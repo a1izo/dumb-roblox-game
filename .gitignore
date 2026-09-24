@@ -6,3 +6,8 @@
 /*.rbxl.lock
 
 sourcemap.json
+
+# Blender
+__pycache__/
+*.pyc
+*.blend1

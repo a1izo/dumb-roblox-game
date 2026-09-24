@@ -101,12 +101,23 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 - Specters are invisible to the living and cannot touch the world; their chat only reaches
   Specters.
 
+## Art made in Blender
+
+All animations, props and effect textures are built by scripts in `art/` (see `art/README.md`).
+
+- **Animations** (28 clips: movement, actions, deaths, endings, emotes) are exported to
+  `src/shared/Anim/Clips.luau` and played by the game itself on every character: nothing to
+  upload. The default Animate script is replaced by an empty one.
+- **Props and textures** need one import in Studio: **Import 3D** `art/export/InkboundModels.fbx`
+  and move the result into `ReplicatedStorage > InkboundAssets`. The maps, meeting room,
+  cutscenes and ink effects then use them; until then everything uses part-built stand-ins.
+
 ## Your own assets and ids
 
 | Where | What to paste |
 | --- | --- |
-| `src/shared/Assets.luau` | Music and sound effect ids, animation ids that replace poses, the movement set, outfit clothing, textures and icons. Empty slots fall back to silence, procedural poses or part-built models. |
-| `assets/shared/Models/*.rbxm` | Your own models (Grimoire, Handcuffs, Specter); Rojo syncs them to `ReplicatedStorage.InkboundAssets`. |
+| `src/shared/Assets.luau` | Music and sound effect ids, uploaded animation ids that replace clips, outfit clothing, textures and icons. Empty slots fall back to silence, the Blender clips or the imported textures. |
+| `ReplicatedStorage > InkboundAssets` | The imported Blender props (see above), or your own models with the same names. |
 | `src/shared/Products.luau` | Developer product ids (coin packs) and game pass ids. An id of 0 hides the button. |
 | `src/shared/Progression/Achievements.luau` | Badge ids (0 = no badge). |
 
@@ -139,7 +150,8 @@ names; tags; DataStore and MemoryStore names. CI fails when a player-facing stri
 ## Code map
 
 ```
-src/shared/     Config, Terms, Assets, Venues, LightingPresets, Models, Cosmetics, CosmeticBuild,
+src/shared/     Config, Terms, Assets, Venues, LightingPresets, Models, ModelLibrary and
+                ModelCatalog (the Blender props), Cosmetics, CosmeticBuild,
                 ShopRotation, Products, AliasRules, SettingsSchema, Net, Copy/ (role cards, How
                 to Play), Anim/ (joints and poses), Progression/ (time, streak, quests,
                 achievements, mastery, ProgressRules), and the game rules shared by both sides
@@ -154,14 +166,16 @@ src/server/     init.server.luau boots every service
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything
   UI/           every screen and panel, Core/ (router, motion, settings, clock, scaling)
-  Presentation/ cue router, camera director, cinema helpers, cutscene presenters
-  Anim/         PoseController and ActingController
+  Presentation/ cue router, camera director, cinema helpers, ink effects, cutscene presenters
+  Anim/         PoseController, LocomotionController and ActingController (Blender clips)
   Audio/        mixer, music and sound effects
   World/        lighting, rain, flicker, Specter visibility
   Specter/      flight, lost souls and real-name tags for ghosts
   Controllers/  prompts, chat rules, emotes, Specter's Eyes, the Academy
   Input/        actions and bindings
 assets/         your own models, synced to ReplicatedStorage/ServerStorage.InkboundAssets
+art/            Blender scripts, .blend sources, the FBX export and previews (art/README.md)
+src/character/  the empty Animate script that replaces Roblox's default one
 scripts/        check_terms.py (run by CI)
 ```
 

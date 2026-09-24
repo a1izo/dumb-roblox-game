@@ -14,6 +14,7 @@ local Theme = require(script.Parent.Parent.Parent.UI.Theme)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
+local InkFx = require(script.Parent.Parent.InkFx)
 
 local function now(): number
 	return workspace:GetServerTimeNow()
@@ -108,6 +109,9 @@ return function(cue)
 			end
 			Sfx.play("thunder")
 			Cinema.flash(Theme.colors.paper, 0.5, 0.35)
+			InkFx.burst(landing.Position + Vector3.new(0, 0.5, 0), InkFx.INK, 40)
+			InkFx.splat(landing.Position, 9, InkFx.INK, 8)
+			InkFx.sparks(landing.Position + Vector3.new(0, 0.6, 0), Color3.fromRGB(255, 60, 60))
 			if Settings.get("cameraShake") then
 				CameraDirector.shake(token, 0.6, 0.35)
 			end

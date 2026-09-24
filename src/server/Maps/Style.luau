@@ -8,7 +8,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local Style = {}
 
@@ -40,6 +42,27 @@ function Style.lampPost(b, x: number, z: number, options: LampOptions?)
 	local height = if options and options.height then options.height else 13
 	local rot = if options and options.rot then options.rot else 0
 	local color = if options and options.color then options.color else LAMP
+	-- The Blender lamp post, when imported: the light hangs in its lantern.
+	local model = b:placeModel("LampPost", x, z, rot)
+	if model then
+		for _, bulb in ipairs(ModelLibrary.glowParts(model)) do
+			bulb.Color = color
+			Create("SpotLight", {
+				Face = Enum.NormalId.Bottom,
+				Angle = 75,
+				Range = height + 14,
+				Brightness = 3.2,
+				Color = color,
+				Shadows = options ~= nil and options.shadows == true,
+				Parent = bulb,
+			})
+			Create("PointLight", { Color = color, Range = 8, Brightness = 0.6, Shadows = false, Parent = bulb })
+			if options and options.flicker then
+				bulb:AddTag("LFlicker")
+			end
+			return bulb
+		end
+	end
 	b:block(x, height / 2, z, 0.45, height, 0.45, IRON, Enum.Material.Metal, { CastShadow = false })
 	b:block(x, 0.4, z, 1.1, 0.8, 1.1, IRON, Enum.Material.Metal)
 	local base = b:cf(x, height, z, rot)
@@ -78,7 +101,7 @@ end
 -- Steam rising from a grate in the ground.
 function Style.steamVent(b, x: number, z: number)
 	local grate = b:block(x, 0.08, z, 2.4, 0.16, 2.4, Color3.fromRGB(30, 30, 34), Enum.Material.DiamondPlate, decor())
-	Create("ParticleEmitter", {
+	local steam = Create("ParticleEmitter", {
 		EmissionDirection = Enum.NormalId.Top,
 		Rate = 6,
 		Lifetime = NumberRange.new(3, 5),
@@ -91,7 +114,17 @@ function Style.steamVent(b, x: number, z: number)
 		RotSpeed = NumberRange.new(-20, 20),
 		Parent = grate,
 	})
+	local texture = Assets.texture("Smoke")
+	if texture ~= "" then
+		steam.Texture = texture
+	end
 	return grate
+end
+
+-- An imported Blender prop, standing on the floor. Only placed when imported: these are
+-- extra street dressing with no part-built stand-in.
+function Style.prop(b, key: string, x: number, z: number, rot: number?)
+	return b:placeModel(key, x, z, rot or 0)
 end
 
 -- A thin neon tube (along x when sx is the long side).

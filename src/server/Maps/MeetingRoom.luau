@@ -14,13 +14,8 @@ local MeetingRoom = {}
 local SEATS = 12
 local SEAT_RADIUS = 17
 
-function MeetingRoom.build(b)
-	local wall = Color3.fromRGB(44, 40, 46)
-	b:floor(-30, -30, 30, 30, Color3.fromRGB(38, 14, 18), Enum.Material.Fabric)
-	b:enclose(-30, -30, 30, 30, 18, wall, Enum.Material.Concrete)
-	b:block(0, 18.5, 0, 62, 1, 62, Color3.fromRGB(24, 22, 26), Enum.Material.Concrete)
-
-	-- Round table
+-- The part-built round table (used until the Blender one is imported).
+local function partTable(b)
 	b:part(
 		Vector3.new(0.6, 26, 26),
 		CFrame.new(0, 3, 0) * CFrame.Angles(0, 0, math.rad(90)),
@@ -42,6 +37,18 @@ function MeetingRoom.build(b)
 		Enum.Material.Neon,
 		{ Shape = Enum.PartType.Cylinder, CanQuery = false }
 	)
+end
+
+function MeetingRoom.build(b)
+	local wall = Color3.fromRGB(44, 40, 46)
+	b:floor(-30, -30, 30, 30, Color3.fromRGB(38, 14, 18), Enum.Material.Fabric)
+	b:enclose(-30, -30, 30, 30, 18, wall, Enum.Material.Concrete)
+	b:block(0, 18.5, 0, 62, 1, 62, Color3.fromRGB(24, 22, 26), Enum.Material.Concrete)
+
+	-- Round table: the Blender one when imported, parts otherwise.
+	if not b:placeModel("MeetingTable", 0, 0, 0) then
+		partTable(b)
+	end
 
 	-- Standing spots around the table, each with a chair behind it.
 	local seats = {}

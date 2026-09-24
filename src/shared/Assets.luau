@@ -103,9 +103,18 @@ Assets.outfit = {
 	pants = "",
 } :: { [string]: string }
 
--- Particle textures. Empty = Roblox's built-in particle texture.
+-- Effect textures made in Blender (art/export/textures). They also arrive with the model import
+-- (on quads named Tex_<name>), so these ids are only needed if you upload the PNGs yourself.
+-- Empty = use the imported one, or Roblox's default particle when nothing is imported.
 Assets.textures = {
-	rain = "",
+	InkSplat1 = "",
+	InkSplat2 = "",
+	InkSplat3 = "",
+	InkDrop = "",
+	RainStreak = "",
+	Smoke = "",
+	SoulGlow = "",
+	Spark = "",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
@@ -141,6 +150,16 @@ function Assets.audioId(entry: Audio?): string?
 		return nil
 	end
 	return Assets.contentId(id)
+end
+
+-- An effect texture's content id: your upload, else the imported one, else "".
+function Assets.texture(name: string): string
+	local id = Assets.textures[name]
+	if id and id ~= "" then
+		return Assets.contentId(id)
+	end
+	local ModelLibrary = require(script.Parent.ModelLibrary) :: any
+	return ModelLibrary.carrierTexture(name) or ""
 end
 
 -- A fresh copy of a model you exported to assets/shared/Models, or nil to build the fallback.

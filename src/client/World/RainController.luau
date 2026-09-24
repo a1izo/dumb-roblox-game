@@ -117,7 +117,7 @@ function RainController.init()
 		SpreadAngle = Vector2.new(2, 2),
 		Parent = holder,
 	})
-	local texture = Assets.contentId(Assets.textures.rain)
+	local texture = Assets.texture("RainStreak")
 	if texture ~= "" then
 		emitter.Texture = texture
 	end

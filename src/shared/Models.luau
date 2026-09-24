@@ -1,9 +1,10 @@
--- Part-built models used in the world, in cutscenes and in previews. Each builder returns a
--- fresh Model whose parts are anchored and never collide. When you export your own model
--- to assets/shared/Models with the same name, that one is used instead.
+-- Models used in the world, in cutscenes and in previews. Each returns a fresh Model whose
+-- parts are anchored and never collide: the Blender prop when it has been imported
+-- (ModelLibrary), otherwise a part-built stand-in.
 
 local Assets = require(script.Parent.Assets)
 local Create = require(script.Parent.Create)
+local ModelLibrary = require(script.Parent.ModelLibrary)
 
 local Models = {}
 
@@ -44,11 +45,31 @@ local function prepare(model: Model): Model
 end
 
 local function custom(key: string): Model?
+	local imported = ModelLibrary.get(key)
+	if imported then
+		for _, item in ipairs(imported:GetDescendants()) do
+			if item:IsA("BasePart") then
+				item.CanCollide = false
+				item.CanQuery = false
+			end
+		end
+		return imported
+	end
 	local model = Assets.model(key)
 	if model and model:IsA("Model") then
 		return prepare(model)
 	end
 	return nil
+end
+
+-- The notebook everyone holds in the Grimoire phase (lying flat), or nil (parts are used).
+function Models.notebook(): Model?
+	return custom("Notebook")
+end
+
+-- A fountain pen standing along Y, or nil.
+function Models.pen(): Model?
+	return custom("Pen")
 end
 
 -- The Grimoire, closed and lying flat, centred on its PrimaryPart.
@@ -236,6 +257,35 @@ end
 
 -- A small standing card with a name, for the empty place of a dead player at the table.
 function Models.memorial(alias: string): Model
+	local imported = custom("Memorial")
+	if imported then
+		-- The alias goes on an invisible card over the mesh card.
+		local pivot = imported:GetPivot()
+		local label = part(imported, {
+			Name = "Label",
+			Size = Vector3.new(1.5, 1.0, 0.05),
+			CFrame = pivot * CFrame.new(0, 2.62, -0.1),
+			Transparency = 1,
+			CastShadow = false,
+		})
+		local gui = Create("SurfaceGui", {
+			Face = Enum.NormalId.Front,
+			SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
+			PixelsPerStud = 60,
+			LightInfluence = 0.6,
+			Parent = label,
+		})
+		Create("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 0.6),
+			Text = string.upper(alias),
+			TextScaled = true,
+			TextColor3 = INK,
+			Font = Enum.Font.Oswald,
+			Parent = gui,
+		})
+		return imported
+	end
 	local model = Instance.new("Model")
 	model.Name = "Memorial"
 	-- The pivot is the foot of the stand, on the floor; the card faces forward (-Z).

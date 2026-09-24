@@ -16,6 +16,7 @@ local Poses = require(Shared:WaitForChild("Anim"):WaitForChild("Poses"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
+local InkFx = require(script.Parent.Parent.Presentation.InkFx)
 local PoseController = require(script.Parent.PoseController)
 
 local ActingController = {}
@@ -135,6 +136,7 @@ local function onVerdict(cue)
 	task.wait(0.8)
 	if character.Parent then
 		dissolve(character, 1.6)
+		InkFx.dissolve(character, 1.4)
 	end
 end
 

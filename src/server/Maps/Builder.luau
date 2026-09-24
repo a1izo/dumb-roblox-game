@@ -1,11 +1,14 @@
 -- Procedural building kit for the lobby, the meeting room and the three maps.
 -- Coordinates passed to the builder are local to its origin; y = 0 is the floor surface.
 -- Rotations are degrees around Y: 0 faces -Z, 180 faces +Z, 90 faces -X, -90 faces +X.
+-- Furniture uses the Blender props (ModelLibrary) once they are imported, and falls back to
+-- the part-built versions below otherwise; both have the same footprint.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local Builder = {}
 Builder.__index = Builder
@@ -249,7 +252,25 @@ end
 
 -- Furniture ---------------------------------------------------------------------------
 
+-- Places an imported Blender prop standing on the floor at (x, z), facing rot. Returns the
+-- model, or nil when the prop has not been imported (the caller then builds its parts).
+function Builder:placeModel(key: string, x: number, z: number, rot: number?, scale: number?, y: number?): Model?
+	local model = ModelLibrary.get(key)
+	if not model then
+		return nil
+	end
+	if scale and math.abs(scale - 1) > 1e-3 then
+		model:ScaleTo(model:GetScale() * scale)
+	end
+	model:PivotTo(self:world(self:cf(x, y or 0, z, rot or 0)))
+	model.Parent = self.parent
+	return model
+end
+
 function Builder:desk(x: number, z: number, rot: number, color: Color3?)
+	if self:placeModel("Desk", x, z, rot) then
+		return
+	end
 	local wood = color or Color3.fromRGB(96, 74, 56)
 	self:prop(x, z, rot, CFrame.new(0, 2.9, 0), Vector3.new(6, 0.3, 3), wood, Enum.Material.Wood)
 	for _, lx in ipairs({ -2.7, 2.7 }) do
@@ -277,6 +298,9 @@ function Builder:desk(x: number, z: number, rot: number, color: Color3?)
 end
 
 function Builder:chair(x: number, z: number, rot: number, color: Color3?)
+	if self:placeModel("OfficeChair", x, z, rot) then
+		return
+	end
 	local c = color or Color3.fromRGB(40, 40, 46)
 	self:prop(x, z, rot, CFrame.new(0, 1.6, 0), Vector3.new(1.8, 0.3, 1.8), c, Enum.Material.Fabric)
 	self:prop(x, z, rot, CFrame.new(0, 2.8, 0.8), Vector3.new(1.8, 2.2, 0.25), c, Enum.Material.Fabric)
@@ -293,6 +317,22 @@ end
 
 function Builder:shelf(x: number, z: number, rot: number, width: number?, color: Color3?)
 	local w = width or 6
+	if ModelLibrary.has("Bookshelf") then
+		-- Bookcases side by side to fill the width.
+		local size = ModelLibrary.size("Bookshelf") or Vector3.new(3.2, 8, 1.6)
+		local count = math.max(1, math.floor(w / size.X + 0.5))
+		local unit = w / count
+		local base = self:cf(x, 0, z, rot)
+		for i = 1, count do
+			local model = ModelLibrary.get("Bookshelf")
+			if model then
+				model:ScaleTo(model:GetScale() * unit / size.X)
+				model:PivotTo(self:world(base * CFrame.new(-w / 2 + unit * (i - 0.5), 0, 0)))
+				model.Parent = self.parent
+			end
+		end
+		return
+	end
 	local c = color or Color3.fromRGB(80, 62, 48)
 	self:prop(x, z, rot, CFrame.new(0, 4, 0), Vector3.new(w, 8, 1.6), c, Enum.Material.Wood)
 	local bookColors = {
@@ -315,6 +355,9 @@ function Builder:shelf(x: number, z: number, rot: number, width: number?, color:
 end
 
 function Builder:cabinet(x: number, z: number, rot: number)
+	if self:placeModel("FilingCabinet", x, z, rot) then
+		return
+	end
 	self:prop(
 		x,
 		z,
@@ -338,6 +381,9 @@ function Builder:cabinet(x: number, z: number, rot: number)
 end
 
 function Builder:plant(x: number, z: number)
+	if self:placeModel("Plant", x, z, (x * 37 + z * 11) % 360) then
+		return
+	end
 	self:block(x, 1, z, 1.6, 2, 1.6, Color3.fromRGB(90, 70, 60), Enum.Material.Concrete)
 	self:part(
 		Vector3.new(3, 3.4, 3),
@@ -350,6 +396,9 @@ end
 
 function Builder:tree(x: number, z: number, scale: number?)
 	local s = scale or 1
+	if self:placeModel("Tree", x, z, (x * 13 + z * 7) % 360, s) then
+		return
+	end
 	self:part(
 		Vector3.new(1.4 * s, 9 * s, 1.4 * s),
 		CFrame.new(x, 4.5 * s, z),
@@ -373,6 +422,9 @@ function Builder:tree(x: number, z: number, scale: number?)
 end
 
 function Builder:bench(x: number, z: number, rot: number)
+	if self:placeModel("Bench", x, z, rot) then
+		return
+	end
 	local wood = Color3.fromRGB(120, 85, 55)
 	self:prop(x, z, rot, CFrame.new(0, 1.5, 0), Vector3.new(6, 0.3, 1.8), wood, Enum.Material.Wood)
 	self:prop(x, z, rot, CFrame.new(0, 2.6, 0.8), Vector3.new(6, 1.6, 0.25), wood, Enum.Material.Wood)
@@ -390,6 +442,9 @@ function Builder:bench(x: number, z: number, rot: number)
 end
 
 function Builder:sofa(x: number, z: number, rot: number, color: Color3?)
+	if self:placeModel("Sofa", x, z, rot) then
+		return
+	end
 	local c = color or Color3.fromRGB(110, 40, 45)
 	self:prop(x, z, rot, CFrame.new(0, 1, 0), Vector3.new(7, 2, 3), c, Enum.Material.Fabric)
 	self:prop(x, z, rot, CFrame.new(0, 2.5, 1.2), Vector3.new(7, 2.2, 0.8), c, Enum.Material.Fabric)
@@ -399,6 +454,9 @@ function Builder:sofa(x: number, z: number, rot: number, color: Color3?)
 end
 
 function Builder:table(x: number, z: number, rot: number, w: number?, d: number?, color: Color3?)
+	if self:placeModel("Table", x, z, rot, (w or 5) / 5) then
+		return
+	end
 	local c = color or Color3.fromRGB(150, 120, 90)
 	local width = w or 5
 	local depth = d or 3
@@ -420,6 +478,9 @@ function Builder:counter(x: number, z: number, rot: number, w: number, color: Co
 end
 
 function Builder:vending(x: number, z: number, rot: number, color: Color3?)
+	if self:placeModel("VendingMachine", x, z, rot) then
+		return
+	end
 	local c = color or Color3.fromRGB(200, 40, 50)
 	self:prop(x, z, rot, CFrame.new(0, 3.5, 0), Vector3.new(4, 7, 2.6), c, Enum.Material.SmoothPlastic)
 	self:prop(
@@ -444,6 +505,9 @@ function Builder:vending(x: number, z: number, rot: number, color: Color3?)
 end
 
 function Builder:crate(x: number, z: number, size: number?, rot: number?)
+	if self:placeModel("Crate", x, z, rot or 0, (size or 4) / 4) then
+		return
+	end
 	local s = size or 4
 	self:prop(
 		x,
@@ -457,6 +521,9 @@ function Builder:crate(x: number, z: number, size: number?, rot: number?)
 end
 
 function Builder:rack(x: number, z: number, rot: number)
+	if self:placeModel("ServerRack", x, z, rot) then
+		return
+	end
 	self:prop(x, z, rot, CFrame.new(0, 4, 0), Vector3.new(3, 8, 3), Color3.fromRGB(30, 32, 38), Enum.Material.Metal)
 	for level = 1, 6 do
 		self:prop(
@@ -479,6 +546,13 @@ end
 
 function Builder:streetLamp(x: number, z: number, color: Color3?)
 	local c = color or Color3.fromRGB(255, 220, 160)
+	local model = self:placeModel("LampPost", x, z, 0)
+	if model then
+		for _, bulb in ipairs(ModelLibrary.glowParts(model)) do
+			Create("PointLight", { Color = c, Range = 26, Brightness = 1.6, Parent = bulb })
+		end
+		return
+	end
 	self:block(x, 6, z, 0.5, 12, 0.5, Color3.fromRGB(45, 45, 50), Enum.Material.Metal)
 	local bulb = self:block(x, 12.3, z, 1.4, 0.6, 1.4, c, Enum.Material.Neon, { CanQuery = false, CastShadow = false })
 	Create("PointLight", { Color = c, Range = 26, Brightness = 1.6, Parent = bulb })
@@ -539,6 +613,9 @@ function Builder:building(x: number, z: number, w: number, d: number, h: number,
 end
 
 function Builder:car(x: number, z: number, rot: number, color: Color3)
+	if self:placeModel("Car", x, z, rot) then
+		return
+	end
 	self:prop(x, z, rot, CFrame.new(0, 1.6, 0), Vector3.new(5, 1.8, 10), color, Enum.Material.SmoothPlastic)
 	self:prop(
 		x,

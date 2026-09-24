@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
@@ -152,7 +153,23 @@ local function makeWisp(position: Vector3): BasePart
 		Parent = workspace.CurrentCamera,
 	})
 	Create("PointLight", { Color = orb.Color, Range = 10, Brightness = 1.5, Parent = orb })
-	Create("ParticleEmitter", {
+	local glow = Assets.texture("SoulGlow")
+	if glow ~= "" then
+		-- A soft glow sprite around the orb.
+		local gui = Create("BillboardGui", {
+			Size = UDim2.fromScale(5, 5),
+			LightInfluence = 0,
+			Parent = orb,
+		})
+		Create("ImageLabel", {
+			BackgroundTransparency = 1,
+			Image = glow,
+			ImageColor3 = orb.Color,
+			Size = UDim2.fromScale(1, 1),
+			Parent = gui,
+		})
+	end
+	local sparkles = Create("ParticleEmitter", {
 		Rate = 8,
 		Lifetime = NumberRange.new(1, 1.6),
 		Speed = NumberRange.new(0.5, 1.5),
@@ -163,6 +180,10 @@ local function makeWisp(position: Vector3): BasePart
 		LightEmission = 1,
 		Parent = orb,
 	})
+	local spark = Assets.texture("Spark")
+	if spark ~= "" then
+		sparkles.Texture = spark
+	end
 	return orb
 end
 

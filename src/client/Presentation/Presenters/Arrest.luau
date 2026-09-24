@@ -14,6 +14,7 @@ local Widgets = require(script.Parent.Parent.Parent.UI.Widgets)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
+local InkFx = require(script.Parent.Parent.InkFx)
 
 local C = Theme.colors
 
@@ -54,6 +55,11 @@ return function(cue)
 	glyph()
 	task.wait(0.25)
 	Sfx.play("handcuffs")
+	local suspect = Cinema.character(tonumber(data.userId))
+	local hand = if suspect then suspect:FindFirstChild("RightHand") else nil
+	if hand and hand:IsA("BasePart") then
+		InkFx.sparks(hand.Position)
+	end
 	for index = 0, 3 do
 		task.delay(index * 0.35, Cinema.flash, if index % 2 == 0 then C.accent else C.team, 0.45, 0.3)
 	end

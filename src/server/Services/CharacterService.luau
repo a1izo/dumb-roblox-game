@@ -222,6 +222,24 @@ function CharacterService.setHood(player: Player, on: boolean)
 	CharacterService.refreshAccessories(player)
 end
 
+-- The parts of a model moved so its pivot sits at `placed`, taken out of the model (for
+-- attachBuilt, which welds them).
+local function modelParts(model: Model, placed: CFrame): { BasePart }
+	local pivot = model:GetPivot()
+	local parts = {}
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("BasePart") then
+			item.CFrame = placed * pivot:ToObjectSpace(item.CFrame)
+			table.insert(parts, item)
+		end
+	end
+	for _, part in ipairs(parts) do
+		part.Parent = nil
+	end
+	model:Destroy()
+	return parts
+end
+
 -- Everyone holds the same notebook during the Death Note phase, so the screens look
 -- identical from the outside.
 function CharacterService.setWriting(player: Player, on: boolean)
@@ -231,6 +249,10 @@ function CharacterService.setWriting(player: Player, on: boolean)
 		return
 	end
 	CharacterService.attachBuilt(player, "LWritingPen", HAND, function(anchor: CFrame)
+		local pen = Models.pen()
+		if pen then
+			return modelParts(pen, anchor * CFrame.new(0, -0.35, -0.2) * CFrame.Angles(math.rad(-55), 0, 0))
+		end
 		return {
 			Create("Part", {
 				Shape = Enum.PartType.Cylinder,
@@ -243,6 +265,24 @@ function CharacterService.setWriting(player: Player, on: boolean)
 	end)
 	CharacterService.attachBuilt(player, "LWriting", TORSO, function(anchor: CFrame)
 		local coverColor = player:GetAttribute("LGrimoireColor")
+		local held = anchor * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)
+		local notebook = Models.notebook()
+		if notebook then
+			local parts = modelParts(notebook, held)
+			if typeof(coverColor) == "Color3" then
+				-- A cover cosmetic: a coloured plate over the front cover.
+				table.insert(
+					parts,
+					Create("Part", {
+						Size = Vector3.new(1.26, 0.02, 0.9),
+						Color = coverColor,
+						Material = Enum.Material.SmoothPlastic,
+						CFrame = held * CFrame.new(0, 0.115, 0),
+					})
+				)
+			end
+			return parts
+		end
 		local cover = Create("Part", {
 			Size = Vector3.new(1.3, 0.12, 0.95),
 			Color = if typeof(coverColor) == "Color3" then coverColor else Color3.fromRGB(22, 22, 26),
@@ -297,19 +337,8 @@ end
 -- client).
 function CharacterService.cuff(player: Player)
 	CharacterService.attachBuilt(player, "LCuffs", HAND, function(anchor: CFrame)
-		local model = Models.handcuffs()
-		local pivot = model:GetPivot()
 		local placed = anchor * CFrame.new(-0.35, -0.2, 0.1) * CFrame.Angles(0, math.rad(90), 0)
-		local parts = {}
-		for _, item in ipairs(model:GetDescendants()) do
-			if item:IsA("BasePart") then
-				item.CFrame = placed * pivot:ToObjectSpace(item.CFrame)
-				item.Parent = nil
-				table.insert(parts, item)
-			end
-		end
-		model:Destroy()
-		return parts
+		return modelParts(Models.handcuffs(), placed)
 	end)
 end
 

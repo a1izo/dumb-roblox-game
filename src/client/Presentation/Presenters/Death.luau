@@ -10,6 +10,7 @@ local Mixer = require(script.Parent.Parent.Parent.Audio.Mixer)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
+local InkFx = require(script.Parent.Parent.InkFx)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -26,8 +27,18 @@ return function(cue)
 	task.delay(0.8, Sfx.play, "heartbeat")
 	task.delay(1.7, Sfx.play, "flatline")
 	local removeVignette = Cinema.vignette(Theme.colors.accent, 0.3)
+	-- The body hits the floor in a burst of ink and leaves a splat.
+	task.delay(1.15, function()
+		local body = Cinema.character(data.userId)
+		local root = if body then body:FindFirstChild("LowerTorso") or body:FindFirstChild("HumanoidRootPart") else nil
+		if root and root:IsA("BasePart") then
+			InkFx.burst(root.Position, InkFx.INK, 40)
+			InkFx.splat(root.Position, 7, InkFx.INK, 14)
+		end
+	end)
 
 	if data.userId == LocalPlayer.UserId then
+		InkFx.screenSplat(3.5)
 		local untint = Cinema.tint({ Saturation = -1, Contrast = 0.15, Brightness = -0.05 }, 1.2)
 		task.wait(5)
 		untint()
