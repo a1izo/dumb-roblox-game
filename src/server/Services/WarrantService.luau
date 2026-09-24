@@ -11,6 +11,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
+local Cues = require(script.Parent.Cues)
 local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local Match = require(script.Parent.Match)
@@ -67,6 +68,12 @@ local function onWarrant(player: Player, payload)
 
 	l.warrantUsed = true
 	Match.pushPrivate(l)
+	-- The arrest cutscene: the result is announced publicly anyway.
+	Cues.fire("arrest", {
+		userId = suspect.userId,
+		alias = suspect.alias,
+		result = if suspect.role == "Kira" then "hand" elseif suspect.role == "Follower" then "cultist" else "innocent",
+	}, { hold = 4 })
 	if suspect.role == "Kira" then
 		l.stats.arrestedKira = true
 		EventLog.add(

@@ -45,6 +45,15 @@ local EmoteController = require(Controllers:WaitForChild("EmoteController"))
 local InteractionController = require(Controllers:WaitForChild("InteractionController"))
 
 local InputRouter = require(script:WaitForChild("Input"):WaitForChild("InputRouter"))
+
+local Audio = script:WaitForChild("Audio")
+local Mixer = require(Audio:WaitForChild("Mixer"))
+local MusicController = require(Audio:WaitForChild("MusicController"))
+
+local Presentation = script:WaitForChild("Presentation")
+local CameraDirector = require(Presentation:WaitForChild("CameraDirector"))
+local Cinema = require(Presentation:WaitForChild("Cinema"))
+local Cutscenes = require(Presentation:WaitForChild("Cutscenes"))
 local HintController = require(script:WaitForChild("Onboarding"):WaitForChild("HintController"))
 
 -- UI core: device scale, the shared clock, the screen router and the player's settings.
@@ -80,6 +89,13 @@ SpectatePanel.init()
 RevealScreen.init()
 WorldFx.init()
 DebugPanel.init()
+
+-- Sound and cutscenes.
+Mixer.init()
+MusicController.init()
+CameraDirector.init()
+Cinema.init()
+Cutscenes.init()
 
 EmoteController.init()
 InteractionController.init()

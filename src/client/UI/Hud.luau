@@ -176,7 +176,7 @@ end
 local function updateBadge()
 	local participant = ClientState.isParticipant()
 	local phase = ClientState.phase()
-	badge.Visible = participant and phase ~= "Vote"
+	badge.Visible = participant and phase ~= "Vote" and not Actions.CUTSCENE_PHASES[phase]
 	if not participant then
 		return
 	end
@@ -201,7 +201,9 @@ local function renderActions()
 	local view = Router.view()
 	local touch = Responsive.isTouch()
 	-- The meeting panel carries its own buttons; keys still work while the bar is hidden.
-	local hideForMeeting = view.phase == "Meeting" or view.phase == "Vote"
+	local hideForMeeting = view.phase == "Meeting"
+		or view.phase == "Vote"
+		or Actions.CUTSCENE_PHASES[view.phase] == true
 	local available = if view.participant and not hideForMeeting then Actions.available(view) else {}
 	-- Rebuild only when the buttons, their labels or the key hints change.
 	local parts = {}

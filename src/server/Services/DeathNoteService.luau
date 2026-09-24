@@ -13,6 +13,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local CharacterService = require(script.Parent.CharacterService)
+local Cues = require(script.Parent.Cues)
 local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local Match = require(script.Parent.Match)
@@ -38,6 +39,7 @@ local function kill(target, kira, cause: string, matchId: number)
 		{ byKira = true }
 	)
 	Match.announce(target.alias .. " is dead", "Cause of death: " .. cause, "danger")
+	Cues.fire("death", { userId = target.userId, alias = target.alias, cause = cause }, { hold = 5.5 })
 end
 
 local function onWrite(player: Player, payload)
@@ -84,7 +86,8 @@ local function onWrite(player: Player, payload)
 		-- The death lands 40 seconds later, clamped so it always falls inside the meeting.
 		local remaining = math.max(0, Match.phaseEndsAt - workspace:GetServerTimeNow())
 		local meeting = Match.phaseLength("Meeting")
-		local delay = math.clamp(Config.DEATH_DELAY, remaining + 3, remaining + math.max(4, meeting - 3))
+		-- Clamped so the death and its cutscene both fit inside the meeting.
+		local delay = math.clamp(Config.DEATH_DELAY, remaining + 3, remaining + math.max(4, meeting - 8))
 		task.delay(delay, kill, target, ps, cause, matchId)
 	else
 		EventLog.add(

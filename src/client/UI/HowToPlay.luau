@@ -87,7 +87,6 @@ local function showChapter(index: number)
 		}, function()
 			showChapter(order)
 		end)
-		Widgets.padding(button, 0, Theme.space.sm)
 		firstButton = firstButton or button
 	end
 end

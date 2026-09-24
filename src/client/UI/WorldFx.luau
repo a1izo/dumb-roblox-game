@@ -10,6 +10,9 @@ local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local Cinema = require(script.Parent.Parent.Presentation.Cinema)
+local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
@@ -94,17 +97,45 @@ local function onEyesName(payload)
 		ResetOnSpawn = false,
 		Parent = playerGui,
 	})
-	Widgets.label({
+	local finalText = string.upper(payload.name)
+	local label = Widgets.label({
 		Font = Theme.fonts.typewriter,
 		TextScaled = true,
 		TextColor3 = Color3.fromRGB(255, 50, 50),
 		TextStrokeTransparency = 0.2,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		Text = string.upper(payload.name),
+		Text = finalText,
 		Size = UDim2.fromScale(1, 1),
 		Parent = gui,
 	})
-	task.delay(tonumber(payload.duration) or 3, function()
+	local duration = tonumber(payload.duration) or 3
+	-- The read: a red pulse, the target outlined for you alone, the name glitching into place.
+	Sfx.play("eyesOpen", { volume = 0.6 })
+	Cinema.flash(Theme.colors.accent, 0.35, 0.4)
+	Cinema.outline(character :: Model, Theme.colors.accent, duration)
+	if not Motion.isReduced() then
+		task.spawn(function()
+			local glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#%&"
+			for step = 1, 8 do
+				if not label.Parent then
+					return
+				end
+				local chars = {}
+				for i = 1, #finalText do
+					local c = string.sub(finalText, i, i)
+					if c ~= " " and math.random() > step / 8 then
+						local r = math.random(1, #glyphs)
+						c = string.sub(glyphs, r, r)
+					end
+					table.insert(chars, c)
+				end
+				label.Text = table.concat(chars)
+				task.wait(0.05)
+			end
+			label.Text = finalText
+		end)
+	end
+	task.delay(duration, function()
 		gui:Destroy()
 	end)
 end

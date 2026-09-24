@@ -108,7 +108,8 @@ function CharacterService.placeForPhase(ps)
 		return
 	end
 	local phase = Match.phase
-	if (phase == "Meeting" or phase == "Vote") and ps.seatCFrame then
+	local seated = phase == "Meeting" or phase == "Vote" or phase == "Verdict" or phase == "Outro"
+	if seated and ps.seatCFrame then
 		CharacterService.placeAt(ps.player, ps.seatCFrame)
 		CharacterService.setFrozen(ps.player, true)
 	else
@@ -291,7 +292,12 @@ function CharacterService.onEliminated(ps, kind: string)
 			CharacterService.load(player)
 		end
 	elseif kind == "voted" or kind == "arrested" then
-		CharacterService.load(player)
+		local character = player.Character
+		task.delay(2.5, function()
+			if player.Parent == Players and player.Character == character then
+				CharacterService.load(player)
+			end
+		end)
 	end
 end
 

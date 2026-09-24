@@ -13,6 +13,9 @@ local Router = require(script.Parent.Parent.UI.Core.Router)
 
 local Actions = {}
 
+-- Phases that are mostly a cutscene or a results screen: no quick chat, no action bar.
+Actions.CUTSCENE_PHASES = { Intro = true, Verdict = true, Outro = true, Reveal = true } :: { [string]: boolean }
+
 export type View = Router.View
 
 export type Action = {
@@ -78,7 +81,7 @@ Actions.list = {
 		pad = Enum.KeyCode.DPadLeft,
 		padLabel = "D-Left",
 		when = function(view: View)
-			return view.living and view.phase ~= "Reveal"
+			return view.living and not Actions.CUTSCENE_PHASES[view.phase]
 		end,
 		run = function()
 			Router.toggle("quickChat")

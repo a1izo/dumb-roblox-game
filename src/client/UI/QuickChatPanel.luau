@@ -7,6 +7,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
 local EmoteController = require(script.Parent.Parent.Controllers.EmoteController)
+local Actions = require(script.Parent.Parent.Input.Actions)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
@@ -94,7 +95,7 @@ function QuickChatPanel.init()
 		layer = "panel",
 		window = panel,
 		allowed = function(view)
-			return view.living and view.phase ~= "Reveal"
+			return view.living and not Actions.CUTSCENE_PHASES[view.phase]
 		end,
 		show = function()
 			panel.Visible = true

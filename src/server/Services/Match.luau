@@ -26,6 +26,7 @@ Match.round = 0
 Match.phaseEndsAt = 0
 Match.startClock = 0
 Match.map = nil
+Match.mapId = ""
 Match.mapName = ""
 Match.list = {}
 Match.byPlayer = {}
@@ -108,6 +109,7 @@ function Match.finish()
 	Match.round = 0
 	Match.phaseEndsAt = 0
 	Match.map = nil
+	Match.mapId = ""
 	Match.mapName = ""
 	Match.list = {}
 	Match.byPlayer = {}
@@ -176,10 +178,17 @@ end
 
 local IS_STUDIO = RunService:IsStudio()
 
--- Phase length in seconds; Studio test runs can be sped up with STUDIO_TIME_SCALE.
+-- The cutscene phases.
+local PRESENTATION = { Intro = true, Verdict = true, Outro = true }
+
+-- Phase length in seconds. Studio test runs can be sped up with STUDIO_TIME_SCALE (cutscene
+-- phases keep their length) and can skip the cutscenes with STUDIO_SKIP_PRESENTATION.
 function Match.phaseLength(name: string): number
 	local base = Config.PHASE_TIME[name] or 10
 	if IS_STUDIO then
+		if PRESENTATION[name] then
+			return if Config.STUDIO_SKIP_PRESENTATION then 0 else base
+		end
 		return math.max(3, base * Config.STUDIO_TIME_SCALE)
 	end
 	return base
@@ -320,6 +329,7 @@ function Match.publicState()
 		round = Match.round,
 		maxRounds = Config.MAX_ROUNDS,
 		endsAt = Match.phaseEndsAt,
+		mapId = Match.mapId,
 		mapName = Match.mapName,
 		players = players,
 	}

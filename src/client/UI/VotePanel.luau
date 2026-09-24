@@ -235,6 +235,10 @@ function VotePanel.init()
 		if type(payload) ~= "table" or type(payload.counts) ~= "table" then
 			return
 		end
+		-- Players in the match watch the tally in the verdict cutscene instead.
+		if ClientState.isParticipant() and not Config.STUDIO_SKIP_PRESENTATION then
+			return
+		end
 		local parts = {}
 		for _, item in ipairs(payload.counts) do
 			table.insert(parts, string.format("%s %d", tostring(item.name), tonumber(item.count) or 0))

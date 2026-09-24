@@ -1,6 +1,7 @@
--- The match loop: lobby -> briefing -> up to five rounds of
--- (investigation, Death Note phase, meeting, vote) -> reveal -> lobby.
--- Win checks run after every removal from the match.
+-- The match loop: lobby -> intro -> briefing -> up to five rounds of
+-- (investigation, Grimoire phase, meeting, vote, verdict) -> outro -> reveal -> lobby.
+-- Win checks run after every removal from the match. A winner ends the gameplay phase at
+-- once; cutscenes that are still playing (Cues holds) finish before the outro starts.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +16,7 @@ local WinConditions = require(Shared:WaitForChild("WinConditions"))
 local CaseFileService = require(script.Parent.CaseFileService)
 local CharacterService = require(script.Parent.CharacterService)
 local ChatService = require(script.Parent.ChatService)
+local Cues = require(script.Parent.Cues)
 local DeathNoteService = require(script.Parent.DeathNoteService)
 local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
@@ -43,20 +45,86 @@ local LOBBY_ZOOM = 128
 
 -- Phases ----------------------------------------------------------------------------------
 
-local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?)
+type PhaseOptions = {
+	length: number?, -- overrides Config.PHASE_TIME
+	uncuttable: boolean?, -- runs its full length even after a winner is declared
+}
+
+-- A phase of length 0 (cutscenes skipped in Studio) still runs its start and end.
+local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, options: PhaseOptions?)
+	local length = if options and options.length then options.length else Match.phaseLength(name)
+	if Match.phaseLength(name) <= 0 then
+		length = 0
+	end
+	local uncuttable = options ~= nil and options.uncuttable == true
 	Match.phase = name
-	Match.phaseEndsAt = workspace:GetServerTimeNow() + Match.phaseLength(name)
+	Match.phaseEndsAt = workspace:GetServerTimeNow() + length
 	if onStart then
 		onStart()
 	end
-	Match.pushState()
-	Match.pushAllPrivate()
-	while Match.winner == nil and workspace:GetServerTimeNow() < Match.phaseEndsAt do
-		task.wait(0.25)
+	if length > 0 then
+		Match.pushState()
+		Match.pushAllPrivate()
+		while (uncuttable or Match.winner == nil) and workspace:GetServerTimeNow() < Match.phaseEndsAt do
+			task.wait(0.25)
+		end
 	end
 	if onEnd then
 		onEnd()
 	end
+end
+
+-- The intro cutscene: a camera path over the map, the case title, and the Grimoire falling
+-- onto the spot where the players stand.
+local function startIntro()
+	local map = Match.map
+	local points = {}
+	for _, area in ipairs(map.areas or {}) do
+		table.insert(points, area.position)
+	end
+	local spawnCenter = Vector3.zero
+	for _, spawnCFrame in ipairs(map.spawns) do
+		spawnCenter += spawnCFrame.Position
+	end
+	spawnCenter /= math.max(1, #map.spawns)
+	local center = spawnCenter
+	if #points > 0 then
+		center = Vector3.zero
+		for _, point in ipairs(points) do
+			center += point
+		end
+		center /= #points
+	end
+	local radius = 40
+	for _, point in ipairs(points) do
+		radius = math.max(radius, (point - center).Magnitude)
+	end
+	local look = center + Vector3.new(0, 4, 0)
+	local path = {
+		CFrame.lookAt(center + Vector3.new(-radius * 0.9, radius * 0.45 + 30, radius * 0.9), look),
+		CFrame.lookAt(center + Vector3.new(radius * 0.7, radius * 0.3 + 22, radius * 0.4), look),
+		CFrame.lookAt(spawnCenter + Vector3.new(0, 14, 26), spawnCenter + Vector3.new(0, 3, 0)),
+	}
+	Cues.fire("intro", {
+		mapName = Match.mapName,
+		playerCount = #Match.list,
+		caseNumber = Match.rng:NextInteger(100, 999),
+		path = path,
+		landmark = spawnCenter,
+		duration = Match.phaseLength("Intro"),
+	}, { lead = 0.2 })
+end
+
+local function meetingCenter(): Vector3?
+	local seats = Match.map and Match.map.meeting and Match.map.meeting.seats
+	if not seats or #seats == 0 then
+		return nil
+	end
+	local sum = Vector3.zero
+	for _, seat in ipairs(seats) do
+		sum += seat.Position
+	end
+	return sum / #seats
 end
 
 local function sendBriefings()
@@ -161,6 +229,38 @@ end
 
 -- Match --------------------------------------------------------------------------------------
 
+-- The ending cutscene: everyone still standing is gathered in the meeting room, the camera
+-- finds the Hand, and each side hears its own music.
+local function startOutro()
+	CaseFileService.cancelAll(nil)
+	VoteService.cancel()
+	WarrantService.close()
+	ChatService.setMeetingOpen(false)
+	MeetingService.gather()
+	local winner = Match.winner or "Kira"
+	local hand = Match.findRole("Kira")
+	local zero = Match.findRole("L")
+	local winners = {}
+	for _, ps in ipairs(Match.list) do
+		if (winner == "Team") ~= Match.isKiraSide(ps) then
+			table.insert(winners, ps.userId)
+		end
+	end
+	Cues.fire("outro", {
+		winner = winner,
+		reason = Match.winReason or "",
+		handUserId = if hand then hand.userId else nil,
+		handAlias = if hand then hand.alias else nil,
+		handRealName = if hand then hand.realName else nil,
+		handAlive = hand ~= nil and hand.alive,
+		zeroUserId = if zero then zero.userId else nil,
+		zeroAlias = if zero then zero.alias else nil,
+		winners = winners,
+		center = meetingCenter(),
+		duration = Match.phaseLength("Outro"),
+	}, { lead = 0.3 })
+end
+
 local function reveal()
 	Match.phase = "Reveal"
 	Match.phaseEndsAt = workspace:GetServerTimeNow() + Match.phaseLength("Reveal")
@@ -209,6 +309,13 @@ local function reveal()
 	end
 end
 
+-- After a winner: let the last cutscene finish, play the outro, then show the results.
+local function finale()
+	Cues.waitHolds(6)
+	runPhase("Outro", startOutro, nil, { uncuttable = true })
+	reveal()
+end
+
 local function runMatch(players: { Player })
 	-- Someone may have left between matchmaking and now.
 	local present = {}
@@ -225,6 +332,7 @@ local function runMatch(players: { Player })
 	Match.begin(present)
 	local map = MapService.build(mapId)
 	Match.map = map
+	Match.mapId = mapId
 	Match.mapName = map.name
 
 	EventLog.reset()
@@ -256,6 +364,8 @@ local function runMatch(players: { Player })
 		end
 	end
 
+	Cues.reset()
+	runPhase("Intro", startIntro)
 	runPhase("Briefing", sendBriefings)
 
 	for round = 1, Config.MAX_ROUNDS do
@@ -284,6 +394,7 @@ local function runMatch(players: { Player })
 		if Match.winner then
 			break
 		end
+		local result = nil
 		runPhase("Vote", function()
 			VoteService.open()
 			WarrantService.open()
@@ -292,20 +403,31 @@ local function runMatch(players: { Player })
 			if Match.winner then
 				VoteService.cancel()
 			else
-				VoteService.close()
+				result = VoteService.tally()
 			end
-			ChatService.setMeetingOpen(false)
 		end)
+		if result then
+			-- The verdict plays in full, even when voting out the Hand ends the match.
+			runPhase("Verdict", function()
+				VoteService.present(result)
+			end, function()
+				ChatService.setMeetingOpen(false)
+			end, { length = if result.removed then nil else 4, uncuttable = true })
+		else
+			ChatService.setMeetingOpen(false)
+		end
 		if Match.winner then
 			break
 		end
 		endRound(round)
+		-- Let a death at the end of the round (the eyes deal) play out before moving on.
+		Cues.waitHolds(6)
 	end
 
 	if not Match.winner then
 		Match.declareWinner("Kira", Terms.f("{Hand} survived all {n} rounds.", { n = Config.MAX_ROUNDS }))
 	end
-	reveal()
+	finale()
 end
 
 local function cleanup()

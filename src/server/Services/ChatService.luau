@@ -33,7 +33,7 @@ local blockedNotices: { [string]: boolean } = {}
 
 -- Living players are cut off from normal chat until the reveal.
 local function isLiving(userId: number): boolean
-	return Match.phase ~= "Reveal" and Match.isLivingUserId(userId)
+	return Match.phase ~= "Reveal" and Match.phase ~= "Outro" and Match.isLivingUserId(userId)
 end
 
 local function containsLivingRealName(text: string): boolean

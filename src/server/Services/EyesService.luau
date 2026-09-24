@@ -11,6 +11,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local CharacterService = require(script.Parent.CharacterService)
+local Cues = require(script.Parent.Cues)
 local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local Match = require(script.Parent.Match)
@@ -53,6 +54,7 @@ local function deal(ps)
 		),
 		"secret"
 	)
+	Cues.fire("eyesDeal", { reads = reads, deathRound = deathRound }, { to = { ps.player }, lead = 0.1 })
 	for _, other in ipairs(Match.list) do
 		if other ~= ps and Match.isKiraSide(other) and other.alive then
 			Match.notify(other.player, Terms.f("{alias} accepted {eyes}.", { alias = ps.alias }), "secret")
@@ -159,6 +161,11 @@ function EyesService.onRoundEnd()
 					ps.alias .. " is dead",
 					Terms.f("Cause of death: the {eyes} deal. They worked with {hand}."),
 					"danger"
+				)
+				Cues.fire(
+					"death",
+					{ userId = ps.userId, alias = ps.alias, cause = Terms.f("{Eyes} deal") },
+					{ hold = 5.5 }
 				)
 			else
 				Match.pushPrivate(ps)

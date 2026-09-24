@@ -31,10 +31,10 @@ local function update()
 	if not inputBar then
 		return
 	end
-	if ClientState.isLiving() and ClientState.phase() ~= "Reveal" then
-		local phase = ClientState.phase()
+	local phase = ClientState.phase()
+	if ClientState.isLiving() and phase ~= "Reveal" and phase ~= "Outro" then
 		local meeting = channel(MEETING_CHANNEL)
-		if (phase == "Meeting" or phase == "Vote") and meeting then
+		if (phase == "Meeting" or phase == "Vote" or phase == "Verdict") and meeting then
 			inputBar.TargetTextChannel = meeting
 			inputBar.Enabled = true
 		else
