@@ -18,9 +18,27 @@ function MeetingRoom.build(b)
 	b:block(0, 18.5, 0, 62, 1, 62, Color3.fromRGB(24, 22, 26), Enum.Material.Concrete)
 
 	-- Round table
-	b:part(Vector3.new(0.6, 26, 26), CFrame.new(0, 3, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(60, 40, 30), Enum.Material.Wood, { Shape = Enum.PartType.Cylinder })
-	b:part(Vector3.new(2.6, 5, 5), CFrame.new(0, 1.4, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(35, 30, 28), Enum.Material.Metal, { Shape = Enum.PartType.Cylinder })
-	b:part(Vector3.new(0.2, 8, 8), CFrame.new(0, 3.35, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(200, 30, 40), Enum.Material.Neon, { Shape = Enum.PartType.Cylinder, CanQuery = false })
+	b:part(
+		Vector3.new(0.6, 26, 26),
+		CFrame.new(0, 3, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Color3.fromRGB(60, 40, 30),
+		Enum.Material.Wood,
+		{ Shape = Enum.PartType.Cylinder }
+	)
+	b:part(
+		Vector3.new(2.6, 5, 5),
+		CFrame.new(0, 1.4, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Color3.fromRGB(35, 30, 28),
+		Enum.Material.Metal,
+		{ Shape = Enum.PartType.Cylinder }
+	)
+	b:part(
+		Vector3.new(0.2, 8, 8),
+		CFrame.new(0, 3.35, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Color3.fromRGB(200, 30, 40),
+		Enum.Material.Neon,
+		{ Shape = Enum.PartType.Cylinder, CanQuery = false }
+	)
 
 	-- Standing spots around the table, each with a chair behind it.
 	local seats = {}
@@ -37,7 +55,8 @@ function MeetingRoom.build(b)
 	end
 
 	-- L's anonymous screen
-	local screen = b:part(Vector3.new(30, 12, 0.4), b:cf(0, 10, -29.3, 180), Color3.fromRGB(8, 8, 10), Enum.Material.SmoothPlastic)
+	local screen =
+		b:part(Vector3.new(30, 12, 0.4), b:cf(0, 10, -29.3, 180), Color3.fromRGB(8, 8, 10), Enum.Material.SmoothPlastic)
 	local gui = Create("SurfaceGui", {
 		Face = Enum.NormalId.Front,
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,

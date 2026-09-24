@@ -73,7 +73,8 @@ local function rebuild()
 		count += 1
 	end
 	if living then
-		statusLabel.Text = string.format("%d voted. You can change your vote until the time runs out. [x] = has voted", count)
+		statusLabel.Text =
+			string.format("%d voted. You can change your vote until the time runs out. [x] = has voted", count)
 	else
 		statusLabel.Text = string.format("%d voted. Only living players can vote.", count)
 	end

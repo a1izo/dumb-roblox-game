@@ -48,8 +48,19 @@ local function onWarrant(player: Player, payload)
 
 	if not NameUtil.matches(typed, suspect.first, suspect.last) then
 		l.warrantBlockedRound = Match.round
-		EventLog.add(string.format("L (%s) tried to arrest %s, but the name was wrong. Warrant rejected.", l.alias, suspect.alias), "warrant")
-		Match.notify(player, "Warrant rejected: that is not the suspect's real name. You can try again next round.", "bad")
+		EventLog.add(
+			string.format(
+				"L (%s) tried to arrest %s, but the name was wrong. Warrant rejected.",
+				l.alias,
+				suspect.alias
+			),
+			"warrant"
+		)
+		Match.notify(
+			player,
+			"Warrant rejected: that is not the suspect's real name. You can try again next round.",
+			"bad"
+		)
 		Match.pushPrivate(l)
 		return
 	end
@@ -58,12 +69,24 @@ local function onWarrant(player: Player, payload)
 	Match.pushPrivate(l)
 	if suspect.role == "Kira" then
 		l.stats.arrestedKira = true
-		EventLog.add(string.format("L (%s) arrested %s with a valid warrant. %s was Kira.", l.alias, suspect.alias, suspect.alias), "warrant")
+		EventLog.add(
+			string.format(
+				"L (%s) arrested %s with a valid warrant. %s was Kira.",
+				l.alias,
+				suspect.alias,
+				suspect.alias
+			),
+			"warrant"
+		)
 		Match.announce("Warrant served: " .. suspect.alias .. " arrested", suspect.alias .. " was KIRA!", "team")
 		Elimination.eliminate(suspect, "arrested", nil, suspect.alias .. " was arrested by L.", {})
 	elseif suspect.role == "Follower" then
 		EventLog.add(string.format("L (%s) arrested %s, a Kira follower.", l.alias, suspect.alias), "warrant")
-		Match.announce("Warrant served: " .. suspect.alias .. " arrested", suspect.alias .. " was a Kira follower. Kira is still free.", "team")
+		Match.announce(
+			"Warrant served: " .. suspect.alias .. " arrested",
+			suspect.alias .. " was a Kira follower. Kira is still free.",
+			"team"
+		)
 		Elimination.eliminate(suspect, "arrested", nil, suspect.alias .. " was arrested by L.", {})
 	else
 		EventLog.add(string.format("L (%s) arrested %s, who was innocent.", l.alias, suspect.alias), "warrant")

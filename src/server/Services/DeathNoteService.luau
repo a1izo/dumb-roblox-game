@@ -72,7 +72,10 @@ local function onWrite(player: Player, payload)
 
 	local shown = TextFilter.broadcast(typed, player.UserId) or "(unreadable)"
 	if target then
-		EventLog.add(string.format("Kira (%s) wrote \"%s\" in the Death Note. %s was doomed.", ps.alias, shown, target.alias), "kill")
+		EventLog.add(
+			string.format('Kira (%s) wrote "%s" in the Death Note. %s was doomed.', ps.alias, shown, target.alias),
+			"kill"
+		)
 		local matchId = Match.id
 		-- The death lands 40 seconds later, clamped so it always falls inside the meeting.
 		local remaining = math.max(0, Match.phaseEndsAt - workspace:GetServerTimeNow())
@@ -80,7 +83,10 @@ local function onWrite(player: Player, payload)
 		local delay = math.clamp(Config.DEATH_DELAY, remaining + 3, remaining + math.max(4, meeting - 3))
 		task.delay(delay, kill, target, ps, cause, matchId)
 	else
-		EventLog.add(string.format("Kira (%s) wrote \"%s\" in the Death Note, but the name matched no one.", ps.alias, shown), "miss")
+		EventLog.add(
+			string.format('Kira (%s) wrote "%s" in the Death Note, but the name matched no one.', ps.alias, shown),
+			"miss"
+		)
 	end
 	Match.notify(player, "The name has been written.", "secret")
 	Match.pushPrivate(ps)

@@ -249,7 +249,10 @@ local function buildReport()
 			reportBox.PlaceholderText = "Pick a suspect above first."
 			return
 		end
-		ReportRemote:FireServer({ suspect = selectedSuspect, text = string.sub(reportBox.Text, 1, Config.REPORT_MAX_LENGTH * 4) })
+		ReportRemote:FireServer({
+			suspect = selectedSuspect,
+			text = string.sub(reportBox.Text, 1, Config.REPORT_MAX_LENGTH * 4),
+		})
 	end)
 	filedLabel = Widgets.label({
 		Text = "Report filed. Wait for the meeting.",

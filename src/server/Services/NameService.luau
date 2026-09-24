@@ -38,7 +38,7 @@ function NameService.watariHint(): string?
 	local position = Match.rng:NextInteger(1, #word)
 	local letter = string.upper(string.sub(word, position, position))
 	return string.format(
-		"The %s letter of Kira's %s name is \"%s\".",
+		'The %s letter of Kira\'s %s name is "%s".',
 		Util.ordinal(position),
 		if useFirst then "first" else "last",
 		letter

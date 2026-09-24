@@ -92,7 +92,7 @@ local function onScreen(player: Player, text)
 		screenLabel.Text = filtered
 	end
 	LScreenMsgRemote:FireAllClients({ text = filtered, clock = Match.clock() })
-	EventLog.add("L on the screen: \"" .. filtered .. "\"", "l")
+	EventLog.add('L on the screen: "' .. filtered .. '"', "l")
 end
 
 function MeetingService.init()

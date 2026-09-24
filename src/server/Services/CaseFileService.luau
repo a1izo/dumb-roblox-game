@@ -84,7 +84,13 @@ end
 local function cameraClue(worker): string
 	local sighting = EventLog.takeSighting(90)
 	if sighting then
-		return string.format("Camera %s: %s %s near %s.", sighting.clock, sighting.alias, sighting.activity, sighting.area)
+		return string.format(
+			"Camera %s: %s %s near %s.",
+			sighting.clock,
+			sighting.alias,
+			sighting.activity,
+			sighting.area
+		)
 	end
 	local others = {}
 	for _, ps in ipairs(Match.living()) do
@@ -96,7 +102,12 @@ local function cameraClue(worker): string
 	if other then
 		local position = Match.position(other)
 		if position then
-			return string.format("Camera %s: %s was seen near %s.", Match.clock(), other.alias, Match.nearestArea(position))
+			return string.format(
+				"Camera %s: %s was seen near %s.",
+				Match.clock(),
+				other.alias,
+				Match.nearestArea(position)
+			)
 		end
 	end
 	return "Camera footage: nothing unusual on the recent tapes."
@@ -160,7 +171,11 @@ local function phoneClue(): string
 	local ping = Util.pick(side, Match.rng)
 	local position = if ping then Match.position(ping) else nil
 	if position then
-		return string.format("Phone records: a burner phone pinged near %s at %s.", Match.nearestArea(position), Match.clock())
+		return string.format(
+			"Phone records: a burner phone pinged near %s at %s.",
+			Match.nearestArea(position),
+			Match.clock()
+		)
 	end
 	return "Phone records: the burner phone is switched off."
 end
@@ -213,7 +228,12 @@ local function finish(ps, runtime)
 	if runtime.tamperedBy ~= nil and runtime.tamperRound == Match.round then
 		pattern = LetterReveal.fakeMask(ps.realName, Config.LETTERS_PER_FLASH, Match.rng)
 		EventLog.add(
-			string.format("%s's letter flash at %s showed false letters (rigged by %s).", ps.alias, info.name, runtime.tamperedBy.alias),
+			string.format(
+				"%s's letter flash at %s showed false letters (rigged by %s).",
+				ps.alias,
+				info.name,
+				runtime.tamperedBy.alias
+			),
 			"tamper"
 		)
 		runtime.tamperedBy = nil
@@ -333,7 +353,11 @@ local function onTamper(player: Player, stationId)
 	runtime.tamperRound = Match.round
 	ps.tamperRound = Match.round
 	EventLog.add(string.format("%s (Follower) rigged the flash at %s.", ps.alias, runtime.info.name), "tamper")
-	Match.notify(player, "Rigged. The next real task at " .. runtime.info.name .. " this round will flash false letters.", "secret")
+	Match.notify(
+		player,
+		"Rigged. The next real task at " .. runtime.info.name .. " this round will flash false letters.",
+		"secret"
+	)
 	Match.pushPrivate(ps)
 end
 

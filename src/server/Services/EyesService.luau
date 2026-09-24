@@ -32,7 +32,9 @@ local function deal(ps)
 		return
 	end
 	Match.eyesDealMade = true
-	local reads = if Match.initialCount < Config.EYES_SMALL_SERVER_BELOW then Config.EYES_READS_SMALL_SERVER else Config.EYES_READS
+	local reads = if Match.initialCount < Config.EYES_SMALL_SERVER_BELOW
+		then Config.EYES_READS_SMALL_SERVER
+		else Config.EYES_READS
 	ps.eyes = {
 		readsLeft = reads,
 		countdown = Config.EYES_COUNTDOWN,
@@ -110,7 +112,10 @@ local function read(ps, targetUserId)
 		name = target.realName,
 		duration = Config.EYES_DURATION,
 	})
-	EventLog.add(string.format("%s (Follower) read %s's real name with the shinigami eyes.", ps.alias, target.alias), "eyes")
+	EventLog.add(
+		string.format("%s (Follower) read %s's real name with the shinigami eyes.", ps.alias, target.alias),
+		"eyes"
+	)
 	Match.pushPrivate(ps)
 end
 
@@ -143,7 +148,11 @@ function EyesService.onRoundEnd()
 					ps.alias .. " collapsed. The shinigami eyes deal claimed them: they were working with Kira.",
 					{}
 				)
-				Match.announce(ps.alias .. " is dead", "Cause of death: the shinigami eyes deal. They worked with Kira.", "danger")
+				Match.announce(
+					ps.alias .. " is dead",
+					"Cause of death: the shinigami eyes deal. They worked with Kira.",
+					"danger"
+				)
 			else
 				Match.pushPrivate(ps)
 			end

@@ -71,7 +71,10 @@ local function rebuild()
 		table.insert(extras, "Carrying a written note")
 	end
 	if private.eyes then
-		table.insert(extras, string.format("Eyes: %d reads left, %d round(s) to live", private.eyes.readsLeft, private.eyes.countdown))
+		table.insert(
+			extras,
+			string.format("Eyes: %d reads left, %d round(s) to live", private.eyes.readsLeft, private.eyes.countdown)
+		)
 	end
 	if private.role == "L" then
 		if private.warrantUsed then

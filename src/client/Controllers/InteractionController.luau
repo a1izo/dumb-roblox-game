@@ -21,7 +21,13 @@ local InteractionController = {}
 
 local entries = {} -- [Instance] = { kind, prompts = { name = ProximityPrompt } }
 
-local function prompt(parent: Instance, action: string, object: string, key: Enum.KeyCode, hold: number?): ProximityPrompt
+local function prompt(
+	parent: Instance,
+	action: string,
+	object: string,
+	key: Enum.KeyCode,
+	hold: number?
+): ProximityPrompt
 	return Create("ProximityPrompt", {
 		Name = "L" .. string.gsub(action, "%s", ""),
 		ActionText = action,
@@ -76,7 +82,8 @@ local function register(instance: Instance, kind: string, prompts)
 end
 
 local function setupStation(desk: Instance)
-	local work = prompt(desk, "Work case file", tostring(desk:GetAttribute("StationName") or "Case file"), Enum.KeyCode.E)
+	local work =
+		prompt(desk, "Work case file", tostring(desk:GetAttribute("StationName") or "Case file"), Enum.KeyCode.E)
 	work.Triggered:Connect(function()
 		local stationId = desk:GetAttribute("StationId")
 		if type(stationId) == "string" then

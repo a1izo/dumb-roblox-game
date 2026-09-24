@@ -118,7 +118,11 @@ local function startRound(round: number)
 		ps.tasksThisRound = 0
 	end
 	HoodService.onRoundStart(round)
-	Match.announce("Round " .. round .. " of " .. Config.MAX_ROUNDS, "Investigation: work the case files and watch each other.", "neutral")
+	Match.announce(
+		"Round " .. round .. " of " .. Config.MAX_ROUNDS,
+		"Investigation: work the case files and watch each other.",
+		"neutral"
+	)
 end
 
 local function endRound(round: number)
@@ -202,7 +206,11 @@ local function reveal()
 			duration = Match.phaseLength("Reveal"),
 		})
 	end
-	Match.announce(if winner == "Team" then "The Task Force wins" else "Kira wins", reason, if winner == "Team" then "team" else "kira")
+	Match.announce(
+		if winner == "Team" then "The Task Force wins" else "Kira wins",
+		reason,
+		if winner == "Team" then "team" else "kira"
+	)
 	Match.pushState()
 	Match.pushAllPrivate()
 	while workspace:GetServerTimeNow() < Match.phaseEndsAt do
@@ -233,7 +241,10 @@ local function runMatch(players: { Player })
 	NameService.assign()
 	EventLog.add(string.format("%d agents were deployed to %s.", #Match.list, map.name), "start")
 	for _, ps in ipairs(Match.list) do
-		EventLog.add(string.format("%s was %s. Real name: %s.", ps.alias, ROLE_TITLES[ps.role] or ps.role, ps.realName), "role")
+		EventLog.add(
+			string.format("%s was %s. Real name: %s.", ps.alias, ROLE_TITLES[ps.role] or ps.role, ps.realName),
+			"role"
+		)
 	end
 
 	EvidenceService.reset()
@@ -273,7 +284,11 @@ local function runMatch(players: { Player })
 		runPhase("Meeting", function()
 			MeetingService.gather()
 			ChatService.setMeetingOpen(true)
-			Match.announce("Task Force meeting", "Free chat is open. Real names of living players are blocked.", "neutral")
+			Match.announce(
+				"Task Force meeting",
+				"Free chat is open. Real names of living players are blocked.",
+				"neutral"
+			)
 		end)
 		if Match.winner then
 			break
@@ -334,7 +349,10 @@ function RoundService.init()
 	Players.PlayerRemoving:Connect(function(player)
 		local ps = Match.getLiving(player)
 		if ps then
-			EventLog.add(string.format("%s (%s) left the investigation.", ps.alias, ROLE_TITLES[ps.role] or ps.role), "left")
+			EventLog.add(
+				string.format("%s (%s) left the investigation.", ps.alias, ROLE_TITLES[ps.role] or ps.role),
+				"left"
+			)
 			Elimination.eliminate(ps, "left", nil, ps.alias .. " left the investigation.", {})
 		end
 	end)

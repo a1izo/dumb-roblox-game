@@ -21,8 +21,30 @@ function Lobby.build(b)
 	b:block(0, 0.05, -13, 10, 0.1, 62, RED, Enum.Material.Fabric)
 
 	-- Title wall
-	b:sign(0, 17, -49.3, 180, 44, 9, "L GAME", Color3.fromRGB(245, 245, 245), Color3.fromRGB(12, 12, 14), Enum.Font.GrenzeGotisch)
-	b:sign(0, 10.5, -49.3, 180, 36, 3, "Find Kira.  Protect your real name.", GOLD, Color3.fromRGB(12, 12, 14), Enum.Font.SpecialElite)
+	b:sign(
+		0,
+		17,
+		-49.3,
+		180,
+		44,
+		9,
+		"L GAME",
+		Color3.fromRGB(245, 245, 245),
+		Color3.fromRGB(12, 12, 14),
+		Enum.Font.GrenzeGotisch
+	)
+	b:sign(
+		0,
+		10.5,
+		-49.3,
+		180,
+		36,
+		3,
+		"Find Kira.  Protect your real name.",
+		GOLD,
+		Color3.fromRGB(12, 12, 14),
+		Enum.Font.SpecialElite
+	)
 
 	-- How to play (west wall, facing +X)
 	b:sign(
@@ -39,7 +61,18 @@ function Lobby.build(b)
 	)
 
 	-- Next map board (east wall, facing -X)
-	local _, nextMapLabel = b:sign(49.3, 11, 0, 90, 26, 8, "NEXT CASE\nTask Force HQ", GOLD, Color3.fromRGB(16, 16, 20), Enum.Font.GothamBlack)
+	local _, nextMapLabel = b:sign(
+		49.3,
+		11,
+		0,
+		90,
+		26,
+		8,
+		"NEXT CASE\nTask Force HQ",
+		GOLD,
+		Color3.fromRGB(16, 16, 20),
+		Enum.Font.GothamBlack
+	)
 
 	-- Pillars, lights and benches
 	for _, x in ipairs({ -32, 32 }) do

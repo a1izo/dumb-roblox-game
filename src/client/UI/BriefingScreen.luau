@@ -55,7 +55,9 @@ local function alliesText(role: string, allies): string
 		end
 		return text
 	elseif role == "L" then
-		return if watari then "Watari is " .. watari .. ". Nobody else knows who you are." else "You work alone this match."
+		return if watari
+			then "Watari is " .. watari .. ". Nobody else knows who you are."
+			else "You work alone this match."
 	elseif role == "Watari" then
 		return "Only L knows who you are. You do not know who L is."
 	end
@@ -121,9 +123,16 @@ function BriefingScreen.init()
 		return Widgets.label(props)
 	end
 
-	centered({ Text = "YOUR ROLE", TextColor3 = Theme.colors.muted, Font = Theme.fonts.bold, TextSize = 14, LayoutOrder = 1 })
+	centered({
+		Text = "YOUR ROLE",
+		TextColor3 = Theme.colors.muted,
+		Font = Theme.fonts.bold,
+		TextSize = 14,
+		LayoutOrder = 1,
+	})
 	roleLabel = centered({ Font = Theme.fonts.black, TextSize = 54, Size = UDim2.new(1, 0, 0, 62), LayoutOrder = 2 })
-	blurbLabel = centered({ TextSize = 16, TextColor3 = Theme.colors.text, Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 3 })
+	blurbLabel =
+		centered({ TextSize = 16, TextColor3 = Theme.colors.text, Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 3 })
 	aliasLabel = centered({ Font = Theme.fonts.bold, TextSize = 20, Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 4 })
 	centered({
 		Text = "YOUR REAL NAME",

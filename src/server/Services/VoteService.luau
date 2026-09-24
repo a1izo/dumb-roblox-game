@@ -114,11 +114,21 @@ function VoteService.close()
 				end
 			end
 		end
-		EventLog.add(string.format("%s (%s) was voted out with %d votes.", removed.alias, removed.role, votesAgainst), "vote")
-		Match.announce(removed.alias .. " was voted out", string.format("%d of %d votes", votesAgainst, result.total), "neutral")
+		EventLog.add(
+			string.format("%s (%s) was voted out with %d votes.", removed.alias, removed.role, votesAgainst),
+			"vote"
+		)
+		Match.announce(
+			removed.alias .. " was voted out",
+			string.format("%d of %d votes", votesAgainst, result.total),
+			"neutral"
+		)
 		Elimination.eliminate(removed, "voted", nil, removed.alias .. " was voted out.", {})
 	else
-		local subtitle = if result.total == 0 then "Nobody voted." elseif result.tie then "The vote was tied." else "Skip won the vote."
+		local subtitle = if result.total == 0
+			then "Nobody voted."
+			elseif result.tie then "The vote was tied."
+			else "Skip won the vote."
 		EventLog.add("The vote removed nobody. " .. subtitle, "vote")
 		Match.announce("Nobody was voted out", subtitle, "neutral")
 	end

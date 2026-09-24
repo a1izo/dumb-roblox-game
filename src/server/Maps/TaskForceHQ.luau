@@ -79,7 +79,17 @@ function TaskForceHQ.build(b)
 
 	-- Security office
 	for i = 0, 3 do
-		b:block(-71 + i * 6, 8, -59.35, 5, 3, 0.2, Color3.fromRGB(60, 110, 190), Enum.Material.Neon, { CanQuery = false })
+		b:block(
+			-71 + i * 6,
+			8,
+			-59.35,
+			5,
+			3,
+			0.2,
+			Color3.fromRGB(60, 110, 190),
+			Enum.Material.Neon,
+			{ CanQuery = false }
+		)
 	end
 	b:desk(-58, -54, 180)
 	b:chair(-58, -51.2, 0)

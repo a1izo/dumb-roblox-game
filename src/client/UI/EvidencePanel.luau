@@ -32,7 +32,13 @@ local function addRow(entry)
 		Font = Theme.fonts.bold,
 		TextSize = 14,
 		TextColor3 = Theme.colors.gold,
-		Text = string.format("R%s  %s   %s  @  %s", tostring(entry.round), tostring(entry.clock), tostring(entry.alias), tostring(entry.station)),
+		Text = string.format(
+			"R%s  %s   %s  @  %s",
+			tostring(entry.round),
+			tostring(entry.clock),
+			tostring(entry.alias),
+			tostring(entry.station)
+		),
 		LayoutOrder = 1,
 		Parent = row,
 	})
@@ -97,7 +103,10 @@ function EvidencePanel.init()
 			addRow(entry)
 		end
 		if ClientState.isParticipant() then
-			Toasts.show(string.format("New evidence from %s at %s.", tostring(entry.alias), tostring(entry.station)), "info")
+			Toasts.show(
+				string.format("New evidence from %s at %s.", tostring(entry.alias), tostring(entry.station)),
+				"info"
+			)
 		end
 	end)
 	ClientState.PhaseChanged:Connect(function()

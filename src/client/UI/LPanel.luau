@@ -83,7 +83,12 @@ local function addInbox(payload)
 	if isTip then
 		header = string.format("R%s %s  ANONYMOUS TIP", tostring(payload.round), tostring(payload.clock))
 	else
-		header = string.format("R%s %s  REPORT: suspects %s", tostring(payload.round), tostring(payload.clock), tostring(payload.suspect))
+		header = string.format(
+			"R%s %s  REPORT: suspects %s",
+			tostring(payload.round),
+			tostring(payload.clock),
+			tostring(payload.suspect)
+		)
 	end
 	local row = Widgets.panel({
 		BackgroundColor3 = if isTip then Color3.fromRGB(44, 30, 34) else Theme.colors.panelLight,

@@ -46,8 +46,16 @@ function RewardService.payout(winner: string?)
 			ps.stats.correctVotes * R.CORRECT_VOTE_COINS,
 			ps.stats.correctVotes * R.CORRECT_VOTE_XP
 		)
-		add(string.format("Death Note kills x%d", ps.stats.kills), ps.stats.kills * R.KILL_COINS, ps.stats.kills * R.KILL_XP)
-		add(string.format("Shinigami reads x%d", ps.stats.reads), ps.stats.reads * R.EYES_READ_COINS, ps.stats.reads * R.EYES_READ_XP)
+		add(
+			string.format("Death Note kills x%d", ps.stats.kills),
+			ps.stats.kills * R.KILL_COINS,
+			ps.stats.kills * R.KILL_XP
+		)
+		add(
+			string.format("Shinigami reads x%d", ps.stats.reads),
+			ps.stats.reads * R.EYES_READ_COINS,
+			ps.stats.reads * R.EYES_READ_XP
+		)
 		if ps.stats.arrestedKira then
 			add("Arrested Kira", R.ARREST_COINS, R.ARREST_XP)
 		end

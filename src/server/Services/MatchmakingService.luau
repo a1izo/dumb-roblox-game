@@ -195,7 +195,10 @@ local function teleportGroup(members: { Player }, code: string)
 	end
 	local options = Instance.new("TeleportOptions")
 	options.ReservedServerAccessCode = code
-	options:SetTeleportData({ lgameParty = if #present > 1 then ticketKey(present) .. "_" .. code else nil, autoReady = true })
+	options:SetTeleportData({
+		lgameParty = if #present > 1 then ticketKey(present) .. "_" .. code else nil,
+		autoReady = true,
+	})
 	local ok, err = pcall(function()
 		TeleportService:TeleportAsync(game.PlaceId, present, options)
 	end)
@@ -372,7 +375,12 @@ local function onPlayerAdded(player: Player)
 	local ok, joinData = pcall(function()
 		return player:GetJoinData()
 	end)
-	if ok and type(joinData) == "table" and type(joinData.TeleportData) == "table" and joinData.TeleportData.autoReady then
+	if
+		ok
+		and type(joinData) == "table"
+		and type(joinData.TeleportData) == "table"
+		and joinData.TeleportData.autoReady
+	then
 		ready[player] = os.clock()
 	end
 	pushLobby()

@@ -28,7 +28,16 @@ local function shop(b, x1: number, z1: number, x2: number, z2: number, doors, wa
 	b:wallDoors(x1, z2, x2, z2, h, doors.south or {}, wallColor, Enum.Material.Concrete)
 	b:wallDoors(x1, z1, x1, z2, h, doors.west or {}, wallColor, Enum.Material.Concrete)
 	b:wallDoors(x2, z1, x2, z2, h, doors.east or {}, wallColor, Enum.Material.Concrete)
-	b:block((x1 + x2) / 2, h + 0.5, (z1 + z2) / 2, x2 - x1 + 2, 1, z2 - z1 + 2, Color3.fromRGB(55, 55, 60), Enum.Material.Concrete)
+	b:block(
+		(x1 + x2) / 2,
+		h + 0.5,
+		(z1 + z2) / 2,
+		x2 - x1 + 2,
+		1,
+		z2 - z1 + 2,
+		Color3.fromRGB(55, 55, 60),
+		Enum.Material.Concrete
+	)
 	b:light((x1 + x2) / 2, h - 0.2, (z1 + z2) / 2, Color3.fromRGB(235, 245, 255), 30, 1.2)
 end
 
@@ -95,7 +104,18 @@ function TokyoDistrict.build(b)
 	end
 	b:bench(34, -47.5, 180)
 	b:bench(44, -47.5, 180)
-	b:sign(42, 6, -49.3, 180, 10, 4, "LINE 3  >>  SHIBUYA", Color3.fromRGB(255, 255, 255), Color3.fromRGB(30, 90, 60), Enum.Font.GothamBold)
+	b:sign(
+		42,
+		6,
+		-49.3,
+		180,
+		10,
+		4,
+		"LINE 3  >>  SHIBUYA",
+		Color3.fromRGB(255, 255, 255),
+		Color3.fromRGB(30, 90, 60),
+		Enum.Font.GothamBold
+	)
 	neon(b, 42, 12.5, -23.2, 180, 12, "METRO", Color3.fromRGB(90, 200, 255))
 
 	-- Phone booth and vending machines on the north-east pavement
@@ -124,7 +144,8 @@ function TokyoDistrict.build(b)
 	}, Color3.fromRGB(225, 225, 230), Color3.fromRGB(150, 150, 160))
 	b:table(32, 42, 0, 5, 3)
 	b:cabinet(46, 25, 90)
-	local lamp = b:block(32, 11.6, 22.5, 1.4, 1.2, 1.4, Color3.fromRGB(255, 40, 40), Enum.Material.Neon, { CanQuery = false })
+	local lamp =
+		b:block(32, 11.6, 22.5, 1.4, 1.2, 1.4, Color3.fromRGB(255, 40, 40), Enum.Material.Neon, { CanQuery = false })
 	local glow = Instance.new("PointLight")
 	glow.Color = Color3.fromRGB(255, 40, 40)
 	glow.Range = 18
@@ -149,7 +170,18 @@ function TokyoDistrict.build(b)
 	b:car(-60, 4, 90, Color3.fromRGB(180, 30, 40))
 	b:car(60, -4, -90, Color3.fromRGB(30, 30, 30))
 	b:car(-90, -4, 90, Color3.fromRGB(230, 200, 60))
-	for _, spot in ipairs({ { -12, -30 }, { 12, -30 }, { -12, 30 }, { 12, 30 }, { -40, -12 }, { 40, 12 }, { -80, 12 }, { 80, -12 }, { -40, 12 }, { 40, -12 } }) do
+	for _, spot in ipairs({
+		{ -12, -30 },
+		{ 12, -30 },
+		{ -12, 30 },
+		{ 12, 30 },
+		{ -40, -12 },
+		{ 40, 12 },
+		{ -80, 12 },
+		{ 80, -12 },
+		{ -40, 12 },
+		{ 40, -12 },
+	}) do
 		b:streetLamp(spot[1], spot[2], Color3.fromRGB(255, 215, 170))
 	end
 

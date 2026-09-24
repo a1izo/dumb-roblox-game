@@ -22,7 +22,18 @@ local PATH = Color3.fromRGB(190, 185, 175)
 
 -- A building with doors and a roof. doors: { side = { {center, width} } } where
 -- north/south centres are measured from x1 and west/east centres from z1.
-local function building(b, x1: number, z1: number, x2: number, z2: number, h: number, doors, wallColor: Color3, floorColor: Color3, floorMaterial: Enum.Material)
+local function building(
+	b,
+	x1: number,
+	z1: number,
+	x2: number,
+	z2: number,
+	h: number,
+	doors,
+	wallColor: Color3,
+	floorColor: Color3,
+	floorMaterial: Enum.Material
+)
 	b:floor(x1, z1, x2, z2, floorColor, floorMaterial, 0.02)
 	b:wallDoors(x1, z1, x2, z1, h, doors.north or {}, wallColor, Enum.Material.Brick)
 	b:wallDoors(x1, z2, x2, z2, h, doors.south or {}, wallColor, Enum.Material.Brick)
@@ -103,13 +114,45 @@ function UniversityCampus.build(b)
 
 	-- Clock tower (north)
 	b:block(0, 15, -70, 10, 30, 10, STONE, Enum.Material.Concrete)
-	b:sign(0, 24, -64.8, 180, 7, 7, "XII", Color3.fromRGB(30, 30, 30), Color3.fromRGB(240, 235, 220), Enum.Font.Garamond)
+	b:sign(
+		0,
+		24,
+		-64.8,
+		180,
+		7,
+		7,
+		"XII",
+		Color3.fromRGB(30, 30, 30),
+		Color3.fromRGB(240, 235, 220),
+		Enum.Font.Garamond
+	)
 
 	-- Quad: fountain, trees and benches
-	b:part(Vector3.new(2, 18, 18), CFrame.new(0, 1, 0) * CFrame.Angles(0, 0, math.rad(90)), STONE, Enum.Material.Concrete, { Shape = Enum.PartType.Cylinder })
-	b:part(Vector3.new(0.3, 15, 15), CFrame.new(0, 1.9, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(80, 150, 220), Enum.Material.Glass, { Shape = Enum.PartType.Cylinder, Transparency = 0.3, CanQuery = false })
+	b:part(
+		Vector3.new(2, 18, 18),
+		CFrame.new(0, 1, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		STONE,
+		Enum.Material.Concrete,
+		{ Shape = Enum.PartType.Cylinder }
+	)
+	b:part(
+		Vector3.new(0.3, 15, 15),
+		CFrame.new(0, 1.9, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Color3.fromRGB(80, 150, 220),
+		Enum.Material.Glass,
+		{ Shape = Enum.PartType.Cylinder, Transparency = 0.3, CanQuery = false }
+	)
 	b:block(0, 4, 0, 2, 6, 2, STONE, Enum.Material.Concrete)
-	for _, spot in ipairs({ { -28, -24 }, { 28, -24 }, { -28, 24 }, { 28, 24 }, { -45, 0 }, { 45, 0 }, { -30, -60 }, { 30, -60 } }) do
+	for _, spot in ipairs({
+		{ -28, -24 },
+		{ 28, -24 },
+		{ -28, 24 },
+		{ 28, 24 },
+		{ -45, 0 },
+		{ 45, 0 },
+		{ -30, -60 },
+		{ 30, -60 },
+	}) do
 		b:tree(spot[1], spot[2], 1)
 	end
 	for _, spot in ipairs({ { -14, -18, 0 }, { 14, -18, 0 }, { -14, 18, 180 }, { 14, 18, 180 } }) do

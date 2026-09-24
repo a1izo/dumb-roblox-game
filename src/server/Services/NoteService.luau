@@ -179,14 +179,24 @@ local function confiscateIfNamed(finder, note): boolean
 	EvidenceService.post(
 		finder.alias,
 		"Paper note",
-		"A note with a real name on it was found near " .. area .. ". The name is withheld; the named player has been warned."
+		"A note with a real name on it was found near "
+			.. area
+			.. ". The name is withheld; the named player has been warned."
 	)
-	Match.notify(finder.player, "This note names a real player. It went to the evidence board with the name hidden.", "good")
+	Match.notify(
+		finder.player,
+		"This note names a real player. It went to the evidence board with the name hidden.",
+		"good"
+	)
 	local aliases = {}
 	for _, ps in ipairs(named) do
 		table.insert(aliases, ps.alias)
 		ps.hoodNextRound = true
-		Match.notify(ps.player, "Warning: someone wrote your real name on a paper note! You will wear a hood next round.", "bad")
+		Match.notify(
+			ps.player,
+			"Warning: someone wrote your real name on a paper note! You will wear a hood next round.",
+			"bad"
+		)
 	end
 	EventLog.add(
 		string.format(

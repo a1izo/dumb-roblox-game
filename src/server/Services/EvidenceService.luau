@@ -23,7 +23,10 @@ local function boardText(): string
 	local lines = {}
 	for i = #entries, math.max(1, #entries - BOARD_LINES + 1), -1 do
 		local entry = entries[i]
-		table.insert(lines, string.format("[R%d %s] %s @ %s: %s", entry.round, entry.clock, entry.alias, entry.station, entry.clue))
+		table.insert(
+			lines,
+			string.format("[R%d %s] %s @ %s: %s", entry.round, entry.clock, entry.alias, entry.station, entry.clue)
+		)
 	end
 	return table.concat(lines, "\n")
 end

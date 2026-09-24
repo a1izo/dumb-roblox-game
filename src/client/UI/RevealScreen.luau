@@ -80,12 +80,19 @@ local function playTimeline(events, myToken: number)
 		if token ~= myToken then
 			return
 		end
-		local isKira = event.kind == "kill" or event.kind == "eyes" or event.kind == "burn" or event.kind == "fake" or event.kind == "tamper"
+		local isKira = event.kind == "kill"
+			or event.kind == "eyes"
+			or event.kind == "burn"
+			or event.kind == "fake"
+			or event.kind == "tamper"
 		Widgets.label({
 			Text = string.format("R%s %s   %s", tostring(event.round), tostring(event.time), tostring(event.text)),
 			Font = if event.kind == "role" then Theme.fonts.body else Theme.fonts.medium,
 			TextSize = 14,
-			TextColor3 = if isKira then Theme.colors.bad elseif event.kind == "role" then Theme.colors.muted else Theme.colors.text,
+			TextColor3 = if isKira
+				then Theme.colors.bad
+				elseif event.kind == "role" then Theme.colors.muted
+				else Theme.colors.text,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			Size = UDim2.new(1, -10, 0, 0),
 			LayoutOrder = index,
@@ -106,7 +113,14 @@ function RevealScreen.show(payload)
 	fillRoster(payload.players or {})
 	local rewards = payload.rewards
 	if type(rewards) == "table" then
-		local lines = { string.format("%s   +%d coins   +%d XP", if rewards.won then "VICTORY" else "DEFEAT", rewards.coins, rewards.xp) }
+		local lines = {
+			string.format(
+				"%s   +%d coins   +%d XP",
+				if rewards.won then "VICTORY" else "DEFEAT",
+				rewards.coins,
+				rewards.xp
+			),
+		}
 		for _, line in ipairs(rewards.lines or {}) do
 			table.insert(lines, string.format("%s: +%d coins, +%d XP", tostring(line.label), line.coins, line.xp))
 		end
