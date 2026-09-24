@@ -1,5 +1,9 @@
 -- Colours, fonts and display names for the noir UI.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Terms = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Terms"))
+
 local Theme = {}
 
 Theme.colors = {
@@ -32,23 +36,9 @@ Theme.fonts = {
 	gothic = Enum.Font.GrenzeGotisch,
 }
 
-Theme.PHASE_NAMES = {
-	Lobby = "Lobby",
-	Briefing = "Briefing",
-	Investigation = "Investigation",
-	DeathNote = "Death Note phase",
-	Meeting = "Task Force meeting",
-	Vote = "Vote",
-	Reveal = "Case closed",
-}
-
-Theme.STATUS_NAMES = {
-	alive = "Alive",
-	dead = "Dead",
-	voted = "Voted out",
-	arrested = "Arrested",
-	left = "Left",
-}
+-- Display names live in Terms; these aliases keep older panels working.
+Theme.PHASE_NAMES = Terms.PHASE
+Theme.STATUS_NAMES = Terms.STATUS
 
 Theme.TONES = {
 	neutral = Color3.fromRGB(236, 234, 228),

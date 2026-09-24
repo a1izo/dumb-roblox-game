@@ -58,6 +58,7 @@ local function onRequest(player: Player, payload)
 		return
 	end
 	DataService.push(player)
+	DataService.saveSoon(player)
 	CosmeticsService.apply(player)
 end
 

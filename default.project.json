@@ -1,20 +1,25 @@
 {
-  "name": "project1",
+  "name": "inkbound",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
+      },
+      "InkboundAssets": {
+        "$path": "assets/shared"
       }
     },
-
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"
       }
     },
-
+    "ServerStorage": {
+      "InkboundAssets": {
+        "$path": "assets/server"
+      }
+    },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
@@ -22,13 +27,11 @@
         }
       }
     },
-
     "Players": {
       "$properties": {
         "CharacterAutoLoads": false
       }
     },
-
     "Workspace": {
       "$properties": {
         "FilteringEnabled": true,

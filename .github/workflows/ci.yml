@@ -28,5 +28,13 @@ jobs:
           version: v0.20.0
           args: --check src
 
+  terms:
+    name: Terms (no source-material names in player-facing text)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check player-facing strings
+        run: python3 scripts/check_terms.py
+
 # Unit tests (src/server/Tests/*.spec.luau) need the Roblox engine. They run automatically
 # when you press Play in Studio (Config.RUN_TESTS_IN_STUDIO) and print a summary in Output.

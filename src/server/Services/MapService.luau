@@ -61,7 +61,7 @@ function MapService.nextMapId(): string
 	local rotation = Config.MAP_ROTATION
 	local id = rotation[(rotationIndex % #rotation) + 1]
 	if MAPS[id] == nil then
-		warn("[L game] Unknown map in Config.MAP_ROTATION: " .. tostring(id))
+		warn("[Inkbound] Unknown map in Config.MAP_ROTATION: " .. tostring(id))
 		return "TaskForceHQ"
 	end
 	return id

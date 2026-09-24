@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NamePools = require(Shared:WaitForChild("NamePools"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local CharacterService = require(script.Parent.CharacterService)
@@ -27,7 +28,7 @@ function NameService.assign()
 	end
 end
 
--- Watari's hint: one letter of Kira's real name and its position.
+-- The Butler's (Watari's) hint: one letter of the Hand's (Kira's) real name and its position.
 function NameService.watariHint(): string?
 	local kira = Match.findRole("Kira")
 	if not kira then
@@ -37,12 +38,11 @@ function NameService.watariHint(): string?
 	local word = if useFirst then kira.first else kira.last
 	local position = Match.rng:NextInteger(1, #word)
 	local letter = string.upper(string.sub(word, position, position))
-	return string.format(
-		'The %s letter of Kira\'s %s name is "%s".',
-		Util.ordinal(position),
-		if useFirst then "first" else "last",
-		letter
-	)
+	return Terms.f('The {nth} letter of {hand}\'s {which} name is "{letter}".', {
+		nth = Util.ordinal(position),
+		which = if useFirst then "first" else "last",
+		letter = letter,
+	})
 end
 
 return NameService

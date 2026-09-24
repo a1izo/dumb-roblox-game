@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local Lobby = {}
 
@@ -28,23 +29,12 @@ function Lobby.build(b)
 		180,
 		44,
 		9,
-		"L GAME",
+		Terms.NAMES.GAME,
 		Color3.fromRGB(245, 245, 245),
 		Color3.fromRGB(12, 12, 14),
 		Enum.Font.GrenzeGotisch
 	)
-	b:sign(
-		0,
-		10.5,
-		-49.3,
-		180,
-		36,
-		3,
-		"Find Kira.  Protect your real name.",
-		GOLD,
-		Color3.fromRGB(12, 12, 14),
-		Enum.Font.SpecialElite
-	)
+	b:sign(0, 10.5, -49.3, 180, 36, 3, Terms.TAGLINE, GOLD, Color3.fromRGB(12, 12, 14), Enum.Font.SpecialElite)
 
 	-- How to play (west wall, facing +X)
 	b:sign(
@@ -54,25 +44,21 @@ function Lobby.build(b)
 		-90,
 		30,
 		14,
-		"HOW TO PLAY\n\n1. Press READY. A match starts with 6 to 12 players.\n2. Memorise your real name in the briefing. It is shown once.\n3. Work case files. Every task leaks 3 letters of your name to anyone close.\n4. Outside meetings you only have quick-chat. Meetings open free chat.\n5. Kira needs your full real name. So does L's warrant.",
+		Terms.f(
+			"HOW TO PLAY\n\n1. Press READY. A match starts with 6 to 12 players.\n"
+				.. "2. Memorise your real name in the briefing. It is shown once.\n"
+				.. "3. Work case files. Every task leaks 3 letters of your name to anyone close.\n"
+				.. "4. Outside meetings you only have quick-chat. Meetings open free chat.\n"
+				.. "5. {Hand} needs your full real name. So does {zero}'s warrant."
+		),
 		Color3.fromRGB(230, 230, 230),
 		Color3.fromRGB(16, 16, 20),
 		Enum.Font.SpecialElite
 	)
 
 	-- Next map board (east wall, facing -X)
-	local _, nextMapLabel = b:sign(
-		49.3,
-		11,
-		0,
-		90,
-		26,
-		8,
-		"NEXT CASE\nTask Force HQ",
-		GOLD,
-		Color3.fromRGB(16, 16, 20),
-		Enum.Font.GothamBlack
-	)
+	local _, nextMapLabel =
+		b:sign(49.3, 11, 0, 90, 26, 8, "NEXT CASE", GOLD, Color3.fromRGB(16, 16, 20), Enum.Font.GothamBlack)
 
 	-- Pillars, lights and benches
 	for _, x in ipairs({ -32, 32 }) do
@@ -95,9 +81,11 @@ function Lobby.build(b)
 	b:plant(-45, 45)
 	b:plant(45, 45)
 
-	-- A giant gothic L inlaid in the floor.
-	b:block(-3, 0.06, 26, 3, 0.12, 14, GOLD, Enum.Material.Neon, { CanQuery = false })
-	b:block(1.5, 0.06, 31.5, 6, 0.12, 3, GOLD, Enum.Material.Neon, { CanQuery = false })
+	-- Zero's mark, a giant 0, inlaid in the floor.
+	b:block(-4, 0.06, 26, 2.4, 0.12, 14, GOLD, Enum.Material.Neon, { CanQuery = false })
+	b:block(4, 0.06, 26, 2.4, 0.12, 14, GOLD, Enum.Material.Neon, { CanQuery = false })
+	b:block(0, 0.06, 20.2, 5.6, 0.12, 2.4, GOLD, Enum.Material.Neon, { CanQuery = false })
+	b:block(0, 0.06, 31.8, 5.6, 0.12, 2.4, GOLD, Enum.Material.Neon, { CanQuery = false })
 
 	-- Spawn pad
 	local spawnPad = Create("SpawnLocation", {

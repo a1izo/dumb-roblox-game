@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 local WinConditions = require(Shared:WaitForChild("WinConditions"))
 
@@ -39,14 +40,6 @@ local RoundService = {}
 
 local MATCH_ZOOM = 18
 local LOBBY_ZOOM = 128
-
-local ROLE_TITLES = {
-	Kira = "Kira",
-	Follower = "a Kira follower",
-	L = "L",
-	Watari = "Watari",
-	TaskForce = "Task Force",
-}
 
 -- Phases ----------------------------------------------------------------------------------
 
@@ -82,7 +75,7 @@ local function sendBriefings()
 		})
 	end
 	if hint then
-		EventLog.add("Watari's hint: " .. hint, "hint")
+		EventLog.add(Terms.f("{Butler}'s hint: ") .. hint, "hint")
 	end
 end
 
@@ -149,18 +142,18 @@ local function onEliminated(ps, kind: string, context)
 	local reason
 	if code == "KiraRemoved" then
 		if kind == "voted" then
-			reason = "The Task Force voted out Kira."
+			reason = Terms.f("{Agency} voted out {hand}.")
 		elseif kind == "arrested" then
-			reason = "L arrested Kira with a valid warrant."
+			reason = Terms.f("{Zero} arrested {hand} with a valid warrant.")
 		elseif kind == "left" then
-			reason = "Kira fled the investigation."
+			reason = Terms.f("{Hand} fled the investigation.")
 		else
-			reason = "Kira is gone."
+			reason = Terms.f("{Hand} is gone.")
 		end
 	elseif code == "LKilled" then
-		reason = "Kira wrote L's real name in the Death Note."
+		reason = Terms.f("{Hand} wrote {zero}'s real name in {grimoire}.")
 	else
-		reason = "Kira's side now matches the investigation team in number."
+		reason = Terms.f("{Circle} now matches {agency} in number.")
 	end
 	Match.declareWinner(side, reason)
 end
@@ -178,7 +171,9 @@ local function reveal()
 
 	local winner = Match.winner or "Kira"
 	local reason = Match.winReason or ""
-	EventLog.add((if winner == "Team" then "The Task Force wins. " else "Kira wins. ") .. reason, "end")
+	-- "The Agency wins" / "The Hand wins"
+	local winnerName = if winner == "Team" then Terms.side("Team", "Name") else Terms.role("Kira", "Name")
+	EventLog.add(winnerName .. " wins. " .. reason, "end")
 
 	local rewards = RewardService.payout(winner)
 	local roster = {}
@@ -206,11 +201,7 @@ local function reveal()
 			duration = Match.phaseLength("Reveal"),
 		})
 	end
-	Match.announce(
-		if winner == "Team" then "The Task Force wins" else "Kira wins",
-		reason,
-		if winner == "Team" then "team" else "kira"
-	)
+	Match.announce(winnerName .. " wins", reason, if winner == "Team" then "team" else "kira")
 	Match.pushState()
 	Match.pushAllPrivate()
 	while workspace:GetServerTimeNow() < Match.phaseEndsAt do
@@ -242,7 +233,7 @@ local function runMatch(players: { Player })
 	EventLog.add(string.format("%d agents were deployed to %s.", #Match.list, map.name), "start")
 	for _, ps in ipairs(Match.list) do
 		EventLog.add(
-			string.format("%s was %s. Real name: %s.", ps.alias, ROLE_TITLES[ps.role] or ps.role, ps.realName),
+			string.format("%s was %s. Real name: %s.", ps.alias, Terms.role(ps.role, "a"), ps.realName),
 			"role"
 		)
 	end
@@ -285,7 +276,7 @@ local function runMatch(players: { Player })
 			MeetingService.gather()
 			ChatService.setMeetingOpen(true)
 			Match.announce(
-				"Task Force meeting",
+				Terms.f("{Meeting}"),
 				"Free chat is open. Real names of living players are blocked.",
 				"neutral"
 			)
@@ -312,7 +303,7 @@ local function runMatch(players: { Player })
 	end
 
 	if not Match.winner then
-		Match.declareWinner("Kira", "Kira survived all " .. Config.MAX_ROUNDS .. " rounds.")
+		Match.declareWinner("Kira", Terms.f("{Hand} survived all {n} rounds.", { n = Config.MAX_ROUNDS }))
 	end
 	reveal()
 end
@@ -349,10 +340,7 @@ function RoundService.init()
 	Players.PlayerRemoving:Connect(function(player)
 		local ps = Match.getLiving(player)
 		if ps then
-			EventLog.add(
-				string.format("%s (%s) left the investigation.", ps.alias, ROLE_TITLES[ps.role] or ps.role),
-				"left"
-			)
+			EventLog.add(string.format("%s (%s) left the investigation.", ps.alias, Terms.role(ps.role)), "left")
 			Elimination.eliminate(ps, "left", nil, ps.alias .. " left the investigation.", {})
 		end
 	end)
@@ -366,11 +354,11 @@ function RoundService.start()
 				return debug.traceback(tostring(message), 2)
 			end, players)
 			if not ok then
-				warn("[L game] The match stopped because of an error:\n" .. tostring(err))
+				warn("[Inkbound] The match stopped because of an error:\n" .. tostring(err))
 			end
 			local cleaned, cleanupErr = pcall(cleanup)
 			if not cleaned then
-				warn("[L game] Cleanup failed: " .. tostring(cleanupErr))
+				warn("[Inkbound] Cleanup failed: " .. tostring(cleanupErr))
 				Match.finish()
 				MatchmakingService.onMatchEnded()
 			end

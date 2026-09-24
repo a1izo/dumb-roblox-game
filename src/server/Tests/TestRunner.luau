@@ -11,6 +11,20 @@ local function describeValue(value: any): string
 	return tostring(value)
 end
 
+local function contains(haystack: any, needle: any): boolean
+	if type(haystack) == "string" and type(needle) == "string" then
+		return string.find(haystack, needle, 1, true) ~= nil
+	end
+	if type(haystack) == "table" then
+		for _, item in pairs(haystack) do
+			if item == needle then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 local function expect(value: any)
 	local api = {}
 	api.to = {
@@ -25,13 +39,42 @@ local function expect(value: any)
 					error("expected a truthy value, got " .. describeValue(value), 2)
 				end
 			end,
+			near = function(expected: number, tolerance: number?)
+				if type(value) ~= "number" or math.abs(value - expected) > (tolerance or 1e-6) then
+					error(string.format("expected about %s, got %s", describeValue(expected), describeValue(value)), 2)
+				end
+			end,
 		},
+		-- A substring of a string, or a value inside a table.
+		contain = function(needle: any)
+			if not contains(value, needle) then
+				error(string.format("expected %s to contain %s", describeValue(value), describeValue(needle)), 2)
+			end
+		end,
+		-- value must be a function that errors (optionally with a message containing `part`).
+		throw = function(part: string?)
+			local ok, err = pcall(value)
+			if ok then
+				error("expected the function to throw", 2)
+			end
+			if part and not string.find(tostring(err), part, 1, true) then
+				error(string.format("expected an error containing %q, got %s", part, tostring(err)), 2)
+			end
+		end,
 	}
 	api.never = {
 		to = {
 			equal = function(expected: any)
 				if value == expected then
 					error("expected a value other than " .. describeValue(expected), 2)
+				end
+			end,
+			contain = function(needle: any)
+				if contains(value, needle) then
+					error(
+						string.format("expected %s not to contain %s", describeValue(value), describeValue(needle)),
+						2
+					)
 				end
 			end,
 		},
@@ -77,9 +120,9 @@ function TestRunner.run(folder: Instance): boolean
 		end
 	end
 
-	print(string.format("[L game tests] %d passed, %d failed", passed, failed))
+	print(string.format("[Inkbound tests] %d passed, %d failed", passed, failed))
 	for _, failure in ipairs(failures) do
-		warn("[L game tests] " .. failure)
+		warn("[Inkbound tests] " .. failure)
 	end
 	return failed == 0
 end

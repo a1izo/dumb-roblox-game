@@ -1,5 +1,5 @@
 --!strict
--- Tuning values for L game. The server and every client read this module,
+-- Tuning values for Inkbound. The server and every client read this module,
 -- so it must never hold secrets (roles, real names, notes...).
 
 local Config = {}
@@ -37,12 +37,12 @@ Config.FLASH_DURATION = 3
 Config.LETTERS_PER_FLASH = 3
 Config.WITNESS_RANGE = 30
 
--- Death Note
+-- The Grimoire (internal phase id "DeathNote")
 Config.DEATH_DELAY = 40
 Config.DEATH_CAUSES = { "Heart attack", "Traffic accident", "Sudden illness", "Accidental fall" }
 Config.NAME_MAX_LENGTH = 40
 
--- Shinigami eyes
+-- Specter's Eyes (internally "eyes")
 Config.EYES_UNLOCK_ROUND = 2
 Config.EYES_COUNTDOWN = 2
 Config.EYES_READS = 3
@@ -51,7 +51,7 @@ Config.EYES_SMALL_SERVER_BELOW = 8
 Config.EYES_RANGE = 14
 Config.EYES_DURATION = 3
 Config.EYES_COOLDOWN = 4
--- While the eyes are new (the round of the deal) some names blur. L's name always blurs in that
+-- While the eyes are new (the round of the deal) some names blur. Zero's name always blurs in that
 -- round, so a blurred read never proves that the target is L.
 Config.EYES_DEAL_ROUND_BLUR_CHANCE = 0.35
 
@@ -111,10 +111,18 @@ Config.MAP_ROTATION = { "TaskForceHQ", "UniversityCampus", "TokyoDistrict" }
 
 -- Studio testing helpers. These are ignored in live servers.
 Config.STUDIO_MIN_PLAYERS = 1
--- Set to "Kira", "Follower", "L", "Watari" or "TaskForce" to force the first player's role in Studio.
+-- Force the first player's role in Studio, by internal id: "Kira" (the Hand), "Follower"
+-- (Cultist), "L" (Zero), "Watari" (the Butler) or "TaskForce" (Agent).
 Config.STUDIO_FORCE_ROLE = ""
 -- Multiplies every phase length in Studio, for example 0.3 for quick test runs.
 Config.STUDIO_TIME_SCALE = 1
 Config.RUN_TESTS_IN_STUDIO = true
+-- Appended to the DataStore name in Studio, so test runs never touch live player data.
+-- Set it to "" only to test against the live store on purpose.
+Config.STUDIO_DATASTORE_SUFFIX = "_studio"
+-- A debug panel (press F2) for forcing phases, wins and eliminations. Studio only.
+Config.STUDIO_DEBUG = true
+-- Cuts the Intro, Verdict and Outro presentation phases short in Studio.
+Config.STUDIO_SKIP_PRESENTATION = false
 
 return Config

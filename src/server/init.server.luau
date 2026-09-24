@@ -1,4 +1,4 @@
--- L game server bootstrap: starts every service in dependency order, then the match loop.
+-- Inkbound server bootstrap: starts every service in dependency order, then the match loop.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,6 +14,7 @@ local CharacterService = require(Services:WaitForChild("CharacterService"))
 local ChatService = require(Services:WaitForChild("ChatService"))
 local CosmeticsService = require(Services:WaitForChild("CosmeticsService"))
 local DataService = require(Services:WaitForChild("DataService"))
+local DebugService = require(Services:WaitForChild("DebugService"))
 local DeathNoteService = require(Services:WaitForChild("DeathNoteService"))
 local EvidenceService = require(Services:WaitForChild("EvidenceService"))
 local EyesService = require(Services:WaitForChild("EyesService"))
@@ -51,6 +52,7 @@ MeetingService.init()
 ChatService.init()
 MatchmakingService.init()
 RoundService.init()
+DebugService.init()
 
 -- Everything a client needs when it starts (or restarts its UI).
 Net.func("GetSnapshot").OnServerInvoke = function(player: Player)
@@ -72,4 +74,4 @@ if RunService:IsStudio() and Config.RUN_TESTS_IN_STUDIO then
 	end)
 end
 
-print(string.format("[L game] Server ready. %d player(s) online.", #Players:GetPlayers()))
+print(string.format("[Inkbound] Server ready. %d player(s) online.", #Players:GetPlayers()))

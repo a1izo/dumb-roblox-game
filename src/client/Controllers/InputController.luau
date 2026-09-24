@@ -1,6 +1,6 @@
 -- Keyboard shortcuts. Every action also has an on-screen button for touch devices.
 --   B evidence board   Q quick chat   N write/read note   G drop note
---   R shinigami eyes read   L L's desk
+--   R Specter's Eyes read   Z Zero's desk
 
 local UserInputService = game:GetService("UserInputService")
 
@@ -33,7 +33,7 @@ function InputController.init()
 			NotePanel.drop()
 		elseif key == Enum.KeyCode.R then
 			EyesController.read()
-		elseif key == Enum.KeyCode.L then
+		elseif key == Enum.KeyCode.Z then
 			LPanel.toggle()
 		end
 	end)

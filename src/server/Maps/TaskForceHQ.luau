@@ -4,7 +4,7 @@
 local TaskForceHQ = {}
 
 TaskForceHQ.id = "TaskForceHQ"
-TaskForceHQ.name = "Task Force HQ"
+TaskForceHQ.name = "Agency HQ"
 TaskForceHQ.lighting = {
 	clockTime = 20.5,
 	brightness = 1,
@@ -125,7 +125,7 @@ function TaskForceHQ.build(b)
 	-- Reception
 	b:counter(64, 4, 90, 10, Color3.fromRGB(60, 60, 70))
 	b:sofa(50, 16.5, 0, Color3.fromRGB(40, 60, 90))
-	b:sign(79.3, 9, -8, 90, 14, 3, "TASK FORCE HQ", Color3.fromRGB(255, 255, 255), Color3.fromRGB(20, 30, 50))
+	b:sign(79.3, 9, -8, 90, 14, 3, "AGENCY HQ", Color3.fromRGB(255, 255, 255), Color3.fromRGB(20, 30, 50))
 	b:plant(76, -16)
 	b:plant(44, 16)
 

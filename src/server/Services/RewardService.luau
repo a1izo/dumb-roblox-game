@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
@@ -42,22 +43,22 @@ function RewardService.payout(winner: string?)
 			ps.stats.notesFound * R.NOTE_FOUND_XP
 		)
 		add(
-			string.format("Votes on Kira x%d", ps.stats.correctVotes),
+			Terms.f("Votes on {hand} x{n}", { n = ps.stats.correctVotes }),
 			ps.stats.correctVotes * R.CORRECT_VOTE_COINS,
 			ps.stats.correctVotes * R.CORRECT_VOTE_XP
 		)
 		add(
-			string.format("Death Note kills x%d", ps.stats.kills),
+			Terms.f("{Grimoire} kills x{n}", { n = ps.stats.kills }),
 			ps.stats.kills * R.KILL_COINS,
 			ps.stats.kills * R.KILL_XP
 		)
 		add(
-			string.format("Shinigami reads x%d", ps.stats.reads),
+			Terms.f("{Eyes} reads x{n}", { n = ps.stats.reads }),
 			ps.stats.reads * R.EYES_READ_COINS,
 			ps.stats.reads * R.EYES_READ_XP
 		)
 		if ps.stats.arrestedKira then
-			add("Arrested Kira", R.ARREST_COINS, R.ARREST_XP)
+			add(Terms.f("Arrested {hand}"), R.ARREST_COINS, R.ARREST_XP)
 		end
 		results[ps] = { coins = coins, xp = xp, won = won, lines = lines }
 		DataService.grant(ps.player, coins, xp, won, ps.stats.tasks)

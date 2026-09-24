@@ -1,6 +1,6 @@
--- L's warrant: one arrest per match, during the vote. L picks a suspect and types that
--- player's full real name. A wrong name rejects the warrant (only L is told) and L must
--- wait for the next round to try again.
+-- Zero's warrant (role id "L"): one arrest per match, during the vote. Zero picks a suspect
+-- and types that player's full real name. A wrong name rejects the warrant (only Zero is
+-- told) and Zero must wait for the next round to try again.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local Elimination = require(script.Parent.Elimination)
@@ -49,10 +50,9 @@ local function onWarrant(player: Player, payload)
 	if not NameUtil.matches(typed, suspect.first, suspect.last) then
 		l.warrantBlockedRound = Match.round
 		EventLog.add(
-			string.format(
-				"L (%s) tried to arrest %s, but the name was wrong. Warrant rejected.",
-				l.alias,
-				suspect.alias
+			Terms.f(
+				"{Zero} ({alias}) tried to arrest {suspect}, but the name was wrong. Warrant rejected.",
+				{ alias = l.alias, suspect = suspect.alias }
 			),
 			"warrant"
 		)
@@ -70,29 +70,58 @@ local function onWarrant(player: Player, payload)
 	if suspect.role == "Kira" then
 		l.stats.arrestedKira = true
 		EventLog.add(
-			string.format(
-				"L (%s) arrested %s with a valid warrant. %s was Kira.",
-				l.alias,
-				suspect.alias,
-				suspect.alias
+			Terms.f(
+				"{Zero} ({alias}) arrested {suspect} with a valid warrant. {suspect} was {hand}.",
+				{ alias = l.alias, suspect = suspect.alias }
 			),
 			"warrant"
 		)
-		Match.announce("Warrant served: " .. suspect.alias .. " arrested", suspect.alias .. " was KIRA!", "team")
-		Elimination.eliminate(suspect, "arrested", nil, suspect.alias .. " was arrested by L.", {})
-	elseif suspect.role == "Follower" then
-		EventLog.add(string.format("L (%s) arrested %s, a Kira follower.", l.alias, suspect.alias), "warrant")
 		Match.announce(
 			"Warrant served: " .. suspect.alias .. " arrested",
-			suspect.alias .. " was a Kira follower. Kira is still free.",
+			Terms.f("{suspect} was {HAND}!", { suspect = suspect.alias }),
 			"team"
 		)
-		Elimination.eliminate(suspect, "arrested", nil, suspect.alias .. " was arrested by L.", {})
+		Elimination.eliminate(
+			suspect,
+			"arrested",
+			nil,
+			Terms.f("{suspect} was arrested by {zero}.", { suspect = suspect.alias }),
+			{}
+		)
+	elseif suspect.role == "Follower" then
+		EventLog.add(
+			Terms.f("{Zero} ({alias}) arrested {suspect}, a {cultist}.", { alias = l.alias, suspect = suspect.alias }),
+			"warrant"
+		)
+		Match.announce(
+			"Warrant served: " .. suspect.alias .. " arrested",
+			Terms.f("{suspect} was a {cultist}. {Hand} is still free.", { suspect = suspect.alias }),
+			"team"
+		)
+		Elimination.eliminate(
+			suspect,
+			"arrested",
+			nil,
+			Terms.f("{suspect} was arrested by {zero}.", { suspect = suspect.alias }),
+			{}
+		)
 	else
-		EventLog.add(string.format("L (%s) arrested %s, who was innocent.", l.alias, suspect.alias), "warrant")
-		Match.declareWinner("Kira", "L arrested an innocent player.")
+		EventLog.add(
+			Terms.f(
+				"{Zero} ({alias}) arrested {suspect}, who was innocent.",
+				{ alias = l.alias, suspect = suspect.alias }
+			),
+			"warrant"
+		)
+		Match.declareWinner("Kira", Terms.f("{Zero} arrested an innocent player."))
 		Match.announce("Warrant served: " .. suspect.alias .. " arrested", suspect.alias .. " was innocent...", "kira")
-		Elimination.eliminate(suspect, "arrested", nil, suspect.alias .. " was arrested by L.", {})
+		Elimination.eliminate(
+			suspect,
+			"arrested",
+			nil,
+			Terms.f("{suspect} was arrested by {zero}.", { suspect = suspect.alias }),
+			{}
+		)
 	end
 end
 

@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Screens = require(script.Parent.Screens)
@@ -28,10 +29,10 @@ local function renderMeter()
 		return
 	end
 	if not payload.enabled then
-		meterNote.Text = "Watari is dead. You lost the suspicion meter."
+		meterNote.Text = Terms.f("{Butler} is dead. You lost the suspicion meter.")
 		return
 	end
-	meterNote.Text = "A hint, not proof. Followers can push it with false reports."
+	meterNote.Text = Terms.f("A hint, not proof. {Cultists} can push it with false reports.")
 	local values = table.clone(payload.values or {})
 	table.sort(values, function(a, b)
 		return a.value > b.value
@@ -133,7 +134,7 @@ end
 
 function LPanel.init()
 	local body
-	window, body = Widgets.modal(Screens.modal, "L's desk", Vector2.new(720, 520))
+	window, body = Widgets.modal(Screens.modal, Terms.f("{ZeroDesk}"), Vector2.new(720, 520))
 	local left = Widgets.frame({ Size = UDim2.new(0.5, -8, 1, 0), Parent = body })
 	Widgets.label({ Text = "SUSPICION METER", Font = Theme.fonts.black, TextSize = 14, Parent = left })
 	meterNote = Widgets.label({
@@ -171,7 +172,7 @@ function LPanel.init()
 		end
 		addInbox(payload)
 		if payload.kind == "tip" then
-			Toasts.show("A new anonymous tip is in the box. Press L to read it.", "secret")
+			Toasts.show("A new anonymous tip is in the box. Press Z to read it.", "secret")
 		end
 	end)
 	ClientState.PhaseChanged:Connect(function()

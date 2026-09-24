@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 local Roles = require(Shared:WaitForChild("Roles"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Screens = require(script.Parent.Screens)
@@ -45,21 +46,21 @@ local function alliesText(role: string, allies): string
 	end
 	if role == "Kira" then
 		if #followers == 0 then
-			return "You have no followers this match."
+			return Terms.f("You have no {cultists} this match.")
 		end
-		return "Your followers: " .. table.concat(followers, ", ")
+		return Terms.f("Your {cultists}: ") .. table.concat(followers, ", ")
 	elseif role == "Follower" then
-		local text = "Kira is " .. (kira or "unknown") .. "."
+		local text = Terms.f("{Hand} is {alias}.", { alias = kira or "unknown" })
 		if #followers > 0 then
-			text ..= "  Other follower: " .. table.concat(followers, ", ")
+			text ..= Terms.f("  Other {cultist}: ") .. table.concat(followers, ", ")
 		end
 		return text
 	elseif role == "L" then
 		return if watari
-			then "Watari is " .. watari .. ". Nobody else knows who you are."
+			then Terms.f("{Butler} is {alias}. Nobody else knows who you are.", { alias = watari })
 			else "You work alone this match."
 	elseif role == "Watari" then
-		return "Only L knows who you are. You do not know who L is."
+		return Terms.f("Only {zero} knows who you are. You do not know who {zero} is.")
 	end
 	return "Nobody knows anyone's role. Trust carefully."
 end
@@ -75,16 +76,16 @@ function BriefingScreen.show(payload)
 	nameLabel.Text = string.upper(tostring(payload.realName))
 	alliesLabel.Text = alliesText(payload.role, payload.allies)
 	if type(payload.hint) == "string" then
-		hintLabel.Text = "WATARI'S HINT\n" .. payload.hint
+		hintLabel.Text = Terms.f("{BUTLER}'S HINT") .. "\n" .. payload.hint
 		hintLabel.Visible = true
 	else
 		hintLabel.Visible = false
 	end
 	footerLabel.Text = string.format(
-		"%d players  |  %d follower%s  |  %s",
+		"%d players  |  %d %s  |  %s",
 		payload.playerCount or 0,
 		payload.followers or 0,
-		if payload.followers == 1 then "" else "s",
+		if payload.followers == 1 then Terms.role("Follower") else Terms.role("Follower", "plural"),
 		tostring(payload.mapName)
 	)
 	root.Visible = true
@@ -149,7 +150,9 @@ function BriefingScreen.init()
 		LayoutOrder = 6,
 	})
 	centered({
-		Text = "Memorise it. It will not be shown again. Kira needs it to kill you; L needs it to arrest.",
+		Text = Terms.f(
+			"Memorise it. It will not be shown again. {Hand} needs it to kill you; {zero} needs it to arrest."
+		),
 		TextColor3 = Theme.colors.bad,
 		TextSize = 15,
 		Size = UDim2.new(1, 0, 0, 22),

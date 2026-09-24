@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local EvidencePanel = require(script.Parent.EvidencePanel)
@@ -62,7 +63,7 @@ function MeetingPanel.init()
 	})
 	Widgets.sizeLimit(panel, Vector2.new(380, 330), Vector2.new(250, 0))
 	Widgets.label({
-		Text = "TASK FORCE MEETING",
+		Text = Terms.f("{MEETING}"),
 		Font = Theme.fonts.black,
 		Position = UDim2.fromOffset(12, 10),
 		Size = UDim2.new(1, -24, 0, 22),
@@ -77,7 +78,7 @@ function MeetingPanel.init()
 		Parent = panel,
 	})
 	Widgets.label({
-		Text = "L'S SCREEN",
+		Text = Terms.f("{ZERO_SCREEN}"),
 		Font = Theme.fonts.bold,
 		TextSize = 13,
 		TextColor3 = Theme.colors.gold,
@@ -107,7 +108,7 @@ function MeetingPanel.init()
 		Parent = panel,
 	})
 	inputBox = Widgets.textbox({
-		PlaceholderText = "Speak as L (anonymous)",
+		PlaceholderText = Terms.f("Speak as {zero} (anonymous)"),
 		TextSize = 15,
 		Size = UDim2.new(1, -78, 1, 0),
 		Parent = inputRow,

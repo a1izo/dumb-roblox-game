@@ -337,14 +337,9 @@ local function allyList(ps)
 	local allies = {}
 	for _, other in ipairs(Match.list) do
 		if other ~= ps then
-			local visible = false
-			if ps.role == "Kira" and other.role == "Follower" then
-				visible = true
-			elseif ps.role == "Follower" and (other.role == "Kira" or other.role == "Follower") then
-				visible = true
-			elseif ps.role == "L" and other.role == "Watari" then
-				visible = true
-			end
+			local visible = (ps.role == "Kira" and other.role == "Follower")
+				or (ps.role == "Follower" and (other.role == "Kira" or other.role == "Follower"))
+				or (ps.role == "L" and other.role == "Watari")
 			if visible then
 				table.insert(allies, {
 					userId = other.userId,

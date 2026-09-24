@@ -1,10 +1,11 @@
--- L game client bootstrap: builds the UI and starts the controllers.
+-- Inkbound client bootstrap: builds the UI and starts the controllers.
 
 local ClientState = require(script:WaitForChild("ClientState"))
 
 local UI = script:WaitForChild("UI")
 local Announcer = require(UI:WaitForChild("Announcer"))
 local BriefingScreen = require(UI:WaitForChild("BriefingScreen"))
+local DebugPanel = require(UI:WaitForChild("DebugPanel"))
 local EvidencePanel = require(UI:WaitForChild("EvidencePanel"))
 local LobbyPanel = require(UI:WaitForChild("LobbyPanel"))
 local LPanel = require(UI:WaitForChild("LPanel"))
@@ -52,6 +53,7 @@ SpectatePanel.init()
 RevealScreen.init()
 WorldFx.init()
 RoleHud.init()
+DebugPanel.init()
 
 EmoteController.init()
 InteractionController.init()

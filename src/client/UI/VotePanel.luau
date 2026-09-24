@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Screens = require(script.Parent.Screens)
@@ -167,7 +168,7 @@ function VotePanel.init()
 	Widgets.padding(warrantFrame, 10)
 	Widgets.list(warrantFrame, 6)
 	Widgets.label({
-		Text = "L'S WARRANT",
+		Text = Terms.f("{ZERO}'S WARRANT"),
 		Font = Theme.fonts.black,
 		TextColor3 = Theme.colors.team,
 		LayoutOrder = 1,

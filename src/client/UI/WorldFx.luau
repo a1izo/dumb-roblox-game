@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
@@ -80,7 +81,7 @@ local function onEyesName(payload)
 		return
 	end
 	local gui = Create("BillboardGui", {
-		Name = "ShinigamiName",
+		Name = "SpecterEyesName",
 		Adornee = head,
 		AlwaysOnTop = true,
 		LightInfluence = 0,
@@ -117,10 +118,10 @@ local function onElimination(payload)
 		overlaySubtitle.Text = "Cause of death: " .. tostring(payload.cause) .. ". You are now a spectator."
 	elseif kind == "voted" then
 		overlayTitle.Text = "VOTED OUT"
-		overlaySubtitle.Text = "The Task Force removed you. You are now a spectator."
+		overlaySubtitle.Text = Terms.f("{Agency} removed you. You are now a spectator.")
 	elseif kind == "arrested" then
 		overlayTitle.Text = "ARRESTED"
-		overlaySubtitle.Text = "L served a warrant with your real name. You are now a spectator."
+		overlaySubtitle.Text = Terms.f("{Zero} served a warrant with your real name. You are now a spectator.")
 	else
 		return
 	end

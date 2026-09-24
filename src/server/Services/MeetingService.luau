@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local CharacterService = require(script.Parent.CharacterService)
@@ -27,7 +28,7 @@ function MeetingService.onMatchStart(map)
 	screenLabel = map.meeting.screenLabel
 	seats = map.meeting.seats
 	if screenLabel then
-		screenLabel.Text = "L is watching."
+		screenLabel.Text = Terms.f("{Zero} is watching.")
 	end
 end
 

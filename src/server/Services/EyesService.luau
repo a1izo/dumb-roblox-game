@@ -1,5 +1,5 @@
--- The shinigami eyes deal. From round 2 one follower per match may trade their life for
--- the eyes: up close and in plain sight, a target's full real name shows above their head
+-- The Specter's Eyes deal (internally "eyes"). From round 2 one Cultist (Follower) per match
+-- may trade their life for the eyes: up close and in plain sight, a target's full real name shows above their head
 -- for 3 seconds, on the follower's screen only. The follower's eyes glow red while
 -- reading, and the follower dies publicly at the end of the second round after the deal.
 
@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local CharacterService = require(script.Parent.CharacterService)
 local Elimination = require(script.Parent.Elimination)
@@ -54,10 +55,10 @@ local function deal(ps)
 	)
 	for _, other in ipairs(Match.list) do
 		if other ~= ps and Match.isKiraSide(other) and other.alive then
-			Match.notify(other.player, ps.alias .. " made the shinigami eyes deal.", "secret")
+			Match.notify(other.player, Terms.f("{alias} accepted {eyes}.", { alias = ps.alias }), "secret")
 		end
 	end
-	EventLog.add(string.format("%s (Follower) made the shinigami eyes deal.", ps.alias), "eyes")
+	EventLog.add(Terms.f("{alias} ({cultist}) accepted {eyes}.", { alias = ps.alias }), "eyes")
 	Match.pushAllPrivate()
 end
 
@@ -113,7 +114,10 @@ local function read(ps, targetUserId)
 		duration = Config.EYES_DURATION,
 	})
 	EventLog.add(
-		string.format("%s (Follower) read %s's real name with the shinigami eyes.", ps.alias, target.alias),
+		Terms.f(
+			"{alias} ({cultist}) read {target}'s real name with {eyes}.",
+			{ alias = ps.alias, target = target.alias }
+		),
 		"eyes"
 	)
 	Match.pushPrivate(ps)
@@ -140,17 +144,20 @@ function EyesService.onRoundEnd()
 		if ps.eyes and ps.alive then
 			ps.eyes.countdown -= 1
 			if ps.eyes.countdown <= 0 then
-				EventLog.add(string.format("%s died from the shinigami eyes deal.", ps.alias), "death")
+				EventLog.add(Terms.f("{alias} died from the {eyes} deal.", { alias = ps.alias }), "death")
 				Elimination.eliminate(
 					ps,
 					"dead",
-					"Shinigami eyes deal",
-					ps.alias .. " collapsed. The shinigami eyes deal claimed them: they were working with Kira.",
+					Terms.f("{Eyes} deal"),
+					Terms.f(
+						"{alias} collapsed. The {eyes} deal claimed them: they were working with {hand}.",
+						{ alias = ps.alias }
+					),
 					{}
 				)
 				Match.announce(
 					ps.alias .. " is dead",
-					"Cause of death: the shinigami eyes deal. They worked with Kira.",
+					Terms.f("Cause of death: the {eyes} deal. They worked with {hand}."),
 					"danger"
 				)
 			else

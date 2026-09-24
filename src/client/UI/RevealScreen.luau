@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 local Roles = require(Shared:WaitForChild("Roles"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Screens = require(script.Parent.Screens)
@@ -107,7 +108,7 @@ function RevealScreen.show(payload)
 	token += 1
 	local myToken = token
 	local teamWon = payload.winner == "Team"
-	winnerLabel.Text = if teamWon then "THE TASK FORCE WINS" else "KIRA WINS"
+	winnerLabel.Text = if teamWon then Terms.f("{AGENCY} WINS") else Terms.f("{HAND} WINS")
 	winnerLabel.TextColor3 = if teamWon then Theme.TONES.team else Theme.TONES.kira
 	reasonLabel.Text = tostring(payload.reason or "")
 	fillRoster(payload.players or {})

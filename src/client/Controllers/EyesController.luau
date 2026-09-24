@@ -8,6 +8,7 @@ local UserInputService = game:GetService("UserInputService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
@@ -83,11 +84,13 @@ function EyesController.deal()
 	if os.clock() > confirmUntil then
 		confirmUntil = os.clock() + 5
 		Toasts.show(
-			string.format(
-				"Shinigami eyes: read up to %d real names (%d on servers under %d players), but you die at the end of the next round. Press again within 5 s to accept.",
-				Config.EYES_READS,
-				Config.EYES_READS_SMALL_SERVER,
-				Config.EYES_SMALL_SERVER_BELOW
+			Terms.f(
+				"{Eyes}: read up to {reads} real names ({small} on servers under {below} players), but you die at the end of the next round. Press again within 5 s to accept.",
+				{
+					reads = Config.EYES_READS,
+					small = Config.EYES_READS_SMALL_SERVER,
+					below = Config.EYES_SMALL_SERVER_BELOW,
+				}
 			),
 			"secret"
 		)

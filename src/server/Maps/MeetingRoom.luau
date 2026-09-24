@@ -1,10 +1,11 @@
--- The Task Force meeting room. Every map sends its living players here for the
--- meeting and the vote. L speaks through the anonymous screen on the north wall.
+-- The Agency meeting room. Every map sends its living players here for the meeting and
+-- the vote. Zero speaks through the anonymous screen on the north wall.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local MeetingRoom = {}
 
@@ -54,7 +55,7 @@ function MeetingRoom.build(b)
 		b:chair(cx, cz, math.deg(angle), Color3.fromRGB(30, 28, 32))
 	end
 
-	-- L's anonymous screen
+	-- Zero's anonymous screen
 	local screen =
 		b:part(Vector3.new(30, 12, 0.4), b:cf(0, 10, -29.3, 180), Color3.fromRGB(8, 8, 10), Enum.Material.SmoothPlastic)
 	local gui = Create("SurfaceGui", {
@@ -68,7 +69,7 @@ function MeetingRoom.build(b)
 		BackgroundColor3 = Color3.fromRGB(245, 245, 245),
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(0.3, 1),
-		Text = "L",
+		Text = Terms.NAMES.zeroGlyph,
 		TextColor3 = Color3.fromRGB(10, 10, 10),
 		TextScaled = true,
 		Font = Enum.Font.GrenzeGotisch,
@@ -79,7 +80,7 @@ function MeetingRoom.build(b)
 		BorderSizePixel = 0,
 		Position = UDim2.fromScale(0.3, 0),
 		Size = UDim2.fromScale(0.7, 1),
-		Text = "L is watching.",
+		Text = Terms.f("{Zero} is watching."),
 		TextColor3 = Color3.fromRGB(235, 235, 235),
 		TextScaled = true,
 		TextWrapped = true,

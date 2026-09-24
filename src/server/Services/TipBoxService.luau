@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local EventLog = require(script.Parent.EventLog)
@@ -40,7 +41,7 @@ local function onTip(player: Player, text)
 		Match.notify(player, "The slot is jammed. Try again in a few seconds.", "bad")
 		return
 	end
-	EventLog.add(string.format("%s (%s) dropped a tip in the box.", ps.alias, ps.role), "tip")
+	EventLog.add(string.format("%s (%s) dropped a tip in the box.", ps.alias, Terms.role(ps.role)), "tip")
 	Match.notify(player, "Your tip dropped into the box.", "info")
 	local l = Match.findRole("L")
 	if not l or not l.alive then

@@ -12,6 +12,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local CharacterService = require(script.Parent.CharacterService)
@@ -450,7 +451,7 @@ local function burn(ps, noteId)
 			end
 		end
 		EventLog.sighting(ps, "burned something", burnPosition)
-		EventLog.add(string.format("Kira (%s) burned a paper note.", ps.alias), "burn")
+		EventLog.add(Terms.f("{Hand} ({alias}) burned a paper note.", { alias = ps.alias }), "burn")
 		Match.notify(ps.player, "The note is ash.", "secret")
 	end)
 end

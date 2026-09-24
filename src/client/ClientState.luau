@@ -159,7 +159,7 @@ function ClientState.init()
 			return Net.func("GetSnapshot"):InvokeServer()
 		end)
 		if not ok or type(snapshot) ~= "table" then
-			warn("[L game] Could not load the initial state: " .. tostring(snapshot))
+			warn("[Inkbound] Could not load the initial state: " .. tostring(snapshot))
 			return
 		end
 		-- Events that already arrived are newer than the snapshot.

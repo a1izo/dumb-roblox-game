@@ -152,7 +152,7 @@ function ChatService.onMatchStart()
 					channel:AddUserAsync(ps.userId)
 				end)
 				if not ok then
-					warn("[L game] Could not add a player to the meeting chat: " .. tostring(err))
+					warn("[Inkbound] Could not add a player to the meeting chat: " .. tostring(err))
 				end
 				ChatService.refresh()
 			end)
@@ -203,7 +203,7 @@ end
 
 local function setupChannels()
 	if TextChatService.ChatVersion ~= Enum.ChatVersion.TextChatService then
-		warn("[L game] Set TextChatService.ChatVersion to TextChatService; the chat rules need it.")
+		warn("[Inkbound] Set TextChatService.ChatVersion to TextChatService; the chat rules need it.")
 	end
 	local folder = TextChatService:WaitForChild("TextChannels", 10)
 	if not folder then

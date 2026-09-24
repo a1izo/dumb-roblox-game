@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local PartyPanel = require(script.Parent.PartyPanel)
@@ -87,7 +88,7 @@ function LobbyPanel.init()
 	Widgets.label({
 		Font = Theme.fonts.gothic,
 		TextSize = 34,
-		Text = "L game",
+		Text = Terms.GAME,
 		Size = UDim2.new(1, 0, 0, 36),
 		LayoutOrder = 1,
 		Parent = panel,

@@ -52,7 +52,7 @@ function CharacterService.load(player: Player)
 			player:LoadCharacterAsync()
 		end)
 		if not ok then
-			warn("[L game] Could not load character for " .. player.Name .. ": " .. tostring(err))
+			warn("[Inkbound] Could not load character for " .. player.Name .. ": " .. tostring(err))
 		end
 	end)
 end

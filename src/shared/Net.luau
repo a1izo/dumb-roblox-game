@@ -33,7 +33,7 @@ local EVENTS = {
 	"LScreenMsg",
 	"Tip",
 	"LInbox",
-	-- Death Note phase, meeting and vote
+	-- Grimoire phase (id "DeathNote"), meeting and vote
 	"DeathNote",
 	"Report",
 	"Vote",
@@ -55,6 +55,13 @@ local EVENTS = {
 	-- end of match and spectating
 	"Reveal",
 	"Spectate",
+	-- presentation cues, Specters, profile settings and private servers
+	"Cue",
+	"Ghost",
+	"ProfileRequest",
+	"PrivateServer",
+	-- Studio debug panel (ignored by live servers)
+	"Debug",
 }
 
 local FUNCTIONS = {

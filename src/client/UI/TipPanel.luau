@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Screens = require(script.Parent.Screens)
@@ -30,14 +31,14 @@ function TipPanel.init()
 	local body
 	window, body = Widgets.modal(Screens.modal, "Anonymous tip box", Vector2.new(460, 320))
 	Widgets.label({
-		Text = "Only L reads these tips, and never sees who sent them.",
+		Text = Terms.f("Only {zero} reads these tips, and never sees who sent them."),
 		TextSize = 14,
 		TextColor3 = Theme.colors.muted,
 		Size = UDim2.new(1, 0, 0, 20),
 		Parent = body,
 	})
 	box = Widgets.textbox({
-		PlaceholderText = "Your tip for L...",
+		PlaceholderText = Terms.f("Your tip for {zero}..."),
 		Font = Theme.fonts.typewriter,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		Position = UDim2.fromOffset(0, 28),

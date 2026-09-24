@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local NotePanel = require(script.Parent.NotePanel)
@@ -104,7 +105,7 @@ local function buildDeathNote()
 	Widgets.padding(noteWindow, 20)
 	Widgets.list(noteWindow, 10, false, Enum.HorizontalAlignment.Center)
 	Widgets.label({
-		Text = "DEATH NOTE",
+		Text = Terms.f("{GRIMOIRE}"),
 		Font = Theme.fonts.gothic,
 		TextSize = 44,
 		TextColor3 = Color3.fromRGB(235, 235, 235),
@@ -211,7 +212,7 @@ local function buildReport()
 		Parent = reportWindow,
 	})
 	Widgets.label({
-		Text = "Who do you suspect most? Reports are private and feed L's suspicion meter.",
+		Text = Terms.f("Who do you suspect most? Reports are private and feed {zero}'s suspicion meter."),
 		TextSize = 14,
 		TextColor3 = Color3.fromRGB(80, 74, 66),
 		Position = UDim2.fromOffset(0, 38),
@@ -225,7 +226,7 @@ local function buildReport()
 	})
 	Widgets.grid(suspectGrid, UDim2.new(0.25, -6, 0, 36), 6)
 	reportBox = Widgets.textbox({
-		PlaceholderText = "Short report for L (optional)",
+		PlaceholderText = Terms.f("Short report for {zero} (optional)"),
 		Font = Theme.fonts.typewriter,
 		TextColor3 = Theme.colors.ink,
 		PlaceholderColor3 = Color3.fromRGB(120, 112, 100),

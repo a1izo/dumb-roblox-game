@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Roles = require(Shared:WaitForChild("Roles"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local EvidencePanel = require(script.Parent.EvidencePanel)
@@ -63,7 +64,7 @@ local function rebuild()
 
 	local extras = {}
 	if private.hood then
-		table.insert(extras, "Hood on: the eyes cannot read you")
+		table.insert(extras, Terms.f("Hood on: {eyes} cannot read you"))
 	end
 	if private.carrying == "blank" then
 		table.insert(extras, "Carrying a blank sheet")
@@ -73,7 +74,10 @@ local function rebuild()
 	if private.eyes then
 		table.insert(
 			extras,
-			string.format("Eyes: %d reads left, %d round(s) to live", private.eyes.readsLeft, private.eyes.countdown)
+			Terms.f(
+				"{Eyes}: {reads} reads left, {rounds} round(s) to live",
+				{ reads = private.eyes.readsLeft, rounds = private.eyes.countdown }
+			)
 		)
 	end
 	if private.role == "L" then
@@ -102,14 +106,14 @@ local function rebuild()
 			addButton("Drop note [G]", nil, NotePanel.drop)
 		end
 		if private.role == "Follower" and private.canDeal and phase == "Investigation" then
-			addButton("Eyes deal", Theme.colors.accent, EyesController.deal)
+			addButton(Terms.f("{Eyes}"), Theme.colors.accent, EyesController.deal)
 		end
 		if private.eyes and phase == "Investigation" then
 			addButton("Read name [R]", Theme.colors.accent, EyesController.read)
 		end
 	end
 	if private.role == "L" then
-		addButton("L desk [L]", Color3.fromRGB(70, 70, 80), LPanel.toggle)
+		addButton(Terms.f("{ZeroDesk} [Z]"), Color3.fromRGB(70, 70, 80), LPanel.toggle)
 	end
 end
 

@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local VoteCounter = require(Shared:WaitForChild("VoteCounter"))
 
 local Elimination = require(script.Parent.Elimination)
@@ -115,7 +116,7 @@ function VoteService.close()
 			end
 		end
 		EventLog.add(
-			string.format("%s (%s) was voted out with %d votes.", removed.alias, removed.role, votesAgainst),
+			string.format("%s (%s) was voted out with %d votes.", removed.alias, Terms.role(removed.role), votesAgainst),
 			"vote"
 		)
 		Match.announce(

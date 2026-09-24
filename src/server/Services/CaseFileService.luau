@@ -1,7 +1,7 @@
 -- Case-file stations. A task takes about 15 seconds; finishing it posts a clue to the
 -- evidence board and flashes three new letters of the worker's real name to players
--- close by with a clear line of sight. Kira's side can fake tasks (no flash, no board
--- entry) and a follower can rig a station so its next real flash shows false letters.
+-- close by with a clear line of sight. Kira's side (the Hand and Cultists) can fake tasks (no
+-- flash, no board entry) and a Cultist can rig a station so its next real flash shows false letters.
 
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,6 +10,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local LetterReveal = require(Shared:WaitForChild("LetterReveal"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local EventLog = require(script.Parent.EventLog)
@@ -28,14 +29,6 @@ local stations = {} -- id -> runtime record
 local order = {}
 local working = {} -- [playerState] = runtime record
 local monitorConnection: RBXScriptConnection? = nil
-
-local ROLE_NAMES = {
-	Kira = "Kira",
-	Follower = "Follower",
-	L = "L",
-	Watari = "Watari",
-	TaskForce = "Task Force",
-}
 
 local function setScreen(runtime, busy: boolean)
 	local info = runtime.info
@@ -157,10 +150,10 @@ local function phoneClue(): string
 	end
 	if Match.phoneFacts == 0 then
 		Match.phoneFacts = 1
-		return string.format("Phone records: Kira's first name has %d letters.", #kira.first)
+		return Terms.f("Phone records: {hand}'s first name has {n} letters.", { n = #kira.first })
 	elseif Match.phoneFacts == 1 then
 		Match.phoneFacts = 2
-		return string.format("Phone records: Kira's last name has %d letters.", #kira.last)
+		return Terms.f("Phone records: {hand}'s last name has {n} letters.", { n = #kira.last })
 	end
 	local side = {}
 	for _, ps in ipairs(Match.living()) do
@@ -209,7 +202,7 @@ local function finish(ps, runtime)
 			string.format(
 				"%s (%s) faked a task at %s%s.",
 				ps.alias,
-				ROLE_NAMES[ps.role] or ps.role,
+				Terms.role(ps.role),
 				info.name,
 				if #seen > 0 then " while being watched" else ""
 			),
@@ -352,7 +345,10 @@ local function onTamper(player: Player, stationId)
 	runtime.tamperedBy = ps
 	runtime.tamperRound = Match.round
 	ps.tamperRound = Match.round
-	EventLog.add(string.format("%s (Follower) rigged the flash at %s.", ps.alias, runtime.info.name), "tamper")
+	EventLog.add(
+		Terms.f("{alias} ({cultist}) rigged the flash at {station}.", { alias = ps.alias, station = runtime.info.name }),
+		"tamper"
+	)
 	Match.notify(
 		player,
 		"Rigged. The next real task at " .. runtime.info.name .. " this round will flash false letters.",

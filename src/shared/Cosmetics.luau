@@ -6,7 +6,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "hat_cap",
 		kind = "hat",
-		name = "Task Force Cap",
+		name = "Agency Cap",
 		price = 100,
 		style = "cap",
 		color = Color3.fromRGB(30, 45, 80),

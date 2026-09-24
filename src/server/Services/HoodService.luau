@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local CharacterService = require(script.Parent.CharacterService)
 local EventLog = require(script.Parent.EventLog)
@@ -84,7 +85,7 @@ local function onRequest(player: Player, hoodId)
 	part:Destroy()
 	wear(ps)
 	EventLog.add(string.format("%s put on a hood.", ps.alias), "hood")
-	Match.notify(player, "Hood on. The shinigami eyes cannot read your name this round.", "good")
+	Match.notify(player, Terms.f("Hood on. {Eyes} cannot read your name this round."), "good")
 end
 
 function HoodService.onRoundStart(round: number)
@@ -92,7 +93,7 @@ function HoodService.onRoundStart(round: number)
 		if ps.hoodNextRound then
 			ps.hoodNextRound = false
 			wear(ps)
-			Match.notify(ps.player, "You wear a hood this round. The shinigami eyes cannot read your name.", "good")
+			Match.notify(ps.player, Terms.f("You wear a hood this round. {Eyes} cannot read your name."), "good")
 		end
 	end
 	if next(hoods) == nil and round >= 1 then

@@ -9,6 +9,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local CharacterService = require(script.Parent.CharacterService)
@@ -73,7 +74,10 @@ local function onWrite(player: Player, payload)
 	local shown = TextFilter.broadcast(typed, player.UserId) or "(unreadable)"
 	if target then
 		EventLog.add(
-			string.format('Kira (%s) wrote "%s" in the Death Note. %s was doomed.', ps.alias, shown, target.alias),
+			Terms.f(
+				'{Hand} ({alias}) wrote "{name}" in {grimoire}. {target} was doomed.',
+				{ alias = ps.alias, name = shown, target = target.alias }
+			),
 			"kill"
 		)
 		local matchId = Match.id
@@ -84,7 +88,10 @@ local function onWrite(player: Player, payload)
 		task.delay(delay, kill, target, ps, cause, matchId)
 	else
 		EventLog.add(
-			string.format('Kira (%s) wrote "%s" in the Death Note, but the name matched no one.', ps.alias, shown),
+			Terms.f(
+				'{Hand} ({alias}) wrote "{name}" in {grimoire}, but the name matched no one.',
+				{ alias = ps.alias, name = shown }
+			),
 			"miss"
 		)
 	end
