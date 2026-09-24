@@ -201,7 +201,7 @@ end
 function NotePanel.init()
 	local body
 	window, body = Widgets.modal(Screens.modal, "Note", Vector2.new(460, 380), NotePanel.close)
-	titleLabel = window:FindFirstChild("Title") :: TextLabel
+	titleLabel = window:FindFirstChild("Title", true) :: TextLabel
 	paper = Widgets.panel({
 		BackgroundColor3 = Theme.colors.paper,
 		BackgroundTransparency = 0,

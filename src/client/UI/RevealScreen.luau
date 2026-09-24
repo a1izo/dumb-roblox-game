@@ -16,6 +16,7 @@ local Widgets = require(script.Parent.Widgets)
 local RevealScreen = {}
 
 local root: Frame
+local winnerRibbon: Frame
 local winnerLabel: TextLabel
 local reasonLabel: TextLabel
 local roster: ScrollingFrame
@@ -110,7 +111,8 @@ function RevealScreen.show(payload)
 	local myToken = token
 	local teamWon = payload.winner == "Team"
 	winnerLabel.Text = if teamWon then Terms.f("{AGENCY} WINS") else Terms.f("{HAND} WINS")
-	winnerLabel.TextColor3 = if teamWon then Theme.TONES.team else Theme.TONES.kira
+	winnerRibbon.BackgroundColor3 = if teamWon then Theme.colors.paper else Theme.colors.accent
+	winnerLabel.TextColor3 = if teamWon then Theme.colors.ink else Theme.colors.paper
 	reasonLabel.Text = tostring(payload.reason or "")
 	fillRoster(payload.players or {})
 	local rewards = payload.rewards
@@ -138,10 +140,20 @@ end
 function RevealScreen.init()
 	root = Widgets.frame({
 		Name = "Reveal",
-		BackgroundTransparency = 0.12,
+		BackgroundTransparency = 0.04,
 		BackgroundColor3 = Theme.colors.backdrop,
 		Visible = false,
 		Parent = Screens.overlay,
+	})
+	-- A red band behind the title, like the briefing.
+	Widgets.frame({
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Theme.colors.accent,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.1),
+		Size = UDim2.new(2, 0, 0, 90),
+		Rotation = -5,
+		Parent = root,
 	})
 	local window = Widgets.frame({
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -150,19 +162,30 @@ function RevealScreen.init()
 		Parent = root,
 	})
 	Widgets.sizeLimit(window, Vector2.new(1100, 700))
-	winnerLabel = Widgets.label({
-		Font = Theme.fonts.black,
-		TextSize = 44,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 0, 52),
+	winnerRibbon = Widgets.frame({
+		BackgroundTransparency = 0,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.fromOffset(0, 60),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Rotation = Theme.tilt,
 		Parent = window,
 	})
+	Widgets.slant(winnerRibbon, 0.05)
+	Widgets.padding(winnerRibbon, 0, 44)
+	winnerLabel = Widgets.display({
+		TextSize = 46,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.new(0, 0, 1, 0),
+		Parent = winnerRibbon,
+	})
 	reasonLabel = Widgets.label({
-		Font = Theme.fonts.medium,
+		FontFace = Theme.faces.displayMedium,
 		TextSize = 18,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.fromOffset(0, 54),
-		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.fromOffset(0, 66),
+		Size = UDim2.new(1, 0, 0, 22),
 		Parent = window,
 	})
 	local left = Widgets.panel({
@@ -170,10 +193,8 @@ function RevealScreen.init()
 		Size = UDim2.new(0.45, -8, 1, -150),
 		Parent = window,
 	})
-	Widgets.label({
-		Text = "ROLES AND REAL NAMES",
-		Font = Theme.fonts.black,
-		TextSize = 14,
+	Widgets.header({
+		Text = "Roles and real names",
 		Position = UDim2.fromOffset(12, 8),
 		Size = UDim2.new(1, -24, 0, 20),
 		Parent = left,
@@ -190,10 +211,8 @@ function RevealScreen.init()
 		Size = UDim2.new(0.55, -8, 1, -150),
 		Parent = window,
 	})
-	Widgets.label({
-		Text = "CASE REPLAY",
-		Font = Theme.fonts.black,
-		TextSize = 14,
+	Widgets.header({
+		Text = "Case replay",
 		Position = UDim2.fromOffset(12, 8),
 		Size = UDim2.new(1, -24, 0, 20),
 		Parent = right,
@@ -215,6 +234,7 @@ function RevealScreen.init()
 	})
 	Widgets.button({
 		Text = "CLOSE",
+		Variant = "primary",
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.fromScale(1, 1),
 		Size = UDim2.fromOffset(120, 40),

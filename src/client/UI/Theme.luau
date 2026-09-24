@@ -1,5 +1,6 @@
--- Design tokens for the noir UI: colours, fonts, type sizes, spacing, corner radii and
--- motion timings. Every panel reads from here; nothing else should hard-code a colour.
+-- Design tokens for the Inkbound UI, "angular manga" style: ink black, paper white and one
+-- red, sharp corners, slanted shapes and bold condensed type (Oswald). Every panel reads
+-- from here; nothing else should hard-code a colour or a font.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -7,48 +8,61 @@ local Terms = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ter
 
 local Theme = {}
 
+local INK = Color3.fromRGB(11, 11, 13)
+local PAPER = Color3.fromRGB(244, 241, 234)
+local RED = Color3.fromRGB(209, 26, 42)
+
 Theme.colors = {
-	-- surfaces, from the back to the front
-	backdrop = Color3.fromRGB(5, 5, 8),
-	panel = Color3.fromRGB(15, 15, 20),
-	panelLight = Color3.fromRGB(28, 28, 36),
-	raised = Color3.fromRGB(38, 38, 48),
-	button = Color3.fromRGB(38, 38, 48),
-	buttonHover = Color3.fromRGB(54, 54, 66),
-	stroke = Color3.fromRGB(66, 64, 78),
-	strokeStrong = Color3.fromRGB(120, 112, 96),
+	-- surfaces
+	backdrop = Color3.fromRGB(6, 6, 8),
+	panel = Color3.fromRGB(13, 13, 16),
+	panelLight = Color3.fromRGB(28, 28, 34),
+	raised = Color3.fromRGB(38, 38, 46),
+	button = Color3.fromRGB(18, 18, 22),
+	buttonHover = PAPER,
+	stroke = Color3.fromRGB(46, 46, 54),
+	strokeStrong = PAPER,
 	-- text
-	text = Color3.fromRGB(238, 233, 224),
-	muted = Color3.fromRGB(150, 145, 138),
+	text = PAPER,
+	muted = Color3.fromRGB(154, 150, 142),
 	faint = Color3.fromRGB(96, 92, 88),
-	-- accents
-	accent = Color3.fromRGB(190, 28, 42), -- ink red
-	accentHover = Color3.fromRGB(214, 44, 58),
-	gold = Color3.fromRGB(214, 182, 110),
-	focus = Color3.fromRGB(236, 206, 132),
-	team = Color3.fromRGB(96, 156, 240),
-	hand = Color3.fromRGB(215, 35, 50),
-	good = Color3.fromRGB(96, 198, 128),
-	bad = Color3.fromRGB(232, 84, 74),
-	warn = Color3.fromRGB(232, 172, 72),
-	secret = Color3.fromRGB(200, 132, 250),
+	-- accents: red is the only loud colour; the rest are used sparingly
+	accent = RED,
+	accentHover = Color3.fromRGB(240, 37, 55),
+	gold = PAPER,
+	focus = RED,
+	team = Color3.fromRGB(62, 139, 255),
+	hand = RED,
+	good = Color3.fromRGB(63, 201, 122),
+	bad = Color3.fromRGB(255, 59, 59),
+	warn = Color3.fromRGB(255, 176, 46),
+	secret = Color3.fromRGB(176, 108, 255),
 	-- paper and ink documents
-	paper = Color3.fromRGB(240, 233, 214),
-	paperDark = Color3.fromRGB(221, 210, 186),
-	ink = Color3.fromRGB(26, 24, 22),
-	inkMuted = Color3.fromRGB(88, 80, 70),
-	deathNote = Color3.fromRGB(9, 9, 11),
+	paper = PAPER,
+	paperDark = Color3.fromRGB(226, 220, 205),
+	ink = INK,
+	inkMuted = Color3.fromRGB(85, 81, 75),
+	deathNote = Color3.fromRGB(6, 6, 7),
 }
 
 Theme.fonts = {
 	body = Enum.Font.Gotham,
 	medium = Enum.Font.GothamMedium,
 	bold = Enum.Font.GothamBold,
-	black = Enum.Font.GothamBlack,
+	-- headings everywhere: condensed and loud
+	black = Enum.Font.Oswald,
+	display = Enum.Font.Oswald,
 	typewriter = Enum.Font.SpecialElite,
 	mono = Enum.Font.Code,
 	gothic = Enum.Font.GrenzeGotisch,
 	hand = Enum.Font.Kalam,
+}
+
+-- Font faces with weights, for the loudest text (set FontFace instead of Font).
+local OSWALD = "rbxasset://fonts/families/Oswald.json"
+Theme.faces = {
+	display = Font.new(OSWALD, Enum.FontWeight.Bold),
+	displayMedium = Font.new(OSWALD, Enum.FontWeight.Medium),
 }
 
 -- Type scale in pixels (before the per-device UIScale).
@@ -57,14 +71,19 @@ Theme.text = {
 	small = 13,
 	body = 15,
 	bodyLarge = 17,
-	title = 20,
-	heading = 28,
-	display = 44,
+	title = 22,
+	heading = 30,
+	display = 48,
 }
 
 Theme.space = { xs = 4, sm = 8, md = 12, lg = 16, xl = 24, xxl = 32 }
 
-Theme.radius = { sm = 4, md = 8, lg = 12, pill = 999 }
+-- The style is sharp-edged: corners are square everywhere.
+Theme.radius = { sm = 0, md = 0, lg = 0, pill = 0 }
+
+-- How far panels and buttons lean (the slant), and the tilt of ribbons in degrees.
+Theme.slant = 0.035
+Theme.tilt = -3
 
 -- Seconds; Motion turns them to 0 when the player asks for reduced motion.
 Theme.motion = { fast = 0.12, base = 0.2, slow = 0.35 }
@@ -74,14 +93,14 @@ Theme.PHASE_NAMES = Terms.PHASE
 Theme.STATUS_NAMES = Terms.STATUS
 
 Theme.TONES = {
-	neutral = Theme.colors.text,
-	danger = Theme.colors.bad,
+	neutral = PAPER,
+	danger = RED,
 	team = Theme.colors.team,
-	kira = Theme.colors.hand,
+	kira = RED,
 }
 
 Theme.TOAST_COLORS = {
-	info = Theme.colors.text,
+	info = PAPER,
 	good = Theme.colors.good,
 	bad = Theme.colors.bad,
 	secret = Theme.colors.secret,

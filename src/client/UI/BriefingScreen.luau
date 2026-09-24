@@ -1,6 +1,7 @@
--- The briefing: your role, three things to know, how you win and a first move, then your
--- alias, your real name, your allies and (for the Butler) the hint. Everything here can be
--- seen again later on the role card (hold C).
+-- The briefing, "angular manga" style: a red band cuts across the screen, your role slams in
+-- on a huge tilted ribbon, the three things to know sit on a paper card, and your real name
+-- is typed on a black card stamped SECRET. Everything here can be seen again later on the
+-- role card (hold C).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -18,14 +19,19 @@ local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
 
+local C = Theme.colors
+
 local BriefingScreen = {}
 
 local root: Frame
-local column: Frame
+local band: Frame
+local roleRibbon: Frame
 local roleLabel: TextLabel
+local rulesCard: Frame
 local bullets: Frame
 local winLabel: TextLabel
 local firstMoveLabel: TextLabel
+local nameCard: Frame
 local aliasLabel: TextLabel
 local nameLabel: TextLabel
 local alliesLabel: TextLabel
@@ -82,136 +88,246 @@ function BriefingScreen.show(payload)
 	local role = payload.role or "TaskForce"
 	local info = Roles.get(role)
 	local copy = RoleCopy[role] or RoleCopy.TaskForce
+	local handSide = role == "Kira" or role == "Follower"
 	roleLabel.Text = info.display
-	roleLabel.TextColor3 = info.color
+	roleRibbon.BackgroundColor3 = if handSide then C.accent else C.paper
+	roleLabel.TextColor3 = if handSide then C.paper else C.ink
+	band.BackgroundColor3 = if handSide then C.ink else C.accent
+	root.BackgroundColor3 = if handSide then Color3.fromRGB(40, 4, 8) else C.backdrop
 	Widgets.clear(bullets)
 	for index, text in ipairs(copy.bullets) do
 		Widgets.label({
-			Text = "•  " .. text,
+			Text = "▶  " .. text,
 			TextSize = Theme.text.body,
+			TextColor3 = C.ink,
+			Font = Theme.fonts.medium,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = index,
 			Parent = bullets,
 		})
 	end
-	winLabel.Text = "HOW YOU WIN: " .. copy.win
+	winLabel.Text = "HOW YOU WIN: " .. string.upper(copy.win)
 	firstMoveLabel.Text = "FIRST MOVE: " .. copy.firstMove
-	aliasLabel.Text = "Your alias: " .. tostring(payload.alias)
+	aliasLabel.Text = "ALIAS: " .. string.upper(tostring(payload.alias))
 	nameLabel.Text = string.upper(tostring(payload.realName))
 	alliesLabel.Text = alliesText(role, payload.allies)
 	hintLabel.Visible = type(payload.hint) == "string"
 	hintLabel.Text = if type(payload.hint) == "string" then Terms.f("{BUTLER}'S HINT: ") .. payload.hint else ""
-	footerLabel.Text = string.format(
-		"%d players  ·  %d %s  ·  %s",
-		payload.playerCount or 0,
-		payload.followers or 0,
-		if payload.followers == 1 then Terms.role("Follower") else Terms.role("Follower", "plural"),
-		tostring(payload.mapName)
+	footerLabel.Text = string.upper(
+		string.format(
+			"%d players  ·  %d %s  ·  %s",
+			payload.playerCount or 0,
+			payload.followers or 0,
+			if payload.followers == 1 then Terms.role("Follower") else Terms.role("Follower", "plural"),
+			tostring(payload.mapName)
+		)
 	)
 	root.Visible = true
 	Router.setBlocking("briefing", true)
-	Motion.pop(column)
+	Motion.slideIn(roleRibbon, Vector2.new(-400, 0), 0.35)
+	Motion.slideIn(rulesCard, Vector2.new(0, 60), 0.45)
+	Motion.slideIn(nameCard, Vector2.new(0, 80), 0.55)
 	if unbindTimer then
 		unbindTimer()
 	end
 	unbindTimer = Clock.bind(timerLabel, function(seconds: number)
-		return string.format("The investigation begins in %d", math.ceil(seconds))
+		return string.format("THE INVESTIGATION BEGINS IN %d", math.ceil(seconds))
 	end)
 end
 
 function BriefingScreen.init()
 	root = Widgets.frame({
 		Name = "Briefing",
-		BackgroundTransparency = 0.06,
-		BackgroundColor3 = Theme.colors.backdrop,
+		BackgroundTransparency = 0.02,
+		BackgroundColor3 = C.backdrop,
+		ClipsDescendants = true,
 		Visible = false,
 		Parent = Screens.overlay,
 	})
-	column = Widgets.frame({
+	-- The red band cutting across the screen.
+	band = Widgets.frame({
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.accent,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.3),
+		Size = UDim2.new(2, 0, 0, 150),
+		Rotation = -8,
+		Parent = root,
+	})
+
+	local column = Widgets.frame({
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromScale(0.9, 0.94),
 		Parent = root,
 	})
-	Widgets.sizeLimit(column, Vector2.new(720, 760))
-	Widgets.list(column, Theme.space.sm, false, Enum.HorizontalAlignment.Center)
+	Widgets.sizeLimit(column, Vector2.new(760, 800))
+	Widgets.list(column, Theme.space.md, false, Enum.HorizontalAlignment.Center)
 
-	local function centered(props)
-		props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Center
-		props.Parent = column
-		props.AutomaticSize = props.AutomaticSize or Enum.AutomaticSize.Y
-		return Widgets.label(props)
-	end
-
-	centered({
+	Widgets.display({
 		Text = "YOUR ROLE",
-		TextColor3 = Theme.colors.muted,
-		Font = Theme.fonts.black,
-		TextSize = Theme.text.small,
+		TextSize = Theme.text.bodyLarge,
+		TextColor3 = C.paper,
+		TextXAlignment = Enum.TextXAlignment.Center,
 		LayoutOrder = 1,
+		Parent = column,
 	})
-	roleLabel = centered({ Font = Theme.fonts.black, TextSize = 52, LayoutOrder = 2 })
-	bullets = Widgets.frame({
+	roleRibbon = Widgets.frame({
+		BackgroundTransparency = 0,
+		Size = UDim2.fromOffset(0, 82),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Rotation = -4,
+		LayoutOrder = 2,
+		Parent = column,
+	})
+	Widgets.slant(roleRibbon, 0.05)
+	Widgets.padding(roleRibbon, 0, 56)
+	roleLabel = Widgets.display({
+		TextSize = 64,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.new(0, 0, 1, 0),
+		Parent = roleRibbon,
+	})
+
+	rulesCard = Widgets.card({
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
+		Rotation = 1,
 		LayoutOrder = 3,
 		Parent = column,
 	})
+	Widgets.padding(rulesCard, Theme.space.lg, Theme.space.xl)
+	Widgets.list(rulesCard, Theme.space.sm)
+	bullets = Widgets.frame({
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 1,
+		Parent = rulesCard,
+	})
 	Widgets.list(bullets, Theme.space.xs)
-	winLabel = centered({
-		Font = Theme.fonts.bold,
-		TextColor3 = Theme.colors.gold,
-		TextSize = Theme.text.body,
-		LayoutOrder = 4,
+	winLabel = Widgets.label({
+		FontFace = Theme.faces.display,
+		TextSize = Theme.text.bodyLarge,
+		TextColor3 = C.accent,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 2,
+		Parent = rulesCard,
 	})
-	firstMoveLabel = centered({
+	firstMoveLabel = Widgets.label({
 		Font = Theme.fonts.medium,
-		TextColor3 = Theme.colors.muted,
 		TextSize = Theme.text.small,
-		LayoutOrder = 5,
+		TextColor3 = C.inkMuted,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 3,
+		Parent = rulesCard,
 	})
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.accent,
-		Size = UDim2.fromOffset(48, 2),
-		LayoutOrder = 6,
+
+	-- The name card and its SECRET stamp share a holder, so the stamp stays out of the
+	-- card's list layout.
+	local nameHolder = Widgets.frame({
+		Size = UDim2.new(0.8, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 4,
 		Parent = column,
 	})
-	aliasLabel = centered({ Font = Theme.fonts.bold, TextSize = Theme.text.title, LayoutOrder = 7 })
-	centered({
-		Text = "YOUR REAL NAME",
-		TextColor3 = Theme.colors.muted,
-		Font = Theme.fonts.black,
-		TextSize = Theme.text.small,
-		LayoutOrder = 8,
+	nameCard = Widgets.frame({
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.ink,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Rotation = -1,
+		Parent = nameHolder,
 	})
-	nameLabel = centered({
+	Widgets.stroke(nameCard, C.paper, 2, 0)
+	Widgets.padding(nameCard, Theme.space.md, Theme.space.xl)
+	Widgets.list(nameCard, Theme.space.xs, false, Enum.HorizontalAlignment.Center)
+	aliasLabel = Widgets.display({
+		TextSize = Theme.text.bodyLarge,
+		TextColor3 = C.muted,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		LayoutOrder = 1,
+		Parent = nameCard,
+	})
+	Widgets.display({
+		Text = "YOUR REAL NAME",
+		TextSize = Theme.text.small,
+		TextColor3 = C.accent,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		LayoutOrder = 2,
+		Parent = nameCard,
+	})
+	nameLabel = Widgets.label({
 		Font = Theme.fonts.typewriter,
 		TextSize = 44,
-		TextColor3 = Theme.colors.paper,
-		LayoutOrder = 9,
+		TextColor3 = C.paper,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 50),
+		LayoutOrder = 3,
+		Parent = nameCard,
 	})
-	centered({
+	Widgets.label({
 		Text = Terms.f(
 			"Keep it secret: {hand} needs it to kill you, {zero} needs it to arrest. Hold C any time to see it again."
 		),
-		TextColor3 = Theme.colors.bad,
 		TextSize = Theme.text.small,
-		LayoutOrder = 10,
+		TextColor3 = C.muted,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 4,
+		Parent = nameCard,
 	})
-	alliesLabel = centered({ Font = Theme.fonts.medium, TextSize = Theme.text.body, LayoutOrder = 11 })
-	hintLabel = centered({
+	-- The SECRET stamp in the corner of the name card.
+	local stamp = Widgets.frame({
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 16, 0, -14),
+		Size = UDim2.fromOffset(110, 34),
+		Rotation = 12,
+		ZIndex = 3,
+		Parent = nameHolder,
+	})
+	Widgets.stroke(stamp, C.accent, 3, 0)
+	Widgets.display({
+		Text = "SECRET",
+		TextSize = Theme.text.title,
+		TextColor3 = C.accent,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.fromScale(1, 1),
+		Parent = stamp,
+	})
+
+	alliesLabel = Widgets.label({
+		FontFace = Theme.faces.displayMedium,
+		TextSize = Theme.text.body,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 5,
+		Parent = column,
+	})
+	hintLabel = Widgets.label({
 		Font = Theme.fonts.typewriter,
 		TextSize = Theme.text.title,
-		TextColor3 = Theme.colors.team,
-		LayoutOrder = 12,
+		TextColor3 = C.team,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 6,
+		Parent = column,
 	})
-	footerLabel = centered({ TextSize = Theme.text.small, TextColor3 = Theme.colors.muted, LayoutOrder = 13 })
-	timerLabel = centered({
-		Font = Theme.fonts.bold,
+	footerLabel = Widgets.label({
+		FontFace = Theme.faces.displayMedium,
+		TextSize = Theme.text.small,
+		TextColor3 = C.muted,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		LayoutOrder = 7,
+		Parent = column,
+	})
+	timerLabel = Widgets.display({
 		TextSize = Theme.text.bodyLarge,
-		TextColor3 = Theme.colors.gold,
-		LayoutOrder = 14,
+		TextColor3 = C.paper,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		LayoutOrder = 8,
+		Parent = column,
 	})
 
 	Net.event("Briefing").OnClientEvent:Connect(function(payload)

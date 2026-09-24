@@ -141,15 +141,27 @@ end
 function WorldFx.init()
 	overlay = Widgets.frame({
 		Name = "Eliminated",
-		BackgroundTransparency = 0.3,
-		BackgroundColor3 = Color3.fromRGB(40, 0, 0),
+		BackgroundTransparency = 0.15,
+		BackgroundColor3 = Theme.colors.ink,
+		ClipsDescendants = true,
 		Visible = false,
 		Parent = Screens.overlay,
 	})
+	-- A red band across the screen behind the title.
+	Widgets.frame({
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Theme.colors.accent,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.new(2, 0, 0, 110),
+		Rotation = -6,
+		Parent = overlay,
+	})
 	overlayTitle = Widgets.label({
-		Font = Theme.fonts.black,
-		TextSize = 64,
-		TextColor3 = Color3.fromRGB(255, 70, 70),
+		FontFace = Theme.faces.display,
+		TextSize = 84,
+		TextColor3 = Theme.colors.paper,
+		Rotation = -6,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.42),
@@ -157,11 +169,11 @@ function WorldFx.init()
 		Parent = overlay,
 	})
 	overlaySubtitle = Widgets.label({
-		Font = Theme.fonts.medium,
-		TextSize = 20,
+		FontFace = Theme.faces.displayMedium,
+		TextSize = 22,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.52),
+		Position = UDim2.fromScale(0.5, 0.58),
 		Size = UDim2.new(0.9, 0, 0, 30),
 		Parent = overlay,
 	})

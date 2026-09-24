@@ -1,5 +1,5 @@
--- Short notifications stacked on the right side of the screen. Each toast slides in and
--- fades out as a whole (text, border and colour bar together).
+-- Short notifications stacked on the right: black slanted strips with a coloured edge.
+-- Each one slides in and fades out as a whole.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -42,27 +42,25 @@ function Toasts.show(text: string, kind: string?)
 	order += 1
 	local color = Theme.TOAST_COLORS[kind or "info"] or Theme.TOAST_COLORS.info
 	local toast = Instance.new("CanvasGroup")
-	toast.BackgroundColor3 = Theme.colors.panel
-	toast.BackgroundTransparency = 0.06
+	toast.BackgroundColor3 = Theme.colors.ink
+	toast.BackgroundTransparency = 0.04
 	toast.BorderSizePixel = 0
 	toast.AutomaticSize = Enum.AutomaticSize.Y
 	toast.Size = UDim2.new(1, 0, 0, 0)
 	toast.LayoutOrder = -order
-	Widgets.corner(toast, Theme.radius.md)
-	Widgets.stroke(toast, color, 1, 0.6)
-	Widgets.padding(toast, Theme.space.sm + 2, Theme.space.md)
+	Widgets.padding(toast, Theme.space.sm + 2, Theme.space.xl)
 	Widgets.frame({
 		BackgroundTransparency = 0,
 		BackgroundColor3 = color,
-		Position = UDim2.fromOffset(-Theme.space.md, -Theme.space.sm - 2),
-		Size = UDim2.new(0, 3, 1, Theme.space.sm * 2 + 4),
+		Position = UDim2.fromOffset(-Theme.space.xl + 6, -Theme.space.sm - 2),
+		Size = UDim2.new(0, 6, 1, Theme.space.sm * 2 + 4),
 		Parent = toast,
 	})
 	Widgets.label({
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0),
 		Text = text,
-		TextColor3 = color,
+		TextColor3 = Theme.colors.paper,
 		TextSize = Theme.text.body,
 		Font = Theme.fonts.medium,
 		Parent = toast,
@@ -91,8 +89,8 @@ function Toasts.init()
 		Size = UDim2.new(0.3, 0, 0.6, 0),
 		Parent = Screens.toast,
 	})
-	Widgets.sizeLimit(holder, Vector2.new(340, 2000), Vector2.new(220, 0))
-	Widgets.list(holder, Theme.space.sm)
+	Widgets.sizeLimit(holder, Vector2.new(360, 2000), Vector2.new(230, 0))
+	Widgets.list(holder, Theme.space.sm, false, Enum.HorizontalAlignment.Right)
 	container = holder
 	Net.event("Notify").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" and type(payload.text) == "string" then

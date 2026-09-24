@@ -188,14 +188,8 @@ local function buildReport()
 	reportWindow, body = Widgets.modal(Screens.modal, "Case report", Vector2.new(580, 540), function()
 		Router.close("report", "user")
 	end)
+	-- A paper document inside the usual window.
 	reportWindow.BackgroundColor3 = Theme.colors.paper
-	local title = reportWindow:FindFirstChild("Title") :: TextLabel
-	title.Font = Theme.fonts.typewriter
-	title.TextColor3 = Theme.colors.ink
-	title.TextSize = 26
-	local close = reportWindow:FindFirstChild("Close") :: TextButton
-	close.TextColor3 = Theme.colors.ink
-	close.BackgroundColor3 = Theme.colors.paperDark
 
 	Widgets.label({
 		Text = Terms.f("Who do you suspect most? Reports are private and feed {zero}'s suspicion meter."),

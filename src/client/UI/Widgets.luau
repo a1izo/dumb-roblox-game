@@ -1,7 +1,11 @@
--- The UI kit: styled frames, labels, buttons (with hover and press states), text boxes,
--- progress bars, pick grids, hold-to-confirm buttons, sliders, toggles, confirm dialogs and
--- modal windows. Every panel builds from these so the whole game looks the same.
+-- The UI kit, "angular manga" style: ink-black panels, paper-white cards, one red, square
+-- corners, slanted buttons and ribbon titles in bold condensed type. Every panel builds from
+-- these helpers so the whole game looks the same.
+--
+-- Slants are made with a UIGradient that cuts the left and right edges of a shape along two
+-- parallel lines, so a plain Frame or button becomes a parallelogram without any images.
 
+local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -14,6 +18,8 @@ local Theme = require(script.Parent.Theme)
 
 local Widgets = {}
 
+local C = Theme.colors
+
 local function merge(defaults: { [string]: any }, props: { [string]: any }?): { [string]: any }
 	local result = table.clone(defaults)
 	if props then
@@ -21,7 +27,20 @@ local function merge(defaults: { [string]: any }, props: { [string]: any }?): { 
 			result[key] = value
 		end
 	end
+	-- Font and FontFace describe the same thing; the one the caller passed wins.
+	if props and props.FontFace ~= nil and props.Font == nil then
+		result.Font = nil
+	elseif props and props.Font ~= nil and props.FontFace == nil then
+		result.FontFace = nil
+	end
 	return result
+end
+
+-- Keys that configure a widget but are not Roblox properties.
+local function take(props: { [string]: any }, key: string): any
+	local value = props[key]
+	props[key] = nil
+	return value
 end
 
 -- Layout helpers ------------------------------------------------------------------------
@@ -32,9 +51,9 @@ end
 
 function Widgets.stroke(parent: Instance, color: Color3?, thickness: number?, transparency: number?)
 	return Create("UIStroke", {
-		Color = color or Theme.colors.stroke,
+		Color = color or C.stroke,
 		Thickness = thickness or 1,
-		Transparency = transparency or 0.3,
+		Transparency = transparency or 0,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = parent,
 	})
@@ -78,6 +97,29 @@ function Widgets.sizeLimit(parent: Instance, maxSize: Vector2, minSize: Vector2?
 	})
 end
 
+-- Turns a shape into a parallelogram leaning right ("/  /"). `amount` is how much of the
+-- width each slanted edge takes (Theme.slant by default).
+function Widgets.slant(gui: GuiObject, amount: number?): UIGradient
+	local cut = math.clamp(amount or Theme.slant, 0.005, 0.2)
+	local existing = gui:FindFirstChild("Slant")
+	if existing then
+		existing:Destroy()
+	end
+	return Create("UIGradient", {
+		Name = "Slant",
+		Rotation = 18,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(cut, 1),
+			NumberSequenceKeypoint.new(cut + 0.001, 0),
+			NumberSequenceKeypoint.new(1 - cut - 0.001, 0),
+			NumberSequenceKeypoint.new(1 - cut, 1),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Parent = gui,
+	})
+end
+
 -- Basic elements --------------------------------------------------------------------------
 
 -- Invisible container.
@@ -92,19 +134,29 @@ function Widgets.frame(props: { [string]: any }?): Frame
 	)
 end
 
--- Dark rounded panel with a thin border.
+-- Ink-black panel with square corners and a hairline edge.
 function Widgets.panel(props: { [string]: any }?): Frame
 	local frame = Create(
 		"Frame",
 		merge({
-			BackgroundColor3 = Theme.colors.panel,
-			BackgroundTransparency = 0.04,
+			BackgroundColor3 = C.panel,
+			BackgroundTransparency = 0.02,
 			BorderSizePixel = 0,
 		}, props)
 	)
-	Widgets.corner(frame, Theme.radius.lg)
-	Widgets.stroke(frame)
+	Widgets.stroke(frame, C.stroke, 1, 0)
 	return frame
+end
+
+-- Paper-white card with ink text inside (use for identity cards, documents).
+function Widgets.card(props: { [string]: any }?): Frame
+	return Create(
+		"Frame",
+		merge({
+			BackgroundColor3 = C.paper,
+			BorderSizePixel = 0,
+		}, props)
+	)
 end
 
 function Widgets.label(props: { [string]: any }?): TextLabel
@@ -114,7 +166,7 @@ function Widgets.label(props: { [string]: any }?): TextLabel
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Font = Theme.fonts.body,
-			TextColor3 = Theme.colors.text,
+			TextColor3 = C.text,
 			TextSize = Theme.text.body,
 			TextWrapped = true,
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -124,54 +176,126 @@ function Widgets.label(props: { [string]: any }?): TextLabel
 	)
 end
 
--- A small upper-case section heading.
+-- Loud condensed text: titles, numbers, role names.
+function Widgets.display(props: { [string]: any }?): TextLabel
+	local label = Widgets.label(merge({
+		FontFace = Theme.faces.display,
+		TextSize = Theme.text.title,
+		Size = UDim2.new(1, 0, 0, 28),
+	}, props))
+	return label
+end
+
+-- A section heading: red, bold, upper case.
 function Widgets.header(props: { [string]: any }?): TextLabel
 	local label = Widgets.label(merge({
-		Font = Theme.fonts.black,
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.muted,
-		Size = UDim2.new(1, 0, 0, 18),
+		FontFace = Theme.faces.display,
+		TextSize = Theme.text.body,
+		TextColor3 = C.accent,
+		Size = UDim2.new(1, 0, 0, 20),
 	}, props))
 	label.Text = string.upper(label.Text)
 	return label
 end
 
+-- A tilted red ribbon with a title in it. Returns the ribbon and its label.
+function Widgets.ribbon(props: { [string]: any }?, text: string, color: Color3?): (Frame, TextLabel)
+	local ribbon = Create(
+		"Frame",
+		merge({
+			BackgroundColor3 = color or C.accent,
+			BorderSizePixel = 0,
+			Rotation = Theme.tilt,
+			Size = UDim2.fromOffset(0, 36),
+			AutomaticSize = Enum.AutomaticSize.X,
+		}, props)
+	)
+	Widgets.padding(ribbon, 2, 16)
+	local label = Widgets.display({
+		Text = string.upper(text),
+		TextSize = Theme.text.title,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.new(0, 0, 1, 0),
+		Parent = ribbon,
+	})
+	return ribbon, label
+end
+
+-- A small red key tag like "[B]", placed at the left of a button.
+local function keyTag(parent: GuiObject, key: string, inverted: boolean?)
+	local tag = Widgets.frame({
+		Name = "KeyTag",
+		BackgroundTransparency = 0,
+		BackgroundColor3 = if inverted then C.ink else C.accent,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 10, 0.5, 0),
+		Size = UDim2.fromOffset(0, 20),
+		AutomaticSize = Enum.AutomaticSize.X,
+		ZIndex = parent.ZIndex + 1,
+		Parent = parent,
+	})
+	Widgets.padding(tag, 0, 5)
+	Widgets.label({
+		Text = key,
+		FontFace = Theme.faces.display,
+		TextSize = Theme.text.small,
+		TextColor3 = C.paper,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.new(0, 0, 1, 0),
+		ZIndex = parent.ZIndex + 2,
+		Parent = tag,
+	})
+	return tag
+end
+
 -- Buttons -------------------------------------------------------------------------------
 
+-- bg, text, hover bg, hover text
 local VARIANTS = {
-	primary = { bg = Theme.colors.accent, text = Theme.colors.text },
-	secondary = { bg = Theme.colors.button, text = Theme.colors.text },
-	team = { bg = Theme.colors.team, text = Theme.colors.backdrop },
-	gold = { bg = Theme.colors.gold, text = Theme.colors.ink },
-	good = { bg = Theme.colors.good, text = Theme.colors.ink },
-	danger = { bg = Theme.colors.bad, text = Theme.colors.ink },
-	ghost = { bg = Theme.colors.panel, text = Theme.colors.text },
-	paper = { bg = Theme.colors.paperDark, text = Theme.colors.ink },
+	primary = { C.accent, C.paper, C.accentHover, C.paper },
+	secondary = { C.button, C.paper, C.paper, C.ink },
+	ghost = { C.panel, C.paper, C.paper, C.ink },
+	inverse = { C.paper, C.ink, C.accent, C.paper },
+	team = { C.team, C.paper, C.paper, C.ink },
+	gold = { C.paper, C.ink, C.accent, C.paper },
+	good = { C.good, C.ink, C.paper, C.ink },
+	danger = { C.bad, C.ink, C.paper, C.ink },
+	paper = { C.paperDark, C.ink, C.ink, C.paper },
 }
 
--- Hover lightens a button and pressing shrinks it a little. Works for any GuiButton.
-function Widgets.interactive(button: GuiButton)
+-- Hover inverts a button (black turns paper-white, red turns brighter) and pressing shrinks
+-- it a little. Works for any GuiButton made by Widgets.button.
+function Widgets.interactive(button: GuiButton, variant: string?)
 	button.AutoButtonColor = false
-	local base: Color3? = nil
-	local hoverColor: Color3? = nil
+	local colors = VARIANTS[variant or "secondary"] or VARIANTS.secondary
+	local restBg: Color3? = nil
+	local restText: Color3? = nil
 	button.MouseEnter:Connect(function()
 		if not button.Active then
 			return
 		end
-		base = button.BackgroundColor3
-		hoverColor = base:Lerp(Color3.new(1, 1, 1), 0.1)
-		button.BackgroundColor3 = hoverColor :: Color3
+		restBg = button.BackgroundColor3
+		button.BackgroundColor3 = colors[3]
+		if button:IsA("TextButton") then
+			restText = button.TextColor3
+			button.TextColor3 = colors[4]
+		end
 	end)
 	button.MouseLeave:Connect(function()
-		if base and button.BackgroundColor3 == hoverColor then
-			button.BackgroundColor3 = base
+		if restBg and button.BackgroundColor3 == colors[3] then
+			button.BackgroundColor3 = restBg
 		end
-		base, hoverColor = nil, nil
+		if restText and button:IsA("TextButton") and button.TextColor3 == colors[4] then
+			button.TextColor3 = restText
+		end
+		restBg, restText = nil, nil
 	end)
 	local scale = Create("UIScale", { Name = "PressScale", Parent = button })
 	button.MouseButton1Down:Connect(function()
 		if button.Active then
-			Motion.tween(scale, { Scale = 0.96 }, 0.06)
+			Motion.tween(scale, { Scale = 0.95 }, 0.05)
 		end
 	end)
 	local function release()
@@ -179,32 +303,63 @@ function Widgets.interactive(button: GuiButton)
 	end
 	button.MouseButton1Up:Connect(release)
 	button.MouseLeave:Connect(release)
+	button.SelectionGained:Connect(function()
+		button.BorderSizePixel = 0
+		local ring = button:FindFirstChild("SelectRing") or Widgets.stroke(button, C.accent, 3, 0)
+		ring.Name = "SelectRing"
+	end)
+	button.SelectionLost:Connect(function()
+		local ring = button:FindFirstChild("SelectRing")
+		if ring then
+			ring:Destroy()
+		end
+	end)
 end
 
--- props may include Variant = "primary" | "secondary" | "team" | "gold" | "good" | "danger"
--- | "ghost" | "paper" (secondary by default).
+-- Extra props: Variant ("primary", "secondary", "ghost", "inverse", "team", "gold", "good",
+-- "danger", "paper"; secondary by default), Slant (true by default), Key (a key tag such as
+-- "B"), Upper (upper-case text, true by default).
 function Widgets.button(props: { [string]: any }?, onClick: (() -> ())?): TextButton
 	local given = table.clone(props or {})
-	local variant = VARIANTS[given.Variant or "secondary"] or VARIANTS.secondary
-	given.Variant = nil
+	local variantName = take(given, "Variant") or "secondary"
+	local slanted = take(given, "Slant")
+	local key = take(given, "Key")
+	local upper = take(given, "Upper")
+	local colors = VARIANTS[variantName] or VARIANTS.secondary
+	if upper ~= false and type(given.Text) == "string" then
+		given.Text = string.upper(given.Text)
+	end
 	local button = Create(
 		"TextButton",
 		merge({
-			BackgroundColor3 = variant.bg,
+			BackgroundColor3 = colors[1],
 			BorderSizePixel = 0,
-			Font = Theme.fonts.bold,
-			TextColor3 = variant.text,
-			TextSize = Theme.text.body,
+			FontFace = Theme.faces.display,
+			TextColor3 = colors[2],
+			TextSize = Theme.text.bodyLarge,
 			TextWrapped = true,
 			Size = UDim2.fromOffset(140, 40),
 			Text = "",
 		}, given)
 	)
-	Widgets.corner(button, Theme.radius.md)
-	if (props or {}).Variant == "ghost" then
-		Widgets.stroke(button, Theme.colors.strokeStrong, 1, 0.4)
+	if variantName == "ghost" then
+		Widgets.stroke(button, C.paper, 1, 0.55)
 	end
-	Widgets.interactive(button)
+	if slanted ~= false then
+		Widgets.slant(button)
+	end
+	local pad = Create("UIPadding", {
+		Name = "ButtonPad",
+		PaddingLeft = UDim.new(0, if key then 38 else 14),
+		PaddingRight = UDim.new(0, 14),
+		Parent = button,
+	})
+	local _ = pad
+	if key then
+		local tag = keyTag(button, key)
+		tag.Position = UDim2.new(0, -26, 0.5, 0)
+	end
+	Widgets.interactive(button, variantName)
 	if onClick then
 		button.Activated:Connect(onClick)
 	end
@@ -215,22 +370,23 @@ end
 function Widgets.setEnabled(button: GuiButton, enabled: boolean)
 	button.Active = enabled
 	button.Selectable = enabled
-	button.BackgroundTransparency = if enabled then 0 else 0.55
+	button.BackgroundTransparency = if enabled then 0 else 0.6
 	if button:IsA("TextButton") then
-		button.TextTransparency = if enabled then 0 else 0.45
+		button.TextTransparency = if enabled then 0 else 0.5
 	end
 end
 
+-- Paper-white field with ink text; a red edge while typing.
 function Widgets.textbox(props: { [string]: any }?): TextBox
 	local box = Create(
 		"TextBox",
 		merge({
-			BackgroundColor3 = Theme.colors.panelLight,
+			BackgroundColor3 = C.paper,
 			BorderSizePixel = 0,
 			ClearTextOnFocus = false,
 			Font = Theme.fonts.medium,
-			PlaceholderColor3 = Theme.colors.muted,
-			TextColor3 = Theme.colors.text,
+			PlaceholderColor3 = C.inkMuted,
+			TextColor3 = C.ink,
 			TextSize = Theme.text.bodyLarge,
 			TextWrapped = true,
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -238,16 +394,13 @@ function Widgets.textbox(props: { [string]: any }?): TextBox
 			Text = "",
 		}, props)
 	)
-	Widgets.corner(box, Theme.radius.md)
-	Widgets.padding(box, 6, 10)
-	local stroke = Widgets.stroke(box, Theme.colors.stroke, 1, 0.5)
+	Widgets.padding(box, 6, 12)
+	local stroke = Widgets.stroke(box, C.accent, 2, 1)
 	box.Focused:Connect(function()
-		stroke.Color = Theme.colors.focus
 		stroke.Transparency = 0
 	end)
 	box.FocusLost:Connect(function()
-		stroke.Color = Theme.colors.stroke
-		stroke.Transparency = 0.5
+		stroke.Transparency = 1
 	end)
 	return box
 end
@@ -269,8 +422,8 @@ function Widgets.scroll(props: { [string]: any }?): ScrollingFrame
 			BorderSizePixel = 0,
 			AutomaticCanvasSize = Enum.AutomaticSize.Y,
 			CanvasSize = UDim2.new(0, 0, 0, 0),
-			ScrollBarThickness = 6,
-			ScrollBarImageColor3 = Theme.colors.stroke,
+			ScrollBarThickness = 4,
+			ScrollBarImageColor3 = C.accent,
 			ScrollingDirection = Enum.ScrollingDirection.Y,
 			Size = UDim2.fromScale(1, 1),
 		}, props)
@@ -288,21 +441,19 @@ end
 
 -- Composite widgets ---------------------------------------------------------------------
 
--- A rounded bar. Returns the bar and a function that sets the fill (0 to 1).
+-- A square-edged bar. Returns the bar and a function that sets the fill (0 to 1).
 function Widgets.progressBar(props: { [string]: any }?, color: Color3?): (Frame, (number) -> ())
 	local bar = Widgets.frame(merge({
 		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.panelLight,
-		Size = UDim2.new(1, 0, 0, 10),
+		BackgroundColor3 = C.panelLight,
+		Size = UDim2.new(1, 0, 0, 8),
 	}, props))
-	Widgets.corner(bar, Theme.radius.pill)
 	local fill = Widgets.frame({
 		BackgroundTransparency = 0,
-		BackgroundColor3 = color or Theme.colors.gold,
+		BackgroundColor3 = color or C.accent,
 		Size = UDim2.fromScale(0, 1),
 		Parent = bar,
 	})
-	Widgets.corner(fill, Theme.radius.pill)
 	return bar, function(progress: number)
 		fill.Size = UDim2.fromScale(math.clamp(progress, 0, 1), 1)
 	end
@@ -326,16 +477,17 @@ function Widgets.pickGrid(
 			local isSelected = option.id == selected
 			local button = Widgets.button({
 				Text = if option.detail then option.text .. "\n" .. option.detail else option.text,
-				Font = look.Font or Theme.fonts.bold,
+				Font = look.Font,
 				TextSize = look.TextSize or Theme.text.body,
 				Variant = if isSelected then "primary" else (look.Variant or "secondary"),
+				Upper = look.Upper,
 				LayoutOrder = index,
 				Parent = parent,
 			}, function()
 				onPick(option.id)
 			end)
 			if isSelected then
-				Widgets.stroke(button, Theme.colors.focus, 2, 0)
+				Widgets.stroke(button, C.paper, 2, 0)
 			end
 		end
 	end
@@ -347,13 +499,12 @@ function Widgets.holdButton(props: { [string]: any }?, seconds: number, onConfir
 	local button = Widgets.button(props)
 	local fill = Widgets.frame({
 		Name = "HoldFill",
-		BackgroundTransparency = 0.55,
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0.5,
+		BackgroundColor3 = C.paper,
 		Size = UDim2.fromScale(0, 1),
 		ZIndex = button.ZIndex + 1,
 		Parent = button,
 	})
-	Widgets.corner(fill, Theme.radius.md)
 	local holding = false
 	local function reset()
 		holding = false
@@ -412,13 +563,13 @@ function Widgets.slider(
 	end
 	local row = Widgets.frame(merge({ Size = UDim2.new(1, 0, 0, 40) }, props))
 	Widgets.label({
-		Text = label,
-		Font = Theme.fonts.medium,
+		Text = string.upper(label),
+		FontFace = Theme.faces.displayMedium,
 		Size = UDim2.new(0.38, 0, 1, 0),
 		Parent = row,
 	})
 	local valueLabel = Widgets.label({
-		Font = Theme.fonts.mono,
+		FontFace = Theme.faces.display,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0),
@@ -429,20 +580,18 @@ function Widgets.slider(
 	local track = Create("TextButton", {
 		Text = "",
 		AutoButtonColor = false,
-		BackgroundColor3 = Theme.colors.panelLight,
+		BackgroundColor3 = C.panelLight,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0.38, 44, 0.5, -5),
-		Size = UDim2.new(0.48, -88, 0, 10),
+		Position = UDim2.new(0.38, 44, 0.5, -4),
+		Size = UDim2.new(0.48, -88, 0, 8),
 		Selectable = false,
 		Parent = row,
 	})
-	Widgets.corner(track, Theme.radius.pill)
 	local fill = Widgets.frame({
 		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.gold,
+		BackgroundColor3 = C.accent,
 		Parent = track,
 	})
-	Widgets.corner(fill, Theme.radius.pill)
 
 	local function set(newValue: number, notify: boolean?)
 		local snapped = math.clamp(math.floor((newValue - min) / step + 0.5) * step + min, min, max)
@@ -488,7 +637,7 @@ function Widgets.slider(
 	end)
 	Widgets.button({
 		Text = "-",
-		Font = Theme.fonts.black,
+		Slant = false,
 		Position = UDim2.new(0.38, 0, 0.5, -16),
 		Size = UDim2.fromOffset(32, 32),
 		Parent = row,
@@ -497,7 +646,7 @@ function Widgets.slider(
 	end)
 	Widgets.button({
 		Text = "+",
-		Font = Theme.fonts.black,
+		Slant = false,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(0.86, 0, 0.5, -16),
 		Size = UDim2.fromOffset(32, 32),
@@ -520,24 +669,24 @@ function Widgets.toggle(
 ): (Frame, (boolean) -> ())
 	local row = Widgets.frame(merge({ Size = UDim2.new(1, 0, 0, 40) }, props))
 	Widgets.label({
-		Text = label,
-		Font = Theme.fonts.medium,
-		Size = UDim2.new(1, -90, 1, 0),
+		Text = string.upper(label),
+		FontFace = Theme.faces.displayMedium,
+		Size = UDim2.new(1, -96, 1, 0),
 		Parent = row,
 	})
 	local current = value
 	local switch = Widgets.button({
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, 0, 0.5, 0),
-		Size = UDim2.fromOffset(76, 30),
-		TextSize = Theme.text.small,
+		Size = UDim2.fromOffset(84, 32),
+		TextSize = Theme.text.body,
 		Parent = row,
 	})
 	local function set(newValue: boolean)
 		current = newValue
 		switch.Text = if newValue then "ON" else "OFF"
-		switch.BackgroundColor3 = if newValue then Theme.colors.good else Theme.colors.button
-		switch.TextColor3 = if newValue then Theme.colors.ink else Theme.colors.muted
+		switch.BackgroundColor3 = if newValue then C.accent else C.button
+		switch.TextColor3 = if newValue then C.paper else C.muted
 	end
 	switch.Activated:Connect(function()
 		set(not current)
@@ -549,8 +698,8 @@ end
 
 -- Modal windows -------------------------------------------------------------------------
 
--- Centered modal window. Returns the window, its body, the close button and the title.
--- onClose runs when the X is pressed; without it the window just hides.
+-- Centered modal window: an ink panel with a red ribbon title. Returns the window, its body,
+-- the close button and the title label. onClose runs when the X is pressed.
 function Widgets.modal(parent: Instance, title: string, maxSize: Vector2, onClose: (() -> ())?)
 	local window = Widgets.panel({
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -561,6 +710,14 @@ function Widgets.modal(parent: Instance, title: string, maxSize: Vector2, onClos
 		Parent = parent,
 	})
 	Widgets.sizeLimit(window, maxSize)
+	-- A red bar along the left edge.
+	Widgets.frame({
+		Name = "Edge",
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.accent,
+		Size = UDim2.new(0, 5, 1, 0),
+		Parent = window,
+	})
 	-- Frees the mouse in first person and shift lock while the window is open.
 	Create("TextButton", {
 		Name = "MouseUnlock",
@@ -571,30 +728,21 @@ function Widgets.modal(parent: Instance, title: string, maxSize: Vector2, onClos
 		Selectable = false,
 		Parent = window,
 	})
-	local titleLabel = Widgets.label({
-		Name = "Title",
-		Font = Theme.fonts.black,
-		TextSize = Theme.text.title,
-		Text = string.upper(title),
-		Position = UDim2.fromOffset(18, 14),
-		Size = UDim2.new(1, -76, 0, 26),
+	local ribbon, titleLabel = Widgets.ribbon({
+		Name = "TitleRibbon",
+		Position = UDim2.fromOffset(12, -14),
 		Parent = window,
-	})
-	Widgets.frame({
-		Name = "Rule",
-		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.accent,
-		Position = UDim2.fromOffset(18, 44),
-		Size = UDim2.fromOffset(36, 2),
-		Parent = window,
-	})
+	}, title)
+	titleLabel.Name = "Title"
+	local _ = ribbon
 	local close = Widgets.button({
 		Name = "Close",
 		Text = "X",
-		Font = Theme.fonts.black,
-		Variant = "ghost",
+		Variant = "inverse",
+		Slant = false,
+		TextSize = Theme.text.title,
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 10),
+		Position = UDim2.new(1, -10, 0, 10),
 		Size = UDim2.fromOffset(36, 36),
 		Parent = window,
 	}, function()
@@ -606,8 +754,8 @@ function Widgets.modal(parent: Instance, title: string, maxSize: Vector2, onClos
 	end)
 	local body = Widgets.frame({
 		Name = "Body",
-		Position = UDim2.fromOffset(18, 56),
-		Size = UDim2.new(1, -36, 1, -72),
+		Position = UDim2.fromOffset(22, 54),
+		Size = UDim2.new(1, -40, 1, -70),
 		Parent = window,
 	})
 	return window, body, close, titleLabel
@@ -627,7 +775,7 @@ function Widgets.confirm(
 		AutoButtonColor = false,
 		Text = "",
 		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.35,
+		BackgroundTransparency = 0.3,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
 		Selectable = false,
@@ -642,33 +790,24 @@ function Widgets.confirm(
 		ZIndex = 51,
 		Parent = shade,
 	})
-	Widgets.sizeLimit(box, Vector2.new(440, 400))
-	Widgets.padding(box, Theme.space.lg)
+	Widgets.sizeLimit(box, Vector2.new(460, 400))
+	Widgets.padding(box, Theme.space.xl, Theme.space.xl)
 	Widgets.list(box, Theme.space.md)
-	Widgets.label({
-		Text = string.upper(title),
-		Font = Theme.fonts.black,
-		TextSize = Theme.text.title,
-		ZIndex = 52,
-		LayoutOrder = 1,
-		Parent = box,
-	})
+	Widgets.ribbon({ LayoutOrder = 1, Parent = box }, title)
 	Widgets.label({
 		Text = body,
-		TextColor3 = Theme.colors.muted,
+		TextColor3 = C.muted,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		ZIndex = 52,
 		LayoutOrder = 2,
 		Parent = box,
 	})
-	local row = Widgets.frame({ Size = UDim2.new(1, 0, 0, 42), ZIndex = 52, LayoutOrder = 3, Parent = box })
+	local row = Widgets.frame({ Size = UDim2.new(1, 0, 0, 44), LayoutOrder = 3, Parent = box })
 	local function dismiss()
 		shade:Destroy()
 	end
 	local cancel = Widgets.button({
 		Text = "Cancel",
 		Size = UDim2.new(0.5, -4, 1, 0),
-		ZIndex = 53,
 		Parent = row,
 	}, dismiss)
 	Widgets.button({
@@ -677,7 +816,6 @@ function Widgets.confirm(
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0),
 		Size = UDim2.new(0.5, -4, 1, 0),
-		ZIndex = 53,
 		Parent = row,
 	}, function()
 		dismiss()
@@ -686,7 +824,7 @@ function Widgets.confirm(
 	shade.Activated:Connect(dismiss)
 	Motion.pop(box)
 	if UserInputService.GamepadEnabled then
-		game:GetService("GuiService").SelectedObject = cancel
+		GuiService.SelectedObject = cancel
 	end
 	return shade
 end

@@ -355,7 +355,7 @@ function TaskScreen.init()
 	window, body = Widgets.modal(Screens.modal, "Case file", Vector2.new(580, 470), function()
 		Router.close("task", "user")
 	end)
-	titleLabel = window:FindFirstChild("Title") :: TextLabel
+	titleLabel = window:FindFirstChild("Title", true) :: TextLabel
 	hintLabel = Widgets.label({
 		TextSize = 15,
 		TextColor3 = Theme.colors.muted,

@@ -319,7 +319,7 @@ function PracticePanel.init()
 	window, inner = Widgets.modal(Screens.modal, "Practice", Vector2.new(560, 520), function()
 		Router.close("practice", "user")
 	end)
-	titleLabel = window:FindFirstChild("Title") :: TextLabel
+	titleLabel = window:FindFirstChild("Title", true) :: TextLabel
 	body = Widgets.scroll({ Parent = inner })
 	Widgets.list(body, Theme.space.md)
 	Widgets.padding(body, 2)

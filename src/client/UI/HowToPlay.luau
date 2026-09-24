@@ -61,7 +61,7 @@ local function showChapter(index: number)
 	local list = chapters()
 	current = math.clamp(index, 1, #list)
 	local chapter = list[current]
-	titleLabel.Text = chapter.title
+	titleLabel.Text = string.upper(chapter.title)
 	Widgets.clear(page)
 	for order, line in ipairs(chapter.body) do
 		Widgets.label({
@@ -105,10 +105,9 @@ function HowToPlay.init()
 		Size = UDim2.new(0.66, 0, 1, 0),
 		Parent = body,
 	})
-	titleLabel = Widgets.label({
-		Font = Theme.fonts.gothic,
-		TextSize = 30,
-		TextColor3 = Theme.colors.gold,
+	titleLabel = Widgets.display({
+		TextSize = Theme.text.heading,
+		TextColor3 = Theme.colors.accent,
 		Size = UDim2.new(1, 0, 0, 36),
 		Parent = right,
 	})

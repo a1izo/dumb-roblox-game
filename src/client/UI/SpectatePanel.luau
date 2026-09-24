@@ -124,14 +124,15 @@ end
 function SpectatePanel.init()
 	bar = Widgets.panel({
 		Name = "Spectate",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -20),
-		Size = UDim2.fromOffset(420, 50),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 16),
+		Size = UDim2.fromOffset(460, 52),
 		Visible = false,
 		Parent = Screens.hud,
 	})
 	Widgets.button({
 		Text = "<",
+		Slant = false,
 		Position = UDim2.fromOffset(8, 8),
 		Size = UDim2.fromOffset(34, 34),
 		Parent = bar,
@@ -142,7 +143,7 @@ function SpectatePanel.init()
 	end)
 	nameLabel = Widgets.label({
 		Text = "Watch the living players",
-		Font = Theme.fonts.bold,
+		FontFace = Theme.faces.displayMedium,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Position = UDim2.fromOffset(48, 15),
 		Size = UDim2.new(1, -230, 0, 20),
@@ -150,6 +151,7 @@ function SpectatePanel.init()
 	})
 	Widgets.button({
 		Text = ">",
+		Slant = false,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -140, 0, 8),
 		Size = UDim2.fromOffset(34, 34),
@@ -161,7 +163,7 @@ function SpectatePanel.init()
 	end)
 	toggleButton = Widgets.button({
 		Text = "SPECTATE",
-		BackgroundColor3 = Theme.colors.team,
+		Variant = "primary",
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -8, 0, 8),
 		Size = UDim2.fromOffset(120, 34),

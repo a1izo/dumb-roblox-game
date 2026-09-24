@@ -80,9 +80,9 @@ function SettingsPanel.init()
 	toggle("reduceMotion", "Reduce motion")
 	toggle("cameraShake", "Camera shake")
 	header("Help")
-	toggle("hints", "Show hints for new players")
+	toggle("hints", "Show the guide (tips and objectives)")
 	Widgets.button({
-		Text = "Show all hints again",
+		Text = "Show all tips again",
 		TextSize = Theme.text.small,
 		Variant = "ghost",
 		Size = UDim2.new(1, 0, 0, 36),
