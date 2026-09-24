@@ -665,20 +665,26 @@ function Builder:station(def, id: string)
 		Enum.Material.Metal,
 		{ Parent = model }
 	)
-	self:part(
+	local strip = self:part(
 		Vector3.new(5.2, 0.12, 2.6),
 		base * CFrame.new(0, 3.06, 0),
 		typeColor,
 		Enum.Material.Neon,
 		{ Parent = model, CanQuery = false }
 	)
-	self:part(
+	local pedestal = self:part(
 		Vector3.new(0.4, 1.2, 0.3),
 		base * CFrame.new(0, 3.6, 0.8),
 		Color3.fromRGB(40, 40, 44),
 		Enum.Material.Metal,
 		{ Parent = model }
 	)
+	if ModelLibrary.dress(desk, "Station", CFrame.new(0, -1.5, 0)) then
+		pedestal.Transparency = 1
+		pedestal.CanQuery = false
+		strip.Size = Vector3.new(5.2, 0.1, 0.14)
+		strip.CFrame = self:world(base * CFrame.new(0, 3.03, -1.3))
+	end
 	local screen = self:part(
 		Vector3.new(4.4, 2.6, 0.3),
 		base * CFrame.new(0, 5.4, 0.8),
@@ -783,20 +789,25 @@ function Builder:tipBox(def)
 		Enum.Material.Metal,
 		{ Parent = model }
 	)
-	self:part(
+	local slot = self:part(
 		Vector3.new(1.6, 0.2, 0.1),
 		base * CFrame.new(0, 3.2, -1.12),
 		Color3.fromRGB(15, 15, 15),
 		Enum.Material.SmoothPlastic,
 		{ Parent = model }
 	)
-	self:part(
+	local lid = self:part(
 		Vector3.new(2.8, 0.3, 2.4),
 		base * CFrame.new(0, 4.15, 0),
 		Color3.fromRGB(90, 20, 25),
 		Enum.Material.Metal,
 		{ Parent = model }
 	)
+	if ModelLibrary.dress(box, "TipBox", CFrame.new(0, -2, 0)) then
+		slot.Transparency = 1
+		lid.Transparency = 1
+		lid.CanQuery = false
+	end
 	local signAt = (base * CFrame.new(0, 2.2, -1.2)).Position
 	local signPart = self:sign(
 		signAt.X,
@@ -833,6 +844,18 @@ function Builder:board(def)
 	Create("UITextSizeConstraint", { MaxTextSize = 16, MinTextSize = 6, Parent = label })
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextYAlignment = Enum.TextYAlignment.Top
+	local boardPart = label:FindFirstAncestorWhichIsA("BasePart")
+	if boardPart and ModelLibrary.dress(boardPart, "EvidenceBoard", CFrame.new(0, 0, 0.05), (def.w or 12) / 12) then
+		-- The log is written in ink on the pinned sheet in the middle of the cork.
+		label.TextColor3 = Color3.fromRGB(24, 22, 26)
+		local padding = label:FindFirstChildOfClass("UIPadding")
+		if padding then
+			padding.PaddingLeft = UDim.new(0.19, 0)
+			padding.PaddingRight = UDim.new(0.19, 0)
+			padding.PaddingTop = UDim.new(0.16, 0)
+			padding.PaddingBottom = UDim.new(0.16, 0)
+		end
+	end
 	local _, title = self:sign(
 		def.x,
 		(def.y or 6) + (def.h or 7) / 2 + 0.6,
@@ -857,6 +880,7 @@ function Builder:dropPoint(def, id: string)
 		Enum.Material.DiamondPlate
 	)
 	grate.Name = "DropPoint_" .. id
+	ModelLibrary.dress(grate, "Grate", CFrame.new(0, -0.15, 0))
 	grate:SetAttribute("DropId", id)
 	grate:SetAttribute("DropName", def.name)
 	grate:AddTag("LDropPoint")

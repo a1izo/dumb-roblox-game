@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -84,7 +85,7 @@ end
 
 -- Unparented paper part; callers set attributes and tags, then parent it.
 local function paperPart(name: string, position: Vector3, color: Color3): Part
-	return Create("Part", {
+	local part = Create("Part", {
 		Name = name,
 		Anchored = true,
 		CanCollide = false,
@@ -94,6 +95,8 @@ local function paperPart(name: string, position: Vector3, color: Color3): Part
 		Material = Enum.Material.SmoothPlastic,
 		CFrame = CFrame.new(position) * CFrame.Angles(0, Match.rng:NextNumber() * math.pi * 2, 0),
 	})
+	ModelLibrary.dress(part, if name == "BlankSheet" then "PaperSheet" else "PaperNote", CFrame.new(0, -0.03, 0))
+	return part
 end
 
 local function spawnSheet(sheet)

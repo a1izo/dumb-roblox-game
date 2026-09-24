@@ -23,7 +23,9 @@ return {
 		glow = { { 80, 220, 150 }, { 255, 214, 160 } },
 	},
 	Dumpster = { size = { 6.2, 4.099, 3.3 }, pivot = "bottom", material = "Metal", collide = true },
+	EvidenceBoard = { size = { 12.6, 7.665, 0.45 }, pivot = "centre", material = "Wood", collide = false },
 	FilingCabinet = { size = { 2.4, 5, 2.16 }, pivot = "bottom", material = "Metal", collide = true },
+	Grate = { size = { 2, 0.355, 2 }, pivot = "bottom", material = "DiamondPlate", collide = false },
 	Grimoire = {
 		size = { 2.83, 0.64, 4.097 },
 		pivot = "centre",
@@ -32,6 +34,8 @@ return {
 		glow = { { 200, 22, 38 } },
 	},
 	Handcuffs = { size = { 1.92, 0.23, 0.945 }, pivot = "centre", material = "Metal", collide = false },
+	Hood = { size = { 1.712, 2.146, 1.516 }, pivot = "centre", material = "Fabric", collide = false },
+	HoodPickup = { size = { 1.729, 1.522, 2.032 }, pivot = "bottom", material = "Fabric", collide = false },
 	Hydrant = { size = { 1.06, 1.975, 0.875 }, pivot = "bottom", material = "Metal", collide = true },
 	LampPost = {
 		size = { 1.227, 12.243, 2.323 },
@@ -56,6 +60,8 @@ return {
 	},
 	Notebook = { size = { 1.3, 0.21, 0.97 }, pivot = "centre", material = "SmoothPlastic", collide = false },
 	OfficeChair = { size = { 2.1, 3.742, 1.968 }, pivot = "bottom", material = "Leather", collide = true },
+	PaperNote = { size = { 1.107, 0.14, 1.507 }, pivot = "bottom", material = "SmoothPlastic", collide = false },
+	PaperSheet = { size = { 1.105, 0.1, 1.505 }, pivot = "bottom", material = "SmoothPlastic", collide = false },
 	Pen = { size = { 0.128, 1.07, 0.116 }, pivot = "centre", material = "Metal", collide = false },
 	Plant = { size = { 3.189, 4.024, 3.008 }, pivot = "bottom", material = "Grass", collide = true },
 	ServerRack = {
@@ -73,7 +79,15 @@ return {
 		collide = false,
 		glow = { { 255, 30, 40 } },
 	},
+	Station = {
+		size = { 5.2, 6.96, 3.25 },
+		pivot = "bottom",
+		material = "Metal",
+		collide = false,
+		glow = { { 80, 255, 140 } },
+	},
 	Table = { size = { 5, 2.75, 3 }, pivot = "bottom", material = "Wood", collide = true },
+	TipBox = { size = { 2.8, 5.3, 2.45 }, pivot = "bottom", material = "Metal", collide = false },
 	TrashCan = { size = { 1.32, 2.59, 1.32 }, pivot = "bottom", material = "Metal", collide = true },
 	Tree = { size = { 7.642, 13.717, 8.402 }, pivot = "bottom", material = "Grass", collide = true },
 	VendingMachine = {

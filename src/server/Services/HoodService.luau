@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
@@ -52,6 +53,12 @@ local function spawnHood()
 		CFrame = CFrame.new(position - Vector3.new(0, 0.55, 0)),
 		Parent = part,
 	})
+	if ModelLibrary.dress(part, "HoodPickup", CFrame.new(0, -0.6, 0)) then
+		local drape = part:FindFirstChild("Drape")
+		if drape and drape:IsA("BasePart") then
+			drape.Transparency = 1
+		end
+	end
 	part:SetAttribute("HoodId", id)
 	part:AddTag("LHood")
 	part.Parent = folder

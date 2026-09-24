@@ -72,6 +72,11 @@ function Models.pen(): Model?
 	return custom("Pen")
 end
 
+-- The hood worn over the head, or nil.
+function Models.hood(): Model?
+	return custom("Hood")
+end
+
 -- The Grimoire, closed and lying flat, centred on its PrimaryPart.
 function Models.grimoire(): Model
 	local existing = custom("Grimoire")

@@ -203,6 +203,26 @@ function CharacterService.setHood(player: Player, on: boolean)
 		return
 	end
 	CharacterService.attachBuilt(player, "LHood", HEAD, function(anchor: CFrame, head: BasePart)
+		local hood = Models.hood()
+		if hood then
+			-- The Blender hood, scaled to this head.
+			local width = hood:GetExtentsSize().X
+			hood:ScaleTo(hood:GetScale() * (head.Size.X * 1.4) / math.max(width, 0.1))
+			local pivot = hood:GetPivot()
+			local placed = anchor * CFrame.new(0, -0.05 * head.Size.Y, 0.12 * head.Size.Z)
+			local parts = {}
+			for _, item in ipairs(hood:GetDescendants()) do
+				if item:IsA("BasePart") then
+					item.CFrame = placed * pivot:ToObjectSpace(item.CFrame)
+					table.insert(parts, item)
+				end
+			end
+			for _, part in ipairs(parts) do
+				part.Parent = nil
+			end
+			hood:Destroy()
+			return parts
+		end
 		local size = math.max(head.Size.X, head.Size.Z) + 0.45
 		local shell = Create("Part", {
 			Shape = Enum.PartType.Ball,

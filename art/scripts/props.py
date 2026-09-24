@@ -165,3 +165,4 @@ def memorial():
 
 # The Specter and the map kit register themselves here.
 import props_world  # noqa: E402,F401
+import props_gameplay  # noqa: E402,F401

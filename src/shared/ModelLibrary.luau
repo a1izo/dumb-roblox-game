@@ -214,6 +214,30 @@ function ModelLibrary.get(key: string): Model?
 	return (template :: Model):Clone()
 end
 
+-- Dresses a gameplay part with a prop: the prop is placed at part.CFrame * offset (scaled if
+-- asked) and parented to the part, and the part turns invisible. The part keeps its tags,
+-- attributes, prompts and collisions, so gameplay does not change. Returns the prop, or nil
+-- when it is not imported (the part then stays as it was).
+function ModelLibrary.dress(part: BasePart, key: string, offset: CFrame?, scale: number?): Model?
+	local model = ModelLibrary.get(key)
+	if not model then
+		return nil
+	end
+	if scale and math.abs(scale - 1) > 1e-3 then
+		model:ScaleTo(model:GetScale() * scale)
+	end
+	model.Name = "Visual"
+	model:PivotTo(part.CFrame * (offset or CFrame.identity))
+	model.Parent = part
+	part.Transparency = 1
+	for _, child in ipairs(part:GetChildren()) do
+		if child:IsA("Decal") or child:IsA("Texture") then
+			child.Transparency = 1
+		end
+	end
+	return model
+end
+
 -- The glowing parts of a prop placed with get().
 function ModelLibrary.glowParts(model: Model): { BasePart }
 	local list = {}
