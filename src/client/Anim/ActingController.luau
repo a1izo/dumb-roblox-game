@@ -5,6 +5,7 @@
 --   arrest         : hands cuffed behind the back
 --   verdict        : the player voted out slumps and fades away
 --   ending         : winners celebrate, losers hang their heads, the Hand laughs or kneels
+--   station work   : a player working a case file (real or faked) types at the console
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -162,7 +163,7 @@ local function onOutro(cue)
 				-- The winner's victory pose cosmetic, if they have one.
 				local player = Players:GetPlayerByUserId(entry.userId)
 				local chosen = if player then player:GetAttribute("LVictoryPose") else nil
-				poseId = if type(chosen) == "string" and Poses.LIST[chosen] then chosen else "victory"
+				poseId = if type(chosen) == "string" and PoseController.exists(chosen) then chosen else "victory"
 			else
 				poseId = "defeat"
 			end
@@ -175,7 +176,32 @@ local function onOutro(cue)
 	end
 end
 
+-- Station work: follows the LWorking attribute the server sets on the character.
+local function watchWorking(character: Model)
+	local function update()
+		if character:GetAttribute("LWorking") then
+			PoseController.play(character, "taskWork", { fadeIn = 0.25, startAt = os.clock() - math.random() })
+		else
+			PoseController.stop(character, "taskWork", 0.3)
+		end
+	end
+	character:GetAttributeChangedSignal("LWorking"):Connect(update)
+	if character:GetAttribute("LWorking") then
+		task.defer(update)
+	end
+end
+
 function ActingController.init()
+	local function onPlayer(player: Player)
+		player.CharacterAdded:Connect(watchWorking)
+		if player.Character then
+			watchWorking(player.Character)
+		end
+	end
+	Players.PlayerAdded:Connect(onPlayer)
+	for _, player in ipairs(Players:GetPlayers()) do
+		onPlayer(player)
+	end
 	ClientState.PhaseChanged:Connect(function(phase)
 		refreshWriting()
 		if phase ~= "Vote" then

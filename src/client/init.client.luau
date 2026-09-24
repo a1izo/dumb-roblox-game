@@ -53,6 +53,7 @@ local InputRouter = require(script:WaitForChild("Input"):WaitForChild("InputRout
 
 local Anim = script:WaitForChild("Anim")
 local ActingController = require(Anim:WaitForChild("ActingController"))
+local LocomotionController = require(Anim:WaitForChild("LocomotionController"))
 local PoseController = require(Anim:WaitForChild("PoseController"))
 
 local World = script:WaitForChild("World")
@@ -119,6 +120,7 @@ CameraDirector.init()
 Cinema.init()
 Cutscenes.init()
 PoseController.init()
+LocomotionController.init()
 ActingController.init()
 
 -- The world: lighting per venue, rain and flickering lamps.

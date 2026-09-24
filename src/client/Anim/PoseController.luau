@@ -1,17 +1,20 @@
--- Plays poses on any R15 character, on this client only. Every client plays the same poses
--- from the same public events, so everyone sees the same thing without anything being sent.
---
--- Procedural poses write Motor6D.Transform right after the Animator each frame, blending
--- from the walk underneath, and only on the joints the pose names. A pose with an uploaded
--- animation in Assets.anim plays that animation instead.
+-- Animates every R15 character on this client, from public events only, by writing
+-- Motor6D.Transform each frame (which never replicates):
+--   1. a base layer from the locomotion controller (idle, walk, run, jump, fall), then
+--   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight.
+-- Clips come from Blender (Anim/Clips.luau). A clip with an uploaded animation id in
+-- Assets.anim plays that animation instead. Older procedural poses (Anim/Poses.luau) still
+-- work for ids that have no clip.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Anim = Shared:WaitForChild("Anim")
 local Assets = require(Shared:WaitForChild("Assets"))
-local Joints = require(Shared:WaitForChild("Anim"):WaitForChild("Joints"))
-local Poses = require(Shared:WaitForChild("Anim"):WaitForChild("Poses"))
+local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
+local Joints = require(Anim:WaitForChild("Joints"))
+local Poses = require(Anim:WaitForChild("Poses"))
 
 local PoseController = {}
 
@@ -19,33 +22,50 @@ export type Options = {
 	duration: number?, -- stop after this many seconds (runs until stopped otherwise)
 	fadeIn: number?,
 	fadeOut: number?,
-	startAt: number?, -- os.clock() time the pose counts from (to sync with a cue)
+	startAt: number?, -- os.clock() time the clip counts from (to sync with a cue)
+	speed: number?,
+	emote: boolean?, -- emotes stop when the character moves
 }
 
 type Track = {
 	id: string,
+	clip: ClipPlayer.Prepared?,
 	pose: Poses.Pose?,
 	animTrack: AnimationTrack?,
 	started: number,
 	fadeIn: number,
 	fadeOut: number,
 	stopAt: number?,
+	speed: number,
+	emote: boolean,
 }
 
-type Rig = {
+export type Rig = {
 	character: Model,
+	humanoid: Humanoid,
 	motors: { [string]: Motor6D },
 	basis: { [string]: CFrame },
 	tracks: { Track },
+	baked: boolean,
 }
 
+-- provider(character, dt) -> (rotations by joint, body offset) or nil to leave the base alone.
+type BaseProvider = (Model, number) -> ({ [string]: CFrame }?, Vector3?)
+
 local rigs: { [Model]: Rig } = {}
+local baseProvider: BaseProvider? = nil
+local IDENTITY = CFrame.identity
+local scratch: { [string]: CFrame } = {}
 
 local function rotation(cf: CFrame): CFrame
 	return cf - cf.Position
 end
 
-local function bind(character: Model): Rig?
+-- The rig for a character (built once), or nil for non-R15 characters.
+function PoseController.bind(character: Model?): Rig?
+	if not character then
+		return nil
+	end
 	local existing = rigs[character]
 	if existing then
 		return existing
@@ -55,19 +75,30 @@ local function bind(character: Model): Rig?
 		return nil
 	end
 	local motors = Joints.find(character)
-	if not motors.waist then
+	if not motors.waist or not motors.root then
 		return nil
 	end
 	local basis = {}
 	for name, motor in pairs(motors) do
 		basis[name] = rotation(motor.C0)
 	end
-	local rig: Rig = { character = character, motors = motors, basis = basis, tracks = {} }
+	local rig: Rig = {
+		character = character,
+		humanoid = humanoid,
+		motors = motors,
+		basis = basis,
+		tracks = {},
+		baked = false,
+	}
 	rigs[character] = rig
 	character.Destroying:Once(function()
 		rigs[character] = nil
 	end)
 	return rig
+end
+
+function PoseController.setBaseProvider(provider: BaseProvider)
+	baseProvider = provider
 end
 
 local function animationFor(character: Model, id: string): AnimationTrack?
@@ -88,41 +119,47 @@ local function animationFor(character: Model, id: string): AnimationTrack?
 	return if ok then track else nil
 end
 
--- Starts a pose (replacing the same pose if it is already playing).
+function PoseController.exists(id: string): boolean
+	return ClipPlayer.exists(id) or Poses.LIST[id] ~= nil
+end
+
+-- Starts a clip (replacing the same clip if it is already playing).
 function PoseController.play(character: Model?, id: string, options: Options?)
-	if not character then
+	local rig = PoseController.bind(character)
+	if not rig or rig.baked then
 		return
 	end
-	local pose = Poses.LIST[id]
-	if not pose then
-		return
-	end
-	local rig = bind(character)
-	if not rig then
+	local clip = ClipPlayer.get(id)
+	local pose = if clip then nil else Poses.LIST[id]
+	if not clip and not pose then
 		return
 	end
 	PoseController.stop(character, id, 0)
 	local now = os.clock()
 	local track: Track = {
 		id = id,
+		clip = clip,
 		pose = pose,
 		started = if options and options.startAt then options.startAt else now,
 		fadeIn = if options and options.fadeIn then options.fadeIn else 0.2,
 		fadeOut = if options and options.fadeOut then options.fadeOut else 0.3,
 		stopAt = if options and options.duration then now + options.duration else nil,
+		speed = if options and options.speed then options.speed else 1,
+		emote = options ~= nil and options.emote == true,
 	}
-	local animTrack = animationFor(character, id)
+	local animTrack = animationFor(rig.character, id)
 	if animTrack then
+		track.clip = nil
 		track.pose = nil
 		track.animTrack = animTrack
 		animTrack.Priority = Enum.AnimationPriority.Action
-		animTrack.Looped = pose.loop == true
+		animTrack.Looped = if clip then clip.loop else (pose ~= nil and pose.loop == true)
 		animTrack:Play(track.fadeIn)
 	end
 	table.insert(rig.tracks, track)
 end
 
--- Stops a pose (all poses when id is nil).
+-- Stops a clip (all clips when id is nil).
 function PoseController.stop(character: Model?, id: string?, fadeOut: number?)
 	local rig = if character then rigs[character] else nil
 	if not rig then
@@ -146,13 +183,46 @@ function PoseController.stop(character: Model?, id: string?, fadeOut: number?)
 	end
 end
 
+-- Stops every emote on a character (it started moving).
+function PoseController.stopEmotes(character: Model?)
+	local rig = if character then rigs[character] else nil
+	if not rig then
+		return
+	end
+	for _, track in ipairs(rig.tracks) do
+		if track.emote and not track.stopAt then
+			if track.animTrack then
+				track.animTrack:Stop(0.25)
+				track.stopAt = os.clock()
+				track.fadeOut = 0
+			else
+				track.stopAt = os.clock()
+				track.fadeOut = 0.25
+			end
+		end
+	end
+end
+
 function PoseController.isPlaying(character: Model?, id: string): boolean
 	local rig = if character then rigs[character] else nil
 	if not rig then
 		return false
 	end
 	for _, track in ipairs(rig.tracks) do
-		if track.id == id then
+		if track.id == id and not track.stopAt then
+			return true
+		end
+	end
+	return false
+end
+
+function PoseController.hasEmote(character: Model?): boolean
+	local rig = if character then rigs[character] else nil
+	if not rig then
+		return false
+	end
+	for _, track in ipairs(rig.tracks) do
+		if track.emote and not track.stopAt then
 			return true
 		end
 	end
@@ -170,62 +240,106 @@ local function weight(track: Track, now: number): number
 	return w
 end
 
-local function step()
+local function apply(rig: Rig, joint: string, target: CFrame, w: number)
+	local motor = rig.motors[joint]
+	if not motor then
+		return
+	end
+	motor.Transform = if w >= 1 then target else motor.Transform:Lerp(target, w)
+end
+
+-- Once the server has locked a pose into the joints (a death), this client stops posing.
+local function bake(rig: Rig)
+	rig.baked = true
+	rig.tracks = {}
+	for _, motor in pairs(rig.motors) do
+		motor.Transform = IDENTITY
+	end
+end
+
+local function playTrack(rig: Rig, track: Track, now: number)
+	local w = weight(track, now)
+	if w <= 0 then
+		return
+	end
+	local elapsed = math.max(0, now - track.started) * track.speed
+	local clip = track.clip
+	if clip then
+		table.clear(scratch)
+		local rotations, offset = ClipPlayer.sample(clip, elapsed, scratch)
+		for joint, rot in pairs(rotations) do
+			local basis = rig.basis[joint]
+			if basis then
+				apply(rig, joint, ClipPlayer.transform(basis, rot, if joint == "root" then offset else nil), w)
+			end
+		end
+		if offset and not rotations.root and rig.basis.root then
+			local motor = rig.motors.root
+			local shifted = CFrame.new(rig.basis.root:Inverse() * offset) * rotation(motor.Transform)
+			apply(rig, "root", shifted, w)
+		end
+		return
+	end
+	local pose = track.pose
+	if pose then
+		local angles, offset = Poses.sample(pose, elapsed)
+		for joint, angle in pairs(angles) do
+			local basis = rig.basis[joint]
+			if basis then
+				local r = CFrame.Angles(math.rad(angle[1]), math.rad(angle[2]), math.rad(angle[3]))
+				apply(rig, joint, ClipPlayer.transform(basis, r, if joint == "root" then offset else nil), w)
+			end
+		end
+	end
+end
+
+local function step(dt: number)
 	local now = os.clock()
 	for character, rig in pairs(rigs) do
 		if not character.Parent then
 			rigs[character] = nil
 			continue
 		end
+		if rig.baked then
+			continue
+		end
+		if character:GetAttribute("LPoseBaked") then
+			bake(rig)
+			continue
+		end
+		-- Finished tracks leave.
 		for index = #rig.tracks, 1, -1 do
 			local track = rig.tracks[index]
-			local finished = track.stopAt ~= nil and now >= track.stopAt + track.fadeOut
-			if finished then
+			if track.stopAt ~= nil and now >= track.stopAt + track.fadeOut then
 				if track.animTrack then
 					track.animTrack:Stop(track.fadeOut)
-				elseif track.pose then
-					-- Hand the joints back; the Animator writes over them again next frame.
-					for _, joint in ipairs(Poses.joints(track.pose)) do
-						local motor = rig.motors[joint]
-						if motor then
-							motor.Transform = CFrame.identity
-						end
-					end
 				end
 				table.remove(rig.tracks, index)
 			end
 		end
+		-- 1. base layer (skipped while an uploaded animation plays, so the Animator drives it)
+		local uploaded = false
 		for _, track in ipairs(rig.tracks) do
-			local pose = track.pose
-			if pose then
-				local w = weight(track, now)
-				if w > 0 then
-					local angles, offset = Poses.sample(pose, math.max(0, now - track.started))
-					for joint, angle in pairs(angles) do
-						local motor = rig.motors[joint]
-						local basis = rig.basis[joint]
-						if motor and basis then
-							local r = CFrame.Angles(math.rad(angle[1]), math.rad(angle[2]), math.rad(angle[3]))
-							local target = basis:Inverse() * r * basis
-							if joint == "root" then
-								target = CFrame.new(basis:Inverse() * offset) * target
-							end
-							motor.Transform = if w >= 1 then target else motor.Transform:Lerp(target, w)
-						end
-					end
-					if angles.root == nil and offset.Magnitude > 0 then
-						local motor = rig.motors.root
-						local basis = rig.basis.root
-						if motor and basis then
-							local shifted = CFrame.new(basis:Inverse() * offset) * motor.Transform
-							motor.Transform = motor.Transform:Lerp(shifted, w)
-						end
-					end
+			if track.animTrack then
+				uploaded = true
+			end
+		end
+		if baseProvider and not uploaded then
+			local rotations, offset = baseProvider(character, dt)
+			if rotations then
+				for joint, motor in pairs(rig.motors) do
+					local basis = rig.basis[joint]
+					motor.Transform = ClipPlayer.transform(
+						basis,
+						rotations[joint] or IDENTITY,
+						if joint == "root" then offset else nil
+					)
 				end
 			end
 		end
-		if #rig.tracks == 0 then
-			rigs[character] = nil
+		-- 2. clip tracks on top
+		for _, track in ipairs(rig.tracks) do
+			playTrack(rig, track, now)
 		end
 	end
 end

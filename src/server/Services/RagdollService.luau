@@ -7,7 +7,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Anim = Shared:WaitForChild("Anim")
+local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
+local Joints = require(Anim:WaitForChild("Joints"))
+local Poses = require(Anim:WaitForChild("Poses"))
 
 local CollisionGroups = require(script.Parent.CollisionGroups)
 local Match = require(script.Parent.Match)
@@ -15,8 +19,8 @@ local Match = require(script.Parent.Match)
 local RagdollService = {}
 
 RagdollService.GROUP = CollisionGroups.RAGDOLL
--- The collapse plays for this long (cue lead included) before the body goes limp.
-RagdollService.COLLAPSE_DELAY = 1.7
+-- The collapse clip plays for this long (cue lead included) before the body goes limp.
+RagdollService.COLLAPSE_DELAY = 1.9
 -- How long the limp body stays physical before it is frozen.
 RagdollService.BODY_TIME = 4.5
 
@@ -49,6 +53,25 @@ local function bodiesFolder(): Instance?
 		return existing
 	end
 	return Create("Folder", { Name = "Bodies", Parent = map.model })
+end
+
+-- Locks the last frame of a clip into the joints (C0), so the pose every client animated is
+-- also where the physics starts. Clients stop animating the body when LPoseBaked is set.
+function RagdollService.bakePose(character: Model, clipId: string)
+	local clip = ClipPlayer.get(clipId)
+	if not clip then
+		return
+	end
+	local rotations, offset = ClipPlayer.sample(clip, clip.length)
+	for joint, motor in pairs(Joints.find(character)) do
+		local rot = rotations[joint]
+		local jointOffset = if joint == "root" then offset else nil
+		if rot or jointOffset then
+			local basis = motor.C0 - motor.C0.Position
+			motor.C0 = motor.C0 * ClipPlayer.transform(basis, rot or CFrame.identity, jointOffset)
+		end
+	end
+	character:SetAttribute("LPoseBaked", true)
 end
 
 -- Turns every Motor6D into a limited ball socket so the body falls naturally.
@@ -129,8 +152,9 @@ local function freezeCopy(character: Model, alias: string)
 end
 
 -- Plays out a death: the collapse, the ragdoll, then the frozen copy and the respawn.
--- respawn(player) is called when the player should get a new character.
-function RagdollService.collapse(player: Player, alias: string, respawn: (Player) -> ())
+-- respawn(player) is called when the player should get a new character. cause picks the
+-- collapse clip (the same one every client plays).
+function RagdollService.collapse(player: Player, alias: string, respawn: (Player) -> (), cause: string?)
 	local character = player.Character
 	if not character then
 		respawn(player)
@@ -142,6 +166,7 @@ function RagdollService.collapse(player: Player, alias: string, respawn: (Player
 		if not character.Parent then
 			return
 		end
+		RagdollService.bakePose(character, Poses.FOR_CAUSE[cause or ""] or "collapseHeart")
 		RagdollService.ragdoll(character)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if humanoid then

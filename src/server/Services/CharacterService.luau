@@ -316,7 +316,7 @@ end
 function CharacterService.onEliminated(ps, kind: string)
 	local player = ps.player
 	if kind == "dead" then
-		RagdollService.collapse(player, ps.alias, CharacterService.load)
+		RagdollService.collapse(player, ps.alias, CharacterService.load, ps.cause)
 	elseif kind == "voted" or kind == "arrested" then
 		local character = player.Character
 		if kind == "arrested" then

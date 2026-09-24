@@ -57,6 +57,7 @@ local EVENTS = {
 	"Spectate",
 	-- presentation cues, Specters, profile settings, private servers and leaderboards
 	"Cue",
+	"Emote",
 	"Leaderboard",
 	"Ghost",
 	"ProfileRequest",

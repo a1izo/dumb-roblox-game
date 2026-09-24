@@ -1,0 +1,3 @@
+-- Replaces Roblox's default Animate script. Every character is animated on each client by
+-- src/client/Anim (LocomotionController and PoseController) with the clips made in Blender,
+-- so this script intentionally does nothing.
