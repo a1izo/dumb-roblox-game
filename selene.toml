@@ -1,0 +1,5 @@
+std = "roblox"
+
+[lints]
+# Short-lived shadowing (e.g. `local window, body = ...` in each UI module) is intentional.
+shadowing = "allow"

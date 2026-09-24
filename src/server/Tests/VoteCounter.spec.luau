@@ -1,0 +1,36 @@
+-- Vote counting with skip and tie handling.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VoteCounter = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("VoteCounter"))
+
+return function(t)
+	local describe, it, expect = t.describe, t.it, t.expect
+
+	describe("VoteCounter.tally", function()
+		it("removes the player with the most votes", function()
+			local result = VoteCounter.tally({ [1] = "10", [2] = "10", [3] = "11", [4] = "skip" })
+			expect(result.removed).to.equal(10)
+			expect(result.tie).to.equal(false)
+			expect(result.total).to.equal(4)
+		end)
+		it("removes nobody on a tie", function()
+			local result = VoteCounter.tally({ [1] = "10", [2] = "10", [3] = "11", [4] = "11" })
+			expect(result.removed).to.equal(nil)
+			expect(result.tie).to.equal(true)
+		end)
+		it("removes nobody when skip wins", function()
+			local result = VoteCounter.tally({ [1] = "skip", [2] = "skip", [3] = "11" })
+			expect(result.removed).to.equal(nil)
+		end)
+		it("removes nobody when skip ties with a player", function()
+			local result = VoteCounter.tally({ [1] = "skip", [2] = "11" })
+			expect(result.removed).to.equal(nil)
+			expect(result.tie).to.equal(true)
+		end)
+		it("handles no votes", function()
+			local result = VoteCounter.tally({})
+			expect(result.removed).to.equal(nil)
+			expect(result.total).to.equal(0)
+		end)
+	end)
+end

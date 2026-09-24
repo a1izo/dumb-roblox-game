@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint (Selene)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Selene
+        run: cargo install selene --version 0.27.1 --locked
+      - name: Run Selene
+        run: selene src
+
+  format:
+    name: Format (StyLua)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check formatting
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: v0.20.0
+          args: --check src
+
+# Unit tests (src/server/Tests/*.spec.luau) need the Roblox engine. They run automatically
+# when you press Play in Studio (Config.RUN_TESTS_IN_STUDIO) and print a summary in Output.

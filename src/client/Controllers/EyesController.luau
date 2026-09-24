@@ -1,0 +1,100 @@
+-- Shinigami eyes for the follower who made the deal: pick the closest player in front of
+-- the camera (within range) and ask the server to read their name.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local Net = require(Shared:WaitForChild("Net"))
+
+local ClientState = require(script.Parent.Parent.ClientState)
+local Toasts = require(script.Parent.Parent.UI.Toasts)
+
+local EyesRequest = Net.event("EyesRequest")
+local LocalPlayer = Players.LocalPlayer
+
+local EyesController = {}
+
+local MAX_ANGLE = math.rad(18)
+local confirmUntil = 0
+
+-- The best target: a living player close by, nearest to the aim direction.
+local function findTarget(): Player?
+	local camera = workspace.CurrentCamera
+	local myCharacter = LocalPlayer.Character
+	local myHead = if myCharacter then myCharacter:FindFirstChild("Head") else nil
+	if not camera or not myHead or not myHead:IsA("BasePart") then
+		return nil
+	end
+	local aim: Vector3
+	if UserInputService.MouseEnabled and not UserInputService.TouchEnabled then
+		local mouse = UserInputService:GetMouseLocation()
+		aim = camera:ViewportPointToRay(mouse.X, mouse.Y).Direction.Unit
+	else
+		aim = camera.CFrame.LookVector
+	end
+	local best, bestAngle = nil, MAX_ANGLE
+	for _, entry in ipairs(ClientState.living()) do
+		if entry.userId ~= LocalPlayer.UserId then
+			local player = Players:GetPlayerByUserId(entry.userId)
+			local character = if player then player.Character else nil
+			local head = if character then character:FindFirstChild("Head") else nil
+			if player and head and head:IsA("BasePart") then
+				local offset = head.Position - myHead.Position
+				if offset.Magnitude <= Config.EYES_RANGE then
+					local toTarget = (head.Position - camera.CFrame.Position).Unit
+					local angle = math.acos(math.clamp(aim:Dot(toTarget), -1, 1))
+					if angle < bestAngle then
+						best = player
+						bestAngle = angle
+					end
+				end
+			end
+		end
+	end
+	return best
+end
+
+function EyesController.read()
+	local private = ClientState.private
+	if not private.eyes or not ClientState.isLiving() or ClientState.phase() ~= "Investigation" then
+		return
+	end
+	if (private.eyes.readsLeft or 0) <= 0 then
+		Toasts.show("Your eyes have no reads left.", "bad")
+		return
+	end
+	local target = findTarget()
+	if not target then
+		Toasts.show("Look at a player within " .. Config.EYES_RANGE .. " studs.", "bad")
+		return
+	end
+	EyesRequest:FireServer({ action = "read", userId = target.UserId })
+end
+
+-- The deal costs the follower's life, so it needs a second press to confirm.
+function EyesController.deal()
+	local private = ClientState.private
+	if ClientState.role() ~= "Follower" or not private.canDeal or ClientState.phase() ~= "Investigation" then
+		return
+	end
+	if os.clock() > confirmUntil then
+		confirmUntil = os.clock() + 5
+		Toasts.show(
+			string.format(
+				"Shinigami eyes: read up to %d real names (%d on servers under %d players), but you die at the end of the next round. Press again within 5 s to accept.",
+				Config.EYES_READS,
+				Config.EYES_READS_SMALL_SERVER,
+				Config.EYES_SMALL_SERVER_BELOW
+			),
+			"secret"
+		)
+		return
+	end
+	confirmUntil = 0
+	EyesRequest:FireServer({ action = "deal" })
+end
+
+return EyesController
