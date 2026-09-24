@@ -1,16 +1,20 @@
 -- Builds the lobby once, and one match map plus the meeting room for every match.
--- All built models use persistent streaming so clients always have them.
+-- All built models use persistent streaming so clients always have them. Lighting is set
+-- per venue on each client (LightingController); the server only sets the defaults.
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
+local Venues = require(Shared:WaitForChild("Venues"))
 
 local Maps = script.Parent.Parent:WaitForChild("Maps")
 local Builder = require(Maps:WaitForChild("Builder"))
 local Lobby = require(Maps:WaitForChild("Lobby"))
+local MapContract = require(Maps:WaitForChild("MapContract"))
 local MeetingRoom = require(Maps:WaitForChild("MeetingRoom"))
 local TaskForceHQ = require(Maps:WaitForChild("TaskForceHQ"))
 local UniversityCampus = require(Maps:WaitForChild("UniversityCampus"))
@@ -24,31 +28,13 @@ local MAPS = {
 	TokyoDistrict = TokyoDistrict,
 }
 
-local LOBBY_ORIGIN = Vector3.new(0, 0.2, 0)
-local MAP_ORIGIN = Vector3.new(0, 0, 1000)
-local MEETING_ORIGIN = Vector3.new(700, 0, 0)
-
-local LOBBY_LIGHTING = {
-	clockTime = 18.5,
-	brightness = 1.5,
-	ambient = Color3.fromRGB(100, 100, 110),
-	outdoorAmbient = Color3.fromRGB(100, 100, 110),
-	fogEnd = 100000,
-	fogColor = Color3.fromRGB(30, 30, 35),
-}
+local LOBBY_ORIGIN = Venues.LOBBY
+local MAP_ORIGIN = Venues.MAP
+local MEETING_ORIGIN = Venues.MEETING
 
 local lobbyInfo = nil
 local currentModel: Model? = nil
 local rotationIndex = 0
-
-local function applyLighting(settings)
-	Lighting.ClockTime = settings.clockTime
-	Lighting.Brightness = settings.brightness
-	Lighting.Ambient = settings.ambient
-	Lighting.OutdoorAmbient = settings.outdoorAmbient
-	Lighting.FogEnd = settings.fogEnd
-	Lighting.FogColor = settings.fogColor
-end
 
 local function newModel(name: string): Model
 	return Create("Model", {
@@ -132,7 +118,11 @@ function MapService.build(mapId: string)
 
 	model.Parent = workspace
 	currentModel = model
-	applyLighting(def.lighting)
+	if RunService:IsStudio() then
+		for _, problem in ipairs(MapContract.validateBuilt(info)) do
+			warn("[Inkbound] Map " .. mapId .. ": " .. problem)
+		end
+	end
 	return info
 end
 
@@ -141,32 +131,19 @@ function MapService.destroy()
 		currentModel:Destroy()
 		currentModel = nil
 	end
-	applyLighting(LOBBY_LIGHTING)
 end
 
 function MapService.init()
 	Lighting.GlobalShadows = true
-	Lighting.EnvironmentDiffuseScale = 0.5
-	Lighting.EnvironmentSpecularScale = 0.5
-	if not Lighting:FindFirstChild("LGameColor") then
-		Create("ColorCorrectionEffect", {
-			Name = "LGameColor",
-			Contrast = 0.08,
-			Saturation = -0.1,
-			TintColor = Color3.fromRGB(255, 248, 240),
-			Parent = Lighting,
-		})
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.8
+	Lighting.ClockTime = 0.5
+	for _, name in ipairs({ "LGameColor", "LGameBloom" }) do
+		local old = Lighting:FindFirstChild(name)
+		if old then
+			old:Destroy()
+		end
 	end
-	if not Lighting:FindFirstChild("LGameBloom") then
-		Create("BloomEffect", {
-			Name = "LGameBloom",
-			Intensity = 0.5,
-			Size = 24,
-			Threshold = 1.5,
-			Parent = Lighting,
-		})
-	end
-	applyLighting(LOBBY_LIGHTING)
 
 	local model = newModel("LGameLobby")
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))

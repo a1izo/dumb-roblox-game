@@ -101,6 +101,11 @@ Assets.outfit = {
 	pants = "",
 } :: { [string]: string }
 
+-- Particle textures. Empty = Roblox's built-in particle texture.
+Assets.textures = {
+	rain = "",
+} :: { [string]: string }
+
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
 Assets.icons = {
 	evidence = { glyph = "▤", image = "" },

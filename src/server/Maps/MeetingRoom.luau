@@ -7,6 +7,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local Style = require(script.Parent.Style)
+
 local MeetingRoom = {}
 
 local SEATS = 12
@@ -14,7 +16,7 @@ local SEAT_RADIUS = 17
 
 function MeetingRoom.build(b)
 	local wall = Color3.fromRGB(44, 40, 46)
-	b:floor(-30, -30, 30, 30, Color3.fromRGB(80, 28, 34), Enum.Material.Fabric)
+	b:floor(-30, -30, 30, 30, Color3.fromRGB(38, 14, 18), Enum.Material.Fabric)
 	b:enclose(-30, -30, 30, 30, 18, wall, Enum.Material.Concrete)
 	b:block(0, 18.5, 0, 62, 1, 62, Color3.fromRGB(24, 22, 26), Enum.Material.Concrete)
 
@@ -111,10 +113,33 @@ function MeetingRoom.build(b)
 	end
 	b:light(0, 17.8, 0, Color3.fromRGB(255, 200, 170), 30, 0.9)
 
+	-- Noir: one hard light over the table, red trim, and the Specters' gallery up on the walls.
+	local lamp = b:block(0, 16.5, 0, 3, 0.6, 3, Color3.fromRGB(20, 20, 22), Enum.Material.Metal, {
+		CanQuery = false,
+		CanCollide = false,
+	})
+	Create("SpotLight", {
+		Face = Enum.NormalId.Bottom,
+		Angle = 60,
+		Range = 26,
+		Brightness = 5,
+		Color = Color3.fromRGB(255, 236, 214),
+		Shadows = true,
+		Parent = lamp,
+	})
+	for _, z in ipairs({ -29.4, 29.4 }) do
+		Style.neonStrip(b, 0, 0.6, z, 58, 0.15, 0.15, Color3.fromRGB(209, 26, 42))
+	end
+	for _, x in ipairs({ -29.4, 29.4 }) do
+		Style.neonStrip(b, x, 0.6, 0, 0.15, 0.15, 58, Color3.fromRGB(209, 26, 42))
+	end
+	local gallery = Style.gallery(b, 30, 12, 3.5, 16)
+
 	return {
 		seats = seats,
 		screenLabel = screenLabel,
 		boardLabel = boardLabel,
+		gallery = gallery,
 	}
 end
 

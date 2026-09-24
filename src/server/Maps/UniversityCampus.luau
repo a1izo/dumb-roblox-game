@@ -2,23 +2,17 @@
 -- the lecture hall, the science lab, the cafeteria and the campus security office.
 -- Local coordinates: x -110..110, z -90..90.
 
+local Style = require(script.Parent.Style)
+
 local UniversityCampus = {}
 
 UniversityCampus.id = "UniversityCampus"
 UniversityCampus.name = "University Campus"
-UniversityCampus.lighting = {
-	clockTime = 16.2,
-	brightness = 2,
-	ambient = Color3.fromRGB(120, 115, 110),
-	outdoorAmbient = Color3.fromRGB(135, 130, 125),
-	fogEnd = 900,
-	fogColor = Color3.fromRGB(200, 190, 175),
-}
 
-local BRICK = Color3.fromRGB(150, 80, 60)
-local STONE = Color3.fromRGB(205, 198, 185)
-local ROOF = Color3.fromRGB(70, 60, 58)
-local PATH = Color3.fromRGB(190, 185, 175)
+local BRICK = Color3.fromRGB(96, 52, 44)
+local STONE = Color3.fromRGB(120, 116, 108)
+local ROOF = Color3.fromRGB(34, 30, 30)
+local PATH = Color3.fromRGB(78, 76, 76)
 
 -- A building with doors and a roof. doors: { side = { {center, width} } } where
 -- north/south centres are measured from x1 and west/east centres from z1.
@@ -45,10 +39,10 @@ local function building(
 	b:light((x1 + x2) / 2 + (x2 - x1) / 4, h - 0.2, (z1 + z2) / 2, light, 28, 1)
 end
 
-function UniversityCampus.build(b)
+local function dress(b)
 	-- Ground, boundary hedge and paths
-	b:floor(-110, -90, 110, 90, Color3.fromRGB(88, 140, 72), Enum.Material.Grass)
-	b:enclose(-110, -90, 110, 90, 12, Color3.fromRGB(50, 95, 50), Enum.Material.Grass)
+	b:floor(-110, -90, 110, 90, Color3.fromRGB(36, 54, 38), Enum.Material.Grass)
+	b:enclose(-110, -90, 110, 90, 12, Color3.fromRGB(24, 40, 28), Enum.Material.Grass)
 	b:block(0, 0.05, -5, 12, 0.1, 118, PATH, Enum.Material.Pavement)
 	b:block(0, 0.05, 0, 216, 0.1, 12, PATH, Enum.Material.Pavement)
 	b:block(-75, 0.05, -35, 10, 0.1, 10, PATH, Enum.Material.Pavement)
@@ -168,10 +162,24 @@ function UniversityCampus.build(b)
 	-- Posts for the freestanding evidence board
 	b:block(-6.4, 4.75, 30.4, 0.5, 9.5, 0.5, Color3.fromRGB(60, 50, 40), Enum.Material.Wood)
 	b:block(6.4, 4.75, 30.4, 0.5, 9.5, 0.5, Color3.fromRGB(60, 50, 40), Enum.Material.Wood)
-	for _, spot in ipairs({ { -8, -34 }, { 8, 34 }, { -40, 12 }, { 40, -12 } }) do
-		b:streetLamp(spot[1], spot[2])
-	end
+end
 
+-- Noir pass: lamps with hard shadows along the paths, puddles, fog over the lawns.
+local function noir(b)
+	for index, spot in ipairs({ { -8, -34, 90 }, { 8, 34, -90 }, { -40, 12, 180 }, { 40, -12, 0 } }) do
+		Style.lampPost(b, spot[1], spot[2], { rot = spot[3], shadows = true, flicker = index == 3 })
+	end
+	for _, spot in ipairs({ { 3, -40, 5, 3 }, { -30, 3, 6, 3 }, { 46, -2, 4, 3 }, { -2, 52, 5, 4 }, { 70, 4, 6, 3 } }) do
+		Style.puddle(b, spot[1], spot[2], spot[3], spot[4])
+	end
+	Style.steamVent(b, -104, -30)
+	Style.steamVent(b, 104, 40)
+	Style.skyline(b, 110, 90, 23)
+end
+
+-- The gameplay contract: stations, spawns, sheets, drop points, hoods, areas, the tip box
+-- and the board. MapContract checks it; the dressing above must leave these places clear.
+function UniversityCampus.layout()
 	return {
 		stations = {
 			{ type = "Phone", name = "Archive Microfilm", x = -95, z = -62, rot = -90 },
@@ -228,6 +236,12 @@ function UniversityCampus.build(b)
 			{ name = "the west lawn", x = -75, z = 0 },
 		},
 	}
+end
+
+function UniversityCampus.build(b)
+	dress(b)
+	noir(b)
+	return UniversityCampus.layout()
 end
 
 return UniversityCampus

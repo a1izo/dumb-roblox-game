@@ -2,22 +2,16 @@
 -- building with an open interior (konbini, metro station, net cafe, koban, ramen shop).
 -- Local coordinates: x -110..110, z -90..90.
 
+local Style = require(script.Parent.Style)
+
 local TokyoDistrict = {}
 
 TokyoDistrict.id = "TokyoDistrict"
 TokyoDistrict.name = "Tokyo District"
-TokyoDistrict.lighting = {
-	clockTime = 22,
-	brightness = 0.6,
-	ambient = Color3.fromRGB(80, 80, 100),
-	outdoorAmbient = Color3.fromRGB(90, 90, 115),
-	fogEnd = 600,
-	fogColor = Color3.fromRGB(25, 25, 40),
-}
 
 local ASPHALT = Color3.fromRGB(42, 42, 48)
-local PAVEMENT = Color3.fromRGB(120, 118, 115)
-local SHOP_WALL = Color3.fromRGB(215, 210, 200)
+local PAVEMENT = Color3.fromRGB(64, 64, 70)
+local SHOP_WALL = Color3.fromRGB(118, 114, 108)
 
 -- Shop with doors and a roof. doors: { side = { {center, width} } } where north/south
 -- centres are measured from x1 and west/east centres from z1.
@@ -45,7 +39,7 @@ local function neon(b, x: number, y: number, z: number, rot: number, w: number, 
 	b:sign(x, y, z, rot, w, 3, text, color, Color3.fromRGB(12, 12, 18), Enum.Font.Bangers)
 end
 
-function TokyoDistrict.build(b)
+local function dress(b)
 	-- Ground: asphalt avenues, pavement blocks, boundary
 	b:floor(-110, -90, 110, 90, ASPHALT, Enum.Material.Asphalt)
 	b:block(-59, 0.05, -49, 102, 0.1, 82, PAVEMENT, Enum.Material.Pavement)
@@ -170,21 +164,58 @@ function TokyoDistrict.build(b)
 	b:car(-60, 4, 90, Color3.fromRGB(180, 30, 40))
 	b:car(60, -4, -90, Color3.fromRGB(30, 30, 30))
 	b:car(-90, -4, 90, Color3.fromRGB(230, 200, 60))
-	for _, spot in ipairs({
-		{ -12, -30 },
-		{ 12, -30 },
-		{ -12, 30 },
-		{ 12, 30 },
-		{ -40, -12 },
-		{ 40, 12 },
-		{ -80, 12 },
-		{ 80, -12 },
-		{ -40, 12 },
-		{ 40, -12 },
-	}) do
-		b:streetLamp(spot[1], spot[2], Color3.fromRGB(255, 215, 170))
-	end
+end
 
+-- Noir pass: wet streets, lamps with hard shadows, steam from the grates, neon trim.
+local function noir(b)
+	local lamps = {
+		{ -12, -30, 90 },
+		{ 12, -30, -90 },
+		{ -12, 30, 90 },
+		{ 12, 30, -90 },
+		{ -40, -12, 180 },
+		{ 40, 12, 0 },
+		{ -80, 12, 0 },
+		{ 80, -12, 180 },
+		{ -40, 12, 0 },
+		{ 40, -12, 180 },
+	}
+	for index, spot in ipairs(lamps) do
+		Style.lampPost(b, spot[1], spot[2], {
+			rot = spot[3],
+			shadows = index <= 6,
+			flicker = index == 4 or index == 9,
+			color = Color3.fromRGB(255, 205, 150),
+		})
+	end
+	for _, spot in ipairs({
+		{ -6, -40, 6, 4 },
+		{ 8, -72, 5, 3 },
+		{ -30, 6, 7, 3 },
+		{ 50, -6, 6, 3 },
+		{ 82, 5, 5, 3 },
+		{ -78, -4, 6, 3 },
+		{ 4, 48, 6, 4 },
+		{ -20, -7, 4, 3 },
+		{ 22, 8, 5, 3 },
+		{ -5, 78, 6, 3 },
+	}) do
+		Style.puddle(b, spot[1], spot[2], spot[3], spot[4])
+	end
+	Style.steamVent(b, -100, -62)
+	Style.steamVent(b, 100, 22)
+	Style.steamVent(b, -22, -84)
+	Style.steamVent(b, 26, 84)
+	Style.neonStrip(b, -42, 10.8, -23.1, 30, 0.2, 0.2, Color3.fromRGB(120, 255, 140), true)
+	Style.neonStrip(b, 42, 10.8, -23.1, 30, 0.2, 0.2, Color3.fromRGB(90, 200, 255))
+	Style.neonStrip(b, -42, 10.8, 23.1, 30, 0.2, 0.2, Color3.fromRGB(80, 255, 230))
+	Style.neonStrip(b, 74, 10.8, 23.1, 30, 0.2, 0.2, Color3.fromRGB(255, 120, 60), true)
+	Style.skyline(b, 110, 90, 37)
+end
+
+-- The gameplay contract: stations, spawns, sheets, drop points, hoods, areas, the tip box
+-- and the board. MapContract checks it; the dressing above must leave these places clear.
+function TokyoDistrict.layout()
 	return {
 		stations = {
 			{ type = "Camera", name = "Konbini CCTV", x = -56, z = -40, rot = -90 },
@@ -243,6 +274,12 @@ function TokyoDistrict.build(b)
 			{ name = "the west street", x = -65, z = 0 },
 		},
 	}
+end
+
+function TokyoDistrict.build(b)
+	dress(b)
+	noir(b)
+	return TokyoDistrict.layout()
 end
 
 return TokyoDistrict

@@ -1,37 +1,31 @@
 -- Map 1: Task Force headquarters. An open-plan office in the middle with six rooms
 -- around it. Local coordinates: x -80..80, z -60..60, ceiling at 14.
 
+local Style = require(script.Parent.Style)
+
 local TaskForceHQ = {}
 
 TaskForceHQ.id = "TaskForceHQ"
 TaskForceHQ.name = "Agency HQ"
-TaskForceHQ.lighting = {
-	clockTime = 20.5,
-	brightness = 1,
-	ambient = Color3.fromRGB(110, 110, 120),
-	outdoorAmbient = Color3.fromRGB(90, 90, 100),
-	fogEnd = 100000,
-	fogColor = Color3.fromRGB(20, 20, 25),
-}
 
-function TaskForceHQ.build(b)
+local function dress(b)
 	local H = 14
-	local wallColor = Color3.fromRGB(196, 200, 208)
+	local wallColor = Color3.fromRGB(74, 76, 86)
 	local wallMat = Enum.Material.SmoothPlastic
-	local partition = Color3.fromRGB(90, 100, 118)
+	local partition = Color3.fromRGB(44, 48, 58)
 
 	-- Floors
-	b:floor(-40, -60, 40, 60, Color3.fromRGB(70, 78, 92), Enum.Material.Carpet)
+	b:floor(-40, -60, 40, 60, Color3.fromRGB(38, 40, 48), Enum.Material.Carpet)
 	b:floor(-80, -60, -40, -20, Color3.fromRGB(60, 60, 66), Enum.Material.Concrete)
 	b:floor(-80, -20, -40, 20, Color3.fromRGB(170, 150, 120), Enum.Material.WoodPlanks)
 	b:floor(-80, 20, -40, 60, Color3.fromRGB(110, 90, 70), Enum.Material.WoodPlanks)
-	b:floor(40, -60, 80, -20, Color3.fromRGB(215, 220, 225), Enum.Material.Marble)
+	b:floor(40, -60, 80, -20, Color3.fromRGB(120, 122, 128), Enum.Material.Marble)
 	b:floor(40, -20, 80, 20, Color3.fromRGB(140, 140, 150), Enum.Material.Marble)
 	b:floor(40, 20, 80, 60, Color3.fromRGB(50, 55, 62), Enum.Material.DiamondPlate)
 
 	-- Shell
-	b:enclose(-80, -60, 80, 60, H, Color3.fromRGB(150, 155, 165), Enum.Material.Concrete)
-	b:block(0, H + 0.5, 0, 162, 1, 122, Color3.fromRGB(225, 225, 228), Enum.Material.SmoothPlastic)
+	b:enclose(-80, -60, 80, 60, H, Color3.fromRGB(52, 54, 62), Enum.Material.Concrete)
+	b:block(0, H + 0.5, 0, 162, 1, 122, Color3.fromRGB(30, 30, 34), Enum.Material.SmoothPlastic)
 
 	-- Office side walls with a door into every side room
 	b:wallDoors(-40, -60, -40, 60, H, { { 20, 8 }, { 60, 10 }, { 100, 8 } }, wallColor, wallMat)
@@ -42,7 +36,7 @@ function TaskForceHQ.build(b)
 	b:wallDoors(40, 20, 80, 20, H, { { 20, 8 } }, wallColor, wallMat)
 
 	-- Ceiling lights
-	local lightColor = Color3.fromRGB(255, 244, 225)
+	local lightColor = Color3.fromRGB(255, 226, 190)
 	for _, x in ipairs({ -26, 0, 26 }) do
 		for _, z in ipairs({ -40, -14, 14, 40 }) do
 			b:light(x, H - 0.2, z, lightColor, 30, 1)
@@ -67,7 +61,7 @@ function TaskForceHQ.build(b)
 	b:wall(26, 8, 26, 24, 6, partition, Enum.Material.Fabric)
 	for _, x in ipairs({ -12, 12 }) do
 		for _, z in ipairs({ -26, 26 }) do
-			b:pillar(x, z, H, Color3.fromRGB(210, 210, 215), 3)
+			b:pillar(x, z, H, Color3.fromRGB(86, 86, 92), 3)
 		end
 	end
 	b:table(0, 0, 0, 4, 3, Color3.fromRGB(200, 200, 205))
@@ -134,7 +128,23 @@ function TaskForceHQ.build(b)
 		b:rack(x, 30, 180)
 		b:rack(x, 50, 0)
 	end
+end
 
+-- Noir pass: moonlight through the blinds, a few tired lights, rain beyond the walls.
+local function noir(b)
+	Style.blinds(b, 0, 8, -59.3, 180, 14, 5)
+	Style.blinds(b, -79.3, 7, 40, -90, 10, 6)
+	Style.blinds(b, 0, 7, 59.3, 0, 14, 6)
+	Style.blinds(b, 79.3, 7, 30, 90, 10, 6)
+	Style.neonStrip(b, 0, 13.6, -59.2, 60, 0.15, 0.15, Color3.fromRGB(209, 26, 42))
+	Style.neonStrip(b, 0, 13.6, 59.2, 60, 0.15, 0.15, Color3.fromRGB(209, 26, 42))
+	Style.neonStrip(b, 79.2, 12, 0, 0.15, 0.15, 30, Color3.fromRGB(120, 170, 255), true)
+	Style.skyline(b, 80, 60, 11)
+end
+
+-- The gameplay contract: stations, spawns, sheets, drop points, hoods, areas, the tip box
+-- and the board. MapContract checks it; the dressing above must leave these places clear.
+function TaskForceHQ.layout()
 	return {
 		stations = {
 			{ type = "Camera", name = "CCTV Wall", x = -74, z = -40, rot = -90 },
@@ -191,6 +201,12 @@ function TaskForceHQ.build(b)
 			{ name = "the south office", x = 0, z = 40 },
 		},
 	}
+end
+
+function TaskForceHQ.build(b)
+	dress(b)
+	noir(b)
+	return TaskForceHQ.layout()
 end
 
 return TaskForceHQ

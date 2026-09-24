@@ -50,6 +50,11 @@ local Anim = script:WaitForChild("Anim")
 local ActingController = require(Anim:WaitForChild("ActingController"))
 local PoseController = require(Anim:WaitForChild("PoseController"))
 
+local World = script:WaitForChild("World")
+local FlickerController = require(World:WaitForChild("FlickerController"))
+local LightingController = require(World:WaitForChild("LightingController"))
+local RainController = require(World:WaitForChild("RainController"))
+
 local Audio = script:WaitForChild("Audio")
 local Mixer = require(Audio:WaitForChild("Mixer"))
 local MusicController = require(Audio:WaitForChild("MusicController"))
@@ -102,6 +107,11 @@ Cinema.init()
 Cutscenes.init()
 PoseController.init()
 ActingController.init()
+
+-- The world: lighting per venue, rain and flickering lamps.
+LightingController.init()
+RainController.init()
+FlickerController.init()
 
 EmoteController.init()
 InteractionController.init()
