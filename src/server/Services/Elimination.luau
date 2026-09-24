@@ -35,7 +35,7 @@ function Elimination.eliminate(ps, kind: string, cause: string?, text: string, c
 
 	-- Listeners run first so they still see the character where it fell.
 	Match.Eliminated:Fire(ps, kind, context or {})
-	CharacterService.detach(ps.player, "LWriting")
+	CharacterService.setWriting(ps.player, false)
 	CharacterService.onEliminated(ps, kind)
 	Match.pushState()
 	Match.pushPrivate(ps)

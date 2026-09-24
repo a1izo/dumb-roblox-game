@@ -118,6 +118,7 @@ function CosmeticsService.apply(player: Player)
 			return buildHat(hat, anchor, head)
 		end)
 	end
+	CharacterService.refreshAccessories(player)
 	local trail = if data.equipped.trail then Cosmetics.byId(data.equipped.trail) else nil
 	if trail and trail.kind == "trail" and data.owned[trail.id] then
 		addTrail(character, trail)

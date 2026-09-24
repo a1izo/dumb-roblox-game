@@ -1,16 +1,20 @@
--- Spawning, placement, freezing and the visible props that hang on characters
--- (paper in hand, hood, notebook, red shinigami eyes).
+-- Spawning, placement, freezing, the look of characters in a match (the noir suit and the
+-- game-wide movement set) and the visible props that hang on them (paper in hand, hood,
+-- notebook and pen, handcuffs, red Specter's Eyes).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
+local Models = require(Shared:WaitForChild("Models"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
 local Match = require(script.Parent.Match)
+local RagdollService = require(script.Parent.RagdollService)
 
 local SpectateRemote = Net.event("Spectate")
 
@@ -195,6 +199,7 @@ end
 function CharacterService.setHood(player: Player, on: boolean)
 	if not on then
 		CharacterService.detach(player, "LHood")
+		CharacterService.refreshAccessories(player)
 		return
 	end
 	CharacterService.attachBuilt(player, "LHood", HEAD, function(anchor: CFrame, head: BasePart)
@@ -214,6 +219,7 @@ function CharacterService.setHood(player: Player, on: boolean)
 		})
 		return { shell, drape }
 	end)
+	CharacterService.refreshAccessories(player)
 end
 
 -- Everyone holds the same notebook during the Death Note phase, so the screens look
@@ -221,8 +227,20 @@ end
 function CharacterService.setWriting(player: Player, on: boolean)
 	if not on then
 		CharacterService.detach(player, "LWriting")
+		CharacterService.detach(player, "LWritingPen")
 		return
 	end
+	CharacterService.attachBuilt(player, "LWritingPen", HAND, function(anchor: CFrame)
+		return {
+			Create("Part", {
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.9, 0.09, 0.09),
+				Color = Color3.fromRGB(14, 14, 16),
+				Material = Enum.Material.Metal,
+				CFrame = anchor * CFrame.new(0, -0.2, -0.2) * CFrame.Angles(0, math.rad(90), math.rad(-60)),
+			}),
+		}
+	end)
 	CharacterService.attachBuilt(player, "LWriting", TORSO, function(anchor: CFrame)
 		local cover = Create("Part", {
 			Size = Vector3.new(1.3, 0.12, 0.95),
@@ -274,30 +292,206 @@ end
 
 -- Elimination ---------------------------------------------------------------------
 
+-- Handcuffs on the wrists of an arrested player (their arms go behind the back on every
+-- client).
+function CharacterService.cuff(player: Player)
+	CharacterService.attachBuilt(player, "LCuffs", HAND, function(anchor: CFrame)
+		local model = Models.handcuffs()
+		local pivot = model:GetPivot()
+		local placed = anchor * CFrame.new(-0.35, -0.2, 0.1) * CFrame.Angles(0, math.rad(90), 0)
+		local parts = {}
+		for _, item in ipairs(model:GetDescendants()) do
+			if item:IsA("BasePart") then
+				item.CFrame = placed * pivot:ToObjectSpace(item.CFrame)
+				item.Parent = nil
+				table.insert(parts, item)
+			end
+		end
+		model:Destroy()
+		return parts
+	end)
+end
+
 function CharacterService.onEliminated(ps, kind: string)
 	local player = ps.player
 	if kind == "dead" then
-		local character = player.Character
-		if not character then
-			return
-		end
-		local root = getRoot(character)
-		if root then
-			root.Anchored = false
-		end
-		local humanoid = getHumanoid(character)
-		if humanoid then
-			humanoid.Health = 0
-		else
-			CharacterService.load(player)
-		end
+		RagdollService.collapse(player, ps.alias, CharacterService.load)
 	elseif kind == "voted" or kind == "arrested" then
 		local character = player.Character
-		task.delay(2.5, function()
+		if kind == "arrested" then
+			CharacterService.cuff(player)
+		end
+		task.delay(if kind == "arrested" then 3.5 else 2.5, function()
 			if player.Parent == Players and player.Character == character then
 				CharacterService.load(player)
 			end
 		end)
+	end
+end
+
+-- Looks -----------------------------------------------------------------------------
+
+-- Roblox's own R15 set, used for every slot of Assets.locomotion left empty. Owned
+-- animation packs never show: a player's pack could give away who is behind an alias.
+local DEFAULT_LOCOMOTION = {
+	idle = "507766666",
+	idleAlt = "507766951",
+	walk = "507777826",
+	run = "507767714",
+	jump = "507765000",
+	fall = "507767968",
+	climb = "507765644",
+	swim = "507784897",
+	swimIdle = "507785072",
+}
+
+-- slot -> { folder in the Animate script, animation name }
+local ANIMATE_PATHS = {
+	idle = { "idle", "Animation1" },
+	idleAlt = { "idle", "Animation2" },
+	walk = { "walk", "WalkAnim" },
+	run = { "run", "RunAnim" },
+	jump = { "jump", "JumpAnim" },
+	fall = { "fall", "FallAnim" },
+	climb = { "climb", "ClimbAnim" },
+	swim = { "swim", "Swim" },
+	swimIdle = { "swimidle", "SwimIdle" },
+}
+
+-- Gives the character the game-wide movement set.
+function CharacterService.applyLocomotion(character: Model)
+	local humanoid = getHumanoid(character)
+	local animate = character:FindFirstChild("Animate")
+	if not humanoid or humanoid.RigType ~= Enum.HumanoidRigType.R15 or not animate then
+		return
+	end
+	for slot, path in pairs(ANIMATE_PATHS) do
+		local id = Assets.locomotion[slot]
+		if id == nil or id == "" then
+			id = DEFAULT_LOCOMOTION[slot]
+		end
+		local folder = animate:FindFirstChild(path[1])
+		local animation = if folder then folder:FindFirstChild(path[2]) else nil
+		if animation and animation:IsA("Animation") then
+			local contentId = Assets.contentId(id)
+			if animation.AnimationId ~= contentId then
+				animation.AnimationId = contentId
+			end
+		end
+	end
+end
+
+local CLOTHING_ACCESSORIES = {
+	[Enum.AccessoryType.Shirt] = true,
+	[Enum.AccessoryType.TShirt] = true,
+	[Enum.AccessoryType.Pants] = true,
+	[Enum.AccessoryType.Jacket] = true,
+	[Enum.AccessoryType.Sweater] = true,
+	[Enum.AccessoryType.Shorts] = true,
+	[Enum.AccessoryType.LeftShoe] = true,
+	[Enum.AccessoryType.RightShoe] = true,
+	[Enum.AccessoryType.DressSkirt] = true,
+}
+
+local SUIT = Color3.fromRGB(30, 30, 34)
+local TROUSERS = Color3.fromRGB(24, 24, 28)
+local SHOES = Color3.fromRGB(12, 12, 13)
+local SUIT_PARTS = { "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftLowerArm", "RightUpperArm", "RightLowerArm" }
+local TROUSER_PARTS = { "LeftUpperLeg", "LeftLowerLeg", "RightUpperLeg", "RightLowerLeg" }
+local SHOE_PARTS = { "LeftFoot", "RightFoot" }
+
+-- The match look: a dark suit, white collar and red tie over the player's own face, hair and
+-- body shape. Clothing (classic and layered) is removed so outfits cannot give anyone away.
+function CharacterService.applyOutfit(player: Player)
+	local character = player.Character
+	if not character or character:GetAttribute("LNoirOutfit") then
+		return
+	end
+	character:SetAttribute("LNoirOutfit", true)
+	local head = character:FindFirstChild("Head")
+	local skin = if head and head:IsA("BasePart") then head.Color else Color3.fromRGB(200, 170, 140)
+	for _, item in ipairs(character:GetChildren()) do
+		local clothing = item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors")
+		if clothing or (item:IsA("Accessory") and CLOTHING_ACCESSORIES[item.AccessoryType]) then
+			item:Destroy()
+		end
+	end
+	local function paint(names: { string }, color: Color3)
+		for _, name in ipairs(names) do
+			local part = character:FindFirstChild(name)
+			if part and part:IsA("BasePart") then
+				part.Color = color
+				part.Material = Enum.Material.Fabric
+			end
+		end
+	end
+	paint(SUIT_PARTS, SUIT)
+	paint(TROUSER_PARTS, TROUSERS)
+	paint(SHOE_PARTS, SHOES)
+	for _, name in ipairs({ "LeftHand", "RightHand" }) do
+		local hand = character:FindFirstChild(name)
+		if hand and hand:IsA("BasePart") then
+			hand.Color = skin
+		end
+	end
+	if Assets.outfit.shirt ~= "" then
+		Create("Shirt", { ShirtTemplate = Assets.contentId(Assets.outfit.shirt), Parent = character })
+	end
+	if Assets.outfit.pants ~= "" then
+		Create("Pants", { PantsTemplate = Assets.contentId(Assets.outfit.pants), Parent = character })
+	end
+	CharacterService.attachBuilt(player, "LNoirTie", TORSO, function(anchor: CFrame, torso: BasePart)
+		local front = -torso.Size.Z / 2
+		local top = torso.Size.Y / 2
+		local white = Color3.fromRGB(236, 233, 226)
+		return {
+			Create("Part", {
+				Size = Vector3.new(0.55, 0.75, 0.05),
+				Color = white,
+				Material = Enum.Material.SmoothPlastic,
+				CFrame = anchor * CFrame.new(0, top - 0.4, front - 0.01),
+			}),
+			Create("Part", {
+				Size = Vector3.new(0.9, 0.16, 0.08),
+				Color = white,
+				Material = Enum.Material.SmoothPlastic,
+				CFrame = anchor * CFrame.new(0, top - 0.06, front - 0.02),
+			}),
+			Create("Part", {
+				Size = Vector3.new(0.2, 0.16, 0.08),
+				Color = Color3.fromRGB(170, 18, 30),
+				Material = Enum.Material.Fabric,
+				CFrame = anchor * CFrame.new(0, top - 0.2, front - 0.05),
+			}),
+			Create("Part", {
+				Size = Vector3.new(0.18, 0.95, 0.05),
+				Color = Color3.fromRGB(190, 22, 36),
+				Material = Enum.Material.Fabric,
+				CFrame = anchor * CFrame.new(0, top - 0.75, front - 0.05),
+			}),
+		}
+	end)
+end
+
+-- Hats hide under the hood or a cosmetic hat, and hair hides under the hood, so nothing
+-- pokes through.
+function CharacterService.refreshAccessories(player: Player)
+	local character = player.Character
+	if not character then
+		return
+	end
+	local hood = character:FindFirstChild("LHood") ~= nil
+	local hat = character:FindFirstChild("LCosmeticHat") ~= nil
+	for _, item in ipairs(character:GetChildren()) do
+		if item:IsA("Accessory") then
+			local kind = item.AccessoryType
+			local hide = (kind == Enum.AccessoryType.Hat and (hood or hat))
+				or (kind == Enum.AccessoryType.Hair and hood)
+			local handle = item:FindFirstChild("Handle")
+			if handle and handle:IsA("BasePart") then
+				handle.Transparency = if hide then 1 else 0
+			end
+		end
 	end
 end
 
@@ -322,6 +516,10 @@ local function onCharacterAdded(player: Player, character: Model)
 	end
 
 	humanoid.Died:Connect(function()
+		-- A body that is still playing out its death respawns when RagdollService is done.
+		if character:GetAttribute("LHeldBody") then
+			return
+		end
 		local stillPlaying = Match.getLiving(player) ~= nil
 		task.delay(if stillPlaying then 2 else 5, function()
 			if player.Parent == Players and player.Character == character then
@@ -330,10 +528,18 @@ local function onCharacterAdded(player: Player, character: Model)
 		end)
 	end)
 
+	CharacterService.applyLocomotion(character)
+	task.delay(1, function()
+		if character.Parent then
+			CharacterService.applyLocomotion(character)
+		end
+	end)
+
 	if ps then
 		-- Wait a frame so the default spawn positioning has finished.
 		RunService.Heartbeat:Wait()
 		if player.Character == character and Match.getLiving(player) == ps then
+			CharacterService.applyOutfit(player)
 			CharacterService.placeForPhase(ps)
 		end
 	end

@@ -18,12 +18,18 @@ export type Cue = {
 
 local MAX_LATE = 5
 
-local presenters: { [string]: (Cue) -> () } = {}
+local listeners: { [string]: { (Cue) -> () } } = {}
 local lastId = 0
 
--- presenter(cue) runs in its own thread and may wait.
-function CueRouter.register(kind: string, presenter: (Cue) -> ())
-	presenters[kind] = presenter
+-- listener(cue) runs in its own thread and may wait. A kind can have several listeners
+-- (the cutscene, the characters' acting, ...).
+function CueRouter.register(kind: string, listener: (Cue) -> ())
+	local list = listeners[kind]
+	if not list then
+		list = {}
+		listeners[kind] = list
+	end
+	table.insert(list, listener)
 end
 
 local function onCue(payload)
@@ -38,21 +44,23 @@ local function onCue(payload)
 	if workspace:GetServerTimeNow() - payload.at > MAX_LATE then
 		return
 	end
-	local presenter = presenters[payload.kind]
-	if not presenter then
+	local list = listeners[payload.kind]
+	if not list then
 		return
 	end
 	if type(payload.data) ~= "table" then
 		payload.data = {}
 	end
-	task.spawn(function()
-		-- The state update sent in the same frame lands first, so presenters see the new phase.
-		task.wait()
-		local ok, err = pcall(presenter, payload :: Cue)
-		if not ok then
-			warn("[Inkbound] The " .. payload.kind .. " cue failed: " .. tostring(err))
-		end
-	end)
+	for _, listener in ipairs(list) do
+		task.spawn(function()
+			-- The state update sent in the same frame lands first, so listeners see the new phase.
+			task.wait()
+			local ok, err = pcall(listener, payload :: Cue)
+			if not ok then
+				warn("[Inkbound] The " .. payload.kind .. " cue failed: " .. tostring(err))
+			end
+		end)
+	end
 end
 
 function CueRouter.init()

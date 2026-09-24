@@ -357,6 +357,7 @@ local function runMatch(players: { Player })
 	for i, ps in ipairs(Match.list) do
 		ps.player.CameraMaxZoomDistance = MATCH_ZOOM
 		if ps.player.Character then
+			CharacterService.applyOutfit(ps.player)
 			CharacterService.placeAt(ps.player, map.spawns[((i - 1) % #map.spawns) + 1])
 			CharacterService.setFrozen(ps.player, true)
 		else

@@ -63,7 +63,9 @@ Assets.sfx = {
 	wisp = { id = "", ref = "soft ghostly chime", fallbackId = "" },
 } :: { [string]: Audio }
 
--- Animations by pose id (see the pose list in the M4 animation module). "" = procedural pose.
+-- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every
+-- client plays these from public events, on every character, so they must be poses anyone
+-- could see anyway.
 Assets.anim = {
 	write = "",
 	collapseHeart = "",
@@ -71,8 +73,9 @@ Assets.anim = {
 	collapseFall = "",
 	collapseTraffic = "",
 	cuffed = "",
+	slump = "",
+	kneel = "",
 	raiseHand = "",
-	accuse = "",
 	laugh = "",
 	victory = "",
 	defeat = "",

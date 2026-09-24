@@ -46,6 +46,10 @@ local InteractionController = require(Controllers:WaitForChild("InteractionContr
 
 local InputRouter = require(script:WaitForChild("Input"):WaitForChild("InputRouter"))
 
+local Anim = script:WaitForChild("Anim")
+local ActingController = require(Anim:WaitForChild("ActingController"))
+local PoseController = require(Anim:WaitForChild("PoseController"))
+
 local Audio = script:WaitForChild("Audio")
 local Mixer = require(Audio:WaitForChild("Mixer"))
 local MusicController = require(Audio:WaitForChild("MusicController"))
@@ -96,6 +100,8 @@ MusicController.init()
 CameraDirector.init()
 Cinema.init()
 Cutscenes.init()
+PoseController.init()
+ActingController.init()
 
 EmoteController.init()
 InteractionController.init()

@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Models = require(Shared:WaitForChild("Models"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
@@ -13,7 +14,6 @@ local Theme = require(script.Parent.Parent.Parent.UI.Theme)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
-local Props = require(script.Parent.Parent.Props)
 
 local function now(): number
 	return workspace:GetServerTimeNow()
@@ -96,7 +96,7 @@ return function(cue)
 			return
 		end
 		CameraDirector.move(token, path[3], left * 0.5, 50)
-		local book = Props.grimoire()
+		local book = Models.grimoire()
 		book.Parent = workspace.CurrentCamera
 		table.insert(cleanup, function()
 			book:Destroy()
