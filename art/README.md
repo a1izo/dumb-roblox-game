@@ -19,17 +19,14 @@ snappy, overshooting timing in the spirit of Ink Game. `export_anims.py` samples
 `src/shared/Anim/Clips.luau`, which the game plays on every character itself (no animation
 uploads). To change an animation:
 
-1. Edit the keys in `art/scripts/anims.py` (or open `blend/Animations.blend`, edit the action,
-   save), then run in Blender's Python console or with the MCP add-on:
+1. Edit the keys in `art/scripts/anims.py`, then run
 
-   ```python
-   import sys; sys.path.insert(0, r"<repo>/art/scripts")
-   import rig, anims, export_anims
-   arm = bpy.data.objects["R15"]
-   anims.build(arm)          # skip this line if you edited the actions by hand
-   export_anims.export(arm)
+   ```
+   blender -b --factory-startup --python art/scripts/run_anims.py
    ```
 
+   Or open `blend/Animations.blend`, edit an action's curves by hand, save, and run
+   `run_anims.py -- --keep` to export the actions as they are.
 2. Rojo syncs the new `Clips.luau` straight into the game.
 
 ## Props and textures: one import in Studio
