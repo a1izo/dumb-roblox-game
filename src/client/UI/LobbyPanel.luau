@@ -11,6 +11,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Motion = require(script.Parent.Core.Motion)
+local DirectorPanel = require(script.Parent.DirectorPanel)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
@@ -146,8 +147,16 @@ local function buildMenu()
 		{ text = "Shop", screen = "shop" },
 		{ text = "Party", screen = "party" },
 		{ text = "Settings", screen = "settings" },
+		{ text = "Private server", screen = "director" },
 	}) do
 		local holder = Widgets.frame({ Size = UDim2.new(1, 0, 0, 46), LayoutOrder = 5 + index, Parent = menu })
+		if item.screen == "director" then
+			-- Only in private servers.
+			holder.Visible = DirectorPanel.state.vip
+			DirectorPanel.Changed:Connect(function(state)
+				holder.Visible = state.vip
+			end)
+		end
 		Widgets.button({
 			Text = item.text,
 			TextSize = 26,

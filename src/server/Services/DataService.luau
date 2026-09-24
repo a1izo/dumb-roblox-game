@@ -20,6 +20,7 @@ local Ranks = require(Shared:WaitForChild("Ranks"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
 local Migrations = require(script.Parent.Parent:WaitForChild("Data"):WaitForChild("Migrations"))
+local PassService = require(script.Parent.PassService)
 
 local ProfileRemote = Net.event("Profile")
 
@@ -115,6 +116,8 @@ function DataService.payload(player: Player)
 		tipsSeen = data.tipsSeen,
 		training = data.training,
 		titles = data.titles,
+		alias = data.alias,
+		passes = PassService.list(player),
 		persistent = profile.persistent,
 	}
 end

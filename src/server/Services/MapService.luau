@@ -15,6 +15,8 @@ local Maps = script.Parent.Parent:WaitForChild("Maps")
 local Builder = require(Maps:WaitForChild("Builder"))
 local Lobby = require(Maps:WaitForChild("Lobby"))
 local MapContract = require(Maps:WaitForChild("MapContract"))
+
+local ServerSettings = require(script.Parent.ServerSettings)
 local MeetingRoom = require(Maps:WaitForChild("MeetingRoom"))
 local TaskForceHQ = require(Maps:WaitForChild("TaskForceHQ"))
 local UniversityCampus = require(Maps:WaitForChild("UniversityCampus"))
@@ -44,7 +46,15 @@ local function newModel(name: string): Model
 end
 
 function MapService.nextMapId(): string
-	local rotation = Config.MAP_ROTATION
+	local rotation = {}
+	for _, id in ipairs(Config.MAP_ROTATION) do
+		if table.find(ServerSettings.maps(), id) then
+			table.insert(rotation, id)
+		end
+	end
+	if #rotation == 0 then
+		rotation = Config.MAP_ROTATION
+	end
 	local id = rotation[(rotationIndex % #rotation) + 1]
 	if MAPS[id] == nil then
 		warn("[Inkbound] Unknown map in Config.MAP_ROTATION: " .. tostring(id))

@@ -10,6 +10,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
+
+local ServerSettings = require(script.Parent.ServerSettings)
 local Util = require(Shared:WaitForChild("Util"))
 
 local StateRemote = Net.event("State")
@@ -185,7 +187,7 @@ local PRESENTATION = { Intro = true, Verdict = true, Outro = true }
 -- Phase length in seconds. Studio test runs can be sped up with STUDIO_TIME_SCALE (cutscene
 -- phases keep their length) and can skip the cutscenes with STUDIO_SKIP_PRESENTATION.
 function Match.phaseLength(name: string): number
-	local base = Config.PHASE_TIME[name] or 10
+	local base = ServerSettings.phaseOverride(name) or Config.PHASE_TIME[name] or 10
 	if IS_STUDIO then
 		if PRESENTATION[name] then
 			return if Config.STUDIO_SKIP_PRESENTATION then 0 else base
@@ -328,7 +330,7 @@ function Match.publicState()
 		active = Match.active,
 		phase = Match.phase,
 		round = Match.round,
-		maxRounds = Config.MAX_ROUNDS,
+		maxRounds = ServerSettings.rounds(),
 		endsAt = Match.phaseEndsAt,
 		mapId = Match.mapId,
 		mapName = Match.mapName,

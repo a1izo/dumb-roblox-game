@@ -8,6 +8,7 @@ local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
 local EmoteController = require(script.Parent.Parent.Controllers.EmoteController)
 local Actions = require(script.Parent.Parent.Input.Actions)
+local ClientState = require(script.Parent.Parent.ClientState)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
@@ -78,19 +79,31 @@ function QuickChatPanel.init()
 		Parent = panel,
 	})
 	Widgets.list(emotes, 6, true)
+	local passEmotes: { [TextButton]: string } = {}
 	for index, emote in ipairs(QuickChat.EMOTES) do
-		Widgets.button({
+		local button = Widgets.button({
 			Text = emote.name,
 			TextSize = Theme.text.small,
 			Variant = "ghost",
-			Size = UDim2.new(0.2, -6, 1, 0),
+			Size = UDim2.new(1 / #QuickChat.EMOTES, -6, 1, 0),
 			LayoutOrder = index,
 			Parent = emotes,
 		}, function()
 			EmoteController.play(emote.id)
 			QuickChatPanel.close()
 		end)
+		if emote.pass then
+			passEmotes[button] = emote.pass
+		end
 	end
+	local function refreshPassEmotes()
+		local passes = if ClientState.profile then ClientState.profile.passes or {} else {}
+		for button, pass in pairs(passEmotes) do
+			button.Visible = table.find(passes, pass) ~= nil
+		end
+	end
+	ClientState.ProfileChanged:Connect(refreshPassEmotes)
+	refreshPassEmotes()
 	Router.register("quickChat", {
 		layer = "panel",
 		window = panel,

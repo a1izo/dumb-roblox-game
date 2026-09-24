@@ -1,10 +1,13 @@
--- The cosmetic shop: buy with coins earned in matches, then equip in the lobby.
+-- The cosmetic shop: buy with coins earned in matches, then equip in the lobby. Items from
+-- the daily rotation can only be bought while they are featured; VIP and earned items
+-- cannot be bought at all.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
+local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local DataService = require(script.Parent.DataService)
@@ -14,6 +17,20 @@ local RateLimit = require(script.Parent.RateLimit)
 local ShopRequest = Net.event("ShopRequest")
 
 local ShopService = {}
+
+-- Can this item be bought right now? Returns (ok, reason).
+function ShopService.canBuy(item: Cosmetics.Item, now: number): (boolean, string)
+	if not item.price then
+		return false, "That item cannot be bought."
+	end
+	if item.source == "rotation" and not ShopRotation.isFeatured(item.id, now) then
+		return false, "That item is not in today's rotation."
+	end
+	if item.source ~= "shop" and item.source ~= "rotation" then
+		return false, "That item cannot be bought."
+	end
+	return true, ""
+end
 
 local function onRequest(player: Player, payload)
 	if type(payload) ~= "table" or type(payload.itemId) ~= "string" then
@@ -27,26 +44,32 @@ local function onRequest(player: Player, payload)
 	if not data or not item then
 		return
 	end
-	if Match.getLiving(player) then
+	if Match.get(player) then
 		Match.notify(player, "Cosmetics can be changed in the lobby.", "bad")
 		return
 	end
 	local action = payload.action
 	if action == "buy" then
-		if data.owned[item.id] then
+		if CosmeticsService.owns(player, item) then
 			Match.notify(player, "You already own " .. item.name .. ".", "info")
 			return
 		end
-		if data.coins < item.price then
+		local ok, reason = ShopService.canBuy(item, os.time())
+		if not ok then
+			Match.notify(player, reason, "bad")
+			return
+		end
+		local price = item.price :: number
+		if data.coins < price then
 			Match.notify(player, "Not enough coins for " .. item.name .. ".", "bad")
 			return
 		end
-		data.coins -= item.price
+		data.coins -= price
 		data.owned[item.id] = true
 		data.equipped[item.kind] = item.id
 		Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")
 	elseif action == "equip" then
-		if not data.owned[item.id] then
+		if not CosmeticsService.owns(player, item) then
 			return
 		end
 		data.equipped[item.kind] = item.id

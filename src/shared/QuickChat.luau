@@ -25,6 +25,9 @@ QuickChat.EMOTES = {
 	{ id = "cheer", name = "Cheer", r15 = "rbxassetid://507770677", r6 = "rbxassetid://129423030" },
 	{ id = "laugh", name = "Laugh", r15 = "rbxassetid://507770818", r6 = "rbxassetid://129423131" },
 	{ id = "dance", name = "Dance", r15 = "rbxassetid://507771019", r6 = "rbxassetid://182435998" },
+	-- Emote Pack pass
+	{ id = "dance2", name = "Groove", r15 = "rbxassetid://507776043", r6 = "", pass = "emotes" },
+	{ id = "dance3", name = "Spin", r15 = "rbxassetid://507777268", r6 = "", pass = "emotes" },
 }
 
 return QuickChat

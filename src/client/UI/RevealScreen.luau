@@ -33,8 +33,12 @@ local function fillRoster(players)
 			LayoutOrder = index,
 			Parent = roster,
 		})
+		local name = string.format("%s  (%s)", tostring(entry.alias), tostring(entry.displayName))
+		if type(entry.title) == "string" and entry.title ~= "" then
+			name ..= "  ·  " .. string.upper(entry.title)
+		end
 		Widgets.label({
-			Text = string.format("%s  (%s)", tostring(entry.alias), tostring(entry.displayName)),
+			Text = name,
 			Font = Theme.fonts.bold,
 			TextSize = 15,
 			TextTruncate = Enum.TextTruncate.AtEnd,

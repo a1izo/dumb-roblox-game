@@ -159,7 +159,10 @@ local function onOutro(cue)
 			if entry.userId == handId then
 				poseId = if handWon then "laugh" else "kneel"
 			elseif winners[entry.userId] then
-				poseId = "victory"
+				-- The winner's victory pose cosmetic, if they have one.
+				local player = Players:GetPlayerByUserId(entry.userId)
+				local chosen = if player then player:GetAttribute("LVictoryPose") else nil
+				poseId = if type(chosen) == "string" and Poses.LIST[chosen] then chosen else "victory"
 			else
 				poseId = "defeat"
 			end

@@ -8,6 +8,7 @@ local NamePools = require(Shared:WaitForChild("NamePools"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
+local AliasService = require(script.Parent.AliasService)
 local CharacterService = require(script.Parent.CharacterService)
 local Match = require(script.Parent.Match)
 
@@ -16,12 +17,29 @@ local NameService = {}
 function NameService.assign()
 	local firsts = Util.shuffle(table.clone(NamePools.FIRST_NAMES), Match.rng)
 	local lasts = Util.shuffle(table.clone(NamePools.LAST_NAMES), Match.rng)
-	local aliases = Util.shuffle(table.clone(NamePools.ALIASES), Match.rng)
+	local custom = AliasService.resolve(Match.list)
+	local taken = {}
+	for _, alias in pairs(custom) do
+		taken[string.lower(alias)] = true
+	end
+	-- Pool aliases that match a custom one are left out.
+	local aliases = {}
+	for _, alias in ipairs(Util.shuffle(table.clone(NamePools.ALIASES), Match.rng)) do
+		if not taken[string.lower(alias)] then
+			table.insert(aliases, alias)
+		end
+	end
+	local nextPool = 0
 	for i, ps in ipairs(Match.list) do
 		ps.first = firsts[i]
 		ps.last = lasts[i]
 		ps.realName = ps.first .. " " .. ps.last
-		ps.alias = aliases[i]
+		if custom[ps] then
+			ps.alias = custom[ps]
+		else
+			nextPool += 1
+			ps.alias = aliases[nextPool]
+		end
 		ps.revealed = {}
 		ps.player:SetAttribute("Alias", ps.alias)
 		CharacterService.setDisplayName(ps.player, ps.alias)

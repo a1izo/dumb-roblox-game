@@ -78,6 +78,8 @@ Assets.anim = {
 	raiseHand = "",
 	laugh = "",
 	victory = "",
+	victoryFist = "",
+	victoryBow = "",
 	defeat = "",
 	specterFloat = "",
 } :: { [string]: string }

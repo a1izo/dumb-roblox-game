@@ -242,9 +242,10 @@ function CharacterService.setWriting(player: Player, on: boolean)
 		}
 	end)
 	CharacterService.attachBuilt(player, "LWriting", TORSO, function(anchor: CFrame)
+		local coverColor = player:GetAttribute("LGrimoireColor")
 		local cover = Create("Part", {
 			Size = Vector3.new(1.3, 0.12, 0.95),
-			Color = Color3.fromRGB(22, 22, 26),
+			Color = if typeof(coverColor) == "Color3" then coverColor else Color3.fromRGB(22, 22, 26),
 			Material = Enum.Material.SmoothPlastic,
 			CFrame = anchor * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0),
 		})
@@ -440,6 +441,8 @@ function CharacterService.applyOutfit(player: Player)
 	if Assets.outfit.pants ~= "" then
 		Create("Pants", { PantsTemplate = Assets.contentId(Assets.outfit.pants), Parent = character })
 	end
+	local tieColor = player:GetAttribute("LTieColor")
+	local tie = if typeof(tieColor) == "Color3" then tieColor else Color3.fromRGB(190, 22, 36)
 	CharacterService.attachBuilt(player, "LNoirTie", TORSO, function(anchor: CFrame, torso: BasePart)
 		local front = -torso.Size.Z / 2
 		local top = torso.Size.Y / 2
@@ -458,19 +461,39 @@ function CharacterService.applyOutfit(player: Player)
 				CFrame = anchor * CFrame.new(0, top - 0.06, front - 0.02),
 			}),
 			Create("Part", {
+				Name = "Knot",
 				Size = Vector3.new(0.2, 0.16, 0.08),
-				Color = Color3.fromRGB(170, 18, 30),
+				Color = tie:Lerp(Color3.new(0, 0, 0), 0.15),
 				Material = Enum.Material.Fabric,
 				CFrame = anchor * CFrame.new(0, top - 0.2, front - 0.05),
 			}),
 			Create("Part", {
+				Name = "Tie",
 				Size = Vector3.new(0.18, 0.95, 0.05),
-				Color = Color3.fromRGB(190, 22, 36),
+				Color = tie,
 				Material = Enum.Material.Fabric,
 				CFrame = anchor * CFrame.new(0, top - 0.75, front - 0.05),
 			}),
 		}
 	end)
+end
+
+-- Recolours the noir tie after the player changes their tie cosmetic.
+function CharacterService.recolorTie(player: Player)
+	local character = player.Character
+	local holder = if character then character:FindFirstChild("LNoirTie") else nil
+	if not holder then
+		return
+	end
+	local tieColor = player:GetAttribute("LTieColor")
+	local tie = if typeof(tieColor) == "Color3" then tieColor else Color3.fromRGB(190, 22, 36)
+	for _, part in ipairs(holder:GetChildren()) do
+		if part:IsA("BasePart") and part.Name == "Tie" then
+			part.Color = tie
+		elseif part:IsA("BasePart") and part.Name == "Knot" then
+			part.Color = tie:Lerp(Color3.new(0, 0, 0), 0.15)
+		end
+	end
 end
 
 -- Hats hide under the hood or a cosmetic hat, and hair hides under the hood, so nothing

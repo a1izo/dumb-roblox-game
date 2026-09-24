@@ -7,7 +7,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
@@ -32,6 +31,8 @@ local NameService = require(script.Parent.NameService)
 local NoteService = require(script.Parent.NoteService)
 local RewardService = require(script.Parent.RewardService)
 local RoleService = require(script.Parent.RoleService)
+local ServerSettings = require(script.Parent.ServerSettings)
+local CosmeticsService = require(script.Parent.CosmeticsService)
 local SuspicionService = require(script.Parent.SuspicionService)
 local VoteService = require(script.Parent.VoteService)
 local WarrantService = require(script.Parent.WarrantService)
@@ -183,7 +184,7 @@ local function startRound(round: number)
 	end
 	HoodService.onRoundStart(round)
 	Match.announce(
-		"Round " .. round .. " of " .. Config.MAX_ROUNDS,
+		"Round " .. round .. " of " .. ServerSettings.rounds(),
 		"Investigation: work the case files and watch each other.",
 		"neutral"
 	)
@@ -289,6 +290,7 @@ local function reveal()
 			role = ps.role,
 			status = ps.status,
 			cause = ps.cause,
+			title = CosmeticsService.titleOf(ps.player),
 		})
 	end
 	local events = EventLog.all()
@@ -372,7 +374,7 @@ local function runMatch(players: { Player })
 	runPhase("Intro", startIntro)
 	runPhase("Briefing", sendBriefings)
 
-	for round = 1, Config.MAX_ROUNDS do
+	for round = 1, ServerSettings.rounds() do
 		if Match.winner then
 			break
 		end
@@ -429,7 +431,7 @@ local function runMatch(players: { Player })
 	end
 
 	if not Match.winner then
-		Match.declareWinner("Kira", Terms.f("{Hand} survived all {n} rounds.", { n = Config.MAX_ROUNDS }))
+		Match.declareWinner("Kira", Terms.f("{Hand} survived all {n} rounds.", { n = ServerSettings.rounds() }))
 	end
 	finale()
 end

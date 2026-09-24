@@ -270,6 +270,70 @@ Poses.LIST = {
 			},
 		},
 	},
+	-- Cosmetic victory poses (Cosmetics kind "victory").
+	victoryFist = {
+		loop = true,
+		frames = {
+			{
+				t = 0,
+				j = {
+					rShoulder = { 150, 0, 10 },
+					rElbow = { 60, 0, 0 },
+					lShoulder = { 10, 0, -10 },
+					neck = { 10, 0, 0 },
+					waist = { 5, 0, 0 },
+				},
+			},
+			{
+				t = 0.3,
+				j = {
+					rShoulder = { 175, 0, 5 },
+					rElbow = { 10, 0, 0 },
+					lShoulder = { 10, 0, -10 },
+					neck = { 18, 0, 0 },
+					waist = { 8, 0, 0 },
+				},
+			},
+			{
+				t = 0.6,
+				j = {
+					rShoulder = { 150, 0, 10 },
+					rElbow = { 60, 0, 0 },
+					lShoulder = { 10, 0, -10 },
+					neck = { 10, 0, 0 },
+					waist = { 5, 0, 0 },
+				},
+			},
+		},
+	},
+	victoryBow = {
+		frames = {
+			{ t = 0, j = { waist = { 0, 0, 0 }, neck = { 0, 0, 0 } } },
+			{
+				t = 0.6,
+				j = {
+					waist = { -50, 0, 0 },
+					neck = { -20, 0, 0 },
+					rShoulder = { 60, 0, -45 },
+					rElbow = { 90, 0, 0 },
+					lShoulder = { -20, 0, -40 },
+					lElbow = { 30, 0, 0 },
+				},
+			},
+			{
+				t = 1.6,
+				j = {
+					waist = { -50, 0, 0 },
+					neck = { -20, 0, 0 },
+					rShoulder = { 60, 0, -45 },
+					rElbow = { 90, 0, 0 },
+					lShoulder = { -20, 0, -40 },
+					lElbow = { 30, 0, 0 },
+				},
+			},
+			{ t = 2.4, j = { waist = { 0, 0, 0 }, neck = { 10, 0, 0 } } },
+		},
+	},
 	defeat = {
 		frames = {
 			{ t = 0, j = { neck = { 0, 0, 0 }, waist = { 0, 0, 0 } } },

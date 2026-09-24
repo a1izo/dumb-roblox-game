@@ -1,70 +1,60 @@
--- Builds equipped cosmetics on characters: hats made of parts and body trails.
+-- Puts equipped cosmetics on players: hats and trails on the character, the tie, notebook
+-- cover, victory pose and Specter outline as player attributes (read wherever they show),
+-- and the title tag over the head in the lobby (never inside a match, where it would give
+-- away who is behind an alias).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 
 local CharacterService = require(script.Parent.CharacterService)
 local DataService = require(script.Parent.DataService)
+local Match = require(script.Parent.Match)
+local PassService = require(script.Parent.PassService)
 
 local CosmeticsService = {}
 
 local HAT = "LCosmeticHat"
+local TITLE_TAG = "LTitleTag"
 local TRAIL_NAMES = { "LCosmeticTrail", "LTrailTop", "LTrailBottom" }
 
-local VERTICAL = CFrame.Angles(0, 0, math.rad(90))
-
-local function cylinder(cf: CFrame, height: number, diameter: number, color: Color3): Part
-	return Create("Part", {
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(height, diameter, diameter),
-		CFrame = cf * VERTICAL,
-		Color = color,
-		Material = Enum.Material.Fabric,
-	})
-end
-
-local function box(cf: CFrame, size: Vector3, color: Color3): Part
-	return Create("Part", {
-		Size = size,
-		CFrame = cf,
-		Color = color,
-		Material = Enum.Material.Fabric,
-	})
-end
-
-local function buildHat(item, anchor: CFrame, head: BasePart): { BasePart }
-	local top = anchor * CFrame.new(0, head.Size.Y / 2, 0)
-	local color = item.color
-	local accent = item.accent
-	if item.style == "fedora" then
-		return {
-			cylinder(top * CFrame.new(0, 0.06, 0), 0.12, 2.3, color),
-			cylinder(top * CFrame.new(0, 0.5, 0), 0.85, 1.35, color),
-			cylinder(top * CFrame.new(0, 0.22, 0), 0.22, 1.4, accent),
-		}
-	elseif item.style == "tophat" then
-		return {
-			cylinder(top * CFrame.new(0, 0.06, 0), 0.12, 2, color),
-			cylinder(top * CFrame.new(0, 0.85, 0), 1.6, 1.3, color),
-			cylinder(top * CFrame.new(0, 0.25, 0), 0.25, 1.35, accent),
-		}
-	elseif item.style == "deerstalker" then
-		return {
-			cylinder(top * CFrame.new(0, 0.3, 0), 0.7, 1.4, color),
-			box(top * CFrame.new(0, 0.05, -0.85), Vector3.new(1, 0.1, 0.6), accent),
-			box(top * CFrame.new(0, 0.05, 0.85), Vector3.new(1, 0.1, 0.6), accent),
-			box(top * CFrame.new(-0.72, -0.2, 0), Vector3.new(0.1, 0.55, 0.6), color),
-			box(top * CFrame.new(0.72, -0.2, 0), Vector3.new(0.1, 0.55, 0.6), color),
-		}
+-- True when the player may use the item (bought, earned, or free with VIP).
+function CosmeticsService.owns(player: Player, item: Cosmetics.Item): boolean
+	if item.source == "vip" then
+		return PassService.owns(player, "vip")
 	end
-	-- cap
-	return {
-		cylinder(top * CFrame.new(0, 0.25, 0), 0.5, 1.35, color),
-		box(top * CFrame.new(0, 0.05, -0.85), Vector3.new(1.1, 0.1, 0.7), accent),
-	}
+	local data = DataService.get(player)
+	if not data then
+		return false
+	end
+	if item.kind == "title" then
+		local key = string.gsub(item.id, "^title_", "")
+		if data.titles[key] then
+			return true
+		end
+	end
+	return data.owned[item.id] == true
+end
+
+local function equipped(player: Player, data, kind: string): Cosmetics.Item?
+	local item = Cosmetics.byId(data.equipped[kind])
+	if item and item.kind == kind and CosmeticsService.owns(player, item) then
+		return item
+	end
+	return nil
+end
+
+-- The title to show on the results screen, or nil.
+function CosmeticsService.titleOf(player: Player): string?
+	local data = DataService.get(player)
+	if not data then
+		return nil
+	end
+	local title = equipped(player, data, "title")
+	return if title then title.name else nil
 end
 
 local function clearTrail(character: Model)
@@ -80,49 +70,78 @@ local function clearTrail(character: Model)
 	end
 end
 
-local function addTrail(character: Model, item)
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then
+local function titleTag(player: Player, character: Model, title: string?)
+	local head = character:FindFirstChild("Head")
+	if not head then
 		return
 	end
-	local top = Create("Attachment", { Name = "LTrailTop", Position = Vector3.new(0, 0.8, 0.45), Parent = root })
-	local bottom = Create("Attachment", { Name = "LTrailBottom", Position = Vector3.new(0, -0.8, 0.45), Parent = root })
-	Create("Trail", {
-		Name = "LCosmeticTrail",
-		Attachment0 = top,
-		Attachment1 = bottom,
-		Color = ColorSequence.new(item.colors[1], item.colors[2]),
-		Transparency = NumberSequence.new(0.15, 1),
-		Lifetime = 0.6,
-		MinLength = 0.1,
-		LightEmission = 0.4,
-		FaceCamera = true,
-		Parent = root,
+	local old = head:FindFirstChild(TITLE_TAG)
+	if old then
+		old:Destroy()
+	end
+	local vip = PassService.owns(player, "vip")
+	if Match.get(player) or (not title and not vip) then
+		return
+	end
+	local gui = Create("BillboardGui", {
+		Name = TITLE_TAG,
+		Size = UDim2.fromOffset(220, 22),
+		StudsOffset = Vector3.new(0, 3.4, 0),
+		MaxDistance = 60,
+		LightInfluence = 0,
+		Parent = head,
+	})
+	local text = title or ""
+	if vip then
+		text = if text ~= "" then "VIP  ·  " .. text else "VIP"
+	end
+	Create("TextLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Text = string.upper(text),
+		TextScaled = true,
+		TextColor3 = if vip then Color3.fromRGB(255, 200, 90) else Color3.fromRGB(244, 241, 234),
+		TextStrokeTransparency = 0.4,
+		Font = Enum.Font.Oswald,
+		Parent = gui,
 	})
 end
 
 function CosmeticsService.apply(player: Player)
+	local data = DataService.get(player)
+	if not data then
+		return
+	end
+	local tie = equipped(player, data, "tie")
+	local book = equipped(player, data, "grimoire")
+	local victory = equipped(player, data, "victory")
+	local specter = equipped(player, data, "specter")
+	player:SetAttribute("LTieColor", if tie then tie.color else nil)
+	player:SetAttribute("LGrimoireColor", if book then book.color else nil)
+	player:SetAttribute("LVictoryPose", if victory then victory.pose else nil)
+	player:SetAttribute("LSpecterColor", if specter then specter.color else nil)
+
 	local character = player.Character
 	if not character then
 		return
 	end
 	CharacterService.detach(player, HAT)
 	clearTrail(character)
-	local data = DataService.get(player)
-	if not data then
-		return
-	end
-	local hat = if data.equipped.hat then Cosmetics.byId(data.equipped.hat) else nil
-	if hat and hat.kind == "hat" and data.owned[hat.id] then
+	local hat = equipped(player, data, "hat")
+	if hat then
 		CharacterService.attachBuilt(player, HAT, { "Head" }, function(anchor: CFrame, head: BasePart)
-			return buildHat(hat, anchor, head)
+			return CosmeticBuild.hat(hat, anchor, head)
 		end)
 	end
-	CharacterService.refreshAccessories(player)
-	local trail = if data.equipped.trail then Cosmetics.byId(data.equipped.trail) else nil
-	if trail and trail.kind == "trail" and data.owned[trail.id] then
-		addTrail(character, trail)
+	local trail = equipped(player, data, "trail")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if trail and root and root:IsA("BasePart") then
+		CosmeticBuild.trail(trail, root)
 	end
+	CharacterService.refreshAccessories(player)
+	CharacterService.recolorTie(player)
+	local title = equipped(player, data, "title")
+	titleTag(player, character, if title then title.name else nil)
 end
 
 function CosmeticsService.init()
@@ -131,6 +150,10 @@ function CosmeticsService.init()
 	end)
 	DataService.ProfileLoaded:Connect(function(player)
 		CosmeticsService.apply(player)
+	end)
+	PassService.Changed:Connect(function(player)
+		CosmeticsService.apply(player)
+		DataService.push(player)
 	end)
 end
 

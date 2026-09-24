@@ -123,6 +123,8 @@ Config.MAP_ROTATION = { "TaskForceHQ", "UniversityCampus", "TokyoDistrict" }
 
 -- Studio testing helpers. These are ignored in live servers.
 Config.STUDIO_MIN_PLAYERS = 1
+-- Game passes treated as owned while testing in Studio, e.g. { "alias", "director", "vip" }.
+Config.STUDIO_PASSES = {} :: { string }
 -- Force the first player's role in Studio, by internal id: "Kira" (the Hand), "Follower"
 -- (Cultist), "L" (Zero), "Watari" (the Butler) or "TaskForce" (Agent).
 Config.STUDIO_FORCE_ROLE = ""

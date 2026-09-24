@@ -28,7 +28,11 @@ local LobbyStateRemote = Net.event("LobbyState")
 local MatchmakingService = {}
 
 local IS_STUDIO = RunService:IsStudio()
-local CROSS_SERVER = Config.CROSS_SERVER_MATCHMAKING and not IS_STUDIO and game.PlaceId ~= 0
+-- Never in private servers: it would teleport the owner's guests away.
+local CROSS_SERVER = Config.CROSS_SERVER_MATCHMAKING
+	and not IS_STUDIO
+	and game.PlaceId ~= 0
+	and not (game.PrivateServerId ~= "" and game.PrivateServerOwnerId ~= 0)
 
 local QUEUE_TTL = 90
 local ASSIGN_TTL = 120

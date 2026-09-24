@@ -63,11 +63,15 @@ local function apply(character: Model)
 	end
 	local showOutline = alpha < 1 and character ~= LocalPlayer.Character
 	if showOutline and not watch.highlight then
+		-- A Specter form cosmetic tints the outline.
+		local owner = Players:GetPlayerFromCharacter(character)
+		local tint = if owner then owner:GetAttribute("LSpecterColor") else nil
+		local color = if typeof(tint) == "Color3" then tint else Color3.fromRGB(210, 225, 255)
 		local highlight = Instance.new("Highlight")
 		highlight.Adornee = character
-		highlight.FillColor = Color3.fromRGB(170, 190, 230)
+		highlight.FillColor = color
 		highlight.FillTransparency = 0.8
-		highlight.OutlineColor = Color3.fromRGB(210, 225, 255)
+		highlight.OutlineColor = color
 		highlight.OutlineTransparency = 0.2
 		highlight.Parent = workspace.CurrentCamera
 		watch.highlight = highlight

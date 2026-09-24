@@ -8,12 +8,15 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
+local PassService = require(script.Parent.PassService)
+local ServerSettings = require(script.Parent.ServerSettings)
 
 local RewardService = {}
 
 -- Returns [playerState] = { coins, xp, won, lines = { { label, coins, xp } } }.
 function RewardService.payout(winner: string?)
 	local R = Config.REWARDS
+	local custom = ServerSettings.isCustom()
 	local results = {}
 	for _, ps in ipairs(Match.list) do
 		local kiraSide = Match.isKiraSide(ps)
@@ -22,6 +25,10 @@ function RewardService.payout(winner: string?)
 		local coins, xp = 0, 0
 		local function add(label: string, c: number, x: number)
 			if c == 0 and x == 0 then
+				return
+			end
+			-- Custom private-server rules pay participation only.
+			if custom and #lines > 0 then
 				return
 			end
 			coins += c
@@ -62,6 +69,10 @@ function RewardService.payout(winner: string?)
 		end
 		local duties = ps.stats.duties or 0
 		add(Terms.f("{Specter} duties x{n}", { n = duties }), duties * R.SPECTER_DUTY_COINS, duties * R.SPECTER_DUTY_XP)
+		if PassService.owns(ps.player, "coins2x") and coins > 0 then
+			table.insert(lines, { label = "Double Coins", coins = coins, xp = 0 })
+			coins *= 2
+		end
 		results[ps] = { coins = coins, xp = xp, won = won, lines = lines }
 		DataService.grant(ps.player, coins, xp, won, ps.stats.tasks)
 	end
