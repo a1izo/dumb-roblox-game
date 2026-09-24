@@ -845,7 +845,8 @@ function Builder:board(def)
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextYAlignment = Enum.TextYAlignment.Top
 	local boardPart = label:FindFirstAncestorWhichIsA("BasePart")
-	if boardPart and ModelLibrary.dress(boardPart, "EvidenceBoard", CFrame.new(0, 0, 0.05), (def.w or 12) / 12) then
+	local boardScale = math.min((def.w or 12) / 12, (def.h or 7) / 7)
+	if boardPart and ModelLibrary.dress(boardPart, "EvidenceBoard", CFrame.new(0, 0, 0.05), boardScale) then
 		-- The log is written in ink on the pinned sheet in the middle of the cork.
 		label.TextColor3 = Color3.fromRGB(24, 22, 26)
 		local padding = label:FindFirstChildOfClass("UIPadding")

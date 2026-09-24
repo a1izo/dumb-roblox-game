@@ -187,6 +187,16 @@ function RevealScreen.init()
 		Parent = root,
 	})
 	Widgets.sizeLimit(window, Vector2.new(1100, 700))
+	Widgets.inkSplat({
+		ImageColor3 = Theme.colors.accent,
+		ImageTransparency = 0.2,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0, 30),
+		Size = UDim2.fromOffset(300, 260),
+		Rotation = -6,
+		ZIndex = 0,
+		Parent = window,
+	}, 3)
 	winnerRibbon = Widgets.frame({
 		BackgroundTransparency = 0,
 		AnchorPoint = Vector2.new(0.5, 0),

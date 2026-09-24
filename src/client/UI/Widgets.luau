@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 
 local Motion = require(script.Parent.Core.Motion)
@@ -118,6 +119,34 @@ function Widgets.slant(gui: GuiObject, amount: number?): UIGradient
 		}),
 		Parent = gui,
 	})
+end
+
+-- An ink splat (made in Blender) behind a title. Stays empty until the textures are imported;
+-- it keeps checking for a little while in case they are still loading.
+function Widgets.inkSplat(props: { [string]: any }?, variant: number?): ImageLabel
+	local image = Create(
+		"ImageLabel",
+		merge({
+			Name = "InkSplat",
+			BackgroundTransparency = 1,
+			ImageColor3 = C.ink,
+			ImageTransparency = 0,
+			ScaleType = Enum.ScaleType.Fit,
+			ZIndex = 0,
+		}, props)
+	)
+	local name = "InkSplat" .. tostring(variant or math.random(1, 3))
+	task.spawn(function()
+		for _ = 1, 12 do
+			local texture = Assets.texture(name)
+			if texture ~= "" then
+				image.Image = texture
+				return
+			end
+			task.wait(2.5)
+		end
+	end)
+	return image
 end
 
 -- Basic elements --------------------------------------------------------------------------

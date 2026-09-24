@@ -250,6 +250,17 @@ function Lobby.build(b)
 		b:bench(-40, z, -90)
 		b:bench(40, z, 90)
 	end
+	-- A lounge along the north wall: sofas under bookcases.
+	for _, x in ipairs({ -30, 30 }) do
+		b:sofa(x, -44.5, 180)
+		b:shelf(x, -48.6, 180, 9)
+	end
+	for _, x in ipairs({ -40, 40 }) do
+		b:table(x, -42, 90, 4, 3)
+	end
+	-- Vending machines either side of the Academy door.
+	b:vending(-14, 47.5, 0)
+	b:vending(14, 47.5, 0)
 	b:plant(-45, -45)
 	b:plant(45, -45)
 	b:plant(-45, 45)

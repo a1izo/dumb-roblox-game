@@ -122,6 +122,16 @@ function Announcer.init()
 		Size = UDim2.new(0, 0, 1, 0),
 		Parent = subtitleStrip,
 	})
+	-- An ink splat behind the title ribbon.
+	Widgets.inkSplat({
+		ImageTransparency = 0.15,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, -40, 0, -30),
+		Size = UDim2.fromOffset(240, 200),
+		Rotation = 8,
+		ZIndex = 0,
+		Parent = group,
+	}, 1)
 	group.Parent = Screens.overlay
 	Net.event("Announce").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" and type(payload.title) == "string" then

@@ -4,6 +4,7 @@
 -- need a shape are skipped and bursts use Roblox's default particle.
 
 local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -89,7 +90,14 @@ function InkFx.splat(position: Vector3, size: number?, colour: Color3?, seconds:
 	end
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { workspace.CurrentCamera }
+	-- The floor, not bodies or effects.
+	local ignore: { Instance } = { workspace.CurrentCamera }
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			table.insert(ignore, player.Character)
+		end
+	end
+	params.FilterDescendantsInstances = ignore
 	local hit = workspace:Raycast(position + Vector3.new(0, 2, 0), Vector3.new(0, -12, 0), params)
 	if not hit then
 		return

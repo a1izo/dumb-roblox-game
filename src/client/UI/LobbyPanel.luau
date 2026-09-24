@@ -107,12 +107,24 @@ local function buildMenu()
 		Parent = Screens.hud,
 	})
 	Widgets.list(menu, Theme.space.sm)
+	-- The title over a red ink splat.
+	local titleHolder = Widgets.frame({ Size = UDim2.new(1, 0, 0, 78), LayoutOrder = 1, Parent = menu })
+	Widgets.inkSplat({
+		ImageColor3 = C.accent,
+		ImageTransparency = 0.1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0, 150, 0.5, 0),
+		Size = UDim2.fromOffset(250, 250),
+		Rotation = -12,
+		ZIndex = 1,
+		Parent = titleHolder,
+	}, 2)
 	Widgets.display({
 		Text = string.upper(Terms.GAME),
 		TextSize = 72,
-		Size = UDim2.new(1, 0, 0, 78),
-		LayoutOrder = 1,
-		Parent = menu,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 2,
+		Parent = titleHolder,
 	})
 	local tagline = Widgets.ribbon({ LayoutOrder = 2, Parent = menu }, Terms.TAGLINE)
 	tagline.Size = UDim2.fromOffset(0, 28)

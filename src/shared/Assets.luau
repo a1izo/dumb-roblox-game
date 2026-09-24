@@ -84,7 +84,8 @@ Assets.anim = {
 	specterFloat = "",
 } :: { [string]: string }
 
--- The game-wide movement set (R15). Empty slots keep Roblox's defaults.
+-- Not used while the Blender movement clips animate characters (src/shared/Anim/Clips.luau and
+-- the empty Animate script). Kept for places that restore Roblox's Animate script.
 Assets.locomotion = {
 	idle = "",
 	idleAlt = "",

@@ -172,6 +172,9 @@ local function noir(b)
 	for _, spot in ipairs({ { 3, -40, 5, 3 }, { -30, 3, 6, 3 }, { 46, -2, 4, 3 }, { -2, 52, 5, 4 }, { 70, 4, 6, 3 } }) do
 		Style.puddle(b, spot[1], spot[2], spot[3], spot[4])
 	end
+	for _, spot in ipairs({ { -9, -26 }, { 9, 26 }, { -30, 16 }, { 30, -16 }, { -6, 44 }, { 6, -44 } }) do
+		Style.prop(b, "TrashCan", spot[1], spot[2], (spot[2] * 5) % 360)
+	end
 	Style.steamVent(b, -104, -30)
 	Style.steamVent(b, 104, 40)
 	Style.skyline(b, 110, 90, 23)

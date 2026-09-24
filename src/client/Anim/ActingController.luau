@@ -113,7 +113,8 @@ local function onDeath(cue)
 	PoseController.play(
 		character,
 		poseId,
-		{ startAt = localTime(cue.at), fadeIn = 0.15, duration = 1.5, fadeOut = 0.1 }
+		-- Holds the last frame until the server locks the pose into the body (LPoseBaked).
+		{ startAt = localTime(cue.at), fadeIn = 0.15 }
 	)
 end
 
