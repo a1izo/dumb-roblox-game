@@ -106,6 +106,16 @@ function ClientState.isLiving(): boolean
 	return ClientState.public.active and me ~= nil and me.alive == true
 end
 
+-- Out of the match but still in it as a Specter (until the results).
+function ClientState.isSpecter(): boolean
+	local me = ClientState.me()
+	return ClientState.public.active
+		and me ~= nil
+		and not me.alive
+		and me.status ~= "left"
+		and ClientState.public.phase ~= "Reveal"
+end
+
 function ClientState.phase(): string
 	if not ClientState.public.active then
 		return "Lobby"

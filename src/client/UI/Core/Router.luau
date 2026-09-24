@@ -22,6 +22,7 @@ export type View = {
 	active: boolean,
 	participant: boolean,
 	living: boolean,
+	specter: boolean,
 	role: string?,
 	private: { [string]: any },
 }
@@ -58,6 +59,7 @@ function Router.view(): View
 		active = ClientState.public.active == true,
 		participant = ClientState.isParticipant(),
 		living = ClientState.isLiving(),
+		specter = ClientState.isSpecter(),
 		role = ClientState.role(),
 		private = ClientState.private,
 	}

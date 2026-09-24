@@ -95,7 +95,7 @@ function QuickChatPanel.init()
 		layer = "panel",
 		window = panel,
 		allowed = function(view)
-			return view.living and not Actions.CUTSCENE_PHASES[view.phase]
+			return (view.living or view.specter) and not Actions.CUTSCENE_PHASES[view.phase]
 		end,
 		show = function()
 			panel.Visible = true

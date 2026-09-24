@@ -149,13 +149,14 @@ local function onElimination(payload)
 	local kind = payload.kind
 	if kind == "dead" then
 		overlayTitle.Text = "YOU DIED"
-		overlaySubtitle.Text = "Cause of death: " .. tostring(payload.cause) .. ". You are now a spectator."
+		overlaySubtitle.Text =
+			Terms.f("Cause of death: {cause}. You rise as a {Specter}.", { cause = tostring(payload.cause) })
 	elseif kind == "voted" then
 		overlayTitle.Text = "VOTED OUT"
-		overlaySubtitle.Text = Terms.f("{Agency} removed you. You are now a spectator.")
+		overlaySubtitle.Text = Terms.f("{Agency} removed you. You rise as a {Specter}.")
 	elseif kind == "arrested" then
 		overlayTitle.Text = "ARRESTED"
-		overlaySubtitle.Text = Terms.f("{Zero} served a warrant with your real name. You are now a spectator.")
+		overlaySubtitle.Text = Terms.f("{Zero} served a warrant with your real name. You rise as a {Specter}.")
 	else
 		return
 	end

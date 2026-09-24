@@ -18,7 +18,11 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 		return {}
 	end
 	if not living then
-		return { line("You are out. Watch the case unfold until the reveal.") }
+		return {
+			line(Terms.f("You are a {Specter}: fly through walls, unseen by the living")),
+			line("Gather lost souls for a few coins"),
+			line(Terms.f("Chat with other {specters} only")),
+		}
 	end
 	if phase == "Briefing" then
 		return { line("Learn your role and your real name") }

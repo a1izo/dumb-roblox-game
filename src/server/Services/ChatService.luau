@@ -2,8 +2,11 @@
 --   * Living players cannot type outside meetings; they use quick-chat and emotes.
 --   * During the meeting and the vote a separate channel opens for living players.
 --     Messages containing the full real name of a living player are blocked.
---   * Dead, voted-out and lobby players chat among themselves; living players never
---     receive those messages (this also covers whispers).
+--   * Specters (players out of the match who stay as ghosts) chat in their own channel,
+--     which only Specters receive. They can read the meeting but not speak in it, and they
+--     cannot use general chat until the match ends.
+--   * Lobby players chat among themselves; living players never receive those messages
+--     (this also covers whispers).
 --   * Voice input of match players is muted during the match.
 
 local Players = game:GetService("Players")
@@ -25,8 +28,10 @@ local QuickChatMsgRemote = Net.event("QuickChatMsg")
 local ChatService = {}
 
 local MEETING_CHANNEL = "LGameMeeting"
+local SPECTER_CHANNEL = "LGameSpecters"
 
 local meetingChannel: TextChannel? = nil
+local specterChannel: TextChannel? = nil
 local otherChannels: { TextChannel } = {}
 local meetingOpen = false
 local blockedNotices: { [string]: boolean } = {}
@@ -34,6 +39,15 @@ local blockedNotices: { [string]: boolean } = {}
 -- Living players are cut off from normal chat until the reveal.
 local function isLiving(userId: number): boolean
 	return Match.phase ~= "Reveal" and Match.phase ~= "Outro" and Match.isLivingUserId(userId)
+end
+
+-- Out of the match but still in it as a Specter (players who left are not Specters).
+local function isSpecter(userId: number): boolean
+	if not Match.active or Match.phase == "Reveal" then
+		return false
+	end
+	local ps = Match.getByUserId(userId)
+	return ps ~= nil and not ps.alive and ps.status ~= "left"
 end
 
 local function containsLivingRealName(text: string): boolean
@@ -52,8 +66,10 @@ local function applySource(channel: TextChannel, child: Instance)
 	local source = child :: TextSource
 	if channel == meetingChannel then
 		source.CanSend = meetingOpen and isLiving(source.UserId)
+	elseif channel == specterChannel then
+		source.CanSend = isSpecter(source.UserId)
 	else
-		source.CanSend = not isLiving(source.UserId)
+		source.CanSend = not isLiving(source.UserId) and not isSpecter(source.UserId)
 	end
 end
 
@@ -68,9 +84,11 @@ end
 
 -- Re-applies every rule. Called whenever the match state changes.
 function ChatService.refresh()
-	if meetingChannel then
-		for _, child in ipairs(meetingChannel:GetChildren()) do
-			applySource(meetingChannel, child)
+	for _, channel in ipairs({ meetingChannel, specterChannel }) do
+		if channel then
+			for _, child in ipairs(channel:GetChildren()) do
+				applySource(channel, child)
+			end
 		end
 	end
 	for _, channel in ipairs(otherChannels) do
@@ -87,7 +105,12 @@ end
 
 -- Any non-meeting channel (general, system, whispers): living players are cut off.
 local function hookChannel(child: Instance)
-	if not child:IsA("TextChannel") or child == meetingChannel or table.find(otherChannels, child) then
+	if
+		not child:IsA("TextChannel")
+		or child == meetingChannel
+		or child == specterChannel
+		or table.find(otherChannels, child)
+	then
 		return
 	end
 	local channel = child :: TextChannel
@@ -128,6 +151,30 @@ local function onMeetingMessage(message: TextChatMessage, _recipient: TextSource
 	return true
 end
 
+-- Adds a new Specter to the Specters' channel.
+function ChatService.addSpecter(userId: number)
+	local channel = specterChannel
+	if not channel or channel:FindFirstChild(tostring(userId)) then
+		return
+	end
+	task.spawn(function()
+		pcall(function()
+			channel:AddUserAsync(userId)
+		end)
+		ChatService.refresh()
+	end)
+end
+
+local function clearChannel(channel: TextChannel?)
+	if channel then
+		for _, child in ipairs(channel:GetChildren()) do
+			if child:IsA("TextSource") then
+				child:Destroy()
+			end
+		end
+	end
+end
+
 function ChatService.setMeetingOpen(open: boolean)
 	meetingOpen = open
 	if not open then
@@ -164,13 +211,8 @@ end
 function ChatService.onMatchEnd()
 	meetingOpen = false
 	blockedNotices = {}
-	if meetingChannel then
-		for _, child in ipairs(meetingChannel:GetChildren()) do
-			if child:IsA("TextSource") then
-				child:Destroy()
-			end
-		end
-	end
+	clearChannel(meetingChannel)
+	clearChannel(specterChannel)
 	ChatService.refresh()
 end
 
@@ -184,12 +226,22 @@ local function onQuickChat(player: Player, index)
 		return
 	end
 	local ps = Match.getLiving(player)
+	local specter = isSpecter(player.UserId)
+	local participant = if Match.active then Match.get(player) else nil
 	local payload = {
 		userId = player.UserId,
-		name = if ps then ps.alias else player.DisplayName,
+		name = if participant then participant.alias else player.DisplayName,
 		text = phrase,
+		specter = specter,
 	}
-	if Match.active and not ps then
+	if specter then
+		-- Specters only reach other Specters.
+		for _, other in ipairs(Players:GetPlayers()) do
+			if isSpecter(other.UserId) then
+				QuickChatMsgRemote:FireClient(other, payload)
+			end
+		end
+	elseif Match.active and not ps then
 		-- Spectators and lobby players never reach the living.
 		for _, other in ipairs(Players:GetPlayers()) do
 			if not isLiving(other.UserId) then
@@ -221,6 +273,18 @@ local function setupChannels()
 	channel.Parent = folder
 	meetingChannel = channel
 
+	local specters = Instance.new("TextChannel")
+	specters.Name = SPECTER_CHANNEL
+	specters.ShouldDeliverCallback = function(message: TextChatMessage, recipient: TextSource): boolean
+		local sender = message.TextSource
+		return sender ~= nil and isSpecter(sender.UserId) and isSpecter(recipient.UserId)
+	end
+	specters.ChildAdded:Connect(function(child)
+		applySource(specters, child)
+	end)
+	specters.Parent = folder
+	specterChannel = specters
+
 	for _, child in ipairs(folder:GetChildren()) do
 		hookChannel(child)
 	end
@@ -229,7 +293,10 @@ end
 
 function ChatService.init()
 	task.spawn(setupChannels)
-	Match.Eliminated:Connect(function()
+	Match.Eliminated:Connect(function(ps, kind)
+		if kind ~= "left" then
+			ChatService.addSpecter(ps.userId)
+		end
 		ChatService.refresh()
 	end)
 	Players.PlayerAdded:Connect(function(player)

@@ -60,6 +60,8 @@ function RewardService.payout(winner: string?)
 		if ps.stats.arrestedKira then
 			add(Terms.f("Arrested {hand}"), R.ARREST_COINS, R.ARREST_XP)
 		end
+		local duties = ps.stats.duties or 0
+		add(Terms.f("{Specter} duties x{n}", { n = duties }), duties * R.SPECTER_DUTY_COINS, duties * R.SPECTER_DUTY_XP)
 		results[ps] = { coins = coins, xp = xp, won = won, lines = lines }
 		DataService.grant(ps.player, coins, xp, won, ps.stats.tasks)
 	end

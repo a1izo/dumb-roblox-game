@@ -22,6 +22,7 @@ local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local EvidenceService = require(script.Parent.EvidenceService)
 local EyesService = require(script.Parent.EyesService)
+local GhostService = require(script.Parent.GhostService)
 local HoodService = require(script.Parent.HoodService)
 local MapService = require(script.Parent.MapService)
 local Match = require(script.Parent.Match)
@@ -58,6 +59,7 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	end
 	local uncuttable = options ~= nil and options.uncuttable == true
 	Match.phase = name
+	GhostService.onPhase(name)
 	Match.phaseEndsAt = workspace:GetServerTimeNow() + length
 	if onStart then
 		onStart()
@@ -353,6 +355,7 @@ local function runMatch(players: { Player })
 	SuspicionService.onMatchStart()
 	MeetingService.onMatchStart(map)
 	ChatService.onMatchStart()
+	GhostService.onMatchStart()
 
 	for i, ps in ipairs(Match.list) do
 		ps.player.CameraMaxZoomDistance = MATCH_ZOOM
@@ -440,6 +443,7 @@ local function cleanup()
 	WarrantService.close()
 	ChatService.onMatchEnd()
 	MeetingService.onMatchEnd()
+	GhostService.onMatchEnd()
 
 	local participants = Match.list
 	Match.finish()

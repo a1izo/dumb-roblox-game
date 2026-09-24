@@ -3,18 +3,18 @@
 -- place as a lifeless copy at the table and the player respawns. The copies are cleared
 -- when the next round starts, and a card with the alias marks the empty place.
 
-local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 
+local CollisionGroups = require(script.Parent.CollisionGroups)
 local Match = require(script.Parent.Match)
 
 local RagdollService = {}
 
-RagdollService.GROUP = "Ragdoll"
+RagdollService.GROUP = CollisionGroups.RAGDOLL
 -- The collapse plays for this long (cue lead included) before the body goes limp.
 RagdollService.COLLAPSE_DELAY = 1.7
 -- How long the limp body stays physical before it is frozen.
@@ -165,14 +165,6 @@ function RagdollService.clearBodies()
 	if folder then
 		folder:ClearAllChildren()
 	end
-end
-
-function RagdollService.init()
-	pcall(function()
-		PhysicsService:RegisterCollisionGroup(RagdollService.GROUP)
-	end)
-	PhysicsService:CollisionGroupSetCollidable(RagdollService.GROUP, RagdollService.GROUP, true)
-	PhysicsService:CollisionGroupSetCollidable(RagdollService.GROUP, "Default", true)
 end
 
 return RagdollService

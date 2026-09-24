@@ -81,7 +81,7 @@ Actions.list = {
 		pad = Enum.KeyCode.DPadLeft,
 		padLabel = "D-Left",
 		when = function(view: View)
-			return view.living and not Actions.CUTSCENE_PHASES[view.phase]
+			return (view.living or view.specter) and not Actions.CUTSCENE_PHASES[view.phase]
 		end,
 		run = function()
 			Router.toggle("quickChat")

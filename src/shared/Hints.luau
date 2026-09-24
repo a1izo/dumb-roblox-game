@@ -72,7 +72,11 @@ local RAW: { { string } } = {
 		"Someone died",
 		"Their name was written in {grimoire} during the last phase. Who could have learned it?",
 	},
-	{ "eliminated", "You are out", "You can still watch. Stay until the end to see every role and real name." },
+	{
+		"eliminated",
+		"You are a {Specter}",
+		"Fly with WASD, Space (up) and Ctrl (down). The living cannot see or hear you. Gather lost souls for coins and chat with other {specters}.",
+	},
 	{
 		"scratchpad",
 		"Your notes",

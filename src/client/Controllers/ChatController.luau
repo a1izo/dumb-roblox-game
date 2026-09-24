@@ -16,6 +16,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local ChatController = {}
 
 local MEETING_CHANNEL = "LGameMeeting"
+local SPECTER_CHANNEL = "LGameSpecters"
 
 local function channel(name: string): TextChannel?
 	local folder = TextChatService:FindFirstChild("TextChannels")
@@ -32,7 +33,14 @@ local function update()
 		return
 	end
 	local phase = ClientState.phase()
-	if ClientState.isLiving() and phase ~= "Reveal" and phase ~= "Outro" then
+	if ClientState.isSpecter() then
+		-- Specters talk among themselves only.
+		local specters = channel(SPECTER_CHANNEL)
+		inputBar.Enabled = specters ~= nil
+		if specters then
+			inputBar.TargetTextChannel = specters
+		end
+	elseif ClientState.isLiving() and phase ~= "Reveal" and phase ~= "Outro" then
 		local meeting = channel(MEETING_CHANNEL)
 		if (phase == "Meeting" or phase == "Vote" or phase == "Verdict") and meeting then
 			inputBar.TargetTextChannel = meeting
@@ -53,7 +61,11 @@ end
 local function onIncomingMessage(message: TextChatMessage)
 	local source = message.TextSource
 	local textChannel = message.TextChannel
-	if not source or not textChannel or textChannel.Name ~= MEETING_CHANNEL then
+	if not source or not textChannel then
+		return nil
+	end
+	local specters = textChannel.Name == SPECTER_CHANNEL
+	if textChannel.Name ~= MEETING_CHANNEL and not specters then
 		return nil
 	end
 	local alias = ClientState.aliasOf(source.UserId)
@@ -61,7 +73,9 @@ local function onIncomingMessage(message: TextChatMessage)
 		return nil
 	end
 	local properties = Instance.new("TextChatMessageProperties")
-	properties.PrefixText = string.format('<font color="#E6C36E">%s:</font>', alias)
+	properties.PrefixText = if specters
+		then string.format('<font color="#9AA7C7">[Specter] %s:</font>', alias)
+		else string.format('<font color="#E6C36E">%s:</font>', alias)
 	return properties
 end
 
@@ -81,7 +95,8 @@ local function onQuickChat(payload)
 	local system = channel("RBXSystem") or channel("RBXGeneral")
 	if system then
 		pcall(function()
-			system:DisplaySystemMessage(string.format("[Quick] %s: %s", tostring(payload.name), payload.text))
+			local tag = if payload.specter then "[Specter]" else "[Quick]"
+			system:DisplaySystemMessage(string.format("%s %s: %s", tag, tostring(payload.name), payload.text))
 		end)
 	end
 end

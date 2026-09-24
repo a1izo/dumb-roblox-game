@@ -108,6 +108,10 @@ Config.REWARDS = {
 	ARREST_XP = 60,
 	EYES_READ_COINS = 5,
 	EYES_READ_XP = 5,
+	-- Lost souls gathered as a Specter (at most 8 per match, so always less than surviving
+	-- plus winning).
+	SPECTER_DUTY_COINS = 3,
+	SPECTER_DUTY_XP = 5,
 }
 
 -- One-time reward for finishing every drill in the Academy (the lobby training wing).
