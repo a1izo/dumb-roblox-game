@@ -7,7 +7,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
-local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
@@ -18,18 +18,17 @@ local TipPanel = {}
 
 local window: Frame
 local box: TextBox
+local sendButton: TextButton
 
 function TipPanel.open()
-	if not ClientState.isLiving() then
-		return
-	end
-	box.Text = ""
-	window.Visible = true
+	Router.open("tip")
 end
 
 function TipPanel.init()
 	local body
-	window, body = Widgets.modal(Screens.modal, "Anonymous tip box", Vector2.new(460, 320))
+	window, body = Widgets.modal(Screens.modal, "Anonymous tip box", Vector2.new(460, 320), function()
+		Router.close("tip", "user")
+	end)
 	Widgets.label({
 		Text = Terms.f("Only {zero} reads these tips, and never sees who sent them."),
 		TextSize = 14,
@@ -40,20 +39,19 @@ function TipPanel.init()
 	box = Widgets.textbox({
 		PlaceholderText = Terms.f("Your tip for {zero}..."),
 		Font = Theme.fonts.typewriter,
+		TextColor3 = Theme.colors.ink,
+		BackgroundColor3 = Theme.colors.paper,
+		PlaceholderColor3 = Theme.colors.inkMuted,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		Position = UDim2.fromOffset(0, 28),
 		Size = UDim2.new(1, 0, 1, -86),
 		Parent = body,
 	})
-	box:GetPropertyChangedSignal("Text"):Connect(function()
-		if #box.Text > Config.TIP_MAX_LENGTH then
-			box.Text = string.sub(box.Text, 1, Config.TIP_MAX_LENGTH)
-		end
-	end)
-	Widgets.button({
+	Widgets.limitLength(box, Config.TIP_MAX_LENGTH)
+	sendButton = Widgets.button({
 		Text = "DROP THE TIP",
 		Font = Theme.fonts.black,
-		BackgroundColor3 = Theme.colors.accent,
+		Variant = "primary",
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 46),
@@ -61,14 +59,26 @@ function TipPanel.init()
 	}, function()
 		if #box.Text > 0 then
 			TipRemote:FireServer(box.Text)
-			window.Visible = false
+			Router.close("tip", "user")
 		end
 	end)
-	ClientState.PhaseChanged:Connect(function(phase)
-		if phase ~= "Investigation" then
+	Router.register("tip", {
+		layer = "modal",
+		window = window,
+		allowed = function(view)
+			return view.living and view.phase == "Investigation"
+		end,
+		show = function()
+			box.Text = ""
+			window.Visible = true
+		end,
+		hide = function()
 			window.Visible = false
-		end
-	end)
+		end,
+		firstSelection = function()
+			return sendButton
+		end,
+	})
 end
 
 return TipPanel

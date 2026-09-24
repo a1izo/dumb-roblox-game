@@ -1,12 +1,20 @@
--- Inkbound client bootstrap: builds the UI and starts the controllers.
+-- Inkbound client bootstrap: sets up the UI core, builds every screen, starts the
+-- controllers, then asks the server for the current state.
 
 local ClientState = require(script:WaitForChild("ClientState"))
 
 local UI = script:WaitForChild("UI")
+local Core = UI:WaitForChild("Core")
+local Clock = require(Core:WaitForChild("Clock"))
+local Responsive = require(Core:WaitForChild("Responsive"))
+local Router = require(Core:WaitForChild("Router"))
+local Settings = require(Core:WaitForChild("Settings"))
+
 local Announcer = require(UI:WaitForChild("Announcer"))
 local BriefingScreen = require(UI:WaitForChild("BriefingScreen"))
 local DebugPanel = require(UI:WaitForChild("DebugPanel"))
 local EvidencePanel = require(UI:WaitForChild("EvidencePanel"))
+local Hud = require(UI:WaitForChild("Hud"))
 local LobbyPanel = require(UI:WaitForChild("LobbyPanel"))
 local LPanel = require(UI:WaitForChild("LPanel"))
 local MeetingPanel = require(UI:WaitForChild("MeetingPanel"))
@@ -15,13 +23,12 @@ local PartyPanel = require(UI:WaitForChild("PartyPanel"))
 local PrivateScreen = require(UI:WaitForChild("PrivateScreen"))
 local QuickChatPanel = require(UI:WaitForChild("QuickChatPanel"))
 local RevealScreen = require(UI:WaitForChild("RevealScreen"))
-local RoleHud = require(UI:WaitForChild("RoleHud"))
+local SettingsPanel = require(UI:WaitForChild("SettingsPanel"))
 local ShopPanel = require(UI:WaitForChild("ShopPanel"))
 local SpectatePanel = require(UI:WaitForChild("SpectatePanel"))
 local TaskScreen = require(UI:WaitForChild("TaskScreen"))
 local TipPanel = require(UI:WaitForChild("TipPanel"))
 local Toasts = require(UI:WaitForChild("Toasts"))
-local TopBar = require(UI:WaitForChild("TopBar"))
 local VotePanel = require(UI:WaitForChild("VotePanel"))
 local WorldFx = require(UI:WaitForChild("WorldFx"))
 
@@ -29,16 +36,24 @@ local Controllers = script:WaitForChild("Controllers")
 local ChatController = require(Controllers:WaitForChild("ChatController"))
 local CoreGuiController = require(Controllers:WaitForChild("CoreGuiController"))
 local EmoteController = require(Controllers:WaitForChild("EmoteController"))
-local InputController = require(Controllers:WaitForChild("InputController"))
 local InteractionController = require(Controllers:WaitForChild("InteractionController"))
 
--- UI first, so every panel is listening before state arrives.
+local InputRouter = require(script:WaitForChild("Input"):WaitForChild("InputRouter"))
+
+-- UI core: device scale, the shared clock, the screen router and the player's settings.
+Responsive.init()
+Clock.init()
+Router.init()
+Settings.init()
+
+-- Screens, so every panel is registered and listening before state arrives.
 Toasts.init()
 Announcer.init()
-TopBar.init()
+Hud.init()
+LobbyPanel.init()
 ShopPanel.init()
 PartyPanel.init()
-LobbyPanel.init()
+SettingsPanel.init()
 BriefingScreen.init()
 EvidencePanel.init()
 NotePanel.init()
@@ -52,12 +67,11 @@ QuickChatPanel.init()
 SpectatePanel.init()
 RevealScreen.init()
 WorldFx.init()
-RoleHud.init()
 DebugPanel.init()
 
 EmoteController.init()
 InteractionController.init()
-InputController.init()
+InputRouter.init()
 ChatController.init()
 CoreGuiController.init()
 

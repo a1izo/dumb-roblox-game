@@ -7,6 +7,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
@@ -27,17 +28,21 @@ local function send(payload)
 	NoteRequest:FireServer(payload)
 end
 
-local function setButtons(buttons: { { text: string, color: Color3?, action: () -> () } })
+local firstButton: TextButton? = nil
+
+local function setButtons(buttons: { { text: string, variant: string?, action: () -> () } })
 	Widgets.clear(buttonRow)
+	firstButton = nil
 	for index, info in ipairs(buttons) do
-		Widgets.button({
+		local button = Widgets.button({
 			Text = info.text,
-			TextSize = 15,
-			BackgroundColor3 = info.color or Theme.colors.button,
+			TextSize = Theme.text.body,
+			Variant = info.variant,
 			Size = UDim2.new(1 / #buttons, -6, 1, 0),
 			LayoutOrder = index,
 			Parent = buttonRow,
 		}, info.action)
+		firstButton = firstButton or button
 	end
 end
 
@@ -46,11 +51,11 @@ local function show(mode: string, title: string)
 	paper.Visible = mode == "read"
 	writeBox.Visible = mode == "write"
 	dropList.Visible = mode == "drop"
-	window.Visible = true
+	Router.open("note")
 end
 
 function NotePanel.close()
-	window.Visible = false
+	Router.close("note", "user")
 end
 
 -- Writing on the blank sheet the player carries.
@@ -63,7 +68,7 @@ function NotePanel.openWrite()
 	setButtons({
 		{
 			text = "WRITE",
-			color = Theme.colors.team,
+			variant = "team",
 			action = function()
 				local text = writeBox.Text
 				if #text > 0 then
@@ -93,7 +98,7 @@ end
 
 -- N key: write on a blank sheet, or read the carried note.
 function NotePanel.toggle()
-	if window.Visible then
+	if Router.isOpen("note") then
 		NotePanel.close()
 		return
 	end
@@ -132,7 +137,7 @@ local function onNoteView(payload)
 	elseif payload.canTake then
 		table.insert(buttons, {
 			text = "Take",
-			color = Theme.colors.team,
+			variant = "team",
 			action = function()
 				send({ action = "take", noteId = noteId })
 				NotePanel.close()
@@ -142,7 +147,7 @@ local function onNoteView(payload)
 	if payload.canBurn then
 		table.insert(buttons, {
 			text = "Burn",
-			color = Theme.colors.accent,
+			variant = "primary",
 			action = function()
 				send({ action = "burn", noteId = noteId })
 				NotePanel.close()
@@ -170,9 +175,8 @@ local function onDropView(payload)
 		Widgets.button({
 			Text = string.format("Folded note #%d  (read)", index),
 			Font = Theme.fonts.typewriter,
-			BackgroundColor3 = Theme.colors.paper,
-			TextColor3 = Theme.colors.ink,
-			Size = UDim2.new(1, -8, 0, 36),
+			Variant = "paper",
+			Size = UDim2.new(1, -8, 0, 40),
 			LayoutOrder = index,
 			Parent = dropList,
 		}, function()
@@ -183,7 +187,7 @@ local function onDropView(payload)
 	if payload.canLeave then
 		table.insert(buttons, {
 			text = "Leave my note here",
-			color = Theme.colors.team,
+			variant = "team",
 			action = function()
 				send({ action = "leave", dropId = payload.dropId })
 				NotePanel.close()
@@ -196,7 +200,7 @@ end
 
 function NotePanel.init()
 	local body
-	window, body = Widgets.modal(Screens.modal, "Note", Vector2.new(460, 380))
+	window, body = Widgets.modal(Screens.modal, "Note", Vector2.new(460, 380), NotePanel.close)
 	titleLabel = window:FindFirstChild("Title") :: TextLabel
 	paper = Widgets.panel({
 		BackgroundColor3 = Theme.colors.paper,
@@ -225,11 +229,7 @@ function NotePanel.init()
 		Size = UDim2.new(1, 0, 1, -56),
 		Parent = body,
 	})
-	writeBox:GetPropertyChangedSignal("Text"):Connect(function()
-		if #writeBox.Text > Config.NOTE_MAX_LENGTH then
-			writeBox.Text = string.sub(writeBox.Text, 1, Config.NOTE_MAX_LENGTH)
-		end
-	end)
+	Widgets.limitLength(writeBox, Config.NOTE_MAX_LENGTH)
 	dropList = Widgets.scroll({ Size = UDim2.new(1, 0, 1, -56), Parent = body })
 	Widgets.list(dropList, 6)
 	buttonRow = Widgets.frame({
@@ -242,16 +242,22 @@ function NotePanel.init()
 
 	Net.event("NoteView").OnClientEvent:Connect(onNoteView)
 	Net.event("DropPointView").OnClientEvent:Connect(onDropView)
-	ClientState.PhaseChanged:Connect(function(phase)
-		if phase ~= "Investigation" and phase ~= "DeathNote" then
-			NotePanel.close()
-		end
-	end)
-	ClientState.PrivateChanged:Connect(function()
-		if not ClientState.isLiving() then
-			NotePanel.close()
-		end
-	end)
+	Router.register("note", {
+		layer = "modal",
+		window = window,
+		allowed = function(view)
+			return view.living and (view.phase == "Investigation" or view.phase == "DeathNote")
+		end,
+		show = function()
+			window.Visible = true
+		end,
+		hide = function()
+			window.Visible = false
+		end,
+		firstSelection = function()
+			return firstButton
+		end,
+	})
 end
 
 return NotePanel

@@ -201,7 +201,6 @@ local function reveal()
 			duration = Match.phaseLength("Reveal"),
 		})
 	end
-	Match.announce(winnerName .. " wins", reason, if winner == "Team" then "team" else "kira")
 	Match.pushState()
 	Match.pushAllPrivate()
 	while workspace:GetServerTimeNow() < Match.phaseEndsAt do

@@ -1,4 +1,5 @@
--- L's private desk: the suspicion meter and the inbox (anonymous tips and reports).
+-- Zero's private desk (role id "L"): the suspicion meter and the inbox of anonymous tips
+-- and reports.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -7,6 +8,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Toasts = require(script.Parent.Toasts)
@@ -92,7 +94,7 @@ local function addInbox(payload)
 		)
 	end
 	local row = Widgets.panel({
-		BackgroundColor3 = if isTip then Color3.fromRGB(44, 30, 34) else Theme.colors.panelLight,
+		BackgroundColor3 = if isTip then Theme.colors.paper else Theme.colors.panelLight,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, -8, 0, 0),
 		LayoutOrder = -inboxCount,
@@ -103,8 +105,8 @@ local function addInbox(payload)
 	Widgets.label({
 		Text = header,
 		Font = Theme.fonts.bold,
-		TextSize = 13,
-		TextColor3 = if isTip then Theme.colors.gold else Theme.colors.team,
+		TextSize = Theme.text.caption,
+		TextColor3 = if isTip then Theme.colors.accent else Theme.colors.team,
 		LayoutOrder = 1,
 		Parent = row,
 	})
@@ -113,7 +115,8 @@ local function addInbox(payload)
 		Widgets.label({
 			Text = text,
 			Font = Theme.fonts.typewriter,
-			TextSize = 15,
+			TextSize = Theme.text.body,
+			TextColor3 = if isTip then Theme.colors.ink else Theme.colors.text,
 			AutomaticSize = Enum.AutomaticSize.Y,
 			Size = UDim2.new(1, 0, 0, 0),
 			LayoutOrder = 2,
@@ -123,20 +126,16 @@ local function addInbox(payload)
 end
 
 function LPanel.toggle()
-	if ClientState.role() ~= "L" then
-		return
-	end
-	window.Visible = not window.Visible
-	if window.Visible then
-		renderMeter()
-	end
+	Router.toggle("zeroDesk")
 end
 
 function LPanel.init()
 	local body
-	window, body = Widgets.modal(Screens.modal, Terms.f("{ZeroDesk}"), Vector2.new(720, 520))
+	window, body = Widgets.modal(Screens.modal, Terms.f("{ZeroDesk}"), Vector2.new(720, 520), function()
+		Router.close("zeroDesk", "user")
+	end)
 	local left = Widgets.frame({ Size = UDim2.new(0.5, -8, 1, 0), Parent = body })
-	Widgets.label({ Text = "SUSPICION METER", Font = Theme.fonts.black, TextSize = 14, Parent = left })
+	Widgets.header({ Text = "Suspicion meter", Parent = left })
 	meterNote = Widgets.label({
 		TextSize = 12,
 		TextColor3 = Theme.colors.muted,
@@ -153,7 +152,7 @@ function LPanel.init()
 		Size = UDim2.new(0.5, -8, 1, 0),
 		Parent = body,
 	})
-	Widgets.label({ Text = "INBOX: TIPS AND REPORTS", Font = Theme.fonts.black, TextSize = 14, Parent = right })
+	Widgets.header({ Text = "Inbox: tips and reports", Parent = right })
 	inbox = Widgets.scroll({ Position = UDim2.fromOffset(0, 26), Size = UDim2.new(1, 0, 1, -26), Parent = right })
 	Widgets.list(inbox, 6)
 
@@ -162,7 +161,7 @@ function LPanel.init()
 			return
 		end
 		lastMeter = payload
-		if window.Visible then
+		if Router.isOpen("zeroDesk") then
 			renderMeter()
 		end
 	end)
@@ -177,17 +176,25 @@ function LPanel.init()
 	end)
 	ClientState.PhaseChanged:Connect(function()
 		if not ClientState.public.active then
-			window.Visible = false
 			lastMeter = nil
 			Widgets.clear(inbox)
 			inboxCount = 0
 		end
 	end)
-	ClientState.PrivateChanged:Connect(function()
-		if ClientState.role() ~= "L" then
+	Router.register("zeroDesk", {
+		layer = "modal",
+		window = window,
+		allowed = function(view)
+			return view.participant and view.role == "L"
+		end,
+		show = function()
+			window.Visible = true
+			renderMeter()
+		end,
+		hide = function()
 			window.Visible = false
-		end
-	end)
+		end,
+	})
 end
 
 return LPanel

@@ -1,4 +1,4 @@
--- Cosmetic shop: buy hats and trails with coins, equip them in the lobby.
+-- Cosmetic shop: buy hats and trails with coins and equip them. Open in the lobby only.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -7,6 +7,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
@@ -18,6 +19,7 @@ local ShopPanel = {}
 local window: Frame
 local coinsLabel: TextLabel
 local grid: ScrollingFrame
+local firstButton: TextButton? = nil
 
 local function isOwned(profile, id: string): boolean
 	return table.find(profile.owned, id) ~= nil
@@ -25,79 +27,82 @@ end
 
 local function rebuild()
 	Widgets.clear(grid)
+	firstButton = nil
 	local profile = ClientState.profile
 	if not profile then
 		coinsLabel.Text = "Loading your profile..."
 		return
 	end
-	coinsLabel.Text = string.format("Coins: %d", profile.coins)
+	coinsLabel.Text = string.format("%d coins", profile.coins)
 	for index, item in ipairs(Cosmetics.ITEMS) do
 		local card = Widgets.panel({
 			BackgroundColor3 = Theme.colors.panelLight,
 			LayoutOrder = index,
 			Parent = grid,
 		})
+		Widgets.padding(card, Theme.space.md)
 		local swatch = if item.kind == "hat" then item.color else item.colors[1]
-		Widgets.frame({
+		local preview = Widgets.frame({
 			BackgroundTransparency = 0,
 			BackgroundColor3 = swatch,
-			Position = UDim2.fromOffset(10, 10),
-			Size = UDim2.new(1, -20, 0, 34),
+			Size = UDim2.new(1, 0, 0, 40),
 			Parent = card,
 		})
+		Widgets.corner(preview, Theme.radius.md)
+		if item.kind == "trail" then
+			local gradient = Instance.new("UIGradient")
+			gradient.Color = ColorSequence.new(item.colors[1], item.colors[2] or item.colors[1])
+			gradient.Parent = preview
+		end
 		Widgets.label({
 			Font = Theme.fonts.bold,
 			Text = item.name,
-			Position = UDim2.fromOffset(10, 50),
-			Size = UDim2.new(1, -20, 0, 20),
+			Position = UDim2.fromOffset(0, 48),
+			Size = UDim2.new(1, 0, 0, 20),
 			Parent = card,
 		})
 		Widgets.label({
-			TextSize = 13,
+			TextSize = Theme.text.caption,
 			TextColor3 = Theme.colors.muted,
-			Text = if item.kind == "hat" then "Hat" else "Trail",
-			Position = UDim2.fromOffset(10, 72),
-			Size = UDim2.new(1, -20, 0, 16),
+			Text = if item.kind == "hat" then "HAT" else "TRAIL",
+			Font = Theme.fonts.black,
+			Position = UDim2.fromOffset(0, 70),
+			Size = UDim2.new(1, 0, 0, 14),
 			Parent = card,
 		})
 		local owned = isOwned(profile, item.id)
 		local equipped = profile.equipped[item.kind] == item.id
-		local text, action, color
+		local text, action, variant
 		if equipped then
-			text, action, color = "Unequip", "unequip", Theme.colors.button
+			text, action, variant = "Unequip", "unequip", "ghost"
 		elseif owned then
-			text, action, color = "Equip", "equip", Theme.colors.team
+			text, action, variant = "Equip", "equip", "team"
 		else
-			text, action = string.format("Buy  %d", item.price), "buy"
-			color = if profile.coins >= item.price then Theme.colors.good else Theme.colors.button
+			text, action = string.format("Buy  ·  %d", item.price), "buy"
+			variant = if profile.coins >= item.price then "gold" else "secondary"
 		end
-		Widgets.button({
+		local button = Widgets.button({
 			Text = text,
-			BackgroundColor3 = color,
+			Variant = variant,
 			AnchorPoint = Vector2.new(0, 1),
-			Position = UDim2.new(0, 10, 1, -10),
-			Size = UDim2.new(1, -20, 0, 32),
+			Position = UDim2.fromScale(0, 1),
+			Size = UDim2.new(1, 0, 0, 34),
 			Parent = card,
 		}, function()
 			ShopRequest:FireServer({ action = action, itemId = item.id })
 		end)
+		if not owned and profile.coins < item.price then
+			Widgets.setEnabled(button, false)
+		end
+		firstButton = firstButton or button
 	end
-end
-
-function ShopPanel.toggle()
-	window.Visible = not window.Visible
-	if window.Visible then
-		rebuild()
-	end
-end
-
-function ShopPanel.close()
-	window.Visible = false
 end
 
 function ShopPanel.init()
 	local body
-	window, body = Widgets.modal(Screens.modal, "Cosmetic shop", Vector2.new(660, 520))
+	window, body = Widgets.modal(Screens.modal, "Cosmetic shop", Vector2.new(680, 540), function()
+		Router.close("shop", "user")
+	end)
 	coinsLabel = Widgets.label({
 		Font = Theme.fonts.bold,
 		TextColor3 = Theme.colors.gold,
@@ -109,17 +114,30 @@ function ShopPanel.init()
 		Size = UDim2.new(1, 0, 1, -32),
 		Parent = body,
 	})
-	Widgets.grid(grid, UDim2.fromOffset(190, 150), 10)
+	Widgets.padding(grid, Theme.space.xs)
+	Widgets.grid(grid, UDim2.fromOffset(196, 160), Theme.space.md)
 	ClientState.ProfileChanged:Connect(function()
-		if window.Visible then
+		if Router.isOpen("shop") then
 			rebuild()
 		end
 	end)
-	ClientState.PhaseChanged:Connect(function()
-		if ClientState.isLiving() then
+	Router.register("shop", {
+		layer = "modal",
+		window = window,
+		allowed = function(view)
+			return not view.living
+		end,
+		show = function()
+			window.Visible = true
+			rebuild()
+		end,
+		hide = function()
 			window.Visible = false
-		end
-	end)
+		end,
+		firstSelection = function()
+			return firstButton
+		end,
+	})
 end
 
 return ShopPanel

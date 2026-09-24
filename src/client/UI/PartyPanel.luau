@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
@@ -32,11 +33,11 @@ local function heading(text: string)
 	})
 end
 
-local function row(text: string, buttons: { { text: string, color: Color3?, action: () -> () } })
+local function row(text: string, buttons: { { text: string, variant: string?, action: () -> () } })
 	order += 1
 	local frame = Widgets.panel({
 		BackgroundColor3 = Theme.colors.panelLight,
-		Size = UDim2.new(1, -8, 0, 44),
+		Size = UDim2.new(1, -8, 0, 48),
 		LayoutOrder = order,
 		Parent = list,
 	})
@@ -44,18 +45,18 @@ local function row(text: string, buttons: { { text: string, color: Color3?, acti
 		Text = text,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		TextWrapped = false,
-		Position = UDim2.fromOffset(12, 12),
-		Size = UDim2.new(1, -24 - #buttons * 96, 0, 20),
+		Position = UDim2.fromOffset(14, 14),
+		Size = UDim2.new(1, -28 - #buttons * 96, 0, 20),
 		Parent = frame,
 	})
 	for i, info in ipairs(buttons) do
 		Widgets.button({
 			Text = info.text,
-			TextSize = 14,
-			BackgroundColor3 = info.color or Theme.colors.button,
+			TextSize = Theme.text.small,
+			Variant = info.variant,
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, -8 - (i - 1) * 96, 0.5, 0),
-			Size = UDim2.fromOffset(88, 30),
+			Size = UDim2.fromOffset(88, 34),
 			Parent = frame,
 		}, info.action)
 	end
@@ -79,7 +80,7 @@ local function rebuild()
 		row("Leave this party", {
 			{
 				text = "Leave",
-				color = Theme.colors.accent,
+				variant = "primary",
 				action = function()
 					PartyRequest:FireServer({ action = "leave" })
 				end,
@@ -93,7 +94,7 @@ local function rebuild()
 			row(invite.name .. " invited you", {
 				{
 					text = "Accept",
-					color = Theme.colors.good,
+					variant = "good",
 					action = function()
 						PartyRequest:FireServer({ action = "accept", userId = invite.userId })
 					end,
@@ -116,7 +117,7 @@ local function rebuild()
 			row(player.DisplayName, {
 				{
 					text = "Invite",
-					color = Theme.colors.team,
+					variant = "team",
 					action = function()
 						PartyRequest:FireServer({ action = "invite", userId = player.UserId })
 					end,
@@ -129,16 +130,11 @@ local function rebuild()
 	end
 end
 
-function PartyPanel.toggle()
-	window.Visible = not window.Visible
-	if window.Visible then
-		rebuild()
-	end
-end
-
 function PartyPanel.init()
 	local body
-	window, body = Widgets.modal(Screens.modal, "Party", Vector2.new(520, 540))
+	window, body = Widgets.modal(Screens.modal, "Party", Vector2.new(520, 540), function()
+		Router.close("party", "user")
+	end)
 	Widgets.label({
 		TextSize = 14,
 		TextColor3 = Theme.colors.muted,
@@ -153,7 +149,7 @@ function PartyPanel.init()
 	})
 	Widgets.list(list, 6)
 	local function refresh()
-		if window.Visible then
+		if Router.isOpen("party") then
 			rebuild()
 		end
 	end
@@ -162,11 +158,20 @@ function PartyPanel.init()
 	Players.PlayerRemoving:Connect(function()
 		task.defer(refresh)
 	end)
-	ClientState.PhaseChanged:Connect(function()
-		if ClientState.isLiving() then
+	Router.register("party", {
+		layer = "modal",
+		window = window,
+		allowed = function(view)
+			return not view.living
+		end,
+		show = function()
+			window.Visible = true
+			rebuild()
+		end,
+		hide = function()
 			window.Visible = false
-		end
-	end)
+		end,
+	})
 end
 
 return PartyPanel

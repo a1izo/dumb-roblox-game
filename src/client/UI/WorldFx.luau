@@ -1,5 +1,5 @@
 -- World-space effects only this client sees: letter flashes above stations, names seen
--- with the shinigami eyes, and the overlay when this player is eliminated.
+-- with Specter's Eyes, and the overlay when this player is eliminated.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -10,6 +10,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
@@ -69,7 +70,7 @@ local function onLetterFlash(payload)
 	end)
 end
 
--- A real name seen with the shinigami eyes. Nothing is stored anywhere.
+-- A real name seen with Specter's Eyes. Nothing is stored anywhere.
 local function onEyesName(payload)
 	if type(payload) ~= "table" or type(payload.name) ~= "string" or type(payload.userId) ~= "number" then
 		return
@@ -126,9 +127,11 @@ local function onElimination(payload)
 		return
 	end
 	overlay.Visible = true
+	Router.setBlocking("eliminated", true)
 	task.delay(5, function()
 		if overlayToken == myToken then
 			overlay.Visible = false
+			Router.setBlocking("eliminated", false)
 		end
 	end)
 end

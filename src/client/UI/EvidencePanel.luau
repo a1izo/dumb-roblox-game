@@ -6,6 +6,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Toasts = require(script.Parent.Toasts)
@@ -20,7 +21,7 @@ local entries = {}
 
 local function addRow(entry)
 	local row = Widgets.panel({
-		BackgroundColor3 = Theme.colors.panelLight,
+		BackgroundColor3 = Theme.colors.paper,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, -8, 0, 0),
 		LayoutOrder = -(tonumber(entry.id) or 0),
@@ -30,10 +31,10 @@ local function addRow(entry)
 	Widgets.list(row, 2)
 	Widgets.label({
 		Font = Theme.fonts.bold,
-		TextSize = 14,
-		TextColor3 = Theme.colors.gold,
+		TextSize = Theme.text.small,
+		TextColor3 = Theme.colors.accent,
 		Text = string.format(
-			"R%s  %s   %s  @  %s",
+			"ROUND %s  ·  %s  ·  %s  @  %s",
 			tostring(entry.round),
 			tostring(entry.clock),
 			tostring(entry.alias),
@@ -44,7 +45,8 @@ local function addRow(entry)
 	})
 	Widgets.label({
 		Font = Theme.fonts.typewriter,
-		TextSize = 16,
+		TextSize = Theme.text.bodyLarge,
+		TextColor3 = Theme.colors.ink,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0),
 		Text = tostring(entry.clue),
@@ -73,23 +75,17 @@ local function refreshFromServer()
 	end)
 	if ok and type(result) == "table" then
 		entries = result
-		if window.Visible then
+		if Router.isOpen("evidence") then
 			rebuild()
 		end
 	end
 end
 
-function EvidencePanel.toggle()
-	window.Visible = not window.Visible
-	if window.Visible then
-		rebuild()
-		task.spawn(refreshFromServer)
-	end
-end
-
 function EvidencePanel.init()
 	local body
-	window, body = Widgets.modal(Screens.modal, "Evidence board", Vector2.new(640, 560))
+	window, body = Widgets.modal(Screens.modal, "Evidence board", Vector2.new(640, 560), function()
+		Router.close("evidence", "user")
+	end)
 	list = Widgets.scroll({ Parent = body })
 	Widgets.list(list, 8)
 	emptyLabel = Widgets.label({ Parent = list })
@@ -99,7 +95,7 @@ function EvidencePanel.init()
 			return
 		end
 		table.insert(entries, entry)
-		if window.Visible then
+		if Router.isOpen("evidence") then
 			addRow(entry)
 		end
 		if ClientState.isParticipant() then
@@ -112,9 +108,23 @@ function EvidencePanel.init()
 	ClientState.PhaseChanged:Connect(function()
 		if not ClientState.public.active then
 			entries = {}
-			window.Visible = false
 		end
 	end)
+	Router.register("evidence", {
+		layer = "modal",
+		window = window,
+		allowed = function(view)
+			return view.participant
+		end,
+		show = function()
+			window.Visible = true
+			rebuild()
+			task.spawn(refreshFromServer)
+		end,
+		hide = function()
+			window.Visible = false
+		end,
+	})
 end
 
 return EvidencePanel

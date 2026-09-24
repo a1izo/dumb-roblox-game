@@ -1,6 +1,7 @@
 -- Proximity prompts for everything the player can use in the world. The prompts are
--- created on this client only, so role-specific prompts (like the follower's rig) never
--- exist on anyone else's screen. The server validates every action.
+-- created on this client only, so role-specific prompts (the Cultist's rig, the Hand's side
+-- "Fake it") never exist on anyone else's screen. The server validates every action.
+-- Each prompt on the same object uses a different gamepad button (X, Y, B).
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,13 +28,15 @@ local function prompt(
 	action: string,
 	object: string,
 	key: Enum.KeyCode,
-	hold: number?
+	hold: number?,
+	pad: Enum.KeyCode?
 ): ProximityPrompt
 	return Create("ProximityPrompt", {
 		Name = "L" .. string.gsub(action, "%s", ""),
 		ActionText = action,
 		ObjectText = object,
 		KeyboardKeyCode = key,
+		GamepadKeyCode = pad or Enum.KeyCode.ButtonX,
 		HoldDuration = hold or 0,
 		MaxActivationDistance = 8,
 		RequiresLineOfSight = false,
@@ -51,7 +54,9 @@ local function refreshEntry(instance: Instance, entry)
 	local active = canAct()
 	local prompts = entry.prompts
 	if entry.kind == "station" then
-		prompts.work.Enabled = active and instance:GetAttribute("Busy") ~= true and not TaskScreen.isBusy()
+		local free = active and instance:GetAttribute("Busy") ~= true and not TaskScreen.isBusy()
+		prompts.work.Enabled = free
+		prompts.fake.Enabled = free and (private.role == "Kira" or private.role == "Follower")
 		prompts.rig.Enabled = active and private.role == "Follower" and private.canTamper == true
 	elseif entry.kind == "tip" then
 		prompts.tip.Enabled = active
@@ -83,19 +88,27 @@ local function register(instance: Instance, kind: string, prompts)
 end
 
 local function setupStation(desk: Instance)
-	local work =
-		prompt(desk, "Work case file", tostring(desk:GetAttribute("StationName") or "Case file"), Enum.KeyCode.E)
-	work.Triggered:Connect(function()
+	local stationName = tostring(desk:GetAttribute("StationName") or "Case file")
+	local function start(fake: boolean)
 		local stationId = desk:GetAttribute("StationId")
 		if type(stationId) == "string" then
-			TaskScreen.request(stationId, tostring(desk:GetAttribute("StationName") or "Case file"))
+			TaskScreen.request(stationId, fake)
 		end
+	end
+	local work = prompt(desk, "Work case file", stationName, Enum.KeyCode.E)
+	work.Triggered:Connect(function()
+		start(false)
 	end)
-	local rig = prompt(desk, "Rig next flash", Terms.f("{Cultist} only"), Enum.KeyCode.T, 1)
+	-- The Hand's side only: no clue is posted and no letters flash.
+	local fake = prompt(desk, "Fake it", "No clue, no flash", Enum.KeyCode.F, 0.5, Enum.KeyCode.ButtonY)
+	fake.Triggered:Connect(function()
+		start(true)
+	end)
+	local rig = prompt(desk, "Rig next flash", Terms.f("{Cultist} only"), Enum.KeyCode.T, 1, Enum.KeyCode.ButtonB)
 	rig.Triggered:Connect(function()
 		TamperRemote:FireServer(desk:GetAttribute("StationId"))
 	end)
-	register(desk, "station", { work = work, rig = rig })
+	register(desk, "station", { work = work, fake = fake, rig = rig })
 	desk:GetAttributeChangedSignal("Busy"):Connect(function()
 		local entry = entries[desk]
 		if entry then
@@ -123,7 +136,7 @@ local function setupNote(note: Instance)
 	read.Triggered:Connect(function()
 		NoteRequest:FireServer({ action = "read", noteId = note:GetAttribute("NoteId") })
 	end)
-	local take = prompt(note, "Pick up", "Paper note", Enum.KeyCode.F)
+	local take = prompt(note, "Pick up", "Paper note", Enum.KeyCode.F, 0, Enum.KeyCode.ButtonY)
 	take.Triggered:Connect(function()
 		NoteRequest:FireServer({ action = "take", noteId = note:GetAttribute("NoteId") })
 	end)
@@ -136,7 +149,7 @@ local function setupDropPoint(grate: Instance)
 	search.Triggered:Connect(function()
 		NoteRequest:FireServer({ action = "check", dropId = grate:GetAttribute("DropId") })
 	end)
-	local leave = prompt(grate, "Hide note", "Loose grate", Enum.KeyCode.F, 1)
+	local leave = prompt(grate, "Hide note", "Loose grate", Enum.KeyCode.F, 1, Enum.KeyCode.ButtonY)
 	leave.MaxActivationDistance = 6
 	leave.Triggered:Connect(function()
 		NoteRequest:FireServer({ action = "leave", dropId = grate:GetAttribute("DropId") })

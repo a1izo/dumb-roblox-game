@@ -9,6 +9,7 @@ local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
@@ -28,6 +29,7 @@ local token = 0
 
 local function hide()
 	root.Visible = false
+	Router.setBlocking("briefing", false)
 	nameLabel.Text = ""
 	hintLabel.Text = ""
 	alliesLabel.Text = ""
@@ -89,6 +91,7 @@ function BriefingScreen.show(payload)
 		tostring(payload.mapName)
 	)
 	root.Visible = true
+	Router.setBlocking("briefing", true)
 	local endsAt = os.clock() + (tonumber(payload.duration) or 12)
 	task.spawn(function()
 		while token == myToken and os.clock() < endsAt do

@@ -1,4 +1,5 @@
--- The vote: remove one living player or skip. L can also issue the warrant here.
+-- The vote: remove one living player or skip, changeable until time runs out. Zero also
+-- gets a button to the warrant window here.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,6 +10,8 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Clock = require(script.Parent.Core.Clock)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Toasts = require(script.Parent.Toasts)
@@ -21,202 +24,200 @@ local LocalPlayer = Players.LocalPlayer
 local VotePanel = {}
 
 local panel: Frame
-local grid: Frame
+local grid: ScrollingFrame
 local statusLabel: TextLabel
-local warrantFrame: Frame
-local suspectButton: TextButton
-local warrantBox: TextBox
 local warrantButton: TextButton
+local firstButton: TextButton? = nil
+
+local warrantWindow: Frame
+local renderWarrantSuspects: (any, any?) -> ()
+local warrantBox: TextBox
 local warrantStatus: TextLabel
+local serveButton: TextButton
 
 local myVote: any = nil
 local voted: { [number]: boolean } = {}
 local warrantSuspect: number? = nil
 
+-- Vote -------------------------------------------------------------------------------------
+
 local function rebuild()
 	Widgets.clear(grid)
+	firstButton = nil
 	local living = ClientState.isLiving()
 	local order = 0
+	local function add(text: string, choice: any, variant: string)
+		order += 1
+		local button = Widgets.button({
+			Text = text,
+			TextSize = Theme.text.body,
+			Variant = if myVote == choice then "primary" else variant,
+			LayoutOrder = order,
+			Parent = grid,
+		}, function()
+			if living then
+				myVote = choice
+				VoteRemote:FireServer(choice)
+				rebuild()
+			end
+		end)
+		Widgets.setEnabled(button, living)
+		if myVote == choice then
+			Widgets.stroke(button, Theme.colors.focus, 2, 0)
+		end
+		firstButton = firstButton or button
+	end
 	for _, entry in ipairs(ClientState.living()) do
 		if entry.userId ~= LocalPlayer.UserId then
-			order += 1
-			local chosen = myVote == entry.userId
-			Widgets.button({
-				Text = (if voted[entry.userId] then "[x] " else "") .. entry.alias,
-				BackgroundColor3 = if chosen then Theme.colors.accent else Theme.colors.button,
-				AutoButtonColor = living,
-				LayoutOrder = order,
-				Parent = grid,
-			}, function()
-				if living then
-					myVote = entry.userId
-					VoteRemote:FireServer(entry.userId)
-					rebuild()
-				end
-			end)
+			add((if voted[entry.userId] then "✓ " else "") .. entry.alias, entry.userId, "secondary")
 		end
 	end
-	Widgets.button({
-		Text = "SKIP",
-		BackgroundColor3 = if myVote == "skip" then Theme.colors.accent else Theme.colors.panelLight,
-		AutoButtonColor = living,
-		LayoutOrder = order + 1,
-		Parent = grid,
-	}, function()
-		if living then
-			myVote = "skip"
-			VoteRemote:FireServer("skip")
-			rebuild()
-		end
-	end)
+	add("SKIP", "skip", "ghost")
+
 	local count = 0
 	for _ in pairs(voted) do
 		count += 1
 	end
-	if living then
-		statusLabel.Text =
-			string.format("%d voted. You can change your vote until the time runs out. [x] = has voted", count)
-	else
-		statusLabel.Text = string.format("%d voted. Only living players can vote.", count)
+	statusLabel.Text = if living
+		then string.format("%d voted  ·  ✓ = has voted  ·  you can change your vote", count)
+		else string.format("%d voted  ·  only living players vote", count)
+	local private = ClientState.private
+	warrantButton.Visible = ClientState.role() == "L" and living and not private.warrantUsed
+	if warrantButton.Visible then
+		warrantButton.Text = if private.warrantBlocked then "WARRANT BLOCKED THIS ROUND" else "SERVE A WARRANT"
+		Widgets.setEnabled(warrantButton, not private.warrantBlocked)
 	end
 end
+
+-- Warrant ----------------------------------------------------------------------------------
 
 local function refreshWarrant()
-	local private = ClientState.private
-	local show = ClientState.role() == "L" and ClientState.isLiving() and not private.warrantUsed
-	warrantFrame.Visible = show
-	if not show then
-		return
-	end
-	if private.warrantBlocked then
-		warrantStatus.Text = "Rejected this round. Try again next round."
-		warrantButton.Visible = false
-	else
-		warrantStatus.Text = "One arrest per match. A wrong name blocks you until next round."
-		warrantButton.Visible = true
-	end
-	local alias = if warrantSuspect then ClientState.aliasOf(warrantSuspect) else nil
-	suspectButton.Text = "Suspect: " .. (alias or "tap to choose")
-end
-
-local function cycleSuspect()
 	local options = {}
 	for _, entry in ipairs(ClientState.living()) do
 		if entry.userId ~= LocalPlayer.UserId then
-			table.insert(options, entry.userId)
+			table.insert(options, { id = entry.userId, text = entry.alias })
 		end
 	end
-	if #options == 0 then
-		return
-	end
-	local index = if warrantSuspect then table.find(options, warrantSuspect) else nil
-	warrantSuspect = options[((index or 0) % #options) + 1]
-	refreshWarrant()
+	renderWarrantSuspects(options, warrantSuspect)
+	local blocked = ClientState.private.warrantBlocked == true
+	serveButton.Visible = not blocked
+	warrantStatus.Text = if blocked
+		then "Rejected this round. You can try again next round."
+		else "One arrest per match. A wrong name blocks you until next round. Arresting an innocent player loses the match."
 end
 
-local function open()
-	myVote = nil
-	voted = {}
-	warrantSuspect = nil
-	warrantBox.Text = ""
-	panel.Visible = true
-	rebuild()
-	refreshWarrant()
+local function buildWarrant()
+	local body
+	warrantWindow, body = Widgets.modal(Screens.modal, Terms.f("{ZERO}'S WARRANT"), Vector2.new(520, 500), function()
+		Router.close("warrant", "user")
+	end)
+	warrantStatus = Widgets.label({
+		TextSize = Theme.text.small,
+		TextColor3 = Theme.colors.muted,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Parent = body,
+	})
+	local suspects = Widgets.scroll({
+		Position = UDim2.fromOffset(0, 52),
+		Size = UDim2.new(1, 0, 1, -170),
+		Parent = body,
+	})
+	renderWarrantSuspects = Widgets.pickGrid(suspects, UDim2.new(1 / 3, -6, 0, 38), function(id)
+		warrantSuspect = id
+		refreshWarrant()
+	end)
+	warrantBox = Widgets.textbox({
+		PlaceholderText = "The suspect's full real name",
+		Font = Theme.fonts.typewriter,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, -62),
+		Size = UDim2.new(1, 0, 0, 44),
+		Parent = body,
+	})
+	Widgets.limitLength(warrantBox, Config.NAME_MAX_LENGTH)
+	serveButton = Widgets.holdButton(
+		{
+			Text = "HOLD TO SERVE THE WARRANT",
+			Font = Theme.fonts.black,
+			Variant = "team",
+			AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.fromScale(0, 1),
+			Size = UDim2.new(1, 0, 0, 50),
+			Parent = body,
+		},
+		1.5,
+		function()
+			if not warrantSuspect then
+				Toasts.show("Choose a suspect first.", "bad")
+				return
+			end
+			if #warrantBox.Text == 0 then
+				Toasts.show("Type the suspect's full real name.", "bad")
+				return
+			end
+			WarrantRemote:FireServer({ suspect = warrantSuspect, name = warrantBox.Text })
+			Router.close("warrant", "user")
+		end
+	)
 end
+
+-- Setup ------------------------------------------------------------------------------------
 
 function VotePanel.init()
 	panel = Widgets.panel({
 		Name = "Vote",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 16, 0.5, 0),
-		Size = UDim2.new(0.34, 0, 0, 440),
+		Position = UDim2.new(0, 16, 0.5, 20),
+		Size = UDim2.new(0.34, 0, 0.66, 0),
 		Visible = false,
 		Parent = Screens.panels,
 	})
-	Widgets.sizeLimit(panel, Vector2.new(420, 440), Vector2.new(270, 0))
+	Widgets.sizeLimit(panel, Vector2.new(420, 470), Vector2.new(280, 0))
 	Widgets.label({
 		Text = "VOTE",
 		Font = Theme.fonts.black,
-		TextSize = 22,
-		Position = UDim2.fromOffset(12, 10),
-		Size = UDim2.new(1, -24, 0, 26),
+		TextSize = Theme.text.heading,
+		Position = UDim2.fromOffset(16, 12),
+		Size = UDim2.new(1, -110, 0, 30),
 		Parent = panel,
 	})
+	local timer = Widgets.label({
+		Font = Theme.fonts.mono,
+		TextSize = 26,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -16, 0, 12),
+		Size = UDim2.fromOffset(90, 30),
+		Parent = panel,
+	})
+	Clock.bind(timer)
 	statusLabel = Widgets.label({
-		TextSize = 13,
+		TextSize = Theme.text.caption,
 		TextColor3 = Theme.colors.muted,
-		Position = UDim2.fromOffset(12, 38),
-		Size = UDim2.new(1, -24, 0, 34),
+		Position = UDim2.fromOffset(16, 46),
+		Size = UDim2.new(1, -32, 0, 30),
 		Parent = panel,
 	})
-	grid = Widgets.frame({
-		Position = UDim2.fromOffset(12, 76),
-		Size = UDim2.new(1, -24, 0, 170),
+	grid = Widgets.scroll({
+		Position = UDim2.fromOffset(16, 80),
+		Size = UDim2.new(1, -32, 1, -148),
 		Parent = panel,
 	})
-	-- Up to 11 other players plus Skip: three columns keep it inside the panel.
-	Widgets.grid(grid, UDim2.new(0.333, -4, 0, 30), 6)
-
-	warrantFrame = Widgets.panel({
-		BackgroundColor3 = Color3.fromRGB(26, 30, 44),
+	Widgets.padding(grid, 2)
+	Widgets.grid(grid, UDim2.new(0.5, -5, 0, 40), Theme.space.sm)
+	warrantButton = Widgets.button({
+		Text = "SERVE A WARRANT",
+		Font = Theme.fonts.black,
+		Variant = "team",
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 12, 1, -12),
-		Size = UDim2.new(1, -24, 0, 176),
+		Position = UDim2.new(0, 16, 1, -14),
+		Size = UDim2.new(1, -32, 0, 44),
 		Visible = false,
 		Parent = panel,
-	})
-	Widgets.padding(warrantFrame, 10)
-	Widgets.list(warrantFrame, 6)
-	Widgets.label({
-		Text = Terms.f("{ZERO}'S WARRANT"),
-		Font = Theme.fonts.black,
-		TextColor3 = Theme.colors.team,
-		LayoutOrder = 1,
-		Parent = warrantFrame,
-	})
-	suspectButton = Widgets.button({
-		Text = "Suspect: tap to choose",
-		TextSize = 14,
-		Size = UDim2.new(1, 0, 0, 30),
-		LayoutOrder = 2,
-		Parent = warrantFrame,
-	}, cycleSuspect)
-	warrantBox = Widgets.textbox({
-		PlaceholderText = "Suspect's full real name",
-		Font = Theme.fonts.typewriter,
-		TextSize = 16,
-		Size = UDim2.new(1, 0, 0, 34),
-		LayoutOrder = 3,
-		Parent = warrantFrame,
-	})
-	warrantButton = Widgets.button({
-		Text = "ISSUE WARRANT",
-		Font = Theme.fonts.black,
-		BackgroundColor3 = Theme.colors.team,
-		Size = UDim2.new(1, 0, 0, 34),
-		LayoutOrder = 4,
-		Parent = warrantFrame,
 	}, function()
-		if not warrantSuspect then
-			Toasts.show("Choose a suspect first.", "bad")
-			return
-		end
-		if #warrantBox.Text == 0 then
-			Toasts.show("Type the suspect's full real name.", "bad")
-			return
-		end
-		WarrantRemote:FireServer({
-			suspect = warrantSuspect,
-			name = string.sub(warrantBox.Text, 1, Config.NAME_MAX_LENGTH * 4),
-		})
+		Router.open("warrant")
 	end)
-	warrantStatus = Widgets.label({
-		TextSize = 12,
-		TextColor3 = Theme.colors.muted,
-		Size = UDim2.new(1, 0, 0, 30),
-		LayoutOrder = 5,
-		Parent = warrantFrame,
-	})
+	buildWarrant()
 
 	Net.event("VoteUpdate").OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" or type(payload.voted) ~= "table" then
@@ -226,7 +227,7 @@ function VotePanel.init()
 		for _, userId in ipairs(payload.voted) do
 			voted[userId] = true
 		end
-		if panel.Visible then
+		if Router.isOpen("vote") then
 			rebuild()
 		end
 	end)
@@ -242,24 +243,62 @@ function VotePanel.init()
 			Toasts.show("Vote results: " .. table.concat(parts, ", "), "info")
 		end
 	end)
-	ClientState.PhaseChanged:Connect(function(phase)
-		if phase == "Vote" and ClientState.isParticipant() then
-			open()
-		else
-			panel.Visible = false
-		end
-	end)
 	ClientState.PublicChanged:Connect(function()
-		if panel.Visible then
+		if Router.isOpen("vote") then
 			rebuild()
+		end
+		if Router.isOpen("warrant") then
 			refreshWarrant()
 		end
 	end)
 	ClientState.PrivateChanged:Connect(function()
-		if panel.Visible then
+		if Router.isOpen("vote") then
+			rebuild()
+		end
+		if Router.isOpen("warrant") then
 			refreshWarrant()
 		end
 	end)
+
+	local function inVote(view): boolean
+		return view.participant and view.phase == "Vote"
+	end
+	Router.register("vote", {
+		layer = "panel",
+		window = panel,
+		auto = inVote,
+		allowed = inVote,
+		show = function()
+			myVote = nil
+			voted = {}
+			panel.Visible = true
+			rebuild()
+		end,
+		hide = function()
+			panel.Visible = false
+		end,
+		firstSelection = function()
+			return firstButton
+		end,
+	})
+	Router.register("warrant", {
+		layer = "modal",
+		window = warrantWindow,
+		allowed = function(view)
+			return view.living and view.phase == "Vote" and view.role == "L" and not view.private.warrantUsed
+		end,
+		show = function()
+			warrantWindow.Visible = true
+			refreshWarrant()
+		end,
+		hide = function(reason)
+			warrantWindow.Visible = false
+			if reason == "rule" then
+				warrantSuspect = nil
+				warrantBox.Text = ""
+			end
+		end,
+	})
 end
 
 return VotePanel

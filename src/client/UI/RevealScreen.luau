@@ -8,6 +8,7 @@ local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
@@ -130,6 +131,7 @@ function RevealScreen.show(payload)
 		rewardsLabel.Text = "You watched this case from the lobby."
 	end
 	root.Visible = true
+	Router.setBlocking("reveal", true)
 	task.spawn(playTimeline, payload.events or {}, myToken)
 end
 
@@ -220,6 +222,7 @@ function RevealScreen.init()
 	}, function()
 		token += 1
 		root.Visible = false
+		Router.setBlocking("reveal", false)
 	end)
 
 	Net.event("Reveal").OnClientEvent:Connect(function(payload)
@@ -231,6 +234,7 @@ function RevealScreen.init()
 		if phase == "Briefing" then
 			token += 1
 			root.Visible = false
+			Router.setBlocking("reveal", false)
 		end
 	end)
 end

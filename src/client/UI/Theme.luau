@@ -1,4 +1,5 @@
--- Colours, fonts and display names for the noir UI.
+-- Design tokens for the noir UI: colours, fonts, type sizes, spacing, corner radii and
+-- motion timings. Every panel reads from here; nothing else should hard-code a colour.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -7,23 +8,36 @@ local Terms = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ter
 local Theme = {}
 
 Theme.colors = {
-	backdrop = Color3.fromRGB(6, 6, 9),
-	panel = Color3.fromRGB(20, 20, 26),
-	panelLight = Color3.fromRGB(34, 34, 43),
-	button = Color3.fromRGB(44, 44, 55),
-	buttonHover = Color3.fromRGB(60, 60, 74),
-	stroke = Color3.fromRGB(78, 78, 92),
-	text = Color3.fromRGB(236, 234, 228),
-	muted = Color3.fromRGB(152, 150, 145),
-	accent = Color3.fromRGB(200, 38, 50),
-	team = Color3.fromRGB(90, 160, 255),
-	good = Color3.fromRGB(90, 200, 120),
-	bad = Color3.fromRGB(235, 85, 75),
-	secret = Color3.fromRGB(205, 130, 255),
-	gold = Color3.fromRGB(220, 188, 110),
-	paper = Color3.fromRGB(242, 236, 220),
-	ink = Color3.fromRGB(28, 26, 24),
-	deathNote = Color3.fromRGB(10, 10, 12),
+	-- surfaces, from the back to the front
+	backdrop = Color3.fromRGB(5, 5, 8),
+	panel = Color3.fromRGB(15, 15, 20),
+	panelLight = Color3.fromRGB(28, 28, 36),
+	raised = Color3.fromRGB(38, 38, 48),
+	button = Color3.fromRGB(38, 38, 48),
+	buttonHover = Color3.fromRGB(54, 54, 66),
+	stroke = Color3.fromRGB(66, 64, 78),
+	strokeStrong = Color3.fromRGB(120, 112, 96),
+	-- text
+	text = Color3.fromRGB(238, 233, 224),
+	muted = Color3.fromRGB(150, 145, 138),
+	faint = Color3.fromRGB(96, 92, 88),
+	-- accents
+	accent = Color3.fromRGB(190, 28, 42), -- ink red
+	accentHover = Color3.fromRGB(214, 44, 58),
+	gold = Color3.fromRGB(214, 182, 110),
+	focus = Color3.fromRGB(236, 206, 132),
+	team = Color3.fromRGB(96, 156, 240),
+	hand = Color3.fromRGB(215, 35, 50),
+	good = Color3.fromRGB(96, 198, 128),
+	bad = Color3.fromRGB(232, 84, 74),
+	warn = Color3.fromRGB(232, 172, 72),
+	secret = Color3.fromRGB(200, 132, 250),
+	-- paper and ink documents
+	paper = Color3.fromRGB(240, 233, 214),
+	paperDark = Color3.fromRGB(221, 210, 186),
+	ink = Color3.fromRGB(26, 24, 22),
+	inkMuted = Color3.fromRGB(88, 80, 70),
+	deathNote = Color3.fromRGB(9, 9, 11),
 }
 
 Theme.fonts = {
@@ -34,24 +48,43 @@ Theme.fonts = {
 	typewriter = Enum.Font.SpecialElite,
 	mono = Enum.Font.Code,
 	gothic = Enum.Font.GrenzeGotisch,
+	hand = Enum.Font.Kalam,
 }
+
+-- Type scale in pixels (before the per-device UIScale).
+Theme.text = {
+	caption = 12,
+	small = 13,
+	body = 15,
+	bodyLarge = 17,
+	title = 20,
+	heading = 28,
+	display = 44,
+}
+
+Theme.space = { xs = 4, sm = 8, md = 12, lg = 16, xl = 24, xxl = 32 }
+
+Theme.radius = { sm = 4, md = 8, lg = 12, pill = 999 }
+
+-- Seconds; Motion turns them to 0 when the player asks for reduced motion.
+Theme.motion = { fast = 0.12, base = 0.2, slow = 0.35 }
 
 -- Display names live in Terms; these aliases keep older panels working.
 Theme.PHASE_NAMES = Terms.PHASE
 Theme.STATUS_NAMES = Terms.STATUS
 
 Theme.TONES = {
-	neutral = Color3.fromRGB(236, 234, 228),
-	danger = Color3.fromRGB(235, 70, 70),
-	team = Color3.fromRGB(110, 175, 255),
-	kira = Color3.fromRGB(215, 35, 50),
+	neutral = Theme.colors.text,
+	danger = Theme.colors.bad,
+	team = Theme.colors.team,
+	kira = Theme.colors.hand,
 }
 
 Theme.TOAST_COLORS = {
-	info = Color3.fromRGB(236, 234, 228),
-	good = Color3.fromRGB(110, 215, 140),
-	bad = Color3.fromRGB(240, 100, 90),
-	secret = Color3.fromRGB(210, 145, 255),
+	info = Theme.colors.text,
+	good = Theme.colors.good,
+	bad = Theme.colors.bad,
+	secret = Theme.colors.secret,
 }
 
 return Theme

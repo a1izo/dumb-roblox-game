@@ -280,6 +280,7 @@ local function onStart(ps, stationId: string, wantFake: boolean)
 		stationName = runtime.info.name,
 		fake = fake,
 		duration = Config.TASK_DURATION,
+		startedAt = workspace:GetServerTimeNow(),
 	})
 	Match.pushPrivate(ps)
 end

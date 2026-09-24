@@ -1,4 +1,4 @@
--- Shinigami eyes for the follower who made the deal: pick the closest player in front of
+-- Specter's Eyes for the Cultist who accepted the deal: pick the closest player in front of
 -- the camera (within range) and ask the server to read their name.
 
 local Players = game:GetService("Players")
@@ -11,7 +11,9 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Screens = require(script.Parent.Parent.UI.Screens)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
+local Widgets = require(script.Parent.Parent.UI.Widgets)
 
 local EyesRequest = Net.event("EyesRequest")
 local LocalPlayer = Players.LocalPlayer
@@ -19,7 +21,6 @@ local LocalPlayer = Players.LocalPlayer
 local EyesController = {}
 
 local MAX_ANGLE = math.rad(18)
-local confirmUntil = 0
 
 -- The best target: a living player close by, nearest to the aim direction.
 local function findTarget(): Player?
@@ -75,29 +76,29 @@ function EyesController.read()
 	EyesRequest:FireServer({ action = "read", userId = target.UserId })
 end
 
--- The deal costs the follower's life, so it needs a second press to confirm.
+-- The deal costs the Cultist's life, so it asks for confirmation first.
 function EyesController.deal()
 	local private = ClientState.private
 	if ClientState.role() ~= "Follower" or not private.canDeal or ClientState.phase() ~= "Investigation" then
 		return
 	end
-	if os.clock() > confirmUntil then
-		confirmUntil = os.clock() + 5
-		Toasts.show(
-			Terms.f(
-				"{Eyes}: read up to {reads} real names ({small} on servers under {below} players), but you die at the end of the next round. Press again within 5 s to accept.",
-				{
-					reads = Config.EYES_READS,
-					small = Config.EYES_READS_SMALL_SERVER,
-					below = Config.EYES_SMALL_SERVER_BELOW,
-				}
-			),
-			"secret"
-		)
-		return
-	end
-	confirmUntil = 0
-	EyesRequest:FireServer({ action = "deal" })
+	Widgets.confirm(
+		Screens.system,
+		Terms.f("Accept {eyes}?"),
+		Terms.f(
+			"Up close, you can read up to {reads} real names ({small} on servers under {below} players). "
+				.. "Your eyes glow red while reading, and you die at the end of the next round.",
+			{
+				reads = Config.EYES_READS,
+				small = Config.EYES_READS_SMALL_SERVER,
+				below = Config.EYES_SMALL_SERVER_BELOW,
+			}
+		),
+		"Accept the deal",
+		function()
+			EyesRequest:FireServer({ action = "deal" })
+		end
+	)
 end
 
 return EyesController

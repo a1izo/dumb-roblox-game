@@ -1,6 +1,6 @@
 -- Case-file tasks. Each station type has a short puzzle; the server only accepts the
 -- result after the full task time, so a task always takes about 15 seconds.
--- Kira's side may choose to fake the task instead.
+-- The Hand's side can fake a task instead, from a second prompt at the station.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,6 +10,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Toasts = require(script.Parent.Toasts)
@@ -24,11 +25,8 @@ local window: Frame
 local titleLabel: TextLabel
 local hintLabel: TextLabel
 local area: Frame
-local progressFill: Frame
+local setProgress: (number) -> ()
 local progressLabel: TextLabel
-local choiceWindow: Frame
-local choiceTitle: TextLabel
-local pendingChoice: string? = nil
 
 local current = nil
 local rng = Random.new()
@@ -259,24 +257,24 @@ end
 -- Flow ------------------------------------------------------------------------------------
 
 local function close()
-	current = nil
-	window.Visible = false
-	Widgets.clear(area)
+	Router.close("task", "rule")
 end
 
 local function start(payload)
 	Widgets.clear(area)
+	-- Progress follows the server clock, so the bar fills exactly when the server accepts.
+	local startedAt = tonumber(payload.startedAt) or workspace:GetServerTimeNow()
 	current = {
 		stationId = payload.stationId,
 		fake = payload.fake == true,
 		duration = tonumber(payload.duration) or 15,
-		startedAt = os.clock(),
+		startedAt = startedAt,
 		solved = payload.fake == true,
 		submittedAt = nil,
 	}
 	local task_ = current
 	titleLabel.Text = string.upper(tostring(payload.stationName))
-	window.Visible = true
+	Router.open("task")
 	local function onSolved()
 		if current == task_ then
 			task_.solved = true
@@ -299,9 +297,9 @@ local function update()
 	if not task_ then
 		return
 	end
-	local elapsed = os.clock() - task_.startedAt
+	local elapsed = workspace:GetServerTimeNow() - task_.startedAt
 	local progress = math.clamp(elapsed / task_.duration, 0, 1)
-	progressFill.Size = UDim2.fromScale(progress, 1)
+	setProgress(progress)
 	if progress < 1 then
 		progressLabel.Text = string.format("Working... %d s", math.ceil(task_.duration - elapsed))
 	elseif not task_.solved then
@@ -317,18 +315,13 @@ local function update()
 	end
 end
 
--- Called by the station prompt.
-function TaskScreen.request(stationId: string, stationName: string)
+-- Called by the station prompts: "Work case file" (fake = false) or, for the Hand's side
+-- only, "Fake it" (fake = true).
+function TaskScreen.request(stationId: string, fake: boolean)
 	if current or not ClientState.isLiving() or ClientState.phase() ~= "Investigation" then
 		return
 	end
-	if ClientState.isKiraSide() then
-		pendingChoice = stationId
-		choiceTitle.Text = string.upper(stationName)
-		choiceWindow.Visible = true
-		return
-	end
-	TaskRequest:FireServer({ action = "start", stationId = stationId, fake = false })
+	TaskRequest:FireServer({ action = "start", stationId = stationId, fake = fake and ClientState.isKiraSide() })
 end
 
 function TaskScreen.isBusy(): boolean
@@ -338,10 +331,7 @@ end
 function TaskScreen.init()
 	local body
 	window, body = Widgets.modal(Screens.modal, "Case file", Vector2.new(580, 470), function()
-		if current then
-			TaskRequest:FireServer({ action = "cancel", stationId = current.stationId })
-		end
-		close()
+		Router.close("task", "user")
 	end)
 	titleLabel = window:FindFirstChild("Title") :: TextLabel
 	hintLabel = Widgets.label({
@@ -355,22 +345,13 @@ function TaskScreen.init()
 		Size = UDim2.new(1, 0, 1, -96),
 		Parent = body,
 	})
-	local bar = Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.panelLight,
+	local _, setter = Widgets.progressBar({
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 0, 1, -26),
 		Size = UDim2.new(1, 0, 0, 12),
 		Parent = body,
-	})
-	Widgets.corner(bar, 6)
-	progressFill = Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.team,
-		Size = UDim2.fromScale(0, 1),
-		Parent = bar,
-	})
-	Widgets.corner(progressFill, 6)
+	}, Theme.colors.team)
+	setProgress = setter
 	progressLabel = Widgets.label({
 		TextSize = 14,
 		TextColor3 = Theme.colors.muted,
@@ -379,48 +360,6 @@ function TaskScreen.init()
 		Size = UDim2.new(1, 0, 0, 20),
 		Parent = body,
 	})
-
-	-- Kira's side chooses between real work and a fake task.
-	local choiceBody
-	choiceWindow, choiceBody = Widgets.modal(Screens.modal, "Station", Vector2.new(460, 300), function()
-		pendingChoice = nil
-	end)
-	choiceTitle = choiceWindow:FindFirstChild("Title") :: TextLabel
-	Widgets.label({
-		Text = "Work for real (a clue is posted and 3 letters of your name flash to anyone watching) "
-			.. "or fake it (nothing is posted - a missing board entry can expose you).",
-		TextSize = 15,
-		Size = UDim2.new(1, 0, 0, 80),
-		Parent = choiceBody,
-	})
-	local function choose(fake: boolean)
-		local stationId = pendingChoice
-		pendingChoice = nil
-		choiceWindow.Visible = false
-		if stationId and ClientState.phase() == "Investigation" then
-			TaskRequest:FireServer({ action = "start", stationId = stationId, fake = fake })
-		end
-	end
-	Widgets.button({
-		Text = "WORK FOR REAL",
-		BackgroundColor3 = Theme.colors.team,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(0.5, -6, 0, 46),
-		Parent = choiceBody,
-	}, function()
-		choose(false)
-	end)
-	Widgets.button({
-		Text = "FAKE IT",
-		BackgroundColor3 = Theme.colors.accent,
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.fromScale(1, 1),
-		Size = UDim2.new(0.5, -6, 0, 46),
-		Parent = choiceBody,
-	}, function()
-		choose(true)
-	end)
 
 	TaskStateRemote.OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" then
@@ -445,13 +384,26 @@ function TaskScreen.init()
 			current.submittedAt = os.clock() - 1
 		end
 	end)
-	ClientState.PhaseChanged:Connect(function(phase)
-		if phase ~= "Investigation" then
-			close()
-			choiceWindow.Visible = false
-			pendingChoice = nil
-		end
-	end)
+	Router.register("task", {
+		layer = "modal",
+		window = window,
+		allowed = function(view)
+			return view.living and view.phase == "Investigation"
+		end,
+		show = function()
+			window.Visible = true
+		end,
+		hide = function(reason)
+			-- The player walked away from the puzzle: tell the server. When the phase ends the
+			-- server has already cancelled the task.
+			if current and (reason == "user" or reason == "back" or reason == "replaced") then
+				TaskRequest:FireServer({ action = "cancel", stationId = current.stationId })
+			end
+			current = nil
+			window.Visible = false
+			Widgets.clear(area)
+		end,
+	})
 	RunService.RenderStepped:Connect(update)
 end
 
