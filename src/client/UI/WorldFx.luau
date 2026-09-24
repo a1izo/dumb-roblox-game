@@ -49,7 +49,7 @@ local function onLetterFlash(payload)
 		AlwaysOnTop = true,
 		LightInfluence = 0,
 		MaxDistance = 60,
-		Size = UDim2.fromScale(11, 1.8),
+		Size = UDim2.fromScale(15, 1.8),
 		StudsOffset = Vector3.new(0, 2.6, 0),
 		ResetOnSpawn = false,
 		Parent = playerGui,
@@ -61,7 +61,9 @@ local function onLetterFlash(payload)
 		TextScaled = true,
 		TextColor3 = Color3.fromRGB(120, 255, 170),
 		TextXAlignment = Enum.TextXAlignment.Center,
-		Text = payload.pattern,
+		Text = if type(payload.alias) == "string"
+			then string.upper(payload.alias) .. "  ·  " .. payload.pattern
+			else payload.pattern,
 		Size = UDim2.fromScale(1, 1),
 		Parent = gui,
 	})

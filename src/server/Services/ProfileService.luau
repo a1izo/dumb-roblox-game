@@ -5,9 +5,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local Hints = require(Shared:WaitForChild("Hints"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local DataService = require(script.Parent.DataService)
+local Match = require(script.Parent.Match)
 local RateLimit = require(script.Parent.RateLimit)
 
 local ProfileRequest = Net.event("ProfileRequest")
@@ -52,9 +55,67 @@ local function setSettings(player: Player, payload)
 	end
 end
 
+-- A one-time hint was shown; remember it so it never shows again.
+local function hintSeen(player: Player, payload)
+	local data = DataService.get(player)
+	if not data or type(payload.id) ~= "string" or not Hints.BY_ID[payload.id] then
+		return
+	end
+	if not data.tipsSeen[payload.id] then
+		data.tipsSeen[payload.id] = true
+		DataService.push(player)
+		DataService.saveSoon(player)
+	end
+end
+
+local function resetHints(player: Player)
+	local data = DataService.get(player)
+	if data then
+		data.tipsSeen = {}
+		DataService.push(player)
+		DataService.saveSoon(player)
+	end
+end
+
+-- An Academy drill was finished. The drills run on the client, so the reward is small and
+-- paid once per profile.
+local function drillDone(player: Player, payload)
+	local data = DataService.get(player)
+	if not data or type(payload.drill) ~= "string" or not table.find(Config.TRAINING_DRILLS, payload.drill) then
+		return
+	end
+	if Match.getLiving(player) then
+		return
+	end
+	data.training.drills[payload.drill] = true
+	if not data.training.done then
+		local all = true
+		for _, drill in ipairs(Config.TRAINING_DRILLS) do
+			if not data.training.drills[drill] then
+				all = false
+			end
+		end
+		if all then
+			data.training.done = true
+			data.coins += Config.TRAINING_REWARD
+			data.titles.trainee = true
+			Match.notify(
+				player,
+				string.format("Academy complete! +%d coins and the title Trainee.", Config.TRAINING_REWARD),
+				"good"
+			)
+		end
+	end
+	DataService.push(player)
+	DataService.saveSoon(player)
+end
+
 -- action -> { cooldown in seconds, handler }
 local ACTIONS: { [string]: { cooldown: number, handler: (Player, any) -> () } } = {
 	settings = { cooldown = 0.5, handler = setSettings },
+	hint = { cooldown = 0.2, handler = hintSeen },
+	resetHints = { cooldown = 2, handler = resetHints },
+	training = { cooldown = 1, handler = drillDone },
 }
 
 -- Other services add their actions here (for example hints or the custom alias).

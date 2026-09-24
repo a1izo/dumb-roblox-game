@@ -112,6 +112,9 @@ function DataService.payload(player: Player)
 		equipped = table.clone(data.equipped),
 		stats = data.stats,
 		settings = data.settings,
+		tipsSeen = data.tipsSeen,
+		training = data.training,
+		titles = data.titles,
 		persistent = profile.persistent,
 	}
 end

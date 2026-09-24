@@ -121,7 +121,7 @@ function VoteService.close()
 		)
 		Match.announce(
 			removed.alias .. " was voted out",
-			string.format("%d of %d votes", votesAgainst, result.total),
+			string.format("%d of %d votes. Their role stays secret.", votesAgainst, result.total),
 			"neutral"
 		)
 		Elimination.eliminate(removed, "voted", nil, removed.alias .. " was voted out.", {})

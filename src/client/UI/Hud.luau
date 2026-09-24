@@ -39,6 +39,7 @@ local roleLabel: TextLabel
 local aliasLabel: TextLabel
 local alliesLabel: TextLabel
 local chipsLabel: TextLabel
+local cardHint: TextLabel
 
 -- Objectives and actions
 local objectives: Frame
@@ -176,6 +177,7 @@ local function updateBadge()
 	alliesLabel.Visible = alliesLabel.Text ~= ""
 	chipsLabel.Text = chips(private, phase)
 	chipsLabel.Visible = chipsLabel.Text ~= ""
+	cardHint.Text = if Responsive.isTouch() then "Press and hold for your role card" else "Hold C for your role card"
 end
 
 -- Action bar -------------------------------------------------------------------------------
@@ -347,6 +349,12 @@ local function buildBadge()
 		LayoutOrder = 4,
 		Parent = badge,
 	})
+	cardHint = Widgets.label({
+		TextSize = Theme.text.caption,
+		TextColor3 = Theme.colors.faint,
+		LayoutOrder = 5,
+		Parent = badge,
+	})
 end
 
 function Hud.init()
@@ -376,9 +384,14 @@ function Hud.init()
 	refresh()
 end
 
--- The container the Guide fills with objective lines.
+-- The container the objective tracker fills with lines.
 function Hud.objectives(): Frame
 	return objectives
+end
+
+-- The role badge; pressing and holding it shows the role card.
+function Hud.badge(): Frame
+	return badge
 end
 
 return Hud

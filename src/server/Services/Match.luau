@@ -34,6 +34,7 @@ Match.winReason = nil
 Match.initialCount = 0
 Match.eyesDealMade = false
 Match.phoneFacts = 0
+Match.butlerHint = nil :: string?
 Match.rng = Random.new()
 
 -- Fired as (playerState, kind) after a player leaves the living: kind is
@@ -89,6 +90,7 @@ function Match.begin(players: { Player })
 	Match.winReason = nil
 	Match.eyesDealMade = false
 	Match.phoneFacts = 0
+	Match.butlerHint = nil
 	Match.startClock = os.clock()
 	Match.list = {}
 	Match.byPlayer = {}
@@ -366,6 +368,7 @@ function Match.privateState(ps)
 		alive = ps.alive,
 		role = ps.role,
 		alias = ps.alias,
+		realName = ps.realName,
 		allies = allyList(ps),
 		hood = Match.hasHood(ps),
 		carrying = if ps.carrying then ps.carrying.kind else nil,
@@ -381,7 +384,10 @@ function Match.privateState(ps)
 	elseif ps.role == "L" then
 		payload.warrantUsed = ps.warrantUsed
 		payload.warrantBlocked = ps.warrantBlockedRound == Match.round
+	elseif ps.role == "Watari" then
+		payload.hint = Match.butlerHint
 	end
+	payload.tasksThisRound = ps.tasksThisRound
 	if ps.eyes then
 		payload.eyes = {
 			readsLeft = ps.eyes.readsLeft,

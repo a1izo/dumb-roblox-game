@@ -260,7 +260,7 @@ local function close()
 	Router.close("task", "rule")
 end
 
-local function start(payload)
+local function start(payload, practice: (() -> ())?)
 	Widgets.clear(area)
 	-- Progress follows the server clock, so the bar fills exactly when the server accepts.
 	local startedAt = tonumber(payload.startedAt) or workspace:GetServerTimeNow()
@@ -271,6 +271,8 @@ local function start(payload)
 		startedAt = startedAt,
 		solved = payload.fake == true,
 		submittedAt = nil,
+		-- Academy practice: runs only on this client and calls this when finished.
+		practice = practice,
 	}
 	local task_ = current
 	titleLabel.Text = string.upper(tostring(payload.stationName))
@@ -307,6 +309,12 @@ local function update()
 	else
 		progressLabel.Text = "Filing the report..."
 	end
+	if task_.solved and progress >= 1 and task_.practice then
+		local done = task_.practice
+		close()
+		done()
+		return
+	end
 	if task_.solved and progress >= 1 then
 		if task_.submittedAt == nil or os.clock() - task_.submittedAt > 2 then
 			task_.submittedAt = os.clock()
@@ -326,6 +334,20 @@ end
 
 function TaskScreen.isBusy(): boolean
 	return current ~= nil
+end
+
+-- An Academy drill: the same puzzle with a shorter bar, checked only on this client.
+function TaskScreen.practice(stationType: string, title: string, onDone: () -> ())
+	if current then
+		return
+	end
+	start({
+		stationId = "practice",
+		stationType = stationType,
+		stationName = title,
+		duration = 6,
+		startedAt = workspace:GetServerTimeNow(),
+	}, onDone)
 end
 
 function TaskScreen.init()
@@ -372,7 +394,10 @@ function TaskScreen.init()
 			if payload.fake then
 				Toasts.show("Fake task done. Nothing was posted.", "secret")
 			else
-				Toasts.show("Case file complete. Your clue is on the evidence board.", "good")
+				Toasts.show(
+					"Case file complete. The clue is on the evidence board, and 3 letters of your real name flashed on the screen.",
+					"good"
+				)
 			end
 		elseif payload.state == "cancelled" then
 			close()
@@ -388,6 +413,9 @@ function TaskScreen.init()
 		layer = "modal",
 		window = window,
 		allowed = function(view)
+			if current and current.practice then
+				return not view.participant
+			end
 			return view.living and view.phase == "Investigation"
 		end,
 		show = function()
@@ -396,7 +424,8 @@ function TaskScreen.init()
 		hide = function(reason)
 			-- The player walked away from the puzzle: tell the server. When the phase ends the
 			-- server has already cancelled the task.
-			if current and (reason == "user" or reason == "back" or reason == "replaced") then
+			local real = current and not current.practice
+			if real and (reason == "user" or reason == "back" or reason == "replaced") then
 				TaskRequest:FireServer({ action = "cancel", stationId = current.stationId })
 			end
 			current = nil

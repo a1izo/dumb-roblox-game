@@ -1,6 +1,10 @@
 -- Settings: volumes, UI scale, reduced motion, camera shake and hints. Changes apply at
 -- once and are saved to the profile.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
+
 local Router = require(script.Parent.Core.Router)
 local Settings = require(script.Parent.Core.Settings)
 local Screens = require(script.Parent.Screens)
@@ -77,6 +81,16 @@ function SettingsPanel.init()
 	toggle("cameraShake", "Camera shake")
 	header("Help")
 	toggle("hints", "Show hints for new players")
+	Widgets.button({
+		Text = "Show all hints again",
+		TextSize = Theme.text.small,
+		Variant = "ghost",
+		Size = UDim2.new(1, 0, 0, 36),
+		LayoutOrder = nextOrder(),
+		Parent = list,
+	}, function()
+		Net.event("ProfileRequest"):FireServer({ action = "resetHints" })
+	end)
 
 	Settings.Changed:Connect(function(key, value)
 		local set = setters[key]

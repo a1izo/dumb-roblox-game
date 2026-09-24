@@ -137,6 +137,32 @@ Actions.list = {
 		run = EyesController.read,
 	},
 	{
+		id = "scratchpad",
+		label = fixed("Scratchpad"),
+		keys = { Enum.KeyCode.V },
+		pad = Enum.KeyCode.ButtonR2,
+		padLabel = "RT",
+		variant = "ghost",
+		when = function(view: View)
+			return view.participant
+		end,
+		run = function()
+			Router.toggle("scratchpad")
+		end,
+	},
+	{
+		id = "help",
+		label = fixed("How to play"),
+		keys = { Enum.KeyCode.H },
+		variant = "ghost",
+		when = function(view: View)
+			return view.participant and view.living
+		end,
+		run = function()
+			Router.toggle("howToPlay")
+		end,
+	},
+	{
 		id = "zeroDesk",
 		label = fixed(Terms.f("{ZeroDesk}")),
 		keys = { Enum.KeyCode.Z },

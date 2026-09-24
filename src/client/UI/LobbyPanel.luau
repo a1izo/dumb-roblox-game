@@ -166,12 +166,13 @@ function LobbyPanel.init()
 		ReadyRemote:FireServer(not (lobby and lobby.ready))
 	end)
 	local menu = Widgets.frame({
-		Size = UDim2.new(1, 0, 0, 40),
+		Size = UDim2.new(1, 0, 0, 88),
 		LayoutOrder = 11,
 		Parent = panel,
 	})
-	Widgets.grid(menu, UDim2.new(1 / 3, -6, 0, 40), Theme.space.sm)
+	Widgets.grid(menu, UDim2.new(0.5, -4, 0, 40), Theme.space.sm)
 	for index, item in ipairs({
+		{ text = "HOW TO PLAY", screen = "howToPlay" },
 		{ text = "SHOP", screen = "shop" },
 		{ text = "PARTY", screen = "party" },
 		{ text = "SETTINGS", screen = "settings" },

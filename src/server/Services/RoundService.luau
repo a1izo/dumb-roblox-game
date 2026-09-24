@@ -61,6 +61,7 @@ end
 
 local function sendBriefings()
 	local hint = NameService.watariHint()
+	Match.butlerHint = hint
 	for _, ps in ipairs(Match.list) do
 		BriefingRemote:FireClient(ps.player, {
 			role = ps.role,
@@ -341,6 +342,7 @@ function RoundService.init()
 		if ps then
 			EventLog.add(string.format("%s (%s) left the investigation.", ps.alias, Terms.role(ps.role)), "left")
 			Elimination.eliminate(ps, "left", nil, ps.alias .. " left the investigation.", {})
+			Match.announce(ps.alias .. " left the case", "They disconnected.", "neutral")
 		end
 	end)
 end

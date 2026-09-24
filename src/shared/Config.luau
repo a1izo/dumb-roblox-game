@@ -11,7 +11,7 @@ Config.MAX_ROUNDS = 5
 
 -- Phase lengths in seconds. Five rounds of 200 seconds plus briefing and reveal is about 18 minutes.
 Config.PHASE_TIME = {
-	Briefing = 12,
+	Briefing = 15,
 	Investigation = 100,
 	DeathNote = 20,
 	Meeting = 60,
@@ -105,6 +105,10 @@ Config.REWARDS = {
 	EYES_READ_COINS = 5,
 	EYES_READ_XP = 5,
 }
+
+-- One-time reward for finishing every drill in the Academy (the lobby training wing).
+Config.TRAINING_REWARD = 100
+Config.TRAINING_DRILLS = { "camera", "fingerprint", "phone", "grimoire", "warrant", "eyes" }
 
 -- Maps in rotation (module names under ServerScriptService.Server.Maps)
 Config.MAP_ROTATION = { "TaskForceHQ", "UniversityCampus", "TokyoDistrict" }
