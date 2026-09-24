@@ -208,6 +208,32 @@ function Lobby.build(b)
 	local _, nextMapLabel =
 		b:sign(49.3, 11, 0, 90, 26, 8, "NEXT CASE", GOLD, Color3.fromRGB(16, 16, 20), Enum.Font.GothamBlack)
 
+	-- Leaderboards (east wall) and today's quests and the weekly board (west wall).
+	local boards = {}
+	for _, spec in ipairs({
+		{ key = "wins", x = 49.3, z = -32, rot = 90 },
+		{ key = "xp", x = 49.3, z = 32, rot = 90 },
+		{ key = "weekly", x = -49.3, z = -32, rot = -90 },
+		{ key = "quests", x = -49.3, z = 32, rot = -90 },
+	}) do
+		local _, label = b:sign(
+			spec.x,
+			11,
+			spec.z,
+			spec.rot,
+			14,
+			14,
+			"",
+			Color3.fromRGB(235, 232, 225),
+			Color3.fromRGB(14, 14, 18),
+			Enum.Font.SpecialElite
+		)
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.TextYAlignment = Enum.TextYAlignment.Top
+		Create("UITextSizeConstraint", { MaxTextSize = 34, Parent = label })
+		boards[spec.key] = label
+	end
+
 	-- Pillars, lights and benches
 	for _, x in ipairs({ -32, 32 }) do
 		for _, z in ipairs({ -32, 0, 32 }) do
@@ -252,6 +278,7 @@ function Lobby.build(b)
 
 	return {
 		nextMapLabel = nextMapLabel,
+		boards = boards,
 		spawnCFrame = b:world(CFrame.new(0, 0.4, 14)),
 	}
 end

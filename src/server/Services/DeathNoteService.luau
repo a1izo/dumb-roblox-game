@@ -138,6 +138,7 @@ local function onReport(player: Player, payload)
 		})
 	end
 	Match.notify(player, "Report filed.", "info")
+	ps.stats.reports += 1
 	Match.pushPrivate(ps)
 end
 

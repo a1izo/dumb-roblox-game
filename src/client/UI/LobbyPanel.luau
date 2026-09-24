@@ -144,12 +144,15 @@ local function buildMenu()
 	-- A staircase: every item sits a little further right than the one above.
 	for index, item in ipairs({
 		{ text = "How to play", screen = "howToPlay" },
+		{ text = "Quests", screen = "quests" },
 		{ text = "Shop", screen = "shop" },
+		{ text = "Profile", screen = "profile" },
+		{ text = "Leaderboards", screen = "leaderboards" },
 		{ text = "Party", screen = "party" },
 		{ text = "Settings", screen = "settings" },
 		{ text = "Private server", screen = "director" },
 	}) do
-		local holder = Widgets.frame({ Size = UDim2.new(1, 0, 0, 46), LayoutOrder = 5 + index, Parent = menu })
+		local holder = Widgets.frame({ Size = UDim2.new(1, 0, 0, 38), LayoutOrder = 5 + index, Parent = menu })
 		if item.screen == "director" then
 			-- Only in private servers.
 			holder.Visible = DirectorPanel.state.vip
@@ -159,9 +162,9 @@ local function buildMenu()
 		end
 		Widgets.button({
 			Text = item.text,
-			TextSize = 26,
-			Position = UDim2.fromOffset(index * 14, 0),
-			Size = UDim2.fromOffset(280, 46),
+			TextSize = 22,
+			Position = UDim2.fromOffset(index * 10, 0),
+			Size = UDim2.fromOffset(260, 38),
 			Parent = holder,
 		}, function()
 			Router.toggle(item.screen)

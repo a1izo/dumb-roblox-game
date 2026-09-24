@@ -79,6 +79,8 @@ local function newState(player: Player)
 			kills = 0,
 			reads = 0,
 			duties = 0,
+			reports = 0,
+			rigs = 0,
 			arrestedKira = false,
 		},
 	}

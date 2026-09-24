@@ -346,6 +346,7 @@ local function onTamper(player: Player, stationId)
 	runtime.tamperedBy = ps
 	runtime.tamperRound = Match.round
 	ps.tamperRound = Match.round
+	ps.stats.rigs += 1
 	EventLog.add(
 		Terms.f("{alias} ({cultist}) rigged the flash at {station}.", { alias = ps.alias, station = runtime.info.name }),
 		"tamper"

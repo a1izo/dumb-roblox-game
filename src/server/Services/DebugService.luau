@@ -10,6 +10,8 @@ local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local TimeUtil = require(Shared:WaitForChild("Progression"):WaitForChild("TimeUtil"))
+
 local DataService = require(script.Parent.DataService)
 local Elimination = require(script.Parent.Elimination)
 local Match = require(script.Parent.Match)
@@ -116,6 +118,16 @@ local COMMANDS: { [string]: (Player, any) -> () } = {
 			DataService.push(player)
 			reply(player, "+500 XP.")
 		end
+	end,
+	dayPlus = function(player)
+		TimeUtil.setOffset(TimeUtil.offset() + 86400)
+		DataService.push(player)
+		reply(player, "Jumped a day ahead (streaks, quests, shop).")
+	end,
+	weekPlus = function(player)
+		TimeUtil.setOffset(TimeUtil.offset() + 7 * 86400)
+		DataService.push(player)
+		reply(player, "Jumped a week ahead.")
 	end,
 }
 

@@ -22,6 +22,10 @@ local Signal = require(Shared:WaitForChild("Signal"))
 local Migrations = require(script.Parent.Parent:WaitForChild("Data"):WaitForChild("Migrations"))
 local PassService = require(script.Parent.PassService)
 
+local Progression = Shared:WaitForChild("Progression")
+local ProgressRules = require(Progression:WaitForChild("ProgressRules"))
+local TimeUtil = require(Progression:WaitForChild("TimeUtil"))
+
 local ProfileRemote = Net.event("Profile")
 
 local DataService = {}
@@ -94,6 +98,8 @@ function DataService.payload(player: Player)
 		return nil
 	end
 	local data = profile.data
+	local now = TimeUtil.now()
+	ProgressRules.ensureQuests(data, now)
 	local index, rank, nextRank = Ranks.forXp(data.xp)
 	local owned = {}
 	for id, isOwned in pairs(data.owned) do
@@ -118,6 +124,14 @@ function DataService.payload(player: Player)
 		titles = data.titles,
 		alias = data.alias,
 		passes = PassService.list(player),
+		streak = data.streak,
+		quests = data.quests,
+		achievements = data.achievements,
+		mastery = data.mastery,
+		weekly = data.weekly,
+		today = TimeUtil.day(now),
+		nextDayIn = TimeUtil.secondsToNextDay(now),
+		nextWeekIn = TimeUtil.secondsToNextWeek(now),
 		persistent = profile.persistent,
 	}
 end

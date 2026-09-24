@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
+local Ranks = require(Shared:WaitForChild("Ranks"))
 local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
@@ -131,6 +132,26 @@ function RevealScreen.show(payload)
 		}
 		for _, line in ipairs(rewards.lines or {}) do
 			table.insert(lines, string.format("%s: +%d coins, +%d XP", tostring(line.label), line.coins, line.xp))
+		end
+		local progress = rewards.progress
+		if type(progress) == "table" then
+			if type(progress.rankUp) == "table" then
+				local rank = Ranks.LIST[tonumber(progress.rankUp.to) or 1]
+				table.insert(lines, "RANK UP: " .. string.upper(if rank then rank.name else "?"))
+			end
+			if type(progress.masteryLevel) == "table" and type(progress.role) == "string" then
+				table.insert(
+					lines,
+					string.format(
+						"%s mastery: level %d",
+						Roles.get(progress.role).display,
+						tonumber(progress.masteryLevel.to) or 1
+					)
+				)
+			end
+			if type(progress.unlocked) == "table" and #progress.unlocked > 0 then
+				table.insert(lines, "Unlocked: " .. table.concat(progress.unlocked, ", "))
+			end
 		end
 		rewardsLabel.Text = table.concat(lines, "\n")
 	else

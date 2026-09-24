@@ -6,6 +6,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local PartyService = require(script.Parent.PartyService)
+
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
 local PassService = require(script.Parent.PassService)
@@ -18,6 +20,18 @@ function RewardService.payout(winner: string?)
 	local R = Config.REWARDS
 	local custom = ServerSettings.isCustom()
 	local results = {}
+	local players = {}
+	for _, ps in ipairs(Match.list) do
+		table.insert(players, ps.player)
+	end
+	local inParty: { [number]: boolean } = {}
+	for _, group in ipairs(PartyService.groupsFor(players)) do
+		if #group > 1 then
+			for _, userId in ipairs(group) do
+				inParty[userId] = true
+			end
+		end
+	end
 	for _, ps in ipairs(Match.list) do
 		local kiraSide = Match.isKiraSide(ps)
 		local won = (winner == "Team" and not kiraSide) or (winner == "Kira" and kiraSide)
@@ -69,6 +83,10 @@ function RewardService.payout(winner: string?)
 		end
 		local duties = ps.stats.duties or 0
 		add(Terms.f("{Specter} duties x{n}", { n = duties }), duties * R.SPECTER_DUTY_COINS, duties * R.SPECTER_DUTY_XP)
+		if inParty[ps.userId] and xp > 0 and not custom then
+			local bonus = math.floor(xp * 0.1 + 0.5)
+			add("Party bonus", 0, bonus)
+		end
 		if PassService.owns(ps.player, "coins2x") and coins > 0 then
 			table.insert(lines, { label = "Double Coins", coins = coins, xp = 0 })
 			coins *= 2

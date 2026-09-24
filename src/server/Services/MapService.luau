@@ -16,6 +16,7 @@ local Builder = require(Maps:WaitForChild("Builder"))
 local Lobby = require(Maps:WaitForChild("Lobby"))
 local MapContract = require(Maps:WaitForChild("MapContract"))
 
+local LeaderboardService = require(script.Parent.LeaderboardService)
 local ServerSettings = require(script.Parent.ServerSettings)
 local MeetingRoom = require(Maps:WaitForChild("MeetingRoom"))
 local TaskForceHQ = require(Maps:WaitForChild("TaskForceHQ"))
@@ -159,6 +160,7 @@ function MapService.init()
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))
 	model.Parent = workspace
 	updateNextMapLabel()
+	LeaderboardService.setLabels(lobbyInfo.boards)
 end
 
 return MapService

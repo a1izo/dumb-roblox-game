@@ -29,6 +29,7 @@ local MatchmakingService = require(script.Parent.MatchmakingService)
 local MeetingService = require(script.Parent.MeetingService)
 local NameService = require(script.Parent.NameService)
 local NoteService = require(script.Parent.NoteService)
+local ProgressService = require(script.Parent.ProgressService)
 local RewardService = require(script.Parent.RewardService)
 local RoleService = require(script.Parent.RoleService)
 local ServerSettings = require(script.Parent.ServerSettings)
@@ -280,6 +281,7 @@ local function reveal()
 	EventLog.add(winnerName .. " wins. " .. reason, "end")
 
 	local rewards = RewardService.payout(winner)
+	ProgressService.onMatchEnd(rewards)
 	local roster = {}
 	for _, ps in ipairs(Match.list) do
 		table.insert(roster, {

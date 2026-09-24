@@ -43,6 +43,7 @@ local function onTip(player: Player, text)
 	end
 	EventLog.add(string.format("%s (%s) dropped a tip in the box.", ps.alias, Terms.role(ps.role)), "tip")
 	Match.notify(player, "Your tip dropped into the box.", "info")
+	ps.stats.reports += 1
 	local l = Match.findRole("L")
 	if not l or not l.alive then
 		return

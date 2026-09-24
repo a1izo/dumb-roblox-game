@@ -71,6 +71,8 @@ function DebugPanel.init()
 	add("Print roles to Output", "roster")
 	add("+500 coins", "coins")
 	add("+500 XP", "xp")
+	add("Next day", "dayPlus")
+	add("Next week", "weekPlus")
 
 	UserInputService.InputBegan:Connect(function(input: InputObject)
 		if input.KeyCode == Enum.KeyCode.F2 then

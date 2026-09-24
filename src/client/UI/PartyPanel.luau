@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SocialService = game:GetService("SocialService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
@@ -87,6 +88,25 @@ local function rebuild()
 			},
 		})
 	end
+
+	row("Bring Roblox friends into this server", {
+		{
+			text = "Invite",
+			variant = "secondary",
+			action = function()
+				task.spawn(function()
+					local ok, canInvite = pcall(function()
+						return SocialService:CanSendGameInviteAsync(Players.LocalPlayer)
+					end)
+					if ok and canInvite then
+						pcall(function()
+							SocialService:PromptGameInvite(Players.LocalPlayer)
+						end)
+					end
+				end)
+			end,
+		},
+	})
 
 	if #party.invites > 0 then
 		heading("Invites")
