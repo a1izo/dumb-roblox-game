@@ -156,7 +156,7 @@ Actions.list = {
 		keys = { Enum.KeyCode.H },
 		variant = "ghost",
 		when = function(view: View)
-			return view.participant and view.living
+			return view.participant
 		end,
 		run = function()
 			Router.toggle("howToPlay")
