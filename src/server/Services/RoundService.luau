@@ -21,6 +21,7 @@ local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local EvidenceService = require(script.Parent.EvidenceService)
 local EyesService = require(script.Parent.EyesService)
+local Analytics = require(script.Parent.Analytics)
 local GhostService = require(script.Parent.GhostService)
 local HoodService = require(script.Parent.HoodService)
 local MapService = require(script.Parent.MapService)
@@ -282,6 +283,12 @@ local function reveal()
 
 	local rewards = RewardService.payout(winner)
 	ProgressService.onMatchEnd(rewards)
+	for ps, reward in pairs(rewards) do
+		Analytics.step(ps.player, "matchFinished")
+		if reward.won then
+			Analytics.step(ps.player, "firstWin")
+		end
+	end
 	local roster = {}
 	for _, ps in ipairs(Match.list) do
 		table.insert(roster, {
@@ -340,6 +347,10 @@ local function runMatch(players: { Player })
 	Match.map = map
 	Match.mapId = mapId
 	Match.mapName = map.name
+
+	for _, ps in ipairs(Match.list) do
+		Analytics.step(ps.player, "matchStarted")
+	end
 
 	EventLog.reset()
 	RoleService.assign()

@@ -12,6 +12,7 @@ local Streak = require(Progression:WaitForChild("Streak"))
 local TimeUtil = require(Progression:WaitForChild("TimeUtil"))
 
 local AchievementService = require(script.Parent.AchievementService)
+local Analytics = require(script.Parent.Analytics)
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local DataService = require(script.Parent.DataService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
@@ -63,6 +64,7 @@ function ProgressService.onMatchEnd(rewards: { [any]: any })
 			end
 			reward.coins += result.coins
 			reward.xp += result.xp
+			Analytics.coins(ps.player, result.coins, data.coins, "Gameplay", "QuestsAndAchievements")
 			reward.progress = {
 				unlocked = itemNames(result.unlocked),
 				rankUp = result.rankUp,
@@ -90,6 +92,7 @@ local function claimStreak(player: Player)
 	end
 	data.streak = state
 	data.coins += reward.coins
+	Analytics.coins(player, reward.coins, data.coins, "TimedReward", "DailyStreak")
 	local text = string.format("Day %d streak: +%d coins.", state.count, reward.coins)
 	if reward.itemId and not data.owned[reward.itemId] then
 		data.owned[reward.itemId] = true

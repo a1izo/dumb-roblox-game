@@ -12,6 +12,7 @@ local Products = require(Shared:WaitForChild("Products"))
 local Data = script.Parent.Parent:WaitForChild("Data")
 local ReceiptLedger = require(Data:WaitForChild("ReceiptLedger"))
 
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
 
@@ -45,6 +46,7 @@ function MonetizationService.processReceipt(receipt): Enum.ProductPurchaseDecisi
 	if DataService.saveNow(player) then
 		ReceiptLedger.prune(data.receipts, os.time())
 		DataService.push(player)
+		Analytics.coins(player, coins, data.coins, "IAP", pack.key)
 		Match.notify(player, string.format("Thank you! +%d coins.", coins), "good")
 		return PurchaseGranted
 	end

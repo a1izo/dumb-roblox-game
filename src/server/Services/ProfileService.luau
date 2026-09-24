@@ -9,6 +9,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Hints = require(Shared:WaitForChild("Hints"))
 local Net = require(Shared:WaitForChild("Net"))
 
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
 local RateLimit = require(script.Parent.RateLimit)
@@ -98,6 +99,8 @@ local function drillDone(player: Player, payload)
 		if all then
 			data.training.done = true
 			data.coins += Config.TRAINING_REWARD
+			Analytics.step(player, "academy")
+			Analytics.coins(player, Config.TRAINING_REWARD, data.coins, "Onboarding", "Academy")
 			data.titles.trainee = true
 			Match.notify(
 				player,

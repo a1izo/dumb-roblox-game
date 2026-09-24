@@ -8,6 +8,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local PartyService = require(script.Parent.PartyService)
 
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
 local PassService = require(script.Parent.PassService)
@@ -93,6 +94,10 @@ function RewardService.payout(winner: string?)
 		end
 		results[ps] = { coins = coins, xp = xp, won = won, lines = lines }
 		DataService.grant(ps.player, coins, xp, won, ps.stats.tasks)
+		local data = DataService.get(ps.player)
+		if data then
+			Analytics.coins(ps.player, coins, data.coins, "Gameplay", "MatchReward")
+		end
 	end
 	return results
 end

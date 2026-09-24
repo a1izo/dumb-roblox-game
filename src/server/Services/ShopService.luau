@@ -9,6 +9,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
+local Analytics = require(script.Parent.Analytics)
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
@@ -65,6 +66,7 @@ local function onRequest(player: Player, payload)
 			return
 		end
 		data.coins -= price
+		Analytics.coins(player, -price, data.coins, "Shop", item.id)
 		data.owned[item.id] = true
 		data.equipped[item.kind] = item.id
 		Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")

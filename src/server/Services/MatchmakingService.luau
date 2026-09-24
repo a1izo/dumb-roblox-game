@@ -23,6 +23,8 @@ local PartyService = require(script.Parent.PartyService)
 local RateLimit = require(script.Parent.RateLimit)
 
 local ReadyRemote = Net.event("Ready")
+
+local Analytics = require(script.Parent.Analytics)
 local LobbyStateRemote = Net.event("LobbyState")
 
 local MatchmakingService = {}
@@ -362,6 +364,9 @@ local function onReady(player: Player, wantReady)
 	end
 	if Match.getLiving(player) then
 		return
+	end
+	if wantReady then
+		Analytics.step(player, "ready")
 	end
 	for _, member in ipairs(PartyService.membersOf(player)) do
 		if Match.getLiving(member) == nil then
