@@ -10,17 +10,18 @@ local Assets = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("As
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Router = require(script.Parent.Parent.UI.Core.Router)
+local AudioCheck = require(script.Parent.AudioCheck)
 local Mixer = require(script.Parent.Mixer)
 
 local MusicController = {}
 
 local FADE = 2
 
-local current: { slot: string, sound: Sound }? = nil
+local current: { slot: string, sound: Sound, id: string }? = nil
 local outcomeSlot: string? = nil
 local debugSlot: string? = nil
 
-local function stop(entry: { slot: string, sound: Sound }, fade: number)
+local function stop(entry: { slot: string, sound: Sound, id: string }, fade: number)
 	local sound = entry.sound
 	local tween = TweenService:Create(sound, TweenInfo.new(fade), { Volume = 0 })
 	tween.Completed:Once(function()
@@ -30,10 +31,11 @@ local function stop(entry: { slot: string, sound: Sound }, fade: number)
 end
 
 local function play(slot: string?)
-	if current and current.slot == slot then
+	-- The upload, or its fallback once the audio check found the upload blocked.
+	local id = if slot then AudioCheck.idFor(Assets.music[slot]) else nil
+	if current and current.slot == slot and current.id == id then
 		return
 	end
-	local id = if slot then Assets.audioId(Assets.music[slot]) else nil
 	if current then
 		stop(current, FADE)
 		current = nil
@@ -51,7 +53,7 @@ local function play(slot: string?)
 	sound.Parent = SoundService
 	sound:Play()
 	TweenService:Create(sound, TweenInfo.new(FADE), { Volume = entry.volume or 1 }):Play()
-	current = { slot = slot, sound = sound }
+	current = { slot = slot, sound = sound, id = id }
 end
 
 -- The slot for right now.
@@ -123,6 +125,7 @@ function MusicController.init()
 	ClientState.PublicChanged:Connect(MusicController.refresh)
 	ClientState.PrivateChanged:Connect(MusicController.refresh)
 	Router.Changed:Connect(MusicController.refresh)
+	AudioCheck.Changed:Connect(MusicController.refresh)
 	MusicController.refresh()
 end
 

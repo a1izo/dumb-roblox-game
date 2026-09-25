@@ -78,7 +78,7 @@ local function looksImported(instance: Instance): boolean
 	if not (instance:IsA("Model") or instance:IsA("Folder")) then
 		return false
 	end
-	if instance.Name == STORE_NAME then
+	if instance.Name == STORE_NAME or instance.Name == "InkboundSuperseded" then
 		return false
 	end
 	if string.sub(instance.Name, 1, 8) == "Inkbound" then
@@ -107,6 +107,127 @@ local function quiet(root: Instance)
 	end
 end
 
+-- Calibration --------------------------------------------------------------------------------
+-- Studio's importer may scale, turn or move what it imports. Each export carries three cubes,
+-- <prefix>_O at the origin, _X 64 studs along x and _Y 64 studs up; where they land tells
+-- exactly how the import was changed.
+
+export type Calibration = { toLocal: CFrame, scale: number }
+
+local calibrations: { [string]: Calibration | false } = {}
+
+local function positionOf(source: Instance): Vector3?
+	if source:IsA("BasePart") then
+		return source.Position
+	elseif source:IsA("Model") then
+		return (source :: Model):GetBoundingBox().Position
+	end
+	return nil
+end
+
+-- The import's calibration from the cubes named prefix_O/_X/_Y, or nil when they are missing.
+-- toLocal turns an imported CFrame back into the one it was exported with (before scaling).
+function ModelLibrary.calibration(prefix: string): Calibration?
+	local cached = calibrations[prefix]
+	if cached ~= nil then
+		return if cached then cached else nil
+	end
+	local o, x, y = findSource(prefix .. "_O"), findSource(prefix .. "_X"), findSource(prefix .. "_Y")
+	local po = o and positionOf(o)
+	local px = x and positionOf(x)
+	local py = y and positionOf(y)
+	if not (po and px and py) then
+		calibrations[prefix] = false
+		return nil
+	end
+	local ex, ey = px - po, py - po
+	if ex.Magnitude < 1e-3 or ey.Magnitude < 1e-3 then
+		calibrations[prefix] = false
+		return nil
+	end
+	local right = ex.Unit
+	local up = (ey - right * ey:Dot(right)).Unit
+	local found = {
+		toLocal = CFrame.fromMatrix(po, right, up, right:Cross(up)):Inverse(),
+		scale = ex.Magnitude / 64,
+	}
+	calibrations[prefix] = found
+	return found
+end
+
+-- The turn that undoes the importer's rotation of props: from the props export's own cubes,
+-- else the maps export's (both go through the same importer), else nil.
+local function importTurn(): CFrame?
+	local cal = ModelLibrary.calibration("Calib_Props") or ModelLibrary.calibration("Calib_Maps")
+	return if cal then cal.toLocal.Rotation else nil
+end
+
+local function describeTurn(prefix: string): string
+	local cal = ModelLibrary.calibration(prefix)
+	if not cal then
+		return prefix .. ": no calibration cubes"
+	end
+	local rx, ry, rz = cal.toLocal:Inverse():ToOrientation()
+	return string.format(
+		"%s: turned %d/%d/%d degrees, scale %.3f",
+		prefix,
+		math.round(math.deg(rx)),
+		math.round(math.deg(ry)),
+		math.round(math.deg(rz)),
+		cal.scale
+	)
+end
+
+-- Versions -----------------------------------------------------------------------------------
+-- Every export carries a marker mesh Inkbound<Kind>_Version_<n>. When the same kind was
+-- imported more than once, only the newest import is used; older ones are set aside so old
+-- and new meshes never mix.
+
+local function importVersion(root: Instance): (string, number)
+	for _, item in ipairs(root:GetDescendants()) do
+		local kind, version = string.match(item.Name, "^Inkbound(%a+)_Version_(%d+)$")
+		if kind then
+			return kind, tonumber(version) or 0
+		end
+	end
+	return root.Name, 0
+end
+
+local function setAsideOlder(root: Instance): { string }
+	local groups: { [string]: { { item: Instance, version: number, order: number } } } = {}
+	for order, child in ipairs(root:GetChildren()) do
+		if child:IsA("Model") or child:IsA("Folder") then
+			local kind, version = importVersion(child)
+			groups[kind] = groups[kind] or {}
+			table.insert(groups[kind], { item = child, version = version, order = order })
+		end
+	end
+	local setAside = {}
+	for kind, list in pairs(groups) do
+		if #list > 1 then
+			table.sort(list, function(a, b)
+				if a.version ~= b.version then
+					return a.version > b.version
+				end
+				return a.order > b.order
+			end)
+			for index = 2, #list do
+				local older = list[index]
+				local ServerStorage = game:GetService("ServerStorage")
+				local bin = ServerStorage:FindFirstChild("InkboundSuperseded")
+				if not bin then
+					bin = Instance.new("Folder")
+					bin.Name = "InkboundSuperseded"
+					bin.Parent = ServerStorage
+				end
+				older.item.Parent = bin
+				table.insert(setAside, string.format("%s (version %d)", kind, older.version))
+			end
+		end
+	end
+	return setAside
+end
+
 -- Server, once at start (before any map is built): moves imports that were left in Workspace,
 -- ReplicatedStorage or ServerStorage into ReplicatedStorage.InkboundAssets and reports what
 -- the game can use.
@@ -131,8 +252,10 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		end
 	end
 	quiet(rootInstance)
+	local setAside = setAsideOlder(rootInstance)
 	index = buildIndex()
 	templates = {}
+	calibrations = {}
 
 	local found, missing = 0, {}
 	for key in pairs(Catalog :: any) do
@@ -173,6 +296,16 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		print(string.format("[Inkbound] Blender map scenes: %d meshes.", scenes))
 	elseif RunService:IsStudio() then
 		print("[Inkbound] No map scenes imported yet: import art/export/InkboundMaps.fbx for the new maps.")
+	end
+	if #setAside > 0 then
+		warn(
+			"[Inkbound] Several imports of the same file: using the newest, ignoring "
+				.. table.concat(setAside, ", ")
+				.. ". Delete the old copies in Studio to keep the place small."
+		)
+	end
+	if found > 0 or scenes > 0 then
+		print("[Inkbound] Import check: " .. describeTurn("Calib_Props") .. "; " .. describeTurn("Calib_Maps") .. ".")
 	end
 	rootInstance:SetAttribute("Installed", true)
 	return { found = found, missing = missing }
@@ -255,6 +388,8 @@ local function build(key: string): Model?
 	end
 	local model = Instance.new("Model")
 	model.Name = key
+	-- Kept when dress() renames the copy, so clients know which prop a mesh belongs to.
+	model:SetAttribute("InkboundProp", key)
 	local main = source:Clone()
 	main.Parent = model
 	for _, part in ipairs(partsOf(main)) do
@@ -276,21 +411,30 @@ local function build(key: string): Model?
 		glow.Parent = model
 	end
 
-	-- Upright: pick the turn that makes the model's shape match the catalog.
+	-- Upright and facing -Z (the way it was made): undo the importer's turn, measured by the
+	-- calibration cubes. Without them, pick the turn that makes the shape match the catalog
+	-- (which cannot tell front from back).
 	local expected = vector(info.size)
 	local cf, size = model:GetBoundingBox()
 	model.WorldPivot = CFrame.new(cf.Position)
-	local bestTurn, bestError = CFrame.identity, math.huge
-	for _, turn in ipairs(TURNS) do
-		local err = shapeError(absolute(turn:VectorToWorldSpace(size)), expected)
-		if err < bestError - 1e-3 then
-			bestTurn, bestError = turn, err
-		end
-	end
-	if bestTurn ~= CFrame.identity then
-		model:PivotTo(model:GetPivot() * bestTurn)
-		model.WorldPivot = CFrame.new(model:GetPivot().Position)
+	local measured = importTurn()
+	if measured then
+		model:PivotTo(measured * model:GetPivot())
 		cf, size = model:GetBoundingBox()
+		model.WorldPivot = CFrame.new(cf.Position)
+	else
+		local bestTurn, bestError = CFrame.identity, math.huge
+		for _, turn in ipairs(TURNS) do
+			local err = shapeError(absolute(turn:VectorToWorldSpace(size)), expected)
+			if err < bestError - 1e-3 then
+				bestTurn, bestError = turn, err
+			end
+		end
+		if bestTurn ~= CFrame.identity then
+			model:PivotTo(model:GetPivot() * bestTurn)
+			model.WorldPivot = CFrame.new(model:GetPivot().Position)
+			cf, size = model:GetBoundingBox()
+		end
 	end
 
 	-- Scale to the catalog size (the importer may have used another unit).

@@ -1,5 +1,5 @@
--- Animates every R15 character on this client, from public events only, by writing
--- Motor6D.Transform each frame (which never replicates):
+-- Animates every R15 character on this client, from public events only, by writing each
+-- joint's Transform every frame (Motor6D or AnimationConstraint; it never replicates):
 --   1. a base layer from the locomotion controller (idle, walk, run, jump, fall), then
 --   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight.
 -- Clips come from Blender (Anim/Clips.luau). A clip with an uploaded animation id in
@@ -43,7 +43,7 @@ type Track = {
 export type Rig = {
 	character: Model,
 	humanoid: Humanoid,
-	motors: { [string]: Motor6D },
+	motors: { [string]: Joints.Instance6D },
 	basis: { [string]: CFrame },
 	tracks: { Track },
 	baked: boolean,
@@ -61,7 +61,20 @@ local function rotation(cf: CFrame): CFrame
 	return cf - cf.Position
 end
 
--- The rig for a character (built once), or nil for non-R15 characters.
+-- Fewer joints than this and the body is still being assembled (or is not R15).
+local MIN_JOINTS = 13
+
+local function refresh(rig: Rig)
+	local motors = Joints.find(rig.character)
+	local basis = {}
+	for name, motor in pairs(motors) do
+		basis[name] = rotation(Joints.c0(motor))
+	end
+	rig.motors = motors
+	rig.basis = basis
+end
+
+-- The rig for a character (built once), or nil while it has no R15 joints.
 function PoseController.bind(character: Model?): Rig?
 	if not character then
 		return nil
@@ -75,26 +88,47 @@ function PoseController.bind(character: Model?): Rig?
 		return nil
 	end
 	local motors = Joints.find(character)
-	if not motors.waist or not motors.root then
-		return nil
+	local count = 0
+	for _ in pairs(motors) do
+		count += 1
 	end
-	local basis = {}
-	for name, motor in pairs(motors) do
-		basis[name] = rotation(motor.C0)
+	if count < MIN_JOINTS or not motors.waist or not motors.root then
+		return nil
 	end
 	local rig: Rig = {
 		character = character,
 		humanoid = humanoid,
 		motors = motors,
-		basis = basis,
+		basis = {},
 		tracks = {},
 		baked = false,
 	}
+	refresh(rig)
 	rigs[character] = rig
+	-- Joints that arrive (or are replaced) later join the rig.
+	local connection = character.DescendantAdded:Connect(function(item)
+		if (item:IsA("Motor6D") or item:IsA("AnimationConstraint")) and rigs[character] == rig then
+			task.defer(refresh, rig)
+		end
+	end)
 	character.Destroying:Once(function()
+		connection:Disconnect()
 		rigs[character] = nil
 	end)
 	return rig
+end
+
+-- Waits (up to `timeout` seconds) for the character's joints, then binds it.
+function PoseController.bindWhenReady(character: Model, timeout: number?): Rig?
+	local deadline = os.clock() + (timeout or 6)
+	repeat
+		local rig = PoseController.bind(character)
+		if rig or not character.Parent then
+			return rig
+		end
+		task.wait(0.1)
+	until os.clock() > deadline
+	return nil
 end
 
 function PoseController.setBaseProvider(provider: BaseProvider)

@@ -381,54 +381,25 @@ end
 
 -- Looks -----------------------------------------------------------------------------
 
--- Roblox's own R15 set, used for every slot of Assets.locomotion left empty. Owned
--- animation packs never show: a player's pack could give away who is behind an alias.
-local DEFAULT_LOCOMOTION = {
-	idle = "507766666",
-	idleAlt = "507766951",
-	walk = "507777826",
-	run = "507767714",
-	jump = "507765000",
-	fall = "507767968",
-	climb = "507765644",
-	swim = "507784897",
-	swimIdle = "507785072",
-}
-
--- slot -> { folder in the Animate script, animation name }
-local ANIMATE_PATHS = {
-	idle = { "idle", "Animation1" },
-	idleAlt = { "idle", "Animation2" },
-	walk = { "walk", "WalkAnim" },
-	run = { "run", "RunAnim" },
-	jump = { "jump", "JumpAnim" },
-	fall = { "fall", "FallAnim" },
-	climb = { "climb", "ClimbAnim" },
-	swim = { "swim", "Swim" },
-	swimIdle = { "swimidle", "SwimIdle" },
-}
-
--- Gives the character the game-wide movement set.
-function CharacterService.applyLocomotion(character: Model)
-	local humanoid = getHumanoid(character)
-	local animate = character:FindFirstChild("Animate")
-	if not humanoid or humanoid.RigType ~= Enum.HumanoidRigType.R15 or not animate then
-		return
-	end
-	for slot, path in pairs(ANIMATE_PATHS) do
-		local id = Assets.locomotion[slot]
-		if id == nil or id == "" then
-			id = DEFAULT_LOCOMOTION[slot]
-		end
-		local folder = animate:FindFirstChild(path[1])
-		local animation = if folder then folder:FindFirstChild(path[2]) else nil
-		if animation and animation:IsA("Animation") then
-			local contentId = Assets.contentId(id)
-			if animation.AnimationId ~= contentId then
-				animation.AnimationId = contentId
-			end
+-- Every body is animated on each client from the clips made in Blender (src/client/Anim), so
+-- Roblox's default Animate script (which Studio and the avatar loader add to characters)
+-- would fight them. It is removed as soon as it appears.
+function CharacterService.removeDefaultAnimate(character: Model)
+	local function strip(item: Instance)
+		if item.Name == "Animate" and (item:IsA("LocalScript") or item:IsA("Script")) then
+			(item :: any).Enabled = false
+			item:Destroy()
 		end
 	end
+	for _, item in ipairs(character:GetChildren()) do
+		strip(item)
+	end
+	local connection = character.ChildAdded:Connect(function(item)
+		task.defer(strip, item)
+	end)
+	task.delay(10, function()
+		connection:Disconnect()
+	end)
 end
 
 local CLOTHING_ACCESSORIES = {
@@ -637,12 +608,7 @@ local function onCharacterAdded(player: Player, character: Model)
 		end)
 	end)
 
-	CharacterService.applyLocomotion(character)
-	task.delay(1, function()
-		if character.Parent then
-			CharacterService.applyLocomotion(character)
-		end
-	end)
+	CharacterService.removeDefaultAnimate(character)
 
 	if ps then
 		-- Wait a frame so the default spawn positioning has finished.

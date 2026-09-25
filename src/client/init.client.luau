@@ -57,14 +57,17 @@ local LocomotionController = require(Anim:WaitForChild("LocomotionController"))
 local PoseController = require(Anim:WaitForChild("PoseController"))
 
 local World = script:WaitForChild("World")
+local CameraCollision = require(World:WaitForChild("CameraCollision"))
 local FlickerController = require(World:WaitForChild("FlickerController"))
 local GhostVisibility = require(World:WaitForChild("GhostVisibility"))
 local LightingController = require(World:WaitForChild("LightingController"))
 local RainController = require(World:WaitForChild("RainController"))
+local TextureDoctor = require(World:WaitForChild("TextureDoctor"))
 
 local GhostController = require(script:WaitForChild("Specter"):WaitForChild("GhostController"))
 
 local Audio = script:WaitForChild("Audio")
+local AudioCheck = require(Audio:WaitForChild("AudioCheck"))
 local Mixer = require(Audio:WaitForChild("Mixer"))
 local MusicController = require(Audio:WaitForChild("MusicController"))
 
@@ -115,6 +118,7 @@ DebugPanel.init()
 
 -- Sound and cutscenes.
 Mixer.init()
+AudioCheck.init()
 MusicController.init()
 CameraDirector.init()
 Cinema.init()
@@ -123,8 +127,10 @@ PoseController.init()
 LocomotionController.init()
 ActingController.init()
 
--- The world: lighting per venue, rain and flickering lamps.
+-- The world: lighting per venue, rain, flickering lamps and a camera that stays out of walls.
 LightingController.init()
+CameraCollision.init()
+TextureDoctor.init()
 RainController.init()
 FlickerController.init()
 

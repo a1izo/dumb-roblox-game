@@ -139,7 +139,7 @@ function ClipPlayer.sample(clip: Prepared, time: number, into: { [string]: CFram
 	return result, ClipPlayer.sampleOffset(clip, t)
 end
 
--- A joint rotation turned into a Motor6D.Transform for a motor whose C0 has rotation `basis`
+-- A joint rotation turned into a joint Transform for a joint whose C0 has rotation `basis`
 -- (so clips work on any rig whose joints are rotated differently).
 function ClipPlayer.transform(basis: CFrame, rotation: CFrame, offset: Vector3?): CFrame
 	local inverse = basis:Inverse()

@@ -699,11 +699,15 @@ function Builder:station(def, id: string)
 		Enum.Material.Metal,
 		{ Parent = model }
 	)
-	if ModelLibrary.dress(desk, "Station", CFrame.new(0, -1.5, 0)) then
-		pedestal.Transparency = 1
-		pedestal.CanQuery = false
-		strip.Size = Vector3.new(5.2, 0.1, 0.14)
-		strip.CFrame = self:world(base * CFrame.new(0, 3.03, -1.3))
+	-- With the Blender console only the screen stays: its housing is built around it, and the
+	-- screen shows the station type. The part-built extras are for the stand-in only.
+	local dressed = ModelLibrary.dress(desk, "Station", CFrame.new(0, -1.5, 0)) ~= nil
+	if dressed then
+		for _, extra in ipairs({ pedestal, strip }) do
+			extra.Transparency = 1
+			extra.CanQuery = false
+			extra.CastShadow = false
+		end
 	end
 	local screen = self:part(
 		Vector3.new(4.4, 2.6, 0.3),
@@ -713,7 +717,8 @@ function Builder:station(def, id: string)
 		{ Parent = model }
 	)
 
-	if def.type == "Camera" then
+	-- Type props for the part-built stand-in (the console mesh is the whole station).
+	if not dressed and def.type == "Camera" then
 		self:part(
 			Vector3.new(0.8, 0.6, 1.2),
 			base * CFrame.new(-1.6, 3.5, 0),
@@ -728,7 +733,7 @@ function Builder:station(def, id: string)
 			Enum.Material.Neon,
 			{ Parent = model, CanQuery = false }
 		)
-	elseif def.type == "Fingerprint" then
+	elseif not dressed and def.type == "Fingerprint" then
 		self:part(
 			Vector3.new(1.4, 0.2, 1),
 			base * CFrame.new(-1.5, 3.2, -0.3),
@@ -736,7 +741,7 @@ function Builder:station(def, id: string)
 			Enum.Material.Neon,
 			{ Parent = model, CanQuery = false }
 		)
-	else
+	elseif not dressed then
 		self:part(
 			Vector3.new(0.7, 0.35, 1.3),
 			base * CFrame.new(-1.6, 3.25, -0.2),
@@ -823,7 +828,8 @@ function Builder:tipBox(def)
 		Enum.Material.Metal,
 		{ Parent = model }
 	)
-	if ModelLibrary.dress(box, "TipBox", CFrame.new(0, -2, 0)) then
+	local dressed = ModelLibrary.dress(box, "TipBox", CFrame.new(0, -2, 0)) ~= nil
+	if dressed then
 		slot.Transparency = 1
 		lid.Transparency = 1
 		lid.CanQuery = false
@@ -841,6 +847,12 @@ function Builder:tipBox(def)
 		Color3.fromRGB(110, 20, 25)
 	)
 	signPart.Parent = model
+	if dressed then
+		-- Painted on the box instead of a plate in front of it.
+		signPart.Transparency = 1
+		signPart.CanQuery = false
+		signPart.CanCollide = false
+	end
 	box:AddTag("LTipBox")
 	return { part = box, position = box.Position, model = model }
 end
@@ -866,7 +878,9 @@ function Builder:board(def)
 	label.TextYAlignment = Enum.TextYAlignment.Top
 	local boardPart = label:FindFirstAncestorWhichIsA("BasePart")
 	local boardScale = math.min((def.w or 12) / 12, (def.h or 7) / 7)
-	if boardPart and ModelLibrary.dress(boardPart, "EvidenceBoard", CFrame.new(0, 0, 0.05), boardScale) then
+	local dressed = boardPart ~= nil
+		and ModelLibrary.dress(boardPart, "EvidenceBoard", CFrame.new(0, 0, 0.05), boardScale) ~= nil
+	if dressed then
 		-- The log is written in ink on the pinned sheet in the middle of the cork.
 		label.TextColor3 = Color3.fromRGB(24, 22, 26)
 		local padding = label:FindFirstChildOfClass("UIPadding")
@@ -889,6 +903,13 @@ function Builder:board(def)
 		Color3.fromRGB(120, 25, 30)
 	)
 	title.Font = Enum.Font.GothamBlack
+	if dressed then
+		-- The cork board is recognisable on its own; no plate floating above it.
+		local titlePart = title:FindFirstAncestorWhichIsA("BasePart")
+		if titlePart then
+			titlePart:Destroy()
+		end
+	end
 	return label
 end
 

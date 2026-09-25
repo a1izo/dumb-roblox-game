@@ -79,8 +79,8 @@ local function drillDesk(b, drill)
 	)
 	-- The same console as the stations in a match, once the Blender props are imported.
 	if ModelLibrary.dress(desk, "Station", CFrame.new(0, -1.5, 0)) then
-		strip.Size = Vector3.new(5.2, 0.1, 0.14)
-		strip.CFrame = b:world(b:cf(x, 0, z, rot) * CFrame.new(0, 3.03, -1.3))
+		strip.Transparency = 1
+		strip.CanQuery = false
 	end
 	desk:SetAttribute("Drill", id)
 	desk:SetAttribute("DrillTitle", title)

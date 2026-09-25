@@ -144,7 +144,44 @@ function MapContract.validateBuilt(info: any): { string }
 			end
 		end
 	end
+	for _, text in ipairs(MapContract.leftovers(info.model)) do
+		fail(text)
+	end
 	return problems
+end
+
+-- Visible part-built pieces left inside a Blender prop (a prop dresses a gameplay part as a
+-- model named "Visual" under it; the stand-in's extras must be hidden when it does). Screens
+-- tagged LStationScreen are meant to show through the console's housing.
+function MapContract.leftovers(root: Instance): { string }
+	local found = {}
+	local visuals = {}
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("Model") and item.Name == "Visual" and item.Parent and item.Parent:IsA("BasePart") then
+			table.insert(visuals, item)
+		end
+	end
+	for _, visual in ipairs(visuals) do
+		local cf, size = visual:GetBoundingBox()
+		local params = OverlapParams.new()
+		params.FilterType = Enum.RaycastFilterType.Include
+		params.FilterDescendantsInstances = { root }
+		for _, part in ipairs(workspace:GetPartBoundsInBox(cf, size * 0.9, params)) do
+			local isStandIn = part.ClassName == "Part"
+				and part.Transparency < 1
+				and part ~= visual.Parent
+				and not part:IsDescendantOf(visual)
+				and not part:HasTag("LStationScreen")
+				and part.Size.Magnitude < size.Magnitude * 1.5
+			if isStandIn then
+				table.insert(
+					found,
+					"part " .. part:GetFullName() .. " shows through the " .. visual.Parent.Name .. " prop"
+				)
+			end
+		end
+	end
+	return found
 end
 
 return MapContract

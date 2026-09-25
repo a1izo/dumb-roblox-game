@@ -22,6 +22,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 
 local Screens = require(script.Parent.Parent.UI.Screens)
+local AudioCheck = require(script.Parent.Parent.Audio.AudioCheck)
 local MusicController = require(script.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local LightingController = require(script.Parent.Parent.World.LightingController)
@@ -530,6 +531,9 @@ builders.World = function()
 	button(r, "Check map contract", function()
 		send("contract")
 	end)
+	button(r, "Prop gallery", function()
+		send("propGallery")
+	end)
 	note("Previews build a map outside a match (between matches). Turning scenes off rebuilds the lobby part-made.")
 	heading("Me")
 	r = row()
@@ -655,10 +659,14 @@ builders.Show = function()
 		MusicController.setDebugSlot("none")
 		lastSignature = ""
 	end)
+	note(
+		"Audio check: ok = plays, fallback = the upload is blocked and the fallback id plays,"
+			.. " blocked = silent (share the audio with this experience in Creator Hub)."
+	)
 	for _, slot in ipairs(sortedKeys(Assets.music)) do
 		local entry = Assets.music[slot]
-		local hasId = Assets.audioId(entry) ~= nil
-		button(r, slot .. (if hasId then "" else " (no id)"), function()
+		local status = AudioCheck.slotStatus(entry)
+		button(r, slot .. (if status == "ok" then "" else " (" .. status .. ")"), function()
 			MusicController.setDebugSlot(slot)
 			lastSignature = ""
 		end, if MusicController.current() == slot then COLORS.pick else nil)

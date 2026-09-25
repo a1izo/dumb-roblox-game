@@ -6,6 +6,7 @@ local SoundService = game:GetService("SoundService")
 
 local Assets = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Assets"))
 
+local AudioCheck = require(script.Parent.AudioCheck)
 local Mixer = require(script.Parent.Mixer)
 
 local Sfx = {}
@@ -22,7 +23,7 @@ export type Options = {
 -- destroyed by the caller; one-shots clean themselves up.
 function Sfx.play(key: string, options: Options?): Sound?
 	local entry = Assets.sfx[key]
-	local id = Assets.audioId(entry)
+	local id = AudioCheck.idFor(entry)
 	if not id then
 		return nil
 	end

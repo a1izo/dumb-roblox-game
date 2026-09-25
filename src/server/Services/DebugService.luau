@@ -14,6 +14,8 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
+local ModelCatalog = require(Shared:WaitForChild("ModelCatalog"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 local RoleLogic = require(Shared:WaitForChild("RoleLogic"))
@@ -666,6 +668,76 @@ COMMANDS.contract = function(player)
 		if #problems == 0 then "Map contract: all clear." else #problems .. " problem(s), listed in the Output.",
 		if #problems == 0 then "good" else "bad"
 	)
+end
+
+-- Every imported prop in a row far from the lobby, each with a red arrow where its front
+-- should face (-Z, the way props are made and placed). A prop whose front does not follow its
+-- arrow is turned wrong.
+local GALLERY_AT = Vector3.new(0, 0, -400)
+
+COMMANDS.propGallery = function(player)
+	local existing = workspace:FindFirstChild("InkboundPropGallery")
+	if existing then
+		existing:Destroy()
+		teleport(player, MapService.lobbySpawn())
+		reply(player, "Prop gallery closed.")
+		return
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "InkboundPropGallery"
+	folder.Parent = workspace
+	local keys = {}
+	for key in pairs(ModelCatalog) do
+		table.insert(keys, key)
+	end
+	table.sort(keys)
+	local x = 0
+	local shown = 0
+	for _, key in ipairs(keys) do
+		local model = ModelLibrary.get(key)
+		local size = ModelLibrary.size(key) or Vector3.new(4, 4, 4)
+		local width = math.max(size.X, 4)
+		local at = GALLERY_AT + Vector3.new(x + width / 2, 0, 0)
+		if model then
+			model:PivotTo(
+				CFrame.new(at + Vector3.new(0, if ModelCatalog[key].pivot == "centre" then size.Y / 2 else 0, 0))
+			)
+			model.Parent = folder
+			shown += 1
+		end
+		local arrow = Instance.new("Part")
+		arrow.Anchored = true
+		arrow.CanCollide = false
+		arrow.Material = Enum.Material.Neon
+		arrow.Color = if model then Color3.fromRGB(230, 30, 40) else Color3.fromRGB(120, 120, 120)
+		arrow.Size = Vector3.new(0.3, 0.3, 3)
+		arrow.CFrame = CFrame.new(at + Vector3.new(0, 0.2, -size.Z / 2 - 1.5))
+		arrow.Parent = folder
+		local label = Instance.new("BillboardGui")
+		label.Size = UDim2.fromOffset(160, 30)
+		label.StudsOffsetWorldSpace = Vector3.new(0, size.Y + 1.5, 0)
+		label.AlwaysOnTop = true
+		label.Adornee = arrow
+		label.Parent = arrow
+		local text = Instance.new("TextLabel")
+		text.BackgroundTransparency = 1
+		text.Size = UDim2.fromScale(1, 1)
+		text.Font = Enum.Font.GothamBold
+		text.TextColor3 = Color3.new(1, 1, 1)
+		text.TextStrokeTransparency = 0.3
+		text.TextScaled = true
+		text.Text = key .. (if model then "" else " (not imported)")
+		text.Parent = label
+		x += width + 3
+	end
+	local floor = Instance.new("Part")
+	floor.Anchored = true
+	floor.Size = Vector3.new(x + 10, 1, 40)
+	floor.CFrame = CFrame.new(GALLERY_AT + Vector3.new(x / 2, -0.5, -4))
+	floor.Color = Color3.fromRGB(40, 40, 44)
+	floor.Parent = folder
+	teleport(player, CFrame.lookAt(GALLERY_AT + Vector3.new(6, 0, -18), GALLERY_AT + Vector3.new(6, 0, 0)))
+	reply(player, string.format("Prop gallery: %d of %d props. Each front should face its red arrow.", shown, #keys))
 end
 
 -- Presentation

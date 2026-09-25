@@ -24,48 +24,11 @@ local SceneBuilder = {}
 -- Set from the debug panel to build the old part-made venues instead (to compare them).
 SceneBuilder.disabled = false
 
-type Calibration = { toLocal: CFrame, scale: number }
+-- Tag on the colliders the camera cannot pass through (see client World/CameraCollision).
+SceneBuilder.CAMERA_TAG = "LCameraBlock"
 
-local calibration: Calibration | false | nil = nil
-
-local function positionOf(source: Instance): Vector3?
-	if source:IsA("BasePart") then
-		return source.Position
-	elseif source:IsA("Model") then
-		return (source :: Model):GetBoundingBox().Position
-	end
-	return nil
-end
-
-local function calibrate(): Calibration?
-	if calibration ~= nil then
-		return if calibration then calibration else nil
-	end
-	local o = ModelLibrary.source("Calib_Maps_O")
-	local x = ModelLibrary.source("Calib_Maps_X")
-	local y = ModelLibrary.source("Calib_Maps_Y")
-	local po = o and positionOf(o)
-	local px = x and positionOf(x)
-	local py = y and positionOf(y)
-	if not (po and px and py) then
-		calibration = false
-		return nil
-	end
-	local ex = px - po
-	local ey = py - po
-	if ex.Magnitude < 1e-3 or ey.Magnitude < 1e-3 then
-		calibration = false
-		return nil
-	end
-	local scale = ex.Magnitude / 64
-	local right = ex.Unit
-	local up = (ey - right * ey:Dot(right)).Unit
-	local found = {
-		toLocal = CFrame.fromMatrix(po, right, up, right:Cross(up)):Inverse(),
-		scale = scale,
-	}
-	calibration = found
-	return found
+local function calibrate(): ModelLibrary.Calibration?
+	return ModelLibrary.calibration("Calib_Maps")
 end
 
 -- "Scene_Meeting_WoodPanel_3" -> "WoodPanel"
@@ -262,13 +225,18 @@ function SceneBuilder.build(b, venue: string): boolean
 		part.Parent = folder
 	end
 	for _, c in ipairs(data.colliders) do
-		b:part(
+		local collider = b:part(
 			Vector3.new(c[4], c[5], c[6]),
 			b:cf(c[1], c[2], c[3], c[7]),
 			Color3.new(0, 0, 0),
 			Enum.Material.SmoothPlastic,
 			{ Name = "Collider", Transparency = 1, CanQuery = c[8], CanTouch = false, CastShadow = false }
 		)
+		-- Walls, ceilings and big furniture also stop the camera (client CameraCollision):
+		-- Roblox's own camera ignores invisible parts.
+		if c[8] then
+			CollectionService:AddTag(collider, SceneBuilder.CAMERA_TAG)
+		end
 	end
 	for _, p in ipairs(data.props) do
 		local model = b:placeModel(p[1], p[2], p[4], p[5], p[6], p[3])

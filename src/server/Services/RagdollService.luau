@@ -67,20 +67,23 @@ function RagdollService.bakePose(character: Model, clipId: string)
 		local rot = rotations[joint]
 		local jointOffset = if joint == "root" then offset else nil
 		if rot or jointOffset then
-			local basis = motor.C0 - motor.C0.Position
-			motor.C0 = motor.C0 * ClipPlayer.transform(basis, rot or CFrame.identity, jointOffset)
+			local c0 = Joints.c0(motor)
+			local basis = c0 - c0.Position
+			Joints.setC0(motor, c0 * ClipPlayer.transform(basis, rot or CFrame.identity, jointOffset))
 		end
 	end
 	character:SetAttribute("LPoseBaked", true)
 end
 
--- Turns every Motor6D into a limited ball socket so the body falls naturally.
+-- Turns every joint (Motor6D or AnimationConstraint) into a limited ball socket so the body
+-- falls naturally.
 function RagdollService.ragdoll(character: Model)
-	for _, motor in ipairs(character:GetDescendants()) do
-		if motor:IsA("Motor6D") and motor.Part0 and motor.Part1 and motor.Name ~= "Root" then
-			local limit = LIMITS[motor.Name] or { 45, 20 }
-			local a0 = Create("Attachment", { Name = "RagdollA0", CFrame = motor.C0, Parent = motor.Part0 })
-			local a1 = Create("Attachment", { Name = "RagdollA1", CFrame = motor.C1, Parent = motor.Part1 })
+	for name, joint in pairs(Joints.find(character)) do
+		local parent, child = Joints.parent(joint), Joints.child(joint)
+		if name ~= "root" and parent and child then
+			local limit = LIMITS[Joints.R15[name].motor] or { 45, 20 }
+			local a0 = Create("Attachment", { Name = "RagdollA0", CFrame = Joints.c0(joint), Parent = parent })
+			local a1 = Create("Attachment", { Name = "RagdollA1", CFrame = Joints.c1(joint), Parent = child })
 			Create("BallSocketConstraint", {
 				Name = "RagdollSocket",
 				Attachment0 = a0,
@@ -90,9 +93,9 @@ function RagdollService.ragdoll(character: Model)
 				TwistLimitsEnabled = true,
 				TwistLowerAngle = -limit[2],
 				TwistUpperAngle = limit[2],
-				Parent = motor.Part1,
+				Parent = child,
 			})
-			motor.Enabled = false
+			joint.Enabled = false
 		end
 	end
 	for _, part in ipairs(character:GetDescendants()) do

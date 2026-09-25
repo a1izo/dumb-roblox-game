@@ -1,14 +1,17 @@
 -- Movement animation for every character, worked out on each client from what everyone can
 -- see (how fast a body moves, whether it is on the ground). Idle, walk and run blend by speed
 -- and share one stride phase so the feet never slide between them; jumping and falling take
--- over in the air, and a knee dip plays on landing. The default Animate script is replaced by
--- an empty one (src/character/Animate.client.luau), so these are the only movement animations.
+-- over in the air, and a knee dip plays on landing. Roblox's default Animate script is removed
+-- (by the server, and here for this player's own body), so these are the only movement
+-- animations.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local ClipPlayer = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Anim"):WaitForChild("ClipPlayer"))
+local Anim = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Anim")
+local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
+local Joints = require(Anim:WaitForChild("Joints"))
 
 local PoseController = require(script.Parent.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
@@ -78,22 +81,13 @@ end
 
 -- How long this avatar's legs are compared with the rig the clips were made on.
 local function legScale(character: Model, reference: number?): number
-	local hip = character:FindFirstChild("RightUpperLeg")
-	local shin = character:FindFirstChild("RightLowerLeg")
-	local foot = character:FindFirstChild("RightFoot")
-	local hipJoint = if hip then hip:FindFirstChild("RightHip") else nil
-	local kneeJoint = if shin then shin:FindFirstChild("RightKnee") else nil
-	local ankleJoint = if foot then foot:FindFirstChild("RightAnkle") else nil
-	if
-		not reference
-		or not (hipJoint and hipJoint:IsA("Motor6D"))
-		or not (kneeJoint and kneeJoint:IsA("Motor6D"))
-		or not (ankleJoint and ankleJoint:IsA("Motor6D"))
-	then
+	local joints = Joints.find(character)
+	local hipJoint, kneeJoint, ankleJoint = joints.rHip, joints.rKnee, joints.rAnkle
+	if not reference or not hipJoint or not kneeJoint or not ankleJoint then
 		return 1
 	end
-	local thigh = (hipJoint.C1.Position - kneeJoint.C0.Position).Magnitude
-	local lower = (kneeJoint.C1.Position - ankleJoint.C0.Position).Magnitude
+	local thigh = (Joints.c1(hipJoint).Position - Joints.c0(kneeJoint).Position).Magnitude
+	local lower = (Joints.c1(kneeJoint).Position - Joints.c0(ankleJoint).Position).Magnitude
 	local length = thigh + lower
 	return if length > 0.2 then math.clamp(length / reference, 0.4, 3) else 1
 end
@@ -216,19 +210,52 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	return buffers.out, lerpOffset(groundOffset, airOffset, state.airWeight)
 end
 
+-- Roblox's own Animate script (added to characters by default) would play its walk on top
+-- of ours, and tracks this client starts on its own body replicate to everyone. Only this
+-- player's own Animate runs here, so only that one is stopped.
+local function silenceDefaultAnimate(character: Model, humanoid: Humanoid): number
+	local removed = 0
+	for _, item in ipairs(character:GetChildren()) do
+		if item.Name == "Animate" and (item:IsA("LocalScript") or item:IsA("Script")) then
+			(item :: any).Enabled = false
+			item:Destroy()
+			removed += 1
+		end
+	end
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if animator then
+		for _, playing in ipairs(animator:GetPlayingAnimationTracks()) do
+			playing:Stop(0)
+		end
+	end
+	return removed
+end
+
 local function track(character: Model)
 	-- Wait for the rig to be assembled.
 	character:WaitForChild("HumanoidRootPart", 10)
 	local humanoid = character:WaitForChild("Humanoid", 10)
-	if not humanoid then
+	if not humanoid or not humanoid:IsA("Humanoid") then
 		return
 	end
-	for _, name in ipairs({ "LowerTorso", "UpperTorso", "Head" }) do
-		character:WaitForChild(name, 5)
+	local own = character == Players.LocalPlayer.Character
+	local removed = 0
+	if own then
+		removed += silenceDefaultAnimate(character, humanoid)
+		-- The script can arrive a moment after the body.
+		local connection = character.ChildAdded:Connect(function(item)
+			if item.Name == "Animate" then
+				task.defer(function()
+					removed += silenceDefaultAnimate(character, humanoid)
+				end)
+			end
+		end)
+		task.delay(10, function()
+			connection:Disconnect()
+		end)
 	end
-	task.wait()
-	local rig = PoseController.bind(character)
-	if RunService:IsStudio() and character == Players.LocalPlayer.Character then
+	local rig = PoseController.bindWhenReady(character, 8)
+	if RunService:IsStudio() and own then
 		-- One line in the output (and Studio's log) that says whether the animator took over.
 		task.delay(4, function()
 			local joints = 0
@@ -239,11 +266,12 @@ local function track(character: Model)
 			local animator = humanoid:FindFirstChildOfClass("Animator")
 			print(
 				string.format(
-					"[Inkbound] Animation check: %s, %d joints, clip animator %s, Animate children %d, Roblox tracks %d, walk speed %d",
+					"[Inkbound] Animation check: %s, %d joints (%s), clip animator %s, default Animate %s, Roblox tracks %d, walk speed %d",
 					tostring(humanoid.RigType),
 					joints,
+					if rig then Joints.kind(rig.motors) else Joints.kind(Joints.find(character)),
 					if rig then "on" else "OFF",
-					if animate then #animate:GetChildren() else -1,
+					if animate then "STILL PRESENT" elseif removed > 0 then "removed" else "absent",
 					if animator then #animator:GetPlayingAnimationTracks() else 0,
 					humanoid.WalkSpeed
 				)

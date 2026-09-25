@@ -18,7 +18,11 @@ MATERIALS_LUAU = os.path.join(common.ROOT, "src", "shared", "SceneMaterials.luau
 FBX = os.path.join(common.EXPORT, "InkboundMaps.fbx")
 
 # Calibration cubes: their centres sit at these Roblox positions in the scene space.
-CALIBRATION = {"Calib_Maps_O": (0, 0, 0), "Calib_Maps_X": (64, 0, 0), "Calib_Maps_Y": (0, 64, 0)}
+CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
+
+# Bumped whenever an export changes in a way the game depends on. The FBX carries a marker mesh
+# Inkbound<Kind>_Version_<n>, and the game uses only the newest import of each kind.
+VERSION = {"Maps": 2, "Models": 2}
 
 
 def num(v, digits=3):
@@ -96,23 +100,28 @@ def write_materials(used):
     return MATERIALS_LUAU
 
 
-def calibration_cubes(collection):
-    objects = []
-    for name, (x, y, z) in CALIBRATION.items():
-        old = bpy.data.objects.get(name)
-        if old:
-            bpy.data.objects.remove(old, do_unlink=True)
-        mesh = bpy.data.meshes.new(name)
-        h = 0.5
-        verts = [(-h, -h, -h), (h, -h, -h), (h, h, -h), (-h, h, -h), (-h, -h, h), (h, -h, h), (h, h, h), (-h, h, h)]
-        faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
-        mesh.from_pydata(verts, [], faces)
-        mesh.uv_layers.new(name="UVMap")
-        mesh.materials.append(matlib.material("BlackTrim"))
-        obj = bpy.data.objects.new(name, mesh)
-        obj.location = (-x, z, y)  # Roblox -> Blender
-        collection.objects.link(obj)
-        objects.append(obj)
+def _cube(name, x, y, z, collection, half=0.5):
+    old = bpy.data.objects.get(name)
+    if old:
+        bpy.data.objects.remove(old, do_unlink=True)
+    mesh = bpy.data.meshes.new(name)
+    h = half
+    verts = [(-h, -h, -h), (h, -h, -h), (h, h, -h), (-h, h, -h), (-h, -h, h), (h, -h, h), (h, h, h), (-h, h, h)]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    mesh.from_pydata(verts, [], faces)
+    mesh.uv_layers.new(name="UVMap")
+    mesh.materials.append(matlib.material("BlackTrim"))
+    obj = bpy.data.objects.new(name, mesh)
+    obj.location = (-x, z, y)  # Roblox -> Blender
+    collection.objects.link(obj)
+    return obj
+
+
+def calibration_cubes(collection, prefix="Calib_Maps", kind="Maps"):
+    """The three cubes that tell the game how the importer moved, turned and scaled the file,
+    plus the version marker."""
+    objects = [_cube(prefix + suffix, x, y, z, collection) for suffix, (x, y, z) in CALIBRATION.items()]
+    objects.append(_cube(f"Inkbound{kind}_Version_{VERSION[kind]}", 0, -40, 0, collection, half=0.25))
     return objects
 
 

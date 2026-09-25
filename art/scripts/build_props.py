@@ -8,11 +8,13 @@ import json
 import os
 
 import bpy
+import numpy as np
 from mathutils import Matrix
 
 import common
 import modelkit as mk
 import props
+from maps import export as maps_export
 
 CATALOG = os.path.join(common.ROOT, "src", "shared", "ModelCatalog.luau")
 FBX = os.path.join(common.EXPORT, "InkboundModels.fbx")
@@ -169,6 +171,16 @@ def write_catalog():
         def to_srgb(x):
             return x * 12.92 if x <= 0.0031308 else 1.055 * (x ** (1 / 2.4)) - 0.055
 
+        # The texture's average colour: the flat look used when the texture fails to load.
+        tex = os.path.join(common.TEXTURES, obj.name + ".png")
+        if os.path.exists(tex):
+            img = bpy.data.images.load(tex, check_existing=True)
+            px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, img.channels)
+            opaque = px[px[:, 3] > 0.5] if img.channels == 4 else px
+            if len(opaque):
+                mean = opaque[:, :3].mean(axis=0)
+                text += ", color = { " + ", ".join(str(int(round(float(c) * 255))) for c in mean) + " }"
+
         colours = []
         for g in _glow_objects(obj.name):
             if "glow_colour" in g:
@@ -195,6 +207,10 @@ def export():
         if obj.get("inkbound_prop") or obj.get("inkbound_texture") or is_glow:
             obj.select_set(True)
             names.append(obj.name)
+    # How the importer turns the file (so props face the way they were made), and the version.
+    for obj in maps_export.calibration_cubes(common.collection("Calibration"), "Calib_Props", "Models"):
+        obj.select_set(True)
+        names.append(obj.name)
     bpy.ops.export_scene.fbx(
         filepath=FBX,
         use_selection=True,

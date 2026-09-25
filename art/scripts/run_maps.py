@@ -7,6 +7,7 @@ venues: Lobby Meeting Agency Campus Tokyo (all when none are given)
            props from Props.blend placed and the scene lights on
 --export   writes src/server/Maps/Scenes/*.luau, src/shared/SceneMaterials.luau and
            art/export/InkboundMaps.fbx, and saves art/blend/Maps.blend
+--materials rewrites only src/shared/SceneMaterials.luau (for the materials it lists now)
 """
 
 import importlib
@@ -124,8 +125,19 @@ def render_views(name, module, scene):
     return paths
 
 
+def rewrite_materials():
+    import re
+
+    with open(export.MATERIALS_LUAU, encoding="utf-8") as f:
+        used = set(re.findall(r"^	(\w+) = \{", f.read(), re.M))
+    print("[maps] materials", export.write_materials(used), len(used))
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if "--materials" in argv:
+        rewrite_materials()
+        return
     names = [a for a in argv if not a.startswith("--")] or VENUES
     preview = "--preview" in argv
     do_export = "--export" in argv
@@ -161,7 +173,7 @@ def main():
             used |= scene.used
             objects.extend(o for o in coll.objects if o.type == "MESH")
         export.write_materials(used | set(matlib.FLAT))
-        objects.extend(export.calibration_cubes(common.collection("Calibration")))
+        objects.extend(export.calibration_cubes(common.collection("Calibration"), "Calib_Maps", "Maps"))
         print("[maps] fbx", export.export_fbx(objects), len(objects), "objects")
         common.save_blend("Maps.blend")
 
