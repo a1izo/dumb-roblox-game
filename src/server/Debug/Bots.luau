@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local PuzzleSet = require(Shared:WaitForChild("Tasks"):WaitForChild("PuzzleSet"))
 local Signal = require(Shared:WaitForChild("Signal"))
 local VoteCounter = require(Shared:WaitForChild("VoteCounter"))
 
@@ -329,12 +330,23 @@ local function freeStation(nearTo: Vector3?)
 	return best
 end
 
-local function startWork(bot, ps, station)
+local function startWork(bot, ps, station, forceFake: boolean?)
 	local brain = bot.brain
 	brain.station = station
 	brain.state = "walkToStation"
+	brain.puzzle = nil
 	walkTo(bot, workSpot(station))
-	brain.fake = Match.isKiraSide(ps) and math.random() < 0.4
+	brain.fake = Match.isKiraSide(ps) and (forceFake == true or math.random() < 0.4)
+end
+
+-- The answer to the puzzle the server gave this bot (from the TaskState it "received").
+local function puzzleAnswer(bot): any
+	local given = bot.brain.puzzle
+	local def = if given then PuzzleSet.get(given.id) else nil
+	if not def then
+		return nil
+	end
+	return def.solve(def.generate(given.seed))
 end
 
 local function thinkInvestigation(bot, ps, now: number)
@@ -354,7 +366,11 @@ local function thinkInvestigation(bot, ps, now: number)
 	elseif brain.state == "working" then
 		if now >= brain.doneAt then
 			if brain.station then
-				Net.simulate("TaskRequest", bot, { action = "complete", stationId = brain.station.id })
+				Net.simulate(
+					"TaskRequest",
+					bot,
+					{ action = "complete", stationId = brain.station.id, answer = puzzleAnswer(bot) }
+				)
 			end
 			brain.state = "wander"
 			local areas = Match.map and Match.map.areas or {}
@@ -474,8 +490,7 @@ function Bots.order(bot, action: string, target: any, from: Vector3?): string
 	elseif action == "fake" then
 		local station = freeStation(nil)
 		if station then
-			bot.brain.fake = true
-			startWork(bot, ps, station)
+			startWork(bot, ps, station, true)
 		end
 		return bot.Name .. " will fake a case file (the Hand's side only)."
 	end
@@ -486,6 +501,10 @@ end
 
 function Bots.init()
 	Net.botSink = function(bot, remoteName: string, payload: any)
+		-- Remember the puzzle a task was given, to answer it when the time is up.
+		if remoteName == "TaskState" and bot.brain and type(payload) == "table" and payload.state == "started" then
+			bot.brain.puzzle = if payload.puzzle then { id = payload.puzzle, seed = payload.seed } else nil
+		end
 		local inbox = bot.inbox
 		table.insert(inbox, { remote = remoteName, payload = payload, at = os.clock() })
 		if #inbox > 20 then

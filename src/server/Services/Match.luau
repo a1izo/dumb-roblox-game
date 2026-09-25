@@ -38,6 +38,8 @@ Match.winReason = nil
 Match.initialCount = 0
 Match.eyesDealMade = false
 Match.phoneFacts = 0
+-- Forensics clues given so far, by Grimoire death (CaseFileService).
+Match.forensics = {} :: { [number]: any }
 Match.butlerHint = nil :: string?
 Match.rng = Random.new()
 
@@ -103,6 +105,7 @@ function Match.begin(players: { Player })
 	Match.winReason = nil
 	Match.eyesDealMade = false
 	Match.phoneFacts = 0
+	Match.forensics = {}
 	Match.butlerHint = nil
 	Match.startClock = os.clock()
 	Match.list = {}

@@ -6,11 +6,11 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
+local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 
 local MapContract = {}
-
-local STATION_TYPES = { Camera = true, Fingerprint = true, Phone = true }
 
 local function isNumber(value: any): boolean
 	return type(value) == "number" and value == value
@@ -25,12 +25,12 @@ function MapContract.validateLayout(layout: any): { string }
 		return { "layout is not a table" }
 	end
 	local stations = layout.stations or {}
-	if #stations ~= 8 then
-		fail("needs exactly 8 stations, has " .. #stations)
+	if #stations ~= TaskTypes.STATIONS_PER_MAP then
+		fail(string.format("needs exactly %d stations, has %d", TaskTypes.STATIONS_PER_MAP, #stations))
 	end
 	local names = {}
 	for index, station in ipairs(stations) do
-		if not STATION_TYPES[station.type] then
+		if not TaskTypes.exists(station.type) then
 			fail("station " .. index .. " has an unknown type " .. tostring(station.type))
 		end
 		if type(station.name) ~= "string" or station.name == "" then
@@ -43,15 +43,18 @@ function MapContract.validateLayout(layout: any): { string }
 			fail("station " .. index .. " needs x, z and rot")
 		end
 	end
-	local counts = { Camera = 0, Fingerprint = 0, Phone = 0 }
+	local counts = {}
+	for _, id in ipairs(TaskTypes.LIST) do
+		counts[id] = 0
+	end
 	for _, station in ipairs(stations) do
 		if counts[station.type] then
 			counts[station.type] += 1
 		end
 	end
 	for kind, count in pairs(counts) do
-		if count < 2 then
-			fail("needs at least 2 " .. kind .. " stations")
+		if count < TaskTypes.MIN_PER_MAP then
+			fail(string.format("needs at least %d %s stations", TaskTypes.MIN_PER_MAP, kind))
 		end
 	end
 	if #(layout.spawns or {}) < Config.MAX_PLAYERS then

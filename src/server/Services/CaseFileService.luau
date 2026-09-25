@@ -1,13 +1,17 @@
 -- Case-file stations. A task takes about 15 seconds; finishing it posts a clue to the
 -- evidence board and flashes three new letters of the worker's real name to players
--- close by with a clear line of sight. Kira's side (the Hand and Cultists) can fake tasks (no
+-- close by with a clear line of sight. Each task is a puzzle from the station type's pool
+-- (Shared/Tasks): the server sends its id and seed, and checks the answer before accepting. Kira's side (the Hand and Cultists) can fake tasks (no
 -- flash, no board entry) and a Cultist can rig a station so its next real flash shows false letters.
 
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Tasks = Shared:WaitForChild("Tasks")
 local Config = require(Shared:WaitForChild("Config"))
+local PuzzleSet = require(Tasks:WaitForChild("PuzzleSet"))
+local TaskTypes = require(Tasks:WaitForChild("TaskTypes"))
 local LetterReveal = require(Shared:WaitForChild("LetterReveal"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -16,6 +20,7 @@ local Util = require(Shared:WaitForChild("Util"))
 local EventLog = require(script.Parent.EventLog)
 local EvidenceService = require(script.Parent.EvidenceService)
 local Match = require(script.Parent.Match)
+local RateLimit = require(script.Parent.RateLimit)
 local SuspicionService = require(script.Parent.SuspicionService)
 
 local TaskRequest = Net.event("TaskRequest")
@@ -182,13 +187,65 @@ local function phoneClue(): string
 	return "Phone records: the burner phone is switched off."
 end
 
-local function makeClue(stationType: string, worker): string
-	if stationType == "Camera" then
-		return cameraClue(worker)
-	elseif stationType == "Fingerprint" then
-		return fingerprintClue(worker)
+-- Forensics: ink analysis of the Grimoire's last deadly entry. The first analysis after each
+-- death names three people, one of whom wrote it; the list is fixed for that death, so repeat
+-- analyses cannot narrow it down. Later analyses of the same death give the time of writing.
+local function forensicsClue(worker): string
+	local entry = EventLog.lastInk()
+	if not entry then
+		return "Forensics: no ink samples yet. Nobody has died by the Grimoire."
 	end
-	return phoneClue()
+	local record = Match.forensics[entry.id]
+	if not record then
+		local pool = {}
+		for _, ps in ipairs(Match.living()) do
+			if ps.userId ~= entry.writerUserId and ps ~= worker then
+				table.insert(pool, ps)
+			end
+		end
+		Util.shuffle(pool, Match.rng)
+		local names = { entry.writerAlias }
+		for i = 1, math.min(Config.FORENSICS.CANDIDATES - 1, #pool) do
+			table.insert(names, pool[i].alias)
+		end
+		Util.shuffle(names, Match.rng)
+		record = { names = names, uses = 0 }
+		Match.forensics[entry.id] = record
+	end
+	record.uses += 1
+	if record.uses == 1 then
+		return string.format(
+			"Ink from the entry that killed %s matches the pen of one of: %s.",
+			entry.victimAlias,
+			table.concat(record.names, ", ")
+		)
+	end
+	local slack = Config.FORENSICS.TIME_SLACK
+	local low = math.max(0, entry.writtenAt - Match.rng:NextInteger(0, slack))
+	return string.format(
+		"The name of %s was written between %s and %s.",
+		entry.victimAlias,
+		Util.formatClock(low),
+		Util.formatClock(low + slack)
+	)
+end
+
+-- What finishing a task at a station of each type posts to the evidence board.
+local CLUES: { [string]: (any) -> string } = {
+	Camera = cameraClue,
+	Fingerprint = fingerprintClue,
+	Phone = function()
+		return phoneClue()
+	end,
+	Forensics = forensicsClue,
+}
+
+local function makeClue(stationType: string, worker): string
+	local clue = CLUES[stationType]
+	if not clue then
+		error("no clue for station type " .. tostring(stationType))
+	end
+	return clue(worker)
 end
 
 -- Task flow ----------------------------------------------------------------------------
@@ -280,6 +337,9 @@ local function onStart(ps, stationId: string, wantFake: boolean)
 	runtime.worker = ps
 	runtime.startedAt = os.clock()
 	runtime.fake = fake
+	-- A faked task has no puzzle; a real one gets one from the station's pool.
+	runtime.puzzle = if fake then nil else TaskTypes.pickPuzzle(runtime.info.type, Match.rng)
+	runtime.seed = Match.rng:NextInteger(1, 2 ^ 30)
 	working[ps] = runtime
 	ps.taskStation = runtime.info.id
 	setScreen(runtime, true)
@@ -290,13 +350,15 @@ local function onStart(ps, stationId: string, wantFake: boolean)
 		stationType = runtime.info.type,
 		stationName = runtime.info.name,
 		fake = fake,
+		puzzle = runtime.puzzle,
+		seed = if fake then nil else runtime.seed,
 		duration = Config.TASK_DURATION,
 		startedAt = workspace:GetServerTimeNow(),
 	})
 	Match.pushPrivate(ps)
 end
 
-local function onComplete(ps, stationId: string)
+local function onComplete(ps, stationId: string, answer: any)
 	local runtime = working[ps]
 	if not runtime or runtime.info.id ~= stationId then
 		return
@@ -314,6 +376,10 @@ local function onComplete(ps, stationId: string)
 		stopWork(ps, "You moved away from the station.")
 		return
 	end
+	if not runtime.fake and not PuzzleSet.verify(runtime.puzzle, runtime.seed, answer) then
+		TaskStateRemote:FireClient(ps.player, { state = "wrong", stationId = stationId })
+		return
+	end
 	finish(ps, runtime)
 end
 
@@ -322,13 +388,13 @@ local function onTaskRequest(player: Player, payload)
 		return
 	end
 	local ps = Match.getLiving(player)
-	if not ps then
+	if not ps or not RateLimit.allow(player, "task", 0.25) then
 		return
 	end
 	if payload.action == "start" then
 		onStart(ps, payload.stationId, payload.fake == true)
 	elseif payload.action == "complete" then
-		onComplete(ps, payload.stationId)
+		onComplete(ps, payload.stationId, payload.answer)
 	elseif payload.action == "cancel" then
 		if working[ps] and working[ps].info.id == payload.stationId then
 			stopWork(ps, nil)
@@ -382,6 +448,8 @@ function CaseFileService.onMatchStart(map)
 			worker = nil,
 			startedAt = 0,
 			fake = false,
+			puzzle = nil,
+			seed = 0,
 			tamperedBy = nil,
 			tamperRound = 0,
 			lastWorker = nil,

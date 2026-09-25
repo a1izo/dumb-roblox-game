@@ -8,11 +8,30 @@ local EventLog = {}
 local entries = {}
 local sightings = {}
 local prints = {}
+local inks = {}
 
 function EventLog.reset()
 	entries = {}
 	sightings = {}
 	prints = {}
+	inks = {}
+end
+
+-- A name written in the Grimoire killed someone: who wrote it, and when (match seconds). Server
+-- only; the Forensics clues read it.
+function EventLog.ink(writer, victim, writtenAt: number)
+	table.insert(inks, {
+		id = #inks + 1,
+		writerUserId = writer.userId,
+		writerAlias = writer.alias,
+		victimAlias = victim.alias,
+		writtenAt = writtenAt,
+	})
+end
+
+-- The newest Grimoire death, or nil before the first.
+function EventLog.lastInk()
+	return inks[#inks]
 end
 
 -- A key event for the end-of-match replay. Roles may be named here: the replay is only

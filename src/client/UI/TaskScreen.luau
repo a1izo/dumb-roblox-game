@@ -1,296 +1,158 @@
--- Case-file tasks. Each station type has a short puzzle; the server only accepts the
--- result after the full task time, so a task always takes about 15 seconds.
+-- Case-file tasks. The server picks a puzzle from the station type's pool and sends its id and
+-- seed; this builds the same puzzle (Shared/Tasks/Puzzles) and shows it with its view
+-- (UI/Puzzles/<id>). The answer is checked here for instant feedback and again by the server,
+-- which also only accepts it after the full task time, so a task always takes about 15 s.
 -- The Hand's side can fake a task instead, from a second prompt at the station.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
-local Util = require(Shared:WaitForChild("Util"))
+local Tasks = Shared:WaitForChild("Tasks")
+local PuzzleSet = require(Tasks:WaitForChild("PuzzleSet"))
+local TaskTypes = require(Tasks:WaitForChild("TaskTypes"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
 local Toasts = require(script.Parent.Toasts)
-local Widgets = require(script.Parent.Widgets)
+
+local C = Kit.color
+
+local Views = script.Parent:WaitForChild("Puzzles")
 
 local TaskRequest = Net.event("TaskRequest")
 local TaskStateRemote = Net.event("TaskState")
 
 local TaskScreen = {}
 
-local window: Frame
-local titleLabel: TextLabel
+local win: any
+local typeIcon: ImageLabel
+local typeLabel: TextLabel
 local hintLabel: TextLabel
 local area: Frame
-local setProgress: (number) -> ()
+local setProgress: (number, boolean?) -> ()
 local progressLabel: TextLabel
+local firstSelection: GuiObject? = nil
 
 local current = nil
-local rng = Random.new()
 
-local function flash(button: GuiObject, color: Color3)
-	local original = button.BackgroundColor3
-	button.BackgroundColor3 = color
-	task.delay(0.25, function()
-		if button.Parent then
-			button.BackgroundColor3 = original
-		end
-	end)
-end
+-- Views ---------------------------------------------------------------------------------------
 
--- Puzzles ------------------------------------------------------------------------------
-
-local function cameraPuzzle(onSolved: () -> ())
-	hintLabel.Text = "Camera footage: tap the frames in time order, earliest first."
-	local grid = Widgets.frame({ Parent = area })
-	Widgets.grid(grid, UDim2.new(0.33, -8, 0.5, -8), 8)
-	local times = {}
-	local t = rng:NextInteger(20 * 3600, 23 * 3600)
-	for i = 1, 6 do
-		t += rng:NextInteger(20, 420)
-		times[i] = t
-	end
-	local order = { 1, 2, 3, 4, 5, 6 }
-	Util.shuffle(order, rng)
-	local nextIndex = 1
-	for position, index in ipairs(order) do
-		local seconds = times[index]
-		local stamp = string.format("%02d:%02d:%02d", (seconds // 3600) % 24, (seconds // 60) % 60, seconds % 60)
-		local button
-		button = Widgets.button({
-			Text = string.format("CAM %02d\n%s", rng:NextInteger(1, 24), stamp),
-			Font = Theme.fonts.mono,
-			TextSize = 18,
-			BackgroundColor3 = Color3.fromRGB(20, 32, 52),
-			LayoutOrder = position,
-			Parent = grid,
-		}, function()
-			if button.Active == false then
-				return
-			end
-			if index == nextIndex then
-				nextIndex += 1
-				button.Active = false
-				button.AutoButtonColor = false
-				button.BackgroundColor3 = Theme.colors.good
-				if nextIndex > #times then
-					onSolved()
-				end
-			else
-				flash(button, Theme.colors.bad)
-			end
-		end)
-	end
-end
-
-local function drawPrint(parent: GuiObject, bits: { boolean })
-	local holder = Widgets.frame({
+local function fakeView()
+	Kit.text({
+		face = "Scrawl",
+		text = "Pretending to work…",
+		size = 44,
+		color = C.secret,
+		align = "center",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.8, 0.8),
-		Parent = parent,
-	})
-	Widgets.grid(holder, UDim2.new(0.25, -3, 0.25, -3), 3)
-	for i = 1, 16 do
-		local cell = Widgets.frame({
-			BackgroundTransparency = 0,
-			BackgroundColor3 = if bits[i] then Theme.colors.ink else Color3.fromRGB(215, 205, 185),
-			LayoutOrder = i,
-			Parent = holder,
-		})
-		Widgets.corner(cell, 3)
-	end
-end
-
-local function fingerprintPuzzle(onSolved: () -> ())
-	hintLabel.Text = "Fingerprints: pick the print that matches the sample. Three samples."
-	local roundsLeft = 3
-
-	local function newRound()
-		Widgets.clear(area)
-		local target = {}
-		for i = 1, 16 do
-			target[i] = rng:NextNumber() < 0.5
-		end
-		local sample = Widgets.panel({
-			BackgroundColor3 = Theme.colors.paper,
-			Size = UDim2.new(0.3, 0, 1, 0),
-			Parent = area,
-		})
-		drawPrint(sample, target)
-		Widgets.label({
-			Text = string.format("SAMPLE (%d left)", roundsLeft),
-			TextColor3 = Theme.colors.ink,
-			Font = Theme.fonts.bold,
-			TextSize = 12,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			Size = UDim2.new(1, 0, 0, 16),
-			Parent = sample,
-		})
-		local choices = Widgets.frame({
-			Position = UDim2.new(0.33, 0, 0, 0),
-			Size = UDim2.new(0.67, 0, 1, 0),
-			Parent = area,
-		})
-		Widgets.grid(choices, UDim2.new(0.5, -6, 0.5, -6), 6)
-		local candidates = { { bits = target, correct = true } }
-		for _ = 1, 3 do
-			local decoy = table.clone(target)
-			local flips = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }
-			Util.shuffle(flips, rng)
-			for k = 1, 3 do
-				decoy[flips[k]] = not decoy[flips[k]]
-			end
-			table.insert(candidates, { bits = decoy, correct = false })
-		end
-		Util.shuffle(candidates, rng)
-		for position, candidate in ipairs(candidates) do
-			local button
-			button = Widgets.button({
-				BackgroundColor3 = Theme.colors.paper,
-				LayoutOrder = position,
-				Parent = choices,
-			}, function()
-				if candidate.correct then
-					roundsLeft -= 1
-					if roundsLeft <= 0 then
-						Widgets.clear(area)
-						onSolved()
-					else
-						newRound()
-					end
-				else
-					flash(button, Theme.colors.bad)
-				end
-			end)
-			drawPrint(button, candidate.bits)
-		end
-	end
-
-	newRound()
-end
-
-local function phonePuzzle(onSolved: () -> ())
-	hintLabel.Text = "Phone records: dial the number from the call log."
-	local digits = { "0", "9", "0" }
-	for _ = 1, 8 do
-		table.insert(digits, tostring(rng:NextInteger(0, 9)))
-	end
-	local function formatted(count: number): string
-		local out = {}
-		for i = 1, #digits do
-			out[i] = if i <= count then digits[i] else "_"
-		end
-		return table.concat(out, "", 1, 3) .. "-" .. table.concat(out, "", 4, 7) .. "-" .. table.concat(out, "", 8, 11)
-	end
-	Widgets.label({
-		Text = "CALL LOG:  " .. formatted(#digits),
-		Font = Theme.fonts.mono,
-		TextSize = 22,
-		TextColor3 = Theme.colors.gold,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 0, 28),
+		Position = UDim2.fromScale(0.5, 0.45),
 		Parent = area,
 	})
-	local display = Widgets.label({
-		Text = "DIALLED:   " .. formatted(0),
-		Font = Theme.fonts.mono,
-		TextSize = 22,
+	Kit.label({
+		Text = "Stay at the station until the bar fills. No clue is posted and no letters flash.",
+		font = "bodyItalic",
+		size = "small",
+		color = C.dim,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.fromOffset(0, 32),
-		Size = UDim2.new(1, 0, 0, 28),
-		Parent = area,
-	})
-	local pad = Widgets.frame({
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 68),
-		Size = UDim2.new(0.6, 0, 1, -68),
+		Position = UDim2.fromScale(0.5, 0.62),
+		Size = UDim2.fromScale(0.8, 0),
 		Parent = area,
 	})
-	Widgets.grid(pad, UDim2.new(0.33, -6, 0.25, -6), 6)
-	local typed = 0
-	local keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#" }
-	for position, key in ipairs(keys) do
-		local button
-		button = Widgets.button({
-			Text = key,
-			Font = Theme.fonts.mono,
-			TextSize = 22,
-			LayoutOrder = position,
-			Parent = pad,
-		}, function()
-			if typed >= #digits then
-				return
+end
+
+local function mountPuzzle(task_)
+	Kit.clear(area)
+	firstSelection = nil
+	local def = PuzzleSet.get(task_.puzzle)
+	local view = Views:FindFirstChild(task_.puzzle or "")
+	if not def or not view then
+		hintLabel.Text = "This case file is damaged. Wait for the bar and file it anyway."
+		task_.solved = true
+		return
+	end
+	hintLabel.Text = def.hint
+	local puzzle = def.generate(task_.seed)
+	local ctx = {
+		area = area,
+		puzzle = puzzle,
+		def = def,
+		practice = task_.practice ~= nil,
+		submit = function(answer: any): boolean
+			if current ~= task_ then
+				return false
 			end
-			if key == digits[typed + 1] then
-				typed += 1
-				display.Text = "DIALLED:   " .. formatted(typed)
-				flash(button, Theme.colors.good)
-				if typed == #digits then
-					onSolved()
-				end
-			else
-				flash(button, Theme.colors.bad)
+			local ok, right = pcall(def.check, puzzle, answer)
+			if not ok or not right then
+				return false
 			end
-		end)
+			task_.solved = true
+			task_.answer = answer
+			hintLabel.Text = "Done. Filing the report…"
+			hintLabel.TextColor3 = C.good
+			return true
+		end,
+		hint = function(text: string)
+			hintLabel.Text = text
+		end,
+		first = function(gui: GuiObject)
+			if not firstSelection then
+				firstSelection = gui
+			end
+		end,
+	}
+	local ok, err = pcall(function()
+		(require(view) :: any)(ctx)
+	end)
+	if not ok then
+		warn("[Inkbound] Puzzle " .. tostring(task_.puzzle) .. " failed to open: " .. tostring(err))
+		task_.solved = true
+		task_.answer = def.solve(puzzle)
 	end
 end
 
-local function fakePuzzle()
-	hintLabel.Text = "Faking it: stay at the station until the bar fills. No clue will be posted."
-	Widgets.label({
-		Text = "Pretending to work...",
-		Font = Theme.fonts.typewriter,
-		TextSize = 26,
-		TextColor3 = Theme.colors.secret,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(1, 0, 0, 40),
-		Parent = area,
-	})
-end
-
--- Flow ------------------------------------------------------------------------------------
+-- Flow ----------------------------------------------------------------------------------------
 
 local function close()
 	Router.close("task", "rule")
 end
 
 local function start(payload, practice: (() -> ())?)
-	Widgets.clear(area)
+	Kit.clear(area)
 	-- Progress follows the server clock, so the bar fills exactly when the server accepts.
 	local startedAt = tonumber(payload.startedAt) or workspace:GetServerTimeNow()
 	current = {
 		stationId = payload.stationId,
 		fake = payload.fake == true,
-		duration = tonumber(payload.duration) or 15,
+		puzzle = payload.puzzle,
+		seed = tonumber(payload.seed) or 0,
+		duration = tonumber(payload.duration) or Config.TASK_DURATION,
 		startedAt = startedAt,
 		solved = payload.fake == true,
+		answer = nil,
 		submittedAt = nil,
 		-- Academy practice: runs only on this client and calls this when finished.
 		practice = practice,
 	}
 	local task_ = current
-	titleLabel.Text = string.upper(tostring(payload.stationName))
+	local info = TaskTypes.INFO[payload.stationType] or TaskTypes.INFO.Camera
+	win.setTitle(tostring(payload.stationName))
+	Kit.Icon.set(typeIcon, info.icon)
+	typeIcon.ImageColor3 = info.color
+	typeLabel.Text = string.upper(info.label)
+	typeLabel.TextColor3 = info.color
+	hintLabel.TextColor3 = C.dim
+	setProgress(0)
 	Router.open("task")
-	local function onSolved()
-		if current == task_ then
-			task_.solved = true
-			hintLabel.Text = "Done. Filing the report..."
-		end
-	end
 	if task_.fake then
-		fakePuzzle()
-	elseif payload.stationType == "Camera" then
-		cameraPuzzle(onSolved)
-	elseif payload.stationType == "Fingerprint" then
-		fingerprintPuzzle(onSolved)
+		hintLabel.Text = "Faking it."
+		fakeView()
 	else
-		phonePuzzle(onSolved)
+		mountPuzzle(task_)
 	end
 end
 
@@ -303,11 +165,11 @@ local function update()
 	local progress = math.clamp(elapsed / task_.duration, 0, 1)
 	setProgress(progress)
 	if progress < 1 then
-		progressLabel.Text = string.format("Working... %d s", math.ceil(task_.duration - elapsed))
+		progressLabel.Text = string.format("Working…  %d s", math.ceil(task_.duration - elapsed))
 	elseif not task_.solved then
 		progressLabel.Text = "Finish the puzzle to file the report."
 	else
-		progressLabel.Text = "Filing the report..."
+		progressLabel.Text = "Filing the report…"
 	end
 	if task_.solved and progress >= 1 and task_.practice then
 		local done = task_.practice
@@ -318,7 +180,7 @@ local function update()
 	if task_.solved and progress >= 1 then
 		if task_.submittedAt == nil or os.clock() - task_.submittedAt > 2 then
 			task_.submittedAt = os.clock()
-			TaskRequest:FireServer({ action = "complete", stationId = task_.stationId })
+			TaskRequest:FireServer({ action = "complete", stationId = task_.stationId, answer = task_.answer })
 		end
 	end
 end
@@ -336,51 +198,67 @@ function TaskScreen.isBusy(): boolean
 	return current ~= nil
 end
 
--- An Academy drill: the same puzzle with a shorter bar, checked only on this client.
+-- An Academy drill: a random puzzle of the station type with a shorter bar, checked only on
+-- this client.
 function TaskScreen.practice(stationType: string, title: string, onDone: () -> ())
-	if current then
+	if current or not TaskTypes.exists(stationType) then
 		return
 	end
+	local rng = Random.new()
 	start({
 		stationId = "practice",
 		stationType = stationType,
 		stationName = title,
+		puzzle = TaskTypes.pickPuzzle(stationType, rng),
+		seed = rng:NextInteger(1, 2 ^ 30),
 		duration = 6,
 		startedAt = workspace:GetServerTimeNow(),
 	}, onDone)
 end
 
 function TaskScreen.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, "Case file", Vector2.new(580, 470), function()
-		Router.close("task", "user")
-	end)
-	titleLabel = window:FindFirstChild("Title", true) :: TextLabel
-	hintLabel = Widgets.label({
-		TextSize = 15,
-		TextColor3 = Theme.colors.muted,
-		Size = UDim2.new(1, 0, 0, 36),
-		Parent = body,
+	win = Kit.window({ name = "task", title = "Case file", size = "M" })
+	local head = Kit.frame({ Name = "Head", Size = UDim2.new(1, 0, 0, 48), Parent = win.body })
+	typeIcon = Kit.icon({ name = "task", size = 22, Position = UDim2.fromOffset(0, 0), Parent = head })
+	typeLabel = Kit.label({
+		font = "label",
+		size = "micro",
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(30, 3),
+		Size = UDim2.new(1, -30, 0, 16),
+		Parent = head,
 	})
-	area = Widgets.frame({
-		Position = UDim2.fromOffset(0, 42),
-		Size = UDim2.new(1, 0, 1, -96),
-		Parent = body,
+	hintLabel = Kit.label({
+		size = "small",
+		color = C.dim,
+		Position = UDim2.fromOffset(0, 24),
+		Size = UDim2.new(1, 0, 0, 20),
+		Parent = head,
 	})
-	local _, setter = Widgets.progressBar({
+	area = Kit.frame({
+		Name = "Puzzle",
+		Position = UDim2.fromOffset(0, 56),
+		Size = UDim2.new(1, 0, 1, -106),
+		Parent = win.body,
+	})
+	local _meter
+	_meter, setProgress = Kit.meter({
+		color = C.red,
+		height = 6,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 0, 1, -26),
-		Size = UDim2.new(1, 0, 0, 12),
-		Parent = body,
-	}, Theme.colors.team)
-	setProgress = setter
-	progressLabel = Widgets.label({
-		TextSize = 14,
-		TextColor3 = Theme.colors.muted,
+		Parent = win.body,
+	})
+	progressLabel = Kit.label({
+		font = "mono",
+		size = "micro",
+		color = C.dim,
+		AutomaticSize = Enum.AutomaticSize.None,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 20),
-		Parent = body,
+		Parent = win.body,
 	})
 
 	TaskStateRemote.OnClientEvent:Connect(function(payload)
@@ -395,7 +273,10 @@ function TaskScreen.init()
 				Toasts.show("Fake task done. Nothing was posted.", "secret")
 			else
 				Toasts.show(
-					"Case file complete. The clue is on the evidence board, and 3 letters of your real name flashed on the screen.",
+					string.format(
+						"Case file complete. The clue is on the evidence board, and %d letters of your real name flashed on the screen.",
+						Config.LETTERS_PER_FLASH
+					),
 					"good"
 				)
 			end
@@ -407,19 +288,26 @@ function TaskScreen.init()
 		elseif payload.state == "wait" and current then
 			-- The server has not counted the full task time yet; retry in a second.
 			current.submittedAt = os.clock() - 1
+		elseif payload.state == "wrong" and current then
+			-- The server did not accept the answer: start the same puzzle again.
+			local task_ = current
+			task_.solved = false
+			task_.answer = nil
+			task_.submittedAt = nil
+			mountPuzzle(task_)
+			hintLabel.Text = "The report was rejected. Check your work."
+			hintLabel.TextColor3 = C.red
 		end
 	end)
-	Router.register("task", {
-		layer = "modal",
-		window = window,
+	Kit.register(win, {
 		allowed = function(view)
 			if current and current.practice then
 				return not view.participant
 			end
 			return view.living and view.phase == "Investigation"
 		end,
-		show = function()
-			window.Visible = true
+		firstSelection = function()
+			return firstSelection or win.close
 		end,
 		hide = function(reason)
 			-- The player walked away from the puzzle: tell the server. When the phase ends the
@@ -429,8 +317,7 @@ function TaskScreen.init()
 				TaskRequest:FireServer({ action = "cancel", stationId = current.stationId })
 			end
 			current = nil
-			window.Visible = false
-			Widgets.clear(area)
+			Kit.clear(area)
 		end,
 	})
 	RunService.RenderStepped:Connect(update)

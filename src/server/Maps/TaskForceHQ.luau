@@ -156,6 +156,8 @@ function TaskForceHQ.layout()
 			{ type = "Fingerprint", name = "Print Scanner", x = 16, z = 8, rot = 0 },
 			{ type = "Phone", name = "Call Log Desk", x = -52, z = 10, rot = 90 },
 			{ type = "Camera", name = "Entrance Cam", x = 48, z = -10, rot = -90 },
+			{ type = "Forensics", name = "Ink Analysis Bench", x = 56, z = -54, rot = 180 },
+			{ type = "Forensics", name = "Document Examiner", x = -56, z = 54, rot = 0 },
 		},
 		tipBox = { x = 74, z = 10, rot = 90 },
 		board = { x = 39.3, y = 7, z = -24, rot = 90, w = 12, h = 7 },

@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
+local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local PracticePanel = require(script.Parent.Parent.UI.PracticePanel)
@@ -15,8 +16,6 @@ local TaskScreen = require(script.Parent.Parent.UI.TaskScreen)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
 
 local AcademyController = {}
-
-local CASE_FILES = { camera = "Camera", fingerprint = "Fingerprint", phone = "Phone" }
 
 local prompts: { [BasePart]: ProximityPrompt } = {}
 
@@ -46,7 +45,7 @@ local function start(desk: BasePart)
 	if type(drill) ~= "string" or ClientState.isParticipant() then
 		return
 	end
-	local stationType = CASE_FILES[drill]
+	local stationType = TaskTypes.forDrill(drill)
 	local function onDone()
 		completed(drill, title)
 	end

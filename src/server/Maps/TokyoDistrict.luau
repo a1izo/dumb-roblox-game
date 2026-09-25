@@ -233,6 +233,8 @@ function TokyoDistrict.layout()
 			{ type = "Fingerprint", name = "Alley Evidence Kit", x = -90, z = -30, rot = -90 },
 			{ type = "Camera", name = "Crossing Camera", x = 14, z = 16, rot = 0 },
 			{ type = "Phone", name = "Ramen Shop Phone", x = 88, z = 32, rot = 90 },
+			{ type = "Forensics", name = "Koban Evidence Lab", x = 30, z = 30, rot = 90 },
+			{ type = "Forensics", name = "Lost Property Lab", x = 46, z = -30, rot = 0 },
 		},
 		tipBox = { x = 44, z = 40, rot = 90 },
 		board = { x = 15.2, y = 5, z = 34, rot = 90, w = 12, h = 7 },

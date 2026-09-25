@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
+local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local SceneBuilder = require(script.Parent.SceneBuilder)
@@ -27,15 +28,27 @@ local DUMMIES = {
 	{ alias = "Dummy C", name = "Hina Ogawa", x = 8 },
 }
 
--- drill id, title, one-line blurb, x, z, rotation (the player stands on the side it faces)
-local DRILLS = {
-	{ "camera", "CAMERA FOOTAGE", "Put the frames in time order.", -26, 62, -90 },
-	{ "fingerprint", "FINGERPRINTS", "Match the print to the sample.", -26, 74, -90 },
-	{ "phone", "PHONE RECORDS", "Dial the number from the log.", -26, 86, -90 },
+-- drill id, title, one-line blurb, x, z, rotation (the player stands on the side it faces).
+-- One case-file desk per station type along the west wall, the rest along the east wall.
+local DRILLS = {}
+for index, id in ipairs(TaskTypes.LIST) do
+	local info = TaskTypes.get(id)
+	table.insert(DRILLS, {
+		info.drill,
+		info.drillTitle,
+		"Practise every puzzle this station can give.",
+		-26,
+		48 + index * 10,
+		-90,
+	})
+end
+for _, drill in ipairs({
 	{ "grimoire", "THE GRIMOIRE", "Write a full real name exactly.", 26, 62, 90 },
 	{ "warrant", "THE WARRANT", "Pick the suspect, type the name.", 26, 74, 90 },
 	{ "eyes", "SPECTER'S EYES", "See real names up close.", 26, 86, 90 },
-}
+}) do
+	table.insert(DRILLS, drill)
+end
 
 local function signText(board: BasePart, text: string, color: Color3, font: Enum.Font)
 	local gui = Create("SurfaceGui", {

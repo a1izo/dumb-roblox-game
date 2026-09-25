@@ -116,7 +116,14 @@ Config.REWARDS = {
 
 -- One-time reward for finishing every drill in the Academy (the lobby training wing).
 Config.TRAINING_REWARD = 100
-Config.TRAINING_DRILLS = { "camera", "fingerprint", "phone", "grimoire", "warrant", "eyes" }
+Config.TRAINING_DRILLS = { "camera", "fingerprint", "phone", "forensics", "grimoire", "warrant", "eyes" }
+
+-- Forensics clues: how many names the ink analysis lists (the writer and the rest at random),
+-- and how wide (seconds) the "written between" window is on later analyses of the same death.
+Config.FORENSICS = {
+	CANDIDATES = 3,
+	TIME_SLACK = 40,
+}
 
 -- Maps in rotation (module names under ServerScriptService.Server.Maps)
 Config.MAP_ROTATION = { "TaskForceHQ", "UniversityCampus", "TokyoDistrict" }

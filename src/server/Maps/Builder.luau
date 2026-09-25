@@ -9,15 +9,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
+local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 
 local Builder = {}
 Builder.__index = Builder
-
-local STATION_COLORS = {
-	Camera = Color3.fromRGB(70, 140, 255),
-	Fingerprint = Color3.fromRGB(80, 220, 160),
-	Phone = Color3.fromRGB(255, 185, 70),
-}
 
 function Builder.new(parent: Instance, origin: Vector3)
 	local self = setmetatable({}, Builder)
@@ -677,7 +672,7 @@ end
 function Builder:station(def, id: string)
 	local model = Create("Model", { Name = "Station_" .. id, Parent = self.parent })
 	local base = self:cf(def.x, def.y or 0, def.z, def.rot)
-	local typeColor = STATION_COLORS[def.type] or Color3.fromRGB(200, 200, 200)
+	local typeColor = TaskTypes.get(def.type).color
 	local desk = self:part(
 		Vector3.new(5, 3, 2.4),
 		base * CFrame.new(0, 1.5, 0),
@@ -740,6 +735,22 @@ function Builder:station(def, id: string)
 			Color3.fromRGB(80, 230, 170),
 			Enum.Material.Neon,
 			{ Parent = model, CanQuery = false }
+		)
+	elseif not dressed and def.type == "Forensics" then
+		-- A microscope and an ink flask.
+		self:part(
+			Vector3.new(0.6, 1.4, 0.6),
+			base * CFrame.new(-1.5, 3.8, -0.2),
+			Color3.fromRGB(40, 40, 46),
+			Enum.Material.Metal,
+			{ Parent = model }
+		)
+		self:part(
+			Vector3.new(0.5, 0.7, 0.5),
+			base * CFrame.new(1.5, 3.4, -0.3),
+			Color3.fromRGB(200, 90, 200),
+			Enum.Material.Glass,
+			{ Parent = model, CanQuery = false, Transparency = 0.3 }
 		)
 	elseif not dressed then
 		self:part(

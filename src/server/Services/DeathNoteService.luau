@@ -26,11 +26,12 @@ local LInboxRemote = Net.event("LInbox")
 
 local DeathNoteService = {}
 
-local function kill(target, kira, cause: string, matchId: number)
+local function kill(target, kira, cause: string, matchId: number, writtenAt: number?)
 	if Match.id ~= matchId or not Match.active or Match.winner ~= nil or not target.alive then
 		return
 	end
 	kira.stats.kills += 1
+	EventLog.ink(kira, target, writtenAt or Match.elapsed())
 	Elimination.eliminate(
 		target,
 		"dead",
@@ -88,7 +89,7 @@ local function onWrite(player: Player, payload)
 		local meeting = Match.phaseLength("Meeting")
 		-- Clamped so the death and its cutscene both fit inside the meeting.
 		local delay = math.clamp(Config.DEATH_DELAY, remaining + 3, remaining + math.max(4, meeting - 8))
-		task.delay(delay, kill, target, ps, cause, matchId)
+		task.delay(delay, kill, target, ps, cause, matchId, Match.elapsed())
 	else
 		EventLog.add(
 			Terms.f(

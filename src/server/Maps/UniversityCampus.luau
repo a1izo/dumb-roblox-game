@@ -194,6 +194,8 @@ function UniversityCampus.layout()
 			{ type = "Camera", name = "Quad Camera Post", x = -22, z = 8, rot = -90 },
 			{ type = "Phone", name = "Student Union Kiosk", x = 22, z = -8, rot = 90 },
 			{ type = "Camera", name = "Campus CCTV Hub", x = 0, z = 81, rot = 0 },
+			{ type = "Forensics", name = "Forensic Microscope", x = 70, z = 76, rot = 0 },
+			{ type = "Forensics", name = "Rare Books Ink Lab", x = -78, z = -46, rot = 180 },
 		},
 		tipBox = { x = 12, z = 70, rot = 90 },
 		board = { x = 0, y = 6, z = 30, rot = 0, w = 12, h = 7 },
