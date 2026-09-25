@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local ClipPlayer = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 
 local PoseController = require(script.Parent.PoseController)
+local Characters = require(script.Parent.Parent.Characters)
 
 local LocomotionController = {}
 
@@ -261,18 +262,10 @@ function LocomotionController.init()
 		clips[id] = clip
 	end
 	PoseController.setBaseProvider(provide)
-	local function onPlayer(player: Player)
-		player.CharacterAdded:Connect(function(character)
-			task.spawn(track, character)
-		end)
-		if player.Character then
-			task.spawn(track, player.Character)
-		end
-	end
-	Players.PlayerAdded:Connect(onPlayer)
-	for _, player in ipairs(Players:GetPlayers()) do
-		onPlayer(player)
-	end
+	-- Every player's character and every test bot's.
+	Characters.each(function(character)
+		task.spawn(track, character)
+	end)
 end
 
 return LocomotionController

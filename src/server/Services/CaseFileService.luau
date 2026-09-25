@@ -421,6 +421,33 @@ function CaseFileService.onMatchEnd()
 	working = {}
 end
 
+-- Debug panel: finishes a real case file for this player at the nearest station right now
+-- (clue on the board, letters flashed to whoever can see it).
+function CaseFileService.debugFlash(ps): string?
+	local position = Match.position(ps)
+	if not position then
+		return nil
+	end
+	local best, bestDistance = nil, math.huge
+	for _, runtime in pairs(stations) do
+		local distance = (runtime.info.position - position).Magnitude
+		if distance < bestDistance and (runtime.worker == nil or runtime.worker == ps) then
+			best, bestDistance = runtime, distance
+		end
+	end
+	if not best then
+		return nil
+	end
+	if working[ps] and working[ps] ~= best then
+		stopWork(ps, nil)
+	end
+	best.worker = ps
+	best.fake = false
+	working[ps] = best
+	finish(ps, best)
+	return best.info.name
+end
+
 function CaseFileService.init()
 	TaskRequest.OnServerEvent:Connect(onTaskRequest)
 	TamperRemote.OnServerEvent:Connect(onTamper)

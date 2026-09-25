@@ -52,6 +52,19 @@ local function load(player: Player)
 	end
 end
 
+-- Debug panel: gives or takes a pass for this session (nothing is bought or saved).
+function PassService.debugSet(player: Player, key: string, on: boolean)
+	local set = owned[player]
+	if not set then
+		set = {}
+		owned[player] = set
+	end
+	set[key] = if on then true else nil
+	if on then
+		PassService.Changed:Fire(player, key)
+	end
+end
+
 function PassService.owns(player: Player, key: string): boolean
 	local set = owned[player]
 	return set ~= nil and set[key] == true

@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
+local Characters = require(script.Parent.Parent.Characters)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -145,16 +146,7 @@ local function refreshAll()
 end
 
 function GhostVisibility.init()
-	local function onPlayer(player: Player)
-		player.CharacterAdded:Connect(track)
-		if player.Character then
-			track(player.Character)
-		end
-	end
-	Players.PlayerAdded:Connect(onPlayer)
-	for _, player in ipairs(Players:GetPlayers()) do
-		onPlayer(player)
-	end
+	Characters.each(track)
 	ClientState.PublicChanged:Connect(refreshAll)
 end
 

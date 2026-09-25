@@ -14,6 +14,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
 local Widgets = require(script.Parent.Parent.UI.Widgets)
+local Characters = require(script.Parent.Parent.Characters)
 
 local EyesRequest = Net.event("EyesRequest")
 local LocalPlayer = Players.LocalPlayer
@@ -23,7 +24,7 @@ local EyesController = {}
 local MAX_ANGLE = math.rad(18)
 
 -- The best target: a living player close by, nearest to the aim direction.
-local function findTarget(): Player?
+local function findTarget(): number?
 	local camera = workspace.CurrentCamera
 	local myCharacter = LocalPlayer.Character
 	local myHead = if myCharacter then myCharacter:FindFirstChild("Head") else nil
@@ -40,16 +41,15 @@ local function findTarget(): Player?
 	local best, bestAngle = nil, MAX_ANGLE
 	for _, entry in ipairs(ClientState.living()) do
 		if entry.userId ~= LocalPlayer.UserId then
-			local player = Players:GetPlayerByUserId(entry.userId)
-			local character = if player then player.Character else nil
+			local character = Characters.byUserId(entry.userId)
 			local head = if character then character:FindFirstChild("Head") else nil
-			if player and head and head:IsA("BasePart") then
+			if head and head:IsA("BasePart") then
 				local offset = head.Position - myHead.Position
 				if offset.Magnitude <= Config.EYES_RANGE then
 					local toTarget = (head.Position - camera.CFrame.Position).Unit
 					local angle = math.acos(math.clamp(aim:Dot(toTarget), -1, 1))
 					if angle < bestAngle then
-						best = player
+						best = entry.userId
 						bestAngle = angle
 					end
 				end
@@ -73,7 +73,7 @@ function EyesController.read()
 		Toasts.show("Look at a player within " .. Config.EYES_RANGE .. " studs.", "bad")
 		return
 	end
-	EyesRequest:FireServer({ action = "read", userId = target.UserId })
+	EyesRequest:FireServer({ action = "read", userId = target })
 end
 
 -- The deal costs the Cultist's life, so it asks for confirmation first.

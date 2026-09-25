@@ -2,7 +2,6 @@
 -- UI style, screen tints and flashes, a red vignette, spotlights and outlines on characters,
 -- and a hold-to-skip button. Each helper cleans up after itself.
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -12,6 +11,7 @@ local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local Theme = require(script.Parent.Parent.UI.Theme)
 local Widgets = require(script.Parent.Parent.UI.Widgets)
+local Characters = require(script.Parent.Parent.Characters)
 
 local C = Theme.colors
 
@@ -38,8 +38,7 @@ function Cinema.character(userId: number?): Model?
 	if not userId then
 		return nil
 	end
-	local player = Players:GetPlayerByUserId(userId)
-	local character = if player then player.Character else nil
+	local character = Characters.byUserId(userId)
 	if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
 		return character
 	end

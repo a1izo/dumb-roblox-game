@@ -10,6 +10,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
+local Characters = require(script.Parent.Parent.Characters)
 
 local SpectateRemote = Net.event("Spectate")
 local LocalPlayer = Players.LocalPlayer
@@ -61,8 +62,7 @@ local function focus()
 	targetUserId = entry.userId
 	nameLabel.Text = "Watching " .. entry.alias
 	SpectateRemote:FireServer(entry.userId)
-	local player = Players:GetPlayerByUserId(entry.userId)
-	local character = if player then player.Character else nil
+	local character = Characters.byUserId(entry.userId)
 	local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
 	local camera = workspace.CurrentCamera
 	if camera and humanoid then

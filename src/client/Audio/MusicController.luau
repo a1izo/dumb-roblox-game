@@ -18,6 +18,7 @@ local FADE = 2
 
 local current: { slot: string, sound: Sound }? = nil
 local outcomeSlot: string? = nil
+local debugSlot: string? = nil
 
 local function stop(entry: { slot: string, sound: Sound }, fade: number)
 	local sound = entry.sound
@@ -55,6 +56,9 @@ end
 
 -- The slot for right now.
 local function pick(): string?
+	if debugSlot then
+		return if debugSlot == "none" then nil else debugSlot
+	end
 	local phase = ClientState.phase()
 	if not ClientState.isParticipant() then
 		if Router.isOpen("shop") then
@@ -97,6 +101,16 @@ end
 function MusicController.setOutcome(slot: string?)
 	outcomeSlot = slot
 	MusicController.refresh()
+end
+
+-- Debug panel: plays this slot whatever is happening ("none" for silence, nil to go back).
+function MusicController.setDebugSlot(slot: string?)
+	debugSlot = slot
+	MusicController.refresh()
+end
+
+function MusicController.current(): string?
+	return if current then current.slot else nil
 end
 
 function MusicController.init()

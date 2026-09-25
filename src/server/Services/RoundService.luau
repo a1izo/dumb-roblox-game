@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
@@ -60,6 +61,16 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	if Match.phaseLength(name) <= 0 then
 		length = 0
 	end
+	-- The debug panel can skip ahead: every phase before the one asked for runs its start and
+	-- end (so the match stays consistent) but takes no time.
+	local skip = Match.debugSkipTo
+	if skip then
+		if skip.phase == name and (skip.round == nil or skip.round == Match.round) then
+			Match.debugSkipTo = nil
+		else
+			length = 0
+		end
+	end
 	local uncuttable = options ~= nil and options.uncuttable == true
 	Match.phase = name
 	GhostService.onPhase(name)
@@ -70,8 +81,20 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	if length > 0 then
 		Match.pushState()
 		Match.pushAllPrivate()
+		local lastPush = 0
 		while (uncuttable or Match.winner == nil) and workspace:GetServerTimeNow() < Match.phaseEndsAt do
-			task.wait(0.25)
+			local dt = task.wait(0.25)
+			if Match.debugPaused then
+				-- Paused from the debug panel: the clock stands still.
+				Match.phaseEndsAt += dt
+				if os.clock() - lastPush > 0.5 then
+					lastPush = os.clock()
+					Match.pushState()
+				end
+			end
+			if Match.debugSkipTo and Match.debugSkipTo.phase ~= name then
+				break
+			end
 		end
 	end
 	if onEnd then
@@ -81,8 +104,7 @@ end
 
 -- The intro cutscene: a camera path over the map, the case title, and the Grimoire falling
 -- onto the spot where the players stand.
-local function startIntro()
-	local map = Match.map
+local function introData(map)
 	local points = {}
 	for _, area in ipairs(map.areas or {}) do
 		table.insert(points, area.position)
@@ -110,14 +132,20 @@ local function startIntro()
 		CFrame.lookAt(center + Vector3.new(radius * 0.7, radius * 0.3 + 22, radius * 0.4), look),
 		CFrame.lookAt(spawnCenter + Vector3.new(0, 14, 26), spawnCenter + Vector3.new(0, 3, 0)),
 	}
-	Cues.fire("intro", {
-		mapName = Match.mapName,
+	return {
+		mapName = map.name or Match.mapName,
 		playerCount = #Match.list,
 		caseNumber = Match.rng:NextInteger(100, 999),
 		path = path,
 		landmark = spawnCenter,
-		duration = Match.phaseLength("Intro"),
-	}, { lead = 0.2 })
+		duration = math.max(Match.phaseLength("Intro"), 8),
+	}
+end
+
+local function startIntro()
+	local data = introData(Match.map)
+	data.duration = Match.phaseLength("Intro")
+	Cues.fire("intro", data, { lead = 0.2 })
 end
 
 local function meetingCenter(): Vector3?
@@ -236,13 +264,7 @@ end
 
 -- The ending cutscene: everyone still standing is gathered in the meeting room, the camera
 -- finds the Hand, and each side hears its own music.
-local function startOutro()
-	CaseFileService.cancelAll(nil)
-	VoteService.cancel()
-	WarrantService.close()
-	ChatService.setMeetingOpen(false)
-	MeetingService.gather()
-	local winner = Match.winner or "Kira"
+local function outroData(winner: string)
 	local hand = Match.findRole("Kira")
 	local zero = Match.findRole("L")
 	local winners = {}
@@ -251,7 +273,7 @@ local function startOutro()
 			table.insert(winners, ps.userId)
 		end
 	end
-	Cues.fire("outro", {
+	return {
 		winner = winner,
 		reason = Match.winReason or "",
 		handUserId = if hand then hand.userId else nil,
@@ -262,8 +284,65 @@ local function startOutro()
 		zeroAlias = if zero then zero.alias else nil,
 		winners = winners,
 		center = meetingCenter(),
-		duration = Match.phaseLength("Outro"),
-	}, { lead = 0.3 })
+		duration = math.max(Match.phaseLength("Outro"), 10),
+	}
+end
+
+local function startOutro()
+	CaseFileService.cancelAll(nil)
+	VoteService.cancel()
+	WarrantService.close()
+	ChatService.setMeetingOpen(false)
+	MeetingService.gather()
+	if Match.debugFastEnd then
+		return -- ended from the debug panel: straight to the lobby
+	end
+	local data = outroData(Match.winner or "Kira")
+	data.duration = Match.phaseLength("Outro")
+	Cues.fire("outro", data, { lead = 0.3 })
+end
+
+-- Debug panel: plays a cutscene for one player only, with data from the running match (the
+-- match itself does not change). target is a player state for the cues about someone.
+function RoundService.debugCue(kind: string, player: Player, target, extra: string?): string?
+	if not Match.active or not Match.map then
+		return "Cutscene previews need a running match (start one with bots)."
+	end
+	local to = { to = { player }, lead = 0.2 }
+	target = target or Match.get(player)
+	if kind == "intro" then
+		Cues.fire("intro", introData(Match.map), to)
+	elseif kind == "outro" then
+		Cues.fire("outro", outroData(if extra == "Kira" then "Kira" else "Team"), to)
+	elseif kind == "death" then
+		Cues.fire("death", { userId = target.userId, alias = target.alias, cause = extra or "Heart attack" }, to)
+	elseif kind == "verdict" then
+		Cues.fire("verdict", {
+			counts = {
+				{ name = target.alias, count = 3, userId = target.userId },
+				{ name = "Skip", count = 1 },
+			},
+			removedUserId = target.userId,
+			removedAlias = target.alias,
+			tie = false,
+			total = 4,
+			climax = VoteService.CLIMAX,
+		}, to)
+	elseif kind == "arrest" then
+		Cues.fire("arrest", {
+			userId = target.userId,
+			alias = target.alias,
+			result = if target.role == "Kira"
+				then "hand"
+				elseif target.role == "Follower" then "cultist"
+				else "innocent",
+		}, to)
+	elseif kind == "eyesDeal" then
+		Cues.fire("eyesDeal", { reads = Config.EYES_READS, deathRound = Match.round + 1 }, to)
+	else
+		return "Unknown cutscene " .. kind
+	end
+	return nil
 end
 
 local function reveal()

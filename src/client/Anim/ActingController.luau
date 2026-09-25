@@ -18,6 +18,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
 local InkFx = require(script.Parent.Parent.Presentation.InkFx)
 local PoseController = require(script.Parent.PoseController)
+local Characters = require(script.Parent.Parent.Characters)
 
 local ActingController = {}
 
@@ -28,12 +29,7 @@ local function characterOf(userId: number?): Model?
 	if not userId then
 		return nil
 	end
-	local player = Players:GetPlayerByUserId(userId)
-	local character = if player then player.Character else nil
-	if character and character.Parent then
-		return character
-	end
-	return nil
+	return Characters.byUserId(userId)
 end
 
 local function now(): number
@@ -195,16 +191,7 @@ local function watchWorking(character: Model)
 end
 
 function ActingController.init()
-	local function onPlayer(player: Player)
-		player.CharacterAdded:Connect(watchWorking)
-		if player.Character then
-			watchWorking(player.Character)
-		end
-	end
-	Players.PlayerAdded:Connect(onPlayer)
-	for _, player in ipairs(Players:GetPlayers()) do
-		onPlayer(player)
-	end
+	Characters.each(watchWorking)
 	ClientState.PhaseChanged:Connect(function(phase)
 		refreshWriting()
 		if phase ~= "Vote" then
@@ -217,16 +204,9 @@ function ActingController.init()
 	CueRouter.register("arrest", onArrest)
 	CueRouter.register("verdict", onVerdict)
 	CueRouter.register("outro", onOutro)
-	Players.PlayerAdded:Connect(function(player)
-		player.CharacterAdded:Connect(function()
-			task.defer(refreshWriting)
-		end)
+	Characters.each(function()
+		task.defer(refreshWriting)
 	end)
-	for _, player in ipairs(Players:GetPlayers()) do
-		player.CharacterAdded:Connect(function()
-			task.defer(refreshWriting)
-		end)
-	end
 end
 
 return ActingController

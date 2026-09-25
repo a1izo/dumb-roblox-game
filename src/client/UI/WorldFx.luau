@@ -17,6 +17,7 @@ local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Theme = require(script.Parent.Theme)
 local Widgets = require(script.Parent.Widgets)
+local Characters = require(script.Parent.Parent.Characters)
 
 local LocalPlayer = Players.LocalPlayer
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -80,8 +81,7 @@ local function onEyesName(payload)
 	if type(payload) ~= "table" or type(payload.name) ~= "string" or type(payload.userId) ~= "number" then
 		return
 	end
-	local target = Players:GetPlayerByUserId(payload.userId)
-	local character = if target then target.Character else nil
+	local character = Characters.byUserId(payload.userId)
 	local head = if character then character:FindFirstChild("Head") else nil
 	if not head or not head:IsA("BasePart") then
 		return

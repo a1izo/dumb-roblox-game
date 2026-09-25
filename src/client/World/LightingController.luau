@@ -27,6 +27,7 @@ local currentKey = ""
 local currentPreset: LightingPresets.Preset = LightingPresets.lobby
 local currentVenue = "lobby"
 local flashing = false
+local debugKey: string? = nil -- "lobby", "meeting" or "map:<mapId>", set from the debug panel
 
 local function focus(): Vector3
 	local camera = workspace.CurrentCamera
@@ -76,6 +77,10 @@ end
 local function update(force: boolean?)
 	local venue = Venues.at(focus())
 	local mapId = if type(ClientState.public.mapId) == "string" then ClientState.public.mapId else nil
+	if debugKey then
+		venue = string.match(debugKey, "^(%a+)") or venue
+		mapId = string.match(debugKey, "^map:(.+)$") or mapId
+	end
 	local key = venue .. ":" .. (if venue == "map" then mapId or "" else "")
 	if key == currentKey and not force then
 		return
@@ -88,6 +93,12 @@ local function update(force: boolean?)
 		apply(currentPreset, if instant then 0 else BLEND)
 	end
 	LightingController.Changed:Fire(venue, currentPreset)
+end
+
+-- Debug panel: forces a lighting preset (nil to follow the camera again).
+function LightingController.setDebugPreset(key: string?)
+	debugKey = key
+	update(true)
 end
 
 function LightingController.venue(): string

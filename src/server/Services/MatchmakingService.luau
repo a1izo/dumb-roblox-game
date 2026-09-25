@@ -183,6 +183,44 @@ local function startLocal(players: { Player })
 	task.spawn(thread, players)
 end
 
+-- Debug helpers (the debug panel and its test bots) ------------------------------------------
+
+function MatchmakingService.setReady(player: any, on: boolean)
+	if on then
+		ready[player] = ready[player] or os.clock()
+	else
+		unready(player)
+	end
+	pushLobby()
+end
+
+function MatchmakingService.isReady(player: any): boolean
+	return ready[player] ~= nil
+end
+
+-- True when a real player (not a test bot) is ready.
+function MatchmakingService.humansReady(): boolean
+	for player in pairs(ready) do
+		if typeof(player) == "Instance" then
+			return true
+		end
+	end
+	return false
+end
+
+-- Starts a match at once with these players (no countdown). False if one is running.
+function MatchmakingService.startNow(players: { any }): boolean
+	if matchRunning or not waitingThread or #players == 0 then
+		return false
+	end
+	startLocal(players)
+	return true
+end
+
+function MatchmakingService.isRunning(): boolean
+	return matchRunning
+end
+
 -- Cross-server --------------------------------------------------------------------------
 
 local function teleportGroup(members: { Player }, code: string)

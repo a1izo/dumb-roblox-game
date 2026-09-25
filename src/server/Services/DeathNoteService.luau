@@ -142,6 +142,12 @@ local function onReport(player: Player, payload)
 	Match.pushPrivate(ps)
 end
 
+-- Debug panel: kills a player the way the Grimoire does (collapse, cutscene, announcement).
+function DeathNoteService.debugKill(target, cause: string?)
+	local kira = Match.findRole("Kira") or target
+	kill(target, kira, cause or "Heart attack", Match.id)
+end
+
 function DeathNoteService.open()
 	for _, ps in ipairs(Match.living()) do
 		CharacterService.setWriting(ps.player, true)

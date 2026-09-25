@@ -96,9 +96,95 @@ else
 	folder = ReplicatedStorage:WaitForChild(FOLDER_NAME)
 end
 
+-- Test bots (server, debug only) -----------------------------------------------------------
+-- When the debug tools are available, the server hands out thin wrappers around its
+-- RemoteEvents: a message fired at a test bot (a table standing in for a Player) goes to
+-- Net.botSink instead of the network, and Net.simulate lets a bot "send" a request through
+-- the very same handlers a real client's request goes through. Live servers without debug
+-- access get the plain RemoteEvents.
+
+local wrapped: { [string]: any } = {}
+local handlers: { [string]: { (...any) -> () } } = {}
+
+-- Set by the bot service: (bot, remoteName, ...payload) for messages sent to a bot.
+Net.botSink = nil :: ((any, string, ...any) -> ())?
+
+local function debugPossible(): boolean
+	local ok, Config = pcall(require, script.Parent:FindFirstChild("Config") :: ModuleScript)
+	if not ok then
+		return false
+	end
+	return (RunService:IsStudio() and Config.STUDIO_DEBUG == true) or #(Config.DEBUG_USER_IDS or {}) > 0
+end
+
+local WRAP = RunService:IsServer() and debugPossible()
+
+local function wrap(remote: RemoteEvent): any
+	local name = remote.Name
+	local list = {}
+	handlers[name] = list
+	local signal = {}
+	function signal.Connect(_, fn)
+		table.insert(list, fn)
+		return remote.OnServerEvent:Connect(fn)
+	end
+	function signal.Once(_, fn)
+		return remote.OnServerEvent:Once(fn)
+	end
+	function signal.Wait(_)
+		return remote.OnServerEvent:Wait()
+	end
+	local proxy = {
+		Name = name,
+		Instance = remote,
+		OnServerEvent = signal,
+		OnClientEvent = remote.OnClientEvent,
+	}
+	function proxy.FireClient(_, player, ...)
+		if type(player) == "table" then
+			local sink = Net.botSink
+			if sink then
+				sink(player, name, ...)
+			end
+			return
+		end
+		remote:FireClient(player, ...)
+	end
+	function proxy.FireAllClients(_, ...)
+		remote:FireAllClients(...)
+	end
+	return setmetatable(proxy, {
+		__index = function(_, key)
+			local value = (remote :: any)[key]
+			if type(value) == "function" then
+				return function(_, ...)
+					return value(remote, ...)
+				end
+			end
+			return value
+		end,
+	})
+end
+
+-- Runs a remote's server handlers as if `player` (usually a test bot) had fired it.
+function Net.simulate(name: string, player: any, ...: any)
+	for _, fn in ipairs(handlers[name] or {}) do
+		task.spawn(fn, player, ...)
+	end
+end
+
 function Net.event(name: string): RemoteEvent
+	local cached = wrapped[name]
+	if cached then
+		return cached
+	end
 	local remote = folder:WaitForChild(name, 10)
 	assert(remote and remote:IsA("RemoteEvent"), "Unknown RemoteEvent: " .. name)
+	if WRAP then
+		local proxy = wrap(remote :: RemoteEvent)
+		wrapped[name] = proxy
+		return proxy
+	end
 	return remote
 end
 

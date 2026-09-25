@@ -95,6 +95,11 @@ local function onRequest(player: Player, hoodId)
 	Match.notify(player, Terms.f("Hood on. {Eyes} cannot read your name this round."), "good")
 end
 
+-- Debug panel: puts a hood on a player for this round.
+function HoodService.debugWear(ps)
+	wear(ps)
+end
+
 function HoodService.onRoundStart(round: number)
 	for _, ps in ipairs(Match.living()) do
 		if ps.hoodNextRound then

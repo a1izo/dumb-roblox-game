@@ -21,6 +21,9 @@ local Scenes = script.Parent:WaitForChild("Scenes")
 
 local SceneBuilder = {}
 
+-- Set from the debug panel to build the old part-made venues instead (to compare them).
+SceneBuilder.disabled = false
+
 type Calibration = { toLocal: CFrame, scale: number }
 
 local calibration: Calibration | false | nil = nil
@@ -233,6 +236,9 @@ end
 -- Builds the venue's scene with builder b. Returns false (and builds nothing) when it has not
 -- been imported.
 function SceneBuilder.build(b, venue: string): boolean
+	if SceneBuilder.disabled then
+		return false
+	end
 	local cal = calibrate()
 	local module = Scenes:FindFirstChild(venue)
 	if not cal or not module then

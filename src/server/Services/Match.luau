@@ -2,6 +2,7 @@
 -- records kept here. This is the only module that sends the State and Private remotes,
 -- so what each client may know is decided in one place.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -39,6 +40,12 @@ Match.eyesDealMade = false
 Match.phoneFacts = 0
 Match.butlerHint = nil :: string?
 Match.rng = Random.new()
+
+-- Debug panel controls (Studio): skip ahead to a phase (and round), pause the phase timer,
+-- and cut the ending short.
+Match.debugSkipTo = nil :: { phase: string, round: number? }?
+Match.debugPaused = false
+Match.debugFastEnd = false
 
 -- Fired as (playerState, kind) after a player leaves the living: kind is
 -- "dead", "voted", "arrested" or "left".
@@ -118,6 +125,14 @@ function Match.finish()
 	Match.mapName = ""
 	Match.list = {}
 	Match.byPlayer = {}
+	Match.debugSkipTo = nil
+	Match.debugPaused = false
+	Match.debugFastEnd = false
+end
+
+-- True for the debug panel's test bots (tables standing in for players).
+function Match.isBot(ps): boolean
+	return type(ps.player) == "table"
 end
 
 -- Lookups -------------------------------------------------------------------
@@ -189,6 +204,9 @@ local PRESENTATION = { Intro = true, Verdict = true, Outro = true }
 -- Phase length in seconds. Studio test runs can be sped up with STUDIO_TIME_SCALE (cutscene
 -- phases keep their length) and can skip the cutscenes with STUDIO_SKIP_PRESENTATION.
 function Match.phaseLength(name: string): number
+	if Match.debugFastEnd and (name == "Outro" or name == "Reveal") then
+		return 0
+	end
 	local base = ServerSettings.phaseOverride(name) or Config.PHASE_TIME[name] or 10
 	if IS_STUDIO then
 		if PRESENTATION[name] then
@@ -251,6 +269,9 @@ local function characterList(): { Instance }
 		if player.Character then
 			table.insert(list, player.Character)
 		end
+	end
+	for _, bot in ipairs(CollectionService:GetTagged("LBotCharacter")) do
+		table.insert(list, bot)
 	end
 	return list
 end

@@ -21,15 +21,15 @@ local EyesNameRemote = Net.event("EyesName")
 
 local EyesService = {}
 
-local function deal(ps)
-	if ps.role ~= "Follower" or Match.phase ~= "Investigation" then
+local function deal(ps, force: boolean?)
+	if not force and (ps.role ~= "Follower" or Match.phase ~= "Investigation") then
 		return
 	end
-	if Match.round < Config.EYES_UNLOCK_ROUND then
+	if not force and Match.round < Config.EYES_UNLOCK_ROUND then
 		Match.notify(ps.player, "The deal unlocks in round " .. Config.EYES_UNLOCK_ROUND .. ".", "bad")
 		return
 	end
-	if Match.eyesDealMade or ps.eyes then
+	if not force and (Match.eyesDealMade or ps.eyes) then
 		Match.notify(ps.player, "The deal has already been made this match.", "bad")
 		return
 	end
@@ -141,6 +141,13 @@ local function onRequest(player: Player, payload)
 end
 
 -- Countdowns tick at the end of every round, starting with the round of the deal.
+-- Debug panel: gives a player the Specter's Eyes now (any role, any round), with the usual
+-- countdown and cutscene.
+function EyesService.debugGrant(ps)
+	ps.eyes = nil
+	deal(ps, true)
+end
+
 function EyesService.onRoundEnd()
 	for _, ps in ipairs(Match.list) do
 		if ps.eyes and ps.alive then

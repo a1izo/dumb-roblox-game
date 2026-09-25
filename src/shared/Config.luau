@@ -138,5 +138,12 @@ Config.STUDIO_DATASTORE_SUFFIX = "_studio"
 Config.STUDIO_DEBUG = true
 -- Cuts the Intro, Verdict and Outro presentation phases short in Studio.
 Config.STUDIO_SKIP_PRESENTATION = false
+-- Test bots added from the debug panel play on their own (walk, work case files, vote, and
+-- write names when they are the Hand). Both can be switched in the panel while testing.
+Config.STUDIO_BOTS_AUTOPLAY = true
+Config.STUDIO_BOTS_HAND_KILLS = true
+-- Roblox user ids that get the debug panel in live servers too (for testing a published
+-- place with friends). Empty = Studio only. Everyone in the server can see what it does.
+Config.DEBUG_USER_IDS = {} :: { number }
 
 return Config

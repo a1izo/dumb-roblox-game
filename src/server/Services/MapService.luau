@@ -36,8 +36,11 @@ local MAP_ORIGIN = Venues.MAP
 local MEETING_ORIGIN = Venues.MEETING
 
 local lobbyInfo = nil
+local lobbyModel: Model? = nil
 local currentModel: Model? = nil
 local rotationIndex = 0
+-- The debug panel can pick the next map (it is used once).
+local forcedNext: string? = nil
 
 local function newModel(name: string): Model
 	return Create("Model", {
@@ -47,6 +50,9 @@ local function newModel(name: string): Model
 end
 
 function MapService.nextMapId(): string
+	if forcedNext and MAPS[forcedNext] then
+		return forcedNext
+	end
 	local rotation = {}
 	for _, id in ipairs(Config.MAP_ROTATION) do
 		if table.find(ServerSettings.maps(), id) then
@@ -75,8 +81,58 @@ local function updateNextMapLabel()
 end
 
 function MapService.advance()
-	rotationIndex += 1
+	if forcedNext then
+		forcedNext = nil
+	else
+		rotationIndex += 1
+	end
 	updateNextMapLabel()
+end
+
+-- Debug -----------------------------------------------------------------------------------
+
+-- Every map id with its name, in rotation order.
+function MapService.list(): { { id: string, name: string } }
+	local list = {}
+	for _, id in ipairs(Config.MAP_ROTATION) do
+		if MAPS[id] then
+			table.insert(list, { id = id, name = MAPS[id].name })
+		end
+	end
+	return list
+end
+
+-- Makes the next match use this map (debug panel).
+function MapService.forceNext(mapId: string): boolean
+	if not MAPS[mapId] then
+		return false
+	end
+	forcedNext = mapId
+	updateNextMapLabel()
+	return true
+end
+
+-- Where lobby players (and test bots) appear.
+function MapService.lobbySpawn(): CFrame
+	return if lobbyInfo then lobbyInfo.spawnCFrame else CFrame.new(LOBBY_ORIGIN + Vector3.new(0, 3, 14))
+end
+
+-- Rebuilds the lobby (after switching between the Blender scene and the part-built one).
+function MapService.rebuildLobby()
+	if lobbyModel then
+		lobbyModel:Destroy()
+	end
+	local model = newModel("LGameLobby")
+	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))
+	model.Parent = workspace
+	lobbyModel = model
+	updateNextMapLabel()
+	LeaderboardService.setLabels(lobbyInfo.boards)
+end
+
+-- True while a map is built outside a match (a debug preview).
+function MapService.previewing(): boolean
+	return currentModel ~= nil and currentModel:GetAttribute("Preview") == true
 end
 
 -- Builds a match map and the meeting room. Returns everything gameplay needs,
@@ -159,6 +215,7 @@ function MapService.init()
 	local model = newModel("LGameLobby")
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))
 	model.Parent = workspace
+	lobbyModel = model
 	updateNextMapLabel()
 	LeaderboardService.setLabels(lobbyInfo.boards)
 end

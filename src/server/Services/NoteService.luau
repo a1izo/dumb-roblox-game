@@ -514,6 +514,15 @@ local function onEliminated(ps)
 	end
 end
 
+-- Debug panel: puts a blank sheet in a player's hands (they write it with the normal note UI).
+function NoteService.debugGiveSheet(ps): boolean
+	if ps.carrying then
+		return false
+	end
+	setCarry(ps, { kind = "blank" })
+	return true
+end
+
 function NoteService.onMatchStart(map)
 	notes = {}
 	sheets = {}

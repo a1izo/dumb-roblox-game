@@ -13,6 +13,9 @@ local PartyService = require(script.Parent.PartyService)
 
 local RoleService = {}
 
+-- Roles forced for the next match from the debug panel: [userId] = role id.
+RoleService.debugForced = {} :: { [number]: string }
+
 function RoleService.assign()
 	local players = {}
 	for _, ps in ipairs(Match.list) do
@@ -27,6 +30,13 @@ function RoleService.assign()
 			forced = { [Match.list[1].userId] = forcedRole }
 		else
 			warn("[Inkbound] Config.STUDIO_FORCE_ROLE is not a role: " .. forcedRole)
+		end
+	end
+
+	for userId, role in pairs(RoleService.debugForced) do
+		if table.find(RoleLogic.ALL, role) and Match.getByUserId(userId) then
+			forced = forced or {}
+			forced[userId] = role
 		end
 	end
 

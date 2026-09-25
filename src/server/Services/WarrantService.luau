@@ -21,6 +21,7 @@ local WarrantRemote = Net.event("Warrant")
 local WarrantService = {}
 
 local isOpen = false
+local serve: (any, any) -> ()
 
 local function onWarrant(player: Player, payload)
 	if type(payload) ~= "table" or type(payload.name) ~= "string" or type(payload.suspect) ~= "number" then
@@ -68,6 +69,11 @@ local function onWarrant(player: Player, payload)
 
 	l.warrantUsed = true
 	Match.pushPrivate(l)
+	serve(l, suspect)
+end
+
+-- A valid warrant is served: the arrest cutscene and its outcome.
+serve = function(l, suspect)
 	-- The arrest cutscene: the result is announced publicly anyway.
 	Cues.fire("arrest", {
 		userId = suspect.userId,
@@ -130,6 +136,12 @@ local function onWarrant(player: Player, payload)
 			{}
 		)
 	end
+end
+
+-- Debug panel: serves a valid warrant on this player now, as Zero would (any phase).
+function WarrantService.debugServe(suspect)
+	local zero = Match.findRole("L") or { alias = "Zero", stats = {} }
+	serve(zero, suspect)
 end
 
 function WarrantService.open()

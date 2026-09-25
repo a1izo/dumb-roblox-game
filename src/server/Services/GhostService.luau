@@ -321,6 +321,11 @@ end
 
 -- Match hooks ---------------------------------------------------------------------------------
 
+-- Debug panel: a revived player stops being a Specter.
+function GhostService.forget(player: Player)
+	ghosts[player] = nil
+end
+
 function GhostService.onMatchStart()
 	ghosts = {}
 	partyOf = {}

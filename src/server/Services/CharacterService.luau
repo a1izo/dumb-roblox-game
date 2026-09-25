@@ -575,7 +575,7 @@ local warnedR6 = false
 -- those players stiff bodies, so an R6 character is rebuilt as R15 from the same avatar.
 -- Returns true when the character was replaced (CharacterAdded fires again for the new one).
 local function replaceWithR15(player: Player, character: Model, humanoid: Humanoid): boolean
-	if humanoid.RigType == Enum.HumanoidRigType.R15 then
+	if humanoid.RigType == Enum.HumanoidRigType.R15 or typeof(player) ~= "Instance" then
 		return false
 	end
 	if not warnedR6 and RunService:IsStudio() then
@@ -669,18 +669,21 @@ local function onSpectate(player: Player, targetUserId)
 	player.ReplicationFocus = root
 end
 
+-- Starts handling a player's characters and loads the first one. Players are tracked when
+-- they join; the debug panel's test bots are tracked when they are added.
+function CharacterService.track(player: Player)
+	player.CharacterAdded:Connect(function(character)
+		onCharacterAdded(player, character)
+	end)
+	CharacterService.load(player)
+end
+
 function CharacterService.init()
 	Players.CharacterAutoLoads = false
 	SpectateRemote.OnServerEvent:Connect(onSpectate)
-	local function setup(player: Player)
-		player.CharacterAdded:Connect(function(character)
-			onCharacterAdded(player, character)
-		end)
-		CharacterService.load(player)
-	end
-	Players.PlayerAdded:Connect(setup)
+	Players.PlayerAdded:Connect(CharacterService.track)
 	for _, player in ipairs(Players:GetPlayers()) do
-		setup(player)
+		CharacterService.track(player)
 	end
 end
 

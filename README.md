@@ -12,11 +12,30 @@ Players who are killed, voted out or arrested stay in the match as invisible **S
 2. Start Rojo (`rojo serve`) and connect the Rojo plugin in Studio. The whole game syncs in; the
    lobby and all maps are built by code.
 3. Press **Play**, then **READY** in the lobby. In Studio a match starts with just you
-   (`Config.STUDIO_MIN_PLAYERS = 1`); live servers need 6.
+   (`Config.STUDIO_MIN_PLAYERS = 1`); live servers need 6. Press **F2** for the debug panel
+   (test bots, phase and role controls, previews; see below).
 4. For a real test, use **Test > Clients and Servers** with 6 or more players.
 
 The server runs the unit tests on every Studio Play and prints `[Inkbound tests] N passed, 0 failed`
 to Output.
+
+### Testing alone: the debug panel (F2)
+
+In a Studio play test, press **F2**. Everything below works with just you in the server:
+
+| Tab | What it does |
+| --- | --- |
+| Match | Start a match now, pick the next map, skip to any phase or round, pause or extend the timer, speed phases up (x0.1 to x2), skip cutscene phases, force a win, end the match at once |
+| People | Everyone with their role and real name. Change anyone's role mid-match (unique roles swap), force roles for the next match, kill (any cause), vote out, arrest, revive, give the Specter's Eyes, a hood or paper, force a letter flash, add suspicion, teleport, freeze |
+| Bots | Add test bots (Studio only). They join the next match, walk on pathfinding, work and fake case files, vote, and the Hand writes names. Toggle autoplay and kills, choose how bots vote, or order one bot to come, work, vote, write a name, serve a warrant or take the Eyes deal |
+| World | Teleport to the lobby, map, meeting room, any station or area; preview any map between matches; switch Blender scenes and part-built venues; check the map contract; fly, noclip, free camera; show colliders, roles over heads and performance stats; force lighting presets and rain |
+| Show | Play any cutscene for yourself during a match (intro, the four deaths, verdict, arrest, Eyes deal, both outros), announcements, every role's briefing card, the results screen, any music slot, every sound |
+| Anim | Play any animation clip on yourself or on the person picked, from x0.1 to x2, looped |
+| Profile | Coins, XP, every cosmetic, passes for the session, next day / week (streaks, quests, shop), resets (hints, Academy, streak, quests, achievements, cosmetics, everything), test purchases |
+
+Bots use the same server code as players (every rule, range check and rate limit applies), so a
+bug a bot hits is a real bug. To give testers the panel in a published place, add their user
+ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 
 ### Place settings to check in Studio
 
@@ -169,6 +188,7 @@ src/server/     init.server.luau boots every service
   Maps/         Builder, Style (noir dressing), MapContract, SceneBuilder (places the Blender
                 scenes), Scenes/ (generated colliders, props, lights and signs per venue), the
                 lobby, the meeting room and three maps: Agency HQ, University Campus, Tokyo
+  Debug/        test bots for the debug panel (DebugService runs the panel's commands)
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything
   UI/           every screen and panel, Core/ (router, motion, settings, clock, scaling)
@@ -179,6 +199,7 @@ src/client/     init.client.luau boots everything
   Specter/      flight, lost souls and real-name tags for ghosts
   Controllers/  prompts, chat rules, emotes, Specter's Eyes, the Academy
   Input/        actions and bindings
+  Debug/        the debug panel (F2) and its local tools (fly, free camera, colliders, tags)
 assets/         your own models, synced to ReplicatedStorage/ServerStorage.InkboundAssets
 art/            Blender scripts, .blend sources, the FBX export and previews (art/README.md)
 src/character/  the empty Animate script that replaces Roblox's default one

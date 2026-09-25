@@ -12,7 +12,7 @@ local Settings = require(Core:WaitForChild("Settings"))
 
 local Announcer = require(UI:WaitForChild("Announcer"))
 local BriefingScreen = require(UI:WaitForChild("BriefingScreen"))
-local DebugPanel = require(UI:WaitForChild("DebugPanel"))
+local DebugPanel = require(script:WaitForChild("Debug"):WaitForChild("DebugPanel"))
 local DirectorPanel = require(UI:WaitForChild("DirectorPanel"))
 local EvidencePanel = require(UI:WaitForChild("EvidencePanel"))
 local GhostHud = require(UI:WaitForChild("GhostHud"))

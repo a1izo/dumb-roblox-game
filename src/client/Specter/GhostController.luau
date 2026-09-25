@@ -15,6 +15,7 @@ local Signal = require(Shared:WaitForChild("Signal"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local Characters = require(script.Parent.Parent.Characters)
 
 local GhostRemote = Net.event("Ghost")
 local LocalPlayer = Players.LocalPlayer
@@ -228,8 +229,7 @@ local function refreshNameTags()
 	end
 	for key, realName in pairs(names) do
 		local userId = tonumber(key)
-		local player = if userId then Players:GetPlayerByUserId(userId) else nil
-		local character = if player then player.Character else nil
+		local character = Characters.byUserId(userId)
 		local head = if character then character:FindFirstChild("Head") else nil
 		if userId and head and head:IsA("BasePart") then
 			local gui = Create("BillboardGui", {

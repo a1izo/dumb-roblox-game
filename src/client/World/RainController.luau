@@ -27,8 +27,11 @@ local loop: Sound? = nil
 local indoors = false
 local lastRoofCheck = 0
 
+-- Set from the debug panel: rain from 0 to 1 whatever the preset says (nil = the preset).
+RainController.debugAmount = nil :: number?
+
 local function rainAmount(): number
-	return LightingController.preset().rain
+	return RainController.debugAmount or LightingController.preset().rain
 end
 
 local function refreshRate()

@@ -194,6 +194,9 @@ function ChatService.onMatchStart()
 			end
 		end
 		for _, ps in ipairs(Match.list) do
+			if Match.isBot(ps) then
+				continue -- test bots never chat
+			end
 			task.spawn(function()
 				local ok, err = pcall(function()
 					channel:AddUserAsync(ps.userId)
