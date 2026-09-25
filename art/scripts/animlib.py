@@ -44,13 +44,15 @@ def _angles(value):
 
 
 class Clip:
-    def __init__(self, name, length, loop=False, note=""):
+    def __init__(self, name, length, loop=False, note="", floor=False):
         self.name = name
+        self.floor = floor  # ends on the ground: the export lifts any frame that dips below it
         self.length = float(length)
         self.loop = loop
         self.note = note
         self.keys = {}  # joint -> [(t, angles, ease)]
         self.offsets = []  # [(t, (x, y, z), ease)]
+        self.stride = None  # studs per cycle, for movement clips the game plays by speed
 
     def pose(self, t, ease="smooth", offset=None, **joints):
         for joint, value in joints.items():
@@ -76,8 +78,8 @@ class Clip:
 CLIPS = {}
 
 
-def clip(name, length, loop=False, note=""):
-    c = Clip(name, length, loop, note)
+def clip(name, length, loop=False, note="", floor=False):
+    c = Clip(name, length, loop, note, floor)
     CLIPS[name] = c
     return c
 
@@ -143,6 +145,9 @@ def build_action(arm, c):
     action["joints"] = sorted(c.keys.keys())
     action["offset"] = len(c.offsets) > 0
     action["note"] = c.note
+    if c.stride:
+        action["stride"] = c.stride
+    action["floor"] = c.floor
     arm.animation_data_create()
     arm.animation_data.action = action
 

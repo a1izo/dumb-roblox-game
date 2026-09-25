@@ -1,12 +1,14 @@
 --!strict
--- The props made in Blender (art/export/InkboundModels.fbx), once they are imported into
--- ReplicatedStorage.InkboundAssets. get(key) returns a ready model: anchored, scaled to the
--- size in ModelCatalog (whatever unit the importer used), turned upright if the importer
--- swapped axes, glowing parts turned Neon, and pivoted at its bottom centre ("bottom") or its
--- middle ("centre"). Without an import it returns nil and callers build their part-made
--- stand-ins, so the game works either way.
+-- The props and map scenes made in Blender (art/export/*.fbx) after they are imported with
+-- Studio's 3D importer. The importer drops its result into Workspace; install() (server, at
+-- start) moves every import it can find into ReplicatedStorage.InkboundAssets, so it is
+-- hidden, anchored and reachable from clients. get(key) then returns a ready model: scaled to
+-- the size in ModelCatalog, turned upright, glow parts turned Neon, and pivoted at its bottom
+-- centre ("bottom") or its middle ("centre"). Without an import it returns nil and callers
+-- build their part-made stand-ins, so the game works either way.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Catalog = require(script.Parent.ModelCatalog)
 
@@ -20,7 +22,10 @@ type Info = {
 	glow: { { number } }?,
 }
 
+local STORE_NAME = "InkboundAssets"
+
 local templates: { [string]: Model | false } = {}
+local index: { [string]: Instance }? = nil
 
 -- Axis-aligned turns tried when the imported model's shape does not match the catalog.
 local TURNS = {
@@ -31,48 +36,135 @@ local TURNS = {
 	CFrame.Angles(0, math.pi / 2, 0),
 }
 
-local function assetRoot(): Instance?
-	return ReplicatedStorage:FindFirstChild("InkboundAssets")
+local function store(): Instance?
+	return ReplicatedStorage:FindFirstChild(STORE_NAME)
 end
 
-local function isSource(instance: Instance, name: string): boolean
-	if instance.Name ~= name then
-		return false
-	end
+local function isMeshSource(instance: Instance): boolean
 	return instance:IsA("MeshPart")
 		or (instance:IsA("Model") and instance:FindFirstChildWhichIsA("MeshPart", true) ~= nil)
 end
 
-local function findSource(name: string): Instance?
-	local root = assetRoot()
-	if not root then
-		return nil
-	end
-	for _, item in ipairs(root:GetDescendants()) do
-		if isSource(item, name) then
-			return item
+-- name -> the first mesh (or model of meshes) with that name in the store.
+local function buildIndex(): { [string]: Instance }
+	local found = {}
+	local root = store()
+	if root then
+		for _, item in ipairs(root:GetDescendants()) do
+			if found[item.Name] == nil and isMeshSource(item) then
+				found[item.Name] = item
+			end
 		end
 	end
-	return nil
+	return found
 end
 
--- <key>_Glow, <key>_Glow2, ... in order.
-local function glowSources(key: string): { Instance }
-	local list = {}
-	local first = findSource(key .. "_Glow")
-	if first then
-		table.insert(list, first)
-		local index = 2
-		while true do
-			local extra = findSource(key .. "_Glow" .. index)
-			if not extra then
-				break
+local function findSource(name: string): Instance?
+	if not index then
+		index = buildIndex()
+	end
+	local hit = (index :: { [string]: Instance })[name]
+	if hit and hit.Parent then
+		return hit
+	end
+	-- Something may have arrived since (replication, a late install): look once more.
+	index = buildIndex()
+	return (index :: { [string]: Instance })[name]
+end
+
+-- True for a model or folder that came from our importer runs (by name, or because it holds
+-- several meshes named after catalog props).
+local function looksImported(instance: Instance): boolean
+	if not (instance:IsA("Model") or instance:IsA("Folder")) then
+		return false
+	end
+	if instance.Name == STORE_NAME then
+		return false
+	end
+	if string.sub(instance.Name, 1, 8) == "Inkbound" then
+		return instance:FindFirstChildWhichIsA("MeshPart", true) ~= nil
+	end
+	local known = 0
+	for _, item in ipairs(instance:GetDescendants()) do
+		if item:IsA("MeshPart") and ((Catalog :: any)[item.Name] ~= nil or string.find(item.Name, "^Scene_")) then
+			known += 1
+			if known >= 3 then
+				return true
 			end
-			table.insert(list, extra)
-			index += 1
 		end
 	end
-	return list
+	return false
+end
+
+local function quiet(root: Instance)
+	for _, item in ipairs(root:GetDescendants()) do
+		if item:IsA("BasePart") then
+			item.Anchored = true
+			item.CanCollide = false
+			item.CanQuery = false
+			item.CanTouch = false
+		end
+	end
+end
+
+-- Server, once at start (before any map is built): moves imports that were left in Workspace,
+-- ReplicatedStorage or ServerStorage into ReplicatedStorage.InkboundAssets and reports what
+-- the game can use.
+function ModelLibrary.install(): { found: number, missing: { string } }
+	local root = store()
+	if not root then
+		local folder = Instance.new("Folder")
+		folder.Name = STORE_NAME
+		folder.Parent = ReplicatedStorage
+		root = folder
+	end
+	local rootInstance = root :: Instance
+	local moved = {}
+	local containers = { workspace, ReplicatedStorage, game:GetService("ServerStorage") }
+	for _, container in ipairs(containers) do
+		for _, child in ipairs(container:GetChildren()) do
+			if child ~= rootInstance and looksImported(child) then
+				quiet(child)
+				child.Parent = rootInstance
+				table.insert(moved, container.Name .. "." .. child.Name)
+			end
+		end
+	end
+	quiet(rootInstance)
+	index = buildIndex()
+	templates = {}
+
+	local found, missing = 0, {}
+	for key in pairs(Catalog :: any) do
+		if (index :: { [string]: Instance })[key] then
+			found += 1
+		else
+			table.insert(missing, key)
+		end
+	end
+	table.sort(missing)
+	local total = found + #missing
+	if #moved > 0 then
+		print(
+			"[Inkbound] Moved imported models into ReplicatedStorage."
+				.. STORE_NAME
+				.. ": "
+				.. table.concat(moved, ", ")
+		)
+	end
+	if found == 0 then
+		print(
+			"[Inkbound] No Blender models imported yet: the game uses its part-built stand-ins. "
+				.. "Import art/export/InkboundModels.fbx with Studio's 3D importer (see art/README.md)."
+		)
+	else
+		print(string.format("[Inkbound] Blender models: %d of %d found.", found, total))
+		if #missing > 0 and RunService:IsStudio() then
+			warn("[Inkbound] Missing Blender models (built from parts instead): " .. table.concat(missing, ", "))
+		end
+	end
+	rootInstance:SetAttribute("Installed", true)
+	return { found = found, missing = missing }
 end
 
 local function partsOf(instance: Instance): { BasePart }
@@ -88,6 +180,25 @@ local function partsOf(instance: Instance): { BasePart }
 	return parts
 end
 
+-- <key>_Glow, <key>_Glow2, ... in order.
+local function glowSources(key: string): { Instance }
+	local list = {}
+	local first = findSource(key .. "_Glow")
+	if first then
+		table.insert(list, first)
+		local n = 2
+		while true do
+			local extra = findSource(key .. "_Glow" .. n)
+			if not extra then
+				break
+			end
+			table.insert(list, extra)
+			n += 1
+		end
+	end
+	return list
+end
+
 local function vector(values: { number }): Vector3
 	return Vector3.new(values[1], values[2], values[3])
 end
@@ -101,6 +212,28 @@ local function shapeError(a: Vector3, b: Vector3): number
 	local na = a / math.max(a.X, a.Y, a.Z, 1e-3)
 	local nb = b / math.max(b.X, b.Y, b.Z, 1e-3)
 	return (na - nb).Magnitude
+end
+
+local function prepareGlow(part: BasePart, colour: { number }?)
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	if colour then
+		part.Color = Color3.fromRGB(colour[1], colour[2], colour[3])
+	end
+	local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
+	if appearance then
+		appearance:Destroy()
+	end
+	if part:IsA("MeshPart") then
+		pcall(function()
+			(part :: MeshPart).TextureID = ""
+		end)
+	end
+	part:SetAttribute("InkboundGlow", true)
 end
 
 local function build(key: string): Model?
@@ -124,29 +257,10 @@ local function build(key: string): Model?
 			part.Material = material
 		end
 	end
-	for index, glowSource in ipairs(glowSources(key)) do
+	for n, glowSource in ipairs(glowSources(key)) do
 		local glow = glowSource:Clone()
-		local colour = info.glow and info.glow[index]
 		for _, part in ipairs(partsOf(glow)) do
-			part.Anchored = true
-			part.CanCollide = false
-			part.CanQuery = false
-			part.CanTouch = false
-			part.CastShadow = false
-			part.Material = Enum.Material.Neon
-			if colour then
-				part.Color = Color3.fromRGB(colour[1], colour[2], colour[3])
-			end
-			local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
-			if appearance then
-				appearance:Destroy()
-			end
-			if part:IsA("MeshPart") then
-				pcall(function()
-					(part :: MeshPart).TextureID = ""
-				end)
-			end
-			part:SetAttribute("InkboundGlow", true)
+			prepareGlow(part, info.glow and info.glow[n])
 		end
 		glow.Parent = model
 	end
@@ -157,15 +271,13 @@ local function build(key: string): Model?
 	model.WorldPivot = CFrame.new(cf.Position)
 	local bestTurn, bestError = CFrame.identity, math.huge
 	for _, turn in ipairs(TURNS) do
-		local turned = absolute(turn:VectorToWorldSpace(size))
-		local err = shapeError(turned, expected)
+		local err = shapeError(absolute(turn:VectorToWorldSpace(size)), expected)
 		if err < bestError - 1e-3 then
 			bestTurn, bestError = turn, err
 		end
 	end
 	if bestTurn ~= CFrame.identity then
 		model:PivotTo(model:GetPivot() * bestTurn)
-		-- Measure again along the world axes.
 		model.WorldPivot = CFrame.new(model:GetPivot().Position)
 		cf, size = model:GetBoundingBox()
 	end
@@ -178,13 +290,12 @@ local function build(key: string): Model?
 	end
 	cf, size = model:GetBoundingBox()
 	local pivot = if info.pivot == "bottom" then cf.Position - Vector3.new(0, size.Y / 2, 0) else cf.Position
-	model.WorldPivot = CFrame.new(pivot)
 	local primary = partsOf(main)[1]
 	if primary then
 		model.PrimaryPart = primary
-		-- Keep the pivot where we set it (setting PrimaryPart moves WorldPivot).
-		model.WorldPivot = CFrame.new(pivot)
 	end
+	-- Setting PrimaryPart moves WorldPivot, so the pivot goes last.
+	model.WorldPivot = CFrame.new(pivot)
 	return model
 end
 
@@ -255,13 +366,31 @@ function ModelLibrary.size(key: string): Vector3?
 	return if info then vector(info.size) else nil
 end
 
--- A texture that came in on a carrier quad named "Tex_<name>" with the same import.
-function ModelLibrary.carrierTexture(name: string): string?
-	local source = findSource("Tex_" .. name)
-	if not source then
-		return nil
+-- The imported mesh (or model of meshes) called `name`, as it came from the importer.
+function ModelLibrary.source(name: string): Instance?
+	return findSource(name)
+end
+
+-- Every imported mesh whose name starts with `prefix`.
+function ModelLibrary.sourcesWithPrefix(prefix: string): { Instance }
+	if not index then
+		index = buildIndex()
 	end
-	for _, part in ipairs(partsOf(source)) do
+	local list = {}
+	for name, item in pairs(index :: { [string]: Instance }) do
+		if string.sub(name, 1, #prefix) == prefix then
+			table.insert(list, item)
+		end
+	end
+	table.sort(list, function(a, b)
+		return a.Name < b.Name
+	end)
+	return list
+end
+
+-- A texture id from an imported mesh: its SurfaceAppearance colour map or its TextureID.
+function ModelLibrary.textureOf(instance: Instance): string?
+	for _, part in ipairs(partsOf(instance)) do
 		local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
 		if appearance then
 			local ok, id = pcall(function()
@@ -279,6 +408,12 @@ function ModelLibrary.carrierTexture(name: string): string?
 		end
 	end
 	return nil
+end
+
+-- A texture that came in on a carrier quad named "Tex_<name>" with the same import.
+function ModelLibrary.carrierTexture(name: string): string?
+	local source = findSource("Tex_" .. name)
+	return if source then ModelLibrary.textureOf(source) else nil
 end
 
 return ModelLibrary

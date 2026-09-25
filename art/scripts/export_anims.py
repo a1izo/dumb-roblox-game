@@ -13,7 +13,7 @@ import bpy
 from mathutils import Matrix, Quaternion, Vector
 
 from common import M, M_INV, ROOT
-from rig import JOINTS, LAYOUT
+from rig import JOINTS, LAYOUT, LEG
 
 SAMPLE_FPS = 30
 ANGLE_TOLERANCE = math.radians(0.6)
@@ -129,13 +129,31 @@ def sample_action(arm, action):
             samples[joint].append(q)
         if has_offset:
             offsets.append(sample_offset(arm))
+    if action.get("floor") and has_offset:
+        lift_to_floor(samples, offsets)
     return length, times, samples, offsets
+
+
+def lift_to_floor(samples, offsets, floor=0.02):
+    """Clips that end on the ground: lifts every frame whose body dips below the floor."""
+    import numpy as np
+    from posekit import lowest
+
+    for i, offset in enumerate(offsets):
+        joints = {joint: np.array(quats[i].to_matrix()) for joint, quats in samples.items()}
+        low = lowest(joints, tuple(offset))
+        if low < floor:
+            offsets[i] = offset + Vector((0, floor - low, 0))
 
 
 def clip_lua(name, action, length, times, samples, offsets):
     lines = [f"\t{name} = {{"]
     lines.append(f"\t\tlength = {fmt(length, 3)},")
     lines.append(f"\t\tloop = {'true' if action['loop'] else 'false'},")
+    if action.get("stride"):
+        # Studs the body moves in one cycle, on a rig whose leg (hip to ankle) is `leg` long.
+        lines.append(f"\t\tstride = {fmt(float(action['stride']), 3)},")
+        lines.append(f"\t\tleg = {fmt(LEG['thigh'] + LEG['shin'], 3)},")
     lines.append("\t\tjoints = {")
     for joint in sorted(samples):
         quats = samples[joint]
@@ -164,6 +182,7 @@ def export(arm):
         "--",
         "-- Each clip: length (seconds), loop, and per joint the key times with quaternions",
         "-- (x, y, z, w) in the joint's parent frame; offset moves the whole body (studs).",
+        "-- Movement clips also give their stride: studs covered per cycle by a leg `leg` long.",
         "",
         "return {",
     ]

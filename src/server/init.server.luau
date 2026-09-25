@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local Services = script:WaitForChild("Services")
@@ -44,6 +45,8 @@ local TipBoxService = require(Services:WaitForChild("TipBoxService"))
 local VoteService = require(Services:WaitForChild("VoteService"))
 local WarrantService = require(Services:WaitForChild("WarrantService"))
 
+-- Imported Blender models first: the maps are built with them.
+ModelLibrary.install()
 CollisionGroups.init()
 Analytics.init()
 MapService.init()

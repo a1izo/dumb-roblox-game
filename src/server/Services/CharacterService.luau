@@ -569,9 +569,46 @@ end
 
 -- Spawning ---------------------------------------------------------------------------
 
+local warnedR6 = false
+
+-- Every animation is made for R15. A place whose avatar setting still allows R6 would give
+-- those players stiff bodies, so an R6 character is rebuilt as R15 from the same avatar.
+-- Returns true when the character was replaced (CharacterAdded fires again for the new one).
+local function replaceWithR15(player: Player, character: Model, humanoid: Humanoid): boolean
+	if humanoid.RigType == Enum.HumanoidRigType.R15 then
+		return false
+	end
+	if not warnedR6 and RunService:IsStudio() then
+		warnedR6 = true
+		warn("[Inkbound] An avatar loaded as R6 and was rebuilt as R15. Set Game Settings > Avatar > R15 to skip this.")
+	end
+	local okDescription, description = pcall(function()
+		return Players:GetHumanoidDescriptionFromUserId(math.max(player.UserId, 1))
+	end)
+	if not okDescription or not description then
+		description = Instance.new("HumanoidDescription")
+	end
+	local ok, model = pcall(function()
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+	end)
+	if not ok or not model or player.Character ~= character then
+		return false
+	end
+	model.Name = player.Name
+	local pivot = character:GetPivot()
+	player.Character = model
+	model:PivotTo(pivot)
+	model.Parent = workspace
+	character:Destroy()
+	return true
+end
+
 local function onCharacterAdded(player: Player, character: Model)
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 	if not humanoid or not humanoid:IsA("Humanoid") then
+		return
+	end
+	if replaceWithR15(player, character, humanoid) then
 		return
 	end
 	character:WaitForChild("HumanoidRootPart", 10)

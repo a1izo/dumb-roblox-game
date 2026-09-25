@@ -5,6 +5,9 @@ Bone names are the Roblox part names. JOINTS maps the short joint names used by 
 (src/shared/Anim/Joints.luau) to the bone that joint moves.
 """
 
+import json
+import os
+
 import bmesh
 import bpy
 from mathutils import Matrix, Vector
@@ -12,44 +15,76 @@ from mathutils import Matrix, Vector
 import common
 from common import rbx_to_blender, srgb
 
-# joint name -> (bone / part name, parent bone, pivot in Roblox space, tail in Roblox space)
-LAYOUT = [
-    ("root", "LowerTorso", "HumanoidRootPart", (0, 3.0, 0), (0, 3.2, 0)),
-    ("waist", "UpperTorso", "LowerTorso", (0, 3.2, 0), (0, 4.8, 0)),
-    ("neck", "Head", "UpperTorso", (0, 4.8, 0), (0, 6.0, 0)),
-    ("rShoulder", "RightUpperArm", "UpperTorso", (1.0, 4.55, 0), (1.5, 3.55, 0)),
-    ("rElbow", "RightLowerArm", "RightUpperArm", (1.5, 3.55, 0), (1.5, 2.6, 0)),
-    ("rWrist", "RightHand", "RightLowerArm", (1.5, 2.6, 0), (1.5, 2.25, 0)),
-    ("lShoulder", "LeftUpperArm", "UpperTorso", (-1.0, 4.55, 0), (-1.5, 3.55, 0)),
-    ("lElbow", "LeftLowerArm", "LeftUpperArm", (-1.5, 3.55, 0), (-1.5, 2.6, 0)),
-    ("lWrist", "LeftHand", "LeftLowerArm", (-1.5, 2.6, 0), (-1.5, 2.25, 0)),
-    ("rHip", "RightUpperLeg", "LowerTorso", (0.5, 2.8, 0), (0.5, 1.6, 0)),
-    ("rKnee", "RightLowerLeg", "RightUpperLeg", (0.5, 1.6, 0), (0.5, 0.4, 0)),
-    ("rAnkle", "RightFoot", "RightLowerLeg", (0.5, 0.4, 0), (0.5, 0.1, -0.6)),
-    ("lHip", "LeftUpperLeg", "LowerTorso", (-0.5, 2.8, 0), (-0.5, 1.6, 0)),
-    ("lKnee", "LeftLowerLeg", "LeftUpperLeg", (-0.5, 1.6, 0), (-0.5, 0.4, 0)),
-    ("lAnkle", "LeftFoot", "LeftLowerLeg", (-0.5, 0.4, 0), (-0.5, 0.1, -0.6)),
+# The joints and parts come from the R15 rig that ships with Roblox Studio (art/data/r15_rig.json,
+# written by r15_extract.py), so what the previews show is what the game plays.
+_R15 = json.load(open(os.path.join(common.ART, "data", "r15_rig.json")))
+
+# joint name -> (bone / part name, parent part, motor)
+_JOINT_PARTS = [
+    ("root", "LowerTorso", "HumanoidRootPart", "Root"),
+    ("waist", "UpperTorso", "LowerTorso", "Waist"),
+    ("neck", "Head", "UpperTorso", "Neck"),
+    ("rShoulder", "RightUpperArm", "UpperTorso", "RightShoulder"),
+    ("rElbow", "RightLowerArm", "RightUpperArm", "RightElbow"),
+    ("rWrist", "RightHand", "RightLowerArm", "RightWrist"),
+    ("lShoulder", "LeftUpperArm", "UpperTorso", "LeftShoulder"),
+    ("lElbow", "LeftLowerArm", "LeftUpperArm", "LeftElbow"),
+    ("lWrist", "LeftHand", "LeftLowerArm", "LeftWrist"),
+    ("rHip", "RightUpperLeg", "LowerTorso", "RightHip"),
+    ("rKnee", "RightLowerLeg", "RightUpperLeg", "RightKnee"),
+    ("rAnkle", "RightFoot", "RightLowerLeg", "RightAnkle"),
+    ("lHip", "LeftUpperLeg", "LowerTorso", "LeftHip"),
+    ("lKnee", "LeftLowerLeg", "LeftUpperLeg", "LeftKnee"),
+    ("lAnkle", "LeftFoot", "LeftLowerLeg", "LeftAnkle"),
 ]
 
-JOINTS = {row[0]: row[1] for row in LAYOUT}
 
-# part -> (centre, size) in Roblox space, for the mannequin
-PARTS = {
-    "LowerTorso": ((0, 3.0, 0), (2, 0.4, 1)),
-    "UpperTorso": ((0, 4.0, 0), (2, 1.6, 1)),
-    "Head": ((0, 5.4, 0), (1.2, 1.2, 1.2)),
-    "RightUpperArm": ((1.5, 4.075, 0), (1, 1.05, 1)),
-    "RightLowerArm": ((1.5, 3.075, 0), (1, 0.95, 1)),
-    "RightHand": ((1.5, 2.425, 0), (0.9, 0.35, 0.9)),
-    "LeftUpperArm": ((-1.5, 4.075, 0), (1, 1.05, 1)),
-    "LeftLowerArm": ((-1.5, 3.075, 0), (1, 0.95, 1)),
-    "LeftHand": ((-1.5, 2.425, 0), (0.9, 0.35, 0.9)),
-    "RightUpperLeg": ((0.5, 2.2, 0), (1, 1.2, 1)),
-    "RightLowerLeg": ((0.5, 1.0, 0), (1, 1.2, 1)),
-    "RightFoot": ((0.5, 0.2, -0.15), (1, 0.4, 1.3)),
-    "LeftUpperLeg": ((-0.5, 2.2, 0), (1, 1.2, 1)),
-    "LeftLowerLeg": ((-0.5, 1.0, 0), (1, 1.2, 1)),
-    "LeftFoot": ((-0.5, 0.2, -0.15), (1, 0.4, 1.3)),
+def _rest_positions():
+    """Part centres and joint pivots at rest, with the HumanoidRootPart above the origin."""
+    parts = _R15["parts"]
+    hrp = parts["HumanoidRootPart"]["cframe"]["p"]
+    centre = {name: Vector((p["cframe"]["p"][0] - hrp[0], p["cframe"]["p"][1], p["cframe"]["p"][2] - hrp[2]))
+              for name, p in parts.items()}
+    pivots = {}
+    for motor in _R15["motors"]:
+        c0 = motor["c0"]["p"]
+        pivots[motor["name"]] = centre[motor["part0"]] + Vector(c0)
+    return centre, pivots
+
+
+PART_CENTRES, MOTOR_PIVOTS = _rest_positions()
+
+# joint name -> (bone / part name, parent bone, pivot in Roblox space, tail in Roblox space)
+LAYOUT = []
+for _joint, _part, _parent, _motor in _JOINT_PARTS:
+    _pivot = MOTOR_PIVOTS[_motor]
+    _centre = PART_CENTRES[_part]
+    # The bone points from the joint through the middle of its part (feet point forward).
+    _tail = _centre + (_centre - _pivot) if (_centre - _pivot).length > 0.05 else _pivot + Vector((0, 0.3, 0))
+    if "Foot" in _part:
+        _tail = Vector((_pivot.x, _centre.y - 0.1, _pivot.z - 0.5))
+    LAYOUT.append((_joint, _part, _parent, tuple(_pivot), tuple(_tail)))
+
+JOINTS = {row[0]: row[1] for row in LAYOUT}
+ROOT_PIVOT = tuple(MOTOR_PIVOTS["Root"])
+
+# part -> (centre, size) in Roblox space, for the mannequin. The classic head is a 2x1x1 box
+# with a rounded mesh in game; the mannequin uses a block of the same height instead.
+PARTS = {}
+for _name, _info in _R15["parts"].items():
+    if _name == "HumanoidRootPart":
+        continue
+    _size = tuple(_info["size"])
+    if _name == "Head":
+        _size = (1.2, 1.2, 1.2)
+    PARTS[_name] = (tuple(PART_CENTRES[_name]), _size)
+
+# Leg lengths of this rig (studs), used to match strides on bigger or smaller avatars.
+LEG = {
+    "hip": MOTOR_PIVOTS["RightHip"].y,
+    "thigh": (MOTOR_PIVOTS["RightHip"] - MOTOR_PIVOTS["RightKnee"]).length,
+    "shin": (MOTOR_PIVOTS["RightKnee"] - MOTOR_PIVOTS["RightAnkle"]).length,
+    "ankle": MOTOR_PIVOTS["RightAnkle"].y,
 }
 
 SUIT = srgb(34, 34, 40)
@@ -112,8 +147,8 @@ def build_rig():
     arm.select_set(True)
     bpy.ops.object.mode_set(mode="EDIT")
     root = arm_data.edit_bones.new("HumanoidRootPart")
-    root.head = rbx_to_blender((0, 3.0, 0.4))
-    root.tail = rbx_to_blender((0, 3.0, 1.4))
+    root.head = rbx_to_blender((0, ROOT_PIVOT[1], 0.4))
+    root.tail = rbx_to_blender((0, ROOT_PIVOT[1], 1.4))
     for _, bone_name, parent, pivot, tail in LAYOUT:
         bone = arm_data.edit_bones.new(bone_name)
         bone.head = rbx_to_blender(pivot)
@@ -133,11 +168,13 @@ def build_rig():
         parent_to_bone(obj, arm, part)
 
     # Details that show which way the mannequin faces: shirt front, tie and eyes.
+    torso = PART_CENTRES["UpperTorso"]
+    head = PART_CENTRES["Head"]
     details = [
-        ("ShirtFront", "UpperTorso", (0, 4.35, -0.51), (0.55, 0.8, 0.04), common.material("Shirt", SHIRT, 0.5)),
-        ("Tie", "UpperTorso", (0, 4.1, -0.54), (0.2, 0.95, 0.04), common.material("Tie", TIE, 0.45)),
-        ("EyeL", "Head", (-0.22, 5.5, -0.61), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
-        ("EyeR", "Head", (0.22, 5.5, -0.61), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
+        ("ShirtFront", "UpperTorso", (0, torso.y + 0.42, -0.51), (0.55, 0.7, 0.04), common.material("Shirt", SHIRT, 0.5)),
+        ("Tie", "UpperTorso", (0, torso.y + 0.2, -0.54), (0.2, 0.9, 0.04), common.material("Tie", TIE, 0.45)),
+        ("EyeL", "Head", (-0.22, head.y + 0.1, -0.61), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
+        ("EyeR", "Head", (0.22, head.y + 0.1, -0.61), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
     ]
     for name, bone_name, center, size, mat in details:
         obj = box(name, rbx_to_blender(center), (size[0], size[2], size[1]), mat, bevel=0.01)

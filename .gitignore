@@ -11,3 +11,6 @@ sourcemap.json
 __pycache__/
 *.pyc
 *.blend1
+
+# Studio importer unpacks embedded textures next to the FBX
+art/export/*.fbm/

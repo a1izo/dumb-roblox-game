@@ -112,7 +112,7 @@ def setup_preview(target=(0, 0, 3), distance=11.0, height=3.5, angle_deg=35, res
     world.use_nodes = True
     bg = world.node_tree.nodes.get("Background")
     if bg:
-        bg.inputs["Color"].default_value = (0.09, 0.09, 0.11, 1)
+        bg.inputs["Color"].default_value = (0.32, 0.33, 0.36, 1)
         bg.inputs["Strength"].default_value = 1.0
 
     cam_data = bpy.data.cameras.get("PreviewCam") or bpy.data.cameras.new("PreviewCam")

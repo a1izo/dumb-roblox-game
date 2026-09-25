@@ -15,6 +15,10 @@ export type Prepared = {
 	joints: { [string]: Track },
 	offsetTimes: { number }?,
 	offsets: { Vector3 }?,
+	-- Movement clips: studs the body covers in one cycle, on a rig whose leg (hip to ankle)
+	-- is `leg` studs long.
+	stride: number?,
+	leg: number?,
 }
 
 local prepared: { [string]: Prepared } = {}
@@ -39,7 +43,14 @@ function ClipPlayer.get(id: string): Prepared?
 		end
 		joints[joint] = { times = data.t, frames = frames }
 	end
-	local clip: Prepared = { id = id, length = raw.length, loop = raw.loop, joints = joints }
+	local clip: Prepared = {
+		id = id,
+		length = raw.length,
+		loop = raw.loop,
+		joints = joints,
+		stride = raw.stride,
+		leg = raw.leg,
+	}
 	if raw.offset then
 		local offsets = {}
 		local p = raw.offset.p

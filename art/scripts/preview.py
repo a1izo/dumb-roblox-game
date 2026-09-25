@@ -23,7 +23,7 @@ def render_pose(arm, action_name, t, path, size=256, angle=35):
     frame = t * scene.render.fps
     whole = int(math.floor(frame))
     scene.frame_set(whole, subframe=frame - whole)
-    common.setup_preview(target=(0, 0, 2.6), distance=13, height=2.0, angle_deg=angle, resolution=size)
+    common.setup_preview(target=(0, 0, 2.1), distance=11, height=1.2, angle_deg=angle, resolution=size)
     return common.render(path)
 
 

@@ -6,6 +6,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local ClipPlayer = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 
@@ -13,16 +14,19 @@ local PoseController = require(script.Parent.PoseController)
 
 local LocomotionController = {}
 
--- Studs covered by one stride of the walk and run clips.
-local STRIDE = 10.5
--- Speed (studs/s) where walking starts and where running takes over completely.
-local WALK_SPEED = 3
-local RUN_FROM, RUN_FULL = 9, 15
+-- Speeds (studs/s) where walking starts, where running begins to take over and where only
+-- the run plays. Each clip knows its stride (studs per cycle); strides scale with the length
+-- of an avatar's legs, so feet stay planted on small and tall bodies alike.
+local MOVE_FULL = 1.5
+local RUN_FROM, RUN_FULL = 4, 11
 local GROUND_CHECK = 0.1
 local LAND_AFTER = 0.35 -- seconds in the air before a landing dip plays
+local DEFAULT_STRIDES = { walk = 2.4, run = 8.64 }
 
 type State = {
 	phase: number,
+	legScale: number?,
+	blendSpeed: number,
 	idleTime: number,
 	airTime: number,
 	airWeight: number,
@@ -55,6 +59,7 @@ local function stateFor(character: Model): State
 	if not state then
 		state = {
 			phase = math.random(),
+			blendSpeed = 0,
 			idleTime = math.random() * 3,
 			airTime = 0,
 			airWeight = 0,
@@ -68,6 +73,28 @@ local function stateFor(character: Model): State
 		end)
 	end
 	return state
+end
+
+-- How long this avatar's legs are compared with the rig the clips were made on.
+local function legScale(character: Model, reference: number?): number
+	local hip = character:FindFirstChild("RightUpperLeg")
+	local shin = character:FindFirstChild("RightLowerLeg")
+	local foot = character:FindFirstChild("RightFoot")
+	local hipJoint = if hip then hip:FindFirstChild("RightHip") else nil
+	local kneeJoint = if shin then shin:FindFirstChild("RightKnee") else nil
+	local ankleJoint = if foot then foot:FindFirstChild("RightAnkle") else nil
+	if
+		not reference
+		or not (hipJoint and hipJoint:IsA("Motor6D"))
+		or not (kneeJoint and kneeJoint:IsA("Motor6D"))
+		or not (ankleJoint and ankleJoint:IsA("Motor6D"))
+	then
+		return 1
+	end
+	local thigh = (hipJoint.C1.Position - kneeJoint.C0.Position).Magnitude
+	local lower = (kneeJoint.C1.Position - ankleJoint.C0.Position).Magnitude
+	local length = thigh + lower
+	return if length > 0.2 then math.clamp(length / reference, 0.4, 3) else 1
 end
 
 local function onGround(character: Model, root: BasePart, humanoid: Humanoid): boolean
@@ -137,14 +164,23 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		else math.min(1, state.airWeight + dt * 8)
 
 	-- Moving stops emotes.
-	if speed > WALK_SPEED or not state.grounded then
+	if speed > MOVE_FULL * 2 or not state.grounded then
 		PoseController.stopEmotes(character)
 	end
 
-	-- Ground: idle, walk and run on a shared stride phase.
-	state.phase = (state.phase + dt * speed / STRIDE) % 1
-	local moving = math.clamp(speed / WALK_SPEED, 0, 1)
-	local running = math.clamp((speed - RUN_FROM) / (RUN_FULL - RUN_FROM), 0, 1)
+	-- Ground: idle, walk and run on a shared phase that advances one cycle per stride, so the
+	-- planted foot moves back exactly as fast as the body moves forward.
+	if not state.legScale then
+		state.legScale = legScale(character, run.leg)
+	end
+	-- Humanoids start and stop almost at once; the poses ease between speeds instead.
+	state.blendSpeed += (speed - state.blendSpeed) * math.min(1, dt * (if speed > state.blendSpeed then 14 else 9))
+	local moving = math.clamp(state.blendSpeed / MOVE_FULL, 0, 1)
+	local running = math.clamp((state.blendSpeed - RUN_FROM) / (RUN_FULL - RUN_FROM), 0, 1)
+	local walkStride = walk.stride or DEFAULT_STRIDES.walk
+	local runStride = run.stride or DEFAULT_STRIDES.run
+	local stride = (walkStride + (runStride - walkStride) * running) * (state.legScale :: number)
+	state.phase = (state.phase + dt * math.max(speed, state.blendSpeed) / stride) % 1
 	table.clear(buffers.idle)
 	table.clear(buffers.walk)
 	table.clear(buffers.run)
@@ -190,7 +226,29 @@ local function track(character: Model)
 		character:WaitForChild(name, 5)
 	end
 	task.wait()
-	PoseController.bind(character)
+	local rig = PoseController.bind(character)
+	if RunService:IsStudio() and character == Players.LocalPlayer.Character then
+		-- One line in the output (and Studio's log) that says whether the animator took over.
+		task.delay(4, function()
+			local joints = 0
+			for _ in pairs(if rig then rig.motors else {}) do
+				joints += 1
+			end
+			local animate = character:FindFirstChild("Animate")
+			local animator = humanoid:FindFirstChildOfClass("Animator")
+			print(
+				string.format(
+					"[Inkbound] Animation check: %s, %d joints, clip animator %s, Animate children %d, Roblox tracks %d, walk speed %d",
+					tostring(humanoid.RigType),
+					joints,
+					if rig then "on" else "OFF",
+					if animate then #animate:GetChildren() else -1,
+					if animator then #animator:GetPlayingAnimationTracks() else 0,
+					humanoid.WalkSpeed
+				)
+			)
+		end)
+	end
 end
 
 function LocomotionController.init()
