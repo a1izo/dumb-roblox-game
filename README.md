@@ -103,14 +103,19 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 
 ## Art made in Blender
 
-All animations, props and effect textures are built by scripts in `art/` (see `art/README.md`).
+All animations, props, map scenes and textures are built by scripts in `art/` (see
+`art/README.md`).
 
-- **Animations** (28 clips: movement, actions, deaths, endings, emotes) are exported to
-  `src/shared/Anim/Clips.luau` and played by the game itself on every character: nothing to
-  upload. The default Animate script is replaced by an empty one.
-- **Props and textures** need one import in Studio: **Import 3D** `art/export/InkboundModels.fbx`
-  and move the result into `ReplicatedStorage > InkboundAssets`. The maps, meeting room,
-  cutscenes and ink effects then use them; until then everything uses part-built stand-ins.
+- **Animations** (28 clips: movement, actions, deaths, endings, emotes) are made on Roblox's own
+  R15 rig and exported to `src/shared/Anim/Clips.luau`; the game plays them itself on every
+  character, so there is nothing to upload. Walking and running are generated with leg IK and
+  advance by distance, so feet do not slide. The default Animate script is replaced by an
+  empty one, and R6 avatars are rebuilt as R15.
+- **Props and maps** need two imports in Studio: **Import 3D** `art/export/InkboundModels.fbx`
+  (props and effect textures) and `art/export/InkboundMaps.fbx` (the lobby, meeting room and
+  three maps, with tiling PBR textures). Leave them where the importer puts them; the server
+  moves them into `ReplicatedStorage > InkboundAssets` when it starts and prints what it found.
+  Until then every venue builds its old part-made version.
 
 ## Your own assets and ids
 
@@ -151,7 +156,7 @@ names; tags; DataStore and MemoryStore names. CI fails when a player-facing stri
 
 ```
 src/shared/     Config, Terms, Assets, Venues, LightingPresets, Models, ModelLibrary and
-                ModelCatalog (the Blender props), Cosmetics, CosmeticBuild,
+                ModelCatalog (the Blender props), SceneMaterials, Cosmetics, CosmeticBuild,
                 ShopRotation, Products, AliasRules, SettingsSchema, Net, Copy/ (role cards, How
                 to Play), Anim/ (joints and poses), Progression/ (time, streak, quests,
                 achievements, mastery, ProgressRules), and the game rules shared by both sides
@@ -161,8 +166,9 @@ src/server/     init.server.luau boots every service
                 services, CharacterService, RagdollService, GhostService, CollisionGroups,
                 DataService, ProfileService, Cosmetics/Shop, Pass/Monetization/Alias/Director,
                 Progress/Achievement/Leaderboard, Analytics, DebugService (Studio only)
-  Maps/         Builder, Style (noir dressing), MapContract, the lobby, the meeting room and
-                three maps: Agency HQ, University Campus, Tokyo District
+  Maps/         Builder, Style (noir dressing), MapContract, SceneBuilder (places the Blender
+                scenes), Scenes/ (generated colliders, props, lights and signs per venue), the
+                lobby, the meeting room and three maps: Agency HQ, University Campus, Tokyo
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything
   UI/           every screen and panel, Core/ (router, motion, settings, clock, scaling)

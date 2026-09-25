@@ -1,6 +1,7 @@
 -- Map 1: Task Force headquarters. An open-plan office in the middle with six rooms
 -- around it. Local coordinates: x -80..80, z -60..60, ceiling at 14.
 
+local SceneBuilder = require(script.Parent.SceneBuilder)
 local Style = require(script.Parent.Style)
 
 local TaskForceHQ = {}
@@ -204,8 +205,12 @@ function TaskForceHQ.layout()
 end
 
 function TaskForceHQ.build(b)
-	dress(b)
-	noir(b)
+	-- The Blender scene when it is imported, the part-built map otherwise. Either way the
+	-- layout (stations, spawns, sheets...) is the same.
+	if not SceneBuilder.build(b, "Agency") then
+		dress(b)
+		noir(b)
+	end
 	return TaskForceHQ.layout()
 end
 

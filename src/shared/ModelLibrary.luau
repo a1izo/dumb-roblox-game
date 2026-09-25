@@ -155,13 +155,24 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	if found == 0 then
 		print(
 			"[Inkbound] No Blender models imported yet: the game uses its part-built stand-ins. "
-				.. "Import art/export/InkboundModels.fbx with Studio's 3D importer (see art/README.md)."
+				.. "Import art/export/InkboundModels.fbx and InkboundMaps.fbx with Studio's 3D importer (art/README.md)."
 		)
 	else
 		print(string.format("[Inkbound] Blender models: %d of %d found.", found, total))
 		if #missing > 0 and RunService:IsStudio() then
 			warn("[Inkbound] Missing Blender models (built from parts instead): " .. table.concat(missing, ", "))
 		end
+	end
+	local scenes = 0
+	for name in pairs(index :: { [string]: Instance }) do
+		if string.sub(name, 1, 6) == "Scene_" then
+			scenes += 1
+		end
+	end
+	if scenes > 0 then
+		print(string.format("[Inkbound] Blender map scenes: %d meshes.", scenes))
+	elseif RunService:IsStudio() then
+		print("[Inkbound] No map scenes imported yet: import art/export/InkboundMaps.fbx for the new maps.")
 	end
 	rootInstance:SetAttribute("Installed", true)
 	return { found = found, missing = missing }

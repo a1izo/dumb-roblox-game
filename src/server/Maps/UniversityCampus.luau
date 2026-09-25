@@ -2,6 +2,7 @@
 -- the lecture hall, the science lab, the cafeteria and the campus security office.
 -- Local coordinates: x -110..110, z -90..90.
 
+local SceneBuilder = require(script.Parent.SceneBuilder)
 local Style = require(script.Parent.Style)
 
 local UniversityCampus = {}
@@ -242,8 +243,12 @@ function UniversityCampus.layout()
 end
 
 function UniversityCampus.build(b)
-	dress(b)
-	noir(b)
+	-- The Blender scene when it is imported, the part-built map otherwise. Either way the
+	-- layout (stations, spawns, sheets...) is the same.
+	if not SceneBuilder.build(b, "Campus") then
+		dress(b)
+		noir(b)
+	end
 	return UniversityCampus.layout()
 end
 

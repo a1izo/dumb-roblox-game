@@ -7,7 +7,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Terms = require(Shared:WaitForChild("Terms"))
+
+local SceneBuilder = require(script.Parent.SceneBuilder)
 
 local Lobby = {}
 
@@ -64,7 +67,7 @@ local function drillDesk(b, drill)
 		Color3.fromRGB(58, 56, 62),
 		Enum.Material.Metal
 	)
-	b:prop(
+	local strip = b:prop(
 		x,
 		z,
 		rot,
@@ -74,6 +77,11 @@ local function drillDesk(b, drill)
 		Enum.Material.Neon,
 		{ CanQuery = false }
 	)
+	-- The same console as the stations in a match, once the Blender props are imported.
+	if ModelLibrary.dress(desk, "Station", CFrame.new(0, -1.5, 0)) then
+		strip.Size = Vector3.new(5.2, 0.1, 0.14)
+		strip.CFrame = b:world(b:cf(x, 0, z, rot) * CFrame.new(0, 3.03, -1.3))
+	end
 	desk:SetAttribute("Drill", id)
 	desk:SetAttribute("DrillTitle", title)
 	desk:AddTag("LTraining")
@@ -121,13 +129,22 @@ local function dummy(b, info)
 	signText(plate, string.upper(info.alias), Color3.fromRGB(235, 230, 220), Enum.Font.GothamBlack)
 end
 
-local function buildAcademy(b)
+-- The Academy's floor, walls, ceiling and lights (part-built version).
+local function academyShell(b)
 	local academyWall = Color3.fromRGB(22, 22, 28)
 	b:floor(-30, 50, 30, 96, Color3.fromRGB(28, 28, 34), Enum.Material.WoodPlanks)
 	b:wall(-30, 50, -30, 96, 14, academyWall, Enum.Material.Concrete)
 	b:wall(30, 50, 30, 96, 14, academyWall, Enum.Material.Concrete)
 	b:wall(-30, 96, 30, 96, 14, academyWall, Enum.Material.Concrete)
 	b:block(0, 14.5, 73, 62, 1, 48, Color3.fromRGB(16, 16, 20), Enum.Material.Concrete)
+	for _, z in ipairs({ 62, 80 }) do
+		b:light(-14, 13.8, z, Color3.fromRGB(255, 232, 196), 30, 1.1)
+		b:light(14, 13.8, z, Color3.fromRGB(255, 232, 196), 30, 1.1)
+	end
+end
+
+-- The Academy's signs, drill desks and practice dummies (built in every version).
+local function academyContent(b)
 	b:sign(0, 10, 95.3, 180, 30, 4, "ACADEMY", GOLD, Color3.fromRGB(12, 12, 14), Enum.Font.GrenzeGotisch)
 	b:sign(
 		0,
@@ -147,26 +164,66 @@ local function buildAcademy(b)
 	for _, info in ipairs(DUMMIES) do
 		dummy(b, info)
 	end
-	for _, z in ipairs({ 62, 80 }) do
-		b:light(-14, 13.8, z, Color3.fromRGB(255, 232, 196), 30, 1.1)
-		b:light(14, 13.8, z, Color3.fromRGB(255, 232, 196), 30, 1.1)
-	end
 	-- The sign above the door, on the lobby side.
 	b:sign(0, 11.2, 49.3, 0, 16, 2.6, "ACADEMY  ·  PRACTICE", GOLD, Color3.fromRGB(12, 12, 14), Enum.Font.GothamBlack)
 end
 
-function Lobby.build(b)
+-- The hall's floor, walls, carpet, pillars, lights and furniture (part-built version).
+local function hallShell(b)
 	b:floor(-50, -50, 50, 50, FLOOR, Enum.Material.Marble)
 	b:wall(-50, -50, 50, -50, 26, WALL, Enum.Material.Concrete)
 	b:wall(50, -50, 50, 50, 26, WALL, Enum.Material.Concrete)
 	b:wall(-50, 50, -50, -50, 26, WALL, Enum.Material.Concrete)
 	-- South wall with the door to the Academy.
 	b:wallDoors(-50, 50, 50, 50, 26, { { 50, 12 } }, WALL, Enum.Material.Concrete)
-	buildAcademy(b)
 	b:block(0, 26.5, 0, 102, 1, 102, Color3.fromRGB(18, 18, 22), Enum.Material.Concrete)
-
 	-- Red carpet from the spawn to the title wall.
 	b:block(0, 0.05, -13, 10, 0.1, 62, RED, Enum.Material.Fabric)
+	for _, x in ipairs({ -32, 32 }) do
+		for _, z in ipairs({ -32, 0, 32 }) do
+			b:pillar(x, z, 26, Color3.fromRGB(58, 56, 62), 3)
+			b:block(x, 0.6, z, 4.2, 1.2, 4.2, GOLD, Enum.Material.Metal)
+		end
+	end
+	for _, x in ipairs({ -24, 0, 24 }) do
+		for _, z in ipairs({ -24, 0, 24 }) do
+			b:light(x, 25.8, z, Color3.fromRGB(255, 236, 200), 40, 1.2)
+		end
+	end
+	for _, z in ipairs({ -20, 20 }) do
+		b:bench(-40, z, -90)
+		b:bench(40, z, 90)
+	end
+	-- A lounge along the north wall: sofas under bookcases.
+	for _, x in ipairs({ -30, 30 }) do
+		b:sofa(x, -44.5, 180)
+		b:shelf(x, -48.6, 180, 9)
+	end
+	for _, x in ipairs({ -40, 40 }) do
+		b:table(x, -42, 90, 4, 3)
+	end
+	-- Vending machines either side of the Academy door.
+	b:vending(-14, 47.5, 0)
+	b:vending(14, 47.5, 0)
+	b:plant(-45, -45)
+	b:plant(45, -45)
+	b:plant(-45, 45)
+	b:plant(45, 45)
+	-- Zero's mark, a giant 0, inlaid in the floor.
+	b:block(-4, 0.06, 26, 2.4, 0.12, 14, GOLD, Enum.Material.Neon, { CanQuery = false })
+	b:block(4, 0.06, 26, 2.4, 0.12, 14, GOLD, Enum.Material.Neon, { CanQuery = false })
+	b:block(0, 0.06, 20.2, 5.6, 0.12, 2.4, GOLD, Enum.Material.Neon, { CanQuery = false })
+	b:block(0, 0.06, 31.8, 5.6, 0.12, 2.4, GOLD, Enum.Material.Neon, { CanQuery = false })
+end
+
+function Lobby.build(b)
+	-- The Blender hall and Academy when they are imported, the part-built ones otherwise.
+	local scene = SceneBuilder.build(b, "Lobby")
+	if not scene then
+		hallShell(b)
+		academyShell(b)
+	end
+	academyContent(b)
 
 	-- Title wall
 	b:sign(
@@ -234,44 +291,6 @@ function Lobby.build(b)
 		boards[spec.key] = label
 	end
 
-	-- Pillars, lights and benches
-	for _, x in ipairs({ -32, 32 }) do
-		for _, z in ipairs({ -32, 0, 32 }) do
-			b:pillar(x, z, 26, Color3.fromRGB(58, 56, 62), 3)
-			b:block(x, 0.6, z, 4.2, 1.2, 4.2, GOLD, Enum.Material.Metal)
-		end
-	end
-	for _, x in ipairs({ -24, 0, 24 }) do
-		for _, z in ipairs({ -24, 0, 24 }) do
-			b:light(x, 25.8, z, Color3.fromRGB(255, 236, 200), 40, 1.2)
-		end
-	end
-	for _, z in ipairs({ -20, 20 }) do
-		b:bench(-40, z, -90)
-		b:bench(40, z, 90)
-	end
-	-- A lounge along the north wall: sofas under bookcases.
-	for _, x in ipairs({ -30, 30 }) do
-		b:sofa(x, -44.5, 180)
-		b:shelf(x, -48.6, 180, 9)
-	end
-	for _, x in ipairs({ -40, 40 }) do
-		b:table(x, -42, 90, 4, 3)
-	end
-	-- Vending machines either side of the Academy door.
-	b:vending(-14, 47.5, 0)
-	b:vending(14, 47.5, 0)
-	b:plant(-45, -45)
-	b:plant(45, -45)
-	b:plant(-45, 45)
-	b:plant(45, 45)
-
-	-- Zero's mark, a giant 0, inlaid in the floor.
-	b:block(-4, 0.06, 26, 2.4, 0.12, 14, GOLD, Enum.Material.Neon, { CanQuery = false })
-	b:block(4, 0.06, 26, 2.4, 0.12, 14, GOLD, Enum.Material.Neon, { CanQuery = false })
-	b:block(0, 0.06, 20.2, 5.6, 0.12, 2.4, GOLD, Enum.Material.Neon, { CanQuery = false })
-	b:block(0, 0.06, 31.8, 5.6, 0.12, 2.4, GOLD, Enum.Material.Neon, { CanQuery = false })
-
 	-- Spawn pad
 	local spawnPad = Create("SpawnLocation", {
 		Name = "LobbySpawn",
@@ -285,6 +304,11 @@ function Lobby.build(b)
 		TopSurface = Enum.SurfaceType.Smooth,
 		BottomSurface = Enum.SurfaceType.Smooth,
 	})
+	if scene then
+		-- The scene's floor and carpet show through; the pad only marks where players appear.
+		spawnPad.Transparency = 1
+		spawnPad.CanCollide = false
+	end
 	spawnPad.Parent = b.parent
 
 	return {

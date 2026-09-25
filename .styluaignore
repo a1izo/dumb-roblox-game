@@ -1,1 +1,3 @@
 src/shared/Anim/Clips.luau
+src/server/Maps/Scenes/
+src/shared/SceneMaterials.luau

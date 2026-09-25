@@ -62,6 +62,8 @@ def read_luau_table(path):
         pos += 1
         if tok in ("true", "false"):
             return tok == "true"
+        if tok == "nil":
+            return None
         if tok.startswith('"'):
             return tok[1:-1]
         return float(tok)

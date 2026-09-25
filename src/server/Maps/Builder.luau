@@ -454,7 +454,27 @@ function Builder:sofa(x: number, z: number, rot: number, color: Color3?)
 end
 
 function Builder:table(x: number, z: number, rot: number, w: number?, d: number?, color: Color3?)
-	if self:placeModel("Table", x, z, rot, (w or 5) / 5) then
+	local model = self:placeModel("Table", x, z, rot)
+	if model then
+		-- Stretch the top to the asked width and depth but keep the height: paper sheets rest
+		-- on tables at 2.8 studs.
+		local made = ModelLibrary.size("Table") or Vector3.new(5, 2.75, 3)
+		local sx, sz = (w or 5) / made.X, (d or 3) / made.Z
+		local pivot = model:GetPivot()
+		for _, part in ipairs(model:GetDescendants()) do
+			if part:IsA("BasePart") then
+				local rel = pivot:ToObjectSpace(part.CFrame)
+				local function factor(axis: Vector3): number
+					return math.abs(axis.X) * sx + math.abs(axis.Y) + math.abs(axis.Z) * sz
+				end
+				part.Size = Vector3.new(
+					part.Size.X * factor(rel.RightVector),
+					part.Size.Y * factor(rel.UpVector),
+					part.Size.Z * factor(-rel.LookVector)
+				)
+				part.CFrame = pivot * CFrame.new(rel.X * sx, rel.Y, rel.Z * sz) * rel.Rotation
+			end
+		end
 		return
 	end
 	local c = color or Color3.fromRGB(150, 120, 90)

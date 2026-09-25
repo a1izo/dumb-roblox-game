@@ -226,10 +226,14 @@ function Style.skyline(b, halfX: number, halfZ: number, seed: number)
 end
 
 -- A walkway ring high on the walls of a square room (half = half the room's width), where
--- Specters watch the meeting. Returns standing spots facing the middle.
-function Style.gallery(b, half: number, y: number, depth: number, spots: number): { CFrame }
+-- Specters watch the meeting. Returns standing spots facing the middle. With spotsOnly the
+-- walkway itself is not built (a Blender scene has it).
+function Style.gallery(b, half: number, y: number, depth: number, spots: number, spotsOnly: boolean?): { CFrame }
 	local color = Color3.fromRGB(22, 20, 24)
 	local inner = half - depth / 2
+	if spotsOnly then
+		return Style.gallerySpots(b, inner, y, spots)
+	end
 	for _, side in ipairs({ { 0, -inner, half * 2, depth }, { 0, inner, half * 2, depth } }) do
 		b:block(side[1], y, side[2], side[3], 0.5, side[4], color, Enum.Material.Metal, decor({ CastShadow = true }))
 	end
@@ -246,6 +250,10 @@ function Style.gallery(b, half: number, y: number, depth: number, spots: number)
 	}) do
 		b:block(edge[1], y + 1.6, edge[2], edge[3], 0.2, edge[4], color, Enum.Material.Metal, decor())
 	end
+	return Style.gallerySpots(b, inner, y, spots)
+end
+
+function Style.gallerySpots(b, inner: number, y: number, spots: number): { CFrame }
 	local list = {}
 	for index = 1, spots do
 		local angle = (index - 1) / spots * math.pi * 2

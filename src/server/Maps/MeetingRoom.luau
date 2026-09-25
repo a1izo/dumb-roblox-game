@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local SceneBuilder = require(script.Parent.SceneBuilder)
 local Style = require(script.Parent.Style)
 
 local MeetingRoom = {}
@@ -39,11 +40,57 @@ local function partTable(b)
 	)
 end
 
-function MeetingRoom.build(b)
+-- The part-built room, used until the Blender scene is imported.
+local function partRoom(b)
 	local wall = Color3.fromRGB(44, 40, 46)
 	b:floor(-30, -30, 30, 30, Color3.fromRGB(38, 14, 18), Enum.Material.Fabric)
 	b:enclose(-30, -30, 30, 30, 18, wall, Enum.Material.Concrete)
 	b:block(0, 18.5, 0, 62, 1, 62, Color3.fromRGB(24, 22, 26), Enum.Material.Concrete)
+end
+
+-- Shelves, plants, lights, red trim and the Specters' walkway of the part-built room.
+local function partDressing(b)
+	b:shelf(-29, -12, -90, 8)
+	b:shelf(-29, 12, -90, 8)
+	b:plant(-26, -26)
+	b:plant(26, -26)
+	b:plant(-26, 26)
+	b:plant(26, 26)
+	for _, x in ipairs({ -14, 14 }) do
+		for _, z in ipairs({ -14, 14 }) do
+			b:light(x, 17.8, z, Color3.fromRGB(255, 225, 190), 30, 1.1)
+		end
+	end
+	b:light(0, 17.8, 0, Color3.fromRGB(255, 200, 170), 30, 0.9)
+
+	-- Noir: one hard light over the table and red trim.
+	local lamp = b:block(0, 16.5, 0, 3, 0.6, 3, Color3.fromRGB(20, 20, 22), Enum.Material.Metal, {
+		CanQuery = false,
+		CanCollide = false,
+	})
+	Create("SpotLight", {
+		Face = Enum.NormalId.Bottom,
+		Angle = 60,
+		Range = 26,
+		Brightness = 5,
+		Color = Color3.fromRGB(255, 236, 214),
+		Shadows = true,
+		Parent = lamp,
+	})
+	for _, z in ipairs({ -29.4, 29.4 }) do
+		Style.neonStrip(b, 0, 0.6, z, 58, 0.15, 0.15, Color3.fromRGB(209, 26, 42))
+	end
+	for _, x in ipairs({ -29.4, 29.4 }) do
+		Style.neonStrip(b, x, 0.6, 0, 0.15, 0.15, 58, Color3.fromRGB(209, 26, 42))
+	end
+end
+
+function MeetingRoom.build(b)
+	-- The Blender war room when it is imported, the part-built room otherwise.
+	local scene = SceneBuilder.build(b, "Meeting")
+	if not scene then
+		partRoom(b)
+	end
 
 	-- Round table: the Blender one when imported, parts otherwise.
 	if not b:placeModel("MeetingTable", 0, 0, 0) then
@@ -106,41 +153,11 @@ function MeetingRoom.build(b)
 
 	local boardLabel = b:board({ x = 29.3, y = 8, z = 0, rot = 90, w = 18, h = 9 })
 
-	-- Decoration
-	b:shelf(-29, -12, -90, 8)
-	b:shelf(-29, 12, -90, 8)
-	b:plant(-26, -26)
-	b:plant(26, -26)
-	b:plant(-26, 26)
-	b:plant(26, 26)
-	for _, x in ipairs({ -14, 14 }) do
-		for _, z in ipairs({ -14, 14 }) do
-			b:light(x, 17.8, z, Color3.fromRGB(255, 225, 190), 30, 1.1)
-		end
+	if not scene then
+		partDressing(b)
 	end
-	b:light(0, 17.8, 0, Color3.fromRGB(255, 200, 170), 30, 0.9)
-
-	-- Noir: one hard light over the table, red trim, and the Specters' gallery up on the walls.
-	local lamp = b:block(0, 16.5, 0, 3, 0.6, 3, Color3.fromRGB(20, 20, 22), Enum.Material.Metal, {
-		CanQuery = false,
-		CanCollide = false,
-	})
-	Create("SpotLight", {
-		Face = Enum.NormalId.Bottom,
-		Angle = 60,
-		Range = 26,
-		Brightness = 5,
-		Color = Color3.fromRGB(255, 236, 214),
-		Shadows = true,
-		Parent = lamp,
-	})
-	for _, z in ipairs({ -29.4, 29.4 }) do
-		Style.neonStrip(b, 0, 0.6, z, 58, 0.15, 0.15, Color3.fromRGB(209, 26, 42))
-	end
-	for _, x in ipairs({ -29.4, 29.4 }) do
-		Style.neonStrip(b, x, 0.6, 0, 0.15, 0.15, 58, Color3.fromRGB(209, 26, 42))
-	end
-	local gallery = Style.gallery(b, 30, 12, 3.5, 16)
+	-- The Specters' gallery up on the walls (the scene has its own walkway).
+	local gallery = Style.gallery(b, 30, 12, 3.5, 16, scene)
 
 	return {
 		seats = seats,

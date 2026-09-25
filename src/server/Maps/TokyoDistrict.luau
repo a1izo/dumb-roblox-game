@@ -2,6 +2,7 @@
 -- building with an open interior (konbini, metro station, net cafe, koban, ramen shop).
 -- Local coordinates: x -110..110, z -90..90.
 
+local SceneBuilder = require(script.Parent.SceneBuilder)
 local Style = require(script.Parent.Style)
 
 local TokyoDistrict = {}
@@ -283,8 +284,12 @@ function TokyoDistrict.layout()
 end
 
 function TokyoDistrict.build(b)
-	dress(b)
-	noir(b)
+	-- The Blender scene when it is imported, the part-built map otherwise. Either way the
+	-- layout (stations, spawns, sheets...) is the same.
+	if not SceneBuilder.build(b, "Tokyo") then
+		dress(b)
+		noir(b)
+	end
 	return TokyoDistrict.layout()
 end
 
