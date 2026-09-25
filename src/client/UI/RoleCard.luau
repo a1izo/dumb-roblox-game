@@ -12,21 +12,26 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Hud = require(script.Parent.Hud)
+local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local RoleCard = {}
 
 local card: Frame
-local roleLabel: TextLabel
+local sealHolder: Frame
+local roleText: any
 local winLabel: TextLabel
 local bullets: Frame
-local aliasLabel: TextLabel
-local nameLabel: TextLabel
+local aliasText: any
+local nameText: any
 local alliesLabel: TextLabel
 local hintLabel: TextLabel
+
+local ROLE_ICON = { Kira = "hand", Follower = "cultist", L = "zero", Watari = "butler", TaskForce = "agency" } -- terms:ok
 
 local function alliesText(private): string
 	local parts = {}
@@ -42,24 +47,27 @@ local function fill()
 	local role = private.role or "TaskForce"
 	local info = Roles.get(role)
 	local copy = RoleCopy[role] or RoleCopy.TaskForce
-	roleLabel.Text = info.display
-	roleLabel.TextColor3 = info.color
-	winLabel.Text = "HOW YOU WIN: " .. copy.win
-	Widgets.clear(bullets)
+	local hostile = role == "Kira" or role == "Follower"
+	Kit.clear(sealHolder)
+	Kit.seal({ size = 72, color = if hostile then C.red else C.steel, icon = ROLE_ICON[role], Parent = sealHolder })
+	roleText:set(info.display)
+	roleText:setColor(if hostile then C.blood else C.ink)
+	winLabel.Text = "How you win: " .. copy.win
+	Kit.clear(bullets)
 	for index, text in ipairs(copy.bullets) do
-		Widgets.label({
-			Text = "•  " .. text,
-			TextSize = Theme.text.small,
-			AutomaticSize = Enum.AutomaticSize.Y,
+		Kit.label({
+			Text = "·  " .. text,
+			size = "small",
+			color = C.ink,
 			LayoutOrder = index,
 			Parent = bullets,
 		})
 	end
-	aliasLabel.Text = "Alias: " .. tostring(private.alias or "")
-	nameLabel.Text = string.upper(tostring(private.realName or "?"))
+	aliasText:set(tostring(private.alias or ""))
+	nameText:set(tostring(private.realName or "?"))
 	alliesLabel.Text = alliesText(private)
 	hintLabel.Visible = type(private.hint) == "string"
-	hintLabel.Text = if type(private.hint) == "string" then Terms.f("{BUTLER}'S HINT: ") .. private.hint else ""
+	hintLabel.Text = if type(private.hint) == "string" then Terms.f("{Butler}'s hint: ") .. private.hint else ""
 end
 
 function RoleCard.show()
@@ -76,80 +84,83 @@ end
 function RoleCard.hide()
 	card.Visible = false
 	-- Nothing secret stays in the UI while the card is hidden.
-	nameLabel.Text = ""
+	nameText:set("")
 	hintLabel.Text = ""
 end
 
 function RoleCard.init()
-	card = Widgets.panel({
+	local page, content = Kit.page({
 		Name = "RoleCard",
+		tone = "parchment",
+		padding = T.space.xl,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.new(0.9, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
 		Visible = false,
+		ZIndex = 10,
 		Parent = Screens.overlay,
 	})
-	Widgets.sizeLimit(card, Vector2.new(520, 700))
-	Widgets.padding(card, Theme.space.xl)
-	Widgets.list(card, Theme.space.sm)
-	Widgets.header({ Text = "Your role card", LayoutOrder = 1, Parent = card })
-	roleLabel = Widgets.label({
-		Font = Theme.fonts.black,
-		TextSize = 34,
-		Size = UDim2.new(1, 0, 0, 38),
-		LayoutOrder = 2,
-		Parent = card,
+	card = page
+	card.AutomaticSize = Enum.AutomaticSize.Y
+	content.AutomaticSize = Enum.AutomaticSize.Y
+	content.Size = UDim2.new(1, 0, 0, 0)
+	Kit.Base.maxSize(card, Vector2.new(500, 760))
+	Kit.list(content, T.space.s)
+	local top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 80), LayoutOrder = 1, Parent = content })
+	sealHolder = Kit.frame({ Name = "Seal", Size = UDim2.fromOffset(72, 72), Parent = top })
+	Kit.label({
+		Text = "YOUR ROLE",
+		font = "label",
+		size = "micro",
+		color = C.inkDim,
+		Position = UDim2.fromOffset(88, 4),
+		Size = UDim2.new(1, -88, 0, 0),
+		Parent = top,
 	})
-	winLabel = Widgets.label({
-		Font = Theme.fonts.bold,
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.gold,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 3,
-		Parent = card,
+	roleText = Kit.text({
+		face = "Gothic",
+		text = "",
+		size = T.size.display,
+		color = C.ink,
+		Position = UDim2.fromOffset(86, 18),
+		Parent = top,
 	})
-	bullets = Widgets.frame({
+	winLabel = Kit.label({ font = "bodyBold", size = "small", color = C.blood, LayoutOrder = 2, Parent = content })
+	bullets = Kit.frame({
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 4,
-		Parent = card,
+		LayoutOrder = 3,
+		Parent = content,
 	})
-	Widgets.list(bullets, Theme.space.xs)
-	aliasLabel = Widgets.label({
-		Font = Theme.fonts.bold,
+	Kit.list(bullets, T.space.xs)
+	Kit.rule({ color = C.ink, transparency = 0.7, LayoutOrder = 4, Parent = content })
+	Kit.label({
+		Text = "YOUR ALIAS",
+		font = "label",
+		size = "micro",
+		color = C.inkDim,
 		LayoutOrder = 5,
-		Parent = card,
+		Parent = content,
 	})
-	Widgets.header({ Text = "Your real name", LayoutOrder = 6, Parent = card })
-	nameLabel = Widgets.label({
-		Font = Theme.fonts.typewriter,
-		TextSize = 36,
-		TextColor3 = Theme.colors.paper,
-		Size = UDim2.new(1, 0, 0, 42),
+	aliasText = Kit.text({ face = "Scrawl", text = "", size = 40, color = C.ink, LayoutOrder = 6, Parent = content })
+	Kit.label({
+		Text = "YOUR REAL NAME",
+		font = "label",
+		size = "micro",
+		color = C.inkDim,
 		LayoutOrder = 7,
-		Parent = card,
+		Parent = content,
 	})
-	alliesLabel = Widgets.label({
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.muted,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 8,
-		Parent = card,
-	})
-	hintLabel = Widgets.label({
-		Font = Theme.fonts.typewriter,
-		TextColor3 = Theme.colors.team,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 9,
-		Parent = card,
-	})
-	Widgets.label({
+	nameText = Kit.text({ face = "Scrawl", text = "", size = 52, color = C.blood, LayoutOrder = 8, Parent = content })
+	alliesLabel = Kit.label({ size = "small", color = C.inkDim, LayoutOrder = 9, Parent = content })
+	hintLabel = Kit.label({ font = "document", size = "small", color = C.ink, LayoutOrder = 10, Parent = content })
+	Kit.label({
 		Text = "Release to hide.",
-		TextSize = Theme.text.caption,
-		TextColor3 = Theme.colors.faint,
-		LayoutOrder = 10,
-		Parent = card,
+		font = "bodyItalic",
+		size = "micro",
+		color = C.inkDim,
+		LayoutOrder = 11,
+		Parent = content,
 	})
 
 	-- Hold C (keyboard) or the left bumper (gamepad).

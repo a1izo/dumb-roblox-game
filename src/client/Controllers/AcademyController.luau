@@ -69,6 +69,7 @@ local function setup(desk: Instance)
 		GamepadKeyCode = Enum.KeyCode.ButtonX,
 		MaxActivationDistance = 8,
 		RequiresLineOfSight = false,
+		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = desk,
 	})
 	prompt.Triggered:Connect(function()

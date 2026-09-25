@@ -21,13 +21,17 @@ local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 
+local Announcer = require(script.Parent.Parent.UI.Announcer)
+local Router = require(script.Parent.Parent.UI.Core.Router)
 local Screens = require(script.Parent.Parent.UI.Screens)
+local Toasts = require(script.Parent.Parent.UI.Toasts)
 local AudioCheck = require(script.Parent.Parent.Audio.AudioCheck)
 local MusicController = require(script.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local LightingController = require(script.Parent.Parent.World.LightingController)
 local RainController = require(script.Parent.Parent.World.RainController)
 local DebugTools = require(script.Parent.DebugTools)
+local UiGallery = require(script.Parent.UiGallery)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -54,7 +58,7 @@ local ROLE_COLORS = {
 	TaskForce = Color3.fromRGB(110, 170, 255),
 }
 
-local TABS = { "Match", "People", "Bots", "World", "Show", "Anim", "Profile" }
+local TABS = { "Match", "People", "Bots", "World", "Show", "UI", "Anim", "Profile" }
 
 local remote = Net.event("Debug")
 local snap: any = nil
@@ -678,6 +682,50 @@ builders.Show = function()
 			Sfx.play(key)
 		end)
 	end
+end
+
+builders.UI = function()
+	heading("Design system")
+	local r = row()
+	button(r, "Kit gallery", function()
+		UiGallery.open()
+	end, COLORS.pick)
+	note(
+		"Every component, lettering size, surface and icon on one page. The lettering, paper and"
+			.. " icons need InkboundModels.fbx imported; until then the code-only versions show."
+	)
+	heading("Notifications")
+	r = row()
+	for _, kind in ipairs({ "info", "good", "bad", "warn", "secret", "coin" }) do
+		button(r, kind, function()
+			Toasts.show("A " .. kind .. " notification from the debug panel.", kind)
+		end)
+	end
+	r = row()
+	for _, tone in ipairs({ "neutral", "danger", "team" }) do
+		button(r, "Announce " .. tone, function()
+			Announcer.show("Round 2", "The Grimoire has been used.", tone)
+		end)
+	end
+	heading("Screens")
+	r = row()
+	for _, name in ipairs({
+		"settings",
+		"howToPlay",
+		"shop",
+		"quests",
+		"profile",
+		"leaderboards",
+		"party",
+		"evidence",
+		"scratchpad",
+		"quickChat",
+	}) do
+		button(r, name, function()
+			Router.toggle(name)
+		end)
+	end
+	note("Screens with rules (the vote, the Grimoire, Zero's desk) only open when the match allows them.")
 end
 
 builders.Anim = function()

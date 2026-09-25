@@ -19,14 +19,29 @@ from maps import export as maps_export
 CATALOG = os.path.join(common.ROOT, "src", "shared", "ModelCatalog.luau")
 FBX = os.path.join(common.EXPORT, "InkboundModels.fbx")
 
-# Effect textures carried into Roblox on flat quads named "Tex_<name>" (see Assets.texture).
+# Textures carried into Roblox on flat quads named "Tex_<name>" (see Assets.texture): effect
+# textures, and the UI's lettering, paper and icons (art/scripts/ui).
 EFFECT_TEXTURES = ["InkSplat1", "InkSplat2", "InkSplat3", "InkDrop", "RainStreak", "Smoke", "SoulGlow", "Spark"]
+UI_TEXTURES = [
+    "UiGothic1",
+    "UiScrawl1",
+    "UiPaper",
+    "UiParchment",
+    "UiTorn",
+    "UiBrush",
+    "UiSeal",
+    "UiStamp",
+    "UiScratches",
+    "UiVignette",
+    "UiRuled",
+    "UiIcons",
+]
 
 
 def texture_carriers():
     """Small quads, one per effect texture, so importing the FBX also uploads the textures."""
     carriers = []
-    for i, name in enumerate(EFFECT_TEXTURES):
+    for i, name in enumerate(EFFECT_TEXTURES + UI_TEXTURES):
         path = os.path.join(common.TEXTURES, name + ".png")
         if not os.path.exists(path):
             continue

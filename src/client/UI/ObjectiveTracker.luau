@@ -1,6 +1,6 @@
--- The "what now?" list under the phase ribbon: one to three short lines for your role and
--- the current phase, ticked off as you do them. Built from your own state only (Objectives
--- module). Part of the guide: hidden when the player turns the guide off.
+-- The "what now?" list at the top left: one to three short handwritten lines for your role and
+-- the current phase, struck through in red as you do them. Built from your own state only
+-- (Objectives module). Part of the guide: hidden when the player turns the guide off.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -8,15 +8,59 @@ local Objectives = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Hud = require(script.Parent.Hud)
+local Kit = require(script.Parent.Kit)
 local Settings = require(script.Parent.Core.Settings)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
-local C = Theme.colors
+local C = Kit.color
 
 local ObjectiveTracker = {}
 
 local lastKey = ""
+
+local function line(parent: Instance, entry, index: number)
+	local width = parent:IsA("GuiObject") and parent.Size.X.Offset or 320
+	local row = Kit.frame({
+		Name = "Objective" .. index,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = index,
+		Parent = parent,
+	})
+	Kit.icon({
+		name = if entry.done then "check" else "quill",
+		size = 18,
+		color = if entry.done then C.red else C.dim,
+		Position = UDim2.fromOffset(0, 6),
+		Parent = row,
+	})
+	local text = Kit.text({
+		face = "Scrawl",
+		text = entry.text,
+		size = 27,
+		seed = index,
+		maxWidth = width - 30,
+		color = if entry.done then C.dim else C.bone,
+		Position = UDim2.fromOffset(26, 0),
+		Parent = row,
+	})
+	if entry.done then
+		-- Struck through in red.
+		local strike = Kit.Base.make("Frame", {
+			Name = "Strike",
+			BackgroundColor3 = C.red,
+			BackgroundTransparency = 0.15,
+			BorderSizePixel = 0,
+			Rotation = -1.5,
+			Position = UDim2.fromOffset(22, 14),
+			Size = UDim2.fromOffset(text.width + 8, 2),
+			ZIndex = 3,
+			Parent = row,
+		})
+		text.Changed:Connect(function()
+			strike.Size = UDim2.fromOffset(text.width + 8, 2)
+		end)
+	end
+end
 
 local function render()
 	local container = Hud.objectives()
@@ -33,27 +77,9 @@ local function render()
 		return
 	end
 	lastKey = key
-	Widgets.clear(container)
+	Kit.clear(container)
 	for index, entry in ipairs(lines) do
-		local row = Widgets.frame({
-			BackgroundTransparency = 0.1,
-			BackgroundColor3 = C.ink,
-			Size = UDim2.new(1, 0, 0, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			LayoutOrder = index,
-			Parent = container,
-		})
-		Widgets.slant(row, 0.02)
-		Widgets.padding(row, Theme.space.xs + 2, Theme.space.lg)
-		Widgets.label({
-			Text = (if entry.done then "✓  " else "▶  ") .. string.upper(entry.text),
-			FontFace = Theme.faces.displayMedium,
-			TextSize = Theme.text.small,
-			TextColor3 = if entry.done then C.muted else C.paper,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			RichText = false,
-			Parent = row,
-		})
+		line(container, entry, index)
 	end
 end
 
@@ -64,6 +90,10 @@ function ObjectiveTracker.init()
 		if key == "hints" then
 			render()
 		end
+	end)
+	Kit.Layout.Changed:Connect(function()
+		lastKey = ""
+		render()
 	end)
 	render()
 end

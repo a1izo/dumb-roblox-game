@@ -1,15 +1,14 @@
--- Short notifications stacked on the right: black slanted strips with a coloured edge.
--- Each one slides in and fades out as a whole.
+-- Short notifications stacked on the right: torn paper slips with an ink mark in the kind's
+-- colour. Each one slides in from the edge and fades away after a few seconds.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
+local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local Toasts = {}
 
@@ -40,58 +39,45 @@ function Toasts.show(text: string, kind: string?)
 		return
 	end
 	order += 1
-	local color = Theme.TOAST_COLORS[kind or "info"] or Theme.TOAST_COLORS.info
-	local toast = Instance.new("CanvasGroup")
-	toast.BackgroundColor3 = Theme.colors.ink
-	toast.BackgroundTransparency = 0.04
-	toast.BorderSizePixel = 0
-	toast.AutomaticSize = Enum.AutomaticSize.Y
-	toast.Size = UDim2.new(1, 0, 0, 0)
-	toast.LayoutOrder = -order
-	Widgets.padding(toast, Theme.space.sm + 2, Theme.space.xl)
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = color,
-		Position = UDim2.fromOffset(-Theme.space.xl + 6, -Theme.space.sm - 2),
-		Size = UDim2.new(0, 6, 1, Theme.space.sm * 2 + 4),
-		Parent = toast,
-	})
-	Widgets.label({
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, 0, 0, 0),
-		Text = text,
-		TextColor3 = Theme.colors.paper,
-		TextSize = Theme.text.body,
-		Font = Theme.fonts.medium,
-		Parent = toast,
-	})
-	toast.Parent = holder
+	-- A CanvasGroup so the slip fades as one piece.
+	local group = Instance.new("CanvasGroup")
+	group.Name = "Toast"
+	group.BackgroundTransparency = 1
+	group.BorderSizePixel = 0
+	group.Size = UDim2.fromOffset(340, 0)
+	group.AutomaticSize = Enum.AutomaticSize.Y
+	group.LayoutOrder = -order
+	local slip = Kit.slip({ text = text, kind = kind, width = 340, Parent = group })
+	local _ = slip
+	group.Parent = holder
 	trim(holder)
-	Motion.fade(toast, true, 0.2)
+	Motion.fade(group, true, Kit.Tokens.motion.base)
+	Motion.slideIn(group, Vector2.new(40, 0), Kit.Tokens.motion.slow)
 
 	task.delay(LIFETIME, function()
-		if not toast.Parent then
+		if not group.Parent then
 			return
 		end
-		local tween = Motion.fade(toast, false, 0.4)
+		local tween = Motion.fade(group, false, 0.4)
 		if tween then
 			tween.Completed:Wait()
 		end
-		toast:Destroy()
+		group:Destroy()
 	end)
 end
 
 function Toasts.init()
-	local holder = Widgets.frame({
+	local holder = Kit.frame({
 		Name = "Toasts",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -16, 0, 96),
-		Size = UDim2.new(0.3, 0, 0.6, 0),
+		Size = UDim2.new(0, 340, 0.6, 0),
 		Parent = Screens.toast,
 	})
-	Widgets.sizeLimit(holder, Vector2.new(360, 2000), Vector2.new(230, 0))
-	Widgets.list(holder, Theme.space.sm, false, Enum.HorizontalAlignment.Right)
+	Kit.Layout.place(holder, "right")
+	Kit.list(holder, Kit.space.s, false, Enum.HorizontalAlignment.Right)
 	container = holder
+	Kit.Layout.watch(function(class)
+		holder.Position = if class == "phone" then UDim2.new(1, -12, 0, 64) else Kit.Layout.ZONES.right.position
+	end)
 	Net.event("Notify").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" and type(payload.text) == "string" then
 			Toasts.show(payload.text, payload.kind)

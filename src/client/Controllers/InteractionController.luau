@@ -41,6 +41,7 @@ local function prompt(
 		MaxActivationDistance = 8,
 		RequiresLineOfSight = false,
 		Enabled = false,
+		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = parent,
 	})
 end

@@ -1,11 +1,12 @@
--- The HUD, "angular manga" style:
---   phase ribbon  (top left)   a black slanted block with the phase, a red one with the
---                              timer, and round bars underneath
---   objectives    under the ribbon (filled in by the objective tracker)
---   role card     (bottom left) your role on a tilted paper-white card
---   action bar    (bottom right) black slanted buttons with red key tags
--- On touch screens the role card moves to the left middle and the action bar to the right
--- edge, clear of the thumbstick and the jump button.
+-- The HUD in a match, drawn with the Grimoire kit:
+--   phase banner  (top centre)   a brush stroke of blood with the phase in Gothic lettering,
+--                                the clock and a mark per round beneath it
+--   objectives    (top left)     handwritten lines, filled in by the objective tracker
+--   identity      (bottom left)  your wax seal, role, alias and what you carry
+--   actions       (bottom right) inked buttons with their keys, from Input/Actions
+-- On touch screens the identity card moves to the left middle and the actions stack on the
+-- right edge, clear of the thumbstick and the jump button. Between matches the lobby panel
+-- takes over and the HUD stays out of the way.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -18,32 +19,54 @@ local Actions = require(script.Parent.Parent.Input.Actions)
 local ClientState = require(script.Parent.Parent.ClientState)
 local Clock = require(script.Parent.Core.Clock)
 local Motion = require(script.Parent.Core.Motion)
-local Responsive = require(script.Parent.Core.Responsive)
 local Router = require(script.Parent.Core.Router)
+local Kit = require(script.Parent.Kit)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
-local C = Theme.colors
+local C = Kit.color
+local T = Kit.Tokens
 
 local Hud = {}
 
--- Phase ribbon
-local ribbon: Frame
-local phaseLabel: TextLabel
-local timerBlock: Frame
-local timerLabel: TextLabel
-local roundRow: Frame
-local roundLabel: TextLabel
-local bars: Frame
+-- Seal emblem per role (the seal is only on your own screen).
+local ROLE_ICON = {
+	Kira = "hand",
+	Follower = "cultist",
+	L = "zero",
+	Watari = "butler",
+	TaskForce = "agency",
+}
+
+-- Icon per action id.
+local ACTION_ICON = {
+	evidence = "evidence",
+	privateScreen = "grimoire",
+	quickChat = "chat",
+	note = "note",
+	drop = "mail",
+	eyesDeal = "eye",
+	eyesRead = "eye",
+	scratchpad = "quill",
+	help = "help",
+	zeroDesk = "zero",
+}
+
+-- Phase banner
+local banner: Frame
+local bannerText: any
+local clockLabel: TextLabel
+local clockIcon: ImageLabel
+local marks: Frame
 local infoLabel: TextLabel
 
--- Role card
+-- Identity
 local badge: Frame
-local roleLabel: TextLabel
+local seal: Frame
+local sealHolder: Frame
+local roleText: any
 local aliasLabel: TextLabel
-local alliesLabel: TextLabel
 local chipsLabel: TextLabel
+local alliesLabel: TextLabel
 local cardHint: TextLabel
 
 -- Objectives and actions
@@ -52,83 +75,66 @@ local actionBar: Frame
 local actionKey = ""
 
 local lastPhase = ""
+local lastRole = ""
 
--- Phase ribbon -----------------------------------------------------------------------------
+-- Phase banner --------------------------------------------------------------------------------
 
-local function renderBars(round: number, maxRounds: number)
-	Widgets.clear(bars)
+local function renderMarks(round: number, maxRounds: number)
+	Kit.clear(marks)
 	for i = 1, maxRounds do
-		local bar = Widgets.frame({
-			BackgroundTransparency = 0,
-			BackgroundColor3 = if i < round then C.paper elseif i == round then C.accent else C.panelLight,
-			Size = UDim2.fromOffset(if i == round then 22 else 14, 8),
+		local current = i == round
+		local mark = Kit.Base.make("Frame", {
+			Name = "Round" .. i,
+			BackgroundColor3 = if current then C.red elseif i < round then C.bone else C.faint,
+			BackgroundTransparency = if i > round then 0.4 else 0,
+			BorderSizePixel = 0,
+			Rotation = 45,
+			Size = UDim2.fromOffset(if current then 10 else 7, if current then 10 else 7),
 			LayoutOrder = i,
-			Parent = bars,
+			Parent = marks,
 		})
-		Widgets.slant(bar, 0.2)
+		local _ = mark
 	end
 end
 
-local function updateRibbon()
+local function updateBanner()
 	local state = ClientState.public
-	ribbon.Visible = state.active == true
-	if state.active then
-		phaseLabel.Text = string.upper(Terms.phase(state.phase))
-		timerBlock.Visible = true
-		local round = state.round or 0
-		roundRow.Visible = round > 0
-		roundLabel.Text = string.format("ROUND %d / %d", round, state.maxRounds or 5)
-		renderBars(round, state.maxRounds or 5)
-		if not ClientState.isLiving() then
-			infoLabel.Text = if ClientState.isParticipant() then "YOU ARE OUT  ·  SPECTATING" else "SPECTATING"
-			infoLabel.TextColor3 = C.accent
-		else
-			infoLabel.Text = string.upper(state.mapName or "")
-			infoLabel.TextColor3 = C.muted
-		end
-		if state.phase ~= lastPhase then
-			lastPhase = state.phase
-			Motion.slideIn(ribbon, Vector2.new(-30, 0), 0.3)
-		end
+	banner.Visible = state.active == true
+	if not state.active then
+		lastPhase = "Lobby"
 		return
 	end
-	lastPhase = "Lobby"
-	phaseLabel.Text = "LOBBY"
-	roundRow.Visible = false
-	infoLabel.TextColor3 = C.muted
-	local lobby = ClientState.lobby
-	if lobby and lobby.countdown then
-		timerBlock.Visible = true
-		timerLabel.Text = Clock.format(lobby.countdown)
-		infoLabel.Text = string.format("MATCH STARTING  ·  %d READY", lobby.readyCount)
-	elseif lobby then
-		timerBlock.Visible = false
-		infoLabel.Text = if lobby.matchRunning
-			then "A MATCH IS RUNNING"
-			else string.format(
-				"%d / %d READY  ·  NEXT: %s",
-				lobby.readyCount,
-				lobby.needed,
-				string.upper(tostring(lobby.nextMap))
-			)
+	local phase = state.phase
+	if phase ~= lastPhase then
+		lastPhase = phase
+		bannerText:set(Terms.phase(phase))
+		bannerText:write(0.45)
+		Motion.slideIn(banner, Vector2.new(0, -24), T.motion.slow)
+	end
+	local round = state.round or 0
+	marks.Visible = round > 0
+	renderMarks(round, state.maxRounds or 5)
+	if not ClientState.isLiving() then
+		infoLabel.Text = if ClientState.isParticipant() then "You are out  ·  watching" else "Watching"
+		infoLabel.TextColor3 = C.red
 	else
-		timerBlock.Visible = false
-		infoLabel.Text = "CONNECTING..."
+		infoLabel.Text = tostring(state.mapName or "")
+		infoLabel.TextColor3 = C.dim
 	end
 end
 
-local function timerText(seconds: number): string
+local function clockText(seconds: number): string
 	if not ClientState.public.active then
-		return timerLabel.Text
+		return clockLabel.Text
 	end
-	-- The timer block turns paper-white for the last ten seconds.
+	-- The last ten seconds are in red.
 	local urgent = seconds <= 10
-	timerBlock.BackgroundColor3 = if urgent then C.paper else C.accent
-	timerLabel.TextColor3 = if urgent then C.accent else C.paper
+	clockLabel.TextColor3 = if urgent then C.red else C.bone
+	clockIcon.ImageColor3 = if urgent then C.red else C.dim
 	return Clock.format(seconds)
 end
 
--- Role card --------------------------------------------------------------------------------
+-- Identity -------------------------------------------------------------------------------------
 
 local function alliesText(private): string
 	local parts = {}
@@ -142,35 +148,48 @@ end
 local function chips(private, phase: string): string
 	local list = {}
 	if private.hood then
-		table.insert(list, "HOOD ON")
+		table.insert(list, "Hood on")
 	end
 	if private.carrying == "blank" then
-		table.insert(list, "BLANK SHEET")
+		table.insert(list, "Blank sheet")
 	elseif private.carrying == "note" then
-		table.insert(list, "WRITTEN NOTE")
+		table.insert(list, "Written note")
 	end
 	if private.eyes then
 		table.insert(
 			list,
-			string.upper(Terms.f("{Eyes}: {reads} reads, {rounds} round(s) left", {
+			Terms.f("{Eyes}: {reads} reads, {rounds} round(s) left", {
 				reads = private.eyes.readsLeft,
 				rounds = private.eyes.countdown,
-			}))
+			})
 		)
 	end
 	if private.role == "L" then
 		table.insert(
 			list,
 			if private.warrantUsed
-				then "WARRANT USED"
-				elseif private.warrantBlocked then "WARRANT BLOCKED"
-				else "WARRANT READY IN THE VOTE"
+				then "Warrant used"
+				elseif private.warrantBlocked then "Warrant blocked"
+				else "Warrant ready in the vote"
 		)
 	end
 	if private.role == "Follower" and private.canTamper and phase == "Investigation" then
-		table.insert(list, "CAN RIG A FLASH (HOLD T)")
+		table.insert(list, "Can rig a flash (hold T)")
 	end
 	return table.concat(list, "  ·  ")
+end
+
+local function rebuildSeal(role: string, color: Color3)
+	if seal then
+		seal:Destroy()
+	end
+	seal = Kit.seal({
+		size = 60,
+		color = color:Lerp(C.blood, 0.25),
+		icon = ROLE_ICON[role] or "agency",
+		ZIndex = 3,
+		Parent = sealHolder,
+	})
 end
 
 local function updateBadge()
@@ -182,24 +201,30 @@ local function updateBadge()
 	end
 	local private = ClientState.private
 	local me = ClientState.me()
-	local info = Roles.get(private.role or "TaskForce")
-	roleLabel.Text = if private.inMatch then info.display else ""
-	roleLabel.TextColor3 = if private.role == "Kira" or private.role == "Follower" then C.accent else C.ink
-	local status = if me then string.upper(Terms.status(me.status)) else ""
-	aliasLabel.Text =
-		string.format("%s  ·  %s", string.upper(tostring(private.alias or (me and me.alias) or "")), status)
+	local role = private.role or "TaskForce"
+	local info = Roles.get(role)
+	local hostile = role == "Kira" or role == "Follower"
+	local color = if hostile then C.red else C.steel
+	if role .. tostring(private.inMatch) ~= lastRole then
+		lastRole = role .. tostring(private.inMatch)
+		rebuildSeal(role, color)
+		roleText:set(if private.inMatch then info.display else "")
+		roleText:setColor(if hostile then C.red else C.bone)
+	end
+	local status = if me then Terms.status(me.status) else ""
+	aliasLabel.Text = string.format("%s  ·  %s", tostring(private.alias or (me and me.alias) or ""), status)
 	alliesLabel.Text = alliesText(private)
 	alliesLabel.Visible = alliesLabel.Text ~= ""
-	chipsLabel.Text = chips(private, phase)
+	chipsLabel.Text = string.upper(chips(private, phase))
 	chipsLabel.Visible = chipsLabel.Text ~= ""
-	cardHint.Text = if Responsive.isTouch() then "PRESS AND HOLD FOR YOUR ROLE CARD" else "HOLD C FOR YOUR ROLE CARD"
+	cardHint.Text = if Kit.Layout.isTouch() then "Press and hold for your role card" else "Hold C for your role card"
 end
 
--- Action bar -------------------------------------------------------------------------------
+-- Actions ---------------------------------------------------------------------------------------
 
 local function renderActions()
 	local view = Router.view()
-	local touch = Responsive.isTouch()
+	local touch = Kit.Layout.isTouch()
 	-- The meeting panel carries its own buttons; keys still work while the bar is hidden.
 	local hideForMeeting = view.phase == "Meeting"
 		or view.phase == "Vote"
@@ -215,223 +240,171 @@ local function renderActions()
 		return
 	end
 	actionKey = key
-	Widgets.clear(actionBar)
+	Kit.clear(actionBar)
 	for index, action in ipairs(available) do
 		local hint = Actions.hint(action)
-		Widgets.button({
-			Text = action.label(view),
-			Key = if hint ~= "" then hint else nil,
-			TextSize = Theme.text.body,
-			Variant = if action.variant == "primary" then "primary" else "secondary",
-			Size = if touch then UDim2.fromOffset(150, 50) else UDim2.fromOffset(0, 42),
-			AutomaticSize = if touch then Enum.AutomaticSize.None else Enum.AutomaticSize.X,
+		Kit.button({
+			text = action.label(view),
+			icon = ACTION_ICON[action.id],
+			key = if touch then nil else hint,
+			variant = if action.variant == "primary" then "primary" else "secondary",
+			size = if touch then "m" else "s",
+			Size = if touch then UDim2.fromOffset(176, T.touch) else nil,
 			LayoutOrder = index,
 			Parent = actionBar,
 		}, action.run)
 	end
 end
 
--- Layout -----------------------------------------------------------------------------------
+-- Layout ----------------------------------------------------------------------------------------
 
-local function layout()
-	local touch = Responsive.isTouch()
+local function layout(class: string)
+	local touch = class == "phone" or class == "tablet"
 	local listLayout = actionBar:FindFirstChildOfClass("UIListLayout")
 	if touch then
 		badge.AnchorPoint = Vector2.new(0, 0.5)
-		badge.Position = UDim2.new(0, 14, 0.5, 0)
+		badge.Position = UDim2.new(0, 12, 0.55, 0)
 		actionBar.AnchorPoint = Vector2.new(1, 0.5)
 		actionBar.Position = UDim2.new(1, -12, 0.42, 0)
-		actionBar.Size = UDim2.fromOffset(150, 0)
+		actionBar.Size = UDim2.fromOffset(176, 0)
+		actionBar.AutomaticSize = Enum.AutomaticSize.Y
 		if listLayout then
 			listLayout.FillDirection = Enum.FillDirection.Vertical
 			listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 			listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 		end
+		objectives.Size = UDim2.fromOffset(250, 0)
 	else
-		badge.AnchorPoint = Vector2.new(0, 1)
-		badge.Position = UDim2.new(0, 22, 1, -22)
-		actionBar.AnchorPoint = Vector2.new(1, 1)
-		actionBar.Position = UDim2.new(1, -22, 1, -22)
-		actionBar.Size = UDim2.new(0.62, 0, 0, 42)
+		Kit.Layout.place(badge, "bottomLeft")
+		Kit.Layout.place(actionBar, "bottomRight")
+		actionBar.Size = UDim2.new(0.62, 0, 0, 40)
+		actionBar.AutomaticSize = Enum.AutomaticSize.None
 		if listLayout then
 			listLayout.FillDirection = Enum.FillDirection.Horizontal
 			listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 			listLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 		end
+		objectives.Size = UDim2.fromOffset(340, 0)
 	end
+	bannerText:setSize(if class == "phone" then T.size.title else T.size.heading)
 	actionKey = ""
 	renderActions()
 end
 
--- Setup ------------------------------------------------------------------------------------
+-- Setup -----------------------------------------------------------------------------------------
 
-local function buildRibbon()
-	ribbon = Widgets.frame({
-		Name = "PhaseRibbon",
-		Position = UDim2.fromOffset(18, 14),
+local function buildBanner()
+	banner = Kit.frame({
+		Name = "PhaseBanner",
 		Size = UDim2.fromOffset(0, 0),
 		AutomaticSize = Enum.AutomaticSize.XY,
+		Visible = false,
 		Parent = Screens.hud,
 	})
-	Widgets.list(ribbon, 6)
-	local top = Widgets.frame({
-		Size = UDim2.fromOffset(0, 44),
-		AutomaticSize = Enum.AutomaticSize.X,
+	Kit.Layout.place(banner, "topCenter", Vector2.new(0, -6))
+	Kit.list(banner, 0, false, Enum.HorizontalAlignment.Center)
+	local stroke, text = Kit.banner({
+		text = "",
+		size = T.size.heading,
+		tone = C.blood,
 		LayoutOrder = 1,
-		Parent = ribbon,
+		Parent = banner,
 	})
-	local row = Widgets.list(top, 0, true)
-	row.VerticalAlignment = Enum.VerticalAlignment.Center
-	local phaseBlock = Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = C.ink,
-		Size = UDim2.fromOffset(0, 40),
+	local _ = stroke
+	bannerText = text
+	local row = Kit.frame({
+		Name = "Clock",
+		Size = UDim2.fromOffset(0, 26),
 		AutomaticSize = Enum.AutomaticSize.X,
-		LayoutOrder = 1,
-		Parent = top,
+		LayoutOrder = 2,
+		Parent = banner,
 	})
-	Widgets.slant(phaseBlock, 0.06)
-	Widgets.padding(phaseBlock, 0, 22)
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = C.accent,
-		Position = UDim2.fromOffset(-12, 0),
-		Size = UDim2.new(0, 5, 1, 0),
-		Parent = phaseBlock,
-	})
-	phaseLabel = Widgets.display({
-		TextSize = Theme.text.title,
+	Kit.list(row, T.space.s, true, Enum.HorizontalAlignment.Center)
+	clockIcon = Kit.icon({ name = "clock", size = 18, color = C.dim, LayoutOrder = 1, Parent = row })
+	clockLabel = Kit.label({
+		Text = "",
+		font = "mono",
+		size = "lead",
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.new(0, 0, 1, 0),
-		Parent = phaseBlock,
-	})
-	timerBlock = Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = C.accent,
-		Size = UDim2.fromOffset(104, 44),
+		Size = UDim2.fromScale(0, 1),
 		LayoutOrder = 2,
-		Parent = top,
+		Parent = row,
 	})
-	Widgets.slant(timerBlock, 0.12)
-	timerLabel = Widgets.display({
-		TextSize = 32,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.fromScale(1, 1),
-		Parent = timerBlock,
-	})
-	roundRow = Widgets.frame({
-		Size = UDim2.fromOffset(260, 16),
-		LayoutOrder = 2,
-		Visible = false,
-		Parent = ribbon,
-	})
-	roundLabel = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.small,
-		Position = UDim2.fromOffset(6, 0),
-		Size = UDim2.new(0, 100, 1, 0),
-		Parent = roundRow,
-	})
-	bars = Widgets.frame({
-		Position = UDim2.fromOffset(108, 4),
-		Size = UDim2.fromOffset(150, 8),
-		Parent = roundRow,
-	})
-	Widgets.list(bars, 4, true)
-	infoLabel = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.caption,
-		TextColor3 = C.muted,
-		Size = UDim2.fromOffset(320, 16),
+	marks = Kit.frame({
+		Name = "Rounds",
+		Size = UDim2.fromOffset(0, 14),
+		AutomaticSize = Enum.AutomaticSize.X,
 		LayoutOrder = 3,
-		Parent = ribbon,
+		Parent = row,
 	})
-	Clock.bind(timerLabel, timerText)
+	Kit.list(marks, 7, true, Enum.HorizontalAlignment.Center)
+	infoLabel = Kit.label({
+		Text = "",
+		font = "bodyItalic",
+		size = "small",
+		color = C.dim,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		LayoutOrder = 3,
+		Parent = banner,
+	})
+	Clock.bind(clockLabel, clockText)
 end
 
 local function buildBadge()
-	badge = Widgets.card({
-		Name = "RoleBadge",
-		Rotation = -2,
-		Size = UDim2.fromOffset(300, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
+	local page, content = Kit.page({
+		Name = "Identity",
+		tone = "raised",
+		padding = T.space.m,
+		Size = UDim2.fromOffset(330, 0),
 		Visible = false,
 		Parent = Screens.hud,
 	})
-	Widgets.sizeLimit(badge, Vector2.new(340, 400), Vector2.new(220, 0))
-	Widgets.padding(badge, Theme.space.md, Theme.space.lg)
-	Widgets.list(badge, 2)
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = C.accent,
-		Size = UDim2.new(0, 36, 0, 4),
-		LayoutOrder = 0,
-		Parent = badge,
-	})
-	roleLabel = Widgets.display({
-		TextSize = 30,
-		TextColor3 = C.ink,
-		Size = UDim2.new(1, 0, 0, 34),
-		LayoutOrder = 1,
-		Parent = badge,
-	})
-	aliasLabel = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.body,
-		TextColor3 = C.ink,
-		LayoutOrder = 2,
-		Parent = badge,
-	})
-	alliesLabel = Widgets.label({
-		TextSize = Theme.text.caption,
-		TextColor3 = C.inkMuted,
+	badge = page
+	badge.AutomaticSize = Enum.AutomaticSize.Y
+	content.AutomaticSize = Enum.AutomaticSize.Y
+	content.Size = UDim2.new(1, 0, 0, 0)
+	sealHolder = Kit.frame({ Name = "SealHolder", Size = UDim2.fromOffset(60, 60), Parent = content })
+	local column = Kit.frame({
+		Name = "Column",
+		Position = UDim2.fromOffset(72, 0),
+		Size = UDim2.new(1, -72, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 3,
-		Parent = badge,
+		Parent = content,
 	})
-	chipsLabel = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.caption,
-		TextColor3 = C.accent,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 4,
-		Parent = badge,
-	})
-	cardHint = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = 11,
-		TextColor3 = C.inkMuted,
-		LayoutOrder = 5,
-		Parent = badge,
-	})
+	Kit.list(column, 2)
+	roleText = Kit.text({ face = "Gothic", text = "", size = T.size.title, LayoutOrder = 1, Parent = column })
+	aliasLabel = Kit.label({ font = "bodyBold", size = "small", LayoutOrder = 2, Parent = column })
+	alliesLabel = Kit.label({ size = "micro", color = C.dim, LayoutOrder = 3, Parent = column })
+	chipsLabel = Kit.label({ font = "label", size = "micro", color = C.red, LayoutOrder = 4, Parent = column })
+	cardHint = Kit.label({ font = "bodyItalic", size = "micro", color = C.faint, LayoutOrder = 5, Parent = column })
 end
 
 function Hud.init()
-	buildRibbon()
+	buildBanner()
 	buildBadge()
-	objectives = Widgets.frame({
+	objectives = Kit.frame({
 		Name = "Objectives",
-		Position = UDim2.fromOffset(18, 108),
 		Size = UDim2.fromOffset(340, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = Screens.hud,
 	})
-	Widgets.list(objectives, Theme.space.xs)
-	actionBar = Widgets.frame({ Name = "ActionBar", Parent = Screens.hud })
-	Widgets.list(actionBar, Theme.space.sm, true)
+	Kit.Layout.place(objectives, "topLeft", Vector2.new(0, 4))
+	Kit.list(objectives, T.space.xs)
+	actionBar = Kit.frame({ Name = "ActionBar", Parent = Screens.hud })
+	Kit.list(actionBar, T.space.s, true)
 
 	local function refresh()
-		updateRibbon()
+		updateBanner()
 		updateBadge()
 		renderActions()
 	end
 	ClientState.PublicChanged:Connect(refresh)
 	ClientState.PrivateChanged:Connect(refresh)
-	ClientState.LobbyChanged:Connect(updateRibbon)
 	UserInputService.LastInputTypeChanged:Connect(renderActions)
-	Responsive.Changed:Connect(layout)
-	layout()
+	Kit.Layout.watch(layout)
 	refresh()
 end
 
@@ -440,7 +413,7 @@ function Hud.objectives(): Frame
 	return objectives
 end
 
--- The role card on the HUD; pressing and holding it shows the full role card.
+-- The identity card on the HUD; pressing and holding it shows the full role card.
 function Hud.badge(): Frame
 	return badge
 end

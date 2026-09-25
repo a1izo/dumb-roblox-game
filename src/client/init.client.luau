@@ -7,6 +7,7 @@ local UI = script:WaitForChild("UI")
 local Core = UI:WaitForChild("Core")
 local Clock = require(Core:WaitForChild("Clock"))
 local Responsive = require(Core:WaitForChild("Responsive"))
+local Kit = require(script:WaitForChild("UI"):WaitForChild("Kit"))
 local Router = require(Core:WaitForChild("Router"))
 local Settings = require(Core:WaitForChild("Settings"))
 
@@ -41,6 +42,7 @@ local TipPanel = require(UI:WaitForChild("TipPanel"))
 local Toasts = require(UI:WaitForChild("Toasts"))
 local VotePanel = require(UI:WaitForChild("VotePanel"))
 local WorldFx = require(UI:WaitForChild("WorldFx"))
+local PromptView = require(UI:WaitForChild("PromptView"))
 
 local Controllers = script:WaitForChild("Controllers")
 local AcademyController = require(Controllers:WaitForChild("AcademyController"))
@@ -79,6 +81,7 @@ local HintController = require(script:WaitForChild("Onboarding"):WaitForChild("H
 
 -- UI core: device scale, the shared clock, the screen router and the player's settings.
 Responsive.init()
+Kit.Textures.init()
 Clock.init()
 Router.init()
 Settings.init()
@@ -114,6 +117,7 @@ SpectatePanel.init()
 GhostHud.init()
 RevealScreen.init()
 WorldFx.init()
+PromptView.init()
 DebugPanel.init()
 
 -- Sound and cutscenes.

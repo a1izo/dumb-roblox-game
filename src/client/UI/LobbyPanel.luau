@@ -1,6 +1,8 @@
--- The lobby menu, "angular manga" style: the INKBOUND title, a staircase of slanted menu
--- buttons (a huge red READY on top), the queue status, and the player's profile on a tilted
--- paper card in the bottom right. Shown to everyone not playing in the current match.
+-- The lobby, drawn as the first page of the Grimoire: the INKBOUND wordmark and tagline, a red
+-- READY stamp with the queue status under it, a handwritten table of contents (I. How to
+-- play, II. Quests...) and, on the right, your profile: rank seal, XP and coins. Shown to
+-- everyone not playing in the current match. The HUD's phase banner is hidden here, so the
+-- queue status lives on this page.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,39 +12,64 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
-local Motion = require(script.Parent.Core.Motion)
 local DirectorPanel = require(script.Parent.DirectorPanel)
+local Kit = require(script.Parent.Kit)
+local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
-local C = Theme.colors
+local C = Kit.color
+local T = Kit.Tokens
 
 local ReadyRemote = Net.event("Ready")
 
 local LobbyPanel = {}
 
+local NUMERALS = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" }
+
+local MENU = {
+	{ text = "How to play", screen = "howToPlay" },
+	{ text = "Quests", screen = "quests" },
+	{ text = "Shop", screen = "shop" },
+	{ text = "Profile", screen = "profile" },
+	{ text = "Leaderboards", screen = "leaderboards" },
+	{ text = "Party", screen = "party" },
+	{ text = "Settings", screen = "settings" },
+	{ text = "Private server", screen = "director" },
+}
+
 local menu: Frame
+local wordmark: any
+local tagline: any
+local contents: Frame
 local profileCard: Frame
-local rankLabel: TextLabel
-local setXp: (number) -> ()
+local rankSeal: Frame
+local rankText: any
+local setXp: (number, boolean?) -> ()
 local xpLabel: TextLabel
 local coinsLabel: TextLabel
 local statusLabel: TextLabel
+local readyHolder: Frame
 local readyButton: TextButton
 local saveWarning: TextLabel
 local lastCoins: number? = nil
+local lastReady: boolean? = nil
+local lastRank = ""
 
 local function updateProfile()
 	local profile = ClientState.profile
 	if not profile then
-		rankLabel.Text = "LOADING PROFILE..."
+		rankText:set("…")
 		return
 	end
-	rankLabel.Text = string.upper(profile.rankName)
+	if profile.rankName ~= lastRank then
+		lastRank = profile.rankName
+		rankText:set(profile.rankName)
+		Kit.clear(rankSeal)
+		Kit.seal({ size = 64, color = C.blood, text = string.sub(profile.rankName, 1, 1), Parent = rankSeal })
+	end
 	local function coinsText(value: number): string
-		return string.format("%d COINS", math.floor(value + 0.5))
+		return string.format("%d coins", math.floor(value + 0.5))
 	end
 	if lastCoins and lastCoins ~= profile.coins then
 		Motion.countUp(coinsLabel, lastCoins, profile.coins, 0.6, coinsText)
@@ -52,18 +79,32 @@ local function updateProfile()
 	lastCoins = profile.coins
 	if profile.nextRankXp then
 		local span = math.max(1, profile.nextRankXp - profile.rankXp)
-		setXp((profile.xp - profile.rankXp) / span)
-		xpLabel.Text = string.format(
-			"%d / %d XP  ·  NEXT: %s",
-			profile.xp,
-			profile.nextRankXp,
-			string.upper(profile.nextRankName)
-		)
+		setXp((profile.xp - profile.rankXp) / span, true)
+		xpLabel.Text = string.format("%d / %d XP  ·  next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
 	else
-		setXp(1)
-		xpLabel.Text = string.format("%d XP  ·  TOP RANK", profile.xp)
+		setXp(1, true)
+		xpLabel.Text = string.format("%d XP  ·  the highest rank", profile.xp)
 	end
 	saveWarning.Visible = profile.persistent == false
+end
+
+local function onReady()
+	local lobby = ClientState.lobby
+	ReadyRemote:FireServer(not (lobby and lobby.ready))
+end
+
+local function buildReady(ready: boolean)
+	if readyButton then
+		readyButton:Destroy()
+	end
+	readyButton = Kit.button({
+		text = if ready then "Cancel ready" else "Ready",
+		icon = if ready then "cross" else "play",
+		variant = if ready then "secondary" else "primary",
+		size = "l",
+		Size = UDim2.fromOffset(if Kit.Layout.isPhone() then 260 else 320, 60),
+		Parent = readyHolder,
+	}, onReady)
 end
 
 local function updateLobby()
@@ -72,175 +113,212 @@ local function updateLobby()
 	menu.Visible = visible
 	profileCard.Visible = visible
 	if not lobby then
-		statusLabel.Text = "CONNECTING..."
+		statusLabel.Text = "Connecting…"
 		return
 	end
 	local status
 	if lobby.searching then
-		status = "SEARCHING OTHER SERVERS FOR PLAYERS..."
+		status = "Searching other servers for players…"
 	elseif lobby.countdown then
-		status = string.format("MATCH STARTS IN %d", lobby.countdown)
+		status = string.format("The case opens in %d…", lobby.countdown)
 	elseif lobby.matchRunning then
-		status = "A MATCH IS RUNNING  ·  READY UP FOR THE NEXT ONE"
+		status = "A match is running. Ready up for the next one."
 	else
-		status = string.format("%d OF %d PLAYERS READY", lobby.readyCount, lobby.needed)
+		status = string.format(
+			"%d of %d ready  ·  next case: %s",
+			lobby.readyCount,
+			lobby.needed,
+			tostring(lobby.nextMap or "?")
+		)
 	end
 	statusLabel.Text = status
-	if lobby.ready then
-		readyButton.Text = "CANCEL READY"
-		readyButton.BackgroundColor3 = C.paper
-		readyButton.TextColor3 = C.ink
+	statusLabel.TextColor3 = if lobby.countdown then C.red else C.dim
+	local ready = lobby.ready == true
+	if ready ~= lastReady then
+		lastReady = ready
+		buildReady(ready)
+	end
+end
+
+local function buildContents(phone: boolean)
+	contents:ClearAllChildren()
+	if phone then
+		Kit.grid(contents, UDim2.fromOffset(190, 44), T.space.xs)
 	else
-		readyButton.Text = "READY"
-		readyButton.BackgroundColor3 = C.accent
-		readyButton.TextColor3 = C.paper
+		Kit.list(contents, 0)
+	end
+	local shown = 0
+	for _, item in ipairs(MENU) do
+		local vip = item.screen ~= "director" or DirectorPanel.state.vip
+		if vip then
+			shown += 1
+		end
+		local entry = Kit.entry({
+			text = item.text,
+			numeral = NUMERALS[shown],
+			size = if phone then 26 else 32,
+			seed = shown,
+			Size = if phone then nil else UDim2.new(1, 0, 0, 44),
+			LayoutOrder = shown,
+			Visible = vip,
+			Parent = contents,
+		}, function()
+			Router.toggle(item.screen)
+		end)
+		local _ = entry
 	end
 end
 
 local function buildMenu()
-	menu = Widgets.frame({
+	menu = Kit.frame({
 		Name = "LobbyMenu",
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 28, 1, -28),
-		Size = UDim2.fromOffset(420, 0),
+		Size = UDim2.fromOffset(460, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = Screens.hud,
 	})
-	Widgets.list(menu, Theme.space.sm)
-	-- The title over a red ink splat.
-	local titleHolder = Widgets.frame({ Size = UDim2.new(1, 0, 0, 78), LayoutOrder = 1, Parent = menu })
-	Widgets.inkSplat({
-		ImageColor3 = C.accent,
-		ImageTransparency = 0.1,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0, 150, 0.5, 0),
-		Size = UDim2.fromOffset(250, 250),
-		Rotation = -12,
-		ZIndex = 1,
-		Parent = titleHolder,
-	}, 2)
-	Widgets.display({
-		Text = string.upper(Terms.GAME),
-		TextSize = 72,
-		Size = UDim2.fromScale(1, 1),
-		ZIndex = 2,
-		Parent = titleHolder,
+	Kit.list(menu, T.space.s)
+	-- A dark wash behind the menu, so the world never fights the text.
+	local wash = Kit.Base.make("Frame", {
+		Name = "Wash",
+		BackgroundColor3 = C.void,
+		BackgroundTransparency = 0.25,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(0.5, 0, 1, 0),
+		ZIndex = 0,
+		Parent = Screens.hud,
 	})
-	local tagline = Widgets.ribbon({ LayoutOrder = 2, Parent = menu }, Terms.TAGLINE)
-	tagline.Size = UDim2.fromOffset(0, 28)
-	local taglineLabel = tagline:FindFirstChildOfClass("TextLabel")
-	if taglineLabel then
-		taglineLabel.TextSize = Theme.text.body
-	end
-	Widgets.frame({ Size = UDim2.new(1, 0, 0, 10), LayoutOrder = 3, Parent = menu })
-
-	readyButton = Widgets.button({
-		Text = "READY",
-		TextSize = 40,
-		Variant = "primary",
-		Size = UDim2.fromOffset(340, 70),
-		LayoutOrder = 4,
-		Parent = menu,
-	}, function()
-		local lobby = ClientState.lobby
-		ReadyRemote:FireServer(not (lobby and lobby.ready))
+	Kit.Base.make("UIGradient", {
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(0.7, 0.35),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Parent = wash,
+	})
+	menu:GetPropertyChangedSignal("Visible"):Connect(function()
+		wash.Visible = menu.Visible
 	end)
-	statusLabel = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.body,
-		TextColor3 = C.muted,
-		Position = UDim2.fromOffset(8, 0),
+	wordmark = Kit.text({
+		face = "Gothic",
+		text = Terms.GAME,
+		size = T.size.hero + 12,
+		color = C.bone,
+		LayoutOrder = 1,
+		Parent = menu,
+	})
+	tagline = Kit.text({
+		face = "Scrawl",
+		text = Terms.TAGLINE,
+		size = 30,
+		color = C.red,
+		maxWidth = 440,
+		LayoutOrder = 2,
+		Parent = menu,
+	})
+	Kit.frame({ Name = "Gap", Size = UDim2.new(1, 0, 0, T.space.m), LayoutOrder = 3, Parent = menu })
+	readyHolder = Kit.frame({ Name = "Ready", Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 4, Parent = menu })
+	statusLabel = Kit.label({
+		font = "bodyItalic",
+		size = "small",
+		color = C.dim,
 		LayoutOrder = 5,
 		Parent = menu,
 	})
-	-- A staircase: every item sits a little further right than the one above.
-	for index, item in ipairs({
-		{ text = "How to play", screen = "howToPlay" },
-		{ text = "Quests", screen = "quests" },
-		{ text = "Shop", screen = "shop" },
-		{ text = "Profile", screen = "profile" },
-		{ text = "Leaderboards", screen = "leaderboards" },
-		{ text = "Party", screen = "party" },
-		{ text = "Settings", screen = "settings" },
-		{ text = "Private server", screen = "director" },
-	}) do
-		local holder = Widgets.frame({ Size = UDim2.new(1, 0, 0, 38), LayoutOrder = 5 + index, Parent = menu })
-		if item.screen == "director" then
-			-- Only in private servers.
-			holder.Visible = DirectorPanel.state.vip
-			DirectorPanel.Changed:Connect(function(state)
-				holder.Visible = state.vip
-			end)
-		end
-		Widgets.button({
-			Text = item.text,
-			TextSize = 22,
-			Position = UDim2.fromOffset(index * 10, 0),
-			Size = UDim2.fromOffset(260, 38),
-			Parent = holder,
-		}, function()
-			Router.toggle(item.screen)
-		end)
-	end
+	Kit.rule({ color = C.red, transparency = 0.4, thickness = 2, LayoutOrder = 6, Parent = menu })
+	contents = Kit.frame({
+		Name = "Contents",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 7,
+		Parent = menu,
+	})
+	DirectorPanel.Changed:Connect(function()
+		buildContents(Kit.Layout.isPhone())
+	end)
 end
 
 local function buildProfile()
-	profileCard = Widgets.card({
+	local page, content = Kit.page({
 		Name = "ProfileCard",
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -28, 1, -28),
-		Rotation = -2,
-		Size = UDim2.fromOffset(300, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
+		tone = "raised",
+		padding = T.space.l,
+		Size = UDim2.fromOffset(320, 0),
 		Parent = Screens.hud,
 	})
-	Widgets.padding(profileCard, Theme.space.md, Theme.space.lg)
-	Widgets.list(profileCard, Theme.space.xs)
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = C.accent,
-		Size = UDim2.fromOffset(36, 4),
-		LayoutOrder = 1,
-		Parent = profileCard,
+	profileCard = page
+	profileCard.AutomaticSize = Enum.AutomaticSize.Y
+	content.AutomaticSize = Enum.AutomaticSize.Y
+	content.Size = UDim2.new(1, 0, 0, 0)
+	Kit.list(content, T.space.xs)
+	local top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 68), LayoutOrder = 1, Parent = content })
+	rankSeal = Kit.frame({ Name = "RankSeal", Size = UDim2.fromOffset(64, 64), Parent = top })
+	Kit.label({
+		Text = Players.LocalPlayer.DisplayName,
+		font = "bodyBold",
+		size = "lead",
+		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(78, 4),
+		Size = UDim2.new(1, -78, 0, 26),
+		Parent = top,
 	})
-	Widgets.display({
-		Text = string.upper(Players.LocalPlayer.DisplayName),
-		TextColor3 = C.ink,
-		TextSize = Theme.text.title,
+	rankText = Kit.text({
+		face = "Gothic",
+		text = "",
+		size = T.size.title,
+		color = C.red,
+		Position = UDim2.fromOffset(76, 32),
+		Parent = top,
+	})
+	local _bar
+	_bar, setXp = Kit.meter({ color = C.red, height = 5, LayoutOrder = 2, Parent = content })
+	xpLabel = Kit.label({ font = "mono", size = "micro", color = C.dim, LayoutOrder = 3, Parent = content })
+	local coinsRow = Kit.frame({ Name = "Coins", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 4, Parent = content })
+	Kit.list(coinsRow, T.space.s, true)
+	Kit.icon({ name = "coin", size = 22, color = C.candle, LayoutOrder = 1, Parent = coinsRow })
+	coinsLabel = Kit.label({
+		font = "bodyBold",
+		size = "body",
+		color = C.candle,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
 		LayoutOrder = 2,
-		Parent = profileCard,
+		Parent = coinsRow,
 	})
-	rankLabel = Widgets.label({
-		FontFace = Theme.faces.display,
-		TextColor3 = C.accent,
-		TextSize = Theme.text.bodyLarge,
-		LayoutOrder = 3,
-		Parent = profileCard,
-	})
-	local bar
-	bar, setXp = Widgets.progressBar({ BackgroundColor3 = C.paperDark, LayoutOrder = 4, Parent = profileCard })
-	bar.Name = "XpBar"
-	xpLabel = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.caption,
-		TextColor3 = C.inkMuted,
-		LayoutOrder = 5,
-		Parent = profileCard,
-	})
-	coinsLabel = Widgets.display({
-		TextColor3 = C.ink,
-		TextSize = Theme.text.bodyLarge,
-		LayoutOrder = 6,
-		Parent = profileCard,
-	})
-	saveWarning = Widgets.label({
-		TextSize = Theme.text.caption,
-		TextColor3 = C.accent,
+	saveWarning = Kit.label({
 		Text = "Progress is not being saved in this session.",
+		size = "micro",
+		color = C.red,
 		Visible = false,
-		LayoutOrder = 7,
-		Parent = profileCard,
+		LayoutOrder = 5,
+		Parent = content,
 	})
+end
+
+local function layout(class: string)
+	local phone = class == "phone"
+	wordmark:setSize(if phone then T.size.display + 8 else T.size.hero + 12)
+	tagline:setSize(if phone then 24 else 30)
+	if phone then
+		menu.AnchorPoint = Vector2.new(0, 0)
+		menu.Position = UDim2.fromOffset(T.space.l, T.space.s)
+		menu.Size = UDim2.fromOffset(400, 0)
+		profileCard.AnchorPoint = Vector2.new(1, 0)
+		profileCard.Position = UDim2.new(1, -T.space.l, 0, T.space.s)
+		profileCard.Size = UDim2.fromOffset(260, 0)
+	else
+		Kit.Layout.place(menu, "bottomLeft", Vector2.new(T.space.l, -T.space.l))
+		menu.Size = UDim2.fromOffset(460, 0)
+		Kit.Layout.place(profileCard, "bottomRight", Vector2.new(-T.space.l, -T.space.l))
+		profileCard.Size = UDim2.fromOffset(320, 0)
+	end
+	buildContents(phone)
+	lastReady = nil
+	updateLobby()
 end
 
 function LobbyPanel.init()
@@ -249,6 +327,7 @@ function LobbyPanel.init()
 	ClientState.ProfileChanged:Connect(updateProfile)
 	ClientState.LobbyChanged:Connect(updateLobby)
 	ClientState.PublicChanged:Connect(updateLobby)
+	Kit.Layout.watch(layout)
 	updateProfile()
 	updateLobby()
 end
