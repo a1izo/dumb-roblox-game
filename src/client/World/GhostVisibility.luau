@@ -1,7 +1,8 @@
 -- Who sees Specters. The living (and the lobby) never see or hear them: every part and
 -- decal is made fully transparent on this screen, effects are switched off and sounds are
--- silenced, including anything added later. Specters see each other as pale, outlined
--- figures that drift.
+-- silenced, including anything added later. Specters, and spectators from the lobby, see the
+-- Specters as pale, outlined figures that drift. Spectators themselves are seen by nobody but
+-- themselves.
 
 local Players = game:GetService("Players")
 
@@ -17,16 +18,19 @@ type Watch = { connections: { RBXScriptConnection }, highlight: Highlight? }
 
 local watched: { [Model]: Watch } = {}
 
-local function viewerIsSpecter(): boolean
-	return ClientState.isSpecter()
+local function viewerSeesSpecters(): boolean
+	return ClientState.isSpecter() or ClientState.isWatching()
 end
 
 -- How transparent a ghost looks to this viewer (1 = invisible).
 local function alphaFor(character: Model): number
-	if not viewerIsSpecter() then
+	if character == LocalPlayer.Character then
+		return if viewerSeesSpecters() then 0.35 else 1
+	end
+	if character:GetAttribute("Spectator") or not viewerSeesSpecters() then
 		return 1
 	end
-	return if character == LocalPlayer.Character then 0.35 else 0.5
+	return 0.5
 end
 
 local function applyItem(item: Instance, alpha: number)
@@ -129,11 +133,12 @@ end
 
 local function track(character: Model)
 	local function check()
-		if character:GetAttribute("Specter") then
+		if character:GetAttribute("Specter") or character:GetAttribute("Spectator") then
 			watch(character)
 		end
 	end
 	character:GetAttributeChangedSignal("Specter"):Connect(check)
+	character:GetAttributeChangedSignal("Spectator"):Connect(check)
 	check()
 end
 
@@ -148,6 +153,7 @@ end
 function GhostVisibility.init()
 	Characters.each(track)
 	ClientState.PublicChanged:Connect(refreshAll)
+	ClientState.WatchChanged:Connect(refreshAll)
 end
 
 return GhostVisibility

@@ -43,6 +43,7 @@ return function(cue)
 	local data = cue.data
 	local handWon = data.winner ~= "Team"
 	local participant = ClientState.isParticipant()
+	local watching = ClientState.isWatching()
 	local won = false
 	if participant and type(data.winners) == "table" then
 		won = table.find(data.winners, LocalPlayer.UserId) ~= nil
@@ -54,7 +55,7 @@ return function(cue)
 	local endAt = cue.at + duration
 	Cinema.waitUntil(cue.at)
 	local left = endAt - workspace:GetServerTimeNow()
-	if not participant or left < 2 then
+	if not (participant or watching) or left < 2 then
 		return
 	end
 

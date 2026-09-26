@@ -1,7 +1,11 @@
--- The Specter HUD, a strip under the phase banner for anyone not alive in a running match:
--- follow a living player's view (◀ name ▶) or fly free; for Specters also the jumps between
--- the map and the meeting room and the lost souls gathered; and, on touch screens, up and
--- down buttons for flying.
+-- The Specter HUD, a strip under the phase banner for Specters and spectators: follow a
+-- living player's view (◀ name ▶) or fly free, and jump between the map and the meeting
+-- room. Specters also see the lost souls they gathered; spectators get a Leave button. On
+-- touch screens there are up and down buttons for flying.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local FollowCam = require(script.Parent.Parent.Specter.FollowCam)
@@ -20,26 +24,31 @@ local previous: TextButton
 local nextButton: TextButton
 local followLabel: TextLabel
 local followButton: TextButton
-local specterPart: Frame
+local jumps: Frame
+local souls: Frame
 local soulsLabel: TextLabel
+local leaveButton: TextButton
 local liftPad: Frame
 
 local function refresh()
 	local show = FollowCam.canFollow()
 	local specter = ClientState.isSpecter()
+	local watching = ClientState.isWatching()
 	local following = FollowCam.isFollowing()
 	strip.Visible = show
-	specterPart.Visible = specter
+	jumps.Visible = show
+	souls.Visible = specter
+	leaveButton.Visible = watching
 	previous.Visible = following
 	nextButton.Visible = following
 	if following then
 		local alias = FollowCam.alias()
 		followLabel.Text = if alias then "Watching " .. alias else "Nobody left to watch"
 	else
-		followLabel.Text = if specter then "Flying free" else "Watch the living"
+		followLabel.Text = "Flying free"
 	end
-	Kit.setText(followButton, if following then (if specter then "Fly" else "Stop") else "Follow")
-	liftPad.Visible = show and specter and not following and Kit.Layout.isTouch()
+	Kit.setText(followButton, if following then "Fly" else "Follow")
+	liftPad.Visible = show and not following and Kit.Layout.isTouch()
 end
 
 local function holdLift(button: GuiButton, value: number)
@@ -105,29 +114,35 @@ function GhostHud.init()
 		{ text = "Follow", icon = "eye", variant = "secondary", size = "s", LayoutOrder = 4, Parent = strip },
 		FollowCam.toggle
 	)
-	-- Specters only
-	specterPart = Kit.frame({
-		Name = "Specter",
+	-- Jumps between the map and the meeting room
+	jumps = Kit.frame({
+		Name = "Jumps",
 		Size = UDim2.fromOffset(0, T.touch),
 		AutomaticSize = Enum.AutomaticSize.X,
 		LayoutOrder = 5,
 		Parent = strip,
 	})
-	Kit.list(specterPart, T.space.s, true)
-	divider(1, specterPart)
-	Kit.button({ text = "Map", variant = "ghost", size = "s", LayoutOrder = 2, Parent = specterPart }, function()
+	Kit.list(jumps, T.space.s, true)
+	divider(1, jumps)
+	Kit.button({ text = "Map", variant = "ghost", size = "s", LayoutOrder = 2, Parent = jumps }, function()
 		FollowCam.stop()
 		GhostController.jump("map")
 	end)
-	Kit.button(
-		{ text = "Meeting room", variant = "ghost", size = "s", LayoutOrder = 3, Parent = specterPart },
-		function()
-			FollowCam.stop()
-			GhostController.jump("meeting")
-		end
-	)
-	divider(4, specterPart)
-	Kit.icon({ name = "ghost", size = 20, color = C.specter, LayoutOrder = 5, Parent = specterPart })
+	Kit.button({ text = "Meeting room", variant = "ghost", size = "s", LayoutOrder = 3, Parent = jumps }, function()
+		FollowCam.stop()
+		GhostController.jump("meeting")
+	end)
+	-- Lost souls (Specters only)
+	souls = Kit.frame({
+		Name = "Souls",
+		Size = UDim2.fromOffset(0, T.touch),
+		AutomaticSize = Enum.AutomaticSize.X,
+		LayoutOrder = 6,
+		Parent = strip,
+	})
+	Kit.list(souls, T.space.s, true)
+	divider(1, souls)
+	Kit.icon({ name = "ghost", size = 20, color = C.specter, LayoutOrder = 2, Parent = souls })
 	soulsLabel = Kit.label({
 		Text = "Lost souls 0/8",
 		font = "label",
@@ -136,10 +151,23 @@ function GhostHud.init()
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.X,
 		Size = UDim2.fromOffset(0, T.touch),
-		LayoutOrder = 6,
-		Parent = specterPart,
+		LayoutOrder = 3,
+		Parent = souls,
 	})
-	Kit.pad(specterPart, 0, T.space.xxs)
+	Kit.pad(souls, 0, T.space.xxs)
+	-- Spectators go back to the lobby from here.
+	leaveButton = Kit.button({
+		text = "Leave",
+		icon = "back",
+		variant = "danger",
+		size = "s",
+		Visible = false,
+		LayoutOrder = 7,
+		Parent = strip,
+	}, function()
+		FollowCam.stop()
+		Net.event("Watch"):FireServer({ action = "leave" })
+	end)
 
 	-- Up and down for flying on touch screens, above the jump button.
 	liftPad = Kit.frame({
@@ -173,6 +201,7 @@ function GhostHud.init()
 	end)
 	FollowCam.Changed:Connect(refresh)
 	ClientState.PublicChanged:Connect(refresh)
+	ClientState.WatchChanged:Connect(refresh)
 	Kit.Layout.Changed:Connect(refresh)
 	refresh()
 end

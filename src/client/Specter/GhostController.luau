@@ -1,6 +1,7 @@
 -- Being a Specter on this client: flying (camera-relative, up and down, straight through
 -- walls), the lost souls only you can see, and the real names of the living when the
--- server says you may see them.
+-- server says you may see them. Spectators from the lobby fly the same way, and get
+-- nothing else.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -282,11 +283,13 @@ end
 local function onCharacter(character: Model)
 	stopFlight()
 	local function check()
-		if character:GetAttribute("Specter") and character == LocalPlayer.Character then
+		local ghost = character:GetAttribute("Specter") or character:GetAttribute("Spectator")
+		if ghost and character == LocalPlayer.Character and not flight then
 			startFlight(character)
 		end
 	end
 	character:GetAttributeChangedSignal("Specter"):Connect(check)
+	character:GetAttributeChangedSignal("Spectator"):Connect(check)
 	check()
 end
 

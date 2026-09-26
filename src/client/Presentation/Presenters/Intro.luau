@@ -58,7 +58,8 @@ local function dropBook(book: Model, landing: CFrame, seconds: number, onLand: (
 end
 
 return function(cue)
-	if not ClientState.isParticipant() then
+	-- Players in the case and spectators watching it (the cues carry only public things).
+	if not (ClientState.isParticipant() or ClientState.isWatching()) then
 		return
 	end
 	local data = cue.data

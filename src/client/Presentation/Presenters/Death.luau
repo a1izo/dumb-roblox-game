@@ -42,7 +42,8 @@ local function witnesses(cue, victim: number): { Model }
 end
 
 return function(cue)
-	if not ClientState.isParticipant() then
+	-- Players in the case and spectators watching it (the cues carry only public things).
+	if not (ClientState.isParticipant() or ClientState.isWatching()) then
 		return
 	end
 	local data = cue.data

@@ -1,5 +1,5 @@
 -- The lobby, drawn as the first page of the Grimoire: the INKBOUND wordmark and tagline, a red
--- READY stamp with the queue status under it, a handwritten table of contents (I. Quests,
+-- READY stamp, a quieter SPECTATE button while a case is running, the queue status, a handwritten table of contents (I. Quests,
 -- II. Shop...) and, on the right, your card: rank seal, XP, coins, and the way to your
 -- profile and the leaderboards. How to Play lives in Settings (and on H). Shown to everyone
 -- not playing in the current match. The HUD's phase banner is hidden here, so the queue
@@ -23,6 +23,7 @@ local C = Kit.color
 local T = Kit.Tokens
 
 local ReadyRemote = Net.event("Ready")
+local WatchRemote = Net.event("Watch")
 
 local LobbyPanel = {}
 
@@ -49,6 +50,7 @@ local coinsLabel: TextLabel
 local statusLabel: TextLabel
 local readyHolder: Frame
 local readyButton: TextButton
+local spectateButton: TextButton
 local saveWarning: TextLabel
 local links: Frame
 local linksLayout: UIListLayout
@@ -109,9 +111,20 @@ local function buildReady(ready: boolean)
 	}, onReady)
 end
 
+-- SPECTATE: only while a case is running, and not while you are queued for the next one.
+local function updateSpectate(lobby)
+	local running = ClientState.public.active == true and lobby ~= nil and lobby.matchRunning == true
+	spectateButton.Visible = running
+	if running then
+		local queued = lobby.ready == true
+		Kit.setText(spectateButton, if queued then "Unready to watch" else "Spectate  ·  case in progress")
+		Kit.setEnabled(spectateButton, not queued)
+	end
+end
+
 local function updateLobby()
 	local lobby = ClientState.lobby
-	local visible = not ClientState.isParticipant()
+	local visible = not ClientState.isParticipant() and not ClientState.isWatching()
 	menu.Visible = visible
 	profileCard.Visible = visible
 	if not lobby then
@@ -124,7 +137,7 @@ local function updateLobby()
 	elseif lobby.countdown then
 		status = string.format("The case opens in %d…", lobby.countdown)
 	elseif lobby.matchRunning then
-		status = "A match is running. Ready up for the next one."
+		status = "A case is running. Watch it, or ready up for the next one."
 	else
 		status = string.format(
 			"%d of %d ready  ·  next case: %s",
@@ -135,6 +148,7 @@ local function updateLobby()
 	end
 	statusLabel.Text = status
 	statusLabel.TextColor3 = if lobby.countdown then C.red else C.dim
+	updateSpectate(lobby)
 	local ready = lobby.ready == true
 	if ready ~= lastReady then
 		lastReady = ready
@@ -221,19 +235,31 @@ local function buildMenu()
 	})
 	Kit.frame({ Name = "Gap", Size = UDim2.new(1, 0, 0, T.space.m), LayoutOrder = 3, Parent = menu })
 	readyHolder = Kit.frame({ Name = "Ready", Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 4, Parent = menu })
+	spectateButton = Kit.button({
+		text = "Spectate  ·  case in progress",
+		icon = "eye",
+		variant = "secondary",
+		size = "s",
+		Size = UDim2.fromOffset(320, 44),
+		Visible = false,
+		LayoutOrder = 5,
+		Parent = menu,
+	}, function()
+		WatchRemote:FireServer({ action = "watch" })
+	end)
 	statusLabel = Kit.label({
 		font = "bodyItalic",
 		size = "small",
 		color = C.dim,
-		LayoutOrder = 5,
+		LayoutOrder = 6,
 		Parent = menu,
 	})
-	Kit.rule({ color = C.red, transparency = 0.4, thickness = 2, LayoutOrder = 6, Parent = menu })
+	Kit.rule({ color = C.red, transparency = 0.4, thickness = 2, LayoutOrder = 7, Parent = menu })
 	contents = Kit.frame({
 		Name = "Contents",
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 7,
+		LayoutOrder = 8,
 		Parent = menu,
 	})
 	DirectorPanel.Changed:Connect(function()
@@ -345,6 +371,7 @@ local function layout(class: string)
 	local buttonSize = if phone then UDim2.new(1, 0, 0, 40) else UDim2.new(0.5, -T.space.xs, 0, 40)
 	profileButton.Size = buttonSize
 	boardsButton.Size = buttonSize
+	spectateButton.Size = UDim2.fromOffset(if phone then 260 else 320, 44)
 	buildContents(phone)
 	lastReady = nil
 	updateLobby()
@@ -356,6 +383,7 @@ function LobbyPanel.init()
 	ClientState.ProfileChanged:Connect(updateProfile)
 	ClientState.LobbyChanged:Connect(updateLobby)
 	ClientState.PublicChanged:Connect(updateLobby)
+	ClientState.WatchChanged:Connect(updateLobby)
 	Kit.Layout.watch(layout)
 	updateProfile()
 	updateLobby()

@@ -55,6 +55,7 @@ local EVENTS = {
 	-- end of match and spectating
 	"Reveal",
 	"Spectate",
+	"Watch",
 	-- presentation cues, Specters, profile settings, private servers and leaderboards
 	"Cue",
 	"Emote",

@@ -23,6 +23,7 @@ export type View = {
 	participant: boolean,
 	living: boolean,
 	specter: boolean,
+	spectating: boolean, -- watching the match from the lobby
 	role: string?,
 	private: { [string]: any },
 }
@@ -60,6 +61,7 @@ function Router.view(): View
 		participant = ClientState.isParticipant(),
 		living = ClientState.isLiving(),
 		specter = ClientState.isSpecter(),
+		spectating = ClientState.isWatching(),
 		role = ClientState.role(),
 		private = ClientState.private,
 	}
@@ -240,6 +242,7 @@ function Router.init()
 	ClientState.PublicChanged:Connect(Router.evaluate)
 	ClientState.PrivateChanged:Connect(Router.evaluate)
 	ClientState.PhaseChanged:Connect(Router.evaluate)
+	ClientState.WatchChanged:Connect(Router.evaluate)
 end
 
 return Router

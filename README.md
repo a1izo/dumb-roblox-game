@@ -79,7 +79,7 @@ ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 | N / G | Write or read your note / drop it |
 | R | Specter's Eyes read (the Cultist who accepted the deal) |
 | Z | Zero's desk: suspicion meter, tips and reports |
-| As a Specter | WASD to fly, Space up, Ctrl down (gamepad: A up, LT down; touch: on-screen buttons) |
+| As a Specter or spectator | WASD to fly, Space up, Ctrl down (gamepad: A up, LT down; touch: on-screen buttons) |
 | F2 | Debug panel (Studio play tests only) |
 
 Every action also has an on-screen button for touch devices, and gamepads are supported.
@@ -103,9 +103,16 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   owned animation packs.
 - **World** (`client/World`, `server/Maps/Style.luau`): night lighting per venue, rain that stops
   under roofs, lightning, flickering lamps, hard-shadow lamp posts, window blinds, steam and neon.
-- **Specters**: ghosts fly through walls, move between the map and the meeting-room gallery,
-  chat only with each other, gather lost souls for a few coins, and see real names only when no
-  party member or Roblox friend of theirs is still alive. The living never see or hear them.
+- **Specters**: ghosts fly through walls (but never out of the map: a box follows each map's
+  outer walls and ceiling), move between the map and the meeting-room gallery, follow a living
+  player's view, chat only with each other, gather lost souls for a few coins, and see real
+  names only when no party member or Roblox friend of theirs is still alive. The living never
+  see or hear them.
+- **Spectating**: while a case runs, players in the lobby can press SPECTATE and fly through
+  it the same way. Nobody sees them, not even the Specters; they get public information only,
+  read the meeting without typing, watch the cutscenes, and go back to the lobby when they
+  leave or the case closes. You cannot be queued and watching at once; a party member readying
+  up brings you back.
 - **Shop and Robux**: hats, trails, ties, notebook covers, victory poses, Specter forms and titles,
   a daily featured rotation, coin packs, and passes (VIP, Double Coins, Custom Alias, Emote Pack,
   Director). Titles and VIP tags show only in the lobby and on the results screen.

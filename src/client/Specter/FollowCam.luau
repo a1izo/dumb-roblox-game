@@ -1,5 +1,5 @@
--- Following a living player's view: anyone not alive in a running match (Specters, and
--- players in the lobby) can point their camera at a living player and step through them.
+-- Following a living player's view: Specters and spectators can point their camera at a
+-- living player and step through them.
 -- While following, a Specter's own ghost waits where it is (see GhostController). The
 -- Specter HUD draws the controls.
 
@@ -77,7 +77,7 @@ end
 
 -- True when this player may follow someone right now.
 function FollowCam.canFollow(): boolean
-	return ClientState.public.active == true and not ClientState.isLiving()
+	return ClientState.isSpecter() or ClientState.isWatching()
 end
 
 function FollowCam.isFollowing(): boolean
@@ -137,14 +137,16 @@ function FollowCam.step(direction: number)
 end
 
 function FollowCam.init()
-	ClientState.PublicChanged:Connect(function()
+	local function refresh()
 		if not FollowCam.canFollow() then
 			FollowCam.stop()
 		elseif following then
 			-- The target may have died: move on to someone still alive.
 			focus()
 		end
-	end)
+	end
+	ClientState.PublicChanged:Connect(refresh)
+	ClientState.WatchChanged:Connect(refresh)
 	LocalPlayer.CharacterAdded:Connect(function()
 		if not following then
 			task.defer(resetCamera)

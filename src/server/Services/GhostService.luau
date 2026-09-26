@@ -8,6 +8,11 @@
 -- Real names: a ghost sees the real names of the living only while none of their party
 -- members or Roblox friends is still alive (otherwise a dead Cultist could read names to
 -- the Hand over voice chat outside the game).
+--
+-- Spectators: players in the lobby can watch a running match. They fly in it like a ghost
+-- (the same bounds and venue moves) but are nobody's ghost: hidden from everyone, Specters
+-- included, with no real names, lost souls or rewards, reading the meeting without sending,
+-- and their voice off. They leave when they want, and the case closing sends them back.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,15 +21,18 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
+local SpectateRules = require(Shared:WaitForChild("SpectateRules"))
 local Venues = require(Shared:WaitForChild("Venues"))
 
 local CharacterService = require(script.Parent.CharacterService)
+local ChatService = require(script.Parent.ChatService)
 local CollisionGroups = require(script.Parent.CollisionGroups)
 local Match = require(script.Parent.Match)
 local PartyService = require(script.Parent.PartyService)
 local RateLimit = require(script.Parent.RateLimit)
 
 local GhostRemote = Net.event("Ghost")
+local WatchRemote = Net.event("Watch")
 
 local GhostService = {}
 
@@ -36,6 +44,10 @@ local ACTIVE_WISPS = 3
 -- How far past its walls the watchdog lets a ghost stray before bringing it back.
 local STRAY = Vector3.new(2, 4, 2)
 
+-- Camera zoom for spectators (as close as the players'), and back in the lobby.
+local WATCH_ZOOM = 18
+local LOBBY_ZOOM = 128
+
 type Ghost = {
 	ps: any,
 	venue: string,
@@ -46,6 +58,12 @@ type Ghost = {
 }
 
 local ghosts: { [Player]: Ghost } = {}
+-- Spectators from the lobby: player -> the venue they are in.
+local watchers: { [Player]: { venue: string } } = {}
+-- Set by the matchmaker: whether a player is queued for the next match.
+local queued: (Player) -> boolean = function(_player: Player)
+	return false
+end
 local partyOf: { [number]: number } = {}
 local friendsOf: { [number]: { [number]: boolean } } = {}
 local boundsFolder: Folder? = nil
@@ -238,6 +256,29 @@ local function moveTo(ghost: Ghost, venue: string)
 	end
 end
 
+-- Makes a body a ghost's: through walls, untouchable, unseen by sight lines, no name tag.
+-- `attribute` is "Specter" for the dead and "Spectator" for watchers from the lobby.
+local function ghostBody(character: Model, attribute: string, displayName: string)
+	character:SetAttribute(attribute, true)
+	local function ghostPart(item: Instance)
+		if item:IsA("BasePart") then
+			item.CollisionGroup = CollisionGroups.SPECTERS
+			item.CanQuery = false
+			item.CanTouch = false
+			item.CastShadow = false
+		end
+	end
+	for _, item in ipairs(character:GetDescendants()) do
+		ghostPart(item)
+	end
+	character.DescendantAdded:Connect(ghostPart)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		humanoid.DisplayName = displayName
+	end
+end
+
 local function setupCharacter(player: Player, character: Model)
 	local ps = Match.get(player)
 	if not ps then
@@ -255,24 +296,7 @@ local function setupCharacter(player: Player, character: Model)
 		}
 		ghosts[player] = ghost
 	end
-	character:SetAttribute("Specter", true)
-	local function ghostPart(item: Instance)
-		if item:IsA("BasePart") then
-			item.CollisionGroup = CollisionGroups.SPECTERS
-			item.CanQuery = false
-			item.CanTouch = false
-			item.CastShadow = false
-		end
-	end
-	for _, item in ipairs(character:GetDescendants()) do
-		ghostPart(item)
-	end
-	character.DescendantAdded:Connect(ghostPart)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-		humanoid.DisplayName = ps.alias
-	end
+	ghostBody(character, "Specter", ps.alias)
 	CharacterService.applyOutfit(player)
 	ghost.venue = venueForPhase(Match.phase)
 	character:PivotTo(spotIn(ghost.venue))
@@ -283,8 +307,94 @@ local function setupCharacter(player: Player, character: Model)
 	sendDuties(player, ghost)
 end
 
+-- Spectators ---------------------------------------------------------------------------------
+
+function GhostService.isWatching(player: Player): boolean
+	return watchers[player] ~= nil
+end
+
+-- The matchmaker says who is queued (a queued player cannot watch).
+function GhostService.setQueueCheck(check: (Player) -> boolean)
+	queued = check
+end
+
+local function setupWatcher(player: Player, character: Model)
+	local watcher = watchers[player]
+	if not watcher then
+		return
+	end
+	ghostBody(character, "Spectator", player.DisplayName)
+	watcher.venue = venueForPhase(Match.phase)
+	character:PivotTo(spotIn(watcher.venue))
+end
+
+-- Why a player cannot watch right now (nil when they can).
+function GhostService.watchBlocker(player: Player): string?
+	return SpectateRules.blocker({
+		active = Match.active,
+		phase = Match.phase,
+		participant = Match.get(player) ~= nil,
+		queued = queued(player),
+	})
+end
+
+-- Sends a lobby player into the running match as a spectator.
+function GhostService.watch(player: Player): boolean
+	if watchers[player] then
+		return true
+	end
+	local blocker = GhostService.watchBlocker(player)
+	local character = player.Character
+	if blocker or not character then
+		if blocker then
+			Match.notify(player, blocker, "bad")
+		end
+		return false
+	end
+	watchers[player] = { venue = venueForPhase(Match.phase) }
+	player.CameraMaxZoomDistance = WATCH_ZOOM
+	setupWatcher(player, character)
+	ChatService.addWatcher(player.UserId)
+	WatchRemote:FireClient(player, { watching = true })
+	return true
+end
+
+-- Brings a spectator back to the lobby with a fresh body.
+function GhostService.unwatch(player: Player)
+	if not watchers[player] then
+		return
+	end
+	watchers[player] = nil
+	ChatService.removeWatcher(player.UserId)
+	if player.Parent == Players then
+		player.CameraMaxZoomDistance = LOBBY_ZOOM
+		WatchRemote:FireClient(player, { watching = false })
+		CharacterService.load(player)
+	end
+end
+
+local function onWatch(player: Player, payload: any)
+	if type(payload) ~= "table" or not RateLimit.allow(player, "watch", 0.5) then
+		return
+	end
+	if payload.action == "watch" then
+		GhostService.watch(player)
+	elseif payload.action == "leave" then
+		GhostService.unwatch(player)
+	end
+end
+
 local function onRequest(player: Player, payload: any)
 	if type(payload) ~= "table" or not RateLimit.allow(player, "ghost", 0.2) then
+		return
+	end
+	local jump = payload.action == "jump" and (payload.venue == "map" or payload.venue == "meeting")
+	local watcher = watchers[player]
+	if watcher then
+		if jump and player.Character then
+			watcher.venue = payload.venue
+			player.Character:PivotTo(spotIn(payload.venue))
+		end
 		return
 	end
 	local ghost = ghosts[player]
@@ -293,8 +403,22 @@ local function onRequest(player: Player, payload: any)
 	end
 	if payload.action == "collect" then
 		onCollect(player, ghost, payload.id)
-	elseif payload.action == "jump" and (payload.venue == "map" or payload.venue == "meeting") then
+	elseif jump then
 		moveTo(ghost, payload.venue)
+	end
+end
+
+-- Brings anything that strayed outside both boxes back to its venue, and damps runaways.
+local function keepInside(character: Model?, attribute: string, venue: string)
+	local root = if character and character:GetAttribute(attribute)
+		then character:FindFirstChild("HumanoidRootPart")
+		else nil
+	if root and root:IsA("BasePart") then
+		if not inBounds("map", root.Position) and not inBounds("meeting", root.Position) then
+			(character :: Model):PivotTo(spotIn(venue))
+		elseif root.AssemblyLinearVelocity.Magnitude > 120 then
+			root.AssemblyLinearVelocity = Vector3.zero
+		end
 	end
 end
 
@@ -303,19 +427,10 @@ local function watchdog()
 		task.wait(1)
 		if Match.active then
 			for player, ghost in pairs(ghosts) do
-				local character = player.Character
-				local root = if character and character:GetAttribute("Specter")
-					then character:FindFirstChild("HumanoidRootPart")
-					else nil
-				if root and root:IsA("BasePart") then
-					local inMap = inBounds("map", root.Position)
-					local inMeeting = inBounds("meeting", root.Position)
-					if not inMap and not inMeeting then
-						character:PivotTo(spotIn(ghost.venue))
-					elseif root.AssemblyLinearVelocity.Magnitude > 120 then
-						root.AssemblyLinearVelocity = Vector3.zero
-					end
-				end
+				keepInside(player.Character, "Specter", ghost.venue)
+			end
+			for player, watcher in pairs(watchers) do
+				keepInside(player.Character, "Spectator", watcher.venue)
 			end
 		end
 	end
@@ -378,6 +493,14 @@ function GhostService.onMatchEnd()
 	ghosts = {}
 	partyOf = {}
 	friendsOf = {}
+	-- The case is closed: every spectator goes back to the lobby.
+	local watching = {}
+	for player in pairs(watchers) do
+		table.insert(watching, player)
+	end
+	for _, player in ipairs(watching) do
+		GhostService.unwatch(player)
+	end
 	if boundsFolder then
 		boundsFolder:Destroy()
 		boundsFolder = nil
@@ -391,12 +514,27 @@ function GhostService.onPhase(phase: string)
 			moveTo(ghost, venue)
 		end
 	end
+	for player, watcher in pairs(watchers) do
+		if watcher.venue ~= venue and player.Character then
+			watcher.venue = venue
+			player.Character:PivotTo(spotIn(venue))
+		end
+	end
 end
 
 function GhostService.init()
 	GhostRemote.OnServerEvent:Connect(onRequest)
+	WatchRemote.OnServerEvent:Connect(onWatch)
 	CharacterService.CharacterSpawned:Connect(function(player, character)
-		if GhostService.isGhost(player) then
+		if watchers[player] then
+			-- A spectator's body was replaced (it fell apart, or the avatar reloaded).
+			task.spawn(function()
+				RunService.Heartbeat:Wait()
+				if player.Character == character then
+					setupWatcher(player, character)
+				end
+			end)
+		elseif GhostService.isGhost(player) then
 			task.spawn(function()
 				-- Let the default spawn placement finish first.
 				RunService.Heartbeat:Wait()
@@ -411,6 +549,10 @@ function GhostService.init()
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		ghosts[player] = nil
+		if watchers[player] then
+			watchers[player] = nil
+			ChatService.removeWatcher(player.UserId)
+		end
 	end)
 	task.spawn(watchdog)
 end

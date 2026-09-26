@@ -16,7 +16,9 @@ local TeleportService = game:GetService("TeleportService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local SpectateRules = require(Shared:WaitForChild("SpectateRules"))
 
+local GhostService = require(script.Parent.GhostService)
 local MapService = require(script.Parent.MapService)
 local Match = require(script.Parent.Match)
 local PartyService = require(script.Parent.PartyService)
@@ -145,6 +147,7 @@ function MatchmakingService.lobbyPayload(player: Player)
 		countdown = if countdownEnds then math.max(0, math.ceil(countdownEnds - os.clock())) else nil,
 		matchRunning = matchRunning,
 		ready = ready[player] ~= nil,
+		watching = GhostService.isWatching(player),
 		searching = key ~= nil,
 		nextMap = MapService.nextMapName(),
 	}
@@ -403,11 +406,20 @@ local function onReady(player: Player, wantReady)
 	if Match.getLiving(player) then
 		return
 	end
+	-- Spectators leave the match before they can queue for the next one.
+	if wantReady and GhostService.isWatching(player) then
+		return
+	end
 	if wantReady then
 		Analytics.step(player, "ready")
 	end
 	for _, member in ipairs(PartyService.membersOf(player)) do
 		if Match.getLiving(member) == nil then
+			-- A party queues together: a member who is watching comes back to the lobby.
+			if wantReady and SpectateRules.pullOnReady(member, player, GhostService.isWatching(member)) then
+				GhostService.unwatch(member)
+				Match.notify(member, "Your party readied up, so you left spectating.", "info")
+			end
 			if wantReady then
 				ready[member] = ready[member] or os.clock()
 			else
@@ -449,6 +461,13 @@ function MatchmakingService.init()
 	end
 
 	ReadyRemote.OnServerEvent:Connect(onReady)
+	GhostService.setQueueCheck(function(player)
+		return ready[player] ~= nil
+	end)
+	-- The lobby's SPECTATE button follows whether you are watching.
+	Net.event("Watch").OnServerEvent:Connect(function()
+		task.defer(pushLobby)
+	end)
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	for _, player in ipairs(Players:GetPlayers()) do
 		task.spawn(onPlayerAdded, player)

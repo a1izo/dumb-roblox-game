@@ -32,6 +32,11 @@ ClientState.PrivateChanged = Signal.new()
 ClientState.PhaseChanged = Signal.new()
 ClientState.ProfileChanged = Signal.new()
 ClientState.LobbyChanged = Signal.new()
+-- Fired with true/false when this player starts or stops spectating from the lobby.
+ClientState.WatchChanged = Signal.new()
+
+-- True while this player watches the running match as a spectator.
+ClientState.watching = false
 ClientState.PartyChanged = Signal.new()
 
 local received = { state = false, private = false, profile = false, lobby = false, party = false }
@@ -68,12 +73,22 @@ local function setProfile(profile)
 	ClientState.ProfileChanged:Fire(profile)
 end
 
+local function setWatching(on: boolean)
+	if on ~= ClientState.watching then
+		ClientState.watching = on
+		ClientState.WatchChanged:Fire(on)
+	end
+end
+
 local function setLobby(lobby)
 	if type(lobby) ~= "table" then
 		return
 	end
 	received.lobby = true
 	ClientState.lobby = lobby
+	if type(lobby.watching) == "boolean" then
+		setWatching(lobby.watching)
+	end
 	ClientState.LobbyChanged:Fire(lobby)
 end
 
@@ -114,6 +129,11 @@ function ClientState.isSpecter(): boolean
 		and not me.alive
 		and me.status ~= "left"
 		and ClientState.public.phase ~= "Reveal"
+end
+
+-- Watching the running match from the lobby as a spectator.
+function ClientState.isWatching(): boolean
+	return ClientState.watching and ClientState.public.active == true
 end
 
 function ClientState.phase(): string
@@ -164,6 +184,11 @@ function ClientState.init()
 	Net.event("Profile").OnClientEvent:Connect(setProfile)
 	Net.event("LobbyState").OnClientEvent:Connect(setLobby)
 	Net.event("PartyState").OnClientEvent:Connect(setParty)
+	Net.event("Watch").OnClientEvent:Connect(function(payload)
+		if type(payload) == "table" then
+			setWatching(payload.watching == true)
+		end
+	end)
 	task.spawn(function()
 		local ok, snapshot = pcall(function()
 			return Net.func("GetSnapshot"):InvokeServer()

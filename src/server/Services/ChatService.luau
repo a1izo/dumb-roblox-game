@@ -35,6 +35,8 @@ local specterChannel: TextChannel? = nil
 local otherChannels: { TextChannel } = {}
 local meetingOpen = false
 local blockedNotices: { [string]: boolean } = {}
+-- Lobby players watching the match (userId -> true): they read the meeting like Specters.
+local watchers: { [number]: boolean } = {}
 
 -- Living players are cut off from normal chat until the reveal.
 local function isLiving(userId: number): boolean
@@ -73,6 +75,12 @@ local function applySource(channel: TextChannel, child: Instance)
 	end
 end
 
+-- Everyone in the match, and anyone watching it: Roblox voice is heard by whoever is near,
+-- so a spectator flying past the living must not be heard either.
+local function shouldMute(player: Player): boolean
+	return Match.active and (Match.get(player) ~= nil or watchers[player.UserId] == true)
+end
+
 local function setVoiceMuted(player: Player, muted: boolean)
 	local input = player:FindFirstChildOfClass("AudioDeviceInput")
 	if input then
@@ -99,7 +107,7 @@ function ChatService.refresh()
 		end
 	end
 	for _, player in ipairs(Players:GetPlayers()) do
-		setVoiceMuted(player, Match.active and Match.get(player) ~= nil)
+		setVoiceMuted(player, shouldMute(player))
 	end
 end
 
@@ -165,6 +173,34 @@ function ChatService.addSpecter(userId: number)
 	end)
 end
 
+-- A lobby player starts watching: they read the meeting (never send) and their voice is off.
+function ChatService.addWatcher(userId: number)
+	watchers[userId] = true
+	local channel = meetingChannel
+	if channel and not channel:FindFirstChild(tostring(userId)) then
+		task.spawn(function()
+			pcall(function()
+				channel:AddUserAsync(userId)
+			end)
+			ChatService.refresh()
+		end)
+	end
+	ChatService.refresh()
+end
+
+function ChatService.removeWatcher(userId: number)
+	watchers[userId] = nil
+	local channel = meetingChannel
+	if channel then
+		for _, child in ipairs(channel:GetChildren()) do
+			if child:IsA("TextSource") and child.UserId == userId then
+				child:Destroy()
+			end
+		end
+	end
+	ChatService.refresh()
+end
+
 local function clearChannel(channel: TextChannel?)
 	if channel then
 		for _, child in ipairs(channel:GetChildren()) do
@@ -214,6 +250,7 @@ end
 function ChatService.onMatchEnd()
 	meetingOpen = false
 	blockedNotices = {}
+	watchers = {}
 	clearChannel(meetingChannel)
 	clearChannel(specterChannel)
 	ChatService.refresh()
@@ -305,7 +342,7 @@ function ChatService.init()
 	Players.PlayerAdded:Connect(function(player)
 		player.ChildAdded:Connect(function(child)
 			if child:IsA("AudioDeviceInput") then
-				setVoiceMuted(player, Match.active and Match.get(player) ~= nil)
+				setVoiceMuted(player, shouldMute(player))
 			end
 		end)
 	end)
