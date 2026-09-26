@@ -4,6 +4,7 @@
 local CollectionService = game:GetService("CollectionService")
 
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
+local LightingController = require(script.Parent.LightingController)
 
 local FlickerController = {}
 
@@ -38,8 +39,9 @@ local function flicker(part: BasePart)
 			part.Material = Enum.Material.SmoothPlastic
 		end
 		task.wait(0.03 + math.random() * 0.08)
+		-- Back to what the lighting wants now (a mood may have dimmed it meanwhile).
 		for index, light in ipairs(lights) do
-			light.Brightness = brightness[index]
+			light.Brightness = LightingController.lampBrightness(light) or brightness[index]
 		end
 		part.Material = material
 		task.wait(0.04 + math.random() * 0.12)

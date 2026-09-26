@@ -26,6 +26,7 @@ Settings.DEFAULTS = {
 	reduceMotion = false,
 	cameraShake = true,
 	hints = true,
+	lowGraphics = false,
 }
 
 local values = table.clone(Settings.DEFAULTS)

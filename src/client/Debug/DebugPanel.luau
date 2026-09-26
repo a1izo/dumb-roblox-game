@@ -596,6 +596,22 @@ builders.World = function()
 	button(r, "Lightning", function()
 		LightingController.lightning()
 	end)
+	heading("Phase mood (lighting only)")
+	r = row()
+	for _, spec in ipairs({
+		{ "Follow the phase", nil },
+		{ "Investigation", "Investigation" },
+		{ "Grimoire", "DeathNote" },
+		{ "Meeting", "Meeting" },
+		{ "Vote", "Vote" },
+		{ "Verdict", "Verdict" },
+		{ "End: Hand wins", "OutroHand" },
+		{ "End: Agency wins", "OutroAgency" },
+	}) do
+		button(r, spec[1], function()
+			LightingController.setDebugMood(spec[2])
+		end)
+	end
 	heading("Rain")
 	r = row()
 	for _, spec in ipairs({ { "Preset", nil }, { "Off", 0 }, { "Light", 0.3 }, { "Heavy", 1 } }) do

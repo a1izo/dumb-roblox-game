@@ -34,6 +34,8 @@ local function screen(name: string, order: number, fullBleed: boolean?): ScreenG
 	return gui
 end
 
+-- Under everything: effects laid over the world itself (the lighting's vignette).
+Screens.world = screen("InkboundWorld", 5, true)
 Screens.hud = screen("InkboundHUD", 10)
 Screens.panels = screen("InkboundPanels", 20)
 Screens.modal = screen("InkboundModal", 30, true)

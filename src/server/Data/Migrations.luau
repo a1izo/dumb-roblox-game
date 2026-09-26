@@ -64,6 +64,7 @@ function Migrations.defaults(startingCoins: number)
 			reduceMotion = false,
 			cameraShake = true,
 			hints = true,
+			lowGraphics = false,
 		},
 		tipsSeen = {}, -- [tipId] = true
 		training = { done = false, drills = {} },

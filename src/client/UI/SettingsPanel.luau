@@ -78,6 +78,8 @@ function SettingsPanel.init()
 	setters.uiScale = setScale
 	toggle("reduceMotion", "Reduce motion")
 	toggle("cameraShake", "Camera shake")
+	-- Low graphics: no bloom or haze, fewer shadows and shorter lamp light (slower devices).
+	toggle("lowGraphics", "Low graphics")
 
 	header("Help")
 	-- How to Play opens over Settings and comes back here when it closes.

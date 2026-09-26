@@ -28,7 +28,7 @@ In a Studio play test, press **F2**. Everything below works with just you in the
 | Match | Start a match now, pick the next map, skip to any phase or round, pause or extend the timer, speed phases up (x0.1 to x2), skip cutscene phases, force a win, end the match at once |
 | People | Everyone with their role and real name. Change anyone's role mid-match (unique roles swap), force roles for the next match, kill (any cause), vote out, arrest, revive, give the Specter's Eyes, a hood or paper, force a letter flash, add suspicion, teleport, freeze |
 | Bots | Add test bots (Studio only). They join the next match, walk on pathfinding, work and fake case files, vote, and the Hand writes names. Toggle autoplay and kills, choose how bots vote, or order one bot to come, work, vote, write a name, serve a warrant or take the Eyes deal |
-| World | Teleport to the lobby, map, meeting room, any station or area; preview any map between matches; switch Blender scenes and part-built venues; check the map contract; fly, noclip, free camera; show colliders, roles over heads and performance stats; force lighting presets and rain |
+| World | Teleport to the lobby, map, meeting room, any station or area; preview any map between matches; switch Blender scenes and part-built venues; check the map contract; fly, noclip, free camera; show colliders, roles over heads and performance stats; force lighting presets, phase moods and rain |
 | Show | Play any cutscene for yourself during a match (intro, the four deaths, verdict, arrest, Eyes deal, both outros), announcements, every role's briefing card, the results screen, any music slot, every sound |
 | Anim | Play any animation clip on yourself or on the person picked, from x0.1 to x2, looped |
 | Profile | Coins, XP, every cosmetic, passes for the session, next day / week (streaks, quests, shop), resets (hints, Academy, streak, quests, achievements, cosmetics, everything), test purchases |
@@ -101,8 +101,13 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   cuffs, victory and defeat). Deaths ragdoll and leave a body until the next round, then a card
   with the alias. In matches everyone wears a noir suit and red tie, and one movement set replaces
   owned animation packs.
-- **World** (`client/World`, `server/Maps/Style.luau`): night lighting per venue, rain that stops
-  under roofs, lightning, flickering lamps, hard-shadow lamp posts, window blinds, steam and neon.
+- **World** (`client/World`, `shared/LightingPresets.luau`, `server/Maps/Style.luau`): "noir night"
+  lighting per venue (cold moonlight, warm lamps with hard shadows, haze, a washed-out grade,
+  bloom only on real lights) with a strong mood per phase, blended slowly: the Grimoire phase
+  falls near-black and red, the meeting gets a harsh cold key light, red creeps into the vote,
+  the verdict and the ending black out around the cutscene's spotlight. Settings has Low
+  graphics for slower devices. Also rain that stops under roofs, lightning, flickering lamps,
+  window blinds, steam and neon.
 - **Specters**: ghosts fly through walls (but never out of the map: a box follows each map's
   outer walls and ceiling), move between the map and the meeting-room gallery, follow a living
   player's view, chat only with each other, gather lost souls for a few coins, and see real

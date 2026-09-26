@@ -201,10 +201,11 @@ function MapService.destroy()
 end
 
 function MapService.init()
+	-- Night defaults; each client blends to its venue's look (World/LightingController).
 	Lighting.GlobalShadows = true
-	Lighting.EnvironmentDiffuseScale = 0.6
-	Lighting.EnvironmentSpecularScale = 0.8
-	Lighting.ClockTime = 0.5
+	Lighting.EnvironmentDiffuseScale = 0.45
+	Lighting.EnvironmentSpecularScale = 0.35
+	Lighting.ClockTime = 0
 	for _, name in ipairs({ "LGameColor", "LGameBloom" }) do
 		local old = Lighting:FindFirstChild(name)
 		if old then

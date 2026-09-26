@@ -28,6 +28,7 @@ local SETTINGS = {
 	reduceMotion = "boolean",
 	cameraShake = "boolean",
 	hints = "boolean",
+	lowGraphics = "boolean",
 }
 
 local function setSettings(player: Player, payload)
