@@ -93,7 +93,7 @@ local function build()
 
 	section(list, order, "Controls")
 	local buttons = row(list, order)
-	for _, variant in ipairs({ "primary", "danger", "secondary", "ghost", "parchment" }) do
+	for _, variant in ipairs({ "primary", "danger", "secondary", "ghost", "parchment", "good" }) do
 		Kit.button({ text = variant, variant = variant, icon = "quill", key = "E", Parent = buttons })
 	end
 	local disabled = Kit.button({ text = "disabled", variant = "primary", Parent = buttons })
@@ -133,7 +133,31 @@ local function build()
 	end
 	Kit.entry({ text = "How to play", numeral = "I", LayoutOrder = order(), Parent = list })
 	Kit.entry({ text = "The open chapter", numeral = "II", selected = true, LayoutOrder = order(), Parent = list })
+	local picks = Kit.frame({ Name = "Picks", Size = UDim2.new(1, 0, 0, 104), LayoutOrder = order(), Parent = list })
+	local renderPicks
+	renderPicks = Kit.pickGrid(picks, UDim2.new(1 / 3, -T.space.s, 0, 48), function(id)
+		renderPicks({
+			{ id = 1, text = "Raven", sub = "voted" },
+			{ id = 2, text = "Moth" },
+			{ id = 3, text = "Crow" },
+			{ id = 4, text = "Skip" },
+		}, id)
+	end)
+	renderPicks({
+		{ id = 1, text = "Raven", sub = "voted" },
+		{ id = 2, text = "Moth" },
+		{ id = 3, text = "Crow" },
+		{ id = 4, text = "Skip" },
+	}, 2)
 	Kit.field({ placeholder = "Write a full name…", maxLength = 32, LayoutOrder = order(), Parent = list })
+	local paper = Kit.card({ tone = "parchment", Size = UDim2.new(1, 0, 0, 80), LayoutOrder = order(), Parent = list })
+	Kit.field({
+		placeholder = "A field on paper…",
+		font = "document",
+		paper = true,
+		Size = UDim2.fromScale(1, 1),
+		Parent = paper,
+	})
 	Kit.slider({ LayoutOrder = order(), Parent = list }, "Music", 0.6, 0, 1, 0.1, function() end)
 	Kit.toggle({ LayoutOrder = order(), Parent = list }, "Reduce motion", true, function() end)
 	local _, setMeter = Kit.meter({ LayoutOrder = order(), Parent = list })
