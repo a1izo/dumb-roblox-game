@@ -312,9 +312,10 @@ function Window.confirm(options: ConfirmOptions): () -> ()
 	task.defer(function()
 		if box.Parent then
 			local height = 0
+			local scale = Base.scaleOf(content)
 			for _, child in ipairs(content:GetChildren()) do
 				if child:IsA("GuiObject") then
-					height += child.AbsoluteSize.Y + Tokens.space.m
+					height += child.AbsoluteSize.Y / scale + Tokens.space.m
 				end
 			end
 			box.Size = UDim2.new(0.92, 0, 0, height + Tokens.space.xl * 2)

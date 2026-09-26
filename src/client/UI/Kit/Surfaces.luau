@@ -58,7 +58,8 @@ local function redrawWhenReady(holder: Instance, draw: () -> ())
 end
 
 -- A page. Props: tone ("black", "raised", "parchment", "white"), torn (default true), ruled,
--- margin (a red margin line), padding (px, default 24), plus frame properties.
+-- margin (a red margin line), padding (px, default 24), autoHeight (the page grows and shrinks
+-- with its content; give it a width), plus frame properties.
 -- Returns the page frame and its content frame (put layouts in the content frame).
 function Surfaces.page(props: Props?): (Frame, Frame)
 	local p = props or {}
@@ -157,6 +158,13 @@ function Surfaces.page(props: Props?): (Frame, Frame)
 	local padding = p.padding or Tokens.space.xl
 	local content = Base.frame({ Name = "Content", ZIndex = z + 1, Parent = frame })
 	Base.pad(content, padding, if p.margin then padding + 44 else padding)
+	if p.autoHeight then
+		-- The paper fills the page, so the page is measured from its content rather than
+		-- sized automatically (see Base.fit).
+		content.Size = UDim2.new(1, 0, 0, 0)
+		content.AutomaticSize = Enum.AutomaticSize.Y
+		Base.fit(frame, content, "Y")
+	end
 	return frame, content
 end
 

@@ -71,7 +71,8 @@ function Slip.new(props: Props): Frame
 	})
 	-- Fit the slip to the text once it has been laid out.
 	local function fit()
-		frame.Size = UDim2.fromOffset(width, math.max(48, label.AbsoluteSize.Y + Tokens.space.m * 2 + 4))
+		local height = label.AbsoluteSize.Y / Base.scaleOf(label)
+		frame.Size = UDim2.fromOffset(width, math.max(48, height + Tokens.space.m * 2 + 4))
 	end
 	label:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
 	task.defer(fit)

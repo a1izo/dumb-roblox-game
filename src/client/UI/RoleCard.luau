@@ -96,14 +96,12 @@ function RoleCard.init()
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.new(0.9, 0, 0, 0),
+		autoHeight = true,
 		Visible = false,
 		ZIndex = 10,
 		Parent = Screens.overlay,
 	})
 	card = page
-	card.AutomaticSize = Enum.AutomaticSize.Y
-	content.AutomaticSize = Enum.AutomaticSize.Y
-	content.Size = UDim2.new(1, 0, 0, 0)
 	Kit.Base.maxSize(card, Vector2.new(500, 760))
 	Kit.list(content, T.space.s)
 	local top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 80), LayoutOrder = 1, Parent = content })

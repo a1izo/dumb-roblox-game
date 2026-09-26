@@ -1,5 +1,6 @@
 -- Specters: players who died, were voted out or were arrested stay in the match as ghosts.
--- Ghosts fly through walls inside invisible bounds, follow the match between the map and
+-- Ghosts fly through walls, but only inside invisible bounds that follow the map's outer
+-- walls and ceiling (Venues.specterBounds), follow the match between the map and
 -- the meeting room's gallery, chat only with each other, and can gather lost souls for a
 -- few coins. The living never see, hear or touch them (the client hides them, and they sit
 -- in their own collision group with CanQuery and CanTouch off).
@@ -32,11 +33,8 @@ GhostService.DUTY_COOLDOWN = 4
 GhostService.DUTY_MAX = 8
 local ACTIVE_WISPS = 3
 
--- Bounds around each venue, relative to its origin: { min, max }.
-local BOUNDS = {
-	map = { Vector3.new(-125, 0, -105), Vector3.new(125, 70, 105) },
-	meeting = { Vector3.new(-30, 0, -30), Vector3.new(30, 18, 30) },
-}
+-- How far past its walls the watchdog lets a ghost stray before bringing it back.
+local STRAY = Vector3.new(2, 4, 2)
 
 type Ghost = {
 	ps: any,
@@ -83,22 +81,26 @@ local function spotIn(venue: string): CFrame
 	return CFrame.new(origin(venue) + Vector3.new(0, 8, 0))
 end
 
+-- The venue's box for this match's map (Venues holds the sizes; clients clamp to the same).
+local function bounds(venue: string): (Vector3, Vector3)
+	return Venues.specterBounds(venue, Match.mapId)
+end
+
 local function inBounds(venue: string, position: Vector3): boolean
-	local box = BOUNDS[venue]
-	local localPos = position - origin(venue)
-	return localPos.X >= box[1].X - 2
-		and localPos.X <= box[2].X + 2
-		and localPos.Y >= box[1].Y - 4
-		and localPos.Y <= box[2].Y + 4
-		and localPos.Z >= box[1].Z - 2
-		and localPos.Z <= box[2].Z + 2
+	local min, max = bounds(venue)
+	min -= STRAY
+	max += STRAY
+	return position.X >= min.X
+		and position.X <= max.X
+		and position.Y >= min.Y
+		and position.Y <= max.Y
+		and position.Z >= min.Z
+		and position.Z <= max.Z
 end
 
 -- Invisible walls, floor and ceiling around a venue that only ghosts bump into.
 local function buildBox(parent: Instance, venue: string)
-	local box = BOUNDS[venue]
-	local o = origin(venue)
-	local min, max = o + box[1], o + box[2]
+	local min, max = bounds(venue)
 	local size = max - min
 	local centre = (min + max) / 2
 	local faces = {

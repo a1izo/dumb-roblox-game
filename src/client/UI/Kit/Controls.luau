@@ -114,10 +114,10 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	local look = LOOKS[props.variant or "secondary"] or LOOKS.secondary
 	local sizeKey = props.size or "m"
 	local height = HEIGHT[sizeKey] or HEIGHT.m
+	local autoWidth = props.Size == nil and props.width == nil
 	local button = Base.hit({
 		Name = props.Name or "Button",
 		Size = props.Size or UDim2.fromOffset(props.width or 0, height),
-		AutomaticSize = if props.Size or props.width then Enum.AutomaticSize.None else Enum.AutomaticSize.X,
 		Position = props.Position,
 		AnchorPoint = props.AnchorPoint,
 		LayoutOrder = props.LayoutOrder,
@@ -128,7 +128,6 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	Controls.focusable(button)
 	local z = button.ZIndex
 	local bg = Base.frame({ Name = "Bg", ZIndex = z, Parent = button })
-	local autoWidth = button.AutomaticSize == Enum.AutomaticSize.X
 	local row = Base.frame({
 		Name = "Row",
 		ZIndex = z + 1,
@@ -167,6 +166,10 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	})
 	if props.key and props.key ~= "" then
 		Controls.keycap({ text = props.key, LayoutOrder = 3, ZIndex = z + 1, Parent = row })
+	end
+	if autoWidth then
+		-- As wide as the icon, text and key; the fill follows the button (see Base.fit).
+		Base.fit(button, row, "X")
 	end
 	local underline: Frame? = nil
 	if look.line then
@@ -412,6 +415,132 @@ function Controls.iconButton(props: Props, onClick: (() -> ())?): TextButton
 	return button
 end
 
+-- A square chip for the match HUD's action bar: an inked icon with its key in the corner. The
+-- name shows on a tag above it on hover and gamepad selection; on touch screens the chip is
+-- bigger and the name is written under the icon. Props: icon, label, key, variant ("primary"
+-- for what to do now), touch, plus frame properties.
+function Controls.actionChip(props: Props, onClick: (() -> ())?): TextButton
+	local touch = props.touch == true
+	local size = if touch then 72 else 56
+	local primary = props.variant == "primary"
+	local rest = if primary then C.red else C.raised
+	local hover = if primary then C.red:Lerp(Color3.new(1, 1, 1), 0.12) else C.lifted
+	local press = if primary then C.blood else C.page
+	local button = Base.hit({
+		Name = props.Name or "ActionChip",
+		Size = UDim2.fromOffset(size, size),
+		LayoutOrder = props.LayoutOrder,
+		ZIndex = props.ZIndex or 1,
+		Parent = props.Parent,
+	})
+	Controls.focusable(button)
+	local z = button.ZIndex
+	local fill = Base.make("Frame", {
+		Name = "Fill",
+		BackgroundColor3 = rest,
+		BackgroundTransparency = if primary then 0 else Tokens.alpha.glass,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = z,
+		Parent = button,
+	})
+	Base.corner(fill, Tokens.radius.key)
+	Base.stroke(fill, if primary then C.blood else C.rule, 1, if primary then 0 else 0.8)
+	Icon.new({
+		name = props.icon or "help",
+		size = 28,
+		color = C.bone,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = if touch then UDim2.new(0.5, 0, 0, 22) else UDim2.fromScale(0.5, 0.5),
+		ZIndex = z + 1,
+		Parent = button,
+	})
+	local name = props.label or ""
+	local key = props.key or ""
+	-- Long gamepad names ("D-Right") go on the tag instead of crowding the icon.
+	local shortKey = key ~= "" and #key <= 2
+	if shortKey then
+		Controls.keycap({
+			text = key,
+			AnchorPoint = Vector2.new(1, 1),
+			Position = UDim2.new(1, -3, 1, -3),
+			ZIndex = z + 2,
+			Parent = button,
+		})
+	end
+	if touch then
+		Base.label({
+			Name = "Label",
+			Text = name,
+			font = "label",
+			size = "micro",
+			color = C.bone,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			AutomaticSize = Enum.AutomaticSize.None,
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 1, -2),
+			Size = UDim2.new(1, -6, 0, 30),
+			ZIndex = z + 1,
+			Parent = button,
+		})
+	end
+	-- The name tag sits above the chip, right-aligned so the last chip's tag stays on screen.
+	local tag = Base.make("Frame", {
+		Name = "Tag",
+		BackgroundColor3 = C.void,
+		BackgroundTransparency = 0.1,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, 0, 0, -Tokens.space.s),
+		Size = UDim2.fromOffset(0, 28),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Visible = false,
+		ZIndex = z + 5,
+		Parent = button,
+	})
+	Base.corner(tag, Tokens.radius.key)
+	Base.pad(tag, 0, Tokens.space.s)
+	Base.label({
+		Text = if key ~= "" and not shortKey then name .. "  ·  " .. key else name,
+		font = "label",
+		size = "small",
+		color = C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
+		ZIndex = z + 6,
+		Parent = tag,
+	})
+	local function lit(on: boolean, pressed: boolean?)
+		tag.Visible = on and not touch
+		local color = if pressed then press elseif on then hover else rest
+		Motion.tween(fill, { BackgroundColor3 = color }, Tokens.motion.quick)
+	end
+	button.MouseEnter:Connect(function()
+		lit(true)
+	end)
+	button.MouseLeave:Connect(function()
+		lit(false)
+	end)
+	button.SelectionGained:Connect(function()
+		lit(true)
+	end)
+	button.SelectionLost:Connect(function()
+		lit(false)
+	end)
+	button.MouseButton1Down:Connect(function()
+		lit(true, true)
+	end)
+	button.MouseButton1Up:Connect(function()
+		lit(true)
+	end)
+	if onClick then
+		button.Activated:Connect(onClick)
+	end
+	return button
+end
+
 -- A key hint ("E", "Q", "LB"...). Hidden on touch screens.
 function Controls.keycap(props: Props): Frame
 	local text = props.text or ""
@@ -479,7 +608,6 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 		local button = Base.hit({
 			Name = "Tab_" .. item.id,
 			Size = if props.vertical then UDim2.new(1, 0, 0, Tokens.touch) else UDim2.new(0, 0, 1, 0),
-			AutomaticSize = if props.vertical then Enum.AutomaticSize.None else Enum.AutomaticSize.X,
 			LayoutOrder = index,
 			ZIndex = frame.ZIndex,
 			Parent = frame,
@@ -541,6 +669,9 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			ZIndex = button.ZIndex + 2,
 			Parent = row,
 		})
+		if not props.vertical then
+			Base.fit(button, row, "X")
+		end
 		buttons[item.id] = { button = button, ribbon = ribbon, label = label }
 		button.MouseEnter:Connect(function()
 			if current ~= item.id then

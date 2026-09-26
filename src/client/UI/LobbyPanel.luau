@@ -244,13 +244,11 @@ local function buildProfile()
 		Name = "ProfileCard",
 		tone = "raised",
 		padding = T.space.l,
+		autoHeight = true,
 		Size = UDim2.fromOffset(320, 0),
 		Parent = Screens.hud,
 	})
 	profileCard = page
-	profileCard.AutomaticSize = Enum.AutomaticSize.Y
-	content.AutomaticSize = Enum.AutomaticSize.Y
-	content.Size = UDim2.new(1, 0, 0, 0)
 	Kit.list(content, T.space.xs)
 	local top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 68), LayoutOrder = 1, Parent = content })
 	rankSeal = Kit.frame({ Name = "RankSeal", Size = UDim2.fromOffset(64, 64), Parent = top })

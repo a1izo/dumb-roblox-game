@@ -158,6 +158,51 @@ function Base.scroll(props: Props?): ScrollingFrame
 	}, props)
 end
 
+-- Measuring ----------------------------------------------------------------------------------
+
+-- The UIScale on a gui: the screen's device scale times any pop or press animation above it.
+-- Divide an AbsoluteSize by this to get design pixels back.
+function Base.scaleOf(gui: Instance): number
+	local scale = 1
+	local node: Instance? = gui
+	while node do
+		local uiScale = node:FindFirstChildOfClass("UIScale")
+		if uiScale then
+			scale *= uiScale.Scale
+		end
+		if node:IsA("LayerCollector") then
+			break
+		end
+		node = node.Parent
+	end
+	return if scale > 1e-3 then scale else 1
+end
+
+-- Keeps `frame` as wide (axis "X") or as tall (axis "Y") as `measured`, plus `extra` design
+-- pixels. Use it instead of AutomaticSize on anything with full-size decoration inside (a
+-- page's paper, a button's fill): those children follow the frame's own size, so an
+-- automatically sized frame feeds on itself, grows once and never shrinks back.
+function Base.fit(frame: GuiObject, measured: GuiObject, axis: string, extra: number?)
+	local function apply()
+		local scale = Base.scaleOf(measured)
+		local size = frame.Size
+		if axis == "X" then
+			local width = math.ceil(measured.AbsoluteSize.X / scale + (extra or 0))
+			if size.X.Scale ~= 0 or size.X.Offset ~= width then
+				frame.Size = UDim2.new(0, width, size.Y.Scale, size.Y.Offset)
+			end
+		else
+			local height = math.ceil(measured.AbsoluteSize.Y / scale + (extra or 0))
+			if size.Y.Scale ~= 0 or size.Y.Offset ~= height then
+				frame.Size = UDim2.new(size.X.Scale, size.X.Offset, 0, height)
+			end
+		end
+	end
+	measured:GetPropertyChangedSignal("AbsoluteSize"):Connect(apply)
+	frame:GetPropertyChangedSignal("Size"):Connect(apply)
+	task.defer(apply)
+end
+
 -- Removes every child except layouts, padding and constraints.
 function Base.clear(parent: Instance)
 	for _, child in ipairs(parent:GetChildren()) do

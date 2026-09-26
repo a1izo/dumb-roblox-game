@@ -58,6 +58,7 @@ local Kit = {
 	button = Controls.button,
 	hold = Controls.hold,
 	iconButton = Controls.iconButton,
+	actionChip = Controls.actionChip,
 	keycap = Controls.keycap,
 	tabs = Controls.tabs,
 	nameLine = Controls.nameLine,

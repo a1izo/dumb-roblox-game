@@ -1,12 +1,14 @@
 -- The HUD in a match, drawn with the Grimoire kit:
---   phase banner  (top centre)   a brush stroke of blood with the phase in Gothic lettering,
---                                the clock and a mark per round beneath it
+--   phase banner  (top centre)   a brush stroke of blood with the phase in Gothic lettering;
+--                                the clock, a mark per round and the place on a dark plate
 --   objectives    (top left)     handwritten lines, filled in by the objective tracker
---   identity      (bottom left)  your wax seal, role, alias and what you carry
---   actions       (bottom right) inked buttons with their keys, from Input/Actions
--- On touch screens the identity card moves to the left middle and the actions stack on the
--- right edge, clear of the thumbstick and the jump button. Between matches the lobby panel
--- takes over and the HUD stays out of the way.
+--   identity      (bottom left)  your wax seal, role, alias and, one per line, what you
+--                                carry and can do
+--   actions       (bottom right) square chips with an icon and a key, from Input/Actions;
+--                                the name shows on hover
+-- On touch screens the identity card moves to the left middle and the actions become a grid
+-- of bigger chips on the right edge, clear of the thumbstick and the jump button. Between
+-- matches the lobby panel takes over and the HUD stays out of the way.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -65,7 +67,7 @@ local seal: Frame
 local sealHolder: Frame
 local roleText: any
 local aliasLabel: TextLabel
-local chipsLabel: TextLabel
+local abilities: Frame
 local alliesLabel: TextLabel
 local cardHint: TextLabel
 
@@ -76,6 +78,11 @@ local actionKey = ""
 
 local lastPhase = ""
 local lastRole = ""
+local lastAbilities = ""
+
+-- Touch screens: chips per row in the action grid.
+local TOUCH_COLUMNS = 3
+local TOUCH_CHIP = 72
 
 -- Phase banner --------------------------------------------------------------------------------
 
@@ -145,7 +152,8 @@ local function alliesText(private): string
 	return table.concat(parts, "   ")
 end
 
-local function chips(private, phase: string): string
+-- What you carry and what you can do right now, one line each.
+local function abilityLines(private, phase: string): { string }
 	local list = {}
 	if private.hood then
 		table.insert(list, "Hood on")
@@ -176,7 +184,44 @@ local function chips(private, phase: string): string
 	if private.role == "Follower" and private.canTamper and phase == "Investigation" then
 		table.insert(list, "Can rig a flash (hold T)")
 	end
-	return table.concat(list, "  ·  ")
+	return list
+end
+
+local function renderAbilities(list: { string })
+	local key = table.concat(list, "|")
+	if key == lastAbilities then
+		return
+	end
+	lastAbilities = key
+	Kit.clear(abilities)
+	for index, text in ipairs(list) do
+		local line = Kit.frame({
+			Name = "Ability",
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			LayoutOrder = index,
+			Parent = abilities,
+		})
+		-- A small red diamond of ink marks each line.
+		Kit.Base.make("Frame", {
+			Name = "Mark",
+			BackgroundColor3 = C.red,
+			BorderSizePixel = 0,
+			Rotation = 45,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(5, 10),
+			Size = UDim2.fromOffset(6, 6),
+			Parent = line,
+		})
+		Kit.label({
+			Text = text,
+			size = "small",
+			Position = UDim2.fromOffset(16, 0),
+			Size = UDim2.new(1, -16, 0, 0),
+			Parent = line,
+		})
+	end
+	abilities.Visible = #list > 0
 end
 
 local function rebuildSeal(role: string, color: Color3)
@@ -215,8 +260,7 @@ local function updateBadge()
 	aliasLabel.Text = string.format("%s  ·  %s", tostring(private.alias or (me and me.alias) or ""), status)
 	alliesLabel.Text = alliesText(private)
 	alliesLabel.Visible = alliesLabel.Text ~= ""
-	chipsLabel.Text = string.upper(chips(private, phase))
-	chipsLabel.Visible = chipsLabel.Text ~= ""
+	renderAbilities(abilityLines(private, phase))
 	cardHint.Text = if Kit.Layout.isTouch() then "Press and hold for your role card" else "Hold C for your role card"
 end
 
@@ -242,14 +286,12 @@ local function renderActions()
 	actionKey = key
 	Kit.clear(actionBar)
 	for index, action in ipairs(available) do
-		local hint = Actions.hint(action)
-		Kit.button({
-			text = action.label(view),
+		Kit.actionChip({
 			icon = ACTION_ICON[action.id],
-			key = if touch then nil else hint,
-			variant = if action.variant == "primary" then "primary" else "secondary",
-			size = if touch then "m" else "s",
-			Size = if touch then UDim2.fromOffset(176, T.touch) else nil,
+			label = action.label(view),
+			key = Actions.hint(action),
+			variant = if action.variant == "primary" then "primary" else nil,
+			touch = touch,
 			LayoutOrder = index,
 			Parent = actionBar,
 		}, action.run)
@@ -260,30 +302,30 @@ end
 
 local function layout(class: string)
 	local touch = class == "phone" or class == "tablet"
-	local listLayout = actionBar:FindFirstChildOfClass("UIListLayout")
+	for _, child in ipairs(actionBar:GetChildren()) do
+		if child:IsA("UIGridStyleLayout") then
+			child:Destroy()
+		end
+	end
 	if touch then
 		badge.AnchorPoint = Vector2.new(0, 0.5)
 		badge.Position = UDim2.new(0, 12, 0.55, 0)
+		-- A grid of big chips on the right edge, filled from the right, above the jump button.
 		actionBar.AnchorPoint = Vector2.new(1, 0.5)
 		actionBar.Position = UDim2.new(1, -12, 0.42, 0)
-		actionBar.Size = UDim2.fromOffset(176, 0)
+		actionBar.Size = UDim2.fromOffset(TOUCH_CHIP * TOUCH_COLUMNS + T.space.s * (TOUCH_COLUMNS - 1), 0)
 		actionBar.AutomaticSize = Enum.AutomaticSize.Y
-		if listLayout then
-			listLayout.FillDirection = Enum.FillDirection.Vertical
-			listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-			listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		end
+		local grid = Kit.grid(actionBar, UDim2.fromOffset(TOUCH_CHIP, TOUCH_CHIP), T.space.s)
+		grid.StartCorner = Enum.StartCorner.TopRight
+		grid.HorizontalAlignment = Enum.HorizontalAlignment.Right
 		objectives.Size = UDim2.fromOffset(250, 0)
 	else
 		Kit.Layout.place(badge, "bottomLeft")
+		-- One row of chips, as wide as they need, growing to the left.
 		Kit.Layout.place(actionBar, "bottomRight")
-		actionBar.Size = UDim2.new(0.62, 0, 0, 40)
-		actionBar.AutomaticSize = Enum.AutomaticSize.None
-		if listLayout then
-			listLayout.FillDirection = Enum.FillDirection.Horizontal
-			listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-			listLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-		end
+		actionBar.Size = UDim2.fromOffset(0, 56)
+		actionBar.AutomaticSize = Enum.AutomaticSize.X
+		Kit.list(actionBar, T.space.s, true, Enum.HorizontalAlignment.Right)
 		objectives.Size = UDim2.fromOffset(340, 0)
 	end
 	bannerText:setSize(if class == "phone" then T.size.title else T.size.heading)
@@ -302,7 +344,7 @@ local function buildBanner()
 		Parent = Screens.hud,
 	})
 	Kit.Layout.place(banner, "topCenter", Vector2.new(0, -6))
-	Kit.list(banner, 0, false, Enum.HorizontalAlignment.Center)
+	Kit.list(banner, T.space.xs, false, Enum.HorizontalAlignment.Center)
 	local stroke, text = Kit.banner({
 		text = "",
 		size = T.size.heading,
@@ -312,14 +354,28 @@ local function buildBanner()
 	})
 	local _ = stroke
 	bannerText = text
+	-- The clock, the rounds and the place sit on a dark plate, so the room never shows through.
+	local plate = Kit.Base.make("Frame", {
+		Name = "Plate",
+		BackgroundColor3 = C.void,
+		BackgroundTransparency = 0.3,
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(0, 0),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		LayoutOrder = 2,
+		Parent = banner,
+	})
+	Kit.Base.corner(plate, T.radius.key)
+	Kit.pad(plate, T.space.xs, T.space.m)
+	Kit.list(plate, T.space.xxs, false, Enum.HorizontalAlignment.Center)
 	local row = Kit.frame({
 		Name = "Clock",
 		Size = UDim2.fromOffset(0, 26),
 		AutomaticSize = Enum.AutomaticSize.X,
-		LayoutOrder = 2,
-		Parent = banner,
+		LayoutOrder = 1,
+		Parent = plate,
 	})
-	Kit.list(row, T.space.s, true, Enum.HorizontalAlignment.Center)
+	Kit.list(row, T.space.m, true, Enum.HorizontalAlignment.Center)
 	clockIcon = Kit.icon({ name = "clock", size = 18, color = C.dim, LayoutOrder = 1, Parent = row })
 	clockLabel = Kit.label({
 		Text = "",
@@ -342,13 +398,13 @@ local function buildBanner()
 	infoLabel = Kit.label({
 		Text = "",
 		font = "bodyItalic",
-		size = "small",
+		size = "body",
 		color = C.dim,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Size = UDim2.fromOffset(0, 0),
-		LayoutOrder = 3,
-		Parent = banner,
+		LayoutOrder = 2,
+		Parent = plate,
 	})
 	Clock.bind(clockLabel, clockText)
 end
@@ -358,28 +414,43 @@ local function buildBadge()
 		Name = "Identity",
 		tone = "raised",
 		padding = T.space.m,
-		Size = UDim2.fromOffset(330, 0),
+		autoHeight = true,
+		Size = UDim2.fromOffset(340, 0),
 		Visible = false,
 		Parent = Screens.hud,
 	})
 	badge = page
-	badge.AutomaticSize = Enum.AutomaticSize.Y
-	content.AutomaticSize = Enum.AutomaticSize.Y
-	content.Size = UDim2.new(1, 0, 0, 0)
-	sealHolder = Kit.frame({ Name = "SealHolder", Size = UDim2.fromOffset(60, 60), Parent = content })
+	Kit.list(content, T.space.s)
+	-- The seal beside who you are; below it, a line per thing you carry or can do.
+	local top = Kit.frame({
+		Name = "Top",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 1,
+		Parent = content,
+	})
+	sealHolder = Kit.frame({ Name = "SealHolder", Size = UDim2.fromOffset(60, 60), Parent = top })
 	local column = Kit.frame({
 		Name = "Column",
 		Position = UDim2.fromOffset(72, 0),
 		Size = UDim2.new(1, -72, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Parent = content,
+		Parent = top,
 	})
 	Kit.list(column, 2)
 	roleText = Kit.text({ face = "Gothic", text = "", size = T.size.title, LayoutOrder = 1, Parent = column })
 	aliasLabel = Kit.label({ font = "bodyBold", size = "small", LayoutOrder = 2, Parent = column })
 	alliesLabel = Kit.label({ size = "micro", color = C.dim, LayoutOrder = 3, Parent = column })
-	chipsLabel = Kit.label({ font = "label", size = "micro", color = C.red, LayoutOrder = 4, Parent = column })
-	cardHint = Kit.label({ font = "bodyItalic", size = "micro", color = C.faint, LayoutOrder = 5, Parent = column })
+	abilities = Kit.frame({
+		Name = "Abilities",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Visible = false,
+		LayoutOrder = 2,
+		Parent = content,
+	})
+	Kit.list(abilities, T.space.xxs)
+	cardHint = Kit.label({ font = "bodyItalic", size = "micro", color = C.faint, LayoutOrder = 3, Parent = content })
 end
 
 function Hud.init()
@@ -393,8 +464,8 @@ function Hud.init()
 	})
 	Kit.Layout.place(objectives, "topLeft", Vector2.new(0, 4))
 	Kit.list(objectives, T.space.xs)
+	-- Its layout (a row, or a grid on touch screens) is set by layout().
 	actionBar = Kit.frame({ Name = "ActionBar", Parent = Screens.hud })
-	Kit.list(actionBar, T.space.s, true)
 
 	local function refresh()
 		updateBanner()
@@ -416,6 +487,24 @@ end
 -- The identity card on the HUD; pressing and holding it shows the full role card.
 function Hud.badge(): Frame
 	return badge
+end
+
+-- Where a HUD piece ends, in design pixels from the top of the safe area (0 while hidden).
+local function bottomOf(gui: GuiObject): number
+	if not gui.Visible then
+		return 0
+	end
+	local scale = Kit.Base.scaleOf(gui)
+	return (gui.AbsolutePosition.Y + gui.AbsoluteSize.Y - Screens.hud.AbsolutePosition.Y) / scale
+end
+
+-- Where the guide's tips go: under the objectives on the left, or under the phase banner on
+-- phones (where the identity card takes the left side). Returns a position and an anchor.
+function Hud.tipPlacement(): (UDim2, Vector2)
+	if Kit.Layout.isPhone() then
+		return UDim2.new(0.5, 0, 0, bottomOf(banner) + T.space.s), Vector2.new(0.5, 0)
+	end
+	return UDim2.new(0, T.space.l, 0, math.max(bottomOf(objectives), T.space.l) + T.space.m), Vector2.new(0, 0)
 end
 
 return Hud

@@ -76,6 +76,11 @@ local function run()
 	running = false
 end
 
+-- True while an announcement is on screen (the guide's tips wait for it to pass).
+function Announcer.isShowing(): boolean
+	return group ~= nil and group.Visible
+end
+
 function Announcer.show(titleText: string, subtitle: string?, tone: string?)
 	table.insert(queue, { title = titleText, subtitle = subtitle, tone = tone, at = os.clock() })
 	if #queue > 4 then
