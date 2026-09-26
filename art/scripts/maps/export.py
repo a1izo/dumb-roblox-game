@@ -22,7 +22,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 
 # Bumped whenever an export changes in a way the game depends on. The FBX carries a marker mesh
 # Inkbound<Kind>_Version_<n>, and the game uses only the newest import of each kind.
-VERSION = {"Maps": 2, "Models": 2}
+VERSION = {"Maps": 2, "Models": 3}
 
 
 def num(v, digits=3):

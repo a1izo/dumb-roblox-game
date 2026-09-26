@@ -313,6 +313,10 @@ for i, t in enumerate((0.0, 0.3, 0.6, 0.9, 1.2)):
               rHip=(0, 0, 6), lHip=(0, 0, -6), rKnee=-6, lKnee=-6, rAnkle=(6, 0, -6), lAnkle=(6, 0, 6))
 
 
+# The cutscenes' activities, reactions, role reveals and extra endings.
+import anims_scenes  # noqa: E402, F401
+
+
 def build(arm):
     import animlib
 

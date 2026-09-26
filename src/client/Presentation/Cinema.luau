@@ -1,19 +1,21 @@
--- Building blocks for cutscenes, all local to this client: letterbox bars, title cards in the
--- UI style, screen tints and flashes, a red vignette, spotlights and outlines on characters,
--- and a hold-to-skip button. Each helper cleans up after itself.
+-- Building blocks for cutscenes, all local to this client: letterbox bars, title cards and
+-- captions in the Grimoire style, dips to black, colour grades, flashes, vignettes, depth of
+-- field, spotlights mounted under the ceiling, outlines, and a hold-to-skip button. Every
+-- helper returns (or cleans up) what it made. Camera positions come from ShotSolver.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 
+local Kit = require(script.Parent.Parent.UI.Kit)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Screens = require(script.Parent.Parent.UI.Screens)
-local Theme = require(script.Parent.Parent.UI.Theme)
-local Widgets = require(script.Parent.Parent.UI.Widgets)
 local Characters = require(script.Parent.Parent.Characters)
+local ShotSolver = require(script.Parent.ShotSolver)
 
-local C = Theme.colors
+local C = Kit.color
+local T = Kit.Tokens
 
 local Cinema = {}
 
@@ -45,18 +47,14 @@ function Cinema.character(userId: number?): Model?
 	return nil
 end
 
--- A camera frame looking at a character's face from in front of it.
+-- A camera frame looking at a character's face from in front of it, moved round or closer if
+-- a wall or the ceiling is in the way. `side` is studs to the right (turned into an angle).
 function Cinema.faceShot(character: Model, distance: number, height: number, side: number?): CFrame
-	local head = character:FindFirstChild("Head")
-	local root = character:FindFirstChild("HumanoidRootPart") :: BasePart
-	local target = if head and head:IsA("BasePart") then head.Position else root.Position + Vector3.new(0, 1.5, 0)
-	local look = root.CFrame.LookVector
-	local right = root.CFrame.RightVector
-	local eye = target + look * distance + Vector3.new(0, height, 0) + right * (side or 0)
-	return CFrame.lookAt(eye, target)
+	local angle = if side and distance > 0 then math.deg(math.atan2(side, distance)) else 0
+	return ShotSolver.frame(character, { distance = distance, height = height, angle = angle })
 end
 
--- Letterbox ------------------------------------------------------------------------------
+-- Letterbox ------------------------------------------------------------------------------------
 
 function Cinema.letterbox(on: boolean)
 	letterboxCount = math.max(0, letterboxCount + (if on then 1 else -1))
@@ -66,94 +64,88 @@ function Cinema.letterbox(on: boolean)
 	Motion.tween(bottomBar, { Size = UDim2.new(1, 0, height, 0) }, 0.4)
 end
 
--- Title cards ----------------------------------------------------------------------------
+-- Title cards -----------------------------------------------------------------------------------
 
 export type CardOptions = {
 	title: string,
 	subtitle: string?,
 	kicker: string?, -- a small line above the title
-	color: Color3?, -- ribbon colour (red by default)
+	color: Color3?, -- the brush stroke (blood red by default)
 	textColor: Color3?,
 	y: number?, -- vertical position, 0..1 (0.72 by default)
-	typewriter: boolean?, -- type the title out letter by letter
+	typewriter: boolean?, -- write the title in letter by letter
 }
 
--- Shows a tilted ribbon card; returns a function that hides it.
+local function fadeAway(group: CanvasGroup)
+	local tween = Motion.fade(group, false, 0.3)
+	if tween then
+		tween.Completed:Once(function()
+			group:Destroy()
+		end)
+	else
+		group:Destroy()
+	end
+end
+
+-- The title in Gothic lettering on a brush stroke, the subtitle written beneath in Scrawl.
+-- Returns a function that hides it.
 function Cinema.card(options: CardOptions): () -> ()
 	local group = Instance.new("CanvasGroup")
+	group.Name = "Card"
 	group.BackgroundTransparency = 1
 	group.AnchorPoint = Vector2.new(0.5, 0.5)
 	group.Position = UDim2.fromScale(0.5, options.y or 0.72)
-	group.Size = UDim2.new(1, 0, 0, 170)
+	group.Size = UDim2.new(1, 0, 0, 200)
 	group.Parent = Screens.cinematic
-	local column = Widgets.frame({ Parent = group })
-	local list = Widgets.list(column, Theme.space.xs, false, Enum.HorizontalAlignment.Center)
+	local column = Kit.frame({ Parent = group })
+	local list = Kit.list(column, T.space.xs, false, Enum.HorizontalAlignment.Center)
 	list.VerticalAlignment = Enum.VerticalAlignment.Center
 	if options.kicker then
-		Widgets.display({
+		Kit.label({
 			Text = string.upper(options.kicker),
-			TextSize = Theme.text.bodyLarge,
-			TextColor3 = C.paper,
+			font = "label",
+			size = "small",
+			color = C.dim,
 			TextXAlignment = Enum.TextXAlignment.Center,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			Size = UDim2.fromOffset(0, 0),
 			LayoutOrder = 1,
 			Parent = column,
 		})
 	end
-	local ribbon = Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = options.color or C.accent,
-		Size = UDim2.fromOffset(0, 66),
-		AutomaticSize = Enum.AutomaticSize.X,
-		Rotation = Theme.tilt,
+	local banner, title = Kit.banner({
+		text = options.title,
+		size = if Kit.Layout.isPhone() then T.size.heading else T.size.display,
+		tone = options.color or C.blood,
+		ink = options.textColor or C.bone,
 		LayoutOrder = 2,
 		Parent = column,
 	})
-	Widgets.slant(ribbon, 0.04)
-	Widgets.padding(ribbon, 0, 44)
-	local title = Widgets.display({
-		Text = string.upper(options.title),
-		TextSize = 48,
-		TextColor3 = options.textColor or C.paper,
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.new(0, 0, 1, 0),
-		Parent = ribbon,
-	})
+	banner.Rotation = -2
+	local subtitle: any = nil
 	if options.subtitle and options.subtitle ~= "" then
-		local strip = Widgets.frame({
-			BackgroundTransparency = 0,
-			BackgroundColor3 = C.ink,
-			Size = UDim2.fromOffset(0, 30),
-			AutomaticSize = Enum.AutomaticSize.X,
-			Rotation = Theme.tilt,
+		subtitle = Kit.text({
+			face = "Scrawl",
+			text = options.subtitle,
+			size = 34,
+			color = C.bone,
+			align = "center",
+			maxWidth = 900,
 			LayoutOrder = 3,
 			Parent = column,
 		})
-		Widgets.slant(strip, 0.04)
-		Widgets.padding(strip, 0, 26)
-		Widgets.label({
-			Text = options.subtitle,
-			FontFace = Theme.faces.displayMedium,
-			TextSize = Theme.text.bodyLarge,
-			TextWrapped = false,
-			AutomaticSize = Enum.AutomaticSize.X,
-			Size = UDim2.new(0, 0, 1, 0),
-			Parent = strip,
-		})
 	end
 	Motion.fade(group, true, 0.2)
-	if options.typewriter and not Motion.isReduced() then
-		local full = title.Text
-		title.Text = ""
-		task.spawn(function()
-			for i = 1, #full do
-				if not group.Parent then
-					return
-				end
-				title.Text = string.sub(full, 1, i)
-				task.wait(0.04)
-			end
-		end)
+	if options.typewriter then
+		title:write(0.9)
+		if subtitle then
+			task.delay(0.6, function()
+				subtitle:write(0.8)
+			end)
+		end
+	elseif subtitle then
+		subtitle:write(0.5)
 	end
 	local closed = false
 	return function()
@@ -161,25 +153,95 @@ function Cinema.card(options: CardOptions): () -> ()
 			return
 		end
 		closed = true
-		local tween = Motion.fade(group, false, 0.3)
-		if tween then
-			tween.Completed:Once(function()
-				group:Destroy()
-			end)
-		else
-			group:Destroy()
+		fadeAway(group)
+	end
+end
+
+-- A vignette caption at the bottom left: a name in handwriting and a line under it.
+function Cinema.caption(name: string, line: string?): () -> ()
+	local group = Instance.new("CanvasGroup")
+	group.Name = "Caption"
+	group.BackgroundTransparency = 1
+	group.AnchorPoint = Vector2.new(0, 1)
+	group.Position = UDim2.new(0, 48, 0.86, 0)
+	group.Size = UDim2.fromOffset(700, 110)
+	group.Parent = Screens.cinematic
+	local nameText = Kit.text({
+		face = "Scrawl",
+		text = name,
+		size = 58,
+		color = C.bone,
+		Position = UDim2.fromOffset(0, 0),
+		Parent = group,
+	})
+	if line and line ~= "" then
+		Kit.label({
+			Text = line,
+			font = "bodyItalic",
+			size = "lead",
+			color = C.dim,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			Size = UDim2.fromOffset(0, 0),
+			Position = UDim2.fromOffset(4, 70),
+			Parent = group,
+		})
+	end
+	Kit.Base.make("Frame", {
+		BackgroundColor3 = C.red,
+		BorderSizePixel = 0,
+		Position = UDim2.fromOffset(2, 64),
+		Size = UDim2.fromOffset(90, 3),
+		Parent = group,
+	})
+	Motion.fade(group, true, 0.15)
+	Motion.slideIn(group, Vector2.new(-30, 0), 0.3)
+	nameText:write(0.5)
+	local closed = false
+	return function()
+		if not closed then
+			closed = true
+			fadeAway(group)
 		end
 	end
 end
 
--- Screen effects -------------------------------------------------------------------------
+-- A quick dip to black between two shots: covers, calls `during`, uncovers.
+function Cinema.dip(seconds: number?, during: (() -> ())?)
+	local half = (seconds or 0.3) / 2
+	local frame = Kit.Base.make("Frame", {
+		Name = "Dip",
+		BackgroundColor3 = C.void,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 5,
+		Parent = Screens.cinematic,
+	})
+	local tween = Motion.tween(frame, { BackgroundTransparency = 0 }, half)
+	if tween then
+		tween.Completed:Wait()
+	end
+	if during then
+		during()
+	end
+	local out = Motion.tween(frame, { BackgroundTransparency = 1 }, half)
+	if out then
+		out.Completed:Once(function()
+			frame:Destroy()
+		end)
+	else
+		frame:Destroy()
+	end
+end
+
+-- Screen effects ----------------------------------------------------------------------------------
 
 -- A colour grade on this screen only. Returns a function that fades it out and removes it.
 function Cinema.tint(props: { [string]: any }, fadeIn: number?): () -> ()
 	local camera = workspace.CurrentCamera
 	local effect = Create("ColorCorrectionEffect", { Name = "CinemaTint", Parent = camera })
-	local target = table.clone(props)
-	Motion.tween(effect, target, fadeIn or 0.4)
+	Motion.tween(effect, table.clone(props), fadeIn or 0.4)
 	return function()
 		local tween =
 			Motion.tween(effect, { Saturation = 0, Contrast = 0, TintColor = Color3.new(1, 1, 1), Brightness = 0 }, 0.5)
@@ -193,11 +255,30 @@ function Cinema.tint(props: { [string]: any }, fadeIn: number?): () -> ()
 	end
 end
 
+-- Softens everything but the subject (depth of field). Returns a remover.
+function Cinema.focus(distance: number, radius: number?): () -> ()
+	local effect = Create("DepthOfFieldEffect", {
+		Name = "CinemaFocus",
+		FarIntensity = 0,
+		NearIntensity = 0,
+		FocusDistance = distance,
+		InFocusRadius = radius or 6,
+		Parent = workspace.CurrentCamera,
+	})
+	Motion.tween(effect, { FarIntensity = 0.45, NearIntensity = 0.3 }, 0.4)
+	return function()
+		effect:Destroy()
+	end
+end
+
 -- A full-screen colour flash that fades out.
 function Cinema.flash(color: Color3, strength: number?, seconds: number?)
-	local frame = Widgets.frame({
+	local frame = Kit.Base.make("Frame", {
 		BackgroundTransparency = 1 - (strength or 0.6),
 		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 4,
 		Parent = Screens.cinematic,
 	})
 	local tween = Motion.tween(frame, { BackgroundTransparency = 1 }, seconds or 0.5)
@@ -210,9 +291,9 @@ function Cinema.flash(color: Color3, strength: number?, seconds: number?)
 	end
 end
 
--- A red vignette at the edges of the screen. Returns a function that removes it.
+-- A coloured vignette at the edges of the screen. Returns a function that removes it.
 function Cinema.vignette(color: Color3?, strength: number?): () -> ()
-	local holder = Widgets.frame({ Name = "Vignette", Parent = Screens.cinematic })
+	local holder = Kit.frame({ Name = "Vignette", Parent = Screens.cinematic })
 	local edge = strength or 0.35
 	local sides = {
 		{ UDim2.fromScale(1, edge), UDim2.fromScale(0, 0), 90 },
@@ -221,9 +302,10 @@ function Cinema.vignette(color: Color3?, strength: number?): () -> ()
 		{ UDim2.fromScale(edge, 1), UDim2.fromScale(1 - edge, 0), 180 },
 	}
 	for _, side in ipairs(sides) do
-		local frame = Widgets.frame({
+		local frame = Kit.Base.make("Frame", {
 			BackgroundTransparency = 0,
-			BackgroundColor3 = color or C.accent,
+			BackgroundColor3 = color or C.red,
+			BorderSizePixel = 0,
 			Size = side[1],
 			Position = side[2],
 			Parent = holder,
@@ -239,14 +321,17 @@ function Cinema.vignette(color: Color3?, strength: number?): () -> ()
 	end
 end
 
--- World effects --------------------------------------------------------------------------
+-- World effects ---------------------------------------------------------------------------------
 
--- A hard white (or coloured) spotlight shining down on a character. Returns a remover.
+-- A hard spotlight shining down on a character, hung just under the ceiling (never above the
+-- roof, where it would light nothing). Returns a remover.
 function Cinema.spotlight(character: Model, color: Color3?, seconds: number?): () -> ()
 	local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not root then
 		return function() end
 	end
+	local roof = ShotSolver.ceiling(root.Position, 20)
+	local height = math.min(14, (roof - root.Position.Y) - 1)
 	local rig = Create("Part", {
 		Name = "CinemaSpotlight",
 		Anchored = true,
@@ -255,14 +340,14 @@ function Cinema.spotlight(character: Model, color: Color3?, seconds: number?): (
 		CanTouch = false,
 		Transparency = 1,
 		Size = Vector3.new(0.2, 0.2, 0.2),
-		CFrame = CFrame.lookAt(root.Position + Vector3.new(0, 16, 0), root.Position),
-		Parent = workspace,
+		CFrame = CFrame.lookAt(root.Position + Vector3.new(0, math.max(height, 4), 0), root.Position),
+		Parent = workspace.CurrentCamera,
 	})
 	Create("SpotLight", {
 		Face = Enum.NormalId.Front,
-		Angle = 40,
-		Range = 30,
-		Brightness = 6,
+		Angle = 50,
+		Range = 28,
+		Brightness = 7,
 		Color = color or Color3.new(1, 1, 1),
 		Shadows = true,
 		Parent = rig,
@@ -281,7 +366,7 @@ function Cinema.outline(model: Instance, color: Color3, seconds: number?): () ->
 	local highlight = Create("Highlight", {
 		Adornee = model,
 		FillColor = color,
-		FillTransparency = 0.75,
+		FillTransparency = 0.8,
 		OutlineColor = color,
 		OutlineTransparency = 0,
 		DepthMode = Enum.HighlightDepthMode.Occluded,
@@ -296,15 +381,15 @@ function Cinema.outline(model: Instance, color: Color3, seconds: number?): () ->
 	return remove
 end
 
--- A "HOLD TO SKIP" button at the bottom right. Returns a remover.
+-- A "Hold to skip" button at the bottom right. Returns a remover.
 function Cinema.skipButton(onSkip: () -> ()): () -> ()
-	local button = Widgets.holdButton({
-		Text = "Hold to skip",
-		TextSize = Theme.text.small,
-		Variant = "ghost",
+	local button = Kit.hold({
+		text = "Hold to skip",
+		variant = "ghost",
+		size = "s",
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -24, 1, -24),
-		Size = UDim2.fromOffset(150, 36),
+		ZIndex = 6,
 		Parent = Screens.cinematic,
 	}, 0.6, onSkip)
 	return function()
@@ -313,18 +398,18 @@ function Cinema.skipButton(onSkip: () -> ()): () -> ()
 end
 
 function Cinema.init()
-	topBar = Widgets.frame({
+	topBar = Kit.Base.make("Frame", {
 		Name = "LetterboxTop",
-		BackgroundTransparency = 0,
 		BackgroundColor3 = Color3.new(0, 0, 0),
+		BorderSizePixel = 0,
 		Size = UDim2.new(1, 0, 0, 0),
 		ZIndex = 0,
 		Parent = Screens.cinematic,
 	})
-	bottomBar = Widgets.frame({
+	bottomBar = Kit.Base.make("Frame", {
 		Name = "LetterboxBottom",
-		BackgroundTransparency = 0,
 		BackgroundColor3 = Color3.new(0, 0, 0),
+		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 0),

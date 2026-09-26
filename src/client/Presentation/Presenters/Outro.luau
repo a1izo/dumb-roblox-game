@@ -1,6 +1,8 @@
--- The ending. Everyone still standing is gathered at the table; the camera circles it, the
--- winning side is called, and then the lights find the Hand. Winners and losers each hear
--- their own music. The roster and rewards follow on the results screen.
+-- The ending. Everyone still standing is gathered round the table, each celebrating or
+-- despairing in their own way (ActingController). The camera stands in the middle of the table,
+-- under the ceiling, and turns slowly across their faces while the winning side is written in;
+-- then the lights find the Hand. Winners and losers each hear their own music; the roster and
+-- rewards follow on the results screen.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,24 +12,27 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
-local Theme = require(script.Parent.Parent.Parent.UI.Theme)
+local Kit = require(script.Parent.Parent.Parent.UI.Kit)
 local MusicController = require(script.Parent.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
+local ShotSolver = require(script.Parent.Parent.ShotSolver)
 
-local C = Theme.colors
+local C = Kit.color
 local LocalPlayer = Players.LocalPlayer
 
--- Circles the camera around `center` for `seconds`, starting at `fromAngle` (radians).
-local function orbit(token: number, center: Vector3, seconds: number, fromAngle: number): () -> ()
+-- Turns the camera from the middle of the table across the faces around it. Returns a stopper.
+local function sweep(token: number, center: Vector3, seconds: number): () -> ()
+	local roof = ShotSolver.ceiling(center + Vector3.new(0, 1, 0), 40)
+	local eye = center + Vector3.new(0, math.min(5.2, roof - center.Y - 1.2), 0)
 	local began = os.clock()
 	local connection = RunService.RenderStepped:Connect(function()
 		local t = math.clamp((os.clock() - began) / seconds, 0, 1)
-		local angle = fromAngle + t * math.rad(70)
-		local radius = 26 - t * 6
-		local eye = center + Vector3.new(math.cos(angle) * radius, 13 - t * 3, math.sin(angle) * radius)
-		CameraDirector.cut(token, CFrame.lookAt(eye, center + Vector3.new(0, 2, 0)))
+		local eased = t * t * (3 - 2 * t)
+		local yaw = math.rad(-60 + eased * 150)
+		local look = eye + Vector3.new(math.cos(yaw), -0.12, math.sin(yaw))
+		CameraDirector.cut(token, CFrame.lookAt(eye, look), 70 - eased * 12)
 	end)
 	return function()
 		connection:Disconnect()
@@ -60,37 +65,41 @@ return function(cue)
 
 	local center = if typeof(data.center) == "Vector3" then data.center else nil
 	local firstShot = left * 0.5
-	local stopOrbit = if center then orbit(token, center, firstShot, math.rad(200)) else nil
-	if stopOrbit then
-		table.insert(cleanup, stopOrbit)
+	if center then
+		table.insert(cleanup, sweep(token, center, firstShot))
 	end
 	local winnerName = if handWon then Terms.role("Kira", "Name") else Terms.side("Team", "Name")
 	local hideTitle = Cinema.card({
 		kicker = if participant then (if won then "Victory" else "Defeat") else Terms.phase("Outro"),
 		title = Terms.f("{name} wins", { name = winnerName }),
 		subtitle = if type(data.reason) == "string" then data.reason else nil,
-		color = if handWon then C.accent else C.team,
+		color = if handWon then C.blood else C.steel:Lerp(C.void, 0.4),
+		typewriter = true,
 		y = 0.74,
 	})
 	table.insert(cleanup, hideTitle)
-	if handWon then
-		table.insert(cleanup, Cinema.tint({ TintColor = Color3.fromRGB(255, 190, 190), Saturation = -0.3 }, 1.5))
-	end
+	-- A world written by the Hand is washed in red until the end.
+	local untint = if handWon
+		then Cinema.tint({ TintColor = Color3.fromRGB(255, 190, 190), Saturation = -0.3 }, 1.5)
+		else nil
 
 	task.wait(firstShot)
-	hideTitle()
-	if stopOrbit then
-		stopOrbit()
+	for index = #cleanup, 1, -1 do
+		cleanup[index]()
+	end
+	cleanup = {}
+	if untint then
+		table.insert(cleanup, untint)
 	end
 
 	-- The Hand, under the lights.
 	local hand = Cinema.character(tonumber(data.handUserId))
 	if hand then
 		Sfx.play("gavel")
-		table.insert(cleanup, Cinema.spotlight(hand, if handWon then C.accent else Color3.new(1, 1, 1)))
-		table.insert(cleanup, Cinema.outline(hand, C.accent))
-		CameraDirector.cut(token, Cinema.faceShot(hand, 9, 2, 3), 55)
-		CameraDirector.move(token, Cinema.faceShot(hand, 5, 0.8, 1), left * 0.45, 40)
+		table.insert(cleanup, Cinema.spotlight(hand, if handWon then C.red else Color3.new(1, 1, 1)))
+		table.insert(cleanup, Cinema.outline(hand, C.red))
+		CameraDirector.cut(token, ShotSolver.frame(hand, { distance = 9, height = 2, angle = 20 }), 55)
+		CameraDirector.move(token, ShotSolver.frame(hand, { distance = 5, height = 0.8, angle = 8 }), left * 0.45, 40)
 	end
 	if type(data.handAlias) == "string" then
 		table.insert(
@@ -99,8 +108,8 @@ return function(cue)
 				kicker = Terms.f("{Hand} was"),
 				title = data.handAlias,
 				subtitle = if type(data.handRealName) == "string" then "Real name: " .. data.handRealName else nil,
-				color = C.ink,
-				textColor = C.accent,
+				color = C.void,
+				textColor = C.red,
 				y = 0.74,
 			})
 		)

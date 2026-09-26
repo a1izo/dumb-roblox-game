@@ -1,10 +1,12 @@
 -- Decides who acts what, from public events only:
 --   Grimoire phase : every living player writes (never tied to who really writes)
 --   vote cast      : that player raises a hand (who voted is public, not for whom)
---   death          : the collapse for the public cause of death
---   arrest         : hands cuffed behind the back
---   verdict        : the player voted out slumps and fades away
+--   death          : the collapse for the public cause of death; everyone else reacts
+--   arrest         : hands cuffed behind the back; everyone else reacts
+--   verdict        : the player voted out slumps and fades away; everyone else reacts
 --   ending         : winners celebrate, losers hang their heads, the Hand laughs or kneels
+-- Reactions and endings are picked from the cue and the user id (Presentation/Activities), so
+-- every screen shows the same thing and nothing depends on roles.
 --   station work   : a player working a case file (real or faked) types at the console
 
 local Players = game:GetService("Players")
@@ -13,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 local Poses = require(Shared:WaitForChild("Anim"):WaitForChild("Poses"))
+local Activities = require(Shared:WaitForChild("Presentation"):WaitForChild("Activities"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
@@ -98,6 +101,26 @@ local function dissolve(character: Model, seconds: number)
 	end)
 end
 
+-- Every living player except `except` reacts, starting around `serverTime`.
+local function reactAround(cue, except: number?, serverTime: number, duration: number)
+	local seed = tonumber(cue.id) or 1
+	for _, entry in ipairs(ClientState.public.players or {}) do
+		if entry.alive and entry.userId ~= except then
+			local character = characterOf(entry.userId)
+			if character then
+				local clip = Activities.pick(Activities.REACTIONS, seed, entry.userId)
+				local jitter = Random.new(seed + entry.userId % 997):NextNumber(0.1, 0.6)
+				PoseController.play(character, clip, {
+					startAt = localTime(serverTime + jitter),
+					fadeIn = 0.2,
+					fadeOut = 0.6,
+					duration = duration,
+				})
+			end
+		end
+	end
+end
+
 local function onDeath(cue)
 	local character = characterOf(tonumber(cue.data.userId))
 	if not character then
@@ -112,11 +135,13 @@ local function onDeath(cue)
 		-- Holds the last frame until the server locks the pose into the body (LPoseBaked).
 		{ startAt = localTime(cue.at), fadeIn = 0.15 }
 	)
+	reactAround(cue, tonumber(cue.data.userId), cue.at + 0.3, 3.4)
 end
 
 local function onArrest(cue)
 	local character = characterOf(tonumber(cue.data.userId))
 	PoseController.play(character, "cuffed", { startAt = localTime(cue.at), fadeIn = 0.4, duration = 4 })
+	reactAround(cue, tonumber(cue.data.userId), cue.at + 0.8, 3)
 end
 
 local function onVerdict(cue)
@@ -130,6 +155,7 @@ local function onVerdict(cue)
 		task.wait(wait)
 	end
 	PoseController.play(character, "slump", { fadeIn = 0.3, duration = 3 })
+	reactAround(cue, tonumber(cue.data.removedUserId), now() + 0.2, 3)
 	task.wait(0.8)
 	if character.Parent then
 		dissolve(character, 1.6)
@@ -162,9 +188,11 @@ local function onOutro(cue)
 				-- The winner's victory pose cosmetic, if they have one.
 				local player = Players:GetPlayerByUserId(entry.userId)
 				local chosen = if player then player:GetAttribute("LVictoryPose") else nil
-				poseId = if type(chosen) == "string" and PoseController.exists(chosen) then chosen else "victory"
+				poseId = if type(chosen) == "string" and PoseController.exists(chosen)
+					then chosen
+					else Activities.pick(Activities.VICTORY, tonumber(cue.id) or 1, entry.userId)
 			else
-				poseId = "defeat"
+				poseId = Activities.pick(Activities.DEFEAT, tonumber(cue.id) or 1, entry.userId)
 			end
 			PoseController.play(character, poseId, {
 				startAt = os.clock() - math.random() * 0.4,

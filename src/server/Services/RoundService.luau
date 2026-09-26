@@ -35,6 +35,7 @@ local ProgressService = require(script.Parent.ProgressService)
 local RewardService = require(script.Parent.RewardService)
 local RoleService = require(script.Parent.RoleService)
 local ServerSettings = require(script.Parent.ServerSettings)
+local Staging = require(script.Parent.Staging)
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local SuspicionService = require(script.Parent.SuspicionService)
 local VoteService = require(script.Parent.VoteService)
@@ -102,42 +103,22 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	end
 end
 
--- The intro cutscene: a camera path over the map, the case title, and the Grimoire falling
--- onto the spot where the players stand.
+-- The intro cutscene: every player's avatar somewhere on the map doing something (Staging picks
+-- the marks and activities), the camera visiting a few of them, and the Grimoire landing in
+-- the middle of the map. Cameras are worked out on each client (Presentation/ShotSolver).
 local function introData(map)
-	local points = {}
-	for _, area in ipairs(map.areas or {}) do
-		table.insert(points, area.position)
+	local userIds = {}
+	for _, ps in ipairs(Match.living()) do
+		table.insert(userIds, ps.userId)
 	end
-	local spawnCenter = Vector3.zero
-	for _, spawnCFrame in ipairs(map.spawns) do
-		spawnCenter += spawnCFrame.Position
-	end
-	spawnCenter /= math.max(1, #map.spawns)
-	local center = spawnCenter
-	if #points > 0 then
-		center = Vector3.zero
-		for _, point in ipairs(points) do
-			center += point
-		end
-		center /= #points
-	end
-	local radius = 40
-	for _, point in ipairs(points) do
-		radius = math.max(radius, (point - center).Magnitude)
-	end
-	local look = center + Vector3.new(0, 4, 0)
-	local path = {
-		CFrame.lookAt(center + Vector3.new(-radius * 0.9, radius * 0.45 + 30, radius * 0.9), look),
-		CFrame.lookAt(center + Vector3.new(radius * 0.7, radius * 0.3 + 22, radius * 0.4), look),
-		CFrame.lookAt(spawnCenter + Vector3.new(0, 14, 26), spawnCenter + Vector3.new(0, 3, 0)),
-	}
+	local cast, vignettes = Staging.cast(map, userIds, Match.rng)
 	return {
 		mapName = map.name or Match.mapName,
 		playerCount = #Match.list,
 		caseNumber = Match.rng:NextInteger(100, 999),
-		path = path,
-		landmark = spawnCenter,
+		cast = cast,
+		vignettes = vignettes,
+		landmark = Staging.landmark(map),
 		duration = math.max(Match.phaseLength("Intro"), 8),
 	}
 end

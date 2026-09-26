@@ -9,12 +9,13 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Models = require(Shared:WaitForChild("Models"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
-local Theme = require(script.Parent.Parent.Parent.UI.Theme)
+local Kit = require(script.Parent.Parent.Parent.UI.Kit)
 local Mixer = require(script.Parent.Parent.Parent.Audio.Mixer)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local Cinema = require(script.Parent.Parent.Cinema)
+local ShotSolver = require(script.Parent.Parent.ShotSolver)
 
-local C = Theme.colors
+local C = Kit.color
 
 -- The Specter rises in front of the camera, sways, then sinks away. Returns a remover.
 local function looming(seconds: number): () -> ()
@@ -26,7 +27,8 @@ local function looming(seconds: number): () -> ()
 	local look = camera.CFrame.LookVector
 	local flat = Vector3.new(look.X, 0, look.Z)
 	flat = if flat.Magnitude > 0.01 then flat.Unit else Vector3.new(0, 0, -1)
-	local ground = camera.CFrame.Position + flat * 11 - Vector3.new(0, 7, 0)
+	-- On the floor in front of you (found with a ray, not guessed).
+	local ground = ShotSolver.floor(camera.CFrame.Position + flat * 11)
 	local facing = CFrame.lookAt(ground, ground - flat)
 	specter:PivotTo(facing * CFrame.new(0, -9, 0))
 	specter.Parent = camera
@@ -54,10 +56,10 @@ return function(cue)
 	Cinema.waitUntil(cue.at)
 	Mixer.duck("eyes", true)
 	Sfx.play("eyesOpen")
-	Cinema.flash(C.accent, 0.75, 0.9)
+	Cinema.flash(C.red, 0.75, 0.9)
 	looming(3.8)
 	local untint = Cinema.tint({ TintColor = Color3.fromRGB(255, 150, 150), Saturation = -0.4, Contrast = 0.2 }, 0.3)
-	local removeVignette = Cinema.vignette(C.accent, 0.4)
+	local removeVignette = Cinema.vignette(C.red, 0.4)
 	local hide = Cinema.card({
 		kicker = "The deal is struck",
 		title = Terms.f("{EYES}"),
@@ -65,8 +67,8 @@ return function(cue)
 			"Half your life for {reads} names. Your time runs out at the end of round {round}.",
 			{ reads = tonumber(data.reads) or 0, round = tonumber(data.deathRound) or 0 }
 		),
-		color = C.ink,
-		textColor = C.accent,
+		color = C.void,
+		textColor = C.red,
 		y = 0.62,
 	})
 	task.wait(3.5)

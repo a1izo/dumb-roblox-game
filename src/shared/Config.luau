@@ -12,7 +12,7 @@ Config.MAX_ROUNDS = 5
 -- Phase lengths in seconds. Five rounds of 200 seconds plus briefing and reveal is about 18 minutes.
 Config.PHASE_TIME = {
 	-- Presentation phases: cutscenes play in full, even in sped-up Studio runs.
-	Intro = 8,
+	Intro = 10,
 	Verdict = 7,
 	Outro = 10,
 	Briefing = 15,

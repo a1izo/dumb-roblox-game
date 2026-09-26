@@ -80,6 +80,29 @@ def on_floor(joints, offset=(0, 0, 0), floor=0.02):
     return (ox, oy + floor - lowest(joints, offset), oz)
 
 
+def lowest_of(joints, names, offset=(0, 0, 0)):
+    """The lowest point (studs above the floor) of the named parts in this pose."""
+    world = fk(joints, offset)
+    low = math.inf
+    for name in names:
+        m = world[name]
+        sx, sy, sz = (s / 2 for s in PARTS[name][1])
+        for x in (-sx, sx):
+            for y in (-sy, sy):
+                for z in (-sz, sz):
+                    low = min(low, (m @ np.array([x, y, z, 1.0]))[1])
+    return low
+
+
+SEAT_PARTS = ("LowerTorso", "LeftUpperLeg", "RightUpperLeg")
+
+
+def on_seat(joints, offset=(0, 0, 0), seat=1.75):
+    """offset with its height changed so the hips and thighs rest on a seat `seat` studs high."""
+    ox, oy, oz = offset
+    return (ox, oy + seat - lowest_of(joints, SEAT_PARTS, offset), oz)
+
+
 def planted_legs(offset=(0, 0, 0), root=(0, 0, 0), stance=0.0, forward=(0.0, 0.0), turn_out=6):
     """Hip, knee and ankle angles that keep both feet flat where they stand while the hips move.
     stance widens the feet (studs); forward moves (right, left) feet forward (studs)."""
