@@ -841,9 +841,11 @@ end
 
 -- An entry in a table of contents (the lobby menu, How to Play chapters): a small numeral and
 -- a handwritten title that turns red and gets underlined on hover. Props: text, numeral,
--- icon, size (lettering px, default 30), plus frame properties.
+-- icon, size (lettering px, default 30), selected (stays red and underlined: the open
+-- chapter), plus frame properties.
 function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 	local size = props.size or 30
+	local selected = props.selected == true
 	local button = Base.hit({
 		Name = props.Name or "Entry",
 		Size = props.Size or UDim2.new(1, 0, 0, math.max(Tokens.touch - 6, size * 1.3)),
@@ -904,8 +906,15 @@ function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 		Parent = button,
 	})
 	local function lit(on: boolean)
-		title:setColor(if on then C.red else C.bone)
-		Motion.tween(underline, { Size = UDim2.fromOffset(if on then title.width else 0, 2) }, Tokens.motion.base)
+		local shown = on or selected
+		title:setColor(if shown then C.red else C.bone)
+		Motion.tween(underline, { Size = UDim2.fromOffset(if shown then title.width else 0, 2) }, Tokens.motion.base)
+	end
+	if selected then
+		lit(true)
+		title.Changed:Connect(function()
+			lit(true)
+		end)
 	end
 	button.MouseEnter:Connect(function()
 		lit(true)

@@ -1,6 +1,7 @@
--- The shop. Tabs down the left: today's featured items, each kind of cosmetic, and Robux
--- (coin packs, passes and the custom alias). Cosmetic tabs show a 3D preview of your own
--- character wearing the selected item. Open in the lobby only.
+-- The shop, as a spread: bookmark tabs down the left (today's featured items, each kind of
+-- cosmetic, and Robux: coin packs, passes and the custom alias), the items as cards edged in
+-- their rarity's ink, and a 3D preview of your own character wearing the selected item on the
+-- right. Open in the lobby only.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -16,26 +17,29 @@ local Products = require(Shared:WaitForChild("Products"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local ShopRequest = Net.event("ShopRequest")
 local ProfileRequest = Net.event("ProfileRequest")
 local LocalPlayer = Players.LocalPlayer
 
-local C = Theme.colors
+local C = Kit.color
+local T = Kit.Tokens
 
 local ShopPanel = {}
 
 local TABS = { "featured", "hat", "trail", "tie", "grimoire", "victory", "specter", "title", "robux" }
 local TAB_NAMES = { featured = "Featured", robux = "Robux" }
 
-local window: Frame
+-- Layout of the spread (design px).
+local TOP = 44 -- the coins line
+local TABS_WIDTH = 180
+local PREVIEW_WIDTH = 240
+local GAP = T.space.l
+
 local coinsLabel: TextLabel
 local noteLabel: TextLabel
-local tabList: Frame
 local grid: ScrollingFrame
 local previewHolder: Frame
 local viewport: ViewportFrame
@@ -67,11 +71,17 @@ local function formatTime(seconds: number): string
 	return string.format("%dh %02dm", hours, minutes)
 end
 
+-- The Kit's rarity inks are keyed "Common", "Rare"...; items say "common", "rare"...
+local function rarityInk(rarity: string): Color3
+	local key = string.upper(string.sub(rarity, 1, 1)) .. string.sub(rarity, 2)
+	return (T.rarity :: any)[key] or C.dim
+end
+
 -- 3D preview ---------------------------------------------------------------------------------
 
 local function clearPreview()
 	for _, child in ipairs(viewport:GetChildren()) do
-		if not child:IsA("UICorner") then
+		if not child:IsA("UIComponent") then
 			child:Destroy()
 		end
 	end
@@ -151,7 +161,7 @@ local function actionFor(profile, item): (string, string?, string, boolean)
 	if profile.equipped[item.kind] == item.id and isOwned then
 		return "Unequip", "unequip", "ghost", true
 	elseif isOwned then
-		return "Equip", "equip", "team", true
+		return "Equip", "equip", "parchment", true
 	elseif item.source == "vip" then
 		return "VIP pass", nil, "secondary", false
 	elseif not item.price then
@@ -164,62 +174,64 @@ local function actionFor(profile, item): (string, string?, string, boolean)
 end
 
 local function itemCard(profile, item: Cosmetics.Item, order: number)
-	local card = Widgets.panel({ BackgroundColor3 = C.panelLight, LayoutOrder = order, Parent = grid })
-	local rarityColor = Cosmetics.RARITY_COLORS[item.rarity] or C.muted
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = rarityColor,
-		Size = UDim2.new(0, 5, 1, 0),
+	local ink = rarityInk(item.rarity)
+	local card = Kit.card({ accent = ink, Size = UDim2.fromScale(1, 1), LayoutOrder = order, Parent = grid })
+	-- A swatch of the item's colour (its lettering for titles and poses).
+	local swatch = Kit.Base.make("Frame", {
+		Name = "Swatch",
+		BackgroundColor3 = item.color or (item.colors and item.colors[1]) or C.void,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 34),
 		Parent = card,
 	})
-	local swatch = item.color or (item.colors and item.colors[1]) or C.ink
-	local preview = Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = swatch,
-		Position = UDim2.fromOffset(14, 10),
-		Size = UDim2.new(1, -24, 0, 30),
-		Parent = card,
-	})
+	Kit.Base.corner(swatch, T.radius.key)
 	if item.colors then
-		Create("UIGradient", { Color = ColorSequence.new(item.colors[1], item.colors[2]), Parent = preview })
+		Create("UIGradient", { Color = ColorSequence.new(item.colors[1], item.colors[2]), Parent = swatch })
 	end
 	if item.kind == "title" or item.kind == "victory" then
-		preview.BackgroundColor3 = C.ink
-		Widgets.display({
+		swatch.BackgroundColor3 = C.void
+		Kit.label({
 			Text = string.upper(item.name),
-			TextSize = Theme.text.body,
+			font = "label",
+			size = "small",
 			TextXAlignment = Enum.TextXAlignment.Center,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.None,
 			Size = UDim2.fromScale(1, 1),
-			Parent = preview,
+			Parent = swatch,
 		})
 	end
-	Widgets.label({
+	Kit.label({
 		Text = item.name,
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.bodyLarge,
-		TextTruncate = Enum.TextTruncate.AtEnd,
+		font = "bodyBold",
 		TextWrapped = false,
-		Position = UDim2.fromOffset(14, 46),
-		Size = UDim2.new(1, -24, 0, 20),
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, 0, 0, 20),
 		Parent = card,
 	})
-	Widgets.label({
+	Kit.label({
 		Text = string.upper(item.rarity .. "  ·  " .. (Cosmetics.KIND_NAMES[item.kind] or item.kind)),
-		TextSize = Theme.text.caption,
-		TextColor3 = rarityColor,
-		FontFace = Theme.faces.display,
-		Position = UDim2.fromOffset(14, 66),
-		Size = UDim2.new(1, -24, 0, 14),
+		font = "label",
+		size = "micro",
+		color = ink,
+		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(0, 66),
+		Size = UDim2.new(1, 0, 0, 14),
 		Parent = card,
 	})
 	local text, action, variant, enabled = actionFor(profile, item)
-	local button = Widgets.button({
-		Text = text,
-		TextSize = Theme.text.small,
-		Variant = variant,
+	local button = Kit.button({
+		text = text,
+		variant = variant,
+		size = "s",
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 14, 1, -10),
-		Size = UDim2.new(1, -24, 0, 32),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 40),
+		ZIndex = 2,
 		Parent = card,
 	}, function()
 		selectedId = item.id
@@ -228,14 +240,9 @@ local function itemCard(profile, item: Cosmetics.Item, order: number)
 			ShopRequest:FireServer({ action = action, itemId = item.id })
 		end
 	end)
-	Widgets.setEnabled(button, enabled)
-	-- Clicking the card previews the item.
-	local hit = Create("TextButton", {
-		BackgroundTransparency = 1,
-		Text = "",
-		Size = UDim2.new(1, 0, 1, -48),
-		Parent = card,
-	})
+	Kit.setEnabled(button, enabled)
+	-- Clicking the card itself previews the item.
+	local hit = Kit.Base.hit({ Name = "Preview", Selectable = false, Size = UDim2.new(1, 0, 1, -48), Parent = card })
 	hit.Activated:Connect(function()
 		selectedId = item.id
 		showPreview(item)
@@ -246,65 +253,52 @@ end
 -- Robux tab -------------------------------------------------------------------------------------
 
 local function robuxCard(order: number, title: string, lines: { string }, buttonText: string?, onBuy: (() -> ())?)
-	local card = Widgets.panel({ BackgroundColor3 = C.panelLight, LayoutOrder = order, Parent = grid })
-	Widgets.label({
-		Text = title,
-		FontFace = Theme.faces.display,
-		TextSize = Theme.text.title,
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -24, 0, 26),
-		Parent = card,
-	})
-	Widgets.label({
+	local card = Kit.card({ Size = UDim2.fromScale(1, 1), LayoutOrder = order, Parent = grid })
+	Kit.text({ face = "Gothic", text = title, size = 22, color = C.bone, Parent = card })
+	Kit.label({
 		Text = table.concat(lines, "\n"),
-		TextSize = Theme.text.small,
-		TextColor3 = C.muted,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		Position = UDim2.fromOffset(12, 38),
-		Size = UDim2.new(1, -24, 1, -86),
+		size = "small",
+		color = C.dim,
+		Position = UDim2.fromOffset(0, 34),
 		Parent = card,
 	})
 	if buttonText then
-		local button = Widgets.button({
-			Text = buttonText,
-			TextSize = Theme.text.small,
-			Variant = if onBuy then "primary" else "secondary",
+		local button = Kit.button({
+			text = buttonText,
+			icon = if onBuy then "coin" else "check",
+			variant = if onBuy then "primary" else "secondary",
+			size = "s",
 			AnchorPoint = Vector2.new(0, 1),
-			Position = UDim2.new(0, 12, 1, -10),
-			Size = UDim2.new(1, -24, 0, 32),
+			Position = UDim2.fromScale(0, 1),
+			Size = UDim2.new(1, 0, 0, 40),
 			Parent = card,
 		}, onBuy)
-		Widgets.setEnabled(button, onBuy ~= nil)
+		Kit.setEnabled(button, onBuy ~= nil)
 		firstButton = firstButton or button
 	end
 	return card
 end
 
 local function aliasCard(profile, order: number)
-	local card = Widgets.panel({ BackgroundColor3 = C.panelLight, LayoutOrder = order, Parent = grid })
-	Widgets.label({
-		Text = "Your custom alias",
-		FontFace = Theme.faces.display,
-		TextSize = Theme.text.title,
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -24, 0, 26),
+	local card = Kit.card({ Size = UDim2.fromScale(1, 1), LayoutOrder = order, Parent = grid })
+	Kit.text({ face = "Gothic", text = "Your custom alias", size = 22, color = C.bone, Parent = card })
+	local _, box = Kit.field({
+		placeholder = "3 to 12 letters",
+		text = profile.alias or "",
+		maxLength = 12,
+		size = "body",
+		Position = UDim2.fromOffset(0, 36),
+		Size = UDim2.new(1, 0, 0, T.touch),
 		Parent = card,
 	})
-	local box = Widgets.textbox({
-		Text = profile.alias or "",
-		PlaceholderText = "3 to 12 letters",
-		Position = UDim2.fromOffset(12, 42),
-		Size = UDim2.new(1, -24, 0, 34),
-		Parent = card,
-	})
-	Widgets.limitLength(box, 12)
-	Widgets.button({
-		Text = "Save alias",
-		TextSize = Theme.text.small,
-		Variant = "primary",
+	Kit.button({
+		text = "Save alias",
+		icon = "quill",
+		variant = "primary",
+		size = "s",
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 12, 1, -10),
-		Size = UDim2.new(1, -24, 0, 32),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 40),
 		Parent = card,
 	}, function()
 		ProfileRequest:FireServer({ action = "alias", alias = box.Text })
@@ -348,43 +342,24 @@ local function buildRobux(profile)
 	noteLabel.Text = if any then "" else "Robux items are not on sale yet."
 end
 
--- Tabs -------------------------------------------------------------------------------------------
+-- Contents -----------------------------------------------------------------------------------------
 
-local rebuild: () -> ()
-
-local function buildTabs()
-	Widgets.clear(tabList)
-	for index, tab in ipairs(TABS) do
-		Widgets.button({
-			Name = tab,
-			Text = TAB_NAMES[tab] or Cosmetics.KIND_NAMES[tab] or tab,
-			TextSize = Theme.text.small,
-			Variant = if tab == currentTab then "primary" else "ghost",
-			Size = UDim2.new(1, -4, 0, 34),
-			LayoutOrder = index,
-			Parent = tabList,
-		}, function()
-			currentTab = tab
-			selectedId = nil
-			rebuild()
-		end)
-	end
-end
-
-function rebuild()
-	Widgets.clear(grid)
+local function rebuild()
+	Kit.clear(grid)
 	firstButton = nil
 	local profile = ClientState.profile
 	if not profile then
-		coinsLabel.Text = "Loading your profile..."
+		coinsLabel.Text = "Loading your profile…"
 		return
 	end
 	coinsLabel.Text = string.format("%d coins", profile.coins)
 	noteLabel.Text = ""
-	buildTabs()
-	previewHolder.Visible = currentTab ~= "robux"
-	grid.Size = if currentTab == "robux" then UDim2.new(1, -150, 1, -40) else UDim2.new(1, -390, 1, -40)
-	if currentTab == "robux" then
+	local robux = currentTab == "robux"
+	previewHolder.Visible = not robux
+	grid.Size = if robux
+		then UDim2.new(1, -(TABS_WIDTH + GAP), 1, -TOP)
+		else UDim2.new(1, -(TABS_WIDTH + PREVIEW_WIDTH + GAP * 2), 1, -TOP)
+	if robux then
 		buildRobux(profile)
 		return
 	end
@@ -410,55 +385,81 @@ function rebuild()
 end
 
 function ShopPanel.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, "Shop", Vector2.new(900, 580), function()
-		Router.close("shop", "user")
-	end)
-	coinsLabel = Widgets.display({
-		TextColor3 = C.paper,
-		TextSize = Theme.text.title,
-		Size = UDim2.new(0.4, 0, 0, 28),
-		Parent = body,
+	local win = Kit.window({ name = "shop", title = "Shop", size = "L" })
+	local body = win.body
+	-- The coins line: your purse on the left, a note on the right.
+	local purse = Kit.frame({ Name = "Purse", Size = UDim2.new(0.45, 0, 0, 32), Parent = body })
+	Kit.list(purse, T.space.s, true)
+	Kit.icon({ name = "coin", size = 24, color = C.candle, LayoutOrder = 1, Parent = purse })
+	coinsLabel = Kit.label({
+		font = "bodyBold",
+		size = "lead",
+		color = C.candle,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
+		LayoutOrder = 2,
+		Parent = purse,
 	})
-	noteLabel = Widgets.label({
-		TextColor3 = C.muted,
+	noteLabel = Kit.label({
+		font = "bodyItalic",
+		size = "small",
+		color = C.dim,
 		TextXAlignment = Enum.TextXAlignment.Right,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.None,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.new(0.6, 0, 0, 28),
+		Size = UDim2.new(0.55, 0, 0, 32),
 		Parent = body,
 	})
-	tabList = Widgets.frame({ Position = UDim2.fromOffset(0, 40), Size = UDim2.new(0, 140, 1, -40), Parent = body })
-	Widgets.list(tabList, Theme.space.xs)
-	grid = Widgets.scroll({
-		Position = UDim2.fromOffset(150, 40),
-		Size = UDim2.new(1, -390, 1, -40),
+	local items = {}
+	for _, tab in ipairs(TABS) do
+		table.insert(items, { id = tab, label = TAB_NAMES[tab] or Cosmetics.KIND_NAMES[tab] or tab })
+	end
+	Kit.tabs({
+		items = items,
+		selected = currentTab,
+		vertical = true,
+		Position = UDim2.fromOffset(0, TOP),
+		Size = UDim2.new(0, TABS_WIDTH, 1, -TOP),
 		Parent = body,
-	})
-	Widgets.padding(grid, Theme.space.xs)
-	Widgets.grid(grid, UDim2.fromOffset(186, 150), Theme.space.md)
-	previewHolder = Widgets.panel({
+	}, function(id)
+		currentTab = id
+		selectedId = nil
+		rebuild()
+	end)
+	grid = Kit.scroll({ Position = UDim2.fromOffset(TABS_WIDTH + GAP, TOP), Parent = body })
+	Kit.pad(grid, T.space.xs, T.space.xs)
+	Kit.grid(grid, UDim2.new(1 / 3, -T.space.m, 0, 172), T.space.m)
+	previewHolder = Kit.card({
+		Name = "Preview",
+		tone = "page",
+		padding = 0,
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 40),
-		Size = UDim2.new(0, 230, 1, -40),
+		Position = UDim2.new(1, 0, 0, TOP),
+		Size = UDim2.new(0, PREVIEW_WIDTH, 1, -TOP),
 		Parent = body,
 	})
 	viewport = Create("ViewportFrame", {
-		BackgroundColor3 = C.ink,
+		BackgroundColor3 = C.void,
 		BackgroundTransparency = 0,
 		Ambient = Color3.fromRGB(150, 150, 160),
 		LightColor = Color3.fromRGB(255, 240, 225),
 		LightDirection = Vector3.new(-1, -1, -0.5),
-		Size = UDim2.new(1, 0, 1, -34),
+		Size = UDim2.new(1, 0, 1, -36),
 		Parent = previewHolder,
 	})
-	previewCaption = Widgets.display({
+	previewCaption = Kit.label({
 		Text = "YOUR LOOK",
-		TextSize = Theme.text.body,
+		font = "label",
+		size = "small",
 		TextXAlignment = Enum.TextXAlignment.Center,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.None,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 30),
+		Size = UDim2.new(1, 0, 0, 36),
 		Parent = previewHolder,
 	})
 	ClientState.ProfileChanged:Connect(function()
@@ -469,19 +470,15 @@ function ShopPanel.init()
 			end
 		end
 	end)
-	Router.register("shop", {
-		layer = "modal",
-		window = window,
+	Kit.register(win, {
 		allowed = function(view)
 			return not view.participant
 		end,
 		show = function()
-			window.Visible = true
 			selectedId = nil
 			rebuild()
 		end,
 		hide = function()
-			window.Visible = false
 			clearPreview()
 		end,
 		firstSelection = function()

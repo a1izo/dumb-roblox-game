@@ -79,6 +79,17 @@ local function build()
 	Kit.seal({ size = 90, icon = "hand", Parent = marks })
 	Kit.seal({ size = 90, color = C.steel, text = "A", Parent = marks })
 	Kit.stamp({ text = "Case closed", width = 220, Parent = marks })
+	Kit.heading({ text = "A section heading", detail = "with a detail", LayoutOrder = order(), Parent = list })
+	local cards = row(list, order, 90)
+	for _, tone in ipairs({ "raised", "lifted", "page", "parchment" }) do
+		local card = Kit.card({
+			tone = tone,
+			accent = if tone == "raised" then T.rarity.Epic else nil,
+			Size = UDim2.fromOffset(200, 80),
+			Parent = cards,
+		})
+		Kit.label({ Text = "card: " .. tone, color = if tone == "parchment" then C.ink else C.bone, Parent = card })
+	end
 
 	section(list, order, "Controls")
 	local buttons = row(list, order)
@@ -94,6 +105,11 @@ local function build()
 		holds
 	Kit.iconButton({ icon = "settings", Parent = holds })
 	Kit.keycap({ text = "LB", Parent = holds })
+	local chips = row(list, order, 96)
+	Kit.actionChip({ icon = "evidence", label = "Evidence", key = "B", Parent = chips })
+	Kit.actionChip({ icon = "eye", label = "Read name", key = "R", variant = "primary", Parent = chips })
+	Kit.actionChip({ icon = "mail", label = "Discard sheet", key = "D-Down", Parent = chips })
+	Kit.actionChip({ icon = "quill", label = "Scratchpad", touch = true, Parent = chips })
 	Kit.tabs({
 		items = {
 			{ id = "a", label = "Hats", icon = "hood" },
@@ -116,6 +132,7 @@ local function build()
 		line.setSelected(index == 1)
 	end
 	Kit.entry({ text = "How to play", numeral = "I", LayoutOrder = order(), Parent = list })
+	Kit.entry({ text = "The open chapter", numeral = "II", selected = true, LayoutOrder = order(), Parent = list })
 	Kit.field({ placeholder = "Write a full name…", maxLength = 32, LayoutOrder = order(), Parent = list })
 	Kit.slider({ LayoutOrder = order(), Parent = list }, "Music", 0.6, 0, 1, 0.1, function() end)
 	Kit.toggle({ LayoutOrder = order(), Parent = list }, "Reduce motion", true, function() end)

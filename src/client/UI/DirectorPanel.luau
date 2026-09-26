@@ -9,12 +9,13 @@ local Net = require(Shared:WaitForChild("Net"))
 local SettingsSchema = require(Shared:WaitForChild("SettingsSchema"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local PrivateServerRemote = Net.event("PrivateServer")
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local DirectorPanel = {}
 
@@ -29,32 +30,41 @@ local MAP_NAMES = {
 	TokyoDistrict = "Tokyo District",
 }
 
-local window: Frame
-local body: Frame
+local win: any
+local list: ScrollingFrame
 local draft: SettingsSchema.Settings = SettingsSchema.defaults()
 
+local function lock(row: Instance)
+	for _, child in ipairs(row:GetDescendants()) do
+		if child:IsA("GuiButton") then
+			Kit.setEnabled(child, false)
+		end
+	end
+end
+
 local function rebuild()
-	Widgets.clear(body)
+	Kit.clear(list)
+	Kit.clear(win.footer)
 	local state = DirectorPanel.state
-	local list = Widgets.scroll({ Size = UDim2.new(1, 0, 1, -52), Parent = body })
-	Widgets.list(list, Theme.space.sm)
-	Widgets.label({
+	local nextOrder = Kit.counter()
+	Kit.label({
 		Text = if state.canEdit
 			then "You own this server. Changes apply from the next match. Custom rules pay participation rewards only."
 			elseif state.vip then "The server owner sets these rules." .. (if state.custom
 				then " Custom rules are on: participation rewards only."
 				else "")
 			else "Rules can be changed in private servers by an owner with the Director pass.",
-		TextColor3 = Theme.colors.muted,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, -8, 0, 0),
-		LayoutOrder = 0,
+		font = "bodyItalic",
+		size = "small",
+		color = C.dim,
+		LayoutOrder = nextOrder(),
 		Parent = list,
 	})
-	for index, key in ipairs(SettingsSchema.ORDER) do
+	Kit.heading({ text = "The match", LayoutOrder = nextOrder(), Parent = list })
+	for _, key in ipairs(SettingsSchema.ORDER) do
 		local range = SettingsSchema.RANGES[key]
-		local row = Widgets.slider(
-			{ LayoutOrder = index, Size = UDim2.new(1, -8, 0, 44), Parent = list },
+		local row = Kit.slider(
+			{ LayoutOrder = nextOrder(), Parent = list },
 			range.label,
 			(draft :: any)[key],
 			range.min,
@@ -62,19 +72,19 @@ local function rebuild()
 			range.step,
 			function(value)
 				(draft :: any)[key] = value
+			end,
+			function(value)
+				return tostring(value)
 			end
 		)
 		if not state.canEdit then
-			for _, child in ipairs(row:GetDescendants()) do
-				if child:IsA("GuiButton") then
-					Widgets.setEnabled(child, false)
-				end
-			end
+			lock(row)
 		end
 	end
-	for index, mapId in ipairs(SettingsSchema.MAPS) do
-		Widgets.toggle(
-			{ LayoutOrder = 20 + index, Size = UDim2.new(1, -8, 0, 36), Parent = list },
+	Kit.heading({ text = "Maps", LayoutOrder = nextOrder(), Parent = list })
+	for _, mapId in ipairs(SettingsSchema.MAPS) do
+		local row = Kit.toggle(
+			{ LayoutOrder = nextOrder(), Parent = list },
 			MAP_NAMES[mapId] or mapId,
 			table.find(draft.maps, mapId) ~= nil,
 			function(on)
@@ -86,35 +96,29 @@ local function rebuild()
 				end
 			end
 		)
+		if not state.canEdit then
+			lock(row)
+		end
 	end
+	win.footer.Visible = state.canEdit
 	if state.canEdit then
-		Widgets.button({
-			Text = "Apply",
-			Variant = "primary",
-			AnchorPoint = Vector2.new(1, 1),
-			Position = UDim2.fromScale(1, 1),
-			Size = UDim2.fromOffset(150, 40),
-			Parent = body,
-		}, function()
-			PrivateServerRemote:FireServer({ action = "set", settings = draft })
-		end)
-		Widgets.button({
-			Text = "Defaults",
-			Variant = "secondary",
-			AnchorPoint = Vector2.new(1, 1),
-			Position = UDim2.new(1, -160, 1, 0),
-			Size = UDim2.fromOffset(130, 40),
-			Parent = body,
-		}, function()
+		Kit.button({ text = "Defaults", variant = "ghost", LayoutOrder = 1, Parent = win.footer }, function()
 			PrivateServerRemote:FireServer({ action = "reset" })
 		end)
+		Kit.button(
+			{ text = "Apply", icon = "check", variant = "primary", LayoutOrder = 2, Parent = win.footer },
+			function()
+				PrivateServerRemote:FireServer({ action = "set", settings = draft })
+			end
+		)
 	end
 end
 
 function DirectorPanel.init()
-	window, body = Widgets.modal(Screens.modal, "Private server", Vector2.new(560, 520), function()
-		Router.close("director", "user")
-	end)
+	win = Kit.window({ name = "director", title = "Private server", size = "M", footer = true })
+	list = Kit.scroll({ Parent = win.body })
+	Kit.list(list, T.space.xs)
+	Kit.pad(list, 0, T.space.xs)
 	PrivateServerRemote.OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" or payload.action ~= "state" then
 			return
@@ -131,19 +135,13 @@ function DirectorPanel.init()
 			rebuild()
 		end
 	end)
-	Router.register("director", {
-		layer = "modal",
-		window = window,
+	Kit.register(win, {
 		allowed = function(view)
 			return not view.participant
 		end,
 		show = function()
 			draft = SettingsSchema.clamp(DirectorPanel.state.settings)
-			window.Visible = true
 			rebuild()
-		end,
-		hide = function()
-			window.Visible = false
 		end,
 	})
 	PrivateServerRemote:FireServer({ action = "get" })

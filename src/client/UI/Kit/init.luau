@@ -49,6 +49,8 @@ local Kit = {
 	icon = Icon.new,
 	-- surfaces
 	page = Surfaces.page,
+	card = Surfaces.card,
+	heading = Surfaces.heading,
 	banner = Surfaces.banner,
 	seal = Surfaces.seal,
 	stamp = Surfaces.stamp,

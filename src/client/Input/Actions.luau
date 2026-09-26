@@ -158,8 +158,9 @@ Actions.list = {
 		label = fixed("How to play"),
 		keys = { Enum.KeyCode.H },
 		variant = "ghost",
-		when = function(view: View)
-			return view.participant
+		-- Everywhere, the lobby included (the HUD only shows action chips in a match).
+		when = function()
+			return true
 		end,
 		run = function()
 			Router.toggle("howToPlay")

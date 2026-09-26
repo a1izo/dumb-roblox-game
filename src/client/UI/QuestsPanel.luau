@@ -11,23 +11,24 @@ local Quests = require(Progression:WaitForChild("Quests"))
 local Streak = require(Progression:WaitForChild("Streak"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local ProfileRequest = Net.event("ProfileRequest")
 
-local C = Theme.colors
+local C = Kit.color
+local T = Kit.Tokens
 
 local QuestsPanel = {}
 
-local window: Frame
+-- Right-hand column of a quest card: the reward, and the swap button under it.
+local SIDE = 170
+
 local list: ScrollingFrame
 local popup: Frame
 local popupText: TextLabel
 local popupShown = false
-local order = 0
 
 local function formatTime(seconds: number): string
 	local hours = math.floor(seconds / 3600)
@@ -37,81 +38,62 @@ local function formatTime(seconds: number): string
 	return string.format("%dh %02dm", hours, math.floor((seconds % 3600) / 60))
 end
 
-local function nextOrder(): number
-	order += 1
-	return order
-end
-
-local function header(text: string, detail: string?)
-	local row = Widgets.frame({ Size = UDim2.new(1, -8, 0, 30), LayoutOrder = nextOrder(), Parent = list })
-	Widgets.header({ Text = text, TextSize = Theme.text.title, Size = UDim2.new(0.6, 0, 1, 0), Parent = row })
-	if detail then
-		Widgets.label({
-			Text = detail,
-			TextColor3 = C.muted,
-			TextXAlignment = Enum.TextXAlignment.Right,
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.fromScale(1, 0),
-			Size = UDim2.new(0.4, 0, 1, 0),
-			Parent = row,
-		})
-	end
-end
-
-local function questRow(item, canSwap: boolean)
+local function questCard(item, canSwap: boolean, order: number)
 	local quest = Quests.byId(item.id)
 	if not quest then
 		return
 	end
-	local row = Widgets.panel({
-		BackgroundColor3 = C.panelLight,
-		Size = UDim2.new(1, -8, 0, 64),
-		LayoutOrder = nextOrder(),
-		Parent = list,
+	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 84), LayoutOrder = order, Parent = list })
+	Kit.label({
+		Text = (if item.done then "Done  ·  " else "") .. quest.text,
+		font = "bodyBold",
+		color = if item.done then C.good else C.bone,
+		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Size = UDim2.new(1, -SIDE, 0, 22),
+		Parent = card,
 	})
-	Widgets.label({
-		Text = (if item.done then "DONE  ·  " else "") .. quest.text,
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.bodyLarge,
-		TextColor3 = if item.done then C.good else C.text,
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -150, 0, 22),
-		Parent = row,
+	local bar, setProgress = Kit.meter({
+		color = if item.done then C.good else C.red,
+		Position = UDim2.fromOffset(0, 38),
+		Size = UDim2.new(1, -(SIDE + 80), 0, 6),
+		Parent = card,
 	})
-	local bar, setProgress = Widgets.progressBar({
-		Position = UDim2.fromOffset(12, 38),
-		Size = UDim2.new(1, -230, 0, 10),
-		Parent = row,
-	}, if item.done then C.good else C.accent)
-	setProgress(item.progress / quest.goal)
 	bar.Name = "Progress"
-	Widgets.label({
+	setProgress(item.progress / quest.goal)
+	Kit.label({
 		Text = string.format("%d / %d", item.progress, quest.goal),
-		TextSize = Theme.text.small,
-		TextColor3 = C.muted,
-		Position = UDim2.new(1, -212, 0, 34),
-		Size = UDim2.fromOffset(70, 18),
-		Parent = row,
+		font = "mono",
+		size = "small",
+		color = C.dim,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.new(1, -(SIDE + 70), 0, 31),
+		Size = UDim2.fromOffset(64, 20),
+		Parent = card,
 	})
-	Widgets.label({
-		Text = string.format("+%d coins  +%d XP", quest.coins, quest.xp),
-		TextSize = Theme.text.small,
-		TextColor3 = C.paper,
+	Kit.label({
+		Text = string.format("+%d coins  ·  +%d XP", quest.coins, quest.xp),
+		font = "label",
+		size = "small",
+		color = C.candle,
 		TextXAlignment = Enum.TextXAlignment.Right,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.None,
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 10),
-		Size = UDim2.fromOffset(130, 18),
-		Parent = row,
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.fromOffset(SIDE, 20),
+		Parent = card,
 	})
 	if canSwap and not item.done then
-		Widgets.button({
-			Text = "Swap",
-			TextSize = Theme.text.small,
-			Variant = "secondary",
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -12, 0, 30),
-			Size = UDim2.fromOffset(80, 28),
-			Parent = row,
+		Kit.button({
+			text = "Swap",
+			variant = "ghost",
+			size = "s",
+			AnchorPoint = Vector2.new(1, 1),
+			Position = UDim2.fromScale(1, 1),
+			Parent = card,
 		}, function()
 			ProfileRequest:FireServer({ action = "reroll", quest = item.id })
 		end)
@@ -123,25 +105,25 @@ local function canClaim(profile): boolean
 end
 
 local function rebuild()
-	Widgets.clear(list)
-	order = 0
+	Kit.clear(list)
 	local profile = ClientState.profile
 	if not profile or not profile.quests then
 		return
 	end
+	local nextOrder = Kit.counter()
 	-- Streak
 	local streak = profile.streak
 	local claimable = canClaim(profile)
 	local nextCount = Streak.nextCount(streak, profile.today)
 	local cycleDay = ((nextCount - 1) % Streak.CYCLE) + 1
-	header("Daily streak", string.format("Best: %d days", streak.best))
-	local streakRow = Widgets.panel({
-		BackgroundColor3 = C.panelLight,
-		Size = UDim2.new(1, -8, 0, 64),
+	Kit.heading({
+		text = "Daily streak",
+		detail = string.format("Best: %d days", streak.best),
 		LayoutOrder = nextOrder(),
 		Parent = list,
 	})
-	Widgets.label({
+	local streakCard = Kit.card({ Size = UDim2.new(1, 0, 0, 76), LayoutOrder = nextOrder(), Parent = list })
+	Kit.label({
 		Text = if claimable
 			then string.format("Day %d is waiting: +%d coins", nextCount, Streak.COINS[cycleDay])
 			else string.format(
@@ -149,40 +131,49 @@ local function rebuild()
 				streak.count,
 				formatTime(profile.nextDayIn or 0)
 			),
-		FontFace = Theme.faces.displayMedium,
-		TextSize = Theme.text.bodyLarge,
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -150, 0, 22),
-		Parent = streakRow,
+		font = "bodyBold",
+		Size = UDim2.new(1, -140, 0, 0),
+		Parent = streakCard,
 	})
-	Widgets.label({
+	Kit.label({
 		Text = "Day 7 of a streak also unlocks the Night Owl title.",
-		TextSize = Theme.text.small,
-		TextColor3 = C.muted,
-		Position = UDim2.fromOffset(12, 34),
-		Size = UDim2.new(1, -150, 0, 20),
-		Parent = streakRow,
+		size = "small",
+		color = C.dim,
+		Position = UDim2.fromOffset(0, 28),
+		Size = UDim2.new(1, -140, 0, 0),
+		Parent = streakCard,
 	})
-	local claim = Widgets.button({
-		Text = if claimable then "Claim" else "Claimed",
-		Variant = if claimable then "primary" else "secondary",
+	local claim = Kit.button({
+		text = if claimable then "Claim" else "Claimed",
+		icon = if claimable then "coin" else "check",
+		variant = if claimable then "primary" else "secondary",
+		size = "s",
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(110, 36),
-		Parent = streakRow,
+		Position = UDim2.fromScale(1, 0.5),
+		Parent = streakCard,
 	}, function()
 		ProfileRequest:FireServer({ action = "streak" })
 	end)
-	Widgets.setEnabled(claim, claimable)
+	Kit.setEnabled(claim, claimable)
 
 	local swapFree = profile.quests.rerollDay ~= profile.today
-	header("Daily quests", "New in " .. formatTime(profile.nextDayIn or 0))
+	Kit.heading({
+		text = "Daily quests",
+		detail = "New in " .. formatTime(profile.nextDayIn or 0),
+		LayoutOrder = nextOrder(),
+		Parent = list,
+	})
 	for _, item in ipairs(profile.quests.daily.items) do
-		questRow(item, swapFree)
+		questCard(item, swapFree, nextOrder())
 	end
-	header("Weekly quests", "New in " .. formatTime(profile.nextWeekIn or 0))
+	Kit.heading({
+		text = "Weekly quests",
+		detail = "New in " .. formatTime(profile.nextWeekIn or 0),
+		LayoutOrder = nextOrder(),
+		Parent = list,
+	})
 	for _, item in ipairs(profile.quests.weekly.items) do
-		questRow(item, false)
+		questCard(item, false, nextOrder())
 	end
 end
 
@@ -200,63 +191,57 @@ local function maybePopup()
 	popup.Visible = true
 end
 
-function QuestsPanel.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, "Quests", Vector2.new(640, 560), function()
-		Router.close("quests", "user")
+local function buildPopup()
+	local page, content = Kit.page({
+		Name = "StreakPopup",
+		tone = "raised",
+		padding = T.space.l,
+		autoHeight = true,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -T.space.xl, 0, 90),
+		Size = UDim2.fromOffset(340, 0),
+		Visible = false,
+		Parent = Screens.panels,
+	})
+	popup = page
+	Kit.list(content, T.space.s)
+	Kit.text({
+		face = "Gothic",
+		text = "Daily streak",
+		size = T.size.title,
+		color = C.red,
+		LayoutOrder = 1,
+		Parent = content,
+	})
+	popupText = Kit.label({ LayoutOrder = 2, Parent = content })
+	local row = Kit.frame({ Name = "Actions", Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 3, Parent = content })
+	Kit.list(row, T.space.s, true)
+	Kit.button(
+		{ text = "Claim", icon = "coin", variant = "primary", size = "s", LayoutOrder = 1, Parent = row },
+		function()
+			ProfileRequest:FireServer({ action = "streak" })
+			popup.Visible = false
+		end
+	)
+	Kit.button({ text = "Later", variant = "ghost", size = "s", LayoutOrder = 2, Parent = row }, function()
+		popup.Visible = false
 	end)
-	list = Widgets.scroll({ Size = UDim2.fromScale(1, 1), Parent = body })
-	Widgets.list(list, Theme.space.sm)
-	Router.register("quests", {
-		layer = "modal",
-		window = window,
+end
+
+function QuestsPanel.init()
+	local win = Kit.window({ name = "quests", title = "Quests", size = "M" })
+	list = Kit.scroll({ Parent = win.body })
+	Kit.list(list, T.space.s)
+	Kit.pad(list, 0, T.space.xs)
+	Kit.register(win, {
 		allowed = function(view)
 			return not view.participant
 		end,
 		show = function()
-			window.Visible = true
 			rebuild()
 		end,
-		hide = function()
-			window.Visible = false
-		end,
 	})
-
-	popup = Widgets.panel({
-		Name = "StreakPopup",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -24, 0, 90),
-		Size = UDim2.fromOffset(340, 118),
-		Visible = false,
-		Parent = Screens.panels,
-	})
-	local ribbon = Widgets.ribbon({ Position = UDim2.fromOffset(-10, -12), Parent = popup }, "DAILY STREAK")
-	ribbon.ZIndex = 2
-	popupText = Widgets.label({
-		TextSize = Theme.text.body,
-		Position = UDim2.fromOffset(14, 26),
-		Size = UDim2.new(1, -28, 0, 40),
-		Parent = popup,
-	})
-	Widgets.button({
-		Text = "Claim",
-		Variant = "primary",
-		Position = UDim2.new(0, 14, 1, -46),
-		Size = UDim2.fromOffset(140, 36),
-		Parent = popup,
-	}, function()
-		ProfileRequest:FireServer({ action = "streak" })
-		popup.Visible = false
-	end)
-	Widgets.button({
-		Text = "Later",
-		Variant = "ghost",
-		Position = UDim2.new(0, 164, 1, -46),
-		Size = UDim2.fromOffset(110, 36),
-		Parent = popup,
-	}, function()
-		popup.Visible = false
-	end)
+	buildPopup()
 
 	ClientState.ProfileChanged:Connect(function()
 		if Router.isOpen("quests") then

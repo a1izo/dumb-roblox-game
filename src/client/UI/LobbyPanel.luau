@@ -1,8 +1,9 @@
 -- The lobby, drawn as the first page of the Grimoire: the INKBOUND wordmark and tagline, a red
--- READY stamp with the queue status under it, a handwritten table of contents (I. How to
--- play, II. Quests...) and, on the right, your profile: rank seal, XP and coins. Shown to
--- everyone not playing in the current match. The HUD's phase banner is hidden here, so the
--- queue status lives on this page.
+-- READY stamp with the queue status under it, a handwritten table of contents (I. Quests,
+-- II. Shop...) and, on the right, your card: rank seal, XP, coins, and the way to your
+-- profile and the leaderboards. How to Play lives in Settings (and on H). Shown to everyone
+-- not playing in the current match. The HUD's phase banner is hidden here, so the queue
+-- status lives on this page.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,11 +29,8 @@ local LobbyPanel = {}
 local NUMERALS = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" }
 
 local MENU = {
-	{ text = "How to play", screen = "howToPlay" },
 	{ text = "Quests", screen = "quests" },
 	{ text = "Shop", screen = "shop" },
-	{ text = "Profile", screen = "profile" },
-	{ text = "Leaderboards", screen = "leaderboards" },
 	{ text = "Party", screen = "party" },
 	{ text = "Settings", screen = "settings" },
 	{ text = "Private server", screen = "director" },
@@ -52,6 +50,10 @@ local statusLabel: TextLabel
 local readyHolder: Frame
 local readyButton: TextButton
 local saveWarning: TextLabel
+local links: Frame
+local linksLayout: UIListLayout
+local profileButton: TextButton
+local boardsButton: TextButton
 local lastCoins: number? = nil
 local lastReady: boolean? = nil
 local lastRank = ""
@@ -295,6 +297,30 @@ local function buildProfile()
 		LayoutOrder = 5,
 		Parent = content,
 	})
+	-- Your profile and the leaderboards open from the card: side by side, or stacked on phones.
+	links = Kit.frame({ Name = "Links", Size = UDim2.new(1, 0, 0, 48), LayoutOrder = 6, Parent = content })
+	linksLayout = Kit.list(links, T.space.s, true)
+	linksLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	profileButton = Kit.button({
+		text = "Profile",
+		variant = "secondary",
+		size = "s",
+		Size = UDim2.new(0.5, -T.space.xs, 0, 40),
+		LayoutOrder = 1,
+		Parent = links,
+	}, function()
+		Router.toggle("profile")
+	end)
+	boardsButton = Kit.button({
+		text = "Leaderboards",
+		variant = "secondary",
+		size = "s",
+		Size = UDim2.new(0.5, -T.space.xs, 0, 40),
+		LayoutOrder = 2,
+		Parent = links,
+	}, function()
+		Router.toggle("leaderboards")
+	end)
 end
 
 local function layout(class: string)
@@ -312,8 +338,13 @@ local function layout(class: string)
 		Kit.Layout.place(menu, "bottomLeft", Vector2.new(T.space.l, -T.space.l))
 		menu.Size = UDim2.fromOffset(460, 0)
 		Kit.Layout.place(profileCard, "bottomRight", Vector2.new(-T.space.l, -T.space.l))
-		profileCard.Size = UDim2.fromOffset(320, 0)
+		profileCard.Size = UDim2.fromOffset(340, 0)
 	end
+	linksLayout.FillDirection = if phone then Enum.FillDirection.Vertical else Enum.FillDirection.Horizontal
+	links.Size = UDim2.new(1, 0, 0, if phone then 40 * 2 + T.space.s + T.space.xs else 48)
+	local buttonSize = if phone then UDim2.new(1, 0, 0, 40) else UDim2.new(0.5, -T.space.xs, 0, 40)
+	profileButton.Size = buttonSize
+	boardsButton.Size = buttonSize
 	buildContents(phone)
 	lastReady = nil
 	updateLobby()

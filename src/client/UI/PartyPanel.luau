@@ -8,70 +8,68 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local PartyRequest = Net.event("PartyRequest")
 local LocalPlayer = Players.LocalPlayer
 
+local C = Kit.color
+local T = Kit.Tokens
+
 local PartyPanel = {}
 
-local window: Frame
 local list: ScrollingFrame
-local order = 0
+local nextOrder = Kit.counter()
+
+type RowButton = { text: string, variant: string?, icon: string?, action: () -> () }
 
 local function heading(text: string)
-	order += 1
-	Widgets.label({
-		Font = Theme.fonts.black,
-		TextSize = 14,
-		TextColor3 = Theme.colors.muted,
-		Text = string.upper(text),
-		LayoutOrder = order,
-		Parent = list,
-	})
+	Kit.heading({ text = text, LayoutOrder = nextOrder(), Parent = list })
 end
 
-local function row(text: string, buttons: { { text: string, variant: string?, action: () -> () } })
-	order += 1
-	local frame = Widgets.panel({
-		BackgroundColor3 = Theme.colors.panelLight,
-		Size = UDim2.new(1, -8, 0, 48),
-		LayoutOrder = order,
-		Parent = list,
-	})
-	Widgets.label({
+-- A card with a line of text and its buttons on the right.
+local function row(text: string, buttons: { RowButton }, quiet: boolean?)
+	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 64), LayoutOrder = nextOrder(), Parent = list })
+	Kit.label({
 		Text = text,
-		TextTruncate = Enum.TextTruncate.AtEnd,
+		font = if quiet then "bodyItalic" else "bodyBold",
+		color = if quiet then C.dim else C.bone,
 		TextWrapped = false,
-		Position = UDim2.fromOffset(14, 14),
-		Size = UDim2.new(1, -28 - #buttons * 96, 0, 20),
-		Parent = frame,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Size = UDim2.new(1, -(#buttons * 120), 1, 0),
+		Parent = card,
 	})
-	for i, info in ipairs(buttons) do
-		Widgets.button({
-			Text = info.text,
-			TextSize = Theme.text.small,
-			Variant = info.variant,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -8 - (i - 1) * 96, 0.5, 0),
-			Size = UDim2.fromOffset(88, 34),
-			Parent = frame,
+	local holder = Kit.frame({
+		Name = "Buttons",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0, #buttons * 120, 1, 0),
+		Parent = card,
+	})
+	Kit.list(holder, T.space.s, true, Enum.HorizontalAlignment.Right)
+	for index, info in ipairs(buttons) do
+		Kit.button({
+			text = info.text,
+			icon = info.icon,
+			variant = info.variant or "secondary",
+			size = "s",
+			LayoutOrder = index,
+			Parent = holder,
 		}, info.action)
 	end
 end
 
 local function rebuild()
-	Widgets.clear(list)
-	order = 0
+	Kit.clear(list)
+	nextOrder = Kit.counter()
 	local party = ClientState.party or { members = {}, invites = {}, maxSize = 4 }
 	local inParty = {}
 
 	heading(string.format("Your party (%d/%d)", math.max(#party.members, 1), party.maxSize or 4))
 	if #party.members == 0 then
-		row("Just you. Invite friends so you always play on the same side.", {})
+		row("Just you. Invite friends so you always play on the same side.", {}, true)
 	else
 		for _, member in ipairs(party.members) do
 			inParty[member.userId] = true
@@ -81,7 +79,7 @@ local function rebuild()
 		row("Leave this party", {
 			{
 				text = "Leave",
-				variant = "primary",
+				variant = "danger",
 				action = function()
 					PartyRequest:FireServer({ action = "leave" })
 				end,
@@ -92,7 +90,7 @@ local function rebuild()
 	row("Bring Roblox friends into this server", {
 		{
 			text = "Invite",
-			variant = "secondary",
+			icon = "mail",
 			action = function()
 				task.spawn(function()
 					local ok, canInvite = pcall(function()
@@ -114,13 +112,14 @@ local function rebuild()
 			row(invite.name .. " invited you", {
 				{
 					text = "Accept",
-					variant = "good",
+					variant = "primary",
 					action = function()
 						PartyRequest:FireServer({ action = "accept", userId = invite.userId })
 					end,
 				},
 				{
 					text = "Decline",
+					variant = "ghost",
 					action = function()
 						PartyRequest:FireServer({ action = "decline", userId = invite.userId })
 					end,
@@ -137,7 +136,7 @@ local function rebuild()
 			row(player.DisplayName, {
 				{
 					text = "Invite",
-					variant = "team",
+					icon = "party",
 					action = function()
 						PartyRequest:FireServer({ action = "invite", userId = player.UserId })
 					end,
@@ -146,28 +145,22 @@ local function rebuild()
 		end
 	end
 	if not any then
-		row("Nobody else is here yet.", {})
+		row("Nobody else is here yet.", {}, true)
 	end
 end
 
 function PartyPanel.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, "Party", Vector2.new(520, 540), function()
-		Router.close("party", "user")
-	end)
-	Widgets.label({
-		TextSize = 14,
-		TextColor3 = Theme.colors.muted,
+	local win = Kit.window({ name = "party", title = "Party", size = "M" })
+	Kit.label({
 		Text = "Friends in a party are always placed on the same side.",
-		Size = UDim2.new(1, 0, 0, 20),
-		Parent = body,
+		font = "bodyItalic",
+		size = "small",
+		color = C.dim,
+		Parent = win.body,
 	})
-	list = Widgets.scroll({
-		Position = UDim2.fromOffset(0, 28),
-		Size = UDim2.new(1, 0, 1, -28),
-		Parent = body,
-	})
-	Widgets.list(list, 6)
+	list = Kit.scroll({ Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 1, -30), Parent = win.body })
+	Kit.list(list, T.space.s)
+	Kit.pad(list, 0, T.space.xs)
 	local function refresh()
 		if Router.isOpen("party") then
 			rebuild()
@@ -178,18 +171,12 @@ function PartyPanel.init()
 	Players.PlayerRemoving:Connect(function()
 		task.defer(refresh)
 	end)
-	Router.register("party", {
-		layer = "modal",
-		window = window,
+	Kit.register(win, {
 		allowed = function(view)
 			return not view.living
 		end,
 		show = function()
-			window.Visible = true
 			rebuild()
-		end,
-		hide = function()
-			window.Visible = false
 		end,
 	})
 end

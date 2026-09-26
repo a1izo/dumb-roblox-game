@@ -371,6 +371,114 @@ function Surfaces.vignette(parent: Instance, strength: number?): Frame
 	return holder
 end
 
+-- A flat card for rows and tiles on a page: a raised fill with a hairline edge. Props: tone
+-- ("raised" by default, "lifted", "page", "parchment"), accent (a Color3 for a mark down the
+-- left side; only on cards with a fixed height), padding (px, default 12), plus frame
+-- properties. It has no full-size decoration, so AutomaticSize is safe on it. Children go
+-- straight inside (the padding is on the card).
+local CARD_TONES = {
+	raised = Tokens.color.raised,
+	lifted = Tokens.color.lifted,
+	page = Tokens.color.page,
+	parchment = Tokens.color.parchment,
+}
+
+function Surfaces.card(props: Props): Frame
+	local frame = Base.make("Frame", {
+		Name = props.Name or "Card",
+		BackgroundColor3 = CARD_TONES[props.tone or "raised"] or Tokens.color.raised,
+		BorderSizePixel = 0,
+		Size = props.Size or UDim2.new(1, 0, 0, 56),
+		AutomaticSize = props.AutomaticSize,
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
+		LayoutOrder = props.LayoutOrder,
+		ZIndex = props.ZIndex or 1,
+		Visible = if props.Visible == nil then true else props.Visible,
+		Parent = props.Parent,
+	})
+	Base.stroke(frame, if props.tone == "parchment" then Tokens.color.ink else Tokens.color.rule, 1, 0.85)
+	local padding = props.padding or Tokens.space.m
+	Base.pad(frame, padding, if props.accent then padding + 6 else padding)
+	if props.accent then
+		Base.make("Frame", {
+			Name = "Accent",
+			BackgroundColor3 = props.accent,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0, -(padding + 6), 0, -padding),
+			Size = UDim2.new(0, 4, 1, padding * 2),
+			ZIndex = frame.ZIndex,
+			Parent = frame,
+		})
+	end
+	return frame
+end
+
+-- A section heading on a page: a Gothic title with a short red stroke under it, an optional
+-- detail on the right in small italic, and a hairline across. Props: text, detail, ink (the
+-- lettering colour), plus frame properties. Returns the frame and set(text, detail?).
+function Surfaces.heading(props: Props): (Frame, (string, string?) -> ())
+	local ink = props.ink or Tokens.color.bone
+	local frame = Base.frame({
+		Name = props.Name or "Heading",
+		Size = UDim2.new(1, 0, 0, 46),
+		LayoutOrder = props.LayoutOrder,
+		ZIndex = props.ZIndex or 1,
+		Parent = props.Parent,
+	})
+	local z = frame.ZIndex
+	local title = GlyphText.new({
+		face = "Gothic",
+		text = props.text or "",
+		size = Tokens.size.title,
+		color = ink,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, -8),
+		ZIndex = z,
+		Parent = frame,
+	})
+	local detail = Base.label({
+		Name = "Detail",
+		Text = props.detail or "",
+		font = "bodyItalic",
+		size = "small",
+		color = if ink == Tokens.color.ink then Tokens.color.inkDim else Tokens.color.dim,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.None,
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, 0, 1, -9),
+		Size = UDim2.new(0.5, 0, 0, 20),
+		ZIndex = z,
+		Parent = frame,
+	})
+	Base.make("Frame", {
+		Name = "Hairline",
+		BackgroundColor3 = ink,
+		BackgroundTransparency = 0.85,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 1),
+		ZIndex = z,
+		Parent = frame,
+	})
+	Base.make("Frame", {
+		Name = "Stroke",
+		BackgroundColor3 = Tokens.color.red,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, -1),
+		Size = UDim2.fromOffset(48, 2),
+		ZIndex = z,
+		Parent = frame,
+	})
+	return frame, function(text: string, newDetail: string?)
+		title:set(text)
+		detail.Text = newDetail or ""
+	end
+end
+
 -- A thin rule (hairline), optionally red.
 function Surfaces.rule(props: Props?): Frame
 	local p = props or {}

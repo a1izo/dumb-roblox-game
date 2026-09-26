@@ -1,5 +1,7 @@
--- The How to Play book: a chapter list on the left and the chapter on the right. The last
--- chapter lists the controls for the input the player is using (keyboard, gamepad, touch).
+-- The How to Play book, drawn as a spread: the table of contents on the left page and the open
+-- chapter on the right. The last chapter lists the controls for the input the player is using
+-- (keyboard, gamepad, touch). It opens from Settings (closing it goes back there), with H
+-- anywhere, and from the match HUD.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -8,19 +10,26 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Book = require(Shared:WaitForChild("Copy"):WaitForChild("HowToPlay"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local HowToPlay = {}
 
-local window: Frame
-local chapterList: ScrollingFrame
-local titleLabel: TextLabel
+local NUMERALS = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" }
+
+-- The left page's share of the spread.
+local CONTENTS_WIDTH = 0.34
+
+local contents: ScrollingFrame
+local chapterTitle: any
 local page: ScrollingFrame
 local current = 1
-local firstButton: TextButton? = nil
+local firstEntry: TextButton? = nil
+-- The screen to go back to when the book closes (Settings, when it was opened from there).
+local returnTo: string? = nil
 
 local function controls(): { string }
 	local last = UserInputService:GetLastInputType()
@@ -61,69 +70,72 @@ local function showChapter(index: number)
 	local list = chapters()
 	current = math.clamp(index, 1, #list)
 	local chapter = list[current]
-	titleLabel.Text = string.upper(chapter.title)
-	Widgets.clear(page)
+	chapterTitle:set(chapter.title)
+	Kit.clear(page)
 	for order, line in ipairs(chapter.body) do
-		Widgets.label({
-			Text = line,
-			TextSize = Theme.text.body,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.new(1, -8, 0, 0),
-			LayoutOrder = order,
-			Parent = page,
-		})
+		Kit.label({ Text = line, size = "body", LayoutOrder = order, Parent = page })
 	end
-	Widgets.clear(chapterList)
-	firstButton = nil
+	page.CanvasPosition = Vector2.zero
+	Kit.clear(contents)
+	firstEntry = nil
 	for order, entry in ipairs(list) do
-		local button = Widgets.button({
-			Text = entry.title,
-			TextSize = Theme.text.small,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Variant = if order == current then "primary" else "ghost",
-			Size = UDim2.new(1, -6, 0, 36),
+		local button = Kit.entry({
+			text = entry.title,
+			numeral = NUMERALS[order],
+			size = 24,
+			seed = order,
+			selected = order == current,
+			Size = UDim2.new(1, -T.space.s, 0, 42),
 			LayoutOrder = order,
-			Parent = chapterList,
+			Parent = contents,
 		}, function()
 			showChapter(order)
 		end)
-		firstButton = firstButton or button
+		firstEntry = firstEntry or button
 	end
 end
 
 function HowToPlay.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, "How to play", Vector2.new(760, 540), function()
-		Router.close("howToPlay", "user")
-	end)
-	chapterList = Widgets.scroll({ Size = UDim2.new(0.32, 0, 1, 0), Parent = body })
-	Widgets.list(chapterList, Theme.space.xs)
-	local right = Widgets.frame({
+	local win = Kit.window({ name = "howToPlay", title = "How to play", size = "L" })
+	-- Left page: the table of contents.
+	contents = Kit.scroll({ Size = UDim2.new(CONTENTS_WIDTH, -T.space.l, 1, 0), Parent = win.body })
+	Kit.list(contents, T.space.xxs)
+	-- The spine between the pages.
+	Kit.Base.make("Frame", {
+		Name = "Spine",
+		BackgroundColor3 = C.rule,
+		BackgroundTransparency = 0.85,
+		BorderSizePixel = 0,
+		Position = UDim2.fromScale(CONTENTS_WIDTH, 0),
+		Size = UDim2.new(0, 1, 1, 0),
+		Parent = win.body,
+	})
+	-- Right page: the open chapter.
+	local right = Kit.frame({
+		Name = "Chapter",
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.new(0.66, 0, 1, 0),
-		Parent = body,
+		Size = UDim2.new(1 - CONTENTS_WIDTH, -T.space.xl, 1, 0),
+		Parent = win.body,
 	})
-	titleLabel = Widgets.display({
-		TextSize = Theme.text.heading,
-		TextColor3 = Theme.colors.accent,
-		Size = UDim2.new(1, 0, 0, 36),
-		Parent = right,
-	})
-	page = Widgets.scroll({ Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 1, -44), Parent = right })
-	Widgets.list(page, Theme.space.md)
-	Router.register("howToPlay", {
-		layer = "modal",
-		window = window,
-		show = function()
+	chapterTitle = Kit.text({ face = "Gothic", text = "", size = T.size.heading, color = C.red, Parent = right })
+	page = Kit.scroll({ Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 1, -58), Parent = right })
+	Kit.list(page, T.space.m)
+	Kit.pad(page, 0, T.space.xs)
+	Kit.register(win, {
+		show = function(args)
+			returnTo = if type(args) == "table" and type(args.returnTo) == "string" then args.returnTo else nil
 			showChapter(current)
-			window.Visible = true
 		end,
-		hide = function()
-			window.Visible = false
+		hide = function(reason)
+			local back = returnTo
+			returnTo = nil
+			if back and (reason == "user" or reason == "back") then
+				task.defer(Router.open, back)
+			end
 		end,
 		firstSelection = function()
-			return firstButton
+			return firstEntry
 		end,
 	})
 end

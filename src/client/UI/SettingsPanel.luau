@@ -1,40 +1,32 @@
--- Settings: volumes, UI scale, reduced motion, camera shake and hints. Changes apply at
--- once and are saved to the profile.
+-- Settings: sound, display, and help (How to Play and the guide). Changes apply at once and
+-- are saved to the profile.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Settings = require(script.Parent.Core.Settings)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
+
+local T = Kit.Tokens
 
 local SettingsPanel = {}
 
-local window: Frame
 local setters: { [string]: (any) -> () } = {}
 
 function SettingsPanel.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, "Settings", Vector2.new(520, 560), function()
-		Router.close("settings", "user")
-	end)
-	local list = Widgets.scroll({ Parent = body })
-	Widgets.list(list, Theme.space.sm)
-	Widgets.padding(list, 0, Theme.space.xs)
+	local win = Kit.window({ name = "settings", title = "Settings", size = "M" })
+	local list = Kit.scroll({ Parent = win.body })
+	Kit.list(list, T.space.xs)
+	Kit.pad(list, 0, T.space.xs)
+	local nextOrder = Kit.counter()
 
-	local order = 0
-	local function nextOrder(): number
-		order += 1
-		return order
-	end
 	local function header(text: string)
-		Widgets.header({ Text = text, LayoutOrder = nextOrder(), Parent = list })
+		Kit.heading({ text = text, LayoutOrder = nextOrder(), Parent = list })
 	end
 	local function volume(key: string, label: string)
-		local _, set = Widgets.slider(
+		local _, set = Kit.slider(
 			{ LayoutOrder = nextOrder(), Parent = list },
 			label,
 			Settings.get(key),
@@ -48,7 +40,7 @@ function SettingsPanel.init()
 		setters[key] = set
 	end
 	local function toggle(key: string, label: string)
-		local _, set = Widgets.toggle(
+		local _, set = Kit.toggle(
 			{ LayoutOrder = nextOrder(), Parent = list },
 			label,
 			Settings.get(key),
@@ -58,14 +50,21 @@ function SettingsPanel.init()
 		)
 		setters[key] = set
 	end
+	local function buttonRow(): Frame
+		local row =
+			Kit.frame({ Size = UDim2.new(1, 0, 0, T.touch + T.space.s), LayoutOrder = nextOrder(), Parent = list })
+		Kit.list(row, T.space.m, true)
+		return row
+	end
 
 	header("Sound")
 	volume("music", "Music")
 	volume("sfx", "Sound effects")
 	volume("ambience", "Ambience")
 	volume("ui", "Interface sounds")
+
 	header("Display")
-	local _, setScale = Widgets.slider(
+	local _, setScale = Kit.slider(
 		{ LayoutOrder = nextOrder(), Parent = list },
 		"UI size",
 		Settings.get("uiScale"),
@@ -79,16 +78,14 @@ function SettingsPanel.init()
 	setters.uiScale = setScale
 	toggle("reduceMotion", "Reduce motion")
 	toggle("cameraShake", "Camera shake")
+
 	header("Help")
+	-- How to Play opens over Settings and comes back here when it closes.
+	Kit.button({ text = "How to play", icon = "help", variant = "primary", Parent = buttonRow() }, function()
+		Router.open("howToPlay", { returnTo = "settings" })
+	end)
 	toggle("hints", "Show the guide (tips and objectives)")
-	Widgets.button({
-		Text = "Show all tips again",
-		TextSize = Theme.text.small,
-		Variant = "ghost",
-		Size = UDim2.new(1, 0, 0, 36),
-		LayoutOrder = nextOrder(),
-		Parent = list,
-	}, function()
+	Kit.button({ text = "Show all tips again", variant = "ghost", size = "s", Parent = buttonRow() }, function()
 		Net.event("ProfileRequest"):FireServer({ action = "resetHints" })
 	end)
 
@@ -99,16 +96,7 @@ function SettingsPanel.init()
 		end
 	end)
 
-	Router.register("settings", {
-		layer = "modal",
-		window = window,
-		show = function()
-			window.Visible = true
-		end,
-		hide = function()
-			window.Visible = false
-		end,
-	})
+	Kit.register(win)
 end
 
 return SettingsPanel
