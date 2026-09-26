@@ -1,4 +1,6 @@
--- The reveal: winner, every role and real name, a replay of the key events and rewards.
+-- The reveal, when the case closes: the winning side on a brush stroke with a CASE CLOSED
+-- stamp, every role and real name on the left page, a replay of the key events on the right,
+-- and your rewards.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -9,100 +11,103 @@ local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local RevealScreen = {}
 
+local HOSTILE = { Kira = true, Follower = true } -- terms:ok (internal ids)
+local TOP = 150 -- the title block
+
 local root: Frame
-local winnerRibbon: Frame
-local winnerLabel: TextLabel
-local reasonLabel: TextLabel
+local titleHolder: Frame
+local reasonText: any
 local roster: ScrollingFrame
 local timeline: ScrollingFrame
 local rewardsLabel: TextLabel
 local token = 0
 
 local function fillRoster(players)
-	Widgets.clear(roster)
+	Kit.clear(roster)
 	for index, entry in ipairs(players) do
 		local info = Roles.get(entry.role)
-		local row = Widgets.frame({
-			Size = UDim2.new(1, -8, 0, 44),
-			LayoutOrder = index,
-			Parent = roster,
-		})
+		local row = Kit.frame({ Name = "Line", Size = UDim2.new(1, 0, 0, 52), LayoutOrder = index, Parent = roster })
 		local name = string.format("%s  (%s)", tostring(entry.alias), tostring(entry.displayName))
 		if type(entry.title) == "string" and entry.title ~= "" then
 			name ..= "  ·  " .. string.upper(entry.title)
 		end
-		Widgets.label({
+		Kit.label({
 			Text = name,
-			Font = Theme.fonts.bold,
-			TextSize = 15,
-			TextTruncate = Enum.TextTruncate.AtEnd,
+			font = "bodyBold",
+			size = "small",
 			TextWrapped = false,
-			Size = UDim2.new(0.62, 0, 0, 20),
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(0.62, 0, 0, 22),
 			Parent = row,
 		})
-		Widgets.label({
+		Kit.label({
 			Text = string.upper(tostring(entry.realName)),
-			Font = Theme.fonts.typewriter,
-			TextSize = 14,
-			TextColor3 = Theme.colors.paper,
-			Position = UDim2.fromOffset(0, 21),
+			font = "document",
+			size = "small",
+			color = C.parchment,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.None,
+			Position = UDim2.fromOffset(0, 24),
 			Size = UDim2.new(0.62, 0, 0, 20),
 			Parent = row,
 		})
-		Widgets.label({
+		Kit.label({
 			Text = info.display,
-			Font = Theme.fonts.black,
-			TextSize = 15,
-			TextColor3 = info.color,
+			font = "label",
+			size = "small",
+			color = if HOSTILE[entry.role] then C.red else C.steel,
 			TextXAlignment = Enum.TextXAlignment.Right,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.None,
 			Position = UDim2.fromScale(0.62, 0),
-			Size = UDim2.new(0.38, 0, 0, 20),
+			Size = UDim2.new(0.38, 0, 0, 22),
 			Parent = row,
 		})
-		local status = Theme.STATUS_NAMES[entry.status] or tostring(entry.status)
+		local status = Terms.status(tostring(entry.status))
 		if entry.cause then
-			status ..= " - " .. tostring(entry.cause)
+			status ..= " · " .. tostring(entry.cause)
 		end
-		Widgets.label({
+		Kit.label({
 			Text = status,
-			TextSize = 12,
-			TextColor3 = Theme.colors.muted,
+			size = "micro",
+			color = C.dim,
 			TextXAlignment = Enum.TextXAlignment.Right,
-			Position = UDim2.new(0.62, 0, 0, 21),
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.None,
+			Position = UDim2.new(0.62, 0, 0, 24),
 			Size = UDim2.new(0.38, 0, 0, 20),
 			Parent = row,
 		})
+		Kit.rule({ Position = UDim2.new(0, 0, 1, -1), Parent = row })
 	end
 end
 
 local function playTimeline(events, myToken: number)
-	Widgets.clear(timeline)
+	Kit.clear(timeline)
 	for index, event in ipairs(events) do
 		if token ~= myToken then
 			return
 		end
-		local isKira = event.kind == "kill"
+		local isHand = event.kind == "kill"
 			or event.kind == "eyes"
 			or event.kind == "burn"
 			or event.kind == "fake"
 			or event.kind == "tamper"
-		Widgets.label({
+		Kit.label({
 			Text = string.format("R%s %s   %s", tostring(event.round), tostring(event.time), tostring(event.text)),
-			Font = if event.kind == "role" then Theme.fonts.body else Theme.fonts.medium,
-			TextSize = 14,
-			TextColor3 = if isKira
-				then Theme.colors.bad
-				elseif event.kind == "role" then Theme.colors.muted
-				else Theme.colors.text,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.new(1, -10, 0, 0),
+			font = if event.kind == "role" then "bodyItalic" else "body",
+			size = "small",
+			color = if isHand then C.red elseif event.kind == "role" then C.dim else C.bone,
 			LayoutOrder = index,
 			Parent = timeline,
 		})
@@ -111,174 +116,152 @@ local function playTimeline(events, myToken: number)
 	end
 end
 
+local function rewardsText(rewards): string
+	if type(rewards) ~= "table" then
+		return "You watched this case from the lobby."
+	end
+	local lines = {
+		string.format(
+			"%s   +%d coins   +%d XP",
+			if rewards.won then "Victory" else "Defeat",
+			rewards.coins,
+			rewards.xp
+		),
+	}
+	for _, line in ipairs(rewards.lines or {}) do
+		table.insert(lines, string.format("%s: +%d coins, +%d XP", tostring(line.label), line.coins, line.xp))
+	end
+	local progress = rewards.progress
+	if type(progress) == "table" then
+		if type(progress.rankUp) == "table" then
+			local rank = Ranks.LIST[tonumber(progress.rankUp.to) or 1]
+			table.insert(lines, "Rank up: " .. (if rank then rank.name else "?"))
+		end
+		if type(progress.masteryLevel) == "table" and type(progress.role) == "string" then
+			table.insert(
+				lines,
+				string.format(
+					"%s mastery: level %d",
+					Roles.get(progress.role).display,
+					tonumber(progress.masteryLevel.to) or 1
+				)
+			)
+		end
+		if type(progress.unlocked) == "table" and #progress.unlocked > 0 then
+			table.insert(lines, "Unlocked: " .. table.concat(progress.unlocked, ", "))
+		end
+	end
+	return table.concat(lines, "\n")
+end
+
+local function close()
+	token += 1
+	root.Visible = false
+	Router.setBlocking("reveal", false)
+end
+
 function RevealScreen.show(payload)
 	token += 1
 	local myToken = token
 	local teamWon = payload.winner == "Team"
-	winnerLabel.Text = if teamWon then Terms.f("{AGENCY} WINS") else Terms.f("{HAND} WINS")
-	winnerRibbon.BackgroundColor3 = if teamWon then Theme.colors.paper else Theme.colors.accent
-	winnerLabel.TextColor3 = if teamWon then Theme.colors.ink else Theme.colors.paper
-	reasonLabel.Text = tostring(payload.reason or "")
+	Kit.clear(titleHolder)
+	local banner = Kit.banner({
+		text = if teamWon then Terms.f("{Agency} wins") else Terms.f("{Hand} wins"),
+		size = T.size.display,
+		tone = if teamWon then C.steel:Lerp(C.void, 0.4) else C.blood,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Parent = titleHolder,
+	})
+	banner.Rotation = -2
+	Kit.stamp({
+		text = "Case closed",
+		width = 200,
+		rotation = -10,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0.5, 150, 0, 40),
+		Parent = titleHolder,
+	})
+	reasonText:set(tostring(payload.reason or ""))
 	fillRoster(payload.players or {})
-	local rewards = payload.rewards
-	if type(rewards) == "table" then
-		local lines = {
-			string.format(
-				"%s   +%d coins   +%d XP",
-				if rewards.won then "VICTORY" else "DEFEAT",
-				rewards.coins,
-				rewards.xp
-			),
-		}
-		for _, line in ipairs(rewards.lines or {}) do
-			table.insert(lines, string.format("%s: +%d coins, +%d XP", tostring(line.label), line.coins, line.xp))
-		end
-		local progress = rewards.progress
-		if type(progress) == "table" then
-			if type(progress.rankUp) == "table" then
-				local rank = Ranks.LIST[tonumber(progress.rankUp.to) or 1]
-				table.insert(lines, "RANK UP: " .. string.upper(if rank then rank.name else "?"))
-			end
-			if type(progress.masteryLevel) == "table" and type(progress.role) == "string" then
-				table.insert(
-					lines,
-					string.format(
-						"%s mastery: level %d",
-						Roles.get(progress.role).display,
-						tonumber(progress.masteryLevel.to) or 1
-					)
-				)
-			end
-			if type(progress.unlocked) == "table" and #progress.unlocked > 0 then
-				table.insert(lines, "Unlocked: " .. table.concat(progress.unlocked, ", "))
-			end
-		end
-		rewardsLabel.Text = table.concat(lines, "\n")
-	else
-		rewardsLabel.Text = "You watched this case from the lobby."
-	end
+	rewardsLabel.Text = rewardsText(payload.rewards)
 	root.Visible = true
 	Router.setBlocking("reveal", true)
 	task.spawn(playTimeline, payload.events or {}, myToken)
 end
 
+local function page(title: string, props): ScrollingFrame
+	local frame, content = Kit.page({
+		tone = "black",
+		ruled = true,
+		padding = T.space.l,
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
+		Size = props.Size,
+		Parent = props.Parent,
+	})
+	local _ = frame
+	Kit.heading({ text = title, Parent = content })
+	local scroll = Kit.scroll({ Position = UDim2.fromOffset(0, 54), Size = UDim2.new(1, 0, 1, -54), Parent = content })
+	Kit.list(scroll, T.space.xs)
+	return scroll
+end
+
 function RevealScreen.init()
-	root = Widgets.frame({
-		Name = "Reveal",
-		BackgroundTransparency = 0.04,
-		BackgroundColor3 = Theme.colors.backdrop,
-		Visible = false,
-		Parent = Screens.overlay,
-	})
-	-- A red band behind the title, like the briefing.
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.accent,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.1),
-		Size = UDim2.new(2, 0, 0, 90),
-		Rotation = -5,
-		Parent = root,
-	})
-	local window = Widgets.frame({
+	root = Kit.frame({ Name = "Reveal", Visible = false, Parent = Screens.overlay })
+	root.BackgroundColor3 = C.void
+	root.BackgroundTransparency = 0.04
+	-- Darkened edges behind the spread.
+	Kit.vignette(root, 0.8).ZIndex = 0
+	local window = Kit.frame({
+		Name = "Spread",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromScale(0.95, 0.92),
 		Parent = root,
 	})
-	Widgets.sizeLimit(window, Vector2.new(1100, 700))
-	Widgets.inkSplat({
-		ImageColor3 = Theme.colors.accent,
-		ImageTransparency = 0.2,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0, 30),
-		Size = UDim2.fromOffset(300, 260),
-		Rotation = -6,
-		ZIndex = 0,
-		Parent = window,
-	}, 3)
-	winnerRibbon = Widgets.frame({
-		BackgroundTransparency = 0,
+	Kit.Base.maxSize(window, Vector2.new(1100, 720))
+	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 100), Parent = window })
+	reasonText = Kit.text({
+		face = "Scrawl",
+		text = "",
+		size = 30,
+		color = C.bone,
+		align = "center",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.fromScale(0.5, 0),
-		Size = UDim2.fromOffset(0, 60),
-		AutomaticSize = Enum.AutomaticSize.X,
-		Rotation = Theme.tilt,
+		Position = UDim2.new(0.5, 0, 0, 104),
 		Parent = window,
 	})
-	Widgets.slant(winnerRibbon, 0.05)
-	Widgets.padding(winnerRibbon, 0, 44)
-	winnerLabel = Widgets.display({
-		TextSize = 46,
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.new(0, 0, 1, 0),
-		Parent = winnerRibbon,
-	})
-	reasonLabel = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = 18,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.fromOffset(0, 66),
-		Size = UDim2.new(1, 0, 0, 22),
+	roster = page("Roles and real names", {
+		Position = UDim2.fromOffset(0, TOP),
+		Size = UDim2.new(0.45, -T.space.s, 1, -(TOP + 72)),
 		Parent = window,
 	})
-	local left = Widgets.panel({
-		Position = UDim2.fromOffset(0, 90),
-		Size = UDim2.new(0.45, -8, 1, -150),
-		Parent = window,
-	})
-	Widgets.header({
-		Text = "Roles and real names",
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -24, 0, 20),
-		Parent = left,
-	})
-	roster = Widgets.scroll({
-		Position = UDim2.fromOffset(12, 34),
-		Size = UDim2.new(1, -24, 1, -44),
-		Parent = left,
-	})
-	Widgets.list(roster, 6)
-	local right = Widgets.panel({
+	timeline = page("Case replay", {
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 90),
-		Size = UDim2.new(0.55, -8, 1, -150),
+		Position = UDim2.new(1, 0, 0, TOP),
+		Size = UDim2.new(0.55, -T.space.s, 1, -(TOP + 72)),
 		Parent = window,
 	})
-	Widgets.header({
-		Text = "Case replay",
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -24, 0, 20),
-		Parent = right,
-	})
-	timeline = Widgets.scroll({
-		Position = UDim2.fromOffset(12, 34),
-		Size = UDim2.new(1, -24, 1, -44),
-		Parent = right,
-	})
-	Widgets.list(timeline, 4)
-	rewardsLabel = Widgets.label({
-		Font = Theme.fonts.medium,
-		TextSize = 14,
-		TextColor3 = Theme.colors.gold,
+	rewardsLabel = Kit.label({
+		font = "bodyBold",
+		size = "small",
+		color = C.candle,
+		AutomaticSize = Enum.AutomaticSize.None,
+		TextYAlignment = Enum.TextYAlignment.Top,
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, 0),
-		Size = UDim2.new(1, -140, 0, 54),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, -160, 0, 60),
 		Parent = window,
 	})
-	Widgets.button({
-		Text = "CLOSE",
-		Variant = "primary",
+	Kit.button({
+		text = "Close",
+		variant = "primary",
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.fromScale(1, 1),
-		Size = UDim2.fromOffset(120, 40),
+		Size = UDim2.fromOffset(140, T.touch),
 		Parent = window,
-	}, function()
-		token += 1
-		root.Visible = false
-		Router.setBlocking("reveal", false)
-	end)
+	}, close)
 
 	Net.event("Reveal").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" then
@@ -287,9 +270,7 @@ function RevealScreen.init()
 	end)
 	ClientState.PhaseChanged:Connect(function(phase)
 		if phase == "Briefing" then
-			token += 1
-			root.Visible = false
-			Router.setBlocking("reveal", false)
+			close()
 		end
 	end)
 end

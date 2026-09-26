@@ -11,9 +11,8 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
-local Screens = require(script.Parent.Parent.UI.Screens)
+local Kit = require(script.Parent.Parent.UI.Kit)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
-local Widgets = require(script.Parent.Parent.UI.Widgets)
 local Characters = require(script.Parent.Parent.Characters)
 
 local EyesRequest = Net.event("EyesRequest")
@@ -82,10 +81,10 @@ function EyesController.deal()
 	if ClientState.role() ~= "Follower" or not private.canDeal or ClientState.phase() ~= "Investigation" then
 		return
 	end
-	Widgets.confirm(
-		Screens.system,
-		Terms.f("Accept {eyes}?"),
-		Terms.f(
+	-- It costs your life, so the confirm button has to be held.
+	Kit.confirm({
+		title = Terms.f("Accept {eyes}?"),
+		body = Terms.f(
 			"Up close, you can read up to {reads} real names ({small} on servers under {below} players). "
 				.. "Your eyes glow red while reading, and you die at the end of the next round.",
 			{
@@ -94,11 +93,13 @@ function EyesController.deal()
 				below = Config.EYES_SMALL_SERVER_BELOW,
 			}
 		),
-		"Accept the deal",
-		function()
+		confirm = "Accept the deal",
+		variant = "danger",
+		hold = 1,
+		onConfirm = function()
 			EyesRequest:FireServer({ action = "deal" })
-		end
-	)
+		end,
+	})
 end
 
 return EyesController

@@ -12,21 +12,21 @@ local Create = require(Shared:WaitForChild("Create"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local PracticePanel = {}
 
 type Dummy = { part: BasePart, model: Model, alias: string, name: string, first: string, last: string }
 
-local window: Frame
-local titleLabel: TextLabel
-local body: Frame
+local win: any
+local body: ScrollingFrame
 local onFinished: (() -> ())? = nil
 
 local function dummies(): { Dummy }
@@ -82,14 +82,24 @@ local function collapse(target: Dummy)
 	end)
 end
 
-local function feedback(text: string, color: Color3): TextLabel
-	return Widgets.label({
-		Text = text,
-		TextColor3 = color,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 99,
+local function feedback(text: string): TextLabel
+	return Kit.label({ Text = text, color = C.red, LayoutOrder = 99, Parent = body })
+end
+
+-- A name field, handwritten (the Grimoire) or typewritten (a warrant).
+local function nameField(font: string, order: number): TextBox
+	local _, box = Kit.field({
+		placeholder = if font == "hand" then "First name  Last name" else "The suspect's full real name",
+		font = font,
+		size = if font == "hand" then 32 else "lead",
+		Size = UDim2.new(1, 0, 0, 60),
+		LayoutOrder = order,
 		Parent = body,
 	})
+	if font == "hand" then
+		box.TextXAlignment = Enum.TextXAlignment.Center
+	end
+	return box
 end
 
 -- Drills ----------------------------------------------------------------------------------
@@ -100,41 +110,30 @@ local function grimoireDrill()
 		return
 	end
 	local target = list[math.random(1, #list)]
-	titleLabel.Text = "PRACTICE GRIMOIRE"
-	window.BackgroundColor3 = Theme.colors.deathNote
-	Widgets.label({
+	win.setTitle(Terms.f("Practice {grimoire}"))
+	Kit.label({
 		Text = Terms.f(
 			"In a match, {hand} learns names letter by letter. Here you know it already: write {alias}'s real name, {name}.",
 			{ alias = target.alias, name = string.upper(target.name) }
 		),
-		AutomaticSize = Enum.AutomaticSize.Y,
 		LayoutOrder = 1,
 		Parent = body,
 	})
-	Widgets.label({
+	Kit.label({
 		Text = "Capital letters and extra spaces do not matter. Any other mistake wastes the round.",
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.muted,
-		AutomaticSize = Enum.AutomaticSize.Y,
+		size = "small",
+		color = C.dim,
 		LayoutOrder = 2,
 		Parent = body,
 	})
-	local box = Widgets.textbox({
-		PlaceholderText = "First name  Last name",
-		Font = Theme.fonts.hand,
-		TextSize = 28,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 0, 54),
-		LayoutOrder = 3,
-		Parent = body,
-	})
+	local box = nameField("hand", 3)
 	local result: TextLabel? = nil
-	Widgets.holdButton(
+	Kit.hold(
 		{
-			Text = "HOLD TO WRITE THE NAME",
-			Font = Theme.fonts.black,
-			Variant = "primary",
-			Size = UDim2.new(1, 0, 0, 48),
+			text = "Hold to write the name",
+			icon = "quill",
+			variant = "primary",
+			Size = UDim2.new(1, 0, 0, 56),
 			LayoutOrder = 4,
 			Parent = body,
 		},
@@ -147,7 +146,7 @@ local function grimoireDrill()
 				collapse(target)
 				finish()
 			else
-				result = feedback("That is not the exact name. Check the spelling and try again.", Theme.colors.bad)
+				result = feedback("That is not the exact name. Check the spelling and try again.")
 			end
 		end
 	)
@@ -159,56 +158,49 @@ local function warrantDrill()
 		return
 	end
 	local target = list[math.random(1, #list)]
-	titleLabel.Text = Terms.f("PRACTICE WARRANT")
-	window.BackgroundColor3 = Theme.colors.panel
+	win.setTitle("Practice warrant")
 	local notes = {}
 	for _, entry in ipairs(list) do
 		table.insert(notes, string.format("%s:  %s", entry.alias, string.upper(entry.name)))
 	end
-	Widgets.label({
+	Kit.label({
 		Text = "Your notes so far:  " .. table.concat(notes, "   ·   "),
-		Font = Theme.fonts.typewriter,
-		AutomaticSize = Enum.AutomaticSize.Y,
+		font = "document",
 		LayoutOrder = 1,
 		Parent = body,
 	})
-	Widgets.label({
+	Kit.label({
 		Text = Terms.f("New clue: {hand}'s first name has {n} letters.", { n = #target.first }),
-		Font = Theme.fonts.bold,
-		TextColor3 = Theme.colors.gold,
-		AutomaticSize = Enum.AutomaticSize.Y,
+		font = "bodyBold",
+		color = C.candle,
 		LayoutOrder = 2,
 		Parent = body,
 	})
-	local picked: string? = nil
-	local grid = Widgets.frame({ Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 3, Parent = body })
-	local render
-	render = Widgets.pickGrid(grid, UDim2.new(1 / 3, -6, 0, 40), function(id)
-		picked = id
-		local options = {}
-		for _, entry in ipairs(list) do
-			table.insert(options, { id = entry.alias, text = entry.alias })
-		end
-		render(options, picked)
-	end)
 	local options = {}
 	for _, entry in ipairs(list) do
 		table.insert(options, { id = entry.alias, text = entry.alias })
 	end
-	render(options, nil)
-	local box = Widgets.textbox({
-		PlaceholderText = "The suspect's full real name",
-		Font = Theme.fonts.typewriter,
-		LayoutOrder = 4,
+	local picked: string? = nil
+	local grid = Kit.frame({
+		Name = "Suspects",
+		Size = UDim2.new(1, 0, 0, math.ceil(#options / 3) * (48 + T.space.s)),
+		LayoutOrder = 3,
 		Parent = body,
 	})
+	local render
+	render = Kit.pickGrid(grid, UDim2.new(1 / 3, -T.space.s, 0, 48), function(id)
+		picked = id
+		render(options, picked)
+	end)
+	render(options, nil)
+	local box = nameField("document", 4)
 	local result: TextLabel? = nil
-	Widgets.holdButton(
+	Kit.hold(
 		{
-			Text = "HOLD TO SERVE THE WARRANT",
-			Font = Theme.fonts.black,
-			Variant = "team",
-			Size = UDim2.new(1, 0, 0, 48),
+			text = "Hold to serve the warrant",
+			icon = "cuffs",
+			variant = "primary",
+			Size = UDim2.new(1, 0, 0, 56),
 			LayoutOrder = 5,
 			Parent = body,
 		},
@@ -219,14 +211,10 @@ local function warrantDrill()
 			end
 			if picked ~= target.alias then
 				result = feedback(
-					Terms.f("Wrong suspect. In a match, arresting an innocent player hands the win to {hand}."),
-					Theme.colors.bad
+					Terms.f("Wrong suspect. In a match, arresting an innocent player hands the win to {hand}.")
 				)
 			elseif not NameUtil.matches(box.Text, target.first, target.last) then
-				result = feedback(
-					"Right suspect, wrong name. A rejected warrant blocks you until the next round.",
-					Theme.colors.bad
-				)
+				result = feedback("Right suspect, wrong name. A rejected warrant blocks you until the next round.")
 			else
 				finish()
 			end
@@ -235,29 +223,26 @@ local function warrantDrill()
 end
 
 local function eyesDrill()
-	titleLabel.Text = Terms.f("{EYES}")
-	window.BackgroundColor3 = Theme.colors.panel
-	Widgets.label({
+	win.setTitle(Terms.f("{Eyes}"))
+	Kit.label({
 		Text = Terms.f(
 			"From round 2, one {cultist} may accept {eyes}. Up close, they see a player's real name for 3 seconds, but their own eyes glow red for everyone to see, and they die soon after."
 		),
-		AutomaticSize = Enum.AutomaticSize.Y,
 		LayoutOrder = 1,
 		Parent = body,
 	})
-	Widgets.label({
+	Kit.label({
 		Text = "A hood blocks the eyes for the round it is worn.",
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.muted,
-		AutomaticSize = Enum.AutomaticSize.Y,
+		size = "small",
+		color = C.dim,
 		LayoutOrder = 2,
 		Parent = body,
 	})
-	Widgets.button({
-		Text = "LOOK AT THE DUMMIES",
-		Font = Theme.fonts.black,
-		Variant = "primary",
-		Size = UDim2.new(1, 0, 0, 48),
+	Kit.button({
+		text = "Look at the dummies",
+		icon = "eye",
+		variant = "primary",
+		Size = UDim2.new(1, 0, 0, 56),
 		LayoutOrder = 3,
 		Parent = body,
 	}, function()
@@ -286,7 +271,7 @@ local function eyesDrill()
 				TextColor3 = Color3.fromRGB(255, 50, 50),
 				TextStrokeTransparency = 0.2,
 				TextScaled = true,
-				Font = Theme.fonts.typewriter,
+				FontFace = T.font.document,
 				Parent = gui,
 			})
 			table.insert(labels, gui)
@@ -309,31 +294,19 @@ function PracticePanel.open(drill: string, onDone: () -> ())
 		return
 	end
 	onFinished = onDone
-	Widgets.clear(body)
+	Kit.clear(body)
 	build()
 	Router.open("practice")
 end
 
 function PracticePanel.init()
-	local inner
-	window, inner = Widgets.modal(Screens.modal, "Practice", Vector2.new(560, 520), function()
-		Router.close("practice", "user")
-	end)
-	titleLabel = window:FindFirstChild("Title", true) :: TextLabel
-	body = Widgets.scroll({ Parent = inner })
-	Widgets.list(body, Theme.space.md)
-	Widgets.padding(body, 2)
-	Router.register("practice", {
-		layer = "modal",
-		window = window,
+	win = Kit.window({ name = "practice", title = "Practice", size = "M" })
+	body = Kit.scroll({ Parent = win.body })
+	Kit.list(body, T.space.m)
+	Kit.pad(body, T.space.xs, T.space.xs)
+	Kit.register(win, {
 		allowed = function(view)
 			return not view.participant
-		end,
-		show = function()
-			window.Visible = true
-		end,
-		hide = function()
-			window.Visible = false
 		end,
 	})
 end

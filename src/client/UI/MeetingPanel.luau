@@ -1,5 +1,5 @@
 -- Meeting panel: the feed of Zero's anonymous screen, and Zero's input for it. Opens for
--- every participant during the meeting and the vote.
+-- every participant during the meeting and the vote, as a page in the lower right.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -9,12 +9,14 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local LScreenRemote = Net.event("LScreen")
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local MeetingPanel = {}
 
@@ -27,12 +29,10 @@ local messageCount = 0
 
 local function addMessage(text: string, clock: string?)
 	messageCount += 1
-	Widgets.label({
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, -8, 0, 0),
-		Font = Theme.fonts.typewriter,
-		TextSize = Theme.text.body,
+	Kit.label({
 		Text = string.format("[%s]  %s", clock or "--:--", text),
+		font = "document",
+		color = C.white,
 		LayoutOrder = -messageCount,
 		Parent = feed,
 	})
@@ -54,96 +54,108 @@ local function send()
 end
 
 function MeetingPanel.init()
-	panel = Widgets.panel({
+	local page, content = Kit.page({
 		Name = "Meeting",
+		tone = "raised",
+		padding = T.space.l,
 		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -16, 1, -16),
-		Size = UDim2.new(0.3, 0, 0.6, 0),
+		Position = UDim2.new(1, -T.space.l, 1, -T.space.l),
+		Size = UDim2.new(0.3, 0, 0.62, 0),
 		Visible = false,
 		Parent = Screens.panels,
 	})
-	Widgets.sizeLimit(panel, Vector2.new(390, 360), Vector2.new(260, 0))
-	Widgets.label({
-		Text = Terms.f("{MEETING}"),
-		Font = Theme.fonts.black,
-		TextSize = Theme.text.bodyLarge,
-		Position = UDim2.fromOffset(16, 12),
-		Size = UDim2.new(1, -32, 0, 22),
+	panel = page
+	Kit.Base.make("UISizeConstraint", {
+		MaxSize = Vector2.new(400, 380),
+		MinSize = Vector2.new(280, 300),
 		Parent = panel,
 	})
-	Widgets.label({
+	Kit.text({ face = "Gothic", text = Terms.f("{Meeting}"), size = T.size.title, color = C.bone, Parent = content })
+	Kit.label({
 		Text = "Free chat is open. Messages with a living player's full real name are blocked.",
-		TextSize = Theme.text.caption,
-		TextColor3 = Theme.colors.muted,
-		Position = UDim2.fromOffset(16, 36),
-		Size = UDim2.new(1, -32, 0, 30),
-		Parent = panel,
+		size = "micro",
+		color = C.dim,
+		Position = UDim2.fromOffset(0, 36),
+		Parent = content,
 	})
-	local buttons = Widgets.frame({
-		Position = UDim2.fromOffset(16, 70),
-		Size = UDim2.new(1, -32, 0, 32),
-		Parent = panel,
+	local buttons = Kit.frame({
+		Name = "Buttons",
+		Position = UDim2.fromOffset(0, 72),
+		Size = UDim2.new(1, 0, 0, 40),
+		Parent = content,
 	})
-	Widgets.list(buttons, Theme.space.sm, true)
-	Widgets.button({
-		Text = "Evidence",
-		TextSize = Theme.text.small,
-		Variant = "ghost",
-		Size = UDim2.fromOffset(110, 32),
-		LayoutOrder = 1,
-		Parent = buttons,
-	}, function()
-		Router.toggle("evidence")
-	end)
-	deskButton = Widgets.button({
-		Text = Terms.f("{ZeroDesk}"),
-		TextSize = Theme.text.small,
-		Variant = "team",
-		Size = UDim2.fromOffset(120, 32),
+	Kit.list(buttons, T.space.s, true)
+	Kit.button(
+		{ text = "Evidence", icon = "evidence", variant = "secondary", size = "s", LayoutOrder = 1, Parent = buttons },
+		function()
+			Router.toggle("evidence")
+		end
+	)
+	deskButton = Kit.button({
+		text = Terms.f("{ZeroDesk}"),
+		icon = "zero",
+		variant = "secondary",
+		size = "s",
 		LayoutOrder = 2,
 		Visible = false,
 		Parent = buttons,
 	}, function()
 		Router.toggle("zeroDesk")
 	end)
-	Widgets.header({
-		Text = Terms.f("{ZERO_SCREEN}"),
-		TextColor3 = Theme.colors.gold,
-		Position = UDim2.fromOffset(16, 110),
-		Size = UDim2.new(1, -32, 0, 16),
-		Parent = panel,
+	-- Zero's screen: white type on black, like the screen in the meeting room.
+	local screen = Kit.card({
+		Name = "ZeroScreen",
+		tone = "page",
+		padding = T.space.s,
+		Position = UDim2.fromOffset(0, 124),
+		Size = UDim2.new(1, 0, 1, -124),
+		Parent = content,
 	})
-	feed = Widgets.scroll({
-		Position = UDim2.fromOffset(16, 130),
-		Size = UDim2.new(1, -32, 1, -190),
-		Parent = panel,
+	Kit.label({
+		Text = string.upper(Terms.f("{ZERO_SCREEN}")),
+		font = "label",
+		size = "micro",
+		color = C.white,
+		Parent = screen,
 	})
-	Widgets.list(feed, 6)
-	inputRow = Widgets.frame({
+	feed = Kit.scroll({ Position = UDim2.fromOffset(0, 20), Size = UDim2.new(1, 0, 1, -20), Parent = screen })
+	Kit.list(feed, T.space.xs)
+	inputRow = Kit.frame({
+		Name = "Input",
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 16, 1, -12),
-		Size = UDim2.new(1, -32, 0, 44),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, T.touch),
 		Visible = false,
-		Parent = panel,
+		ZIndex = 2,
+		Parent = content,
 	})
-	inputBox = Widgets.textbox({
-		PlaceholderText = Terms.f("Speak as {zero} (anonymous)"),
-		TextSize = Theme.text.body,
-		Size = UDim2.new(1, -78, 1, 0),
+	local field
+	field, inputBox = Kit.field({
+		placeholder = Terms.f("Speak as {zero} (anonymous)"),
+		size = "body",
+		Size = UDim2.new(1, -96, 1, 0),
+		ZIndex = 2,
 		Parent = inputRow,
 	})
-	Widgets.button({
-		Text = "Send",
-		Variant = "team",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.new(0, 70, 1, 0),
+	local _ = field
+	Kit.button({
+		text = "Send",
+		variant = "primary",
+		size = "s",
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.fromScale(1, 0.5),
+		Size = UDim2.fromOffset(88, 40),
+		ZIndex = 2,
 		Parent = inputRow,
 	}, send)
 	inputBox.FocusLost:Connect(function(enterPressed)
 		if enterPressed then
 			send()
 		end
+	end)
+	-- While Zero can type, the feed makes room for the input.
+	inputRow:GetPropertyChangedSignal("Visible"):Connect(function()
+		screen.Size = UDim2.new(1, 0, 1, if inputRow.Visible then -(124 + T.touch + T.space.s) else -124)
 	end)
 
 	Net.event("LScreenMsg").OnClientEvent:Connect(function(payload)
@@ -153,7 +165,7 @@ function MeetingPanel.init()
 	end)
 	ClientState.PhaseChanged:Connect(function()
 		if not ClientState.public.active then
-			Widgets.clear(feed)
+			Kit.clear(feed)
 			messageCount = 0
 		end
 	end)

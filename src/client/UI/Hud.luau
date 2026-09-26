@@ -60,6 +60,7 @@ local clockLabel: TextLabel
 local clockIcon: ImageLabel
 local marks: Frame
 local infoLabel: TextLabel
+local bannerExtra: Frame
 
 -- Identity
 local badge: Frame
@@ -407,6 +408,14 @@ local function buildBanner()
 		Parent = plate,
 	})
 	Clock.bind(clockLabel, clockText)
+	-- Room under the plate for controls that belong with the phase (the Specter HUD).
+	bannerExtra = Kit.frame({
+		Name = "Extra",
+		Size = UDim2.fromOffset(0, 0),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		LayoutOrder = 3,
+		Parent = banner,
+	})
 end
 
 local function buildBadge()
@@ -487,6 +496,11 @@ end
 -- The identity card on the HUD; pressing and holding it shows the full role card.
 function Hud.badge(): Frame
 	return badge
+end
+
+-- The slot under the phase banner's plate, centred with it (the Specter HUD lives there).
+function Hud.bannerExtra(): Frame
+	return bannerExtra
 end
 
 -- Where a HUD piece ends, in design pixels from the top of the safe area (0 while hidden).

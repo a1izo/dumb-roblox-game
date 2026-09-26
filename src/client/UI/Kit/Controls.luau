@@ -93,6 +93,15 @@ local LOOKS: { [string]: Look } = {
 		line = false,
 	},
 	ghost = { text = C.dim, textHover = C.bone, torn = false, line = true },
+	good = {
+		bg = C.good:Lerp(C.void, 0.45),
+		bgHover = C.good:Lerp(C.void, 0.25),
+		bgPress = C.good:Lerp(C.void, 0.6),
+		text = C.bone,
+		textHover = Color3.new(1, 1, 1),
+		torn = false,
+		line = false,
+	},
 	parchment = {
 		bg = C.parchment,
 		bgHover = C.parchment:Lerp(Color3.new(1, 1, 1), 0.2),
@@ -107,7 +116,7 @@ local LOOKS: { [string]: Look } = {
 type ButtonState = { look: Look, enabled: boolean, paint: (string) -> () }
 local states: { [GuiObject]: ButtonState } = setmetatable({}, { __mode = "k" }) :: any
 
--- A button. Props: text, variant ("primary", "danger", "secondary", "ghost", "parchment"),
+-- A button. Props: text, variant ("primary", "danger", "secondary", "ghost", "parchment", "good"),
 -- icon (an icon name), key (a key hint such as "E"), size ("s", "m", "l"), width (px), upper
 -- (default true), plus frame properties (Size overrides width/size).
 function Controls.button(props: Props, onClick: (() -> ())?): TextButton
@@ -698,10 +707,13 @@ export type NameLine = {
 }
 
 -- A name written on a ruled line (the vote, the roster, results). Props: text, sub (small
--- print after the name), right (text at the right, in red handwriting), seed, plus frame
--- properties. setMarked draws a red line through the name; setSelected marks it as chosen.
+-- print after the name), right (text at the right, in red handwriting), seed, paper (ink on
+-- a parchment page), plus frame properties. setMarked draws a red line through the name;
+-- setSelected marks it as chosen.
 function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 	local height = props.height or 56
+	local onPaper = props.paper == true
+	local ink = if onPaper then C.ink else C.bone
 	local button = Base.hit({
 		Name = props.Name or "NameLine",
 		Size = props.Size or UDim2.new(1, 0, 0, height),
@@ -713,7 +725,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 	local z = button.ZIndex
 	local rule = Base.make("Frame", {
 		Name = "Rule",
-		BackgroundColor3 = C.rule,
+		BackgroundColor3 = if onPaper then C.ink else C.rule,
 		BackgroundTransparency = 0.8,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
@@ -724,7 +736,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 	})
 	local hover = Base.make("Frame", {
 		Name = "Hover",
-		BackgroundColor3 = C.lifted,
+		BackgroundColor3 = if onPaper then C.parchmentDark else C.lifted,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
@@ -746,7 +758,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		text = props.text or "",
 		size = height * 0.62,
 		seed = props.seed,
-		color = C.bone,
+		color = ink,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 40, 0.5, 2),
 		ZIndex = z + 1,
@@ -757,7 +769,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		Text = props.sub or "",
 		font = "bodyItalic",
 		size = "small",
-		color = C.dim,
+		color = if onPaper then C.inkDim else C.dim,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.X,
 		Size = UDim2.fromScale(0, 1),
@@ -798,7 +810,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		end,
 		setSelected = function(on: boolean)
 			check.Visible = on
-			name:setColor(if on then C.red else C.bone)
+			name:setColor(if on then C.red else ink)
 		end,
 		setRight = function(text: string)
 			right:set(text)
@@ -837,6 +849,44 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		sub.Position = UDim2.new(0, 52 + name.width, 0, 0)
 	end)
 	return line
+end
+
+export type PickOption = { id: any, text: string, sub: string? }
+
+-- A grid of names on ruled lines where one can be picked (the vote, a warrant's suspect, a
+-- cause of death). Props: paper (ink on a parchment page). Returns render(options, selected,
+-- enabled?), which rebuilds the grid and returns its lines.
+function Controls.pickGrid(
+	parent: GuiObject,
+	cellSize: UDim2,
+	onPick: (any) -> (),
+	props: Props?
+): ({ PickOption }, any?, boolean?) -> { NameLine }
+	local p = props or {}
+	Base.grid(parent, cellSize, Tokens.space.s)
+	return function(options: { PickOption }, selected: any?, enabled: boolean?): { NameLine }
+		Base.clear(parent)
+		local lines = {}
+		for index, option in ipairs(options) do
+			local line = Controls.nameLine({
+				text = option.text,
+				sub = option.sub,
+				seed = index,
+				height = cellSize.Y.Offset,
+				paper = p.paper,
+				LayoutOrder = index,
+				Parent = parent,
+			}, function()
+				onPick(option.id)
+			end)
+			line.setSelected(option.id == selected)
+			if enabled == false then
+				line.setEnabled(false)
+			end
+			table.insert(lines, line)
+		end
+		return lines
+	end
 end
 
 -- An entry in a table of contents (the lobby menu, How to Play chapters): a small numeral and
@@ -934,10 +984,13 @@ function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 	return button
 end
 
--- A text field written on a line. Props: placeholder, text, maxLength, font ("body" or
--- "document"), size, multiline, plus frame properties. Returns the frame and the TextBox.
+-- A text field written on a line. Props: placeholder, text, maxLength, font ("body",
+-- "document", "hand", "mono"), size, multiline, paper (ink on a parchment page), plus frame
+-- properties. Returns the frame and the TextBox.
 function Controls.field(props: Props): (Frame, TextBox)
 	local multiline = props.multiline == true
+	local onPaper = props.paper == true
+	local lineRest = if onPaper then C.ink else C.rule
 	local frame = Base.frame({
 		Name = props.Name or "Field",
 		Size = props.Size or UDim2.new(1, 0, 0, if multiline then 120 else Tokens.touch + 4),
@@ -950,15 +1003,15 @@ function Controls.field(props: Props): (Frame, TextBox)
 	local z = frame.ZIndex
 	local box = Base.make("TextBox", {
 		Name = "Box",
-		BackgroundColor3 = C.void,
-		BackgroundTransparency = 0.5,
+		BackgroundColor3 = if onPaper then C.parchmentDark else C.void,
+		BackgroundTransparency = if onPaper then 0.6 else 0.5,
 		BorderSizePixel = 0,
 		ClearTextOnFocus = false,
 		MultiLine = multiline,
 		PlaceholderText = props.placeholder or "",
-		PlaceholderColor3 = C.faint,
+		PlaceholderColor3 = if onPaper then C.inkDim else C.faint,
 		Text = props.text or "",
-		TextColor3 = props.color or C.bone,
+		TextColor3 = props.color or (if onPaper then C.ink else C.bone),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = if multiline then Enum.TextYAlignment.Top else Enum.TextYAlignment.Center,
 		TextWrapped = multiline,
@@ -967,12 +1020,14 @@ function Controls.field(props: Props): (Frame, TextBox)
 		Parent = frame,
 	})
 	box.FontFace = (Tokens.font :: any)[props.font or "body"] or Tokens.font.body
-	box.TextSize = (Tokens.size :: any)[props.size or "lead"] or Tokens.size.lead
+	box.TextSize = if type(props.size) == "number"
+		then props.size
+		else (Tokens.size :: any)[props.size or "lead"] or Tokens.size.lead
 	Base.pad(box, Tokens.space.s, Tokens.space.m)
 	Controls.focusable(box)
 	local line = Base.make("Frame", {
 		Name = "Line",
-		BackgroundColor3 = C.rule,
+		BackgroundColor3 = lineRest,
 		BackgroundTransparency = 0.6,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
@@ -985,7 +1040,7 @@ function Controls.field(props: Props): (Frame, TextBox)
 		Motion.tween(line, { BackgroundColor3 = C.red, BackgroundTransparency = 0 }, Tokens.motion.quick)
 	end)
 	box.FocusLost:Connect(function()
-		Motion.tween(line, { BackgroundColor3 = C.rule, BackgroundTransparency = 0.6 }, Tokens.motion.base)
+		Motion.tween(line, { BackgroundColor3 = lineRest, BackgroundTransparency = 0.6 }, Tokens.motion.base)
 	end)
 	local maxLength = props.maxLength
 	if maxLength then

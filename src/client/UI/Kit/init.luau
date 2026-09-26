@@ -64,6 +64,7 @@ local Kit = {
 	keycap = Controls.keycap,
 	tabs = Controls.tabs,
 	nameLine = Controls.nameLine,
+	pickGrid = Controls.pickGrid,
 	entry = Controls.entry,
 	field = Controls.field,
 	slider = Controls.slider,

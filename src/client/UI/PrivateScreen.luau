@@ -1,6 +1,7 @@
 -- The private screens of the Grimoire phase. Every living player gets one at the same
 -- moment, so nobody can tell who is writing: the Hand writes one full real name in the
--- Grimoire; everyone else files a short case report and picks a suspect.
+-- Grimoire (a ruled black page, the name in handwriting); everyone else files a short case
+-- report on parchment and picks a suspect.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,30 +13,29 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Clock = require(script.Parent.Core.Clock)
+local Kit = require(script.Parent.Kit)
 local NotePanel = require(script.Parent.NotePanel)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local DeathNoteRemote = Net.event("DeathNote")
 local ReportRemote = Net.event("Report")
 local LocalPlayer = Players.LocalPlayer
 
+local C = Kit.color
+local T = Kit.Tokens
+
 local PrivateScreen = {}
 
-local noteWindow: Frame
 local nameBox: TextBox
-local renderCauses: (any, any?) -> ()
+local renderCauses: (any, any?, boolean?) -> { any }
 local writeButton: TextButton
-local writtenLabel: TextLabel
+local writtenText: any
 local heldNoteButton: TextButton
 
-local reportWindow: Frame
-local renderSuspects: (any, any?) -> ()
+local renderSuspects: (any, any?, boolean?) -> { any }
 local reportBox: TextBox
 local fileButton: TextButton
-local filedLabel: TextLabel
+local filedText: any
 
 local cause = Config.DEATH_CAUSES[1]
 local selectedSuspect: number? = nil
@@ -51,83 +51,55 @@ local function refreshGrimoire()
 	local canWrite = private.canWrite ~= false
 	writeButton.Visible = canWrite
 	nameBox.TextEditable = canWrite
-	writtenLabel.Visible = not canWrite
+	writtenText.frame.Visible = not canWrite
 	heldNoteButton.Visible = private.carrying == "note"
 	local options = {}
 	for _, name in ipairs(Config.DEATH_CAUSES) do
 		table.insert(options, { id = name, text = name })
 	end
-	renderCauses(options, cause)
+	renderCauses(options, cause, canWrite)
 end
 
 local function buildGrimoire()
-	noteWindow = Widgets.panel({
-		Name = "Grimoire",
-		BackgroundColor3 = Theme.colors.deathNote,
-		BackgroundTransparency = 0,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.94, 0.86),
-		ZIndex = 2,
-		Visible = false,
-		Parent = Screens.modal,
-	})
-	Widgets.stroke(noteWindow, Theme.colors.accent, 1, 0.3)
-	Widgets.sizeLimit(noteWindow, Vector2.new(540, 520))
-	Widgets.padding(noteWindow, Theme.space.xl)
-	Widgets.list(noteWindow, Theme.space.md, false, Enum.HorizontalAlignment.Center)
-	Widgets.label({
-		Text = Terms.f("{Grimoire}"),
-		Font = Theme.fonts.gothic,
-		TextSize = 48,
-		TextColor3 = Theme.colors.text,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 0, 52),
-		LayoutOrder = 1,
-		Parent = noteWindow,
-	})
-	Widgets.label({
+	local win = Kit.window({ name = "grimoire", title = Terms.f("{Grimoire}"), size = "M", ruled = true })
+	local list = Kit.scroll({ Parent = win.body })
+	Kit.list(list, T.space.m, false, Enum.HorizontalAlignment.Center)
+	Kit.pad(list, T.space.xs, T.space.xs)
+	Kit.label({
 		Text = "Write one full real name: first name, then last name. Any mistake wastes the round. "
 			.. "The victim dies during the meeting.",
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.muted,
+		size = "small",
+		color = C.dim,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 1,
+		Parent = list,
+	})
+	local _, box = Kit.field({
+		placeholder = "First name  Last name",
+		font = "hand",
+		size = 34,
+		maxLength = Config.NAME_MAX_LENGTH,
+		Size = UDim2.new(1, 0, 0, 64),
 		LayoutOrder = 2,
-		Parent = noteWindow,
+		Parent = list,
 	})
-	nameBox = Widgets.textbox({
-		PlaceholderText = "First name  Last name",
-		Font = Theme.fonts.hand,
-		TextSize = 30,
-		TextColor3 = Theme.colors.text,
-		BackgroundColor3 = Color3.fromRGB(20, 18, 20),
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 0, 58),
-		LayoutOrder = 3,
-		Parent = noteWindow,
-	})
-	Widgets.limitLength(nameBox, Config.NAME_MAX_LENGTH)
-	Widgets.header({
-		Text = "Cause of death",
-		TextXAlignment = Enum.TextXAlignment.Center,
-		LayoutOrder = 4,
-		Parent = noteWindow,
-	})
-	local causes = Widgets.frame({ Size = UDim2.new(1, 0, 0, 84), LayoutOrder = 5, Parent = noteWindow })
-	renderCauses = Widgets.pickGrid(causes, UDim2.new(0.5, -4, 0, 38), function(id)
+	nameBox = box
+	nameBox.TextXAlignment = Enum.TextXAlignment.Center
+	Kit.heading({ text = "Cause of death", LayoutOrder = 3, Parent = list })
+	local causes = Kit.frame({ Name = "Causes", Size = UDim2.new(1, 0, 0, 104), LayoutOrder = 4, Parent = list })
+	renderCauses = Kit.pickGrid(causes, UDim2.new(0.5, -T.space.s, 0, 48), function(id)
 		cause = id
 		refreshGrimoire()
-	end, { TextSize = Theme.text.small })
-	writeButton = Widgets.holdButton(
+	end)
+	writeButton = Kit.hold(
 		{
-			Text = "HOLD TO WRITE THE NAME",
-			Font = Theme.fonts.black,
-			TextSize = Theme.text.bodyLarge,
-			Variant = "primary",
-			Size = UDim2.new(1, 0, 0, 50),
-			LayoutOrder = 6,
-			Parent = noteWindow,
+			text = "Hold to write the name",
+			icon = "quill",
+			variant = "primary",
+			size = "l",
+			Size = UDim2.new(1, 0, 0, 60),
+			LayoutOrder = 5,
+			Parent = list,
 		},
 		1.2,
 		function()
@@ -138,34 +110,35 @@ local function buildGrimoire()
 			DeathNoteRemote:FireServer({ name = typed, cause = cause })
 		end
 	)
-	writtenLabel = Widgets.label({
-		Text = "A name has been written this round.",
-		Font = Theme.fonts.hand,
-		TextSize = 22,
-		TextColor3 = Theme.colors.bad,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 0, 30),
+	writtenText = Kit.text({
+		face = "Scrawl",
+		text = "A name has been written this round.",
+		size = 30,
+		color = C.red,
+		align = "center",
+		LayoutOrder = 6,
+		Parent = list,
+	})
+	writtenText.frame.Visible = false
+	heldNoteButton = Kit.button({
+		text = "Read the note in your hand",
+		icon = "note",
+		variant = "ghost",
+		size = "s",
 		Visible = false,
 		LayoutOrder = 7,
-		Parent = noteWindow,
-	})
-	heldNoteButton = Widgets.button({
-		Text = "Read the note in your hand",
-		TextSize = Theme.text.small,
-		Variant = "ghost",
-		Size = UDim2.new(1, 0, 0, 34),
-		Visible = false,
-		LayoutOrder = 8,
-		Parent = noteWindow,
+		Parent = list,
 	}, NotePanel.openHeld)
-	local timer = Widgets.label({
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.muted,
+	local timer = Kit.label({
+		font = "bodyItalic",
+		size = "small",
+		color = C.dim,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		LayoutOrder = 9,
-		Parent = noteWindow,
+		LayoutOrder = 8,
+		Parent = list,
 	})
 	Clock.bind(timer, timerText)
+	return win
 end
 
 -- Case report -----------------------------------------------------------------------------
@@ -180,56 +153,48 @@ local function refreshReport()
 	renderSuspects(options, selectedSuspect)
 	local filed = ClientState.private.reported == true
 	fileButton.Visible = not filed
-	filedLabel.Visible = filed
+	filedText.frame.Visible = filed
 end
 
 local function buildReport()
-	local body
-	reportWindow, body = Widgets.modal(Screens.modal, "Case report", Vector2.new(580, 540), function()
-		Router.close("report", "user")
-	end)
-	-- A paper document inside the usual window.
-	reportWindow.BackgroundColor3 = Theme.colors.paper
-
-	Widgets.label({
+	local win = Kit.window({ name = "report", title = "Case report", tone = "parchment", size = "M" })
+	local body = win.body
+	Kit.label({
 		Text = Terms.f("Who do you suspect most? Reports are private and feed {zero}'s suspicion meter."),
-		TextSize = Theme.text.small,
-		TextColor3 = Theme.colors.inkMuted,
-		Size = UDim2.new(1, 0, 0, 34),
+		size = "small",
+		color = C.inkDim,
 		Parent = body,
 	})
-	local suspects = Widgets.scroll({
-		Position = UDim2.fromOffset(0, 40),
-		Size = UDim2.new(1, 0, 1, -196),
-		ScrollBarImageColor3 = Theme.colors.inkMuted,
+	local suspects = Kit.scroll({
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, 0, 1, -(44 + 196)),
+		ScrollBarImageColor3 = C.inkDim,
 		Parent = body,
 	})
-	renderSuspects = Widgets.pickGrid(suspects, UDim2.new(1 / 3, -6, 0, 38), function(id)
+	renderSuspects = Kit.pickGrid(suspects, UDim2.new(1 / 3, -T.space.s, 0, 48), function(id)
 		selectedSuspect = id
 		refreshReport()
-	end, { Font = Theme.fonts.typewriter, Variant = "paper" })
-	reportBox = Widgets.textbox({
-		PlaceholderText = Terms.f("Short report for {zero} (optional)"),
-		Font = Theme.fonts.typewriter,
-		TextColor3 = Theme.colors.ink,
-		PlaceholderColor3 = Theme.colors.inkMuted,
-		BackgroundColor3 = Theme.colors.paperDark,
-		TextYAlignment = Enum.TextYAlignment.Top,
+	end, { paper = true })
+	local _, box = Kit.field({
+		placeholder = Terms.f("Short report for {zero} (optional)"),
+		font = "document",
+		size = "body",
+		multiline = true,
+		paper = true,
+		maxLength = Config.REPORT_MAX_LENGTH,
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, -76),
-		Size = UDim2.new(1, 0, 0, 72),
+		Position = UDim2.new(0, 0, 1, -96),
+		Size = UDim2.new(1, 0, 0, 88),
 		Parent = body,
 	})
-	Widgets.limitLength(reportBox, Config.REPORT_MAX_LENGTH)
-	fileButton = Widgets.button({
-		Text = "FILE REPORT",
-		Font = Theme.fonts.black,
-		Variant = "secondary",
-		BackgroundColor3 = Theme.colors.ink,
-		TextColor3 = Theme.colors.paper,
+	reportBox = box
+	fileButton = Kit.button({
+		text = "File report",
+		icon = "seal",
+		variant = "primary",
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, -22),
-		Size = UDim2.new(1, 0, 0, 46),
+		Position = UDim2.new(0, 0, 1, -26),
+		Size = UDim2.new(1, 0, 0, T.touch + 4),
 		Parent = body,
 	}, function()
 		if not selectedSuspect then
@@ -238,33 +203,35 @@ local function buildReport()
 		end
 		ReportRemote:FireServer({ suspect = selectedSuspect, text = reportBox.Text })
 	end)
-	filedLabel = Widgets.label({
-		Text = "Report filed. Wait for the meeting.",
-		Font = Theme.fonts.typewriter,
-		TextSize = Theme.text.title,
-		TextColor3 = Theme.colors.ink,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, -30),
-		Size = UDim2.new(1, 0, 0, 30),
-		Visible = false,
+	filedText = Kit.text({
+		face = "Scrawl",
+		text = "Report filed. Wait for the meeting.",
+		size = 34,
+		color = C.ink,
+		align = "center",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -34),
 		Parent = body,
 	})
-	local timer = Widgets.label({
-		TextSize = Theme.text.caption,
-		TextColor3 = Theme.colors.inkMuted,
+	filedText.frame.Visible = false
+	local timer = Kit.label({
+		font = "bodyItalic",
+		size = "micro",
+		color = C.inkDim,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 18),
+		AutomaticSize = Enum.AutomaticSize.None,
 		Parent = body,
 	})
 	Clock.bind(timer, timerText)
+	return win
 end
 
 function PrivateScreen.init()
-	buildGrimoire()
-	buildReport()
+	local grimoire = buildGrimoire()
+	local report = buildReport()
 
 	local function isWriter(view): boolean
 		return view.living and view.phase == "DeathNote" and view.role == "Kira"
@@ -272,17 +239,13 @@ function PrivateScreen.init()
 	local function isReporter(view): boolean
 		return view.living and view.phase == "DeathNote" and view.role ~= "Kira"
 	end
-	Router.register("grimoire", {
-		layer = "modal",
-		window = noteWindow,
+	Kit.register(grimoire, {
 		auto = isWriter,
 		allowed = isWriter,
 		show = function()
 			refreshGrimoire()
-			noteWindow.Visible = true
 		end,
 		hide = function(reason)
-			noteWindow.Visible = false
 			if reason == "rule" then
 				nameBox.Text = ""
 				cause = Config.DEATH_CAUSES[1]
@@ -292,17 +255,13 @@ function PrivateScreen.init()
 			return nameBox
 		end,
 	})
-	Router.register("report", {
-		layer = "modal",
-		window = reportWindow,
+	Kit.register(report, {
 		auto = isReporter,
 		allowed = isReporter,
 		show = function()
 			refreshReport()
-			reportWindow.Visible = true
 		end,
 		hide = function(reason)
-			reportWindow.Visible = false
 			if reason == "rule" then
 				selectedSuspect = nil
 				reportBox.Text = ""

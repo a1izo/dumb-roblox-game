@@ -1,5 +1,5 @@
--- Zero's private desk (role id "L"): the suspicion meter and the inbox of anonymous tips
--- and reports.
+-- Zero's private desk (role id "L"), on white paper, the colour that belongs to Zero alone: the
+-- suspicion meter on the left page and the inbox of anonymous tips and reports on the right.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -8,15 +8,15 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
 local Toasts = require(script.Parent.Toasts)
-local Widgets = require(script.Parent.Widgets)
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local LPanel = {}
 
-local window: Frame
 local meterList: ScrollingFrame
 local inbox: ScrollingFrame
 local meterNote: TextLabel
@@ -24,7 +24,7 @@ local inboxCount = 0
 local lastMeter = nil
 
 local function renderMeter()
-	Widgets.clear(meterList)
+	Kit.clear(meterList)
 	local payload = lastMeter
 	if not payload then
 		meterNote.Text = "Suspicion rises with reports, fake tasks that were seen, burned notes nearby and idle rounds."
@@ -40,39 +40,37 @@ local function renderMeter()
 		return a.value > b.value
 	end)
 	for index, item in ipairs(values) do
-		local row = Widgets.frame({
-			Size = UDim2.new(1, -8, 0, 26),
-			LayoutOrder = index,
-			Parent = meterList,
-		})
-		Widgets.label({
+		local row = Kit.frame({ Name = "Line", Size = UDim2.new(1, 0, 0, 30), LayoutOrder = index, Parent = meterList })
+		Kit.label({
 			Text = tostring(item.alias),
-			Font = Theme.fonts.bold,
-			TextSize = 14,
+			font = "bodyBold",
+			size = "small",
+			color = C.ink,
+			TextWrapped = false,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			AutomaticSize = Enum.AutomaticSize.None,
 			Size = UDim2.new(0.3, 0, 1, 0),
 			Parent = row,
 		})
-		local bar = Widgets.frame({
-			BackgroundTransparency = 0,
-			BackgroundColor3 = Theme.colors.panelLight,
-			Position = UDim2.new(0.32, 0, 0.2, 0),
-			Size = UDim2.new(0.56, 0, 0.6, 0),
+		local value = math.clamp(tonumber(item.value) or 0, 0, 100)
+		local _, setFill = Kit.meter({
+			color = C.candle:Lerp(C.red, value / 100),
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.fromScale(0.32, 0.5),
+			Size = UDim2.new(0.56, 0, 0, 8),
 			Parent = row,
 		})
-		Widgets.corner(bar, 4)
-		local value = math.clamp(tonumber(item.value) or 0, 0, 100)
-		local fill = Widgets.frame({
-			BackgroundTransparency = 0,
-			BackgroundColor3 = Theme.colors.accent:Lerp(Theme.colors.gold, 1 - value / 100),
-			Size = UDim2.fromScale(value / 100, 1),
-			Parent = bar,
-		})
-		Widgets.corner(fill, 4)
-		Widgets.label({
+		setFill(value / 100)
+		Kit.label({
 			Text = tostring(math.floor(value)),
-			TextSize = 13,
+			font = "mono",
+			size = "small",
+			color = C.inkDim,
 			TextXAlignment = Enum.TextXAlignment.Right,
-			Position = UDim2.new(0.9, 0, 0, 0),
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.None,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.fromScale(1, 0),
 			Size = UDim2.new(0.1, 0, 1, 0),
 			Parent = row,
 		})
@@ -84,44 +82,36 @@ local function addInbox(payload)
 	local isTip = payload.kind == "tip"
 	local header
 	if isTip then
-		header = string.format("R%s %s  ANONYMOUS TIP", tostring(payload.round), tostring(payload.clock))
+		header = string.format("R%s %s  ·  ANONYMOUS TIP", tostring(payload.round), tostring(payload.clock))
 	else
 		header = string.format(
-			"R%s %s  REPORT: suspects %s",
+			"R%s %s  ·  REPORT: suspects %s",
 			tostring(payload.round),
 			tostring(payload.clock),
 			tostring(payload.suspect)
 		)
 	end
-	local row = Widgets.panel({
-		BackgroundColor3 = if isTip then Theme.colors.paper else Theme.colors.panelLight,
+	local slip = Kit.card({
+		Name = if isTip then "Tip" else "Report",
+		tone = "parchment",
+		padding = T.space.s,
+		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Size = UDim2.new(1, -8, 0, 0),
 		LayoutOrder = -inboxCount,
 		Parent = inbox,
 	})
-	Widgets.padding(row, 8, 10)
-	Widgets.list(row, 2)
-	Widgets.label({
+	Kit.list(slip, T.space.xxs)
+	Kit.label({
 		Text = header,
-		Font = Theme.fonts.bold,
-		TextSize = Theme.text.caption,
-		TextColor3 = if isTip then Theme.colors.accent else Theme.colors.team,
+		font = "label",
+		size = "micro",
+		color = if isTip then C.blood else C.steel:Lerp(C.ink, 0.35),
 		LayoutOrder = 1,
-		Parent = row,
+		Parent = slip,
 	})
 	local text = tostring(payload.text or "")
 	if #text > 0 then
-		Widgets.label({
-			Text = text,
-			Font = Theme.fonts.typewriter,
-			TextSize = Theme.text.body,
-			TextColor3 = if isTip then Theme.colors.ink else Theme.colors.text,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Size = UDim2.new(1, 0, 0, 0),
-			LayoutOrder = 2,
-			Parent = row,
-		})
+		Kit.label({ Text = text, font = "document", color = C.ink, LayoutOrder = 2, Parent = slip })
 	end
 end
 
@@ -130,31 +120,40 @@ function LPanel.toggle()
 end
 
 function LPanel.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, Terms.f("{ZeroDesk}"), Vector2.new(720, 520), function()
-		Router.close("zeroDesk", "user")
-	end)
-	local left = Widgets.frame({ Size = UDim2.new(0.5, -8, 1, 0), Parent = body })
-	Widgets.header({ Text = "Suspicion meter", Parent = left })
-	meterNote = Widgets.label({
-		TextSize = 12,
-		TextColor3 = Theme.colors.muted,
-		Position = UDim2.fromOffset(0, 22),
-		Size = UDim2.new(1, 0, 0, 32),
+	local win = Kit.window({ name = "zeroDesk", title = Terms.f("{ZeroDesk}"), tone = "white", size = "L" })
+	local body = win.body
+	local left = Kit.frame({ Name = "Meter", Size = UDim2.new(0.5, -T.space.l, 1, 0), Parent = body })
+	Kit.heading({ text = "Suspicion meter", ink = C.ink, Parent = left })
+	meterNote = Kit.label({
+		size = "micro",
+		color = C.inkDim,
+		Position = UDim2.fromOffset(0, 52),
 		Parent = left,
 	})
-	meterList = Widgets.scroll({ Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 1, -58), Parent = left })
-	Widgets.list(meterList, 4)
+	meterList = Kit.scroll({
+		Position = UDim2.fromOffset(0, 90),
+		Size = UDim2.new(1, 0, 1, -90),
+		ScrollBarImageColor3 = C.inkDim,
+		Parent = left,
+	})
+	Kit.list(meterList, T.space.xs)
 
-	local right = Widgets.frame({
+	local right = Kit.frame({
+		Name = "Inbox",
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.new(0.5, -8, 1, 0),
+		Size = UDim2.new(0.5, -T.space.l, 1, 0),
 		Parent = body,
 	})
-	Widgets.header({ Text = "Inbox: tips and reports", Parent = right })
-	inbox = Widgets.scroll({ Position = UDim2.fromOffset(0, 26), Size = UDim2.new(1, 0, 1, -26), Parent = right })
-	Widgets.list(inbox, 6)
+	Kit.heading({ text = "Inbox", detail = "tips and reports", ink = C.ink, Parent = right })
+	inbox = Kit.scroll({
+		Position = UDim2.fromOffset(0, 56),
+		Size = UDim2.new(1, 0, 1, -56),
+		ScrollBarImageColor3 = C.inkDim,
+		Parent = right,
+	})
+	Kit.list(inbox, T.space.s)
+	Kit.pad(inbox, T.space.xs, T.space.xs)
 
 	Net.event("Suspicion").OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" then
@@ -177,22 +176,16 @@ function LPanel.init()
 	ClientState.PhaseChanged:Connect(function()
 		if not ClientState.public.active then
 			lastMeter = nil
-			Widgets.clear(inbox)
+			Kit.clear(inbox)
 			inboxCount = 0
 		end
 	end)
-	Router.register("zeroDesk", {
-		layer = "modal",
-		window = window,
+	Kit.register(win, {
 		allowed = function(view)
 			return view.participant and view.role == "L"
 		end,
 		show = function()
-			window.Visible = true
 			renderMeter()
-		end,
-		hide = function()
-			window.Visible = false
 		end,
 	})
 end

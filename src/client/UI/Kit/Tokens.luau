@@ -159,6 +159,7 @@ Tokens.z = {
 -- Modal window sizes at desktop scale.
 Tokens.modal = {
 	S = Vector2.new(420, 300), -- dialogs
+	sheet = Vector2.new(500, 440), -- a single sheet of paper (notes, the tip box)
 	M = Vector2.new(620, 560), -- one page
 	L = Vector2.new(1040, 640), -- a book spread
 }

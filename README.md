@@ -86,8 +86,11 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 
 ## What is in the game
 
-- **UI**: an angular manga look (black, paper white, one red) built from `UI/Widgets.luau`, with
-  a router for windows, device scaling, reduced motion and full gamepad support.
+- **UI**: the Grimoire design system (`UI/Kit`): a black notebook in candlelight, with inked
+  Gothic titles, handwritten names, parchment for the Agency's paperwork and red ink only for
+  what matters. Every screen is built from its tokens, pages, cards, tabs and controls (the
+  debug panel's UI tab shows them all), with a router for windows, device scaling, reduced
+  motion and full gamepad support.
 - **Teaching**: the role card, objectives for your role and phase, one-time tips (the X on a tip
   turns the whole guide off; Settings brings it back), How to Play, and the **Academy** wing of
   the lobby with practice desks for every skill.

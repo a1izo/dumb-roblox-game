@@ -1,5 +1,6 @@
 -- World-space effects only this client sees: letter flashes above stations, names seen
--- with Specter's Eyes, and the overlay when this player is eliminated.
+-- with Specter's Eyes, and the overlay when this player is eliminated (a brush stroke of
+-- blood with the verdict in Gothic lettering, the rest written beneath in handwriting).
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -12,12 +13,14 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
+local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 local Characters = require(script.Parent.Parent.Characters)
+
+local C = Kit.color
+local T = Kit.Tokens
 
 local LocalPlayer = Players.LocalPlayer
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -25,8 +28,8 @@ local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 local WorldFx = {}
 
 local overlay: Frame
-local overlayTitle: TextLabel
-local overlaySubtitle: TextLabel
+local titleHolder: Frame
+local overlaySubtitle: any
 local overlayToken = 0
 
 local function findScreen(stationId: string): BasePart?
@@ -58,11 +61,12 @@ local function onLetterFlash(payload)
 		ResetOnSpawn = false,
 		Parent = playerGui,
 	})
-	Widgets.label({
+	Kit.label({
 		BackgroundTransparency = 0.15,
-		BackgroundColor3 = Color3.fromRGB(8, 10, 16),
-		Font = Theme.fonts.mono,
+		BackgroundColor3 = C.void,
+		font = "mono",
 		TextScaled = true,
+		AutomaticSize = Enum.AutomaticSize.None,
 		TextColor3 = Color3.fromRGB(120, 255, 170),
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Text = if type(payload.alias) == "string"
@@ -98,9 +102,10 @@ local function onEyesName(payload)
 		Parent = playerGui,
 	})
 	local finalText = string.upper(payload.name)
-	local label = Widgets.label({
-		Font = Theme.fonts.typewriter,
+	local label = Kit.label({
+		font = "document",
 		TextScaled = true,
+		AutomaticSize = Enum.AutomaticSize.None,
 		TextColor3 = Color3.fromRGB(255, 50, 50),
 		TextStrokeTransparency = 0.2,
 		TextXAlignment = Enum.TextXAlignment.Center,
@@ -111,8 +116,8 @@ local function onEyesName(payload)
 	local duration = tonumber(payload.duration) or 3
 	-- The read: a red pulse, the target outlined for you alone, the name glitching into place.
 	Sfx.play("eyesOpen", { volume = 0.6 })
-	Cinema.flash(Theme.colors.accent, 0.35, 0.4)
-	Cinema.outline(character :: Model, Theme.colors.accent, duration)
+	Cinema.flash(C.red, 0.35, 0.4)
+	Cinema.outline(character :: Model, C.red, duration)
 	if not Motion.isReduced() then
 		task.spawn(function()
 			local glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#%&"
@@ -147,20 +152,33 @@ local function onElimination(payload)
 	overlayToken += 1
 	local myToken = overlayToken
 	local kind = payload.kind
+	local title, subtitle
 	if kind == "dead" then
-		overlayTitle.Text = "YOU DIED"
-		overlaySubtitle.Text =
-			Terms.f("Cause of death: {cause}. You rise as a {Specter}.", { cause = tostring(payload.cause) })
+		title = "You died"
+		subtitle = Terms.f("Cause of death: {cause}. You rise as a {Specter}.", { cause = tostring(payload.cause) })
 	elseif kind == "voted" then
-		overlayTitle.Text = "VOTED OUT"
-		overlaySubtitle.Text = Terms.f("{Agency} removed you. You rise as a {Specter}.")
+		title = "Voted out"
+		subtitle = Terms.f("{Agency} removed you. You rise as a {Specter}.")
 	elseif kind == "arrested" then
-		overlayTitle.Text = "ARRESTED"
-		overlaySubtitle.Text = Terms.f("{Zero} served a warrant with your real name. You rise as a {Specter}.")
+		title = "Arrested"
+		subtitle = Terms.f("{Zero} served a warrant with your real name. You rise as a {Specter}.")
 	else
 		return
 	end
+	Kit.clear(titleHolder)
+	local banner, lettering = Kit.banner({
+		text = title,
+		size = T.size.hero,
+		tone = C.blood,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Parent = titleHolder,
+	})
+	banner.Rotation = -4
+	overlaySubtitle:set(subtitle)
 	overlay.Visible = true
+	lettering:write(0.5)
+	overlaySubtitle:write(0.9)
 	Router.setBlocking("eliminated", true)
 	task.delay(5, function()
 		if overlayToken == myToken then
@@ -171,42 +189,25 @@ local function onElimination(payload)
 end
 
 function WorldFx.init()
-	overlay = Widgets.frame({
-		Name = "Eliminated",
-		BackgroundTransparency = 0.15,
-		BackgroundColor3 = Theme.colors.ink,
-		ClipsDescendants = true,
-		Visible = false,
-		Parent = Screens.overlay,
-	})
-	-- A red band across the screen behind the title.
-	Widgets.frame({
-		BackgroundTransparency = 0,
-		BackgroundColor3 = Theme.colors.accent,
+	overlay = Kit.frame({ Name = "Eliminated", ClipsDescendants = true, Visible = false, Parent = Screens.overlay })
+	overlay.BackgroundColor3 = C.void
+	overlay.BackgroundTransparency = 0.15
+	titleHolder = Kit.frame({
+		Name = "Title",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.42),
-		Size = UDim2.new(2, 0, 0, 110),
-		Rotation = -6,
+		Size = UDim2.new(1, 0, 0, 160),
 		Parent = overlay,
 	})
-	overlayTitle = Widgets.label({
-		FontFace = Theme.faces.display,
-		TextSize = 84,
-		TextColor3 = Theme.colors.paper,
-		Rotation = -6,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.42),
-		Size = UDim2.new(1, 0, 0, 70),
-		Parent = overlay,
-	})
-	overlaySubtitle = Widgets.label({
-		FontFace = Theme.faces.displayMedium,
-		TextSize = 22,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.58),
-		Size = UDim2.new(0.9, 0, 0, 30),
+	overlaySubtitle = Kit.text({
+		face = "Scrawl",
+		text = "",
+		size = 36,
+		color = C.bone,
+		align = "center",
+		maxWidth = 900,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0.56),
 		Parent = overlay,
 	})
 	Net.event("LetterFlash").OnClientEvent:Connect(onLetterFlash)

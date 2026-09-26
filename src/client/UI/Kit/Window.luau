@@ -28,7 +28,7 @@ local Window = {}
 export type Options = {
 	name: string,
 	title: string?,
-	size: string?, -- "S", "M" (default) or "L"
+	size: string?, -- "S", "sheet", "M" (default) or "L"
 	tone: string?, -- page tone: "black" (default), "parchment", "white"
 	closable: boolean?, -- default true
 	onClose: (() -> ())?, -- default: Router.close(name)

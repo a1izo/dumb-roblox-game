@@ -1,4 +1,5 @@
--- Paper notes: write on a blank sheet, read notes, hide them at drop points, burn them.
+-- Paper notes: write on a blank sheet, read notes, hide them at drop points, burn them. The
+-- window is a single sheet; the note itself is parchment with typewritten text.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -7,21 +8,21 @@ local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
-local Screens = require(script.Parent.Screens)
-local Theme = require(script.Parent.Theme)
-local Widgets = require(script.Parent.Widgets)
 
 local NoteRequest = Net.event("NoteRequest")
 
+local C = Kit.color
+local T = Kit.Tokens
+
 local NotePanel = {}
 
-local window: Frame
-local titleLabel: TextLabel
+local win: any
 local paper: Frame
 local paperText: TextLabel
+local writeField: Frame
 local writeBox: TextBox
-local buttonRow: Frame
 local dropList: ScrollingFrame
 
 local function send(payload)
@@ -30,26 +31,27 @@ end
 
 local firstButton: TextButton? = nil
 
-local function setButtons(buttons: { { text: string, variant: string?, action: () -> () } })
-	Widgets.clear(buttonRow)
+type NoteButton = { text: string, variant: string?, icon: string?, action: () -> () }
+
+local function setButtons(buttons: { NoteButton })
+	Kit.clear(win.footer)
 	firstButton = nil
 	for index, info in ipairs(buttons) do
-		local button = Widgets.button({
-			Text = info.text,
-			TextSize = Theme.text.body,
-			Variant = info.variant,
-			Size = UDim2.new(1 / #buttons, -6, 1, 0),
+		local button = Kit.button({
+			text = info.text,
+			icon = info.icon,
+			variant = info.variant or "ghost",
 			LayoutOrder = index,
-			Parent = buttonRow,
+			Parent = win.footer,
 		}, info.action)
 		firstButton = firstButton or button
 	end
 end
 
 local function show(mode: string, title: string)
-	titleLabel.Text = string.upper(title)
+	win.setTitle(title)
 	paper.Visible = mode == "read"
-	writeBox.Visible = mode == "write"
+	writeField.Visible = mode == "write"
 	dropList.Visible = mode == "drop"
 	Router.open("note")
 end
@@ -67,21 +69,22 @@ function NotePanel.openWrite()
 	show("write", "Blank sheet")
 	setButtons({
 		{
-			text = "WRITE",
-			variant = "team",
+			text = "Throw away",
+			action = function()
+				send({ action = "drop" })
+				NotePanel.close()
+			end,
+		},
+		{
+			text = "Write",
+			icon = "quill",
+			variant = "primary",
 			action = function()
 				local text = writeBox.Text
 				if #text > 0 then
 					send({ action = "write", text = text })
 					NotePanel.close()
 				end
-			end,
-		},
-		{
-			text = "Throw away",
-			action = function()
-				send({ action = "drop" })
-				NotePanel.close()
 			end,
 		},
 	})
@@ -125,7 +128,7 @@ local function onNoteView(payload)
 	local noteId = payload.noteId
 	local location = payload.location
 	show("read", if location == "held" then "Your note" else "A paper note")
-	local buttons = {}
+	local buttons: { NoteButton } = { { text = "Close", action = NotePanel.close } }
 	if location == "held" then
 		table.insert(buttons, {
 			text = "Drop here",
@@ -137,7 +140,8 @@ local function onNoteView(payload)
 	elseif payload.canTake then
 		table.insert(buttons, {
 			text = "Take",
-			variant = "team",
+			icon = "note",
+			variant = "parchment",
 			action = function()
 				send({ action = "take", noteId = noteId })
 				NotePanel.close()
@@ -147,14 +151,14 @@ local function onNoteView(payload)
 	if payload.canBurn then
 		table.insert(buttons, {
 			text = "Burn",
-			variant = "primary",
+			icon = "candle",
+			variant = "danger",
 			action = function()
 				send({ action = "burn", noteId = noteId })
 				NotePanel.close()
 			end,
 		})
 	end
-	table.insert(buttons, { text = "Close", action = NotePanel.close })
 	setButtons(buttons)
 end
 
@@ -162,97 +166,86 @@ local function onDropView(payload)
 	if type(payload) ~= "table" or type(payload.notes) ~= "table" then
 		return
 	end
-	Widgets.clear(dropList)
+	Kit.clear(dropList)
 	show("drop", tostring(payload.name))
 	if #payload.notes == 0 then
-		Widgets.label({
-			Text = "Nothing hidden here.",
-			TextColor3 = Theme.colors.muted,
-			Parent = dropList,
-		})
+		Kit.label({ Text = "Nothing hidden here.", font = "bodyItalic", color = C.dim, Parent = dropList })
 	end
 	for index, noteId in ipairs(payload.notes) do
-		Widgets.button({
-			Text = string.format("Folded note #%d  (read)", index),
-			Font = Theme.fonts.typewriter,
-			Variant = "paper",
-			Size = UDim2.new(1, -8, 0, 40),
+		Kit.button({
+			text = string.format("Folded note %d  ·  read", index),
+			icon = "note",
+			variant = "parchment",
+			upper = false,
+			Size = UDim2.new(1, 0, 0, T.touch),
 			LayoutOrder = index,
 			Parent = dropList,
 		}, function()
 			send({ action = "read", noteId = noteId })
 		end)
 	end
-	local buttons = {}
+	local buttons: { NoteButton } = { { text = "Close", action = NotePanel.close } }
 	if payload.canLeave then
 		table.insert(buttons, {
 			text = "Leave my note here",
-			variant = "team",
+			icon = "mail",
+			variant = "primary",
 			action = function()
 				send({ action = "leave", dropId = payload.dropId })
 				NotePanel.close()
 			end,
 		})
 	end
-	table.insert(buttons, { text = "Close", action = NotePanel.close })
 	setButtons(buttons)
 end
 
 function NotePanel.init()
-	local body
-	window, body = Widgets.modal(Screens.modal, "Note", Vector2.new(460, 380), NotePanel.close)
-	titleLabel = window:FindFirstChild("Title", true) :: TextLabel
-	paper = Widgets.panel({
-		BackgroundColor3 = Theme.colors.paper,
-		BackgroundTransparency = 0,
-		Size = UDim2.new(1, 0, 1, -56),
+	win = Kit.window({ name = "note", title = "Note", size = "sheet", footer = true, onClose = NotePanel.close })
+	local body = win.body
+	paper = Kit.card({
+		Name = "Paper",
+		tone = "parchment",
+		padding = T.space.l,
+		Size = UDim2.fromScale(1, 1),
 		Parent = body,
 	})
-	paperText = Widgets.label({
-		Font = Theme.fonts.typewriter,
-		TextSize = 24,
-		TextColor3 = Theme.colors.ink,
+	paperText = Kit.label({
+		font = "document",
+		size = 24,
+		color = C.ink,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
+		AutomaticSize = Enum.AutomaticSize.None,
 		Size = UDim2.fromScale(1, 1),
 		Parent = paper,
 	})
-	Widgets.padding(paperText, 16)
-	writeBox = Widgets.textbox({
-		PlaceholderText = string.format("Write up to %d characters...", Config.NOTE_MAX_LENGTH),
-		Font = Theme.fonts.typewriter,
-		TextSize = 22,
-		TextColor3 = Theme.colors.ink,
-		BackgroundColor3 = Theme.colors.paper,
-		PlaceholderColor3 = Color3.fromRGB(130, 120, 105),
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 1, -56),
+	writeField = Kit.card({
+		Name = "Sheet",
+		tone = "parchment",
+		padding = T.space.m,
+		Size = UDim2.fromScale(1, 1),
 		Parent = body,
 	})
-	Widgets.limitLength(writeBox, Config.NOTE_MAX_LENGTH)
-	dropList = Widgets.scroll({ Size = UDim2.new(1, 0, 1, -56), Parent = body })
-	Widgets.list(dropList, 6)
-	buttonRow = Widgets.frame({
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 44),
-		Parent = body,
+	local _, box = Kit.field({
+		placeholder = string.format("Write up to %d characters…", Config.NOTE_MAX_LENGTH),
+		font = "document",
+		size = 22,
+		multiline = true,
+		paper = true,
+		maxLength = Config.NOTE_MAX_LENGTH,
+		Size = UDim2.fromScale(1, 1),
+		Parent = writeField,
 	})
-	Widgets.list(buttonRow, 6, true)
+	writeBox = box
+	dropList = Kit.scroll({ Parent = body })
+	Kit.list(dropList, T.space.s)
+	Kit.pad(dropList, T.space.xs, T.space.xs)
 
 	Net.event("NoteView").OnClientEvent:Connect(onNoteView)
 	Net.event("DropPointView").OnClientEvent:Connect(onDropView)
-	Router.register("note", {
-		layer = "modal",
-		window = window,
+	Kit.register(win, {
 		allowed = function(view)
 			return view.living and (view.phase == "Investigation" or view.phase == "DeathNote")
-		end,
-		show = function()
-			window.Visible = true
-		end,
-		hide = function()
-			window.Visible = false
 		end,
 		firstSelection = function()
 			return firstButton
