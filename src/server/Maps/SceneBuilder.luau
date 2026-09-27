@@ -160,11 +160,12 @@ local function addEmitter(b, folder: Instance, spec)
 		CanCollide = false,
 		CanQuery = false,
 		CanTouch = false,
+		CastShadow = false,
 		Transparency = 1,
 		Size = Vector3.new(1, 0.2, 1),
 		CFrame = b:world(CFrame.new(at[1], at[2], at[3])),
 		Parent = folder,
-	})
+	}) :: BasePart
 	if spec.kind == "fountain" then
 		Create("ParticleEmitter", {
 			EmissionDirection = Enum.NormalId.Top,
@@ -203,7 +204,94 @@ local function addEmitter(b, folder: Instance, spec)
 		if texture ~= "" then
 			steam.Texture = texture
 		end
+	elseif spec.kind == "rivermist" then
+		-- A low, slow mist lying on the water, drifting downstream.
+		anchor.Size = Vector3.new(30, 0.2, 18)
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("Smoke")
+		Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Top,
+			Rate = 3,
+			Lifetime = NumberRange.new(8, 12),
+			Speed = NumberRange.new(0.2, 0.6),
+			Acceleration = Vector3.new(0.4, 0, 0),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 6), NumberSequenceKeypoint.new(1, 12) }),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.3, 0.86),
+				NumberSequenceKeypoint.new(0.7, 0.88),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(150, 146, 180)),
+			LightInfluence = 1,
+			LightEmission = 0,
+			RotSpeed = NumberRange.new(-6, 6),
+			Rotation = NumberRange.new(0, 360),
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
+			Parent = anchor,
+		})
+	elseif spec.kind == "petals" then
+		-- Sakura petals drifting down from the trees over the promenade and onto the water.
+		anchor.Size = Vector3.new(34, 0.2, 10)
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Bottom,
+			Rate = 4,
+			Lifetime = NumberRange.new(6, 9),
+			Speed = NumberRange.new(0.5, 1.2),
+			Acceleration = Vector3.new(0.6, -0.9, 0.3),
+			Drag = 0.6,
+			SpreadAngle = Vector2.new(35, 35),
+			Size = NumberSequence.new(0.18),
+			Squash = NumberSequence.new(0.5),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.1, 0.1),
+				NumberSequenceKeypoint.new(0.85, 0.2),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(255, 196, 214), Color3.fromRGB(246, 168, 196)),
+			LightInfluence = 1,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-90, 90),
+			Parent = anchor,
+		})
 	end
+end
+
+-- Terrain water (a river's channel): filled when a big venue builds, cleared when its map goes.
+-- The water's look is set here, the same for every map that has any.
+local filledWater: { { cf: CFrame, size: Vector3 } } = {}
+
+local function fillWater(b, boxes)
+	if #boxes == 0 then
+		return
+	end
+	local terrain = workspace.Terrain
+	terrain.WaterColor = Color3.fromRGB(22, 40, 52)
+	terrain.WaterTransparency = 0.55
+	terrain.WaterReflectance = 0.9
+	terrain.WaterWaveSize = 0.08
+	terrain.WaterWaveSpeed = 6
+	for _, w in ipairs(boxes) do
+		local cf = b:world(b:cf(w.at[1], w.at[2], w.at[3], w.rot))
+		local size = Vector3.new(w.size[1], w.size[2], w.size[3])
+		terrain:FillBlock(cf, size, Enum.Material.Water)
+		table.insert(filledWater, { cf = cf, size = size })
+	end
+end
+
+-- Takes away the water the last build filled in (MapService, when it tears a map down).
+function SceneBuilder.clearWater()
+	for _, w in ipairs(filledWater) do
+		-- A little bigger, so no half-full voxel is left behind at the edges.
+		workspace.Terrain:FillBlock(w.cf, w.size + Vector3.new(8, 8, 8), Enum.Material.Air)
+	end
+	table.clear(filledWater)
 end
 
 -- Format 2: the big venues ----------------------------------------------------------------------
@@ -574,6 +662,7 @@ local function buildFormat2(b, venue: string, data): string
 	for _, spec in ipairs(dressing.emitters) do
 		addEmitter(b, folder, spec)
 	end
+	fillWater(b, dressing.water or {})
 	folder:SetAttribute("Mode", mode)
 	return mode
 end

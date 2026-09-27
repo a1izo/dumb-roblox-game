@@ -471,14 +471,31 @@ def lobby(s, e, style, rng):
     e.quad(s, "WindowGlass", a, b, 0, 10.0, -0.3)
     e.niche(s, a, b, 0.0, 10.0, SET_DEPTH, "PlasterLight", back="MarbleWhite", floor="MarbleWhite", ceiling="Ceiling",
             front=0.3)
-    e.box(s, "WoodPanel", mid, 1.8, -(SET_DEPTH - 1.0), (min(6.0, w - 2.0), 3.6, 1.4))
-    e.box(s, "NeonWarm", mid, 9.85, -SET_DEPTH / 2, (w * 0.5, 0.1, 0.8))
+    counter = min(6.0, w - 2.0)
+    e.box(s, "WoodPanel", mid, 1.8, -(SET_DEPTH - 1.0), (counter, 3.6, 1.4))
+    e.box(s, "MarbleBlack", mid, 3.65, -(SET_DEPTH - 1.0), (counter + 0.2, 0.1, 1.6))
+    # Downlights over the desk, a tenant board on the back wall, potted plants by the glass.
+    for du in (-w / 4, w / 4):
+        e.box(s, "PanelWarm", mid + du, 9.9, -SET_DEPTH / 2, (1.2, 0.08, 1.2))
     x, z = e.at(mid, -SET_DEPTH / 2)
-    s.light("point", (x, 9.0, z), (255, 226, 190), 14, 0.8)
+    s.light("point", (x, 8.6, z), (255, 222, 180), 14, 0.7)
+    if w >= 8.0:
+        bx, bz = e.at(a + 1.6, -(SET_DEPTH - 0.06))
+        s.sign((bx, 6.2, bz), e.rot, 2.2, 3.0, "テナント\nご案内\n\n1F  受付\n2F-  各社", "GothamBlack",
+               (230, 226, 214), (34, 36, 42), glow=None)
+        for u in (a + 1.2, b - 1.2):
+            px, pz = e.at(u, -1.4)
+            potted_plant(s, px, pz)
     for k in range(5):
         u = a + w * k / 4
         e.box(s, "DarkMetal", u, 5.0, -0.2, (0.25, 10.0, 0.3))
     e.box(s, style["trim"], mid, 10.6, 2.0, (w + 2.0, 0.5, 4.0))
+
+
+def potted_plant(s, x, z):
+    """A tall potted plant for a lobby behind glass (drawn, not a prop: nobody reaches it)."""
+    s.cylinder("BlackTrim", (x, 0.0, z), 0.7, 1.6, segments=10, radius_top=0.8)
+    s.lathe("Foliage", (x, 1.4, z), [(0.2, 0.0), (0.9, 0.6), (1.1, 1.6), (0.8, 2.6), (0.0, 3.2)], 9)
 
 
 def tin_front(s, e, style, rng):
@@ -579,6 +596,9 @@ def screen(s, e, top, size):
     e.quad(s, "Screen", u - w / 2, u + w / 2, y - h / 2, y + h / 2, 1.25)
     x, z = e.at(u, 1.3)
     s.screen((x, y, z), e.rot, w, h)
+    # The screen's glow on the street below it (a crossing lit by its screens).
+    gx, gz = e.at(u, 8.0)
+    s.light("spot", (gx, y - h / 2, gz), (196, 204, 255), 64, 1.3, False, "Bottom", 120)
 
 
 # Building ----------------------------------------------------------------------------------------------
@@ -684,9 +704,9 @@ def massing(s, b, y=0.0, collide=True):
     return top
 
 
-def far(s, poly, floors, seed, y=0.0):
+def far(s, poly, floors, seed, y=0.0, lit=0.35):
     """A building beyond the map: a block with flat lit windows on the 12-stud floor grid, a
-    parapet line and a roof."""
+    parapet line and a roof. lit: the share of windows lit (fewer on the distant skyline)."""
     rng = random.Random(seed)
     top = y + height(floors)
     clad = rng.choice(("FacadeTile", "FacadeTileGrey", "ConcreteDark", "PlasterGrey", "BrickDark"))
@@ -696,8 +716,8 @@ def far(s, poly, floors, seed, y=0.0):
         for level in floor_levels(floors):
             for u0, u1 in spans:
                 r = rng.random()
-                if r < 0.35:
-                    mat = "WindowLit" if r < 0.25 else "WindowCool"
+                if r < lit:
+                    mat = "WindowLit" if r < lit * 0.7 else "WindowCool"
                     e.quad(s, mat, (u0 + u1) / 2 - 2.0, (u0 + u1) / 2 + 2.0, level + 3.0, level + 9.4, 0.05)
     for piece in g2.convex_pieces(poly):
         city.up_face(s, "ConcreteDark", piece, top + 0.2)

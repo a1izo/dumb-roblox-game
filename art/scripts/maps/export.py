@@ -450,6 +450,7 @@ def write_scene_v2(scene, module, source):
               f'volume = {num(so["volume"], 2)}, loop = {"true" if so["loop"] else "false"} }}' for so in scene.sounds]
     look_zones = [f'{{ preset = {lua_string(z["preset"])}, min = {vec(z["min"])}, max = {vec(z["max"])} }}'
                   for z in scene.look_zones]
+    waters = [f'{{ at = {vec(w["at"])}, size = {vec(w["size"])}, rot = {num(w["rot"], 2)} }}' for w in scene.waters]
     dressing_fields = [
         ("prop, x, y, z, degrees about Y, scale, flags (\"dark\": without its light)", "props", props),
         (None, "lights", lights),
@@ -462,6 +463,7 @@ def write_scene_v2(scene, module, source):
          "train", _lua(scene.train) if scene.train else "nil"),
         ("boxes where the camera switches to a lighting look of their own (LightingPresets.maps)",
          "lookZones", look_zones),
+        ("boxes the game fills with Terrain water (centre, size, degrees about Y)", "water", waters),
     ]
 
     paths = [_write(os.path.join(folder, "init.luau"), init)]

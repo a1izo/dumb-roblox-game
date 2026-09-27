@@ -96,16 +96,50 @@ def outside_scramble(name, reach=33.0):
     return pts
 
 
+def _direction_near(points, near):
+    best = min(range(len(points) - 1), key=lambda i: g2.dist_point_segment(near, points[i], points[i + 1]))
+    a, b = points[best], points[best + 1]
+    length = math.dist(a, b)
+    return ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+
+
+def junction_cuts(name, pts):
+    """Where another road crosses (or meets) this one: (point, width) gaps for its lane lines, so
+    no line runs on across the other road's carriageway."""
+    cuts = []
+    for other, st in P.STREETS.items():
+        if other == name or st.get("kind", "road") != "road":
+            continue
+        for h in g2.polyline_hits(pts, st["points"]):
+            a, b = _direction_near(pts, h), _direction_near(st["points"], h)
+            sin = max(0.3, abs(a[0] * b[1] - a[1] * b[0]))
+            cuts.append((h, (st["road"] + 4.0) / sin))
+        # A road ending on this one (a T junction) does not cross it: cut at its end too.
+        for end in (st["points"][0], st["points"][-1]):
+            p = min((g2.dist_point_segment(end, pts[i], pts[i + 1]) for i in range(len(pts) - 1)))
+            if p < P.STREETS[name]["road"] / 2 + 1.0:
+                b = _direction_near(st["points"], end)
+                a = _direction_near(pts, end)
+                sin = max(0.3, abs(a[0] * b[1] - a[1] * b[0]))
+                cuts.append((end, (st["road"] + 4.0) / sin))
+    return cuts
+
+
+def trimmed(name, pts):
+    return [piece for piece in g2.split_polyline(pts, junction_cuts(name, pts)) if g2.polyline_length(piece) > 2.0]
+
+
 def markings(s):
-    """Lane lines, stopping at the scramble."""
+    """Lane lines, stopping at the scramble and short of every junction."""
     for name in ("ave_nw", "ave_se"):
-        pts = outside_scramble(name)
-        city.stripe(s, pts, mat="PaintYellow", w=0.35, offset=0.35)
-        city.stripe(s, pts, mat="PaintYellow", w=0.35, offset=-0.35)
-        for off in (5.0, -5.0):
-            city.dashes(s, pts, dash=4, gap=8, w=0.3, offset=off)
+        for pts in trimmed(name, outside_scramble(name)):
+            city.stripe(s, pts, mat="PaintYellow", w=0.35, offset=0.35)
+            city.stripe(s, pts, mat="PaintYellow", w=0.35, offset=-0.35)
+            for off in (5.0, -5.0):
+                city.dashes(s, pts, dash=4, gap=8, w=0.3, offset=off)
     for name in ("east", "kita", "frontage", "minami"):
-        city.dashes(s, outside_scramble(name), dash=3, gap=5, w=0.3)
+        for pts in trimmed(name, outside_scramble(name)):
+            city.dashes(s, pts, dash=3, gap=5, w=0.3)
 
 
 def build(s, g):

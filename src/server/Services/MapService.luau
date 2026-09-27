@@ -15,6 +15,7 @@ local Maps = script.Parent.Parent:WaitForChild("Maps")
 local Builder = require(Maps:WaitForChild("Builder"))
 local Lobby = require(Maps:WaitForChild("Lobby"))
 local MapContract = require(Maps:WaitForChild("MapContract"))
+local SceneBuilder = require(Maps:WaitForChild("SceneBuilder"))
 local Zones = require(Maps:WaitForChild("Zones"))
 
 local LeaderboardService = require(script.Parent.LeaderboardService)
@@ -230,6 +231,8 @@ function MapService.destroy()
 		currentModel:Destroy()
 		currentModel = nil
 	end
+	-- The map's Terrain water is not part of its model.
+	SceneBuilder.clearWater()
 end
 
 function MapService.init()

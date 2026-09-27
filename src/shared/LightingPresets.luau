@@ -226,7 +226,8 @@ LightingPresets.maps = {
 	-- streets so nothing is pitch black, lamps and shop windows make the pools of light, and the
 	-- haze is thin enough to see down the long avenues of a big map.
 	-- A readable night: the ambient alone keeps an unlit alley legible; the light comes from real
-	-- fixtures (street lights, shopfronts, signs, lanterns). The haze hides the city's far edge.
+	-- fixtures (street lights, shopfronts, signs, lanterns). The haze and the fog (the night sky's
+	-- own violet) swallow the city's far skyline, so there is no edge to see.
 	TokyoDistrict = preset({
 		clockTime = 0,
 		brightness = 1.5,
@@ -235,11 +236,11 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(112, 102, 142),
 		envDiffuse = 0.65,
 		envSpecular = 0.5,
-		fogStart = 120,
-		fogEnd = 900,
+		fogStart = 110,
+		fogEnd = 720,
 		fogColor = rgb(40, 32, 58),
 		density = 0.3,
-		haze = 1.6,
+		haze = 2.2,
 		glare = 0.1,
 		atmosphereColor = rgb(110, 86, 140),
 		decay = rgb(70, 40, 80),
@@ -279,6 +280,37 @@ LightingPresets.maps = {
 		tint = rgb(236, 242, 255),
 		bloom = 0.2,
 		bloomSize = 12,
+		bloomThreshold = 2.6,
+		lamps = 1,
+		lampRange = 1,
+		keyLights = 4,
+		rain = 0,
+		lightning = false,
+	}),
+	-- Inside Tokyo's shops and rooms: the street's exposure and bloom would blow their lit walls
+	-- out to white, so indoors the camera takes a plainer look, a step darker than the street.
+	-- Picked by the interiors' look zones, like the metro's.
+	TokyoDistrict_Inside = preset({
+		clockTime = 0,
+		brightness = 0.8,
+		exposure = 0,
+		ambient = rgb(58, 54, 70),
+		outdoorAmbient = rgb(70, 66, 90),
+		envDiffuse = 0.35,
+		envSpecular = 0.3,
+		fogStart = 120,
+		fogEnd = 720,
+		fogColor = rgb(40, 32, 58),
+		density = 0,
+		haze = 0,
+		glare = 0,
+		atmosphereColor = rgb(110, 86, 140),
+		decay = rgb(70, 40, 80),
+		saturation = -0.05,
+		contrast = 0.12,
+		tint = rgb(246, 240, 250),
+		bloom = 0.2,
+		bloomSize = 14,
 		bloomThreshold = 2.6,
 		lamps = 1,
 		lampRange = 1,

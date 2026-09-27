@@ -2,8 +2,9 @@
 -- Where each place is built in the world. The server builds at these origins; clients use
 -- them to know which venue the camera is in (for lighting, rain and music).
 --
--- The maps are big (up to about 1000 x 800 studs, with a metro under Tokyo) and the lobby's
--- scenery reaches far out, so the three places sit well apart along Z.
+-- The maps are big (Tokyo's playable ground is 400 x 300 studs, with a metro under it and its
+-- city and ground running on under the fog for over 1000 studs) and the lobby's scenery reaches
+-- far out, so the three places sit well apart along Z.
 
 local MapBounds = require(script.Parent.MapBounds)
 

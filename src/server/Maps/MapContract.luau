@@ -60,8 +60,9 @@ function MapContract.validateLayout(layout: any): { string }
 	if #(layout.spawns or {}) < Config.MAX_PLAYERS then
 		fail("needs at least " .. Config.MAX_PLAYERS .. " spawns")
 	end
-	if #(layout.sheets or {}) ~= 4 then
-		fail("needs exactly 4 paper sheets")
+	-- Four sheets at least; a big map spreads a few more over its ground.
+	if #(layout.sheets or {}) < 4 then
+		fail("needs at least 4 paper sheets")
 	end
 	local drops = layout.dropPoints or {}
 	if #drops ~= 3 then

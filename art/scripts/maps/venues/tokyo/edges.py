@@ -2,11 +2,12 @@
 
 Every street, lane and promenade that leaves the map is closed by a site fence ten studs tall with
 police tape across it, barricades and cones in front, sometimes a patrol car: a barrier anyone can
-see (the fence's own collision stops people; nothing invisible stands where a player can walk up
-to it). Along the north a concrete wall under the expressway closes the frontage road; along the
-south the viaduct does. Past the barriers the streets carry on between buildings with lit
-windows, and blocks of the city stand all round to the horizon, so there is never a void to see.
-Only a safety net behind the outermost buildings is invisible, where nobody can get to."""
+see (the fence's own collision stops people, and an invisible wall over it keeps anyone from
+getting over). Along the north a concrete wall under the expressway closes the frontage road;
+along the south the viaduct does. Past the barriers the streets carry on, lit, between buildings
+with lit windows; blocks of the city stand all round out to a tall skyline, the ground runs on
+under the fog to the horizon and a dark floor lies under everything, so there is never a void to
+see. A safety net stands behind the outermost buildings, where nobody can get to."""
 
 import math
 import random
@@ -17,6 +18,7 @@ from maps.venues.tokyo import plan as P
 from maps.venues.tokyo import river
 
 FAR = 700.0  # how far the ground runs past the map
+BLOCK_H = 40.0  # the invisible wall over a barrier or edge wall
 CAT = catalog.load()
 
 
@@ -46,6 +48,8 @@ def barrier(s, a, b, out, rng, car=False):
         c = (a[0] + d[0] * step * (k + 0.5), a[1] + d[1] * step * (k + 0.5))
         s.prop("SiteFence", c[0], c[1], rot)
         s.collider((c[0], 5.0, c[1]), (step + 0.2, 10.0, 0.6), g2.rot_of(d), True, None)
+        # Invisible above the fence, so nothing gets over it (the view past it stays open).
+        s.collider((c[0], 10.0 + BLOCK_H / 2, c[1]), (step + 0.2, BLOCK_H, 0.6), g2.rot_of(d), False, None)
         tx, tz = c[0] - out[0] * 0.5, c[1] - out[1] * 0.5
         s.prop("PoliceTape", tx, tz, rot, 1.0, 3.6 + 0.2 * (k % 2))
     # Barricades and cones a few studs in front.
@@ -97,6 +101,7 @@ def expressway(s):
             c = ((cursor + g0) / 2, -148.6)
             s.box("Concrete", (c[0], 7.0, c[1]), (g0 - cursor, 14.0, 1.2), 0, collide=True)
             s.box("ConcreteDark", (c[0], 14.2, c[1]), (g0 - cursor, 0.4, 1.6), 0)
+            s.collider((c[0], 14.0 + BLOCK_H / 2, c[1]), (g0 - cursor, BLOCK_H, 1.2), 0, False, None)
         cursor = g1
     x = -186.0
     while x < P.X1 + 20:
@@ -186,6 +191,33 @@ def far_ground(s, g):
         for q in g2.strip_quads(pts, road / 2 + walk, road / 2) + g2.strip_quads(pts, -road / 2, -road / 2 - walk):
             g.add(q, "Pavers", 0.0, 2, None, None)
         city.dashes(s, pts, dash=3, gap=5, w=0.3)
+        # Street lamps down the first stretch past the barrier, so the street reads as going on
+        # into a lit city rather than into the dark.
+        total = g2.polyline_length(pts)
+        u, side = 24.0, 1
+        while u < min(total, 170.0):
+            p, d = g2.point_along(pts, u)
+            n = g2.normal_left(d)
+            x, z = p[0] + n[0] * side * (road / 2 + 1.0), p[1] + n[1] * side * (road / 2 + 1.0)
+            s.box("DarkMetal", (x, 4.5, z), (0.35, 9.0, 0.35), skip=("-y",))
+            head = (x - n[0] * side * 1.2, z - n[1] * side * 1.2)
+            s.box("BlackMetal", (head[0], 9.1, head[1]), (1.6, 0.3, 0.8), g2.rot_of(d))
+            s.box("NeonWarm", (head[0], 8.92, head[1]), (1.2, 0.06, 0.5), g2.rot_of(d), skip=("+y",))
+            s.light("point", (head[0], 8.2, head[1]), (255, 200, 140), 26, 1.2)
+            u += 36.0
+            side = -side
+    # The skirt: ground on to the horizon past the far city, and a dark floor under everything,
+    # so no view (from above, or through any gap) ever ends in the void.
+    for x0, z0, x1, z1 in ((-SKIRT, -SKIRT, SKIRT, -FAR), (-SKIRT, FAR, SKIRT, SKIRT), (-SKIRT, -FAR, -FAR, FAR),
+                           (FAR, -FAR, SKIRT, FAR)):
+        city.up_face(s, "ConcreteDark", P.box(x0, z0, x1, z1), -0.05)
+    city.up_face(s, "CoreDark", P.box(-SKIRT, -SKIRT, SKIRT, SKIRT), UNDER_Y)
+
+
+# How far the ground runs, well past where the fog has closed in; short of the lobby, which is
+# built 3000 studs away (src/shared/Venues.luau).
+SKIRT = 1400.0
+UNDER_Y = -45.0  # the dark floor under the whole world (below the metro and the river)
 
 
 def far_city(s, seed=7):
@@ -199,20 +231,33 @@ def far_city(s, seed=7):
     corridors.append(P.box(-FAR, P.EXPRESSWAY_Z[0] - 6, FAR, -150))
     corridors.append(P.box(-FAR, P.VIADUCT_LANE_Z[0] - 2, FAR, 152))
     map_zone = P.box(P.X0 - 4, P.Z0 - 4, P.X1 + 4, P.Z1 + 4)
-    x = -420.0
-    while x < 420.0:
+    x = -560.0
+    while x < 560.0:
         w = rng.uniform(26, 40)
-        z = -400.0
-        while z < 400.0:
+        z = -500.0
+        while z < 500.0:
             d = rng.uniform(26, 40)
             lot = P.box(x + 2, z + 2, x + w - 2, z + d - 2)
             dist = max(abs(x + w / 2) - P.X1, abs(z + d / 2) - P.Z1)
             clear = not g2.intersect(lot, map_zone) and not any(g2.intersect(lot, c) for c in corridors)
-            if clear and dist < 260:
-                floors = rng.randint(4, 12) if dist < 90 else rng.randint(8, 22)
-                buildings.far(s, lot, floors, rng.randint(1, 1 << 30))
+            if clear and dist < SKYLINE:
+                if dist < 90:
+                    buildings.far(s, lot, rng.randint(4, 12), rng.randint(1, 1 << 30))
+                elif dist < 260:
+                    buildings.far(s, lot, rng.randint(8, 22), rng.randint(1, 1 << 30))
+                else:
+                    # The skyline ring: tall and sparsely lit, closing every view out of the map.
+                    buildings.far(s, lot, rng.randint(16, 30), rng.randint(1, 1 << 30), lit=0.18)
             z += d
         x += w
+    # Where the expressway and the viaduct run out of the city, a tower closes each end, so no
+    # view along them reaches the edge of the world.
+    for x in (-FAR + 30.0, FAR - 30.0):
+        for z0, z1 in ((P.EXPRESSWAY_Z[0] - 40, P.EXPRESSWAY_Z[1] + 30), (P.VIADUCT_LANE_Z[0] - 30, P.VIADUCT_Z[1] + 40)):
+            buildings.far(s, P.box(x - 24, z0, x + 24, z1), rng.randint(20, 30), rng.randint(1, 1 << 30), lit=0.2)
+
+
+SKYLINE = 330.0  # how far past the map's edge the city is built
 
 
 def perimeter(s):

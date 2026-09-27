@@ -305,10 +305,16 @@ def stairs(s, x, z, rot, width, rise, run, steps, mat, side_mat=None, base=0.0, 
 
 
 def panel_light(s, x, y, z, w=4.0, d=2.0, color=WARM, range_=24, brightness=1.1, frame="DarkMetal", rot=0.0,
-                shadows=False):
+                shadows=False, soft=False):
+    """A ceiling panel with its light. soft: a frosted diffuser that reads as lit without
+    blooming (rooms people walk into), instead of a bright neon face."""
     s.box(frame, (x, y - 0.08, z), (w + 0.3, 0.16, d + 0.3), rot, skip=("+y",))
     warm = color[0] > color[2]  # the panel glows the colour its light is
-    s.box("NeonWarm" if warm else "NeonCool", (x, y - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
+    if soft:
+        glow = "PanelWarm" if warm else "PanelCool"
+    else:
+        glow = "NeonWarm" if warm else "NeonCool"
+    s.box(glow, (x, y - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
     s.light("point", (x, y - 1.0, z), color, range_, brightness, shadows)
 
 

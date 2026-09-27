@@ -80,6 +80,12 @@ function CharacterService.placeAt(player: Player, floorCFrame: CFrame)
 	character:PivotTo(floorCFrame + Vector3.new(0, groundOffset(character), 0))
 end
 
+-- Nobody jumps during the investigation: no hopping onto props, walls or roofs and out of the
+-- map. (Climbing is switched off on each client, which owns its character: World/MovementRules.)
+local function canJump(): boolean
+	return Match.phase ~= "Investigation"
+end
+
 function CharacterService.setFrozen(player: Player, frozen: boolean)
 	local character = player.Character
 	if not character then
@@ -91,9 +97,10 @@ function CharacterService.setFrozen(player: Player, frozen: boolean)
 	end
 	local humanoid = getHumanoid(character)
 	if humanoid then
+		local jumps = not frozen and canJump()
 		humanoid.WalkSpeed = if frozen then 0 else 16
-		humanoid.JumpPower = if frozen then 0 else 50
-		humanoid.JumpHeight = if frozen then 0 else 7.2
+		humanoid.JumpPower = if jumps then 50 else 0
+		humanoid.JumpHeight = if jumps then 7.2 else 0
 	end
 end
 

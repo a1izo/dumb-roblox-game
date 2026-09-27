@@ -91,6 +91,7 @@ class Scene(LayoutMixin):
         self.sounds = []  # ambient sound sources (their ids are the game's to fill in)
         self.train = None  # the metro train's run, for the client to animate
         self.look_zones = []  # boxes with a lighting look of their own (the metro under Tokyo)
+        self.waters = []  # boxes the game fills with Terrain water: (centre, size, rot)
         self.used = set()
         self.preview_props = []  # placed by the game's own code; only drawn in previews
         self._layout_init()
@@ -384,6 +385,11 @@ class Scene(LayoutMixin):
         """A box (corners lo, hi as x, y, z) where the camera switches to the lighting preset
         LightingPresets.maps[preset] (a metro under the street, a tunnel)."""
         self.look_zones.append({"preset": preset, "min": lo, "max": hi})
+
+    def water(self, centre, size, rot=0.0):
+        """A box the game fills with Terrain water (a river's channel): real waves and reflections,
+        out of reach behind the railings."""
+        self.waters.append({"at": centre, "size": size, "rot": rot})
 
     # Output ----------------------------------------------------------------------------------
 

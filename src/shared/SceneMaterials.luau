@@ -53,6 +53,8 @@ return {
 	NeonWarm = { material = "Neon", color = { 255, 214, 160 }, transparency = 0, reflectance = 0 },
 	NeonYellow = { material = "Neon", color = { 255, 220, 70 }, transparency = 0, reflectance = 0 },
 	PaintYellow = { material = "SmoothPlastic", color = { 222, 190, 60 }, transparency = 0, reflectance = 0 },
+	PanelCool = { material = "Neon", color = { 130, 140, 156 }, transparency = 0, reflectance = 0 },
+	PanelWarm = { material = "Neon", color = { 156, 138, 112 }, transparency = 0, reflectance = 0 },
 	Paper = { material = "SmoothPlastic", color = { 226, 220, 205 }, transparency = 0, reflectance = 0 },
 	Pavers = { textured = true, fallback = { material = "Pavement", color = { 102, 100, 105 } } },
 	PaversWarm = { textured = true, fallback = { material = "Pavement", color = { 118, 104, 90 } } },

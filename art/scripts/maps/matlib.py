@@ -47,6 +47,9 @@ FLAT = {
     "NeonCool": ("Neon", (200, 225, 255), 0, 0),
     # A fluorescent fitting's diffuser: it reads as lit without blooming (see kit.tube_light).
     "TubeDiffuser": ("Neon", (150, 158, 170), 0, 0),
+    # Frosted ceiling panels in rooms people walk into: lit, but too dim to bloom.
+    "PanelWarm": ("Neon", (156, 138, 112), 0, 0),
+    "PanelCool": ("Neon", (130, 140, 156), 0, 0),
     "NeonRed": ("Neon", (255, 40, 60), 0, 0),
     "NeonPink": ("Neon", (255, 80, 200), 0, 0),
     "NeonCyan": ("Neon", (60, 230, 255), 0, 0),

@@ -43,6 +43,11 @@ def at_front(name, direction, frac, out=1.6):
     return x, z, facing(e.n[0], e.n[1])
 
 
+def overlaps(a, b, min_area=0.5):
+    hit = g2.intersect(a, b)
+    return bool(hit) and abs(g2.area(hit)) > min_area
+
+
 def street_light(s, name, side, u):
     (x, z), d, into = kerb(name, side, u, 0.8)
     place(s, "StreetLightTokyo", x, z, facing(-into[0], -into[1]))
@@ -92,8 +97,9 @@ def scramble(s):
             z = back[1] + n[1] * side * (hw + 1.6)
             place(s, "PedestrianSignal", x, z, facing(-n[0] * side, -n[1] * side))
             s.collider((x, 4.6, z), (0.5, 9.2, 0.5), 0, True, None)
-    # A street light on each of the scramble's four corners.
-    for x, z in ((-85.0, -74.0), (-58.0, -101.0), (-2.0, -52.0), (-54.0, -38.0)):
+    # A street light on each of the scramble's four corners (the plaza's between the bus bay and
+    # the drive).
+    for x, z in ((-85.0, -71.4), (-58.0, -101.0), (-2.0, -52.0), (-54.0, -38.0)):
         place(s, "StreetLightTokyo", x, z, facing(P.SCRAMBLE_CENTRE[0] - x, P.SCRAMBLE_CENTRE[1] - z))
         s.collider((x, 8.0, z), (0.8, 16.0, 0.8), 0, True, None)
 
@@ -103,17 +109,27 @@ def scramble(s):
 
 def streets(s):
     # The avenue: street lights on its east side, guard rails along its kerbs.
-    for u in (32.0, 78.0):
-        street_light(s, "ave_nw", 1, u)
-    for u in (48.0, 96.0, 168.0, 212.0):
-        street_light(s, "ave_se", 1, u)
+    lamps = {"ave_nw": (32.0, 78.0), "ave_se": (48.0, 96.0, 168.0, 212.0)}
+    for name, us in lamps.items():
+        for u in us:
+            street_light(s, name, 1, u)
+    others = [(n, q) for n, q in P.bands() if n not in ("ave_nw", "ave_se", "river")]
     for name, spans in (("ave_nw", [(22, 62), (70, 76)]), ("ave_se", [(42, 88), (170, 205)])):
+        walk = P.STREETS[name]["walk"][0]
         for side in (1, -1):
             for u0, u1 in spans:
                 u = u0
                 while u + 8 <= u1:
                     (x, z), d, into = kerb(name, side, u + 4, 0.4)
-                    s.prop("GuardRail", x, z, g2.rot_of(d))
+                    # Never across the mouth of a side street, alley or lane (people turn in
+                    # there), nor through a street light's post.
+                    reach = walk + 3.0
+                    foot = [(x - d[0] * 4.5, z - d[1] * 4.5), (x + d[0] * 4.5, z + d[1] * 4.5),
+                            (x + d[0] * 4.5 + into[0] * reach, z + d[1] * 4.5 + into[1] * reach),
+                            (x - d[0] * 4.5 + into[0] * reach, z - d[1] * 4.5 + into[1] * reach)]
+                    post = side == 1 and any(u - 1.0 <= lu <= u + 9.0 for lu in lamps[name])
+                    if not post and not any(overlaps(g2.ccw(foot), q) for _, q in others):
+                        s.prop("GuardRail", x, z, g2.rot_of(d))
                     u += 8.4
     # Power poles and wires on the small streets.
     power_line(s, "east", -1, [56.0, 88.0, 120.0, 152.0, 186.0, 220.0])
@@ -124,20 +140,22 @@ def streets(s):
     street_light(s, "kita", 1, 50.0)
     # The frontage road under the expressway lies in the pier lamps' light (edges.py).
     # Vending machines against walls, bins beside them, bikes and scooters left by the doors.
-    vending = [("zakkyo_se", (0, -1), 0.72), ("zakkyo_se", (0, -1), 0.86), ("east_s2", (0, -1), 0.3),
+    # (One machine on the zakkyo's short front, clear of the power pole; the bins by the pair on
+    # the next block.)
+    vending = [("zakkyo_se", (0, -1), 0.4), ("east_s2", (0, -1), 0.3),
                ("station", (1, 0), 0.1), ("laundromat", (-1, 0), 0.85), ("flats_yw", (1, 0), 0.7),
                ("office_riverside", (0, -1), 0.8), ("yokocho_gate", (0, -1), 0.2)]
     for k, (name, direction, frac) in enumerate(vending):
         x, z, rot = at_front(name, direction, frac, 1.7)
         s.prop(("VendingBlue", "VendingWhite")[k % 2], x, z, rot)
-    for name, direction, frac in (("zakkyo_se", (0, -1), 0.98), ("flats_yw", (1, 0), 0.9)):
+    for name, direction, frac in (("east_s2", (0, -1), 0.5), ("flats_yw", (1, 0), 0.9)):
         x, z, rot = at_front(name, direction, frac, 0.8)
         s.prop("RecycleBins", x, z, rot)
     for name, direction, frac in (("konbini_block", (0, -1), 0.25), ("flats_footbridge", (0, -1), 0.4),
                                   ("arcade_n1", (0, 1), 0.3)):
         x, z, rot = at_front(name, direction, frac, 2.9)
         s.prop("BikeRack", x, z, rot + 180)
-    for name, direction, frac in (("river_se1", (0, -1), 0.3), ("river_se1", (0, -1), 0.45),
+    for name, direction, frac in (("river_se1", (0, -1), 0.3), ("river_se1", (0, -1), 0.6),
                                   ("ya_n1", (0, -1), 0.5), ("yc_n2", (0, -1), 0.4), ("hotel_se", (-1, 0), 0.5)):
         x, z, rot = at_front(name, direction, frac, 1.2)
         s.prop("Bicycle", x, z, rot + 90)
@@ -148,7 +166,6 @@ def streets(s):
     (x, z), d, into = kerb("minami", -1, 50.0, -2.8)
     s.prop("KeiTruck", x, z, g2.rot_of(d) + 90)
     s.collider((x, 2.7, z), (5.2, 5.4, 11.0), g2.rot_of(d) + 90, True, None)
-    s.prop("PostBox", -80.0, -24.0, 180)
 
 
 # The station plaza ----------------------------------------------------------------------------------------
@@ -162,10 +179,11 @@ def plaza(s):
     s.collider((-90.0, 4.2, -88.8), (11.6, 8.4, 0.4), 0, True, None)
     s.prop("BusStopSign", -101.0, -82.8, 180)
     s.prop("TaxiRankSign", -104.0, -55.0, 0)
-    for x in (-99.0, -87.0):
+    for x in (-100.0, -85.5):
         s.prop("Taxi", x, -59.4, 90)
     # Trees in beds, benches round them, planters, the plaza's lamps.
-    for x, z in ((-100.0, -46.0), (-86.0, -33.0), (-100.0, -96.0)):
+    # (The middle bed keeps clear of the phone booth in front of it.)
+    for x, z in ((-100.0, -46.0), (-86.0, -31.5), (-100.0, -96.0)):
         s.box("Stone", (x, 0.6, z), (7.0, 1.2, 7.0), 0)
         s.collider((x, 0.6, z), (7.0, 1.2, 7.0), 0, True, "Stone")
         s.prop("Tree", x, z, RNG.uniform(0, 360), 1.0, 1.2)
@@ -262,6 +280,8 @@ def riverside(s):
             n = g2.normal_left(d)
             side = 1 if offset > 0 else -1
             p = (cx + n[0] * (offset - side * 1.6), cz + n[1] * (offset - side * 1.6))
+            if any(math.dist(p, tp) < 4.5 for _, tp, _ in trees):
+                continue  # not under a tree's trunk
             s.prop("Bench", p[0], p[1], facing(-n[0] * side, -n[1] * side))
     for x, side in ((-36.0, 1), (136.0, -1)):
         (cx, cz), d = P.river_frame(x)
@@ -330,7 +350,7 @@ def viaduct_lane(s):
     for x in (-178.0, -118.0, -34.0, 2.0, 122.0, 158.0):
         s.prop("Chochin", x - 3.0, z - 1.0, 180, 1.0, 8.0, dark=x not in (-118.0, 2.0, 158.0))
         s.prop("Noren", x + 1.0, z - 0.2, 180, 0.9, 6.2)
-    for x in (-150.0, -70.0, 30.0, 140.0):
+    for x in (-186.0, -150.0, -110.0, -70.0, -20.0, 30.0, 46.0, 100.0, 140.0, 184.0):
         s.box("BlackMetal", (x, 11.5, z - 0.3), (0.8, 1.0, 0.8), 0)
         s.box("NeonWarm", (x, 10.95, z - 0.3), (0.6, 0.1, 0.6), 0)
         s.light("point", (x, 10.2, z - 0.8), (255, 196, 140), 20, 1.1)
@@ -359,6 +379,35 @@ def alleys(s):
     s.prop("Dumpster", 60.0, -77.0, 90)
     s.prop("Crate", 56.0, -75.5, 30, 0.7)
     wall_lamp(s, 52.0, -78.6, 0, 8.0)
+
+
+def dark_corners(s):
+    """Light for the stretches the street lights miss: lantern posts along the south promenade's
+    west end and at the footbridge, lamps down the laundromat's lane and the yokocho's alleys,
+    yard lamps in the back lots, a lamp under the expressway by the station tower."""
+    for x in (-156.5, -122.5, -71.5, -37.5):
+        (cx, cz), d = P.river_frame(x)
+        n = g2.normal_left(d)
+        off = P.PROM_S[0] + 1.0
+        kit.lantern_post(s, cx + n[0] * off, cz + n[1] * off, 10.0)
+    # Lantern posts at both ends of the footbridge.
+    (cx, cz), d = P.river_frame(P.FOOTBRIDGE_X)
+    n = g2.normal_left(d)
+    for off in (P.PROM_N[0] + 2.0, P.PROM_S[1] - 2.0):
+        for side in (1, -1):
+            kit.lantern_post(s, cx + d[0] * side * 5.5 + n[0] * off, cz + d[1] * side * 5.5 + n[1] * off, 10.0)
+    city.wall_lamps(s, P.STREETS["lane_e"]["points"], 3.2, spacing=16.0, h=8.0, start=6.0)
+    city.wall_lamps(s, P.STREETS["y_dead"]["points"], 2.1, spacing=16.0, h=7.6, start=8.0, flicker_every=3)
+    city.wall_lamps(s, P.STREETS["y_cross"]["points"], 2.1, spacing=22.0, h=7.8, start=10.0, flicker_every=4)
+    for x, z in YARD_LAMPS:
+        city.pole_lamp(s, x, z)
+    x, z, rot = at_front("station_tower", (0, -1), 0.55, 0.3)
+    wall_lamp(s, x, z, rot, 9.0)
+
+
+# Back lots the street lights miss, found by check_v2's light map (walkable ground, clear of
+# walls): a cheap lamp on a pole in each.
+YARD_LAMPS = [(164.0, -74.0), (162.0, -58.0), (164.0, -96.0), (131.0, -8.0)]
 
 
 # Sounds and the train ------------------------------------------------------------------------------------
@@ -398,4 +447,5 @@ def build(s):
     yokocho(s)
     viaduct_lane(s)
     alleys(s)
+    dark_corners(s)
     ambience(s)

@@ -69,22 +69,65 @@ def channel(s, g):
 
     along(river, NORTH_WALL, wall_face(-1))
     along(river, SOUTH_WALL, wall_face(1))
-
-    def coping(side):
-        def piece(a, b, d, n):
-            mid = ((a[0] + b[0]) / 2 + n[0] * side * 0.4, (a[1] + b[1]) / 2 + n[1] * side * 0.4)
-            s.box("Stone", (mid[0], 0.2, mid[1]), (math.dist(a, b) + 0.8, 0.4, 1.0), g2.rot_of(d), skip=("-y",))
-
-        return piece
-
-    along(river, NORTH_WALL, coping(1))
-    along(river, SOUTH_WALL, coping(-1))
     for q in band(NORTH_WALL, SOUTH_WALL, river):
         city.up_face(s, "ConcreteDark", q, P.BED_Y)
-        city.up_face(s, "Water", q, P.WATER_Y)
+        # A solid bed under the water: whatever happens, nothing falls through into the void.
+        city.floor(s, q, P.BED_Y, 2.0, None, query=False)
         s.zone("water", q, P.WATER_Y)
+    water(s, river)
     for x in P.RIVER_CULVERTS:
         culvert(s, x)
+
+
+WATER_DEPTH = 6.0  # the Terrain water runs this far under its surface (past the bed, out of sight)
+WATER_INTO_WALLS = 2.0  # and this far into both walls, so it meets them without a gap
+
+
+def water(s, river):
+    """The water itself is Terrain water the game fills in (real waves, reflections of the
+    lanterns): a box per straight piece of the channel, overlapping at the bends. On it, faint
+    mist; over the promenades, sakura petals drifting down."""
+    middle = (NORTH_WALL + SOUTH_WALL) / 2
+    width = NORTH_WALL - SOUTH_WALL + 2 * WATER_INTO_WALLS
+    y = P.WATER_Y - WATER_DEPTH / 2
+    for i in range(len(river) - 1):
+        a, b = river[i], river[i + 1]
+        length = math.dist(a, b)
+        if length < 0.5:
+            continue
+        d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+        n = g2.normal_left(d)
+        c = ((a[0] + b[0]) / 2 + n[0] * middle, (a[1] + b[1]) / 2 + n[1] * middle)
+        s.water((c[0], y, c[1]), (length + 6.0, WATER_DEPTH, width), g2.rot_of(d))
+    total = g2.polyline_length(river)
+    u = 20.0
+    k = 0
+    while u < total - 10:
+        p, d = g2.point_along(river, u)
+        n = g2.normal_left(d)
+        if inside_map(p, 40):
+            s.emitter("rivermist", (p[0] + n[0] * middle, P.WATER_Y + 0.6, p[1] + n[1] * middle), g2.rot_of(d))
+            for off in (P.PROM_N[0] + 3.0, P.PROM_S[1] - 3.0) if k % 2 == 0 else ():
+                s.emitter("petals", (p[0] + n[0] * off, 10.0, p[1] + n[1] * off), g2.rot_of(d))
+            k += 1
+        u += 36.0
+
+
+def coping(s, gaps_n, gaps_s):
+    """The stone cap along the top of both channel walls, stopping where a bridge crosses (the
+    bridge's deck carries the road and the promenade over the wall there)."""
+    river = inner_river()
+    for offset, side, gaps in ((NORTH_WALL, 1, gaps_n), (SOUTH_WALL, -1, gaps_s)):
+        line = g2.offset_polyline(river, offset + side * 0.4)
+        for raw in g2.split_polyline(line, gaps):
+            for i in range(len(raw) - 1):
+                a, b = raw[i], raw[i + 1]
+                length = math.dist(a, b)
+                if length < 0.1:
+                    continue
+                d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+                mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+                s.box("Stone", (mid[0], 0.2, mid[1]), (length + 0.8, 0.4, 1.0), g2.rot_of(d), skip=("-y",))
 
 
 def culvert(s, x):
@@ -250,3 +293,4 @@ def build(s, g):
     road = road_bridge(s)
     foot_n, foot_s = footbridge(s, g)
     railings(s, road[NORTH_WALL] + foot_n, road[SOUTH_WALL] + foot_s)
+    coping(s, road[NORTH_WALL] + foot_n, road[SOUTH_WALL] + foot_s)
