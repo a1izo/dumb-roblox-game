@@ -21,6 +21,7 @@ from maps.layout import LayoutMixin
 CHUNK = 64.0  # studs
 MAX_TRIS = 9000
 SMALL_TRIS = 5000  # a material with fewer triangles than this stays in one mesh
+MAX_SPAN = 1500.0  # ...unless it spreads wider than this (Roblox parts stop at 2048 studs)
 
 
 def ry(rot):
@@ -397,11 +398,16 @@ class Scene(LayoutMixin):
         """Builds the Blender meshes (chunked per material) and returns their names."""
         names = []
         for mat, pieces in sorted(self.pieces.items()):
-            # Small materials stay in one mesh; big ones are cut into cells of CHUNK studs.
+            # Small materials stay in one mesh; big ones are cut into cells of CHUNK studs. So are
+            # small ones spread wider than a Roblox part may be (2048 studs a side), which the
+            # importer would otherwise squash.
             total = sum(len(p.faces) for p in pieces)
+            xs = [v[0] for p in pieces for v in p.verts]
+            zs = [v[2] for p in pieces for v in p.verts]
+            wide = max(max(xs) - min(xs), max(zs) - min(zs)) > MAX_SPAN
             cells = {}
             for piece in pieces:
-                if total <= SMALL_TRIS:
+                if total <= SMALL_TRIS and not wide:
                     key = (0, 0)
                 else:
                     key = (math.floor(piece.centre[0] / self.chunk), math.floor(piece.centre[2] / self.chunk))

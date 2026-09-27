@@ -147,7 +147,8 @@ def opening(s, a, t, n, rot, thick, base, op, collide):
                   rot)
     if kind == "window":
         sill_mat = op.get("sill", frame or "WhiteTrim")
-        s.box(sill_mat, point_on(a, t, op["at"], bottom - 0.08), (u1 - u0 + 0.6, 0.16, thick + 0.5), rot)
+        # (Its top a hair over the wall below, so the two never flicker.)
+        s.box(sill_mat, point_on(a, t, op["at"], bottom - 0.06), (u1 - u0 + 0.6, 0.16, thick + 0.5), rot)
         glass = op.get("glass", "Glass")
         if glass:
             s.box(glass, point_on(a, t, op["at"], (bottom + top_y) / 2), (u1 - u0, top_y - bottom, 0.06), rot,

@@ -210,7 +210,8 @@ HALF_LANDING = (-146.0, -140.0)  # x extent, at flight 1's foot, both flights wi
 # The ticket gates face the entrances; the paid landing behind them leads onto flight 1.
 GATE_X = -116.0
 PAID = (-121.0, -116.0, -70.6, -53.4)  # x0, x1, z0, z1
-GATES_Z = (-70.0, -66.0, -62.0, -58.0, -54.0)  # the gate cabinets; the lanes run between them
+# The gate cabinets (2.8 studs wide), the lanes between them wide enough for anyone to walk.
+GATES_Z = (-69.2, -62.0, -54.8)
 # The opening in the hall's floor over flight 1.
 HALL_HOLE = [(-140.0, -67.5), (-121.0, -67.5), (-121.0, -62.2), (-140.0, -62.2)]
 

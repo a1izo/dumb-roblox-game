@@ -143,11 +143,13 @@ def streets(s):
     # (One machine on the zakkyo's short front, clear of the power pole; the bins by the pair on
     # the next block.)
     vending = [("zakkyo_se", (0, -1), 0.4), ("east_s2", (0, -1), 0.3),
-               ("station", (1, 0), 0.1), ("laundromat", (-1, 0), 0.85), ("flats_yw", (1, 0), 0.7),
-               ("office_riverside", (0, -1), 0.8), ("yokocho_gate", (0, -1), 0.2)]
+               ("laundromat", (-1, 0), 0.85), ("flats_yw", (1, 0), 0.7),
+               ("office_riverside", (0, -1), 0.86), ("yokocho_gate", (0, -1), 0.2)]
     for k, (name, direction, frac) in enumerate(vending):
         x, z, rot = at_front(name, direction, frac, 1.7)
         s.prop(("VendingBlue", "VendingWhite")[k % 2], x, z, rot)
+    # By the station's glass front, clear of its doors, facing the plaza.
+    s.prop("VendingBlue", -106.2, -30.0, -90)
     for name, direction, frac in (("east_s2", (0, -1), 0.5), ("flats_yw", (1, 0), 0.9)):
         x, z, rot = at_front(name, direction, frac, 0.8)
         s.prop("RecycleBins", x, z, rot)
@@ -172,15 +174,14 @@ def streets(s):
 
 
 def plaza(s):
-    # The bus bay on the plaza north of the drive with a bus in and its shelter, the taxi rank on
-    # the drive's south kerb.
-    s.prop("Bus", -91.0, -77.0, 90)
+    # The bus stop on the plaza north of the drive (its shelter and sign: a parked bus would fill
+    # the plaza from the station's doors to the scramble), the taxi rank on the drive's south
+    # kerb with one cab waiting, clear of the doors.
     s.prop("BusShelter", -90.0, -87.0, 180)
     s.collider((-90.0, 4.2, -88.8), (11.6, 8.4, 0.4), 0, True, None)
     s.prop("BusStopSign", -101.0, -82.8, 180)
     s.prop("TaxiRankSign", -104.0, -55.0, 0)
-    for x in (-100.0, -85.5):
-        s.prop("Taxi", x, -59.4, 90)
+    s.prop("Taxi", -93.0, -59.4, 90)
     # Trees in beds, benches round them, planters, the plaza's lamps.
     # (The middle bed keeps clear of the phone booth in front of it.)
     for x, z in ((-100.0, -46.0), (-86.0, -31.5), (-100.0, -96.0)):
@@ -188,7 +189,7 @@ def plaza(s):
         s.collider((x, 0.6, z), (7.0, 1.2, 7.0), 0, True, "Stone")
         s.prop("Tree", x, z, RNG.uniform(0, 360), 1.0, 1.2)
         s.prop("Bench", x, z + 5.2, 180)
-    for x, z in ((-104.0, -50.0), (-104.0, -30.0)):
+    for x, z in ((-105.2, -50.0), (-103.0, -35.8)):
         s.prop("Planter", x, z, 90)
     for x, z in ((-104.0, -40.0), (-104.0, -104.0)):
         place(s, "StreetLightTokyo", x, z, -90)
@@ -263,7 +264,8 @@ def riverside(s):
                 n = g2.normal_left(d)
                 p = (cx + n[0] * offset, cz + n[1] * offset)
                 s.prop("TreeSakura", p[0], p[1], RNG.uniform(0, 360), RNG.uniform(0.85, 1.05))
-                s.collider((p[0], 3.5, p[1]), (1.2, 7.0, 1.2), 0, True, None)
+                # The trunk only (the promenade is 6 studs wide, the trees down its middle).
+                s.collider((p[0], 3.5, p[1]), (0.8, 7.0, 0.8), 0, True, None)
                 trees.append((x, p, d))
             x += step
         for k, (a, b) in enumerate(zip(trees, trees[1:])):
@@ -316,11 +318,12 @@ def yokocho(s):
             x, z = e.at(e.length / 2, 0.35)
             if b.get("use") != "izakaya":
                 s.prop("Noren", x, z, facing(e.n[0], e.n[1]), 1.0 if e.length > 8 else 0.8, 6.4)
+            # Crates and a grill tucked against the front: the alleys are only 5 studs wide.
             if k % 4 == 1:
-                x, z = e.at(e.length - 1.4, 1.2)
+                x, z = e.at(e.length - 1.8, 1.0)
                 s.prop("BeerCrates", x, z, facing(e.n[0], e.n[1]))
-            if k % 7 == 3:
-                x, z = e.at(e.length / 2, 2.4)
+            if k % 7 == 3 and e.length >= 10:
+                x, z = e.at(e.length / 2 - 2.6, 1.15)  # the other side of the door from the crates
                 s.prop("YakitoriGrill", x, z, facing(e.n[0], e.n[1]))
     # Wires zig-zagging over the alleys between the bars' upper floors.
     for name in ("y_a", "y_b", "y_c", "y_cross", "y_dead"):
@@ -373,12 +376,39 @@ def alleys(s):
         wall_lamp(s, x, z, rot + 180, 8.0)
     for x in (32.0, 40.0, 70.0, 78.0):
         s.box("WhiteTrim", (x, 3.0, -18.4), (2.4, 2.0, 1.2), 3)
-    s.prop("TrashCan", 50.0, -17.2, 0)
+    s.prop("TrashCan", 53.0, -17.2, 0)
     s.prop("Crate", 84.0, -17.6, 12, 0.6)
-    # The service alley off the east street behind the department store.
-    s.prop("Dumpster", 60.0, -77.0, 90)
-    s.prop("Crate", 56.0, -75.5, 30, 0.7)
-    wall_lamp(s, 52.0, -78.6, 0, 8.0)
+    # The service alley off the east street behind the shopping street's shops, its mouth kept
+    # clear (the dumpster along it: the alley is narrower than a dumpster is long; it widens
+    # towards the dead end).
+    s.prop("Dumpster", 71.0, -77.2, 0)  # past the hood's spot, against the shops' back wall
+    wall_lamp(s, 52.0, -78.6, 180, 8.0)
+
+
+def lamps_on_walls(s, name, offset, spacing=18.0, h=8.0, start=5.0, flicker_every=0):
+    """Small caged lamps along a lane, alternating sides, each on a building's wall: where there
+    is no wall behind a spot (a side alley opening, a gap between buildings) the lamp moves to
+    the other side, or is left out, never hanging in the air."""
+    pts = P.STREETS[name]["points"]
+    total = g2.polyline_length(pts)
+    u, k = start, 0
+    while u < total - 2:
+        p, d = g2.point_along(pts, u)
+        n = g2.normal_left(d)
+        for side in ((1, -1) if k % 2 == 0 else (-1, 1)):
+            wall = next((w for w in (offset - 1.0 + 0.25 * i for i in range(20))
+                         if any(g2.contains(b["poly"], (p[0] + n[0] * side * w, p[1] + n[1] * side * w))
+                                for b in P.BUILDINGS)), None)
+            if wall is not None:
+                x, z = p[0] + n[0] * side * (wall - 0.35), p[1] + n[1] * side * (wall - 0.35)
+                flicker = bool(flicker_every) and k % flicker_every == flicker_every - 1
+                s.box("BlackMetal", (x, h + 0.3, z), (0.4, 0.6, 0.4), g2.rot_of(d))
+                s.box("NeonWarm", (x, h - 0.15, z), (0.5, 0.3, 0.5), g2.rot_of(d))
+                s.light("point", (x - n[0] * side * 0.8, h - 0.6, z - n[1] * side * 0.8), (255, 196, 140), 20.0, 1.1,
+                        flicker=flicker)
+                break
+        k += 1
+        u += spacing
 
 
 def dark_corners(s):
@@ -396,9 +426,9 @@ def dark_corners(s):
     for off in (P.PROM_N[0] + 2.0, P.PROM_S[1] - 2.0):
         for side in (1, -1):
             kit.lantern_post(s, cx + d[0] * side * 5.5 + n[0] * off, cz + d[1] * side * 5.5 + n[1] * off, 10.0)
-    city.wall_lamps(s, P.STREETS["lane_e"]["points"], 3.2, spacing=16.0, h=8.0, start=6.0)
-    city.wall_lamps(s, P.STREETS["y_dead"]["points"], 2.1, spacing=16.0, h=7.6, start=8.0, flicker_every=3)
-    city.wall_lamps(s, P.STREETS["y_cross"]["points"], 2.1, spacing=22.0, h=7.8, start=10.0, flicker_every=4)
+    lamps_on_walls(s, "lane_e", 3.2, spacing=16.0, h=8.0, start=6.0)
+    lamps_on_walls(s, "y_dead", 2.1, spacing=16.0, h=7.6, start=8.0, flicker_every=3)
+    lamps_on_walls(s, "y_cross", 2.1, spacing=22.0, h=7.8, start=10.0, flicker_every=4)
     for x, z in YARD_LAMPS:
         city.pole_lamp(s, x, z)
     x, z, rot = at_front("station_tower", (0, -1), 0.55, 0.3)

@@ -277,12 +277,19 @@ def retaining(s, poly, y, base, wall_mat="Stone", coping="ConcreteDark", edges=N
               g2.rot_of((dx / length, dz / length)), skip=("-y",))
 
 
-def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="ConcreteDark", step=0.8, name=None, cheeks=True):
+GUARD_FROM = 2.0  # how high a flight climbs before its side guards begin
+
+
+def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="ConcreteDark", step=0.8, name=None, cheeks=True,
+           guard=0.0, guard_out=0.15):
     """A flight of steps from a (x, z) at height y0 to b at y1 (either way up), with a smooth
-    ramp under the steps for walking and a "stairs" zone."""
+    ramp under the steps for walking and a "stairs" zone. The mass under the steps is solid (no
+    walking into the side of a flight); guard: an invisible wall that high along both sides over
+    the steps, where handrails or balustrades stand (guard_out: how far out past the steps)."""
     run = math.dist(a, b)
     d = ((b[0] - a[0]) / run, (b[1] - a[1]) / run)
-    rot = g2.rot_of(g2.normal_left(d))  # local x across the flight, local z along it
+    n = g2.normal_left(d)
+    rot = g2.rot_of(n)  # local x across the flight, local z along it
     rise = y1 - y0
     count = max(2, round(abs(rise) / step))
     low = min(y0, y1)
@@ -294,6 +301,16 @@ def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="ConcreteDark", step
         s.box(mat, (c[0], low + h / 2, c[1]), (width, h, run / count), rot, skip=("-y",),
               mats={"+x": side_mat, "-x": side_mat})
         s.step((c[0], low + h / 2, c[1]), (width, h, run / count), rot, mat)
+        # Solid under the ramp, never above it (walking up stays smooth).
+        under = min(y0 + rise * t0, y0 + rise * t1) - 0.15 - low
+        if under > 0.6:
+            s.collider((c[0], low + under / 2, c[1]), (width, under, run / count), rot, False, None)
+        # (Not over the first steps: people step onto a flight from its sides there too.)
+        if guard > 0 and top - low > GUARD_FROM:
+            for side in (1, -1):
+                off = width / 2 + guard_out
+                p = (c[0] + n[0] * side * off, c[1] + n[1] * side * off)
+                s.collider((p[0], top + guard / 2, p[1]), (0.3, guard, run / count + 0.05), rot, False, None)
     s.ramp(a if rise > 0 else b, b if rise > 0 else a, low, max(y0, y1), width, look=mat)
     band = [
         (a[0] + g2.normal_left(d)[0] * width / 2, a[1] + g2.normal_left(d)[1] * width / 2),

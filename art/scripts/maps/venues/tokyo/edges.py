@@ -42,11 +42,12 @@ def barrier(s, a, b, out, rng, car=False):
     length = math.dist(a, b)
     d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
     rot = facing(-out[0], -out[1])  # the fence's face (its -Z side) looks back into the map
-    count = max(1, math.ceil(length / 7.6))
+    count = max(1, round(length / 8.0))
     step = length / count
     for k in range(count):
         c = (a[0] + d[0] * step * (k + 0.5), a[1] + d[1] * step * (k + 0.5))
-        s.prop("SiteFence", c[0], c[1], rot)
+        # Each 8-stud panel sized to its share of the span, so they meet end to end.
+        s.prop("SiteFence", c[0], c[1], rot, step / 8.0)
         s.collider((c[0], 5.0, c[1]), (step + 0.2, 10.0, 0.6), g2.rot_of(d), True, None)
         # Invisible above the fence, so nothing gets over it (the view past it stays open).
         s.collider((c[0], 10.0 + BLOCK_H / 2, c[1]), (step + 0.2, BLOCK_H, 0.6), g2.rot_of(d), False, None)
@@ -61,24 +62,26 @@ def barrier(s, a, b, out, rng, car=False):
         else:
             s.prop("TrafficCone", p[0] + rng.uniform(-1, 1), p[1] + rng.uniform(-1, 1), rng.uniform(0, 90))
     if car:
-        p = (a[0] + d[0] * length * 0.35 - out[0] * 9.0, a[1] + d[1] * length * 0.35 - out[1] * 9.0)
+        # Parked across the carriageway, clear of the corner buildings.
+        p = (a[0] + d[0] * length * 0.55 - out[0] * 9.0, a[1] + d[1] * length * 0.55 - out[1] * 9.0)
         s.prop("PoliceCar", p[0], p[1], g2.rot_of(d) + 90 + rng.uniform(-12, 12))
 
 
 def barriers(s):
     rng = random.Random(21)
     x0, x1 = P.X0 + 1.5, P.X1 - 1.5
-    barrier(s, (x0, -127.0), (x0, -147.5), (-1, 0), rng, car=True)  # the frontage road, west
-    barrier(s, (x1, -147.5), (x1, -127.0), (1, 0), rng)  # the frontage road, east
+    # (Each span runs from building face to building face, or to the river's railing.)
+    barrier(s, (x0, -128.4), (x0, -147.5), (-1, 0), rng, car=True)  # the frontage road, west
+    barrier(s, (x1, -147.5), (x1, -128.4), (1, 0), rng)  # the frontage road, east
     barrier(s, (-122.0, -148.5), (-84.0, -148.5), (0, -1), rng, car=True)  # the avenue, north
     barrier(s, (118.0, -148.5), (139.0, -148.5), (0, -1), rng)  # Kita-dori, north
-    barrier(s, (x1, -53.0), (x1, -30.0), (1, 0), rng, car=True)  # the east street
+    barrier(s, (x1, -50.2), (x1, -32.8), (1, 0), rng, car=True)  # the east street
     barrier(s, (50.0, 147.0), (92.0, 147.0), (0, 1), rng)  # the avenue, south under the viaduct
     for x, out in ((x0, (-1, 0)), (x1, (1, 0))):
-        barrier(s, (x, P.VIADUCT_LANE_Z[0] - 0.5), (x, P.VIADUCT_LANE_Z[1] + 0.5), out, rng)
+        barrier(s, (x, P.VIADUCT_LANE_Z[0] - 0.3), (x, P.VIADUCT_LANE_Z[1] + 0.3), out, rng)
         (cx, cz), d = P.river_frame(x)
         n = g2.normal_left(d)
-        for a, b in ((P.PROM_N[1] + 0.5, P.CHANNEL[1]), (P.CHANNEL[0], P.PROM_S[0] - 0.5)):
+        for a, b in ((P.PROM_N[1] + 0.5, P.CHANNEL[1] + 0.9), (P.CHANNEL[0] - 0.9, P.PROM_S[0] - 0.5)):
             barrier(s, (cx + n[0] * a, cz + n[1] * a), (cx + n[0] * b, cz + n[1] * b), out, rng)
 
 
@@ -207,11 +210,29 @@ def far_ground(s, g):
             u += 36.0
             side = -side
     # The skirt: ground on to the horizon past the far city, and a dark floor under everything,
-    # so no view (from above, or through any gap) ever ends in the void.
-    for x0, z0, x1, z1 in ((-SKIRT, -SKIRT, SKIRT, -FAR), (-SKIRT, FAR, SKIRT, SKIRT), (-SKIRT, -FAR, -FAR, FAR),
-                           (FAR, -FAR, SKIRT, FAR)):
-        city.up_face(s, "ConcreteDark", P.box(x0, z0, x1, z1), -0.05)
-    city.up_face(s, "CoreDark", P.box(-SKIRT, -SKIRT, SKIRT, SKIRT), UNDER_Y)
+    # so no view (from above, or through any gap) ever ends in the void. In tiles, as no Roblox
+    # part may be more than 2048 studs across.
+    for x0, z0, x1, z1 in tiles(-SKIRT, -SKIRT, SKIRT, SKIRT, TILE):
+        if not (-FAR <= x0 and x1 <= FAR and -FAR <= z0 and z1 <= FAR):
+            for piece in g2.subtract_all([g2.ccw(P.box(x0, z0, x1, z1))], [g2.ccw(P.box(-FAR, -FAR, FAR, FAR))]):
+                city.up_face(s, "ConcreteDark", piece, -0.05)
+        city.up_face(s, "CoreDark", P.box(x0, z0, x1, z1), UNDER_Y)
+
+
+def tiles(x0, z0, x1, z1, size):
+    """(x0, z0, x1, z1) of the squares covering a box, `size` studs a side."""
+    out = []
+    x = x0
+    while x < x1:
+        z = z0
+        while z < z1:
+            out.append((x, z, min(x + size, x1), min(z + size, z1)))
+            z += size
+        x += size
+    return out
+
+
+TILE = 700.0
 
 
 # How far the ground runs, well past where the fog has closed in; short of the lobby, which is

@@ -31,6 +31,7 @@ HEAD = 9.6  # window head above the floor
 ROOM_DEPTH = 3.0  # the rooms behind the low windows
 ROOMS_BELOW = 38.0  # windows whose sill is lower than this get a room behind clear glass
 CORE_INSET = 4.5  # the dark core inside every body (deeper than any room or shop set)
+PIER_SOLID = 16.0  # how high a corner pier is solid from the ground (above, nobody reaches)
 
 STYLE_KEYS = (
     "clad",  # cladding material of the upper floors
@@ -129,7 +130,8 @@ class Edge:
         if ceiling:
             city.down_face(s, ceiling, [p0, q0, q1, p1], y1)
         if floor:
-            city.up_face(s, floor, [p0, p1, q1, q0], y0)
+            # At street level the sidewalk runs on under the building: sit a hair over it.
+            city.up_face(s, floor, [p0, p1, q1, q0], y0 + (0.03 if abs(y0) < 0.05 else 0.0))
         if back:
             self.quad(s, back, u0, u1, y0, y1, -depth)
 
@@ -167,36 +169,44 @@ ROOM_LOOKS = {  # back, sides, floor, ceiling
 }
 
 
-def fake_room(s, e, u0, u1, y0, y1, depth, look, rng):
+def fake_room(s, e, u0, u1, y0, y1, depth, look, rng, reach=0.5, level=None):
     """A shallow room behind clear glass: its back wall, sides, floor (at the floor level, a sill
     below the window) and ceiling, lit or dark, now and then a piece of furniture against the
-    back and a ceiling light."""
+    back and a ceiling light. reach: how far past the window's sides it goes (0 where windows
+    run on side by side, so neighbouring rooms never overlap); level: the room's floor, when the
+    window does not sit a sill's height above it (a balcony's door)."""
     back, side, floor, ceiling = ROOM_LOOKS[look]
-    lo, hi = y0 - SILL, y1 + 1.0
-    w0, w1 = u0 - 0.5, u1 + 0.5
+    # Rooms behind two walls meeting at a corner cross each other: each wall's rooms sit a little
+    # higher or lower than the next wall's, so their floors and ceilings never flicker.
+    nudge = (round(e.rot) % 360) / 360.0 * 0.24
+    lo = (y0 - SILL if level is None else level) + nudge
+    hi = y1 + 1.0 - nudge
+    w0, w1 = u0 - reach, u1 + reach
     e.niche(s, w0, w1, lo, hi, depth + ROOM_DEPTH, side, back=back, floor=floor, ceiling=ceiling, front=depth)
     if look in ("lit", "cool") and rng.random() < 0.6:
         # A desk, a shelf or a sofa against the back wall, in silhouette.
         kind = rng.random()
         mid = (u0 + u1) / 2 + rng.uniform(-0.6, 0.6)
+        # (Never their undersides: those would lie on the ceiling of a real room below.)
         if kind < 0.4:
-            e.box(s, "RoomDark", mid, lo + 1.3, -(depth + ROOM_DEPTH - 0.8), ((u1 - u0) * 0.5, 2.6, 1.4))
+            e.box(s, "RoomDark", mid, lo + 1.3, -(depth + ROOM_DEPTH - 0.8), ((u1 - u0) * 0.5, 2.6, 1.4), skip=("-y",))
         elif kind < 0.7:
-            e.box(s, "RoomDark", mid, lo + 3.0, -(depth + ROOM_DEPTH - 0.4), ((u1 - u0) * 0.6, 6.0, 0.8))
+            e.box(s, "RoomDark", mid, lo + 3.0, -(depth + ROOM_DEPTH - 0.4), ((u1 - u0) * 0.6, 6.0, 0.8), skip=("-y",))
         else:
-            e.box(s, "RoomDark", mid, lo + 1.0, -(depth + ROOM_DEPTH - 0.9), ((u1 - u0) * 0.7, 2.0, 1.6))
+            e.box(s, "RoomDark", mid, lo + 1.0, -(depth + ROOM_DEPTH - 0.9), ((u1 - u0) * 0.7, 2.0, 1.6), skip=("-y",))
     if look == "lit" and rng.random() < 0.5:
         e.box(s, "NeonWarm", (u0 + u1) / 2, hi - 0.1, -(depth + ROOM_DEPTH / 2), ((u1 - u0) * 0.5, 0.12, 0.5))
 
 
-def window(s, e, u0, u1, y0, y1, frame, rng, lit, depth=0.45, sill=True, mullion=True, room=False):
+def window(s, e, u0, u1, y0, y1, frame, rng, lit, depth=0.45, sill=True, mullion=True, room=False, reach=0.5,
+           level=None):
     """A recessed window between u0..u1 and y0..y1 on edge e, the glass set `depth` back. With
     room, clear glass and a shallow room behind it; without, an opaque pane that glows like a lit
     room, or shows a cool-lit or dark one."""
     look = room_light(rng, lit)
     if room:
         e.quad(s, "WindowGlass", u0, u1, y0, y1, -depth)
-        fake_room(s, e, u0, u1, y0, y1, depth, look, rng)
+        fake_room(s, e, u0, u1, y0, y1, depth, look, rng, reach, level)
         if look == "curtain":
             cut = u0 + (u1 - u0) * rng.uniform(0.3, 0.7)
             e.quad(s, rng.choice(("Fabric", "FabricRed", "CreamTrim")), u0, cut, y0, y1, -depth - 0.15)
@@ -295,7 +305,7 @@ def ribbon(s, e, y0, y1, levels, style, rng):
         while u + 0.5 < e.length - 0.8:
             u1 = min(e.length - 0.8, u + pane)
             window(s, e, u, u1, wy0, wy1, trim, rng, style.get("lit", 0.5), depth=0.3, sill=False, mullion=False,
-                   room=room_at(style, wy0))
+                   room=room_at(style, wy0), reach=0.0)
             e.box(s, trim, u1, (wy0 + wy1) / 2, 0.02, (0.25, wy1 - wy0, 0.25))
             u = u1
 
@@ -336,7 +346,7 @@ def balconies(s, e, y0, y1, levels, style, rng):
         for u0, u1 in spans:
             e.quad(s, clad, cursor, u0 + 0.6, level + 1.0, head)
             window(s, e, u0 + 0.6, u1 - 0.6, level + 1.0, head, trim, rng, style.get("lit", 0.45), depth=0.4,
-                   sill=False, room=room_at(style, level + 1.0 + SILL))
+                   sill=False, room=room_at(style, level + 1.0 + SILL), level=level + 1.0)
             cursor = u1 - 0.6
             mid = (u0 + u1) / 2
             width = u1 - u0 - 0.4
@@ -524,10 +534,13 @@ GROUNDS = {"shutters": shutters, "display": display, "lobby": lobby, "tin": tin_
 
 
 def roof(s, poly, top, style, rng, edges):
+    # (A hair over the top of the walls, which rooms inside may bring up to the same height.)
     for piece in g2.convex_pieces(poly):
-        city.up_face(s, "ConcreteDark", piece, top)
+        city.up_face(s, "ConcreteDark", piece, top + 0.02)
     trim = style["trim"]
     for e in edges:
+        if getattr(e, "party", 0.0) >= top - 0.1:
+            continue  # a neighbour as tall stands against this side: no parapet between the roofs
         e.quad(s, style["clad"], 0, e.length, top, top + 1.6)
         # The parapet's inner face and its cap.
         city.vquad(s, "ConcreteDark", e.at(0, -0.6), e.at(e.length, -0.6), top, top + 1.6, (-e.n[0], -e.n[1]))
@@ -604,6 +617,16 @@ def screen(s, e, top, size):
 # Building ----------------------------------------------------------------------------------------------
 
 
+def blocked_ahead(e, others, reach):
+    """True when a neighbouring building stands within `reach` studs in front of edge e."""
+    for frac in (0.1, 0.3, 0.5, 0.7, 0.9):
+        for out in (1.0, reach / 2, reach):
+            p = e.at(e.length * frac, out)
+            if any(g2.contains(poly, p) for poly, _ in others):
+                return True
+    return False
+
+
 def party_heights(poly, others, top):
     """For each edge of poly: how high a neighbour stands against it (0 when nothing does)."""
     result = []
@@ -649,13 +672,21 @@ def build(s, b, style, others=(), fronts=None, y=0.0):
             if hidden > levels[0] + 0.5:
                 plain_wall(s, e, hidden, top, style["clad"])
             elif e.front or e.length > 8:
-                facade(s, e, levels[0], top, levels, style, rng)
+                # Balconies stick out 3.2 studs: facing a neighbour closer than that, the flats
+                # get plain windows on that side instead of balconies through its wall.
+                face = facade
+                if facade is balconies and blocked_ahead(e, others, 4.0):
+                    face = punched
+                face(s, e, levels[0], top, levels, style, rng)
             else:
                 plain_wall(s, e, levels[0], top, style["clad"])
         if hidden < top - 0.5:
             x, z = e.at(0, 0.25)
             pier = style["trim"] if style.get("windows") == "curtain" else style["clad"]
             s.box(pier, (x, (max(y, hidden) + top) / 2, z), (0.8, top - max(y, hidden), 0.8), e.rot)
+            if hidden < 1.0:
+                # The corner pier stands a little proud of the walls: solid where people walk.
+                s.collider((x, y + PIER_SOLID / 2, z), (0.8, PIER_SOLID, 0.8), e.rot, False, None)
         if e.front and style.get("fascia") and not interior and hidden < 1:
             fascia(s, e, *style["fascia"])
     front_edges = [e for e in edges if e.front] or sorted(edges, key=lambda e: -e.length)[:1]
