@@ -14,3 +14,4 @@ __pycache__/
 
 # Studio importer unpacks embedded textures next to the FBX
 art/export/*.fbm/
+art/export/scenes/

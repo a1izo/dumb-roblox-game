@@ -45,6 +45,8 @@ FLAT = {
     "Bark": ("Wood", (60, 44, 34), 0, 0),
     "NeonWarm": ("Neon", (255, 214, 160), 0, 0),
     "NeonCool": ("Neon", (200, 225, 255), 0, 0),
+    # A fluorescent fitting's diffuser: it reads as lit without blooming (see kit.tube_light).
+    "TubeDiffuser": ("Neon", (150, 158, 170), 0, 0),
     "NeonRed": ("Neon", (255, 40, 60), 0, 0),
     "NeonPink": ("Neon", (255, 80, 200), 0, 0),
     "NeonCyan": ("Neon", (60, 230, 255), 0, 0),
@@ -52,9 +54,30 @@ FLAT = {
     "NeonYellow": ("Neon", (255, 220, 70), 0, 0),
     "NeonBlue": ("Neon", (80, 150, 255), 0, 0),
     "NeonOrange": ("Neon", (255, 130, 50), 0, 0),
-    "WindowLit": ("Neon", (255, 208, 140), 0.1, 0),
-    "WindowCool": ("Neon", (150, 180, 230), 0.25, 0),
-    "WindowDark": ("Glass", (22, 26, 34), 0.1, 0.35),
+    # Windows seen from the street: opaque, so nothing behind them ever shows (the low floors have
+    # rooms behind clear glass instead, see buildings.window).
+    "WindowLit": ("Neon", (255, 208, 140), 0, 0),
+    "WindowCool": ("Neon", (150, 180, 230), 0, 0),
+    "WindowDark": ("Glass", (22, 26, 34), 0, 0.35),
+    "WindowGlass": ("Glass", (70, 80, 96), 0.55, 0.3),
+    # The shallow rooms behind the low windows and in shop windows: a lit room's walls glow
+    # softly (nothing lights them at night), a dark room is just dark.
+    "RoomLitBack": ("Neon", (150, 118, 84), 0, 0),
+    "RoomLitSide": ("Neon", (108, 84, 60), 0, 0),
+    "RoomLitCeiling": ("Neon", (186, 156, 118), 0, 0),
+    "RoomCoolBack": ("Neon", (86, 102, 132), 0, 0),
+    "RoomCoolSide": ("Neon", (62, 74, 98), 0, 0),
+    "RoomCoolCeiling": ("Neon", (120, 138, 170), 0, 0),
+    "RoomDark": ("SmoothPlastic", (18, 18, 22), 0, 0),
+    "CoreDark": ("SmoothPlastic", (14, 15, 18), 0, 0),
+    # Massing: plain blocks at true height, for reviewing a layout before its buildings are made.
+    "MassLight": ("SmoothPlastic", (208, 204, 196), 0, 0),
+    "MassMid": ("SmoothPlastic", (168, 166, 162), 0, 0),
+    "MassWarm": ("SmoothPlastic", (214, 190, 156), 0, 0),
+    "MassGlass": ("SmoothPlastic", (128, 146, 166), 0, 0),
+    "MassBand": ("SmoothPlastic", (92, 92, 96), 0, 0),
+    "MassEnter": ("Neon", (255, 196, 110), 0, 0),
+    "MassClosed": ("SmoothPlastic", (64, 64, 70), 0, 0),
 }
 
 

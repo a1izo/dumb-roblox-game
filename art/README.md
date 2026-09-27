@@ -10,16 +10,20 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | `data/r15_rig.json` | Roblox's own R15 rig (joints and part sizes), from `r15_extract.py` |
 | `blend/Animations.blend` | The R15 rig with every animation as an action (open it to tweak curves) |
 | `blend/Props.blend` | Every prop, baked |
-| `blend/Maps.blend` | The five map scenes |
+| `blend/Maps.blend` | The map scenes not rebuilt yet |
+| `blend/Maps_<Venue>.blend` | A rebuilt big map (Tokyo) |
 | `export/InkboundModels.fbx` | All props and effect textures (Studio import #1) |
-| `export/InkboundMaps.fbx` | The map scenes with their tiling textures (Studio import #2) |
+| `export/InkboundModels_<Set>.fbx` | The props made for one map (Tokyo), imported like the others |
+| `export/InkboundMaps.fbx` | The map scenes not rebuilt yet, with their tiling textures (Studio import #2) |
+| `export/InkboundMaps_<Venue>.fbx` | One rebuilt big map each (Studio import, one per map) |
 | `export/textures/` | Baked prop textures, effect textures, and `maps/` (tiling colour, normal and roughness maps) |
 | `export/previews/` | Renders of every pose, prop and map, for review |
 
 ## The two imports in Studio
 
 Meshes and images must be uploaded under your account, which only Studio can do. For each of
-`art/export/InkboundModels.fbx` and `art/export/InkboundMaps.fbx`:
+`art/export/InkboundModels.fbx` and `art/export/InkboundMaps.fbx` (and each
+`InkboundModels_<Set>.fbx` and `InkboundMaps_<Venue>.fbx` beside them):
 
 1. **Home > Import 3D** (or File > Import 3D), pick the file, keep the defaults, press **Import**.
 2. That's it. The importer drops the model into Workspace; when the game starts, the server
@@ -77,6 +81,64 @@ python art/scripts/maps/contract_check.py                                       
 clear, worker spots free, screens visible from at least 3 of 8 sides, sheets resting on a
 surface, spawns, hoods and drop points not inside anything. Run it after changing a venue.
 
+### The rebuilt big maps (Tokyo so far)
+
+A venue whose module sets `FORMAT = 2` (`scripts/maps/venues/tokyo/`) is a whole map made here:
+its streets, buildings and **gameplay spots** (stations, spawns, sheets, drop points, hoods,
+named areas with intro marks, the tip box and board, plus spare spots of every kind) are all
+placed by the venue script, and the game reads them from the generated scene data. The Luau map
+module is three lines (`Maps/TokyoDistrict.luau`).
+
+Tokyo is 400 x 300 studs at real scale (ground floors 14 studs, the floors above 12). Its script
+is a package, one file per job: `plan.py` (streets, the river, the station and every building's
+footprint, height and use), `ground.py`, `river.py` (water wall to wall, railings with an
+invisible wall above them), `station.py` (the metro), `styles.py` (each building's look, set by
+hand), `interiors.py` (the rooms you can walk into, with the stations in them), `dressing.py`
+(street furniture and every lamp, placed by hand), `edges.py` (the city carrying on past the
+map, and a fence with police tape across every street that leaves it) and `gameplay.py`.
+Buildings are made by the kit in `maps/buildings.py` (facades, shopfronts, signs, roofs).
+
+```
+blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --plan      # top-down plans
+blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --massing   # blocks only
+blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --preview   # street-level views
+blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --export
+python art/scripts/maps/check_v2.py Tokyo            # full check (a few minutes); --quick skips the walk
+python art/scripts/maps/walkdebug.py Tokyo x y z 40  # where can you walk from here?
+```
+
+`--export` writes, for that venue only (other venues are left alone):
+- `export/InkboundMaps_Tokyo.fbx`: meshes `Map_Tokyo_<Material>_<n>`, calibration cubes
+  `Calib_Tokyo_O/X/Y` and a marker `InkboundMapsTokyo_Version_<n>`. The version only goes up when
+  the meshes change; only then does Studio need a new import (delete the old one first).
+- `src/server/Maps/Scenes/Tokyo/`: `Layout` (gameplay spots, spare spots, zones), `Geometry`
+  (colliders, floor triangles, ramps, the steps drawn over them), `Dressing` (props, lights, signs,
+  screens, sound sources and the metro train's timetable). Long lists are split into parts so no
+  script gets too long for Studio.
+- `src/shared/MapBounds.luau` (the Specter box) and `src/shared/SceneMaterials.luau` (merged).
+- `export/scenes/Tokyo.json`: the same data for the checks (not committed).
+
+Without the import the game builds the map as a greybox from the colliders (in their materials'
+colours, streets painted, lamps as small glowing fittings), so a map change can be played before
+it is imported.
+
+Every light belongs to something you can see: a lamp in the map's meshes, or a prop that carries
+its own (street lights, lanterns, fridges, the train; `lights` in the catalog). A lantern string
+can be placed unlit (`s.prop(..., dark=True)`). The client's `World/MapAmbient` plays the
+screens' adverts, the sound sources (silent until their `Assets.sfx` slot has an id) and the
+train that pulls into the platform every two minutes.
+
+`check_v2.py` checks the contract at every floor height; that nothing of the game's stands on a
+road, crossing, water, track or stairs (zones); that every spot can be walked to from the spawns
+and how long corner to corner takes (aim: 30-45 s); how much of the walkable ground is lit (a
+report, not a pass mark: `previews/light_Tokyo.png` shows the dark parts in red); and how alike
+the map is to its own mirror image (it must not be symmetrical).
+
+The kit for big maps: `maps/geo2d.py` (plane geometry: clipping, covering, polylines),
+`maps/city.py` (ground surfaces that never overlap, exact floors, streets, lanes grown into the
+blocks, terraces, stairs, slopes, shops, multi-storey buildings, lamps), `maps/layout.py` (the
+gameplay spots and zones).
+
 ## Props and textures
 
 ```
@@ -84,10 +146,13 @@ blender -b --factory-startup --python art/scripts/run_props.py            # buil
 blender -b --factory-startup --python art/scripts/run_props.py -- Desk    # just one
 blender -b --factory-startup --python art/scripts/run_textures.py         # effect textures
 blender -b --factory-startup --python art/scripts/run_props.py -- --export  # FBX + catalog
+blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --preview  # one set
+blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --export
 ```
 
-`--export` writes `export/InkboundModels.fbx` and `src/shared/ModelCatalog.luau` (each prop's
-size in studs, pivot, material and glow colours). `ModelLibrary` fixes scale and orientation
+`--export` writes `export/InkboundModels.fbx` (or `InkboundModels_<Set>.fbx` with `--set`) and
+`src/shared/ModelCatalog.luau` (each prop's size in studs, pivot, material, glow colours, the
+lights it carries and its set). `ModelLibrary` fixes scale and orientation
 from the catalog, so the importer's unit and axis settings do not matter.
 
 Effect textures ride along on small quads named `Tex_<name>`. If you would rather upload the
@@ -97,6 +162,8 @@ PNGs yourself, paste their ids into `Assets.textures` in `src/shared/Assets.luau
 
 1. Add a builder to `scripts/props.py` or `scripts/props_world.py` with `@prop("Name", ...)`,
    facing -Y, standing on z = 0 (for `pivot="bottom"`). Glowing parts go in the second list.
+   A map's own props go in their own file (`props_tokyo.py`, `props_tokyo_shops.py`,
+   `props_stations.py`) with `set="Tokyo"`; `lights=` gives the lights it carries.
 2. Rebuild and export as above, then re-import the FBX in Studio.
 3. Place it from a map with `b:placeModel("Name", x, z, rot)`, or from a scene with
    `s.prop("Name", x, z, rot)`.

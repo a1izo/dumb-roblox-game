@@ -15,6 +15,7 @@ local Maps = script.Parent.Parent:WaitForChild("Maps")
 local Builder = require(Maps:WaitForChild("Builder"))
 local Lobby = require(Maps:WaitForChild("Lobby"))
 local MapContract = require(Maps:WaitForChild("MapContract"))
+local Zones = require(Maps:WaitForChild("Zones"))
 
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local ServerSettings = require(script.Parent.ServerSettings)
@@ -138,6 +139,7 @@ end
 -- Builds a match map and the meeting room. Returns everything gameplay needs,
 -- converted to world space.
 function MapService.build(mapId: string)
+	local started = os.clock()
 	MapService.destroy()
 	local def = MAPS[mapId] or MAPS.TaskForceHQ
 	local model = newModel("LGameMap")
@@ -164,7 +166,7 @@ function MapService.build(mapId: string)
 	for _, spot in ipairs(layout.spawns) do
 		-- Face the middle of the map unless a rotation is given.
 		local rot = spot.rot or math.deg(math.atan2(spot.x, spot.z))
-		table.insert(info.spawns, b:world(b:cf(spot.x, 0, spot.z, rot)))
+		table.insert(info.spawns, b:world(b:cf(spot.x, spot.y or 0, spot.z, rot)))
 	end
 	for i, sheet in ipairs(layout.sheets) do
 		table.insert(info.sheets, { id = "P" .. i, position = b:worldPos(sheet.x, sheet.y, sheet.z) })
@@ -176,8 +178,19 @@ function MapService.build(mapId: string)
 		table.insert(info.hoods, b:worldPos(hood.x, hood.y, hood.z))
 	end
 	for _, area in ipairs(layout.areas) do
-		table.insert(info.areas, { name = area.name, position = b:worldPos(area.x, 0, area.z) })
+		-- Designed intro marks (where avatars perform), when the map has them.
+		local marks = {}
+		for _, mark in ipairs(area.marks or {}) do
+			table.insert(marks, { kind = mark.kind, cf = b:world(b:cf(mark.x, mark.y or 0, mark.z, mark.rot or 0)) })
+		end
+		table.insert(
+			info.areas,
+			{ name = area.name, position = b:worldPos(area.x, area.y or 0, area.z), marks = marks }
+		)
 	end
+	-- What kind of ground each place is (roads, crossings, water...), for placing things.
+	info.zones = Zones.new(layout.zones or {}, MAP_ORIGIN)
+	info.spare = layout.spare
 
 	local meeting = MeetingRoom.build(Builder.new(model, MEETING_ORIGIN))
 	info.meeting = meeting
@@ -186,6 +199,25 @@ function MapService.build(mapId: string)
 	model.Parent = workspace
 	currentModel = model
 	if RunService:IsStudio() then
+		local parts, lights = 0, 0
+		for _, item in ipairs(model:GetDescendants()) do
+			if item:IsA("BasePart") then
+				parts += 1
+			elseif item:IsA("Light") then
+				lights += 1
+			end
+		end
+		local scene = model:FindFirstChild("Scene", true)
+		print(
+			string.format(
+				"[Inkbound] Built %s (%s) in %.2f s: %d parts, %d lights.",
+				mapId,
+				if scene then tostring(scene:GetAttribute("Mode") or "scene") else "parts",
+				os.clock() - started,
+				parts,
+				lights
+			)
+		)
 		for _, problem in ipairs(MapContract.validateBuilt(info)) do
 			warn("[Inkbound] Map " .. mapId .. ": " .. problem)
 		end

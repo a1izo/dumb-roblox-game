@@ -1,27 +1,38 @@
 --!strict
 -- Where each place is built in the world. The server builds at these origins; clients use
 -- them to know which venue the camera is in (for lighting, rain and music).
+--
+-- The maps are big (up to about 1000 x 800 studs, with a metro under Tokyo) and the lobby's
+-- scenery reaches far out, so the three places sit well apart along Z.
+
+local MapBounds = require(script.Parent.MapBounds)
 
 local Venues = {}
 
 Venues.LOBBY = Vector3.new(0, 0.2, 0)
-Venues.MAP = Vector3.new(0, 0, 1000)
-Venues.MEETING = Vector3.new(700, 0, 0)
+Venues.MAP = Vector3.new(0, 0, 3000)
+Venues.MEETING = Vector3.new(0, 0, -3000)
 
 -- Half-size of the meeting room around its origin (the room is 60 x 60).
 local MEETING_HALF = 45
 
 -- Where Specters may fly, relative to each venue's origin: a map's outer walls up to its
 -- ceiling (the highest rooftop on the outdoor maps), and the meeting room itself. They pass
--- through everything inside, but never out of the place.
-local SPECTER_BOUNDS = {
+-- through everything inside, but never out of the place. Maps built from a Blender scene
+-- take theirs from MapBounds (generated with the scene).
+local SPECTER_BOUNDS: { [string]: { Vector3 } } = {
 	TaskForceHQ = { Vector3.new(-80, 0, -60), Vector3.new(80, 14, 60) },
 	UniversityCampus = { Vector3.new(-110, 0, -90), Vector3.new(110, 30, 90) },
-	TokyoDistrict = { Vector3.new(-110, 0, -90), Vector3.new(110, 40, 90) },
 	meeting = { Vector3.new(-30, 0, -30), Vector3.new(30, 18, 30) },
 	-- A map with no entry of its own.
 	fallback = { Vector3.new(-125, 0, -105), Vector3.new(125, 60, 105) },
 }
+for mapId, box in pairs(MapBounds :: any) do
+	SPECTER_BOUNDS[mapId] = {
+		Vector3.new(box.min[1], box.min[2], box.min[3]),
+		Vector3.new(box.max[1], box.max[2], box.max[3]),
+	}
+end
 
 -- "lobby", "map" or "meeting" for a world position.
 function Venues.at(position: Vector3): string
@@ -29,7 +40,7 @@ function Venues.at(position: Vector3): string
 	if math.abs(offset.X) <= MEETING_HALF and math.abs(offset.Z) <= MEETING_HALF then
 		return "meeting"
 	end
-	if position.Z > Venues.MAP.Z - 300 then
+	if position.Z > (Venues.LOBBY.Z + Venues.MAP.Z) / 2 then
 		return "map"
 	end
 	return "lobby"

@@ -102,7 +102,7 @@ def boxes_for(venue, cat):
     for c in scene["colliders"]:
         x, y, z, sx, sy, sz, rot, query = c
         boxes.append(Box(x, y, z, sx, sy, sz, rot, query, "collider"))
-    for key, x, y, z, rot, sc in scene["props"]:
+    for key, x, y, z, rot, sc, *_ in scene["props"]:
         if key not in cat:
             continue
         size, pivot, collide = cat[key]

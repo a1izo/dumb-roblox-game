@@ -2,3 +2,5 @@ src/shared/Anim/Clips.luau
 src/server/Maps/Scenes/
 src/shared/SceneMaterials.luau
 src/shared/UI/
+src/shared/MapBounds.luau
+src/shared/ModelCatalog.luau

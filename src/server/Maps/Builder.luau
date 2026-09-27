@@ -696,7 +696,16 @@ function Builder:station(def, id: string)
 	)
 	-- With the Blender console only the screen stays: its housing is built around it, and the
 	-- screen shows the station type. The part-built extras are for the stand-in only.
-	local dressed = ModelLibrary.dress(desk, "Station", CFrame.new(0, -1.5, 0)) ~= nil
+	-- The station's own look where the map gives one (a CCTV desk, a phone booth...), else the
+	-- standard console. A look placed by its anchor stands on the station's origin, and when it
+	-- has a screen slot (a monitor on the desk, a terminal on the counter) the game's screen goes
+	-- there instead of the console's spot.
+	local look = if def.prop then ModelLibrary.info(def.prop) else nil
+	local anchor = look and look.anchor
+	local lookOffset = CFrame.new(0, -1.5, 0)
+		* (if anchor then CFrame.new(-anchor[1], 0, -(anchor[2] or 0)) else CFrame.identity)
+	local ownLook = def.prop ~= nil and ModelLibrary.dress(desk, def.prop, lookOffset) ~= nil
+	local dressed = ownLook or ModelLibrary.dress(desk, "Station", CFrame.new(0, -1.5, 0)) ~= nil
 	if dressed then
 		for _, extra in ipairs({ pedestal, strip }) do
 			extra.Transparency = 1
@@ -704,9 +713,14 @@ function Builder:station(def, id: string)
 			extra.CastShadow = false
 		end
 	end
+	local slot = if ownLook and look then look.screen else nil
+	local screenSize = if slot then Vector3.new(slot.size[1], slot.size[2], 0.2) else Vector3.new(4.4, 2.6, 0.3)
+	local screenAt = if slot
+		then CFrame.new(slot.at[1], slot.at[2], slot.at[3]) * CFrame.Angles(math.rad(slot.tilt or 0), 0, 0)
+		else CFrame.new(0, 5.4, 0.8)
 	local screen = self:part(
-		Vector3.new(4.4, 2.6, 0.3),
-		base * CFrame.new(0, 5.4, 0.8),
+		screenSize,
+		base * screenAt,
 		Color3.fromRGB(12, 12, 16),
 		Enum.Material.SmoothPlastic,
 		{ Parent = model }
@@ -817,7 +831,7 @@ end
 -- Anonymous tip box at headquarters. Only L reads the tips.
 function Builder:tipBox(def)
 	local model = Create("Model", { Name = "TipBox", Parent = self.parent })
-	local base = self:cf(def.x, 0, def.z, def.rot)
+	local base = self:cf(def.x, def.y or 0, def.z, def.rot)
 	local box = self:part(
 		Vector3.new(2.6, 4, 2.2),
 		base * CFrame.new(0, 2, 0),

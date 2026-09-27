@@ -251,6 +251,8 @@ local function walkTo(bot, position: Vector3)
 	brain.waypoints = { position }
 	brain.index = 1
 	brain.walkStarted = os.clock()
+	-- Time to get there, with room for detours (maps are big); set properly once the path is known.
+	brain.walkTimeout = 10 + flat(root.Position, position) / 16 * 2.2
 	task.spawn(function()
 		local path = PathfindingService:CreatePath({
 			AgentRadius = 1.6,
@@ -263,10 +265,15 @@ local function walkTo(bot, position: Vector3)
 		end)
 		if ok and path.Status == Enum.PathStatus.Success and brain.goal == position then
 			local list = {}
-			for _, waypoint in ipairs(path:GetWaypoints()) do
+			local length = 0
+			for index, waypoint in ipairs(path:GetWaypoints()) do
 				table.insert(list, waypoint.Position)
+				if index > 1 then
+					length += (waypoint.Position - list[index - 1]).Magnitude
+				end
 			end
 			brain.waypoints = list
+			brain.walkTimeout = 10 + length / 16 * 1.6
 			brain.index = math.min(2, #list)
 		end
 	end)
@@ -284,7 +291,7 @@ local function followPath(bot): boolean
 		humanoid:MoveTo(root.Position)
 		return true
 	end
-	if os.clock() - (brain.walkStarted or 0) > 25 then
+	if os.clock() - (brain.walkStarted or 0) > (brain.walkTimeout or 25) then
 		brain.goal = nil
 		return true
 	end
@@ -321,7 +328,10 @@ local function freeStation(nearTo: Vector3?)
 	local best, bestScore = nil, math.huge
 	for _, station in ipairs(stations) do
 		if not station.desk:GetAttribute("Busy") then
-			local score = if nearTo then (station.position - nearTo).Magnitude else math.random() * 100
+			-- Mostly the nearest free station (the maps are big), with a little chance in it.
+			local score = if nearTo
+				then (station.position - nearTo).Magnitude + math.random() * 80
+				else math.random() * 100
 			if score < bestScore then
 				best, bestScore = station, score
 			end
@@ -385,7 +395,8 @@ local function thinkInvestigation(bot, ps, now: number)
 			brain.nextThink = now + math.random(1, 4)
 		end
 	elseif now >= brain.nextThink then
-		local station = freeStation(nil)
+		local _, root = parts(bot)
+		local station = freeStation(if root then root.Position else nil)
 		if station then
 			startWork(bot, ps, station)
 		else

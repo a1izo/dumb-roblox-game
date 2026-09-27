@@ -145,11 +145,14 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
   character, so there is nothing to upload. Walking and running are generated with leg IK and
   advance by distance, so feet do not slide. The default Animate script is replaced by an
   empty one, and R6 avatars are rebuilt as R15.
-- **Props and maps** need two imports in Studio: **Import 3D** `art/export/InkboundModels.fbx`
-  (props and effect textures) and `art/export/InkboundMaps.fbx` (the lobby, meeting room and
-  three maps, with tiling PBR textures). Leave them where the importer puts them; the server
-  moves them into `ReplicatedStorage > InkboundAssets` when it starts and prints what it found.
-  Until then every venue builds its old part-made version.
+- **Props and maps** are imported in Studio with **Import 3D**: `art/export/InkboundModels.fbx`
+  (props and effect textures), `art/export/InkboundMaps.fbx` (the venues not rebuilt yet), and for
+  each rebuilt map its props and its scene, `art/export/InkboundModels_<Venue>.fbx` and
+  `art/export/InkboundMaps_<Venue>.fbx` (Tokyo so far). Leave them where the
+  importer puts them; the server moves them into `ReplicatedStorage > InkboundAssets` when it
+  starts and prints what it found. A rebuilt map without its import (or with an older one) loads
+  as a **greybox**: the same map, fully playable, in plain colours, and the Output says which file
+  to import.
 
 ## Your own assets and ids
 

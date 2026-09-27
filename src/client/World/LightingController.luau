@@ -6,6 +6,7 @@
 -- rest are fill, and a mood scales the two groups apart: a single cold key over the meeting
 -- table, lamps dying in the Grimoire phase, a blackout around the verdict's spotlight.
 
+local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -28,6 +29,8 @@ local LightingController = {}
 LightingController.Changed = Signal.new()
 
 local BLEND = 3.5 -- seconds for a change of venue or mood
+local ZONE_BLEND = 1.2 -- seconds for stepping into or out of a part of a map with its own look
+local LOOK_TAG = "LLookZone"
 local CREEP_BLEND = 0.6 -- the vote's slow creep, applied in small steps
 
 type Lamp = { brightness: number, range: number, shadows: boolean }
@@ -79,6 +82,50 @@ local function lampPosition(light: Light): Vector3?
 	return nil
 end
 
+-- The venue's lamps, and where the shadow-casting keys were last picked from.
+local venueLamps: { Light } = {}
+local keysPickedAt: Vector3? = nil
+-- The keys are re-picked round the camera when it has moved this far (the maps are big).
+local KEY_REPICK = 40
+
+-- Picks the keys: the lamps built to cast shadows nearest the camera first, then the strongest
+-- nearest. Returns the lamps whose key state changed.
+local function pickKeys(keyCount: number): { Light }
+	local here = focus()
+	keysPickedAt = here
+	local scored = {}
+	for _, light in ipairs(venueLamps) do
+		local lamp = lamps[light]
+		local at = lampPosition(light)
+		if lamp and at and light.Parent then
+			local distance = (at - here).Magnitude
+			-- Lamps made for shadows win within reach; beyond that the nearest strong ones.
+			local score = distance - (if lamp.shadows then 60 else 0) - math.min(20, lamp.brightness * lamp.range * 0.2)
+			table.insert(scored, { light = light, score = score })
+		end
+	end
+	table.sort(scored, function(a, b)
+		return a.score < b.score
+	end)
+	local fresh: { [Light]: boolean } = {}
+	for index = 1, math.min(keyCount, #scored) do
+		fresh[scored[index].light] = true
+	end
+	local changed = {}
+	for light in pairs(keys) do
+		if not fresh[light] then
+			table.insert(changed, light)
+		end
+	end
+	for light in pairs(fresh) do
+		if not keys[light] then
+			table.insert(changed, light)
+		end
+	end
+	keys = fresh
+	return changed
+end
+
 -- Finds the venue's lamps (once per venue and build) and picks the ones that cast shadows.
 local function gatherLamps(venue: string, keyCount: number)
 	local model = workspace:FindFirstChild(if venue == "lobby" then "LGameLobby" else "LGameMap")
@@ -88,8 +135,7 @@ local function gatherLamps(venue: string, keyCount: number)
 	lampModel = model
 	lampVenue = venue
 	lampKeyCount = keyCount
-	table.clear(keys)
-	local list = {}
+	table.clear(venueLamps)
 	if model then
 		for _, item in ipairs(model:GetDescendants()) do
 			if item:IsA("Light") then
@@ -98,22 +144,12 @@ local function gatherLamps(venue: string, keyCount: number)
 					if not lamps[item] then
 						lamps[item] = { brightness = item.Brightness, range = item.Range, shadows = item.Shadows }
 					end
-					table.insert(list, item)
+					table.insert(venueLamps, item)
 				end
 			end
 		end
 	end
-	-- The keys: the lamps built to cast shadows first, then the strongest.
-	table.sort(list, function(a, b)
-		local la, lb = lamps[a], lamps[b]
-		if la.shadows ~= lb.shadows then
-			return la.shadows
-		end
-		return la.brightness * la.range > lb.brightness * lb.range
-	end)
-	for index = 1, math.min(keyCount, #list) do
-		keys[list[index]] = true
-	end
+	pickKeys(keyCount)
 end
 
 -- The brightness a lamp should have right now (the flicker returns lamps to this).
@@ -229,27 +265,50 @@ local function resolve(): LightingPresets.Look
 	})
 end
 
+-- The part of a map the camera is in that has a look of its own (the metro under Tokyo): the
+-- name of its preset in LightingPresets.maps, from the invisible boxes the map builder tags
+-- (SceneBuilder.LOOK_TAG, attribute Preset), or nil.
+local function lookZone(position: Vector3): string?
+	for _, zone in ipairs(CollectionService:GetTagged(LOOK_TAG)) do
+		if zone:IsA("BasePart") then
+			local p = zone.CFrame:PointToObjectSpace(position)
+			local half = zone.Size / 2
+			if math.abs(p.X) <= half.X and math.abs(p.Y) <= half.Y and math.abs(p.Z) <= half.Z then
+				local name = zone:GetAttribute("Preset")
+				if type(name) == "string" and LightingPresets.maps[name] then
+					return name
+				end
+			end
+		end
+	end
+	return nil
+end
+
 local function update(force: boolean?)
-	local venue = Venues.at(focus())
+	local position = focus()
+	local venue = Venues.at(position)
 	local mapId = if type(ClientState.public.mapId) == "string" then ClientState.public.mapId else nil
 	if debugKey then
 		venue = string.match(debugKey, "^(%a+)") or venue
 		mapId = string.match(debugKey, "^map:(.+)$") or mapId
 	end
-	local key = venue .. ":" .. (if venue == "map" then mapId or "" else "") .. ":" .. moodName()
+	local zone = if venue == "map" and not debugKey then lookZone(position) else nil
+	local key = venue .. ":" .. (if venue == "map" then (zone or mapId or "") else "") .. ":" .. moodName()
 	if key == currentKey and not force then
 		return
 	end
 	local instant = currentKey == ""
+	local preset = if zone then LightingPresets.maps[zone] else LightingPresets.pick(venue, mapId)
 	local venueChanged = venue ~= currentVenue
-		or (venue == "map" and currentPreset ~= LightingPresets.pick(venue, mapId))
+	local presetChanged = preset ~= currentPreset
 	currentKey = key
 	currentVenue = venue
-	currentPreset = LightingPresets.pick(venue, mapId)
+	currentPreset = preset
 	if not flashing then
-		apply(resolve(), if instant then 0 else BLEND)
+		-- Stepping into or out of a zone (down to the metro) changes quicker than a venue.
+		apply(resolve(), if instant then 0 elseif presetChanged and not venueChanged then ZONE_BLEND else BLEND)
 	end
-	if venueChanged or instant then
+	if venueChanged or presetChanged or instant then
 		LightingController.Changed:Fire(venue, currentPreset)
 	end
 end
@@ -361,6 +420,26 @@ function LightingController.init()
 		while true do
 			task.wait(0.5)
 			update()
+			-- Move the shadow-casting keys along with the camera.
+			local look = currentLook
+			if
+				look
+				and lampVenue == currentVenue
+				and keysPickedAt
+				and (focus() - keysPickedAt).Magnitude > KEY_REPICK
+			then
+				local info = TweenInfo.new(1, Enum.EasingStyle.Sine)
+				for _, light in ipairs(pickKeys(look.keyLights)) do
+					local lamp = lamps[light]
+					if lamp and light.Parent then
+						local key = keys[light] == true
+						light.Shadows = key
+						TweenService:Create(light, info, {
+							Brightness = lamp.brightness * (if key then look.keyScale else look.fillScale),
+						}):Play()
+					end
+				end
+			end
 			-- The vote's red creeps in over the phase.
 			if not flashing and moodOf(moodName()).creep then
 				apply(resolve(), CREEP_BLEND)

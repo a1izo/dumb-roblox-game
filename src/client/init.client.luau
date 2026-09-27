@@ -62,6 +62,7 @@ local CameraCollision = require(World:WaitForChild("CameraCollision"))
 local FlickerController = require(World:WaitForChild("FlickerController"))
 local GhostVisibility = require(World:WaitForChild("GhostVisibility"))
 local LightingController = require(World:WaitForChild("LightingController"))
+local MapAmbient = require(World:WaitForChild("MapAmbient"))
 local RainController = require(World:WaitForChild("RainController"))
 local TextureDoctor = require(World:WaitForChild("TextureDoctor"))
 
@@ -131,12 +132,14 @@ PoseController.init()
 LocomotionController.init()
 ActingController.init()
 
--- The world: lighting per venue, rain, flickering lamps and a camera that stays out of walls.
+-- The world: lighting per venue, rain, flickering lamps, a camera that stays out of walls, and
+-- the maps' screens, sounds and trains.
 LightingController.init()
 CameraCollision.init()
 TextureDoctor.init()
 RainController.init()
 FlickerController.init()
+MapAmbient.init()
 
 -- Specters: hidden from the living, flying for yourself.
 GhostVisibility.init()

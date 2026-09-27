@@ -14,12 +14,19 @@ local Catalog = require(script.Parent.ModelCatalog)
 
 local ModelLibrary = {}
 
-type Info = {
+export type Info = {
 	size: { number },
 	pivot: string,
 	material: string,
 	collide: boolean,
 	glow: { { number } }?,
+	lights: { any }?, -- the lights it carries (placed by the map builder, see SceneBuilder)
+	anchor: { number }?, -- where maps put its foot (x, z from its pivot), when not the middle
+	set: string?, -- which import it comes in ("Tokyo": InkboundModels_Tokyo.fbx)
+	-- A station look's slot for the game's screen: the middle of its face from the station's
+	-- origin (x, y, z), its size (w, h) and how far its top leans back (degrees).
+	screen: { at: { number }, size: { number }, tilt: number? }?,
+	tris: number?, -- triangles, for the debug line-up
 }
 
 local STORE_NAME = "InkboundAssets"
@@ -86,7 +93,9 @@ local function looksImported(instance: Instance): boolean
 	end
 	local known = 0
 	for _, item in ipairs(instance:GetDescendants()) do
-		if item:IsA("MeshPart") and ((Catalog :: any)[item.Name] ~= nil or string.find(item.Name, "^Scene_")) then
+		local name = item.Name
+		local ours = (Catalog :: any)[name] ~= nil or string.find(name, "^Scene_") or string.find(name, "^Map_")
+		if item:IsA("MeshPart") and ours then
 			known += 1
 			if known >= 3 then
 				return true
@@ -155,10 +164,13 @@ function ModelLibrary.calibration(prefix: string): Calibration?
 	return found
 end
 
--- The turn that undoes the importer's rotation of props: from the props export's own cubes,
--- else the maps export's (both go through the same importer), else nil.
-local function importTurn(): CFrame?
-	local cal = ModelLibrary.calibration("Calib_Props") or ModelLibrary.calibration("Calib_Maps")
+-- The turn that undoes the importer's rotation of a prop: from the cubes in the prop's own file
+-- (Calib_Props, or Calib_Props<Set> for a set's file such as InkboundModels_Tokyo.fbx), else
+-- the main props file's, else the maps export's (all go through the same importer), else nil.
+-- Each file is measured on its own: two imports can come in turned differently.
+local function importTurn(set: string?): CFrame?
+	local own = if set and set ~= "" then ModelLibrary.calibration("Calib_Props" .. set) else nil
+	local cal = own or ModelLibrary.calibration("Calib_Props") or ModelLibrary.calibration("Calib_Maps")
 	return if cal then cal.toLocal.Rotation else nil
 end
 
@@ -287,10 +299,19 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		end
 	end
 	local scenes = 0
+	local venues = {}
 	for name in pairs(index :: { [string]: Instance }) do
 		if string.sub(name, 1, 6) == "Scene_" then
 			scenes += 1
 		end
+		local venue, version = string.match(name, "^InkboundMaps(%a+)_Version_(%d+)$")
+		if venue then
+			table.insert(venues, venue .. " v" .. version)
+		end
+	end
+	table.sort(venues)
+	if #venues > 0 then
+		print("[Inkbound] Big map imports: " .. table.concat(venues, ", ") .. ".")
 	end
 	if scenes > 0 then
 		print(string.format("[Inkbound] Blender map scenes: %d meshes.", scenes))
@@ -305,7 +326,22 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		)
 	end
 	if found > 0 or scenes > 0 then
-		print("[Inkbound] Import check: " .. describeTurn("Calib_Props") .. "; " .. describeTurn("Calib_Maps") .. ".")
+		-- Every props file (the main one and each set's) and the maps file, measured apart.
+		local prefixes, seen = { "Calib_Props" }, {}
+		for _, info in pairs(Catalog :: any) do
+			local set = (info :: Info).set
+			if set and set ~= "" and not seen[set] then
+				seen[set] = true
+				table.insert(prefixes, "Calib_Props" .. set)
+			end
+		end
+		table.sort(prefixes)
+		table.insert(prefixes, "Calib_Maps")
+		local lines = {}
+		for _, prefix in ipairs(prefixes) do
+			table.insert(lines, describeTurn(prefix))
+		end
+		print("[Inkbound] Import check: " .. table.concat(lines, "; ") .. ".")
 	end
 	rootInstance:SetAttribute("Installed", true)
 	return { found = found, missing = missing }
@@ -417,7 +453,7 @@ local function build(key: string): Model?
 	local expected = vector(info.size)
 	local cf, size = model:GetBoundingBox()
 	model.WorldPivot = CFrame.new(cf.Position)
-	local measured = importTurn()
+	local measured = importTurn(info.set)
 	if measured then
 		model:PivotTo(measured * model:GetPivot())
 		cf, size = model:GetBoundingBox()
@@ -478,6 +514,11 @@ function ModelLibrary.get(key: string): Model?
 		return nil
 	end
 	return (template :: Model):Clone()
+end
+
+-- The catalog entry for a prop (size, pivot, anchor, lights, screen slot...), or nil.
+function ModelLibrary.info(key: string): Info?
+	return (Catalog :: any)[key]
 end
 
 -- Dresses a gameplay part with a prop: the prop is placed at part.CFrame * offset (scaled if

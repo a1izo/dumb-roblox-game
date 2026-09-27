@@ -469,4 +469,8 @@ LIBRARY = {
     "Shutter": (lambda: corrugated(38, srgb(150, 152, 154)), 6),
     "Hedge": (lambda: leaves(39, srgb(40, 70, 36)), 6),
     "Dirt": (lambda: dirt(40, srgb(70, 54, 40)), 8),
+    # The metro's own surfaces: grey tile and a darker ceiling, so the platform is not a white box.
+    "TileMetroFloor": (lambda: ceramic(43, srgb(118, 120, 124), srgb(66, 68, 72), 8), 4),
+    "TileMetroGrey": (lambda: ceramic(44, srgb(150, 154, 156), srgb(76, 78, 80), 8, 16, 0.5), 4),
+    "CeilingDark": (lambda: ceiling(45, srgb(92, 94, 98)), 8),
 }

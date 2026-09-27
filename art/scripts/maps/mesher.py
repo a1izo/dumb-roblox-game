@@ -16,6 +16,7 @@ import math
 import bpy
 
 from maps import matlib
+from maps.layout import LayoutMixin
 
 CHUNK = 64.0  # studs
 MAX_TRIS = 9000
@@ -69,17 +70,30 @@ class Piece:
         self.centre = (0.0, 0.0, 0.0)
 
 
-class Scene:
-    def __init__(self, venue):
+class Scene(LayoutMixin):
+    """prefix names the meshes (<prefix>_<Venue>_<Material>_<n>): "Scene" for the venues in the
+    shared InkboundMaps.fbx, "Map" for the big venues with an FBX of their own."""
+
+    def __init__(self, venue, prefix="Scene", chunk=CHUNK):
         self.venue = venue
+        self.prefix = prefix
+        self.chunk = chunk
         self.pieces = {}  # material -> [Piece]
-        self.colliders = []  # (x, y, z, sx, sy, sz, rot, query)
-        self.props = []  # (key, x, y, z, rot, scale)
+        self.colliders = []  # (x, y, z, sx, sy, sz, rot, query, look)
+        self.ramps = []  # tilted walkable slabs (stairs, slopes)
+        self.floors = []  # flat triangles (x1, z1, x2, z2, x3, z3, top y, thickness, look, query)
+        self.props = []  # (key, x, y, z, rot, scale, flags)
+        self.steps = []  # visible steps of stairs, drawn by the greybox: (centre, size, rot, look)
         self.lights = []
         self.signs = []
         self.emitters = []
+        self.screens = []  # giant screens the game plays loops on
+        self.sounds = []  # ambient sound sources (their ids are the game's to fill in)
+        self.train = None  # the metro train's run, for the client to animate
+        self.look_zones = []  # boxes with a lighting look of their own (the metro under Tokyo)
         self.used = set()
         self.preview_props = []  # placed by the game's own code; only drawn in previews
+        self._layout_init()
 
     # Low level ------------------------------------------------------------------------------
 
@@ -147,7 +161,7 @@ class Scene:
                 points.append(add(turn(corner), centre))
             self.polygon(face_mat, points, uvs, t)
         if collide:
-            self.collider(centre, size, rot, query)
+            self.collider(centre, size, rot, query, look=mat)
 
     def obox(self, mat, centre, size, ux, uy, uz, collide=False, skip=()):
         """A box with any orientation: ux, uy, uz are its (unit) axes in the world."""
@@ -307,11 +321,41 @@ class Scene:
 
     # Things the game places -----------------------------------------------------------------
 
-    def collider(self, centre, size, rot=0.0, query=True):
-        self.colliders.append((*centre, *size, rot, query))
+    def collider(self, centre, size, rot=0.0, query=True, look=None):
+        """An invisible solid box. look is the material it shows as in the greybox (the map
+        without its imported meshes); None keeps it invisible there too (blockers)."""
+        self.colliders.append((*centre, *size, rot, query, look))
 
-    def prop(self, key, x, z, rot=0.0, scale_=1.0, y=0.0):
-        self.props.append((key, x, y, z, rot, scale_))
+    def floor_tri(self, a, b, c, y, thick=1.0, look=None, query=True):
+        """A solid triangle of floor (a, b, c are (x, z)) whose top is at y: the game builds it
+        from two wedges, so floors of any shape have exact edges."""
+        self.floors.append((a[0], a[1], b[0], b[1], c[0], c[1], y, thick, look, query))
+
+    def ramp(self, a, b, y0, y1, width, thick=1.0, look="Concrete", query=False):
+        """A walkable slope from the middle of its low edge a (x, z) at height y0 to the middle
+        of its high edge b at y1: a tilted slab whose top face is the surface (stairs get one
+        under their steps, so walking up them is smooth)."""
+        run = math.dist(a, b)
+        rise = y1 - y0
+        length = math.hypot(run, rise)
+        pitch = math.degrees(math.atan2(rise, run))
+        dx, dz = (b[0] - a[0]) / run, (b[1] - a[1]) / run
+        # rot facing the climb (rot 0 faces -Z): the facing vector is (-sin, -cos).
+        rot = math.degrees(math.atan2(-dx, -dz))
+        tilt = math.radians(pitch)
+        mid = ((a[0] + b[0]) / 2, (y0 + y1) / 2, (a[1] + b[1]) / 2)
+        normal = (-dx * math.sin(tilt), math.cos(tilt), -dz * math.sin(tilt))
+        centre = (mid[0] - normal[0] * thick / 2, mid[1] - normal[1] * thick / 2, mid[2] - normal[2] * thick / 2)
+        self.ramps.append({"at": centre, "size": (width, thick, length), "rot": rot, "pitch": pitch, "look": look,
+                           "query": query, "a": a, "b": b, "y0": y0, "y1": y1, "width": width})
+
+    def prop(self, key, x, z, rot=0.0, scale_=1.0, y=0.0, dark=False):
+        """A prop from the prop library. dark: leave off the light it carries (a string of
+        lanterns where only some are lit)."""
+        self.props.append((key, x, y, z, rot, scale_, "dark" if dark else ""))
+
+    def step(self, centre, size, rot, look):
+        self.steps.append((centre, size, rot, look))
 
     def preview_prop(self, key, x, z, rot=0.0, scale_=1.0, y=0.0):
         self.preview_props.append((key, x, y, z, rot, scale_))
@@ -328,6 +372,19 @@ class Scene:
     def emitter(self, kind, pos, rot=0.0):
         self.emitters.append({"kind": kind, "pos": pos, "rot": rot})
 
+    def screen(self, pos, rot, w, h, loop="ads"):
+        """A giant screen facing rot (its face at pos); the game plays `loop` on it."""
+        self.screens.append({"pos": pos, "rot": rot, "w": w, "h": h, "loop": loop})
+
+    def sound(self, key, pos, radius=40.0, volume=0.5, loop=True):
+        """An ambient sound source: key names an Assets.sfx slot (silent while it is empty)."""
+        self.sounds.append({"key": key, "pos": pos, "radius": radius, "volume": volume, "loop": loop})
+
+    def look_zone(self, preset, lo, hi):
+        """A box (corners lo, hi as x, y, z) where the camera switches to the lighting preset
+        LightingPresets.maps[preset] (a metro under the street, a tunnel)."""
+        self.look_zones.append({"preset": preset, "min": lo, "max": hi})
+
     # Output ----------------------------------------------------------------------------------
 
     def finish(self, collection):
@@ -341,7 +398,7 @@ class Scene:
                 if total <= SMALL_TRIS:
                     key = (0, 0)
                 else:
-                    key = (math.floor(piece.centre[0] / CHUNK), math.floor(piece.centre[2] / CHUNK))
+                    key = (math.floor(piece.centre[0] / self.chunk), math.floor(piece.centre[2] / self.chunk))
                 cells.setdefault(key, []).append(piece)
             chunks = []
             for key in sorted(cells):
@@ -355,7 +412,7 @@ class Scene:
                 if current:
                     chunks.append(current)
             for index, chunk in enumerate(chunks, 1):
-                name = f"Scene_{self.venue}_{mat}_{index}"
+                name = f"{self.prefix}_{self.venue}_{mat}_{index}"
                 names.append(name)
                 build_mesh(name, chunk, mat, collection)
         return names

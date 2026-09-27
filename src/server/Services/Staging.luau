@@ -61,9 +61,16 @@ local function outdoors(point: Vector3): boolean
 	return workspace:Raycast(point + Vector3.new(0, 3, 0), Vector3.new(0, 80, 0), rayParams()) == nil
 end
 
+-- The map being staged (for its zones: nothing goes on a road, crossing, water or track).
+local currentMap: any = nil
+
 local function add(list: { Mark }, position: Vector3, look: Vector3, kind: string, area: string)
 	local floor = floorAt(position)
 	if not floor then
+		return
+	end
+	local zones = currentMap and currentMap.zones
+	if zones and zones:forbidden(floor) then
 		return
 	end
 	local flat = Vector3.new(look.X, 0, look.Z)
@@ -89,6 +96,7 @@ local function areaName(map, point: Vector3): string
 end
 
 function Staging.marks(map, rng: Random): { Mark }
+	currentMap = map
 	local marks: { Mark } = {}
 	for _, station in ipairs(map.stations or {}) do
 		local desk = station.desk
@@ -101,10 +109,17 @@ function Staging.marks(map, rng: Random): { Mark }
 	for _, area in ipairs(map.areas or {}) do
 		local centre = area.position
 		local yaw = rng:NextNumber() * math.pi * 2
-		local look = Vector3.new(math.cos(yaw), 0, math.sin(yaw))
-		add(marks, centre + look * 2, -look, "stand", area.name)
-		local side = Vector3.new(-look.Z, 0, look.X)
-		add(marks, centre + side * 5, side, "seat", area.name)
+		if area.marks and #area.marks > 0 then
+			-- The map says where people stand and sit here.
+			for _, mark in ipairs(area.marks) do
+				add(marks, mark.cf.Position, mark.cf.LookVector, mark.kind, area.name)
+			end
+		else
+			local look = Vector3.new(math.cos(yaw), 0, math.sin(yaw))
+			add(marks, centre + look * 2, -look, "stand", area.name)
+			local side = Vector3.new(-look.Z, 0, look.X)
+			add(marks, centre + side * 5, side, "seat", area.name)
+		end
 		-- Back to the nearest wall within reach.
 		local params = rayParams()
 		for step = 0, 7 do

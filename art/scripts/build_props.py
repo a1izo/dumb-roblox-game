@@ -121,6 +121,25 @@ def build_one(key):
     main["pivot"] = spec["pivot"]
     main["material"] = spec["material"]
     main["collide"] = spec["collide"]
+    main["set"] = spec.get("set", "")
+    # Lights and the anchor, moved like the mesh and turned into Roblox axes (x -> -x, y <-> z),
+    # relative to the prop's pivot.
+    lights = []
+    for light in spec.get("lights", []):
+        x, y, z = light["at"]
+        entry = dict(light)
+        entry["at"] = [round(-(x + shift.x), 3), round(z + shift.z, 3), round(y + shift.y, 3)]
+        lights.append(entry)
+    main["lights"] = json.dumps(lights)
+    anchor = spec.get("anchor")
+    main["anchor"] = json.dumps([round(-(anchor[0] + shift.x), 3), round(anchor[1] + shift.y, 3)] if anchor else None)
+    # A station's screen slot stays in design coordinates (the station is placed by its origin).
+    screen = spec.get("screen")
+    if screen:
+        sx, sy, sz, w, h = screen[:5]
+        main["screen"] = json.dumps({"at": [round(-sx, 3), round(sz, 3), round(sy, 3)], "size": [w, h],
+                                     "tilt": screen[5] if len(screen) > 5 else 0})
+    main["tris"] = info["tris"]
     return main, glow_obj, info
 
 
@@ -196,6 +215,22 @@ def write_catalog():
                 mean = opaque[:, :3].mean(axis=0)
                 text += ", color = { " + ", ".join(str(int(round(float(c) * 255))) for c in mean) + " }"
 
+        lights = json.loads(obj.get("lights") or "[]")
+        if lights:
+            items = ["{ " + ", ".join(f"{k} = {_lua_value(v)}" for k, v in sorted(li.items())) + " }" for li in lights]
+            text += ", lights = { " + ", ".join(items) + " }"
+        anchor = json.loads(obj.get("anchor") or "null")
+        if anchor:
+            text += ", anchor = " + _lua_value(anchor)
+        screen = json.loads(obj.get("screen") or "null")
+        if screen:
+            text += (", screen = { at = " + _lua_value(screen["at"]) + ", size = " + _lua_value(screen["size"])
+                     + ", tilt = " + _lua_value(screen["tilt"]) + " }")
+        if obj.get("set"):
+            text += ", set = " + _lua_value(obj["set"])
+        if obj.get("tris"):
+            text += ", tris = " + _lua_value(int(obj["tris"]))
+
         colours = []
         for g in _glow_objects(obj.name):
             if "glow_colour" in g:
@@ -210,24 +245,43 @@ def write_catalog():
     return CATALOG
 
 
-def export():
+def _prop_set(obj):
+    """The set a prop mesh (or its glow mesh) belongs to."""
+    if obj.get("inkbound_prop"):
+        return obj.get("set", "")
+    if "glow_colour" in obj:
+        owner = bpy.data.objects.get(obj.name.split("_Glow")[0])
+        return owner.get("set", "") if owner else ""
+    return ""
+
+
+def fbx_path(set_name=""):
+    return FBX if not set_name else os.path.join(common.EXPORT, f"InkboundModels_{set_name}.fbx")
+
+
+def export(set_name=""):
+    """Writes the set's FBX (the main one also carries the effect and UI textures) and the
+    catalog of every prop."""
     common.ensure_dirs()
-    texture_carriers()
+    if not set_name:
+        texture_carriers()
     bpy.context.view_layer.update()
     names = []
     for obj in bpy.data.objects:
         obj.select_set(False)
     for obj in bpy.data.objects:
         is_glow = "glow_colour" in obj
-        if obj.get("inkbound_prop") or obj.get("inkbound_texture") or is_glow:
+        mine = (obj.get("inkbound_prop") or is_glow) and _prop_set(obj) == set_name
+        if mine or (not set_name and obj.get("inkbound_texture")):
             obj.select_set(True)
             names.append(obj.name)
     # How the importer turns the file (so props face the way they were made), and the version.
-    for obj in maps_export.calibration_cubes(common.collection("Calibration"), "Calib_Props", "Models"):
+    for obj in maps_export.calibration_cubes(common.collection("Calibration" + set_name), "Calib_Props" + set_name,
+                                             "Models" + set_name):
         obj.select_set(True)
         names.append(obj.name)
     bpy.ops.export_scene.fbx(
-        filepath=FBX,
+        filepath=fbx_path(set_name),
         use_selection=True,
         object_types={"MESH"},
         apply_unit_scale=True,
@@ -242,4 +296,4 @@ def export():
         add_leaf_bones=False,
     )
     catalog = write_catalog()
-    return {"fbx": FBX, "objects": names, "catalog": catalog}
+    return {"fbx": fbx_path(set_name), "objects": names, "catalog": catalog}

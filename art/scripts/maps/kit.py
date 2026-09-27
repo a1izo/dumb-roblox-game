@@ -307,7 +307,24 @@ def stairs(s, x, z, rot, width, rise, run, steps, mat, side_mat=None, base=0.0, 
 def panel_light(s, x, y, z, w=4.0, d=2.0, color=WARM, range_=24, brightness=1.1, frame="DarkMetal", rot=0.0,
                 shadows=False):
     s.box(frame, (x, y - 0.08, z), (w + 0.3, 0.16, d + 0.3), rot, skip=("+y",))
-    s.box("NeonWarm" if color == WARM else "NeonCool", (x, y - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
+    warm = color[0] > color[2]  # the panel glows the colour its light is
+    s.box("NeonWarm" if warm else "NeonCool", (x, y - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
+    s.light("point", (x, y - 1.0, z), color, range_, brightness, shadows)
+
+
+def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18, brightness=0.7, tubes=2,
+               shadows=False):
+    """A fluorescent fitting on a ceiling at height y: a steel housing with its tubes behind a
+    ribbed diffuser, and one light under it. Dimmer than a panel, and it does not bloom."""
+    s.box("Steel", (x, y - 0.12, z), (length + 0.2, 0.24, 0.5 + 0.35 * tubes), rot, skip=("+y",))
+    a = math.radians(rot)
+    for k in range(tubes):
+        off = (k - (tubes - 1) / 2) * 0.35
+        dx, dz = off * math.sin(a), off * math.cos(a)
+        s.box("TubeDiffuser", (x + dx, y - 0.3, z + dz), (length - 0.2, 0.14, 0.18), rot)
+    for u in (-length / 2 + 0.15, length / 2 - 0.15):
+        dx, dz = u * math.cos(a), -u * math.sin(a)
+        s.box("DarkMetal", (x + dx, y - 0.3, z + dz), (0.2, 0.3, 0.5 + 0.35 * tubes), rot)
     s.light("point", (x, y - 1.0, z), color, range_, brightness, shadows)
 
 
@@ -513,11 +530,11 @@ def pyramid_roof(s, x, z, w, base_y, height, mat="Slate", finial="Brass"):
     s.lathe(finial, add(apex, (0, 0.6, 0)), [(0.0, 0), (0.35, 0.3), (0.0, 0.7)], 10)
 
 
-def lantern_post(s, x, z, h=10.0, shadows=False, flicker=False, color=WARM, collide=True, glow=None):
-    """A cast-iron lamp post with a glass lantern."""
-    s.lathe("BlackMetal", (x, 0, z), [(0.55, 0), (0.55, 0.35), (0.35, 0.6), (0.24, 1.3), (0.17, 1.6), (0.15, h - 1.3),
+def lantern_post(s, x, z, h=10.0, shadows=False, flicker=False, color=WARM, collide=True, glow=None, y=0.0):
+    """A cast-iron lamp post with a glass lantern, standing on the ground at height y."""
+    s.lathe("BlackMetal", (x, y, z), [(0.55, 0), (0.55, 0.35), (0.35, 0.6), (0.24, 1.3), (0.17, 1.6), (0.15, h - 1.3),
                                       (0.26, h - 1.1), (0.26, h - 0.9)], 10)
-    top = h - 0.9
+    top = y + h - 0.9
     s.box("NeonWarm", (x, top + 0.7, z), (0.7, 1.1, 0.7))
     for dx in (-0.4, 0.4):
         for dz in (-0.4, 0.4):
@@ -528,7 +545,7 @@ def lantern_post(s, x, z, h=10.0, shadows=False, flicker=False, color=WARM, coll
     if glow if glow is not None else shadows:
         s.light("point", (x, top + 0.8, z), color, 9, 0.7, False, flicker=flicker)
     if collide:
-        s.collider((x, h / 2, z), (0.6, h, 0.6))
+        s.collider((x, y + h / 2, z), (0.6, h, 0.6))
 
 
 def bollard_light(s, x, z, color=WARM):

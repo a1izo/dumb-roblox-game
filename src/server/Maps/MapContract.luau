@@ -87,6 +87,48 @@ function MapContract.validateLayout(layout: any): { string }
 	return problems
 end
 
+-- Spare spots (maps made in Blender carry extra spots of each kind for a later change of the
+-- counts): known station types, names unique across the active and spare stations, and every
+-- spot with its coordinates.
+function MapContract.validateSpare(layout: any): { string }
+	local problems = {}
+	local spare = layout.spare
+	if spare == nil then
+		return problems
+	end
+	local names = {}
+	for _, station in ipairs(layout.stations or {}) do
+		names[station.name] = true
+	end
+	for index, station in ipairs(spare.stations or {}) do
+		if not TaskTypes.exists(station.type) then
+			table.insert(problems, "spare station " .. index .. " has an unknown type " .. tostring(station.type))
+		end
+		if names[station.name] then
+			table.insert(problems, "two stations are called " .. tostring(station.name))
+		end
+		names[station.name or ""] = true
+		if not (isNumber(station.x) and isNumber(station.z) and isNumber(station.rot)) then
+			table.insert(problems, "spare station " .. index .. " needs x, z and rot")
+		end
+	end
+	for _, kind in ipairs({ "spawns", "sheets", "dropPoints", "hoods", "areas" }) do
+		for index, spot in ipairs(spare[kind] or {}) do
+			if not (isNumber(spot.x) and isNumber(spot.z)) then
+				table.insert(problems, "spare " .. kind .. " " .. index .. " needs x and z")
+			end
+		end
+	end
+	local areaNames = {}
+	for _, area in ipairs(layout.areas or {}) do
+		if areaNames[area.name] then
+			table.insert(problems, "two areas are called " .. tostring(area.name))
+		end
+		areaNames[area.name] = true
+	end
+	return problems
+end
+
 -- How many of 8 points around a station (at head height, 9 studs out) can see its screen.
 local function visibleFrom(screen: BasePart, ignore: { Instance }): number
 	local params = RaycastParams.new()

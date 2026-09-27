@@ -674,8 +674,33 @@ end
 -- should face (-Z, the way props are made and placed). A prop whose front does not follow its
 -- arrow is turned wrong.
 local GALLERY_AT = Vector3.new(0, 0, -400)
+local GALLERY_ROW = 10 -- props per row
+local GALLERY_ROW_GAP = 26 -- studs between rows
 
-COMMANDS.propGallery = function(player)
+-- A player-sized dummy (5 studs tall) at the start of each row, to judge a prop's scale.
+local function galleryDummy(folder: Instance, at: Vector3)
+	local grey = Color3.fromRGB(150, 150, 156)
+	for _, spec in ipairs({
+		{ Vector3.new(2, 2, 1), Vector3.new(0, 3, 0) },
+		{ Vector3.new(1.2, 1.2, 1.2), Vector3.new(0, 4.6, 0) },
+		{ Vector3.new(0.9, 2, 0.9), Vector3.new(-0.5, 1, 0) },
+		{ Vector3.new(0.9, 2, 0.9), Vector3.new(0.5, 1, 0) },
+		{ Vector3.new(0.8, 2, 0.8), Vector3.new(-1.45, 3, 0) },
+		{ Vector3.new(0.8, 2, 0.8), Vector3.new(1.45, 3, 0) },
+	}) do
+		local part = Instance.new("Part")
+		part.Anchored = true
+		part.CanCollide = false
+		part.Size = spec[1]
+		part.Color = grey
+		part.CFrame = CFrame.new(at + spec[2])
+		part.Parent = folder
+	end
+end
+
+-- Every prop (or one set's: args.set = "Tokyo") in rows, each beside a red arrow that points the
+-- way its front should face (-Z), with its name and triangle count, a dummy and a lamp per row.
+COMMANDS.propGallery = function(player, args)
 	local existing = workspace:FindFirstChild("InkboundPropGallery")
 	if existing then
 		existing:Destroy()
@@ -683,25 +708,49 @@ COMMANDS.propGallery = function(player)
 		reply(player, "Prop gallery closed.")
 		return
 	end
+	local only = if type(args) == "table" and type(args.set) == "string" then args.set else nil
 	local folder = Instance.new("Folder")
 	folder.Name = "InkboundPropGallery"
 	folder.Parent = workspace
 	local keys = {}
-	for key in pairs(ModelCatalog) do
-		table.insert(keys, key)
+	for key, info in pairs(ModelCatalog) do
+		if not only or (info :: any).set == only then
+			table.insert(keys, key)
+		end
 	end
 	table.sort(keys)
-	local x = 0
 	local shown = 0
-	for _, key in ipairs(keys) do
+	local x, row, widest = 6, 0, 0
+	local function rowStart(index: number)
+		local z = index * GALLERY_ROW_GAP -- rows run away from the camera, which faces +Z
+		galleryDummy(folder, GALLERY_AT + Vector3.new(0, 0, z))
+		return z
+	end
+	local rowZ = rowStart(0)
+	for index, key in ipairs(keys) do
+		if index > 1 and (index - 1) % GALLERY_ROW == 0 then
+			local lamp = Instance.new("Part")
+			lamp.Anchored = true
+			lamp.CanCollide = false
+			lamp.Transparency = 1
+			lamp.CFrame = CFrame.new(GALLERY_AT + Vector3.new(x / 2, 18, rowZ))
+			lamp.Parent = folder
+			local light = Instance.new("PointLight")
+			light.Range = math.max(30, x / 2)
+			light.Brightness = 1.5
+			light.Parent = lamp
+			widest = math.max(widest, x)
+			row += 1
+			x = 6
+			rowZ = rowStart(row)
+		end
+		local info = (ModelCatalog :: any)[key]
 		local model = ModelLibrary.get(key)
 		local size = ModelLibrary.size(key) or Vector3.new(4, 4, 4)
 		local width = math.max(size.X, 4)
-		local at = GALLERY_AT + Vector3.new(x + width / 2, 0, 0)
+		local at = GALLERY_AT + Vector3.new(x + width / 2, 0, rowZ)
 		if model then
-			model:PivotTo(
-				CFrame.new(at + Vector3.new(0, if ModelCatalog[key].pivot == "centre" then size.Y / 2 else 0, 0))
-			)
+			model:PivotTo(CFrame.new(at + Vector3.new(0, if info.pivot == "centre" then size.Y / 2 else 0, 0)))
 			model.Parent = folder
 			shown += 1
 		end
@@ -714,8 +763,8 @@ COMMANDS.propGallery = function(player)
 		arrow.CFrame = CFrame.new(at + Vector3.new(0, 0.2, -size.Z / 2 - 1.5))
 		arrow.Parent = folder
 		local label = Instance.new("BillboardGui")
-		label.Size = UDim2.fromOffset(160, 30)
-		label.StudsOffsetWorldSpace = Vector3.new(0, size.Y + 1.5, 0)
+		label.Size = UDim2.fromOffset(180, 34)
+		label.StudsOffsetWorldSpace = Vector3.new(0, size.Y + 1.5, size.Z / 2 + 1.5)
 		label.AlwaysOnTop = true
 		label.Adornee = arrow
 		label.Parent = arrow
@@ -726,18 +775,29 @@ COMMANDS.propGallery = function(player)
 		text.TextColor3 = Color3.new(1, 1, 1)
 		text.TextStrokeTransparency = 0.3
 		text.TextScaled = true
-		text.Text = key .. (if model then "" else " (not imported)")
+		text.Text = key
+			.. (if model then "" else " (not imported)")
+			.. (if info.tris then string.format(", %d tris", info.tris) else "")
 		text.Parent = label
 		x += width + 3
 	end
+	widest = math.max(widest, x)
 	local floor = Instance.new("Part")
 	floor.Anchored = true
-	floor.Size = Vector3.new(x + 10, 1, 40)
-	floor.CFrame = CFrame.new(GALLERY_AT + Vector3.new(x / 2, -0.5, -4))
+	floor.Size = Vector3.new(widest + 10, 1, (row + 1) * GALLERY_ROW_GAP + 20)
+	floor.CFrame = CFrame.new(GALLERY_AT + Vector3.new(widest / 2, -0.5, row * GALLERY_ROW_GAP / 2))
 	floor.Color = Color3.fromRGB(40, 40, 44)
 	floor.Parent = folder
 	teleport(player, CFrame.lookAt(GALLERY_AT + Vector3.new(6, 0, -18), GALLERY_AT + Vector3.new(6, 0, 0)))
-	reply(player, string.format("Prop gallery: %d of %d props. Each front should face its red arrow.", shown, #keys))
+	reply(
+		player,
+		string.format(
+			"Prop gallery%s: %d of %d props. Each front should face its red arrow.",
+			if only then " (" .. only .. ")" else "",
+			shown,
+			#keys
+		)
+	)
 end
 
 -- Presentation

@@ -55,6 +55,18 @@ return function(t)
 			expect(look.haze).to.equal(0)
 			expect(look.keyLights <= 2).to.equal(true)
 		end)
+		it("keeps the rebuilt maps readable at night", function()
+			-- Maps rebuilt at full size get a night you can see in (the moods still darken them).
+			for _, mapId in ipairs({ "TokyoDistrict" }) do
+				local p = LightingPresets.maps[mapId]
+				local brightest = math.max(p.ambient.R, p.ambient.G, p.ambient.B)
+				expect(p.exposure >= 0).to.equal(true)
+				expect(brightest >= 45 / 255).to.equal(true)
+				expect(p.density <= 0.3).to.equal(true)
+				local grim = LightingPresets.resolve(p, LightingPresets.moodFor("DeathNote"))
+				expect(grim.exposure < p.exposure).to.equal(true)
+			end
+		end)
 		it("never lets bloom catch lit skin", function()
 			for _, venue in ipairs({ "lobby", "meeting" }) do
 				expect(LightingPresets.pick(venue).bloomThreshold >= 1.8).to.equal(true)
