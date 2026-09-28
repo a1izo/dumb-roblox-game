@@ -29,6 +29,9 @@ FLAT = {
     "CreamTrim": ("SmoothPlastic", (196, 184, 160), 0, 0),
     "BlackTrim": ("SmoothPlastic", (20, 20, 24), 0, 0),
     "RedTrim": ("SmoothPlastic", (150, 22, 32), 0, 0),
+    "Vermilion": ("SmoothPlastic", (170, 44, 32), 0, 0.02),  # the red gate's lacquer
+    "Bamboo": ("SmoothPlastic", (156, 138, 88), 0, 0),
+    "ChainLink": ("Metal", (112, 116, 122), 0, 0),  # the tennis court fence's galvanised wire
     "PaintYellow": ("SmoothPlastic", (222, 190, 60), 0, 0),
     "Rubber": ("SmoothPlastic", (30, 30, 32), 0, 0),
     "Glass": ("Glass", (150, 180, 210), 0.6, 0.2),
@@ -97,6 +100,8 @@ FLAT = {
 
 # Textured material name fragment -> the Roblox material closest to it (first match wins).
 FALLBACK_KIND = [
+    ("Snow", "Snow"),
+    ("Ice", "Ice"),
     ("MetalFloor", "DiamondPlate"),
     ("Shutter", "CorrodedMetal"),
     ("Marble", "Marble"),

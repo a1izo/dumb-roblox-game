@@ -34,8 +34,8 @@ Meshes and images must be uploaded under your account, which only Studio can do.
 Importing a newer version: delete the old imported model first (the game uses the first one it
 finds with a given name).
 
-Nothing breaks before an import: props fall back to their part-built versions and each venue
-builds its old part-made map.
+Nothing breaks before an import: props fall back to their part-built versions, the lobby and the
+meeting room build their part-made rooms, and each map is built as a greybox (below).
 
 ## Animations: no upload needed
 
@@ -57,16 +57,15 @@ blender -b --factory-startup --python art/scripts/verify_ingame.py        # Blen
 
 ## Map scenes
 
-Each older venue (`scripts/maps/venues/lobby.py`, `meeting.py`, `campus.py`) builds its
-architecture from the kit (`kit.py`, `urban.py`) on the same layout as the Luau map module, so
-stations, spawns, sheets, drop points and hoods keep their places. The rebuilt big maps (`tokyo/`,
-`agency/`) are packages that place their gameplay spots themselves (below).
+The two older venues (`scripts/maps/venues/lobby.py`, `meeting.py`) build their architecture
+from the kit (`kit.py`, `urban.py`) around the Luau module's own layout. The maps (`tokyo/`,
+`agency/`, `campus/`) are packages that place their gameplay spots themselves (below).
 
 ```
 blender -b --factory-startup --python art/scripts/run_maps.py -- --preview            # renders
 blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --preview      # one venue
 blender -b --factory-startup --python art/scripts/run_maps.py -- --export             # all venues
-python art/scripts/maps/contract_check.py                                             # gameplay checks
+blender -b --factory-startup --python art/scripts/run_maps.py -- Lobby Meeting --export  # the older two
 ```
 
 `--export` writes:
@@ -78,11 +77,7 @@ python art/scripts/maps/contract_check.py                                       
   signs and particle emitters.
 - `src/shared/SceneMaterials.luau`: colours for the flat materials (metal, glass, neon...).
 
-`contract_check.py` tests the exported colliders and props against each map's `layout()`: desks
-clear, worker spots free, screens visible from at least 3 of 8 sides, sheets resting on a
-surface, spawns, hoods and drop points not inside anything. Run it after changing a venue.
-
-### The rebuilt big maps (Tokyo, Agency HQ)
+### The rebuilt big maps (Tokyo, Agency HQ, University Campus)
 
 A venue whose module sets `FORMAT = 2` (`scripts/maps/venues/tokyo/`) is a whole map made here:
 its streets, buildings and **gameplay spots** (stations, spawns, sheets, drop points, hoods,
@@ -112,6 +107,25 @@ neighbouring towers, car lights, rain on the glass, the helicopter's pass; flat 
 mesh chunks, `far_chunk`, since it is all far away) and `gameplay.py`. Its props are the `Agency`
 set (`props_agency.py`, `InkboundModels_Agency.fbx`).
 
+University Campus (`scripts/maps/venues/campus/`, map `UniversityCampus`) is Kagegaoka
+University on the eve of its entrance exam, a winter night in light snow: 300 x 220 studs inside
+its brick wall. The red gate (taped off by the police) opens on an avenue of bare ginkgos that
+runs up to the forecourt and the Great Auditorium, whose clock tower's hands creep to midnight as
+the investigation runs out. Round it: Law & Letters with its arcade, the library (its reading
+room has a gallery with a stair at each end), the pond hollow 5 studs down with its frozen pond
+and bridge, the concrete club house, the cafeteria, the Faculty of Science with its forensic
+medicine lab, and the snowed-over tennis court (look-only). `plan.py` (every footprint, door,
+room, path and height, with its own overlap check), `masonry.py` (brick Gothic walls with arched
+openings, snowy gable and hip roofs, the clock tower, the arcade, the red gate, the guard booth),
+`fit.py` (the Agency's fittings, plus `clear_of_stations`: the build fails when something solid
+stands within 5 studs of a station's worker side), `ground.py` (lawns under snow, shovelled paths,
+the hollow and the pond), `auditorium.py`, `library.py`, `faculties.py`, `student.py`,
+`grounds.py` (every lamp and tree placed by hand), `outside.py` (snowy streets past the gates,
+the city, the Central Tower on the skyline) and `gameplay.py`. Its props are the `Campus` set
+(`props_campus.py`, `InkboundModels_Campus.fbx`). Snow lies where the ground's look is `Snow`:
+the client leaves footprints there (`World/FootprintController`), never on the shovelled
+`SnowPath`.
+
 ```
 blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --plan      # top-down plans
 blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --massing   # blocks only
@@ -139,10 +153,11 @@ it is imported.
 Every light belongs to something you can see: a lamp in the map's meshes, or a prop that carries
 its own (street lights, lanterns, fridges, the train; `lights` in the catalog). A lantern string
 can be placed unlit (`s.prop(..., dark=True)`). The client's `World/MapAmbient` plays the
-screens' loops (adverts, camera feeds, the night news, a sector map), the sound sources (silent
-until their `Assets.sfx` slot has an id), the train that pulls into the platform every two
-minutes, the aircraft lights blinking on towers, the rain on a tower's glass and the police
-helicopter sweeping its searchlight past the windows.
+screens' loops (adverts, camera feeds, the night news, a sector map, an old film), the sound
+sources (silent until their `Assets.sfx` slot has an id), the train that pulls into the platform
+every two minutes, the aircraft lights blinking on towers, the rain on a tower's glass, snow
+slipping off branches, the police helicopter sweeping its searchlight past the windows, and the
+campus clock tower (its hands, and the bell tolling twelve when the Grimoire phase begins).
 
 `check_v2.py` checks the contract at every floor height; that nothing of the game's stands on a
 road, crossing, water, track or stairs (zones); that every spot can be walked to from the spawns
@@ -180,7 +195,9 @@ PNGs yourself, paste their ids into `Assets.textures` in `src/shared/Assets.luau
 1. Add a builder to `scripts/props.py` or `scripts/props_world.py` with `@prop("Name", ...)`,
    facing -Y, standing on z = 0 (for `pivot="bottom"`). Glowing parts go in the second list.
    A map's own props go in their own file (`props_tokyo.py`, `props_tokyo_shops.py`,
-   `props_stations.py`) with `set="Tokyo"`; `lights=` gives the lights it carries.
+   `props_stations.py` with `set="Tokyo"`, `props_agency.py`, `props_campus.py`); `lights=`
+   gives the lights it carries. Build a set on its own (`--set Campus`): a bare run rebuilds
+   every set.
 2. Rebuild and export as above, then re-import the FBX in Studio.
 3. Place it from a map with `b:placeModel("Name", x, z, rot)`, or from a scene with
    `s.prop("Name", x, z, rot)`.

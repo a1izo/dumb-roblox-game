@@ -431,6 +431,57 @@ def dirt(seed, base):
     return result(color, height, rough, 2.0)
 
 
+def snow(seed, base, shadow):
+    """Fresh snow lying on the ground or a roof: soft drifts and ripples, a faint blue in the
+    hollows, a sparkle of grains."""
+    r = rng(seed)
+    drift = fbm(r, 3.0, 1, 12)
+    ripple = fbm(r, 1.8, 8, 120)
+    grain = fbm(r, 0.4, 200, 512)
+    sparkle = (grain > 0.86).astype(float)
+    shade = np.clip(drift * 0.6 + ripple * 0.4, 0, 1)
+    color = mix(shadow, base, 0.55 + shade * 0.45)
+    color = color * (0.95 + grain * 0.05 + sparkle * 0.05)[..., None]
+    height = drift * 0.6 + ripple * 0.5 + grain * 0.1
+    rough = np.clip(0.8 - sparkle * 0.45, 0.1, 1)
+    return result(color, height, rough, 1.2)
+
+
+def slush(seed, base, joint_color, snow_color, cols=6, rows=6):
+    """A shovelled path: wet pavers, trodden slush in the joints, packed snow in patches."""
+    r = rng(seed)
+    col, row, cu, cv = grid(cols, rows, 0.5)
+    aspect = (N / cols) / (N / rows)
+    d = edge_distance(cu, cv, aspect)
+    joint = 1 - smoothstep(0.01, 0.035, d)
+    tone = cell_random(col, row, seed, 64, 64)
+    grit = fbm(r, 0.8, 100, 512)
+    patches = fbm(r, 2.6, 2, 24)
+    packed = smoothstep(0.58, 0.72, patches)
+    wet = smoothstep(0.3, 0.1, patches) * 0.8
+    color = tint(base, 0.85 + tone * 0.18 + grit * 0.1)
+    color = mix(color, joint_color, joint * 0.6)
+    color = mix(color, snow_color, np.clip(packed + joint * 0.35, 0, 1) * 0.85)
+    color = color * (1 - wet * 0.22)[..., None]
+    height = smoothstep(0.01, 0.06, d) * 0.6 + packed * 0.4 + grit * 0.1
+    rough = np.clip(0.8 - wet * 0.6 + packed * 0.05, 0.08, 1)
+    return result(color, height, rough, 1.8)
+
+
+def ice(seed, base, frost, snow_color):
+    """A frozen pond: dark ice with pale cracks and frost, snow blown into drifts on it."""
+    r = rng(seed)
+    cracks = 1 - smoothstep(0.0, 0.012, np.abs(fbm(r, 2.0, 2, 40) - 0.5))
+    fine = 1 - smoothstep(0.0, 0.01, np.abs(fbm(r, 1.6, 10, 120) - 0.5))
+    cloud = fbm(r, 2.6, 1, 16)
+    drifts = smoothstep(0.62, 0.78, fbm(r, 2.8, 1, 10))
+    color = mix(base, frost, np.clip(cloud * 0.5 + cracks * 0.8 + fine * 0.35, 0, 1))
+    color = mix(color, snow_color, drifts)
+    height = drifts * 0.6 - cracks * 0.3
+    rough = np.clip(0.12 + drifts * 0.7 + cloud * 0.1, 0.05, 1)
+    return result(color, height, rough, 1.0)
+
+
 def srgb(r, g, b):
     return np.array([r, g, b]) / 255.0
 
@@ -474,4 +525,8 @@ LIBRARY = {
     "TileMetroGrey": (lambda: ceramic(44, srgb(150, 154, 156), srgb(76, 78, 80), 8, 16, 0.5), 4),
     "CeilingDark": (lambda: ceiling(45, srgb(92, 94, 98)), 8),
     "CarpetNavy": (lambda: carpet(46, srgb(34, 40, 56), srgb(62, 70, 92), pattern="diamond"), 12),
+    # Kagegaoka University in snow: the lawns and roofs, the shovelled paths, the frozen pond.
+    "Snow": (lambda: snow(47, srgb(222, 228, 238), srgb(168, 180, 204)), 24),
+    "SnowPath": (lambda: slush(48, srgb(88, 86, 84), srgb(40, 40, 42), srgb(196, 200, 208)), 8),
+    "Ice": (lambda: ice(49, srgb(34, 48, 60), srgb(140, 166, 186), srgb(210, 218, 230)), 24),
 }

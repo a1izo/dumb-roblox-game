@@ -4,8 +4,8 @@
 --
 -- The maps are big (Tokyo's playable ground is 400 x 300 studs, with a metro under it and its
 -- city and ground running on under the fog for over 1000 studs; Agency HQ's city lies 440 studs
--- under its floors, reaching 1450 studs north) and the lobby's scenery reaches far out, so the
--- three places sit well apart along Z.
+-- under its floors, reaching 1450 studs north; the University's snowy city runs 1400 studs out)
+-- and the lobby's scenery reaches far out, so the three places sit well apart along Z.
 
 local MapBounds = require(script.Parent.MapBounds)
 
@@ -23,7 +23,6 @@ local MEETING_HALF = 45
 -- through everything inside, but never out of the place. Maps built from a Blender scene
 -- take theirs from MapBounds (generated with the scene).
 local SPECTER_BOUNDS: { [string]: { Vector3 } } = {
-	UniversityCampus = { Vector3.new(-110, 0, -90), Vector3.new(110, 30, 90) },
 	meeting = { Vector3.new(-30, 0, -30), Vector3.new(30, 18, 30) },
 	-- A map with no entry of its own.
 	fallback = { Vector3.new(-125, 0, -105), Vector3.new(125, 60, 105) },

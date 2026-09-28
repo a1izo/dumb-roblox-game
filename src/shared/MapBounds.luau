@@ -5,4 +5,5 @@
 return {
 	TaskForceHQ = { min = { -100, -1, -75 }, max = { 100, 28, 75 } },
 	TokyoDistrict = { min = { -200, -30, -150 }, max = { 200, 60, 150 } },
+	UniversityCampus = { min = { -150, -8, -110 }, max = { 150, 84, 110 } },
 }

@@ -284,10 +284,20 @@ local function lookZone(position: Vector3): string?
 	return nil
 end
 
+-- The map built in the world (outside a match, a debug preview has no map id in the state).
+local function builtMapId(): string?
+	local model = workspace:FindFirstChild("LGameMap")
+	local id = if model then model:GetAttribute("MapId") else nil
+	return if type(id) == "string" then id else nil
+end
+
 local function update(force: boolean?)
 	local position = focus()
 	local venue = Venues.at(position)
 	local mapId = if type(ClientState.public.mapId) == "string" then ClientState.public.mapId else nil
+	if (mapId == nil or mapId == "") and venue == "map" then
+		mapId = builtMapId()
+	end
 	if debugKey then
 		venue = string.match(debugKey, "^(%a+)") or venue
 		mapId = string.match(debugKey, "^map:(.+)$") or mapId

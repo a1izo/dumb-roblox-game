@@ -1,6 +1,7 @@
 """Effect textures, rendered in Blender as white shapes on a transparent background so the game
 can tint them (ParticleEmitter.Color, Decal.Color3): ink splats and drops (made from metaballs,
-seen from above), a rain streak, a smoke puff, a soul glow and a spark.
+seen from above), a rain streak, a smoke puff, a soul glow, a spark, a snowflake and a shoe's print
+in snow.
 
     blender -b --factory-startup --python art/scripts/run_textures.py
 """
@@ -179,6 +180,31 @@ def spark(size=128):
     return save_array("Spark", rgba)
 
 
+def snowflake(size=64):
+    """A soft flake: a bright core in a fuzzy halo (it falls too small for arms to show)."""
+    y, x = np.mgrid[-1 : 1 : size * 1j, -1 : 1 : size * 1j]
+    r = np.sqrt(x**2 + y**2)
+    alpha = np.clip(np.exp(-(r**2) / 0.12) + 0.25 * np.exp(-(r**2) / 0.45), 0, 1) * np.clip((1 - r) * 4, 0, 1)
+    rgba = np.ones((size, size, 4), dtype=np.float32)
+    rgba[..., 3] = alpha
+    return save_array("Snowflake", rgba)
+
+
+def footprint(h=256, w=128):
+    """A shoe's print pressed into snow, toe up: the sole and the heel, the tread across them,
+    soft at the edges. White, so the game tints it (FootprintController)."""
+    y, x = np.mgrid[0 : 1 : h * 1j, -1 : 1 : w * 1j]
+    # The sole: an oval over the front two thirds, a little wider at the ball of the foot.
+    sole = ((x + 0.05) / 0.78) ** 2 + ((y - 0.32) / 0.3) ** 2
+    heel = (x / 0.62) ** 2 + ((y - 0.8) / 0.16) ** 2
+    shape = np.clip((1 - np.minimum(sole, heel)) * 6, 0, 1)
+    tread = 0.75 + 0.25 * (np.sin(y * 70) > 0)
+    alpha = shape * tread * 0.9
+    rgba = np.ones((h, w, 4), dtype=np.float32)
+    rgba[..., 3] = alpha
+    return save_array("Footprint", rgba)
+
+
 def build():
     common.ensure_dirs()
     _clear()
@@ -195,4 +221,6 @@ def build():
     paths.append(smoke())
     paths.append(soul_glow())
     paths.append(spark())
+    paths.append(snowflake())
+    paths.append(footprint())
     return paths

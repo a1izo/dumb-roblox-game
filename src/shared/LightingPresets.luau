@@ -42,9 +42,10 @@ export type Preset = {
 	lamps: number,
 	lampRange: number,
 	keyLights: number,
-	-- weather: 0 = none, 1 = downpour
+	-- weather: 0 = none, 1 = downpour; snow likewise (0 = none, 1 = a blizzard)
 	rain: number,
 	lightning: boolean,
+	snow: number,
 }
 
 export type Mood = {
@@ -130,6 +131,7 @@ LightingPresets.lobby = preset({
 	keyLights = 4,
 	rain = 0.35,
 	lightning = false,
+	snow = 0,
 })
 
 -- The meeting room: one hard key light over the table, everything else falls away.
@@ -160,6 +162,7 @@ LightingPresets.meeting = preset({
 	keyLights = 3,
 	rain = 0,
 	lightning = false,
+	snow = 0,
 })
 
 LightingPresets.maps = {
@@ -194,35 +197,73 @@ LightingPresets.maps = {
 		keyLights = 6,
 		rain = 0.7,
 		lightning = true,
+		snow = 0,
 	}),
-	-- University Campus: a moonlit quad, warm lamp posts, mist between the buildings.
+	-- University Campus: the eve of the entrance exam, a winter night in light snow. Low snow
+	-- clouds glow a faint orange with the city's light and the snow on the ground throws the warm
+	-- lamps, heaters and windows back up, while the shadows stay a cold blue. The ambient keeps an
+	-- unlit corner legible, and the haze is thin enough to see from the gate to the clock tower.
 	UniversityCampus = preset({
-		clockTime = 23.8,
-		brightness = 1.6,
-		exposure = 0.05,
-		ambient = rgb(30, 32, 42),
-		outdoorAmbient = rgb(58, 64, 86),
-		envDiffuse = 0.5,
+		clockTime = 0,
+		brightness = 1.3,
+		exposure = 0.15,
+		ambient = rgb(52, 54, 70),
+		outdoorAmbient = rgb(84, 88, 112),
+		envDiffuse = 0.6,
 		envSpecular = 0.4,
-		fogStart = 40,
-		fogEnd = 650,
-		fogColor = rgb(18, 20, 30),
-		density = 0.32,
-		haze = 1.8,
+		fogStart = 90,
+		fogEnd = 760,
+		fogColor = rgb(58, 52, 60),
+		density = 0.28,
+		haze = 1.6,
 		glare = 0,
-		atmosphereColor = rgb(62, 70, 92),
-		decay = rgb(36, 36, 54),
-		saturation = -0.3,
-		contrast = 0.18,
-		tint = rgb(228, 236, 255),
-		bloom = 0.4,
-		bloomSize = 20,
-		bloomThreshold = 2.1,
-		lamps = 1.1,
+		atmosphereColor = rgb(124, 104, 100),
+		decay = rgb(92, 70, 64),
+		saturation = -0.12,
+		contrast = 0.14,
+		tint = rgb(246, 240, 244),
+		bloom = 0.45,
+		bloomSize = 22,
+		bloomThreshold = 1.9,
+		lamps = 1,
 		lampRange = 1,
 		keyLights = 6,
-		rain = 0.6,
-		lightning = true,
+		rain = 0,
+		lightning = false,
+		snow = 0.6,
+	}),
+	-- Inside the campus buildings: a plainer look a step darker than the snow outside, so lit
+	-- plaster and tiles never blow out. The snow stays at the outdoor amount: the flakes stop
+	-- under the roof on their own, the wind is heard muffled, and footprints keep appearing on
+	-- the lawns seen through the windows. Picked by the interiors' look zones.
+	UniversityCampus_Inside = preset({
+		clockTime = 0,
+		brightness = 0.8,
+		exposure = 0,
+		ambient = rgb(56, 54, 64),
+		outdoorAmbient = rgb(70, 70, 88),
+		envDiffuse = 0.35,
+		envSpecular = 0.3,
+		fogStart = 120,
+		fogEnd = 760,
+		fogColor = rgb(58, 52, 60),
+		density = 0,
+		haze = 0,
+		glare = 0,
+		atmosphereColor = rgb(124, 104, 100),
+		decay = rgb(92, 70, 64),
+		saturation = -0.08,
+		contrast = 0.12,
+		tint = rgb(248, 242, 238),
+		bloom = 0.2,
+		bloomSize = 14,
+		bloomThreshold = 2.6,
+		lamps = 1,
+		lampRange = 1,
+		keyLights = 4,
+		rain = 0,
+		lightning = false,
+		snow = 0.6,
 	}),
 	-- Tokyo District: neon night in the rain, but readable. A violet night glow fills the
 	-- streets so nothing is pitch black, lamps and shop windows make the pools of light, and the
@@ -257,6 +298,7 @@ LightingPresets.maps = {
 		keyLights = 6,
 		rain = 0.7,
 		lightning = true,
+		snow = 0,
 	}),
 	-- Under Tokyo: the station hall and the metro. Cool and dim like a real platform at night,
 	-- lit by its fluorescent fittings alone; the street's glow and rain stay up top. Picked by
@@ -288,6 +330,7 @@ LightingPresets.maps = {
 		keyLights = 4,
 		rain = 0,
 		lightning = false,
+		snow = 0,
 	}),
 	-- Inside Tokyo's shops and rooms: the street's exposure and bloom would blow their lit walls
 	-- out to white, so indoors the camera takes a plainer look, a step darker than the street.
@@ -319,6 +362,7 @@ LightingPresets.maps = {
 		keyLights = 4,
 		rain = 0,
 		lightning = false,
+		snow = 0,
 	}),
 } :: { [string]: Preset }
 

@@ -57,7 +57,7 @@ return function(t)
 		end)
 		it("keeps the rebuilt maps readable at night", function()
 			-- Maps rebuilt at full size get a night you can see in (the moods still darken them).
-			for _, mapId in ipairs({ "TokyoDistrict", "TaskForceHQ" }) do
+			for _, mapId in ipairs({ "TokyoDistrict", "TaskForceHQ", "UniversityCampus" }) do
 				local p = LightingPresets.maps[mapId]
 				local brightest = math.max(p.ambient.R, p.ambient.G, p.ambient.B)
 				expect(p.exposure >= 0).to.equal(true)
@@ -66,6 +66,24 @@ return function(t)
 				local grim = LightingPresets.resolve(p, LightingPresets.moodFor("DeathNote"))
 				expect(grim.exposure < p.exposure).to.equal(true)
 			end
+		end)
+		it("snows on the campus, inside and out, and nowhere else", function()
+			local campus = LightingPresets.maps.UniversityCampus
+			local inside = LightingPresets.maps.UniversityCampus_Inside
+			expect(campus.snow > 0).to.equal(true)
+			expect(campus.rain).to.equal(0)
+			expect(campus.lightning).to.equal(false)
+			-- Indoors the flakes stop under the roof by themselves; the amount stays, so prints keep
+			-- appearing outside the windows.
+			expect(inside.snow).to.equal(campus.snow)
+			expect(inside.exposure <= campus.exposure).to.equal(true)
+			for id, p in pairs(LightingPresets.maps) do
+				if string.sub(id, 1, #"UniversityCampus") ~= "UniversityCampus" then
+					expect(p.snow).to.equal(0)
+				end
+			end
+			expect(LightingPresets.lobby.snow).to.equal(0)
+			expect(LightingPresets.meeting.snow).to.equal(0)
 		end)
 		it("never lets bloom catch lit skin", function()
 			for _, venue in ipairs({ "lobby", "meeting" }) do

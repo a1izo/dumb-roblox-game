@@ -26,7 +26,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 
 # Bumped whenever an export changes in a way the game depends on. The FBX carries a marker mesh
 # Inkbound<Kind>_Version_<n>, and the game uses only the newest import of each kind.
-VERSION = {"Maps": 3, "Models": 3, "ModelsTokyo": 1, "ModelsAgency": 1}
+VERSION = {"Maps": 4, "Models": 3, "ModelsTokyo": 1, "ModelsAgency": 1, "ModelsCampus": 1}
 
 
 def num(v, digits=3):
@@ -458,6 +458,8 @@ def write_scene_v2(scene, module, source):
     look_zones = [f'{{ preset = {lua_string(z["preset"])}, min = {vec(z["min"])}, max = {vec(z["max"])} }}'
                   for z in scene.look_zones]
     waters = [f'{{ at = {vec(w["at"])}, size = {vec(w["size"])}, rot = {num(w["rot"], 2)} }}' for w in scene.waters]
+    clocks = [f'{{ at = {vec(c["pos"])}, rot = {num(c["rot"], 2)}, radius = {num(c["radius"], 2)} }}'
+              for c in scene.clocks]
     dressing_fields = [
         ("prop, x, y, z, degrees about Y, scale, flags (\"dark\": without its light)", "props", props),
         (None, "lights", lights),
@@ -475,6 +477,8 @@ def write_scene_v2(scene, module, source):
          "blinkers", blinkers),
         ("the searchlight helicopter's flight for the client: its path, where its light points, how often",
          "helicopter", helicopter),
+        ("clock faces whose hands the client turns: the middle of the dial, facing rot, its radius",
+         "clocks", clocks),
     ]
 
     paths = [_write(os.path.join(folder, "init.luau"), init)]

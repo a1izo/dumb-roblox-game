@@ -3,7 +3,7 @@
 -- and share one stride phase so the feet never slide between them; jumping and falling take
 -- over in the air, and a knee dip plays on landing. Roblox's default Animate script is removed
 -- (by the server, and here for this player's own body), so these are the only movement
--- animations.
+-- animations. Each time a stride plants a foot, Footfall fires (the snow's footprints use it).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,8 +15,12 @@ local Joints = require(Anim:WaitForChild("Joints"))
 
 local PoseController = require(script.Parent.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
+local Signal = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Signal"))
 
 local LocomotionController = {}
+
+-- Fired with (character) when a walking or running character's foot comes down on the ground.
+LocomotionController.Footfall = Signal.new()
 
 -- Speeds (studs/s) where walking starts, where running begins to take over and where only
 -- the run plays. Each clip knows its stride (studs per cycle); strides scale with the length
@@ -175,7 +179,14 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	local walkStride = walk.stride or DEFAULT_STRIDES.walk
 	local runStride = run.stride or DEFAULT_STRIDES.run
 	local stride = (walkStride + (runStride - walkStride) * running) * (state.legScale :: number)
+	local before = state.phase
 	state.phase = (state.phase + dt * math.max(speed, state.blendSpeed) / stride) % 1
+	-- A foot comes down each time the stride passes 0 and 0.5.
+	if state.grounded and speed > MOVE_FULL and not root.Anchored then
+		if state.phase < before or (before < 0.5 and state.phase >= 0.5) then
+			LocomotionController.Footfall:Fire(character)
+		end
+	end
 	table.clear(buffers.idle)
 	table.clear(buffers.walk)
 	table.clear(buffers.run)

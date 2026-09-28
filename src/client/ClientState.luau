@@ -18,6 +18,7 @@ ClientState.public = {
 	phase = "Lobby",
 	round = 0,
 	maxRounds = 5,
+	startedAt = 0,
 	endsAt = 0,
 	mapName = "",
 	players = {},

@@ -4,9 +4,10 @@
 -- listed in Maps/Scenes/<Venue>.luau. build() returns false when the scene is not imported, and
 -- the venue then builds its part-made version instead.
 --
--- Big venues rebuilt at full size (format 2: Tokyo, Agency HQ) have an FBX of their own and scene
--- data that includes their gameplay layout; they always build, as the imported scene or, without
--- the import, as a playable greybox (see buildFormat2 below).
+-- The maps, all rebuilt at full size (format 2: Tokyo, Agency HQ, the University Campus), each
+-- have an FBX of their own and scene data that includes their gameplay layout; they always build,
+-- as the imported scene or, without the import, as a playable greybox (see buildFormat2 below).
+-- The lobby and the meeting room are the older kind (format 1), with part-made fallbacks.
 --
 -- The importer may scale or turn what it imports. Three calibration cubes in the same file
 -- (Calib_Maps_O at the origin, _X 64 studs along x, _Y 64 studs up) tell how, so every mesh
@@ -26,7 +27,8 @@ local Scenes = script.Parent:WaitForChild("Scenes")
 
 local SceneBuilder = {}
 
--- Set from the debug panel to build the old part-made venues instead (to compare them).
+-- Set from the debug panel to build the lobby and meeting room part-made and the maps as
+-- greyboxes instead (to compare them).
 SceneBuilder.disabled = false
 
 -- Tag on the colliders the camera cannot pass through (see client World/CameraCollision).
@@ -260,6 +262,43 @@ local function addEmitter(b, folder: Instance, spec)
 			RotSpeed = NumberRange.new(-90, 90),
 			Parent = anchor,
 		})
+	elseif spec.kind == "branchsnow" then
+		-- Snow slipping off a tree's branches: nothing until the client shakes a clump loose now and
+		-- then (World/MapAmbient calls Emit on it), then a short fall of flakes and powder.
+		local size = if spec.size then Vector3.new(spec.size[1], spec.size[2], spec.size[3]) else Vector3.new(8, 1, 8)
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("Snowflake")
+		local fall = Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Bottom,
+			Rate = 0,
+			Lifetime = NumberRange.new(1.4, 2.2),
+			Speed = NumberRange.new(1, 3),
+			Acceleration = Vector3.new(0.6, -14, 0.3),
+			Drag = 1.2,
+			SpreadAngle = Vector2.new(20, 20),
+			Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.3, 0.12),
+				NumberSequenceKeypoint.new(1, 0.5, 0.2),
+			}),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.1),
+				NumberSequenceKeypoint.new(0.7, 0.3),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(240, 244, 252)),
+			LightInfluence = 0.8,
+			LightEmission = 0.1,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-90, 90),
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
+			Parent = anchor,
+		})
+		-- How many flakes one clump makes, for the size of the tree.
+		fall:SetAttribute("Burst", math.floor(size.X * size.Z * 0.4))
+		CollectionService:AddTag(fall, SceneBuilder.BRANCH_SNOW_TAG)
 	elseif spec.kind == "windowrain" and spec.size then
 		-- Rain running down the outside of a tower's glass: drops sliding down a band the size of
 		-- the window, just outside it. The client thins it on slower devices (World/MapAmbient).
@@ -518,8 +557,9 @@ local function propLights(b, folder: Instance, p, standIn: boolean)
 end
 
 -- Tagged markers the clients bring to life (client World/MapAmbient): giant screens, ambient
--- sound sources and the metro train's run; and boxes where the client's LightingController
--- switches to a look of their own (the metro under Tokyo).
+-- sound sources, the metro train's run, snowy branches and a clock tower's hands; and boxes
+-- where the client's LightingController switches to a look of their own (the metro under
+-- Tokyo, the campus buildings).
 SceneBuilder.SCREEN_TAG = "LMapScreen"
 SceneBuilder.SOUND_TAG = "LMapSound"
 SceneBuilder.TRAIN_TAG = "LMapTrain"
@@ -529,6 +569,51 @@ SceneBuilder.LOOK_TAG = "LLookZone"
 SceneBuilder.RAIN_GLASS_TAG = "LMapRainGlass"
 SceneBuilder.BLINK_TAG = "LMapBlink"
 SceneBuilder.HELI_TAG = "LMapHeli"
+-- Snow the client shakes off the branches, and a clock tower's hands (the client turns them).
+SceneBuilder.BRANCH_SNOW_TAG = "LMapBranchSnow"
+SceneBuilder.CLOCK_TAG = "LMapClock"
+
+-- A clock's two hands over its dial, made here and turned by the client (World/MapAmbient): a
+-- model holding an invisible "Dial" (its front is the face) and the "Hour" and "Minute" hands.
+-- Each hand turns about the dial's middle: at angle a (clockwise from twelve, seen from the
+-- front) it stands at Dial * Angles(0, 0, a) * (0, Reach, -Lift), its attributes. Built showing
+-- 23:00.
+local HAND_COLOUR = Color3.fromRGB(18, 16, 16)
+
+local function makeHand(
+	dial: CFrame,
+	name: string,
+	length: number,
+	width: number,
+	angle: number,
+	lift: number
+): BasePart
+	-- A short tail past the middle, the rest towards the rim.
+	local reach = length / 2 - length * 0.12
+	local hand = Create("Part", {
+		Name = name,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Material = Enum.Material.SmoothPlastic,
+		Color = HAND_COLOUR,
+		Size = Vector3.new(width, length, 0.12),
+		CFrame = dial * CFrame.Angles(0, 0, angle) * CFrame.new(0, reach, -lift),
+	})
+	hand:SetAttribute("Reach", reach)
+	hand:SetAttribute("Lift", lift)
+	return hand
+end
+
+-- The hour and minute hands over a dial of `radius`, showing `minutes` past midnight.
+local function clockHands(dial: CFrame, radius: number, minutes: number): (BasePart, BasePart)
+	local hours = (minutes / 60) % 12
+	local hour = makeHand(dial, "Hour", radius * 0.58, radius * 0.1, hours / 12 * math.pi * 2, 0.18)
+	local minute = makeHand(dial, "Minute", radius * 0.86, radius * 0.06, (minutes % 60) / 60 * math.pi * 2, 0.3)
+	return hour, minute
+end
 
 -- "x,y,z;x,y,z;..." for a list of local points, in world space (attributes cannot hold lists).
 local function encodePath(b, points: { { number } }): string
@@ -635,6 +720,28 @@ local function addAmbience(b, folder: Instance, dressing)
 		zone:SetAttribute("Preset", spec.preset)
 		CollectionService:AddTag(zone, SceneBuilder.LOOK_TAG)
 	end
+	for _, spec in ipairs(dressing.clocks or {}) do
+		local clock = Create("Model", { Name = "Clock" })
+		local dial = Create("Part", {
+			Name = "Dial",
+			Anchored = true,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			CastShadow = false,
+			Transparency = 1,
+			Size = Vector3.new(0.2, 0.2, 0.2),
+			CFrame = b:world(b:cf(spec.at[1], spec.at[2], spec.at[3], spec.rot)),
+			Parent = clock,
+		})
+		local hour, minute = clockHands(dial.CFrame, spec.radius, 23 * 60)
+		hour.Parent = clock
+		minute.Parent = clock
+		clock.PrimaryPart = dial
+		clock:SetAttribute("Radius", spec.radius)
+		clock.Parent = folder
+		CollectionService:AddTag(clock, SceneBuilder.CLOCK_TAG)
+	end
 end
 
 local warned: { [string]: boolean } = {}
@@ -700,6 +807,10 @@ local function buildFormat2(b, venue: string, data): string
 		part.Size = Vector3.new(c[4], c[5], c[6])
 		part.CFrame = b:world(b:cf(c[1], c[2], c[3], c[7]))
 		solid(part, look, greybox, c[8])
+		if look then
+			-- What the surface is (the client's footprints look for "Snow").
+			part:SetAttribute("Look", look)
+		end
 		part.Parent = solids
 		if c[8] then
 			CollectionService:AddTag(part, SceneBuilder.CAMERA_TAG)
@@ -714,6 +825,9 @@ local function buildFormat2(b, venue: string, data): string
 		local look = if f[9] > 0 then looks[f[9]] else nil
 		for _, wedge in ipairs(triangle(solids, a, p, q, thickness)) do
 			solid(wedge, look, greybox, f[10])
+			if look then
+				wedge:SetAttribute("Look", look)
+			end
 			if f[10] then
 				CollectionService:AddTag(wedge, SceneBuilder.CAMERA_TAG)
 			end

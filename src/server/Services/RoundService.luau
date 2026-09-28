@@ -75,7 +75,8 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	local uncuttable = options ~= nil and options.uncuttable == true
 	Match.phase = name
 	GhostService.onPhase(name)
-	Match.phaseEndsAt = workspace:GetServerTimeNow() + length
+	Match.phaseStartedAt = workspace:GetServerTimeNow()
+	Match.phaseEndsAt = Match.phaseStartedAt + length
 	if onStart then
 		onStart()
 	end
@@ -88,6 +89,7 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 			if Match.debugPaused then
 				-- Paused from the debug panel: the clock stands still.
 				Match.phaseEndsAt += dt
+				Match.phaseStartedAt += dt
 				if os.clock() - lastPush > 0.5 then
 					lastPush = os.clock()
 					Match.pushState()
@@ -328,7 +330,8 @@ end
 
 local function reveal()
 	Match.phase = "Reveal"
-	Match.phaseEndsAt = workspace:GetServerTimeNow() + Match.phaseLength("Reveal")
+	Match.phaseStartedAt = workspace:GetServerTimeNow()
+	Match.phaseEndsAt = Match.phaseStartedAt + Match.phaseLength("Reveal")
 	CaseFileService.cancelAll(nil)
 	VoteService.cancel()
 	WarrantService.close()

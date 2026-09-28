@@ -603,7 +603,9 @@ TOUCH = 0.2  # how far two things may press into each other (a bin against a wal
 # other things): the size of that foot, at the prop's anchor.
 FEET = {"StreetLightTokyo": 1.2, "TrafficSignal": 1.2, "PedestrianSignal": 1.0, "UtilityPole": 1.4,
         "RoadSign": 0.8, "BusStopSign": 0.8, "TaxiRankSign": 0.8, "Tree": 2.0, "TreeSakura": 2.0,
-        "TreeZelkova": 2.0}
+        "TreeZelkova": 2.0, "GinkgoBare": 1.9, "PineYukizuri": 1.7, "CampusLamp": 1.2,
+        # A tent stands on four thin legs round what stands under it (the map gives the legs colliders).
+        "EventTent": 0.5}
 # Props that are walls themselves (the barriers across the streets that leave the map): they may
 # meet the buildings' walls.
 WALLS = {"SiteFence", "PoliceTape", "Barricade"}

@@ -1,4 +1,5 @@
--- Procedural building kit for the lobby, the meeting room and the three maps.
+-- Procedural building kit for the lobby and the meeting room, and the parts, props and signs
+-- every map's Blender scene is placed with (SceneBuilder).
 -- Coordinates passed to the builder are local to its origin; y = 0 is the floor surface.
 -- Rotations are degrees around Y: 0 faces -Z, 180 faces +Z, 90 faces -X, -90 faces +X.
 -- Furniture uses the Blender props (ModelLibrary) once they are imported, and falls back to

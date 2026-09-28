@@ -541,7 +541,12 @@ builders.World = function()
 	button(r, "Tokyo props", function()
 		send("propGallery", { set = "Tokyo" })
 	end)
-	note("Previews build a map outside a match (between matches). Turning scenes off rebuilds the lobby part-made.")
+	button(r, "Campus props", function()
+		send("propGallery", { set = "Campus" })
+	end)
+	note(
+		"Previews build a map outside a match (between matches). Turning scenes off rebuilds the lobby and meeting room part-made, and the maps as greyboxes."
+	)
 	heading("Me")
 	r = row()
 	toggle(r, "Fly (WASD, Space/E up, Ctrl/Q down)", DebugTools.flying, function()
@@ -619,10 +624,19 @@ builders.World = function()
 	r = row()
 	for _, spec in ipairs({ { "Preset", nil }, { "Off", 0 }, { "Light", 0.3 }, { "Heavy", 1 } }) do
 		button(r, spec[1], function()
-			RainController.debugAmount = spec[2]
+			RainController.setDebug(spec[2], RainController.debugSnow)
 			lastSignature = ""
-		end, if RainController.debugAmount == spec[2] then COLORS.pick else nil)
+		end, if RainController.debugRain == spec[2] then COLORS.pick else nil)
 	end
+	heading("Snow")
+	r = row()
+	for _, spec in ipairs({ { "Preset", nil }, { "Off", 0 }, { "Light", 0.4 }, { "Heavy", 1 } }) do
+		button(r, spec[1], function()
+			RainController.setDebug(RainController.debugRain, spec[2])
+			lastSignature = ""
+		end, if RainController.debugSnow == spec[2] then COLORS.pick else nil)
+	end
+	note("Snow leaves footprints on snowy ground (the campus lawns) while it falls.")
 end
 
 builders.Show = function()

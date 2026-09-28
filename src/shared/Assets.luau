@@ -78,6 +78,11 @@ Assets.sfx = {
 	mapPhoneRing = { id = "", ref = "an office desk phone ringing unanswered, loop", fallbackId = "" },
 	mapSirenFar = { id = "", ref = "distant police siren across a city at night, loop", fallbackId = "" },
 	mapHelicopter = { id = "", ref = "helicopter passing overhead, rotor loop", fallbackId = "" },
+	mapWindSnow = { id = "", ref = "soft winter wind with light snow falling, loop", fallbackId = "" },
+	mapHeaterHum = { id = "", ref = "kerosene heater burning, a low hum and tick, loop", fallbackId = "" },
+	mapTowerBell = { id = "", ref = "one stroke of a large clock-tower bell, ringing out", fallbackId = "" },
+	mapPianoFar = { id = "", ref = "an upright piano practising down a corridor, muffled, loop", fallbackId = "" },
+	mapNewsRadio = { id = "", ref = "a late-night news radio murmuring in an empty room, loop", fallbackId = "" },
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every
@@ -133,6 +138,8 @@ Assets.textures = {
 	Smoke = "",
 	SoulGlow = "",
 	Spark = "",
+	Snowflake = "",
+	Footprint = "",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.

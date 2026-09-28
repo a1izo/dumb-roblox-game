@@ -21,7 +21,8 @@ FBX = os.path.join(common.EXPORT, "InkboundModels.fbx")
 
 # Textures carried into Roblox on flat quads named "Tex_<name>" (see Assets.texture): effect
 # textures, and the UI's lettering, paper and icons (art/scripts/ui).
-EFFECT_TEXTURES = ["InkSplat1", "InkSplat2", "InkSplat3", "InkDrop", "RainStreak", "Smoke", "SoulGlow", "Spark"]
+EFFECT_TEXTURES = ["InkSplat1", "InkSplat2", "InkSplat3", "InkDrop", "RainStreak", "Smoke", "SoulGlow", "Spark",
+                   "Snowflake", "Footprint"]
 UI_TEXTURES = [
     "UiGothic1",
     "UiScrawl1",

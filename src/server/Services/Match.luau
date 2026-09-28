@@ -27,6 +27,8 @@ Match.id = 0
 Match.phase = "Lobby"
 Match.round = 0
 Match.phaseEndsAt = 0
+-- When the phase began (server time), so clients that join mid-phase can tell how far in it is.
+Match.phaseStartedAt = 0
 Match.startClock = 0
 Match.map = nil
 Match.mapId = ""
@@ -101,6 +103,7 @@ function Match.begin(players: { Player })
 	Match.phase = "Briefing"
 	Match.round = 0
 	Match.phaseEndsAt = 0
+	Match.phaseStartedAt = 0
 	Match.winner = nil
 	Match.winReason = nil
 	Match.eyesDealMade = false
@@ -123,6 +126,7 @@ function Match.finish()
 	Match.phase = "Lobby"
 	Match.round = 0
 	Match.phaseEndsAt = 0
+	Match.phaseStartedAt = 0
 	Match.map = nil
 	Match.mapId = ""
 	Match.mapName = ""
@@ -357,6 +361,7 @@ function Match.publicState()
 		phase = Match.phase,
 		round = Match.round,
 		maxRounds = ServerSettings.rounds(),
+		startedAt = Match.phaseStartedAt,
 		endsAt = Match.phaseEndsAt,
 		mapId = Match.mapId,
 		mapName = Match.mapName,

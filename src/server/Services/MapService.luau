@@ -144,6 +144,8 @@ function MapService.build(mapId: string)
 	MapService.destroy()
 	local def = MAPS[mapId] or MAPS.TaskForceHQ
 	local model = newModel("LGameMap")
+	-- Which map this is, for clients looking at it outside a match (a debug preview).
+	model:SetAttribute("MapId", def.id)
 	local b = Builder.new(model, MAP_ORIGIN)
 	local layout = def.build(b)
 

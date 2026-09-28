@@ -200,7 +200,7 @@ end
 -- Colliders ------------------------------------------------------------------------------------
 
 -- Invisible parts that still collide or block sight lines: scene colliders, roofs, walls of
--- the part-built maps made invisible, Specter bounds.
+-- the part-built rooms made invisible, Specter bounds.
 local function isHidden(part: BasePart): boolean
 	return part.Transparency >= 0.95 and (part.CanCollide or part.CanQuery)
 end

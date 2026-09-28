@@ -95,6 +95,7 @@ class Scene(LayoutMixin):
         self.waters = []  # boxes the game fills with Terrain water: (centre, size, rot)
         self.blinkers = []  # small lamps the client blinks (aircraft warning lights on towers)
         self.helicopter = None  # the searchlight helicopter's flight past the windows
+        self.clocks = []  # clock faces whose hands the client turns (the campus's tower)
         self.checks = {}  # the venue's own targets for check_v2 (walk times and where to measure them)
         self.far_chunk = None  # (distance, cell size): bigger chunks for far scenery (see _cell)
         self.used = set()
@@ -392,6 +393,11 @@ class Scene(LayoutMixin):
         searchlight on `target` [(x, y, z)] (followed in step with the path)."""
         self.helicopter = {"path": [tuple(p) for p in path], "target": [tuple(p) for p in target], "every": every,
                            "duration": duration}
+
+    def clock(self, pos, rot, radius):
+        """A clock face whose hands the game makes and turns: pos is the dial's middle (just in
+        front of its face), rot the way it faces, radius the dial's."""
+        self.clocks.append({"pos": pos, "rot": rot, "radius": radius})
 
     def screen(self, pos, rot, w, h, loop="ads"):
         """A giant screen facing rot (its face at pos); the game plays `loop` on it."""

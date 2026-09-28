@@ -1,11 +1,13 @@
 --!strict
 -- Life in a map, played on each client from markers the server's map builder leaves
--- (server Maps/SceneBuilder): screens looping made-up adverts, camera feeds, the night news or a
--- sector map; ambient sounds (silent while their Assets.sfx slot is empty); the metro train,
--- which pulls into its platform, opens its doors and leaves again on a timer; aircraft lights
--- blinking on the towers; rain on the glass (thinner on slower devices); and the police
--- helicopter that now and then sweeps its searchlight across a tower's floors. Nothing here
--- collides with anyone.
+-- (server Maps/SceneBuilder): screens looping made-up adverts, camera feeds, the night news, a
+-- sector map or an old film; ambient sounds (silent while their Assets.sfx slot is empty); the
+-- metro train, which pulls into its platform, opens its doors and leaves again on a timer;
+-- aircraft lights blinking on the towers; rain on the glass and snow slipping off branches
+-- (thinner on slower devices); the police helicopter that now and then sweeps its searchlight
+-- across a tower's floors; and the campus clock tower, whose hands creep towards midnight as the
+-- investigation runs out and whose bell tolls twelve when the Grimoire phase begins. Nothing
+-- here collides with anyone.
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +18,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Catalog = require(Shared:WaitForChild("ModelCatalog")) :: any
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
+local ClientState = require(script.Parent.Parent.ClientState)
 local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
@@ -28,6 +31,8 @@ local TRAIN_TAG = "LMapTrain"
 local BLINK_TAG = "LMapBlink"
 local HELI_TAG = "LMapHeli"
 local RAIN_GLASS_TAG = "LMapRainGlass"
+local BRANCH_SNOW_TAG = "LMapBranchSnow"
+local CLOCK_TAG = "LMapClock"
 
 -- Screens ------------------------------------------------------------------------------------------
 
@@ -309,6 +314,128 @@ local function playMap(part: BasePart)
 	end)
 end
 
+-- The film club's winter screening: an old black-and-white reel on the projector's screen. The
+-- leader counts down, the title card comes up, then a few silent scenes (a street in the snow, a
+-- figure crossing it, a train going by) under flicker, dust and scratches, and the end card.
+local FILM_SCENES = {
+	-- { caption, { { x, y, w, h, shade } ... } }: shapes in a scene, 0 = black, 1 = white.
+	{ "", { { 0, 0.62, 1, 0.38, 0.85 }, { 0.08, 0.1, 0.22, 0.55, 0.25 }, { 0.62, 0.2, 0.3, 0.45, 0.3 } } },
+	{ "", { { 0, 0.7, 1, 0.3, 0.8 }, { 0, 0.35, 1, 0.12, 0.15 }, { 0.46, 0.05, 0.08, 0.3, 0.45 } } },
+	{ "", { { 0, 0.55, 1, 0.45, 0.2 }, { 0.2, 0.15, 0.6, 0.35, 0.7 }, { 0.3, 0.6, 0.4, 0.05, 0.9 } } },
+}
+local FILM_CARDS = {
+	title = "冬の上映会\nWINTER SCREENING",
+	credit = "影ヶ丘大学 映画研究会\nKAGEGAOKA UNIV. FILM CLUB",
+	finish = "終\nTHE END",
+}
+
+local function playFilm(part: BasePart)
+	local back = face(part, 24)
+	back.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+	-- The picture, a little inside the screen, and what is on it.
+	local picture = box(back, UDim2.fromScale(0.04, 0.05), UDim2.fromScale(0.92, 0.9), Color3.fromRGB(128, 128, 124))
+	picture.ClipsDescendants = true
+	local shapes: { Frame } = {}
+	for _ = 1, 3 do
+		table.insert(shapes, box(picture, UDim2.new(), UDim2.new(), Color3.new(0, 0, 0)))
+	end
+	local walker = box(picture, UDim2.fromScale(-0.1, 0.42), UDim2.fromScale(0.05, 0.28), Color3.fromRGB(16, 16, 16))
+	local card = label(picture, UDim2.fromScale(0.1, 0.25), UDim2.fromScale(0.8, 0.5), Color3.fromRGB(236, 234, 226))
+	card.Font = Enum.Font.Antique
+	card.TextXAlignment = Enum.TextXAlignment.Center
+	-- Scratches and dust that come and go with the flicker.
+	local scratches: { Frame } = {}
+	for _ = 1, 3 do
+		table.insert(scratches, box(picture, UDim2.fromScale(0.5, 0), UDim2.new(0, 2, 1, 0), Color3.new(1, 1, 1), 0.5))
+	end
+	local specks: { Frame } = {}
+	for _ = 1, 5 do
+		table.insert(
+			specks,
+			box(picture, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.012, 0.02), Color3.new(0, 0, 0), 0.3)
+		)
+	end
+	local function shade(value: number): Color3
+		return Color3.new(value, value, value * 0.97)
+	end
+	local function show(scene: { any }?)
+		for index, shape in ipairs(shapes) do
+			local spec = if scene then scene[2][index] else nil
+			shape.Visible = spec ~= nil
+			if spec then
+				shape.Position = UDim2.fromScale(spec[1], spec[2])
+				shape.Size = UDim2.fromScale(spec[3], spec[4])
+				shape.BackgroundColor3 = shade(spec[5])
+			end
+		end
+	end
+	local function flicker()
+		local still = Settings.get("reduceMotion")
+		local level = if still then 0.5 else 0.42 + math.random() * 0.16
+		picture.BackgroundColor3 = shade(level)
+		for _, scratch in ipairs(scratches) do
+			scratch.Visible = not still and math.random() < 0.3
+			scratch.Position = UDim2.fromScale(math.random(), 0)
+		end
+		for _, speck in ipairs(specks) do
+			speck.Visible = not still and math.random() < 0.4
+			speck.Position = UDim2.fromScale(math.random(), math.random())
+		end
+	end
+	local function hold(seconds: number): boolean
+		local steps = math.floor(seconds / 0.12)
+		for _ = 1, steps do
+			flicker()
+			task.wait(0.12)
+			if not part.Parent then
+				return false
+			end
+		end
+		return true
+	end
+	task.spawn(function()
+		task.wait(math.random() * 4)
+		while part.Parent do
+			-- The leader's countdown, then the cards.
+			show(nil)
+			walker.Visible = false
+			for count = 5, 1, -1 do
+				card.Text = tostring(count)
+				if not hold(0.8) then
+					return
+				end
+			end
+			for _, text in ipairs({ FILM_CARDS.title, FILM_CARDS.credit }) do
+				card.Text = text
+				if not hold(3.5) then
+					return
+				end
+			end
+			card.Text = ""
+			for index, scene in ipairs(FILM_SCENES) do
+				show(scene)
+				-- Someone crosses the snowy street in the first scene.
+				walker.Visible = index == 1 and not Settings.get("reduceMotion")
+				if walker.Visible then
+					walker.Position = UDim2.fromScale(-0.1, 0.42)
+					TweenService:Create(walker, TweenInfo.new(6, Enum.EasingStyle.Linear), {
+						Position = UDim2.fromScale(1.05, 0.42),
+					}):Play()
+				end
+				if not hold(6) then
+					return
+				end
+			end
+			show(nil)
+			walker.Visible = false
+			card.Text = FILM_CARDS.finish
+			if not hold(3) then
+				return
+			end
+		end
+	end)
+end
+
 local function playScreen(part: BasePart)
 	local loop = part:GetAttribute("Loop")
 	if loop == "cctv" then
@@ -317,6 +444,8 @@ local function playScreen(part: BasePart)
 		playNews(part)
 	elseif loop == "map" then
 		playMap(part)
+	elseif loop == "film" then
+		playFilm(part)
 	else
 		playAds(part)
 	end
@@ -501,6 +630,123 @@ local function refreshRainGlass()
 	end
 end
 
+-- Snow off the branches ---------------------------------------------------------------------------------
+-- Now and then a clump of snow slips off a tree near the camera. Slower devices get smaller
+-- clumps, further apart.
+
+local branchSnow: { [ParticleEmitter]: boolean } = {}
+local BRANCH_REACH = 110
+
+local function branchSnowLoop()
+	while true do
+		task.wait(2.5 + math.random() * 4)
+		local camera = workspace.CurrentCamera
+		if not camera or Settings.get("reduceMotion") then
+			continue
+		end
+		local near = {}
+		for emitter in pairs(branchSnow) do
+			local anchor = emitter.Parent
+			if not anchor then
+				branchSnow[emitter] = nil
+			elseif anchor:IsA("BasePart") and (anchor.Position - camera.CFrame.Position).Magnitude < BRANCH_REACH then
+				table.insert(near, emitter)
+			end
+		end
+		if #near > 0 then
+			local emitter = near[math.random(1, #near)]
+			local burst = (emitter:GetAttribute("Burst") :: number?) or 20
+			emitter:Emit(math.max(4, math.floor(burst * rainFactor())))
+		end
+	end
+end
+
+-- The clock tower -----------------------------------------------------------------------------------------
+-- Its hands stand at 23:00 until the investigation starts, then creep to midnight as it runs out
+-- (a rough timer anyone can read from across the campus), and stay at midnight from the Grimoire
+-- phase on; a new round's investigation sends them back to eleven. Twelve strokes of the bell mark
+-- the Grimoire phase.
+
+type Clock = { dial: BasePart, hour: BasePart, minute: BasePart }
+
+local clocks: { [Instance]: Clock } = {}
+local shownMinutes = 0 -- minutes past 23:00 the hands show (0 to 60)
+local AFTER_MIDNIGHT = { DeathNote = true, Meeting = true, Vote = true, Verdict = true, Reveal = true, Outro = true }
+local BELL_STROKES = 12
+local BELL_GAP = 2.4
+
+-- Minutes past 23:00 the hands should show now.
+local function towerMinutes(): number
+	local public = ClientState.public
+	if not public.active then
+		return 0
+	end
+	if public.phase == "Investigation" then
+		local startedAt = tonumber(public.startedAt) or 0
+		local span = (tonumber(public.endsAt) or 0) - startedAt
+		if span <= 0 then
+			return 0
+		end
+		return math.clamp((workspace:GetServerTimeNow() - startedAt) / span, 0, 1) * 60
+	end
+	return if AFTER_MIDNIGHT[public.phase] then 60 else 0
+end
+
+local function placeHand(dial: BasePart, hand: BasePart, angle: number)
+	local reach = (hand:GetAttribute("Reach") :: number?) or 0
+	local lift = (hand:GetAttribute("Lift") :: number?) or 0.2
+	hand.CFrame = dial.CFrame * CFrame.Angles(0, 0, angle) * CFrame.new(0, reach, -lift)
+end
+
+local function stepClocks(dt: number)
+	if next(clocks) == nil then
+		return
+	end
+	local target = towerMinutes()
+	-- The hands run back or forward in a few seconds when they jump (a new round, a late join).
+	if math.abs(target - shownMinutes) > 1 then
+		shownMinutes += (target - shownMinutes) * math.min(1, dt * 1.5)
+	else
+		shownMinutes = target
+	end
+	local minutes = 23 * 60 + shownMinutes
+	local hourAngle = ((minutes / 60) % 12) / 12 * math.pi * 2
+	local minuteAngle = (minutes % 60) / 60 * math.pi * 2
+	for model, clock in pairs(clocks) do
+		if not model.Parent then
+			clocks[model] = nil
+			continue
+		end
+		placeHand(clock.dial, clock.hour, hourAngle)
+		placeHand(clock.dial, clock.minute, minuteAngle)
+	end
+end
+
+local function tollMidnight()
+	for _, source in ipairs(CollectionService:GetTagged(SOUND_TAG)) do
+		if source:IsA("BasePart") and source:GetAttribute("Key") == "mapTowerBell" then
+			task.spawn(function()
+				for _ = 1, BELL_STROKES do
+					if not source.Parent then
+						return
+					end
+					local sound = Sfx.play("mapTowerBell", {
+						group = "Ambience",
+						parent = source,
+						volume = (source:GetAttribute("Volume") :: number?) or 0.8,
+					})
+					if not sound then
+						return -- the slot is empty
+					end
+					sound.RollOffMaxDistance = (source:GetAttribute("Radius") :: number?) or 600
+					sound.RollOffMinDistance = 40
+					task.wait(BELL_GAP)
+				end
+			end)
+		end
+	end
+end
+
 -- The helicopter ----------------------------------------------------------------------------------------
 -- Now and then a police helicopter flies the map's path past the tower, its searchlight following
 -- the target points in step (so it sweeps across the floors), nav lights blinking, rotor turning.
@@ -667,6 +913,28 @@ function MapAmbient.init()
 		end
 	end)
 	watch(HELI_TAG, runHeli)
+	watch(BRANCH_SNOW_TAG, function(item)
+		if item:IsA("ParticleEmitter") then
+			branchSnow[item] = true
+		end
+	end)
+	task.spawn(branchSnowLoop)
+	watch(CLOCK_TAG, function(item)
+		local dial = item:FindFirstChild("Dial")
+		local hour = item:FindFirstChild("Hour")
+		local minute = item:FindFirstChild("Minute")
+		if dial and dial:IsA("BasePart") and hour and hour:IsA("BasePart") and minute and minute:IsA("BasePart") then
+			clocks[item] = { dial = dial, hour = hour, minute = minute }
+			shownMinutes = towerMinutes()
+		end
+	end)
+	RunService.Heartbeat:Connect(stepClocks)
+	ClientState.PhaseChanged:Connect(function(phase, previous)
+		-- (Only as the investigation ends: not for someone joining in the middle of the phase.)
+		if phase == "DeathNote" and previous == "Investigation" and next(clocks) ~= nil then
+			tollMidnight()
+		end
+	end)
 end
 
 return MapAmbient

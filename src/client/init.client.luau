@@ -60,6 +60,7 @@ local PoseController = require(Anim:WaitForChild("PoseController"))
 local World = script:WaitForChild("World")
 local CameraCollision = require(World:WaitForChild("CameraCollision"))
 local FlickerController = require(World:WaitForChild("FlickerController"))
+local FootprintController = require(World:WaitForChild("FootprintController"))
 local GhostVisibility = require(World:WaitForChild("GhostVisibility"))
 local LightingController = require(World:WaitForChild("LightingController"))
 local MapAmbient = require(World:WaitForChild("MapAmbient"))
@@ -133,12 +134,14 @@ PoseController.init()
 LocomotionController.init()
 ActingController.init()
 
--- The world: lighting per venue, rain, flickering lamps, a camera that stays out of walls, the
--- maps' screens, sounds and trains, and no jumping or climbing during the investigation.
+-- The world: lighting per venue, rain and snow (and footprints in it), flickering lamps, a camera
+-- that stays out of walls, the maps' screens, sounds and trains, and no jumping or climbing during
+-- the investigation.
 LightingController.init()
 CameraCollision.init()
 TextureDoctor.init()
 RainController.init()
+FootprintController.init()
 FlickerController.init()
 MapAmbient.init()
 MovementRules.init()

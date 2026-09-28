@@ -39,6 +39,14 @@ GROUPS = {
                      "MicrofilmReader"],
     "agency_office": ["WaterCooler", "Photocopier", "FaxMachine", "DeskPhone", "CoffeeMachine", "CoatStand",
                       "PinBoard", "Whiteboard"],
+    "campus_stations": ["StationCameraPost", "StationPublicPhone", "StationNewsDesk", "StationBookReturn",
+                        "StationVault", "StationAutopsy"],
+    "campus_grounds": ["GinkgoBare", "PineYukizuri", "ShrubSnow", "StoneLantern", "Snowman", "SnowTools",
+                       "CampusLamp", "NoticeBoard", "Tatekan", "BustStatue", "UmpireChair", "TennisNet"],
+    "campus_exam": ["EventTent", "KeroseneHeater", "ExamDesk", "Lectern", "ExamSignStand", "QueuePosts"],
+    "campus_rooms": ["ReadingTable", "CardCatalog", "BookCart", "SkeletonModel", "SpecimenShelf", "Microscope",
+                     "Kotatsu", "ShoeLockers", "DrumKit", "UprightPiano", "FilmProjector", "Typewriter",
+                     "TrayReturn", "UmbrellaStand"],
 }
 
 GAP = 3.0
