@@ -148,7 +148,7 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
 - **Props and maps** are imported in Studio with **Import 3D**: `art/export/InkboundModels.fbx`
   (props and effect textures), `art/export/InkboundMaps.fbx` (the venues not rebuilt yet), and for
   each rebuilt map its props and its scene, `art/export/InkboundModels_<Venue>.fbx` and
-  `art/export/InkboundMaps_<Venue>.fbx` (Tokyo so far). Leave them where the
+  `art/export/InkboundMaps_<Venue>.fbx` (Tokyo and Agency HQ). Leave them where the
   importer puts them; the server moves them into `ReplicatedStorage > InkboundAssets` when it
   starts and prints what it found. A rebuilt map without its import (or with an older one) loads
   as a **greybox**: the same map, fully playable, in plain colours, and the Output says which file

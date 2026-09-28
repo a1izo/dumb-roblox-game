@@ -166,6 +166,14 @@ def load_props():
     for obj in dst.objects:
         if obj is not None:
             _PROPS[obj.name] = obj
+    # Baked textures saved on another machine keep that machine's paths: find them by name here.
+    for img in bpy.data.images:
+        path = bpy.path.abspath(img.filepath) if img.filepath else ""
+        if path and not os.path.exists(path):
+            local = os.path.join(common.TEXTURES, os.path.basename(path.replace("\\", "/")))
+            if os.path.exists(local):
+                img.filepath = local
+                img.reload()
     return _PROPS
 
 

@@ -4,7 +4,7 @@
 -- listed in Maps/Scenes/<Venue>.luau. build() returns false when the scene is not imported, and
 -- the venue then builds its part-made version instead.
 --
--- Big venues rebuilt at full size (format 2, Tokyo so far) have an FBX of their own and scene
+-- Big venues rebuilt at full size (format 2: Tokyo, Agency HQ) have an FBX of their own and scene
 -- data that includes their gameplay layout; they always build, as the imported scene or, without
 -- the import, as a playable greybox (see buildFormat2 below).
 --
@@ -260,6 +260,65 @@ local function addEmitter(b, folder: Instance, spec)
 			RotSpeed = NumberRange.new(-90, 90),
 			Parent = anchor,
 		})
+	elseif spec.kind == "windowrain" and spec.size then
+		-- Rain running down the outside of a tower's glass: drops sliding down a band the size of
+		-- the window, just outside it. The client thins it on slower devices (World/MapAmbient).
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local rain = Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Bottom,
+			Rate = size.X * 0.3,
+			Lifetime = NumberRange.new(1.6, 3.0),
+			Speed = NumberRange.new(2, 5),
+			Acceleration = Vector3.new(0, -3, 0),
+			SpreadAngle = Vector2.new(0, 0),
+			Orientation = Enum.ParticleOrientation.VelocityParallel,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0.07) }),
+			Squash = NumberSequence.new(1.5),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.1, 0.55),
+				NumberSequenceKeypoint.new(0.8, 0.6),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(190, 205, 230)),
+			LightInfluence = 0.4,
+			LightEmission = 0.25,
+			Parent = anchor,
+		})
+		local texture = Assets.texture("RainStreak")
+		if texture ~= "" then
+			rain.Texture = texture
+		end
+		rain:SetAttribute("BaseRate", rain.Rate)
+		CollectionService:AddTag(rain, SceneBuilder.RAIN_GLASS_TAG)
+	elseif (spec.kind == "traffic_tail" or spec.kind == "traffic_head") and spec.size then
+		-- Car lights streaming down a road far below: particles sent along it from its start (the
+		-- anchor faces the way the traffic runs; size z is how far the road goes).
+		local width, length = spec.size[1], spec.size[3]
+		local speed = 60
+		anchor.Size = Vector3.new(width, 0.2, 0.2)
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Front,
+			Rate = 3,
+			Lifetime = NumberRange.new(length / speed, length / speed),
+			Speed = NumberRange.new(speed, speed),
+			SpreadAngle = Vector2.new(0, 0),
+			Size = NumberSequence.new(2.4),
+			Transparency = NumberSequence.new(0.1),
+			Color = ColorSequence.new(
+				if spec.kind == "traffic_tail" then Color3.fromRGB(255, 60, 50) else Color3.fromRGB(255, 236, 200)
+			),
+			LightEmission = 1,
+			LightInfluence = 0,
+			Parent = anchor,
+		})
 	end
 end
 
@@ -465,6 +524,21 @@ SceneBuilder.SCREEN_TAG = "LMapScreen"
 SceneBuilder.SOUND_TAG = "LMapSound"
 SceneBuilder.TRAIN_TAG = "LMapTrain"
 SceneBuilder.LOOK_TAG = "LLookZone"
+-- Rain on a tower's glass (thinned by the client), aircraft lights that blink, and the searchlight
+-- helicopter's flight past the windows.
+SceneBuilder.RAIN_GLASS_TAG = "LMapRainGlass"
+SceneBuilder.BLINK_TAG = "LMapBlink"
+SceneBuilder.HELI_TAG = "LMapHeli"
+
+-- "x,y,z;x,y,z;..." for a list of local points, in world space (attributes cannot hold lists).
+local function encodePath(b, points: { { number } }): string
+	local parts = {}
+	for _, p in ipairs(points) do
+		local w = b:worldPos(p[1], p[2], p[3])
+		table.insert(parts, string.format("%.2f,%.2f,%.2f", w.X, w.Y, w.Z))
+	end
+	return table.concat(parts, ";")
+end
 
 local function addAmbience(b, folder: Instance, dressing)
 	for _, spec in ipairs(dressing.screens or {}) do
@@ -514,6 +588,34 @@ local function addAmbience(b, folder: Instance, dressing)
 		run:SetAttribute("Dwell", train.dwell)
 		run:SetAttribute("CarLength", train.carLength)
 		CollectionService:AddTag(run, SceneBuilder.TRAIN_TAG)
+	end
+	for _, spec in ipairs(dressing.blinkers or {}) do
+		local lamp = Create("Part", {
+			Name = "Blinker",
+			Anchored = true,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			CastShadow = false,
+			Shape = Enum.PartType.Ball,
+			Material = Enum.Material.Neon,
+			Color = color(spec.color) :: Color3,
+			Size = Vector3.one * spec.size,
+			CFrame = b:world(CFrame.new(spec.at[1], spec.at[2], spec.at[3])),
+			Parent = folder,
+		})
+		lamp:SetAttribute("Period", spec.period)
+		lamp:SetAttribute("Phase", spec.phase)
+		CollectionService:AddTag(lamp, SceneBuilder.BLINK_TAG)
+	end
+	local heli = dressing.helicopter
+	if heli then
+		local run = Create("Folder", { Name = "Helicopter", Parent = folder })
+		run:SetAttribute("Path", encodePath(b, heli.path))
+		run:SetAttribute("Target", encodePath(b, heli.target))
+		run:SetAttribute("Every", heli.every)
+		run:SetAttribute("Duration", heli.duration)
+		CollectionService:AddTag(run, SceneBuilder.HELI_TAG)
 	end
 	for _, spec in ipairs(dressing.lookZones or {}) do
 		local lo = Vector3.new(spec.min[1], spec.min[2], spec.min[3])

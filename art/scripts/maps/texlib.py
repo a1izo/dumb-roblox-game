@@ -473,4 +473,5 @@ LIBRARY = {
     "TileMetroFloor": (lambda: ceramic(43, srgb(118, 120, 124), srgb(66, 68, 72), 8), 4),
     "TileMetroGrey": (lambda: ceramic(44, srgb(150, 154, 156), srgb(76, 78, 80), 8, 16, 0.5), 4),
     "CeilingDark": (lambda: ceiling(45, srgb(92, 94, 98)), 8),
+    "CarpetNavy": (lambda: carpet(46, srgb(34, 40, 56), srgb(62, 70, 92), pattern="diamond"), 12),
 }

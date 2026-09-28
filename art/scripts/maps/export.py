@@ -26,7 +26,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 
 # Bumped whenever an export changes in a way the game depends on. The FBX carries a marker mesh
 # Inkbound<Kind>_Version_<n>, and the game uses only the newest import of each kind.
-VERSION = {"Maps": 2, "Models": 3, "ModelsTokyo": 1}
+VERSION = {"Maps": 3, "Models": 3, "ModelsTokyo": 1, "ModelsAgency": 1}
 
 
 def num(v, digits=3):
@@ -443,7 +443,14 @@ def write_scene_v2(scene, module, source):
             f'text = {lua_string(sg["text"])}, font = "{sg["font"]}", color = {rgb(sg["color"])}, bg = {bg}, '
             f'glow = {glow}, align = "{sg["align"]}" }}'
         )
-    emitters = [f'{{ kind = "{em["kind"]}", at = {vec(em["pos"])}, rot = {num(em["rot"], 2)} }}' for em in scene.emitters]
+    emitters = [f'{{ kind = "{em["kind"]}", at = {vec(em["pos"])}, rot = {num(em["rot"], 2)}'
+                + (f', size = {vec(em["size"])}' if em.get("size") else "") + " }" for em in scene.emitters]
+    blinkers = [f'{{ at = {vec(b["pos"])}, color = {rgb(b["color"])}, period = {num(b["period"], 2)}, '
+                f'size = {num(b["size"], 2)}, phase = {num(b["phase"], 2)} }}' for b in scene.blinkers]
+    heli = scene.helicopter
+    helicopter = (f'{{ path = {{ {", ".join(vec(p) for p in heli["path"])} }}, '
+                  f'target = {{ {", ".join(vec(p) for p in heli["target"])} }}, every = {num(heli["every"], 1)}, '
+                  f'duration = {num(heli["duration"], 1)} }}') if heli else "nil"
     screens = [f'{{ at = {vec(sc["pos"])}, rot = {num(sc["rot"], 2)}, w = {num(sc["w"])}, h = {num(sc["h"])}, '
                f'loop = {lua_string(sc["loop"])} }}' for sc in scene.screens]
     sounds = [f'{{ key = {lua_string(so["key"])}, at = {vec(so["pos"])}, radius = {num(so["radius"], 1)}, '
@@ -464,6 +471,10 @@ def write_scene_v2(scene, module, source):
         ("boxes where the camera switches to a lighting look of their own (LightingPresets.maps)",
          "lookZones", look_zones),
         ("boxes the game fills with Terrain water (centre, size, degrees about Y)", "water", waters),
+        ("small lamps the client blinks (aircraft warning lights): where, colour, seconds per blink, size",
+         "blinkers", blinkers),
+        ("the searchlight helicopter's flight for the client: its path, where its light points, how often",
+         "helicopter", helicopter),
     ]
 
     paths = [_write(os.path.join(folder, "init.luau"), init)]
@@ -490,6 +501,7 @@ def write_scene_v2(scene, module, source):
         "zones": scene.zones,
         "anchors": scene.anchors,
         "stats": stats,
+        "checks": scene.checks,
     }
     side_path = os.path.join(SIDECAR_DIR, venue + ".json")
     with open(side_path, "w", encoding="utf-8") as f:

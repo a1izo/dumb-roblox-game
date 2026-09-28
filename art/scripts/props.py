@@ -184,3 +184,4 @@ import props_world  # noqa: E402,F401
 import props_gameplay  # noqa: E402,F401
 import props_stations  # noqa: E402,F401
 import props_tokyo  # noqa: E402,F401
+import props_agency  # noqa: E402,F401

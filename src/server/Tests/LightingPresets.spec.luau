@@ -57,7 +57,7 @@ return function(t)
 		end)
 		it("keeps the rebuilt maps readable at night", function()
 			-- Maps rebuilt at full size get a night you can see in (the moods still darken them).
-			for _, mapId in ipairs({ "TokyoDistrict" }) do
+			for _, mapId in ipairs({ "TokyoDistrict", "TaskForceHQ" }) do
 				local p = LightingPresets.maps[mapId]
 				local brightest = math.max(p.ambient.R, p.ambient.G, p.ambient.B)
 				expect(p.exposure >= 0).to.equal(true)

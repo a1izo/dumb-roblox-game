@@ -392,20 +392,34 @@ def reach_report(data, dist, problems):
     return picks, len(dist)
 
 
-def corner_times(data, world, picks, problems):
-    """Walk times between opposite corners (a fresh search from each corner)."""
+def nearest_node(dist, x, y, z):
+    """The reached walk node closest to (x, y, z), preferring the floor at height y."""
+    return min(dist, key=lambda n: (n[0] * GRID - x) ** 2 + (n[1] * GRID - z) ** 2 + 4 * (n[2] - y) ** 2)
+
+
+def corner_times(data, world, picks, problems, dist=None):
+    """Walk times between opposite corners (a fresh search from each corner). A venue can name
+    its own pairs of far points (checks.corners: [[(x, y, z), (x, y, z)], ...]), such as the
+    corners of two floors, and its own target (checks.walk: (low, high) seconds)."""
+    checks = data.get("checks") or {}
+    target = tuple(checks.get("walk") or TARGET_WALK)
+    pairs = [(picks[0], picks[1]), (picks[2], picks[3])]
+    if checks.get("corners") and dist:
+        pairs = [(nearest_node(dist, *a), nearest_node(dist, *b)) for a, b in checks["corners"]]
     times = []
-    for a, b in ((picks[0], picks[1]), (picks[2], picks[3])):
+    for a, b in pairs:
         sub = {"layout": {"spawns": [{"x": a[0] * GRID, "z": a[1] * GRID, "y": a[2]}]}, "bounds": data["bounds"]}
         dist = walk(sub, world, [])
-        d = min((v for (i, j, h), v in dist.items() if abs(i - b[0]) <= 1 and abs(j - b[1]) <= 1), default=None)
+        d = min((v for (i, j, h), v in dist.items() if abs(i - b[0]) <= 1 and abs(j - b[1]) <= 1 and abs(h - b[2]) < 3),
+                default=None)
         if d is not None:
             times.append(d / WALK_SPEED)
     if times:
         worst = max(times)
         print(f"  walk corner to corner: {', '.join(f'{t:.0f} s' for t in times)}")
-        if not TARGET_WALK[0] <= worst <= TARGET_WALK[1] + 20:
-            problems.append(f"walk: corner to corner takes {worst:.0f} s (aim for {TARGET_WALK[0]:.0f}-{TARGET_WALK[1]:.0f} s)")
+        slack = 0 if checks.get("walk") else 20
+        if not target[0] <= worst <= target[1] + slack:
+            problems.append(f"walk: corner to corner takes {worst:.0f} s (aim for {target[0]:.0f}-{target[1]:.0f} s)")
     return times
 
 
@@ -714,7 +728,7 @@ def check(venue, full=True):
         dist = walk(data, world, problems)
         picks, reach_count = reach_report(data, dist, problems)
         print(f"  reach: {reach_count} walkable spots reached from the spawns")
-        corner_times(data, world, picks, problems)
+        corner_times(data, world, picks, problems, dist)
         light(data, world, zones, dist, problems)
         symmetry(data, dist, problems)
     return problems

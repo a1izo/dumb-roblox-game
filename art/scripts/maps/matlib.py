@@ -63,6 +63,17 @@ FLAT = {
     "WindowCool": ("Neon", (150, 180, 230), 0, 0),
     "WindowDark": ("Glass", (22, 26, 34), 0, 0.35),
     "WindowGlass": ("Glass", (70, 80, 96), 0.55, 0.3),
+    # Agency HQ: the tower's floor-to-ceiling glass (clear enough to see the city far below), frosted
+    # office glass and the interrogation room's one-way mirror (dark, reflective).
+    "CurtainGlass": ("Glass", (70, 82, 100), 0.72, 0.12),
+    "GlassFrosted": ("Glass", (196, 204, 212), 0.2, 0.05),
+    "MirrorGlass": ("Glass", (30, 34, 40), 0.25, 0.6),
+    # The city seen from high up (Agency HQ's windows): flat, cheap, dark.
+    "CityFacade": ("SmoothPlastic", (40, 42, 52), 0, 0),
+    "CityFacadeWarm": ("SmoothPlastic", (54, 48, 46), 0, 0),
+    "CityGround": ("SmoothPlastic", (24, 24, 28), 0, 0),
+    "CityRoad": ("SmoothPlastic", (15, 15, 19), 0, 0),
+    "CityRoof": ("SmoothPlastic", (31, 32, 38), 0, 0),
     # The shallow rooms behind the low windows and in shop windows: a lit room's walls glow
     # softly (nothing lights them at night), a dark room is just dark.
     "RoomLitBack": ("Neon", (150, 118, 84), 0, 0),

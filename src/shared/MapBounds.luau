@@ -3,5 +3,6 @@
 -- Blender scene, local to the map's origin (Venues.MAP).
 
 return {
+	TaskForceHQ = { min = { -100, -1, -75 }, max = { 100, 28, 75 } },
 	TokyoDistrict = { min = { -200, -30, -150 }, max = { 200, 60, 150 } },
 }

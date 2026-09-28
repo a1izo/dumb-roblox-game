@@ -72,6 +72,12 @@ Assets.sfx = {
 	mapRiver = { id = "96847503564877", ref = "gentle canal water flowing, loop", fallbackId = "" },
 	mapLanternCreak = { id = "91834117633575", ref = "paper lanterns creaking in a light wind, loop", fallbackId = "" },
 	mapIzakaya = { id = "113237103762830", ref = "muffled bar chatter and clinking glasses, loop", fallbackId = "" },
+	mapOfficeHum = { id = "", ref = "empty office at night: air conditioning hum, loop", fallbackId = "" },
+	mapRainGlass = { id = "", ref = "heavy rain against a tall window, loop", fallbackId = "" },
+	mapServerHum = { id = "", ref = "server room fans and hum, loop", fallbackId = "" },
+	mapPhoneRing = { id = "", ref = "an office desk phone ringing unanswered, loop", fallbackId = "" },
+	mapSirenFar = { id = "", ref = "distant police siren across a city at night, loop", fallbackId = "" },
+	mapHelicopter = { id = "", ref = "helicopter passing overhead, rotor loop", fallbackId = "" },
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

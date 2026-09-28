@@ -21,7 +21,8 @@ sys.path.insert(0, os.path.dirname(HERE))
 from rbxsim import read_luau_table  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, "..", "..", ".."))
-MAPS = {"Agency": "TaskForceHQ", "Campus": "UniversityCampus", "Tokyo": "TokyoDistrict"}
+# The maps still laid out by their Luau module (the big maps made in Blender are checked by check_v2.py).
+MAPS = {"Campus": "UniversityCampus"}
 
 
 def luau_return(path, anchor=None):

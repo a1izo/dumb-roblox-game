@@ -12,12 +12,15 @@ return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
 
 	describe("Venues.specterBounds", function()
-		it("keeps Specters inside Agency HQ's walls and under its ceiling", function()
+		it("keeps Specters inside Agency HQ's two floors, under the roof", function()
+			-- Its box comes from its Blender scene (MapBounds): 38F and 39F, glass to glass.
 			local min, max = Venues.specterBounds("map", "TaskForceHQ")
-			expect(inside(Venues.MAP + Vector3.new(79, 5, 59), min, max)).to.equal(true)
-			expect(inside(Venues.MAP + Vector3.new(81, 5, 0), min, max)).to.equal(false)
-			expect(inside(Venues.MAP + Vector3.new(0, 5, -61), min, max)).to.equal(false)
-			expect(inside(Venues.MAP + Vector3.new(0, 15, 0), min, max)).to.equal(false)
+			expect(inside(Venues.MAP + Vector3.new(99, 5, -74), min, max)).to.equal(true)
+			expect(inside(Venues.MAP + Vector3.new(-99, 20, 74), min, max)).to.equal(true)
+			expect(inside(Venues.MAP + Vector3.new(101, 5, 0), min, max)).to.equal(false)
+			expect(inside(Venues.MAP + Vector3.new(0, 5, -76), min, max)).to.equal(false)
+			expect(inside(Venues.MAP + Vector3.new(0, 29, 0), min, max)).to.equal(false)
+			expect(inside(Venues.MAP + Vector3.new(0, -3, 0), min, max)).to.equal(false)
 		end)
 		it("lets Specters reach the rooftops on the outdoor maps, but not past the edge", function()
 			-- Tokyo's box comes from its Blender scene (MapBounds): the metro under it included.

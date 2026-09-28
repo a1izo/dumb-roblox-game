@@ -93,6 +93,10 @@ class Scene(LayoutMixin):
         self.train = None  # the metro train's run, for the client to animate
         self.look_zones = []  # boxes with a lighting look of their own (the metro under Tokyo)
         self.waters = []  # boxes the game fills with Terrain water: (centre, size, rot)
+        self.blinkers = []  # small lamps the client blinks (aircraft warning lights on towers)
+        self.helicopter = None  # the searchlight helicopter's flight past the windows
+        self.checks = {}  # the venue's own targets for check_v2 (walk times and where to measure them)
+        self.far_chunk = None  # (distance, cell size): bigger chunks for far scenery (see _cell)
         self.used = set()
         self.preview_props = []  # placed by the game's own code; only drawn in previews
         self._layout_init()
@@ -371,8 +375,23 @@ class Scene(LayoutMixin):
         self.signs.append({"pos": pos, "rot": rot, "w": w, "h": h, "text": text, "font": font, "color": color,
                            "bg": bg, "glow": glow, "align": align})
 
-    def emitter(self, kind, pos, rot=0.0):
-        self.emitters.append({"kind": kind, "pos": pos, "rot": rot})
+    def emitter(self, kind, pos, rot=0.0, size=None):
+        """A particle source of a kind the game knows (SceneBuilder); size (x, y, z) for the kinds
+        that fill a box (rain on a window, a stream of car lights)."""
+        item = {"kind": kind, "pos": pos, "rot": rot}
+        if size is not None:
+            item["size"] = tuple(size)
+        self.emitters.append(item)
+
+    def blinker(self, pos, color=(255, 40, 40), period=2.0, size=1.2, phase=0.0):
+        """A small lamp the client switches on and off every `period` seconds."""
+        self.blinkers.append({"pos": pos, "color": color, "period": period, "size": size, "phase": phase})
+
+    def fly(self, path, target, every=90.0, duration=16.0):
+        """The helicopter that now and then flies `path` [(x, y, z)] past the building, its
+        searchlight on `target` [(x, y, z)] (followed in step with the path)."""
+        self.helicopter = {"path": [tuple(p) for p in path], "target": [tuple(p) for p in target], "every": every,
+                           "duration": duration}
 
     def screen(self, pos, rot, w, h, loop="ads"):
         """A giant screen facing rot (its face at pos); the game plays `loop` on it."""
@@ -408,9 +427,9 @@ class Scene(LayoutMixin):
             cells = {}
             for piece in pieces:
                 if total <= SMALL_TRIS and not wide:
-                    key = (0, 0)
+                    key = (0, 0, 0)
                 else:
-                    key = (math.floor(piece.centre[0] / self.chunk), math.floor(piece.centre[2] / self.chunk))
+                    key = self._cell(piece.centre)
                 cells.setdefault(key, []).append(piece)
             chunks = []
             for key in sorted(cells):
@@ -428,6 +447,16 @@ class Scene(LayoutMixin):
                 names.append(name)
                 build_mesh(name, chunk, mat, collection)
         return names
+
+    def _cell(self, centre):
+        """The chunk a piece falls in: cells of `chunk` studs; or, past a venue's far_chunk
+        (distance, size), much bigger cells for the scenery far out, which needs only a few
+        meshes (its pieces must stay well under a Roblox part's 2048 studs)."""
+        x, z = centre[0], centre[2]
+        far = self.far_chunk
+        if far and max(abs(x), abs(z)) > far[0]:
+            return (1, math.floor(x / far[1]), math.floor(z / far[1]))
+        return (0, math.floor(x / self.chunk), math.floor(z / self.chunk))
 
     def triangles(self):
         return sum(len(p.faces) for pieces in self.pieces.values() for p in pieces)

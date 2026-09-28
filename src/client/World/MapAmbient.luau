@@ -1,17 +1,22 @@
 --!strict
 -- Life in a map, played on each client from markers the server's map builder leaves
--- (server Maps/SceneBuilder): giant screens looping made-up adverts, ambient sounds (silent while
--- their Assets.sfx slot is empty) and the metro train, which pulls into its platform, opens its
--- doors and leaves again on a timer. Nothing here collides with anyone.
+-- (server Maps/SceneBuilder): screens looping made-up adverts, camera feeds, the night news or a
+-- sector map; ambient sounds (silent while their Assets.sfx slot is empty); the metro train,
+-- which pulls into its platform, opens its doors and leaves again on a timer; aircraft lights
+-- blinking on the towers; rain on the glass (thinner on slower devices); and the police
+-- helicopter that now and then sweeps its searchlight across a tower's floors. Nothing here
+-- collides with anyone.
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Catalog = require(Shared:WaitForChild("ModelCatalog")) :: any
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
+local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 
@@ -20,6 +25,9 @@ local MapAmbient = {}
 local SCREEN_TAG = "LMapScreen"
 local SOUND_TAG = "LMapSound"
 local TRAIN_TAG = "LMapTrain"
+local BLINK_TAG = "LMapBlink"
+local HELI_TAG = "LMapHeli"
+local RAIN_GLASS_TAG = "LMapRainGlass"
 
 -- Screens ------------------------------------------------------------------------------------------
 
@@ -31,7 +39,7 @@ local ADS = {
 	{ "夜のニュース", "NIGHT NEWS", Color3.fromRGB(220, 230, 255), Color3.fromRGB(20, 30, 60) },
 }
 
-local function playScreen(part: BasePart)
+local function playAds(part: BasePart)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.LightInfluence = 0
@@ -88,6 +96,230 @@ local function playScreen(part: BasePart)
 			index = index % #ADS + 1
 		end
 	end)
+end
+
+-- A screen's face: a SurfaceGui on its front with a black backing frame.
+local function face(part: BasePart, pixels: number): Frame
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.LightInfluence = 0
+	gui.Brightness = 1.3
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = pixels
+	gui.Parent = part
+	local back = Instance.new("Frame")
+	back.Size = UDim2.fromScale(1, 1)
+	back.BorderSizePixel = 0
+	back.BackgroundColor3 = Color3.new(0, 0, 0)
+	back.ClipsDescendants = true
+	back.Parent = gui
+	return back
+end
+
+local function box(parent: Instance, position: UDim2, size: UDim2, colour: Color3, transparency: number?): Frame
+	local frame = Instance.new("Frame")
+	frame.Position = position
+	frame.Size = size
+	frame.BorderSizePixel = 0
+	frame.BackgroundColor3 = colour
+	frame.BackgroundTransparency = transparency or 0
+	frame.Parent = parent
+	return frame
+end
+
+local function label(parent: Instance, position: UDim2, size: UDim2, colour: Color3, font: Enum.Font?): TextLabel
+	local line = Instance.new("TextLabel")
+	line.BackgroundTransparency = 1
+	line.Position = position
+	line.Size = size
+	line.TextScaled = true
+	line.Font = font or Enum.Font.Code
+	line.TextColor3 = colour
+	line.TextXAlignment = Enum.TextXAlignment.Left
+	line.Parent = parent
+	return line
+end
+
+-- The night as the screens tell it: past two in the morning, ticking on from when the map loaded.
+local nightStart = os.clock() - math.random(0, 3000)
+local function nightClock(): string
+	local seconds = math.floor(os.clock() - nightStart) + 2 * 3600 + 13 * 60
+	return string.format("%02d:%02d:%02d", (seconds // 3600) % 24, (seconds // 60) % 60, seconds % 60)
+end
+
+-- What the building's cameras see: a few scenes as grey-green silhouettes (a corridor, the fire
+-- stair, the lobby, the street far below, the archive), someone crossing now and then, the
+-- camera's number, the time and a blinking REC.
+local CCTV_SCENES = {
+	{ "38F CORRIDOR", { { 0.3, 0, 0.4, 1, 0.12 }, { 0.42, 0.2, 0.16, 0.6, 0.05 }, { 0, 0.85, 1, 0.15, 0.2 } } },
+	{ "FIRE STAIR", { { 0.1, 0.1, 0.3, 0.9, 0.16 }, { 0.5, 0.3, 0.4, 0.7, 0.1 }, { 0.45, 0, 0.1, 1, 0.22 } } },
+	{ "LOBBY", { { 0, 0.7, 1, 0.3, 0.18 }, { 0.2, 0.2, 0.25, 0.5, 0.08 }, { 0.6, 0.25, 0.3, 0.45, 0.1 } } },
+	{ "STREET", { { 0, 0.55, 1, 0.45, 0.1 }, { 0.05, 0.1, 0.2, 0.45, 0.2 }, { 0.7, 0.05, 0.25, 0.5, 0.18 } } },
+	{ "ARCHIVE", { { 0.05, 0.1, 0.12, 0.9, 0.2 }, { 0.3, 0.1, 0.12, 0.9, 0.2 }, { 0.55, 0.1, 0.12, 0.9, 0.2 } } },
+}
+
+local function playCctv(part: BasePart)
+	local back = face(part, 40)
+	back.BackgroundColor3 = Color3.fromRGB(10, 14, 12)
+	local tint = Color3.fromRGB(120, 150, 130)
+	local shapes: { Frame } = {}
+	for _ = 1, 3 do
+		table.insert(shapes, box(back, UDim2.new(), UDim2.new(), tint, 0.8))
+	end
+	local figure = box(back, UDim2.fromScale(-0.1, 0.45), UDim2.fromScale(0.05, 0.3), Color3.fromRGB(20, 26, 22), 0.2)
+	for k = 1, 6 do
+		box(back, UDim2.fromScale(0, (k - 0.5) / 6), UDim2.new(1, 0, 0, 1), Color3.new(0, 0, 0), 0.7)
+	end
+	local camLabel = label(back, UDim2.fromScale(0.04, 0.04), UDim2.fromScale(0.6, 0.12), Color3.fromRGB(210, 230, 210))
+	local clock = label(back, UDim2.fromScale(0.04, 0.84), UDim2.fromScale(0.5, 0.11), Color3.fromRGB(210, 230, 210))
+	local rec = label(back, UDim2.fromScale(0.72, 0.04), UDim2.fromScale(0.24, 0.12), Color3.fromRGB(255, 60, 60))
+	rec.Text = "● REC"
+	task.spawn(function()
+		local index = math.random(1, #CCTV_SCENES)
+		local camera = math.random(1, 24)
+		while part.Parent do
+			local scene = CCTV_SCENES[index]
+			camLabel.Text = string.format("CAM %02d  %s", camera, scene[1])
+			for k, shape in ipairs(shapes) do
+				local r = scene[2][k]
+				shape.Position = UDim2.fromScale(r[1], r[2])
+				shape.Size = UDim2.fromScale(r[3], r[4])
+				shape.BackgroundTransparency = 1 - r[5] * 3
+			end
+			local crossing = math.random() < 0.4 and not Settings.get("reduceMotion")
+			figure.Visible = crossing
+			if crossing then
+				figure.Position = UDim2.fromScale(-0.1, 0.45)
+				TweenService:Create(figure, TweenInfo.new(6, Enum.EasingStyle.Linear), {
+					Position = UDim2.fromScale(1.05, 0.45),
+				}):Play()
+			end
+			for second = 1, 7 do
+				clock.Text = nightClock()
+				rec.Visible = second % 2 == 1
+				task.wait(1)
+				if not part.Parent then
+					return
+				end
+			end
+			index = index % #CCTV_SCENES + 1
+			camera = camera % 24 + 1
+		end
+	end)
+end
+
+-- Kagegaoka's night news: the channel's bar, LIVE, the headline and a ticker along the foot.
+local HEADLINES = {
+	"THIRD SUDDEN DEATH THIS WEEK",
+	"WITNESSES SOUGHT IN KAGEGAOKA",
+	"THE AGENCY SAYS NOTHING",
+	"RAIN ALL NIGHT OVER THE CITY",
+	"EXPRESSWAY CLOSED AT EXIT 7",
+}
+
+local function playNews(part: BasePart)
+	local back = face(part, 30)
+	back.BackgroundColor3 = Color3.fromRGB(14, 18, 34)
+	local bar = box(back, UDim2.fromScale(0, 0), UDim2.fromScale(1, 0.2), Color3.fromRGB(150, 20, 30))
+	local channel =
+		label(bar, UDim2.fromScale(0.03, 0.1), UDim2.fromScale(0.7, 0.8), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+	channel.Text = "影ヶ丘 NIGHT NEWS"
+	local live =
+		label(bar, UDim2.fromScale(0.8, 0.15), UDim2.fromScale(0.17, 0.7), Color3.new(1, 1, 1), Enum.Font.GothamBlack)
+	live.Text = "● LIVE"
+	local headline = label(
+		back,
+		UDim2.fromScale(0.04, 0.3),
+		UDim2.fromScale(0.92, 0.36),
+		Color3.fromRGB(236, 236, 244),
+		Enum.Font.GothamBold
+	)
+	local strip = box(back, UDim2.fromScale(0, 0.78), UDim2.fromScale(1, 0.18), Color3.fromRGB(230, 226, 214))
+	strip.ClipsDescendants = true
+	local ticker =
+		label(strip, UDim2.fromScale(0, 0.1), UDim2.fromScale(3, 0.8), Color3.fromRGB(20, 20, 26), Enum.Font.GothamBold)
+	ticker.Text = table.concat(HEADLINES, "   ◆   ")
+	task.spawn(function()
+		local index = math.random(1, #HEADLINES)
+		while part.Parent do
+			headline.Text = HEADLINES[index]
+			if not Settings.get("reduceMotion") then
+				ticker.Position = UDim2.fromScale(0, 0.1)
+				TweenService:Create(ticker, TweenInfo.new(9, Enum.EasingStyle.Linear), {
+					Position = UDim2.fromScale(-2, 0.1),
+				}):Play()
+			end
+			task.wait(9)
+			index = index % #HEADLINES + 1
+		end
+	end)
+end
+
+-- The operations room's map of the city: a street grid, the river, the tower, and red marks that
+-- move from one place to the next as the night goes on, under a slow scan line.
+local function playMap(part: BasePart)
+	local back = face(part, 20)
+	back.BackgroundColor3 = Color3.fromRGB(8, 14, 30)
+	local line = Color3.fromRGB(40, 70, 120)
+	for k = 1, 9 do
+		box(back, UDim2.fromScale(k / 10, 0), UDim2.new(0, 2, 1, 0), line, 0.2)
+		box(back, UDim2.fromScale(0, k / 10), UDim2.new(1, 0, 0, 2), line, 0.2)
+	end
+	local river = box(back, UDim2.fromScale(0, 0.72), UDim2.fromScale(1, 0.06), Color3.fromRGB(30, 60, 110))
+	river.Rotation = -3
+	box(back, UDim2.fromScale(0.48, 0.42), UDim2.fromScale(0.04, 0.07), Color3.fromRGB(230, 214, 170))
+	local title = label(back, UDim2.fromScale(0.03, 0.03), UDim2.fromScale(0.6, 0.09), Color3.fromRGB(150, 190, 255))
+	title.Text = "影ヶ丘  KAGEGAOKA  SECTOR 7"
+	local stamp = label(back, UDim2.fromScale(0.72, 0.03), UDim2.fromScale(0.25, 0.09), Color3.fromRGB(150, 190, 255))
+	local marks: { Frame } = {}
+	for _ = 1, 4 do
+		table.insert(
+			marks,
+			box(back, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.025, 0.04), Color3.fromRGB(255, 50, 60))
+		)
+	end
+	local scan = box(back, UDim2.fromScale(0, 0), UDim2.new(1, 0, 0, 3), Color3.fromRGB(120, 180, 255), 0.4)
+	task.spawn(function()
+		while part.Parent do
+			for _, mark in ipairs(marks) do
+				local goal = UDim2.fromScale(0.05 + math.random() * 0.9, 0.12 + math.random() * 0.8)
+				if Settings.get("reduceMotion") then
+					mark.Position = goal
+				else
+					TweenService:Create(mark, TweenInfo.new(4, Enum.EasingStyle.Sine), { Position = goal }):Play()
+				end
+			end
+			if not Settings.get("reduceMotion") then
+				scan.Position = UDim2.fromScale(0, 0)
+				TweenService
+					:Create(scan, TweenInfo.new(8, Enum.EasingStyle.Linear), { Position = UDim2.fromScale(0, 1) })
+					:Play()
+			end
+			for second = 1, 8 do
+				stamp.Text = nightClock()
+				for _, mark in ipairs(marks) do
+					mark.BackgroundTransparency = if second % 2 == 0 then 0.5 else 0
+				end
+				task.wait(1)
+				if not part.Parent then
+					return
+				end
+			end
+		end
+	end)
+end
+
+local function playScreen(part: BasePart)
+	local loop = part:GetAttribute("Loop")
+	if loop == "cctv" then
+		playCctv(part)
+	elseif loop == "news" then
+		playNews(part)
+	elseif loop == "map" then
+		playMap(part)
+	else
+		playAds(part)
+	end
 end
 
 -- Sounds ------------------------------------------------------------------------------------------
@@ -219,6 +451,179 @@ local function runTrain(run: Instance)
 	end)
 end
 
+-- Aircraft lights -------------------------------------------------------------------------------------
+-- Every lamp tagged by the map blinks on its own period and phase: on for a third of it.
+
+local blinkers: { [BasePart]: { period: number, phase: number } } = {}
+local lastBlink = 0
+
+local function stepBlinkers()
+	local now = os.clock()
+	if now - lastBlink < 0.1 then
+		return
+	end
+	lastBlink = now
+	for lamp, timing in pairs(blinkers) do
+		if not lamp.Parent then
+			blinkers[lamp] = nil
+			continue
+		end
+		local on = (now + timing.phase) % timing.period < timing.period * 0.35
+		lamp.Transparency = if on then 0 else 0.85
+	end
+end
+
+-- Rain on the glass ------------------------------------------------------------------------------------
+-- The map sets how hard it rains on each pane; phones, Reduce motion and Low graphics get less.
+
+local RAIN_SCALE = { phone = 0.3, tablet = 0.5, console = 0.8, desktop = 1 }
+local rainGlass: { [ParticleEmitter]: boolean } = {}
+
+local function rainFactor(): number
+	local factor = RAIN_SCALE[Responsive.class()] or 1
+	if Settings.get("reduceMotion") then
+		factor *= 0.5
+	end
+	if Settings.get("lowGraphics") then
+		factor *= 0.4
+	end
+	return factor
+end
+
+local function refreshRainGlass()
+	local factor = rainFactor()
+	for emitter in pairs(rainGlass) do
+		if emitter.Parent then
+			emitter.Rate = ((emitter:GetAttribute("BaseRate") :: number?) or 10) * factor
+		else
+			rainGlass[emitter] = nil
+		end
+	end
+end
+
+-- The helicopter ----------------------------------------------------------------------------------------
+-- Now and then a police helicopter flies the map's path past the tower, its searchlight following
+-- the target points in step (so it sweeps across the floors), nav lights blinking, rotor turning.
+
+local function decode(value: any): { Vector3 }
+	local points = {}
+	if type(value) ~= "string" then
+		return points
+	end
+	for chunk in string.gmatch(value, "[^;]+") do
+		local x, y, z = string.match(chunk, "^([%-%d%.]+),([%-%d%.]+),([%-%d%.]+)$")
+		if x then
+			table.insert(points, Vector3.new(tonumber(x) :: number, tonumber(y) :: number, tonumber(z) :: number))
+		end
+	end
+	return points
+end
+
+-- The point `t` (0 to 1) along a smooth curve through points (Catmull-Rom, even time per span).
+local function along(points: { Vector3 }, t: number): Vector3
+	local spans = #points - 1
+	local f = math.clamp(t, 0, 1) * spans
+	local i = math.min(spans, math.floor(f) + 1)
+	local u = f - (i - 1)
+	local p0 = points[math.max(1, i - 1)]
+	local p1 = points[i]
+	local p2 = points[i + 1]
+	local p3 = points[math.min(#points, i + 2)]
+	return 0.5
+		* (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (3 * p1 - p0 - 3 * p2 + p3) * u * u * u)
+end
+
+local function heliPart(model: Model, size: Vector3, colour: Color3, material: Enum.Material?): Part
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Size = size
+	part.Color = colour
+	part.Material = material or Enum.Material.SmoothPlastic
+	part.Parent = model
+	return part
+end
+
+local function fly(run: Instance, path: { Vector3 }, target: { Vector3 }, duration: number)
+	local model = Instance.new("Model")
+	model.Name = "PoliceHelicopter"
+	local dark = Color3.fromRGB(24, 26, 32)
+	local body = heliPart(model, Vector3.new(3.4, 3.2, 8), dark)
+	local tail = heliPart(model, Vector3.new(0.8, 0.8, 7), dark)
+	local fin = heliPart(model, Vector3.new(0.2, 2.2, 1.4), dark)
+	local rotor = heliPart(model, Vector3.new(13, 0.12, 0.7), Color3.fromRGB(12, 12, 14))
+	local rotor2 = heliPart(model, Vector3.new(0.7, 0.12, 13), Color3.fromRGB(12, 12, 14))
+	local red = heliPart(model, Vector3.new(0.35, 0.35, 0.35), Color3.fromRGB(255, 40, 40), Enum.Material.Neon)
+	local green = heliPart(model, Vector3.new(0.35, 0.35, 0.35), Color3.fromRGB(40, 255, 90), Enum.Material.Neon)
+	local strobe = heliPart(model, Vector3.new(0.35, 0.35, 0.35), Color3.new(1, 1, 1), Enum.Material.Neon)
+	local lamp = heliPart(model, Vector3.new(0.9, 0.9, 0.9), Color3.fromRGB(255, 250, 235), Enum.Material.Neon)
+	local beam = Instance.new("SpotLight")
+	beam.Face = Enum.NormalId.Front
+	beam.Angle = 26
+	beam.Range = 60
+	beam.Brightness = 7
+	beam.Shadows = true
+	beam.Color = Color3.fromRGB(240, 244, 255)
+	beam.Parent = lamp
+	model.Parent = run
+	local sound = Sfx.play("mapHelicopter", { group = "Ambience", parent = body, looped = true, volume = 0.6 })
+	if sound then
+		sound.RollOffMinDistance = 30
+		sound.RollOffMaxDistance = 500
+	end
+	local began = os.clock()
+	local connection: RBXScriptConnection
+	connection = RunService.RenderStepped:Connect(function()
+		local elapsed = os.clock() - began
+		local t = elapsed / duration
+		if t >= 1 or not run.Parent then
+			connection:Disconnect()
+			if sound then
+				sound:Stop()
+				sound:Destroy()
+			end
+			model:Destroy()
+			return
+		end
+		local at = along(path, t)
+		local ahead = along(path, math.min(1, t + 0.01))
+		local heading = if (ahead - at).Magnitude > 0.01 then CFrame.lookAt(at, ahead) else CFrame.new(at)
+		local tilt = heading * CFrame.Angles(math.rad(-8), 0, 0)
+		body.CFrame = tilt
+		tail.CFrame = tilt * CFrame.new(0, 0.6, 6.5)
+		fin.CFrame = tilt * CFrame.new(0, 1.6, 9.6)
+		local spin = CFrame.Angles(0, elapsed * 30, 0)
+		rotor.CFrame = tilt * CFrame.new(0, 2.0, 0) * spin
+		rotor2.CFrame = tilt * CFrame.new(0, 2.0, 0) * spin
+		red.CFrame = tilt * CFrame.new(-1.8, 0, 0)
+		green.CFrame = tilt * CFrame.new(1.8, 0, 0)
+		strobe.CFrame = tilt * CFrame.new(0, 1.8, 3)
+		strobe.Transparency = if elapsed % 1.2 < 0.12 then 0 else 1
+		local nose = (tilt * CFrame.new(0, -1.8, -3.5)).Position
+		lamp.CFrame = CFrame.lookAt(nose, along(target, t))
+	end)
+end
+
+local function runHeli(run: Instance)
+	local path = decode(run:GetAttribute("Path"))
+	local target = decode(run:GetAttribute("Target"))
+	if #path < 2 or #target ~= #path then
+		return
+	end
+	local every = (run:GetAttribute("Every") :: number?) or 90
+	local duration = (run:GetAttribute("Duration") :: number?) or 18
+	task.wait(15 + math.random() * every * 0.5)
+	while run.Parent do
+		if not Settings.get("reduceMotion") then
+			fly(run, path, target, duration)
+		end
+		task.wait(every * (0.8 + math.random() * 0.4))
+	end
+end
+
 local function watch(tag: string, handler: (Instance) -> ())
 	for _, item in ipairs(CollectionService:GetTagged(tag)) do
 		task.spawn(handler, item)
@@ -240,6 +645,28 @@ function MapAmbient.init()
 		end
 	end)
 	watch(TRAIN_TAG, runTrain)
+	watch(BLINK_TAG, function(item)
+		if item:IsA("BasePart") then
+			blinkers[item] = {
+				period = math.max(0.2, (item:GetAttribute("Period") :: number?) or 2),
+				phase = (item:GetAttribute("Phase") :: number?) or 0,
+			}
+		end
+	end)
+	RunService.Heartbeat:Connect(stepBlinkers)
+	watch(RAIN_GLASS_TAG, function(item)
+		if item:IsA("ParticleEmitter") then
+			rainGlass[item] = true
+			refreshRainGlass()
+		end
+	end)
+	Responsive.Changed:Connect(refreshRainGlass)
+	Settings.Changed:Connect(function(key)
+		if key == "reduceMotion" or key == "lowGraphics" then
+			refreshRainGlass()
+		end
+	end)
+	watch(HELI_TAG, runHeli)
 end
 
 return MapAmbient

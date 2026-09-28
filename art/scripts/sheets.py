@@ -33,6 +33,12 @@ GROUPS = {
     "yokocho": ["Chochin", "LanternString", "Noren", "BeerCrates", "YakitoriGrill", "Boat"],
     "trees": ["TreeSakura", "TreeZelkova", "PetalScatter"],
     "stations": ["StationCCTV", "StationReception", "StationPhoneBooth", "StationPrintKit", "StationLabBench"],
+    "agency_stations": ["StationCRTBank", "StationPhoneDesk", "StationReelToReel", "ElevatorDoors", "MetalDetector",
+                        "XRayScanner"],
+    "agency_rooms": ["InterrogationTable", "ArchiveShelving", "EvidenceCage", "ExecutiveDesk", "FumeHood",
+                     "MicrofilmReader"],
+    "agency_office": ["WaterCooler", "Photocopier", "FaxMachine", "DeskPhone", "CoffeeMachine", "CoatStand",
+                      "PinBoard", "Whiteboard"],
 }
 
 GAP = 3.0

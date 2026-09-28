@@ -11,9 +11,9 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | `blend/Animations.blend` | The R15 rig with every animation as an action (open it to tweak curves) |
 | `blend/Props.blend` | Every prop, baked |
 | `blend/Maps.blend` | The map scenes not rebuilt yet |
-| `blend/Maps_<Venue>.blend` | A rebuilt big map (Tokyo) |
+| `blend/Maps_<Venue>.blend` | A rebuilt big map (Tokyo, Agency) |
 | `export/InkboundModels.fbx` | All props and effect textures (Studio import #1) |
-| `export/InkboundModels_<Set>.fbx` | The props made for one map (Tokyo), imported like the others |
+| `export/InkboundModels_<Set>.fbx` | The props made for one map (Tokyo, Agency), imported like the others |
 | `export/InkboundMaps.fbx` | The map scenes not rebuilt yet, with their tiling textures (Studio import #2) |
 | `export/InkboundMaps_<Venue>.fbx` | One rebuilt big map each (Studio import, one per map) |
 | `export/textures/` | Baked prop textures, effect textures, and `maps/` (tiling colour, normal and roughness maps) |
@@ -57,9 +57,10 @@ blender -b --factory-startup --python art/scripts/verify_ingame.py        # Blen
 
 ## Map scenes
 
-Each venue (`scripts/maps/venues/lobby.py`, `meeting.py`, `agency.py`, `campus.py`,
-`tokyo.py`) builds its architecture from the kit (`kit.py`, `urban.py`) on the same layout as
-the Luau map module, so stations, spawns, sheets, drop points and hoods keep their places.
+Each older venue (`scripts/maps/venues/lobby.py`, `meeting.py`, `campus.py`) builds its
+architecture from the kit (`kit.py`, `urban.py`) on the same layout as the Luau map module, so
+stations, spawns, sheets, drop points and hoods keep their places. The rebuilt big maps (`tokyo/`,
+`agency/`) are packages that place their gameplay spots themselves (below).
 
 ```
 blender -b --factory-startup --python art/scripts/run_maps.py -- --preview            # renders
@@ -81,7 +82,7 @@ python art/scripts/maps/contract_check.py                                       
 clear, worker spots free, screens visible from at least 3 of 8 sides, sheets resting on a
 surface, spawns, hoods and drop points not inside anything. Run it after changing a venue.
 
-### The rebuilt big maps (Tokyo so far)
+### The rebuilt big maps (Tokyo, Agency HQ)
 
 A venue whose module sets `FORMAT = 2` (`scripts/maps/venues/tokyo/`) is a whole map made here:
 its streets, buildings and **gameplay spots** (stations, spawns, sheets, drop points, hoods,
@@ -97,6 +98,19 @@ hand), `interiors.py` (the rooms you can walk into, with the stations in them), 
 (street furniture and every lamp, placed by hand), `edges.py` (the city carrying on past the
 map, and a fence with police tape across every street that leaves it) and `gameplay.py`.
 Buildings are made by the kit in `maps/buildings.py` (facades, shopfronts, signs, roofs).
+
+Agency HQ (`scripts/maps/venues/agency/`, map `TaskForceHQ`) is the Agency's two floors, 38F
+(y 0) and 39F (y 14), high in the Kagegaoka Central Tower: a 200 x 150 plate with its south-east
+corner cut, an off-centre core (the lifts, closed service rooms, a fire stair) with a corridor
+round it, and over the lobby the atrium, where a grand stair climbs to the operations deck facing
+the video wall. `plan.py` (the plate, the core, the stairs and every room of both floors),
+`shell.py` (slabs, the curtain wall, the core, the fire stair, the atrium), `fit.py` (partitions:
+clear glass lets a letter flash through, frosted glass, shut blinds and the one-way mirror do not;
+furniture, stairs and railings with their invisible guards, ceiling fittings), `lower.py` and
+`upper.py` (each floor's rooms with their stations), `outside.py` (the city 440 studs down, the
+neighbouring towers, car lights, rain on the glass, the helicopter's pass; flat colours and big
+mesh chunks, `far_chunk`, since it is all far away) and `gameplay.py`. Its props are the `Agency`
+set (`props_agency.py`, `InkboundModels_Agency.fbx`).
 
 ```
 blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --plan      # top-down plans
@@ -125,12 +139,15 @@ it is imported.
 Every light belongs to something you can see: a lamp in the map's meshes, or a prop that carries
 its own (street lights, lanterns, fridges, the train; `lights` in the catalog). A lantern string
 can be placed unlit (`s.prop(..., dark=True)`). The client's `World/MapAmbient` plays the
-screens' adverts, the sound sources (silent until their `Assets.sfx` slot has an id) and the
-train that pulls into the platform every two minutes.
+screens' loops (adverts, camera feeds, the night news, a sector map), the sound sources (silent
+until their `Assets.sfx` slot has an id), the train that pulls into the platform every two
+minutes, the aircraft lights blinking on towers, the rain on a tower's glass and the police
+helicopter sweeping its searchlight past the windows.
 
 `check_v2.py` checks the contract at every floor height; that nothing of the game's stands on a
 road, crossing, water, track or stairs (zones); that every spot can be walked to from the spawns
-and how long corner to corner takes (aim: 30-45 s); how much of the walkable ground is lit (a
+and how long corner to corner takes (aim: 30-45 s; a venue can set its own target and the
+points to measure between, `CHECKS` in its module); how much of the walkable ground is lit (a
 report, not a pass mark: `previews/light_Tokyo.png` shows the dark parts in red); and how alike
 the map is to its own mirror image (it must not be symmetrical).
 
