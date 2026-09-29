@@ -10,10 +10,9 @@ venues: Lobby Meeting Agency Campus Tokyo (all when none are given)
            (art/export/previews/plan_<Venue>_<level>.png)
 --massing  renders the venue's MASSING_VIEWS like an architect's model, with player-sized figures
            for scale (art/export/previews/massing_<Venue>_<n>.png)
---export   older venues: src/server/Maps/Scenes/<Venue>.luau and art/export/InkboundMaps.fbx;
-           big venues (FORMAT = 2): src/server/Maps/Scenes/<Venue>/, src/shared/MapBounds.luau,
-           art/export/InkboundMaps_<Venue>.fbx and art/export/scenes/<Venue>.json (for the checks).
-           Always merges src/shared/SceneMaterials.luau and saves the .blend
+--export   each venue's src/server/Maps/Scenes/<Venue>/, art/export/InkboundMaps_<Venue>.fbx and
+           art/export/scenes/<Venue>.json (for the checks), and for the maps src/shared/MapBounds.luau.
+           Always merges src/shared/SceneMaterials.luau and saves the .blend (Maps_<Venue>.blend)
 --materials rewrites only src/shared/SceneMaterials.luau (for the materials it lists now)
 """
 
@@ -34,15 +33,12 @@ VENUES = ["Lobby", "Meeting", "Agency", "Campus", "Tokyo"]
 MODULES = {"Lobby": "lobby", "Meeting": "meeting", "Agency": "agency", "Campus": "campus", "Tokyo": "tokyo"}
 
 
-def is_v2(module):
-    """Big venues (FORMAT = 2 in the venue module) get an FBX of their own and scene data
-    with their gameplay layout (see maps/export.py)."""
-    return getattr(module, "FORMAT", 1) >= 2
-
-
 def build_venue(name):
+    """Every venue is a package with FORMAT = 2: an FBX of its own and scene data with its gameplay
+    layout and anchors (see maps/export.py)."""
     module = importlib.import_module("maps.venues." + MODULES[name])
-    scene = mesher.Scene(name, prefix="Map", chunk=128.0) if is_v2(module) else mesher.Scene(name)
+    assert getattr(module, "FORMAT", 1) >= 2, f"{name}: every venue is FORMAT 2 now"
+    scene = mesher.Scene(name, prefix="Map", chunk=128.0)
     module.build(scene)
     coll = common.collection("Scene_" + name)
     started = time.time()
@@ -539,11 +535,8 @@ def main():
             print("[maps] massing", render_massing(scene, module))
     if do_export:
         used = set()
-        legacy = [(s, m, c) for s, m, c in built if not is_v2(m)]
         for scene, module, coll in built:
             used |= scene.used
-            if not is_v2(module):
-                continue
             source = f"art/scripts/maps/venues/{MODULES[scene.venue]}"
             version, paths = export.write_scene_v2(scene, module, source)
             objects = [o for o in coll.objects if o.type == "MESH"]
@@ -558,14 +551,7 @@ def main():
             for p in paths:
                 print("[maps]   wrote", p)
         export.write_materials(used | set(matlib.FLAT))
-        if legacy:
-            objects = []
-            for scene, module, coll in legacy:
-                export.write_scene(scene, f"art/scripts/maps/venues/{MODULES[scene.venue]}.py")
-                objects.extend(o for o in coll.objects if o.type == "MESH")
-            objects.extend(export.calibration_cubes(common.collection("Calibration"), "Calib_Maps", "Maps"))
-            print("[maps] fbx", export.export_fbx(objects), len(objects), "objects")
-        common.save_blend("Maps.blend" if not any(is_v2(m) for _, m, _ in built) else f"Maps_{'_'.join(names)}.blend")
+        common.save_blend(f"Maps_{'_'.join(names)}.blend")
 
 
 main()

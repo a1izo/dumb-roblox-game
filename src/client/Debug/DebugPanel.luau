@@ -544,8 +544,15 @@ builders.World = function()
 	button(r, "Campus props", function()
 		send("propGallery", { set = "Campus" })
 	end)
+	r = row()
+	button(r, "Lobby props", function()
+		send("propGallery", { set = "Lobby" })
+	end)
+	button(r, "Meeting props", function()
+		send("propGallery", { set = "Meeting" })
+	end)
 	note(
-		"Previews build a map outside a match (between matches). Turning scenes off rebuilds the lobby and meeting room part-made, and the maps as greyboxes."
+		"Previews build a map outside a match (between matches). Turning scenes off rebuilds the lobby, the meeting room and the maps as greyboxes."
 	)
 	heading("Me")
 	r = row()
@@ -725,7 +732,7 @@ builders.UI = function()
 	end, COLORS.pick)
 	note(
 		"Every component, lettering size, surface and icon on one page. The lettering, paper and"
-			.. " icons need InkboundModels.fbx imported; until then the code-only versions show."
+			.. " icons need InkboundModels_Core.fbx imported; until then the code-only versions show."
 	)
 	heading("Notifications")
 	r = row()

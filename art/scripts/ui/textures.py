@@ -4,7 +4,7 @@
 
 Everything is white or grey with alpha (the game tints it), except the two paper tiles, which
 carry their own colour. Files go to art/export/textures/Ui<Name>.png and ride into Roblox on
-carrier quads in InkboundModels.fbx (build_props.py). The UI works without them.
+carrier quads in InkboundModels_Core.fbx (build_props.py). The UI works without them.
 """
 
 import math

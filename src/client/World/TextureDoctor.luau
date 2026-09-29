@@ -3,7 +3,7 @@
 -- colour), so nothing renders blank. A texture fails when Roblox is still processing it, has
 -- moderated it, or cannot read it; Studio prints which ones.
 --
--- Map meshes are named Scene_<Venue>_<Material>_<n> and take their fallback from
+-- Scene meshes are named Map_<Venue>_<Material>_<n> and take their fallback from
 -- SceneMaterials; props take theirs from ModelCatalog.
 
 local ContentProvider = game:GetService("ContentProvider")
@@ -58,7 +58,7 @@ end
 
 -- The look to fall back to for a mesh, from its name (map scene) or the prop it belongs to.
 local function fallbackFor(part: MeshPart): (Look?, string)
-	local material = string.match(part.Name, "^Scene_%a+_(.-)_%d+$")
+	local material = string.match(part.Name, "^Map_%a+_(.-)_%d+$")
 	if material then
 		local entry = (SceneMaterials :: any)[material]
 		return if entry then entry.fallback else nil, material
@@ -154,7 +154,7 @@ end
 
 local function consider(item: Instance)
 	-- Only our imports: avatars' accessories and anything else keep Roblox's own handling.
-	if not item:IsA("MeshPart") or not (string.sub(item.Name, 1, 6) == "Scene_" or propOf(item)) then
+	if not item:IsA("MeshPart") or not (string.sub(item.Name, 1, 4) == "Map_" or propOf(item)) then
 		return
 	end
 	local id = textureOf(item)

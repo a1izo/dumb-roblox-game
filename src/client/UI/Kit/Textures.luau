@@ -1,6 +1,6 @@
 --!strict
 -- The UI's own textures (glyph atlases, paper, torn edges, seals, icons). They are drawn by
--- art/scripts/ui and travel in InkboundModels.fbx on carrier quads, so importing that file is
+-- art/scripts/ui and travel in InkboundModels_Core.fbx on carrier quads, so importing that file is
 -- all it takes; Assets.texture finds them. Until they are imported and loaded (or if a load
 -- fails) every component draws a code-only version instead, and redraws when Ready fires.
 

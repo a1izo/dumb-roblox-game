@@ -83,6 +83,8 @@ Assets.sfx = {
 	mapTowerBell = { id = "", ref = "one stroke of a large clock-tower bell, ringing out", fallbackId = "" },
 	mapPianoFar = { id = "", ref = "an upright piano practising down a corridor, muffled, loop", fallbackId = "" },
 	mapNewsRadio = { id = "", ref = "a late-night news radio murmuring in an empty room, loop", fallbackId = "" },
+	mapWindWaste = { id = "", ref = "a dry wind moaning across an empty desert of ash, loop", fallbackId = "" },
+	mapRiftHum = { id = "", ref = "a deep, hollow drone rising out of a chasm, loop", fallbackId = "" },
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

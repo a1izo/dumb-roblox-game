@@ -10,7 +10,8 @@ Players who are killed, voted out or arrested stay in the match as invisible **S
 
 1. Install the tools once: `aftman install` (Rojo, StyLua and Selene, pinned in `aftman.toml`).
 2. Start Rojo (`rojo serve`) and connect the Rojo plugin in Studio. The whole game syncs in; the
-   lobby and all maps are built by code.
+   lobby, the meeting room and all maps are built by code from their Blender scene data (as
+   greyboxes until their FBX files are imported, see "Art made in Blender").
 3. Press **Play**, then **READY** in the lobby. In Studio a match starts with just you
    (`Config.STUDIO_MIN_PLAYERS = 1`); live servers need 6. Press **F2** for the debug panel
    (test bots, phase and role controls, previews; see below).
@@ -28,7 +29,7 @@ In a Studio play test, press **F2**. Everything below works with just you in the
 | Match | Start a match now, pick the next map, skip to any phase or round, pause or extend the timer, speed phases up (x0.1 to x2), skip cutscene phases, force a win, end the match at once |
 | People | Everyone with their role and real name. Change anyone's role mid-match (unique roles swap), force roles for the next match, kill (any cause), vote out, arrest, revive, give the Specter's Eyes, a hood or paper, force a letter flash, add suspicion, teleport, freeze |
 | Bots | Add test bots (Studio only). They join the next match, walk on pathfinding, work and fake case files, vote, and the Hand writes names. Toggle autoplay and kills, choose how bots vote, or order one bot to come, work, vote, write a name, serve a warrant or take the Eyes deal |
-| World | Teleport to the lobby, map, meeting room, any station or area; preview any map between matches; switch Blender scenes and part-built rooms (greybox maps); check the map contract; fly, noclip, free camera; show colliders, roles over heads and performance stats; force lighting presets, phase moods, rain and snow |
+| World | Teleport to the lobby, map, meeting room, any station or area; preview any map between matches; switch Blender scenes and greyboxes; check the map contract; fly, noclip, free camera; show colliders, roles over heads and performance stats; force lighting presets, phase moods, rain and snow |
 | Show | Play any cutscene for yourself during a match (intro, the four deaths, verdict, arrest, Eyes deal, both outros), announcements, every role's briefing card, the results screen, any music slot, every sound |
 | Anim | Play any animation clip on yourself or on the person picked, from x0.1 to x2, looped |
 | Profile | Coins, XP, every cosmetic, passes for the session, next day / week (streaks, quests, shop), resets (hints, Academy, streak, quests, achievements, cosmetics, everything), test purchases |
@@ -92,8 +93,18 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   debug panel's UI tab shows them all), with a router for windows, device scaling, reduced
   motion and full gamepad support.
 - **Teaching**: the role card, objectives for your role and phase, one-time tips (the X on a tip
-  turns the whole guide off; Settings brings it back), How to Play, and the **Academy** wing of
-  the lobby with practice desks for every skill.
+  turns the whole guide off; Settings brings it back), How to Play, and the **Academy** in the
+  lobby, a ring of broken pillars with a practice altar for every skill.
+- **The lobby** is the Grey Realm: an ashen wasteland under a flat grey sky, the world the
+  Grimoire comes from. Players appear on an old flagstone plaza before the Grimoire's plinth, the
+  title carved on a monolith before them; steles round the plaza carry How to Play, the next case
+  and the boards. The Academy lies south-west; to the east a rift in the ground looks down on
+  Kagegaoka at night; dead trees, bones, a colossal carcass, an abandoned dice game and an empty
+  bone throne fill the plain, which runs on into the haze.
+- **The meeting room** is the Agency's war room high in the Central Tower: a round table under one
+  hard light, Zero's screen between two speaker columns, the evidence board on a wall of pinned
+  photographs and red string, the Specters' mezzanine round the walls, and the city at night
+  through half-open blinds.
 - **Cutscenes** (`client/Presentation`): the server sends timed cues that every client plays at the
   same moment. Case opening, deaths, the verdict, arrests, the Specter's Eyes deal and the ending.
 - **Characters** (`client/Anim`, `shared/Anim`): procedural poses played on every character from
@@ -101,8 +112,8 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   cuffs, victory and defeat). Deaths ragdoll and leave a body until the next round, then a card
   with the alias. In matches everyone wears a noir suit and red tie, and one movement set replaces
   owned animation packs.
-- **World** (`client/World`, `shared/LightingPresets.luau`, `server/Maps/Style.luau`): "noir night"
-  lighting per venue (cold moonlight, warm lamps with hard shadows, haze, a washed-out grade,
+- **World** (`client/World`, `shared/LightingPresets.luau`): "noir night"
+  lighting per venue (the lobby's Grey Realm is a sunless grey day) (cold moonlight, warm lamps with hard shadows, haze, a washed-out grade,
   bloom only on real lights) with a strong mood per phase, blended slowly: the Grimoire phase
   falls near-black and red, the meeting gets a harsh cold key light, red creeps into the vote,
   the verdict and the ending black out around the cutscene's spotlight. Settings has Low
@@ -145,14 +156,15 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
   character, so there is nothing to upload. Walking and running are generated with leg IK and
   advance by distance, so feet do not slide. The default Animate script is replaced by an
   empty one, and R6 avatars are rebuilt as R15.
-- **Props and maps** are imported in Studio with **Import 3D**: `art/export/InkboundModels.fbx`
-  (props and effect textures), `art/export/InkboundMaps.fbx` (the venues not rebuilt yet), and for
-  each rebuilt map its props and its scene, `art/export/InkboundModels_<Venue>.fbx` and
-  `art/export/InkboundMaps_<Venue>.fbx` (Tokyo and Agency HQ). Leave them where the
-  importer puts them; the server moves them into `ReplicatedStorage > InkboundAssets` when it
-  starts and prints what it found. A rebuilt map without its import (or with an older one) loads
-  as a **greybox**: the same map, fully playable, in plain colours, and the Output says which file
-  to import.
+- **Props and scenes** are imported in Studio with **Import 3D**: the props every venue and the
+  game use, with the effect and UI textures, `art/export/InkboundModels_Core.fbx`; and for each
+  venue (the lobby, the meeting room, Agency HQ, University Campus, Tokyo) its props and its scene,
+  `art/export/InkboundModels_<Set>.fbx` and `art/export/InkboundMaps_<Venue>.fbx`. Leave them where
+  the importer puts them; the server moves them into `ReplicatedStorage > InkboundAssets` when it
+  starts and prints what it found. A venue without its import (or with an older one) loads as a
+  **greybox**: the same place, fully playable, in plain colours, and the Output says which file
+  to import. The old `InkboundModels.fbx` and `InkboundMaps.fbx` are retired: an import of either is
+  set aside with a warning, so delete them from the place.
 
 ## Your own assets and ids
 
@@ -203,9 +215,10 @@ src/server/     init.server.luau boots every service
                 services, CharacterService, RagdollService, GhostService, CollisionGroups,
                 DataService, ProfileService, Cosmetics/Shop, Pass/Monetization/Alias/Director,
                 Progress/Achievement/Leaderboard, Analytics, DebugService (Studio only)
-  Maps/         Builder, Style (meeting-room dressing), MapContract, SceneBuilder (places the Blender
-                scenes), Scenes/ (generated colliders, props, lights and signs per venue), the
-                lobby, the meeting room and three maps: Agency HQ, University Campus, Tokyo
+  Maps/         Builder, MapContract, SceneBuilder (places the Blender scenes), Scenes/ (generated
+                layouts, anchors, colliders, props, lights and signs per venue), the
+                lobby (the Grey Realm), the meeting room (the war room) and three maps: Agency HQ,
+                University Campus, Tokyo
   Debug/        test bots for the debug panel (DebugService runs the panel's commands)
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything

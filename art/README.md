@@ -6,24 +6,22 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | Folder | What it holds |
 | --- | --- |
 | `scripts/` | The build scripts (run with Blender, see below) |
-| `scripts/maps/` | The map scenes: texture library, geometry kit, one script per venue |
+| `scripts/maps/` | The scenes: texture library, geometry kit, one package per venue |
 | `data/r15_rig.json` | Roblox's own R15 rig (joints and part sizes), from `r15_extract.py` |
 | `blend/Animations.blend` | The R15 rig with every animation as an action (open it to tweak curves) |
 | `blend/Props.blend` | Every prop, baked |
-| `blend/Maps.blend` | The map scenes not rebuilt yet |
-| `blend/Maps_<Venue>.blend` | A rebuilt big map (Tokyo, Agency) |
-| `export/InkboundModels.fbx` | All props and effect textures (Studio import #1) |
-| `export/InkboundModels_<Set>.fbx` | The props made for one map (Tokyo, Agency), imported like the others |
-| `export/InkboundMaps.fbx` | The map scenes not rebuilt yet, with their tiling textures (Studio import #2) |
-| `export/InkboundMaps_<Venue>.fbx` | One rebuilt big map each (Studio import, one per map) |
+| `blend/Maps_<Venue>.blend` | Each venue's scene (Lobby, Meeting, Agency, Campus, Tokyo) |
+| `export/InkboundModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
+| `export/InkboundModels_<Set>.fbx` | The props made for one venue (Tokyo, Agency, Campus, Lobby, Meeting) |
+| `export/InkboundMaps_<Venue>.fbx` | One venue's scene each, with its tiling textures |
 | `export/textures/` | Baked prop textures, effect textures, and `maps/` (tiling colour, normal and roughness maps) |
 | `export/previews/` | Renders of every pose, prop and map, for review |
 
-## The two imports in Studio
+## The imports in Studio
 
-Meshes and images must be uploaded under your account, which only Studio can do. For each of
-`art/export/InkboundModels.fbx` and `art/export/InkboundMaps.fbx` (and each
-`InkboundModels_<Set>.fbx` and `InkboundMaps_<Venue>.fbx` beside them):
+Meshes and images must be uploaded under your account, which only Studio can do. For each
+`art/export/InkboundModels_<Set>.fbx` (Core and one per venue) and each
+`art/export/InkboundMaps_<Venue>.fbx`:
 
 1. **Home > Import 3D** (or File > Import 3D), pick the file, keep the defaults, press **Import**.
 2. That's it. The importer drops the model into Workspace; when the game starts, the server
@@ -34,8 +32,12 @@ Meshes and images must be uploaded under your account, which only Studio can do.
 Importing a newer version: delete the old imported model first (the game uses the first one it
 finds with a given name).
 
-Nothing breaks before an import: props fall back to their part-built versions, the lobby and the
-meeting room build their part-made rooms, and each map is built as a greybox (below).
+Nothing breaks before an import: props fall back to their part-built versions and every venue
+is built as a greybox (below).
+
+`InkboundModels.fbx` and `InkboundMaps.fbx` are retired (their props moved to the Core set, the
+lobby and the meeting room got scenes of their own). The game sets an import of either aside and
+warns; delete them from the place.
 
 ## Animations: no upload needed
 
@@ -57,29 +59,46 @@ blender -b --factory-startup --python art/scripts/verify_ingame.py        # Blen
 
 ## Map scenes
 
-The two older venues (`scripts/maps/venues/lobby.py`, `meeting.py`) build their architecture
-from the kit (`kit.py`, `urban.py`) around the Luau module's own layout. The maps (`tokyo/`,
-`agency/`, `campus/`) are packages that place their gameplay spots themselves (below).
+Every venue is a package in `scripts/maps/venues/` with `FORMAT = 2`: the lobby (`lobby/`), the
+meeting room (`meeting/`) and the maps (`tokyo/`, `agency/`, `campus/`). Export one venue at a
+time (each saves its own `Maps_<Venue>.blend`).
 
 ```
-blender -b --factory-startup --python art/scripts/run_maps.py -- --preview            # renders
-blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --preview      # one venue
-blender -b --factory-startup --python art/scripts/run_maps.py -- --export             # all venues
-blender -b --factory-startup --python art/scripts/run_maps.py -- Lobby Meeting --export  # the older two
+blender -b --factory-startup --python art/scripts/run_maps.py -- Lobby --preview      # renders
+blender -b --factory-startup --python art/scripts/run_maps.py -- Lobby --export
+blender -b --factory-startup --python art/scripts/run_maps.py -- Meeting --export
 ```
 
-`--export` writes:
-- `export/InkboundMaps.fbx`: meshes named `Scene_<Venue>_<Material>_<n>` (one material per
-  mesh, textures tiling in world space) plus three calibration cubes (`Calib_Maps_O/X/Y`) the
-  game uses to undo any scale or rotation the importer applied.
-- `src/server/Maps/Scenes/<Venue>.luau`: invisible colliders (walls, furniture, roofs; windows
-  block sight lines like the solid walls they replaced), props from the prop library, lights,
-  signs and particle emitters.
-- `src/shared/SceneMaterials.luau`: colours for the flat materials (metal, glass, neon...).
+### The lobby and the meeting room
 
-### The rebuilt big maps (Tokyo, Agency HQ, University Campus)
+The lobby (`scripts/maps/venues/lobby/`) is the Grey Realm, the ashen wasteland the Grimoire comes
+from: a grey plain under a flat grey sky, the walkable basin about 320 studs across (a bay of rock
+cuts into its west side), ringed by rock outcrops and bone stakes with an invisible wall behind
+them, the plain, its spires and mesas and the ribs of colossal things running on to about 1000
+studs into the haze. `plan.py` (every place, with its own overlap check), `terrain.py` (the ground
+with the rift cut out of it, crusts of cracked earth, the rock kit: `rock`, `spire`, `mesa`,
+`boulder`; the edge and what lies beyond it), `landmarks.py` (the plaza and the Grimoire's plinth,
+the title monolith, the six steles, the bone throne on its mesa, the Academy's ring of pillars, the
+dice rock, the carcass), `rift.py` (the hole in the ground, its glowing rim and guard, and
+Kagegaoka at night far below, built at a third of its size so its tower ends well under the
+realm), `dressing.py` (dead trees, braziers, lantern posts, bones, stepping stones, drifting ash,
+the wind; placed by hand) and `gameplay.py`. The lobby's Luau (`Maps/Lobby.luau`) builds the title,
+the boards, the spawn, the Academy's signs, drill altars and effigies at the scene's `anchors`
+(`s.anchor`). Its props are the `Lobby` set (`props_lobby.py`, `InkboundModels_Lobby.fbx`).
 
-A venue whose module sets `FORMAT = 2` (`scripts/maps/venues/tokyo/`) is a whole map made here:
+The meeting room (`scripts/maps/venues/meeting/`) is the Agency's war room, 60 x 60 x 18 as it
+always was: `plan.py` (the room's numbers: the table, the twelve standing places, the screen, the
+board, the windows, the mezzanine), `room.py` (parquet and the round carpet, walnut panelling
+under damask, pilasters, the coffered ceiling with the spotlight and the brass halo, the
+Specters' mezzanine), `furnish.py` (the table's round colliders and chairs, the screen wall, the
+case wall of photographs and red string, bookcases, sideboard, clock, radiators, the corners) and
+`outside.py` (the city far below the windows, rain on the glass). `Maps/MeetingRoom.luau` builds
+the screen, the board, the seats and the Specters' spots at its anchors. Its props are the
+`Meeting` set (`props_meeting.py`, `InkboundModels_Meeting.fbx`).
+
+### The maps (Tokyo, Agency HQ, University Campus)
+
+Each map (`scripts/maps/venues/tokyo/`) is a whole map made here:
 its streets, buildings and **gameplay spots** (stations, spawns, sheets, drop points, hoods,
 named areas with intro marks, the tip box and board, plus spare spots of every kind) are all
 placed by the venue script, and the game reads them from the generated scene data. The Luau map
@@ -135,7 +154,7 @@ python art/scripts/maps/check_v2.py Tokyo            # full check (a few minutes
 python art/scripts/maps/walkdebug.py Tokyo x y z 40  # where can you walk from here?
 ```
 
-`--export` writes, for that venue only (other venues are left alone):
+`--export` writes, for that venue only (other venues are left alone), here for Tokyo:
 - `export/InkboundMaps_Tokyo.fbx`: meshes `Map_Tokyo_<Material>_<n>`, calibration cubes
   `Calib_Tokyo_O/X/Y` and a marker `InkboundMapsTokyo_Version_<n>`. The version only goes up when
   the meshes change; only then does Studio need a new import (delete the old one first).
@@ -143,7 +162,7 @@ python art/scripts/maps/walkdebug.py Tokyo x y z 40  # where can you walk from h
   (colliders, floor triangles, ramps, the steps drawn over them), `Dressing` (props, lights, signs,
   screens, sound sources and the metro train's timetable). Long lists are split into parts so no
   script gets too long for Studio.
-- `src/shared/MapBounds.luau` (the Specter box) and `src/shared/SceneMaterials.luau` (merged).
+- `src/shared/MapBounds.luau` (a map's Specter box) and `src/shared/SceneMaterials.luau` (merged).
 - `export/scenes/Tokyo.json`: the same data for the checks (not committed).
 
 Without the import the game builds the map as a greybox from the colliders (in their materials'
@@ -164,7 +183,8 @@ road, crossing, water, track or stairs (zones); that every spot can be walked to
 and how long corner to corner takes (aim: 30-45 s; a venue can set its own target and the
 points to measure between, `CHECKS` in its module); how much of the walkable ground is lit (a
 report, not a pass mark: `previews/light_Tokyo.png` shows the dark parts in red); and how alike
-the map is to its own mirror image (it must not be symmetrical).
+the map is to its own mirror image (it must not be symmetrical; `CHECKS["symmetry"]` sets a
+venue's own limit, None where being symmetrical is the point, as in the meeting room).
 
 The kit for big maps: `maps/geo2d.py` (plane geometry: clipping, covering, polylines),
 `maps/city.py` (ground surfaces that never overlap, exact floors, streets, lanes grown into the
@@ -177,14 +197,14 @@ gameplay spots and zones).
 blender -b --factory-startup --python art/scripts/run_props.py            # build and bake all
 blender -b --factory-startup --python art/scripts/run_props.py -- Desk    # just one
 blender -b --factory-startup --python art/scripts/run_textures.py         # effect textures
-blender -b --factory-startup --python art/scripts/run_props.py -- --export  # FBX + catalog
+blender -b --factory-startup --python art/scripts/run_props.py -- --set Core --export  # FBX + catalog
 blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --preview  # one set
 blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --export
 ```
 
-`--export` writes `export/InkboundModels.fbx` (or `InkboundModels_<Set>.fbx` with `--set`) and
+`--export` (with `--set`) writes `export/InkboundModels_<Set>.fbx` and
 `src/shared/ModelCatalog.luau` (each prop's size in studs, pivot, material, glow colours, the
-lights it carries and its set). `ModelLibrary` fixes scale and orientation
+lights it carries and its set). The Core set's file also carries the effect and UI textures. `ModelLibrary` fixes scale and orientation
 from the catalog, so the importer's unit and axis settings do not matter.
 
 Effect textures ride along on small quads named `Tex_<name>`. If you would rather upload the
@@ -194,8 +214,9 @@ PNGs yourself, paste their ids into `Assets.textures` in `src/shared/Assets.luau
 
 1. Add a builder to `scripts/props.py` or `scripts/props_world.py` with `@prop("Name", ...)`,
    facing -Y, standing on z = 0 (for `pivot="bottom"`). Glowing parts go in the second list.
-   A map's own props go in their own file (`props_tokyo.py`, `props_tokyo_shops.py`,
-   `props_stations.py` with `set="Tokyo"`, `props_agency.py`, `props_campus.py`); `lights=`
+   Those are the Core set (the default). A venue's own props go in their own file
+   (`props_tokyo.py`, `props_tokyo_shops.py`, `props_stations.py` with `set="Tokyo"`,
+   `props_agency.py`, `props_campus.py`, `props_lobby.py`, `props_meeting.py`); `lights=`
    gives the lights it carries. Build a set on its own (`--set Campus`): a bare run rebuilds
    every set.
 2. Rebuild and export as above, then re-import the FBX in Studio.

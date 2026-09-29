@@ -648,7 +648,7 @@ COMMANDS.scenes = function(player)
 	reply(
 		player,
 		if SceneBuilder.disabled
-			then "Part-built lobby and meeting room, greybox maps (the next map too)."
+			then "Greybox lobby, meeting room and maps (the next map too)."
 			else "Blender scenes (when imported; the next map too)."
 	)
 end

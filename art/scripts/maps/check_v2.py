@@ -562,6 +562,13 @@ def write_lightmap(data, levels):
 
 
 def symmetry(data, dist, problems):
+    """A venue can set its own limit (checks.symmetry), or None where being its own mirror image is
+    the point (a square room round a round table)."""
+    checks = data.get("checks") or {}
+    limit = checks.get("symmetry", SYMMETRY_MAX)
+    if limit is None:
+        print("  symmetry: not checked for this venue (its CHECKS)")
+        return 0.0
     (x0, _, z0), (x1, _, z1) = data["bounds"]["min"], data["bounds"]["max"]
     cells = {(i, j) for (i, j, h) in dist if abs(h) < 3}
     if not cells:
@@ -580,7 +587,7 @@ def symmetry(data, dist, problems):
         scores.append((overlap - p) / max(1e-6, 1 - p))
     worst = max(scores)
     print(f"  symmetry: mirror left-right {scores[0]:.2f}, top-bottom {scores[1]:.2f} (walkable ground {p * 100:.0f}%)")
-    if worst > SYMMETRY_MAX:
+    if worst > limit:
         problems.append(f"symmetry: the ground floor is too much like its mirror image ({worst:.2f})")
     return worst
 
@@ -597,7 +604,8 @@ def ramps(data, problems):
 # across a fence or a barricade.
 MAY_TOUCH = {frozenset(p) for p in (("Bicycle", "BikeRack"), ("PoliceTape", "SiteFence"),
                                     ("PoliceTape", "Barricade"), ("PoliceTape", "PoliceCar"),
-                                    ("PoliceTape", "TrafficCone"), ("BarStool", "ShopCounter"))}
+                                    ("PoliceTape", "TrafficCone"), ("BarStool", "ShopCounter"),
+                                    ("BankerLamp", "Sideboard"))}
 TOUCH = 0.2  # how far two things may press into each other (a bin against a wall)
 # Props that meet the ground only at a pole or a trunk (their arms and canopies may reach over
 # other things): the size of that foot, at the prop's anchor.
@@ -605,7 +613,9 @@ FEET = {"StreetLightTokyo": 1.2, "TrafficSignal": 1.2, "PedestrianSignal": 1.0, 
         "RoadSign": 0.8, "BusStopSign": 0.8, "TaxiRankSign": 0.8, "Tree": 2.0, "TreeSakura": 2.0,
         "TreeZelkova": 2.0, "GinkgoBare": 1.9, "PineYukizuri": 1.7, "CampusLamp": 1.2,
         # A tent stands on four thin legs round what stands under it (the map gives the legs colliders).
-        "EventTent": 0.5}
+        "EventTent": 0.5,
+        # The Grey Realm's dead trees and lantern posts.
+        "DeadTree": 2.0, "DeadTreeGnarled": 2.0, "WitheredAppleTree": 2.0, "LanternPost": 0.6}
 # Props that are walls themselves (the barriers across the streets that leave the map): they may
 # meet the buildings' walls.
 WALLS = {"SiteFence", "PoliceTape", "Barricade"}

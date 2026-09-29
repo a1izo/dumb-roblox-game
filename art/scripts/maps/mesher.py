@@ -3,7 +3,7 @@
 A Scene collects faces per material (with UVs that tile in world space, so neighbouring pieces
 continue the same texture), plus everything the game places itself: invisible colliders, props
 from the prop library, lights, signs and particle emitters. finish() merges the faces into
-meshes named Scene_<Venue>_<Material>_<n>, split into chunks so no mesh is too big for the
+meshes named Map_<Venue>_<Material>_<n>, split into chunks so no mesh is too big for the
 importer.
 
 Coordinates: x right, y up, z backwards (Roblox). rot is degrees about +Y, like the map builder:
@@ -72,10 +72,10 @@ class Piece:
 
 
 class Scene(LayoutMixin):
-    """prefix names the meshes (<prefix>_<Venue>_<Material>_<n>): "Scene" for the venues in the
-    shared InkboundMaps.fbx, "Map" for the big venues with an FBX of their own."""
+    """prefix names the meshes (<prefix>_<Venue>_<Material>_<n>): "Map" for every venue, each in an
+    FBX of its own."""
 
-    def __init__(self, venue, prefix="Scene", chunk=CHUNK):
+    def __init__(self, venue, prefix="Map", chunk=CHUNK):
         self.venue = venue
         self.prefix = prefix
         self.chunk = chunk
@@ -456,11 +456,12 @@ class Scene(LayoutMixin):
 
     def _cell(self, centre):
         """The chunk a piece falls in: cells of `chunk` studs; or, past a venue's far_chunk
-        (distance, size), much bigger cells for the scenery far out, which needs only a few
-        meshes (its pieces must stay well under a Roblox part's 2048 studs)."""
+        (distance, size[, depth]), much bigger cells for the scenery far out (or, with a depth,
+        far below it), which needs only a few meshes (its pieces must stay well under a Roblox
+        part's 2048 studs)."""
         x, z = centre[0], centre[2]
         far = self.far_chunk
-        if far and max(abs(x), abs(z)) > far[0]:
+        if far and (max(abs(x), abs(z)) > far[0] or (len(far) > 2 and centre[1] < far[2])):
             return (1, math.floor(x / far[1]), math.floor(z / far[1]))
         return (0, math.floor(x / self.chunk), math.floor(z / self.chunk))
 

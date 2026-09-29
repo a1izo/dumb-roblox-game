@@ -119,7 +119,7 @@ function MapService.lobbySpawn(): CFrame
 	return if lobbyInfo then lobbyInfo.spawnCFrame else CFrame.new(LOBBY_ORIGIN + Vector3.new(0, 3, 14))
 end
 
--- Rebuilds the lobby (after switching between the Blender scene and the part-built one).
+-- Rebuilds the lobby (after switching between the Blender scene and its greybox).
 function MapService.rebuildLobby()
 	if lobbyModel then
 		lobbyModel:Destroy()
@@ -248,6 +248,12 @@ function MapService.init()
 		if old then
 			old:Destroy()
 		end
+	end
+	-- A place made from the template still has its baseplate just under the lobby's ground, where it
+	-- would show through the rift; the lobby's own ground replaces it.
+	local baseplate = workspace:FindFirstChild("Baseplate")
+	if baseplate and baseplate:IsA("BasePart") then
+		baseplate:Destroy()
 	end
 
 	local model = newModel("LGameLobby")

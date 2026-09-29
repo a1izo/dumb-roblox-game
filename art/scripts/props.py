@@ -33,10 +33,11 @@ BONE_B = srgb(180, 168, 146)
 BUILDERS = {}
 
 
-def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="", lights=None,
+def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Core", lights=None,
          anchor=None, screen=None):
-    """Registers a prop builder. set: which FBX it goes in ("" = InkboundModels.fbx, "Tokyo" =
-    InkboundModels_Tokyo.fbx). lights: the lights the prop carries, so a lamp never exists
+    """Registers a prop builder. set: which FBX it goes in, InkboundModels_<set>.fbx ("Core": the
+    props every map and the game itself use, with the effect and UI textures; "Tokyo", "Agency",
+    "Campus", "Lobby", "Meeting": one venue's own). lights: the lights the prop carries, so a lamp never exists
     without its fixture: [dict(at=(x, y, z), kind="point"|"spot", color=(r, g, b), range=,
     brightness=, angle=, face=)] in the builder's own coordinates (Blender, before grounding).
     anchor: the point (x, y) that stands where a map places the prop (a pole's foot), when that
@@ -186,3 +187,5 @@ import props_stations  # noqa: E402,F401
 import props_tokyo  # noqa: E402,F401
 import props_agency  # noqa: E402,F401
 import props_campus  # noqa: E402,F401
+import props_lobby  # noqa: E402,F401
+import props_meeting  # noqa: E402,F401

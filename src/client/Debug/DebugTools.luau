@@ -199,8 +199,8 @@ end
 
 -- Colliders ------------------------------------------------------------------------------------
 
--- Invisible parts that still collide or block sight lines: scene colliders, roofs, walls of
--- the part-built rooms made invisible, Specter bounds.
+-- Invisible parts that still collide or block sight lines: scene colliders, roofs, gameplay parts
+-- a Blender prop dresses, Specter bounds.
 local function isHidden(part: BasePart): boolean
 	return part.Transparency >= 0.95 and (part.CanCollide or part.CanQuery)
 end

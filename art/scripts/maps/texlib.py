@@ -495,6 +495,122 @@ def ice(seed, base, frost, snow_color):
     return result(color, height, rough, 1.0)
 
 
+def worley(r, cells, n=N):
+    """Periodic cellular noise: the distance to the nearest and second-nearest of one jittered
+    point per cell (cells x cells per image), in cell units."""
+    pts = r.random((cells, cells, 2))
+    v, u = np.mgrid[0:n, 0:n] / n * cells
+    cu, cv = np.floor(u).astype(int), np.floor(v).astype(int)
+    d1 = np.full((n, n), 9.0)
+    d2 = np.full((n, n), 9.0)
+    for dv in (-1, 0, 1):
+        for du in (-1, 0, 1):
+            nu, nv = cu + du, cv + dv
+            p = pts[nv % cells, nu % cells]
+            dx = nu + p[..., 0] - u
+            dy = nv + p[..., 1] - v
+            d = np.sqrt(dx * dx + dy * dy)
+            d2 = np.where(d < d1, d1, np.minimum(d2, d))
+            d1 = np.minimum(d1, d)
+    return d1, d2
+
+
+def ash(seed, base, dark):
+    """The Grey Realm's ground: fine grey ash and dust, wind ripples, darker drifts, pale grit and
+    a few small stones."""
+    r = rng(seed)
+    drift = fbm(r, 2.8, 1, 10)
+    ripple = fbm(r, 1.6, 12, 90, aniso=(1.0, 3.0))
+    grain = fbm(r, 0.5, 200, 512)
+    stones = smoothstep(0.8, 0.86, fbm(r, 1.2, 30, 160))
+    color = mix(dark, base, np.clip(0.35 + drift * 0.45 + ripple * 0.2, 0, 1))
+    color = color * (0.9 + grain * 0.14)[..., None]
+    color = mix(color, np.asarray(dark) * 0.7, stones * 0.8)
+    height = drift * 0.4 + ripple * 0.5 + grain * 0.1 + stones * 0.5
+    rough = np.clip(0.92 - stones * 0.2, 0.1, 1)
+    return result(color, height, rough, 1.4)
+
+
+def cracked(seed, base, crack_color, cells=9):
+    """Dried, cracked earth: plates of pale crust curling at their edges, dark cracks between,
+    ash blown into the cracks."""
+    r = rng(seed)
+    d1, d2 = worley(r, cells)
+    edge = d2 - d1
+    crack = 1 - smoothstep(0.02, 0.07, edge)
+    curl = smoothstep(0.06, 0.25, edge)
+    grain = fbm(r, 0.6, 150, 512)
+    tone = fbm(r, 2.4, 2, 30)
+    color = tint(base, 0.78 + tone * 0.2 + grain * 0.1 + (1 - curl) * 0.12)
+    color = mix(color, crack_color, crack)
+    height = curl * 0.6 - crack * 0.5 + grain * 0.08
+    rough = np.full((N, N), 0.93)
+    return result(color, height, rough, 2.4)
+
+
+def rockface(seed, base, dark):
+    """Weathered grey rock: tilted strata, fractures, pitted faces, ash lodged in the hollows."""
+    r = rng(seed)
+    v, u = np.mgrid[0:N, 0:N] / N
+    warp = fbm(r, 2.4, 1, 12)
+    strata = 0.5 + 0.5 * np.sin((v * 7 + u * 1 + warp * 1.2) * 2 * math.pi)
+    fine = 0.5 + 0.5 * np.sin((v * 23 + u * 3 + warp * 2.0) * 2 * math.pi)
+    d1, d2 = worley(r, 3)
+    fracture = (1 - smoothstep(0.005, 0.025, d2 - d1)) * smoothstep(0.3, 0.6, fbm(r, 2.0, 2, 20))
+    pits = fbm(r, 1.2, 30, 250)
+    big = fbm(r, 2.6, 1, 16)
+    color = mix(dark, base, np.clip(0.2 + strata * 0.35 + fine * 0.1 + big * 0.3 + pits * 0.15, 0, 1))
+    color = mix(color, np.asarray(dark) * 0.6, fracture * 0.7)
+    height = strata * 0.4 + fine * 0.1 + big * 0.5 + pits * 0.3 - fracture * 0.5
+    rough = np.clip(0.85 + pits * 0.1, 0, 1)
+    return result(color, height, rough, 2.6)
+
+
+def chevron(seed, light, dark, cols=8, rows=10, slope=1.0):
+    """Chevron parquet: columns of short planks laid at 45 degrees, each column mirrored against
+    the next, with fine joints and grain along each plank."""
+    r = rng(seed)
+    v, u = np.mgrid[0:N, 0:N] / N
+    fc = u * cols
+    col = np.floor(fc).astype(int)
+    x = fc - col
+    x = np.where(col % 2 == 0, x, 1 - x)
+    d = v * rows + x * slope
+    plank = np.floor(d).astype(int)
+    fd = d - plank
+    joint = np.maximum(1 - smoothstep(0.0, 0.04, np.minimum(fd, 1 - fd)),
+                       1 - smoothstep(0.0, 0.02, np.minimum(x, 1 - x)))
+    tone = cell_random(col, plank, seed, 64, 64)
+    grain = fbm(r, 1.2, 20, 400, aniso=(1.0, 6.0))
+    color = mix(dark, light, np.clip(0.25 + tone * 0.45 + grain * 0.35, 0, 1))
+    color = color * (1 - joint * 0.55)[..., None]
+    height = (1 - joint) * 0.7 + grain * 0.08
+    rough = np.clip(0.35 + grain * 0.15 + joint * 0.4, 0, 1)
+    return result(color, height, rough, 1.6)
+
+
+def damask(seed, base, pattern, cols=4, rows=3):
+    """Damask wallpaper: a repeating flower-and-leaf medallion in a slightly lighter, glossier
+    tone than the ground, a fine woven texture over all."""
+    r = rng(seed)
+    col, row, cu, cv = grid(cols, rows, 0.5)
+    x, y = cu * 2 - 1, cv * 2 - 1
+    rad = np.sqrt(x * x * 1.3 + y * y)
+    ang = np.arctan2(y, x)
+    petals = 0.5 + 0.5 * np.cos(ang * 6)
+    flower = 1 - smoothstep(0.02, 0.05, rad - (0.28 + 0.14 * petals))
+    ring = 1 - smoothstep(0.015, 0.035, np.abs(rad - (0.62 + 0.06 * np.cos(ang * 10))))
+    leaves = (1 - smoothstep(0.02, 0.05, np.abs(np.abs(x) - (0.45 + 0.25 * y * y)) - 0.06 * (1 - np.abs(y))))
+    leaves *= smoothstep(0.7, 0.4, rad)
+    motif = np.clip(flower + ring * 0.8 + leaves * 0.6, 0, 1)
+    weave = fbm(r, 0.4, 250, 512)
+    color = mix(base, pattern, motif)
+    color = color * (0.94 + weave * 0.1)[..., None]
+    height = motif * 0.3 + weave * 0.15
+    rough = np.clip(0.8 - motif * 0.35, 0, 1)
+    return result(color, height, rough, 1.0)
+
+
 def srgb(r, g, b):
     return np.array([r, g, b]) / 255.0
 
@@ -546,4 +662,13 @@ LIBRARY = {
     "Snow": (lambda: snow(47, srgb(222, 228, 238), srgb(168, 180, 204)), 24),
     "SnowPath": (lambda: slush(48, srgb(88, 86, 84), srgb(40, 40, 42), srgb(196, 200, 208)), 8),
     "Ice": (lambda: ice(49, srgb(34, 48, 60), srgb(140, 166, 186), srgb(210, 218, 230)), 24),
+    # The lobby, the Grey Realm: ash plains, crusts of cracked earth, grey rock and old flagstones.
+    "Ash": (lambda: ash(50, srgb(128, 128, 130), srgb(78, 78, 82)), 24),
+    "AshCracked": (lambda: cracked(51, srgb(112, 110, 106), srgb(40, 40, 42)), 20),
+    "RockGrey": (lambda: rockface(52, srgb(118, 118, 120), srgb(52, 52, 56)), 16),
+    "RuinFlag": (lambda: ashlar(53, srgb(98, 98, 100), srgb(46, 46, 48), 3, 3, 0.2), 12),
+    "RuinStone": (lambda: ashlar(54, srgb(86, 86, 90), srgb(44, 44, 48), 2, 4, 0.14), 10),
+    # The war room: a chevron parquet and a deep oxblood damask.
+    "Parquet": (lambda: chevron(55, srgb(110, 72, 44), srgb(46, 28, 16)), 8),
+    "Damask": (lambda: damask(56, srgb(52, 16, 20), srgb(84, 30, 34)), 6),
 }

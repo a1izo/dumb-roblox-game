@@ -1,16 +1,14 @@
--- Puts a map scene made in Blender (art/export/InkboundMaps.fbx, imported with Studio's 3D
--- importer) into a venue: every mesh named Scene_<Venue>_<Material>_<n>, invisible colliders
--- where the walls and furniture are, props from the prop library, lights, signs and steam, as
--- listed in Maps/Scenes/<Venue>.luau. build() returns false when the scene is not imported, and
--- the venue then builds its part-made version instead.
---
--- The maps, all rebuilt at full size (format 2: Tokyo, Agency HQ, the University Campus), each
--- have an FBX of their own and scene data that includes their gameplay layout; they always build,
--- as the imported scene or, without the import, as a playable greybox (see buildFormat2 below).
--- The lobby and the meeting room are the older kind (format 1), with part-made fallbacks.
+-- Puts a scene made in Blender into a venue: the lobby, the meeting room and every map (Tokyo,
+-- Agency HQ, the University Campus) each have an FBX of their own, art/export/InkboundMaps_<Venue>.fbx
+-- (imported with Studio's 3D importer), with its meshes named Map_<Venue>_<Material>_<n>, and scene
+-- data in Maps/Scenes/<Venue>/: invisible colliders where the walls and furniture are, props from
+-- the prop library, lights, signs, particle emitters, the gameplay layout, and anchors where the
+-- venue's own Luau builds what shows text or does something (the lobby's boards, the meeting
+-- room's screen and seats). A venue always builds: as the imported scene or, without the import
+-- (or with an older one), as a playable greybox (see buildFormat2 below).
 --
 -- The importer may scale or turn what it imports. Three calibration cubes in the same file
--- (Calib_Maps_O at the origin, _X 64 studs along x, _Y 64 studs up) tell how, so every mesh
+-- (Calib_<Venue>_O at the origin, _X 64 studs along x, _Y 64 studs up) tell how, so every mesh
 -- lands exactly where it was made.
 
 local CollectionService = game:GetService("CollectionService")
@@ -27,22 +25,11 @@ local Scenes = script.Parent:WaitForChild("Scenes")
 
 local SceneBuilder = {}
 
--- Set from the debug panel to build the lobby and meeting room part-made and the maps as
--- greyboxes instead (to compare them).
+-- Set from the debug panel to build every venue as its greybox instead (to compare them).
 SceneBuilder.disabled = false
 
 -- Tag on the colliders the camera cannot pass through (see client World/CameraCollision).
 SceneBuilder.CAMERA_TAG = "LCameraBlock"
-
-local function calibrate(): ModelLibrary.Calibration?
-	return ModelLibrary.calibration("Calib_Maps")
-end
-
--- "Scene_Meeting_WoodPanel_3" -> "WoodPanel"
-local function materialName(meshName: string, venue: string): string
-	local rest = string.sub(meshName, #("Scene_" .. venue .. "_") + 1)
-	return (string.gsub(rest, "_%d+$", ""))
-end
 
 local function dress(part: BasePart, material: string)
 	part.Anchored = true
@@ -69,13 +56,6 @@ local function dress(part: BasePart, material: string)
 			(part :: MeshPart).TextureID = ""
 		end)
 	end
-end
-
--- True when the venue's scene has been imported (meshes and calibration).
-function SceneBuilder.available(venue: string): boolean
-	return calibrate() ~= nil
-		and Scenes:FindFirstChild(venue) ~= nil
-		and #ModelLibrary.sourcesWithPrefix("Scene_" .. venue .. "_") > 0
 end
 
 local function color(values: { number }?): Color3?
@@ -341,6 +321,64 @@ local function addEmitter(b, folder: Instance, spec)
 		end
 		rain:SetAttribute("BaseRate", rain.Rate)
 		CollectionService:AddTag(rain, SceneBuilder.RAIN_GLASS_TAG)
+	elseif spec.kind == "ash" and spec.size then
+		-- The Grey Realm's ash: flakes drifting sideways through a big box over the plain, slowly
+		-- settling, never quite reaching the ground.
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("Snowflake")
+		Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Bottom,
+			Rate = size.X * size.Z / 2400,
+			Lifetime = NumberRange.new(9, 14),
+			Speed = NumberRange.new(0.3, 0.9),
+			Acceleration = Vector3.new(1.4, -0.35, 0.5),
+			Drag = 0.4,
+			SpreadAngle = Vector2.new(40, 40),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.14, 0.06), NumberSequenceKeypoint.new(1, 0.1) }),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.15, 0.35),
+				NumberSequenceKeypoint.new(0.85, 0.45),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(96, 96, 100), Color3.fromRGB(150, 150, 154)),
+			LightInfluence = 1,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-60, 60),
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
+			Parent = anchor,
+		})
+	elseif spec.kind == "riftwisp" and spec.size then
+		-- Pale motes rising out of the rift and fading as they clear its rim.
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("SoulGlow")
+		Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Top,
+			Rate = 5,
+			Lifetime = NumberRange.new(5, 8),
+			Speed = NumberRange.new(0.8, 1.8),
+			Acceleration = Vector3.new(0, 0.4, 0),
+			SpreadAngle = Vector2.new(25, 25),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.5) }),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.2, 0.4),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(170, 205, 255)),
+			LightEmission = 0.8,
+			LightInfluence = 0,
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/sparkles_main.dds",
+			Parent = anchor,
+		})
 	elseif (spec.kind == "traffic_tail" or spec.kind == "traffic_head") and spec.size then
 		-- Car lights streaming down a road far below: particles sent along it from its start (the
 		-- anchor faces the way the traffic runs; size z is how far the road goes).
@@ -399,10 +437,10 @@ function SceneBuilder.clearWater()
 	table.clear(filledWater)
 end
 
--- Format 2: the big venues ----------------------------------------------------------------------
--- Their scene data (Scenes/<Venue>/) holds everything, gameplay spots included, and each has an
--- FBX of its own (InkboundMaps_<Venue>.fbx). Without that import, or with an older one, the
--- venue is built as a greybox: the colliders shown in their materials' colours, so the map is
+-- Building a venue ---------------------------------------------------------------------------------
+-- Its scene data (Scenes/<Venue>/) holds everything, gameplay spots and anchors included, and each
+-- venue has an FBX of its own (InkboundMaps_<Venue>.fbx). Without that import, or with an older
+-- one, the venue is built as a greybox: the colliders shown in their materials' colours, so it is
 -- complete and playable, just plain.
 
 local function lookOf(name: string?): (Enum.Material, Color3, number)
@@ -760,9 +798,6 @@ function SceneBuilder.mode(venue: string): string
 		return "greybox"
 	end
 	local data = require(module) :: any
-	if data.format ~= 2 then
-		return if SceneBuilder.available(venue) then "scene" else "greybox"
-	end
 	local marker = ModelLibrary.source(data.marker)
 	local cal = ModelLibrary.calibration(data.calibration)
 	if marker and cal and #ModelLibrary.sourcesWithPrefix(data.meshPrefix) > 0 then
@@ -890,7 +925,7 @@ local function buildFormat2(b, venue: string, data): string
 	return mode
 end
 
--- The scene data of a big venue (format 2), or nil.
+-- The scene data of a venue (Scenes/<Venue>/), or nil.
 function SceneBuilder.data(venue: string): any
 	local module = Scenes:FindFirstChild(venue)
 	if not module then
@@ -900,69 +935,14 @@ function SceneBuilder.data(venue: string): any
 	return if data.format == 2 then data else nil
 end
 
--- Builds the venue's scene with builder b. Older venues: returns false (and builds nothing)
--- when the scene has not been imported. Big venues (format 2) always build: "scene" or
--- "greybox".
-function SceneBuilder.build(b, venue: string): boolean | string
-	local big = SceneBuilder.data(venue)
-	if big then
-		return buildFormat2(b, venue, big)
+-- Builds the venue's scene with builder b: "scene" (its import is there) or "greybox"; nil when the
+-- venue has no scene data.
+function SceneBuilder.build(b, venue: string): string?
+	local data = SceneBuilder.data(venue)
+	if not data then
+		return nil
 	end
-	if SceneBuilder.disabled then
-		return false
-	end
-	local cal = calibrate()
-	local module = Scenes:FindFirstChild(venue)
-	if not cal or not module then
-		return false
-	end
-	local sources = ModelLibrary.sourcesWithPrefix("Scene_" .. venue .. "_")
-	if #sources == 0 then
-		return false
-	end
-	local data = require(module) :: any
-	local folder = Create("Folder", { Name = "Scene", Parent = b.parent })
-	for _, source in ipairs(sources) do
-		if not source:IsA("MeshPart") then
-			continue
-		end
-		local part = source:Clone()
-		local local_ = cal.toLocal * source.CFrame
-		part.Size = source.Size / cal.scale
-		part.CFrame = b:world(CFrame.new(local_.Position / cal.scale) * local_.Rotation)
-		dress(part, materialName(source.Name, venue))
-		part.Parent = folder
-	end
-	for _, c in ipairs(data.colliders) do
-		local collider = b:part(
-			Vector3.new(c[4], c[5], c[6]),
-			b:cf(c[1], c[2], c[3], c[7]),
-			Color3.new(0, 0, 0),
-			Enum.Material.SmoothPlastic,
-			{ Name = "Collider", Transparency = 1, CanQuery = c[8], CanTouch = false, CastShadow = false }
-		)
-		-- Walls, ceilings and big furniture also stop the camera (client CameraCollision):
-		-- Roblox's own camera ignores invisible parts.
-		if c[8] then
-			CollectionService:AddTag(collider, SceneBuilder.CAMERA_TAG)
-		end
-	end
-	for _, p in ipairs(data.props) do
-		local model = b:placeModel(p[1], p[2], p[4], p[5], p[6], p[3])
-		if model then
-			model.Parent = folder
-		end
-	end
-	for _, spec in ipairs(data.lights) do
-		addLight(b, folder, spec)
-	end
-	for _, spec in ipairs(data.signs) do
-		addSign(b, spec)
-	end
-	for _, spec in ipairs(data.emitters) do
-		addEmitter(b, folder, spec)
-	end
-	return true
+	return buildFormat2(b, venue, data)
 end
 
 return SceneBuilder

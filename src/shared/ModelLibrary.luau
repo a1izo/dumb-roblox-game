@@ -1,6 +1,7 @@
 --!strict
--- The props and map scenes made in Blender (art/export/*.fbx) after they are imported with
--- Studio's 3D importer. The importer drops its result into Workspace; install() (server, at
+-- The props and scenes made in Blender (art/export/InkboundModels_<Set>.fbx for the props,
+-- InkboundMaps_<Venue>.fbx for each venue's scene) after they are imported with Studio's 3D
+-- importer. The importer drops its result into Workspace; install() (server, at
 -- start) moves every import it can find into ReplicatedStorage.InkboundAssets, so it is
 -- hidden, anchored and reachable from clients. get(key) then returns a ready model: scaled to
 -- the size in ModelCatalog, turned upright, glow parts turned Neon, and pivoted at its bottom
@@ -22,7 +23,7 @@ export type Info = {
 	glow: { { number } }?,
 	lights: { any }?, -- the lights it carries (placed by the map builder, see SceneBuilder)
 	anchor: { number }?, -- where maps put its foot (x, z from its pivot), when not the middle
-	set: string?, -- which import it comes in ("Tokyo": InkboundModels_Tokyo.fbx)
+	set: string?, -- which import it comes in ("Core": InkboundModels_Core.fbx, "Tokyo": InkboundModels_Tokyo.fbx)
 	-- A station look's slot for the game's screen: the middle of its face from the station's
 	-- origin (x, y, z), its size (w, h) and how far its top leans back (degrees).
 	screen: { at: { number }, size: { number }, tilt: number? }?,
@@ -94,7 +95,7 @@ local function looksImported(instance: Instance): boolean
 	local known = 0
 	for _, item in ipairs(instance:GetDescendants()) do
 		local name = item.Name
-		local ours = (Catalog :: any)[name] ~= nil or string.find(name, "^Scene_") or string.find(name, "^Map_")
+		local ours = (Catalog :: any)[name] ~= nil or string.find(name, "^Map_")
 		if item:IsA("MeshPart") and ours then
 			known += 1
 			if known >= 3 then
@@ -165,12 +166,10 @@ function ModelLibrary.calibration(prefix: string): Calibration?
 end
 
 -- The turn that undoes the importer's rotation of a prop: from the cubes in the prop's own file
--- (Calib_Props, or Calib_Props<Set> for a set's file such as InkboundModels_Tokyo.fbx), else
--- the main props file's, else the maps export's (all go through the same importer), else nil.
--- Each file is measured on its own: two imports can come in turned differently.
+-- (Calib_Props<Set>, such as Calib_PropsCore in InkboundModels_Core.fbx), else nil. Each file is
+-- measured on its own: two imports can come in turned differently.
 local function importTurn(set: string?): CFrame?
-	local own = if set and set ~= "" then ModelLibrary.calibration("Calib_Props" .. set) else nil
-	local cal = own or ModelLibrary.calibration("Calib_Props") or ModelLibrary.calibration("Calib_Maps")
+	local cal = ModelLibrary.calibration("Calib_Props" .. (if set and set ~= "" then set else "Core"))
 	return if cal then cal.toLocal.Rotation else nil
 end
 
@@ -194,22 +193,57 @@ end
 -- Every export carries a marker mesh Inkbound<Kind>_Version_<n>. When the same kind was
 -- imported more than once, only the newest import is used; older ones are set aside so old
 -- and new meshes never mix.
+--
+-- Two files are retired: InkboundModels.fbx (kind "Models", its props now come in
+-- InkboundModels_Core.fbx) and InkboundMaps.fbx (kind "Maps", the lobby and the meeting room now
+-- have files of their own). An import of either is always set aside, so nothing can use it.
+local RETIRED = { Models = "InkboundModels.fbx", Maps = "InkboundMaps.fbx" }
 
-local function importVersion(root: Instance): (string, number)
+-- The import's kind and version from its marker, and whether it has one (without, the kind is
+-- the folder's own name: an early import, or your own models).
+local function importVersion(root: Instance): (string, number, boolean)
 	for _, item in ipairs(root:GetDescendants()) do
 		local kind, version = string.match(item.Name, "^Inkbound(%a+)_Version_(%d+)$")
 		if kind then
-			return kind, tonumber(version) or 0
+			return kind, tonumber(version) or 0, true
 		end
 	end
-	return root.Name, 0
+	return root.Name, 0, false
 end
 
-local function setAsideOlder(root: Instance): { string }
+-- True for an import of a retired file: its marker says so, or (an import from before the
+-- markers) the importer named it after the file.
+local function isRetired(root: Instance, kind: string, marked: boolean): boolean
+	if marked then
+		return RETIRED[kind] ~= nil
+	end
+	return root.Name == "InkboundModels" or root.Name == "InkboundMaps"
+end
+
+local function supersede(item: Instance)
+	local ServerStorage = game:GetService("ServerStorage")
+	local bin = ServerStorage:FindFirstChild("InkboundSuperseded")
+	if not bin then
+		bin = Instance.new("Folder")
+		bin.Name = "InkboundSuperseded"
+		bin.Parent = ServerStorage
+	end
+	item.Parent = bin
+end
+
+-- Sets aside every import of a retired file and all but the newest import of each kind. Returns
+-- (older imports set aside, retired files found).
+local function setAsideOlder(root: Instance): ({ string }, { string })
 	local groups: { [string]: { { item: Instance, version: number, order: number } } } = {}
+	local retired = {}
 	for order, child in ipairs(root:GetChildren()) do
 		if child:IsA("Model") or child:IsA("Folder") then
-			local kind, version = importVersion(child)
+			local kind, version, marked = importVersion(child)
+			if isRetired(child, kind, marked) then
+				supersede(child)
+				table.insert(retired, RETIRED[kind] or (child.Name .. ".fbx"))
+				continue
+			end
 			groups[kind] = groups[kind] or {}
 			table.insert(groups[kind], { item = child, version = version, order = order })
 		end
@@ -225,19 +259,12 @@ local function setAsideOlder(root: Instance): { string }
 			end)
 			for index = 2, #list do
 				local older = list[index]
-				local ServerStorage = game:GetService("ServerStorage")
-				local bin = ServerStorage:FindFirstChild("InkboundSuperseded")
-				if not bin then
-					bin = Instance.new("Folder")
-					bin.Name = "InkboundSuperseded"
-					bin.Parent = ServerStorage
-				end
-				older.item.Parent = bin
+				supersede(older.item)
 				table.insert(setAside, string.format("%s (version %d)", kind, older.version))
 			end
 		end
 	end
-	return setAside
+	return setAside, retired
 end
 
 -- Server, once at start (before any map is built): moves imports that were left in Workspace,
@@ -264,7 +291,7 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		end
 	end
 	quiet(rootInstance)
-	local setAside = setAsideOlder(rootInstance)
+	local setAside, retired = setAsideOlder(rootInstance)
 	index = buildIndex()
 	templates = {}
 	calibrations = {}
@@ -287,10 +314,18 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 				.. table.concat(moved, ", ")
 		)
 	end
+	if #retired > 0 then
+		warn(
+			"[Inkbound] Set aside imports of retired files (nothing uses them any more; delete them in Studio): "
+				.. table.concat(retired, ", ")
+				.. ". Their props come in InkboundModels_Core.fbx, the lobby and the meeting room in "
+				.. "InkboundMaps_Lobby.fbx and InkboundMaps_Meeting.fbx."
+		)
+	end
 	if found == 0 then
 		print(
 			"[Inkbound] No Blender models imported yet: the game uses its part-built stand-ins. "
-				.. "Import art/export/InkboundModels.fbx and InkboundMaps.fbx with Studio's 3D importer (art/README.md)."
+				.. "Import art/export/InkboundModels_<Set>.fbx and InkboundMaps_<Venue>.fbx with Studio's 3D importer (art/README.md)."
 		)
 	else
 		print(string.format("[Inkbound] Blender models: %d of %d found.", found, total))
@@ -301,7 +336,7 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	local scenes = 0
 	local venues = {}
 	for name in pairs(index :: { [string]: Instance }) do
-		if string.sub(name, 1, 6) == "Scene_" then
+		if string.sub(name, 1, 4) == "Map_" then
 			scenes += 1
 		end
 		local venue, version = string.match(name, "^InkboundMaps(%a+)_Version_(%d+)$")
@@ -311,12 +346,11 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	end
 	table.sort(venues)
 	if #venues > 0 then
-		print("[Inkbound] Big map imports: " .. table.concat(venues, ", ") .. ".")
-	end
-	if scenes > 0 then
-		print(string.format("[Inkbound] Blender map scenes: %d meshes.", scenes))
+		print(string.format("[Inkbound] Scene imports: %s (%d meshes).", table.concat(venues, ", "), scenes))
 	elseif RunService:IsStudio() then
-		print("[Inkbound] No map scenes imported yet: import art/export/InkboundMaps.fbx for the new maps.")
+		print(
+			"[Inkbound] No scenes imported yet (every venue is a greybox): import art/export/InkboundMaps_<Venue>.fbx."
+		)
 	end
 	if #setAside > 0 then
 		warn(
@@ -326,8 +360,8 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		)
 	end
 	if found > 0 or scenes > 0 then
-		-- Every props file (the main one and each set's) and the maps file, measured apart.
-		local prefixes, seen = { "Calib_Props" }, {}
+		-- Every props file (one per set), measured apart.
+		local prefixes, seen = {}, {}
 		for _, info in pairs(Catalog :: any) do
 			local set = (info :: Info).set
 			if set and set ~= "" and not seen[set] then
@@ -336,7 +370,6 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 			end
 		end
 		table.sort(prefixes)
-		table.insert(prefixes, "Calib_Maps")
 		local lines = {}
 		for _, prefix in ipairs(prefixes) do
 			table.insert(lines, describeTurn(prefix))

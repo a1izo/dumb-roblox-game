@@ -1,7 +1,7 @@
 -- Finds camera positions that can actually see their subject. Every cutscene camera goes
 -- through here, so no shot ends up inside a wall, above a ceiling or on the far side of a roof:
 --   * the path from the subject to the eye must be clear (a small sphere cast against anything
---     that collides: walls, ceilings, the Blender scenes' invisible colliders, part-built rooms)
+--     that collides: walls, ceilings, the Blender scenes' invisible colliders, their greyboxes)
 --   * the eye stays at least a stud under whatever roof is above the subject
 -- Preferred angles are tried first, then the rest of the circle, then closer distances.
 
