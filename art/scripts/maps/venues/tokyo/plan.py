@@ -203,9 +203,9 @@ DIAGONALS = [(_kerb_mid(3, 0), _kerb_mid(1, 2)), (_kerb_mid(0, 1), _kerb_mid(2, 
 # onto the platform. The stairwell round them stands on the platform's west end, with a walk
 # 5 studs wide past it on both sides of the island.
 STAIRWELL = (-146.0, -121.0, -67.5, -56.5)  # x0, x1, z0, z1: the inside of its walls
-FLIGHT_1 = dict(z=(-67.5, -62.2), top=(-121.0, 0.0), bottom=(-140.0, -10.0))
-FLIGHT_2 = dict(z=(-61.8, -56.5), top=(-140.0, -10.0), bottom=(-121.0, -20.0))
-DIVIDER = (-62.2, -61.8)  # the wall between the flights (z)
+FLIGHT_1 = dict(z=(-67.5, -62.6), top=(-121.0, 0.0), bottom=(-140.0, -10.0))
+FLIGHT_2 = dict(z=(-61.4, -56.5), top=(-140.0, -10.0), bottom=(-121.0, -20.0))
+DIVIDER = (-62.6, -61.4)  # the wall between the flights (z), a real wall's thickness
 HALF_LANDING = (-146.0, -140.0)  # x extent, at flight 1's foot, both flights wide
 # The ticket gates face the entrances; the paid landing behind them leads onto flight 1.
 GATE_X = -116.0
@@ -213,7 +213,7 @@ PAID = (-121.0, -116.0, -70.6, -53.4)  # x0, x1, z0, z1
 # The gate cabinets (2.8 studs wide), the lanes between them wide enough for anyone to walk.
 GATES_Z = (-69.2, -62.0, -54.8)
 # The opening in the hall's floor over flight 1.
-HALL_HOLE = [(-140.0, -67.5), (-121.0, -67.5), (-121.0, -62.2), (-140.0, -62.2)]
+HALL_HOLE = [(-140.0, -67.5), (-121.0, -67.5), (-121.0, -62.6), (-140.0, -62.6)]
 
 
 # Buildings ------------------------------------------------------------------------------------------
@@ -223,9 +223,25 @@ HALL_HOLE = [(-140.0, -67.5), (-121.0, -67.5), (-121.0, -62.2), (-140.0, -62.2)]
 BUILDINGS = []
 
 
+def tidy(poly, shortest=1.0):
+    """poly without slivers: while an edge is shorter than `shortest`, one of its ends goes (the
+    one whose loss changes the outline least). Cuts along bending streets leave such scraps, and
+    a wall a few tenths of a stud long only makes trouble (its windows, its offsets)."""
+    pts = [tuple(p) for p in poly]
+    while len(pts) > 3:
+        n = len(pts)
+        i = min(range(n), key=lambda k: math.dist(pts[k], pts[(k + 1) % n]))
+        if math.dist(pts[i], pts[(i + 1) % n]) >= shortest:
+            break
+        before, a, b, after = pts[i - 1], pts[i], pts[(i + 1) % n], pts[(i + 2) % n]
+        lose_a = abs(g2.area([before, a, b]))
+        lose_b = abs(g2.area([a, b, after]))
+        pts.pop(i if lose_a <= lose_b else (i + 1) % n)
+    return pts
+
+
 def building(name, poly, floors, kind, front=None, use=None, **extra):
-    BUILDINGS.append(dict(name=name, poly=[tuple(p) for p in poly], floors=floors, kind=kind, front=front, use=use,
-                          **extra))
+    BUILDINGS.append(dict(name=name, poly=tidy(poly), floors=floors, kind=kind, front=front, use=use, **extra))
 
 
 def rect(cx, cz, w, d, rot=0.0):
@@ -234,6 +250,12 @@ def rect(cx, cz, w, d, rot=0.0):
 
 def box(x0, z0, x1, z1):
     return [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
+
+
+def under_expressway(poly):
+    """poly kept clear of the expressway's deck (its south edge)."""
+    edge = EXPRESSWAY_Z[1]
+    return line_cut(poly, (-300.0, edge), (300.0, edge), "right")
 
 
 def river_cut(poly, gap=0.0):
@@ -284,10 +306,10 @@ building("glass_tower", clear_scramble(line_cut(cut(lot("ave_nw", 1, 60, 101, 34
 building("office_nw1", cut(box(-80, -128, -42, -116), "ave_nw", 1), 5, "office", front="frontage")
 building("office_nw2", box(-40, -128, -6, -116), 7, "office", front="frontage")
 # The arcade's north side, up to Kita-dori.
-building("arcade_n1", lot("arcade", 1, 30, 52, 22), 5, "shop", front="arcade")
-building("arcade_n2", lot("arcade", 1, 52, 74, 22), 7, "shop", front="arcade", use="game_centre")
-building("arcade_n3", lot("arcade", 1, 74, 96, 22), 4, "shop", front="arcade")
-building("arcade_n4", lot("arcade", 1, 96, 116, 22), 6, "shop", front="arcade")
+building("arcade_n1", under_expressway(lot("arcade", 1, 30, 52, 22)), 5, "shop", front="arcade")
+building("arcade_n2", under_expressway(lot("arcade", 1, 52, 74, 22)), 7, "shop", front="arcade", use="game_centre")
+building("arcade_n3", under_expressway(lot("arcade", 1, 74, 96, 22)), 4, "shop", front="arcade")
+building("arcade_n4", under_expressway(lot("arcade", 1, 96, 116, 22)), 6, "shop", front="arcade")
 building("arcade_n5", cut(lot("arcade", 1, 116, 140, 22), "kita", -1), 5, "shop", front="arcade")
 
 # The fork between the arcade and the east street: the department store's wedge at the tip,
@@ -303,7 +325,7 @@ building("kita_w", cut(lot("kita", -1, 78, 97, 14), "east", 1), 9, "zakkyo", fro
 # East of Kita-dori: the tall blocks at the edge.
 building("tower_ne", lot("kita", 1, 26, 62, 30), 12, "office", front="kita")
 building("office_ne", lot("kita", 1, 62, 97, 26), 9, "office", front="kita")
-building("edge_ne", cut(box(172, -130, 200, -48), "east", 1), 14, "edge")
+building("edge_ne", cut(box(172, -128, 200, -48), "east", 1), 14, "edge")
 
 # South of the east street, east of the avenue: the zakkyo tower on the scramble's corner, the
 # konbini, a back alley (ura) and a row facing the river.

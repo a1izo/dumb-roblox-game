@@ -11,10 +11,10 @@ from maps.venues.tokyo import plan as P
 
 SURFACES = {
     # kind: (material, Ground priority, zone)
-    "road": ("Asphalt", 4, "road"),
+    "road": ("AsphaltWet", 4, "road"),
     "arcade": ("PaversWarm", 3, "arcade"),
     "alley": ("ConcreteDark", 3, "alley"),
-    "lane": ("PaversWarm", 3, "lane"),
+    "lane": ("PaversWarmWet", 3, "lane"),
 }
 
 
@@ -28,17 +28,17 @@ def streets(g):
         left, right = st["walk"]
         if left:
             for q in g2.strip_quads(st["points"], half + left, half):
-                g.add(q, "Pavers", 0.0, 2, "sidewalk", name)
+                g.add(q, "PaversWet", 0.0, 2, "sidewalk", name)
         if right:
             for q in g2.strip_quads(st["points"], -half, -half - right):
-                g.add(q, "Pavers", 0.0, 2, "sidewalk", name)
+                g.add(q, "PaversWet", 0.0, 2, "sidewalk", name)
 
 
 def plazas(g):
     # The station plaza, between the station and the avenue; the drive crosses it.
-    g.add(P.box(-108, -112, -40, -24), "PaversWarm", 0.0, 1, "plaza", "the station plaza")
+    g.add(P.box(-108, -112, -40, -24), "PaversWarmWet", 0.0, 1, "plaza", "the station plaza")
     # The corners of the scramble: sidewalk all round it, cut by the roads.
-    g.add(grow(P.SCRAMBLE, 16.0), "Pavers", 0.0, 1, "plaza", "the scramble")
+    g.add(grow(P.SCRAMBLE, 16.0), "PaversWet", 0.0, 1, "plaza", "the scramble")
 
 def base(s, g):
     """Plain ground wherever nothing else is (yards, gaps between buildings) and the solid floor
@@ -67,7 +67,7 @@ def zebra_band(s, a, b, width, y=0.0, stripe=1.0, gap=1.0, mat="WhiteTrim"):
 
 
 def scramble(s, g):
-    g.add(P.SCRAMBLE, "Asphalt", 0.0, 6, "crossing", "the scramble")
+    g.add(P.SCRAMBLE, "AsphaltWet", 0.0, 6, "crossing", "the scramble")
     for ap in P.APPROACHES:
         (px, pz), (dx, dz) = ap["at"], ap["out"]
         # The zebra just inside the junction, across the road...

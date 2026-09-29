@@ -9,10 +9,13 @@ exported with it (src/server/Maps/Scenes/Tokyo/). The layout is in plan.py.
 """
 
 from maps import buildings, city
-from maps.venues.tokyo import dressing, edges, gameplay, ground, interiors, plan, river, station, styles
+from maps.venues.tokyo import boats, decor, dressing, edges, gameplay, ground, interiors, plan, river, station, styles
 
 FORMAT = 2
 MAP_ID = "TokyoDistrict"
+# Effect textures the map's own FBX carries (art/scripts/textures.py): the rain's streaks and
+# splashes (client/World/RainController) and the petals over the river (SceneBuilder).
+TEXTURES = ["TokyoRain", "TokyoSplash", "TokyoPetal"]
 
 # Plan renders: the camera sits just under each level's ceiling, looking down.
 PLAN_LEVELS = [("platform", -9.0), ("ground", 12.0), ("upper", 24.0)]
@@ -53,6 +56,8 @@ def preview(s):
 
 
 def build(s):
+    # The city far out past the edges goes in a few big meshes, not hundreds of small ones.
+    s.far_chunk = (360.0, 1400.0)
     g = city.Ground(s)
     ground.build(s, g)
     river.build(s, g)
@@ -63,7 +68,21 @@ def build(s):
         buildings.build(s, b, styles.style(b), others, styles.fronts(b, plan.BUILDINGS))
     interiors.build(s, g)
     dressing.build(s)
+    boats.build(s)
+    decor.build(s)
     edges.build(s, g)
     g.finish()
     gameplay.build(s)
+    noir_signs(s)
     s.set_bounds(*plan.BOUNDS)
+
+
+def noir_signs(s):
+    """The district's English in a noir face: Bodoni on the big signs, Special Elite (a typewriter)
+    on plates and notices. Japanese comes out in the game's own kanji face whatever the font."""
+    for sign in s.signs:
+        latin = any("A" <= ch <= "Z" or "a" <= ch <= "z" for ch in sign["text"])
+        if sign["font"] != "GothamBlack" or not latin:
+            continue
+        small = sign["h"] < 1.5 or sign["w"] * sign["h"] < 8.0
+        sign["font"] = "SpecialElite" if small else "Bodoni"

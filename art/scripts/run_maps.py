@@ -443,6 +443,44 @@ def render_massing(scene, module):
     return paths
 
 
+def texture_carriers(names, venue):
+    """Small quads Tex_<name>, one per effect texture a venue's effects use (its TEXTURES), so
+    importing the venue's FBX also brings those textures in (ModelLibrary.carrierTexture)."""
+    carriers = []
+    coll = common.collection("Textures_" + venue)
+    for i, name in enumerate(names):
+        path = os.path.join(common.TEXTURES, name + ".png")
+        if not os.path.exists(path):
+            print(f"[maps] WARNING: no texture {path} (run art/scripts/run_textures.py)")
+            continue
+        obj_name = "Tex_" + name
+        old = bpy.data.objects.get(obj_name)
+        if old:
+            bpy.data.objects.remove(old, do_unlink=True)
+        image = bpy.data.images.load(path, check_existing=True)
+        mat = bpy.data.materials.get(obj_name) or bpy.data.materials.new(obj_name)
+        mat.use_nodes = True
+        nodes, links = mat.node_tree.nodes, mat.node_tree.links
+        bsdf = nodes["Principled BSDF"]
+        tex = nodes.get("Image") or nodes.new("ShaderNodeTexImage")
+        tex.name = "Image"
+        tex.image = image
+        links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+        links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
+        mesh = bpy.data.meshes.new(obj_name)
+        mesh.from_pydata([(-1, 0, -1), (1, 0, -1), (1, 0, 1), (-1, 0, 1)], [], [(0, 1, 2, 3)])
+        uv = mesh.uv_layers.new(name="UVMap")
+        for loop, co in zip(uv.data, ((0, 0), (1, 0), (1, 1), (0, 1))):
+            loop.uv = co
+        mesh.materials.append(mat)
+        obj = bpy.data.objects.new(obj_name, mesh)
+        coll.objects.link(obj)
+        obj.location = (i * 3.0, -60.0, 0.0)
+        obj["inkbound_texture"] = True
+        carriers.append(obj)
+    return carriers
+
+
 def rewrite_materials():
     import re
 
@@ -511,6 +549,7 @@ def main():
             objects = [o for o in coll.objects if o.type == "MESH"]
             objects.extend(export.calibration_cubes(common.collection("Calibration_" + scene.venue),
                                                     "Calib_" + scene.venue, "Maps" + scene.venue, version))
+            objects.extend(texture_carriers(getattr(module, "TEXTURES", ()), scene.venue))
             path = export.export_fbx(objects, export.venue_fbx(scene.venue))
             size = os.path.getsize(path) / 1e6
             print(f"[maps] {scene.venue} v{version}: {path} ({size:.1f} MB, {len(objects)} objects)")

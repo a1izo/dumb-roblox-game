@@ -41,6 +41,7 @@ FLAT = {
     "Screen": ("SmoothPlastic", (14, 16, 22), 0, 0.1),
     "Paper": ("SmoothPlastic", (226, 220, 205), 0, 0),
     "Fabric": ("Fabric", (40, 40, 46), 0, 0),
+    "TarpBlue": ("Fabric", (36, 78, 150), 0, 0),  # the blue plastic sheet on every work boat and site
     "FabricRed": ("Fabric", (120, 24, 30), 0, 0),
     "Leather": ("Leather", (40, 26, 22), 0, 0),
     "Wood": ("Wood", (86, 58, 38), 0, 0),

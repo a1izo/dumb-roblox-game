@@ -111,7 +111,7 @@ def expressway(s):
         in_gap = any(g0 - 3 < x < g1 + 3 for g0, g1 in gaps)
         if not in_gap:
             s.box("Concrete", (x, y / 2, -150.5), (4.0, y, 4.0), 0, skip=("-y",), collide=True)
-            s.box("Concrete", (x, y - 1.0, mid_z), (4.0, 2.0, z1 - z0), 0, skip=("-y",))
+            s.box("Concrete", (x, y - 1.0, mid_z), (4.0, 2.0, z1 - z0), 0, skip=("+y",))
             # A sodium lamp on the pier's face, lighting the road under the deck.
             s.box("BlackMetal", (x, y - 5.0, -148.2), (1.2, 0.8, 1.6), 0)
             s.box("NeonOrange", (x, y - 5.45, -147.8), (0.9, 0.1, 1.0), 0)
@@ -137,12 +137,20 @@ def viaduct(s):
     while x < FAR:
         nxt = x + bay
         if gap[0] < nxt and x < gap[1]:
+            # The part of a bay left over at the avenue's span: solid brick, closing the arcade's
+            # end (the last niche's side, and the span's abutment).
+            for a, b in ((x, min(nxt, gap[0])), (max(x, gap[1]), nxt)):
+                if b - a > 0.05:
+                    s.box("BrickDark", ((a + b) / 2, top / 2, z0 + niche / 2), (b - a, top, niche), 0,
+                          skip=("-y", "+y"), collide=abs(a) < P.X1 + 20)
             x = nxt
             continue
-        s.box("BrickDark", (x + pier / 2, top / 2, z0 + niche / 2), (pier, top, niche), 0, skip=("-y",),
+        s.box("BrickDark", (x + pier / 2, top / 2, z0 + niche / 2), (pier, top, niche), 0, skip=("-y", "+y"),
               collide=abs(x) < P.X1 + 20)
+        # The arch's head over the niche: its face and its soffit (its top and back lie against the
+        # deck and the viaduct's body).
         s.box("BrickDark", ((x + nxt) / 2 + pier / 2, top - 2.5, z0 + niche / 2), (nxt - x - pier, 5.0, niche), 0,
-              skip=("+y", "-z", "+z"))
+              skip=("+y", "+z"))
         city.vquad(s, "Shutter", (x + pier, z0 + niche), (nxt, z0 + niche), 0.0, top - 5.0, (0, -1))
         x = nxt
     for a, b in ((-FAR, gap[0]), (gap[1], FAR)):
@@ -190,9 +198,9 @@ def far_ground(s, g):
         g.add(piece, "ConcreteDark", -0.02, -1, None, None)
     for pts, road, walk in BEYOND:
         for q in g2.strip_quads(pts, road / 2, -road / 2):
-            g.add(q, "Asphalt", 0.0, 4, None, None)
+            g.add(q, "AsphaltWet", 0.0, 4, None, None)
         for q in g2.strip_quads(pts, road / 2 + walk, road / 2) + g2.strip_quads(pts, -road / 2, -road / 2 - walk):
-            g.add(q, "Pavers", 0.0, 2, None, None)
+            g.add(q, "PaversWet", 0.0, 2, None, None)
         city.dashes(s, pts, dash=3, gap=5, w=0.3)
         # Street lamps down the first stretch past the barrier, so the street reads as going on
         # into a lit city rather than into the dark.
@@ -271,6 +279,7 @@ def far_city(s, seed=7):
                     buildings.far(s, lot, rng.randint(16, 30), rng.randint(1, 1 << 30), lit=0.18)
             z += d
         x += w
+    outer_city(s, rng, corridors)
     # Where the expressway and the viaduct run out of the city, a tower closes each end, so no
     # view along them reaches the edge of the world.
     for x in (-FAR + 30.0, FAR - 30.0):
@@ -278,7 +287,92 @@ def far_city(s, seed=7):
             buildings.far(s, P.box(x - 24, z0, x + 24, z1), rng.randint(20, 30), rng.randint(1, 1 << 30), lit=0.2)
 
 
-SKYLINE = 330.0  # how far past the map's edge the city is built
+SKYLINE = 330.0  # how far past the map's edge the city is built in detail
+REACH = 700.0  # and how far it goes on, cheaper, until the haze has it
+
+
+def _ring_dist(x0, z0, x1, z1):
+    """How far a lot lies past the map's edge (by its middle)."""
+    return max(abs((x0 + x1) / 2) - P.X1, abs((z0 + z1) / 2) - P.Z1)
+
+
+def outer_city(s, rng, corridors):
+    """The city on out past the detailed blocks, until the haze has swallowed it: big plain blocks
+    in the same grid of streets (every one a few pixels from inside the map), taller towards the
+    far edge so there is a skyline all round and never flat ground to the horizon. A landmark or
+    two stands in it: the broadcast tower to the north-west and tall towers with beacons."""
+    landmarks = [((-470.0, -520.0), 34.0), ((560.0, -380.0), 30.0), ((520.0, 470.0), 30.0), ((-600.0, 330.0), 30.0),
+                 ((140.0, -620.0), 30.0)]
+    # (And the towers closing the ends of the expressway and the viaduct, far_city's.)
+    for x in (-FAR + 30.0, FAR - 30.0):
+        for z in ((P.EXPRESSWAY_Z[0] + P.EXPRESSWAY_Z[1]) / 2 - 5, (P.VIADUCT_LANE_Z[0] + P.VIADUCT_Z[1]) / 2 + 5):
+            landmarks.append(((x, z), 45.0))
+    x = -P.X1 - REACH
+    while x < P.X1 + REACH:
+        w = rng.uniform(42, 64)
+        z = -P.Z1 - REACH
+        while z < P.Z1 + REACH:
+            d = rng.uniform(42, 64)
+            box = (x + 4, z + 4, x + w - 4, z + d - 4)
+            dist = _ring_dist(*box)
+            lot = P.box(*box)
+            clear = all(max(abs((box[0] + box[2]) / 2 - lx), abs((box[1] + box[3]) / 2 - lz)) > r + 30
+                        for (lx, lz), r in landmarks)
+            # (Its own ring, clear of the detailed blocks' lots, a wide road between.)
+            if SKYLINE + 50 <= dist < REACH and clear and not any(g2.intersect(lot, c) for c in corridors):
+                if dist > REACH - 130:
+                    floors = rng.randint(14, 26)  # the skyline's far wall
+                else:
+                    floors = rng.randint(6, 18)
+                buildings.far(s, lot, floors, rng.randint(1, 1 << 30), lit=0.08, bay=11.0)
+            z += d
+        x += w
+    broadcast_tower(s, (-470.0, -520.0), 330.0)
+    for (tx, tz), floors, period, phase in (((560.0, -380.0), 21, 1.6, 0.0), ((520.0, 470.0), 19, 2.1, 0.7),
+                                           ((-600.0, 330.0), 23, 1.8, 1.3), ((140.0, -620.0), 18, 2.4, 0.4)):
+        lot = P.box(tx - 22, tz - 18, tx + 22, tz + 18)
+        top = buildings.far(s, lot, floors, rng.randint(1, 1 << 30), lit=0.12, bay=9.0)
+        for cx, cz in ((tx - 20, tz - 16), (tx + 20, tz + 16)):
+            s.box("BlackMetal", (cx, top + 3.0, cz), (0.6, 6.0, 0.6))
+            s.blinker((cx, top + 6.4, cz), (255, 40, 40), period, 2.4, phase)
+
+
+def broadcast_tower(s, at, height):
+    """A lattice broadcast tower in red and white bands, its legs splayed at the foot, a two-deck
+    gallery two-thirds up, an antenna mast on top; red beacons blinking up its height."""
+    x, z = at
+    base, top_w = 34.0, 7.0
+    bands = 7
+    deck = height * 0.62
+
+    def half(y):
+        return base / 2 + (top_w / 2 - base / 2) * (y / height) ** 0.7
+
+    levels = [height * k / 14 for k in range(15)]
+    for i in range(14):
+        y0, y1 = levels[i], levels[i + 1]
+        mat = "RedTrim" if (i * bands // 14) % 2 == 0 else "WhiteTrim"
+        h0, h1 = half(y0), half(y1)
+        for sx, sz in ((1, 1), (1, -1), (-1, -1), (-1, 1)):
+            s.tube(mat, (x + sx * h0, y0, z + sz * h0), (x + sx * h1, y1, z + sz * h1), 0.9, 6)
+        # Cross bracing on each face, and the ring beam at the top of the section.
+        for (ax, az), (bx, bz) in (((1, 1), (1, -1)), ((1, -1), (-1, -1)), ((-1, -1), (-1, 1)), ((-1, 1), (1, 1))):
+            s.tube(mat, (x + ax * h0, y0, z + az * h0), (x + bx * h1, y1, z + bz * h1), 0.35, 4)
+            s.tube(mat, (x + bx * h0, y0, z + bz * h0), (x + ax * h1, y1, z + az * h1), 0.35, 4)
+            s.tube(mat, (x + ax * h1, y1, z + az * h1), (x + bx * h1, y1, z + bz * h1), 0.4, 4)
+    # The gallery: two stacked glass decks.
+    for dy, r in ((0.0, half(deck) + 5.0), (9.0, half(deck) + 3.5)):
+        s.cylinder("GlassDark", (x, deck + dy, z), r, 6.0, segments=16)
+        s.cylinder("WhiteTrim", (x, deck + dy + 6.0, z), r + 0.6, 0.8, segments=16)
+        s.cylinder("WindowLit", (x, deck + dy + 2.0, z), r + 0.05, 1.2, segments=16, caps=(False, False))
+    # The mast.
+    s.tube("RedTrim", (x, height, z), (x, height + 40.0, z), 1.2, 8, radius_b=0.5)
+    s.tube("WhiteTrim", (x, height + 40.0, z), (x, height + 60.0, z), 0.5, 6, radius_b=0.25)
+    s.blinker((x, height + 61.0, z), (255, 40, 40), 1.5, 3.0, 0.0)
+    for k, y in enumerate((height * 0.3, deck + 15.0, height)):
+        h = half(y)
+        for sx, sz in ((1, 1), (-1, -1)):
+            s.blinker((x + sx * (h + 0.8), y, z + sz * (h + 0.8)), (255, 40, 40), 1.5, 2.2, 0.35 * (k + 1))
 
 
 def perimeter(s):

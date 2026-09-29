@@ -85,7 +85,10 @@ return function(t)
 					expect(def.check(a, wrong(answer))).to.equal(false)
 					expect(PuzzleSet.verify(id, seed * 7919, nil)).to.equal(false)
 					for _, junk in ipairs(JUNK) do
-						expect(PuzzleSet.verify(id, seed * 7919, junk)).to.equal(false)
+						-- (A guess shaped like an answer, { 1, 2, 3 }, is now and then the answer.)
+						if not deepEqual(junk, answer) then
+							expect(PuzzleSet.verify(id, seed * 7919, junk)).to.equal(false)
+						end
 					end
 				end
 			end)

@@ -26,6 +26,7 @@ end
 
 function Def.check(puzzle, answer): boolean
 	return type(answer) == "table"
+		and #answer == 2
 		and PuzzleKit.isInt(answer[1], 1, Def.MAX_FREQUENCY)
 		and PuzzleKit.isInt(answer[2], 1, Def.MAX_GAIN)
 		and answer[1] == puzzle.frequency

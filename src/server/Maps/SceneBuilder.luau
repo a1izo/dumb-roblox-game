@@ -238,7 +238,9 @@ local function addEmitter(b, folder: Instance, spec)
 		-- Sakura petals drifting down from the trees over the promenade and onto the water.
 		anchor.Size = Vector3.new(34, 0.2, 10)
 		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
-		Create("ParticleEmitter", {
+		-- A petal's shape when the map brought its texture in (else Roblox's default spark).
+		local petal = Assets.texture("TokyoPetal")
+		local petals = Create("ParticleEmitter", {
 			Shape = Enum.ParticleEmitterShape.Box,
 			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 			EmissionDirection = Enum.NormalId.Bottom,
@@ -262,6 +264,11 @@ local function addEmitter(b, folder: Instance, spec)
 			RotSpeed = NumberRange.new(-90, 90),
 			Parent = anchor,
 		})
+		if petal ~= "" then
+			petals.Texture = petal
+			petals.Size = NumberSequence.new(0.3)
+			petals.Squash = NumberSequence.new(0)
+		end
 	elseif spec.kind == "branchsnow" then
 		-- Snow slipping off a tree's branches: nothing until the client shakes a clump loose now and
 		-- then (World/MapAmbient calls Emit on it), then a short fall of flakes and powder.

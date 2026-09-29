@@ -1,7 +1,7 @@
 """Effect textures, rendered in Blender as white shapes on a transparent background so the game
 can tint them (ParticleEmitter.Color, Decal.Color3): ink splats and drops (made from metaballs,
-seen from above), a rain streak, a smoke puff, a soul glow, a spark, a snowflake and a shoe's print
-in snow.
+seen from above), a rain streak, a smoke puff, a soul glow, a spark, a snowflake, a shoe's print
+in snow, and Tokyo's rain streak, splash and cherry petal (carried in the Tokyo map's own FBX).
 
     blender -b --factory-startup --python art/scripts/run_textures.py
 """
@@ -205,6 +205,63 @@ def footprint(h=256, w=128):
     return save_array("Footprint", rgba)
 
 
+def tokyo_rain(h=256, w=16):
+    """A falling drop's streak for Tokyo's rain: thin, bright at its head (the bottom, where it
+    falls to), fading up its tail. White: the game tints it."""
+    y = np.linspace(0, 1, h)[:, None]  # 0 at the top of the image (the tail)
+    x = np.linspace(-1, 1, w)[None, :]
+    core = np.exp(-(x**2) / 0.08)
+    body = np.clip(y ** 1.6, 0, 1) * np.clip((1 - y) * 14, 0, 1)
+    head = np.exp(-((y - 0.93) ** 2) / 0.0012) * 0.5
+    alpha = np.clip(core * (body * 0.75 + head), 0, 1)
+    rgba = np.ones((h, w, 4), dtype=np.float32)
+    rgba[..., 3] = alpha
+    return save_array("TokyoRain", rgba)
+
+
+def tokyo_splash(size=128):
+    """A drop landing, seen from above: a thin ring with a few droplets thrown round it and a
+    faint centre. Laid flat on the ground by the emitter, it grows and fades."""
+    y, x = np.mgrid[-1 : 1 : size * 1j, -1 : 1 : size * 1j]
+    r = np.sqrt(x**2 + y**2)
+    a = np.arctan2(y, x)
+    ring = np.exp(-((r - 0.62) ** 2) / 0.004) * (0.75 + 0.25 * np.cos(a * 7))
+    drops = np.zeros_like(r)
+    for k in range(9):
+        ang = k * 2.39996
+        dx, dy = 0.84 * np.cos(ang), 0.84 * np.sin(ang)
+        drops += np.exp(-((x - dx) ** 2 + (y - dy) ** 2) / 0.0015)
+    centre = np.exp(-(r**2) / 0.05) * 0.25
+    alpha = np.clip(ring + drops * 0.8 + centre, 0, 1) * np.clip((1 - r) * 6, 0, 1)
+    rgba = np.ones((size, size, 4), dtype=np.float32)
+    rgba[..., 3] = alpha
+    return save_array("TokyoSplash", rgba)
+
+
+def tokyo_petal(size=128):
+    """A cherry petal: a rounded teardrop with the notch at its tip, a little darker at its base.
+    White and grey only (the game tints it pink)."""
+    y, x = np.mgrid[-1 : 1 : size * 1j, -1 : 1 : size * 1j]
+    # Base at the bottom (y = 1), the notched tip at the top.
+    u = x / (0.46 + 0.22 * (1 - y) * 0.5)
+    v = y
+    shape = (u**2 + (v * 0.92) ** 2) < 0.72
+    notch = (np.abs(x) < 0.12 * np.clip((-0.62 - y) / 0.25, 0, 1) + 0.001) & (y < -0.45)
+    body = shape & ~notch
+    edge = np.clip((0.72 - (u**2 + (v * 0.92) ** 2)) * 8, 0, 1)
+    shade = 0.82 + 0.18 * np.clip(-y, 0, 1)
+    alpha = edge * body
+    rgba = np.ones((size, size, 4), dtype=np.float32)
+    rgba[..., 0] = shade
+    rgba[..., 1] = shade
+    rgba[..., 2] = shade
+    rgba[..., 3] = alpha
+    return save_array("TokyoPetal", rgba)
+
+
+TOKYO = (tokyo_rain, tokyo_splash, tokyo_petal)
+
+
 def build():
     common.ensure_dirs()
     _clear()
@@ -223,4 +280,5 @@ def build():
     paths.append(spark())
     paths.append(snowflake())
     paths.append(footprint())
+    paths.extend(make() for make in TOKYO)
     return paths

@@ -6,6 +6,7 @@
 
 return {
 	Asphalt = { textured = true, fallback = { material = "Asphalt", color = { 39, 38, 42 } } },
+	AsphaltWet = { textured = true, fallback = { material = "Asphalt", color = { 26, 26, 28 } } },
 	Bamboo = { material = "SmoothPlastic", color = { 156, 138, 88 }, transparency = 0, reflectance = 0 },
 	Bark = { material = "Wood", color = { 60, 44, 34 }, transparency = 0, reflectance = 0 },
 	BlackMetal = { material = "Metal", color = { 26, 26, 30 }, transparency = 0, reflectance = 0 },
@@ -70,6 +71,8 @@ return {
 	Paper = { material = "SmoothPlastic", color = { 226, 220, 205 }, transparency = 0, reflectance = 0 },
 	Pavers = { textured = true, fallback = { material = "Pavement", color = { 102, 100, 105 } } },
 	PaversWarm = { textured = true, fallback = { material = "Pavement", color = { 118, 104, 90 } } },
+	PaversWarmWet = { textured = true, fallback = { material = "Pavement", color = { 84, 74, 65 } } },
+	PaversWet = { textured = true, fallback = { material = "Pavement", color = { 73, 73, 75 } } },
 	PlasterDark = { textured = true, fallback = { material = "Plaster", color = { 46, 49, 56 } } },
 	PlasterGrey = { textured = true, fallback = { material = "Plaster", color = { 101, 108, 118 } } },
 	PlasterLight = { textured = true, fallback = { material = "Plaster", color = { 147, 142, 129 } } },
@@ -90,6 +93,7 @@ return {
 	SnowPath = { textured = true, fallback = { material = "Snow", color = { 105, 105, 106 } } },
 	Steel = { material = "Metal", color = { 150, 152, 158 }, transparency = 0, reflectance = 0 },
 	Stone = { textured = true, fallback = { material = "Cobblestone", color = { 142, 136, 122 } } },
+	TarpBlue = { material = "Fabric", color = { 36, 78, 150 }, transparency = 0, reflectance = 0 },
 	TileChecker = { textured = true, fallback = { material = "Slate", color = { 120, 119, 120 } } },
 	TileMetro = { textured = true, fallback = { material = "Slate", color = { 199, 202, 197 } } },
 	TileMetroFloor = { textured = true, fallback = { material = "Slate", color = { 115, 116, 120 } } },

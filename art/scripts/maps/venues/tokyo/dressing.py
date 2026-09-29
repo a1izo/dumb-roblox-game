@@ -184,7 +184,7 @@ def plaza(s):
     s.prop("Taxi", -93.0, -59.4, 90)
     # Trees in beds, benches round them, planters, the plaza's lamps.
     # (The middle bed keeps clear of the phone booth in front of it.)
-    for x, z in ((-100.0, -46.0), (-86.0, -31.5), (-100.0, -96.0)):
+    for x, z in ((-96.0, -46.0), (-86.0, -31.5), (-100.0, -96.0)):
         s.box("Stone", (x, 0.6, z), (7.0, 1.2, 7.0), 0)
         s.collider((x, 0.6, z), (7.0, 1.2, 7.0), 0, True, "Stone")
         s.prop("Tree", x, z, RNG.uniform(0, 360), 1.0, 1.2)
@@ -208,6 +208,8 @@ def arcade(s):
     for q in g2.strip_quads(pts, half, -half):
         city.down_face(s, "GlassDark", q, y + 1.2)
         city.up_face(s, "GlassDark", q, y + 1.3)
+        # Solid to a query up there (nobody reaches it): the rain knows it is under a roof here.
+        city.floor(s, q, y + 1.3, 0.2, None, query=True)
     total = g2.polyline_length(pts)
     u = 4.0
     k = 0
@@ -251,7 +253,7 @@ def arcade(s):
 
 def riverside(s):
     """Cherry trees along both promenades with lantern strings between them (one in three lit),
-    benches, moored boats, lamps at the road bridge's ends."""
+    benches, lamps at the road bridge's ends (the boats moored below are boats.py's)."""
     avoid = [(P.FOOTBRIDGE_X, 9.0)]
     for h in g2.polyline_hits(P.STREETS["ave_se"]["points"], R.inner_river()):
         avoid.append((h[0], 30.0))
@@ -285,11 +287,6 @@ def riverside(s):
             if any(math.dist(p, tp) < 4.5 for _, tp, _ in trees):
                 continue  # not under a tree's trunk
             s.prop("Bench", p[0], p[1], facing(-n[0] * side, -n[1] * side))
-    for x, side in ((-36.0, 1), (136.0, -1)):
-        (cx, cz), d = P.river_frame(x)
-        n = g2.normal_left(d)
-        off = P.CHANNEL[1] - 5.0 if side > 0 else P.CHANNEL[0] + 5.0
-        s.prop("Boat", cx + n[0] * off, cz + n[1] * off, g2.rot_of(d) + 90, 1.0, P.WATER_Y - 1.4)
     # Lamps at the road bridge's four corners.
     for h in g2.polyline_hits(P.STREETS["ave_se"]["points"], P.river_line(P.CHANNEL[1] + 3.0)) + \
             g2.polyline_hits(P.STREETS["ave_se"]["points"], P.river_line(P.CHANNEL[0] - 3.0)):

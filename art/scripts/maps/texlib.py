@@ -291,7 +291,9 @@ def ashlar(seed, base, joint_color, cols=3, rows=4, variation=0.12):
     return result(color, height, rough, 2.0)
 
 
-def asphalt(seed, base):
+def asphalt(seed, base, wet_all=0.0):
+    """Road asphalt. wet_all: rain-soaked (Tokyo): darker all over and glossy, the low patches
+    holding water (near-mirror, smooth)."""
     r = rng(seed)
     big = fbm(r, 2.8, 1, 12)
     grit = fbm(r, 0.5, 200, 512)
@@ -304,10 +306,17 @@ def asphalt(seed, base):
     color = color * (1 - cracks * 0.4)[..., None]
     height = grit * 0.5 + mid * 0.2 - cracks * 0.5 - wet * 0.2
     rough = np.clip(0.8 - wet * 0.5 + grit * 0.08, 0.1, 1)
+    if wet_all:
+        pool = smoothstep(0.62, 0.74, big) * wet_all
+        color = color * (1 - 0.3 * wet_all - pool[..., None] * 0.18)
+        height = height * (1 - pool * 0.85)
+        rough = np.clip(0.44 - pool * 0.36 + grit * 0.1 - wet * 0.1, 0.05, 1)
     return result(color, height, rough, 1.4)
 
 
-def pavers(seed, base, joint_color, cols=4, rows=4, offset=0.0):
+def pavers(seed, base, joint_color, cols=4, rows=4, offset=0.0, wet_all=0.0):
+    """Paving slabs. wet_all: rain-soaked (Tokyo): darker, glossy, water standing in the joints
+    and in the odd dip."""
     r = rng(seed)
     col, row, cu, cv = grid(cols, rows, offset)
     aspect = (N / cols) / (N / rows)
@@ -323,6 +332,10 @@ def pavers(seed, base, joint_color, cols=4, rows=4, offset=0.0):
     color = color * (1 - wet * 0.12)[..., None]
     height = bevel * 0.8 + grit * 0.1
     rough = np.clip(0.8 - wet * 0.4 + grit * 0.1, 0.1, 1)
+    if wet_all:
+        dip = smoothstep(0.66, 0.78, stain) * wet_all
+        color = color * (1 - 0.26 * wet_all - dip[..., None] * 0.14 - joint[..., None] * 0.1 * wet_all)
+        rough = np.clip(0.4 - dip * 0.3 - joint * 0.25 * wet_all + grit * 0.1, 0.05, 1)
     return result(color, height, rough, 2.2)
 
 
@@ -511,6 +524,10 @@ LIBRARY = {
     "Asphalt": (lambda: asphalt(29, srgb(44, 44, 48)), 16),
     "Pavers": (lambda: pavers(30, srgb(104, 104, 108), srgb(52, 52, 56), 4, 4), 8),
     "PaversWarm": (lambda: pavers(31, srgb(120, 106, 92), srgb(62, 56, 50), 6, 6, 0.5), 8),
+    # Tokyo in the rain: the same surfaces soaked (darker, glossy, water in the dips and joints).
+    "AsphaltWet": (lambda: asphalt(29, srgb(44, 44, 48), wet_all=1.0), 16),
+    "PaversWet": (lambda: pavers(30, srgb(104, 104, 108), srgb(52, 52, 56), 4, 4, wet_all=1.0), 8),
+    "PaversWarmWet": (lambda: pavers(31, srgb(120, 106, 92), srgb(62, 56, 50), 6, 6, 0.5, wet_all=1.0), 8),
     "Grass": (lambda: grass(32, srgb(46, 76, 38), srgb(92, 88, 52)), 16),
     "Slate": (lambda: slate(33, srgb(46, 48, 54)), 8),
     "FacadeTile": (lambda: facade_tiles(34, srgb(150, 140, 124)), 8),

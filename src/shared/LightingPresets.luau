@@ -269,8 +269,9 @@ LightingPresets.maps = {
 	-- streets so nothing is pitch black, lamps and shop windows make the pools of light, and the
 	-- haze is thin enough to see down the long avenues of a big map.
 	-- A readable night: the ambient alone keeps an unlit alley legible; the light comes from real
-	-- fixtures (street lights, shopfronts, signs, lanterns). The haze and the fog (the night sky's
-	-- own violet) swallow the city's far skyline, so there is no edge to see.
+	-- fixtures (street lights, shopfronts, signs, lanterns). The city runs on past the map to the
+	-- haze (the night sky's own violet), which swallows its far skyline, so there is no edge to
+	-- see; low down the haze takes the warm glow of a city's lights.
 	TokyoDistrict = preset({
 		clockTime = 0,
 		brightness = 1.5,
@@ -278,15 +279,15 @@ LightingPresets.maps = {
 		ambient = rgb(80, 72, 102),
 		outdoorAmbient = rgb(112, 102, 142),
 		envDiffuse = 0.65,
-		envSpecular = 0.5,
-		fogStart = 110,
-		fogEnd = 720,
+		envSpecular = 0.55,
+		fogStart = 90,
+		fogEnd = 650,
 		fogColor = rgb(40, 32, 58),
 		density = 0.3,
-		haze = 2.2,
+		haze = 2.6,
 		glare = 0.1,
 		atmosphereColor = rgb(110, 86, 140),
-		decay = rgb(70, 40, 80),
+		decay = rgb(132, 66, 74),
 		saturation = -0.05,
 		contrast = 0.14,
 		tint = rgb(242, 236, 255),

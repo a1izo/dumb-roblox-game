@@ -136,29 +136,51 @@ def style(b):
 
 # Which walls face a street -------------------------------------------------------------------------------
 
-_BANDS = None
+_CHANNEL = None
 
 
 def _walkable(p):
-    global _BANDS
-    if _BANDS is None:
-        _BANDS = [q for _, q in P.bands()] + [P.box(-108, -112, -40, -24)]
-    return any(g2.contains(q, p) for q in _BANDS) or g2.contains(P.SCRAMBLE, p)
+    """Open ground: in the map, and not in the river's channel (buildings are left to fronts)."""
+    global _CHANNEL
+    if _CHANNEL is None:
+        _CHANNEL = g2.strip_quads(P.RIVER, P.CHANNEL[1], P.CHANNEL[0])
+    if not (P.X0 < p[0] < P.X1 and P.Z0 < p[1] < P.Z1):
+        return False
+    return not any(g2.contains(q, p) for q in _CHANNEL)
 
 
 def fronts(b, buildings):
     """The indices (counter-clockwise edge order, as maps.buildings.edges_of) of the walls of b
-    that look onto a street, plaza, lane or the river."""
+    that look onto open ground people walk on (a street, plaza, lane, yard or the river's
+    promenade), three studs of it at least."""
     from maps.buildings import edges_of
 
     out = []
-    for i, e in enumerate(edges_of(b["poly"])):
+    edges = edges_of(b["poly"])
+    for i, e in enumerate(edges):
         if e.length < 3.0:
             continue
-        p = e.at(e.length / 2, 3.0)
-        if _walkable(p) and not any(o is not b and g2.contains(o["poly"], p) for o in buildings):
+        probes = [e.at(e.length / 2, out) for out in (1.5, 3.0)]
+        if all(_walkable(p) and not any(o is not b and g2.contains(o["poly"], p) for o in buildings) for p in probes):
             out.append(i)
-    return out
+    # The side on the street the building is named for first (its signs go there).
+    return sorted(out, key=lambda i: _to_front(b, edges[i].at(edges[i].length / 2, 3.0)))
+
+
+def _to_front(b, p):
+    """How far p lies from the place building b fronts (plan: front=...)."""
+    name = b.get("front")
+    if name in P.STREETS:
+        line = P.STREETS[name]["points"]
+    elif name == "river":
+        line = P.RIVER
+    elif name == "scramble":
+        return g2.dist_to_poly_edge(P.SCRAMBLE, p) * (0 if g2.contains(P.SCRAMBLE, p) else 1)
+    elif name == "plaza":
+        line = [(-108.0, -68.0), (-40.0, -68.0)]
+    else:
+        return 0.0
+    return min(g2.dist_point_segment(p, line[k], line[k + 1]) for k in range(len(line) - 1))
 
 
 def repeats(buildings):

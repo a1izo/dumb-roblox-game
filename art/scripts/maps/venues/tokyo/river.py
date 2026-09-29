@@ -51,9 +51,9 @@ def along(points, offset, fn):
 def channel(s, g):
     river = inner_river()
     for q in band(P.PROM_N[1], P.PROM_N[0], river):
-        g.add(q, "PaversWarm", 0.0, 2, "lane", "the north promenade")
+        g.add(q, "PaversWarmWet", 0.0, 2, "lane", "the north promenade")
     for q in band(P.PROM_S[1], P.PROM_S[0], river):
-        g.add(q, "PaversWarm", 0.0, 2, "lane", "the south promenade")
+        g.add(q, "PaversWarmWet", 0.0, 2, "lane", "the south promenade")
 
     def wall_face(facing):
         def piece(a, b, d, n):
@@ -150,7 +150,7 @@ def culvert(s, x):
         s.box("Concrete", (p[0], P.WATER_Y + 2.2, p[1]), (0.8, 4.4, 0.8), g2.rot_of(n))
     # The deck over it, so the ground carries on.
     deck = g2.rect(cx + inward[0] * -6, cz + inward[1] * -6, 12, math.dist(a, b) + 2, g2.rot_of(d))
-    city.up_face(s, "Asphalt", deck, 0.02)
+    city.up_face(s, "AsphaltWet", deck, 0.02)
 
 
 def blocker(s, a, b, base=3.4):
@@ -188,15 +188,36 @@ def road_bridge(s):
                       key=lambda h: h[1])
         if len(hits) < 2:
             continue
-        a, b = hits[0], hits[-1]
-        out = _outward(st["points"], a, side)
-        city.vquad(s, "Concrete", a, b, -DECK, 0.0, out)
-        parapet(s, a, b, out)
+        # The fascia and parapet follow the deck's edge round the avenue's bend over the water
+        # (a straight one from bank to bank would leave a slit along the deck).
+        path = g2.sub_polyline(edge, _u_on(edge, hits[0]), _u_on(edge, hits[-1]))
+        for a, b in zip(path, path[1:]):
+            if math.dist(a, b) < 0.05:
+                continue
+            out = _outward(st["points"], ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), side)
+            city.vquad(s, "Concrete", a, b, -DECK, 0.0, out)
+            parapet(s, a, b, out)
     gaps = {NORTH_WALL: [], SOUTH_WALL: []}
     for off in (NORTH_WALL, SOUTH_WALL):
         for h in g2.polyline_hits(st["points"], P.river_line(off)):
             gaps[off].append((h, 2 * half / _sin_between(st["points"], P.river_line(off), h) + 1.0))
     return gaps
+
+
+def _u_on(points, p):
+    """How far along the polyline its nearest point to p lies."""
+    best, best_d, u = 0.0, 1e9, 0.0
+    for i in range(len(points) - 1):
+        a, b = points[i], points[i + 1]
+        seg = math.dist(a, b)
+        if seg < 1e-9:
+            continue
+        t = max(0.0, min(1.0, ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / (seg * seg)))
+        d = math.dist(p, (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+        if d < best_d:
+            best, best_d = u + seg * t, d
+        u += seg
+    return best
 
 
 def _outward(points, near, side):

@@ -870,7 +870,9 @@ function Builder:tipBox(def)
 		0.9,
 		"TIP BOX",
 		Color3.fromRGB(255, 240, 220),
-		Color3.fromRGB(110, 20, 25)
+		Color3.fromRGB(110, 20, 25),
+		-- A typewritten plate, like the rest of the case's paperwork.
+		Enum.Font.SpecialElite
 	)
 	signPart.Parent = model
 	if dressed then
@@ -895,7 +897,7 @@ function Builder:board(def)
 		"",
 		Color3.fromRGB(235, 235, 225),
 		Color3.fromRGB(30, 34, 30),
-		Enum.Font.Code
+		Enum.Font.SpecialElite
 	)
 	label.TextScaled = true
 	label.TextWrapped = true
@@ -928,7 +930,7 @@ function Builder:board(def)
 		Color3.fromRGB(255, 255, 255),
 		Color3.fromRGB(120, 25, 30)
 	)
-	title.Font = Enum.Font.GothamBlack
+	title.Font = Enum.Font.SpecialElite
 	if dressed then
 		-- The cork board is recognisable on its own; no plate floating above it.
 		local titlePart = title:FindFirstAncestorWhichIsA("BasePart")
