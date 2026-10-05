@@ -702,11 +702,21 @@ end
 -- way its front should face (-Z), with its name and triangle count, a dummy and a lamp per row.
 COMMANDS.propGallery = function(player, args)
 	local existing = workspace:FindFirstChild("InkboundPropGallery")
+	local flip = type(args) == "table" and args.flip == true
+	if flip then
+		-- Tries the other facing: the half turn off if it was on, on if it was off, then builds the gallery again.
+		ModelLibrary.setFacingTurned(not ModelLibrary.facingTurned())
+	end
 	if existing then
 		existing:Destroy()
-		teleport(player, MapService.lobbySpawn())
-		reply(player, "Prop gallery closed.")
-		return
+		if not flip then
+			teleport(player, MapService.lobbySpawn())
+			reply(player, "Prop gallery closed.")
+			return
+		end
+	end
+	for _, key in ipairs({ "Chair", "Car", "Bench", "Desk" }) do
+		print("[Inkbound] Facing check: " .. ModelLibrary.describeFacing(key))
 	end
 	local only = if type(args) == "table" and type(args.set) == "string" then args.set else nil
 	local folder = Instance.new("Folder")
@@ -796,7 +806,7 @@ COMMANDS.propGallery = function(player, args)
 			if only then " (" .. only .. ")" else "",
 			shown,
 			#keys,
-			if ModelLibrary.facingTurned() then " Half-turn fix on (FACING_TURN)." else ""
+			if ModelLibrary.facingTurned() then " Half-turn fix ON (FACING_TURN)." else " Half-turn fix OFF."
 		)
 	)
 end

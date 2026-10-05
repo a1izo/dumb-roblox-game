@@ -171,12 +171,46 @@ end
 -- freshly imported: every front faced away from its red arrow, in every set. Blender makes them
 -- face -Z and the file holds them that way, so build() turns each prop this much about its own
 -- centre. Set to 0 if a later Studio stops doing it (the gallery shows it at once).
-local FACING_TURN = CFrame.Angles(0, math.pi, 0)
+local HALF_TURN = CFrame.Angles(0, math.pi, 0)
+local facingTurn = HALF_TURN
 
 -- True while build() gives every prop that half turn. The debug Prop gallery says so in its
 -- message, so a place that still runs scripts from before the fix is easy to tell.
 function ModelLibrary.facingTurned(): boolean
-	return FACING_TURN ~= CFrame.identity
+	return facingTurn ~= CFrame.identity
+end
+
+-- Turns the half turn on or off and forgets every prop built so far (the debug Prop gallery's
+-- "Flip facing" uses it to find out which way this Studio's import needs).
+function ModelLibrary.setFacingTurned(on: boolean)
+	facingTurn = if on then HALF_TURN else CFrame.identity
+	templates = {}
+end
+
+-- What the import and the built prop look like (orientations in degrees), for the Output.
+function ModelLibrary.describeFacing(key: string): string
+	local source = ModelLibrary.source(key)
+	local model = ModelLibrary.get(key)
+	if not source or not model then
+		return key .. ": not imported"
+	end
+	local function yaw(cf: CFrame): string
+		local rx, ry, rz = cf:ToOrientation()
+		return string.format("%d/%d/%d", math.round(math.deg(rx)), math.round(math.deg(ry)), math.round(math.deg(rz)))
+	end
+	local part = if source:IsA("BasePart") then source else source:FindFirstChildWhichIsA("BasePart", true)
+	local primary = model.PrimaryPart
+	local text = string.format(
+		"%s: source %s orientation %s; built primary %s, pivot %s, half turn %s",
+		key,
+		source.ClassName,
+		if part then yaw(part.CFrame) else "?",
+		if primary then yaw(primary.CFrame) else "none",
+		yaw(model:GetPivot()),
+		tostring(ModelLibrary.facingTurned())
+	)
+	model:Destroy()
+	return text
 end
 
 -- The turn that undoes the importer's rotation of a prop: from the cubes in the prop's own file
@@ -526,7 +560,7 @@ local function build(key: string): Model?
 	-- Then the half turn Studio's importer gives every mesh (see FACING_TURN), about the prop's
 	-- own centre so it stays where it is.
 	local centre = cf.Position
-	model:PivotTo(CFrame.new(centre) * FACING_TURN * CFrame.new(-centre) * model:GetPivot())
+	model:PivotTo(CFrame.new(centre) * facingTurn * CFrame.new(-centre) * model:GetPivot())
 	cf, size = model:GetBoundingBox()
 	model.WorldPivot = CFrame.new(cf.Position)
 

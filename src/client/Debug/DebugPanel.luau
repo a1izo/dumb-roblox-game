@@ -551,6 +551,9 @@ builders.World = function()
 	button(r, "Meeting props", function()
 		send("propGallery", { set = "Meeting" })
 	end)
+	button(r, "Flip facing + gallery", function()
+		send("propGallery", { flip = true })
+	end)
 	note(
 		"Previews build a map outside a match (between matches). Turning scenes off rebuilds the lobby, the meeting room and the maps as greyboxes."
 	)
