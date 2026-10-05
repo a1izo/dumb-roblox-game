@@ -173,6 +173,12 @@ end
 -- centre. Set to 0 if a later Studio stops doing it (the gallery shows it at once).
 local FACING_TURN = CFrame.Angles(0, math.pi, 0)
 
+-- True while build() gives every prop that half turn. The debug Prop gallery says so in its
+-- message, so a place that still runs scripts from before the fix is easy to tell.
+function ModelLibrary.facingTurned(): boolean
+	return FACING_TURN ~= CFrame.identity
+end
+
 -- The turn that undoes the importer's rotation of a prop: from the cubes in the prop's own file
 -- (Calib_Props<Set>, such as Calib_PropsCore in InkboundModels_Core.fbx), else nil. Each file is
 -- measured on its own: two imports can come in turned differently.
@@ -535,9 +541,14 @@ local function build(key: string): Model?
 	local primary = partsOf(main)[1]
 	if primary then
 		model.PrimaryPart = primary
+		-- With a primary part the pivot takes that part's orientation, which carries the half turn
+		-- above (and any measured turn), and PivotTo would then undo it: a prop placed upright at a
+		-- yaw faced the importer's way again. The part's own pivot offset keeps the pivot upright, at
+		-- the bottom or centre of the prop, so PivotTo(position * yaw) places it as it was made.
+		primary.PivotOffset = primary.CFrame:Inverse() * CFrame.new(pivot)
+	else
+		model.WorldPivot = CFrame.new(pivot)
 	end
-	-- Setting PrimaryPart moves WorldPivot, so the pivot goes last.
-	model.WorldPivot = CFrame.new(pivot)
 	return model
 end
 

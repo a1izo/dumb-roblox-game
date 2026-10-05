@@ -46,14 +46,21 @@ local function fakeImport(key: string, set: string, withCubes: boolean): Instanc
 	return folder
 end
 
-local function markerSide(key: string): number
+-- Which way the marker lies from the slab once the prop is placed the way the maps place it:
+-- standing at the origin, turned `rot` degrees about the vertical axis (rot 0 faces -Z, 90 faces -X).
+local function markerDirection(key: string, rot: number): Vector3
 	local model = ModelLibrary.get(key)
 	assert(model, "the fake prop should build")
+	model:PivotTo(CFrame.new(300, 0, 300) * CFrame.Angles(0, math.rad(rot), 0))
 	local marker = model:FindFirstChild("Marker", true) :: BasePart
 	local slab = model:FindFirstChild("Slab", true) :: BasePart
-	local side = marker.Position.Z - slab.Position.Z
+	local direction = marker.Position - slab.Position
 	model:Destroy()
-	return side
+	return Vector3.new(direction.X, 0, direction.Z).Unit
+end
+
+local function markerSide(key: string): number
+	return markerDirection(key, 0).Z
 end
 
 return function(t)
@@ -99,6 +106,45 @@ return function(t)
 			cleanup()
 			assert(ok, side)
 			expect(side < -0.5).to.equal(true)
+		end)
+
+		it("places a turned prop the way the maps place it: rot 90 faces -X, rot 180 faces +Z", function()
+			catalog.SpecFacingBare = { size = { 4, 4, 3 }, pivot = "bottom", material = "Plastic", collide = false }
+			table.insert(folders, fakeImport("SpecFacingBare", "", false))
+			local ok, west, south = pcall(function()
+				return markerDirection("SpecFacingBare", 90), markerDirection("SpecFacingBare", 180)
+			end)
+			cleanup()
+			assert(ok, west)
+			expect(west.X < -0.9).to.equal(true)
+			expect(south.Z > 0.9).to.equal(true)
+		end)
+
+		it("keeps the pivot upright at the bottom of the prop, so PivotTo places it at its yaw on the floor", function()
+			catalog.SpecFacingBare = { size = { 4, 4, 3 }, pivot = "bottom", material = "Plastic", collide = false }
+			table.insert(folders, fakeImport("SpecFacingBare", "", false))
+			local ok, yaw, floor = pcall(function()
+				local model = ModelLibrary.get("SpecFacingBare")
+				assert(model, "the fake prop should build")
+				model:PivotTo(CFrame.new(300, 0, 300) * CFrame.Angles(0, math.rad(30), 0))
+				local box, size = model:GetBoundingBox()
+				local _, ry = model:GetPivot():ToOrientation()
+				local lowest = math.min(
+					(model:FindFirstChild("Slab", true) :: BasePart).Position.Y
+						- (model:FindFirstChild("Slab", true) :: BasePart).Size.Y / 2,
+					box.Position.Y - size.Y / 2
+				)
+				model:Destroy()
+				return math.round(math.deg(ry)), lowest
+			end)
+			cleanup()
+			assert(ok, yaw)
+			expect(yaw).to.equal(30)
+			expect(math.abs(floor) < 0.05).to.equal(true)
+		end)
+
+		it("reports the half turn, which the Prop gallery shows", function()
+			expect(ModelLibrary.facingTurned()).to.equal(true)
 		end)
 	end)
 end

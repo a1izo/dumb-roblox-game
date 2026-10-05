@@ -237,7 +237,9 @@ from the catalog and undoes the importer's turn of each file with its three cali
 Studio's importer also turns every prop's mesh data half way round the vertical axis, which the cubes cannot
 see, so `ModelLibrary` adds that half turn itself (`FACING_TURN`; measured with the debug Prop gallery, where
 every front must face its red arrow). If a later Studio stops doing it, the gallery shows every front backwards:
-set `FACING_TURN` to the identity.
+set `FACING_TURN` to the identity. The prop's pivot is kept upright through the primary part's `PivotOffset`: with a
+primary part the pivot takes that part's orientation, so without it `PivotTo` (what every map placement uses)
+would undo the half turn. The Prop gallery's message says "Half-turn fix on" when a place runs these scripts.
 
 Effect textures ride along on small quads named `Tex_<name>`. If you would rather upload the
 PNGs yourself, paste their ids into `Assets.textures` in `src/shared/Assets.luau`.

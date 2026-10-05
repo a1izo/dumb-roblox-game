@@ -792,10 +792,11 @@ COMMANDS.propGallery = function(player, args)
 	reply(
 		player,
 		string.format(
-			"Prop gallery%s: %d of %d props. Each front should face its red arrow.",
+			"Prop gallery%s: %d of %d props. Each front should face its red arrow.%s",
 			if only then " (" .. only .. ")" else "",
 			shown,
-			#keys
+			#keys,
+			if ModelLibrary.facingTurned() then " Half-turn fix on (FACING_TURN)." else ""
 		)
 	)
 end
