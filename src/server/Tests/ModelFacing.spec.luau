@@ -1,5 +1,5 @@
 -- Studio's importer turns every prop's mesh data half way round the vertical axis, so
--- ModelLibrary.get turns each prop back (FACING_TURN): what the importer hands over with its
+-- ModelLibrary.get turns each prop back when the half turn is on: what the importer hands over with its
 -- marker on +Z must come out with the marker on -Z, the way props are made and placed, with and
 -- without the calibration cubes.
 
@@ -20,6 +20,7 @@ end
 
 -- A fake import: a slab with a marker on its +Z side, under the store the game reads.
 local function fakeImport(key: string, set: string, withCubes: boolean): Instance
+	ModelLibrary.setFacingTurned(true) -- these tests are about what the half turn does when it is on
 	local store = ReplicatedStorage:FindFirstChild("InkboundAssets")
 	local created = false
 	if not store then
@@ -69,8 +70,10 @@ return function(t)
 	describe("ModelLibrary facing", function()
 		local catalog = ModelCatalog :: any
 		local folders = {}
+		local wasTurned = ModelLibrary.facingTurned()
 
 		local function cleanup()
+			ModelLibrary.setFacingTurned(wasTurned)
 			for key in pairs({ SpecFacingBare = true, SpecFacingCubes = true }) do
 				catalog[key] = nil
 			end
@@ -143,8 +146,14 @@ return function(t)
 			expect(math.abs(floor) < 0.05).to.equal(true)
 		end)
 
-		it("reports the half turn, which the Prop gallery shows", function()
-			expect(ModelLibrary.facingTurned()).to.equal(true)
+		it("reports the half turn, which the Prop gallery shows, and can switch it off", function()
+			ModelLibrary.setFacingTurned(true)
+			local on = ModelLibrary.facingTurned()
+			ModelLibrary.setFacingTurned(false)
+			local off = ModelLibrary.facingTurned()
+			cleanup()
+			expect(on).to.equal(true)
+			expect(off).to.equal(false)
 		end)
 	end)
 end

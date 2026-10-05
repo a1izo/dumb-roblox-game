@@ -234,12 +234,11 @@ blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --
 `src/shared/ModelCatalog.luau` (each prop's size in studs, pivot, material, glow colours, the
 lights it carries and its set). The Core set's file also carries the effect and UI textures. `ModelLibrary` fixes scale
 from the catalog and undoes the importer's turn of each file with its three calibration cubes (positions only).
-Studio's importer also turns every prop's mesh data half way round the vertical axis, which the cubes cannot
-see, so `ModelLibrary` adds that half turn itself (`FACING_TURN`; measured with the debug Prop gallery, where
-every front must face its red arrow). If a later Studio stops doing it, the gallery shows every front backwards:
-set `FACING_TURN` to the identity. The prop's pivot is kept upright through the primary part's `PivotOffset`: with a
+`ModelLibrary` can also give every prop a half turn (`facingTurn`, default OFF, set 2026-10-05 after ON showed them backwards in Studio 0.741; the gallery shows which is right
+(an earlier Studio showed them backwards without it). The gallery's "Flip facing +
+gallery" button tries the other setting. The prop's pivot is kept upright through the primary part's `PivotOffset`: with a
 primary part the pivot takes that part's orientation, so without it `PivotTo` (what every map placement uses)
-would undo the half turn. The Prop gallery's message says "Half-turn fix on" when a place runs these scripts.
+would undo the half turn. The Prop gallery's message says "Half-turn ON/OFF" when a place runs these scripts.
 
 Effect textures ride along on small quads named `Tex_<name>`. If you would rather upload the
 PNGs yourself, paste their ids into `Assets.textures` in `src/shared/Assets.luau`.

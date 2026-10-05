@@ -165,14 +165,14 @@ function ModelLibrary.calibration(prefix: string): Calibration?
 	return found
 end
 
--- Studio's importer also turns the mesh data of every prop half way round the vertical axis, which
--- the cubes cannot show (they only tell where the importer put each mesh, and Studio puts them
--- where the file says). Measured with the debug Prop gallery on 2026-09-29, with every file
--- freshly imported: every front faced away from its red arrow, in every set. Blender makes them
--- face -Z and the file holds them that way, so build() turns each prop this much about its own
--- centre. Set to 0 if a later Studio stops doing it (the gallery shows it at once).
+-- Whether build() gives every prop a half turn about the vertical axis, for an importer that turns
+-- the mesh data (the cubes cannot show that: they only tell where the importer put each mesh).
+-- Blender makes props face -Z and the file holds them that way. On 2026-09-29 the debug Prop gallery
+-- showed every front facing away from its red arrow, but on 2026-10-05, in the Studio of that day
+-- (0.741) the half turn ON left them backwards, so the default is OFF. The gallery's
+-- "Flip facing + gallery" button tries the other setting at once.
 local HALF_TURN = CFrame.Angles(0, math.pi, 0)
-local facingTurn = HALF_TURN
+local facingTurn = CFrame.identity
 
 -- True while build() gives every prop that half turn. The debug Prop gallery says so in its
 -- message, so a place that still runs scripts from before the fix is easy to tell.
@@ -425,7 +425,9 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		print(
 			"[Inkbound] Import check: "
 				.. table.concat(lines, "; ")
-				.. ". Props are also turned half way round for Studio's importer (FACING_TURN); open the debug Prop gallery to check: every front faces its red arrow."
+				.. ". Props get a half turn: "
+				.. (if facingTurn ~= CFrame.identity then "ON" else "OFF")
+				.. " (debug Prop gallery: every front should face its red arrow)."
 		)
 	end
 	rootInstance:SetAttribute("Installed", true)
@@ -557,8 +559,8 @@ local function build(key: string): Model?
 			cf, size = model:GetBoundingBox()
 		end
 	end
-	-- Then the half turn Studio's importer gives every mesh (see FACING_TURN), about the prop's
-	-- own centre so it stays where it is.
+	-- Then the half turn, when it is on (see facingTurn), about the prop's own centre so it stays
+	-- where it is.
 	local centre = cf.Position
 	model:PivotTo(CFrame.new(centre) * facingTurn * CFrame.new(-centre) * model:GetPivot())
 	cf, size = model:GetBoundingBox()

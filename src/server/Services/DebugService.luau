@@ -806,7 +806,7 @@ COMMANDS.propGallery = function(player, args)
 			if only then " (" .. only .. ")" else "",
 			shown,
 			#keys,
-			if ModelLibrary.facingTurned() then " Half-turn fix ON (FACING_TURN)." else " Half-turn fix OFF."
+			if ModelLibrary.facingTurned() then " Half-turn ON." else " Half-turn OFF."
 		)
 	)
 end
