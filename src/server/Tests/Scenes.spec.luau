@@ -40,12 +40,43 @@ return function(t)
 			for index = 1, #TaskTypes.LIST + 3 do
 				table.insert(names, "drill" .. index)
 			end
+			-- The mini-games: the Spire Ascent's pad, centre and ten checkpoints, the rune courtyard's pad,
+			-- centre and nine tiles, the dice rock and its four seats, the stone-toss and the rift's shape,
+			-- and the two boards.
+			for _, name in ipairs({
+				"pkStart",
+				"pkCenter",
+				"runeStart",
+				"runeCenter",
+				"diceRock",
+				"toss",
+				"rift",
+				"parkourBoard",
+				"runesBoard",
+			}) do
+				table.insert(names, name)
+			end
+			for index = 1, 10 do
+				table.insert(names, "pk" .. index)
+			end
+			for index = 1, 9 do
+				table.insert(names, "rune" .. index)
+			end
+			for index = 1, 4 do
+				table.insert(names, "diceSeat" .. index)
+			end
 			for _, name in ipairs(names) do
 				if not anchors[name] then
 					table.insert(missing, name)
 				end
 			end
 			expect(table.concat(missing, ", ")).to.equal("")
+		end)
+
+		it("puts the spawn on the terrace, above the plaza", function()
+			local anchors = SceneBuilder.data("Lobby").layout.anchors
+			expect(anchors.spawn.y > 5).to.equal(true)
+			expect(anchors.spawn.rot).to.equal(0)
 		end)
 
 		it("gives the meeting room its screen, board, a place for everyone and the Specters' spots", function()

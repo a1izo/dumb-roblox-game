@@ -1,12 +1,14 @@
--- The lobby: the Grey Realm, an ashen wasteland under a flat grey sky, made in Blender
--- (art/scripts/maps/venues/lobby/). Players appear on its old flagstone plaza before the
--- Grimoire's plinth, facing the title monolith; the steles round the plaza carry How to Play, the
--- next case and the boards; south-west lies the Academy, a ring of broken pillars with a practice
--- altar for every skill and three effigies to practise on.
+-- The lobby: the Grey Realm, a dead island floating in a grey sea of cloud, made in Blender
+-- (art/scripts/maps/venues/lobby/). Players appear on a ruined terrace over its old flagstone
+-- plaza, facing north; the steles round the plaza carry How to Play, the next case and the boards;
+-- south-west lies the Academy, a ring of broken pillars with a practice altar for every skill and
+-- three effigies to practise on; two old bridges lead to the islets of the Spire Ascent and the rune
+-- courtyard, and the dice rock and the stone-toss wait on the island itself.
 --
 -- SceneBuilder puts up the scene (or its greybox, without the import); this module builds what
 -- shows text or does something, at the scene's anchors. The Academy only tags parts (LTraining
 -- drill desks, LDummy torsos); the drills run on each player's client and never touch a match.
+-- The mini-games' objects are LobbyGames', the things that sway in the wind LobbyDecor's.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -16,6 +18,8 @@ local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
+local LobbyDecor = require(script.Parent.LobbyDecor)
+local LobbyGames = require(script.Parent.LobbyGames)
 local SceneBuilder = require(script.Parent.SceneBuilder)
 
 local Lobby = {}
@@ -215,25 +219,34 @@ function Lobby.build(b)
 	-- The next case, on the stele east of the plaza.
 	local _, nextMapLabel = sign(b, anchors.nextCase, "NEXT CASE", GOLD, SLATE, Enum.Font.GothamBlack)
 
-	-- Leaderboards (east) and today's quests and the weekly board (west).
+	-- Leaderboards (east) and today's quests and the weekly board (west); the two mini-game boards stand by
+	-- the bridges' heads (anchor parkourBoard, runesBoard; board keys parkour, runes).
 	local boards = {}
-	for _, key in ipairs({ "wins", "xp", "weekly", "quests" }) do
-		local _, label = sign(b, anchors[key], "", Color3.fromRGB(235, 232, 225), SLATE, Enum.Font.SpecialElite)
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextYAlignment = Enum.TextYAlignment.Top
-		Create("UITextSizeConstraint", { MaxTextSize = 34, Parent = label })
-		boards[key] = label
+	for _, key in ipairs({ "wins", "xp", "weekly", "quests", "parkour", "runes" }) do
+		local anchor = anchors[if key == "parkour" or key == "runes" then key .. "Board" else key]
+		if anchor then
+			local _, label = sign(b, anchor, "", Color3.fromRGB(235, 232, 225), SLATE, Enum.Font.SpecialElite)
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.TextYAlignment = Enum.TextYAlignment.Top
+			Create("UITextSizeConstraint", { MaxTextSize = 34, Parent = label })
+			boards[key] = label
+		else
+			warn("[Inkbound] The lobby scene has no board for " .. key .. ".")
+		end
 	end
 
-	-- Where players appear: the ring on the plaza (the scene's ground is under it, so the pad
+	LobbyDecor.build(b, anchors)
+	local games = LobbyGames.build(b, anchors)
+
+	-- Where players appear: the ring on the terrace (the scene's floor is under it, so the pad
 	-- itself only marks the place).
 	local spawn = anchors.spawn
-	local spawnCFrame = b:world(b:cf(spawn.x, 0.4, spawn.z, spawn.rot))
+	local spawnCFrame = b:world(b:cf(spawn.x, spawn.y + 0.4, spawn.z, spawn.rot))
 	Create("SpawnLocation", {
 		Name = "LobbySpawn",
 		Anchored = true,
 		Size = Vector3.new(12, 0.4, 12),
-		CFrame = b:world(b:cf(spawn.x, 0.2, spawn.z, spawn.rot)),
+		CFrame = b:world(b:cf(spawn.x, spawn.y + 0.2, spawn.z, spawn.rot)),
 		Transparency = 1,
 		CanCollide = false,
 		Neutral = true,
@@ -245,6 +258,7 @@ function Lobby.build(b)
 		nextMapLabel = nextMapLabel,
 		boards = boards,
 		spawnCFrame = spawnCFrame,
+		games = games,
 	}
 end
 

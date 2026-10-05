@@ -341,7 +341,7 @@ local function addEmitter(b, folder: Instance, spec)
 		anchor.Size = size
 		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
 		local texture = Assets.texture("Snowflake")
-		Create("ParticleEmitter", {
+		fogged(Create("ParticleEmitter", {
 			Shape = Enum.ParticleEmitterShape.Box,
 			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 			EmissionDirection = Enum.NormalId.Bottom,
@@ -364,14 +364,14 @@ local function addEmitter(b, folder: Instance, spec)
 			RotSpeed = NumberRange.new(-60, 60),
 			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
 			Parent = anchor,
-		})
+		}))
 	elseif spec.kind == "riftwisp" and spec.size then
 		-- Pale motes rising out of the rift and fading as they clear its rim.
 		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
 		anchor.Size = size
 		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
 		local texture = Assets.texture("SoulGlow")
-		Create("ParticleEmitter", {
+		fogged(Create("ParticleEmitter", {
 			Shape = Enum.ParticleEmitterShape.Box,
 			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 			EmissionDirection = Enum.NormalId.Top,
@@ -391,7 +391,46 @@ local function addEmitter(b, folder: Instance, spec)
 			LightInfluence = 0,
 			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/sparkles_main.dds",
 			Parent = anchor,
-		})
+		}))
+	elseif (spec.kind == "realmcloud" or spec.kind == "realmhaze") and spec.size then
+		-- The Grey Realm's cloud layers: huge slow grey sprites in a wide, flat box. They take the scene's
+		-- light, so the sky's slow breathing (World/RealmSky) darkens and lightens them with everything
+		-- else. "realmcloud" is the sea under the island and the dark banks on the horizon; "realmhaze"
+		-- the pale, thin layers high above. Thinned on weak devices like every cloud emitter.
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("Smoke")
+		local sea = spec.kind == "realmcloud"
+		fogged(Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Top,
+			Rate = math.max(0.6, size.X * size.Z / (if sea then 1400000 else 2200000)),
+			Lifetime = NumberRange.new(40, 56),
+			Speed = NumberRange.new(0.2, 0.8),
+			Acceleration = Vector3.new(if sea then 0.12 else 0.18, 0, if sea then 0.04 else 0.06),
+			Drag = 0.06,
+			Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, if sea then 260 else 380),
+				NumberSequenceKeypoint.new(1, if sea then 340 else 520),
+			}),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.22, if sea then 0.5 else 0.84),
+				NumberSequenceKeypoint.new(0.78, if sea then 0.54 else 0.86),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = if sea
+				then ColorSequence.new(Color3.fromRGB(120, 126, 140), Color3.fromRGB(190, 196, 208))
+				else ColorSequence.new(Color3.fromRGB(84, 88, 98), Color3.fromRGB(170, 174, 186)),
+			LightInfluence = if sea then 0.5 else 0.6,
+			LightEmission = if sea then 0.3 else 0.15,
+			RotSpeed = NumberRange.new(-1, 1),
+			Rotation = NumberRange.new(0, 360),
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
+			Parent = anchor,
+		}))
 	elseif spec.kind == "mist" and spec.size then
 		-- Cold ground mist: big soft sprites lying low over a patch of ground, thinning with height,
 		-- lit by the lamps they pass (the campus lawns, the tower's atrium).

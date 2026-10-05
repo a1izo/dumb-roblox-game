@@ -3,7 +3,7 @@ wasteland beyond the world where the Grimoire comes from.
 
 - What the game dresses: the Academy's practice altar (round the game's invisible drill desk) and
   the effigy the drills point at (round the practice dummy).
-- The wasteland: two kinds of dead tree, a withered apple tree still hung with a few red apples,
+- The wasteland: two kinds of dead tree, a withered apple tree still hung with a few dull grey-brown apples,
   skull piles and scattered bones, a colossal horned skull, stone cairns.
 - Fire and light: bone braziers burning pale, a crooked lantern post, candle clusters.
 - Its dwellers' things: the bone throne, a dice game left on a rock, vertebra stools.
@@ -21,7 +21,7 @@ from common import srgb
 from props import prop
 
 PALE_FIRE = (196, 222, 255)  # the realm's fire: cold, blue-white
-CANDLE = (255, 196, 128)
+CANDLE = (232, 226, 214)  # a candle's light here is pale and neutral, nothing warm lives in the realm
 
 
 def bone_mat(prefix):
@@ -247,13 +247,13 @@ def dead_tree_gnarled():
 
 @prop("WitheredAppleTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
 def withered_apple_tree():
-    """The one fruit tree in the realm: grey and twisted like the rest, yet hung with a few glossy
-    red apples, and two more fallen in the ash at its foot (one bitten)."""
+    """The one fruit tree in the realm: grey and twisted like the rest, yet hung with a few dull,
+    grey-brown apples, and two more fallen in the ash at its foot (one bitten)."""
     parts, tips = dead_tree(37, "Apl", 13.0, (0.6, 0.9), 5, 0.6, 0.05, 0.4)
     rng = random.Random(8)
-    red = mk.noisy("Apl_Apple", srgb(120, 14, 20), srgb(186, 34, 34), scale=6, roughness=0.25)
+    red = mk.noisy("Apl_Apple", srgb(58, 52, 48), srgb(104, 96, 88), scale=6, roughness=0.55)
     stem = mk.flat("Apl_Stem", srgb(40, 30, 22), 0.8)
-    flesh = mk.flat("Apl_Flesh", srgb(220, 206, 170), 0.7)
+    flesh = mk.flat("Apl_Flesh", srgb(176, 172, 164), 0.7)
     for k, ((tx, ty, tz), _) in enumerate(tips[::2][:9]):
         hang = rng.uniform(0.3, 0.7)
         parts.append(mk.tube("Stalk", (tx, ty, tz), (tx, ty, tz - hang), 0.03, mat=stem, verts=4))

@@ -92,8 +92,17 @@ FLAT = {
     # depths of the rift and the rocks' clefts.
     "BoneWhite": ("SmoothPlastic", (168, 162, 146), 0, 0),
     "BoneOld": ("SmoothPlastic", (122, 116, 104), 0, 0),
-    "RiftGlow": ("Neon", (150, 190, 255), 0, 0),
+    "RiftGlow": ("Neon", (150, 176, 214), 0, 0),
     "Abyss": ("SmoothPlastic", (10, 10, 12), 0, 0),
+    # The Grey Realm's second pass: the cold glow of the blade relics, the cloud walls on the horizon, and
+    # the city below the rift seen dim and pale (a few faint warm windows, no neon).
+    "RelicGlow": ("Neon", (176, 196, 224), 0, 0),
+    "CloudBank": ("SmoothPlastic", (126, 130, 138), 0, 0),
+    "DimWindow": ("Neon", (112, 128, 156), 0, 0),
+    "DimWarm": ("Neon", (150, 124, 94), 0, 0),
+    "DimLamp": ("Neon", (92, 102, 124), 0, 0),
+    "DimBand": ("Neon", (106, 120, 146), 0, 0),
+    "DimBandWarm": ("Neon", (136, 112, 84), 0, 0),
     # The war room: venetian blind slats, pinned photographs, the red string between them.
     "BlindSlat": ("SmoothPlastic", (150, 140, 118), 0, 0),
     "Photo": ("SmoothPlastic", (70, 72, 74), 0, 0),

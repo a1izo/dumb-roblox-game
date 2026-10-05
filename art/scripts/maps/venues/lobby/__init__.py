@@ -1,17 +1,19 @@
-"""The lobby: the Grey Realm, the ashen wasteland beyond the world where the Grimoire comes from. A
-flat grey plain under a flat grey sky, dead trees and bones, rock spires fading into the haze.
-Players appear on an old flagstone plaza before the Grimoire's plinth, facing the title monolith;
-the steles round the plaza carry How to Play, the next case and the boards. South-west, the
-Academy's ring of broken pillars holds the practice altars; east, the rift looks down on Kagegaoka
-at night; north-west lies an abandoned dice game, south-east a colossal carcass, and behind the
-monolith, up on its mesa, the empty bone throne.
+"""The lobby: the Grey Realm, the dead floating island beyond the world where the Grimoire comes from.
+Grey cloud above and below, rock spires and floating stone in the haze, one colossal blade far to the
+north. Players appear on a ruined terrace over the old flagstone plaza, facing north; the steles round
+the plaza carry How to Play, the next case and the boards. South-west, the Academy's ring of broken
+pillars holds the practice altars; east, the rift looks down on Kagegaoka at night; north-west lies
+the dice rock and the cleft, north-east the needle ledge; south-east a colossal carcass; and behind
+the title monolith, up on its mesa, the empty bone throne. Two old bridges lead to two islets: the
+Spire Ascent (west) and the rune courtyard (north-east).
 
-Everything that shows text or does something is built by the game (src/server/Maps/Lobby.luau) at
-the anchors this scene exports: the title and tagline, the six boards, the spawn, the Academy's
-signs, its seven drill altars and three effigies. The layout is in plan.py."""
+Everything that shows text or does something is built by the game (src/server/Maps/Lobby.luau and
+the lobby games) at the anchors this scene exports: the title and tagline, the eight boards, the
+spawn, the Academy's signs, its seven drill altars and three effigies, the dice seats, the stone-toss,
+the rune tiles, the parkour's checkpoints, the roots and banners that sway. The layout is in plan.py."""
 
 from maps import city
-from maps.venues.lobby import dressing, gameplay, landmarks, rift, terrain
+from maps.venues.lobby import dressing, formations, gameplay, islets, landmarks, rift, terrain
 from maps.venues.lobby import plan as P
 
 FORMAT = 2
@@ -26,25 +28,29 @@ FIGURES = [(0.0, 0.0, 20.0, 0.0)]
 
 # Views for --preview: (camera, target, lens), at a player's height unless noted.
 VIEWS = [
-    ((0.0, 6.0, 30.0), (0.0, 14.0, -60.0), 16),  # from the spawn: the Grimoire, the monolith
+    ((0.0, 19.0, 70.0), (-20.0, 60.0, -700.0), 18),  # from the spawn: the first view
+    ((0.0, 19.0, 70.0), (0.0, 12.0, -60.0), 18),  # from the spawn: the plaza and the title
     ((-20.0, 6.0, 30.0), (-47.0, 9.0, 4.0), 16),  # How to Play and the west steles
-    ((30.0, 6.0, 0.0), (47.0, 9.0, 4.0), 16),  # the next case and the east steles
     ((-54.0, 7.0, 58.0), (-80.0, 6.0, 84.0), 16),  # the Academy's gate
     ((-80.0, 7.0, 76.0), (-86.0, 4.0, 100.0), 14),  # inside the ring: the altars and effigies
     ((80.0, 12.0, 22.0), (106.0, -200.0, 22.0), 16),  # down through the rift (from over its lip)
-    ((66.0, 7.0, 40.0), (98.0, 0.0, 22.0), 18),  # the rift and the apple tree
+    ((66.0, 7.0, 44.0), (98.0, 0.0, 22.0), 18),  # the rift and the apple tree
     ((-70.0, 6.0, -40.0), (-88.0, 3.0, -54.0), 16),  # the dice rock
-    ((20.0, 6.0, 90.0), (70.0, 10.0, 110.0), 16),  # under the carcass's ribs
-    ((20.0, 8.0, -60.0), (58.0, 16.0, -112.0), 16),  # the throne on its mesa
-    ((0.0, 8.0, 150.0), (0.0, 20.0, -400.0), 18),  # across the basin to the horizon
-    ((0.0, 260.0, 60.0), (0.0, 0.0, 0.0), 14),  # the basin from above
+    ((-70.0, 7.0, -92.0), (-110.0, 20.0, -140.0), 18),  # the cleft
+    ((104.0, 7.0, -48.0), (140.0, 14.0, -80.0), 18),  # the needle ledge and its blade
+    ((20.0, 8.0, 90.0), (70.0, 10.0, 110.0), 16),  # under the carcass's ribs
+    ((-150.0, 8.0, 0.0), (-300.0, 30.0, 0.0), 20),  # the west bridge to the Spire Ascent
+    ((-290.0, 4.0, 0.0), (-326.0, 70.0, -2.0), 20),  # at the foot of the spire
+    ((190.0, 6.0, -190.0), (214.0, 4.0, -216.0), 18),  # the rune courtyard
+    ((0.0, 300.0, 90.0), (0.0, 0.0, -80.0), 14),  # the island from above
 ]
 
-# check_v2's targets: the walk across the basin (seconds), measured between far sides. The mirror
+# check_v2's targets: the walk from the spawn to each islet and across the island (seconds); up to 35 s to the
+# farthest activity (settled with the user, 2026-10-05). The mirror
 # rule is for the gameplay maps; the lobby is an open field to wait in, naturally close to its own
 # mirror image, so it is not held to it (settled with the user, 2026-09-29).
 CHECKS = {
-    "walk": (15.0, 26.0),
+    "walk": (15.0, 35.0),
     "corners": P.CORNERS,
     "symmetry": None,
 }
@@ -61,7 +67,7 @@ def preview(s):
         a = anchors[key]
         s.box("Screen", (a["x"], a["y"], a["z"]), (a["w"], a["h"], 0.3), a["rot"])
     sx, sz = P.SPAWN
-    s.box("RuinFlag", (sx, 0.2, sz), (12.0, 0.4, 12.0))
+    s.box("RuinFlag", (sx, P.TERRACE[4] + 0.2, sz), (12.0, 0.4, 12.0))
 
 
 _LAST = {}
@@ -71,11 +77,13 @@ def build(s):
     g = city.Ground(s)
     terrain.build(s, g)
     landmarks.build(s, g)
+    islets.build(s, g)
     rift.build(s)
     dressing.build(s)
+    formations.build(s)
     gameplay.build(s)
     g.finish()
     s.set_bounds(*P.BOUNDS)
     s.checks = CHECKS
-    s.far_chunk = (220.0, 1000.0, -120.0)
+    s.far_chunk = (230.0, 1000.0, -120.0)
     _LAST["anchors"] = s.anchors

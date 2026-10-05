@@ -68,6 +68,9 @@ function Migrations.defaults(startingCoins: number)
 		},
 		tipsSeen = {}, -- [tipId] = true
 		training = { done = false, drills = {} },
+		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
+		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds).
+		lobbyGames = { parkourBest = 0, runesBest = 0, diceBest = 0, tossBest = 0 },
 		alias = "", -- custom public alias (Custom Alias pass), already filtered
 		titles = {}, -- [titleId] = true
 		equippedTitle = "",

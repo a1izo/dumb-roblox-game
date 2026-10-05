@@ -39,7 +39,7 @@ SKULL_PILES = [(-52.0, -52.0, 30.0, 1.0), (128.0, 40.0, 200.0, 1.3), (-40.0, -12
 def blocked(x, z, r, extra=()):
     """True when a circle of radius r at (x, z) would touch anything solid the plan knows of, or
     one of `extra` ((x, z, r) circles), or leave the basin."""
-    if not g2.contains(P.BASIN, (x, z)) or g2.dist_to_poly_edge(P.BASIN, (x, z)) < r + 2.0:
+    if not g2.contains(P.BASIN, (x, z)) or g2.dist_to_poly_edge(P.BASIN, (x, z)) < r + 11.0:
         return True
     for poly in P.footprints().values():
         if g2.contains(poly, (x, z)) or g2.dist_to_poly_edge(poly, (x, z)) < r + 1.0:
@@ -63,6 +63,8 @@ def trunk(key, x, z, rot, sc):
 
 def trees(s, taken):
     for kind, x, z, rot, sc in TREES + [("WitheredAppleTree", P.APPLE_TREE[0], P.APPLE_TREE[1], 200.0, 1.0)]:
+        if blocked(x, z, 2.5, taken) and kind != "WitheredAppleTree":
+            continue
         s.prop(kind, x, z, rot, sc)
         tx, tz = trunk(kind, x, z, rot, sc)
         s.collider((tx, 5.0, tz), (1.8 * sc, 10.0, 1.8 * sc), rot, True, "Bark")
@@ -71,15 +73,21 @@ def trees(s, taken):
 
 def lights(s, taken):
     for x, z, rot in LANTERNS:
+        if blocked(x, z, 1.5, taken):
+            continue
         s.prop("LanternPost", x, z, rot)
         taken.append((x, z, 1.5))
     for x, z in BRAZIERS:
+        if blocked(x, z, 2.0, taken):
+            continue
         s.prop("BoneBrazier", x, z, (x * 7 + z * 3) % 360)
         taken.append((x, z, 2.0))
 
 
 def bones(s, taken):
     for x, z, rot, sc in SKULL_PILES:
+        if blocked(x, z, 2.4 * sc, taken):
+            continue
         s.prop("SkullPile", x, z, rot, sc)
         taken.append((x, z, 2.4 * sc))
     rng = random.Random(1313)
@@ -125,10 +133,48 @@ def ways(s):
     stepping(s, [(-26.0, -6.0), (-44.0, -24.0), (-58.0, -36.0)], 44)
 
 
+# Things the game builds and sways in the wind (src/client/World/WindSway): roots hanging from
+# lintels and from the island's rim, banners on poles. Anchors: root<n> (x, y, z, h = length) hangs
+# from its anchor down; banner<n> stands on its anchor (h = the pole's height).
+LINTEL_ROOTS = [(-66.5, 15.5, 64.5, 6.0), (-63.3, 15.5, 68.1, 8.0), (-60.0, 15.5, 71.7, 5.0)]
+RIM_ROOT_DEGREES = (196.0, 212.0, 236.0, 250.0, 276.0, 300.0, 322.0, 346.0, 24.0, 118.0, 150.0)
+BANNERS = [(-9.0, 11.0, 53.6, 0.0), (9.0, 11.0, 53.6, 0.0), (-46.0, 0.0, 62.0, 40.0), (46.0, 0.0, 66.0, -40.0)]
+
+
+def sway(s, taken):
+    roots = list(LINTEL_ROOTS)
+    nx, nz = P.RIFT_MID[0] - 3.0, P.RIFT_MID[1] - P.RIFT_AXES[1] - 9.5
+    roots += [(nx - 6.0, 16.2, nz, 7.0), (nx - 1.0, 17.6, nz, 6.0)]
+    for deg in RIM_ROOT_DEGREES:
+        x, z = P.rim_at(deg, -1.0)
+        roots.append((x, -1.5, z, 14.0 + (deg % 7)))
+    for k, (x, y, z, length) in enumerate(roots):
+        s.anchor(f"root{k + 1}", x, y, z, 0.0, h=length)
+    n = 0
+    for x, y, z, rot in BANNERS:
+        if blocked(x, z, 1.0, taken):
+            continue
+        n += 1
+        s.anchor(f"banner{n}", x, y, z, rot, w=3.2, h=10.0)
+
+
 def ambience(s):
+    # Ash drifting over the island, motes hanging in the still air, mist lying low (all thinned on weak devices).
     for x, z in ((0.0, 0.0), (-90.0, -60.0), (90.0, -60.0), (-80.0, 90.0), (80.0, 90.0)):
         s.emitter("ash", (x, 22.0, z), 0.0, size=(120.0, 30.0, 120.0))
-    s.sound("mapWindWaste", (0.0, 10.0, 0.0), 260.0, 0.5)
+    for x, z in ((0.0, 20.0), (-70.0, -40.0), (70.0, 60.0)):
+        s.emitter("dust", (x, 10.0, z), 0.0, size=(44.0, 14.0, 44.0))
+    for x, z, w, d in ((0.0, 40.0, 90.0, 60.0), (-70.0, -70.0, 70.0, 50.0), (60.0, -80.0, 70.0, 50.0), (-90.0, 90.0, 70.0, 50.0)):
+        s.emitter("mist", (x, 1.0, z), 0.0, size=(w, 5.0, d))
+    # The sea of cloud under the island and the layers over it.
+    s.emitter("realmcloud", (0.0, -105.0, 0.0), 0.0, size=(1500.0, 40.0, 1500.0))
+    s.emitter("realmcloud", (0.0, -60.0, -420.0), 0.0, size=(1400.0, 30.0, 700.0))
+    s.emitter("realmhaze", (0.0, 170.0, 0.0), 0.0, size=(1500.0, 60.0, 1500.0))
+    s.emitter("realmhaze", (0.0, 260.0, -300.0), 0.0, size=(1800.0, 60.0, 1400.0))
+    # The sounds: wind through the rocks at the vistas (the beds and the one-shots are the client's,
+    # Audio/RealmAmbience).
+    s.sound("realmRocks", (P.CLEFT[0], 14.0, P.CLEFT[1]), 80.0, 0.5)
+    s.sound("realmRocks", (P.NEEDLE[0], 12.0, P.NEEDLE[1]), 80.0, 0.5)
 
 
 def build(s):
@@ -137,4 +183,5 @@ def build(s):
     lights(s, taken)
     bones(s, taken)
     ways(s)
+    sway(s, taken)
     ambience(s)

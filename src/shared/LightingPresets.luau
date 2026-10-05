@@ -46,6 +46,8 @@ export type Preset = {
 	rain: number,
 	lightning: boolean,
 	snow: number,
+	-- The Grey Realm's sky: no sun, moon or stars, and the layered moving clouds (World/RealmSky).
+	realmSky: boolean?,
 }
 
 export type Mood = {
@@ -103,37 +105,40 @@ end
 
 -- Venues -------------------------------------------------------------------------------------
 
--- The lobby: the Grey Realm under its flat grey sky. A sunless, even light (the sun is lost in
--- thick grey haze), almost no colour left, the plain fading into grey past a few hundred studs;
--- the braziers' pale fire, the candles and the rift's glow are the only warmth or colour.
+-- The lobby: the Grey Realm, a dead island floating in a grey sea of cloud. No sun (the light comes
+-- from the whole overcast sky: low, even, cool), almost no colour left, heavy haze: things close by are
+-- clear, the far rocks and the colossal blade thin into grey over a kilometre. The braziers' pale fire,
+-- the cold glow of the relics and the rift are the only light that is not the sky's. The sky itself
+-- (clouds, no sun) and its slow breathing are World/RealmSky's; these are the values it breathes around.
 LightingPresets.lobby = preset({
 	clockTime = 14.5,
-	brightness = 1.1,
-	exposure = 0.1,
-	ambient = rgb(84, 84, 88),
-	outdoorAmbient = rgb(104, 104, 110),
-	envDiffuse = 0.5,
-	envSpecular = 0.3,
-	fogStart = 140,
-	fogEnd = 900,
-	fogColor = rgb(112, 112, 116),
+	brightness = 0.85,
+	exposure = 0,
+	ambient = rgb(88, 92, 102),
+	outdoorAmbient = rgb(110, 116, 128),
+	envDiffuse = 0.55,
+	envSpecular = 0.25,
+	fogStart = 110,
+	fogEnd = 1700,
+	fogColor = rgb(104, 108, 118),
 	density = 0.34,
-	haze = 2.6,
+	haze = 1.2,
 	glare = 0,
-	atmosphereColor = rgb(158, 158, 162),
-	decay = rgb(120, 118, 122),
-	saturation = -0.72,
-	contrast = 0.14,
-	tint = rgb(236, 238, 242),
-	bloom = 0.2,
-	bloomSize = 16,
-	bloomThreshold = 2.4,
+	atmosphereColor = rgb(122, 128, 140),
+	decay = rgb(58, 62, 76),
+	saturation = -0.78,
+	contrast = 0.16,
+	tint = rgb(226, 232, 244),
+	bloom = 0.25,
+	bloomSize = 18,
+	bloomThreshold = 2.2,
 	lamps = 1,
 	lampRange = 1,
 	keyLights = 3,
 	rain = 0,
 	lightning = false,
 	snow = 0,
+	realmSky = true,
 })
 
 -- The meeting room: one hard key light over the table, everything else falls away.

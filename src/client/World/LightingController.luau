@@ -49,6 +49,7 @@ local debugKey: string? = nil -- "lobby", "meeting" or "map:<mapId>", set from t
 local debugMood: string? = nil -- a phase id (or "OutroHand" / "OutroAgency"), from the debug panel
 local winner: string? = nil -- the winning side once the ending starts
 local phaseStartedAt = 0
+local blendEndsAt = 0 -- os.clock() when the blend in progress finishes
 
 -- The lamps of the venue being lit, with their values as built.
 local lamps: { [Light]: Lamp } = setmetatable({}, { __mode = "k" }) :: any
@@ -224,6 +225,7 @@ end
 
 local function apply(look: LightingPresets.Look, time: number)
 	currentLook = look
+	blendEndsAt = os.clock() + time
 	local info = TweenInfo.new(time, Enum.EasingStyle.Sine)
 	TweenService:Create(Lighting, info, {
 		ClockTime = look.clockTime,
@@ -339,6 +341,20 @@ end
 
 function LightingController.venue(): string
 	return currentVenue
+end
+
+-- The look being applied (what a slow ambient motion breathes around), nil before the first apply.
+function LightingController.look(): LightingPresets.Look?
+	return currentLook
+end
+
+-- True when no blend or flash is moving the lighting (a module that nudges it by hand waits for this).
+function LightingController.settled(): boolean
+	return os.clock() >= blendEndsAt and not flashing
+end
+
+function LightingController.atmosphere(): Atmosphere
+	return atmosphere
 end
 
 function LightingController.preset(): LightingPresets.Preset

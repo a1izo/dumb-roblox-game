@@ -85,6 +85,56 @@ Assets.sfx = {
 	mapNewsRadio = { id = "", ref = "a late-night news radio murmuring in an empty room, loop", fallbackId = "" },
 	mapWindWaste = { id = "", ref = "a dry wind moaning across an empty desert of ash, loop", fallbackId = "" },
 	mapRiftHum = { id = "", ref = "a deep, hollow drone rising out of a chasm, loop", fallbackId = "" },
+	-- The Grey Realm's soundscape (art/audio/*.wav made by art/scripts/audio/make_realm_audio.py): three
+	-- beds that never stop, wind through rocks at the vistas, and one-shots that come now and then from a
+	-- long way off (World: Audio/RealmAmbience). Keep every one of them quiet.
+	realmWind = {
+		id = "",
+		ref = "a low, distant wind over an empty plain, slowly swelling, loop",
+		fallbackId = "",
+		volume = 0.5,
+	},
+	realmDrone = { id = "", ref = "a very quiet, low atmospheric drone, loop", fallbackId = "", volume = 0.4 },
+	realmRumble = {
+		id = "",
+		ref = "an extremely subtle sub-bass rumble far below, loop",
+		fallbackId = "",
+		volume = 0.35,
+	},
+	realmRocks = {
+		id = "",
+		ref = "wind passing through rock spires, a thin whistle, loop",
+		fallbackId = "",
+		volume = 0.5,
+	},
+	realmStone1 = {
+		id = "",
+		ref = "a distant stone knock, as if a rock settled, one shot",
+		fallbackId = "",
+		volume = 0.6,
+	},
+	realmStone2 = { id = "", ref = "a far-off rumble of loose scree sliding, one shot", fallbackId = "", volume = 0.6 },
+	realmMetal1 = { id = "", ref = "a faint distant metallic creak, one shot", fallbackId = "", volume = 0.5 },
+	realmMetal2 = {
+		id = "",
+		ref = "a far, hollow metallic tone, like a chain moving, one shot",
+		fallbackId = "",
+		volume = 0.5,
+	},
+	realmFar1 = { id = "", ref = "a barely heard whisper on the wind, one shot", fallbackId = "", volume = 0.4 },
+	realmFar2 = { id = "", ref = "a distant, unplaceable breath of sound, one shot", fallbackId = "", volume = 0.4 },
+	-- The lobby mini-games.
+	gameRune = { id = "", ref = "a soft, glassy single tone, played at different pitches, one shot", fallbackId = "" },
+	gameWrong = { id = "", ref = "a dull low stone thud, one shot", fallbackId = "" },
+	gameCheckpoint = { id = "", ref = "a pale bell tone, short, one shot", fallbackId = "" },
+	gameFinish = { id = "", ref = "two soft bell tones rising, one shot", fallbackId = "" },
+	gameDice = { id = "", ref = "bone dice rattled and thrown on stone, one shot", fallbackId = "" },
+	gameThrow = { id = "", ref = "a pebble thrown, a short whoosh, one shot", fallbackId = "" },
+	gameFall = {
+		id = "",
+		ref = "a pebble knocking against a rock wall, falling a very long way, fading into the distance, one shot",
+		fallbackId = "",
+	},
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

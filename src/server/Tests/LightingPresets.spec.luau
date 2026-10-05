@@ -96,6 +96,13 @@ return function(t)
 			expect(LightingPresets.lobby.snow).to.equal(0)
 			expect(LightingPresets.meeting.snow).to.equal(0)
 		end)
+		it("gives the lobby the realm's sky (no sun) and keeps every other venue's", function()
+			expect(LightingPresets.lobby.realmSky).to.equal(true)
+			expect(LightingPresets.meeting.realmSky).to.equal(nil)
+			for _, p in pairs(LightingPresets.maps) do
+				expect(p.realmSky).to.equal(nil)
+			end
+		end)
 		it("never lets bloom catch lit skin", function()
 			for _, venue in ipairs({ "lobby", "meeting" }) do
 				expect(LightingPresets.pick(venue).bloomThreshold >= 1.8).to.equal(true)

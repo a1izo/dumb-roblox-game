@@ -19,6 +19,7 @@ local SceneBuilder = require(Maps:WaitForChild("SceneBuilder"))
 local Zones = require(Maps:WaitForChild("Zones"))
 
 local LeaderboardService = require(script.Parent.LeaderboardService)
+local LobbyGameService = require(script.Parent.LobbyGameService)
 local ServerSettings = require(script.Parent.ServerSettings)
 local MeetingRoom = require(Maps:WaitForChild("MeetingRoom"))
 local TaskForceHQ = require(Maps:WaitForChild("TaskForceHQ"))
@@ -130,6 +131,7 @@ function MapService.rebuildLobby()
 	lobbyModel = model
 	updateNextMapLabel()
 	LeaderboardService.setLabels(lobbyInfo.boards)
+	LobbyGameService.setup(lobbyInfo.games)
 end
 
 -- True while a map is built outside a match (a debug preview).
@@ -262,6 +264,7 @@ function MapService.init()
 	lobbyModel = model
 	updateNextMapLabel()
 	LeaderboardService.setLabels(lobbyInfo.boards)
+	LobbyGameService.setup(lobbyInfo.games)
 end
 
 return MapService

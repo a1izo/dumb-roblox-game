@@ -95,12 +95,16 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 - **Teaching**: the role card, objectives for your role and phase, one-time tips (the X on a tip
   turns the whole guide off; Settings brings it back), How to Play, and the **Academy** in the
   lobby, a ring of broken pillars with a practice altar for every skill.
-- **The lobby** is the Grey Realm: an ashen wasteland under a flat grey sky, the world the
-  Grimoire comes from. Players appear on an old flagstone plaza before the Grimoire's plinth, the
-  title carved on a monolith before them; steles round the plaza carry How to Play, the next case
-  and the boards. The Academy lies south-west; to the east a rift in the ground looks down on
-  Kagegaoka at night; dead trees, bones, a colossal carcass, an abandoned dice game and an empty
-  bone throne fill the plain, which runs on into the haze.
+- **The lobby** is the Grey Realm: a dead island floating in a grey sea of slow, layered cloud,
+  the world the Grimoire comes from. Players appear on a ruined terrace over an old flagstone plaza,
+  the colossal blade far to the north between two twisted columns; the title is carved on a monolith
+  beyond the Grimoire's plinth, and steles round the plaza carry How to Play, the next case and the
+  boards. The Academy lies south-west; to the east a rift in the island looks down on Kagegaoka at
+  night; dead trees, bones, a colossal carcass and an empty bone throne stand about. **Mini-games for
+  the wait** (solo-capable, no rewards, global top-10 boards for the first two): the *Spire Ascent*, a
+  parkour up floating stones on an islet over the west bridge; the *rune courtyard*, a memory game on
+  the north-east islet; *bone dice* at the dice rock; and the *stone-toss* at the rift's rim. Wind, drones
+  and far-off knocks make a quiet soundscape (upload `art/audio/*.wav`, see its README).
 - **The meeting room** is the Agency's war room high in the Central Tower: a round table under one
   hard light, Zero's screen between two speaker columns, the evidence board on a wall of pinned
   photographs and red string, the Specters' mezzanine round the walls, and the city at night

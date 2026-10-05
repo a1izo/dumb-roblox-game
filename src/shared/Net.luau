@@ -60,6 +60,9 @@ local EVENTS = {
 	"Cue",
 	"Emote",
 	"Leaderboard",
+	-- the lobby mini-games: requests (client -> server) and what the server tells the player about their run
+	"LobbyGame",
+	"LobbyGameState",
 	"Ghost",
 	"ProfileRequest",
 	"PrivateServer",

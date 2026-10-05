@@ -10,7 +10,7 @@ from maps import city
 from maps import geo2d as g2
 from maps.city import Frame
 from maps.venues.lobby import plan as P
-from maps.venues.lobby.terrain import boulder, rock
+from maps.venues.lobby.terrain import blade, boulder, column, needle_field, rock
 
 
 def flag_disc(s, g, c, r, seed, mat="RuinFlag", zone="plaza", name=None, y=0.04, broken=0.12):
@@ -38,13 +38,14 @@ def flag_disc(s, g, c, r, seed, mat="RuinFlag", zone="plaza", name=None, y=0.04,
 
 def plaza(s, g):
     flag_disc(s, g, P.PLAZA_C, P.PLAZA_R, 31, name="the plaza")
-    # A ring of darker stone round the spawn, and the spawn's own square.
-    sx, sz = P.SPAWN
-    for k in range(24):
-        a0, a1 = 2 * math.pi * k / 24, 2 * math.pi * (k + 1) / 24
-        pts = [(sx + math.cos(a) * r, sz + math.sin(a) * r) for a, r in ((a0, 9.0), (a1, 9.0), (a1, 10.2), (a0, 10.2))]
+    # A worn ring of darker flagstones round the plinth's side of the plaza.
+    px, pz = P.PLAZA_C
+    for k in range(32):
+        a0, a1 = 2 * math.pi * k / 32, 2 * math.pi * (k + 1) / 32
+        if k % 5 == 3:
+            continue  # worn away
+        pts = [(px + math.cos(a) * r, pz + math.sin(a) * r) for a, r in ((a0, 16.0), (a1, 16.0), (a1, 17.2), (a0, 17.2))]
         s.polygon("RuinStone", [(x, 0.06, z) for x, z in reversed(g2.ccw(pts))])
-    s.anchor("spawn", sx, 0.0, sz, 0.0)
     # The plinth, with the Grimoire lying on it (a Core prop, scaled up), candles on its step.
     x, z, w, d, h = P.PLINTH
     s.box("RuinStone", (x, 0.5, z), (w + 3.0, 1.0, d + 3.0), collide=True)
@@ -216,21 +217,22 @@ def academy(s, g):
         s.preview_prop("Effigy", x, z, rot)
 
 
-def pillar(s, x, z, h, rng, whole=False):
-    """A fluted stone pillar on a square base, broken off at h (whole ones get a capital)."""
-    s.box("RuinStone", (x, 0.6, z), (3.6, 1.2, 3.6), rng.uniform(0, 90), collide=True)
-    s.lathe("RuinStone", (x, 1.2, z), [(1.35, 0.0), (1.2, 0.5), (1.2, h - 1.2 - (1.0 if whole else 0.0))], 14,
+def pillar(s, x, z, h, rng, whole=False, y=0.0):
+    """A fluted stone pillar on a square base, broken off at h (whole ones get a capital); y is the
+    ground's height."""
+    s.box("RuinStone", (x, y + 0.6, z), (3.6, 1.2, 3.6), rng.uniform(0, 90), collide=True)
+    s.lathe("RuinStone", (x, y + 1.2, z), [(1.35, 0.0), (1.2, 0.5), (1.2, h - 1.2 - (1.0 if whole else 0.0))], 14,
             caps=(False, not whole), flutes=12, flute_depth=0.12)
     if whole:
-        s.lathe("RuinStone", (x, h - 1.0, z), [(1.2, 0.0), (1.7, 0.6), (1.9, 1.0), (0.0, 1.0)], 14, caps=(False, False))
+        s.lathe("RuinStone", (x, y + h - 1.0, z), [(1.2, 0.0), (1.7, 0.6), (1.9, 1.0), (0.0, 1.0)], 14, caps=(False, False))
     else:
         # The break: a jagged cap.
-        top = h
+        top = y + h
         for k in range(5):
             a = rng.uniform(0, math.tau)
             s.box("RuinStone", (x + math.cos(a) * 0.5, top - 0.1, z + math.sin(a) * 0.5), (1.0, rng.uniform(0.3, 0.9), 0.8),
                   math.degrees(a))
-    s.collider((x, h / 2 + 0.6, z), (2.4, h, 2.4), 0.0, True, "RuinStone")
+    s.collider((x, y + h / 2 + 0.6, z), (2.4, h, 2.4), 0.0, True, "RuinStone")
 
 
 # The dice rock and the carcass --------------------------------------------------------------------------------
@@ -243,6 +245,9 @@ def dice_rock(s):
     for k in range(4):
         a = math.radians(30 + k * 90)
         s.prop("BoneStool", x + math.cos(a) * (r + 2.6), z + math.sin(a) * (r + 2.6), -math.degrees(a) + 90.0)
+    s.anchor("diceRock", x, h, z, 0.0, r=r)
+    for k, (sx, sz) in enumerate(P.DICE_SEATS):
+        s.anchor(f"diceSeat{k + 1}", sx, 0.0, sz, P.rot_towards((sx, sz), (x, z)))
     s.prop("SkullPile", x - 9.0, z - 5.0, 40.0, 1.2)
     s.prop("LanternPost", x + 7.5, z - 5.5, 220.0)
     s.prop("BoneScatter", x + 3.0, z + 9.0, 70.0)
@@ -303,9 +308,106 @@ def carcass(s):
         s.prop("BoneScatter", px, pz, rng.uniform(0, 360), rng.uniform(1.0, 1.3))
 
 
+# The spawn terrace -------------------------------------------------------------------------------------------
+
+
+def terrace(s, g):
+    """A broken ruin a few studs over the plaza's south side: wide steps down its north edge, ruined
+    pillars at its corners, a worn ring of dark stone where players appear, the view north."""
+    cx, cz, w, d, h = P.TERRACE
+    poly = g2.rect(cx, cz, w, d)
+    city.terrace(s, g, poly, h, 0.0, top_mat="RuinFlag", wall_mat="RuinStone", zone="plaza", name="the terrace",
+                 coping="RuinStone")
+    (ax, az), (bx, bz), sw = P.TERRACE_STEPS
+    city.stairs(s, g, (ax, az), (bx, bz), h, 0.0, sw, mat="RuinStone", side_mat="RuinStone", step=0.85, name="the steps")
+    sx, sz = P.SPAWN
+    for k in range(28):
+        a0, a1 = 2 * math.pi * k / 28, 2 * math.pi * (k + 1) / 28
+        if k % 6 == 4:
+            continue
+        pts = [(sx + math.cos(a) * r, sz + math.sin(a) * r) for a, r in ((a0, 9.0), (a1, 9.0), (a1, 10.0), (a0, 10.0))]
+        s.polygon("RuinStone", [(x, h + 0.06, z) for x, z in reversed(g2.ccw(pts))])
+    s.anchor("spawn", sx, h, sz, 0.0)
+    rng = random.Random(14)
+    back = cz + d / 2 - 1.4
+    front = cz - d / 2 + 1.4
+    # The corners: pillars, the two at the back whole and the two at the front snapped off.
+    for qx, qz, hh, whole in ((-21.0, back, 15.0, True), (21.0, back, 15.0, True), (-21.0, front, 7.0, False),
+                              (21.0, front, 10.0, False)):
+        pillar(s, cx + qx, qz, hh, rng, whole=whole, y=h)
+    # A worn balustrade along the back and the sides (low blocks, gaps where it has fallen).
+    for (x0, z0, x1, z1) in ((-23.0, back + 1.1, 23.0, back + 1.1), (-22.7, front - 0.5, -22.7, back + 1.5),
+                             (22.7, front - 0.5, 22.7, back + 1.5)):
+        length = math.dist((x0, z0), (x1, z1))
+        along_x = z0 == z1
+        u = 2.0
+        while u < length - 2.0:
+            run = rng.uniform(2.5, 6.0)
+            if rng.random() < 0.3:
+                u += run
+                continue
+            mx = x0 + (x1 - x0) * (u + run / 2) / length
+            mz = z0 + (z1 - z0) * (u + run / 2) / length
+            bh = rng.uniform(1.0, 2.8)
+            s.box("RuinStone", (mx, h + bh / 2, mz), (run if along_x else 1.0, bh, 1.0 if along_x else run), 0.0,
+                  skip=("-y",))
+            u += run + rng.uniform(0.2, 1.4)
+    for side in (-1, 1):
+        s.prop("BoneBrazier", cx + side * 14.0, front + 1.6, 0.0, 1.0, h)
+
+
+def vistas(s, g):
+    """The two ledges at the island's rim where you look out over the clouds: the cleft (north-west),
+    between leaning masses of rock; the needle ledge (north-east), a field of spikes with a small
+    blade glowing in a rock at its brink."""
+    # The cleft.
+    cx, cz = P.CLEFT
+    a = math.radians(P.CLEFT_DEG)
+    out = (math.cos(a), math.sin(a))
+    tan = (-out[1], out[0])
+    flag_disc(s, g, (cx, cz), P.LEDGE_R, 241, name="the cleft", broken=0.05)
+    for side, (r, h, seed) in ((1, (11.0, 46.0, 242)), (-1, (9.0, 38.0, 243))):
+        mx, mz = cx + out[0] * 9.0 + tan[0] * side * 17.0, cz + out[1] * 9.0 + tan[1] * side * 17.0
+        rock(s, mx, mz, r, h, seed, tiers=4, sides=9, taper=0.55, lean=(-tan[0] * side * 0.2, -tan[1] * side * 0.2))
+    for side, seed in ((1, 244), (-1, 245)):
+        column(s, cx + out[0] * 15.0 + tan[0] * side * 10.5, cz + out[1] * 15.0 + tan[1] * side * 10.5, 3.2, 30.0, seed,
+               twist=1.8, sides=12, tiers=9)
+    s.box("RuinFlag", (cx + out[0] * 5.0, 0.4, cz + out[1] * 5.0), (7.0, 0.8, 3.0),
+          -math.degrees(math.atan2(out[1], out[0])) + 90.0, collide=True)
+    needle_field(s, cx + out[0] * 6.0, cz + out[1] * 6.0, 22.0, 9, 6.0, 20.0, 246,
+                 avoid=[(cx, cz, 11.0)], arc=(a - 1.2, a + 1.2))
+    # The needle ledge with the relic.
+    nx, nz = P.NEEDLE
+    b = math.radians(P.NEEDLE_DEG)
+    nout = (math.cos(b), math.sin(b))
+    flag_disc(s, g, (nx, nz), P.LEDGE_R, 251, name="the needle ledge", broken=0.05)
+    needle_field(s, nx + nout[0] * 4.0, nz + nout[1] * 4.0, 20.0, 18, 6.0, 26.0, 252,
+                 avoid=[(nx, nz, 8.5)], arc=(b - 1.3, b + 1.3))
+    rx, rz = nx + nout[0] * 7.5, nz + nout[1] * 7.5
+    top = rock(s, rx, rz, 3.4, 4.6, 253, tiers=3, sides=8, taper=0.4, flat_top=True)
+    blade(s, rx, top - 0.6, rz, 1.5, 9.5, 0.4, rot=P.rot_towards((rx, rz), (nx, nz)))
+    s.light("point", (rx, top + 6.0, rz), (170, 196, 232), 30, 1.1)
+    s.light("point", (nx, 4.0, nz), (150, 176, 214), 22, 0.5)
+
+
+def toss(s):
+    """The stone-toss: a cairn of throwing stones at the rift's rim, a brazier by it; the anchors the game
+    builds its prompt and the throw's aim at (the rift's middle and radii for the rules)."""
+    x, z, rot = P.TOSS
+    s.prop("Cairn", x, z, 40.0, 1.6)
+    s.anchor("toss", x, 0.0, z, rot)
+    cx, cz = P.RIFT_MID
+    s.anchor("rift", cx, 0.0, cz, P.RIFT_TURN, rx=P.RIFT_AXES[0], rz=P.RIFT_AXES[1])
+    a = math.radians(rot + 90.0)
+    s.prop("BoneBrazier", x + math.cos(a) * 5.0, z + math.sin(a) * 5.0, 0.0, 1.0)
+
+
 def build(s, g):
+    terrace(s, g)
+    vistas(s, g)
     plaza(s, g)
     monolith(s)
+    toss(s)
     throne(s)
     steles(s)
     academy(s, g)
