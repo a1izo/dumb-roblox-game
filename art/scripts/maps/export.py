@@ -397,6 +397,8 @@ def write_scene_v2(scene, module, source):
         )
     emitters = [f'{{ kind = "{em["kind"]}", at = {vec(em["pos"])}, rot = {num(em["rot"], 2)}'
                 + (f', size = {vec(em["size"])}' if em.get("size") else "") + " }" for em in scene.emitters]
+    covers = [f'{{ at = {vec(c[0])}, size = {vec(c[1])}, rot = {num(c[2], 2)}, amount = {num(c[3], 2)} }}'
+              for c in scene.covers]
     blinkers = [f'{{ at = {vec(b["pos"])}, color = {rgb(b["color"])}, period = {num(b["period"], 2)}, '
                 f'size = {num(b["size"], 2)}, phase = {num(b["phase"], 2)} }}' for b in scene.blinkers]
     heli = scene.helicopter
@@ -417,6 +419,8 @@ def write_scene_v2(scene, module, source):
         (None, "lights", lights),
         (None, "signs", signs),
         (None, "emitters", emitters),
+        ("boxes that shelter from rain and snow without being solid (awnings, canopies, tree crowns): "
+         "centre, size, degrees about Y, how much they stop (1 all, 0.5 half)", "covers", covers),
         ("giant screens the client plays loops on: where the face is, facing rot", "screens", screens),
         ("ambient sounds: an Assets.sfx key (silent while its slot is empty), where, how far it carries",
          "sounds", sounds),

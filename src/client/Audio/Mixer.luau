@@ -1,5 +1,7 @@
 -- The four sound groups (music, sound effects, ambience, UI) on this client, with their
--- volumes taken from the player's settings. Cutscenes can duck the music for a moment.
+-- volumes taken from the player's settings. Cutscenes can duck the music for a moment. A fifth,
+-- "Outdoor", sits inside Ambience for everything heard from outside (the rain, the wind, thunder,
+-- the river, the city): Audio/Muffle closes a low-pass on it when the player goes in.
 
 local SoundService = game:GetService("SoundService")
 
@@ -65,6 +67,10 @@ function Mixer.init()
 		groups[name] = group
 		apply(name)
 	end
+	local outdoor = Instance.new("SoundGroup")
+	outdoor.Name = "InkboundOutdoor"
+	outdoor.Parent = groups.Ambience
+	groups.Outdoor = outdoor
 	Settings.Changed:Connect(function(key)
 		for name, settingKey in pairs(GROUPS) do
 			if settingKey == key then

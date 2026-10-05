@@ -619,6 +619,32 @@ def police_car():
     return parts, glows
 
 
+@prop("Crow", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Tokyo")
+def crow():
+    """A crow perched with its wings folded, beak to -Y: a glossy blue-black body and head, a heavy
+    beak, a wedge tail, thin legs and feet. A little bigger than life, so it reads from the street."""
+    feather = mk.noisy("CR_Feather", srgb(8, 8, 12), srgb(34, 38, 52), scale=34, roughness=0.32)
+    wing = mk.noisy("CR_Wing", srgb(6, 6, 10), srgb(26, 28, 40), scale=26, roughness=0.3)
+    beak = pk.plastic("CR_Beak", (46, 44, 46), rough=0.3)
+    eye = pk.plastic("CR_Eye", (170, 172, 180), rough=0.2)
+    parts = [
+        mk.sphere("Body", 1.0, (0, 0.12, 1.0), scale=(0.4, 0.82, 0.46), mat=feather, segments=18, rings=12),
+        mk.sphere("Chest", 1.0, (0, -0.4, 1.12), scale=(0.34, 0.4, 0.4), mat=feather, segments=14, rings=10),
+        mk.sphere("Head", 0.3, (0, -0.72, 1.5), mat=feather, segments=14, rings=10),
+        mk.cylinder("Beak", 0.14, 0.58, (0, -1.08, 1.46), rot=(90, 0, 0), radius2=0.02, mat=beak, verts=10),
+        mk.box("Tail", (0.36, 1.0, 0.09), (0, 0.98, 0.92), rot=(-18, 0, 0), mat=wing, bevel=0.03),
+        mk.sphere("WingL", 1.0, (-0.38, 0.22, 1.04), scale=(0.1, 0.78, 0.36), mat=wing, segments=12, rings=8),
+        mk.sphere("WingR", 1.0, (0.38, 0.22, 1.04), scale=(0.1, 0.78, 0.36), mat=wing, segments=12, rings=8),
+    ]
+    for sx in (-1, 1):
+        parts += [
+            mk.cylinder("Leg", 0.045, 0.62, (sx * 0.15, -0.02, 0.31), mat=beak, verts=6),
+            mk.box("Foot", (0.1, 0.34, 0.05), (sx * 0.15, -0.14, 0.03), mat=beak),
+            mk.sphere("Eye", 0.055, (sx * 0.2, -0.88, 1.56), mat=eye, segments=8, rings=6),
+        ]
+    return parts, []
+
+
 import props_tokyo_shops  # noqa: E402,F401
 import props_tokyo_transit  # noqa: E402,F401
 import props_tokyo_trees  # noqa: E402,F401

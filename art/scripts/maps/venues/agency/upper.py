@@ -95,7 +95,7 @@ def forensics(s):
     s.box("BlackMetal", (-50.35, Y + 8.0, -61.0), (0.1, 3.6, 6.0))  # the X-ray light box on the east wall
     s.box("NeonCool", (-50.42, Y + 8.0, -61.0), (0.04, 3.2, 5.6))
     for x, z in ((-86.0, -64.0), (-66.0, -64.0), (-76.0, -54.0)):
-        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.9, range_=20)
+        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.9, range_=20, flicker=True)
     fit.plaque(s, -88.0, Y + 10.6, -47.7, 0, 6.0, 0.9, "鑑識課 FORENSICS")
 
 
@@ -132,7 +132,7 @@ def server_room(s):
         s.light("point", (x, Y + 6.0, -67.5), (100, 150, 255), 16, 0.6)
     station(s, "Phone", "Records Terminal", -9.0, -58.0, -90, prop="StationPhoneDesk")
     drop_point(s, "the server rack alcove", 28.4, -73.2)
-    fit.panel(s, -9.0, -62.0, C, color=fit.COOL, brightness=0.8, range_=18)
+    fit.panel(s, -9.0, -62.0, C, color=fit.COOL, brightness=0.8, range_=18, flicker=True)  # the server room
     fit.panel(s, 14.0, -54.0, C, color=fit.COOL, brightness=0.5, range_=16)
     s.sound("mapServerHum", (14.0, Y + 6.0, -66.0), 34.0, 0.3)
     fit.plaque(s, -7.0, Y + 10.6, -47.7, 0, 6.0, 0.9, "サーバー室 SERVERS")
@@ -172,7 +172,7 @@ def canteen(s):
     top = fit.counter(s, 72.0, -45.8, 180, 14.0, d=2.4, y=Y, top="WhiteTrim", body="WoodPanel")
     prop(s, "CoffeeMachine", 68.0, -45.9, 180, 1.0, top)
     prop(s, "DrinkFridge", 88.0, -46.4, 180)
-    prop(s, "VendingWhite", 97.3, -40.0, -90)
+    prop(s, "VendingWhite", 97.3, -40.0, 90)  # front to the room, back to the glass
     for x, z in ((62.0, -34.0), (62.0, -20.0), (84.0, -27.0), (62.0, -6.0), (84.0, -13.0), (84.0, 1.0)):
         fit.table(s, x, z, 5.0, 3.0, 0, Y)
         fit.chairs_round(s, x, z, 5.0, 3.0, 0, Y)
@@ -180,7 +180,7 @@ def canteen(s):
     # A bar along the east glass with stools.
     top = fit.counter(s, 97.8, -14.0, 90, 30.0, d=1.6, h=3.5, y=Y, top="Wood", body="BlackTrim")
     for k in range(8):
-        prop(s, "BarStool", 95.6, -27.0 + k * 3.7, 0, 1.0, Y)
+        prop(s, "BarStool", 95.6, -27.0 + k * 3.7, -90, 1.0, Y)
     prop(s, "WaterCooler", 53.0, 12.4, 0)
     hood(s, 96.5, 12.5, spare=True)
     for x, z in ((62.0, -27.0), (84.0, -20.0), (62.0, 0.0)):

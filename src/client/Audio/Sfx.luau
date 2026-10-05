@@ -12,7 +12,7 @@ local Mixer = require(script.Parent.Mixer)
 local Sfx = {}
 
 export type Options = {
-	group: string?, -- "Sfx" (default), "Ui" or "Ambience"
+	group: string?, -- "Sfx" (default), "Ui", "Ambience" or "Outdoor" (heard from outside: muffled indoors)
 	volume: number?,
 	pitch: number?,
 	parent: Instance?, -- a part for positional sound; plays on the listener otherwise

@@ -62,9 +62,20 @@ return function(t)
 				local brightest = math.max(p.ambient.R, p.ambient.G, p.ambient.B)
 				expect(p.exposure >= 0).to.equal(true)
 				expect(brightest >= 45 / 255).to.equal(true)
-				expect(p.density <= 0.3).to.equal(true)
+				-- Mist and haze make the mood, but another player must stay recognisable at ~80 studs.
+				expect(p.density <= 0.45).to.equal(true)
 				local grim = LightingPresets.resolve(p, LightingPresets.moodFor("DeathNote"))
 				expect(grim.exposure < p.exposure).to.equal(true)
+			end
+		end)
+		it("rains on Tokyo outside and keeps the rain's amount in the shops and the metro", function()
+			local tokyo = LightingPresets.maps.TokyoDistrict
+			expect(tokyo.rain >= 1).to.equal(true)
+			-- Indoors the cells stop under the roof by themselves and the rain is heard muffled, so
+			-- the amount stays; only the street has lightning.
+			for _, id in ipairs({ "TokyoDistrict_Inside", "TokyoDistrict_Under" }) do
+				expect(LightingPresets.maps[id].rain).to.equal(tokyo.rain)
+				expect(LightingPresets.maps[id].lightning).to.equal(false)
 			end
 		end)
 		it("snows on the campus, inside and out, and nowhere else", function()

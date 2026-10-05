@@ -210,10 +210,10 @@ def tokyo_rain(h=256, w=16):
     falls to), fading up its tail. White: the game tints it."""
     y = np.linspace(0, 1, h)[:, None]  # 0 at the top of the image (the tail)
     x = np.linspace(-1, 1, w)[None, :]
-    core = np.exp(-(x**2) / 0.08)
-    body = np.clip(y ** 1.6, 0, 1) * np.clip((1 - y) * 14, 0, 1)
-    head = np.exp(-((y - 0.93) ** 2) / 0.0012) * 0.5
-    alpha = np.clip(core * (body * 0.75 + head), 0, 1)
+    core = np.exp(-(x**2) / 0.15)
+    body = np.clip(y ** 1.3, 0, 1) * np.clip((1 - y) * 12, 0, 1)
+    head = np.exp(-((y - 0.9) ** 2) / 0.002) * 0.75
+    alpha = np.clip(core * (body * 0.95 + head), 0, 1)
     rgba = np.ones((h, w, 4), dtype=np.float32)
     rgba[..., 3] = alpha
     return save_array("TokyoRain", rgba)
@@ -225,13 +225,14 @@ def tokyo_splash(size=128):
     y, x = np.mgrid[-1 : 1 : size * 1j, -1 : 1 : size * 1j]
     r = np.sqrt(x**2 + y**2)
     a = np.arctan2(y, x)
-    ring = np.exp(-((r - 0.62) ** 2) / 0.004) * (0.75 + 0.25 * np.cos(a * 7))
+    ring = np.exp(-((r - 0.6) ** 2) / 0.006) * (0.8 + 0.2 * np.cos(a * 7))
     drops = np.zeros_like(r)
-    for k in range(9):
+    for k in range(13):
         ang = k * 2.39996
-        dx, dy = 0.84 * np.cos(ang), 0.84 * np.sin(ang)
-        drops += np.exp(-((x - dx) ** 2 + (y - dy) ** 2) / 0.0015)
-    centre = np.exp(-(r**2) / 0.05) * 0.25
+        rad = 0.78 + 0.1 * np.sin(k * 1.7)
+        dx, dy = rad * np.cos(ang), rad * np.sin(ang)
+        drops += np.exp(-((x - dx) ** 2 + (y - dy) ** 2) / 0.002)
+    centre = np.exp(-(r**2) / 0.06) * 0.3
     alpha = np.clip(ring + drops * 0.8 + centre, 0, 1) * np.clip((1 - r) * 6, 0, 1)
     rgba = np.ones((size, size, 4), dtype=np.float32)
     rgba[..., 3] = alpha
@@ -259,7 +260,70 @@ def tokyo_petal(size=128):
     return save_array("TokyoPetal", rgba)
 
 
+def campus_flake(size=128):
+    """A crisp little snow crystal for the campus: six fine arms and a bright core in a soft halo,
+    so it still reads as a flake a few studs away. White: the game tints it."""
+    y, x = np.mgrid[-1 : 1 : size * 1j, -1 : 1 : size * 1j]
+    r = np.sqrt(x**2 + y**2)
+    arms = np.zeros_like(r)
+    for k in range(6):
+        a = k * math.pi / 3
+        along = x * math.cos(a) + y * math.sin(a)
+        across = -x * math.sin(a) + y * math.cos(a)
+        spine = np.exp(-(across**2) / 0.0016) * np.clip(1 - np.abs(along) / 0.8, 0, 1)
+        # A pair of short side branches on each arm.
+        for at in (0.35, 0.58):
+            for side in (-1, 1):
+                bx = (along - np.sign(along) * at) if False else (np.abs(along) - at)
+                branch = np.exp(-((across - side * (np.abs(along) - at) * 0.9) ** 2) / 0.0012) * np.clip(
+                    1 - np.abs(np.abs(along) - at) / 0.16, 0, 1
+                )
+                arms += 0.55 * branch * (np.abs(along) > at)
+        arms += spine
+    core = np.exp(-(r**2) / 0.02)
+    halo = 0.3 * np.exp(-(r**2) / 0.25)
+    alpha = np.clip(arms * 0.85 + core + halo, 0, 1) * np.clip((1 - r) * 5, 0, 1)
+    rgba = np.ones((size, size, 4), dtype=np.float32)
+    rgba[..., 3] = alpha
+    return save_array("CampusFlake", rgba)
+
+
+def feather(h=256, w=128):
+    """One black feather (the game colours it): a curved quill, an uneven vane that swells and tapers
+    with a ragged edge and slanting barbs, drawn with its tip at the top. White on transparent."""
+    y, x = np.mgrid[-1 : 1 : h * 1j, -1 : 1 : w * 1j]
+    # The quill bends to one side; the vane is wider on the other side of it and widest low down.
+    bend = 0.3 * y**2 - 0.06 * y
+    across = x - bend
+    t = np.clip((y + 0.8) / 1.55, 0, 1)  # 0 at the base of the vane, 1 at the tip
+    swell = np.sin(np.pi * t**0.7) ** 0.85
+    width = np.where(across < 0, 0.5, 0.3) * swell
+    # Ragged edge: the vane's outline is nibbled into barbs.
+    ragged = 0.04 * np.sin(y * 70 + (across < 0) * 1.7) * np.clip(np.abs(across) / 0.2, 0, 1)
+    inside = (np.abs(across) < width + ragged) & (y > -0.8) & (y < 0.78)
+    edge = np.clip((width + ragged - np.abs(across)) * 16, 0, 1) * inside
+    # Barbs slant back from the quill, with a few slits between them.
+    barbs = 0.7 + 0.3 * np.sin(y * 52 - np.abs(across) * 26 * np.sign(across))
+    slits = 1 - 0.55 * (np.sin(y * 31 + across * 9) > 0.93)
+    vane = edge * barbs * slits
+    quill = np.exp(-(across**2) / 0.0007) * (y > -0.99) * (y < 0.8)
+    alpha = np.clip(np.maximum(vane, quill), 0, 1)
+    rgba = np.ones((h, w, 4), dtype=np.float32)
+    rgba[..., 3] = alpha
+    return save_array("Feather", rgba)
+
+
 TOKYO = (tokyo_rain, tokyo_splash, tokyo_petal)
+CAMPUS = (campus_flake, feather)
+
+
+def build_only(groups):
+    """Writes only some textures ("Tokyo", "Campus"), without rendering the rest again."""
+    common.ensure_dirs()
+    paths = []
+    for name in groups:
+        paths.extend(make() for make in {"Tokyo": TOKYO, "Campus": CAMPUS}[name])
+    return paths
 
 
 def build():
@@ -281,4 +345,5 @@ def build():
     paths.append(snowflake())
     paths.append(footprint())
     paths.extend(make() for make in TOKYO)
+    paths.extend(make() for make in CAMPUS)
     return paths

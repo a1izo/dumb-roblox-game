@@ -65,7 +65,7 @@ def security(s):
     s.box("BlackTrim", (-96.85, 3.6, -56.0), (0.05, 6.6, 0.1))
     fit.desk(s, -84.0, -57.0, 90, Y)
     s.prop("CoatStand", -62.5, -51.5, 0)
-    fit.panel(s, -80.0, -63.0, C, color=fit.COOL, brightness=0.8, range_=20)
+    fit.panel(s, -80.0, -63.0, C, color=fit.COOL, brightness=0.8, range_=20, flicker=True)  # the CCTV wall's tube
     fit.panel(s, -70.0, -56.0, C, on=False)
     fit.panel(s, -92.0, -54.0, C, on=False)
     fit.plaque(s, -86.0, 10.6, -47.7, 0, 5.2, 0.9, "警備室 SECURITY")
@@ -79,7 +79,7 @@ def observation(s):
     s.station("Phone", "Wiretap Console", -47.8, -66.0, 90, prop="StationReelToReel")
     s.prop("Chair", -54.5, -71.5, -90)
     top = fit.table(s, -55.8, -55.0, 3.0, 2.2, 90, Y)
-    s.prop("CoffeeMachine", -55.8, -55.6, 90, 1.0, top)
+    s.prop("CoffeeMachine", -55.8, -55.6, -90, 1.0, top)  # front to the room, back to the wall
     s.box("NeonRed", (-51.0, 10.1, -48.34), (1.2, 0.35, 0.05))  # the red lamp over the door: recording
     s.sign((-51.0, 10.9, -48.36), 0, 3.0, 0.5, "録音中 ON AIR", "GothamBlack", (255, 90, 90), None)
     s.light("point", (-51.0, 9.6, -50.0), (255, 60, 60), 8, 0.5)
@@ -147,8 +147,8 @@ def lockers(s):
         s.prop("CoinLockers", 48.3, z, 90)
     for z in (-70.8, -64.6):
         s.prop("CoinLockers", 25.7, z, -90)
-    for z in (-68.0, -60.5):
-        s.prop("Bench", 37.0, z, 0)
+    s.prop("Bench", 29.4, -67.7, 90)  # each bench faces a bank of lockers
+    s.prop("Bench", 44.6, -64.6, -90)
     fit.closed_door(s, 24.3, -55.0, -90, Y, 4.0, "Steel", sign="シャワー SHOWERS")
     s.prop("CoatStand", 44.5, -51.5, 0)
     s.hood(28.5, -52.5)
@@ -167,7 +167,7 @@ def break_room(s):
     # The kitchenette along the east glass: counter, sink, coffee; the fridge, the cooler.
     top = fit.counter(s, 97.3, -63.0, 90, 18.0, d=2.4, top="WhiteTrim", body="WoodPanel")
     s.prop("CoffeeMachine", 97.4, -66.0, 90, 1.0, top)
-    s.box("Steel", (97.3, top + 0.02, -60.0), (2.0, 0.05, 2.6))
+    s.box("Steel", (97.3, top + 0.06, -60.0), (2.0, 0.05, 2.6))
     s.prop("DrinkFridge", 86.0, -72.6, 180)
     s.prop("WaterCooler", 76.5, -73.2, 180)
     for x, z in ((66.0, -66.0), (66.0, -53.0), (80.0, -58.0)):
@@ -196,13 +196,13 @@ def night_desk(s):
     s.prop("Whiteboard", 75.0, -24.0, 180)
     s.prop("Whiteboard", 88.0, 6.5, 0)
     for z in (-21.0, -18.5, -16.0):
-        s.prop("FilingCabinet", 97.8, z, -90)
+        s.prop("FilingCabinet", 97.8, z, 90)  # fronts to the room, backs to the glass
     for x in (60.0, 76.0):
         s.prop("PinBoard", x, 15.55, 0, 1.0, 7.4)
     s.prop("CoatStand", 96.5, 12.0, 0)
     s.prop("Plant", 53.2, 12.8, 0)
     for x, z in ((88.0, -26.0), (70.0, -4.0)):
-        fit.panel(s, x, z, C, brightness=0.8)
+        fit.panel(s, x, z, C, brightness=0.8, flicker=x == 70.0)
     fit.panel(s, 62.0, -22.0, C, on=False)
     fit.panel(s, 88.0, 6.0, C, on=False)
     fit.plaque(s, 49.7, 10.6, -26.0, 90, 5.0, 0.9, "夜勤 NIGHT DESK")
@@ -268,9 +268,9 @@ def lounge(s):
     top = fit.counter(s, 72.0, 17.5, 180, 14.0, d=2.2, top="Wood", body="WoodPanel")
     s.prop("CoffeeMachine", 68.0, 17.3, 180, 1.0, top)
     for x in (66.5, 70.0, 73.5, 77.0):
-        s.prop("BarStool", x, 20.4, 180)
-    s.polygon("FabricRed", [(60.0, 0.03, 36.0), (74.0, 0.03, 36.0), (74.0, 0.03, 24.0), (60.0, 0.03, 24.0)])
-    s.polygon("Fabric", [(66.0, 0.03, 56.0), (80.0, 0.03, 56.0), (80.0, 0.03, 44.0), (66.0, 0.03, 44.0)])
+        s.prop("BarStool", x, 20.4, 0)
+    s.polygon("FabricRed", [(60.0, 0.08, 36.0), (74.0, 0.08, 36.0), (74.0, 0.08, 24.0), (60.0, 0.08, 24.0)])
+    s.polygon("Fabric", [(66.0, 0.08, 56.0), (80.0, 0.08, 56.0), (80.0, 0.08, 44.0), (66.0, 0.08, 44.0)])
     s.hood(88.0, 22.0, spare=True)
     for x, z in ((-4.0, 62.0), (14.0, 62.0), (32.0, 62.0), (66.0, 36.0), (80.0, 24.0), (60.0, 56.0)):
         fit.downlight(s, x, z, C, range_=15, brightness=0.8)
@@ -303,8 +303,8 @@ def bullpen(s):
     s.prop("Whiteboard", -30.0, 5.0, 0)
     for z in (-44.4, -41.9, -39.4):
         s.prop("FilingCabinet", -97.9, z, -90)
-    for z in (60.0, 62.5):
-        s.prop("FilingCabinet", -73.2, z, 90)
+    for z in (66.5, 69.0):  # against the sergeant's wall, clear of its door (z 58 to 62), fronts to the room
+        s.prop("FilingCabinet", -74.6, z, -90)
     top = fit.counter(s, -17.5, 68.5, 90, 8.0, d=2.2, top="Wood", body="WoodPanel")
     s.prop("CoffeeMachine", -17.6, 67.0, 90, 1.0, top)
     s.prop("WaterCooler", -17.4, 55.0, 90)
@@ -317,7 +317,7 @@ def bullpen(s):
         s.prop("TrashCan", x, z, 0)
     # After hours: a few panels on over the station and the table, the rest off.
     for x, z in ((-40.0, -14.0), (-86.0, 46.0), (-58.0, 0.0), (-24.0, 40.0)):
-        fit.panel(s, x, z, C, brightness=0.85, range_=20)
+        fit.panel(s, x, z, C, brightness=0.85, range_=20, flicker=(x, z) in ((-58.0, 0.0), (-24.0, 40.0)))
     for x, z in ((-86.0, 8.0), (-58.0, 30.0)):
         fit.panel(s, x, z, C, brightness=0.6, range_=18)
     for x, z in ((-86.0, -26.0), (-58.0, -30.0), (-30.0, -34.0), (-86.0, 64.0)):
@@ -332,7 +332,7 @@ def sergeant(s):
     fit.desk(s, -88.0, 66.0, 180, Y)
     s.prop("Bookshelf", -98.0, 60.0, -90)
     s.prop("Bookshelf", -98.0, 63.4, -90)
-    s.prop("FilingCabinet", -79.0, 72.0, 180)
+    s.prop("FilingCabinet", -79.0, 72.6, 0)  # back to the glass, front to the room
     s.drop_point("the sergeant's office", -97.2, 72.3, spare=True)
     fit.panel(s, -88.0, 61.0, C, w=3.0, brightness=0.6, range_=14)
     fit.plaque(s, -75.7, 10.6, 60.5, -90, 4.0, 0.8, "班長室 SERGEANT")
@@ -351,7 +351,7 @@ def corridor(s):
     fit.plaque(s, P.CORE[0] - 0.5, 7.2, -28.0, 90, 7.0, 4.2,
                "38F  案内\nSECURITY · INTERVIEW  ↑\nCOPY · LOCKERS  ↑\nBREAK ROOM · NIGHT DESK  →", (220, 220, 225),
                (20, 22, 28))
-    s.prop("Bench", 46.8, -33.0, -90)
+    s.prop("Bench", 48.85, -33.0, 90, 0.9)  # against the outer wall: the corridor stays 6 wide
 
 
 def build(s, g):

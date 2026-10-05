@@ -165,6 +165,14 @@ function ModelLibrary.calibration(prefix: string): Calibration?
 	return found
 end
 
+-- Studio's importer also turns the mesh data of every prop half way round the vertical axis, which
+-- the cubes cannot show (they only tell where the importer put each mesh, and Studio puts them
+-- where the file says). Measured with the debug Prop gallery on 2026-09-29, with every file
+-- freshly imported: every front faced away from its red arrow, in every set. Blender makes them
+-- face -Z and the file holds them that way, so build() turns each prop this much about its own
+-- centre. Set to 0 if a later Studio stops doing it (the gallery shows it at once).
+local FACING_TURN = CFrame.Angles(0, math.pi, 0)
+
 -- The turn that undoes the importer's rotation of a prop: from the cubes in the prop's own file
 -- (Calib_Props<Set>, such as Calib_PropsCore in InkboundModels_Core.fbx), else nil. Each file is
 -- measured on its own: two imports can come in turned differently.
@@ -374,7 +382,11 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		for _, prefix in ipairs(prefixes) do
 			table.insert(lines, describeTurn(prefix))
 		end
-		print("[Inkbound] Import check: " .. table.concat(lines, "; ") .. ".")
+		print(
+			"[Inkbound] Import check: "
+				.. table.concat(lines, "; ")
+				.. ". Props are also turned half way round for Studio's importer (FACING_TURN); open the debug Prop gallery to check: every front faces its red arrow."
+		)
 	end
 	rootInstance:SetAttribute("Installed", true)
 	return { found = found, missing = missing }
@@ -505,6 +517,12 @@ local function build(key: string): Model?
 			cf, size = model:GetBoundingBox()
 		end
 	end
+	-- Then the half turn Studio's importer gives every mesh (see FACING_TURN), about the prop's
+	-- own centre so it stays where it is.
+	local centre = cf.Position
+	model:PivotTo(CFrame.new(centre) * FACING_TURN * CFrame.new(-centre) * model:GetPivot())
+	cf, size = model:GetBoundingBox()
+	model.WorldPivot = CFrame.new(cf.Position)
 
 	-- Scale to the catalog size (the importer may have used another unit).
 	local largest = math.max(expected.X, expected.Y, expected.Z)

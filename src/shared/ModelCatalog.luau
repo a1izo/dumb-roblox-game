@@ -41,6 +41,7 @@ return {
 	CoffeeMachine = { size = { 1, 1.725, 1.41 }, pivot = "bottom", material = "Metal", collide = false, color = { 16, 15, 16 }, set = "Agency", tris = 468, glow = { { 255, 60, 40 } } },
 	CoinLockers = { size = { 6, 7, 2.58 }, pivot = "bottom", material = "Metal", collide = true, color = { 37, 39, 42 }, set = "Tokyo", glow = { { 150, 210, 255 } } },
 	Crate = { size = { 4.08, 4, 4.16 }, pivot = "bottom", material = "WoodPlanks", collide = true, color = { 22, 16, 10 }, set = "Core" },
+	Crow = { size = { 0.96, 1.8, 2.83 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 8, 9, 11 }, set = "Tokyo", tris = 1604 },
 	DeadTree = { size = { 14.285, 17.333, 15.171 }, pivot = "bottom", material = "Wood", collide = false, color = { 6, 6, 6 }, anchor = { 1.118, 0.411 }, set = "Lobby", tris = 3004 },
 	DeadTreeGnarled = { size = { 10.027, 10.953, 11.374 }, pivot = "bottom", material = "Wood", collide = false, color = { 4, 4, 4 }, anchor = { 2.202, -0.046 }, set = "Lobby", tris = 2452 },
 	Desk = { size = { 6, 4.595, 3.25 }, pivot = "bottom", material = "Wood", collide = true, color = { 31, 25, 19 }, set = "Core", glow = { { 80, 220, 150 }, { 255, 214, 160 } } },

@@ -120,6 +120,11 @@ class Edge:
         x, z = self.at(u, depth)
         s.box(mat, (x, y, z), size, self.rot, skip=skip)
 
+    def cover(self, s, u, y, depth, size, amount=1.0):
+        """A box that shelters from rain and snow (an awning): like box, but invisible and not solid."""
+        x, z = self.at(u, depth)
+        s.cover((x, y, z), size, self.rot, amount)
+
     def niche(self, s, u0, u1, y0, y1, depth, side, back=None, floor=None, ceiling=None, front=0.0):
         """A closed recess in the wall from u0 to u1 and y0 to y1, from `front` back to `depth`
         (both measured into the wall): jambs, and a back, floor and soffit when given, every face
@@ -132,7 +137,7 @@ class Edge:
             city.down_face(s, ceiling, [p0, q0, q1, p1], y1)
         if floor:
             # At street level the sidewalk runs on under the building: sit a hair over it.
-            city.up_face(s, floor, [p0, p1, q1, q0], y0 + (0.03 if abs(y0) < 0.05 else 0.0))
+            city.up_face(s, floor, [p0, p1, q1, q0], y0 + (0.09 if abs(y0) < 0.05 else 0.0))
         if back:
             self.quad(s, back, u0, u1, y0, y1, -depth)
 
@@ -587,6 +592,7 @@ def lobby(s, e, style, rng):
         u = a + w * k / 4
         e.box(s, "DarkMetal", u, 5.0, -0.2, (0.25, 10.0, 0.3))
     e.box(s, style["trim"], mid, 10.6, 2.0, (w + 2.0, 0.5, 4.0))
+    e.cover(s, mid, 10.6, 2.0, (w + 2.0, 0.8, 4.0))  # the canopy keeps the rain off the doors
 
 
 def potted_plant(s, x, z):
@@ -613,6 +619,7 @@ def tin_front(s, e, style, rng):
         e.quad(s, "WoodPanel", 0, e.length, 0, 9.0)
     e.quad(s, style["clad"], 0, e.length, 9.0, FLOOR_GF)
     e.box(s, "Shutter", e.length / 2, 9.6, 0.7, (e.length, 0.25, 1.4))
+    e.cover(s, e.length / 2, 9.6, 0.7, (e.length, 0.8, 1.4))  # the awning over the door
 
 
 GROUNDS = {"shutters": shutters, "display": display, "lobby": lobby, "tin": tin_front}

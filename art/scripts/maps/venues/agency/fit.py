@@ -175,13 +175,15 @@ ROOM_BRIGHTNESS = 1.35
 ROOM_RANGE = 1.25
 
 
-def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9, rot=0.0, on=True):
-    """A frosted ceiling panel; off after hours unless on (the fitting is there either way)."""
+def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9, rot=0.0, on=True, flicker=False):
+    """A frosted ceiling panel; off after hours unless on (the fitting is there either way).
+    flicker: a tired tube that now and then cuts out for half a second (the client does it, rarely)."""
     s.box("DarkMetal", (x, ceiling - 0.08, z), (w + 0.3, 0.16, d + 0.3), rot, skip=("+y",))
     if on:
         glow = "PanelWarm" if color[0] > color[2] else "PanelCool"
         s.box(glow, (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
-        s.light("point", (x, ceiling - 1.0, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS)
+        s.light("point", (x, ceiling - 1.0, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS,
+                flicker=flicker)
     else:
         s.box("TubeDiffuser", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
 

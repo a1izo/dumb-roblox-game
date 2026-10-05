@@ -184,7 +184,7 @@ def puddle(s, x, z, rx, rz, rot, seed):
     note("puddle", x, z, max(rx, rz), 0.0, 0.0)
 
 
-PUDDLE_Y = 0.04
+PUDDLE_Y = 0.08
 # Where the water stands after the rain: along the kerbs, in the scramble's low corners, at alley
 # mouths, under the viaduct's drip line, in dips of the promenades and the plaza. (x, z, half
 # length, half width, turn, seed.)

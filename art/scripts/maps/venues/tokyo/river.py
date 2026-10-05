@@ -150,7 +150,7 @@ def culvert(s, x):
         s.box("Concrete", (p[0], P.WATER_Y + 2.2, p[1]), (0.8, 4.4, 0.8), g2.rot_of(n))
     # The deck over it, so the ground carries on.
     deck = g2.rect(cx + inward[0] * -6, cz + inward[1] * -6, 12, math.dist(a, b) + 2, g2.rot_of(d))
-    city.up_face(s, "AsphaltWet", deck, 0.02)
+    city.up_face(s, "AsphaltWet", deck, 0.08)
 
 
 def blocker(s, a, b, base=3.4):

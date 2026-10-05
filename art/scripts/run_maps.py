@@ -8,6 +8,11 @@ venues: Lobby Meeting Agency Campus Tokyo (all when none are given)
            props from Props.blend placed and the scene lights on
 --plan     renders top-down plans of each floor level with the gameplay spots marked
            (art/export/previews/plan_<Venue>_<level>.png)
+--proplan  the hand-check plans: every level in tiles (--tile 64x48 --ppu 30 --levels ground,upper
+           --region x0,z0,x1,z1) with each prop placed, numbered, named and arrowed (its front), a
+           10-stud grid, and a .txt legend per tile (plan_props_<Venue>_<level>_<i>_<j>.png/.txt)
+--eyes "px,py,pz,tx,ty,tz[,lens];..."  ad-hoc perspective views (eye_<Venue>_<n>.png), studs
+--out DIR  writes the renders there instead of art/export/previews (use it for scratch renders)
 --massing  renders the venue's MASSING_VIEWS like an architect's model, with player-sized figures
            for scale (art/export/previews/massing_<Venue>_<n>.png)
 --export   each venue's src/server/Maps/Scenes/<Venue>/, art/export/InkboundMaps_<Venue>.fbx and
@@ -146,6 +151,174 @@ def render_plans(scene, module):
     for obj in list(coll.objects):
         bpy.data.objects.remove(obj, do_unlink=True)
     return paths
+
+
+# Prop plans, for the hand-check: a level seen from above in tiles, every prop placed, numbered and
+# named, with an arrow for the way its front faces and a 10-stud grid; each tile comes with a text
+# legend (number, prop, position, rotation, and the script line that placed it). They are aids for
+# looking; nothing here decides where a prop goes. -------------------------------------------------------
+
+PLAN_LABEL = (1.0, 0.92, 0.2)
+PLAN_ARROW = (1.0, 0.1, 0.75)
+PLAN_GRID = (0.1, 0.85, 0.95)
+# Props that look the same from every side get no facing arrow (it would only be noise).
+ROUND_HINTS = ("Ginkgo", "Tree", "Plant", "Lamp", "Snowman", "Planter", "Hydrant", "TrashCan", "BarStool", "Bollard",
+               "Bush", "Shrub", "Pine", "Cherry", "Lantern", "Post", "Cairn", "Stump")
+
+
+def _flat(name, rgb):
+    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    mat.diffuse_color = (*rgb, 1.0)
+    return mat
+
+
+def _label(coll, text, x, z, y, size, mat):
+    curve = bpy.data.curves.new("PlanLabel", "FONT")
+    curve.body = text
+    curve.size = size
+    curve.align_x = "CENTER"
+    obj = bpy.data.objects.new("PlanLabel", curve)
+    obj.location = (-x, z, y)
+    obj.rotation_euler = (0, 0, math.pi)  # reads left to right in the plan (north up)
+    obj.data.materials.append(mat)
+    coll.objects.link(obj)
+    return obj
+
+
+def _flat_mesh(coll, name, quads, tris, y, mat):
+    """One object of flat quads and triangles, each a list of (x, z) Roblox points, drawn at height y."""
+    verts, faces = [], []
+    for poly in list(quads) + list(tris):
+        base = len(verts)
+        verts.extend((-px, pz, y) for px, pz in poly)
+        faces.append(tuple(range(base, base + len(poly))))
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(verts, [], faces)
+    mesh.materials.append(mat)
+    obj = bpy.data.objects.new(name, mesh)
+    coll.objects.link(obj)
+    return obj
+
+
+def _arrow(x, z, rot, length):
+    """(shaft quad, head triangle) for a prop at (x, z) whose front faces rot (0 faces -Z)."""
+    a = math.radians(rot)
+    fx, fz = -math.sin(a), -math.cos(a)
+    px, pz = -fz, fx
+    head = min(0.9, length * 0.4)
+    bx, bz = x + fx * (length - head), z + fz * (length - head)
+    tx, tz = x + fx * length, z + fz * length
+    w, hw = 0.16, 0.55
+    shaft = [(x + px * w, z + pz * w), (bx + px * w, bz + pz * w), (bx - px * w, bz - pz * w), (x - px * w, z - pz * w)]
+    tip = [(bx + px * hw, bz + pz * hw), (tx, tz), (bx - px * hw, bz - pz * hw)]
+    return shaft, tip
+
+
+def _grid_lines(x0, z0, x1, z1, step=10.0, thick=0.035):
+    quads = []
+    gx = math.ceil(x0 / step) * step
+    while gx <= x1:
+        quads.append([(gx - thick, z0), (gx + thick, z0), (gx + thick, z1), (gx - thick, z1)])
+        gx += step
+    gz = math.ceil(z0 / step) * step
+    while gz <= z1:
+        quads.append([(x0, gz - thick), (x1, gz - thick), (x1, gz + thick), (x0, gz + thick)])
+        gz += step
+    return quads
+
+
+def render_propplans(scene, module, coll, opts):
+    """art/export/previews/plan_props_<Venue>_<level>_<i>_<j>.png (+ .txt legend) for each tile that holds
+    props of the level. opts: tile (w, d) studs, ppu pixels per stud, levels (names or None), region
+    (x0, z0, x1, z1) or None."""
+    from maps import catalog
+
+    sizes = catalog.load()
+    library = load_props()
+    tw, td = opts["tile"]
+    ppu = opts["ppu"]
+    (bx0, by0, bz0), (bx1, by1, bz1) = scene.bounds or ((-100, 0, -100), (100, 60, 100))
+    if opts["region"]:
+        bx0, bz0, bx1, bz1 = opts["region"]
+    label_mat, arrow_mat, grid_mat = _flat("PlanLabel", PLAN_LABEL), _flat("PlanArrow", PLAN_ARROW), _flat("PlanGrid", PLAN_GRID)
+    # Every prop stays placed for all tiles; only the labels are made per tile.
+    placed = place_props(scene, coll)
+    bscene = bpy.context.scene
+    bscene.render.engine = "BLENDER_WORKBENCH"
+    shading = bscene.display.shading
+    shading.light = "STUDIO"
+    shading.color_type = "TEXTURE"
+    shading.show_shadows = False  # shadows across snow and lawns only confuse a plan
+    shading.show_cavity = True
+    # The night textures are dark: lift them so props and ground can be told apart by eye.
+    bscene.view_settings.view_transform = "Standard"
+    bscene.view_settings.exposure = opts["bright"]
+    cam_data = bpy.data.cameras.get("PlanCam") or bpy.data.cameras.new("PlanCam")
+    cam_data.type = "ORTHO"
+    cam_data.ortho_scale = max(tw, td)
+    cam_data.clip_start = 0.05
+    cam = bpy.data.objects.get("PlanCam") or bpy.data.objects.new("PlanCam", cam_data)
+    if cam.name not in bscene.collection.objects:
+        bscene.collection.objects.link(cam)
+    bscene.camera = cam
+    bscene.render.resolution_x, bscene.render.resolution_y = int(tw * ppu), int(td * ppu)
+    levels = getattr(module, "PLAN_LEVELS", [("ground", 9.0)])
+    written = []
+    for li, (lname, cut) in enumerate(levels):
+        if opts["levels"] and lname not in opts["levels"]:
+            continue
+        lo = levels[li - 1][1] - 1.5 if li else -1e9
+        members = [i for i, p in enumerate(scene.props) if lo < p[2] <= cut]
+        nx, nz = math.ceil((bx1 - bx0) / tw), math.ceil((bz1 - bz0) / td)
+        for ix in range(nx):
+            for iz in range(nz):
+                x0, z0 = bx0 + ix * tw, bz0 + iz * td
+                x1, z1 = x0 + tw, z0 + td
+                inside = [i for i in members if x0 <= scene.props[i][1] < x1 and z0 <= scene.props[i][3] < z1]
+                if not inside:
+                    continue
+                made = []
+                arrows = []
+                for i in inside:
+                    key, x, y, z, rot, sc, *_ = scene.props[i]
+                    info = sizes.get(key, {})
+                    w, d = (info.get("size") or [2.0, 0, 2.0])[0], (info.get("size") or [2.0, 0, 2.0])[2]
+                    if not any(h in key for h in ROUND_HINTS):
+                        arrows.append(_arrow(x, z, rot, max(1.6, 0.5 * max(w, d) * sc + 1.0)))
+                    text = f"{i} {key[:13]}"
+                    made.append(_label(coll, text, x, z + 0.0, cut - 0.15, 1.05, label_mat))
+                shafts = [a[0] for a in arrows]
+                heads = [a[1] for a in arrows]
+                made.append(_flat_mesh(coll, "PlanArrows", shafts, heads, cut - 0.3, arrow_mat))
+                made.append(_flat_mesh(coll, "PlanGrid", _grid_lines(x0, z0, x1, z1), [], cut - 0.5, grid_mat))
+                gx = math.ceil(x0 / 20.0) * 20.0
+                while gx < x1:
+                    gz = math.ceil(z0 / 20.0) * 20.0
+                    while gz < z1:
+                        made.append(_label(coll, f"{gx:g},{gz:g}", gx, gz, cut - 0.6, 0.9, _flat("PlanGridText", PLAN_GRID)))
+                        gz += 20.0
+                    gx += 20.0
+                cam.location = (-(x0 + x1) / 2, (z0 + z1) / 2, cut)
+                cam.rotation_euler = (0, 0, math.radians(180))
+                cam_data.clip_end = cut - by0 + 20
+                stem = f"plan_props_{scene.venue}_{lname}_{ix}_{iz}"
+                path = os.path.join(common.PREVIEWS, stem + ".png")
+                common.render(path)
+                with open(os.path.join(common.PREVIEWS, stem + ".txt"), "w", encoding="utf-8", newline="\n") as f:
+                    f.write(f"{scene.venue} {lname} tile {ix},{iz}: x {x0:g}..{x1:g}, z {z0:g}..{z1:g}, cut y {cut:g}\n")
+                    for i in inside:
+                        key, x, y, z, rot, sc, flags = (*scene.props[i][:6], scene.props[i][6] if len(scene.props[i]) > 6 else "")
+                        src = scene.prop_src[i] if i < len(scene.prop_src) else ""
+                        f.write(f"{i:4d} {key:22s} x={x:8.2f} y={y:6.2f} z={z:8.2f} rot={rot:7.1f} sc={sc:4.2f} {flags} <- {src}\n")
+                written.append(path)
+                for obj in made:
+                    data = obj.data
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                    if data is not None and data.users == 0:
+                        (bpy.data.curves if isinstance(data, bpy.types.TextCurve) else bpy.data.meshes).remove(data)
+    for obj in placed:
+        bpy.data.objects.remove(obj, do_unlink=True)
+    return written
 
 
 # Previews -------------------------------------------------------------------------------------------
@@ -316,7 +489,7 @@ def draw_signs(scene, coll):
     return made
 
 
-def render_views(name, module, scene, only=None):
+def render_views(name, module, scene, only=None, views=None, tag="map"):
     render = bpy.context.scene.render
     bpy.context.scene.render.engine = "BLENDER_EEVEE"
     render.resolution_x, render.resolution_y = 1280, 720
@@ -342,7 +515,7 @@ def render_views(name, module, scene, only=None):
         bpy.context.scene.collection.objects.link(cam)
     bpy.context.scene.camera = cam
     paths = []
-    for i, view in enumerate(getattr(module, "VIEWS", [])):
+    for i, view in enumerate(views if views is not None else getattr(module, "VIEWS", [])):
         if only and i + 1 not in only:
             continue
         (px, py, pz), (tx, ty, tz), lens = view
@@ -354,7 +527,7 @@ def render_views(name, module, scene, only=None):
         cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
         cam_data.lens = lens
         cam_data.clip_end = 2000
-        path = os.path.join(common.PREVIEWS, f"map_{name}_{i + 1}.png")
+        path = os.path.join(common.PREVIEWS, f"{tag}_{name}_{i + 1}.png")
         common.render(path)
         paths.append(path)
     return paths
@@ -490,10 +663,35 @@ def main():
     if "--materials" in argv:
         rewrite_materials()
         return
-    names = [a for a in argv if not a.startswith("--") and not a[0].isdigit()] or VENUES
-    preview = "--preview" in argv
+    names = [a for a in argv if a in VENUES] or VENUES
+    eyes = None
+    if "--eyes" in argv:
+        # "px,py,pz,tx,ty,tz[,lens];..." in Roblox studs: ad-hoc perspective views (props, lights and signs
+        # on), written as eye_<Venue>_<n>.png.
+        eyes = []
+        for spec in argv[argv.index("--eyes") + 1].split(";"):
+            v = [float(n) for n in spec.split(",")]
+            eyes.append(((v[0], v[1], v[2]), (v[3], v[4], v[5]), v[6] if len(v) > 6 else 28.0))
+    preview = "--preview" in argv or eyes is not None
     do_export = "--export" in argv
     plan = "--plan" in argv
+    if "--out" in argv:
+        # Scratch renders (not the tracked previews).
+        common.PREVIEWS = os.path.abspath(argv[argv.index("--out") + 1])
+        os.makedirs(common.PREVIEWS, exist_ok=True)
+    propplans = None
+    if "--proplan" in argv:
+        # --tile 64x48 --ppu 30 --levels ground,upper --region x0,z0,x1,z1 (all optional)
+        tile = argv[argv.index("--tile") + 1] if "--tile" in argv else "64x48"
+        region = argv[argv.index("--region") + 1] if "--region" in argv else None
+        levels = argv[argv.index("--levels") + 1] if "--levels" in argv else None
+        propplans = {
+            "tile": tuple(float(n) for n in tile.split("x")),
+            "ppu": float(argv[argv.index("--ppu") + 1]) if "--ppu" in argv else 30.0,
+            "bright": float(argv[argv.index("--bright") + 1]) if "--bright" in argv else 2.2,
+            "levels": set(levels.split(",")) if levels else None,
+            "region": tuple(float(n) for n in region.split(",")) if region else None,
+        }
     common.clear_scene()
     images = matlib.make_textures()
     mesher.use_images(images)
@@ -517,7 +715,10 @@ def main():
             only = None
             if "--views" in argv:
                 only = {int(v) for v in argv[argv.index("--views") + 1].split(",")}
-            print("[maps] previews", render_views(scene.venue, module, scene, only))
+            if eyes is not None:
+                print("[maps] eyes", render_views(scene.venue, module, scene, only, views=eyes, tag="eye"))
+            else:
+                print("[maps] previews", render_views(scene.venue, module, scene, only))
             for obj in set(extra) | set(stand_coll.objects):
                 bpy.data.objects.remove(obj, do_unlink=True)
             for c in others:
@@ -528,6 +729,15 @@ def main():
             for c in others:
                 c.hide_render = True
             print("[maps] plans", render_plans(scene, module))
+            for c in others:
+                c.hide_render = False
+    if propplans is not None:
+        for scene, module, coll in built:
+            others = [c for s2, m2, c in built if c is not coll]
+            for c in others:
+                c.hide_render = True
+            written = render_propplans(scene, module, coll, propplans)
+            print(f"[maps] prop plans: {len(written)} tiles in {common.PREVIEWS}")
             for c in others:
                 c.hide_render = False
     if "--massing" in argv:

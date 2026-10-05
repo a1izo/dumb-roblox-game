@@ -74,8 +74,8 @@ def avenue(s):
         lamp(s, x, z)
     s.prop("Bench", -35.4, 26.0, -90)
     # The hot-drinks machine and the recycling by the avenue.
-    s.prop("VendingBlue", -5.2, 46.6, -90)
-    s.prop("RecycleBins", -5.8, 53.5, -90)
+    s.prop("VendingBlue", -5.2, 46.6, 90)  # its front to the avenue
+    s.prop("RecycleBins", -5.8, 53.5, 90)
     s.station("Phone", "Avenue Phone Box", -6.0, 40.0, 90, prop="StationPhoneBooth", spare=True)
 
 
@@ -182,7 +182,7 @@ def hollow(s):
     s.drop_point("under the pond bridge", -99.4, -20.4, y=HY + 0.15)
     s.hood(-138.0, -24.0, y=HY + 0.6)
     s.prop("Snowman", -110.0, -24.0, 30, 1.0, HY)
-    for x, z in ((-70.0, 10.0), (-121.0, -26.0), (-96.0, 34.0), (-140.0, 30.0), (-100.0, -27.0), (-80.0, -27.0)):
+    for x, z in ((-70.0, 12.5), (-126.0, -26.0), (-96.0, 34.0), (-140.0, 30.0), (-100.0, -27.0), (-80.0, -27.0)):
         lamp(s, x, z, HY)
     for x in (-124.0, -90.0):
         s.emitter("rivermist", (x, HY + 0.4, 2.0), 0)
@@ -243,11 +243,11 @@ def court(s):
     s.prop("UmpireChair", cx, z1 - 3.0, 180)
     # The court's white lines, mostly under the snow.
     for zz in (cz - 18.0, cz + 18.0):
-        s.box("WhiteTrim", (cx - 12.0, 0.03, zz), (22.0, 0.04, 0.3), skip=("-y",))
+        s.box("WhiteTrim", (cx - 12.0, 0.06, zz), (22.0, 0.06, 0.3), skip=("-y",))
     for xx in (cx - 36.0, cx + 36.0):
-        s.box("WhiteTrim", (xx, 0.03, cz + 6.0), (0.3, 0.04, 16.0), skip=("-y",))
+        s.box("WhiteTrim", (xx, 0.06, cz + 6.0), (0.3, 0.06, 16.0), skip=("-y",))
     lamp(s, x0 - 3.0, cz - 10.0)
-    lamp(s, x1 + 3.4, cz - 12.0)
+    lamp(s, x1 + 5.4, cz - 12.0)
     # The roller shed outside the fence's west side, a spare drop point behind it.
     rx, rz = 62.0, 8.0
     s.box("Shutter", (rx, 2.6, rz), (4.0, 5.2, 8.0), collide=True, mats={"+y": "Slate"})
@@ -275,11 +275,17 @@ def bike_shed(s):
 
 
 def lawns(s):
-    for x, z in ((-71.0, -104.0), (-71.0, -72.0), (33.0, -104.0), (33.0, -72.0), (40.0, -34.0), (90.0, -34.0),
-                 (132.0, -34.0), (146.0, 2.0), (22.0, 28.0), (60.0, 28.0), (100.0, 28.0), (136.0, 28.0),
-                 (-140.0, 51.0), (-110.0, 51.0), (-80.0, 51.0), (-50.0, 51.0), (-130.0, -44.0), (-100.0, -44.0),
-                 (-76.0, -44.0), (42.0, 64.0), (30.0, 96.0), (-84.0, 64.0), (16.0, 10.0), (32.0, -14.0),
-                 (34.0, 104.0)):
+    for x, z in (
+            # West and east side paths (10 and 14 wide), the library's path (12), the east path (8, along the wall).
+            (-68.5, -104.0), (-68.5, -72.0), (37.5, -104.0), (37.5, -72.0), (40.0, -30.5), (90.0, -30.5),
+            (132.0, -30.5), (147.4, 4.0),
+            # The east cross path (12): along its north edge.
+            (22.0, 24.5), (60.0, 24.5), (100.0, 24.5), (136.0, 24.5),
+            # The south path (14): along the hollow's rim; the north-rim path (12): along the rim too.
+            (-140.0, 47.0), (-110.0, 47.0), (-80.0, 47.0), (-50.0, 47.0), (-130.0, -41.0), (-100.0, -41.0),
+            (-76.0, -41.0),
+            # The science path (12), the gate plaza, the alley (8, against the cafeteria wall), the open lawns.
+            (38.5, 64.0), (30.0, 96.0), (-82.4, 64.0), (16.0, 10.0), (32.0, -14.0), (34.0, 104.0)):
         lamp(s, x, z)
     for x, z, rot in ((30.0, 10.0, 20), (-44.0, 30.0, 300)):
         s.prop("Snowman", x, z, rot)

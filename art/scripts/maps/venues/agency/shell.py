@@ -48,7 +48,9 @@ def slabs(s):
             length = math.dist(a, b)
             away = ((b[1] - a[1]) / length, -(b[0] - a[0]) / length)  # out of the hole
             city.vquad(s, "ConcreteDark", a, b, P.CEIL1, P.L2, (-away[0], -away[1]))
-            city.vquad(s, "BlackMetal", a, b, P.L2 - 0.02, P.L2 + 0.02, (-away[0], -away[1]))
+            lip = (-away[0] * 0.05, -away[1] * 0.05)  # 0.05 proud of the concrete, so the two never flicker
+            city.vquad(s, "BlackMetal", (a[0] + lip[0], a[1] + lip[1]), (b[0] + lip[0], b[1] + lip[1]), P.L2 - 0.02,
+                       P.L2 + 0.02, (-away[0], -away[1]))
     # Ceilings: 38F's everywhere but over the atrium; 39F's everywhere (the atrium's too).
     core = P.rect_of(P.CORE)
     landing1 = P.box(P.SHAFT[0], P.LANDING[0], P.SHAFT[2], P.LANDING[1])
@@ -92,7 +94,7 @@ def curtain(s):
             mid = at(length / 2)
             s.box("CurtainGlass", (mid[0], (level + 0.35 + top) / 2, mid[1]), (length, top - level - 0.35, 0.08), rot,
                   skip=("+x", "-x", "+y", "-y"))
-            s.box("BlackMetal", (mid[0], top + 0.7, mid[1]), (length, 1.4, 0.5), rot)
+            s.box("BlackMetal", (mid[0], top + 0.7, mid[1]), (length, 1.4, 0.5), rot, skip=("-y",))
             s.box("BlackMetal", (mid[0], level + 0.18, mid[1]), (length, 0.36, 0.4), rot)
             # The low sill inside, along the glass (a heater cover).
             sill = at(length / 2, -0.9)

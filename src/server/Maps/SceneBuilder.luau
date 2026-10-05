@@ -134,6 +134,14 @@ local function addSign(b, spec)
 	end
 end
 
+-- Marks a mist, cloud or dust emitter so the client can thin it on slower devices (it keeps the
+-- rate it was built with in BaseRate).
+local function fogged(emitter: ParticleEmitter): ParticleEmitter
+	emitter:SetAttribute("BaseRate", emitter.Rate)
+	CollectionService:AddTag(emitter, SceneBuilder.FOG_TAG)
+	return emitter
+end
+
 local function addEmitter(b, folder: Instance, spec)
 	local at = spec.at
 	local anchor = Create("Part", {
@@ -187,15 +195,19 @@ local function addEmitter(b, folder: Instance, spec)
 			steam.Texture = texture
 		end
 	elseif spec.kind == "rivermist" then
-		-- A low, slow mist lying on the water, drifting downstream.
-		anchor.Size = Vector3.new(30, 0.2, 18)
+		-- A low, slow mist lying on the water (or pooling in an alley), drifting along. A map may give
+		-- it a box of its own (spec.size); the rate follows the ground it covers.
+		local box = if spec.size
+			then Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+			else Vector3.new(30, 0.2, 18)
+		anchor.Size = box
 		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
 		local texture = Assets.texture("Smoke")
-		Create("ParticleEmitter", {
+		local mist = Create("ParticleEmitter", {
 			Shape = Enum.ParticleEmitterShape.Box,
 			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 			EmissionDirection = Enum.NormalId.Top,
-			Rate = 3,
+			Rate = if spec.size then math.max(1.5, box.X * box.Z * 0.0045) else 3,
 			Lifetime = NumberRange.new(8, 12),
 			Speed = NumberRange.new(0.2, 0.6),
 			Acceleration = Vector3.new(0.4, 0, 0),
@@ -214,6 +226,7 @@ local function addEmitter(b, folder: Instance, spec)
 			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
 			Parent = anchor,
 		})
+		fogged(mist)
 	elseif spec.kind == "petals" then
 		-- Sakura petals drifting down from the trees over the promenade and onto the water.
 		anchor.Size = Vector3.new(34, 0.2, 10)
@@ -379,6 +392,129 @@ local function addEmitter(b, folder: Instance, spec)
 			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/sparkles_main.dds",
 			Parent = anchor,
 		})
+	elseif spec.kind == "mist" and spec.size then
+		-- Cold ground mist: big soft sprites lying low over a patch of ground, thinning with height,
+		-- lit by the lamps they pass (the campus lawns, the tower's atrium).
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("Smoke")
+		fogged(Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Top,
+			Rate = math.max(1.5, size.X * size.Z * 0.0035),
+			Lifetime = NumberRange.new(10, 15),
+			Speed = NumberRange.new(0.15, 0.45),
+			Acceleration = Vector3.new(0.35, 0.02, 0.15),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 9), NumberSequenceKeypoint.new(1, 17) }),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.25, 0.87),
+				NumberSequenceKeypoint.new(0.75, 0.89),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(152, 164, 190)),
+			LightInfluence = 1,
+			LightEmission = 0,
+			RotSpeed = NumberRange.new(-5, 5),
+			Rotation = NumberRange.new(0, 360),
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
+			Parent = anchor,
+		}))
+	elseif spec.kind == "cloudsea" and spec.size then
+		-- A sea of cloud far below the tower windows: huge slow sprites in a wide flat box, the
+		-- glow of the city showing through them.
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("Smoke")
+		fogged(Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Top,
+			Rate = math.max(1, size.X * size.Z / 90000),
+			Lifetime = NumberRange.new(34, 48),
+			Speed = NumberRange.new(0.8, 2.2),
+			Acceleration = Vector3.new(1.0, 0, 0.3),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 170), NumberSequenceKeypoint.new(1, 230) }),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.2, 0.8),
+				NumberSequenceKeypoint.new(0.8, 0.82),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(104, 108, 148), Color3.fromRGB(138, 130, 170)),
+			LightInfluence = 0.25,
+			LightEmission = 0.12,
+			RotSpeed = NumberRange.new(-1.5, 1.5),
+			Rotation = NumberRange.new(0, 360),
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/smoke_main.dds",
+			Parent = anchor,
+		}))
+	elseif spec.kind == "dust" and spec.size then
+		-- Dust motes hanging in the light of a tall room: tiny warm specks that barely move.
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local texture = Assets.texture("Snowflake")
+		fogged(Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Top,
+			Rate = math.max(1, size.X * size.Y * size.Z / 2200),
+			Lifetime = NumberRange.new(9, 14),
+			Speed = NumberRange.new(0.03, 0.18),
+			Acceleration = Vector3.new(0.02, 0.01, 0.015),
+			SpreadAngle = Vector2.new(180, 180),
+			Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.1, 0.04),
+				NumberSequenceKeypoint.new(1, 0.1, 0.04),
+			}),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.2, 0.38),
+				NumberSequenceKeypoint.new(0.8, 0.45),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(255, 232, 196)),
+			LightInfluence = 0,
+			LightEmission = 0.7,
+			Rotation = NumberRange.new(0, 360),
+			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/sparkles_main.dds",
+			Parent = anchor,
+		}))
+	elseif spec.kind == "feathers" and spec.size then
+		-- Now and then a single black feather turning slowly down through the snow.
+		local size = Vector3.new(spec.size[1], spec.size[2], spec.size[3])
+		anchor.Size = size
+		anchor.CFrame = b:world(b:cf(at[1], at[2], at[3], spec.rot))
+		local feather = Assets.texture("Feather")
+		fogged(Create("ParticleEmitter", {
+			Shape = Enum.ParticleEmitterShape.Box,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Bottom,
+			Rate = 0.14,
+			Lifetime = NumberRange.new(14, 18),
+			Speed = NumberRange.new(0.7, 1.2),
+			Acceleration = Vector3.new(0.3, -0.15, 0.22),
+			Drag = 0.5,
+			SpreadAngle = Vector2.new(20, 20),
+			Size = NumberSequence.new(if feather ~= "" then 1.1 else 0.45),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.1, 0.05),
+				NumberSequenceKeypoint.new(0.88, 0.1),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(20, 20, 26)),
+			LightInfluence = 1,
+			LightEmission = 0,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-45, 45),
+			Texture = if feather ~= "" then feather else "rbxasset://textures/particles/smoke_main.dds",
+			Parent = anchor,
+		}))
 	elseif (spec.kind == "traffic_tail" or spec.kind == "traffic_head") and spec.size then
 		-- Car lights streaming down a road far below: particles sent along it from its start (the
 		-- anchor faces the way the traffic runs; size z is how far the road goes).
@@ -617,6 +753,33 @@ SceneBuilder.HELI_TAG = "LMapHeli"
 -- Snow the client shakes off the branches, and a clock tower's hands (the client turns them).
 SceneBuilder.BRANCH_SNOW_TAG = "LMapBranchSnow"
 SceneBuilder.CLOCK_TAG = "LMapClock"
+-- Boxes that shelter from rain and snow (client World/RainController, Weather/CoverIndex): an
+-- awning, a tree's crown. Attribute Cover is how much they stop, 1 all, 0.5 half.
+SceneBuilder.COVER_TAG = "LRainCover"
+-- Mist, cloud and dust emitters the client thins on slower devices (World/MapAmbient); the
+-- attribute BaseRate is the rate they were built with.
+SceneBuilder.FOG_TAG = "LMapFog"
+-- Rooms whose lights the client flickers now and then (World/MapAmbient).
+SceneBuilder.FLICKER_TAG = "LMapFlicker"
+
+-- An invisible box that stops the weather under it without being solid or showing: the client
+-- finds it by its tag and does the arithmetic itself, so no ray ever meets it.
+local function addCover(b, folder: Instance, spec)
+	local part = Create("Part", {
+		Name = "Cover",
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Transparency = 1,
+		Size = Vector3.new(spec.size[1], spec.size[2], spec.size[3]),
+		CFrame = b:world(b:cf(spec.at[1], spec.at[2], spec.at[3], spec.rot)),
+		Parent = folder,
+	}) :: BasePart
+	part:SetAttribute("Cover", spec.amount or 1)
+	CollectionService:AddTag(part, SceneBuilder.COVER_TAG)
+end
 
 -- A clock's two hands over its dial, made here and turned by the client (World/MapAmbient): a
 -- model holding an invisible "Dial" (its front is the face) and the "Hour" and "Minute" hands.
@@ -919,6 +1082,9 @@ local function buildFormat2(b, venue: string, data): string
 	end
 	for _, spec in ipairs(dressing.emitters) do
 		addEmitter(b, folder, spec)
+	end
+	for _, spec in ipairs(dressing.covers or {}) do
+		addCover(b, folder, spec)
 	end
 	fillWater(b, dressing.water or {})
 	folder:SetAttribute("Mode", mode)

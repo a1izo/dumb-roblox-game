@@ -161,7 +161,7 @@ def dashes(s, points, y=0.0, mat="WhiteTrim", dash=6.0, gap=6.0, w=0.4, offset=0
         p, d = g2.point_along(points, u + dash / 2)
         n = g2.normal_left(d)
         c = (p[0] + n[0] * offset, p[1] + n[1] * offset)
-        s.box(mat, (c[0], y + 0.02, c[1]), (dash, 0.04, w), g2.rot_of(d), skip=("-y",))
+        s.box(mat, (c[0], y + 0.06, c[1]), (dash, 0.12, w), g2.rot_of(d), skip=("-y",))
         u += dash + gap
 
 

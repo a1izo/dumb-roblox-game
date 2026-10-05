@@ -154,6 +154,21 @@ python art/scripts/maps/check_v2.py Tokyo            # full check (a few minutes
 python art/scripts/maps/walkdebug.py Tokyo x y z 40  # where can you walk from here?
 ```
 
+To look over a map by hand (props in roads, in walls, facing the wrong way), render it into a scratch
+folder, never the tracked previews:
+
+```
+blender -b --factory-startup --python art/scripts/run_maps.py -- Campus --proplan --out <dir>
+blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --proplan --levels ground --region -60,-110,0,-60 --out <dir>
+blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --eyes "px,py,pz,tx,ty,tz[,lens];..." --out <dir>
+```
+
+`--proplan` renders each level in tiles (`--tile 50x38 --ppu 34 --bright 2.2`) from above with every prop
+placed: its number and name, a magenta arrow for the way its front faces, a 10-stud grid with
+coordinates, and a `.txt` legend per tile that gives each prop's position, rotation and the script line
+that placed it (`Scene.prop_src`). `--eyes` renders perspective views from any spot (Roblox studs). They
+are aids for looking, nothing decides where a prop goes.
+
 `--export` writes, for that venue only (other venues are left alone), here for Tokyo:
 - `export/InkboundMaps_Tokyo.fbx`: meshes `Map_Tokyo_<Material>_<n>`, calibration cubes
   `Calib_Tokyo_O/X/Y` and a marker `InkboundMapsTokyo_Version_<n>`. The version only goes up when
@@ -204,8 +219,12 @@ blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --
 
 `--export` (with `--set`) writes `export/InkboundModels_<Set>.fbx` and
 `src/shared/ModelCatalog.luau` (each prop's size in studs, pivot, material, glow colours, the
-lights it carries and its set). The Core set's file also carries the effect and UI textures. `ModelLibrary` fixes scale and orientation
-from the catalog, so the importer's unit and axis settings do not matter.
+lights it carries and its set). The Core set's file also carries the effect and UI textures. `ModelLibrary` fixes scale
+from the catalog and undoes the importer's turn of each file with its three calibration cubes (positions only).
+Studio's importer also turns every prop's mesh data half way round the vertical axis, which the cubes cannot
+see, so `ModelLibrary` adds that half turn itself (`FACING_TURN`; measured with the debug Prop gallery, where
+every front must face its red arrow). If a later Studio stops doing it, the gallery shows every front backwards:
+set `FACING_TURN` to the identity.
 
 Effect textures ride along on small quads named `Tex_<name>`. If you would rather upload the
 PNGs yourself, paste their ids into `Assets.textures` in `src/shared/Assets.luau`.

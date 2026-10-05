@@ -153,10 +153,15 @@ def streets(s):
     for name, direction, frac in (("east_s2", (0, -1), 0.5), ("flats_yw", (1, 0), 0.9)):
         x, z, rot = at_front(name, direction, frac, 0.8)
         s.prop("RecycleBins", x, z, rot)
-    for name, direction, frac in (("konbini_block", (0, -1), 0.25), ("flats_footbridge", (0, -1), 0.4),
-                                  ("arcade_n1", (0, 1), 0.3)):
-        x, z, rot = at_front(name, direction, frac, 2.9)
-        s.prop("BikeRack", x, z, rot + 180)
+    # (A bicycle is 5.5 long: two along the wall, clear of the scooter further along the konbini's front.)
+    for name, direction, frac, offsets in (("konbini_block", (0, -1), 0.25, (-5.2, 0.3)),
+                                           ("flats_footbridge", (0, -1), 0.4, (-3.1, 3.1)),
+                                           ("arcade_n1", (0, 1), 0.3, (-3.1, 3.1))):
+        x, z, rot = at_front(name, direction, frac, 1.1)
+        a = math.radians(rot)
+        along = (math.cos(a), -math.sin(a))  # along the wall
+        for k in offsets:
+            s.prop("Bicycle", x + along[0] * k, z + along[1] * k, rot + 90)
     for name, direction, frac in (("river_se1", (0, -1), 0.3), ("river_se1", (0, -1), 0.6),
                                   ("ya_n1", (0, -1), 0.5), ("yc_n2", (0, -1), 0.4), ("hotel_se", (-1, 0), 0.5)):
         x, z, rot = at_front(name, direction, frac, 1.2)
@@ -317,11 +322,11 @@ def yokocho(s):
                 s.prop("Noren", x, z, facing(e.n[0], e.n[1]), 1.0 if e.length > 8 else 0.8, 6.4)
             # Crates and a grill tucked against the front: the alleys are only 5 studs wide.
             if k % 4 == 1:
-                x, z = e.at(e.length - 1.8, 1.0)
-                s.prop("BeerCrates", x, z, facing(e.n[0], e.n[1]))
+                x, z = e.at(e.length - 1.8, 0.55)
+                s.prop("BeerCrates", x, z, facing(e.n[0], e.n[1]), 0.5)  # the alley keeps 4 studs clear
             if k % 7 == 3 and e.length >= 10:
-                x, z = e.at(e.length / 2 - 2.6, 1.15)  # the other side of the door from the crates
-                s.prop("YakitoriGrill", x, z, facing(e.n[0], e.n[1]))
+                x, z = e.at(e.length / 2 - 2.6, 0.55)  # the other side of the door from the crates
+                s.prop("YakitoriGrill", x, z, facing(e.n[0], e.n[1]), 0.45)  # small and flush: 4 studs stay clear
     # Wires zig-zagging over the alleys between the bars' upper floors.
     for name in ("y_a", "y_b", "y_c", "y_cross", "y_dead"):
         pts = P.STREETS[name]["points"]

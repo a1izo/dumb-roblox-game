@@ -3,12 +3,17 @@
 
 local CollectionService = game:GetService("CollectionService")
 
+local ClientState = require(script.Parent.Parent.ClientState)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local LightingController = require(script.Parent.LightingController)
 
 local FlickerController = {}
 
 local TAG = "LFlicker"
+-- In the tower the lights flicker only now and then (one pick in this many is used): a tired
+-- strip over the bullpen, a desk lamp. It is only a local light going dark for half a second, so
+-- it never touches what anyone can see of a letter.
+local RARE = { TaskForceHQ = 6 }
 
 local function lightsOf(part: Instance): { Light }
 	local list = {}
@@ -54,7 +59,9 @@ function FlickerController.init()
 			task.wait(1.2 + math.random() * 1.5)
 			if not Settings.get("reduceMotion") then
 				local tagged = CollectionService:GetTagged(TAG)
-				if #tagged > 0 then
+				local mapId = ClientState.public.mapId
+				local every = if type(mapId) == "string" then RARE[mapId] else nil
+				if #tagged > 0 and (not every or math.random(1, every) == 1) then
 					local part = tagged[math.random(1, #tagged)]
 					if part:IsA("BasePart") then
 						task.spawn(flicker, part)

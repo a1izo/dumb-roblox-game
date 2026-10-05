@@ -63,7 +63,7 @@ def zebra_band(s, a, b, width, y=0.0, stripe=1.0, gap=1.0, mat="WhiteTrim"):
     for k in range(count):
         u = start + k * (stripe + gap) + stripe / 2
         c = (a[0] + d[0] * u, a[1] + d[1] * u)
-        s.box(mat, (c[0], y + 0.03, c[1]), (width, 0.06, stripe), rot, skip=("-y",))
+        s.box(mat, (c[0], y + 0.06, c[1]), (width, 0.12, stripe), rot, skip=("-y",))
 
 
 def scramble(s, g):
@@ -80,7 +80,7 @@ def scramble(s, g):
         a = (stop[0] - n[0] * 0.2, stop[1] - n[1] * 0.2)
         b = (stop[0] - n[0] * (ap["width"] / 2 - 0.4), stop[1] - n[1] * (ap["width"] / 2 - 0.4))
         mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-        s.box("WhiteTrim", (mid[0], 0.03, mid[1]), (math.dist(a, b), 0.06, 0.8), g2.rot_of(n), skip=("-y",))
+        s.box("WhiteTrim", (mid[0], 0.06, mid[1]), (math.dist(a, b), 0.12, 0.8), g2.rot_of(n), skip=("-y",))
     for a, b in P.DIAGONALS:
         zebra_band(s, a, b, 6.0)
 

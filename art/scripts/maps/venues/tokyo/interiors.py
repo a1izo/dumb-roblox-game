@@ -58,10 +58,10 @@ def shell(s, g, b, doors, inside="PlasterLight", floor="TileMetroGrey", outside=
     # The floor runs on under the walls to the building's face: in a doorway it is the threshold
     # (short of it the ground would end in a slit down into the dark).
     for piece in g2.subtract_all(g2.convex_pieces(g2.ccw(poly)), [g2.ccw(h) for h in holes]):
-        city.up_face(s, floor, piece, 0.06)
-        city.floor(s, piece, 0.06, 0.4, floor)
+        city.up_face(s, floor, piece, 0.1)
+        city.floor(s, piece, 0.1, 0.4, floor)
     for e in edges:
-        city.vquad(s, floor, e.a, e.b, 0.0, 0.06, e.n)
+        city.vquad(s, floor, e.a, e.b, 0.0, 0.1, e.n)
     for piece in g2.subtract_all(g2.convex_pieces(inner), [g2.ccw(h) for h in stairwells]):
         city.down_face(s, ceiling, piece, CEIL)
     for hole in stairwells:

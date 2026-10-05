@@ -81,7 +81,7 @@ def platform(s, g):
     city.floor(s, island, P.PLATFORM_Y, 4.0, look=FLOOR)
     # Tactile strips along both edges, and the edges' faces down to the tracks.
     for z, facing in ((pz0, -1), (pz1, 1)):
-        s.box("PaintYellow", ((x0 + x1) / 2, P.PLATFORM_Y + 0.03, z - facing * 1.6), (x1 - x0, 0.06, 1.0), 0,
+        s.box("PaintYellow", ((x0 + x1) / 2, P.PLATFORM_Y + 0.06, z - facing * 1.6), (x1 - x0, 0.12, 1.0), 0,
               skip=("-y",))
         city.vquad(s, "ConcreteDark", (x0, z), (x1, z), TRACK_Y, P.PLATFORM_Y, (0, facing))
         screen_doors(s, x0, x1, z, facing)

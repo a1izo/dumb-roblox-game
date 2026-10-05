@@ -1,8 +1,17 @@
--- Rain and snow that follow the camera, stopped under a roof, heavier or lighter with the venue's
--- preset and the device (phones get less). The rain comes down in two layers, a dense near one of
--- long streaks slanting in the wind and a thin far one for depth, and splashes on the ground
--- round you; now and then the sky flashes and thunder rolls in a second later. In the snow the
--- flakes drift down slowly and the wind is heard over them.
+-- Rain and snow built from small cells round the camera, not one big box that follows it. Each
+-- cell looks at its own patch of ground (Weather/Probe): where the ground really is (a street, a
+-- bridge, the river's surface, a floor) and how much of it is under a roof, an awning or a tree.
+-- A cell's drops start high enough, and live exactly long enough, to land on that ground, with
+-- a splash where they do; under cover the cell stops, so the rain ends at a roof's edge and
+-- over the river it falls to the water, not to the street beside it.
+--
+-- The rain is heavy and slanted (a storm) with gusts, in near cells of long bright streaks and a
+-- few coarse far cells for the veil of it behind; now and then the sky flashes and thunder rolls
+-- in. The snow falls in two sizes of flake, drifts with the wind and gusts, and stops under cover
+-- the same way. The loops and the thunder are outdoor sounds: they are muffled when you go in
+-- (Audio/Muffle), and quieter then.
+--
+-- Every number you might want to turn lives in TUNING.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,42 +19,93 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
+local Probe = require(Shared:WaitForChild("Weather"):WaitForChild("Probe"))
 
 local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local LightingController = require(script.Parent.LightingController)
+local Shelter = require(script.Parent.Shelter)
 
 local RainController = {}
 
--- Most drops per second for each device class at full rain: the near layer, the far layer and
--- the splashes on the ground.
-local MAX_RATE = { phone = 260, tablet = 480, console = 700, desktop = 900 }
-local FAR_SHARE = 0.35
-local SPLASH_SHARE = 0.45
--- Most flakes per second at full snow: they fall slowly and live long, so fewer do.
-local MAX_SNOW = { phone = 70, tablet = 120, console = 170, desktop = 220 }
-local NEAR_HEIGHT = 24
-local FAR_HEIGHT = 48
-local SNOW_HEIGHT = 16
-local ROOF_CHECK = 0.4
--- The rain slants a little in the wind (a steady breeze from the north-east).
-local SLANT = CFrame.Angles(math.rad(7), 0, math.rad(-8))
-local FALLBACK_TEXTURE = "rbxasset://textures/particles/smoke_main.dds"
+local TUNING = {
+	cell = 9, -- studs across of a near cell: the patch of ground it looks at and rains on
+	radius = 4, -- near cells each way from the camera (81 studs across)
+	farCell = 36, -- the coarse cells of the rain's far veil
+	farRadius = 2,
+	rain = {
+		-- Streaks a second at full rain, all the near cells together (Low graphics x0.6, Reduce
+		-- motion x0.5 on top).
+		rate = { phone = 650, tablet = 1200, console = 1900, desktop = 3200 },
+		farShare = 0.1, -- the far veil, as a share of the near rate
+		splashShare = 0.3, -- splashes a second, as a share of the near rate
+		height = 34, -- studs over the ground a near drop starts
+		farHeight = 72,
+		speed = 92, -- studs a second along its path
+		slant = { pitch = 10, roll = -11 }, -- degrees: the wind from the north-east
+		gust = 34, -- studs/s^2 of extra sideways push at the height of a gust
+		size = 0.2, -- how wide a streak is, and how many times as long
+		squash = 9,
+		-- The streak's see-through-ness at birth, mid-fall and landing (0 solid, 1 invisible).
+		transparency = { 0.14, 0.3 },
+		colour = Color3.fromRGB(214, 222, 242),
+	},
+	snow = {
+		rate = { phone = 150, tablet = 260, console = 380, desktop = 520 },
+		height = 15,
+		bigShare = 0.35, -- the big soft flakes, as a share of the rate (the rest are fine ones)
+		bigSpeed = 2.6,
+		fineSpeed = 3.8,
+		bigSize = 0.42,
+		fineSize = 0.17,
+		sway = Vector3.new(0.5, 0, 0.3), -- the steady drift (studs/s^2)
+		gust = 6,
+	},
+	gustEvery = { 20, 40 }, -- seconds between gusts (a gust builds, holds and fades over ~9 s)
+	probesPerFrame = 8, -- cells looked at a frame when new ground comes into range
+	refreshPerFrame = 0.5, -- and cells looked at again a frame, in turn (the world seldom changes)
+	updateEvery = 0.25, -- seconds between rate and wind updates
+}
 
-local holder: Part
-local emitter: ParticleEmitter
-local farHolder: Part
-local farEmitter: ParticleEmitter
-local splashHolder: Part
-local splashEmitter: ParticleEmitter
-local snowHolder: Part
-local snowEmitter: ParticleEmitter
+local FALLBACK_TEXTURE = "rbxasset://textures/particles/smoke_main.dds"
+local RING_FALLBACK = FALLBACK_TEXTURE
+local SLANT = CFrame.Angles(math.rad(TUNING.rain.slant.pitch), 0, math.rad(TUNING.rain.slant.roll))
+local FALL = -SLANT.UpVector -- the way a drop falls (a unit vector, going down)
+local WIND = Vector3.new(FALL.X, 0, FALL.Z).Unit -- the way the wind blows, across the ground
+
+type Layer = { part: Part, emitter: ParticleEmitter }
+type Cell = {
+	gx: number,
+	gz: number,
+	x: number,
+	z: number,
+	size: number,
+	landing: number?,
+	cover: number,
+	weight: number,
+	probed: boolean,
+	rain: Layer?,
+	splash: Layer?,
+	flakes: { Layer }?,
+}
+
+local container: Folder
+local nearCells: { Cell } = {}
+local farCells: { Cell } = {}
+local assignedNear: { [string]: Cell } = {}
+local assignedFar: { [string]: Cell } = {}
+local cameraCell = Vector2.new(math.huge, math.huge)
+local farCameraCell = Vector2.new(math.huge, math.huge)
+local dirty: { Cell } = {}
+local refreshCursor = 0
+local refreshDebt = 0
+local lastUpdate = 0
+local gust = 0 -- 0 calm, 1 the height of a gust
+local gustAt = 0
+local nextGust = os.clock() + 12
 local loop: Sound? = nil
 local windLoop: Sound? = nil
-local indoors = false
-local lastRoofCheck = 0
-local groundY: number? = nil
 
 -- Set from the debug panel (setDebug): rain and snow from 0 to 1 whatever the preset says
 -- (nil = the preset).
@@ -72,28 +132,362 @@ local function texture(...: string): string
 	return FALLBACK_TEXTURE
 end
 
-local function refreshRate()
+local function device(): string
 	local class = Responsive.class()
-	local cap = MAX_RATE[class] or MAX_RATE.desktop
-	local snowCap = MAX_SNOW[class] or MAX_SNOW.desktop
+	return if TUNING.rain.rate[class] then class else "desktop"
+end
+
+-- How much weather the device and the settings allow (1 = a desktop at full graphics).
+local function budget(): number
+	local scale = 1
 	if Settings.get("reduceMotion") then
-		cap *= 0.5
-		snowCap *= 0.5
+		scale *= 0.5
 	end
 	if Settings.get("lowGraphics") then
-		cap *= 0.6
-		snowCap *= 0.5
+		scale *= 0.6
 	end
-	local rain = if indoors then 0 else cap * rainAmount()
-	emitter.Rate = rain
-	farEmitter.Rate = rain * FAR_SHARE
-	splashEmitter.Rate = if groundY then rain * SPLASH_SHARE else 0
-	snowEmitter.Rate = if indoors then 0 else snowCap * RainController.snowAmount()
+	return scale
+end
+
+-- Emitters and their parts ------------------------------------------------------------------------
+
+local function holder(name: string, size: Vector3): Part
+	return Create("Part", {
+		Name = name,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Transparency = 1,
+		Size = size,
+		Parent = container,
+	}) :: Part
+end
+
+local function streakEmitter(part: Part, far: boolean): ParticleEmitter
+	local rain = TUNING.rain
+	local alpha = rain.transparency
+	return Create("ParticleEmitter", {
+		EmissionDirection = Enum.NormalId.Bottom,
+		Speed = NumberRange.new(rain.speed * 0.99, rain.speed * 1.01),
+		Lifetime = NumberRange.new(1, 1), -- set for each cell, from how far its drops fall
+		Rate = 0,
+		Enabled = false,
+		Size = NumberSequence.new(if far then rain.size * 1.7 else rain.size),
+		Squash = NumberSequence.new(if far then rain.squash * 1.2 else rain.squash),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.08, if far then alpha[2] + 0.28 else alpha[1]),
+			NumberSequenceKeypoint.new(1, if far then alpha[2] + 0.34 else alpha[2]),
+		}),
+		Color = ColorSequence.new(rain.colour),
+		LightInfluence = if far then 0.5 else 0.55,
+		LightEmission = if far then 0.2 else 0.35,
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		SpreadAngle = Vector2.new(1.2, 1.2),
+		Texture = texture("TokyoRain", "RainStreak"),
+		Parent = part,
+	}) :: ParticleEmitter
+end
+
+local function splashEmitter(part: Part): ParticleEmitter
+	local ring = Assets.texture("TokyoSplash")
+	return Create("ParticleEmitter", {
+		EmissionDirection = Enum.NormalId.Top,
+		Speed = NumberRange.new(0.2, 0.4),
+		Lifetime = NumberRange.new(0.22, 0.34),
+		Rate = 0,
+		Enabled = false,
+		Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.2),
+			NumberSequenceKeypoint.new(1, if ring ~= "" then 1.5 else 0.7),
+		}),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.2),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Color = ColorSequence.new(Color3.fromRGB(208, 216, 236)),
+		LightInfluence = 0.7,
+		LightEmission = 0.3,
+		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
+		Texture = if ring ~= "" then ring else RING_FALLBACK,
+		Parent = part,
+	}) :: ParticleEmitter
+end
+
+local function flakeEmitter(part: Part, big: boolean): ParticleEmitter
+	local snow = TUNING.snow
+	local size = if big then snow.bigSize else snow.fineSize
+	local speed = if big then snow.bigSpeed else snow.fineSpeed
+	local flake = texture("CampusFlake", "Snowflake")
+	return Create("ParticleEmitter", {
+		EmissionDirection = Enum.NormalId.Bottom,
+		Speed = NumberRange.new(speed * 0.97, speed * 1.03),
+		Lifetime = NumberRange.new(1, 1), -- set for each cell
+		Rate = 0,
+		Enabled = false,
+		Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, size, size * 0.3),
+			NumberSequenceKeypoint.new(1, size, size * 0.3),
+		}),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.08, if big then 0.05 else 0.12),
+			NumberSequenceKeypoint.new(0.8, if big then 0.1 else 0.16),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Color = ColorSequence.new(Color3.fromRGB(246, 248, 255)),
+		LightInfluence = 0.35,
+		LightEmission = if big then 0.3 else 0.2,
+		Acceleration = snow.sway,
+		SpreadAngle = Vector2.new(if big then 18 else 26, if big then 18 else 26),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-70, 70),
+		Texture = if flake ~= "" then flake else FALLBACK_TEXTURE,
+		Parent = part,
+	}) :: ParticleEmitter
+end
+
+local function newCell(size: number): Cell
+	return {
+		gx = 0,
+		gz = 0,
+		x = 0,
+		z = 0,
+		size = size,
+		landing = nil,
+		cover = 1,
+		weight = 1,
+		probed = false,
+		rain = nil,
+		splash = nil,
+		flakes = nil,
+	}
+end
+
+-- A cell's layers are made the first time its weather is needed (a map with no snow never makes
+-- the flakes).
+local function ensureRain(cell: Cell, far: boolean)
+	if cell.rain then
+		return
+	end
+	local part = holder(if far then "FarRain" else "Rain", Vector3.new(cell.size, 1, cell.size))
+	cell.rain = { part = part, emitter = streakEmitter(part, far) }
+	if not far then
+		local ground = holder("Splash", Vector3.new(cell.size, 0.1, cell.size))
+		cell.splash = { part = ground, emitter = splashEmitter(ground) }
+	end
+end
+
+local function ensureSnow(cell: Cell)
+	if cell.flakes then
+		return
+	end
+	local part = holder("Snow", Vector3.new(cell.size, 1, cell.size))
+	cell.flakes =
+		{ { part = part, emitter = flakeEmitter(part, true) }, { part = part, emitter = flakeEmitter(part, false) } }
+end
+
+-- Puts a cell's emitters over the ground it has found: drops start where they will land.
+local function place(cell: Cell, far: boolean)
+	local landing = cell.landing
+	if not landing then
+		return
+	end
+	local rain = TUNING.rain
+	if cell.rain then
+		local height = if far then rain.farHeight else rain.height
+		local start, length = Probe.dropStart(cell.x, cell.z, landing, height, FALL)
+		cell.rain.part.CFrame = CFrame.new(start) * SLANT
+		local life = length / rain.speed
+		cell.rain.emitter.Lifetime = NumberRange.new(life, life)
+	end
+	if cell.splash then
+		cell.splash.part.CFrame = CFrame.new(cell.x, landing + 0.07, cell.z)
+	end
+	if cell.flakes then
+		local snow = TUNING.snow
+		cell.flakes[1].part.CFrame = CFrame.new(cell.x, landing + snow.height, cell.z)
+		local big = snow.height / snow.bigSpeed
+		local fine = snow.height / snow.fineSpeed
+		cell.flakes[1].emitter.Lifetime = NumberRange.new(big, big)
+		cell.flakes[2].emitter.Lifetime = NumberRange.new(fine, fine)
+	end
+end
+
+-- Looking at the ground ---------------------------------------------------------------------------
+
+local function probe(cell: Cell, far: boolean, originY: number)
+	local landing, cover = Probe.patch(cell.x, cell.z, cell.size, originY, Shelter.rayParams(), Shelter.index())
+	cell.landing = landing
+	cell.cover = cover
+	cell.probed = true
+	if landing then
+		if far then
+			ensureRain(cell, true)
+		else
+			if rainAmount() > 0 then
+				ensureRain(cell, false)
+			end
+			if RainController.snowAmount() > 0 then
+				ensureSnow(cell)
+			end
+		end
+		place(cell, far)
+	end
+end
+
+local function cameraOrigin(): (Vector3?, number)
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return nil, 0
+	end
+	local subject = camera.CameraSubject
+	local at = if subject
+			and subject:IsA("Humanoid")
+			and subject.RootPart
+		then subject.RootPart.Position
+		else camera.Focus.Position
+	return at, at.Y + 3
+end
+
+local function keyOf(gx: number, gz: number): string
+	return gx .. "," .. gz
+end
+
+-- Hands every cell its place round the camera's cell (the cells that fell out of range are reused
+-- for the ones coming into it).
+local function assign(
+	cells: { Cell },
+	assigned: { [string]: Cell },
+	size: number,
+	radius: number,
+	cx: number,
+	cz: number
+)
+	local wanted: { [string]: { number } } = {}
+	for gx = cx - radius, cx + radius do
+		for gz = cz - radius, cz + radius do
+			wanted[keyOf(gx, gz)] = { gx, gz }
+		end
+	end
+	local free: { Cell } = {}
+	for key, cell in pairs(assigned) do
+		if not wanted[key] then
+			assigned[key] = nil
+			table.insert(free, cell)
+		end
+	end
+	for key, spot in pairs(wanted) do
+		if not assigned[key] then
+			local cell = table.remove(free)
+			if not cell then
+				cell = newCell(size)
+				table.insert(cells, cell)
+			end
+			cell.gx, cell.gz = spot[1], spot[2]
+			cell.x, cell.z = spot[1] * size, spot[2] * size
+			cell.landing = nil
+			cell.cover = 1
+			cell.probed = false
+			assigned[key] = cell
+			table.insert(dirty, cell)
+			if cell.rain then
+				cell.rain.emitter.Enabled = false
+				cell.rain.emitter.Rate = 0
+			end
+			if cell.splash then
+				cell.splash.emitter.Enabled = false
+			end
+			if cell.flakes then
+				for _, layer in ipairs(cell.flakes) do
+					layer.emitter.Enabled = false
+				end
+			end
+		end
+	end
+	-- Weights fall off towards the edge of the area, so its border does not show.
+	local reach = (radius + 0.5) * size
+	for _, cell in pairs(assigned) do
+		local dx, dz = cell.x - cx * size, cell.z - cz * size
+		local dist = math.sqrt(dx * dx + dz * dz)
+		cell.weight = math.clamp(1.4 - dist / reach, 0.2, 1)
+	end
+end
+
+-- Rates and wind ---------------------------------------------------------------------------------
+
+-- The preset changed: ground already looked at needs the right layers made.
+local function refreshLayers()
+	for _, cell in pairs(assignedNear) do
+		if cell.landing then
+			if rainAmount() > 0 then
+				ensureRain(cell, false)
+			end
+			if RainController.snowAmount() > 0 then
+				ensureSnow(cell)
+			end
+			place(cell, false)
+		end
+	end
+end
+
+local function setLayer(layer: Layer?, rate: number)
+	if not layer then
+		return
+	end
+	local emitter = layer.emitter
+	if rate < 0.4 then
+		if emitter.Enabled then
+			emitter.Enabled = false
+			emitter.Rate = 0
+		end
+	else
+		emitter.Rate = rate
+		if not emitter.Enabled then
+			emitter.Enabled = true
+		end
+	end
+end
+
+local function applyRates()
+	local class = device()
+	local scale = budget()
+	local rain = TUNING.rain
+	local snow = TUNING.snow
+	local rainTotal = rain.rate[class] * scale * rainAmount()
+	local snowTotal = snow.rate[class] * scale * RainController.snowAmount()
+	local nearWeight, farWeight = 0, 0
+	for _, cell in pairs(assignedNear) do
+		nearWeight += cell.weight
+	end
+	for _, cell in pairs(assignedFar) do
+		farWeight += cell.weight
+	end
+	for _, cell in pairs(assignedNear) do
+		local open = if cell.landing then 1 - cell.cover else 0
+		local rate = if nearWeight > 0 then cell.weight / nearWeight else 0
+		setLayer(cell.rain, rainTotal * rate * open)
+		setLayer(cell.splash, rainTotal * rain.splashShare * rate * open)
+		if cell.flakes then
+			setLayer(cell.flakes[1], snowTotal * snow.bigShare * rate * open)
+			setLayer(cell.flakes[2], snowTotal * (1 - snow.bigShare) * rate * open)
+		end
+	end
+	for _, cell in pairs(assignedFar) do
+		-- The veil only stands where the near cells do not reach, and never under cover.
+		local open = if cell.landing then 1 - cell.cover else 0
+		local rate = if farWeight > 0 then cell.weight / farWeight else 0
+		setLayer(cell.rain, rainTotal * rain.farShare * rate * open)
+	end
+	local shelter = Shelter.level()
 	if loop then
-		loop.Volume = rainAmount() * (if indoors then 0.25 else 0.8)
+		-- Outside at full volume; indoors a little under it, and muffled besides (Audio/Muffle).
+		loop.Volume = rainAmount() * RainController.loopVolume * (1 - 0.45 * shelter)
 	end
 	if windLoop then
-		windLoop.Volume = RainController.snowAmount() * (if indoors then 0.3 else 0.9)
+		windLoop.Volume = RainController.snowAmount() * RainController.windVolume * (1 - 0.45 * shelter)
 	end
 end
 
@@ -101,62 +495,104 @@ end
 function RainController.setDebug(rain: number?, snow: number?)
 	RainController.debugRain = rain
 	RainController.debugSnow = snow
-	refreshRate()
+	refreshLayers()
+	applyRates()
 end
 
-local function params(): RaycastParams
-	local p = RaycastParams.new()
-	p.FilterType = Enum.RaycastFilterType.Exclude
-	local exclude: { Instance } = { holder, farHolder, splashHolder, snowHolder }
-	local camera = workspace.CurrentCamera
-	local subject = if camera then camera.CameraSubject else nil
-	if subject and subject:IsA("Humanoid") and subject.Parent then
-		table.insert(exclude, subject.Parent)
+local function applyWind()
+	local rain, snow = TUNING.rain, TUNING.snow
+	local push = WIND * (rain.gust * gust)
+	for _, cell in pairs(assignedNear) do
+		if cell.rain then
+			cell.rain.emitter.Acceleration = push
+		end
+		if cell.flakes then
+			local sideways = snow.sway + WIND * (snow.gust * gust)
+			cell.flakes[1].emitter.Acceleration = sideways
+			cell.flakes[2].emitter.Acceleration = sideways
+		end
 	end
-	p.FilterDescendantsInstances = exclude
-	return p
-end
-
-local function underRoof(position: Vector3, p: RaycastParams): boolean
-	return workspace:Raycast(position + Vector3.new(0, 1, 0), Vector3.new(0, 80, 0), p) ~= nil
-end
-
--- The ground (or water) under a spot, open to the sky: its height, or nil.
-local function openGround(position: Vector3, p: RaycastParams): number?
-	local hit = workspace:Raycast(position + Vector3.new(0, 2, 0), Vector3.new(0, -70, 0), p)
-	if not hit or underRoof(hit.Position, p) then
-		return nil
+	for _, cell in pairs(assignedFar) do
+		if cell.rain then
+			cell.rain.emitter.Acceleration = push
+		end
 	end
-	return hit.Position.Y
+end
+
+local function stepGust(now: number)
+	if now >= nextGust then
+		gustAt = now
+		nextGust = now + math.random(TUNING.gustEvery[1], TUNING.gustEvery[2])
+	end
+	local age = now - gustAt
+	-- Builds over 3 s, holds 2, fades over 4.
+	if age < 3 then
+		gust = age / 3
+	elseif age < 5 then
+		gust = 1
+	elseif age < 9 then
+		gust = 1 - (age - 5) / 4
+	else
+		gust = 0
+	end
+	gust = gust * gust * (3 - 2 * gust)
 end
 
 local function step()
-	local camera = workspace.CurrentCamera
-	if not camera then
+	local origin, originY = cameraOrigin()
+	if not origin then
 		return
 	end
-	local at = camera.CFrame.Position
-	local ahead = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
-	holder.CFrame = CFrame.new(at + Vector3.new(0, NEAR_HEIGHT, 0) + ahead * 12) * SLANT
-	farHolder.CFrame = CFrame.new(at + Vector3.new(0, FAR_HEIGHT, 0) + ahead * 30) * SLANT
-	-- The flakes fall slowly, so the box sits lower and further ahead, where the camera looks.
-	snowHolder.CFrame = CFrame.new(at + Vector3.new(0, SNOW_HEIGHT, 0) + ahead * 16)
-	local now = os.clock()
-	if now - lastRoofCheck > ROOF_CHECK then
-		lastRoofCheck = now
-		local p = params()
-		local wasIndoors, hadGround = indoors, groundY ~= nil
-		indoors = underRoof(at, p)
-		local spot = at + ahead * 9
-		groundY = if indoors then nil else openGround(spot, p)
-		if groundY then
-			splashHolder.CFrame = CFrame.new(spot.X, groundY + 0.08, spot.Z)
-		end
-		if wasIndoors ~= indoors or hadGround ~= (groundY ~= nil) then
-			refreshRate()
+	local size, farSize = TUNING.cell, TUNING.farCell
+	local gx, gz = math.floor(origin.X / size + 0.5), math.floor(origin.Z / size + 0.5)
+	if cameraCell.X ~= gx or cameraCell.Y ~= gz then
+		cameraCell = Vector2.new(gx, gz)
+		assign(nearCells, assignedNear, size, TUNING.radius, gx, gz)
+	end
+	local fx, fz = math.floor(origin.X / farSize + 0.5), math.floor(origin.Z / farSize + 0.5)
+	if farCameraCell.X ~= fx or farCameraCell.Y ~= fz then
+		farCameraCell = Vector2.new(fx, fz)
+		assign(farCells, assignedFar, farSize, TUNING.farRadius, fx, fz)
+		-- The far veil is for what the near cells do not reach.
+		local nearReach = (TUNING.radius + 0.5) * size
+		for _, cell in pairs(assignedFar) do
+			if math.max(math.abs(cell.x - origin.X), math.abs(cell.z - origin.Z)) + farSize / 2 < nearReach then
+				cell.weight = 0
+			end
 		end
 	end
+	-- Look at the ground under the cells that are new, then every cell again now and then.
+	local looked = 0
+	while looked < TUNING.probesPerFrame and #dirty > 0 do
+		local cell = table.remove(dirty, 1) :: Cell
+		local far = assignedFar[keyOf(cell.gx, cell.gz)] == cell
+		probe(cell, far, originY)
+		looked += 1
+	end
+	if #dirty == 0 then
+		refreshDebt += TUNING.refreshPerFrame
+		while refreshDebt >= 1 do
+			refreshDebt -= 1
+			local list = nearCells
+			if #list > 0 then
+				refreshCursor = refreshCursor % #list + 1
+				local cell = list[refreshCursor]
+				if assignedNear[keyOf(cell.gx, cell.gz)] == cell then
+					probe(cell, false, originY)
+				end
+			end
+		end
+	end
+	local now = os.clock()
+	stepGust(now)
+	if now - lastUpdate >= TUNING.updateEvery then
+		lastUpdate = now
+		applyRates()
+		applyWind()
+	end
 end
+
+-- Thunder and lightning -----------------------------------------------------------------------------
 
 local function lightningLoop()
 	while true do
@@ -167,163 +603,63 @@ local function lightningLoop()
 				LightingController.lightning()
 			end
 			task.delay(0.6 + math.random() * 1.6, function()
-				Sfx.play("thunder", { group = "Ambience", volume = if indoors then 0.5 else 0.9 })
+				Sfx.play("thunder", {
+					group = "Outdoor",
+					volume = RainController.thunderVolume * (1 - 0.45 * Shelter.level()),
+				})
 			end)
 		end
 	end
 end
 
-local function box(name: string, size: Vector3): Part
-	return Create("Part", {
-		Name = name,
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		Transparency = 1,
-		Size = size,
-		Parent = workspace.CurrentCamera,
-	}) :: Part
-end
-
-local function makeRain()
-	local streak = texture("TokyoRain", "RainStreak")
-	-- Near: long thin streaks all round the camera, a little lit by the lamps they pass.
-	holder = box("InkboundRain", Vector3.new(46, 1, 46))
-	emitter = Create("ParticleEmitter", {
-		EmissionDirection = Enum.NormalId.Bottom,
-		Speed = NumberRange.new(92, 108),
-		Lifetime = NumberRange.new(0.42, 0.55),
-		Rate = 0,
-		Size = NumberSequence.new(0.16),
-		Squash = NumberSequence.new(5),
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.12, 0.3),
-			NumberSequenceKeypoint.new(1, 0.4),
-		}),
-		Color = ColorSequence.new(Color3.fromRGB(206, 214, 236)),
-		LightInfluence = 0.6,
-		LightEmission = 0.3,
-		Orientation = Enum.ParticleOrientation.VelocityParallel,
-		SpreadAngle = Vector2.new(1.5, 1.5),
-		Texture = streak,
-		Parent = holder,
-	}) :: ParticleEmitter
-	-- Far: a thin veil further out and higher, fainter, falling past the camera to the street.
-	farHolder = box("InkboundRainFar", Vector3.new(130, 1, 130))
-	farEmitter = Create("ParticleEmitter", {
-		EmissionDirection = Enum.NormalId.Bottom,
-		Speed = NumberRange.new(92, 108),
-		Lifetime = NumberRange.new(0.75, 0.95),
-		Rate = 0,
-		Size = NumberSequence.new(0.3),
-		Squash = NumberSequence.new(6),
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.1, 0.62),
-			NumberSequenceKeypoint.new(1, 0.7),
-		}),
-		Color = ColorSequence.new(Color3.fromRGB(190, 198, 226)),
-		LightInfluence = 0.5,
-		LightEmission = 0.2,
-		Orientation = Enum.ParticleOrientation.VelocityParallel,
-		SpreadAngle = Vector2.new(1.5, 1.5),
-		Texture = streak,
-		Parent = farHolder,
-	}) :: ParticleEmitter
-	-- Splashes: rings flat on the ground round where you look, each a fraction of a second.
-	splashHolder = box("InkboundRainSplash", Vector3.new(34, 0.1, 34))
-	local ring = Assets.texture("TokyoSplash")
-	splashEmitter = Create("ParticleEmitter", {
-		EmissionDirection = Enum.NormalId.Top,
-		Speed = NumberRange.new(0.2, 0.4),
-		Lifetime = NumberRange.new(0.2, 0.32),
-		Rate = 0,
-		Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.12),
-			NumberSequenceKeypoint.new(1, if ring ~= "" then 0.9 else 0.45),
-		}),
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.35),
-			NumberSequenceKeypoint.new(1, 1),
-		}),
-		Color = ColorSequence.new(Color3.fromRGB(200, 208, 230)),
-		LightInfluence = 0.7,
-		LightEmission = 0.2,
-		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
-		Texture = if ring ~= "" then ring else FALLBACK_TEXTURE,
-		Parent = splashHolder,
-	}) :: ParticleEmitter
-end
-
-local function makeSnow()
-	snowHolder = box("InkboundSnow", Vector3.new(90, 1, 90))
-	snowEmitter = Create("ParticleEmitter", {
-		EmissionDirection = Enum.NormalId.Bottom,
-		Speed = NumberRange.new(3, 5),
-		Lifetime = NumberRange.new(6, 8),
-		Rate = 0,
-		Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.2, 0.07),
-			NumberSequenceKeypoint.new(1, 0.2, 0.07),
-		}),
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.08, 0.15),
-			NumberSequenceKeypoint.new(0.85, 0.2),
-			NumberSequenceKeypoint.new(1, 1),
-		}),
-		Color = ColorSequence.new(Color3.fromRGB(242, 244, 255)),
-		LightInfluence = 0.5,
-		LightEmission = 0.15,
-		-- A slow drift with the wind, each flake wandering a little on its way down: the drag
-		-- holds them near 4 studs a second down and 3 across.
-		Acceleration = Vector3.new(1, -1.4, 0.6),
-		Drag = 0.5,
-		SpreadAngle = Vector2.new(28, 28),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-60, 60),
-		Parent = snowHolder,
-	}) :: ParticleEmitter
-	local flake = Assets.texture("Snowflake")
-	snowEmitter.Texture = if flake ~= "" then flake else FALLBACK_TEXTURE
-end
+-- How loud the weather is, before the mixer and the muffling (about 75% over what it was).
+RainController.loopVolume = 1.0
+RainController.windVolume = 1.1
+RainController.thunderVolume = 1.5
 
 -- A map imported after the client started may bring the rain's textures: pick them up when the
 -- venue's look changes (entering a match).
 local function refreshTextures()
 	local streak = texture("TokyoRain", "RainStreak")
-	emitter.Texture = streak
-	farEmitter.Texture = streak
 	local ring = Assets.texture("TokyoSplash")
-	if ring ~= "" then
-		splashEmitter.Texture = ring
+	local flake = texture("CampusFlake", "Snowflake")
+	for _, cells in ipairs({ nearCells, farCells }) do
+		for _, cell in ipairs(cells) do
+			if cell.rain then
+				cell.rain.emitter.Texture = streak
+			end
+			if cell.splash and ring ~= "" then
+				cell.splash.emitter.Texture = ring
+			end
+			if cell.flakes and flake ~= "" then
+				for _, layer in ipairs(cell.flakes) do
+					layer.emitter.Texture = flake
+				end
+			end
+		end
 	end
 end
 
 function RainController.init()
-	makeRain()
-	makeSnow()
-	loop = Sfx.play("rainLoop", { group = "Ambience", looped = true, volume = 0 })
-	windLoop = Sfx.play("mapWindSnow", { group = "Ambience", looped = true, volume = 0 })
+	container = Create("Folder", { Name = "InkboundWeather", Parent = workspace.CurrentCamera }) :: Folder
+	loop = Sfx.play("rainLoop", { group = "Outdoor", looped = true, volume = 0 })
+	windLoop = Sfx.play("mapWindSnow", { group = "Outdoor", looped = true, volume = 0 })
 	RunService.RenderStepped:Connect(step)
 	LightingController.Changed:Connect(function()
 		refreshTextures()
-		refreshRate()
+		refreshLayers()
+		applyRates()
 	end)
-	Responsive.Changed:Connect(refreshRate)
+	Responsive.Changed:Connect(applyRates)
 	Settings.Changed:Connect(function(key)
 		if key == "reduceMotion" or key == "lowGraphics" then
-			refreshRate()
+			applyRates()
 		end
 	end)
 	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-		for _, part in ipairs({ holder, farHolder, splashHolder, snowHolder }) do
-			part.Parent = workspace.CurrentCamera
-		end
+		container.Parent = workspace.CurrentCamera
 	end)
-	refreshRate()
+	applyRates()
 	task.spawn(lightningLoop)
 end
 

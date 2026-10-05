@@ -36,9 +36,10 @@ def place(s, key, x, z, rot, y=0.0, dark=False):
     s.prop(key, x - wx, z - wz, rot, 1.0, y, dark)
 
 
-def barrier(s, a, b, out, rng, car=False):
+def barrier(s, a, b, out, rng, car=None):
     """A street closed from a to b (x, z): site fence panels along the line, police tape across
-    them, barricades and cones on the near side (out points away from the map)."""
+    them, barricades and cones on the near side (out points away from the map). car: (x, z, rot) of
+    the police car, parked along the kerb (never across the carriageway)."""
     length = math.dist(a, b)
     d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
     rot = facing(-out[0], -out[1])  # the fence's face (its -Z side) looks back into the map
@@ -62,20 +63,18 @@ def barrier(s, a, b, out, rng, car=False):
         else:
             s.prop("TrafficCone", p[0] + rng.uniform(-1, 1), p[1] + rng.uniform(-1, 1), rng.uniform(0, 90))
     if car:
-        # Parked across the carriageway, clear of the corner buildings.
-        p = (a[0] + d[0] * length * 0.55 - out[0] * 9.0, a[1] + d[1] * length * 0.55 - out[1] * 9.0)
-        s.prop("PoliceCar", p[0], p[1], g2.rot_of(d) + 90 + rng.uniform(-12, 12))
+        s.prop("PoliceCar", car[0], car[1], car[2])
 
 
 def barriers(s):
     rng = random.Random(21)
     x0, x1 = P.X0 + 1.5, P.X1 - 1.5
     # (Each span runs from building face to building face, or to the river's railing.)
-    barrier(s, (x0, -128.4), (x0, -147.5), (-1, 0), rng, car=True)  # the frontage road, west
+    barrier(s, (x0, -128.4), (x0, -147.5), (-1, 0), rng, car=(-186.0, -138.3, 90.0))  # the frontage road, west
     barrier(s, (x1, -147.5), (x1, -128.4), (1, 0), rng)  # the frontage road, east
-    barrier(s, (-122.0, -148.5), (-84.0, -148.5), (0, -1), rng, car=True)  # the avenue, north
+    barrier(s, (-122.0, -148.5), (-84.0, -148.5), (0, -1), rng, car=(-134.0, -138.3, -90.0))  # the avenue, north
     barrier(s, (118.0, -148.5), (139.0, -148.5), (0, -1), rng)  # Kita-dori, north
-    barrier(s, (x1, -50.2), (x1, -32.8), (1, 0), rng, car=True)  # the east street
+    barrier(s, (x1, -50.2), (x1, -32.8), (1, 0), rng, car=(186.0, -44.0, -90.0))  # the east street
     barrier(s, (50.0, 147.0), (92.0, 147.0), (0, 1), rng)  # the avenue, south under the viaduct
     for x, out in ((x0, (-1, 0)), (x1, (1, 0))):
         barrier(s, (x, P.VIADUCT_LANE_Z[0] - 0.3), (x, P.VIADUCT_LANE_Z[1] + 0.3), out, rng)

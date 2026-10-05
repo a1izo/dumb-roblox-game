@@ -12,6 +12,8 @@ outside (Roblox draws only the front of a mesh face).
 """
 
 import math
+import os
+import sys
 
 import bpy
 
@@ -84,10 +86,12 @@ class Scene(LayoutMixin):
         self.ramps = []  # tilted walkable slabs (stairs, slopes)
         self.floors = []  # flat triangles (x1, z1, x2, z2, x3, z3, top y, thickness, look, query)
         self.props = []  # (key, x, y, z, rot, scale, flags)
+        self.prop_src = []  # per prop: where in the venue's scripts it was placed (for the hand-check plans)
         self.steps = []  # visible steps of stairs, drawn by the greybox: (centre, size, rot, look)
         self.lights = []
         self.signs = []
         self.emitters = []
+        self.covers = []  # boxes that shelter from the rain and snow without being solid: (centre, size, rot, amount)
         self.screens = []  # giant screens the game plays loops on
         self.sounds = []  # ambient sound sources (their ids are the game's to fill in)
         self.train = None  # the metro train's run, for the client to animate
@@ -360,6 +364,15 @@ class Scene(LayoutMixin):
         """A prop from the prop library. dark: leave off the light it carries (a string of
         lanterns where only some are lit)."""
         self.props.append((key, x, y, z, rot, scale_, "dark" if dark else ""))
+        # The call chain outside this file ("dressing.py:120 < decor.py:44"), so a prop seen in a plan
+        # can be found in the scripts that placed it.
+        frame, trail = sys._getframe(1), []
+        while frame is not None and len(trail) < 3:
+            name = os.path.basename(frame.f_code.co_filename)
+            if name != "mesher.py":
+                trail.append(f"{name}:{frame.f_lineno}")
+            frame = frame.f_back
+        self.prop_src.append(" < ".join(trail))
 
     def step(self, centre, size, rot, look):
         self.steps.append((centre, size, rot, look))
@@ -383,6 +396,11 @@ class Scene(LayoutMixin):
         if size is not None:
             item["size"] = tuple(size)
         self.emitters.append(item)
+
+    def cover(self, centre, size, rot=0.0, amount=1.0):
+        """A box that shelters from rain and snow without being solid or visible: an awning, a tree's canopy,
+        a bus shelter's roof. The client stops the weather under it (amount 1 stops it, 0.5 thins it)."""
+        self.covers.append((tuple(centre), tuple(size), rot, amount))
 
     def blinker(self, pos, color=(255, 40, 40), period=2.0, size=1.2, phase=0.0):
         """A small lamp the client switches on and off every `period` seconds."""

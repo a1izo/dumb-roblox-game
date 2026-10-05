@@ -33,6 +33,7 @@ local HELI_TAG = "LMapHeli"
 local RAIN_GLASS_TAG = "LMapRainGlass"
 local BRANCH_SNOW_TAG = "LMapBranchSnow"
 local CLOCK_TAG = "LMapClock"
+local FOG_TAG = "LMapFog"
 
 -- Screens ------------------------------------------------------------------------------------------
 
@@ -453,12 +454,26 @@ end
 
 -- Sounds ------------------------------------------------------------------------------------------
 
+-- The sounds heard from outside (muffled indoors, see Audio/Muffle); the rest are room tones.
+local OUTDOOR_SOUNDS = {
+	mapRiver = true,
+	mapCityHum = true,
+	mapCrossingChirp = true,
+	mapLanternCreak = true,
+	mapSirenFar = true,
+	mapHelicopter = true,
+	mapWindSnow = true,
+	mapTowerBell = true,
+	mapRainGlass = true,
+}
+
 local function playSound(source: BasePart)
 	if source:GetAttribute("Looped") ~= true then
 		return -- one-shots (the station chime, the train) are played by the train
 	end
-	local sound = Sfx.play(source:GetAttribute("Key") :: string, {
-		group = "Ambience",
+	local key = source:GetAttribute("Key") :: string
+	local sound = Sfx.play(key, {
+		group = if OUTDOOR_SOUNDS[key] then "Outdoor" else "Ambience",
 		parent = source,
 		looped = true,
 		volume = (source:GetAttribute("Volume") :: number?) or 0.5,
@@ -630,6 +645,36 @@ local function refreshRainGlass()
 	end
 end
 
+-- Mist, cloud and dust ----------------------------------------------------------------------------------
+-- The mood of each map is made of slow soft particles (ground mist, the tower's cloud sea, dust in
+-- the light, a feather now and then). Slower devices get fewer of them; Low graphics keeps the mist
+-- only as fewer particles (the atmosphere's haze stays off there).
+
+local FOG_SCALE = { phone = 0.35, tablet = 0.55, console = 0.85, desktop = 1 }
+local fog: { [ParticleEmitter]: boolean } = {}
+
+local function fogFactor(): number
+	local factor = FOG_SCALE[Responsive.class()] or 1
+	if Settings.get("reduceMotion") then
+		factor *= 0.6
+	end
+	if Settings.get("lowGraphics") then
+		factor *= 0.45
+	end
+	return factor
+end
+
+local function refreshFog()
+	local factor = fogFactor()
+	for emitter in pairs(fog) do
+		if emitter.Parent then
+			emitter.Rate = ((emitter:GetAttribute("BaseRate") :: number?) or 2) * factor
+		else
+			fog[emitter] = nil
+		end
+	end
+end
+
 -- Snow off the branches ---------------------------------------------------------------------------------
 -- Now and then a clump of snow slips off a tree near the camera. Slower devices get smaller
 -- clumps, further apart.
@@ -731,7 +776,7 @@ local function tollMidnight()
 						return
 					end
 					local sound = Sfx.play("mapTowerBell", {
-						group = "Ambience",
+						group = "Outdoor",
 						parent = source,
 						volume = (source:GetAttribute("Volume") :: number?) or 0.8,
 					})
@@ -815,7 +860,7 @@ local function fly(run: Instance, path: { Vector3 }, target: { Vector3 }, durati
 	beam.Color = Color3.fromRGB(240, 244, 255)
 	beam.Parent = lamp
 	model.Parent = run
-	local sound = Sfx.play("mapHelicopter", { group = "Ambience", parent = body, looped = true, volume = 0.6 })
+	local sound = Sfx.play("mapHelicopter", { group = "Outdoor", parent = body, looped = true, volume = 0.6 })
 	if sound then
 		sound.RollOffMinDistance = 30
 		sound.RollOffMaxDistance = 500
@@ -910,6 +955,18 @@ function MapAmbient.init()
 	Settings.Changed:Connect(function(key)
 		if key == "reduceMotion" or key == "lowGraphics" then
 			refreshRainGlass()
+		end
+	end)
+	watch(FOG_TAG, function(item)
+		if item:IsA("ParticleEmitter") then
+			fog[item] = true
+			refreshFog()
+		end
+	end)
+	Responsive.Changed:Connect(refreshFog)
+	Settings.Changed:Connect(function(key)
+		if key == "reduceMotion" or key == "lowGraphics" then
+			refreshFog()
 		end
 	end)
 	watch(HELI_TAG, runHeli)

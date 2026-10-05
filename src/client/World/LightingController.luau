@@ -42,6 +42,7 @@ local vignetteHolder: Frame
 local currentKey = ""
 local currentPreset: LightingPresets.Preset = LightingPresets.lobby
 local currentVenue = "lobby"
+local currentZone: string? = nil -- the part of a map the camera is in that has a look of its own
 local currentLook: LightingPresets.Look? = nil
 local flashing = false
 local debugKey: string? = nil -- "lobby", "meeting" or "map:<mapId>", set from the debug panel
@@ -303,6 +304,7 @@ local function update(force: boolean?)
 		mapId = string.match(debugKey, "^map:(.+)$") or mapId
 	end
 	local zone = if venue == "map" and not debugKey then lookZone(position) else nil
+	currentZone = zone
 	local key = venue .. ":" .. (if venue == "map" then (zone or mapId or "") else "") .. ":" .. moodName()
 	if key == currentKey and not force then
 		return
@@ -341,6 +343,12 @@ end
 
 function LightingController.preset(): LightingPresets.Preset
 	return currentPreset
+end
+
+-- The name of the look the camera's part of the map has ("TokyoDistrict_Inside", "..._Under"), or
+-- nil in the open (the audio and the weather ask whether the player is in a building).
+function LightingController.zone(): string?
+	return currentZone
 end
 
 -- A lightning flash: the scene blows out for a moment, twice.
