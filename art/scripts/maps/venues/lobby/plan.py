@@ -1,26 +1,26 @@
 """The Grey Realm's plan, in local studs: x east, z south (north is -z), y up; the lobby's origin.
 
-A dead island floating in a grey sea of cloud: the walkable part is a rough island about 320 studs
-across with sheer cliffs all round (invisible walls follow its edge) and its roots hanging into the
-fog. Two small islets, each reached by an old stone bridge, carry the mini-games. Beyond them
-there is no ground at all: floating rocks, rock spires and arches, walls of cloud and, far off in
-the haze, one colossal blade standing in a rock.
+A never-ending wasteland under a grey sky: cracked ash running to the horizon, huge twisted columns,
+mesas and spires rising out of the fog, and walls of cloud on the skyline. The part people can walk is a
+rough basin about 320 studs across, bordered by a ridge of rock and needles (an invisible wall follows its
+edge); past the ridge the plain goes on, out of reach. Two ruined plateaus stand out on the plain, each
+reached by an old stone causeway that crosses a deep chasm; they carry the mini-games.
 
-- The south: the spawn terrace, a broken ruin a few steps above the plaza; players appear on it
-  facing north, over the island, to the colossal blade between two twisted columns.
-- The middle: an old flagstone plaza, a plinth with the Grimoire lying on it, and round the
-  plaza six steles carrying the game's boards.
+- The south: the spawn terrace, a broken ruin a few steps above the plaza; players appear on it facing
+  north, over the basin, to the colossal blade standing in its mound between two twisted columns.
+- The middle: an old flagstone plaza, a plinth with the Grimoire lying on it, and round the plaza six
+  steles carrying the game's boards.
 - North: the title monolith; behind it, up on a mesa nobody can climb, the bone throne.
 - South-west: the Academy, a ring of broken pillars with the practice altars and effigies.
-- East: the rift, a hole in the island looking down on Kagegaoka at night far below (the stone
-  toss stands at its rim).
-- North-west: the dice rock; the cleft over the cloud sea. North-east: the needle ledge, where a
-  small blade glows. South-east: a colossal carcass, its ribcage arching over the ash.
-- West islet (over the west bridge): the Spire Ascent. North-east islet: the rune courtyard.
+- East: the rift, a hole in the ground looking down on Kagegaoka at night far below (the stone toss stands at
+  its rim).
+- North-west: the dice rock; the cleft. North-east: the needle ledge, where a small blade glows.
+  South-east: a colossal carcass, its ribcage arching over the ash.
+- West plateau (over the west causeway): the Spire Ascent. North-east plateau: the rune courtyard.
 
 Every place the venue modules use is set here. Run it on its own (python
 art/scripts/maps/venues/lobby/plan.py) to check that nothing overlaps and it all stays inside the
-island, clear of the rift.
+basin, clear of the rift.
 """
 
 import math
@@ -32,8 +32,9 @@ if __name__ == "__main__":
 
 from maps import geo2d as g2  # noqa: E402
 
-# Everything walkable: the island, its two islets and the parkour's climb (y up to ~125).
-BOUNDS = ((-380.0, -70.0, -290.0), (270.0, 150.0, 190.0))
+# Everything walkable: the basin, its two plateaus and the parkour's climb (y up to ~130).
+BOUNDS = ((-380.0, -6.0, -290.0), (270.0, 150.0, 190.0))
+FAR = 1500.0  # how far the plain runs (the fog closes well before)
 
 
 def rim_r(a):
@@ -79,23 +80,45 @@ THRONE_MESA = (58.0, -112.0, 19.0, 14.0)  # x, z, radius, height
 THRONE_ROT = 154.0
 
 # The two islets (x, z, radius) and the bridges to them from the island's rim.
-ISLET_RUNE = (214.0, -216.0, 40.0)
+ISLET_RUNE = (214.0, -216.0, 40.0)  # the plateaus: x, z, radius
 ISLET_PARKOUR = (-326.0, -2.0, 38.0)
-BRIDGE_W = 10.0
+PLATEAU_H = 7.0  # how high their tops stand over the plain
+BRIDGE_W = 10.0  # the causeways' width
+STAIR_RUN = 12.0  # the flight at a causeway's far end, up onto its plateau
 
 
 def _bridge(islet):
-    """(start on the island, end on the islet), a straight span along the line between their middles."""
+    """(start on the basin's rim, end on the plateau), a straight causeway along the line between their
+    middles."""
     deg = math.degrees(math.atan2(islet[1], islet[0])) % 360.0
     a = rim_at(deg, 3.0)
     d = math.hypot(islet[0], islet[1])
     ux, uz = islet[0] / d, islet[1] / d
-    b = (islet[0] - ux * (islet[2] - 3.0), islet[1] - uz * (islet[2] - 3.0))
+    b = (islet[0] - ux * (islet[2] - 7.0), islet[1] - uz * (islet[2] - 7.0))
     return a, b
 
 
 BRIDGE_RUNE = _bridge(ISLET_RUNE)
 BRIDGE_PARKOUR = _bridge(ISLET_PARKOUR)
+
+
+def _chasm(bridge):
+    """(x, z, along, across, rot): the chasm under a causeway: `along` studs of it along the causeway,
+    `across` studs wide the other way, its middle 45 % of the way along the part before the stairs."""
+    a, b = bridge
+    length = math.dist(a, b) - STAIR_RUN
+    ux, uz = (b[0] - a[0]) / math.dist(a, b), (b[1] - a[1]) / math.dist(a, b)
+    t = length * 0.45
+    return (a[0] + ux * t, a[1] + uz * t, 34.0, 84.0, math.degrees(math.atan2(-uz, ux)))
+
+
+CHASMS = [_chasm(BRIDGE_RUNE), _chasm(BRIDGE_PARKOUR)]
+CHASM_DEPTH = 72.0
+
+
+def chasm_poly(c):
+    return g2.rect(c[0], c[1], c[2], c[3], c[4])
+
 
 # The steles: name -> (x, z, rot facing where people come from, board w, board h). The board's middle is 11 up.
 STELES = {
@@ -122,10 +145,9 @@ GATE_DIR = math.degrees(math.atan2(PLAZA_C[1] - ACADEMY_C[1], PLAZA_C[0] - ACADE
 RIFT_C = (98.0, 22.0)
 RIFT_AXES = (23.0, 15.0)
 RIFT_TURN = 20.0
-RIFT_DEPTH = 50.0  # the rock walls down into it, to the island's underside
+RIFT_DEPTH = 50.0  # the rock walls down into it, then it opens on the sky of another world
 BELOW_Y = -260.0  # Kagegaoka, far beneath
 GUARD = 3.5
-PLATE = 50.0  # the island is this thick (its underside is a cap at -PLATE)
 
 
 def _rift():
@@ -168,7 +190,7 @@ SPINE = [(46.0, 118.0), (62.0, 112.0), (78.0, 108.0), (94.0, 106.0), (110.0, 106
 RIB_SPAN = 13.0  # how far each rib's foot lands from the spine
 SPINE_Y = 17.0
 
-# The two vista ledges at the rim: the cleft over the cloud sea (north-west) and the needle ledge with
+# The two vista ledges at the rim: the cleft looking out over the plain (north-west) and the needle ledge with
 # the small glowing blade (north-east). x, z of each ledge's middle, and the direction outwards (degrees).
 CLEFT_DEG = 236.0
 NEEDLE_DEG = 334.0
@@ -187,9 +209,9 @@ OUTCROPS = [
     (130.0, 60.0, 8.0, 14.0, 19),
 ]
 
-# The Spire Ascent: ten checkpoints climbing a spiral of floating stones round the islet's spire.
+# The Spire Ascent: ten checkpoints climbing a spiral of floating stones round the plateau's spire.
 PK_CENTER = (ISLET_PARKOUR[0], ISLET_PARKOUR[1])
-PK_TOP = 118.0  # the finish's height
+PK_TOP = 118.0  # the finish's height over the plateau
 
 # The rune courtyard: nine tiles (3 x 3) of 7 studs with 1.8 between them, on the islet's far side.
 RUNE_CENTER = (ISLET_RUNE[0], ISLET_RUNE[1])
@@ -197,8 +219,8 @@ RUNE_TILE = 7.0
 RUNE_GAP = 1.8
 
 # Where the checks measure the walk (x, y, z pairs): the spawn to each islet's far side, and across the island.
-CORNERS = [[(0.0, 11.0, 63.0), (ISLET_RUNE[0] + 22.0, 0.0, ISLET_RUNE[1] - 22.0)],
-           [(0.0, 11.0, 63.0), (ISLET_PARKOUR[0] - 22.0, 0.0, ISLET_PARKOUR[1] + 10.0)],
+CORNERS = [[(0.0, 11.0, 63.0), (ISLET_RUNE[0] + 22.0, PLATEAU_H, ISLET_RUNE[1] - 22.0)],
+           [(0.0, 11.0, 63.0), (ISLET_PARKOUR[0] - 22.0, PLATEAU_H, ISLET_PARKOUR[1] + 10.0)],
            [(-100.0, 0.0, 110.0), (104.0, 0.0, -96.0)]]
 
 
@@ -300,7 +322,7 @@ def check():
             continue
         if math.dist((x, z), PLAZA_C) < PLAZA_R + 4:
             problems.append(f"stele {name} stands on the plaza")
-    # The bridges: their heads inside the island, clear of every solid, and the islets clear of the island.
+    # The causeways: their heads inside the basin, clear of every solid, and the islets clear of the island.
     for name, (a, b) in (("rune", BRIDGE_RUNE), ("parkour", BRIDGE_PARKOUR)):
         deck = g2.rect((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, math.dist(a, b), BRIDGE_W,
                        math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0])))

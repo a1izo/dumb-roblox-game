@@ -1,10 +1,11 @@
-"""The Grey Realm's ground and rock: the island's ash ground (a hole cut for the rift) with its sheer
-cliffs, underside and hanging roots, crusts of cracked earth, the broken crown of rock along its rim
-with the invisible wall behind it, and the shapes the whole realm is made of: twisted fluted columns,
-needle spikes, rocks floating in the air, arches, walls of cloud and the colossal blade.
+"""The Grey Realm's ground and rock: the basin's ash ground (a hole cut for the rift) with crusts of cracked
+earth, the endless plain that runs from the basin's ridge to the horizon, the ridge itself (a continuous crown
+of rock, needle fields and spires, with the invisible wall behind it), the chasms under the causeways, and the
+shapes the whole realm is made of: twisted fluted columns, needle spikes, rocks floating in the air, arches,
+walls of cloud and the colossal blade.
 
-The distant world (floating rocks, spires, arches, cloud banks, the blade) is placed in
-formations.py; the islets and bridges are in islets.py."""
+The distant world (spires, mesas, columns, arches, cloud banks, the blade) is placed in formations.py; the
+plateaus and causeways are in islets.py."""
 
 import math
 import random
@@ -193,32 +194,6 @@ def floating_rock(s, x, y, z, r, seed, depth=None, mat="RockGrey", top_mat=None,
     return depth
 
 
-def stalactite(s, x, z, y, r, length, seed, mat="RockGrey", sides=6):
-    """A rock root hanging from y: wide at its top, narrowing to a point `length` below, leaning a little."""
-    rng = random.Random(seed)
-    lx, lz = rng.uniform(-0.18, 0.18) * length, rng.uniform(-0.18, 0.18) * length
-    levels = [(0.0, 1.0), (0.3, 0.8), (0.65, 0.45)]
-    phase = rng.uniform(0, math.tau)
-    rings = []
-    for u, f in levels:
-        ring = []
-        for k in range(sides):
-            a = phase + math.tau * k / sides
-            rk = r * f * (0.8 + 0.4 * rng.random())
-            ring.append((x + lx * u + math.cos(a) * rk, y - length * u, z + lz * u + math.sin(a) * rk))
-        rings.append(ring)
-    tip = (x + lx, y - length, z + lz)
-    for i in range(len(levels) - 1):
-        mid = (x + lx * (levels[i][0] + levels[i + 1][0]) / 2, y - length * (levels[i][0] + levels[i + 1][0]) / 2,
-               z + lz * (levels[i][0] + levels[i + 1][0]) / 2)
-        for k in range(sides):
-            k1 = (k + 1) % sides
-            face(s, mat, [rings[i][k], rings[i][k1], rings[i + 1][k1]], mid)
-            face(s, mat, [rings[i][k], rings[i + 1][k1], rings[i + 1][k]], mid)
-    for k in range(sides):
-        face(s, mat, [tip, rings[-1][k], rings[-1][(k + 1) % sides]], (x + lx * 0.7, y - length * 0.5, z + lz * 0.7))
-
-
 def arch(s, x, y, z, span, height, thick, rot, seed, mat="RockGrey", sections=12, sides=8):
     """A rock arch: lumpy ring sections along a half ellipse, thick at its two feet and thin at the
     crown. Its feet stand `span` apart along the direction rot (the arch lies in that vertical plane)."""
@@ -351,30 +326,36 @@ def ground(s, g):
             city.up_face(s, "AshCracked", piece, 0.03)
 
 
-# Cliffs, undersides and the wall round an edge ---------------------------------------------------------
-
-LEVELS = [(0.0, 1.0), (-7.0, 1.035), (-17.0, 0.99), (-30.0, 0.93)]
+# Plateau sides, the wall round an edge, the ridge, the plain and the chasms ----------------------------------
 
 
-def cliff(s, poly, seed, plate, centre=(0.0, 0.0), mat="RockGrey", roots=0, hole=None, root_len=(14.0, 70.0)):
-    """Sheer cliffs round poly (a star-shaped ring about `centre`): rings dropping to -plate, bulging
-    and jagged, the last pulled in; a flat underside below them (cut round `hole`, a convex polygon the
-    rift's walls land on), and `roots` rock roots hanging from it. Returns the bottom ring (x, z)."""
+def toward(s, mat, pts, target):
+    """A face whose front looks towards `target`."""
+    n = cross(sub(pts[1], pts[0]), sub(pts[2], pts[0]))
+    cx = sum(p[0] for p in pts) / len(pts)
+    cy = sum(p[1] for p in pts) / len(pts)
+    cz = sum(p[2] for p in pts) / len(pts)
+    if dot(n, (target[0] - cx, target[1] - cy, target[2] - cz)) < 0:
+        pts = list(reversed(pts))
+    s.polygon(mat, pts)
+
+
+def plateau_sides(s, poly, centre, seed, top, mat="RockGrey"):
+    """The rock sides of a plateau standing `top` over the plain: rings flaring out from its top edge to the
+    ground, jagged and bulging."""
     rng = random.Random(seed)
     n = len(poly)
-    levels = LEVELS + [(-plate, 0.82)]
-    levels = [(y if y > -plate else -plate, f) for y, f in levels]
+    levels = [(top, 1.0), (top * 0.62, 1.05), (top * 0.25, 1.1), (-0.5, 1.17)]
     rings = []
     for li, (y, f) in enumerate(levels):
         ring = []
-        for k, (x, z) in enumerate(poly):
+        for x, z in poly:
             dx, dz = x - centre[0], z - centre[1]
             r = math.hypot(dx, dz)
-            ux, uz = dx / r, dz / r
-            push = 0.0 if li == 0 else rng.uniform(-2.2, 3.0) + (3.5 if (k + li) % 5 == 0 else 0.0)
+            push = 0.0 if li == 0 else rng.uniform(-1.2, 2.4)
+            jit = rng.uniform(-0.7, 0.7) if 0 < li < 3 else 0.0
             rr = r * f + push
-            drop = 0.0 if li == 0 else rng.uniform(-2.5, 2.5) if li < len(levels) - 1 else rng.uniform(-1.0, 1.0)
-            ring.append((centre[0] + ux * rr, y + drop, centre[1] + uz * rr))
+            ring.append((centre[0] + dx / r * rr, y + jit, centre[1] + dz / r * rr))
         rings.append(ring)
     for li in range(len(levels) - 1):
         a, b = rings[li], rings[li + 1]
@@ -383,21 +364,6 @@ def cliff(s, poly, seed, plate, centre=(0.0, 0.0), mat="RockGrey", roots=0, hole
             k1 = (k + 1) % n
             face(s, mat, [a[k], a[k1], b[k1]], axis)
             face(s, mat, [a[k], b[k1], b[k]], axis)
-    bottom = [(p[0], p[2]) for p in rings[-1]]
-    for piece in g2.convex_pieces(bottom):
-        for part in g2.subtract_all([piece], [hole] if hole else []):
-            if abs(g2.area(part)) > 0.05:
-                city.down_face(s, mat, part, -plate)
-    for k in range(roots):
-        a = rng.uniform(0, math.tau)
-        d = rng.uniform(0.0, 0.8) * math.dist(bottom[0], centre)
-        x, z = centre[0] + math.cos(a) * d, centre[1] + math.sin(a) * d
-        if hole and (g2.contains(hole, (x, z)) or g2.dist_to_poly_edge(hole, (x, z)) < 14.0):
-            continue
-        if not g2.contains(bottom, (x, z)):
-            continue
-        stalactite(s, x, z, -plate + 0.5, rng.uniform(2.5, 8.0), rng.uniform(*root_len), seed * 10 + k)
-    return bottom
 
 
 def wall(s, poly, height, gaps=(), y=34.0, gap_w=P.BRIDGE_W + 1.0):
@@ -432,8 +398,9 @@ def wall(s, poly, height, gaps=(), y=34.0, gap_w=P.BRIDGE_W + 1.0):
 
 
 def edge(s):
-    """The broken crown of rock along the island's rim (solid, so it is a wall you can see), here and
-    there a bone stake or a cairn; the invisible wall behind it, open where the bridges leave."""
+    """The basin's border: a continuous ridge of big rock along the rim (solid, so you see it is a wall), needle
+    fields and tall spires in and behind it, here and there a bone stake or a cairn, a second ridge of rock
+    further out for depth; the invisible wall behind the first ridge, open where the causeways leave."""
     rng = random.Random(77)
     pts = P.BASIN
     n = len(pts)
@@ -444,39 +411,56 @@ def edge(s):
         a, b = pts[k], pts[(k + 1) % n]
         length = math.dist(a, b)
         ux, uz = (b[0] - a[0]) / length, (b[1] - a[1]) / length
-        ox, oz = uz, -ux  # outward (the island runs counter-clockwise)
-        kind = (k * 7 + 3) % 5
-        u = rng.uniform(1, 4)
+        ox, oz = uz, -ux  # outward (the basin runs counter-clockwise)
+        u = rng.uniform(0, 3)
         while u < length:
             px, pz = a[0] + ux * u, a[1] + uz * u
             if any(math.dist((px, pz), (x, z)) < r + 4.0 for x, z, r, _, _ in P.OUTCROPS) or \
                     any(math.dist((px, pz), c) < 22.0 for c in keep):
-                u += 3.0
+                u += 3.5
                 continue
-            if kind in (0, 1, 2):
-                r = rng.uniform(3.5, 8.0)
-                h = r * rng.uniform(0.9, 3.0)
-                off = -r * 0.35 + rng.uniform(-1.0, 2.0)  # a little inside the rim, the mass leaning over the drop
-                rock(s, px + ox * off, pz + oz * off, r, h, 1000 + k * 37 + int(u), tiers=3,
-                     sides=rng.choice((7, 8, 9)), taper=rng.uniform(0.35, 0.7), lean=(ox * 0.05, oz * 0.05))
-                solids.append((px + ox * off, pz + oz * off, r))
-                u += r * rng.uniform(1.2, 1.9)
+            r = rng.uniform(5.5, 10.5)
+            h = r * rng.uniform(1.5, 3.4)
+            off = rng.uniform(-r * 0.15, r * 0.45)
+            rx, rz = px + ox * off, pz + oz * off
+            rock(s, rx, rz, r, h, 1000 + k * 37 + int(u), tiers=rng.choice((3, 4)), sides=rng.choice((7, 8, 9)),
+                 taper=rng.uniform(0.4, 0.75), lean=(ox * 0.05, oz * 0.05))
+            solids.append((rx, rz, r))
+            u += r * rng.uniform(0.95, 1.5)
+        # Between the rocks of some stretches: needles, a bone stake, a cairn.
+        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        if not any(math.dist(mid, c) < 26.0 for c in keep):
+            kind = (k * 7 + 3) % 5
+            if kind in (0, 2):
+                needle_field(s, mid[0] + ox * 5.0, mid[1] + oz * 5.0, 8.0, 7, 8.0, 24.0, 3100 + k)
             elif kind == 3:
-                bone_stake(s, px - ox * 1.2, pz - oz * 1.2, rng.uniform(4.0, 7.5), rng)
-                u += rng.uniform(2.6, 4.2)
-            else:
-                cx, cz = px - ox * 2.0, pz - oz * 2.0
-                near = any(math.dist((cx, cz), (qx, qz)) < qr + 5.0 for qx, qz, qr in solids) or \
-                    any(math.dist((cx, cz), (x, z)) < r + 6.0 for x, z, r, _, _ in P.OUTCROPS)
-                if rng.random() < 0.35 and not near:
+                bone_stake(s, mid[0] - ox * 1.2, mid[1] - oz * 1.2, rng.uniform(4.0, 7.5), rng)
+            elif kind == 4:
+                cx, cz = mid[0] - ox * 2.0, mid[1] - oz * 2.0
+                near = any(math.dist((cx, cz), (qx, qz)) < qr + 5.0 for qx, qz, qr in solids)
+                near = near or any(math.dist((cx, cz), (x, z)) < r + 6.0 for x, z, r, _, _ in P.OUTCROPS)
+                if not near:
                     s.prop("Cairn", cx, cz, rng.uniform(0, 360), rng.uniform(0.9, 1.4))
-                    solids.append((cx, cz, 2.4))
-                    u += rng.uniform(9, 14)
-                else:
-                    br = rng.uniform(1.4, 3.2)
-                    boulder(s, px - ox * 1.5, pz - oz * 1.5, br, 3000 + k * 13 + int(u))
-                    solids.append((px - ox * 1.5, pz - oz * 1.5, br))
-                    u += rng.uniform(4, 8)
+    # A second ridge behind the first and tall spires standing in it, out of reach: it gives the border depth.
+    for k in range(n):
+        a, b = pts[k], pts[(k + 1) % n]
+        length = math.dist(a, b)
+        ux, uz = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+        ox, oz = uz, -ux
+        u = rng.uniform(0, 6)
+        while u < length:
+            px, pz = a[0] + ux * u, a[1] + uz * u
+            if any(math.dist((px, pz), c) < 30.0 for c in keep):
+                u += 6.0
+                continue
+            off = rng.uniform(13.0, 34.0)
+            r = rng.uniform(7.0, 15.0)
+            if rng.random() < 0.25:
+                spire(s, px + ox * off, pz + oz * off, r * 0.55, r * rng.uniform(5.0, 8.5), 4100 + k * 11 + int(u))
+            else:
+                rock(s, px + ox * off, pz + oz * off, r, r * rng.uniform(1.2, 3.0), 4200 + k * 13 + int(u), tiers=3,
+                     sides=7, taper=0.55, collide=False)
+            u += r * rng.uniform(1.8, 2.9)
 
 
 def bone_stake(s, x, z, h, rng, mat="BoneOld"):
@@ -506,11 +490,92 @@ def outcrops(s):
              flat_top=True)
 
 
+def far_plain(s):
+    """The plain, from the basin's ridge to the horizon: ash faces in 250-stud squares (a hair under the basin's
+    ground, so the two never fight), cut round the basin and the chasms; a thin big collider under each strip
+    so the greybox has a horizon too (nothing reaches it: the wall is in between)."""
+    step = 250.0
+    n = int(P.FAR // step)
+    holes = [piece for piece in g2.convex_pieces(P.BASIN)] + [P.chasm_poly(c) for c in P.CHASMS]
+    for i in range(-n, n):
+        for j in range(-n, n):
+            x0, z0 = i * step, j * step
+            pieces = [[(x0, z0), (x0 + step, z0), (x0 + step, z0 + step), (x0, z0 + step)]]
+            pieces = g2.subtract_all(pieces, holes)
+            for piece in pieces:
+                if abs(g2.area(piece)) > 0.05:
+                    city.up_face(s, "Ash", piece, -0.15)
+    inner, outer = 195.0, P.FAR
+    mid = (inner + outer) / 2
+    for cx, cz, w, d in ((0.0, -mid, 2 * outer, outer - inner), (0.0, mid, 2 * outer, outer - inner),
+                         (-mid, 0.0, outer - inner, 2 * inner), (mid, 0.0, outer - inner, 2 * inner)):
+        pieces = max(1, math.ceil(max(w, d) / 1000.0))
+        for k in range(pieces):
+            if w >= d:
+                s.collider((cx - w / 2 + w * (k + 0.5) / pieces, -0.5, cz), (w / pieces, 1.0, d), 0, False, "Ash")
+            else:
+                s.collider((cx, -0.5, cz - d / 2 + d * (k + 0.5) / pieces), (w, 1.0, d / pieces), 0, False, "Ash")
+
+
+def chasm(s, c, seed):
+    """A deep crack in the plain (cut out of far_plain): jagged rock walls dropping to a dark floor, a faint
+    cold glow and mist down in it, boulders and needles along its lips. The causeway crosses it."""
+    rng = random.Random(seed)
+    cx, cz, along, across, rot = c
+    corners = P.chasm_poly(c)
+    outline = []
+    for k in range(4):
+        a, b = corners[k], corners[(k + 1) % 4]
+        count = max(2, int(math.dist(a, b) / 9.0))
+        for q in range(count):
+            t = q / count
+            outline.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
+    levels = [(0.0, 1.0), (-8.0, 1.0), (-20.0, 0.96), (-36.0, 0.9), (-54.0, 0.82), (-P.CHASM_DEPTH, 0.74)]
+    rings = []
+    for li, (y, f) in enumerate(levels):
+        ring = []
+        for x, z in outline:
+            dx, dz = x - cx, z - cz
+            push = 0.0 if li == 0 else rng.uniform(-2.0, 1.6)
+            ring.append((cx + dx * f + (dx / (math.hypot(dx, dz) or 1.0)) * push, y, cz + dz * f + (dz / (math.hypot(dx, dz) or 1.0)) * push))
+        rings.append(ring)
+    n = len(outline)
+    for li in range(len(levels) - 1):
+        a, b = rings[li], rings[li + 1]
+        axis = (cx, (levels[li][0] + levels[li + 1][0]) / 2, cz)
+        for k in range(n):
+            k1 = (k + 1) % n
+            toward(s, "RockGrey", [a[k], a[k1], b[k1]], axis)
+            toward(s, "RockGrey", [a[k], b[k1], b[k]], axis)
+    bottom = [(p[0], p[2]) for p in rings[-1]]
+    for piece in g2.convex_pieces(bottom):
+        city.up_face(s, "Abyss", piece, -P.CHASM_DEPTH)
+    s.emitter("mist", (cx, -P.CHASM_DEPTH + 10.0, cz), 0.0, size=(along, 6.0, across * 0.5))
+    s.light("point", (cx, -34.0, cz), (150, 176, 214), 34, 0.5)
+    # The lips: boulders and a few needles along the two long sides, outside the causeway's rails.
+    t = math.radians(rot)
+    ax, az = math.cos(t), -math.sin(t)  # along the causeway
+    sx, sz = -az, ax  # across it
+    for q in range(10):
+        side = 1 if q % 2 else -1
+        across_off = rng.uniform(9.0, across / 2)
+        if q % 4 < 2:
+            across_off = -across_off
+        ex = cx + ax * side * (along / 2 + rng.uniform(1.0, 6.0)) + sx * across_off
+        ez = cz + az * side * (along / 2 + rng.uniform(1.0, 6.0)) + sz * across_off
+        boulder(s, ex, ez, rng.uniform(1.5, 4.0), seed * 10 + q, collide=False)
+    for side in (-1, 1):
+        needle_field(s, cx + sx * side * (across / 2 + 4.0), cz + sz * side * (across / 2 + 4.0), 7.0, 5, 8.0, 22.0,
+                     seed * 7 + side)
+
+
 def build(s, g):
     ground(s, g)
-    cliff(s, P.BASIN, 4242, P.PLATE, hole=P.grown(P.RIFT, 3.5), roots=46, root_len=(18.0, 90.0))
+    far_plain(s)
     edge(s)
     outcrops(s)
+    for k, c in enumerate(P.CHASMS):
+        chasm(s, c, 801 + k)
     # The twisted columns that frame the first view.
     for x, z, r, h, seed in P.COLUMNS:
         column(s, x, z, r, h, seed)

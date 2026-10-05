@@ -71,27 +71,30 @@ blender -b --factory-startup --python art/scripts/run_maps.py -- Meeting --expor
 
 ### The lobby and the meeting room
 
-The lobby (`scripts/maps/venues/lobby/`) is the Grey Realm, a dead island floating in a grey sea of
-cloud: the walkable island about 320 studs across with sheer cliffs all round (an invisible wall
-follows the rim, open only where the two bridges leave), an underside with rock roots hanging into the
-fog, and two small islets (the Spire Ascent to the west, the rune courtyard to the north-east) reached
-by old stone bridges. Beyond them there is no ground, only shapes in the haze: floating rocks, spires,
-arches, walls of cloud and, far north, one colossal blade. `plan.py` (every place, with its own overlap
-check; `python plan.py` runs it), `terrain.py` (the island's ground with the rift cut out, its cliffs,
-underside and roots, the rim's crown of rock, and the realm's own shapes: `column` (fluted, twisted),
-`needle`, `floating_rock`, `arch`, `cloud_bank`, `horn`, `blade`), `landmarks.py` (the spawn terrace, the
-plaza and the Grimoire's plinth, the title monolith, the eight steles, the bone throne, the Academy's ring
-of pillars, the dice rock, the stone-toss cairn, the cleft and the needle ledge, the carcass), `islets.py`
-(the two bridges and islets, the Spire Ascent's spiral of stones round a twisted spire, the rune
-courtyard), `formations.py` (the world beyond), `rift.py` (the hole through the island, its ruined rim,
-and Kagegaoka at night far below, dim and pale, built at a third of its size), `dressing.py` (dead trees,
-braziers, lantern posts, bones, the particles, the sounds, the roots and banners that sway; placed by
-hand) and `gameplay.py`. The lobby's Luau builds what shows text or does something at the scene's
-`anchors` (`s.anchor`): `Maps/Lobby.luau` (the title, the eight boards, the spawn, the Academy),
-`Maps/LobbyGames.luau` (the mini-games' objects) and `Maps/LobbyDecor.luau` (the things that sway). Its
-props are the `Lobby` set (`props_lobby.py`, `InkboundModels_Lobby.fbx`). The lobby's sky, clouds,
-fog and ambience are runtime: `client/World/RealmSky.luau`, `WindSway.luau`, `Audio/RealmAmbience.luau`,
-and the `lobby` preset in `shared/LightingPresets.luau`; their numbers are in each module's `TUNING`.
+The lobby (`scripts/maps/venues/lobby/`) is the Grey Realm, a never-ending wasteland: cracked ash running to the
+horizon (the plain is built out to 1500 studs and the fog closes at 1300, so its edge is never seen), huge
+twisted columns, mesas and spires standing out of the haze, walls of cloud on the skyline and, far north, one
+colossal blade standing in a rock mound. The walkable part is a rough basin about 320 studs across, bordered by
+a continuous ridge of rock, needle fields and spires (an invisible wall follows its edge, open only where the
+two causeways leave), with a second ridge behind it for depth. Two causeways of old stone cross deep chasms
+(cracks cut out of the plain) and climb a flight of steps onto two raised plateaus: the Spire Ascent (west)
+and the rune courtyard (north-east). A few rocks float high in the sky, the only things that do.
+`plan.py` (every place, with its own overlap check; `python plan.py` runs it), `terrain.py` (the basin's
+ground with the rift cut out, the endless plain `far_plain`, the ridge `edge`, the chasms `chasm`, the plateau
+sides, and the realm's own shapes: `column` (fluted, twisted), `needle`, `floating_rock`, `arch`,
+`cloud_bank`, `horn`, `blade`), `landmarks.py` (the spawn terrace, the plaza and the Grimoire's plinth, the
+title monolith, the eight steles, the bone throne, the Academy's ring of pillars, the dice rock, the
+stone-toss cairn, the cleft and the needle ledge, the carcass), `islets.py` (the two causeways and plateaus,
+the Spire Ascent's spiral of stones round a twisted spire, the rune courtyard), `formations.py` (the world
+beyond: spires, mesas, columns, arches, horns, ribs, ridges, dunes, cloud banks, floating rocks), `rift.py`
+(the hole through the ground, its ruined rim, and Kagegaoka at night far below, dim and pale, built at a third
+of its size), `dressing.py` (dead trees, braziers, lantern posts, bones, the particles, the sounds, the roots
+and banners that sway; placed by hand) and `gameplay.py`. The lobby's Luau builds what shows text or does
+something at the scene's `anchors` (`s.anchor`): `Maps/Lobby.luau` (the title, the eight boards, the spawn, the
+Academy), `Maps/LobbyGames.luau` (the mini-games' objects) and `Maps/LobbyDecor.luau` (the things that sway).
+Its props are the `Lobby` set (`props_lobby.py`, `InkboundModels_Lobby.fbx`). The lobby's sky, clouds, fog and
+ambience are runtime: `client/World/RealmSky.luau`, `WindSway.luau`, `Audio/RealmAmbience.luau`, and the
+`lobby` preset in `shared/LightingPresets.luau`; their numbers are in each module's `TUNING`.
 
 The lobby's sounds are synthesised by `scripts/audio/make_realm_audio.py` into `art/audio/` (see its
 README for the upload steps and the `Assets.sfx` slots).

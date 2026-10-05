@@ -105,9 +105,10 @@ end
 
 -- Venues -------------------------------------------------------------------------------------
 
--- The lobby: the Grey Realm, a dead island floating in a grey sea of cloud. No sun (the light comes
+-- The lobby: the Grey Realm, a never-ending wasteland under layers of cloud. No sun (the light comes
 -- from the whole overcast sky: low, even, cool), almost no colour left, heavy haze: things close by are
--- clear, the far rocks and the colossal blade thin into grey over a kilometre. The braziers' pale fire,
+-- clear, the far rocks and the colossal blade thin into grey over a kilometre; the plain runs on past
+-- the fog's end, so its edge is never seen. The braziers' pale fire,
 -- the cold glow of the relics and the rift are the only light that is not the sky's. The sky itself
 -- (clouds, no sun) and its slow breathing are World/RealmSky's; these are the values it breathes around.
 LightingPresets.lobby = preset({
@@ -119,7 +120,7 @@ LightingPresets.lobby = preset({
 	envDiffuse = 0.55,
 	envSpecular = 0.25,
 	fogStart = 110,
-	fogEnd = 1700,
+	fogEnd = 1300,
 	fogColor = rgb(104, 108, 118),
 	density = 0.34,
 	haze = 1.2,

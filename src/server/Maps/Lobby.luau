@@ -1,9 +1,9 @@
--- The lobby: the Grey Realm, a dead island floating in a grey sea of cloud, made in Blender
+-- The lobby: the Grey Realm, a never-ending wasteland under layered cloud, made in Blender
 -- (art/scripts/maps/venues/lobby/). Players appear on a ruined terrace over its old flagstone
 -- plaza, facing north; the steles round the plaza carry How to Play, the next case and the boards;
 -- south-west lies the Academy, a ring of broken pillars with a practice altar for every skill and
--- three effigies to practise on; two old bridges lead to the islets of the Spire Ascent and the rune
--- courtyard, and the dice rock and the stone-toss wait on the island itself.
+-- three effigies to practise on; two old causeways over chasms lead to the plateaus of the Spire Ascent
+-- and the rune courtyard, and the dice rock and the stone-toss wait in the basin itself.
 --
 -- SceneBuilder puts up the scene (or its greybox, without the import); this module builds what
 -- shows text or does something, at the scene's anchors. The Academy only tags parts (LTraining

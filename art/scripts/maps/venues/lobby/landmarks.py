@@ -23,7 +23,7 @@ def flag_disc(s, g, c, r, seed, mat="RuinFlag", zone="plaza", name=None, y=0.04,
         pts.append((c[0] + math.cos(a) * r * (1 - rng.uniform(0, broken)), c[1] + math.sin(a) * r * (1 - rng.uniform(0, broken))))
     hull = g2.convex_hull(pts)
     city.up_face(s, mat, hull, y)
-    s.zone(zone, hull, 0.0, name=name)
+    s.zone(zone, hull, max(0.0, y - 0.04), name=name)
     for k in range(18):
         a = rng.uniform(0, math.tau)
         d = r * rng.uniform(1.0, 1.25)

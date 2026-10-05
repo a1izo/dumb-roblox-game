@@ -6,7 +6,7 @@
 --     and close in the grey and the whole sky gets a little darker and lighter.
 --   * The lighting breathes: the ambient light, the exposure and the haze swell and ebb by a few
 --     per cent over minutes. The scene's cloud sprites (realmcloud / realmhaze emitters, built by
---     the server's SceneBuilder) take the scene's light, so the whole cloud sea darkens and lightens
+--     the server's SceneBuilder) take the scene's light, so the whole cloud belt darkens and lightens
 --     with it, one layer out of step with the next because they live at different distances.
 --
 -- Only while the camera is in the lobby (LightingController.Changed says which venue it is);

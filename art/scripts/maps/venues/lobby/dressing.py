@@ -166,9 +166,10 @@ def ambience(s):
         s.emitter("dust", (x, 10.0, z), 0.0, size=(44.0, 14.0, 44.0))
     for x, z, w, d in ((0.0, 40.0, 90.0, 60.0), (-70.0, -70.0, 70.0, 50.0), (60.0, -80.0, 70.0, 50.0), (-90.0, 90.0, 70.0, 50.0)):
         s.emitter("mist", (x, 1.0, z), 0.0, size=(w, 5.0, d))
-    # The sea of cloud under the island and the layers over it.
-    s.emitter("realmcloud", (0.0, -105.0, 0.0), 0.0, size=(1500.0, 40.0, 1500.0))
-    s.emitter("realmcloud", (0.0, -60.0, -420.0), 0.0, size=(1400.0, 30.0, 700.0))
+    # Low belts of cloud lying along the horizon on every side, and the thin layers high over the basin.
+    for x, z, w, d in ((0.0, -900.0, 2200.0, 300.0), (0.0, 900.0, 2200.0, 300.0), (-900.0, 0.0, 300.0, 2200.0),
+                       (900.0, 0.0, 300.0, 2200.0)):
+        s.emitter("realmcloud", (x, 24.0, z), 0.0, size=(w, 40.0, d))
     s.emitter("realmhaze", (0.0, 170.0, 0.0), 0.0, size=(1500.0, 60.0, 1500.0))
     s.emitter("realmhaze", (0.0, 260.0, -300.0), 0.0, size=(1800.0, 60.0, 1400.0))
     # The sounds: wind through the rocks at the vistas (the beds and the one-shots are the client's,

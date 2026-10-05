@@ -1,11 +1,12 @@
-"""The lobby: the Grey Realm, the dead floating island beyond the world where the Grimoire comes from.
-Grey cloud above and below, rock spires and floating stone in the haze, one colossal blade far to the
-north. Players appear on a ruined terrace over the old flagstone plaza, facing north; the steles round
-the plaza carry How to Play, the next case and the boards. South-west, the Academy's ring of broken
-pillars holds the practice altars; east, the rift looks down on Kagegaoka at night; north-west lies
-the dice rock and the cleft, north-east the needle ledge; south-east a colossal carcass; and behind
-the title monolith, up on its mesa, the empty bone throne. Two old bridges lead to two islets: the
-Spire Ascent (west) and the rune courtyard (north-east).
+"""The lobby: the Grey Realm, the never-ending wasteland beyond the world where the Grimoire comes from.
+Cracked grey ash running to the horizon under layered cloud, huge twisted columns, mesas and spires standing
+out of the fog, and far to the north one colossal blade. Players appear on a ruined terrace over an old
+flagstone plaza, facing north; the steles round the plaza carry How to Play, the next case and the boards.
+South-west, the Academy's ring of broken pillars holds the practice altars; east, the rift looks down on
+Kagegaoka at night; north-west lies the dice rock and the cleft, north-east the needle ledge; south-east a
+colossal carcass; and behind the title monolith, up on its mesa, the empty bone throne. A ridge of rock and
+needles borders the walkable basin; two old stone causeways cross deep chasms to two plateaus: the Spire
+Ascent (west) and the rune courtyard (north-east).
 
 Everything that shows text or does something is built by the game (src/server/Maps/Lobby.luau and
 the lobby games) at the anchors this scene exports: the title and tagline, the eight boards, the
@@ -39,10 +40,11 @@ VIEWS = [
     ((-70.0, 7.0, -92.0), (-110.0, 20.0, -140.0), 18),  # the cleft
     ((104.0, 7.0, -48.0), (140.0, 14.0, -80.0), 18),  # the needle ledge and its blade
     ((20.0, 8.0, 90.0), (70.0, 10.0, 110.0), 16),  # under the carcass's ribs
-    ((-150.0, 8.0, 0.0), (-300.0, 30.0, 0.0), 20),  # the west bridge to the Spire Ascent
-    ((-290.0, 4.0, 0.0), (-326.0, 70.0, -2.0), 20),  # at the foot of the spire
-    ((190.0, 6.0, -190.0), (214.0, 4.0, -216.0), 18),  # the rune courtyard
-    ((0.0, 300.0, 90.0), (0.0, 0.0, -80.0), 14),  # the island from above
+    ((-150.0, 8.0, 0.0), (-300.0, 20.0, 0.0), 20),  # the west causeway to the Spire Ascent
+    ((-228.0, 8.0, 14.0), (-228.0, -50.0, -2.0), 20),  # looking down into its chasm
+    ((-290.0, 11.0, 0.0), (-326.0, 77.0, -2.0), 20),  # at the foot of the spire
+    ((190.0, 14.0, -190.0), (214.0, 11.0, -216.0), 18),  # the rune courtyard
+    ((0.0, 300.0, 90.0), (0.0, 0.0, -80.0), 14),  # the basin from above
 ]
 
 # check_v2's targets: the walk from the spawn to each islet and across the island (seconds); up to 35 s to the
