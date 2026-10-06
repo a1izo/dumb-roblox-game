@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local LobbyGames = {}
 
@@ -233,7 +234,7 @@ local function dice(b, folder: Instance, anchors: { [string]: Anchor })
 			Text = "?",
 			TextColor3 = INK,
 			TextScaled = true,
-			Font = Enum.Font.GrenzeGotisch,
+			FontFace = WorldFont.face(Enum.Font.GrenzeGotisch),
 			Parent = gui,
 		}) :: TextLabel
 		table.insert(dies, die)
@@ -265,7 +266,7 @@ local function dice(b, folder: Instance, anchors: { [string]: Anchor })
 		TextColor3 = Color3.fromRGB(226, 222, 212),
 		TextStrokeTransparency = 0.4,
 		TextScaled = true,
-		Font = Enum.Font.SpecialElite,
+		FontFace = WorldFont.face(Enum.Font.SpecialElite),
 		Parent = gui,
 	}) :: TextLabel
 	return {

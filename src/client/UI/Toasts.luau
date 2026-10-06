@@ -1,5 +1,5 @@
--- Short notifications stacked on the right: torn paper slips with an ink mark in the kind's
--- colour. Each one slides in from the edge and fades away after a few seconds.
+-- Short notifications stacked on the right: Notch panels with a mark in the kind's colour. Each one
+-- glitches in once (a short videotape blink), and fades away after a few seconds.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local Kit = require(script.Parent.Kit)
+local Glitch = require(script.Parent.Core.Glitch)
 local Motion = require(script.Parent.Core.Motion)
 local Screens = require(script.Parent.Screens)
 
@@ -51,7 +52,7 @@ function Toasts.show(text: string, kind: string?)
 	local _ = slip
 	group.Parent = holder
 	trim(holder)
-	Motion.fade(group, true, Kit.Tokens.motion.base)
+	Glitch.attach(group, { loop = false })
 	Motion.slideIn(group, Vector2.new(40, 0), Kit.Tokens.motion.slow)
 
 	task.delay(LIFETIME, function()

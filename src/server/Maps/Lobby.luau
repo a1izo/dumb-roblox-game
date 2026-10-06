@@ -14,8 +14,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local WorldFont = require(Shared:WaitForChild("WorldFont"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
+local Assets = require(Shared:WaitForChild("Assets"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local LobbyDecor = require(script.Parent.LobbyDecor)
@@ -24,7 +26,7 @@ local SceneBuilder = require(script.Parent.SceneBuilder)
 
 local Lobby = {}
 
-local GOLD = Color3.fromRGB(215, 185, 110)
+local GOLD = Color3.fromRGB(163, 170, 181) -- the grey of the UI's secondary text
 local INK = Color3.fromRGB(12, 12, 14)
 local SLATE = Color3.fromRGB(16, 16, 20)
 local STONE = Color3.fromRGB(58, 58, 62)
@@ -68,7 +70,7 @@ local function signText(board: BasePart, text: string, color: Color3, font: Enum
 		Text = text,
 		TextColor3 = color,
 		TextScaled = true,
-		Font = font,
+		FontFace = WorldFont.face(font),
 		Parent = gui,
 	})
 end
@@ -196,7 +198,21 @@ function Lobby.build(b)
 	academy(b, anchors)
 
 	-- The title, carved into the monolith.
-	sign(b, anchors.title, Terms.NAMES.GAME, Color3.fromRGB(245, 245, 245), INK, Enum.Font.GrenzeGotisch)
+	local _, titleLabel =
+		sign(b, anchors.title, Terms.NAMES.GAME, Color3.fromRGB(245, 245, 245), INK, Enum.Font.GothamBlack)
+	-- The ransom-note wordmark replaces the plain lettering once the Core import has brought it.
+	local wordmark = Assets.texture("UiWordmark")
+	if wordmark ~= "" and titleLabel.Parent then
+		titleLabel.Visible = false
+		Create("ImageLabel", {
+			Name = "Wordmark",
+			BackgroundTransparency = 1,
+			Image = wordmark,
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.fromScale(1, 1),
+			Parent = titleLabel.Parent,
+		})
+	end
 	sign(b, anchors.tagline, Terms.TAGLINE, GOLD, INK, Enum.Font.SpecialElite)
 
 	-- How to play, on the great stele west of the plaza.

@@ -10,7 +10,7 @@
 --
 -- Parent the target before attaching (an element with no parent is dropped). The target should be a
 -- CanvasGroup (it blinks through GroupTransparency); on anything else it only jumps sideways. Ghosts are copies of its children, tinted and shifted, built only for the 0.15 s a blip
--- lasts. One Heartbeat connection serves every element, and exists only while there is at least one.
+-- lasts (not on a target that lays out its children). One Heartbeat connection serves every element, and exists only while there is at least one.
 -- The HUD does not loop: its elements only pulse when something changes. Reduced motion turns it all off.
 
 local RunService = game:GetService("RunService")
@@ -220,14 +220,17 @@ local function apply(entry: Entry, keys: { { any } }, elapsed: number)
 		(target :: CanvasGroup).GroupTransparency = 1 - visible
 	end
 	clearEffects(entry)
-	if split > 0 and entry.canvas then
+	-- Ghosts and tears are added inside the target, so a target that lays out its children only blinks
+	-- and jumps (they would be taken for list items).
+	local plain = entry.canvas and target:FindFirstChildWhichIsA("UIGridStyleLayout") == nil
+	if split > 0 and plain then
 		local red = makeGhost(entry, Tokens.color.danger)
 		red.Position = UDim2.fromOffset(-split, 0)
 		local white = makeGhost(entry, Tokens.color.white)
 		white.Position = UDim2.fromOffset(split, 0)
 		entry.ghosts = { red, white }
 	end
-	if tear and entry.canvas then
+	if tear and plain then
 		local height = target.AbsoluteSize.Y
 		for n = 1, 2 do
 			local bar = Instance.new("Frame")

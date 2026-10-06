@@ -14,8 +14,10 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
 local Kit = require(script.Parent.Kit)
+local Glitch = require(script.Parent.Core.Glitch)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
+local UiSound = require(script.Parent.Core.UiSound)
 local Screens = require(script.Parent.Screens)
 local Characters = require(script.Parent.Parent.Characters)
 
@@ -28,7 +30,8 @@ local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 local WorldFx = {}
 
 local overlay: Frame
-local titleHolder: Frame
+local titleHolder: any
+local titleGlitch: any
 local overlaySubtitle: any
 local overlayToken = 0
 
@@ -67,7 +70,7 @@ local function onLetterFlash(payload)
 		font = "mono",
 		TextScaled = true,
 		AutomaticSize = Enum.AutomaticSize.None,
-		TextColor3 = Color3.fromRGB(120, 255, 170),
+		TextColor3 = C.white,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Text = if type(payload.alias) == "string"
 			then string.upper(payload.alias) .. "  ·  " .. payload.pattern
@@ -106,7 +109,7 @@ local function onEyesName(payload)
 		font = "document",
 		TextScaled = true,
 		AutomaticSize = Enum.AutomaticSize.None,
-		TextColor3 = Color3.fromRGB(255, 50, 50),
+		TextColor3 = C.danger,
 		TextStrokeTransparency = 0.2,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Text = finalText,
@@ -116,8 +119,8 @@ local function onEyesName(payload)
 	local duration = tonumber(payload.duration) or 3
 	-- The read: a red pulse, the target outlined for you alone, the name glitching into place.
 	Sfx.play("eyesOpen", { volume = 0.6 })
-	Cinema.flash(C.red, 0.35, 0.4)
-	Cinema.outline(character :: Model, C.red, duration)
+	Cinema.flash(C.danger, 0.35, 0.4)
+	Cinema.outline(character :: Model, C.danger, duration)
 	if not Motion.isReduced() then
 		task.spawn(function()
 			local glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#%&"
@@ -168,16 +171,19 @@ local function onElimination(payload)
 	Kit.clear(titleHolder)
 	local banner, lettering = Kit.banner({
 		text = title,
+		face = "Title",
 		size = T.size.hero,
-		tone = C.blood,
+		tone = C.danger,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Parent = titleHolder,
 	})
-	banner.Rotation = -4
+	banner.Rotation = -3
 	overlaySubtitle:set(subtitle)
 	overlay.Visible = true
-	lettering:write(0.5)
+	local _ = lettering
+	titleGlitch:enter()
+	UiSound.play("slam")
 	overlaySubtitle:write(0.9)
 	Router.setBlocking("eliminated", true)
 	task.delay(5, function()
@@ -192,17 +198,20 @@ function WorldFx.init()
 	overlay = Kit.frame({ Name = "Eliminated", ClipsDescendants = true, Visible = false, Parent = Screens.overlay })
 	overlay.BackgroundColor3 = C.void
 	overlay.BackgroundTransparency = 0.15
-	titleHolder = Kit.frame({
+	-- A CanvasGroup, so the title can blink and split when it glitches in.
+	titleHolder = Kit.Base.make("CanvasGroup", {
 		Name = "Title",
+		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.42),
 		Size = UDim2.new(1, 0, 0, 160),
 		Parent = overlay,
-	})
+	}) :: any
+	titleGlitch = Glitch.attach(titleHolder, { loop = false, enter = false })
 	overlaySubtitle = Kit.text({
-		face = "Scrawl",
+		face = "Semi",
 		text = "",
-		size = 36,
+		size = 28,
 		color = C.bone,
 		align = "center",
 		maxWidth = 900,

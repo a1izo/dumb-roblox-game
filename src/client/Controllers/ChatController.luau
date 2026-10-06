@@ -13,6 +13,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Parent.UI.Kit)
 
 local ChatController = {}
 
@@ -75,8 +76,8 @@ local function onIncomingMessage(message: TextChatMessage)
 	end
 	local properties = Instance.new("TextChatMessageProperties")
 	properties.PrefixText = if specters
-		then string.format('<font color="#9AA7C7">[%s] %s:</font>', Terms.NAMES.Specter, alias)
-		else string.format('<font color="#E6C36E">%s:</font>', alias)
+		then string.format('<font color="#A3AAB5">[%s] %s:</font>', Terms.NAMES.Specter, alias)
+		else string.format('<font color="#F4F5F7">%s:</font>', alias)
 	return properties
 end
 
@@ -102,7 +103,59 @@ local function onQuickChat(payload)
 	end
 end
 
+-- The chat window, the input bar and the speech bubbles in the Notch style: near-black panels, white
+-- Montserrat text. The layout stays Roblox's (on phones the window stays where thumbs are not). Each
+-- property is set on its own and guarded, so one a Studio version lacks cannot stop the rest.
+local function setProps(config: Instance?, props: { [string]: any })
+	if not config then
+		return
+	end
+	for name, value in pairs(props) do
+		pcall(function()
+			(config :: any)[name] = value
+		end)
+	end
+end
+
+local function styleChat()
+	local font = Kit.Tokens.font.body
+	local C = Kit.color
+	local phone = Kit.Layout.isPhone()
+	setProps(TextChatService:FindFirstChildOfClass("ChatWindowConfiguration"), {
+		FontFace = font,
+		TextSize = if phone then 13 else 15,
+		TextColor3 = C.white,
+		TextStrokeTransparency = 1,
+		BackgroundColor3 = C.g0,
+		BackgroundTransparency = 0.25,
+		HeightScale = if phone then 0.4 else 0.3,
+		WidthScale = if phone then 0.5 else 0.32,
+		-- Bottom left on a desktop, where the thumbs are not; top left on a phone, Roblox's default.
+		VerticalAlignment = if phone then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Bottom,
+	})
+	setProps(TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration"), {
+		FontFace = font,
+		TextSize = 15,
+		TextColor3 = C.white,
+		PlaceholderColor3 = C.g5,
+		TextStrokeTransparency = 1,
+		BackgroundColor3 = C.g0,
+		BackgroundTransparency = 0.2,
+	})
+	setProps(TextChatService:FindFirstChildOfClass("BubbleChatConfiguration"), {
+		FontFace = Kit.Tokens.font.bodyBold,
+		TextSize = 16,
+		TextColor3 = C.white,
+		BackgroundColor3 = C.g0,
+		BackgroundTransparency = 0.1,
+	})
+end
+
 function ChatController.init()
+	styleChat()
+	TextChatService.ChildAdded:Connect(function()
+		task.defer(styleChat)
+	end)
 	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
 		TextChatService.OnIncomingMessage = onIncomingMessage
 	end

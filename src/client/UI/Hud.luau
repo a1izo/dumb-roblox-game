@@ -1,8 +1,9 @@
--- The HUD in a match, drawn with the Grimoire kit:
---   phase banner  (top centre)   a brush stroke of blood with the phase in Gothic lettering;
---                                the clock, a mark per round and the place on a dark plate
---   objectives    (top left)     handwritten lines, filled in by the objective tracker
---   identity      (bottom left)  your wax seal, role, alias and, one per line, what you
+-- The HUD in a match, drawn with the Notch kit. It is the quiet side of the design: steady, grey, and red
+-- only for danger (the last ten seconds, Diavolo's side). It glitches once when the phase changes.
+--   phase banner  (top centre)   the phase in Melodrama on a dark bar; under it a panel with the
+--                                clock (equal-width digits), a tick per round and the place
+--   objectives    (top left)     lines, filled in by the objective tracker
+--   identity      (bottom left)  your ID seal, role, alias and, one per line, what you
 --                                carry and can do
 --   actions       (bottom right) square chips with an icon and a key, from Input/Actions;
 --                                the name shows on hover
@@ -20,6 +21,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local Actions = require(script.Parent.Parent.Input.Actions)
 local ClientState = require(script.Parent.Parent.ClientState)
 local Clock = require(script.Parent.Core.Clock)
+local Glitch = require(script.Parent.Core.Glitch)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Kit = require(script.Parent.Kit)
@@ -56,7 +58,8 @@ local ACTION_ICON = {
 -- Phase banner
 local banner: Frame
 local bannerText: any
-local clockLabel: TextLabel
+local clockLabel: any
+local bannerGlitch: any
 local clockIcon: ImageLabel
 local marks: Frame
 local infoLabel: TextLabel
@@ -90,18 +93,14 @@ local TOUCH_CHIP = 72
 local function renderMarks(round: number, maxRounds: number)
 	Kit.clear(marks)
 	for i = 1, maxRounds do
-		local current = i == round
-		local mark = Kit.Base.make("Frame", {
+		Kit.Base.make("Frame", {
 			Name = "Round" .. i,
-			BackgroundColor3 = if current then C.red elseif i < round then C.bone else C.faint,
-			BackgroundTransparency = if i > round then 0.4 else 0,
+			BackgroundColor3 = if i <= round then C.white else C.g4,
 			BorderSizePixel = 0,
-			Rotation = 45,
-			Size = UDim2.fromOffset(if current then 10 else 7, if current then 10 else 7),
+			Size = UDim2.fromOffset(14, 6),
 			LayoutOrder = i,
 			Parent = marks,
 		})
-		local _ = mark
 	end
 end
 
@@ -116,7 +115,7 @@ local function updateBanner()
 	if phase ~= lastPhase then
 		lastPhase = phase
 		bannerText:set(Terms.phase(phase))
-		bannerText:write(0.45)
+		bannerGlitch:enter()
 		Motion.slideIn(banner, Vector2.new(0, -24), T.motion.slow)
 	end
 	local round = state.round or 0
@@ -124,7 +123,7 @@ local function updateBanner()
 	renderMarks(round, state.maxRounds or 5)
 	if not ClientState.isLiving() then
 		infoLabel.Text = if ClientState.isParticipant() then "You are out  ·  watching" else "Watching"
-		infoLabel.TextColor3 = C.red
+		infoLabel.TextColor3 = C.white
 	else
 		infoLabel.Text = tostring(state.mapName or "")
 		infoLabel.TextColor3 = C.dim
@@ -133,12 +132,12 @@ end
 
 local function clockText(seconds: number): string
 	if not ClientState.public.active then
-		return clockLabel.Text
+		return clockLabel.text
 	end
-	-- The last ten seconds are in red.
+	-- The last ten seconds are in red (danger).
 	local urgent = seconds <= 10
-	clockLabel.TextColor3 = if urgent then C.red else C.bone
-	clockIcon.ImageColor3 = if urgent then C.red else C.dim
+	clockLabel:setColor(if urgent then C.danger else C.bone)
+	clockIcon.ImageColor3 = if urgent then C.danger else C.dim
 	return Clock.format(seconds)
 end
 
@@ -203,12 +202,11 @@ local function renderAbilities(list: { string })
 			LayoutOrder = index,
 			Parent = abilities,
 		})
-		-- A small red diamond of ink marks each line.
+		-- A small grey square marks each line.
 		Kit.Base.make("Frame", {
 			Name = "Mark",
-			BackgroundColor3 = C.red,
+			BackgroundColor3 = C.dim,
 			BorderSizePixel = 0,
-			Rotation = 45,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromOffset(5, 10),
 			Size = UDim2.fromOffset(6, 6),
@@ -231,7 +229,7 @@ local function rebuildSeal(role: string, color: Color3)
 	end
 	seal = Kit.seal({
 		size = 60,
-		color = color:Lerp(C.blood, 0.25),
+		color = color,
 		icon = ROLE_ICON[role] or "agency",
 		ZIndex = 3,
 		Parent = sealHolder,
@@ -250,12 +248,12 @@ local function updateBadge()
 	local role = private.role or "TaskForce"
 	local info = Roles.get(role)
 	local hostile = role == "Kira" or role == "Follower"
-	local color = if hostile then C.red else C.steel
+	local color = if hostile then C.danger else C.g6
 	if role .. tostring(private.inMatch) ~= lastRole then
 		lastRole = role .. tostring(private.inMatch)
 		rebuildSeal(role, color)
 		roleText:set(if private.inMatch then info.display else "")
-		roleText:setColor(if hostile then C.red else C.bone)
+		roleText:setColor(if hostile then C.danger else C.bone)
 	end
 	local status = if me then Terms.status(me.status) else ""
 	aliasLabel.Text = string.format("%s  ·  %s", tostring(private.alias or (me and me.alias) or ""), status)
@@ -337,57 +335,66 @@ end
 -- Setup -----------------------------------------------------------------------------------------
 
 local function buildBanner()
-	banner = Kit.frame({
+	-- A CanvasGroup, so the whole banner can blink when the phase changes.
+	banner = Kit.Base.make("CanvasGroup", {
 		Name = "PhaseBanner",
+		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(0, 0),
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Visible = false,
 		Parent = Screens.hud,
-	})
+	}) :: any
 	Kit.Layout.place(banner, "topCenter", Vector2.new(0, -6))
 	Kit.list(banner, T.space.xs, false, Enum.HorizontalAlignment.Center)
 	local stroke, text = Kit.banner({
 		text = "",
 		size = T.size.heading,
-		tone = C.blood,
 		LayoutOrder = 1,
 		Parent = banner,
 	})
 	local _ = stroke
 	bannerText = text
-	-- The clock, the rounds and the place sit on a dark plate, so the room never shows through.
-	local plate = Kit.Base.make("Frame", {
+	-- The clock, the rounds and the place sit on a glass panel, so the room never shows through. The panel
+	-- is a shell with the clipped-corner shape behind an inner frame that lays its rows out.
+	local plate = Kit.frame({
 		Name = "Plate",
-		BackgroundColor3 = C.void,
-		BackgroundTransparency = 0.3,
-		BorderSizePixel = 0,
 		Size = UDim2.fromOffset(0, 0),
 		AutomaticSize = Enum.AutomaticSize.XY,
 		LayoutOrder = 2,
 		Parent = banner,
 	})
-	Kit.Base.corner(plate, T.radius.key)
-	Kit.pad(plate, T.space.xs, T.space.m)
-	Kit.list(plate, T.space.xxs, false, Enum.HorizontalAlignment.Center)
-	local row = Kit.frame({
-		Name = "Clock",
-		Size = UDim2.fromOffset(0, 26),
-		AutomaticSize = Enum.AutomaticSize.X,
-		LayoutOrder = 1,
+	local shell = Kit.frame({ Name = "Shell", ZIndex = 0, Parent = plate })
+	Kit.Surfaces.redrawWhenReady(shell, function()
+		Kit.clear(shell)
+		Kit.notch(shell, { shape = "panel", color = C.page, transparency = T.alpha.glass, ZIndex = 0 })
+		Kit.Base.make("Frame", {
+			Name = "Edge",
+			BackgroundColor3 = C.g5,
+			BorderSizePixel = 0,
+			Size = UDim2.new(0, 2, 1, 0),
+			ZIndex = 0,
+			Parent = shell,
+		})
+	end)
+	local inner = Kit.frame({
+		Name = "Inner",
+		Size = UDim2.fromOffset(0, 0),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		ZIndex = 1,
 		Parent = plate,
 	})
-	Kit.list(row, T.space.m, true, Enum.HorizontalAlignment.Center)
-	clockIcon = Kit.icon({ name = "clock", size = 18, color = C.dim, LayoutOrder = 1, Parent = row })
-	clockLabel = Kit.label({
-		Text = "",
-		font = "mono",
-		size = "lead",
-		TextWrapped = false,
+	Kit.pad(inner, T.space.s, T.space.l)
+	Kit.list(inner, T.space.xxs, false, Enum.HorizontalAlignment.Center)
+	local row = Kit.frame({
+		Name = "Clock",
+		Size = UDim2.fromOffset(0, 32),
 		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromScale(0, 1),
-		LayoutOrder = 2,
-		Parent = row,
+		LayoutOrder = 1,
+		Parent = inner,
 	})
+	Kit.list(row, T.space.m, true, Enum.HorizontalAlignment.Center)
+	clockIcon = Kit.icon({ name = "clock", size = 20, color = C.dim, LayoutOrder = 1, Parent = row })
+	clockLabel = Kit.num({ text = "0:00", size = 26, color = C.bone, LayoutOrder = 2, Parent = row })
 	marks = Kit.frame({
 		Name = "Rounds",
 		Size = UDim2.fromOffset(0, 14),
@@ -395,20 +402,21 @@ local function buildBanner()
 		LayoutOrder = 3,
 		Parent = row,
 	})
-	Kit.list(marks, 7, true, Enum.HorizontalAlignment.Center)
+	Kit.list(marks, 4, true, Enum.HorizontalAlignment.Center)
 	infoLabel = Kit.label({
 		Text = "",
-		font = "bodyItalic",
-		size = "body",
+		font = "label",
+		size = "micro",
+		upper = true,
 		color = C.dim,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Size = UDim2.fromOffset(0, 0),
 		LayoutOrder = 2,
-		Parent = plate,
+		Parent = inner,
 	})
 	Clock.bind(clockLabel, clockText)
-	-- Room under the plate for controls that belong with the phase (the Specter HUD).
+	-- Room under the panel for controls that belong with the phase (the Deathsinger HUD).
 	bannerExtra = Kit.frame({
 		Name = "Extra",
 		Size = UDim2.fromOffset(0, 0),
@@ -416,12 +424,15 @@ local function buildBanner()
 		LayoutOrder = 3,
 		Parent = banner,
 	})
+	-- A one-time glitch when the phase changes (the HUD itself never loops).
+	bannerGlitch = Glitch.attach(banner, { loop = false, enter = false })
 end
 
 local function buildBadge()
 	local page, content = Kit.page({
 		Name = "Identity",
 		tone = "raised",
+		glass = true,
 		padding = T.space.m,
 		autoHeight = true,
 		Size = UDim2.fromOffset(340, 0),
@@ -447,7 +458,7 @@ local function buildBadge()
 		Parent = top,
 	})
 	Kit.list(column, 2)
-	roleText = Kit.text({ face = "Gothic", text = "", size = T.size.title, LayoutOrder = 1, Parent = column })
+	roleText = Kit.text({ face = "Head", text = "", size = T.size.title, LayoutOrder = 1, Parent = column })
 	aliasLabel = Kit.label({ font = "bodyBold", size = "small", LayoutOrder = 2, Parent = column })
 	alliesLabel = Kit.label({ size = "micro", color = C.dim, LayoutOrder = 3, Parent = column })
 	abilities = Kit.frame({
@@ -459,20 +470,54 @@ local function buildBadge()
 		Parent = content,
 	})
 	Kit.list(abilities, T.space.xxs)
-	cardHint = Kit.label({ font = "bodyItalic", size = "micro", color = C.faint, LayoutOrder = 3, Parent = content })
+	cardHint = Kit.label({ font = "label", size = "micro", color = C.faint, LayoutOrder = 3, Parent = content })
 end
 
 function Hud.init()
 	buildBanner()
 	buildBadge()
+	-- The list sits on a glass panel that shows only while it has lines.
+	local objectivesPanel = Kit.frame({
+		Name = "ObjectivesPanel",
+		Size = UDim2.fromOffset(0, 0),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Visible = false,
+		Parent = Screens.hud,
+	})
+	Kit.Layout.place(objectivesPanel, "topLeft", Vector2.new(0, 4))
+	local objectivesShell = Kit.frame({ Name = "Shell", ZIndex = 0, Parent = objectivesPanel })
+	Kit.Surfaces.redrawWhenReady(objectivesShell, function()
+		Kit.clear(objectivesShell)
+		Kit.notch(objectivesShell, { shape = "panel", color = C.page, transparency = T.alpha.glass, ZIndex = 0 })
+		Kit.Base.make("Frame", {
+			Name = "Edge",
+			BackgroundColor3 = C.g5,
+			BorderSizePixel = 0,
+			Size = UDim2.new(0, 2, 1, 0),
+			ZIndex = 0,
+			Parent = objectivesShell,
+		})
+	end)
 	objectives = Kit.frame({
 		Name = "Objectives",
 		Size = UDim2.fromOffset(340, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Parent = Screens.hud,
+		ZIndex = 1,
+		Parent = objectivesPanel,
 	})
-	Kit.Layout.place(objectives, "topLeft", Vector2.new(0, 4))
-	Kit.list(objectives, T.space.xs)
+	Kit.pad(objectives, T.space.m, T.space.m + 4)
+	Kit.list(objectives, T.space.s)
+	local function syncObjectives()
+		local any = false
+		for _, child in ipairs(objectives:GetChildren()) do
+			if child:IsA("GuiObject") then
+				any = true
+			end
+		end
+		objectivesPanel.Visible = any
+	end
+	objectives.ChildAdded:Connect(syncObjectives)
+	objectives.ChildRemoved:Connect(syncObjectives)
 	-- Its layout (a row, or a grid on touch screens) is set by layout().
 	actionBar = Kit.frame({ Name = "ActionBar", Parent = Screens.hud })
 
@@ -488,7 +533,7 @@ function Hud.init()
 	refresh()
 end
 
--- The container the objective tracker fills with lines.
+-- The container the objective tracker fills with lines (inside a glass panel that hides when it is empty).
 function Hud.objectives(): Frame
 	return objectives
 end

@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local WorldFont = require(Shared:WaitForChild("WorldFont"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local SceneBuilder = require(script.Parent.SceneBuilder)
@@ -38,7 +39,7 @@ local function facingCentre(b, spots: { Anchor }, lift: number): { CFrame }
 	return list
 end
 
--- Zero's anonymous screen: a sigil on the left, what Zero says on the right.
+-- Ace's anonymous screen: a sigil on the left, what Ace says on the right. The only black-on-white panel in the world.
 local function screen(b, a: Anchor): TextLabel
 	local part = b:part(
 		Vector3.new(a.w or 30, a.h or 12, 0.4),
@@ -54,25 +55,25 @@ local function screen(b, a: Anchor): TextLabel
 		Parent = part,
 	})
 	Create("TextLabel", {
-		BackgroundColor3 = Color3.fromRGB(245, 245, 245),
+		BackgroundColor3 = Color3.fromRGB(8, 9, 11),
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(0.3, 1),
 		Text = Terms.NAMES.zeroGlyph,
-		TextColor3 = Color3.fromRGB(10, 10, 10),
+		TextColor3 = Color3.fromRGB(244, 245, 247),
 		TextScaled = true,
-		Font = Enum.Font.GrenzeGotisch,
+		FontFace = WorldFont.face(Enum.Font.GrenzeGotisch),
 		Parent = gui,
 	})
 	local label = Create("TextLabel", {
-		BackgroundColor3 = Color3.fromRGB(12, 12, 14),
+		BackgroundColor3 = Color3.fromRGB(244, 245, 247),
 		BorderSizePixel = 0,
 		Position = UDim2.fromScale(0.3, 0),
 		Size = UDim2.fromScale(0.7, 1),
 		Text = Terms.f("{Zero} is watching."),
-		TextColor3 = Color3.fromRGB(235, 235, 235),
+		TextColor3 = Color3.fromRGB(8, 9, 11),
 		TextScaled = true,
 		TextWrapped = true,
-		Font = Enum.Font.SpecialElite,
+		FontFace = WorldFont.face(Enum.Font.SpecialElite),
 		Parent = gui,
 	})
 	Create("UIPadding", {

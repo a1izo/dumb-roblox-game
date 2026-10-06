@@ -71,6 +71,7 @@ local MovementRules = require(World:WaitForChild("MovementRules"))
 local RainController = require(World:WaitForChild("RainController"))
 local WindSway = require(World:WaitForChild("WindSway"))
 local TextureDoctor = require(World:WaitForChild("TextureDoctor"))
+local NameTags = require(World:WaitForChild("NameTags"))
 
 local Specter = script:WaitForChild("Specter")
 local FollowCam = require(Specter:WaitForChild("FollowCam"))
@@ -158,6 +159,7 @@ MovementRules.init()
 RealmAmbience.init()
 
 -- Specters: hidden from the living, flying for yourself.
+NameTags.init()
 GhostVisibility.init()
 GhostController.init()
 FollowCam.init()

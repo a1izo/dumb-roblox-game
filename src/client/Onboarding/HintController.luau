@@ -118,7 +118,7 @@ local function buildCard()
 	})
 	Kit.Base.make("Frame", {
 		Name = "Mark",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BorderSizePixel = 0,
 		Position = UDim2.fromOffset(10, 14),
 		Size = UDim2.new(0, 3, 1, -28),
@@ -131,7 +131,7 @@ local function buildCard()
 	Kit.icon({
 		name = "help",
 		size = 22,
-		color = C.red,
+		color = C.white,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.fromScale(0, 0.5),
 		Parent = titleRow,
@@ -139,7 +139,7 @@ local function buildCard()
 	titleLabel = Kit.label({
 		font = "label",
 		size = "small",
-		color = C.red,
+		color = C.white,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,

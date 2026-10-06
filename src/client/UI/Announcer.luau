@@ -1,6 +1,6 @@
 -- Big announcements across the upper middle of the screen (rounds, deaths, votes): the title
--- slams in as inked Gothic lettering on a brush stroke, and the subtitle is written beneath in
--- handwriting. While a full-screen overlay is up (the briefing, the results, your own
+-- slams in as Aktura lettering on a bar (red for danger, black otherwise) with a videotape glitch, and
+-- the subtitle is cut in beneath it. While a full-screen overlay is up (the briefing, the results, your own
 -- elimination) the queue waits, and anything older than a few seconds is dropped instead of
 -- shown late.
 
@@ -10,8 +10,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local Kit = require(script.Parent.Kit)
+local Glitch = require(script.Parent.Core.Glitch)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
+local UiSound = require(script.Parent.Core.UiSound)
 local Screens = require(script.Parent.Screens)
 
 local C = Kit.color
@@ -21,19 +23,32 @@ local Announcer = {}
 
 local MAX_AGE = 6
 
--- tone -> brush colour, lettering colour
+-- tone -> bar colour, lettering colour
 local TONES = {
-	neutral = { C.void, C.bone },
-	danger = { C.blood, C.bone },
-	kira = { C.blood, C.bone },
-	team = { C.steel:Lerp(C.void, 0.45), C.bone },
+	neutral = { C.g0, C.white },
+	danger = { C.danger, C.white },
+	kira = { C.danger, C.white },
+	team = { C.g0, C.white },
 }
+
+-- Aktura is set in mixed case (its capitals are ornate): "ROUND 2" becomes "Round 2".
+local function mixedCase(text: string): string
+	if text ~= string.upper(text) then
+		return text
+	end
+	return (
+		string.gsub(text, "(%a)(%a*)", function(first: string, rest: string): string
+			return string.upper(first) .. string.lower(rest)
+		end)
+	)
+end
 
 local queue = {}
 local running = false
 local group: CanvasGroup
 local titleHolder: Frame
 local subtitleText: any
+local glitch: any
 
 local function run()
 	running = true
@@ -45,9 +60,10 @@ local function run()
 		if os.clock() - item.at <= MAX_AGE then
 			local tone = TONES[item.tone] or TONES.neutral
 			Kit.clear(titleHolder)
-			local bannerFrame, bannerText = Kit.banner({
-				text = item.title,
-				size = if Kit.Layout.isPhone() then T.size.heading else T.size.display,
+			local bannerFrame = Kit.banner({
+				text = mixedCase(item.title),
+				face = "Title",
+				size = if Kit.Layout.isPhone() then T.size.display else 72,
 				tone = tone[1],
 				ink = tone[2],
 				AnchorPoint = Vector2.new(0.5, 0),
@@ -57,13 +73,15 @@ local function run()
 			})
 			bannerFrame.Rotation = -2
 			subtitleText:set(item.subtitle or "")
-			Motion.fade(group, true, T.motion.quick)
+			group.GroupTransparency = 0
+			group.Visible = true
+			glitch:enter()
+			UiSound.play("slam")
 			-- The slam: in from a little larger, settling hard.
 			local scale = Instance.new("UIScale")
 			scale.Scale = if Motion.isReduced() then 1 else 1.25
 			scale.Parent = bannerFrame
 			Motion.tween(scale, { Scale = 1 }, 0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-			bannerText:write(0.35, C.bone)
 			subtitleText:write(0.6)
 			task.wait(if #queue > 0 then 2.2 else 3.2)
 			local tween = Motion.fade(group, false, 0.3)
@@ -102,9 +120,9 @@ function Announcer.init()
 	group.Visible = false
 	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 110), Parent = group })
 	subtitleText = Kit.text({
-		face = "Scrawl",
+		face = "Semi",
 		text = "",
-		size = 34,
+		size = 28,
 		color = C.bone,
 		align = "center",
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -112,6 +130,7 @@ function Announcer.init()
 		Parent = group,
 	})
 	group.Parent = Screens.overlay
+	glitch = Glitch.attach(group, { loop = false, enter = false })
 	Net.event("Announce").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" and type(payload.title) == "string" then
 			Announcer.show(payload.title, payload.subtitle, payload.tone)

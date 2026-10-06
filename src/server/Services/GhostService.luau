@@ -276,6 +276,7 @@ local function ghostBody(character: Model, attribute: string, displayName: strin
 	if humanoid then
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 		humanoid.DisplayName = displayName
+		character:SetAttribute("NameHidden", true)
 	end
 end
 

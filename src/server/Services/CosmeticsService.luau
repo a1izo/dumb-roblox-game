@@ -100,9 +100,10 @@ local function titleTag(player: Player, character: Model, title: string?)
 		Size = UDim2.fromScale(1, 1),
 		Text = string.upper(text),
 		TextScaled = true,
-		TextColor3 = if vip then Color3.fromRGB(255, 200, 90) else Color3.fromRGB(244, 241, 234),
+		TextColor3 = if vip then Color3.fromRGB(244, 245, 247) else Color3.fromRGB(163, 170, 181),
+		TextStrokeColor3 = Color3.fromRGB(8, 9, 11),
 		TextStrokeTransparency = 0.4,
-		Font = Enum.Font.Oswald,
+		FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold),
 		Parent = gui,
 	})
 end

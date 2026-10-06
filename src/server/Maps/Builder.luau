@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local WorldFont = require(Shared:WaitForChild("WorldFont"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 
@@ -119,7 +120,7 @@ function Builder:sign(
 		Text = text,
 		TextColor3 = textColor,
 		TextScaled = true,
-		Font = font or Enum.Font.GothamBlack,
+		FontFace = WorldFont.face(font or Enum.Font.GothamBlack),
 		Parent = gui,
 	})
 	Create("UIPadding", {
@@ -281,7 +282,7 @@ function Builder:station(def, id: string)
 		Text = string.upper(def.name) .. "\nREADY",
 		TextColor3 = typeColor,
 		TextScaled = true,
-		Font = Enum.Font.Code,
+		FontFace = WorldFont.face(Enum.Font.Code),
 		Parent = gui,
 	})
 	Create("UIPadding", {
@@ -413,7 +414,7 @@ function Builder:board(def)
 		Color3.fromRGB(255, 255, 255),
 		Color3.fromRGB(120, 25, 30)
 	)
-	title.Font = Enum.Font.SpecialElite
+	title.FontFace = WorldFont.face(Enum.Font.SpecialElite)
 	if dressed then
 		-- The cork board is recognisable on its own; no plate floating above it.
 		local titlePart = title:FindFirstAncestorWhichIsA("BasePart")

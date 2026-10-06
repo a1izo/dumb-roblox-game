@@ -248,10 +248,11 @@ local function refreshNameTags()
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
 				Text = string.upper(realName),
-				TextColor3 = Color3.fromRGB(255, 70, 70),
+				TextColor3 = Color3.fromRGB(244, 245, 247),
+				TextStrokeColor3 = Color3.fromRGB(8, 9, 11),
 				TextStrokeTransparency = 0.3,
 				TextScaled = true,
-				Font = Enum.Font.SpecialElite,
+				FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold),
 				Parent = gui,
 			})
 			nameTags[userId] = gui

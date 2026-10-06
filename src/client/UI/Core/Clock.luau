@@ -7,9 +7,14 @@ local ClientState = require(script.Parent.Parent.Parent.ClientState)
 
 local Clock = {}
 
-type Binding = { label: TextLabel, format: (number) -> string, endsAt: (() -> number)? }
+-- A label is a TextLabel, or a Kit.num / Kit.text handle (anything with :set(text) and a .frame).
+type Binding = { label: any, format: (number) -> string, endsAt: (() -> number)? }
 
-local bindings: { [TextLabel]: Binding } = {}
+local bindings: { [any]: Binding } = {}
+
+local function guiOf(label: any): GuiObject
+	return if typeof(label) == "Instance" then label else label.frame
+end
 
 function Clock.now(): number
 	return workspace:GetServerTimeNow()
@@ -28,12 +33,17 @@ end
 
 local function refresh(binding: Binding)
 	local left = if binding.endsAt then math.max(0, binding.endsAt() - Clock.now()) else Clock.phaseLeft()
-	binding.label.Text = binding.format(left)
+	local text = binding.format(left)
+	if typeof(binding.label) == "Instance" then
+		binding.label.Text = text
+	else
+		binding.label:set(text)
+	end
 end
 
 -- Keeps `label` showing format(secondsLeft). By default it counts down the current phase;
 -- pass endsAt to count down to another server time. Returns a function that unbinds.
-function Clock.bind(label: TextLabel, format: ((number) -> string)?, endsAt: (() -> number)?): () -> ()
+function Clock.bind(label: any, format: ((number) -> string)?, endsAt: (() -> number)?): () -> ()
 	local binding = { label = label, format = format or Clock.format, endsAt = endsAt }
 	bindings[label] = binding
 	refresh(binding)
@@ -53,9 +63,10 @@ function Clock.init()
 		end
 		elapsed = 0
 		for label, binding in pairs(bindings) do
-			if label.Parent == nil then
+			local gui = guiOf(label)
+			if gui.Parent == nil then
 				bindings[label] = nil
-			elseif label.Visible then
+			elseif gui.Visible then
 				refresh(binding)
 			end
 		end

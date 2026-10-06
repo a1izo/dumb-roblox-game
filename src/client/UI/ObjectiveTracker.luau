@@ -1,5 +1,5 @@
--- The "what now?" list at the top left: one to three short handwritten lines for your role and
--- the current phase, struck through in red as you do them. Built from your own state only
+-- The "what now?" list at the top left: one to three short lines for your role and
+-- the current phase, struck through (in grey) as you do them. Built from your own state only
 -- (Objectives module). Part of the guide: hidden when the player turns the guide off.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,40 +26,28 @@ local function line(parent: Instance, entry, index: number)
 		LayoutOrder = index,
 		Parent = parent,
 	})
-	Kit.icon({
-		name = if entry.done then "check" else "quill",
-		size = 18,
-		color = if entry.done then C.red else C.dim,
+	-- A square mark: hollow while to do, filled once done.
+	local mark = Kit.Base.make("Frame", {
+		Name = "Mark",
+		BackgroundColor3 = if entry.done then C.g6 else C.g5,
+		BackgroundTransparency = if entry.done then 0 else 1,
+		BorderSizePixel = 0,
 		Position = UDim2.fromOffset(0, 6),
+		Size = UDim2.fromOffset(10, 10),
 		Parent = row,
 	})
-	local text = Kit.text({
-		face = "Scrawl",
-		text = entry.text,
-		size = 27,
-		seed = index,
-		maxWidth = width - 30,
-		color = if entry.done then C.dim else C.bone,
-		Position = UDim2.fromOffset(26, 0),
-		Parent = row,
-	})
-	if entry.done then
-		-- Struck through in red.
-		local strike = Kit.Base.make("Frame", {
-			Name = "Strike",
-			BackgroundColor3 = C.red,
-			BackgroundTransparency = 0.15,
-			BorderSizePixel = 0,
-			Rotation = -1.5,
-			Position = UDim2.fromOffset(22, 14),
-			Size = UDim2.fromOffset(text.width + 8, 2),
-			ZIndex = 3,
-			Parent = row,
-		})
-		text.Changed:Connect(function()
-			strike.Size = UDim2.fromOffset(text.width + 8, 2)
-		end)
+	if not entry.done then
+		Kit.Base.stroke(mark, C.g5, 1.5, 0)
 	end
+	local label = Kit.label({
+		Text = if entry.done then "<s>" .. entry.text .. "</s>" else entry.text,
+		size = "small",
+		color = if entry.done then C.faint else C.bone,
+		Position = UDim2.fromOffset(20, 0),
+		Size = UDim2.new(0, math.max(width - 64, 120), 0, 0),
+		Parent = row,
+	})
+	label.RichText = true
 end
 
 local function render()

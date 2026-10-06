@@ -147,9 +147,9 @@ local function show(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInpu
 		Parent = wash,
 	})
 	Kit.text({
-		face = "Scrawl",
+		face = "Head",
 		text = prompt.ActionText,
-		size = 30,
+		size = 22,
 		color = C.bone,
 		Position = UDim2.fromOffset(4, 2),
 		ZIndex = 2,
@@ -171,7 +171,7 @@ local function show(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInpu
 	-- Hold progress: ink running along the bottom.
 	local fill = Kit.Base.make("Frame", {
 		Name = "Hold",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 4, 1, -6),
 		Size = UDim2.fromOffset(0, 3),

@@ -4,12 +4,13 @@
 
 local Assets = require(script.Parent.Assets)
 local Create = require(script.Parent.Create)
+local WorldFont = require(script.Parent.WorldFont)
 local ModelLibrary = require(script.Parent.ModelLibrary)
 
 local Models = {}
 
 local INK = Color3.fromRGB(12, 12, 14)
-local PAPER = Color3.fromRGB(226, 220, 205)
+local PAPER = Color3.fromRGB(244, 245, 247)
 local RED = Color3.fromRGB(209, 26, 42)
 local STEEL = Color3.fromRGB(160, 162, 170)
 
@@ -286,7 +287,7 @@ function Models.memorial(alias: string): Model
 			Text = string.upper(alias),
 			TextScaled = true,
 			TextColor3 = INK,
-			Font = Enum.Font.Oswald,
+			FontFace = WorldFont.face(Enum.Font.Oswald),
 			Parent = gui,
 		})
 		return imported
@@ -329,7 +330,7 @@ function Models.memorial(alias: string): Model
 		Text = string.upper(alias),
 		TextScaled = true,
 		TextColor3 = INK,
-		Font = Enum.Font.Oswald,
+		FontFace = WorldFont.face(Enum.Font.Oswald),
 		Parent = gui,
 	})
 	Create("Frame", {

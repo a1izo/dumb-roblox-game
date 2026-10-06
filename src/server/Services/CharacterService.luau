@@ -596,6 +596,8 @@ local function onCharacterAdded(player: Player, character: Model)
 	humanoid.NameOcclusion = Enum.NameOcclusion.OccludeAll
 	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	humanoid.NameDisplayDistance = 60
+	-- Roblox's own tag is off for everyone: the client draws the Notch tag (World/NameTags) from DisplayName.
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 
 	local ps = Match.getLiving(player)
 	if ps then
