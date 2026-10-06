@@ -33,7 +33,6 @@ BANNED = re.compile(SOURCE_NAMES + "|" + GAME_NAME + "|" + OLD_ROLES)
 # only the retired game name and the source material stay banned in them.
 IDENTIFIER = re.compile(r"[A-Za-z0-9_.:/#-]+")
 BANNED_IN_IDS = re.compile(SOURCE_NAMES + "|" + GAME_NAME)
-SOURCE_ONLY = re.compile(SOURCE_NAMES)
 PLACEHOLDER = re.compile(r"\{[A-Za-z_]+\}")
 INTERNAL_IDS = {
     "Kira", "Watari", "KiraRemoved", "LKilled", "DeathNote", "DeathNoteService",
@@ -43,19 +42,6 @@ INTERNAL_IDS = {
 # One string literal, double or single quoted; \\. keeps escaped characters inside it.
 STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"|\'((?:[^\'\\\n]|\\.)*)\'')
 SKIP = ("src/server/Tests/",)
-# The asset pipeline still names its imports Inkbound* until the one re-import of every FBX (the
-# Death's Gambit rename). These files read both names, so only the other bans apply to them.
-# Remove this list in the cleanup commit that follows the re-import.
-PIPELINE_UNTIL_REIMPORT = (
-    "src/shared/ModelLibrary.luau",
-    "src/shared/ModelCatalog.luau",
-    "src/shared/Assets.luau",
-    "src/client/UI/Kit/Textures.luau",
-    "src/client/World/TextureDoctor.luau",
-    "src/server/Maps/SceneBuilder.luau",
-    "src/server/Maps/Scenes/",
-)
-BANNED_WITHOUT_GAME_NAME = re.compile(SOURCE_NAMES + "|" + OLD_ROLES)
 
 problems = []
 for path in sorted((ROOT / "src").rglob("*.luau")):
@@ -72,9 +58,9 @@ for path in sorted((ROOT / "src").rglob("*.luau")):
                 continue
             visible = PLACEHOLDER.sub("", text)
             if IDENTIFIER.fullmatch(visible):
-                banned = SOURCE_ONLY if rel.startswith(PIPELINE_UNTIL_REIMPORT) else BANNED_IN_IDS
+                banned = BANNED_IN_IDS
             else:
-                banned = BANNED_WITHOUT_GAME_NAME if rel.startswith(PIPELINE_UNTIL_REIMPORT) else BANNED
+                banned = BANNED
             if banned.search(visible):
                 problems.append(f"{rel}:{number}: {text}")
 

@@ -26,10 +26,8 @@ MATERIALS_LUAU = os.path.join(common.ROOT, "src", "shared", "SceneMaterials.luau
 CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
-# mesh DeathsGambit<Kind>_Version_<n> (imports from before the rename carry Inkbound<Kind>_Version_<n>, which
-# the game still reads), and the game uses only the newest import of each kind. (The maps'
-# versions come from their mesh digests, see next_version. The retired InkboundModels.fbx and
-# InkboundMaps.fbx were the kinds "Models" and "Maps"; the game sets their imports aside.)
+# mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
+# versions come from their mesh digests, see next_version.)
 VERSION = {"ModelsCore": 2, "ModelsTokyo": 1, "ModelsAgency": 1, "ModelsCampus": 1, "ModelsLobby": 1,
            "ModelsMeeting": 1}
 
@@ -327,7 +325,6 @@ def write_scene_v2(scene, module, source):
         f"\tmeshPrefix = {lua_string(scene.prefix + '_' + venue + '_')},",
         f"\tcalibration = {lua_string('Calib_' + venue)},",
         f"\tmarker = {lua_string(f'DeathsGambit{kind}_Version_{version}')},",
-        f"\tlegacyMarker = {lua_string(f'Inkbound{kind}_Version_{version}')},",
         f"\tfbx = {lua_string(fbx_name)},",
         f"\tbounds = {{ min = {vec(lo)}, max = {vec(hi)} }},",
         f"\tstats = {_lua(stats)},",

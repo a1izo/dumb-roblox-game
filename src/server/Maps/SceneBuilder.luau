@@ -1001,7 +1001,7 @@ function SceneBuilder.mode(venue: string): string
 	end
 	local data = require(module) :: any
 	-- Imports from before the rename carry the older marker name (same version, same meshes).
-	local marker = ModelLibrary.source(data.marker) or (data.legacyMarker and ModelLibrary.source(data.legacyMarker))
+	local marker = ModelLibrary.source(data.marker)
 	local cal = ModelLibrary.calibration(data.calibration)
 	if marker and cal and #ModelLibrary.sourcesWithPrefix(data.meshPrefix) > 0 then
 		return "scene"

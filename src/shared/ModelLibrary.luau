@@ -31,11 +31,8 @@ export type Info = {
 }
 
 local STORE_NAME = "DeathsGambitAssets"
--- Before the game was renamed the store, the file prefix and the markers said Inkbound. Imports and places
--- from then still work: every lookup accepts both names, and the newer one wins when both are there.
-local LEGACY_STORE_NAME = "InkboundAssets"
-local PREFIX, LEGACY_PREFIX = "DeathsGambit", "Inkbound"
-local BIN_NAME, LEGACY_BIN_NAME = "DeathsGambitSuperseded", "InkboundSuperseded"
+local PREFIX = "DeathsGambit"
+local BIN_NAME = "DeathsGambitSuperseded"
 
 local templates: { [string]: Model | false } = {}
 local index: { [string]: Instance }? = nil
@@ -50,10 +47,10 @@ local TURNS = {
 }
 
 local function store(): Instance?
-	return ReplicatedStorage:FindFirstChild(STORE_NAME) or ReplicatedStorage:FindFirstChild(LEGACY_STORE_NAME)
+	return ReplicatedStorage:FindFirstChild(STORE_NAME)
 end
 
--- The folder the imports live in (either name), for the client modules that look for it.
+-- The folder the imports live in, for the client modules that look for it.
 function ModelLibrary.findStore(): Instance?
 	return store()
 end
@@ -97,10 +94,10 @@ local function looksImported(instance: Instance): boolean
 		return false
 	end
 	local name = instance.Name
-	if name == STORE_NAME or name == LEGACY_STORE_NAME or name == BIN_NAME or name == LEGACY_BIN_NAME then
+	if name == STORE_NAME or name == BIN_NAME then
 		return false
 	end
-	if string.sub(name, 1, #PREFIX) == PREFIX or string.sub(name, 1, #LEGACY_PREFIX) == LEGACY_PREFIX then
+	if string.sub(name, 1, #PREFIX) == PREFIX then
 		return instance:FindFirstChildWhichIsA("MeshPart", true) ~= nil
 	end
 	local known = 0
@@ -249,47 +246,19 @@ local function describeTurn(prefix: string): string
 end
 
 -- Versions -----------------------------------------------------------------------------------
--- Every export carries a marker mesh DeathsGambit<Kind>_Version_<n> (Inkbound<Kind>_Version_<n> before the rename). When the same kind was
--- imported more than once, only the newest import is used; older ones are set aside so old
--- and new meshes never mix.
---
--- Two files are retired: InkboundModels.fbx (kind "Models", its props now come in
--- DeathsGambitModels_Core.fbx) and InkboundMaps.fbx (kind "Maps", the lobby and the meeting room now
--- have files of their own). An import of either is always set aside, so nothing can use it.
-local RETIRED = { Models = "InkboundModels.fbx", Maps = "InkboundMaps.fbx" }
+-- Every export carries a marker mesh DeathsGambit<Kind>_Version_<n>. When the same kind was imported more
+-- than once, only the newest import is used; older ones are set aside so old and new meshes never mix.
 
 -- The import's kind and version from its marker, and whether it has one (without, the kind is
 -- the folder's own name: an early import, or your own models).
 local function importVersion(root: Instance): (string, number, boolean)
 	for _, item in ipairs(root:GetDescendants()) do
 		local kind, version = string.match(item.Name, "^DeathsGambit(%a+)_Version_(%d+)$")
-		if not kind then
-			kind, version = string.match(item.Name, "^Inkbound(%a+)_Version_(%d+)$")
-		end
 		if kind then
 			return kind, tonumber(version) or 0, true
 		end
 	end
 	return root.Name, 0, false
-end
-
--- True when the import's marker still carries the old game name.
-local function isLegacyImport(root: Instance): boolean
-	for _, item in ipairs(root:GetDescendants()) do
-		if string.match(item.Name, "^Inkbound%a+_Version_%d+$") then
-			return true
-		end
-	end
-	return false
-end
-
--- True for an import of a retired file: its marker says so, or (an import from before the
--- markers) the importer named it after the file.
-local function isRetired(root: Instance, kind: string, marked: boolean): boolean
-	if marked then
-		return RETIRED[kind] ~= nil
-	end
-	return root.Name == "InkboundModels" or root.Name == "InkboundMaps"
 end
 
 local function supersede(item: Instance)
@@ -303,24 +272,14 @@ local function supersede(item: Instance)
 	item.Parent = bin
 end
 
--- Sets aside every import of a retired file and all but the newest import of each kind. Returns
--- (older imports set aside, retired files found).
-local function setAsideOlder(root: Instance): ({ string }, { string })
-	local groups: { [string]: { { item: Instance, version: number, order: number, legacy: boolean } } } = {}
-	local retired = {}
+-- Sets aside all but the newest import of each kind. Returns the older imports set aside.
+local function setAsideOlder(root: Instance): { string }
+	local groups: { [string]: { { item: Instance, version: number, order: number } } } = {}
 	for order, child in ipairs(root:GetChildren()) do
 		if child:IsA("Model") or child:IsA("Folder") then
-			local kind, version, marked = importVersion(child)
-			if isRetired(child, kind, marked) then
-				supersede(child)
-				table.insert(retired, RETIRED[kind] or (child.Name .. ".fbx"))
-				continue
-			end
+			local kind, version = importVersion(child)
 			groups[kind] = groups[kind] or {}
-			table.insert(
-				groups[kind],
-				{ item = child, version = version, order = order, legacy = isLegacyImport(child) }
-			)
+			table.insert(groups[kind], { item = child, version = version, order = order })
 		end
 	end
 	local setAside = {}
@@ -329,9 +288,6 @@ local function setAsideOlder(root: Instance): ({ string }, { string })
 			table.sort(list, function(a, b)
 				if a.version ~= b.version then
 					return a.version > b.version
-				end
-				if a.legacy ~= b.legacy then
-					return not a.legacy -- an import made after the rename beats an older one of the same version
 				end
 				return a.order > b.order
 			end)
@@ -342,7 +298,7 @@ local function setAsideOlder(root: Instance): ({ string }, { string })
 			end
 		end
 	end
-	return setAside, retired
+	return setAside
 end
 
 -- Server, once at start (before any map is built): moves imports that were left in Workspace,
@@ -358,14 +314,6 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	end
 	local rootInstance = root :: Instance
 	local moved = {}
-	-- A store from before the rename (a place saved with one) is emptied into the current one.
-	local legacy = ReplicatedStorage:FindFirstChild(LEGACY_STORE_NAME)
-	if legacy and legacy ~= rootInstance then
-		for _, child in ipairs(legacy:GetChildren()) do
-			child.Parent = rootInstance
-			table.insert(moved, LEGACY_STORE_NAME .. "." .. child.Name)
-		end
-	end
 	local containers = { workspace, ReplicatedStorage, game:GetService("ServerStorage") }
 	for _, container in ipairs(containers) do
 		for _, child in ipairs(container:GetChildren()) do
@@ -377,7 +325,7 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		end
 	end
 	quiet(rootInstance)
-	local setAside, retired = setAsideOlder(rootInstance)
+	local setAside = setAsideOlder(rootInstance)
 	index = buildIndex()
 	templates = {}
 	calibrations = {}
@@ -400,14 +348,6 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 				.. table.concat(moved, ", ")
 		)
 	end
-	if #retired > 0 then
-		warn(
-			"[DeathsGambit] Set aside imports of retired files (nothing uses them any more; delete them in Studio): "
-				.. table.concat(retired, ", ")
-				.. ". Their props come in DeathsGambitModels_Core.fbx, the lobby and the meeting room in "
-				.. "DeathsGambitMaps_Lobby.fbx and DeathsGambitMaps_Meeting.fbx."
-		)
-	end
 	if found == 0 then
 		print(
 			"[DeathsGambit] No Blender models imported yet: the game uses its part-built stand-ins. "
@@ -426,9 +366,6 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 			scenes += 1
 		end
 		local venue, version = string.match(name, "^DeathsGambitMaps(%a+)_Version_(%d+)$")
-		if not venue then
-			venue, version = string.match(name, "^InkboundMaps(%a+)_Version_(%d+)$")
-		end
 		if venue then
 			table.insert(venues, venue .. " v" .. version)
 		end

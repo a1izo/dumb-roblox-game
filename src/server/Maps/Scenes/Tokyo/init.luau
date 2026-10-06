@@ -11,7 +11,6 @@ return {
 	meshPrefix = "Map_Tokyo_",
 	calibration = "Calib_Tokyo",
 	marker = "DeathsGambitMapsTokyo_Version_25",
-	legacyMarker = "InkboundMapsTokyo_Version_25",
 	fbx = "DeathsGambitMaps_Tokyo.fbx",
 	bounds = { min = { -200, -30, -150 }, max = { 200, 60, 150 } },
 	stats = { materials = 75, triangles = 395188, colliders = 1200, floors = 198, ramps = 7, props = 475, lights = 231, signs = 323 },

@@ -11,7 +11,6 @@ return {
 	meshPrefix = "Map_Agency_",
 	calibration = "Calib_Agency",
 	marker = "DeathsGambitMapsAgency_Version_7",
-	legacyMarker = "InkboundMapsAgency_Version_7",
 	fbx = "DeathsGambitMaps_Agency.fbx",
 	bounds = { min = { -100, -1, -75 }, max = { 100, 28, 75 } },
 	stats = { materials = 53, triangles = 101543, colliders = 429, floors = 9, ramps = 3, props = 387, lights = 135, signs = 37 },

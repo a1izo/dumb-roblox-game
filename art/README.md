@@ -25,7 +25,7 @@ Meshes and images must be uploaded under your account, which only Studio can do.
 
 1. **Home > Import 3D** (or File > Import 3D), pick the file, keep the defaults, press **Import**.
 2. That's it. The importer drops the model into Workspace; when the game starts, the server
-   moves every `DeathsGambit...` import (and any older `Inkbound...` one) into **ReplicatedStorage > DeathsGambitAssets** and prints what
+   moves every `DeathsGambit...` import into **ReplicatedStorage > DeathsGambitAssets** and prints what
    it found in the Output ("Blender models: 33 of 33 found."). You can also drag them there
    yourself, which keeps the editor view clean.
 
@@ -35,15 +35,9 @@ finds with a given name).
 Nothing breaks before an import: props fall back to their part-built versions and every venue
 is built as a greybox (below).
 
-`InkboundModels.fbx` and `InkboundMaps.fbx` are retired (their props moved to the Core set, the
-lobby and the meeting room got scenes of their own). The game sets an import of either aside and
-warns; delete them from the place.
-
-**After the rename to Death's Gambit** every file is called `DeathsGambit...` (props, scenes, markers, the
-store folder). Imports made before it (`InkboundModels_<Set>.fbx`, `InkboundMaps_<Venue>.fbx`) keep working: the
-game reads both names and uses the newer import when both are in the place. To finish the switch, import the
-eleven new files, check the Output (`[DeathsGambit] ...` lines), then delete the old `Inkbound...` imports.
-The Core file also carries the new UI textures, so the new lettering and panels need it.
+Every file is called `DeathsGambit...` (props, scenes, markers, the store folder). The Core file also carries the UI
+textures, so the lettering and panels need it. If an import is older than the code expects, the game uses the newest
+import of each kind and sets the others aside (into `ServerStorage > DeathsGambitSuperseded`).
 
 ## Animations: no upload needed
 

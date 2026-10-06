@@ -89,10 +89,8 @@ end
 function Textures.init()
 	task.spawn(function()
 		-- The server moves the imports into place at start; wait until it has.
-		-- The store is named DeathsGambitAssets (InkboundAssets in a place from before the rename).
 		local function find()
 			return ReplicatedStorage:FindFirstChild("DeathsGambitAssets")
-				or ReplicatedStorage:FindFirstChild("InkboundAssets")
 		end
 		local store = find()
 		local waitUntil = os.clock() + 30

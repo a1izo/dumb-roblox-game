@@ -168,8 +168,7 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
   the importer puts them; the server moves them into `ReplicatedStorage > DeathsGambitAssets` when it
   starts and prints what it found. A venue without its import (or with an older one) loads as a
   **greybox**: the same place, fully playable, in plain colours, and the Output says which file
-  to import. The old `InkboundModels.fbx` and `InkboundMaps.fbx` are retired: an import of either is
-  set aside with a warning, so delete them from the place.
+  to import.
 
 ## Your own assets and ids
 

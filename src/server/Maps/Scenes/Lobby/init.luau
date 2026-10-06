@@ -11,7 +11,6 @@ return {
 	meshPrefix = "Map_Lobby_",
 	calibration = "Calib_Lobby",
 	marker = "DeathsGambitMapsLobby_Version_6",
-	legacyMarker = "InkboundMapsLobby_Version_6",
 	fbx = "DeathsGambitMaps_Lobby.fbx",
 	bounds = { min = { -380, -6, -290 }, max = { 270, 150, 190 } },
 	stats = { materials = 24, triangles = 97682, colliders = 498, floors = 251, ramps = 3, props = 91, lights = 7, signs = 0 },

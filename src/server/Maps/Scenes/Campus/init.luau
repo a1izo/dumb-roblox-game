@@ -11,7 +11,6 @@ return {
 	meshPrefix = "Map_Campus_",
 	calibration = "Calib_Campus",
 	marker = "DeathsGambitMapsCampus_Version_7",
-	legacyMarker = "InkboundMapsCampus_Version_7",
 	fbx = "DeathsGambitMaps_Campus.fbx",
 	bounds = { min = { -150, -8, -110 }, max = { 150, 84, 110 } },
 	stats = { materials = 54, triangles = 172734, colliders = 2052, floors = 30, ramps = 9, props = 488, lights = 137, signs = 50 },

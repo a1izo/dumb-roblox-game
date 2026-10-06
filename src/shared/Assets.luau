@@ -248,7 +248,6 @@ end
 -- A fresh copy of a model you exported to assets/shared/Models, or nil to build the fallback.
 function Assets.model(key: string): Instance?
 	local root = ReplicatedStorage:FindFirstChild("DeathsGambitAssets")
-		or ReplicatedStorage:FindFirstChild("InkboundAssets")
 	local models = root and root:FindFirstChild("Models")
 	local model = models and models:FindFirstChild(key)
 	if model then
