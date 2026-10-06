@@ -25,20 +25,23 @@ CORE = "Core"
 # textures, and the UI's lettering, paper and icons (art/scripts/ui). They ride in the Core set's
 # file.
 EFFECT_TEXTURES = ["InkSplat1", "InkSplat2", "InkSplat3", "InkDrop", "RainStreak", "Smoke", "SoulGlow", "Spark",
-                   "Snowflake", "Footprint"]
+                   "Snowflake", "Footprint", "FxShard", "FxStatic", "FxChalk", "FxTear"]
 UI_TEXTURES = [
-    "UiGothic1",
-    "UiScrawl1",
-    "UiPaper",
-    "UiParchment",
-    "UiTorn",
-    "UiBrush",
-    "UiSeal",
-    "UiStamp",
-    "UiScratches",
+    "UiTitle1",
+    "UiHead1",
+    "UiSemi1",
+    "UiRnLight1",
+    "UiRnMedium1",
+    "UiNotch",
+    "UiNotchBtn",
+    "UiNotchBtnLine",
+    "UiNotchWin",
+    "UiNotchWinLine",
+    "UiScan",
+    "UiGrain",
     "UiVignette",
-    "UiRuled",
     "UiIcons",
+    "UiWordmark",
 ]
 
 

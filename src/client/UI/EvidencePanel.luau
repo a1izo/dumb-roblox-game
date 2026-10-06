@@ -60,7 +60,7 @@ local function addSlip(entry)
 		),
 		font = "label",
 		size = "micro",
-		color = C.blood,
+		color = C.dim,
 		LayoutOrder = 1,
 		Parent = text,
 	})
@@ -68,7 +68,7 @@ local function addSlip(entry)
 		Text = tostring(entry.clue),
 		font = "document",
 		size = "lead",
-		color = C.ink,
+		color = C.bone,
 		LayoutOrder = 2,
 		Parent = text,
 	})

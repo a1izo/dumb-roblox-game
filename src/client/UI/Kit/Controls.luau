@@ -1,6 +1,6 @@
 --!strict
 -- Things you press, pick, drag and type into. Every control is at least Tokens.touch tall,
--- shows a red ink focus mark for gamepads, and can be disabled with Controls.setEnabled.
+-- shows a white focus mark for gamepads, and can be disabled with Controls.setEnabled.
 --
 --   Controls.button({ text = "Play", variant = "primary", icon = "play", Parent = x }, onClick)
 --   Controls.hold({ text = "Write the name" }, 1.2, onConfirm)
@@ -15,9 +15,11 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Motion = require(script.Parent.Parent.Core.Motion)
+local UiSound = require(script.Parent.Parent.Core.UiSound)
 local Base = require(script.Parent.Base)
 local GlyphText = require(script.Parent.GlyphText)
 local Icon = require(script.Parent.Icon)
+local Surfaces = require(script.Parent.Surfaces)
 local Textures = require(script.Parent.Textures)
 local Tokens = require(script.Parent.Tokens)
 
@@ -27,18 +29,18 @@ type Props = { [string]: any }
 
 local C = Tokens.color
 
--- The red mark a gamepad's current selection gets.
+-- The white mark a gamepad's current selection gets.
 local focusMark: Frame = Base.make("Frame", {
-	Name = "InkFocus",
+	Name = "Focus",
 	BackgroundTransparency = 1,
 	Size = UDim2.fromScale(1, 1),
 })
 do
-	local stroke = Base.stroke(focusMark, C.red, 2, 0)
+	local stroke = Base.stroke(focusMark, C.white, 2, 0)
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	Base.make("Frame", {
 		Name = "Underline",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 0, 1, 4),
@@ -51,8 +53,9 @@ function Controls.focusable(button: GuiObject)
 	button.SelectionImageObject = focusMark
 end
 
-local HEIGHT = { s = 40, m = Tokens.touch, l = 60 }
-local TEXT = { s = Tokens.size.small, m = Tokens.size.body, l = Tokens.size.lead }
+-- Every size is at least the touch minimum tall; the lettering is Melodrama, 16 px and up.
+local HEIGHT = { s = Tokens.touch, m = Tokens.touch, l = 60 }
+local TEXT = { s = 16, m = 18, l = 22 }
 
 type Look = {
 	bg: Color3?,
@@ -60,60 +63,62 @@ type Look = {
 	bgPress: Color3?,
 	text: Color3,
 	textHover: Color3,
-	torn: boolean,
-	line: boolean,
+	notch: boolean, -- drawn with the clipped-corner button image
+	line: boolean, -- an outline only (ghost)
 }
 
+-- Primary is the one white button on a screen; danger is the only red one. Everything else is grey.
 local LOOKS: { [string]: Look } = {
 	primary = {
-		bg = C.red,
-		bgHover = C.red:Lerp(Color3.new(1, 1, 1), 0.12),
-		bgPress = C.blood,
-		text = C.bone,
-		textHover = Color3.new(1, 1, 1),
-		torn = true,
+		bg = C.white,
+		bgHover = C.white:Lerp(C.g6, 0.3),
+		bgPress = C.g6,
+		text = C.ink,
+		textHover = C.ink,
+		notch = true,
 		line = false,
 	},
 	danger = {
 		bg = C.blood,
-		bgHover = C.red,
+		bgHover = C.danger,
 		bgPress = C.blood:Lerp(Color3.new(0, 0, 0), 0.3),
-		text = C.bone,
-		textHover = Color3.new(1, 1, 1),
-		torn = true,
+		text = C.white,
+		textHover = C.white,
+		notch = true,
 		line = false,
 	},
 	secondary = {
-		bg = C.raised,
-		bgHover = C.lifted,
-		bgPress = C.page,
-		text = C.bone,
-		textHover = Color3.new(1, 1, 1),
-		torn = false,
+		bg = C.lifted,
+		bgHover = C.g4,
+		bgPress = C.raised,
+		text = C.white,
+		textHover = C.white,
+		notch = true,
 		line = false,
 	},
-	ghost = { text = C.dim, textHover = C.bone, torn = false, line = true },
+	ghost = { text = C.dim, textHover = C.bone, notch = false, line = true },
 	good = {
-		bg = C.good:Lerp(C.void, 0.45),
-		bgHover = C.good:Lerp(C.void, 0.25),
-		bgPress = C.good:Lerp(C.void, 0.6),
-		text = C.bone,
-		textHover = Color3.new(1, 1, 1),
-		torn = false,
+		bg = C.lifted,
+		bgHover = C.g4,
+		bgPress = C.raised,
+		text = C.white,
+		textHover = C.white,
+		notch = true,
 		line = false,
 	},
+	-- The old paper button; reading pages are dark now, so it is a plain grey button.
 	parchment = {
-		bg = C.parchment,
-		bgHover = C.parchment:Lerp(Color3.new(1, 1, 1), 0.2),
-		bgPress = C.parchmentDark,
-		text = C.ink,
-		textHover = C.ink,
-		torn = true,
+		bg = C.lifted,
+		bgHover = C.g4,
+		bgPress = C.raised,
+		text = C.white,
+		textHover = C.white,
+		notch = true,
 		line = false,
 	},
 }
 
-type ButtonState = { look: Look, enabled: boolean, paint: (string) -> () }
+type ButtonState = { look: Look, enabled: boolean, paint: (string) -> (), label: any }
 local states: { [GuiObject]: ButtonState } = setmetatable({}, { __mode = "k" }) :: any
 
 -- A button. Props: text, variant ("primary", "danger", "secondary", "ghost", "parchment", "good"),
@@ -158,16 +163,14 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 		})
 	end
 	local text = props.text or ""
-	local label = Base.label({
+	local label = GlyphText.new({
 		Name = "Label",
-		Text = if props.upper == false then text else string.upper(text),
-		font = "label",
+		face = "Head",
+		text = text,
+		upper = props.upper ~= false,
 		size = TEXT[sizeKey],
 		color = look.text,
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.new(0, 0, 1, 0),
-		TextXAlignment = Enum.TextXAlignment.Center,
+		tracking = 1.2,
 		LayoutOrder = 2,
 		ZIndex = z + 1,
 		Visible = text ~= "",
@@ -184,7 +187,7 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	if look.line then
 		underline = Base.make("Frame", {
 			Name = "Underline",
-			BackgroundColor3 = C.red,
+			BackgroundColor3 = C.white,
 			BorderSizePixel = 0,
 			AnchorPoint = Vector2.new(0.5, 1),
 			Position = UDim2.new(0.5, 0, 1, -6),
@@ -197,34 +200,15 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	local function drawBg()
 		Base.clear(bg)
 		fill = nil
-		if not look.bg then
+		if look.line then
+			Surfaces.notch(
+				bg,
+				{ shape = "button", line = true, color = C.rule, transparency = Tokens.alpha.hairline, ZIndex = z }
+			)
 			return
 		end
-		local id = if look.torn then Textures.id("UiTorn") else ""
-		if id ~= "" then
-			fill = Base.make("ImageLabel", {
-				BackgroundTransparency = 1,
-				Image = id,
-				ImageColor3 = look.bg,
-				ScaleType = Enum.ScaleType.Slice,
-				SliceCenter = Rect.new(32, 32, 224, 224),
-				SliceScale = 0.35,
-				Size = UDim2.fromScale(1, 1),
-				ZIndex = z,
-				Parent = bg,
-			})
-		else
-			local frame = Base.make("Frame", {
-				BackgroundColor3 = look.bg,
-				BorderSizePixel = 0,
-				Size = UDim2.fromScale(1, 1),
-				ZIndex = z,
-				Parent = bg,
-			})
-			if not look.torn then
-				Base.stroke(frame, C.rule, 1, 0.85)
-			end
-			fill = frame
+		if look.bg then
+			fill = Surfaces.notch(bg, { shape = "button", color = look.bg, ZIndex = z })
 		end
 	end
 	drawBg()
@@ -251,7 +235,7 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 			end
 		end
 		local textColor = if hovered or pressed then look.textHover else look.text
-		label.TextColor3 = textColor
+		label:setColor(textColor)
 		if icon then
 			icon.ImageColor3 = textColor
 		end
@@ -259,10 +243,11 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 			Motion.tween(underline, { Size = UDim2.new(if hovered then 0.8 else 0, 0, 0, 2) }, Tokens.motion.base)
 		end
 	end
-	states[button] = { look = look, enabled = true, paint = paint }
+	states[button] = { look = look, enabled = true, paint = paint, label = label }
 	local scale = Base.make("UIScale", { Name = "PressScale", Parent = button })
 	button.MouseEnter:Connect(function()
 		paint("hover")
+		UiSound.play("uiHover")
 	end)
 	button.MouseLeave:Connect(function()
 		paint("rest")
@@ -287,6 +272,7 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	if onClick then
 		button.Activated:Connect(function()
 			if states[button].enabled then
+				UiSound.play("uiClick")
 				onClick()
 			end
 		end)
@@ -316,23 +302,27 @@ end
 
 -- Changes a button's text.
 function Controls.setText(button: GuiObject, text: string, upper: boolean?)
-	local label = button:FindFirstChild("Label", true)
-	if label and label:IsA("TextLabel") then
-		label.Text = if upper == false then text else string.upper(text)
-		label.Visible = text ~= ""
+	local state = states[button]
+	local label = state and state.label
+	if label then
+		label.props.upper = upper ~= false
+		label.text = text
+		label.frame.Visible = text ~= ""
+		label:refresh()
 	end
 end
 
--- A button that fires only after being held for `seconds`: ink fills it from the left.
+-- A button that fires only after being held for `seconds`: a bar fills it from the left.
 -- Guards things that cannot be undone. Works with mouse, touch, Enter and gamepad A.
 function Controls.hold(props: Props, seconds: number, onConfirm: () -> ()): TextButton
 	local p = table.clone(props)
 	p.variant = p.variant or "primary"
 	local button = Controls.button(p)
+	local holdLook = LOOKS[p.variant] or LOOKS.primary
 	local fill = Base.make("Frame", {
 		Name = "HoldInk",
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.72,
+		BackgroundColor3 = holdLook.text,
+		BackgroundTransparency = 0.7,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(0, 1),
 		ZIndex = button.ZIndex + 2,
@@ -348,6 +338,7 @@ function Controls.hold(props: Props, seconds: number, onConfirm: () -> ()): Text
 			return
 		end
 		holding = true
+		UiSound.play("holdTick")
 		local started = os.clock()
 		while holding and button.Parent do
 			local progress = (os.clock() - started) / seconds
@@ -432,9 +423,9 @@ function Controls.actionChip(props: Props, onClick: (() -> ())?): TextButton
 	local touch = props.touch == true
 	local size = if touch then 72 else 56
 	local primary = props.variant == "primary"
-	local rest = if primary then C.red else C.raised
-	local hover = if primary then C.red:Lerp(Color3.new(1, 1, 1), 0.12) else C.lifted
-	local press = if primary then C.blood else C.page
+	local rest = if primary then C.white else C.raised
+	local hover = if primary then C.white:Lerp(C.g6, 0.3) else C.lifted
+	local press = if primary then C.g6 else C.page
 	local button = Base.hit({
 		Name = props.Name or "ActionChip",
 		Size = UDim2.fromOffset(size, size),
@@ -454,11 +445,11 @@ function Controls.actionChip(props: Props, onClick: (() -> ())?): TextButton
 		Parent = button,
 	})
 	Base.corner(fill, Tokens.radius.key)
-	Base.stroke(fill, if primary then C.blood else C.rule, 1, if primary then 0 else 0.8)
+	Base.stroke(fill, if primary then C.g6 else C.rule, 1, if primary then 0 else 0.8)
 	Icon.new({
 		name = props.icon or "help",
 		size = 28,
-		color = C.bone,
+		color = if primary then C.ink else C.bone,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = if touch then UDim2.new(0.5, 0, 0, 22) else UDim2.fromScale(0.5, 0.5),
 		ZIndex = z + 1,
@@ -599,18 +590,20 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 		Parent = props.Parent,
 	})
 	Base.list(frame, Tokens.space.xs, not props.vertical)
-	local buttons: { [string]: { button: TextButton, ribbon: Frame, label: TextLabel } } = {}
+	local buttons: { [string]: { button: TextButton, ribbon: any, label: TextLabel } } = {}
 	local current: string? = nil
 	local function paint()
 		for id, parts in pairs(buttons) do
 			local on = id == current
-			Motion.tween(parts.ribbon, { BackgroundTransparency = if on then 0 else 1 }, Tokens.motion.base)
+			Motion.tween(parts.ribbon, { BackgroundTransparency = if on then 0.9 else 1 }, Tokens.motion.base)
+			parts.ribbon.Edge.Visible = on
 			parts.label.TextColor3 = if on then C.bone else C.dim
 		end
 	end
 	local function choose(id: string)
 		current = id
 		paint()
+		UiSound.play("select")
 		onSelect(id)
 	end
 	for index, item in ipairs(props.items or {}) do
@@ -622,24 +615,23 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			Parent = frame,
 		})
 		Controls.focusable(button)
+		-- The selected tab: a faint white tint with a white edge (left when vertical, below otherwise).
 		local ribbon = Base.make("Frame", {
 			Name = "Ribbon",
-			BackgroundColor3 = C.blood,
+			BackgroundColor3 = C.white,
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Size = UDim2.fromScale(1, 1),
 			ZIndex = button.ZIndex,
 			Parent = button,
 		})
-		-- A bookmark's notched end.
 		Base.make("Frame", {
-			Name = "Notch",
-			BackgroundColor3 = C.page,
+			Name = "Edge",
+			BackgroundColor3 = C.white,
 			BorderSizePixel = 0,
-			Rotation = 45,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = if props.vertical then UDim2.new(1, 0, 0.5, 0) else UDim2.new(0.5, 0, 1, 0),
-			Size = UDim2.fromOffset(14, 14),
+			AnchorPoint = if props.vertical then Vector2.zero else Vector2.new(0, 1),
+			Position = if props.vertical then UDim2.fromScale(0, 0) else UDim2.fromScale(0, 1),
+			Size = if props.vertical then UDim2.new(0, 3, 1, 0) else UDim2.new(1, 0, 0, 2),
 			ZIndex = button.ZIndex + 1,
 			Parent = ribbon,
 		})
@@ -707,13 +699,13 @@ export type NameLine = {
 }
 
 -- A name written on a ruled line (the vote, the roster, results). Props: text, sub (small
--- print after the name), right (text at the right, in red handwriting), seed, paper (ink on
--- a parchment page), plus frame properties. setMarked draws a red line through the name;
+-- print after the name), right (text at the right), seed, paper (ignored: pages are dark now),
+-- plus frame properties. setMarked draws a red line through the name (it is out: danger);
 -- setSelected marks it as chosen.
 function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 	local height = props.height or 56
-	local onPaper = props.paper == true
-	local ink = if onPaper then C.ink else C.bone
+	local onPaper = false
+	local ink = C.bone
 	local button = Base.hit({
 		Name = props.Name or "NameLine",
 		Size = props.Size or UDim2.new(1, 0, 0, height),
@@ -746,7 +738,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 	local check = Icon.new({
 		name = "check",
 		size = 26,
-		color = C.red,
+		color = C.white,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 6, 0.5, 0),
 		Visible = false,
@@ -754,9 +746,9 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		Parent = button,
 	})
 	local name = GlyphText.new({
-		face = "Scrawl",
+		face = "Semi",
 		text = props.text or "",
-		size = height * 0.62,
+		size = math.max(height * 0.46, 18),
 		seed = props.seed,
 		color = ink,
 		AnchorPoint = Vector2.new(0, 0.5),
@@ -779,10 +771,10 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		Parent = button,
 	})
 	local right = GlyphText.new({
-		face = "Scrawl",
+		face = "Semi",
 		text = props.right or "",
-		size = height * 0.55,
-		color = C.red,
+		size = math.max(height * 0.4, 18),
+		color = C.white,
 		align = "right",
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -8, 0.5, 2),
@@ -791,11 +783,10 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 	})
 	local strike = Base.make("Frame", {
 		Name = "Strike",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.danger,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 34, 0.5, 2),
-		Rotation = -2,
 		Size = UDim2.fromOffset(0, 3),
 		ZIndex = z + 3,
 		Parent = button,
@@ -810,7 +801,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		end,
 		setSelected = function(on: boolean)
 			check.Visible = on
-			name:setColor(if on then C.red else ink)
+			name:setColor(if on then C.white else ink)
 		end,
 		setRight = function(text: string)
 			right:set(text)
@@ -936,11 +927,11 @@ function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 		x = size * 0.7 + 12
 	end
 	local title = GlyphText.new({
-		face = "Scrawl",
+		face = "Head",
 		text = props.text or "",
-		size = size,
+		size = math.max(size * 0.8, 18),
 		seed = props.seed,
-		color = C.bone,
+		color = C.dim,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, x, 0.5, 2),
 		ZIndex = z,
@@ -948,7 +939,7 @@ function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 	})
 	local underline = Base.make("Frame", {
 		Name = "Underline",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, x, 1, -6),
 		Size = UDim2.fromOffset(0, 2),
@@ -957,7 +948,7 @@ function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 	})
 	local function lit(on: boolean)
 		local shown = on or selected
-		title:setColor(if shown then C.red else C.bone)
+		title:setColor(if shown then C.white else C.dim)
 		Motion.tween(underline, { Size = UDim2.fromOffset(if shown then title.width else 0, 2) }, Tokens.motion.base)
 	end
 	if selected then
@@ -989,8 +980,8 @@ end
 -- properties. Returns the frame and the TextBox.
 function Controls.field(props: Props): (Frame, TextBox)
 	local multiline = props.multiline == true
-	local onPaper = props.paper == true
-	local lineRest = if onPaper then C.ink else C.rule
+	local onPaper = false -- the paper fields of the old notebook are ordinary dark fields now
+	local lineRest = C.rule
 	local frame = Base.frame({
 		Name = props.Name or "Field",
 		Size = props.Size or UDim2.new(1, 0, 0, if multiline then 120 else Tokens.touch + 4),
@@ -1037,7 +1028,7 @@ function Controls.field(props: Props): (Frame, TextBox)
 		Parent = frame,
 	})
 	box.Focused:Connect(function()
-		Motion.tween(line, { BackgroundColor3 = C.red, BackgroundTransparency = 0 }, Tokens.motion.quick)
+		Motion.tween(line, { BackgroundColor3 = C.white, BackgroundTransparency = 0 }, Tokens.motion.quick)
 	end)
 	box.FocusLost:Connect(function()
 		Motion.tween(line, { BackgroundColor3 = lineRest, BackgroundTransparency = 0.6 }, Tokens.motion.base)
@@ -1066,7 +1057,7 @@ function Controls.field(props: Props): (Frame, TextBox)
 				return
 			end
 			counter.Text = if length > maxLength * 0.6 then string.format("%d/%d", length, maxLength) else ""
-			counter.TextColor3 = if length >= maxLength then C.red else C.faint
+			counter.TextColor3 = if length >= maxLength then C.danger else C.faint
 		end)
 	end
 	return frame, box
@@ -1104,7 +1095,7 @@ local function labelledRow(props: Props, label: string, height: number?): (Frame
 	return row, slot
 end
 
--- A slider: a ruled track with red ink up to the value, and - / + buttons (for gamepads).
+-- A slider: a thin track filled in white up to the value, and - / + buttons (for gamepads).
 -- Returns the row and set(value) (which does not call onChanged).
 function Controls.slider(
 	props: Props,
@@ -1157,7 +1148,7 @@ function Controls.slider(
 	})
 	local ink = Base.make("Frame", {
 		Name = "Ink",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.fromScale(0, 0.5),
@@ -1169,10 +1160,9 @@ function Controls.slider(
 		Name = "Nib",
 		BackgroundColor3 = C.bone,
 		BorderSizePixel = 0,
-		Rotation = 45,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0, 0.5),
-		Size = UDim2.fromOffset(12, 12),
+		Size = UDim2.fromOffset(12, 18),
 		ZIndex = z + 2,
 		Parent = track,
 	})
@@ -1238,7 +1228,7 @@ function Controls.slider(
 	end
 end
 
--- An on/off switch drawn as a wax seal: pressed in red when on, an empty ring when off.
+-- An on/off switch: a white disc with a dark tick when on, an empty grey ring when off.
 -- Returns the row and set(value) (which does not call onChanged).
 function Controls.toggle(
 	props: Props,
@@ -1259,7 +1249,7 @@ function Controls.toggle(
 	Controls.focusable(button)
 	local ring = Base.make("Frame", {
 		Name = "Ring",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(1, 0.5),
@@ -1273,7 +1263,7 @@ function Controls.toggle(
 	local mark = Icon.new({
 		name = "check",
 		size = 20,
-		color = C.bone,
+		color = C.ink,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		ZIndex = z + 2,
@@ -1297,7 +1287,7 @@ function Controls.toggle(
 	local function set(on: boolean, notify: boolean?)
 		state = on
 		Motion.tween(ring, { BackgroundTransparency = if on then 0 else 1 }, Tokens.motion.base)
-		stroke.Color = if on then C.blood else C.dim
+		stroke.Color = if on then C.white else C.dim
 		mark.Visible = on
 		word.Text = if on then "ON" else "OFF"
 		word.TextColor3 = if on then C.bone else C.dim
@@ -1314,7 +1304,7 @@ function Controls.toggle(
 	end
 end
 
--- A thin ink meter. Props: color (red), height (px, 6), plus frame properties. Returns the
+-- A thin meter. Props: color (white; pass the danger colour for a danger meter), height (px, 6), plus frame properties. Returns the
 -- frame and set(fraction, animate?).
 function Controls.meter(props: Props): (Frame, (number, boolean?) -> ())
 	local height = props.height or 6
@@ -1332,7 +1322,7 @@ function Controls.meter(props: Props): (Frame, (number, boolean?) -> ())
 	})
 	local fill = Base.make("Frame", {
 		Name = "Fill",
-		BackgroundColor3 = props.color or C.red,
+		BackgroundColor3 = props.color or C.white,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(0, 1),
 		ZIndex = frame.ZIndex + 1,

@@ -109,7 +109,7 @@ local function build(payload)
 		Text = "YOU ARE",
 		font = "label",
 		size = "micro",
-		color = C.inkDim,
+		color = C.dim,
 		Position = UDim2.fromOffset(86, 6),
 		Size = UDim2.new(1, -86, 0, 14),
 		AutomaticSize = Enum.AutomaticSize.None,
@@ -119,7 +119,7 @@ local function build(payload)
 		face = "Gothic",
 		text = info.display,
 		size = T.size.heading + 6,
-		color = if hostile then C.blood else C.ink,
+		color = if hostile then C.red else C.bone,
 		Position = UDim2.fromOffset(84, 22),
 		Parent = top,
 	})
@@ -128,7 +128,7 @@ local function build(payload)
 		Text = "How you win: " .. copy.win,
 		font = "bodyBold",
 		size = "small",
-		color = C.blood,
+		color = C.red,
 		LayoutOrder = 2,
 		Parent = cardContent,
 	})
@@ -136,17 +136,17 @@ local function build(payload)
 		Kit.label({
 			Text = "·  " .. text,
 			size = "small",
-			color = C.ink,
+			color = C.bone,
 			LayoutOrder = 2 + index,
 			Parent = cardContent,
 		})
 	end
-	Kit.rule({ color = C.ink, transparency = 0.7, LayoutOrder = 10, Parent = cardContent })
+	Kit.rule({ color = C.bone, transparency = 0.7, LayoutOrder = 10, Parent = cardContent })
 	Kit.label({
 		Text = "FIRST MOVE",
 		font = "label",
 		size = "micro",
-		color = C.inkDim,
+		color = C.dim,
 		LayoutOrder = 11,
 		Parent = cardContent,
 	})
@@ -154,7 +154,7 @@ local function build(payload)
 		Text = copy.firstMove,
 		font = "document",
 		size = "body",
-		color = C.ink,
+		color = C.bone,
 		LayoutOrder = 12,
 		Parent = cardContent,
 	})

@@ -1,8 +1,9 @@
 --!strict
--- The UI's own textures (glyph atlases, paper, torn edges, seals, icons). They are drawn by
--- art/scripts/ui and travel in InkboundModels_Core.fbx on carrier quads, so importing that file is
--- all it takes; Assets.texture finds them. Until they are imported and loaded (or if a load
--- fails) every component draws a code-only version instead, and redraws when Ready fires.
+-- The UI's own textures (glyph atlases, the clipped-corner Notch shapes, scanlines, grain, icons). They
+-- are drawn by art/scripts/ui and travel in InkboundModels_Core.fbx on carrier quads, so importing that
+-- file is all it takes; Assets.texture finds them. Until they are imported and loaded (or if a load
+-- fails) every component draws a code-only version instead (plain rectangles, a Montserrat stand-in
+-- for the lettering), and redraws when Ready fires.
 
 local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,18 +16,23 @@ local Textures = {}
 
 -- Every UI texture by name (the carrier is Tex_<name>).
 Textures.NAMES = {
-	"UiGothic1",
-	"UiScrawl1",
-	"UiPaper",
-	"UiParchment",
-	"UiTorn",
-	"UiBrush",
-	"UiSeal",
-	"UiStamp",
-	"UiScratches",
+	-- lettering (glyph atlases, see src/shared/UI/GlyphFonts.luau)
+	"UiTitle1",
+	"UiHead1",
+	"UiSemi1",
+	"UiRnLight1",
+	"UiRnMedium1",
+	-- the Notch shapes (9-slice), the film textures, the screen-edge shade and the icons
+	"UiNotch",
+	"UiNotchBtn",
+	"UiNotchBtnLine",
+	"UiNotchWin",
+	"UiNotchWinLine",
+	"UiScan",
+	"UiGrain",
 	"UiVignette",
-	"UiRuled",
 	"UiIcons",
+	"UiWordmark",
 }
 
 Textures.Ready = Signal.new()

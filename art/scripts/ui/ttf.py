@@ -1,8 +1,8 @@
 """A small TrueType reader and rasterizer (numpy only), for turning fonts into glyph atlases.
 
-Reads the tables needed to draw glyphs (head, hhea, maxp, cmap, hmtx, loca, glyf) and fills
-outlines with the non-zero winding rule on a supersampled grid. Outlines can be bent by an
-affine transform first (the handwriting alternates use that).
+Reads the tables needed to draw glyphs (head, hhea, maxp, cmap, hmtx, loca, glyf), glyph names
+(post, format 2.0) and pair kerning (GPOS 'kern' PairPos), and fills outlines with the non-zero
+winding rule on a supersampled grid.
 """
 
 import struct
@@ -30,6 +30,8 @@ class Font:
         self._hmtx = self._table("hmtx")
         self._loca = self._read_loca()
         self._glyf_offset = self.tables["glyf"][0]
+        self._names = None
+        self._kern_subtables = None
 
     def _table(self, tag):
         offset, length = self.tables[tag]
@@ -93,6 +95,128 @@ class Font:
 
     def glyph_index(self, char):
         return self.cmap.get(ord(char), 0)
+
+    # Glyph names (post table, format 2.0) --------------------------------------------------------
+
+    def glyph_names(self):
+        """{glyph index: name} for glyphs with a custom name (like "one.case"). The first 258 names
+        of the Macintosh standard order are not stored in the font, so those glyphs are absent."""
+        if self._names is None:
+            self._names = {}
+            if "post" in self.tables:
+                table = self._table("post")
+                if struct.unpack(">I", table[:4])[0] == 0x00020000:
+                    count = struct.unpack(">H", table[32:34])[0]
+                    index = struct.unpack(f">{count}H", table[34 : 34 + 2 * count])
+                    at = 34 + 2 * count
+                    strings = []
+                    while at < len(table):
+                        length = table[at]
+                        strings.append(table[at + 1 : at + 1 + length].decode("latin-1"))
+                        at += 1 + length
+                    for glyph, i in enumerate(index):
+                        if i >= 258 and i - 258 < len(strings):
+                            self._names[glyph] = strings[i - 258]
+        return self._names
+
+    def glyph_by_name(self, name):
+        """The glyph index with this custom name, or 0."""
+        for glyph, glyph_name in self.glyph_names().items():
+            if glyph_name == name:
+                return glyph
+        return 0
+
+    # Pair kerning (GPOS 'kern', PairPos formats 1 and 2) ------------------------------------------
+
+    def _u16(self, table, at):
+        return struct.unpack(">H", table[at : at + 2])[0]
+
+    def _kern_subs(self):
+        if self._kern_subtables is None:
+            self._kern_subtables = []
+            if "GPOS" not in self.tables:
+                return self._kern_subtables
+            g = self._table("GPOS")
+            feature_list, lookup_list = self._u16(g, 6), self._u16(g, 8)
+            wanted = set()
+            for i in range(self._u16(g, feature_list)):
+                tag = g[feature_list + 2 + 6 * i : feature_list + 6 + 6 * i]
+                if tag != b"kern":
+                    continue
+                feature = feature_list + self._u16(g, feature_list + 6 + 6 * i)
+                for j in range(self._u16(g, feature + 2)):
+                    wanted.add(self._u16(g, feature + 4 + 2 * j))
+            for index in sorted(wanted):
+                lookup = lookup_list + self._u16(g, lookup_list + 2 + 2 * index)
+                kind = self._u16(g, lookup)
+                for k in range(self._u16(g, lookup + 4)):
+                    sub = lookup + self._u16(g, lookup + 6 + 2 * k)
+                    sub_kind = kind
+                    if kind == 9:  # extension lookup: the real subtable is elsewhere
+                        sub_kind = self._u16(g, sub + 2)
+                        sub += struct.unpack(">I", g[sub + 4 : sub + 8])[0]
+                    if sub_kind == 2:
+                        self._kern_subtables.append(sub)
+        return self._kern_subtables
+
+    def _coverage_index(self, g, at, glyph):
+        fmt, count = self._u16(g, at), self._u16(g, at + 2)
+        if fmt == 1:
+            for i in range(count):
+                if self._u16(g, at + 4 + 2 * i) == glyph:
+                    return i
+            return None
+        for i in range(count):
+            start, end, first = struct.unpack(">HHH", g[at + 4 + 6 * i : at + 10 + 6 * i])
+            if start <= glyph <= end:
+                return first + glyph - start
+        return None
+
+    def _class_of(self, g, at, glyph):
+        fmt = self._u16(g, at)
+        if fmt == 1:
+            start, count = self._u16(g, at + 2), self._u16(g, at + 4)
+            if start <= glyph < start + count:
+                return self._u16(g, at + 6 + 2 * (glyph - start))
+            return 0
+        for i in range(self._u16(g, at + 2)):
+            start, end, cls = struct.unpack(">HHH", g[at + 4 + 6 * i : at + 10 + 6 * i])
+            if start <= glyph <= end:
+                return cls
+        return 0
+
+    def kern(self, left, right):
+        """The extra advance (font units, usually negative) between two glyph indices."""
+        subs = self._kern_subs()
+        if not subs:
+            return 0
+        g = self._table("GPOS")
+        for sub in subs:
+            fmt = self._u16(g, sub)
+            index = self._coverage_index(g, sub + self._u16(g, sub + 2), left)
+            if index is None:
+                continue
+            fmt1, fmt2 = self._u16(g, sub + 4), self._u16(g, sub + 6)
+            size1, size2 = 2 * bin(fmt1).count("1"), 2 * bin(fmt2).count("1")
+            advance_at = 2 * bin(fmt1 & 0x3).count("1") if fmt1 & 0x4 else None
+            if fmt == 1:
+                pair_set = sub + self._u16(g, sub + 10 + 2 * index)
+                record = 2 + size1 + size2
+                for r in range(self._u16(g, pair_set)):
+                    at = pair_set + 2 + r * record
+                    if self._u16(g, at) == right:
+                        if advance_at is None:
+                            return 0
+                        return struct.unpack(">h", g[at + 2 + advance_at : at + 4 + advance_at])[0]
+                continue
+            class1 = self._class_of(g, sub + self._u16(g, sub + 8), left)
+            class2 = self._class_of(g, sub + self._u16(g, sub + 10), right)
+            per_row = self._u16(g, sub + 14)
+            at = sub + 16 + (class1 * per_row + class2) * (size1 + size2)
+            if advance_at is None:
+                return 0
+            return struct.unpack(">h", g[at + advance_at : at + advance_at + 2])[0]
+        return 0
 
     def contours(self, glyph, depth=0):
         """The glyph's outline as a list of contours, each a list of (x, y, on_curve)."""

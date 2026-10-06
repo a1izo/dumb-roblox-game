@@ -51,14 +51,14 @@ local function fill()
 	Kit.clear(sealHolder)
 	Kit.seal({ size = 72, color = if hostile then C.red else C.steel, icon = ROLE_ICON[role], Parent = sealHolder })
 	roleText:set(info.display)
-	roleText:setColor(if hostile then C.blood else C.ink)
+	roleText:setColor(if hostile then C.red else C.bone)
 	winLabel.Text = "How you win: " .. copy.win
 	Kit.clear(bullets)
 	for index, text in ipairs(copy.bullets) do
 		Kit.label({
 			Text = "·  " .. text,
 			size = "small",
-			color = C.ink,
+			color = C.bone,
 			LayoutOrder = index,
 			Parent = bullets,
 		})
@@ -110,7 +110,7 @@ function RoleCard.init()
 		Text = "YOUR ROLE",
 		font = "label",
 		size = "micro",
-		color = C.inkDim,
+		color = C.dim,
 		Position = UDim2.fromOffset(88, 4),
 		Size = UDim2.new(1, -88, 0, 0),
 		Parent = top,
@@ -119,11 +119,11 @@ function RoleCard.init()
 		face = "Gothic",
 		text = "",
 		size = T.size.display,
-		color = C.ink,
+		color = C.bone,
 		Position = UDim2.fromOffset(86, 18),
 		Parent = top,
 	})
-	winLabel = Kit.label({ font = "bodyBold", size = "small", color = C.blood, LayoutOrder = 2, Parent = content })
+	winLabel = Kit.label({ font = "bodyBold", size = "small", color = C.red, LayoutOrder = 2, Parent = content })
 	bullets = Kit.frame({
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -131,32 +131,32 @@ function RoleCard.init()
 		Parent = content,
 	})
 	Kit.list(bullets, T.space.xs)
-	Kit.rule({ color = C.ink, transparency = 0.7, LayoutOrder = 4, Parent = content })
+	Kit.rule({ color = C.bone, transparency = 0.7, LayoutOrder = 4, Parent = content })
 	Kit.label({
 		Text = "YOUR ALIAS",
 		font = "label",
 		size = "micro",
-		color = C.inkDim,
+		color = C.dim,
 		LayoutOrder = 5,
 		Parent = content,
 	})
-	aliasText = Kit.text({ face = "Scrawl", text = "", size = 40, color = C.ink, LayoutOrder = 6, Parent = content })
+	aliasText = Kit.text({ face = "Scrawl", text = "", size = 40, color = C.bone, LayoutOrder = 6, Parent = content })
 	Kit.label({
 		Text = "YOUR REAL NAME",
 		font = "label",
 		size = "micro",
-		color = C.inkDim,
+		color = C.dim,
 		LayoutOrder = 7,
 		Parent = content,
 	})
-	nameText = Kit.text({ face = "Scrawl", text = "", size = 52, color = C.blood, LayoutOrder = 8, Parent = content })
-	alliesLabel = Kit.label({ size = "small", color = C.inkDim, LayoutOrder = 9, Parent = content })
-	hintLabel = Kit.label({ font = "document", size = "small", color = C.ink, LayoutOrder = 10, Parent = content })
+	nameText = Kit.text({ face = "Scrawl", text = "", size = 52, color = C.red, LayoutOrder = 8, Parent = content })
+	alliesLabel = Kit.label({ size = "small", color = C.dim, LayoutOrder = 9, Parent = content })
+	hintLabel = Kit.label({ font = "document", size = "small", color = C.bone, LayoutOrder = 10, Parent = content })
 	Kit.label({
 		Text = "Release to hide.",
 		font = "bodyItalic",
 		size = "micro",
-		color = C.inkDim,
+		color = C.dim,
 		LayoutOrder = 11,
 		Parent = content,
 	})

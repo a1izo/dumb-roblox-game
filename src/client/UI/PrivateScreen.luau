@@ -162,13 +162,13 @@ local function buildReport()
 	Kit.label({
 		Text = Terms.f("Who do you suspect most? Reports are private and feed {zero}'s suspicion meter."),
 		size = "small",
-		color = C.inkDim,
+		color = C.dim,
 		Parent = body,
 	})
 	local suspects = Kit.scroll({
 		Position = UDim2.fromOffset(0, 44),
 		Size = UDim2.new(1, 0, 1, -(44 + 196)),
-		ScrollBarImageColor3 = C.inkDim,
+		ScrollBarImageColor3 = C.dim,
 		Parent = body,
 	})
 	renderSuspects = Kit.pickGrid(suspects, UDim2.new(1 / 3, -T.space.s, 0, 48), function(id)
@@ -207,7 +207,7 @@ local function buildReport()
 		face = "Scrawl",
 		text = "Report filed. Wait for the meeting.",
 		size = 34,
-		color = C.ink,
+		color = C.bone,
 		align = "center",
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -34),
@@ -217,7 +217,7 @@ local function buildReport()
 	local timer = Kit.label({
 		font = "bodyItalic",
 		size = "micro",
-		color = C.inkDim,
+		color = C.dim,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),

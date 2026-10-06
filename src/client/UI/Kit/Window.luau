@@ -1,7 +1,8 @@
 --!strict
--- Windows: a torn notebook page centred on the screen (a book spread when large), or a sheet
--- that rises from the bottom on phones. Every window has a Gothic title, a close mark, a body
--- and an optional footer for its actions, and frees the mouse while it is open.
+-- Windows: a Notch panel (two clipped corners and an outline) centred on the screen, or a sheet
+-- that rises from the bottom on phones. Every window has a Melodrama title (Aktura when `loud`), a
+-- close mark, a body and an optional footer for its actions, and frees the mouse while it is open.
+-- The title glitches in when the window opens (and keeps glitching every couple of seconds if `loud`).
 --
 --   local win = Window.new({ name = "settings", title = "Settings", size = "M" })
 --   ... build into win.body, put buttons in win.footer ...
@@ -19,6 +20,7 @@ local Screens = require(script.Parent.Parent.Screens)
 local Base = require(script.Parent.Base)
 local Controls = require(script.Parent.Controls)
 local GlyphText = require(script.Parent.GlyphText)
+local Glitch = require(script.Parent.Parent.Core.Glitch)
 local Layout = require(script.Parent.Layout)
 local Surfaces = require(script.Parent.Surfaces)
 local Tokens = require(script.Parent.Tokens)
@@ -29,7 +31,8 @@ export type Options = {
 	name: string,
 	title: string?,
 	size: string?, -- "S", "sheet", "M" (default) or "L"
-	tone: string?, -- page tone: "black" (default), "parchment", "white"
+	tone: string?, -- "black" (default), "white" (Ace's windows only); "parchment" is the same as "black"
+	loud: boolean?, -- an Aktura title that keeps glitching (Death's Manual, the case report)
 	closable: boolean?, -- default true
 	onClose: (() -> ())?, -- default: Router.close(name)
 	footer: boolean?, -- reserve a footer row for actions
@@ -47,6 +50,7 @@ export type Window = {
 	footer: Frame,
 	title: any,
 	close: TextButton?,
+	glitch: Glitch.Handle,
 	setTitle: (string) -> (),
 	options: Options,
 }
@@ -55,7 +59,7 @@ local HEADER = 76
 local FOOTER = 72
 
 local function inkFor(tone: string?): Color3
-	return if tone == "parchment" or tone == "white" then Tokens.color.ink else Tokens.color.bone
+	return if tone == "white" then Tokens.color.ink else Tokens.color.bone
 end
 
 function Window.new(options: Options): Window
@@ -79,31 +83,37 @@ function Window.new(options: Options): Window
 	local page, content = Surfaces.page({
 		tone = options.tone or "black",
 		padding = 0,
-		ruled = options.ruled,
-		margin = options.margin,
+		window = true,
 		ZIndex = 2,
 		Parent = root,
 	})
 	local ink = inkFor(options.tone)
-	local header = Base.frame({ Name = "Header", Size = UDim2.new(1, 0, 0, HEADER), ZIndex = 3, Parent = content })
+	-- The header is a CanvasGroup so it can blink and split when it glitches in.
+	local header = Base.make("CanvasGroup", {
+		Name = "Header",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, HEADER),
+		ZIndex = 3,
+		Parent = content,
+	}) :: any
 	local title = GlyphText.new({
-		face = "Gothic",
+		face = if options.loud then "Title" else "Head",
 		text = options.title or "",
-		size = Tokens.size.heading + 4,
+		size = if options.loud then Tokens.size.display else Tokens.size.heading,
 		color = ink,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, Tokens.space.xl + 4, 0.5, 2),
 		ZIndex = 4,
 		Parent = header,
 	})
-	-- A short red stroke of ink under the title.
+	-- A short stroke under the title (white; red only on a danger window).
 	Base.make("Frame", {
 		Name = "Underline",
-		BackgroundColor3 = Tokens.color.red,
+		BackgroundColor3 = if options.loud then Tokens.color.danger else ink,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, Tokens.space.xl, 1, -6),
-		Size = UDim2.fromOffset(72, 3),
+		Size = UDim2.fromOffset(72, 2),
 		ZIndex = 4,
 		Parent = header,
 	})
@@ -112,9 +122,7 @@ function Window.new(options: Options): Window
 		close = Controls.iconButton({
 			icon = "cross",
 			size = 40,
-			color = if options.tone == "parchment" or options.tone == "white"
-				then Tokens.color.inkDim
-				else Tokens.color.dim,
+			color = if options.tone == "white" then Tokens.color.inkDim else Tokens.color.dim,
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, -Tokens.space.m, 0.5, 0),
 			ZIndex = 5,
@@ -161,6 +169,7 @@ function Window.new(options: Options): Window
 		end
 	end
 	Layout.watch(arrange)
+	local glitch = Glitch.attach(header, { enter = false, loop = options.loud == true })
 
 	local win: Window
 	win = {
@@ -172,6 +181,7 @@ function Window.new(options: Options): Window
 		footer = footer,
 		title = title,
 		close = close,
+		glitch = glitch,
 		options = options,
 		setTitle = function(text: string)
 			title:set(text)
@@ -202,6 +212,7 @@ function Window.register(win: Window, spec: Spec?)
 		end,
 		show = function(args)
 			win.root.Visible = true
+			win.glitch:enter()
 			if Layout.isPhone() then
 				Motion.slideIn(win.root, Vector2.new(0, 260), Tokens.motion.slow)
 			end
@@ -250,9 +261,9 @@ function Window.confirm(options: ConfirmOptions): () -> ()
 	Base.maxSize(box, Tokens.modal.S + Vector2.new(60, 0))
 	Base.list(content, Tokens.space.m)
 	GlyphText.new({
-		face = "Gothic",
+		face = "Head",
 		text = options.title,
-		size = Tokens.size.title + 4,
+		size = Tokens.size.title,
 		color = Tokens.color.bone,
 		LayoutOrder = 1,
 		ZIndex = Tokens.z.top + 2,

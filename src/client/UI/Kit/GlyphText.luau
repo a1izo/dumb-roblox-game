@@ -1,14 +1,21 @@
 --!strict
--- Text set in Death's Gambit's own lettering (Death's Gambit Gothic, Specter Scrawl): one image per glyph
--- from the atlases art/scripts/ui/fonts.py draws. Handwriting has several versions of each
--- letter, used in turn, so a word never repeats a letter exactly. Until the atlases are
--- imported and loaded the same text shows in the Roblox font the face is based on, and it
--- switches over by itself once they are.
+-- Text set in Death's Gambit's lettering: one image per glyph from the atlases art/scripts/ui/fonts.py draws
+-- from the two Fontshare fonts (Roblox cannot load custom fonts). Faces:
+--   "Title"    Aktura: the game title, CASE CLOSED, big slams. Mixed case; its capitals are ornate, so
+--              `plainCaps` sets A H I J K N as lower case at capital height (default on for this face).
+--   "Head"     Melodrama Bold: headings, buttons, names, numbers (18 px and up)
+--   "Semi"     Melodrama Semibold: the lighter heading weight
+--   "RnLight", "RnMedium": letters only, for the ransom note (Kit.ransom)
+-- The old names still work: "Gothic" is "Head" and "Scrawl" is "Semi".
+-- Text is kerned with the font's own pair kerning. With `tabular = true` every digit gets the same slot
+-- width (Melodrama's digits are proportional), so a clock does not shift as it counts.
+-- Until the atlases are imported and loaded the same text shows in Montserrat, and it switches over by
+-- itself once they are.
 --
---   local title = GlyphText.new({ face = "Gothic", text = "The Grimoire", size = 48,
+--   local title = GlyphText.new({ face = "Title", text = "Death's Gambit", size = 96,
 --       color = Tokens.color.bone, align = "center", Parent = frame })
---   title:set("Investigation")        -- new text
---   title:write(1.2)                  -- letters appear one by one, as if written
+--   title:set("Diavolo Wins")         -- new text
+--   title:write(1.2)                  -- letters cut in one by one
 --
 -- The handle's frame is sized to the text (offset pixels); place it with Position and
 -- AnchorPoint like any other frame.
@@ -28,7 +35,7 @@ local GlyphText = {}
 GlyphText.__index = GlyphText
 
 export type Props = {
-	face: string?, -- "Gothic" (default) or "Scrawl"
+	face: string?, -- "Head" (default), "Title", "Semi" (see the top of the file)
 	text: string?,
 	size: number?, -- px per em
 	color: Color3?,
@@ -37,7 +44,8 @@ export type Props = {
 	maxWidth: number?, -- wrap lines wider than this (px)
 	lineHeight: number?, -- times the size
 	tracking: number?, -- extra px between letters
-	seed: number?, -- which handwriting versions to start from
+	tabular: boolean?, -- digits in equal slots
+	plainCaps: boolean?, -- Title only: A H I J K N as lower case at capital height
 	upper: boolean?,
 	Name: string?,
 	Parent: Instance?,
@@ -64,22 +72,31 @@ export type GlyphText = typeof(setmetatable(
 	GlyphText
 ))
 
-type Face = {
+export type Face = {
 	em: number,
 	ascent: number,
 	descent: number,
 	lineGap: number,
+	digit: number,
 	atlases: { string },
 	fallback: string,
-	glyphs: { [string]: { { number } } },
+	kern: { [string]: { [string]: number } },
+	glyphs: { [string]: { number } },
 }
 
+local LEGACY = { Gothic = "Head", Scrawl = "Semi" }
+-- Which Roblox font stands in for each face until its atlas loads.
+local STAND_IN = { Title = "title", Head = "display", Semi = "hand", RnLight = "hand", RnMedium = "hand" }
+-- Aktura capitals that are hard to read; they are set as lower case scaled up to capital height.
+local PLAIN_CAPS = { A = true, H = true, I = true, J = true, K = true, N = true }
+local PLAIN_CAP_SCALE = 1.3
+
 local function faceOf(name: string?): (Face, string)
-	local key = name or "Gothic"
+	local key = LEGACY[name or ""] or name or "Head"
 	local face = (GlyphFonts :: any)[key]
 	if not face then
-		key = "Gothic"
-		face = (GlyphFonts :: any).Gothic
+		key = "Head"
+		face = (GlyphFonts :: any).Head
 	end
 	return face, key
 end
@@ -105,24 +122,53 @@ local function characters(text: string): { string }
 	return out
 end
 
-local function versionsFor(face: Face, char: string): { { number } }
-	return face.glyphs[char] or face.glyphs[string.upper(char)] or face.glyphs["?"]
+local function glyphOf(face: Face, char: string): { number }
+	return face.glyphs[char] or face.glyphs[string.upper(char)] or face.glyphs["?"] or face.glyphs[" "]
 end
 
--- Lays text out into lines: { { chars, width } }, measuring with advances at `scale`.
-local function layout(face: Face, text: string, scale: number, tracking: number, maxWidth: number?)
+local function isDigit(char: string): boolean
+	return #char == 1 and char >= "0" and char <= "9"
+end
+
+-- Where each drawn character of a line sits (px at `scale`) and the line's width. Pairs are kerned; a
+-- space adds its advance and breaks the pair.
+local function place(face: Face, chars: { string }, scale: number, tracking: number, tabular: boolean)
+	local out: { { char: string, glyph: { number }, x: number, slot: boolean } } = {}
+	local x = 0
+	local previous: string? = nil
+	for _, char in ipairs(chars) do
+		local glyph = glyphOf(face, char)
+		if char == " " then
+			x += glyph[1] * scale + tracking
+			previous = nil
+		else
+			if previous then
+				local row = face.kern[previous]
+				local pair = row and row[char]
+				if pair then
+					x += pair * scale
+				end
+			end
+			local slot = tabular and isDigit(char)
+			local advance = if slot then face.digit else (glyph[8] or glyph[1])
+			table.insert(out, { char = char, glyph = glyph, x = x, slot = slot })
+			x += advance * scale + tracking
+			previous = char
+		end
+	end
+	return out, x
+end
+
+-- Lays text out into lines: { { chars, width } }, wrapping at maxWidth.
+local function layout(face: Face, text: string, scale: number, tracking: number, maxWidth: number?, tabular: boolean)
 	local lines = {}
 	for _, paragraph in ipairs(string.split(text, "\n")) do
 		local words = string.split(paragraph, " ")
-		local current, width = {}, 0
-		local space = (versionsFor(face, " ")[1][1] :: number) * scale
+		local current: { string }, width = {}, 0
+		local space = glyphOf(face, " ")[1] * scale + tracking
 		for index, word in ipairs(words) do
 			local chars = characters(word)
-			local wordWidth = 0
-			for _, char in ipairs(chars) do
-				local v = versionsFor(face, char)[1]
-				wordWidth += (v[8] or v[1]) * scale + tracking
-			end
+			local _, wordWidth = place(face, chars, scale, tracking, tabular)
 			local needed = if #current > 0 then space + wordWidth else wordWidth
 			if maxWidth and #current > 0 and width + needed > maxWidth then
 				table.insert(lines, { chars = current, width = width })
@@ -145,6 +191,23 @@ local function layout(face: Face, text: string, scale: number, tracking: number,
 		end
 	end
 	return lines
+end
+
+-- The width of `text` in a face at a size (px), without building anything. Used by the ransom note.
+function GlyphText.measure(faceName: string, text: string, size: number, tracking: number?, tabular: boolean?): number
+	local face = faceOf(faceName)
+	local _, width = place(face, characters(text), size / face.em, tracking or 0, tabular == true)
+	return width
+end
+
+-- Face data (metrics and atlas names) by face name.
+function GlyphText.face(faceName: string?): Face
+	return (faceOf(faceName))
+end
+
+-- The atlas content ids of a face, or nil while any is missing.
+function GlyphText.atlases(faceName: string?): { string }?
+	return atlasIds((faceOf(faceName)))
 end
 
 function GlyphText.new(props: Props): GlyphText
@@ -200,21 +263,22 @@ end
 function GlyphText._render(self: GlyphText)
 	self:_clear()
 	local props = self.props
-	local face = faceOf(props.face)
+	local face, faceKey = faceOf(props.face)
 	local size = props.size or Tokens.size.display
 	local color = props.color or Tokens.color.bone
 	local transparency = props.transparency or 0
 	local text = if props.upper then string.upper(self.text) else self.text
 	local zIndex = props.ZIndex or 1
+	local tabular = props.tabular == true
 	local ids = atlasIds(face)
 	if not ids then
-		-- The Roblox font this face is drawn from, until the atlases load.
+		-- Montserrat stands in until the atlases load.
 		local label = Create("TextLabel", {
 			Name = "Fallback",
 			BackgroundTransparency = 1,
-			FontFace = if props.face == "Scrawl" then Tokens.font.hand else Tokens.font.display,
+			FontFace = (Tokens.font :: any)[STAND_IN[faceKey] or "display"],
 			Text = text,
-			TextSize = size * (if props.face == "Scrawl" then 1.05 else 0.92),
+			TextSize = size * 0.92,
 			TextColor3 = color,
 			TextTransparency = transparency,
 			TextWrapped = props.maxWidth ~= nil,
@@ -240,7 +304,7 @@ function GlyphText._render(self: GlyphText)
 		for _, line in ipairs(lines) do
 			longest = math.max(longest, utf8.len(line) or #line)
 		end
-		self.width = math.min(longest * label.TextSize * 0.5, props.maxWidth or math.huge)
+		self.width = math.min(longest * label.TextSize * 0.55, props.maxWidth or math.huge)
 		self.height = #lines * label.TextSize * 1.2
 		self.version += 1
 		local version = self.version
@@ -267,45 +331,49 @@ function GlyphText._render(self: GlyphText)
 	local scale = size / face.em
 	local tracking = props.tracking or 0
 	local lineHeight = size * (props.lineHeight or 1.15)
-	local lines = layout(face, text, scale, tracking, props.maxWidth)
+	local plainCaps = if props.plainCaps == nil then faceKey == "Title" else props.plainCaps
+	local lines = layout(face, text, scale, tracking, props.maxWidth, tabular)
 	local widest = 0
 	for _, line in ipairs(lines) do
 		widest = math.max(widest, line.width)
 	end
 	local height = lineHeight * math.max(#lines - 1, 0) + (face.ascent + face.descent) * scale
-	local counters: { [string]: number } = {}
-	local seed = props.seed or 0
 	for index, line in ipairs(lines) do
-		local x = 0
+		local shift = 0
 		if props.align == "center" then
-			x = (widest - line.width) / 2
+			shift = (widest - line.width) / 2
 		elseif props.align == "right" then
-			x = widest - line.width
+			shift = widest - line.width
 		end
 		local baseline = face.ascent * scale + lineHeight * (index - 1)
-		for _, char in ipairs(line.chars) do
-			local versions = versionsFor(face, char)
-			local n = (counters[char] or 0) + seed
-			counters[char] = (counters[char] or 0) + 1
-			local v = versions[(n % #versions) + 1]
+		local items = place(face, line.chars, scale, tracking, tabular)
+		for _, item in ipairs(items) do
+			local v = item.glyph
 			if #v >= 8 then
+				local glyphScale = scale
+				local glyph = v
+				if plainCaps and PLAIN_CAPS[item.char] and face.glyphs[string.lower(item.char)] then
+					-- A plain capital: the lower-case letter, enlarged to the height of a capital.
+					glyph = face.glyphs[string.lower(item.char)]
+					glyphScale = scale * PLAIN_CAP_SCALE
+				end
+				local left = if item.slot
+					then item.x + (face.digit / 2 - glyph[4] / 2) * scale
+					else item.x + glyph[6] * glyphScale
 				local image = Create("ImageLabel", {
 					Name = "Glyph",
 					BackgroundTransparency = 1,
-					Image = ids[v[1]],
-					ImageRectOffset = Vector2.new(v[2], v[3]),
-					ImageRectSize = Vector2.new(v[4], v[5]),
+					Image = ids[glyph[1]],
+					ImageRectOffset = Vector2.new(glyph[2], glyph[3]),
+					ImageRectSize = Vector2.new(glyph[4], glyph[5]),
 					ImageColor3 = color,
 					ImageTransparency = transparency,
-					Size = UDim2.fromOffset(v[4] * scale, v[5] * scale),
-					Position = UDim2.fromOffset(x + v[6] * scale, baseline - v[7] * scale),
+					Size = UDim2.fromOffset(glyph[4] * glyphScale, glyph[5] * glyphScale),
+					Position = UDim2.fromOffset(shift + left, baseline - glyph[7] * glyphScale),
 					ZIndex = zIndex,
 					Parent = self.frame,
 				})
 				table.insert(self.glyphs, image)
-				x += v[8] * scale + tracking
-			else
-				x += v[1] * scale + tracking
 			end
 		end
 	end
@@ -321,6 +389,11 @@ function GlyphText.setSize(self: GlyphText, size: number)
 		return
 	end
 	self.props.size = size
+	self:_render()
+end
+
+-- Draws the text again (after changing props such as `upper` by hand).
+function GlyphText.refresh(self: GlyphText)
 	self:_render()
 end
 
@@ -355,9 +428,9 @@ function GlyphText.setTransparency(self: GlyphText, transparency: number)
 	end
 end
 
--- Writes the text in: each letter appears in turn, starting as a red blot that settles into
--- the text colour. Returns the time it takes.
-function GlyphText.write(self: GlyphText, duration: number?, inkColor: Color3?): number
+-- Cuts the text in: each letter blinks on in turn (a hard cut, no fade), flashing `flashColor` (white by
+-- default) for a moment before it takes the text colour. Returns the time it takes.
+function GlyphText.write(self: GlyphText, duration: number?, flashColor: Color3?): number
 	local total = duration or 0.8
 	local count = #self.glyphs
 	if count == 0 or Motion.isReduced() then
@@ -365,15 +438,20 @@ function GlyphText.write(self: GlyphText, duration: number?, inkColor: Color3?):
 	end
 	local color = self.props.color or Tokens.color.bone
 	local target = self.props.transparency or 0
+	local flash = flashColor or Tokens.color.white
 	local step = total / count
 	for index, glyph in ipairs(self.glyphs) do
 		if glyph:IsA("ImageLabel") then
 			glyph.ImageTransparency = 1
-			glyph.ImageColor3 = inkColor or Tokens.color.red
 			task.delay(step * (index - 1), function()
 				if glyph.Parent then
-					Motion.tween(glyph, { ImageTransparency = target }, step * 2.5)
-					Motion.tween(glyph, { ImageColor3 = color }, 0.5)
+					glyph.ImageColor3 = flash
+					glyph.ImageTransparency = target
+					task.delay(0.09, function()
+						if glyph.Parent then
+							glyph.ImageColor3 = color
+						end
+					end)
 				end
 			end)
 		elseif glyph:IsA("TextLabel") then

@@ -1,10 +1,22 @@
-"""The UI's textures and icons, drawn with numpy (run with plain Python):
+"""The UI's textures and icons, drawn with numpy (run with Blender's Python; plain `python` is not installed):
 
-    python art/scripts/ui/textures.py      textures + icon atlas + src/shared/UI/Icons.luau + preview
+    "C:\\Program Files\\Blender Foundation\\Blender 5.2\\5.2\\python\\bin\\python.exe" art/scripts/ui/textures.py
 
-Everything is white or grey with alpha (the game tints it), except the two paper tiles, which
-carry their own colour. Files go to art/export/textures/Ui<Name>.png and ride into Roblox on
-carrier quads in InkboundModels_Core.fbx (build_props.py). The UI works without them.
+It writes the textures, the icon atlas, src/shared/UI/Icons.luau and a preview sheet.
+
+Everything is white with alpha (the game tints it). Files go to art/export/textures/<Name>.png and ride
+into Roblox on carrier quads in DeathsGambitModels_Core.fbx (build_props.py). The UI works without them
+(plain rectangles instead of clipped corners).
+
+The "Notch" shapes are 9-slice images (Rect centre noted next to each): a rectangle with clipped corners.
+  UiNotch         panels, cards, toasts: bottom-right corner cut 14 px.        slice 32..224, scale 1
+  UiNotchBtn      buttons: top-right corner cut 12 px.                          slice 32..224, scale 1
+  UiNotchBtnLine  the 1 px outline of a UiNotchBtn (ghost buttons).             slice 32..224, scale 1
+  UiNotchWin      windows: top-right and bottom-left corners cut 18 px.         slice 48..208, scale 0.5
+  UiNotchWinLine  the 1 px outline of a UiNotchWin.                             slice 48..208, scale 0.5
+Windows are drawn at twice their size (cut 36, outline 2) and shown with SliceScale 0.5.
+Tiles: UiScan (scanlines, 3 px period), UiGrain (film grain). UiVignette darkens the screen edges.
+Effects for the death and glitch moments: FxShard, FxStatic, FxChalk (a body outline), FxTear.
 """
 
 import math
@@ -47,16 +59,6 @@ def tile_noise(size, cells, seed):
     return top + (bottom - top) * f[:, None]
 
 
-def fbm(size, base, octaves, seed):
-    out = np.zeros((size, size))
-    amp, total = 1.0, 0.0
-    for o in range(octaves):
-        out += tile_noise(size, base * 2**o, seed + o) * amp
-        total += amp
-        amp *= 0.5
-    return out / total
-
-
 def noise(h, w, cell, seed):
     """Smooth noise (not tiling) for any shape."""
     r = np.random.default_rng(seed)
@@ -78,22 +80,6 @@ def smoothstep(e0, e1, x):
     return t * t * (3 - 2 * t)
 
 
-def fibers(size, count, length, seed):
-    """Thin random strokes that wrap around the edges (paper fibres), 0..1."""
-    r = np.random.default_rng(seed)
-    out = np.zeros((size, size))
-    for _ in range(count):
-        x, y = r.uniform(0, size, 2)
-        angle = r.uniform(0, math.pi)
-        n = int(r.uniform(0.4, 1.0) * length)
-        strength = r.uniform(0.3, 1.0)
-        for s in range(n):
-            px = int(x + math.cos(angle) * s) % size
-            py = int(y + math.sin(angle) * s) % size
-            out[py, px] = max(out[py, px], strength)
-    return out
-
-
 def rgba(lum, alpha):
     lum = np.clip(lum, 0, 1)
     return np.stack([lum, lum, lum, np.clip(alpha, 0, 1)], axis=2)
@@ -102,117 +88,111 @@ def rgba(lum, alpha):
 # Textures ----------------------------------------------------------------------------------------
 
 
-def paper(size, base, spread, fiber_tone, seed):
-    mottle = fbm(size, 4, 4, seed)
-    fib = fibers(size, 2600, 14, seed + 1)
-    speck = (tile_noise(size, 128, seed + 2) > 0.93) * 0.5
-    img = np.zeros((size, size, 4))
-    for c in range(3):
-        v = base[c] / 255 + mottle * spread + fib * fiber_tone + speck * fiber_tone * 0.6
-        img[..., c] = v
-    img[..., 3] = 1
-    return np.clip(img, 0, 1)
+def cut_polygon(size, margin, cuts):
+    """The square [margin, size - margin]^2 with clipped corners; cuts = (top-left, top-right,
+    bottom-right, bottom-left) leg lengths in px (0 = square corner), clockwise from the top left."""
+    a, b = margin, size - margin
+    tl, tr, br, bl = cuts
+    pts = []
+    pts += [(a, a + tl), (a + tl, a)] if tl else [(a, a)]
+    pts += [(b - tr, a), (b, a + tr)] if tr else [(b, a)]
+    pts += [(b, b - br), (b - br, b)] if br else [(b, b)]
+    pts += [(a + bl, b), (a, b - bl)] if bl else [(a, b)]
+    return pts
 
 
-def black_page():
-    return paper(512, (18, 16, 21), 0.018, 0.035, 10)
+def notch(size, cuts, ring=0.0):
+    """A white clipped-corner rectangle as an RGBA image; with `ring` > 0 only its outline of that width.
+    The diagonal of an inset outline moves in by `ring` perpendicular to itself, so its legs shrink."""
+    outer = ttf.fill([cut_polygon(size, 0, cuts) + [cut_polygon(size, 0, cuts)[0]]], size, size, ss=6)
+    if ring <= 0:
+        return rgba(np.ones((size, size)), outer)
+    shrink = ring * (2 - math.sqrt(2))
+    inner_cuts = tuple(max(c - shrink, 0) if c else 0 for c in cuts)
+    poly = cut_polygon(size, ring, inner_cuts)
+    inner = ttf.fill([poly + [poly[0]]], size, size, ss=6)
+    return rgba(np.ones((size, size)), np.clip(outer - inner, 0, 1))
 
 
-def parchment():
-    img = paper(512, (216, 205, 180), 0.06, -0.08, 20)
-    stains = smoothstep(0.35, 0.7, fbm(512, 2, 3, 23))
-    for c, tone in enumerate((0.10, 0.12, 0.16)):
-        img[..., c] -= stains * tone
-    return np.clip(img, 0, 1)
+def scanlines(size=12, period=3):
+    """White lines one pixel thick every `period` pixels (tiled over a panel at low opacity)."""
+    alpha = np.zeros((size, size))
+    alpha[::period, :] = 1.0
+    return rgba(np.ones((size, size)), alpha)
 
 
-def torn_card(size=256, margin=10):
-    """A white card with torn, fibrous edges (for 9-slice; centre 32..224)."""
-    yy, xx = np.mgrid[0:size, 0:size].astype(float)
-    edge = np.minimum(np.minimum(xx, size - 1 - xx), np.minimum(yy, size - 1 - yy))
-    wobble = noise(size, size, 9, 31) * 3.0 + noise(size, size, 2.2, 32) * 1.6
-    alpha = smoothstep(margin - 1.2, margin + 1.2, edge + wobble)
-    fuzz = (noise(size, size, 1.1, 33) > 0.55) & (edge + wobble > margin - 3) & (edge + wobble < margin + 1)
-    alpha = np.maximum(alpha, fuzz * 0.6)
-    lum = 0.97 + noise(size, size, 6, 34) * 0.03
-    return rgba(lum, alpha)
-
-
-def brush_stroke(w=1024, h=160):
-    """A horizontal dry-brush stroke: rough top and bottom, bristle streaks, tapered ends."""
-    yy, xx = np.mgrid[0:h, 0:w].astype(float)
-    u = xx / (w - 1)
-    along = np.arange(w) / (w - 1)
-    centre = h / 2 + noise(1, w, 180, 41)[0] * 10
-    half = (h * 0.4) * np.clip(np.sin(along * math.pi) ** 0.3, 0, 1)
-    half = half + noise(1, w, 40, 42)[0] * 4
-    top_edge = centre - half + noise(1, w, 5, 43)[0] * 3
-    bottom_edge = centre + half + noise(1, w, 5, 44)[0] * 3
-    body = smoothstep(-1.5, 1.5, yy - top_edge[None, :]) * smoothstep(-1.5, 1.5, bottom_edge[None, :] - yy)
-    streaks = noise(h, 1, 1.3, 45)[:, 0][:, None] * np.ones((1, w))
-    dry = smoothstep(0.35, 0.8, streaks + noise(h, w, 60, 46) * 0.6) * smoothstep(0.55, 1.0, u)
-    alpha = body * (1 - 0.85 * dry)
-    lum = 0.9 + streaks * 0.08
-    return rgba(lum, alpha)
-
-
-def wax_seal(size=256):
-    yy, xx = np.mgrid[0:size, 0:size].astype(float)
-    c = size / 2
-    dx, dy = xx - c, yy - c
-    r = np.hypot(dx, dy)
-    theta = np.arctan2(dy, dx)
-    rim = size * 0.44 + np.sin(theta * 7 + 0.6) * 4 + np.sin(theta * 13) * 2.5 + noise(size, size, 10, 51) * 3
-    alpha = smoothstep(1.5, -1.5, r - rim)
-    # Relief: raised outer lip, sunken ring, flat centre.
-    ring_r = size * 0.31
-    lip = np.exp(-((r - rim + 8) ** 2) / 30)
-    groove = np.exp(-((r - ring_r) ** 2) / 12)
-    light = -(dx + dy) / (size * 0.8)  # light from the top left
-    lum = 0.62 + lip * 0.25 * (0.6 + light) - groove * 0.25 + noise(size, size, 5, 52) * 0.04
-    lum += np.clip(light, -0.3, 0.3) * 0.15
-    return rgba(lum, alpha)
-
-
-def rubber_stamp(w=512, h=192):
-    yy, xx = np.mgrid[0:h, 0:w].astype(float)
-    edge = np.minimum(np.minimum(xx, w - 1 - xx), np.minimum(yy, h - 1 - yy))
-    outer = smoothstep(4, 6, edge) * smoothstep(20, 18, edge)
-    inner = smoothstep(26, 28, edge) * smoothstep(32, 30, edge)
-    ink = np.maximum(outer, inner)
-    grunge = noise(h, w, 3, 61) + noise(h, w, 14, 62) * 0.8
-    ink *= 1 - smoothstep(0.55, 0.9, grunge)
-    return rgba(np.full((h, w), 1.0), ink)
-
-
-def scratches(size=512):
-    out = np.zeros((size, size))
-    r = np.random.default_rng(71)
-    for _ in range(90):
-        x, y = r.uniform(0, size, 2)
-        angle = r.uniform(-0.5, 0.5) + (math.pi / 2 if r.random() < 0.3 else 0)
-        length = r.uniform(20, 140)
-        strength = r.uniform(0.2, 0.7)
-        for s in range(int(length)):
-            px = int(x + math.cos(angle) * s) % size
-            py = int(y + math.sin(angle) * s + math.sin(s / 9) * 1.5) % size
-            out[py, px] = max(out[py, px], strength * (1 - s / length) ** 0.3)
-    return rgba(np.ones((size, size)), out)
-
-
-def ruled(w=64, h=60):
-    """One notebook rule at the bottom of a transparent tile (tiled down a page)."""
-    img = np.zeros((h, w, 4))
-    img[..., :3] = 1
-    img[h - 2 :, :, 3] = 0.9
-    img[h - 3, :, 3] = 0.25
-    return img
+def grain(size=256):
+    """Film grain that tiles: white specks of random strength."""
+    r = np.random.default_rng(31)
+    return rgba(np.ones((size, size)), r.random((size, size)) ** 2.2)
 
 
 def vignette(size=256):
     yy, xx = np.mgrid[0:size, 0:size].astype(float)
     d = np.hypot((xx - size / 2) / (size / 2), (yy - size / 2) / (size / 2))
     return rgba(np.zeros((size, size)), smoothstep(0.45, 1.3, d) * 0.92)
+
+
+def shard(size=256):
+    """A sharp sliver of glass, bright at the tip and fading toward the base (a particle and burst sprite)."""
+    pts = [(128, 4), (170, 120), (150, 252), (118, 200), (92, 118)]
+    cov = ttf.fill([pts + [pts[0]]], size, size, ss=6)
+    yy = np.mgrid[0:size, 0:size][0] / size
+    fade = 0.45 + 0.55 * (1 - yy)
+    return rgba(np.ones((size, size)), cov * fade)
+
+
+def static(size=256):
+    """TV static that tiles: grey grain with a few brighter horizontal tears (a dissolve and glitch particle)."""
+    r = np.random.default_rng(41)
+    lum = r.random((size, size)) ** 1.5
+    alpha = np.full((size, size), 0.9)
+    for _ in range(9):
+        y = int(r.integers(0, size))
+        h = int(r.integers(1, 4))
+        lum[y : y + h, :] = 1.0
+        alpha[y : y + h, :] = 1.0
+    return rgba(lum, alpha)
+
+
+def chalk(size=512):
+    """A chalk outline of a body lying with arms and legs apart, seen from above (a floor decal)."""
+    body = [
+        (41, 26), (22, 30), (10, 44), (6, 60), (15, 62), (22, 48), (35, 44), (36, 62), (32, 92), (32, 98),
+        (44, 98), (47, 70), (53, 70), (56, 98), (68, 98), (68, 92), (64, 62), (65, 44), (78, 48), (85, 62),
+        (94, 60), (90, 44), (78, 30), (59, 26), (41, 26),
+    ]  # fmt: skip
+    yy, xx = np.mgrid[0:size, 0:size].astype(float) + 0.5
+    x, y = xx / size * 100, yy / size * 100
+    dist = np.full((size, size), 1e9)
+    for (ax, ay), (bx, by) in zip(body, body[1:]):
+        vx, vy = bx - ax, by - ay
+        t = np.clip(((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy), 0, 1)
+        dist = np.minimum(dist, np.hypot(x - (ax + t * vx), y - (ay + t * vy)))
+    dist = np.minimum(dist, np.abs(np.hypot(x - 50, y - 13) - 8.5))  # the head
+    width = 1.5  # half the stroke in design units
+    px = 100 / size
+    stroke = smoothstep(width + 2 * px, width - 2 * px, dist)
+    rough = noise(size, size, 5, 51) * 0.5 + noise(size, size, 1.6, 52) * 0.5
+    gaps = smoothstep(-0.62, -0.5, rough)  # chalk skips here and there
+    return rgba(np.ones((size, size)), stroke * gaps * (0.78 + 0.22 * rough))
+
+
+def tear(w=512, h=64):
+    """Horizontal glitch bars of different lengths, for the videotape tear overlay."""
+    r = np.random.default_rng(61)
+    alpha = np.zeros((h, w))
+    for _ in range(8):
+        y = int(r.integers(0, h - 8))
+        bar = int(r.integers(2, 8))
+        x0 = int(r.integers(0, w // 2))
+        x1 = int(min(w, x0 + r.integers(w // 6, w)))
+        alpha[y : y + bar, x0:x1] = r.uniform(0.55, 1.0)
+    for _ in range(14):
+        y = int(r.integers(0, h))
+        x0 = int(r.integers(0, w - 40))
+        alpha[y, x0 : x0 + int(r.integers(30, 200))] = 1.0
+    return rgba(np.ones((h, w)), alpha)
 
 
 # Icons -------------------------------------------------------------------------------------------
@@ -618,12 +598,9 @@ def draw_icons():
     return icons
 
 
-def ink_icon(cov, seed):
-    """Hand-inked edges: a little bleed and a slightly bitten outline."""
-    h, w = cov.shape
-    wobble = noise(h, w, 3.5, seed) * 0.12 + noise(h, w, 1.5, seed + 1) * 0.06
-    alpha = smoothstep(0.35, 0.65, cov + wobble * smoothstep(0.02, 0.5, cov) * smoothstep(0.98, 0.5, cov))
-    return rgba(np.full((h, w), 1.0), alpha)
+def clean_icon(cov):
+    """Icons keep their drawn, antialiased edge: white with the coverage as alpha."""
+    return rgba(np.ones(cov.shape), cov)
 
 
 def icon_atlas():
@@ -634,7 +611,7 @@ def icon_atlas():
         c = Canvas()
         fn(c)
         x, y = (i % GRID) * CELL, (i // GRID) * CELL
-        atlas[y : y + CELL, x : x + CELL] = ink_icon(c.cov, 900 + i)
+        atlas[y : y + CELL, x : x + CELL] = clean_icon(c.cov)
         cells[name] = (x, y)
     return atlas, cells
 
@@ -643,7 +620,7 @@ def write_icons_luau(cells):
     lines = [
         "--!strict",
         "-- GENERATED by art/scripts/ui/textures.py. Do not edit by hand.",
-        "-- The hand-inked icons in the UiIcons atlas: name -> top-left pixel of its cell.",
+        "-- The line icons in the UiIcons atlas: name -> top-left pixel of its cell.",
         "",
         "return {",
         '\tatlas = "UiIcons",',
@@ -659,28 +636,31 @@ def write_icons_luau(cells):
 
 
 def preview(textures, icons):
-    """A contact sheet: each texture on dark and light, tinted like the game does."""
-    sheet = np.zeros((1400, 1400, 4))
-    sheet[..., :3] = np.array([30, 28, 34]) / 255
+    """A contact sheet: every texture white-on-dark, as the game tints them."""
+    sheet = np.zeros((1500, 1400, 4))
+    sheet[..., :3] = np.array([23, 26, 32]) / 255
     sheet[..., 3] = 1
 
-    def put(img, x, y, tint=(1, 1, 1), max_w=640):
-        h, w = img.shape[:2]
-        step = max(1, int(math.ceil(w / max_w)))
+    def put(img, x, y, tint=(0.96, 0.96, 0.97), max_w=300):
+        step = max(1, int(math.ceil(img.shape[1] / max_w)))
         img = img[::step, ::step]
         h, w = img.shape[:2]
         region = sheet[y : y + h, x : x + w]
         a = img[: region.shape[0], : region.shape[1], 3:4]
         region[..., :3] = region[..., :3] * (1 - a) + img[: region.shape[0], : region.shape[1], :3] * np.array(tint) * a
 
-    put(textures["UiPaper"], 20, 20, max_w=300)
-    put(textures["UiParchment"], 340, 20, max_w=300)
-    put(textures["UiTorn"], 660, 20, (0.85, 0.12, 0.16))
-    put(textures["UiSeal"], 940, 20, (0.75, 0.08, 0.1))
-    put(textures["UiBrush"], 20, 340, (0.9, 0.9, 0.86))
-    put(textures["UiStamp"], 700, 340, (0.85, 0.12, 0.16))
-    put(textures["UiScratches"], 1200, 20, max_w=180)
-    put(icons, 20, 540, (0.93, 0.9, 0.85), max_w=860)
+    put(textures["UiNotch"], 20, 20)
+    put(textures["UiNotchBtn"], 340, 20)
+    put(textures["UiNotchBtnLine"], 660, 20)
+    put(textures["UiNotchWin"], 20, 340)
+    put(textures["UiNotchWinLine"], 340, 340)
+    put(np.tile(textures["UiScan"], (20, 20, 1)), 660, 340)
+    put(np.tile(textures["UiGrain"], (1, 1, 1)), 980, 340, max_w=256)
+    put(textures["FxShard"], 20, 660, max_w=200)
+    put(textures["FxStatic"], 240, 660, max_w=200)
+    put(textures["FxChalk"], 460, 660, max_w=300)
+    put(textures["FxTear"], 780, 660, max_w=400)
+    put(icons, 20, 980, max_w=1000)
     os.makedirs(PREVIEWS, exist_ok=True)
     return png.write(os.path.join(PREVIEWS, "ui_textures.png"), sheet)
 
@@ -688,15 +668,18 @@ def preview(textures, icons):
 def main():
     os.makedirs(TEXTURES, exist_ok=True)
     textures = {
-        "UiPaper": black_page(),
-        "UiParchment": parchment(),
-        "UiTorn": torn_card(),
-        "UiBrush": brush_stroke(),
-        "UiSeal": wax_seal(),
-        "UiStamp": rubber_stamp(),
-        "UiScratches": scratches(),
+        "UiNotch": notch(256, (0, 0, 14, 0)),
+        "UiNotchBtn": notch(256, (0, 12, 0, 0)),
+        "UiNotchBtnLine": notch(256, (0, 12, 0, 0), ring=1),
+        "UiNotchWin": notch(256, (0, 36, 0, 36)),
+        "UiNotchWinLine": notch(256, (0, 36, 0, 36), ring=2),
+        "UiScan": scanlines(),
+        "UiGrain": grain(),
         "UiVignette": vignette(),
-        "UiRuled": ruled(),
+        "FxShard": shard(),
+        "FxStatic": static(),
+        "FxChalk": chalk(),
+        "FxTear": tear(),
     }
     for name, img in textures.items():
         png.write(os.path.join(TEXTURES, name + ".png"), img)

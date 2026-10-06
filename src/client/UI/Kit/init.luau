@@ -1,9 +1,9 @@
 --!strict
--- The Grimoire design system: tokens, lettering, surfaces, controls, windows and layout.
+-- The Death's Gambit design system ("Notch"): tokens, lettering, surfaces, controls, windows and layout.
 -- Screens require this one module:
 --
 --   local Kit = require(UI.Kit)
---   local page, content = Kit.page({ tone = "parchment", Parent = x })
+--   local page, content = Kit.page({ tone = "black", Parent = x })
 --   Kit.button({ text = "Play", variant = "primary" }, onClick)
 --
 -- See each child module for details. Kit.Textures.init() runs once at start.
@@ -13,11 +13,13 @@ local Controls = require(script.Controls)
 local GlyphText = require(script.GlyphText)
 local Icon = require(script.Icon)
 local Layout = require(script.Layout)
+local Ransom = require(script.Ransom)
 local Slip = require(script.Slip)
 local Surfaces = require(script.Surfaces)
 local Textures = require(script.Textures)
 local Tokens = require(script.Tokens)
 local Window = require(script.Window)
+local Glitch = require(script.Parent.Core.Glitch)
 
 local Kit = {
 	Base = Base,
@@ -25,6 +27,8 @@ local Kit = {
 	GlyphText = GlyphText,
 	Icon = Icon,
 	Layout = Layout,
+	Ransom = Ransom,
+	Glitch = Glitch,
 	Slip = Slip,
 	Surfaces = Surfaces,
 	Textures = Textures,
@@ -46,6 +50,17 @@ local Kit = {
 	counter = Base.counter,
 	-- lettering and icons
 	text = GlyphText.new,
+	-- digits in equal slots (clocks, counts): the glyph text with `tabular` on
+	num = function(props: { [string]: any })
+		local p = table.clone(props)
+		p.tabular = true
+		p.face = p.face or "Head"
+		return GlyphText.new(p)
+	end,
+	-- ransom-note lettering (the game title and CASE CLOSED only)
+	ransom = Ransom.new,
+	-- the videotape glitch on loud elements
+	glitch = Glitch.attach,
 	icon = Icon.new,
 	-- surfaces
 	page = Surfaces.page,
@@ -56,6 +71,8 @@ local Kit = {
 	stamp = Surfaces.stamp,
 	rule = Surfaces.rule,
 	vignette = Surfaces.vignette,
+	notch = Surfaces.notch,
+	texture = Surfaces.texture,
 	-- controls
 	button = Controls.button,
 	hold = Controls.hold,

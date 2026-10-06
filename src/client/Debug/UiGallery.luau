@@ -19,8 +19,8 @@ local built = false
 
 local function section(parent: Instance, order: () -> number, title: string)
 	Kit.frame({ Size = UDim2.new(1, 0, 0, T.space.l), LayoutOrder = order(), Parent = parent })
-	Kit.text({ face = "Gothic", text = title, size = T.size.title, LayoutOrder = order(), Parent = parent })
-	Kit.rule({ color = C.red, transparency = 0.4, LayoutOrder = order(), Parent = parent })
+	Kit.text({ face = "Head", text = title, size = T.size.title, LayoutOrder = order(), Parent = parent })
+	Kit.rule({ color = C.white, transparency = 0.6, LayoutOrder = order(), Parent = parent })
 end
 
 local function row(parent: Instance, order: () -> number, height: number?): Frame
@@ -42,18 +42,42 @@ local function build()
 	local order = Kit.counter()
 
 	section(list, order, "Lettering")
-	for _, size in ipairs({ T.size.hero, T.size.display, T.size.heading, T.size.title }) do
-		Kit.text({ face = "Gothic", text = "Investigation " .. size, size = size, LayoutOrder = order(), Parent = list })
+	-- Aktura (Title): the game title and the big moments. Mixed case; A H I J K N are set as plain capitals.
+	for _, size in ipairs({ 96, 64, 40 }) do
+		Kit.text({ face = "Title", text = Terms.GAME .. " " .. size, size = size, LayoutOrder = order(), Parent = list })
 	end
-	for _, size in ipairs({ 52, 40, 30, 24 }) do
+	Kit.text({
+		face = "Title",
+		text = "Heron, Koi, Hawk, Anchor, Night",
+		size = 48,
+		LayoutOrder = order(),
+		Parent = list,
+	})
+	-- Melodrama (Head and Semi): headings, buttons, names, numbers, 18 px and up.
+	for _, size in ipairs({ T.size.display, T.size.heading, T.size.title, T.size.lead }) do
+		Kit.text({ face = "Head", text = "Investigation " .. size, size = size, LayoutOrder = order(), Parent = list })
+	end
+	for _, size in ipairs({ 40, 30, 24, 18 }) do
 		Kit.text({
-			face = "Scrawl",
-			text = "Kenji Mori, heart attack. letters letters",
+			face = "Semi",
+			text = "Kenji Mori, heart attack. Death's Manual",
 			size = size,
 			LayoutOrder = order(),
 			Parent = list,
 		})
 	end
+	-- Digits sit in equal slots: these two lines are the same width.
+	Kit.num({ text = "11:11  00:08", size = 48, LayoutOrder = order(), Parent = list })
+	Kit.num({ text = "00:00  88:88", size = 48, LayoutOrder = order(), Parent = list })
+	-- The ransom note: only for the title and CASE CLOSED. Diavolo's side winning turns two letters red.
+	local title = Kit.ransom({ text = Terms.GAME, size = 56, LayoutOrder = order(), Parent = list })
+	Kit.ransom({ text = "Case Closed", size = 44, hand = true, LayoutOrder = order(), Parent = list })
+	Kit.button(
+		{ text = "Drop the letters again", variant = "secondary", LayoutOrder = order(), Parent = list },
+		function()
+			title:play()
+		end
+	)
 	for _, font in ipairs({ "body", "bodyBold", "bodyItalic", "label", "document", "mono" }) do
 		Kit.label({
 			Text = font .. Terms.f(": {Hand} writes one full real name a night."),
@@ -66,19 +90,18 @@ local function build()
 	section(list, order, "Surfaces")
 	local pages = row(list, order, 200)
 	for _, tone in ipairs({ "black", "raised", "parchment", "white" }) do
-		local _, content =
-			Kit.page({ tone = tone, ruled = tone == "black", Size = UDim2.fromOffset(220, 190), Parent = pages })
+		local _, content = Kit.page({ tone = tone, Size = UDim2.fromOffset(220, 190), Parent = pages })
 		Kit.label({
 			Text = tone,
 			font = "document",
-			color = if tone == "parchment" or tone == "white" then C.ink else C.bone,
+			color = if tone == "white" then C.ink else C.bone,
 			Parent = content,
 		})
 	end
 	local marks = row(list, order, 110)
 	Kit.banner({ text = Terms.NAMES.Grimoire, size = T.size.heading, Parent = marks })
 	Kit.seal({ size = 90, icon = "hand", Parent = marks })
-	Kit.seal({ size = 90, color = C.steel, text = "A", Parent = marks })
+	Kit.seal({ size = 90, color = C.danger, text = "A", Parent = marks })
 	Kit.stamp({ text = "Case closed", width = 220, Parent = marks })
 	Kit.heading({ text = "A section heading", detail = "with a detail", LayoutOrder = order(), Parent = list })
 	local cards = row(list, order, 90)
@@ -151,7 +174,7 @@ local function build()
 		{ id = 4, text = "Skip" },
 	}, 2)
 	Kit.field({ placeholder = "Write a full name…", maxLength = 32, LayoutOrder = order(), Parent = list })
-	local paper = Kit.card({ tone = "parchment", Size = UDim2.new(1, 0, 0, 80), LayoutOrder = order(), Parent = list })
+	local paper = Kit.card({ tone = "raised", Size = UDim2.new(1, 0, 0, 80), LayoutOrder = order(), Parent = list })
 	Kit.field({
 		placeholder = "A field on paper…",
 		font = "document",

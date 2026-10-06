@@ -13,6 +13,7 @@ local Signal = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Si
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
 local Motion = require(script.Parent.Motion)
+local UiSound = require(script.Parent.UiSound)
 local Screens = require(script.Parent.Parent.Screens)
 
 local Router = {}
@@ -168,6 +169,7 @@ function Router.open(name: string, args: any?): boolean
 	if not wasOpen then
 		if spec.window and spec.layer == "modal" then
 			Motion.pop(spec.window)
+			UiSound.play("uiOpen")
 		end
 		selectFirst(spec)
 		refreshChrome()

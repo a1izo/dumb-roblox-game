@@ -62,4 +62,27 @@ function Layout.watch(apply: (string) -> ()): any
 	end)
 end
 
+-- Builds a screen's own layout for the device: `phone` on a phone, `pc` everywhere else (desktop, tablet
+-- and console share the PC layout; tablets get the same touch-sized controls). Each builder gets
+-- (class, previous) and is called again when the device class changes between phone and not-phone,
+-- so it should clear what it built before. Returns the connection.
+--
+--   Layout.variant({ phone = buildPhone, pc = buildPc })
+function Layout.variant(builders: { phone: ((string) -> ())?, pc: ((string) -> ())? }): any
+	local lastKind: string? = nil
+	local function build(class: string)
+		local kind = if class == "phone" then "phone" else "pc"
+		if kind == lastKind then
+			return
+		end
+		lastKind = kind
+		local builder = if kind == "phone" then builders.phone or builders.pc else builders.pc or builders.phone
+		if builder then
+			builder(class)
+		end
+	end
+	build(Responsive.class())
+	return Responsive.Changed:Connect(build)
+end
+
 return Layout

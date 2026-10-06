@@ -212,7 +212,7 @@ function NotePanel.init()
 	paperText = Kit.label({
 		font = "document",
 		size = 24,
-		color = C.ink,
+		color = C.bone,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Center,
 		AutomaticSize = Enum.AutomaticSize.None,

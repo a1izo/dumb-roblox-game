@@ -1,6 +1,6 @@
 --!strict
--- A torn paper slip: the look of notifications (toasts). A small raised page with an ink mark
--- in the kind's colour, an icon and the message.
+-- A toast: a small Notch panel with a mark in the kind's colour (white, grey, or red for bad news and
+-- warnings), an icon and the message.
 
 local Base = require(script.Parent.Base)
 local Icon = require(script.Parent.Icon)
@@ -11,7 +11,7 @@ local Slip = {}
 
 -- kind -> { mark colour, icon }
 Slip.KINDS = {
-	info = { Tokens.color.bone, "note" },
+	info = { Tokens.color.dim, "note" },
 	good = { Tokens.color.good, "check" },
 	bad = { Tokens.color.red, "cross" },
 	warn = { Tokens.color.warn, "bell" },
@@ -36,6 +36,8 @@ function Slip.new(props: Props): Frame
 	local frame, content = Surfaces.page({
 		Name = "Slip",
 		tone = "raised",
+		glass = true,
+		edge = false,
 		padding = Tokens.space.m,
 		Size = UDim2.fromOffset(width, 60),
 		LayoutOrder = props.LayoutOrder,
