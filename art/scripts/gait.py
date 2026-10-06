@@ -111,8 +111,8 @@ def run_pose(phase):
 # Walk -----------------------------------------------------------------------------------------------
 # An easy walk, used while speeding up and slowing down.
 
-WALK = Gait("walk", period=1.0, stride=3.0, stance=0.6, lift=0.28,
-            note="Walk at 3 studs/s: soles planted, a gentle knee give, arms swinging in arcs.")
+WALK = Gait("walk", period=1.15, stride=4.6, stance=0.62, lift=0.3,
+            note="A serious walk: long steps, slouched, shoulders rolled forward, arms low and close.")
 
 
 def walk_pose(phase):
@@ -120,14 +120,14 @@ def walk_pose(phase):
     bob = math.cos(4 * math.pi * (phase - s * 0.25))
     yaw = 5 * wave(phase, 0.03)
     roll = 1.6 * wave(phase, 0.1)
-    root = (-2 + 0.6 * bob, yaw, roll)
-    offset = (0.05 * wave(phase, 0.12), -0.05 - 0.04 * bob, 0.0)
-    swing = wave(phase, 0.07)
+    root = (-9 + 0.8 * bob, yaw, roll)  # slouched forward
+    offset = (0.05 * wave(phase, 0.12), -0.1 - 0.05 * bob, 0.0)
+    swing = wave(phase, 0.09)
     joints = dict(
         root=root,
-        neck=(2, -0.8 * yaw, -0.4 * roll),
-        rShoulder=J((4 - 24 * swing, -4 * swing, 2), (0, 0.02, 0.1 * swing)),
-        lShoulder=J((4 + 24 * swing, 4 * swing, -2), (0, 0.02, -0.1 * swing)),
+        neck=(10, -0.8 * yaw, -0.4 * roll),  # head pushed forward, eyes up
+        rShoulder=J((6 - 14 * swing, -3 * swing, -2), (-0.06, -0.04, -0.12 + 0.06 * swing)),
+        lShoulder=J((6 + 14 * swing, 3 * swing, 2), (0.06, -0.04, -0.12 - 0.06 * swing)),
     )
     joints.update(WALK.legs(phase, root, offset))
     return joints, offset
