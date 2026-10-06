@@ -47,7 +47,7 @@ local MENU = {
 -- The zigzag: every other menu entry is pushed this far right.
 local ZIGZAG = { pc = 40, phone = 20 }
 -- Where the left column starts, down from the top of the screen.
-local COLUMN_TOP = { pc = 0.25, phone = 0.2 }
+local COLUMN_TOP = { pc = 0.25, phone = 0.18 }
 local DIAVOLO = "Diavolo"
 -- Where the title's letters come to rest, from the top of the screen (level with Roblox's buttons).
 local TITLE_TOP = 6
@@ -129,6 +129,17 @@ local function wrapper(props: { [string]: any }): CanvasGroup
 	}) :: CanvasGroup
 	group:SetAttribute("GlitchWrap", true)
 	return group
+end
+
+-- A list places its items itself, so a glitch could not shake one sideways. A glitching element in a list
+-- therefore sits in a slot of its own size: the list places the slot, the glitch shakes what is inside it.
+local function slot(group: GuiObject, order: number, parent: Instance)
+	local holder = Kit.frame({ Name = group.Name .. "Slot", Size = group.Size, LayoutOrder = order, Parent = parent })
+	group.Position = UDim2.new()
+	group.Parent = holder
+	group:GetPropertyChangedSignal("Size"):Connect(function()
+		holder.Size = group.Size
+	end)
 end
 
 -- A very slight, endless up-and-down drift (nothing under reduced motion).
@@ -436,6 +447,7 @@ local function buildTitle()
 		LayoutOrder = 1,
 		Parent = titleBlock,
 	}) :: CanvasGroup
+	slot(wordmarkHolder, 1, titleBlock)
 	Glitch.attach(wordmarkHolder, { loop = true, enter = false })
 	quoteGroup = Kit.Base.make("CanvasGroup", {
 		Name = "Quote",
@@ -443,6 +455,7 @@ local function buildTitle()
 		LayoutOrder = 2,
 		Parent = titleBlock,
 	}) :: CanvasGroup
+	slot(quoteGroup, 2, titleBlock)
 	quoteFloat = Kit.frame({ Name = "Float", Position = UDim2.fromOffset(0, 4), Parent = quoteGroup })
 	-- The rest of the quote never glitches; this handle only plays its entrance.
 	quoteGlitch = Glitch.attach(quoteGroup, { loop = false, enter = false })
@@ -459,6 +472,7 @@ local function buildMenu()
 	})
 	Kit.list(menu, T.space.s)
 	readyHolder = wrapper({ Name = "Ready", Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 1, Parent = menu })
+	slot(readyHolder, 1, menu)
 	readyGlitch = Glitch.attach(readyHolder, { loop = true, enter = false })
 	spectateButton = Kit.button({
 		text = "Spectate  ·  case in progress",
@@ -474,6 +488,7 @@ local function buildMenu()
 	end)
 	-- The status line and the rule under it glitch in together.
 	statusGroup = wrapper({ Name = "Status", Size = UDim2.new(1, 0, 0, 34), LayoutOrder = 3, Parent = menu })
+	slot(statusGroup, 3, menu)
 	statusLabel = Kit.label({
 		font = "label",
 		size = "small",
@@ -568,7 +583,7 @@ local function buildProfile()
 		LayoutOrder = 5,
 		Parent = content,
 	})
-	-- Your profile and the leaderboards open from the card: side by side, or stacked on phones. Each sits in
+	-- Your profile and the leaderboards open from the card, side by side. Each sits in
 	-- a wrapper that blips like the rest of the lobby.
 	links = Kit.frame({ Name = "Links", Size = UDim2.new(1, 0, 0, 48), LayoutOrder = 6, Parent = content })
 	linksLayout = Kit.list(links, T.space.s, true)
@@ -595,7 +610,8 @@ local function layout(class: string)
 	-- The ransom letters are cut at a size, so the title is built again for the device. Its wrapper takes
 	-- the letters' size (a fixed size, so the glitch's ghosts never make it grow).
 	Kit.clear(wordmarkHolder)
-	local size = if phone then 34 else 58
+	-- On a phone the title stays small enough to clear Roblox's buttons at the top left.
+	local size = if phone then 26 else 58
 	-- The letters fall in from above and start larger, so the wrapper (which clips) leaves room around them;
 	-- the block is raised by the same amount so the letters still come to rest at the top of the screen.
 	local padTop, padSide = math.ceil(size * 1.1), math.ceil(size * 0.7)
@@ -621,19 +637,14 @@ local function layout(class: string)
 	placeColumn()
 	menu.Size = UDim2.fromOffset(if phone then 300 else 460, 0)
 	readyHolder.Size = UDim2.new(1, 0, 0, if phone then 48 else 60)
-	if phone then
-		profileGroup.AnchorPoint = Vector2.new(1, 0)
-		profileGroup.Position = UDim2.new(1, -T.space.l, 0, T.space.s)
-		profileGroup.Size = UDim2.fromOffset(260, 0)
-	else
-		Kit.Layout.place(profileGroup, "bottomRight", Vector2.new(-T.space.l, -T.space.l))
-		profileGroup.Size = UDim2.fromOffset(340, 0)
-	end
-	linksLayout.FillDirection = if phone then Enum.FillDirection.Vertical else Enum.FillDirection.Horizontal
-	links.Size = UDim2.new(1, 0, 0, if phone then 40 * 2 + T.space.s + T.space.xs else 48)
-	local wrapSize = if phone then UDim2.new(1, 0, 0, 40) else UDim2.new(0.5, -T.space.xs, 0, 40)
+	-- The card sits at the bottom right on every device (the top right is where pop-ups like the daily streak go).
+	Kit.Layout.place(profileGroup, "bottomRight", Vector2.new(-T.space.l, -T.space.l))
+	profileGroup.Size = UDim2.fromOffset(if phone then 260 else 340, 0)
+	-- Side by side on every device, so the card stays short (on a phone it must clear the pop-ups above it).
+	linksLayout.FillDirection = Enum.FillDirection.Horizontal
+	links.Size = UDim2.new(1, 0, 0, 48)
 	for _, wrap in ipairs(linkWraps) do
-		wrap.Size = wrapSize
+		wrap.Size = UDim2.new(0.5, -T.space.xs, 0, 40)
 	end
 	spectateButton.Size = UDim2.fromOffset(if phone then 260 else 320, 48)
 	buildContents(phone)
