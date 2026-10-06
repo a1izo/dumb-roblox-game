@@ -670,6 +670,11 @@ function LobbyPanel.init()
 	updateLobby()
 end
 
+-- Your card at the bottom right (pop-ups such as the daily streak sit just above it).
+function LobbyPanel.profileCard(): GuiObject
+	return profileGroup
+end
+
 -- The READY button, for gamepad selection.
 function LobbyPanel.readyButton(): TextButton
 	return readyButton

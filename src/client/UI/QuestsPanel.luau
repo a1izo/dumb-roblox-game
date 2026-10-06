@@ -12,6 +12,7 @@ local Streak = require(Progression:WaitForChild("Streak"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
+local LobbyPanel = require(script.Parent.LobbyPanel)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 
@@ -197,13 +198,23 @@ local function buildPopup()
 		tone = "raised",
 		padding = T.space.l,
 		autoHeight = true,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -T.space.xl, 0, 90),
+		AnchorPoint = Vector2.new(1, 1),
 		Size = UDim2.fromOffset(340, 0),
 		Visible = false,
 		Parent = Screens.panels,
 	})
 	popup = page
+	-- It sits just above your card at the bottom right, so it never covers the card (or the title above).
+	local card = LobbyPanel.profileCard()
+	local function place()
+		local scale = Kit.Base.scaleOf(card)
+		local above = math.ceil(card.AbsoluteSize.Y / scale) + T.space.l + T.space.s
+		popup.Size = UDim2.fromOffset(if Kit.Layout.isPhone() then 260 else 340, 0)
+		popup.Position = UDim2.new(1, -T.space.l, 1, -above)
+	end
+	card:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
+	popup:GetPropertyChangedSignal("Visible"):Connect(place)
+	place()
 	Kit.list(content, T.space.s)
 	Kit.text({
 		face = "Head",
