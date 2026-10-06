@@ -45,8 +45,8 @@ return function(ctx: Common.Context)
 		Size = UDim2.new(1, 0, 0.36, 0),
 		Parent = ctx.area,
 	})
-	Kit.Base.stroke(page, C.red, 1, 0.5)
-	Common.caption(page, Terms.f("from the page of {grimoire}"), { Position = UDim2.fromOffset(8, 4), color = C.red })
+	Kit.Base.stroke(page, C.g5, 1, 0.5)
+	Common.caption(page, Terms.f("from the page of {grimoire}"), { Position = UDim2.fromOffset(8, 4), color = C.dim })
 	written(page, puzzle.word, puzzle.sample, def.SLANTS, def.RISES, 52, C.bone)
 	local samples =
 		Kit.frame({ Position = UDim2.fromScale(0, 0.42), Size = UDim2.fromScale(1, 0.58), Parent = ctx.area })

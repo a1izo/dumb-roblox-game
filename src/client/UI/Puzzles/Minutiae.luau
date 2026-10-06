@@ -29,9 +29,9 @@ return function(ctx: Common.Context)
 		local x, y = at(p[1], p[2])
 		Common.dot(file, x, y, 10, C.inkDim)
 		if marked[index] then
-			local ring = Common.dot(file, x, y, 24, C.red, 3)
+			local ring = Common.dot(file, x, y, 24, C.ink, 3)
 			ring.BackgroundTransparency = 1
-			Kit.Base.stroke(ring, C.red, 2, 0)
+			Kit.Base.stroke(ring, C.ink, 2, 0)
 		end
 	end
 	local lifted = Kit.Base.make("Frame", {
@@ -50,7 +50,7 @@ return function(ctx: Common.Context)
 	local function reset()
 		chosen = {}
 		for _, button in ipairs(buttons) do
-			button.BackgroundColor3 = C.bone
+			button.BackgroundColor3 = C.g5
 		end
 	end
 	for index, p in ipairs(puzzle.points) do
@@ -58,7 +58,7 @@ return function(ctx: Common.Context)
 		local button = Kit.Base.hit({
 			Name = "Point",
 			BackgroundTransparency = 0,
-			BackgroundColor3 = C.bone,
+			BackgroundColor3 = C.g5,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(x, y),
 			Size = UDim2.fromOffset(Kit.Tokens.touch * 0.6, Kit.Tokens.touch * 0.6),
@@ -71,11 +71,11 @@ return function(ctx: Common.Context)
 			local at_ = table.find(chosen, index)
 			if at_ then
 				table.remove(chosen, at_)
-				button.BackgroundColor3 = C.bone
+				button.BackgroundColor3 = C.g5
 				return
 			end
 			table.insert(chosen, index)
-			button.BackgroundColor3 = C.red
+			button.BackgroundColor3 = C.white
 			if #chosen == def.MARKED then
 				if not ctx.submit(table.clone(chosen)) then
 					ctx.hint("Not those five. Remember: the lifted print is mirrored left to right.")

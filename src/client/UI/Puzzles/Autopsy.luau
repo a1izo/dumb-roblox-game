@@ -81,7 +81,7 @@ return function(ctx: Common.Context)
 				Name = "Mark",
 				name = "cross",
 				size = 22,
-				color = C.red,
+				color = C.white,
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.5),
 				ZIndex = 6,

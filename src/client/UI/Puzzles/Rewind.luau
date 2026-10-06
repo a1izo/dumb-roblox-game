@@ -41,7 +41,7 @@ return function(ctx: Common.Context)
 		ZIndex = 5,
 		Parent = screen,
 	})
-	local counter = Common.caption(screen, "", { Position = UDim2.fromOffset(8, 6), color = C.red })
+	local counter = Common.caption(screen, "", { Position = UDim2.fromOffset(8, 6), color = C.white })
 	local function show()
 		local x = def.figureAt(puzzle, frame)
 		figure.Visible = x > -0.1 and x < 1.1

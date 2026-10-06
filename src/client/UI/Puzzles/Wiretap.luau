@@ -35,12 +35,12 @@ return function(ctx: Common.Context)
 		end
 	end
 	local recording = Kit.frame({ Name = "Recording", Parent = scope })
-	wave(recording, puzzle.frequency, puzzle.gain, Color3.fromRGB(150, 220, 170), 8)
+	wave(recording, puzzle.frequency, puzzle.gain, C.g5, 8)
 	local live = Kit.frame({ Name = "Live", ZIndex = 5, Parent = scope })
 	local done = false
 	local function draw()
 		Kit.clear(live)
-		wave(live, frequency, gain, C.red, 4)
+		wave(live, frequency, gain, C.white, 4)
 		if not done and frequency == puzzle.frequency and gain == puzzle.gain then
 			done = true
 			ctx.submit({ frequency, gain })

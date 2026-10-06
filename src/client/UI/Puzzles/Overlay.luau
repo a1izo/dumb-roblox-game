@@ -33,7 +33,7 @@ return function(ctx: Common.Context)
 		for _, p in ipairs(puzzle.points) do
 			local x, y = def.turn(p[1], p[2], puzzle.turns + turns)
 			local fx, fy = at(x + puzzle.sx + dx, y + puzzle.sy + dy)
-			Common.dot(film, fx, fy, 10, C.red, 6)
+			Common.dot(film, fx, fy, 10, C.white, 6)
 		end
 		if not done and def.aligned(puzzle, turns, dx, dy) then
 			done = true

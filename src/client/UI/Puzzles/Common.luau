@@ -1,5 +1,5 @@
 -- Building blocks for the puzzle views: tiles you tap, dials with - / + (so gamepads and
--- touch work everywhere), dot boards and quick red/green flashes.
+-- touch work everywhere), dot boards and quick flashes (red for wrong, pale for right).
 
 local Kit = require(script.Parent.Parent.Kit)
 local Motion = require(script.Parent.Parent.Core.Motion)

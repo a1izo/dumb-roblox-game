@@ -63,7 +63,7 @@ return function(ctx: Common.Context)
 	end
 	local status = Common.caption(screen, "no signal", {
 		Position = UDim2.new(0, 8, 0, 6),
-		color = C.red,
+		color = C.white,
 	})
 	local controls =
 		Kit.frame({ Position = UDim2.fromScale(0.62, 0), Size = UDim2.fromScale(0.38, 1), Parent = ctx.area })
