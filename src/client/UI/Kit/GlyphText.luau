@@ -339,6 +339,8 @@ function GlyphText._render(self: GlyphText)
 			label.AutomaticSize = Enum.AutomaticSize.Y
 			label.Size = UDim2.fromOffset(props.maxWidth, 0)
 		end
+		-- The stand-in is ours: FontMirror must not redraw it.
+		label:SetAttribute("KeepFont", true)
 		table.insert(self.glyphs, label)
 		self.frame.AutomaticSize = Enum.AutomaticSize.XY
 		self.frame.Size = UDim2.fromOffset(0, 0)

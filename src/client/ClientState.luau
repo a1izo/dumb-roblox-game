@@ -113,8 +113,15 @@ function ClientState.me()
 	return nil
 end
 
+-- A Specter waiting in the lobby: still in the case (its rewards and results), but on the lobby's side of
+-- everything (menus, mini-games), hidden from everyone there.
+function ClientState.isAway(): boolean
+	return ClientState.public.active == true and ClientState.private.away == true and ClientState.me() ~= nil
+end
+
+-- In the case right now (an away Specter is in the lobby, so not).
 function ClientState.isParticipant(): boolean
-	return ClientState.public.active and ClientState.me() ~= nil
+	return ClientState.public.active and ClientState.me() ~= nil and not ClientState.isAway()
 end
 
 function ClientState.isLiving(): boolean
@@ -129,6 +136,7 @@ function ClientState.isSpecter(): boolean
 		and me ~= nil
 		and not me.alive
 		and me.status ~= "left"
+		and not ClientState.isAway()
 		and ClientState.public.phase ~= "Reveal"
 end
 

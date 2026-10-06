@@ -38,6 +38,10 @@ local function onEmote(player: Player, emoteId)
 	if not emote or (emote.pass and not PassService.owns(player, emote.pass)) then
 		return
 	end
+	-- A Specter waiting in the lobby is hidden; an emote would only show where they stand.
+	if player.Character and player.Character:GetAttribute("Away") then
+		return
+	end
 	local payload = { userId = player.UserId, emote = emote.id }
 	if isSpecter(player) then
 		for _, other in ipairs(Players:GetPlayers()) do

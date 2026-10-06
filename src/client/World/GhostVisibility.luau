@@ -2,7 +2,7 @@
 -- decal is made fully transparent on this screen, effects are switched off and sounds are
 -- silenced, including anything added later. Specters, and spectators from the lobby, see the
 -- Specters as pale, outlined figures that drift. Spectators themselves are seen by nobody but
--- themselves.
+-- themselves, and so are Specters waiting in the lobby ("Away"), who see their own body faded.
 
 local Players = game:GetService("Players")
 
@@ -24,6 +24,9 @@ end
 
 -- How transparent a ghost looks to this viewer (1 = invisible).
 local function alphaFor(character: Model): number
+	if character:GetAttribute("Away") then
+		return if character == LocalPlayer.Character then 0.5 else 1
+	end
 	if character == LocalPlayer.Character then
 		return if viewerSeesSpecters() then 0.35 else 1
 	end
@@ -33,8 +36,25 @@ local function alphaFor(character: Model): number
 	return 0.5
 end
 
+-- Your own body while you wait in the lobby (away): Roblox's camera rewrites LocalTransparencyModifier on
+-- your own character every frame, so the parts themselves are faded, on this screen only.
+local function fadeOwn(item: Instance, alpha: number)
+	if item:IsA("BasePart") or item:IsA("Decal") then
+		if item:GetAttribute("LAwayBase") == nil then
+			item:SetAttribute("LAwayBase", item.Transparency)
+		end
+		local base = item:GetAttribute("LAwayBase") :: number
+		item.Transparency = math.max(base, alpha)
+	end
+end
+
 local function applyItem(item: Instance, alpha: number)
 	local hidden = alpha >= 1
+	local owner = item:FindFirstAncestorOfClass("Model")
+	if owner == LocalPlayer.Character and owner and owner:GetAttribute("Away") then
+		fadeOwn(item, alpha)
+		return
+	end
 	if item:IsA("BasePart") or item:IsA("Decal") then
 		item.LocalTransparencyModifier = alpha
 	elseif
@@ -84,7 +104,7 @@ local function apply(character: Model)
 		watch.highlight:Destroy()
 		watch.highlight = nil
 	end
-	if alpha < 1 then
+	if alpha < 1 and not character:GetAttribute("Away") then
 		if not PoseController.isPlaying(character, "specterFloat") then
 			PoseController.play(character, "specterFloat", { startAt = os.clock() - math.random() * 2, fadeIn = 0.6 })
 		end
@@ -133,12 +153,17 @@ end
 
 local function track(character: Model)
 	local function check()
-		if character:GetAttribute("Specter") or character:GetAttribute("Spectator") then
+		if
+			character:GetAttribute("Specter")
+			or character:GetAttribute("Spectator")
+			or character:GetAttribute("Away")
+		then
 			watch(character)
 		end
 	end
 	character:GetAttributeChangedSignal("Specter"):Connect(check)
 	character:GetAttributeChangedSignal("Spectator"):Connect(check)
+	character:GetAttributeChangedSignal("Away"):Connect(check)
 	check()
 end
 

@@ -4,6 +4,8 @@
 -- vignette. Each is drawn from the UI textures when they are loaded, and from plain rectangles until then
 -- (redrawn automatically once they arrive).
 
+local Players = game:GetService("Players")
+
 local Base = require(script.Parent.Base)
 local GlyphText = require(script.Parent.GlyphText)
 local Icon = require(script.Parent.Icon)
@@ -236,6 +238,10 @@ function Surfaces.banner(props: Props): (Frame, any)
 		Base.clear(bar)
 		local color = props.tone or C.g0
 		Surfaces.notch(bar, { shape = "panel", color = color, ZIndex = z })
+		if props.underline == false then
+			fit()
+			return
+		end
 		Base.make("Frame", {
 			Name = "Underline",
 			BackgroundColor3 = if color == C.danger or color == C.blood then C.g0 else C.white,
@@ -253,9 +259,28 @@ function Surfaces.banner(props: Props): (Frame, any)
 	return frame, text
 end
 
+-- Head shots by user id (Roblox's thumbnail service is slow and rate limited, so each is fetched once).
+local portraits: { [number]: string | false } = {}
+local function portraitOf(userId: number): string?
+	local known = portraits[userId]
+	if known ~= nil then
+		return if known then known else nil
+	end
+	local ok, image, ready = pcall(function()
+		return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+	end)
+	if ok and ready and type(image) == "string" and image ~= "" then
+		portraits[userId] = image
+		return image
+	end
+	-- Not ready yet: try again next time rather than remembering a failure.
+	return nil
+end
+
 -- An ID seal: a dark square with a coloured border and an emblem. Props: size (px, default 64), color
 -- (the border and emblem; white by default, danger for Diavolo's side), icon (an icon name) or text (a
--- letter or two), plus frame properties.
+-- letter or two), portrait (a user id: that player's Roblox head shot fills the square; the icon or letter
+-- shows until it loads, or if it never does), plus frame properties.
 function Surfaces.seal(props: Props): Frame
 	local size = props.size or 64
 	local frame = Base.frame({
@@ -310,6 +335,26 @@ function Surfaces.seal(props: Props): Frame
 			ZIndex = z + 1,
 			Parent = frame,
 		})
+	end
+	if props.portrait then
+		-- The player's Roblox head shot fills the plate once it has loaded; until then (or if it never does)
+		-- the icon or letter above shows.
+		task.spawn(function()
+			local image = portraitOf(props.portrait :: number)
+			if image and frame.Parent then
+				Base.make("ImageLabel", {
+					Name = "Portrait",
+					BackgroundColor3 = C.g2,
+					BorderSizePixel = 0,
+					Image = image,
+					ScaleType = Enum.ScaleType.Crop,
+					Position = UDim2.fromOffset(2, 2),
+					Size = UDim2.new(1, -4, 1, -4),
+					ZIndex = z + 2,
+					Parent = frame,
+				})
+			end
+		end)
 	end
 	return frame
 end

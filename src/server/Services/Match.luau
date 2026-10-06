@@ -419,6 +419,8 @@ function Match.privateState(ps)
 		noteId = if ps.carrying then ps.carrying.noteId else nil,
 		taskStation = ps.taskStation,
 		reported = ps.reportRound == Match.round,
+		-- A Specter waiting in the lobby (GhostService).
+		away = ps.away == true,
 	}
 	if ps.role == "Kira" then
 		payload.canWrite = ps.dnRound ~= Match.round

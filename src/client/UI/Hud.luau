@@ -12,6 +12,7 @@
 -- of bigger chips on the right edge, clear of the thumbstick and the jump button. Between
 -- matches the lobby panel takes over and the HUD stays out of the way.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
@@ -108,8 +109,10 @@ end
 
 local function updateBanner()
 	local state = ClientState.public
-	-- The cutscene's own card says where you are, so the banner steps aside while one plays.
-	banner.Visible = state.active == true and not Actions.CUTSCENE_PHASES[state.phase]
+	-- Only for those in the case or watching it (the lobby has its own title), and the cutscene's own card
+	-- says where you are, so the banner steps aside while one plays.
+	local inCase = ClientState.isParticipant() or ClientState.isWatching()
+	banner.Visible = state.active == true and inCase and not Actions.CUTSCENE_PHASES[state.phase]
 	if not state.active then
 		lastPhase = "Lobby"
 		return
@@ -236,6 +239,8 @@ local function rebuildSeal(role: string, color: Color3)
 		size = 60,
 		color = color,
 		icon = ROLE_ICON[role] or "agency",
+		-- Your own Roblox head shot (only ever on your own screen); the role icon shows until it loads.
+		portrait = Players.LocalPlayer.UserId,
 		ZIndex = 3,
 		Parent = sealHolder,
 	})
@@ -534,9 +539,19 @@ function Hud.init()
 	end
 	ClientState.PublicChanged:Connect(refresh)
 	ClientState.PrivateChanged:Connect(refresh)
+	ClientState.WatchChanged:Connect(refresh)
 	UserInputService.LastInputTypeChanged:Connect(renderActions)
 	Kit.Layout.watch(layout)
 	refresh()
+end
+
+-- Where the phase banner (phase, clock, place) ends on screen, in absolute pixels, or nil while it is hidden.
+-- The announcer slams in under it.
+function Hud.bannerBottom(): number?
+	if not banner or not banner.Visible then
+		return nil
+	end
+	return banner.AbsolutePosition.Y + banner.AbsoluteSize.Y
 end
 
 -- The container the objective tracker fills with lines (inside a glass panel that hides when it is empty).

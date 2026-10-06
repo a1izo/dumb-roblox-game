@@ -304,10 +304,13 @@ function GhostController.init()
 		if flight then
 			steer()
 			checkWisps()
+		elseif ClientState.isAway() then
+			-- Lost souls drift in the lobby too while you wait there.
+			checkWisps()
 		end
 	end)
 	ClientState.PhaseChanged:Connect(function()
-		if not ClientState.isSpecter() then
+		if not ClientState.isSpecter() and not ClientState.isAway() then
 			clearWisps()
 			names = {}
 			clearNames()

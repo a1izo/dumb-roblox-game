@@ -8,6 +8,9 @@
 -- hard (Core/HoverGlitch). The lobby comes in from black (UI/LobbyIntro) on joining and on coming back from a
 -- case, then plays its entrance: the title cards fall in, everything else glitches in over 1.5 s. The VHS
 -- look belongs to the lobby only, so this page turns Glitch off while you are in a case or watching one.
+-- "Hide UI" in the menu hides all of it (and chat) to look at the world; an eye button at the top left brings
+-- it back. A Specter waiting here (away from the case, hidden) also gets "Academy" and, at the bottom,
+-- "Spectate", which takes them back into the case.
 -- How to Play lives in Settings (and on H). The HUD's phase banner is hidden here, so the queue status
 -- lives on this page.
 
@@ -22,6 +25,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local ClientState = require(script.Parent.Parent.ClientState)
 local DirectorPanel = require(script.Parent.DirectorPanel)
 local Glitch = require(script.Parent.Core.Glitch)
+local LobbyChrome = require(script.Parent.Core.LobbyChrome)
 local Kit = require(script.Parent.Kit)
 local LobbyIntro = require(script.Parent.LobbyIntro)
 local Motion = require(script.Parent.Core.Motion)
@@ -36,12 +40,17 @@ local WatchRemote = Net.event("Watch")
 
 local LobbyPanel = {}
 
+-- `vip`: only in a private server you own; `away`: only for a Specter waiting in the lobby; `action`: not a
+-- screen but something done at once.
 local MENU = {
 	{ text = "Quests", screen = "quests" },
 	{ text = "Shop", screen = "shop" },
 	{ text = "Party", screen = "party" },
 	{ text = "Settings", screen = "settings" },
-	{ text = "Private server", screen = "director" },
+	{ text = "Private server", screen = "director", vip = true },
+	{ text = "Academy", screen = "academy", away = true },
+	{ text = "Hide UI", action = "hide" },
+	{ text = "Spectate", action = "rejoin", away = true },
 }
 
 -- The zigzag: every other menu entry is pushed this far right.
@@ -64,6 +73,7 @@ local contents: Frame
 local menuRows: { { wrap: CanvasGroup, glitch: any } } = {}
 local profileGroup: CanvasGroup
 local profileGlitch: any
+local profilePage: Frame
 local rankSeal: Frame
 local rankText: any
 local setXp: (number, boolean?) -> ()
@@ -86,6 +96,9 @@ local lastRank = ""
 -- The lobby stays hidden behind the intro's black until its entrance plays.
 local introHidden = true
 local lastVisible: boolean? = nil
+local lastAway: boolean? = nil
+-- Built further down (the menu entries depend on the lobby state).
+local buildContents: (boolean) -> ()
 local returning = false
 
 local columnShare = COLUMN_TOP.pc
@@ -109,11 +122,17 @@ local function lobbyView(): boolean
 	return not ClientState.isParticipant() and not ClientState.isWatching()
 end
 
+local eyeButton: GuiObject
+
 local function applyVisibility()
-	local shown = lobbyView() and not introHidden
+	local view = lobbyView()
+	local shown = view and not introHidden and not LobbyChrome.isHidden()
 	menu.Visible = shown
 	profileGroup.Visible = shown
 	titleBlock.Visible = shown
+	if eyeButton then
+		eyeButton.Visible = view and not introHidden and LobbyChrome.isHidden()
+	end
 end
 
 -- A transparent CanvasGroup the glitch can blink; marked so a hovered button inside glitches through it.
@@ -170,7 +189,13 @@ local function updateProfile()
 		lastRank = profile.rankName
 		rankText:set(profile.rankName)
 		Kit.clear(rankSeal)
-		Kit.seal({ size = 64, color = C.white, text = string.sub(profile.rankName, 1, 1), Parent = rankSeal })
+		Kit.seal({
+			size = 64,
+			color = C.white,
+			text = string.sub(profile.rankName, 1, 1),
+			portrait = Players.LocalPlayer.UserId,
+			Parent = rankSeal,
+		})
 	end
 	local function coinsText(value: number): string
 		return string.format("%d coins", math.floor(value + 0.5))
@@ -213,7 +238,11 @@ end
 
 -- SPECTATE: only while a case is running, and not while you are queued for the next one.
 local function updateSpectate(lobby)
-	local running = ClientState.public.active == true and lobby ~= nil and lobby.matchRunning == true
+	-- (A Specter waiting here goes back in from the menu's own Spectate.)
+	local running = ClientState.public.active == true
+		and lobby ~= nil
+		and lobby.matchRunning == true
+		and not ClientState.isAway()
 	spectateButton.Visible = running
 	if running then
 		local queued = lobby.ready == true
@@ -261,6 +290,7 @@ local function returnToLobby()
 	end
 	returning = true
 	introHidden = true
+	LobbyChrome.setHidden(false)
 	applyVisibility()
 	task.spawn(function()
 		while Router.isBlocking() do
@@ -284,7 +314,17 @@ local function updateLobby()
 	if visible and lastVisible == false then
 		returnToLobby()
 	end
+	if not visible then
+		-- Pulled into a case (or watching one): the UI is never left hidden.
+		LobbyChrome.setHidden(false)
+	end
 	lastVisible = visible
+	-- The menu has entries only for a Specter waiting here.
+	local away = ClientState.isAway()
+	if away ~= lastAway then
+		lastAway = away
+		buildContents(Kit.Layout.isPhone())
+	end
 	applyVisibility()
 	if not lobby then
 		statusLabel.Text = "Connecting…"
@@ -317,18 +357,18 @@ end
 
 -- The menu: one row per entry, every other one pushed right (the zigzag). Each entry sits in a floating
 -- frame, inside a wrapper the glitch blinks.
-local function buildContents(phone: boolean)
+function buildContents(phone: boolean)
 	for _, row in ipairs(menuRows) do
 		row.glitch:destroy()
 	end
 	table.clear(menuRows)
 	contents:ClearAllChildren()
 	Kit.list(contents, 0)
-	local rowHeight = 44
+	local rowHeight = if phone then 36 else 44
 	local shown = 0
+	local away = ClientState.isAway()
 	for _, item in ipairs(MENU) do
-		local vip = item.screen ~= "director" or DirectorPanel.state.vip
-		if not vip then
+		if (item.vip and not DirectorPanel.state.vip) or (item.away and not away) then
 			continue
 		end
 		shown += 1
@@ -353,7 +393,14 @@ local function buildContents(phone: boolean)
 			Size = UDim2.fromScale(1, 1),
 			Parent = wrap,
 		}, function()
-			Router.toggle(item.screen)
+			if item.action == "hide" then
+				Router.closeAll()
+				LobbyChrome.setHidden(true)
+			elseif item.action == "rejoin" then
+				Net.event("Ghost"):FireServer({ action = "rejoin" })
+			elseif item.screen then
+				Router.toggle(item.screen)
+			end
 		end)
 		table.insert(
 			menuRows,
@@ -529,7 +576,7 @@ local function buildProfile()
 		Parent = Screens.hud,
 	}) :: CanvasGroup
 	profileGlitch = Glitch.attach(profileGroup, { loop = false, enter = false })
-	local _, content = Kit.page({
+	local page, content = Kit.page({
 		Name = "ProfileCard",
 		tone = "raised",
 		padding = T.space.l,
@@ -537,6 +584,7 @@ local function buildProfile()
 		Size = UDim2.new(1, 0, 0, 0),
 		Parent = profileGroup,
 	})
+	profilePage = page
 	Kit.list(content, T.space.xs)
 	local top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 68), LayoutOrder = 1, Parent = content })
 	rankSeal = Kit.frame({ Name = "RankSeal", Size = UDim2.fromOffset(64, 64), Parent = top })
@@ -654,6 +702,19 @@ end
 
 function LobbyPanel.init()
 	screenProbe = Kit.frame({ Name = "LobbyScreenProbe", Parent = Screens.world })
+	-- While the UI is hidden, this eye under Roblox's buttons brings it back.
+	local eye = Kit.iconButton(
+		{ Name = "ShowUI", icon = "eye", size = 44, color = C.white, Parent = Screens.hud },
+		function()
+			LobbyChrome.setHidden(false)
+		end
+	)
+	Kit.Layout.place(eye, "topLeft")
+	eye.Visible = false
+	eyeButton = eye
+	LobbyChrome.Changed:Connect(function()
+		applyVisibility()
+	end)
 	hudProbe = Kit.frame({ Name = "LobbyHudProbe", Size = UDim2.fromOffset(0, 0), Parent = Screens.hud })
 	buildTitle()
 	buildMenu()
@@ -672,7 +733,7 @@ end
 
 -- Your card at the bottom right (pop-ups such as the daily streak sit just above it).
 function LobbyPanel.profileCard(): GuiObject
-	return profileGroup
+	return profilePage
 end
 
 -- The READY button, for gamepad selection.

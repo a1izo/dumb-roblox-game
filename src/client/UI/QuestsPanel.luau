@@ -12,6 +12,7 @@ local Streak = require(Progression:WaitForChild("Streak"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
+local LobbyChrome = require(script.Parent.Core.LobbyChrome)
 local LobbyPanel = require(script.Parent.LobbyPanel)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
@@ -205,13 +206,29 @@ local function buildPopup()
 	})
 	popup = page
 	-- It sits just above your card at the bottom right, so it never covers the card (or the title above).
+	-- The card lives in another layer, so its top is read on screen and turned into this layer's units
+	-- (a probe marks where this layer starts).
 	local card = LobbyPanel.profileCard()
+	local probe = Kit.frame({ Name = "StreakProbe", Size = UDim2.fromOffset(0, 0), Parent = Screens.panels })
+	local GAP = 16
 	local function place()
-		local scale = Kit.Base.scaleOf(card)
-		local above = math.ceil(card.AbsoluteSize.Y / scale) + T.space.l + T.space.s
-		popup.Size = UDim2.fromOffset(if Kit.Layout.isPhone() then 260 else 340, 0)
-		popup.Position = UDim2.new(1, -T.space.l, 1, -above)
+		local scale = Kit.Base.scaleOf(popup)
+		local bottom = (card.AbsolutePosition.Y - probe.AbsolutePosition.Y) / scale - GAP
+		popup.Size = UDim2.fromOffset(if Kit.Layout.isPhone() then 260 else 340, popup.Size.Y.Offset)
+		popup.Position = UDim2.new(1, -T.space.l, 0, math.floor(bottom))
 	end
+	-- Hide UI hides the pop-up too; it comes back with the rest if it was still waiting.
+	local waiting = false
+	LobbyChrome.Changed:Connect(function(hidden: boolean)
+		if hidden then
+			waiting = popup.Visible
+			popup.Visible = false
+		elseif waiting then
+			waiting = false
+			popup.Visible = true
+		end
+	end)
+	card:GetPropertyChangedSignal("AbsolutePosition"):Connect(place)
 	card:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
 	popup:GetPropertyChangedSignal("Visible"):Connect(place)
 	place()

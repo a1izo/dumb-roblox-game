@@ -1,6 +1,7 @@
 -- The Academy in the lobby: a "Practice" prompt on every drill desk (tag LTraining). Case
 -- file drills reuse the real puzzles; the Grimoire, warrant and eyes drills use the practice
--- panel. Finishing a drill tells the server, which pays a small reward once all are done.
+-- panel. Finishing a drill tells the server, which pays a small reward once all are done. The same drills
+-- are listed in an "Academy" window (the lobby menu offers it to a Specter waiting there).
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +12,8 @@ local Net = require(Shared:WaitForChild("Net"))
 local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Kit = require(script.Parent.Parent.UI.Kit)
+local Router = require(script.Parent.Parent.UI.Core.Router)
 local PracticePanel = require(script.Parent.Parent.UI.PracticePanel)
 local TaskScreen = require(script.Parent.Parent.UI.TaskScreen)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
@@ -18,6 +21,7 @@ local Toasts = require(script.Parent.Parent.UI.Toasts)
 local AcademyController = {}
 
 local prompts: { [BasePart]: ProximityPrompt } = {}
+local menuList: ScrollingFrame
 
 local function isDone(drill: string): boolean
 	local profile = ClientState.profile
@@ -78,7 +82,48 @@ local function setup(desk: Instance)
 	refresh()
 end
 
+-- The Academy window: one button per drill desk, done ones marked.
+local function rebuildMenu()
+	Kit.clear(menuList)
+	local desks = {}
+	for desk in pairs(prompts) do
+		table.insert(desks, desk)
+	end
+	table.sort(desks, function(a, b)
+		return tostring(a:GetAttribute("DrillTitle")) < tostring(b:GetAttribute("DrillTitle"))
+	end)
+	for index, desk in ipairs(desks) do
+		local drill = tostring(desk:GetAttribute("Drill"))
+		local title = tostring(desk:GetAttribute("DrillTitle"))
+		Kit.button({
+			text = title .. (if isDone(drill) then "  (done)" else ""),
+			variant = if isDone(drill) then "ghost" else "secondary",
+			size = "s",
+			Size = UDim2.new(1, 0, 0, 48),
+			LayoutOrder = index,
+			Parent = menuList,
+		}, function()
+			Router.close("academy")
+			start(desk)
+		end)
+	end
+end
+
+local function buildMenu()
+	local win = Kit.window({ name = "academy", title = "Academy", size = "M" })
+	menuList = Kit.scroll({ Parent = win.body })
+	Kit.list(menuList, Kit.Tokens.space.s)
+	Kit.pad(menuList, Kit.Tokens.space.xs, Kit.Tokens.space.xs)
+	Kit.register(win, {
+		allowed = function(view)
+			return not view.participant
+		end,
+		show = rebuildMenu,
+	})
+end
+
 function AcademyController.init()
+	buildMenu()
 	CollectionService:GetInstanceAddedSignal("LTraining"):Connect(setup)
 	CollectionService:GetInstanceRemovedSignal("LTraining"):Connect(function(desk)
 		prompts[desk :: BasePart] = nil
@@ -87,6 +132,7 @@ function AcademyController.init()
 		setup(desk)
 	end
 	ClientState.PublicChanged:Connect(refresh)
+	ClientState.PrivateChanged:Connect(refresh)
 	ClientState.ProfileChanged:Connect(refresh)
 end
 

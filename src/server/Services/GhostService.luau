@@ -9,6 +9,12 @@
 -- members or Roblox friends is still alive (otherwise a dead Cultist could read names to
 -- the Hand over voice chat outside the game).
 --
+-- Away: a Specter can go back to the lobby until the case closes ("away"). They stay in the case (its
+-- rewards and its results are theirs), but in the lobby they are hidden from everyone: no body, no name, they
+-- walk through people (the Away collision group), talk in the Specters' channel only, and their mini-game
+-- bests reach the public boards only after the case. Lost souls drift in the lobby for them too (the same cap
+-- as in the case). They can go back in as a Specter ("rejoin") at any time.
+--
 -- Spectators: players in the lobby can watch a running match. They fly in it like a ghost
 -- (the same bounds and venue moves) but are nobody's ghost: hidden from everyone, Specters
 -- included, with no real names, lost souls or rewards, reading the meeting without sending,
@@ -27,6 +33,7 @@ local Venues = require(Shared:WaitForChild("Venues"))
 local CharacterService = require(script.Parent.CharacterService)
 local ChatService = require(script.Parent.ChatService)
 local CollisionGroups = require(script.Parent.CollisionGroups)
+local LeaderboardService = require(script.Parent.LeaderboardService)
 local Match = require(script.Parent.Match)
 local PartyService = require(script.Parent.PartyService)
 local RateLimit = require(script.Parent.RateLimit)
@@ -58,6 +65,9 @@ type Ghost = {
 }
 
 local ghosts: { [Player]: Ghost } = {}
+-- Specters waiting in the lobby: their lost souls there (ids -> positions).
+type Away = { ps: any, wisps: { [number]: Vector3 }, nextWisp: number, lastCollect: number }
+local awayPlayers: { [Player]: Away } = {}
 -- Spectators from the lobby: player -> the venue they are in.
 local watchers: { [Player]: { venue: string } } = {}
 -- Set by the matchmaker: whether a player is queued for the next match.
@@ -73,7 +83,12 @@ function GhostService.isGhost(player: Player): boolean
 		return false
 	end
 	local ps = Match.get(player)
-	return ps ~= nil and not ps.alive and ps.status ~= "left"
+	return ps ~= nil and not ps.alive and ps.status ~= "left" and not awayPlayers[player]
+end
+
+-- A Specter waiting in the lobby (see the top of the file).
+function GhostService.isAway(player: Player): boolean
+	return Match.active and awayPlayers[player] ~= nil
 end
 
 local function venueForPhase(phase: string): string
@@ -308,6 +323,148 @@ local function setupCharacter(player: Player, character: Model)
 	sendDuties(player, ghost)
 end
 
+-- Away in the lobby ---------------------------------------------------------------------------------
+
+local LOBBY_WISP_RADIUS = 70
+
+-- A spot over the lobby's open ground, near its spawn, where a lost soul can drift.
+local function lobbyWispPosition(): Vector3?
+	local lobby = workspace:FindFirstChild("LGameLobby")
+	local spawn = if lobby then lobby:FindFirstChild("LobbySpawn", true) else nil
+	if not spawn or not spawn:IsA("BasePart") then
+		return nil
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { lobby :: Instance }
+	for _ = 1, 8 do
+		local angle = Match.rng:NextNumber(0, math.pi * 2)
+		local distance = Match.rng:NextNumber(12, LOBBY_WISP_RADIUS)
+		local top = spawn.Position + Vector3.new(math.cos(angle) * distance, 40, math.sin(angle) * distance)
+		local hit = workspace:Raycast(top, Vector3.new(0, -80, 0), params)
+		if hit and hit.Normal.Y > 0.7 then
+			return hit.Position + Vector3.new(0, Match.rng:NextNumber(2.5, 5), 0)
+		end
+	end
+	return nil
+end
+
+local function sendAwayDuties(player: Player, away: Away)
+	local list = {}
+	for id, position in pairs(away.wisps) do
+		table.insert(list, { id = id, position = position })
+	end
+	GhostRemote:FireClient(player, {
+		action = "duties",
+		done = away.ps.stats.duties or 0,
+		max = GhostService.DUTY_MAX,
+		wisps = list,
+	})
+end
+
+local function fillAwayWisps(away: Away)
+	local done = away.ps.stats.duties or 0
+	local count = 0
+	for _ in pairs(away.wisps) do
+		count += 1
+	end
+	while count < ACTIVE_WISPS and done + count < GhostService.DUTY_MAX do
+		local position = lobbyWispPosition()
+		if not position then
+			return
+		end
+		away.nextWisp += 1
+		away.wisps[away.nextWisp] = position
+		count += 1
+	end
+end
+
+local function onAwayCollect(player: Player, away: Away, id: any)
+	local position = if type(id) == "number" then away.wisps[id] else nil
+	local character = player.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	if not position or not root or not root:IsA("BasePart") then
+		return
+	end
+	if (root.Position - position).Magnitude > GhostService.DUTY_RANGE then
+		return
+	end
+	local now = os.clock()
+	if now - away.lastCollect < GhostService.DUTY_COOLDOWN then
+		return
+	end
+	local stats = away.ps.stats
+	if (stats.duties or 0) >= GhostService.DUTY_MAX then
+		return
+	end
+	away.lastCollect = now
+	stats.duties = (stats.duties or 0) + 1
+	away.wisps[id] = nil
+	fillAwayWisps(away)
+	sendAwayDuties(player, away)
+end
+
+-- Hides an away body: nobody else sees it (the clients hide bodies marked Away), it has no name tag and it
+-- walks through people.
+local function awayBody(character: Model)
+	character:SetAttribute("Away", true)
+	character:SetAttribute("NameHidden", true)
+	CollisionGroups.body(character, CollisionGroups.AWAY, true)
+	for _, item in ipairs(character:GetDescendants()) do
+		if item:IsA("BasePart") then
+			item.CanQuery = false
+			item.CanTouch = false
+		end
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		humanoid.DisplayName = ""
+	end
+end
+
+local function setupAway(player: Player, character: Model)
+	local away = awayPlayers[player]
+	if not away then
+		return
+	end
+	awayBody(character)
+	fillAwayWisps(away)
+	sendAwayDuties(player, away)
+end
+
+-- A Specter goes back to the lobby (hidden) until the case closes. False when they cannot.
+function GhostService.goAway(player: Player): boolean
+	local ps = Match.get(player)
+	if not GhostService.isGhost(player) or not ps or Match.phase == "Reveal" or Match.phase == "Outro" then
+		return false
+	end
+	ghosts[player] = nil
+	awayPlayers[player] = { ps = ps, wisps = {}, nextWisp = 0, lastCollect = 0 }
+	ps.away = true
+	LeaderboardService.hold(player.UserId, true)
+	player.CameraMaxZoomDistance = LOBBY_ZOOM
+	GhostRemote:FireClient(player, { action = "names", names = {}, eligible = false })
+	Match.pushPrivate(ps)
+	CharacterService.load(player)
+	return true
+end
+
+-- An away Specter goes back into the case as a Specter.
+function GhostService.rejoin(player: Player): boolean
+	local away = awayPlayers[player]
+	if not away or not Match.active or Match.phase == "Reveal" or Match.phase == "Outro" then
+		return false
+	end
+	awayPlayers[player] = nil
+	away.ps.away = false
+	player.CameraMaxZoomDistance = WATCH_ZOOM
+	Match.pushPrivate(away.ps)
+	-- The new body is made a Specter's on spawn (CharacterSpawned below).
+	CharacterService.load(player)
+	return true
+end
+
 -- Spectators ---------------------------------------------------------------------------------
 
 function GhostService.isWatching(player: Player): boolean
@@ -387,6 +544,20 @@ end
 
 local function onRequest(player: Player, payload: any)
 	if type(payload) ~= "table" or not RateLimit.allow(player, "ghost", 0.2) then
+		return
+	end
+	if payload.action == "away" then
+		GhostService.goAway(player)
+		return
+	elseif payload.action == "rejoin" then
+		GhostService.rejoin(player)
+		return
+	end
+	local away = awayPlayers[player]
+	if away then
+		if payload.action == "collect" and Match.active then
+			onAwayCollect(player, away, payload.id)
+		end
 		return
 	end
 	local jump = payload.action == "jump" and (payload.venue == "map" or payload.venue == "meeting")
@@ -492,6 +663,13 @@ end
 
 function GhostService.onMatchEnd()
 	ghosts = {}
+	-- Away Specters come back into view (the case's cleanup gives everyone a fresh body), and their held
+	-- mini-game bests go to the boards.
+	for player, away in pairs(awayPlayers) do
+		away.ps.away = false
+		LeaderboardService.hold(player.UserId, false)
+	end
+	awayPlayers = {}
 	partyOf = {}
 	friendsOf = {}
 	-- The case is closed: every spectator goes back to the lobby.
@@ -527,7 +705,10 @@ function GhostService.init()
 	GhostRemote.OnServerEvent:Connect(onRequest)
 	WatchRemote.OnServerEvent:Connect(onWatch)
 	CharacterService.CharacterSpawned:Connect(function(player, character)
-		if watchers[player] then
+		if awayPlayers[player] and Match.active then
+			-- At once: the body must never show in the lobby, even for a frame.
+			setupAway(player, character)
+		elseif watchers[player] then
 			-- A spectator's body was replaced (it fell apart, or the avatar reloaded).
 			task.spawn(function()
 				RunService.Heartbeat:Wait()
@@ -550,6 +731,10 @@ function GhostService.init()
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		ghosts[player] = nil
+		if awayPlayers[player] then
+			awayPlayers[player] = nil
+			LeaderboardService.hold(player.UserId, false)
+		end
 		if watchers[player] then
 			watchers[player] = nil
 			ChatService.removeWatcher(player.UserId)

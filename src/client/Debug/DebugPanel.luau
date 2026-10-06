@@ -980,6 +980,8 @@ local function build()
 		Active = true,
 		Parent = Screens.overlay,
 	})
+	-- A tool for us, not part of the game's look: its fonts stay as they are (UI/Core/FontMirror).
+	window:SetAttribute("KeepFont", true)
 	corner(window, 6)
 	make("UIStroke", { Color = Color3.fromRGB(70, 70, 84), Thickness = 1, Parent = window })
 	make("UISizeConstraint", { MaxSize = Vector2.new(480, 620), Parent = window })

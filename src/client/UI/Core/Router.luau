@@ -146,6 +146,17 @@ function Router.close(name: string, reason: string?)
 end
 
 -- Opens a screen if its rules allow it. Returns true when it is open afterwards.
+-- Closes every open screen (the lobby's Hide UI).
+function Router.closeAll(reason: string?)
+	local names = {}
+	for name in pairs(openOrder) do
+		table.insert(names, name)
+	end
+	for _, name in ipairs(names) do
+		Router.close(name, reason or "user")
+	end
+end
+
 function Router.open(name: string, args: any?): boolean
 	local spec = specs[name]
 	if not spec then

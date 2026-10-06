@@ -14,6 +14,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local LobbyChrome = require(script.Parent.Parent.UI.Core.LobbyChrome)
 
 local ChatController = {}
 
@@ -34,9 +35,23 @@ local function update()
 	if not inputBar then
 		return
 	end
+	-- The lobby's Hide UI hides chat as well (window, bubbles and the bar).
+	local hidden = LobbyChrome.isHidden()
+	local window = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+	local bubbles = TextChatService:FindFirstChildOfClass("BubbleChatConfiguration")
+	if window then
+		window.Enabled = not hidden
+	end
+	if bubbles then
+		bubbles.Enabled = not hidden
+	end
+	if hidden then
+		inputBar.Enabled = false
+		return
+	end
 	local phase = ClientState.phase()
-	if ClientState.isSpecter() then
-		-- Specters talk among themselves only.
+	if ClientState.isSpecter() or ClientState.isAway() then
+		-- Specters talk among themselves only (in the lobby too, while they wait there hidden).
 		local specters = channel(SPECTER_CHANNEL)
 		inputBar.Enabled = specters ~= nil
 		if specters then
@@ -161,6 +176,7 @@ function ChatController.init()
 	end
 	ClientState.PublicChanged:Connect(update)
 	ClientState.PrivateChanged:Connect(update)
+	LobbyChrome.Changed:Connect(update)
 	Net.event("QuickChatMsg").OnClientEvent:Connect(onQuickChat)
 	task.spawn(function()
 		-- Channels are created by the server shortly after start.

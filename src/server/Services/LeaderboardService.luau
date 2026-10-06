@@ -61,6 +61,14 @@ function LeaderboardService.queue(player: Player, data)
 	}
 end
 
+-- Players whose mini-game bests must wait (a Specter waiting in the lobby: a new best on the public board
+-- could give them away). Held bests are written once the hold is lifted.
+local held: { [number]: boolean } = {}
+
+function LeaderboardService.hold(userId: number, on: boolean)
+	held[userId] = if on then true else nil
+end
+
 -- Remembers a mini-game best that just improved ("parkour": seconds, lower is better; "runes": rounds).
 function LeaderboardService.record(player: Player, board: string, value: number)
 	local mine = extra[player.UserId]
@@ -106,6 +114,9 @@ local function flushGames()
 	for userId, scores in pairs(extra) do
 		if budget() < 6 then
 			return
+		end
+		if held[userId] then
+			continue
 		end
 		extra[userId] = nil
 		local key = tostring(userId)

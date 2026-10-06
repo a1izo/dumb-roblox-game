@@ -67,14 +67,18 @@ local function humanoid(player: Player): Humanoid?
 	return if character then character:FindFirstChildOfClass("Humanoid") else nil
 end
 
--- Why a player may not play now (in a case, or watching one from the lobby), nil when they may.
-local function blocked(player: Player): string?
-	if Match.active and Match.get(player) ~= nil then
-		return "in a case"
-	end
+-- Why a player may not play `game` now (in a case, or watching one from the lobby), nil when they may. A
+-- Specter waiting in the lobby (hidden) may play the solo games, not the shared dice table.
+local function blocked(player: Player, game: string?): string?
 	local ok, ghost = pcall(function()
 		return require(script.Parent.GhostService)
 	end)
+	if Match.active and Match.get(player) ~= nil then
+		if ok and ghost.isAway(player) and game ~= "dice" then
+			return nil
+		end
+		return "in a case"
+	end
 	if ok and ghost.isWatching(player) then
 		return "watching"
 	end
@@ -451,7 +455,7 @@ local function diceStep()
 		if player then
 			local hum = humanoid(player)
 			local seat: Seat = games.dice.seats[index]
-			if not player.Parent or not hum or hum.SeatPart ~= seat or blocked(player) then
+			if not player.Parent or not hum or hum.SeatPart ~= seat or blocked(player, "dice") then
 				seats[index] = nil
 				rolls[player] = nil
 				if player.Parent then
@@ -528,7 +532,7 @@ local function step()
 		local part = root(player)
 		if not player.Parent or not part then
 			sessions[player] = nil
-		elseif blocked(player) then
+		elseif blocked(player, session.game) then
 			cancel(player, "case")
 		elseif session.game == "parkour" then
 			parkourStep(player, session, part.Position)
@@ -547,7 +551,7 @@ local function onRequest(player: Player, payload: any)
 	if type(game) ~= "string" or type(action) ~= "string" then
 		return
 	end
-	if not RateLimit.allow(player, "lobbyGame", 0.2) or blocked(player) then
+	if not RateLimit.allow(player, "lobbyGame", 0.2) or blocked(player, game) then
 		return
 	end
 	if game == "parkour" then

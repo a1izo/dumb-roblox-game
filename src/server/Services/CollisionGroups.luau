@@ -1,5 +1,7 @@
 -- Who collides with whom.
---   Default       : the world and living characters
+--   Default       : the world
+--   Characters    : players' bodies (and the test bots'); they stand on the world and bump into each other
+--   Away          : a dead player waiting in the lobby, hidden: they stand on the world and walk through people
 --   Ragdoll       : bodies of the dead; they rest on the world but do not shove anyone
 --   Specters      : ghosts; they pass through everything except their own bounds
 --   SpecterBounds : invisible boxes around each venue that keep ghosts inside
@@ -11,6 +13,8 @@ local CollisionGroups = {}
 CollisionGroups.RAGDOLL = "Ragdoll"
 CollisionGroups.SPECTERS = "Specters"
 CollisionGroups.BOUNDS = "SpecterBounds"
+CollisionGroups.CHARACTERS = "Characters"
+CollisionGroups.AWAY = "Away"
 
 local function register(name: string)
 	if not PhysicsService:IsCollisionGroupRegistered(name) then
@@ -19,7 +23,13 @@ local function register(name: string)
 end
 
 function CollisionGroups.init()
-	for _, name in ipairs({ CollisionGroups.RAGDOLL, CollisionGroups.SPECTERS, CollisionGroups.BOUNDS }) do
+	for _, name in ipairs({
+		CollisionGroups.RAGDOLL,
+		CollisionGroups.SPECTERS,
+		CollisionGroups.BOUNDS,
+		CollisionGroups.CHARACTERS,
+		CollisionGroups.AWAY,
+	}) do
 		register(name)
 	end
 	local set = function(a: string, b: string, collide: boolean)
@@ -34,6 +44,36 @@ function CollisionGroups.init()
 	set(CollisionGroups.BOUNDS, "Default", false)
 	set(CollisionGroups.BOUNDS, CollisionGroups.RAGDOLL, false)
 	set(CollisionGroups.BOUNDS, CollisionGroups.BOUNDS, false)
+	-- Bodies: like the world's own parts, except that the hidden (away) ones pass through the others.
+	local CHARS, AWAY = CollisionGroups.CHARACTERS, CollisionGroups.AWAY
+	set(CHARS, "Default", true)
+	set(CHARS, CHARS, true)
+	set(CHARS, CollisionGroups.RAGDOLL, true)
+	set(CHARS, CollisionGroups.SPECTERS, false)
+	set(CHARS, CollisionGroups.BOUNDS, false)
+	set(AWAY, "Default", true)
+	set(AWAY, CHARS, false)
+	set(AWAY, AWAY, false)
+	set(AWAY, CollisionGroups.RAGDOLL, false)
+	set(AWAY, CollisionGroups.SPECTERS, false)
+	set(AWAY, CollisionGroups.BOUNDS, false)
+end
+
+-- Keeps a body's parts (and parts added later) in `group`, leaving alone any part another service has
+-- already put elsewhere (a ghost, a ragdoll) unless `force` is set.
+function CollisionGroups.body(character: Model, group: string, force: boolean?)
+	local function apply(item: Instance)
+		if item:IsA("BasePart") then
+			local current = item.CollisionGroup
+			if force or current == "Default" or current == CollisionGroups.CHARACTERS then
+				item.CollisionGroup = group
+			end
+		end
+	end
+	for _, item in ipairs(character:GetDescendants()) do
+		apply(item)
+	end
+	return character.DescendantAdded:Connect(apply)
 end
 
 -- Puts every part of a model (and parts added later) in a group.

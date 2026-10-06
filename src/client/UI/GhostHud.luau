@@ -1,6 +1,7 @@
 -- The Specter HUD, a strip under the phase banner for Specters and spectators: follow a
 -- living player's view (◀ name ▶) or fly free, and jump between the map and the meeting
--- room. Specters also see the lost souls they gathered; spectators get a Leave button. On
+-- room. Specters also see the lost souls they gathered and can go back to the lobby until the case closes
+-- (hidden there, GhostService "away"); spectators get a Leave button. On
 -- touch screens there are up and down buttons for flying.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,6 +29,7 @@ local jumps: Frame
 local souls: Frame
 local soulsLabel: TextLabel
 local leaveButton: TextButton
+local lobbyButton: TextButton
 local liftPad: Frame
 
 local function refresh()
@@ -39,6 +41,7 @@ local function refresh()
 	jumps.Visible = show
 	souls.Visible = specter
 	leaveButton.Visible = watching
+	lobbyButton.Visible = specter
 	previous.Visible = following
 	nextButton.Visible = following
 	if following then
@@ -167,6 +170,20 @@ function GhostHud.init()
 	}, function()
 		FollowCam.stop()
 		Net.event("Watch"):FireServer({ action = "leave" })
+	end)
+
+	-- Specters can wait in the lobby (hidden) and come back in from its menu.
+	lobbyButton = Kit.button({
+		text = "Return to lobby",
+		icon = "back",
+		variant = "secondary",
+		size = "s",
+		Visible = false,
+		LayoutOrder = 8,
+		Parent = strip,
+	}, function()
+		FollowCam.stop()
+		Net.event("Ghost"):FireServer({ action = "away" })
 	end)
 
 	-- Up and down for flying on touch screens, above the jump button.

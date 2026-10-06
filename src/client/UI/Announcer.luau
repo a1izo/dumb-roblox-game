@@ -1,6 +1,7 @@
 -- Big announcements across the upper middle of the screen (rounds, deaths, votes): the title
--- slams in as Aktura lettering on a bar (red for danger, black otherwise) with a videotape glitch, and
--- the subtitle is cut in beneath it. While a full-screen overlay is up (the briefing, the results, your own
+-- slams in as Aktura lettering on a bar (red for danger, black otherwise), and the subtitle is cut in
+-- beneath it, always clear of the bar. In a case the slam sits under the HUD's phase banner, so the phase,
+-- clock and place stay readable. While a full-screen overlay is up (the briefing, the results, your own
 -- elimination) the queue waits, and anything older than a few seconds is dropped instead of
 -- shown late.
 
@@ -11,6 +12,7 @@ local Net = require(Shared:WaitForChild("Net"))
 
 local Kit = require(script.Parent.Kit)
 local Glitch = require(script.Parent.Core.Glitch)
+local Hud = require(script.Parent.Hud)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local UiSound = require(script.Parent.Core.UiSound)
@@ -37,6 +39,7 @@ local group: CanvasGroup
 local titleHolder: Frame
 local subtitleText: any
 local glitch: any
+local probe: Frame
 
 local function run()
 	running = true
@@ -48,9 +51,16 @@ local function run()
 		if os.clock() - item.at <= MAX_AGE then
 			local tone = TONES[item.tone] or TONES.neutral
 			Kit.clear(titleHolder)
+			-- Under the HUD's phase banner when it is up (12 px below it), else in the upper middle.
+			local hudBottom = Hud.bannerBottom()
+			local scale = Kit.Base.scaleOf(group)
+			group.Position = if hudBottom
+				then UDim2.new(0.5, 0, 0, math.floor((hudBottom - probe.AbsolutePosition.Y) / scale) + 12)
+				else UDim2.fromScale(0.5, 0.18)
 			local bannerFrame = Kit.banner({
 				text = Kit.mixedCase(item.title),
 				face = "Title",
+				underline = false,
 				size = if Kit.Layout.isPhone() then T.size.display else 72,
 				tone = tone[1],
 				ink = tone[2],
@@ -60,6 +70,12 @@ local function run()
 				Parent = titleHolder,
 			})
 			bannerFrame.Rotation = -2
+			-- The subtitle sits under the bar, whatever height the bar comes out at.
+			local function placeSubtitle()
+				subtitleText.frame.Position = UDim2.new(0.5, 0, 0, bannerFrame.Size.Y.Offset + 14)
+			end
+			bannerFrame:GetPropertyChangedSignal("Size"):Connect(placeSubtitle)
+			placeSubtitle()
 			subtitleText:set(item.subtitle or "")
 			group.GroupTransparency = 0
 			group.Visible = true
@@ -102,11 +118,11 @@ function Announcer.init()
 	group.Name = "Announcement"
 	group.AnchorPoint = Vector2.new(0.5, 0)
 	group.Position = UDim2.fromScale(0.5, 0.18)
-	group.Size = UDim2.new(1, 0, 0, 190)
+	group.Size = UDim2.new(1, 0, 0, 220)
 	group.BackgroundTransparency = 1
 	group.BorderSizePixel = 0
 	group.Visible = false
-	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 110), Parent = group })
+	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 140), Parent = group })
 	subtitleText = Kit.text({
 		face = "Semi",
 		text = "",
@@ -118,6 +134,7 @@ function Announcer.init()
 		Parent = group,
 	})
 	group.Parent = Screens.overlay
+	probe = Kit.frame({ Name = "AnnouncerProbe", Size = UDim2.fromOffset(0, 0), Parent = Screens.overlay })
 	glitch = Glitch.attach(group, { loop = false, enter = false })
 	Net.event("Announce").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" and type(payload.title) == "string" then

@@ -13,6 +13,7 @@ local Models = require(Shared:WaitForChild("Models"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
+local CollisionGroups = require(script.Parent.CollisionGroups)
 local Match = require(script.Parent.Match)
 local RagdollService = require(script.Parent.RagdollService)
 
@@ -584,6 +585,13 @@ local function replaceWithR15(player: Player, character: Model, humanoid: Humano
 end
 
 local function onCharacterAdded(player: Player, character: Model)
+	-- A Specter waiting in the lobby is hidden from the very first frame (GhostService finishes the job).
+	local anyPs = if Match.active then Match.get(player) else nil
+	local away = anyPs ~= nil and anyPs.away == true
+	if away then
+		character:SetAttribute("Away", true)
+		character:SetAttribute("NameHidden", true)
+	end
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 	if not humanoid or not humanoid:IsA("Humanoid") then
 		return
@@ -592,6 +600,8 @@ local function onCharacterAdded(player: Player, character: Model)
 		return
 	end
 	character:WaitForChild("HumanoidRootPart", 10)
+	-- Bodies have a group of their own, so a hidden (away) body can pass through them.
+	CollisionGroups.body(character, CollisionGroups.CHARACTERS)
 	humanoid.BreakJointsOnDeath = false
 	humanoid.NameOcclusion = Enum.NameOcclusion.OccludeAll
 	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
@@ -602,6 +612,8 @@ local function onCharacterAdded(player: Player, character: Model)
 	local ps = Match.getLiving(player)
 	if ps then
 		humanoid.DisplayName = ps.alias
+	elseif away then
+		humanoid.DisplayName = ""
 	else
 		humanoid.DisplayName = player.DisplayName
 	end

@@ -192,6 +192,8 @@ end
 local function makeGhost(entry: Entry, color: Color3): Frame
 	local holder = Instance.new("Frame")
 	holder.Name = "GlitchGhost"
+	-- The copies already carry the redrawn letters (FontMirror leaves them be).
+	holder:SetAttribute("KeepFont", true)
 	holder.BackgroundTransparency = 1
 	holder.Size = UDim2.fromScale(1, 1)
 	holder.ZIndex = 0
