@@ -1,6 +1,6 @@
 -- Effects for deaths and big moments, local to this client, in the Notch style: a burst of black, white and
 -- red shards, a chalk outline of the body on the floor that fades, static rising off a body while it
--- dissolves, sparks, and a videotape tear across your own screen when you are taken out. Textures come
+-- dissolves, sparks, and a dark red wash over your own screen when you are taken out. Textures come
 -- from Blender (Assets.texture); without them the effects that need a shape are skipped and bursts use
 -- Roblox's default particle.
 
@@ -193,65 +193,23 @@ function DeathFx.sparks(position: Vector3, colour: Color3?)
 	Debris:AddItem(holder, 1)
 end
 
--- A videotape tear across your own screen (you were taken out): red and white slices slip sideways in a few
--- hard cuts, then the screen holds a dark red wash and fades after `seconds`. Without the tear texture the
--- slices are plain bars.
+-- Your own screen when you are taken out: a steady dark red wash that fades after `seconds`. (Nothing in a
+-- match glitches, so there is no tear.)
 function DeathFx.screenTear(seconds: number?, colour: Color3?)
 	local layer = Instance.new("CanvasGroup")
-	layer.Name = "DeathTear"
+	layer.Name = "DeathWash"
 	layer.BackgroundTransparency = 1
 	layer.Size = UDim2.fromScale(1, 1)
 	layer.Parent = Screens.cinematic
-	local wash = Kit.Base.make("Frame", {
+	Kit.Base.make("Frame", {
 		Name = "Wash",
 		BackgroundColor3 = colour or C.blood,
-		BackgroundTransparency = 0.7,
+		BackgroundTransparency = 0.6,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
 		Parent = layer,
 	})
-	local texture = Assets.texture("FxTear")
-	local bars = {}
-	local reduced = Motion.isReduced()
-	if not reduced then
-		for index = 1, 7 do
-			local bar: GuiObject
-			if texture ~= "" then
-				bar = Create("ImageLabel", {
-					BackgroundTransparency = 1,
-					Image = texture,
-					ImageColor3 = if index % 2 == 0 then C.white else C.danger,
-					Parent = layer,
-				}) :: any
-			else
-				bar = Create("Frame", {
-					BackgroundColor3 = if index % 2 == 0 then C.white else C.danger,
-					BackgroundTransparency = 0.35,
-					BorderSizePixel = 0,
-					Parent = layer,
-				}) :: any
-			end
-			bars[index] = bar
-		end
-		task.spawn(function()
-			for _ = 1, 8 do
-				if not layer.Parent then
-					return
-				end
-				for _, bar in ipairs(bars) do
-					local height = math.random(18, 70) / 1000
-					bar.Size = UDim2.fromScale(math.random(40, 100) / 100, height)
-					bar.Position = UDim2.fromScale(math.random(-25, 25) / 100, math.random(0, 95) / 100)
-					bar.Visible = math.random() < 0.75
-				end
-				task.wait(0.06)
-			end
-			for _, bar in ipairs(bars) do
-				bar:Destroy()
-			end
-		end)
-	end
-	wash.BackgroundTransparency = if reduced then 0.6 else 0.7
+	Motion.fade(layer, true, 0.2)
 	task.delay(seconds or 2.5, function()
 		local fade = Motion.fade(layer, false, 1.2)
 		if fade then

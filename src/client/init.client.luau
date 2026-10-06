@@ -1,6 +1,8 @@
 -- Death's Gambit client bootstrap: sets up the UI core, builds every screen, starts the
 -- controllers, then asks the server for the current state.
 
+local Players = game:GetService("Players")
+
 local ClientState = require(script:WaitForChild("ClientState"))
 
 local UI = script:WaitForChild("UI")
@@ -20,6 +22,7 @@ local GhostHud = require(UI:WaitForChild("GhostHud"))
 local HowToPlay = require(UI:WaitForChild("HowToPlay"))
 local LeaderboardPanel = require(UI:WaitForChild("LeaderboardPanel"))
 local Hud = require(UI:WaitForChild("Hud"))
+local LobbyIntro = require(UI:WaitForChild("LobbyIntro"))
 local LobbyPanel = require(UI:WaitForChild("LobbyPanel"))
 local LPanel = require(UI:WaitForChild("LPanel"))
 local MeetingPanel = require(UI:WaitForChild("MeetingPanel"))
@@ -89,6 +92,17 @@ local CameraDirector = require(Presentation:WaitForChild("CameraDirector"))
 local Cinema = require(Presentation:WaitForChild("Cinema"))
 local Cutscenes = require(Presentation:WaitForChild("Cutscenes"))
 local HintController = require(script:WaitForChild("Onboarding"):WaitForChild("HintController"))
+
+-- The join intro: the black ReplicatedFirst put up stays until the lobby is ready (the first lobby state has
+-- arrived and your character is in the world, or 12 s at most), then the lobby glitches in from it.
+LobbyIntro.cover()
+task.spawn(function()
+	local deadline = os.clock() + 12
+	while os.clock() < deadline and (ClientState.lobby == nil or Players.LocalPlayer.Character == nil) do
+		task.wait(0.1)
+	end
+	LobbyIntro.play(LobbyPanel.playEntrance)
+end)
 
 -- UI core: device scale, the shared clock, the screen router and the player's settings.
 Responsive.init()

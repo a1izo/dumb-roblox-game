@@ -14,6 +14,7 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local HoverGlitch = require(script.Parent.Parent.Core.HoverGlitch)
 local Motion = require(script.Parent.Parent.Core.Motion)
 local UiSound = require(script.Parent.Parent.Core.UiSound)
 local Base = require(script.Parent.Base)
@@ -183,19 +184,6 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 		-- As wide as the icon, text and key; the fill follows the button (see Base.fit).
 		Base.fit(button, row, "X")
 	end
-	local underline: Frame? = nil
-	if look.line then
-		underline = Base.make("Frame", {
-			Name = "Underline",
-			BackgroundColor3 = C.white,
-			BorderSizePixel = 0,
-			AnchorPoint = Vector2.new(0.5, 1),
-			Position = UDim2.new(0.5, 0, 1, -6),
-			Size = UDim2.new(0, 0, 0, 2),
-			ZIndex = z + 1,
-			Parent = button,
-		})
-	end
 	local fill: GuiObject? = nil
 	local function drawBg()
 		Base.clear(bg)
@@ -239,12 +227,10 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 		if icon then
 			icon.ImageColor3 = textColor
 		end
-		if underline then
-			Motion.tween(underline, { Size = UDim2.new(if hovered then 0.8 else 0, 0, 0, 2) }, Tokens.motion.base)
-		end
 	end
 	states[button] = { look = look, enabled = true, paint = paint, label = label }
 	local scale = Base.make("UIScale", { Name = "PressScale", Parent = button })
+	HoverGlitch.wire(button)
 	button.MouseEnter:Connect(function()
 		paint("hover")
 		UiSound.play("uiHover")
@@ -397,6 +383,7 @@ function Controls.iconButton(props: Props, onClick: (() -> ())?): TextButton
 	local function lit(on: boolean)
 		Motion.tween(icon, { ImageColor3 = if on then C.bone else color }, Tokens.motion.quick)
 	end
+	HoverGlitch.wire(button)
 	button.MouseEnter:Connect(function()
 		lit(true)
 	end)
@@ -517,6 +504,7 @@ function Controls.actionChip(props: Props, onClick: (() -> ())?): TextButton
 		local color = if pressed then press elseif on then hover else rest
 		Motion.tween(fill, { BackgroundColor3 = color }, Tokens.motion.quick)
 	end
+	HoverGlitch.wire(button)
 	button.MouseEnter:Connect(function()
 		lit(true)
 	end)
@@ -674,6 +662,7 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			Base.fit(button, row, "X")
 		end
 		buttons[item.id] = { button = button, ribbon = ribbon, label = label }
+		HoverGlitch.wire(button)
 		button.MouseEnter:Connect(function()
 			if current ~= item.id then
 				label.TextColor3 = C.bone
@@ -817,6 +806,7 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		Motion.tween(hover, { BackgroundTransparency = if on and enabled then 0.6 else 1 }, Tokens.motion.quick)
 		rule.BackgroundTransparency = if on and enabled then 0.5 else 0.8
 	end
+	HoverGlitch.wire(button)
 	button.MouseEnter:Connect(function()
 		lit(true)
 	end)
@@ -880,9 +870,9 @@ function Controls.pickGrid(
 	end
 end
 
--- An entry in a table of contents (the lobby menu, How to Play chapters): a small numeral and
--- a handwritten title that turns red and gets underlined on hover. Props: text, numeral,
--- icon, size (lettering px, default 30), selected (stays red and underlined: the open
+-- An entry in a table of contents (the lobby menu, How to Play chapters): a small numeral and a title
+-- that turns white, slides a little to the right and glitches while hovered. Props: text, numeral,
+-- icon, size (lettering px, default 30), selected (stays white with a line under it: the open
 -- chapter), plus frame properties.
 function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 	local size = props.size or 30
@@ -947,9 +937,14 @@ function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 		Parent = button,
 	})
 	local function lit(on: boolean)
-		local shown = on or selected
-		title:setColor(if shown then C.white else C.dim)
-		Motion.tween(underline, { Size = UDim2.fromOffset(if shown then title.width else 0, 2) }, Tokens.motion.base)
+		title:setColor(if on or selected then C.white else C.dim)
+		-- Only the open chapter keeps a line; hovering nudges the title instead.
+		Motion.tween(underline, { Size = UDim2.fromOffset(if selected then title.width else 0, 2) }, Tokens.motion.base)
+		Motion.tween(
+			title.frame,
+			{ Position = UDim2.new(0, x + (if on and not selected then 8 else 0), 0.5, 2) },
+			Tokens.motion.quick
+		)
 	end
 	if selected then
 		lit(true)
@@ -957,6 +952,7 @@ function Controls.entry(props: Props, onClick: (() -> ())?): TextButton
 			lit(true)
 		end)
 	end
+	HoverGlitch.wire(button)
 	button.MouseEnter:Connect(function()
 		lit(true)
 	end)
@@ -1295,6 +1291,7 @@ function Controls.toggle(
 			onChanged(on)
 		end
 	end
+	HoverGlitch.wire(button)
 	button.Activated:Connect(function()
 		set(not state, true)
 	end)

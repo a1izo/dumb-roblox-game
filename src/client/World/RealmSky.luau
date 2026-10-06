@@ -30,7 +30,7 @@ local TUNING = {
 	coverSwing = 0.07, -- cover wanders by up to this much either way (never past 1)
 	density = 0.95,
 	densitySwing = 0.05,
-	color = Color3.fromRGB(172, 178, 190),
+	color = Color3.fromRGB(140, 145, 156),
 	colorSwing = 0.12, -- the clouds' colour darkens and lightens by up to this fraction
 	-- Periods in seconds of the three waves everything wanders on (they never line up).
 	periods = { 173, 97, 61 },

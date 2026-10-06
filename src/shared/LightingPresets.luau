@@ -105,7 +105,8 @@ end
 
 -- Venues -------------------------------------------------------------------------------------
 
--- The lobby: the Grey Realm, a never-ending wasteland under layers of cloud. No sun (the light comes
+-- The lobby: the Grey Realm, a never-ending wasteland under layers of cloud, a little darker and more somber
+-- than the maps (the owner's call, 2026-10-06; the ground ahead must stay easy to see). No sun (the light comes
 -- from the whole overcast sky: low, even, cool), almost no colour left, heavy haze: things close by are
 -- clear, the far rocks and the colossal blade thin into grey over a kilometre; the plain runs on past
 -- the fog's end, so its edge is never seen. The braziers' pale fire,
@@ -113,23 +114,23 @@ end
 -- (clouds, no sun) and its slow breathing are World/RealmSky's; these are the values it breathes around.
 LightingPresets.lobby = preset({
 	clockTime = 14.5,
-	brightness = 0.85,
-	exposure = 0,
-	ambient = rgb(88, 92, 102),
-	outdoorAmbient = rgb(110, 116, 128),
+	brightness = 0.68,
+	exposure = -0.2,
+	ambient = rgb(70, 74, 82),
+	outdoorAmbient = rgb(88, 93, 102),
 	envDiffuse = 0.55,
 	envSpecular = 0.25,
 	fogStart = 110,
 	fogEnd = 1300,
-	fogColor = rgb(104, 108, 118),
+	fogColor = rgb(83, 86, 94),
 	density = 0.34,
 	haze = 1.2,
 	glare = 0,
-	atmosphereColor = rgb(122, 128, 140),
-	decay = rgb(58, 62, 76),
+	atmosphereColor = rgb(98, 102, 112),
+	decay = rgb(46, 50, 61),
 	saturation = -0.78,
 	contrast = 0.16,
-	tint = rgb(226, 232, 244),
+	tint = rgb(212, 218, 230),
 	bloom = 0.25,
 	bloomSize = 18,
 	bloomThreshold = 2.2,

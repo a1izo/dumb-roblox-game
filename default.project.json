@@ -10,6 +10,11 @@
         "$path": "assets/shared"
       }
     },
+    "ReplicatedFirst": {
+      "DGCover": {
+        "$path": "src/first/Cover.client.luau"
+      }
+    },
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"

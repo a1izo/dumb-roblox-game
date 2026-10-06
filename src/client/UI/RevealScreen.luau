@@ -13,7 +13,6 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
-local Glitch = require(script.Parent.Core.Glitch)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local UiSound = require(script.Parent.Core.UiSound)
@@ -29,7 +28,6 @@ local root: Frame
 local titleHolder: Frame
 local winnerHolder: CanvasGroup
 local winnerText: any
-local winnerGlitch: any
 local reasonText: any
 local roster: ScrollingFrame
 local timeline: ScrollingFrame
@@ -231,7 +229,6 @@ function RevealScreen.show(payload)
 	root.Visible = true
 	Router.setBlocking("reveal", true)
 	ransom:play()
-	winnerGlitch:enter()
 	UiSound.play("slam")
 	task.spawn(playTimeline, payload.events or {}, myToken)
 end
@@ -283,7 +280,6 @@ function RevealScreen.init()
 		Position = UDim2.fromScale(0.5, 0),
 		Parent = winnerHolder,
 	})
-	winnerGlitch = Glitch.attach(winnerHolder, { loop = true, enter = false })
 	reasonText = Kit.text({
 		face = "Semi",
 		text = "",

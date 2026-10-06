@@ -2,7 +2,9 @@
 -- Text set in Death's Gambit's lettering: one image per glyph from the atlases art/scripts/ui/fonts.py draws
 -- from the two Fontshare fonts (Roblox cannot load custom fonts). Faces:
 --   "Title"    Aktura: the game title, CASE CLOSED, big slams. Mixed case; its capitals are ornate, so
---              `plainCaps` sets A H I J K N as lower case at capital height (default on for this face).
+--              `plainCaps` sets A H I J K N as lower case at capital height (default on for this face),
+--              and a word written all in capitals (HQ, ACE) is drawn in Melodrama Bold at Aktura's
+--              capital height, so it reads.
 --   "Head"     Melodrama Bold: headings, buttons, names, numbers (18 px and up)
 --   "Semi"     Melodrama Semibold: the lighter heading weight
 --   "RnLight", "RnMedium": letters only, for the ransom note (Kit.ransom)
@@ -90,6 +92,8 @@ local STAND_IN = { Title = "title", Head = "display", Semi = "hand", RnLight = "
 -- Aktura capitals that are hard to read; they are set as lower case scaled up to capital height.
 local PLAIN_CAPS = { A = true, H = true, I = true, J = true, K = true, N = true }
 local PLAIN_CAP_SCALE = 1.3
+-- Marks a character of an all-capitals word inside an Aktura line (drawn in Melodrama instead).
+local ALT = "\1"
 
 local function faceOf(name: string?): (Face, string)
 	local key = LEGACY[name or ""] or name or "Head"
@@ -132,11 +136,28 @@ end
 
 -- Where each drawn character of a line sits (px at `scale`) and the line's width. Pairs are kerned; a
 -- space adds its advance and breaks the pair.
-local function place(face: Face, chars: { string }, scale: number, tracking: number, tabular: boolean)
-	local out: { { char: string, glyph: { number }, x: number, slot: boolean } } = {}
+local function place(
+	face: Face,
+	chars: { string },
+	scale: number,
+	tracking: number,
+	tabular: boolean,
+	alt: Face?,
+	altScale: number?
+)
+	local out: { { char: string, glyph: { number }, x: number, slot: boolean, alt: boolean? } } = {}
 	local x = 0
 	local previous: string? = nil
 	for _, char in ipairs(chars) do
+		if alt and altScale and string.sub(char, 1, 1) == ALT then
+			-- A letter of an all-capitals word: Melodrama, scaled to Aktura's capital height.
+			local real = string.sub(char, 2)
+			local glyph = glyphOf(alt, real)
+			table.insert(out, { char = real, glyph = glyph, x = x, slot = false, alt = true })
+			x += (glyph[8] or glyph[1]) * altScale + tracking
+			previous = nil
+			continue
+		end
 		local glyph = glyphOf(face, char)
 		if char == " " then
 			x += glyph[1] * scale + tracking
@@ -159,8 +180,24 @@ local function place(face: Face, chars: { string }, scale: number, tracking: num
 	return out, x
 end
 
--- Lays text out into lines: { { chars, width } }, wrapping at maxWidth.
-local function layout(face: Face, text: string, scale: number, tracking: number, maxWidth: number?, tabular: boolean)
+-- A word of two or more letters with no lower-case letter ("HQ", "ACE").
+local function allCaps(word: string): boolean
+	local letters = string.gsub(word, "[^%a]", "")
+	return #letters >= 2 and string.upper(letters) == letters
+end
+
+-- Lays text out into lines: { { chars, width } }, wrapping at maxWidth. With `alt`, the characters of an
+-- all-capitals word are marked to be drawn in that face.
+local function layout(
+	face: Face,
+	text: string,
+	scale: number,
+	tracking: number,
+	maxWidth: number?,
+	tabular: boolean,
+	alt: Face?,
+	altScale: number?
+)
 	local lines = {}
 	for _, paragraph in ipairs(string.split(text, "\n")) do
 		local words = string.split(paragraph, " ")
@@ -168,7 +205,14 @@ local function layout(face: Face, text: string, scale: number, tracking: number,
 		local space = glyphOf(face, " ")[1] * scale + tracking
 		for index, word in ipairs(words) do
 			local chars = characters(word)
-			local _, wordWidth = place(face, chars, scale, tracking, tabular)
+			if alt and allCaps(word) then
+				for i, char in ipairs(chars) do
+					if string.match(char, "^%a$") then
+						chars[i] = ALT .. char
+					end
+				end
+			end
+			local _, wordWidth = place(face, chars, scale, tracking, tabular, alt, altScale)
 			local needed = if #current > 0 then space + wordWidth else wordWidth
 			if maxWidth and #current > 0 and width + needed > maxWidth then
 				table.insert(lines, { chars = current, width = width })
@@ -332,7 +376,23 @@ function GlyphText._render(self: GlyphText)
 	local tracking = props.tracking or 0
 	local lineHeight = size * (props.lineHeight or 1.15)
 	local plainCaps = if props.plainCaps == nil then faceKey == "Title" else props.plainCaps
-	local lines = layout(face, text, scale, tracking, props.maxWidth, tabular)
+	-- In Aktura, all-capitals words are drawn in Melodrama Bold at Aktura's capital height (the height a
+	-- plain capital reaches: the x-height times PLAIN_CAP_SCALE).
+	local alt: Face? = nil
+	local altScale: number? = nil
+	local altIds: { string }? = nil
+	if faceKey == "Title" then
+		local head = (faceOf("Head"))
+		local headIds = atlasIds(head)
+		local xGlyph = face.glyphs["x"]
+		local capGlyph = head.glyphs["H"]
+		if headIds and xGlyph and capGlyph and #xGlyph >= 8 and #capGlyph >= 8 and capGlyph[7] > 0 then
+			alt = head
+			altIds = headIds
+			altScale = scale * (xGlyph[7] * PLAIN_CAP_SCALE) / capGlyph[7]
+		end
+	end
+	local lines = layout(face, text, scale, tracking, props.maxWidth, tabular, alt, altScale)
 	local widest = 0
 	for _, line in ipairs(lines) do
 		widest = math.max(widest, line.width)
@@ -346,13 +406,17 @@ function GlyphText._render(self: GlyphText)
 			shift = widest - line.width
 		end
 		local baseline = face.ascent * scale + lineHeight * (index - 1)
-		local items = place(face, line.chars, scale, tracking, tabular)
+		local items = place(face, line.chars, scale, tracking, tabular, alt, altScale)
 		for _, item in ipairs(items) do
 			local v = item.glyph
 			if #v >= 8 then
 				local glyphScale = scale
 				local glyph = v
-				if plainCaps and PLAIN_CAPS[item.char] and face.glyphs[string.lower(item.char)] then
+				local atlas = ids
+				if item.alt and altIds and altScale then
+					glyphScale = altScale
+					atlas = altIds
+				elseif plainCaps and PLAIN_CAPS[item.char] and face.glyphs[string.lower(item.char)] then
 					-- A plain capital: the lower-case letter, enlarged to the height of a capital.
 					glyph = face.glyphs[string.lower(item.char)]
 					glyphScale = scale * PLAIN_CAP_SCALE
@@ -363,7 +427,7 @@ function GlyphText._render(self: GlyphText)
 				local image = Create("ImageLabel", {
 					Name = "Glyph",
 					BackgroundTransparency = 1,
-					Image = ids[glyph[1]],
+					Image = atlas[glyph[1]],
 					ImageRectOffset = Vector2.new(glyph[2], glyph[3]),
 					ImageRectSize = Vector2.new(glyph[4], glyph[5]),
 					ImageColor3 = color,

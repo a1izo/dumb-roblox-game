@@ -1,7 +1,8 @@
 -- The HUD in a match, drawn with the Notch kit. It is the quiet side of the design: steady, grey, and red
--- only for danger (the last ten seconds, Diavolo's side). It glitches once when the phase changes.
---   phase banner  (top centre)   the phase in Melodrama on a dark bar; under it a panel with the
---                                clock (equal-width digits), a tick per round and the place
+-- only for danger (the last ten seconds, Diavolo's side). Nothing in a match glitches.
+--   phase banner  (top centre)   the phase in Melodrama on a dark bar; under it one plain shadowed line:
+--                                the clock (equal-width digits), a tick per round, and the place under
+--                                it. Hidden while a cutscene plays.
 --   objectives    (top left)     lines, filled in by the objective tracker
 --   identity      (bottom left)  your ID seal, role, alias and, one per line, what you
 --                                carry and can do
@@ -59,6 +60,7 @@ local ACTION_ICON = {
 local banner: Frame
 local bannerText: any
 local clockLabel: any
+local clockShadow: any
 local bannerGlitch: any
 local clockIcon: ImageLabel
 local marks: Frame
@@ -106,7 +108,8 @@ end
 
 local function updateBanner()
 	local state = ClientState.public
-	banner.Visible = state.active == true
+	-- The cutscene's own card says where you are, so the banner steps aside while one plays.
+	banner.Visible = state.active == true and not Actions.CUTSCENE_PHASES[state.phase]
 	if not state.active then
 		lastPhase = "Lobby"
 		return
@@ -126,7 +129,7 @@ local function updateBanner()
 		infoLabel.TextColor3 = C.white
 	else
 		infoLabel.Text = tostring(state.mapName or "")
-		infoLabel.TextColor3 = C.dim
+		infoLabel.TextColor3 = C.g6
 	end
 end
 
@@ -138,7 +141,9 @@ local function clockText(seconds: number): string
 	local urgent = seconds <= 10
 	clockLabel:setColor(if urgent then C.danger else C.bone)
 	clockIcon.ImageColor3 = if urgent then C.danger else C.dim
-	return Clock.format(seconds)
+	local text = Clock.format(seconds)
+	clockShadow:set(text)
+	return text
 end
 
 -- Identity -------------------------------------------------------------------------------------
@@ -354,36 +359,14 @@ local function buildBanner()
 	})
 	local _ = stroke
 	bannerText = text
-	-- The clock, the rounds and the place sit on a glass panel, so the room never shows through. The panel
-	-- is a shell with the clipped-corner shape behind an inner frame that lays its rows out.
-	local plate = Kit.frame({
-		Name = "Plate",
+	-- The clock, the rounds and the place: plain lines with a soft shadow, no panel behind them.
+	local inner = Kit.frame({
+		Name = "Inner",
 		Size = UDim2.fromOffset(0, 0),
 		AutomaticSize = Enum.AutomaticSize.XY,
 		LayoutOrder = 2,
 		Parent = banner,
 	})
-	local shell = Kit.frame({ Name = "Shell", ZIndex = 0, Parent = plate })
-	Kit.Surfaces.redrawWhenReady(shell, function()
-		Kit.clear(shell)
-		Kit.notch(shell, { shape = "panel", color = C.page, transparency = T.alpha.glass, ZIndex = 0 })
-		Kit.Base.make("Frame", {
-			Name = "Edge",
-			BackgroundColor3 = C.g5,
-			BorderSizePixel = 0,
-			Size = UDim2.new(0, 2, 1, 0),
-			ZIndex = 0,
-			Parent = shell,
-		})
-	end)
-	local inner = Kit.frame({
-		Name = "Inner",
-		Size = UDim2.fromOffset(0, 0),
-		AutomaticSize = Enum.AutomaticSize.XY,
-		ZIndex = 1,
-		Parent = plate,
-	})
-	Kit.pad(inner, T.space.s, T.space.l)
 	Kit.list(inner, T.space.xxs, false, Enum.HorizontalAlignment.Center)
 	local row = Kit.frame({
 		Name = "Clock",
@@ -394,7 +377,24 @@ local function buildBanner()
 	})
 	Kit.list(row, T.space.m, true, Enum.HorizontalAlignment.Center)
 	clockIcon = Kit.icon({ name = "clock", size = 20, color = C.dim, LayoutOrder = 1, Parent = row })
-	clockLabel = Kit.num({ text = "0:00", size = 26, color = C.bone, LayoutOrder = 2, Parent = row })
+	-- The digits get a dark copy 2 px down and right, so they read over a bright room.
+	local clockHolder = Kit.frame({
+		Name = "ClockDigits",
+		Size = UDim2.fromOffset(0, 0),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		LayoutOrder = 2,
+		Parent = row,
+	})
+	clockShadow = Kit.num({
+		text = "0:00",
+		size = 26,
+		color = C.g0,
+		Position = UDim2.fromOffset(2, 2),
+		ZIndex = 1,
+		Parent = clockHolder,
+	})
+	clockShadow:setTransparency(0.35)
+	clockLabel = Kit.num({ text = "0:00", size = 26, color = C.bone, ZIndex = 2, Parent = clockHolder })
 	marks = Kit.frame({
 		Name = "Rounds",
 		Size = UDim2.fromOffset(0, 14),
@@ -406,15 +406,17 @@ local function buildBanner()
 	infoLabel = Kit.label({
 		Text = "",
 		font = "label",
-		size = "micro",
+		size = "small",
 		upper = true,
-		color = C.dim,
+		color = C.g6,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Size = UDim2.fromOffset(0, 0),
 		LayoutOrder = 2,
 		Parent = inner,
 	})
+	infoLabel.TextStrokeColor3 = C.g0
+	infoLabel.TextStrokeTransparency = 0.45
 	Clock.bind(clockLabel, clockText)
 	-- Room under the panel for controls that belong with the phase (the Deathsinger HUD).
 	bannerExtra = Kit.frame({
@@ -477,10 +479,11 @@ function Hud.init()
 	buildBanner()
 	buildBadge()
 	-- The list sits on a glass panel that shows only while it has lines.
+	-- The panel takes its size from the list inside it (an auto-sized frame must never hold a child that
+	-- fills it, or the two grow each other without end).
 	local objectivesPanel = Kit.frame({
 		Name = "ObjectivesPanel",
 		Size = UDim2.fromOffset(0, 0),
-		AutomaticSize = Enum.AutomaticSize.XY,
 		Visible = false,
 		Parent = Screens.hud,
 	})
@@ -518,6 +521,9 @@ function Hud.init()
 	end
 	objectives.ChildAdded:Connect(syncObjectives)
 	objectives.ChildRemoved:Connect(syncObjectives)
+	objectives:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		objectivesPanel.Size = UDim2.fromOffset(objectives.AbsoluteSize.X, objectives.AbsoluteSize.Y)
+	end)
 	-- Its layout (a row, or a grid on touch screens) is set by layout().
 	actionBar = Kit.frame({ Name = "ActionBar", Parent = Screens.hud })
 

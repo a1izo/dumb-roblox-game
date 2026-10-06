@@ -12,7 +12,7 @@ local RunService = game:GetService("RunService")
 local Terms = {}
 
 Terms.GAME = "Death's Gambit"
-Terms.TAGLINE = "Find Diavolo.  Protect your real name."
+Terms.TAGLINE = "Sfuggi al destino che Diavolo ha scelto per te"
 
 export type RoleNames = {
 	name: string, -- mid-sentence: "Diavolo", "Muerto"
