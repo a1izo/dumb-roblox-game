@@ -25,6 +25,11 @@ export type Summary = {
 	duties: number,
 	reports: number,
 	rigs: number,
+	-- Deathsinger quests (only counted when `ghost`: the player ended the case as a Deathsinger).
+	wagersWon: number?,
+	haunts: number?,
+	spiritRuns: number?,
+	ghost: boolean?,
 	xpBefore: number, -- profile xp before this match's rewards
 }
 
@@ -69,6 +74,9 @@ function ProgressRules.ensureQuests(data: any, now: number)
 	end
 	if quests.weekly.period ~= week then
 		quests.weekly = { period = week, items = questItems(Quests.weekly(week)) }
+	end
+	if type(quests.ghost) ~= "table" or quests.ghost.period ~= day then
+		quests.ghost = { period = day, items = questItems(Quests.ghost(day)) }
 	end
 end
 
@@ -175,7 +183,11 @@ function ProgressRules.apply(data: any, summary: Summary, now: number): Result
 
 	-- Quests.
 	ProgressRules.ensureQuests(data, now)
-	for _, list in ipairs({ data.quests.daily.items, data.quests.weekly.items }) do
+	local lists = { data.quests.daily.items, data.quests.weekly.items }
+	if summary.ghost then
+		table.insert(lists, data.quests.ghost.items)
+	end
+	for _, list in ipairs(lists) do
 		for _, item in ipairs(list) do
 			local quest = Quests.byId(item.id)
 			if quest and not item.done then

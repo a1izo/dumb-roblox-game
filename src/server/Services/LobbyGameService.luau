@@ -21,6 +21,7 @@ local Dice = require(Games:WaitForChild("Dice"))
 local Parkour = require(Games:WaitForChild("Parkour"))
 local Runes = require(Games:WaitForChild("Runes"))
 local Toss = require(Games:WaitForChild("Toss"))
+local SpiritTrial = require(Games:WaitForChild("SpiritTrial"))
 
 local DataService = require(script.Parent.DataService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
@@ -38,6 +39,7 @@ local START_RANGE = 16 -- studs from a pad or a seat within which a request coun
 type Session = {
 	game: string,
 	parkour: Parkour.Session?,
+	spirit: SpiritTrial.Session?,
 	runes: Runes.State?,
 	state: string?, -- runes: "show" or "input"
 	inputAt: number?,
@@ -167,6 +169,94 @@ local function finishParkour(player: Player, session: Session)
 	end
 	tell(player, { game = "parkour", kind = "finish", time = time, best = best, newBest = isBest })
 	sendHome(player, games.parkour.start)
+end
+
+-- The spirit trial (Deathsingers waiting in the lobby only) ------------------------------------------------
+
+local spiritRings: { Vector3 }? = nil
+local spiritCenter = Vector3.zero
+
+-- The loop's rings, dropped onto the lobby's real floor around its spawn (worked out once).
+local function spiritCourse(): { Vector3 }?
+	if spiritRings then
+		return spiritRings
+	end
+	local lobby = workspace:FindFirstChild("LGameLobby")
+	local spawn = if lobby then lobby:FindFirstChild("LobbySpawn", true) else nil
+	if not lobby or not spawn or not spawn:IsA("BasePart") then
+		return nil
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { lobby }
+	local rings = {}
+	for _, spot in ipairs(SpiritTrial.layout(spawn.Position)) do
+		local hit = workspace:Raycast(spot + Vector3.new(0, 60, 0), Vector3.new(0, -140, 0), params)
+		table.insert(rings, (if hit then hit.Position else spot) + Vector3.new(0, 3.5, 0))
+	end
+	spiritRings = rings
+	spiritCenter = spawn.Position
+	return rings
+end
+
+local function isAway(player: Player): boolean
+	local ok, ghost = pcall(function()
+		return require(script.Parent.GhostService)
+	end)
+	return ok and ghost.isAway(player)
+end
+
+local function startSpirit(player: Player)
+	local rings = spiritCourse()
+	if not rings or not isAway(player) then
+		return
+	end
+	cancel(player, "restart")
+	sessions[player] = { game = "spirit", spirit = SpiritTrial.newSession(os.clock()) }
+	tell(player, { game = "spirit", kind = "start", at = workspace:GetServerTimeNow(), rings = rings })
+end
+
+local function spiritStep(player: Player, session: Session, position: Vector3)
+	local run = session.spirit :: SpiritTrial.Session
+	local rings = spiritRings
+	if not rings or not isAway(player) then
+		cancel(player, "case")
+		return
+	end
+	if (flat(position) - flat(spiritCenter)).Magnitude > SpiritTrial.WANDER then
+		cancel(player, "wandered")
+		return
+	end
+	local index = run.reached + 1
+	local ring = rings[index]
+	if not ring or (position - ring).Magnitude > SpiritTrial.REACH then
+		return
+	end
+	local from = if run.reached > 0 then rings[run.reached] else position
+	local ok = SpiritTrial.reach(run, index, os.clock(), (ring - from).Magnitude)
+	if not ok then
+		return
+	end
+	tell(player, { game = "spirit", kind = "ring", reached = index })
+	if index < SpiritTrial.RINGS then
+		return
+	end
+	sessions[player] = nil
+	local time = SpiritTrial.finish(run, os.clock())
+	if not time then
+		tell(player, { game = "spirit", kind = "end", why = "invalid" })
+		return
+	end
+	local ps = Match.get(player)
+	if ps then
+		ps.stats.spiritRuns = (ps.stats.spiritRuns or 0) + 1
+	end
+	local isBest, best = improve(player, "spiritBest", time, SpiritTrial.isBetter)
+	if isBest then
+		-- Held off the public board until the case closes (LeaderboardService.hold).
+		LeaderboardService.record(player, "spirit", time)
+	end
+	tell(player, { game = "spirit", kind = "finish", time = time, best = best, newBest = isBest })
 end
 
 local function parkourStep(player: Player, session: Session, position: Vector3)
@@ -538,6 +628,8 @@ local function step()
 			parkourStep(player, session, part.Position)
 		elseif session.game == "runes" then
 			runesStep(player, session, part.Position)
+		elseif session.game == "spirit" then
+			spiritStep(player, session, part.Position)
 		end
 	end
 	diceStep()
@@ -557,6 +649,12 @@ local function onRequest(player: Player, payload: any)
 	if game == "parkour" then
 		if action == "start" then
 			startParkour(player)
+		elseif action == "leave" then
+			cancel(player, "left")
+		end
+	elseif game == "spirit" then
+		if action == "start" then
+			startSpirit(player)
 		elseif action == "leave" then
 			cancel(player, "left")
 		end

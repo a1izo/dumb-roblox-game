@@ -84,6 +84,8 @@ function RewardService.payout(winner: string?)
 		end
 		local duties = ps.stats.duties or 0
 		add(Terms.f("{Specter} duties x{n}", { n = duties }), duties * R.SPECTER_DUTY_COINS, duties * R.SPECTER_DUTY_XP)
+		local wagers = ps.stats.wagersWon or 0
+		add(string.format("Death's wager x%d", wagers), ps.stats.wagerCoins or 0, 0)
 		if inParty[ps.userId] and xp > 0 and not custom then
 			local bonus = math.floor(xp * 0.1 + 0.5)
 			add("Party bonus", 0, bonus)

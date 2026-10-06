@@ -39,6 +39,7 @@ local Staging = require(script.Parent.Staging)
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local SuspicionService = require(script.Parent.SuspicionService)
 local VoteService = require(script.Parent.VoteService)
+local WagerService = require(script.Parent.WagerService)
 local WarrantService = require(script.Parent.WarrantService)
 
 local BriefingRemote = Net.event("Briefing")
@@ -344,6 +345,8 @@ local function reveal()
 	local winnerName = if winner == "Team" then Terms.side("Team", "Name") else Terms.role("Kira", "Name")
 	EventLog.add(winnerName .. " wins. " .. reason, "end")
 
+	-- Diavolo guesses are settled first, so their coins are paid with the rest.
+	WagerService.settleCase()
 	local rewards = RewardService.payout(winner)
 	ProgressService.onMatchEnd(rewards)
 	for ps, reward in pairs(rewards) do
@@ -434,6 +437,7 @@ local function runMatch(players: { Player })
 	MeetingService.onMatchStart(map)
 	ChatService.onMatchStart()
 	GhostService.onMatchStart()
+	WagerService.onMatchStart()
 
 	for i, ps in ipairs(Match.list) do
 		ps.player.CameraMaxZoomDistance = MATCH_ZOOM
@@ -492,6 +496,7 @@ local function runMatch(players: { Player })
 			-- The verdict plays in full, even when voting out the Hand ends the match.
 			runPhase("Verdict", function()
 				VoteService.present(result)
+				WagerService.settleVote(if result.removed then result.removed.userId else nil)
 			end, function()
 				ChatService.setMeetingOpen(false)
 			end, { length = if result.removed then nil else 4, uncuttable = true })
@@ -522,6 +527,7 @@ local function cleanup()
 	ChatService.onMatchEnd()
 	MeetingService.onMatchEnd()
 	GhostService.onMatchEnd()
+	WagerService.onMatchEnd()
 
 	local participants = Match.list
 	Match.finish()

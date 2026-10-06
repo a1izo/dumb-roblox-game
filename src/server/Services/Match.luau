@@ -92,6 +92,11 @@ local function newState(player: Player)
 			duties = 0,
 			reports = 0,
 			rigs = 0,
+			-- A Deathsinger's: Death's wager winnings and wins, lobby haunts, spirit trial runs.
+			wagerCoins = 0,
+			wagersWon = 0,
+			haunts = 0,
+			spiritRuns = 0,
 			arrestedKira = false,
 		},
 	}

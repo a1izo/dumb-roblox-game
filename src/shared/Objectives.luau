@@ -19,7 +19,7 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 	end
 	if not living then
 		return {
-			line(Terms.f("You are a {Specter}: fly through walls, unseen by the living")),
+			line(Terms.f("You are a {Specter}: fly about the case, unseen by the living")),
 			line("Gather lost souls for a few coins"),
 			line(Terms.f("Chat with other {specters} only")),
 		}

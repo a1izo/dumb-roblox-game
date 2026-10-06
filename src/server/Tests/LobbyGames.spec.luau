@@ -7,6 +7,7 @@ local Dice = require(Games:WaitForChild("Dice"))
 local Parkour = require(Games:WaitForChild("Parkour"))
 local Runes = require(Games:WaitForChild("Runes"))
 local Toss = require(Games:WaitForChild("Toss"))
+local SpiritTrial = require(Games:WaitForChild("SpiritTrial"))
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -173,6 +174,40 @@ return function(t)
 		it("knows a better echo", function()
 			expect(Toss.isBetter(0, 2.1)).to.equal(true)
 			expect(Toss.isBetter(3.2, 2.1)).to.equal(false)
+		end)
+	end)
+
+	describe("SpiritTrial", function()
+		it("lays out one ring per spot around the middle", function()
+			local spots = SpiritTrial.layout(Vector3.new(10, 0, 20))
+			expect(#spots).to.equal(SpiritTrial.RINGS)
+			for _, spot in ipairs(spots) do
+				local distance = (spot - Vector3.new(10, 0, 20)).Magnitude
+				expect(distance > 30 and distance < 60).to.equal(true)
+			end
+		end)
+		it("takes the rings in order and at a believable pace", function()
+			local s = SpiritTrial.newSession(0)
+			expect((SpiritTrial.reach(s, 2, 5, 10))).to.equal(false)
+			expect((SpiritTrial.reach(s, 1, 0.1, 30))).to.equal(false) -- 300 studs a second
+			expect((SpiritTrial.reach(s, 1, 2, 30))).to.equal(true)
+		end)
+		it("times only a full, honest lap", function()
+			local s = SpiritTrial.newSession(0)
+			for index = 1, SpiritTrial.RINGS - 1 do
+				SpiritTrial.reach(s, index, index * 3, 20)
+			end
+			expect(SpiritTrial.finish(s, 30)).to.equal(nil)
+			SpiritTrial.reach(s, SpiritTrial.RINGS, 30, 20)
+			expect(SpiritTrial.finish(s, 30)).to.equal(30)
+			local quick = SpiritTrial.newSession(0)
+			quick.reached = SpiritTrial.RINGS
+			expect(SpiritTrial.finish(quick, 5)).to.equal(nil)
+		end)
+		it("keeps the lower time", function()
+			expect(SpiritTrial.isBetter(0, 20)).to.equal(true)
+			expect(SpiritTrial.isBetter(18, 20)).to.equal(false)
+			expect(SpiritTrial.isBetter(25, 20)).to.equal(true)
 		end)
 	end)
 end

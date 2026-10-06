@@ -4,7 +4,8 @@
 -- Progress comes only from the end-of-match summary.
 --
 -- stat: a key of the match summary (see ProgressRules): matches, wins, survived, tasks,
--- notesFound, correctVotes, duties, reports.
+-- notesFound, correctVotes, duties, reports, and for the Deathsinger quests (period "ghost": three a
+-- day, progressing only in cases you ended as a Deathsinger) wagersWon, haunts, spiritRuns.
 
 local Terms = require(script.Parent.Parent.Terms)
 
@@ -17,7 +18,7 @@ export type Quest = {
 	goal: number,
 	coins: number,
 	xp: number,
-	period: string, -- "daily" or "weekly"
+	period: string, -- "daily", "weekly" or "ghost"
 }
 
 Quests.LIST = {
@@ -55,6 +56,44 @@ Quests.LIST = {
 		coins = 30,
 		xp = 30,
 		period = "daily",
+	},
+	-- Deathsinger (period "ghost")
+	{ id = "g_souls5", text = "Gather 5 lost souls", stat = "duties", goal = 5, coins = 40, xp = 40, period = "ghost" },
+	{
+		id = "g_wager1",
+		text = "Win a Death's wager",
+		stat = "wagersWon",
+		goal = 1,
+		coins = 50,
+		xp = 50,
+		period = "ghost",
+	},
+	{
+		id = "g_trial1",
+		text = "Finish the spirit trial",
+		stat = "spiritRuns",
+		goal = 1,
+		coins = 40,
+		xp = 40,
+		period = "ghost",
+	},
+	{
+		id = "g_haunt3",
+		text = "Haunt the lobby 3 times",
+		stat = "haunts",
+		goal = 3,
+		coins = 30,
+		xp = 30,
+		period = "ghost",
+	},
+	{
+		id = "g_wager2",
+		text = "Win 2 Death's wagers",
+		stat = "wagersWon",
+		goal = 2,
+		coins = 70,
+		xp = 70,
+		period = "ghost",
 	},
 	-- weekly
 	{
@@ -180,6 +219,11 @@ end
 
 function Quests.weekly(week: number): { string }
 	return pick("weekly", week * 130363 + 11)
+end
+
+-- The day's three Deathsinger quests.
+function Quests.ghost(day: number): { string }
+	return pick("ghost", day * 92821 + 7)
 end
 
 -- A replacement daily quest for a reroll: one not already held, on a different stat.

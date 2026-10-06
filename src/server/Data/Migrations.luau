@@ -70,7 +70,7 @@ function Migrations.defaults(startingCoins: number)
 		training = { done = false, drills = {} },
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
 		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds).
-		lobbyGames = { parkourBest = 0, runesBest = 0, diceBest = 0, tossBest = 0 },
+		lobbyGames = { parkourBest = 0, runesBest = 0, diceBest = 0, tossBest = 0, spiritBest = 0 },
 		alias = "", -- custom public alias (Custom Alias pass), already filtered
 		titles = {}, -- [titleId] = true
 		equippedTitle = "",
@@ -78,6 +78,7 @@ function Migrations.defaults(startingCoins: number)
 		quests = {
 			daily = { period = -1, items = {} },
 			weekly = { period = -1, items = {} },
+			ghost = { period = -1, items = {} },
 			rerollDay = -1,
 		},
 		achievements = {}, -- [achievementId] = unix time

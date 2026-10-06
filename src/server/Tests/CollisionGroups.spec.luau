@@ -1,5 +1,6 @@
 -- Who collides with whom: a Specter waiting in the lobby (Away) stands on the world but passes through
--- everyone's bodies, and bodies still bump into each other and stand on the world.
+-- everyone's bodies, bodies still bump into each other and stand on the world, and flying ghosts are stopped
+-- by walls but never by a body.
 
 local PhysicsService = game:GetService("PhysicsService")
 
@@ -25,9 +26,11 @@ return function(t)
 			expect(collide(AWAY, CHARS)).to.equal(false)
 			expect(collide(AWAY, AWAY)).to.equal(false)
 		end)
-		it("keeps ghosts out of everyone's way", function()
+		it("stops ghosts at walls but keeps them out of everyone's way", function()
+			expect(collide(CollisionGroups.SPECTERS, "Default")).to.equal(true)
 			expect(collide(CollisionGroups.SPECTERS, CHARS)).to.equal(false)
 			expect(collide(CollisionGroups.SPECTERS, AWAY)).to.equal(false)
+			expect(collide(CollisionGroups.SPECTERS, CollisionGroups.SPECTERS)).to.equal(false)
 		end)
 		it("moves a body's parts but leaves a ghost's parts alone", function()
 			local model = Instance.new("Model")

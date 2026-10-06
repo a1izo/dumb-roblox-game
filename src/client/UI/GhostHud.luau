@@ -13,6 +13,7 @@ local FollowCam = require(script.Parent.Parent.Specter.FollowCam)
 local GhostController = require(script.Parent.Parent.Specter.GhostController)
 local Hud = require(script.Parent.Hud)
 local Kit = require(script.Parent.Kit)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 
 local C = Kit.color
@@ -30,6 +31,7 @@ local souls: Frame
 local soulsLabel: TextLabel
 local leaveButton: TextButton
 local lobbyButton: TextButton
+local wagerButton: TextButton
 local liftPad: Frame
 
 local function refresh()
@@ -42,6 +44,7 @@ local function refresh()
 	souls.Visible = specter
 	leaveButton.Visible = watching
 	lobbyButton.Visible = specter
+	wagerButton.Visible = specter
 	previous.Visible = following
 	nextButton.Visible = following
 	if following then
@@ -170,6 +173,19 @@ function GhostHud.init()
 	}, function()
 		FollowCam.stop()
 		Net.event("Watch"):FireServer({ action = "leave" })
+	end)
+
+	-- Death's wager (UI/WagerPanel).
+	wagerButton = Kit.button({
+		text = "Wager",
+		icon = "coin",
+		variant = "secondary",
+		size = "s",
+		Visible = false,
+		LayoutOrder = 6,
+		Parent = strip,
+	}, function()
+		Router.toggle("wager")
 	end)
 
 	-- Specters can wait in the lobby (hidden) and come back in from its menu.

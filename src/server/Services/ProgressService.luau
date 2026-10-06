@@ -56,6 +56,10 @@ function ProgressService.onMatchEnd(rewards: { [any]: any })
 				duties = ps.stats.duties or 0,
 				reports = ps.stats.reports or 0,
 				rigs = ps.stats.rigs or 0,
+				wagersWon = ps.stats.wagersWon or 0,
+				haunts = ps.stats.haunts or 0,
+				spiritRuns = ps.stats.spiritRuns or 0,
+				ghost = not ps.alive,
 				xpBefore = data.xp - reward.xp,
 			}
 			local result = ProgressRules.apply(data, summary, now)

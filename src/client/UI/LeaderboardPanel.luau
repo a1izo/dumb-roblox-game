@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
+local Parkour = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames"):WaitForChild("Parkour"))
 
 local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
@@ -19,6 +20,7 @@ local TABS = {
 	{ id = "wins", label = "Most wins", icon = "trophy" },
 	{ id = "xp", label = "Experience", icon = "xp" },
 	{ id = "weekly", label = "This week", icon = "streak" },
+	{ id = "spirit", label = "Spirit trial", icon = "eye" },
 }
 
 local list: ScrollingFrame
@@ -58,7 +60,8 @@ local function ledgerLine(entry, order: number)
 		Parent = row,
 	})
 	Kit.label({
-		Text = tostring(entry.value),
+		-- Times are kept in hundredths of a second.
+		Text = if current == "spirit" then Parkour.formatCentis(entry.value) else tostring(entry.value),
 		font = "mono",
 		size = "lead",
 		color = C.bone,

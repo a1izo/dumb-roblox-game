@@ -1,5 +1,6 @@
 -- Your profile: rank, lifetime numbers, every role's record and mastery, and achievements.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -30,7 +31,13 @@ end
 
 local function rankBlock(profile, order: number)
 	local block = Kit.frame({ Name = "Rank", Size = UDim2.new(1, 0, 0, 76), LayoutOrder = order, Parent = list })
-	Kit.seal({ size = 68, color = C.white, text = string.sub(profile.rankName, 1, 1), Parent = block })
+	Kit.seal({
+		size = 68,
+		color = C.white,
+		text = string.sub(profile.rankName, 1, 1),
+		portrait = Players.LocalPlayer.UserId,
+		Parent = block,
+	})
 	Kit.text({
 		face = "Head",
 		text = profile.rankName,

@@ -88,6 +88,10 @@ return function(t)
 				stats[quest.stat] = true
 			end
 			expect(#Quests.weekly(3000)).to.equal(Quests.PER_PERIOD)
+			expect(#Quests.ghost(20000)).to.equal(Quests.PER_PERIOD)
+			for _, id in ipairs(Quests.ghost(20000)) do
+				expect((Quests.byId(id) :: any).period).to.equal("ghost")
+			end
 		end)
 	end)
 

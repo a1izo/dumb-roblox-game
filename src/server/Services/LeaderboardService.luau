@@ -80,6 +80,8 @@ function LeaderboardService.record(player: Player, board: string, value: number)
 		mine.parkour = math.floor(value * 100 + 0.5)
 	elseif board == "runes" then
 		mine.runes = math.floor(value)
+	elseif board == "spirit" then
+		mine.spirit = math.floor(value * 100 + 0.5)
 	end
 end
 
@@ -127,6 +129,9 @@ local function flushGames()
 			if scores.runes then
 				store("runes"):SetAsync(key, scores.runes)
 			end
+			if scores.spirit then
+				store("spirit"):SetAsync(key, scores.spirit)
+			end
 		end)
 		if not ok then
 			warn("[DeathsGambit] Could not save mini-game scores: " .. tostring(err))
@@ -157,7 +162,7 @@ end
 local function readBoard(board: string, week: number?): { Entry }
 	local entries = {}
 	local ok, pages = pcall(function()
-		return store(board, week):GetSortedAsync(board == "parkour", TOP)
+		return store(board, week):GetSortedAsync(board == "parkour" or board == "spirit", TOP)
 	end)
 	if not ok or not pages then
 		return entries
@@ -175,6 +180,7 @@ local TITLES = {
 	weekly = "WINS THIS WEEK",
 	parkour = "FASTEST ASCENT",
 	runes = "MOST RUNES CLEARED",
+	spirit = "FASTEST SPIRIT TRIAL",
 }
 
 local function renderLabels()
@@ -214,6 +220,7 @@ local function read()
 		weekly = readBoard("weekly", week),
 		parkour = readBoard("parkour"),
 		runes = readBoard("runes"),
+		spirit = readBoard("spirit"),
 	}
 	renderLabels()
 	LeaderboardRemote:FireAllClients(boards)

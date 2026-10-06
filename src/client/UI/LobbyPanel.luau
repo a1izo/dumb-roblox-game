@@ -1,7 +1,8 @@
 -- The lobby, the loud side of the design. At the top centre, the Death's Gambit ransom-note title with the
 -- quote under it ("Diavolo" in red Aktura, the only word of it that glitches; the rest floats very gently).
--- On the left, from a quarter of the way down: the READY button, a quieter SPECTATE button while a case is
--- running, the queue status, and the menu (Quests, Shop...) in a zigzag, each entry floating on its own beat.
+-- On the left, from a quarter of the way down: the READY button, the queue status, and the menu (Quests,
+-- Shop...) in a zigzag, each entry floating on its own beat; while a case is running, "Spectate" is its last
+-- entry (for everyone, players who joined during the case too).
 -- On the right, your card: rank seal, XP, coins, and the way to your profile and the leaderboards.
 --
 -- The title, READY, the menu and the profile buttons blip every couple of seconds; hovered buttons glitch
@@ -9,8 +10,7 @@
 -- case, then plays its entrance: the title cards fall in, everything else glitches in over 1.5 s. The VHS
 -- look belongs to the lobby only, so this page turns Glitch off while you are in a case or watching one.
 -- "Hide UI" in the menu hides all of it (and chat) to look at the world; an eye button at the top left brings
--- it back. A Specter waiting here (away from the case, hidden) also gets "Academy" and, at the bottom,
--- "Spectate", which takes them back into the case.
+-- it back. For a Specter waiting here (away from the case, hidden), "Spectate" takes them back in as a ghost.
 -- How to Play lives in Settings (and on H). The HUD's phase banner is hidden here, so the queue status
 -- lives on this page.
 
@@ -40,17 +40,16 @@ local WatchRemote = Net.event("Watch")
 
 local LobbyPanel = {}
 
--- `vip`: only in a private server you own; `away`: only for a Specter waiting in the lobby; `action`: not a
--- screen but something done at once.
+-- `vip`: only in a private server you own; `running`: only while a case is running; `action`: not a screen
+-- but something done at once.
 local MENU = {
 	{ text = "Quests", screen = "quests" },
 	{ text = "Shop", screen = "shop" },
 	{ text = "Party", screen = "party" },
 	{ text = "Settings", screen = "settings" },
 	{ text = "Private server", screen = "director", vip = true },
-	{ text = "Academy", screen = "academy", away = true },
 	{ text = "Hide UI", action = "hide" },
-	{ text = "Spectate", action = "rejoin", away = true },
+	{ text = "Spectate", action = "spectate", running = true },
 }
 
 -- The zigzag: every other menu entry is pushed this far right.
@@ -85,7 +84,6 @@ local statusLabel: TextLabel
 local readyHolder: CanvasGroup
 local readyGlitch: any
 local readyButton: TextButton
-local spectateButton: TextButton
 local saveWarning: TextLabel
 local links: Frame
 local linksLayout: UIListLayout
@@ -96,7 +94,7 @@ local lastRank = ""
 -- The lobby stays hidden behind the intro's black until its entrance plays.
 local introHidden = true
 local lastVisible: boolean? = nil
-local lastAway: boolean? = nil
+local lastRunning: boolean? = nil
 -- Built further down (the menu entries depend on the lobby state).
 local buildContents: (boolean) -> ()
 local returning = false
@@ -236,19 +234,10 @@ local function buildReady(ready: boolean)
 	}, onReady)
 end
 
--- SPECTATE: only while a case is running, and not while you are queued for the next one.
-local function updateSpectate(lobby)
-	-- (A Specter waiting here goes back in from the menu's own Spectate.)
-	local running = ClientState.public.active == true
-		and lobby ~= nil
-		and lobby.matchRunning == true
-		and not ClientState.isAway()
-	spectateButton.Visible = running
-	if running then
-		local queued = lobby.ready == true
-		Kit.setText(spectateButton, if queued then "Unready to watch" else "Spectate  ·  case in progress")
-		Kit.setEnabled(spectateButton, not queued)
-	end
+-- A case is running that can be watched (not when it is closing).
+local function caseRunning(): boolean
+	local state = ClientState.public
+	return state.active == true and state.phase ~= "Reveal" and state.phase ~= "Outro"
 end
 
 -- The lobby's entrance, once the intro's black has gone: the title cards fall in, in line, and everything
@@ -319,10 +308,10 @@ local function updateLobby()
 		LobbyChrome.setHidden(false)
 	end
 	lastVisible = visible
-	-- The menu has entries only for a Specter waiting here.
-	local away = ClientState.isAway()
-	if away ~= lastAway then
-		lastAway = away
+	-- "Spectate" comes and goes with the case.
+	local running = caseRunning()
+	if running ~= lastRunning then
+		lastRunning = running
 		buildContents(Kit.Layout.isPhone())
 	end
 	applyVisibility()
@@ -347,7 +336,6 @@ local function updateLobby()
 	end
 	statusLabel.Text = status
 	statusLabel.TextColor3 = if lobby.countdown then C.white else C.dim
-	updateSpectate(lobby)
 	local ready = lobby.ready == true
 	if ready ~= lastReady then
 		lastReady = ready
@@ -366,9 +354,9 @@ function buildContents(phone: boolean)
 	Kit.list(contents, 0)
 	local rowHeight = if phone then 36 else 44
 	local shown = 0
-	local away = ClientState.isAway()
+	local running = caseRunning()
 	for _, item in ipairs(MENU) do
-		if (item.vip and not DirectorPanel.state.vip) or (item.away and not away) then
+		if (item.vip and not DirectorPanel.state.vip) or (item.running and not running) then
 			continue
 		end
 		shown += 1
@@ -396,8 +384,13 @@ function buildContents(phone: boolean)
 			if item.action == "hide" then
 				Router.closeAll()
 				LobbyChrome.setHidden(true)
-			elseif item.action == "rejoin" then
-				Net.event("Ghost"):FireServer({ action = "rejoin" })
+			elseif item.action == "spectate" then
+				-- A Specter waiting here goes back in as a ghost; anyone else starts watching.
+				if ClientState.isAway() then
+					Net.event("Ghost"):FireServer({ action = "rejoin" })
+				else
+					WatchRemote:FireServer({ action = "watch" })
+				end
 			elseif item.screen then
 				Router.toggle(item.screen)
 			end
@@ -521,18 +514,6 @@ local function buildMenu()
 	readyHolder = wrapper({ Name = "Ready", Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 1, Parent = menu })
 	slot(readyHolder, 1, menu)
 	readyGlitch = Glitch.attach(readyHolder, { loop = true, enter = false })
-	spectateButton = Kit.button({
-		text = "Spectate  ·  case in progress",
-		icon = "eye",
-		variant = "secondary",
-		size = "s",
-		Size = UDim2.fromOffset(320, 48),
-		Visible = false,
-		LayoutOrder = 2,
-		Parent = menu,
-	}, function()
-		WatchRemote:FireServer({ action = "watch" })
-	end)
 	-- The status line and the rule under it glitch in together.
 	statusGroup = wrapper({ Name = "Status", Size = UDim2.new(1, 0, 0, 34), LayoutOrder = 3, Parent = menu })
 	slot(statusGroup, 3, menu)
@@ -694,7 +675,6 @@ local function layout(class: string)
 	for _, wrap in ipairs(linkWraps) do
 		wrap.Size = UDim2.new(0.5, -T.space.xs, 0, 40)
 	end
-	spectateButton.Size = UDim2.fromOffset(if phone then 260 else 320, 48)
 	buildContents(phone)
 	lastReady = nil
 	updateLobby()

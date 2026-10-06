@@ -1,6 +1,6 @@
 -- Specters: players who died, were voted out or were arrested stay in the match as ghosts.
--- Ghosts fly through walls, but only inside invisible bounds that follow the map's outer
--- walls and ceiling (Venues.specterBounds), follow the match between the map and
+-- Ghosts fly, but walls, floors and ceilings stop them like anyone (they pass only through bodies), and
+-- invisible bounds follow the map's outer walls and ceiling (Venues.specterBounds); follow the match between the map and
 -- the meeting room's gallery, chat only with each other, and can gather lost souls for a
 -- few coins. The living never see, hear or touch them (the client hides them, and they sit
 -- in their own collision group with CanQuery and CanTouch off).
@@ -39,6 +39,7 @@ local PartyService = require(script.Parent.PartyService)
 local RateLimit = require(script.Parent.RateLimit)
 
 local GhostRemote = Net.event("Ghost")
+local HauntRemote = Net.event("Haunt")
 local WatchRemote = Net.event("Watch")
 
 local GhostService = {}
@@ -66,7 +67,7 @@ type Ghost = {
 
 local ghosts: { [Player]: Ghost } = {}
 -- Specters waiting in the lobby: their lost souls there (ids -> positions).
-type Away = { ps: any, wisps: { [number]: Vector3 }, nextWisp: number, lastCollect: number }
+type Away = { ps: any, wisps: { [number]: Vector3 }, nextWisp: number, lastCollect: number, lastHaunt: number }
 local awayPlayers: { [Player]: Away } = {}
 -- Spectators from the lobby: player -> the venue they are in.
 local watchers: { [Player]: { venue: string } } = {}
@@ -197,14 +198,40 @@ end
 
 -- Lost souls ------------------------------------------------------------------------------
 
+-- True when a lost soul at `position` would sit inside the world (ghosts cannot pass walls).
+local function insideWorld(position: Vector3): boolean
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local ignore: { Instance } = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			table.insert(ignore, player.Character)
+		end
+	end
+	params.FilterDescendantsInstances = ignore
+	for _, part in ipairs(workspace:GetPartBoundsInRadius(position, 1.5, params)) do
+		if part.CanCollide and part.Transparency < 1 then
+			return true
+		end
+	end
+	return false
+end
+
 local function newWispPosition(): Vector3?
 	local map = Match.map
 	if not map or #map.areas == 0 then
 		return nil
 	end
-	local area = map.areas[Match.rng:NextInteger(1, #map.areas)]
-	local offset = Vector3.new(Match.rng:NextNumber(-14, 14), Match.rng:NextNumber(3, 9), Match.rng:NextNumber(-14, 14))
-	return area.position + offset
+	for _ = 1, 8 do
+		local area = map.areas[Match.rng:NextInteger(1, #map.areas)]
+		local offset =
+			Vector3.new(Match.rng:NextNumber(-14, 14), Match.rng:NextNumber(3, 9), Match.rng:NextNumber(-14, 14))
+		local position = area.position + offset
+		if not insideWorld(position) then
+			return position
+		end
+	end
+	return nil
 end
 
 local function sendDuties(player: Player, ghost: Ghost)
@@ -271,7 +298,7 @@ local function moveTo(ghost: Ghost, venue: string)
 	end
 end
 
--- Makes a body a ghost's: through walls, untouchable, unseen by sight lines, no name tag.
+-- Makes a body a ghost's: through other bodies (not walls), untouchable, unseen by sight lines, no name tag.
 -- `attribute` is "Specter" for the dead and "Spectator" for watchers from the lobby.
 local function ghostBody(character: Model, attribute: string, displayName: string)
 	character:SetAttribute(attribute, true)
@@ -404,6 +431,64 @@ local function onAwayCollect(player: Player, away: Away, id: any)
 	sendAwayDuties(player, away)
 end
 
+-- Haunting the lobby: an away Specter flickers the nearest light, whispers at a spot or puffs cold mist, within
+-- HAUNT_RANGE of their body and on a shared cooldown. Every client plays it; nothing says who did it.
+local HAUNT_RANGE = 25
+local HAUNT_COOLDOWN = 20
+local HAUNTS = { flicker = true, whisper = true, mist = true }
+
+-- The lobby's light nearest to `position` (a PointLight, SpotLight or Fire), within HAUNT_RANGE.
+local function nearestLight(position: Vector3): Instance?
+	local lobby = workspace:FindFirstChild("LGameLobby")
+	if not lobby then
+		return nil
+	end
+	local best, bestDistance = nil, HAUNT_RANGE
+	for _, item in ipairs(lobby:GetDescendants()) do
+		if item:IsA("PointLight") or item:IsA("SpotLight") or item:IsA("Fire") then
+			local holder = item.Parent
+			if holder and holder:IsA("BasePart") then
+				local distance = (holder.Position - position).Magnitude
+				if distance < bestDistance then
+					best, bestDistance = item, distance
+				end
+			end
+		end
+	end
+	return best
+end
+
+local function onHaunt(player: Player, away: Away, payload: any)
+	local kind = payload.kind
+	local character = player.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	if type(kind) ~= "string" or not HAUNTS[kind] or not root or not root:IsA("BasePart") then
+		return
+	end
+	local now = os.clock()
+	if now - away.lastHaunt < HAUNT_COOLDOWN then
+		return
+	end
+	local origin = root.Position
+	local spot = origin
+	if typeof(payload.position) == "Vector3" then
+		local offset = payload.position - origin
+		spot = if offset.Magnitude > HAUNT_RANGE then origin + offset.Unit * HAUNT_RANGE else payload.position
+	end
+	local light = nil
+	if kind == "flicker" then
+		light = nearestLight(origin)
+		if not light then
+			Match.notify(player, "No light close enough to flicker.", "bad")
+			return
+		end
+	end
+	away.lastHaunt = now
+	away.ps.stats.haunts = (away.ps.stats.haunts or 0) + 1
+	HauntRemote:FireAllClients({ kind = kind, position = spot, light = light })
+	GhostRemote:FireClient(player, { action = "haunted", ready = workspace:GetServerTimeNow() + HAUNT_COOLDOWN })
+end
+
 -- Hides an away body: nobody else sees it (the clients hide bodies marked Away), it has no name tag and it
 -- walks through people.
 local function awayBody(character: Model)
@@ -440,7 +525,7 @@ function GhostService.goAway(player: Player): boolean
 		return false
 	end
 	ghosts[player] = nil
-	awayPlayers[player] = { ps = ps, wisps = {}, nextWisp = 0, lastCollect = 0 }
+	awayPlayers[player] = { ps = ps, wisps = {}, nextWisp = 0, lastCollect = 0, lastHaunt = -math.huge }
 	ps.away = true
 	LeaderboardService.hold(player.UserId, true)
 	player.CameraMaxZoomDistance = LOBBY_ZOOM
@@ -557,6 +642,8 @@ local function onRequest(player: Player, payload: any)
 	if away then
 		if payload.action == "collect" and Match.active then
 			onAwayCollect(player, away, payload.id)
+		elseif payload.action == "haunt" and Match.active then
+			onHaunt(player, away, payload)
 		end
 		return
 	end

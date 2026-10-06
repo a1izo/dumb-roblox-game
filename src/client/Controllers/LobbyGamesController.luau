@@ -73,7 +73,9 @@ end
 local function refresh()
 	local ok = usable()
 	for _, entry in pairs(prompts) do
-		entry.prompt.Enabled = ok and not (entry.tag == "LDiceSeat" and current == "dice")
+		-- A Deathsinger waiting here (hidden) plays the solo games only, not the shared dice table.
+		local dice = entry.tag == "LDiceSeat"
+		entry.prompt.Enabled = ok and not (dice and current == "dice") and not (dice and ClientState.isAway())
 	end
 	if not ok and card.Visible then
 		hideCard()
@@ -202,6 +204,83 @@ local function onParkour(p: any)
 	end
 end
 
+-- The spirit trial (a Deathsinger waiting in the lobby): its rings exist on this screen only.
+local spiritRings: { BasePart } = {}
+
+local function clearSpirit()
+	for _, ring in ipairs(spiritRings) do
+		ring:Destroy()
+	end
+	table.clear(spiritRings)
+end
+
+local function lightRing(index: number)
+	for i, ring in ipairs(spiritRings) do
+		ring.Transparency = if i == index then 0.25 elseif i > index then 0.75 else 1
+	end
+end
+
+local function onSpirit(p: any)
+	local kind = p.kind
+	if kind == "start" and type(p.rings) == "table" then
+		current = "spirit"
+		run.startedAt = tonumber(p.at) or workspace:GetServerTimeNow()
+		run.reached = 0
+		run.total = #p.rings
+		clearSpirit()
+		for index, position in ipairs(p.rings) do
+			if typeof(position) == "Vector3" then
+				local nextSpot = p.rings[index % #p.rings + 1]
+				-- A thin glowing disc standing upright, its face turned along the loop.
+				local facing = if typeof(nextSpot) == "Vector3" and (nextSpot - position).Magnitude > 0.1
+					then CFrame.lookAt(position, Vector3.new(nextSpot.X, position.Y, nextSpot.Z))
+					else CFrame.new(position)
+				local ring = Create("Part", {
+					Name = "SpiritRing",
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(0.4, 9, 9),
+					Material = Enum.Material.Neon,
+					Color = GLOW_ON,
+					Anchored = true,
+					CanCollide = false,
+					CanQuery = false,
+					CanTouch = false,
+					CastShadow = false,
+					CFrame = facing * CFrame.Angles(0, math.rad(90), 0),
+					Parent = workspace.CurrentCamera,
+				})
+				table.insert(spiritRings, ring)
+			end
+		end
+		lightRing(1)
+		rollButton.Visible = false
+		setStatus("SPIRIT TRIAL", "Ring 0/" .. run.total .. "   0:00.0")
+	elseif kind == "ring" then
+		run.reached = tonumber(p.reached) or run.reached
+		lightRing(run.reached + 1)
+		Sfx.play("gameCheckpoint", { volume = 0.8 })
+	elseif kind == "finish" then
+		current = nil
+		clearSpirit()
+		Sfx.play("gameFinish")
+		local text = "Spirit trial: " .. Parkour.format(tonumber(p.time) or 0)
+		Toasts.show(text .. (if p.newBest then "  New best!" else ""), "good")
+		setStatus("SPIRIT TRIAL", text .. "\nBest " .. Parkour.format(tonumber(p.best) or 0))
+		hideAt = os.clock() + 7
+	elseif kind == "end" then
+		clearSpirit()
+		if p.why == "wandered" then
+			Toasts.show("Too far from the rings: the trial is off.")
+		end
+		hideCard()
+	end
+end
+
+-- Starts a lap of the spirit trial (the haunt bar's button).
+function LobbyGamesController.startSpiritTrial()
+	request:FireServer({ game = "spirit", action = "start" })
+end
+
 local function onRunes(p: any)
 	local kind = p.kind
 	if kind == "start" then
@@ -309,6 +388,8 @@ local function onState(payload: any)
 	end
 	if payload.game == "parkour" then
 		onParkour(payload)
+	elseif payload.game == "spirit" then
+		onSpirit(payload)
 	elseif payload.game == "runes" then
 		onRunes(payload)
 	elseif payload.game == "dice" then
@@ -449,12 +530,20 @@ function LobbyGamesController.init()
 	end
 	Net.event("LobbyGameState").OnClientEvent:Connect(onState)
 	ClientState.PublicChanged:Connect(refresh)
+	ClientState.PrivateChanged:Connect(refresh)
 	ClientState.WatchChanged:Connect(refresh)
 	-- The Spire Ascent's clock, and the card's goodbye a few seconds after a run ends.
 	task.spawn(function()
 		while true do
 			task.wait(0.1)
-			if current == "parkour" then
+			if current == "spirit" then
+				statusLabel.Text = string.format(
+					"Ring %d/%d   %s",
+					run.reached,
+					run.total,
+					Parkour.format(workspace:GetServerTimeNow() - run.startedAt)
+				)
+			elseif current == "parkour" then
 				statusLabel.Text = string.format(
 					"Stone %d/%d   %s",
 					run.reached,

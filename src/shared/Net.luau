@@ -64,6 +64,9 @@ local EVENTS = {
 	"LobbyGame",
 	"LobbyGameState",
 	"Ghost",
+	-- a Deathsinger haunting the lobby (server -> every client), and Death's wager (both ways)
+	"Haunt",
+	"Wager",
 	"ProfileRequest",
 	"PrivateServer",
 	-- Studio debug panel (ignored by live servers)

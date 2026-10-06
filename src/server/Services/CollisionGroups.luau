@@ -3,7 +3,7 @@
 --   Characters    : players' bodies (and the test bots'); they stand on the world and bump into each other
 --   Away          : a dead player waiting in the lobby, hidden: they stand on the world and walk through people
 --   Ragdoll       : bodies of the dead; they rest on the world but do not shove anyone
---   Specters      : ghosts; they pass through everything except their own bounds
+--   Specters      : ghosts and spectators; they fly, the world stops them, but they pass through bodies
 --   SpecterBounds : invisible boxes around each venue that keep ghosts inside
 
 local PhysicsService = game:GetService("PhysicsService")
@@ -37,7 +37,7 @@ function CollisionGroups.init()
 	end
 	set(CollisionGroups.RAGDOLL, "Default", true)
 	set(CollisionGroups.RAGDOLL, CollisionGroups.RAGDOLL, true)
-	set(CollisionGroups.SPECTERS, "Default", false)
+	set(CollisionGroups.SPECTERS, "Default", true)
 	set(CollisionGroups.SPECTERS, CollisionGroups.SPECTERS, false)
 	set(CollisionGroups.SPECTERS, CollisionGroups.RAGDOLL, false)
 	set(CollisionGroups.SPECTERS, CollisionGroups.BOUNDS, true)

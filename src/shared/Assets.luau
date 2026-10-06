@@ -67,6 +67,10 @@ Assets.sfx = {
 	rainLoop = { id = "134202339842350", ref = "steady rain loop", fallbackId = "" },
 	eyesOpen = { id = "", ref = "low whoosh with a whisper", fallbackId = "" },
 	wisp = { id = "", ref = "soft ghostly chime", fallbackId = "" },
+	-- A Deathsinger haunting the lobby.
+	hauntWhisper = { id = "", ref = "a faint, breathy whisper, words not quite heard", fallbackId = "" },
+	hauntMist = { id = "", ref = "a short cold gust of wind", fallbackId = "" },
+	hauntFlicker = { id = "", ref = "a flame or bulb sputtering for a moment", fallbackId = "" },
 	mapCityHum = { id = "81235587177208", ref = "distant city traffic hum at night, loop", fallbackId = "" },
 	mapCrossingChirp = {
 		id = "118593933745441",

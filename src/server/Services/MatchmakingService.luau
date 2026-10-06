@@ -145,7 +145,8 @@ function MatchmakingService.lobbyPayload(player: Player)
 		needed = minPlayers(),
 		max = Config.MAX_PLAYERS,
 		countdown = if countdownEnds then math.max(0, math.ceil(countdownEnds - os.clock())) else nil,
-		matchRunning = matchRunning,
+		-- A case may also have been started some other way (the debug panel); either way it is running.
+		matchRunning = matchRunning or Match.active,
 		ready = ready[player] ~= nil,
 		watching = GhostService.isWatching(player),
 		searching = key ~= nil,

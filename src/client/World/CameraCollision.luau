@@ -5,9 +5,9 @@
 -- focus (your head) out to the camera and pulls the camera in front of the first collider
 -- tagged LCameraBlock. When the way clears the camera eases back out.
 --
--- Off while a cutscene holds the camera and in first person. Specters (and spectators) fly
--- through walls, so their camera ignores colliders; instead it is kept inside the box they fly in (the map's
--- outer walls and ceiling, or the meeting room), so the outside of a place never shows.
+-- Off while a cutscene holds the camera and in first person. Specters (and spectators) are stopped by walls
+-- like anyone, so their camera keeps out of the colliders too, and it is also kept inside the box they fly
+-- in (the map's outer walls and ceiling, or the meeting room), so the outside of a place never shows.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -117,9 +117,7 @@ local function step(dt: number)
 		return
 	end
 	if character and (character:GetAttribute("Specter") or character:GetAttribute("Spectator")) then
-		release(character)
 		keepInside(camera)
-		return
 	end
 	if dirty then
 		rebuild()

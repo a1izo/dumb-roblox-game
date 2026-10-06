@@ -18,6 +18,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Clock = require(script.Parent.Core.Clock)
 local Kit = require(script.Parent.Kit)
 local LobbyChrome = require(script.Parent.Core.LobbyChrome)
+local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 
 local C = Kit.color
@@ -31,6 +32,7 @@ local VIEW_HEIGHT = 170
 local MAX_PARTS = 2500 -- the largest parts of the map, at most
 local MIN_PART = 6 -- studs (the longest side): smaller parts are left out
 local CUT_ABOVE = 6 -- studs above the highest living player's root where the copy is cut off
+local VIEW_RADIUS = 160 -- studs around the living that the copy covers
 
 local panel: Frame
 local phaseLabel: TextLabel
@@ -156,22 +158,29 @@ local function openView()
 	frame.Parent = viewHolder
 	local model = Instance.new("WorldModel")
 	model.Parent = frame
-	-- Where the cut goes: a little above the highest living player's head (or the map's floor, if nobody).
+	-- The view centres on the living (a map can have a whole city around it as a backdrop): the middle of
+	-- where they stand, and the cut a little above the highest head (or the map's own middle, if nobody).
 	local cut = -math.huge
+	local sum, count = Vector3.zero, 0
 	for _, entry in ipairs(ClientState.living()) do
 		local character = Characters.byUserId(entry.userId)
 		local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
 		if root and root:IsA("BasePart") then
 			cut = math.max(cut, root.Position.Y + CUT_ABOVE)
+			sum += root.Position
+			count += 1
 		end
 	end
+	local middle = if count > 0 then sum / count else map:GetPivot().Position
 	if cut == -math.huge then
-		cut = map:GetPivot().Position.Y + 10
+		cut = middle.Y + 10
 	end
 	-- The map's larger parts below the cut, copied once without their insides (no scripts, lights or decals).
 	local parts = {}
 	for _, item in ipairs(map:GetDescendants()) do
-		if item:IsA("BasePart") and item.Transparency < 0.9 and item.Position.Y - item.Size.Y / 2 < cut then
+		local near = item:IsA("BasePart")
+			and (Vector3.new(item.Position.X, middle.Y, item.Position.Z) - middle).Magnitude <= VIEW_RADIUS
+		if near and item.Transparency < 0.9 and item.Position.Y - item.Size.Y / 2 < cut then
 			local size = item.Size
 			local longest = math.max(size.X, size.Y, size.Z)
 			if longest >= MIN_PART then
@@ -182,7 +191,6 @@ local function openView()
 	table.sort(parts, function(a, b)
 		return a.size > b.size
 	end)
-	local low, high = Vector3.new(math.huge, math.huge, math.huge), -Vector3.new(math.huge, math.huge, math.huge)
 	for index = 1, math.min(#parts, MAX_PARTS) do
 		local source = parts[index].part
 		local ok, copy = pcall(function()
@@ -192,16 +200,9 @@ local function openView()
 			copy:ClearAllChildren()
 			copy.Anchored = true
 			copy.Parent = model
-			low = low:Min(source.Position)
-			high = high:Max(source.Position)
 		end
 	end
-	if low.X == math.huge then
-		focus, reach = map:GetPivot().Position, 120
-	else
-		focus = (low + high) / 2
-		reach = math.max((high - low).Magnitude * 0.55, 60)
-	end
+	focus, reach = middle, VIEW_RADIUS * 0.75
 	local cam = Instance.new("Camera")
 	cam.FieldOfView = 40
 	cam.Parent = frame
@@ -277,12 +278,23 @@ function CaseFeed.init()
 	})
 	Kit.list(tickerList, T.space.xxs)
 	Kit.button({
+		text = "Death's wager",
+		icon = "coin",
+		variant = "secondary",
+		size = "s",
+		Size = UDim2.new(1, 0, 0, 48),
+		LayoutOrder = 8,
+		Parent = content,
+	}, function()
+		Router.toggle("wager")
+	end)
+	Kit.button({
 		text = "Spectate",
 		icon = "eye",
 		variant = "secondary",
 		size = "s",
 		Size = UDim2.new(1, 0, 0, 48),
-		LayoutOrder = 8,
+		LayoutOrder = 9,
 		Parent = content,
 	}, function()
 		Net.event("Ghost"):FireServer({ action = "rejoin" })

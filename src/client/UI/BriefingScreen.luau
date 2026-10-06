@@ -4,6 +4,7 @@
 -- allies, and (for the Butler) the hint. Everything here
 -- can be seen again on the role card (hold C).
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -102,7 +103,13 @@ local function build(payload)
 	})
 	Kit.list(cardContent, T.space.s)
 	local top = Kit.frame({ Size = UDim2.new(1, 0, 0, 78), LayoutOrder = 1, Parent = cardContent })
-	Kit.seal({ size = 72, color = if hostile then C.red else C.steel, icon = ROLE_ICON[role], Parent = top })
+	Kit.seal({
+		size = 72,
+		color = if hostile then C.red else C.steel,
+		icon = ROLE_ICON[role],
+		portrait = Players.LocalPlayer.UserId,
+		Parent = top,
+	})
 	Kit.label({
 		Text = "YOU ARE",
 		font = "label",

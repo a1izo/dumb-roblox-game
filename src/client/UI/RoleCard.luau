@@ -2,6 +2,7 @@
 -- (for the Butler) the hint. It shows only while you hold C, the left bumper, or press and
 -- hold your role badge, so a glance at your screen never gives your name away.
 
+local Players = game:GetService("Players")
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -49,7 +50,14 @@ local function fill()
 	local copy = RoleCopy[role] or RoleCopy.TaskForce
 	local hostile = role == "Kira" or role == "Follower"
 	Kit.clear(sealHolder)
-	Kit.seal({ size = 72, color = if hostile then C.red else C.steel, icon = ROLE_ICON[role], Parent = sealHolder })
+	Kit.seal({
+		size = 72,
+		color = if hostile then C.red else C.steel,
+		icon = ROLE_ICON[role],
+		-- Your own Roblox head shot (the role icon shows until it loads).
+		portrait = Players.LocalPlayer.UserId,
+		Parent = sealHolder,
+	})
 	roleText:set(info.display)
 	roleText:setColor(if hostile then C.red else C.bone)
 	winLabel.Text = "How you win: " .. copy.win
