@@ -57,13 +57,13 @@ def glow(name, rgb, strength=4.0):
 
 
 def font():
-    f = bpy.data.fonts.get("InkboundJP")
+    f = bpy.data.fonts.get("DeathsGambitJP") or bpy.data.fonts.get("InkboundJP")
     if f:
         return f
     for path in FONT_PATHS:
         try:
             f = bpy.data.fonts.load(path)
-            f.name = "InkboundJP"
+            f.name = "DeathsGambitJP"
             return f
         except Exception:  # noqa: BLE001 - try the next font
             continue

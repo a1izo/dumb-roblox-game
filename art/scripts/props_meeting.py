@@ -1,4 +1,4 @@
-"""The meeting room's props (set "Meeting", exported to InkboundModels_Meeting.fbx): the Agency's
+"""The meeting room's props (set "Meeting", exported to DeathsGambitModels_Meeting.fbx): the Agency's
 war room, where every case's survivors meet round one table under one hard light and Zero speaks
 from the screen.
 

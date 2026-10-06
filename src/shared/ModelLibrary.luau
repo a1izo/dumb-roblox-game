@@ -1,8 +1,8 @@
 --!strict
--- The props and scenes made in Blender (art/export/InkboundModels_<Set>.fbx for the props,
--- InkboundMaps_<Venue>.fbx for each venue's scene) after they are imported with Studio's 3D
+-- The props and scenes made in Blender (art/export/DeathsGambitModels_<Set>.fbx for the props,
+-- DeathsGambitMaps_<Venue>.fbx for each venue's scene) after they are imported with Studio's 3D
 -- importer. The importer drops its result into Workspace; install() (server, at
--- start) moves every import it can find into ReplicatedStorage.InkboundAssets, so it is
+-- start) moves every import it can find into ReplicatedStorage.DeathsGambitAssets, so it is
 -- hidden, anchored and reachable from clients. get(key) then returns a ready model: scaled to
 -- the size in ModelCatalog, turned upright, glow parts turned Neon, and pivoted at its bottom
 -- centre ("bottom") or its middle ("centre"). Without an import it returns nil and callers
@@ -23,14 +23,19 @@ export type Info = {
 	glow: { { number } }?,
 	lights: { any }?, -- the lights it carries (placed by the map builder, see SceneBuilder)
 	anchor: { number }?, -- where maps put its foot (x, z from its pivot), when not the middle
-	set: string?, -- which import it comes in ("Core": InkboundModels_Core.fbx, "Tokyo": InkboundModels_Tokyo.fbx)
+	set: string?, -- which import it comes in ("Core": DeathsGambitModels_Core.fbx, "Tokyo": DeathsGambitModels_Tokyo.fbx)
 	-- A station look's slot for the game's screen: the middle of its face from the station's
 	-- origin (x, y, z), its size (w, h) and how far its top leans back (degrees).
 	screen: { at: { number }, size: { number }, tilt: number? }?,
 	tris: number?, -- triangles, for the debug line-up
 }
 
-local STORE_NAME = "InkboundAssets"
+local STORE_NAME = "DeathsGambitAssets"
+-- Before the game was renamed the store, the file prefix and the markers said Inkbound. Imports and places
+-- from then still work: every lookup accepts both names, and the newer one wins when both are there.
+local LEGACY_STORE_NAME = "InkboundAssets"
+local PREFIX, LEGACY_PREFIX = "DeathsGambit", "Inkbound"
+local BIN_NAME, LEGACY_BIN_NAME = "DeathsGambitSuperseded", "InkboundSuperseded"
 
 local templates: { [string]: Model | false } = {}
 local index: { [string]: Instance }? = nil
@@ -45,7 +50,12 @@ local TURNS = {
 }
 
 local function store(): Instance?
-	return ReplicatedStorage:FindFirstChild(STORE_NAME)
+	return ReplicatedStorage:FindFirstChild(STORE_NAME) or ReplicatedStorage:FindFirstChild(LEGACY_STORE_NAME)
+end
+
+-- The folder the imports live in (either name), for the client modules that look for it.
+function ModelLibrary.findStore(): Instance?
+	return store()
 end
 
 local function isMeshSource(instance: Instance): boolean
@@ -86,10 +96,11 @@ local function looksImported(instance: Instance): boolean
 	if not (instance:IsA("Model") or instance:IsA("Folder")) then
 		return false
 	end
-	if instance.Name == STORE_NAME or instance.Name == "InkboundSuperseded" then
+	local name = instance.Name
+	if name == STORE_NAME or name == LEGACY_STORE_NAME or name == BIN_NAME or name == LEGACY_BIN_NAME then
 		return false
 	end
-	if string.sub(instance.Name, 1, 8) == "Inkbound" then
+	if string.sub(name, 1, #PREFIX) == PREFIX or string.sub(name, 1, #LEGACY_PREFIX) == LEGACY_PREFIX then
 		return instance:FindFirstChildWhichIsA("MeshPart", true) ~= nil
 	end
 	local known = 0
@@ -214,7 +225,7 @@ function ModelLibrary.describeFacing(key: string): string
 end
 
 -- The turn that undoes the importer's rotation of a prop: from the cubes in the prop's own file
--- (Calib_Props<Set>, such as Calib_PropsCore in InkboundModels_Core.fbx), else nil. Each file is
+-- (Calib_Props<Set>, such as Calib_PropsCore in DeathsGambitModels_Core.fbx), else nil. Each file is
 -- measured on its own: two imports can come in turned differently.
 local function importTurn(set: string?): CFrame?
 	local cal = ModelLibrary.calibration("Calib_Props" .. (if set and set ~= "" then set else "Core"))
@@ -238,12 +249,12 @@ local function describeTurn(prefix: string): string
 end
 
 -- Versions -----------------------------------------------------------------------------------
--- Every export carries a marker mesh Inkbound<Kind>_Version_<n>. When the same kind was
+-- Every export carries a marker mesh DeathsGambit<Kind>_Version_<n> (Inkbound<Kind>_Version_<n> before the rename). When the same kind was
 -- imported more than once, only the newest import is used; older ones are set aside so old
 -- and new meshes never mix.
 --
 -- Two files are retired: InkboundModels.fbx (kind "Models", its props now come in
--- InkboundModels_Core.fbx) and InkboundMaps.fbx (kind "Maps", the lobby and the meeting room now
+-- DeathsGambitModels_Core.fbx) and InkboundMaps.fbx (kind "Maps", the lobby and the meeting room now
 -- have files of their own). An import of either is always set aside, so nothing can use it.
 local RETIRED = { Models = "InkboundModels.fbx", Maps = "InkboundMaps.fbx" }
 
@@ -251,12 +262,25 @@ local RETIRED = { Models = "InkboundModels.fbx", Maps = "InkboundMaps.fbx" }
 -- the folder's own name: an early import, or your own models).
 local function importVersion(root: Instance): (string, number, boolean)
 	for _, item in ipairs(root:GetDescendants()) do
-		local kind, version = string.match(item.Name, "^Inkbound(%a+)_Version_(%d+)$")
+		local kind, version = string.match(item.Name, "^DeathsGambit(%a+)_Version_(%d+)$")
+		if not kind then
+			kind, version = string.match(item.Name, "^Inkbound(%a+)_Version_(%d+)$")
+		end
 		if kind then
 			return kind, tonumber(version) or 0, true
 		end
 	end
 	return root.Name, 0, false
+end
+
+-- True when the import's marker still carries the old game name.
+local function isLegacyImport(root: Instance): boolean
+	for _, item in ipairs(root:GetDescendants()) do
+		if string.match(item.Name, "^Inkbound%a+_Version_%d+$") then
+			return true
+		end
+	end
+	return false
 end
 
 -- True for an import of a retired file: its marker says so, or (an import from before the
@@ -270,10 +294,10 @@ end
 
 local function supersede(item: Instance)
 	local ServerStorage = game:GetService("ServerStorage")
-	local bin = ServerStorage:FindFirstChild("InkboundSuperseded")
+	local bin = ServerStorage:FindFirstChild(BIN_NAME)
 	if not bin then
 		bin = Instance.new("Folder")
-		bin.Name = "InkboundSuperseded"
+		bin.Name = BIN_NAME
 		bin.Parent = ServerStorage
 	end
 	item.Parent = bin
@@ -282,7 +306,7 @@ end
 -- Sets aside every import of a retired file and all but the newest import of each kind. Returns
 -- (older imports set aside, retired files found).
 local function setAsideOlder(root: Instance): ({ string }, { string })
-	local groups: { [string]: { { item: Instance, version: number, order: number } } } = {}
+	local groups: { [string]: { { item: Instance, version: number, order: number, legacy: boolean } } } = {}
 	local retired = {}
 	for order, child in ipairs(root:GetChildren()) do
 		if child:IsA("Model") or child:IsA("Folder") then
@@ -293,7 +317,10 @@ local function setAsideOlder(root: Instance): ({ string }, { string })
 				continue
 			end
 			groups[kind] = groups[kind] or {}
-			table.insert(groups[kind], { item = child, version = version, order = order })
+			table.insert(
+				groups[kind],
+				{ item = child, version = version, order = order, legacy = isLegacyImport(child) }
+			)
 		end
 	end
 	local setAside = {}
@@ -302,6 +329,9 @@ local function setAsideOlder(root: Instance): ({ string }, { string })
 			table.sort(list, function(a, b)
 				if a.version ~= b.version then
 					return a.version > b.version
+				end
+				if a.legacy ~= b.legacy then
+					return not a.legacy -- an import made after the rename beats an older one of the same version
 				end
 				return a.order > b.order
 			end)
@@ -316,7 +346,7 @@ local function setAsideOlder(root: Instance): ({ string }, { string })
 end
 
 -- Server, once at start (before any map is built): moves imports that were left in Workspace,
--- ReplicatedStorage or ServerStorage into ReplicatedStorage.InkboundAssets and reports what
+-- ReplicatedStorage or ServerStorage into ReplicatedStorage.DeathsGambitAssets and reports what
 -- the game can use.
 function ModelLibrary.install(): { found: number, missing: { string } }
 	local root = store()
@@ -328,6 +358,14 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	end
 	local rootInstance = root :: Instance
 	local moved = {}
+	-- A store from before the rename (a place saved with one) is emptied into the current one.
+	local legacy = ReplicatedStorage:FindFirstChild(LEGACY_STORE_NAME)
+	if legacy and legacy ~= rootInstance then
+		for _, child in ipairs(legacy:GetChildren()) do
+			child.Parent = rootInstance
+			table.insert(moved, LEGACY_STORE_NAME .. "." .. child.Name)
+		end
+	end
 	local containers = { workspace, ReplicatedStorage, game:GetService("ServerStorage") }
 	for _, container in ipairs(containers) do
 		for _, child in ipairs(container:GetChildren()) do
@@ -356,7 +394,7 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	local total = found + #missing
 	if #moved > 0 then
 		print(
-			"[Inkbound] Moved imported models into ReplicatedStorage."
+			"[DeathsGambit] Moved imported models into ReplicatedStorage."
 				.. STORE_NAME
 				.. ": "
 				.. table.concat(moved, ", ")
@@ -364,21 +402,21 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	end
 	if #retired > 0 then
 		warn(
-			"[Inkbound] Set aside imports of retired files (nothing uses them any more; delete them in Studio): "
+			"[DeathsGambit] Set aside imports of retired files (nothing uses them any more; delete them in Studio): "
 				.. table.concat(retired, ", ")
-				.. ". Their props come in InkboundModels_Core.fbx, the lobby and the meeting room in "
-				.. "InkboundMaps_Lobby.fbx and InkboundMaps_Meeting.fbx."
+				.. ". Their props come in DeathsGambitModels_Core.fbx, the lobby and the meeting room in "
+				.. "DeathsGambitMaps_Lobby.fbx and DeathsGambitMaps_Meeting.fbx."
 		)
 	end
 	if found == 0 then
 		print(
-			"[Inkbound] No Blender models imported yet: the game uses its part-built stand-ins. "
-				.. "Import art/export/InkboundModels_<Set>.fbx and InkboundMaps_<Venue>.fbx with Studio's 3D importer (art/README.md)."
+			"[DeathsGambit] No Blender models imported yet: the game uses its part-built stand-ins. "
+				.. "Import art/export/DeathsGambitModels_<Set>.fbx and DeathsGambitMaps_<Venue>.fbx with Studio's 3D importer (art/README.md)."
 		)
 	else
-		print(string.format("[Inkbound] Blender models: %d of %d found.", found, total))
+		print(string.format("[DeathsGambit] Blender models: %d of %d found.", found, total))
 		if #missing > 0 and RunService:IsStudio() then
-			warn("[Inkbound] Missing Blender models (built from parts instead): " .. table.concat(missing, ", "))
+			warn("[DeathsGambit] Missing Blender models (built from parts instead): " .. table.concat(missing, ", "))
 		end
 	end
 	local scenes = 0
@@ -387,22 +425,25 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		if string.sub(name, 1, 4) == "Map_" then
 			scenes += 1
 		end
-		local venue, version = string.match(name, "^InkboundMaps(%a+)_Version_(%d+)$")
+		local venue, version = string.match(name, "^DeathsGambitMaps(%a+)_Version_(%d+)$")
+		if not venue then
+			venue, version = string.match(name, "^InkboundMaps(%a+)_Version_(%d+)$")
+		end
 		if venue then
 			table.insert(venues, venue .. " v" .. version)
 		end
 	end
 	table.sort(venues)
 	if #venues > 0 then
-		print(string.format("[Inkbound] Scene imports: %s (%d meshes).", table.concat(venues, ", "), scenes))
+		print(string.format("[DeathsGambit] Scene imports: %s (%d meshes).", table.concat(venues, ", "), scenes))
 	elseif RunService:IsStudio() then
 		print(
-			"[Inkbound] No scenes imported yet (every venue is a greybox): import art/export/InkboundMaps_<Venue>.fbx."
+			"[DeathsGambit] No scenes imported yet (every venue is a greybox): import art/export/DeathsGambitMaps_<Venue>.fbx."
 		)
 	end
 	if #setAside > 0 then
 		warn(
-			"[Inkbound] Several imports of the same file: using the newest, ignoring "
+			"[DeathsGambit] Several imports of the same file: using the newest, ignoring "
 				.. table.concat(setAside, ", ")
 				.. ". Delete the old copies in Studio to keep the place small."
 		)
@@ -423,7 +464,7 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 			table.insert(lines, describeTurn(prefix))
 		end
 		print(
-			"[Inkbound] Import check: "
+			"[DeathsGambit] Import check: "
 				.. table.concat(lines, "; ")
 				.. ". Props get a half turn: "
 				.. (if facingTurn ~= CFrame.identity then "ON" else "OFF")
@@ -500,7 +541,7 @@ local function prepareGlow(part: BasePart, colour: { number }?)
 			(part :: MeshPart).TextureID = ""
 		end)
 	end
-	part:SetAttribute("InkboundGlow", true)
+	part:SetAttribute("DeathsGambitGlow", true)
 end
 
 local function build(key: string): Model?
@@ -512,7 +553,7 @@ local function build(key: string): Model?
 	local model = Instance.new("Model")
 	model.Name = key
 	-- Kept when dress() renames the copy, so clients know which prop a mesh belongs to.
-	model:SetAttribute("InkboundProp", key)
+	model:SetAttribute("DeathsGambitProp", key)
 	local main = source:Clone()
 	main.Parent = model
 	for _, part in ipairs(partsOf(main)) do
@@ -603,7 +644,7 @@ function ModelLibrary.get(key: string): Model?
 	if template == nil then
 		local ok, result = pcall(build, key)
 		if not ok then
-			warn("[Inkbound] Could not prepare model " .. key .. ": " .. tostring(result))
+			warn("[DeathsGambit] Could not prepare model " .. key .. ": " .. tostring(result))
 		end
 		template = if ok and result then result else false
 		templates[key] = template
@@ -647,7 +688,7 @@ end
 function ModelLibrary.glowParts(model: Model): { BasePart }
 	local list = {}
 	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") and item:GetAttribute("InkboundGlow") then
+		if item:IsA("BasePart") and item:GetAttribute("DeathsGambitGlow") then
 			table.insert(list, item)
 		end
 	end

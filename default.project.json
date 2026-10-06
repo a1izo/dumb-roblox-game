@@ -1,12 +1,12 @@
 {
-  "name": "inkbound",
+  "name": "death-s-gambit",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
       },
-      "InkboundAssets": {
+      "DeathsGambitAssets": {
         "$path": "assets/shared"
       }
     },
@@ -16,7 +16,7 @@
       }
     },
     "ServerStorage": {
-      "InkboundAssets": {
+      "DeathsGambitAssets": {
         "$path": "assets/server"
       }
     },

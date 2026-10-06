@@ -1,4 +1,4 @@
-# Inkbound art (Blender)
+# Death's Gambit art (Blender)
 
 Everything here is made by the Python scripts in `art/scripts`, so it can be rebuilt, changed
 and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blender unit = 1 stud.
@@ -11,21 +11,21 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | `blend/Animations.blend` | The R15 rig with every animation as an action (open it to tweak curves) |
 | `blend/Props.blend` | Every prop, baked |
 | `blend/Maps_<Venue>.blend` | Each venue's scene (Lobby, Meeting, Agency, Campus, Tokyo) |
-| `export/InkboundModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
-| `export/InkboundModels_<Set>.fbx` | The props made for one venue (Tokyo, Agency, Campus, Lobby, Meeting) |
-| `export/InkboundMaps_<Venue>.fbx` | One venue's scene each, with its tiling textures |
+| `export/DeathsGambitModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
+| `export/DeathsGambitModels_<Set>.fbx` | The props made for one venue (Tokyo, Agency, Campus, Lobby, Meeting) |
+| `export/DeathsGambitMaps_<Venue>.fbx` | One venue's scene each, with its tiling textures |
 | `export/textures/` | Baked prop textures, effect textures, and `maps/` (tiling colour, normal and roughness maps) |
 | `export/previews/` | Renders of every pose, prop and map, for review |
 
 ## The imports in Studio
 
 Meshes and images must be uploaded under your account, which only Studio can do. For each
-`art/export/InkboundModels_<Set>.fbx` (Core and one per venue) and each
-`art/export/InkboundMaps_<Venue>.fbx`:
+`art/export/DeathsGambitModels_<Set>.fbx` (Core and one per venue) and each
+`art/export/DeathsGambitMaps_<Venue>.fbx`:
 
 1. **Home > Import 3D** (or File > Import 3D), pick the file, keep the defaults, press **Import**.
 2. That's it. The importer drops the model into Workspace; when the game starts, the server
-   moves every `Inkbound...` import into **ReplicatedStorage > InkboundAssets** and prints what
+   moves every `DeathsGambit...` import (and any older `Inkbound...` one) into **ReplicatedStorage > DeathsGambitAssets** and prints what
    it found in the Output ("Blender models: 33 of 33 found."). You can also drag them there
    yourself, which keeps the editor view clean.
 
@@ -38,6 +38,12 @@ is built as a greybox (below).
 `InkboundModels.fbx` and `InkboundMaps.fbx` are retired (their props moved to the Core set, the
 lobby and the meeting room got scenes of their own). The game sets an import of either aside and
 warns; delete them from the place.
+
+**After the rename to Death's Gambit** every file is called `DeathsGambit...` (props, scenes, markers, the
+store folder). Imports made before it (`InkboundModels_<Set>.fbx`, `InkboundMaps_<Venue>.fbx`) keep working: the
+game reads both names and uses the newer import when both are in the place. To finish the switch, import the
+eleven new files, check the Output (`[DeathsGambit] ...` lines), then delete the old `Inkbound...` imports.
+The Core file also carries the new UI textures, so the new lettering and panels need it.
 
 ## Animations: no upload needed
 
@@ -92,7 +98,7 @@ of its size), `dressing.py` (dead trees, braziers, lantern posts, bones, the par
 and banners that sway; placed by hand) and `gameplay.py`. The lobby's Luau builds what shows text or does
 something at the scene's `anchors` (`s.anchor`): `Maps/Lobby.luau` (the title, the eight boards, the spawn, the
 Academy), `Maps/LobbyGames.luau` (the mini-games' objects) and `Maps/LobbyDecor.luau` (the things that sway).
-Its props are the `Lobby` set (`props_lobby.py`, `InkboundModels_Lobby.fbx`). The lobby's sky, clouds, fog and
+Its props are the `Lobby` set (`props_lobby.py`, `DeathsGambitModels_Lobby.fbx`). The lobby's sky, clouds, fog and
 ambience are runtime: `client/World/RealmSky.luau`, `WindSway.luau`, `Audio/RealmAmbience.luau`, and the
 `lobby` preset in `shared/LightingPresets.luau`; their numbers are in each module's `TUNING`.
 
@@ -107,7 +113,7 @@ Specters' mezzanine), `furnish.py` (the table's round colliders and chairs, the 
 case wall of photographs and red string, bookcases, sideboard, clock, radiators, the corners) and
 `outside.py` (the city far below the windows, rain on the glass). `Maps/MeetingRoom.luau` builds
 the screen, the board, the seats and the Specters' spots at its anchors. Its props are the
-`Meeting` set (`props_meeting.py`, `InkboundModels_Meeting.fbx`).
+`Meeting` set (`props_meeting.py`, `DeathsGambitModels_Meeting.fbx`).
 
 ### The maps (Tokyo, Agency HQ, University Campus)
 
@@ -137,7 +143,7 @@ furniture, stairs and railings with their invisible guards, ceiling fittings), `
 `upper.py` (each floor's rooms with their stations), `outside.py` (the city 440 studs down, the
 neighbouring towers, car lights, rain on the glass, the helicopter's pass; flat colours and big
 mesh chunks, `far_chunk`, since it is all far away) and `gameplay.py`. Its props are the `Agency`
-set (`props_agency.py`, `InkboundModels_Agency.fbx`).
+set (`props_agency.py`, `DeathsGambitModels_Agency.fbx`).
 
 University Campus (`scripts/maps/venues/campus/`, map `UniversityCampus`) is Kagegaoka
 University on the eve of its entrance exam, a winter night in light snow: 300 x 220 studs inside
@@ -154,7 +160,7 @@ stands within 5 studs of a station's worker side), `ground.py` (lawns under snow
 the hollow and the pond), `auditorium.py`, `library.py`, `faculties.py`, `student.py`,
 `grounds.py` (every lamp and tree placed by hand), `outside.py` (snowy streets past the gates,
 the city, the Central Tower on the skyline) and `gameplay.py`. Its props are the `Campus` set
-(`props_campus.py`, `InkboundModels_Campus.fbx`). Snow lies where the ground's look is `Snow`:
+(`props_campus.py`, `DeathsGambitModels_Campus.fbx`). Snow lies where the ground's look is `Snow`:
 the client leaves footprints there (`World/FootprintController`), never on the shovelled
 `SnowPath`.
 
@@ -183,8 +189,8 @@ that placed it (`Scene.prop_src`). `--eyes` renders perspective views from any s
 are aids for looking, nothing decides where a prop goes.
 
 `--export` writes, for that venue only (other venues are left alone), here for Tokyo:
-- `export/InkboundMaps_Tokyo.fbx`: meshes `Map_Tokyo_<Material>_<n>`, calibration cubes
-  `Calib_Tokyo_O/X/Y` and a marker `InkboundMapsTokyo_Version_<n>`. The version only goes up when
+- `export/DeathsGambitMaps_Tokyo.fbx`: meshes `Map_Tokyo_<Material>_<n>`, calibration cubes
+  `Calib_Tokyo_O/X/Y` and a marker `DeathsGambitMapsTokyo_Version_<n>`. The version only goes up when
   the meshes change; only then does Studio need a new import (delete the old one first).
 - `src/server/Maps/Scenes/Tokyo/`: `Layout` (gameplay spots, spare spots, zones), `Geometry`
   (colliders, floor triangles, ramps, the steps drawn over them), `Dressing` (props, lights, signs,
@@ -230,7 +236,7 @@ blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --
 blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --export
 ```
 
-`--export` (with `--set`) writes `export/InkboundModels_<Set>.fbx` and
+`--export` (with `--set`) writes `export/DeathsGambitModels_<Set>.fbx` and
 `src/shared/ModelCatalog.luau` (each prop's size in studs, pivot, material, glow colours, the
 lights it carries and its set). The Core set's file also carries the effect and UI textures. `ModelLibrary` fixes scale
 from the catalog and undoes the importer's turn of each file with its three calibration cubes (positions only).

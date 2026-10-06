@@ -15,7 +15,7 @@ venues: Lobby Meeting Agency Campus Tokyo (all when none are given)
 --out DIR  writes the renders there instead of art/export/previews (use it for scratch renders)
 --massing  renders the venue's MASSING_VIEWS like an architect's model, with player-sized figures
            for scale (art/export/previews/massing_<Venue>_<n>.png)
---export   each venue's src/server/Maps/Scenes/<Venue>/, art/export/InkboundMaps_<Venue>.fbx and
+--export   each venue's src/server/Maps/Scenes/<Venue>/, art/export/DeathsGambitMaps_<Venue>.fbx and
            art/export/scenes/<Venue>.json (for the checks), and for the maps src/shared/MapBounds.luau.
            Always merges src/shared/SceneMaterials.luau and saves the .blend (Maps_<Venue>.blend)
 --materials rewrites only src/shared/SceneMaterials.luau (for the materials it lists now)
@@ -645,7 +645,7 @@ def texture_carriers(names, venue):
         obj = bpy.data.objects.new(obj_name, mesh)
         coll.objects.link(obj)
         obj.location = (i * 3.0, -60.0, 0.0)
-        obj["inkbound_texture"] = True
+        obj["dg_texture"] = True
         carriers.append(obj)
     return carriers
 

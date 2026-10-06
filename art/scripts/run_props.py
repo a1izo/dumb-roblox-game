@@ -4,7 +4,7 @@
     blender -b --factory-startup --python art/scripts/run_props.py -- --sheet street [--no-build]
 
 With no keys every prop is built; with --set only that set's props (--export alone rebuilds
-nothing). --export writes the set's FBX, InkboundModels_<Set>.fbx (--set is needed: Core, Tokyo,
+nothing). --export writes the set's FBX, DeathsGambitModels_<Set>.fbx (--set is needed: Core, Tokyo,
 Agency, Campus, Lobby, Meeting), and the catalog of every prop. Opens art/blend/Props.blend when it exists (so props can be
 rebuilt one at a time), and saves it back.
 """

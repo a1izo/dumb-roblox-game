@@ -3,7 +3,7 @@ included, has its own):
   src/server/Maps/Scenes/<Venue>/        its layout, anchors, colliders, props, lights, signs...
   src/shared/SceneMaterials.luau         how the game dresses each flat material
   src/shared/MapBounds.luau              each map's Specter box
-  art/export/InkboundMaps_<Venue>.fbx    every scene mesh (with its textures) plus three calibration
+  art/export/DeathsGambitMaps_<Venue>.fbx every scene mesh (with its textures) plus three calibration
                                          cubes the game uses to undo whatever scale and rotation
                                          the importer applied
 """
@@ -26,10 +26,11 @@ MATERIALS_LUAU = os.path.join(common.ROOT, "src", "shared", "SceneMaterials.luau
 CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
-# mesh Inkbound<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
+# mesh DeathsGambit<Kind>_Version_<n> (imports from before the rename carry Inkbound<Kind>_Version_<n>, which
+# the game still reads), and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version. The retired InkboundModels.fbx and
 # InkboundMaps.fbx were the kinds "Models" and "Maps"; the game sets their imports aside.)
-VERSION = {"ModelsCore": 1, "ModelsTokyo": 1, "ModelsAgency": 1, "ModelsCampus": 1, "ModelsLobby": 1,
+VERSION = {"ModelsCore": 2, "ModelsTokyo": 1, "ModelsAgency": 1, "ModelsCampus": 1, "ModelsLobby": 1,
            "ModelsMeeting": 1}
 
 
@@ -89,7 +90,7 @@ def calibration_cubes(collection, prefix, kind, version=None):
     plus the version marker."""
     objects = [_cube(prefix + suffix, x, y, z, collection) for suffix, (x, y, z) in CALIBRATION.items()]
     number = version if version is not None else VERSION[kind]
-    objects.append(_cube(f"Inkbound{kind}_Version_{number}", 0, -40, 0, collection, half=0.25))
+    objects.append(_cube(f"DeathsGambit{kind}_Version_{number}", 0, -40, 0, collection, half=0.25))
     return objects
 
 
@@ -124,7 +125,7 @@ SIDECAR_DIR = os.path.join(common.EXPORT, "scenes")
 
 
 def venue_fbx(venue):
-    return os.path.join(common.EXPORT, f"InkboundMaps_{venue}.fbx")
+    return os.path.join(common.EXPORT, f"DeathsGambitMaps_{venue}.fbx")
 
 
 def mesh_digest(scene):
@@ -325,7 +326,8 @@ def write_scene_v2(scene, module, source):
         f"\tversion = {version},",
         f"\tmeshPrefix = {lua_string(scene.prefix + '_' + venue + '_')},",
         f"\tcalibration = {lua_string('Calib_' + venue)},",
-        f"\tmarker = {lua_string(f'Inkbound{kind}_Version_{version}')},",
+        f"\tmarker = {lua_string(f'DeathsGambit{kind}_Version_{version}')},",
+        f"\tlegacyMarker = {lua_string(f'Inkbound{kind}_Version_{version}')},",
         f"\tfbx = {lua_string(fbx_name)},",
         f"\tbounds = {{ min = {vec(lo)}, max = {vec(hi)} }},",
         f"\tstats = {_lua(stats)},",

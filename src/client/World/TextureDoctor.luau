@@ -47,7 +47,7 @@ end
 local function propOf(part: MeshPart): string?
 	local node: Instance? = part.Parent
 	while node and node ~= workspace do
-		local key = node:GetAttribute("InkboundProp")
+		local key = node:GetAttribute("DeathsGambitProp")
 		if type(key) == "string" then
 			return key
 		end
@@ -116,10 +116,10 @@ local function report()
 		table.insert(names, string.format("%s (%d)", name, count))
 	end
 	table.sort(names)
-	print(string.format("[Inkbound] Texture check: %d of %d imported textures load.", checked - failed, checked))
+	print(string.format("[DeathsGambit] Texture check: %d of %d imported textures load.", checked - failed, checked))
 	if #names > 0 then
 		warn(
-			"[Inkbound] Textures that did not load (shown with a flat colour instead): "
+			"[DeathsGambit] Textures that did not load (shown with a flat colour instead): "
 				.. table.concat(names, ", ")
 				.. ". Roblox may still be processing or reviewing new uploads; check again later, or re-import."
 		)

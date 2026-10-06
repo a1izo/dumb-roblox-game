@@ -234,7 +234,7 @@ def lobby(s):
     s.tip_box(48.3, 26.0, 90)
     # The sign wall facing the lifts, the Agency's name on it; the news over it.
     fit.partition(s, (0.0, 44.0), (34.0, 44.0), Y, C, "WoodPanel", "PlasterGrey", trim=False)
-    s.sign((17.0, 8.6, 43.62), 0, 20.0, 2.2, "THE AGENCY", "GothamBlack", (236, 226, 196), None, (255, 220, 170))
+    s.sign((17.0, 8.6, 43.62), 0, 20.0, 2.2, "THE BUREAU", "GothamBlack", (236, 226, 196), None, (255, 220, 170))
     s.sign((17.0, 6.6, 43.62), 0, 20.0, 1.0, P.TOWER + "  38F", "GothamBold", (190, 190, 196), None)
     s.box("Brass", (17.0, 5.6, 43.66), (18.0, 0.1, 0.05))
     s.box("BlackMetal", (17.0, 11.3, 43.55), (9.6, 3.0, 0.2))

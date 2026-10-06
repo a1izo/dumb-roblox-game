@@ -71,6 +71,8 @@ return {
 		{ kind = "windowrain", at = { 0, 9.1, 30.35 }, rot = 0, size = { 7, 4.6, 0.3 } },
 		{ kind = "windowrain", at = { -16, 9.1, 30.35 }, rot = 0, size = { 7, 4.6, 0.3 } },
 	},
+	-- boxes that shelter from rain and snow without being solid (awnings, canopies, tree crowns): centre, size, degrees about Y, how much they stop (1 all, 0.5 half)
+	covers = {},
 	-- giant screens the client plays loops on: where the face is, facing rot
 	screens = {},
 	-- ambient sounds: an Assets.sfx key (silent while its slot is empty), where, how far it carries

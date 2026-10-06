@@ -162,10 +162,10 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
   advance by distance, so feet do not slide. The default Animate script is replaced by an
   empty one, and R6 avatars are rebuilt as R15.
 - **Props and scenes** are imported in Studio with **Import 3D**: the props every venue and the
-  game use, with the effect and UI textures, `art/export/InkboundModels_Core.fbx`; and for each
+  game use, with the effect and UI textures, `art/export/DeathsGambitModels_Core.fbx`; and for each
   venue (the lobby, the meeting room, Bureau HQ, University Campus, Tokyo) its props and its scene,
-  `art/export/InkboundModels_<Set>.fbx` and `art/export/InkboundMaps_<Venue>.fbx`. Leave them where
-  the importer puts them; the server moves them into `ReplicatedStorage > InkboundAssets` when it
+  `art/export/DeathsGambitModels_<Set>.fbx` and `art/export/DeathsGambitMaps_<Venue>.fbx`. Leave them where
+  the importer puts them; the server moves them into `ReplicatedStorage > DeathsGambitAssets` when it
   starts and prints what it found. A venue without its import (or with an older one) loads as a
   **greybox**: the same place, fully playable, in plain colours, and the Output says which file
   to import. The old `InkboundModels.fbx` and `InkboundMaps.fbx` are retired: an import of either is
@@ -176,7 +176,7 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
 | Where | What to paste |
 | --- | --- |
 | `src/shared/Assets.luau` | Music and sound effect ids, uploaded animation ids that replace clips, outfit clothing, textures and icons. Empty slots fall back to silence, the Blender clips or the imported textures. |
-| `ReplicatedStorage > InkboundAssets` | The imported Blender props (see above), or your own models with the same names. |
+| `ReplicatedStorage > DeathsGambitAssets` | The imported Blender props (see above), or your own models with the same names. |
 | `src/shared/Products.luau` | Developer product ids (coin packs) and game pass ids. An id of 0 hides the button. |
 | `src/shared/Progression/Achievements.luau` | Badge ids (0 = no badge). |
 
@@ -236,7 +236,7 @@ src/client/     init.client.luau boots everything
   Controllers/  prompts, chat rules, emotes, the Oculus of the Dead, the Academy
   Input/        actions and bindings
   Debug/        the debug panel (F2) and its local tools (fly, free camera, colliders, tags)
-assets/         your own models, synced to ReplicatedStorage/ServerStorage.InkboundAssets
+assets/         your own models, synced to ReplicatedStorage/ServerStorage.DeathsGambitAssets
 art/            Blender scripts, .blend sources, the FBX export and previews (art/README.md)
 src/character/  the empty Animate script that replaces Roblox's default one
 scripts/        check_terms.py (run by CI)

@@ -1,4 +1,4 @@
-"""The lobby's props (set "Lobby", exported to InkboundModels_Lobby.fbx): the Grey Realm, the ashen
+"""The lobby's props (set "Lobby", exported to DeathsGambitModels_Lobby.fbx): the Grey Realm, the ashen
 wasteland beyond the world where the Grimoire comes from.
 
 - What the game dresses: the Academy's practice altar (round the game's invisible drill desk) and

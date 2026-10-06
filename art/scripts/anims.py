@@ -1,4 +1,4 @@
-"""Every Inkbound animation, keyed in the game's joint convention (see animlib.py) on the real
+"""Every Death's Gambit animation, keyed in the game's joint convention (see animlib.py) on the real
 R15 rig (rig.py).
 
 Style: punchy and cartoony, in the spirit of Ink Game. Strong silhouettes, anticipation before

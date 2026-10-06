@@ -7,7 +7,7 @@
 --   audio / animations: upload them in Studio or on the Creator Dashboard and paste the id
 --     ("rbxassetid://123..." or just the number) into the matching slot.
 --   models: export them from Studio as .rbxm into assets/shared/Models (Rojo syncs that folder
---     to ReplicatedStorage.InkboundAssets.Models) and name the file after the key below.
+--     to ReplicatedStorage.DeathsGambitAssets.Models) and name the file after the key below.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -247,7 +247,8 @@ end
 
 -- A fresh copy of a model you exported to assets/shared/Models, or nil to build the fallback.
 function Assets.model(key: string): Instance?
-	local root = ReplicatedStorage:FindFirstChild("InkboundAssets")
+	local root = ReplicatedStorage:FindFirstChild("DeathsGambitAssets")
+		or ReplicatedStorage:FindFirstChild("InkboundAssets")
 	local models = root and root:FindFirstChild("Models")
 	local model = models and models:FindFirstChild(key)
 	if model then

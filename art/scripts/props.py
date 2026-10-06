@@ -1,4 +1,4 @@
-"""Every Inkbound prop, built in Blender from code (see modelkit.py).
+"""Every Death's Gambit prop, built in Blender from code (see modelkit.py).
 
 Each builder returns (parts, glow_parts, info): parts are merged into one textured mesh named
 after the prop, glow parts into "<Prop>_Glow" (the game turns those to Neon), and info tells
@@ -35,7 +35,7 @@ BUILDERS = {}
 
 def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Core", lights=None,
          anchor=None, screen=None):
-    """Registers a prop builder. set: which FBX it goes in, InkboundModels_<set>.fbx ("Core": the
+    """Registers a prop builder. set: which FBX it goes in, DeathsGambitModels_<set>.fbx ("Core": the
     props every map and the game itself use, with the effect and UI textures; "Tokyo", "Agency",
     "Campus", "Lobby", "Meeting": one venue's own). lights: the lights the prop carries, so a lamp never exists
     without its fixture: [dict(at=(x, y, z), kind="point"|"spot", color=(r, g, b), range=,

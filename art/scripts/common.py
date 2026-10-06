@@ -1,4 +1,4 @@
-"""Shared helpers for the Inkbound Blender scripts.
+"""Shared helpers for the Death's Gambit Blender scripts.
 
 Coordinates: Roblox is Y-up and characters face -Z; Blender is Z-up and our rig faces -Y.
     roblox = M @ blender, with M = [[-1, 0, 0], [0, 0, 1], [0, 1, 0]]
@@ -150,3 +150,12 @@ def save_blend(name):
     path = os.path.join(BLEND, name)
     bpy.ops.wm.save_as_mainfile(filepath=path)
     return path
+
+
+def flag(owner, key, default=None):
+    """A custom property of an object, material or action: `dg_<key>`, or the `inkbound_<key>` older .blend
+    files carry from before the game was renamed (Death's Gambit). New values are always written as dg_."""
+    value = owner.get("dg_" + key)
+    if value is None:
+        value = owner.get("inkbound_" + key)
+    return default if value is None else value

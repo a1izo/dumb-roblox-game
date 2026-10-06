@@ -163,7 +163,7 @@ def lifts(s):
     # The crest wall west of the lifts (the grand stair's head faces it).
     s.box("WoodPanel", (-1.0, 6.5, z + 0.1), (13.0, 12.6, 0.2), 180)
     fit.plaque(s, -1.0, 9.6, z + 0.2, 180, 10.0, 1.4, P.TOWER + " 38F", (230, 214, 170), (20, 20, 24))
-    fit.plaque(s, -1.0, 7.6, z + 0.2, 180, 10.0, 1.0, "THE AGENCY  ·  RECEPTION", (200, 200, 205), (20, 20, 24))
+    fit.plaque(s, -1.0, 7.6, z + 0.2, 180, 10.0, 1.0, "THE BUREAU  ·  RECEPTION", (200, 200, 205), (20, 20, 24))
     s.box("Brass", (-1.0, 5.9, z + 0.3), (9.0, 0.12, 0.06), 180)
     s.light("spot", (-1.0, 12.4, z + 1.5), fit.WARM, 16, 1.0, False, "Bottom", 70)
     # The grand stair's head, faced in stone (38F sees its tall end from the lifts).

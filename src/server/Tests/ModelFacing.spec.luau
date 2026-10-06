@@ -21,11 +21,12 @@ end
 -- A fake import: a slab with a marker on its +Z side, under the store the game reads.
 local function fakeImport(key: string, set: string, withCubes: boolean): Instance
 	ModelLibrary.setFacingTurned(true) -- these tests are about what the half turn does when it is on
-	local store = ReplicatedStorage:FindFirstChild("InkboundAssets")
+	local store = ReplicatedStorage:FindFirstChild("DeathsGambitAssets")
+		or ReplicatedStorage:FindFirstChild("InkboundAssets")
 	local created = false
 	if not store then
 		store = Instance.new("Folder")
-		store.Name = "InkboundAssets"
+		store.Name = "DeathsGambitAssets"
 		store.Parent = ReplicatedStorage
 		created = true
 	end

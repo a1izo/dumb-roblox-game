@@ -1,4 +1,4 @@
-"""A small keyframe language for Inkbound animations, and the code that turns it into Blender
+"""A small keyframe language for Death's Gambit animations, and the code that turns it into Blender
 actions on the R15 rig (art/scripts/rig.py).
 
 Poses are written in the game's joint convention (src/shared/Anim/Joints.luau): degrees around
@@ -139,7 +139,7 @@ def build_action(arm, c):
         bpy.data.actions.remove(old)
     action = bpy.data.actions.new(c.name)
     action.use_fake_user = True
-    action["inkbound_clip"] = True
+    action["dg_clip"] = True
     action["length"] = c.length
     action["loop"] = c.loop
     action["joints"] = sorted(c.keys.keys())

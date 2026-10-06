@@ -1,4 +1,4 @@
-"""Tokyo's street props (set "Tokyo", exported to InkboundModels_Tokyo.fbx): the lamp, the traffic
+"""Tokyo's street props (set "Tokyo", exported to DeathsGambitModels_Tokyo.fbx): the lamp, the traffic
 and walk signals, the power pole, road signs, the guard rail and bollards, the post box, recycling
 bins, bicycles in and out of their rack, a scooter, a planter and the two vending machines; and
 the barriers that close the streets leaving the map (site fence, police tape, barricade, cone,

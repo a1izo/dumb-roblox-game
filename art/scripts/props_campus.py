@@ -1,4 +1,4 @@
-"""Kagegaoka University's props (set "Campus", exported to InkboundModels_Campus.fbx): a winter
+"""Kagegaoka University's props (set "Campus", exported to DeathsGambitModels_Campus.fbx): a winter
 campus on the eve of the entrance exam.
 
 - Six station looks: the camera post in the pond hollow, the green public phone in the

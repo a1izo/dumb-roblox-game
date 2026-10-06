@@ -42,7 +42,7 @@ def screen_wall(s):
     for sx in (-1, 1):
         s.prop("SpeakerColumn", sx * P.SPEAKERS[0], P.SPEAKERS[1], 0.0)
     s.box("Brass", (0.0, 2.2, face + 0.08), (7.0, 0.9, 0.12))
-    s.sign((0.0, 2.2, face + 0.16), 180, 6.6, 0.75, "THE AGENCY  ·  WAR ROOM", "SpecialElite", (30, 22, 14), None)
+    s.sign((0.0, 2.2, face + 0.16), 180, 6.6, 0.75, "THE BUREAU  ·  WAR ROOM", "SpecialElite", (30, 22, 14), None)
 
 
 def case_wall(s):

@@ -1,6 +1,6 @@
 --!strict
 -- The UI's own textures (glyph atlases, the clipped-corner Notch shapes, scanlines, grain, icons). They
--- are drawn by art/scripts/ui and travel in InkboundModels_Core.fbx on carrier quads, so importing that
+-- are drawn by art/scripts/ui and travel in DeathsGambitModels_Core.fbx on carrier quads, so importing that
 -- file is all it takes; Assets.texture finds them. Until they are imported and loaded (or if a load
 -- fails) every component draws a code-only version instead (plain rectangles, a Montserrat stand-in
 -- for the lettering), and redraws when Ready fires.
@@ -89,7 +89,17 @@ end
 function Textures.init()
 	task.spawn(function()
 		-- The server moves the imports into place at start; wait until it has.
-		local store = ReplicatedStorage:WaitForChild("InkboundAssets", 30)
+		-- The store is named DeathsGambitAssets (InkboundAssets in a place from before the rename).
+		local function find()
+			return ReplicatedStorage:FindFirstChild("DeathsGambitAssets")
+				or ReplicatedStorage:FindFirstChild("InkboundAssets")
+		end
+		local store = find()
+		local waitUntil = os.clock() + 30
+		while not store and os.clock() < waitUntil do
+			task.wait(0.25)
+			store = find()
+		end
 		if not store then
 			return
 		end

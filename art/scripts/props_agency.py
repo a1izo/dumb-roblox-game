@@ -1,4 +1,4 @@
-"""Agency HQ's props (set "Agency", exported to InkboundModels_Agency.fbx): the three station looks
+"""Agency HQ's props (set "Agency", exported to DeathsGambitModels_Agency.fbx): the three station looks
 of the old-school investigation unit (a bank of CRT monitors, a detective's phone desk, a
 reel-to-reel wiretap console), the tower's lift doors, the lobby's metal detector and X-ray belt,
 the interrogation table, archive and evidence storage, the director's desk, and office things

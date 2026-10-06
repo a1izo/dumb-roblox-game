@@ -1,4 +1,4 @@
-"""A small modelling kit for Inkbound props: primitives with bevels, procedural materials,
+"""A small modelling kit for Death's Gambit props: primitives with bevels, procedural materials,
 merging into one mesh per prop, UV unwrapping and baking colour + ambient occlusion into a
 single texture per prop (Roblox shows one texture per MeshPart).
 
@@ -312,13 +312,13 @@ class _Reuse(Exception):
 
 def _new_material(name):
     mat = bpy.data.materials.get(name)
-    if mat and mat.get("inkbound_build") == BUILD["id"]:
+    if mat and common.flag(mat, "build") == BUILD["id"]:
         raise _Reuse(mat)
     if mat:
         bpy.data.materials.remove(mat)
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
-    mat["inkbound_build"] = BUILD["id"]
+    mat["dg_build"] = BUILD["id"]
     return mat, mat.node_tree.nodes, mat.node_tree.links, mat.node_tree.nodes["Principled BSDF"]
 
 
@@ -345,8 +345,8 @@ def flat(name, color, roughness=0.6, metallic=0.0):
     bsdf.inputs["Base Color"].default_value = (*color, 1)
     bsdf.inputs["Roughness"].default_value = roughness
     bsdf.inputs["Metallic"].default_value = metallic
-    mat["inkbound_roughness"] = roughness
-    mat["inkbound_metallic"] = metallic
+    mat["dg_roughness"] = roughness
+    mat["dg_metallic"] = metallic
     return mat
 
 
@@ -371,8 +371,8 @@ def noisy(name, color_a, color_b, scale=6.0, detail=8.0, roughness=0.6, metallic
     links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     bsdf.inputs["Roughness"].default_value = roughness
     bsdf.inputs["Metallic"].default_value = metallic
-    mat["inkbound_roughness"] = roughness
-    mat["inkbound_metallic"] = metallic
+    mat["dg_roughness"] = roughness
+    mat["dg_metallic"] = metallic
     return mat
 
 
@@ -405,8 +405,8 @@ def wood(name, light, dark, scale=3.0, rings=18.0, roughness=0.55):
     links.new(mix.outputs["Result"], ramp.inputs["Fac"])
     links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     bsdf.inputs["Roughness"].default_value = roughness
-    mat["inkbound_roughness"] = roughness
-    mat["inkbound_metallic"] = 0.0
+    mat["dg_roughness"] = roughness
+    mat["dg_metallic"] = 0.0
     return mat
 
 
@@ -427,8 +427,8 @@ def banded(name, color_a, color_b, frequency=120.0, axis="Z", roughness=0.85):
     links.new(wave.outputs["Fac"], ramp.inputs["Fac"])
     links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
     bsdf.inputs["Roughness"].default_value = roughness
-    mat["inkbound_roughness"] = roughness
-    mat["inkbound_metallic"] = 0.0
+    mat["dg_roughness"] = roughness
+    mat["dg_metallic"] = 0.0
     return mat
 
 
@@ -438,7 +438,7 @@ def emissive(name, color, strength=4.0):
     bsdf.inputs["Base Color"].default_value = (*color, 1)
     bsdf.inputs["Emission Color"].default_value = (*color, 1)
     bsdf.inputs["Emission Strength"].default_value = strength
-    mat["inkbound_glow"] = True
+    mat["dg_glow"] = True
     return mat
 
 
@@ -448,7 +448,7 @@ def glass(name, color, alpha=0.35):
     bsdf.inputs["Base Color"].default_value = (*color, 1)
     bsdf.inputs["Roughness"].default_value = 0.05
     bsdf.inputs["Alpha"].default_value = alpha
-    mat["inkbound_glass"] = True
+    mat["dg_glass"] = True
     return mat
 
 
@@ -495,7 +495,7 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24):
             bsdf.inputs["Metallic"].default_value = 0.0
     for mat in obj.data.materials:
         node = mat.node_tree.nodes.new("ShaderNodeTexImage")
-        node.name = "InkboundBake"
+        node.name = "DeathsGambitBake"
         mat.node_tree.nodes.active = node
         targets.append((mat, node))
 
@@ -542,8 +542,8 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24):
     for poly in obj.data.polygons:
         areas[poly.material_index] += poly.area
     total = sum(areas) or 1.0
-    rough = sum(m.get("inkbound_roughness", 0.6) * a for m, a in zip(obj.data.materials, areas)) / total
-    metal = sum(m.get("inkbound_metallic", 0.0) * a for m, a in zip(obj.data.materials, areas)) / total
+    rough = sum(common.flag(m, "roughness", 0.6) * a for m, a in zip(obj.data.materials, areas)) / total
+    metal = sum(common.flag(m, "metallic", 0.0) * a for m, a in zip(obj.data.materials, areas)) / total
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metal
     obj["metalness"] = round(metal, 2)

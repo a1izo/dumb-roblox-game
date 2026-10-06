@@ -1,5 +1,5 @@
 -- Puts a scene made in Blender into a venue: the lobby, the meeting room and every map (Tokyo,
--- Agency HQ, the University Campus) each have an FBX of their own, art/export/InkboundMaps_<Venue>.fbx
+-- Agency HQ, the University Campus) each have an FBX of their own, art/export/DeathsGambitMaps_<Venue>.fbx
 -- (imported with Studio's 3D importer), with its meshes named Map_<Venue>_<Material>_<n>, and scene
 -- data in Maps/Scenes/<Venue>/: invisible colliders where the walls and furniture are, props from
 -- the prop library, lights, signs, particle emitters, the gameplay layout, and anchors where the
@@ -614,7 +614,7 @@ end
 
 -- Building a venue ---------------------------------------------------------------------------------
 -- Its scene data (Scenes/<Venue>/) holds everything, gameplay spots and anchors included, and each
--- venue has an FBX of its own (InkboundMaps_<Venue>.fbx). Without that import, or with an older
+-- venue has an FBX of its own (DeathsGambitMaps_<Venue>.fbx). Without that import, or with an older
 -- one, the venue is built as a greybox: the colliders shown in their materials' colours, so it is
 -- complete and playable, just plain.
 
@@ -1000,7 +1000,8 @@ function SceneBuilder.mode(venue: string): string
 		return "greybox"
 	end
 	local data = require(module) :: any
-	local marker = ModelLibrary.source(data.marker)
+	-- Imports from before the rename carry the older marker name (same version, same meshes).
+	local marker = ModelLibrary.source(data.marker) or (data.legacyMarker and ModelLibrary.source(data.legacyMarker))
 	local cal = ModelLibrary.calibration(data.calibration)
 	if marker and cal and #ModelLibrary.sourcesWithPrefix(data.meshPrefix) > 0 then
 		return "scene"
@@ -1010,7 +1011,7 @@ function SceneBuilder.mode(venue: string): string
 		local older = #ModelLibrary.sourcesWithPrefix(data.meshPrefix) > 0
 		warn(
 			string.format(
-				"[Inkbound] %s is built as a greybox: %s. Import art/export/%s with Studio's 3D importer (art/README.md).",
+				"[DeathsGambit] %s is built as a greybox: %s. Import art/export/%s with Studio's 3D importer (art/README.md).",
 				venue,
 				if older
 					then "the imported meshes are an older version than the scene data (v" .. data.version .. ")"
