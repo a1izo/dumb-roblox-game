@@ -31,18 +31,6 @@ local TONES = {
 	team = { C.g0, C.white },
 }
 
--- Aktura is set in mixed case (its capitals are ornate): "ROUND 2" becomes "Round 2".
-local function mixedCase(text: string): string
-	if text ~= string.upper(text) then
-		return text
-	end
-	return (
-		string.gsub(text, "(%a)(%a*)", function(first: string, rest: string): string
-			return string.upper(first) .. string.lower(rest)
-		end)
-	)
-end
-
 local queue = {}
 local running = false
 local group: CanvasGroup
@@ -61,7 +49,7 @@ local function run()
 			local tone = TONES[item.tone] or TONES.neutral
 			Kit.clear(titleHolder)
 			local bannerFrame = Kit.banner({
-				text = mixedCase(item.title),
+				text = Kit.mixedCase(item.title),
 				face = "Title",
 				size = if Kit.Layout.isPhone() then T.size.display else 72,
 				tone = tone[1],

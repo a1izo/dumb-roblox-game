@@ -18,7 +18,7 @@ local Kit = require(script.Parent.Parent.Parent.UI.Kit)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
-local InkFx = require(script.Parent.Parent.InkFx)
+local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local Stage = require(script.Parent.Parent.Stage)
 
@@ -181,9 +181,9 @@ return function(cue)
 			end
 			Sfx.play("thunder")
 			Cinema.flash(C.bone, 0.5, 0.35)
-			InkFx.burst(landing.Position + Vector3.new(0, 0.5, 0), InkFx.INK, 40)
-			InkFx.splat(landing.Position, 9, InkFx.INK, 8)
-			InkFx.sparks(landing.Position + Vector3.new(0, 0.6, 0), C.red)
+			DeathFx.burst(landing.Position + Vector3.new(0, 0.5, 0), DeathFx.DARK, 40)
+			DeathFx.chalk(landing.Position, 9, DeathFx.CHALK, 8)
+			DeathFx.sparks(landing.Position + Vector3.new(0, 0.6, 0), C.white)
 			if Settings.get("cameraShake") then
 				CameraDirector.shake(token, 0.6, 0.35)
 			end

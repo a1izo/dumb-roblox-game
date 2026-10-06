@@ -118,7 +118,7 @@ function HowToPlay.init()
 		Size = UDim2.new(1 - CONTENTS_WIDTH, -T.space.xl, 1, 0),
 		Parent = win.body,
 	})
-	chapterTitle = Kit.text({ face = "Gothic", text = "", size = T.size.heading, color = C.white, Parent = right })
+	chapterTitle = Kit.text({ face = "Head", text = "", size = T.size.heading, color = C.white, Parent = right })
 	page = Kit.scroll({ Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 1, -58), Parent = right })
 	Kit.list(page, T.space.m)
 	Kit.pad(page, 0, T.space.xs)

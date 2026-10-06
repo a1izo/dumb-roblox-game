@@ -1,7 +1,7 @@
--- The verdict, written into the Grimoire: every candidate is a name on a ruled page and the
--- ballots are counted in as tally marks (the totals are public). At the climax the gavel falls,
--- the name voted out is struck through in red, and the camera and a spotlight find them while
--- the others react. When nobody is removed the page gets a stamp instead.
+-- The verdict, on a dark page that glitches in: every candidate is a name on a row and the ballots are
+-- counted in as tally marks (the totals are public). At the climax the gavel falls, the name voted out
+-- turns red, and the camera and a spotlight find them while the others react. When nobody is removed
+-- the page gets a stamp instead.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -10,6 +10,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Parent.Parent.UI.Kit)
+local Glitch = require(script.Parent.Parent.Parent.UI.Core.Glitch)
 local Motion = require(script.Parent.Parent.Parent.UI.Core.Motion)
 local Screens = require(script.Parent.Parent.Parent.UI.Screens)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
@@ -45,10 +46,10 @@ local function buildPage(rows: { Row }): (CanvasGroup, { [number]: any }, () -> 
 	group.Position = UDim2.fromScale(0.5, 0.47)
 	group.Size = UDim2.fromOffset(560, 110 + math.min(#rows, MAX_ROWS) * ROW_HEIGHT)
 	group.Parent = Screens.cinematic
-	local _, content = Kit.page({ tone = "black", ruled = false, margin = true, Parent = group })
+	local _, content = Kit.page({ tone = "black", margin = true, Parent = group })
 	Kit.list(content, 0)
 	Kit.text({
-		face = "Gothic",
+		face = "Head",
 		text = Terms.phase("Verdict"),
 		size = T.size.heading,
 		LayoutOrder = 0,
@@ -116,8 +117,7 @@ return function(cue)
 
 	Cinema.waitUntil(cue.at)
 	local group, lines, animate = buildPage(rows)
-	Motion.fade(group, true, 0.2)
-	Motion.slideIn(group, Vector2.new(0, 30), 0.3)
+	local glitch = Glitch.attach(group, { loop = false })
 	animate()
 
 	Cinema.waitUntil(cue.at + climax)
@@ -135,6 +135,7 @@ return function(cue)
 		if tween then
 			tween.Completed:Wait()
 		end
+		glitch:destroy()
 		group:Destroy()
 		local character = Cinema.character(removedId)
 		if character then
@@ -146,7 +147,7 @@ return function(cue)
 			CameraDirector.move(token, ShotSolver.frame(character, { distance = 5, height = 1, angle = -8 }), 1.8, 42)
 			local stamp = Kit.stamp({
 				text = "Their role stays secret",
-				color = C.red,
+				color = C.white,
 				width = 420,
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.fromScale(0.5, 0.76),
@@ -164,7 +165,7 @@ return function(cue)
 	else
 		local stamp = Kit.stamp({
 			text = if data.tie then "Tie" else "No one removed",
-			color = C.red,
+			color = C.white,
 			width = 360,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.55),
@@ -177,6 +178,7 @@ return function(cue)
 		if tween then
 			tween.Completed:Wait()
 		end
+		glitch:destroy()
 		group:Destroy()
 	end
 end

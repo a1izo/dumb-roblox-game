@@ -43,7 +43,7 @@ local current = nil
 
 local function fakeView()
 	Kit.text({
-		face = "Scrawl",
+		face = "Semi",
 		text = "Pretending to work…",
 		size = 44,
 		color = C.secret,

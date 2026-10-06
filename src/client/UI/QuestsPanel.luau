@@ -206,7 +206,7 @@ local function buildPopup()
 	popup = page
 	Kit.list(content, T.space.s)
 	Kit.text({
-		face = "Gothic",
+		face = "Head",
 		text = "Daily streak",
 		size = T.size.title,
 		color = C.white,

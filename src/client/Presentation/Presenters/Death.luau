@@ -11,7 +11,7 @@ local Mixer = require(script.Parent.Parent.Parent.Audio.Mixer)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
-local InkFx = require(script.Parent.Parent.InkFx)
+local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 
 local C = Kit.color
@@ -53,18 +53,18 @@ return function(cue)
 	task.delay(0.8, Sfx.play, "heartbeat")
 	task.delay(1.9, Sfx.play, "flatline")
 	local removeVignette = Cinema.vignette(C.red, 0.3)
-	-- The body hits the floor in a burst of ink and leaves a splat.
+	-- The body hits the floor in a burst of shards and leaves a chalk outline.
 	task.delay(1.15, function()
 		local body = Cinema.character(data.userId)
 		local root = if body then body:FindFirstChild("LowerTorso") or body:FindFirstChild("HumanoidRootPart") else nil
 		if root and root:IsA("BasePart") then
-			InkFx.burst(root.Position, InkFx.INK, 40)
-			InkFx.splat(root.Position, 7, InkFx.INK, 14)
+			DeathFx.burst(root.Position, DeathFx.DARK, 40)
+			DeathFx.chalk(root.Position, 7, DeathFx.CHALK, 14)
 		end
 	end)
 
 	if data.userId == LocalPlayer.UserId then
-		InkFx.screenSplat(3.5)
+		DeathFx.screenTear(3.5)
 		local untint = Cinema.tint({ Saturation = -1, Contrast = 0.15, Brightness = -0.05 }, 1.2)
 		task.wait(5)
 		untint()
@@ -92,9 +92,10 @@ return function(cue)
 			table.insert(
 				cleanup,
 				Cinema.card({
-					kicker = "Cause of death",
-					title = tostring(data.cause or ""),
-					subtitle = tostring(data.alias or "") .. " is dead.",
+					kicker = "Cause of death: " .. tostring(data.cause or ""),
+					title = tostring(data.alias or ""),
+					subtitle = "is dead.",
+					color = C.danger,
 					y = 0.74,
 				})
 			)

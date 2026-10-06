@@ -57,6 +57,17 @@ local Kit = {
 		p.face = p.face or "Head"
 		return GlyphText.new(p)
 	end,
+	-- Aktura is set in mixed case (its capitals are ornate): "ROUND 2" becomes "Round 2"
+	mixedCase = function(text: string): string
+		if text ~= string.upper(text) then
+			return text
+		end
+		return (
+			string.gsub(text, "(%a)(%a*)", function(first: string, rest: string): string
+				return string.upper(first) .. string.lower(rest)
+			end)
+		)
+	end,
 	-- ransom-note lettering (the game title and CASE CLOSED only)
 	ransom = Ransom.new,
 	-- the videotape glitch on loud elements

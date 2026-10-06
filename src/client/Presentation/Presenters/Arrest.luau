@@ -1,6 +1,6 @@
--- A warrant is served: a huge Gothic "0" slams onto the screen, two faceless agents in black
--- close in on the suspect, the cuffs click under red and blue light, and a stamp says how it
--- went. The agents are shadows made on this screen, never anyone's avatar (Zero stays hidden).
+-- A warrant is served: a huge Aktura "A" slams onto the screen, two faceless operatives in black
+-- close in on the suspect, the cuffs click under flashing light, and a stamp says how it went. The
+-- operatives are shadows made on this screen, never anyone's avatar (Ace stays hidden).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -14,7 +14,7 @@ local Screens = require(script.Parent.Parent.Parent.UI.Screens)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
-local InkFx = require(script.Parent.Parent.InkFx)
+local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local Stage = require(script.Parent.Parent.Stage)
 
@@ -24,7 +24,7 @@ local SHOT = 2.6
 
 local function slamZero()
 	local zero = Kit.text({
-		face = "Gothic",
+		face = "Title",
 		text = Terms.NAMES.zeroGlyph,
 		size = 420,
 		color = C.bone,
@@ -48,7 +48,7 @@ local function slamZero()
 	end)
 end
 
--- A faceless agent: a copy of the suspect's outline, all in black.
+-- A faceless operative: a copy of the suspect's outline, all in black.
 local function agent(stage: any, suspect: Model, mark: CFrame): Model?
 	local actor = stage:cast(suspect, mark, "point", nil)
 	if not actor then
@@ -81,7 +81,7 @@ return function(cue)
 	task.wait(0.3)
 	Sfx.play("handcuffs")
 	for index = 0, 3 do
-		task.delay(index * 0.35, Cinema.flash, if index % 2 == 0 then C.red else C.steel, 0.45, 0.3)
+		task.delay(index * 0.35, Cinema.flash, if index % 2 == 0 then C.white else C.steel, 0.45, 0.3)
 	end
 	local suspect = Cinema.character(tonumber(data.userId))
 	if not suspect then
@@ -89,7 +89,7 @@ return function(cue)
 	end
 	local hand = suspect:FindFirstChild("RightHand")
 	if hand and hand:IsA("BasePart") then
-		InkFx.sparks(hand.Position)
+		DeathFx.sparks(hand.Position)
 	end
 	local stage = Stage.new()
 	local pivot = suspect:GetPivot()

@@ -32,7 +32,7 @@ local function rankBlock(profile, order: number)
 	local block = Kit.frame({ Name = "Rank", Size = UDim2.new(1, 0, 0, 76), LayoutOrder = order, Parent = list })
 	Kit.seal({ size = 68, color = C.white, text = string.sub(profile.rankName, 1, 1), Parent = block })
 	Kit.text({
-		face = "Gothic",
+		face = "Head",
 		text = profile.rankName,
 		size = T.size.heading,
 		color = C.white,
@@ -96,7 +96,7 @@ local function roleCard(profile, roleId: string, order: number)
 	local hostile = roleId == "Kira" or roleId == "Follower"
 	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 68), LayoutOrder = order, Parent = list })
 	Kit.text({
-		face = "Gothic",
+		face = "Head",
 		text = info.display,
 		size = 24,
 		color = if hostile then C.red else C.bone,

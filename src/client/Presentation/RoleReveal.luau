@@ -170,7 +170,7 @@ function RoleReveal.play(role: string)
 		kicker = "You are",
 		title = info.display,
 		color = if hostile then C.blood else C.void,
-		textColor = if hostile then C.bone else C.bone,
+		textColor = C.white,
 		typewriter = true,
 		y = 0.78,
 	})

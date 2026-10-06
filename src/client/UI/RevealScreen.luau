@@ -1,6 +1,7 @@
--- The reveal, when the case closes: the winning side on a brush stroke with a CASE CLOSED
--- stamp, every role and real name on the left page, a replay of the key events on the right,
--- and your rewards.
+-- The reveal, when the case closes: CASE CLOSED in ransom-note letters (two of them red when Diavolo's
+-- side won), the winning side in Aktura beneath it, every role and real name on the left, a replay of the
+-- key events on the right, and your rewards. On a phone the two pages stack. The winner line glitches
+-- every couple of seconds.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,8 +13,10 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
+local Glitch = require(script.Parent.Core.Glitch)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
+local UiSound = require(script.Parent.Core.UiSound)
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -21,13 +24,18 @@ local T = Kit.Tokens
 local RevealScreen = {}
 
 local HOSTILE = { Kira = true, Follower = true } -- terms:ok (internal ids)
-local TOP = 150 -- the title block
 
 local root: Frame
 local titleHolder: Frame
+local winnerHolder: CanvasGroup
+local winnerText: any
+local winnerGlitch: any
 local reasonText: any
 local roster: ScrollingFrame
 local timeline: ScrollingFrame
+local rosterPage: Frame
+local timelinePage: Frame
+local ransom: any
 local rewardsLabel: TextLabel
 local token = 0
 
@@ -54,7 +62,7 @@ local function fillRoster(players)
 			Text = string.upper(tostring(entry.realName)),
 			font = "document",
 			size = "small",
-			color = C.parchment,
+			color = C.g6,
 			TextWrapped = false,
 			AutomaticSize = Enum.AutomaticSize.None,
 			Position = UDim2.fromOffset(0, 24),
@@ -160,51 +168,87 @@ local function close()
 	Router.setBlocking("reveal", false)
 end
 
-function RevealScreen.show(payload)
-	token += 1
-	local myToken = token
-	local teamWon = payload.winner == "Team"
+local handWon = false
+
+-- CASE CLOSED, cut out of ransom-note letters at a size for the device.
+local function buildTitle()
 	Kit.clear(titleHolder)
-	local banner = Kit.banner({
-		text = if teamWon then Terms.f("{Agency} wins") else Terms.f("{Hand} wins"),
-		size = T.size.display,
-		tone = if teamWon then C.steel:Lerp(C.void, 0.4) else C.blood,
+	local phone = Kit.Layout.isPhone()
+	ransom = Kit.ransom({
+		text = "Case Closed",
+		size = if phone then 34 else 56,
+		hand = handWon,
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.fromScale(0.5, 0),
 		Parent = titleHolder,
 	})
-	banner.Rotation = -2
-	Kit.stamp({
-		text = "Case closed",
-		width = 200,
-		rotation = -10,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0.5, 150, 0, 40),
-		Parent = titleHolder,
-	})
+end
+
+-- The title block is 190 px tall on a PC and 130 on a phone; below it the two pages sit side by side or
+-- stacked. The close button and the rewards line take the bottom 72 px.
+local function layout(class: string)
+	local phone = class == "phone"
+	local top = if phone then 132 else 196
+	titleHolder.Size = UDim2.new(1, 0, 0, if phone then 44 else 70)
+	winnerHolder.Position = UDim2.new(0.5, 0, 0, if phone then 48 else 76)
+	winnerText:setSize(if phone then 26 else 44)
+	reasonText.frame.Position = UDim2.new(0.5, 0, 0, if phone then 84 else 130)
+	reasonText:setSize(if phone then 16 else 22)
+	if phone then
+		rosterPage.AnchorPoint = Vector2.new(0, 0)
+		rosterPage.Position = UDim2.fromOffset(0, top)
+		rosterPage.Size = UDim2.new(1, 0, 0.5, -(top / 2 + 36 + 4))
+		timelinePage.AnchorPoint = Vector2.new(0, 1)
+		timelinePage.Position = UDim2.new(0, 0, 1, -72)
+		timelinePage.Size = UDim2.new(1, 0, 0.5, -(top / 2 + 36 + 4))
+	else
+		rosterPage.AnchorPoint = Vector2.new(0, 0)
+		rosterPage.Position = UDim2.fromOffset(0, top)
+		rosterPage.Size = UDim2.new(0.45, -T.space.s, 1, -(top + 72))
+		timelinePage.AnchorPoint = Vector2.new(1, 0)
+		timelinePage.Position = UDim2.new(1, 0, 0, top)
+		timelinePage.Size = UDim2.new(0.55, -T.space.s, 1, -(top + 72))
+	end
+	if ransom then
+		buildTitle()
+		if root.Visible then
+			ransom:play()
+		end
+	end
+end
+
+function RevealScreen.show(payload)
+	token += 1
+	local myToken = token
+	local teamWon = payload.winner == "Team"
+	handWon = not teamWon
+	buildTitle()
+	winnerText:set(Kit.mixedCase(if teamWon then Terms.f("{Agency} wins") else Terms.f("{Hand} wins")))
+	winnerText:setColor(if teamWon then C.white else C.danger)
 	reasonText:set(tostring(payload.reason or ""))
 	fillRoster(payload.players or {})
 	rewardsLabel.Text = rewardsText(payload.rewards)
 	root.Visible = true
 	Router.setBlocking("reveal", true)
+	ransom:play()
+	winnerGlitch:enter()
+	UiSound.play("slam")
 	task.spawn(playTimeline, payload.events or {}, myToken)
 end
 
-local function page(title: string, props): ScrollingFrame
+local function page(title: string, props): (ScrollingFrame, Frame)
 	local frame, content = Kit.page({
 		tone = "black",
-		ruled = true,
 		padding = T.space.l,
 		Position = props.Position,
 		AnchorPoint = props.AnchorPoint,
 		Size = props.Size,
 		Parent = props.Parent,
 	})
-	local _ = frame
 	Kit.heading({ text = title, Parent = content })
 	local scroll = Kit.scroll({ Position = UDim2.fromOffset(0, 54), Size = UDim2.new(1, 0, 1, -54), Parent = content })
 	Kit.list(scroll, T.space.xs)
-	return scroll
+	return scroll, frame
 end
 
 function RevealScreen.init()
@@ -221,28 +265,37 @@ function RevealScreen.init()
 		Parent = root,
 	})
 	Kit.Base.maxSize(window, Vector2.new(1100, 720))
-	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 100), Parent = window })
-	reasonText = Kit.text({
-		face = "Scrawl",
+	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 70), Parent = window })
+	winnerHolder = Kit.Base.make("CanvasGroup", {
+		Name = "Winner",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Size = UDim2.new(1, 0, 0, 56),
+		Parent = window,
+	}) :: any
+	winnerText = Kit.text({
+		face = "Title",
 		text = "",
-		size = 30,
+		size = 44,
+		color = C.white,
+		align = "center",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Parent = winnerHolder,
+	})
+	winnerGlitch = Glitch.attach(winnerHolder, { loop = true, enter = false })
+	reasonText = Kit.text({
+		face = "Semi",
+		text = "",
+		size = 22,
 		color = C.bone,
 		align = "center",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 104),
+		Position = UDim2.new(0.5, 0, 0, 130),
 		Parent = window,
 	})
-	roster = page("Roles and real names", {
-		Position = UDim2.fromOffset(0, TOP),
-		Size = UDim2.new(0.45, -T.space.s, 1, -(TOP + 72)),
-		Parent = window,
-	})
-	timeline = page("Case replay", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, TOP),
-		Size = UDim2.new(0.55, -T.space.s, 1, -(TOP + 72)),
-		Parent = window,
-	})
+	roster, rosterPage = page("Roles and real names", { Parent = window })
+	timeline, timelinePage = page("Case replay", { Parent = window })
 	rewardsLabel = Kit.label({
 		font = "bodyBold",
 		size = "small",
@@ -262,6 +315,9 @@ function RevealScreen.init()
 		Size = UDim2.fromOffset(140, T.touch),
 		Parent = window,
 	}, close)
+
+	buildTitle()
+	Kit.Layout.watch(layout)
 
 	Net.event("Reveal").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" then

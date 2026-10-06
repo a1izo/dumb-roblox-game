@@ -1,7 +1,7 @@
--- Building blocks for cutscenes, all local to this client: letterbox bars, title cards and
--- captions in the Grimoire style, dips to black, colour grades, flashes, vignettes, depth of
--- field, spotlights mounted under the ceiling, outlines, and a hold-to-skip button. Every
--- helper returns (or cleans up) what it made. Camera positions come from ShotSolver.
+-- Building blocks for cutscenes, all local to this client: letterbox bars, Aktura title cards that cut in
+-- with a videotape glitch, captions, dips to black, colour grades, flashes, vignettes, depth of field,
+-- spotlights mounted under the ceiling, outlines, and a hold-to-skip button. Every helper returns (or
+-- cleans up) what it made. Camera positions come from ShotSolver.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -9,8 +9,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Glitch = require(script.Parent.Parent.UI.Core.Glitch)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Screens = require(script.Parent.Parent.UI.Screens)
+local UiSound = require(script.Parent.Parent.UI.Core.UiSound)
 local Characters = require(script.Parent.Parent.Characters)
 local ShotSolver = require(script.Parent.ShotSolver)
 
@@ -70,10 +72,10 @@ export type CardOptions = {
 	title: string,
 	subtitle: string?,
 	kicker: string?, -- a small line above the title
-	color: Color3?, -- the brush stroke (blood red by default)
+	color: Color3?, -- the bar behind the title (black by default; red for danger)
 	textColor: Color3?,
 	y: number?, -- vertical position, 0..1 (0.72 by default)
-	typewriter: boolean?, -- write the title in letter by letter
+	typewriter: boolean?, -- cut the title in letter by letter after the glitch
 }
 
 local function fadeAway(group: CanvasGroup)
@@ -87,8 +89,8 @@ local function fadeAway(group: CanvasGroup)
 	end
 end
 
--- The title in Gothic lettering on a brush stroke, the subtitle written beneath in Scrawl.
--- Returns a function that hides it.
+-- The title in Aktura on a bar that glitches in, the subtitle cut in beneath it. Returns a function that
+-- hides it.
 function Cinema.card(options: CardOptions): () -> ()
 	local group = Instance.new("CanvasGroup")
 	group.Name = "Card"
@@ -115,10 +117,11 @@ function Cinema.card(options: CardOptions): () -> ()
 		})
 	end
 	local banner, title = Kit.banner({
-		text = options.title,
+		text = Kit.mixedCase(options.title),
+		face = "Title",
 		size = if Kit.Layout.isPhone() then T.size.heading else T.size.display,
-		tone = options.color or C.blood,
-		ink = options.textColor or C.bone,
+		tone = options.color or C.g0,
+		ink = options.textColor or C.white,
 		LayoutOrder = 2,
 		Parent = column,
 	})
@@ -126,9 +129,9 @@ function Cinema.card(options: CardOptions): () -> ()
 	local subtitle: any = nil
 	if options.subtitle and options.subtitle ~= "" then
 		subtitle = Kit.text({
-			face = "Scrawl",
+			face = "Semi",
 			text = options.subtitle,
-			size = 34,
+			size = 28,
 			color = C.bone,
 			align = "center",
 			maxWidth = 900,
@@ -136,7 +139,8 @@ function Cinema.card(options: CardOptions): () -> ()
 			Parent = column,
 		})
 	end
-	Motion.fade(group, true, 0.2)
+	local glitch = Glitch.attach(group, { loop = false })
+	UiSound.play("slam")
 	if options.typewriter then
 		title:write(0.9)
 		if subtitle then
@@ -153,11 +157,12 @@ function Cinema.card(options: CardOptions): () -> ()
 			return
 		end
 		closed = true
+		glitch:destroy()
 		fadeAway(group)
 	end
 end
 
--- A vignette caption at the bottom left: a name in handwriting and a line under it.
+-- A caption at the bottom left: a name in Melodrama with a white rule and a line under it.
 function Cinema.caption(name: string, line: string?): () -> ()
 	local group = Instance.new("CanvasGroup")
 	group.Name = "Caption"
@@ -167,9 +172,9 @@ function Cinema.caption(name: string, line: string?): () -> ()
 	group.Size = UDim2.fromOffset(700, 110)
 	group.Parent = Screens.cinematic
 	local nameText = Kit.text({
-		face = "Scrawl",
+		face = "Head",
 		text = name,
-		size = 58,
+		size = 48,
 		color = C.bone,
 		Position = UDim2.fromOffset(0, 0),
 		Parent = group,
@@ -177,7 +182,7 @@ function Cinema.caption(name: string, line: string?): () -> ()
 	if line and line ~= "" then
 		Kit.label({
 			Text = line,
-			font = "bodyItalic",
+			font = "label",
 			size = "lead",
 			color = C.dim,
 			TextWrapped = false,
@@ -188,19 +193,19 @@ function Cinema.caption(name: string, line: string?): () -> ()
 		})
 	end
 	Kit.Base.make("Frame", {
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BorderSizePixel = 0,
 		Position = UDim2.fromOffset(2, 64),
 		Size = UDim2.fromOffset(90, 3),
 		Parent = group,
 	})
-	Motion.fade(group, true, 0.15)
-	Motion.slideIn(group, Vector2.new(-30, 0), 0.3)
+	local glitch = Glitch.attach(group, { loop = false })
 	nameText:write(0.5)
 	local closed = false
 	return function()
 		if not closed then
 			closed = true
+			glitch:destroy()
 			fadeAway(group)
 		end
 	end
@@ -304,7 +309,7 @@ function Cinema.vignette(color: Color3?, strength: number?): () -> ()
 	for _, side in ipairs(sides) do
 		local frame = Kit.Base.make("Frame", {
 			BackgroundTransparency = 0,
-			BackgroundColor3 = color or C.red,
+			BackgroundColor3 = color or C.g0,
 			BorderSizePixel = 0,
 			Size = side[1],
 			Position = side[2],
