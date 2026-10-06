@@ -16,7 +16,7 @@ local SettingsPanel = {}
 local setters: { [string]: (any) -> () } = {}
 
 function SettingsPanel.init()
-	local win = Kit.window({ name = "settings", title = "Settings", size = "M" })
+	local win = Kit.window({ name = "settings", title = "Settings", jp = "設定", size = "M" })
 	local list = Kit.scroll({ Parent = win.body })
 	Kit.list(list, T.space.xs)
 	Kit.pad(list, 0, T.space.xs)

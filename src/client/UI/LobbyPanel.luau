@@ -1,6 +1,6 @@
--- The lobby, drawn as the first page of the Grimoire: the DEATH'S GAMBIT wordmark and tagline, a red
--- READY stamp, a quieter SPECTATE button while a case is running, the queue status, a handwritten table of contents (I. Quests,
--- II. Shop...) and, on the right, your card: rank seal, XP, coins, and the way to your
+-- The lobby, the loud side of the design: the Death's Gambit ransom-note wordmark and tagline, a white READY
+-- button that glitches every couple of seconds, a quieter SPECTATE button while a case is running, the queue
+-- status, the menu (Quests, Shop...) and, on the right, your card: rank seal, XP, coins, and the way to your
 -- profile and the leaderboards. How to Play lives in Settings (and on H). Shown to everyone
 -- not playing in the current match. The HUD's phase banner is hidden here, so the queue
 -- status lives on this page.
@@ -14,6 +14,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local DirectorPanel = require(script.Parent.DirectorPanel)
+local Glitch = require(script.Parent.Core.Glitch)
 local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
@@ -27,8 +28,6 @@ local WatchRemote = Net.event("Watch")
 
 local LobbyPanel = {}
 
-local NUMERALS = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" }
-
 local MENU = {
 	{ text = "Quests", screen = "quests" },
 	{ text = "Shop", screen = "shop" },
@@ -39,6 +38,8 @@ local MENU = {
 
 local menu: Frame
 local wordmark: any
+local wordmarkHolder: any
+local wordmarkGlitch: any
 local tagline: any
 local contents: Frame
 local profileCard: Frame
@@ -70,7 +71,7 @@ local function updateProfile()
 		lastRank = profile.rankName
 		rankText:set(profile.rankName)
 		Kit.clear(rankSeal)
-		Kit.seal({ size = 64, color = C.blood, text = string.sub(profile.rankName, 1, 1), Parent = rankSeal })
+		Kit.seal({ size = 64, color = C.white, text = string.sub(profile.rankName, 1, 1), Parent = rankSeal })
 	end
 	local function coinsText(value: number): string
 		return string.format("%d coins", math.floor(value + 0.5))
@@ -147,7 +148,7 @@ local function updateLobby()
 		)
 	end
 	statusLabel.Text = status
-	statusLabel.TextColor3 = if lobby.countdown then C.red else C.dim
+	statusLabel.TextColor3 = if lobby.countdown then C.white else C.dim
 	updateSpectate(lobby)
 	local ready = lobby.ready == true
 	if ready ~= lastReady then
@@ -171,7 +172,6 @@ local function buildContents(phone: boolean)
 		end
 		local entry = Kit.entry({
 			text = item.text,
-			numeral = NUMERALS[shown],
 			size = if phone then 26 else 32,
 			seed = shown,
 			Size = if phone then nil else UDim2.new(1, 0, 0, 44),
@@ -196,7 +196,7 @@ local function buildMenu()
 	-- A dark wash behind the menu, so the world never fights the text.
 	local wash = Kit.Base.make("Frame", {
 		Name = "Wash",
-		BackgroundColor3 = C.void,
+		BackgroundColor3 = C.g0,
 		BackgroundTransparency = 0.25,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
@@ -216,25 +216,40 @@ local function buildMenu()
 	menu:GetPropertyChangedSignal("Visible"):Connect(function()
 		wash.Visible = menu.Visible
 	end)
-	wordmark = Kit.text({
-		face = "Gothic",
-		text = Terms.GAME,
-		size = T.size.hero + 12,
-		color = C.bone,
+	-- The wordmark sits in a CanvasGroup so it can glitch; layout() builds the ransom letters into it.
+	wordmarkHolder = Kit.Base.make("CanvasGroup", {
+		Name = "Wordmark",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(0, 0),
+		AutomaticSize = Enum.AutomaticSize.XY,
 		LayoutOrder = 1,
 		Parent = menu,
-	})
+	}) :: any
+	wordmarkGlitch = Glitch.attach(wordmarkHolder, { loop = true, enter = false })
+	menu:GetPropertyChangedSignal("Visible"):Connect(function()
+		if menu.Visible and wordmark then
+			wordmark:play()
+			wordmarkGlitch:enter()
+		end
+	end)
 	tagline = Kit.text({
-		face = "Scrawl",
+		face = "Semi",
 		text = Terms.TAGLINE,
-		size = 30,
-		color = C.red,
+		size = 20,
+		color = C.bone,
 		maxWidth = 440,
 		LayoutOrder = 2,
 		Parent = menu,
 	})
 	Kit.frame({ Name = "Gap", Size = UDim2.new(1, 0, 0, T.space.m), LayoutOrder = 3, Parent = menu })
-	readyHolder = Kit.frame({ Name = "Ready", Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 4, Parent = menu })
+	readyHolder = Kit.Base.make("CanvasGroup", {
+		Name = "Ready",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 60),
+		LayoutOrder = 4,
+		Parent = menu,
+	}) :: any
+	Glitch.attach(readyHolder, { loop = true, enter = false })
 	spectateButton = Kit.button({
 		text = "Spectate  ·  case in progress",
 		icon = "eye",
@@ -248,13 +263,13 @@ local function buildMenu()
 		WatchRemote:FireServer({ action = "watch" })
 	end)
 	statusLabel = Kit.label({
-		font = "bodyItalic",
+		font = "label",
 		size = "small",
 		color = C.dim,
 		LayoutOrder = 6,
 		Parent = menu,
 	})
-	Kit.rule({ color = C.red, transparency = 0.4, thickness = 2, LayoutOrder = 7, Parent = menu })
+	Kit.rule({ color = C.white, transparency = 0.5, thickness = 2, LayoutOrder = 7, Parent = menu })
 	contents = Kit.frame({
 		Name = "Contents",
 		Size = UDim2.new(1, 0, 0, 0),
@@ -292,15 +307,15 @@ local function buildProfile()
 		Parent = top,
 	})
 	rankText = Kit.text({
-		face = "Gothic",
+		face = "Head",
 		text = "",
 		size = T.size.title,
-		color = C.red,
+		color = C.white,
 		Position = UDim2.fromOffset(76, 32),
 		Parent = top,
 	})
 	local _bar
-	_bar, setXp = Kit.meter({ color = C.red, height = 5, LayoutOrder = 2, Parent = content })
+	_bar, setXp = Kit.meter({ height = 5, LayoutOrder = 2, Parent = content })
 	xpLabel = Kit.label({ font = "mono", size = "micro", color = C.dim, LayoutOrder = 3, Parent = content })
 	local coinsRow = Kit.frame({ Name = "Coins", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 4, Parent = content })
 	Kit.list(coinsRow, T.space.s, true)
@@ -351,8 +366,13 @@ end
 
 local function layout(class: string)
 	local phone = class == "phone"
-	wordmark:setSize(if phone then T.size.display + 8 else T.size.hero + 12)
-	tagline:setSize(if phone then 24 else 30)
+	-- The ransom letters are cut at a size, so the wordmark is built again for the device.
+	Kit.clear(wordmarkHolder)
+	wordmark = Kit.ransom({ text = Terms.GAME, size = if phone then 40 else 62, Parent = wordmarkHolder })
+	if menu.Visible then
+		wordmark:play()
+	end
+	tagline:setSize(if phone then 18 else 20)
 	if phone then
 		menu.AnchorPoint = Vector2.new(0, 0)
 		menu.Position = UDim2.fromOffset(T.space.l, T.space.s)

@@ -1,11 +1,13 @@
--- The shop, as a spread: bookmark tabs down the left (today's featured items, each kind of
--- cosmetic, and Robux: coin packs, passes and the custom alias), the items as cards edged in
--- their rarity's ink, and a 3D preview of your own character wearing the selected item on the
--- right. Open in the lobby only.
+-- The shop: tabs down the left (today's featured items, each kind of cosmetic, and Robux: coin packs,
+-- passes and the custom alias), the items as cards, and a 3D preview of your own character wearing the
+-- selected item on the right. Rarity is greyscale: one to four slashes, a grey edge rising to white, and a
+-- moving shine on the top tier. On a phone the tabs are a scrolling row, the cards are two across and the
+-- preview is left out. Open in the lobby only.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
@@ -18,6 +20,7 @@ local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
+local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 
 local ShopRequest = Net.event("ShopRequest")
@@ -44,6 +47,9 @@ local grid: ScrollingFrame
 local previewHolder: Frame
 local viewport: ViewportFrame
 local previewCaption: TextLabel
+local gridLayout: UIGridLayout
+local verticalTabs: Frame
+local rowScroll: ScrollingFrame
 local currentTab = "featured"
 local selectedId: string? = nil
 local firstButton: TextButton? = nil
@@ -76,6 +82,9 @@ local function rarityInk(rarity: string): Color3
 	local key = string.upper(string.sub(rarity, 1, 1)) .. string.sub(rarity, 2)
 	return (T.rarity :: any)[key] or C.dim
 end
+
+-- Slashes on the card: 1 common, 2 rare, 3 epic, 4 legendary.
+local RARITY_TIER = { common = 1, uncommon = 1, rare = 2, epic = 3, legendary = 4, mythic = 4 }
 
 -- 3D preview ---------------------------------------------------------------------------------
 
@@ -161,7 +170,7 @@ local function actionFor(profile, item): (string, string?, string, boolean)
 	if profile.equipped[item.kind] == item.id and isOwned then
 		return "Unequip", "unequip", "ghost", true
 	elseif isOwned then
-		return "Equip", "equip", "parchment", true
+		return "Equip", "equip", "secondary", true
 	elseif item.source == "vip" then
 		return "VIP pass", nil, "secondary", false
 	elseif not item.price then
@@ -175,7 +184,44 @@ end
 
 local function itemCard(profile, item: Cosmetics.Item, order: number)
 	local ink = rarityInk(item.rarity)
+	local tier = RARITY_TIER[item.rarity] or 1
 	local card = Kit.card({ accent = ink, Size = UDim2.fromScale(1, 1), LayoutOrder = order, Parent = grid })
+	if tier >= 3 then
+		local edge = card:FindFirstChildOfClass("UIStroke")
+		if edge then
+			edge.Color = ink
+			edge.Thickness = 2
+			edge.Transparency = 0
+		end
+	end
+	if tier >= 4 and not Motion.isReduced() then
+		-- The top tier shimmers: a soft white band sweeps across the card.
+		local shine = Kit.Base.make("Frame", {
+			Name = "Shine",
+			BackgroundColor3 = C.white,
+			BackgroundTransparency = 0.78,
+			BorderSizePixel = 0,
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = card.ZIndex + 3,
+			Parent = card,
+		})
+		local gradient = Instance.new("UIGradient")
+		gradient.Rotation = 20
+		gradient.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.4, 1),
+			NumberSequenceKeypoint.new(0.5, 0),
+			NumberSequenceKeypoint.new(0.6, 1),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		gradient.Offset = Vector2.new(-1, 0)
+		gradient.Parent = shine
+		TweenService:Create(
+			gradient,
+			TweenInfo.new(2.6, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1),
+			{ Offset = Vector2.new(1, 0) }
+		):Play()
+	end
 	-- A swatch of the item's colour (its lettering for titles and poses).
 	local swatch = Kit.Base.make("Frame", {
 		Name = "Swatch",
@@ -215,14 +261,27 @@ local function itemCard(profile, item: Cosmetics.Item, order: number)
 		Text = string.upper(item.rarity .. "  ·  " .. (Cosmetics.KIND_NAMES[item.kind] or item.kind)),
 		font = "label",
 		size = "micro",
-		color = ink,
+		color = if tier == 1 then C.g5 else ink,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
 		Position = UDim2.fromOffset(0, 66),
-		Size = UDim2.new(1, 0, 0, 14),
+		Size = UDim2.new(1, -(tier * 9 + 6), 0, 14),
 		Parent = card,
 	})
+	-- The slashes, one per tier, at the right of the rarity line.
+	for slash = 1, tier do
+		Kit.Base.make("Frame", {
+			Name = "Slash",
+			BackgroundColor3 = if tier == 1 then C.g5 else ink,
+			BorderSizePixel = 0,
+			Rotation = 20,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -((tier - slash) * 9), 0, 66),
+			Size = UDim2.fromOffset(4, 14),
+			Parent = card,
+		})
+	end
 	local text, action, variant, enabled = actionFor(profile, item)
 	local button = Kit.button({
 		text = text,
@@ -254,7 +313,7 @@ end
 
 local function robuxCard(order: number, title: string, lines: { string }, buttonText: string?, onBuy: (() -> ())?)
 	local card = Kit.card({ Size = UDim2.fromScale(1, 1), LayoutOrder = order, Parent = grid })
-	Kit.text({ face = "Gothic", text = title, size = 22, color = C.bone, Parent = card })
+	Kit.text({ face = "Head", text = title, size = 22, color = C.bone, Parent = card })
 	Kit.label({
 		Text = table.concat(lines, "\n"),
 		size = "small",
@@ -281,7 +340,7 @@ end
 
 local function aliasCard(profile, order: number)
 	local card = Kit.card({ Size = UDim2.fromScale(1, 1), LayoutOrder = order, Parent = grid })
-	Kit.text({ face = "Gothic", text = "Your custom alias", size = 22, color = C.bone, Parent = card })
+	Kit.text({ face = "Head", text = "Your custom alias", size = 22, color = C.bone, Parent = card })
 	local _, box = Kit.field({
 		placeholder = "3 to 12 letters",
 		text = profile.alias or "",
@@ -355,10 +414,15 @@ local function rebuild()
 	coinsLabel.Text = string.format("%d coins", profile.coins)
 	noteLabel.Text = ""
 	local robux = currentTab == "robux"
-	previewHolder.Visible = not robux
-	grid.Size = if robux
-		then UDim2.new(1, -(TABS_WIDTH + GAP), 1, -TOP)
-		else UDim2.new(1, -(TABS_WIDTH + PREVIEW_WIDTH + GAP * 2), 1, -TOP)
+	local phone = Kit.Layout.isPhone()
+	previewHolder.Visible = not robux and not phone
+	-- On a phone the tabs are a row above the cards and there is no preview.
+	local left = if phone then 0 else TABS_WIDTH + GAP
+	local top = if phone then TOP + 56 else TOP
+	local right = if robux or phone then 0 else PREVIEW_WIDTH + GAP
+	grid.Position = UDim2.fromOffset(left, top)
+	grid.Size = UDim2.new(1, -(left + right), 1, -top)
+	gridLayout.CellSize = if phone then UDim2.new(0.5, -T.space.m, 0, 172) else UDim2.new(1 / 3, -T.space.m, 0, 172)
 	if robux then
 		buildRobux(profile)
 		return
@@ -385,7 +449,7 @@ local function rebuild()
 end
 
 function ShopPanel.init()
-	local win = Kit.window({ name = "shop", title = "Shop", size = "L" })
+	local win = Kit.window({ name = "shop", title = "Shop", jp = "ショップ", size = "L" })
 	local body = win.body
 	-- The coins line: your purse on the left, a note on the right.
 	local purse = Kit.frame({ Name = "Purse", Size = UDim2.new(0.45, 0, 0, 32), Parent = body })
@@ -417,21 +481,54 @@ function ShopPanel.init()
 	for _, tab in ipairs(TABS) do
 		table.insert(items, { id = tab, label = TAB_NAMES[tab] or Cosmetics.KIND_NAMES[tab] or tab })
 	end
-	Kit.tabs({
+	-- Two tab strips share one selection: a column for desktops, a scrolling row for phones.
+	local syncing = false
+	local selectVertical: (string) -> () = function(_id: string) end
+	local selectRow: (string) -> () = function(_id: string) end
+	local function onTab(id: string)
+		if syncing then
+			return
+		end
+		syncing = true
+		selectVertical(id)
+		selectRow(id)
+		syncing = false
+		currentTab = id
+		selectedId = nil
+		rebuild()
+	end
+	verticalTabs, selectVertical = Kit.tabs({
 		items = items,
 		selected = currentTab,
 		vertical = true,
 		Position = UDim2.fromOffset(0, TOP),
 		Size = UDim2.new(0, TABS_WIDTH, 1, -TOP),
 		Parent = body,
-	}, function(id)
-		currentTab = id
-		selectedId = nil
-		rebuild()
-	end)
+	}, onTab)
+	rowScroll = Kit.Base.make("ScrollingFrame", {
+		Name = "TabRow",
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Position = UDim2.fromOffset(0, TOP),
+		Size = UDim2.new(1, 0, 0, 48),
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		ScrollBarThickness = 0,
+		Visible = false,
+		Parent = body,
+	}) :: any
+	local rowTabs
+	rowTabs, selectRow = Kit.tabs({
+		items = items,
+		selected = currentTab,
+		Size = UDim2.fromOffset(0, 48),
+		Parent = rowScroll,
+	}, onTab)
+	rowTabs.AutomaticSize = Enum.AutomaticSize.X
 	grid = Kit.scroll({ Position = UDim2.fromOffset(TABS_WIDTH + GAP, TOP), Parent = body })
 	Kit.pad(grid, T.space.xs, T.space.xs)
-	Kit.grid(grid, UDim2.new(1 / 3, -T.space.m, 0, 172), T.space.m)
+	gridLayout = Kit.grid(grid, UDim2.new(1 / 3, -T.space.m, 0, 172), T.space.m)
 	previewHolder = Kit.card({
 		Name = "Preview",
 		tone = "page",
@@ -444,8 +541,8 @@ function ShopPanel.init()
 	viewport = Create("ViewportFrame", {
 		BackgroundColor3 = C.void,
 		BackgroundTransparency = 0,
-		Ambient = Color3.fromRGB(150, 150, 160),
-		LightColor = Color3.fromRGB(255, 240, 225),
+		Ambient = Color3.fromRGB(150, 155, 165),
+		LightColor = Color3.fromRGB(255, 255, 255),
 		LightDirection = Vector3.new(-1, -1, -0.5),
 		Size = UDim2.new(1, 0, 1, -36),
 		Parent = previewHolder,
@@ -470,12 +567,22 @@ function ShopPanel.init()
 			end
 		end
 	end)
+	Kit.Layout.watch(function(class: string)
+		local phone = class == "phone"
+		verticalTabs.Visible = not phone
+		rowScroll.Visible = phone
+		if Router.isOpen("shop") then
+			rebuild()
+		end
+	end)
 	Kit.register(win, {
 		allowed = function(view)
 			return not view.participant
 		end,
 		show = function()
 			selectedId = nil
+			verticalTabs.Visible = not Kit.Layout.isPhone()
+			rowScroll.Visible = Kit.Layout.isPhone()
 			rebuild()
 		end,
 		hide = function()

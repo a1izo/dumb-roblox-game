@@ -102,7 +102,7 @@ local function refreshFromServer()
 end
 
 function EvidencePanel.init()
-	local win = Kit.window({ name = "evidence", title = "Evidence board", size = "M" })
+	local win = Kit.window({ name = "evidence", title = "Evidence board", jp = "証拠", size = "M" })
 	list = Kit.scroll({ Parent = win.body })
 	Kit.list(list, T.space.l)
 	Kit.pad(list, T.space.s, T.space.xs)

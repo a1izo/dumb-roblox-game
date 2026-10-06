@@ -217,7 +217,7 @@ function TaskScreen.practice(stationType: string, title: string, onDone: () -> (
 end
 
 function TaskScreen.init()
-	win = Kit.window({ name = "task", title = "Case file", size = "M" })
+	win = Kit.window({ name = "task", title = "Case file", jp = "事件ファイル", size = "M" })
 	local head = Kit.frame({ Name = "Head", Size = UDim2.new(1, 0, 0, 48), Parent = win.body })
 	typeIcon = Kit.icon({ name = "task", size = 22, Position = UDim2.fromOffset(0, 0), Parent = head })
 	typeLabel = Kit.label({

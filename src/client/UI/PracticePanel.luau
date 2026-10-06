@@ -83,7 +83,7 @@ local function collapse(target: Dummy)
 end
 
 local function feedback(text: string): TextLabel
-	return Kit.label({ Text = text, color = C.red, LayoutOrder = 99, Parent = body })
+	return Kit.label({ Text = text, color = C.white, LayoutOrder = 99, Parent = body })
 end
 
 -- A name field, handwritten (the Grimoire) or typewritten (a warrant).

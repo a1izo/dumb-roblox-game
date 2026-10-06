@@ -55,7 +55,7 @@ local function questCard(item, canSwap: boolean, order: number)
 		Parent = card,
 	})
 	local bar, setProgress = Kit.meter({
-		color = if item.done then C.good else C.red,
+		color = if item.done then C.white else C.g6,
 		Position = UDim2.fromOffset(0, 38),
 		Size = UDim2.new(1, -(SIDE + 80), 0, 6),
 		Parent = card,
@@ -209,7 +209,7 @@ local function buildPopup()
 		face = "Gothic",
 		text = "Daily streak",
 		size = T.size.title,
-		color = C.red,
+		color = C.white,
 		LayoutOrder = 1,
 		Parent = content,
 	})
@@ -229,7 +229,7 @@ local function buildPopup()
 end
 
 function QuestsPanel.init()
-	local win = Kit.window({ name = "quests", title = "Quests", size = "M" })
+	local win = Kit.window({ name = "quests", title = "Quests", jp = "任務", size = "M" })
 	list = Kit.scroll({ Parent = win.body })
 	Kit.list(list, T.space.s)
 	Kit.pad(list, 0, T.space.xs)

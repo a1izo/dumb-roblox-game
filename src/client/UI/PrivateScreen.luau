@@ -157,7 +157,7 @@ local function refreshReport()
 end
 
 local function buildReport()
-	local win = Kit.window({ name = "report", title = "Case report", tone = "parchment", size = "M" })
+	local win = Kit.window({ name = "report", title = "Case report", jp = "報告書", size = "M" })
 	local body = win.body
 	Kit.label({
 		Text = Terms.f("Who do you suspect most? Reports are private and feed {zero}'s suspicion meter."),

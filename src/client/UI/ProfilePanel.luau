@@ -30,17 +30,17 @@ end
 
 local function rankBlock(profile, order: number)
 	local block = Kit.frame({ Name = "Rank", Size = UDim2.new(1, 0, 0, 76), LayoutOrder = order, Parent = list })
-	Kit.seal({ size = 68, color = C.blood, text = string.sub(profile.rankName, 1, 1), Parent = block })
+	Kit.seal({ size = 68, color = C.white, text = string.sub(profile.rankName, 1, 1), Parent = block })
 	Kit.text({
 		face = "Gothic",
 		text = profile.rankName,
 		size = T.size.heading,
-		color = C.red,
+		color = C.white,
 		Position = UDim2.fromOffset(84, 0),
 		Parent = block,
 	})
 	local _, setProgress = Kit.meter({
-		color = C.red,
+		color = C.white,
 		Position = UDim2.fromOffset(86, 46),
 		Size = UDim2.new(1, -86, 0, 5),
 		Parent = block,

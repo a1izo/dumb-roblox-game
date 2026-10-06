@@ -32,6 +32,7 @@ export type Options = {
 	title: string?,
 	size: string?, -- "S", "sheet", "M" (default) or "L"
 	tone: string?, -- "black" (default), "white" (Ace's windows only); "parchment" is the same as "black"
+	jp: string?, -- a small grey Japanese accent beside the title (Roblox draws it with its CJK fallback font)
 	loud: boolean?, -- an Aktura title that keeps glitching (Death's Manual, the case report)
 	closable: boolean?, -- default true
 	onClose: (() -> ())?, -- default: Router.close(name)
@@ -106,6 +107,25 @@ function Window.new(options: Options): Window
 		ZIndex = 4,
 		Parent = header,
 	})
+	if options.jp then
+		local accent = Base.label({
+			Text = options.jp,
+			font = "label",
+			size = "small",
+			color = if options.tone == "white" then Tokens.color.inkDim else Tokens.color.g5,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.fromOffset(0, 20),
+			AnchorPoint = Vector2.new(0, 0.5),
+			ZIndex = 4,
+			Parent = header,
+		})
+		local function placeAccent()
+			accent.Position = UDim2.new(0, Tokens.space.xl + 4 + title.width + 14, 0.5, 8)
+		end
+		title.Changed:Connect(placeAccent)
+		placeAccent()
+	end
 	-- A short stroke under the title (white; red only on a danger window).
 	Base.make("Frame", {
 		Name = "Underline",
