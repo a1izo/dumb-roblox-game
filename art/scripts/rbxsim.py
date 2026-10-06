@@ -125,6 +125,23 @@ def sample_track(track, t):
     return slerp(quats[i], quats[i + 1], (t - times[i]) / span if span > 0 else 0)
 
 
+def sample_track_position(track, t):
+    """The slide (x, y, z studs, parent frame) of a joint at t, or None when the joint only turns."""
+    p = track.get("p")
+    if not p:
+        return None
+    times = track["t"]
+    pts = [np.array(p[i * 3 : i * 3 + 3]) for i in range(len(times))]
+    if t <= times[0]:
+        return pts[0]
+    if t >= times[-1]:
+        return pts[-1]
+    i = max(k for k in range(len(times)) if times[k] <= t)
+    span = times[i + 1] - times[i]
+    a = (t - times[i]) / span if span > 0 else 0
+    return pts[i] + (pts[i + 1] - pts[i]) * a
+
+
 def sample_offset(clip, t):
     off = clip.get("offset")
     if not off:
@@ -153,20 +170,24 @@ def pose_parts(rig, clip, t):
     t = clip_time(clip, t)
     rotations = {}
     for joint, track in clip["joints"].items():
-        rotations[JOINT_MOTORS[joint]] = quat_matrix(*sample_track(track, t))
+        rot = quat_matrix(*sample_track(track, t))
+        pos = sample_track_position(track, t)
+        rotations[JOINT_MOTORS[joint]] = rot if pos is None else (rot, pos)
     offset = sample_offset(clip, t)
     return pose_from(rig, rotations, offset)
 
 
 def pose_from(rig, rotations, offset=None):
     """World CFrames of every part for joint rotations (3x3, in the parent part's frame, by motor
-    name) and a whole-body offset. A joint's rotation becomes its Transform the way the game does
-    it (ClipPlayer.transform): basis^-1 * rotation * basis, with basis the rotation of its C0."""
+    name; or (3x3, slide) for a joint that also slides) and a whole-body offset. A joint's value
+    becomes its Transform the way the game does it (ClipPlayer.transform): basis^-1 * value * basis,
+    with basis the rotation of its C0."""
     motor_by_name = {m["name"]: m for m in rig["motors"]}
     transforms = {}
-    for name, rot in rotations.items():
+    for name, value in rotations.items():
         basis = np.array(motor_by_name[name]["c0"]["r"])
-        transforms[name] = cf(r=basis.T @ rot @ basis)
+        rot, pos = (value[0], np.array(value[1], float)) if isinstance(value, tuple) else (value, None)
+        transforms[name] = cf(p=basis.T @ pos if pos is not None else (0, 0, 0), r=basis.T @ rot @ basis)
     if offset is not None:
         root_name = JOINT_MOTORS["root"]
         basis = np.array(motor_by_name[root_name]["c0"]["r"])

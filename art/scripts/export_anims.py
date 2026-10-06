@@ -39,6 +39,16 @@ def sample_joint(arm, joint):
     return q
 
 
+def sample_position(arm, joint):
+    """How far a joint's part has slid from its rest place, in its parent's frame (Roblox axes)."""
+    bone = JOINTS[joint]
+    parent = PARENT[bone]
+    pb, pp = arm.pose.bones[bone], arm.pose.bones[parent]
+    rest = arm.data.bones[bone].head_local - arm.data.bones[parent].head_local
+    now = _delta(arm, parent).inverted() @ (pb.head - pp.head)
+    return M @ (now - rest)
+
+
 def sample_offset(arm):
     bone = JOINTS["root"]
     pb = arm.pose.bones[bone]
@@ -115,6 +125,8 @@ def sample_action(arm, action):
     count = max(1, int(round(length * SAMPLE_FPS)))
     times = [length * i / count for i in range(count + 1)]
     samples = {joint: [] for joint in joints}
+    moves = [j for j in action.get("moves", []) if j in joints and j != "root"]
+    positions = {joint: [] for joint in moves}
     offsets = []
     for t in times:
         frame = t * fps
@@ -126,26 +138,32 @@ def sample_action(arm, action):
             if previous is not None and previous.dot(q) < 0:
                 q.negate()
             samples[joint].append(q)
+        for joint in moves:
+            positions[joint].append(sample_position(arm, joint))
         if has_offset:
             offsets.append(sample_offset(arm))
     if action.get("floor") and has_offset:
-        lift_to_floor(samples, offsets)
-    return length, times, samples, offsets
+        lift_to_floor(samples, offsets, positions)
+    return length, times, samples, offsets, positions
 
 
-def lift_to_floor(samples, offsets, floor=0.02):
+def lift_to_floor(samples, offsets, positions, floor=0.02):
     """Clips that end on the ground: lifts every frame whose body dips below the floor."""
     import numpy as np
     from posekit import lowest
 
     for i, offset in enumerate(offsets):
-        joints = {joint: np.array(quats[i].to_matrix()) for joint, quats in samples.items()}
+        joints = {}
+        for joint, quats in samples.items():
+            rot = np.array(quats[i].to_matrix())
+            moved = positions.get(joint)
+            joints[joint] = (rot, tuple(moved[i])) if moved else rot
         low = lowest(joints, tuple(offset))
         if low < floor:
             offsets[i] = offset + Vector((0, floor - low, 0))
 
 
-def clip_lua(name, action, length, times, samples, offsets):
+def clip_lua(name, action, length, times, samples, offsets, positions=None):
     lines = [f"\t{name} = {{"]
     lines.append(f"\t\tlength = {fmt(length, 3)},")
     lines.append(f"\t\tloop = {'true' if action['loop'] else 'false'},")
@@ -154,14 +172,25 @@ def clip_lua(name, action, length, times, samples, offsets):
         lines.append(f"\t\tstride = {fmt(float(action['stride']), 3)},")
         lines.append(f"\t\tleg = {fmt(LEG['length'], 3)},")
     lines.append("\t\tjoints = {")
+    positions = positions or {}
     for joint in sorted(samples):
         quats = samples[joint]
-        keep = reduce_quats(times, quats)
+        keep = set(reduce_quats(times, quats))
+        moved = positions.get(joint)
+        if moved and max(p.length for p in moved) > 0.002:
+            keep |= set(reduce_vectors(times, moved))
+        else:
+            moved = None
+        keep = sorted(keep)
         t_text = ", ".join(fmt(times[i], 3) for i in keep)
         q_text = ", ".join(
             f"{fmt(quats[i].x, 4)}, {fmt(quats[i].y, 4)}, {fmt(quats[i].z, 4)}, {fmt(quats[i].w, 4)}" for i in keep
         )
-        lines.append(f"\t\t\t{joint} = {{ t = {{ {t_text} }}, q = {{ {q_text} }} }},")
+        line = f"\t\t\t{joint} = {{ t = {{ {t_text} }}, q = {{ {q_text} }}"
+        if moved:
+            p_text = ", ".join(f"{fmt(moved[i].x, 3)}, {fmt(moved[i].y, 3)}, {fmt(moved[i].z, 3)}" for i in keep)
+            line += f", p = {{ {p_text} }}"
+        lines.append(line + " },")
     lines.append("\t\t},")
     if offsets:
         keep = reduce_vectors(times, offsets)
@@ -180,15 +209,16 @@ def export(arm):
         "-- change the keys in art/scripts/anims.py (or the actions in Blender) and export again.",
         "--",
         "-- R6 joints: root, neck, rShoulder, lShoulder, rHip, lHip. Each clip: length (seconds), loop, and per joint the key times with quaternions",
-        "-- (x, y, z, w) in the joint's parent frame; offset moves the whole body (studs).",
+        "-- (x, y, z, w) in the joint's parent frame, and p (x, y, z studs)",
+        "-- where the part also slides in that frame; offset moves the whole body (studs).",
         "-- Movement clips also give their stride: studs covered per cycle by a leg `leg` long.",
         "",
         "return {",
     ]
     stats = {}
     for action in actions:
-        length, times, samples, offsets = sample_action(arm, action)
-        lines = clip_lua(action.name, action, length, times, samples, offsets)
+        length, times, samples, offsets, positions = sample_action(arm, action)
+        lines = clip_lua(action.name, action, length, times, samples, offsets, positions)
         body.extend(lines)
         stats[action.name] = sum(line.count(",") for line in lines)
     body.append("}")

@@ -1,21 +1,23 @@
 """A small keyframe language for Death's Gambit animations, and the code that turns it into Blender
-actions on the R15 rig (art/scripts/rig.py).
+actions on the R6 rig (art/scripts/rig.py).
 
 Poses are written in the game's joint convention (src/shared/Anim/Joints.luau): degrees around
 each joint in its parent's frame, applied like Roblox's CFrame.Angles(x, y, z).
-    arms and legs: +x swings forward/up; knees: -x bends; neck and waist: -x leans forward
+    arms and legs: +x swings forward/up; neck and root: -x leans forward
     right arm / right leg: +z out to the side; left arm / left leg: -z out to the side
     +y turns left
-`offset` moves the whole body (the root joint) in studs: x right, y up, z backwards.
+A joint can also move: J(angles, (dx, dy, dz)) slides the part by that many studs in its parent's
+frame (x right, y up, z backwards) as well as turning it. R6 has no elbows or knees, so sliding a
+leg up fakes a bent knee and sliding an arm forward fakes a bent elbow.
+`offset` moves the whole body (the root joint) in studs.
 
 Each key says how the motion arrives at it (ease):
-    smooth, linear, sine, in, out, snap, overshoot, bigshoot, bounce, elastic, hold
-Snappy, springy arrivals (snap, overshoot) give the punchy cartoon feel.
+    smooth, linear, sine, in, out, snap, hold
 """
 
 import bpy
 from bpy_extras import anim_utils
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Vector
 
 from common import M, M_INV, rbx_angles
 from rig import JOINTS
@@ -29,18 +31,26 @@ EASES = {
     "in": ("CUBIC", "EASE_IN", None),
     "out": ("CUBIC", "EASE_OUT", None),
     "snap": ("EXPO", "EASE_OUT", None),
-    "overshoot": ("BACK", "EASE_OUT", 1.7),
-    "bigshoot": ("BACK", "EASE_OUT", 3.2),
-    "bounce": ("BOUNCE", "EASE_OUT", None),
-    "elastic": ("ELASTIC", "EASE_OUT", None),
     "hold": ("CONSTANT", "AUTO", None),
 }
+
+
+def J(angles=(0, 0, 0), pos=(0, 0, 0)):
+    """A joint value that turns and slides: J((x, y, z), (dx, dy, dz))."""
+    return {"r": _angles(angles), "p": tuple(float(v) for v in pos)}
 
 
 def _angles(value):
     if isinstance(value, (int, float)):
         return (float(value), 0.0, 0.0)
     return tuple(float(v) for v in value)
+
+
+def split(value):
+    """(angles, position or None) for any joint value."""
+    if isinstance(value, dict):
+        return _angles(value.get("r", (0, 0, 0))), tuple(value.get("p", (0, 0, 0)))
+    return _angles(value), None
 
 
 class Clip:
@@ -50,7 +60,7 @@ class Clip:
         self.length = float(length)
         self.loop = loop
         self.note = note
-        self.keys = {}  # joint -> [(t, angles, ease)]
+        self.keys = {}  # joint -> [(t, angles, position or None, ease)]
         self.offsets = []  # [(t, (x, y, z), ease)]
         self.stride = None  # studs per cycle, for movement clips the game plays by speed
 
@@ -58,7 +68,8 @@ class Clip:
         for joint, value in joints.items():
             if joint not in JOINTS:
                 raise ValueError(f"{self.name}: unknown joint {joint}")
-            self.keys.setdefault(joint, []).append((float(t), _angles(value), ease))
+            angles, pos = split(value)
+            self.keys.setdefault(joint, []).append((float(t), angles, pos, ease))
         if offset is not None:
             self.offsets.append((float(t), tuple(float(v) for v in offset), ease))
         return self
@@ -68,7 +79,8 @@ class Clip:
         for joint, keys in self.keys.items():
             keys.sort(key=lambda k: k[0])
             if self.loop and keys[-1][0] < self.length - 1e-6:
-                keys.append((self.length, keys[0][1], "sine" if keys[0][2] == "hold" else keys[0][2]))
+                first = keys[0]
+                keys.append((self.length, first[1], first[2], "sine" if first[3] == "hold" else first[3]))
         self.offsets.sort(key=lambda k: k[0])
         if self.loop and self.offsets and self.offsets[-1][0] < self.length - 1e-6:
             self.offsets.append((self.length, self.offsets[0][1], self.offsets[0][2]))
@@ -82,11 +94,6 @@ def clip(name, length, loop=False, note="", floor=False):
     c = Clip(name, length, loop, note, floor)
     CLIPS[name] = c
     return c
-
-
-def side(joint_left, joint_right, left, right):
-    """kwargs for a left/right pair: side("lShoulder", "rShoulder", (x, y, z), (x, y, z))."""
-    return {joint_left: left, joint_right: right}
 
 
 # Building actions ------------------------------------------------------------------------------
@@ -105,6 +112,7 @@ def bone_quaternion(arm, bone_name, angles):
 
 
 def bone_location(arm, bone_name, offset):
+    """The pose-bone location that slides a part by `offset` studs in its parent's frame."""
     rest = _rest(arm, bone_name)
     return rest.inverted() @ (M_INV @ Vector(offset))
 
@@ -143,6 +151,7 @@ def build_action(arm, c):
     action["length"] = c.length
     action["loop"] = c.loop
     action["joints"] = sorted(c.keys.keys())
+    action["moves"] = sorted(j for j, keys in c.keys.items() if any(k[2] is not None for k in keys))
     action["offset"] = len(c.offsets) > 0
     action["note"] = c.note
     if c.stride:
@@ -160,17 +169,21 @@ def build_action(arm, c):
         bone_name = JOINTS[joint]
         pb = arm.pose.bones[bone_name]
         previous = None
-        for t, angles, _ in keys:
+        moves = any(k[2] is not None for k in keys)
+        for t, angles, pos, _ in keys:
             q = bone_quaternion(arm, bone_name, angles)
             if previous is not None and previous.dot(q) < 0:
                 q.negate()
             previous = q
             pb.rotation_quaternion = q
             pb.keyframe_insert("rotation_quaternion", frame=t * FPS, group=bone_name)
+            if moves and joint != "root":
+                pb.location = bone_location(arm, bone_name, pos or (0, 0, 0))
+                pb.keyframe_insert("location", frame=t * FPS, group=bone_name)
         bag = _channelbag(arm, action)
-        path = f'pose.bones["{bone_name}"].rotation_quaternion'
-        fcurves = [fc for fc in bag.fcurves if fc.data_path == path]
-        _apply_eases(fcurves, [k[2] for k in keys])
+        paths = {f'pose.bones["{bone_name}"].rotation_quaternion', f'pose.bones["{bone_name}"].location'}
+        fcurves = [fc for fc in bag.fcurves if fc.data_path in paths]
+        _apply_eases(fcurves, [k[3] for k in keys])
 
     if c.offsets:
         pb = arm.pose.bones[JOINTS["root"]]

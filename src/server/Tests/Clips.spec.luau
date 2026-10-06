@@ -48,6 +48,9 @@ return function(t)
 				for joint, track in pairs(clip.joints) do
 					expect(Joints.R6[joint] ~= nil).to.equal(true)
 					expect(#track.q).to.equal(#track.t * 4)
+					if track.p then
+						expect(#track.p).to.equal(#track.t * 3)
+					end
 					for i = 2, #track.t do
 						expect(track.t[i] > track.t[i - 1]).to.equal(true)
 					end

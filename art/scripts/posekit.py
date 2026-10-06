@@ -66,10 +66,18 @@ def euler(m):
 
 def fk(joints, offset=(0, 0, 0)):
     """World CFrames (4x4) of every part, with the HumanoidRootPart standing on the origin.
-    Joint values are angles (degrees) or 3x3 rotation matrices, in the parent part's frame."""
+    Joint values are angles (degrees), 3x3 rotation matrices, animlib.J values or (rotation,
+    slide) pairs, in the parent part's frame."""
     rotations = {}
     for joint, value in joints.items():
-        rotations[_MOTOR_OF[joint]] = value if isinstance(value, np.ndarray) else _matrix(value)
+        if isinstance(value, dict):  # animlib.J: turns and slides
+            value = (_matrix(value.get("r", (0, 0, 0))), tuple(value.get("p", (0, 0, 0))))
+        if isinstance(value, tuple) and len(value) == 2 and not isinstance(value[0], (int, float)):
+            rot, pos = value
+            rot = rot if isinstance(rot, np.ndarray) else _matrix(rot)
+            rotations[_MOTOR_OF[joint]] = (rot, pos)
+        else:
+            rotations[_MOTOR_OF[joint]] = value if isinstance(value, np.ndarray) else _matrix(value)
     world = rbxsim.pose_from(_RIG, rotations, offset)
     hrp = _RIG["parts"]["HumanoidRootPart"]["cframe"]["p"]
     # pose_from leaves the root part at its rest place; stand it on the origin axis
@@ -160,6 +168,18 @@ def planted_legs(offset=(0, 0, 0), root=(0, 0, 0), stance=0.0, forward=(0.0, 0.0
             foot = (inward if side * inward >= 0.25 else hip[0] + side * d, foot[1], foot[2])
         out[key + "Hip"], _ = leg_angles_for(side, foot, root, offset)
     return out
+
+
+def planted_slide(side, foot, root=(0, 0, 0), offset=(0, 0, 0), pitch=0.0, roll=0.0):
+    """The R6 way to keep a sole planted: the leg stays upright in the world (or tilted by pitch /
+    roll degrees) and slides in or out of the hip so the middle of its sole sits on `foot`
+    (character frame). Returns (hip angles in the torso's frame, slide in the torso's frame)."""
+    world = R(pitch, 0, roll)
+    pivot = np.array(foot, float) - world @ np.array([-side * 0.5, -LEG_LENGTH, 0.0])
+    natural = hip_world(side, root, offset)
+    root_rot = R(*root)
+    slide = root_rot.T @ (pivot - natural)
+    return euler(root_rot.T @ world), tuple(float(v) for v in slide)
 
 
 def leg_contact(side, hip, root=(0, 0, 0), offset=(0, 0, 0)):
