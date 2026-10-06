@@ -91,7 +91,7 @@ end
 function RoleCard.init()
 	local page, content = Kit.page({
 		Name = "RoleCard",
-		tone = "parchment",
+		tone = "black",
 		padding = T.space.xl,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -116,14 +116,14 @@ function RoleCard.init()
 		Parent = top,
 	})
 	roleText = Kit.text({
-		face = "Gothic",
+		face = "Head",
 		text = "",
 		size = T.size.display,
 		color = C.bone,
 		Position = UDim2.fromOffset(86, 18),
 		Parent = top,
 	})
-	winLabel = Kit.label({ font = "bodyBold", size = "small", color = C.red, LayoutOrder = 2, Parent = content })
+	winLabel = Kit.label({ font = "bodyBold", size = "small", color = C.white, LayoutOrder = 2, Parent = content })
 	bullets = Kit.frame({
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -140,7 +140,7 @@ function RoleCard.init()
 		LayoutOrder = 5,
 		Parent = content,
 	})
-	aliasText = Kit.text({ face = "Scrawl", text = "", size = 40, color = C.bone, LayoutOrder = 6, Parent = content })
+	aliasText = Kit.text({ face = "Head", text = "", size = 36, color = C.bone, LayoutOrder = 6, Parent = content })
 	Kit.label({
 		Text = "YOUR REAL NAME",
 		font = "label",
@@ -149,7 +149,7 @@ function RoleCard.init()
 		LayoutOrder = 7,
 		Parent = content,
 	})
-	nameText = Kit.text({ face = "Scrawl", text = "", size = 52, color = C.red, LayoutOrder = 8, Parent = content })
+	nameText = Kit.text({ face = "Head", text = "", size = 44, color = C.danger, LayoutOrder = 8, Parent = content })
 	alliesLabel = Kit.label({ size = "small", color = C.dim, LayoutOrder = 9, Parent = content })
 	hintLabel = Kit.label({ font = "document", size = "small", color = C.bone, LayoutOrder = 10, Parent = content })
 	Kit.label({

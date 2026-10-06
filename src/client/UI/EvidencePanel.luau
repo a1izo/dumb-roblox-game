@@ -34,7 +34,7 @@ local function addSlip(entry)
 	-- A red pin at the top of every slip.
 	local pin = Kit.Base.make("Frame", {
 		Name = "Pin",
-		BackgroundColor3 = C.red,
+		BackgroundColor3 = C.white,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0, -T.space.m + 2),

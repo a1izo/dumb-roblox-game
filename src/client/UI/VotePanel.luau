@@ -12,6 +12,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Clock = require(script.Parent.Core.Clock)
+local Glitch = require(script.Parent.Core.Glitch)
 local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
@@ -27,6 +28,7 @@ local T = Kit.Tokens
 local VotePanel = {}
 
 local panel: Frame
+local voteGlitch: any
 local renderChoices: (any, any?, boolean?) -> { any }
 local statusLabel: TextLabel
 local warrantButton: TextButton
@@ -160,7 +162,6 @@ function VotePanel.init()
 	local page, content = Kit.page({
 		Name = "Vote",
 		tone = "black",
-		ruled = true,
 		padding = T.space.l,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, T.space.l, 0.5, 20),
@@ -174,19 +175,37 @@ function VotePanel.init()
 		MinSize = Vector2.new(300, 320),
 		Parent = panel,
 	})
-	Kit.text({ face = "Gothic", text = "The vote", size = T.size.heading, color = C.bone, Parent = content })
-	local timer = Kit.label({
-		font = "mono",
-		size = "title",
-		TextXAlignment = Enum.TextXAlignment.Right,
+	-- The loud header: the title and its Japanese accent glitch every couple of seconds.
+	local header = Kit.Base.make("CanvasGroup", {
+		Name = "Header",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(0.7, 0, 0, 44),
+		Parent = content,
+	}) :: any
+	Kit.text({ face = "Head", text = "The vote", size = T.size.heading, color = C.bone, Parent = header })
+	Kit.label({
+		Text = "投票",
+		font = "label",
+		size = "small",
+		color = C.g5,
 		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(176, 18),
+		Parent = header,
+	})
+	voteGlitch = Glitch.attach(header, { loop = true, enter = false })
+	-- The clock, in equal-width digits; red in the last ten seconds.
+	local timer = Kit.num({
+		text = "",
+		size = 30,
+		color = C.bone,
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 4),
-		Size = UDim2.fromOffset(90, 30),
+		Position = UDim2.new(1, 0, 0, 2),
 		Parent = content,
 	})
-	Clock.bind(timer)
+	Clock.bind(timer, function(seconds: number): string
+		timer:setColor(if seconds <= 10 then C.danger else C.bone)
+		return Clock.format(seconds)
+	end)
 	statusLabel = Kit.label({
 		size = "micro",
 		color = C.dim,
@@ -270,6 +289,7 @@ function VotePanel.init()
 			myVote = nil
 			voted = {}
 			panel.Visible = true
+			voteGlitch:enter()
 			rebuild()
 		end,
 		hide = function()

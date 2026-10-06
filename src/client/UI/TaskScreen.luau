@@ -244,7 +244,7 @@ function TaskScreen.init()
 	})
 	local _meter
 	_meter, setProgress = Kit.meter({
-		color = C.red,
+		color = C.white,
 		height = 6,
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.new(0, 0, 1, -26),

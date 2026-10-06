@@ -32,7 +32,7 @@ local function addMessage(text: string, clock: string?)
 	Kit.label({
 		Text = string.format("[%s]  %s", clock or "--:--", text),
 		font = "document",
-		color = C.white,
+		color = C.ink,
 		LayoutOrder = -messageCount,
 		Parent = feed,
 	})
@@ -70,7 +70,7 @@ function MeetingPanel.init()
 		MinSize = Vector2.new(280, 300),
 		Parent = panel,
 	})
-	Kit.text({ face = "Gothic", text = Terms.f("{Meeting}"), size = T.size.title, color = C.bone, Parent = content })
+	Kit.text({ face = "Head", text = Terms.f("{Meeting}"), size = T.size.title, color = C.bone, Parent = content })
 	Kit.label({
 		Text = "Free chat is open. Messages with a living player's full real name are blocked.",
 		size = "micro",
@@ -102,10 +102,10 @@ function MeetingPanel.init()
 	}, function()
 		Router.toggle("zeroDesk")
 	end)
-	-- Zero's screen: white type on black, like the screen in the meeting room.
+	-- Ace's screen: black type on white, like the screen in the meeting room, and the only such panel here.
 	local screen = Kit.card({
 		Name = "ZeroScreen",
-		tone = "page",
+		tone = "parchment",
 		padding = T.space.s,
 		Position = UDim2.fromOffset(0, 124),
 		Size = UDim2.new(1, 0, 1, -124),
@@ -115,7 +115,7 @@ function MeetingPanel.init()
 		Text = string.upper(Terms.f("{ZERO_SCREEN}")),
 		font = "label",
 		size = "micro",
-		color = C.white,
+		color = C.inkDim,
 		Parent = screen,
 	})
 	feed = Kit.scroll({ Position = UDim2.fromOffset(0, 20), Size = UDim2.new(1, 0, 1, -20), Parent = screen })

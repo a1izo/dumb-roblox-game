@@ -1,7 +1,7 @@
 -- The briefing. First your own avatar acts out your role on a dark set (Presentation/RoleReveal,
--- the same length for every role), then two pages open: a parchment card with your role, how
--- you win, the three things to know and your first move; and a black page with your alias and
--- your real name written in red, your allies, and (for the Butler) the hint. Everything here
+-- the same length for every role), then two panels open: your role card (how you win, the three things
+-- to know and your first move) and your secret page with your alias and your real name in red, your
+-- allies, and (for the Butler) the hint. Everything here
 -- can be seen again on the role card (hold C).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -94,14 +94,12 @@ local function build(payload)
 
 	-- The role card.
 	local card, cardContent = Kit.page({
-		tone = "parchment",
+		tone = "black",
 		padding = T.space.xl,
 		Size = if phone then UDim2.new(1, 0, 0.55, 0) else UDim2.fromOffset(460, 540),
-		Rotation = -1,
 		LayoutOrder = 1,
 		Parent = holder,
 	})
-	card.Rotation = if phone then 0 else -1.5
 	Kit.list(cardContent, T.space.s)
 	local top = Kit.frame({ Size = UDim2.new(1, 0, 0, 78), LayoutOrder = 1, Parent = cardContent })
 	Kit.seal({ size = 72, color = if hostile then C.red else C.steel, icon = ROLE_ICON[role], Parent = top })
@@ -116,19 +114,19 @@ local function build(payload)
 		Parent = top,
 	})
 	local roleName = Kit.text({
-		face = "Gothic",
+		face = "Head",
 		text = info.display,
 		size = T.size.heading + 6,
 		color = if hostile then C.red else C.bone,
 		Position = UDim2.fromOffset(84, 22),
 		Parent = top,
 	})
-	roleName:write(0.6, C.red)
+	roleName:write(0.6)
 	Kit.label({
 		Text = "How you win: " .. copy.win,
 		font = "bodyBold",
 		size = "small",
-		color = C.red,
+		color = C.white,
 		LayoutOrder = 2,
 		Parent = cardContent,
 	})
@@ -161,15 +159,12 @@ local function build(payload)
 
 	-- Your secret page.
 	local page, pageContent = Kit.page({
-		tone = "black",
-		ruled = true,
-		margin = true,
+		tone = "raised",
 		padding = T.space.xl,
 		Size = if phone then UDim2.new(1, 0, 0.4, 0) else UDim2.fromOffset(440, 520),
 		LayoutOrder = 2,
 		Parent = holder,
 	})
-	page.Rotation = if phone then 0 else 1.2
 	Kit.list(pageContent, T.space.xs)
 	Kit.label({
 		Text = "YOUR ALIAS",
@@ -180,7 +175,7 @@ local function build(payload)
 		Parent = pageContent,
 	})
 	local alias =
-		Kit.text({ face = "Scrawl", text = tostring(payload.alias), size = 48, LayoutOrder = 2, Parent = pageContent })
+		Kit.text({ face = "Head", text = tostring(payload.alias), size = 44, LayoutOrder = 2, Parent = pageContent })
 	alias:write(0.5)
 	Kit.label({
 		Text = "YOUR REAL NAME",
@@ -191,10 +186,10 @@ local function build(payload)
 		Parent = pageContent,
 	})
 	local name = Kit.text({
-		face = "Scrawl",
+		face = "Head",
 		text = tostring(payload.realName),
-		size = 60,
-		color = C.red,
+		size = 48,
+		color = C.danger,
 		LayoutOrder = 4,
 		Parent = pageContent,
 	})

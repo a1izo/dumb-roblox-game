@@ -1,7 +1,7 @@
--- The private screens of the Grimoire phase. Every living player gets one at the same
--- moment, so nobody can tell who is writing: the Hand writes one full real name in the
--- Grimoire (a ruled black page, the name in handwriting); everyone else files a short case
--- report on parchment and picks a suspect.
+-- The private screens of Death's Gambit. Every living player gets one at the same moment, so nobody can
+-- tell who is writing: Diavolo writes one full real name in Death's Manual; everyone else files a short
+-- case report and picks a suspect. The two windows are the same in every way that can be seen from the
+-- outside: the same loud Aktura header with its red stroke, the same size, the same timer.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -61,7 +61,13 @@ local function refreshGrimoire()
 end
 
 local function buildGrimoire()
-	local win = Kit.window({ name = "grimoire", title = Terms.f("{Grimoire}"), size = "M", ruled = true })
+	local win = Kit.window({
+		name = "grimoire",
+		title = Terms.f("{Grimoire}"),
+		jp = "死の手引書",
+		loud = true,
+		size = "M",
+	})
 	local list = Kit.scroll({ Parent = win.body })
 	Kit.list(list, T.space.m, false, Enum.HorizontalAlignment.Center)
 	Kit.pad(list, T.space.xs, T.space.xs)
@@ -111,10 +117,10 @@ local function buildGrimoire()
 		end
 	)
 	writtenText = Kit.text({
-		face = "Scrawl",
+		face = "Semi",
 		text = "A name has been written this round.",
-		size = 30,
-		color = C.red,
+		size = 24,
+		color = C.danger,
 		align = "center",
 		LayoutOrder = 6,
 		Parent = list,
@@ -157,7 +163,7 @@ local function refreshReport()
 end
 
 local function buildReport()
-	local win = Kit.window({ name = "report", title = "Case report", jp = "報告書", size = "M" })
+	local win = Kit.window({ name = "report", title = "Case report", jp = "報告書", loud = true, size = "M" })
 	local body = win.body
 	Kit.label({
 		Text = Terms.f("Who do you suspect most? Reports are private and feed {zero}'s suspicion meter."),
@@ -204,9 +210,9 @@ local function buildReport()
 		ReportRemote:FireServer({ suspect = selectedSuspect, text = reportBox.Text })
 	end)
 	filedText = Kit.text({
-		face = "Scrawl",
+		face = "Semi",
 		text = "Report filed. Wait for the meeting.",
-		size = 34,
+		size = 24,
 		color = C.bone,
 		align = "center",
 		AnchorPoint = Vector2.new(0.5, 1),
