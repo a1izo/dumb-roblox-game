@@ -1,7 +1,7 @@
 """Preview videos of animation clips, for review (background Blender):
 
     blender -b --factory-startup --python art/scripts/video_anims.py -- out.mp4 [--seconds=4] [--fps=30] \
-        [--width=1600] [--height=640] [--angle=0] clip clip ...
+        [--width=1600] [--height=640] [--angle=0] [--spacing=4.6] clip clip ...
 
 Every clip gets its own copy of the R6 mannequin in a row, labelled with the clip's name, all
 playing at once and looping. Movement clips play in place. Videos are written to
@@ -72,6 +72,7 @@ def main():
     out = argv[0]
     seconds, fps, width, height, angle = 4.0, 30, 1600, 640, 0.0
     still = None
+    spacing = SPACING
     names = []
     for a in argv[1:]:
         if a.startswith("--seconds="):
@@ -84,6 +85,8 @@ def main():
             height = int(a.split("=")[1])
         elif a.startswith("--angle="):
             angle = float(a.split("=")[1])
+        elif a.startswith("--spacing="):
+            spacing = float(a.split("=")[1])
         elif a.startswith("--still="):
             still = float(a.split("=")[1])
         else:
@@ -95,7 +98,7 @@ def main():
     count = len(names)
     rigs = []
     for i, name in enumerate(names):
-        x = -(i - (count - 1) / 2) * SPACING  # the camera looks from +Y, so the first clip is on the left
+        x = -(i - (count - 1) / 2) * spacing  # the camera looks from +Y, so the first clip is on the left
         action = bpy.data.actions[name]
         loop(action)
         rig = arm if i == 0 else duplicate_rig(arm, i, x)
@@ -111,7 +114,7 @@ def main():
         rig.animation_data.action = action
     for obj in bpy.data.objects:
         if obj.type == "MESH" and obj.name == "Floor":
-            obj.dimensions = (SPACING * count + 12, 14, 0.1)
+            obj.dimensions = (spacing * count + 12, 14, 0.1)
 
     # The actions are keyed at 60 frames a second; every other scene frame is rendered, so a video
     # at `fps` (30) plays at real speed.
@@ -121,7 +124,7 @@ def main():
     scene.frame_start = 0
     scene.frame_end = int(seconds * 60) - 1
     scene.frame_step = 60 // fps
-    width_total = SPACING * count
+    width_total = spacing * count
     a = math.radians(angle)
     target = Vector((0, 0, 2.7))
     dist = max(16.0, width_total * 1.5)  # a 50 mm lens sees 0.72 x the distance across

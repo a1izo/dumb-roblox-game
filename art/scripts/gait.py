@@ -184,49 +184,49 @@ def build_cycle(g, samples, pose_fn):
 
 
 # Run ------------------------------------------------------------------------------------------------
-# Full speed in the game is 16 studs/s.
+# Full speed in the game is 16 studs/s. Grounded: a steady forward lean, arms pumping close to the
+# body, a low flight between steps.
 
-RUN = Gait("run", period=0.54, stride=16 * 0.54, stance=0.2, apex=0.5, swing_peak=46,
-           note="Sprint at 16 studs/s: planted soles never slide, flight between steps.")
+RUN = Gait("run", period=0.54, stride=16 * 0.54, stance=0.22, apex=0.28, swing_peak=34,
+           note="Run at 16 studs/s: planted soles never slide, a low flight between steps.")
 
 
 def run_pose(phase):
     s = RUN.stance_fraction
-    bob = math.cos(4 * math.pi * (phase - s / 2))
-    yaw = 12 * math.cos(2 * math.pi * phase)  # right hip forward at the right touch-down
-    roll = 3.5 * math.cos(2 * math.pi * (phase - s / 2))
-    root = (-9, yaw, roll)
-    legs, offset = RUN.pose(phase, root, sway=0.05 * math.cos(2 * math.pi * (phase - s / 2)))
+    yaw = 6 * math.cos(2 * math.pi * phase)  # right hip forward at the right touch-down
+    roll = 1.5 * math.cos(2 * math.pi * (phase - s / 2))
+    root = (-8, yaw, roll)
+    legs, offset = RUN.pose(phase, root, sway=0.03 * math.cos(2 * math.pi * (phase - s / 2)))
     swing = math.cos(2 * math.pi * phase)  # +1: right arm back, left arm forward
     joints = dict(
         root=root,
-        neck=(9 + 2 * bob, -0.8 * yaw, 0),
-        rShoulder=(-58 * swing + 6, 18 * swing * 0, 12 + 6 * swing),
-        lShoulder=(58 * swing + 6, 0, -12 + 6 * swing),
+        neck=(7, -0.8 * yaw, 0),
+        rShoulder=(10 - 40 * swing, 0, 3),
+        lShoulder=(10 + 40 * swing, 0, -3),
     )
     joints.update(legs)
     return joints, offset
 
 
 # Walk -----------------------------------------------------------------------------------------------
-# A relaxed walk at about 3 studs/s, used while speeding up and slowing down.
+# A plain walk at about 3 studs/s, used while speeding up and slowing down.
 
-WALK = Gait("walk", period=0.8, stride=2.4, stance=0.62, swing_peak=26,
-            note="Relaxed walk at 3 studs/s; soles stay planted.")
+WALK = Gait("walk", period=0.9, stride=2.4, stance=0.62, swing_peak=24,
+            note="Walk at about 2.7 studs/s; soles stay planted.")
 
 
 def walk_pose(phase):
     s = WALK.stance_fraction
-    yaw = 7 * math.cos(2 * math.pi * phase)
-    roll = 2.5 * math.cos(2 * math.pi * (phase - s / 2))
-    root = (-2, yaw, roll)
-    legs, offset = WALK.pose(phase, root, sway=0.07 * math.cos(2 * math.pi * (phase - s / 2)))
+    yaw = 3 * math.cos(2 * math.pi * phase)
+    roll = 1.2 * math.cos(2 * math.pi * (phase - s / 2))
+    root = (-1, yaw, roll)
+    legs, offset = WALK.pose(phase, root, sway=0.03 * math.cos(2 * math.pi * (phase - s / 2)))
     swing = math.cos(2 * math.pi * phase)
     joints = dict(
         root=root,
-        neck=(2, -0.5 * yaw, 0),
-        rShoulder=(-26 * swing, 0, 7),
-        lShoulder=(26 * swing, 0, -7),
+        neck=(1, -0.6 * yaw, 0),
+        rShoulder=(-16 * swing, 0, 1.5),
+        lShoulder=(16 * swing, 0, -1.5),
     )
     joints.update(legs)
     return joints, offset
@@ -238,23 +238,23 @@ def walk_pose(phase):
 def idle_clip():
     from posekit import planted_legs
 
-    c = clip("idle", 4.0, loop=True, note="Breathing and a slow weight shift, feet planted.")
-    steps = 32
+    c = clip("idle", 6.0, loop=True, note="Standing still: a slow breath, the weight settling, arms at the sides.")
+    steps = 36
     for i in range(steps):
         t = i / steps
-        breath = math.sin(2 * math.pi * t * 2)  # two breaths per loop
-        shift = math.sin(2 * math.pi * t)  # weight moves right, then left
-        offset = (0.07 * shift, -0.01 + 0.012 * breath, 0.0)
-        root = (-1.0 + 1.0 * breath, 2.5 * math.sin(2 * math.pi * t + 0.8), -1.8 * shift)
-        legs = planted_legs(offset, root, stance=0.05)
+        breath = math.sin(2 * math.pi * t * 3)  # three breaths per loop
+        shift = math.sin(2 * math.pi * t)  # the weight settles a little to one side and back
+        offset = (0.025 * shift, 0.004 * breath, 0.0)
+        root = (0.4 * breath, 1.2 * math.sin(2 * math.pi * t + 0.8), -0.6 * shift)
+        legs = planted_legs(offset, root, stance=0.02)
         c.pose(
-            t * 4.0,
+            t * 6.0,
             "linear",
             offset=offset,
             root=root,
-            neck=(1.5 - 1.0 * breath, 5 * math.sin(2 * math.pi * t * 0.5 + 1.1), 0.8 * shift),
-            rShoulder=(1 + 1.2 * breath, 0, 6 + 1.0 * breath),
-            lShoulder=(1 + 1.2 * breath, 0, -6 - 1.0 * breath),
+            neck=(-0.3 * breath, 3 * math.sin(2 * math.pi * t + 1.9), 0.3 * shift),
+            rShoulder=(0.6 * breath, 0, 1.0 + 0.3 * breath),
+            lShoulder=(0.6 * breath, 0, -1.0 - 0.3 * breath),
             **legs,
         )
     return c
@@ -264,29 +264,28 @@ def idle_clip():
 
 
 def land_clip():
-    """The body dips with the legs braced wide, then springs back with a small overshoot."""
+    """A small give in the body on landing, then it settles."""
     from posekit import planted_legs
 
-    c = clip("land", 0.42, note="Squash on landing, legs braced wide; faded out over the ground pose.")
+    c = clip("land", 0.4, note="A small give on landing; faded out over the ground pose.")
     keys = [
-        (0.0, -0.12, -6, 40),
-        (0.07, -0.34, -20, 34),
-        (0.16, -0.26, -16, 20),
-        (0.3, -0.03, -2, 6),
-        (0.42, -0.02, -3, 8),
+        (0.0, -0.02, -2, 8),
+        (0.08, -0.1, -7, 12),
+        (0.22, -0.04, -3, 5),
+        (0.4, 0.0, 0, 1),
     ]
     for t, drop, lean, arms in keys:
-        offset = (0, drop, 0.05)
+        offset = (0, drop, 0.02)
         root = (lean, 0, 0)
-        legs = planted_legs(offset, root, stance=0.1)
+        legs = planted_legs(offset, root, stance=0.04)
         c.pose(
             t,
             "smooth",
             offset=offset,
             root=root,
-            neck=(-lean * 0.7, 0, 0),
-            rShoulder=(arms * 0.8, 0, 10 + arms * 0.4),
-            lShoulder=(arms * 0.8, 0, -10 - arms * 0.4),
+            neck=(-lean * 0.5, 0, 0),
+            rShoulder=(arms, 0, 1.5 + arms * 0.2),
+            lShoulder=(arms, 0, -1.5 - arms * 0.2),
             **legs,
         )
     return c
