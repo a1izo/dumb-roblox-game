@@ -132,7 +132,9 @@ function Stage.cast(self: Stage, who: number | Model, mark: CFrame, clip: string
 	local humanoid = actor:FindFirstChildOfClass("Humanoid")
 	local lift = 3
 	if root and root:IsA("BasePart") and humanoid then
-		lift = humanoid.HipHeight + root.Size.Y / 2
+		-- R6: the root hangs half its height plus a leg above the floor.
+		local leg = actor:FindFirstChild("Right Leg")
+		lift = humanoid.HipHeight + root.Size.Y / 2 + (if leg and leg:IsA("BasePart") then leg.Size.Y else 2)
 	end
 	actor:PivotTo(mark * CFrame.new(0, lift, 0))
 	actor.Parent = self.folder
@@ -291,13 +293,17 @@ local PROPS: { [string]: { string | CFrame | (() -> Instance) } } = {
 	},
 }
 
+-- R6 has no hands: a prop sits at the end of the arm.
+local ARM_OF = { RightHand = "Right Arm", LeftHand = "Left Arm" }
+local ARM_END = CFrame.new(0, -0.9, 0)
+
 -- Welds a prop into an actor's hand.
 function Stage.hold(_self: Stage, actor: Model, prop: string)
 	local spec = PROPS[prop]
 	if not spec then
 		return
 	end
-	local hand = actor:FindFirstChild(spec[1] :: string)
+	local hand = actor:FindFirstChild(ARM_OF[spec[1] :: string] or spec[1] :: string)
 	if not hand or not hand:IsA("BasePart") then
 		return
 	end
@@ -321,7 +327,7 @@ function Stage.hold(_self: Stage, actor: Model, prop: string)
 	if built:IsA("BasePart") then
 		built.Anchored = false
 	end
-	local target = hand.CFrame * (spec[2] :: CFrame)
+	local target = hand.CFrame * ARM_END * (spec[2] :: CFrame)
 	if built:IsA("Model") then
 		built:PivotTo(target)
 		for _, item in ipairs(built:GetDescendants()) do

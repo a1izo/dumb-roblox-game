@@ -87,7 +87,7 @@ return function(cue)
 	if not suspect then
 		return
 	end
-	local hand = suspect:FindFirstChild("RightHand")
+	local hand = suspect:FindFirstChild("Right Arm")
 	if hand and hand:IsA("BasePart") then
 		DeathFx.sparks(hand.Position)
 	end

@@ -1,5 +1,5 @@
 -- Puts equipped cosmetics on players: hats and trails on the character, the tie, notebook
--- cover, victory pose and Specter outline as player attributes (read wherever they show),
+-- cover and Specter outline as player attributes (read wherever they show),
 -- and the title tag over the head in the lobby (never inside a match, where it would give
 -- away who is behind an alias).
 
@@ -115,11 +115,9 @@ function CosmeticsService.apply(player: Player)
 	end
 	local tie = equipped(player, data, "tie")
 	local book = equipped(player, data, "grimoire")
-	local victory = equipped(player, data, "victory")
 	local specter = equipped(player, data, "specter")
 	player:SetAttribute("LTieColor", if tie then tie.color else nil)
 	player:SetAttribute("LGrimoireColor", if book then book.color else nil)
-	player:SetAttribute("LVictoryPose", if victory then victory.pose else nil)
 	player:SetAttribute("LSpecterColor", if specter then specter.color else nil)
 
 	local character = player.Character

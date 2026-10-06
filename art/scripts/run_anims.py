@@ -24,7 +24,7 @@ def main():
         bpy.ops.wm.open_mainfile(filepath=blend)
         import export_anims
 
-        arm = bpy.data.objects["R15"]
+        arm = bpy.data.objects["R6"]
     else:
         import anims
         import export_anims

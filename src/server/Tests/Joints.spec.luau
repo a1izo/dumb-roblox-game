@@ -5,28 +5,19 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Joints = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Anim"):WaitForChild("Joints"))
 
 local PARENTS = {
-	LowerTorso = "HumanoidRootPart",
-	UpperTorso = "LowerTorso",
-	Head = "UpperTorso",
-	LeftUpperArm = "UpperTorso",
-	LeftLowerArm = "LeftUpperArm",
-	LeftHand = "LeftLowerArm",
-	RightUpperArm = "UpperTorso",
-	RightLowerArm = "RightUpperArm",
-	RightHand = "RightLowerArm",
-	LeftUpperLeg = "LowerTorso",
-	LeftLowerLeg = "LeftUpperLeg",
-	LeftFoot = "LeftLowerLeg",
-	RightUpperLeg = "LowerTorso",
-	RightLowerLeg = "RightUpperLeg",
-	RightFoot = "RightLowerLeg",
+	Torso = "HumanoidRootPart",
+	Head = "Torso",
+	["Left Arm"] = "Torso",
+	["Right Arm"] = "Torso",
+	["Left Leg"] = "Torso",
+	["Right Leg"] = "Torso",
 }
 
 local C0 = CFrame.new(0.5, 1, 0) * CFrame.Angles(0, math.rad(30), 0)
 local C1 = CFrame.new(0, -0.4, 0.1)
 
--- A bare R15 skeleton. `kind` picks the joint class; `hidden` puts the joints somewhere a
--- classic rig would not (as upgraded rigs may), with other names.
+-- A bare R6 skeleton. `kind` picks the joint class; `hidden` puts the joints somewhere a
+-- classic rig would not (in the part they move, as R15 keeps them), with other names.
 local function rig(kind: string, hidden: boolean?): Model
 	local model = Instance.new("Model")
 	local parts = {}
@@ -43,13 +34,13 @@ local function rig(kind: string, hidden: boolean?): Model
 		parts[child] = part
 	end
 	local motorName = {}
-	for _, joint in pairs(Joints.R15) do
+	for _, joint in pairs(Joints.R6) do
 		motorName[joint.part] = joint.motor
 	end
 	for child, parentName in pairs(PARENTS) do
 		local parent, part = parts[parentName], parts[child]
 		local name = if hidden then "Joint_" .. child else motorName[child]
-		local holder = if hidden then parent else part
+		local holder = if hidden then part else parent
 		if kind == "Motor6D" then
 			local motor = Instance.new("Motor6D")
 			motor.Name = name
@@ -101,8 +92,8 @@ return function(t)
 			local found = Joints.find(model)
 			expect(count(found)).to.equal(Joints.COUNT)
 			expect(Joints.kind(found)).to.equal("AnimationConstraint")
-			expect(Joints.child(found.lKnee).Name).to.equal("LeftLowerLeg")
-			expect(Joints.parent(found.lKnee).Name).to.equal("LeftUpperLeg")
+			expect(Joints.child(found.lHip).Name).to.equal("Left Leg")
+			expect(Joints.parent(found.lHip).Name).to.equal("Torso")
 			model:Destroy()
 		end)
 		it("finds joints kept elsewhere under other names", function()
@@ -117,13 +108,13 @@ return function(t)
 		it("reads the same frames from both kinds", function()
 			local classic, upgraded = rig("Motor6D"), rig("AnimationConstraint")
 			local a, b = Joints.find(classic), Joints.find(upgraded)
-			for name in pairs(Joints.R15) do
+			for name in pairs(Joints.R6) do
 				expect(Joints.c0(a[name]):FuzzyEq(Joints.c0(b[name]), 1e-4)).to.equal(true)
 				expect(Joints.c1(a[name]):FuzzyEq(Joints.c1(b[name]), 1e-4)).to.equal(true)
 			end
 			local moved = C0 * CFrame.Angles(0.3, 0, 0)
-			Joints.setC0(b.waist, moved)
-			expect(Joints.c0(b.waist):FuzzyEq(moved, 1e-4)).to.equal(true)
+			Joints.setC0(b.root, moved)
+			expect(Joints.c0(b.root):FuzzyEq(moved, 1e-4)).to.equal(true)
 			classic:Destroy()
 			upgraded:Destroy()
 		end)

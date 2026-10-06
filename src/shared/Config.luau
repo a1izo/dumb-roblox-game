@@ -43,7 +43,7 @@ Config.WITNESS_RANGE = 30
 
 -- The Grimoire (internal phase id "DeathNote")
 Config.DEATH_DELAY = 40
-Config.DEATH_CAUSES = { "Heart attack", "Traffic accident", "Sudden illness", "Accidental fall" }
+Config.DEATH_CAUSES = { "Heart attack", "Disease", "Accident" }
 Config.NAME_MAX_LENGTH = 40
 
 -- Specter's Eyes (internally "eyes")

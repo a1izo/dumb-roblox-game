@@ -5,9 +5,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Clips = require(Anim:WaitForChild("Clips"))
-local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Joints = require(Anim:WaitForChild("Joints"))
-local Poses = require(Anim:WaitForChild("Poses"))
+local Causes = require(Anim:WaitForChild("Causes"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
 local REQUIRED = {
@@ -17,15 +16,15 @@ local REQUIRED = {
 	"jump",
 	"fall",
 	"land",
+	"sit",
 	"write",
-	"taskWork",
+	"workCamera",
+	"workFingerprint",
+	"workPhone",
+	"workForensics",
 	"raiseHand",
 	"cuffed",
 	"slump",
-	"kneel",
-	"laugh",
-	"victory",
-	"defeat",
 	"specterFloat",
 }
 
@@ -37,20 +36,17 @@ return function(t)
 			for _, id in ipairs(REQUIRED) do
 				expect(ClipPlayer.exists(id)).to.equal(true)
 			end
-			for _, id in pairs(Poses.FOR_CAUSE) do
+			for _, id in pairs(Causes.CLIP) do
 				expect(ClipPlayer.exists(id)).to.equal(true)
 			end
 			for _, emote in ipairs(QuickChat.EMOTES) do
 				expect(ClipPlayer.exists(emote.id)).to.equal(true)
 			end
-			for _, item in ipairs(Cosmetics.ofKind("victory")) do
-				expect(ClipPlayer.exists(item.pose)).to.equal(true)
-			end
 		end)
 		it("uses known joints, rising times and unit quaternions", function()
 			for id, clip in pairs(Clips) do
 				for joint, track in pairs(clip.joints) do
-					expect(Joints.R15[joint] ~= nil).to.equal(true)
+					expect(Joints.R6[joint] ~= nil).to.equal(true)
 					expect(#track.q).to.equal(#track.t * 4)
 					for i = 2, #track.t do
 						expect(track.t[i] > track.t[i - 1]).to.equal(true)

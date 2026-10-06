@@ -40,8 +40,8 @@ ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 
 ### Place settings to check in Studio
 
-- **Game Settings > Avatar > Avatar type: R15.** Poses, the movement set and the noir outfit are
-  built for R15.
+- **Game Settings > Avatar > Avatar type: R6.** Every animation and the noir outfit are built for
+  R6 (an avatar that loads as R15 is rebuilt as R6 by the server, so this only saves that step).
 - **Game Settings > Security > Enable Studio Access to API Services**: needed to save profiles in
   Studio. Without it the game uses temporary data and says so in the lobby. Studio saves go to a
   separate store (`Config.STUDIO_DATASTORE_SUFFIX`), never to live data.
@@ -156,11 +156,11 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 All animations, props, map scenes and textures are built by scripts in `art/` (see
 `art/README.md`).
 
-- **Animations** (28 clips: movement, actions, deaths, endings, emotes) are made on Roblox's own
-  R15 rig and exported to `src/shared/Anim/Clips.luau`; the game plays them itself on every
-  character, so there is nothing to upload. Walking and running are generated with leg IK and
-  advance by distance, so feet do not slide. The default Animate script is replaced by an
-  empty one, and R6 avatars are rebuilt as R15.
+- **Animations** (movement, actions, deaths, reactions and emotes) are made on the R6 rig (see
+  `art/README.md`) and exported to `src/shared/Anim/Clips.luau`; the game plays them itself on every
+  character, so there is nothing to upload. Walking and running are generated so a stance leg rolls
+  over its sole and advances by distance, so feet do not slide. The default Animate script is
+  replaced by an empty one, and R15 avatars are rebuilt as R6.
 - **Props and scenes** are imported in Studio with **Import 3D**: the props every venue and the
   game use, with the effect and UI textures, `art/export/DeathsGambitModels_Core.fbx`; and for each
   venue (the lobby, the meeting room, Bureau HQ, University Campus, Tokyo) its props and its scene,

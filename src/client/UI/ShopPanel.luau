@@ -32,7 +32,7 @@ local T = Kit.Tokens
 
 local ShopPanel = {}
 
-local TABS = { "featured", "hat", "trail", "tie", "grimoire", "victory", "specter", "title", "robux" }
+local TABS = { "featured", "hat", "trail", "tie", "grimoire", "specter", "title", "robux" }
 local TAB_NAMES = { featured = "Featured", robux = "Robux" }
 
 -- Layout of the spread (design px).
@@ -128,7 +128,7 @@ local function showPreview(item: Cosmetics.Item?)
 	clone:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(200), 0))
 	clone.Parent = world
 	local head = clone:FindFirstChild("Head")
-	local torso = clone:FindFirstChild("UpperTorso") or clone:FindFirstChild("Torso")
+	local torso = clone:FindFirstChild("Torso")
 	if item and item.kind == "hat" and head and head:IsA("BasePart") then
 		for _, part in ipairs(CosmeticBuild.hat(item, head.CFrame, head)) do
 			part.Anchored = true
@@ -234,7 +234,7 @@ local function itemCard(profile, item: Cosmetics.Item, order: number)
 	if item.colors then
 		Create("UIGradient", { Color = ColorSequence.new(item.colors[1], item.colors[2]), Parent = swatch })
 	end
-	if item.kind == "title" or item.kind == "victory" then
+	if item.kind == "title" then
 		swatch.BackgroundColor3 = C.void
 		Kit.label({
 			Text = string.upper(item.name),

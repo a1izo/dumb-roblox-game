@@ -1,8 +1,12 @@
-"""Helpers for keying poses on the real R15 rig: forward kinematics (where every part ends up),
-legs that keep the feet planted while the hips move, a kneeling leg, and floor fitting so a
-body lying down rests on the floor instead of sinking into it or hovering above it.
+"""Helpers for keying poses on the R6 rig: forward kinematics (where every part ends up), rigid
+legs that keep the feet where they are while the hips move, and floor fitting so a body lying
+down rests on the floor instead of sinking into it or hovering above it.
 
-Angles are in the game's joint convention (animlib.py); positions are Roblox studs.
+R6 legs and arms are single rigid parts (no knees, elbows or ankles), so a leg only has a pitch
+(x) and a roll (z): its foot can reach the points on a sphere round the hip.
+
+Angles are in the game's joint convention (animlib.py); positions are Roblox studs (x right,
+y up, z backwards; forward is -z) with the HumanoidRootPart standing on the origin.
 """
 
 import math
@@ -10,11 +14,35 @@ import math
 import numpy as np
 
 import rbxsim
-from gait import ANKLE_Y, HIP_X, HIP_Y, L1, L2, R, euler, solve_leg
-from rig import JOINTS, PARTS
+from rig import JOINTS, LEG, PARTS, PIVOTS
 
 _RIG = rbxsim.load_rig()
 _MOTOR_OF = {joint: rbxsim.JOINT_MOTORS[joint] for joint in JOINTS}
+ROOT_MOTOR = rbxsim.JOINT_MOTORS["root"]
+
+HIP_X = LEG["hip_x"]  # the hip pivot's distance from the middle (the torso's edge)
+HIP_Y = LEG["hip"]
+LEG_LENGTH = LEG["length"]
+
+
+def rx(deg):
+    a = math.radians(deg)
+    return np.array([[1, 0, 0], [0, math.cos(a), -math.sin(a)], [0, math.sin(a), math.cos(a)]])
+
+
+def ry(deg):
+    a = math.radians(deg)
+    return np.array([[math.cos(a), 0, math.sin(a)], [0, 1, 0], [-math.sin(a), 0, math.cos(a)]])
+
+
+def rz(deg):
+    a = math.radians(deg)
+    return np.array([[math.cos(a), -math.sin(a), 0], [math.sin(a), math.cos(a), 0], [0, 0, 1]])
+
+
+def R(x=0.0, y=0.0, z=0.0):
+    """Roblox CFrame.Angles(x, y, z) in degrees: Rx * Ry * Rz."""
+    return rx(x) @ ry(y) @ rz(z)
 
 
 def _angles(value):
@@ -24,60 +52,34 @@ def _angles(value):
 
 
 def _matrix(value):
-    x, y, z = (math.radians(a) for a in _angles(value))
-    cx, sx, cy, sy, cz, sz = math.cos(x), math.sin(x), math.cos(y), math.sin(y), math.cos(z), math.sin(z)
-    rx = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
-    ry = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
-    rz = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
-    return rx @ ry @ rz
+    return R(*_angles(value))
+
+
+def euler(m):
+    """(x, y, z) degrees with m = CFrame.Angles(x, y, z) = Rx * Ry * Rz."""
+    sy = max(-1.0, min(1.0, m[0][2]))
+    b = math.asin(sy)
+    a = math.atan2(-m[1][2], m[2][2])
+    c = math.atan2(-m[0][1], m[0][0])
+    return (math.degrees(a), math.degrees(b), math.degrees(c))
 
 
 def fk(joints, offset=(0, 0, 0)):
     """World CFrames (4x4) of every part, with the HumanoidRootPart standing on the origin.
-    Joint values are angles (degrees) or 3x3 rotation matrices."""
-    transforms = {}
+    Joint values are angles (degrees) or 3x3 rotation matrices, in the parent part's frame."""
+    rotations = {}
     for joint, value in joints.items():
-        m = np.identity(4)
-        m[:3, :3] = value if isinstance(value, np.ndarray) else _matrix(value)
-        transforms[_MOTOR_OF[joint]] = m
-    root = transforms.get("Root", np.identity(4))
-    shift = np.identity(4)
-    shift[:3, 3] = offset
-    transforms["Root"] = shift @ root
-    parts = _RIG["parts"]
-    hrp = parts["HumanoidRootPart"]["cframe"]["p"]
-    world = {"HumanoidRootPart": rbxsim.cf((0, hrp[1], 0))}
-    motors = list(_RIG["motors"])
-    while motors:
-        for motor in list(motors):
-            if motor["part0"] in world:
-                c0 = rbxsim.cf(motor["c0"]["p"], motor["c0"]["r"])
-                c1 = rbxsim.cf(motor["c1"]["p"], motor["c1"]["r"])
-                t = transforms.get(motor["name"], np.identity(4))
-                world[motor["part1"]] = world[motor["part0"]] @ c0 @ t @ np.linalg.inv(c1)
-                motors.remove(motor)
-    return world
+        rotations[_MOTOR_OF[joint]] = value if isinstance(value, np.ndarray) else _matrix(value)
+    world = rbxsim.pose_from(_RIG, rotations, offset)
+    hrp = _RIG["parts"]["HumanoidRootPart"]["cframe"]["p"]
+    # pose_from leaves the root part at its rest place; stand it on the origin axis
+    shift = rbxsim.cf((-hrp[0], 0, -hrp[2]))
+    return {name: shift @ m for name, m in world.items()}
 
 
-def lowest(joints, offset=(0, 0, 0)):
-    """The lowest point of the body (studs above the floor) in this pose."""
-    world = fk(joints, offset)
-    low = math.inf
-    for name, m in world.items():
-        if name == "HumanoidRootPart":
-            continue
-        sx, sy, sz = (s / 2 for s in PARTS[name][1])
-        for x in (-sx, sx):
-            for y in (-sy, sy):
-                for z in (-sz, sz):
-                    low = min(low, (m @ np.array([x, y, z, 1.0]))[1])
-    return low
-
-
-def on_floor(joints, offset=(0, 0, 0), floor=0.02):
-    """offset with its height changed so the lowest point of the body rests on the floor."""
-    ox, oy, oz = offset
-    return (ox, oy + floor - lowest(joints, offset), oz)
+def _corners(name):
+    sx, sy, sz = (s / 2 for s in PARTS[name][1])
+    return [(x, y, z) for x in (-sx, sx) for y in (-sy, sy) for z in (-sz, sz)]
 
 
 def lowest_of(joints, names, offset=(0, 0, 0)):
@@ -86,15 +88,23 @@ def lowest_of(joints, names, offset=(0, 0, 0)):
     low = math.inf
     for name in names:
         m = world[name]
-        sx, sy, sz = (s / 2 for s in PARTS[name][1])
-        for x in (-sx, sx):
-            for y in (-sy, sy):
-                for z in (-sz, sz):
-                    low = min(low, (m @ np.array([x, y, z, 1.0]))[1])
+        for c in _corners(name):
+            low = min(low, (m @ np.array([*c, 1.0]))[1])
     return low
 
 
-SEAT_PARTS = ("LowerTorso", "LeftUpperLeg", "RightUpperLeg")
+def lowest(joints, offset=(0, 0, 0)):
+    """The lowest point of the body (studs above the floor) in this pose."""
+    return lowest_of(joints, [n for n in PARTS if n != "HumanoidRootPart"], offset)
+
+
+def on_floor(joints, offset=(0, 0, 0), floor=0.02):
+    """offset with its height changed so the lowest point of the body rests on the floor."""
+    ox, oy, oz = offset
+    return (ox, oy + floor - lowest(joints, offset), oz)
+
+
+SEAT_PARTS = ("Torso", "Left Leg", "Right Leg")
 
 
 def on_seat(joints, offset=(0, 0, 0), seat=1.75):
@@ -103,56 +113,81 @@ def on_seat(joints, offset=(0, 0, 0), seat=1.75):
     return (ox, oy + seat - lowest_of(joints, SEAT_PARTS, offset), oz)
 
 
-def planted_legs(offset=(0, 0, 0), root=(0, 0, 0), stance=0.0, forward=(0.0, 0.0), turn_out=6):
-    """Hip, knee and ankle angles that keep both feet flat where they stand while the hips move.
-    stance widens the feet (studs); forward moves (right, left) feet forward (studs)."""
-    root_rot = R(*root)
+# Legs -------------------------------------------------------------------------------------------------
+
+_LEG_NAME = {1: "Right Leg", -1: "Left Leg"}
+
+
+def hip_world(side, root=(0, 0, 0), offset=(0, 0, 0)):
+    """Where this hip pivots (character frame), for a body moved by `offset` and turned by `root`."""
+    pivot = np.array(PIVOTS["root"])
+    return pivot + np.array(offset) + R(*root) @ (np.array([side * HIP_X, HIP_Y, 0.0]) - pivot)
+
+
+def leg_angles_for(side, foot, root=(0, 0, 0), offset=(0, 0, 0)):
+    """Hip angles (x pitch, 0, z roll) that put the middle of this leg's sole at `foot` (character
+    frame). A leg is rigid, so a foot out of reach ends up as near as it can get. Returns the
+    angles and how far short or long the foot is (studs)."""
+    a = -side * 0.5  # the sole's middle sits half a stud in from the hip pivot
+    reach = math.hypot(a, LEG_LENGTH)
+    v = R(*root).T @ (np.array(foot) - hip_world(side, root, offset))
+    length = float(np.linalg.norm(v))
+    err = abs(length - reach)
+    if length > 1e-6:
+        v = v * (reach / length)
+    phi = math.atan2(LEG_LENGTH, a)
+    gamma = phi - math.acos(max(-1.0, min(1.0, v[0] / reach)))
+    v1y = a * math.sin(gamma) - LEG_LENGTH * math.cos(gamma)
+    theta = math.atan2(v[2] / v1y, v[1] / v1y)
+    return (math.degrees(theta), 0.0, math.degrees(gamma)), err
+
+
+def planted_legs(offset=(0, 0, 0), root=(0, 0, 0), stance=0.0, forward=(0.0, 0.0)):
+    """Hip angles that keep both soles where they stand while the hips move (they splay or step as
+    far as rigid legs allow). stance widens the feet (studs); forward moves (right, left) soles
+    forward (studs)."""
     out = {}
+    reach = math.hypot(0.5, LEG_LENGTH)
     for side, key, ahead in ((1, "r", forward[0]), (-1, "l", forward[1])):
-        ankle = (side * (HIP_X + stance), ANKLE_Y, -ahead)
-        hip, knee, ank, _ = solve_leg(side, ankle, root_rot, offset, 0, -side * turn_out)
-        out[key + "Hip"], out[key + "Knee"], out[key + "Ankle"] = hip, knee, ank
+        foot = (side * (abs(-side * 0.5 + side * HIP_X) + stance), 0.0, -ahead)
+        hip = hip_world(side, root, offset)
+        flat = reach * reach - (hip[1] - foot[1]) ** 2 - (hip[2] - foot[2]) ** 2
+        if flat > 0 and abs(abs(foot[0] - hip[0]) - math.sqrt(flat)) > 1e-3:
+            # A rigid leg cannot keep its sole where it is once the hips move: it reaches in or out by
+            # the smallest amount (in, unless that would cross the middle; then the soles go out).
+            d = math.sqrt(flat)
+            inward = hip[0] - side * d
+            foot = (inward if side * inward >= 0.25 else hip[0] + side * d, foot[1], foot[2])
+        out[key + "Hip"], _ = leg_angles_for(side, foot, root, offset)
     return out
 
 
-def fitted_kneel(offset, root, build, floor=0.02, rounds=6):
-    """Raises or lowers the hips until the lowest point of the pose rests on the floor. build(offset)
-    returns the joints for a hip offset (so planted and kneeling legs are solved again)."""
-    ox, oy, oz = offset
-    joints = build((ox, oy, oz))
-    for _ in range(rounds):
-        low = lowest(joints, (ox, oy, oz))
-        if abs(low - floor) < 0.005:
-            break
-        oy += floor - low
-        joints = build((ox, oy, oz))
-    return (ox, oy, oz), joints
+def leg_contact(side, hip, root=(0, 0, 0), offset=(0, 0, 0)):
+    """The lowest corner of this leg in the character frame for hip angles `hip`."""
+    m = R(*root) @ _matrix(hip)
+    h = hip_world(side, root, offset)
+    best = None
+    for cx, cy, cz in _corners("Right Leg"):
+        # corners of the leg box, relative to the hip pivot at its top outer edge
+        p = h + m @ np.array([cx - side * 0.5, cy - 1.0, cz])
+        if best is None or p[1] < best[1]:
+            best = p
+    return best
 
 
-def kneeling_leg(side, offset=(0, 0, 0), root=(0, 0, 0), knee_ahead=-0.3, knee_height=0.5):
-    """Angles for a leg kneeling on the floor: the knee rests on the floor `knee_ahead` studs in
-    front of the hip line and the shin lies flat behind it, toes curled under. Also returns how
-    far the knee falls short of its spot (0 when the hips are low enough)."""
-    key = "r" if side > 0 else "l"
-    root_rot = np.array(R(*root))
-    hip = np.array([0, HIP_Y, 0]) + np.array(offset) + root_rot @ np.array([side * HIP_X, 0, 0])
-    knee = np.array([side * HIP_X, knee_height, -knee_ahead])
-    v = root_rot.T @ (knee - hip)
-    d = float(np.linalg.norm(v))
-    u = v / d
-    gamma = math.asin(max(-1.0, min(1.0, u[0])))
-    theta = math.atan2(-u[2], -u[1])
-    hip_m = np.array(R(math.degrees(theta), 0, math.degrees(gamma)))
-    # The shin lies flat and points backwards (+z in the world).
-    s = np.linalg.inv(root_rot @ hip_m) @ np.array([0, -0.12, 1.0])
-    knee_angle = math.degrees(math.atan2(-s[2], -s[1]))
-    thigh_and_shin = root_rot @ hip_m @ np.array(R(knee_angle))
-    foot = np.linalg.inv(thigh_and_shin) @ np.array(R(-38))
-    return {
-        key + "Hip": (math.degrees(theta), 0, math.degrees(gamma)),
-        key + "Knee": knee_angle,
-        key + "Ankle": euler(foot),
-    }, max(0.0, d - L1)
-
-
-__all__ = ["fk", "lowest", "on_floor", "planted_legs", "kneeling_leg", "L1", "L2", "ANKLE_Y"]
+__all__ = [
+    "fk",
+    "lowest",
+    "lowest_of",
+    "on_floor",
+    "on_seat",
+    "planted_legs",
+    "leg_angles_for",
+    "leg_contact",
+    "hip_world",
+    "R",
+    "euler",
+    "HIP_X",
+    "HIP_Y",
+    "LEG_LENGTH",
+]

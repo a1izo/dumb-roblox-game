@@ -1,8 +1,9 @@
 """Shared helpers for the Death's Gambit Blender scripts.
 
-Coordinates: Roblox is Y-up and characters face -Z; Blender is Z-up and our rig faces -Y.
-    roblox = M @ blender, with M = [[-1, 0, 0], [0, 0, 1], [0, 1, 0]]
-so a character's right side (+X in Roblox) is -X in Blender. 1 Blender unit = 1 stud.
+Coordinates: Roblox is Y-up and characters face -Z; Blender is Z-up and the R6 rig (art/rig, which
+follows the Roblox Blender plugin) faces +Y.
+    roblox = M @ blender, with M = [[1, 0, 0], [0, 0, 1], [0, -1, 0]]
+so a character's right side (+X in Roblox) is +X in Blender, and forward (-Z) is +Y. 1 Blender unit = 1 stud.
 """
 
 import math
@@ -18,7 +19,7 @@ PREVIEWS = os.path.join(EXPORT, "previews")
 TEXTURES = os.path.join(EXPORT, "textures")
 BLEND = os.path.join(ART, "blend")
 
-M = Matrix(((-1, 0, 0), (0, 0, 1), (0, 1, 0)))
+M = Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
 M_INV = M.transposed()
 
 
@@ -100,8 +101,9 @@ def srgb(r, g, b):
     return (lin(r), lin(g), lin(b))
 
 
-def setup_preview(target=(0, 0, 3), distance=11.0, height=3.5, angle_deg=35, resolution=640):
-    """A camera, a key light and a rim light pointed at `target` (Blender space)."""
+def setup_preview(target=(0, 0, 3), distance=11.0, height=3.5, angle_deg=35, resolution=640, side=-1):
+    """A camera, a key light and a rim light pointed at `target` (Blender space). side -1 puts the
+    camera on the -Y side (props face -Y), +1 on the +Y side (the R6 rig faces +Y)."""
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = resolution
@@ -121,13 +123,13 @@ def setup_preview(target=(0, 0, 3), distance=11.0, height=3.5, angle_deg=35, res
         scene.collection.objects.link(cam)
     a = math.radians(angle_deg)
     t = Vector(target)
-    cam.location = t + Vector((math.sin(a) * distance, -math.cos(a) * distance, height))
+    cam.location = t + Vector((math.sin(a) * distance, side * math.cos(a) * distance, height))
     direction = t - cam.location
     cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
     cam_data.lens = 50
     scene.camera = cam
 
-    for name, energy, offset in (("KeyLight", 900, (-4, -6, 8)), ("RimLight", 600, (5, 6, 6))):
+    for name, energy, offset in (("KeyLight", 900, (-4, 6 * side, 8)), ("RimLight", 600, (5, -6 * side, 6))):
         light_data = bpy.data.lights.get(name) or bpy.data.lights.new(name, "AREA")
         light_data.energy = energy
         light_data.size = 4

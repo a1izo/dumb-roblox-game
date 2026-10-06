@@ -7,8 +7,9 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | --- | --- |
 | `scripts/` | The build scripts (run with Blender, see below) |
 | `scripts/maps/` | The scenes: texture library, geometry kit, one package per venue |
-| `data/r15_rig.json` | Roblox's own R15 rig (joints and part sizes), from `r15_extract.py` |
-| `blend/Animations.blend` | The R15 rig with every animation as an action (open it to tweak curves) |
+| `data/r6_rig.json` | Roblox's classic R6 rig (joints and part sizes), the maths the game plays by |
+| `rig/BlenderR6Rig_V2.22.blend` | The R6 IK + FK Blender rig by Aeresei (Roblox DevForum, https://devforum.roblox.com/t/r6-ik-fk-blender-rig-v222/3586405), used as the rig for every animation. Not committed: download "Blender R6 Rig.blend" from that post into `art/rig/` under this name before running `run_anims.py` |
+| `blend/Animations.blend` | The R6 rig with every animation as an action (open it to tweak curves) |
 | `blend/Props.blend` | Every prop, baked |
 | `blend/Maps_<Venue>.blend` | Each venue's scene (Lobby, Meeting, Agency, Campus, Tokyo) |
 | `export/DeathsGambitModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
@@ -41,21 +42,33 @@ import of each kind and sets the others aside (into `ServerStorage > DeathsGambi
 
 ## Animations: no upload needed
 
-`gait.py` generates the movement clips (idle, walk, run, land) with leg IK on the real R15 rig:
-planted feet move back exactly as fast as the body moves, and each clip exports its stride so
-the game advances the cycle by distance (scaled to each avatar's leg length). `anims.py` keys
-the other animations in the game's joint convention; `posekit.py` keeps feet planted when the
-hips move and fits poses that end on the ground to the floor. `export_anims.py` writes
-`src/shared/Anim/Clips.luau`, which the game plays on every character itself.
+R6 has six joints (the RootJoint, which also bends the waist, the Neck, both Shoulders and both Hips)
+and rigid limbs. `rig.py` opens the downloaded rig, keeps its `InternalArmature` (the six real joints,
+one bone each, their heads on Roblox's Motor6D pivots) and cuts the constraints that tie it to the
+control rig, so keys go straight on the joints the game plays. A clip that someone hand-animates on
+the control rig exports just the same, because the exporter samples the evaluated `InternalArmature`.
+The rig's own Python scripts are never run (headless Blender has scripts off).
+
+`gait.py` generates the movement clips (idle, walk, run, land): a stance leg rolls over its sole
+(heel edge, then toe edge) exactly as fast as the body moves, so planted feet never slide, and each
+clip exports its stride so the game advances the cycle by distance (scaled to each avatar's leg
+length). `anims.py` keys the other animations in the game's joint convention; `posekit.py` keeps feet
+where they are when the hips move (rigid legs reach in or splay out as far as they can) and fits poses
+that end on the ground to the floor. `export_anims.py` writes `src/shared/Anim/Clips.luau`, which the
+game plays on every character itself.
 
 ```
 blender -b --factory-startup --python art/scripts/run_anims.py            # rebuild and export
-blender -b --factory-startup --python art/scripts/review_anims.py -- out.png 30 run:0 run:0.1
-blender -b --factory-startup --python art/scripts/verify_ingame.py        # Blender rig vs game maths
+blender -b --factory-startup --python art/scripts/review_anims.py -- out.png --angle=35 --cols=8 run walk@8
+blender -b --factory-startup --python art/scripts/video_anims.py -- name.mp4 --seconds=4 idle walk run land
+blender -b --factory-startup --python art/scripts/check_export.py         # Blender rig vs game maths
+blender -b --factory-startup --python art/scripts/verify_ingame.py -- out.png clip:time ...
 ```
 
-`verify_ingame.py` poses a real R15 body from `Clips.luau` with the same maths as the game
-(`rbxsim.py`), next to the Blender rig, so export mistakes show up as two different poses.
+`video_anims.py` renders a row of labelled mannequins playing clips in `art/export/previews/anims/`
+(a few at a time, for reviewing motion). `check_export.py` compares every part of the Blender rig with
+the same part posed from `Clips.luau` using the game's maths (`rbxsim.py`) and prints the worst error in
+studs; `verify_ingame.py` draws the two side by side.
 
 ## Map scenes
 

@@ -66,8 +66,10 @@ end
 local function groundOffset(character: Model): number
 	local humanoid = getHumanoid(character)
 	local root = getRoot(character)
-	if humanoid and root and humanoid.RigType == Enum.HumanoidRigType.R15 then
-		return humanoid.HipHeight + root.Size.Y / 2
+	if humanoid and root and humanoid.RigType == Enum.HumanoidRigType.R6 then
+		-- The root hangs half its height plus a leg above the floor (R6 HipHeight is 0).
+		local leg = character:FindFirstChild("Right Leg")
+		return humanoid.HipHeight + root.Size.Y / 2 + (if leg and leg:IsA("BasePart") then leg.Size.Y else 2)
 	end
 	return 3
 end
@@ -170,9 +172,9 @@ function CharacterService.detach(player: Player, name: string)
 	end
 end
 
-local HAND = { "RightHand", "Right Arm" }
+local HAND = { "Right Arm" }
 local HEAD = { "Head" }
-local TORSO = { "UpperTorso", "Torso" }
+local TORSO = { "Torso" }
 
 -- A sheet of paper in the right hand. Everyone can see who carries paper.
 function CharacterService.setCarry(player: Player, kind: string?)
@@ -424,10 +426,8 @@ local CLOTHING_ACCESSORIES = {
 
 local SUIT = Color3.fromRGB(30, 30, 34)
 local TROUSERS = Color3.fromRGB(24, 24, 28)
-local SHOES = Color3.fromRGB(12, 12, 13)
-local SUIT_PARTS = { "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftLowerArm", "RightUpperArm", "RightLowerArm" }
-local TROUSER_PARTS = { "LeftUpperLeg", "LeftLowerLeg", "RightUpperLeg", "RightLowerLeg" }
-local SHOE_PARTS = { "LeftFoot", "RightFoot" }
+local SUIT_PARTS = { "Torso", "Left Arm", "Right Arm" }
+local TROUSER_PARTS = { "Left Leg", "Right Leg" }
 
 -- The match look: a dark suit, white collar and red tie over the player's own face, hair and
 -- body shape. Clothing (classic and layered) is removed so outfits cannot give anyone away.
@@ -456,12 +456,18 @@ function CharacterService.applyOutfit(player: Player)
 	end
 	paint(SUIT_PARTS, SUIT)
 	paint(TROUSER_PARTS, TROUSERS)
-	paint(SHOE_PARTS, SHOES)
-	for _, name in ipairs({ "LeftHand", "RightHand" }) do
-		local hand = character:FindFirstChild(name)
-		if hand and hand:IsA("BasePart") then
-			hand.Color = skin
-		end
+	-- R6 arms are one part, so the hands are skin-coloured cuffs welded over the arm ends.
+	for _, side in ipairs({ "Left", "Right" }) do
+		CharacterService.attachBuilt(player, "LHand" .. side, { side .. " Arm" }, function(anchor: CFrame)
+			return {
+				Create("Part", {
+					Size = Vector3.new(1.04, 0.55, 1.04),
+					Color = skin,
+					Material = Enum.Material.SmoothPlastic,
+					CFrame = anchor * CFrame.new(0, -0.74, 0),
+				}),
+			}
+		end)
 	end
 	if Assets.outfit.shirt ~= "" then
 		Create("Shirt", { ShirtTemplate = Assets.contentId(Assets.outfit.shirt), Parent = character })
@@ -550,17 +556,18 @@ end
 
 local warnedR6 = false
 
--- Every animation is made for R15. A place whose avatar setting still allows R6 would give
--- those players stiff bodies, so an R6 character is rebuilt as R15 from the same avatar.
+-- Every animation is made for R6. A place whose avatar setting still allows R15 would give
+-- those players bodies the animator cannot pose, so an R15 character is rebuilt as R6 from the
+-- same avatar (clothes, face and accessories carry over; R6 has no body shapes).
 -- Returns true when the character was replaced (CharacterAdded fires again for the new one).
-local function replaceWithR15(player: Player, character: Model, humanoid: Humanoid): boolean
-	if humanoid.RigType == Enum.HumanoidRigType.R15 or typeof(player) ~= "Instance" then
+local function replaceWithR6(player: Player, character: Model, humanoid: Humanoid): boolean
+	if humanoid.RigType == Enum.HumanoidRigType.R6 or typeof(player) ~= "Instance" then
 		return false
 	end
 	if not warnedR6 and RunService:IsStudio() then
 		warnedR6 = true
 		warn(
-			"[DeathsGambit] An avatar loaded as R6 and was rebuilt as R15. Set Game Settings > Avatar > R15 to skip this."
+			"[DeathsGambit] An avatar loaded as R15 and was rebuilt as R6. Set Game Settings > Avatar > R6 to skip this."
 		)
 	end
 	local okDescription, description = pcall(function()
@@ -570,7 +577,7 @@ local function replaceWithR15(player: Player, character: Model, humanoid: Humano
 		description = Instance.new("HumanoidDescription")
 	end
 	local ok, model = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
 	end)
 	if not ok or not model or player.Character ~= character then
 		return false
@@ -596,7 +603,7 @@ local function onCharacterAdded(player: Player, character: Model)
 	if not humanoid or not humanoid:IsA("Humanoid") then
 		return
 	end
-	if replaceWithR15(player, character, humanoid) then
+	if replaceWithR6(player, character, humanoid) then
 		return
 	end
 	character:WaitForChild("HumanoidRootPart", 10)

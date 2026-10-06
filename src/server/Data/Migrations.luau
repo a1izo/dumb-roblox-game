@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 2
+Migrations.CURRENT = 3
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -103,11 +103,31 @@ local function fill(data: any, defaults: any)
 	end
 end
 
+-- The retired victory poses and what they cost (coins), refunded by the v2 -> v3 step.
+local RETIRED_VICTORY_POSES = { win_fist = 400, win_bow = 700 }
+
 -- One function per version: STEPS[n] upgrades a version n profile to n + 1.
 local STEPS: { [number]: (any) -> () } = {
 	-- v1 held coins, xp, owned, equipped { hat, trail } and stats { matches, wins, tasks }.
 	-- Everything new comes from defaults(), so nothing needs converting.
 	[1] = function(_data) end,
+	-- v2 -> v3: the victory poses were retired (the win cutscenes replace them). Whoever owned one
+	-- gets its price back in coins and nothing stays equipped in that slot.
+	[2] = function(data)
+		local refunded = 0
+		for id, price in pairs(RETIRED_VICTORY_POSES) do
+			if type(data.owned) == "table" and data.owned[id] then
+				data.owned[id] = nil
+				refunded += price
+			end
+		end
+		if type(data.equipped) == "table" then
+			data.equipped.victory = nil
+		end
+		if refunded > 0 then
+			data.coins = (tonumber(data.coins) or 0) + refunded
+		end
+	end,
 }
 
 function Migrations.version(data: any): number

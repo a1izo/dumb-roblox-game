@@ -1,5 +1,5 @@
-"""Roblox-side maths without Blender: reads Clips.luau and poses a real R15 rig
-(art/data/r15_rig.json) exactly the way the game does (ClipPlayer + PoseController)."""
+"""Roblox-side maths without Blender: reads Clips.luau and poses a real R6 rig
+(art/data/r6_rig.json) exactly the way the game does (ClipPlayer + PoseController)."""
 
 import json
 import math
@@ -11,24 +11,15 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 CLIPS = os.path.join(ROOT, "src", "shared", "Anim", "Clips.luau")
-RIG = os.path.join(ROOT, "art", "data", "r15_rig.json")
+RIG = os.path.join(ROOT, "art", "data", "r6_rig.json")
 
 JOINT_MOTORS = {
-    "root": "Root",
-    "waist": "Waist",
+    "root": "RootJoint",
     "neck": "Neck",
-    "lShoulder": "LeftShoulder",
-    "lElbow": "LeftElbow",
-    "lWrist": "LeftWrist",
-    "rShoulder": "RightShoulder",
-    "rElbow": "RightElbow",
-    "rWrist": "RightWrist",
-    "lHip": "LeftHip",
-    "lKnee": "LeftKnee",
-    "lAnkle": "LeftAnkle",
-    "rHip": "RightHip",
-    "rKnee": "RightKnee",
-    "rAnkle": "RightAnkle",
+    "lShoulder": "Left Shoulder",
+    "rShoulder": "Right Shoulder",
+    "lHip": "Left Hip",
+    "rHip": "Right Hip",
 }
 
 
@@ -160,13 +151,27 @@ def clip_time(clip, t):
 def pose_parts(rig, clip, t):
     """World CFrames of every part (HumanoidRootPart at its rest place)."""
     t = clip_time(clip, t)
-    transforms = {}
+    rotations = {}
     for joint, track in clip["joints"].items():
-        transforms[JOINT_MOTORS[joint]] = cf(r=quat_matrix(*sample_track(track, t)))
+        rotations[JOINT_MOTORS[joint]] = quat_matrix(*sample_track(track, t))
     offset = sample_offset(clip, t)
+    return pose_from(rig, rotations, offset)
+
+
+def pose_from(rig, rotations, offset=None):
+    """World CFrames of every part for joint rotations (3x3, in the parent part's frame, by motor
+    name) and a whole-body offset. A joint's rotation becomes its Transform the way the game does
+    it (ClipPlayer.transform): basis^-1 * rotation * basis, with basis the rotation of its C0."""
+    motor_by_name = {m["name"]: m for m in rig["motors"]}
+    transforms = {}
+    for name, rot in rotations.items():
+        basis = np.array(motor_by_name[name]["c0"]["r"])
+        transforms[name] = cf(r=basis.T @ rot @ basis)
     if offset is not None:
-        root = transforms.get("Root", np.identity(4))
-        transforms["Root"] = cf(p=offset) @ root
+        root_name = JOINT_MOTORS["root"]
+        basis = np.array(motor_by_name[root_name]["c0"]["r"])
+        local = transforms.get(root_name, np.identity(4))
+        transforms[root_name] = cf(p=basis.T @ np.array(offset)) @ local
     parts = rig["parts"]
     world = {"HumanoidRootPart": cf(parts["HumanoidRootPart"]["cframe"]["p"])}
     motors = list(rig["motors"])

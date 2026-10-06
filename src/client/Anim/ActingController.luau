@@ -9,12 +9,11 @@
 -- every screen shows the same thing and nothing depends on roles.
 --   station work   : a player working a case file (real or faked) types at the console
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
-local Poses = require(Shared:WaitForChild("Anim"):WaitForChild("Poses"))
+local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local Activities = require(Shared:WaitForChild("Presentation"):WaitForChild("Activities"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
@@ -128,7 +127,7 @@ local function onDeath(cue)
 	end
 	PoseController.stop(character, "write", 0.1)
 	local cause = if type(cue.data.cause) == "string" then cue.data.cause else ""
-	local poseId = Poses.FOR_CAUSE[cause] or "collapseHeart"
+	local poseId = Causes.clipFor(cause)
 	PoseController.play(
 		character,
 		poseId,
@@ -183,14 +182,9 @@ local function onOutro(cue)
 		if character and entry.alive then
 			local poseId
 			if entry.userId == handId then
-				poseId = if handWon then "laugh" else "kneel"
+				poseId = if handWon then "laugh" else "slump"
 			elseif winners[entry.userId] then
-				-- The winner's victory pose cosmetic, if they have one.
-				local player = Players:GetPlayerByUserId(entry.userId)
-				local chosen = if player then player:GetAttribute("LVictoryPose") else nil
-				poseId = if type(chosen) == "string" and PoseController.exists(chosen)
-					then chosen
-					else Activities.pick(Activities.VICTORY, tonumber(cue.id) or 1, entry.userId)
+				poseId = Activities.pick(Activities.VICTORY, tonumber(cue.id) or 1, entry.userId)
 			else
 				poseId = Activities.pick(Activities.DEFEAT, tonumber(cue.id) or 1, entry.userId)
 			end
@@ -203,13 +197,25 @@ local function onOutro(cue)
 	end
 end
 
--- Station work: follows the LWorking attribute the server sets on the character.
+-- Station work: follows the LWorking attribute the server sets on the character, which holds the
+-- station type; each type has its own working clip (workCamera, workFingerprint, ...).
+local WORK_FALLBACK = "workCamera"
+
 local function watchWorking(character: Model)
+	local playing: string? = nil
 	local function update()
-		if character:GetAttribute("LWorking") then
-			PoseController.play(character, "taskWork", { fadeIn = 0.25, startAt = os.clock() - math.random() })
-		else
-			PoseController.stop(character, "taskWork", 0.3)
+		local working = character:GetAttribute("LWorking")
+		if playing then
+			PoseController.stop(character, playing, 0.3)
+			playing = nil
+		end
+		if working then
+			local id = if type(working) == "string" then "work" .. working else WORK_FALLBACK
+			if not PoseController.exists(id) then
+				id = WORK_FALLBACK
+			end
+			playing = id
+			PoseController.play(character, id, { fadeIn = 0.25, startAt = os.clock() - math.random() })
 		end
 	end
 	character:GetAttributeChangedSignal("LWorking"):Connect(update)

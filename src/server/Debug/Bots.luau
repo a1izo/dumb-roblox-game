@@ -136,7 +136,7 @@ function Bots.spawnCharacter(bot)
 		(description :: any)[key] = skin
 	end
 	local ok, model = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
 	end)
 	if not ok or not model then
 		warn("[DeathsGambit debug] Could not build a body for " .. bot.Name .. ": " .. tostring(model))

@@ -1,8 +1,20 @@
-"""Builds an R15 reference rig: an armature whose bones pivot where Roblox's R15 Motor6Ds do,
-plus a blocky noir mannequin parented to the bones for previews.
+"""The R6 reference rig, taken from Aeresei's "R6 IK + FK Blender Rig" V2.22 (Roblox DevForum,
+art/rig/BlenderR6Rig_V2.22.blend, credited in art/README.md).
 
-Bone names are the Roblox part names. JOINTS maps the short joint names used by the game
-(src/shared/Anim/Joints.luau) to the bone that joint moves.
+That file holds a control rig (IK/FK, `__PrimaryArmature`) that drives an `InternalArmature`:
+the six real R6 joints, each bone's head on a Motor6D pivot. The game plays joint rotations,
+so everything here works on the InternalArmature. build_rig() opens the file, keeps that
+armature (renamed "R6") and the blocky body, cuts the constraints that tied it to the control
+rig, and dresses the body in the noir mannequin colours. Keyed actions go straight on its bones.
+A clip someone animates by hand on the control rig exports just the same, because the exporter
+reads the InternalArmature's evaluated pose.
+
+Bone names are Roblox's part names. JOINTS maps the short joint names used by the game
+(src/shared/Anim/Joints.luau) to the bone that joint moves. Roblox's six joints:
+    root  (RootJoint,      HumanoidRootPart -> Torso)   moves the whole body, and bends the waist
+    neck  (Neck,           Torso -> Head)
+    rShoulder / lShoulder  (Torso -> Right Arm / Left Arm)
+    rHip / lHip            (Torso -> Right Leg / Left Leg)
 """
 
 import json
@@ -15,77 +27,54 @@ from mathutils import Matrix, Vector
 import common
 from common import rbx_to_blender, srgb
 
-# The joints and parts come from the R15 rig that ships with Roblox Studio (art/data/r15_rig.json,
-# written by r15_extract.py), so what the previews show is what the game plays.
-_R15 = json.load(open(os.path.join(common.ART, "data", "r15_rig.json")))
+RIG_FILE = os.path.join(common.ART, "rig", "BlenderR6Rig_V2.22.blend")
 
-# joint name -> (bone / part name, parent part, motor)
-_JOINT_PARTS = [
-    ("root", "LowerTorso", "HumanoidRootPart", "Root"),
-    ("waist", "UpperTorso", "LowerTorso", "Waist"),
-    ("neck", "Head", "UpperTorso", "Neck"),
-    ("rShoulder", "RightUpperArm", "UpperTorso", "RightShoulder"),
-    ("rElbow", "RightLowerArm", "RightUpperArm", "RightElbow"),
-    ("rWrist", "RightHand", "RightLowerArm", "RightWrist"),
-    ("lShoulder", "LeftUpperArm", "UpperTorso", "LeftShoulder"),
-    ("lElbow", "LeftLowerArm", "LeftUpperArm", "LeftElbow"),
-    ("lWrist", "LeftHand", "LeftLowerArm", "LeftWrist"),
-    ("rHip", "RightUpperLeg", "LowerTorso", "RightHip"),
-    ("rKnee", "RightLowerLeg", "RightUpperLeg", "RightKnee"),
-    ("rAnkle", "RightFoot", "RightLowerLeg", "RightAnkle"),
-    ("lHip", "LeftUpperLeg", "LowerTorso", "LeftHip"),
-    ("lKnee", "LeftLowerLeg", "LeftUpperLeg", "LeftKnee"),
-    ("lAnkle", "LeftFoot", "LeftLowerLeg", "LeftAnkle"),
-]
+_R6 = json.load(open(os.path.join(common.ART, "data", "r6_rig.json")))
 
-
-def _rest_positions():
-    """Part centres and joint pivots at rest, with the HumanoidRootPart above the origin."""
-    parts = _R15["parts"]
-    hrp = parts["HumanoidRootPart"]["cframe"]["p"]
-    centre = {name: Vector((p["cframe"]["p"][0] - hrp[0], p["cframe"]["p"][1], p["cframe"]["p"][2] - hrp[2]))
-              for name, p in parts.items()}
-    pivots = {}
-    for motor in _R15["motors"]:
-        c0 = motor["c0"]["p"]
-        pivots[motor["name"]] = centre[motor["part0"]] + Vector(c0)
-    return centre, pivots
-
-
-PART_CENTRES, MOTOR_PIVOTS = _rest_positions()
-
-# joint name -> (bone / part name, parent bone, pivot in Roblox space, tail in Roblox space)
-LAYOUT = []
-for _joint, _part, _parent, _motor in _JOINT_PARTS:
-    _pivot = MOTOR_PIVOTS[_motor]
-    _centre = PART_CENTRES[_part]
-    # The bone points from the joint through the middle of its part (feet point forward).
-    _tail = _centre + (_centre - _pivot) if (_centre - _pivot).length > 0.05 else _pivot + Vector((0, 0.3, 0))
-    if "Foot" in _part:
-        _tail = Vector((_pivot.x, _centre.y - 0.1, _pivot.z - 0.5))
-    LAYOUT.append((_joint, _part, _parent, tuple(_pivot), tuple(_tail)))
-
-JOINTS = {row[0]: row[1] for row in LAYOUT}
-ROOT_PIVOT = tuple(MOTOR_PIVOTS["Root"])
-
-# part -> (centre, size) in Roblox space, for the mannequin. The classic head is a 2x1x1 box
-# with a rounded mesh in game; the mannequin uses a block of the same height instead.
-PARTS = {}
-for _name, _info in _R15["parts"].items():
-    if _name == "HumanoidRootPart":
-        continue
-    _size = tuple(_info["size"])
-    if _name == "Head":
-        _size = (1.2, 1.2, 1.2)
-    PARTS[_name] = (tuple(PART_CENTRES[_name]), _size)
-
-# Leg lengths of this rig (studs), used to match strides on bigger or smaller avatars.
-LEG = {
-    "hip": MOTOR_PIVOTS["RightHip"].y,
-    "thigh": (MOTOR_PIVOTS["RightHip"] - MOTOR_PIVOTS["RightKnee"]).length,
-    "shin": (MOTOR_PIVOTS["RightKnee"] - MOTOR_PIVOTS["RightAnkle"]).length,
-    "ankle": MOTOR_PIVOTS["RightAnkle"].y,
+JOINTS = {
+    "root": "Torso",
+    "neck": "Head",
+    "rShoulder": "Right Arm",
+    "lShoulder": "Left Arm",
+    "rHip": "Right Leg",
+    "lHip": "Left Leg",
 }
+MOTORS = {
+    "root": "RootJoint",
+    "neck": "Neck",
+    "rShoulder": "Right Shoulder",
+    "lShoulder": "Left Shoulder",
+    "rHip": "Right Hip",
+    "lHip": "Left Hip",
+}
+# bone -> the bone it hangs from
+PARENT = {
+    "Torso": "HumanoidRootPart",
+    "Head": "Torso",
+    "Right Arm": "Torso",
+    "Left Arm": "Torso",
+    "Right Leg": "Torso",
+    "Left Leg": "Torso",
+}
+
+# part -> (centre, size) in Roblox space, standing with the HumanoidRootPart at (0, 3, 0)
+PARTS = {name: (tuple(info["cframe"]["p"]), tuple(info["size"])) for name, info in _R6["parts"].items()}
+
+
+def _pivot(motor_name):
+    motor = next(m for m in _R6["motors"] if m["name"] == motor_name)
+    base = Vector(_R6["parts"][motor["part0"]]["cframe"]["p"])
+    return base + Vector(motor["c0"]["p"])
+
+
+# Roblox-space joint pivots at rest
+PIVOTS = {joint: _pivot(motor) for joint, motor in MOTORS.items()}
+ROOT_PIVOT = tuple(PIVOTS["root"])
+
+# Leg geometry (studs): the leg is one rigid 2-stud part swinging from the hip pivot, whose
+# x is the torso's edge, half a stud outside the leg's own middle.
+LEG = {"hip": PIVOTS["rHip"].y, "length": PARTS["Right Leg"][1][1], "hip_x": PIVOTS["rHip"].x}
+ARM = {"length": PARTS["Right Arm"][1][1], "shoulder_y": PIVOTS["rShoulder"].y, "shoulder_x": PIVOTS["rShoulder"].x}
 
 SUIT = srgb(34, 34, 40)
 TROUSERS = srgb(26, 26, 30)
@@ -94,18 +83,26 @@ SKIN = srgb(232, 196, 160)
 SHIRT = srgb(236, 233, 226)
 TIE = srgb(190, 22, 36)
 
+_BODY = {  # part -> the mesh object in the downloaded file
+    "Torso": "Torso_MBlocky",
+    "Head": "Head_MBlocky",
+    "Right Arm": "Right Arm_MBlocky",
+    "Left Arm": "Left Arm_MBlocky",
+    "Right Leg": "Right Leg_MBlocky",
+    "Left Leg": "Left Leg_MBlocky",
+}
+
 
 def part_material(part):
-    if part in ("Head", "RightHand", "LeftHand"):
+    if part == "Head":
         return common.material("Skin", SKIN, 0.55)
-    if "Foot" in part:
-        return common.material("Shoes", SHOES, 0.35)
     if "Leg" in part:
         return common.material("Trousers", TROUSERS, 0.8)
     return common.material("Suit", SUIT, 0.75)
 
 
 def box(name, center, size, mat, bevel=0.06):
+    """A bevelled box; centre and size in Blender space."""
     mesh = bpy.data.meshes.new(name)
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
@@ -126,6 +123,7 @@ def box(name, center, size, mat, bevel=0.06):
 
 
 def parent_to_bone(obj, arm, bone_name):
+    """Parents obj to one bone of arm, keeping it where it is."""
     bone = arm.data.bones[bone_name]
     world = obj.matrix_world.copy()
     obj.parent = arm
@@ -137,44 +135,82 @@ def parent_to_bone(obj, arm, bone_name):
     obj.matrix_world = world
 
 
-def build_rig():
-    common.clear_scene()
-    coll = common.collection("Rig")
-    arm_data = bpy.data.armatures.new("R15")
-    arm = bpy.data.objects.new("R15", arm_data)
-    coll.objects.link(arm)
-    bpy.context.view_layer.objects.active = arm
-    arm.select_set(True)
-    bpy.ops.object.mode_set(mode="EDIT")
-    root = arm_data.edit_bones.new("HumanoidRootPart")
-    root.head = rbx_to_blender((0, ROOT_PIVOT[1], 0.4))
-    root.tail = rbx_to_blender((0, ROOT_PIVOT[1], 1.4))
-    for _, bone_name, parent, pivot, tail in LAYOUT:
-        bone = arm_data.edit_bones.new(bone_name)
-        bone.head = rbx_to_blender(pivot)
-        bone.tail = rbx_to_blender(tail)
-        bone.roll = 0
-        bone.parent = arm_data.edit_bones[parent]
-        bone.use_connect = False
-    bpy.ops.object.mode_set(mode="OBJECT")
-    for pose_bone in arm.pose.bones:
-        pose_bone.rotation_mode = "QUATERNION"
+def reset_pose(arm):
+    for pb in arm.pose.bones:
+        pb.rotation_mode = "QUATERNION"
+        pb.rotation_quaternion = (1, 0, 0, 0)
+        pb.location = (0, 0, 0)
+        pb.scale = (1, 1, 1)
 
+
+def build_rig():
+    """Opens the downloaded rig and returns the R6 armature, ready to be keyed."""
+    if not os.path.exists(RIG_FILE):
+        raise SystemExit(f"The rig is missing: {RIG_FILE} (see art/README.md)")
+    bpy.ops.wm.open_mainfile(filepath=RIG_FILE)
+    arm = bpy.data.objects["InternalArmature"]
+    keep = {arm.name} | set(_BODY.values())
+    for obj in list(bpy.data.objects):
+        if obj.name not in keep:
+            bpy.data.objects.remove(obj, do_unlink=True)
+    for action in list(bpy.data.actions):
+        bpy.data.actions.remove(action)
+    for text in list(bpy.data.texts):
+        bpy.data.texts.remove(text)
+    for coll in list(bpy.data.collections):
+        bpy.data.collections.remove(coll)
+    arm.name = "R6"
+    arm.data.name = "R6"
+    # The file's own drivers (body type, visibility) need its Python scripts and the control rig.
+    for obj in list(bpy.data.objects):
+        obj.animation_data_clear()
+        if obj.data is not None and getattr(obj.data, "animation_data", None):
+            obj.data.animation_data_clear()
+    for pb in arm.pose.bones:
+        for con in list(pb.constraints):
+            pb.constraints.remove(con)
+    arm.hide_viewport = arm.hide_render = False
+    arm.hide_set(False)
+    # The file switches rotation inheritance off (its control rig drives each bone separately). Roblox's
+    # Motor6Ds chain: a limb turns with the torso it hangs from, and the clips are keyed that way.
+    for bone in arm.data.bones:
+        bone.use_inherit_rotation = True
+    reset_pose(arm)
+
+    scene = bpy.context.scene
+    for coll in list(scene.collection.children):
+        scene.collection.children.unlink(coll)
+    rig_coll = common.collection("Rig")
     mannequin = common.collection("Mannequin")
-    for part, (center, size) in PARTS.items():
-        obj = box(part + "_Mesh", rbx_to_blender(center), (size[0], size[2], size[1]), part_material(part))
+    for coll_obj in list(scene.collection.objects):
+        scene.collection.objects.unlink(coll_obj)
+    rig_coll.objects.link(arm)
+    bpy.context.view_layer.update()
+
+    for part, mesh_name in _BODY.items():
+        obj = bpy.data.objects[mesh_name]
+        obj.name = part + "_Mesh"
+        obj.hide_viewport = obj.hide_render = False
         mannequin.objects.link(obj)
+        obj.hide_set(False)
+        obj.data.materials.clear()
+        obj.data.materials.append(part_material(part))
+        bpy.context.view_layer.update()
+        # The file follows a bone with a Child Of constraint; the bone parent below does the same.
+        world = obj.matrix_world.copy()
+        for con in list(obj.constraints):
+            obj.constraints.remove(con)
+        obj.matrix_world = world
         bpy.context.view_layer.update()
         parent_to_bone(obj, arm, part)
 
-    # Details that show which way the mannequin faces: shirt front, tie and eyes.
-    torso = PART_CENTRES["UpperTorso"]
-    head = PART_CENTRES["Head"]
+    # Details that show which way the mannequin faces: shirt front, tie and eyes (Roblox +x right,
+    # forward is -z; boxes are given in Roblox space and sized (x, y, z)).
     details = [
-        ("ShirtFront", "UpperTorso", (0, torso.y + 0.42, -0.51), (0.55, 0.7, 0.04), common.material("Shirt", SHIRT, 0.5)),
-        ("Tie", "UpperTorso", (0, torso.y + 0.2, -0.54), (0.2, 0.9, 0.04), common.material("Tie", TIE, 0.45)),
-        ("EyeL", "Head", (-0.22, head.y + 0.1, -0.61), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
-        ("EyeR", "Head", (0.22, head.y + 0.1, -0.61), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
+        ("ShirtFront", "Torso", (0, 3.42, -0.51), (0.55, 0.7, 0.04), common.material("Shirt", SHIRT, 0.5)),
+        ("Tie", "Torso", (0, 3.2, -0.54), (0.2, 0.9, 0.04), common.material("Tie", TIE, 0.45)),
+        ("EyeL", "Head", (-0.22, 4.55, -0.52), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
+        ("EyeR", "Head", (0.22, 4.55, -0.52), (0.14, 0.2, 0.04), common.material("Ink", (0.01, 0.01, 0.01), 0.3)),
     ]
     for name, bone_name, center, size, mat in details:
         obj = box(name, rbx_to_blender(center), (size[0], size[2], size[1]), mat, bevel=0.01)
@@ -184,6 +220,7 @@ def build_rig():
 
     floor = box("Floor", (0, 0, -0.05), (30, 30, 0.1), common.material("Floor", srgb(40, 40, 46), 0.9), bevel=0)
     common.collection("Stage").objects.link(floor)
+    bpy.context.view_layer.objects.active = arm
     return arm
 
 

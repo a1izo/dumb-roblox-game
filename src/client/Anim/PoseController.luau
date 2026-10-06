@@ -1,10 +1,9 @@
--- Animates every R15 character on this client, from public events only, by writing each
+-- Animates every R6 character on this client, from public events only, by writing each
 -- joint's Transform every frame (Motor6D or AnimationConstraint; it never replicates):
 --   1. a base layer from the locomotion controller (idle, walk, run, jump, fall), then
 --   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight.
 -- Clips come from Blender (Anim/Clips.luau). A clip with an uploaded animation id in
--- Assets.anim plays that animation instead. Older procedural poses (Anim/Poses.luau) still
--- work for ids that have no clip.
+-- Assets.anim plays that animation instead.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -14,7 +13,6 @@ local Anim = Shared:WaitForChild("Anim")
 local Assets = require(Shared:WaitForChild("Assets"))
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Joints = require(Anim:WaitForChild("Joints"))
-local Poses = require(Anim:WaitForChild("Poses"))
 
 local PoseController = {}
 
@@ -30,7 +28,6 @@ export type Options = {
 type Track = {
 	id: string,
 	clip: ClipPlayer.Prepared?,
-	pose: Poses.Pose?,
 	animTrack: AnimationTrack?,
 	started: number,
 	fadeIn: number,
@@ -61,8 +58,8 @@ local function rotation(cf: CFrame): CFrame
 	return cf - cf.Position
 end
 
--- Fewer joints than this and the body is still being assembled (or is not R15).
-local MIN_JOINTS = 13
+-- Fewer joints than this and the body is still being assembled (or is not R6).
+local MIN_JOINTS = Joints.COUNT
 
 local function refresh(rig: Rig)
 	local motors = Joints.find(rig.character)
@@ -74,7 +71,7 @@ local function refresh(rig: Rig)
 	rig.basis = basis
 end
 
--- The rig for a character (built once), or nil while it has no R15 joints.
+-- The rig for a character (built once), or nil while it has no R6 joints.
 function PoseController.bind(character: Model?): Rig?
 	if not character then
 		return nil
@@ -84,7 +81,7 @@ function PoseController.bind(character: Model?): Rig?
 		return existing
 	end
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+	if not humanoid or humanoid.RigType ~= Enum.HumanoidRigType.R6 then
 		return nil
 	end
 	local motors = Joints.find(character)
@@ -92,7 +89,7 @@ function PoseController.bind(character: Model?): Rig?
 	for _ in pairs(motors) do
 		count += 1
 	end
-	if count < MIN_JOINTS or not motors.waist or not motors.root then
+	if count < MIN_JOINTS or not motors.root then
 		return nil
 	end
 	local rig: Rig = {
@@ -154,7 +151,7 @@ local function animationFor(character: Model, id: string): AnimationTrack?
 end
 
 function PoseController.exists(id: string): boolean
-	return ClipPlayer.exists(id) or Poses.LIST[id] ~= nil
+	return ClipPlayer.exists(id)
 end
 
 -- Starts a clip (replacing the same clip if it is already playing).
@@ -164,8 +161,7 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 		return
 	end
 	local clip = ClipPlayer.get(id)
-	local pose = if clip then nil else Poses.LIST[id]
-	if not clip and not pose then
+	if not clip then
 		return
 	end
 	PoseController.stop(character, id, 0)
@@ -173,7 +169,6 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 	local track: Track = {
 		id = id,
 		clip = clip,
-		pose = pose,
 		started = if options and options.startAt then options.startAt else now,
 		fadeIn = if options and options.fadeIn then options.fadeIn else 0.2,
 		fadeOut = if options and options.fadeOut then options.fadeOut else 0.3,
@@ -184,10 +179,9 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 	local animTrack = animationFor(rig.character, id)
 	if animTrack then
 		track.clip = nil
-		track.pose = nil
 		track.animTrack = animTrack
 		animTrack.Priority = Enum.AnimationPriority.Action
-		animTrack.Looped = if clip then clip.loop else (pose ~= nil and pose.loop == true)
+		animTrack.Looped = clip.loop
 		animTrack:Play(track.fadeIn)
 	end
 	table.insert(rig.tracks, track)
@@ -244,6 +238,20 @@ function PoseController.isPlaying(character: Model?, id: string): boolean
 	end
 	for _, track in ipairs(rig.tracks) do
 		if track.id == id and not track.stopAt then
+			return true
+		end
+	end
+	return false
+end
+
+-- True while any clip is playing on the character (and has not been told to stop).
+function PoseController.busy(character: Model?): boolean
+	local rig = if character then rigs[character] else nil
+	if not rig then
+		return false
+	end
+	for _, track in ipairs(rig.tracks) do
+		if not track.stopAt then
 			return true
 		end
 	end
@@ -313,17 +321,6 @@ local function playTrack(rig: Rig, track: Track, now: number)
 			apply(rig, "root", shifted, w)
 		end
 		return
-	end
-	local pose = track.pose
-	if pose then
-		local angles, offset = Poses.sample(pose, elapsed)
-		for joint, angle in pairs(angles) do
-			local basis = rig.basis[joint]
-			if basis then
-				local r = CFrame.Angles(math.rad(angle[1]), math.rad(angle[2]), math.rad(angle[3]))
-				apply(rig, joint, ClipPlayer.transform(basis, r, if joint == "root" then offset else nil), w)
-			end
-		end
 	end
 end
 

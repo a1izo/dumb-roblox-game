@@ -11,7 +11,7 @@ local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
 local Joints = require(Anim:WaitForChild("Joints"))
-local Poses = require(Anim:WaitForChild("Poses"))
+local Causes = require(Anim:WaitForChild("Causes"))
 
 local CollisionGroups = require(script.Parent.CollisionGroups)
 local Match = require(script.Parent.Match)
@@ -27,21 +27,15 @@ RagdollService.BODY_TIME = 4.5
 -- Ball-socket limits per joint: { cone angle, twist }.
 local LIMITS = {
 	Neck = { 35, 30 },
-	Waist = { 30, 25 },
-	Root = { 20, 15 },
-	LeftShoulder = { 80, 45 },
-	RightShoulder = { 80, 45 },
-	LeftElbow = { 70, 10 },
-	RightElbow = { 70, 10 },
-	LeftWrist = { 35, 10 },
-	RightWrist = { 35, 10 },
-	LeftHip = { 55, 20 },
-	RightHip = { 55, 20 },
-	LeftKnee = { 70, 5 },
-	RightKnee = { 70, 5 },
-	LeftAnkle = { 25, 5 },
-	RightAnkle = { 25, 5 },
+	["Left Shoulder"] = { 80, 45 },
+	["Right Shoulder"] = { 80, 45 },
+	["Left Hip"] = { 55, 20 },
+	["Right Hip"] = { 55, 20 },
 }
+
+-- Which way each limb points from its joint, in the parent part's frame (the neck goes up).
+local LIMB_UP = Vector3.new(0, 1, 0)
+local LIMB_DOWN = Vector3.new(0, -1, 0)
 
 local function bodiesFolder(): Instance?
 	local map = Match.map
@@ -81,9 +75,16 @@ function RagdollService.ragdoll(character: Model)
 	for name, joint in pairs(Joints.find(character)) do
 		local parent, child = Joints.parent(joint), Joints.child(joint)
 		if name ~= "root" and parent and child then
-			local limit = LIMITS[Joints.R15[name].motor] or { 45, 20 }
-			local a0 = Create("Attachment", { Name = "RagdollA0", CFrame = Joints.c0(joint), Parent = parent })
-			local a1 = Create("Attachment", { Name = "RagdollA1", CFrame = Joints.c1(joint), Parent = child })
+			local limit = LIMITS[Joints.R6[name].motor] or { 45, 20 }
+			-- A ball socket's cone and twist run along its attachments' X axis, so the attachments
+			-- point down the limb (R6 joints are turned a quarter, which would aim them sideways).
+			local c0, c1 = Joints.c0(joint), Joints.c1(joint)
+			local along = if name == "neck" then LIMB_UP else LIMB_DOWN
+			local side = if math.abs(along.Z) > 0.9 then Vector3.xAxis else Vector3.zAxis
+			local frame0 = CFrame.fromMatrix(c0.Position, along, along:Cross(side).Unit:Cross(along))
+			local frame1 = c1 * c0:Inverse() * frame0
+			local a0 = Create("Attachment", { Name = "RagdollA0", CFrame = frame0, Parent = parent })
+			local a1 = Create("Attachment", { Name = "RagdollA1", CFrame = frame1, Parent = child })
 			Create("BallSocketConstraint", {
 				Name = "RagdollSocket",
 				Attachment0 = a0,
@@ -169,7 +170,7 @@ function RagdollService.collapse(player: Player, alias: string, respawn: (Player
 		if not character.Parent then
 			return
 		end
-		RagdollService.bakePose(character, Poses.FOR_CAUSE[cause or ""] or "collapseHeart")
+		RagdollService.bakePose(character, Causes.clipFor(cause))
 		RagdollService.ragdoll(character)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if humanoid then

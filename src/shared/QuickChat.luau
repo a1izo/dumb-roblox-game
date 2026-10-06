@@ -17,17 +17,23 @@ QuickChat.PHRASES = {
 	"No",
 }
 
--- Emotes use the character's own Animate script when possible, with the default
--- Roblox animations as a fallback.
+-- Emotes are clips from Blender (Anim/Clips.luau), named by id. The Emote Pack pass unlocks the
+-- showy ones.
 QuickChat.EMOTES = {
-	{ id = "wave", name = "Wave", r15 = "rbxassetid://507770239", r6 = "rbxassetid://128777973" },
-	{ id = "point", name = "Point", r15 = "rbxassetid://507770453", r6 = "rbxassetid://128853357" },
-	{ id = "cheer", name = "Cheer", r15 = "rbxassetid://507770677", r6 = "rbxassetid://129423030" },
-	{ id = "laugh", name = "Laugh", r15 = "rbxassetid://507770818", r6 = "rbxassetid://129423131" },
-	{ id = "dance", name = "Dance", r15 = "rbxassetid://507771019", r6 = "rbxassetid://182435998" },
+	{ id = "wave", name = "Wave" },
+	{ id = "point", name = "Point" },
+	{ id = "cheer", name = "Cheer" },
+	{ id = "laugh", name = "Laugh" },
+	{ id = "dance", name = "Dance" },
+	{ id = "salute", name = "Salute" },
+	{ id = "bow", name = "Bow" },
+	{ id = "shrug", name = "Shrug" },
+	{ id = "facepalm", name = "Facepalm" },
 	-- Emote Pack pass
-	{ id = "dance2", name = "Groove", r15 = "rbxassetid://507776043", r6 = "", pass = "emotes" },
-	{ id = "dance3", name = "Spin", r15 = "rbxassetid://507777268", r6 = "", pass = "emotes" },
+	{ id = "dance2", name = "Groove", pass = "emotes" },
+	{ id = "dance3", name = "Spin", pass = "emotes" },
+	{ id = "chip", name = "Potato chip", pass = "emotes" },
+	{ id = "think", name = "Thinker", pass = "emotes" },
 }
 
 return QuickChat

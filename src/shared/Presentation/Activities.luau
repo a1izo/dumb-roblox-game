@@ -13,30 +13,25 @@ export type Activity = {
 	outdoor: boolean?, -- only where there is open sky
 }
 
--- mark kind -> what can be done there
+-- mark kind -> what can be done there (a stopgap until the new intro cutscenes replace these vignettes)
 Activities.BY_KIND = {
 	desk = {
-		{ clip = "taskWork", props = {}, caption = "going through the case files" },
-		{ clip = "actMagnify", props = { "magnifier" }, caption = "studying the evidence" },
-		{ clip = "actCabinet", props = {}, caption = "searching the records" },
-		{ clip = "actThink", props = {}, caption = "thinking it over" },
+		{ clip = "workCamera", props = {}, caption = "going through the footage" },
+		{ clip = "workFingerprint", props = {}, caption = "dusting for prints" },
+		{ clip = "workPhone", props = { "phone" }, caption = "working the phones" },
+		{ clip = "workForensics", props = { "magnifier" }, caption = "studying the evidence" },
 	},
 	stand = {
-		{ clip = "actCoffee", props = { "cup" }, caption = "on a coffee break" },
-		{ clip = "actPhone", props = { "phone" }, caption = "checking messages" },
-		{ clip = "actReadFile", props = { "file" }, caption = "reading a file" },
-		{ clip = "actLookAround", props = {}, caption = "keeping watch" },
-		{ clip = "actStretch", props = {}, caption = "stretching" },
-		{ clip = "actThink", props = {}, caption = "lost in thought" },
-		{ clip = "actUmbrella", props = { "umbrella" }, caption = "waiting out the rain", outdoor = true },
+		{ clip = "idleWatch", props = {}, caption = "checking the time" },
+		{ clip = "idleLook", props = {}, caption = "keeping watch" },
+		{ clip = "idleTie", props = {}, caption = "straightening up" },
+		{ clip = "think", props = {}, caption = "lost in thought" },
 	},
 	seat = {
 		{ clip = "sit", props = {}, caption = "taking a seat" },
-		{ clip = "actNewspaper", props = { "newspaper" }, caption = "reading the evening paper" },
-		{ clip = "actCrouchSweets", props = { "sweets" }, caption = "thinking, crouched on a chair" },
 	},
 	wall = {
-		{ clip = "actLeanWall", props = {}, caption = "leaning on the wall" },
+		{ clip = "idle", props = {}, caption = "leaning on the wall" },
 	},
 } :: { [string]: { Activity } }
 
@@ -47,22 +42,22 @@ Activities.REACTIONS = {
 	"reactCoverMouth",
 	"reactLookAway",
 	"reactStartle",
-	"reactFacepalm",
-	"reactShrug",
+	"facepalm",
+	"shrug",
 	"point",
 }
 
--- Endings: winners and losers without a victory-pose cosmetic get one of these.
-Activities.VICTORY = { "victory", "victoryFist", "victoryBow", "victoryCross", "cheer", "reactSlowClap" }
-Activities.DEFEAT = { "defeat", "defeatFloor", "reactFacepalm", "reactHandsHead", "reactShrug" }
+-- Endings: winners and losers get one of these.
+Activities.VICTORY = { "cheer", "reactSlowClap", "wave", "dance" }
+Activities.DEFEAT = { "facepalm", "reactHandsHead", "shrug", "slump" }
 
 -- Private role reveals: clip, props, and whether the actor sits.
 Activities.REVEAL = {
-	Kira = { clip = "revealOpen", props = { "grimoire" }, after = "laugh" },
-	Follower = { clip = "revealPray", props = { "candle" } },
-	L = { clip = "actCrouchSweets", props = { "sweets" }, seat = true },
-	Watari = { clip = "revealTip", props = { "umbrella" } },
-	TaskForce = { clip = "revealBadge", props = { "badge" } },
+	Kira = { clip = "idle", props = { "grimoire" }, after = "laugh" },
+	Follower = { clip = "bow", props = { "candle" } },
+	L = { clip = "think", props = { "sweets" }, seat = true },
+	Watari = { clip = "salute", props = { "umbrella" } },
+	TaskForce = { clip = "salute", props = { "badge" } },
 } :: { [string]: { clip: string, props: { string }, after: string?, seat: boolean? } }
 
 -- A deterministic pick for one person from a list.

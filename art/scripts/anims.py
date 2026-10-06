@@ -1,25 +1,26 @@
-"""Every Death's Gambit animation, keyed in the game's joint convention (see animlib.py) on the real
-R15 rig (rig.py).
+"""Every Death's Gambit animation, keyed in the game's joint convention (see animlib.py) on the R6
+rig (rig.py).
 
-Style: punchy and cartoony, in the spirit of Ink Game. Strong silhouettes, anticipation before
-big moves, fast arrivals that overshoot and settle (snap / overshoot eases), bouncy bodies.
-Movement (idle, walk, run, land) is generated with leg IK in gait.py. Wherever the hips move
-here, the legs are solved so the feet stay planted (posekit.planted_legs), and every pose that
-ends on the ground is fitted to the floor (posekit.on_floor), so nothing sinks or floats.
+R6 has six joints: root (moves the whole body and bends the waist), neck, both shoulders and both
+hips. Limbs are rigid blocks, so the acting lives in strong silhouettes, held poses and timing.
+Style: cutscenes get dramatic anime acting; gameplay clips stay clean and readable.
 
-Run build() in Blender (see art/README.md) to rebuild the actions on the rig, then
-export_anims.py writes src/shared/Anim/Clips.luau.
+Movement (idle, walk, run, land) is generated in gait.py. Wherever the hips move here, the legs are
+solved so the feet stay where they are (posekit.planted_legs), and every pose that ends on the
+ground is fitted to the floor (posekit.on_floor), so nothing sinks or floats.
+
+Rigid arms: shoulder x 0 = hanging, 90 = straight out in front, 180 = overhead. z swings an arm out
+to the side (right +, left -) before it is raised, so with the arm raised z spreads it left or right.
+
+Run build() in Blender (see art/README.md) to rebuild the actions on the rig, then export_anims.py
+writes src/shared/Anim/Clips.luau.
 """
+
+import math
 
 import gait
 from animlib import clip
-from posekit import fitted_kneel, kneeling_leg, on_floor, planted_legs
-
-# Shorthands for the arm joints (right arm +z is out to the side, left arm -z).
-
-
-def arms(r=(0, 0, 6), l=(0, 0, -6), re=10, le=10, rw=(0, 0, 0), lw=(0, 0, 0)):
-    return {"rShoulder": r, "lShoulder": l, "rElbow": re, "lElbow": le, "rWrist": rw, "lWrist": lw}
+from posekit import on_floor, planted_legs
 
 
 def stand(c, t, ease="smooth", offset=(0, 0, 0), root=(0, 0, 0), stance=0.0, forward=(0.0, 0.0), **upper):
@@ -38,283 +39,286 @@ def floor_key(c, t, ease, offset_xz=(0, 0), **joints):
 
 gait.build()
 
-jump = clip("jump", 0.5, note="Take-off: arms whip up, one knee drives, then a tuck while rising.")
-stand(jump, 0.0, "smooth", offset=(0, -0.16, 0), waist=(-8, 0, 0), neck=(4, 0, 0),
-      **arms((40, 0, 12), (40, 0, -12), 30, 30))
-jump.pose(0.12, "overshoot", offset=(0, 0.12, 0), waist=(6, 0, 0), neck=(10, 0, 0),
-          **arms((168, 0, 22), (160, 0, -28), 14, 20),
-          rHip=72, lHip=-8, rKnee=-96, lKnee=-22, rAnkle=(-18, 0, 0), lAnkle=(-40, 0, 0))
-jump.pose(0.5, "sine", offset=(0, 0.06, 0), waist=(2, 0, 0), neck=(6, 0, 0),
-          **arms((128, 0, 36), (120, 0, -40), 30, 34),
-          rHip=58, lHip=20, rKnee=-86, lKnee=-54, rAnkle=(-12, 0, 0), lAnkle=(-22, 0, 0))
+jump = clip("jump", 0.5, note="Take-off: arms whip up, one leg drives, the other trails.")
+stand(jump, 0.0, "smooth", offset=(0, -0.3, 0), root=(-10, 0, 0), neck=(5, 0, 0),
+      rShoulder=(40, 0, 12), lShoulder=(40, 0, -12), stance=0.15)
+jump.pose(0.12, "overshoot", offset=(0, 0.1, 0), root=(6, 0, 0), neck=(10, 0, 0),
+          rShoulder=(168, 0, 22), lShoulder=(160, 0, -28), rHip=(58, 0, 4), lHip=(-14, 0, -6))
+jump.pose(0.5, "sine", offset=(0, 0.05, 0), root=(2, 0, 0), neck=(6, 0, 0),
+          rShoulder=(128, 0, 36), lShoulder=(120, 0, -40), rHip=(46, 0, 8), lHip=(12, 0, -8))
 
 fall = clip("fall", 0.7, loop=True, note="Arms paddle and legs pedal while falling.")
-fall.pose(0.0, "sine", waist=(8, 0, 4), neck=(-14, 0, 0),
-          **arms((150, 0, 42), (118, 0, -58), 34, 20),
-          rHip=34, lHip=-4, rKnee=-62, lKnee=-24, rAnkle=(-20, 0, 0), lAnkle=(-12, 0, 0))
-fall.pose(0.35, "sine", waist=(8, 0, -4), neck=(-14, 0, 0),
-          **arms((118, 0, 58), (150, 0, -42), 20, 34),
-          rHip=-4, lHip=34, rKnee=-24, lKnee=-62, rAnkle=(-12, 0, 0), lAnkle=(-20, 0, 0))
+fall.pose(0.0, "sine", root=(8, 0, 4), neck=(-14, 0, 0), rShoulder=(150, 0, 42), lShoulder=(118, 0, -58),
+          rHip=(34, 0, 6), lHip=(-14, 0, -4))
+fall.pose(0.35, "sine", root=(8, 0, -4), neck=(-14, 0, 0), rShoulder=(118, 0, 58), lShoulder=(150, 0, -42),
+          rHip=(-14, 0, 4), lHip=(34, 0, -6))
+
+# Standing and sitting ----------------------------------------------------------------------------------
+
+sit = clip("sit", 4.0, loop=True, note="Seated (a Seat): thighs level, hands resting, a slow breath.")
+for t, b in ((0.0, 0.0), (1.0, 1.0), (2.0, 0.0), (3.0, 1.0)):
+    sit.pose(t, "sine", root=(-1 + b, 0, 0), neck=(2 - b, 0, 0), rHip=(88, 0, 3), lHip=(88, 0, -3),
+             rShoulder=(34 + b, 0, 9), lShoulder=(34 + b, 0, -9))
+sit.pose(4.0, "sine", root=(-1, 0, 0), neck=(2, 0, 0), rHip=(88, 0, 3), lHip=(88, 0, -3),
+         rShoulder=(34, 0, 9), lShoulder=(34, 0, -9))
+
+idle_look = clip("idleLook", 2.6, note="A fidget: a slow look round to one side, then the other.")
+idle_look.pose(0.0, neck=(0, 0, 0), root=(0, 0, 0))
+idle_look.pose(0.7, "sine", neck=(2, 50, 0), root=(0, 14, 0))
+idle_look.pose(1.3, "sine", neck=(2, 50, 0), root=(0, 14, 0))
+idle_look.pose(1.9, "sine", neck=(1, -38, 0), root=(0, -10, 0))
+idle_look.pose(2.6, "sine", neck=(0, 0, 0), root=(0, 0, 0))
+
+idle_watch = clip("idleWatch", 3.0, note="A fidget: a glance at the wrist watch.")
+idle_watch.pose(0.0, rShoulder=(1, 0, 6), neck=(0, 0, 0), root=(-1, 0, 0))
+idle_watch.pose(0.55, "overshoot", rShoulder=(78, 0, -34), neck=(-26, 8, 0), root=(-4, 8, 0))
+idle_watch.pose(1.9, "sine", rShoulder=(76, 0, -34), neck=(-26, 8, 0), root=(-4, 8, 0))
+idle_watch.pose(2.5, "sine", rShoulder=(10, 0, 8), neck=(-2, 0, 0), root=(-1, 0, 0))
+idle_watch.pose(3.0, "sine", rShoulder=(1, 0, 6), neck=(0, 0, 0))
+
+idle_tie = clip("idleTie", 2.4, note="A fidget: straightening the tie.")
+idle_tie.pose(0.0, rShoulder=(1, 0, 6), neck=(0, 0, 0), root=(0, 0, 0))
+idle_tie.pose(0.4, "overshoot", rShoulder=(104, 0, -30), neck=(-8, 0, 6), root=(-2, 0, 0))
+for t, d in ((0.7, 8), (0.9, -6), (1.1, 8), (1.3, -6)):
+    idle_tie.pose(t, "sine", rShoulder=(104 + d, 0, -30), neck=(-8, 0, 6), root=(-2, 0, 0))
+idle_tie.pose(1.8, "sine", rShoulder=(10, 0, 8), neck=(-1, 0, 0), root=(0, 0, 0))
+idle_tie.pose(2.4, "sine", rShoulder=(1, 0, 6), neck=(0, 0, 0))
 
 # Actions -----------------------------------------------------------------------------------------------
 
-# Everyone alive writes in the Grimoire phase: notebook flat at the chest in the left hand, the
-# right hand scribbling a line, jumping back for the next line, and a glance up now and then.
-write = clip("write", 1.6, loop=True, note="Everyone alive writes in the Grimoire phase.")
-scribble = [(0.0, -16, 0), (0.1, 12, 1), (0.2, -14, 2), (0.3, 14, 3), (0.4, -12, 4), (0.5, 16, 5),
-            (0.62, -10, 6), (0.72, 12, 7), (0.8, -14, 8), (0.9, 12, 9), (1.02, -12, 10), (1.12, 14, 11)]
-for t, wrist, step in scribble:
-    reach = step * 1.6  # the pen travels along the line
-    write.pose(t, "sine", neck=(-30, 4 - step * 0.6, 0), waist=(-8, 3, 0),
-               lShoulder=(38, 0, 22), lElbow=76, lWrist=(-12, 0, -8),
-               rShoulder=(30 + reach * 0.4, 0, -22 + reach * 0.9), rElbow=74 - reach * 0.5,
-               rWrist=(-24, 0, wrist))
-write.pose(1.26, "snap", neck=(-18, 0, 0), waist=(-6, 2, 0), lShoulder=(38, 0, 22), lElbow=76,
-           lWrist=(-12, 0, -8), rShoulder=(28, 0, -30), rElbow=84, rWrist=(-10, 0, 0))
-write.pose(1.42, "sine", neck=(-12, -6, 0), waist=(-5, 0, 0), lShoulder=(36, 0, 22), lElbow=74,
-           lWrist=(-12, 0, -8), rShoulder=(30, 0, -26), rElbow=80, rWrist=(-18, 0, -6))
+# Everyone alive writes in the Death's Gambit phase: notebook flat at the chest in the left arm, the right
+# arm scribbling a line, jumping back for the next line, and a glance up now and then.
+write = clip("write", 1.6, loop=True, note="Everyone alive writes in the Death's Gambit phase.")
+scribble = [(0.0, -4, 0), (0.1, 6, 1), (0.2, -3, 2), (0.3, 7, 3), (0.4, -2, 4), (0.5, 8, 5),
+            (0.62, -1, 6), (0.72, 9, 7), (0.8, 0, 8), (0.9, 10, 9), (1.02, 1, 10), (1.12, 11, 11)]
+for t, swing, step in scribble:
+    write.pose(t, "sine", root=(-7, 3, 0), neck=(-32, 4 - step * 0.6, 0),
+               lShoulder=(58, 0, 24), rShoulder=(56 + swing * 0.5, 0, -6 + swing + step * 0.5))
+write.pose(1.26, "snap", root=(-6, 2, 0), neck=(-18, 0, 0), lShoulder=(58, 0, 24), rShoulder=(52, 0, -2))
+write.pose(1.42, "sine", root=(-6, -2, 0), neck=(-12, -6, 0), lShoulder=(58, 0, 24), rShoulder=(54, 0, -4))
 
-task_work = clip("taskWork", 1.2, loop=True, note="Working a case-file station (real or faked).")
-for t, r, l, look in ((0.0, 0, 7, 0), (0.15, 8, 0, 0), (0.3, 0, 8, 2), (0.45, 7, 0, 2), (0.6, 0, 6, 0),
-                      (0.75, 9, 0, -4), (0.9, 0, 8, -4), (1.05, 6, 0, 0)):
-    # Forearms level over the console, fingers tapping in turn.
-    task_work.pose(t, "snap", neck=(-16, look * 3, 0), waist=(-10, look, 0),
-                   rShoulder=(30 - r, 0, -12), rElbow=66 + r, rWrist=(-12 - r, 0, 0),
-                   lShoulder=(30 - l, 0, 12), lElbow=66 + l, lWrist=(-12 - l, 0, 0))
+# One loop per kind of station (Camera, Fingerprint, Phone, Forensics): the body leans over the console,
+# each job with its own movement.
+work_camera = clip("workCamera", 1.2, loop=True, note="Camera footage: scrubbing a jog dial, a tap on the console.")
+for t, r, l, look in ((0.0, 0, 7, 0), (0.15, 9, 0, 0), (0.3, 3, 8, 2), (0.45, 12, 0, 2), (0.6, 4, 6, 0),
+                      (0.75, 10, 0, -4), (0.9, 2, 9, -4), (1.05, 8, 0, 0)):
+    work_camera.pose(t, "snap", root=(-9, look, 0), neck=(-18, look * 3, 0),
+                     rShoulder=(66 + r, 0, -4 + r * 0.5), lShoulder=(62 + l, 0, 10))
+
+work_print = clip("workFingerprint", 1.4, loop=True, note="Fingerprints: dusting in small circles, the other hand steadying.")
+for i in range(8):
+    a = i / 8 * 2 * math.pi
+    work_print.pose(i * 0.175, "linear", root=(-14, 6, 0), neck=(-24, 8, 0),
+                    rShoulder=(76 + 9 * math.sin(a), 0, -10 + 12 * math.cos(a)), lShoulder=(64, 0, 12))
+
+work_phone = clip("workPhone", 2.0, loop=True, note="Phone records: handset at the ear, the other hand taking notes.")
+for t, w, tilt in ((0.0, 0, 0), (0.25, 5, 1), (0.5, -3, 2), (0.75, 6, 0), (1.0, -2, -1), (1.25, 5, 1), (1.5, -4, 2),
+                   (1.75, 4, 0)):
+    work_phone.pose(t, "sine", root=(-4, 4, 0), neck=(-8, 0, 10 + tilt),
+                    lShoulder=(168, 0, -14), rShoulder=(52 + w * 0.4, 0, -2 + w))
+work_phone.pose(2.0, "sine", root=(-4, 4, 0), neck=(-8, 0, 10), lShoulder=(168, 0, -14), rShoulder=(52, 0, -2))
+
+work_lab = clip("workForensics", 1.6, loop=True, note="Forensics: bent over the microscope, turning the focus knob.")
+for t, knob, look in ((0.0, 0, 0), (0.2, 6, 1), (0.4, 0, 0), (0.6, 8, -1), (0.8, 0, 0), (1.0, 7, 1),
+                      (1.2, 0, 0), (1.4, 6, -1)):
+    work_lab.pose(t, "sine", root=(-16, look * 2, 0), neck=(-26, look * 4, 0),
+                  rShoulder=(82 + knob, 0, -12), lShoulder=(82, 0, 12))
+work_lab.pose(1.6, "sine", root=(-16, 0, 0), neck=(-26, 0, 0), rShoulder=(82, 0, -12), lShoulder=(82, 0, 12))
 
 raise_hand = clip("raiseHand", 0.6, note="A vote is cast: a dip, then the hand shoots up.")
-raise_hand.pose(0.0, rShoulder=(0, 0, 8), rElbow=10, waist=(0, 0, 0), neck=(0, 0, 0))
-raise_hand.pose(0.08, "out", rShoulder=(-18, 0, 14), rElbow=40, waist=(-4, 0, 2), neck=(-4, 0, 0))
-raise_hand.pose(0.22, "bigshoot", rShoulder=(174, 0, -6), rElbow=6, rWrist=(0, 0, 0), waist=(2, 0, -8),
-                neck=(10, 0, -6))
-raise_hand.pose(0.6, "sine", rShoulder=(166, 0, -2), rElbow=14, waist=(1, 0, -6), neck=(8, 0, -4))
+raise_hand.pose(0.0, rShoulder=(0, 0, 6), root=(0, 0, 0), neck=(0, 0, 0))
+raise_hand.pose(0.08, "out", rShoulder=(-18, 0, 12), root=(-4, 0, 2), neck=(-4, 0, 0))
+raise_hand.pose(0.22, "bigshoot", rShoulder=(176, 0, 8), root=(2, 0, -8), neck=(10, 0, -6))
+raise_hand.pose(0.6, "sine", rShoulder=(168, 0, 6), root=(1, 0, -6), neck=(8, 0, -4))
 
 point = clip("point", 1.3, note="Accuse! Wind up, then thrust a pointing arm forward.")
-point.pose(0.0, rShoulder=(10, 0, 6), rElbow=20, waist=(0, 0, 0), neck=(0, 0, 0))
-point.pose(0.18, "out", rShoulder=(40, 0, -30), rElbow=118, waist=(-2, 22, 0), neck=(0, 12, 0),
-           lShoulder=(14, 0, -22), lElbow=36)
-point.pose(0.3, "bigshoot", rShoulder=(94, -6, 4), rElbow=0, rWrist=(0, 0, 0), waist=(-10, -14, 0),
-           neck=(-2, -10, 0), lShoulder=(-24, 0, -14), lElbow=24)
-point.pose(1.3, "sine", rShoulder=(90, -6, 4), rElbow=4, waist=(-8, -12, 0), neck=(0, -10, 0),
-           lShoulder=(-20, 0, -14), lElbow=26)
+point.pose(0.0, rShoulder=(10, 0, 6), lShoulder=(4, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+point.pose(0.18, "out", rShoulder=(30, -40, -10), lShoulder=(10, 0, -22), root=(-2, 22, 0), neck=(0, 12, 0))
+point.pose(0.3, "bigshoot", rShoulder=(92, -8, -4), lShoulder=(-24, 0, -14), root=(-10, -14, 0), neck=(-2, -10, 0))
+point.pose(1.3, "sine", rShoulder=(90, -8, -4), lShoulder=(-20, 0, -14), root=(-8, -12, 0), neck=(0, -10, 0))
 
-# Deaths: each ends on the floor; the server then locks the final pose into the joints and lets
-# the body go limp, so the last frame must be a pose that rests on the ground.
+# Held down ---------------------------------------------------------------------------------------------
 
-heart = clip("collapseHeart", 1.6, note="Clutches the chest, staggers, knees give out, falls forward.", floor=True)
-clutch = dict(rShoulder=(52, 0, -40), rElbow=122, rWrist=(20, 0, 0))
-heart.pose(0.0, waist=(0, 0, 0), neck=(0, 0, 0), root=(0, 0, 0))
-stand(heart, 0.1, "snap", offset=(0, 0.04, 0.08), waist=(14, 0, 0), neck=(22, 0, 0),
-      lShoulder=(26, 0, -34), lElbow=36, **clutch)
-stand(heart, 0.45, "out", offset=(0.1, -0.2, 0.12), root=(0, 8, 4), waist=(-22, 8, 10), neck=(-16, 0, 12),
-      lShoulder=(40, 0, -46), lElbow=48, stance=0.1, forward=(0.3, -0.1), **clutch)
-knees = kneeling_leg(1, (0.05, -0.68, 0.1), (-6, 0, 4))[0] | kneeling_leg(-1, (0.05, -0.68, 0.1), (-6, 0, 4))[0]
-heart.pose(0.85, "in", offset=(0.05, -0.68, 0.1), root=(-6, 0, 4), waist=(-34, 0, 6), neck=(-26, 0, 8),
-           lShoulder=(-4, 0, -40), lElbow=26, **clutch, **knees)
-floor_key(heart, 1.25, "in", (0.05, -0.6), root=(-60, 0, 6), waist=(-20, 0, 4), neck=(-18, 0, 10),
-          rShoulder=(70, 0, -22), rElbow=84, lShoulder=(46, 0, -60), lElbow=20,
-          rHip=64, rKnee=-86, lHip=58, lKnee=-80, rAnkle=(20, 0, 0), lAnkle=(20, 0, 0))
-floor_key(heart, 1.6, "bounce", (0.05, -1.1), root=(-86, 0, 8), waist=(-8, 0, 4), neck=(8, 0, 22),
-          rShoulder=(96, 0, -8), rElbow=40, lShoulder=(72, 0, -74), lElbow=12,
-          rHip=24, rKnee=-30, lHip=14, lKnee=-18, rAnkle=(30, 0, 0), lAnkle=(30, 0, 0))
+cuffed = clip("cuffed", 1.6, loop=True, note="Wrists cuffed behind the back, head down, a shaky breath.")
+for t, b in ((0.0, 0.0), (0.8, 1.0), (1.6, 0.0)):
+    cuffed.pose(t, "sine", root=(-4 - b, 0, 0), neck=(-22 - b * 2, 0, 0),
+                rShoulder=(-24, 0, -10 + b), lShoulder=(-24, 0, 10 - b))
 
-illness = clip("collapseIllness", 1.7, note="Doubles over coughing, sinks to the knees, keels over sideways.", floor=True)
-illness.pose(0.0, waist=(0, 0, 0), neck=(0, 0, 0), root=(0, 0, 0))
-for t, depth in ((0.12, -38), (0.28, -20), (0.44, -42), (0.6, -24), (0.76, -46)):
-    stand(illness, t, "snap", offset=(0, -0.08 if depth < -30 else -0.03, 0.06), waist=(depth, 0, 0),
-          neck=(-8 if depth < -30 else 6, 0, 0), rShoulder=(78, 0, -36), rElbow=130, rWrist=(20, 0, 0),
-          lShoulder=(40, 0, 30), lElbow=90)
-knees = kneeling_leg(1, (0, -0.67, 0.05), (0, 0, 0), 0.1)[0] | kneeling_leg(-1, (0, -0.67, 0.05), (0, 0, 0), 0.1)[0]
-illness.pose(1.12, "in", offset=(0, -0.67, 0.05), root=(0, 0, 0), waist=(-40, 0, 12), neck=(-18, 0, 14),
-             rShoulder=(50, 0, -22), rElbow=100, lShoulder=(10, 0, -30), lElbow=40, **knees)
-floor_key(illness, 1.45, "in", (-0.4, 0.1), root=(-20, 0, 58), waist=(-30, 0, 16), neck=(-16, 0, 24),
-          rShoulder=(40, 0, -14), rElbow=80, lShoulder=(20, 0, -60), lElbow=20,
-          rHip=70, lHip=66, rKnee=-100, lKnee=-96)
-floor_key(illness, 1.7, "bounce", (-0.8, 0.1), root=(-12, 0, 86), waist=(-24, 0, 10), neck=(-12, 0, 30),
-          rShoulder=(28, 0, -8), rElbow=60, lShoulder=(10, 0, -84), lElbow=10,
-          rHip=64, lHip=58, rKnee=-92, lKnee=-84)
+slump = clip("slump", 1.0, note="Voted out: the shoulders drop and the head falls.")
+slump.pose(0.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
+slump.pose(0.25, "out", offset=(0, -0.05, 0), root=(-10, 0, 3), neck=(-32, 0, 5), rShoulder=(10, 0, 4), lShoulder=(8, 0, -4))
+slump.pose(1.0, "in", offset=(0, -0.12, 0), root=(-16, 0, 5), neck=(-44, 0, 8), rShoulder=(14, 0, 3), lShoulder=(10, 0, -3))
 
-slip = clip("collapseFall", 1.5, note="Cartoon slip: feet fly up, arms windmill, lands flat on the back.", floor=True)
-slip.pose(0.0, waist=(0, 0, 0), neck=(0, 0, 0), root=(0, 0, 0))
-slip.pose(0.1, "snap", rHip=74, lHip=48, rKnee=-12, lKnee=-24, waist=(20, 0, 0), neck=(28, 0, 0),
-          rShoulder=(160, 0, 40), lShoulder=(140, 0, -60), rElbow=10, lElbow=20, offset=(0, 0.25, 0),
-          root=(10, 0, 0))
-slip.pose(0.26, "sine", rShoulder=(110, 0, 80), lShoulder=(170, 0, -25), rElbow=30, lElbow=5,
-          root=(24, 0, 0), offset=(0, 0.2, 0.25))
-slip.pose(0.42, "sine", rShoulder=(170, 0, 25), lShoulder=(110, 0, -80), rElbow=5, lElbow=30,
-          root=(44, 0, 0), rHip=84, lHip=64, offset=(0, -0.15, 0.55))
-floor_key(slip, 0.8, "in", (0, 1.0), root=(70, 0, 0), waist=(10, 0, 0), neck=(28, 0, 0),
-          rShoulder=(130, 0, 70), lShoulder=(130, 0, -70), rElbow=20, lElbow=20, rHip=86, lHip=70,
-          rKnee=-20, lKnee=-40)
-floor_key(slip, 1.1, "bounce", (0, 1.35), root=(86, 0, 0), waist=(4, 0, 0), neck=(10, 0, 0),
-          rShoulder=(70, 0, 90), lShoulder=(70, 0, -90), rElbow=10, lElbow=10, rHip=64, lHip=46,
-          rKnee=-30, lKnee=-50)
-floor_key(slip, 1.5, "sine", (0, 1.4), root=(88, 0, 0), waist=(0, 0, 0), neck=(4, 0, 8),
-          rShoulder=(40, 0, 96), lShoulder=(50, 0, -96), rElbow=20, lElbow=10, rHip=34, lHip=24,
-          rKnee=-44, lKnee=-64)
-
-traffic = clip("collapseTraffic", 1.5, note="A violent jolt spins the body; arms fling out; it drops.", floor=True)
-traffic.pose(0.0, root=(0, 0, 0), waist=(0, 0, 0), neck=(0, 0, 0))
-traffic.pose(0.08, "snap", root=(-6, 40, 12), waist=(12, 30, 0), neck=(24, -36, 0),
-             rShoulder=(40, 0, 90), lShoulder=(20, 0, -100), rElbow=10, lElbow=30, offset=(0.4, 0.2, 0))
-traffic.pose(0.3, "out", root=(-10, 110, 24), waist=(-6, 20, 10), neck=(-10, 0, 20),
-             rShoulder=(60, 0, 70), lShoulder=(80, 0, -60), rElbow=40, lElbow=20,
-             rHip=30, lHip=-10, rKnee=-40, lKnee=-10, offset=(0.9, -0.2, 0.2))
-floor_key(traffic, 0.8, "in", (1.3, 0.3), root=(-40, 150, 50), waist=(-20, 10, 10), neck=(-20, 0, 20),
-          rShoulder=(30, 0, 40), lShoulder=(90, 0, -40), rElbow=60, lElbow=10,
-          rHip=50, lHip=20, rKnee=-70, lKnee=-30)
-floor_key(traffic, 1.5, "bounce", (1.6, 0.4), root=(-86, 160, 20), waist=(-10, 0, 14), neck=(-6, 0, 24),
-          rShoulder=(70, 0, 60), lShoulder=(60, 0, -84), rElbow=30, lElbow=10,
-          rHip=40, lHip=26, rKnee=-60, lKnee=-40)
-
-behind = dict(rShoulder=(-42, 0, -16), lShoulder=(-42, 0, 16), rElbow=46, lElbow=46,
-              rWrist=(0, 0, 12), lWrist=(0, 0, -12))
-cuffed = clip("cuffed", 1.6, loop=True, note="Hands cuffed behind the back, head down, a struggle.")
-cuffed.pose(0.0, "sine", neck=(-26, 0, 0), waist=(-6, 0, 0), **behind)
-cuffed.pose(0.45, "snap", neck=(-18, 12, 0), waist=(-3, 10, 0), rShoulder=(-50, 0, -12), lShoulder=(-46, 0, 14),
-            rElbow=40, lElbow=40)
-cuffed.pose(0.7, "sine", neck=(-24, -10, 0), waist=(-5, -8, 0), rShoulder=(-44, 0, -15), lShoulder=(-50, 0, 12),
-            rElbow=42, lElbow=40)
-cuffed.pose(1.1, "sine", neck=(-30, 0, 0), waist=(-7, 0, 0), **behind)
-
-slump = clip("slump", 1.0, note="Voted out: the body deflates before it fades away.")
-slump.pose(0.0, neck=(0, 0, 0), waist=(0, 0, 0))
-stand(slump, 0.12, "snap", offset=(0, 0.04, 0), neck=(12, 0, 0), waist=(5, 0, 0),
-      rShoulder=(10, 0, 14), lShoulder=(10, 0, -14), rElbow=10, lElbow=10)
-stand(slump, 0.7, "in", offset=(0, -0.3, 0.05), neck=(-48, 0, 6), waist=(-24, 0, 4),
-      rShoulder=(6, 0, 4), lShoulder=(6, 0, -4), rElbow=6, lElbow=6)
-stand(slump, 1.0, "bounce", offset=(0, -0.26, 0.05), neck=(-44, 0, 8), waist=(-22, 0, 4),
-      rShoulder=(4, 0, 3), lShoulder=(4, 0, -3), rElbow=5, lElbow=5)
-
-kneel = clip("kneel", 1.1, note="Caught: drops onto one knee, hands cuffed behind the back.")
-kneel.pose(0.0, root=(0, 0, 0), waist=(0, 0, 0), neck=(0, 0, 0))
-stand(kneel, 0.25, "in", offset=(0, -0.35, 0.1), neck=(-10, 0, 0), waist=(-14, 0, 0), forward=(0.7, -0.2),
-      **behind)
+specter = clip("specterFloat", 2.4, loop=True, note="Deathsingers drift with arms spread and legs trailing.")
+specter.pose(0.0, "sine", offset=(0, 0, 0), root=(6, 0, 3), neck=(-4, 0, 0), rShoulder=(18, 0, 28), lShoulder=(18, 0, -28),
+             rHip=(-14, 0, 2), lHip=(-8, 0, -2))
+specter.pose(1.2, "sine", offset=(0, 0.35, 0), root=(4, 0, -3), neck=(2, 0, 0), rShoulder=(26, 0, 38),
+             lShoulder=(26, 0, -38), rHip=(-8, 0, 2), lHip=(-14, 0, -2))
+specter.pose(2.4, "sine", offset=(0, 0, 0), root=(6, 0, 3), neck=(-4, 0, 0), rShoulder=(18, 0, 28), lShoulder=(18, 0, -28),
+             rHip=(-14, 0, 2), lHip=(-8, 0, -2))
 
 
-def kneel_joints(offset):
-    joints, _ = kneeling_leg(-1, offset, (0, 0, 0), knee_ahead=-0.35)
-    right = planted_legs(offset, (0, 0, 0), forward=(0.95, 0))
-    joints.update({k: v for k, v in right.items() if k.startswith("r")})
-    joints.update(root=(0, 0, 0), waist=(-8, 0, 0), neck=(-34, 0, 0), **behind)
-    return joints
+# Deaths: each ends on the floor; the server then locks the final pose into the joints and lets the
+# body go limp, so the last frame must be a pose that rests on the ground. Floor keys work out the
+# height of the body; a sideways or forward shift (offset_xz = x, z) carries it as it topples.
 
+heart = clip("collapseHeart", 1.6, note="Clutches the chest, staggers, and topples forward.", floor=True)
+clutch = dict(rShoulder=(104, 0, -48))
+heart.pose(0.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
+stand(heart, 0.1, "snap", offset=(0, -0.03, 0.05), root=(-14, 0, 0), neck=(-22, 0, 0),
+      lShoulder=(24, 0, -34), **clutch)
+stand(heart, 0.45, "out", offset=(0.08, -0.05, 0.1), root=(-22, 10, 6), neck=(-14, 0, 12),
+      lShoulder=(40, 0, -46), stance=0.1, forward=(0.3, -0.1), **clutch)
+floor_key(heart, 0.95, "in", (0.1, -0.4), root=(-58, 8, 8), neck=(-10, 0, 14),
+          rShoulder=(70, 0, -30), lShoulder=(50, 0, -50), rHip=(20, 0, 4), lHip=(8, 0, -3))
+floor_key(heart, 1.3, "bounce", (0.1, -0.95), root=(-88, 6, 6), neck=(14, 0, 18),
+          rShoulder=(150, 0, -16), lShoulder=(110, 0, -62), rHip=(4, 0, 8), lHip=(-4, 0, -8))
+floor_key(heart, 1.6, "sine", (0.1, -0.95), root=(-88, 6, 6), neck=(14, 0, 18),
+          rShoulder=(152, 0, -14), lShoulder=(112, 0, -64), rHip=(4, 0, 8), lHip=(-4, 0, -8))
 
-down, kneeling = fitted_kneel((0, -0.66, 0.25), (0, 0, 0), kneel_joints)
-kneel.pose(0.55, "bounce", offset=down, **kneeling)
-kneeling["neck"] = (-38, 0, 0)
-kneeling["waist"] = (-10, 0, 0)
-kneel.pose(1.1, "sine", offset=down, **kneeling)
+ill = clip("collapseDisease", 1.7, note="A racking cough, a stagger, and a slow fall onto the back.", floor=True)
+ill.pose(0.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
+for t, bend in ((0.12, 14), (0.26, 4), (0.4, 16), (0.54, 6)):
+    stand(ill, t, "snap", offset=(0, -0.04, 0.08), root=(-bend, 0, 0), neck=(-12, 0, 0),
+          rShoulder=(130, 0, -20), lShoulder=(30, 0, 14))
+stand(ill, 0.85, "out", offset=(-0.12, -0.05, 0.1), root=(-20, -12, -10), neck=(-18, 0, -12),
+      rShoulder=(60, 0, 40), lShoulder=(80, 0, -30), stance=0.12, forward=(0.2, -0.3))
+floor_key(ill, 1.3, "in", (-0.2, 0.55), root=(60, -10, -14), neck=(24, 0, -10),
+          rShoulder=(40, 0, 70), lShoulder=(86, 0, -20), rHip=(-12, 0, 10), lHip=(-22, 0, -8))
+floor_key(ill, 1.7, "bounce", (-0.2, 0.95), root=(88, -8, -16), neck=(26, 0, -14),
+          rShoulder=(20, 0, 82), lShoulder=(160, 0, -26), rHip=(-4, 0, 10), lHip=(-10, 0, -12))
 
-# Endings -----------------------------------------------------------------------------------------------
+acc = clip("collapseAccident", 1.5, note="Struck from the side: thrown off their feet and down on the back.", floor=True)
+acc.pose(0.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
+acc.pose(0.1, "snap", offset=(0.3, 0.15, 0.1), root=(8, 20, 28), neck=(-6, 0, -20),
+         rShoulder=(70, 0, 80), lShoulder=(40, 0, -30), rHip=(-30, 0, 20), lHip=(24, 0, -6))
+acc.pose(0.38, "out", offset=(0.9, 0.7, 0.4), root=(30, 60, 70), neck=(10, 0, -24),
+         rShoulder=(150, 0, 60), lShoulder=(120, 0, -70), rHip=(-30, 0, 26), lHip=(32, 0, -14))
+floor_key(acc, 0.95, "in", (1.4, 0.4), root=(78, 36, 24), neck=(18, 0, -14),
+          rShoulder=(120, 0, 90), lShoulder=(40, 0, -80), rHip=(-6, 0, 16), lHip=(14, 0, -12))
+floor_key(acc, 1.5, "bounce", (1.5, 0.5), root=(86, 30, 12), neck=(12, 0, -10),
+          rShoulder=(100, 0, 94), lShoulder=(60, 0, -84), rHip=(-4, 0, 14), lHip=(8, 0, -12))
 
-laugh = clip("laugh", 0.6, loop=True, note="Villain laugh: leaning back, hands on the belly, shaking.")
-hands_on_belly = dict(rShoulder=(10, 0, -24), lShoulder=(10, 0, 24), rElbow=86, lElbow=86)
-stand(laugh, 0.0, "sine", offset=(0, -0.08, 0.06), waist=(18, 0, 0), neck=(30, 0, 0), **hands_on_belly)
-stand(laugh, 0.15, "snap", offset=(0, 0.0, 0.1), waist=(26, 0, 0), neck=(42, 0, 0),
-      rShoulder=(14, 0, -28), lShoulder=(14, 0, 28), rElbow=82, lElbow=82)
-stand(laugh, 0.3, "sine", offset=(0, -0.08, 0.06), waist=(18, 0, 0), neck=(30, 0, 0), **hands_on_belly)
-stand(laugh, 0.45, "snap", offset=(0, 0.0, 0.1), waist=(26, 0, 0), neck=(42, 0, 0),
-      rShoulder=(14, 0, -28), lShoulder=(14, 0, 28), rElbow=82, lElbow=82)
+# Reactions: the table's one-shot reaction to a death, an arrest or a verdict (they hold their last pose).
 
-victory = clip("victory", 0.9, loop=True, note="Both arms up, hopping.")
-stand(victory, 0.0, "sine", offset=(0, -0.3, 0), rShoulder=(150, 0, 34), lShoulder=(150, 0, -34),
-      rElbow=30, lElbow=30, neck=(6, 0, 0), waist=(-6, 0, 0))
-victory.pose(0.28, "overshoot", offset=(0, 0.55, 0), rShoulder=(176, 0, 16), lShoulder=(176, 0, -16),
-             rElbow=2, lElbow=2, rKnee=-18, lKnee=-18, rHip=10, lHip=10, rAnkle=(-20, 0, 0),
-             lAnkle=(-20, 0, 0), neck=(18, 0, 0), waist=(6, 0, 0), root=(0, 0, 0))
-stand(victory, 0.6, "in", offset=(0, -0.34, 0), rShoulder=(156, 0, 30), lShoulder=(156, 0, -30),
-      rElbow=24, lElbow=24, neck=(6, 0, 0), waist=(-8, 0, 0))
+gasp = clip("reactGasp", 1.2, note="A sharp breath in: the chest lifts, the hands fly up.")
+gasp.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+gasp.pose(0.14, "bigshoot", root=(7, 0, 0), neck=(10, 0, 0), rShoulder=(92, 0, 30), lShoulder=(92, 0, -30))
+gasp.pose(1.2, "sine", root=(5, 0, 0), neck=(8, 0, 0), rShoulder=(88, 0, 26), lShoulder=(88, 0, -26))
 
-fist = clip("victoryFist", 0.7, loop=True, note="Fist pump, other hand on the hip.")
-stand(fist, 0.0, "sine", offset=(0, -0.1, 0), rShoulder=(146, 0, 12), rElbow=70, lShoulder=(10, 0, -30),
-      lElbow=96, lWrist=(0, 0, 20), waist=(0, -8, 0), neck=(6, -6, 0))
-stand(fist, 0.18, "bigshoot", offset=(0, 0.02, 0), rShoulder=(176, 0, 6), rElbow=4, waist=(4, -12, 0),
-      neck=(16, -8, 0), lShoulder=(10, 0, -30), lElbow=96)
+startle = clip("reactStartle", 0.9, note="A jolt: a hop back with the arms thrown wide.")
+startle.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+startle.pose(0.08, "snap", offset=(0, 0.25, 0.3), root=(10, 0, 0), neck=(10, 0, 0),
+             rShoulder=(60, 0, 62), lShoulder=(60, 0, -62), rHip=(24, 0, 6), lHip=(-12, 0, -6))
+startle.pose(0.9, "in", offset=(0, -0.02, 0.3), root=(8, 0, 0), neck=(6, 0, 0),
+             rShoulder=(40, 0, 36), lShoulder=(40, 0, -36))
 
-bow = clip("victoryBow", 2.4, note="A theatrical bow, then a proud stance.")
-bow.pose(0.0, waist=(0, 0, 0), rShoulder=(0, 0, 8), lShoulder=(0, 0, -8), root=(0, 0, 0))
-bow.pose(0.45, "overshoot", rShoulder=(40, 0, 76), rElbow=10, lShoulder=(-30, 0, -16), lElbow=64,
-         waist=(4, 0, 0), neck=(8, 0, 0))
-stand(bow, 1.0, "in", offset=(0, -0.05, 0.2), root=(-12, 0, 0), waist=(-48, 0, 0), neck=(-18, 0, 0),
-      rShoulder=(72, 0, -52), rElbow=96, lShoulder=(-32, 0, -14), lElbow=66, forward=(0.35, 0))
-stand(bow, 1.7, "hold", offset=(0, -0.05, 0.2), root=(-12, 0, 0), waist=(-48, 0, 0), neck=(-18, 0, 0),
-      rShoulder=(72, 0, -52), rElbow=96, lShoulder=(-32, 0, -14), lElbow=66, forward=(0.35, 0))
-stand(bow, 2.4, "overshoot", offset=(0, 0, 0), root=(0, 0, 0), waist=(6, 0, 0), neck=(12, 0, 0),
-      rShoulder=(6, 0, 14), rElbow=10, lShoulder=(6, 0, -14), lElbow=10, forward=(0.35, 0))
+hands_head = clip("reactHandsHead", 1.4, note="Both hands on the head: no, no, no.")
+hands_head.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+hands_head.pose(0.2, "bigshoot", root=(-6, 0, 0), neck=(-8, 0, 0), rShoulder=(166, 0, -14), lShoulder=(166, 0, 14))
+hands_head.pose(0.6, "sine", root=(-9, 4, 0), neck=(-10, 8, 4), rShoulder=(162, 0, -12), lShoulder=(162, 0, 12))
+hands_head.pose(1.0, "sine", root=(-9, -4, 0), neck=(-10, -8, -4), rShoulder=(162, 0, -12), lShoulder=(162, 0, 12))
+hands_head.pose(1.4, "sine", root=(-9, 0, 0), neck=(-12, 0, 0), rShoulder=(162, 0, -12), lShoulder=(162, 0, 12))
 
-defeat = clip("defeat", 1.4, note="Hands to the head, then the arms drop and the head hangs.")
-defeat.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), neck=(0, 0, 0))
-defeat.pose(0.25, "snap", rShoulder=(146, 0, -36), lShoulder=(146, 0, 36), rElbow=128, lElbow=128,
-            neck=(-6, 0, 0), waist=(-4, 0, 0))
-defeat.pose(0.7, "sine", rShoulder=(142, 0, -38), lShoulder=(142, 0, 38), rElbow=130, lElbow=130,
-            neck=(-16, 12, 0), waist=(-8, 0, 0))
-stand(defeat, 1.1, "in", offset=(0, -0.22, 0.05), rShoulder=(4, 0, 4), lShoulder=(4, 0, -4), rElbow=6,
-      lElbow=6, neck=(-42, 0, 0), waist=(-16, 0, 0))
-stand(defeat, 1.4, "bounce", offset=(0, -0.2, 0.05), rShoulder=(3, 0, 3), lShoulder=(3, 0, -3), rElbow=5,
-      lElbow=5, neck=(-40, 0, 0), waist=(-14, 0, 0))
+cover = clip("reactCoverMouth", 1.4, note="A hand to the mouth, eyes wide.")
+cover.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+cover.pose(0.2, "overshoot", root=(4, 0, 0), neck=(6, 0, 0), rShoulder=(146, 0, -38), lShoulder=(50, 0, 24))
+cover.pose(1.4, "sine", root=(5, 0, 0), neck=(4, 0, 0), rShoulder=(142, 0, -40), lShoulder=(48, 0, 26))
 
-specter = clip("specterFloat", 2.4, loop=True, note="Specters drift with arms spread and legs trailing.")
-specter.pose(0.0, "sine", offset=(0, 0, 0), waist=(4, 0, 3), neck=(-4, 0, 0),
-             rShoulder=(16, 0, 26), lShoulder=(16, 0, -26), rElbow=24, lElbow=24,
-             rHip=-12, lHip=-6, rKnee=-26, lKnee=-18, rAnkle=(-30, 0, 0), lAnkle=(-26, 0, 0))
-specter.pose(1.2, "sine", offset=(0, 0.35, 0), waist=(2, 0, -3), neck=(2, 0, 0),
-             rShoulder=(24, 0, 36), lShoulder=(24, 0, -36), rElbow=14, lElbow=14,
-             rHip=-6, lHip=-12, rKnee=-18, lKnee=-26, rAnkle=(-26, 0, 0), lAnkle=(-30, 0, 0))
+look_away = clip("reactLookAway", 1.2, note="Turns the head and body away, arms held across.")
+look_away.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+look_away.pose(0.3, "out", root=(-4, 28, 0), neck=(-6, 62, 0), rShoulder=(46, 0, -32), lShoulder=(40, 0, 30))
+look_away.pose(1.2, "sine", root=(-5, 30, 0), neck=(-8, 64, 0), rShoulder=(48, 0, -34), lShoulder=(42, 0, 32))
+
+clap = clip("reactSlowClap", 1.0, loop=True, note="A slow, mocking clap.")
+clap.pose(0.0, "snap", root=(0, 0, 0), neck=(2, 0, 0), rShoulder=(88, 0, -34), lShoulder=(88, 0, 34))
+clap.pose(0.5, "out", root=(0, 0, 0), neck=(-2, 0, 0), rShoulder=(88, 0, -8), lShoulder=(88, 0, 8))
+
+shrug = clip("shrug", 1.4, note="Palms up, shoulders and eyebrows up: who knows?")
+shrug.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+shrug.pose(0.22, "overshoot", root=(-2, 0, 4), neck=(0, 0, 14), rShoulder=(40, 0, 52), lShoulder=(40, 0, -52))
+shrug.pose(1.0, "sine", root=(-2, 0, 4), neck=(0, 0, 12), rShoulder=(38, 0, 50), lShoulder=(38, 0, -50))
+shrug.pose(1.4, "sine", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
+
+facepalm = clip("facepalm", 1.8, note="A hand to the forehead and a sigh.")
+facepalm.pose(0.0, rShoulder=(0, 0, 6), root=(0, 0, 0), neck=(0, 0, 0))
+facepalm.pose(0.3, "overshoot", root=(-8, 0, 0), neck=(-26, 0, 0), rShoulder=(150, 0, -30))
+facepalm.pose(1.4, "sine", root=(-9, 0, 0), neck=(-30, 0, 0), rShoulder=(150, 0, -30))
+facepalm.pose(1.8, "sine", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6))
 
 # Emotes ------------------------------------------------------------------------------------------------
 
-wave = clip("wave", 2.0, note="A big friendly wave.")
-wave.pose(0.0, rShoulder=(0, 0, 8), rElbow=10)
-wave.pose(0.22, "overshoot", rShoulder=(150, 0, 30), rElbow=40, rWrist=(0, 0, 0), neck=(4, 8, -4),
-          waist=(0, 0, -4))
-for i, t in enumerate((0.45, 0.7, 0.95, 1.2, 1.45)):
-    swing = 22 if i % 2 == 0 else -18
-    wave.pose(t, "sine", rShoulder=(150, 0, 30 + swing * 0.4), rElbow=40 - swing * 0.6, rWrist=(0, 0, swing),
-              neck=(4, 8, -4), waist=(0, 0, -4 + swing * 0.05))
-wave.pose(2.0, "in", rShoulder=(0, 0, 8), rElbow=10, rWrist=(0, 0, 0), neck=(0, 0, 0), waist=(0, 0, 0))
+wave = clip("wave", 2.0, note="A friendly wave.")
+wave.pose(0.0, rShoulder=(0, 0, 6), root=(0, 0, 0), neck=(0, 0, 0))
+wave.pose(0.25, "overshoot", rShoulder=(168, 0, 14), root=(0, 0, -4), neck=(0, 0, -5))
+for i in range(4):
+    wave.pose(0.5 + i * 0.28, "sine", rShoulder=(168, 0, 14 + (24 if i % 2 == 0 else -4)), root=(0, 0, -4))
+wave.pose(1.7, "sine", rShoulder=(150, 0, 12), root=(0, 0, -2), neck=(0, 0, -3))
+wave.pose(2.0, "sine", rShoulder=(0, 0, 6), root=(0, 0, 0), neck=(0, 0, 0))
 
-cheer = clip("cheer", 1.8, note="Two hops with both fists up.")
-stand(cheer, 0.0, "smooth", offset=(0, -0.32, 0), rShoulder=(60, 0, 20), lShoulder=(60, 0, -20),
-      rElbow=90, lElbow=90)
-for base in (0.18, 0.78):
-    cheer.pose(base, "overshoot", offset=(0, 0.6, 0), rShoulder=(172, 0, 20), lShoulder=(172, 0, -20),
-               rElbow=8, lElbow=8, rKnee=-24, lKnee=-24, rHip=18, lHip=18, rAnkle=(-24, 0, 0),
-               lAnkle=(-24, 0, 0), neck=(16, 0, 0), root=(0, 0, 0))
-    stand(cheer, base + 0.35, "in", offset=(0, -0.3, 0), rShoulder=(120, 0, 30), lShoulder=(120, 0, -30),
-          rElbow=60, lElbow=60, neck=(4, 0, 0))
-stand(cheer, 1.8, "overshoot", offset=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), rElbow=10,
-      lElbow=10, neck=(0, 0, 0))
+cheer = clip("cheer", 1.8, note="Both arms up and a bounce.")
+cheer.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+stand(cheer, 0.18, "out", offset=(0, -0.3, 0), root=(-8, 0, 0), neck=(4, 0, 0),
+      rShoulder=(60, 0, 20), lShoulder=(60, 0, -20), stance=0.12)
+cheer.pose(0.36, "overshoot", offset=(0, 0.3, 0), root=(6, 0, 0), neck=(12, 0, 0),
+           rShoulder=(172, 0, 20), lShoulder=(172, 0, -20), rHip=(10, 0, 6), lHip=(-4, 0, -6))
+for i, t in enumerate((0.7, 1.0, 1.3)):
+    cheer.pose(t, "sine", offset=(0, 0.16 if i % 2 == 0 else 0.0, 0), root=(4, 0, 0), neck=(10, 0, 0),
+               rShoulder=(170 - 10 * (i % 2), 0, 22), lShoulder=(170 - 10 * ((i + 1) % 2), 0, -22),
+               rHip=(6, 0, 6), lHip=(-2, 0, -6))
+cheer.pose(1.8, "sine", root=(2, 0, 0), neck=(4, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
 
-dance = clip("dance", 1.2, loop=True, note="Disco point: up-right, down-left, hips swinging.")
-for t, s in ((0.0, 1), (0.3, -1), (0.6, 1), (0.9, -1)):
-    up = s == 1
-    stand(dance, t, "snap", offset=(0.22 * s, -0.2, 0), root=(0, 0, 6 * s), stance=0.25,
-          waist=(0, 8 * s, -12 * s), neck=(8 if up else -6, 12 * s, 6 * s),
-          rShoulder=(150, 0, 40) if up else (40, 0, -46), rElbow=4 if up else 6,
-          lShoulder=(12, 0, -30), lElbow=100, lWrist=(0, 0, 20))
-    stand(dance, t + 0.15, "sine", offset=(0.08 * s, -0.1, 0), root=(0, 0, 2 * s), stance=0.25,
-          waist=(0, 4 * s, -4 * s))
+laugh = clip("laugh", 0.6, loop=True, note="Shaking with laughter, head back.")
+laugh.pose(0.0, "sine", offset=(0, 0.03, 0), root=(6, 0, 0), neck=(16, 0, 0), rShoulder=(34, 0, 14),
+           lShoulder=(78, 0, 26))
+laugh.pose(0.3, "sine", offset=(0, -0.03, 0), root=(10, 0, 0), neck=(22, 0, 0), rShoulder=(30, 0, 12),
+           lShoulder=(74, 0, 24))
+laugh.pose(0.6, "sine", offset=(0, 0.03, 0), root=(6, 0, 0), neck=(16, 0, 0), rShoulder=(34, 0, 14),
+           lShoulder=(78, 0, 26))
 
-groove = clip("dance2", 0.8, loop=True, note="Groove: bent-knee bounce with shoulder shrugs.")
-for t, s in ((0.0, 1), (0.4, -1)):
-    stand(groove, t, "snap", offset=(0.05 * s, -0.36, 0), root=(0, 6 * s, 0), stance=0.2,
-          neck=(10, 10 * s, 0), waist=(-6, 10 * s, 0),
-          rShoulder=(30 + 12 * s, 0, 14 + 6 * s), lShoulder=(30 - 12 * s, 0, -14 + 6 * s),
-          rElbow=90, lElbow=90, rWrist=(20, 0, 0), lWrist=(20, 0, 0))
-    stand(groove, t + 0.2, "sine", offset=(0, -0.14, 0), root=(0, 2 * s, 0), stance=0.2,
-          neck=(-6, 4 * s, 0), waist=(-4, 4 * s, 0),
-          rShoulder=(30, 0, 18), lShoulder=(30, 0, -18), rElbow=86, lElbow=86)
+dance = clip("dance", 1.2, loop=True, note="Arms up and down, hips swaying.")
+for i, t in enumerate((0.0, 0.3, 0.6, 0.9, 1.2)):
+    sign = 1 if i % 2 == 0 else -1
+    stand(dance, t, "sine", offset=(0.14 * sign, -0.08, 0), root=(0, 12 * sign, 6 * sign), stance=0.2,
+          neck=(-4, -8 * sign, 0), rShoulder=(110 - 70 * (i % 2), 0, 24), lShoulder=(40 + 70 * (i % 2), 0, -24))
+
+groove = clip("dance2", 0.8, loop=True, note="A side-to-side bounce, arms swinging.")
+for i, t in enumerate((0.0, 0.2, 0.4, 0.6, 0.8)):
+    s = (1, 0, -1, 0, 1)[i]
+    stand(groove, t, "sine", offset=(0.2 * s, -0.14 if i % 2 else 0.0, 0), root=(0, 8 * s, 4 * s), stance=0.25,
+          neck=(-6, 4 * s, 0), rShoulder=(30 + 20 * s, 0, 18 + 20 * (1 - s) * 0.5),
+          lShoulder=(30 - 20 * s, 0, -18 - 20 * (1 + s) * 0.5))
 
 spin = clip("dance3", 1.2, loop=True, note="Spin with the arms out, one full turn per loop.")
 for i, t in enumerate((0.0, 0.3, 0.6, 0.9, 1.2)):
-    spin.pose(t, "linear", root=(0, 90 * i, 0), rShoulder=(10, 0, 84), lShoulder=(10, 0, -84), rElbow=6, lElbow=6,
-              neck=(10, 0, 0), waist=(4, 0, 0), offset=(0, 0.12 if i % 2 == 0 else 0.02, 0),
-              rHip=(0, 0, 6), lHip=(0, 0, -6), rKnee=-6, lKnee=-6, rAnkle=(6, 0, -6), lAnkle=(6, 0, 6))
+    spin.pose(t, "linear", offset=(0, 0.12 if i % 2 == 0 else 0.02, 0), root=(4, 90 * i, 0), neck=(10, 0, 0),
+              rShoulder=(10, 0, 84), lShoulder=(10, 0, -84), rHip=(6, 0, 8), lHip=(-6, 0, -8))
 
+salute = clip("salute", 1.6, note="A crisp Bureau salute.")
+salute.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+salute.pose(0.14, "snap", root=(2, 0, 0), neck=(6, 0, 0), rShoulder=(158, 0, -34), lShoulder=(0, 0, -4))
+salute.pose(1.0, "sine", root=(2, 0, 0), neck=(6, 0, 0), rShoulder=(158, 0, -34), lShoulder=(0, 0, -4))
+salute.pose(1.2, "snap", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 4), lShoulder=(0, 0, -6))
 
-# The cutscenes' activities, reactions, role reveals and extra endings.
-import anims_scenes  # noqa: E402, F401
+bow = clip("bow", 2.4, note="A polite bow from the waist.")
+bow.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+stand(bow, 0.7, "smooth", root=(-55, 0, 0), neck=(18, 0, 0), rShoulder=(8, 0, 4), lShoulder=(8, 0, -4))
+stand(bow, 1.5, "sine", root=(-56, 0, 0), neck=(18, 0, 0), rShoulder=(8, 0, 4), lShoulder=(8, 0, -4))
+bow.pose(2.4, "sine", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
+
+chip = clip("chip", 2.6, note="The dramatic chip: raised high, a long pause, then a crunch.")
+chip.pose(0.0, rShoulder=(0, 0, 6), lShoulder=(0, 0, -6), root=(0, 0, 0), neck=(0, 0, 0))
+chip.pose(0.35, "overshoot", root=(8, 0, 4), neck=(14, 0, 8), rShoulder=(128, 0, 12), lShoulder=(0, 0, -30))
+chip.pose(1.5, "sine", root=(10, 0, 5), neck=(16, 0, 9), rShoulder=(132, 0, 14), lShoulder=(0, 0, -34))
+chip.pose(1.7, "snap", root=(-12, 0, 0), neck=(-8, 0, 0), rShoulder=(150, 0, -26), lShoulder=(10, 0, -12))
+for t, d in ((1.85, 6), (1.97, -4), (2.09, 6), (2.21, -3)):
+    chip.pose(t, "snap", root=(-12 + d, 0, 0), neck=(-8, 0, 0), rShoulder=(150, 0, -26), lShoulder=(10, 0, -12))
+chip.pose(2.6, "sine", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=(0, 0, 6), lShoulder=(0, 0, -6))
+
+think = clip("think", 3.0, loop=True, note="Crouched like a detective, a thumb to the lip.")
+for t, b in ((0.0, 0.0), (1.5, 1.0), (3.0, 0.0)):
+    floor_key(think, t, "sine", (0, 0), root=(-12 + b, 0, 0), neck=(-14 + b * 2, 6 * b, 0),
+              rShoulder=(104, 0, -34), lShoulder=(76, 0, 22), rHip=(80, 0, 4), lHip=(80, 0, -4))
 
 
 def build(arm):

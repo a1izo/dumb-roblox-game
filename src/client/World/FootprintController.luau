@@ -30,8 +30,8 @@ local CAP = { phone = 40, tablet = 80, console = 120, desktop = 160 }
 local SIZE = Vector3.new(0.55, 0.04, 1.05)
 local COLOUR = Color3.fromRGB(150, 160, 186)
 local FRESH = 0.45 -- a new print's transparency
--- The parts a foot can be, R15 then R6: the lowest one is the foot coming down.
-local FEET = { "LeftFoot", "RightFoot", "Left Leg", "Right Leg" }
+-- The parts a foot can be (R6 legs): the lowest one is the foot coming down.
+local FEET = { "Left Leg", "Right Leg" }
 
 type Print = { part: BasePart, decal: Decal?, born: number, fade: Tween? }
 

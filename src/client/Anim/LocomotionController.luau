@@ -1,4 +1,4 @@
--- Movement animation for every character, worked out on each client from what everyone can
+-- Movement animation for every R6 character, worked out on each client from what everyone can
 -- see (how fast a body moves, whether it is on the ground). Idle, walk and run blend by speed
 -- and share one stride phase so the feet never slide between them; jumping and falling take
 -- over in the air, and a knee dip plays on landing. Roblox's default Animate script is removed
@@ -29,9 +29,14 @@ local MOVE_FULL = 1.5
 local RUN_FROM, RUN_FULL = 4, 11
 local GROUND_CHECK = 0.1
 local LAND_AFTER = 0.35 -- seconds in the air before a landing dip plays
-local DEFAULT_STRIDES = { walk = 2.4, run = 8.64 }
+local DEFAULT_STRIDES = { walk = 2.4, run = 8.64 } -- until the clips say their own
+
+-- Now and then a standing body fidgets (looks round, checks a watch, straightens a tie).
+local FIDGETS = { "idleLook", "idleWatch", "idleTie" }
+local FIDGET_EVERY = { 6, 15 }
 
 type State = {
+	fidgetAt: number,
 	phase: number,
 	legScale: number?,
 	blendSpeed: number,
@@ -66,6 +71,7 @@ local function stateFor(character: Model): State
 	local state = states[character]
 	if not state then
 		state = {
+			fidgetAt = os.clock() + FIDGET_EVERY[1] + math.random() * (FIDGET_EVERY[2] - FIDGET_EVERY[1]),
 			phase = math.random(),
 			blendSpeed = 0,
 			idleTime = math.random() * 3,
@@ -84,21 +90,24 @@ local function stateFor(character: Model): State
 end
 
 -- How long this avatar's legs are compared with the rig the clips were made on.
+local function legLength(character: Model): number
+	local leg = character:FindFirstChild("Right Leg")
+	return if leg and leg:IsA("BasePart") then leg.Size.Y else 2
+end
+
 local function legScale(character: Model, reference: number?): number
-	local joints = Joints.find(character)
-	local hipJoint, kneeJoint, ankleJoint = joints.rHip, joints.rKnee, joints.rAnkle
-	if not reference or not hipJoint or not kneeJoint or not ankleJoint then
+	if not reference then
 		return 1
 	end
-	local thigh = (Joints.c1(hipJoint).Position - Joints.c0(kneeJoint).Position).Magnitude
-	local lower = (Joints.c1(kneeJoint).Position - Joints.c0(ankleJoint).Position).Magnitude
-	local length = thigh + lower
+	local length = legLength(character)
 	return if length > 0.2 then math.clamp(length / reference, 0.4, 3) else 1
 end
 
+-- R6 legs are the part that stands on the ground (HipHeight is 0), so the distance from the
+-- root to the floor is half the root plus the leg.
 local function onGround(character: Model, root: BasePart, humanoid: Humanoid): boolean
 	rayParams.FilterDescendantsInstances = { character }
-	local reach = humanoid.HipHeight + root.Size.Y / 2 + 1.2
+	local reach = humanoid.HipHeight + root.Size.Y / 2 + legLength(character) + 1.2
 	return workspace:Raycast(root.Position, Vector3.new(0, -reach, 0), rayParams) ~= nil
 end
 
@@ -136,6 +145,13 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		return rotations, offset
 	end
 
+	-- Sitting (a Seat, like the lobby's dice table): the seated pose, whatever else is going on.
+	if humanoid.Sit and clips.sit then
+		table.clear(buffers.out)
+		local rotations, offset = ClipPlayer.sample(clips.sit, state.idleTime, buffers.out)
+		return rotations, offset
+	end
+
 	local velocity = root.AssemblyLinearVelocity
 	local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
 	if root.Anchored then
@@ -161,6 +177,21 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	state.airWeight = if state.grounded
 		then math.max(0, state.airWeight - dt * 10)
 		else math.min(1, state.airWeight + dt * 8)
+
+	-- A fidget now and then, when standing still with nothing else to do.
+	if speed < 0.3 and state.grounded and os.clock() >= state.fidgetAt then
+		state.fidgetAt = os.clock() + FIDGET_EVERY[1] + math.random() * (FIDGET_EVERY[2] - FIDGET_EVERY[1])
+		if not PoseController.busy(character) then
+			local id = FIDGETS[math.random(#FIDGETS)]
+			if ClipPlayer.exists(id) then
+				PoseController.play(
+					character,
+					id,
+					{ fadeIn = 0.35, fadeOut = 0.45, duration = ClipPlayer.length(id), emote = true }
+				)
+			end
+		end
+	end
 
 	-- Moving stops emotes.
 	if speed > MOVE_FULL * 2 or not state.grounded then
@@ -292,7 +323,7 @@ local function track(character: Model)
 end
 
 function LocomotionController.init()
-	for _, id in ipairs({ "idle", "walk", "run", "jump", "fall" }) do
+	for _, id in ipairs({ "idle", "walk", "run", "jump", "fall", "sit" }) do
 		local clip = ClipPlayer.get(id)
 		if not clip then
 			warn("[DeathsGambit] Missing movement clip " .. id .. "; run art/scripts/export_anims.py.")

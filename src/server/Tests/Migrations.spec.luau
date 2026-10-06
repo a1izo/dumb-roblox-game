@@ -46,6 +46,21 @@ return function(t)
 			expect(data.streak.count).to.equal(0)
 			expect(data.settings.hints).to.equal(true)
 		end)
+		it("refunds the retired victory poses once", function()
+			local old = v1Profile()
+			old.v = 2
+			old.coins = 100
+			old.owned.win_fist = true
+			old.owned.win_bow = true
+			old.equipped.victory = "win_bow"
+			local data = Migrations.migrate(old, START)
+			expect(data.coins).to.equal(1200)
+			expect(data.owned.win_fist).to.equal(nil)
+			expect(data.owned.win_bow).to.equal(nil)
+			expect(data.equipped.victory).to.equal(nil)
+			local again = Migrations.migrate(data, START)
+			expect(again.coins).to.equal(1200)
+		end)
 		it("changes nothing when run twice", function()
 			local once = Migrations.migrate(v1Profile(), START)
 			once.coins = 777

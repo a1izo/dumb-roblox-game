@@ -41,11 +41,12 @@ local function setScreen(runtime, busy: boolean)
 	info.label.Text = string.upper(info.name) .. (if busy then "\nANALYSING..." else "\nREADY")
 end
 
--- Everyone sees who is working a station (their character plays the working animation).
-local function markWorking(ps, on: boolean)
+-- Everyone sees who is working a station (their character plays that station type's working
+-- animation: LWorking holds the type, "Camera", "Fingerprint", "Phone" or "Forensics").
+local function markWorking(ps, on: boolean, stationType: string?)
 	local character = ps.player.Character
 	if character then
-		character:SetAttribute("LWorking", if on then true else nil)
+		character:SetAttribute("LWorking", if on then stationType or true else nil)
 	end
 end
 
@@ -343,7 +344,7 @@ local function onStart(ps, stationId: string, wantFake: boolean)
 	working[ps] = runtime
 	ps.taskStation = runtime.info.id
 	setScreen(runtime, true)
-	markWorking(ps, true)
+	markWorking(ps, true, runtime.info.type)
 	TaskStateRemote:FireClient(ps.player, {
 		state = "started",
 		stationId = runtime.info.id,

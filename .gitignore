@@ -19,3 +19,8 @@ art/export/scenes/
 # Fontshare font files (download your own copy from fontshare.com) and UI board screenshots
 art/fonts/fontshare/
 art/uiboard/
+
+# Preview videos (rendered by art/scripts/video_anims.py) and the downloaded third-party rig
+art/export/previews/anims/
+art/export/previews/_*.png
+art/rig/*.blend

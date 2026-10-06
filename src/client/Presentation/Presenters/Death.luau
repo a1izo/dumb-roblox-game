@@ -56,7 +56,7 @@ return function(cue)
 	-- The body hits the floor in a burst of shards and leaves a chalk outline.
 	task.delay(1.15, function()
 		local body = Cinema.character(data.userId)
-		local root = if body then body:FindFirstChild("LowerTorso") or body:FindFirstChild("HumanoidRootPart") else nil
+		local root = if body then body:FindFirstChild("Torso") or body:FindFirstChild("HumanoidRootPart") else nil
 		if root and root:IsA("BasePart") then
 			DeathFx.burst(root.Position, DeathFx.DARK, 40)
 			DeathFx.chalk(root.Position, 7, DeathFx.CHALK, 14)

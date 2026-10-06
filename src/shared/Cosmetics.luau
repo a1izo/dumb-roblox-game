@@ -1,7 +1,7 @@
 -- Cosmetic catalog. Item ids never change (they are saved in profiles).
 --
 --   kind    hat, trail, tie (the noir tie in matches), grimoire (the manual cover in the
---           Grimoire phase), victory (your pose when your side wins), specter (your
+--           Grimoire phase), specter (your
 --           outline as a ghost), title (shown in the lobby and on the results screen only)
 --   rarity  common, rare, epic, legendary
 --   source  shop (always for sale), rotation (for sale on days it is featured), vip
@@ -247,26 +247,6 @@ Cosmetics.ITEMS = {
 		color = Color3.fromRGB(200, 160, 60),
 	},
 
-	-- Victory poses
-	{
-		id = "win_fist",
-		kind = "victory",
-		name = "Fist of Justice",
-		rarity = "rare",
-		source = "shop",
-		price = 400,
-		pose = "victoryFist",
-	},
-	{
-		id = "win_bow",
-		kind = "victory",
-		name = "Curtain Call",
-		rarity = "epic",
-		source = "rotation",
-		price = 700,
-		pose = "victoryBow",
-	},
-
 	-- Specter outlines (seen by other ghosts only)
 	{
 		id = "specter_ember",
@@ -370,14 +350,13 @@ Cosmetics.ITEMS = {
 	{ id = "title_rank_8", kind = "title", name = "Legendary Detective", rarity = "legendary", source = "rank" },
 } :: { Item }
 
-Cosmetics.KINDS = { "hat", "trail", "tie", "grimoire", "victory", "specter", "title" }
+Cosmetics.KINDS = { "hat", "trail", "tie", "grimoire", "specter", "title" }
 
 Cosmetics.KIND_NAMES = {
 	hat = "Hats",
 	trail = "Trails",
 	tie = "Ties",
 	grimoire = "Manual covers",
-	victory = "Victory poses",
 	specter = "Deathsinger forms",
 	title = "Titles",
 }
