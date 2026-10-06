@@ -249,7 +249,7 @@ function BriefingScreen.show(payload)
 	task.spawn(function()
 		local ok, err = pcall(RoleReveal.play, payload.role or "TaskForce")
 		if not ok then
-			warn("[Inkbound] Role reveal failed: " .. tostring(err))
+			warn("[DeathsGambit] Role reveal failed: " .. tostring(err))
 		end
 		if showing ~= mine or ClientState.phase() ~= "Briefing" then
 			return

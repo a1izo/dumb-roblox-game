@@ -468,7 +468,7 @@ COMMANDS.eyes = function(player, args)
 	local ps = needTarget(player, args)
 	if ps and ps.alive then
 		EyesService.debugGrant(ps)
-		reply(player, ps.alias .. " has the Specter's Eyes.")
+		reply(player, Terms.f("{alias} has {eyes}.", { alias = ps.alias }))
 	end
 end
 
@@ -661,7 +661,7 @@ COMMANDS.contract = function(player)
 	end
 	local problems = MapContract.validateBuilt(info)
 	for _, problem in ipairs(problems) do
-		warn("[Inkbound debug] " .. info.name .. ": " .. problem)
+		warn("[DeathsGambit debug] " .. info.name .. ": " .. problem)
 	end
 	reply(
 		player,
@@ -701,7 +701,7 @@ end
 -- Every prop (or one set's: args.set = "Tokyo") in rows, each beside a red arrow that points the
 -- way its front should face (-Z), with its name and triangle count, a dummy and a lamp per row.
 COMMANDS.propGallery = function(player, args)
-	local existing = workspace:FindFirstChild("InkboundPropGallery")
+	local existing = workspace:FindFirstChild("DeathsGambitPropGallery")
 	local flip = type(args) == "table" and args.flip == true
 	if flip then
 		-- Tries the other facing: the half turn off if it was on, on if it was off, then builds the gallery again.
@@ -716,11 +716,11 @@ COMMANDS.propGallery = function(player, args)
 		end
 	end
 	for _, key in ipairs({ "Chair", "Car", "Bench", "Desk" }) do
-		print("[Inkbound] Facing check: " .. ModelLibrary.describeFacing(key))
+		print("[DeathsGambit] Facing check: " .. ModelLibrary.describeFacing(key))
 	end
 	local only = if type(args) == "table" and type(args.set) == "string" then args.set else nil
 	local folder = Instance.new("Folder")
-	folder.Name = "InkboundPropGallery"
+	folder.Name = "DeathsGambitPropGallery"
 	folder.Parent = workspace
 	local keys = {}
 	for key, info in pairs(ModelCatalog) do
@@ -839,7 +839,7 @@ COMMANDS.briefing = function(player, args)
 		alias = "Raven",
 		realName = "Kenji Mori",
 		allies = {},
-		hint = if role == "Watari" then 'The 2nd letter of the Hand\'s last name is "O".' else nil,
+		hint = if role == "Watari" then Terms.f('The 2nd letter of {Hand}\'s last name is "O".') else nil,
 		playerCount = 8,
 		followers = 1,
 		mapName = MapService.nextMapName(),
@@ -1035,7 +1035,7 @@ function DebugService.init()
 		end
 		local ok, err = pcall(handler, player, args)
 		if not ok then
-			warn("[Inkbound debug] " .. command .. " failed: " .. tostring(err))
+			warn("[DeathsGambit debug] " .. command .. " failed: " .. tostring(err))
 			reply(player, command .. " failed: " .. tostring(err), "bad")
 		end
 		task.defer(pushSnapshots)
@@ -1046,7 +1046,7 @@ function DebugService.init()
 			pushSnapshots()
 		end
 	end)
-	print("[Inkbound] Debug panel enabled (press F2 in a play test).")
+	print("[DeathsGambit] Debug panel enabled (press F2 in a play test).")
 end
 
 return DebugService

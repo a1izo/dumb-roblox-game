@@ -20,7 +20,7 @@ function TextFilter.forUser(text: string, fromUserId: number, toUserId: number):
 	if IS_STUDIO then
 		return text
 	end
-	warn("[Inkbound] Text filtering failed: " .. tostring(result))
+	warn("[DeathsGambit] Text filtering failed: " .. tostring(result))
 	return nil
 end
 
@@ -35,7 +35,7 @@ function TextFilter.broadcast(text: string, fromUserId: number): string?
 	if IS_STUDIO then
 		return text
 	end
-	warn("[Inkbound] Text filtering failed: " .. tostring(result))
+	warn("[DeathsGambit] Text filtering failed: " .. tostring(result))
 	return nil
 end
 

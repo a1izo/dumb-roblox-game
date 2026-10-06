@@ -52,7 +52,7 @@ local blocking: { [string]: boolean } = {}
 local counter = 0
 local scrim: TextButton
 
-local BACK_ACTION = "InkboundBack"
+local BACK_ACTION = "DeathsGambitBack"
 
 function Router.view(): View
 	return {
@@ -148,7 +148,7 @@ end
 function Router.open(name: string, args: any?): boolean
 	local spec = specs[name]
 	if not spec then
-		warn("[Inkbound] Router: unknown screen " .. name)
+		warn("[DeathsGambit] Router: unknown screen " .. name)
 		return false
 	end
 	if spec.allowed and not spec.allowed(Router.view()) then

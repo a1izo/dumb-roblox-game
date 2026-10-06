@@ -418,7 +418,7 @@ local function runMatch(players: { Player })
 	EventLog.reset()
 	RoleService.assign()
 	NameService.assign()
-	EventLog.add(string.format("%d agents were deployed to %s.", #Match.list, map.name), "start")
+	EventLog.add(Terms.f("{n} {agents} were deployed to {map}.", { n = #Match.list, map = map.name }), "start")
 	for _, ps in ipairs(Match.list) do
 		EventLog.add(
 			string.format("%s was %s. Real name: %s.", ps.alias, Terms.role(ps.role, "a"), ps.realName),
@@ -560,11 +560,11 @@ function RoundService.start()
 				return debug.traceback(tostring(message), 2)
 			end, players)
 			if not ok then
-				warn("[Inkbound] The match stopped because of an error:\n" .. tostring(err))
+				warn("[DeathsGambit] The match stopped because of an error:\n" .. tostring(err))
 			end
 			local cleaned, cleanupErr = pcall(cleanup)
 			if not cleaned then
-				warn("[Inkbound] Cleanup failed: " .. tostring(cleanupErr))
+				warn("[DeathsGambit] Cleanup failed: " .. tostring(cleanupErr))
 				Match.finish()
 				MatchmakingService.onMatchEnded()
 			end

@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local PuzzleSet = require(Shared:WaitForChild("Tasks"):WaitForChild("PuzzleSet"))
 local Signal = require(Shared:WaitForChild("Signal"))
 local VoteCounter = require(Shared:WaitForChild("VoteCounter"))
@@ -138,7 +139,7 @@ function Bots.spawnCharacter(bot)
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
 	end)
 	if not ok or not model then
-		warn("[Inkbound debug] Could not build a body for " .. bot.Name .. ": " .. tostring(model))
+		warn("[DeathsGambit debug] Could not build a body for " .. bot.Name .. ": " .. tostring(model))
 		return
 	end
 	model.Name = bot.Name
@@ -488,22 +489,23 @@ function Bots.order(bot, action: string, target: any, from: Vector3?): string
 			return "Pick a target first."
 		end
 		Net.simulate("DeathNote", bot, { name = targetPs.realName, cause = Config.DEATH_CAUSES[1] })
-		return bot.Name .. " wrote a name (only works for the Hand in the Grimoire phase)."
+		return bot.Name
+			.. Terms.f(" wrote a name (only works for {Hand} during {phase}).", { phase = Terms.PHASE.DeathNote })
 	elseif action == "deal" then
 		Net.simulate("EyesRequest", bot, { action = "deal" })
-		return bot.Name .. " asked for the Eyes (Cultists, investigation, round 2 or later)."
+		return bot.Name .. Terms.f(" asked for {eyes} ({cultists}, investigation, round 2 or later).")
 	elseif action == "warrant" then
 		if not targetPs then
 			return "Pick a target first."
 		end
 		Net.simulate("Warrant", bot, { name = targetPs.realName, suspect = targetPs.userId })
-		return bot.Name .. " served a warrant (only works for Zero during the vote)."
+		return bot.Name .. Terms.f(" served a warrant (only works for {Zero} during the vote).")
 	elseif action == "fake" then
 		local station = freeStation(nil)
 		if station then
 			startWork(bot, ps, station, true)
 		end
-		return bot.Name .. " will fake a case file (the Hand's side only)."
+		return bot.Name .. Terms.f(" will fake a case file ({Hand}'s side only).")
 	end
 	return "Unknown order."
 end
@@ -530,7 +532,7 @@ function Bots.init()
 				if bot.Character and bot.Character.Parent then
 					local ok, err = pcall(think, bot, now)
 					if not ok then
-						warn("[Inkbound debug] " .. bot.Name .. ": " .. tostring(err))
+						warn("[DeathsGambit debug] " .. bot.Name .. ": " .. tostring(err))
 					end
 				end
 				-- In the lobby, bots are ready whenever a real player is (so they never start a

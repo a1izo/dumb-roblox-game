@@ -95,7 +95,7 @@ local function flush()
 			end
 		end)
 		if not ok then
-			warn("[Inkbound] Could not save leaderboard scores: " .. tostring(err))
+			warn("[DeathsGambit] Could not save leaderboard scores: " .. tostring(err))
 			enabled = not string.find(tostring(err), "not allowed", 1, true)
 			return
 		end
@@ -118,7 +118,7 @@ local function flushGames()
 			end
 		end)
 		if not ok then
-			warn("[Inkbound] Could not save mini-game scores: " .. tostring(err))
+			warn("[DeathsGambit] Could not save mini-game scores: " .. tostring(err))
 			enabled = not string.find(tostring(err), "not allowed", 1, true)
 			return
 		end

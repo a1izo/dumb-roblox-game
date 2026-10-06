@@ -25,7 +25,7 @@ DirectorPanel.Changed = Signal.new()
 DirectorPanel.state = { vip = false, canEdit = false, custom = false, settings = SettingsSchema.defaults() }
 
 local MAP_NAMES = {
-	TaskForceHQ = "Agency HQ",
+	TaskForceHQ = "Bureau HQ",
 	UniversityCampus = "University Campus",
 	TokyoDistrict = "Tokyo District",
 }

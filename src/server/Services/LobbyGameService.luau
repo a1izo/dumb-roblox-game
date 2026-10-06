@@ -610,12 +610,12 @@ function LobbyGameService.init()
 			task.wait(POLL)
 			local ok, err = pcall(step)
 			if not ok then
-				warn("[Inkbound] Lobby games: " .. tostring(err))
+				warn("[DeathsGambit] Lobby games: " .. tostring(err))
 			end
 		end
 	end)
 	if RunService:IsStudio() then
-		print("[Inkbound] Lobby games ready.")
+		print("[DeathsGambit] Lobby games ready.")
 	end
 end
 

@@ -99,7 +99,7 @@ local function remember()
 end
 
 local function enter()
-	sky = Lighting:FindFirstChild("InkboundSky") :: Sky?
+	sky = Lighting:FindFirstChild("DeathsGambitSky") :: Sky?
 	remember()
 	local s = sky
 	if s then

@@ -109,7 +109,7 @@ local function mountPuzzle(task_)
 		(require(view) :: any)(ctx)
 	end)
 	if not ok then
-		warn("[Inkbound] Puzzle " .. tostring(task_.puzzle) .. " failed to open: " .. tostring(err))
+		warn("[DeathsGambit] Puzzle " .. tostring(task_.puzzle) .. " failed to open: " .. tostring(err))
 		task_.solved = true
 		task_.answer = def.solve(puzzle)
 	end

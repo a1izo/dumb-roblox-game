@@ -1,7 +1,8 @@
 --!strict
 -- Every name a player can read: the game, roles, sides, items and phases. Code writes
 -- sentences with placeholders, e.g. Terms.f("{Hand} wins."), so renaming anything is a
--- change to this file only.
+-- change to this file only. The placeholder keys keep their original spelling ({Hand} is
+-- Diavolo, {zero} is Ace, {grimoire} is Death's Manual...); only the words they print change.
 --
 -- Internal ids never change: role ids ("Kira", "Follower", "L", "Watari", "TaskForce"),
 -- side ids ("Kira", "Team"), the phase id "DeathNote", remote names, tags and DataStore keys.
@@ -10,28 +11,34 @@ local RunService = game:GetService("RunService")
 
 local Terms = {}
 
-Terms.GAME = "Inkbound"
-Terms.TAGLINE = "Find the Hand.  Protect your real name."
+Terms.GAME = "Death's Gambit"
+Terms.TAGLINE = "Find Diavolo.  Protect your real name."
 
 export type RoleNames = {
-	name: string, -- mid-sentence: "the Hand", "Cultist"
-	Name: string, -- sentence start: "The Hand"
-	title: string, -- headings: "THE HAND"
-	a: string, -- with an article: "the Hand", "a Cultist", "an Agent"
+	name: string, -- mid-sentence: "Diavolo", "Muerto"
+	Name: string, -- sentence start: "Diavolo", "Muerto"
+	title: string, -- headings: "DIAVOLO"
+	a: string, -- with an article: "Diavolo", "a Muerto", "an Operative"
 	plural: string,
 }
 
 Terms.ROLE = {
-	Kira = { name = "the Hand", Name = "The Hand", title = "THE HAND", a = "the Hand", plural = "Hands" },
-	Follower = { name = "Cultist", Name = "Cultist", title = "CULTIST", a = "a Cultist", plural = "Cultists" },
-	L = { name = "Zero", Name = "Zero", title = "ZERO", a = "Zero", plural = "Zeros" },
+	Kira = { name = "Diavolo", Name = "Diavolo", title = "DIAVOLO", a = "Diavolo", plural = "Diavolos" },
+	Follower = { name = "Muerto", Name = "Muerto", title = "MUERTO", a = "a Muerto", plural = "Muertos" },
+	L = { name = "Ace", Name = "Ace", title = "ACE", a = "Ace", plural = "Aces" },
 	Watari = { name = "the Butler", Name = "The Butler", title = "THE BUTLER", a = "the Butler", plural = "Butlers" },
-	TaskForce = { name = "Agent", Name = "Agent", title = "AGENT", a = "an Agent", plural = "Agents" },
+	TaskForce = {
+		name = "Operative",
+		Name = "Operative",
+		title = "OPERATIVE",
+		a = "an Operative",
+		plural = "Operatives",
+	},
 } :: { [string]: RoleNames }
 
 Terms.SIDE = {
-	Team = { name = "the Agency", Name = "The Agency", title = "THE AGENCY" },
-	Kira = { name = "the Hand's circle", Name = "The Hand's circle", title = "THE HAND'S CIRCLE" },
+	Team = { name = "the Bureau", Name = "The Bureau", title = "THE BUREAU" },
+	Kira = { name = "the Coven", Name = "The Coven", title = "THE COVEN" },
 }
 
 -- Phase ids come from Config.PHASE_TIME plus "Lobby".
@@ -40,8 +47,8 @@ Terms.PHASE = {
 	Intro = "Case opening",
 	Briefing = "Briefing",
 	Investigation = "Investigation",
-	DeathNote = "Grimoire phase",
-	Meeting = "Agency meeting",
+	DeathNote = "Death's Gambit",
+	Meeting = "Bureau meeting",
 	Vote = "Vote",
 	Verdict = "Verdict",
 	Outro = "The end",
@@ -59,55 +66,55 @@ Terms.STATUS = {
 -- Placeholders usable in Terms.f. Lower case = mid-sentence, capitalised = sentence start,
 -- upper case = headings.
 Terms.NAMES = {
-	game = "Inkbound",
-	GAME = "INKBOUND",
+	game = "Death's Gambit",
+	GAME = "DEATH'S GAMBIT",
 
-	hand = "the Hand",
-	Hand = "The Hand",
-	HAND = "THE HAND",
-	cultist = "Cultist",
-	Cultist = "Cultist",
-	CULTIST = "CULTIST",
-	cultists = "Cultists",
-	Cultists = "Cultists",
-	zero = "Zero",
-	Zero = "Zero",
-	ZERO = "ZERO",
+	hand = "Diavolo",
+	Hand = "Diavolo",
+	HAND = "DIAVOLO",
+	cultist = "Muerto",
+	Cultist = "Muerto",
+	CULTIST = "MUERTO",
+	cultists = "Muertos",
+	Cultists = "Muertos",
+	zero = "Ace",
+	Zero = "Ace",
+	ZERO = "ACE",
 	butler = "the Butler",
 	Butler = "The Butler",
 	BUTLER = "THE BUTLER",
-	agent = "Agent",
-	Agent = "Agent",
-	AGENT = "AGENT",
-	agents = "Agents",
-	Agents = "Agents",
-	agency = "the Agency",
-	Agency = "The Agency",
-	AGENCY = "THE AGENCY",
-	circle = "the Hand's circle",
-	Circle = "The Hand's circle",
+	agent = "Operative",
+	Agent = "Operative",
+	AGENT = "OPERATIVE",
+	agents = "Operatives",
+	Agents = "Operatives",
+	agency = "the Bureau",
+	Agency = "The Bureau",
+	AGENCY = "THE BUREAU",
+	circle = "the Coven",
+	Circle = "The Coven",
 
-	grimoire = "the Grimoire",
-	Grimoire = "The Grimoire",
-	GRIMOIRE = "THE GRIMOIRE",
-	specter = "Specter",
-	Specter = "Specter",
-	SPECTER = "SPECTER",
-	specters = "Specters",
-	eyes = "Specter's Eyes",
-	Eyes = "Specter's Eyes",
-	EYES = "SPECTER'S EYES",
-	zeroDesk = "Zero's desk",
-	ZeroDesk = "Zero's desk",
-	ZERO_DESK = "ZERO'S DESK",
-	zeroScreen = "Zero's screen",
-	ZeroScreen = "Zero's screen",
-	ZERO_SCREEN = "ZERO'S SCREEN",
-	meeting = "Agency meeting",
-	Meeting = "Agency meeting",
-	MEETING = "AGENCY MEETING",
-	-- The single glyph that stands for Zero on screens and signs.
-	zeroGlyph = "0",
+	grimoire = "Death's Manual",
+	Grimoire = "Death's Manual",
+	GRIMOIRE = "DEATH'S MANUAL",
+	specter = "Deathsinger",
+	Specter = "Deathsinger",
+	SPECTER = "DEATHSINGER",
+	specters = "Deathsingers",
+	eyes = "the Oculus of the Dead",
+	Eyes = "The Oculus of the Dead",
+	EYES = "THE OCULUS OF THE DEAD",
+	zeroDesk = "Ace's desk",
+	ZeroDesk = "Ace's desk",
+	ZERO_DESK = "ACE'S DESK",
+	zeroScreen = "Ace's screen",
+	ZeroScreen = "Ace's screen",
+	ZERO_SCREEN = "ACE'S SCREEN",
+	meeting = "Bureau meeting",
+	Meeting = "Bureau meeting",
+	MEETING = "BUREAU MEETING",
+	-- The single glyph that stands for Ace on screens and signs.
+	zeroGlyph = "A",
 }
 
 local IS_STUDIO = RunService:IsStudio()

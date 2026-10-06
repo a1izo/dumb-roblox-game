@@ -153,20 +153,20 @@ function EyesService.onRoundEnd()
 		if ps.eyes and ps.alive then
 			ps.eyes.countdown -= 1
 			if ps.eyes.countdown <= 0 then
-				EventLog.add(Terms.f("{alias} died from the {eyes} deal.", { alias = ps.alias }), "death")
+				EventLog.add(Terms.f("{alias} died after a deal with {eyes}.", { alias = ps.alias }), "death")
 				Elimination.eliminate(
 					ps,
 					"dead",
 					Terms.f("{Eyes} deal"),
 					Terms.f(
-						"{alias} collapsed. The {eyes} deal claimed them: they were working with {hand}.",
+						"{alias} collapsed. The deal with {eyes} claimed them: they were working with {hand}.",
 						{ alias = ps.alias }
 					),
 					{}
 				)
 				Match.announce(
 					ps.alias .. " is dead",
-					Terms.f("Cause of death: the {eyes} deal. They worked with {hand}."),
+					Terms.f("Cause of death: the deal with {eyes}. They worked with {hand}."),
 					"danger"
 				)
 				Cues.fire(

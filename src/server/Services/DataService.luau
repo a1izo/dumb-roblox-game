@@ -64,7 +64,7 @@ do
 	if ok then
 		store = result
 	else
-		warn("[Inkbound] DataStore unavailable: " .. tostring(result))
+		warn("[DeathsGambit] DataStore unavailable: " .. tostring(result))
 	end
 end
 
@@ -191,11 +191,11 @@ local function write(profile: Profile, release: boolean): boolean
 		end)
 	end)
 	if not ok then
-		warn("[Inkbound] Saving data failed for " .. profile.key .. ": " .. tostring(err))
+		warn("[DeathsGambit] Saving data failed for " .. profile.key .. ": " .. tostring(err))
 		return false
 	end
 	if not owned then
-		warn("[Inkbound] Did not save " .. profile.key .. ": another server owns this profile.")
+		warn("[DeathsGambit] Did not save " .. profile.key .. ": another server owns this profile.")
 	end
 	return owned
 end
@@ -290,7 +290,7 @@ local function load(player: Player)
 			if ok and newer then
 				profile.data = (Migrations.migrate(seen.data, Config.STARTING_COINS))
 				profile.readOnly = true
-				warn("[Inkbound] " .. key .. " was saved by a newer version; loading it read-only.")
+				warn("[DeathsGambit] " .. key .. " was saved by a newer version; loading it read-only.")
 				break
 			elseif ok and lockedBy == nil then
 				profile.data = (Migrations.migrate(seen and seen.data, Config.STARTING_COINS))
@@ -312,7 +312,7 @@ local function load(player: Player)
 				task.wait(3)
 			else
 				failures += 1
-				warn("[Inkbound] Loading data failed for " .. player.Name .. ": " .. tostring(err))
+				warn("[DeathsGambit] Loading data failed for " .. player.Name .. ": " .. tostring(err))
 				if IS_STUDIO or failures >= 5 then
 					break
 				end
@@ -331,7 +331,7 @@ local function load(player: Player)
 		return
 	end
 	if not profile.persistent then
-		warn("[Inkbound] Using temporary data for " .. player.Name .. " (progress will not be saved).")
+		warn("[DeathsGambit] Using temporary data for " .. player.Name .. " (progress will not be saved).")
 	end
 	profile.loaded = true
 	DataService.push(player)
@@ -410,7 +410,7 @@ function DataService.init()
 			MessagingService:SubscribeAsync(RELEASE_TOPIC, onReleaseRequest)
 		end)
 		if not ok and not IS_STUDIO then
-			warn("[Inkbound] Profile release requests unavailable: " .. tostring(err))
+			warn("[DeathsGambit] Profile release requests unavailable: " .. tostring(err))
 		end
 	end)
 	task.spawn(function()

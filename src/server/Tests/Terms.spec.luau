@@ -7,7 +7,22 @@ local RoleLogic = require(Shared:WaitForChild("RoleLogic"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 -- Names from the source material that must never reach a player again.
-local BANNED = { "Kira", "Death Note", "Shinigami", "Watari", "Task Force", "L's" }
+local BANNED = {
+	"Kira",
+	"Death Note",
+	"Shinigami",
+	"Watari",
+	"Task Force",
+	"L's",
+	-- The game's own retired names.
+	"Inkbound",
+	"Grimoire",
+	"Specter",
+	"Cultist",
+	"Zero",
+	"Agency",
+	"the Hand",
+}
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -60,11 +75,11 @@ return function(t)
 
 	describe("Terms.f", function()
 		it("fills name placeholders", function()
-			expect(Terms.f("{Hand} wins.")).to.equal("The Hand wins.")
-			expect(Terms.f("Read by {zero}.")).to.equal("Read by Zero.")
+			expect(Terms.f("{Hand} wins.")).to.equal("Diavolo wins.")
+			expect(Terms.f("Read by {zero}.")).to.equal("Read by Ace.")
 		end)
 		it("prefers the variables that are passed in", function()
-			expect(Terms.f("{alias} ({cultist})", { alias = "Raven" })).to.equal("Raven (Cultist)")
+			expect(Terms.f("{alias} ({cultist})", { alias = "Raven" })).to.equal("Raven (Muerto)")
 		end)
 		it("formats numbers", function()
 			expect(Terms.f("x{n}", { n = 3 })).to.equal("x3")

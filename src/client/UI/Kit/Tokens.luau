@@ -65,7 +65,7 @@ Tokens.alpha = {
 
 -- Glyph faces (Kit/GlyphText) for lettering; each has a Roblox font to fall back on.
 Tokens.face = {
-	display = "Gothic", -- Inkbound Gothic: titles, phases, role names
+	display = "Gothic", -- Death's Gambit Gothic: titles, phases, role names
 	hand = "Scrawl", -- Specter Scrawl: names, captions, notes
 }
 

@@ -6,6 +6,8 @@
 -- stat: a key of the match summary (see ProgressRules): matches, wins, survived, tasks,
 -- notesFound, correctVotes, duties, reports.
 
+local Terms = require(script.Parent.Parent.Terms)
+
 local Quests = {}
 
 export type Quest = {
@@ -37,7 +39,7 @@ Quests.LIST = {
 	},
 	{
 		id = "d_vote1",
-		text = "Vote for the Hand once",
+		text = Terms.f("Vote for {hand} once"),
 		stat = "correctVotes",
 		goal = 1,
 		coins = 50,
@@ -104,7 +106,7 @@ Quests.LIST = {
 	},
 	{
 		id = "w_votes3",
-		text = "Vote for the Hand 3 times",
+		text = Terms.f("Vote for {hand} 3 times"),
 		stat = "correctVotes",
 		goal = 3,
 		coins = 250,

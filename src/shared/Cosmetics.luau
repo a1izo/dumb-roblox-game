@@ -1,6 +1,6 @@
 -- Cosmetic catalog. Item ids never change (they are saved in profiles).
 --
---   kind    hat, trail, tie (the noir tie in matches), grimoire (the notebook cover in the
+--   kind    hat, trail, tie (the noir tie in matches), grimoire (the manual cover in the
 --           Grimoire phase), victory (your pose when your side wins), specter (your
 --           outline as a ghost), title (shown in the lobby and on the results screen only)
 --   rarity  common, rare, epic, legendary
@@ -31,7 +31,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "hat_cap",
 		kind = "hat",
-		name = "Agency Cap",
+		name = "Bureau Cap",
 		rarity = "common",
 		source = "shop",
 		price = 100,
@@ -185,7 +185,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "tie_navy",
 		kind = "tie",
-		name = "Agency Navy",
+		name = "Bureau Navy",
 		rarity = "common",
 		source = "shop",
 		price = 120,
@@ -315,15 +315,15 @@ Cosmetics.ITEMS = {
 	{ id = "title_inkstained", kind = "title", name = "Ink-Stained", rarity = "epic", source = "achievement" },
 	{ id = "title_handcuffs", kind = "title", name = "Handcuffs", rarity = "epic", source = "achievement" },
 	-- Earned: role mastery (levels 5 and 10)
-	{ id = "title_m_hand", kind = "title", name = "Master of the Hand", rarity = "epic", source = "mastery" },
-	{ id = "title_m_cultist", kind = "title", name = "High Cultist", rarity = "epic", source = "mastery" },
-	{ id = "title_m_zero", kind = "title", name = "Zero's Equal", rarity = "epic", source = "mastery" },
+	{ id = "title_m_hand", kind = "title", name = "Diavolo Incarnate", rarity = "epic", source = "mastery" },
+	{ id = "title_m_cultist", kind = "title", name = "High Muerto", rarity = "epic", source = "mastery" },
+	{ id = "title_m_zero", kind = "title", name = "Ace's Equal", rarity = "epic", source = "mastery" },
 	{ id = "title_m_butler", kind = "title", name = "Head Butler", rarity = "epic", source = "mastery" },
-	{ id = "title_m_agent", kind = "title", name = "Senior Agent", rarity = "epic", source = "mastery" },
+	{ id = "title_m_agent", kind = "title", name = "Senior Operative", rarity = "epic", source = "mastery" },
 	{
 		id = "tie_m_hand",
 		kind = "tie",
-		name = "Hand's Crimson",
+		name = "Diavolo's Crimson",
 		rarity = "legendary",
 		source = "mastery",
 		color = Color3.fromRGB(150, 0, 18),
@@ -339,7 +339,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "tie_m_zero",
 		kind = "tie",
-		name = "Zero's White",
+		name = "Ace's White",
 		rarity = "legendary",
 		source = "mastery",
 		color = Color3.fromRGB(250, 250, 250),
@@ -355,7 +355,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "tie_m_agent",
 		kind = "tie",
-		name = "Agency Blue",
+		name = "Bureau Blue",
 		rarity = "legendary",
 		source = "mastery",
 		color = Color3.fromRGB(40, 90, 200),
@@ -376,9 +376,9 @@ Cosmetics.KIND_NAMES = {
 	hat = "Hats",
 	trail = "Trails",
 	tie = "Ties",
-	grimoire = "Notebooks",
+	grimoire = "Manual covers",
 	victory = "Victory poses",
-	specter = "Specter forms",
+	specter = "Deathsinger forms",
 	title = "Titles",
 }
 

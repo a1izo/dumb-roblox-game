@@ -11,7 +11,7 @@ export type Pass = { key: string, id: number, name: string, perks: { string } }
 Products.COIN_PACKS = {
 	{ key = "coins_500", id = 0, coins = 500, label = "Pocket of coins" },
 	{ key = "coins_1200", id = 0, coins = 1200, label = "Case budget" },
-	{ key = "coins_3000", id = 0, coins = 3000, label = "Agency grant" },
+	{ key = "coins_3000", id = 0, coins = 3000, label = "Bureau grant" },
 	{ key = "coins_8000", id = 0, coins = 8000, label = "Black budget" },
 } :: { CoinPack }
 

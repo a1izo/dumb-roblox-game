@@ -1,5 +1,5 @@
 --!strict
--- Text set in Inkbound's own lettering (Inkbound Gothic, Specter Scrawl): one image per glyph
+-- Text set in Death's Gambit's own lettering (Death's Gambit Gothic, Specter Scrawl): one image per glyph
 -- from the atlases art/scripts/ui/fonts.py draws. Handwriting has several versions of each
 -- letter, used in turn, so a word never repeats a letter exactly. Until the atlases are
 -- imported and loaded the same text shows in the Roblox font the face is based on, and it

@@ -6,6 +6,7 @@
 local Icons =
 	require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("Icons"))
 
+local Terms = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Terms"))
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Router = require(script.Parent.Parent.UI.Core.Router)
 
@@ -34,7 +35,7 @@ local function row(parent: Instance, order: () -> number, height: number?): Fram
 end
 
 local function build()
-	local win = Kit.window({ name = "uiGallery", title = "The Grimoire kit", size = "L" })
+	local win = Kit.window({ name = "uiGallery", title = Terms.f("{game} kit"), size = "L" })
 	local list = Kit.scroll({ Parent = win.body })
 	Kit.list(list, T.space.s)
 	Kit.pad(list, T.space.xs, T.space.xs)
@@ -55,7 +56,7 @@ local function build()
 	end
 	for _, font in ipairs({ "body", "bodyBold", "bodyItalic", "label", "document", "mono" }) do
 		Kit.label({
-			Text = font .. ": The Hand writes one full real name a night.",
+			Text = font .. Terms.f(": {Hand} writes one full real name a night."),
 			font = font,
 			LayoutOrder = order(),
 			Parent = list,
@@ -75,7 +76,7 @@ local function build()
 		})
 	end
 	local marks = row(list, order, 110)
-	Kit.banner({ text = "The Grimoire", size = T.size.heading, Parent = marks })
+	Kit.banner({ text = Terms.NAMES.Grimoire, size = T.size.heading, Parent = marks })
 	Kit.seal({ size = 90, icon = "hand", Parent = marks })
 	Kit.seal({ size = 90, color = C.steel, text = "A", Parent = marks })
 	Kit.stamp({ text = "Case closed", width = 220, Parent = marks })
@@ -100,7 +101,7 @@ local function build()
 	Kit.setEnabled(disabled, false)
 	local holds = row(list, order)
 	Kit.hold({ text = "Hold to write", icon = "grimoire" }, 1.2, function()
-		print("[Inkbound debug] held")
+		print("[DeathsGambit debug] held")
 	end).Parent =
 		holds
 	Kit.iconButton({ icon = "settings", Parent = holds })

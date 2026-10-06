@@ -641,7 +641,7 @@ local function refreshTextures()
 end
 
 function RainController.init()
-	container = Create("Folder", { Name = "InkboundWeather", Parent = workspace.CurrentCamera }) :: Folder
+	container = Create("Folder", { Name = "DeathsGambitWeather", Parent = workspace.CurrentCamera }) :: Folder
 	loop = Sfx.play("rainLoop", { group = "Outdoor", looped = true, volume = 0 })
 	windLoop = Sfx.play("mapWindSnow", { group = "Outdoor", looped = true, volume = 0 })
 	RunService.RenderStepped:Connect(step)

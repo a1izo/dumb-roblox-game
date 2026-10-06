@@ -64,7 +64,7 @@ return {
 	},
 	signs = {
 		{ at = { 29.32, 10.4, -23 }, rot = 90, w = 2.8, h = 0.55, text = "RECORDS", font = "SpecialElite", color = { 30, 22, 14 }, bg = nil, glow = nil, align = "Center" },
-		{ at = { 0, 2.2, -29.34 }, rot = 180, w = 6.6, h = 0.75, text = "THE AGENCY  ·  WAR ROOM", font = "SpecialElite", color = { 30, 22, 14 }, bg = nil, glow = nil, align = "Center" },
+		{ at = { 0, 2.2, -29.34 }, rot = 180, w = 6.6, h = 0.75, text = "THE BUREAU  ·  WAR ROOM", font = "SpecialElite", color = { 30, 22, 14 }, bg = nil, glow = nil, align = "Center" },
 	},
 	emitters = {
 		{ kind = "windowrain", at = { 16, 9.1, 30.35 }, rot = 0, size = { 7, 4.6, 0.3 } },

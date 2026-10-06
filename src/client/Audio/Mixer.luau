@@ -57,18 +57,18 @@ end
 
 function Mixer.init()
 	for name in pairs(GROUPS) do
-		local existing = SoundService:FindFirstChild("Inkbound" .. name)
+		local existing = SoundService:FindFirstChild("DeathsGambit" .. name)
 		if existing then
 			existing:Destroy()
 		end
 		local group = Instance.new("SoundGroup")
-		group.Name = "Inkbound" .. name
+		group.Name = "DeathsGambit" .. name
 		group.Parent = SoundService
 		groups[name] = group
 		apply(name)
 	end
 	local outdoor = Instance.new("SoundGroup")
-	outdoor.Name = "InkboundOutdoor"
+	outdoor.Name = "DeathsGambitOutdoor"
 	outdoor.Parent = groups.Ambience
 	groups.Outdoor = outdoor
 	Settings.Changed:Connect(function(key)

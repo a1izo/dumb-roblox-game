@@ -29,7 +29,7 @@ function RoleService.assign()
 		if table.find(RoleLogic.ALL, forcedRole) then
 			forced = { [Match.list[1].userId] = forcedRole }
 		else
-			warn("[Inkbound] Config.STUDIO_FORCE_ROLE is not a role: " .. forcedRole)
+			warn("[DeathsGambit] Config.STUDIO_FORCE_ROLE is not a role: " .. forcedRole)
 		end
 	end
 

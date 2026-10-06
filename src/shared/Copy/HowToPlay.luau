@@ -36,7 +36,9 @@ local RAW: { { title: string, body: { string } } } = {
 		body = {
 			"Camera, fingerprint, phone and forensics stations each post a different kind of clue."
 				.. " Every station has four puzzles; you get one at random.",
-			"Forensics analyses the ink of the Grimoire's last deadly entry: whose pen could have written it.",
+			Terms.f(
+				"Forensics analyses the ink of the last deadly entry in {grimoire}: whose pen could have written it."
+			),
 			"Clues appear on the evidence board (B) and on the board in the meeting room.",
 			"{Hand} and {cultists} can fake a task: no clue, no flash. A missing board entry can expose them.",
 		},

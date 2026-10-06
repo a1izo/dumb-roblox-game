@@ -17,7 +17,7 @@ function InputRouter.init()
 			table.insert(inputs, action.pad)
 		end
 		if #inputs > 0 then
-			ContextActionService:BindAction("Inkbound_" .. action.id, function(_, state: Enum.UserInputState)
+			ContextActionService:BindAction("DeathsGambit_" .. action.id, function(_, state: Enum.UserInputState)
 				if state ~= Enum.UserInputState.Begin then
 					return Enum.ContextActionResult.Pass
 				end

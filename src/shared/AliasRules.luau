@@ -17,7 +17,9 @@ AliasRules.MIN = 3
 AliasRules.MAX = 12
 
 local RESERVED = {
-	"inkbound",
+	"deathsgambit",
+	"gambit",
+	"inkbound", -- terms:ok (the retired name stays reserved)
 	"admin",
 	"administrator",
 	"moderator",

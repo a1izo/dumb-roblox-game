@@ -1,6 +1,11 @@
 -- Forensics · Handwriting: the same word in four hands. Each hand leans and lifts its letters its
 -- own way; pick the one that matches the page, letter by letter.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Terms = require(Shared:WaitForChild("Terms"))
+
 local Kit = require(script.Parent.Parent.Kit)
 local Common = require(script.Parent.Common)
 
@@ -41,7 +46,7 @@ return function(ctx: Common.Context)
 		Parent = ctx.area,
 	})
 	Kit.Base.stroke(page, C.red, 1, 0.5)
-	Common.caption(page, "from the Grimoire's page", { Position = UDim2.fromOffset(8, 4), color = C.red })
+	Common.caption(page, Terms.f("from the page of {grimoire}"), { Position = UDim2.fromOffset(8, 4), color = C.red })
 	written(page, puzzle.word, puzzle.sample, def.SLANTS, def.RISES, 52, C.bone)
 	local samples =
 		Kit.frame({ Position = UDim2.fromScale(0, 0.42), Size = UDim2.fromScale(1, 0.58), Parent = ctx.area })

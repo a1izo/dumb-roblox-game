@@ -120,9 +120,9 @@ function TestRunner.run(folder: Instance): boolean
 		end
 	end
 
-	print(string.format("[Inkbound tests] %d passed, %d failed", passed, failed))
+	print(string.format("[DeathsGambit tests] %d passed, %d failed", passed, failed))
 	for _, failure in ipairs(failures) do
-		warn("[Inkbound tests] " .. failure)
+		warn("[DeathsGambit tests] " .. failure)
 	end
 	return failed == 0
 end

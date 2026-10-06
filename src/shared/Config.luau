@@ -1,5 +1,5 @@
 --!strict
--- Tuning values for Inkbound. The server and every client read this module,
+-- Tuning values for Death's Gambit. The server and every client read this module,
 -- so it must never hold secrets (roles, real names, notes...).
 
 local Config = {}

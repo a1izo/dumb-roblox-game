@@ -250,7 +250,7 @@ local function teleportGroup(members: { Player }, code: string)
 		TeleportService:TeleportAsync(game.PlaceId, present, options)
 	end)
 	if not ok then
-		warn("[Inkbound] Teleport failed: " .. tostring(err))
+		warn("[DeathsGambit] Teleport failed: " .. tostring(err))
 		for _, player in ipairs(present) do
 			if player.Parent == Players then
 				ready[player] = os.clock()
@@ -315,7 +315,7 @@ local function runMatchmaker()
 		return TeleportService:ReserveServerAsync(game.PlaceId)
 	end)
 	if not okReserve or type(code) ~= "string" then
-		warn("[Inkbound] Could not reserve a match server: " .. tostring(code))
+		warn("[DeathsGambit] Could not reserve a match server: " .. tostring(code))
 		return
 	end
 	for _, entry in ipairs(chosen) do
@@ -393,7 +393,7 @@ local function crossServerStep()
 	local ok, err = pcall(crossServerStepUnsafe)
 	crossBusy = false
 	if not ok then
-		warn("[Inkbound] Matchmaking step failed: " .. tostring(err))
+		warn("[DeathsGambit] Matchmaking step failed: " .. tostring(err))
 	end
 end
 
@@ -453,7 +453,7 @@ function MatchmakingService.init()
 			lockMap = MemoryStoreService:GetSortedMap("LGameLock_v1")
 		end)
 		if not ok then
-			warn("[Inkbound] Cross-server matchmaking disabled: " .. tostring(err))
+			warn("[DeathsGambit] Cross-server matchmaking disabled: " .. tostring(err))
 			queueMap = nil
 			assignMap = nil
 			lockMap = nil

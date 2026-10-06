@@ -51,12 +51,12 @@ local function controls(): { string }
 		}
 	end
 	return {
-		"E / F / T: use the prompts near stations, notes and hoods (F fakes a task for the Hand's side).",
+		Terms.f("E / F / T: use the prompts near stations, notes and hoods (F fakes a task for {Hand}'s side)."),
 		"B: evidence board.  Q: quick chat and emotes.",
 		"N / G: read or write your note / drop it.",
 		"Hold C: role card.  V: scratchpad.  H: this book.",
 		Terms.f("R: read a name with {eyes}.  Z: {zeroDesk}."),
-		"P: reopen your private screen in the Grimoire phase.",
+		Terms.f("P: reopen your private screen during {phase}.", { phase = Terms.PHASE.DeathNote }),
 	}
 end
 

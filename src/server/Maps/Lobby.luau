@@ -47,9 +47,9 @@ for _, id in ipairs(TaskTypes.LIST) do
 	table.insert(DRILLS, { info.drill, info.drillTitle, "Practise every puzzle this station can give." })
 end
 for _, drill in ipairs({
-	{ "grimoire", "THE GRIMOIRE", "Write a full real name exactly." },
+	{ "grimoire", Terms.NAMES.GRIMOIRE, "Write a full real name exactly." },
 	{ "warrant", "THE WARRANT", "Pick the suspect, type the name." },
-	{ "eyes", "SPECTER'S EYES", "See real names up close." },
+	{ "eyes", Terms.NAMES.EYES, "See real names up close." },
 }) do
 	table.insert(DRILLS, drill)
 end
@@ -176,7 +176,7 @@ local function academy(b, anchors: { [string]: Anchor })
 		if a then
 			drillDesk(b, drill, a)
 		else
-			warn("[Inkbound] The lobby scene has no altar for drill " .. index .. " (" .. drill[1] .. ").")
+			warn("[DeathsGambit] The lobby scene has no altar for drill " .. index .. " (" .. drill[1] .. ").")
 		end
 	end
 	for index, info in ipairs(DUMMIES) do
@@ -231,7 +231,7 @@ function Lobby.build(b)
 			Create("UITextSizeConstraint", { MaxTextSize = 34, Parent = label })
 			boards[key] = label
 		else
-			warn("[Inkbound] The lobby scene has no board for " .. key .. ".")
+			warn("[DeathsGambit] The lobby scene has no board for " .. key .. ".")
 		end
 	end
 

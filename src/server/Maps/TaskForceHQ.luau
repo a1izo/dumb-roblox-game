@@ -6,4 +6,4 @@
 
 local SceneMap = require(script.Parent.SceneMap)
 
-return SceneMap.new({ id = "TaskForceHQ", name = "Agency HQ", venue = "Agency" })
+return SceneMap.new({ id = "TaskForceHQ", name = "Bureau HQ", venue = "Agency" })

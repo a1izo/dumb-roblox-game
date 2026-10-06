@@ -16,7 +16,7 @@ export type Settings = {
 SettingsSchema.RANGES = {
 	rounds = { min = 3, max = 7, step = 1, default = 5, label = "Rounds" },
 	investigation = { min = 60, max = 180, step = 10, default = 100, label = "Investigation (s)" },
-	grimoire = { min = 15, max = 40, step = 5, default = 20, label = "Grimoire phase (s)" },
+	grimoire = { min = 15, max = 40, step = 5, default = 20, label = "Death's Gambit (s)" },
 	meeting = { min = 30, max = 120, step = 10, default = 60, label = "Meeting (s)" },
 	vote = { min = 15, max = 40, step = 5, default = 20, label = "Vote (s)" },
 }

@@ -1,4 +1,4 @@
--- Inkbound server bootstrap: starts every service in dependency order, then the match loop.
+-- Death's Gambit server bootstrap: starts every service in dependency order, then the match loop.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -103,4 +103,4 @@ if RunService:IsStudio() and Config.RUN_TESTS_IN_STUDIO then
 	end)
 end
 
-print(string.format("[Inkbound] Server ready. %d player(s) online.", #Players:GetPlayers()))
+print(string.format("[DeathsGambit] Server ready. %d player(s) online.", #Players:GetPlayers()))

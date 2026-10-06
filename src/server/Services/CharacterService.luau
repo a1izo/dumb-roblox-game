@@ -56,7 +56,7 @@ function CharacterService.load(player: Player)
 			player:LoadCharacterAsync()
 		end)
 		if not ok then
-			warn("[Inkbound] Could not load character for " .. player.Name .. ": " .. tostring(err))
+			warn("[DeathsGambit] Could not load character for " .. player.Name .. ": " .. tostring(err))
 		end
 	end)
 end
@@ -558,7 +558,9 @@ local function replaceWithR15(player: Player, character: Model, humanoid: Humano
 	end
 	if not warnedR6 and RunService:IsStudio() then
 		warnedR6 = true
-		warn("[Inkbound] An avatar loaded as R6 and was rebuilt as R15. Set Game Settings > Avatar > R15 to skip this.")
+		warn(
+			"[DeathsGambit] An avatar loaded as R6 and was rebuilt as R15. Set Game Settings > Avatar > R15 to skip this."
+		)
 	end
 	local okDescription, description = pcall(function()
 		return Players:GetHumanoidDescriptionFromUserId(math.max(player.UserId, 1))

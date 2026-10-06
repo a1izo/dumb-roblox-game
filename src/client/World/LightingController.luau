@@ -386,20 +386,20 @@ end
 
 function LightingController.init()
 	for _, child in ipairs(Lighting:GetChildren()) do
-		local ours = child.Name == "InkboundAtmosphere"
-			or child.Name == "InkboundGrade"
-			or child.Name == "InkboundBloom"
-			or child.Name == "InkboundSky"
+		local ours = child.Name == "DeathsGambitAtmosphere"
+			or child.Name == "DeathsGambitGrade"
+			or child.Name == "DeathsGambitBloom"
+			or child.Name == "DeathsGambitSky"
 		if ours or child:IsA("Sky") then
 			child:Destroy()
 		end
 	end
-	atmosphere = Create("Atmosphere", { Name = "InkboundAtmosphere", Parent = Lighting })
-	grade = Create("ColorCorrectionEffect", { Name = "InkboundGrade", Parent = Lighting })
-	bloom = Create("BloomEffect", { Name = "InkboundBloom", Parent = Lighting })
+	atmosphere = Create("Atmosphere", { Name = "DeathsGambitAtmosphere", Parent = Lighting })
+	grade = Create("ColorCorrectionEffect", { Name = "DeathsGambitGrade", Parent = Lighting })
+	bloom = Create("BloomEffect", { Name = "DeathsGambitBloom", Parent = Lighting })
 	-- Roblox's own night sky: stars and a small moon, nothing to upload.
 	Create("Sky", {
-		Name = "InkboundSky",
+		Name = "DeathsGambitSky",
 		StarCount = 2500,
 		CelestialBodiesShown = true,
 		MoonAngularSize = 14,

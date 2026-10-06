@@ -1,8 +1,13 @@
-"""Fails when a player-facing string still uses a name from the source material.
+"""Fails when a player-facing string still uses an old name.
 
-Player-facing text must come from src/shared/Terms.luau. Internal ids ("Kira", "Watari",
-"KiraRemoved"...) are allowed as whole string literals, because code compares against them.
-Add "-- terms:ok" to a line to allow it on purpose. Test specs are skipped.
+Player-facing text must come from src/shared/Terms.luau. Two kinds of names are banned:
+names from the source material (Kira, Death Note...) and the game's own retired names
+(Inkbound, the Hand, the Grimoire, Specter, Zero, Cultist, the Agency, Agent).
+
+Internal ids ("Kira", "Watari", "DeathNote", the "Agency" venue...) are allowed as whole string
+literals, because code compares against them. {placeholders} are ignored: their keys stay stable
+while the words they print change. Add "-- terms:ok" to a line to allow it on purpose.
+Test specs are skipped.
 
 Run: python scripts/check_terms.py
 """
@@ -11,10 +16,46 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-BANNED = re.compile(r"Kira|KIRA|Death Note|DEATH NOTE|[Ss]hinigami|SHINIGAMI|Watari|WATARI|Task Force|TASK FORCE|\bL's\b|\bL'S\b|L game|L GAME")
-INTERNAL_IDS = {"Kira", "Watari", "KiraRemoved", "LKilled", "DeathNote", "DeathNoteService"}
-STRING = re.compile(r'"((?:[^"\\n]|\.)*)"|\'((?:[^\'\\n]|\.)*)\'')
+SOURCE_NAMES = r"Kira|KIRA|Death Note|DEATH NOTE|[Ss]hinigami|SHINIGAMI|Watari|WATARI|Task Force|TASK FORCE|\bL's\b|\bL'S\b|L game|L GAME"
+GAME_NAME = r"[Ii]nkbound|INKBOUND"
+OLD_ROLES = (
+    r"\b[Tt]he Hand\b|\bTHE HAND\b|\bHand's\b|\bHand wins\b|\bHands\b"
+    r"|[Gg]rimoire|GRIMOIRE"
+    r"|[Ss]pecter|SPECTER"
+    r"|\bZero\b|\bZERO\b"
+    r"|[Cc]ultist|CULTIST"
+    r"|\b[Aa]gency\b|\bAGENCY\b"
+    r"|\b[Aa]gents?\b|\bAGENTS?\b"
+)
+BANNED = re.compile(SOURCE_NAMES + "|" + GAME_NAME + "|" + OLD_ROLES)
+# A string with no spaces and only identifier characters is an id or instance name, never a sentence.
+# Ids may keep old role words ("Specter" attributes, "specter_ember" cosmetics, "grimoire" windows);
+# only the retired game name and the source material stay banned in them.
+IDENTIFIER = re.compile(r"[A-Za-z0-9_.:/#-]+")
+BANNED_IN_IDS = re.compile(SOURCE_NAMES + "|" + GAME_NAME)
+SOURCE_ONLY = re.compile(SOURCE_NAMES)
+PLACEHOLDER = re.compile(r"\{[A-Za-z_]+\}")
+INTERNAL_IDS = {
+    "Kira", "Watari", "KiraRemoved", "LKilled", "DeathNote", "DeathNoteService",
+    # Internal ids that are never shown: the venue id, the model and set names in the Blender art.
+    "Agency", "Grimoire", "TaskForce",
+}
+# One string literal, double or single quoted; \\. keeps escaped characters inside it.
+STRING = re.compile(r'"((?:[^"\\\n]|\\.)*)"|\'((?:[^\'\\\n]|\\.)*)\'')
 SKIP = ("src/server/Tests/",)
+# The asset pipeline still names its imports Inkbound* until the one re-import of every FBX (the
+# Death's Gambit rename). These files read both names, so only the other bans apply to them.
+# Remove this list in the cleanup commit that follows the re-import.
+PIPELINE_UNTIL_REIMPORT = (
+    "src/shared/ModelLibrary.luau",
+    "src/shared/ModelCatalog.luau",
+    "src/shared/Assets.luau",
+    "src/client/UI/Kit/Textures.luau",
+    "src/client/World/TextureDoctor.luau",
+    "src/server/Maps/SceneBuilder.luau",
+    "src/server/Maps/Scenes/",
+)
+BANNED_WITHOUT_GAME_NAME = re.compile(SOURCE_NAMES + "|" + OLD_ROLES)
 
 problems = []
 for path in sorted((ROOT / "src").rglob("*.luau")):
@@ -29,7 +70,12 @@ for path in sorted((ROOT / "src").rglob("*.luau")):
             text = match.group(1) if match.group(1) is not None else match.group(2)
             if text in INTERNAL_IDS:
                 continue
-            if BANNED.search(text):
+            visible = PLACEHOLDER.sub("", text)
+            if IDENTIFIER.fullmatch(visible):
+                banned = SOURCE_ONLY if rel.startswith(PIPELINE_UNTIL_REIMPORT) else BANNED_IN_IDS
+            else:
+                banned = BANNED_WITHOUT_GAME_NAME if rel.startswith(PIPELINE_UNTIL_REIMPORT) else BANNED
+            if banned.search(visible):
                 problems.append(f"{rel}:{number}: {text}")
 
 if problems:

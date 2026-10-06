@@ -277,7 +277,7 @@ local function track(character: Model)
 			local animator = humanoid:FindFirstChildOfClass("Animator")
 			print(
 				string.format(
-					"[Inkbound] Animation check: %s, %d joints (%s), clip animator %s, default Animate %s, Roblox tracks %d, walk speed %d",
+					"[DeathsGambit] Animation check: %s, %d joints (%s), clip animator %s, default Animate %s, Roblox tracks %d, walk speed %d",
 					tostring(humanoid.RigType),
 					joints,
 					if rig then Joints.kind(rig.motors) else Joints.kind(Joints.find(character)),
@@ -295,7 +295,7 @@ function LocomotionController.init()
 	for _, id in ipairs({ "idle", "walk", "run", "jump", "fall" }) do
 		local clip = ClipPlayer.get(id)
 		if not clip then
-			warn("[Inkbound] Missing movement clip " .. id .. "; run art/scripts/export_anims.py.")
+			warn("[DeathsGambit] Missing movement clip " .. id .. "; run art/scripts/export_anims.py.")
 			return
 		end
 		clips[id] = clip

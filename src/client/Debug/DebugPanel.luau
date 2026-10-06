@@ -19,6 +19,7 @@ local Assets = require(Shared:WaitForChild("Assets"))
 local Clips = require(Shared:WaitForChild("Anim"):WaitForChild("Clips"))
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Products = require(Shared:WaitForChild("Products"))
 
 local Announcer = require(script.Parent.Parent.UI.Announcer)
@@ -270,7 +271,7 @@ builders.Match = function()
 	for _, phase in ipairs({
 		{ "Briefing", "Briefing" },
 		{ "Investigation", "Investigation" },
-		{ "DeathNote", "Grimoire phase" },
+		{ "DeathNote", Terms.PHASE.DeathNote },
 		{ "Meeting", "Meeting" },
 		{ "Vote", "Vote" },
 	}) do
@@ -296,10 +297,10 @@ builders.Match = function()
 	end)
 	heading("End")
 	r = row()
-	button(r, "Agency wins", function()
+	button(r, Terms.f("{Agency} wins"), function()
 		send("win", { side = "Team" })
 	end)
-	button(r, "Hand wins", function()
+	button(r, Terms.f("{Hand} wins"), function()
 		send("win", { side = "Kira" })
 	end)
 	button(r, "End match now (no outro)", function()
@@ -349,7 +350,7 @@ builders.People = function()
 			send("setRole", { userId = selected, role = role.id })
 		end, if find(selected) and find(selected).role == role.id then COLORS.pick else nil)
 	end
-	note("Unique roles (the Hand, Zero, the Butler) swap with whoever held them.")
+	note(Terms.f("Unique roles ({hand}, {zero}, {butler}) swap with whoever held them."))
 	heading("Role next match")
 	r = row()
 	local forced = if find(selected) then find(selected).forced else nil
@@ -383,7 +384,7 @@ builders.People = function()
 	end, COLORS.on)
 	heading("Give")
 	r = row()
-	button(r, "Specter's Eyes", function()
+	button(r, Terms.NAMES.Eyes, function()
 		send("eyes", { userId = selected })
 	end)
 	button(r, "Hood", function()
@@ -594,7 +595,7 @@ builders.World = function()
 		statsLabel.Visible = showStats
 		lastSignature = ""
 	end)
-	note("Colliders: red blocks movement and sight lines, blue only movement, purple Specter bounds.")
+	note(Terms.f("Colliders: red blocks movement and sight lines, blue only movement, purple {Specter} bounds."))
 	heading("Lighting")
 	r = row()
 	button(r, "Follow the camera", function()
@@ -623,8 +624,8 @@ builders.World = function()
 		{ "Meeting", "Meeting" },
 		{ "Vote", "Vote" },
 		{ "Verdict", "Verdict" },
-		{ "End: Hand wins", "OutroHand" },
-		{ "End: Agency wins", "OutroAgency" },
+		{ Terms.f("End: {Hand} wins"), "OutroHand" },
+		{ Terms.f("End: {Agency} wins"), "OutroAgency" },
 	}) do
 		button(r, spec[1], function()
 			LightingController.setDebugMood(spec[2])
@@ -669,10 +670,10 @@ builders.Show = function()
 	button(r, "Eyes deal", function()
 		send("cue", { kind = "eyesDeal" })
 	end)
-	button(r, "Outro: Agency", function()
+	button(r, Terms.f("Outro: {Agency}"), function()
 		send("cue", { kind = "outro", extra = "Team" })
 	end)
-	button(r, "Outro: Hand", function()
+	button(r, Terms.f("Outro: {Hand}"), function()
 		send("cue", { kind = "outro", extra = "Kira" })
 	end)
 	note("Death, verdict and arrest use the person picked in People (" .. selectedName() .. ").")
@@ -690,10 +691,10 @@ builders.Show = function()
 		end)
 	end
 	r = row()
-	button(r, "Results: Agency wins", function()
+	button(r, Terms.f("Results: {Agency} wins"), function()
 		send("results", { winner = "Team" })
 	end)
-	button(r, "Results: Hand wins", function()
+	button(r, Terms.f("Results: {Hand} wins"), function()
 		send("results", { winner = "Kira" })
 	end)
 	heading("Music (" .. (MusicController.current() or "silence") .. ")")
@@ -735,7 +736,7 @@ builders.UI = function()
 	end, COLORS.pick)
 	note(
 		"Every component, lettering size, surface and icon on one page. The lettering, paper and"
-			.. " icons need InkboundModels_Core.fbx imported; until then the code-only versions show."
+			.. " icons need DeathsGambitModels_Core.fbx imported; until then the code-only versions show."
 	)
 	heading("Notifications")
 	r = row()
@@ -747,7 +748,7 @@ builders.UI = function()
 	r = row()
 	for _, tone in ipairs({ "neutral", "danger", "team" }) do
 		button(r, "Announce " .. tone, function()
-			Announcer.show("Round 2", "The Grimoire has been used.", tone)
+			Announcer.show("Round 2", Terms.f("{Grimoire} has been used."), tone)
 		end)
 	end
 	heading("Screens")
@@ -768,7 +769,7 @@ builders.UI = function()
 			Router.toggle(name)
 		end)
 	end
-	note("Screens with rules (the vote, the Grimoire, Zero's desk) only open when the match allows them.")
+	note(Terms.f("Screens with rules (the vote, {grimoire}, {zeroDesk}) only open when the match allows them."))
 end
 
 builders.Anim = function()
@@ -991,7 +992,7 @@ local function build()
 		TextSize = 13,
 		TextColor3 = COLORS.header,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Text = "   INKBOUND DEBUG   (F2 to hide, drag to move)",
+		Text = Terms.f("   {GAME} DEBUG   (F2 to hide, drag to move)"),
 		Parent = window,
 	})
 	corner(bar, 6)

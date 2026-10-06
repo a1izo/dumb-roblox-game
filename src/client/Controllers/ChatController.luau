@@ -10,6 +10,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 
@@ -74,7 +75,7 @@ local function onIncomingMessage(message: TextChatMessage)
 	end
 	local properties = Instance.new("TextChatMessageProperties")
 	properties.PrefixText = if specters
-		then string.format('<font color="#9AA7C7">[Specter] %s:</font>', alias)
+		then string.format('<font color="#9AA7C7">[%s] %s:</font>', Terms.NAMES.Specter, alias)
 		else string.format('<font color="#E6C36E">%s:</font>', alias)
 	return properties
 end
@@ -95,7 +96,7 @@ local function onQuickChat(payload)
 	local system = channel("RBXSystem") or channel("RBXGeneral")
 	if system then
 		pcall(function()
-			local tag = if payload.specter then "[Specter]" else "[Quick]"
+			local tag = if payload.specter then "[" .. Terms.NAMES.Specter .. "]" else "[Quick]"
 			system:DisplaySystemMessage(string.format("%s %s: %s", tag, tostring(payload.name), payload.text))
 		end)
 	end

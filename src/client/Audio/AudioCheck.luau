@@ -102,10 +102,10 @@ local function report(uses: { [string]: { string } })
 		end
 	end
 	table.sort(blocked)
-	print(string.format("[Inkbound] Audio check: %d of %d audio ids play.", ok, total))
+	print(string.format("[DeathsGambit] Audio check: %d of %d audio ids play.", ok, total))
 	if #blocked > 0 then
 		warn(
-			"[Inkbound] Audio blocked (silent until fixed): "
+			"[DeathsGambit] Audio blocked (silent until fixed): "
 				.. table.concat(blocked, "; ")
 				.. ". Audio must be owned by you or your group and shared with this experience:"
 				.. " Creator Hub > Creations > Audio > the track > Permissions > add this experience"
@@ -118,7 +118,14 @@ local function report(uses: { [string]: { string } })
 	for slot, entry in pairs(Assets.music) do
 		if entry.id ~= "" then
 			if seen[entry.id] then
-				warn(string.format("[Inkbound] Music %s and %s use the same id (%s).", seen[entry.id], slot, entry.id))
+				warn(
+					string.format(
+						"[DeathsGambit] Music %s and %s use the same id (%s).",
+						seen[entry.id],
+						slot,
+						entry.id
+					)
+				)
 			else
 				seen[entry.id] = slot
 			end

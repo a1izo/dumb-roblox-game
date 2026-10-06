@@ -35,13 +35,13 @@ local function screen(name: string, order: number, fullBleed: boolean?): ScreenG
 end
 
 -- Under everything: effects laid over the world itself (the lighting's vignette).
-Screens.world = screen("InkboundWorld", 5, true)
-Screens.hud = screen("InkboundHUD", 10)
-Screens.panels = screen("InkboundPanels", 20)
-Screens.modal = screen("InkboundModal", 30, true)
-Screens.overlay = screen("InkboundOverlay", 40, true)
-Screens.toast = screen("InkboundToasts", 50)
-Screens.cinematic = screen("InkboundCinematic", 60, true)
-Screens.system = screen("InkboundSystem", 70)
+Screens.world = screen("DeathsGambitWorld", 5, true)
+Screens.hud = screen("DeathsGambitHUD", 10)
+Screens.panels = screen("DeathsGambitPanels", 20)
+Screens.modal = screen("DeathsGambitModal", 30, true)
+Screens.overlay = screen("DeathsGambitOverlay", 40, true)
+Screens.toast = screen("DeathsGambitToasts", 50)
+Screens.cinematic = screen("DeathsGambitCinematic", 60, true)
+Screens.system = screen("DeathsGambitSystem", 70)
 
 return Screens

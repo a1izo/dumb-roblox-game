@@ -100,7 +100,7 @@ local function parkour(b, folder: Instance, anchors: { [string]: Anchor })
 	for index = 1, 10 do
 		local a = anchors["pk" .. index]
 		if not a then
-			warn("[Inkbound] The lobby scene has no checkpoint pk" .. index .. ".")
+			warn("[DeathsGambit] The lobby scene has no checkpoint pk" .. index .. ".")
 			break
 		end
 		local finish = index == 10
@@ -144,7 +144,7 @@ local function runes(b, folder: Instance, anchors: { [string]: Anchor })
 	for index = 1, 9 do
 		local a = anchors["rune" .. index]
 		if not a then
-			warn("[Inkbound] The lobby scene has no rune tile " .. index .. ".")
+			warn("[DeathsGambit] The lobby scene has no rune tile " .. index .. ".")
 		else
 			tile = a.w or tile
 			local base = b:world(CFrame.new(a.x, a.y + 0.25, a.z))

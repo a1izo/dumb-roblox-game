@@ -7,6 +7,8 @@
 -- seed; both sides build the same puzzle from them (Tasks/Puzzles), so the server can check
 -- the answer.
 
+local Terms = require(script.Parent.Parent.Terms)
+
 local TaskTypes = {}
 
 export type Info = {
@@ -51,7 +53,7 @@ TaskTypes.INFO = {
 		puzzles = { "Dial", "Wiretap", "CallLog", "Cipher" },
 		drill = "phone",
 		drillTitle = "PHONE RECORDS",
-		blurb = "the length of the Hand's names and where a burner phone pinged",
+		blurb = Terms.f("the length of {Hand}'s names and where a burner phone pinged"),
 	},
 	Forensics = {
 		id = "Forensics",
@@ -61,7 +63,7 @@ TaskTypes.INFO = {
 		puzzles = { "Chromatography", "Microscope", "Handwriting", "Autopsy" },
 		drill = "forensics",
 		drillTitle = "FORENSICS",
-		blurb = "whose ink wrote the last name in the Grimoire",
+		blurb = Terms.f("whose ink wrote the last name in {grimoire}"),
 	},
 } :: { [string]: Info }
 

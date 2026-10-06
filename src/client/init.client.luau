@@ -1,4 +1,4 @@
--- Inkbound client bootstrap: sets up the UI core, builds every screen, starts the
+-- Death's Gambit client bootstrap: sets up the UI core, builds every screen, starts the
 -- controllers, then asks the server for the current state.
 
 local ClientState = require(script:WaitForChild("ClientState"))

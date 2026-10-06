@@ -57,7 +57,7 @@ local function onCue(payload)
 			task.wait()
 			local ok, err = pcall(listener, payload :: Cue)
 			if not ok then
-				warn("[Inkbound] The " .. payload.kind .. " cue failed: " .. tostring(err))
+				warn("[DeathsGambit] The " .. payload.kind .. " cue failed: " .. tostring(err))
 			end
 		end)
 	end

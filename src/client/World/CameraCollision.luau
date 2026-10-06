@@ -164,7 +164,7 @@ function CameraCollision.init()
 	CollectionService:GetInstanceRemovedSignal(CameraCollision.TAG):Connect(function()
 		dirty = true
 	end)
-	RunService:BindToRenderStep("InkboundCameraCollision", Enum.RenderPriority.Camera.Value + 1, step)
+	RunService:BindToRenderStep("DeathsGambitCameraCollision", Enum.RenderPriority.Camera.Value + 1, step)
 end
 
 return CameraCollision

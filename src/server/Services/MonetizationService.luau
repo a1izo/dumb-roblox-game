@@ -28,7 +28,7 @@ function MonetizationService.processReceipt(receipt): Enum.ProductPurchaseDecisi
 	end
 	local pack = Products.packById(receipt.ProductId)
 	if not pack then
-		warn("[Inkbound] A purchase of an unknown product id " .. tostring(receipt.ProductId) .. " is waiting.")
+		warn("[DeathsGambit] A purchase of an unknown product id " .. tostring(receipt.ProductId) .. " is waiting.")
 		return NotProcessedYet
 	end
 	local data = DataService.get(player)
@@ -63,7 +63,7 @@ function MonetizationService.init()
 		if ok then
 			return result
 		end
-		warn("[Inkbound] ProcessReceipt failed: " .. tostring(result))
+		warn("[DeathsGambit] ProcessReceipt failed: " .. tostring(result))
 		return NotProcessedYet
 	end
 end

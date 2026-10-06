@@ -26,11 +26,11 @@ type Saved = { [Instance]: any }
 export type Stage = typeof(setmetatable({} :: { folder: Folder, hidden: { [Model]: Saved }, actors: { Model } }, Stage))
 
 local function folder(): Folder
-	local existing = workspace:FindFirstChild("InkboundStage")
+	local existing = workspace:FindFirstChild("DeathsGambitStage")
 	if existing and existing:IsA("Folder") then
 		return existing
 	end
-	return Create("Folder", { Name = "InkboundStage", Parent = workspace })
+	return Create("Folder", { Name = "DeathsGambitStage", Parent = workspace })
 end
 
 function Stage.new(): Stage

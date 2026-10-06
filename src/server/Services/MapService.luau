@@ -67,7 +67,7 @@ function MapService.nextMapId(): string
 	end
 	local id = rotation[(rotationIndex % #rotation) + 1]
 	if MAPS[id] == nil then
-		warn("[Inkbound] Unknown map in Config.MAP_ROTATION: " .. tostring(id))
+		warn("[DeathsGambit] Unknown map in Config.MAP_ROTATION: " .. tostring(id))
 		return "TaskForceHQ"
 	end
 	return id
@@ -215,7 +215,7 @@ function MapService.build(mapId: string)
 		local scene = model:FindFirstChild("Scene", true)
 		print(
 			string.format(
-				"[Inkbound] Built %s (%s) in %.2f s: %d parts, %d lights.",
+				"[DeathsGambit] Built %s (%s) in %.2f s: %d parts, %d lights.",
 				mapId,
 				if scene then tostring(scene:GetAttribute("Mode") or "scene") else "parts",
 				os.clock() - started,
@@ -224,7 +224,7 @@ function MapService.build(mapId: string)
 			)
 		)
 		for _, problem in ipairs(MapContract.validateBuilt(info)) do
-			warn("[Inkbound] Map " .. mapId .. ": " .. problem)
+			warn("[DeathsGambit] Map " .. mapId .. ": " .. problem)
 		end
 	end
 	return info

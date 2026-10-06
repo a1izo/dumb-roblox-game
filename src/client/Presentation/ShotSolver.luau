@@ -24,7 +24,7 @@ local function ignoreList(extra: { Instance }?): { Instance }
 	for _, model in ipairs(CollectionService:GetTagged("LBotCharacter")) do
 		table.insert(list, model)
 	end
-	local stage = workspace:FindFirstChild("InkboundStage")
+	local stage = workspace:FindFirstChild("DeathsGambitStage")
 	if stage then
 		table.insert(list, stage)
 	end

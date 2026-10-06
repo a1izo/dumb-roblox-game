@@ -25,11 +25,11 @@ return function(t)
 				end
 			end
 		end)
-		it("ticks the Grimoire line once a name is written", function()
+		it("ticks the Death's Manual line once a name is written", function()
 			local lines = Objectives.lines("Kira", "DeathNote", { canWrite = false }, true)
 			expect(lines[1].done).to.equal(true)
 		end)
-		it("gives eliminated players the Specter lines", function()
+		it("gives eliminated players the Deathsinger lines", function()
 			local lines = Objectives.lines("TaskForce", "Investigation", {}, false)
 			expect(#lines).to.equal(3)
 			for _, line in ipairs(lines) do

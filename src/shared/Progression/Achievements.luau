@@ -3,6 +3,8 @@
 -- a title. badgeId: the Roblox badge to award (create badges on the Creator Dashboard and
 -- paste the ids; 0 = no badge).
 
+local Terms = require(script.Parent.Parent.Terms)
+
 local Achievements = {}
 
 export type Achievement = {
@@ -43,22 +45,45 @@ Achievements.LIST = {
 	a("tasks500", "Workaholic", "Work 500 case files.", { "stats", "tasks" }, 500, 400),
 	a("notes1", "Scrap of paper", "Find a paper note.", { "stats", "notesFound" }, 1, 25),
 	a("notes25", "Paper trail", "Find 25 paper notes.", { "stats", "notesFound" }, 25, 200, "title_papertrail"),
-	a("votes1", "Pointed finger", "Vote for the Hand.", { "stats", "correctVotes" }, 1, 25),
-	a("votes25", "Sharp eye", "Vote for the Hand 25 times.", { "stats", "correctVotes" }, 25, 250, "title_sharpeye"),
+	a("votes1", "Pointed finger", Terms.f("Vote for {hand}."), { "stats", "correctVotes" }, 1, 25),
+	a(
+		"votes25",
+		"Sharp eye",
+		Terms.f("Vote for {hand} 25 times."),
+		{ "stats", "correctVotes" },
+		25,
+		250,
+		"title_sharpeye"
+	),
 	a("survive10", "Hard to kill", "Survive 10 matches.", { "stats", "survived" }, 10, 100),
 	a("survive50", "Unwritten", "Survive 50 matches.", { "stats", "survived" }, 50, 300, "title_unwritten"),
 	a("souls10", "Ferryman", "Gather 10 lost souls.", { "stats", "duties" }, 10, 50),
 	a("souls100", "Shepherd of souls", "Gather 100 lost souls.", { "stats", "duties" }, 100, 250, "title_shepherd"),
-	a("ink1", "First entry", "Write a name in the Grimoire and see it come true.", { "stats", "kills" }, 1, 25),
+	a("ink1", "First entry", Terms.f("Write a name in {grimoire} and see it come true."), { "stats", "kills" }, 1, 25),
 	a("ink25", "Ink-stained", "25 names come true.", { "stats", "kills" }, 25, 250, "title_inkstained"),
-	a("arrest1", "Warrant served", "Arrest the Hand as Zero.", { "stats", "arrests" }, 1, 50),
-	a("arrest10", "Handcuffs", "Arrest the Hand 10 times as Zero.", { "stats", "arrests" }, 10, 300, "title_handcuffs"),
+	a("arrest1", "Warrant served", Terms.f("Arrest {hand} as {zero}."), { "stats", "arrests" }, 1, 50),
+	a(
+		"arrest10",
+		"Handcuffs",
+		Terms.f("Arrest {hand} 10 times as {zero}."),
+		{ "stats", "arrests" },
+		10,
+		300,
+		"title_handcuffs"
+	),
 	a("reads10", "Second sight", "Read 10 real names with the eyes.", { "stats", "reads" }, 10, 100),
-	a("win_hand", "Written", "Win as the Hand.", { "stats", "roles", "Kira", "won" }, 1, 50), -- terms:ok
-	a("win_cultist", "Devoted", "Win as a Cultist.", { "stats", "roles", "Follower", "won" }, 1, 50),
-	a("win_zero", "Checkmate", "Win as Zero.", { "stats", "roles", "L", "won" }, 1, 50),
+	a("win_hand", "Written", Terms.f("Win as {hand}."), { "stats", "roles", "Kira", "won" }, 1, 50), -- terms:ok
+	a("win_cultist", "Devoted", Terms.f("Win as a {cultist}."), { "stats", "roles", "Follower", "won" }, 1, 50),
+	a("win_zero", "Checkmate", Terms.f("Win as {zero}."), { "stats", "roles", "L", "won" }, 1, 50),
 	a("win_butler", "At your service", "Win as the Butler.", { "stats", "roles", "Watari", "won" }, 1, 50), -- terms:ok
-	a("win_agent", "Agent of the case", "Win as an Agent.", { "stats", "roles", "TaskForce", "won" }, 1, 50),
+	a(
+		"win_agent",
+		Terms.f("{Agent} of the case"),
+		Terms.f("Win as an {agent}."),
+		{ "stats", "roles", "TaskForce", "won" },
+		1,
+		50
+	),
 	a("streak7", "Night shift", "Keep a 7-day streak.", { "streak", "best" }, 7, 100),
 } :: { Achievement }
 

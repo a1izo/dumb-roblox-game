@@ -15,3 +15,7 @@ __pycache__/
 # Studio importer unpacks embedded textures next to the FBX
 art/export/*.fbm/
 art/export/scenes/
+
+# Fontshare font files (download your own copy from fontshare.com) and UI board screenshots
+art/fonts/fontshare/
+art/uiboard/

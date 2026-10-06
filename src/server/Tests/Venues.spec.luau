@@ -1,4 +1,4 @@
--- Where Specters may fly: every map's box follows its outer walls and ceiling, and the camera
+-- Where Deathsingers may fly: every map's box follows its outer walls and ceiling, and the camera
 -- clamp finds the nearest point inside a box.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,7 +12,7 @@ return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
 
 	describe("Venues.specterBounds", function()
-		it("keeps Specters inside Agency HQ's two floors, under the roof", function()
+		it("keeps Deathsingers inside Bureau HQ's two floors, under the roof", function()
 			-- Its box comes from its Blender scene (MapBounds): 38F and 39F, glass to glass.
 			local min, max = Venues.specterBounds("map", "TaskForceHQ")
 			expect(inside(Venues.MAP + Vector3.new(99, 5, -74), min, max)).to.equal(true)
@@ -22,7 +22,7 @@ return function(t)
 			expect(inside(Venues.MAP + Vector3.new(0, 29, 0), min, max)).to.equal(false)
 			expect(inside(Venues.MAP + Vector3.new(0, -3, 0), min, max)).to.equal(false)
 		end)
-		it("lets Specters reach the rooftops on the outdoor maps, but not past the edge", function()
+		it("lets Deathsingers reach the rooftops on the outdoor maps, but not past the edge", function()
 			-- Tokyo's box comes from its Blender scene (MapBounds): the metro under it included.
 			local min, max = Venues.specterBounds("map", "TokyoDistrict")
 			expect(inside(Venues.MAP + Vector3.new(199, 59, 149), min, max)).to.equal(true)
@@ -31,7 +31,7 @@ return function(t)
 			expect(inside(Venues.MAP + Vector3.new(202, 5, 0), min, max)).to.equal(false)
 			expect(inside(Venues.MAP + Vector3.new(0, 5, 152), min, max)).to.equal(false)
 		end)
-		it("keeps Specters over the campus, from the pond hollow to the clock tower's spire", function()
+		it("keeps Deathsingers over the campus, from the pond hollow to the clock tower's spire", function()
 			-- The campus box comes from its Blender scene (MapBounds): inside its walls, from the
 			-- hollow's floor up past the spire.
 			local min, max = Venues.specterBounds("map", "UniversityCampus")

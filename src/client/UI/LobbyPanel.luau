@@ -1,4 +1,4 @@
--- The lobby, drawn as the first page of the Grimoire: the INKBOUND wordmark and tagline, a red
+-- The lobby, drawn as the first page of the Grimoire: the DEATH'S GAMBIT wordmark and tagline, a red
 -- READY stamp, a quieter SPECTATE button while a case is running, the queue status, a handwritten table of contents (I. Quests,
 -- II. Shop...) and, on the right, your card: rank seal, XP, coins, and the way to your
 -- profile and the leaderboards. How to Play lives in Settings (and on H). Shown to everyone

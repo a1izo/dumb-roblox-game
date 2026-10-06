@@ -193,7 +193,7 @@ end
 local function forensicsClue(worker): string
 	local entry = EventLog.lastInk()
 	if not entry then
-		return "Forensics: no ink samples yet. Nobody has died by the Grimoire."
+		return Terms.f("Forensics: no ink samples yet. Nobody has died by {grimoire}.")
 	end
 	local record = Match.forensics[entry.id]
 	if not record then

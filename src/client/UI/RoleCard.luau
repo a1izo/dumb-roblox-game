@@ -162,7 +162,7 @@ function RoleCard.init()
 	})
 
 	-- Hold C (keyboard) or the left bumper (gamepad).
-	ContextActionService:BindAction("InkboundRoleCard", function(_, state: Enum.UserInputState)
+	ContextActionService:BindAction("DeathsGambitRoleCard", function(_, state: Enum.UserInputState)
 		if not ClientState.private.inMatch then
 			return Enum.ContextActionResult.Pass
 		end

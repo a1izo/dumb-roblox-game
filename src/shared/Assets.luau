@@ -31,7 +31,7 @@ Assets.music = {
 	inv_TaskForceHQ = { id = "102705059219535", ref = "OMORI: Lost Library", fallbackId = "" },
 	inv_UniversityCampus = { id = "72785505837503", ref = "Deltarune Ch.1: School", fallbackId = "" },
 	inv_TokyoDistrict = { id = "77962238440490", ref = "OMORI: Underwater Highway", fallbackId = "" },
-	grimoire = { id = "85538418554276", ref = "Black Souls: Grimoire (M-ART)", fallbackId = "" },
+	grimoire = { id = "85538418554276", ref = "Black Souls: Grimoire (M-ART)", fallbackId = "" }, -- terms:ok (a track title)
 	meeting = { id = "82941366813687", ref = "Deltarune Ch.3+4: Query?", fallbackId = "" },
 	vote = { id = "90401963211160", ref = "Deltarune Ch.3+4: Black Knife", fallbackId = "" },
 	specter = { id = "124751068997305", ref = "OMORI: WHITE SPACE", fallbackId = "" },

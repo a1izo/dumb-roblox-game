@@ -198,7 +198,7 @@ local function onFootfall(character: Model)
 end
 
 function FootprintController.init()
-	folder = Create("Folder", { Name = "InkboundFootprints", Parent = workspace }) :: Folder
+	folder = Create("Folder", { Name = "DeathsGambitFootprints", Parent = workspace }) :: Folder
 	LocomotionController.Footfall:Connect(onFootfall)
 	-- Prints that have faded go back to the pool; all of them when the map is torn down.
 	local lastSweep = 0
