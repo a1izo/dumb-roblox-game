@@ -124,6 +124,10 @@ def opening(s, a, t, n, rot, thick, base, op, collide):
     bottom = op.get("bottom", base)
     top_y = op.get("top", base + 8.5)
     frame = op.get("frame")
+    if kind in ("door", "gap") and bottom <= base + 0.05 and top_y - bottom >= 6 and hasattr(s, "openings"):
+        # A way through at floor level: check_v2 keeps the space in front of it clear.
+        x, _, z = point_on(a, t, op["at"])
+        s.openings.append((round(x, 3), round(bottom, 3), round(z, 3), round(u1 - u0, 3), round(rot, 2), thick, kind))
     if kind == "gap":
         return
     if frame:

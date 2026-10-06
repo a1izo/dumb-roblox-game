@@ -87,6 +87,7 @@ class Scene(LayoutMixin):
         self.floors = []  # flat triangles (x1, z1, x2, z2, x3, z3, top y, thickness, look, query)
         self.props = []  # (key, x, y, z, rot, scale, flags)
         self.prop_src = []  # per prop: where in the venue's scripts it was placed (for the hand-check plans)
+        self.openings = []  # doors and gaps at floor level, for check_v2's doorways: (x, y, z, w, rot, thick, kind)
         self.steps = []  # visible steps of stairs, drawn by the greybox: (centre, size, rot, look)
         self.lights = []
         self.signs = []

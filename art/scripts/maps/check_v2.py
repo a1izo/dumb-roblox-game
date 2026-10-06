@@ -9,6 +9,8 @@ opening Studio:
              nothing walkable outside the Specter box
   light      how much of the walkable ground is lit (outdoors and indoors), and the darkest patches
   symmetry   how alike the ground floor is to its own mirror image (0 = not at all, 1 = mirrored)
+  doorways   every door and gap at floor level keeps DOOR_CLEAR studs free in front of it, on both
+             sides (a flag for the hand-check: it names what stands there, it never moves anything)
 
 Every rule covers the spare spots too. Returns a list of problems and prints a report.
 """
@@ -36,6 +38,8 @@ GRID = 2.0
 LIGHT_OUT = 0.25
 LIGHT_IN = 0.4
 SYMMETRY_MAX = 0.5
+DOOR_CLEAR = 4.0  # the clear width every doorway keeps (or its own width, when narrower)
+DOOR_DEPTH = 3.0  # how far in front of a doorway, on both sides, that width must stay clear
 
 
 class Solid:
@@ -714,6 +718,91 @@ def overlaps(data, problems):
     problems.extend(found)
 
 
+def doorways(data, problems):
+    """Every door and gap at floor level (kit.opening records them) keeps DOOR_CLEAR studs, or its
+    own width when narrower, free for DOOR_DEPTH studs in front of it on both sides: no prop,
+    station or collider in the way. A row wholly filled by walls ends that side (a door facing a
+    wall across a corridor). Names what stands in the way; never moves anything."""
+    from maps import catalog
+
+    cat = catalog.load()
+    src = data.get("propSrc") or []
+    blockers = []  # (label, poly, y0, y1, is_wall)
+    for k, c in enumerate(data["colliders"]):
+        x, y, z, sx, sy, sz, rot = c[:7]
+        blockers.append((f"collider {sx:.1f}x{sz:.1f} at {x:.1f}, {z:.1f}", g2.rect(x, z, sx, sz, rot), y - sy / 2,
+                         y + sy / 2, True))
+    for n, (key, x, y, z, rot, sc, *_) in enumerate(data["props"]):
+        info = cat.get(key)
+        if not info or not info.get("collide", True):
+            continue
+        sx, sy, sz = (v * sc for v in info["size"])
+        base = y if info["pivot"] == "bottom" else y - sy / 2
+        where = f" ({src[n]})" if n < len(src) and src[n] else ""
+        blockers.append((f"{key} at {x:.1f}, {z:.1f}{where}", g2.rect(x, z, sx, sz, rot), base, base + sy, False))
+    for group in (data["layout"], data["spare"]):
+        for st in group["stations"]:
+            info = cat.get(st.get("prop") or "")
+            if not info:
+                continue
+            ax, az = info["anchor"]
+            px, pz = rotate(st["rot"], (-ax, -az))
+            sx, sy, sz = info["size"]
+            y = st.get("y", 0.0)
+            blockers.append((f"station {st['name']}", g2.rect(st["x"] + px, st["z"] + pz, sx, sz, st["rot"]), y,
+                             y + sy, False))
+    cell = 8.0
+    grid = {}
+    for i, b in enumerate(blockers):
+        box = g2.bbox(b[1])
+        for ci in range(math.floor(box[0] / cell), math.floor(box[2] / cell) + 1):
+            for cj in range(math.floor(box[1] / cell), math.floor(box[3] / cell) + 1):
+                grid.setdefault((ci, cj), []).append(i)
+
+    def hits(px, pz, y):
+        out = []
+        for i in grid.get((math.floor(px / cell), math.floor(pz / cell)), ()):
+            label, poly, y0, y1, wall = blockers[i]
+            if y1 > y + 0.5 and y0 < y + 5.0 and g2.contains(poly, (px, pz)):
+                out.append(i)
+        return out
+
+    flagged = 0
+    for x, y, z, w, rot, thick, kind in data.get("openings", []):
+        r = math.radians(rot)
+        t = (math.cos(r), -math.sin(r))
+        nrm = (t[1], -t[0])
+        want = min(DOOR_CLEAR, w - 0.3)
+        us = [-w / 2 + 0.15 + k * 0.2 for k in range(int((w - 0.3) / 0.2) + 1)]
+        worst, names = w, set()
+        for side in (1, -1):
+            d = thick / 2 + 0.4
+            while d <= thick / 2 + DOOR_DEPTH + 1e-6:
+                row = []
+                for u in us:
+                    px = x + t[0] * u + nrm[0] * side * d
+                    pz = z + t[1] * u + nrm[1] * side * d
+                    row.append(hits(px, pz, y))
+                if all(row) and all(blockers[i][4] for h in row for i in h):
+                    break  # a wall across the whole way: this side ends here
+                run = best = 0
+                for h in row:
+                    run = 0 if h else run + 1
+                    best = max(best, run)
+                clear = best * 0.2 + 0.1 if best else 0.0
+                if clear < want - 0.01:
+                    for h in row:
+                        for i in h:
+                            names.add(blockers[i][0])
+                worst = min(worst, clear)
+                d += 0.4
+        if worst < want - 0.01:
+            flagged += 1
+            what = "; ".join(sorted(names)) or "?"
+            problems.append(f"doorway ({kind} {w:.1f} wide) at {x:.1f}, {y:.1f}, {z:.1f}: {worst:.1f} clear - {what}")
+    print(f"  doorways: {len(data.get('openings', []))} checked, {flagged} crowded")
+
+
 def _rect_of(poly, grow):
     """(cx, cz, w, d, rot) of a rectangle from g2.rect, grown by `grow` on every side."""
     (x0, z0), (x1, z1), (x2, z2), _ = poly
@@ -736,6 +825,7 @@ def check(venue, full=True):
     contract(data, world, zones, problems)
     ramps(data, problems)
     overlaps(data, problems)
+    doorways(data, problems)
     if full:
         dist = walk(data, world, problems)
         picks, reach_count = reach_report(data, dist, problems)

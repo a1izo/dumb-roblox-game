@@ -454,6 +454,8 @@ def write_scene_v2(scene, module, source):
         "floors": [list(f) for f in scene.floors],
         "ramps": scene.ramps,
         "props": [list(p) for p in scene.props],
+        "propSrc": scene.prop_src,
+        "openings": [list(o) for o in scene.openings],
         "lights": scene.lights,
         "layout": scene.layout,
         "spare": scene.spare,
