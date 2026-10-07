@@ -1,5 +1,5 @@
 """The gameplay side of a map scene: where the game puts its stations, spawns, paper sheets,
-drop points, hoods, named areas, the tip box and the evidence board, plus spare spots for each
+hoods, named areas, the tip box and the evidence board, plus spare spots for each
 (a later rework can change the counts without rebuilding the map), zones (what kind of ground
 each place is: road, sidewalk, interior...) and the box Specters stay inside.
 
@@ -36,13 +36,12 @@ class LayoutMixin:
             "stations": [],
             "spawns": [],
             "sheets": [],
-            "dropPoints": [],
             "hoods": [],
             "areas": [],
             "tipBox": None,
             "board": None,
         }
-        self.spare = {"stations": [], "spawns": [], "sheets": [], "dropPoints": [], "hoods": [], "areas": []}
+        self.spare = {"stations": [], "spawns": [], "sheets": [], "hoods": [], "areas": []}
         self.zones = []
         self.anchors = {}
         self.bounds = None
@@ -67,9 +66,6 @@ class LayoutMixin:
     def sheet(self, x, y, z, spare=False):
         """y is the top of the surface the sheet lies on (tables 2.8, counters 3.55, + floor)."""
         return self._put("sheets", {"x": x, "y": y, "z": z}, spare)
-
-    def drop_point(self, name, x, z, y=0.15, rot=0.0, spare=False):
-        return self._put("dropPoints", {"name": name, "x": x, "y": y, "z": z, "rot": rot}, spare)
 
     def hood(self, x, z, y=0.6, spare=False):
         return self._put("hoods", {"x": x, "y": y, "z": z}, spare)

@@ -8,10 +8,13 @@
 -- Reactions and endings are picked from the cue and the user id (Presentation/Activities), so
 -- every screen shows the same thing and nothing depends on roles.
 --   station work   : a player working a case file (real or faked) types at the console
+--   note handed    : the giver reaches out and a slip of paper crosses to the other's hand
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local Activities = require(Shared:WaitForChild("Presentation"):WaitForChild("Activities"))
@@ -162,6 +165,47 @@ local function onVerdict(cue)
 	end
 end
 
+-- A note passed hand to hand (public: anyone looking saw it): the giver reaches out and a slip of
+-- paper slides from their hand into the other's.
+local function onHandoff(cue)
+	local giver = characterOf(tonumber(cue.data.from))
+	local taker = characterOf(tonumber(cue.data.to))
+	if not giver or not taker then
+		return
+	end
+	PoseController.play(giver, "point", { startAt = localTime(cue.at), fadeIn = 0.1, duration = 0.7 })
+	local from = giver:FindFirstChild("Right Arm")
+	local to = taker:FindFirstChild("Right Arm")
+	if not (from and from:IsA("BasePart") and to and to:IsA("BasePart")) then
+		return
+	end
+	local function hand(arm: BasePart): CFrame
+		return arm.CFrame * CFrame.new(0, -arm.Size.Y / 2 - 0.1, -0.2)
+	end
+	local paper = Create("Part", {
+		Name = "HandedNote",
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Size = Vector3.new(0.5, 0.04, 0.7),
+		Color = Color3.fromRGB(245, 238, 215),
+		Material = Enum.Material.SmoothPlastic,
+		CFrame = hand(from),
+		Parent = workspace.CurrentCamera,
+	})
+	task.wait(0.15)
+	local tween = TweenService:Create(
+		paper,
+		TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+		{ CFrame = hand(to) }
+	)
+	tween:Play()
+	tween.Completed:Wait()
+	paper:Destroy()
+end
+
 local function onOutro(cue)
 	local data = cue.data
 	local winners: { [number]: boolean } = {}
@@ -238,6 +282,7 @@ function ActingController.init()
 	CueRouter.register("arrest", onArrest)
 	CueRouter.register("verdict", onVerdict)
 	CueRouter.register("outro", onOutro)
+	CueRouter.register("handoff", onHandoff)
 	Characters.each(function()
 		task.defer(refreshWriting)
 	end)

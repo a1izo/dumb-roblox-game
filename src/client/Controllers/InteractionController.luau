@@ -66,9 +66,6 @@ local function refreshEntry(instance: Instance, entry)
 	elseif entry.kind == "note" then
 		prompts.read.Enabled = active
 		prompts.take.Enabled = active and private.carrying == nil
-	elseif entry.kind == "drop" then
-		prompts.search.Enabled = active
-		prompts.leave.Enabled = active and private.carrying == "note"
 	elseif entry.kind == "hood" then
 		prompts.wear.Enabled = active and not private.hood
 	end
@@ -144,20 +141,6 @@ local function setupNote(note: Instance)
 	register(note, "note", { read = read, take = take })
 end
 
-local function setupDropPoint(grate: Instance)
-	local search = prompt(grate, "Search", "Loose grate", Enum.KeyCode.E, 0.5)
-	search.MaxActivationDistance = 6
-	search.Triggered:Connect(function()
-		NoteRequest:FireServer({ action = "check", dropId = grate:GetAttribute("DropId") })
-	end)
-	local leave = prompt(grate, "Hide note", "Loose grate", Enum.KeyCode.F, 1, Enum.KeyCode.ButtonY)
-	leave.MaxActivationDistance = 6
-	leave.Triggered:Connect(function()
-		NoteRequest:FireServer({ action = "leave", dropId = grate:GetAttribute("DropId") })
-	end)
-	register(grate, "drop", { search = search, leave = leave })
-end
-
 local function setupHood(hood: Instance)
 	local wear = prompt(hood, "Wear", "Hood", Enum.KeyCode.E)
 	wear.Triggered:Connect(function()
@@ -186,7 +169,6 @@ function InteractionController.init()
 	watchTag("LTipBox", setupTipBox)
 	watchTag("LSheet", setupSheet)
 	watchTag("LNote", setupNote)
-	watchTag("LDropPoint", setupDropPoint)
 	watchTag("LHood", setupHood)
 	ClientState.PublicChanged:Connect(refreshAll)
 	ClientState.PrivateChanged:Connect(refreshAll)

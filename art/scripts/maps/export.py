@@ -340,7 +340,7 @@ def write_scene_v2(scene, module, source):
         (None, "tipBox", _lua(L["tipBox"]) if L["tipBox"] else "nil"),
         (None, "board", _lua(L["board"]) if L["board"] else "nil"),
     ]
-    for kind_name in ("spawns", "sheets", "dropPoints", "hoods", "areas"):
+    for kind_name in ("spawns", "sheets", "hoods", "areas"):
         layout_fields.append((None, kind_name, [_lua(x) for x in L[kind_name]]))
     layout_fields.append(("Spare spots of each kind, not used by the game yet (for a later rework of the counts).",
                           "spare", _lua(scene.spare)))

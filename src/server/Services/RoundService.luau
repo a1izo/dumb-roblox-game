@@ -189,6 +189,7 @@ end
 
 local function endInvestigation()
 	CaseFileService.cancelAll("The investigation phase is over.")
+	NoteService.cancelOffers("phase")
 	freezeLiving(true)
 end
 

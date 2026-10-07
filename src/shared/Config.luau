@@ -67,7 +67,11 @@ Config.NOTE_MAX_LENGTH = 40
 Config.BURN_TIME = 2
 Config.BURN_SMOKE_RANGE = 20
 Config.SHEET_RESPAWN_TIME = 30
-Config.DROP_POINT_CAPACITY = 3
+-- Passing a written note hand to hand: how close, how long the other has to take it, and how
+-- soon the same player may offer again.
+Config.PASS_RANGE = 4
+Config.PASS_TIMEOUT = 5
+Config.PASS_COOLDOWN = 3
 
 -- Communication
 Config.TIP_MAX_LENGTH = 150

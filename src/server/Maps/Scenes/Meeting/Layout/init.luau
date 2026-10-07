@@ -21,11 +21,10 @@ return {
 		{ x = -8.5, y = 0, z = 14.722, rot = 330 },
 	},
 	sheets = {},
-	dropPoints = {},
 	hoods = {},
 	areas = {},
 	-- Spare spots of each kind, not used by the game yet (for a later rework of the counts).
-	spare = { stations = {}, spawns = {}, sheets = {}, dropPoints = {}, hoods = {}, areas = {} },
+	spare = { stations = {}, spawns = {}, sheets = {}, hoods = {}, areas = {} },
 	-- What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...
 	zones = {
 		{ kind = "interior", y0 = 0, y1 = 0, points = { -29.5, -29.5, 29.5, -29.5, 29.5, 29.5, -29.5, 29.5 }, name = "the war room" },

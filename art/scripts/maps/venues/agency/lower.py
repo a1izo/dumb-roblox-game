@@ -159,11 +159,10 @@ def lockers(s):
 def break_room(s):
     fit.partition(s, (50.0, -75.0), (50.0, -40.0), Y, C, "PlasterLight", "TileMetroGrey", doors=[(31.0, 5.0)])
     fit.partition(s, (50.0, -40.0), (100.0, -40.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(25.0, 5.0)])
-    # Vending machines along the west wall; the gap behind the last one is the drop point.
+    # Vending machines along the west wall.
     s.prop("VendingBlue", 51.9, -69.8, -90)
     s.prop("VendingWhite", 51.9, -65.4, -90)
     s.prop("VendingMachine", 51.8, -60.9, -90)
-    s.drop_point("behind the vending machines", 52.4, -73.2)
     # The kitchenette along the east glass: counter, sink, coffee; the fridge, the cooler.
     top = fit.counter(s, 97.3, -63.0, 90, 18.0, d=2.4, top="WhiteTrim", body="WoodPanel")
     s.prop("CoffeeMachine", 97.4, -66.0, 90, 1.0, top)
@@ -333,7 +332,6 @@ def sergeant(s):
     s.prop("Bookshelf", -98.0, 60.0, -90)
     s.prop("Bookshelf", -98.0, 63.4, -90)
     s.prop("FilingCabinet", -79.0, 72.6, 0)  # back to the glass, front to the room
-    s.drop_point("the sergeant's office", -97.2, 72.3, spare=True)
     fit.panel(s, -88.0, 61.0, C, w=3.0, brightness=0.6, range_=14)
     fit.plaque(s, -75.7, 10.6, 60.5, -90, 4.0, 0.8, "班長室 SERGEANT")
 

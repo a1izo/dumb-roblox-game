@@ -213,7 +213,7 @@ def contract(data, world, zones, problems):
     cat = catalog.load()
     L, S = data["layout"], data["spare"]
     everything = [(False, L), (True, S)]
-    counts = {k: len(L[k]) for k in ("stations", "spawns", "sheets", "dropPoints", "hoods", "areas")}
+    counts = {k: len(L[k]) for k in ("stations", "spawns", "sheets", "hoods", "areas")}
     print("  layout:", counts, "spare:", {k: len(v) for k, v in S.items()})
     for spare, group in everything:
         tag = " (spare)" if spare else ""
@@ -256,13 +256,11 @@ def contract(data, world, zones, problems):
                 problems.append(f"sheet {i + 1}{tag}: nothing under it")
             elif sh["y"] - top > 0.3:
                 problems.append(f"sheet {i + 1}{tag}: floats {sh['y'] - top:.2f} above its surface")
-        for kind in ("spawns", "hoods", "dropPoints"):
+        for kind in ("spawns", "hoods"):
             for it in group[kind]:
                 base = it.get("y", 0.0)
                 if kind == "hoods":
                     base -= 0.6
-                elif kind == "dropPoints":
-                    base -= 0.15
                 label = f"{kind[:-1]} at {it['x']:.0f}, {base:.0f}, {it['z']:.0f}{tag}"
                 if world.inside(it["x"], base + 1, it["z"]):
                     problems.append(f"{label}: inside something")
@@ -376,9 +374,9 @@ def reach_report(data, dist, problems):
             wx, wz = rotate(st["rot"], (0, -2.6))
             if at(st["x"] + wx, st.get("y", 0), st["z"] + wz) is None:
                 problems.append(f"{st['name']}{tag}: cannot be reached from the spawns")
-        for kind in ("sheets", "dropPoints", "hoods"):
+        for kind in ("sheets", "hoods"):
             for it in group[kind]:
-                y = it["y"] - (2.8 if kind == "sheets" else 0.6 if kind == "hoods" else 0.15)
+                y = it["y"] - (2.8 if kind == "sheets" else 0.6)
                 r = 3 if kind == "sheets" else 2
                 if at(it["x"], y, it["z"], r) is None:
                     problems.append(f"{kind[:-1]} at {it['x']:.0f}, {it['z']:.0f}{tag}: cannot be reached")

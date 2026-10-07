@@ -38,11 +38,6 @@ return {
 		{ x = 66, y = 16.8, z = 62 },
 		{ x = 15, y = 16.8, z = 62 },
 	},
-	dropPoints = {
-		{ name = "behind the vending machines", x = 52.4, y = 0.15, z = -73.2, rot = 0 },
-		{ name = "the server rack alcove", x = 28.4, y = 14.15, z = -73.2, rot = 0 },
-		{ name = "the archive's back corner", x = 97.2, y = 14.15, z = -72.8, rot = 0 },
-	},
 	hoods = {
 		{ x = 28.5, y = 0.6, z = -52.5 },
 		{ x = -47, y = 14.6, z = -51.5 },
@@ -72,7 +67,7 @@ return {
 		{ name = "the training room", x = -48, y = 14, z = 57, marks = { { kind = "stand", x = -48, y = 14, z = 54, rot = 180 }, { kind = "stand", x = -48, y = 14, z = 60, rot = 0 } } },
 	},
 	-- Spare spots of each kind, not used by the game yet (for a later rework of the counts).
-	spare = { stations = { { id = "Interview Recorder", type = "Phone", name = "Interview Recorder", x = -12.4, y = 0, z = -71.4, rot = 180, prop = "StationPhoneDesk" }, { id = "Evidence Print Kit", type = "Fingerprint", name = "Evidence Print Kit", x = -20, y = 14, z = -62.5, rot = 90, prop = "StationPrintKit" }, { id = "Satellite Feed", type = "Camera", name = "Satellite Feed", x = 44, y = 14, z = 46, rot = 90, prop = "StationCCTV" } }, spawns = { { x = -80, y = 0, z = 0 }, { x = 72, y = 0, z = -48 }, { x = 75, y = 0, z = 8 }, { x = 20, y = 0, z = 58 }, { x = -58, y = 0, z = 58 }, { x = 17, y = 14, z = 70 }, { x = 70, y = 14, z = -18 }, { x = -44, y = 14, z = -4 }, { x = -48, y = 14, z = 57 }, { x = 40, y = 14, z = -62 }, { x = 44, y = 14, z = 20 }, { x = -10, y = 14, z = 20 } }, sheets = { { x = 8, y = 2.8, z = -60 }, { x = 14, y = 1.65, z = 70.3 }, { x = 62, y = 16.8, z = -20 } }, dropPoints = { { name = "the sergeant's office", x = -97.2, y = 0.15, z = 72.3, rot = 0 }, { name = "under the director's window", x = 90, y = 14.15, z = 40, rot = 0 } }, hoods = { { x = 21, y = 0.6, z = -60 }, { x = 88, y = 0.6, z = 22 }, { x = 96.5, y = 14.6, z = 12.5 }, { x = -30, y = 14.6, z = 72.5 } }, areas = {} },
+	spare = { stations = { { id = "Interview Recorder", type = "Phone", name = "Interview Recorder", x = -12.4, y = 0, z = -71.4, rot = 180, prop = "StationPhoneDesk" }, { id = "Evidence Print Kit", type = "Fingerprint", name = "Evidence Print Kit", x = -20, y = 14, z = -62.5, rot = 90, prop = "StationPrintKit" }, { id = "Satellite Feed", type = "Camera", name = "Satellite Feed", x = 44, y = 14, z = 46, rot = 90, prop = "StationCCTV" } }, spawns = { { x = -80, y = 0, z = 0 }, { x = 72, y = 0, z = -48 }, { x = 75, y = 0, z = 8 }, { x = 20, y = 0, z = 58 }, { x = -58, y = 0, z = 58 }, { x = 17, y = 14, z = 70 }, { x = 70, y = 14, z = -18 }, { x = -44, y = 14, z = -4 }, { x = -48, y = 14, z = 57 }, { x = 40, y = 14, z = -62 }, { x = 44, y = 14, z = 20 }, { x = -10, y = 14, z = 20 } }, sheets = { { x = 8, y = 2.8, z = -60 }, { x = 14, y = 1.65, z = 70.3 }, { x = 62, y = 16.8, z = -20 } }, hoods = { { x = 21, y = 0.6, z = -60 }, { x = 88, y = 0.6, z = 22 }, { x = 96.5, y = 14.6, z = 12.5 }, { x = -30, y = 14.6, z = 72.5 } }, areas = {} },
 	-- What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...
 	zones = {
 		{ kind = "stairs", y0 = 0, y1 = 7, points = { 36.5, -14, 36.5, -30, 41.5, -30, 41.5, -14 } },

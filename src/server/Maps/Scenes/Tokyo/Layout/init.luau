@@ -38,11 +38,6 @@ return {
 		{ x = 126, y = 2.8, z = 79 },
 		{ x = -86, y = 3.55, z = 82.2 },
 	},
-	dropPoints = {
-		{ name = "behind the viaduct bars", x = -30, y = 0.15, z = 128, rot = 0 },
-		{ name = "the platform's end", x = -36, y = -19.85, z = -62, rot = 0 },
-		{ name = "by the road bridge", x = 72, y = 0.15, z = 58, rot = 0 },
-	},
 	hoods = {
 		{ x = 64, y = 0.6, z = -76 },
 		{ x = -16, y = 0.6, z = 110.5 },
@@ -64,7 +59,7 @@ return {
 		{ name = "the viaduct lane", x = 40, y = 0, z = 130, marks = { { kind = "stand", x = 42, y = 0, z = 130, rot = 0 }, { kind = "stand", x = 38, y = 0, z = 132, rot = 180 } } },
 	},
 	-- Spare spots of each kind, not used by the game yet (for a later rework of the counts).
-	spare = { stations = { { id = "Station Staff Phone", type = "Phone", name = "Station Staff Phone", x = -120, y = 0, z = -100, rot = -90, prop = "StationReception" }, { id = "Store Info Desk", type = "Phone", name = "Store Info Desk", x = 38, y = 0, z = -70.2, rot = 180, prop = "StationReception" }, { id = "Game Centre Office", type = "Camera", name = "Game Centre Office", x = 49.2, y = 0, z = -125.3, rot = 180, prop = "StationCCTV" }, { id = "Konbini Back Office", type = "Camera", name = "Konbini Back Office", x = 45.6, y = 0, z = -20.2, rot = 0, prop = "StationCCTV" } }, spawns = { { x = -150, y = 0, z = 20 }, { x = -60, y = 0, z = 20 }, { x = 36, y = 0, z = 10 }, { x = 140, y = 0, z = 30 }, { x = -140, y = 0, z = 60 }, { x = -80, y = 0, z = 90.5 }, { x = 0, y = 0, z = 90.5 }, { x = 112, y = 0, z = 80 }, { x = 60, y = 0, z = -100 }, { x = 100, y = 0, z = -100 }, { x = 150, y = 0, z = -51 }, { x = -40, y = 0, z = 130 } }, sheets = {}, dropPoints = { { name = "the pocket park", x = -150, y = 0.15, z = 70, rot = 0 }, { name = "the back alley", x = 70, y = 0.15, z = -14, rot = 0 }, { name = "the footbridge's end", x = -97, y = 0.15, z = 58, rot = 0 } }, hoods = { { x = -150, y = 0.6, z = 108 }, { x = 114, y = 0.6, z = 118 } }, areas = {} },
+	spare = { stations = { { id = "Station Staff Phone", type = "Phone", name = "Station Staff Phone", x = -120, y = 0, z = -100, rot = -90, prop = "StationReception" }, { id = "Store Info Desk", type = "Phone", name = "Store Info Desk", x = 38, y = 0, z = -70.2, rot = 180, prop = "StationReception" }, { id = "Game Centre Office", type = "Camera", name = "Game Centre Office", x = 49.2, y = 0, z = -125.3, rot = 180, prop = "StationCCTV" }, { id = "Konbini Back Office", type = "Camera", name = "Konbini Back Office", x = 45.6, y = 0, z = -20.2, rot = 0, prop = "StationCCTV" } }, spawns = { { x = -150, y = 0, z = 20 }, { x = -60, y = 0, z = 20 }, { x = 36, y = 0, z = 10 }, { x = 140, y = 0, z = 30 }, { x = -140, y = 0, z = 60 }, { x = -80, y = 0, z = 90.5 }, { x = 0, y = 0, z = 90.5 }, { x = 112, y = 0, z = 80 }, { x = 60, y = 0, z = -100 }, { x = 100, y = 0, z = -100 }, { x = 150, y = 0, z = -51 }, { x = -40, y = 0, z = 130 } }, sheets = {}, hoods = { { x = -150, y = 0.6, z = 108 }, { x = 114, y = 0.6, z = 118 } }, areas = {} },
 	-- What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...
 	zones = {
 		{ kind = "water", y0 = -6, y1 = -6, points = { -300.6, 44.98, -270.44, 46.99, -269.22, 22.02, -298.94, 20.04 } },

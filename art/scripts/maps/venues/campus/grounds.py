@@ -8,8 +8,7 @@
 - The forecourt: the evidence board in its kiosk among the seat-chart boards, the founder's
   bust, the frozen fountain, benches.
 - The pond hollow: pines in their yukizuri, stone lanterns, clipped shrubs under snow, the
-  campus security camera post (the Pond Camera Post), the drop point beside the bridge's foot,
-  a hood among the pines.
+  campus security camera post (the Pond Camera Post), a hood among the pines.
 - The tennis court, look-only behind its chain-link fence: the net sagging under snow, the
   umpire's chair, the roller shed beside it.
 - The bike shed, a hot-drinks machine, the avenue's phone box (a spare), snowmen, snow scoops,
@@ -179,7 +178,6 @@ def hollow(s):
                  (-100.0, -34.5), (-132.0, -34.5)):
         s.prop("ShrubSnow", x, z, (x + z) % 180, 1.0, HY)
     s.station("Camera", "Pond Camera Post", -60.0, 24.0, 90, y=HY, prop="StationCameraPost")
-    s.drop_point("under the pond bridge", -99.4, -20.4, y=HY + 0.15)
     s.hood(-138.0, -24.0, y=HY + 0.6)
     s.prop("Snowman", -110.0, -24.0, 30, 1.0, HY)
     for x, z in ((-70.0, 12.5), (-126.0, -26.0), (-96.0, 34.0), (-140.0, 30.0), (-100.0, -27.0), (-80.0, -27.0)):
@@ -248,11 +246,10 @@ def court(s):
         s.box("WhiteTrim", (xx, 0.06, cz + 6.0), (0.3, 0.06, 16.0), skip=("-y",))
     lamp(s, x0 - 3.0, cz - 10.0)
     lamp(s, x1 + 5.4, cz - 12.0)
-    # The roller shed outside the fence's west side, a spare drop point behind it.
+    # The roller shed outside the fence's west side.
     rx, rz = 62.0, 8.0
     s.box("Shutter", (rx, 2.6, rz), (4.0, 5.2, 8.0), collide=True, mats={"+y": "Slate"})
     s.box("Snow", (rx, 5.28, rz), (4.2, 0.16, 8.2), skip=("-y",))
-    s.drop_point("behind the tennis court's roller shed", rx - 3.4, rz, spare=True)
 
 
 def bike_shed(s):
@@ -266,7 +263,6 @@ def bike_shed(s):
     s.prop("BikeRack", (x0 + x1) / 2 + 3.0, z0 + 3.0, 0)
     for k, x in enumerate((x0 + 13.0, x0 + 15.0, x0 + 17.0)):
         s.prop("Bicycle", x, z0 + 3.4, 180 * (k % 2))
-    s.drop_point("the bike shed", x0 + 2.0, (z0 + z1) / 2, spare=True)
     s.light("point", ((x0 + x1) / 2, 7.4, (z0 + z1) / 2), (220, 230, 255), 16, 0.8)
     s.box("NeonCool", ((x0 + x1) / 2, 7.95, (z0 + z1) / 2), (3.0, 0.1, 0.4))
 

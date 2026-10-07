@@ -69,7 +69,6 @@ return {
 	FumeHood = { size = { 5.3, 9, 2.77 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 47, 48, 49 }, lights = { { at = { -0, 6.6, -0.265 }, brightness = 0.8, color = { 220, 236, 255 }, kind = "point", range = 10 } }, set = "Agency", tris = 744, glow = { { 220, 236, 255 } } },
 	GiantSkull = { size = { 31.378, 14.617, 28.89 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 17, 16, 14 }, set = "Lobby", tris = 2216 },
 	GinkgoBare = { size = { 16.78, 29.244, 17.492 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 14, 13, 13 }, anchor = { 1.656, 0.684 }, set = "Campus", tris = 4628 },
-	Grate = { size = { 2, 0.355, 2 }, pivot = "bottom", material = "DiamondPlate", collide = false, color = { 20, 20, 22 }, set = "Core" },
 	Grimoire = { size = { 2.83, 0.64, 4.097 }, pivot = "centre", material = "Leather", collide = false, color = { 32, 26, 24 }, set = "Core", glow = { { 200, 22, 38 } } },
 	GuardRail = { size = { 8.066, 3, 0.28 }, pivot = "bottom", material = "Metal", collide = true, color = { 80, 80, 80 }, set = "Tokyo" },
 	Handcuffs = { size = { 1.92, 0.23, 0.945 }, pivot = "centre", material = "Metal", collide = false, color = { 40, 40, 42 }, set = "Core" },

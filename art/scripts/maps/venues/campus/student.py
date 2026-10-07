@@ -12,8 +12,7 @@ The cafeteria (学生食堂) has long tables, the meal-ticket machines by the do
 phone (the Cafeteria Payphone) on the east wall, and the serving counter with the tray return,
 the kitchen behind it look-only.
 
-The alley between them runs to the campus wall. The club house's vending machines stand in it,
-and the drop point is behind them."""
+The alley between them runs to the campus wall. The club house's vending machines stand in it."""
 
 from maps import kit
 from maps.venues.campus import fit, masonry
@@ -202,12 +201,11 @@ def cafeteria(s):
 
 
 def alley(s):
-    """The club house's vending machines in the alley, the drop point behind them."""
+    """The club house's vending machines in the alley."""
     s.prop("RecycleBins", -86.2, 85.5, -90)
     s.prop("VendingBlue", -86.4, 90.2, -90)
     s.prop("VendingWhite", -86.4, 94.6, -90)
     s.prop("VendingMachine", -86.6, 99.0, -90)
-    s.drop_point("behind the club house vending machines", -86.6, 105.4)
     fit.wall_lamp(s, -87.7, 9.4, 96.0, -90, color=fit.WARM, range_=18, brightness=0.9)
     s.sound("mapCityHum", (-84.0, 6.0, 104.0), 40.0, 0.2)
 

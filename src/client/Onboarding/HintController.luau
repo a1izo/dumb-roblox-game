@@ -4,7 +4,7 @@
 -- turns it back on, and "Show all tips again" there resets which tips were seen.
 --
 -- Triggers: first match as each role, first time in each phase, first letter flash, first
--- evidence, first sheet / drop point / hood prompt, first death seen, being eliminated.
+-- evidence, first sheet / note pass / hood prompt, a note offered, first death seen, being eliminated.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -198,6 +198,11 @@ function HintController.init()
 		HintController.trigger("flash")
 		HintController.trigger("scratchpad")
 	end)
+	Net.event("NoteOffer").OnClientEvent:Connect(function(payload)
+		if type(payload) == "table" and payload.state == "offered" then
+			HintController.trigger("offer")
+		end
+	end)
 	Net.event("Evidence").OnClientEvent:Connect(function()
 		if ClientState.isParticipant() then
 			HintController.trigger("evidence")
@@ -216,8 +221,8 @@ function HintController.init()
 	ProximityPromptService.PromptShown:Connect(function(prompt: ProximityPrompt)
 		if prompt.Name == "LTake" and prompt.ObjectText == "Blank sheet" then
 			HintController.trigger("sheet")
-		elseif prompt.Name == "LSearch" then
-			HintController.trigger("dropPoint")
+		elseif prompt.Name == "LPassNote" then
+			HintController.trigger("pass")
 		elseif prompt.Name == "LWear" then
 			HintController.trigger("hood")
 		end

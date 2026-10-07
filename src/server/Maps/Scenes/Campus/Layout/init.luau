@@ -38,11 +38,6 @@ return {
 		{ x = -139.6, y = 1.3, z = 93.4 },
 		{ x = -66, y = 2.8, z = 82 },
 	},
-	dropPoints = {
-		{ name = "the library's back stacks", x = 146, y = 0.15, z = -106.2, rot = 0 },
-		{ name = "behind the club house vending machines", x = -86.6, y = 0.15, z = 105.4, rot = 0 },
-		{ name = "under the pond bridge", x = -99.4, y = -4.85, z = -20.4, rot = 0 },
-	},
 	hoods = {
 		{ x = 78, y = 0.6, z = -106 },
 		{ x = 62, y = 0.6, z = 104 },
@@ -81,7 +76,7 @@ return {
 		{ name = "the bike shed", x = 50, y = 0, z = -20, marks = { { kind = "stand", x = 48, y = 0, z = -12, rot = 0 }, { kind = "stand", x = 54, y = 0, z = -12, rot = 0 } } },
 	},
 	-- Spare spots of each kind, not used by the game yet (for a later rework of the counts).
-	spare = { stations = { { id = "Library CCTV", type = "Camera", name = "Library CCTV", x = 146.4, y = 12, z = -96, rot = 90, prop = "StationCCTV" }, { id = "Chemistry Lab Bench", type = "Forensics", name = "Chemistry Lab Bench", x = 118, y = 0, z = 39.9, rot = 180, prop = "StationLabBench" }, { id = "Club Locker Prints", type = "Fingerprint", name = "Club Locker Prints", x = -99, y = 0, z = 106.3, rot = 0, prop = "StationPrintKit" }, { id = "Avenue Phone Box", type = "Phone", name = "Avenue Phone Box", x = -6, y = 0, z = 40, rot = 90, prop = "StationPhoneBooth" } }, spawns = { { x = -40, y = 0, z = -34 }, { x = 0, y = 0, z = -34.5 }, { x = 60, y = 0, z = -34 }, { x = 120, y = 0, z = -34 }, { x = 146, y = 0, z = 0 }, { x = 56, y = 0, z = 28 }, { x = 120, y = 0, z = 28 }, { x = -120, y = 0, z = 51 }, { x = -60, y = 0, z = 51 }, { x = 20, y = 0, z = 96 }, { x = -104, y = -5, z = 30 }, { x = -110, y = 0, z = -44 } }, sheets = { { x = 60, y = 2.8, z = -76 }, { x = -136, y = 2.8, z = -94 } }, dropPoints = { { name = "behind the tennis court's roller shed", x = 58.6, y = 0.15, z = 8, rot = 0 }, { name = "the bike shed", x = 42, y = 0.15, z = -20, rot = 0 } }, hoods = { { x = 13, y = 0.6, z = 64 }, { x = -79, y = 0.6, z = -60 } }, areas = {} },
+	spare = { stations = { { id = "Library CCTV", type = "Camera", name = "Library CCTV", x = 146.4, y = 12, z = -96, rot = 90, prop = "StationCCTV" }, { id = "Chemistry Lab Bench", type = "Forensics", name = "Chemistry Lab Bench", x = 118, y = 0, z = 39.9, rot = 180, prop = "StationLabBench" }, { id = "Club Locker Prints", type = "Fingerprint", name = "Club Locker Prints", x = -99, y = 0, z = 106.3, rot = 0, prop = "StationPrintKit" }, { id = "Avenue Phone Box", type = "Phone", name = "Avenue Phone Box", x = -6, y = 0, z = 40, rot = 90, prop = "StationPhoneBooth" } }, spawns = { { x = -40, y = 0, z = -34 }, { x = 0, y = 0, z = -34.5 }, { x = 60, y = 0, z = -34 }, { x = 120, y = 0, z = -34 }, { x = 146, y = 0, z = 0 }, { x = 56, y = 0, z = 28 }, { x = 120, y = 0, z = 28 }, { x = -120, y = 0, z = 51 }, { x = -60, y = 0, z = 51 }, { x = 20, y = 0, z = 96 }, { x = -104, y = -5, z = 30 }, { x = -110, y = 0, z = -44 } }, sheets = { { x = 60, y = 2.8, z = -76 }, { x = -136, y = 2.8, z = -94 } }, hoods = { { x = 13, y = 0.6, z = 64 }, { x = -79, y = 0.6, z = -60 } }, areas = {} },
 	-- What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...
 	zones = {
 		{ kind = "lane", y0 = 0, y1 = -5, points = { -52, 10, -68, 10, -68, 2, -52, 2 }, name = "the pond hollow" },

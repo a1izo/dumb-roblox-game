@@ -1,4 +1,4 @@
-"""Agency HQ's gameplay spots outside the rooms' own (stations, sheets, drop points and some hoods
+"""Agency HQ's gameplay spots outside the rooms' own (stations, sheets and some hoods
 are placed with their rooms): the spawns (in the lobby and the bullpen, where the lifts and the
 gates bring the Agency in), the named areas with their intro marks, a last hood and the spare
 spawns on both floors."""

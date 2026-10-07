@@ -1,4 +1,4 @@
--- Paper notes: write on a blank sheet, read notes, hide them at drop points, burn them. The
+-- Paper notes: write on a blank sheet, read notes, burn them. The
 -- window is a single sheet; the note itself is parchment with typewritten text.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,7 +23,6 @@ local paper: Frame
 local paperText: TextLabel
 local writeField: Frame
 local writeBox: TextBox
-local dropList: ScrollingFrame
 
 local function send(payload)
 	NoteRequest:FireServer(payload)
@@ -52,7 +51,6 @@ local function show(mode: string, title: string)
 	win.setTitle(title)
 	paper.Visible = mode == "read"
 	writeField.Visible = mode == "write"
-	dropList.Visible = mode == "drop"
 	Router.open("note")
 end
 
@@ -162,43 +160,6 @@ local function onNoteView(payload)
 	setButtons(buttons)
 end
 
-local function onDropView(payload)
-	if type(payload) ~= "table" or type(payload.notes) ~= "table" then
-		return
-	end
-	Kit.clear(dropList)
-	show("drop", tostring(payload.name))
-	if #payload.notes == 0 then
-		Kit.label({ Text = "Nothing hidden here.", font = "bodyItalic", color = C.dim, Parent = dropList })
-	end
-	for index, noteId in ipairs(payload.notes) do
-		Kit.button({
-			text = string.format("Folded note %d  ·  read", index),
-			icon = "note",
-			variant = "parchment",
-			upper = false,
-			Size = UDim2.new(1, 0, 0, T.touch),
-			LayoutOrder = index,
-			Parent = dropList,
-		}, function()
-			send({ action = "read", noteId = noteId })
-		end)
-	end
-	local buttons: { NoteButton } = { { text = "Close", action = NotePanel.close } }
-	if payload.canLeave then
-		table.insert(buttons, {
-			text = "Leave my note here",
-			icon = "mail",
-			variant = "primary",
-			action = function()
-				send({ action = "leave", dropId = payload.dropId })
-				NotePanel.close()
-			end,
-		})
-	end
-	setButtons(buttons)
-end
-
 function NotePanel.init()
 	win = Kit.window({ name = "note", title = "Note", size = "sheet", footer = true, onClose = NotePanel.close })
 	local body = win.body
@@ -237,12 +198,8 @@ function NotePanel.init()
 		Parent = writeField,
 	})
 	writeBox = box
-	dropList = Kit.scroll({ Parent = body })
-	Kit.list(dropList, T.space.s)
-	Kit.pad(dropList, T.space.xs, T.space.xs)
 
 	Net.event("NoteView").OnClientEvent:Connect(onNoteView)
-	Net.event("DropPointView").OnClientEvent:Connect(onDropView)
 	Kit.register(win, {
 		allowed = function(view)
 			return view.living and (view.phase == "Investigation" or view.phase == "DeathNote")

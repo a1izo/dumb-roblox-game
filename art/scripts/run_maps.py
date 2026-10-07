@@ -63,7 +63,6 @@ SOCKET_COLOURS = {
     "Forensics": (0.85, 0.3, 1.0),
     "spawn": (1.0, 1.0, 1.0),
     "sheet": (1.0, 0.95, 0.75),
-    "drop": (1.0, 0.3, 0.3),
     "hood": (0.05, 0.05, 0.05),
     "area": (1.0, 0.5, 0.1),
     "spare": (0.45, 0.45, 0.45),
@@ -97,7 +96,7 @@ def _marker(coll, name, x, y, z, colour, radius=2.2, height=0.6, text=None, text
 
 def render_plans(scene, module):
     """art/export/previews/plan_<Venue>_<level>.png: orthographic views from above, cut just
-    under each floor's ceiling, with stations (by type), spawns, sheets, drop points, hoods and
+    under each floor's ceiling, with stations (by type), spawns, sheets, hoods and
     area names marked; spare spots in grey."""
     (x0, y0, z0), (x1, y1, z1) = scene.bounds or ((-100, 0, -100), (100, 60, 100))
     coll = common.collection("PlanMarkers")
@@ -110,8 +109,6 @@ def render_plans(scene, module):
                                    ("hood", L["hoods"], "hood", 1.6), ("spawn_s", S["spawns"], "spare", 0.9)):
         for it in items:
             _marker(coll, colour, it["x"], it["y"], it["z"], SOCKET_COLOURS[colour], radius=r)
-    for it in L["dropPoints"]:
-        _marker(coll, "drop", it["x"], it["y"], it["z"], SOCKET_COLOURS["drop"], radius=1.8, text=it["name"], text_size=3)
     for it in L["areas"]:
         _marker(coll, "area", it["x"], it["y"], it["z"], SOCKET_COLOURS["area"], radius=0.8, height=0.3,
                 text=it["name"], text_size=7)

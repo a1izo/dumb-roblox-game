@@ -101,26 +101,6 @@ def tip_box():
     return parts, []
 
 
-@prop("Grate", pivot="bottom", material="DiamondPlate", collide=False, texture=512)
-def grate():
-    """A floor vent: a steel frame with slats and four bolts."""
-    steel = mk.noisy("Grate_Steel", srgb(50, 52, 56), srgb(90, 92, 98), scale=20, roughness=0.45, metallic=0.8)
-    dark = mk.flat("Grate_Dark", srgb(6, 6, 8), 1.0)
-    parts = [
-        mk.box("Pit", (1.8, 1.8, 0.05), (0, 0, 0.02), mat=dark),
-        mk.box("FrameN", (2.0, 0.2, 0.3), (0, 0.9, 0.15), mat=steel, bevel=0.03),
-        mk.box("FrameS", (2.0, 0.2, 0.3), (0, -0.9, 0.15), mat=steel, bevel=0.03),
-        mk.box("FrameE", (0.2, 1.6, 0.3), (0.9, 0, 0.15), mat=steel, bevel=0.03),
-        mk.box("FrameW", (0.2, 1.6, 0.3), (-0.9, 0, 0.15), mat=steel, bevel=0.03),
-    ]
-    for i in range(7):
-        parts.append(mk.box("Slat", (1.6, 0.08, 0.22), (0, -0.66 + i * 0.22, 0.17), rot=(25, 0, 0), mat=steel))
-    for x in (-0.9, 0.9):
-        for y in (-0.9, 0.9):
-            parts.append(mk.cylinder("Bolt", 0.06, 0.06, (x, y, 0.32), mat=steel, verts=8))
-    return parts, []
-
-
 def _paper_sheet(name, mat, curl=0.08):
     """A sheet of paper with slightly curled corners (1.1 x 1.5 studs, like the game's sheets)."""
     bm = bmesh.new()

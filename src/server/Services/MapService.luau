@@ -158,7 +158,6 @@ function MapService.build(mapId: string)
 		stations = {},
 		spawns = {},
 		sheets = {},
-		dropPoints = {},
 		hoods = {},
 		areas = {},
 		boardLabels = {},
@@ -175,9 +174,6 @@ function MapService.build(mapId: string)
 	end
 	for i, sheet in ipairs(layout.sheets) do
 		table.insert(info.sheets, { id = "P" .. i, position = b:worldPos(sheet.x, sheet.y, sheet.z) })
-	end
-	for i, drop in ipairs(layout.dropPoints) do
-		table.insert(info.dropPoints, b:dropPoint(drop, "D" .. i))
 	end
 	for _, hood in ipairs(layout.hoods) do
 		table.insert(info.hoods, b:worldPos(hood.x, hood.y, hood.z))

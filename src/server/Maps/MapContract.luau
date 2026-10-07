@@ -64,15 +64,6 @@ function MapContract.validateLayout(layout: any): { string }
 	if #(layout.sheets or {}) < 4 then
 		fail("needs at least 4 paper sheets")
 	end
-	local drops = layout.dropPoints or {}
-	if #drops ~= 3 then
-		fail("needs exactly 3 drop points")
-	end
-	for index, drop in ipairs(drops) do
-		if type(drop.name) ~= "string" or drop.name == "" then
-			fail("drop point " .. index .. " has no name")
-		end
-	end
 	if #(layout.hoods or {}) < 1 then
 		fail("needs at least one hood")
 	end
@@ -113,7 +104,7 @@ function MapContract.validateSpare(layout: any): { string }
 			table.insert(problems, "spare station " .. index .. " needs x, z and rot")
 		end
 	end
-	for _, kind in ipairs({ "spawns", "sheets", "dropPoints", "hoods", "areas" }) do
+	for _, kind in ipairs({ "spawns", "sheets", "hoods", "areas" }) do
 		for index, spot in ipairs(spare[kind] or {}) do
 			if not (isNumber(spot.x) and isNumber(spot.z)) then
 				table.insert(problems, "spare " .. kind .. " " .. index .. " needs x and z")
@@ -168,11 +159,6 @@ function MapContract.validateBuilt(info: any): { string }
 	end
 	if not info.tipBox or not info.tipBox.part:HasTag("LTipBox") then
 		fail("the tip box is missing its tag")
-	end
-	for _, drop in ipairs(info.dropPoints or {}) do
-		if not drop.part:HasTag("LDropPoint") then
-			fail(drop.name .. ": drop point is missing its tag")
-		end
 	end
 	local down = RaycastParams.new()
 	down.FilterType = Enum.RaycastFilterType.Include

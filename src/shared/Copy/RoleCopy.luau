@@ -23,14 +23,14 @@ local RoleCopy: { [string]: RoleCopy } = {
 		{
 			"Each {grimoire} phase, write one full real name. That player dies during the next meeting.",
 			"Real names leak 3 letters at a time whenever someone finishes a case file. Watch the flashes.",
-			"Fake tasks and blend in. Your {cultists} can pass you names on paper notes.",
+			"Fake tasks and blend in. Your {cultists} can hand you names on paper notes.",
 		},
 		"Kill {zero}, match {agency} in number, or survive all 5 rounds.",
 		"Stand near a busy station and watch whose letters flash."
 	),
 	Follower = card(
 		{
-			"You know who {hand} is. Gather real names and pass them on paper notes or drop points.",
+			"You know who {hand} is. Gather real names and pass them to {hand} on paper notes, hand to hand.",
 			"Fake tasks, rig a station's next flash (hold T) and file false reports to frame others.",
 			"From round 2, one {cultist} may accept {eyes}: read real names up close, then die soon after.",
 		},

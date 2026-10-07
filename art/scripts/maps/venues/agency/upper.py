@@ -26,10 +26,6 @@ def station(s, *args, **kw):
     s.station(*args, **kw)
 
 
-def drop_point(s, name, x, z, **kw):
-    kw.setdefault("y", Y + 0.15)
-    s.drop_point(name, x, z, **kw)
-
 
 def hood(s, x, z, **kw):
     kw.setdefault("y", Y + 0.6)
@@ -131,7 +127,6 @@ def server_room(s):
     for x in (6.0, 20.0):
         s.light("point", (x, Y + 6.0, -67.5), (100, 150, 255), 16, 0.6)
     station(s, "Phone", "Records Terminal", -9.0, -58.0, -90, prop="StationPhoneDesk")
-    drop_point(s, "the server rack alcove", 28.4, -73.2)
     fit.panel(s, -9.0, -62.0, C, color=fit.COOL, brightness=0.8, range_=18, flicker=True)  # the server room
     fit.panel(s, 14.0, -54.0, C, color=fit.COOL, brightness=0.5, range_=16)
     s.sound("mapServerHum", (14.0, Y + 6.0, -66.0), 34.0, 0.3)
@@ -152,7 +147,6 @@ def archive(s):
     top = fit.table(s, 42.0, -55.0, 6.0, 3.0, 0, Y)
     fit.chairs_round(s, 42.0, -55.0, 6.0, 3.0, 0, Y)
     s.sheet(42.0, top, -55.0)
-    drop_point(s, "the archive's back corner", 97.2, -72.8)
     for x, z in ((37.0, -64.0), (44.0, -54.0)):
         fit.panel(s, x, z, C, brightness=0.8, range_=18)
     for x in (57.5, 71.5, 85.5):
@@ -209,7 +203,6 @@ def director(s):
     kit.picture(s, 60.35, Y + 7.6, 23.0, -90, 4.0, 3.0, "Wood", "Paper")
     for x, z in ((80.0, 30.0), (72.0, 56.0)):
         fit.downlight(s, x, z, C, range_=16, brightness=0.8)
-    drop_point(s, "under the director's window", 90.0, 40.0, spare=True)
     fit.plaque(s, 59.7, Y + 10.6, 27.0, 90, 5.0, 0.9, "局長室 DIRECTOR")
 
 

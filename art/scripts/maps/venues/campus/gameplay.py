@@ -1,4 +1,4 @@
-"""Kagegaoka University's gameplay spots outside the rooms' own (stations, sheets, drop points,
+"""Kagegaoka University's gameplay spots outside the rooms' own (stations, sheets,
 the tip box, the board and most hoods are placed with their rooms and grounds):
 - the spawns, mid-avenue, where the case gathers under the ginkgos;
 - the named areas with their intro marks;

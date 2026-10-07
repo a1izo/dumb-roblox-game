@@ -93,11 +93,11 @@ local function cameraClue(worker): string
 	local sighting = EventLog.takeSighting(90)
 	if sighting then
 		return string.format(
-			"Camera %s: %s %s near %s.",
+			"Camera %s: %s %s %s.",
 			sighting.clock,
 			sighting.alias,
 			sighting.activity,
-			sighting.area
+			EventLog.place(sighting)
 		)
 	end
 	local others = {}

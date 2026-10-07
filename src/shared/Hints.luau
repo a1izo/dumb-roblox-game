@@ -63,9 +63,14 @@ local RAW: { { string } } = {
 	{
 		"sheet",
 		"Blank sheets",
-		"Take a sheet to write a secret note. Drop it, or hide it at a loose grate for someone else.",
+		"Take a sheet to write a secret note. Drop it, or hand it to someone standing close (X).",
 	},
-	{ "dropPoint", "Loose grates", "Hidden notes wait here. Search it (E) or hide the note you carry (hold F)." },
+	{
+		"pass",
+		"Passing notes",
+		"Stand close to someone and press X to offer your note. Anyone watching sees it change hands.",
+	},
+	{ "offer", "A note for you", "Take it (X) or leave it. A note handed to you is never confiscated." },
 	{ "hood", "Hoods", "A hood blocks {eyes} for the rest of the round. Everyone can see you wear it." },
 	{
 		"death",

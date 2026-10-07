@@ -1,4 +1,4 @@
--- Every map keeps the gameplay contract (stations, spawns, sheets, drop points, hoods,
+-- Every map keeps the gameplay contract (stations, spawns, sheets, hoods,
 -- areas, tip box and board), whatever its dressing looks like.
 
 local Maps = script.Parent.Parent:WaitForChild("Maps")
@@ -24,8 +24,15 @@ return function(t)
 				expect(table.concat(problems, "; ")).to.equal("")
 			end)
 		end
+		for _, name in ipairs(MAP_MODULES) do
+			it(name .. " has no drop points left (notes pass hand to hand)", function()
+				local layout = require(Maps:WaitForChild(name)).layout()
+				expect(layout.dropPoints).to.equal(nil)
+				expect((layout.spare or {}).dropPoints).to.equal(nil)
+			end)
+		end
 		it("reports a map with too few stations", function()
-			local problems = MapContract.validateLayout({ stations = {}, spawns = {}, sheets = {}, dropPoints = {} })
+			local problems = MapContract.validateLayout({ stations = {}, spawns = {}, sheets = {} })
 			expect(#problems > 0).to.equal(true)
 		end)
 	end)

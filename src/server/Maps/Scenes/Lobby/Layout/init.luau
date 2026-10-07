@@ -17,11 +17,10 @@ return {
 		{ x = 9, y = 11, z = 64, rot = 0 },
 	},
 	sheets = {},
-	dropPoints = {},
 	hoods = {},
 	areas = {},
 	-- Spare spots of each kind, not used by the game yet (for a later rework of the counts).
-	spare = { stations = {}, spawns = {}, sheets = {}, dropPoints = {}, hoods = {}, areas = {} },
+	spare = { stations = {}, spawns = {}, sheets = {}, hoods = {}, areas = {} },
 	-- What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...
 	zones = {
 		{ kind = "offlimits", y0 = 0, y1 = 0, points = { 71.96, 19.78, 74.56, 13.47, 78.57, 8.34, 83.51, 2.7, 93.42, 1.19, 104.22, 4.92, 113.27, 10.25, 119.7, 16.95, 122.79, 24.12, 124.36, 31.59, 120.31, 37.69, 111.02, 39.35, 101.98, 40.09, 91.56, 39.68, 81.7, 34.55, 75.06, 27.34 } },

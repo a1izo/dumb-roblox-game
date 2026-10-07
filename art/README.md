@@ -125,7 +125,7 @@ the screen, the board, the seats and the Specters' spots at its anchors. Its pro
 ### The maps (Tokyo, Agency HQ, University Campus)
 
 Each map (`scripts/maps/venues/tokyo/`) is a whole map made here:
-its streets, buildings and **gameplay spots** (stations, spawns, sheets, drop points, hoods,
+its streets, buildings and **gameplay spots** (stations, spawns, sheets, hoods,
 named areas with intro marks, the tip box and board, plus spare spots of every kind) are all
 placed by the venue script, and the game reads them from the generated scene data. The Luau map
 module is three lines (`Maps/TokyoDistrict.luau`).
