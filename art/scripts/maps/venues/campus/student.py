@@ -51,17 +51,19 @@ def club_exterior(s):
                             (-101.0, "がんばれ\n受験生!!", (150, 24, 30))):
         s.prop("Tatekan", x, 55.6, 0)
         s.sign((x, 4.4, 55.45), 0, 5.2, 6.4, text, "GothamBlack", colour, None)
-    for x in (-126.0, -124.0):
+    for x in (-131.0, -129.0):
         s.prop("Bicycle", x, 55.0, 0)
-    s.prop("BikeRack", -110.0, 55.0, 0)
+    s.prop("BikeRack", -108.8, 55.0, 0)
 
 
 def club_rooms(s):
-    for r, mat in ((P.CLUB_ENTRY, "Concrete"), (P.CLUB_CORRIDOR, "ConcreteDark"), (P.NEWSROOM, "CarpetGrey"),
-                   (P.FILM_CLUB, "CarpetRed"), (P.KOTATSU, "WoodFloor"), (P.BAND_ROOM, "WoodFloorDark"),
-                   (P.LOCKER_ROOM, "TileMetroGrey")):
+    for r, mat in ((P.CLUB_ENTRY, "Concrete"), (P.CLUB_CORRIDOR, "Linoleum"), (P.NEWSROOM, "CarpetTile"),
+                   (P.FILM_CLUB, "CarpetPurple"), (P.KOTATSU, "Tatami"), (P.BAND_ROOM, "WoodFloorDark"),
+                   (P.LOCKER_ROOM, "TerrazzoDark")):
         fit.floor_faces(s, P.rect_of(r), 0.0, mat)
-    ceiling(s, (KX0, KZ0, KX1, KZ1))
+    # A 1960s block: painted plaster ceilings, dark over the film club (it screens films).
+    ceiling(s, (KX0, KZ0, KX1, KZ1), "CeilingPlaster")
+    fit.ceiling_faces(s, P.rect_of(P.FILM_CLUB), C - 0.06, "CeilingPlasterDark")
     fit.partition(s, (KX0, 71.0), (KX1, 71.0), 0.0, C, "PlasterGrey", "PlasterGrey",
                   doors=[(-138.0 - KX0, 4.4), (-118.0 - KX0, 8.0), (-99.0 - KX0, 4.4)], glass="clear",
                   spans=[(0.8, 7.6), (13.6, 19.8)])
@@ -107,8 +109,8 @@ def film_club(s):
     s.prop("FilmProjector", -104.5, 64.7, -90)
     s.box("BlackMetal", (KX1 - 0.25, 6.5, 64.7), (0.3, 5.1, 8.6))
     s.screen((KX1 - 0.45, 6.5, 64.7), 90, 8.0, 4.5, "film")
-    for z in (62.2, 67.2):
-        s.prop("Chair", -98.5, z, -90)
+    for z in (62.2, 64.7):
+        s.prop("Chair", -96.0, z, -90)
     poster(s, -106.0, 7.0, 70.7, 180, 2.4, 3.4, "RedTrim")
     s.light("point", (-96.0, 6.0, 64.7), (200, 210, 255), 12, 0.5)
     fit.plaque(s, -99.0, 10.2, 71.3, 180, 4.4, 0.8, "映画研究会  FILM CLUB")
@@ -136,7 +138,7 @@ def band_room(s):
     for x in (-113.0, -124.0):
         s.box("BlackMetal", (x, 1.4, 106.8), (2.4, 2.8, 1.6), collide=True)
         s.box("Fabric", (x, 1.5, 105.98), (2.0, 2.0, 0.04))
-    s.prop("Sofa", -113.4, 80.2, 180)
+    s.prop("Sofa", -110.9, 88.0, 90)
     poster(s, -110.6, 7.0, 95.0, 90, 3.0, 4.0, "PaintYellow")
     kit.pendant(s, -119.0, C, 92.0, drop=4.0, shade="BlackMetal", color=fit.WARM, range_=18, brightness=0.9, wide=1.0)
     fit.panel(s, -119.0, 82.0, C, brightness=0.7, range_=16)
@@ -169,7 +171,7 @@ def cafeteria(s):
     fit.wall_lamp(s, -54.0, 9.6, CAF[1] - 0.3, 0, color=fit.WARM, range_=20, brightness=1.0)
     fit.floor_faces(s, P.rect_of(P.DINING), 0.0, "TileChecker")
     fit.floor_faces(s, P.rect_of(P.KITCHEN), 0.0, "TileWhite")
-    ceiling(s, (FX0, FZ0, FX1, FZ1))
+    ceiling(s, (FX0, FZ0, FX1, FZ1), "CeilingPlaster")
     s.zone("interior", P.rect_of(P.DINING), 0.0, name="the cafeteria")
     s.look_zone("UniversityCampus_Inside", (FX0, 0.0, FZ0), (FX1, C, FZ1))
     # The serving counter closes off the kitchen.

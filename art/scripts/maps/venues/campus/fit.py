@@ -307,6 +307,25 @@ def floor_faces(s, poly, y, mat, holes=()):
             city.up_face(s, mat, piece, y)
 
 
+def coffers(s, x0, z0, x1, z1, y, spacing=8.0, mat="CreamTrim", depth=0.7, w=0.6):
+    """Plaster beams under a ceiling at y in both directions, every `spacing` studs: the coffered
+    ceiling of the old halls (look-only)."""
+    nx = max(1, round((x1 - x0) / spacing))
+    nz = max(1, round((z1 - z0) / spacing))
+    for i in range(1, nx):
+        x = x0 + (x1 - x0) * i / nx
+        s.box(mat, (x, y - depth / 2, (z0 + z1) / 2), (w, depth, z1 - z0), skip=("+y",))
+    for j in range(1, nz):
+        z = z0 + (z1 - z0) * j / nz
+        s.box(mat, ((x0 + x1) / 2, y - depth / 2 - 0.01, z), (x1 - x0, depth, w), skip=("+y",))
+    # A moulding round the edge, where the ceiling meets the walls.
+    for a, b in (((x0, z0), (x1, z0)), ((x1, z0), (x1, z1)), ((x1, z1), (x0, z1)), ((x0, z1), (x0, z0))):
+        cx, cz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        horizontal = abs(a[1] - b[1]) < 1e-6
+        size = (abs(b[0] - a[0]), depth * 0.6, w) if horizontal else (w, depth * 0.6, abs(b[1] - a[1]))
+        s.box(mat, (cx, y - depth * 0.3, cz), size, skip=("+y",))
+
+
 def ceiling_faces(s, poly, y, mat, holes=()):
     pieces = g2.subtract_all([g2.ccw(p) for p in g2.convex_pieces(poly)], [g2.ccw(h) for h in holes])
     for piece in pieces:

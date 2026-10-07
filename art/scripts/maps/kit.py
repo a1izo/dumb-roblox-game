@@ -77,20 +77,35 @@ def wall(s, a, b, height, *, thick=1.0, base=0.0, core="PlasterDark", side_n=Non
     length, t, n, rot = wall_frame(a, b)
     ops = sorted(openings, key=lambda o: o["at"])
     mats = {"-z": side_n, "+z": side_s, "+y": top or core, "-y": core, "+x": core, "-x": core}
-    cursor = 0.0
-    segments = []  # (u0, u1, y0, y1, is_lintel)
+    # Openings whose spans overlap (a window over a door, the same window on every storey) are cut
+    # as one column: the wall fills only between them, below the lowest and above the highest.
+    groups = []  # [u0, u1, [(u0, u1, bottom, top)]]
     for op in ops:
         u0 = max(0.0, op["at"] - op["w"] / 2)
         u1 = min(length, op["at"] + op["w"] / 2)
-        if u0 - cursor > 0.02:
-            segments.append((cursor, u0, base, height, False))
-        bottom = op.get("bottom", base)
-        top_y = op.get("top", min(height, base + 8.5))
-        if bottom - base > 0.02:
-            segments.append((u0, u1, base, bottom, False))
-        if height - top_y > 0.02:
-            segments.append((u0, u1, top_y, height, True))
-        cursor = u1
+        span = (u0, u1, op.get("bottom", base), op.get("top", min(height, base + 8.5)))
+        if groups and u0 < groups[-1][1] - 0.02:
+            groups[-1][1] = max(groups[-1][1], u1)
+            groups[-1][2].append(span)
+        else:
+            groups.append([u0, u1, [span]])
+    cursor = 0.0
+    segments = []  # (u0, u1, y0, y1, is_lintel)
+    for g0, g1, spans in groups:
+        if g0 - cursor > 0.02:
+            segments.append((cursor, g0, base, height, False))
+        y = base
+        for u0, u1, bottom, top_y in sorted(spans, key=lambda sp: sp[2]):
+            if bottom - y > 0.02:
+                segments.append((g0, g1, y, bottom, y > base + 0.02))
+            # A narrower opening in the column: wall at its sides for its height.
+            for s0, s1 in ((g0, u0), (u1, g1)):
+                if s1 - s0 > 0.02:
+                    segments.append((s0, s1, max(y, bottom), top_y, bottom > base + 0.02))
+            y = max(y, top_y)
+        if height - y > 0.02:
+            segments.append((g0, g1, y, height, True))
+        cursor = g1
     if length - cursor > 0.02:
         segments.append((cursor, length, base, height, False))
     for u0, u1, y0, y1, lintel in segments:
@@ -99,12 +114,16 @@ def wall(s, a, b, height, *, thick=1.0, base=0.0, core="PlasterDark", side_n=Non
         s.box(core, centre, (u1 - u0, y1 - y0, thick), rot, collide=collide, skip=skip, mats=mats)
     for op in ops:
         opening(s, a, t, n, rot, thick, base, op, collide)
-    # Trims run along the floor between doors.
-    doors = [(o["at"] - o["w"] / 2, o["at"] + o["w"] / 2) for o in ops if o.get("bottom", base) <= base + 0.05]
+    # Trims run along the floor between doors, up to each door's casing (or its opening).
+    doors = []
+    for o in ops:
+        if o.get("bottom", base) <= base + 0.05:
+            edge = o.get("casing", 0.35) if o.get("frame") and o.get("kind", "door") == "door" else 0.0
+            doors.append((o["at"] - o["w"] / 2 - edge, o["at"] + o["w"] / 2 + edge))
     spans, cursor = [], 0.0
     for d0, d1 in doors:
-        spans.append((cursor, max(cursor, d0 - (0.4 if trim_n or trim_s else 0))))
-        cursor = d1 + (0.4 if trim_n or trim_s else 0)
+        spans.append((cursor, max(cursor, d0)))
+        cursor = max(cursor, d1)
     spans.append((cursor, length))
     if trim_n:
         trims(s, add3(a, scale(n, thick / 2)), t, n, spans, height, trim_n, base)
@@ -128,6 +147,11 @@ def opening(s, a, t, n, rot, thick, base, op, collide):
         # A way through at floor level: check_v2 keeps the space in front of it clear.
         x, _, z = point_on(a, t, op["at"])
         s.openings.append((round(x, 3), round(bottom, 3), round(z, 3), round(u1 - u0, 3), round(rot, 2), thick, kind))
+    if kind == "door" and bottom <= base + 0.05 and op.get("threshold", True):
+        # The floor across the wall's thickness (the rooms' floors stop at its faces): a threshold a
+        # hair proud of both, so no dark slot shows under the door.
+        mat = op.get("threshold") if isinstance(op.get("threshold"), str) else (frame or "ConcreteDark")
+        s.box(mat, point_on(a, t, op["at"], bottom - 0.12), (u1 - u0, 0.3, thick + 0.06), rot, skip=("-y",))
     if kind == "gap":
         return
     if frame:
@@ -138,12 +162,14 @@ def opening(s, a, t, n, rot, thick, base, op, collide):
         s.box(frame, point_on(a, t, op["at"], top_y - lining / 2), (u1 - u0, lining, thick + 0.1), rot)
         if kind == "window":
             s.box(frame, point_on(a, t, op["at"], bottom + lining / 2), (u1 - u0, lining, thick + 0.1), rot)
+        # Casings on both faces; none (casing 0) on an arched opening, whose arch head and voussoirs
+        # frame it instead (a square casing there overlaps the brick and flickers).
         casing = op.get("casing", 0.35)
         if kind == "window":
             post_y, post_h = (bottom + top_y) / 2, top_y - bottom + casing * 2
         else:
             post_y, post_h = (bottom + top_y + casing) / 2, top_y - bottom + casing
-        for side in (1, -1):
+        for side in ((1, -1) if casing > 0 else ()):
             off = scale(n, side * (thick / 2 + 0.05))
             for u in (u0 - casing / 2, u1 + casing / 2):
                 s.box(frame, add(point_on(a, t, u, post_y), off), (casing, post_h, 0.1), rot)
@@ -474,11 +500,11 @@ def exit_sign(s, x, y, z, rot):
     s.sign(p, rot, 1.3, 0.4, "EXIT", "GothamBlack", (235, 255, 235), None)
 
 
-def extinguisher(s, x, z, rot):
+def extinguisher(s, x, z, rot, y=0.0):
     p = _on_wall(x, 0, z, rot, 0.35)
-    s.cylinder("RedTrim", (p[0], 1.6, p[2]), 0.28, 1.4, 12)
-    s.lathe("BlackMetal", (p[0], 3.0, p[2]), [(0.2, 0), (0.12, 0.25), (0.06, 0.4)], 8)
-    s.box("BlackMetal", _on_wall(x, 2.4, z, rot, 0.05), (0.5, 0.2, 0.1), rot)
+    s.cylinder("RedTrim", (p[0], y + 1.6, p[2]), 0.28, 1.4, 12)
+    s.lathe("BlackMetal", (p[0], y + 3.0, p[2]), [(0.2, 0), (0.12, 0.25), (0.06, 0.4)], 8)
+    s.box("BlackMetal", _on_wall(x, y + 2.4, z, rot, 0.05), (0.5, 0.2, 0.1), rot)
 
 
 def vent(s, x, y, z, rot, w=2.0, h=1.0):

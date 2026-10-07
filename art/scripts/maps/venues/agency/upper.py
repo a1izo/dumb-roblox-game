@@ -34,12 +34,15 @@ def hood(s, x, z, **kw):
 
 def floors(s):
     rooms = P.ROOMS_L2
-    looks = {"forensics": "TileWhite", "lockup": "ConcreteDark", "server": "MetalFloor", "archive": "CarpetGrey",
-             "canteen": "WoodFloor", "training": "CarpetGrey", "director": "WoodFloorDark"}
+    looks = {"forensics": "VinylLab", "lockup": "ConcreteDark", "server": "MetalFloor", "archive": "Linoleum",
+             "canteen": "Terrazzo", "training": "CarpetTile", "director": "Parquet"}
     for name, poly in rooms.items():
         fit.floor_faces(s, poly, Y, looks[name])
     fit.floor_faces(s, P.ANALYSTS, Y, "CarpetNavy")
-    fit.floor_faces(s, P.OPS, Y, "CarpetNavy", holes=[P.rect_of(P.VOID)])
+    fit.floor_faces(s, P.OPS, Y, "TerrazzoDark", holes=[P.rect_of(P.VOID)])
+    # Finished ceilings (a hair under the office tiles) over the canteen and the director's office.
+    fit.ceiling_faces(s, rooms["canteen"], P.CEIL2 - 0.06, "CeilingSlats")
+    fit.ceiling_faces(s, rooms["director"], P.CEIL2 - 0.06, "CeilingPlaster")
     taken = [P.rect_of(P.CORE), P.ANALYSTS, P.OPS, P.rect_of(P.VOID)] + list(rooms.values())
     holes = [g2.ccw(q) for t in taken for q in g2.convex_pieces(t)]
     for piece in g2.subtract_all([g2.ccw(q) for q in g2.convex_pieces(P.PLATE)], holes):
@@ -158,12 +161,12 @@ def archive(s):
 
 
 def canteen(s):
-    fit.partition(s, (50.0, -48.0), (50.0, 16.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(18.0, 5.0), (54.0, 5.0)],
+    fit.partition(s, (50.0, -48.0), (50.0, 16.3), Y, C, "PlasterLight", "PlasterGrey", doors=[(18.0, 5.0), (54.0, 5.0)],
                   glass="clear")
     fit.partition(s, (50.0, 16.0), (100.0, 16.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(5.0, 4.4)],
                   glass="frosted", spans=[(10.4, 49.4)])
     prop(s, "MealTicketMachine", 53.2, -45.6, 180)
-    top = fit.counter(s, 72.0, -45.8, 180, 14.0, d=2.4, y=Y, top="WhiteTrim", body="WoodPanel")
+    top = fit.counter(s, 70.5, -45.8, 180, 11.0, d=2.4, y=Y, top="WhiteTrim", body="WoodPanel")
     prop(s, "CoffeeMachine", 68.0, -45.9, 180, 1.0, top)
     prop(s, "DrinkFridge", 88.0, -46.4, 180)
     prop(s, "VendingWhite", 97.3, -40.0, 90)  # front to the room, back to the glass
@@ -175,7 +178,7 @@ def canteen(s):
     top = fit.counter(s, 97.8, -14.0, 90, 30.0, d=1.6, h=3.5, y=Y, top="Wood", body="BlackTrim")
     for k in range(8):
         prop(s, "BarStool", 95.6, -27.0 + k * 3.7, -90, 1.0, Y)
-    prop(s, "WaterCooler", 53.0, 12.4, 0)
+    prop(s, "WaterCooler", 50.9, 12.4, 0)
     hood(s, 96.5, 12.5, spare=True)
     for x, z in ((62.0, -27.0), (84.0, -20.0), (62.0, 0.0)):
         fit.panel(s, x, z, C, brightness=0.85, range_=20)
@@ -303,7 +306,7 @@ def corridor(s):
     for z in (-30.0, -14.0):
         fit.panel(s, -12.0, z, C, w=3.0, brightness=0.7, range_=18)
         fit.panel(s, 46.0, z, C, w=3.0, brightness=0.7, range_=18)
-    kit.extinguisher(s, P.CORE[2] + 0.5, -24.0, -90)
+    kit.extinguisher(s, P.CORE[2] + 0.5, -24.0, -90, Y)
 
 
 def build(s, g):

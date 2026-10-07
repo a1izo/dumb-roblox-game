@@ -194,6 +194,18 @@ def _save(name, array, non_color, size=None, quality=90):
     return img
 
 
+# Smaller maps for the quiet surfaces added in the second maps pass (ceilings, sheet floors,
+# carpets): (colour size, normal size) in pixels. Their relief is faint, so a 512 normal map looks the
+# same in game, and the map FBXs stay inside their budget.
+LIGHT = {
+    "CeilingPlaster": (512, 256), "CeilingPlasterDark": (512, 256), "CeilingSlats": (None, 512),
+    "Terrazzo": (None, 512), "TerrazzoDark": (None, 512), "VinylLab": (512, 256), "VinylClinic": (512, 256),
+    "Linoleum": (512, 256), "Tatami": (None, 512), "CarpetTile": (512, 256), "CarpetTileBlue": (512, 256),
+    "CarpetPurple": (None, 512), "CarpetGreen": (None, 512), "WoodHerringbone": (None, 512),
+    "Snow2": (None, 512), "SnowThin": (None, 512),
+}
+
+
 def make_textures(names=None, force=False):
     """Draws the textures (skipping ones already on disk unless force) and returns
     {material: {"color": image, "normal": image, "rough": image}}."""
@@ -213,10 +225,11 @@ def make_textures(names=None, force=False):
             out[name] = images
             continue
         maps = generator()
+        color_size, normal_size = LIGHT.get(name, (None, None))
         out[name] = {
-            "color": _save(f"{name}_color", maps["color"], False, quality=90),
-            "normal": _save(f"{name}_normal", maps["normal"], True, quality=94),
-            "rough": _save(f"{name}_rough", maps["rough"], True, size=512, quality=88),
+            "color": _save(f"{name}_color", maps["color"], False, size=color_size, quality=88 if color_size else 90),
+            "normal": _save(f"{name}_normal", maps["normal"], True, size=normal_size, quality=90 if normal_size else 94),
+            "rough": _save(f"{name}_rough", maps["rough"], True, size=256 if normal_size else 512, quality=88),
         }
         print("[maps] texture", name)
     return out

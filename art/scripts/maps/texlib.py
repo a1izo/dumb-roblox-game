@@ -460,25 +460,46 @@ def snow(seed, base, shadow):
     return result(color, height, rough, 1.2)
 
 
-def slush(seed, base, joint_color, snow_color, cols=6, rows=6):
-    """A shovelled path: wet pavers, trodden slush in the joints, packed snow in patches."""
+def slush(seed, base, joint_color, snow_color, cols=18, rows=18):
+    """A shovelled path: packed snow trodden grey, the wet pavers showing through in soft worn patches
+    and along their joints, never in hard-edged blobs (one image covers 24 studs, so the patches do
+    not repeat close by)."""
     r = rng(seed)
     col, row, cu, cv = grid(cols, rows, 0.5)
     aspect = (N / cols) / (N / rows)
     d = edge_distance(cu, cv, aspect)
-    joint = 1 - smoothstep(0.01, 0.035, d)
+    joint = 1 - smoothstep(0.01, 0.04, d)
     tone = cell_random(col, row, seed, 64, 64)
     grit = fbm(r, 0.8, 100, 512)
-    patches = fbm(r, 2.6, 2, 24)
-    packed = smoothstep(0.58, 0.72, patches)
-    wet = smoothstep(0.3, 0.1, patches) * 0.8
-    color = tint(base, 0.85 + tone * 0.18 + grit * 0.1)
-    color = mix(color, joint_color, joint * 0.6)
-    color = mix(color, snow_color, np.clip(packed + joint * 0.35, 0, 1) * 0.85)
-    color = color * (1 - wet * 0.22)[..., None]
-    height = smoothstep(0.01, 0.06, d) * 0.6 + packed * 0.4 + grit * 0.1
-    rough = np.clip(0.8 - wet * 0.6 + packed * 0.05, 0.08, 1)
-    return result(color, height, rough, 1.8)
+    wear = fbm(r, 2.4, 1, 10)  # where feet went: large and soft
+    patches = fbm(r, 2.0, 3, 40)
+    cover = np.clip(smoothstep(0.25, 0.85, wear * 0.7 + patches * 0.3), 0, 1)  # 1 = packed snow
+    pavers = tint(base, 0.85 + tone * 0.18 + grit * 0.1)
+    pavers = mix(pavers, joint_color, joint * 0.5)
+    packed = tint(snow_color, 0.84 + patches * 0.12 + grit * 0.06)
+    packed = mix(packed, np.asarray(snow_color) * 0.72, (1 - smoothstep(0.0, 0.5, wear)) * 0.35)  # trodden grey
+    color = mix(pavers, packed, cover * (1 - joint * 0.35))
+    wet = (1 - cover) * smoothstep(0.55, 0.2, patches) * 0.6
+    color = color * (1 - wet * 0.18)[..., None]
+    height = smoothstep(0.01, 0.06, d) * 0.4 * (1 - cover) + cover * 0.5 + grit * 0.1
+    rough = np.clip(0.85 - wet * 0.6 - (1 - cover) * 0.15, 0.08, 1)
+    return result(color, height, rough, 1.4)
+
+
+def snow_thin(seed, base, shadow, ground):
+    """Thin snow under trees and eaves: the dark ground and dead grass showing through it in soft
+    holes, more ground toward the middle of the image's patches."""
+    r = rng(seed)
+    fresh = snow(seed + 1, base, shadow)
+    holes = fbm(r, 3.0, 1, 8)
+    edge = fbm(r, 1.6, 8, 60)
+    straw = fbm(r, 1.0, 40, 300)
+    earth = tint(ground, 0.8 + straw * 0.3)
+    show = smoothstep(0.5, 0.9, holes * 0.85 + edge * 0.15)
+    color = mix(fresh["color"], earth, show * 0.7)
+    height = (1 - show) * 0.5 + straw * 0.15
+    rough = np.clip(0.75 + show * 0.2, 0, 1)
+    return result(color, height, rough, 1.1)
 
 
 def ice(seed, base, frost, snow_color):
@@ -611,6 +632,79 @@ def damask(seed, base, pattern, cols=4, rows=3):
     return result(color, height, rough, 1.0)
 
 
+def terrazzo(seed, base, chips, joint=8):
+    """Terrazzo: cement with marble chips of a few colours, polished, cut into large squares by brass
+    or zinc strips (corridors and halls)."""
+    r = rng(seed)
+    ground = fbm(r, 2.2, 2, 48)
+    color = tint(base, 0.92 + ground * 0.1)
+    height = ground * 0.05
+    for k, chip in enumerate(chips):
+        cr = rng(seed + 31 * (k + 1))
+        d1, _ = worley(cr, 96 + 40 * k)
+        size = 0.16 + fbm(cr, 1.0, 40, 300) * 0.16
+        keep = smoothstep(0.45, 0.55, fbm(cr, 1.2, 20, 200))
+        spot = (1 - smoothstep(size, size + 0.04, d1)) * keep
+        color = mix(color, chip, spot * 0.9)
+        height = height + spot * 0.08
+    col, row, cu, cv = grid(joint, joint)
+    strip = 1 - smoothstep(0.003, 0.007, edge_distance(cu, cv))
+    color = mix(color, srgb(140, 132, 110), strip * 0.8)
+    rough = 0.22 + ground * 0.08 + strip * 0.2
+    return result(color, height - strip * 0.2, rough, 1.2)
+
+
+def sheet_vinyl(seed, base, fleck, seams=2):
+    """Welded sheet vinyl (labs, clinics): a smooth floor flecked with darker and lighter specks,
+    with a weld seam every half image."""
+    r = rng(seed)
+    soft = fbm(r, 2.4, 2, 40)
+    specks = fbm(r, 0.5, 200, 512)
+    color = tint(base, 0.94 + soft * 0.08)
+    color = mix(color, fleck, np.clip((specks - 0.78) * 4, 0, 1) * 0.7)
+    color = mix(color, np.asarray(base) * 1.18, np.clip((0.2 - specks) * 4, 0, 1) * 0.5)
+    v, u = np.mgrid[0:N, 0:N] / N
+    seam = 1 - smoothstep(0.0, 0.002, np.abs(((u * seams) % 1) - 0.5) / seams)
+    color = color * (1 - seam * 0.25)[..., None]
+    rough = 0.35 + soft * 0.1 + seam * 0.2
+    return result(color, soft * 0.05 - seam * 0.2, rough, 1.0)
+
+
+def tatami(seed, base, border, mats=2):
+    """Tatami: woven rush mats with dark cloth borders along their long sides, laid in a grid
+    (two mats per image, each 1 x 2)."""
+    r = rng(seed)
+    v, u = np.mgrid[0:N, 0:N] / N
+    mu = (u * mats) % 1  # across a mat
+    weave = np.sin((v * 2 * 220) * math.pi) * 0.5 + 0.5
+    weave = weave * 0.6 + fbm(r, 0.8, 200, 512) * 0.4
+    straw = fbm(r, 2.0, 2, 30)
+    color = tint(base, 0.84 + weave * 0.14 + straw * 0.08)
+    edge = smoothstep(0.0, 0.004, np.minimum(mu, 1 - mu))
+    band = 1 - smoothstep(0.045, 0.05, np.minimum(mu, 1 - mu))
+    color = mix(color, border, band)
+    joint = 1 - smoothstep(0.0, 0.003, np.minimum(v % 1, 1 - v % 1))
+    color = color * (1 - (joint + (1 - edge)) * 0.4)[..., None]
+    height = weave * 0.3 * (1 - band) + band * 0.15
+    rough = np.full((N, N), 0.85)
+    return result(color, height, rough, 1.0)
+
+
+def slats(seed, base, gap_color, count=16):
+    """A ceiling of narrow wooden slats with dark gaps between them (bars, karaoke halls)."""
+    r = rng(seed)
+    v, u = np.mgrid[0:N, 0:N] / N
+    phase = (u * count) % 1
+    gap = 1 - smoothstep(0.06, 0.1, np.minimum(phase, 1 - phase))
+    grain = fbm(r, 1.4, 6, 300, aniso=(1.0, 0.08))
+    tone = cell_random(np.floor(u * count).astype(int), np.zeros((N, N), int), seed, count, 1)
+    color = tint(base, 0.82 + grain * 0.2 + tone * 0.12)
+    color = mix(color, gap_color, gap)
+    height = (1 - gap) * 0.6 + grain * 0.1
+    rough = 0.7 + gap * 0.2
+    return result(color, height, rough, 1.4)
+
+
 def srgb(r, g, b):
     return np.array([r, g, b]) / 255.0
 
@@ -660,7 +754,11 @@ LIBRARY = {
     "CarpetNavy": (lambda: carpet(46, srgb(34, 40, 56), srgb(62, 70, 92), pattern="diamond"), 12),
     # Kagegaoka University in snow: the lawns and roofs, the shovelled paths, the frozen pond.
     "Snow": (lambda: snow(47, srgb(222, 228, 238), srgb(168, 180, 204)), 24),
-    "SnowPath": (lambda: slush(48, srgb(88, 86, 84), srgb(40, 40, 42), srgb(196, 200, 208)), 8),
+    "SnowPath": (lambda: slush(48, srgb(88, 86, 84), srgb(40, 40, 42), srgb(196, 200, 208)), 24),
+    # The lawns' second snow (a slightly older, bluer drift) and thin snow under trees: patches of them
+    # break up the one snow texture's repeat.
+    "Snow2": (lambda: snow(71, srgb(214, 222, 236), srgb(160, 174, 202)), 28),
+    "SnowThin": (lambda: snow_thin(72, srgb(218, 224, 234), srgb(166, 178, 200), srgb(84, 76, 62)), 20),
     "Ice": (lambda: ice(49, srgb(34, 48, 60), srgb(140, 166, 186), srgb(210, 218, 230)), 24),
     # The lobby, the Grey Realm: ash plains, crusts of cracked earth, grey rock and old flagstones.
     "Ash": (lambda: ash(50, srgb(128, 128, 130), srgb(78, 78, 82)), 24),
@@ -671,4 +769,19 @@ LIBRARY = {
     # The war room: a chevron parquet and a deep oxblood damask.
     "Parquet": (lambda: chevron(55, srgb(110, 72, 44), srgb(46, 28, 16)), 8),
     "Damask": (lambda: damask(56, srgb(52, 16, 20), srgb(84, 30, 34)), 6),
+    # Maps pass 2: a surface per kind of room instead of one per building.
+    "CeilingPlaster": (lambda: plaster(57, srgb(196, 190, 178)), 16),
+    "CeilingPlasterDark": (lambda: plaster(58, srgb(58, 60, 66)), 16),
+    "CeilingSlats": (lambda: slats(59, srgb(104, 70, 44), srgb(18, 14, 12)), 8),
+    "Terrazzo": (lambda: terrazzo(60, srgb(170, 166, 156), [srgb(90, 88, 84), srgb(214, 210, 200), srgb(140, 110, 84)]), 16),
+    "TerrazzoDark": (lambda: terrazzo(61, srgb(86, 88, 92), [srgb(40, 40, 44), srgb(170, 170, 168), srgb(120, 96, 70)]), 16),
+    "VinylLab": (lambda: sheet_vinyl(62, srgb(150, 162, 156), srgb(70, 78, 74)), 12),
+    "VinylClinic": (lambda: sheet_vinyl(63, srgb(186, 196, 200), srgb(96, 110, 120)), 12),
+    "Linoleum": (lambda: sheet_vinyl(64, srgb(122, 92, 66), srgb(70, 50, 36), seams=1), 12),
+    "Tatami": (lambda: tatami(65, srgb(170, 156, 98), srgb(36, 44, 34)), 6),
+    "CarpetTile": (lambda: carpet(66, srgb(70, 74, 82)), 8),
+    "CarpetTileBlue": (lambda: carpet(67, srgb(34, 48, 78)), 8),
+    "CarpetPurple": (lambda: carpet(68, srgb(54, 22, 66), srgb(170, 120, 200), pattern="diamond"), 12),
+    "CarpetGreen": (lambda: carpet(69, srgb(30, 58, 42), srgb(150, 130, 80), pattern="diamond"), 16),
+    "WoodHerringbone": (lambda: chevron(70, srgb(126, 88, 56), srgb(60, 38, 24)), 8),
 }

@@ -171,10 +171,26 @@ def table(s, x, z, w, d, rot=0.0, y=0.0, top="Wood"):
     return y + 2.8
 
 
-def partition(s, a, b, y0, y1, mat="PlasterLight", door=None, glass=False):
+def exam_bed(s, x, z, y):
+    """A clinic's exam bed along z (head to the south wall) with a curtain on a rail round it."""
+    s.box("Steel", (x, y + 1.0, z), (2.4, 0.2, 6.0))
+    for dx in (-1.0, 1.0):
+        for dz in (-2.7, 2.7):
+            s.box("Steel", (x + dx, y + 0.5, z + dz), (0.12, 1.0, 0.12))
+    s.box("WhiteTrim", (x, y + 1.35, z), (2.2, 0.5, 5.8))
+    s.box("Paper", (x, y + 1.62, z - 0.4), (1.8, 0.04, 4.6))
+    s.box("WhiteTrim", (x, y + 1.75, z - 2.4), (1.6, 0.3, 0.9))
+    s.collider((x, y + 0.9, z), (2.4, 1.8, 6.0), 0)
+    rail = y + 8.0
+    s.box("Steel", (x + 1.6, rail, z), (0.08, 0.08, 6.6))
+    s.box("Steel", (x, rail, z + 3.3), (3.2, 0.08, 0.08))
+    s.box("Fabric", (x + 1.6, y + 4.6, z - 0.9), (0.06, 6.6, 4.6))
+
+
+def partition(s, a, b, y0, y1, mat="PlasterLight", door=None, glass=False, outer=None):
     """An inner wall from a to b; door = (u from a to its middle, width). glass: True for one
     window in the middle, "band" for glass all along it above waist height (an office you can
-    see into)."""
+    see into). outer: the face on the wall's n side when it differs (the hall outside a room)."""
     ops = []
     if door:
         ops.append({"at": door[0], "w": door[1], "bottom": y0, "top": y0 + 8.4, "kind": "door", "frame": "DarkMetal",
@@ -194,7 +210,7 @@ def partition(s, a, b, y0, y1, mat="PlasterLight", door=None, glass=False):
         ops.append({"at": length / 2 + (4 if door else 0), "w": min(8.0, length - 6), "bottom": y0 + 3.0,
                     "top": y0 + 8.0, "kind": "window", "frame": "DarkMetal", "glass": "Glass", "rows": 1,
                     "see_through": True})
-    kit.wall(s, a, b, y1, thick=0.8, base=y0, core=mat, openings=ops)
+    kit.wall(s, a, b, y1, thick=0.8, base=y0, core=mat, side_n=outer or mat, openings=ops)
 
 
 def stairs_up(s, g, a, b, y0, y1, width, mat="Stone", rail=True):
@@ -318,7 +334,7 @@ def station_hall(s, g):
     partition(s, (-124.0, -109.4), (-124.0, -96.0), 0.0, CEIL, "PlasterLight")
     partition(s, (-124.0, -96.0), (-108.6, -96.0), 0.0, CEIL, "PlasterLight", door=(4.0, 5.0), glass=True)
     s.station("Camera", "Station CCTV Room", -114.0, -106.4, 180, prop="StationCCTV")
-    s.station("Phone", "Station Staff Phone", -120.0, -100.0, -90, prop="StationReception", spare=True)
+    s.station("Phone", "Station Staff Phone", -112.0, -100.0, 90, prop="StationReception", spare=True)
     partition(s, (-124.0, -38.0), (-108.6, -38.0), 0.0, CEIL, "PlasterLight", door=(3.5, 5.0), glass=True)
     partition(s, (-124.0, -38.0), (-124.0, -25.6), 0.0, CEIL, "PlasterLight")
     s.station("Fingerprint", "Station Lost & Found", -114.0, -28.6, 0, prop="StationPrintKit")
@@ -359,8 +375,8 @@ def koban(s, g):
     front = edge_towards(poly, (0.46, -0.89))
     edges = edges_of(poly)
     e = edges[front]
-    shell(s, g, b, {front: [(3.5, 4.4)]}, inside="PlasterLight", outside="BrickDark", storefront=(front,),
-          name="the police box")
+    shell(s, g, b, {front: [(3.5, 4.4)]}, inside="PlasterLight", floor="VinylClinic", outside="BrickDark",
+          storefront=(front,), name="the police box")
     # Inside: the door to the right, the counter across the left, the print kit on the back wall
     # facing the room, a table with the sheet on it.
     back = e.n  # outward from the front
@@ -402,7 +418,7 @@ def dept_store(s, g):
     tip = edge_towards(poly, (-0.8, 0.6))
     arcade = edge_towards(poly, (-0.3, -0.95))
     street = edge_towards(poly, (0.1, 1.0))
-    doors = {tip: [(0.0, 6.0)], arcade: [(-4.0, 6.0)], street: [(-8.0, 6.0)]}
+    doors = {arcade: [(-4.0, 6.0)], street: [(-8.0, 6.0)]}
     # Escalators up and a stair beside them, in the middle; the opening above them.
     hole = P.box(10.0, -86.8, 28.0, -71.6)
     shell(s, g, b, doors, inside="PlasterLight", floor="MarbleBlack", outside="Stone",
@@ -410,7 +426,8 @@ def dept_store(s, g):
     escalator(s, g, (6.0, -74.0), (28.0, -74.0), 0.0, UP)
     escalator(s, g, (28.0, -79.0), (6.0, -79.0), UP, 0.0)
     stairs_up(s, g, (8.0, -84.4), (28.0, -84.4), 0.0, UP, 4.2)
-    upper_room(s, b, floor="CarpetRed", inside="Wallpaper", holes=[hole], name="the department store")
+    upper_room(s, b, floor="WoodHerringbone", inside="Wallpaper", holes=[hole], name="the department store",
+               ceiling="CeilingPlaster")
     for z in (-87.0, -71.4):
         kit.railing(s, [(10.0, z), (28.0, z)], h=3.6, mat="Gold", base=UP, glass="Glass")
     kit.railing(s, [(9.8, -87.0), (9.8, -71.4)], h=3.6, mat="Gold", base=UP, glass="Glass")
@@ -430,7 +447,8 @@ def dept_store(s, g):
     s.prop("Mannequin", 1.5, -80.5, 150, 1.0, UP)
     top = counter(s, 34.5, -76.0, 90, 7.0, y=UP)
     s.sheet(34.5, top, -77.0)
-    partition(s, (36.0, -92.4), (36.0, -66.0), UP, UP + CEIL, "PlasterGrey", door=(7.8, 5.0), glass=True)
+    partition(s, (36.0, -92.4), (36.0, -66.0), UP, UP + CEIL, "PlasterGrey", door=(7.8, 5.0), glass=True,
+              outer="Wallpaper")
     s.station("Camera", "Store Security Office", 43.5, -84.0, 90, y=UP, prop="StationCCTV")
     lights(s, [(-2.0, -76.0), (12.0, -69.5), (22.0, -88.2), (33.0, -80.0)], y=UP + CEIL - 1.0, brightness=1.3,
            color=(255, 240, 220))
@@ -446,18 +464,20 @@ def drugstore(s, g):
     front = edge_towards(b["poly"], (0, -1))
     # The opening ends where the top step does: the landing past it is solid floor.
     hole = P.box(58.5, -84.2, 71.0, -80.2)
-    shell(s, g, b, {front: [(2.0, 7.0)]}, inside="PlasterLight", outside="FacadeTileGrey", storefront=(front,),
-          name="the drugstore", stairwells=[hole], rooms=2)
+    shell(s, g, b, {front: [(2.0, 7.0)]}, inside="PlasterLight", floor="Terrazzo", outside="FacadeTileGrey",
+          storefront=(front,), name="the drugstore", stairwells=[hole], rooms=2, ceiling="Ceiling")
     # A row of shelves along the front, the floor to the foot of the stair left open (the flight
     # starts clear of the west wall, so there is room to step onto it).
     s.prop("StoreShelf", 56.0, -92.4, 180)
     s.station("Forensics", "Drugstore Dispensary", 70.0, -88.5, 90, prop="StationLabBench")
     stairs_up(s, g, (53.0, -82.2), (71.0, -82.2), 0.0, UP, 3.6)
     lights(s, [(53.0, -89.0), (63.0, -89.0), (72.0, -90.0)], color=COOL, brightness=1.4)
-    upper_room(s, b, floor="TileMetroGrey", inside="PlasterLight", holes=[hole], name="the clinic")
+    upper_room(s, b, floor="VinylClinic", inside="PlasterLight", holes=[hole], name="the clinic", ceiling="Ceiling")
     kit.railing(s, [(58.3, -80.2), (58.3, -84.4), (71.0, -84.4)], h=3.6, mat="Steel", base=UP)
-    for x in (51.0, 54.0, 57.0):
-        s.prop("BarStool", x, -83.0, 0, 1.0, UP)
+    for x in (50.8, 53.2, 55.6):
+        s.prop("Chair", x, -82.6, 0, 1.0, UP)
+    for x in (60.4, 64.2):
+        exam_bed(s, x, -90.6, UP)
     counter(s, 54.0, -90.5, 180, 7.0, y=UP, top="WhiteTrim", body="PlasterLight")
     s.station("Forensics", "Clinic Lab", 70.0, -92.0, 180, y=UP, prop="StationLabBench")
     lights(s, [(54.0, -88.0), (66.0, -90.0)], y=UP + CEIL - 1.0, color=COOL, brightness=1.4)
@@ -467,13 +487,13 @@ def ramen_clinic(s, g):
     b = building("arcade_s2")
     front = edge_towards(b["poly"], (0, -1))
     shell(s, g, b, {front: [(-4.0, 5.0)]}, inside="WoodPanel", floor="WoodFloorDark", outside="BrickRed",
-          storefront=(front,), name="the ramen bar")
+          storefront=(front,), name="the ramen bar", ceiling="CeilingSlats")
     # The bar: a counter with stools, the meal-ticket machine by the door, the kitchen behind
     # (room to walk behind the counter to the pass).
     s.prop("RamenCounter", 90.5, -87.0, 180)
     for x in (85.5, 88.0, 90.5, 93.0, 95.5):
         s.prop("BarStool", x, -89.6, 0)
-    s.prop("MealTicketMachine", 84.8, -93.0, 180)
+    s.prop("MealTicketMachine", 83.0, -93.0, 180)
     s.box("Steel", (90.5, 1.6, -81.2), (12.0, 3.2, 2.4), 0)
     s.collider((90.5, 1.6, -81.2), (12.0, 3.2, 2.4), 0, True, "Steel")
     s.sheet(88.0, 3.25, -81.4)
@@ -483,16 +503,16 @@ def ramen_clinic(s, g):
 def game_centre(s, g):
     b = building("arcade_n2")
     front = edge_towards(b["poly"], (0, 1))
-    shell(s, g, b, {front: [(0.0, 7.0)]}, inside="PlasterDark", floor="CarpetGrey", outside="PlasterDark",
-          storefront=(front,), name="the game centre")
+    shell(s, g, b, {front: [(0.0, 7.0)]}, inside="PlasterDark", floor="CarpetNavy", outside="PlasterDark",
+          storefront=(front,), name="the game centre", ceiling="CeilingPlasterDark")
     for k, x in enumerate((35.0, 39.2, 43.4)):
         s.prop("ClawMachine", x, -111.5, 0 if k % 2 else 180)
     s.prop("ClawMachine", 51.3, -113.0, 90)
     for x in (33.0, 37.0, 41.0):
         s.prop("ArcadeCabinet", x, -119.5, 180)
-    partition(s, (45.6, -127.0), (45.6, -121.5), 0.0, CEIL, "PlasterGrey", glass="band")
-    partition(s, (45.6, -121.5), (53.8, -121.5), 0.0, CEIL, "PlasterGrey", door=(3.2, 4.5), glass="band")
-    s.station("Camera", "Game Centre Office", 49.2, -125.3, 180, prop="StationCCTV", spare=True)
+    partition(s, (45.6, -127.0), (45.6, -119.5), 0.0, CEIL, "PlasterGrey", glass="band")
+    partition(s, (45.6, -119.5), (53.8, -119.5), 0.0, CEIL, "PlasterGrey", door=(3.2, 4.5), glass="band")
+    s.station("Camera", "Game Centre Office", 50.4, -124.8, 180, prop="StationCCTV", spare=True)
     lights(s, [(38.0, -114.0), (48.0, -114.0), (42.0, -121.0)], color=(220, 200, 255), brightness=1.2)
     lights(s, [(50.0, -125.0)], brightness=0.9, range_=12)
 
@@ -500,8 +520,8 @@ def game_centre(s, g):
 def konbini(s, g):
     b = building("konbini_block")
     front = edge_towards(b["poly"], (0.1, -1))
-    shell(s, g, b, {front: [(9.0, 6.0)]}, inside="PlasterLight", outside="FacadeTile", storefront=(front,),
-          name="the konbini")
+    shell(s, g, b, {front: [(9.0, 6.0)]}, inside="PlasterLight", floor="TileWhite", outside="FacadeTile",
+          storefront=(front,), name="the konbini", ceiling="Ceiling")
     # Counter by the door, three rows of shelves, fridges along the back wall, the back office.
     s.prop("ShopCounter", 40.0, -38.5, 180)
     for x in (24.0, 31.0):
@@ -525,12 +545,14 @@ def karaoke(s, g):
     river = edge_towards(b["poly"], (0, -1))
     hole = P.box(88.0, 93.2, 100.5, 97.2)
     shell(s, g, b, {front: [(-6.0, 6.0)], river: [(0.0, 5.0)]}, inside="Wallpaper", floor="CarpetRed",
-          outside="PlasterDark", storefront=(front,), name="the karaoke lobby", stairwells=[hole], rooms=2)
+          outside="PlasterDark", storefront=(front,), name="the karaoke lobby", stairwells=[hole], rooms=2,
+          ceiling="CeilingPlasterDark")
     s.station("Phone", "Karaoke Front Desk", 104.0, 80.0, 90, prop="StationReception")
     s.prop("Sofa", 86.0, 69.0, 180)
     s.prop("Plant", 81.0, 68.4, 0)
     stairs_up(s, g, (82.0, 95.2), (100.5, 95.2), 0.0, UP, 3.6)
-    upper_room(s, b, floor="CarpetGrey", inside="Wallpaper", holes=[hole], name="the karaoke rooms")
+    upper_room(s, b, floor="CarpetPurple", inside="Wallpaper", holes=[hole], name="the karaoke rooms",
+               ceiling="CeilingPlasterDark")
     kit.railing(s, [(100.5, 93.0), (88.0, 93.0), (88.0, 97.2)], h=3.6, mat="Steel", base=UP)
     lights(s, [(88.0, 74.0), (98.0, 84.0), (88.0, 88.0)], brightness=1.2, color=(255, 190, 220))
     # Upstairs: a corridor along the west, rooms and the monitor room off it.
@@ -538,7 +560,7 @@ def karaoke(s, g):
         partition(s, (86.0, z0), (86.0, z1), UP, UP + CEIL, "Wallpaper", door=(4.0, 4.2))
         partition(s, (86.0, z1), (106.0, z1), UP, UP + CEIL, "Wallpaper")
     for z in (69.0, 77.0):
-        s.prop("Sofa", 102.0, z, -90, 1.0, UP)
+        s.prop("Sofa", 102.0, z, 90, 1.0, UP)
         table(s, 96.0, z, 4.0, 3.0, 90, y=UP)
     s.station("Camera", "Hotel Monitor Room", 96.0, 83.0, 180, y=UP, prop="StationCCTV")
     lights(s, [(82.0, 70.0), (82.0, 86.0), (96.0, 69.0), (96.0, 77.0), (96.0, 85.0)], y=UP + CEIL - 1.0,
@@ -563,14 +585,15 @@ def izakaya(s, g):
     b = building("ya_s2")
     front = edge_towards(b["poly"], (0, 1))
     shell(s, g, b, {front: [(0.0, 4.4)]}, inside="WoodPanel", floor="WoodFloorDark", outside="WoodPanel",
-          name="the izakaya")
-    top = counter(s, -83.5, 82.4, 180, 9.0, d=2.2, top="Wood", body="WoodPanel")
+          name="the izakaya", ceiling="CeilingSlats")
+    top = counter(s, -85.4, 82.4, 180, 6.0, d=2.2, top="Wood", body="WoodPanel")
     s.sheet(-86.0, top, 82.2)
-    for x in (-88.0, -85.5, -83.0, -80.5):
+    for x in (-87.6, -85.4, -83.2):
         s.prop("BarStool", x, 85.2, 0)
     partition(s, (-89.4, 80.2), (-77.6, 80.2), 0.0, CEIL, "WoodPanel", door=(9.0, 3.6))
-    s.prop("DrinkFridge", -85.0, 76.5, 180)
-    s.prop("BeerCrates", -79.2, 76.8, 90)
+    s.prop("BeerCrates", -87.4, 77.2, 90)
+    s.prop("BeerCrates", -87.4, 77.2, 90, 1.0, 3.48)
+    s.prop("Crate", -84.4, 76.6, 15, 0.6)
     lights(s, [(-83.5, 84.0)], brightness=1.2, range_=14, color=(255, 200, 150))
     lights(s, [(-84.0, 76.0)], brightness=0.8, range_=10, color=(255, 200, 150))
 

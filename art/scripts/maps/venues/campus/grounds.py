@@ -63,15 +63,17 @@ def lamp(s, x, z, y=0.0):
 def avenue(s):
     rng = random.Random(17)
     skip = {(P.GINKGO_X[0], 8.0), (P.GINKGO_X[1], 22.0), (P.GINKGO_X[1], 92.0)}
+    # North of the south path the west row would stand in the café path (and grow through its wall).
+    skip |= {(P.GINKGO_X[0], z) for z in P.GINKGO_Z if z > 56.0}
     for k, z in enumerate(P.GINKGO_Z):
         for x in P.GINKGO_X:
             if (x, z) in skip:
                 continue
             ginkgo(s, x, z, rng.uniform(0, 360), snow=(k % 3 == 1))
     for x, z in ((-33.6, -13.0), (-6.4, 1.0), (-33.6, 15.0), (-6.4, 29.0), (-33.6, 43.0), (-6.4, 57.0),
-                 (-33.6, 71.0), (-6.4, 85.0), (-33.6, 99.0)):
+                 (-31.4, 71.0), (-6.4, 85.0), (-31.4, 99.0)):
         lamp(s, x, z)
-    s.prop("Bench", -35.4, 26.0, -90)
+    s.prop("Bench", -35.4, 29.4, -90)
     # The hot-drinks machine and the recycling by the avenue.
     s.prop("VendingBlue", -5.2, 46.6, 90)  # its front to the avenue
     s.prop("RecycleBins", -5.8, 53.5, 90)
@@ -93,6 +95,8 @@ def tents(s):
     s.sign((13.0, 4.8, 62.1), 0, 2.0, 4.2, "受\n付", "GothamBlack", (20, 20, 22), None)
     s.sound("mapHeaterHum", (13.0, 3.0, 71.0), 22.0, 0.3)
     fit.plaque(s, 13.0, 9.2, 76.4, 0, 8.0, 1.0, "受験生受付  CANDIDATES' CHECK-IN", (250, 240, 220), (40, 50, 96))
+    for x in (8.8, 17.2):
+        s.box("DarkMetal", (x, 4.85, 76.5), (0.24, 9.7, 0.24), collide=True)
 
 
 def gate(s):
@@ -115,11 +119,10 @@ def gate(s):
             s.prop("Barricade", x, a[1] - 3.2, 180 + rng.uniform(-8, 8))
         else:
             s.prop("TrafficCone", x + rng.uniform(-1, 1), a[1] - 3.0, rng.uniform(0, 90))
-    for x, text in ((-35.8, "入\n学\n試\n験\n会\n場"), (-12.4, "影\nヶ\n丘\n大\n学")):
+    for x, text in ((-12.4, "入\n学\n試\n験\n会\n場"),):
         s.prop("ExamSignStand", x, 101.0, 180)
         s.sign((x, 4.9, 101.3), 180, 1.8, 4.6, text, "GothamBlack", (20, 20, 22), None)
-    s.prop("PostBox", -36.4, 95.0, 90)
-    lamp(s, -36.5, 90.0)
+    s.prop("PostBox", -39.0, 95.0, 90)
 
 
 def booth(s):
@@ -162,7 +165,7 @@ def forecourt(s):
     s.prop("SnowTools", -33.0, -60.4, 180)
     s.prop("Snowman", 20.0, -58.0, 200)
     for x in (-50.0, 10.0):
-        s.prop("ShrubSnow", x, -60.8, 0)
+        s.prop("Planter", x, -60.6, 0)
 
 
 # The pond hollow -------------------------------------------------------------------------------------------------
@@ -285,9 +288,9 @@ def lawns(s):
         lamp(s, x, z)
     for x, z, rot in ((30.0, 10.0, 20), (-44.0, 30.0, 300)):
         s.prop("Snowman", x, z, rot)
-    for x, z, rot in ((-84.6, 57.0, 0), (54.0, 34.6, 180), (-60.0, 56.6, 0)):
+    for x, z, rot in ((-81.3, 70.0, -90), (-67.6, 56.6, 0)):
         s.prop("SnowTools", x, z, rot)
-    for x, z in ((34.0, -44.0), (-60.0, -34.5), (-12.0, -34.5), (44.0, 32.0)):
+    for x, z in ((34.0, -26.0), (-60.0, -34.5), (-5.6, -27.5), (34.0, 36.6)):
         s.prop("ShrubSnow", x, z, (x * 3) % 180)
     for x, z in ((30.0, 48.0), (-60.0, 20.0)):
         s.box("BlackMetal", (x, 0.08, z), (2.4, 0.16, 2.4), skip=("-y",))

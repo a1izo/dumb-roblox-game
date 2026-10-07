@@ -135,7 +135,8 @@ def streets(s):
     power_line(s, "east", -1, [56.0, 88.0, 120.0, 152.0, 186.0, 220.0])
     power_line(s, "kita", -1, [34.0, 64.0, 94.0])
     power_line(s, "minami", 1, [18.0, 46.0, 70.0])
-    for u in (70.0, 136.0):
+    # (The first stands clear of the shop door it used to block.)
+    for u in (63.0, 136.0):
         street_light(s, "east", 1, u)
     street_light(s, "kita", 1, 50.0)
     # The frontage road under the expressway lies in the pier lamps' light (edges.py).

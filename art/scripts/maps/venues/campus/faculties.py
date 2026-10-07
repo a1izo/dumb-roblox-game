@@ -54,10 +54,13 @@ def law_exterior(s):
 
 
 def law_rooms(s, g):
-    for r, mat in ((P.LAW_HALL, "Stone"), (P.AFFAIRS, "WoodFloor"), (P.SEMINAR, "CarpetRed"),
+    for r, mat in ((P.LAW_HALL, "Stone"), (P.AFFAIRS, "CarpetTile"), (P.SEMINAR, "Linoleum"),
                    (P.PROFESSOR, "WoodFloorDark")):
         fit.floor_faces(s, P.rect_of(r), 0.0, mat)
-    ceiling(s, (LX0, LZ0, LX1, LZ1))
+    # Plaster over the hall, the seminar room and the professor's office; office tiles over student affairs.
+    ceiling(s, (LX0, LZ0, LX1, LZ1), "CeilingPlaster")
+    fit.ceiling_faces(s, P.rect_of(P.AFFAIRS), C - 0.06, "Ceiling")
+    fit.coffers(s, *P.LAW_HALL, C, spacing=8.0)
     fit.partition(s, (-98.0, LZ0), (-98.0, LZ1), 0.0, C, "PlasterLight", "PlasterLight",
                   doors=[(-90.0 - LZ0, 4.4), (-66.0 - LZ0, 5.0)], glass="clear", spans=[(30.0, 39.3), (45.9, 56.4)])
     fit.partition(s, (LX0, -80.0), (-98.0, -80.0), 0.0, C, "PlasterLight", "PlasterLight", doors=[(-126.0 - LX0, 4.4)])
@@ -67,11 +70,11 @@ def law_rooms(s, g):
         s.zone("interior", P.rect_of(r), 0.0, name=name)
     s.look_zone("UniversityCampus_Inside", (LX0, 0.0, LZ0), (LX1, C, LZ1))
     # The hall: the roped-off stair along its outer wall, benches, the faculty's notices.
-    closed_stair(s, g, -85.9, -84.0, -100.0, landing_z=LZ0)
+    closed_stair(s, g, -85.9, -85.6, -100.0, landing_z=LZ0)
     s.prop("Bench", -97.0 + 1.0, -58.0, -90)
     s.prop("DisplayCase", -97.0 + 1.3, -73.0, -90)
     s.prop("UmbrellaStand", -85.0, -53.0, 0)
-    s.prop("Plant", -85.2, -76.0, 0)
+    s.prop("Plant", -85.2, -74.2, 0)
     for z in (-60.0, -76.0, -92.0):
         kit.pendant(s, -91.0, C, z, drop=3.0, shade="Brass", color=fit.WARM, range_=20, brightness=1.0, wide=1.1)
     fit.plaque(s, -97.7, 10.2, -60.0, -90, 5.4, 0.9, "学務課  STUDENT AFFAIRS")
@@ -140,7 +143,7 @@ def science_exterior(s):
 
 
 def science_rooms(s, g):
-    for r, mat in ((P.SCI_HALL, "TileMetroGrey"), (P.FORENSIC, "TileWhite"), (P.CHEMISTRY, "TileWhite"),
+    for r, mat in ((P.SCI_HALL, "Terrazzo"), (P.FORENSIC, "VinylLab"), (P.CHEMISTRY, "VinylClinic"),
                    (P.SPECIMENS, "WoodFloorDark"), (P.LECTURE_ROOM, "WoodFloor")):
         fit.floor_faces(s, P.rect_of(r), 0.0, mat)
     ceiling(s, (SX0, SZ0, SX1, SZ1))

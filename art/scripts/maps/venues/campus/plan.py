@@ -113,7 +113,7 @@ GALLERY_Y = 12.0
 GALLERY = (72.0, -84.0, 148.6, -76.0)  # along the reading room's north side, at GALLERY_Y
 RARE_BOOKS = (72.0, -108.6, 148.6, -84.0)  # at GALLERY_Y, over the stacks
 # The gallery's two stairs, along the reading room's side walls: (x centre, width, foot z, head z).
-GALLERY_STAIRS = [(74.3, 4.0, -50.0, -76.0), (146.3, 4.0, -50.0, -76.0)]
+GALLERY_STAIRS = [(74.3, 4.0, -59.5, -76.0), (146.3, 4.0, -50.0, -76.0)]
 
 CLUB_ENTRY = (-128.0, 59.4, -108.0, 71.0)
 CLUB_CORRIDOR = (-148.6, 71.0, -89.4, 77.0)
@@ -175,6 +175,7 @@ PATHS = {
     "cafe_east": (-40.0, 58.0, -32.0, 110.0),
     "gate_plaza": (-8.0, 84.0, 48.0, 110.0),
     "science_west": (36.0, 34.0, 48.0, 84.0),
+    "science_door": (54.0, 34.0, 62.0, 36.0),
 }
 
 # The hollow: its floor at HOLLOW_Y all round the frozen pond, three ways down, a bridge over the

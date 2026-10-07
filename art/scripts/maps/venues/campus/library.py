@@ -50,20 +50,22 @@ def exterior(s):
 def rooms(s):
     """Floors, ceilings, the partitions and the gallery's slab."""
     fit.floor_faces(s, P.rect_of(P.CIRCULATION), 0.0, "MarbleWhite")
-    fit.floor_faces(s, P.rect_of(P.MICROFILM), 0.0, "CarpetGrey")
-    fit.floor_faces(s, P.rect_of(P.READING), 0.0, "WoodFloor")
+    fit.floor_faces(s, P.rect_of(P.MICROFILM), 0.0, "CarpetTileBlue")
+    fit.floor_faces(s, P.rect_of(P.READING), 0.0, "WoodHerringbone")
     fit.floor_faces(s, P.rect_of(P.STACKS), 0.0, "WoodFloorDark")
-    for r in (P.CIRCULATION, P.MICROFILM):
-        fit.ceiling_faces(s, P.rect_of(r), C, "Ceiling")
+    fit.ceiling_faces(s, P.rect_of(P.CIRCULATION), C, "CeilingPlaster")
+    fit.coffers(s, *P.CIRCULATION, C, spacing=7.6)
+    fit.ceiling_faces(s, P.rect_of(P.MICROFILM), C, "Ceiling")
     s.collider(((X0 + 72.0) / 2, C + 0.5, (Z0 + Z1) / 2), (72.0 - X0, 1.0, Z1 - Z0), 0, True, None)
-    fit.ceiling_faces(s, P.box(72.0, Z0, X1, Z1), H, "Ceiling")
+    fit.ceiling_faces(s, P.box(72.0, Z0, X1, Z1), H, "CeilingPlaster")
+    fit.coffers(s, 72.0, P.GALLERY[3], X1, Z1, H, spacing=9.5, depth=1.0, w=0.8)
     s.collider(((72.0 + X1) / 2, H + 0.5, (Z0 + Z1) / 2), (X1 - 72.0, 1.0, Z1 - Z0), 0, True, None)
     # The slab of the gallery and the rare books room over the stacks, and its underside.
     upper = P.box(72.0, Z0, X1, P.GALLERY[3])
     city.floor(s, upper, GY, 0.8, "WoodFloorDark")
     fit.floor_faces(s, P.rect_of(P.GALLERY), GY, "WoodFloorDark")
-    fit.floor_faces(s, P.rect_of(P.RARE_BOOKS), GY, "CarpetRed")
-    fit.ceiling_faces(s, upper, SLAB, "Ceiling")
+    fit.floor_faces(s, P.rect_of(P.RARE_BOOKS), GY, "CarpetGreen")
+    fit.ceiling_faces(s, upper, SLAB, "CeilingPlaster")
     city.vquad(s, "WoodPanel", (72.0, P.GALLERY[3]), (X1, P.GALLERY[3]), SLAB, GY, (0, 1))
     s.box("Wood", ((72.0 + X1) / 2, GY + 0.1, P.GALLERY[3] - 0.1), (X1 - 72.0, 0.2, 0.3))
     # Partitions: circulation | microfilm; the reading room's west wall; stacks | reading room;
@@ -91,8 +93,8 @@ def circulation(s):
     s.prop("BookCart", 66.0, -45.5, 90)
     s.prop("UmbrellaStand", 43.0, -45.0, 0)
     s.prop("CoatStand", 43.0, -58.0, 0)
-    s.prop("Plant", 69.5, -61.8, 0)
-    s.prop("Bench", 64.0, -61.9, 180)
+    s.prop("Plant", 70.2, -61.8, 0)
+    s.prop("Bench", 58.4, -61.9, 180)
     for x in (50.0, 63.0):
         kit.pendant(s, x, C, -52.0, drop=3.0, shade="Brass", color=fit.WARM, range_=20, brightness=1.0, wide=1.1)
     fit.plaque(s, 52.0, 9.8, -63.7, 180, 5.0, 0.9, "返却  RETURNS")
