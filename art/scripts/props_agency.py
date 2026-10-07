@@ -618,3 +618,29 @@ def fume_hood():
                                  verts=10, radius2=0.08))
     glows = [mk.box("Panel", (w - 0.6, d - 0.6, 0.04), (0, 0, 6.98), mat=pk.glow("Hood_Panel", (220, 236, 255), 2.4))]
     return parts, glows
+
+
+@prop("BreakerPanel", pivot="bottom", material="Metal", collide=True, texture=1024, set="Agency")
+def breaker_panel():
+    """The floor's main breaker panel by the fire stair: a grey steel cabinet with its door open on
+    rows of breakers, the big red-handled main switch on the side, the warning plate, a green lamp
+    (power on)."""
+    steel = pk.metal("BP_Steel", (120, 124, 130), (156, 160, 166), rough=0.4, metallic=0.6)
+    dark = pk.metal("BP_Dark", (30, 30, 34), (48, 48, 52), rough=0.5, metallic=0.3)
+    red = pk.plastic("BP_Red", (190, 24, 30))
+    yellow = pk.plastic("BP_Yellow", (232, 196, 50))
+    ink = pk.plastic("BP_Ink", (20, 20, 22))
+    parts = [mk.box("Cabinet", (2.8, 0.9, 6.0), (0, 0, 3.6), mat=steel, bevel=0.04),
+             mk.box("Plinth", (2.9, 1.0, 0.6), (0, 0, 0.3), mat=dark),
+             mk.box("Inner", (2.4, 0.06, 5.2), (0, -0.44, 3.6), mat=dark),
+             mk.box("Door", (2.5, 0.08, 5.4), (-1.42, -1.7, 3.6), rot=(0, 0, 90), mat=steel, bevel=0.03),
+             mk.box("Lever", (0.3, 0.5, 1.6), (1.55, -0.1, 4.2), mat=dark, bevel=0.04),
+             mk.box("Handle", (0.22, 0.9, 0.3), (1.55, -0.5, 4.9), mat=red, bevel=0.06),
+             mk.box("Warning", (1.8, 0.04, 0.6), (0, -0.47, 6.35), mat=yellow)]
+    for row in range(6):
+        for k in range(8):
+            parts.append(mk.box("Breaker", (0.22, 0.12, 0.45), (-0.95 + k * 0.27, -0.5, 1.6 + row * 0.78), mat=ink))
+    parts += pk.label("Plate", "主電源  MAIN BREAKER", 0.16, (0, -0.5, 6.35), ink)
+    glows = [mk.cylinder("PowerOn", 0.1, 0.06, (0.95, -0.5, 6.0), rot=(90, 0, 0), mat=pk.glow("BP_On", (90, 255, 140), 4),
+                         verts=12)]
+    return parts, glows

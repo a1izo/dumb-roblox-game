@@ -11,7 +11,7 @@ Built for the map UniversityCampus: the gameplay spots are placed here with the 
 exported with it (src/server/Maps/Scenes/Campus/). The layout is in plan.py."""
 
 from maps import catalog, city
-from maps.venues.campus import auditorium, faculties, fit, gameplay, ground, grounds, library, mood, outside, student
+from maps.venues.campus import auditorium, clutter, faculties, fit, gameplay, ground, grounds, library, mood, outside, student
 from maps.venues.campus import plan as P
 
 FORMAT = 2
@@ -81,6 +81,7 @@ def build(s):
     faculties.build(s, g)
     student.build(s, g)
     grounds.build(s)
+    clutter.build(s)
     outside.build(s, g)
     gameplay.build(s)
     mood.build(s)

@@ -10,7 +10,7 @@ exported with it (src/server/Maps/Scenes/Agency/). The layout is in plan.py.
 """
 
 from maps import catalog, city
-from maps.venues.agency import fit, gameplay, lower, mood, outside, shell, upper
+from maps.venues.agency import clutter, fit, gameplay, lower, mood, outside, shell, upper
 from maps.venues.agency import plan as P
 
 FORMAT = 2
@@ -74,6 +74,7 @@ def build(s):
     shell.build(s, g)
     lower.build(s, g)
     upper.build(s, g)
+    clutter.build(s)
     outside.build(s)
     gameplay.build(s)
     mood.build(s)

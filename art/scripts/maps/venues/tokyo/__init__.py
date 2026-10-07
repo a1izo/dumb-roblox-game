@@ -10,7 +10,7 @@ exported with it (src/server/Maps/Scenes/Tokyo/). The layout is in plan.py.
 
 from maps import buildings, city
 from maps.venues.tokyo import boats, decor, dressing, edges, gameplay, ground, interiors, mood, plan, river, station
-from maps.venues.tokyo import styles
+from maps.venues.tokyo import clutter, styles
 
 FORMAT = 2
 MAP_ID = "TokyoDistrict"
@@ -68,6 +68,7 @@ def build(s):
         others = [t for t, o in zip(tops, plan.BUILDINGS) if o is not b]
         buildings.build(s, b, styles.style(b), others, styles.fronts(b, plan.BUILDINGS))
     interiors.build(s, g)
+    clutter.build(s)
     dressing.build(s)
     boats.build(s)
     decor.build(s)

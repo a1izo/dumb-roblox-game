@@ -437,6 +437,115 @@ local function playFilm(part: BasePart)
 	end)
 end
 
+-- A karaoke room's screen: the song's title card, then its lyrics two lines at a time, the sung part
+-- filling in colour left to right, over a slow drifting backdrop. The songs are the house's own.
+local KARAOKE_SONGS = {
+	{
+		title = "雨の交差点  RAIN AT THE CROSSING",
+		lines = {
+			"信号が変わるまで  until the light turns",
+			"傘の中で名前を  I hold your name",
+			"誰にも言えない  under my umbrella",
+			"夜明けの前に  before the dawn comes",
+		},
+	},
+	{
+		title = "最終電車  THE LAST TRAIN",
+		lines = {
+			"ホームの端で  at the platform's end",
+			"君を待ってた  I waited for you",
+			"ドアが閉まる  the doors are closing",
+			"さよならを言えず  and no goodbye",
+		},
+	},
+	{
+		title = "黒いノート  THE BLACK NOTEBOOK",
+		lines = {
+			"ページをめくる  turning the pages",
+			"指が震える  my fingers shake",
+			"書かない名前  the name I won't write",
+			"今夜だけは  just for tonight",
+		},
+	},
+}
+
+local function playKaraoke(part: BasePart)
+	local back = face(part, 18)
+	back.BackgroundColor3 = Color3.fromRGB(28, 10, 46)
+	local glowA = box(back, UDim2.fromScale(-0.2, -0.3), UDim2.fromScale(0.8, 0.9), Color3.fromRGB(120, 30, 120), 0.6)
+	local glowB = box(back, UDim2.fromScale(0.5, 0.4), UDim2.fromScale(0.8, 0.9), Color3.fromRGB(30, 60, 140), 0.6)
+	local title = label(
+		back,
+		UDim2.fromScale(0.05, 0.08),
+		UDim2.fromScale(0.9, 0.16),
+		Color3.fromRGB(255, 220, 120),
+		Enum.Font.GothamBlack
+	)
+	local rows = {}
+	for k = 1, 2 do
+		local holder =
+			box(back, UDim2.fromScale(0.06, 0.42 + (k - 1) * 0.22), UDim2.fromScale(0.88, 0.16), Color3.new(0, 0, 0), 1)
+		holder.ClipsDescendants = true
+		local plain = label(
+			holder,
+			UDim2.fromScale(0, 0),
+			UDim2.fromScale(1, 1),
+			Color3.fromRGB(240, 240, 250),
+			Enum.Font.GothamBold
+		)
+		local fill = box(holder, UDim2.fromScale(0, 0), UDim2.fromScale(0, 1), Color3.new(0, 0, 0), 1)
+		fill.ClipsDescendants = true
+		local sung = label(
+			fill,
+			UDim2.fromScale(0, 0),
+			UDim2.fromScale(1, 1),
+			Color3.fromRGB(80, 220, 255),
+			Enum.Font.GothamBold
+		)
+		rows[k] = { plain = plain, fill = fill, sung = sung, holder = holder }
+	end
+	task.spawn(function()
+		local song = math.random(1, #KARAOKE_SONGS)
+		while part.Parent do
+			local current = KARAOKE_SONGS[song]
+			title.Text = current.title
+			for _, row in ipairs(rows) do
+				row.plain.Text = ""
+				row.sung.Text = ""
+			end
+			task.wait(3)
+			for index = 1, #current.lines, 2 do
+				for k = 1, 2 do
+					local text = current.lines[index + k - 1] or ""
+					local row = rows[k]
+					row.plain.Text = text
+					row.sung.Text = text
+					row.fill.Size = UDim2.fromScale(0, 1)
+					-- The sung label keeps the row's full width inside the growing fill.
+					row.sung.Size = UDim2.fromScale(1, 1)
+				end
+				for k = 1, 2 do
+					local row = rows[k]
+					local start = os.clock()
+					while part.Parent and os.clock() - start < 4 do
+						local t = (os.clock() - start) / 4
+						row.fill.Size = UDim2.fromScale(t, 1)
+						row.sung.Size = UDim2.fromScale(1 / math.max(t, 0.01), 1)
+						task.wait(0.05)
+					end
+					row.fill.Size = UDim2.fromScale(1, 1)
+					row.sung.Size = UDim2.fromScale(1, 1)
+				end
+				if not Settings.get("reduceMotion") then
+					glowA.Position = UDim2.fromScale(-0.2 + math.random() * 0.2, -0.3 + math.random() * 0.2)
+					glowB.Position = UDim2.fromScale(0.4 + math.random() * 0.2, 0.3 + math.random() * 0.2)
+				end
+			end
+			song = song % #KARAOKE_SONGS + 1
+		end
+	end)
+end
+
 local function playScreen(part: BasePart)
 	local loop = part:GetAttribute("Loop")
 	if loop == "cctv" then
@@ -447,6 +556,8 @@ local function playScreen(part: BasePart)
 		playMap(part)
 	elseif loop == "film" then
 		playFilm(part)
+	elseif loop == "karaoke" then
+		playKaraoke(part)
 	else
 		playAds(part)
 	end
