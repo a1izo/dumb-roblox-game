@@ -434,6 +434,10 @@ soft(think, head=1.5, arms=1.5).plant(stance=0.12, forward=(0.55, 0.55), tilt=(6
 think.build()
 
 
+# The cutscenes' actors: their acting clips are built with everything else.
+import cinema.shots  # noqa: E402, F401
+
+
 def build(arm):
     import animlib
 

@@ -78,6 +78,7 @@ return {
 	NeonRed = { material = "Neon", color = { 255, 40, 60 }, transparency = 0, reflectance = 0 },
 	NeonWarm = { material = "Neon", color = { 255, 214, 160 }, transparency = 0, reflectance = 0 },
 	NeonYellow = { material = "Neon", color = { 255, 220, 70 }, transparency = 0, reflectance = 0 },
+	PaintSteel = { material = "Metal", color = { 74, 88, 98 }, transparency = 0, reflectance = 0 },
 	PaintYellow = { material = "SmoothPlastic", color = { 222, 190, 60 }, transparency = 0, reflectance = 0 },
 	PanelCool = { material = "Neon", color = { 130, 140, 156 }, transparency = 0, reflectance = 0 },
 	PanelWarm = { material = "Neon", color = { 156, 138, 112 }, transparency = 0, reflectance = 0 },

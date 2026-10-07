@@ -34,8 +34,8 @@ import bpy  # noqa: E402
 import common  # noqa: E402
 from maps import export, matlib, mesher  # noqa: E402
 
-VENUES = ["Lobby", "Meeting", "Agency", "Campus", "Tokyo"]
-MODULES = {"Lobby": "lobby", "Meeting": "meeting", "Agency": "agency", "Campus": "campus", "Tokyo": "tokyo"}
+VENUES = ["Lobby", "Meeting", "Agency", "Campus", "Tokyo", "Sets"]
+MODULES = {"Lobby": "lobby", "Meeting": "meeting", "Agency": "agency", "Campus": "campus", "Tokyo": "tokyo", "Sets": "sets"}
 
 
 def build_venue(name):
@@ -764,4 +764,5 @@ def main():
         common.save_blend(f"Maps_{'_'.join(names)}.blend")
 
 
-main()
+if __name__ == "__main__":
+    main()

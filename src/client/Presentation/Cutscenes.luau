@@ -12,6 +12,9 @@ local KINDS = {
 	arrest = "Arrest",
 	eyesDeal = "EyesDeal",
 	outro = "Outro",
+	gambit = "Gambit",
+	meetingIntro = "MeetingIntro",
+	roundStart = "RoundStart",
 }
 
 function Cutscenes.init()

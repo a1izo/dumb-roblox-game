@@ -4,3 +4,5 @@ src/shared/SceneMaterials.luau
 src/shared/UI/
 src/shared/MapBounds.luau
 src/shared/ModelCatalog.luau
+src/shared/Cinema/Acting/
+src/shared/Cinema/Shots/

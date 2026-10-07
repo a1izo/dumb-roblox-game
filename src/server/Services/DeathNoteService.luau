@@ -1,7 +1,7 @@
 -- The Death Note phase. Every living player gets a private screen at once: Kira types
 -- one full real name into the Death Note, everyone else files a short report and picks
--- the player they suspect most. A correct name kills its target 40 seconds later,
--- during the meeting. A wrong name fails silently.
+-- the player they suspect most. A correct name kills its target when the phase is over (resolve(),
+-- before the meeting), each death its own scene. A wrong name fails silently.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -25,6 +25,9 @@ local ReportRemote = Net.event("Report")
 local LInboxRemote = Net.event("LInbox")
 
 local DeathNoteService = {}
+
+-- The deaths written this phase, in the order they were written (resolve() carries them out).
+local pending: { { target: any, kira: any, cause: string, matchId: number, writtenAt: number } } = {}
 
 local function kill(target, kira, cause: string, matchId: number, writtenAt: number?)
 	if Match.id ~= matchId or not Match.active or Match.winner ~= nil or not target.alive then
@@ -83,13 +86,13 @@ local function onWrite(player: Player, payload)
 			),
 			"kill"
 		)
-		local matchId = Match.id
-		-- The death lands 40 seconds later, clamped so it always falls inside the meeting.
-		local remaining = math.max(0, Match.phaseEndsAt - workspace:GetServerTimeNow())
-		local meeting = Match.phaseLength("Meeting")
-		-- Clamped so the death and its cutscene both fit inside the meeting.
-		local delay = math.clamp(Config.DEATH_DELAY, remaining + 3, remaining + math.max(4, meeting - 8))
-		task.delay(delay, kill, target, ps, cause, matchId, Match.elapsed())
+		table.insert(pending, {
+			target = target,
+			kira = ps,
+			cause = cause,
+			matchId = Match.id,
+			writtenAt = Match.elapsed(),
+		})
 	else
 		EventLog.add(
 			Terms.f(
@@ -159,6 +162,24 @@ function DeathNoteService.close()
 	for _, ps in ipairs(Match.list) do
 		CharacterService.setWriting(ps.player, false)
 	end
+end
+
+-- The phase is over: every name written in it takes its victim now, each with its own scene (the
+-- death cue holds the match loop while it plays).
+function DeathNoteService.resolve()
+	local due = pending
+	pending = {}
+	for _, death in ipairs(due) do
+		kill(death.target, death.kira, death.cause, death.matchId, death.writtenAt)
+	end
+end
+
+-- Queues a death for the next resolve() (the Deathsinger's deal takes its maker this way).
+function DeathNoteService.queue(target, kira, cause: string)
+	table.insert(
+		pending,
+		{ target = target, kira = kira, cause = cause, matchId = Match.id, writtenAt = Match.elapsed() }
+	)
 end
 
 function DeathNoteService.init()

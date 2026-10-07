@@ -14,6 +14,10 @@ local Venues = {}
 Venues.LOBBY = Vector3.new(0, 0.2, 0)
 Venues.MAP = Vector3.new(0, 0, 3000)
 Venues.MEETING = Vector3.new(0, 0, -3000)
+-- The cutscene sets (Diavolo's study, the shrine, Ace's room, the locker room, the warehouse), side by
+-- side along X from here. Only cutscene cameras see them.
+Venues.SETS = Vector3.new(6000, 0, 0)
+local SETS_MIN, SETS_MAX = Vector3.new(-100, -20, -120), Vector3.new(650, 120, 120)
 
 -- Half-size of the meeting room around its origin (the room is 60 x 60).
 local MEETING_HALF = 45
@@ -34,8 +38,18 @@ for mapId, box in pairs(MapBounds :: any) do
 	}
 end
 
--- "lobby", "map" or "meeting" for a world position.
+-- "lobby", "map", "meeting" or "sets" for a world position.
 function Venues.at(position: Vector3): string
+	local rel = position - Venues.SETS
+	if
+		rel.X >= SETS_MIN.X
+		and rel.X <= SETS_MAX.X
+		and rel.Y >= SETS_MIN.Y
+		and rel.Y <= SETS_MAX.Y
+		and math.abs(rel.Z) <= SETS_MAX.Z
+	then
+		return "sets"
+	end
 	local offset = position - Venues.MEETING
 	if math.abs(offset.X) <= MEETING_HALF and math.abs(offset.Z) <= MEETING_HALF then
 		return "meeting"

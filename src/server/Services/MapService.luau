@@ -200,6 +200,8 @@ function MapService.build(mapId: string)
 	local meeting = MeetingRoom.build(Builder.new(model, MEETING_ORIGIN))
 	info.meeting = meeting
 	table.insert(info.boardLabels, meeting.boardLabel)
+	-- The cutscene sets, far off along X (role and win cutscenes play there).
+	SceneBuilder.build(Builder.new(model, Venues.SETS), "Sets")
 
 	model.Parent = workspace
 	currentModel = model

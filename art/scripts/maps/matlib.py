@@ -23,6 +23,7 @@ FLAT = {
     "BlackMetal": ("Metal", (26, 26, 30), 0, 0),
     "DarkMetal": ("Metal", (58, 60, 66), 0, 0),
     "Steel": ("Metal", (150, 152, 158), 0, 0),
+    "PaintSteel": ("Metal", (74, 88, 98), 0, 0),  # the blue-grey enamel of staff lockers
     "Brass": ("Metal", (176, 140, 72), 0, 0.05),
     "Gold": ("Metal", (214, 176, 96), 0, 0.1),
     "WhiteTrim": ("SmoothPlastic", (218, 214, 204), 0, 0),

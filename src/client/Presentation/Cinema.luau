@@ -211,6 +211,131 @@ function Cinema.caption(name: string, line: string?): () -> ()
 	end
 end
 
+-- A line of dialogue at the bottom of the screen, for `seconds`. Returns a function that removes it early.
+function Cinema.subtitle(text: string, seconds: number?): () -> ()
+	local group = Instance.new("CanvasGroup")
+	group.Name = "Subtitle"
+	group.BackgroundTransparency = 1
+	group.AnchorPoint = Vector2.new(0.5, 1)
+	group.Position = UDim2.new(0.5, 0, 0.87, 0)
+	group.Size = UDim2.new(0.8, 0, 0, 60)
+	group.Parent = Screens.cinematic
+	Kit.label({
+		Text = text,
+		font = "label",
+		size = "lead",
+		color = C.white,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		TextStrokeTransparency = 0.4,
+		TextWrapped = true,
+		Size = UDim2.fromScale(1, 1),
+		Parent = group,
+	})
+	Motion.fade(group, true, 0.2)
+	local closed = false
+	local function close()
+		if not closed then
+			closed = true
+			fadeAway(group)
+		end
+	end
+	if seconds then
+		task.delay(seconds, close)
+	end
+	return close
+end
+
+export type CaptionLine = { text: string, color: Color3?, size: any?, font: string?, head: boolean? }
+
+-- A caption over a cutscene, low on the left, above the letterbox: a small kicker ("YOU ARE") and its
+-- lines (a line with head = true is written out in the heading face, `size` in pixels). Fades in;
+-- fades out on close() or after `seconds`.
+function Cinema.caption(kicker: string, lines: { CaptionLine }, seconds: number?): () -> ()
+	local group = Instance.new("CanvasGroup")
+	group.Name = "Caption"
+	group.BackgroundTransparency = 1
+	group.AnchorPoint = Vector2.new(0, 1)
+	group.Position = UDim2.new(0.06, 0, 0.84, 0)
+	group.Size = UDim2.new(0.5, 0, 0, 0)
+	group.AutomaticSize = Enum.AutomaticSize.Y
+	group.Parent = Screens.cinematic
+	Kit.list(group, T.space.xs)
+	Kit.label({
+		Text = kicker,
+		font = "label",
+		size = "micro",
+		color = C.dim,
+		TextStrokeTransparency = 0.6,
+		LayoutOrder = 0,
+		Parent = group,
+	})
+	for index, line in ipairs(lines) do
+		if line.head then
+			local text = Kit.text({
+				face = "Head",
+				text = line.text,
+				size = if type(line.size) == "number" then line.size else T.size.heading + 6,
+				color = line.color or C.bone,
+				LayoutOrder = index,
+				Parent = group,
+			})
+			text:write(0.6)
+		else
+			Kit.label({
+				Text = line.text,
+				font = line.font or "body",
+				size = line.size or "small",
+				color = line.color or C.white,
+				TextStrokeTransparency = 0.5,
+				LayoutOrder = index,
+				Parent = group,
+			})
+		end
+	end
+	Motion.fade(group, true, 0.25)
+	local closed = false
+	local function close()
+		if not closed then
+			closed = true
+			fadeAway(group)
+		end
+	end
+	if seconds then
+		task.delay(seconds, close)
+	end
+	return close
+end
+
+-- A longer black: fades to black over `cover` seconds, shows what `during` puts up (a card, under
+-- the black's own layer so it shows on it; it returns its closer) for `hold` seconds, then closes it
+-- and fades back over `uncover`. Returns when the screen is clear again.
+function Cinema.blackout(cover: number, hold: number, uncover: number, during: (() -> (() -> ())?)?)
+	local frame = Kit.Base.make("Frame", {
+		Name = "Blackout",
+		BackgroundColor3 = C.void,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 0,
+		Parent = Screens.cinematic,
+	})
+	local tween = Motion.tween(frame, { BackgroundTransparency = 0 }, cover)
+	if tween then
+		tween.Completed:Wait()
+	end
+	frame.BackgroundTransparency = 0
+	local close = if during then during() else nil
+	task.wait(hold)
+	if close then
+		close()
+	end
+	local out = Motion.tween(frame, { BackgroundTransparency = 1 }, uncover)
+	if out then
+		out.Completed:Wait()
+	end
+	frame:Destroy()
+end
+
 -- A quick dip to black between two shots: covers, calls `during`, uncovers.
 function Cinema.dip(seconds: number?, during: (() -> ())?)
 	local half = (seconds or 0.3) / 2

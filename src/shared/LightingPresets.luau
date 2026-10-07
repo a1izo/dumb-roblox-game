@@ -377,9 +377,44 @@ LightingPresets.maps = {
 } :: { [string]: Preset }
 
 -- The preset for a venue ("lobby", "map", "meeting"); map presets need the map id.
+-- The cutscene sets: night interiors lit only by what is in them (a desk lamp, candles, monitors, the
+-- moon through a skylight). Very little ambient so the dark stays dark, no fog to speak of (the rooms are
+-- small), a touch more bloom for the flames and screens.
+LightingPresets.sets = preset({
+	clockTime = 0,
+	brightness = 0.2,
+	exposure = 0,
+	ambient = rgb(14, 14, 18),
+	outdoorAmbient = rgb(16, 18, 26),
+	envDiffuse = 0.25,
+	envSpecular = 0.35,
+	fogStart = 200,
+	fogEnd = 1200,
+	fogColor = rgb(8, 8, 12),
+	density = 0.05,
+	haze = 0,
+	glare = 0,
+	atmosphereColor = rgb(30, 30, 40),
+	decay = rgb(20, 18, 24),
+	saturation = -0.2,
+	contrast = 0.3,
+	tint = rgb(244, 240, 236),
+	bloom = 0.45,
+	bloomSize = 20,
+	bloomThreshold = 1.8,
+	lamps = 1,
+	lampRange = 1,
+	keyLights = 3,
+	rain = 0,
+	lightning = false,
+	snow = 0,
+})
+
 function LightingPresets.pick(venue: string, mapId: string?): Preset
 	if venue == "meeting" then
 		return LightingPresets.meeting
+	elseif venue == "sets" then
+		return LightingPresets.sets
 	elseif venue == "map" then
 		return LightingPresets.maps[mapId or ""] or LightingPresets.maps.TaskForceHQ
 	end

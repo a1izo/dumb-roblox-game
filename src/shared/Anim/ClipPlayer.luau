@@ -23,18 +23,38 @@ export type Prepared = {
 
 local prepared: { [string]: Prepared } = {}
 
+-- A clip's raw data: the game's clips (Anim/Clips), or a cutscene's acting (Cinema/Acting/<Shot>,
+-- for ids like "IntroCampus_noticer").
+local function raw(id: string): any
+	local found = (Clips :: any)[id]
+	if found then
+		return found
+	end
+	local prefix = string.match(id, "^([^_]+)_")
+	local cinema = script.Parent.Parent:FindFirstChild("Cinema")
+	local acting = if cinema then cinema:FindFirstChild("Acting") else nil
+	local module = if acting and prefix then acting:FindFirstChild(prefix) else nil
+	if module and module:IsA("ModuleScript") then
+		local ok, clips = pcall(require, module)
+		if ok and type(clips) == "table" then
+			return (clips :: any)[id]
+		end
+	end
+	return nil
+end
+
 -- The clip with its keys turned into CFrames (done once per clip), or nil if it does not exist.
 function ClipPlayer.get(id: string): Prepared?
 	local cached = prepared[id]
 	if cached then
 		return cached
 	end
-	local raw = (Clips :: any)[id]
-	if not raw then
+	local source = raw(id)
+	if not source then
 		return nil
 	end
 	local joints: { [string]: Track } = {}
-	for joint, data in pairs(raw.joints) do
+	for joint, data in pairs(source.joints) do
 		local frames = {}
 		local q = data.q
 		local p = data.p -- slides (studs, parent frame), for joints that move as well as turn
@@ -51,20 +71,20 @@ function ClipPlayer.get(id: string): Prepared?
 	end
 	local clip: Prepared = {
 		id = id,
-		length = raw.length,
-		loop = raw.loop,
+		length = source.length,
+		loop = source.loop,
 		joints = joints,
-		stride = raw.stride,
-		leg = raw.leg,
+		stride = source.stride,
+		leg = source.leg,
 	}
-	if raw.offset then
+	if source.offset then
 		local offsets = {}
-		local p = raw.offset.p
-		for i = 1, #raw.offset.t do
+		local p = source.offset.p
+		for i = 1, #source.offset.t do
 			local base = (i - 1) * 3
 			offsets[i] = Vector3.new(p[base + 1], p[base + 2], p[base + 3])
 		end
-		clip.offsetTimes = raw.offset.t
+		clip.offsetTimes = source.offset.t
 		clip.offsets = offsets
 	end
 	prepared[id] = clip
@@ -72,7 +92,7 @@ function ClipPlayer.get(id: string): Prepared?
 end
 
 function ClipPlayer.exists(id: string): boolean
-	return (Clips :: any)[id] ~= nil
+	return raw(id) ~= nil
 end
 
 function ClipPlayer.length(id: string): number

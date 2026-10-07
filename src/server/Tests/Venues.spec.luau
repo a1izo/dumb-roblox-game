@@ -61,6 +61,8 @@ return function(t)
 			expect(Venues.at(Venues.MEETING + Vector3.new(20, 5, -20))).to.equal("meeting")
 			expect(Venues.at(Venues.MAP + Vector3.new(-500, -24, -400))).to.equal("map")
 			expect(Venues.at(Venues.MAP + Vector3.new(500, 60, 400))).to.equal("map")
+			expect(Venues.at(Venues.SETS + Vector3.new(520, 3, 0))).to.equal("sets")
+			expect(Venues.at(Venues.SETS + Vector3.new(0, 6, -9))).to.equal("sets")
 		end)
 	end)
 

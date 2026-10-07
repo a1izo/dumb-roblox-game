@@ -1,7 +1,7 @@
--- The briefing. First your own avatar acts out your role on a dark set (Presentation/RoleReveal,
--- the same length for every role), then two panels open: your role card (how you win, the three things
--- to know and your first move) and your secret page with your alias and your real name in red, your
--- allies, and (for the Butler) the hint. Everything here
+-- The briefing: your role's own cutscene (made in Blender, art/scripts/cinema/shots/role_*.py, every
+-- one the same length), with you in it and the allies you know, and your role card running over it as
+-- captions: who you are, how you win, your first move, then your alias, your real name in red, your
+-- allies and (for the Butler) the hint. Without the cutscene two panels show the same. Everything here
 -- can be seen again on the role card (hold C).
 
 local Players = game:GetService("Players")
@@ -241,29 +241,79 @@ local function build(payload)
 	Motion.slideIn(page, Vector2.new(80, 0), T.motion.slow)
 end
 
+-- The captions the role cutscene asks for, by key (its "card" events).
+local function caption(key: string, payload): (() -> ())?
+	local Cinema = require(script.Parent.Parent.Presentation.Cinema) :: any
+	local role = payload.role or "TaskForce"
+	local info = Roles.get(role)
+	local copy = RoleCopy[role] or RoleCopy.TaskForce
+	local hostile = role == "Kira" or role == "Follower"
+	if key == "role" then
+		return Cinema.caption(
+			"YOU ARE",
+			{ { text = info.display, head = true, color = if hostile then C.red else C.bone } }
+		)
+	elseif key == "win" then
+		return Cinema.caption("HOW YOU WIN", { { text = copy.win, font = "bodyBold", size = "body" } })
+	elseif key == "move" then
+		return Cinema.caption("FIRST MOVE", { { text = copy.firstMove, font = "document", size = "body" } })
+	elseif key == "names" then
+		local lines: { any } = {
+			{ text = tostring(payload.alias), head = true, size = 40 },
+			{ text = "YOUR REAL NAME", font = "label", size = "micro", color = C.dim },
+			{ text = tostring(payload.realName), head = true, size = 40, color = C.danger },
+			{ text = alliesText(role, payload.allies), size = "small" },
+		}
+		if type(payload.hint) == "string" then
+			table.insert(
+				lines,
+				{ text = Terms.f("{Butler}'s hint: ") .. payload.hint, font = "document", color = C.steel }
+			)
+		end
+		return Cinema.caption("YOUR ALIAS", lines)
+	end
+	return nil
+end
+
+local function showPanels(payload)
+	build(payload)
+	root.Visible = true
+	if unbindTimer then
+		unbindTimer()
+	end
+	unbindTimer = Clock.bind(timerLabel, function(seconds: number)
+		return string.format("The investigation begins in %d", math.ceil(seconds))
+	end)
+end
+
 function BriefingScreen.show(payload)
 	showing += 1
 	local mine = showing
 	root.Visible = false
 	Router.setBlocking("briefing", true)
 	-- Lazily required: Presentation needs the UI to exist first.
-	local RoleReveal = require(script.Parent.Parent.Presentation.RoleReveal) :: any
+	local ShotPlayer = require(script.Parent.Parent.Presentation.ShotPlayer) :: any
+	if type(payload.shot) ~= "string" or not ShotPlayer.exists(payload.shot) then
+		showPanels(payload)
+		return
+	end
 	task.spawn(function()
-		local ok, err = pcall(RoleReveal.play, payload.role or "TaskForce")
+		local ok, err = pcall(ShotPlayer.play, payload.shot, {
+			at = tonumber(payload.at),
+			cast = if type(payload.cast) == "table" then payload.cast else {},
+			onCard = function(key: string)
+				return caption(key, payload)
+			end,
+			stop = function()
+				return showing ~= mine or ClientState.phase() ~= "Briefing"
+			end,
+		})
 		if not ok then
-			warn("[DeathsGambit] Role reveal failed: " .. tostring(err))
+			warn("[DeathsGambit] Role cutscene failed: " .. tostring(err))
+			if showing == mine and ClientState.phase() == "Briefing" then
+				showPanels(payload)
+			end
 		end
-		if showing ~= mine or ClientState.phase() ~= "Briefing" then
-			return
-		end
-		build(payload)
-		root.Visible = true
-		if unbindTimer then
-			unbindTimer()
-		end
-		unbindTimer = Clock.bind(timerLabel, function(seconds: number)
-			return string.format("The investigation begins in %d", math.ceil(seconds))
-		end)
 	end)
 end
 

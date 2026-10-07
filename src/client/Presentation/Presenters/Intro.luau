@@ -19,6 +19,7 @@ local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
+local ShotPlayer = require(script.Parent.Parent.ShotPlayer)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local Stage = require(script.Parent.Parent.Stage)
 
@@ -63,6 +64,29 @@ return function(cue)
 		return
 	end
 	local data = cue.data
+	local mapName = if type(data.mapName) == "string" then data.mapName else ""
+	local caseNumber = tonumber(data.caseNumber) or 0
+	local count = tonumber(data.playerCount) or #ClientState.public.players
+	local function caseCard(): () -> ()
+		return Cinema.card({
+			kicker = string.format("Case %04d", caseNumber),
+			title = mapName,
+			subtitle = Terms.f("{count} suspects. One of them is {hand}.", { count = count }),
+			typewriter = true,
+			y = 0.7,
+		})
+	end
+	-- The map's own intro, made in Blender (art/scripts/cinema/shots).
+	if type(data.shot) == "string" and ShotPlayer.exists(data.shot) then
+		ShotPlayer.play(data.shot, {
+			at = cue.at,
+			cast = if type(data.cast) == "table" then data.cast else {},
+			onCard = function(key)
+				return if key == "case" then caseCard() else nil
+			end,
+		})
+		return
+	end
 	local duration = tonumber(data.duration) or 0
 	local endAt = cue.at + duration
 	Cinema.waitUntil(cue.at)
@@ -118,16 +142,7 @@ return function(cue)
 		CameraDirector.cut(token, from, 62)
 		CameraDirector.move(token, to, openingTime, 56)
 	end
-	local mapName = if type(data.mapName) == "string" then data.mapName else ""
-	local caseNumber = tonumber(data.caseNumber) or 0
-	local count = tonumber(data.playerCount) or #ClientState.public.players
-	local hideCard = Cinema.card({
-		kicker = string.format("Case %04d", caseNumber),
-		title = mapName,
-		subtitle = Terms.f("{count} suspects. One of them is {hand}.", { count = count }),
-		typewriter = true,
-		y = 0.7,
-	})
+	local hideCard = caseCard()
 	table.insert(cleanup, hideCard)
 	task.wait(openingTime)
 	hideCard()
