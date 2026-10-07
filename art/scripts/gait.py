@@ -84,8 +84,8 @@ def build_cycle(g, samples, pose_fn):
 # Run ------------------------------------------------------------------------------------------------
 # Full speed in the game is 16 studs/s.
 
-RUN = Gait("run", period=0.6, stride=16 * 0.6, stance=0.3, lift=0.55,
-           note="Run at 16 studs/s: soles planted while down, knees (slides) take the weight.")
+RUN = Gait("run", period=0.72, stride=16 * 0.72, stance=0.32, lift=0.6,
+           note="Run at 16 studs/s: long, driven strides, leaning in; soles planted while down.")
 
 
 def run_pose(phase):
@@ -94,15 +94,15 @@ def run_pose(phase):
     bob = math.cos(4 * math.pi * (phase - s * 0.45))
     yaw = 8 * wave(phase, 0.04)  # hips turn with the leading leg
     roll = 2.5 * wave(phase, 0.12)
-    root = (-11 + 1.5 * bob, yaw, roll)
+    root = (-15 + 1.5 * bob, yaw, roll)  # leaning into the run
     offset = (0.04 * wave(phase, 0.1), -0.12 - 0.12 * bob, 0.0)
     swing = wave(phase, 0.06)  # +1: right arm back, left arm forward (the arms trail the legs)
     lift = abs(swing)
     joints = dict(
         root=root,
-        neck=(9 - 1.5 * bob, -0.85 * yaw, -0.5 * roll),
-        rShoulder=J((12 - 48 * swing, -6 * swing, 6 - 8 * min(0.0, swing)), (0, 0.06 * lift, 0.18 * swing)),
-        lShoulder=J((12 + 48 * swing, 6 * swing, -6 - 8 * min(0.0, -swing)), (0, 0.06 * lift, -0.18 * swing)),
+        neck=(14 - 1.5 * bob, -0.85 * yaw, -0.5 * roll),  # head up, eyes ahead
+        rShoulder=J((14 - 42 * swing, -6 * swing, -4 + 6 * max(0.0, swing)), (-0.05, 0.05 * lift, -0.06 + 0.16 * swing)),
+        lShoulder=J((14 + 42 * swing, 6 * swing, 4 - 6 * max(0.0, -swing)), (0.05, 0.05 * lift, -0.06 - 0.16 * swing)),
     )
     joints.update(RUN.legs(phase, root, offset))
     return joints, offset

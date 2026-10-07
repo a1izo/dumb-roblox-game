@@ -426,11 +426,11 @@ chip.key(3.2, **REST)
 soft(chip, arms=3.0).plant(stance=0.04)
 chip.build()
 
-think = Motion("think", 4.0, loop=True, note="Crouched like a detective, a thumb to the lip.")
+think = Motion("think", 4.0, loop=True, note="Crouched like a detective: knees up, a thumb to the lip.")
 for t, b in ((0.0, 0.0), (2.0, 1.0)):
-    think.key(t, offset=(0, -1.2 + 0.03 * b, 0), root=(-14 + b, 0, 0), neck=(-4 + b, 4 * b, 0),
-              rShoulder=J((108, 0, -34), (-0.3, 0.3, -0.25)), lShoulder=J((72, 0, 14), (0.1, 0.1, -0.3)))
-soft(think, head=1.5, arms=1.5).plant(stance=0.18, tilt=(28, 28))
+    think.key(t, offset=(0, -1.15 + 0.02 * b, 0.25), root=(-8 + b, 0, 0), neck=(-2 + b, 5 * b, 0),
+              rShoulder=J((128, 0, -26), (-0.28, 0.25, -0.3)), lShoulder=J((78, 0, 18), (0.12, 0.05, -0.4)))
+soft(think, head=1.5, arms=1.5).plant(stance=0.12, forward=(0.55, 0.55), tilt=(62, 62))
 think.build()
 
 
