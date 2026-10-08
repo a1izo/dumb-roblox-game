@@ -1,7 +1,7 @@
 """Diavolo's study: a room in an old house at night. Walnut panelling under dark damask, books floor to
-ceiling on both side walls, a heavy desk with a banker's lamp against the west side, and in the north wall
-the tall window with the rain running down it and the city's lights beyond. The floor between the window
-and the door is left open (the Muertos kneel there); candles burn in the two corners by the window."""
+ceiling on both side walls; in the north wall the tall window with the rain running down it and the city's
+lights beyond, and before it a heavy desk with a banker's lamp, the chair behind it. Across the room an old
+television on its legs, facing the desk. Candles burn in the two corners by the window."""
 
 from maps import kit
 from maps.venues.sets import plan as P
@@ -45,13 +45,18 @@ def build(s):
     s.prop("ClubChair", px, pz, 150)
     px, pz = at(7.6, 8.5)
     s.prop("Sideboard", px, pz, 180, 0.7)  # against the south wall, east of the door
-    # The desk against the west side, facing into the room (no chair: Diavolo stands), so the floor from the
-    # window to the door is open. It carries its own banker's lamp, pen stand, nameplate and dossier; the
-    # point light is its lamp's. A warm light from above on the open floor, where the Muertos kneel.
-    px, pz = at(-7.0, -3.6)
-    s.prop("ExecutiveDesk", px, pz, -90)
-    s.light("point", (OX - 7.35, 4.0, OZ - 1.3), (255, 214, 150), 14, 1.4, shadows=True)
-    s.light("spot", (OX, H - 1.0, OZ + 0.5), (255, 196, 140), 24, 1.0, shadows=True, angle=60)
+    # The desk in front of the window, its chair behind (Diavolo writes with the rain at his back); the desk
+    # carries its own banker's lamp (west end), pen stand, nameplate and dossier, and the point light is its
+    # lamp's. Across the room, facing him, an old television on its legs, the news on.
+    px, pz = at(0.0, -5.4)
+    s.prop("ExecutiveDesk", px, pz, 180)
+    px, pz = at(0.0, -8.0)
+    s.prop("OfficeChair", px, pz, 180)
+    s.light("point", (OX - 2.3, 3.55, OZ - 5.75), (255, 214, 150), 20, 2.6, shadows=True)  # under the shade
+    px, pz = at(0.0, 6.6)
+    s.prop("CRTTelevision", px, pz, 0)
+    s.screen((OX + 0.3, 1.75, OZ + 5.43), 0, 1.9, 1.5, "news")
+    s.light("spot", (OX, H - 1.0, OZ + 0.5), (255, 196, 140), 26, 0.8, shadows=True, angle=70)  # a little fill
     # Candles in the corners by the window; a brass sconce either side of the door.
     for x in (-8.5, 8.5):
         px, pz = at(x, -8.4)

@@ -45,10 +45,14 @@ UI_TEXTURES = [
 ]
 
 
+# Cutscene face decals (art/scripts/ui/faces.py), swapped onto actors' heads by the "face" event.
+FACE_TEXTURES = ["FaceGrin", "FaceLaugh", "FaceCrazed", "FaceShock", "FaceStern", "FaceFear", "FaceDevoted"]
+
+
 def texture_carriers():
     """Small quads, one per effect texture, so importing the FBX also uploads the textures."""
     carriers = []
-    for i, name in enumerate(EFFECT_TEXTURES + UI_TEXTURES):
+    for i, name in enumerate(EFFECT_TEXTURES + UI_TEXTURES + FACE_TEXTURES):
         path = os.path.join(common.TEXTURES, name + ".png")
         if not os.path.exists(path):
             continue

@@ -234,6 +234,10 @@ class Shot:
         self.props.append(p)
         return p
 
+    def face(self, t, slot, name):
+        """From t, `slot` wears the face decal Face<name> (ui/faces.py); name None puts their own face back."""
+        return self.event(t, "face", slot=slot, face=name or "")
+
     def event(self, t, kind, **data):
         self.events.append((float(t), kind, data))
         return self

@@ -53,6 +53,32 @@ def load_shots():
 # Set ----------------------------------------------------------------------------------------------------
 
 
+def look_and_atmosphere(bscene):
+    """The previews' look: AgX with punch (rich blacks, lights that bloom instead of clipping flat), volumetric
+    light shafts, and a bloom pass over lamps, screens and glowing eyes (the game's Bloom)."""
+    vs = bscene.view_settings
+    vs.view_transform = "AgX"
+    vs.look = "AgX - Punchy"
+    vs.exposure = 2.0
+    ee = bscene.eevee
+    ee.volumetric_end = 90.0
+    ee.volumetric_tile_size = "4"
+    ee.volumetric_samples = 48
+    ee.use_volumetric_shadows = True
+    tree = bpy.data.node_groups.new("Bloom", "CompositorNodeTree")
+    layers = tree.nodes.new("CompositorNodeRLayers")
+    glare = tree.nodes.new("CompositorNodeGlare")
+    glare.inputs["Type"].default_value = "Bloom"
+    glare.inputs["Threshold"].default_value = 0.8
+    glare.inputs["Strength"].default_value = 0.5
+    out = tree.nodes.new("NodeGroupOutput")
+    tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+    tree.links.new(layers.outputs["Image"], glare.inputs["Image"])
+    tree.links.new(glare.outputs["Image"], out.inputs[0])
+    bscene.compositing_node_group = tree
+    bscene.render.use_compositing = True
+
+
 def build_set(venue):
     import run_maps
     from maps import matlib, mesher
@@ -84,13 +110,19 @@ def build_set(venue):
                 pass
     bscene = bpy.context.scene
     bscene.render.engine = "BLENDER_EEVEE"
-    bscene.view_settings.view_transform = "Standard"
+    look_and_atmosphere(bscene)
     world = bscene.world or bpy.data.worlds.new("World")
     bscene.world = world
     world.use_nodes = True
     bg = world.node_tree.nodes.get("Background")
     bg.inputs["Color"].default_value = (0.05, 0.055, 0.085, 1)
     bg.inputs["Strength"].default_value = 1.6
+    # a thin haze in the air, so lamps and windows throw beams
+    nodes, links = world.node_tree.nodes, world.node_tree.links
+    scatter = nodes.new("ShaderNodeVolumeScatter")
+    scatter.inputs["Density"].default_value = 0.0018
+    scatter.inputs["Anisotropy"].default_value = 0.55
+    links.new(scatter.outputs["Volume"], nodes["World Output"].inputs["Volume"])
     data = bpy.data.lights.new("Moon", "SUN")
     data.energy = 0.35
     data.color = (0.7, 0.75, 1.0)
@@ -208,7 +240,89 @@ def place_actor(shot, actor, rig, actions, index):
             for t, hidden in ((0.0, t0 > 0.0), (t0, False), (t1, True)):
                 shell.hide_render = hidden
                 shell.keyframe_insert("hide_render", frame=t * FPS)
+    add_faces(shot, actor, arm, parts)
+    if not actor.extra:
+        add_hair(actor, arm, parts, index)
     return root, arm, parts
+
+
+HAIR = [(0.1, 0.06, 0.035), (0.32, 0.18, 0.08), (0.7, 0.52, 0.24), (0.36, 0.1, 0.04), (0.45, 0.45, 0.48),
+        (0.16, 0.12, 0.1)]
+
+
+def add_hair(actor, arm, parts, index):
+    """Stand-in hair, so the grey mannequins read as different people (the game shows real avatars)."""
+    socket = arm_socket(arm, "Head", parts)
+    mat = common.material(f"Hair{index % len(HAIR)}", HAIR[index % len(HAIR)], 0.7)
+    style = index % 3
+    dims = parts["Head_Mesh"].dimensions
+    w, h, d = dims.x + 0.16, dims.z, dims.y + 0.16  # the head's width, height, depth (+ the hair's thickness)
+    top, back = h / 2, dims.y / 2
+    boxes = [((0, top + 0.08, 0.04), (w, 0.36, d)), ((0, top - 0.42, back + 0.08), (w, 1.0, 0.18))]
+    if style == 1:  # a fringe
+        boxes.append(((0, top - 0.12, -back - 0.06), (w, 0.26, 0.14)))
+    elif style == 2:  # longer at the back and sides
+        boxes += [((w / 2 - 0.06, top - 0.5, 0.15), (0.14, 0.9, d * 0.8)), ((-w / 2 + 0.06, top - 0.5, 0.15), (0.14, 0.9, d * 0.8)),
+                  ((0, top - 1.0, back + 0.08), (w, 0.5, 0.18))]
+    for k, (pos, size) in enumerate(boxes):
+        mesh = bpy.data.meshes.new(f"Hair_{actor.slot}_{k}")
+        sx, sy, sz = (v / 2 for v in size)
+        x, y, z = pos
+        verts = [(x + a * sx, y + b * sy, z + c * sz) for a in (-1, 1) for b in (-1, 1) for c in (-1, 1)]
+        faces = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
+        mesh.from_pydata(verts, [], faces)
+        mesh.materials.append(mat)
+        obj = bpy.data.objects.new(mesh.name, mesh)
+        common.collection("Actors").objects.link(obj)
+        obj.parent = socket
+
+
+def add_faces(shot, actor, arm, parts):
+    """The face decals the shot puts on this actor: one quad per face over the front of the head, each
+    shown while it is the one worn (the game swaps the head's face decal instead)."""
+    changes = sorted((t, data.get("face") or "") for t, kind, data in shot.events
+                     if kind == "face" and data.get("slot") == actor.slot)
+    if not changes:
+        return
+    socket = arm_socket(arm, "Head", parts)
+    skin = (0.84, 0.66, 0.52, 1.0)
+    for name in sorted({n for _, n in changes if n}):
+        path = os.path.join(common.TEXTURES, f"Face{name}.png")
+        if not os.path.exists(path):
+            print(f"[cinema] no face texture {path}")
+            continue
+        mat = bpy.data.materials.get("Face" + name)
+        if mat is None:
+            mat = bpy.data.materials.new("Face" + name)
+            mat.use_nodes = True
+            nodes, links = mat.node_tree.nodes, mat.node_tree.links
+            bsdf = nodes["Principled BSDF"]
+            tex = nodes.new("ShaderNodeTexImage")
+            tex.image = bpy.data.images.load(path, check_existing=True)
+            mix = nodes.new("ShaderNodeMix")
+            mix.data_type = "RGBA"
+            mix.inputs["A"].default_value = skin
+            links.new(tex.outputs["Alpha"], mix.inputs["Factor"])
+            links.new(tex.outputs["Color"], mix.inputs["B"])
+            links.new(mix.outputs["Result"], bsdf.inputs["Base Color"])
+            bsdf.inputs["Roughness"].default_value = 0.7
+        # a quad in the socket's Roblox-like axes (x right, y up, z back): its face to -z, just over the front of
+        # the head, as big as the head's face (the rig's head: x width, y depth, z height in its own axes)
+        dims = parts["Head_Mesh"].dimensions
+        s, z = 0.46 * min(dims.x, dims.z), -(dims.y / 2 + 0.012)
+        mesh = bpy.data.meshes.new(f"Face_{actor.slot}_{name}")
+        mesh.from_pydata([(s, -s, z), (-s, -s, z), (-s, s, z), (s, s, z)], [], [(0, 1, 2, 3)])
+        uv = mesh.uv_layers.new(name="UVMap")
+        for loop, co in zip(uv.data, ((0, 0), (1, 0), (1, 1), (0, 1))):  # seen from the front: the actor's right on the left
+            loop.uv = co
+        mesh.materials.append(mat)
+        quad = bpy.data.objects.new(mesh.name, mesh)
+        common.collection("Actors").objects.link(quad)
+        quad.parent = socket
+        keys = [(0.0, False)] + [(t, n == name) for t, n in changes]
+        for t, on in keys:
+            quad.hide_render = not on
+            quad.keyframe_insert("hide_render", frame=t * FPS)
 
 
 def arm_socket(arm, part_name, parts):

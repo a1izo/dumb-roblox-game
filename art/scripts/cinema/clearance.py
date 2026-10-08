@@ -92,13 +92,14 @@ def report(shot, scene, step=0.2):
         for slot, parts in bodies.items():
             ok = set(allow.get(slot, ()))
             centre = parts[0][1]
+            ground = framing.actor(shot, slot).path.value(t)[1]  # the level they stand at
             for label, key, c, r, h in boxes:
                 if key in ok or np.linalg.norm((c - centre)[[0, 2]]) > np.linalg.norm(h) + 3.0:
                     continue
                 for name, pc, pr, ph in parts:
                     dd = depth((pc, pr, ph), (c, r, h))
-                    if name.endswith("Leg") and key == "solid" and c[1] + h[1] <= 2.1:
-                        continue  # feet on steps and low ledges
+                    if name.endswith("Leg") and key == "solid" and c[1] + h[1] <= ground + 2.1:
+                        continue  # the floor and the steps they walk on, low ledges
                     if dd > TOL:
                         hits.setdefault((slot, label), []).append((t, dd, name))
             for other, oparts in bodies.items():

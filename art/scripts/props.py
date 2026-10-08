@@ -238,6 +238,84 @@ def bureau_badge():
     return parts, []
 
 
+@prop("NotebookOpen", pivot="bottom", material="SmoothPlastic", collide=False, texture=512)
+def notebook_open():
+    """The plain black notebook lying open (Diavolo writing): both covers flat, the pages lined, the left
+    page full of cramped handwriting, the right half written, the red ribbon across."""
+    cover = mk.noisy("NoteO_Cover", srgb(28, 26, 30), srgb(48, 44, 48), scale=14, roughness=0.7)
+    pages = mk.flat("NoteO_Pages", PAPER_A, 0.85)
+    ink = mk.flat("NoteO_Ink", srgb(26, 22, 30), 0.6)
+    band = mk.flat("NoteO_Band", DEEP_RED, 0.7)
+    parts = [mk.box("CoverL", (1.32, 0.97, 0.04), (-0.66, 0, 0.02), mat=cover, bevel=0.01),
+             mk.box("CoverR", (1.32, 0.97, 0.04), (0.66, 0, 0.02), mat=cover, bevel=0.01),
+             mk.box("PagesL", (1.24, 0.9, 0.06), (-0.63, 0, 0.07), mat=pages, bevel=0.005),
+             mk.box("PagesR", (1.24, 0.9, 0.06), (0.63, 0, 0.07), mat=pages, bevel=0.005),
+             mk.box("Spine", (0.06, 0.95, 0.08), (0, 0, 0.05), mat=cover),
+             mk.box("Ribbon", (0.05, 1.05, 0.005), (0.25, -0.02, 0.105), rot=(0, 0, 8), mat=band)]
+    rng = __import__("random").Random(7)
+    for side, rows in ((-1, 8), (1, 4)):
+        for r in range(rows):
+            y = 0.34 - r * 0.09
+            x = side * 0.14
+            while abs(x) < 1.05:
+                w = rng.uniform(0.06, 0.16)
+                parts.append(mk.box("Word", (w, 0.012, 0.004), (x + side * w / 2, y, 0.102), mat=ink))
+                x += side * (w + rng.uniform(0.06, 0.1))
+    return parts, []
+
+
+@prop("Smartphone", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def smartphone():
+    """A black phone held up, its screen lit a hard red (the summons)."""
+    body = mk.flat("Phone_Body", srgb(14, 14, 16), 0.3, 0.2)
+    rim = mk.noisy("Phone_Rim", STEEL_B, STEEL_A, scale=20, roughness=0.3, metallic=1.0)
+    parts = [mk.box("Body", (0.52, 1.02, 0.07), (0, 0, 0), mat=body, bevel=0.04),
+             mk.box("Rim", (0.54, 1.04, 0.04), (0, 0, 0), mat=rim, bevel=0.04),
+             mk.box("Lens", (0.08, 0.08, 0.02), (-0.16, 0.42, -0.04), mat=body)]
+    glows = [mk.box("Screen", (0.46, 0.92, 0.01), (0, 0, 0.04), mat=mk.emissive("Phone_Glow", srgb(255, 40, 46), 4))]
+    return parts, glows
+
+
+@prop("CRTTelevision", pivot="bottom", material="SmoothPlastic", collide=True, texture=512,
+      lights=[dict(at=(0, -1.6, 1.4), kind="point", color=(170, 196, 255), range=12, brightness=0.9)])
+def crt_television():
+    """An old television on its own short legs: a wood-grain cabinet, the glass bulging out of a dark
+    bezel and lit a cold blue, two dials and a speaker grille, rabbit-ear antennas."""
+    wood = mk.wood("TV_Wood", srgb(96, 62, 38), srgb(54, 32, 20), scale=4)
+    dark = mk.flat("TV_Dark", srgb(20, 20, 22), 0.5)
+    chrome = mk.noisy("TV_Chrome", STEEL_B, STEEL_A, scale=20, roughness=0.25, metallic=1.0)
+    parts = [mk.box("Cabinet", (3.0, 2.2, 2.2), (0, 0, 1.75), mat=wood, bevel=0.1),
+             mk.box("Bezel", (2.2, 0.08, 1.8), (-0.3, -1.1, 1.75), mat=dark, bevel=0.06)]
+    for k, z in enumerate((2.15, 1.65)):
+        parts.append(mk.cylinder("Dial", 0.14, 0.12, (1.1, -1.14, z), rot=(90, 0, 0), mat=chrome, verts=16))
+    for k in range(5):
+        parts.append(mk.box("Grille", (0.45, 0.04, 0.04), (1.1, -1.12, 1.2 - k * 0.12), mat=dark))
+    for sx in (-1, 1):
+        parts.append(mk.tube("Leg", (sx * 1.2, 0.0, 0.66), (sx * 1.35, 0.0, 0.0), 0.06, mat=dark))
+        parts.append(mk.tube("Ear", (0, 0.3, 2.84), (sx * 0.9, 0.5, 4.2), 0.025, mat=chrome))
+    parts.append(mk.sphere("EarBase", 0.18, (0, 0.3, 2.86), mat=dark, segments=12, rings=8))
+    glows = [mk.box("Screen", (1.9, 0.06, 1.5), (-0.3, -1.12, 1.75), mat=mk.emissive("TV_Glow", srgb(170, 196, 255), 3),
+                    bevel=0.12)]
+    return parts, glows
+
+
+@prop("ShrineDoor", pivot="bottom", material="WoodPlanks", collide=True, texture=512)
+def shrine_door():
+    """One leaf of the shrine's heavy double door: dark planks, three iron bands with studs, a ring pull.
+    Its hinge is on its left edge (seen from the outside), x = -1.6; the door is 3.2 wide, 8 high."""
+    wood = mk.wood("Door_Wood", srgb(62, 40, 28), srgb(30, 18, 12), scale=3)
+    iron = mk.noisy("Door_Iron", IRON_A, IRON_B, scale=18, roughness=0.6, metallic=0.8)
+    parts = [mk.box("Leaf", (3.2, 0.4, 8.0), (0, 0, 4.0), mat=wood, bevel=0.04)]
+    for k in range(4):
+        parts.append(mk.box("Plank", (0.04, 0.42, 7.9), (-1.2 + k * 0.8, 0, 4.0), mat=iron))
+    for z in (1.2, 4.0, 6.8):
+        parts.append(mk.box("Band", (3.24, 0.46, 0.3), (0, 0, z), mat=iron, bevel=0.02))
+        for k in range(5):
+            parts.append(mk.sphere("Stud", 0.06, (-1.3 + k * 0.65, -0.25, z), mat=iron, segments=8, rings=6))
+    parts.append(mk.torus("Ring", 0.28, 0.05, (1.1, -0.32, 3.8), rot=(90, 0, 0), mat=iron, major_segments=20))
+    return parts, []
+
+
 @prop("Notebook", pivot="centre", material="SmoothPlastic", collide=False, texture=512)
 def notebook():
     cover = mk.noisy("Note_Cover", srgb(28, 26, 30), srgb(48, 44, 48), scale=14, roughness=0.7)

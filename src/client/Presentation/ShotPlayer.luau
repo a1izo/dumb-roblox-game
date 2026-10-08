@@ -230,6 +230,25 @@ type Live = {
 	eyes: { BasePart },
 }
 
+-- Puts the cutscene face decal Face<name> (art/scripts/ui/faces.py) on an actor's head, or ("") its own back.
+local function setFace(model: Model, name: string)
+	local head = model:FindFirstChild("Head")
+	if not head or not head:IsA("BasePart") then
+		return
+	end
+	local decal = head:FindFirstChild("face")
+	if not decal or not decal:IsA("Decal") then
+		decal = Create("Decal", { Name = "face", Face = Enum.NormalId.Front, Parent = head }) :: Decal
+	end
+	local own = decal:GetAttribute("OwnTexture")
+	if own == nil then
+		own = decal.Texture
+		decal:SetAttribute("OwnTexture", own)
+	end
+	local texture = if name ~= "" then ModelLibrary.carrierTexture("Face" .. name) else nil
+	decal.Texture = texture or own
+end
+
 local function runEvent(event: any, base: Vector3, token: number, options: Options, closers: { () -> () })
 	local kind = event.kind
 	if options.onEvent then
@@ -311,6 +330,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 
 	local stage = Stage.new()
 	local actors: { Live } = {}
+	local bySlot: { [string]: Live } = {}
 	for _, data in ipairs(shot.actors) do
 		local userId = cast[data.slot]
 		local model = if userId
@@ -352,6 +372,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				end)
 			end
 			table.insert(actors, live)
+			bySlot[data.slot] = live
 		end
 	end
 
@@ -444,7 +465,14 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		while nextEvent <= #events and events[nextEvent].t <= tt do
 			local event = events[nextEvent]
 			nextEvent += 1
-			task.spawn(runEvent, event, base, token, opts, closers)
+			if event.kind == "face" then
+				local live = bySlot[event.slot or ""]
+				if live then
+					setFace(live.model, event.face or "")
+				end
+			else
+				task.spawn(runEvent, event, base, token, opts, closers)
+			end
 		end
 	end)
 
