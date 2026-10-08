@@ -1,123 +1,143 @@
-"""Diavolo's role cutscene (the briefing, seen only by Diavolo): the study at night. Diavolo stands at the
-tall window with their back to the room, watching the rain; the Muertos kneel on the carpet before the
-desk. Diavolo turns, lays a hand on the black notebook on the desk, and behind them, unseen, the
-Deathsinger rises out of the dark; Diavolo straightens, opens their arms, and laughs. The role card runs
-as captions over it.
+"""Diavolo's role cutscene (the briefing, seen only by Diavolo), 15 s.
 
-The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, the window in the
-north wall (x -4..4); the desk at (0, -3.6), 6.6 across, its top at y 3.23; the desk chair behind it at
-(0, -6.2). Diavolo stands behind the desk's east end; the Muertos kneel south of the desk."""
+1  0.0-3.0   From behind the kneeling Muertos, over the desk: Diavolo at the tall window, back to the room,
+             a black shape against the rain. Lightning.
+2  3.0-5.4   From the room's east side: Diavolo looks round over the right shoulder, smiles, turns.
+3  5.4-7.7   Diavolo walks round the desk to the open floor before the Muertos, the notebook in hand.
+4  7.7-9.0   Insert: the notebook raised, held to the chest.
+5  9.0-11.4  Low from the west: Diavolo throws their arms open; behind, unseen, the Deathsinger rises
+             out of the dark over the desk.
+6  11.4-12.8 High over Diavolo's shoulder: the Muertos bow down to the floor.
+7  12.8-15.0 Close: a hand over the face, a chuckle that breaks into a laugh, head thrown back.
+
+The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, 14 high; the
+window in the north wall (x -4..4); the desk at (0, -3.6) (x -3.3..3.3, z -5.2..-2.0, top 3.23), the
+lamp at its west end; no chair (Diavolo stands)."""
 
 from animlib import J
-from cinema.acting import PRAY, facing, kneel, soft, walking
+from cinema import framing
+from cinema.acting import PRAY, beat, facing, hold, kneel, soft, walking
 from cinema.shot import Shot
 from motion import Motion
 
 NAME = "RoleDiavolo"
 LENGTH = 15.0
-TOP = 3.23  # the desk top
-WINDOW = (2.2, -8.7)  # where Diavolo stands at first, looking out
-DIAVOLO = (3.4, -6.0)  # behind the desk's east end
-NOTEBOOK = (2.9, -4.6)
-SINGER = (-1.6, -8.6)  # where the Deathsinger rises, right behind Diavolo
-KNEEL = [(-2.4, 0.9), (2.6, 0.9), (-5.4, 2.3), (5.6, 2.3)]
+WINDOW = (3.2, -8.8)
+CORNER = (4.9, -5.4)  # round the desk's east end
+STAND = (2.2, -0.8)  # the open floor in front of the desk
+SINGER = (2.2, -3.6)
+KNEEL = [(0.0, 3.4), (4.4, 3.4), (-2.6, 1.4), (7.0, 1.4)]  # an arc with a gap in front of Diavolo
+WALK_START, WALK_END = 5.4, 7.6
 
-# Acting ---------------------------------------------------------------------------------------------
+# Diavolo ---------------------------------------------------------------------------------------------
 
-BEHIND = dict(rShoulder=J((-16, 0, -8), (0.14, 0.04, 0.16)), lShoulder=J((-16, 0, 8), (-0.14, 0.04, 0.16)))
-DOWN = dict(rShoulder=J((4, 0, 2)), lShoulder=J((4, 0, -2)))
-OPEN = dict(rShoulder=J((24, -10, 30), (0.04, 0.12, -0.08)), lShoulder=J((24, 10, -30), (-0.04, 0.12, -0.08)))
-FACE = dict(rShoulder=J((132, 0, -36), (-0.22, 0.3, -0.24)), lShoulder=J((16, 0, -14), (0.02, 0.04, 0.0)))
-WIDE = dict(rShoulder=J((40, -12, 62), (0.08, 0.18, 0.0)), lShoulder=J((40, 12, -62), (-0.08, 0.18, 0.0)))
+BEHIND = dict(rShoulder=J((-20, 0, -10), (0.16, 0.05, 0.18)), lShoulder=J((-20, 0, 10), (-0.16, 0.05, 0.18)))
+WALK_ARMS = dict(rShoulder=J((6, 0, -2)), lShoulder=J((10, 0, 4), (0.0, 0.02, -0.04)))
+BOOK = dict(lShoulder=J((78, 0, 34), (0.26, 0.18, -0.3)))  # the notebook held up to the chest
 
-d = Motion("RoleDiavolo_self", LENGTH, note="Diavolo's role cutscene: at the window, the notebook, the laugh.")
-d.key(0.0, root=(2, 0, 0), neck=(10, 0, 0), **BEHIND)
-d.key(3.2, root=(2, 4, 0), neck=(8, -6, 0), **BEHIND)
-d.key(3.8, root=(-2, -16, 0), neck=(-4, -10, 0), **DOWN)  # the body leads the turn
-d.key(4.6, root=(-6, 0, 0), neck=(-12, 0, 0), **DOWN)
-d.key(5.3, root=(-8, 0, 0), neck=(-20, 0, 0), **DOWN)
-d.key(5.6, root=(-14, 0, 0), neck=(-28, 0, 0), rShoulder=J((46, 0, -4), (0, 0.06, -0.22)), lShoulder=J((6, 0, -2)))
-d.key(7.0, root=(-15, 0, 0), neck=(-30, 2, 0), rShoulder=J((48, 0, -4), (0, 0.06, -0.22)), lShoulder=J((6, 0, -2)))
-d.key(8.0, root=(0, 0, 0), neck=(-4, 0, 0), rShoulder=J((14, 0, 4)), lShoulder=J((8, 0, -4)))
-d.key(9.2, "out", root=(4, 0, 0), neck=(12, 0, 0), **OPEN)  # the red flash: chin up, arms open
-d.key(10.4, root=(4, 0, 0), neck=(10, 0, 0), **OPEN)
-d.key(11.0, root=(-6, 0, 0), neck=(-14, 0, 0), **FACE)  # a hand over the face: it starts as a chuckle
-for k in range(9):
-    t = 11.2 + 0.24 * k
-    d.key(t, "sine", root=(-4 + (3 if k % 2 else -1), 0, 0), neck=(-10 + (5 if k % 2 else 0), 0, 0), **FACE)
-d.key(13.6, "out", root=(10, 0, 0), neck=(26, 0, 0), **WIDE)  # and breaks out: head back, arms wide
-for k in range(5):
-    t = 13.8 + 0.24 * k
-    d.key(t, "sine", root=(10 + (3 if k % 2 else 0), 0, 0), neck=(26 + (4 if k % 2 else 0), 0, 0), **WIDE)
-d.key(LENGTH, root=(11, 0, 0), neck=(28, 0, 0), **WIDE)
-soft(d, head=2.6, arms=2.2).plant(None, 4.5, stance=0.06).plant(5.5, None, stance=0.06)
-walking(d, 4.6, 5.3)
+d = Motion("RoleDiavolo_self", LENGTH, note="Diavolo's role cutscene: the window, the notebook, the laugh.")
+d.key(0.0, root=(4, 0, 0), neck=(10, 0, 0), **BEHIND)  # chest up, eyes up at the storm
+d.key(1.6, root=(5, 0, 0), neck=(12, 0, -4), **BEHIND)
+d.key(3.0, root=(4, 0, 0), neck=(10, 0, -2), **BEHIND)
+beat(d, 3.7, 0.5, neck=(-6, -60, 6))  # a look over the right shoulder, into the room
+hold(d, 4.5)
+beat(d, 5.0, 0.5, root=(-4, -40, 0), neck=(-6, -30, 0))  # the body follows the head round
+beat(d, 5.5, 0.4, root=(-6, 0, 0), neck=(2, 0, 0), **WALK_ARMS)
+hold(d, WALK_END)
+beat(d, 8.1, 0.45, root=(-4, 0, 0), neck=(-14, 0, 0), **BOOK)  # raises the notebook, eyes on it
+hold(d, 8.9)
+beat(d, 9.6, 0.6, root=(6, 0, 0), neck=(16, 0, 0), lShoulder=J((14, 0, -8)))  # straightens, chin up
+beat(d, 10.2, 0.5, antic=0.35, over=0.15,  # and throws the arms open
+     rShoulder=J((34, -12, 66), (0.1, 0.16, -0.06)), lShoulder=J((34, 12, -66), (-0.1, 0.16, -0.06)))
+d.key(11.2, root=(7, 0, 0), neck=(18, 0, 0))
+hold(d, 12.6)
+FACE = dict(rShoulder=J((136, 0, -38), (-0.24, 0.32, -0.26)), lShoulder=J((22, 0, -18), (0.04, 0.04, 0.0)))
+beat(d, 13.1, 0.4, root=(-10, 0, 0), neck=(-18, 0, 0), **FACE)  # a hand over the face
+for k in range(4):  # a chuckle shakes the shoulders
+    t = 13.2 + 0.15 * k
+    d.key(t, "sine", root=(-10 + (4 if k % 2 else 0), 0, 0), neck=(-16 + (5 if k % 2 else 0), 0, 0))
+beat(d, 14.0, 0.3, antic=0.3, over=0.2, root=(16, 0, 0), neck=(34, 0, 0),  # and breaks: head back
+     rShoulder=J((40, -14, 64), (0.08, 0.2, 0.0)), lShoulder=J((40, 14, -64), (-0.08, 0.2, 0.0)))
+for k in range(7):
+    t = 14.15 + 0.12 * k
+    d.key(t, "sine", root=(16 + (4 if k % 2 else 0), 0, (2 if k % 2 else -2)), neck=(34 + (6 if k % 2 else 0), 0, 0))
+soft(d, head=2.6, arms=2.2).plant(None, WALK_START - 0.1, stance=0.06).plant(WALK_END + 0.1, None, stance=0.06)
+walking(d, WALK_START, WALK_END)
 d.build()
+
+# The Muertos -----------------------------------------------------------------------------------------
 
 
 def kneeler(k):
-    """A Muerto kneeling before the desk, head bowed; at the red flash they bow lower."""
     m = Motion(f"RoleDiavolo_kneel{k}", LENGTH, note="Diavolo's role cutscene: a Muerto kneeling.")
-    lag = 0.15 * k
-    kneel(m, 0.0, head=-24, **PRAY)
-    kneel(m, 4.0 + lag, head=-18, **PRAY)  # they look up as Diavolo turns
-    kneel(m, 8.4 + lag, head=-20, **PRAY)
-    kneel(m, 9.2 + lag, "out", lean=-34, head=-34, **PRAY)  # and bow down to the floor
-    kneel(m, LENGTH, lean=-36, head=-36, **PRAY)
-    return soft(m)
+    lag = 0.12 * k
+    kneel(m, 0.0, lean=-10, head=-30, **PRAY)
+    kneel(m, 7.4 + lag, lean=-10, head=-28, **PRAY)
+    kneel(m, 8.0 + lag, lean=-4, head=-8, **PRAY)  # they lift their eyes as Diavolo comes before them
+    kneel(m, 10.0 + lag, lean=0, head=-2, **PRAY)  # a breath in as the arms open...
+    kneel(m, 10.7 + lag, "out", lean=-46, head=-40, **PRAY)  # ...and down to the floor
+    kneel(m, 12.2 + lag, lean=-48, head=-42, **PRAY)
+    kneel(m, LENGTH, lean=-47, head=-42, **PRAY)
+    return soft(m, head=3.0, arms=2.6)
 
 
 for k in range(len(KNEEL)):
     kneeler(k).build()
 
-# The shot -------------------------------------------------------------------------------------------
+# The shot --------------------------------------------------------------------------------------------
 
 shot = Shot(NAME, "Sets", LENGTH, note="Diavolo's role cutscene: the study, the Muertos, the Deathsinger.")
+shot.room = (-12.0, -10.0, 12.0, 10.0, 14.0)
 
-# A: from the door, behind the kneeling Muertos: the desk, and Diavolo's back dark against the rainy window.
-shot.cam(0.0, (-1.0, 7.4, 9.0), (1.6, 4.6, -8.0), fov=46)
-shot.cam(3.6, (-0.4, 6.8, 6.6), (2.0, 4.8, -8.0), fov=42, ease="linear")
-# B: from the desk's east end: Diavolo turns from the window, comes to the desk, lays a hand on the notebook.
-shot.cam(3.6, (7.6, 5.2, -1.2), (2.8, 4.4, -7.0), fov=44, cut=True)
-shot.cam(7.2, (7.8, 5.0, -0.8), (3.0, 4.2, -6.0), fov=44, ease="linear")
-# C: low from the front: the Deathsinger rises out of the dark behind them.
-shot.cam(7.2, (0.2, 2.8, 3.0), (0.8, 6.4, -7.0), fov=50, cut=True)
-shot.cam(10.6, (0.3, 2.6, 2.2), (0.8, 7.2, -7.0), fov=46, ease="linear")
-# D: over Diavolo's shoulder, down on the kneeling Muertos.
-shot.cam(10.6, (5.4, 7.8, -8.2), (-0.4, 1.0, 1.8), fov=46, cut=True)
-shot.cam(13.0, (5.8, 8.6, -8.4), (-0.4, 1.0, 1.8), fov=44, ease="linear")
-# E: Diavolo laughing, arms wide, the Deathsinger looming behind.
-shot.cam(13.0, (5.6, 5.0, 0.4), (1.6, 5.6, -6.8), fov=48, cut=True)
-shot.cam(LENGTH, (5.2, 5.0, -0.6), (1.6, 5.8, -6.8), fov=42, ease="in")
-
-me = shot.actor("self", d)
+me = shot.actor("self", d, silhouette=(0.0, 3.0))
 me.mark(0.0, (WINDOW[0], 0.0, WINDOW[1]), 0.0)
-me.mark(3.3, (WINDOW[0], 0.0, WINDOW[1]), 0.0)
-me.mark(4.5, (WINDOW[0], 0.0, WINDOW[1]), -156.0)
-me.mark(5.4, (DIAVOLO[0], 0.0, DIAVOLO[1]), -164.0)
-me.mark(6.0, (DIAVOLO[0], 0.0, DIAVOLO[1]), -180.0)
-me.mark(LENGTH, (DIAVOLO[0], 0.0, DIAVOLO[1]), -180.0)
+me.mark(4.6, (WINDOW[0], 0.0, WINDOW[1]), 0.0)
+# turning right all the way round: 0 -> -153 (to the corner) -> -210 (to the open floor) -> -180
+me.mark(WALK_START, (WINDOW[0], 0.0, WINDOW[1]), facing(WINDOW, CORNER))
+me.mark(WALK_START + 0.94, (CORNER[0], 0.0, CORNER[1]), facing(WINDOW, CORNER), "linear")
+me.mark(WALK_END, (STAND[0], 0.0, STAND[1]), facing(CORNER, STAND) - 360, "linear")
+me.mark(WALK_END + 0.5, (STAND[0], 0.0, STAND[1]), -180.0)
+me.mark(LENGTH, (STAND[0], 0.0, STAND[1]), -180.0)
+me.hold("Notebook", "Left Arm", (0.0, -1.15, -0.25), (12, 0, 0))
 for k, (x, z) in enumerate(KNEEL):
     a = shot.actor(f"ally:{k + 1}", clip=f"RoleDiavolo_kneel{k}")
-    a.mark(0.0, (x, 0.0, z), facing((x, z), DIAVOLO))
+    a.mark(0.0, (x, 0.0, z), facing((x, z), STAND))
 
-book = shot.prop("Notebook")
-book.at(0.0, (NOTEBOOK[0], TOP + 0.11, NOTEBOOK[1]), (0, 8, 0))
-book.at(LENGTH, (NOTEBOOK[0], TOP + 0.11, NOTEBOOK[1]), (0, 8, 0))
-singer = shot.prop("Specter", show=(7.2, None))
-singer.at(7.2, (SINGER[0], -11.0, SINGER[1]), (0, 180, 0))
-singer.at(7.6, (SINGER[0], -10.0, SINGER[1]), (0, 180, 0), "in")
-singer.at(9.4, (SINGER[0], 0.4, SINGER[1]), (0, 180, 0), "out")
+singer = shot.prop("Specter", show=(9.0, None))
+singer.at(9.0, (SINGER[0], -11.0, SINGER[1]), (0, 180, 0))
+singer.at(9.4, (SINGER[0], -9.6, SINGER[1]), (0, 180, 0), "in")
+singer.at(11.0, (SINGER[0], 0.4, SINGER[1]), (0, 180, 0), "out")
 singer.at(LENGTH, (SINGER[0], 0.8, SINGER[1]), (0, 184, 0))
 
+# 1: from behind the Muertos, over the desk to the window; a slow creep in.
+shot.cam(0.0, (1.0, 4.8, 8.6), (3.0, 4.6, -8.8), fov=42)
+shot.cam(3.0, (1.6, 4.6, 6.0), (3.0, 4.7, -8.8), fov=40, ease="linear")
+# 2: from the room's east side, holding on them as they look round and turn.
+shot.pan(3.0, WALK_START, "self", (8.6, 4.8, -8.4), fov=34, cut=True)
+# 3: from the south-east corner, turning with them as they come round the desk.
+shot.pan(WALK_START, WALK_END, "self", (9.4, 4.4, 4.2), dy=-0.6, fov=44, cut=True, drift=(-1.2, 0.0, -0.6))
+# 4: in front, between the kneeling Muertos: the notebook raised to the chest.
+shot.frame(WALK_END, "self", "medium", angle=0, height=0.4, cut=True)
+shot.frame(9.0, "self", "medium", angle=4, height=0.2, dist=0.82, ease="linear")
+# 5: low from the south-east, up at Diavolo's face and the Deathsinger rising behind.
+shot.pan(9.0, 11.4, "self", (2.9, 1.8, 2.6), aim="Torso", dy=2.4, fov=54, cut=True, drift=(0.0, 0.0, -0.4))
+# 6: over Diavolo's shoulder, down onto the Muertos bowing.
+shot.cam(11.4, (-3.6, 7.4, -1.2), (2.2, 1.2, 2.2), fov=46, cut=True)
+shot.cam(12.8, (-3.8, 7.9, -1.4), (2.2, 1.0, 2.2), fov=44, ease="linear")
+# 7: the laugh, close; the camera rises as the head goes back, to keep the face.
+shot.frame(12.8, "self", "close", angle=-25, height=-0.2, cut=True)
+shot.frame(13.9, "self", "close", angle=-20, height=0.4, dist=0.92)
+shot.frame(LENGTH, "self", "close", angle=-16, height=1.6, dist=0.86, ease="in")
+
 shot.event(0.0, "sfx", slot="mapRainGlass")
-shot.event(2.0, "sfx", slot="thunder")
-shot.event(7.4, "sfx", slot="wisp")
-shot.event(9.2, "fx", name="flash", r=200, g=20, b=30, strength=0.35, dur=0.5)
-shot.event(9.2, "sfx", slot="eyesOpen")
-shot.event(11.0, "sfx", slot="hauntWhisper")
+shot.event(1.2, "fx", name="flash", r=200, g=210, b=255, strength=0.5, dur=0.35)
+shot.event(1.25, "sfx", slot="thunder")
+shot.event(9.2, "sfx", slot="wisp")
+shot.event(10.2, "fx", name="flash", r=200, g=20, b=30, strength=0.35, dur=0.5)
+shot.event(10.2, "sfx", slot="eyesOpen")
+shot.event(14.0, "sfx", slot="hauntWhisper")
 # The role card, as captions over the scene (the game fills them in).
 shot.event(1.0, "card", key="role", dur=4.2)
-shot.event(5.4, "card", key="win", dur=3.6)
+shot.event(5.6, "card", key="win", dur=3.4)
 shot.event(9.2, "card", key="move", dur=2.8)
-shot.event(12.0, "card", key="names", dur=3.0)
+shot.event(12.2, "card", key="names", dur=2.8)

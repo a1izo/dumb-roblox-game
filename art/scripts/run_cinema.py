@@ -185,12 +185,29 @@ def place_actor(shot, actor, rig, actions, index):
             length = float(action["length"]) * FPS
             strip.repeat = max(1.0, (shot.length * FPS - start) / max(1.0, length) + 1)
         strip.extrapolation = "HOLD"
-    if actor.silhouette or actor.extra:
-        black = common.material("Silhouette", (0.005, 0.005, 0.006), 0.9)
+    if actor.extra:
+        grey = common.material("Extra", (0.12, 0.12, 0.14), 0.8)
         for obj in parts.values():
-            if obj.type == "MESH" and (actor.extra or actor.silhouette[0] <= 0.0):
+            if obj.type == "MESH":
                 obj.data.materials.clear()
-                obj.data.materials.append(black if actor.silhouette else common.material("Extra", (0.12, 0.12, 0.14), 0.8))
+                obj.data.materials.append(grey)
+    if actor.silhouette:
+        # A black shell over each part, shown only while the actor is a silhouette (the game's Highlight).
+        black = common.material("Silhouette", (0.005, 0.005, 0.006), 0.9)
+        t0, t1 = actor.silhouette
+        for obj in list(parts.values()):
+            if obj.type != "MESH":
+                continue
+            shell = obj.copy()
+            shell.data = obj.data.copy()
+            shell.data.materials.clear()
+            shell.data.materials.append(black)
+            shell.scale = obj.scale * 1.015
+            for coll in obj.users_collection:
+                coll.objects.link(shell)
+            for t, hidden in ((0.0, t0 > 0.0), (t0, False), (t1, True)):
+                shell.hide_render = hidden
+                shell.keyframe_insert("hide_render", frame=t * FPS)
     return root, arm, parts
 
 
@@ -325,6 +342,87 @@ def add_captions(shot, cam):
 # Main -------------------------------------------------------------------------------------------------
 
 
+# A font for the contact sheets' labels (ffmpeg on Windows finds none by itself).
+FONT = r"C\:/Windows/Fonts/arial.ttf" if os.name == "nt" else "DejaVuSans.ttf"
+
+
+def cut_times(shot):
+    """For each cut: (its start, a moment just in, the middle, a moment before its end)."""
+    starts = [g[0][0] for g in shot.cam_groups if g]
+    ends = starts[1:] + [shot.length]
+    out = []
+    for a, b in zip(starts, ends):
+        pad = min(0.25, (b - a) / 4)
+        out.append((a + pad, (a + b) / 2, b - pad))
+    return out
+
+
+def add_plan_camera(shot):
+    """A camera straight down over the actors, to check where everyone stands."""
+    pts = []
+    for a in shot.actors:
+        for t in (0.0, shot.length / 2, shot.length):
+            v = a.path.value(t)
+            pts.append((v[0], v[2]))
+    pts = np.array(pts) if pts else np.zeros((1, 2))
+    lo, hi = pts.min(axis=0), pts.max(axis=0)
+    centre = (lo + hi) / 2
+    span = max(hi[0] - lo[0], (hi[1] - lo[1]) * 16 / 9, 12.0) + 10.0
+    data = bpy.data.cameras.new("PlanCam")
+    data.type = "ORTHO"
+    data.ortho_scale = span
+    data.clip_end = 3000
+    cam = bpy.data.objects.new("PlanCam", data)
+    bpy.context.scene.collection.objects.link(cam)
+    top = max((a.path.value(0.0)[1] for a in shot.actors), default=0.0) + 9.0
+    cam.matrix_world = Matrix.Translation(b_pos((centre[0], top, centre[1]))) @ b_rot(
+        shotlib.look_rotation((centre[0], top, centre[1]), (centre[0], 0.0, centre[1] - 0.001)), True).to_4x4()
+    return cam
+
+
+def sheet(shot, size=(640, 360)):
+    """A contact sheet: every cut at its start, middle and end through the shot's camera, then the
+    actors from straight above at the start, middle and end. Written as <Shot>_sheet.png."""
+    import subprocess
+
+    library = build_set(shot.venue)
+    clips = {a.clip for a in shot.actors if a.clip}
+    rig, actions = load_rig(clips)
+    for i, actor in enumerate(shot.actors):
+        root, arm, parts = place_actor(shot, actor, rig, actions, i)
+        add_held(actor, arm, parts, library)
+    add_props(shot, library)
+    cam = add_camera(shot)
+    plan = add_plan_camera(shot)
+    scene = bpy.context.scene
+    scene.render.resolution_x, scene.render.resolution_y = size
+    scene.render.image_settings.media_type = "IMAGE"
+    scene.render.image_settings.file_format = "PNG"
+    os.makedirs(OUT_DIR, exist_ok=True)
+    frames = []
+    rows = cut_times(shot) + [(0.3, shot.length / 2, shot.length - 0.3)]
+    for r, row in enumerate(rows):
+        scene.camera = plan if r == len(rows) - 1 else cam
+        for k, t in enumerate(row):
+            scene.frame_set(int(round(t * FPS)))
+            path = os.path.join(OUT_DIR, f"_{shot.name}_{r}_{k}.png")
+            scene.render.filepath = path
+            bpy.ops.render.render(write_still=True)
+            frames.append((path, f"{'plan' if r == len(rows) - 1 else 'cut ' + str(r + 1)}  {t:.2f}s"))
+    out = os.path.join(OUT_DIR, f"{shot.name}_sheet.png")
+    args, filters = [], []
+    for i, (path, label) in enumerate(frames):
+        args += ["-i", path]
+        filters.append(f"[{i}]drawtext=fontfile='{FONT}':text='{label}':x=8:y=8:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.6[f{i}]")
+    n = len(frames)
+    layout = "|".join(f"{(i % 3) * size[0]}_{(i // 3) * size[1]}" for i in range(n))
+    graph = ";".join(filters) + ";" + "".join(f"[f{i}]" for i in range(n)) + f"xstack=inputs={n}:layout={layout}"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", *args, "-filter_complex", graph, out], check=True)
+    for path, _ in frames:
+        os.remove(path)
+    return out
+
+
 def preview(shot, size=(960, 540), t_from=0.0, t_to=None, stills=None):
     library = build_set(shot.venue)
     clips = {a.clip for a in shot.actors if a.clip}
@@ -375,6 +473,9 @@ def main():
     if "--export" in argv:
         for name in names:
             print("[cinema] wrote", shotlib.export(shots[name]))
+    if "--sheet" in argv:
+        for name in names:
+            print("[cinema] sheet", sheet(shots[name]))
     if "--preview" in argv:
         size = (960, 540)
         t_from, t_to, stills = 0.0, None, None

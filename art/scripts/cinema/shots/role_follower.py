@@ -1,116 +1,142 @@
-"""The Muerto's role cutscene (the briefing, seen only by that Muerto): the shrine under the city. The
-Muertos kneel on the stone between the rows of candles; on the altar steps, against the red glow of the
-robed figure, stands Diavolo, a black shape at first. The candles flare and show their face; Diavolo
-holds out a hand to the Muerto, who lifts their hands to it, then lays one on their heart and bows.
+"""The Muerto's role cutscene (the briefing, seen only by that Muerto), 15 s.
 
-The shrine (maps/venues/sets/shrine.py, Sets scene space, origin x 120): the hall x 109..131,
-z -16..14; three altar steps up from the north wall (tops at y 0.6, 1.2, 1.8; the top step's front edge
-at z -8.5), the altar block at z -10.4, the figure behind it; two red cushions at (117.8 / 122.2, -4.5)
-(0.5 high); candles on the floor at x 115.5 / 124.5."""
+1  0.0-3.6   Low from the altar steps down the nave: the Muerto walks up between the rows of candles, the
+             other Muertos kneeling at the sides.
+2  3.6-6.0   From the side: the Muerto goes down on their knees before the steps, hands together, head bowed.
+3  6.0-8.6   Low over the Muerto's shoulder, up the steps: Diavolo, a black shape against the red glow of
+             the robed figure, turns round. The candles flare and show their face.
+4  8.6-11.0  From the side: Diavolo comes down the steps and stands over the kneeling Muerto.
+5  11.0-13.0 Close and low on the Muerto: Diavolo's hand comes down on their head; they look up.
+6  13.0-15.0 High from beside the figure: everyone bows; Diavolo opens their arms.
+
+The shrine (maps/venues/sets/shrine.py, Sets scene space, origin x 120): the hall x 109..131, z -16..14,
+20 high; three altar steps up from the north wall (tops 0.6, 1.2, 1.8; front edges at z -6.5, -7.5,
+-8.5), the altar block at z -10.4 (x 117..123), the robed figure behind it (x 116..124, 12 high); candles on
+the floor at x 115.5 / 124.5, z -6, -1, 4, 9; pillars at x 111.4 / 128.6, z -8, -1, 6."""
 
 from animlib import J
-from cinema.acting import PRAY, facing, kneel, soft
+from cinema.acting import PRAY, beat, facing, hold, kneel, soft, walking
 from cinema.shot import Shot
 from motion import Motion
 
 NAME = "RoleMuerto"
 LENGTH = 15.0
 OX = 120.0
-STEP = 1.8  # the top step
-DIAVOLO = (OX, -8.9)
-SELF = (OX - 2.2, -4.5)
-CUSHION = 0.5
-OTHERS = [((OX + 2.2, -4.5), CUSHION), ((OX - 3.2, -1.2), 0.0), ((OX + 3.2, -1.2), 0.0)]
+DOOR = (OX, 9.0)
+KNEEL_AT = (OX, -3.4)
+ALTAR = (OX, -9.0)  # Diavolo, on the top step
+BELOW = (OX, -5.4)  # Diavolo, come down to the floor
+OTHERS = [(OX - 6.8, -3.0), (OX + 6.8, -3.0), (OX - 6.8, 2.4), (OX + 6.8, 2.4)]
+ARRIVE = 0.3 + (DOOR[1] - KNEEL_AT[1]) / 4.0  # the walk's own speed
 
-# Acting ---------------------------------------------------------------------------------------------
+# The Muerto ------------------------------------------------------------------------------------------
 
-UP = dict(rShoulder=J((118, 0, -16), (-0.1, 0.22, -0.2)), lShoulder=J((118, 0, 16), (0.1, 0.22, -0.2)))
-HEART = dict(rShoulder=J((44, 0, -58), (-0.36, 0.16, -0.22)), lShoulder=J((4, 0, -4)))
+WALK = dict(rShoulder=J((4, 0, -2)), lShoulder=J((4, 0, 2)))
+UP = dict(rShoulder=J((96, 0, -18), (-0.12, 0.18, -0.24)), lShoulder=J((96, 0, 18), (0.12, 0.18, -0.24)))
 
-me = Motion("RoleMuerto_self", LENGTH, note="The Muerto's role cutscene: kneeling, the hand, the vow.")
-kneel(me, 0.0, head=-26, **PRAY)
-kneel(me, 4.8, head=-28, **PRAY)
-kneel(me, 5.6, lean=-4, head=-2, **PRAY)  # looks up at the altar
-kneel(me, 7.0, lean=-2, head=4, **PRAY)
-kneel(me, 7.4, lean=0, head=8, **PRAY)  # the candles flare: a start
-kneel(me, 8.4, lean=-2, head=6, **PRAY)
-kneel(me, 9.4, "out", lean=2, head=10, **UP)  # lifts both hands to Diavolo's
-kneel(me, 10.6, lean=2, head=12, **UP)
-kneel(me, 11.4, lean=-10, head=-14, **HEART)
-kneel(me, 12.2, lean=-24, head=-30, **HEART)  # a hand on the heart, a bow
-kneel(me, 13.6, lean=-22, head=-28, **HEART)
-kneel(me, LENGTH, lean=-8, head=2, **HEART)  # and looks up again
-soft(me)
+me = Motion("RoleMuerto_self", LENGTH, note="The Muerto's role cutscene: the walk, the kneel, the hand.")
+me.key(0.0, root=(-6, 0, 0), neck=(-14, 0, 0), **WALK)  # head down, walking up the nave
+me.key(ARRIVE, root=(-6, 0, 0), neck=(-10, 0, 0), **WALK)
+beat(me, ARRIVE + 0.5, 0.45, neck=(8, 0, 0))  # a look up at the altar
+hold(me, ARRIVE + 0.9)
+me.key(ARRIVE + 0.9, offset=(0, 0, 0), rHip=(0, 0, 0), lHip=(0, 0, 0))  # still standing...
+kneel(me, ARRIVE + 1.6, "out", lean=-8, head=-6, **PRAY)  # ...then down on the knees
+kneel(me, ARRIVE + 2.4, lean=-14, head=-32, **PRAY)  # and bows the head
+kneel(me, 7.4, lean=-14, head=-30, **PRAY)
+kneel(me, 7.9, "out", lean=-6, head=-8, **PRAY)  # the flare: eyes come up
+kneel(me, 10.6, lean=-8, head=-12, **PRAY)
+kneel(me, 11.2, lean=-18, head=-30, **PRAY)  # the hand on the head pushes it down...
+kneel(me, 12.0, "out", lean=-2, head=22, **UP)  # ...and they look up, hands reaching
+kneel(me, 13.0, lean=-2, head=24, **UP)
+kneel(me, 13.7, "out", lean=-40, head=-38, **PRAY)  # and down to the floor
+kneel(me, LENGTH, lean=-42, head=-40, **PRAY)
+soft(me, head=2.8, arms=2.4).plant(None, 0.3, stance=0.05).plant(ARRIVE + 0.1, ARRIVE + 0.85, stance=0.05)
+walking(me, 0.3, ARRIVE)
 me.build()
 
-BEHIND = dict(rShoulder=J((-16, 0, -8), (0.14, 0.04, 0.16)), lShoulder=J((-16, 0, 8), (-0.14, 0.04, 0.16)))
-REACH = dict(rShoulder=J((66, 0, -12), (0, 0.1, -0.22)), lShoulder=J((-10, 0, 6), (-0.1, 0.02, 0.1)))
-WELCOME = dict(rShoulder=J((26, -10, 26), (0.04, 0.1, -0.08)), lShoulder=J((26, 10, -26), (-0.04, 0.1, -0.08)))
-turn = (facing(DIAVOLO, SELF) - 180.0 + 180.0) % 360.0 - 180.0  # towards the Muerto, from facing south
+# Diavolo ---------------------------------------------------------------------------------------------
 
-dv = Motion("RoleMuerto_diavolo", LENGTH, note="The Muerto's role cutscene: Diavolo on the altar steps.")
-dv.key(0.0, root=(2, 0, 0), neck=(-6, 0, 0), **BEHIND)
-dv.key(6.6, root=(2, 0, 0), neck=(-8, 0, 0), **BEHIND)
-dv.key(7.6, root=(-2, turn * 0.3, 0), neck=(-20, turn * 0.5, 0), **BEHIND)  # looks down at the Muerto
-dv.key(8.4, root=(-6, turn * 0.4, 0), neck=(-22, turn * 0.5, 0), **REACH)  # and holds out a hand
-dv.key(10.6, root=(-6, turn * 0.4, 0), neck=(-24, turn * 0.5, 0), **REACH)
-dv.key(11.6, root=(2, turn * 0.2, 0), neck=(-12, turn * 0.3, 0), **WELCOME)
-dv.key(12.6, root=(3, 0, 0), neck=(-6, 0, 0), **WELCOME)
-dv.key(13.2, root=(3, 0, 0), neck=(-16, 0, 0), **WELCOME)  # a nod
-dv.key(LENGTH, root=(3, 0, 0), neck=(-4, 0, 0), **WELCOME)
-soft(dv, head=2.6, arms=2.2).plant(stance=0.06)
+BEHIND = dict(rShoulder=J((-20, 0, -10), (0.16, 0.05, 0.18)), lShoulder=J((-20, 0, 10), (-0.16, 0.05, 0.18)))
+REACH = dict(rShoulder=J((62, 0, -6), (0, 0.08, -0.28)))
+OPEN = dict(rShoulder=J((30, -12, 60), (0.1, 0.14, -0.06)), lShoulder=J((30, 12, -60), (-0.1, 0.14, -0.06)))
+
+dv = Motion("RoleMuerto_diavolo", LENGTH, note="The Muerto's role cutscene: Diavolo at the altar.")
+dv.key(0.0, root=(4, 0, 0), neck=(14, 0, 0), **BEHIND)  # facing the figure, head up
+dv.key(6.0, root=(4, 0, 0), neck=(14, 0, 2), **BEHIND)
+beat(dv, 6.6, 0.45, neck=(-4, -50, 0))  # looks back over the shoulder...
+beat(dv, 7.4, 0.5, root=(-4, -30, 0), neck=(-10, -10, 0))  # ...and turns
+beat(dv, 7.9, 0.35, root=(-6, 0, 0), neck=(-18, 0, 0), rShoulder=J((6, 0, 4)), lShoulder=J((6, 0, -4)))
+hold(dv, 10.6)
+beat(dv, 11.2, 0.5, antic=0.2, root=(-16, 0, 0), neck=(-30, 0, 0), **REACH)  # the hand on the head
+hold(dv, 12.6)
+beat(dv, 13.6, 0.6, antic=0.3, root=(6, 0, 0), neck=(16, 0, 0), **OPEN)  # straightens, arms open
+dv.key(LENGTH, root=(7, 0, 0), neck=(18, 0, 0))
+soft(dv, head=2.6, arms=2.2).plant(None, 8.5, stance=0.06).plant(9.7, None, stance=0.06)
+walking(dv, 8.6, 9.5)
 dv.build()
 
 
 def kneeler(k):
     m = Motion(f"RoleMuerto_kneel{k}", LENGTH, note="The Muerto's role cutscene: another Muerto kneeling.")
-    lag = 0.2 * (k + 1)
-    kneel(m, 0.0, head=-26, **PRAY)
-    kneel(m, 5.4 + lag, head=-26, **PRAY)
-    kneel(m, 6.2 + lag, lean=-4, head=-4, **PRAY)
-    kneel(m, 11.2 + lag, lean=-4, head=-6, **PRAY)
-    kneel(m, 12.2 + lag, lean=-24, head=-30, **PRAY)  # they bow with the Muerto
-    kneel(m, LENGTH, lean=-22, head=-28, **PRAY)
+    lag = 0.15 * (k + 1)
+    kneel(m, 0.0, lean=-12, head=-28, **PRAY)
+    kneel(m, 7.6 + lag, lean=-12, head=-26, **PRAY)
+    kneel(m, 8.2 + lag, "out", lean=-30, head=-36, **PRAY)  # they bow lower as Diavolo turns
+    kneel(m, 13.4 + lag, lean=-30, head=-34, **PRAY)
+    kneel(m, 14.0 + lag, "out", lean=-46, head=-40, **PRAY)
+    kneel(m, LENGTH, lean=-46, head=-40, **PRAY)
     return soft(m)
 
 
 for k in range(len(OTHERS)):
     kneeler(k).build()
 
-# The shot -------------------------------------------------------------------------------------------
+# The shot --------------------------------------------------------------------------------------------
 
 shot = Shot(NAME, "Sets", LENGTH, note="The Muerto's role cutscene: the shrine, Diavolo, the vow.")
-
-# A: from the door end, high, down the nave: the kneeling backs, the candles, the black shape on the steps.
-shot.cam(0.0, (OX, 9.4, 11.0), (OX, 3.0, -8.0), fov=44)
-shot.cam(3.6, (OX, 8.2, 7.6), (OX, 3.2, -8.0), fov=42, ease="linear")
-# B: low from the foot of the steps, the Muerto's face as they look up.
-shot.cam(3.6, (OX - 7.8, 2.2, -8.8), (SELF[0], 2.0, SELF[1]), fov=48, cut=True)
-shot.cam(7.0, (OX - 7.4, 2.2, -8.4), (SELF[0], 2.2, SELF[1]), fov=44, ease="linear")
-# C: behind the Muerto, up at Diavolo: the flare, the hand held out.
-shot.cam(7.0, (OX - 0.6, 3.6, -1.4), (OX, 5.6, DIAVOLO[1]), fov=42, cut=True)
-shot.cam(10.8, (OX - 0.6, 3.4, -2.2), (OX - 0.3, 5.4, DIAVOLO[1]), fov=38, ease="linear")
-# D: from the side of the steps, down on the Muerto's vow.
-shot.cam(10.8, (OX - 6.4, 6.8, -9.6), (SELF[0], 1.6, SELF[1]), fov=48, cut=True)
-shot.cam(13.2, (OX - 6.6, 6.4, -9.2), (SELF[0], 1.8, SELF[1]), fov=44, ease="linear")
-# E: low behind the kneeling Muertos, up the steps to Diavolo and the figure.
-shot.cam(13.2, (OX, 1.2, -0.2), (OX, 6.6, -12.0), fov=50, cut=True)
-shot.cam(LENGTH, (OX, 1.0, 0.6), (OX, 7.0, -12.0), fov=48, ease="linear")
+shot.room = (109.0, -16.0, 131.0, 14.0, 20.0)
 
 a = shot.actor("self", me)
-a.mark(0.0, (SELF[0], CUSHION, SELF[1]), facing(SELF, DIAVOLO))
-dva = shot.actor("diavolo", dv, silhouette=(0.0, 7.2))
-dva.mark(0.0, (DIAVOLO[0], STEP, DIAVOLO[1]), 180.0)
-for k, ((x, z), y) in enumerate(OTHERS):
+a.mark(0.0, (DOOR[0], 0.0, DOOR[1]), 0.0)
+a.mark(0.3, (DOOR[0], 0.0, DOOR[1]), 0.0, "linear")
+a.mark(ARRIVE, (KNEEL_AT[0], 0.0, KNEEL_AT[1]), 0.0, "linear")
+a.mark(LENGTH, (KNEEL_AT[0], 0.0, KNEEL_AT[1]), 0.0)
+
+d = shot.actor("diavolo", dv, silhouette=(0.0, 7.8))
+d.mark(0.0, (ALTAR[0], 1.8, ALTAR[1]), 0.0)
+d.mark(6.6, (ALTAR[0], 1.8, ALTAR[1]), 0.0)
+d.mark(7.6, (ALTAR[0], 1.8, ALTAR[1]), 180.0)
+d.mark(8.6, (ALTAR[0], 1.8, ALTAR[1]), 180.0, "linear")
+d.mark(9.0, (ALTAR[0], 1.2, ALTAR[1] + 1.4), 180.0, "linear")
+d.mark(9.5, (BELOW[0], 0.0, BELOW[1]), 180.0, "linear")
+d.mark(LENGTH, (BELOW[0], 0.0, BELOW[1]), 180.0)
+
+for k, (x, z) in enumerate(OTHERS):
     o = shot.actor(f"ally:{k + 1}", clip=f"RoleMuerto_kneel{k}")
-    o.mark(0.0, (x, y, z), facing((x, z), DIAVOLO))
+    o.mark(0.0, (x, 0.0, z), facing((x, z), (OX, -9.0)))
+
+# 1: low from the foot of the steps, down the nave; the camera turns to keep the Muerto in frame.
+shot.pan(0.0, 3.6, "self", (OX + 1.8, 2.6, -8.0), aim="Torso", dy=1.0, fov=44, drift=(0.0, 1.2, -0.2))
+# 2: from in front, beside the steps, as they go down on their knees.
+shot.pan(3.6, 6.0, "self", (OX + 3.6, 2.8, -5.6), aim="Torso", dy=0.6, fov=42, cut=True, drift=(-0.2, 0.0, 0.2))
+# 3: low over the Muerto's shoulder, up the steps at Diavolo turning round.
+shot.pan(6.0, 8.6, "diavolo", (OX - 2.6, 2.4, -0.2), aim="Head", dy=-0.6, fov=40, cut=True, drift=(0.0, 0.0, -0.8))
+# 4: from the west side, both of them, as Diavolo comes down.
+shot.pan(8.6, 11.0, "diavolo", (OX - 5.8, 3.4, -6.2), aim="Torso", dy=0.2, fov=46, cut=True, drift=(0.3, 0.0, 0.2))
+# 5: both in profile from the side: the hand comes down on the Muerto's head; they look up.
+shot.frame(11.0, "self", "two", other="diavolo", height=0.3, dist=0.7, cut=True)
+shot.frame(13.0, "self", "two", other="diavolo", height=0.1, dist=0.62, ease="linear")
+# 6: high from beside the figure, down on them all.
+shot.cam(13.0, (OX + 5.4, 11.0, -12.0), (OX, 1.2, -3.0), fov=52, cut=True)
+shot.cam(LENGTH, (OX + 5.0, 11.8, -12.4), (OX, 1.0, -3.0), fov=50, ease="linear")
 
 shot.event(0.0, "sfx", slot="hauntWhisper")
-shot.event(5.6, "sfx", slot="heartbeat")
-shot.event(7.2, "fx", name="flash", r=255, g=150, b=80, strength=0.25, dur=0.5)
-shot.event(7.2, "sfx", slot="wisp")
-shot.event(12.2, "sfx", slot="bell")
+shot.event(4.6, "sfx", slot="heartbeat")
+shot.event(7.8, "fx", name="flash", r=255, g=150, b=80, strength=0.3, dur=0.5)
+shot.event(7.8, "sfx", slot="wisp")
+shot.event(11.2, "sfx", slot="heartbeat")
+shot.event(13.7, "sfx", slot="bell")
 shot.event(1.0, "card", key="role", dur=4.2)
-shot.event(5.4, "card", key="win", dur=3.6)
+shot.event(5.6, "card", key="win", dur=3.4)
 shot.event(9.2, "card", key="move", dur=2.8)
-shot.event(12.0, "card", key="names", dur=3.0)
+shot.event(12.2, "card", key="names", dur=2.8)

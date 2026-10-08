@@ -14,7 +14,6 @@ return {
 		{ "ClubChair", -7, 0, 6, 150, 1 },
 		{ "Sideboard", 7.5, 0, 7.6, 180, 0.8 },
 		{ "ExecutiveDesk", 0, 0, -3.6, 180, 1 },
-		{ "ClubChair", 0, 0, -6.2, 180, 1 },
 		{ "BankerLamp", -2.2, 3.23, -3.9, 160, 1 },
 		{ "PaperSheet", 0.4, 3.24, -3.4, 10, 1 },
 		{ "CandleCluster", -8.5, 0, -7.6, 0, 1 },
@@ -56,6 +55,7 @@ return {
 	lights = {
 		{ kind = "spot", at = { 0, 13, -16 }, color = { 150, 170, 220 }, range = 30, brightness = 1.2, shadows = true, face = "Back", angle = 50, flicker = false },
 		{ kind = "point", at = { -2.2, 4.4, -3.9 }, color = { 255, 214, 150 }, range = 14, brightness = 1.4, shadows = true, face = "Bottom", angle = 90, flicker = false },
+		{ kind = "spot", at = { 2, 13, 3 }, color = { 255, 196, 140 }, range = 22, brightness = 0.9, shadows = true, face = "Bottom", angle = 55, flicker = false },
 		{ kind = "point", at = { -8.5, 2.2, -7.6 }, color = { 255, 170, 90 }, range = 12, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = true },
 		{ kind = "point", at = { 8.5, 2.2, -7.6 }, color = { 255, 170, 90 }, range = 12, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = true },
 		{ kind = "point", at = { -5, 6.4, 9.25 }, color = { 255, 214, 170 }, range = 10, brightness = 0.35, shadows = false, face = "Bottom", angle = 90, flicker = false },

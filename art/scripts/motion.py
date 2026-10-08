@@ -113,8 +113,13 @@ class Channel:
         return h00 * v0 + h10 * span * m0 + h01 * v1 + h11 * span * m1
 
 
+# Every Motion by name, so a cutscene camera can work out where an actor's head is at any moment.
+MOTIONS = {}
+
+
 class Motion:
     def __init__(self, name, length, loop=False, note="", floor=False, rate=30):
+        MOTIONS[name] = self
         self.name = name
         self.length = float(length)
         self.loop = loop
@@ -234,4 +239,4 @@ class Motion:
         return c
 
 
-__all__ = ["Motion", "J"]
+__all__ = ["Motion", "J", "MOTIONS"]

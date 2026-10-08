@@ -44,16 +44,16 @@ def build(s):
     s.prop("ClubChair", px, pz, 150)
     px, pz = at(7.5, 7.6)
     s.prop("Sideboard", px, pz, 180, 0.8)
-    # The desk, its chair behind (towards the window), the lamp and the papers.
+    # The desk (no chair: Diavolo stands), the lamp and the papers; a low warm light on the open floor
+    # in front of it, where the Muertos kneel.
     px, pz = at(0.0, -3.6)
     s.prop("ExecutiveDesk", px, pz, 180)
-    px, pz = at(0.0, -6.2)
-    s.prop("ClubChair", px, pz, 180)
     px, pz = at(-2.2, -3.9)
     s.prop("BankerLamp", px, pz, 160, 1.0, 3.23)
     s.light("point", (px, 4.4, pz), (255, 214, 150), 14, 1.4, shadows=True)
     px, pz = at(0.4, -3.4)
     s.prop("PaperSheet", px, pz, 10, 1.0, 3.24)
+    s.light("spot", (OX + 2.0, H - 1.0, OZ + 3.0), (255, 196, 140), 22, 0.9, shadows=True, angle=55)
     # Candles in the corners by the window, where the Muertos kneel; a brass sconce either side of the door.
     for x in (-8.5, 8.5):
         px, pz = at(x, -7.6)

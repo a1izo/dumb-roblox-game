@@ -190,6 +190,7 @@ class Shot:
         self.letterbox = letterbox
         self.skippable = skippable
         self.mood = mood  # a LightingPresets name the game switches to for the shot
+        self.room = None  # (x0, z0, x1, z1, height): lint warns when the camera leaves it
         self.cam_groups = [[]]  # camera keys, split at the cuts
         self.actors = []
         self.props = []
@@ -202,6 +203,25 @@ class Shot:
         if cut and self.cam_groups[-1]:
             self.cam_groups.append([])
         self.cam_groups[-1].append((float(t), np.array([*pos, *look, fov, roll], float), ease))
+        return self
+
+    def frame(self, t, slot, kind="medium", **kw):
+        """A camera key framing an actor where they really are at t (see framing.py)."""
+        from cinema import framing
+
+        framing.frame(self, t, slot, kind, **kw)
+        return self
+
+    def pan(self, t0, t1, slot, pos, **kw):
+        from cinema import framing
+
+        framing.pan(self, t0, t1, slot, pos, **kw)
+        return self
+
+    def follow(self, t0, t1, slot, kind="medium", **kw):
+        from cinema import framing
+
+        framing.follow(self, t0, t1, slot, kind, **kw)
         return self
 
     def actor(self, slot, motion=None, **kw):
@@ -269,6 +289,10 @@ def lint(shot, step=0.25, radius=1.3, height=5.0):
             ch.add(*key)
         v = ch.value(t)
         cam, look = v[0:3], v[3:6]
+        if shot.room is not None:
+            x0, z0, x1, z1, h = shot.room
+            if not (x0 + 0.4 < cam[0] < x1 - 0.4 and z0 + 0.4 < cam[2] < z1 - 0.4 and 0.3 < cam[1] < h - 0.3):
+                warnings.append(f"{t:5.2f}s camera outside the room at ({cam[0]:.1f}, {cam[1]:.1f}, {cam[2]:.1f})")
         for a in shot.actors:
             if not (a.show[0] <= t <= a.show[1]):
                 continue

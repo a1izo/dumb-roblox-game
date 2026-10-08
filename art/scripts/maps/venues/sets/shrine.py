@@ -35,14 +35,12 @@ def build(s):
     s.light("spot", (OX, H - 1.0, OZ + Z0 + 9.0), (255, 70, 50), 24, 1.4, shadows=True, angle=40)
     for dx in (-2.4, 0.0, 2.4):
         s.prop("CandleCluster", OX + dx, block, 0, 0.7, top + 3.2)
-    # Two rows of candles on the floor down to the door, and cushions where the Muertos kneel.
+    # Two rows of candles on the floor down the nave to the door.
     for z in (-6.0, -1.0, 4.0, 9.0):
         for x in (-4.5, 4.5):
             s.prop("CandleCluster", OX + x, OZ + z, 37 * z)
     # A dim warm light down from the dark over the nave, on the altar steps and whoever kneels before them.
     s.light("spot", (OX, H - 1.0, OZ - 5.0), (255, 170, 110), 26, 0.9, shadows=True, angle=50)
     s.light("point", (OX, 3.0, OZ - 5.6), (255, 160, 90), 9, 0.6)  # the candles' glow on the steps
-    for x in (-2.2, 2.2):
-        s.box("FabricRed", (OX + x, 0.25, OZ + Z0 + 11.5), (1.8, 0.5, 1.6))
     s.emitter("mist", (OX, 0.6, OZ - 1.0), 0, (18.0, 1.6, 26.0))
     s.emitter("dust", (OX, 9.0, OZ - 1.0), 0, (18.0, 14.0, 26.0))

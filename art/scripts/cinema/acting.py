@@ -86,3 +86,46 @@ def walking(m, t0, t1, blend=0.35):
 
     m.extra(fn)
     return m
+
+
+def beat(m, t, dur=0.4, antic=0.15, over=0.1, offset=None, **joints):
+    """A pose that lands at `t` after a move of `dur` seconds, acted rather than slid: the body first draws
+    back a little the other way (anticipation), swings a little past the pose (overshoot) and settles into
+    it. Every joint not named holds still. `offset` (x, y, z) moves the body the same way."""
+    from motion import _vec
+
+    t0 = max(0.0, t - dur)
+    settle = min(m.length, t + dur * 0.6)
+    for joint, value in joints.items():
+        target = _vec(value)
+        ch = m.channels.get(joint)
+        prev = ch.value(t0) if ch is not None and ch.keys else np.zeros(6)
+        delta = target - prev
+        steps = [(t0, prev, "smooth"), (t0 + (t - t0) * 0.3, prev - delta * antic, "smooth"),
+                 (t, target + delta * over, "out"), (settle, target, "smooth")]
+        for time, vec, ease in steps:
+            if ch is not None and any(abs(k[0] - time) < 1e-6 for k in ch.keys):
+                continue
+            m.key(time, ease, **{joint: J(vec[:3], vec[3:])})
+            ch = m.channels[joint]
+    if offset is not None:
+        prev = m.offset.value(t0) if m.offset.keys else np.zeros(3)
+        target = np.array(offset, float)
+        delta = target - prev
+        for time, vec, ease in ((t0, prev, "smooth"), (t0 + (t - t0) * 0.3, prev - delta * antic, "smooth"),
+                                (t, target + delta * over * 0.5, "out"), (settle, target, "smooth")):
+            if not any(abs(k[0] - time) < 1e-6 for k in m.offset.keys):
+                m.offset.add(time, vec, ease)
+    return m
+
+
+def hold(m, t, **joints):
+    """Keys the joints at their current values at t (a pose held until the next beat)."""
+    for joint in joints or m.channels:
+        ch = m.channels.get(joint)
+        if ch is not None and ch.keys and not any(abs(k[0] - t) < 1e-6 for k in ch.keys):
+            v = ch.value(t)
+            m.key(t, **{joint: J(v[:3], v[3:])})
+    if m.offset.keys and not any(abs(k[0] - t) < 1e-6 for k in m.offset.keys):
+        m.offset.add(t, m.offset.value(t), "smooth")
+    return m
