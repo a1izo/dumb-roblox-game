@@ -64,22 +64,25 @@ def kneel(m, t, ease="smooth", lean=-8.0, head=-28.0, turn=0.0, **upper):
     m.key(t, ease, floor=True, **joints)
 
 
-def walking(m, t0, t1, blend=0.35):
-    """The legs walk (the game's walk) between t0 and t1, easing in and out over `blend` seconds. The
-    actor's path must cover WALK.stride / WALK.period (4 studs a second) meanwhile, so the soles do
-    not slide. Plant the feet outside t0..t1."""
-    from gait import WALK
+def walking(m, t0, t1, blend=0.35, speed=4.0):
+    """The legs walk between t0 and t1, easing in and out over `blend` seconds, at `speed` studs a second
+    (the game's walk is 4; slower walks take shorter, slower steps). The actor's path must cover the
+    same distance meanwhile, so the soles do not slide. Plant the feet outside t0..t1."""
+    from gait import WALK, Gait
+
+    period = WALK.period * (4.0 / speed) ** 0.5
+    g = Gait("walk_" + m.name, period, speed * period, WALK.stance, WALK.lift * min(1.0, speed / 4.0), WALK.note)
 
     def fn(t, pose, off):
         if t <= t0 - blend or t >= t1 + blend:
             return
         u = min(1.0, (t - (t0 - blend)) / blend, ((t1 + blend) - t) / blend)
         w = u * u * (3 - 2 * u)
-        phase = max(0.0, t - t0) / WALK.period % 1.0
-        bob = math.cos(4 * math.pi * (phase - WALK.stance * 0.25))
+        phase = max(0.0, t - t0) / g.period % 1.0
+        bob = math.cos(4 * math.pi * (phase - g.stance * 0.25))
         off[1] += w * (-0.1 - 0.05 * bob)
         root = tuple(pose["root"][:3]) if "root" in pose else (0.0, 0.0, 0.0)
-        for key, leg in WALK.legs(phase, root, tuple(off)).items():
+        for key, leg in g.legs(phase, root, tuple(off)).items():
             new = np.array([*leg["r"], *leg["p"]], float)
             old = pose.get(key, np.zeros(6))
             pose[key] = old * (1 - w) + new * w

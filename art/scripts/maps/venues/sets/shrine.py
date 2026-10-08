@@ -36,8 +36,8 @@ def build(s):
     for dx in (-2.4, 0.0, 2.4):
         s.prop("CandleCluster", OX + dx, block, 0, 0.7, top + 3.2)
     # Two rows of candles on the floor down the nave to the door.
-    for z in (-6.0, -1.0, 4.0, 9.0):
-        for x in (-4.5, 4.5):
+    for z in (-5.2, -1.6, 9.6):  # clear of the bottom step (its edge at -6.5) and of the kneeling Muertos
+        for x in (-6.0, 6.0):
             s.prop("CandleCluster", OX + x, OZ + z, 37 * z)
     # A dim warm light down from the dark over the nave, on the altar steps and whoever kneels before them.
     s.light("spot", (OX, H - 1.0, OZ - 5.0), (255, 170, 110), 26, 0.9, shadows=True, angle=50)

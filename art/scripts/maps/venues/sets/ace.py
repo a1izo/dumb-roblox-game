@@ -23,10 +23,10 @@ def ace_room(s):
         kit.wall(s, a, b, h, core="ConcreteDark", side_s="PlasterDark", openings=ops)
     # The monitor wall: CRT banks with screens above them, cameras' feeds and the case.
     for x in (-7.5, -2.0, 3.5):
-        s.prop("StationCRTBank", AX + x, AZ - 7.4, 0)
+        s.prop("StationCRTBank", AX + x, AZ - 6.7, 0)
     for x, loop in ((-7.5, "cctv"), (-2.0, "news"), (3.5, "cctv")):
-        s.box("Screen", (AX + x, 9.4, AZ - 8.6), (4.6, 2.6, 0.2))
-        s.screen((AX + x, 9.4, AZ - 8.48), 0, 4.4, 2.4, loop)
+        s.box("Screen", (AX + x, 9.4, AZ - 8.38), (4.6, 2.6, 0.2))
+        s.screen((AX + x, 9.4, AZ - 8.26), 0, 4.4, 2.4, loop)
     for x in (-7.5, -2.0, 3.5):
         s.light("point", (AX + x, 5.0, AZ - 5.0), SCREEN, 14, 0.9)
     s.light("spot", (AX - 2.0, 9.0, AZ - 7.8), SCREEN, 20, 0.8, face="Back", angle=70)
@@ -42,7 +42,7 @@ def ace_room(s):
     # Cables across the carpet to the monitors, a filing cabinet, the curtains drawn.
     for k in range(4):
         s.tube("Rubber", (AX - 9.0 + k * 3.0, 0.08, AZ - 6.8), (AX - 3.0 + k * 1.6, 0.08, AZ + 2.0), 0.08, 5)
-    s.prop("FilingCabinet", AX + 8.4, AZ - 7.6, 0)
+    s.prop("FilingCabinet", AX + 8.2, AZ - 7.4, 0)
     s.box("FabricRed", (AX - 11.6, 6.0, AZ + 2.0), (0.2, 10.0, 8.0))
 
 

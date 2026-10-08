@@ -470,6 +470,23 @@ def main():
         for name in names:
             for line in shotlib.lint(shots[name]):
                 print(f"[lint] {name} {line}")
+    if "--clear" in argv:
+        # room to move: the actors against the set and each other
+        import run_maps
+        from cinema import clearance
+        from maps import matlib, mesher
+
+        built = {}
+        for name in names:
+            venue = shots[name].venue
+            if venue not in built:
+                common.clear_scene()
+                mesher.use_images(matlib.make_textures())
+                built[venue] = run_maps.build_venue(venue)[0]
+            lines = clearance.report(shots[name], built[venue])
+            for line in lines:
+                print(f"[clear] {name} {line}")
+            print(f"[clear] {name}: {len(lines)} problems")
     if "--export" in argv:
         for name in names:
             print("[cinema] wrote", shotlib.export(shots[name]))
