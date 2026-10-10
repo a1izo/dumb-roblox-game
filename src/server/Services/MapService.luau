@@ -192,6 +192,11 @@ function MapService.build(mapId: string)
 	-- What kind of ground each place is (roads, crossings, water...), for placing things.
 	info.zones = Zones.new(layout.zones or {}, MAP_ORIGIN)
 	info.spare = layout.spare
+	-- The map's own data and builder, for its mechanic (Maps/Mechanics): the Tokyo crowd's walks and
+	-- the cars' lanes, the Bureau's breaker panel.
+	info.layout = layout
+	info.origin = MAP_ORIGIN
+	info.builder = b
 
 	local meeting = MeetingRoom.build(Builder.new(model, MEETING_ORIGIN))
 	info.meeting = meeting

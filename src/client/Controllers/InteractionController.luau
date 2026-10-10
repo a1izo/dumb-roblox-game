@@ -18,6 +18,7 @@ local TipPanel = require(script.Parent.Parent.UI.TipPanel)
 local NoteRequest = Net.event("NoteRequest")
 local TamperRemote = Net.event("Tamper")
 local HoodRequest = Net.event("HoodRequest")
+local MapAction = Net.event("MapAction")
 
 local InteractionController = {}
 
@@ -68,6 +69,8 @@ local function refreshEntry(instance: Instance, entry)
 		prompts.take.Enabled = active and private.carrying == nil
 	elseif entry.kind == "hood" then
 		prompts.wear.Enabled = active and not private.hood
+	elseif entry.kind == "breaker" then
+		prompts.pull.Enabled = active and instance:GetAttribute("Spent") ~= true
 	end
 end
 
@@ -149,6 +152,16 @@ local function setupHood(hood: Instance)
 	register(hood, "hood", { wear = wear })
 end
 
+-- Bureau HQ's main breaker (its blackout is the server's: Maps/Mechanics/TaskForceHQ).
+local function setupBreaker(panel: Instance)
+	local pull = prompt(panel, "Pull the breaker", "Main breaker", Enum.KeyCode.E, 1.5)
+	pull.Triggered:Connect(function()
+		MapAction:FireServer({ action = "breaker" })
+	end)
+	panel:GetAttributeChangedSignal("Spent"):Connect(refreshAll)
+	register(panel, "breaker", { pull = pull })
+end
+
 local function watchTag(tag: string, setup: (Instance) -> ())
 	local function add(instance: Instance)
 		if entries[instance] == nil and instance:IsA("BasePart") then
@@ -170,6 +183,7 @@ function InteractionController.init()
 	watchTag("LSheet", setupSheet)
 	watchTag("LNote", setupNote)
 	watchTag("LHood", setupHood)
+	watchTag("LBreaker", setupBreaker)
 	ClientState.PublicChanged:Connect(refreshAll)
 	ClientState.PrivateChanged:Connect(refreshAll)
 	-- The task screen opening or closing changes whether stations can be used.

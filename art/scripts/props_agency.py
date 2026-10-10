@@ -633,7 +633,7 @@ def breaker_panel():
     parts = [mk.box("Cabinet", (2.8, 0.9, 6.0), (0, 0, 3.6), mat=steel, bevel=0.04),
              mk.box("Plinth", (2.9, 1.0, 0.6), (0, 0, 0.3), mat=dark),
              mk.box("Inner", (2.4, 0.06, 5.2), (0, -0.44, 3.6), mat=dark),
-             mk.box("Door", (2.5, 0.08, 5.4), (-1.42, -1.7, 3.6), rot=(0, 0, 90), mat=steel, bevel=0.03),
+             mk.box("Door", (2.5, 0.08, 5.4), (-2.72, -0.38, 3.6), mat=steel, bevel=0.03),
              mk.box("Lever", (0.3, 0.5, 1.6), (1.55, -0.1, 4.2), mat=dark, bevel=0.04),
              mk.box("Handle", (0.22, 0.9, 0.3), (1.55, -0.5, 4.9), mat=red, bevel=0.06),
              mk.box("Warning", (1.8, 0.04, 0.6), (0, -0.47, 6.35), mat=yellow)]

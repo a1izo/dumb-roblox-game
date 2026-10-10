@@ -1,10 +1,10 @@
 --!strict
--- Footprints in the snow. Where a living, visible character walks or runs over untrodden snow (a
--- map surface whose Look is "Snow": the campus lawns, the pond hollow, the margins), a print is
--- pressed into it and fades out within a few seconds. Never on the shovelled paths or indoors,
--- never for Specters, spectators or bodies. Cosmetic and local: each client makes its own, fewer
--- on phones and with Low graphics. A print is a decal when Assets.textures.Footprint is set (or
--- imported), a flat oval otherwise.
+-- Tracks in the snow (the campus's mechanic). The server records where every living player walks on
+-- untrodden snow (Maps/Mechanics/UniversityCampus) and sends the prints to everyone; this draws them.
+-- A print lasts a minute, fading over its last FADE seconds, so a trail can be followed; the prints
+-- are anonymous. Never on the shovelled paths or indoors, never for Specters, spectators or bodies (the
+-- server decides). Fewer at once on phones and with Low graphics: the oldest go first. A print is a
+-- decal when Assets.textures.Footprint is set (or imported), a flat oval otherwise.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -13,25 +13,22 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
+local Net = require(Shared:WaitForChild("Net"))
+local Tracks = require(Shared:WaitForChild("Tracks"))
+local Venues = require(Shared:WaitForChild("Venues"))
 
-local LocomotionController = require(script.Parent.Parent.Anim.LocomotionController)
 local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
-local RainController = require(script.Parent.RainController)
 
 local FootprintController = {}
 
-local LOOK = "Snow" -- the look of the ground that takes prints
-local LIFE = 8 -- seconds a print lasts...
-local FADE = 3 -- ...fading out over the last of them
-local REACH = 220 -- no prints this far from the camera (nobody would see them)
--- The most prints at once for each device class; Low graphics keeps a quarter.
-local CAP = { phone = 40, tablet = 80, console = 120, desktop = 160 }
+local LIFE = Tracks.LIFE -- seconds a print lasts...
+local FADE = 20 -- ...fading out over the last of them
+-- The most prints drawn at once for each device class; Low graphics keeps a quarter.
+local CAP = { phone = 120, tablet = 200, console = 300, desktop = 400 }
 local SIZE = Vector3.new(0.55, 0.04, 1.05)
 local COLOUR = Color3.fromRGB(150, 160, 186)
 local FRESH = 0.45 -- a new print's transparency
--- The parts a foot can be (R6 legs): the lowest one is the foot coming down.
-local FEET = { "Left Leg", "Right Leg" }
 
 type Print = { part: BasePart, decal: Decal?, born: number, fade: Tween? }
 
@@ -39,8 +36,6 @@ local folder: Folder
 local live: { Print } = {} -- oldest first
 local spare: { Print } = {}
 local texture = ""
-local rayParams = RaycastParams.new()
-rayParams.FilterType = Enum.RaycastFilterType.Include
 
 local function cap(): number
 	local most = CAP[Responsive.class()] or CAP.desktop
@@ -48,13 +43,6 @@ local function cap(): number
 		most = math.floor(most / 4)
 	end
 	return most
-end
-
--- The map's solid parts (the colliders and floors carry their Look), or nil between maps.
-local function solids(): Instance?
-	local map = workspace:FindFirstChild("LGameMap")
-	local scene = if map then map:FindFirstChild("Scene") else nil
-	return if scene then scene:FindFirstChild("Solids") else nil
 end
 
 local function makePrint(): Print
@@ -105,7 +93,7 @@ local function clearAll()
 	table.clear(live)
 end
 
-local function press(at: CFrame)
+local function press(at: CFrame, age: number)
 	local print_ = table.remove(spare)
 	if not print_ then
 		if #live >= cap() and #live > 0 then
@@ -119,15 +107,19 @@ local function press(at: CFrame)
 		end
 	end
 	local chosen = print_ :: Print
-	chosen.born = os.clock()
+	chosen.born = os.clock() - age
 	chosen.part.CFrame = at
-	local info = TweenInfo.new(FADE, Enum.EasingStyle.Sine, Enum.EasingDirection.In, 0, false, LIFE - FADE)
+	-- A print that arrives already old (made before this client was there) starts part-way faded.
+	local wait = math.max(0, LIFE - FADE - age)
+	local left = math.max(0.1, math.min(FADE, LIFE - age))
+	local start = FRESH + (1 - FRESH) * math.clamp((age - (LIFE - FADE)) / FADE, 0, 1)
+	local info = TweenInfo.new(left, Enum.EasingStyle.Sine, Enum.EasingDirection.In, 0, false, wait)
 	local decal = chosen.decal
 	if decal then
-		decal.Transparency = FRESH
+		decal.Transparency = start
 		chosen.fade = TweenService:Create(decal, info, { Transparency = 1 })
 	else
-		chosen.part.Transparency = FRESH
+		chosen.part.Transparency = start
 		chosen.fade = TweenService:Create(chosen.part, info, { Transparency = 1 })
 	end
 	chosen.part.Parent = folder;
@@ -139,67 +131,57 @@ local function press(at: CFrame)
 	end
 end
 
--- Whether this character leaves prints at all: a living, visible body that is nobody's ghost.
-local function leavesPrints(character: Model): boolean
-	if character:GetAttribute("Specter") or character:GetAttribute("Spectator") then
-		return false
-	end
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
-		return false
-	end
-	local head = character:FindFirstChild("Head")
-	return head ~= nil and head:IsA("BasePart") and head.Transparency < 0.9
+-- The map's origin (prints come relative to it) and a downward ray to lay them on the surface.
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Include
+
+local function solids(): Instance?
+	local map = workspace:FindFirstChild("LGameMap")
+	local scene = if map then map:FindFirstChild("Scene") else nil
+	return if scene then scene:FindFirstChild("Solids") else nil
 end
 
-local function plantedFoot(character: Model): BasePart?
-	local lowest: BasePart? = nil
-	local bottom = math.huge
-	for _, name in ipairs(FEET) do
-		local part = character:FindFirstChild(name)
-		if part and part:IsA("BasePart") then
-			local y = part.Position.Y - part.Size.Y / 2
-			if y < bottom then
-				lowest, bottom = part, y
+local function onTracks(payload)
+	if type(payload) ~= "table" then
+		return
+	end
+	if payload.kind == "clear" then
+		clearAll()
+		return
+	end
+	if payload.kind ~= "add" or typeof(payload.data) ~= "buffer" then
+		return
+	end
+	local origin = Venues.MAP
+	local ground = solids()
+	if ground then
+		rayParams.FilterDescendantsInstances = { ground }
+	end
+	local late = math.max(0, workspace:GetServerTimeNow() - (tonumber(payload.at) or workspace:GetServerTimeNow()))
+	for _, p in ipairs(Tracks.decode(payload.data)) do
+		local age = p.age + late
+		if age < LIFE then
+			local at = origin + Vector3.new(p.x, p.y, p.z)
+			local up = Vector3.yAxis
+			if ground then
+				local hit = workspace:Raycast(at + Vector3.new(0, 1, 0), Vector3.new(0, -2.5, 0), rayParams)
+				if hit then
+					at, up = hit.Position, hit.Normal
+				end
 			end
+			local forward = Vector3.new(math.sin(p.heading), 0, math.cos(p.heading))
+			forward = (forward - up * forward:Dot(up)).Unit
+			press(CFrame.fromMatrix(at + up * 0.03, forward:Cross(up), up, -forward), age)
 		end
 	end
-	return lowest
-end
-
-local function onFootfall(character: Model)
-	if RainController.snowAmount() <= 0 or not character.Parent or not leavesPrints(character) then
-		return
-	end
-	local camera = workspace.CurrentCamera
-	local foot = plantedFoot(character)
-	local root = character:FindFirstChild("HumanoidRootPart")
-	local ground = solids()
-	if not camera or not foot or not root or not root:IsA("BasePart") or not ground then
-		return
-	end
-	if (foot.Position - camera.CFrame.Position).Magnitude > REACH then
-		return
-	end
-	rayParams.FilterDescendantsInstances = { ground }
-	local hit = workspace:Raycast(foot.Position + Vector3.new(0, 1.5, 0), Vector3.new(0, -5, 0), rayParams)
-	if not hit or hit.Instance:GetAttribute("Look") ~= LOOK then
-		return
-	end
-	-- Lying on the snow, pointing the way the body faces.
-	local up = hit.Normal
-	local look = root.CFrame.LookVector
-	local forward = look - up * look:Dot(up)
-	if forward.Magnitude < 0.05 then
-		return
-	end
-	forward = forward.Unit
-	press(CFrame.fromMatrix(hit.Position + up * 0.03, forward:Cross(up), up, -forward))
 end
 
 function FootprintController.init()
 	folder = Create("Folder", { Name = "DeathsGambitFootprints", Parent = workspace }) :: Folder
-	LocomotionController.Footfall:Connect(onFootfall)
+	local remote = Net.event("Tracks")
+	remote.OnClientEvent:Connect(onTracks)
+	-- Joining (or reloading) mid-round: ask for the prints already on the snow.
+	remote:FireServer({ action = "sync" })
 	-- Prints that have faded go back to the pool; all of them when the map is torn down.
 	local lastSweep = 0
 	RunService.Heartbeat:Connect(function()

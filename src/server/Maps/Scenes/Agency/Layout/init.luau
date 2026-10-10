@@ -82,5 +82,5 @@ return {
 		{ kind = "interior", y0 = 14, y1 = 14, points = { 38, 75, -100, 75, -100, 34, 38, 34 }, name = "39F" },
 		{ kind = "interior", y0 = 14, y1 = 14, points = { -100, 34, -100, 4, -4, 4, -4, 34 }, name = "39F" },
 	},
-	anchors = {},
+	anchors = { breaker = { x = 42.95, y = 0, z = -20, rot = -90 } },
 }

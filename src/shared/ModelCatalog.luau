@@ -23,7 +23,7 @@ return {
 	BookCart = { size = { 3.331, 3.19, 1.5 }, pivot = "bottom", material = "Wood", collide = true, color = { 26, 20, 17 }, set = "Campus", tris = 804 },
 	BookcaseTall = { size = { 4.6, 9.005, 1.9 }, pivot = "bottom", material = "Wood", collide = true, color = { 7, 5, 4 }, set = "Meeting", tris = 2956 },
 	Bookshelf = { size = { 3.2, 8.1, 1.75 }, pivot = "bottom", material = "Wood", collide = true, color = { 11, 9, 7 }, set = "Core" },
-	BreakerPanel = { size = { 3.16, 6.65, 3.45 }, pivot = "bottom", material = "Metal", collide = true, color = { 16, 16, 16 }, set = "Agency", tris = 1776, glow = { { 90, 255, 140 } } },
+	BreakerPanel = { size = { 5.67, 6.65, 1.45 }, pivot = "bottom", material = "Metal", collide = true, color = { 16, 16, 17 }, set = "Agency", tris = 1776, glow = { { 90, 255, 140 } } },
 	Bus = { size = { 8.97, 10.476, 34.095 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 36, 47, 42 }, lights = { { at = { -0.215, 7.976, 0.023 }, brightness = 0.9, color = { 236, 244, 255 }, kind = "point", range = 18 } }, set = "Tokyo", glow = { { 255, 190, 70 }, { 236, 244, 255 } } },
 	BusShelter = { size = { 12.4, 8.624, 4.405 }, pivot = "bottom", material = "Metal", collide = false, color = { 54, 58, 61 }, lights = { { at = { -0, 7.4, -0 }, brightness = 1.2, color = { 255, 232, 196 }, kind = "point", range = 14 } }, set = "Tokyo", glow = { { 255, 236, 214 } } },
 	BusStopSign = { size = { 1.9, 8.85, 1.4 }, pivot = "bottom", material = "Metal", collide = false, color = { 33, 36, 40 }, anchor = { -0, 0 }, set = "Tokyo" },

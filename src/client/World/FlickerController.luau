@@ -5,6 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
+local Blackout = require(script.Parent.Blackout)
 local LightingController = require(script.Parent.LightingController)
 
 local FlickerController = {}
@@ -57,7 +58,8 @@ function FlickerController.init()
 	task.spawn(function()
 		while true do
 			task.wait(1.2 + math.random() * 1.5)
-			if not Settings.get("reduceMotion") then
+			-- (Nothing flickers in a blackout: the lamps are out.)
+			if not Settings.get("reduceMotion") and not Blackout.isActive() then
 				local tagged = CollectionService:GetTagged(TAG)
 				local mapId = ClientState.public.mapId
 				local every = if type(mapId) == "string" then RARE[mapId] else nil

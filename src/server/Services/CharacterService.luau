@@ -107,6 +107,23 @@ function CharacterService.setFrozen(player: Player, frozen: boolean)
 	end
 end
 
+-- Why each character's name tag is hidden: "ghost", "away", "crowd" (the Tokyo crowd around a
+-- player), "blackout" (Bureau HQ). The tag shows again only when no reason is left.
+local hiddenWhy: { [Model]: { [string]: boolean } } = setmetatable({}, { __mode = "k" }) :: any
+
+function CharacterService.setNameHidden(character: Model, reason: string, hidden: boolean)
+	local reasons = hiddenWhy[character]
+	if not reasons then
+		reasons = {}
+		hiddenWhy[character] = reasons
+	end
+	reasons[reason] = if hidden then true else nil
+	local any = next(reasons) ~= nil
+	if character:GetAttribute("NameHidden") ~= any then
+		character:SetAttribute("NameHidden", any)
+	end
+end
+
 function CharacterService.setDisplayName(player: Player, name: string)
 	local character = player.Character
 	local humanoid = character and getHumanoid(character)
@@ -139,10 +156,17 @@ end
 -- build(anchorCFrame, anchorPart) must return a list of parts placed in world space.
 function CharacterService.attachBuilt(player: Player, name: string, bodyParts: { string }, build)
 	local character = player.Character
-	if not character then
-		return
+	if character then
+		CharacterService.attachBuiltTo(character, name, bodyParts, build)
 	end
-	CharacterService.detach(player, name)
+end
+
+-- The same on any character model (the Tokyo crowd's dressed templates, too).
+function CharacterService.attachBuiltTo(character: Model, name: string, bodyParts: { string }, build)
+	local existing = character:FindFirstChild(name)
+	if existing then
+		existing:Destroy()
+	end
 	local anchor = findBodyPart(character, bodyParts)
 	if not anchor then
 		return
@@ -436,6 +460,15 @@ function CharacterService.applyOutfit(player: Player)
 	if not character or character:GetAttribute("LNoirOutfit") then
 		return
 	end
+	local tieColor = player:GetAttribute("LTieColor")
+	CharacterService.dressNoir(character, if typeof(tieColor) == "Color3" then tieColor else nil)
+end
+
+-- Dresses any R6 model in the match suit (players, and the Tokyo crowd that must look like them).
+function CharacterService.dressNoir(character: Model, tie: Color3?)
+	if character:GetAttribute("LNoirOutfit") then
+		return
+	end
 	character:SetAttribute("LNoirOutfit", true)
 	local head = character:FindFirstChild("Head")
 	local skin = if head and head:IsA("BasePart") then head.Color else Color3.fromRGB(200, 170, 140)
@@ -458,7 +491,7 @@ function CharacterService.applyOutfit(player: Player)
 	paint(TROUSER_PARTS, TROUSERS)
 	-- R6 arms are one part, so the hands are skin-coloured cuffs welded over the arm ends.
 	for _, side in ipairs({ "Left", "Right" }) do
-		CharacterService.attachBuilt(player, "LHand" .. side, { side .. " Arm" }, function(anchor: CFrame)
+		CharacterService.attachBuiltTo(character, "LHand" .. side, { side .. " Arm" }, function(anchor: CFrame)
 			return {
 				Create("Part", {
 					Size = Vector3.new(1.04, 0.55, 1.04),
@@ -475,9 +508,8 @@ function CharacterService.applyOutfit(player: Player)
 	if Assets.outfit.pants ~= "" then
 		Create("Pants", { PantsTemplate = Assets.contentId(Assets.outfit.pants), Parent = character })
 	end
-	local tieColor = player:GetAttribute("LTieColor")
-	local tie = if typeof(tieColor) == "Color3" then tieColor else Color3.fromRGB(190, 22, 36)
-	CharacterService.attachBuilt(player, "LNoirTie", TORSO, function(anchor: CFrame, torso: BasePart)
+	local tieColour = tie or Color3.fromRGB(190, 22, 36)
+	CharacterService.attachBuiltTo(character, "LNoirTie", TORSO, function(anchor: CFrame, torso: BasePart)
 		local front = -torso.Size.Z / 2
 		local top = torso.Size.Y / 2
 		local white = Color3.fromRGB(236, 233, 226)
@@ -497,14 +529,14 @@ function CharacterService.applyOutfit(player: Player)
 			Create("Part", {
 				Name = "Knot",
 				Size = Vector3.new(0.2, 0.16, 0.08),
-				Color = tie:Lerp(Color3.new(0, 0, 0), 0.15),
+				Color = tieColour:Lerp(Color3.new(0, 0, 0), 0.15),
 				Material = Enum.Material.Fabric,
 				CFrame = anchor * CFrame.new(0, top - 0.2, front - 0.05),
 			}),
 			Create("Part", {
 				Name = "Tie",
 				Size = Vector3.new(0.18, 0.95, 0.05),
-				Color = tie,
+				Color = tieColour,
 				Material = Enum.Material.Fabric,
 				CFrame = anchor * CFrame.new(0, top - 0.75, front - 0.05),
 			}),
@@ -597,7 +629,7 @@ local function onCharacterAdded(player: Player, character: Model)
 	local away = anyPs ~= nil and anyPs.away == true
 	if away then
 		character:SetAttribute("Away", true)
-		character:SetAttribute("NameHidden", true)
+		CharacterService.setNameHidden(character, "away", true)
 	end
 	local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
 	if not humanoid or not humanoid:IsA("Humanoid") then

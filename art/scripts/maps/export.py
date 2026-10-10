@@ -382,7 +382,8 @@ def write_scene_v2(scene, module, source):
         f'{{ kind = "{li["kind"]}", at = {vec(li["pos"])}, color = {rgb(li["color"])}, '
         f'range = {num(li["range"], 1)}, brightness = {num(li["brightness"], 2)}, '
         f'shadows = {"true" if li["shadows"] else "false"}, face = "{li["face"]}", angle = {num(li["angle"], 1)}, '
-        f'flicker = {"true" if li["flicker"] else "false"} }}'
+        f'flicker = {"true" if li["flicker"] else "false"}'
+        + (f', role = "{li["role"]}"' if li.get("role") else "") + " }"
         for li in scene.lights
     ]
     signs = []

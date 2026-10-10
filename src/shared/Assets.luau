@@ -91,6 +91,16 @@ Assets.sfx = {
 	mapWindSnow = { id = "", ref = "soft winter wind with light snow falling, loop", fallbackId = "" },
 	mapHeaterHum = { id = "", ref = "kerosene heater burning, a low hum and tick, loop", fallbackId = "" },
 	mapTowerBell = { id = "", ref = "one stroke of a large clock-tower bell, ringing out", fallbackId = "" },
+	-- Bureau HQ's blackout and Tokyo's scramble (empty = silent until the owner picks the sounds).
+	mapBreakerClunk = { id = "", ref = "a heavy electrical breaker lever thrown, one clunk", fallbackId = "" },
+	mapPowerDown = {
+		id = "",
+		ref = "an office building's power dying: hum winding down, lights ticking off",
+		fallbackId = "",
+	},
+	mapPowerUp = { id = "", ref = "power coming back: a hum rising, fluorescent tubes flickering on", fallbackId = "" },
+	mapCarHorn = { id = "", ref = "a city car's short horn blast", fallbackId = "" },
+	mapCarPass = { id = "", ref = "a car passing over a wet street at low speed", fallbackId = "" },
 	mapPianoFar = { id = "", ref = "an upright piano practising down a corridor, muffled, loop", fallbackId = "" },
 	mapNewsRadio = { id = "", ref = "a late-night news radio murmuring in an empty room, loop", fallbackId = "" },
 	mapWindWaste = { id = "", ref = "a dry wind moaning across an empty desert of ash, loop", fallbackId = "" },

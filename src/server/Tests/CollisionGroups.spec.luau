@@ -32,6 +32,17 @@ return function(t)
 			expect(collide(CollisionGroups.SPECTERS, AWAY)).to.equal(false)
 			expect(collide(CollisionGroups.SPECTERS, CollisionGroups.SPECTERS)).to.equal(false)
 		end)
+		it("lets players bump into the Tokyo crowd and nothing else touch it or the cars", function()
+			local CROWD, PASS, CARS = CollisionGroups.CROWD, CollisionGroups.CROWD_PASS, CollisionGroups.VEHICLES
+			expect(collide(CROWD, CHARS)).to.equal(true)
+			expect(collide(CROWD, "Default")).to.equal(false)
+			expect(collide(CROWD, CROWD)).to.equal(false)
+			expect(collide(CROWD, AWAY)).to.equal(false)
+			for _, group in ipairs({ CHARS, "Default", AWAY, CollisionGroups.SPECTERS, CROWD }) do
+				expect(collide(PASS, group)).to.equal(false)
+				expect(collide(CARS, group)).to.equal(false)
+			end
+		end)
 		it("moves a body's parts but leaves a ghost's parts alone", function()
 			local model = Instance.new("Model")
 			local plain = Instance.new("Part")

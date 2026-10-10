@@ -23,6 +23,7 @@ local EventLog = require(script.Parent.EventLog)
 local EvidenceService = require(script.Parent.EvidenceService)
 local EyesService = require(script.Parent.EyesService)
 local Analytics = require(script.Parent.Analytics)
+local Mechanics = require(script.Parent.Parent:WaitForChild("Maps"):WaitForChild("Mechanics"))
 local GhostService = require(script.Parent.GhostService)
 local HoodService = require(script.Parent.HoodService)
 local MapService = require(script.Parent.MapService)
@@ -76,6 +77,7 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	local uncuttable = options ~= nil and options.uncuttable == true
 	Match.phase = name
 	GhostService.onPhase(name)
+	Mechanics.onPhase(name)
 	Match.phaseStartedAt = workspace:GetServerTimeNow()
 	Match.phaseEndsAt = Match.phaseStartedAt + length
 	if onStart then
@@ -104,6 +106,7 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	if onEnd then
 		onEnd()
 	end
+	Mechanics.onPhaseEnd(name)
 end
 
 -- The intro cutscene: every player's avatar somewhere on the map doing something (Staging picks
@@ -129,6 +132,7 @@ end
 local function startIntro()
 	local data = introData(Match.map)
 	data.duration = Match.phaseLength("Intro")
+	Mechanics.stageMarks(data.cast)
 	Cues.fire("intro", data, { lead = 0.2 })
 end
 
@@ -332,6 +336,7 @@ end
 
 local function reveal()
 	Match.phase = "Reveal"
+	Mechanics.onPhase("Reveal")
 	Match.phaseStartedAt = workspace:GetServerTimeNow()
 	Match.phaseEndsAt = Match.phaseStartedAt + Match.phaseLength("Reveal")
 	CaseFileService.cancelAll(nil)
@@ -439,6 +444,7 @@ local function runMatch(players: { Player })
 	ChatService.onMatchStart()
 	GhostService.onMatchStart()
 	WagerService.onMatchStart()
+	Mechanics.start(map)
 
 	for i, ps in ipairs(Match.list) do
 		ps.player.CameraMaxZoomDistance = MATCH_ZOOM
@@ -529,6 +535,7 @@ local function cleanup()
 	MeetingService.onMatchEnd()
 	GhostService.onMatchEnd()
 	WagerService.onMatchEnd()
+	Mechanics.stop()
 
 	local participants = Match.list
 	Match.finish()

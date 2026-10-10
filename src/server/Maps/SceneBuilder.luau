@@ -30,6 +30,8 @@ SceneBuilder.disabled = false
 
 -- Tag on the colliders the camera cannot pass through (see client World/CameraCollision).
 SceneBuilder.CAMERA_TAG = "LCameraBlock"
+-- Emergency lamps (off until the map's blackout; the client lights them, World/Blackout).
+SceneBuilder.EMERGENCY_TAG = "LMapEmergency"
 
 local function dress(part: BasePart, material: string)
 	part.Anchored = true
@@ -97,6 +99,11 @@ local function addLight(b, folder: Instance, spec, showFixture: boolean?, where:
 	light.Parent = anchor
 	if spec.flicker then
 		CollectionService:AddTag(anchor, "LFlicker")
+	end
+	if spec.role == "emergency" then
+		-- An emergency lamp: off until the map's blackout (the client lights it, World/Blackout).
+		light.Enabled = false
+		CollectionService:AddTag(anchor, SceneBuilder.EMERGENCY_TAG)
 	end
 end
 

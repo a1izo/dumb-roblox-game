@@ -381,9 +381,11 @@ class Scene(LayoutMixin):
     def preview_prop(self, key, x, z, rot=0.0, scale_=1.0, y=0.0):
         self.preview_props.append((key, x, y, z, rot, scale_))
 
-    def light(self, kind, pos, color, range_, brightness, shadows=False, face="Bottom", angle=90, flicker=False):
+    def light(self, kind, pos, color, range_, brightness, shadows=False, face="Bottom", angle=90, flicker=False,
+              role=None):
+        """role "emergency": a lamp that stays off until the map's blackout (Bureau HQ's breaker)."""
         self.lights.append({"kind": kind, "pos": pos, "color": color, "range": range_, "brightness": brightness,
-                            "shadows": shadows, "face": face, "angle": angle, "flicker": flicker})
+                            "shadows": shadows, "face": face, "angle": angle, "flicker": flicker, "role": role})
 
     def sign(self, pos, rot, w, h, text, font="GothamBlack", color=(255, 255, 255), bg=None, glow=None,
              align="Center"):

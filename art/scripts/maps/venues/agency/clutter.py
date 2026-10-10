@@ -67,6 +67,31 @@ def upper(s):
     p(s, "Plant", -14.4, -46.4, 0, 1.0, y)
 
 
+# The blackout (Bureau HQ's mechanic) ---------------------------------------------------------------------
+
+# Red emergency lamps, off until someone pulls the breaker: along the corridor round the core and over
+# the open floors, on both storeys.
+EMERGENCY = {
+    L1: [(-12.0, -44.0), (22.0, -44.0), (46.0, -44.0), (-12.0, -14.0), (46.0, -14.0), (-58.0, -20.0), (-58.0, 30.0),
+         (17.0, 20.0), (60.0, 40.0), (25.0, 60.0)],
+    L2: [(-12.0, -44.0), (22.0, -44.0), (46.0, -44.0), (-12.0, -14.0), (46.0, -14.0), (-58.0, -20.0), (-58.0, 20.0),
+         (-60.0, 58.0), (20.0, 50.0), (40.0, 10.0)],
+}
+
+
+def blackout(s):
+    # The main breaker panel on the core's east face, 10 studs past the fire stair's door (the game
+    # builds it at this anchor; its door folds flat against the wall).
+    s.anchor("breaker", P.CORE[2] + 1.25, L1, -20.0, rot=-90)
+    for level, spots in EMERGENCY.items():
+        ceiling = P.CEIL1 if level == L1 else P.CEIL2
+        for x, z in spots:
+            s.box("RedTrim", (x, ceiling - 0.12, z), (1.0, 0.24, 0.5), skip=("+y",))
+            s.box("NeonRed", (x, ceiling - 0.26, z), (0.8, 0.05, 0.3), skip=("+y",))
+            s.light("point", (x, ceiling - 0.8, z), (255, 40, 40), 26, 0.9, role="emergency")
+
+
 def build(s):
     lower(s)
     upper(s)
+    blackout(s)

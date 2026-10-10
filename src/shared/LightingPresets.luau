@@ -479,6 +479,20 @@ LightingPresets.moods = {
 		fill = 0.08,
 		vignette = 1,
 	}),
+	-- Bureau HQ's blackout (someone pulled the breaker): every lamp out but the red emergency ones,
+	-- the city's glow through the glass, a red cast.
+	Blackout = mood({
+		exposure = -1.6,
+		brightness = 0.05,
+		ambient = 0.06,
+		saturation = -0.4,
+		contrast = 0.3,
+		tint = rgb(255, 80, 80),
+		tintAmount = 0.25,
+		key = 0,
+		fill = 0,
+		vignette = 0.9,
+	}),
 	OutroAgency = mood({
 		exposure = -0.4,
 		brightness = 0.8,
