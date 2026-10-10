@@ -199,7 +199,8 @@ are aids for looking, nothing decides where a prop goes.
 - `export/DeathsGambitMaps_Tokyo.fbx`: meshes `Map_Tokyo_<Material>_<n>`, calibration cubes
   `Calib_Tokyo_O/X/Y` and a marker `DeathsGambitMapsTokyo_Version_<n>`. The version only goes up when
   the meshes change; only then does Studio need a new import (delete the old one first).
-- `src/server/Maps/Scenes/Tokyo/`: `Layout` (gameplay spots, spare spots, zones), `Geometry`
+- `src/server/Maps/Scenes/Tokyo/`: `Layout` (gameplay spots, spare spots, zones; for Tokyo also the
+  crowd's walks and the cars' lanes, `venues/tokyo/crowd.py`), `Geometry`
   (colliders, floor triangles, ramps, the steps drawn over them), `Dressing` (props, lights, signs,
   screens, sound sources and the metro train's timetable). Long lists are split into parts so no
   script gets too long for Studio.
@@ -226,6 +227,16 @@ points to measure between, `CHECKS` in its module); how much of the walkable gro
 report, not a pass mark: `previews/light_Tokyo.png` shows the dark parts in red); and how alike
 the map is to its own mirror image (it must not be symmetrical; `CHECKS["symmetry"]` sets a
 venue's own limit, None where being symmetrical is the point, as in the meeting room).
+
+Tokyo's scramble has a crowd and cars (`venues/tokyo/crowd.py`, data only: the game moves them and
+each client draws them). The crowd walks a graph: nodes on the pavement, links between them (a
+"crossing" link is only walked on the walk lamp), and posts where a few stand all match. The cars
+drive lanes, each with its stop line and its road (the two roads take turns). `crowd.py` places every
+node and walk against the scene with the checker's own eyes, round whatever stands on the pavement;
+`check_v2.py` then holds the result to it: every node on a floor and inside nothing, at least 10
+studs from a station and 4 from a spawn, every walk open and off the roadway, every crossing on the
+crossing, every lane on the road with its stop line short of the crossing. Move a street light or
+a vending machine and the walks move with it at the next export.
 
 The kit for big maps: `maps/geo2d.py` (plane geometry: clipping, covering, polylines),
 `maps/city.py` (ground surfaces that never overlap, exact floors, streets, lanes grown into the

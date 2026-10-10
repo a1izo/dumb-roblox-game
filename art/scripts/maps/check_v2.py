@@ -801,6 +801,64 @@ def doorways(data, problems):
     print(f"  doorways: {len(data.get('openings', []))} checked, {flagged} crowded")
 
 
+def crowd_and_traffic(data, world, zones, problems):
+    """Tokyo's crowd walks on floors, through open ground, never on a road but at a crossing, never
+    near a station's worker or a spawn; its posts stand on floors; the cars' lanes run on roads and
+    crossings and stop before the crossing."""
+    crowd = data.get("crowd") or {}
+    nodes = crowd.get("nodes") or []
+    if not nodes:
+        return
+    keep_clear = []
+    for group in (data["layout"], data["spare"]):
+        keep_clear += [(st["x"], st["z"], 10.0, "station " + st["name"]) for st in group["stations"]]
+        keep_clear += [(sp["x"], sp["z"], 4.0, "a spawn") for sp in group["spawns"]]
+    for i, nd in enumerate(nodes):
+        label = f"crowd node {i + 1} at {nd['x']:.0f}, {nd['z']:.0f}"
+        if world.floor_under(nd["x"], nd["y"], nd["z"], reach=1.0) is None:
+            problems.append(f"{label}: no floor under it")
+        if world.inside(nd["x"], nd["y"], nd["z"]):
+            problems.append(f"{label}: inside something")
+        for x, z, r, what in keep_clear:
+            if math.dist((x, z), (nd["x"], nd["z"])) < r:
+                problems.append(f"{label}: within {r:.0f} of {what}")
+    for link in crowd.get("links") or []:
+        a, b = nodes[link["a"] - 1], nodes[link["b"] - 1]
+        mid = ((a["x"] + b["x"]) / 2, (a["y"] + b["y"]) / 2, (a["z"] + b["z"]) / 2)
+        kinds = zones.kinds(*mid)
+        label = f"crowd link {link['a']}-{link['b']}"
+        if link["kind"] == "crossing":
+            if "crossing" not in kinds:
+                problems.append(f"{label}: a crossing link off the crossing ({kinds})")
+        else:
+            if not world.open((a["x"], a["z"]), (b["x"], b["z"]), a["y"]):
+                problems.append(f"{label}: something solid in the way")
+            if set(kinds) & {"road", "crossing", "water", "track"}:
+                problems.append(f"{label}: over {sorted(set(kinds))}")
+    for post in crowd.get("posts") or []:
+        if world.floor_under(post["x"], post["y"], post["z"], reach=1.0) is None or world.inside(post["x"], post["y"], post["z"]):
+            problems.append(f"crowd post at {post['x']:.0f}, {post['z']:.0f}: not standing free on a floor")
+    for k, lane in enumerate((data.get("traffic") or {}).get("lanes") or []):
+        pts = lane["points"]
+        for x, z in pts:
+            kinds = zones.kinds(x, 0.0, z)
+            if not set(kinds) & {"road", "crossing"}:
+                problems.append(f"lane {k + 1}: point {x:.0f}, {z:.0f} off the road ({kinds})")
+        # The stop line: the point `stop` studs along the lane.
+        left, at = lane["stop"], pts[0]
+        for p, q in zip(pts, pts[1:]):
+            seg = math.dist(p, q)
+            if left <= seg:
+                f = left / seg if seg else 0
+                at = (p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f)
+                break
+            left -= seg
+        if "crossing" in zones.kinds(at[0], 0.0, at[1]):
+            problems.append(f"lane {k + 1}: its stop line is on the crossing")
+    print(f"  crowd: {len(nodes)} nodes, {len(crowd.get('links') or [])} links, {len(crowd.get('posts') or [])} posts; "
+          f"{len((data.get('traffic') or {}).get('lanes') or [])} lanes")
+
+
 def _rect_of(poly, grow):
     """(cx, cz, w, d, rot) of a rectangle from g2.rect, grown by `grow` on every side."""
     (x0, z0), (x1, z1), (x2, z2), _ = poly
@@ -824,6 +882,7 @@ def check(venue, full=True):
     ramps(data, problems)
     overlaps(data, problems)
     doorways(data, problems)
+    crowd_and_traffic(data, world, zones, problems)
     if full:
         dist = walk(data, world, problems)
         picks, reach_count = reach_report(data, dist, problems)

@@ -347,6 +347,12 @@ def write_scene_v2(scene, module, source):
     layout_fields.append(("What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...",
                           "zones", [_lua(_zone_entry(z)) for z in scene.zones]))
     layout_fields.append((None, "anchors", _lua(scene.anchors)))
+    if scene.crowd["nodes"]:
+        layout_fields.append(("The crowd's walks (Tokyo): nodes, links between them (1-based), posts.", "crowd",
+                              _lua(scene.crowd)))
+    if scene.traffic["lanes"]:
+        layout_fields.append(("The cars' lanes (Tokyo): points from where they appear, the distance to the stop line.",
+                              "traffic", _lua(scene.traffic)))
 
     colliders = []
     for c in scene.colliders:
@@ -462,6 +468,8 @@ def write_scene_v2(scene, module, source):
         "spare": scene.spare,
         "zones": scene.zones,
         "anchors": scene.anchors,
+        "crowd": scene.crowd,
+        "traffic": scene.traffic,
         "stats": stats,
         "checks": scene.checks,
     }

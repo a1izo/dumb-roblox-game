@@ -1,5 +1,6 @@
 -- The rules every map must keep so the game works on it, whatever it looks like.
 --   validateLayout(layout)  pure checks on a map's layout() data (runs as a spec)
+--   validateCrowd(layout)   the same for a map's crowd walks and car lanes (Tokyo's scramble)
 --   validateBuilt(info)     checks on the built map in the world (runs in Studio after each
 --                           build): tags, attributes, reachable desks, clear sight lines to
 --                           the stations, and sheets resting on something.
@@ -8,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local MapSync = require(Shared:WaitForChild("MapSync"))
 local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 
 local MapContract = {}
@@ -117,6 +119,111 @@ function MapContract.validateSpare(layout: any): { string }
 			table.insert(problems, "two areas are called " .. tostring(area.name))
 		end
 		areaNames[area.name] = true
+	end
+	return problems
+end
+
+-- A map with a crowd and cars (Tokyo's scramble: layout.crowd and layout.traffic): every link joins two
+-- nodes that exist, a crossing runs from kerb to kerb, the walks hang together (a walker can get from
+-- any node to any other), nobody walks or stands on top of a station's worker or a spawn, and every
+-- lane has its stop line somewhere along it. A map without them has nothing to keep.
+function MapContract.validateCrowd(layout: any): { string }
+	local problems = {}
+	local function fail(text: string)
+		table.insert(problems, text)
+	end
+	local crowd = layout.crowd
+	if crowd ~= nil then
+		local nodes, links = crowd.nodes or {}, crowd.links or {}
+		local keepClear = {}
+		for _, group in ipairs({ layout, layout.spare or {} }) do
+			for _, station in ipairs(group.stations or {}) do
+				table.insert(
+					keepClear,
+					{ x = station.x, z = station.z, r = 10, what = "station " .. tostring(station.name) }
+				)
+			end
+			for _, spawn in ipairs(group.spawns or {}) do
+				table.insert(keepClear, { x = spawn.x, z = spawn.z, r = 4, what = "a spawn" })
+			end
+		end
+		local joined = {}
+		for index, node in ipairs(nodes) do
+			joined[index] = {}
+			if not (isNumber(node.x) and isNumber(node.z)) then
+				fail("crowd node " .. index .. " needs x and z")
+			elseif node.kind ~= "walk" and node.kind ~= "kerb" then
+				fail("crowd node " .. index .. " has an unknown kind " .. tostring(node.kind))
+			else
+				for _, spot in ipairs(keepClear) do
+					if isNumber(spot.x) and isNumber(spot.z) and (node.y or 0) == 0 then
+						if math.sqrt((spot.x - node.x) ^ 2 + (spot.z - node.z) ^ 2) < spot.r then
+							fail(string.format("crowd node %d is within %d studs of %s", index, spot.r, spot.what))
+						end
+					end
+				end
+			end
+		end
+		for index, link in ipairs(links) do
+			local a, b = nodes[link.a], nodes[link.b]
+			if not a or not b or link.a == link.b then
+				fail("crowd link " .. index .. " does not join two nodes")
+			else
+				table.insert(joined[link.a], link.b)
+				table.insert(joined[link.b], link.a)
+				if link.kind == "crossing" then
+					if a.kind ~= "kerb" or b.kind ~= "kerb" then
+						fail("crowd link " .. index .. " crosses the road from somewhere that is not a kerb")
+					end
+				elseif link.kind ~= "walk" then
+					fail("crowd link " .. index .. " has an unknown kind " .. tostring(link.kind))
+				end
+				if not isNumber(link.width) or link.width <= 0 then
+					fail("crowd link " .. index .. " needs a width")
+				end
+			end
+		end
+		-- One piece: everything is reached from the first node.
+		local reached, queue = { [1] = true }, { 1 }
+		while #queue > 0 do
+			local at = table.remove(queue) :: number
+			for _, other in ipairs(joined[at] or {}) do
+				if not reached[other] then
+					reached[other] = true
+					table.insert(queue, other)
+				end
+			end
+		end
+		for index in ipairs(nodes) do
+			if not reached[index] then
+				fail("crowd node " .. index .. " cannot be reached from the others")
+			end
+		end
+		for index, post in ipairs(crowd.posts or {}) do
+			if not (isNumber(post.x) and isNumber(post.z) and isNumber(post.rot)) then
+				fail("crowd post " .. index .. " needs x, z and rot")
+			end
+		end
+	end
+	for index, lane in ipairs((layout.traffic or {}).lanes or {}) do
+		local points = lane.points or {}
+		local length = 0
+		for i = 2, #points do
+			length += math.sqrt((points[i][1] - points[i - 1][1]) ^ 2 + (points[i][2] - points[i - 1][2]) ^ 2)
+		end
+		if #points < 2 then
+			fail("lane " .. index .. " needs at least two points")
+		elseif not isNumber(lane.stop) or lane.stop <= 0 or lane.stop >= length then
+			fail("lane " .. index .. " has no stop line along it")
+		end
+		if lane.road ~= nil and lane.road ~= 1 and lane.road ~= 2 then
+			fail("lane " .. index .. " belongs to an unknown road " .. tostring(lane.road))
+		end
+		for _, key in ipairs(lane.kinds or {}) do
+			if not table.find(MapSync.CARS, key) then
+				fail("lane " .. index .. " wants a car the game does not have: " .. tostring(key))
+			end
+		end
 	end
 	return problems
 end

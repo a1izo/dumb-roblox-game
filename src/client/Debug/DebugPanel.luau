@@ -558,6 +558,25 @@ builders.World = function()
 	note(
 		"Previews build a map outside a match (between matches). Turning scenes off rebuilds the lobby, the meeting room and the maps as greyboxes."
 	)
+	r = row()
+	button(r, "Scramble status", function()
+		send("mechanic", { command = "status" })
+	end)
+	button(r, "Lamps: WALK now", function()
+		send("mechanic", { command = "walk" })
+	end)
+	button(r, "Lamps: CARS now", function()
+		send("mechanic", { command = "cars" })
+	end)
+	button(r, "Count snow tracks", function()
+		send("mechanic", { command = "tracks" })
+	end)
+	button(r, "Pull the breaker", function()
+		send("mechanic", { command = "blackout" })
+	end)
+	note(
+		"Each map's own mechanic, in a match on that map: Tokyo's scramble (lamps, crowd, cars), the campus's tracks in the snow, Bureau HQ's blackout."
+	)
 	heading("Me")
 	r = row()
 	toggle(r, "Fly (WASD, Space/E up, Ctrl/Q down)", DebugTools.flying, function()
@@ -647,7 +666,9 @@ builders.World = function()
 			lastSignature = ""
 		end, if RainController.debugSnow == spec[2] then COLORS.pick else nil)
 	end
-	note("Snow leaves footprints on snowy ground (the campus lawns) while it falls.")
+	note(
+		"On the campus, every living player leaves tracks on untrodden snow (the lawns) for a minute, and everyone sees them."
+	)
 end
 
 builders.Show = function()

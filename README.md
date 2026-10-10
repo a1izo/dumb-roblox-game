@@ -110,6 +110,22 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   hard light, Ace's screen between two speaker columns, the evidence board on a wall of pinned
   photographs and red string, the Deathsingers' mezzanine round the walls, and the city at night
   through half-open blinds.
+- **Each map has a mechanic of its own** (`server/Maps/Mechanics`, one module per map; a bug in one
+  warns and never ends a match):
+  - *Tokyo, the Scramble.* The lamps really cycle (50 s: walk 11, blink 4, cars 32, amber 3; worked
+    out on every machine from one number, `shared/ScrambleCycle`). A crowd of about 35 walkers and a
+    few clerks crosses with the walk lamp, four in five of them in the players' own suit: a player's
+    name tag hides inside the crowd, and a walker's body blocks a letter flash, a witness and the
+    Oculus. A few cars drive on their lamp, brake and honk for anyone in their lane and never touch
+    them. Crossing on the cars' lamp is jaywalking: a camera may report it, and it accuses nobody.
+    Nothing of the crowd or the cars exists on the server: they are numbers, sent five times a
+    second in one small unreliable snapshot (`shared/MapSync`) and drawn by each client
+    (`client/World/Crowd`, `client/World/Scramble`).
+  - *University Campus, tracks in the snow.* Every living player leaves prints on untrodden snow
+    (never on the swept paths) for a minute, and everyone sees them. They are anonymous.
+  - *Bureau HQ, the breaker.* Once a round anyone can pull the main breaker by the fire stair: both
+    floors go dark for 15 s under red emergency lamps, name tags hide, a letter flash reaches half as
+    far and a faked task is only witnessed from close by. The pull is on camera.
 - **Cutscenes** (`client/Presentation`): the server sends timed cues that every client plays at the
   same moment. Case opening, deaths, the verdict, arrests, the Oculus of the Dead deal and the ending.
 - **Characters** (`client/Anim`, `shared/Anim`): procedural poses played on every character from
@@ -222,7 +238,8 @@ src/server/     init.server.luau boots every service
   Maps/         Builder, MapContract, SceneBuilder (places the Blender scenes), Scenes/ (generated
                 layouts, anchors, colliders, props, lights and signs per venue), the
                 lobby (the Grey Realm), the meeting room (the war room) and three maps: Bureau HQ,
-                University Campus, Tokyo
+                University Campus, Tokyo; Mechanics/ (each map's own: the scramble's crowd and
+                cars, the tracks in the snow, the breaker's blackout)
   Debug/        test bots for the debug panel (DebugService runs the panel's commands)
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything
@@ -230,7 +247,8 @@ src/client/     init.client.luau boots everything
   Presentation/ cue router, camera director, cinema helpers, ink effects, cutscene presenters
   Anim/         PoseController, LocomotionController and ActingController (Blender clips)
   Audio/        mixer, music and sound effects
-  World/        lighting, rain and snow, footprints, flicker, Deathsinger visibility
+  World/        lighting, rain and snow, footprints, flicker, Deathsinger visibility, and what
+                each map's mechanic shows (the Tokyo crowd, its lamps and cars, the blackout)
   Deathsinger/      flight, lost souls and real-name tags for ghosts
   Controllers/  prompts, chat rules, emotes, the Oculus of the Dead, the Academy
   Input/        actions and bindings

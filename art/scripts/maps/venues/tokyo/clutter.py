@@ -48,14 +48,16 @@ def konbini(s):
 
 
 def dept_store(s):
-    # Ground floor: two cosmetics counters with their backs to the walls, a mannequin by the west wall.
-    s.prop("CosmeticsCounter", -3.0, -92.2, 180)
-    s.prop("CosmeticsCounter", -3.0, -66.5, 0)
+    # Ground floor (the store is a wedge: its north and south walls slant): two cosmetics counters with
+    # their backs to those walls, each clear of that wall's door (the south one east of the street door,
+    # off the escalators' flank), a mannequin by the tip.
+    s.prop("CosmeticsCounter", 40.5, -66.0, -7)
+    s.prop("CosmeticsCounter", 34.0, -89.8, 170)
     s.prop("Mannequin", -7.6, -77.0, -90)
-    # First floor: fitting rooms along the west wall, two more racks and a mannequin.
-    for z in (-88.4, -84.2):
-        s.prop("FittingRoom", -8.0, z, -90, 1.0, UP)
-    s.prop("ClothesRack", 2.0, -91.6, 0, 1.0, UP)
+    # First floor: two fitting rooms against the north wall west of the escalators' well, a rack and a
+    # mannequin.
+    for x in (2.0, 6.2):
+        s.prop("FittingRoom", x, -71.3 + (x - 2.0) * 0.115, -7, 1.0, UP)
     s.prop("ClothesRack", 30.0, -67.0, 180, 1.0, UP)
     s.prop("Mannequin", 31.0, -90.5, 0, 1.0, UP)
 

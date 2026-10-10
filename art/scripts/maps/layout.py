@@ -44,6 +44,10 @@ class LayoutMixin:
         self.spare = {"stations": [], "spawns": [], "sheets": [], "hoods": [], "areas": []}
         self.zones = []
         self.anchors = {}
+        # Tokyo's scramble: where its crowd walks (nodes, links between them, posts where some stand)
+        # and where its cars drive (lanes, each with the distance along it to its stop line).
+        self.crowd = {"nodes": [], "links": [], "posts": []}
+        self.traffic = {"lanes": []}
         self.bounds = None
 
     def _put(self, kind, item, spare):
@@ -94,6 +98,32 @@ class LayoutMixin:
         assert kind in ZONE_KINDS, kind
         self.zones.append({"kind": kind, "poly": [tuple(p) for p in poly], "y0": y0,
                            "y1": y0 if y1 is None else y1, "name": name})
+
+    def crowd_node(self, x, z, y=0.0, kind="walk"):
+        """A spot the crowd walks through (kind "kerb": it waits there for the walk signal). Returns its
+        index (1-based, as Luau reads it)."""
+        self.crowd["nodes"].append({"x": round(x, 2), "y": y, "z": round(z, 2), "kind": kind})
+        return len(self.crowd["nodes"])
+
+    def crowd_link(self, a, b, kind="walk", width=2.0):
+        """A way between two nodes (kind "crossing": only walked on the walk signal); width: how far a
+        walker may step aside on it."""
+        self.crowd["links"].append({"a": a, "b": b, "kind": kind, "width": width})
+
+    def crowd_post(self, x, z, rot, y=0.0, kind="clerk"):
+        """Where one of the crowd stands all match (behind a counter, at the police box's door)."""
+        self.crowd["posts"].append({"x": x, "y": y, "z": z, "rot": rot, "kind": kind})
+
+    def traffic_lane(self, points, stop, width=4.0, road=1, kinds=None):
+        """A lane cars drive along ([(x, z)], from where they appear to where they leave); stop: the
+        distance along it to its stop line (where they wait while pedestrians cross); road: which of
+        the junction's roads it belongs to (the roads take turns, so their cars never cross); kinds:
+        the only models that drive it (ModelCatalog keys; any of the game's cars when not given)."""
+        lane = {"points": [[round(x, 2), round(z, 2)] for x, z in points], "stop": round(stop, 2), "width": width,
+                "road": road}
+        if kinds:
+            lane["kinds"] = list(kinds)
+        self.traffic["lanes"].append(lane)
 
     def anchor(self, name, x, y, z, rot=0.0, **extra):
         """A named spot the venue's own Luau builds something at (boards, seats, altars...)."""

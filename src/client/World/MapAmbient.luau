@@ -578,6 +578,11 @@ local OUTDOOR_SOUNDS = {
 	mapRainGlass = true,
 }
 
+-- The looping sounds by key, and the keys a map's mechanic has silenced for now (the crossing's
+-- chirp only sounds on the walk lamp).
+local looping: { [Sound]: { key: string, volume: number } } = {}
+local silenced: { [string]: boolean } = {}
+
 local function playSound(source: BasePart)
 	if source:GetAttribute("Looped") ~= true then
 		return -- one-shots (the station chime, the train) are played by the train
@@ -592,7 +597,27 @@ local function playSound(source: BasePart)
 	if sound then
 		sound.RollOffMaxDistance = (source:GetAttribute("Radius") :: number?) or 40
 		sound.RollOffMinDistance = 6
+		looping[sound] = { key = key, volume = sound.Volume }
+		sound.Destroying:Once(function()
+			looping[sound] = nil
+		end)
+		if silenced[key] then
+			sound.Volume = 0
+		end
 		sound:Play()
+	end
+end
+
+-- Lets a looping map sound be heard or not (it keeps playing, silently, so it stays in step).
+function MapAmbient.setAudible(key: string, audible: boolean)
+	if (silenced[key] == true) == not audible then
+		return
+	end
+	silenced[key] = if audible then nil else true
+	for sound, entry in pairs(looping) do
+		if entry.key == key then
+			sound.Volume = if audible then entry.volume else 0
+		end
 	end
 end
 
