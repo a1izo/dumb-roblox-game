@@ -13,7 +13,7 @@ return {
 	marker = "DeathsGambitMapsTokyo_Version_28",
 	fbx = "DeathsGambitMaps_Tokyo.fbx",
 	bounds = { min = { -200, -30, -150 }, max = { 200, 60, 150 } },
-	stats = { materials = 83, triangles = 395766, colliders = 1205, floors = 198, ramps = 7, props = 513, lights = 233, signs = 325 },
+	stats = { materials = 83, triangles = 395766, colliders = 1205, floors = 198, ramps = 7, props = 521, lights = 233, signs = 327 },
 	layout = require(script.Layout),
 	geometry = require(script.Geometry),
 	dressing = require(script.Dressing),

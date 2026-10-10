@@ -2,11 +2,13 @@
 screen between speakers and a costume rack downstairs; a lyric screen over each room's door, a
 mirror ball, song books and drinks upstairs), the konbini's third shelf row, magazine rack and ATM,
 the department store's cosmetics counters, fitting rooms and racks, the clinic's cooler and plant,
-and the station hall's machines, benches and kiosk.
+the station hall's machines, benches and kiosk, the police box's chairs, cabinets and notices, and
+the drugstore's display counter and waiting chairs.
 
 Every placement keeps the doorways (check_v2's doorway check), the stations' worker sides and the
 walking lanes clear."""
 
+from maps import geo2d as g2
 from maps.venues.tokyo import interiors as I
 
 UP, CEIL = I.UP, I.CEIL
@@ -80,9 +82,45 @@ def station_hall(s):
     s.prop("ShopCounter", -146.5, -100.0, -90)
 
 
+def koban(s):
+    """The police box was a counter and a table in a bare room. It is a small one (14 by 10.5 inside
+    its walls: u from -7 to 7 along the front, 1 to 11 deep), and the door, the table and the sight
+    lines to the print kit leave the floor no room for more than a filing cabinet in the back corner:
+    the rest goes on the walls, a board of wanted notices under its sign on the east one, the duty
+    roster on the west."""
+    b = I.building("koban")
+    e = I.edges_of(b["poly"])[I.edge_towards(b["poly"], (0.46, -0.89))]
+    along, back = g2.rot_of((-e.n[0], -e.n[1])), g2.rot_of(e.n)
+
+    def local(u, depth):
+        return e.at(e.length / 2 + u, -depth)
+
+    s.prop("FilingCabinet", *local(-5.9, 9.7), along)
+    x, z = local(6.84, 5.25)
+    s.prop("PinBoard", x, z, back, 1.0, 6.4)
+    x, z = local(6.9, 5.25)
+    s.sign((x, 9.3, z), back, 5.0, 0.9, "指名手配  WANTED", "GothamBlack", (250, 240, 230), (150, 24, 30))
+    x, z = local(-6.84, 6.3)
+    s.prop("PinBoard", x, z, along, 1.0, 6.4)
+    x, z = local(-6.9, 6.3)
+    s.sign((x, 9.3, z), along, 5.0, 0.9, "勤務表  DUTY ROSTER", "GothamBold", (230, 236, 244), (30, 60, 140))
+
+
+def drugstore(s):
+    """One shelf in a 30-stud shop: a display counter along the stair's flank (4 studs of aisle to the
+    shelf), chairs and a water cooler for those waiting on the dispensary, a plant in the corner."""
+    s.prop("DisplayCase", 62.0, -85.7, 180)
+    for z in (-93.0, -90.8):
+        s.prop("Chair", 75.6, z, 90)
+    s.prop("WaterCooler", 75.9, -88.4, 90)
+    s.prop("Plant", 50.4, -92.4, 0, 0.9)
+
+
 def build(s):
     karaoke(s)
     konbini(s)
     dept_store(s)
     clinic(s)
     station_hall(s)
+    koban(s)
+    drugstore(s)

@@ -354,7 +354,7 @@ return {
 		{ "CampusLamp", -6.4, 0, 85, 0, 1 },
 		{ "CampusLamp", -31.4, 0, 99, 0, 1 },
 		{ "Bench", -35.4, 0, 29.4, -90, 1 },
-		{ "VendingBlue", -5.2, 0, 46.6, 90, 1 },
+		{ "VendingBlue", -5.2, 0, 45.7, 90, 1 },
 		{ "RecycleBins", -5.8, 0, 53.5, 90, 1 },
 		{ "EventTent", 6, 0, 71, 90, 1 },
 		{ "KeroseneHeater", 4, 0, 74.2, 0, 1 },

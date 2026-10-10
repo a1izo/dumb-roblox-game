@@ -75,12 +75,17 @@ class Street:
     def roadway(self, x, z):
         return bool(set(self.zones.kinds(x, 0.0, z)) & ROADWAY)
 
+    def solid(self, x, z):
+        """Something solid stands at (x, z) anywhere between a walker's knee and its head (a wall,
+        a pole, a shopfront's sill or its overhang: the heights a walk is held open at)."""
+        return any(s.kind == "box" and s.blocks(x, z, 0.4, 5.2) for s in self.world.near(x, z))
+
     def stand(self, x, z, room=SHOULDER):
         """A walker can stand at (x, z): on a floor, off the roadway, inside nothing, with nothing
         solid within `room` studs, and clear of the spawns and stations."""
         if self.roadway(x, z) or self.world.floor_under(x, 0.0, z, reach=1.0) is None:
             return False
-        if self.world.inside(x, 0.0, z):
+        if self.solid(x, z):
             return False
         # (Rings no further apart than the thinnest pole is wide.)
         rings = max(1, math.ceil(room / 0.4))
@@ -88,7 +93,7 @@ class Street:
             r = room * ring / rings
             for k in range(8 * ring):
                 a = math.pi * k / (4 * ring)
-                if self.world.inside(x + math.cos(a) * r, 0.0, z + math.sin(a) * r):
+                if self.solid(x + math.cos(a) * r, z + math.sin(a) * r):
                     return False
         return all(math.dist((x, z), (kx, kz)) >= r for kx, kz, r in self.keep)
 

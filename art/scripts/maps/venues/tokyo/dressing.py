@@ -98,8 +98,9 @@ def scramble(s):
             place(s, "PedestrianSignal", x, z, facing(-n[0] * side, -n[1] * side))
             s.collider((x, 4.6, z), (0.5, 9.2, 0.5), 0, True, None)
     # A street light on each of the scramble's four corners (the plaza's between the bus bay and
-    # the drive).
-    for x, z in ((-85.0, -71.4), (-58.0, -101.0), (-2.0, -52.0), (-54.0, -38.0)):
+    # the drive), each at the kerb with 3 studs clear all round: two of them stood a step from a
+    # signal's pole and a building's corner post, and pinched the pavement there.
+    for x, z in ((-85.0, -71.4), (-62.0, -104.0), (-6.5, -48.5), (-54.0, -38.0)):
         place(s, "StreetLightTokyo", x, z, facing(P.SCRAMBLE_CENTRE[0] - x, P.SCRAMBLE_CENTRE[1] - z))
         s.collider((x, 8.0, z), (0.8, 16.0, 0.8), 0, True, None)
 
@@ -141,9 +142,10 @@ def streets(s):
     street_light(s, "kita", 1, 50.0)
     # The frontage road under the expressway lies in the pier lamps' light (edges.py).
     # Vending machines against walls, bins beside them, bikes and scooters left by the doors.
-    # (One machine on the zakkyo's short front, clear of the power pole; the bins by the pair on
-    # the next block.)
-    vending = [("zakkyo_se", (0, -1), 0.4), ("east_s2", (0, -1), 0.3),
+    # (A pair on the zakkyo's avenue front, where the pavement is 6 wide and they leave room to walk
+    # past: on the east street's 4-stud pavement a machine filled it from wall to kerb. The bins stay
+    # on the next block.)
+    vending = [("zakkyo_se", (-0.78, 0.63), 0.42), ("zakkyo_se", (-0.78, 0.63), 0.58),
                ("laundromat", (-1, 0), 0.85), ("flats_yw", (1, 0), 0.7),
                ("office_riverside", (0, -1), 0.86), ("yokocho_gate", (0, -1), 0.2)]
     for k, (name, direction, frac) in enumerate(vending):

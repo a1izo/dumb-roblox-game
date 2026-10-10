@@ -75,7 +75,7 @@ def avenue(s):
         lamp(s, x, z)
     s.prop("Bench", -35.4, 29.4, -90)
     # The hot-drinks machine and the recycling by the avenue.
-    s.prop("VendingBlue", -5.2, 46.6, 90)  # its front to the avenue
+    s.prop("VendingBlue", -5.2, 45.7, 90)  # its front to the avenue, a step clear of the ginkgo beside it
     s.prop("RecycleBins", -5.8, 53.5, 90)
     s.station("Phone", "Avenue Phone Box", -6.0, 40.0, 90, prop="StationPhoneBooth", spare=True)
 
