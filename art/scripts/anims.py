@@ -433,6 +433,37 @@ for t, b in ((0.0, 0.0), (2.0, 1.0)):
 soft(think, head=1.5, arms=1.5).plant(stance=0.18, tilt=(28, 28))
 think.build()
 
+# The dive into the rift (the lobby's Last breath). The body's own turn is in the root joint, so the
+# character itself stays upright while it falls: belly to the ground with arms and legs spread, then the
+# flare that brakes it, then hanging in the rift's draught, looking down at what was nearly hit.
+
+dive = Motion("dive", 1.2, loop=True, note="Falling through the rift: belly down, arms and legs spread, fluttering.")
+for i in range(4):
+    f = 1 if i % 2 == 0 else -1
+    dive.key(i * 0.3, root=(-80 + 2 * f, 0, 3 * f), neck=(30, 0, 0),
+             rShoulder=J((8, 0, 112 + 5 * f), (0, 0.05, 0)), lShoulder=J((8, 0, -112 + 5 * f), (0, 0.05, 0)),
+             rHip=J((-14 - 5 * f, 0, 22)), lHip=J((-14 + 5 * f, 0, -22)))
+soft(dive, head=1.4, arms=1.8).follow(("rHip", "lHip"), 1.6, 0.7)
+dive.build()
+
+brake = Motion("diveBrake", 0.7, note="The flare: the body swings upright, arms thrown wide, legs braced against the air.")
+brake.key(0.0, root=(-80, 0, 0), neck=(30, 0, 0), rShoulder=J((8, 0, 112), (0, 0.05, 0)),
+          lShoulder=J((8, 0, -112), (0, 0.05, 0)), rHip=J((-14, 0, 22)), lHip=J((-14, 0, -22)))
+brake.key(0.28, "out", root=(14, 0, 0), neck=(-18, 0, 0), rShoulder=J((20, 0, 138), (0, 0.1, 0)),
+          lShoulder=J((20, 0, -138), (0, 0.1, 0)), rHip=J((48, 0, 14), (0, 0.35, 0)), lHip=J((36, 0, -14), (0, 0.3, 0)))
+brake.key(0.7, root=(6, 0, 0), neck=(-22, 0, 0), rShoulder=J((14, 0, 96), (0, 0.06, 0)),
+          lShoulder=J((14, 0, -96), (0, 0.06, 0)), rHip=J((30, 0, 10), (0, 0.3, 0)), lHip=J((18, 0, -10), (0, 0.2, 0)))
+soft(brake, arms=3.0)
+brake.build()
+
+caught = Motion("diveCaught", 3.0, loop=True, note="Held in the rift's draught: upright, limbs loose, looking down.")
+for t, b in ((0.0, 0.0), (1.5, 1.0)):
+    caught.key(t, offset=(0, 0.25 * b, 0), root=(6 - 2 * b, 0, 2 - 4 * b), neck=(-26 + 3 * b, 0, 0),
+               rShoulder=J((16 + 5 * b, 0, 58 + 8 * b), (0, 0.05, 0)), lShoulder=J((16 + 5 * b, 0, -58 - 8 * b), (0, 0.05, 0)),
+               rHip=J((10 + 4 * b, 0, 6), (0, 0.2, 0)), lHip=J((-4 - 4 * b, 0, -6), (0, 0.1, 0)))
+soft(caught, head=1.2, arms=1.0).follow(("rHip", "lHip"), 1.0, 0.8)
+caught.build()
+
 
 def build(arm):
     import animlib

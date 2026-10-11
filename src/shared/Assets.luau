@@ -155,6 +155,22 @@ Assets.sfx = {
 		ref = "a pebble knocking against a rock wall, falling a very long way, fading into the distance, one shot",
 		fallbackId = "",
 	},
+	-- The rift dive and Death's mark (art/audio/game_bell_toll.wav, game_dive_wind.wav, game_dive_crash.wav).
+	gameBellToll = {
+		id = "",
+		ref = "one stroke of a great cracked bell, low, a long dying ring, one shot",
+		fallbackId = "",
+	},
+	gameDiveWind = {
+		id = "",
+		ref = "air rushing past a falling body, rising, about six seconds, one shot",
+		fallbackId = "",
+	},
+	gameDiveCrash = {
+		id = "",
+		ref = "a body landing hard on a flat roof, a dull heavy thud, one shot",
+		fallbackId = "",
+	},
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

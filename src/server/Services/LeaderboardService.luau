@@ -1,5 +1,5 @@
 -- Global leaderboards (all-time wins, experience, this week's wins, and the lobby mini-games'
--- fastest Spire Ascent, most rune rounds and fastest spirit trial) in ordered data stores. Scores are
+-- fastest Spire Ascent, most rune rounds, fastest spirit trial and the rift's smallest gap) in ordered data stores. Scores are
 -- written as absolute values, gathered up and flushed every 20 seconds within the request budget; the
 -- top 10 are read every 5 minutes and shown in the Leaderboards panel. One board is also written in the
 -- world: Most Wins, on its slab in the lobby (and the player at its top sits on the throne, in stone:
@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local LastBreath = require(Shared:WaitForChild("LobbyGames"):WaitForChild("LastBreath"))
 local Parkour = require(Shared:WaitForChild("LobbyGames"):WaitForChild("Parkour"))
 local Net = require(Shared:WaitForChild("Net"))
 local TimeUtil = require(Shared:WaitForChild("Progression"):WaitForChild("TimeUtil"))
@@ -29,9 +30,13 @@ type Entry = { rank: number, userId: number, name: string, value: number }
 
 local pending: { [number]: { wins: number, xp: number, weekly: number, week: number } } = {}
 -- The mini-games' newly improved bests, written on the next flush: the Spire Ascent and the spirit trial in
--- centiseconds (lower is better) and the rune rounds cleared.
-local extra: { [number]: { parkour: number?, runes: number?, spirit: number? } } = {}
-local boards: { [string]: { Entry } } = { wins = {}, xp = {}, weekly = {}, parkour = {}, runes = {}, spirit = {} }
+-- centiseconds (lower is better), the rune rounds cleared, and the rift's smallest gap in hundredths of a
+-- stud (lower is better).
+local extra: { [number]: { parkour: number?, runes: number?, spirit: number?, rift: number? } } = {}
+local boards: { [string]: { Entry } } =
+	{ wins = {}, xp = {}, weekly = {}, parkour = {}, runes = {}, spirit = {}, rift = {} }
+-- Boards where the lowest score is the best.
+local LOWEST = { parkour = true, spirit = true, rift = true }
 local nameCache: { [number]: string } = {}
 local labels: { [string]: TextLabel } = {}
 local enabled = true
@@ -43,6 +48,7 @@ local STORES = {
 	parkour = "LGameLB_Parkour_v1",
 	runes = "LGameLB_Runes_v1",
 	spirit = "LGameLB_Spirit_v1",
+	rift = "LGameLB_Rift_v1",
 }
 -- Until the spirit trial had a store of its own, its times fell through to the weekly store's name with no
 -- week ("..._Wnil"). They are copied across once (see moveSpirit).
@@ -109,6 +115,8 @@ function LeaderboardService.record(player: Player, board: string, value: number)
 		mine.runes = math.floor(value)
 	elseif board == "spirit" then
 		mine.spirit = math.floor(value * 100 + 0.5)
+	elseif board == "rift" then
+		mine.rift = LastBreath.score(value)
 	end
 end
 
@@ -159,6 +167,9 @@ local function flushGames()
 			if scores.spirit then
 				store("spirit"):SetAsync(key, scores.spirit)
 			end
+			if scores.rift then
+				store("rift"):SetAsync(key, scores.rift)
+			end
 		end)
 		if not ok then
 			warn("[DeathsGambit] Could not save mini-game scores: " .. tostring(err))
@@ -189,7 +200,7 @@ end
 local function readBoard(board: string, week: number?): { Entry }
 	local entries = {}
 	local ok, pages = pcall(function()
-		return store(board, week):GetSortedAsync(board == "parkour" or board == "spirit", TOP)
+		return store(board, week):GetSortedAsync(LOWEST[board] == true, TOP)
 	end)
 	if not ok or not pages then
 		return entries
@@ -208,14 +219,16 @@ local TITLES = {
 	parkour = "FASTEST ASCENT",
 	runes = "MOST RUNES CLEARED",
 	spirit = "FASTEST SPIRIT TRIAL",
+	rift = "LAST BREATH",
 }
 
 local function renderLabels()
 	for board, label in pairs(labels) do
 		local lines = { TITLES[board] or string.upper(board), "" }
 		for _, entry in ipairs(boards[board] or {}) do
-			local value = if board == "parkour" or board == "spirit"
-				then Parkour.formatCentis(entry.value)
+			local value = if board == "rift"
+				then LastBreath.formatScore(entry.value)
+				elseif board == "parkour" or board == "spirit" then Parkour.formatCentis(entry.value)
 				else tostring(entry.value)
 			table.insert(lines, string.format("%d. %s  %s", entry.rank, entry.name, value))
 		end
@@ -235,6 +248,7 @@ local function read()
 		parkour = readBoard("parkour"),
 		runes = readBoard("runes"),
 		spirit = readBoard("spirit"),
+		rift = readBoard("rift"),
 	}
 	renderLabels()
 	LeaderboardRemote:FireAllClients(boards)

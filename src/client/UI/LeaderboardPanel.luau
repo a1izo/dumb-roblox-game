@@ -8,6 +8,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
+local LastBreath =
+	require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames"):WaitForChild("LastBreath"))
 local Parkour = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames"):WaitForChild("Parkour"))
 
 local Kit = require(script.Parent.Kit)
@@ -25,6 +27,7 @@ local TABS = {
 	{ id = "weekly", label = "This week", icon = "streak" },
 	{ id = "parkour", label = "Ascent" },
 	{ id = "runes", label = "Runes" },
+	{ id = "rift", label = "Last breath" },
 	{ id = "spirit", label = "Spirit trial", icon = "eye" },
 }
 -- Boards whose score is a time, kept in hundredths of a second.
@@ -69,7 +72,11 @@ local function ledgerLine(entry, order: number)
 		Parent = row,
 	})
 	Kit.label({
-		Text = if TIMED[current] then Parkour.formatCentis(entry.value) else tostring(entry.value),
+		-- (The rift's score is the gap left above the roof, in hundredths of a stud.)
+		Text = if TIMED[current]
+			then Parkour.formatCentis(entry.value)
+			elseif current == "rift" then LastBreath.formatScore(entry.value)
+			else tostring(entry.value),
 		font = "mono",
 		size = "lead",
 		color = C.bone,

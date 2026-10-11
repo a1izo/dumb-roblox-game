@@ -294,6 +294,8 @@ Cosmetics.ITEMS = {
 	{ id = "title_shepherd", kind = "title", name = "Shepherd of Souls", rarity = "epic", source = "achievement" },
 	{ id = "title_inkstained", kind = "title", name = "Ink-Stained", rarity = "epic", source = "achievement" },
 	{ id = "title_handcuffs", kind = "title", name = "Handcuffs", rarity = "epic", source = "achievement" },
+	-- Earned: the seven grey apples hidden in the lobby
+	{ id = "title_realmwalker", kind = "title", name = "Realm Walker", rarity = "rare", source = "achievement" },
 	-- Earned: role mastery (levels 5 and 10)
 	{ id = "title_m_hand", kind = "title", name = "Diavolo Incarnate", rarity = "epic", source = "mastery" },
 	{ id = "title_m_cultist", kind = "title", name = "High Muerto", rarity = "epic", source = "mastery" },

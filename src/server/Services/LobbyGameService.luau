@@ -8,6 +8,10 @@
 -- A player in a case (or watching one) is in none of these: their runs end the moment they are
 -- called to a match. Nothing here pays coins or XP; bests are saved in the profile and the Spire
 -- Ascent and the rune rounds also go on the global boards (LeaderboardService).
+--
+-- Three more things to do in the lobby are routed through here: the dive into the rift (LobbyRift),
+-- Death's mark (LobbyMark) and the seven grey apples (below). And one safeguard: whoever falls out of
+-- the lobby's world is set back on the terrace.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,6 +29,8 @@ local SpiritTrial = require(Games:WaitForChild("SpiritTrial"))
 
 local DataService = require(script.Parent.DataService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
+local LobbyMark = require(script.Parent.LobbyMark)
+local LobbyRift = require(script.Parent.LobbyRift)
 local Match = require(script.Parent.Match)
 local RateLimit = require(script.Parent.RateLimit)
 
@@ -650,7 +656,8 @@ local function catchFallen()
 	local floor = spawn.Position.Y - CATCH_DEPTH
 	for _, player in ipairs(Players:GetPlayers()) do
 		local part = root(player)
-		if part and part.Position.Y < floor and inLobby(player) then
+		-- (A diver is far under the lobby on purpose: the rift gives them back itself.)
+		if part and part.Position.Y < floor and inLobby(player) and not LobbyRift.diving(player) then
 			cancel(player, "fell")
 			sendHome(player, spawn.Position)
 			tell(player, { game = "lobby", kind = "caught" })
@@ -658,13 +665,63 @@ local function catchFallen()
 	end
 end
 
+-- The seven grey apples -----------------------------------------------------------------------------------
+
+local APPLE_RANGE = 12
+
+-- A player takes an apple they are standing at: kept in the profile (a bit per apple), and all seven earn
+-- a title.
+local function takeApple(player: Player, index: number)
+	local spots: { Vector3 } = games.apples or {}
+	local spot = spots[index]
+	local part = root(player)
+	local data = DataService.get(player)
+	if not spot or not part or not data or (part.Position - spot).Magnitude > APPLE_RANGE then
+		return
+	end
+	local mine = data.lobbyGames
+	local have = math.floor(tonumber(mine.apples) or 0)
+	local bit = bit32.lshift(1, index - 1)
+	if bit32.band(have, bit) ~= 0 then
+		return
+	end
+	have = bit32.bor(have, bit)
+	mine.apples = have
+	local count = 0
+	for n = 0, #spots - 1 do
+		if bit32.band(have, bit32.lshift(1, n)) ~= 0 then
+			count += 1
+		end
+	end
+	if count >= #spots and not data.titles.realmwalker then
+		data.titles.realmwalker = true
+		Match.notify(player, "All seven grey apples. The title Realm Walker is yours.", "good")
+	end
+	saved(player)
+	tell(player, { game = "apples", kind = "took", index = index, count = count, total = #spots })
+end
+
 -- The loop and the requests -------------------------------------------------------------------------------
+
+-- A lobby player in plain sight: not in a case, not watching one, not a hidden Deathsinger.
+local function playable(player: Player): boolean
+	return blocked(player, "dice") == nil
+end
+
+-- Ends whatever a player is doing in the lobby's games (they began another, or dived into the rift).
+local function leaveOthers(player: Player)
+	cancel(player, "left")
+	leaveDice(player)
+	LobbyMark.cancel(player)
+end
 
 local function step()
 	if not games then
 		return
 	end
 	catchFallen()
+	LobbyRift.step()
+	LobbyMark.step()
 	for player, session in pairs(sessions) do
 		local part = root(player)
 		if not player.Parent or not part then
@@ -729,6 +786,12 @@ local function onRequest(player: Player, payload: any)
 		end
 	elseif game == "toss" and action == "throw" then
 		throwStone(player, payload.look)
+	elseif game == "rift" then
+		LobbyRift.request(player, action)
+	elseif game == "mark" then
+		LobbyMark.request(player, action)
+	elseif game == "apples" and action == "take" and type(payload.index) == "number" then
+		takeApple(player, math.floor(payload.index))
 	end
 end
 
@@ -742,6 +805,21 @@ function LobbyGameService.setup(built: any)
 	windowEndsAt = nil
 	games = built
 	refreshBoard()
+	LobbyRift.setup({
+		tell = tell,
+		improve = improve,
+		root = root,
+		playable = playable,
+		sendHome = sendHome,
+		leaveOthers = leaveOthers,
+	}, built.dive)
+	LobbyMark.setup({
+		tell = tell,
+		improve = improve,
+		root = root,
+		humanoid = humanoid,
+		playable = playable,
+	}, built.mark)
 end
 
 function LobbyGameService.init()
@@ -753,6 +831,8 @@ function LobbyGameService.init()
 		if games then
 			leaveDice(player)
 		end
+		LobbyRift.cancel(player)
+		LobbyMark.cancel(player)
 	end)
 	task.spawn(function()
 		while true do

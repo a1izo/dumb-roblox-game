@@ -28,6 +28,9 @@ nothing, so you can fill them in any order.
 | `game_dice.wav` | `gameDice` | bone dice thrown on stone | no |
 | `game_throw.wav` | `gameThrow` | a pebble thrown | no |
 | `game_fall.wav` | `gameFall` | a pebble knocking down a very long fall | no |
+| `game_bell_toll.wav` | `gameBellToll` | Death's mark: one stroke of a great cracked bell | no |
+| `game_dive_wind.wav` | `gameDiveWind` | the rift dive: air rushing past, rising over six seconds | no |
+| `game_dive_crash.wav` | `gameDiveCrash` | the rift dive, braked too late: a heavy thud on a roof | no |
 
 The beds are meant to be heard only just: their levels are the slot's `volume` in `Assets.sfx` times
 the Ambience slider (and the player's own setting). The lobby music is ducked to about a third while the

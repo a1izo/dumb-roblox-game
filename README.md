@@ -109,7 +109,12 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   The Academy lies south-west; to the east a rift in the ground looks down on Kagegaoka at night; dead
   trees, bones and a colossal carcass stand about, and behind the title, up on its mesa, the bone
   throne: whoever has the most wins sits on it in stone, over the one board left in the world (Most
-  Wins; every other board is in the Leaderboards window). **Mini-games for the wait**
+  Wins; every other board is in the Leaderboards window). **More to do while waiting** (no rewards but
+  bests, a board and a title): *Last breath*, the dive into the rift: step over the rim, fall towards a
+  lit roof far below, and brake with one press; the smallest gap left wins, too late and you land on
+  it, and divers who jump together are ranked together. *Death's mark*, tag from the bell by the plaza:
+  whoever carries the mark when the bell tolls goes down, and the score is the tolls survived in a row.
+  And seven grey apples lie in the realm's far corners, for a title. **Mini-games for the wait**
   (solo-capable, no rewards, global top-10 boards for the first two): the *Spire Ascent*, a parkour up
   floating stones on a plateau over the west causeway; the *rune courtyard*, a memory game on the
   north-east plateau; *bone dice* at the dice rock; and the *stone-toss* at the rift's rim. Wind, drones
