@@ -202,6 +202,10 @@ function Bots.spawnCharacter(bot)
 		return
 	end
 	model.Name = bot.Name
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		model.PrimaryPart = root -- R6 models pivot on the Head otherwise
+	end
 	model:SetAttribute("BotUserId", bot.UserId)
 	CollectionService:AddTag(model, Bots.TAG)
 	-- Characters normally start without the default Animate script; bots never had one.

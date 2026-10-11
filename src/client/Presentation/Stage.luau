@@ -112,6 +112,11 @@ local function copyOf(source: Model): Model?
 			(humanoid :: any).EvaluateStateMachine = false
 		end)
 	end
+	-- Placed by the root: Roblox's R6 models pivot on the Head, which puts a posed body off its mark.
+	local root = clone:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		clone.PrimaryPart = root
+	end
 	clone:SetAttribute("Specter", nil)
 	return clone
 end

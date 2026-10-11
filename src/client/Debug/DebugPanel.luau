@@ -716,6 +716,26 @@ builders.Show = function()
 				send("cue", { kind = "shot", extra = name })
 			end)
 		end
+		-- Slow motion for the Blender cutscenes (on this screen only), with the shot's clock shown on top.
+		r = row()
+		local speeds = { 1, 0.5, 0.25, 0.1 }
+		local speedButtons: { TextButton } = {}
+		local function paint()
+			local rate = Players.LocalPlayer:GetAttribute("ShotRate") or 1
+			for i, b in ipairs(speedButtons) do
+				b.BackgroundColor3 = if speeds[i] == rate then COLORS.on else COLORS.button
+			end
+		end
+		for _, speed in ipairs(speeds) do
+			table.insert(
+				speedButtons,
+				button(r, "Shot x" .. speed, function()
+					Players.LocalPlayer:SetAttribute("ShotRate", if speed == 1 then nil else speed)
+					paint()
+				end)
+			)
+		end
+		paint()
 	end
 	heading("Screens")
 	r = row()

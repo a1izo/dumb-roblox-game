@@ -11,6 +11,7 @@
 -- play() blocks until the shot has finished (or was skipped), so call it from the presenter's own
 -- thread. Every client plays the same shot from the same cue, so everyone sees the same thing.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -304,6 +305,9 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	local serverStart = opts.at or workspace:GetServerTimeNow()
 	local startClock = os.clock() + (serverStart - workspace:GetServerTimeNow())
 	local length = shot.length
+	-- Debug: Players.LocalPlayer:SetAttribute("ShotRate", 0.25) plays shots in slow motion (from the command bar).
+	local rateAttr = Players.LocalPlayer:GetAttribute("ShotRate")
+	local rate = if type(rateAttr) == "number" and rateAttr > 0 then rateAttr else 1
 
 	-- The camera's keys as CFrames.
 	local cam = shot.camera
@@ -368,7 +372,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				local clip, at = data.clip, data.at or 0
 				task.spawn(function()
 					PoseController.bindWhenReady(model, 2)
-					PoseController.play(model, clip, { startAt = startClock + at, fadeIn = 0 })
+					PoseController.play(model, clip, { startAt = startClock + at / rate, fadeIn = 0, speed = rate })
 				end)
 			end
 			table.insert(actors, live)
@@ -392,11 +396,40 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		end
 	end
 
-	local token = CameraDirector.take(length + 2)
+	local closers: { () -> () } = {}
+	-- With the debug rate set, the shot's own clock in a corner, so a screenshot says which moment it is.
+	local clockLabel: TextLabel? = nil
+	local probed = false
+	if rateAttr ~= nil then
+		local gui = Create("ScreenGui", {
+			Name = "ShotClock",
+			DisplayOrder = 1000,
+			IgnoreGuiInset = true,
+			ResetOnSpawn = false,
+			Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+		})
+		clockLabel = Create("TextLabel", {
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 0.3,
+			TextColor3 = Color3.new(1, 1, 0),
+			Font = Enum.Font.Code,
+			TextSize = 22,
+			Position = UDim2.new(0.5, -90, 0, 6),
+			Size = UDim2.fromOffset(180, 30),
+			Parent = gui,
+		})
+		table.insert(closers, function()
+			gui:Destroy()
+		end)
+	end
+	local late = os.clock() - startClock
+	if late > 0.25 then
+		warn(string.format("[DeathsGambit] Shot %s started %.2f s late (its opening is skipped)", name, late))
+	end
+	local token = CameraDirector.take(length / rate + 2)
 	if shot.letterbox then
 		Cinema.letterbox(true)
 	end
-	local closers: { () -> () } = {}
 	local finished = false
 	local skip: (() -> ())? = nil
 	if shot.skippable then
@@ -409,11 +442,47 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	local nextEvent = 1
 	local bindName = "ShotPlayer_" .. name .. "_" .. tostring(token)
 	RunService:BindToRenderStep(bindName, Enum.RenderPriority.Camera.Value + 1, function()
-		local t = os.clock() - startClock
+		local t = (os.clock() - startClock) * rate
 		if t >= length then
 			finished = true
 		end
 		local tt = math.clamp(t, 0, length)
+		if clockLabel then
+			clockLabel.Text = string.format("%s %.2f", name, tt)
+			if not probed and tt >= 2 then
+				-- Where the bodies really are (set space), to compare with the Blender layout.
+				probed = true
+				for _, live in ipairs(actors) do
+					local head = live.model:FindFirstChild("Head")
+					local torso = live.model:FindFirstChild("Torso")
+					if head and torso and head:IsA("BasePart") and torso:IsA("BasePart") then
+						print(
+							string.format(
+								"[ShotProbe] %s t=%.2f %s head %s torso %s",
+								name,
+								tt,
+								live.data.slot,
+								tostring(head.Position - base),
+								tostring(torso.Position - base)
+							)
+						)
+						local root = live.model:FindFirstChild("HumanoidRootPart")
+						local motor = if root then root:FindFirstChild("RootJoint") else nil
+						local humanoid = live.model:FindFirstChildOfClass("Humanoid")
+						print(
+							string.format(
+								"[ShotProbe]   lift %.2f hip %.2f root %s joint %s transform %s",
+								live.lift,
+								if humanoid then humanoid.HipHeight else -1,
+								if root and root:IsA("BasePart") then tostring(root.Position - base) else "none",
+								if motor then motor.ClassName else "none",
+								if motor and motor:IsA("Motor6D") then tostring(motor.Transform.Position) else "-"
+							)
+						)
+					end
+				end
+			end
+		end
 		-- camera
 		local i = find(camTimes, tt)
 		local j, alpha = alphaAt(camTimes, i, tt)
