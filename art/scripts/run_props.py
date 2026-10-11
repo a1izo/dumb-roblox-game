@@ -49,7 +49,7 @@ def main():
             print(f"[props] {key}: size {info['size']} tris {info['tris']}")
         print(f"[props] built in {time.time() - started:.1f}s")
         if do_preview:
-            for key in keys or list(props.BUILDERS):
+            for key in results:
                 print("[props] preview", build_props.preview(key))
     if not no_build:
         common.save_blend("Props.blend")

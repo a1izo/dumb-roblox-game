@@ -91,8 +91,12 @@ FLAT = {
 }
 
 
+# Printed sheets (maps/prints.py): one picture a map shows a poster at a time, never as a repeat.
+SHEETS = {"PrintsTokyo": "PrintsTokyo.png"}
+
 # Textured material name fragment -> the Roblox material closest to it (first match wins).
 FALLBACK_KIND = [
+    ("Prints", "SmoothPlastic"),
     ("MetalFloor", "DiamondPlate"),
     ("Metal", "Metal"),
     ("Steel", "Metal"),
@@ -137,6 +141,8 @@ def fallback_look(name):
     closest Roblox material and the average colour of its colour map."""
     kind = next((k for key, k in FALLBACK_KIND if key in name), "SmoothPlastic")
     path = os.path.join(TEX_DIR, f"{name}_color.jpg")
+    if name in SHEETS:
+        path = os.path.join(common.TEXTURES, SHEETS[name])
     rgb = (128, 128, 128)
     if os.path.exists(path):
         img = bpy.data.images.load(path, check_existing=True)
@@ -150,6 +156,8 @@ def tile_size(name):
     """Studs covered by one repeat of a textured material (1 for flat materials)."""
     if name in scanlib.LIBRARY:
         return scanlib.LIBRARY[name][1]
+    if name in SHEETS:
+        return 1.0
     return 4.0
 
 
@@ -235,6 +243,13 @@ def material(name, images=None):
         if alpha > 0:
             bsdf.inputs["Alpha"].default_value = 1 - alpha
         mat.diffuse_color = (*color, 1)
+        return mat
+    if name in SHEETS:
+        sheet = nodes.new("ShaderNodeTexImage")
+        sheet.image = bpy.data.images.load(os.path.join(common.TEXTURES, SHEETS[name]), check_existing=True)
+        links.new(sheet.outputs["Color"], bsdf.inputs["Base Color"])
+        bsdf.inputs["Roughness"].default_value = 0.75
+        bsdf.inputs["Metallic"].default_value = 0.0
         return mat
     tex = images[name]
     color = nodes.new("ShaderNodeTexImage")

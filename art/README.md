@@ -275,9 +275,13 @@ assets are left out), fitted to the game:
 - `scripts/skies.py` cuts a sky panorama into the six faces of a map's sky. Each map's FBX carries
   its faces on `Tex_Sky<Venue><Face>` quads, and a running game may set a Sky's faces from them,
   but the game does not show them yet: Roblox darkens a skybox at night, so the three night maps
-  need their light re-tuned around it first, and that has to be done by eye in Studio;
-  `scripts/maps/prints.py` draws poster sheets with the open-licence typefaces (its header holds
-  the rules for what may be printed).
+  need their light re-tuned around it first, and that has to be done by eye in Studio.
+- `scripts/maps/prints.py` draws a venue's posters into one sheet (`export/textures/Prints<Venue>.png`)
+  with the open-licence typefaces; its header holds the rules for what may be printed. The sheet
+  is a map material (`matlib.SHEETS`) that a wall shows one poster of at a time
+  (`venues/tokyo/decor.py`, `poster(..., sheet=n)`), so it rides in the map's own FBX. Run it
+  (`blender -b --factory-startup --python art/scripts/maps/prints.py -- Tokyo`) before the map's
+  export when a poster changes. Signs a player has to read stay text the game draws.
 
 Colour variants of one scan (the carpets, the plasters) are separate texture sets for now. Studio
 uploads an image shared by several meshes once, and a script may set `SurfaceAppearance.Color`, so
@@ -299,6 +303,17 @@ blender -b --factory-startup --python art/scripts/run_props.py -- --set Core --e
 blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --preview  # one set
 blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --export
 ```
+
+Tokyo's first 57 props keep the shapes they shipped with (`build_props.KEPT`). The builders in the
+scripts are newer than those meshes (bigger vehicles and trees, a narrower ticket gate, stations
+with a screen slot), and the district was laid out around the old ones: built as they stand, 28
+placements fail `maps/check_v2.py`. So a build never runs those builders. It takes the kept mesh
+from `blend/Props.blend` and bakes it in the scanned materials (`build_props.reskin_one`): each
+face carries the number of its surface, and the mesh the list of them, sorted once from the old
+baked pictures against the builders' own materials. Without `Props.blend` those shapes cannot be
+made again. To take a newer shape, remove the name from `KEPT`, build it, and run the check on
+every map that places it. `TreeZelkova` and `PetalScatter` have builders and no place in any map,
+so they are not built (`build_props.SHELVED`).
 
 `--export` (with `--set`) writes `export/DeathsGambitModels_<Set>.fbx` and
 `src/shared/ModelCatalog.luau` (each prop's size in studs, pivot, material, glow colours, the
