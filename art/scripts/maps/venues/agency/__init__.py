@@ -15,6 +15,9 @@ from maps.venues.agency import plan as P
 
 FORMAT = 2
 MAP_ID = "TaskForceHQ"
+# Textures the map's own FBX carries: the six faces of its sky (art/scripts/skies.py; not shown by the
+# game yet, see art/README.md).
+TEXTURES = ["SkyAgency" + face for face in ("Ft", "Bk", "Lf", "Rt", "Up", "Dn")]
 
 # Plan renders: the camera just under each floor's ceiling, looking down.
 PLAN_LEVELS = [("38F", 12.6), ("39F", 26.6)]

@@ -19,6 +19,8 @@ MAP_ID = "UniversityCampus"
 # Effect textures the map's own FBX carries (art/scripts/textures.py): the crisp snow crystal the
 # snow falls as (client/World/RainController) and the feather that now and then falls through it.
 TEXTURES = ["CampusFlake", "Feather"]
+# ...and the six faces of its sky (art/scripts/skies.py; not shown by the game yet, see art/README.md).
+TEXTURES += ["SkyCampus" + face for face in ("Ft", "Bk", "Lf", "Rt", "Up", "Dn")]
 
 # Plan renders: the camera under each level's ceiling, looking down.
 PLAN_LEVELS = [("ground", 11.0), ("gallery", 24.0)]

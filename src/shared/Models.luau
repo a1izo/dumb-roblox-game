@@ -78,6 +78,11 @@ function Models.hood(): Model?
 	return custom("Hood")
 end
 
+-- The match suit's cloth for one body part ("SuitTorso" or "SuitLimb"), or nil before the import.
+function Models.suit(key: string): Model?
+	return custom(key)
+end
+
 -- The Grimoire, closed and lying flat, centred on its PrimaryPart.
 function Models.grimoire(): Model
 	local existing = custom("Grimoire")

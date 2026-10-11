@@ -452,6 +452,9 @@ local SUIT = Color3.fromRGB(30, 30, 34)
 local TROUSERS = Color3.fromRGB(24, 24, 28)
 local SUIT_PARTS = { "Torso", "Left Arm", "Right Arm" }
 local TROUSER_PARTS = { "Left Leg", "Right Leg" }
+-- The cloth shells are this much larger than the part they cover, and the trousers' this much darker.
+local CLOTH_PAD = 0.03
+local TROUSER_TINT = Color3.new(0.8, 0.8, 0.82)
 
 -- The match look: a dark suit, white collar and red tie over the player's own face, hair and
 -- body shape. Clothing (classic and layered) is removed so outfits cannot give anyone away.
@@ -489,12 +492,44 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 	end
 	paint(SUIT_PARTS, SUIT)
 	paint(TROUSER_PARTS, TROUSERS)
+	-- Real cloth over the painted parts when the Core import carries it (Models.suit): a shell sized
+	-- to each part, a hair larger. Before the import the painted parts stand as they are.
+	local function clothe(names: { string }, tint: Color3?)
+		for _, name in ipairs(names) do
+			local holder = "LSuit" .. (string.gsub(name, " ", ""))
+			CharacterService.attachBuiltTo(character, holder, { name }, function(anchor: CFrame, part: BasePart)
+				local shell = Models.suit(if name == "Torso" then "SuitTorso" else "SuitLimb")
+				if not shell then
+					return {}
+				end
+				local parts = {}
+				for _, item in ipairs(shell:GetDescendants()) do
+					if item:IsA("MeshPart") then
+						item.Size = part.Size + Vector3.new(CLOTH_PAD, CLOTH_PAD, CLOTH_PAD)
+						item.CFrame = anchor
+						local look = item:FindFirstChildWhichIsA("SurfaceAppearance")
+						if look and tint then
+							look.Color = tint
+						end
+						table.insert(parts, item)
+					end
+				end
+				for _, item in ipairs(parts) do
+					item.Parent = nil
+				end
+				shell:Destroy()
+				return parts
+			end)
+		end
+	end
+	clothe(SUIT_PARTS, nil)
+	clothe(TROUSER_PARTS, TROUSER_TINT)
 	-- R6 arms are one part, so the hands are skin-coloured cuffs welded over the arm ends.
 	for _, side in ipairs({ "Left", "Right" }) do
 		CharacterService.attachBuiltTo(character, "LHand" .. side, { side .. " Arm" }, function(anchor: CFrame)
 			return {
 				Create("Part", {
-					Size = Vector3.new(1.04, 0.55, 1.04),
+					Size = Vector3.new(1.08, 0.55, 1.08),
 					Color = skin,
 					Material = Enum.Material.SmoothPlastic,
 					CFrame = anchor * CFrame.new(0, -0.74, 0),

@@ -96,7 +96,8 @@ def _glow_objects(key):
 
 
 # Props held in a hand, in front of the camera: their textures get the denser rule (lookbook.DENSITY).
-HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood"}
+# (The suit cloth too: it is what the camera follows.)
+HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLimb"}
 
 
 def build_one(key):

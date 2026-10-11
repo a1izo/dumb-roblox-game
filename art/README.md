@@ -267,7 +267,10 @@ assets are left out), fitted to the game:
   four maps per prop at the size the rulebook gives its surface. Edges are rounded in the mesh
   (the builders' bevels), not in the normal map: a shader bevel reads a thin inlay lying on a
   surface as an edge.
-- `scripts/skies.py` cuts a sky panorama into the six faces of a map's sky;
+- `scripts/skies.py` cuts a sky panorama into the six faces of a map's sky. Each map's FBX carries
+  its faces on `Tex_Sky<Venue><Face>` quads, and a running game may set a Sky's faces from them,
+  but the game does not show them yet: Roblox darkens a skybox at night, so the three night maps
+  need their light re-tuned around it first, and that has to be done by eye in Studio;
   `scripts/maps/prints.py` draws poster sheets with the open-licence typefaces (its header holds
   the rules for what may be printed).
 

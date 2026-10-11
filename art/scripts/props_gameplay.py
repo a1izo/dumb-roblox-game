@@ -166,6 +166,23 @@ def _hood_shell(name, mat):
     return obj
 
 
+def _suit_wool():
+    return mk.flat("Suit_Wool", srgb(30, 30, 34), 0.85, kind="wool")
+
+
+@prop("SuitTorso", pivot="centre", material="Fabric", collide=False, texture=256)
+def suit_torso():
+    """The match suit's cloth over an R6 torso: a shell the game sizes to each body
+    (CharacterService.dressNoir), since a running game cannot give a plain part a cloth of its own."""
+    return [mk.box("Cloth", (2.0, 1.0, 2.0), (0, 0, 0), mat=_suit_wool())], []
+
+
+@prop("SuitLimb", pivot="centre", material="Fabric", collide=False, texture=256)
+def suit_limb():
+    """The same cloth over an arm or a leg (the trousers' are tinted a shade darker by the game)."""
+    return [mk.box("Cloth", (1.0, 1.0, 2.0), (0, 0, 0), mat=_suit_wool())], []
+
+
 @prop("Hood", pivot="centre", material="Fabric", collide=False, texture=512)
 def hood():
     """The hood worn over the head (the game scales it to each head)."""

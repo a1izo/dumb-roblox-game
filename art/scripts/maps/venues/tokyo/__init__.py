@@ -17,6 +17,8 @@ MAP_ID = "TokyoDistrict"
 # Effect textures the map's own FBX carries (art/scripts/textures.py): the rain's streaks and
 # splashes (client/World/RainController) and the petals over the river (SceneBuilder).
 TEXTURES = ["TokyoRain", "TokyoSplash", "TokyoPetal"]
+# ...and the six faces of its sky (art/scripts/skies.py; not shown by the game yet, see art/README.md).
+TEXTURES += ["SkyTokyo" + face for face in ("Ft", "Bk", "Lf", "Rt", "Up", "Dn")]
 
 # Plan renders: the camera sits just under each level's ceiling, looking down.
 PLAN_LEVELS = [("platform", -9.0), ("ground", 12.0), ("upper", 24.0)]
