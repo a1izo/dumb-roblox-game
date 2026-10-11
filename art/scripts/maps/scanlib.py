@@ -207,6 +207,9 @@ def prepared(scan, size=1024):
         return out
     os.makedirs(folder, exist_ok=True)
     maps = evened(load(scan, size), 1.0, 0.04)
+    # Its relief keeps only the grain: a broad swell in the scan would bend the reflections on a
+    # polished table top (the prop's own mesh gives it its shape).
+    maps["height"] = evened(load(scan, size), 1.0, 0.012)["height"]
     for kind, path in out.items():
         arr = np.clip(maps[kind], 0, 1)
         if arr.ndim == 2:

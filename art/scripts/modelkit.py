@@ -8,6 +8,7 @@ FBX export (axis_forward="Z", axis_up="Y") turns them to face -Z in Roblox.
 
 import math
 import os
+import time
 
 import bmesh
 import bpy
@@ -234,7 +235,26 @@ def merge(objects, name, keep=False):
             bpy.data.objects.remove(obj, do_unlink=True)
     # Sharp edges stay sharp: split normals above 40 degrees.
     auto_smooth(result, 40)
+    weighted_normals(result)
     return result
+
+
+def weighted_normals(obj):
+    """Lets big faces keep their own direction where they meet small ones (a table top and its
+    chamfer): without it the top's light bends towards the rim across the whole face, and a normal
+    map baked against that bend comes out as wild tilts that smear."""
+    mod = obj.modifiers.new("WeightedNormals", "WEIGHTED_NORMAL")
+    mod.mode = "FACE_AREA"
+    mod.weight = 100
+    mod.keep_sharp = True
+    view_layer = bpy.context.view_layer
+    view_layer.update()
+    for other in view_layer.objects:
+        other.select_set(False)
+    obj.select_set(True)
+    view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+    return obj
 
 
 def auto_smooth(obj, angle_deg=40):
@@ -344,24 +364,26 @@ def _coord(nodes, links):
 # Scanned surfaces ---------------------------------------------------------------------------------------
 # A prop's materials are photographed scans (art/source/textures, the ones the maps use too), laid over
 # the prop from six sides and graded onto the material's own colours, so a prop's steel is the map's
-# steel. The scan's height gives the relief; the prop's own shape rounds its edges and wears them.
+# steel. The scan's height gives the relief; the prop's own shape says where its edges are worn.
 
-# kind -> (scan, metres it covers, depth of its relief in studs, how much its edges wear, how much of
-# the scan's own light and dark shows in the colour)
+# kind -> (scan, metres it covers, depth of its relief in studs, how much its edges wear, how much its
+# brightness follows the scan's light and dark, how far it swings between its two colours). The last
+# two are counted in the scan's own spread, so a contrasty scan varies a prop no more than a quiet
+# one: paint, plastic and metal stay even (they would look camouflaged), wood, leather and stone vary.
 SCANS = {
-    "plastic": ("Plastic001", 0.3, 0.003, 0.0, 0.15),
-    "metal": ("metal_plate_02", 2.0, 0.005, 0.5, 0.3),
-    "paint": ("blue_metal_plate", 2.5, 0.005, 0.8, 0.25),
-    "matte": ("beige_wall_001", 3.0, 0.004, 0.2, 0.3),
-    "rubber": ("rubber_tiles", 2.0, 0.01, 0.0, 0.4),
-    "wood": ("oak_veneer_01", 1.83, 0.006, 0.2, 0.7),
-    "dark_wood": ("walnut_veneer_02", 1.0, 0.006, 0.2, 0.7),
-    "leather": ("brown_leather", 0.4, 0.02, 0.2, 0.6),
-    "cloth": ("rough_linen", 0.27, 0.012, 0.0, 0.6),
-    "paper": ("Paper001", 0.3, 0.003, 0.0, 0.3),
-    "card": ("Paper005", 0.4, 0.004, 0.0, 0.5),
-    "stone": ("concrete_wall_008", 2.71, 0.03, 0.3, 0.7),
-    "bark": ("sakura_bark", 1.59, 0.1, 0.0, 0.8),
+    "plastic": ("Plastic001", 0.3, 0.003, 0.0, 0.3, 0.3),
+    "metal": ("metal_plate_02", 2.0, 0.005, 0.5, 0.4, 0.4),
+    "paint": ("blue_metal_plate", 2.5, 0.005, 0.8, 0.4, 0.4),
+    "matte": ("beige_wall_001", 3.0, 0.004, 0.2, 0.4, 0.4),
+    "rubber": ("rubber_tiles", 2.0, 0.01, 0.0, 0.5, 0.5),
+    "wood": ("oak_veneer_01", 1.83, 0.004, 0.2, 1.0, 0.9),
+    "dark_wood": ("walnut_veneer_02", 1.0, 0.003, 0.2, 0.8, 0.7),
+    "leather": ("brown_leather", 0.4, 0.02, 0.2, 0.9, 0.8),
+    "cloth": ("rough_linen", 0.27, 0.012, 0.0, 0.8, 0.6),
+    "paper": ("Paper001", 0.3, 0.003, 0.0, 0.5, 0.4),
+    "card": ("Paper005", 0.4, 0.004, 0.0, 0.7, 0.5),
+    "stone": ("concrete_wall_008", 2.71, 0.03, 0.3, 1.0, 0.9),
+    "bark": ("sakura_bark", 1.59, 0.1, 0.0, 1.2, 1.0),
 }
 # The last word of a material's name ("Desk_Steel") names its kind when it is one of these; any
 # other name takes the kind of the helper that made it.
@@ -398,11 +420,15 @@ def _scan_image(scan, what):
 
 
 def _scan_stats(scan):
-    """(mean brightness, mean roughness) of a scan: what its light and dark is measured against."""
+    """(mean brightness, its spread as a share of the mean, mean roughness, its spread) of a scan as a
+    prop sees it: what its light and dark, and its rough and smooth, are measured against."""
     if scan not in _stats:
-        maps = scanlib.load(scan, 256)
-        # (Evening a scan for props keeps both of these as they are.)
-        _stats[scan] = (float((scanlib.to_linear(maps["color"]) @ scanlib.LUMA).mean()), float(maps["rough"].mean()))
+        files = scanlib.prepared(scan)
+        light = scanlib.to_linear(scanlib._read(files["color"], 256, 256)) @ scanlib.LUMA
+        rough = scanlib._read(files["rough"], 256, 256)[..., 0]
+        mean = float(light.mean())
+        _stats[scan] = (mean, max(0.01, float(light.std()) / max(1e-4, mean)), float(rough.mean()),
+                        max(0.01, float(rough.std())))
     return _stats[scan]
 
 
@@ -423,9 +449,9 @@ def _math(nodes, links, operation, a, b=None, clamp=False):
 def _scanned(mat, nodes, links, bsdf, kind, color_a, color_b, roughness, metallic):
     """Wires `kind`'s scan into the material: the scan's dark parts take color_a and its light parts
     color_b (give the same colour twice for a plain surface), its roughness varies around `roughness`,
-    its height is the relief, and the prop's edges are rounded and, on painted and bare metal, worn."""
-    scan, metres, depth, wear, tone_share = SCANS[kind]
-    mean_light, mean_rough = _scan_stats(scan)
+    its height is the relief, and on painted and bare metal the prop's edges are worn."""
+    scan, metres, depth, wear, tone_share, swing = SCANS[kind]
+    mean_light, spread_light, mean_rough, spread_rough = _scan_stats(scan)
     mapping = nodes.new("ShaderNodeMapping")
     scale = 1.0 / (metres * lookbook.STUDS_PER_METRE)
     mapping.inputs["Scale"].default_value = (scale, scale, scale)
@@ -447,46 +473,42 @@ def _scanned(mat, nodes, links, bsdf, kind, color_a, color_b, roughness, metalli
     grey = nodes.new("ShaderNodeRGBToBW")
     links.new(sample("color"), grey.inputs["Color"])
     light = _math(nodes, links, "DIVIDE", grey.outputs["Val"], mean_light)  # 1 = the scan's average
-    # Its dark parts take the first colour, its light parts the second...
+    # How far this spot is from the scan's average, in the scan's own spread (kept within three).
+    off = _math(nodes, links, "DIVIDE", _math(nodes, links, "SUBTRACT", light, 1.0), spread_light)
+    off = _math(nodes, links, "MAXIMUM", _math(nodes, links, "MINIMUM", off, 3.0), -3.0)
+    # Its dark parts lean to the first colour, its light parts to the second...
     ramp = nodes.new("ShaderNodeValToRGB")
     ramp.color_ramp.elements[0].position = 0.25
     ramp.color_ramp.elements[0].color = (*color_a, 1)
     ramp.color_ramp.elements[1].position = 0.75
     ramp.color_ramp.elements[1].color = (*color_b, 1)
-    spread = _math(nodes, links, "MULTIPLY", _math(nodes, links, "SUBTRACT", light, 1.0), 2.5)
-    links.new(_math(nodes, links, "ADD", spread, 0.5, clamp=True), ramp.inputs["Fac"])
-    # ...and all of it keeps the scan's own light and dark, softened.
+    links.new(_math(nodes, links, "ADD", _math(nodes, links, "MULTIPLY", off, 0.125 * swing), 0.5, clamp=True),
+              ramp.inputs["Fac"])
+    # ...and its brightness follows the scan's own light and dark a little.
     tone = nodes.new("ShaderNodeVectorMath")
     tone.operation = "SCALE"
     links.new(ramp.outputs["Color"], tone.inputs[0])
-    links.new(_math(nodes, links, "POWER", light, tone_share), tone.inputs["Scale"])
+    links.new(_math(nodes, links, "ADD", _math(nodes, links, "MULTIPLY", off, 0.06 * tone_share), 1.0), tone.inputs["Scale"])
     colour = tone.outputs["Vector"]
 
-    # Rounded edges, from the prop's own shape (no extra triangles: it goes into the normal map).
-    bevel = nodes.new("ShaderNodeBevel")
-    bevel.samples = 6
-    bevel.inputs["Radius"].default_value = 0.035
+    # The scan's relief. (Edges are rounded in the mesh, by the builders' own bevels: a shader bevel
+    # takes a thin inlay or a label lying on a surface for an edge and tilts the whole face under it.)
     bump = nodes.new("ShaderNodeBump")
     bump.inputs["Strength"].default_value = 1.0
     bump.inputs["Distance"].default_value = depth
     links.new(value(sample("height")), bump.inputs["Height"])
-    links.new(bevel.outputs["Normal"], bump.inputs["Normal"])
     links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
 
-    rough = _math(nodes, links, "SUBTRACT", value(sample("rough")), mean_rough)
-    rough = _math(nodes, links, "ADD", _math(nodes, links, "MULTIPLY", rough, 0.7), roughness)
+    # Rougher and smoother than the material's own level by what its kind allows, like the brightness.
+    rough = _math(nodes, links, "DIVIDE", _math(nodes, links, "SUBTRACT", value(sample("rough")), mean_rough), spread_rough)
+    rough = _math(nodes, links, "MAXIMUM", _math(nodes, links, "MINIMUM", rough, 3.0), -3.0)
+    rough = _math(nodes, links, "ADD", _math(nodes, links, "MULTIPLY", rough, 0.04 * tone_share), roughness)
     if wear > 0:
-        # Where the shape turns sharply, hands and knocks have worn the finish: lighter and smoother.
-        wide = nodes.new("ShaderNodeBevel")
-        wide.samples = 6
-        wide.inputs["Radius"].default_value = 0.09
+        # Where the shape turns outward (edges, corners), hands and knocks have worn the finish: lighter
+        # and smoother. The mesh's own pointiness says where.
         geometry = nodes.new("ShaderNodeNewGeometry")
-        dot = nodes.new("ShaderNodeVectorMath")
-        dot.operation = "DOT_PRODUCT"
-        links.new(wide.outputs["Normal"], dot.inputs[0])
-        links.new(geometry.outputs["Normal"], dot.inputs[1])
-        edge = _math(nodes, links, "SUBTRACT", 1.0, dot.outputs["Value"])
-        edge = _math(nodes, links, "MULTIPLY", edge, 7.0, clamp=True)
+        edge = _math(nodes, links, "SUBTRACT", geometry.outputs["Pointiness"], 0.5)
+        edge = _math(nodes, links, "MULTIPLY", edge, 6.0, clamp=True)
         # (Broken up by the scan, so the wear is not a drawn line.)
         edge = _math(nodes, links, "MULTIPLY", edge, _math(nodes, links, "MULTIPLY", light, wear, clamp=True))
         worn = nodes.new("ShaderNodeVectorMath")
@@ -591,6 +613,15 @@ def _select_only(obj):
 
 
 def unwrap(obj, margin=0.02, angle=60):
+    # Faces with a zero-length edge go first (where a lathe's profile touches its axis, a whole ring of
+    # points is one point): they have no direction for a normal map to be measured against, and baked
+    # as random tilts, which showed as smears on a polished table top.
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.dissolve_degenerate(bm, dist=1e-6, edges=bm.edges)
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
     _select_only(obj)
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
@@ -615,7 +646,15 @@ def _save_map(name, pixels, size, non_color, quality):
     path = os.path.join(common.TEXTURES, name + ".jpg")
     img.filepath_raw = path
     img.file_format = "JPEG"
-    img.save(filepath=path, quality=quality)
+    # (On Windows another program may hold the old file for a moment: a scanner, a file listing.)
+    for attempt in range(6):
+        try:
+            img.save(filepath=path, quality=quality)
+            break
+        except RuntimeError:
+            if attempt == 5:
+                raise
+            time.sleep(1.0)
     img.filepath = path
     return img
 
@@ -623,7 +662,7 @@ def _save_map(name, pixels, size, non_color, quality):
 def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop"):
     """Bakes the object's materials into one set of textures, then gives the object a single material
     using them: <name>_color.jpg (colour with the shade of its own hollows), <name>_normal.jpg (the
-    scans' relief and the rounded edges, at half the colour's size), <name>_rough.jpg and, when part of
+    scans' relief, at half the colour's size), <name>_rough.jpg and, when part of
     it is metal, <name>_metal.jpg (a quarter). `size` is the most the colour may take; the look
     rulebook may give it less. The split is what lets a prop carry four maps in the memory its one
     colour map took before.

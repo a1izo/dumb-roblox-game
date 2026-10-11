@@ -264,8 +264,9 @@ assets are left out), fitted to the game:
   which needs `art/source/`; a plain export reads the committed files.
 - Props take the same scans (`modelkit.SCANS`, by the helper that made the material or the last word
   of its name), prepared without their broad stains (`scanlib.prepared`), and `modelkit.bake` writes
-  four maps per prop at the size the rulebook gives its surface. The rounded edges are in the
-  normal map, not in the mesh.
+  four maps per prop at the size the rulebook gives its surface. Edges are rounded in the mesh
+  (the builders' bevels), not in the normal map: a shader bevel reads a thin inlay lying on a
+  surface as an edge.
 - `scripts/skies.py` cuts a sky panorama into the six faces of a map's sky;
   `scripts/maps/prints.py` draws poster sheets with the open-licence typefaces (its header holds
   the rules for what may be printed).
