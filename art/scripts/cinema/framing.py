@@ -70,6 +70,19 @@ def part(shot, slot, t, name="Head"):
     return body(shot, slot, t)[2][name]
 
 
+def head_view(shot, slot, t):
+    """(the centre of the actor's head, the way their face points) at time t, in the set's space."""
+    a = actor(shot, slot)
+    v = a.path.value(t)
+    place, yaw = np.array(v[:3]), float(v[3])
+    joints, off = _pose(a, t)
+    m = posekit.fk(joints, off)["Head"]
+    turn = np.array([[math.cos(math.radians(yaw)), 0, math.sin(math.radians(yaw))], [0, 1, 0],
+                     [-math.sin(math.radians(yaw)), 0, math.cos(math.radians(yaw))]])
+    face = turn @ (m[:3, :3] @ np.array([0.0, 0.0, -1.0]))
+    return place + turn @ m[:3, 3], face / max(np.linalg.norm(face), 1e-6)
+
+
 def facing_dir(yaw):
     """The way a body with this yaw faces (yaw 0 faces -z)."""
     a = math.radians(yaw)
@@ -118,22 +131,27 @@ def camera(shot, t, slot, kind="medium", angle=0.0, height=0.0, dist=1.0, tilt=0
     return pos, target + np.array([0.0, tilt, 0.0]), fov
 
 
-def frame(shot, t, slot, kind="medium", ease="smooth", cut=False, fov=None, **kw):
+def frame(shot, t, slot, kind="medium", ease="smooth", cut=False, fov=None, back=False, **kw):
+    if not shot.subjects or shot.subjects[-1][:3] != (t, t, slot):
+        shot.subjects.append((t, t, slot, back or kind == "ots"))
     pos, look, auto = camera(shot, t, slot, kind, **kw)
     shot.cam(t, tuple(pos), tuple(look), fov=fov or auto, ease=ease, cut=cut)
 
 
-def follow(shot, t0, t1, slot, kind="medium", step=0.25, cut=False, fov=None, **kw):
+def follow(shot, t0, t1, slot, kind="medium", step=0.25, cut=False, fov=None, back=False, **kw):
     """Keys every `step` seconds keeping `slot` framed while they move (the first key may be a cut)."""
+    shot.subjects.append((t0, t1, slot, back or kind == "ots"))
     n = max(1, int(round((t1 - t0) / step)))
     for i in range(n + 1):
         t = t0 + (t1 - t0) * i / n
-        frame(shot, t, slot, kind, ease="linear", cut=cut and i == 0, fov=fov, **kw)
+        frame(shot, t, slot, kind, ease="linear", cut=cut and i == 0, fov=fov, back=back, **kw)
 
 
-def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=False, drift=(0.0, 0.0, 0.0)):
+def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=False, drift=(0.0, 0.0, 0.0),
+        back=False):
     """A camera standing at `pos` (drifting by `drift` over the cut) that turns to keep `slot`'s `aim` part
-    in the middle of the frame while they move."""
+    in the middle of the frame while they move. `back`: seeing the back of their head is meant."""
+    shot.subjects.append((t0, t1, slot, back))
     n = max(1, int(round((t1 - t0) / step)))
     for i in range(n + 1):
         u = i / n

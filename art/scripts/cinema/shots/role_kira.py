@@ -1,13 +1,15 @@
 """Diavolo's role cutscene (the briefing, seen only by Diavolo), 15 s, four shots: writing the name.
 
-A  0.0-4.2   Night, the desk lamp, rain on the window behind. From across the room, pushing in: Diavolo at the
-             desk writing in the notebook, fast and hard. In the dark along the bookcases the Muertos kneel.
-B  4.2-7.4   Close on the face bent over the page, the pen scratching. Behind the camera the television: the
-             news, a jingle, a man has collapsed live on air. A flatline.
-C  7.4-11.2  Low, from across the desk: the pen stops. Diavolo slowly lifts their head to the television. A
-             grin. Behind them, the Deathsinger rises and leans over their shoulder; their shoulders shake.
-D  11.2-15.0 The hand slams the book shut. Diavolo rises, arms flung wide, and laughs; the Deathsinger laughs
-             with them; the Muertos bow to the floor.
+A  0.0-4.0   Night, the desk lamp, rain on the window behind. From the television's corner, high and wide,
+             drifting in: Diavolo at the desk writing in the notebook, fast and hard. In the dark along the
+             bookcases the Muertos kneel.
+B  4.0-8.0   Close on the page: the pen scratching a name; behind, the television: the news, a man has
+             collapsed live on air. A flatline. Then the face over the page, as the pen stops.
+C  8.0-11.2  Lower and closer: Diavolo slowly lifts their head to the television. A grin. Behind them the
+             Deathsinger rises and leans over their shoulder; their shoulders shake.
+D  11.2-13.4 Low, from the desk's corner, pulling back: the hand slams the book shut; Diavolo rises, arms flung
+             wide, and laughs, the Deathsinger with them.
+E  13.4-15.0 Over Diavolo's shoulder, high: the room, the Muertos bowing to the floor before them.
 
 The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, 14 high; the window
 in the north wall (x -3..3, from 5.4 up); the desk before it at (0, -5.4) (x -3.3..3.3, z -7.0..-3.8, top
@@ -37,10 +39,11 @@ STILL_L = J((54, 0, 24), (0.2, 0.04, -0.3))
 LIFTED = J((78, 0, -10), (-0.02, 0.1, -0.3))
 
 d = Motion("RoleDiavolo_self", LENGTH, note="Diavolo's role cutscene: writing the name.")
-writing(d, 0.0, 7.4, seat=SEAT, speed=1.1, seed=3)
-seated(d, 7.55, "out", seat=SEAT, lean=-26, legs=86, neck=(-34, 0, 0), rShoulder=LIFTED, lShoulder=STILL_L)  # pen up
-seated(d, 7.9, seat=SEAT, lean=-26, legs=86, neck=(-34, 0, 0), rShoulder=LIFTED, lShoulder=STILL_L)
-seated(d, 9.0, "sine", seat=SEAT, lean=-14, legs=86, neck=LOOK_UP, rShoulder=STILL_R, lShoulder=STILL_L)  # up, slowly
+# Eyes on the page rather than nose to it: real avatars' hair hides a face bent any lower.
+writing(d, 0.0, 7.4, seat=SEAT, lean=-18, head=-12, speed=1.1, seed=3)
+seated(d, 7.55, "out", seat=SEAT, lean=-19, legs=86, neck=(-13, 0, 0), rShoulder=LIFTED, lShoulder=STILL_L)  # pen up
+seated(d, 8.3, seat=SEAT, lean=-19, legs=86, neck=(-14, 0, 0), rShoulder=LIFTED, lShoulder=STILL_L)  # still...
+seated(d, 9.2, "sine", seat=SEAT, lean=-12, legs=86, neck=LOOK_UP, rShoulder=STILL_R, lShoulder=STILL_L)  # up, slowly
 seated(d, 9.6, seat=SEAT, lean=-14, legs=86, neck=(-2, 0, 8), rShoulder=STILL_R, lShoulder=STILL_L)  # the head tilts
 for k in range(6):  # a silent laugh shakes the shoulders
     t = 10.0 + 0.17 * k
@@ -111,14 +114,21 @@ for k in range(8):  # it laughs with them
     t = 12.6 + 0.3 * k
     singer.at(t, (SINGER[0], 0.4 + (0.25 if k % 2 else 0.0), SINGER[1] + 0.3), (12 - (5 if k % 2 else 0), 170, 4))
 
-# A: from across the room, a slow push to the desk.
-shot.pan(0.0, 4.2, "self", (2.6, 5.4, 4.6), aim="Head", dy=-0.4, fov=40, drift=(-1.0, -0.4, -3.4))
-# B: close on the face bent over the page, a slow push.
-shot.pan(4.2, 7.4, "self", (1.7, 4.3, -3.4), aim="Head", fov=32, cut=True, drift=(-0.1, -0.1, -0.4))
-# C: low across the desk: the look up, the grin, the Deathsinger rising behind.
-shot.pan(7.4, 11.2, "self", (0.9, 4.3, -1.8), aim="Head", dy=0.6, fov=48, cut=True, drift=(-0.3, 0.0, -0.4))
-# D: the slam, the rise, the laugh: from the desk's east end (clear of the lamp), pushing in.
-shot.pan(11.2, LENGTH, "self", (4.4, 4.0, -1.8), aim="Torso", dy=1.0, fov=50, cut=True, drift=(-0.8, 0.3, -0.4))
+# A: from the television's corner, high and wide, drifting in (the room matters more than the face).
+shot.pan(0.0, 4.0, "self", (2.6, 8.0, 7.2), aim="Torso", dy=0.6, fov=44, drift=(-0.8, -0.6, -2.2), back=True)
+# B: across the desk at eye level, far enough back for real hair: head, shoulders, the hands on the book.
+shot.subjects.append((4.0, 6.4, None, True))  # the page, not a face
+shot.cam(4.0, (1.1, 6.2, -3.7), (BOOK[0], TOP + 0.2, BOOK[1]), fov=34, cut=True)  # the pen on the page,
+shot.cam(6.4, (0.8, 5.8, -4.1), (BOOK[0], TOP + 0.3, BOOK[1]), fov=32, ease="linear")  # Diavolo looming behind it
+shot.pan(6.4, 8.0, "self", (2.7, 4.4, 0.8), aim="Head", dy=-0.7, fov=40, cut=True, drift=(-0.2, 0.0, -0.4))  # it stops
+# C: lower and closer, from the other side of the lamp's light: the look up, the grin, the Deathsinger behind.
+shot.pan(8.0, 11.2, "self", (1.9, 4.9, -1.6), aim="Head", dy=-0.35, fov=44, cut=True, drift=(-0.3, 0.0, -0.4))
+# D: low from the desk's east corner, pulling back as Diavolo rises and laughs.
+shot.pan(11.2, 13.4, "self", (3.4, 3.0, -2.6), aim="Torso", dy=1.0, fov=52, cut=True, drift=(-0.3, 0.3, 1.0))
+# E: high over Diavolo's shoulder: the Muertos bowing to them.
+shot.subjects.append((13.4, LENGTH, None, True))  # the room, past Diavolo's shoulder: no face to frame
+shot.cam(13.4, (-4.6, 7.8, -9.3), (1.2, 1.4, 0.4), fov=50, cut=True)
+shot.cam(LENGTH, (-4.3, 8.1, -9.2), (1.2, 1.2, 0.2), fov=48, ease="linear")
 
 # Faces
 shot.face(0.0, "self", "Stern")

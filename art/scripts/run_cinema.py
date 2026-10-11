@@ -256,14 +256,17 @@ def add_hair(actor, arm, parts, index):
     mat = common.material(f"Hair{index % len(HAIR)}", HAIR[index % len(HAIR)], 0.7)
     style = index % 3
     dims = parts["Head_Mesh"].dimensions
-    w, h, d = dims.x + 0.16, dims.z, dims.y + 0.16  # the head's width, height, depth (+ the hair's thickness)
+    # As big as the hair real avatars wear: a full cap well over the head, thick at the back and sides
+    # (a bare stand-in head made close-ups look fine in Blender that were all hair in the game).
+    w, h, d = dims.x + 0.7, dims.z, dims.y + 0.7
     top, back = h / 2, dims.y / 2
-    boxes = [((0, top + 0.08, 0.04), (w, 0.36, d)), ((0, top - 0.42, back + 0.08), (w, 1.0, 0.18))]
+    boxes = [((0, top + 0.22, 0.05), (w, 0.62, d)), ((0, top - 0.45, back + 0.22), (w, 1.25, 0.45)),
+             ((w / 2 - 0.15, top - 0.3, 0.12), (0.3, 0.75, d * 0.85)), ((-w / 2 + 0.15, top - 0.3, 0.12), (0.3, 0.75, d * 0.85))]
     if style == 1:  # a fringe
-        boxes.append(((0, top - 0.12, -back - 0.06), (w, 0.26, 0.14)))
-    elif style == 2:  # longer at the back and sides
-        boxes += [((w / 2 - 0.06, top - 0.5, 0.15), (0.14, 0.9, d * 0.8)), ((-w / 2 + 0.06, top - 0.5, 0.15), (0.14, 0.9, d * 0.8)),
-                  ((0, top - 1.0, back + 0.08), (w, 0.5, 0.18))]
+        boxes.append(((0, top - 0.1, -back - 0.12), (w * 0.9, 0.34, 0.24)))
+    elif style == 2:  # long at the back and sides
+        boxes += [((w / 2 - 0.12, top - 0.95, 0.15), (0.24, 0.9, d * 0.7)), ((-w / 2 + 0.12, top - 0.95, 0.15), (0.24, 0.9, d * 0.7)),
+                  ((0, top - 1.25, back + 0.2), (w, 0.7, 0.4))]
     for k, (pos, size) in enumerate(boxes):
         mesh = bpy.data.meshes.new(f"Hair_{actor.slot}_{k}")
         sx, sy, sz = (v / 2 for v in size)
@@ -494,6 +497,14 @@ def add_plan_camera(shot):
     return cam
 
 
+def letterbox(scene, on):
+    """The game's letterbox (Cinema.letterbox: 11% at the top and the bottom), as a render border."""
+    scene.render.use_border = on
+    scene.render.use_crop_to_border = False
+    scene.render.border_min_x, scene.render.border_max_x = 0.0, 1.0
+    scene.render.border_min_y, scene.render.border_max_y = (0.11, 0.89) if on else (0.0, 1.0)
+
+
 def sheet(shot, size=(640, 360)):
     """A contact sheet: every cut at its start, middle and end through the shot's camera, then the
     actors from straight above at the start, middle and end. Written as <Shot>_sheet.png."""
@@ -517,6 +528,7 @@ def sheet(shot, size=(640, 360)):
     rows = cut_times(shot) + [(0.3, shot.length / 2, shot.length - 0.3)]
     for r, row in enumerate(rows):
         scene.camera = plan if r == len(rows) - 1 else cam
+        letterbox(scene, shot.letterbox and r < len(rows) - 1)
         for k, t in enumerate(row):
             scene.frame_set(int(round(t * FPS)))
             path = os.path.join(OUT_DIR, f"_{shot.name}_{r}_{k}.png")
@@ -548,6 +560,7 @@ def preview(shot, size=(960, 540), t_from=0.0, t_to=None, stills=None):
     cam = add_camera(shot)
     add_captions(shot, cam)
     scene = bpy.context.scene
+    letterbox(scene, shot.letterbox)
     scene.render.resolution_x, scene.render.resolution_y = size
     scene.render.fps = 30
     scene.frame_start = int(t_from * FPS)
@@ -584,6 +597,8 @@ def main():
         for name in names:
             for line in shotlib.lint(shots[name]):
                 print(f"[lint] {name} {line}")
+            for line in shotlib.framing_lint(shots[name]):
+                print(f"[frame] {name} {line}")
     if "--clear" in argv:
         # room to move: the actors against the set and each other
         import run_maps

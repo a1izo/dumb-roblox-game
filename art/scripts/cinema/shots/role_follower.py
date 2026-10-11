@@ -1,8 +1,8 @@
 """The Muerto's role cutscene (the briefing, seen only by that Muerto), 15 s, four shots: summoned.
 
-A  0.0-4.8   A back alley in the rain under a sodium lamp. The Muerto's phone buzzes; the screen glows red; they
+A  0.0-3.4   A back alley in the rain under a sodium lamp. The Muerto's phone buzzes; the screen glows red; they
              read it ("COME."), put it away and walk to the stair going down beside the lamp.
-B  4.8-7.4   From inside the shrine's open doors, up the stairs: the Muerto comes down between the candles,
+B  3.4-7.4   From inside the shrine's open doors, up the stairs: the Muerto comes down between the candles,
              the alley's light behind them.
 C  7.4-11.4  Low in the nave, towards the altar: the Muerto walks up between the kneeling Muertos, who all turn
              their heads to them at once, eyes red. On the steps Diavolo's black shape raises a hand: come.
@@ -156,10 +156,10 @@ def door(hinge, side, close=(11.55, 11.85)):
 door((OX - 3.2, 13.2), 1)
 door((OX + 3.2, 13.2), -1)
 
-# A: the alley, from its west side: the Muerto reads, then goes to the way down under the lamp.
-shot.pan(0.0, 4.8, "self", (OX - 4.4, ALLEY_Y + 3.4, 31.4), aim="Head", dy=-0.2, fov=40, drift=(0.0, 0.3, -0.4))
+# A: the alley, low in front of the Muerto (under the bowed head, into the phone's glow), backing off as they come.
+shot.pan(0.0, 3.4, "self", (OX - 2.8, ALLEY_Y + 3.6, 28.4), aim="Head", dy=-0.2, fov=44, drift=(-0.6, 0.2, 0.1))
 # B: from inside the doors, up the stair.
-shot.pan(4.8, T_CUT, "self", (OX + 1.2, 2.2, 12.8), aim="Torso", dy=0.6, fov=44, cut=True)
+shot.pan(3.4, T_CUT, "self", (OX + 1.2, 2.2, 12.8), aim="Torso", dy=0.6, fov=44, cut=True)
 # C: low in the nave, the heads turning.
 shot.pan(T_CUT, 11.4, "self", (OX + 1.0, 2.4, -3.6), aim="Head", dy=-0.4, fov=50, cut=True, drift=(0.0, 0.0, -0.4))
 # D: over Diavolo's shoulder: the doors slam, the look back, the walk on.

@@ -192,6 +192,7 @@ class Shot:
         self.mood = mood  # a LightingPresets name the game switches to for the shot
         self.room = None  # (x0, z0, x1, z1, height): lint warns when the camera leaves it
         self.cam_groups = [[]]  # camera keys, split at the cuts
+        self.subjects = []  # (t0, t1, slot, back_ok): who the framing helpers aim at (framing_lint)
         self.actors = []
         self.props = []
         self.events = []
@@ -325,6 +326,108 @@ def lint(shot, step=0.25, radius=1.3, height=5.0):
                 warnings.append(f"{t:5.2f}s {a.slot} blocks the view {near:.1f} studs from the camera")
         t += step
     return warnings
+
+
+# What the player really sees: real avatars wear hair and hats, and the game letterboxes the screen.
+HAIR_UP = 1.05  # the top of a head's hair above the head's centre (studs)
+CHIN = 0.65  # the chin below it
+NEAREST = 3.0  # closer than this to a head, its hair fills the screen
+SEEN = 0.78  # the letterbox hides 11% at the top and the bottom
+ASPECT = 16 / 9
+
+
+def _subject(shot, t):
+    """(slot, back_ok) of the actor the camera is framing at t: the latest framing that covers t, else
+    the latest that started before it (a held frame)."""
+    best = None
+    for t0, t1, slot, back in shot.subjects:
+        if t0 - 1e-6 <= t <= t1 + 1e-6:
+            best = (t0, slot, back)
+    if best is None:
+        for t0, t1, slot, back in shot.subjects:
+            if t0 <= t and (best is None or t0 >= best[0]):
+                best = (t0, slot, back)
+    return (best[1], best[2]) if best else (None, False)
+
+
+def framing_lint(shot, step=0.25):
+    """Warnings, as time ranges, for moments the player would not see the subject's face properly: the
+    camera in their hair, their head cut by the letterbox or out of frame, the back or the top of their
+    head instead of the face, or another head in the way."""
+    from cinema import framing
+
+    found = []
+    t = 0.0
+    while t <= shot.length + 1e-6:
+        slot, back_ok = _subject(shot, t)
+        if slot is None:
+            t += step
+            continue
+        group = shot.cam_groups[0]
+        for g in shot.cam_groups:
+            if g and g[0][0] <= t + 1e-9:
+                group = g
+        ch = Channel(shot.length, False)
+        for key in group:
+            ch.add(*key)
+        v = ch.value(t)
+        cam, fov = v[0:3], v[6]
+        m = look_rotation(v[0:3], v[3:6], v[7])
+        right, up, fwd = m[:, 0], m[:, 1], -m[:, 2]
+        head, facing = framing.head_view(shot, slot, t)
+        tan_v = math.tan(math.radians(fov) / 2)
+
+        def screen(p):
+            d = p - cam
+            depth = d @ fwd
+            if depth <= 0.05:
+                return None
+            return (d @ right) / (depth * tan_v * ASPECT), (d @ up) / (depth * tan_v)
+
+        dist = float(np.linalg.norm(head - cam))
+        top, chin = screen(head + np.array([0, HAIR_UP, 0])), screen(head - np.array([0, CHIN, 0]))
+        if top is None or chin is None:
+            found.append((t, f"{slot} is behind the camera"))
+        else:
+            if dist < NEAREST:
+                found.append((t, f"the camera is in {slot}'s hair (under {NEAREST:g} studs from the head)"))
+            if top[1] > SEEN - 0.03 or chin[1] < -SEEN + 0.03:
+                found.append((t, f"{slot}'s head is cut by the letterbox"))
+            if abs(top[0]) > 0.97:
+                found.append((t, f"{slot}'s head is off the side of the frame"))
+            if (top[1] - chin[1]) / (2 * SEEN) > 0.62:
+                found.append((t, f"{slot}'s head fills the frame"))
+            middle = (top[1] + chin[1]) / 2
+            if middle < -0.25:
+                found.append((t, f"{slot}'s head is low in the frame (empty space above)"))
+        to_cam = (cam - head) / max(dist, 1e-6)
+        if not back_ok:
+            if facing @ to_cam < 0.5:  # past about 60 degrees off the face, real hair hides it
+                found.append((t, f"the camera sees {slot}'s hair, not their face (from the side or behind)"))
+            elif facing[1] < -0.55:
+                found.append((t, f"{slot}'s head is bowed: their hair hides the face"))
+        for a in shot.actors:
+            if a.slot == slot or not (a.show[0] <= t <= a.show[1]):
+                continue
+            other, _ = framing.head_view(shot, a.slot, t)
+            d = head - cam
+            u = float(np.clip((other - cam) @ d / (d @ d), 0.0, 1.0))
+            if u < 0.92 and np.linalg.norm(cam + d * u - other) < 1.0:
+                found.append((t, f"{a.slot}'s head is in front of {slot}'s"))
+        t += step
+    # one line per message per run of moments
+    runs = {}
+    for t, msg in found:
+        spans = runs.setdefault(msg, [])
+        if spans and t - spans[-1][1] <= step * 1.5:
+            spans[-1][1] = t
+        else:
+            spans.append([t, t])
+    lines = []
+    for msg, spans in runs.items():
+        for t0, t1 in spans:
+            lines.append((t0, f"{t0:5.2f}-{t1:5.2f}s {msg}"))
+    return [line for _, line in sorted(lines)]
 
 
 # Export -------------------------------------------------------------------------------------------------
