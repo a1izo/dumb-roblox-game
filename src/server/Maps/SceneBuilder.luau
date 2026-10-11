@@ -47,6 +47,21 @@ local function dress(part: BasePart, material: string)
 	part.CanQuery = false
 	part.CanTouch = false
 	local look = (SceneMaterials :: any)[material]
+	if look and look.alpha then
+		-- A picture whose alpha channel is its shape (wear on walls). The surface's mode has to be set
+		-- before the mesh enters the world: afterwards the change is not drawn. With no picture, or when
+		-- the mode cannot be set, it is not shown at all (an opaque rectangle would be worse than none).
+		part.CastShadow = false
+		local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
+		local shaped = appearance
+			and pcall(function()
+				(appearance :: SurfaceAppearance).AlphaMode = Enum.AlphaMode.Transparency
+			end)
+		if not shaped then
+			part.Transparency = 1
+		end
+		return
+	end
 	if look and look.textured and look.fallback and not hasTexture(part) then
 		-- A material that has a texture now, on a mesh imported before it had one (a venue whose file
 		-- is older than the material): its fallback look, so it does not show as bare grey.

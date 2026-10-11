@@ -206,7 +206,7 @@ def shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storey
                 if rise:
                     arches.append((at, window_w, head, rise))
         kit.wall(s, a, b, eaves, thick=T, core=brick, side_n=brick, side_s=inside, openings=ops,
-                 trim_s={"base": "BlackTrim"})
+                 trim_s={"base": "BlackTrim", "grime": True})
         for at, w, top, rise in arches:
             arch_head(s, a, t, n, T, at, w, top, rise, brick, inside)
         if plinth:
