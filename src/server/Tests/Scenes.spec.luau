@@ -32,17 +32,28 @@ return function(t)
 		it("gives the lobby every anchor it builds at", function()
 			local anchors = SceneBuilder.data("Lobby").layout.anchors
 			local missing = {}
-			local names = { "spawn", "title", "tagline", "howto", "nextCase", "wins", "xp", "weekly", "quests" }
-			for _, name in ipairs({ "academyTitle", "academyLine", "academyGate", "dummy1", "dummy2", "dummy3" }) do
+			-- The title, the one board (Most Wins), the throne's seat, the bell, the duel's two slates.
+			local names = { "spawn", "title", "tagline", "wins", "throne", "bell", "duel1", "duel2" }
+			for _, name in ipairs({ "academyGate", "dummy1", "dummy2", "dummy3" }) do
 				table.insert(names, name)
+			end
+			-- Twelve candle stones, five tableaux, seven apples.
+			for index = 1, 12 do
+				table.insert(names, "ready" .. index)
+			end
+			for index = 1, 5 do
+				table.insert(names, "tableau" .. index)
+			end
+			for index = 1, 7 do
+				table.insert(names, "apple" .. index)
 			end
 			-- An altar for each case-file drill, the Grimoire, the warrant and the eyes.
 			for index = 1, #TaskTypes.LIST + 3 do
 				table.insert(names, "drill" .. index)
 			end
 			-- The mini-games: the Spire Ascent's pad, centre and ten checkpoints, the rune courtyard's pad,
-			-- centre and nine tiles, the dice rock and its four seats, the stone-toss and the rift's shape,
-			-- and the two boards.
+			-- centre and nine tiles, the dice rock and its four seats, the stone-toss, the rift's shape and
+			-- the roof far under it.
 			for _, name in ipairs({
 				"pkStart",
 				"pkCenter",
@@ -51,8 +62,7 @@ return function(t)
 				"diceRock",
 				"toss",
 				"rift",
-				"parkourBoard",
-				"runesBoard",
+				"landing",
 			}) do
 				table.insert(names, name)
 			end
@@ -77,6 +87,33 @@ return function(t)
 			local anchors = SceneBuilder.data("Lobby").layout.anchors
 			expect(anchors.spawn.y > 5).to.equal(true)
 			expect(anchors.spawn.rot).to.equal(0)
+		end)
+
+		it("leaves no wall of text in the lobby", function()
+			local anchors = SceneBuilder.data("Lobby").layout.anchors
+			for _, name in ipairs({
+				"howto",
+				"nextCase",
+				"xp",
+				"weekly",
+				"quests",
+				"parkourBoard",
+				"runesBoard",
+				"academyTitle",
+				"academyLine",
+			}) do
+				expect(anchors[name]).to.equal(nil)
+			end
+		end)
+
+		it("puts the landing roof far under the rift's middle, wider than the rift", function()
+			local anchors = SceneBuilder.data("Lobby").layout.anchors
+			local rift, landing = anchors.rift, anchors.landing
+			expect(landing.y < -150).to.equal(true)
+			expect(math.abs(landing.x - rift.x) < 1).to.equal(true)
+			expect(math.abs(landing.z - rift.z) < 1).to.equal(true)
+			expect(landing.w > 2 * rift.rx).to.equal(true)
+			expect(landing.h > 2 * rift.rz).to.equal(true)
 		end)
 
 		it("gives the meeting room its screen, board, a place for everyone and the Specters' spots", function()

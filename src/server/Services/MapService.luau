@@ -77,19 +77,13 @@ function MapService.nextMapName(): string
 	return MAPS[MapService.nextMapId()].name
 end
 
-local function updateNextMapLabel()
-	if lobbyInfo then
-		lobbyInfo.nextMapLabel.Text = "NEXT CASE\n" .. MapService.nextMapName()
-	end
-end
-
+-- (The next case's name is on every player's lobby page, from the lobby state; no sign in the world carries it.)
 function MapService.advance()
 	if forcedNext then
 		forcedNext = nil
 	else
 		rotationIndex += 1
 	end
-	updateNextMapLabel()
 end
 
 -- Debug -----------------------------------------------------------------------------------
@@ -111,7 +105,6 @@ function MapService.forceNext(mapId: string): boolean
 		return false
 	end
 	forcedNext = mapId
-	updateNextMapLabel()
 	return true
 end
 
@@ -129,7 +122,6 @@ function MapService.rebuildLobby()
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))
 	model.Parent = workspace
 	lobbyModel = model
-	updateNextMapLabel()
 	LeaderboardService.setLabels(lobbyInfo.boards)
 	LobbyGameService.setup(lobbyInfo.games)
 end
@@ -263,7 +255,6 @@ function MapService.init()
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))
 	model.Parent = workspace
 	lobbyModel = model
-	updateNextMapLabel()
 	LeaderboardService.setLabels(lobbyInfo.boards)
 	LobbyGameService.setup(lobbyInfo.games)
 end

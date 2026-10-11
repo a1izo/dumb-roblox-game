@@ -67,7 +67,12 @@ function Migrations.defaults(startingCoins: number)
 			lowGraphics = false,
 		},
 		tipsSeen = {}, -- [tipId] = true
+		-- The Academy's drills. `unrewarded` is set (by Shared/Trial) on a profile that finishes all seven now
+		-- that they pay nothing by themselves; it is deliberately not a default, so profiles that finished
+		-- them when they did pay can be told apart.
 		training = { done = false, drills = {} },
+		-- The Trial (Shared/Trial): done, the offer turned down, the Academy's one reward paid for it.
+		trial = { done = false, skipped = false, paid = false },
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
 		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds).
 		lobbyGames = { parkourBest = 0, runesBest = 0, diceBest = 0, tossBest = 0, spiritBest = 0 },

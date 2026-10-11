@@ -1,7 +1,9 @@
 -- Global leaderboards (all-time wins, experience, this week's wins, and the lobby mini-games'
--- fastest Spire Ascent and most rune rounds) in ordered data stores. Scores are written as absolute values, gathered up and flushed every 20 seconds
--- within the request budget; the top 10 are read every 5 minutes and shown on the lobby
--- boards and in the Leaderboards panel.
+-- fastest Spire Ascent, most rune rounds and fastest spirit trial) in ordered data stores. Scores are
+-- written as absolute values, gathered up and flushed every 20 seconds within the request budget; the
+-- top 10 are read every 5 minutes and shown in the Leaderboards panel. One board is also written in the
+-- world: Most Wins, on its slab in the lobby (and the player at its top sits on the throne, in stone:
+-- client World/Champion).
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
@@ -12,7 +14,6 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Parkour = require(Shared:WaitForChild("LobbyGames"):WaitForChild("Parkour"))
 local Net = require(Shared:WaitForChild("Net"))
-local Quests = require(Shared:WaitForChild("Progression"):WaitForChild("Quests"))
 local TimeUtil = require(Shared:WaitForChild("Progression"):WaitForChild("TimeUtil"))
 
 local LeaderboardRemote = Net.event("Leaderboard")
@@ -27,25 +28,51 @@ local SUFFIX = if RunService:IsStudio() then Config.STUDIO_DATASTORE_SUFFIX else
 type Entry = { rank: number, userId: number, name: string, value: number }
 
 local pending: { [number]: { wins: number, xp: number, weekly: number, week: number } } = {}
--- The mini-games' newly improved bests, written on the next flush: the Spire Ascent in centiseconds
--- (lower is better) and the rune rounds cleared.
-local extra: { [number]: { parkour: number?, runes: number? } } = {}
-local boards: { [string]: { Entry } } = { wins = {}, xp = {}, weekly = {}, parkour = {}, runes = {} }
+-- The mini-games' newly improved bests, written on the next flush: the Spire Ascent and the spirit trial in
+-- centiseconds (lower is better) and the rune rounds cleared.
+local extra: { [number]: { parkour: number?, runes: number?, spirit: number? } } = {}
+local boards: { [string]: { Entry } } = { wins = {}, xp = {}, weekly = {}, parkour = {}, runes = {}, spirit = {} }
 local nameCache: { [number]: string } = {}
 local labels: { [string]: TextLabel } = {}
 local enabled = true
 
+-- The stores that are not a week's: board -> name.
+local STORES = {
+	wins = "LGameLB_Wins_v1",
+	xp = "LGameLB_Xp_v1",
+	parkour = "LGameLB_Parkour_v1",
+	runes = "LGameLB_Runes_v1",
+	spirit = "LGameLB_Spirit_v1",
+}
+-- Until the spirit trial had a store of its own, its times fell through to the weekly store's name with no
+-- week ("..._Wnil"). They are copied across once (see moveSpirit).
+local OLD_SPIRIT = "LGameLB_Wins_Wnil"
+
 local function store(board: string, week: number?): OrderedDataStore
-	if board == "wins" then
-		return DataStoreService:GetOrderedDataStore("LGameLB_Wins_v1" .. SUFFIX)
-	elseif board == "xp" then
-		return DataStoreService:GetOrderedDataStore("LGameLB_Xp_v1" .. SUFFIX)
-	elseif board == "parkour" then
-		return DataStoreService:GetOrderedDataStore("LGameLB_Parkour_v1" .. SUFFIX)
-	elseif board == "runes" then
-		return DataStoreService:GetOrderedDataStore("LGameLB_Runes_v1" .. SUFFIX)
+	local name = STORES[board]
+	if name then
+		return DataStoreService:GetOrderedDataStore(name .. SUFFIX)
 	end
+	assert(board == "weekly" and week ~= nil, "no leaderboard store for " .. tostring(board))
 	return DataStoreService:GetOrderedDataStore("LGameLB_Wins_W" .. tostring(week) .. SUFFIX)
+end
+
+-- The spirit trial's old times, brought to its own store: only while that store is still empty, so it
+-- happens once (and never writes over a newer time).
+local function moveSpirit()
+	local ok, err = pcall(function()
+		if #store("spirit"):GetSortedAsync(true, 1):GetCurrentPage() > 0 then
+			return
+		end
+		local old = DataStoreService:GetOrderedDataStore(OLD_SPIRIT .. SUFFIX)
+		for _, row in ipairs(old:GetSortedAsync(true, TOP):GetCurrentPage()) do
+			store("spirit"):SetAsync(row.key, row.value)
+		end
+	end)
+	-- (Quiet where the stores cannot be reached at all: a Studio place without API access.)
+	if not ok and not string.find(tostring(err), "not allowed", 1, true) then
+		warn("[DeathsGambit] Could not move the spirit trial's old times: " .. tostring(err))
+	end
 end
 
 -- Remembers a player's latest scores; they are written on the next flush.
@@ -184,31 +211,18 @@ local TITLES = {
 }
 
 local function renderLabels()
-	local questLabel = labels.quests
-	if questLabel then
-		local lines = { "TODAY'S QUESTS", "" }
-		for _, id in ipairs(Quests.daily(TimeUtil.day(TimeUtil.now()))) do
-			local quest = Quests.byId(id)
-			if quest then
-				table.insert(lines, string.format("- %s  (+%d)", quest.text, quest.coins))
-			end
-		end
-		table.insert(lines, "")
-		table.insert(lines, "Track them in the Quests menu.")
-		questLabel.Text = table.concat(lines, "\n")
-	end
 	for board, label in pairs(labels) do
-		if board ~= "quests" then
-			local lines = { TITLES[board] or string.upper(board), "" }
-			for _, entry in ipairs(boards[board] or {}) do
-				local value = if board == "parkour" then Parkour.formatCentis(entry.value) else tostring(entry.value)
-				table.insert(lines, string.format("%d. %s  %s", entry.rank, entry.name, value))
-			end
-			if #(boards[board] or {}) == 0 then
-				table.insert(lines, "No scores yet.")
-			end
-			label.Text = table.concat(lines, "\n")
+		local lines = { TITLES[board] or string.upper(board), "" }
+		for _, entry in ipairs(boards[board] or {}) do
+			local value = if board == "parkour" or board == "spirit"
+				then Parkour.formatCentis(entry.value)
+				else tostring(entry.value)
+			table.insert(lines, string.format("%d. %s  %s", entry.rank, entry.name, value))
 		end
+		if #(boards[board] or {}) == 0 then
+			table.insert(lines, "No scores yet.")
+		end
+		label.Text = table.concat(lines, "\n")
 	end
 end
 
@@ -226,7 +240,7 @@ local function read()
 	LeaderboardRemote:FireAllClients(boards)
 end
 
--- The lobby boards to write into: { wins = label, xp = label, weekly = label }.
+-- The boards in the world to write into, by board (the lobby has one: { wins = label }).
 function LeaderboardService.setLabels(newLabels: { [string]: TextLabel })
 	labels = newLabels
 	renderLabels()
@@ -245,6 +259,7 @@ function LeaderboardService.init()
 	end)
 	task.spawn(function()
 		task.wait(8)
+		moveSpirit()
 		local sinceRead = READ_EVERY
 		while enabled do
 			pcall(flush)

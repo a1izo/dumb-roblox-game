@@ -6,6 +6,7 @@
 -- who is in a case or watching one.
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -396,6 +397,14 @@ local function onState(payload: any)
 		onDice(payload)
 	elseif payload.game == "toss" then
 		onToss(payload)
+	elseif payload.game == "lobby" and payload.kind == "caught" then
+		-- Set back on the terrace after falling out of the world: without the speed of the fall.
+		local character = Players.LocalPlayer.Character
+		local part = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if part and part:IsA("BasePart") then
+			part.AssemblyLinearVelocity = Vector3.zero
+			part.AssemblyAngularVelocity = Vector3.zero
+		end
 	end
 end
 

@@ -8,6 +8,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Hints = require(Shared:WaitForChild("Hints"))
 local Net = require(Shared:WaitForChild("Net"))
+local Trial = require(Shared:WaitForChild("Trial"))
 
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
@@ -79,8 +80,8 @@ local function resetHints(player: Player)
 	end
 end
 
--- An Academy drill was finished. The drills run on the client, so the reward is small and
--- paid once per profile.
+-- An Academy drill was finished. The drills run on the client. Finishing all seven earns the title
+-- Trainee; the Academy's coins are paid for the Trial (below), once per profile.
 local function drillDone(player: Player, payload)
 	local data = DataService.get(player)
 	if not data or type(payload.drill) ~= "string" or not table.find(Config.TRAINING_DRILLS, payload.drill) then
@@ -98,17 +99,38 @@ local function drillDone(player: Player, payload)
 			end
 		end
 		if all then
-			data.training.done = true
-			data.coins += Config.TRAINING_REWARD
+			Trial.drillsFinished(data)
 			Analytics.step(player, "academy")
-			Analytics.coins(player, Config.TRAINING_REWARD, data.coins, "Onboarding", "Academy")
 			data.titles.trainee = true
-			Match.notify(
-				player,
-				string.format("Academy complete! +%d coins and the title Trainee.", Config.TRAINING_REWARD),
-				"good"
-			)
+			Match.notify(player, "Every drill done: the title Trainee is yours.", "good")
 		end
+	end
+	DataService.push(player)
+	DataService.saveSoon(player)
+end
+
+-- The Trial (Shared/Trial): its steps run on the client, like the drills, so the reward is small and paid
+-- once per profile. event "skip": the offer was turned down; "done": it was finished.
+local function trialEvent(player: Player, payload)
+	local data = DataService.get(player)
+	if not data or Match.getLiving(player) then
+		return
+	end
+	if payload.event == "skip" then
+		if not Trial.skip(data) then
+			return
+		end
+	elseif payload.event == "done" then
+		local first = not data.trial.done
+		local paid = Trial.finish(data, Config.TRAINING_REWARD)
+		if paid > 0 then
+			Analytics.coins(player, paid, data.coins, "Onboarding", "Trial")
+			Match.notify(player, string.format("The Trial is done. +%d coins.", paid), "good")
+		elseif first then
+			Match.notify(player, "The Trial is done.", "good")
+		end
+	else
+		return
 	end
 	DataService.push(player)
 	DataService.saveSoon(player)
@@ -120,6 +142,7 @@ local ACTIONS: { [string]: { cooldown: number, handler: (Player, any) -> () } } 
 	hint = { cooldown = 0.2, handler = hintSeen },
 	resetHints = { cooldown = 2, handler = resetHints },
 	training = { cooldown = 1, handler = drillDone },
+	trial = { cooldown = 1, handler = trialEvent },
 }
 
 -- Other services add their actions here (for example hints or the custom alias).

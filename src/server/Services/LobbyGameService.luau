@@ -397,7 +397,8 @@ end
 local function refreshBoard()
 	local here = seated()
 	if #here == 0 then
-		setBoard("BONE DICE\nSit on a stool to play.")
+		-- Nothing hangs over an empty table (the stools' own prompt says what to do).
+		setBoard("")
 	else
 		local names = {}
 		for _, player in ipairs(here) do
@@ -612,12 +613,58 @@ local function throwStone(player: Player, look: any)
 	})
 end
 
+-- The catch under the lobby -------------------------------------------------------------------------------
+
+-- Nothing under the lobby's ground is solid (the rift opens on another world's sky, the causeways cross
+-- chasms), so whoever has fallen this far below it is set back on the terrace.
+local CATCH_DEPTH = 60
+
+local lobbySpawn: BasePart? = nil
+
+local function spawnPart(): BasePart?
+	if lobbySpawn and lobbySpawn.Parent then
+		return lobbySpawn
+	end
+	local lobby = workspace:FindFirstChild("LGameLobby")
+	local spawn = if lobby then lobby:FindFirstChild("LobbySpawn", true) else nil
+	lobbySpawn = if spawn and spawn:IsA("BasePart") then spawn else nil
+	return lobbySpawn
+end
+
+-- Is this player in the lobby's world (not in a case's map or its meeting room)?
+local function inLobby(player: Player): boolean
+	if Match.active and Match.get(player) ~= nil then
+		local ok, ghost = pcall(function()
+			return require(script.Parent.GhostService)
+		end)
+		return ok and ghost.isAway(player)
+	end
+	return true
+end
+
+local function catchFallen()
+	local spawn = spawnPart()
+	if not spawn then
+		return
+	end
+	local floor = spawn.Position.Y - CATCH_DEPTH
+	for _, player in ipairs(Players:GetPlayers()) do
+		local part = root(player)
+		if part and part.Position.Y < floor and inLobby(player) then
+			cancel(player, "fell")
+			sendHome(player, spawn.Position)
+			tell(player, { game = "lobby", kind = "caught" })
+		end
+	end
+end
+
 -- The loop and the requests -------------------------------------------------------------------------------
 
 local function step()
 	if not games then
 		return
 	end
+	catchFallen()
 	for player, session in pairs(sessions) do
 		local part = root(player)
 		if not player.Parent or not part then

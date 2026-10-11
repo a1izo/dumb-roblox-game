@@ -86,6 +86,9 @@ local RainController = require(World:WaitForChild("RainController"))
 local WindSway = require(World:WaitForChild("WindSway"))
 local TextureDoctor = require(World:WaitForChild("TextureDoctor"))
 local NameTags = require(World:WaitForChild("NameTags"))
+local Champion = require(World:WaitForChild("Champion"))
+local ReadyCircle = require(World:WaitForChild("ReadyCircle"))
+local Tableaux = require(World:WaitForChild("Tableaux"))
 
 local Specter = script:WaitForChild("Specter")
 local FollowCam = require(Specter:WaitForChild("FollowCam"))
@@ -103,6 +106,7 @@ local CameraDirector = require(Presentation:WaitForChild("CameraDirector"))
 local Cinema = require(Presentation:WaitForChild("Cinema"))
 local Cutscenes = require(Presentation:WaitForChild("Cutscenes"))
 local HintController = require(script:WaitForChild("Onboarding"):WaitForChild("HintController"))
+local TrialController = require(script:WaitForChild("Onboarding"):WaitForChild("TrialController"))
 
 -- The join intro: the black ReplicatedFirst put up stays until the lobby is ready (the first lobby state has
 -- arrived and your character is in the world, or 12 s at most), then the lobby glitches in from it.
@@ -194,6 +198,12 @@ WindSway.init()
 MovementRules.init()
 RealmAmbience.init()
 
+-- The lobby's own: a candle for everyone who is ready, the stone tableaux round the plaza, and whoever has
+-- the most wins seated on the throne.
+ReadyCircle.init()
+Tableaux.init()
+Champion.init()
+
 -- Specters: hidden from the living, flying for yourself.
 NameTags.init()
 GhostVisibility.init()
@@ -206,6 +216,7 @@ NotePassController.init()
 AcademyController.init()
 LobbyGamesController.init()
 HintController.init()
+TrialController.init()
 InputRouter.init()
 ChatController.init()
 CoreGuiController.init()

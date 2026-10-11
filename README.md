@@ -92,16 +92,24 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   what matters. Every screen is built from its tokens, pages, cards, tabs and controls (the
   debug panel's UI tab shows them all), with a router for windows, device scaling, reduced
   motion and full gamepad support.
-- **Teaching**: the role card, objectives for your role and phase, one-time tips (the X on a tip
-  turns the whole guide off; Settings brings it back), How to Play, and the **Academy** in the
-  lobby, a ring of broken pillars with a practice altar for every skill.
+- **Teaching**: nothing in the lobby is explained on a wall. **The Trial** teaches by doing: a new
+  player is offered it once (a wisp at the foot of the terrace's steps, never forced), anyone can begin
+  it under the Academy's gate, and it walks five steps through the Academy's own drills (role card, a
+  case file and its leak of letters, a name in the Manual, a warrant, READY) for a one-time reward.
+  Round the plaza five **tableaux** of stone figures act out how a case goes, with one line on the
+  screen of whoever stands near. In a case: the role card, objectives for your role and phase, and
+  one-time tips that name what to press for the player's own input (longer on a first case; the X
+  closes a tip, "Stop tips" turns the guide off, Settings brings it back). How to Play stays in
+  Settings and on H; the **Academy** keeps a practice altar for every skill.
 - **The lobby** is the Grey Realm: a never-ending wasteland of cracked ash under slow, layered cloud,
   the world Death's Manual comes from. Players appear on a ruined terrace over an old flagstone plaza,
   the colossal blade far to the north between two twisted columns; the title is carved on a monolith
-  beyond the plinth of Death's Manual, and steles round the plaza carry How to Play, the next case and the
-  boards. A ridge of rock borders the walkable basin and the wasteland runs on to the horizon beyond it.
+  beyond the plaza, whose open middle holds a ring of twelve candles (one burns for each player who is
+  ready). A ridge of rock borders the walkable basin and the wasteland runs on to the horizon beyond it.
   The Academy lies south-west; to the east a rift in the ground looks down on Kagegaoka at night; dead
-  trees, bones, a colossal carcass and an empty bone throne stand about. **Mini-games for the wait**
+  trees, bones and a colossal carcass stand about, and behind the title, up on its mesa, the bone
+  throne: whoever has the most wins sits on it in stone, over the one board left in the world (Most
+  Wins; every other board is in the Leaderboards window). **Mini-games for the wait**
   (solo-capable, no rewards, global top-10 boards for the first two): the *Spire Ascent*, a parkour up
   floating stones on a plateau over the west causeway; the *rune courtyard*, a memory game on the
   north-east plateau; *bone dice* at the dice rock; and the *stone-toss* at the rift's rim. Wind, drones

@@ -1,7 +1,8 @@
 """The Grey Realm's dressing, every piece placed by hand: dead trees (their trunks solid), the
 braziers round the plaza, crooked lantern posts along the ways people walk, skull piles and loose
 bones, old flagstones stepping from the plaza to the Academy, the monolith and the rift; drifting
-ash over the whole basin and the wind."""
+ash over the whole basin and the wind. Nothing is placed where the plan has something solid
+(`blocked`): the candle ring, the tableaux' bases and the bell count."""
 
 import math
 import random
@@ -25,15 +26,20 @@ TREES = [
     ("DeadTreeGnarled", -30.0, 112.0, 20.0, 1.2),
     ("DeadTree", 90.0, -110.0, 340.0, 1.0),
     ("DeadTreeGnarled", 104.0, 84.0, 100.0, 1.0),
+    # Where the two mini-game boards stood, by the causeways' heads.
+    ("DeadTreeGnarled", -126.0, -26.0, 110.0, 1.0),
+    ("DeadTreeGnarled", 94.0, -66.0, 30.0, 0.95),
 ]
 
 LANTERNS = [(-30.0, -22.0, 60.0), (30.0, 44.0, 230.0), (-56.0, 56.0, 150.0), (60.0, 32.0, 290.0), (-50.0, -34.0, 10.0),
-            (40.0, 96.0, 120.0), (-90.0, 8.0, 200.0), (104.0, -48.0, 330.0), (-8.0, -84.0, 100.0)]
+            (40.0, 96.0, 120.0), (-90.0, 8.0, 200.0), (104.0, -48.0, 330.0), (-8.0, -84.0, 100.0),
+            (-118.0, -16.0, 80.0)]
 
 BRAZIERS = [(23.3, 31.3), (-23.3, 31.3), (-23.3, -15.3), (23.3, -15.3), (72.0, 44.0), (-104.0, 56.0)]
 
 SKULL_PILES = [(-52.0, -52.0, 30.0, 1.0), (128.0, 40.0, 200.0, 1.3), (-40.0, -122.0, 90.0, 1.1), (82.0, -58.0, 300.0, 0.9),
-               (-110.0, 36.0, 10.0, 1.4), (8.0, 142.0, 150.0, 1.2), (-100.0, 128.0, 250.0, 1.0)]
+               (-110.0, 36.0, 10.0, 1.4), (8.0, 142.0, 150.0, 1.2), (-100.0, 128.0, 250.0, 1.0),
+               (-122.0, -34.0, 200.0, 1.0)]
 
 
 def blocked(x, z, r, extra=()):
@@ -47,8 +53,6 @@ def blocked(x, z, r, extra=()):
     for ex, ez, er in extra:
         if math.dist((x, z), (ex, ez)) < r + er + 1.0:
             return True
-    if math.dist((x, z), P.PLAZA_C) < P.PLAZA_R + r and math.dist((x, z), P.PLINTH[:2]) < 10 + r:
-        return True
     return False
 
 

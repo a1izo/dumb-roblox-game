@@ -98,16 +98,21 @@ and the rune courtyard (north-east). A few rocks float high in the sky, the only
 `plan.py` (every place, with its own overlap check; `python plan.py` runs it), `terrain.py` (the basin's
 ground with the rift cut out, the endless plain `far_plain`, the ridge `edge`, the chasms `chasm`, the plateau
 sides, and the realm's own shapes: `column` (fluted, twisted), `needle`, `floating_rock`, `arch`,
-`cloud_bank`, `horn`, `blade`), `landmarks.py` (the spawn terrace, the plaza and the Grimoire's plinth, the
-title monolith, the eight steles, the bone throne, the Academy's ring of pillars, the dice rock, the
-stone-toss cairn, the cleft and the needle ledge, the carcass), `islets.py` (the two causeways and plateaus,
-the Spire Ascent's spiral of stones round a twisted spire, the rune courtyard), `formations.py` (the world
-beyond: spires, mesas, columns, arches, horns, ribs, ridges, dunes, cloud banks, floating rocks), `rift.py`
-(the hole through the ground, its ruined rim, and Kagegaoka at night far below, dim and pale, built at a third
-of its size), `dressing.py` (dead trees, braziers, lantern posts, bones, the particles, the sounds, the roots
-and banners that sway; placed by hand) and `gameplay.py`. The lobby's Luau builds what shows text or does
-something at the scene's `anchors` (`s.anchor`): `Maps/Lobby.luau` (the title, the eight boards, the spawn, the
-Academy), `Maps/LobbyGames.luau` (the mini-games' objects) and `Maps/LobbyDecor.luau` (the things that sway).
+`cloud_bank`, `horn`, `blade`), `landmarks.py` (the spawn terrace, the plaza and its ring of candle stones,
+the five bases of the tableaux and the bell round it, the title monolith, the bone throne and the Most Wins
+slab at its mesa's foot, the Academy's ring of pillars, the dice rock, the stone-toss cairn, the cleft and the
+needle ledge, the carcass and the duel's two slates under its ribs; `pool()` hangs a pale light over every
+place where something is done or read), `islets.py` (the two causeways and plateaus, the Spire Ascent's spiral
+of stones round a twisted spire, the rune courtyard), `formations.py` (the world beyond: spires, mesas,
+columns, arches, horns, ribs, ridges, dunes, cloud banks, floating rocks), `rift.py` (the hole through the
+ground, its ruined rim, open to step over, and Kagegaoka at night far below, dim and pale, built at a third of
+its size, with the hall whose roof a dive ends on straight under the rift), `dressing.py` (dead trees,
+braziers, lantern posts, bones, the particles, the sounds, the roots and banners that sway; placed by hand)
+and `gameplay.py`. No wall in the lobby explains anything: the scene has no slabs of text. The lobby's Luau
+builds what shows text or does something at the scene's `anchors` (`s.anchor`): `Maps/Lobby.luau` (the title,
+the Most Wins board, the spawn, the Academy), `Maps/LobbyFixtures.luau` (the candles, the rift's guard, the
+marks the clients build their stone figures at), `Maps/LobbyGames.luau` (the mini-games' objects) and
+`Maps/LobbyDecor.luau` (the things that sway).
 Its props are the `Lobby` set (`props_lobby.py`, `DeathsGambitModels_Lobby.fbx`). The lobby's sky, clouds, fog and
 ambience are runtime: `client/World/RealmSky.luau`, `WindSway.luau`, `Audio/RealmAmbience.luau`, and the
 `lobby` preset in `shared/LightingPresets.luau`; their numbers are in each module's `TUNING`.
