@@ -8,6 +8,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Casting = require(Shared:WaitForChild("Cinema"):WaitForChild("Casting"))
+local LoadGate = require(script.Parent.LoadGate)
+
+-- The longest a match start waits for slow clients to load the map (LoadGate).
+local LOAD_TIMEOUT = 30
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -540,6 +544,13 @@ local function runMatch(players: { Player })
 			CharacterService.load(ps.player)
 		end
 	end
+
+	-- Everyone's client must have the map and its content before anything plays on it.
+	local players = {}
+	for _, ps in ipairs(Match.list) do
+		table.insert(players, ps.player)
+	end
+	LoadGate.wait(map.loadToken, players, LOAD_TIMEOUT)
 
 	Cues.reset()
 	runPhase("Intro", startIntro)
