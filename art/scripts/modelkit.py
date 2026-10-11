@@ -1,6 +1,6 @@
-"""A small modelling kit for Death's Gambit props: primitives with bevels, procedural materials,
-merging into one mesh per prop, UV unwrapping and baking colour + ambient occlusion into a
-single texture per prop (Roblox shows one texture per MeshPart).
+"""A small modelling kit for Death's Gambit props: primitives with bevels, materials made from
+photographed scans, merging into one mesh per prop, UV unwrapping and baking each prop's colour,
+relief, roughness and metalness into one set of textures (Roblox shows one set per MeshPart).
 
 Units: 1 Blender unit = 1 stud. Props stand on z = 0 and face -Y (the rig's facing), so the
 FBX export (axis_forward="Z", axis_up="Y") turns them to face -Z in Roblox.
@@ -15,6 +15,8 @@ import numpy as np
 from mathutils import Euler, Matrix, Vector
 
 import common
+import lookbook
+from maps import scanlib
 
 
 # Objects ------------------------------------------------------------------------------------------
@@ -339,74 +341,197 @@ def _coord(nodes, links):
     return coord.outputs["Object"]
 
 
-@_reusable
-def flat(name, color, roughness=0.6, metallic=0.0):
-    mat, nodes, links, bsdf = _new_material(name)
-    bsdf.inputs["Base Color"].default_value = (*color, 1)
-    bsdf.inputs["Roughness"].default_value = roughness
+# Scanned surfaces ---------------------------------------------------------------------------------------
+# A prop's materials are photographed scans (art/source/textures, the ones the maps use too), laid over
+# the prop from six sides and graded onto the material's own colours, so a prop's steel is the map's
+# steel. The scan's height gives the relief; the prop's own shape rounds its edges and wears them.
+
+# kind -> (scan, metres it covers, depth of its relief in studs, how much its edges wear, how much of
+# the scan's own light and dark shows in the colour)
+SCANS = {
+    "plastic": ("Plastic001", 0.3, 0.003, 0.0, 0.15),
+    "metal": ("metal_plate_02", 2.0, 0.005, 0.5, 0.3),
+    "paint": ("blue_metal_plate", 2.5, 0.005, 0.8, 0.25),
+    "matte": ("beige_wall_001", 3.0, 0.004, 0.2, 0.3),
+    "rubber": ("rubber_tiles", 2.0, 0.01, 0.0, 0.4),
+    "wood": ("oak_veneer_01", 1.83, 0.006, 0.2, 0.7),
+    "dark_wood": ("walnut_veneer_02", 1.0, 0.006, 0.2, 0.7),
+    "leather": ("brown_leather", 0.4, 0.02, 0.2, 0.6),
+    "cloth": ("rough_linen", 0.27, 0.012, 0.0, 0.6),
+    "paper": ("Paper001", 0.3, 0.003, 0.0, 0.3),
+    "card": ("Paper005", 0.4, 0.004, 0.0, 0.5),
+    "stone": ("concrete_wall_008", 2.71, 0.03, 0.3, 0.7),
+    "bark": ("sakura_bark", 1.59, 0.1, 0.0, 0.8),
+}
+# The last word of a material's name ("Desk_Steel") names its kind when it is one of these; any
+# other name takes the kind of the helper that made it.
+WORDS = {
+    "leather": ("leather",),
+    "cloth": ("cloth", "fabric", "felt", "curtain", "quilt", "cushion", "scarf", "coat", "canvas", "sack", "cloak",
+              "velvet", "ribbon", "tent", "rope", "thread", "string", "umbrella", "slipper", "hat", "bag"),
+    "paper": ("paper", "pages", "label", "print", "photo", "menu", "lined"),
+    "card": ("card", "folder", "cover", "book"),
+    "wood": ("wood", "oak", "timber", "ply", "planks", "pencil", "bamboo", "stick"),
+    "dark_wood": ("ebony",),
+    "stone": ("stone", "concrete", "bone", "horn", "ivory", "ash", "coal"),
+    "bark": ("bark",),
+    "rubber": ("tyre", "rubber"),
+    "metal": ("steel", "iron", "brass", "gold", "alu", "galv", "chrome", "rust", "metal", "rim", "cymbal"),
+    "plastic": ("plastic", "resin", "bezel", "button"),
+}
+_stats = {}
+
+
+def kind_of(name, fallback):
+    word = name.rsplit("_", 1)[-1].lower().rstrip("0123456789")
+    for kind, words in WORDS.items():
+        if word in words:
+            return kind
+    return fallback
+
+
+def _scan_image(scan, what):
+    img = bpy.data.images.load(scanlib.prepared(scan)[what], check_existing=True)
+    if what != "color":
+        img.colorspace_settings.name = "Non-Color"
+    return img
+
+
+def _scan_stats(scan):
+    """(mean brightness, mean roughness) of a scan: what its light and dark is measured against."""
+    if scan not in _stats:
+        maps = scanlib.load(scan, 256)
+        # (Evening a scan for props keeps both of these as they are.)
+        _stats[scan] = (float((scanlib.to_linear(maps["color"]) @ scanlib.LUMA).mean()), float(maps["rough"].mean()))
+    return _stats[scan]
+
+
+def _math(nodes, links, operation, a, b=None, clamp=False):
+    node = nodes.new("ShaderNodeMath")
+    node.operation = operation
+    node.use_clamp = clamp
+    for socket, value in zip(node.inputs, (a, b)):
+        if value is None:
+            continue
+        if isinstance(value, (int, float)):
+            socket.default_value = value
+        else:
+            links.new(value, socket)
+    return node.outputs["Value"]
+
+
+def _scanned(mat, nodes, links, bsdf, kind, color_a, color_b, roughness, metallic):
+    """Wires `kind`'s scan into the material: the scan's dark parts take color_a and its light parts
+    color_b (give the same colour twice for a plain surface), its roughness varies around `roughness`,
+    its height is the relief, and the prop's edges are rounded and, on painted and bare metal, worn."""
+    scan, metres, depth, wear, tone_share = SCANS[kind]
+    mean_light, mean_rough = _scan_stats(scan)
+    mapping = nodes.new("ShaderNodeMapping")
+    scale = 1.0 / (metres * lookbook.STUDS_PER_METRE)
+    mapping.inputs["Scale"].default_value = (scale, scale, scale)
+    links.new(_coord(nodes, links), mapping.inputs["Vector"])
+
+    def sample(what):
+        node = nodes.new("ShaderNodeTexImage")
+        node.image = _scan_image(scan, what)
+        node.projection = "BOX"
+        node.projection_blend = 0.2
+        links.new(mapping.outputs["Vector"], node.inputs["Vector"])
+        return node.outputs["Color"]
+
+    def value(color_socket):
+        split = nodes.new("ShaderNodeSeparateColor")
+        links.new(color_socket, split.inputs["Color"])
+        return split.outputs["Red"]
+
+    grey = nodes.new("ShaderNodeRGBToBW")
+    links.new(sample("color"), grey.inputs["Color"])
+    light = _math(nodes, links, "DIVIDE", grey.outputs["Val"], mean_light)  # 1 = the scan's average
+    # Its dark parts take the first colour, its light parts the second...
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.25
+    ramp.color_ramp.elements[0].color = (*color_a, 1)
+    ramp.color_ramp.elements[1].position = 0.75
+    ramp.color_ramp.elements[1].color = (*color_b, 1)
+    spread = _math(nodes, links, "MULTIPLY", _math(nodes, links, "SUBTRACT", light, 1.0), 2.5)
+    links.new(_math(nodes, links, "ADD", spread, 0.5, clamp=True), ramp.inputs["Fac"])
+    # ...and all of it keeps the scan's own light and dark, softened.
+    tone = nodes.new("ShaderNodeVectorMath")
+    tone.operation = "SCALE"
+    links.new(ramp.outputs["Color"], tone.inputs[0])
+    links.new(_math(nodes, links, "POWER", light, tone_share), tone.inputs["Scale"])
+    colour = tone.outputs["Vector"]
+
+    # Rounded edges, from the prop's own shape (no extra triangles: it goes into the normal map).
+    bevel = nodes.new("ShaderNodeBevel")
+    bevel.samples = 6
+    bevel.inputs["Radius"].default_value = 0.035
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 1.0
+    bump.inputs["Distance"].default_value = depth
+    links.new(value(sample("height")), bump.inputs["Height"])
+    links.new(bevel.outputs["Normal"], bump.inputs["Normal"])
+    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+
+    rough = _math(nodes, links, "SUBTRACT", value(sample("rough")), mean_rough)
+    rough = _math(nodes, links, "ADD", _math(nodes, links, "MULTIPLY", rough, 0.7), roughness)
+    if wear > 0:
+        # Where the shape turns sharply, hands and knocks have worn the finish: lighter and smoother.
+        wide = nodes.new("ShaderNodeBevel")
+        wide.samples = 6
+        wide.inputs["Radius"].default_value = 0.09
+        geometry = nodes.new("ShaderNodeNewGeometry")
+        dot = nodes.new("ShaderNodeVectorMath")
+        dot.operation = "DOT_PRODUCT"
+        links.new(wide.outputs["Normal"], dot.inputs[0])
+        links.new(geometry.outputs["Normal"], dot.inputs[1])
+        edge = _math(nodes, links, "SUBTRACT", 1.0, dot.outputs["Value"])
+        edge = _math(nodes, links, "MULTIPLY", edge, 7.0, clamp=True)
+        # (Broken up by the scan, so the wear is not a drawn line.)
+        edge = _math(nodes, links, "MULTIPLY", edge, _math(nodes, links, "MULTIPLY", light, wear, clamp=True))
+        worn = nodes.new("ShaderNodeVectorMath")
+        worn.operation = "SCALE"
+        links.new(colour, worn.inputs[0])
+        links.new(_math(nodes, links, "ADD", 1.0, _math(nodes, links, "MULTIPLY", edge, 0.7)), worn.inputs["Scale"])
+        colour = worn.outputs["Vector"]
+        rough = _math(nodes, links, "SUBTRACT", rough, _math(nodes, links, "MULTIPLY", edge, 0.15))
+    links.new(colour, bsdf.inputs["Base Color"])
+    clamp = nodes.new("ShaderNodeClamp")
+    clamp.inputs["Min"].default_value = 0.03
+    links.new(rough, clamp.inputs["Value"])
+    links.new(clamp.outputs["Result"], bsdf.inputs["Roughness"])
     bsdf.inputs["Metallic"].default_value = metallic
     mat["dg_roughness"] = roughness
     mat["dg_metallic"] = metallic
+    mat["dg_kind"] = kind
+
+
+@_reusable
+def flat(name, color, roughness=0.6, metallic=0.0, kind=None):
+    """One colour. kind: the surface (SCANS), when the name's last word does not already say."""
+    mat, nodes, links, bsdf = _new_material(name)
+    kind = kind or kind_of(name, "metal" if metallic > 0.5 else "matte")
+    _scanned(mat, nodes, links, bsdf, kind, color, color, roughness, metallic)
     return mat
 
 
 @_reusable
-def noisy(name, color_a, color_b, scale=6.0, detail=8.0, roughness=0.6, metallic=0.0, stretch=(1, 1, 1)):
-    """Two colours mixed by noise (grime, leather, concrete, cast iron)."""
+def noisy(name, color_a, color_b, scale=6.0, detail=8.0, roughness=0.6, metallic=0.0, stretch=(1, 1, 1), kind=None):
+    """Two colours: the surface's dark parts take the first, its light parts the second (grime,
+    leather, concrete, cast iron). scale, detail and stretch shaped the noise this was once drawn
+    with; the scan decides now, and they are accepted so that the builders need not change."""
     mat, nodes, links, bsdf = _new_material(name)
-    coord = _coord(nodes, links)
-    mapping = nodes.new("ShaderNodeMapping")
-    mapping.inputs["Scale"].default_value = stretch
-    links.new(coord, mapping.inputs["Vector"])
-    noise = nodes.new("ShaderNodeTexNoise")
-    noise.inputs["Scale"].default_value = scale
-    noise.inputs["Detail"].default_value = detail
-    links.new(mapping.outputs["Vector"], noise.inputs["Vector"])
-    ramp = nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].color = (*color_a, 1)
-    ramp.color_ramp.elements[1].color = (*color_b, 1)
-    ramp.color_ramp.elements[0].position = 0.35
-    ramp.color_ramp.elements[1].position = 0.7
-    links.new(noise.outputs["Fac"], ramp.inputs["Fac"])
-    links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
-    bsdf.inputs["Roughness"].default_value = roughness
-    bsdf.inputs["Metallic"].default_value = metallic
-    mat["dg_roughness"] = roughness
-    mat["dg_metallic"] = metallic
+    kind = kind or kind_of(name, "metal" if metallic > 0.5 else "matte")
+    _scanned(mat, nodes, links, bsdf, kind, color_a, color_b, roughness, metallic)
     return mat
 
 
 @_reusable
 def wood(name, light, dark, scale=3.0, rings=18.0, roughness=0.55):
-    """Wood grain running along X: stretched noise bands between two browns."""
+    """Wood between two browns, its grain running along X (scale and rings: see noisy)."""
     mat, nodes, links, bsdf = _new_material(name)
-    coord = _coord(nodes, links)
-    mapping = nodes.new("ShaderNodeMapping")
-    mapping.inputs["Scale"].default_value = (0.25, 4.0, 4.0)
-    links.new(coord, mapping.inputs["Vector"])
-    noise = nodes.new("ShaderNodeTexNoise")
-    noise.inputs["Scale"].default_value = scale
-    noise.inputs["Detail"].default_value = 6
-    noise.inputs["Distortion"].default_value = 1.5
-    links.new(mapping.outputs["Vector"], noise.inputs["Vector"])
-    wave = nodes.new("ShaderNodeTexWave")
-    wave.inputs["Scale"].default_value = rings
-    wave.inputs["Distortion"].default_value = 6
-    wave.bands_direction = "Y"
-    links.new(mapping.outputs["Vector"], wave.inputs["Vector"])
-    mix = nodes.new("ShaderNodeMix")
-    mix.data_type = "FLOAT"
-    mix.inputs["Factor"].default_value = 0.5
-    links.new(noise.outputs["Fac"], mix.inputs["A"])
-    links.new(wave.outputs["Fac"], mix.inputs["B"])
-    ramp = nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].color = (*dark, 1)
-    ramp.color_ramp.elements[1].color = (*light, 1)
-    links.new(mix.outputs["Result"], ramp.inputs["Fac"])
-    links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
-    bsdf.inputs["Roughness"].default_value = roughness
-    mat["dg_roughness"] = roughness
-    mat["dg_metallic"] = 0.0
+    kind = "dark_wood" if sum(light) / 3 < 0.09 else "wood"
+    _scanned(mat, nodes, links, bsdf, kind, dark, light, roughness, 0.0)
     return mat
 
 
@@ -473,17 +598,58 @@ def unwrap(obj, margin=0.02, angle=60):
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
-def bake(obj, size=1024, ao_strength=0.6, samples=24):
-    """Bakes the object's materials (colour) and ambient occlusion into one texture, then gives
-    the object a single material using it. Returns the image path."""
+def texture_size(obj, limit=1024, where="prop"):
+    """The texture size the look rulebook gives a prop: enough pixels for its surface at the density
+    of `where` ("prop", or "held" for what sits in a hand), and never more than `limit`."""
+    area = sum(poly.area for poly in obj.data.polygons)
+    side = math.sqrt(max(1e-6, area) / 0.55)  # (an unwrap fills a little over half of its square)
+    size = 2 ** round(math.log2(side * lookbook.DENSITY[where]))
+    return int(min(limit, lookbook.LARGEST, max(lookbook.SMALLEST, size)))
+
+
+def _save_map(name, pixels, size, non_color, quality):
+    img = bpy.data.images.new(name, size, size, alpha=False)
+    if non_color:
+        img.colorspace_settings.name = "Non-Color"
+    img.pixels.foreach_set(np.ascontiguousarray(pixels, dtype=np.float32).ravel())
+    path = os.path.join(common.TEXTURES, name + ".jpg")
+    img.filepath_raw = path
+    img.file_format = "JPEG"
+    img.save(filepath=path, quality=quality)
+    img.filepath = path
+    return img
+
+
+def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop"):
+    """Bakes the object's materials into one set of textures, then gives the object a single material
+    using them: <name>_color.jpg (colour with the shade of its own hollows), <name>_normal.jpg (the
+    scans' relief and the rounded edges, at half the colour's size), <name>_rough.jpg and, when part of
+    it is metal, <name>_metal.jpg (a quarter). `size` is the most the colour may take; the look
+    rulebook may give it less. The split is what lets a prop carry four maps in the memory its one
+    colour map took before.
+    Returns the colour map's path."""
     scene = bpy.context.scene
     previous_engine = scene.render.engine
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
     scene.cycles.samples = samples
     common.ensure_dirs()
-    color_img = bpy.data.images.new(obj.name + "_color", size, size, alpha=False)
-    ao_img = bpy.data.images.new(obj.name + "_ao", size, size, alpha=False)
+    size = texture_size(obj, size, where)
+    half = max(lookbook.SMALLEST // 2, size // 2)
+    small = max(lookbook.SMALLEST // 2, size // 4)
+
+    def target(name, side, data=False):
+        img = bpy.data.images.new(obj.name + name, side, side, alpha=False, float_buffer=data)
+        if data:
+            img.colorspace_settings.name = "Non-Color"
+        return img
+
+    def read(img, side):
+        return np.array(img.pixels[:], dtype=np.float32).reshape(side, side, 4)
+
+    color_img, ao_img = target("_bake_color", size), target("_bake_ao", size)
+    normal_img = target("_bake_normal", half, True)
+    rough_img, metal_img = target("_bake_rough", small, True), target("_bake_metal", small, True)
 
     targets = []
     # Metals bake as black diffuse colour; bake their albedo as if they were not metal.
@@ -499,54 +665,104 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24):
         mat.node_tree.nodes.active = node
         targets.append((mat, node))
 
+    def aim(img):
+        for _, node in targets:
+            node.image = img
+
+    # Alone in the scene while it bakes: every prop in Props.blend stands on the same spot, and its
+    # neighbours would shade it (and round its edges against theirs).
+    others = [o for o in scene.objects if o is not obj and o.type == "MESH" and not o.hide_render]
+    for other in others:
+        other.hide_render = True
     _select_only(obj)
-    for _, node in targets:
-        node.image = color_img
     scene.render.bake.margin = 8
     scene.render.bake.use_pass_direct = False
     scene.render.bake.use_pass_indirect = False
     scene.render.bake.use_pass_color = True
+    aim(color_img)
     bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=8)
-    for _, node in targets:
-        node.image = ao_img
+    aim(ao_img)
     bpy.ops.object.bake(type="AO", margin=8)
+    aim(normal_img)
+    bpy.ops.object.bake(type="NORMAL", normal_space="TANGENT", margin=8)
+    aim(rough_img)
+    bpy.ops.object.bake(type="ROUGHNESS", margin=8)
+    # Metalness has no bake pass of its own: each material glows by how metal it is, and the glow is
+    # baked.
+    glows = []
+    for mat, _ in targets:
+        bsdf = mat.node_tree.nodes.get("Principled BSDF")
+        if not bsdf:
+            continue
+        socket = bsdf.inputs["Emission Color"]
+        sources = [link.from_socket for link in socket.links]
+        glows.append((mat, bsdf, tuple(socket.default_value), bsdf.inputs["Emission Strength"].default_value, sources))
+        for link in list(socket.links):
+            mat.node_tree.links.remove(link)
+        value = saved_metal.get(mat.name, 0.0)
+        socket.default_value = (value, value, value, 1)
+        bsdf.inputs["Emission Strength"].default_value = 1.0
+    aim(metal_img)
+    bpy.ops.object.bake(type="EMIT", margin=8)
+    for mat, bsdf, colour, strength, sources in glows:
+        bsdf.inputs["Emission Color"].default_value = colour
+        bsdf.inputs["Emission Strength"].default_value = strength
+        for source in sources:
+            mat.node_tree.links.new(source, bsdf.inputs["Emission Color"])
+    for other in others:
+        other.hide_render = False
 
-    color = np.array(color_img.pixels[:], dtype=np.float32).reshape(size, size, 4)
-    ao = np.array(ao_img.pixels[:], dtype=np.float32).reshape(size, size, 4)
-    shade = 1.0 - ao_strength * (1.0 - ao[..., :3])
+    color = read(color_img, size)
+    shade = 1.0 - ao_strength * (1.0 - read(ao_img, size)[..., :3])
     final = color.copy()
     final[..., :3] = color[..., :3] * shade
     final[..., 3] = 1.0
-    out = bpy.data.images.new(obj.name + "_Texture", size, size, alpha=False)
-    out.pixels = final.ravel()
-    path = os.path.join(common.TEXTURES, obj.name + ".png")
-    out.filepath_raw = path
-    out.file_format = "PNG"
-    out.save()
+    metal = read(metal_img, small)
+    maps = {
+        "color": _save_map(obj.name + "_color", final, size, False, 90),
+        "normal": _save_map(obj.name + "_normal", read(normal_img, half), half, True, 90),
+        "rough": _save_map(obj.name + "_rough", read(rough_img, small), small, True, 88),
+    }
+    metal_path = os.path.join(common.TEXTURES, obj.name + "_metal.jpg")
+    if float(metal[..., 0].max()) > 0.1:
+        maps["metal"] = _save_map(obj.name + "_metal", metal, small, True, 88)
+    elif os.path.exists(metal_path):
+        os.remove(metal_path)
+    path = bpy.path.abspath(maps["color"].filepath)
 
     for mat, node in targets:
         mat.node_tree.nodes.remove(node)
         bsdf = mat.node_tree.nodes.get("Principled BSDF")
         if bsdf and mat.name in saved_metal:
             bsdf.inputs["Metallic"].default_value = saved_metal[mat.name]
-    bpy.data.images.remove(color_img)
-    bpy.data.images.remove(ao_img)
+    for img in (color_img, ao_img, normal_img, rough_img, metal_img):
+        bpy.data.images.remove(img)
 
-    # One material with the baked texture.
-    baked, nodes, links, bsdf = _new_material("M_" + obj.name)
-    tex = nodes.new("ShaderNodeTexImage")
-    tex.image = out
-    links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-    # Roughness and metalness weighted by how much surface each material covers.
+    # Roughness and metalness weighted by how much surface each material covers (the prop's base
+    # Roblox material is chosen from them).
     areas = [0.0] * len(obj.data.materials)
     for poly in obj.data.polygons:
         areas[poly.material_index] += poly.area
     total = sum(areas) or 1.0
-    rough = sum(common.flag(m, "roughness", 0.6) * a for m, a in zip(obj.data.materials, areas)) / total
-    metal = sum(common.flag(m, "metallic", 0.0) * a for m, a in zip(obj.data.materials, areas)) / total
-    bsdf.inputs["Roughness"].default_value = rough
-    bsdf.inputs["Metallic"].default_value = metal
-    obj["metalness"] = round(metal, 2)
+    obj["metalness"] = round(sum(common.flag(m, "metallic", 0.0) * a for m, a in zip(obj.data.materials, areas)) / total, 2)
+
+    # One material with the baked textures.
+    baked, nodes, links, bsdf = _new_material("M_" + obj.name)
+
+    def use(kind, socket):
+        tex = nodes.new("ShaderNodeTexImage")
+        tex.image = maps[kind]
+        links.new(tex.outputs["Color"], socket)
+
+    use("color", bsdf.inputs["Base Color"])
+    use("rough", bsdf.inputs["Roughness"])
+    relief = nodes.new("ShaderNodeNormalMap")
+    use("normal", relief.inputs["Color"])
+    links.new(relief.outputs["Normal"], bsdf.inputs["Normal"])
+    if "metal" in maps:
+        use("metal", bsdf.inputs["Metallic"])
+    else:
+        bsdf.inputs["Metallic"].default_value = 0.0
     obj.data.materials.clear()
     obj.data.materials.append(baked)
     scene.render.engine = previous_engine

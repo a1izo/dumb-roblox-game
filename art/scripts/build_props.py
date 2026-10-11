@@ -95,6 +95,10 @@ def _glow_objects(key):
     return sorted(found, key=lambda o: o.name)
 
 
+# Props held in a hand, in front of the camera: their textures get the denser rule (lookbook.DENSITY).
+HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood"}
+
+
 def build_one(key):
     spec = props.BUILDERS[key]
     mk.new_build()
@@ -105,7 +109,7 @@ def build_one(key):
     main = mk.merge(parts, key)
     shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
     mk.unwrap(main)
-    mk.bake(main, size=spec["texture"])
+    mk.bake(main, size=spec["texture"], where="held" if key in HELD else "prop")
     # Glowing parts, one mesh per colour (each becomes a Neon MeshPart of that colour).
     by_colour = {}
     for part in glow:
@@ -213,7 +217,9 @@ def write_catalog():
             return x * 12.92 if x <= 0.0031308 else 1.055 * (x ** (1 / 2.4)) - 0.055
 
         # The texture's average colour: the flat look used when the texture fails to load.
-        tex = os.path.join(common.TEXTURES, obj.name + ".png")
+        tex = os.path.join(common.TEXTURES, obj.name + "_color.jpg")
+        if not os.path.exists(tex):
+            tex = os.path.join(common.TEXTURES, obj.name + ".png")  # (a prop not yet baked from the scans)
         if os.path.exists(tex):
             img = bpy.data.images.load(tex, check_existing=True)
             px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, img.channels)
