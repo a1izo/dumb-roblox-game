@@ -39,6 +39,82 @@ def crown(h):
     return [(0, h - 0.9), (0.12, h - 0.8), (0.28, h - 0.5), (0.4, h - 0.22), (0.46, h - 0.1), (0.46, h), (0, h)]
 
 
+# Wear ------------------------------------------------------------------------------------------------
+# Dirt gathers low and scuffs sit beside doors (lookbook.py). A wall face with trim spec "grime": True
+# gets a band of dirt along its foot, and the doors in it a scuff or two on either side, pasted from
+# the grime sheet (maps/grime.py) as quads 0.03 studs off the face. Nothing is added where an opening
+# is, and the pieces are picked by a hash of where the wall stands, so a map is the same every run.
+
+GRIME = "GrimeWall"
+GRIME_OFFSET = 0.03
+BAND_ALONG = 8.0  # studs one tile of a foot band covers along the wall
+BAND_HIGH = 2.0
+BAND_V = ((0.75, 1.0), (0.5, 0.75), (0.25, 0.5))  # light, medium, heavy
+SCUFF_CELLS = (0, 2, 3, 1)  # kicks, a cart's streak, spots, a rub (at hand height)
+SCUFF_SIZE = 2.0  # studs, both ways
+
+
+def _hash(*values):
+    h = 2166136261
+    for v in values:
+        h = ((h ^ (int(round(v * 100)) & 0xFFFFFFFF)) * 16777619) & 0xFFFFFFFF
+    return h
+
+
+def overlay(s, a, b, y0, y1, out, u_a, u_b, v0, v1):
+    """A quad of the grime sheet on an upright face from ground point a to b (x, z), facing out (x, z),
+    between heights y0 and y1: u_a and u_b the sheet's u at a and at b, v0 and v1 its v at the foot and
+    the top. The right way round whichever way the face was given."""
+    right = (out[1], -out[0])  # to the right of someone looking at the face
+    if (b[0] - a[0]) * right[0] + (b[1] - a[1]) * right[1] < 0:
+        a, b, u_a, u_b = b, a, u_b, u_a
+    s.polygon(GRIME, [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])],
+              uvs=[(u_a, v0), (u_b, v0), (u_b, v1), (u_a, v1)], tile=1.0)
+
+
+def grime(s, a, t, outward, length, spans, doors, ops, base, seed):
+    """The wear on one face of a wall from a (x, z) along t, facing outward: a foot band over each
+    unbroken span, scuffs beside the doors."""
+    out = (outward[0], outward[2])
+    off = (out[0] * GRIME_OFFSET, out[1] * GRIME_OFFSET)
+
+    def ground(u):
+        return (a[0] + t[0] * u + off[0], a[1] + t[2] * u + off[1])
+
+    for i, (u0, u1) in enumerate(spans):
+        if u1 - u0 < 0.8:
+            continue
+        h = _hash(seed, i, u0)
+        v0, v1 = BAND_V[(0, 0, 1, 1, 1, 2)[h % 6]]
+        shift = (h >> 8) % 800 / 100.0
+        # (The quad stops a tenth short of the picture's top, which is empty: no edge line shows.)
+        overlay(s, ground(u0), ground(u1), base, base + BAND_HIGH * 0.9, out,
+                (u0 + shift) / BAND_ALONG, (u1 + shift) / BAND_ALONG, v0, v0 + (v1 - v0) * 0.9)
+    for j, (d0, d1) in enumerate(doors):
+        for side in (-1, 1):
+            h = _hash(seed, j, side, d0)
+            if h % 5 == 0:
+                continue  # not every door has been kicked
+            cell = SCUFF_CELLS[(h >> 4) % 4]
+            u0 = d0 - 0.15 - SCUFF_SIZE if side < 0 else d1 + 0.15
+            u1 = u0 + SCUFF_SIZE
+            y0 = base + (2.2 if cell == 1 else 0.05)
+            y1 = y0 + SCUFF_SIZE
+            if u0 < 0.1 or u1 > length - 0.1:
+                continue
+            clash = False
+            for op in ops:
+                o0, o1 = op["at"] - op["w"] / 2, op["at"] + op["w"] / 2
+                if o1 > u0 - 0.05 and o0 < u1 + 0.05 and op.get("top", base + 8.5) > y0 and op.get("bottom", base) < y1:
+                    clash = True
+                    break
+            if clash:
+                continue
+            c0 = cell * 0.25
+            ua, ub = (c0 + 0.25, c0) if side < 0 else (c0, c0 + 0.25)  # mirrored on the left of a door
+            overlay(s, ground(u0), ground(u1), y0, y1, out, ua, ub, 0.0, 0.25)
+
+
 def trims(s, a, t, outward, spans, height, spec, base=0.0):
     """Mouldings along one face of a wall. spans: [(start, end)] along the wall where the face is
     unbroken at floor level. spec keys: base, wainscot (material, height), rail, crown."""
@@ -127,8 +203,13 @@ def wall(s, a, b, height, *, thick=1.0, base=0.0, core="PlasterDark", side_n=Non
     spans.append((cursor, length))
     if trim_n:
         trims(s, add3(a, scale(n, thick / 2)), t, n, spans, height, trim_n, base)
+        if trim_n.get("grime"):
+            grime(s, add3(a, scale(n, thick / 2)), t, n, length, spans, doors, ops, base, _hash(a[0], a[1], 1))
     if trim_s:
         trims(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), spans, height, trim_s, base)
+        if trim_s.get("grime"):
+            grime(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), length, spans, doors, ops, base,
+                  _hash(a[0], a[1], 2))
     return length, t, n
 
 

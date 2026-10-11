@@ -8,11 +8,10 @@ return {
 	board = nil,
 	spawns = {},
 	sheets = {},
-	dropPoints = {},
 	hoods = {},
 	areas = {},
 	-- Spare spots of each kind, not used by the game yet (for a later rework of the counts).
-	spare = { stations = {}, spawns = {}, sheets = {}, dropPoints = {}, hoods = {}, areas = {} },
+	spare = { stations = {}, spawns = {}, sheets = {}, hoods = {}, areas = {} },
 	-- What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...
 	zones = {},
 	anchors = {},

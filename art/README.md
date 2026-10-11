@@ -285,6 +285,19 @@ assets are left out), fitted to the game:
   before the map's export when a poster changes. Signs a player has to read stay text the game
   draws.
 
+- Wear on walls (`scripts/maps/grime.py`, `kit.grime`): a band of dirt along the foot of a wall face
+  and a scuff or two beside each door, pasted as quads 0.03 studs off the face from one RGBA sheet
+  (`GrimeWall.png`; its alpha channel is the dirt's shape, so it sits on any wall colour). A face
+  takes it when its trim spec has `"grime": True` (HQ and Campus partitions; Tokyo, at +0%
+  triangles, and the war room, which is well kept, do not). Three things about how Roblox draws
+  it: the importer makes a full surface appearance, the only kind whose alpha can be switched to
+  transparency, only when the material has normal and roughness maps (hence the two flat 8 px
+  maps next to the sheet); `SceneBuilder.dress` sets `AlphaMode` to Transparency before the mesh
+  enters the world (set afterwards, it is not drawn); and the alpha is drawn nearly cut-out, so
+  the band shows as a tide line rather than a gradient. Where the picture is missing or the mode
+  cannot be set, the wear is hidden, never an opaque rectangle (`SceneMaterials` entries with
+  `alpha = true`, `TextureDoctor`).
+
 Colour variants of one scan (the carpets, the plasters) are separate texture sets for now. Studio
 uploads an image shared by several meshes once, and a script may set `SurfaceAppearance.Color`, so
 they could share one set and be tinted; a running game cannot fill a `MaterialVariant`.

@@ -88,7 +88,7 @@ def partition(s, a, b, y0, y1, mat_n="PlasterLight", mat_s="PlasterLight", doors
                         "frame": "BlackMetal", "mullions": "BlackMetal", "cols": max(1, round((u1 - u0) / 4.5)),
                         "rows": 1, "glass": pane, "blinds": blinds, "blinds_side": 1, "slat": "CreamTrim",
                         "sill": "BlackMetal", "casing": 0.2, "see_through": through})
-    trims = {"base": "BlackTrim"} if trim else None
+    trims = {"base": "BlackTrim", "grime": True} if trim else None
     kit.wall(s, a, b, y1, thick=thick, base=y0, core=core or mat_n, side_n=mat_n, side_s=mat_s, openings=ops,
              trim_n=trims, trim_s=trims)
 

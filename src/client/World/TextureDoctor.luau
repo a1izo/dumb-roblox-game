@@ -79,6 +79,12 @@ local function applyFallback(part: MeshPart)
 	if appearance then
 		appearance:Destroy()
 	end
+	local entry = (SceneMaterials :: any)[name]
+	if entry and entry.alpha then
+		-- Wear drawn on a wall: without its picture it is nothing, never a coloured rectangle.
+		part.Transparency = 1
+		return
+	end
 	if look then
 		local material = (Enum.Material :: any)[look.material]
 		if material then
