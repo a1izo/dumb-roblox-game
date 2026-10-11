@@ -19,12 +19,14 @@ local Venues = require(Shared:WaitForChild("Venues"))
 
 local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
+local Governor = require(script.Parent.Governor)
 
 local FootprintController = {}
 
 local LIFE = Tracks.LIFE -- seconds a print lasts...
 local FADE = 20 -- ...fading out over the last of them
--- The most prints drawn at once for each device class; Low graphics keeps a quarter.
+-- The most prints drawn at once for each device class; Low graphics keeps a quarter, the governor's
+-- last cut a half (the oldest go first either way, so the fresh end of a trail stays).
 local CAP = { phone = 120, tablet = 200, console = 300, desktop = 400 }
 local SIZE = Vector3.new(0.55, 0.04, 1.05)
 local COLOUR = Color3.fromRGB(150, 160, 186)
@@ -41,6 +43,8 @@ local function cap(): number
 	local most = CAP[Responsive.class()] or CAP.desktop
 	if Settings.get("lowGraphics") then
 		most = math.floor(most / 4)
+	elseif Governor.cut("prints") then
+		most = math.floor(most / 2)
 	end
 	return most
 end
@@ -199,13 +203,17 @@ function FootprintController.init()
 			clearAll()
 		end
 	end)
+	local function trim()
+		while #live > cap() do
+			release(table.remove(live, 1) :: Print)
+		end
+	end
 	Settings.Changed:Connect(function(key)
 		if key == "lowGraphics" then
-			while #live > cap() do
-				release(table.remove(live, 1) :: Print)
-			end
+			trim()
 		end
 	end)
+	Governor.Changed:Connect(trim)
 end
 
 return FootprintController

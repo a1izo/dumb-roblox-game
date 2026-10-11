@@ -75,6 +75,7 @@ local Blackout = require(World:WaitForChild("Blackout"))
 local Crowd = require(World:WaitForChild("Crowd"))
 local FootprintController = require(World:WaitForChild("FootprintController"))
 local GhostVisibility = require(World:WaitForChild("GhostVisibility"))
+local Governor = require(World:WaitForChild("Governor"))
 local LightingController = require(World:WaitForChild("LightingController"))
 local RealmSky = require(World:WaitForChild("RealmSky"))
 local Scramble = require(World:WaitForChild("Scramble"))
@@ -170,9 +171,10 @@ PoseController.init()
 LocomotionController.init()
 ActingController.init()
 
--- The world: lighting per venue, rain and snow (and footprints in it), flickering lamps, a camera
--- that stays out of walls, the maps' screens, sounds and trains, and no jumping or climbing during
--- the investigation.
+-- The world: the governor that lightens it on slow devices, lighting per venue, rain and snow (and
+-- footprints in it), flickering lamps, a camera that stays out of walls, the maps' screens, sounds
+-- and trains, and no jumping or climbing during the investigation.
+Governor.init()
 LightingController.init()
 Shelter.init()
 Muffle.init()

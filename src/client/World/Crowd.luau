@@ -22,7 +22,7 @@ local Venues = require(Shared:WaitForChild("Venues"))
 local LocomotionController = require(script.Parent.Parent.Anim.LocomotionController)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
-local Settings = require(script.Parent.Parent.UI.Core.Settings)
+local Governor = require(script.Parent.Governor)
 
 local Crowd = {}
 
@@ -177,7 +177,7 @@ end
 local function choose(walkers: { MapSync.Walker }, camera: Vector3)
 	table.clear(wanted)
 	local most = CAP[Responsive.class()] or CAP.desktop
-	if Settings.get("lowGraphics") then
+	if Governor.low("crowd") then
 		most = math.floor(most / 2)
 	end
 	local rest = {}

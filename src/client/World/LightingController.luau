@@ -22,6 +22,7 @@ local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local Textures = require(script.Parent.Parent.UI.Kit.Textures)
+local Governor = require(script.Parent.Governor)
 
 local LightingController = {}
 
@@ -271,6 +272,8 @@ end
 local function resolve(): LightingPresets.Look
 	return LightingPresets.resolve(currentPreset, moodOf(moodName()), {
 		low = Settings.get("lowGraphics") == true,
+		noGlow = Governor.cut("glow"),
+		fewShadows = Governor.cut("shadows"),
 		progress = progress(),
 	})
 end
@@ -456,6 +459,9 @@ function LightingController.init()
 		if key == "lowGraphics" then
 			update(true)
 		end
+	end)
+	Governor.Changed:Connect(function()
+		update(true)
 	end)
 	task.spawn(function()
 		while true do

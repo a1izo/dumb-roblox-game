@@ -22,6 +22,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local Governor = require(script.Parent.Governor)
 
 local MapAmbient = {}
 
@@ -764,7 +765,7 @@ local function rainFactor(): number
 	if Settings.get("reduceMotion") then
 		factor *= 0.5
 	end
-	if Settings.get("lowGraphics") then
+	if Governor.low("particles") then
 		factor *= 0.4
 	end
 	return factor
@@ -794,7 +795,7 @@ local function fogFactor(): number
 	if Settings.get("reduceMotion") then
 		factor *= 0.6
 	end
-	if Settings.get("lowGraphics") then
+	if Governor.low("particles") then
 		factor *= 0.45
 	end
 	return factor
@@ -1088,6 +1089,7 @@ function MapAmbient.init()
 		end
 	end)
 	Responsive.Changed:Connect(refreshRainGlass)
+	Governor.Changed:Connect(refreshRainGlass)
 	Settings.Changed:Connect(function(key)
 		if key == "reduceMotion" or key == "lowGraphics" then
 			refreshRainGlass()
@@ -1100,6 +1102,7 @@ function MapAmbient.init()
 		end
 	end)
 	Responsive.Changed:Connect(refreshFog)
+	Governor.Changed:Connect(refreshFog)
 	Settings.Changed:Connect(function(key)
 		if key == "reduceMotion" or key == "lowGraphics" then
 			refreshFog()
