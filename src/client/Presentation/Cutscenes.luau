@@ -15,6 +15,7 @@ local KINDS = {
 	gambit = "Gambit",
 	meetingIntro = "MeetingIntro",
 	roundStart = "RoundStart",
+	shot = "Shot",
 }
 
 function Cutscenes.init()

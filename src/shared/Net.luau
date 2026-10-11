@@ -44,7 +44,8 @@ local EVENTS = {
 	-- notes, eyes and hoods
 	"NoteRequest",
 	"NoteView",
-	"DropPointView",
+	-- a note offered hand to hand (server -> giver and receiver)
+	"NoteOffer",
 	"EyesRequest",
 	"EyesName",
 	"HoodRequest",
@@ -69,8 +70,17 @@ local EVENTS = {
 	"Wager",
 	"ProfileRequest",
 	"PrivateServer",
+	-- a map's own mechanic: requests (the breaker) and the snow tracks
+	"MapAction",
+	"Tracks",
 	-- Studio debug panel (ignored by live servers)
 	"Debug",
+}
+
+-- Unreliable events (server -> every client): frequent snapshots where a lost one is replaced by
+-- the next (the Tokyo crowd and cars). Got with Net.unreliable, never Net.event.
+local UNRELIABLE = {
+	"MapSync",
 }
 
 local FUNCTIONS = {
@@ -89,6 +99,11 @@ if RunService:IsServer() then
 	newFolder.Name = FOLDER_NAME
 	for _, name in ipairs(EVENTS) do
 		local remote = Instance.new("RemoteEvent")
+		remote.Name = name
+		remote.Parent = newFolder
+	end
+	for _, name in ipairs(UNRELIABLE) do
+		local remote = Instance.new("UnreliableRemoteEvent")
 		remote.Name = name
 		remote.Parent = newFolder
 	end
@@ -193,6 +208,12 @@ function Net.event(name: string): RemoteEvent
 		return proxy
 	end
 	return remote
+end
+
+function Net.unreliable(name: string): UnreliableRemoteEvent
+	local remote = folder:WaitForChild(name, 10)
+	assert(remote and remote:IsA("UnreliableRemoteEvent"), "Unknown UnreliableRemoteEvent: " .. name)
+	return remote :: UnreliableRemoteEvent
 end
 
 function Net.func(name: string): RemoteFunction

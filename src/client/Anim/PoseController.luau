@@ -44,6 +44,10 @@ export type Rig = {
 	basis: { [string]: CFrame },
 	tracks: { Track },
 	baked: boolean,
+	-- Posed once every `every` frames (far-off bodies of the Tokyo crowd); nil: every frame.
+	every: number?,
+	turn: number?,
+	owed: number?,
 }
 
 -- provider(character, dt) -> (rotations by joint, body offset) or nil to leave the base alone.
@@ -130,6 +134,15 @@ end
 
 function PoseController.setBaseProvider(provider: BaseProvider)
 	baseProvider = provider
+end
+
+-- Poses a body only once every `every` frames (1: every frame). For bodies too far off for anyone to
+-- tell: the Tokyo crowd's distant walkers.
+function PoseController.setEvery(character: Model, every: number)
+	local rig = rigs[character]
+	if rig then
+		rig.every = if every > 1 then math.floor(every) else nil
+	end
 end
 
 local function animationFor(character: Model, id: string): AnimationTrack?
@@ -338,6 +351,16 @@ local function step(dt: number)
 			bake(rig)
 			continue
 		end
+		local every = rig.every
+		if every then
+			rig.owed = (rig.owed or 0) + dt
+			rig.turn = ((rig.turn or 0) + 1) % every
+			if rig.turn ~= 0 then
+				continue
+			end
+		end
+		local elapsed = if every then rig.owed or dt else dt
+		rig.owed = 0
 		-- Finished tracks leave.
 		for index = #rig.tracks, 1, -1 do
 			local track = rig.tracks[index]
@@ -356,7 +379,7 @@ local function step(dt: number)
 			end
 		end
 		if baseProvider and not uploaded then
-			local rotations, offset = baseProvider(character, dt)
+			local rotations, offset = baseProvider(character, elapsed)
 			if rotations then
 				for joint, motor in pairs(rig.motors) do
 					local basis = rig.basis[joint]

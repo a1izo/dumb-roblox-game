@@ -1,0 +1,32 @@
+{
+  "Lobby": {
+    "megapixels": 50.98,
+    "megabytes": 32.41,
+    "triangles": 97682,
+    "textures": 91
+  },
+  "Meeting": {
+    "megapixels": 55.96,
+    "megabytes": 26.18,
+    "triangles": 13618,
+    "textures": 98
+  },
+  "Agency": {
+    "megapixels": 84.8,
+    "megabytes": 37.7,
+    "triangles": 102510,
+    "textures": 157
+  },
+  "Campus": {
+    "megapixels": 117.42,
+    "megabytes": 50.59,
+    "triangles": 151603,
+    "textures": 212
+  },
+  "Tokyo": {
+    "megapixels": 156.33,
+    "megabytes": 78.11,
+    "triangles": 395766,
+    "textures": 252
+  }
+}

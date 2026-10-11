@@ -1,17 +1,21 @@
 """The lobby: the Grey Realm, the never-ending wasteland beyond the world where the Grimoire comes from.
 Cracked grey ash running to the horizon under layered cloud, huge twisted columns, mesas and spires standing
 out of the fog, and far to the north one colossal blade. Players appear on a ruined terrace over an old
-flagstone plaza, facing north; the steles round the plaza carry How to Play, the next case and the boards.
-South-west, the Academy's ring of broken pillars holds the practice altars; east, the rift looks down on
-Kagegaoka at night; north-west lies the dice rock and the cleft, north-east the needle ledge; south-east a
-colossal carcass; and behind the title monolith, up on its mesa, the empty bone throne. A ridge of rock and
-needles borders the walkable basin; two old stone causeways cross deep chasms to two plateaus: the Spire
-Ascent (west) and the rune courtyard (north-east).
+flagstone plaza, facing north. No wall here explains anything: round the plaza five low bases carry the
+tableaux (stone figures acting out how a case goes) and a sixth place a bell; a ring of candle stones at the
+plaza's middle shows who is ready. South-west, the Academy's ring of broken pillars holds the practice altars;
+east, the rift looks down on Kagegaoka at night, its rim open; north-west lies the dice rock and the cleft,
+north-east the needle ledge; south-east a colossal carcass, the duel's two slates under its ribs; and behind
+the title monolith, up on its mesa, the bone throne, with the one board left (Most Wins) on a low slab at the
+mesa's foot. A ridge of rock and needles borders the walkable basin; two old stone causeways cross deep chasms
+to two plateaus: the Spire Ascent (west) and the rune courtyard (north-east).
 
 Everything that shows text or does something is built by the game (src/server/Maps/Lobby.luau and
-the lobby games) at the anchors this scene exports: the title and tagline, the eight boards, the
-spawn, the Academy's signs, its seven drill altars and three effigies, the dice seats, the stone-toss,
-the rune tiles, the parkour's checkpoints, the roots and banners that sway. The layout is in plan.py."""
+the lobby games) at the anchors this scene exports: the title and tagline, the Most Wins board, the
+spawn, the Academy's gate sign, its seven drill altars and three effigies, the candles, the tableaux'
+figures, the figure on the throne, the bell, the duel, the apples, the dice seats, the stone-toss, the rift
+and its landing, the rune tiles, the parkour's checkpoints, the roots and banners that sway. The layout is in
+plan.py."""
 
 from maps import city
 from maps.venues.lobby import dressing, formations, gameplay, islets, landmarks, rift, terrain
@@ -31,7 +35,9 @@ FIGURES = [(0.0, 0.0, 20.0, 0.0)]
 VIEWS = [
     ((0.0, 19.0, 70.0), (-20.0, 60.0, -700.0), 18),  # from the spawn: the first view
     ((0.0, 19.0, 70.0), (0.0, 12.0, -60.0), 18),  # from the spawn: the plaza and the title
-    ((-20.0, 6.0, 30.0), (-47.0, 9.0, 4.0), 16),  # How to Play and the west steles
+    ((-20.0, 6.0, 30.0), (-47.0, 5.0, 4.0), 16),  # the west tableaux' bases
+    ((14.0, 6.0, 46.0), (38.0, 7.0, 40.0), 16),  # the bell
+    ((14.0, 6.0, -78.0), (40.0, 9.0, -104.0), 18),  # the Most Wins slab and the throne's mesa
     ((-54.0, 7.0, 58.0), (-80.0, 6.0, 84.0), 16),  # the Academy's gate
     ((-80.0, 7.0, 76.0), (-86.0, 4.0, 100.0), 14),  # inside the ring: the altars and effigies
     ((80.0, 12.0, 22.0), (106.0, -200.0, 22.0), 16),  # down through the rift (from over its lip)
@@ -62,10 +68,10 @@ def preview(s):
     """What the game builds itself, for the previews: its sign panels, the spawn pad (the drill
     altars and effigies are preview props of the scene itself)."""
     anchors = _LAST.get("anchors", {})
-    for name, (x, z, rot, w, h) in P.STELES.items():
+    for name, (x, z, rot, w, h, by) in P.STELES.items():
         a = anchors[name]
         s.box("Screen", (a["x"], a["y"], a["z"]), (w, h, 0.3), rot)
-    for key in ("title", "tagline", "academyTitle", "academyLine", "academyGate"):
+    for key in ("title", "tagline", "academyGate"):
         a = anchors[key]
         s.box("Screen", (a["x"], a["y"], a["z"]), (a["w"], a["h"], 0.3), a["rot"])
     sx, sz = P.SPAWN

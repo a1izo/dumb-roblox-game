@@ -1,4 +1,4 @@
-"""Tokyo's gameplay spots outside the rooms: the payphone booth by the police box, drop points,
+"""Tokyo's gameplay spots outside the rooms: the payphone booth by the police box,
 hoods, the spawns round the scramble, named areas with their intro marks, and spare spots of every
 kind. The stations, sheets, tip box and board inside buildings are placed with their rooms
 (interiors.py).
@@ -25,12 +25,6 @@ def stations(s):
 
 
 def spots(s):
-    s.drop_point("behind the viaduct bars", -30.0, 128.0)
-    s.drop_point("the platform's end", -36.0, -62.0, y=P.PLATFORM_Y + 0.15)
-    s.drop_point("by the road bridge", 72.0, 58.0)
-    s.drop_point("the pocket park", -150.0, 70.0, spare=True)
-    s.drop_point("the back alley", 70.0, -14.0, spare=True)
-    s.drop_point("the footbridge's end", -97.0, 58.0, spare=True)
     s.hood(64.0, -76.0)
     s.hood(-16.0, 110.5)
     s.hood(-150.0, 108.0, spare=True)

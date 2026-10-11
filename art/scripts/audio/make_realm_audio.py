@@ -268,9 +268,45 @@ def game_fall():
     save("game_fall.wav", fade(reverb(x, 4.5, 0.6, 2200), 0.001, 1.2), 0.6)
 
 
+def game_bell_toll():
+    """Death's mark: one stroke of a great cracked bell, low, a sour partial in it, a long dying ring."""
+    seconds = 6.0
+    t = t_axis(seconds)
+    x = bell(98, seconds, 0.55, partials=((1.0, 1.0), (2.0, 0.55), (2.41, 0.5), (3.0, 0.3), (4.07, 0.22), (5.6, 0.12)))
+    strike = shaped_noise(len(t), lambda f: bandpass(f, 300, 2500, 2)) * np.exp(-40 * t) * 0.6
+    save("game_bell_toll.wav", fade(reverb(x + strike, 3.5, 0.3, 2600), 0.001, 1.5), 0.75)
+
+
+def game_dive_wind():
+    """The dive into the rift: air rushing past a falling body, rising over six seconds."""
+    seconds = 6.5
+    t = t_axis(seconds)
+    n = len(t)
+    u = t / seconds
+    low = shaped_noise(n, lambda f: lowpass(f, 500, 2) / np.sqrt(np.maximum(f, 30) / 30))
+    high = shaped_noise(n, lambda f: bandpass(f, 900, 4200, 2))
+    flutter = slow_envelope(n, 2.0, 9.0)
+    x = low / np.abs(low).max() * (0.25 + 0.75 * u) + high / np.abs(high).max() * u ** 2 * (0.5 + 0.5 * flutter) * 0.6
+    save("game_dive_wind.wav", fade(x, 0.4, 0.6), 0.6)
+
+
+def game_dive_crash():
+    """The dive, braked too late: a body landing hard on a flat roof, a dull heavy thud and a short rattle."""
+    t = t_axis(1.2)
+    n = len(t)
+    thud = np.sin(2 * np.pi * (52 + 30 * np.exp(-t * 30)) * t) * np.exp(-7 * t)
+    slap = shaped_noise(n, lambda f: lowpass(f, 900, 2))
+    slap = slap / np.abs(slap).max() * np.exp(-28 * t) * 0.7
+    rattle = shaped_noise(n, lambda f: bandpass(f, 1200, 3800, 2))
+    rattle = rattle / np.abs(rattle).max() * np.exp(-10 * np.clip(t - 0.08, 0, None)) * (t > 0.08) * 0.12
+    save("game_dive_crash.wav", fade(reverb(thud + slap + rattle, 1.2, 0.25, 1800), 0.001, 0.3), 0.8)
+
+
 def main():
+    # (New sounds go at the end: the random stream is shared, so the earlier files stay as they were.)
     for make in (wind, drone, rumble, rocks, stone1, stone2, metal1, metal2, far1, far2, game_rune, game_wrong,
-                 game_checkpoint, game_finish, game_dice, game_throw, game_fall):
+                 game_checkpoint, game_finish, game_dice, game_throw, game_fall, game_bell_toll, game_dive_wind,
+                 game_dive_crash):
         make()
 
 

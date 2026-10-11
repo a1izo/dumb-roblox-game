@@ -1,8 +1,12 @@
 """The rift: a hole torn in the Grey Realm's ground, where its dwellers sit and watch the world of
 the living. Its rim glows with cold cracks; jagged rock walls drop away into it; and far beneath,
 seen through it, lies Kagegaoka at night: streets of lamps, lit windows, the river, the Central
-Tower with its red lights. Nobody can fall in: an invisible guard stands a few studs back from the
-edge, behind a lip of broken rock.
+Tower with its red lights.
+
+The rim is open: a lip of broken rock and a worn balustrade stand round it, low enough to step over,
+and whoever goes over falls (the game makes a dive of it; until it does, it puts up its own guard at
+the `rift` anchor). Straight beneath the opening stands a broad hall whose roof, with a ring of light
+on it, is where a dive ends: the only solid thing down there (anchor `landing`).
 
 The city is built at a third of its size (a city three times as far away looks the same), so its
 tallest tower still ends well under the realm."""
@@ -17,7 +21,7 @@ from maps.venues.lobby import plan as P
 from maps.venues.lobby.landmarks import pillar
 from maps.venues.lobby.terrain import boulder, rock
 
-K = 1 / 3  # the city's scale
+K = P.CITY_SCALE  # the city's scale
 
 
 def face_to(s, mat, pts, target):
@@ -69,8 +73,7 @@ def hole(s):
             face_to(s, "RiftGlow", [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])], (cx, -5.0, cz))
     s.light("point", (cx, -7.0, cz), (170, 196, 232), 40, 1.0)
     s.light("point", (cx, -22.0, cz), (150, 176, 214), 30, 0.6)
-    # The lip: broken rocks round the edge, between it and the guard.
-    guard = g2.ccw(P.RIFT_GUARD)
+    # The lip: broken rocks round the edge, solid, low enough to hop over.
     for k in range(n):
         p, q = poly[k], poly[(k + 1) % n]
         for t in (0.25, 0.75):
@@ -78,14 +81,13 @@ def hole(s):
             dx, dz = x - cx, z - cz
             r = math.hypot(dx, dz)
             off = rng.uniform(1.2, 2.4)
-            boulder(s, x + dx / r * off, z + dz / r * off, rng.uniform(0.7, 1.5), 7000 + k * 2 + int(t * 4), collide=False)
-    for k in range(len(guard)):
-        a, b = guard[k], guard[(k + 1) % len(guard)]
-        length = math.dist(a, b)
-        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-        rot = math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0]))
-        s.collider((mid[0], 12.0, mid[1]), (length + 1.0, 26.0, 1.0), rot, False, None)
+            boulder(s, x + dx / r * off, z + dz / r * off, rng.uniform(0.7, 1.5), 7000 + k * 2 + int(t * 4), collide=True)
     rim(s, poly, cx, cz, rng)
+    # A pale light on the plaza's side of the rim, where people come to it.
+    wx, wz = P.PLAZA_C[0] - cx, P.PLAZA_C[1] - cz
+    wd = math.hypot(wx, wz)
+    s.light("point", (cx + wx / wd * (P.RIFT_AXES[0] + 6.0), 7.0, cz + wz / wd * (P.RIFT_AXES[0] + 6.0)), (170, 196, 232),
+            26, 1.0)
     s.emitter("riftwisp", (cx, -3.0, cz), P.RIFT_TURN, size=(P.RIFT_AXES[0] * 1.7, 2.0, P.RIFT_AXES[1] * 1.7))
     s.emitter("mist", (cx, -6.0, cz), P.RIFT_TURN, size=(P.RIFT_AXES[0] * 1.5, 5.0, P.RIFT_AXES[1] * 1.5))
     s.sound("mapRiftHum", (cx, -2.0, cz), 60.0, 0.5)
@@ -98,7 +100,8 @@ def hole(s):
 
 def rim(s, poly, cx, cz, rng):
     """The rift's ruined rim: a band of old flagstones round the edge, a worn balustrade standing
-    between the stones and the guard, and a broken arch of two pillars over the north side."""
+    just outside it (solid, with gaps, never higher than a jump), and a broken arch of two pillars over
+    the north side."""
     ring = P.grown(poly, 3.3)
     n = len(poly)
     for k in range(n):
@@ -120,7 +123,7 @@ def rim(s, poly, cx, cz, rng):
             run = min(run, length - u - 0.2)
             h = rng.uniform(1.0, 3.0)
             mx, mz = a[0] + ux * (u + run / 2), a[1] + uz * (u + run / 2)
-            s.box("RuinStone", (mx, h / 2, mz), (run, h, 0.8), rot, skip=("-y",))
+            s.box("RuinStone", (mx, h / 2, mz), (run, h, 0.8), rot, collide=True, skip=("-y",))
             if rng.random() < 0.4:
                 s.box("RuinStone", (mx, h + 0.4, mz), (run * 0.7, 0.8, 1.1), rot)
             u += run + rng.uniform(0.1, 0.9)
@@ -188,8 +191,13 @@ def below(s):
     half = 1000.0
     b.up("CityGround", -half, -half, half, half, 0.0)
     step, road = 96.0, 14.0
-    # The river: a band across the city, north-west to south-east.
-    river = [(-half, -300.0), (half, 420.0)]
+    # The river: a band across the city, north-west to south-east. It passes north of the point under the rift,
+    # so the hall a dive ends on stands among streets and blocks, not in the water.
+    river = [(-half, -573.0), (half, 147.0)]
+    lw, ld, _ = P.LANDING
+
+    def at_landing(x0, z0, x1, z1, pad=24.0):
+        return x0 < lw + pad and x1 > -lw - pad and z0 < ld + pad and z1 > -ld - pad
 
     def near_river(x, z, pad):
         (ax, az), (bx, bz) = river
@@ -219,7 +227,7 @@ def below(s):
             x0, z0 = i * step + road / 2 + 3.0, j * step + road / 2 + 3.0
             x1, z1 = (i + 1) * step - road / 2 - 3.0, (j + 1) * step - road / 2 - 3.0
             mx, mz = (x0 + x1) / 2, (z0 + z1) / 2
-            if near_river(mx, mz, 48.0):
+            if near_river(mx, mz, 48.0) or at_landing(x0, z0, x1, z1):
                 continue
             dist = math.hypot(mx, mz)
             if dist > 860:
@@ -263,6 +271,32 @@ def below(s):
         for sz in (tz0, tz1):
             s.blinker(b.p(sx, top + 1.5, sz), (190, 205, 230), 2.2, 0.9, rng.uniform(0, 2.2))
     s.box("DarkMetal", b.p((tx0 + tx1) / 2, top + 15.0, (tz0 + tz1) / 2), (1.6 * K * 3, 30 * K, 1.6 * K * 3), skip=("-y",))
+    landing(s, b)
+
+
+def landing(s, b):
+    """The hall under the rift's middle: broad and low among the towers, a ring of light on its roof. The roof
+    is solid, the one thing down here that is: a dive ends on it (anchor `landing`: its middle, w and h its
+    sides, r the ring)."""
+    w, d, floors = P.LANDING
+    rng = random.Random(4242)
+    roof = b.block(rng, -w, -d, w, d, floors, 0.5) + 1.5
+    ring = P.LANDING_RING / K
+    n = 28
+    for k in range(n):
+        a0, a1 = math.tau * k / n, math.tau * (k + 1) / n
+        quad = [(math.cos(a) * r, math.sin(a) * r) for a, r in ((a0, ring - 3.0), (a1, ring - 3.0), (a1, ring + 3.0),
+                                                                (a0, ring + 3.0))]
+        s.polygon("DimBand", [b.p(x, roof + 0.4, z) for x, z in g2.cw(quad)])
+    mark = [(math.cos(math.tau * k / 12) * 5.0, math.sin(math.tau * k / 12) * 5.0) for k in range(12)]
+    s.polygon("DimBandWarm", [b.p(x, roof + 0.4, z) for x, z in g2.cw(mark)])
+    for sx in (-w, w):
+        for sz in (-d, d):
+            s.blinker(b.p(sx, roof + 2.0, sz), (190, 205, 230), 2.4, 0.9, rng.uniform(0, 2.4))
+    y = P.LANDING_Y
+    s.collider((b.cx, y - 2.0, b.cz), (2 * w * K, 4.0, 2 * d * K), 0.0, True, "Concrete")
+    s.anchor("landing", b.cx, y, b.cz, 0.0, w=round(2 * w * K, 2), h=round(2 * d * K, 2), r=P.LANDING_RING)
+    s.light("point", (b.cx, y + 9.0, b.cz), (190, 205, 230), 40, 0.9)
 
 
 def build(s):

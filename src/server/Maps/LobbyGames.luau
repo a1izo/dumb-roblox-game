@@ -1,10 +1,11 @@
 --!strict
 -- The lobby mini-games' objects, built at the scene's anchors (art/scripts/maps/venues/lobby): the
 -- Spire Ascent's start pad and checkpoint pylons, the rune courtyard's nine tiles and start pad, the
--- dice rock's two dice, board and four seats, the stone-toss cairn. Everything is tagged (LParkourStart,
--- LParkourCheckpoint, LRuneStart, LRuneTile, LDiceSeat, LTossCairn) so each client puts up its own
--- prompts (client Controllers/LobbyGamesController); the rules and every score are the server's
--- (Services/LobbyGameService), which is handed the table this returns.
+-- dice rock's two dice, board and four seats, the stone-toss cairn, the rift's numbers for the dive, the
+-- bell of Death's mark, the seven grey apples and the name duel's two stones. Everything is tagged
+-- (LParkourStart, LParkourCheckpoint, LRuneStart, LRuneTile, LDiceSeat, LTossCairn, LRift, LMarkBell,
+-- LApple, LDuelStone) so each client puts up its own prompts (client Controllers/LobbyGamesController); the rules and every score
+-- are the server's (Services/LobbyGameService), which is handed the table this returns.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -28,6 +29,17 @@ export type Games = {
 	runes: { start: Vector3, center: Vector3, tile: number, gap: number },
 	dice: { rock: Vector3, seats: { Seat }, dice: { BasePart }, faces: { TextLabel }, board: TextLabel },
 	toss: { cairn: Vector3, rift: { cx: number, cz: number, rx: number, rz: number, turn: number } },
+	-- The dive: the rift's shape, the rim's and the landing roof's heights, where a diver is set down after.
+	dive: {
+		rift: { cx: number, cz: number, rx: number, rz: number, turn: number },
+		rimY: number,
+		roofY: number,
+		back: Vector3,
+	}?,
+	mark: { bell: Vector3, mouth: Vector3 }?,
+	apples: { Vector3 },
+	-- The name duel's two stones: the foot of each, the part its prompt is on, the writing on its slate.
+	duel: { stones: { { at: Vector3, part: BasePart, label: TextLabel } } }?,
 }
 
 -- Glyphs for the nine tiles: bars (x, z, width, depth, turn in degrees) on a 7-stud tile.
@@ -278,6 +290,167 @@ local function dice(b, folder: Instance, anchors: { [string]: Anchor })
 	}
 end
 
+-- The rift, for the dive: an unseen part tagged LRift carrying the numbers every client flies by (the rift's
+-- ellipse, the rim's height and the landing roof's), and where a diver is set down afterwards (on the
+-- plaza's side of the rim).
+local function dive(b, folder: Instance, anchors: { [string]: Anchor })
+	local rift, landing = anchors.rift, anchors.landing
+	if not rift or not landing then
+		return nil
+	end
+	local rx, rz = rift.rx or 23, rift.rz or 15
+	local rim = b:worldPos(rift.x, 0, rift.z)
+	local roof = b:worldPos(landing.x, landing.y, landing.z)
+	-- Towards the lobby's middle, a few studs outside the balustrade.
+	local toMiddle = Vector3.new(-rift.x, 0, -rift.z)
+	toMiddle = if toMiddle.Magnitude > 1 then toMiddle.Unit else Vector3.new(-1, 0, 0)
+	local back = rim + toMiddle * (math.max(rx, rz) * 1.08 + 9)
+	local mark = part(folder, "Rift", Vector3.new(1, 1, 1), CFrame.new(rim), STONE, Enum.Material.Slate)
+	inert(mark)
+	mark.CanCollide = false
+	mark.Transparency = 1
+	mark:SetAttribute("Cx", rim.X)
+	mark:SetAttribute("Cz", rim.Z)
+	mark:SetAttribute("Rx", rx)
+	mark:SetAttribute("Rz", rz)
+	mark:SetAttribute("Turn", rift.rot)
+	mark:SetAttribute("RimY", rim.Y)
+	mark:SetAttribute("RoofY", roof.Y)
+	mark:AddTag("LRift")
+	return {
+		rift = { cx = rim.X, cz = rim.Z, rx = rx, rz = rz, turn = rift.rot },
+		rimY = rim.Y,
+		roofY = roof.Y,
+		back = back,
+	}
+end
+
+-- Death's mark: the bell's prompt (an unseen part tagged LMarkBell under the bell).
+local function bell(b, folder: Instance, anchors: { [string]: Anchor })
+	local a = anchors.bell
+	if not a then
+		return nil
+	end
+	local prompt =
+		part(folder, "MarkBell", Vector3.new(5, 6, 5), b:world(b:cf(a.x, 3, a.z, a.rot)), STONE, Enum.Material.Slate)
+	inert(prompt)
+	prompt.CanCollide = false
+	prompt.CanQuery = true
+	prompt.Transparency = 1
+	prompt:AddTag("LMarkBell")
+	return { bell = b:worldPos(a.x, 0, a.z), mouth = b:worldPos(a.x, a.y, a.z) }
+end
+
+-- The seven grey apples: a small grey fruit at each anchor (tag LApple, attribute Index). Every client hides
+-- the ones its player has found already.
+local function apples(b, folder: Instance, anchors: { [string]: Anchor })
+	local spots = {}
+	local index = 1
+	while anchors["apple" .. index] do
+		local a = anchors["apple" .. index]
+		local at = b:world(CFrame.new(a.x, a.y + 1.3, a.z))
+		local fruit = Create("Part", {
+			Name = "Apple" .. index,
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(1.2, 1.2, 1.2),
+			CFrame = at,
+			Color = Color3.fromRGB(128, 128, 134),
+			Material = Enum.Material.SmoothPlastic,
+			Anchored = true,
+			Parent = folder,
+		}) :: BasePart
+		inert(fruit)
+		fruit.CanCollide = false
+		fruit.CanQuery = true
+		local stem = part(
+			folder,
+			"Stem",
+			Vector3.new(0.12, 0.45, 0.12),
+			at * CFrame.new(0.05, 0.72, 0) * CFrame.Angles(0, 0, math.rad(-14)),
+			INK,
+			Enum.Material.SmoothPlastic
+		)
+		inert(stem)
+		stem.CanCollide = false
+		stem.Parent = fruit
+		Create("PointLight", { Color = GLOW, Range = 7, Brightness = 0.5, Shadows = false, Parent = fruit })
+		fruit:SetAttribute("Index", index)
+		fruit:AddTag("LApple")
+		table.insert(spots, fruit.Position)
+		index += 1
+	end
+	return spots
+end
+
+-- The slates on the duel's stones lie on a slope (art/scripts/maps/venues/lobby/landmarks.py, duel()): its
+-- middle is this high, and it rises this steeply from the duellist's side towards the other stone.
+local DUEL_SLATE_Y = 2.9
+local DUEL_SLATE_SLOPE = math.atan2(0.8, 1.7)
+
+-- The name duel: at each of the two stones an unseen part that carries the prompt (tag LDuelStone, attribute
+-- Index; the server sets Holder, the user id of whoever stands there), and the writing on the stone's slate:
+-- who stands there, and how their duel ended.
+local function duel(b, folder: Instance, anchors: { [string]: Anchor })
+	local stones = {}
+	for index = 1, 2 do
+		local a = anchors["duel" .. index]
+		if not a then
+			return nil
+		end
+		local base = b:world(b:cf(a.x, 0, a.z, a.rot))
+		local prompt = part(
+			folder,
+			"DuelStone" .. index,
+			Vector3.new(4, 5, 3),
+			base * CFrame.new(0, 2.5, 0),
+			STONE,
+			Enum.Material.Slate
+		)
+		inert(prompt)
+		prompt.CanCollide = false
+		prompt.CanQuery = true
+		prompt.Transparency = 1
+		prompt:SetAttribute("Index", index)
+		prompt:AddTag("LDuelStone")
+		-- Facing the duellist (who stands behind the stone), a hair above the slate itself.
+		local slate = part(
+			folder,
+			"DuelSlate" .. index,
+			Vector3.new(a.w or 2.8, a.h or 1.28, 0.05),
+			base
+				* CFrame.new(0, DUEL_SLATE_Y, 0)
+				* CFrame.Angles(0, math.pi, 0)
+				* CFrame.Angles(math.rad(90) - DUEL_SLATE_SLOPE, 0, 0)
+				* CFrame.new(0, 0, -0.07),
+			INK,
+			Enum.Material.SmoothPlastic
+		)
+		inert(slate)
+		slate.CanCollide = false
+		slate.Transparency = 1
+		local gui = Create("SurfaceGui", {
+			Face = Enum.NormalId.Front,
+			SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
+			PixelsPerStud = 60,
+			LightInfluence = 0,
+			Parent = slate,
+		})
+		local label = Create("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+			Text = "",
+			TextColor3 = Color3.fromRGB(226, 222, 212),
+			TextScaled = true,
+			TextWrapped = true,
+			FontFace = WorldFont.face(Enum.Font.SpecialElite),
+			Parent = gui,
+		}) :: TextLabel
+		Create("UITextSizeConstraint", { MaxTextSize = 30, Parent = label })
+		table.insert(stones, { at = b:worldPos(a.x, 0, a.z), part = prompt, label = label })
+	end
+	return { stones = stones }
+end
+
 local function toss(b, folder: Instance, anchors: { [string]: Anchor })
 	local a, rift = anchors.toss, anchors.rift
 	local prompt =
@@ -300,6 +473,10 @@ function LobbyGames.build(b, anchors: { [string]: Anchor }): Games
 		runes = runes(b, folder, anchors),
 		dice = dice(b, folder, anchors),
 		toss = toss(b, folder, anchors),
+		dive = dive(b, folder, anchors),
+		mark = bell(b, folder, anchors),
+		apples = apples(b, folder, anchors),
+		duel = duel(b, folder, anchors),
 	}
 end
 

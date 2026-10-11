@@ -1,14 +1,20 @@
 -- The guide's one-time tips for new players, written on a slip under the objectives (under
 -- the phase banner on phones). Each tip appears once per profile (the server remembers it in
--- tipsSeen). The X on a tip turns the whole guide off (tips and the objective list); Settings
--- turns it back on, and "Show all tips again" there resets which tips were seen.
+-- tipsSeen). The X (or "Got it") on a tip closes that tip; "Stop tips" turns the whole guide off
+-- (tips and the objective list); Settings turns it back on, and "Show all tips again" there resets
+-- which tips were seen.
+--
+-- The tips are the coach of a first case: until a profile has finished one, each tip stays twice as
+-- long (it is read while learning everything else at once). What a tip says to press is named for the
+-- input in the player's hands (Hints.resolve): a key, a gamepad button, or what to tap.
 --
 -- Triggers: first match as each role, first time in each phase, first letter flash, first
--- evidence, first sheet / drop point / hood prompt, first death seen, being eliminated.
+-- evidence, first sheet / note pass / hood prompt, a note offered, first death seen, being eliminated.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Hints = require(Shared:WaitForChild("Hints"))
@@ -33,6 +39,7 @@ local LocalPlayer = Players.LocalPlayer
 local HintController = {}
 
 local SHOW_TIME = 14
+local FIRST_CASE_TIME = 28
 local WIDTH = 400
 
 local queue: { string } = {}
@@ -52,6 +59,24 @@ local function seen(id: string): boolean
 	return profile ~= nil and type(profile.tipsSeen) == "table" and profile.tipsSeen[id] == true
 end
 
+-- "keyboard", "gamepad" or "touch": what the player last used.
+local function inputKind(): string
+	local last = UserInputService:GetLastInputType()
+	if last == Enum.UserInputType.Touch then
+		return "touch"
+	elseif string.find(last.Name, "Gamepad") then
+		return "gamepad"
+	end
+	return "keyboard"
+end
+
+-- No case finished yet on this profile.
+local function firstCase(): boolean
+	local profile = ClientState.profile
+	local stats = if profile then profile.stats else nil
+	return type(stats) == "table" and (tonumber(stats.matches) or 0) == 0
+end
+
 local function run()
 	running = true
 	while #queue > 0 do
@@ -64,15 +89,16 @@ local function run()
 		if hint and Settings.get("hints") then
 			Net.event("ProfileRequest"):FireServer({ action = "hint", id = id })
 			titleLabel.Text = "TIP  ·  " .. string.upper(hint.title)
-			textLabel.Text = hint.text
+			textLabel.Text = Hints.resolve(hint.text, inputKind())
 			dismissed = false
+			local showTime = if firstCase() then FIRST_CASE_TIME else SHOW_TIME
 			local position, anchor = Hud.tipPlacement()
 			card.AnchorPoint = anchor
 			card.Position = position
 			Motion.fade(card, true, 0.25)
 			Motion.slideIn(card, Vector2.new(0, -10), 0.3)
 			local started = os.clock()
-			while not dismissed and Settings.get("hints") and os.clock() - started < SHOW_TIME do
+			while not dismissed and Settings.get("hints") and os.clock() - started < showTime do
 				task.wait(0.1)
 			end
 			local tween = Motion.fade(card, false, 0.3)
@@ -99,8 +125,8 @@ function HintController.trigger(id: string)
 end
 
 local function buildCard()
-	-- A slip from the guide with a red ink mark: TIP and its title, the hint, GOT IT, and an
-	-- X that turns the whole guide off. A CanvasGroup so it fades as one piece.
+	-- A slip from the guide with a mark down its side: TIP and its title with an X that closes it, the
+	-- hint, then "Stop tips" (the whole guide off) and GOT IT. A CanvasGroup so it fades as one piece.
 	card = Instance.new("CanvasGroup")
 	card.Name = "Hint"
 	card.Size = UDim2.fromOffset(WIDTH, 0)
@@ -126,7 +152,7 @@ local function buildCard()
 		Parent = page,
 	})
 	Kit.list(content, T.space.xs)
-	-- Title row: TIP · title, and the X that turns the whole guide off.
+	-- Title row: TIP · title, and the X that closes this tip.
 	local titleRow = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 1, Parent = content })
 	Kit.icon({
 		name = "help",
@@ -147,7 +173,6 @@ local function buildCard()
 		Size = UDim2.new(1, -78, 1, 0),
 		Parent = titleRow,
 	})
-	-- X: no more tips and no objective list, until the guide is turned on in Settings.
 	local close = Kit.iconButton({
 		icon = "cross",
 		size = 32,
@@ -156,13 +181,23 @@ local function buildCard()
 		Parent = titleRow,
 	}, function()
 		dismissed = true
+	end)
+	close.Name = "CloseTip"
+	textLabel = Kit.label({ size = "body", color = C.bone, LayoutOrder = 2, Parent = content })
+	local row = Kit.frame({ Name = "Actions", Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 3, Parent = content })
+	-- No more tips and no objective list, until the guide is turned on again in Settings.
+	local stop = Kit.button({
+		text = "Stop tips",
+		variant = "ghost",
+		size = "s",
+		Parent = row,
+	}, function()
+		dismissed = true
 		table.clear(queue)
 		Settings.set("hints", false)
 		Toasts.show("Guide turned off. You can turn it back on in Settings.", "info")
 	end)
-	close.Name = "HideGuide"
-	textLabel = Kit.label({ size = "body", color = C.bone, LayoutOrder = 2, Parent = content })
-	local row = Kit.frame({ Name = "Actions", Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 3, Parent = content })
+	stop.Name = "HideGuide"
 	Kit.button({
 		text = "Got it",
 		variant = "secondary",
@@ -198,6 +233,11 @@ function HintController.init()
 		HintController.trigger("flash")
 		HintController.trigger("scratchpad")
 	end)
+	Net.event("NoteOffer").OnClientEvent:Connect(function(payload)
+		if type(payload) == "table" and payload.state == "offered" then
+			HintController.trigger("offer")
+		end
+	end)
 	Net.event("Evidence").OnClientEvent:Connect(function()
 		if ClientState.isParticipant() then
 			HintController.trigger("evidence")
@@ -216,8 +256,8 @@ function HintController.init()
 	ProximityPromptService.PromptShown:Connect(function(prompt: ProximityPrompt)
 		if prompt.Name == "LTake" and prompt.ObjectText == "Blank sheet" then
 			HintController.trigger("sheet")
-		elseif prompt.Name == "LSearch" then
-			HintController.trigger("dropPoint")
+		elseif prompt.Name == "LPassNote" then
+			HintController.trigger("pass")
 		elseif prompt.Name == "LWear" then
 			HintController.trigger("hood")
 		end

@@ -4,8 +4,15 @@
 -- thrown pebble's flight. Every rule and score is the server's (Services/LobbyGameService); this only
 -- asks (start, sit, roll, throw, leave) and shows what the server says. Nothing here runs for a player
 -- who is in a case or watching one.
+--
+-- Also here: the bell of Death's mark (join or leave at it; the card says who carries the mark and when
+-- the bell tolls next; what shows on the characters is Controllers/MarkController's) and the seven grey
+-- apples (a prompt on each; the ones this player has found are hidden on this screen). The dive into the
+-- rift has a controller of its own (Controllers/DiveController). The name duel's two stones get their
+-- prompts here (step up, step down); its card is UI/DuelPanel's.
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -37,6 +44,9 @@ local OFFERS: { [string]: Offer } = {
 	LRuneStart = { action = "Begin the runes", object = "Rune courtyard", distance = 8 },
 	LDiceSeat = { action = "Sit", object = "Bone dice", distance = 6 },
 	LTossCairn = { action = "Throw a stone", object = "Look at the rift; aim higher to throw farther", distance = 10 },
+	LMarkBell = { action = "Take the mark", object = "Death's mark", distance = 10 },
+	LApple = { action = "Take", object = "A grey apple", distance = 7 },
+	LDuelStone = { action = "Step up", object = "Name duel", distance = 8 },
 }
 
 local prompts: { [BasePart]: { prompt: ProximityPrompt, tag: string } } = {}
@@ -49,7 +59,11 @@ local statusLabel: TextLabel
 local rollButton: TextButton
 
 -- What the player is doing now.
-local current: string? = nil -- "parkour", "runes", "dice"
+local current: string? = nil -- "parkour", "runes", "dice", "mark"
+-- Is this player in a name duel now (between its start and its end)?
+local duelling = false
+-- Death's mark, as the server last told it.
+local mark = { tollAt = nil :: number?, line = "" }
 local run = { startedAt = 0, reached = 0, total = Parkour.CHECKPOINTS }
 local showToken = 0
 local hideAt = 0
@@ -70,13 +84,52 @@ local function hideCard()
 	rollButton.Visible = false
 end
 
+-- The apples this player has found already are not there for them: unseen, and nothing to take.
+local function hideFoundApples()
+	local profile = ClientState.profile
+	local games = if profile then profile.lobbyGames else nil
+	local found = if type(games) == "table" then math.floor(tonumber(games.apples) or 0) else 0
+	for object, entry in pairs(prompts) do
+		if entry.tag == "LApple" then
+			local index = object:GetAttribute("Index")
+			local has = type(index) == "number" and bit32.band(found, bit32.lshift(1, index - 1)) ~= 0
+			if has then
+				entry.prompt.Enabled = false
+			end
+			object.LocalTransparencyModifier = if has then 1 else 0
+			for _, item in ipairs(object:GetDescendants()) do
+				if item:IsA("BasePart") then
+					item.LocalTransparencyModifier = if has then 1 else 0
+				elseif item:IsA("Light") then
+					item.Enabled = not has
+				end
+			end
+		end
+	end
+end
+
 local function refresh()
 	local ok = usable()
-	for _, entry in pairs(prompts) do
-		-- A Deathsinger waiting here (hidden) plays the solo games only, not the shared dice table.
+	local me = Players.LocalPlayer.UserId
+	for object, entry in pairs(prompts) do
+		-- A Deathsinger waiting here (hidden) plays the solo games only, not the ones played with others.
 		local dice = entry.tag == "LDiceSeat"
-		entry.prompt.Enabled = ok and not (dice and current == "dice") and not (dice and ClientState.isAway())
+		local stone = entry.tag == "LDuelStone"
+		local shared = dice or stone or entry.tag == "LMarkBell"
+		local enabled = ok and not (dice and current == "dice") and not (shared and ClientState.isAway())
+		if stone then
+			-- A stone someone else stands at offers nothing; your own lets you step down, but not by a slip
+			-- of the key in the middle of a duel (the card has a button for giving up).
+			local holder = object:GetAttribute("Holder")
+			enabled = enabled and (holder == nil or (holder == me and not duelling))
+			entry.prompt.ActionText = if holder == me then "Step down" else OFFERS.LDuelStone.action
+		end
+		entry.prompt.Enabled = enabled
+		if entry.tag == "LMarkBell" then
+			entry.prompt.ActionText = if current == "mark" then "Leave the game" else OFFERS.LMarkBell.action
+		end
 	end
+	hideFoundApples()
 	if not ok and card.Visible then
 		hideCard()
 	end
@@ -382,6 +435,51 @@ local function onToss(p: any)
 	end)
 end
 
+-- Death's mark: the card says who carries it and counts down to the bell.
+local function onMark(p: any)
+	local me = Players.LocalPlayer.UserId
+	if p.kind == "joined" then
+		current = "mark"
+		mark.tollAt = nil
+		mark.line = "Waiting for one more to take it."
+		setStatus("DEATH'S MARK", mark.line)
+		refresh()
+	elseif p.kind == "state" then
+		current = "mark"
+		mark.tollAt = if type(p.tollAt) == "number" then p.tollAt else nil
+		if p.carrier == nil then
+			mark.line = "Waiting for one more to take it."
+		elseif p.carrier == me then
+			mark.line = "You carry it. Touch someone before the bell."
+		else
+			mark.line = string.format("%s carries it.   Streak %d", tostring(p.carrierName), p.streak or 0)
+		end
+		setStatus("DEATH'S MARK", mark.line)
+		refresh()
+	elseif p.kind == "toll" then
+		Sfx.play("gameBellToll")
+		if p.down == me then
+			Toasts.show("The bell tolls for you.", "bad")
+		else
+			Toasts.show(
+				string.format("The bell tolls for %s.  You have survived %d.", tostring(p.downName), p.streak or 0),
+				if p.newBest then "good" else nil
+			)
+		end
+	elseif p.kind == "pass" then
+		Sfx.play("gameWrong", { volume = 0.7 })
+		if p.to == me then
+			Toasts.show("The mark is yours.", "bad")
+		end
+	elseif p.kind == "left" then
+		mark.tollAt = nil
+		if current == "mark" then
+			hideCard()
+		end
+		refresh()
+	end
+end
+
 local function onState(payload: any)
 	if type(payload) ~= "table" then
 		return
@@ -396,6 +494,26 @@ local function onState(payload: any)
 		onDice(payload)
 	elseif payload.game == "toss" then
 		onToss(payload)
+	elseif payload.game == "mark" then
+		onMark(payload)
+	elseif payload.game == "duel" then
+		if payload.kind == "start" then
+			duelling = true
+		elseif payload.kind == "over" or payload.kind == "left" then
+			duelling = false
+		end
+		refresh()
+	elseif payload.game == "apples" and payload.kind == "took" then
+		Sfx.play("gameCheckpoint", { volume = 0.8 })
+		Toasts.show(string.format("A grey apple.  %d of %d.", payload.count or 0, payload.total or 7), "good")
+	elseif payload.game == "lobby" and payload.kind == "caught" then
+		-- Set back on the terrace after falling out of the world: without the speed of the fall.
+		local character = Players.LocalPlayer.Character
+		local part = if character then character:FindFirstChild("HumanoidRootPart") else nil
+		if part and part:IsA("BasePart") then
+			part.AssemblyLinearVelocity = Vector3.zero
+			part.AssemblyAngularVelocity = Vector3.zero
+		end
 	end
 end
 
@@ -411,6 +529,17 @@ local function trigger(tag: string, object: BasePart)
 		request:FireServer({ game = "runes", action = "start" })
 	elseif tag == "LDiceSeat" then
 		request:FireServer({ game = "dice", action = "sit", seat = object:GetAttribute("Seat") })
+	elseif tag == "LMarkBell" then
+		request:FireServer({ game = "mark", action = if current == "mark" then "leave" else "join" })
+	elseif tag == "LApple" then
+		request:FireServer({ game = "apples", action = "take", index = object:GetAttribute("Index") })
+	elseif tag == "LDuelStone" then
+		local mine = object:GetAttribute("Holder") == Players.LocalPlayer.UserId
+		request:FireServer({
+			game = "duel",
+			action = if mine then "leave" else "stand",
+			stone = object:GetAttribute("Index"),
+		})
 	elseif tag == "LTossCairn" then
 		local camera = workspace.CurrentCamera
 		if camera then
@@ -439,6 +568,9 @@ local function setup(tag: string, object: Instance)
 		trigger(tag, object)
 	end)
 	prompts[object] = { prompt = prompt, tag = tag }
+	if tag == "LDuelStone" then
+		object:GetAttributeChangedSignal("Holder"):Connect(refresh)
+	end
 	refresh()
 end
 
@@ -532,6 +664,7 @@ function LobbyGamesController.init()
 	ClientState.PublicChanged:Connect(refresh)
 	ClientState.PrivateChanged:Connect(refresh)
 	ClientState.WatchChanged:Connect(refresh)
+	ClientState.ProfileChanged:Connect(hideFoundApples)
 	-- The Spire Ascent's clock, and the card's goodbye a few seconds after a run ends.
 	task.spawn(function()
 		while true do
@@ -550,6 +683,12 @@ function LobbyGamesController.init()
 					run.total,
 					Parkour.format(workspace:GetServerTimeNow() - run.startedAt)
 				)
+			elseif current == "mark" then
+				local tollAt = mark.tollAt
+				local left = if tollAt then math.max(0, tollAt - workspace:GetServerTimeNow()) else nil
+				statusLabel.Text = if left
+					then string.format("%s   Bell in %d", mark.line, math.ceil(left))
+					else mark.line
 			elseif current == nil and card.Visible and hideAt > 0 and os.clock() > hideAt then
 				hideAt = 0
 				hideCard()

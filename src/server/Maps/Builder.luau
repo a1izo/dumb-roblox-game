@@ -1,5 +1,5 @@
 -- The parts, props and signs every venue's Blender scene is placed with (SceneBuilder), and the
--- gameplay objects the game builds itself: stations, the tip box, the evidence board, drop points.
+-- gameplay objects the game builds itself: stations, the tip box, the evidence board.
 -- Coordinates passed to the builder are local to its origin; y = 0 is the floor surface.
 -- Rotations are degrees around Y: 0 faces -Z, 180 faces +Z, 90 faces -X, -90 faces +X.
 -- Gameplay objects wear the Blender props (ModelLibrary) once they are imported, and keep their
@@ -423,22 +423,6 @@ function Builder:board(def)
 		end
 	end
 	return label
-end
-
--- Hidden drop point for paper notes: an inconspicuous vent grate.
-function Builder:dropPoint(def, id: string)
-	local grate = self:part(
-		Vector3.new(2, 0.3, 2),
-		self:cf(def.x, def.y or 0.15, def.z, def.rot or 0),
-		Color3.fromRGB(70, 72, 76),
-		Enum.Material.DiamondPlate
-	)
-	grate.Name = "DropPoint_" .. id
-	ModelLibrary.dress(grate, "Grate", CFrame.new(0, -0.15, 0))
-	grate:SetAttribute("DropId", id)
-	grate:SetAttribute("DropName", def.name)
-	grate:AddTag("LDropPoint")
-	return { id = id, name = def.name, part = grate, position = grate.Position }
 end
 
 return Builder

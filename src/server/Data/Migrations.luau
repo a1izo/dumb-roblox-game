@@ -67,10 +67,27 @@ function Migrations.defaults(startingCoins: number)
 			lowGraphics = false,
 		},
 		tipsSeen = {}, -- [tipId] = true
+		-- The Academy's drills. `unrewarded` is set (by Shared/Trial) on a profile that finishes all seven now
+		-- that they pay nothing by themselves; it is deliberately not a default, so profiles that finished
+		-- them when they did pay can be told apart.
 		training = { done = false, drills = {} },
+		-- The Trial (Shared/Trial): done, the offer turned down, the Academy's one reward paid for it.
+		trial = { done = false, skipped = false, paid = false },
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
-		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds).
-		lobbyGames = { parkourBest = 0, runesBest = 0, diceBest = 0, tossBest = 0, spiritBest = 0 },
+		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds), the fastest
+		-- spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls survived in a row with
+		-- Death's mark; the grey apples found (a bit for each of the seven); and the name duels won.
+		lobbyGames = {
+			parkourBest = 0,
+			runesBest = 0,
+			diceBest = 0,
+			tossBest = 0,
+			spiritBest = 0,
+			riftBest = 0,
+			markBest = 0,
+			apples = 0,
+			duelWins = 0,
+		},
 		alias = "", -- custom public alias (Custom Alias pass), already filtered
 		titles = {}, -- [titleId] = true
 		equippedTitle = "",

@@ -8,8 +8,7 @@
 - The forecourt: the evidence board in its kiosk among the seat-chart boards, the founder's
   bust, the frozen fountain, benches.
 - The pond hollow: pines in their yukizuri, stone lanterns, clipped shrubs under snow, the
-  campus security camera post (the Pond Camera Post), the drop point beside the bridge's foot,
-  a hood among the pines.
+  campus security camera post (the Pond Camera Post), a hood among the pines.
 - The tennis court, look-only behind its chain-link fence: the net sagging under snow, the
   umpire's chair, the roller shed beside it.
 - The bike shed, a hot-drinks machine, the avenue's phone box (a spare), snowmen, snow scoops,
@@ -64,17 +63,19 @@ def lamp(s, x, z, y=0.0):
 def avenue(s):
     rng = random.Random(17)
     skip = {(P.GINKGO_X[0], 8.0), (P.GINKGO_X[1], 22.0), (P.GINKGO_X[1], 92.0)}
+    # North of the south path the west row would stand in the café path (and grow through its wall).
+    skip |= {(P.GINKGO_X[0], z) for z in P.GINKGO_Z if z > 56.0}
     for k, z in enumerate(P.GINKGO_Z):
         for x in P.GINKGO_X:
             if (x, z) in skip:
                 continue
             ginkgo(s, x, z, rng.uniform(0, 360), snow=(k % 3 == 1))
     for x, z in ((-33.6, -13.0), (-6.4, 1.0), (-33.6, 15.0), (-6.4, 29.0), (-33.6, 43.0), (-6.4, 57.0),
-                 (-33.6, 71.0), (-6.4, 85.0), (-33.6, 99.0)):
+                 (-31.4, 71.0), (-6.4, 85.0), (-31.4, 99.0)):
         lamp(s, x, z)
-    s.prop("Bench", -35.4, 26.0, -90)
+    s.prop("Bench", -35.4, 29.4, -90)
     # The hot-drinks machine and the recycling by the avenue.
-    s.prop("VendingBlue", -5.2, 46.6, 90)  # its front to the avenue
+    s.prop("VendingBlue", -5.2, 45.7, 90)  # its front to the avenue, a step clear of the ginkgo beside it
     s.prop("RecycleBins", -5.8, 53.5, 90)
     s.station("Phone", "Avenue Phone Box", -6.0, 40.0, 90, prop="StationPhoneBooth", spare=True)
 
@@ -94,6 +95,8 @@ def tents(s):
     s.sign((13.0, 4.8, 62.1), 0, 2.0, 4.2, "受\n付", "GothamBlack", (20, 20, 22), None)
     s.sound("mapHeaterHum", (13.0, 3.0, 71.0), 22.0, 0.3)
     fit.plaque(s, 13.0, 9.2, 76.4, 0, 8.0, 1.0, "受験生受付  CANDIDATES' CHECK-IN", (250, 240, 220), (40, 50, 96))
+    for x in (8.8, 17.2):
+        s.box("DarkMetal", (x, 4.85, 76.5), (0.24, 9.7, 0.24), collide=True)
 
 
 def gate(s):
@@ -116,11 +119,10 @@ def gate(s):
             s.prop("Barricade", x, a[1] - 3.2, 180 + rng.uniform(-8, 8))
         else:
             s.prop("TrafficCone", x + rng.uniform(-1, 1), a[1] - 3.0, rng.uniform(0, 90))
-    for x, text in ((-35.8, "入\n学\n試\n験\n会\n場"), (-12.4, "影\nヶ\n丘\n大\n学")):
+    for x, text in ((-12.4, "入\n学\n試\n験\n会\n場"),):
         s.prop("ExamSignStand", x, 101.0, 180)
         s.sign((x, 4.9, 101.3), 180, 1.8, 4.6, text, "GothamBlack", (20, 20, 22), None)
-    s.prop("PostBox", -36.4, 95.0, 90)
-    lamp(s, -36.5, 90.0)
+    s.prop("PostBox", -39.0, 95.0, 90)
 
 
 def booth(s):
@@ -163,7 +165,7 @@ def forecourt(s):
     s.prop("SnowTools", -33.0, -60.4, 180)
     s.prop("Snowman", 20.0, -58.0, 200)
     for x in (-50.0, 10.0):
-        s.prop("ShrubSnow", x, -60.8, 0)
+        s.prop("Planter", x, -60.6, 0)
 
 
 # The pond hollow -------------------------------------------------------------------------------------------------
@@ -179,7 +181,6 @@ def hollow(s):
                  (-100.0, -34.5), (-132.0, -34.5)):
         s.prop("ShrubSnow", x, z, (x + z) % 180, 1.0, HY)
     s.station("Camera", "Pond Camera Post", -60.0, 24.0, 90, y=HY, prop="StationCameraPost")
-    s.drop_point("under the pond bridge", -99.4, -20.4, y=HY + 0.15)
     s.hood(-138.0, -24.0, y=HY + 0.6)
     s.prop("Snowman", -110.0, -24.0, 30, 1.0, HY)
     for x, z in ((-70.0, 12.5), (-126.0, -26.0), (-96.0, 34.0), (-140.0, 30.0), (-100.0, -27.0), (-80.0, -27.0)):
@@ -248,11 +249,10 @@ def court(s):
         s.box("WhiteTrim", (xx, 0.06, cz + 6.0), (0.3, 0.06, 16.0), skip=("-y",))
     lamp(s, x0 - 3.0, cz - 10.0)
     lamp(s, x1 + 5.4, cz - 12.0)
-    # The roller shed outside the fence's west side, a spare drop point behind it.
+    # The roller shed outside the fence's west side.
     rx, rz = 62.0, 8.0
     s.box("Shutter", (rx, 2.6, rz), (4.0, 5.2, 8.0), collide=True, mats={"+y": "Slate"})
     s.box("Snow", (rx, 5.28, rz), (4.2, 0.16, 8.2), skip=("-y",))
-    s.drop_point("behind the tennis court's roller shed", rx - 3.4, rz, spare=True)
 
 
 def bike_shed(s):
@@ -266,7 +266,6 @@ def bike_shed(s):
     s.prop("BikeRack", (x0 + x1) / 2 + 3.0, z0 + 3.0, 0)
     for k, x in enumerate((x0 + 13.0, x0 + 15.0, x0 + 17.0)):
         s.prop("Bicycle", x, z0 + 3.4, 180 * (k % 2))
-    s.drop_point("the bike shed", x0 + 2.0, (z0 + z1) / 2, spare=True)
     s.light("point", ((x0 + x1) / 2, 7.4, (z0 + z1) / 2), (220, 230, 255), 16, 0.8)
     s.box("NeonCool", ((x0 + x1) / 2, 7.95, (z0 + z1) / 2), (3.0, 0.1, 0.4))
 
@@ -289,9 +288,9 @@ def lawns(s):
         lamp(s, x, z)
     for x, z, rot in ((30.0, 10.0, 20), (-44.0, 30.0, 300)):
         s.prop("Snowman", x, z, rot)
-    for x, z, rot in ((-84.6, 57.0, 0), (54.0, 34.6, 180), (-60.0, 56.6, 0)):
+    for x, z, rot in ((-81.3, 70.0, -90), (-67.6, 56.6, 0)):
         s.prop("SnowTools", x, z, rot)
-    for x, z in ((34.0, -44.0), (-60.0, -34.5), (-12.0, -34.5), (44.0, 32.0)):
+    for x, z in ((34.0, -26.0), (-60.0, -34.5), (-5.6, -27.5), (34.0, 36.6)):
         s.prop("ShrubSnow", x, z, (x * 3) % 180)
     for x, z in ((30.0, 48.0), (-60.0, 20.0)):
         s.box("BlackMetal", (x, 0.08, z), (2.4, 0.16, 2.4), skip=("-y",))

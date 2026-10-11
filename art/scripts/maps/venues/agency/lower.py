@@ -19,13 +19,16 @@ C = P.CEIL1
 
 def floors(s):
     rooms = P.ROOMS_L1
-    looks = {"security": "CarpetGrey", "observation": "CarpetGrey", "interview_a": "TileMetroGrey",
-             "interview_b": "TileMetroGrey", "copy": "CarpetGrey", "lockers": "TileMetroGrey", "break": "WoodFloor",
-             "night": "CarpetNavy", "sergeant": "WoodFloorDark"}
+    looks = {"security": "CarpetTile", "observation": "CarpetTileBlue", "interview_a": "VinylClinic",
+             "interview_b": "VinylClinic", "copy": "Linoleum", "lockers": "TerrazzoDark", "break": "WoodFloor",
+             "night": "CarpetTileBlue", "sergeant": "WoodFloorDark"}
     for name, poly in rooms.items():
         fit.floor_faces(s, poly, Y, looks[name])
     fit.floor_faces(s, P.LOBBY, Y, "MarbleBlack")
-    fit.floor_faces(s, P.LOUNGE, Y, "WoodFloorDark")
+    fit.floor_faces(s, P.LOUNGE, Y, "WoodHerringbone")
+    # Finished ceilings (a hair under the office tiles) over the lobby and the lounge.
+    for poly in (P.LOBBY, P.LOUNGE):
+        fit.ceiling_faces(s, poly, P.CEIL1 - 0.06, "CeilingPlasterDark", holes=[P.rect_of(P.VOID)])
     fit.floor_faces(s, P.BULLPEN, Y, "CarpetNavy", holes=[rooms["sergeant"]])
     taken = [P.rect_of(P.CORE), P.LOBBY, P.BULLPEN, P.LOUNGE] + list(rooms.values())
     holes = [g2.ccw(q) for t in taken for q in g2.convex_pieces(t)]
@@ -78,8 +81,8 @@ def observation(s):
     fit.partition(s, (-58.0, -48.0), (-44.0, -48.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(7.0, 4.4)])
     s.station("Phone", "Wiretap Console", -47.8, -66.0, 90, prop="StationReelToReel")
     s.prop("Chair", -54.5, -71.5, -90)
-    top = fit.table(s, -55.8, -55.0, 3.0, 2.2, 90, Y)
-    s.prop("CoffeeMachine", -55.8, -55.6, -90, 1.0, top)  # front to the room, back to the wall
+    top = fit.table(s, -55.8, -57.6, 3.0, 2.2, 90, Y)
+    s.prop("CoffeeMachine", -55.8, -58.2, -90, 1.0, top)  # front to the room, back to the wall
     s.box("NeonRed", (-51.0, 10.1, -48.34), (1.2, 0.35, 0.05))  # the red lamp over the door: recording
     s.sign((-51.0, 10.9, -48.36), 0, 3.0, 0.5, "録音中 ON AIR", "GothamBlack", (255, 90, 90), None)
     s.light("point", (-51.0, 9.6, -50.0), (255, 60, 60), 8, 0.5)
@@ -159,11 +162,10 @@ def lockers(s):
 def break_room(s):
     fit.partition(s, (50.0, -75.0), (50.0, -40.0), Y, C, "PlasterLight", "TileMetroGrey", doors=[(31.0, 5.0)])
     fit.partition(s, (50.0, -40.0), (100.0, -40.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(25.0, 5.0)])
-    # Vending machines along the west wall; the gap behind the last one is the drop point.
+    # Vending machines along the west wall.
     s.prop("VendingBlue", 51.9, -69.8, -90)
     s.prop("VendingWhite", 51.9, -65.4, -90)
     s.prop("VendingMachine", 51.8, -60.9, -90)
-    s.drop_point("behind the vending machines", 52.4, -73.2)
     # The kitchenette along the east glass: counter, sink, coffee; the fridge, the cooler.
     top = fit.counter(s, 97.3, -63.0, 90, 18.0, d=2.4, top="WhiteTrim", body="WoodPanel")
     s.prop("CoffeeMachine", 97.4, -66.0, 90, 1.0, top)
@@ -186,7 +188,7 @@ def break_room(s):
 
 
 def night_desk(s):
-    fit.partition(s, (50.0, -40.0), (50.0, 16.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(20.0, 5.0), (48.0, 5.0)],
+    fit.partition(s, (50.0, -40.0), (50.0, 16.3), Y, C, "PlasterGrey", "PlasterGrey", doors=[(20.0, 5.0), (48.0, 5.0)],
                   glass="clear")
     fit.partition(s, (50.0, 16.0), (100.0, 16.0), Y, C, "PlasterGrey", "PlasterLight", doors=[(38.0, 5.0)])
     s.station("Phone", "Call Log Desk", 88.0, -29.0, 0, prop="StationPhoneDesk")
@@ -327,13 +329,12 @@ def bullpen(s):
 
 
 def sergeant(s):
-    fit.partition(s, (-100.0, 53.0), (-76.0, 53.0), Y, C, "PlasterGrey", "WoodPanel", glass="blinds")
+    fit.partition(s, (-100.0, 53.0), (-75.7, 53.0), Y, C, "PlasterGrey", "WoodPanel", glass="blinds")
     fit.partition(s, (-76.0, 53.0), (-76.0, 75.0), Y, C, "PlasterGrey", "WoodPanel", doors=[(5.0, 4.2)], glass="blinds")
     fit.desk(s, -88.0, 66.0, 180, Y)
     s.prop("Bookshelf", -98.0, 60.0, -90)
     s.prop("Bookshelf", -98.0, 63.4, -90)
     s.prop("FilingCabinet", -79.0, 72.6, 0)  # back to the glass, front to the room
-    s.drop_point("the sergeant's office", -97.2, 72.3, spare=True)
     fit.panel(s, -88.0, 61.0, C, w=3.0, brightness=0.6, range_=14)
     fit.plaque(s, -75.7, 10.6, 60.5, -90, 4.0, 0.8, "班長室 SERGEANT")
 

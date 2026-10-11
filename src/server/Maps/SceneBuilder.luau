@@ -30,6 +30,16 @@ SceneBuilder.disabled = false
 
 -- Tag on the colliders the camera cannot pass through (see client World/CameraCollision).
 SceneBuilder.CAMERA_TAG = "LCameraBlock"
+-- Emergency lamps (off until the map's blackout; the client lights them, World/Blackout).
+SceneBuilder.EMERGENCY_TAG = "LMapEmergency"
+
+-- Whether the importer gave the mesh a texture (a SurfaceAppearance, or a plain TextureID).
+local function hasTexture(part: BasePart): boolean
+	if part:FindFirstChildWhichIsA("SurfaceAppearance") then
+		return true
+	end
+	return part:IsA("MeshPart") and (part :: MeshPart).TextureID ~= ""
+end
 
 local function dress(part: BasePart, material: string)
 	part.Anchored = true
@@ -37,7 +47,11 @@ local function dress(part: BasePart, material: string)
 	part.CanQuery = false
 	part.CanTouch = false
 	local look = (SceneMaterials :: any)[material]
-	if not look or look.textured then
+	if look and look.textured and look.fallback and not hasTexture(part) then
+		-- A material that has a texture now, on a mesh imported before it had one (a venue whose file
+		-- is older than the material): its fallback look, so it does not show as bare grey.
+		look = look.fallback
+	elseif not look or look.textured then
 		part.CastShadow = true
 		return
 	end
@@ -97,6 +111,11 @@ local function addLight(b, folder: Instance, spec, showFixture: boolean?, where:
 	light.Parent = anchor
 	if spec.flicker then
 		CollectionService:AddTag(anchor, "LFlicker")
+	end
+	if spec.role == "emergency" then
+		-- An emergency lamp: off until the map's blackout (the client lights it, World/Blackout).
+		light.Enabled = false
+		CollectionService:AddTag(anchor, SceneBuilder.EMERGENCY_TAG)
 	end
 end
 

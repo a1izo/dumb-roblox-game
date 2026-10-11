@@ -99,6 +99,28 @@ def _glow_objects(key):
     return sorted(found, key=lambda o: o.name)
 
 
+# Props held in a hand, in front of the camera: their textures get the denser rule (lookbook.DENSITY).
+# (The suit cloth too: it is what the camera follows.)
+HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLimb"}
+
+# Tokyo's first props were shipped from builders older than the ones in the scripts now, and the
+# district was laid out around those shapes (a bicycle rack's spacing, a ticket gate's width, a
+# cherry tree's reach). Their meshes are KEPT: a build gives the kept mesh the scanned materials
+# (reskin_one) and never runs the builder, whose newer shape waits for the owner's yes. To take a
+# newer shape: remove the name here, build it, and run maps/check_v2.py on every map that places it.
+KEPT = frozenset("""
+    ArcadeCabinet BarStool Barricade BeerCrates Bicycle BikeRack Boat Bollard Bus BusShelter BusStopSign
+    Chochin ClawMachine ClothesRack CoinLockers DisplayCase DrinkFridge DryerStack GuardRail KeiTruck
+    LanternString Mannequin MealTicketMachine Noren Planter PlatformBench PoliceCar PoliceTape PostBox
+    RamenCounter RecycleBins RoadSign Scooter ShopCounter SiteFence StationCCTV StationClock
+    StationLabBench StationPhoneBooth StationPrintKit StationReception StationSignHanging StoreShelf
+    StreetLightTokyo Taxi TaxiRankSign TicketGate TicketMachine TrafficCone TrainHead TrainMiddle
+    TreeSakura UtilityPole VendingBlue VendingWhite Washer YakitoriGrill
+""".split())
+# Designs no map places: not built, so no file carries them.
+SHELVED = frozenset({"TreeZelkova", "PetalScatter"})
+
+
 def build_one(key):
     spec = props.BUILDERS[key]
     mk.new_build()
@@ -109,7 +131,7 @@ def build_one(key):
     main = mk.merge(parts, key)
     shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
     mk.unwrap(main)
-    mk.bake(main, size=spec["texture"])
+    mk.bake(main, size=spec["texture"], where="held" if key in HELD else "prop")
     # Glowing parts, one mesh per colour (each becomes a Neon MeshPart of that colour).
     by_colour = {}
     for part in glow:
@@ -154,10 +176,46 @@ def build_one(key):
     return main, glow_obj, info
 
 
+def reskin_one(key):
+    """A kept prop (KEPT) in the scanned materials, on its own mesh. Each face carries the number of
+    its surface ("dg_skin") in the object's list "dg_skins": the two colours it runs between, its kind
+    (modelkit.SCANS), roughness and metal, or the two colours and the run of a banded sheet. Its
+    glowing parts, lights and anchor stay as they are."""
+    main = bpy.data.objects.get(key)
+    if main is None or not main.get("dg_skins") or "dg_skin" not in main.data.attributes:
+        raise RuntimeError(f"{key} is a kept prop, and art/blend/Props.blend has no kept mesh for it")
+    mk.new_build()
+    mesh = main.data
+    mesh.materials.clear()
+    for i, skin in enumerate(json.loads(main["dg_skins"])):
+        name = f"{key}_Skin{i}"
+        if skin.get("bands"):
+            dark, light, frequency, axis = skin["bands"]
+            mat = mk.banded(name, dark, light, frequency=frequency, axis=axis, roughness=skin["roughness"])
+        else:
+            dark, light = skin["colors"]
+            mat = mk.noisy(name, dark, light, roughness=skin["roughness"], metallic=skin["metallic"], kind=skin["kind"])
+        mesh.materials.append(mat)
+    faces = np.zeros(len(mesh.polygons), dtype=np.int32)
+    mesh.attributes["dg_skin"].data.foreach_get("value", faces)
+    mesh.polygons.foreach_set("material_index", faces)
+    mesh.update()
+    if "custom_normal" not in mesh.attributes:
+        mk.weighted_normals(main)
+    mk.unwrap(main)
+    mk.bake(main, size=props.BUILDERS[key]["texture"], where="prop")
+    glow_objs = _glow_objects(key)
+    main["tris"] = mk.triangles(main) + sum(mk.triangles(o) for o in glow_objs)
+    info = {"size": [round(v, 3) for v in mk.dimensions(main)], "tris": main["tris"]}
+    return main, glow_objs[0] if glow_objs else None, info
+
+
 def build(keys=None):
     results = {}
     for key in keys or list(props.BUILDERS):
-        _, _, info = build_one(key)
+        if key in SHELVED:
+            continue
+        _, _, info = reskin_one(key) if key in KEPT else build_one(key)
         results[key] = info
     for coll_name in ("Build",):
         coll = bpy.data.collections.get(coll_name)
@@ -217,7 +275,9 @@ def write_catalog():
             return x * 12.92 if x <= 0.0031308 else 1.055 * (x ** (1 / 2.4)) - 0.055
 
         # The texture's average colour: the flat look used when the texture fails to load.
-        tex = os.path.join(common.TEXTURES, obj.name + ".png")
+        tex = os.path.join(common.TEXTURES, obj.name + "_color.jpg")
+        if not os.path.exists(tex):
+            tex = os.path.join(common.TEXTURES, obj.name + ".png")  # (a prop not yet baked from the scans)
         if os.path.exists(tex):
             img = bpy.data.images.load(tex, check_existing=True)
             px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, img.channels)

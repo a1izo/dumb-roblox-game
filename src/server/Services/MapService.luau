@@ -79,19 +79,13 @@ function MapService.nextMapName(): string
 	return MAPS[MapService.nextMapId()].name
 end
 
-local function updateNextMapLabel()
-	if lobbyInfo then
-		lobbyInfo.nextMapLabel.Text = "NEXT CASE\n" .. MapService.nextMapName()
-	end
-end
-
+-- (The next case's name is on every player's lobby page, from the lobby state; no sign in the world carries it.)
 function MapService.advance()
 	if forcedNext then
 		forcedNext = nil
 	else
 		rotationIndex += 1
 	end
-	updateNextMapLabel()
 end
 
 -- Debug -----------------------------------------------------------------------------------
@@ -113,7 +107,6 @@ function MapService.forceNext(mapId: string): boolean
 		return false
 	end
 	forcedNext = mapId
-	updateNextMapLabel()
 	return true
 end
 
@@ -131,7 +124,6 @@ function MapService.rebuildLobby()
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))
 	model.Parent = workspace
 	lobbyModel = model
-	updateNextMapLabel()
 	LeaderboardService.setLabels(lobbyInfo.boards)
 	LobbyGameService.setup(lobbyInfo.games)
 end
@@ -161,7 +153,6 @@ function MapService.build(mapId: string)
 		stations = {},
 		spawns = {},
 		sheets = {},
-		dropPoints = {},
 		hoods = {},
 		areas = {},
 		boardLabels = {},
@@ -178,9 +169,6 @@ function MapService.build(mapId: string)
 	end
 	for i, sheet in ipairs(layout.sheets) do
 		table.insert(info.sheets, { id = "P" .. i, position = b:worldPos(sheet.x, sheet.y, sheet.z) })
-	end
-	for i, drop in ipairs(layout.dropPoints) do
-		table.insert(info.dropPoints, b:dropPoint(drop, "D" .. i))
 	end
 	for _, hood in ipairs(layout.hoods) do
 		table.insert(info.hoods, b:worldPos(hood.x, hood.y, hood.z))
@@ -199,6 +187,11 @@ function MapService.build(mapId: string)
 	-- What kind of ground each place is (roads, crossings, water...), for placing things.
 	info.zones = Zones.new(layout.zones or {}, MAP_ORIGIN)
 	info.spare = layout.spare
+	-- The map's own data and builder, for its mechanic (Maps/Mechanics): the Tokyo crowd's walks and
+	-- the cars' lanes, the Bureau's breaker panel.
+	info.layout = layout
+	info.origin = MAP_ORIGIN
+	info.builder = b
 
 	local meeting = MeetingRoom.build(Builder.new(model, MEETING_ORIGIN))
 	info.meeting = meeting
@@ -273,7 +266,6 @@ function MapService.init()
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))
 	model.Parent = workspace
 	lobbyModel = model
-	updateNextMapLabel()
 	LeaderboardService.setLabels(lobbyInfo.boards)
 	LobbyGameService.setup(lobbyInfo.games)
 end

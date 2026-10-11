@@ -8,15 +8,20 @@ reached by an old stone causeway that crosses a deep chasm; they carry the mini-
 
 - The south: the spawn terrace, a broken ruin a few steps above the plaza; players appear on it facing
   north, over the basin, to the colossal blade standing in its mound between two twisted columns.
-- The middle: an old flagstone plaza, a plinth with the Grimoire lying on it, and round the plaza six
-  steles carrying the game's boards.
-- North: the title monolith; behind it, up on a mesa nobody can climb, the bone throne.
+- The middle: an old flagstone plaza, open, a ring of twelve candle stones at its middle (one burns for each
+  player who is ready). Round the plaza, where boards once stood, five low stone bases carry the tableaux
+  (stone figures the game stands on them, acting out how a case goes), and a sixth place the bell of
+  Death's mark.
+- North: the title monolith; behind it, up on a mesa nobody can climb, the bone throne (the game seats the
+  player with the most wins on it, in stone); at the mesa's foot a low slab, the one board left: Most Wins.
 - South-west: the Academy, a ring of broken pillars with the practice altars and effigies.
 - East: the rift, a hole in the ground looking down on Kagegaoka at night far below (the stone toss stands at
-  its rim).
+  its rim). Its rim is open: far beneath its middle a hall's roof with a lit ring is where a dive ends.
 - North-west: the dice rock; the cleft. North-east: the needle ledge, where a small blade glows.
-  South-east: a colossal carcass, its ribcage arching over the ash.
+  South-east: a colossal carcass, its ribcage arching over the ash; two slates face each other under it (the
+  name duel).
 - West plateau (over the west causeway): the Spire Ascent. North-east plateau: the rune courtyard.
+- Seven grey apples lie about: one under the withered tree, the rest in the far corners.
 
 Every place the venue modules use is set here. Run it on its own (python
 art/scripts/maps/venues/lobby/plan.py) to check that nothing overlaps and it all stays inside the
@@ -56,11 +61,29 @@ def _basin():
 
 BASIN = _basin()  # the walkable ground's edge (counter-clockwise from east)
 
-# The plaza and the Grimoire's plinth.
+# The plaza, and the ring of candle stones at its middle (the game lights one for each player who is ready).
 PLAZA_C = (0.0, 8.0)
 PLAZA_R = 30.0
-PLINTH = (0.0, -8.0, 8.0, 11.0, 3.4)  # x, z, width (x), depth (z), height
-GRIMOIRE_SCALE = 2.2
+READY_R = 8.0  # the ring's radius
+READY_COUNT = 12  # one stone for each player a case can hold
+READY_H = 1.7  # a stone's height (low: the view from the terrace to the title goes over them)
+
+
+def ready_stones():
+    """The candle stones (x, z): from the one nearest the terrace's steps, clockwise seen from above."""
+    return [(round(PLAZA_C[0] + math.cos(math.radians(90.0 + k * 360.0 / READY_COUNT)) * READY_R, 2),
+             round(PLAZA_C[1] + math.sin(math.radians(90.0 + k * 360.0 / READY_COUNT)) * READY_R, 2))
+            for k in range(READY_COUNT)]
+
+
+# The five tableaux (x, z), where boards once stood round the plaza: low round bases the game stands its stone
+# figures on, each facing the plaza's middle, in the order the story is told (clockwise from the steps). The
+# sixth such place holds the bell of Death's mark.
+TABLEAUX = [(-38.0, 40.0), (-47.0, 4.0), (-38.0, -27.0), (38.0, -27.0), (47.0, 4.0)]
+TABLEAU_R = 6.0
+TABLEAU_H = 0.7
+BELL = (38.0, 40.0)
+BELL_R = 3.6  # its base
 
 # The spawn terrace: raised a few studs over the plaza's south side, wide steps down its north edge.
 TERRACE = (0.0, 62.0, 46.0, 20.0, 11.0)  # x, z, width (x), depth (z), height of its top
@@ -120,20 +143,7 @@ def chasm_poly(c):
     return g2.rect(c[0], c[1], c[2], c[3], c[4])
 
 
-# The steles: name -> (x, z, rot facing where people come from, board w, board h). The board's middle is 11 up.
-STELES = {
-    "howto": (-47.0, 4.0, -90.0, 30.0, 14.0),
-    "weekly": (-38.0, -27.0, -131.8, 14.0, 14.0),
-    "quests": (-38.0, 40.0, -51.7, 14.0, 14.0),
-    "nextCase": (47.0, 4.0, 90.0, 26.0, 8.0),
-    "wins": (38.0, -27.0, 131.8, 14.0, 14.0),
-    "xp": (38.0, 40.0, 51.7, 14.0, 14.0),
-    # The mini-game boards, by the bridge heads (facing the plaza).
-    "parkourBoard": (-136.0, -28.0, -90.0, 14.0, 14.0),
-    "runesBoard": (90.0, -58.0, 126.0, 14.0, 14.0),
-}
-STELE_T = 2.4  # the stone's thickness
-BOARD_Y = 11.0
+STELE_T = 2.4  # a stele's thickness
 
 # The Academy: a ring of broken pillars, its gate facing the plaza.
 ACADEMY_C = (-80.0, 84.0)
@@ -181,6 +191,14 @@ APPLE_TREE = (76.0, -6.0)
 TOSS = (64.0, 42.0, -59.5)  # the stone-toss cairn (x, z) and the rot facing the rift's middle
 RIFT_MID = g2.centroid(RIFT)
 
+# Far beneath the rift's middle: the hall whose roof a dive ends on. In the city's own units, from the point
+# under the rift's middle (the city is drawn at a third of its size): half its width (x), half its depth (z)
+# and its floors. It reaches past the whole opening, so whoever goes over the rim anywhere comes down on it.
+LANDING = (90.0, 72.0, 13)
+CITY_SCALE = 1 / 3
+LANDING_Y = BELOW_Y + (LANDING[2] * 12.0 + 1.5) * CITY_SCALE  # its roof
+LANDING_RING = 10.5  # the lit ring on the roof (studs)
+
 # The dice rock and the carcass.
 DICE_ROCK = (-66.0, -44.0, 3.6, 2.4)  # x, z, radius, height of its flat top
 DICE_SEATS = [(DICE_ROCK[0] + math.cos(math.radians(30 + k * 90)) * (DICE_ROCK[2] + 2.6),
@@ -189,6 +207,14 @@ CARCASS_SKULL = (14.0, 116.0, 70.0)  # x, z, rot (facing west-north-west, its sp
 SPINE = [(46.0, 118.0), (62.0, 112.0), (78.0, 108.0), (94.0, 106.0), (110.0, 106.0)]
 RIB_SPAN = 13.0  # how far each rib's foot lands from the spine
 SPINE_Y = 17.0
+
+
+def _along(a, b, t):
+    return (round(a[0] + (b[0] - a[0]) * t, 2), round(a[1] + (b[1] - a[1]) * t, 2))
+
+
+# The name duel: two slates under the ribs, on the spine's line, facing each other (x, z).
+DUEL = [_along(SPINE[1], SPINE[2], 0.5625), _along(SPINE[2], SPINE[3], 0.4375)]
 
 # The two vista ledges at the rim: the cleft looking out over the plain (north-west) and the needle ledge with
 # the small glowing blade (north-east). x, z of each ledge's middle, and the direction outwards (degrees).
@@ -235,6 +261,39 @@ def rot_towards(frm, to):
     return math.degrees(math.atan2(-dx, -dz))
 
 
+def _wins_slab():
+    """At the foot of the throne's mesa, a little to the side of the line from the plaza to the throne (so it
+    never stands in front of whoever sits there), facing the plaza."""
+    fx, fz = facing(THRONE_ROT)
+    a = math.atan2(fz, fx) + math.radians(35.0)
+    d = THRONE_MESA[2] + 6.0
+    x, z = THRONE_MESA[0] + math.cos(a) * d, THRONE_MESA[1] + math.sin(a) * d
+    return (round(x, 2), round(z, 2), round(rot_towards((x, z), PLAZA_C), 1), 10.0, 10.0, 6.0)
+
+
+# The one board left standing in the world, Most Wins: a low slab. name -> (x, z, rot facing where people come
+# from, board w, board h, the board's middle above the ground).
+STELES = {"wins": _wins_slab()}
+
+
+def apples():
+    """The seven grey apples: (x, y of the ground there, z). The first lies under the withered tree, where
+    anyone finds it; the others in the far corners: the cleft, the needle ledge, by the carcass's skull, behind
+    the throne's mesa, behind the spire, behind the rune courtyard."""
+    ca, na = math.radians(CLEFT_DEG), math.radians(NEEDLE_DEG)
+    out = [
+        (APPLE_TREE[0] + 3.0, 0.0, APPLE_TREE[1] + 3.0),
+        (CLEFT[0] - math.sin(ca) * 5.0, 0.0, CLEFT[1] + math.cos(ca) * 5.0),
+        (NEEDLE[0] - math.sin(na) * 5.0 - math.cos(na), 0.0, NEEDLE[1] + math.cos(na) * 5.0 - math.sin(na)),
+        (CARCASS_SKULL[0] - 14.0, 0.0, CARCASS_SKULL[1] - 6.0),
+        (40.0, 0.0, -128.0),
+    ]
+    for islet, d in ((ISLET_PARKOUR, 14.5), (ISLET_RUNE, 21.5)):
+        r = math.hypot(islet[0], islet[1])
+        out.append((islet[0] + islet[0] / r * d, PLATEAU_H, islet[1] + islet[1] / r * d))
+    return [(round(x, 2), y, round(z, 2)) for x, y, z in out]
+
+
 def altars():
     """The seven practice altars: (x, z, rot facing the ring's middle), spread over the ring's back."""
     gate = math.radians(GATE_DIR)
@@ -261,7 +320,8 @@ def circle(c, r, n=16):
 def footprints():
     """name -> polygon of everything solid on the ground, for the overlap check."""
     items = {
-        "plinth": g2.rect(PLINTH[0], PLINTH[1], PLINTH[2], PLINTH[3]),
+        "ready ring": circle(PLAZA_C, READY_R + 1.5),
+        "bell": circle(BELL, BELL_R),
         "monolith": g2.rect(MONO[0], MONO[1], MONO[2] + 22.0, MONO[3] + 10.0),  # its base and tusks too
         "throne mesa": circle(THRONE_MESA[:2], THRONE_MESA[2]),
         "rift guard": RIFT_GUARD,
@@ -279,8 +339,10 @@ def footprints():
     }
     for k, (x, z, r, h, seed) in enumerate(COLUMNS):
         items[f"column {k}"] = circle((x, z), r + 1.5)
-    for name, (x, z, rot, w, h) in STELES.items():
+    for name, (x, z, rot, w, h, by) in STELES.items():
         items["stele " + name] = g2.rect(x, z, w + 4.0, STELE_T, rot)
+    for k, c in enumerate(TABLEAUX):
+        items[f"tableau {k + 1}"] = circle(c, TABLEAU_R + 0.5)
     for k, (x, z, r, h, seed) in enumerate(OUTCROPS):
         items[f"outcrop {k}"] = circle((x, z), r)
     for k, (x, z, rot) in enumerate(altars()):
@@ -298,10 +360,49 @@ def check():
             hit = g2.intersect(g2.ccw(items[a]), g2.ccw(items[b])) if g2.is_convex(items[b]) else []
             if hit and abs(g2.area(hit)) > 0.5:
                 problems.append(f"{a} overlaps {b}")
-    for name in ("plinth", "monolith", "rift guard", "dice rock", "apple tree", "terrace", "toss cairn", "cleft ledge",
-                 "needle ledge"):
+    inside = ["ready ring", "bell", "monolith", "rift guard", "dice rock", "apple tree", "terrace", "toss cairn",
+              "cleft ledge", "needle ledge", "stele wins"] + [f"tableau {k + 1}" for k in range(len(TABLEAUX))]
+    for name in inside:
         if not all(g2.contains(basin, p) for p in items[name]):
             problems.append(f"{name} leaves the island")
+    # The tableaux and the bell ring the plaza without standing on it; the candle stones stand well inside it.
+    for name, c, r in [(f"tableau {k + 1}", c, TABLEAU_R) for k, c in enumerate(TABLEAUX)] + [("bell", BELL, BELL_R)]:
+        if math.dist(c, PLAZA_C) - r < PLAZA_R + 4.0:
+            problems.append(f"{name} stands on the plaza")
+    if READY_R + 2.0 > PLAZA_R - 8.0:
+        problems.append("the candle ring reaches the plaza's edge")
+    # The duel's slates: under the ribs, on the spine's line, clear of every rib's foot, a fair way apart.
+    ribs = items["carcass ribs"]
+    for k, p in enumerate(DUEL):
+        if not g2.contains(ribs, p):
+            problems.append(f"duel slate {k + 1} is outside the ribcage")
+        for q in range(len(SPINE)):
+            cx, cz = SPINE[q]
+            if q + 1 < len(SPINE):
+                dx, dz = SPINE[q + 1][0] - cx, SPINE[q + 1][1] - cz
+            else:
+                dx, dz = cx - SPINE[q - 1][0], cz - SPINE[q - 1][1]
+            length = math.hypot(dx, dz)
+            for sgn in (-1, 1):
+                foot = (cx - dz / length * sgn * RIB_SPAN, cz + dx / length * sgn * RIB_SPAN)
+                if math.dist(p, foot) < 6.0:
+                    problems.append(f"duel slate {k + 1} is within 6 of a rib's foot")
+    if not 10.0 <= math.dist(DUEL[0], DUEL[1]) <= 18.0:
+        problems.append(f"the duel's slates are {math.dist(DUEL[0], DUEL[1]):.1f} apart")
+    # The apples in the basin: on the ground people can reach, not inside anything solid.
+    for k, (x, y, z) in enumerate(apples()):
+        if y > 0.0:
+            continue
+        if not g2.contains(basin, (x, z)) or g2.dist_to_poly_edge(basin, (x, z)) < 14.0:
+            problems.append(f"apple {k + 1} is at the rim or past it")
+        for name, poly in items.items():
+            if name not in ("cleft ledge", "needle ledge") and g2.contains(poly, (x, z)):
+                problems.append(f"apple {k + 1} lies inside {name}")
+    # The landing hall reaches past the whole opening (the city is not turned with the rift).
+    for x, z in RIFT_GUARD:
+        if abs(x - RIFT_MID[0]) > LANDING[0] * CITY_SCALE - 2.0 or abs(z - RIFT_MID[1]) > LANDING[1] * CITY_SCALE - 2.0:
+            problems.append("the landing hall does not reach under the whole rift")
+            break
     for x, z in SPAWNS + [SPAWN]:
         if not g2.contains(items["terrace"], (x, z)):
             problems.append(f"spawn {(x, z)} is off the terrace")
@@ -317,11 +418,11 @@ def check():
                 problems.append(f"altar {k + 1}'s worker spot is within 5 of an effigy")
         if math.dist((x, z), ACADEMY_C) + 3.2 > ACADEMY_R - 1.5:
             problems.append(f"altar {k + 1} reaches the pillars")
-    for name, (x, z, rot, w, h) in STELES.items():
-        if name.endswith("Board"):
-            continue
+    for name, (x, z, rot, w, h, by) in STELES.items():
         if math.dist((x, z), PLAZA_C) < PLAZA_R + 4:
             problems.append(f"stele {name} stands on the plaza")
+        if by - h / 2 < 0.9:
+            problems.append(f"stele {name}'s board reaches the ground")
     # The causeways: their heads inside the basin, clear of every solid, and the islets clear of the island.
     for name, (a, b) in (("rune", BRIDGE_RUNE), ("parkour", BRIDGE_PARKOUR)):
         deck = g2.rect((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, math.dist(a, b), BRIDGE_W,
@@ -342,3 +443,5 @@ if __name__ == "__main__":
         print("  -", p)
     print("bridge rune", BRIDGE_RUNE, "bridge parkour", BRIDGE_PARKOUR)
     print("cleft", CLEFT, "needle", NEEDLE)
+    print("wins slab", STELES["wins"], "duel", DUEL, "landing roof y", LANDING_Y)
+    print("apples", apples())

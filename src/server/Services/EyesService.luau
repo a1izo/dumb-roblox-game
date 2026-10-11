@@ -85,7 +85,7 @@ local function read(ps, targetUserId)
 		return
 	end
 	local targetHead = Match.eyePosition(target)
-	if not targetHead or not Match.canSee(ps, targetHead, Config.EYES_RANGE, nil) then
+	if not targetHead or not Match.canSee(ps, targetHead, Match.sightRange("eyes"), nil) then
 		Match.notify(ps.player, "Too far away, or something is in the way.", "bad")
 		return
 	end

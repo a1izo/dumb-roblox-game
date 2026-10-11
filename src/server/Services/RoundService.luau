@@ -28,6 +28,7 @@ local EventLog = require(script.Parent.EventLog)
 local EvidenceService = require(script.Parent.EvidenceService)
 local EyesService = require(script.Parent.EyesService)
 local Analytics = require(script.Parent.Analytics)
+local Mechanics = require(script.Parent.Parent:WaitForChild("Maps"):WaitForChild("Mechanics"))
 local GhostService = require(script.Parent.GhostService)
 local HoodService = require(script.Parent.HoodService)
 local MapService = require(script.Parent.MapService)
@@ -81,6 +82,7 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	local uncuttable = options ~= nil and options.uncuttable == true
 	Match.phase = name
 	GhostService.onPhase(name)
+	Mechanics.onPhase(name)
 	Match.phaseStartedAt = workspace:GetServerTimeNow()
 	Match.phaseEndsAt = Match.phaseStartedAt + length
 	if onStart then
@@ -109,6 +111,7 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	if onEnd then
 		onEnd()
 	end
+	Mechanics.onPhaseEnd(name)
 end
 
 -- The intro cutscene: every player's avatar somewhere on the map doing something (Staging picks
@@ -165,6 +168,7 @@ end
 local function startIntro()
 	local data = introData(Match.map)
 	data.duration = Match.phaseLength("Intro")
+	Mechanics.stageMarks(data.cast)
 	Cues.fire("intro", data, { lead = 0.2 })
 end
 
@@ -284,6 +288,7 @@ end
 
 local function endInvestigation()
 	CaseFileService.cancelAll("The investigation phase is over.")
+	NoteService.cancelOffers("phase")
 	freezeLiving(true)
 end
 
@@ -418,6 +423,36 @@ function RoundService.debugCue(kind: string, player: Player, target, extra: stri
 		}, to)
 	elseif kind == "eyesDeal" then
 		Cues.fire("eyesDeal", { reads = Config.EYES_READS, deathRound = Match.round + 1 }, to)
+	elseif kind == "shot" then
+		-- Any Blender cutscene by name: you play the lead ("self" or the first part), the others fill the
+		-- rest of its parts in match order.
+		local shot = shotData(extra)
+		if not shot then
+			return "No cutscene called " .. tostring(extra) .. " (exported to Shared/Cinema/Shots?)"
+		end
+		local cast: { [string]: number } = {}
+		local named, crowd = Casting.slots(shot)
+		local others = {}
+		for _, ps in ipairs(Match.list) do
+			if ps.userId ~= player.UserId then
+				table.insert(others, ps.userId)
+			end
+		end
+		local lead = if table.find(named, "self") then "self" else named[1]
+		if lead then
+			cast[lead] = player.UserId
+		end
+		for _, slot in ipairs(named) do
+			if slot ~= lead and #others > 0 then
+				cast[slot] = table.remove(others, 1) :: number
+			end
+		end
+		for _, slot in ipairs(crowd) do
+			if #others > 0 then
+				cast[slot] = table.remove(others, 1) :: number
+			end
+		end
+		Cues.fire("shot", { shot = extra, cast = cast }, to)
 	else
 		return "Unknown cutscene " .. kind
 	end
@@ -426,6 +461,7 @@ end
 
 local function reveal()
 	Match.phase = "Reveal"
+	Mechanics.onPhase("Reveal")
 	Match.phaseStartedAt = workspace:GetServerTimeNow()
 	Match.phaseEndsAt = Match.phaseStartedAt + Match.phaseLength("Reveal")
 	CaseFileService.cancelAll(nil)
@@ -533,6 +569,7 @@ local function runMatch(players: { Player })
 	ChatService.onMatchStart()
 	GhostService.onMatchStart()
 	WagerService.onMatchStart()
+	Mechanics.start(map)
 
 	for i, ps in ipairs(Match.list) do
 		ps.player.CameraMaxZoomDistance = MATCH_ZOOM
@@ -641,6 +678,7 @@ local function cleanup()
 	MeetingService.onMatchEnd()
 	GhostService.onMatchEnd()
 	WagerService.onMatchEnd()
+	Mechanics.stop()
 
 	local participants = Match.list
 	Match.finish()

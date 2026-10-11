@@ -44,10 +44,11 @@ local RAW: { { title: string, body: { string } } } = {
 		},
 	},
 	{
-		title = "Notes and drop points",
+		title = "Notes",
 		body = {
-			"Take a blank sheet, write up to 40 characters, then drop it or hide it at a drop point.",
-			"If anyone from {agency} reads a note naming a living player, it is confiscated and that player gets a hood.",
+			"Take a blank sheet, write up to 40 characters, then drop it or hand it to someone close by (X).",
+			"A handed note can be taken or left. Anyone watching sees the paper change hands.",
+			"If anyone from {agency} picks up a dropped note naming a living player, it is confiscated and that player gets a hood.",
 			"{Hand} can burn a note, but the smoke makes everyone nearby look suspicious.",
 		},
 	},

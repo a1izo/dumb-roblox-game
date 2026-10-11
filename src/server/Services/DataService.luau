@@ -121,6 +121,8 @@ function DataService.payload(player: Player)
 		settings = data.settings,
 		tipsSeen = data.tipsSeen,
 		training = data.training,
+		trial = data.trial,
+		lobbyGames = data.lobbyGames,
 		titles = data.titles,
 		alias = data.alias,
 		passes = PassService.list(player),

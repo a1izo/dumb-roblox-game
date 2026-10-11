@@ -92,16 +92,32 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   what matters. Every screen is built from its tokens, pages, cards, tabs and controls (the
   debug panel's UI tab shows them all), with a router for windows, device scaling, reduced
   motion and full gamepad support.
-- **Teaching**: the role card, objectives for your role and phase, one-time tips (the X on a tip
-  turns the whole guide off; Settings brings it back), How to Play, and the **Academy** in the
-  lobby, a ring of broken pillars with a practice altar for every skill.
+- **Teaching**: nothing in the lobby is explained on a wall. **The Trial** teaches by doing: a new
+  player is offered it once (a wisp at the foot of the terrace's steps, never forced), anyone can begin
+  it under the Academy's gate, and it walks five steps through the Academy's own drills (role card, a
+  case file and its leak of letters, a name in the Manual, a warrant, READY) for a one-time reward.
+  Round the plaza five **tableaux** of stone figures act out how a case goes, with one line on the
+  screen of whoever stands near. In a case: the role card, objectives for your role and phase, and
+  one-time tips that name what to press for the player's own input (longer on a first case; the X
+  closes a tip, "Stop tips" turns the guide off, Settings brings it back). How to Play stays in
+  Settings and on H; the **Academy** keeps a practice altar for every skill.
 - **The lobby** is the Grey Realm: a never-ending wasteland of cracked ash under slow, layered cloud,
   the world Death's Manual comes from. Players appear on a ruined terrace over an old flagstone plaza,
   the colossal blade far to the north between two twisted columns; the title is carved on a monolith
-  beyond the plinth of Death's Manual, and steles round the plaza carry How to Play, the next case and the
-  boards. A ridge of rock borders the walkable basin and the wasteland runs on to the horizon beyond it.
+  beyond the plaza, whose open middle holds a ring of twelve candles (one burns for each player who is
+  ready). A ridge of rock borders the walkable basin and the wasteland runs on to the horizon beyond it.
   The Academy lies south-west; to the east a rift in the ground looks down on Kagegaoka at night; dead
-  trees, bones, a colossal carcass and an empty bone throne stand about. **Mini-games for the wait**
+  trees, bones and a colossal carcass stand about, and behind the title, up on its mesa, the bone
+  throne: whoever has the most wins sits on it in stone, over the one board left in the world (Most
+  Wins; every other board is in the Leaderboards window). **More to do while waiting** (no rewards but
+  bests, a board and a title): *Last breath*, the dive into the rift: step over the rim, fall towards a
+  lit roof far below, and brake with one press; the smallest gap left wins, too late and you land on
+  it, and divers who jump together are ranked together. *Death's mark*, tag from the bell by the plaza:
+  whoever carries the mark when the bell tolls goes down, and the score is the tolls survived in a row.
+  The *name duel*, at the two stones under the carcass's ribs: each of two players is given an invented
+  name that leaks to the other three letters at a time, and the first to write the other's whole name
+  wins (a wrong name costs three seconds; a minute without a winner is a draw).
+  And seven grey apples lie in the realm's far corners, for a title. **Mini-games for the wait**
   (solo-capable, no rewards, global top-10 boards for the first two): the *Spire Ascent*, a parkour up
   floating stones on a plateau over the west causeway; the *rune courtyard*, a memory game on the
   north-east plateau; *bone dice* at the dice rock; and the *stone-toss* at the rift's rim. Wind, drones
@@ -110,6 +126,22 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   hard light, Ace's screen between two speaker columns, the evidence board on a wall of pinned
   photographs and red string, the Deathsingers' mezzanine round the walls, and the city at night
   through half-open blinds.
+- **Each map has a mechanic of its own** (`server/Maps/Mechanics`, one module per map; a bug in one
+  warns and never ends a match):
+  - *Tokyo, the Scramble.* The lamps really cycle (50 s: walk 11, blink 4, cars 32, amber 3; worked
+    out on every machine from one number, `shared/ScrambleCycle`). A crowd of about 35 walkers and a
+    few clerks crosses with the walk lamp, four in five of them in the players' own suit: a player's
+    name tag hides inside the crowd, and a walker's body blocks a letter flash, a witness and the
+    Oculus. A few cars drive on their lamp, brake and honk for anyone in their lane and never touch
+    them. Crossing on the cars' lamp is jaywalking: a camera may report it, and it accuses nobody.
+    Nothing of the crowd or the cars exists on the server: they are numbers, sent five times a
+    second in one small unreliable snapshot (`shared/MapSync`) and drawn by each client
+    (`client/World/Crowd`, `client/World/Scramble`).
+  - *University Campus, tracks in the snow.* Every living player leaves prints on untrodden snow
+    (never on the swept paths) for a minute, and everyone sees them. They are anonymous.
+  - *Bureau HQ, the breaker.* Once a round anyone can pull the main breaker by the fire stair: both
+    floors go dark for 15 s under red emergency lamps, name tags hide, a letter flash reaches half as
+    far and a faked task is only witnessed from close by. The pull is on camera.
 - **Cutscenes** (`client/Presentation`): the server sends timed cues that every client plays at the
   same moment. Case opening, deaths, the verdict, arrests, the Oculus of the Dead deal and the ending.
 - **Characters** (`client/Anim`, `shared/Anim`): procedural poses played on every character from
@@ -222,7 +254,8 @@ src/server/     init.server.luau boots every service
   Maps/         Builder, MapContract, SceneBuilder (places the Blender scenes), Scenes/ (generated
                 layouts, anchors, colliders, props, lights and signs per venue), the
                 lobby (the Grey Realm), the meeting room (the war room) and three maps: Bureau HQ,
-                University Campus, Tokyo
+                University Campus, Tokyo; Mechanics/ (each map's own: the scramble's crowd and
+                cars, the tracks in the snow, the breaker's blackout)
   Debug/        test bots for the debug panel (DebugService runs the panel's commands)
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything
@@ -230,7 +263,8 @@ src/client/     init.client.luau boots everything
   Presentation/ cue router, camera director, cinema helpers, ink effects, cutscene presenters
   Anim/         PoseController, LocomotionController and ActingController (Blender clips)
   Audio/        mixer, music and sound effects
-  World/        lighting, rain and snow, footprints, flicker, Deathsinger visibility
+  World/        lighting, rain and snow, footprints, flicker, Deathsinger visibility, and what
+                each map's mechanic shows (the Tokyo crowd, its lamps and cars, the blackout)
   Deathsinger/      flight, lost souls and real-name tags for ghosts
   Controllers/  prompts, chat rules, emotes, the Oculus of the Dead, the Academy
   Input/        actions and bindings

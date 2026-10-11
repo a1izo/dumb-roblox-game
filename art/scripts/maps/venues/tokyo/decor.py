@@ -6,6 +6,7 @@ walls, and a few bikes, crates and cones. Every one is placed by hand below (a w
 along it), kept off the walking lines and away from the case files' spots."""
 
 from maps import geo2d as g2
+from maps import prints
 from maps.buildings import edges_of
 from maps.venues.tokyo import plan as P
 from maps.venues.tokyo.dressing import kerb
@@ -104,16 +105,26 @@ def umbrella_stand(s, e, u, out):
     note("umbrellas", x, z, 0.5, 0.0, 2.8)
 
 
-def poster(s, e, u, y, w, h, mat, text=None, fg=(24, 22, 26)):
-    """A poster pasted on a wall (words on it, when given, in a transparent board)."""
+def printed(s, a, b, y0, y1, out, index):
+    """Poster `index` of the district's printed sheet (maps/prints.py) on the upright face from ground
+    point a to b, facing out: the right way round whichever way the face was given."""
+    prints.paste(s, "Tokyo", a, b, y0, y1, out, index)
+
+
+def poster(s, e, u, y, w, h, mat, text=None, fg=(24, 22, 26), sheet=None):
+    """A poster pasted on a wall: number `sheet` of the printed sheet, or a plain sheet of `mat` (with
+    words on it, when given, in a transparent board)."""
+    if sheet is not None:
+        printed(s, e.at(u - w / 2, 0.03), e.at(u + w / 2, 0.03), y - h / 2, y + h / 2, e.n, sheet)
+        return
     e.quad(s, mat, u - w / 2, u + w / 2, y - h / 2, y + h / 2, 0.03)
     if text:
         x, z = e.at(u, -0.1)
         s.sign((x, y, z), out_rot(e), w * 0.86, h * 0.86, text, "GothamBlack", fg, None)
 
 
-def pier_poster(s, x, z, rot, y, w, h, mat, text=None, fg=(24, 22, 26)):
-    """A poster on a free-standing face (a pier) at (x, z) facing rot."""
+def pier_poster(s, x, z, rot, y, w, h, mat, text=None, fg=(24, 22, 26), sheet=None):
+    """A poster on a free-standing face (a pier) at (x, z) facing rot (`sheet`: see poster)."""
     import math
 
     a = math.radians(rot)
@@ -121,6 +132,9 @@ def pier_poster(s, x, z, rot, y, w, h, mat, text=None, fg=(24, 22, 26)):
     t = (math.cos(a), -math.sin(a))
     p0 = (x - t[0] * w / 2 + fx * 0.03, z - t[1] * w / 2 + fz * 0.03)
     p1 = (x + t[0] * w / 2 + fx * 0.03, z + t[1] * w / 2 + fz * 0.03)
+    if sheet is not None:
+        printed(s, p0, p1, y - h / 2, y + h / 2, (fx, fz), sheet)
+        return
     from maps import city
 
     city.vquad(s, mat, p0, p1, y - h / 2, y + h / 2, (fx, fz))
@@ -264,16 +278,17 @@ def build(s):
     # Posters on the viaduct's piers (a club night, a missing cat, a gig), and on the
     # expressway's piers over the frontage road.
     z = P.VIADUCT_Z[0]
-    pier_poster(s, -26.7, z, 0, 4.6, 1.6, 2.2, "PaintYellow", "LIVE\n影ヶ丘\nCLUB NOIR\n11.29")
-    pier_poster(s, 33.3, z, 0, 4.2, 1.4, 1.9, "Paper", "迷い猫\nさがしています\n黒猫 オス")
-    pier_poster(s, -134.7, z, 0, 4.8, 1.6, 2.3, "FabricRed", "JAZZ\nMOONLIGHT\nTRIO", (250, 240, 220))
-    pier_poster(s, 141.3, z, 0, 4.4, 1.4, 2.0, "Paper")
-    for x in (-42.0, 54.0, 102.0):
-        pier_poster(s, x, -148.0, 180, 4.4, 1.5, 2.1, "Paper" if x != 54.0 else "PaintYellow",
-                    "貸店舗\nFOR RENT" if x == -42.0 else None)
-    # Flyers on the yokocho's alley walls.
-    poster(s, wall("yb_n2", 0), 3.0, 4.2, 1.0, 1.4, "Paper")
-    poster(s, wall("yc_s3", 2), 2.2, 4.6, 1.2, 1.6, "FabricRed")
+    # (Printed now, from the district's sheet, maps/prints.py: the club night, the cat, the gig, a cram
+    # school's winter course; then the shop to let, the club night again, the Bureau's advisory.)
+    pier_poster(s, -26.7, z, 0, 4.6, 1.6, 2.2, "PaintYellow", sheet=0)
+    pier_poster(s, 33.3, z, 0, 4.2, 1.4, 1.9, "Paper", sheet=1)
+    pier_poster(s, -134.7, z, 0, 4.8, 1.6, 2.3, "FabricRed", sheet=2)
+    pier_poster(s, 141.3, z, 0, 4.4, 1.4, 2.0, "Paper", sheet=3)
+    for x, sheet in ((-42.0, 5), (54.0, 0), (102.0, 4)):
+        pier_poster(s, x, -148.0, 180, 4.4, 1.5, 2.1, "Paper", sheet=sheet)
+    # Flyers on the yokocho's alley walls: the Bureau's advisory, the gig.
+    poster(s, wall("yb_n2", 0), 3.0, 4.2, 1.0, 1.4, "Paper", sheet=4)
+    poster(s, wall("yc_s3", 2), 2.2, 4.6, 1.2, 1.6, "FabricRed", sheet=2)
     # Flyers taped round two of the east street's poles.
     for u in (88.0, 152.0):
         (x, z), d, into = kerb("east", -1, u, 0.9)

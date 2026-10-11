@@ -87,6 +87,7 @@ class Scene(LayoutMixin):
         self.floors = []  # flat triangles (x1, z1, x2, z2, x3, z3, top y, thickness, look, query)
         self.props = []  # (key, x, y, z, rot, scale, flags)
         self.prop_src = []  # per prop: where in the venue's scripts it was placed (for the hand-check plans)
+        self.openings = []  # doors and gaps at floor level, for check_v2's doorways: (x, y, z, w, rot, thick, kind)
         self.steps = []  # visible steps of stairs, drawn by the greybox: (centre, size, rot, look)
         self.lights = []
         self.signs = []
@@ -380,9 +381,11 @@ class Scene(LayoutMixin):
     def preview_prop(self, key, x, z, rot=0.0, scale_=1.0, y=0.0):
         self.preview_props.append((key, x, y, z, rot, scale_))
 
-    def light(self, kind, pos, color, range_, brightness, shadows=False, face="Bottom", angle=90, flicker=False):
+    def light(self, kind, pos, color, range_, brightness, shadows=False, face="Bottom", angle=90, flicker=False,
+              role=None):
+        """role "emergency": a lamp that stays off until the map's blackout (Bureau HQ's breaker)."""
         self.lights.append({"kind": kind, "pos": pos, "color": color, "range": range_, "brightness": brightness,
-                            "shadows": shadows, "face": face, "angle": angle, "flicker": flicker})
+                            "shadows": shadows, "face": face, "angle": angle, "flicker": flicker, "role": role})
 
     def sign(self, pos, rot, w, h, text, font="GothamBlack", color=(255, 255, 255), bg=None, glow=None,
              align="Center"):

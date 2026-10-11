@@ -26,11 +26,11 @@ local RealmSky = {}
 
 local TUNING = {
 	-- Terrain clouds: how much of the sky they cover, how thick they are, their colour.
-	cover = 0.82,
+	cover = 0.88,
 	coverSwing = 0.07, -- cover wanders by up to this much either way (never past 1)
 	density = 0.95,
 	densitySwing = 0.05,
-	color = Color3.fromRGB(140, 145, 156),
+	color = Color3.fromRGB(70, 73, 82), -- (heavier and darker since 2026-10-10: the owner asked for a blacker realm)
 	colorSwing = 0.12, -- the clouds' colour darkens and lightens by up to this fraction
 	-- Periods in seconds of the three waves everything wanders on (they never line up).
 	periods = { 173, 97, 61 },

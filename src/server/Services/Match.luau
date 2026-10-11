@@ -51,6 +51,14 @@ Match.debugSkipTo = nil :: { phase: string, round: number? }?
 Match.debugPaused = false
 Match.debugFastEnd = false
 
+-- A map's own mechanic can change what blocks sight and how far it reaches (the Tokyo crowd
+-- stands in the way; the Bureau HQ blackout shortens every view). Both are reset by finish().
+-- occluder(from, to) -> true when something of the map's (not a player) blocks that line.
+Match.occluder = nil :: ((Vector3, Vector3) -> boolean)?
+Match.sightScale = { flash = 1, witness = 1, eyes = 1 } :: { [string]: number }
+
+local SIGHT_RANGES = { flash = "FLASH_RANGE", witness = "WITNESS_RANGE", eyes = "EYES_RANGE" }
+
 -- Fired as (playerState, kind) after a player leaves the living: kind is
 -- "dead", "voted", "arrested" or "left".
 Match.Eliminated = Signal.new()
@@ -140,6 +148,14 @@ function Match.finish()
 	Match.debugSkipTo = nil
 	Match.debugPaused = false
 	Match.debugFastEnd = false
+	Match.occluder = nil
+	Match.sightScale = { flash = 1, witness = 1, eyes = 1 }
+end
+
+-- How far a kind of sight reaches right now: "flash" (a letter flash), "witness" (a faked task
+-- seen), "eyes" (the Oculus reading a name).
+function Match.sightRange(kind: string): number
+	return (Config :: any)[SIGHT_RANGES[kind]] * (Match.sightScale[kind] or 1)
 end
 
 -- True for the debug panel's test bots (tables standing in for players).
@@ -300,13 +316,13 @@ function Match.hasLineOfSight(from: Vector3, to: Vector3, target: Instance?): bo
 	params.FilterDescendantsInstances = characterList()
 	params.IgnoreWater = true
 	local result = workspace:Raycast(from, direction, params)
-	if result == nil then
-		return true
+	local clear = result == nil
+		or (target ~= nil and result.Instance:IsDescendantOf(target))
+		or (result.Position - to).Magnitude < 0.75
+	if clear and Match.occluder then
+		return not Match.occluder(from, to)
 	end
-	if target ~= nil and result.Instance:IsDescendantOf(target) then
-		return true
-	end
-	return (result.Position - to).Magnitude < 0.75
+	return clear
 end
 
 -- Can this player see `point` from close range with nothing in between?

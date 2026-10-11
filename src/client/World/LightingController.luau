@@ -22,6 +22,7 @@ local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local Textures = require(script.Parent.Parent.UI.Kit.Textures)
+local Governor = require(script.Parent.Governor)
 
 local LightingController = {}
 
@@ -140,7 +141,8 @@ local function gatherLamps(venue: string, keyCount: number)
 	table.clear(venueLamps)
 	if model then
 		for _, item in ipairs(model:GetDescendants()) do
-			if item:IsA("Light") then
+			-- (Emergency lamps are World/Blackout's: they stay off, then on, whatever the look.)
+			if item:IsA("Light") and not (item.Parent and item.Parent:HasTag("LMapEmergency")) then
 				local at = lampPosition(item)
 				if at and Venues.at(at) == venue then
 					if not lamps[item] then
@@ -197,6 +199,12 @@ local function moodName(): string
 	end
 	if public.phase == "Outro" then
 		return if winner == "Team" then "OutroAgency" else "OutroHand"
+	end
+	-- A map's blackout (Bureau HQ's breaker): the map sets BlackoutUntil (server time).
+	local map = workspace:FindFirstChild("LGameMap")
+	local blackout = if map then map:GetAttribute("BlackoutUntil") else nil
+	if public.phase == "Investigation" and type(blackout) == "number" and workspace:GetServerTimeNow() < blackout then
+		return "Blackout"
 	end
 	return public.phase
 end
@@ -264,6 +272,8 @@ end
 local function resolve(): LightingPresets.Look
 	return LightingPresets.resolve(currentPreset, moodOf(moodName()), {
 		low = Settings.get("lowGraphics") == true,
+		noGlow = Governor.cut("glow"),
+		fewShadows = Governor.cut("shadows"),
 		progress = progress(),
 	})
 end
@@ -449,6 +459,9 @@ function LightingController.init()
 		if key == "lowGraphics" then
 			update(true)
 		end
+	end)
+	Governor.Changed:Connect(function()
+		update(true)
 	end)
 	task.spawn(function()
 		while true do

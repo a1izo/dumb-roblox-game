@@ -175,7 +175,7 @@ def shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storey
             at = along(r, face, c) + lead
             rise = 0.0 if arch is None else (w / 2 if arch == "round" else w * 0.6)
             ops.append({"at": at, "w": w, "bottom": 0.0, "top": door_top + rise, "kind": "door", "frame": trim,
-                        "casing": 0.5})
+                        "casing": 0.0 if rise else 0.5, "threshold": "Stone"})
             if rise:
                 arches.append((at, w, door_top + rise, rise))
             door_spans.append((at, w))
@@ -202,7 +202,7 @@ def shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storey
                     glass = "WindowLit" if roll < lit else ("WindowCool" if roll < lit + 0.12 else "WindowDark")
                 ops.append({"at": at, "w": window_w, "bottom": sill, "top": head, "kind": "window", "frame": trim,
                             "mullions": "BlackMetal", "cols": 2 if window_w < 5 else 3, "rows": 3, "glass": glass,
-                            "sill": trim, "casing": 0.35, "see_through": see_through and ground})
+                            "sill": trim, "casing": 0.0 if rise else 0.35, "see_through": see_through and ground})
                 if rise:
                     arches.append((at, window_w, head, rise))
         kit.wall(s, a, b, eaves, thick=T, core=brick, side_n=brick, side_s=inside, openings=ops,

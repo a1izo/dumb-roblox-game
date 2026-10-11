@@ -26,6 +26,7 @@ local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local LightingController = require(script.Parent.LightingController)
 local Shelter = require(script.Parent.Shelter)
+local Governor = require(script.Parent.Governor)
 
 local RainController = {}
 
@@ -39,6 +40,7 @@ local TUNING = {
 		-- motion x0.5 on top).
 		rate = { phone = 650, tablet = 1200, console = 1900, desktop = 3200 },
 		farShare = 0.1, -- the far veil, as a share of the near rate
+		farCut = 0.4, -- what is left of the far veil after the governor's first cut
 		splashShare = 0.3, -- splashes a second, as a share of the near rate
 		height = 34, -- studs over the ground a near drop starts
 		farHeight = 72,
@@ -458,6 +460,8 @@ local function applyRates()
 	local snow = TUNING.snow
 	local rainTotal = rain.rate[class] * scale * rainAmount()
 	local snowTotal = snow.rate[class] * scale * RainController.snowAmount()
+	-- The governor's first cut thins the far veil; the rain around the camera stays as it is.
+	local farScale = if Governor.cut("particles") then TUNING.rain.farCut else 1
 	local nearWeight, farWeight = 0, 0
 	for _, cell in pairs(assignedNear) do
 		nearWeight += cell.weight
@@ -479,7 +483,7 @@ local function applyRates()
 		-- The veil only stands where the near cells do not reach, and never under cover.
 		local open = if cell.landing then 1 - cell.cover else 0
 		local rate = if farWeight > 0 then cell.weight / farWeight else 0
-		setLayer(cell.rain, rainTotal * rain.farShare * rate * open)
+		setLayer(cell.rain, rainTotal * rain.farShare * farScale * rate * open)
 	end
 	local shelter = Shelter.level()
 	if loop then
@@ -651,6 +655,7 @@ function RainController.init()
 		applyRates()
 	end)
 	Responsive.Changed:Connect(applyRates)
+	Governor.Changed:Connect(applyRates)
 	Settings.Changed:Connect(function(key)
 		if key == "reduceMotion" or key == "lowGraphics" then
 			applyRates()

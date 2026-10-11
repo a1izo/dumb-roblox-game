@@ -126,7 +126,7 @@ def core_walls(s):
         y1 = level + P.L2 - P.L1
         up = level == P.L2
         # North face: closed service doors (toilets on 38F, stores on 39F).
-        kit.wall(s, (x0, z0), (x1, z0), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
+        kit.wall(s, (x0 - 0.5, z0), (x1 + 0.5, z0), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
                  side_s="ConcreteDark", trim_n={"base": "BlackTrim"})
         # East face: the fire stair's door, into its landing.
         door = {"at": P.STAIR_DOOR_Z - z0, "w": 4.6, "bottom": level, "top": level + fit.DOOR_H, "kind": "door",
@@ -134,7 +134,7 @@ def core_walls(s):
         kit.wall(s, (x1, z0), (x1, z1), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
                  side_s="ConcreteDark", openings=[door], trim_n={"base": "BlackTrim"})
         # South face: the lifts on 38F (stone), the video wall on 39F.
-        kit.wall(s, (x1, z1), (x0, z1), y1, base=level, core="ConcreteDark",
+        kit.wall(s, (x1 + 0.5, z1), (x0 - 0.5, z1), y1, base=level, core="ConcreteDark",
                  side_n="BlackTrim" if up else "MarbleBlack", side_s="ConcreteDark", trim_n=None if up else {"base": "BlackTrim"})
         # West face.
         kit.wall(s, (x0, z1), (x0, z0), y1, base=level, core="ConcreteDark", side_n="WoodPanel" if up else "PlasterGrey",

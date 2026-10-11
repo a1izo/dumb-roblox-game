@@ -42,7 +42,7 @@ def exterior(s):
         masonry.buttress(s, A[2], z, (1, 0), 17.0)
     # The side doors' lamps and names.
     for x, rot in ((A[0], 90), (A[2], -90)):
-        fit.wall_lamp(s, x - (0.3 if rot == 90 else -0.3), 12.0, -94.0, rot, color=fit.WARM, range_=20, brightness=1.0)
+        fit.wall_lamp(s, x - (0.3 if rot == 90 else -0.3), 13.0, -94.0, rot, color=fit.WARM, range_=20, brightness=1.0)
     # The tower: the vestibule's walls, then the tower above it.
     masonry.shell(s, P.TOWER, P.GF, P.DOORS["tower"][:1], brick="BrickRed", storeys=[0.0], skip=("n",),
                   ground_windows=("e", "w"), window_w=2.6, spacing=7.0, cornice=False, seed=4)
@@ -57,11 +57,13 @@ def exterior(s):
 def vestibule(s):
     x0, z0, x1, z1 = P.TOWER[0] + P.WALL_T, P.TOWER[1], P.TOWER[2] - P.WALL_T, P.TOWER[3] - P.WALL_T
     fit.floor_faces(s, P.box(x0, z0, x1, z1), 0.0, "Stone")
-    fit.ceiling_faces(s, P.box(x0, z0, x1, z1), C, "WoodPanel")
-    s.collider(((x0 + x1) / 2, C + 0.5, (z0 + z1) / 2), (x1 - x0, 1.0, z1 - z0), 0, True, None)
+    # (Higher than the other rooms' ceilings: the tower door's arch rises to 13.2.)
+    vc = 13.8
+    fit.ceiling_faces(s, P.box(x0, z0, x1, z1), vc, "WoodPanel")
+    s.collider(((x0 + x1) / 2, vc + 0.1, (z0 + z1) / 2), (x1 - x0, 0.2, z1 - z0), 0, True, None)
     s.zone("interior", P.box(x0, z0, x1, z1), 0.0, name="the clock tower")
-    s.look_zone("UniversityCampus_Inside", (x0, 0.0, z0), (x1, C, z1))
-    kit.pendant(s, (x0 + x1) / 2, C, (z0 + z1) / 2, drop=3.5, shade="Brass", color=fit.WARM, range_=22,
+    s.look_zone("UniversityCampus_Inside", (x0, 0.0, z0), (x1, vc, z1))
+    kit.pendant(s, (x0 + x1) / 2, vc, (z0 + z1) / 2, drop=4.3, shade="Brass", color=fit.WARM, range_=22,
                 brightness=1.1, wide=1.1)
     s.prop("UmbrellaStand", x0 + 1.2, z1 - 1.4, 0)
     s.prop("Plant", x1 - 2.0, z1 - 2.0, 0)
@@ -69,11 +71,16 @@ def vestibule(s):
 
 def foyer(s):
     # Floors, ceilings and the partitions.
-    fit.floor_faces(s, P.box(X0, FOYER_N + 0.3, X1, Z1), 0.0, "TileChecker",
+    fit.floor_faces(s, P.box(X0, FOYER_N + 0.3, X1, Z1), 0.0, "Terrazzo",
                     holes=[P.rect_of(P.EXAM_HQ), P.rect_of(P.PROCTOR)])
+    fit.floor_faces(s, P.rect_of(P.EXAM_HQ), 0.0, "CarpetTile")
+    fit.floor_faces(s, P.rect_of(P.PROCTOR), 0.0, "WoodFloorDark")
+    # Coffered plaster over the foyer; the two offices keep their office tiles.
+    fit.ceiling_faces(s, P.box(X0, FOYER_N + 0.3, X1, Z1), C, "CeilingPlaster",
+                      holes=[P.rect_of(P.EXAM_HQ), P.rect_of(P.PROCTOR)])
     for r in (P.EXAM_HQ, P.PROCTOR):
-        fit.floor_faces(s, P.rect_of(r), 0.0, "CarpetGrey")
-    fit.ceiling_faces(s, P.box(X0, FOYER_N + 0.3, X1, Z1), C, "Ceiling")
+        fit.ceiling_faces(s, P.rect_of(r), C, "Ceiling")
+    fit.coffers(s, P.EXAM_HQ[2] + 0.3, FOYER_N + 0.3, P.PROCTOR[0] - 0.3, Z1, C, spacing=8.0)
     s.collider(((X0 + X1) / 2, C + 0.5, (FOYER_N + Z1) / 2), (X1 - X0, 1.0, Z1 - FOYER_N), 0, True, None)
     fit.partition(s, (X0, FOYER_N), (X1, FOYER_N), 0.0, P.HALL_H, "WoodPanel", "PlasterLight",
                   doors=[(-32.0 - X0, 6.0), (-8.0 - X0, 6.0)])
@@ -96,7 +103,7 @@ def foyer(s):
            (236, 232, 222))
     for x in (-38.0, -2.0):
         s.prop("Bench", x, -64.5, 0)
-    s.prop("DisplayCase", -12.0, -76.2, 180)
+    s.prop("DisplayCase", -15.4, -76.2, 180)
     s.prop("CoatStand", 2.0, -66.0, 0)
     s.prop("Plant", -25.0, -76.2, 0)
     for x in (-34.0, -20.0, -6.0):
@@ -150,7 +157,8 @@ DESK_BLOCKS = [-55.8 + k * 15.2 for k in range(5)]  # the west edge of each bloc
 def exam_hall(s):
     H = P.HALL_H
     fit.floor_faces(s, P.box(X0, STAGE_Z, X1, HALL_Z1), 0.0, "WoodFloor")
-    fit.ceiling_faces(s, P.box(X0, HALL_Z0, X1, HALL_Z1), H, "Ceiling")
+    fit.ceiling_faces(s, P.box(X0, HALL_Z0, X1, HALL_Z1), H, "CeilingPlaster")
+    fit.coffers(s, X0, HALL_Z0, X1, HALL_Z1, H, spacing=11.15, depth=0.9, w=0.8)
     s.collider(((X0 + X1) / 2, H + 0.5, (HALL_Z0 + HALL_Z1) / 2), (X1 - X0, 1.0, HALL_Z1 - HALL_Z0), 0, True, None)
     for x in (X0 + 22.3, X0 + 44.6, X0 + 66.9):
         s.box("WoodPanel", (x, H - 0.6, (HALL_Z0 + HALL_Z1) / 2), (1.0, 1.2, HALL_Z1 - HALL_Z0), skip=("+y",))
@@ -185,7 +193,7 @@ def exam_hall(s):
     for x in (X0 + 0.9, X1 - 0.9):
         s.box("DarkMetal", (x, 1.4, -81.5), (0.8, 2.2, 4.0), 0, collide=True)
     for x in (X0 + 0.3, X1 - 0.3):
-        fit.plaque(s, x, 9.0, -99.0, -90 if x < 0 else 90, 5.0, 1.6, "試験中  静粛に\nEXAM IN PROGRESS", (240, 236, 226),
+        fit.plaque(s, x, 9.0, -100.6, -90 if x < 0 else 90, 5.0, 1.6, "試験中  静粛に\nEXAM IN PROGRESS", (240, 236, 226),
                    (110, 24, 28))
     for x in (-45.0, -20.0, 5.0):
         for z in (-97.0, -86.0):

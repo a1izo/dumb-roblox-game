@@ -68,7 +68,8 @@ function Router.view(): View
 	}
 end
 
-local function anyOpen(layer: string?): boolean
+-- Is any screen open (in this layer, when one is given)?
+function Router.anyOpen(layer: string?): boolean
 	for name in pairs(openOrder) do
 		if layer == nil or specs[name].layer == layer then
 			return true
@@ -94,7 +95,7 @@ local function newest(): string?
 end
 
 local function refreshChrome()
-	scrim.Visible = anyOpen("modal")
+	scrim.Visible = Router.anyOpen("modal")
 	if newest() then
 		ContextActionService:BindActionAtPriority(BACK_ACTION, function(_, state)
 			if state == Enum.UserInputState.Begin then

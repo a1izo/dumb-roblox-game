@@ -105,29 +105,30 @@ end
 
 -- Venues -------------------------------------------------------------------------------------
 
--- The lobby: the Grey Realm, a never-ending wasteland under layers of cloud, a little darker and more somber
--- than the maps (the owner's call, 2026-10-06; the ground ahead must stay easy to see). No sun (the light comes
+-- The lobby: the Grey Realm, a never-ending wasteland under layers of cloud, blacker and darker than the maps
+-- (the owner's calls, 2026-10-06 and 2026-10-10: a deep dusk, about a third darker than it was, with the
+-- ground ahead still easy to see and pools of pale light where people gather). No sun (the light comes
 -- from the whole overcast sky: low, even, cool), almost no colour left, heavy haze: things close by are
--- clear, the far rocks and the colossal blade thin into grey over a kilometre; the plain runs on past
+-- clear, the far rocks and the colossal blade thin into near-black over a kilometre; the plain runs on past
 -- the fog's end, so its edge is never seen. The braziers' pale fire,
 -- the cold glow of the relics and the rift are the only light that is not the sky's. The sky itself
 -- (clouds, no sun) and its slow breathing are World/RealmSky's; these are the values it breathes around.
 LightingPresets.lobby = preset({
 	clockTime = 14.5,
-	brightness = 0.68,
-	exposure = -0.2,
-	ambient = rgb(70, 74, 82),
-	outdoorAmbient = rgb(88, 93, 102),
-	envDiffuse = 0.55,
-	envSpecular = 0.25,
+	brightness = 0.6,
+	exposure = -0.25,
+	ambient = rgb(60, 64, 71),
+	outdoorAmbient = rgb(76, 80, 88),
+	envDiffuse = 0.5,
+	envSpecular = 0.3,
 	fogStart = 110,
 	fogEnd = 1300,
-	fogColor = rgb(83, 86, 94),
+	fogColor = rgb(24, 25, 29),
 	density = 0.34,
 	haze = 1.2,
 	glare = 0,
-	atmosphereColor = rgb(98, 102, 112),
-	decay = rgb(46, 50, 61),
+	atmosphereColor = rgb(34, 36, 42),
+	decay = rgb(16, 17, 21),
 	saturation = -0.78,
 	contrast = 0.16,
 	tint = rgb(212, 218, 230),
@@ -514,6 +515,20 @@ LightingPresets.moods = {
 		fill = 0.08,
 		vignette = 1,
 	}),
+	-- Bureau HQ's blackout (someone pulled the breaker): every lamp out but the red emergency ones,
+	-- the city's glow through the glass, a red cast.
+	Blackout = mood({
+		exposure = -1.6,
+		brightness = 0.05,
+		ambient = 0.06,
+		saturation = -0.4,
+		contrast = 0.3,
+		tint = rgb(255, 80, 80),
+		tintAmount = 0.25,
+		key = 0,
+		fill = 0,
+		vignette = 0.9,
+	}),
 	OutroAgency = mood({
 		exposure = -0.4,
 		brightness = 0.8,
@@ -547,14 +562,17 @@ local function scaled(color: Color3, factor: number): Color3
 end
 
 export type Options = {
-	low: boolean?, -- the Low graphics setting
+	low: boolean?, -- the Low graphics setting: both of the cuts below
+	noGlow: boolean?, -- no bloom, haze or glare, thinner air (World/Governor's second cut)
+	fewShadows: boolean?, -- at most two shadow-casting lamps, shorter lamp range (its third)
 	progress: number?, -- how far through the phase (0 to 1), for moods that creep
 }
 
 -- The values to apply for a venue preset under a mood.
 function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 	local o = options or {}
-	local low = o.low == true
+	local noGlow = o.low == true or o.noGlow == true
+	local fewShadows = o.low == true or o.fewShadows == true
 	local tint = p.tint:Lerp(m.tint, math.clamp(m.tintAmount, 0, 1))
 	local exposure = p.exposure + m.exposure
 	local creep = m.creep
@@ -574,21 +592,21 @@ function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 		fogStart = p.fogStart * m.fog,
 		fogEnd = p.fogEnd * m.fog,
 		fogColor = p.fogColor,
-		density = math.clamp((p.density + m.density) * (if low then 0.6 else 1), 0, 1),
-		haze = if low then 0 else p.haze,
-		glare = if low then 0 else p.glare,
+		density = math.clamp((p.density + m.density) * (if noGlow then 0.6 else 1), 0, 1),
+		haze = if noGlow then 0 else p.haze,
+		glare = if noGlow then 0 else p.glare,
 		atmosphereColor = p.atmosphereColor,
 		decay = p.decay,
 		saturation = math.clamp(p.saturation + m.saturation, -1, 1),
 		contrast = math.clamp(p.contrast + m.contrast, -1, 1),
 		tint = tint,
-		bloom = if low then 0 else p.bloom * m.bloom,
+		bloom = if noGlow then 0 else p.bloom * m.bloom,
 		bloomSize = p.bloomSize,
 		bloomThreshold = p.bloomThreshold,
 		keyScale = p.lamps * m.key,
 		fillScale = p.lamps * m.fill,
-		rangeScale = p.lampRange * (if low then 0.8 else 1),
-		keyLights = if low then math.min(2, p.keyLights) else p.keyLights,
+		rangeScale = p.lampRange * (if fewShadows then 0.8 else 1),
+		keyLights = if fewShadows then math.min(2, p.keyLights) else p.keyLights,
 		vignette = m.vignette,
 	}
 end

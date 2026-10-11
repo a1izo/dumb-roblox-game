@@ -117,6 +117,7 @@ def runes(s, g):
     s.anchor("runeStart", sx, H, sz, P.rot_towards((sx, sz), c))
     s.prop("BoneBrazier", sx + uz * 4.5, sz - ux * 4.5, 0.0, 1.0, H)
     s.prop("BoneBrazier", sx - uz * 4.5, sz + ux * 4.5, 0.0, 1.0, H)
+    s.light("point", (sx, H + 8.0, sz), (170, 196, 232), 26, 1.0)
     # A ring of broken pillars round the slab, the far side whole; an obelisk with cold glyphs behind it.
     rng = random.Random(58)
     for q in range(12):
@@ -172,6 +173,7 @@ def parkour(s, g):
     s.anchor("pkStart", sx, H, sz, P.rot_towards((sx, sz), c))
     s.prop("BoneBrazier", sx + uz * 4.5, sz - ux * 4.5, 0.0, 1.0, H)
     s.prop("BoneBrazier", sx - uz * 4.5, sz + ux * 4.5, 0.0, 1.0, H)
+    s.light("point", (sx, H + 8.0, sz), (170, 196, 232), 26, 1.0)
     for i, (x, y, z, w, check) in enumerate(pk_platforms()):
         r = w * 0.62
         floating_rock(s, x, y, z, r, 700 + i, depth=r * (1.1 + 0.25 * (i % 3)), sides=7,

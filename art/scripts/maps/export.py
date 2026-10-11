@@ -17,7 +17,7 @@ import shutil
 import bpy
 
 import common
-from maps import matlib
+from maps import matlib, scanlib
 
 SCENES_DIR = os.path.join(common.ROOT, "src", "server", "Maps", "Scenes")
 MATERIALS_LUAU = os.path.join(common.ROOT, "src", "shared", "SceneMaterials.luau")
@@ -28,8 +28,13 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
+<<<<<<< HEAD
 VERSION = {"ModelsCore": 4, "ModelsTokyo": 2, "ModelsAgency": 1, "ModelsCampus": 1, "ModelsLobby": 1,
            "ModelsMeeting": 1}
+=======
+VERSION = {"ModelsCore": 4, "ModelsTokyo": 3, "ModelsAgency": 3, "ModelsCampus": 2, "ModelsLobby": 2,
+           "ModelsMeeting": 2}
+>>>>>>> 22a36b5abb53dff611e47d7c2a700b8e0135fa6f
 
 
 def num(v, digits=3):
@@ -76,7 +81,7 @@ def _cube(name, x, y, z, collection, half=0.5):
     faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
     mesh.from_pydata(verts, [], faces)
     mesh.uv_layers.new(name="UVMap")
-    mesh.materials.append(matlib.material("BlackTrim"))
+    mesh.materials.append(matlib.material("CoreDark"))  # (any flat material: the cubes are never shown)
     obj = bpy.data.objects.new(name, mesh)
     obj.location = (-x, z, y)  # Roblox -> Blender
     collection.objects.link(obj)
@@ -128,7 +133,8 @@ def venue_fbx(venue):
 
 def mesh_digest(scene):
     """A fingerprint of the meshes (what the Studio import carries): it changes when the
-    geometry changes, not when only colliders, props or lights do."""
+    geometry changes or the surfaces do (their textures and how often they repeat), not when only
+    colliders, props or lights do."""
     h = hashlib.sha1()
     for mat in sorted(scene.pieces):
         pieces = scene.pieces[mat]
@@ -139,8 +145,8 @@ def mesh_digest(scene):
                 sx += x
                 sy += y
                 sz += z
-        h.update(f"{mat}:{tris}:{sx:.1f}:{sy:.1f}:{sz:.1f};".encode())
-    h.update(f"chunk:{scene.chunk};prefix:{scene.prefix}".encode())
+        h.update(f"{mat}:{tris}:{sx:.1f}:{sy:.1f}:{sz:.1f}:{matlib.tile_size(mat)};".encode())
+    h.update(f"chunk:{scene.chunk};prefix:{scene.prefix};surfaces:{scanlib.REVISION}".encode())
     return h.hexdigest()[:16]
 
 
@@ -340,13 +346,19 @@ def write_scene_v2(scene, module, source):
         (None, "tipBox", _lua(L["tipBox"]) if L["tipBox"] else "nil"),
         (None, "board", _lua(L["board"]) if L["board"] else "nil"),
     ]
-    for kind_name in ("spawns", "sheets", "dropPoints", "hoods", "areas"):
+    for kind_name in ("spawns", "sheets", "hoods", "areas"):
         layout_fields.append((None, kind_name, [_lua(x) for x in L[kind_name]]))
     layout_fields.append(("Spare spots of each kind, not used by the game yet (for a later rework of the counts).",
                           "spare", _lua(scene.spare)))
     layout_fields.append(("What kind of ground each place is: kind, floor height (y0 to y1 on slopes), corners x1, z1, x2, z2...",
                           "zones", [_lua(_zone_entry(z)) for z in scene.zones]))
     layout_fields.append((None, "anchors", _lua(scene.anchors)))
+    if scene.crowd["nodes"]:
+        layout_fields.append(("The crowd's walks (Tokyo): nodes, links between them (1-based), posts.", "crowd",
+                              _lua(scene.crowd)))
+    if scene.traffic["lanes"]:
+        layout_fields.append(("The cars' lanes (Tokyo): points from where they appear, the distance to the stop line.",
+                              "traffic", _lua(scene.traffic)))
 
     colliders = []
     for c in scene.colliders:
@@ -382,7 +394,8 @@ def write_scene_v2(scene, module, source):
         f'{{ kind = "{li["kind"]}", at = {vec(li["pos"])}, color = {rgb(li["color"])}, '
         f'range = {num(li["range"], 1)}, brightness = {num(li["brightness"], 2)}, '
         f'shadows = {"true" if li["shadows"] else "false"}, face = "{li["face"]}", angle = {num(li["angle"], 1)}, '
-        f'flicker = {"true" if li["flicker"] else "false"} }}'
+        f'flicker = {"true" if li["flicker"] else "false"}'
+        + (f', role = "{li["role"]}"' if li.get("role") else "") + " }"
         for li in scene.lights
     ]
     signs = []
@@ -454,11 +467,15 @@ def write_scene_v2(scene, module, source):
         "floors": [list(f) for f in scene.floors],
         "ramps": scene.ramps,
         "props": [list(p) for p in scene.props],
+        "propSrc": scene.prop_src,
+        "openings": [list(o) for o in scene.openings],
         "lights": scene.lights,
         "layout": scene.layout,
         "spare": scene.spare,
         "zones": scene.zones,
         "anchors": scene.anchors,
+        "crowd": scene.crowd,
+        "traffic": scene.traffic,
         "stats": stats,
         "checks": scene.checks,
     }

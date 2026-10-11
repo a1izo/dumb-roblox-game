@@ -17,6 +17,7 @@ local UserInputService = game:GetService("UserInputService")
 local HoverGlitch = require(script.Parent.Parent.Core.HoverGlitch)
 local Motion = require(script.Parent.Parent.Core.Motion)
 local UiSound = require(script.Parent.Parent.Core.UiSound)
+local Screens = require(script.Parent.Parent.Screens)
 local Base = require(script.Parent.Base)
 local GlyphText = require(script.Parent.GlyphText)
 local Icon = require(script.Parent.Icon)
@@ -54,9 +55,11 @@ function Controls.focusable(button: GuiObject)
 	button.SelectionImageObject = focusMark
 end
 
--- Every size is at least the touch minimum tall; the lettering is Melodrama, 16 px and up.
+-- Every size is at least the touch minimum tall; the lettering is Melodrama, 16 px and up, and 18 px and up
+-- on a button inside a window (it is read before it is pressed).
 local HEIGHT = { s = Tokens.touch, m = Tokens.touch, l = 60 }
 local TEXT = { s = 16, m = 18, l = 22 }
+local WINDOW_TEXT = 18
 
 type Look = {
 	bg: Color3?,
@@ -179,6 +182,16 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	})
 	if props.key and props.key ~= "" then
 		Controls.keycap({ text = props.key, LayoutOrder = 3, ZIndex = z + 1, Parent = row })
+	end
+	if TEXT[sizeKey] < WINDOW_TEXT then
+		-- The small button's lettering grows once it sits in a window (now, or when it is put in one).
+		local function inWindow()
+			if button:IsDescendantOf(Screens.modal) then
+				label:setSize(WINDOW_TEXT)
+			end
+		end
+		inWindow()
+		button.AncestryChanged:Connect(inWindow)
 	end
 	if autoWidth then
 		-- As wide as the icon, text and key; the fill follows the button (see Base.fit).

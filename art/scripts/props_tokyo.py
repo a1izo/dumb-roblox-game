@@ -21,6 +21,8 @@ from props import prop
 
 WARM_LIGHT = (255, 232, 196)
 GREEN = (60, 255, 190)
+AMBER = (255, 176, 40)  # the signals' amber and red lamps (lit by the Tokyo client when the cycle shows them)
+RED = (255, 52, 44)
 
 
 def galvanised(name):
@@ -77,7 +79,6 @@ def traffic_signal():
     green lit."""
     steel = galvanised("TS_Steel")
     dark = pk.metal("TS_Dark", (30, 30, 34), (48, 48, 52), rough=0.5, metallic=0.2)
-    off = {"amber": mk.flat("TS_AmberOff", srgb(96, 64, 12), 0.25), "red": mk.flat("TS_RedOff", srgb(88, 14, 14), 0.25)}
     white = pk.plastic("TS_White", (234, 234, 230))
     blue = pk.plastic("TS_Blue", (26, 70, 160))
     parts = [
@@ -98,15 +99,19 @@ def traffic_signal():
     for side in (-1, 1):  # both faces of the plate
         parts += pk.label("Name", "影ヶ丘駅前", 0.34, (side * 0.05, -3.2, 13.68), white, rot=(90, 0, 90 * side))
         parts += pk.label("NameEn", "Kagegaoka Sta.", 0.2, (side * 0.05, -3.2, 13.32), white, rot=(90, 0, 90 * side))
-    for y, colour in zip(SIGNAL_LAMPS[1:], ("amber", "red")):
-        parts.append(mk.cylinder("Lamp", 0.5, 0.06, (-0.57, y, 12.6), rot=(0, 90, 0), mat=off[colour], verts=24))
     for y in SIGNAL_LAMPS:
         parts.append(mk.cylinder("Visor", 0.58, 0.5, (-0.83, y, 12.75), rot=(0, 90, 0), mat=dark, verts=20,
                                  radius2=0.6))
         parts.append(mk.torus("Ring", 0.55, 0.04, (-0.58, y, 12.6), rot=(0, 90, 0), mat=dark, major_segments=20,
                               minor_segments=4))
+    # One glowing lamp per colour, in this order (green, amber, red: the catalog's glow list): the
+    # Tokyo client lights the one the scramble's cycle shows and dims the others.
     glow = [mk.cylinder("Green", 0.5, 0.06, (-0.58, SIGNAL_LAMPS[0], 12.6), rot=(0, 90, 0),
-                        mat=pk.glow("TS_Green", GREEN, 5), verts=24)]
+                        mat=pk.glow("TS_Green", GREEN, 5), verts=24),
+            mk.cylinder("Amber", 0.5, 0.06, (-0.58, SIGNAL_LAMPS[1], 12.6), rot=(0, 90, 0),
+                        mat=pk.glow("TS_Amber", AMBER, 5), verts=24),
+            mk.cylinder("Red", 0.5, 0.06, (-0.58, SIGNAL_LAMPS[2], 12.6), rot=(0, 90, 0),
+                        mat=pk.glow("TS_Red", RED, 5), verts=24)]
     return parts, glow
 
 
@@ -117,22 +122,17 @@ def pedestrian_signal():
     lit), each under a hood, on a slim pole with the push-button box."""
     steel = galvanised("PS_Steel")
     dark = pk.metal("PS_Dark", (30, 30, 34), (48, 48, 52), rough=0.5, metallic=0.2)
-    red_off = mk.flat("PS_RedOff", srgb(92, 20, 18), 0.3)
-    red_fig = mk.flat("PS_RedFig", srgb(130, 34, 30), 0.3)
+    red_fig = pk.glow("PS_Red", RED, 5)
     parts = [
         mk.cylinder("Pole", 0.22, 9.4, (0, 0, 4.7), mat=steel, verts=12),
         mk.box("Clamp", (0.5, 0.5, 0.4), (0, -0.2, 8.0), mat=steel),
         mk.box("Head", (1.4, 0.8, 2.9), (0, -0.7, 8.0), mat=dark, bevel=0.1, segments=3),
-        mk.box("RedPane", (1.1, 0.05, 1.15), (0, -1.12, 8.7), mat=red_off),
         mk.box("ButtonBox", (0.7, 0.45, 1.1), (0, -0.4, 3.7), mat=pk.plastic("PS_Yellow", (232, 196, 50)), bevel=0.08),
         mk.cylinder("Button", 0.16, 0.12, (0, -0.66, 3.55), rot=(90, 0, 0), mat=pk.plastic("PS_ButtonRed", (200, 30, 36)),
                     verts=12),
     ]
     parts += pk.label("Push", "押ボタン", 0.12, (0, -0.64, 4.05), pk.plastic("PS_Ink", (20, 20, 24)))
-    # The standing figure on the red pane: head, body, legs.
-    parts += [mk.cylinder("RFHead", 0.12, 0.04, (0, -1.15, 9.05), rot=(90, 0, 0), mat=red_fig, verts=10),
-              mk.box("RFBody", (0.26, 0.04, 0.42), (0, -1.15, 8.75), mat=red_fig),
-              mk.box("RFLegs", (0.2, 0.04, 0.34), (0, -1.15, 8.38), mat=red_fig)]
+    parts.append(mk.box("RedPane", (1.1, 0.05, 1.15), (0, -1.12, 8.7), mat=mk.flat("PS_RedOff", srgb(60, 16, 14), 0.3)))
     for z in (8.7, 7.3):
         parts.append(mk.box("Hood", (1.35, 0.7, 0.08), (0, -1.45, z + 0.6), rot=(-14, 0, 0), mat=dark))
         parts += [mk.box("HoodSide", (0.06, 0.6, 1.1), (sx * 0.66, -1.42, z + 0.1), mat=dark) for sx in (-1, 1)]
@@ -141,7 +141,11 @@ def pedestrian_signal():
             mk.cylinder("GFHead", 0.12, 0.06, (0.05, -1.16, 7.65), rot=(90, 0, 0), mat=green, verts=10),
             mk.box("GFBody", (0.24, 0.06, 0.4), (0.02, -1.16, 7.35), rot=(0, 10, 0), mat=green),
             mk.box("GFLegF", (0.1, 0.06, 0.38), (0.14, -1.16, 6.98), rot=(0, -24, 0), mat=green),
-            mk.box("GFLegB", (0.1, 0.06, 0.38), (-0.12, -1.16, 6.98), rot=(0, 24, 0), mat=green)]
+            mk.box("GFLegB", (0.1, 0.06, 0.38), (-0.12, -1.16, 6.98), rot=(0, 24, 0), mat=green),
+            # The standing figure on the red pane (glow 3): the client lights it while pedestrians wait.
+            mk.cylinder("RFHead", 0.12, 0.06, (0, -1.16, 9.05), rot=(90, 0, 0), mat=red_fig, verts=10),
+            mk.box("RFBody", (0.26, 0.06, 0.42), (0, -1.16, 8.75), mat=red_fig),
+            mk.box("RFLegs", (0.2, 0.06, 0.34), (0, -1.16, 8.38), mat=red_fig)]
     return parts, glow
 
 
@@ -645,6 +649,7 @@ def crow():
     return parts, []
 
 
+import props_tokyo_karaoke  # noqa: E402,F401
 import props_tokyo_shops  # noqa: E402,F401
 import props_tokyo_transit  # noqa: E402,F401
 import props_tokyo_trees  # noqa: E402,F401

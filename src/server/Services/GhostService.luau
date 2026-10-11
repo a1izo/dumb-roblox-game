@@ -318,7 +318,7 @@ local function ghostBody(character: Model, attribute: string, displayName: strin
 	if humanoid then
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 		humanoid.DisplayName = displayName
-		character:SetAttribute("NameHidden", true)
+		CharacterService.setNameHidden(character, "ghost", true)
 	end
 end
 
@@ -493,7 +493,7 @@ end
 -- walks through people.
 local function awayBody(character: Model)
 	character:SetAttribute("Away", true)
-	character:SetAttribute("NameHidden", true)
+	CharacterService.setNameHidden(character, "away", true)
 	CollisionGroups.body(character, CollisionGroups.AWAY, true)
 	for _, item in ipairs(character:GetDescendants()) do
 		if item:IsA("BasePart") then

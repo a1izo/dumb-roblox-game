@@ -80,7 +80,7 @@ local function witnesses(ps)
 		return result
 	end
 	for _, other in ipairs(Match.living()) do
-		if other ~= ps and Match.canSee(other, target, Config.WITNESS_RANGE, nil) then
+		if other ~= ps and Match.canSee(other, target, Match.sightRange("witness"), nil) then
 			table.insert(result, other)
 		end
 	end
@@ -93,11 +93,11 @@ local function cameraClue(worker): string
 	local sighting = EventLog.takeSighting(90)
 	if sighting then
 		return string.format(
-			"Camera %s: %s %s near %s.",
+			"Camera %s: %s %s %s.",
 			sighting.clock,
 			sighting.alias,
 			sighting.activity,
-			sighting.area
+			EventLog.place(sighting)
 		)
 	end
 	local others = {}
@@ -310,7 +310,7 @@ local function finish(ps, runtime)
 	-- Only the worker and players close by with a clear view get the flash.
 	local payload = { stationId = info.id, alias = ps.alias, pattern = pattern, duration = Config.FLASH_DURATION }
 	for _, other in ipairs(Match.living()) do
-		if other == ps or Match.canSee(other, info.screen.Position, Config.FLASH_RANGE, info.model) then
+		if other == ps or Match.canSee(other, info.screen.Position, Match.sightRange("flash"), info.model) then
 			LetterFlashRemote:FireClient(other.player, payload)
 		end
 	end

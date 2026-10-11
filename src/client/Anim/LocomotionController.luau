@@ -49,6 +49,9 @@ type State = {
 }
 
 local states: { [Model]: State } = {}
+-- Bodies this client moves itself (the Tokyo crowd): anchored, so they have no velocity to read and
+-- are told how fast they walk.
+local adopted: { [Model]: number } = {}
 local clips: { [string]: ClipPlayer.Prepared } = {}
 local buffers = {
 	idle = {},
@@ -155,7 +158,7 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	local velocity = root.AssemblyLinearVelocity
 	local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
 	if root.Anchored then
-		speed = 0
+		speed = adopted[character] or 0
 	end
 	local now = os.clock()
 	if now - state.lastCheck > GROUND_CHECK then
@@ -319,6 +322,25 @@ local function track(character: Model)
 				)
 			)
 		end)
+	end
+end
+
+-- Animates a body that is neither a player's nor a bot's (a walker of the Tokyo crowd, drawn and moved
+-- by World/Crowd on an anchored root). Call it again whenever the body comes back into the world.
+function LocomotionController.adopt(character: Model)
+	if adopted[character] == nil then
+		adopted[character] = 0
+		character.Destroying:Once(function()
+			adopted[character] = nil
+		end)
+	end
+	PoseController.bind(character)
+end
+
+-- How fast an adopted body is walking (studs a second): its stride follows.
+function LocomotionController.setSpeed(character: Model, speed: number)
+	if adopted[character] ~= nil then
+		adopted[character] = speed
 	end
 end
 

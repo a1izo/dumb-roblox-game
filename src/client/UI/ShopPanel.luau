@@ -195,14 +195,15 @@ local function itemCard(profile, item: Cosmetics.Item, order: number)
 		end
 	end
 	if tier >= 4 and not Motion.isReduced() then
-		-- The top tier shimmers: a soft white band sweeps across the card.
+		-- The top tier shimmers: a soft white band sweeps across the card, under its lettering and its
+		-- button (never over what is read).
 		local shine = Kit.Base.make("Frame", {
 			Name = "Shine",
 			BackgroundColor3 = C.white,
 			BackgroundTransparency = 0.78,
 			BorderSizePixel = 0,
 			Size = UDim2.fromScale(1, 1),
-			ZIndex = card.ZIndex + 3,
+			ZIndex = 0,
 			Parent = card,
 		})
 		local gradient = Instance.new("UIGradient")

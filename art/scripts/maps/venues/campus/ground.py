@@ -1,6 +1,9 @@
 """The campus ground under snow.
 
-- The lawns lie under untrodden snow (footprints show there: their colliders' look is "Snow").
+- The lawns lie under untrodden snow (footprints show there: their colliders' look is "Snow"). It is
+  not one sheet: patches of an older, bluer snow and thin snow under the trees (the ground showing
+  through) are cut into it, and the wind has piled low drifts against the walls and fences that face
+  a lawn. The colliders under all of it keep the look "Snow".
 - The paths are shovelled down to the wet pavers ("SnowPath"), flush with the lawns (nothing to
   step up onto), and low banks of shovelled snow line them (visual only: you wade through).
 - The pond hollow is sunk five studs behind stone retaining walls, with a bamboo fence along its
@@ -13,6 +16,7 @@ Every piece of ground has a solid floor under it (city.floor) with the look it s
 (park, lane, plaza, water)."""
 
 import math
+import random
 
 from maps import city
 from maps import geo2d as g2
@@ -43,6 +47,79 @@ def building_holes():
 # The level ground ------------------------------------------------------------------------------------------
 
 
+def blob(cx, cz, r, rng, points=22, rough=0.22):
+    """An organic outline round (cx, cz): a circle of radius r with soft bumps, counter-clockwise."""
+    p1, p2, p3 = (rng.uniform(0, 2 * math.pi) for _ in range(3))
+    out = []
+    for k in range(points):
+        a = 2 * math.pi * k / points
+        wobble = 0.55 * math.sin(2 * a + p1) + 0.3 * math.sin(3 * a + p2) + 0.15 * math.sin(5 * a + p3)
+        rr = r * (1 + rough * wobble)
+        out.append((cx + rr * math.cos(a), cz + rr * math.sin(a)))
+    return out
+
+
+def patches(g, holes):
+    """Patches of older snow over the lawns, and thin snow round every tree trunk that stands on one,
+    cut into the lawn's snow (priority 2: the paths, 3, still cut them)."""
+    rng = random.Random(23)
+    for _ in range(46):
+        cx, cz = rng.uniform(P.X0 + 10, P.X1 - 10), rng.uniform(P.Z0 + 10, P.Z1 - 10)
+        for piece in pieces_minus(blob(cx, cz, rng.uniform(7.0, 16.0), rng), holes):
+            g.add(piece, "Snow2", 0.0, 2, "park", None)
+    trunks = [(x, z) for z in P.GINKGO_Z for x in P.GINKGO_X if not (x == P.GINKGO_X[0] and z > 56.0)]
+    for x, z in trunks:
+        for piece in pieces_minus(blob(x, z, rng.uniform(4.5, 6.0), rng, rough=0.3), holes):
+            g.add(piece, "SnowThin", 0.0, 2, "park", None)
+
+
+def drift(s, a, b, out):
+    """A low drift of wind-blown snow along a wall's foot from a to b, on its side `out`: steeper
+    against the wall, a long tail onto the lawn (look-only, like the banks)."""
+    if math.dist(a, b) < 3.0:
+        return
+    profile = [(0.0, 0.0), (0.0, 0.7), (0.4, 0.78), (1.2, 0.62), (2.2, 0.32), (3.2, 0.08), (3.6, 0.0)]
+    s.sweep("Snow", (a[0], 0.0, a[1]), (b[0], 0.0, b[1]), profile, (out[0], 0.0, out[1]), caps=True)
+
+
+def _on_lawn(x, z, holes):
+    if not (P.X0 + 1.5 < x < P.X1 - 1.5 and P.Z0 + 1.5 < z < P.Z1 - 1.5):
+        return False
+    return not any(g2.contains(h, (x, z)) for h in holes)
+
+
+def drifts(s):
+    """Drifts against every wall and fence face that stands on a lawn: the buildings' faces, the
+    tennis court's fence and the campus wall's inner face, wherever 0.5 to 4 studs out is lawn."""
+    holes = [rect(r) for r in P.BUILDINGS.values()] + [rect(P.ARCADE), rect(P.HOLLOW), rect(P.COURT)]
+    holes += [rect(r) for r in P.PATHS.values()]
+    faces = []
+    for r in list(P.BUILDINGS.values()) + [P.COURT]:
+        x0, z0, x1, z1 = r
+        faces += [((x0, z0), (x1, z0), (0, -1)), ((x1, z1), (x0, z1), (0, 1)),
+                  ((x0, z1), (x0, z0), (-1, 0)), ((x1, z0), (x1, z1), (1, 0))]
+    faces += [((P.X0, P.Z0), (P.X1, P.Z0), (0, 1)), ((P.X1, P.Z1), (P.X0, P.Z1), (0, -1)),
+              ((P.X0, P.Z1), (P.X0, P.Z0), (1, 0)), ((P.X1, P.Z0), (P.X1, P.Z1), (-1, 0))]
+    for a, b, out in faces:
+        length = math.dist(a, b)
+        d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+        start = None
+        steps = int(length)
+        for k in range(steps + 1):
+            u = k * length / steps
+            px, pz = a[0] + d[0] * u, a[1] + d[1] * u
+            ok = all(_on_lawn(px + out[0] * w, pz + out[1] * w, holes) for w in (0.5, 2.0, 4.0))
+            if ok and start is None:
+                start = u
+            if (not ok or k == steps) and start is not None:
+                end = u if ok else u - 1.0
+                if end - start >= 4.0:
+                    p0 = (a[0] + d[0] * (start + 0.5), a[1] + d[1] * (start + 0.5))
+                    p1 = (a[0] + d[0] * (end - 0.5), a[1] + d[1] * (end - 0.5))
+                    drift(s, p0, p1, out)
+                start = None
+
+
 def level(s, g):
     buildings = building_holes()
     for name, r in P.PATHS.items():
@@ -54,6 +131,7 @@ def level(s, g):
     for piece in pieces_minus(P.box(P.X0, P.Z0, P.X1, P.Z1), lawn_holes):
         g.add(piece, "Snow", 0.0, 1, "park", None)
         city.floor(s, piece, 0.0, 2.0, "Snow")
+    patches(g, lawn_holes)
     # The tennis court: snowed over, fenced, look-only.
     g.add(rect(P.COURT), "Snow", 0.0, 2, "offlimits", "the tennis court")
     city.floor(s, rect(P.COURT), 0.0, 2.0, "Snow")
@@ -77,10 +155,10 @@ def banks(s):
     # The avenue's two sides, broken where paths join it and where the trees stand in them.
     for z0, z1 in ((-30.0, 2.0), (10.0, 44.0)):
         bank(s, (ax0, z0), (ax0, z1), (-1, 0))
-    for z0, z1 in ((-30.0, 22.0), (34.0, 84.0)):
+    for z0, z1 in ((-30.0, 22.0), (34.0, 37.4), (56.4, 84.0)):
         bank(s, (ax1, z0), (ax1, z1), (1, 0))
     # The east cross path, both sides, and the forecourt's south strip.
-    for x0, x1 in ((-8.0, 36.0), (48.0, 142.0)):
+    for x0, x1 in ((-8.0, 36.0), (48.0, 54.0), (62.0, 142.0)):
         bank(s, (x0, 34.0), (x1, 34.0), (0, 1))
     bank(s, (-8.0, 22.0), (66.0, 22.0), (0, -1))
     for x0, x1 in ((-52.0, -32.0), (-8.0, 26.0)):
@@ -316,5 +394,6 @@ def fountain(s):
 def build(s, g):
     level(s, g)
     banks(s)
+    drifts(s)
     hollow(s, g)
     fountain(s)

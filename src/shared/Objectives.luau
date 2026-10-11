@@ -56,7 +56,7 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 			table.insert(lines, line("Watch who works where, and remember the letters"))
 		end
 		if private.carrying == "note" then
-			table.insert(lines, line("You carry a written note: read it (N) or hide it"))
+			table.insert(lines, line("You carry a written note: read it (N), drop it (G) or pass it (X)"))
 		end
 	elseif phase == "DeathNote" then
 		if role == "Kira" then

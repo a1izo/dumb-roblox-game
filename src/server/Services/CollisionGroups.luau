@@ -5,6 +5,9 @@
 --   Ragdoll       : bodies of the dead; they rest on the world but do not shove anyone
 --   Specters      : ghosts and spectators; they fly, the world stops them, but they pass through bodies
 --   SpecterBounds : invisible boxes around each venue that keep ghosts inside
+--   Crowd         : the Tokyo crowd (drawn by each client): players bump into them, nothing else does
+--   CrowdPass     : a crowd walker stepping through someone it could not get round; collides with nothing
+--   Vehicles      : the Tokyo cars (drawn by each client); they brake for people instead of touching them
 
 local PhysicsService = game:GetService("PhysicsService")
 
@@ -15,6 +18,9 @@ CollisionGroups.SPECTERS = "Specters"
 CollisionGroups.BOUNDS = "SpecterBounds"
 CollisionGroups.CHARACTERS = "Characters"
 CollisionGroups.AWAY = "Away"
+CollisionGroups.CROWD = "Crowd"
+CollisionGroups.CROWD_PASS = "CrowdPass"
+CollisionGroups.VEHICLES = "Vehicles"
 
 local function register(name: string)
 	if not PhysicsService:IsCollisionGroupRegistered(name) then
@@ -29,6 +35,9 @@ function CollisionGroups.init()
 		CollisionGroups.BOUNDS,
 		CollisionGroups.CHARACTERS,
 		CollisionGroups.AWAY,
+		CollisionGroups.CROWD,
+		CollisionGroups.CROWD_PASS,
+		CollisionGroups.VEHICLES,
 	}) do
 		register(name)
 	end
@@ -57,6 +66,18 @@ function CollisionGroups.init()
 	set(AWAY, CollisionGroups.RAGDOLL, false)
 	set(AWAY, CollisionGroups.SPECTERS, false)
 	set(AWAY, CollisionGroups.BOUNDS, false)
+	-- The Tokyo crowd and cars: drawn by each client, moved by the server's maths, never by physics.
+	local groups = { "Default", CHARS, AWAY, CollisionGroups.RAGDOLL, CollisionGroups.SPECTERS, CollisionGroups.BOUNDS }
+	for _, group in ipairs(groups) do
+		set(CollisionGroups.CROWD, group, group == CHARS)
+		set(CollisionGroups.CROWD_PASS, group, false)
+		set(CollisionGroups.VEHICLES, group, false)
+	end
+	for _, a in ipairs({ CollisionGroups.CROWD, CollisionGroups.CROWD_PASS, CollisionGroups.VEHICLES }) do
+		for _, b in ipairs({ CollisionGroups.CROWD, CollisionGroups.CROWD_PASS, CollisionGroups.VEHICLES }) do
+			set(a, b, false)
+		end
+	end
 end
 
 -- Keeps a body's parts (and parts added later) in `group`, leaving alone any part another service has

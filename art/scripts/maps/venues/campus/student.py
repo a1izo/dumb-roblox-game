@@ -12,8 +12,7 @@ The cafeteria (学生食堂) has long tables, the meal-ticket machines by the do
 phone (the Cafeteria Payphone) on the east wall, and the serving counter with the tray return,
 the kitchen behind it look-only.
 
-The alley between them runs to the campus wall. The club house's vending machines stand in it,
-and the drop point is behind them."""
+The alley between them runs to the campus wall. The club house's vending machines stand in it."""
 
 from maps import kit
 from maps.venues.campus import fit, masonry
@@ -32,9 +31,7 @@ def ceiling(s, r, mat="Ceiling"):
     s.collider(((x0 + x1) / 2, C + 0.5, (z0 + z1) / 2), (x1 - x0, 1.0, z1 - z0), 0, True, None)
 
 
-def poster(s, x, y, z, rot, w, h, mat):
-    p = fit.turn(rot, 0, -0.04)
-    s.box(mat, (x + p[0], y, z + p[1]), (w, h, 0.03), rot)
+poster = fit.poster
 
 
 # The club house --------------------------------------------------------------------------------------------
@@ -52,17 +49,19 @@ def club_exterior(s):
                             (-101.0, "がんばれ\n受験生!!", (150, 24, 30))):
         s.prop("Tatekan", x, 55.6, 0)
         s.sign((x, 4.4, 55.45), 0, 5.2, 6.4, text, "GothamBlack", colour, None)
-    for x in (-126.0, -124.0):
+    for x in (-131.0, -129.0):
         s.prop("Bicycle", x, 55.0, 0)
-    s.prop("BikeRack", -110.0, 55.0, 0)
+    s.prop("BikeRack", -108.8, 55.0, 0)
 
 
 def club_rooms(s):
-    for r, mat in ((P.CLUB_ENTRY, "Concrete"), (P.CLUB_CORRIDOR, "ConcreteDark"), (P.NEWSROOM, "CarpetGrey"),
-                   (P.FILM_CLUB, "CarpetRed"), (P.KOTATSU, "WoodFloor"), (P.BAND_ROOM, "WoodFloorDark"),
-                   (P.LOCKER_ROOM, "TileMetroGrey")):
+    for r, mat in ((P.CLUB_ENTRY, "Concrete"), (P.CLUB_CORRIDOR, "Linoleum"), (P.NEWSROOM, "CarpetTile"),
+                   (P.FILM_CLUB, "CarpetPurple"), (P.KOTATSU, "Tatami"), (P.BAND_ROOM, "WoodFloorDark"),
+                   (P.LOCKER_ROOM, "TerrazzoDark")):
         fit.floor_faces(s, P.rect_of(r), 0.0, mat)
-    ceiling(s, (KX0, KZ0, KX1, KZ1))
+    # A 1960s block: painted plaster ceilings, dark over the film club (it screens films).
+    ceiling(s, (KX0, KZ0, KX1, KZ1), "CeilingPlaster")
+    fit.ceiling_faces(s, P.rect_of(P.FILM_CLUB), C - 0.06, "CeilingPlasterDark")
     fit.partition(s, (KX0, 71.0), (KX1, 71.0), 0.0, C, "PlasterGrey", "PlasterGrey",
                   doors=[(-138.0 - KX0, 4.4), (-118.0 - KX0, 8.0), (-99.0 - KX0, 4.4)], glass="clear",
                   spans=[(0.8, 7.6), (13.6, 19.8)])
@@ -81,12 +80,13 @@ def club_rooms(s):
     s.prop("ShoeLockers", -126.2, 64.7, -90)
     s.prop("UmbrellaStand", -110.0, 61.0, 0)
     s.prop("PinBoard", -108.44, 64.7, 90, 1.0, 6.0)
-    # Club posters along the corridor: on its north wall (facing south) and its south wall.
-    for x, y, rot, w, h, mat in ((-133.0, 6.4, 180, 2.0, 2.8, "RedTrim"), (-124.0, 6.2, 180, 2.2, 3.0, "PaintYellow"),
-                                 (-94.0, 6.4, 180, 2.2, 3.0, "WhiteTrim"), (-146.0, 6.0, 0, 2.2, 3.0, "PaintYellow"),
-                                 (-132.0, 6.2, 0, 2.4, 3.2, "WhiteTrim"), (-113.0, 6.0, 0, 2.0, 2.6, "RedTrim"),
-                                 (-104.0, 6.4, 0, 2.2, 3.0, "PaintYellow")):
-        poster(s, x, y, 71.3 if rot == 180 else 76.7, rot, w, h, mat)
+    # Club posters along the corridor, on its north wall (facing south): the film society, the winter
+    # live, the go club; and on its south wall: the registry's notice, the Bureau's advisory, the film
+    # society again (the three bigger ones between them are in clutter.py).
+    for x, y, rot, w, h, sheet in ((-133.0, 6.4, 180, 2.0, 2.8, 0), (-124.0, 6.2, 180, 2.2, 3.0, 2),
+                                   (-94.0, 6.4, 180, 2.2, 3.0, 5), (-146.0, 6.0, 0, 2.2, 3.0, 3),
+                                   (-132.0, 6.2, 0, 2.4, 3.2, 4), (-113.0, 6.0, 0, 2.0, 2.6, 0)):
+        poster(s, x, y, 71.3 if rot == 180 else 76.7, rot, w, h, sheet)
     s.hood(-146.4, 74.0)
     for x in (-140.0, -118.0, -98.0):
         kit.tube_light(s, x, C, 74.0, length=6.0, range_=16, brightness=0.6)
@@ -108,9 +108,9 @@ def film_club(s):
     s.prop("FilmProjector", -104.5, 64.7, -90)
     s.box("BlackMetal", (KX1 - 0.25, 6.5, 64.7), (0.3, 5.1, 8.6))
     s.screen((KX1 - 0.45, 6.5, 64.7), 90, 8.0, 4.5, "film")
-    for z in (62.2, 67.2):
-        s.prop("Chair", -98.5, z, -90)
-    poster(s, -106.0, 7.0, 70.7, 180, 2.4, 3.4, "RedTrim")
+    for z in (62.2, 64.7):
+        s.prop("Chair", -96.0, z, -90)
+    poster(s, -106.0, 7.0, 70.7, 180, 2.4, 3.4, 1)
     s.light("point", (-96.0, 6.0, 64.7), (200, 210, 255), 12, 0.5)
     fit.plaque(s, -99.0, 10.2, 71.3, 180, 4.4, 0.8, "映画研究会  FILM CLUB")
 
@@ -137,8 +137,8 @@ def band_room(s):
     for x in (-113.0, -124.0):
         s.box("BlackMetal", (x, 1.4, 106.8), (2.4, 2.8, 1.6), collide=True)
         s.box("Fabric", (x, 1.5, 105.98), (2.0, 2.0, 0.04))
-    s.prop("Sofa", -113.4, 80.2, 180)
-    poster(s, -110.6, 7.0, 95.0, 90, 3.0, 4.0, "PaintYellow")
+    s.prop("Sofa", -110.9, 88.0, 90)
+    poster(s, -110.6, 7.0, 95.0, 90, 3.0, 4.0, 2)
     kit.pendant(s, -119.0, C, 92.0, drop=4.0, shade="BlackMetal", color=fit.WARM, range_=18, brightness=0.9, wide=1.0)
     fit.panel(s, -119.0, 82.0, C, brightness=0.7, range_=16)
     s.sound("mapPianoFar", (-124.0, 4.0, 88.0), 34.0, 0.35)
@@ -170,7 +170,7 @@ def cafeteria(s):
     fit.wall_lamp(s, -54.0, 9.6, CAF[1] - 0.3, 0, color=fit.WARM, range_=20, brightness=1.0)
     fit.floor_faces(s, P.rect_of(P.DINING), 0.0, "TileChecker")
     fit.floor_faces(s, P.rect_of(P.KITCHEN), 0.0, "TileWhite")
-    ceiling(s, (FX0, FZ0, FX1, FZ1))
+    ceiling(s, (FX0, FZ0, FX1, FZ1), "CeilingPlaster")
     s.zone("interior", P.rect_of(P.DINING), 0.0, name="the cafeteria")
     s.look_zone("UniversityCampus_Inside", (FX0, 0.0, FZ0), (FX1, C, FZ1))
     # The serving counter closes off the kitchen.
@@ -202,12 +202,11 @@ def cafeteria(s):
 
 
 def alley(s):
-    """The club house's vending machines in the alley, the drop point behind them."""
+    """The club house's vending machines in the alley."""
     s.prop("RecycleBins", -86.2, 85.5, -90)
     s.prop("VendingBlue", -86.4, 90.2, -90)
     s.prop("VendingWhite", -86.4, 94.6, -90)
     s.prop("VendingMachine", -86.6, 99.0, -90)
-    s.drop_point("behind the club house vending machines", -86.6, 105.4)
     fit.wall_lamp(s, -87.7, 9.4, 96.0, -90, color=fit.WARM, range_=18, brightness=0.9)
     s.sound("mapCityHum", (-84.0, 6.0, 104.0), 40.0, 0.2)
 

@@ -6,7 +6,10 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | Folder | What it holds |
 | --- | --- |
 | `scripts/` | The build scripts (run with Blender, see below) |
-| `scripts/maps/` | The scenes: texture library, geometry kit, one package per venue |
+| `scripts/maps/` | The scenes: surface library (`scanlib.py`), geometry kit, one package per venue |
+| `source/` | Photographed source material: material scans, sky panoramas, typefaces. Not committed (905 MB); `sources.json` lists every file and `scripts/sources.py fetch` downloads them |
+| `sources.json`, `CREDITS.md` | Where every source file came from, its licence, size and checksum |
+| `budget.json` | What each scene weighed before the surfaces were remade (see "Weight") |
 | `data/r6_rig.json` | Roblox's classic R6 rig (joints and part sizes), the maths the game plays by |
 | `rig/BlenderR6Rig_V2.22.blend` | The R6 IK + FK Blender rig by Aeresei (Roblox DevForum, https://devforum.roblox.com/t/r6-ik-fk-blender-rig-v222/3586405), used as the rig for every animation. Not committed: download "Blender R6 Rig.blend" from that post into `art/rig/` under this name before running `run_anims.py` |
 | `blend/Animations.blend` | The R6 rig with every animation as an action (open it to tweak curves) |
@@ -15,7 +18,7 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | `export/DeathsGambitModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
 | `export/DeathsGambitModels_<Set>.fbx` | The props made for one venue (Tokyo, Agency, Campus, Lobby, Meeting) |
 | `export/DeathsGambitMaps_<Venue>.fbx` | One venue's scene each, with its tiling textures |
-| `export/textures/` | Baked prop textures, effect textures, and `maps/` (tiling colour, normal and roughness maps) |
+| `export/textures/` | Baked prop textures (`<Prop>_color`, `_normal`, `_rough`, `_metal`), effect textures, and `maps/` (tiling colour, normal, roughness and metalness maps) |
 | `export/previews/` | Renders of every pose, prop and map, for review |
 
 ## The imports in Studio
@@ -95,16 +98,21 @@ and the rune courtyard (north-east). A few rocks float high in the sky, the only
 `plan.py` (every place, with its own overlap check; `python plan.py` runs it), `terrain.py` (the basin's
 ground with the rift cut out, the endless plain `far_plain`, the ridge `edge`, the chasms `chasm`, the plateau
 sides, and the realm's own shapes: `column` (fluted, twisted), `needle`, `floating_rock`, `arch`,
-`cloud_bank`, `horn`, `blade`), `landmarks.py` (the spawn terrace, the plaza and the Grimoire's plinth, the
-title monolith, the eight steles, the bone throne, the Academy's ring of pillars, the dice rock, the
-stone-toss cairn, the cleft and the needle ledge, the carcass), `islets.py` (the two causeways and plateaus,
-the Spire Ascent's spiral of stones round a twisted spire, the rune courtyard), `formations.py` (the world
-beyond: spires, mesas, columns, arches, horns, ribs, ridges, dunes, cloud banks, floating rocks), `rift.py`
-(the hole through the ground, its ruined rim, and Kagegaoka at night far below, dim and pale, built at a third
-of its size), `dressing.py` (dead trees, braziers, lantern posts, bones, the particles, the sounds, the roots
-and banners that sway; placed by hand) and `gameplay.py`. The lobby's Luau builds what shows text or does
-something at the scene's `anchors` (`s.anchor`): `Maps/Lobby.luau` (the title, the eight boards, the spawn, the
-Academy), `Maps/LobbyGames.luau` (the mini-games' objects) and `Maps/LobbyDecor.luau` (the things that sway).
+`cloud_bank`, `horn`, `blade`), `landmarks.py` (the spawn terrace, the plaza and its ring of candle stones,
+the five bases of the tableaux and the bell round it, the title monolith, the bone throne and the Most Wins
+slab at its mesa's foot, the Academy's ring of pillars, the dice rock, the stone-toss cairn, the cleft and the
+needle ledge, the carcass and the duel's two slates under its ribs; `pool()` hangs a pale light over every
+place where something is done or read), `islets.py` (the two causeways and plateaus, the Spire Ascent's spiral
+of stones round a twisted spire, the rune courtyard), `formations.py` (the world beyond: spires, mesas,
+columns, arches, horns, ribs, ridges, dunes, cloud banks, floating rocks), `rift.py` (the hole through the
+ground, its ruined rim, open to step over, and Kagegaoka at night far below, dim and pale, built at a third of
+its size, with the hall whose roof a dive ends on straight under the rift), `dressing.py` (dead trees,
+braziers, lantern posts, bones, the particles, the sounds, the roots and banners that sway; placed by hand)
+and `gameplay.py`. No wall in the lobby explains anything: the scene has no slabs of text. The lobby's Luau
+builds what shows text or does something at the scene's `anchors` (`s.anchor`): `Maps/Lobby.luau` (the title,
+the Most Wins board, the spawn, the Academy), `Maps/LobbyFixtures.luau` (the candles, the rift's guard, the
+marks the clients build their stone figures at), `Maps/LobbyGames.luau` (the mini-games' objects) and
+`Maps/LobbyDecor.luau` (the things that sway).
 Its props are the `Lobby` set (`props_lobby.py`, `DeathsGambitModels_Lobby.fbx`). The lobby's sky, clouds, fog and
 ambience are runtime: `client/World/RealmSky.luau`, `WindSway.luau`, `Audio/RealmAmbience.luau`, and the
 `lobby` preset in `shared/LightingPresets.luau`; their numbers are in each module's `TUNING`.
@@ -125,7 +133,7 @@ the screen, the board, the seats and the Specters' spots at its anchors. Its pro
 ### The maps (Tokyo, Agency HQ, University Campus)
 
 Each map (`scripts/maps/venues/tokyo/`) is a whole map made here:
-its streets, buildings and **gameplay spots** (stations, spawns, sheets, drop points, hoods,
+its streets, buildings and **gameplay spots** (stations, spawns, sheets, hoods,
 named areas with intro marks, the tip box and board, plus spare spots of every kind) are all
 placed by the venue script, and the game reads them from the generated scene data. The Luau map
 module is three lines (`Maps/TokyoDistrict.luau`).
@@ -199,7 +207,8 @@ are aids for looking, nothing decides where a prop goes.
 - `export/DeathsGambitMaps_Tokyo.fbx`: meshes `Map_Tokyo_<Material>_<n>`, calibration cubes
   `Calib_Tokyo_O/X/Y` and a marker `DeathsGambitMapsTokyo_Version_<n>`. The version only goes up when
   the meshes change; only then does Studio need a new import (delete the old one first).
-- `src/server/Maps/Scenes/Tokyo/`: `Layout` (gameplay spots, spare spots, zones), `Geometry`
+- `src/server/Maps/Scenes/Tokyo/`: `Layout` (gameplay spots, spare spots, zones; for Tokyo also the
+  crowd's walks and the cars' lanes, `venues/tokyo/crowd.py`), `Geometry`
   (colliders, floor triangles, ramps, the steps drawn over them), `Dressing` (props, lights, signs,
   screens, sound sources and the metro train's timetable). Long lists are split into parts so no
   script gets too long for Studio.
@@ -227,10 +236,64 @@ report, not a pass mark: `previews/light_Tokyo.png` shows the dark parts in red)
 the map is to its own mirror image (it must not be symmetrical; `CHECKS["symmetry"]` sets a
 venue's own limit, None where being symmetrical is the point, as in the meeting room).
 
+Tokyo's scramble has a crowd and cars (`venues/tokyo/crowd.py`, data only: the game moves them and
+each client draws them). The crowd walks a graph: nodes on the pavement, links between them (a
+"crossing" link is only walked on the walk lamp), and posts where a few stand all match. The cars
+drive lanes, each with its stop line and its road (the two roads take turns). `crowd.py` places every
+node and walk against the scene with the checker's own eyes, round whatever stands on the pavement;
+`check_v2.py` then holds the result to it: every node on a floor and inside nothing, at least 10
+studs from a station and 4 from a spawn, every walk open and off the roadway, every crossing on the
+crossing, every lane on the road with its stop line short of the crossing. Move a street light or
+a vending machine and the walks move with it at the next export.
+
 The kit for big maps: `maps/geo2d.py` (plane geometry: clipping, covering, polylines),
 `maps/city.py` (ground surfaces that never overlap, exact floors, streets, lanes grown into the
 blocks, terraces, stairs, slopes, shops, multi-storey buildings, lamps), `maps/layout.py` (the
 gameplay spots and zones).
+
+## Where the surfaces come from
+
+No surface is drawn from noise, and none is made by an image generator. Every wall, floor, trim and
+prop material is a photographed scan (CC0, from Poly Haven and ambientCG; ambientCG's procedural
+assets are left out), fitted to the game:
+
+- `scripts/sources.py list` writes `sources.json` from the two catalogues; `fetch` downloads what it
+  lists into `art/source/` and checks every file. A git worktree under the main checkout finds
+  that folder by itself (`common.source`).
+- `scripts/lookbook.py` is the rulebook: how many pixels a surface gets for where a player sees it
+  from, the grade every scan gets, and what wear means.
+- `scripts/maps/scanlib.py` makes the maps' tiling sets. `LIBRARY` names each surface, its scan, its
+  colour in the game and the studs one repeat covers. Patterned scans (bricks, tiles, boards) are
+  laid side by side; plain ones (ash, asphalt, plaster, snow) are shuffled into patches so no
+  repeat shows. The sets on disk are only made again with `run_maps.py -- <Venue> --retexture`,
+  which needs `art/source/`; a plain export reads the committed files.
+- Props take the same scans (`modelkit.SCANS`, by the helper that made the material or the last word
+  of its name), prepared without their broad stains (`scanlib.prepared`), and `modelkit.bake` writes
+  four maps per prop at the size the rulebook gives its surface. Edges are rounded in the mesh
+  (the builders' bevels), not in the normal map: a shader bevel reads a thin inlay lying on a
+  surface as an edge.
+- `scripts/skies.py` cuts a sky panorama into the six faces of a map's sky. Each map's FBX carries
+  its faces on `Tex_Sky<Venue><Face>` quads, and a running game may set a Sky's faces from them,
+  but the game does not show them yet: Roblox darkens a skybox at night, so the three night maps
+  need their light re-tuned around it first, and that has to be done by eye in Studio.
+- `scripts/maps/prints.py` draws a venue's posters into one sheet (`export/textures/Prints<Venue>.png`)
+  with the open-licence typefaces; its header holds the rules for what may be printed. The sheet
+  is a map material (`matlib.SHEETS`) that a wall shows one poster of at a time (`prints.paste`,
+  through `poster(..., sheet=n)` in `venues/tokyo/decor.py` and `venues/campus/fit.py`), so it
+  rides in the map's own FBX. Tokyo has a sheet (the street) and the Campus has one (the club
+  house). Run it (`blender -b --factory-startup --python art/scripts/maps/prints.py -- Tokyo`)
+  before the map's export when a poster changes. Signs a player has to read stay text the game
+  draws.
+
+Colour variants of one scan (the carpets, the plasters) are separate texture sets for now. Studio
+uploads an image shared by several meshes once, and a script may set `SurfaceAppearance.Color`, so
+they could share one set and be tinted; a running game cannot fill a `MaterialVariant`.
+
+## Weight
+
+`python scripts/budget.py` compares each scene with `art/budget.json`: the texture pixels its
+three import files embed, their megabytes, and the map's triangles. Pixels and megabytes may not
+grow; triangles may grow by a tenth, and not at all in Tokyo. Run it after every export.
 
 ## Props and textures
 
@@ -242,6 +305,17 @@ blender -b --factory-startup --python art/scripts/run_props.py -- --set Core --e
 blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --preview  # one set
 blender -b --factory-startup --python art/scripts/run_props.py -- --set Tokyo --export
 ```
+
+Tokyo's first 57 props keep the shapes they shipped with (`build_props.KEPT`). The builders in the
+scripts are newer than those meshes (bigger vehicles and trees, a narrower ticket gate, stations
+with a screen slot), and the district was laid out around the old ones: built as they stand, 28
+placements fail `maps/check_v2.py`. So a build never runs those builders. It takes the kept mesh
+from `blend/Props.blend` and bakes it in the scanned materials (`build_props.reskin_one`): each
+face carries the number of its surface, and the mesh the list of them, sorted once from the old
+baked pictures against the builders' own materials. Without `Props.blend` those shapes cannot be
+made again. To take a newer shape, remove the name from `KEPT`, build it, and run the check on
+every map that places it. `TreeZelkova` and `PetalScatter` have builders and no place in any map,
+so they are not built (`build_props.SHELVED`).
 
 `--export` (with `--set`) writes `export/DeathsGambitModels_<Set>.fbx` and
 `src/shared/ModelCatalog.luau` (each prop's size in studs, pivot, material, glow colours, the

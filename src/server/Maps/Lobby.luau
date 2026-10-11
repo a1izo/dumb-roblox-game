@@ -1,14 +1,18 @@
 -- The lobby: the Grey Realm, a never-ending wasteland under layered cloud, made in Blender
 -- (art/scripts/maps/venues/lobby/). Players appear on a ruined terrace over its old flagstone
--- plaza, facing north; the steles round the plaza carry How to Play, the next case and the boards;
--- south-west lies the Academy, a ring of broken pillars with a practice altar for every skill and
--- three effigies to practise on; two old causeways over chasms lead to the plateaus of the Spire Ascent
--- and the rune courtyard, and the dice rock and the stone-toss wait in the basin itself.
+-- plaza, facing north. No wall in it explains anything: the game is learnt by doing (the Trial, in the
+-- Academy) and by looking (the stone tableaux round the plaza, the candles at its middle). The only
+-- writing left is the title on its monolith, one board (Most Wins, on a low slab at the foot of the
+-- throne's mesa) and the names on the Academy's gate and altars.
+-- South-west lies the Academy, a ring of broken pillars with a practice altar for every skill and three
+-- effigies to practise on; two old causeways over chasms lead to the plateaus of the Spire Ascent and the
+-- rune courtyard, and the dice rock and the stone-toss wait in the basin itself.
 --
 -- SceneBuilder puts up the scene (or its greybox, without the import); this module builds what
 -- shows text or does something, at the scene's anchors. The Academy only tags parts (LTraining
 -- drill desks, LDummy torsos); the drills run on each player's client and never touch a match.
--- The mini-games' objects are LobbyGames', the things that sway in the wind LobbyDecor's.
+-- The mini-games' objects are LobbyGames', the things that sway in the wind LobbyDecor's, and the
+-- candles, the rift's guard and the other fixtures LobbyFixtures'.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -21,6 +25,7 @@ local Assets = require(Shared:WaitForChild("Assets"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local LobbyDecor = require(script.Parent.LobbyDecor)
+local LobbyFixtures = require(script.Parent.LobbyFixtures)
 local LobbyGames = require(script.Parent.LobbyGames)
 local SceneBuilder = require(script.Parent.SceneBuilder)
 
@@ -30,7 +35,6 @@ local GOLD = Color3.fromRGB(163, 170, 181) -- the grey of the UI's secondary tex
 local INK = Color3.fromRGB(12, 12, 14)
 local SLATE = Color3.fromRGB(16, 16, 20)
 local STONE = Color3.fromRGB(58, 58, 62)
-local NEWLINE = string.char(10)
 
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number? }
 
@@ -41,17 +45,18 @@ local DUMMIES = {
 	{ alias = "Dummy C", name = "Hina Ogawa" },
 }
 
--- drill id, title, one-line blurb: one case-file altar per station type, then the Grimoire, the
--- warrant and the eyes. They take the scene's altars in order (drill1, drill2...).
+-- drill id and the name on its plaque: one case-file altar per station type, then the Grimoire, the
+-- warrant and the eyes. They take the scene's altars in order (drill1, drill2...). The name is all
+-- the plaque says; what a drill asks of you, it says itself when you start it.
 local DRILLS = {}
 for _, id in ipairs(TaskTypes.LIST) do
 	local info = TaskTypes.get(id)
-	table.insert(DRILLS, { info.drill, info.drillTitle, "Practise every puzzle this station can give." })
+	table.insert(DRILLS, { info.drill, info.drillTitle })
 end
 for _, drill in ipairs({
-	{ "grimoire", Terms.NAMES.GRIMOIRE, "Write a full real name exactly." },
-	{ "warrant", "THE WARRANT", "Pick the suspect, type the name." },
-	{ "eyes", Terms.NAMES.EYES, "See real names up close." },
+	{ "grimoire", Terms.NAMES.GRIMOIRE },
+	{ "warrant", "THE WARRANT" },
+	{ "eyes", Terms.NAMES.EYES },
 }) do
 	table.insert(DRILLS, drill)
 end
@@ -83,7 +88,7 @@ end
 -- A practice altar: the game's drill desk (the prompt's part), dressed with the Blender altar when
 -- it is imported, and a stone tablet behind it carrying the drill's name.
 local function drillDesk(b, drill, a: Anchor)
-	local id, title, blurb = drill[1], drill[2], drill[3]
+	local id, title = drill[1], drill[2]
 	local desk = b:prop(
 		a.x,
 		a.z,
@@ -112,8 +117,8 @@ local function drillDesk(b, drill, a: Anchor)
 	desk:AddTag("LTraining")
 	local base = b:cf(a.x, 0, a.z, a.rot)
 	b:part(Vector3.new(6.6, 7.6, 0.7), base * CFrame.new(0, 3.8, 2.6), STONE, Enum.Material.Slate)
-	local plaque = b:part(Vector3.new(6, 2.4, 0.3), base * CFrame.new(0, 6.2, 2.1), SLATE, Enum.Material.SmoothPlastic)
-	signText(plaque, title .. NEWLINE .. blurb, GOLD, Enum.Font.SpecialElite)
+	local plaque = b:part(Vector3.new(6, 1.5, 0.3), base * CFrame.new(0, 6.5, 2.1), SLATE, Enum.Material.SmoothPlastic)
+	signText(plaque, title, GOLD, Enum.Font.SpecialElite)
 end
 
 -- A figure for the drills to point at: a plain grey mannequin, or the Blender effigy over it when
@@ -161,17 +166,8 @@ local function dummy(b, info, a: Anchor)
 	signText(plate, string.upper(info.alias), Color3.fromRGB(235, 230, 220), Enum.Font.GothamBlack)
 end
 
--- The Academy's signs, drill altars and effigies.
+-- The Academy's name over its gate, its drill altars and effigies.
 local function academy(b, anchors: { [string]: Anchor })
-	sign(b, anchors.academyTitle, "ACADEMY", GOLD, INK, Enum.Font.GrenzeGotisch)
-	sign(
-		b,
-		anchors.academyLine,
-		"Practice every skill here. Nothing you do here counts in a match.",
-		Color3.fromRGB(220, 215, 205),
-		INK,
-		Enum.Font.SpecialElite
-	)
 	sign(b, anchors.academyGate, "ACADEMY  ·  PRACTICE", GOLD, INK, Enum.Font.GothamBlack)
 	for index, drill in ipairs(DRILLS) do
 		local a = anchors["drill" .. index]
@@ -215,43 +211,22 @@ function Lobby.build(b)
 	end
 	sign(b, anchors.tagline, Terms.TAGLINE, GOLD, INK, Enum.Font.SpecialElite)
 
-	-- How to play, on the great stele west of the plaza.
-	sign(
-		b,
-		anchors.howto,
-		Terms.f(
-			"HOW TO PLAY\n\n1. Press READY. A match starts with 6 to 12 players.\n"
-				.. "2. Your real name is on your role card. Hold C to see it.\n"
-				.. "3. Work case files. Every task leaks 3 letters of your name to anyone close.\n"
-				.. "4. Outside meetings you only have quick-chat. Meetings open free chat.\n"
-				.. "5. {Hand} needs your full real name. So does {zero}'s warrant.\n\n"
-				.. "Practice every skill in the Academy, the ring of pillars to the south-west."
-		),
-		Color3.fromRGB(230, 230, 230),
-		SLATE,
-		Enum.Font.SpecialElite
-	)
-
-	-- The next case, on the stele east of the plaza.
-	local _, nextMapLabel = sign(b, anchors.nextCase, "NEXT CASE", GOLD, SLATE, Enum.Font.GothamBlack)
-
-	-- Leaderboards (east) and today's quests and the weekly board (west); the two mini-game boards stand by
-	-- the bridges' heads (anchor parkourBoard, runesBoard; board keys parkour, runes).
+	-- The one board in the world: Most Wins, on the low slab at the foot of the throne's mesa. The other
+	-- boards (experience, the week, the mini-games) are in the Leaderboards window; the next case and the
+	-- quests are on the lobby's own page.
 	local boards = {}
-	for _, key in ipairs({ "wins", "xp", "weekly", "quests", "parkour", "runes" }) do
-		local anchor = anchors[if key == "parkour" or key == "runes" then key .. "Board" else key]
-		if anchor then
-			local _, label = sign(b, anchor, "", Color3.fromRGB(235, 232, 225), SLATE, Enum.Font.SpecialElite)
-			label.TextXAlignment = Enum.TextXAlignment.Left
-			label.TextYAlignment = Enum.TextYAlignment.Top
-			Create("UITextSizeConstraint", { MaxTextSize = 34, Parent = label })
-			boards[key] = label
-		else
-			warn("[DeathsGambit] The lobby scene has no board for " .. key .. ".")
-		end
+	if anchors.wins then
+		local _, label = sign(b, anchors.wins, "", Color3.fromRGB(235, 232, 225), SLATE, Enum.Font.SpecialElite)
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.TextYAlignment = Enum.TextYAlignment.Top
+		Create("UITextSizeConstraint", { MaxTextSize = 34, Parent = label })
+		boards.wins = label
+	else
+		warn("[DeathsGambit] The lobby scene has no board for wins.")
 	end
 
 	LobbyDecor.build(b, anchors)
+	LobbyFixtures.build(b, anchors)
 	local games = LobbyGames.build(b, anchors)
 
 	-- Where players appear: the ring on the terrace (the scene's floor is under it, so the pad
@@ -271,7 +246,6 @@ function Lobby.build(b)
 	})
 
 	return {
-		nextMapLabel = nextMapLabel,
 		boards = boards,
 		spawnCFrame = spawnCFrame,
 		games = games,

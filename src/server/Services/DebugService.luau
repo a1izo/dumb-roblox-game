@@ -26,6 +26,7 @@ local Server = script.Parent.Parent
 local Migrations = require(Server:WaitForChild("Data"):WaitForChild("Migrations"))
 local Maps = Server:WaitForChild("Maps")
 local MapContract = require(Maps:WaitForChild("MapContract"))
+local Mechanics = require(Maps:WaitForChild("Mechanics"))
 local SceneBuilder = require(Maps:WaitForChild("SceneBuilder"))
 
 local CaseFileService = require(script.Parent.CaseFileService)
@@ -660,6 +661,9 @@ COMMANDS.contract = function(player)
 		return
 	end
 	local problems = MapContract.validateBuilt(info)
+	for _, problem in ipairs(MapContract.validateCrowd(info.layout or {})) do
+		table.insert(problems, problem)
+	end
 	for _, problem in ipairs(problems) do
 		warn("[DeathsGambit debug] " .. info.name .. ": " .. problem)
 	end
@@ -667,6 +671,21 @@ COMMANDS.contract = function(player)
 		player,
 		if #problems == 0 then "Map contract: all clear." else #problems .. " problem(s), listed in the Output.",
 		if #problems == 0 then "good" else "bad"
+	)
+end
+
+-- The running map's own mechanic (Maps/Mechanics): Tokyo's "status", "walk" and "cars" (turn the
+-- lamps), the campus's "tracks" (how many prints), Bureau HQ's "blackout" (pull the breaker now).
+COMMANDS.mechanic = function(player, args)
+	if not needMatch(player) then
+		return
+	end
+	local command = if type(args) == "table" and type(args.command) == "string" then args.command else "status"
+	local answer = Mechanics.debug(command, args)
+	reply(
+		player,
+		answer or string.format("%s's mechanic has no '%s'.", tostring(Mechanics.currentId() or "This map"), command),
+		if answer then nil else "bad"
 	)
 end
 
