@@ -1,5 +1,5 @@
-"""Map materials: tiling textured materials (colour, normal and roughness maps from texlib) and
-flat materials that the game colours at runtime (metal trims, glass, neon, screens).
+"""Map materials: tiling textured materials (colour, normal and roughness maps from scanlib) and
+flat materials that the game colours at runtime (glass, neon, screens, the far city).
 
 Textured materials keep their texture after import (a SurfaceAppearance or TextureID on the
 MeshPart). Flat materials are listed in src/shared/SceneMaterials.luau with the Roblox colour,
@@ -14,39 +14,18 @@ import bpy
 import numpy as np
 
 import common
-from maps import texlib
+from maps import scanlib
 
 TEX_DIR = os.path.join(common.EXPORT, "textures", "maps")
 
 # name -> (Roblox material, sRGB colour, transparency, reflectance)
 FLAT = {
-    "BlackMetal": ("Metal", (26, 26, 30), 0, 0),
-    "DarkMetal": ("Metal", (58, 60, 66), 0, 0),
-    "Steel": ("Metal", (150, 152, 158), 0, 0),
-    "Brass": ("Metal", (176, 140, 72), 0, 0.05),
-    "Gold": ("Metal", (214, 176, 96), 0, 0.1),
-    "WhiteTrim": ("SmoothPlastic", (218, 214, 204), 0, 0),
-    "CreamTrim": ("SmoothPlastic", (196, 184, 160), 0, 0),
-    "BlackTrim": ("SmoothPlastic", (20, 20, 24), 0, 0),
-    "RedTrim": ("SmoothPlastic", (150, 22, 32), 0, 0),
-    "Vermilion": ("SmoothPlastic", (170, 44, 32), 0, 0.02),  # the red gate's lacquer
-    "Bamboo": ("SmoothPlastic", (156, 138, 88), 0, 0),
-    "ChainLink": ("Metal", (112, 116, 122), 0, 0),  # the tennis court fence's galvanised wire
-    "PaintYellow": ("SmoothPlastic", (222, 190, 60), 0, 0),
-    "Rubber": ("SmoothPlastic", (30, 30, 32), 0, 0),
     "Glass": ("Glass", (150, 180, 210), 0.6, 0.2),
     "GlassDark": ("Glass", (40, 52, 66), 0.35, 0.25),
     "Water": ("Glass", (40, 90, 120), 0.35, 0.3),
     "Puddle": ("Glass", (16, 16, 22), 0.15, 0.35),
     "Screen": ("SmoothPlastic", (14, 16, 22), 0, 0.1),
-    "Paper": ("SmoothPlastic", (226, 220, 205), 0, 0),
-    "Fabric": ("Fabric", (40, 40, 46), 0, 0),
-    "TarpBlue": ("Fabric", (36, 78, 150), 0, 0),  # the blue plastic sheet on every work boat and site
-    "FabricRed": ("Fabric", (120, 24, 30), 0, 0),
-    "Leather": ("Leather", (40, 26, 22), 0, 0),
-    "Wood": ("Wood", (86, 58, 38), 0, 0),
     "Foliage": ("Grass", (44, 74, 40), 0, 0),
-    "Bark": ("Wood", (60, 44, 34), 0, 0),
     "NeonWarm": ("Neon", (255, 214, 160), 0, 0),
     "NeonCool": ("Neon", (200, 225, 255), 0, 0),
     # A fluorescent fitting's diffuser: it reads as lit without blooming (see kit.tube_light).
@@ -88,10 +67,8 @@ FLAT = {
     "RoomCoolCeiling": ("Neon", (120, 138, 170), 0, 0),
     "RoomDark": ("SmoothPlastic", (18, 18, 22), 0, 0),
     "CoreDark": ("SmoothPlastic", (14, 15, 18), 0, 0),
-    # The Grey Realm (the lobby): old bone, the glowing cracks at the rift's rim, and the dark
-    # depths of the rift and the rocks' clefts.
-    "BoneWhite": ("SmoothPlastic", (168, 162, 146), 0, 0),
-    "BoneOld": ("SmoothPlastic", (122, 116, 104), 0, 0),
+    # The Grey Realm (the lobby): the glowing cracks at the rift's rim, and the dark depths of the
+    # rift and the rocks' clefts.
     "RiftGlow": ("Neon", (150, 176, 214), 0, 0),
     "Abyss": ("SmoothPlastic", (10, 10, 12), 0, 0),
     # The Grey Realm's second pass: the cold glow of the blade relics, the cloud walls on the horizon, and
@@ -103,11 +80,6 @@ FLAT = {
     "DimLamp": ("Neon", (92, 102, 124), 0, 0),
     "DimBand": ("Neon", (106, 120, 146), 0, 0),
     "DimBandWarm": ("Neon", (136, 112, 84), 0, 0),
-    # The war room: venetian blind slats, pinned photographs, the red string between them.
-    "BlindSlat": ("SmoothPlastic", (150, 140, 118), 0, 0),
-    "Photo": ("SmoothPlastic", (70, 72, 74), 0, 0),
-    "PhotoPale": ("SmoothPlastic", (178, 176, 168), 0, 0),
-    "RedString": ("SmoothPlastic", (170, 24, 32), 0, 0),
     # Massing: plain blocks at true height, for reviewing a layout before its buildings are made.
     "MassLight": ("SmoothPlastic", (208, 204, 196), 0, 0),
     "MassMid": ("SmoothPlastic", (168, 166, 162), 0, 0),
@@ -121,6 +93,18 @@ FLAT = {
 
 # Textured material name fragment -> the Roblox material closest to it (first match wins).
 FALLBACK_KIND = [
+    ("MetalFloor", "DiamondPlate"),
+    ("Metal", "Metal"),
+    ("Steel", "Metal"),
+    ("Brass", "Metal"),
+    ("Gold", "Metal"),
+    ("ChainLink", "Metal"),
+    ("Fabric", "Fabric"),
+    ("Tarp", "Fabric"),
+    ("RedString", "Fabric"),
+    ("Leather", "Leather"),
+    ("Bark", "Wood"),
+    ("Bamboo", "Wood"),
     ("AshCracked", "Salt"),
     ("Ash", "Sand"),
     ("RockGrey", "Rock"),
@@ -128,7 +112,6 @@ FALLBACK_KIND = [
     ("Damask", "Fabric"),
     ("Snow", "Snow"),
     ("Ice", "Ice"),
-    ("MetalFloor", "DiamondPlate"),
     ("Shutter", "CorrodedMetal"),
     ("Marble", "Marble"),
     ("Wood", "WoodPlanks"),
@@ -165,8 +148,8 @@ def fallback_look(name):
 
 def tile_size(name):
     """Studs covered by one repeat of a textured material (1 for flat materials)."""
-    if name in texlib.LIBRARY:
-        return texlib.LIBRARY[name][1]
+    if name in scanlib.LIBRARY:
+        return scanlib.LIBRARY[name][1]
     return 4.0
 
 
@@ -174,7 +157,7 @@ def is_flat(name):
     return name in FLAT
 
 
-def _save(name, array, non_color, size=None, quality=90):
+def _save(name, array, non_color, quality=90):
     """Saves a map as JPEG (much smaller than PNG for noisy textures, which keeps the FBX light)."""
     h, w = array.shape[:2]
     img = bpy.data.images.get(name) or bpy.data.images.new(name, w, h, alpha=False)
@@ -184,8 +167,6 @@ def _save(name, array, non_color, size=None, quality=90):
         array = np.stack([array, array, array], axis=-1)
     rgba = np.concatenate([array, np.ones((h, w, 1))], axis=-1).astype(np.float32)
     img.pixels.foreach_set(rgba.ravel())
-    if size and size != w:
-        img.scale(size, size)
     path = os.path.join(TEX_DIR, name + ".jpg")
     img.filepath_raw = path
     img.file_format = "JPEG"
@@ -194,30 +175,24 @@ def _save(name, array, non_color, size=None, quality=90):
     return img
 
 
-# Smaller maps for the quiet surfaces added in the second maps pass (ceilings, sheet floors,
-# carpets): (colour size, normal size) in pixels. Their relief is faint, so a 512 normal map looks the
-# same in game, and the map FBXs stay inside their budget.
-LIGHT = {
-    "CeilingPlaster": (512, 256), "CeilingPlasterDark": (512, 256), "CeilingSlats": (None, 512),
-    "Terrazzo": (None, 512), "TerrazzoDark": (None, 512), "VinylLab": (512, 256), "VinylClinic": (512, 256),
-    "Linoleum": (512, 256), "Tatami": (None, 512), "CarpetTile": (512, 256), "CarpetTileBlue": (512, 256),
-    "CarpetPurple": (None, 512), "CarpetGreen": (None, 512), "WoodHerringbone": (None, 512),
-    "Snow2": (None, 512), "SnowThin": (None, 512),
-}
+KINDS = ("color", "normal", "rough", "metal")
 
 
 def make_textures(names=None, force=False):
-    """Draws the textures (skipping ones already on disk unless force) and returns
-    {material: {"color": image, "normal": image, "rough": image}}."""
+    """Makes the textures (skipping ones already on disk unless force) and returns
+    {material: {"color": image, "normal": image, "rough": image[, "metal": image]}}. Each map comes
+    from scanlib at the size the look rulebook gives it."""
     os.makedirs(TEX_DIR, exist_ok=True)
     out = {}
-    for name, (generator, _) in texlib.LIBRARY.items():
+    for name, (generator, _) in scanlib.LIBRARY.items():
         if names and name not in names:
             continue
-        paths = {kind: os.path.join(TEX_DIR, f"{name}_{kind}.jpg") for kind in ("color", "normal", "rough")}
-        if not force and all(os.path.exists(p) for p in paths.values()):
+        paths = {kind: os.path.join(TEX_DIR, f"{name}_{kind}.jpg") for kind in KINDS}
+        if not force and all(os.path.exists(paths[kind]) for kind in ("color", "normal", "rough")):
             images = {}
             for kind, path in paths.items():
+                if not os.path.exists(path):
+                    continue
                 img = bpy.data.images.load(path, check_existing=True)
                 if kind != "color":
                     img.colorspace_settings.name = "Non-Color"
@@ -225,12 +200,15 @@ def make_textures(names=None, force=False):
             out[name] = images
             continue
         maps = generator()
-        color_size, normal_size = LIGHT.get(name, (None, None))
         out[name] = {
-            "color": _save(f"{name}_color", maps["color"], False, size=color_size, quality=88 if color_size else 90),
-            "normal": _save(f"{name}_normal", maps["normal"], True, size=normal_size, quality=90 if normal_size else 94),
-            "rough": _save(f"{name}_rough", maps["rough"], True, size=256 if normal_size else 512, quality=88),
+            "color": _save(f"{name}_color", maps["color"], False, quality=90),
+            "normal": _save(f"{name}_normal", maps["normal"], True, quality=90),
+            "rough": _save(f"{name}_rough", maps["rough"], True, quality=88),
         }
+        if "metal" in maps and float(maps["metal"].max()) > 0.05:
+            out[name]["metal"] = _save(f"{name}_metal", maps["metal"], True, quality=88)
+        elif os.path.exists(paths["metal"]):
+            os.remove(paths["metal"])
         print("[maps] texture", name)
     return out
 
@@ -270,7 +248,12 @@ def material(name, images=None):
     nmap = nodes.new("ShaderNodeNormalMap")
     links.new(normal.outputs["Color"], nmap.inputs["Color"])
     links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
-    bsdf.inputs["Metallic"].default_value = 0.0
+    if "metal" in tex:
+        metal = nodes.new("ShaderNodeTexImage")
+        metal.image = tex["metal"]
+        links.new(metal.outputs["Color"], bsdf.inputs["Metallic"])
+    else:
+        bsdf.inputs["Metallic"].default_value = 0.0
     return mat
 
 

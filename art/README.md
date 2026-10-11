@@ -6,7 +6,10 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | Folder | What it holds |
 | --- | --- |
 | `scripts/` | The build scripts (run with Blender, see below) |
-| `scripts/maps/` | The scenes: texture library, geometry kit, one package per venue |
+| `scripts/maps/` | The scenes: surface library (`scanlib.py`), geometry kit, one package per venue |
+| `source/` | Photographed source material: material scans, sky panoramas, typefaces. Not committed (905 MB); `sources.json` lists every file and `scripts/sources.py fetch` downloads them |
+| `sources.json`, `CREDITS.md` | Where every source file came from, its licence, size and checksum |
+| `budget.json` | What each scene weighed before the surfaces were remade (see "Weight") |
 | `data/r6_rig.json` | Roblox's classic R6 rig (joints and part sizes), the maths the game plays by |
 | `rig/BlenderR6Rig_V2.22.blend` | The R6 IK + FK Blender rig by Aeresei (Roblox DevForum, https://devforum.roblox.com/t/r6-ik-fk-blender-rig-v222/3586405), used as the rig for every animation. Not committed: download "Blender R6 Rig.blend" from that post into `art/rig/` under this name before running `run_anims.py` |
 | `blend/Animations.blend` | The R6 rig with every animation as an action (open it to tweak curves) |
@@ -15,7 +18,7 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | `export/DeathsGambitModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
 | `export/DeathsGambitModels_<Set>.fbx` | The props made for one venue (Tokyo, Agency, Campus, Lobby, Meeting) |
 | `export/DeathsGambitMaps_<Venue>.fbx` | One venue's scene each, with its tiling textures |
-| `export/textures/` | Baked prop textures, effect textures, and `maps/` (tiling colour, normal and roughness maps) |
+| `export/textures/` | Baked prop textures (`<Prop>_color`, `_normal`, `_rough`, `_metal`), effect textures, and `maps/` (tiling colour, normal, roughness and metalness maps) |
 | `export/previews/` | Renders of every pose, prop and map, for review |
 
 ## The imports in Studio
@@ -242,6 +245,40 @@ The kit for big maps: `maps/geo2d.py` (plane geometry: clipping, covering, polyl
 `maps/city.py` (ground surfaces that never overlap, exact floors, streets, lanes grown into the
 blocks, terraces, stairs, slopes, shops, multi-storey buildings, lamps), `maps/layout.py` (the
 gameplay spots and zones).
+
+## Where the surfaces come from
+
+No surface is drawn from noise, and none is made by an image generator. Every wall, floor, trim and
+prop material is a photographed scan (CC0, from Poly Haven and ambientCG; ambientCG's procedural
+assets are left out), fitted to the game:
+
+- `scripts/sources.py list` writes `sources.json` from the two catalogues; `fetch` downloads what it
+  lists into `art/source/` and checks every file. A git worktree under the main checkout finds
+  that folder by itself (`common.source`).
+- `scripts/lookbook.py` is the rulebook: how many pixels a surface gets for where a player sees it
+  from, the grade every scan gets, and what wear means.
+- `scripts/maps/scanlib.py` makes the maps' tiling sets. `LIBRARY` names each surface, its scan, its
+  colour in the game and the studs one repeat covers. Patterned scans (bricks, tiles, boards) are
+  laid side by side; plain ones (ash, asphalt, plaster, snow) are shuffled into patches so no
+  repeat shows. The sets on disk are only made again with `run_maps.py -- <Venue> --retexture`,
+  which needs `art/source/`; a plain export reads the committed files.
+- Props take the same scans (`modelkit.SCANS`, by the helper that made the material or the last word
+  of its name), prepared without their broad stains (`scanlib.prepared`), and `modelkit.bake` writes
+  four maps per prop at the size the rulebook gives its surface. The rounded edges are in the
+  normal map, not in the mesh.
+- `scripts/skies.py` cuts a sky panorama into the six faces of a map's sky;
+  `scripts/maps/prints.py` draws poster sheets with the open-licence typefaces (its header holds
+  the rules for what may be printed).
+
+Colour variants of one scan (the carpets, the plasters) are separate texture sets for now. Studio
+uploads an image shared by several meshes once, and a script may set `SurfaceAppearance.Color`, so
+they could share one set and be tinted; a running game cannot fill a `MaterialVariant`.
+
+## Weight
+
+`python scripts/budget.py` compares each scene with `art/budget.json`: the texture pixels its
+three import files embed, their megabytes, and the map's triangles. Pixels and megabytes may not
+grow; triangles may grow by a tenth, and not at all in Tokyo. Run it after every export.
 
 ## Props and textures
 

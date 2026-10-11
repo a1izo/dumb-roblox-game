@@ -16,6 +16,10 @@ __pycache__/
 art/export/*.fbm/
 art/export/scenes/
 
+# Photographed source material (scans, sky panoramas, typefaces): art/sources.json lists every file,
+# art/scripts/sources.py fetches them
+art/source/
+
 # Fontshare font files (download your own copy from fontshare.com) and UI board screenshots
 art/fonts/fontshare/
 art/uiboard/

@@ -19,6 +19,8 @@ venues: Lobby Meeting Agency Campus Tokyo (all when none are given)
            art/export/scenes/<Venue>.json (for the checks), and for the maps src/shared/MapBounds.luau.
            Always merges src/shared/SceneMaterials.luau and saves the .blend (Maps_<Venue>.blend)
 --materials rewrites only src/shared/SceneMaterials.luau (for the materials it lists now)
+--retexture makes every map texture again from the scans (maps/scanlib.py; needs art/source, see
+           art/scripts/sources.py). Without it only the textures missing on disk are made
 """
 
 import importlib
@@ -690,7 +692,7 @@ def main():
             "region": tuple(float(n) for n in region.split(",")) if region else None,
         }
     common.clear_scene()
-    images = matlib.make_textures()
+    images = matlib.make_textures(force="--retexture" in argv)
     mesher.use_images(images)
     built = []
     for name in names:

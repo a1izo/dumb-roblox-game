@@ -19,6 +19,21 @@ PREVIEWS = os.path.join(EXPORT, "previews")
 TEXTURES = os.path.join(EXPORT, "textures")
 BLEND = os.path.join(ART, "blend")
 
+
+
+def source(*parts):
+    """A path inside the photographed source material (art/source: scans, sky panoramas, typefaces; see
+    art/scripts/sources.py). The folder is large and git-ignored, so it exists once, in the main
+    checkout: a git worktree below that checkout finds it there."""
+    folder, probe = os.path.join(ART, "source"), ROOT
+    while not os.path.isdir(folder) and os.path.dirname(probe) != probe:
+        probe = os.path.dirname(probe)
+        folder = os.path.join(probe, "art", "source")
+    if not os.path.isdir(folder):
+        folder = os.path.join(ART, "source")
+    return os.path.join(folder, *parts)
+
+
 M = Matrix(((1, 0, 0), (0, 0, 1), (0, -1, 0)))
 M_INV = M.transposed()
 

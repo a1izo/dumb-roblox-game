@@ -133,7 +133,7 @@ class Ground:
 # Streets -------------------------------------------------------------------------------------------
 
 
-def road(g, points, width, walk=0.0, y=0.0, road_mat="Asphalt", walk_mat="Pavers", name=None, priority=4,
+def road(g, points, width, walk=0.0, y=0.0, road_mat="Asphalt", walk_mat="PaversWarm", name=None, priority=4,
          walk_left=True, walk_right=True):
     """A road along the centre line `points` with sidewalks `walk` wide either side."""
     for q in g2.strip_quads(points, width / 2, -width / 2):
@@ -147,7 +147,7 @@ def road(g, points, width, walk=0.0, y=0.0, road_mat="Asphalt", walk_mat="Pavers
                 g.add(q, walk_mat, y, priority - 2, "sidewalk", name)
 
 
-def path(g, points, width, mat="Pavers", kind="lane", y=0.0, priority=1, name=None):
+def path(g, points, width, mat="PaversWarm", kind="lane", y=0.0, priority=1, name=None):
     """A pedestrian way (lane, alley, arcade...) along a centre line."""
     for q in g2.strip_quads(points, width / 2, -width / 2):
         g.add(q, mat, y, priority, kind, name)
@@ -250,7 +250,7 @@ def zebra(s, centre, direction, width, depth=4.0, y=0.0, stripe=1.0, mat="WhiteT
 # Terrain -------------------------------------------------------------------------------------------
 
 
-def terrace(s, g, poly, y, base=0.0, top_mat="Pavers", wall_mat="Stone", zone="lane", name=None, walls=True,
+def terrace(s, g, poly, y, base=0.0, top_mat="PaversWarm", wall_mat="Stone", zone="lane", name=None, walls=True,
             priority=1, coping="ConcreteDark"):
     """Raised solid ground over a polygon: top at y, retaining walls down to base."""
     g.add(poly, top_mat, y, priority, zone, name)
@@ -322,7 +322,7 @@ def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="ConcreteDark", step
     return band
 
 
-def slope(s, g, a, b, y0, y1, width, mat="Pavers", side_mat="Stone", name=None, zone="lane", sides=True):
+def slope(s, g, a, b, y0, y1, width, mat="PaversWarm", side_mat="Stone", name=None, zone="lane", sides=True):
     """A sloping lane from a at y0 to b at y1: a tilted face, a ramp under it, and walls under
     its edges down to the lower end's height."""
     run = math.dist(a, b)
