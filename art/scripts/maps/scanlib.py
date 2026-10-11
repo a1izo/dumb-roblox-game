@@ -507,7 +507,7 @@ LIBRARY = {
     # The lobby, the Grey Realm: dark ash and basalt, old flagstones (the owner asked for it blacker
     # and darker, 2026-10-10; the light went down with them, see LightingPresets.lobby, so these stay
     # light enough to model).
-    "Ash": surface("moon_01", (112, 112, 116), 22, "ground", 2, True, keep=0.3, seed=50),
+    "Ash": surface("moon_01", (112, 112, 116), 22, "ground", 2, True, keep=0.3, quiet=True, seed=50),
     "AshCracked": surface("dry_mud_field_001", (98, 97, 96), 21, "ground", 2, True, keep=0.2, contrast=1.2, seed=51),
     "RockGrey": surface("Rock050", (70, 70, 74), 14, "wall", 2, True, keep=0.3, seed=52),
     "RuinFlag": surface("monastery_stone_floor", (90, 90, 94), 12, "floor", 2, keep=0.3, seed=53),
