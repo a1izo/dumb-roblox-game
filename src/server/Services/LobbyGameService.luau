@@ -9,8 +9,8 @@
 -- called to a match. Nothing here pays coins or XP; bests are saved in the profile and the Spire
 -- Ascent and the rune rounds also go on the global boards (LeaderboardService).
 --
--- Three more things to do in the lobby are routed through here: the dive into the rift (LobbyRift),
--- Death's mark (LobbyMark) and the seven grey apples (below). And one safeguard: whoever falls out of
+-- Four more things to do in the lobby are routed through here: the dive into the rift (LobbyRift),
+-- Death's mark (LobbyMark), the name duel (LobbyDuel) and the seven grey apples (below). And one safeguard: whoever falls out of
 -- the lobby's world is set back on the terrace.
 
 local Players = game:GetService("Players")
@@ -29,6 +29,7 @@ local SpiritTrial = require(Games:WaitForChild("SpiritTrial"))
 
 local DataService = require(script.Parent.DataService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
+local LobbyDuel = require(script.Parent.LobbyDuel)
 local LobbyMark = require(script.Parent.LobbyMark)
 local LobbyRift = require(script.Parent.LobbyRift)
 local Match = require(script.Parent.Match)
@@ -713,6 +714,19 @@ local function leaveOthers(player: Player)
 	cancel(player, "left")
 	leaveDice(player)
 	LobbyMark.cancel(player)
+	LobbyDuel.cancel(player)
+end
+
+-- A name duel won goes in the profile (a count, nothing more); returns how many that makes.
+local function duelWon(player: Player): number
+	local mine = bests(player)
+	if not mine then
+		return 0
+	end
+	local wins = math.floor(tonumber(mine.duelWins) or 0) + 1
+	mine.duelWins = wins
+	saved(player)
+	return wins
 end
 
 local function step()
@@ -722,6 +736,7 @@ local function step()
 	catchFallen()
 	LobbyRift.step()
 	LobbyMark.step()
+	LobbyDuel.step()
 	for player, session in pairs(sessions) do
 		local part = root(player)
 		if not player.Parent or not part then
@@ -790,6 +805,8 @@ local function onRequest(player: Player, payload: any)
 		LobbyRift.request(player, action)
 	elseif game == "mark" then
 		LobbyMark.request(player, action)
+	elseif game == "duel" then
+		LobbyDuel.request(player, action, payload)
 	elseif game == "apples" and action == "take" and type(payload.index) == "number" then
 		takeApple(player, math.floor(payload.index))
 	end
@@ -820,6 +837,13 @@ function LobbyGameService.setup(built: any)
 		humanoid = humanoid,
 		playable = playable,
 	}, built.mark)
+	LobbyDuel.setup({
+		tell = tell,
+		root = root,
+		playable = playable,
+		leaveOthers = leaveOthers,
+		won = duelWon,
+	}, built.duel)
 end
 
 function LobbyGameService.init()
@@ -833,6 +857,7 @@ function LobbyGameService.init()
 		end
 		LobbyRift.cancel(player)
 		LobbyMark.cancel(player)
+		LobbyDuel.cancel(player)
 	end)
 	task.spawn(function()
 		while true do

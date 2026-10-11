@@ -76,7 +76,7 @@ function Migrations.defaults(startingCoins: number)
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
 		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds), the fastest
 		-- spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls survived in a row with
-		-- Death's mark; and the grey apples found (a bit for each of the seven).
+		-- Death's mark; the grey apples found (a bit for each of the seven); and the name duels won.
 		lobbyGames = {
 			parkourBest = 0,
 			runesBest = 0,
@@ -86,6 +86,7 @@ function Migrations.defaults(startingCoins: number)
 			riftBest = 0,
 			markBest = 0,
 			apples = 0,
+			duelWins = 0,
 		},
 		alias = "", -- custom public alias (Custom Alias pass), already filtered
 		titles = {}, -- [titleId] = true

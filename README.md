@@ -114,6 +114,9 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   lit roof far below, and brake with one press; the smallest gap left wins, too late and you land on
   it, and divers who jump together are ranked together. *Death's mark*, tag from the bell by the plaza:
   whoever carries the mark when the bell tolls goes down, and the score is the tolls survived in a row.
+  The *name duel*, at the two stones under the carcass's ribs: each of two players is given an invented
+  name that leaks to the other three letters at a time, and the first to write the other's whole name
+  wins (a wrong name costs three seconds; a minute without a winner is a draw).
   And seven grey apples lie in the realm's far corners, for a title. **Mini-games for the wait**
   (solo-capable, no rewards, global top-10 boards for the first two): the *Spire Ascent*, a parkour up
   floating stones on a plateau over the west causeway; the *rune courtyard*, a memory game on the

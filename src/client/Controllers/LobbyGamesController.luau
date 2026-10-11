@@ -8,7 +8,8 @@
 -- Also here: the bell of Death's mark (join or leave at it; the card says who carries the mark and when
 -- the bell tolls next; what shows on the characters is Controllers/MarkController's) and the seven grey
 -- apples (a prompt on each; the ones this player has found are hidden on this screen). The dive into the
--- rift has a controller of its own (Controllers/DiveController).
+-- rift has a controller of its own (Controllers/DiveController). The name duel's two stones get their
+-- prompts here (step up, step down); its card is UI/DuelPanel's.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -45,6 +46,7 @@ local OFFERS: { [string]: Offer } = {
 	LTossCairn = { action = "Throw a stone", object = "Look at the rift; aim higher to throw farther", distance = 10 },
 	LMarkBell = { action = "Take the mark", object = "Death's mark", distance = 10 },
 	LApple = { action = "Take", object = "A grey apple", distance = 7 },
+	LDuelStone = { action = "Step up", object = "Name duel", distance = 8 },
 }
 
 local prompts: { [BasePart]: { prompt: ProximityPrompt, tag: string } } = {}
@@ -58,6 +60,8 @@ local rollButton: TextButton
 
 -- What the player is doing now.
 local current: string? = nil -- "parkour", "runes", "dice", "mark"
+-- Is this player in a name duel now (between its start and its end)?
+local duelling = false
 -- Death's mark, as the server last told it.
 local mark = { tollAt = nil :: number?, line = "" }
 local run = { startedAt = 0, reached = 0, total = Parkour.CHECKPOINTS }
@@ -106,11 +110,21 @@ end
 
 local function refresh()
 	local ok = usable()
-	for _, entry in pairs(prompts) do
-		-- A Deathsinger waiting here (hidden) plays the solo games only, not the shared dice table.
+	local me = Players.LocalPlayer.UserId
+	for object, entry in pairs(prompts) do
+		-- A Deathsinger waiting here (hidden) plays the solo games only, not the ones played with others.
 		local dice = entry.tag == "LDiceSeat"
-		local shared = dice or entry.tag == "LMarkBell"
-		entry.prompt.Enabled = ok and not (dice and current == "dice") and not (shared and ClientState.isAway())
+		local stone = entry.tag == "LDuelStone"
+		local shared = dice or stone or entry.tag == "LMarkBell"
+		local enabled = ok and not (dice and current == "dice") and not (shared and ClientState.isAway())
+		if stone then
+			-- A stone someone else stands at offers nothing; your own lets you step down, but not by a slip
+			-- of the key in the middle of a duel (the card has a button for giving up).
+			local holder = object:GetAttribute("Holder")
+			enabled = enabled and (holder == nil or (holder == me and not duelling))
+			entry.prompt.ActionText = if holder == me then "Step down" else OFFERS.LDuelStone.action
+		end
+		entry.prompt.Enabled = enabled
 		if entry.tag == "LMarkBell" then
 			entry.prompt.ActionText = if current == "mark" then "Leave the game" else OFFERS.LMarkBell.action
 		end
@@ -482,6 +496,13 @@ local function onState(payload: any)
 		onToss(payload)
 	elseif payload.game == "mark" then
 		onMark(payload)
+	elseif payload.game == "duel" then
+		if payload.kind == "start" then
+			duelling = true
+		elseif payload.kind == "over" or payload.kind == "left" then
+			duelling = false
+		end
+		refresh()
 	elseif payload.game == "apples" and payload.kind == "took" then
 		Sfx.play("gameCheckpoint", { volume = 0.8 })
 		Toasts.show(string.format("A grey apple.  %d of %d.", payload.count or 0, payload.total or 7), "good")
@@ -512,6 +533,13 @@ local function trigger(tag: string, object: BasePart)
 		request:FireServer({ game = "mark", action = if current == "mark" then "leave" else "join" })
 	elseif tag == "LApple" then
 		request:FireServer({ game = "apples", action = "take", index = object:GetAttribute("Index") })
+	elseif tag == "LDuelStone" then
+		local mine = object:GetAttribute("Holder") == Players.LocalPlayer.UserId
+		request:FireServer({
+			game = "duel",
+			action = if mine then "leave" else "stand",
+			stone = object:GetAttribute("Index"),
+		})
 	elseif tag == "LTossCairn" then
 		local camera = workspace.CurrentCamera
 		if camera then
@@ -540,6 +568,9 @@ local function setup(tag: string, object: Instance)
 		trigger(tag, object)
 	end)
 	prompts[object] = { prompt = prompt, tag = tag }
+	if tag == "LDuelStone" then
+		object:GetAttributeChangedSignal("Holder"):Connect(refresh)
+	end
 	refresh()
 end
 
