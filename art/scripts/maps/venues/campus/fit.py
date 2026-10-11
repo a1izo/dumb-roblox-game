@@ -40,6 +40,18 @@ def turn(rot, lx, lz):
     return (lx * math.cos(a) + lz * math.sin(a), -lx * math.sin(a) + lz * math.cos(a))
 
 
+def poster(s, x, y, z, rot, w, h, sheet, off=0.04):
+    """Poster number `sheet` of the campus's printed sheet (maps/prints.py), pasted on the wall at
+    (x, z) and facing rot; off: how far it stands off the wall (one pasted over another's edge
+    takes a little more). Its sheets are 1 wide to 1.414 high."""
+    from maps import prints
+
+    out, along = turn(rot, 0, -1), turn(rot, 1, 0)
+    a = (x - along[0] * w / 2 + out[0] * off, z - along[1] * w / 2 + out[1] * off)
+    b = (x + along[0] * w / 2 + out[0] * off, z + along[1] * w / 2 + out[1] * off)
+    prints.paste(s, "Campus", a, b, y - h / 2, y + h / 2, out, sheet)
+
+
 # Walls -------------------------------------------------------------------------------------------------
 
 GLASS = {

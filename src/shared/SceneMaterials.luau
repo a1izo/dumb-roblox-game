@@ -96,6 +96,7 @@ return {
 	PlasterDark = { textured = true, fallback = { material = "Plaster", color = { 46, 49, 56 } } },
 	PlasterGrey = { textured = true, fallback = { material = "Plaster", color = { 103, 110, 120 } } },
 	PlasterLight = { textured = true, fallback = { material = "Plaster", color = { 148, 144, 135 } } },
+	PrintsCampus = { textured = true, fallback = { material = "SmoothPlastic", color = { 164, 158, 139 } } },
 	PrintsTokyo = { textured = true, fallback = { material = "SmoothPlastic", color = { 173, 162, 149 } } },
 	Puddle = { material = "Glass", color = { 16, 16, 22 }, transparency = 0.15, reflectance = 0.35 },
 	RedString = { textured = true, fallback = { material = "Fabric", color = { 160, 41, 45 } } },

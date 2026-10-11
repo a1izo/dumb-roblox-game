@@ -68,15 +68,16 @@ def clubs(s):
     # The film club: a second row of chairs behind the first.
     for z in (62.2, 64.7):
         s.prop("Chair", -99.6, z, -90)
-    s.sign((-107.7, 7.0, 64.7), -90, 3.2, 4.4, "冬の上映会\nWINTER SCREENING", "GothamBlack", (240, 230, 210), (90, 20, 30))
+    fit.poster(s, -107.7, 7.0, 64.7, -90, 3.1, 4.4, 0)  # the film society's winter screening
     # The newsroom: a bookshelf of back issues, the pin board of leads, a bundle of papers.
     s.prop("Bookshelf", -147.7, 66.0, -90)
     s.prop("PinBoard", -144.0, 70.5, 0, 1.0, 6.5)
     s.prop("Crate", -129.6, 64.6, 0, 0.5)
-    # The club corridor: posters on its north wall (only posters: it is 6 wide).
-    for x, text, colour in ((-142.0, "囲碁部\nGO CLUB", (30, 30, 34)), (-122.0, "写真部\nPHOTO CLUB", (40, 70, 120)),
-                            (-104.0, "軽音楽部\nLIVE 12/24", (150, 24, 30))):
-        s.sign((x, 6.5, 76.65), 0, 3.0, 3.6, text, "GothamBlack", (240, 236, 226), colour)
+    # The club corridor: the bigger posters on its south wall (only posters: it is 6 wide), printed
+    # like the rest (maps/prints.py): the go club, the photo club, the light music club's live on 12/24.
+    # (Each hangs clear of the door frames: the rooms' doors are at -139, -119 and -99, 4.4 wide.)
+    for x, sheet in ((-143.2, 5), (-123.1, 1), (-104.0, 2)):
+        fit.poster(s, x, 6.5, 76.7, 0, 2.55, 3.6, sheet, off=0.06)
 
 
 def foyer(s):

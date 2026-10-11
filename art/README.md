@@ -278,10 +278,12 @@ assets are left out), fitted to the game:
   need their light re-tuned around it first, and that has to be done by eye in Studio.
 - `scripts/maps/prints.py` draws a venue's posters into one sheet (`export/textures/Prints<Venue>.png`)
   with the open-licence typefaces; its header holds the rules for what may be printed. The sheet
-  is a map material (`matlib.SHEETS`) that a wall shows one poster of at a time
-  (`venues/tokyo/decor.py`, `poster(..., sheet=n)`), so it rides in the map's own FBX. Run it
-  (`blender -b --factory-startup --python art/scripts/maps/prints.py -- Tokyo`) before the map's
-  export when a poster changes. Signs a player has to read stay text the game draws.
+  is a map material (`matlib.SHEETS`) that a wall shows one poster of at a time (`prints.paste`,
+  through `poster(..., sheet=n)` in `venues/tokyo/decor.py` and `venues/campus/fit.py`), so it
+  rides in the map's own FBX. Tokyo has a sheet (the street) and the Campus has one (the club
+  house). Run it (`blender -b --factory-startup --python art/scripts/maps/prints.py -- Tokyo`)
+  before the map's export when a poster changes. Signs a player has to read stay text the game
+  draws.
 
 Colour variants of one scan (the carpets, the plasters) are separate texture sets for now. Studio
 uploads an image shared by several meshes once, and a script may set `SurfaceAppearance.Color`, so

@@ -108,12 +108,7 @@ def umbrella_stand(s, e, u, out):
 def printed(s, a, b, y0, y1, out, index):
     """Poster `index` of the district's printed sheet (maps/prints.py) on the upright face from ground
     point a to b, facing out: the right way round whichever way the face was given."""
-    right = (out[1], -out[0])  # to the right of someone looking at the face
-    if (b[0] - a[0]) * right[0] + (b[1] - a[1]) * right[1] < 0:
-        a, b = b, a
-    u0, v0, u1, v1 = prints.cell(index)
-    s.polygon(prints.name("Tokyo"), [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])],
-              uvs=[(u0, v0), (u1, v0), (u1, v1), (u0, v1)], tile=1.0)
+    prints.paste(s, "Tokyo", a, b, y0, y1, out, index)
 
 
 def poster(s, e, u, y, w, h, mat, text=None, fg=(24, 22, 26), sheet=None):

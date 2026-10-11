@@ -31,9 +31,7 @@ def ceiling(s, r, mat="Ceiling"):
     s.collider(((x0 + x1) / 2, C + 0.5, (z0 + z1) / 2), (x1 - x0, 1.0, z1 - z0), 0, True, None)
 
 
-def poster(s, x, y, z, rot, w, h, mat):
-    p = fit.turn(rot, 0, -0.04)
-    s.box(mat, (x + p[0], y, z + p[1]), (w, h, 0.03), rot)
+poster = fit.poster
 
 
 # The club house --------------------------------------------------------------------------------------------
@@ -82,12 +80,13 @@ def club_rooms(s):
     s.prop("ShoeLockers", -126.2, 64.7, -90)
     s.prop("UmbrellaStand", -110.0, 61.0, 0)
     s.prop("PinBoard", -108.44, 64.7, 90, 1.0, 6.0)
-    # Club posters along the corridor: on its north wall (facing south) and its south wall.
-    for x, y, rot, w, h, mat in ((-133.0, 6.4, 180, 2.0, 2.8, "RedTrim"), (-124.0, 6.2, 180, 2.2, 3.0, "PaintYellow"),
-                                 (-94.0, 6.4, 180, 2.2, 3.0, "WhiteTrim"), (-146.0, 6.0, 0, 2.2, 3.0, "PaintYellow"),
-                                 (-132.0, 6.2, 0, 2.4, 3.2, "WhiteTrim"), (-113.0, 6.0, 0, 2.0, 2.6, "RedTrim"),
-                                 (-104.0, 6.4, 0, 2.2, 3.0, "PaintYellow")):
-        poster(s, x, y, 71.3 if rot == 180 else 76.7, rot, w, h, mat)
+    # Club posters along the corridor, on its north wall (facing south): the film society, the winter
+    # live, the go club; and on its south wall: the registry's notice, the Bureau's advisory, the film
+    # society again (the three bigger ones between them are in clutter.py).
+    for x, y, rot, w, h, sheet in ((-133.0, 6.4, 180, 2.0, 2.8, 0), (-124.0, 6.2, 180, 2.2, 3.0, 2),
+                                   (-94.0, 6.4, 180, 2.2, 3.0, 5), (-146.0, 6.0, 0, 2.2, 3.0, 3),
+                                   (-132.0, 6.2, 0, 2.4, 3.2, 4), (-113.0, 6.0, 0, 2.0, 2.6, 0)):
+        poster(s, x, y, 71.3 if rot == 180 else 76.7, rot, w, h, sheet)
     s.hood(-146.4, 74.0)
     for x in (-140.0, -118.0, -98.0):
         kit.tube_light(s, x, C, 74.0, length=6.0, range_=16, brightness=0.6)
@@ -111,7 +110,7 @@ def film_club(s):
     s.screen((KX1 - 0.45, 6.5, 64.7), 90, 8.0, 4.5, "film")
     for z in (62.2, 64.7):
         s.prop("Chair", -96.0, z, -90)
-    poster(s, -106.0, 7.0, 70.7, 180, 2.4, 3.4, "RedTrim")
+    poster(s, -106.0, 7.0, 70.7, 180, 2.4, 3.4, 1)
     s.light("point", (-96.0, 6.0, 64.7), (200, 210, 255), 12, 0.5)
     fit.plaque(s, -99.0, 10.2, 71.3, 180, 4.4, 0.8, "映画研究会  FILM CLUB")
 
@@ -139,7 +138,7 @@ def band_room(s):
         s.box("BlackMetal", (x, 1.4, 106.8), (2.4, 2.8, 1.6), collide=True)
         s.box("Fabric", (x, 1.5, 105.98), (2.0, 2.0, 0.04))
     s.prop("Sofa", -110.9, 88.0, 90)
-    poster(s, -110.6, 7.0, 95.0, 90, 3.0, 4.0, "PaintYellow")
+    poster(s, -110.6, 7.0, 95.0, 90, 3.0, 4.0, 2)
     kit.pendant(s, -119.0, C, 92.0, drop=4.0, shade="BlackMetal", color=fit.WARM, range_=18, brightness=0.9, wide=1.0)
     fit.panel(s, -119.0, 82.0, C, brightness=0.7, range_=16)
     s.sound("mapPianoFar", (-124.0, 4.0, 88.0), 34.0, 0.35)

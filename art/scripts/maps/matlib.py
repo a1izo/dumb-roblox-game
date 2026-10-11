@@ -92,7 +92,7 @@ FLAT = {
 
 
 # Printed sheets (maps/prints.py): one picture a map shows a poster at a time, never as a repeat.
-SHEETS = {"PrintsTokyo": "PrintsTokyo.png"}
+SHEETS = {"PrintsTokyo": "PrintsTokyo.png", "PrintsCampus": "PrintsCampus.png"}
 
 # Textured material name fragment -> the Roblox material closest to it (first match wins).
 FALLBACK_KIND = [

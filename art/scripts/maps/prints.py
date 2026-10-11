@@ -4,12 +4,14 @@ Fonts under the Open Font License; see art/scripts/sources.py) on photographed p
 What may be printed (the owner's rules, 2026-10-10): brands are invented, the Japanese says what it
 means to say, no real trademark, no name from the source material, no photographed person or face
 (people appear as flat shapes only), nothing about alcohol, tobacco or gambling, and nothing that
-gives away what happens in a match. Next to everyday Tokyo there is a thin layer of the game's own
-world: the Bureau's public notices.
+gives away what happens in a match, and no red but the wine of one old poster (red is the game's
+colour for danger). Next to everyday Tokyo and the university's clubs there is a thin layer of the
+game's own world: the Bureau's public notices.
 
 One sheet per venue, art/export/textures/Prints<Venue>.png: 3 x 2 upright posters in the proportion
 of a sheet of paper (1 : 1.414). SHEETS[venue] lists them in reading order from the top left; a map
-puts poster n of its sheet on a wall with the material name(venue) and the UVs of cell(n).
+puts poster n of its sheet on a wall with paste(), which uses the material name(venue) and the UVs
+of cell(n).
 
     blender -b --factory-startup --python art/scripts/maps/prints.py [-- Tokyo]
 """
@@ -110,7 +112,75 @@ SHEETS = {
             ("text", "お問い合わせは店頭まで", "round", 0.06, 0.5, 0.1, INK),
         ]),
     ],
+    "Campus": [
+        # 0. The film society: "Film Society. Winter screening. Every Wednesday at 18:00. Club house,
+        #    ground floor."
+        dict(paper=(28, 34, 58), items=[
+            ("tri", 0.16, 0.9, 0.94, 1.32, 0.94, 0.72, (232, 220, 170)),
+            ("disc", 0.18, 0.9, 0.11, CREAM), ("disc", 0.18, 0.9, 0.035, (28, 34, 58)),
+            ("text", "映画研究会", "round", 0.11, 0.5, 0.5, CREAM),
+            ("text", "冬の上映会", "brush", 0.18, 0.5, 0.26, (240, 206, 90)),
+            ("text", "毎週水曜 18:00  部室棟1階", "round", 0.06, 0.5, 0.09, CREAM),
+        ]),
+        # 1. The photo club: "Photo Club. Members wanted. We have a darkroom. Beginners welcome."
+        dict(paper=(238, 234, 222), items=[
+            ("box", 0.0, 1.12, 1.0, 1.414, (30, 52, 96)),
+            ("text", "写真部", "loud", 0.2, 0.5, 1.19, (238, 234, 222)),
+            ("box", 0.3, 0.7, 0.7, 0.96, INK), ("box", 0.38, 0.96, 0.52, 1.01, INK),
+            ("disc", 0.5, 0.83, 0.1, (238, 234, 222)), ("disc", 0.5, 0.83, 0.07, INK),
+            ("text", "部員募集", "brush", 0.2, 0.5, 0.42, INK),
+            ("box", 0.1, 0.36, 0.9, 0.375, INK),
+            ("text", "暗室あります", "round", 0.085, 0.5, 0.21, INK),
+            ("text", "初心者歓迎", "round", 0.07, 0.5, 0.08, INK),
+        ]),
+        # 2. The light music club: "Light Music Club. Winter live. 24 December, the auditorium. Free."
+        dict(paper=(228, 190, 52), items=[
+            ("box", 0.0, 0.0, 1.0, 0.3, INK),
+            ("text", "軽音楽部", "round", 0.11, 0.5, 1.2, INK),
+            ("text", "WINTER", "caps", 0.3, 0.5, 0.86, INK),
+            ("text", "LIVE", "loud", 0.3, 0.5, 0.5, INK),
+            ("text", "12.24", "caps", 0.2, 0.34, 0.08, (228, 190, 52)),
+            ("text", "講堂・入場無料", "round", 0.06, 0.74, 0.11, (228, 190, 52)),
+        ]),
+        # 3. The registry: "From the Registry. Final examinations. The timetable is on the notice board.
+        #    Do not forget your student card."
+        dict(paper=(236, 236, 230), items=[
+            ("box", 0.0, 1.2, 1.0, 1.414, (30, 60, 122)),
+            ("text", "教務課より", "round", 0.1, 0.5, 1.26, (236, 236, 230)),
+            ("text", "期末試験", "brush", 0.22, 0.5, 0.86, INK),
+            ("box", 0.1, 0.76, 0.9, 0.775, INK),
+            ("text", "時間割は掲示板で", "round", 0.085, 0.5, 0.54, INK),
+            ("text", "学生証を忘れずに", "round", 0.085, 0.5, 0.36, INK),
+            ("text", "遅刻は入室できません", "round", 0.06, 0.5, 0.12, INK),
+        ]),
+        # 4. The Bureau's advisory: "From the Bureau. Do not stay on campus at night. Anything suspicious:
+        #    the guard room."
+        dict(paper=(228, 228, 224), items=[
+            ("box", 0.0, 1.2, 1.0, 1.414, (36, 38, 46)),
+            ("text", "捜査局より", "round", 0.1, 0.5, 1.26, (228, 228, 224)),
+            ("text", "夜間の", "brush", 0.17, 0.5, 0.96, INK),
+            ("text", "学内残留は", "brush", 0.17, 0.5, 0.75, INK),
+            ("text", "ご遠慮ください", "brush", 0.13, 0.5, 0.5, INK),
+            ("box", 0.1, 0.4, 0.9, 0.415, INK),
+            ("text", "不審なことは守衛室へ", "round", 0.07, 0.5, 0.2, INK),
+        ]),
+        # 5. The go club: "Go Club. Beginners welcome. Tuesdays and Thursdays at 16:30."
+        dict(paper=(214, 190, 138), items=[
+            ("box", 0.2, 0.66, 0.8, 0.672, INK), ("box", 0.2, 0.86, 0.8, 0.872, INK), ("box", 0.2, 1.06, 0.8, 1.072, INK),
+            ("box", 0.2, 1.26, 0.8, 1.272, INK),
+            ("box", 0.2, 0.66, 0.212, 1.272, INK), ("box", 0.4, 0.66, 0.412, 1.272, INK),
+            ("box", 0.6, 0.66, 0.612, 1.272, INK), ("box", 0.788, 0.66, 0.8, 1.272, INK),
+            ("disc", 0.406, 0.866, 0.085, INK), ("disc", 0.606, 0.866, 0.085, (240, 238, 230)),
+            ("disc", 0.606, 1.066, 0.085, INK), ("disc", 0.406, 1.066, 0.085, (240, 238, 230)),
+            ("text", "囲碁部", "brush", 0.2, 0.5, 0.36, INK),
+            ("text", "初心者歓迎", "round", 0.085, 0.5, 0.2, INK),
+            ("text", "火・木 16:30", "round", 0.07, 0.5, 0.07, INK),
+        ]),
+    ],
 }
+
+# How hard the weather has been on a venue's posters: Tokyo's hang in the street, the campus's indoors.
+WEATHER = {"Tokyo": 1.0, "Campus": 0.3}
 
 
 def name(venue):
@@ -123,6 +193,18 @@ def cell(index):
     col, row = index % COLS, index // COLS
     y0 = (ROWS - 1 - row) * TALL
     return col / COLS, y0 / COLS, (col + 1) / COLS, (y0 + TALL) / COLS
+
+
+def paste(s, venue, a, b, y0, y1, out, index):
+    """Poster `index` of the venue's sheet on the upright face of scene `s` from ground point a to b
+    (x, z) between heights y0 and y1, facing out (x, z): the right way round whichever way the face
+    was given."""
+    right = (out[1], -out[0])  # to the right of someone looking at the face
+    if (b[0] - a[0]) * right[0] + (b[1] - a[1]) * right[1] < 0:
+        a, b = b, a
+    u0, v0, u1, v1 = cell(index)
+    s.polygon(name(venue), [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])],
+              uvs=[(u0, v0), (u1, v0), (u1, v1), (u0, v1)], tile=1.0)
 
 
 def _flat(rgb):
@@ -181,8 +263,9 @@ def _text(coll, words, face, size, x, y, z, rgb):
     coll.objects.link(obj)
 
 
-def _weathered(sheet, seed):
-    """The printed sheet as it hangs outside: on creased paper, bleached a little, grimy at the foot."""
+def _weathered(sheet, seed, hard=1.0):
+    """The printed sheet as it hangs: on creased paper and, as far as `hard` says (1: in the street),
+    bleached a little and grimy at the foot."""
     r = np.random.default_rng(seed)
     paper = scanlib.load("Paper003", 256)
     grain = paper["color"] @ scanlib.LUMA
@@ -191,10 +274,10 @@ def _weathered(sheet, seed):
     up = np.mgrid[0:SIZE, 0:SIZE][0] / SIZE * COLS  # height on the sheet, in poster widths
     foot = (up % TALL) / TALL  # 0 at each poster's foot
     grime = (1 - scanlib.smoothstep(0.0, 0.22, foot)) * (0.25 + 0.5 * scanlib.drift(r, SIZE, 2, 12))
-    out = out * (1 - 0.45 * grime[..., None])
+    out = out * (1 - 0.45 * hard * grime[..., None])
     grey = (out @ scanlib.LUMA)[..., None]
-    out = grey + (out - grey) * 0.82  # the sun has had the colours
-    out = out * 0.94 + 0.03
+    out = grey + (out - grey) * (1 - 0.18 * hard)  # the sun has had the colours
+    out = out * (1 - 0.06 * hard) + 0.03 * hard
     return scanlib.to_srgb(out).astype(np.float32)
 
 
@@ -241,7 +324,7 @@ def make(venue):
     img.pixels.foreach_get(buf)
     bpy.data.images.remove(img)
     os.remove(raw)
-    sheet = _weathered(buf.reshape(SIZE, SIZE, 4)[..., :3], seed=len(venue))
+    sheet = _weathered(buf.reshape(SIZE, SIZE, 4)[..., :3], seed=len(venue), hard=WEATHER.get(venue, 1.0))
     rgba = np.concatenate([sheet, np.ones((SIZE, SIZE, 1), dtype=np.float32)], axis=-1)
     out = bpy.data.images.new(f"Prints{venue}", SIZE, SIZE, alpha=False)
     out.pixels.foreach_set(rgba.ravel())
