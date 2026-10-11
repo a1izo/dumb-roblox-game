@@ -3,7 +3,8 @@
 -- redrawn here in Melodrama from the glyph atlases, the way the titles are:
 --   * the label keeps its Text, layout and everything code does with it, but stops drawing its own letters
 --     (MaxVisibleGraphemes = 0); a GlyphText inside it draws them instead, Semibold (Bold for bold text),
---     never under MIN_SIZE px;
+--     never under MIN_SIZE px, and never under WINDOW_MIN px inside a window (the shop, the settings...):
+--     that is where the small print is read and pressed;
 --   * colour, transparency, alignment, wrapping, TextScaled, truncation ("…"), text stroke (a dark copy
 --     underneath) and simple rich text (tags dropped, <s> struck through, <b> in Bold) follow the label;
 --   * a label that sized itself to its text (AutomaticSize) is sized to the Melodrama letters instead;
@@ -18,10 +19,12 @@ local Players = game:GetService("Players")
 
 local Base = require(script.Parent.Parent.Kit.Base)
 local GlyphText = require(script.Parent.Parent.Kit.GlyphText)
+local Screens = require(script.Parent.Parent.Screens)
 
 local FontMirror = {}
 
 local MIN_SIZE = 14
+local WINDOW_MIN = 16 -- inside a window (the modal layer)
 local LINE = 1.15 -- line height, times the size (GlyphText's default)
 
 type Mirror = {
@@ -205,7 +208,7 @@ local function render(m: Mirror)
 	local left, right, top, bottom = padding(label)
 	local boxWidth = label.AbsoluteSize.X / scale - left - right
 	local boxHeight = label.AbsoluteSize.Y / scale - top - bottom
-	local size = math.max(label.TextSize, MIN_SIZE)
+	local size = math.max(label.TextSize, if label:IsDescendantOf(Screens.modal) then WINDOW_MIN else MIN_SIZE)
 	if label.TextScaled then
 		size = fitSize(face, text, boxWidth, boxHeight, label.TextWrapped)
 	end

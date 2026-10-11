@@ -14,6 +14,11 @@
 -- nothing glitches until it is turned back on. Attaching to a target that already has an entry shares it, so a
 -- hovered button inside a looping wrapper does not fight the wrapper's own blips.
 --
+-- While a window is open the lobby behind it goes quiet (Glitch.setQuiet): no blip starts and the full-screen
+-- scan band stays off, so nothing rolls over what is being read. An element can still be made to glitch
+-- (the window's own title cuts in as it opens). And a hovered button's tear bars are drawn behind it, never
+-- across its lettering.
+--
 -- Parent the target before attaching (an element with no parent is dropped). The target should be a
 -- CanvasGroup (it blinks through GroupTransparency); on anything else it only jumps sideways. Ghosts are copies of its children, tinted and shifted, built only for the 0.15 s a blip
 -- lasts (not on a target that lays out its children). One Heartbeat connection serves every element, and exists only while there is at least one.
@@ -104,6 +109,7 @@ local grain: ImageLabel? = nil
 local overlayVisible = false
 local counter = 0
 local enabled = true
+local quiet = false
 local byTarget: { [GuiObject]: Entry } = setmetatable({}, { __mode = "k" }) :: any
 
 local function overlay(): (Frame, ImageLabel?)
@@ -290,7 +296,9 @@ local function apply(entry: Entry, keys: { { any } }, elapsed: number)
 			bar.BackgroundColor3 = Tokens.color.white
 			bar.BackgroundTransparency = 0.3
 			bar.BorderSizePixel = 0
-			bar.ZIndex = 50
+			-- Over the element as it cuts in or blips; behind it while it is hovered, so the bars never
+			-- cross the lettering of the thing about to be pressed.
+			bar.ZIndex = if entry.mode == "hover" then 0 else 50
 			bar.Active = false
 			local at = ((entry.token * 37 + index * 11 + n * 23) % 100) / 100
 			bar.Size = UDim2.new(0.3 + (((entry.token + n) * 17) % 7) / 10, 0, 0, 2 + (n * 2))
@@ -314,7 +322,7 @@ local function step()
 				rest(entry)
 			end
 		else
-			if entry.mode == nil and entry.loop and now >= entry.nextBlip and shown(entry.target) then
+			if entry.mode == nil and entry.loop and not quiet and now >= entry.nextBlip and shown(entry.target) then
 				start(entry, "blip", now)
 			end
 			if entry.mode == "hover" and not shown(entry.target) then
@@ -348,7 +356,7 @@ local function step()
 			end
 		end
 	end
-	setOverlay(active > 0, bandStep)
+	setOverlay(active > 0 and not quiet, bandStep)
 	if next(entries) == nil and connection then
 		connection:Disconnect()
 		connection = nil
@@ -390,6 +398,16 @@ end
 
 function Glitch.isEnabled(): boolean
 	return enabled
+end
+
+-- Quiet (a window is open): no blip starts by itself and the full-screen band stays off. Blips already
+-- running play out their fraction of a second.
+function Glitch.setQuiet(on: boolean)
+	quiet = on
+end
+
+function Glitch.isQuiet(): boolean
+	return quiet
 end
 
 local function hover(entry: Entry, on: boolean)

@@ -1,12 +1,19 @@
 --!strict
--- A hovered (or gamepad-selected) button glitches hard and fast for as long as the pointer is on it; a tap on a
--- touch screen plays a short burst instead. Like every glitch it belongs to the lobby: while Glitch is turned off
--- (in a match) nothing happens and buttons stay calm.
+-- A hovered (or gamepad-selected) button on the lobby's own page (READY, the menu, the card's two buttons)
+-- glitches hard and fast for as long as the pointer is on it. Like every glitch it belongs to the lobby:
+-- while Glitch is turned off (in a match) nothing happens and buttons stay calm.
+--
+-- Inside a window or a pop-up nothing glitches: what you are about to press has to stay readable, and the
+-- control's own hover look (a lighter fill, a nudge) is the whole answer there. A tap never glitches either:
+-- a touch screen has no hover, the effect only hid the label under the finger, and it could stick.
 --
 -- A button sitting alone in a CanvasGroup marked with the attribute `GlitchWrap` (the lobby menu) glitches
 -- through that wrapper, so it also blinks; any other button gets the split and the tears on itself.
 
+local UserInputService = game:GetService("UserInputService")
+
 local Glitch = require(script.Parent.Glitch)
+local Screens = require(script.Parent.Parent.Screens)
 
 local HoverGlitch = {}
 
@@ -20,8 +27,16 @@ local function targetOf(gui: GuiObject): GuiObject
 	return gui
 end
 
+-- Only the lobby's page is loud; windows and pop-ups live in the layers above the HUD.
+function HoverGlitch.isLoud(gui: GuiObject): boolean
+	return gui:IsDescendantOf(Screens.hud)
+end
+
 function HoverGlitch.begin(gui: GuiObject)
 	if active[gui] or not Glitch.isEnabled() or not gui.Parent then
+		return
+	end
+	if not HoverGlitch.isLoud(gui) or UserInputService:GetLastInputType() == Enum.UserInputType.Touch then
 		return
 	end
 	local handle = Glitch.attach(targetOf(gui), { loop = false, enter = false })
@@ -38,13 +53,7 @@ function HoverGlitch.finish(gui: GuiObject)
 	end
 end
 
--- A short burst (a tap on a touch screen, where there is no hover).
-function HoverGlitch.burst(gui: GuiObject, seconds: number?)
-	HoverGlitch.begin(gui)
-	task.delay(seconds or 0.3, HoverGlitch.finish, gui)
-end
-
--- Wires a button: glitch while hovered or selected, a burst when tapped.
+-- Wires a button: glitch while hovered or selected.
 function HoverGlitch.wire(button: GuiButton)
 	button.MouseEnter:Connect(function()
 		HoverGlitch.begin(button)
@@ -57,11 +66,6 @@ function HoverGlitch.wire(button: GuiButton)
 	end)
 	button.SelectionLost:Connect(function()
 		HoverGlitch.finish(button)
-	end)
-	button.InputBegan:Connect(function(input: InputObject)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			HoverGlitch.burst(button)
-		end
 	end)
 	button.AncestryChanged:Connect(function()
 		if not button:IsDescendantOf(game) then

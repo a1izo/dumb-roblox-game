@@ -13,6 +13,7 @@ local Responsive = require(Core:WaitForChild("Responsive"))
 local Kit = require(script:WaitForChild("UI"):WaitForChild("Kit"))
 local Router = require(Core:WaitForChild("Router"))
 local Settings = require(Core:WaitForChild("Settings"))
+local TouchControls = require(Core:WaitForChild("TouchControls"))
 
 local Announcer = require(UI:WaitForChild("Announcer"))
 local BriefingScreen = require(UI:WaitForChild("BriefingScreen"))
@@ -116,6 +117,7 @@ end)
 
 -- UI core: device scale, the shared clock, the screen router and the player's settings.
 Responsive.init()
+TouchControls.init()
 Kit.Textures.init()
 Clock.init()
 Router.init()

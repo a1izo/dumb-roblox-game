@@ -21,8 +21,16 @@
 --
 -- The handle's frame is sized to the text (offset pixels); place it with Position and
 -- AnchorPoint like any other frame.
+--
+-- Whole pixels: Melodrama's thin strokes are its horizontals, and at small sizes a hairline that falls
+-- between two rows of screen pixels is drawn faintly across both, so the lettering goes soft. The letters
+-- therefore sit in an inner frame ("Ink") that is nudged by a fraction of a pixel until the first line's
+-- baseline lies on a whole screen pixel, and lines are a whole number of screen pixels apart. The nudge is
+-- worked out from where the text really is on screen, once it has stopped moving (a window sliding in, a
+-- list being scrolled).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -30,6 +38,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local GlyphFonts = require(Shared:WaitForChild("UI"):WaitForChild("GlyphFonts"))
 
 local Motion = require(script.Parent.Parent.Core.Motion)
+local Responsive = require(script.Parent.Parent.Core.Responsive)
 local Textures = require(script.Parent.Textures)
 local Tokens = require(script.Parent.Tokens)
 
@@ -61,6 +70,10 @@ export type Props = {
 export type GlyphText = typeof(setmetatable(
 	{} :: {
 		frame: Frame,
+		-- Holds the glyph images; nudged onto whole screen pixels (see the top of the file).
+		ink: Frame,
+		baseline: number, -- the first line's baseline, down from the frame's top (0 in the stand-in font)
+		nudge: number, -- how far the Ink is moved down, in design pixels (a fraction of one)
 		props: Props,
 		text: string,
 		width: number,
@@ -254,6 +267,52 @@ function GlyphText.atlases(faceName: string?): { string }?
 	return atlasIds((faceOf(faceName)))
 end
 
+-- Texts that moved, waiting to come to rest: text -> where its frame was on the last pass.
+local settling: { [any]: number } = {}
+local settleConnection: RBXScriptConnection? = nil
+
+local function settle()
+	for text, lastY in pairs(settling) do
+		local frame: Frame = text.frame
+		if not frame.Parent then
+			settling[text] = nil
+			continue
+		end
+		local y = frame.AbsolutePosition.Y
+		if y ~= lastY then
+			-- Still moving: look again on the next frame.
+			settling[text] = y
+			continue
+		end
+		settling[text] = nil
+		local design = frame.Size.Y.Offset
+		local scale = if design > 0 then frame.AbsoluteSize.Y / design else 0
+		-- Only on the screen itself: a sign in the world has no pixels of its own to land on.
+		if scale > 0 and text.baseline > 0 and frame:FindFirstAncestorWhichIsA("ScreenGui") then
+			local baseline = y + text.baseline * scale
+			local nudge = (math.round(baseline) - baseline) / scale
+			text.nudge = nudge
+			-- A UDim's offset is a whole number, so the fraction of a pixel goes in as a share of the frame's
+			-- height (which is in whole design pixels).
+			text.ink.Position = UDim2.fromScale(0, nudge / design)
+		end
+	end
+	if next(settling) == nil and settleConnection then
+		settleConnection:Disconnect()
+		settleConnection = nil
+	end
+end
+
+-- The text moved or was drawn again: once it rests, put its baseline on a whole pixel.
+local function unsettled(text: any)
+	if settling[text] == nil then
+		settling[text] = -math.huge
+		if not settleConnection then
+			settleConnection = RunService.Heartbeat:Connect(settle)
+		end
+	end
+end
+
 function GlyphText.new(props: Props): GlyphText
 	local frame = Create("Frame", {
 		Name = props.Name or "GlyphText",
@@ -265,9 +324,20 @@ function GlyphText.new(props: Props): GlyphText
 		Visible = if props.Visible == nil then true else props.Visible,
 		Parent = props.Parent,
 	})
+	-- No size of its own (the frame may size itself to the stand-in label): the glyphs hang from its corner.
+	local ink = Create("Frame", {
+		Name = "Ink",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(0, 0),
+		ZIndex = props.ZIndex or 1,
+		Parent = frame,
+	})
 	local changed = Instance.new("BindableEvent")
 	local self = setmetatable({
 		frame = frame,
+		ink = ink,
+		baseline = 0,
+		nudge = 0,
 		props = props,
 		text = props.text or "",
 		width = 0,
@@ -287,7 +357,11 @@ function GlyphText.new(props: Props): GlyphText
 			end
 		end)
 	end
+	frame:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+		unsettled(self)
+	end)
 	frame.Destroying:Once(function()
+		settling[self] = nil
 		if self.readyConnection then
 			self.readyConnection:Disconnect()
 			self.readyConnection = nil
@@ -316,7 +390,10 @@ function GlyphText._render(self: GlyphText)
 	local tabular = props.tabular == true
 	local ids = atlasIds(face)
 	if not ids then
-		-- Montserrat stands in until the atlases load.
+		-- Montserrat stands in until the atlases load (Roblox places its own text on whole pixels).
+		self.baseline = 0
+		self.nudge = 0
+		self.ink.Position = UDim2.new()
 		local label = Create("TextLabel", {
 			Name = "Fallback",
 			BackgroundTransparency = 1,
@@ -376,7 +453,9 @@ function GlyphText._render(self: GlyphText)
 	self.frame.AutomaticSize = Enum.AutomaticSize.None
 	local scale = size / face.em
 	local tracking = props.tracking or 0
-	local lineHeight = size * (props.lineHeight or 1.15)
+	-- A whole number of screen pixels from one line to the next, so every baseline lands like the first.
+	local device = Responsive.scale()
+	local lineHeight = math.max(1, math.round(size * (props.lineHeight or 1.15) * device)) / device
 	local plainCaps = if props.plainCaps == nil then faceKey == "Title" else props.plainCaps
 	-- In Aktura, all-capitals words are drawn in Melodrama Bold at Aktura's capital height (the height a
 	-- plain capital reaches: the x-height times PLAIN_CAP_SCALE).
@@ -437,7 +516,7 @@ function GlyphText._render(self: GlyphText)
 					Size = UDim2.fromOffset(glyph[4] * glyphScale, glyph[5] * glyphScale),
 					Position = UDim2.fromOffset(shift + left, baseline - glyph[7] * glyphScale),
 					ZIndex = zIndex,
-					Parent = self.frame,
+					Parent = self.ink,
 				})
 				table.insert(self.glyphs, image)
 			end
@@ -445,7 +524,9 @@ function GlyphText._render(self: GlyphText)
 	end
 	self.width = widest
 	self.height = height
+	self.baseline = face.ascent * scale
 	self.frame.Size = UDim2.fromOffset(math.ceil(widest), math.ceil(height))
+	unsettled(self)
 	self.changed:Fire()
 end
 

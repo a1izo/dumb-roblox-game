@@ -3,7 +3,9 @@
 -- On the left, from a quarter of the way down: the READY button, the queue status, and the menu (Quests,
 -- Shop...) in a zigzag, each entry floating on its own beat; while a case is running, "Spectate" is its last
 -- entry (for everyone, players who joined during the case too).
--- On the right, your card: rank seal, XP, coins, and the way to your profile and the leaderboards.
+-- On the right, your card: rank seal, XP, coins, and the way to your profile and the leaderboards. On a touch
+-- screen it ends just above Roblox's jump button, and on a phone it is cut down to your portrait, name and
+-- coins over the two buttons.
 --
 -- The title, READY, the menu and the profile buttons blip every couple of seconds; hovered buttons glitch
 -- hard (Core/HoverGlitch). The lobby comes in from black (UI/LobbyIntro) on joining and on coming back from a
@@ -21,6 +23,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
+local TouchSafe = require(Shared:WaitForChild("UI"):WaitForChild("TouchSafe"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local DirectorPanel = require(script.Parent.DirectorPanel)
@@ -30,6 +33,7 @@ local Kit = require(script.Parent.Kit)
 local LobbyIntro = require(script.Parent.LobbyIntro)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
+local TouchControls = require(script.Parent.Core.TouchControls)
 local Screens = require(script.Parent.Screens)
 
 local C = Kit.color
@@ -70,13 +74,17 @@ local quoteGlitch: any
 local diavoloGlitch: any
 local contents: Frame
 local menuRows: { { wrap: CanvasGroup, glitch: any } } = {}
+local profileAnchor: Frame
 local profileGroup: CanvasGroup
 local profileGlitch: any
 local profilePage: Frame
+local profileContent: Frame
 local rankSeal: Frame
-local rankText: any
-local setXp: (number, boolean?) -> ()
-local xpLabel: TextLabel
+local sealSize = 64
+-- The rank and the XP bar are left off the phone's short card (they are in the Profile window).
+local rankText: any = nil
+local setXp: ((number, boolean?) -> ())? = nil
+local xpLabel: TextLabel? = nil
 local coinsLabel: TextLabel
 local statusGroup: CanvasGroup
 local statusGlitch: any
@@ -85,9 +93,7 @@ local readyHolder: CanvasGroup
 local readyGlitch: any
 local readyButton: TextButton
 local saveWarning: TextLabel
-local links: Frame
-local linksLayout: UIListLayout
-local linkWraps: { CanvasGroup } = {}
+local linkGlitches: { any } = {}
 local lastCoins: number? = nil
 local lastReady: boolean? = nil
 local lastRank = ""
@@ -180,15 +186,19 @@ end
 local function updateProfile()
 	local profile = ClientState.profile
 	if not profile then
-		rankText:set("…")
+		if rankText then
+			rankText:set("…")
+		end
 		return
 	end
 	if profile.rankName ~= lastRank then
 		lastRank = profile.rankName
-		rankText:set(profile.rankName)
+		if rankText then
+			rankText:set(profile.rankName)
+		end
 		Kit.clear(rankSeal)
 		Kit.seal({
-			size = 64,
+			size = sealSize,
 			color = C.white,
 			text = string.sub(profile.rankName, 1, 1),
 			portrait = Players.LocalPlayer.UserId,
@@ -204,13 +214,16 @@ local function updateProfile()
 		coinsLabel.Text = coinsText(profile.coins)
 	end
 	lastCoins = profile.coins
-	if profile.nextRankXp then
-		local span = math.max(1, profile.nextRankXp - profile.rankXp)
-		setXp((profile.xp - profile.rankXp) / span, true)
-		xpLabel.Text = string.format("%d / %d XP  ·  next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
-	else
-		setXp(1, true)
-		xpLabel.Text = string.format("%d XP  ·  the highest rank", profile.xp)
+	if setXp and xpLabel then
+		if profile.nextRankXp then
+			local span = math.max(1, profile.nextRankXp - profile.rankXp)
+			setXp((profile.xp - profile.rankXp) / span, true)
+			xpLabel.Text =
+				string.format("%d / %d XP  ·  next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
+		else
+			setXp(1, true)
+			xpLabel.Text = string.format("%d XP  ·  the highest rank", profile.xp)
+		end
 	end
 	saveWarning.Visible = profile.persistent == false
 end
@@ -547,14 +560,18 @@ local function buildMenu()
 end
 
 local function buildProfile()
+	-- The card hangs by its bottom right corner from a point the layout places (see placeProfile): the glitch
+	-- shakes the card, never the point.
+	profileAnchor = Kit.frame({ Name = "ProfileAnchor", Size = UDim2.fromOffset(0, 0), Parent = Screens.hud })
 	-- The card sits in a CanvasGroup so it can glitch in with the rest.
 	profileGroup = Kit.Base.make("CanvasGroup", {
 		Name = "ProfileGroup",
 		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(1, 1),
 		Size = UDim2.fromOffset(340, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Visible = false,
-		Parent = Screens.hud,
+		Parent = profileAnchor,
 	}) :: CanvasGroup
 	profileGlitch = Glitch.attach(profileGroup, { loop = false, enter = false })
 	local page, content = Kit.page({
@@ -566,9 +583,29 @@ local function buildProfile()
 		Parent = profileGroup,
 	})
 	profilePage = page
+	profileContent = content
 	Kit.list(content, T.space.xs)
-	local top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 68), LayoutOrder = 1, Parent = content })
-	rankSeal = Kit.frame({ Name = "RankSeal", Size = UDim2.fromOffset(64, 64), Parent = top })
+end
+
+-- What the card holds, built again for the device. A desktop or a tablet gets all of it: rank seal, name,
+-- rank, XP bar, coins and the two buttons. A phone gets a short one (portrait, name and coins, then the
+-- buttons): it has to fit above the jump button and still leave room over it for the pop-ups. The rank and
+-- the XP are in the Profile window.
+local function buildCard(phone: boolean)
+	for _, glitch in ipairs(linkGlitches) do
+		glitch:destroy()
+	end
+	table.clear(linkGlitches)
+	Kit.clear(profileContent)
+	sealSize = if phone then 44 else 64
+	local beside = if phone then 54 else 78
+	local top = Kit.frame({
+		Name = "Top",
+		Size = UDim2.new(1, 0, 0, if phone then 44 else 68),
+		LayoutOrder = 1,
+		Parent = profileContent,
+	})
+	rankSeal = Kit.frame({ Name = "RankSeal", Size = UDim2.fromOffset(sealSize, sealSize), Parent = top })
 	Kit.label({
 		Text = Players.LocalPlayer.DisplayName,
 		font = "bodyBold",
@@ -576,24 +613,36 @@ local function buildProfile()
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(78, 4),
-		Size = UDim2.new(1, -78, 0, 26),
+		Position = UDim2.fromOffset(beside, if phone then 0 else 4),
+		Size = UDim2.new(1, -beside, 0, if phone then 22 else 26),
 		Parent = top,
 	})
-	rankText = Kit.text({
-		face = "Head",
-		text = "",
-		size = T.size.title,
-		color = C.white,
-		Position = UDim2.fromOffset(76, 32),
-		Parent = top,
-	})
-	local _bar
-	_bar, setXp = Kit.meter({ height = 5, LayoutOrder = 2, Parent = content })
-	xpLabel = Kit.label({ font = "mono", size = "micro", color = C.dim, LayoutOrder = 3, Parent = content })
-	local coinsRow = Kit.frame({ Name = "Coins", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 4, Parent = content })
+	local coinsRow: Frame
+	if phone then
+		rankText, setXp, xpLabel = nil, nil, nil
+		coinsRow = Kit.frame({
+			Name = "Coins",
+			Position = UDim2.fromOffset(beside, 22),
+			Size = UDim2.new(1, -beside, 0, 22),
+			Parent = top,
+		})
+	else
+		rankText = Kit.text({
+			face = "Head",
+			text = "",
+			size = T.size.title,
+			color = C.white,
+			Position = UDim2.fromOffset(76, 32),
+			Parent = top,
+		})
+		local _bar
+		_bar, setXp = Kit.meter({ height = 5, LayoutOrder = 2, Parent = profileContent })
+		xpLabel = Kit.label({ font = "mono", size = "micro", color = C.dim, LayoutOrder = 3, Parent = profileContent })
+		coinsRow =
+			Kit.frame({ Name = "Coins", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 4, Parent = profileContent })
+	end
 	Kit.list(coinsRow, T.space.s, true)
-	Kit.icon({ name = "coin", size = 22, color = C.candle, LayoutOrder = 1, Parent = coinsRow })
+	Kit.icon({ name = "coin", size = if phone then 18 else 22, color = C.candle, LayoutOrder = 1, Parent = coinsRow })
 	coinsLabel = Kit.label({
 		font = "bodyBold",
 		size = "body",
@@ -610,12 +659,12 @@ local function buildProfile()
 		color = C.red,
 		Visible = false,
 		LayoutOrder = 5,
-		Parent = content,
+		Parent = profileContent,
 	})
-	-- Your profile and the leaderboards open from the card, side by side. Each sits in
-	-- a wrapper that blips like the rest of the lobby.
-	links = Kit.frame({ Name = "Links", Size = UDim2.new(1, 0, 0, 48), LayoutOrder = 6, Parent = content })
-	linksLayout = Kit.list(links, T.space.s, true)
+	-- Your profile and the leaderboards open from the card, side by side (so the card stays short). Each
+	-- sits in a wrapper that blips like the rest of the lobby.
+	local links = Kit.frame({ Name = "Links", Size = UDim2.new(1, 0, 0, 48), LayoutOrder = 6, Parent = profileContent })
+	local linksLayout = Kit.list(links, T.space.s, true)
 	linksLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 	for index, item in ipairs({ { "Profile", "profile" }, { "Leaderboards", "leaderboards" } }) do
 		local wrap =
@@ -629,9 +678,29 @@ local function buildProfile()
 		}, function()
 			Router.toggle(item[2])
 		end)
-		Glitch.attach(wrap, { loop = true, enter = false, band = false })
-		linkWraps[index] = wrap
+		linkGlitches[index] = Glitch.attach(wrap, { loop = true, enter = false, band = false })
 	end
+	lastRank = ""
+	lastCoins = nil
+	updateProfile()
+end
+
+-- The card sits at the bottom right on every device (the top right is where pop-ups like the daily streak
+-- go). On a touch screen Roblox's jump button is there too, under the HUD, and a card left on it takes the
+-- jump tap: there the card ends just above the button, wherever the button really is on this screen.
+local function placeProfile()
+	if not profileAnchor or not hudProbe then
+		return
+	end
+	local jump = TouchControls.jump()
+	if not jump then
+		Kit.Layout.place(profileAnchor, "bottomRight", Vector2.new(-T.space.l, -T.space.l))
+		return
+	end
+	-- From screen pixels to the HUD layer's own: it starts at the probe and is scaled for the device.
+	local floor = (TouchSafe.floorAbove(jump) - hudProbe.AbsolutePosition.Y) / Kit.Base.scaleOf(profileAnchor)
+	profileAnchor.AnchorPoint = Vector2.new(1, 1)
+	profileAnchor.Position = UDim2.new(1, -2 * T.space.l, 0, math.floor(floor))
 end
 
 local function layout(class: string)
@@ -666,15 +735,9 @@ local function layout(class: string)
 	placeColumn()
 	menu.Size = UDim2.fromOffset(if phone then 300 else 460, 0)
 	readyHolder.Size = UDim2.new(1, 0, 0, if phone then 48 else 60)
-	-- The card sits at the bottom right on every device (the top right is where pop-ups like the daily streak go).
-	Kit.Layout.place(profileGroup, "bottomRight", Vector2.new(-T.space.l, -T.space.l))
 	profileGroup.Size = UDim2.fromOffset(if phone then 260 else 340, 0)
-	-- Side by side on every device, so the card stays short (on a phone it must clear the pop-ups above it).
-	linksLayout.FillDirection = Enum.FillDirection.Horizontal
-	links.Size = UDim2.new(1, 0, 0, 48)
-	for _, wrap in ipairs(linkWraps) do
-		wrap.Size = UDim2.new(0.5, -T.space.xs, 0, 40)
-	end
+	buildCard(phone)
+	placeProfile()
 	buildContents(phone)
 	lastReady = nil
 	updateLobby()
@@ -706,6 +769,12 @@ function LobbyPanel.init()
 	Kit.Layout.watch(layout)
 	screenProbe:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeColumn)
 	hudProbe:GetPropertyChangedSignal("AbsolutePosition"):Connect(placeColumn)
+	hudProbe:GetPropertyChangedSignal("AbsolutePosition"):Connect(placeProfile)
+	TouchControls.Changed:Connect(placeProfile)
+	-- With a window open, the lobby behind it stops blipping and the scan band stays off it.
+	Router.Changed:Connect(function()
+		Glitch.setQuiet(Router.anyOpen("modal"))
+	end)
 	placeColumn()
 	updateProfile()
 	updateLobby()
