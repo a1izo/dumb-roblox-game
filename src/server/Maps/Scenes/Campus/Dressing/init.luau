@@ -668,9 +668,6 @@ return {
 		{ kind = "point", at = { 173.6, 8.2, 60 }, color = { 255, 200, 140 }, range = 26, brightness = 1.1, shadows = false, face = "Bottom", angle = 90, flicker = false },
 		{ kind = "point", at = { 173.6, 8.2, 96 }, color = { 255, 200, 140 }, range = 26, brightness = 1.1, shadows = false, face = "Bottom", angle = 90, flicker = false },
 		{ kind = "point", at = { -40, 4, 139 }, color = { 230, 240, 255 }, range = 26, brightness = 1.2, shadows = false, face = "Bottom", angle = 90, flicker = false },
-		{ kind = "point", at = { -20, 47, -42 }, color = { 255, 196, 128 }, range = 40, brightness = 1.3, shadows = false, face = "Bottom", angle = 90, flicker = false },
-		{ kind = "point", at = { -35.5, 47, -55 }, color = { 255, 196, 128 }, range = 40, brightness = 1.3, shadows = false, face = "Bottom", angle = 90, flicker = false },
-		{ kind = "point", at = { -4.5, 47, -55 }, color = { 255, 196, 128 }, range = 40, brightness = 1.3, shadows = false, face = "Bottom", angle = 90, flicker = false },
 	},
 	signs = {
 		{ at = { -20, 16.2, -47.83 }, rot = 180, w = 11, h = 1.6, text = "大講堂  GREAT AUDITORIUM", font = "Garamond", color = { 236, 214, 150 }, bg = { 26, 20, 18 }, glow = nil, align = "Center" },

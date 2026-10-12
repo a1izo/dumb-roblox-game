@@ -23,13 +23,14 @@ SOURCE = common.source("skies")
 SIZE = 512  # a night sky under cloud holds little detail: six small faces are enough
 
 # venue -> (panorama, the sky's own colour at night (sRGB), how much of the clouds' light and dark shows).
-# Roblox shows a Sky's faces as they are (no darkening at night), and cloud over a lit city glows: graded as
-# dark as a clear night's, they read black in the game (2026-10-12) and took the haze and the wet streets'
-# reflections down with them, so they sit about as bright as the default night sky they replace.
+# Roblox shows a Sky's faces as they are (no darkening at night). Graded as dark as a clear night's
+# (Tokyo 34, 28, 48) they read black in the game and took the haze and the wet streets' reflections with them;
+# as bright as the default night sky (Tokyo 64, 52, 88) they read flat. The owner wanted them moodier
+# (2026-10-12): about a third darker than that, with more of the clouds' shapes showing.
 SKIES = {
-    "Tokyo": ("kloppenheim_07_puresky", (64, 52, 88), 0.9),  # low cloud lit violet from below by the city
-    "Campus": ("kloofendal_overcast_puresky", (80, 74, 80), 0.7),  # a snow sky: dull, a little warm, close
-    "Agency": ("overcast_soil_puresky", (46, 42, 68), 1.1),  # storm cloud seen from the 38th floor
+    "Tokyo": ("kloppenheim_07_puresky", (46, 37, 64), 1.1),  # low cloud lit violet from below by the city
+    "Campus": ("kloofendal_overcast_puresky", (58, 53, 58), 0.85),  # a snow sky: dull, a little warm, close
+    "Agency": ("overcast_soil_puresky", (33, 30, 49), 1.25),  # storm cloud seen from the 38th floor
 }
 # face -> (the way it looks, its up), in Roblox axes
 FACES = {
