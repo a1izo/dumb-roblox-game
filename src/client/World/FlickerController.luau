@@ -26,13 +26,32 @@ local function lightsOf(part: Instance): { Light }
 	return list
 end
 
+-- The glowing parts that go dark with a lamp: its own part (a fitting's face drawn by the game) and, for a
+-- prop's lamp, the prop's glowing parts (SceneBuilder links them with a FlickerGlow value).
+local function glowsOf(part: BasePart): { BasePart }
+	local list = {}
+	if part.Material == Enum.Material.Neon and part.Transparency < 1 then
+		table.insert(list, part)
+	end
+	local link = part:FindFirstChild("FlickerGlow")
+	local model = if link and link:IsA("ObjectValue") then link.Value else nil
+	if model then
+		for _, item in ipairs(model:GetDescendants()) do
+			if item:IsA("BasePart") and item:GetAttribute("DeathsGambitGlow") ~= nil then
+				table.insert(list, item)
+			end
+		end
+	end
+	return list
+end
+
 local function flicker(part: BasePart)
 	local lights = lightsOf(part)
 	local brightness = {}
 	for index, light in ipairs(lights) do
 		brightness[index] = light.Brightness
 	end
-	local material = part.Material
+	local glows = glowsOf(part)
 	local pulses = math.random(2, 4)
 	for _ = 1, pulses do
 		if not part.Parent then
@@ -41,15 +60,17 @@ local function flicker(part: BasePart)
 		for _, light in ipairs(lights) do
 			light.Brightness = 0
 		end
-		if material == Enum.Material.Neon then
-			part.Material = Enum.Material.SmoothPlastic
+		for _, glow in ipairs(glows) do
+			glow.Material = Enum.Material.SmoothPlastic
 		end
 		task.wait(0.03 + math.random() * 0.08)
 		-- Back to what the lighting wants now (a mood may have dimmed it meanwhile).
 		for index, light in ipairs(lights) do
 			light.Brightness = LightingController.lampBrightness(light) or brightness[index]
 		end
-		part.Material = material
+		for _, glow in ipairs(glows) do
+			glow.Material = Enum.Material.Neon
+		end
 		task.wait(0.04 + math.random() * 0.12)
 	end
 end

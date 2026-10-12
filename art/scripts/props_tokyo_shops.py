@@ -62,7 +62,8 @@ def store_shelf():
 
 
 @prop("DrinkFridge", pivot="bottom", material="Metal", collide=True, texture=1024, set="Tokyo",
-      lights=[dict(at=(0, -2.2, 4.0), kind="point", color=(214, 232, 255), range=10, brightness=0.7)])
+      lights=[dict(at=(0, -2.2, 4.0), kind="spot", face="Front", angle=160, color=(214, 232, 255), range=10,
+                   brightness=0.7)])
 def drink_fridge():
     """A konbini's walk-in fridge front, 8 wide: three glass doors in steel frames with long
     handles, five lit shelves of bottles and cans behind them, a header with the shop's colours."""

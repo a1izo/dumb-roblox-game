@@ -390,7 +390,9 @@ def write_scene_v2(scene, module, source):
         f'range = {num(li["range"], 1)}, brightness = {num(li["brightness"], 2)}, '
         f'shadows = {"true" if li["shadows"] else "false"}, face = "{li["face"]}", angle = {num(li["angle"], 1)}, '
         f'flicker = {"true" if li["flicker"] else "false"}'
-        + (f', role = "{li["role"]}"' if li.get("role") else "") + " }"
+        + (f', role = "{li["role"]}"' if li.get("role") else "")
+        + (f', rot = {num(li["rot"], 1)}' if li.get("rot") else "")
+        + (f', size = {vec(li["glow"][0])}, glow = {rgb(li["glow"][1])}' if li.get("glow") else "") + " }"
         for li in scene.lights
     ]
     signs = []
@@ -453,6 +455,15 @@ def write_scene_v2(scene, module, source):
     paths += _module(os.path.join(folder, "Dressing"), source,
                      "Props from the prop library, lights, signs and particle emitters.", dressing_fields)
     os.makedirs(SIDECAR_DIR, exist_ok=True)
+    # The likely visual defects (maps/finders.py: flicker, floating or sunk props, lamps and fittings, light
+    # through walls, stretched pictures, signs in walls), for check_v2's report and its gate.
+    try:
+        from maps import catalog as prop_catalog
+        from maps import finders
+
+        finds = finders.run(scene, prop_catalog.load(), venue)[0]
+    except ImportError:  # (outside Blender there is no mathutils: no finds)
+        finds = None
     sidecar = {
         "venue": venue,
         "mapId": map_id,
@@ -473,6 +484,7 @@ def write_scene_v2(scene, module, source):
         "traffic": scene.traffic,
         "stats": stats,
         "checks": scene.checks,
+        "finds": finds,
     }
     side_path = os.path.join(SIDECAR_DIR, venue + ".json")
     with open(side_path, "w", encoding="utf-8") as f:

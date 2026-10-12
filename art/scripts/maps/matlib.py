@@ -25,6 +25,8 @@ FLAT = {
     "Water": ("Glass", (40, 90, 120), 0.35, 0.3),
     "Puddle": ("Glass", (16, 16, 22), 0.15, 0.35),
     "Screen": ("SmoothPlastic", (14, 16, 22), 0, 0.1),
+    # A ceiling panel switched off: pale plastic that takes the room's light (a glowing look there lit nothing).
+    "DiffuserOff": ("SmoothPlastic", (150, 154, 160), 0, 0.05),
     "Foliage": ("Grass", (44, 74, 40), 0, 0),
     "NeonWarm": ("Neon", (255, 214, 160), 0, 0),
     "NeonCool": ("Neon", (200, 225, 255), 0, 0),

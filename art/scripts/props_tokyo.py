@@ -508,7 +508,8 @@ def vending(prefix, body_rgb, trim_rgb, brand):
     return parts, glows
 
 
-VENDING_LIGHTS = [dict(at=(0, -2.2, 4.3), kind="point", color=(214, 232, 255), range=10, brightness=0.8)]
+VENDING_LIGHTS = [dict(at=(0, -2.2, 4.3), kind="spot", face="Front", angle=160, color=(214, 232, 255), range=10,
+                       brightness=0.8)]
 
 
 @prop("VendingBlue", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Tokyo",

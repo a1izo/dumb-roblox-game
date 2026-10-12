@@ -54,7 +54,7 @@ def rooms(s):
     fit.floor_faces(s, P.rect_of(P.READING), 0.0, "WoodHerringbone")
     fit.floor_faces(s, P.rect_of(P.STACKS), 0.0, "WoodFloorDark")
     fit.ceiling_faces(s, P.rect_of(P.CIRCULATION), C, "CeilingPlaster")
-    fit.coffers(s, *P.CIRCULATION, C, spacing=7.6)
+    fit.coffers(s, *P.CIRCULATION, C, spacing=7.6, wall=0.3)
     fit.ceiling_faces(s, P.rect_of(P.MICROFILM), C, "Ceiling")
     s.collider(((X0 + 72.0) / 2, C + 0.5, (Z0 + Z1) / 2), (72.0 - X0, 1.0, Z1 - Z0), 0, True, None)
     fit.ceiling_faces(s, P.box(72.0, Z0, X1, Z1), H, "CeilingPlaster")

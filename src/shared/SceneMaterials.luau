@@ -47,6 +47,7 @@ return {
 	CurtainGlass = { material = "Glass", color = { 70, 82, 100 }, transparency = 0.72, reflectance = 0.12 },
 	Damask = { textured = true, fallback = { material = "Fabric", color = { 91, 38, 43 } } },
 	DarkMetal = { textured = true, fallback = { material = "Metal", color = { 61, 62, 67 } } },
+	DiffuserOff = { material = "SmoothPlastic", color = { 150, 154, 160 }, transparency = 0, reflectance = 0.05 },
 	DimBand = { material = "Neon", color = { 106, 120, 146 }, transparency = 0, reflectance = 0 },
 	DimBandWarm = { material = "Neon", color = { 136, 112, 84 }, transparency = 0, reflectance = 0 },
 	DimLamp = { material = "Neon", color = { 92, 102, 124 }, transparency = 0, reflectance = 0 },

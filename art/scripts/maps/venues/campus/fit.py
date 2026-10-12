@@ -19,7 +19,7 @@ for one running south."""
 
 import math
 
-from maps import catalog, city, kit
+from maps import catalog, city, kit, lightbook
 from maps import geo2d as g2
 
 WARM = (255, 214, 170)
@@ -176,9 +176,10 @@ def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9,
     if on:
         glow = "PanelWarm" if color[0] > color[2] else "PanelCool"
         s.box(glow, (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
-        s.light("point", (x, ceiling - 1.0, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS)
+        lightbook.ceiling(s, (x, ceiling - lightbook.CEILING_DROP, z), color, range_ * ROOM_RANGE,
+                          brightness * ROOM_BRIGHTNESS)
     else:
-        s.box("TubeDiffuser", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
+        s.box("DiffuserOff", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
 
 
 def downlight(s, x, z, ceiling, color=WARM, range_=16, brightness=0.8, angle=90):
@@ -195,14 +196,14 @@ def wall_lamp(s, x, y, z, rot, color=WARM, range_=16, brightness=0.8):
     s.box("BlackMetal", (x + p[0], y, z + p[1]), (1.4, 0.8, 0.4), rot)
     q = turn(rot, 0, -0.42)
     s.box("NeonCool" if color[2] >= color[0] else "NeonWarm", (x + q[0], y, z + q[1]), (1.1, 0.5, 0.04), rot)
-    r = turn(rot, 0, -1.0)
-    s.light("point", (x + r[0], y, z + r[1]), color, range_, brightness)
+    r = turn(rot, 0, -lightbook.WALL_OUT)
+    lightbook.wall(s, (x + r[0], y, z + r[1]), rot, color, range_, brightness)
 
 
 def exit_sign(s, x, y, z, rot):
     kit.exit_sign(s, x, y, z, rot)
-    p = turn(rot, 0, -0.6)
-    s.light("point", (x + p[0], y, z + p[1]), (120, 255, 160), 8, 0.4)
+    p = turn(rot, 0, -0.3)
+    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 8, 0.4, angle=170)
 
 
 # Stairs and rails ----------------------------------------------------------------------------------------
@@ -319,9 +320,11 @@ def floor_faces(s, poly, y, mat, holes=()):
             city.up_face(s, mat, piece, y)
 
 
-def coffers(s, x0, z0, x1, z1, y, spacing=8.0, mat="CreamTrim", depth=0.7, w=0.6):
+def coffers(s, x0, z0, x1, z1, y, spacing=8.0, mat="CreamTrim", depth=0.7, w=0.6, wall=0.0):
     """Plaster beams under a ceiling at y in both directions, every `spacing` studs: the coffered
-    ceiling of the old halls (look-only)."""
+    ceiling of the old halls (look-only). wall: how far the walls' faces stand in from the rectangle's
+    edges (half their thickness when the rectangle runs along their middles), so the cornice round the
+    edge sits against them instead of inside them."""
     nx = max(1, round((x1 - x0) / spacing))
     nz = max(1, round((z1 - z0) / spacing))
     for i in range(1, nx):
@@ -331,8 +334,10 @@ def coffers(s, x0, z0, x1, z1, y, spacing=8.0, mat="CreamTrim", depth=0.7, w=0.6
         z = z0 + (z1 - z0) * j / nz
         s.box(mat, ((x0 + x1) / 2, y - depth / 2 - 0.01, z), (x1 - x0, depth, w), skip=("+y",))
     # A moulding round the edge, where the ceiling meets the walls.
-    for a, b in (((x0, z0), (x1, z0)), ((x1, z0), (x1, z1)), ((x1, z1), (x0, z1)), ((x0, z1), (x0, z0))):
-        cx, cz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+    inset = wall - 0.03 + w / 2 if wall else 0.0  # (0.03 into the wall: no seam, no shared plane)
+    for (a, b), (ix, iz) in zip((((x0, z0), (x1, z0)), ((x1, z0), (x1, z1)), ((x1, z1), (x0, z1)), ((x0, z1), (x0, z0))),
+                                ((0, 1), (-1, 0), (0, -1), (1, 0))):
+        cx, cz = (a[0] + b[0]) / 2 + ix * inset, (a[1] + b[1]) / 2 + iz * inset
         horizontal = abs(a[1] - b[1]) < 1e-6
         size = (abs(b[0] - a[0]), depth * 0.6, w) if horizontal else (w, depth * 0.6, abs(b[1] - a[1]))
         s.box(mat, (cx, y - depth * 0.3, cz), size, skip=("+y",))

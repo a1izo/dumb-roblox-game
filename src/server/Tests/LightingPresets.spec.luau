@@ -112,6 +112,19 @@ return function(t)
 				expect(p.realmSky).to.equal(nil)
 			end
 		end)
+		it("hangs each map's own overcast sky over it and its inside looks, and none over the rest", function()
+			-- It rains or snows on all three maps: no stars, no moon's disc, the map's cloud instead.
+			local skies = { TokyoDistrict = "Tokyo", TaskForceHQ = "Agency", UniversityCampus = "Campus" }
+			for id, p in pairs(LightingPresets.maps) do
+				local own = skies[id] or skies[string.match(id, "^(%a+)_") or ""]
+				expect(own ~= nil).to.equal(true)
+				expect(p.sky).to.equal(own)
+				expect(LightingPresets.resolve(p, LightingPresets.NEUTRAL).sky).to.equal(own)
+			end
+			expect(LightingPresets.lobby.sky).to.equal(nil)
+			expect(LightingPresets.meeting.sky).to.equal(nil)
+			expect(LightingPresets.resolve(LightingPresets.lobby, LightingPresets.NEUTRAL).realmSky).to.equal(true)
+		end)
 		it("never lets bloom catch lit skin", function()
 			for _, venue in ipairs({ "lobby", "meeting" }) do
 				expect(LightingPresets.pick(venue).bloomThreshold >= 1.8).to.equal(true)

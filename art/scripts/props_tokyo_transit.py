@@ -268,7 +268,8 @@ def train_middle():
 
 
 @prop("BusShelter", pivot="bottom", material="Metal", collide=False, texture=1024, set="Tokyo",
-      lights=[dict(at=(0, 0.2, 7.6), kind="point", color=(236, 240, 255), range=14, brightness=0.8)])
+      lights=[dict(at=(0, 0.2, 7.6), kind="spot", face="Bottom", angle=118, color=(236, 240, 255), range=14,
+                   brightness=0.8)])
 def bus_shelter():
     """A bus shelter 12 long, open to the kerb (-Y): a steel frame under a curved roof with its
     strip light, frosted glass at the back (+Y) and the ends, a lit advert at one end, the route

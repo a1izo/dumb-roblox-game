@@ -106,7 +106,7 @@ def arch_head(s, a, t, n, thick, u, w, top, rise, outer, inner, stone=STONE, rin
     hw = w / 2
     curve, (cu, _) = arch_curve(hw, rise)
     spring = top - rise
-    for side, mat, off in ((1, outer, thick / 2 + 0.03), (-1, inner, -(thick / 2 + 0.03))):
+    for side, mat, off in ((1, outer, thick / 2 + 0.04), (-1, inner, -(thick / 2 + 0.04))):
         normal = (n[0] * side, n[2] * side)
         for sign in (1, -1):
             corner = _world(a, t, n, u + sign * hw, top, off)
@@ -442,7 +442,7 @@ def arcade(s, r, h=12.0, pier=1.2, bay=6.5, brick="BrickDark"):
     spring = 7.0
     for k in range(count + 1):
         z = z0 + pier / 2 + k * step
-        s.box(STONE, (px, spring / 2, z), (pier, spring, pier), collide=True)
+        s.box(STONE, (px, spring / 2, z), (pier + 0.06, spring, pier + 0.06), collide=True)
         s.box(STONE, (px, spring + 0.25, z), (pier + 0.3, 0.5, pier + 0.3))
     # Arches and the wall above them, bay by bay, on the open face.
     _, t, n, _ = kit.wall_frame((px, z0), (px, z1))

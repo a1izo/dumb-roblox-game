@@ -11,6 +11,9 @@ opening Studio:
   symmetry   how alike the ground floor is to its own mirror image (0 = not at all, 1 = mirrored)
   doorways   every door and gap at floor level keeps DOOR_CLEAR studs free in front of it, on both
              sides (a flag for the hand-check: it names what stands there, it never moves anything)
+  finds      what maps/finders.py found at export (flicker, lamps, light through walls, stretched pictures): a
+             report for the eye; a sign inside a wall or a floating or sunk prop is a problem unless the
+             venue's CHECKS["finds_ok"] names it ("<kind> <detail>")
 
 Every rule covers the spare spots too. Returns a list of problems and prints a report.
 """
@@ -869,6 +872,25 @@ def _rect_of(poly, grow):
     return cx, cz, w + 2 * grow, d + 2 * grow, rot
 
 
+# Finds that are never right unless a venue says so (CHECKS["finds_ok"]).
+GATED_FINDS = {"buried", "float", "sunk"}
+
+
+def finds(data, problems):
+    found = data.get("finds")
+    if found is None:
+        print("  finds: none recorded (export the venue again to run maps/finders.py)")
+        return
+    counts = {}
+    for f in found:
+        counts[f["kind"]] = counts.get(f["kind"], 0) + 1
+    print(f"  finds: {counts or 'none'}")
+    allowed = set((data.get("checks") or {}).get("finds_ok", []))
+    for f in found:
+        if f["kind"] in GATED_FINDS and f"{f['kind']} {f['detail']}" not in allowed:
+            problems.append(f"{f['kind']}: {f['detail']} at {f['at']} (maps/finders.py)")
+
+
 def check(venue, full=True):
     path = os.path.join(SIDECARS, venue + ".json")
     if not os.path.exists(path):
@@ -883,6 +905,7 @@ def check(venue, full=True):
     overlaps(data, problems)
     doorways(data, problems)
     crowd_and_traffic(data, world, zones, problems)
+    finds(data, problems)
     if full:
         dist = walk(data, world, problems)
         picks, reach_count = reach_report(data, dist, problems)

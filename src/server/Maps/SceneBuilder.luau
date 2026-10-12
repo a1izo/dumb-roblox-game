@@ -94,8 +94,9 @@ end
 -- A light in an invisible anchor inside its fixture. When the fixture itself is not there (a
 -- greybox, or a prop that is not imported) the anchor shows as a small glowing fixture, so no
 -- light ever hangs in mid-air.
-local function addLight(b, folder: Instance, spec, showFixture: boolean?, where: CFrame?)
+local function addLight(b, folder: Instance, spec, showFixture: boolean?, where: CFrame?): BasePart
 	local at = spec.at
+	local face = spec.size -- the fitting's glowing face, drawn as this part (a flickering lamp's)
 	local anchor = Create("Part", {
 		Name = "Light",
 		Anchored = true,
@@ -103,11 +104,15 @@ local function addLight(b, folder: Instance, spec, showFixture: boolean?, where:
 		CanQuery = false,
 		CanTouch = false,
 		CastShadow = false,
-		Transparency = if showFixture then 0 else 1,
+		Transparency = if showFixture or face then 0 else 1,
 		Material = Enum.Material.Neon,
-		Color = color(spec.color) :: Color3,
-		Size = if showFixture then Vector3.new(0.8, 0.8, 0.8) else Vector3.new(0.2, 0.2, 0.2),
-		CFrame = where or b:world(CFrame.new(at[1], at[2], at[3])),
+		Color = color(spec.glow or spec.color) :: Color3,
+		Size = if face
+			then Vector3.new(face[1], face[2], face[3])
+			elseif showFixture then Vector3.new(0.8, 0.8, 0.8)
+			else Vector3.new(0.2, 0.2, 0.2),
+		-- (Turned by rot: a spot facing "Front" shines the way the wall it is on faces.)
+		CFrame = where or b:world(CFrame.new(at[1], at[2], at[3]) * CFrame.Angles(0, math.rad(spec.rot or 0), 0)),
 		Parent = folder,
 	})
 	local light
@@ -132,6 +137,7 @@ local function addLight(b, folder: Instance, spec, showFixture: boolean?, where:
 		light.Enabled = false
 		CollectionService:AddTag(anchor, SceneBuilder.EMERGENCY_TAG)
 	end
+	return anchor
 end
 
 local function addSign(b, spec)
@@ -787,7 +793,7 @@ end
 
 -- The lights a prop carries (its catalog lights, at their places in the prop), unless the map
 -- placed it dark. Their anchors show as fixtures when the prop is only a stand-in.
-local function propLights(b, folder: Instance, p, standIn: boolean)
+local function propLights(b, folder: Instance, p, model: Instance?)
 	local info = Catalog[p[1]]
 	if not info or not info.lights or p[7] == "dark" then
 		return
@@ -796,7 +802,7 @@ local function propLights(b, folder: Instance, p, standIn: boolean)
 	local base = b:world(b:cf(p[2], p[3], p[4], p[5]))
 	for _, spec in ipairs(info.lights) do
 		local where = base * CFrame.new(spec.at[1] * scale, spec.at[2] * scale, spec.at[3] * scale)
-		addLight(b, folder, {
+		local anchor = addLight(b, folder, {
 			kind = spec.kind,
 			at = spec.at,
 			color = spec.color,
@@ -806,7 +812,11 @@ local function propLights(b, folder: Instance, p, standIn: boolean)
 			face = spec.face or "Bottom",
 			angle = spec.angle or 90,
 			flicker = spec.flicker == true,
-		}, standIn, where)
+		}, model == nil, where)
+		if spec.flicker and model then
+			-- (The flicker dims the prop's own glowing parts with the light: World/FlickerController.)
+			Create("ObjectValue", { Name = "FlickerGlow", Value = model, Parent = anchor })
+		end
 	end
 end
 
@@ -832,8 +842,7 @@ SceneBuilder.COVER_TAG = "LRainCover"
 -- Mist, cloud and dust emitters the client thins on slower devices (World/MapAmbient); the
 -- attribute BaseRate is the rate they were built with.
 SceneBuilder.FOG_TAG = "LMapFog"
--- Rooms whose lights the client flickers now and then (World/MapAmbient).
-SceneBuilder.FLICKER_TAG = "LMapFlicker"
+-- (Flickering lamps are tagged "LFlicker" where they are built, addLight; client World/FlickerController.)
 
 -- An invisible box that stops the weather under it without being solid or showing: the client
 -- finds it by its tag and does the arithmetic itself, so no ray ever meets it.
@@ -1145,7 +1154,7 @@ local function buildFormat2(b, venue: string, data): string
 		else
 			standIn(b, folder, p)
 		end
-		propLights(b, folder, p, model == nil)
+		propLights(b, folder, p, model)
 	end
 	for _, spec in ipairs(dressing.lights) do
 		addLight(b, folder, spec, greybox)

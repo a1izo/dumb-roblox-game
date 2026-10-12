@@ -50,7 +50,8 @@ def case_wall(s):
     pinned to the damask, red string strung between the pins."""
     x, y, z, rot, w, h = P.BOARD
     s.anchor("board", x, y, z, rot, w=w, h=h)
-    face = IN - 0.06
+    # (Proud of the wainscot's face, IN - 0.08: flush, the two drew over each other and flickered.)
+    face = IN - 0.12
     rng = random.Random(55)
     pins = []
     for zc, yc in ((14.5, 8.5), (19.5, 6.0), (16.0, 4.0), (21.5, 9.5), (13.5, 10.5), (18.5, 11.0), (-13.0, 9.0),
@@ -81,7 +82,7 @@ def west_wall(s):
     for z in (-7.8, -12.4, 7.8, 12.4):
         s.prop("BookcaseTall", x + 0.95, z, -90.0)
     s.prop("WallClock", x + 0.3, 0.0, -90.0, 1.0, 9.6)
-    s.prop("BankerLamp", x + 1.6, -3.4, -90.0, 1.0, 3.3)
+    s.prop("BankerLamp", x + 1.6, -3.4, -90.0, 1.0, 4.88)  # on the sideboard (4.88 tall since its rebuild)
     for z in (-22.0, 22.0):
         s.prop("FilingCabinet", x + 1.1, z, -90.0)
 
@@ -120,8 +121,9 @@ def lights(s):
                                ((-28.8, 29.35), (28.8, 29.35)), ((-29.35, -28.8), (-29.35, 28.8)),
                                ((29.35, -18.5), (29.35, -10.0)), ((29.35, 10.0), (29.35, 28.8))):
         s.box("NeonRed", ((ax + bx) / 2, 0.85, (az + bz) / 2), (max(0.1, abs(bx - ax)), 0.1, max(0.1, abs(bz - az))))
-    for x, z in ((0.0, 27.0), (-27.0, 0.0), (27.0, 20.0)):
-        s.light("point", (x, 1.2, z), (255, 40, 60), 12, 0.5)
+    # Its light comes from the strip: lamps just off the wall, not hanging in the room.
+    for x, z in ((0.0, 28.7), (-28.7, 0.0), (28.7, 20.0)):
+        s.light("point", (x, 1.0, z), (255, 40, 60), 12, 0.5)
 
 
 def spots(s):

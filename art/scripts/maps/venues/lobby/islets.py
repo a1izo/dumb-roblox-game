@@ -59,8 +59,9 @@ def causeway(s, g, a, b, seed, chasm):
     for dt in (-11.0, 0.0, 11.0):
         px = chasm[0] + ux * dt
         pz = chasm[1] + uz * dt
+        top = P.CHASM_DEPTH - 2.05  # (a hair under the deck: at its height the two flickered)
         s.lathe("RuinStone", (px, -P.CHASM_DEPTH + 2.0, pz), [(0.0, 0.0), (3.4, 4.0), (4.4, P.CHASM_DEPTH - 8.0),
-                                                                 (4.8, P.CHASM_DEPTH - 2.0), (0.0, P.CHASM_DEPTH - 2.0)], 4,
+                                                                 (4.8, top), (0.0, top)], 4,
                 caps=(False, False))
     for q in range(1, int(flat // 32) + 1):
         t = q * 32.0

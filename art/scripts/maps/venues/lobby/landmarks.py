@@ -67,11 +67,11 @@ def plaza(s, g):
         if k % 5 == 3:
             continue  # worn away
         pts = [(px + math.cos(a) * r, pz + math.sin(a) * r) for a, r in ((a0, 16.0), (a1, 16.0), (a1, 17.2), (a0, 17.2))]
-        s.polygon("RuinStone", [(x, 0.06, z) for x, z in reversed(g2.ccw(pts))])
+        s.polygon("RuinStone", [(x, 0.09, z) for x, z in reversed(g2.ccw(pts))])
     # The middle is open (the view from the terrace runs over it to the title): a dark disc in the stones, and
     # round it twelve low candle stones. The game stands a candle on each and lights one for every player who
     # is ready (anchors ready<n>, at the stone's top).
-    city.up_face(s, "BlackTrim", P.circle(P.PLAZA_C, 2.4, 14), 0.06)
+    city.up_face(s, "BlackTrim", P.circle(P.PLAZA_C, 2.4, 14), 0.09)
     rng = random.Random(33)
     for k, (x, z) in enumerate(P.ready_stones()):
         h = P.READY_H
@@ -196,7 +196,7 @@ def base(s, x, z, r, h, seed):
         a0, a1 = math.tau * k / n, math.tau * (k + 1) / n
         pts = [(x + math.cos(a) * rr, z + math.sin(a) * rr) for a, rr in ((a0, r - 1.3), (a1, r - 1.3), (a1, r - 0.6),
                                                                          (a0, r - 0.6))]
-        s.polygon("RuinStone", [(px, h + 0.02, pz) for px, pz in reversed(g2.ccw(pts))])
+        s.polygon("RuinStone", [(px, h + 0.05, pz) for px, pz in reversed(g2.ccw(pts))])
     # Two boxes turned against each other stand in for the disc.
     side = r * 1.6
     for rot in (0.0, 45.0):

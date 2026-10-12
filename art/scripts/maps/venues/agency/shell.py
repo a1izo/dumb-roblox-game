@@ -111,7 +111,7 @@ def curtain(s):
         for k in range(bays + 1):
             u = k * step
             p = at(u)
-            s.box("BlackMetal", (p[0], P.ROOF / 2, p[1]), (0.22, P.ROOF, 0.3), rot)
+            s.box("BlackMetal", (p[0], P.ROOF / 2, p[1]), (0.18, P.ROOF, 0.3), rot)
             q = at(u, 0.5)
             s.box("DarkMetal", (q[0], P.ROOF / 2 + 0.5, q[1]), (0.25, P.ROOF + 1.0, 0.8), rot, skip=("-y",))
 
@@ -127,21 +127,23 @@ def core_walls(s):
         up = level == P.L2
         # North face: closed service doors (toilets on 38F, stores on 39F).
         kit.wall(s, (x0 - 0.5, z0), (x1 + 0.5, z0), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
-                 side_s="ConcreteDark", trim_n={"base": "BlackTrim", "grime": True})
+                 side_s="ConcreteDark", trim_n={"base": "BlackTrim", "grime": True}, covered=True)
         # East face: the fire stair's door, into its landing.
-        door = {"at": P.STAIR_DOOR_Z - z0, "w": 4.6, "bottom": level, "top": level + fit.DOOR_H, "kind": "door",
-                "frame": "RedTrim", "casing": 0.3}
-        kit.wall(s, (x1, z0), (x1, z1), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
-                 side_s="ConcreteDark", openings=[door], trim_n={"base": "BlackTrim", "grime": True})
+        door = {"at": P.STAIR_DOOR_Z - (z0 + 0.5), "w": 4.6, "bottom": level, "top": level + fit.DOOR_H,
+                "kind": "door", "frame": "RedTrim", "casing": 0.3}
+        kit.wall(s, (x1, z0 + 0.5), (x1, z1 - 0.5), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
+                 side_s="ConcreteDark", openings=[door], trim_n={"base": "BlackTrim", "grime": True}, covered=True)
         # South face: the lifts on 38F (stone), the video wall on 39F.
         kit.wall(s, (x1 + 0.5, z1), (x0 - 0.5, z1), y1, base=level, core="ConcreteDark",
-                 side_n="BlackTrim" if up else "MarbleBlack", side_s="ConcreteDark", trim_n=None if up else {"base": "BlackTrim", "grime": True})
+                 side_n="BlackTrim" if up else "MarbleBlack", side_s="ConcreteDark", trim_n=None if up else {"base": "BlackTrim", "grime": True},
+                 covered=True)
         # West face.
-        kit.wall(s, (x0, z1), (x0, z0), y1, base=level, core="ConcreteDark", side_n="WoodPanel" if up else "PlasterGrey",
-                 side_s="ConcreteDark", trim_n={"base": "BlackTrim", "grime": True})
+        kit.wall(s, (x0, z1 - 0.5), (x0, z0 + 0.5), y1, base=level, core="ConcreteDark",
+                 side_n="WoodPanel" if up else "PlasterGrey", side_s="ConcreteDark",
+                 trim_n={"base": "BlackTrim", "grime": True}, covered=True)
         # The stair shaft's inner wall (its east side faces the flights).
-        kit.wall(s, (sx0, z0), (sx0, z1), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
-                 side_s="ConcreteDark")
+        kit.wall(s, (sx0, z0 + 0.5), (sx0, z1 - 0.5), y1, base=level, core="ConcreteDark", side_n="PlasterGrey",
+                 side_s="ConcreteDark", covered=True)
     # Service doors on the north face, and their plates.
     for x, text in ((0.0, "WC 男"), (8.0, "WC 女"), (18.0, "清掃 JANITOR"), (25.0, "倉庫 STORE")):
         fit.closed_door(s, x, z0 - 0.5, 0, P.L1, 3.8, sign=text)
@@ -168,7 +170,7 @@ def lifts(s):
     s.light("spot", (-1.0, 12.4, z + 1.5), fit.WARM, 16, 1.0, False, "Bottom", 70)
     # The grand stair's head, faced in stone (38F sees its tall end from the lifts).
     x0, x1 = P.GRAND["x"]
-    s.box("MarbleBlack", ((x0 + x1) / 2, P.L2 / 2, P.GRAND["z1"] - 0.05), (x1 - x0, P.L2, 0.1), 180)
+    s.box("MarbleBlack", ((x0 + x1) / 2, P.L2 / 2, P.GRAND["z1"] - 0.01), (x1 - x0, P.L2, 0.1), 180)
 
 
 def video_wall(s):

@@ -61,6 +61,8 @@ CHECKS = {
     "walk": (15.0, 35.0),
     "corners": P.CORNERS,
     "symmetry": None,
+    # The carcass's skull rests on its jaw, settled into the ash (landmarks.carcass): sunk on purpose.
+    "finds_ok": ["sunk GiantSkull in the floor or the map"],
 }
 
 

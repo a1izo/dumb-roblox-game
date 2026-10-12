@@ -61,7 +61,8 @@ def shell(s, g, b, doors, inside="PlasterLight", floor="TileMetroGrey", outside=
         city.up_face(s, floor, piece, 0.1)
         city.floor(s, piece, 0.1, 0.4, floor)
     for e in edges:
-        city.vquad(s, floor, e.a, e.b, 0.0, 0.1, e.n)
+        # (A hair inside the building's face: in its plane, the strip flickered with the facade's foot.)
+        city.vquad(s, floor, e.at(0, -0.03), e.at(e.length, -0.03), 0.0, 0.1, e.n)
     for piece in g2.subtract_all(g2.convex_pieces(inner), [g2.ccw(h) for h in stairwells]):
         city.down_face(s, ceiling, piece, CEIL)
     for hole in stairwells:

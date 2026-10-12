@@ -290,8 +290,9 @@ def lawns(s):
         s.prop("Snowman", x, z, rot)
     for x, z, rot in ((-81.3, 70.0, -90), (-67.6, 56.6, 0)):
         s.prop("SnowTools", x, z, rot)
-    for x, z in ((34.0, -26.0), (-60.0, -34.5), (-5.6, -27.5), (34.0, 36.6)):
-        s.prop("ShrubSnow", x, z, (x * 3) % 180)
+    # (The one at -60, -34.5 stands in the sunken court, five studs down: on its floor, not in the air.)
+    for x, z, y in ((34.0, -26.0, 0.0), (-60.0, -34.5, -5.0), (-5.6, -27.5, 0.0), (34.0, 36.6, 0.0)):
+        s.prop("ShrubSnow", x, z, (x * 3) % 180, 1.0, y)
     for x, z in ((30.0, 48.0), (-60.0, 20.0)):
         s.box("BlackMetal", (x, 0.08, z), (2.4, 0.16, 2.4), skip=("-y",))
         for k in range(5):
