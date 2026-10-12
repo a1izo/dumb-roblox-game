@@ -28,6 +28,20 @@ export type Info = {
 	-- origin (x, y, z), its size (w, h) and how far its top leans back (degrees).
 	screen: { at: { number }, size: { number }, tilt: number? }?,
 	tris: number?, -- triangles, for the debug line-up
+	-- A prop in pieces that move by themselves (Death's Manual, see ManualBook): the pieces' meshes
+	-- are <key>_<part>; hinge: a point of the line each turns about, from the pivot; turn: how far
+	-- each turns to lie open (degrees); page: the open page the game writes on, and its ruling.
+	parts: { string }?,
+	hinge: { [string]: { number } }?,
+	turn: { [string]: number }?,
+	page: {
+		at: { number },
+		size: { number },
+		first: number,
+		pitch: number,
+		count: number,
+		margin: number,
+	}?,
 }
 
 local STORE_NAME = "DeathsGambitAssets"
@@ -510,6 +524,28 @@ local function build(key: string): Model?
 			prepareGlow(part, info.glow and info.glow[n])
 		end
 		glow.Parent = model
+	end
+	-- Pieces that move by themselves come with the prop. An import from before it had them is not
+	-- used at all: callers then build their stand-in, which has them.
+	for _, name in ipairs(info.parts or {}) do
+		local pieceSource = findSource(key .. "_" .. name)
+		if not pieceSource then
+			model:Destroy()
+			return nil
+		end
+		local piece = pieceSource:Clone()
+		for _, part in ipairs(partsOf(piece)) do
+			part.Anchored = true
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.CastShadow = true
+			local material = (Enum.Material :: any)[info.material]
+			if material then
+				part.Material = material
+			end
+		end
+		piece.Parent = model
 	end
 
 	-- Upright and facing -Z (the way it was made): undo the importer's turn, measured by the

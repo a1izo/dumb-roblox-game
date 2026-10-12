@@ -5,6 +5,7 @@
 local Assets = require(script.Parent.Assets)
 local Create = require(script.Parent.Create)
 local WorldFont = require(script.Parent.WorldFont)
+local ManualBook = require(script.Parent.ManualBook)
 local ModelLibrary = require(script.Parent.ModelLibrary)
 
 local Models = {}
@@ -83,63 +84,76 @@ function Models.suit(key: string): Model?
 	return custom(key)
 end
 
--- The Grimoire, closed and lying flat, centred on its PrimaryPart.
+-- Death's Manual, closed and lying flat, centred on its pivot, ready to open (ManualBook). Before the
+-- import, a part-built book in the same pieces at the same places: black boards, amber pages, three
+-- loose leaves on top, nothing that glows.
+local MANUAL_PAGE_AT = { -0.019, 0.135, 0.161 } -- (ModelCatalog's page.at, for a catalog without one)
+local MANUAL_LEATHER = Color3.fromRGB(18, 17, 19)
+local MANUAL_PAGES = Color3.fromRGB(178, 100, 36)
+
 function Models.grimoire(): Model
 	local existing = custom("Grimoire")
 	if existing then
-		return existing
+		return ManualBook.rig(existing)
 	end
+	local info = ModelLibrary.info("Grimoire")
+	local at = if info and info.page then info.page.at else MANUAL_PAGE_AT
+	local top = Vector3.new(at[1], at[2], at[3]) -- the middle of the open page
+	local pageSize = Vector2.new(1.895, 2.58)
+	local gutter = top.X + pageSize.X / 2 -- the joint side (the spine's)
+	local board = Vector3.new(1.955, 0.05, 2.7)
+	local boardX = gutter - board.X / 2
 	local model = Instance.new("Model")
 	model.Name = "Grimoire"
-	local cover = part(model, {
-		Name = "Cover",
-		Size = Vector3.new(2.4, 0.5, 3.2),
-		Color = INK,
+	local body = part(model, {
+		Name = "Grimoire",
+		Size = board,
+		CFrame = CFrame.new(boardX, top.Y - 0.3 - board.Y / 2, top.Z),
+		Color = MANUAL_LEATHER,
 		Material = Enum.Material.Leather,
 	})
 	part(model, {
-		Name = "Pages",
-		Size = Vector3.new(2.25, 0.36, 3.02),
-		CFrame = CFrame.new(0.1, 0, 0),
-		Color = PAPER,
-		Material = Enum.Material.SmoothPlastic,
+		Name = "Block",
+		Size = Vector3.new(pageSize.X, 0.3, pageSize.Y),
+		CFrame = CFrame.new(top.X, top.Y - 0.15, top.Z),
+		Color = MANUAL_PAGES,
+		Material = Enum.Material.SmoothPlastic, -- (paper is smooth: Fabric reads as cloth this close)
 	})
 	part(model, {
 		Name = "Spine",
-		Size = Vector3.new(0.2, 0.56, 3.24),
-		CFrame = CFrame.new(-1.15, 0, 0),
-		Color = Color3.fromRGB(8, 8, 10),
+		Size = Vector3.new(0.08, 0.43, board.Z),
+		CFrame = CFrame.new(gutter + 0.04, top.Y - 0.135, top.Z),
+		Color = MANUAL_LEATHER,
 		Material = Enum.Material.Leather,
-	})
-	local sigil = part(model, {
-		Name = "Sigil",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.04, 1.3, 1.3),
-		CFrame = CFrame.new(0.1, 0.27, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = RED,
-		Material = Enum.Material.Neon,
-		CastShadow = false,
-	})
-	part(model, {
-		Name = "SigilHole",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.05, 1.0, 1.0),
-		CFrame = sigil.CFrame,
-		Color = INK,
-		Material = Enum.Material.Leather,
-		CastShadow = false,
 	})
 	part(model, {
 		Name = "Ribbon",
-		Size = Vector3.new(0.18, 0.04, 0.9),
-		CFrame = CFrame.new(0.5, -0.1, 1.95),
-		Color = RED,
+		Size = Vector3.new(0.11, 0.012, 0.44),
+		CFrame = CFrame.new(gutter - 1.255, top.Y - 0.02, top.Z - 1.45),
+		Color = INK,
 		Material = Enum.Material.Fabric,
 		CastShadow = false,
 	})
-	Create("PointLight", { Color = Color3.fromRGB(255, 40, 50), Brightness = 1.5, Range = 8, Parent = sigil })
-	model.PrimaryPart = cover
-	return model
+	for leaf = 1, 3 do
+		part(model, {
+			Name = "Grimoire_Leaf" .. leaf,
+			Size = Vector3.new(pageSize.X - 0.02, 0.004, pageSize.Y - 0.012),
+			CFrame = CFrame.new(top.X - 0.01, top.Y + 0.006 + 0.008 * (leaf - 1), top.Z),
+			Color = MANUAL_PAGES,
+			Material = Enum.Material.SmoothPlastic,
+		})
+	end
+	part(model, {
+		Name = "Grimoire_Cover",
+		Size = board,
+		CFrame = CFrame.new(boardX, top.Y + 0.03 + board.Y / 2, top.Z),
+		Color = MANUAL_LEATHER,
+		Material = Enum.Material.Leather,
+	})
+	model.PrimaryPart = body
+	-- (Everything above is placed from the pivot, the middle of the closed book, as an import's is.)
+	body.PivotOffset = body.CFrame:Inverse()
+	return ManualBook.rig(model)
 end
 
 -- A pair of handcuffs: two steel rings and a short chain, lying flat.

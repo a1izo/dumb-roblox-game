@@ -284,10 +284,6 @@ local PROPS: { [string]: { string | CFrame | (() -> Instance) } } = {
 		"LeftHand",
 		CFrame.new(0.6, -0.3, -0.5) * CFrame.Angles(math.rad(-70), 0, 0),
 		function()
-			local model = ModelLibrary.get("Grimoire")
-			if model then
-				return model
-			end
 			return Models.grimoire()
 		end,
 	},
@@ -331,7 +327,8 @@ function Stage.hold(_self: Stage, actor: Model, prop: string)
 	if built:IsA("Model") then
 		built:PivotTo(target)
 		for _, item in ipairs(built:GetDescendants()) do
-			if item:IsA("BasePart") and item ~= anchor then
+			-- (A piece with a joint of its own, the Manual's board and leaves, moves on that joint.)
+			if item:IsA("BasePart") and item ~= anchor and not item:FindFirstChildWhichIsA("JointInstance") then
 				Create("WeldConstraint", { Part0 = anchor, Part1 = item, Parent = item })
 			end
 		end

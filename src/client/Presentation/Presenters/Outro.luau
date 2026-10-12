@@ -1,8 +1,9 @@
 -- The ending. Everyone still standing is gathered round the table, each celebrating or
 -- despairing in their own way (ActingController). The camera stands in the middle of the table,
 -- under the ceiling, and turns slowly across their faces while the winning side is written in;
--- then the lights find the Hand. Winners and losers each hear their own music; the roster and
--- rewards follow on the results screen.
+-- then Death's Manual lies open on every name written in it this match, those that killed struck
+-- through (when any name was written); then the lights find the Hand. Winners and losers each hear
+-- their own music; the roster and rewards follow on the results screen.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,11 +11,13 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Terms = require(Shared:WaitForChild("Terms"))
+local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Parent.Parent.UI.Kit)
 local MusicController = require(script.Parent.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
+local BookStage = require(script.Parent.Parent.BookStage)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
@@ -65,7 +68,14 @@ return function(cue)
 	Sfx.play("bell")
 
 	local center = if typeof(data.center) == "Vector3" then data.center else nil
-	local firstShot = left * 0.5
+	local lines: { BookStage.Line } = {}
+	for _, entry in ipairs(if type(data.written) == "table" then data.written else {}) do
+		if type(entry) == "table" and type(entry.name) == "string" then
+			table.insert(lines, { text = entry.name, struck = entry.struck == true })
+		end
+	end
+	local bookTime = if #lines > 0 then ManualTiming.OUTRO else 0
+	local firstShot = (left - bookTime) * 0.5
 	if center then
 		table.insert(cleanup, sweep(token, center, firstShot))
 	end
@@ -93,6 +103,13 @@ return function(cue)
 		table.insert(cleanup, untint)
 	end
 
+	-- Every name written in the Manual.
+	if bookTime > 0 then
+		local stop = BookStage.play(token, lines, bookTime - 0.4)
+		task.wait(bookTime)
+		stop()
+	end
+
 	-- The Hand, under the lights.
 	local hand = Cinema.character(tonumber(data.handUserId))
 	if hand then
@@ -100,7 +117,8 @@ return function(cue)
 		table.insert(cleanup, Cinema.spotlight(hand, if handWon then C.red else Color3.new(1, 1, 1)))
 		table.insert(cleanup, Cinema.outline(hand, C.red))
 		CameraDirector.cut(token, ShotSolver.frame(hand, { distance = 9, height = 2, angle = 20 }), 55)
-		CameraDirector.move(token, ShotSolver.frame(hand, { distance = 5, height = 0.8, angle = 8 }), left * 0.45, 40)
+		local rest = math.max(0.5, endAt - workspace:GetServerTimeNow())
+		CameraDirector.move(token, ShotSolver.frame(hand, { distance = 5, height = 0.8, angle = 8 }), rest * 0.9, 40)
 	end
 	if type(data.handAlias) == "string" then
 		table.insert(

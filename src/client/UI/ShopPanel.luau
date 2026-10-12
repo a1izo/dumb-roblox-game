@@ -145,14 +145,39 @@ local function showPreview(item: Cosmetics.Item?)
 			Parent = world,
 		})
 	elseif item and item.kind == "grimoire" and torso and torso:IsA("BasePart") then
-		local book = Models.grimoire()
-		local cover = book:FindFirstChild("Cover")
-		if cover and cover:IsA("BasePart") then
-			cover.Color = item.color
+		-- A Manual cover colours the notebook everyone holds while writing (CharacterService.setWriting),
+		-- held as it is there: a coloured plate over its front cover.
+		local held = torso.CFrame * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)
+		local notebook = Models.notebook()
+		if notebook then
+			notebook:PivotTo(held)
+			notebook.Parent = world
+			Create("Part", {
+				Anchored = true,
+				Size = Vector3.new(1.26, 0.02, 0.9),
+				Color = item.color,
+				Material = Enum.Material.SmoothPlastic,
+				CFrame = held * CFrame.new(0, 0.115, 0),
+				Parent = world,
+			})
+		else
+			Create("Part", {
+				Anchored = true,
+				Size = Vector3.new(1.3, 0.12, 0.95),
+				Color = item.color,
+				Material = Enum.Material.SmoothPlastic,
+				CFrame = held,
+				Parent = world,
+			})
+			Create("Part", {
+				Anchored = true,
+				Size = Vector3.new(1.2, 0.06, 0.88),
+				Color = Color3.fromRGB(240, 236, 225),
+				Material = Enum.Material.SmoothPlastic,
+				CFrame = held * CFrame.new(0, 0.09, 0),
+				Parent = world,
+			})
 		end
-		book:PivotTo(torso.CFrame * CFrame.new(0, -0.3, -1.4) * CFrame.Angles(math.rad(70), 0, 0))
-		book:ScaleTo(0.6)
-		book.Parent = world
 	end
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 30

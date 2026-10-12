@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
@@ -251,6 +252,13 @@ end
 
 -- Match --------------------------------------------------------------------------------------
 
+-- The ending's length: its own, and a few seconds more for the Manual's page of names when a name
+-- was written.
+local function outroLength(): number
+	local base = Match.phaseLength("Outro")
+	return if base > 0 and #Match.written > 0 then base + ManualTiming.OUTRO else base
+end
+
 -- The ending cutscene: everyone still standing is gathered in the meeting room, the camera
 -- finds the Hand, and each side hears its own music.
 local function outroData(winner: string)
@@ -273,7 +281,9 @@ local function outroData(winner: string)
 		zeroAlias = if zero then zero.alias else nil,
 		winners = winners,
 		center = meetingCenter(),
-		duration = math.max(Match.phaseLength("Outro"), 10),
+		-- Every name written in the Manual this match (filtered when written), struck once it killed.
+		written = Match.written,
+		duration = math.max(outroLength(), 10),
 	}
 end
 
@@ -287,7 +297,7 @@ local function startOutro()
 		return -- ended from the debug panel: straight to the lobby
 	end
 	local data = outroData(Match.winner or "Kira")
-	data.duration = Match.phaseLength("Outro")
+	data.duration = outroLength()
 	Cues.fire("outro", data, { lead = 0.3 })
 end
 
@@ -397,7 +407,7 @@ end
 -- After a winner: let the last cutscene finish, play the outro, then show the results.
 local function finale()
 	Cues.waitHolds(6)
-	runPhase("Outro", startOutro, nil, { uncuttable = true })
+	runPhase("Outro", startOutro, nil, { uncuttable = true, length = outroLength() })
 	reveal()
 end
 

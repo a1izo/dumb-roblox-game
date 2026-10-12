@@ -28,5 +28,13 @@
     "megabytes": 78.11,
     "triangles": 395766,
     "textures": 252
-  }
+  },
+  "exceptions": [
+    {
+      "what": "Death's Manual: its front board's own texture set (Grimoire_Cover), for the drawing pressed into it",
+      "approved": "2026-10-12",
+      "megapixels": 1.31,
+      "megabytes": 0.5
+    }
+  ]
 }

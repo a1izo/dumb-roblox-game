@@ -187,7 +187,12 @@ def build_one(key):
             mk.unwrap(pieces[name], laid=piece["laid"], into=piece["into"])
         shift, whole_size = _settle(spec["pivot"], [main, *pieces.values()])
         sharing = [pieces[name] for name, piece in more["pieces"].items() if not piece["own"] and piece["bake"]]
-        baked = _bake_as_one(key, main, sharing, size=spec["texture"], where=where, finish=more.get("finish"))
+        how = {"size": spec["texture"], "where": where, "finish": more.get("finish")}
+        if sharing:
+            baked = _bake_as_one(key, main, sharing, **how)
+        else:
+            mk.bake(main, **how)
+            baked = main.data.materials[0]
         for name, piece in more["pieces"].items():
             if piece["own"]:
                 mk.bake(pieces[name], size=piece["exact"] or spec["texture"], where=where, exact=bool(piece["exact"]),

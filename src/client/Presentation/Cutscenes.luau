@@ -11,6 +11,7 @@ local KINDS = {
 	verdict = "Verdict",
 	arrest = "Arrest",
 	eyesDeal = "EyesDeal",
+	manualWrite = "ManualWrite",
 	outro = "Outro",
 }
 

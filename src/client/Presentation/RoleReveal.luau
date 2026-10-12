@@ -2,7 +2,7 @@
 -- above the world, acts out your role while the camera closes in and your role is written
 -- across the screen. Only you see it: the set and the copy of your avatar exist on this
 -- screen alone. Every role's reveal lasts exactly the same time, so its length says nothing.
---   the Hand   opens the Grimoire and laughs while the Specter rises behind
+--   the Hand   opens Death's Manual on an empty ruled page and laughs while the Specter rises behind
 --   Cultist    kneels in prayer by a candle
 --   Zero       crouched on a chair in front of a white "0"
 --   the Butler under an umbrella, tipping the hat
@@ -15,6 +15,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Activities = require(Shared:WaitForChild("Presentation"):WaitForChild("Activities"))
 local Create = require(Shared:WaitForChild("Create"))
+local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local Models = require(Shared:WaitForChild("Models"))
 local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -150,6 +151,14 @@ function RoleReveal.play(role: string)
 		move:Disconnect()
 	end)
 	if role == "Kira" then
+		local book = if actor then actor:FindFirstChild("Prop_grimoire") else nil
+		if book and book:IsA("Model") then
+			task.delay(0.5, function()
+				if book.Parent then
+					table.insert(stops, ManualBook.open(book, 1.1))
+				end
+			end)
+		end
 		task.delay(1.4, function()
 			table.insert(stops, specterRises(set))
 			Sfx.play("thunder", { volume = 0.5 })
