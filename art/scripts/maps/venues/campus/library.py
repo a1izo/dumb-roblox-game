@@ -134,7 +134,7 @@ def reading_room(s, g):
     for x in (90.0, 110.0, 130.0):
         kit.pendant(s, x, H, -60.0, drop=9.0, shade="Brass", color=fit.WARM, range_=36, brightness=1.3, wide=1.8)
     for x in (86.0, 134.0):
-        fit.wall_lamp(s, x, GY + 7.0, -83.7, 180, color=fit.WARM, range_=16, brightness=0.7)
+        fit.wall_lamp(s, x, GY + 7.0, -83.7, 180, color=fit.WARM, range_=16, brightness=0.7, inside=True)
     # Downlights set in the gallery's underside, over the shelves under it.
     for x in (90.0, 110.0, 130.0):
         fit.downlight(s, x, -80.0, SLAB, range_=16, brightness=0.8)

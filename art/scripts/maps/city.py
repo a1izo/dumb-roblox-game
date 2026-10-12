@@ -215,7 +215,7 @@ def wall_lamps(s, points, offset, spacing=18.0, y=0.0, h=8.0, color=(255, 196, 1
         rot = g2.rot_of(d)
         s.box("BlackMetal", (x, y + h + 0.3, z), (0.4, 0.6, 0.4), rot)
         s.box("NeonWarm", (x, y + h - 0.15, z), (0.5, 0.3, 0.5), rot)
-        lightbook.wall(s, (x - n[0] * side * 0.5, y + h - 0.4, z - n[1] * side * 0.5),
+        lightbook.facade(s, (x - n[0] * side * 0.5, y + h - 0.4, z - n[1] * side * 0.5),
                        lightbook.facing(-n[0] * side, -n[1] * side), color, range_, brightness,
                        flicker=bool(flicker_every) and k % flicker_every == flicker_every - 1)
         k += 1

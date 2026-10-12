@@ -126,10 +126,11 @@ def venue_fbx(venue):
     return os.path.join(common.EXPORT, f"DeathsGambitMaps_{venue}.fbx")
 
 
-def mesh_digest(scene):
+def mesh_digest(scene, carried=()):
     """A fingerprint of the meshes (what the Studio import carries): it changes when the
-    geometry changes or the surfaces do (their textures and how often they repeat), not when only
-    colliders, props or lights do."""
+    geometry changes or the surfaces do (their textures and how often they repeat), or one of the
+    textures the import carries on its own quads does (carried: the venue's TEXTURES, its sky and
+    effects), not when only colliders, props or lights do."""
     h = hashlib.sha1()
     for mat in sorted(scene.pieces):
         pieces = scene.pieces[mat]
@@ -142,6 +143,11 @@ def mesh_digest(scene):
                 sz += z
         h.update(f"{mat}:{tris}:{sx:.1f}:{sy:.1f}:{sz:.1f}:{matlib.tile_size(mat)};".encode())
     h.update(f"chunk:{scene.chunk};prefix:{scene.prefix};surfaces:{scanlib.REVISION}".encode())
+    for name in carried:
+        path = os.path.join(common.TEXTURES, name + ".png")
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                h.update(f"{name}:{hashlib.sha1(f.read()).hexdigest()};".encode())
     return h.hexdigest()[:16]
 
 
@@ -155,12 +161,12 @@ def _previous(folder):
     return (int(version.group(1)) if version else 0), (digest.group(1) if digest else "")
 
 
-def next_version(scene):
-    """(version, digest): the version goes up only when the meshes changed since the last
-    export, so the Studio import is only needed again then."""
+def next_version(scene, carried=()):
+    """(version, digest): the version goes up only when the meshes (or the textures the import
+    carries) changed since the last export, so the Studio import is only needed again then."""
     folder = os.path.join(SCENES_DIR, scene.venue)
     old_version, old_digest = _previous(folder)
-    digest = mesh_digest(scene)
+    digest = mesh_digest(scene, carried)
     if digest == old_digest and old_version > 0:
         return old_version, digest
     return old_version + 1, digest
@@ -290,7 +296,7 @@ def write_scene_v2(scene, module, source):
     copy the checks read. Returns (version, paths)."""
     venue = scene.venue
     folder = os.path.join(SCENES_DIR, venue)
-    version, digest = next_version(scene)
+    version, digest = next_version(scene, getattr(module, "TEXTURES", ()))
     if os.path.isdir(folder):
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)

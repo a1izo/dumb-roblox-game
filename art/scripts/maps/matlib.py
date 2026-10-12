@@ -50,7 +50,9 @@ FLAT = {
     "WindowGlass": ("Glass", (70, 80, 96), 0.55, 0.3),
     # Agency HQ: the tower's floor-to-ceiling glass (clear enough to see the city far below), frosted
     # office glass and the interrogation room's one-way mirror (dark, reflective).
-    "CurtainGlass": ("Glass", (70, 82, 100), 0.72, 0.12),
+    # Not Roblox's Glass: its own surface pattern smeared every lamp's reflection on the Bureau's big panes into
+    # a cloudy blotch (seen in the game, 2026-10-12); plain and see-through, the lamps reflect as points.
+    "CurtainGlass": ("SmoothPlastic", (70, 82, 100), 0.72, 0.12),
     "GlassFrosted": ("Glass", (196, 204, 212), 0.2, 0.05),
     "MirrorGlass": ("Glass", (30, 34, 40), 0.25, 0.6),
     # The city seen from high up (Agency HQ's windows): flat, cheap, dark.

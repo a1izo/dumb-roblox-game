@@ -75,7 +75,8 @@ local function dress(part: BasePart, material: string)
 	part.Color = Color3.fromRGB(look.color[1], look.color[2], look.color[3])
 	part.Transparency = look.transparency or 0
 	part.Reflectance = look.reflectance or 0
-	part.CastShadow = enum ~= Enum.Material.Neon and enum ~= Enum.Material.Glass
+	-- Glowing and see-through surfaces cast no shadow (glass in any Roblox material lets the light through).
+	part.CastShadow = enum ~= Enum.Material.Neon and enum ~= Enum.Material.Glass and part.Transparency < 0.5
 	local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
 	if appearance then
 		appearance:Destroy()

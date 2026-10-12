@@ -190,20 +190,22 @@ def downlight(s, x, z, ceiling, color=WARM, range_=16, brightness=0.8, angle=90)
             angle)
 
 
-def wall_lamp(s, x, y, z, rot, color=WARM, range_=16, brightness=0.8):
-    """A caged bulkhead lamp on a wall face (doors outside, service corners)."""
+def wall_lamp(s, x, y, z, rot, color=WARM, range_=16, brightness=0.8, inside=False):
+    """A caged bulkhead lamp on a wall face: over a door outside (shining out over the ground, not into the
+    building), or inside (a round light, washing its wall too)."""
     p = turn(rot, 0, -0.2)
     s.box("BlackMetal", (x + p[0], y, z + p[1]), (1.4, 0.8, 0.4), rot)
     q = turn(rot, 0, -0.42)
     s.box("NeonCool" if color[2] >= color[0] else "NeonWarm", (x + q[0], y, z + q[1]), (1.1, 0.5, 0.04), rot)
     r = turn(rot, 0, -lightbook.WALL_OUT)
-    lightbook.wall(s, (x + r[0], y, z + r[1]), rot, color, range_, brightness)
+    lamp = lightbook.wall if inside else lightbook.facade
+    lamp(s, (x + r[0], y, z + r[1]), rot, color, range_, brightness)
 
 
 def exit_sign(s, x, y, z, rot):
     kit.exit_sign(s, x, y, z, rot)
     p = turn(rot, 0, -0.3)
-    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 8, 0.4, angle=170)
+    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 8, 0.4)
 
 
 # Stairs and rails ----------------------------------------------------------------------------------------

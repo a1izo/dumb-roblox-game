@@ -214,7 +214,7 @@ def wall_lamp(s, x, y, z, rot, color=COOL, range_=16, brightness=0.8):
 def exit_sign(s, x, y, z, rot):
     kit.exit_sign(s, x, y, z, rot)
     p = turn(rot, 0, -0.3)
-    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 8, 0.4, angle=170)
+    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 8, 0.4)
 
 
 # Stairs and rails ----------------------------------------------------------------------------------------

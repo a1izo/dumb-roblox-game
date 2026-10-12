@@ -448,7 +448,7 @@ def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18
     for u in (-length / 2 + 0.15, length / 2 - 0.15):
         dx, dz = u * math.cos(a), -u * math.sin(a)
         s.box("DarkMetal", (x + dx, y - 0.3, z + dz), (0.2, 0.3, 0.5 + 0.35 * tubes), rot)
-    lightbook.ceiling(s, (x, y - lightbook.CEILING_DROP - 0.1, z), color, range_, brightness, shadows)
+    lightbook.ceiling(s, (x, y - lightbook.CEILING_DROP, z), color, range_, brightness, shadows)
 
 
 def pendant(s, x, ceiling_y, z, drop=4.0, shade="BlackMetal", color=WARM, range_=22, brightness=1.4,

@@ -589,8 +589,7 @@ def microfilm_reader():
 
 
 @prop("FumeHood", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Agency",
-      lights=[dict(at=(0, -0.3, 6.6), kind="spot", face="Bottom", angle=120, color=(220, 236, 255), range=10,
-                   brightness=0.8)])
+      lights=[dict(at=(0, -0.3, 6.6), kind="point", color=(220, 236, 255), range=10, brightness=0.8)])
 def fume_hood():
     """A lab fume hood: a white cabinet base, the black resin work top inside a steel box with a
     raised glass sash, the lit panel in its roof, the extract duct rising out of the top."""
