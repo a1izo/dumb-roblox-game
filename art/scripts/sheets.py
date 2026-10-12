@@ -62,7 +62,8 @@ FIGURE = [  # (centre, size) in Blender space: an R15-sized body 5.2 tall, facin
 
 
 def _parts_of(key):
-    return [o for o in bpy.data.objects if o.type == "MESH" and (o.name == key or o.name.startswith(key + "_Glow"))]
+    return [o for o in bpy.data.objects
+            if o.type == "MESH" and (o.name == key or o.name.startswith(key + "_Glow") or o.get("dg_part") == key)]
 
 
 def _label(text, loc, mat):

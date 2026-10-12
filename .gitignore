@@ -27,4 +27,5 @@ art/uiboard/
 # Preview videos (rendered by art/scripts/video_anims.py) and the downloaded third-party rig
 art/export/previews/anims/
 art/export/previews/_*.png
+art/export/previews/_manual/
 art/rig/*.blend

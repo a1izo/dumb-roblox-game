@@ -9,7 +9,7 @@ import os
 
 import bpy
 import numpy as np
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 import common
 import modelkit as mk
@@ -117,17 +117,87 @@ KEPT = frozenset("""
 SHELVED = frozenset({"TreeZelkova", "PetalScatter"})
 
 
+def _piece_objects(key):
+    """The meshes of a prop's pieces that move by themselves: <key>_Spine, <key>_Cover, ... (props.piece)."""
+    return sorted((o for o in bpy.data.objects if o.get("dg_part") == key), key=lambda o: o.name)
+
+
+def _settle(pivot, objs):
+    """Moves a prop's meshes together, so that their bottom centre (or their middle) is the origin.
+    Returns the shift applied and the size of them all."""
+    coords = [v.co for obj in objs for v in obj.data.vertices]
+    low = Vector([min(c[i] for c in coords) for i in range(3)])
+    high = Vector([max(c[i] for c in coords) for i in range(3)])
+    middle = (low + high) / 2
+    shift = Vector((-middle.x, -middle.y, -low.z)) if pivot == "bottom" else -middle
+    for obj in objs:
+        obj.data.transform(Matrix.Translation(shift))
+        obj.location = (0, 0, 0)
+    return shift, [round(v, 3) for v in high - low]
+
+
+def _bake_as_one(key, main, sharing, **how):
+    """Bakes a prop's main mesh and the pieces that share its textures as one mesh, so they come out
+    in one set, and gives them all that set's material."""
+    copies = []
+    for obj in [main] + sharing:
+        copy = obj.copy()
+        copy.data = obj.data.copy()
+        common.collection("Build").objects.link(copy)
+        copies.append(copy)
+    bpy.context.view_layer.update()
+    for obj in bpy.context.view_layer.objects:
+        obj.select_set(obj in copies)
+    bpy.context.view_layer.objects.active = copies[0]
+    bpy.ops.object.join()
+    whole = copies[0]
+    main.name = key + "_Main"
+    whole.name = key
+    mk.bake(whole, **how)
+    baked = whole.data.materials[0]
+    bpy.data.objects.remove(whole, do_unlink=True)
+    main.name = key
+    return baked
+
+
+def _wear(obj, mat):
+    """One material on every face of a mesh."""
+    obj.data.materials.clear()
+    obj.data.materials.append(mat)
+    obj.data.polygons.foreach_set("material_index", [0] * len(obj.data.polygons))
+    obj.data.update()
+
+
 def build_one(key):
     spec = props.BUILDERS[key]
     mk.new_build()
     _remove(key)
-    for obj in _glow_objects(key):
+    for obj in _glow_objects(key) + _piece_objects(key):
         bpy.data.objects.remove(obj, do_unlink=True)
-    parts, glow = spec["build"]()
+    built = spec["build"]()
+    parts, glow = built[0], built[1]
+    more = built[2] if len(built) > 2 else {}  # a prop in pieces that move by themselves: props.piece
+    where = "held" if key in HELD else "prop"
     main = mk.merge(parts, key)
-    shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
-    mk.unwrap(main)
-    mk.bake(main, size=spec["texture"], where="held" if key in HELD else "prop")
+    pieces = {name: mk.merge(piece["parts"], f"{key}_{name}") for name, piece in more.get("pieces", {}).items()}
+    if pieces:
+        # Faces that carry pictures are laid by hand, where the builder's own coordinates still hold.
+        mk.unwrap(main, laid=more.get("laid"), into=more.get("into", (0.0, 0.0, 1.0, 1.0)))
+        for name, piece in more["pieces"].items():
+            mk.unwrap(pieces[name], laid=piece["laid"], into=piece["into"])
+        shift, whole_size = _settle(spec["pivot"], [main, *pieces.values()])
+        sharing = [pieces[name] for name, piece in more["pieces"].items() if not piece["own"] and piece["bake"]]
+        baked = _bake_as_one(key, main, sharing, size=spec["texture"], where=where, finish=more.get("finish"))
+        for name, piece in more["pieces"].items():
+            if piece["own"]:
+                mk.bake(pieces[name], size=piece["exact"] or spec["texture"], where=where, exact=bool(piece["exact"]),
+                        finish=piece["finish"])
+        for obj in [main] + [pieces[name] for name, piece in more["pieces"].items() if not piece["own"]]:
+            _wear(obj, baked)
+    else:
+        shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
+        mk.unwrap(main)
+        mk.bake(main, size=spec["texture"], where=where)
     # Glowing parts, one mesh per colour (each becomes a Neon MeshPart of that colour).
     by_colour = {}
     for part in glow:
@@ -143,14 +213,31 @@ def build_one(key):
         glow_objs.append(obj)
     glow_obj = glow_objs[0] if glow_objs else None
     info = {
-        "size": [round(v, 3) for v in mk.dimensions(main)],
-        "tris": mk.triangles(main) + sum(mk.triangles(o) for o in glow_objs),
+        "size": whole_size if pieces else [round(v, 3) for v in mk.dimensions(main)],
+        "tris": mk.triangles(main) + sum(mk.triangles(o) for o in glow_objs + list(pieces.values())),
     }
     main["dg_prop"] = True
     main["pivot"] = spec["pivot"]
     main["material"] = spec["material"]
     main["collide"] = spec["collide"]
     main["set"] = spec.get("set") or CORE
+
+    def spot(point):
+        """A point of the builder's, moved like the mesh and turned into Roblox axes (as the lights below)."""
+        x, y, z = point
+        return [round(-(x + shift.x), 3), round(z + shift.z, 3), round(y + shift.y, 3)]
+
+    if pieces:
+        for obj in pieces.values():
+            obj["dg_part"] = key
+        main["size"] = json.dumps(whole_size)
+        main["parts"] = json.dumps(list(pieces))
+        main["hinge"] = json.dumps({name: spot(point) for name, point in more.get("hinge", {}).items()})
+        main["turn"] = json.dumps(more.get("turn") or {})
+        page = dict(more.get("page") or {})
+        if page:
+            page["at"] = spot(page["at"])
+        main["page"] = json.dumps(page)
     # Lights and the anchor, moved like the mesh and turned into Roblox axes (x -> -x, y <-> z),
     # relative to the prop's pivot.
     lights = []
@@ -227,7 +314,8 @@ def preview(key, path=None, angle=35, height_factor=0.6):
     radius = max(size) * 0.75 + 0.3
     target = (0, 0, size[2] / 2 if obj.get("pivot") == "bottom" else 0)
     for other in bpy.data.objects:
-        other.hide_render = other.type == "MESH" and other.name not in (key, key + "_Glow")
+        other.hide_render = (other.type == "MESH" and other.name not in (key, key + "_Glow")
+                             and other.get("dg_part") != key)
     common.setup_preview(target=target, distance=radius * 2.6, height=radius * height_factor, angle_deg=angle)
     path = path or os.path.join(common.PREVIEWS, "prop_" + key + ".png")
     common.render(path)
@@ -253,12 +341,14 @@ def write_catalog():
         "--!strict",
         "-- GENERATED by art/scripts/build_props.py. Every prop in art/export/DeathsGambitModels_<set>.fbx:",
         "-- its size in studs (x, y, z with y up), how it is placed (pivot), its Roblox material,",
-        "-- whether it collides, and the colour of its glowing part (turned Neon), if any.",
+        "-- whether it collides, and the colour of its glowing part (turned Neon), if any. A prop in pieces",
+        "-- that move by themselves (parts: the meshes <Prop>_<part>) also has the point each turns about",
+        "-- (hinge) and, for the Manual, the page the game writes on (page), all from the prop's pivot.",
         "",
         "return {",
     ]
     for obj in sorted((o for o in bpy.data.objects if common.flag(o, "prop")), key=lambda o: o.name):
-        size = mk.dimensions(obj)
+        size = json.loads(obj["size"]) if obj.get("size") else mk.dimensions(obj)
         entry = {
             "size": [size[0], size[2], size[1]],
             "pivot": obj["pivot"],
@@ -304,6 +394,12 @@ def write_catalog():
                 colours.append(f"{{ {rgb[0]}, {rgb[1]}, {rgb[2]} }}")
         if colours:
             text += ", glow = { " + ", ".join(colours) + " }"
+        parts = json.loads(obj.get("parts") or "[]")
+        if parts:
+            text += ", parts = " + _lua_value(parts)
+            for field in ("hinge", "turn", "page"):
+                items = json.loads(obj.get(field) or "{}")
+                text += f", {field} = {{ " + ", ".join(f"{k} = {_lua_value(v)}" for k, v in items.items()) + " }"
         lines.append(f"\t{obj.name} = {{ {text} }},")
     lines.append("}")
     with open(CATALOG, "w", encoding="utf-8", newline="\n") as f:
@@ -316,8 +412,8 @@ def _prop_set(obj):
     the Core set's)."""
     if common.flag(obj, "prop"):
         return obj.get("set") or CORE
-    if "glow_colour" in obj:
-        owner = bpy.data.objects.get(obj.name.split("_Glow")[0])
+    if "glow_colour" in obj or obj.get("dg_part"):
+        owner = bpy.data.objects.get(obj.get("dg_part") or obj.name.split("_Glow")[0])
         return (owner.get("set") or CORE) if owner else ""
     return ""
 
@@ -355,7 +451,7 @@ def export(set_name):
         obj.select_set(False)
     for obj in bpy.data.objects:
         is_glow = "glow_colour" in obj
-        mine = (common.flag(obj, "prop") or is_glow) and _prop_set(obj) == set_name
+        mine = (common.flag(obj, "prop") or is_glow or obj.get("dg_part")) and _prop_set(obj) == set_name
         if mine or (set_name == CORE and common.flag(obj, "texture")):
             obj.select_set(True)
             names.append(obj.name)
