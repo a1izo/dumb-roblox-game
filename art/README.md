@@ -57,7 +57,7 @@ The rig's own Python scripts are never run (headless Blender has scripts off).
 clip exports its stride so the game advances the cycle by distance (scaled to each avatar's leg
 length). `anims.py` keys the other animations in the game's joint convention; `posekit.py` keeps feet
 where they are when the hips move (rigid legs reach in or splay out as far as they can) and fits poses
-that end on the ground to the floor. `export_anims.py` writes `src/shared/Anim/Clips.luau`, which the
+that end on the ground to the floor. `export_anims.py` writes `src/shared/Anim/Clips/` (parts joined by `init.luau`, `clipfile.py`), which the
 game plays on every character itself.
 
 ```
@@ -70,7 +70,7 @@ blender -b --factory-startup --python art/scripts/verify_ingame.py -- out.png cl
 
 `video_anims.py` renders a row of labelled mannequins playing clips in `art/export/previews/anims/`
 (a few at a time, for reviewing motion). `check_export.py` compares every part of the Blender rig with
-the same part posed from `Clips.luau` using the game's maths (`rbxsim.py`) and prints the worst error in
+the same part posed from the exported clips using the game's maths (`rbxsim.py`) and prints the worst error in
 studs; `verify_ingame.py` draws the two side by side.
 
 ## Map scenes

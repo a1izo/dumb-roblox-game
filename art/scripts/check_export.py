@@ -3,7 +3,7 @@
     blender -b --factory-startup --python art/scripts/check_export.py -- [clip ...]
 
 For every clip and a spread of times, compares each body part's corners in the Blender rig
-(posed by its action) with the same part posed from src/shared/Anim/Clips.luau using the
+(posed by its action) with the same part posed from src/shared/Anim/Clips/ using the
 game's maths (rbxsim). Prints the worst corner distance in studs per clip; anything over a
 few hundredths means the export or the playback is wrong.
 """

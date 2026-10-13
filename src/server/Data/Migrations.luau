@@ -65,6 +65,7 @@ function Migrations.defaults(startingCoins: number)
 			cameraShake = true,
 			hints = true,
 			lowGraphics = false,
+			emoteMusic = true, -- other players' emote sounds (Shared/EmoteMedia)
 		},
 		tipsSeen = {}, -- [tipId] = true
 		-- The Academy's drills. `unrewarded` is set (by Shared/Trial) on a profile that finishes all seven now
@@ -107,6 +108,8 @@ function Migrations.defaults(startingCoins: number)
 		weekly = { week = -1, wins = 0, xp = 0 },
 		-- The shop's Today's hand: the cards turned so far, on which day (Shared/ShopRotation.turn).
 		shopTurned = { day = -1, cards = {} },
+		-- The emote wheel's eight clip ids, "" for an empty slot; empty = never changed (Shared/EmoteWheel).
+		emoteWheel = {},
 	}
 end
 

@@ -1,14 +1,17 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
--- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Gestures, Sets, and Robux once a
--- product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six, dealt
--- face down (the same six for everyone): each is turned over with a click, and stays turned that day
--- (ShopService "turn"). The other suits lay their cards out by kind; Sets lays out each set (Shared/Sets)
--- with how many of its pieces you own, and the title it earns.
+-- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Emotes, Titles, Sets, and Robux
+-- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six,
+-- dealt face down (the same six for everyone): each is turned over with a click, and stays turned that
+-- day (ShopService "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances,
+-- poses, with props, strolls, duo); Sets lays out each set (Shared/Sets) with how many of its pieces you
+-- own, and the title it earns.
 --
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
--- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once), "N more coins" when
--- you are short, or wear / take off what you own. On a phone the cards fill the window and Your look
--- rises as a sheet from the bottom when a card is picked. Open in the lobby only.
+-- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
+-- the emote wheel's first empty slot), "N more coins" when you are short, or wear / take off what you
+-- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel).
+-- On a phone the cards fill the window and Your look rises as a sheet from the bottom when a card is
+-- picked. Open in the lobby only.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -16,6 +19,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
+local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 local Sets = require(Shared:WaitForChild("Sets"))
@@ -69,6 +73,10 @@ local firstButton: GuiObject? = nil
 local function owns(profile, item): boolean
 	if item.source == "vip" then
 		return table.find(profile.passes or {}, "vip") ~= nil
+	end
+	-- (the Emote Pack's four emotes come with the pass)
+	if item.pass and table.find(profile.passes or {}, item.pass) then
+		return true
 	end
 	if item.kind == "title" then
 		local key = string.gsub(item.id, "^title_", "")
@@ -138,7 +146,9 @@ end
 
 -- What a card's chip says: its price, or where you stand with it.
 local function chipFor(profile, item: Cosmetics.Item): (string, boolean)
-	if owns(profile, item) then
+	if owns(profile, item) and item.kind == "emote" then
+		return if EmoteWheel.slotOf(profile.emoteWheel, item.emote) then "On wheel" else "Owned", false
+	elseif owns(profile, item) then
 		return if profile.equipped[item.kind] == item.id then "Worn" else "Owned", false
 	elseif item.source == "vip" then
 		return "VIP", false
@@ -158,6 +168,31 @@ local function clearAction()
 			child:Destroy()
 		end
 	end
+end
+
+-- An emote you own: the wheel's eight slots, numbered, its own lit; a click puts it there (or takes it off
+-- the slot it is in).
+local function wheelSlots(profile, item: Cosmetics.Item)
+	local slots = EmoteWheel.slots(profile.emoteWheel)
+	local at = table.find(slots, item.emote)
+	local row = Kit.frame({ Name = "Wheel", Size = UDim2.fromScale(1, 1), Parent = actionHolder })
+	Kit.list(row, 4, true)
+	for index = 1, EmoteWheel.SLOTS do
+		local here = index == at
+		Kit.button({
+			text = tostring(index),
+			variant = if here then "primary" else "secondary",
+			size = "s",
+			Size = UDim2.new(1 / EmoteWheel.SLOTS, -4 * (EmoteWheel.SLOTS - 1) / EmoteWheel.SLOTS, 1, 0),
+			LayoutOrder = index,
+			Parent = row,
+		}, function()
+			ProfileRequest:FireServer({ action = "emoteWheel", slot = index, emote = if here then "" else item.emote })
+		end)
+	end
+	actionNote.Text = if at
+		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
+		else "Pick a number to put it on your emote wheel (Q)."
 end
 
 -- The button under Your look for the picked item, and the note under it.
@@ -183,7 +218,9 @@ local function showAction(profile, item: Cosmetics.Item?)
 			Kit.button({ text = text, variant = "secondary", size = "m", Size = size, Parent = actionHolder })
 		Kit.setEnabled(button, false)
 	end
-	if owns(profile, item) then
+	if owns(profile, item) and item.kind == "emote" then
+		wheelSlots(profile, item)
+	elseif owns(profile, item) then
 		if profile.equipped[item.kind] == item.id then
 			press("Take off", "unequip", "ghost")
 			actionNote.Text = "You are wearing it."
@@ -497,14 +534,30 @@ function ShopPanel.rebuild()
 	else
 		local suit = Cosmetics.suit(currentSuit)
 		local order = 0
-		for _, kind in ipairs((suit and suit.kinds) or {}) do
-			local items = Cosmetics.ofKind(kind)
+		local function lay(title: string, items: { Cosmetics.Item })
 			if #items > 0 then
 				order += 1
-				local grid = section(Cosmetics.KIND_NAMES[kind] or kind, order)
+				local grid = section(title, order)
 				for index, item in ipairs(items) do
 					deal(profile, item, grid, index, false)
 				end
+			end
+		end
+		for _, kind in ipairs((suit and suit.kinds) or {}) do
+			local items = Cosmetics.ofKind(kind)
+			if kind == "emote" then
+				-- Emotes by their sections.
+				for _, category in ipairs(Cosmetics.EMOTE_CATEGORIES) do
+					local inSection = {}
+					for _, item in ipairs(items) do
+						if item.category == category.id then
+							table.insert(inSection, item)
+						end
+					end
+					lay(category.name, inSection)
+				end
+			else
+				lay(Cosmetics.KIND_NAMES[kind] or kind, items)
 			end
 		end
 	end

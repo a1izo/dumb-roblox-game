@@ -1,4 +1,4 @@
-"""Roblox-side maths without Blender: reads Clips.luau and poses a real R6 rig
+"""Roblox-side maths without Blender: reads the clips (src/shared/Anim/Clips) and poses a real R6 rig
 (art/data/r6_rig.json) exactly the way the game does (ClipPlayer + PoseController)."""
 
 import json
@@ -8,9 +8,10 @@ import re
 
 import numpy as np
 
+import clipfile
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
-CLIPS = os.path.join(ROOT, "src", "shared", "Anim", "Clips.luau")
 RIG = os.path.join(ROOT, "art", "data", "r6_rig.json")
 
 JOINT_MOTORS = {
@@ -23,8 +24,11 @@ JOINT_MOTORS = {
 }
 
 
-def load_clips(path=CLIPS):
-    return read_luau_table(path)
+def load_clips():
+    clips = {}
+    for path in clipfile.part_files():
+        clips.update(read_luau_table(path))
+    return clips
 
 
 def load_rig(path=RIG):

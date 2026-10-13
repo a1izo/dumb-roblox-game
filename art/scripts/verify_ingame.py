@@ -5,7 +5,7 @@
 For each shot it renders two bodies side by side:
   left:  the Blender rig, posed by its action (what the previews show),
   right: a real Roblox R6 body (art/data/r6_rig.json) posed from
-         src/shared/Anim/Clips.luau with the same maths the game uses (ClipPlayer +
+         src/shared/Anim/Clips/ with the same maths the game uses (ClipPlayer +
          PoseController): Part1 = Part0 * C0 * Transform * C1:Inverse().
 If the two disagree, the export or the playback is wrong.
 """

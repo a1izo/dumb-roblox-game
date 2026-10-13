@@ -8,7 +8,7 @@
 --   legendary  amber gold leaf, a slow shine passing over it (still under reduced motion)
 --
 -- Objects (hats, ties, trails, Manual covers) are a small 3D view, and so are the styles, forms and
--- gestures that have a prop of their own once the Core models are imported (a quill, a gavel, a chess
+-- emotes that have a prop of their own once the Core models are imported (a quill, a gavel, a chess
 -- king, a crow cloak, a coin...); the rest is a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand
 -- can lie face down (the back of the deck) and be turned over.
 --
@@ -40,7 +40,7 @@ local PICTURE = 118 -- the picture's height
 local GOLD = Color3.fromRGB(212, 168, 92) -- the legendary card's gold leaf
 local FOV = 28
 
--- The still for kinds with no 3D view: an icon (styles and gestures come in suits of their own).
+-- The still for kinds with no 3D view: an icon (styles and emotes come in suits of their own).
 local STILL_ICON = {
 	writing = "quill",
 	verdict = "zero",
@@ -103,7 +103,7 @@ local function part(
 	})
 end
 
--- The prop a style, form or gesture shows on its card (a Core model; nil when it has none).
+-- The prop a style, form or emote shows on its card (a Core model; nil when it has none).
 local PROP = {
 	writing = { quill = "Quill", typewriter = "Typewriter", fire = "Quill", knife = "Knife" },
 	verdict = { gavel = "Gavel", cuffs = "Handcuffs", checkmate = "ChessKing", sugar = "SugarCube" },

@@ -2,7 +2,7 @@
 
 The shop as it stands (2026-10-13): a table of tarot cards in suits, Today's hand dealt face down,
 hold to buy, matching sets with titles, and styles that play in the case itself (writing, verdict,
-death), Deathsinger forms and gestures. Coins only: the Robux suit stays hidden until a product id is
+death), Deathsinger forms and emotes. Coins only: the Robux suit stays hidden until a product id is
 set in `src/shared/Products.luau`.
 
 These were agreed as the next things to sell, in no fixed order. Each keeps the game's rules: nothing

@@ -207,7 +207,7 @@ Assets.anim = {
 	specterFloat = "",
 } :: { [string]: string }
 
--- Not used while the Blender movement clips animate characters (src/shared/Anim/Clips.luau and
+-- Not used while the Blender movement clips animate characters (src/shared/Anim/Clips and
 -- the empty Animate script). Kept for places that restore Roblox's Animate script.
 Assets.locomotion = {
 	idle = "",

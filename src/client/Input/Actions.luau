@@ -38,6 +38,16 @@ local function inMatchPhase(view: View, ...: string): boolean
 	return false
 end
 
+-- Emotes (the quick-chat page's wheel) work in the lobby too, and in a case for the living and the
+-- Specters outside the cutscenes. Not while watching a case from the lobby, nor for a Specter waiting
+-- there (hidden).
+function Actions.emotesAllowed(view: View): boolean
+	if view.participant then
+		return (view.living or view.specter) and not Actions.CUTSCENE_PHASES[view.phase]
+	end
+	return not view.spectating and view.private.away ~= true
+end
+
 local function fixed(text: string): (View) -> string
 	return function()
 		return text
@@ -76,13 +86,13 @@ Actions.list = {
 	},
 	{
 		id = "quickChat",
-		label = fixed("Quick chat"),
+		label = function(view: View)
+			return if view.participant then "Quick chat" else "Emotes"
+		end,
 		keys = { Enum.KeyCode.Q },
 		pad = Enum.KeyCode.DPadLeft,
 		padLabel = "D-Left",
-		when = function(view: View)
-			return (view.living or view.specter) and not Actions.CUTSCENE_PHASES[view.phase]
-		end,
+		when = Actions.emotesAllowed,
 		run = function()
 			Router.toggle("quickChat")
 		end,

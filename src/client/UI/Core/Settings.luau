@@ -27,6 +27,7 @@ Settings.DEFAULTS = {
 	cameraShake = true,
 	hints = true,
 	lowGraphics = false,
+	emoteMusic = true,
 }
 
 local values = table.clone(Settings.DEFAULTS)

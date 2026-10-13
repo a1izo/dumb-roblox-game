@@ -1,20 +1,28 @@
 -- Emotes. The player asks the server, which checks the emote (owned from the shop, or the Emote Pack
 -- pass) and tells every client that may see it; each client then plays the Blender clip on that
--- character. Moving stops the emote (LocomotionController). Two shop gestures hold something in the
--- right hand while they play: Coin Flip a coin (thrown up and caught on the clip's beats), Apple Bite
--- an apple (the Core models' Coin and Apple, plain parts until they are imported).
+-- character, ending the emote it was doing. Moving stops the emote (LocomotionController). A looping
+-- emote starts on a beat shared by every client (the server's clock), so players doing the same dance
+-- move together. Two shop emotes hold something in the right hand while they play: Coin Flip a coin
+-- (thrown up and caught on the clip's beats), Apple Bite an apple (the Core models' Coin and Apple, plain
+-- parts until they are imported). An emote with a sound in Shared/EmoteMedia plays it around the dancer
+-- while it lasts (others' can be muted in Settings; never in a meeting or a cutscene).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
+local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
+local ClientState = require(script.Parent.Parent.ClientState)
+local Mixer = require(script.Parent.Parent.Audio.Mixer)
+local Settings = require(script.Parent.Parent.UI.Core.Settings)
 
 local EmoteRemote = Net.event("Emote")
 
@@ -30,7 +38,7 @@ end
 local GRIP = CFrame.new(0, -1.05, -0.25) -- in the right hand, from the arm's middle
 local PROP_FOR = { coinFlip = "Coin", appleBite = "Apple" }
 
--- The thing a gesture holds: the Core model scaled to `height`, or a plain stand-in.
+-- The thing an emote holds: the Core model scaled to `height`, or a plain stand-in.
 local function heldProp(key: string): Model
 	local model = ModelLibrary.get(key)
 	if model then
@@ -77,7 +85,7 @@ local function unweld(model: Model)
 	end
 end
 
--- Puts a gesture's prop in the character's right hand for as long as the clip plays (the coin is thrown
+-- Puts an emote's prop in the character's right hand for as long as the clip plays (the coin is thrown
 -- and caught). Returns a function that takes it away (it also goes by itself). Your look uses it too.
 function EmoteController.dress(character: Model, clip: string): () -> ()
 	local key = PROP_FOR[clip]
@@ -129,7 +137,7 @@ function EmoteController.dress(character: Model, clip: string): () -> ()
 	end
 	local length = (ClipPlayer.get(clip) or { length = 3 }).length
 	task.delay(length + HOLD, remove)
-	-- Moving stops the gesture (and the prop goes with it).
+	-- Moving stops the emote (and the prop goes with it).
 	task.spawn(function()
 		task.wait(0.3)
 		while not gone and character.Parent and PoseController.isPlaying(character, clip) do
@@ -138,6 +146,81 @@ function EmoteController.dress(character: Model, clip: string): () -> ()
 		remove()
 	end)
 	return remove
+end
+
+-- Phases of a case in which emote sounds stay quiet: the meeting (people are talking) and the cutscenes.
+local QUIET_PHASES = { Meeting = true, Intro = true, Verdict = true, Outro = true, Reveal = true }
+
+-- An emote's sound around the dancer, for as long as the emote plays. Returns a function that stops it.
+function EmoteController.sound(character: Model, clip: string, own: boolean): () -> ()
+	local id = EmoteMedia.sound(clip)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not id or not root then
+		return function() end
+	end
+	if not own and Settings.get("emoteMusic") == false then
+		return function() end
+	end
+	if ClientState.isParticipant() and QUIET_PHASES[ClientState.phase()] then
+		return function() end
+	end
+	-- One emote sound a character at a time.
+	local playing = root:FindFirstChild("EmoteSound")
+	if playing then
+		playing:Destroy()
+	end
+	local prepared = ClipPlayer.get(clip)
+	local sound = Instance.new("Sound")
+	sound.Name = "EmoteSound"
+	sound.SoundId = id
+	sound.Volume = EmoteMedia.VOLUME
+	sound.Looped = prepared ~= nil and prepared.loop
+	sound.RollOffMode = Enum.RollOffMode.InverseTapered
+	sound.RollOffMinDistance = 8
+	sound.RollOffMaxDistance = EmoteMedia.RANGE
+	sound.SoundGroup = Mixer.group("Music")
+	sound.Parent = root
+	sound:Play()
+	local gone = false
+	local function stop()
+		if not gone then
+			gone = true
+			sound:Destroy()
+		end
+	end
+	task.spawn(function()
+		task.wait(0.3)
+		while not gone and character.Parent and PoseController.isPlaying(character, clip) do
+			task.wait(0.2)
+		end
+		stop()
+	end)
+	return stop
+end
+
+-- An emote's sound for the shop's preview: heard as it is (no distance), for `seconds`. Returns a function
+-- that stops it.
+function EmoteController.previewSound(clip: string, seconds: number): () -> ()
+	local id = EmoteMedia.sound(clip)
+	if not id then
+		return function() end
+	end
+	local sound = Instance.new("Sound")
+	sound.Name = "EmotePreview"
+	sound.SoundId = id
+	sound.Volume = EmoteMedia.VOLUME
+	sound.SoundGroup = Mixer.group("Music")
+	sound.Parent = SoundService
+	sound:Play()
+	local gone = false
+	local function stop()
+		if not gone then
+			gone = true
+			sound:Destroy()
+		end
+	end
+	task.delay(seconds, stop)
+	return stop
 end
 
 local function onEmote(payload)
@@ -150,13 +233,17 @@ local function onEmote(payload)
 	if not character or not clip then
 		return
 	end
+	PoseController.stopEmotes(character)
 	PoseController.play(character, payload.emote, {
 		emote = true,
 		fadeIn = 0.15,
 		fadeOut = 0.3,
 		duration = if clip.loop then nil else clip.length + HOLD,
+		-- A loop starts on the shared beat, so everyone doing it is in step.
+		phase = if clip.loop and clip.length > 0 then workspace:GetServerTimeNow() % clip.length else nil,
 	})
 	EmoteController.dress(character, payload.emote)
+	EmoteController.sound(character, payload.emote, player == Players.LocalPlayer)
 end
 
 function EmoteController.init()

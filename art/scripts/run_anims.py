@@ -2,7 +2,7 @@
 
     blender -b --factory-startup --python art/scripts/run_anims.py [-- --keep | --add name,name]
 
-Rebuilds the rig and every action from anims.py, writes src/shared/Anim/Clips.luau and saves
+Rebuilds the rig and every action from anims.py, writes src/shared/Anim/Clips/ and saves
 art/blend/Animations.blend. With --keep, the actions in the saved .blend are exported as they
 are (use this after editing curves by hand in Blender). With --add, only the named clips are
 built from anims.py, onto the rig the saved .blend already holds, and every other action stays

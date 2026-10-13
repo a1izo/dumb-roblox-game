@@ -2,7 +2,7 @@
 -- joint's Transform every frame (Motor6D or AnimationConstraint; it never replicates):
 --   1. a base layer from the locomotion controller (idle, walk, run, jump, fall), then
 --   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight.
--- Clips come from Blender (Anim/Clips.luau). A clip with an uploaded animation id in
+-- Clips come from Blender (Anim/Clips). A clip with an uploaded animation id in
 -- Assets.anim plays that animation instead.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +21,7 @@ export type Options = {
 	fadeIn: number?,
 	fadeOut: number?,
 	startAt: number?, -- os.clock() time the clip counts from (to sync with a cue)
+	phase: number?, -- seconds into the clip it starts at (looping emotes start on a shared beat)
 	speed: number?,
 	emote: boolean?, -- emotes stop when the character moves
 }
@@ -34,6 +35,7 @@ type Track = {
 	fadeOut: number,
 	stopAt: number?,
 	speed: number,
+	phase: number,
 	emote: boolean,
 }
 
@@ -187,6 +189,7 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 		fadeOut = if options and options.fadeOut then options.fadeOut else 0.3,
 		stopAt = if options and options.duration then now + options.duration else nil,
 		speed = if options and options.speed then options.speed else 1,
+		phase = if options and options.phase then options.phase else 0,
 		emote = options ~= nil and options.emote == true,
 	}
 	local animTrack = animationFor(rig.character, id)
@@ -323,7 +326,7 @@ local function playTrack(rig: Rig, track: Track, now: number)
 	if w <= 0 then
 		return
 	end
-	local elapsed = math.max(0, now - track.started) * track.speed
+	local elapsed = math.max(0, now - track.started) * track.speed + track.phase
 	local clip = track.clip
 	if clip then
 		table.clear(scratch)

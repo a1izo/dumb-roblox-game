@@ -4,7 +4,9 @@
 --           Grimoire phase), specter (your form as a Deathsinger: `form` names what it wears),
 --           title (shown in the lobby and on the results screen only), writing (how Diavolo's
 --           names go into the Manual: `style`), verdict (how Ace's arrest lands: `style`), death
---           (what becomes of you when you die: `style`), emote (a gesture: `emote` is its clip)
+--           (what becomes of you when you die: `style`), emote (`emote` is its clip, `category` its
+--           section in the shop: dance, pose, prop, stroll or duo; `lobbyOnly` when it looks like a
+--           game signal, a death, an arrest or the Eyes, so it is never played in a match)
 --   rarity  common, rare, epic, legendary
 --   source  shop (always for sale), rotation (for sale on days it is featured), vip
 --           (free with the VIP pass), rank / achievement / streak / mastery (earned)
@@ -427,10 +429,11 @@ Cosmetics.ITEMS = {
 		color = Color3.fromRGB(150, 148, 142),
 	},
 
-	-- Gestures (emotes; `emote` is the clip). The Emote Pack pass still unlocks its four (`pass`).
+	-- Emotes (`emote` is the clip). The Emote Pack pass still unlocks its four (`pass`).
 	{
 		id = "emote_groove",
 		kind = "emote",
+		category = "dance",
 		name = "Groove",
 		rarity = "common",
 		source = "shop",
@@ -441,6 +444,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_spin",
 		kind = "emote",
+		category = "dance",
 		name = "Spin",
 		rarity = "common",
 		source = "shop",
@@ -451,6 +455,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_chip",
 		kind = "emote",
+		category = "pose",
 		name = "Potato chip",
 		rarity = "common",
 		source = "shop",
@@ -461,6 +466,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_think",
 		kind = "emote",
+		category = "pose",
 		name = "Thinker",
 		rarity = "common",
 		source = "shop",
@@ -471,6 +477,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_coin",
 		kind = "emote",
+		category = "prop",
 		name = "Coin Flip",
 		rarity = "common",
 		source = "shop",
@@ -480,6 +487,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_apple",
 		kind = "emote",
+		category = "prop",
 		name = "Apple Bite",
 		rarity = "rare",
 		source = "shop",
@@ -489,6 +497,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_puppet",
 		kind = "emote",
+		category = "dance",
 		name = "Puppet Dance",
 		rarity = "rare",
 		source = "shop",
@@ -498,6 +507,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_air",
 		kind = "emote",
+		category = "pose",
 		name = "Write in the Air",
 		rarity = "epic",
 		source = "shop",
@@ -507,6 +517,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "emote_crouch",
 		kind = "emote",
+		category = "pose",
 		name = Terms.f("{Zero}'s Crouch"),
 		rarity = "epic",
 		source = "shop",
@@ -622,10 +633,20 @@ Cosmetics.SUITS = {
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },
-	{ id = "gestures", name = "Gestures", icon = "palm", kinds = { "emote", "title" } },
+	{ id = "emotes", name = "Emotes", icon = "palm", kinds = { "emote" } },
+	{ id = "titles", name = "Titles", icon = "trophy", kinds = { "title" } },
 	{ id = "sets", name = "Sets", icon = "set" },
 	{ id = "robux", name = "Robux", icon = "coin" },
 } :: { Suit }
+
+-- The Emotes suit's sections, in order (an emote's `category`).
+Cosmetics.EMOTE_CATEGORIES = {
+	{ id = "dance", name = "Dances" },
+	{ id = "pose", name = "Poses" },
+	{ id = "prop", name = "With props" },
+	{ id = "stroll", name = "Strolls" },
+	{ id = "duo", name = "Duo" },
+} :: { { id: string, name: string } }
 
 -- One item of a kind ("Epic · Manual cover").
 Cosmetics.KIND_SINGULAR = {

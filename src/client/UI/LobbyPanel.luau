@@ -50,6 +50,7 @@ local LobbyPanel = {}
 local MENU = {
 	{ text = "Quests", screen = "quests" },
 	{ text = "Shop", screen = "shop" },
+	{ text = "Emotes", screen = "quickChat" },
 	{ text = "Party", screen = "party" },
 	{ text = "Settings", screen = "settings" },
 	{ text = "Private server", screen = "director", vip = true },

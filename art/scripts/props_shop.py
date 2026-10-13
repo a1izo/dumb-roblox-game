@@ -1,6 +1,6 @@
-"""The things the shop's styles, forms and gestures hold or show (Core set; see props.py): the quill and the
+"""The things the shop's styles, forms and emotes hold or show (Core set; see props.py): the quill and the
 knife of Diavolo's writing styles, Ace's gavel, chess king and sugar cube, the coin and the apple of two
-gestures, and what three Deathsinger forms wear (a chain, a cloak of crow feathers, a marionette's
+emotes, and what three Deathsinger forms wear (a chain, a cloak of crow feathers, a marionette's
 control bar). Each is small and plain enough to be held in a hand or hung on a ghost, and is seen up close
 in the shop's "Your look"."""
 
