@@ -78,6 +78,7 @@ local function onRequest(player: Player, payload)
 		data.owned[item.id] = true
 		data.equipped[item.kind] = item.id
 		Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")
+		CosmeticsService.grantSets(player)
 	elseif action == "equip" then
 		if not CosmeticsService.owns(player, item) then
 			return

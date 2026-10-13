@@ -6,6 +6,9 @@
 -- alone.
 --
 --   local stop = BookStage.play(token, { { text = "Kenji Mori" }, { text = "Heart attack", small = true } }, 1.6)
+--
+-- A writing style (Diavolo's, from the shop: Presentation/Styles) changes the ink and how each line goes
+-- in; without one it is plain dark ink from a pen.
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,10 +18,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local Models = require(Shared:WaitForChild("Models"))
-local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local CameraDirector = require(script.Parent.CameraDirector)
 local Stage = require(script.Parent.Stage)
+local Styles = require(script.Parent.Styles)
 
 local BookStage = {}
 
@@ -73,7 +76,7 @@ end
 
 -- One line of the page as a clipped strip, empty at first: write() uncovers its text from the left,
 -- as a pen moves (a font carries no strokes to follow).
-local function strip(gui: SurfaceGui, rule: ManualBook.Rule, row: number, line: Line)
+local function strip(gui: SurfaceGui, rule: ManualBook.Rule, row: number, line: Line, style: string?)
 	local top = (rule.first + row * rule.pitch - rule.pitch * 0.92) * PIXELS
 	local left = (rule.margin + 0.07) * PIXELS
 	local wide = (rule.size.X - rule.margin - 0.16) * PIXELS
@@ -84,13 +87,14 @@ local function strip(gui: SurfaceGui, rule: ManualBook.Rule, row: number, line: 
 		Size = UDim2.fromOffset(0, rule.pitch * PIXELS),
 		Parent = gui,
 	})
+	local ink, font = Styles.ink(style)
 	local label = Create("TextLabel", {
 		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(wide, rule.pitch * PIXELS),
 		Text = line.text,
-		FontFace = WorldFont.hand(),
+		FontFace = font,
 		TextSize = math.floor(rule.pitch * PIXELS * (if line.small then 0.6 else 0.86)),
-		TextColor3 = INK,
+		TextColor3 = if line.small then INK else ink,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
 		TextTruncate = Enum.TextTruncate.AtEnd,
@@ -100,7 +104,7 @@ local function strip(gui: SurfaceGui, rule: ManualBook.Rule, row: number, line: 
 end
 
 -- Writes the lines one after another over `seconds`.
-local function write(gui: SurfaceGui, rule: ManualBook.Rule, lines: { Line }, seconds: number)
+local function write(gui: SurfaceGui, rule: ManualBook.Rule, lines: { Line }, seconds: number, style: string?)
 	local letters = 0
 	for _, line in ipairs(lines) do
 		letters += math.max(4, #line.text)
@@ -110,18 +114,13 @@ local function write(gui: SurfaceGui, rule: ManualBook.Rule, lines: { Line }, se
 		if row > rule.count then
 			break
 		end
-		local clip, label, wide = strip(gui, rule, row - 1, line)
+		local lineStyle = if line.small then nil else style
+		local clip, label, wide = strip(gui, rule, row - 1, line, lineStyle)
 		task.wait()
 		-- (The font may still be on its way: then the hand's usual width per letter.)
 		local measured = if label.TextBounds.X > 1 then label.TextBounds.X else #line.text * label.TextSize * 0.48
 		local shown = math.min(wide, measured + PIXELS * 0.04)
-		local time = pace * math.max(4, #line.text)
-		TweenService:Create(
-			clip,
-			TweenInfo.new(time, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
-			{ Size = UDim2.fromOffset(shown, rule.pitch * PIXELS) }
-		):Play()
-		task.wait(time)
+		Styles.write(clip, label, shown, pace, lineStyle)
 		if line.struck then
 			local bar = Create("Frame", {
 				BackgroundColor3 = INK,
@@ -146,8 +145,9 @@ local function writing(sheet: BasePart, rule: ManualBook.Rule, count: number): V
 end
 
 -- Plays the shot on the camera token's behalf: the open book, then `lines` written in over
--- `seconds`. Returns a function that takes the set away (call it when the shot is over).
-function BookStage.play(token: number, lines: { Line }, seconds: number): () -> ()
+-- `seconds`, in `style` (a writing style, or nil for plain ink). Returns a function that takes the set away
+-- (call it when the shot is over).
+function BookStage.play(token: number, lines: { Line }, seconds: number, style: string?): () -> ()
 	local stage = Stage.new()
 	local book = Models.grimoire()
 	ManualBook.pose(book, 1, 1)
@@ -176,7 +176,7 @@ function BookStage.play(token: number, lines: { Line }, seconds: number): () -> 
 			LightInfluence = 1,
 			Parent = sheet,
 		})
-		task.spawn(write, gui, rule, lines, math.max(0.3, seconds - 0.3))
+		task.spawn(write, gui, rule, lines, math.max(0.3, seconds - 0.3), style)
 	end
 	return function()
 		stage:destroy()

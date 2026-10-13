@@ -1,6 +1,7 @@
 --!strict
 -- Role mastery: experience per role from matches played as it. Ten levels each; levels 5
--- and 10 unlock cosmetics that only masters of that role have.
+-- and 10 unlock cosmetics that only masters of that role have, and level 7 a style for the two
+-- roles that have one (Diavolo's The Knife, Ace's Sugar Cubes).
 
 local Mastery = {}
 
@@ -12,9 +13,9 @@ Mastery.WIN_XP = 30
 
 -- [roleId] = { [level] = cosmetic id }
 Mastery.UNLOCKS = {
-	Kira = { [5] = "title_m_hand", [10] = "tie_m_hand" }, -- terms:ok (internal role id)
+	Kira = { [5] = "title_m_hand", [7] = "writing_knife", [10] = "tie_m_hand" }, -- terms:ok (internal role id)
 	Follower = { [5] = "title_m_cultist", [10] = "tie_m_cultist" },
-	L = { [5] = "title_m_zero", [10] = "tie_m_zero" },
+	L = { [5] = "title_m_zero", [7] = "verdict_sugar", [10] = "tie_m_zero" },
 	Watari = { [5] = "title_m_butler", [10] = "tie_m_butler" }, -- terms:ok (internal role id)
 	TaskForce = { [5] = "title_m_agent", [10] = "tie_m_agent" },
 } :: { [string]: { [number]: string } }

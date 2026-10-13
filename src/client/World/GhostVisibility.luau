@@ -1,20 +1,22 @@
 -- Who sees Specters. The living (and the lobby) never see or hear them: every part and
 -- decal is made fully transparent on this screen, effects are switched off and sounds are
 -- silenced, including anything added later. Specters, and spectators from the lobby, see the
--- Specters as pale, outlined figures that drift. Spectators themselves are seen by nobody but
--- themselves, and so are Specters waiting in the lobby ("Away"), who see their own body faded.
+-- Specters as pale, outlined figures that drift, each in its Deathsinger form from the shop (the outline
+-- in the form's colour, and what it wears: Presentation/Styles.form). Spectators themselves are seen by
+-- nobody but themselves, and so are Specters waiting in the lobby ("Away"), who see their own body faded.
 
 local Players = game:GetService("Players")
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
+local Styles = require(script.Parent.Parent.Presentation.Styles)
 
 local LocalPlayer = Players.LocalPlayer
 
 local GhostVisibility = {}
 
-type Watch = { connections: { RBXScriptConnection }, highlight: Highlight? }
+type Watch = { connections: { RBXScriptConnection }, highlight: Highlight?, form: string? }
 
 local watched: { [Model]: Watch } = {}
 
@@ -104,6 +106,20 @@ local function apply(character: Model)
 		watch.highlight:Destroy()
 		watch.highlight = nil
 	end
+	-- The form it wears, while it shows as a Deathsinger (never while waiting in the lobby).
+	local owner = Players:GetPlayerFromCharacter(character)
+	local form = if owner
+			and alpha < 1
+			and character:GetAttribute("Specter")
+			and not character:GetAttribute("Away")
+		then owner:GetAttribute("LSpecterForm")
+		else nil
+	form = if type(form) == "string" then form else nil
+	if form ~= watch.form then
+		watch.form = form
+		local tint = if owner then owner:GetAttribute("LSpecterColor") else nil
+		Styles.form(character, form, if typeof(tint) == "Color3" then tint else nil)
+	end
 	if alpha < 1 and not character:GetAttribute("Away") then
 		if not PoseController.isPlaying(character, "specterFloat") then
 			PoseController.play(character, "specterFloat", { startAt = os.clock() - math.random() * 2, fadeIn = 0.6 })
@@ -124,6 +140,9 @@ local function unwatch(character: Model)
 	if watch.highlight then
 		watch.highlight:Destroy()
 	end
+	if watch.form then
+		Styles.form(character, nil)
+	end
 	watched[character] = nil
 end
 
@@ -132,7 +151,7 @@ local function watch(character: Model)
 		apply(character)
 		return
 	end
-	local entry: Watch = { connections = {}, highlight = nil }
+	local entry: Watch = { connections = {}, highlight = nil, form = nil }
 	watched[character] = entry
 	table.insert(
 		entry.connections,

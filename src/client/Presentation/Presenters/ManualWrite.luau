@@ -2,7 +2,7 @@
 -- inking itself in. Only the writer gets this cue (DeathNoteService), right after the name is sent,
 -- and it is the same shot whether the name was right or wrong: a wrong name still fails silently. The
 -- writing screen steps aside for it and comes back, unchanged. It keeps the phase's red grade (the
--- owner, 2026-10-12).
+-- owner, 2026-10-12). The name goes in in the writer's writing style, if they have one.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -28,7 +28,8 @@ return function(cue)
 	end
 	local token = CameraDirector.take(ManualTiming.WRITE + 0.6)
 	Cinema.letterbox(true)
-	local stop = BookStage.play(token, { { text = name } }, ManualTiming.WRITE - 0.4)
+	local writing = if type(cue.data.writing) == "string" then cue.data.writing else nil
+	local stop = BookStage.play(token, { { text = name } }, ManualTiming.WRITE - 0.4, writing)
 	task.wait(ManualTiming.WRITE)
 	stop()
 	Cinema.letterbox(false)

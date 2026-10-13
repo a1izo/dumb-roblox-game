@@ -178,6 +178,12 @@ Assets.sfx = {
 		fallbackId = "",
 		volume = 0.6,
 	},
+	-- The shop's styles (Presentation/Styles): art/audio/style_*.wav, silent until uploaded.
+	typewriter = { id = "", ref = "one typewriter key striking, a sharp clack", fallbackId = "", volume = 0.5 },
+	knifeScrape = { id = "", ref = "a knife blade scraping into paper", fallbackId = "", volume = 0.6 },
+	crows = { id = "", ref = "a flock of crows taking off, wings and caws", fallbackId = "", volume = 0.7 },
+	stoneCrack = { id = "", ref = "stone grinding and cracking, grit settling", fallbackId = "", volume = 0.7 },
+	stringsSnap = { id = "", ref = "taut strings twanging and snapping", fallbackId = "", volume = 0.6 },
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

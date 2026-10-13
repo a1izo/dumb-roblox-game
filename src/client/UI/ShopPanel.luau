@@ -2,7 +2,8 @@
 -- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Gestures, Sets, and Robux once a
 -- product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six, dealt
 -- face down (the same six for everyone): each is turned over with a click, and stays turned that day
--- (ShopService "turn"). The other suits lay their cards out by kind.
+-- (ShopService "turn"). The other suits lay their cards out by kind; Sets lays out each set (Shared/Sets)
+-- with how many of its pieces you own, and the title it earns.
 --
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
 -- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once), "N more coins" when
@@ -17,6 +18,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
+local Sets = require(Shared:WaitForChild("Sets"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
@@ -115,6 +117,8 @@ local function suits(): { Cosmetics.Suit }
 			show = true
 		elseif suit.id == "robux" then
 			show = onSale()
+		elseif suit.id == "sets" then
+			show = #Sets.LIST > 0
 		elseif suit.kinds then
 			show = false
 			for _, kind in ipairs(suit.kinds) do
@@ -189,6 +193,9 @@ local function showAction(profile, item: Cosmetics.Item?)
 	elseif item.source == "vip" then
 		closed("VIP pass")
 		actionNote.Text = "Comes with the VIP pass."
+	elseif item.source == "set" then
+		closed("Set title")
+		actionNote.Text = "Yours with every piece of its set."
 	elseif not item.price then
 		closed("Earned")
 		actionNote.Text = "Earned in play, never sold."
@@ -460,6 +467,33 @@ function ShopPanel.rebuild()
 			.. formatTime(ShopRotation.secondsLeft(now))
 	elseif currentSuit == "robux" then
 		buildRobux(profile)
+	elseif currentSuit == "sets" then
+		for index, set in ipairs(Sets.LIST) do
+			local have = Sets.progress(set, function(id: string): boolean
+				local item = Cosmetics.byId(id)
+				return item ~= nil and owns(profile, item)
+			end)
+			local title = Cosmetics.byId(set.title)
+			local done = title ~= nil and owns(profile, title)
+			local grid = section(
+				string.format(
+					"%s  ·  %s",
+					set.name,
+					if done then "complete" else string.format("%d of %d", have, #set.pieces)
+				),
+				index
+			)
+			for order, id in ipairs(set.pieces) do
+				local item = Cosmetics.byId(id)
+				if item then
+					deal(profile, item, grid, order, false)
+				end
+			end
+			if title then
+				deal(profile, title, grid, #set.pieces + 1, false)
+			end
+		end
+		noteLabel.Text = "Own every piece of a set and its title is yours."
 	else
 		local suit = Cosmetics.suit(currentSuit)
 		local order = 0

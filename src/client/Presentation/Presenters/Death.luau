@@ -3,7 +3,9 @@
 -- others reacting (their reactions are picked from the cue, the same on every screen, never from
 -- roles), then the victim's collapse in close-up while the heart monitor beats twice and flatlines,
 -- and the cause is written across the screen. The victim sees their own screen drain of colour
--- instead.
+-- instead. The name goes into the book in the writer's writing style on the writer's screen only (the
+-- server sends it there alone); the victim's death style (ash, cut strings, crows, stone) plays on the
+-- body after it falls, on every screen, under the cause of death.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,6 +22,7 @@ local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local Styles = require(script.Parent.Parent.Styles)
 
 local C = Kit.color
 local LocalPlayer = Players.LocalPlayer
@@ -63,7 +66,8 @@ return function(cue)
 		bookToken = CameraDirector.take(ManualTiming.BOOK + 0.8)
 		Cinema.letterbox(true)
 		local lines = { { text = data.realName }, { text = tostring(data.cause or ""), small = true } }
-		local stop = BookStage.play(bookToken, lines, ManualTiming.BOOK)
+		local writing = if type(data.writing) == "string" then data.writing else nil
+		local stop = BookStage.play(bookToken, lines, ManualTiming.BOOK, writing)
 		task.wait(ManualTiming.BOOK)
 		stop()
 		-- (The cuts below take the camera over; the victim's own screen gets it back.)
@@ -83,6 +87,10 @@ return function(cue)
 		if root and root:IsA("BasePart") then
 			DeathFx.burst(root.Position, DeathFx.DARK, 40)
 			DeathFx.chalk(root.Position, 7, DeathFx.CHALK, 14)
+		end
+		-- The victim's death style, once the body is down.
+		if body and type(data.death) == "string" then
+			task.delay(0.9, Styles.death, data.death, body)
 		end
 	end)
 

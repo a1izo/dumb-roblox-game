@@ -433,6 +433,64 @@ for t, b in ((0.0, 0.0), (2.0, 1.0)):
 soft(think, head=1.5, arms=1.5).plant(stance=0.12, forward=(0.55, 0.55), tilt=(62, 62))
 think.build()
 
+# The shop's gestures (2026-10-13). Coin Flip and Apple Bite hold props the game puts in the right hand
+# (EmoteController: the coin is thrown and caught on these timings).
+
+coin = Motion("coinFlip", 2.6, note="A coin flicked up off the thumb, watched up and down, caught and slapped onto the back of the other hand.")
+coin.key(0.0, **REST)
+coin.key(0.35, root=(-2, 0, 0), neck=(-8, 0, 0), rShoulder=J((70, 0, -10), (-0.1, 0.1, -0.15)))
+coin.key(0.55, "snap", root=(0, 0, 0), neck=(14, 0, 0), rShoulder=J((96, 0, -8), (-0.1, 0.22, -0.2)))
+coin.key(0.95, root=(2, 0, 0), neck=(26, 0, 0), rShoulder=J((84, 0, -10), (-0.1, 0.16, -0.18)))
+coin.key(1.35, root=(-1, 0, 0), neck=(2, 0, 0), rShoulder=J((74, 0, -14), (-0.1, 0.1, -0.18)), lShoulder=l_chest(58, 30))
+coin.key(1.55, "snap", root=(-3, 0, 0), neck=(-12, 0, 0), rShoulder=J((60, 0, -32), (-0.2, 0.05, -0.22)), lShoulder=l_chest(56, 30))
+coin.key(2.1, root=(-3, 0, 0), neck=(-14, 0, 5), rShoulder=J((60, 0, -32), (-0.2, 0.05, -0.22)), lShoulder=l_chest(56, 30))
+coin.key(2.6, **REST)
+soft(coin, arms=3.2).plant(stance=0.04)
+coin.build()
+
+apple = Motion("appleBite", 2.8, note="An apple raised to the mouth, one big bite, a slow chew.")
+apple.key(0.0, **REST)
+apple.key(0.5, root=(1, 0, 0), neck=(4, 0, 0), rShoulder=J((110, 0, -20), (-0.22, 0.16, -0.2)))
+apple.key(0.9, "snap", root=(-4, 0, 0), neck=(-10, 0, 0), rShoulder=r_face(122, -30))
+apple.key(1.15, root=(1, 0, 0), neck=(6, 0, 0), rShoulder=J((104, 0, -18), (-0.2, 0.14, -0.18)))
+for i, nod in enumerate((-3, 2, -3, 2)):
+    apple.key(1.35 + i * 0.18, root=(1, 0, 0), neck=(6 + nod, 0, 0), rShoulder=J((100, 0, -18), (-0.2, 0.12, -0.18)))
+apple.key(2.8, **REST)
+soft(apple, arms=3.0).plant(stance=0.04)
+apple.build()
+
+# A marionette's dance: each beat a string jerks a limb up and lets it drop, the head lolling.
+puppet = Motion("puppetDance", 2.0, loop=True, note="Danced like a marionette: limbs jerked up by strings and dropped, the head lolling.")
+for i in range(4):
+    s = 1 if i % 2 == 0 else -1
+    puppet.key(i * 0.5, "snap", offset=(0, 0.12 if i % 2 == 0 else 0.02, 0), root=(0, 6 * s, 7 * s), neck=(-10, 0, -16 * s),
+               rShoulder=J((112 if s > 0 else 18, 0, 34), (0, 0.12, 0)), lShoulder=J((18 if s > 0 else 112, 0, -34), (0, 0.12, 0)),
+               rHip=J((38 if s > 0 else 0, 0, 4), (0, 0.4 if s > 0 else 0.0, 0)), lHip=J((0 if s > 0 else 38, 0, -4), (0, 0.0 if s > 0 else 0.4, 0)))
+soft(puppet, head=1.6, arms=2.0)
+puppet.build()
+
+# Writing a name in the air with one finger, left to right, then the flourish and the full stop.
+air = Motion("writeAir", 3.0, note="A name written in the air with one finger, a flourish, a full stop.")
+air.key(0.0, **REST)
+air.key(0.4, root=(0, -6, 0), neck=(4, -10, 0), rShoulder=J((100, 0, 4), (0, 0.12, -0.12)))
+for i in range(8):
+    z = 4 + i * 5
+    air.key(0.6 + i * 0.2, "sine", root=(0, -6 + i * 1.5, 0), neck=(4, -10 + i * 3, 0),
+            rShoulder=J((106 if i % 2 == 0 else 94, 0, z), (0, 0.12, -0.12)))
+air.key(2.3, root=(0, 6, 0), neck=(8, 12, 0), rShoulder=J((128, 0, 46), (0, 0.22, -0.1)))
+air.key(2.5, "snap", root=(0, 5, 0), neck=(2, 10, 0), rShoulder=J((96, 0, 40), (0, 0.1, -0.15)))
+air.key(3.0, **REST)
+soft(air, arms=3.5).plant(stance=0.05)
+air.build()
+
+# Ace's crouch: down on the heels, knees drawn up, hands resting on them, rocking a little.
+crouch = Motion("aceCrouch", 4.0, loop=True, note="Crouched on the heels, knees up, hands on the knees, rocking slightly.")
+for t, b in ((0.0, 0.0), (2.0, 1.0)):
+    crouch.key(t, offset=(0, -1.35 + 0.03 * b, 0), root=(-8 + 2 * b, 0, -2 + 4 * b), neck=(2 + b, 6 - 12 * b, 2 * b),
+               rShoulder=J((62, 0, -6), (0.0, 0.06, -0.36)), lShoulder=J((62, 0, 6), (0.0, 0.06, -0.36)))
+soft(crouch, head=1.4, arms=1.4).plant(stance=0.14, tilt=(34, 34))
+crouch.build()
+
 # The dive into the rift (the lobby's Last breath). The body's own turn is in the root joint, so the
 # character itself stays upright while it falls: belly to the ground with arms and legs spread, then the
 # flare that brakes it, then hanging in the rift's draught, looking down at what was nearly hit.

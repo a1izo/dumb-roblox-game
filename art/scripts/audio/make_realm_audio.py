@@ -312,11 +312,73 @@ def trial_chime():
     save("trial_chime.wav", fade(reverb(a + 0.8 * b, 1.6, 0.3, 5000), 0.001, 0.35), 0.5)
 
 
+def style_typewriter():
+    """A typewriter key striking: a sharp metallic clack with a short wooden knock under it."""
+    t = t_axis(0.25)
+    n = len(t)
+    clack = shaped_noise(n, lambda f: bandpass(f, 2500, 7000, 2))
+    clack = clack / np.abs(clack).max() * np.exp(-90 * t)
+    knock = np.sin(2 * np.pi * 220 * t) * np.exp(-40 * t) * 0.4
+    save("style_typewriter.wav", fade(clack + knock, 0.0005, 0.05), 0.7)
+
+
+def style_knife():
+    """A blade cut into paper: a dry scrape, rising, a little gritty."""
+    t = t_axis(0.9)
+    n = len(t)
+    scrape = shaped_noise(n, lambda f: bandpass(f, 1800, 6500, 2))
+    env = np.sin(np.pi * np.clip(t / 0.85, 0, 1)) ** 0.6
+    grit = 1 + 0.35 * np.sign(np.sin(2 * np.pi * 38 * t))
+    save("style_knife.wav", fade(scrape / np.abs(scrape).max() * env * grit, 0.01, 0.1), 0.6)
+
+
+def style_crows():
+    """A burst of crows taking off: wings beating and three rough caws."""
+    t = t_axis(2.2)
+    n = len(t)
+    wings = shaped_noise(n, lambda f: bandpass(f, 300, 2400, 2))
+    wings = wings / np.abs(wings).max() * (0.5 + 0.5 * np.sin(2 * np.pi * 9 * t) ** 2) * np.exp(-1.2 * t)
+    caws = np.zeros(n)
+    for start, pitch in ((0.15, 620), (0.6, 560), (1.1, 680)):
+        k = (t >= start) & (t < start + 0.35)
+        u = t[k] - start
+        tone = np.sign(np.sin(2 * np.pi * (pitch - 260 * u) * u)) * 0.5 + np.sin(2 * np.pi * pitch * 2.1 * u) * 0.3
+        caws[k] += tone * np.sin(np.pi * u / 0.35) * 0.5
+    save("style_crows.wav", fade(reverb(wings + caws, 1.5, 0.25, 4000), 0.005, 0.3), 0.7)
+
+
+def style_stone():
+    """A body turning to stone: a deep grinding crack, then grit settling."""
+    t = t_axis(1.6)
+    n = len(t)
+    crack = shaped_noise(n, lambda f: lowpass(f, 1400, 2))
+    crack = crack / np.abs(crack).max() * np.exp(-6 * t)
+    grind = np.sin(2 * np.pi * (70 + 20 * np.sin(2 * np.pi * 3 * t)) * t) * np.exp(-2.5 * t) * 0.5
+    grit = shaped_noise(n, lambda f: bandpass(f, 2000, 6000, 2))
+    grit = grit / np.abs(grit).max() * np.exp(-3 * np.clip(t - 0.3, 0, None)) * (t > 0.3) * 0.15
+    save("style_stone.wav", fade(reverb(crack + grind + grit, 1.4, 0.3, 2500), 0.002, 0.3), 0.8)
+
+
+def style_strings():
+    """Strings cut: a taut twang, snapping, with a short whip of the loose ends."""
+    t = t_axis(1.0)
+    n = len(t)
+    twang = np.zeros(n)
+    for start, hz in ((0.0, 330), (0.07, 392), (0.13, 294)):
+        k = t >= start
+        u = t[k] - start
+        twang[k] += np.sin(2 * np.pi * hz * u) * np.exp(-9 * u) * (1 + 0.3 * np.sin(2 * np.pi * hz * 2 * u))
+    snap = shaped_noise(n, lambda f: bandpass(f, 3000, 9000, 2))
+    snap = snap / np.abs(snap).max() * np.exp(-70 * t)
+    save("style_strings.wav", fade(reverb(twang * 0.6 + snap, 1.0, 0.2, 6000), 0.0005, 0.2), 0.7)
+
+
 def main():
     # (New sounds go at the end: the random stream is shared, so the earlier files stay as they were.)
     for make in (wind, drone, rumble, rocks, stone1, stone2, metal1, metal2, far1, far2, game_rune, game_wrong,
                  game_checkpoint, game_finish, game_dice, game_throw, game_fall, game_bell_toll, game_dive_wind,
-                 game_dive_crash, trial_chime):
+                 game_dive_crash, trial_chime, style_typewriter, style_knife, style_crows, style_stone,
+                 style_strings):
         make()
 
 
