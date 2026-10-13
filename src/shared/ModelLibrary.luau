@@ -275,6 +275,31 @@ local function importVersion(root: Instance): (string, number, boolean)
 	return root.Name, 0, false
 end
 
+-- The version of the newest import of a kind ("ModelsCore", "ModelsLobby"...; the marker's middle), or 0
+-- when none is there yet. For what only a newer export carries (the icons the Core models brought in
+-- version 6). Asked again until an import of that kind turns up.
+local versions: { [string]: number } = {}
+function ModelLibrary.version(kind: string): number
+	local known = versions[kind]
+	if known then
+		return known
+	end
+	local root = store()
+	local newest = 0
+	for _, child in ipairs(if root then root:GetChildren() else {}) do
+		if child:IsA("Model") or child:IsA("Folder") then
+			local found, version, marked = importVersion(child)
+			if marked and found == kind then
+				newest = math.max(newest, version)
+			end
+		end
+	end
+	if newest > 0 then
+		versions[kind] = newest
+	end
+	return newest
+end
+
 local function supersede(item: Instance)
 	local ServerStorage = game:GetService("ServerStorage")
 	local bin = ServerStorage:FindFirstChild(BIN_NAME)

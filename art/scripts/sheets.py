@@ -48,7 +48,7 @@ GROUPS = {
                      "Kotatsu", "ShoeLockers", "DrumKit", "UprightPiano", "FilmProjector", "Typewriter",
                      "TrayReturn", "UmbrellaStand"],
     "lobby_realm": ["DeadTree", "DeadTreeGnarled", "WitheredAppleTree", "GiantSkull", "BoneThrone"],
-    "lobby_things": ["PracticeAltar", "Effigy", "BoneBrazier", "LanternPost", "CandleCluster", "SkullPile",
+    "lobby_things": ["PracticeAltar", "Puppet", "PuppeteerHand", "BoneBrazier", "LanternPost", "CandleCluster", "SkullPile",
                      "BoneScatter", "Cairn", "DiceGame", "BoneStool"],
     "meeting_room": ["WarTable", "WarChair", "Sideboard", "BookcaseTall", "SpeakerColumn", "FloorGlobe"],
     "meeting_things": ["ClubChair", "DrinksTrolley", "Radiator", "WallClock", "CaseFiles", "FloorLamp", "BankerLamp"],

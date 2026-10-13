@@ -340,3 +340,4 @@ import props_agency  # noqa: E402,F401
 import props_campus  # noqa: E402,F401
 import props_lobby  # noqa: E402,F401
 import props_meeting  # noqa: E402,F401
+import props_shop  # noqa: E402,F401

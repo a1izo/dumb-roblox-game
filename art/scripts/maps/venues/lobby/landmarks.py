@@ -309,7 +309,7 @@ def academy(s, g):
         s.preview_prop("PracticeAltar", x, z, rot)
     for k, (x, z, rot) in enumerate(P.effigies()):
         s.anchor(f"dummy{k + 1}", x, 0.0, z, rot)
-        s.preview_prop("Effigy", x, z, rot)
+        s.preview_prop("Puppet", x, z, rot)
 
 
 def pillar(s, x, z, h, rng, whole=False, y=0.0):

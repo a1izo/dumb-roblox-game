@@ -5,7 +5,7 @@
 -- writing left is the title on its monolith, one board (Most Wins, on a low slab at the foot of the
 -- throne's mesa) and the names on the Academy's gate and altars.
 -- South-west lies the Academy, a ring of broken pillars with a practice altar for every skill and three
--- effigies to practise on; two old causeways over chasms lead to the plateaus of the Spire Ascent and the
+-- wooden puppets to practise on, hung on strings from a great hand; two old causeways over chasms lead to the plateaus of the Spire Ascent and the
 -- rune courtyard, and the dice rock and the stone-toss wait in the basin itself.
 --
 -- SceneBuilder puts up the scene (or its greybox, without the import); this module builds what
@@ -38,6 +38,9 @@ local STONE = Color3.fromRGB(58, 58, 62)
 
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number? }
 
+local STONE_TOP = 0.6 -- the low stone each practice figure stands (or hangs) over
+local HAND_HEIGHT = 22 -- how high over the figures' ground the hand's fingertips are
+
 -- The practice dummies' aliases and real names (names from the real name pools).
 local DUMMIES = {
 	{ alias = "Dummy A", name = "Kenji Mori" },
@@ -61,11 +64,13 @@ for _, drill in ipairs({
 	table.insert(DRILLS, drill)
 end
 
-local function signText(board: BasePart, text: string, color: Color3, font: Enum.Font)
+-- pixelsPerStud: more for a small card, so its lettering is not cut off at the smallest size text is
+-- drawn at (40 by default).
+local function signText(board: BasePart, text: string, color: Color3, font: Enum.Font, pixelsPerStud: number?)
 	local gui = Create("SurfaceGui", {
 		Face = Enum.NormalId.Front,
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
-		PixelsPerStud = 40,
+		PixelsPerStud = pixelsPerStud or 40,
 		LightInfluence = 0,
 		Parent = board,
 	})
@@ -121,24 +126,32 @@ local function drillDesk(b, drill, a: Anchor)
 	signText(plaque, title, GOLD, Enum.Font.SpecialElite)
 end
 
--- A figure for the drills to point at: a plain grey mannequin, or the Blender effigy over it when
--- it is imported. Its torso carries the tag and the names; the whole model tips over when a drill
--- "kills" it (client PracticePanel), so everything hangs off the torso.
+-- A figure for the drills to point at, on a low stone. Every client hangs a wooden puppet on strings
+-- in its place (World/Puppets, once the Lobby models are imported: the puppet's feet a hand's width
+-- above the stone, the strings up to the hand over the three); until then this plain grey mannequin
+-- stands on the stone. Its torso carries the tag and the names, and its name tag is pinned on its chest
+-- (the puppet's clients carry the tag along on the puppet's chest). A drill's reaction plays on the
+-- drilling player's screen only (client PracticePanel, through Puppets).
 local function dummy(b, info, a: Anchor)
+	-- The stone is not the figure's: the figure tips over (or the puppet drops) onto it.
+	b:part(
+		Vector3.new(STONE_TOP, 3.2, 3.2),
+		b:cf(a.x, STONE_TOP / 2, a.z, a.rot) * CFrame.Angles(0, 0, math.rad(90)),
+		STONE,
+		Enum.Material.Slate,
+		{ Shape = Enum.PartType.Cylinder, Name = "PracticeStone" }
+	)
 	local model = Create("Model", { Name = "Dummy_" .. info.alias, Parent = b.parent })
 	local grey = Color3.fromRGB(150, 146, 140)
-	local base = b:cf(a.x, 0, a.z, a.rot)
-	local parts = {}
+	local base = b:cf(a.x, STONE_TOP, a.z, a.rot)
 	local function piece(size: Vector3, offset: CFrame, shape: Enum.PartType?)
-		local part = b:part(
+		return b:part(
 			size,
 			base * offset,
 			grey,
 			Enum.Material.SmoothPlastic,
-			{ Parent = model, Shape = shape or Enum.PartType.Block }
+			{ Parent = model, Shape = shape or Enum.PartType.Block, Name = "Figure" }
 		)
-		table.insert(parts, part)
-		return part
 	end
 	piece(Vector3.new(0.9, 2.6, 0.9), CFrame.new(-0.5, 1.3, 0))
 	piece(Vector3.new(0.9, 2.6, 0.9), CFrame.new(0.5, 1.3, 0))
@@ -146,27 +159,51 @@ local function dummy(b, info, a: Anchor)
 	piece(Vector3.new(0.8, 2.3, 0.8), CFrame.new(-1.45, 3.85, 0))
 	piece(Vector3.new(0.8, 2.3, 0.8), CFrame.new(1.45, 3.85, 0))
 	piece(Vector3.new(1.4, 1.4, 1.4), CFrame.new(0, 5.8, 0), Enum.PartType.Ball)
+	torso.Name = "Torso"
 	model.PrimaryPart = torso
 	torso:SetAttribute("Alias", info.alias)
 	torso:SetAttribute("PracticeName", info.name)
+	-- Where the feet stand (the puppet hangs a hand's width above it), from the torso.
+	torso:SetAttribute("Feet", CFrame.new(0, -3.8, 0))
 	torso:AddTag("LDummy")
-	if ModelLibrary.dress(torso, "Effigy", CFrame.new(0, -3.8, 0)) then
-		for _, part in ipairs(parts) do
-			part.Transparency = 1
-		end
-	end
-	-- Alias placard at its feet, tilted towards the gate.
-	local plate = b:part(
-		Vector3.new(3, 0.8, 0.2),
-		base * CFrame.new(0, 0.6, -1.6) * CFrame.Angles(math.rad(-20), 0, 0),
-		Color3.fromRGB(20, 20, 24),
+	-- The name tag, a paper card pinned on the chest.
+	local tag = b:part(
+		Vector3.new(1.1, 0.55, 0.05),
+		base * CFrame.new(0, 4.25, -0.53) * CFrame.Angles(0, 0, math.rad(-4)),
+		Color3.fromRGB(214, 206, 186),
 		Enum.Material.SmoothPlastic,
-		{ Parent = model }
+		{ Parent = model, Name = "Tag", CanCollide = false, CanQuery = false }
 	)
-	signText(plate, string.upper(info.alias), Color3.fromRGB(235, 230, 220), Enum.Font.GothamBlack)
+	signText(tag, string.upper(info.alias), INK, Enum.Font.SpecialElite, 120)
 end
 
--- The Academy's name over its gate, its drill altars and effigies.
+-- The mark for the hand over the three figures (World/Puppets hangs it there): the middle of its
+-- fingertips HAND_HEIGHT studs over the middle of the three, facing the way they face.
+local function handMark(b, anchors: { [string]: Anchor })
+	local sum, count, rot = Vector3.zero, 0, 0
+	for index = 1, #DUMMIES do
+		local a = anchors["dummy" .. index]
+		if a then
+			sum += Vector3.new(a.x, a.y, a.z)
+			count += 1
+			rot = a.rot
+		end
+	end
+	if count == 0 then
+		return
+	end
+	local middle = sum / count
+	local mark = b:part(
+		Vector3.new(1, 1, 1),
+		b:cf(middle.X, middle.Y + HAND_HEIGHT, middle.Z, rot),
+		STONE,
+		Enum.Material.SmoothPlastic,
+		{ Name = "PuppeteerHand", Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false }
+	)
+	mark:AddTag("LPuppeteer")
+end
+
+-- The Academy's name over its gate, its drill altars, the practice figures and the hand over them.
 local function academy(b, anchors: { [string]: Anchor })
 	sign(b, anchors.academyGate, "ACADEMY  ·  PRACTICE", GOLD, INK, Enum.Font.GothamBlack)
 	for index, drill in ipairs(DRILLS) do
@@ -183,6 +220,7 @@ local function academy(b, anchors: { [string]: Anchor })
 			dummy(b, info, a)
 		end
 	end
+	handMark(b, anchors)
 end
 
 function Lobby.build(b)

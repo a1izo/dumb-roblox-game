@@ -315,7 +315,8 @@ def build(keys=None):
 
 def preview(key, path=None, angle=35, height_factor=0.6):
     obj = bpy.data.objects[key]
-    size = mk.dimensions(obj)
+    # A prop in pieces is framed whole (its "size" covers the pieces too).
+    size = json.loads(obj["size"]) if obj.get("size") else mk.dimensions(obj)
     radius = max(size) * 0.75 + 0.3
     target = (0, 0, size[2] / 2 if obj.get("pivot") == "bottom" else 0)
     for other in bpy.data.objects:
