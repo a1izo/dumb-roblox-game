@@ -1,7 +1,7 @@
 --!strict
 -- A hovered (or gamepad-selected) button on the lobby's own page (READY, the menu, the card's two buttons)
--- glitches hard and fast for as long as the pointer is on it. Like every glitch it belongs to the lobby:
--- while Glitch is turned off (in a match) nothing happens and buttons stay calm.
+-- blips once as the pointer arrives, then stays still and readable. Like every glitch it belongs to the
+-- lobby: while Glitch is turned off (in a match) nothing happens and buttons stay calm.
 --
 -- Inside a window or a pop-up nothing glitches: what you are about to press has to stay readable, and the
 -- control's own hover look (a lighter fill, a nudge) is the whole answer there. A tap never glitches either:
@@ -53,7 +53,7 @@ function HoverGlitch.finish(gui: GuiObject)
 	end
 end
 
--- Wires a button: glitch while hovered or selected.
+-- Wires a button: one blip when hovered or selected.
 function HoverGlitch.wire(button: GuiButton)
 	button.MouseEnter:Connect(function()
 		HoverGlitch.begin(button)

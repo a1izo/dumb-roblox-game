@@ -363,6 +363,16 @@ Cosmetics.KIND_NAMES = {
 	title = "Titles",
 }
 
+-- One item of a kind ("Epic · Manual cover").
+Cosmetics.KIND_SINGULAR = {
+	hat = "Hat",
+	trail = "Trail",
+	tie = "Tie",
+	grimoire = "Manual cover",
+	specter = "Deathsinger form",
+	title = "Title",
+}
+
 Cosmetics.RARITIES = { "common", "rare", "epic", "legendary" }
 
 Cosmetics.RARITY_COLORS = {

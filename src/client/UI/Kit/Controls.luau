@@ -55,8 +55,8 @@ function Controls.focusable(button: GuiObject)
 	button.SelectionImageObject = focusMark
 end
 
--- Every size is at least the touch minimum tall; the lettering is Melodrama, 16 px and up, and 18 px and up
--- on a button inside a window (it is read before it is pressed).
+-- Every size is at least the touch minimum tall; the lettering is spaced capitals, 16 px and up, and 18 px
+-- and up on a button inside a window (it is read before it is pressed): Montserrat Bold, Melodrama from 22 px.
 local HEIGHT = { s = Tokens.touch, m = Tokens.touch, l = 60 }
 local TEXT = { s = 16, m = 18, l = 22 }
 local WINDOW_TEXT = 18
@@ -660,7 +660,7 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			})
 		end
 		local label = Base.label({
-			Text = string.upper(item.label),
+			Text = GlyphText.spaced(string.upper(item.label)),
 			font = "label",
 			size = "small",
 			color = C.dim,

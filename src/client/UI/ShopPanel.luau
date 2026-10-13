@@ -10,10 +10,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
-local Models = require(Shared:WaitForChild("Models"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
@@ -22,6 +20,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
+local YourLook = require(script.Parent.Shop.YourLook)
 
 local ShopRequest = Net.event("ShopRequest")
 local ProfileRequest = Net.event("ProfileRequest")
@@ -33,19 +32,20 @@ local T = Kit.Tokens
 local ShopPanel = {}
 
 local TABS = { "featured", "hat", "trail", "tie", "grimoire", "specter", "title", "robux" }
-local TAB_NAMES = { featured = "Featured", robux = "Robux" }
+local TAB_NAMES = { featured = "Featured", robux = "Robux", specter = "Deathsingers" }
 
 -- Layout of the spread (design px).
 local TOP = 44 -- the coins line
-local TABS_WIDTH = 180
+local TABS_WIDTH = 210
 local PREVIEW_WIDTH = 240
 local GAP = T.space.l
+local CARD_HEIGHT = 196
 
 local coinsLabel: TextLabel
 local noteLabel: TextLabel
 local grid: ScrollingFrame
 local previewHolder: Frame
-local viewport: ViewportFrame
+local look: YourLook.YourLook
 local previewCaption: TextLabel
 local gridLayout: UIGridLayout
 local verticalTabs: Frame
@@ -88,103 +88,9 @@ local RARITY_TIER = { common = 1, uncommon = 1, rare = 2, epic = 3, legendary = 
 
 -- 3D preview ---------------------------------------------------------------------------------
 
-local function clearPreview()
-	for _, child in ipairs(viewport:GetChildren()) do
-		if not child:IsA("UIComponent") then
-			child:Destroy()
-		end
-	end
-end
-
 local function showPreview(item: Cosmetics.Item?)
-	clearPreview()
-	previewCaption.Text = if item then string.upper(item.name) else "YOUR LOOK"
-	local character = LocalPlayer.Character
-	if not character then
-		return
-	end
-	local archivable = character.Archivable
-	character.Archivable = true
-	local clone = character:Clone()
-	character.Archivable = archivable
-	if not clone then
-		return
-	end
-	for _, child in ipairs(clone:GetDescendants()) do
-		if child:IsA("Script") or child:IsA("LocalScript") or child:IsA("Sound") then
-			child:Destroy()
-		elseif child:IsA("BasePart") then
-			child.Anchored = true
-		end
-	end
-	for _, name in ipairs({ "LCosmeticHat", "LTitleTag" }) do
-		local old = clone:FindFirstChild(name, true)
-		if old then
-			old:Destroy()
-		end
-	end
-	local world = Instance.new("WorldModel")
-	world.Parent = viewport
-	clone:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(200), 0))
-	clone.Parent = world
-	local head = clone:FindFirstChild("Head")
-	local torso = clone:FindFirstChild("Torso")
-	if item and item.kind == "hat" and head and head:IsA("BasePart") then
-		for _, part in ipairs(CosmeticBuild.hat(item, head.CFrame, head)) do
-			part.Anchored = true
-			part.Parent = world
-		end
-	elseif item and item.kind == "tie" and torso and torso:IsA("BasePart") then
-		local top = torso.Size.Y / 2
-		Create("Part", {
-			Anchored = true,
-			Size = Vector3.new(0.2, 0.95, 0.05),
-			Color = item.color,
-			Material = Enum.Material.Fabric,
-			CFrame = torso.CFrame * CFrame.new(0, top - 0.75, -torso.Size.Z / 2 - 0.05),
-			Parent = world,
-		})
-	elseif item and item.kind == "grimoire" and torso and torso:IsA("BasePart") then
-		-- A Manual cover colours the notebook everyone holds while writing (CharacterService.setWriting),
-		-- held as it is there: a coloured plate over its front cover.
-		local held = torso.CFrame * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)
-		local notebook = Models.notebook()
-		if notebook then
-			notebook:PivotTo(held)
-			notebook.Parent = world
-			Create("Part", {
-				Anchored = true,
-				Size = Vector3.new(1.26, 0.02, 0.9),
-				Color = item.color,
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = held * CFrame.new(0, 0.115, 0),
-				Parent = world,
-			})
-		else
-			Create("Part", {
-				Anchored = true,
-				Size = Vector3.new(1.3, 0.12, 0.95),
-				Color = item.color,
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = held,
-				Parent = world,
-			})
-			Create("Part", {
-				Anchored = true,
-				Size = Vector3.new(1.2, 0.06, 0.88),
-				Color = Color3.fromRGB(240, 236, 225),
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = held * CFrame.new(0, 0.09, 0),
-				Parent = world,
-			})
-		end
-	end
-	local camera = Instance.new("Camera")
-	camera.FieldOfView = 30
-	local focus = if head and head:IsA("BasePart") then head.Position - Vector3.new(0, 1.2, 0) else Vector3.new(0, 2, 0)
-	camera.CFrame = CFrame.lookAt(focus + Vector3.new(0, 1.2, -11), focus)
-	camera.Parent = viewport
-	viewport.CurrentCamera = camera
+	previewCaption.Text = if item then item.name else "Your look"
+	look:show(item)
 end
 
 -- Cards ----------------------------------------------------------------------------------------
@@ -263,48 +169,65 @@ local function itemCard(profile, item: Cosmetics.Item, order: number)
 	if item.kind == "title" then
 		swatch.BackgroundColor3 = C.void
 		Kit.label({
-			Text = string.upper(item.name),
-			font = "label",
+			Text = item.name,
+			font = "bodyBold",
 			size = "small",
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextWrapped = false,
+			TextTruncate = Enum.TextTruncate.AtEnd,
 			AutomaticSize = Enum.AutomaticSize.None,
 			Size = UDim2.fromScale(1, 1),
 			Parent = swatch,
 		})
 	end
+	-- The name (two lines at most), the rarity with its slashes, and on the Featured tab what kind of thing
+	-- it is. All plain, sentence case, 16 px: read before it is bought.
 	Kit.label({
 		Text = item.name,
 		font = "bodyBold",
-		TextWrapped = false,
+		TextWrapped = true,
 		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextYAlignment = Enum.TextYAlignment.Top,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(0, 44),
-		Size = UDim2.new(1, 0, 0, 20),
+		Position = UDim2.fromOffset(0, 42),
+		Size = UDim2.new(1, 0, 0, 40),
 		Parent = card,
 	})
+	local rarityName = string.upper(string.sub(item.rarity, 1, 1)) .. string.sub(item.rarity, 2)
 	Kit.label({
-		Text = string.upper(item.rarity .. "  ·  " .. (Cosmetics.KIND_NAMES[item.kind] or item.kind)),
+		Text = rarityName,
 		font = "label",
-		size = "micro",
-		color = if tier == 1 then C.g5 else ink,
+		color = if tier == 1 then C.dim else ink,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(0, 66),
-		Size = UDim2.new(1, -(tier * 9 + 6), 0, 14),
+		Position = UDim2.fromOffset(0, 84),
+		Size = UDim2.new(1, -(tier * 9 + 6), 0, 20),
 		Parent = card,
 	})
 	-- The slashes, one per tier, at the right of the rarity line.
 	for slash = 1, tier do
 		Kit.Base.make("Frame", {
 			Name = "Slash",
-			BackgroundColor3 = if tier == 1 then C.g5 else ink,
+			BackgroundColor3 = if tier == 1 then C.dim else ink,
 			BorderSizePixel = 0,
 			Rotation = 20,
 			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -((tier - slash) * 9), 0, 66),
+			Position = UDim2.new(1, -((tier - slash) * 9), 0, 87),
 			Size = UDim2.fromOffset(4, 14),
+			Parent = card,
+		})
+	end
+	if currentTab == "featured" then
+		Kit.label({
+			Text = Cosmetics.KIND_SINGULAR[item.kind] or item.kind,
+			font = "body",
+			color = C.dim,
+			TextWrapped = false,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			AutomaticSize = Enum.AutomaticSize.None,
+			Position = UDim2.fromOffset(0, 104),
+			Size = UDim2.new(1, 0, 0, 20),
 			Parent = card,
 		})
 	end
@@ -448,7 +371,9 @@ local function rebuild()
 	local right = if robux or phone then 0 else PREVIEW_WIDTH + GAP
 	grid.Position = UDim2.fromOffset(left, top)
 	grid.Size = UDim2.new(1, -(left + right), 1, -top)
-	gridLayout.CellSize = if phone then UDim2.new(0.5, -T.space.m, 0, 172) else UDim2.new(1 / 3, -T.space.m, 0, 172)
+	gridLayout.CellSize = if phone
+		then UDim2.new(0.5, -T.space.m, 0, CARD_HEIGHT)
+		else UDim2.new(1 / 3, -T.space.m, 0, CARD_HEIGHT)
 	if robux then
 		buildRobux(profile)
 		return
@@ -554,7 +479,7 @@ function ShopPanel.init()
 	rowTabs.AutomaticSize = Enum.AutomaticSize.X
 	grid = Kit.scroll({ Position = UDim2.fromOffset(TABS_WIDTH + GAP, TOP), Parent = body })
 	Kit.pad(grid, T.space.xs, T.space.xs)
-	gridLayout = Kit.grid(grid, UDim2.new(1 / 3, -T.space.m, 0, 172), T.space.m)
+	gridLayout = Kit.grid(grid, UDim2.new(1 / 3, -T.space.m, 0, CARD_HEIGHT), T.space.m)
 	previewHolder = Kit.card({
 		Name = "Preview",
 		tone = "page",
@@ -564,18 +489,10 @@ function ShopPanel.init()
 		Size = UDim2.new(0, PREVIEW_WIDTH, 1, -TOP),
 		Parent = body,
 	})
-	viewport = Create("ViewportFrame", {
-		BackgroundColor3 = C.void,
-		BackgroundTransparency = 0,
-		Ambient = Color3.fromRGB(150, 155, 165),
-		LightColor = Color3.fromRGB(255, 255, 255),
-		LightDirection = Vector3.new(-1, -1, -0.5),
-		Size = UDim2.new(1, 0, 1, -36),
-		Parent = previewHolder,
-	})
+	look = YourLook.new(previewHolder, { background = C.void, Size = UDim2.new(1, 0, 1, -36) })
 	previewCaption = Kit.label({
-		Text = "YOUR LOOK",
-		font = "label",
+		Text = "Your look",
+		font = "bodyBold",
 		size = "small",
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextWrapped = false,
@@ -587,10 +504,9 @@ function ShopPanel.init()
 	})
 	ClientState.ProfileChanged:Connect(function()
 		if Router.isOpen("shop") then
+			-- The cards follow the profile; the 3D copy is taken again only if what you wear changed.
 			rebuild()
-			if selectedId then
-				showPreview(Cosmetics.byId(selectedId))
-			end
+			look:profileChanged(ClientState.profile)
 		end
 	end)
 	Kit.Layout.watch(function(class: string)
@@ -609,10 +525,11 @@ function ShopPanel.init()
 			selectedId = nil
 			verticalTabs.Visible = not Kit.Layout.isPhone()
 			rowScroll.Visible = Kit.Layout.isPhone()
+			look:open(ClientState.profile)
 			rebuild()
 		end,
 		hide = function()
-			clearPreview()
+			look:close()
 		end,
 		firstSelection = function()
 			return firstButton

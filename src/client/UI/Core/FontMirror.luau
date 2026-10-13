@@ -1,18 +1,19 @@
--- Melodrama everywhere. Roblox cannot load custom fonts, so every text the game sets in the plain stand-in
--- font (Montserrat: labels, lists, tips, toasts, name tags, the signs and boards built in the world) is
--- redrawn here in Melodrama from the glyph atlases, the way the titles are:
---   * the label keeps its Text, layout and everything code does with it, but stops drawing its own letters
---     (MaxVisibleGraphemes = 0); a GlyphText inside it draws them instead, Semibold (Bold for bold text),
---     never under MIN_SIZE px, and never under WINDOW_MIN px inside a window (the shop, the settings...):
---     that is where the small print is read and pressed;
+-- Melodrama where it reads well. Roblox cannot load custom fonts, so text the game sets in the plain font
+-- (Montserrat: labels, lists, tips, toasts, name tags, the signs and boards built in the world) is redrawn
+-- here in Melodrama from the glyph atlases, the way the titles are, but only where Melodrama can be read:
+--   * text of MIRROR_MIN px and up on the screen (headings, big numbers), and every sign in the world (a
+--     SurfaceGui on a part); smaller text keeps its own Montserrat lettering, never under MIN_SIZE px, and
+--     never under WINDOW_MIN px inside a window (the shop, the settings...), where the small print is read
+--     and pressed. A label crosses over by itself when its size changes;
+--   * a redrawn label keeps its Text, layout and everything code does with it, but stops drawing its own
+--     letters (MaxVisibleGraphemes = 0); a GlyphText inside it draws them instead, Semibold (Bold for bold
+--     text);
 --   * colour, transparency, alignment, wrapping, TextScaled, truncation ("…"), text stroke (a dark copy
 --     underneath) and simple rich text (tags dropped, <s> struck through, <b> in Bold) follow the label;
---   * a label that sized itself to its text (AutomaticSize) is sized to the Melodrama letters instead;
---   * a text box keeps what you type in the stand-in font (Roblox draws typing and its cursor); only its
---     grey hint is redrawn.
--- Left alone: anything tagged KeepFont (or inside something tagged so: the debug panel, GlyphText's own
--- stand-in while its atlas loads), and text with a character the atlases do not have (the Japanese accents).
--- Chat and Roblox's own menus are out of reach.
+--   * a label that sized itself to its text (AutomaticSize) is sized to the Melodrama letters instead.
+-- Left alone: text boxes (typing and their grey hints stay Montserrat), anything tagged KeepFont (or inside
+-- something tagged so: the debug panel, GlyphText's own Montserrat labels), and text with a character the
+-- atlases do not have (the Japanese accents). Chat and Roblox's own menus are out of reach.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -23,6 +24,7 @@ local Screens = require(script.Parent.Parent.Screens)
 
 local FontMirror = {}
 
+local MIRROR_MIN = GlyphText.MIN_ATLAS -- px: smaller text stays Montserrat (signs in the world excepted)
 local MIN_SIZE = 14
 local WINDOW_MIN = 16 -- inside a window (the modal layer)
 local LINE = 1.15 -- line height, times the size (GlyphText's default)
@@ -33,8 +35,10 @@ type Mirror = {
 	shadow: any?,
 	strike: Frame?,
 	key: string,
+	auto: Enum.AutomaticSize,
 	autoX: boolean,
 	autoY: boolean,
+	mirrored: boolean,
 	pending: boolean,
 	width: number,
 	connections: { RBXScriptConnection },
@@ -173,28 +177,41 @@ local function clear(m: Mirror)
 	m.key = ""
 end
 
+-- Draws the label in Melodrama (true), or lets it draw its own Montserrat letters (false).
+local function setMirrored(m: Mirror, on: boolean)
+	if m.mirrored == on then
+		return
+	end
+	m.mirrored = on
+	local gui = m.label :: any
+	if on then
+		gui.MaxVisibleGraphemes = 0
+		if m.autoX or m.autoY then
+			gui.AutomaticSize = Enum.AutomaticSize.None
+		end
+	else
+		clear(m)
+		gui.MaxVisibleGraphemes = -1
+		gui.AutomaticSize = m.auto
+	end
+end
+
 local function render(m: Mirror)
 	m.pending = false
 	local label = m.label :: any
 	if not label.Parent then
 		return
 	end
-	local isBox = label:IsA("TextBox")
 	local raw = label.Text
 	local color = label.TextColor3
 	local transparency = label.TextTransparency
-	if isBox then
-		-- Only the grey hint of an empty box is redrawn.
-		if label.Text ~= "" or label:IsFocused() then
-			clear(m)
-			return
-		end
-		raw = tostring(label:GetAttribute("FontMirrorHint") or "")
-		color = label.PlaceholderColor3
-	end
 	local text, struck, bold = plain(raw, label.RichText)
-	if text == "" then
-		clear(m)
+	-- A sign on a part keeps Melodrama at any size; text on the screen (and over heads) only when large.
+	local sign = label:FindFirstAncestorWhichIsA("SurfaceGui") ~= nil
+	local onScreen = label:FindFirstAncestorWhichIsA("ScreenGui") ~= nil
+	local floor = if onScreen and label:IsDescendantOf(Screens.modal) then WINDOW_MIN else MIN_SIZE
+	if text == "" or not covered(text) then
+		setMirrored(m, false)
 		return
 	end
 	local weight = label.FontFace.Weight
@@ -208,10 +225,19 @@ local function render(m: Mirror)
 	local left, right, top, bottom = padding(label)
 	local boxWidth = label.AbsoluteSize.X / scale - left - right
 	local boxHeight = label.AbsoluteSize.Y / scale - top - bottom
-	local size = math.max(label.TextSize, if label:IsDescendantOf(Screens.modal) then WINDOW_MIN else MIN_SIZE)
+	local size = math.max(label.TextSize, floor)
 	if label.TextScaled then
 		size = fitSize(face, text, boxWidth, boxHeight, label.TextWrapped)
 	end
+	if not sign and size < MIRROR_MIN then
+		setMirrored(m, false)
+		if onScreen and not label.TextScaled and label.TextSize < floor then
+			-- Small print is never smaller than the floor.
+			label.TextSize = floor
+		end
+		return
+	end
+	setMirrored(m, true)
 	local maxWidth = if label.TextWrapped and not m.autoX and boxWidth > 0 then boxWidth else nil
 	if label.TextTruncate ~= Enum.TextTruncate.None and not label.TextWrapped and not m.autoX and boxWidth > 0 then
 		text = truncate(face, text, size, boxWidth)
@@ -311,17 +337,8 @@ local function detach(label: Instance)
 	for _, connection in ipairs(m.connections) do
 		connection:Disconnect()
 	end
+	setMirrored(m, false)
 	clear(m)
-	local gui = label :: any
-	if not gui:IsA("TextBox") then
-		gui.MaxVisibleGraphemes = -1
-	else
-		local hint = gui:GetAttribute("FontMirrorHint")
-		if hint then
-			gui.PlaceholderText = hint
-			gui:SetAttribute("FontMirrorHint", nil)
-		end
-	end
 end
 
 local function attach(label: Instance)
@@ -329,24 +346,11 @@ local function attach(label: Instance)
 		return
 	end
 	local gui = label :: any
-	local isBox = gui:IsA("TextBox")
-	local sample = if isBox then gui.PlaceholderText else plain(gui.Text, gui.RichText)
-	if gui:IsA("TextButton") and sample == "" then
+	if gui:IsA("TextButton") and plain(gui.Text, gui.RichText) == "" then
 		-- A bare clickable area (its look is drawn by other things): only if it ever gets text.
 		local watch
 		watch = gui:GetPropertyChangedSignal("Text"):Connect(function()
 			if gui.Text ~= "" then
-				watch:Disconnect()
-				attach(label)
-			end
-		end)
-		return
-	end
-	if not covered(sample) then
-		-- Not now (a Japanese accent, a check mark...); look again when the text changes.
-		local watch
-		watch = gui:GetPropertyChangedSignal(if isBox then "PlaceholderText" else "Text"):Connect(function()
-			if covered(if isBox then gui.PlaceholderText else plain(gui.Text, gui.RichText)) then
 				watch:Disconnect()
 				attach(label)
 			end
@@ -360,22 +364,15 @@ local function attach(label: Instance)
 		shadow = nil,
 		strike = nil,
 		key = "",
+		auto = auto,
 		autoX = auto == Enum.AutomaticSize.X or auto == Enum.AutomaticSize.XY,
 		autoY = auto == Enum.AutomaticSize.Y or auto == Enum.AutomaticSize.XY,
+		mirrored = false,
 		pending = false,
 		width = 0,
 		connections = {},
 	}
 	mirrors[label] = m
-	if m.autoX or m.autoY then
-		gui.AutomaticSize = Enum.AutomaticSize.None
-	end
-	if isBox then
-		gui:SetAttribute("FontMirrorHint", gui.PlaceholderText)
-		gui.PlaceholderText = ""
-	else
-		gui.MaxVisibleGraphemes = 0
-	end
 	local function on(property: string, handler: (() -> ())?)
 		table.insert(
 			m.connections,
@@ -414,34 +411,14 @@ local function attach(label: Instance)
 			FontMirror.schedule(gui)
 		end
 	end)
-	if isBox then
-		on("PlaceholderText", function()
-			-- Code sets a new hint now and then ("Pick a suspect first"): keep it, draw it ourselves.
-			if gui.PlaceholderText ~= "" then
-				gui:SetAttribute("FontMirrorHint", gui.PlaceholderText)
-				gui.PlaceholderText = ""
-				FontMirror.schedule(gui)
-			end
-		end)
-		on("PlaceholderColor3")
-		table.insert(
-			m.connections,
-			gui.Focused:Connect(function()
-				FontMirror.schedule(gui)
-			end)
-		)
-		table.insert(
-			m.connections,
-			gui.FocusLost:Connect(function()
-				FontMirror.schedule(gui)
-			end)
-		)
-	end
 	table.insert(
 		m.connections,
 		gui.AncestryChanged:Connect(function()
 			if not gui:IsDescendantOf(game) then
 				detach(gui)
+			else
+				-- Moved into (or out of) a window: the floor may have changed.
+				FontMirror.schedule(gui)
 			end
 		end)
 	)
@@ -449,7 +426,7 @@ local function attach(label: Instance)
 end
 
 local function consider(item: Instance)
-	if item:IsA("TextLabel") or item:IsA("TextButton") or item:IsA("TextBox") then
+	if item:IsA("TextLabel") or item:IsA("TextButton") then
 		-- After this frame, so the properties set right after parenting are in place.
 		task.defer(attach, item)
 	end

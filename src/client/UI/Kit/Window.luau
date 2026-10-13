@@ -2,7 +2,7 @@
 -- Windows: a Notch panel (two clipped corners and an outline) centred on the screen, or a sheet
 -- that rises from the bottom on phones. Every window has a Melodrama title (Aktura when `loud`), a
 -- close mark, a body and an optional footer for its actions, and frees the mouse while it is open.
--- The title glitches in when the window opens (and keeps glitching every couple of seconds if `loud`).
+-- Windows never glitch: what is in them has to be read.
 --
 --   local win = Window.new({ name = "settings", title = "Settings", size = "M" })
 --   ... build into win.body, put buttons in win.footer ...
@@ -20,7 +20,6 @@ local Screens = require(script.Parent.Parent.Screens)
 local Base = require(script.Parent.Base)
 local Controls = require(script.Parent.Controls)
 local GlyphText = require(script.Parent.GlyphText)
-local Glitch = require(script.Parent.Parent.Core.Glitch)
 local Layout = require(script.Parent.Layout)
 local Surfaces = require(script.Parent.Surfaces)
 local Tokens = require(script.Parent.Tokens)
@@ -33,7 +32,7 @@ export type Options = {
 	size: string?, -- "S", "sheet", "M" (default) or "L"
 	tone: string?, -- "black" (default), "white" (Ace's windows only); "parchment" is the same as "black"
 	jp: string?, -- a small grey Japanese accent beside the title (Roblox draws it with its CJK fallback font)
-	loud: boolean?, -- an Aktura title that keeps glitching (Death's Manual, the case report)
+	loud: boolean?, -- an Aktura title with a red stroke (Death's Manual, the case report)
 	closable: boolean?, -- default true
 	onClose: (() -> ())?, -- default: Router.close(name)
 	footer: boolean?, -- reserve a footer row for actions
@@ -51,7 +50,6 @@ export type Window = {
 	footer: Frame,
 	title: any,
 	close: TextButton?,
-	glitch: Glitch.Handle,
 	setTitle: (string) -> (),
 	options: Options,
 }
@@ -89,7 +87,7 @@ function Window.new(options: Options): Window
 		Parent = root,
 	})
 	local ink = inkFor(options.tone)
-	-- The header is a CanvasGroup so it can blink and split when it glitches in.
+	-- The header is a CanvasGroup (it fades as one piece).
 	local header = Base.make("CanvasGroup", {
 		Name = "Header",
 		BackgroundTransparency = 1,
@@ -189,7 +187,6 @@ function Window.new(options: Options): Window
 		end
 	end
 	Layout.watch(arrange)
-	local glitch = Glitch.attach(header, { enter = false, loop = options.loud == true })
 
 	local win: Window
 	win = {
@@ -201,7 +198,6 @@ function Window.new(options: Options): Window
 		footer = footer,
 		title = title,
 		close = close,
-		glitch = glitch,
 		options = options,
 		setTitle = function(text: string)
 			title:set(text)
@@ -232,7 +228,6 @@ function Window.register(win: Window, spec: Spec?)
 		end,
 		show = function(args)
 			win.root.Visible = true
-			win.glitch:enter()
 			if Layout.isPhone() then
 				Motion.slideIn(win.root, Vector2.new(0, 260), Tokens.motion.slow)
 			end

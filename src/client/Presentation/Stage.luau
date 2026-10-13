@@ -79,7 +79,7 @@ function Stage.hide(self: Stage, model: Model)
 	end
 end
 
--- A still copy of a character: no scripts, no physics, no name tag.
+-- A still copy of a character: no scripts, no physics, no name tag. (The shop's Your Look uses it too.)
 local function copyOf(source: Model): Model?
 	local archivable = source.Archivable
 	source.Archivable = true
@@ -115,6 +115,7 @@ local function copyOf(source: Model): Model?
 	clone:SetAttribute("Specter", nil)
 	return clone
 end
+Stage.copyOf = copyOf
 
 -- Puts a copy of `userId`'s avatar (or of `model`) on a mark (feet on the mark, facing its look
 -- vector), playing `clip`, holding `props`. Returns the copy, or nil if there is no body.
