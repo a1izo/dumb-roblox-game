@@ -355,8 +355,18 @@ def wetted(maps, amount, seed):
     return maps
 
 
+def _prepared_normal(scan, kind, size):
+    """A normal map art/scripts/heightmap.py made for a scan (art/source/prepared): "height" is the one
+    of its rebuilt height map, "relief" the one for the facets of its relief tile (maps/relief.py)."""
+    name = {"height": "normal", "relief": "relief_normal"}[kind]
+    path = os.path.join(common.source("prepared"), f"{scan}_{name}.png")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"{path} is missing: run art/scripts/heightmap.py {scan} (see there)")
+    return _unit(_read(path, size, size) * 2 - 1)
+
+
 def build(scan, colour, studs, where, n, organic, keep, contrast, relief, rough, quiet, wet, joint, turn, seed,
-          even, accent, metal, reach, clean):
+          even, accent, metal, reach, clean, normal=None):
     size = lookbook.pixels(studs, where)
     if isinstance(n, tuple):
         # A scan that is longer one way (a bolt of cloth): across x up, so the figure keeps its shape.
@@ -367,6 +377,8 @@ def build(scan, colour, studs, where, n, organic, keep, contrast, relief, rough,
         n = 1
     else:
         maps = load(scan, size // n)
+    if normal:
+        maps = dict(maps, normal=_prepared_normal(scan, normal, size // n))
     if not metal:
         # (Cloth scans carry a sheen map under that name; only real metal keeps a metalness map.)
         maps = {kind: arr for kind, arr in maps.items() if kind != "metal" or accent}
@@ -424,7 +436,8 @@ def quarter_turn(maps):
 
 
 def surface(scan, colour, studs, where="wall", n=1, organic=False, keep=0.5, contrast=1.0, relief=1.0, rough=None,
-            quiet=False, wet=0.0, joint=None, turn=False, seed=1, even=0.85, accent=None, metal=False, reach=None, clean=False):
+            quiet=False, wet=0.0, joint=None, turn=False, seed=1, even=0.85, accent=None, metal=False, reach=None, clean=False,
+            normal=None):
     """A LIBRARY entry: the surface's generator and the studs one repeat covers.
 
     scan     the photographed material (a folder of art/source/textures)
@@ -437,9 +450,11 @@ def surface(scan, colour, studs, where="wall", n=1, organic=False, keep=0.5, con
     even     how much of the scan's own slow light and dark is taken out before it is laid out
     accent   a second colour along the figure the scan carries (a jacquard's woven pattern)
     clean    take the scan's dark specks out (grit on photographed snow)
+    normal   a normal map art/scripts/heightmap.py made, in place of the scan's own: "height" (from the
+             height it rebuilt) or "relief" (for the facets of the relief tile, maps/relief.py)
     """
     return (lambda: build(scan, colour, studs, where, n, organic, keep, contrast, relief, rough, quiet, wet, joint,
-                          turn, seed, even, accent, metal, reach, clean)), studs
+                          turn, seed, even, accent, metal, reach, clean, normal)), studs
 
 
 # name -> (generator, studs covered by one repeat of the image)
@@ -452,7 +467,11 @@ LIBRARY = {
     "PlasterDark": surface("beige_wall_001", (46, 50, 56), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=22),
     "PlasterLight": surface("beige_wall_001", (150, 144, 132), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=23),
     "PlasterGrey": surface("beige_wall_001", (104, 110, 120), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=42),
-    "Stone": surface("medieval_blocks_03", (150, 144, 130), 8, "wall", 1, keep=0.7, seed=28),
+    # (The scan's own normal map has its red and green swapped, and its height map is blank: both come from
+    # the height art/scripts/heightmap.py rebuilt. StoneRelief is the same wall where its joints are cut
+    # into the mesh, maps/relief.py.)
+    "Stone": surface("medieval_blocks_03", (150, 144, 130), 8, "wall", 1, keep=0.7, seed=28, normal="height"),
+    "StoneRelief": surface("medieval_blocks_03", (150, 144, 130), 8, "wall", 1, keep=0.7, seed=28, normal="relief"),
     "Slate": surface("roof_slates_03", (46, 48, 54), 10, "far", 1, keep=0.4, seed=33),
     "FacadeTile": surface("exterior_wall_cladding_02", (150, 140, 124), 8, "wall", 1, keep=0.4, seed=34),
     "FacadeTileGrey": surface("concrete_tile_facade", (104, 108, 114), 8, "wall", 1, keep=0.4, seed=35),

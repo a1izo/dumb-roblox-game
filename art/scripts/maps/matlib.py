@@ -149,7 +149,7 @@ def fallback_look(name):
     """(Roblox material, sRGB colour) for a textured material whose texture did not load: the
     closest Roblox material and the average colour of its colour map."""
     kind = next((k for key, k in FALLBACK_KIND if key in name), "SmoothPlastic")
-    path = os.path.join(TEX_DIR, f"{name}_color.jpg")
+    path = os.path.join(TEX_DIR, f"{SHARED.get(name, name)}_color.jpg")
     if name in SHEETS:
         path = os.path.join(common.TEXTURES, SHEETS[name])
     rgb = (128, 128, 128)
@@ -193,6 +193,9 @@ def _save(name, array, non_color, quality=90):
 
 
 KINDS = ("color", "normal", "rough", "metal")
+# Surfaces that wear another's colour and roughness maps (one upload for both) and have a normal map of
+# their own: a wall with real relief (maps/relief.py), whose normal map is made for its facets.
+SHARED = {"StoneRelief": "Stone"}
 
 
 def make_textures(names=None, force=False):
@@ -204,7 +207,9 @@ def make_textures(names=None, force=False):
     for name, (generator, _) in scanlib.LIBRARY.items():
         if names and name not in names:
             continue
-        paths = {kind: os.path.join(TEX_DIR, f"{name}_{kind}.jpg") for kind in KINDS}
+        base = SHARED.get(name)
+        paths = {kind: os.path.join(TEX_DIR, f"{base if base and kind != 'normal' else name}_{kind}.jpg")
+                 for kind in KINDS}
         if not force and all(os.path.exists(paths[kind]) for kind in ("color", "normal", "rough")):
             images = {}
             for kind, path in paths.items():
@@ -217,6 +222,16 @@ def make_textures(names=None, force=False):
             out[name] = images
             continue
         maps = generator()
+        if base:
+            # (The base surface was made first in this loop, or is on disk.)
+            out[name] = {"normal": _save(f"{name}_normal", maps["normal"], True, quality=90)}
+            for kind in ("color", "rough"):
+                img = bpy.data.images.load(paths[kind], check_existing=True)
+                if kind != "color":
+                    img.colorspace_settings.name = "Non-Color"
+                out[name][kind] = img
+            print("[maps] texture", name, "(colour and roughness of " + base + ")")
+            continue
         out[name] = {
             "color": _save(f"{name}_color", maps["color"], False, quality=90),
             "normal": _save(f"{name}_normal", maps["normal"], True, quality=90),

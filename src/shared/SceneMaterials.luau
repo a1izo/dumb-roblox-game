@@ -126,6 +126,7 @@ return {
 	SnowThin = { textured = true, fallback = { material = "Snow", color = { 166, 170, 180 } } },
 	Steel = { textured = true, fallback = { material = "Metal", color = { 147, 148, 152 } } },
 	Stone = { textured = true, fallback = { material = "Cobblestone", color = { 148, 144, 133 } } },
+	StoneRelief = { textured = true, fallback = { material = "Cobblestone", color = { 148, 144, 133 } } },
 	TarpBlue = { textured = true, fallback = { material = "Fabric", color = { 45, 79, 143 } } },
 	Tatami = { textured = true, fallback = { material = "SmoothPlastic", color = { 167, 156, 110 } } },
 	Terrazzo = { textured = true, fallback = { material = "SmoothPlastic", color = { 168, 166, 158 } } },
