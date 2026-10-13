@@ -32,6 +32,22 @@ EmoteMedia.SOUNDS = {
 	puppetDance = "",
 	writeAir = "",
 	aceCrouch = "",
+	-- The emote pack: dances
+	officeParty = "",
+	twoLeggedBop = "",
+	boatAura = "",
+	jackpotShuffle = "",
+	theClassic = "",
+	floss = "",
+	bouncePump = "",
+	ratDance = "",
+	bunnyEars = "",
+	puppetPop = "",
+	jumpstyle = "",
+	glitchStep = "",
+	goalCelebration = "",
+	takeTheL = "",
+	twoWeeksNotice = "",
 } :: { [string]: string }
 
 -- [expression] = decal asset id (a face drawn in art/textures/faces, uploaded as a Decal)
