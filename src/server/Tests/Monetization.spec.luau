@@ -191,6 +191,7 @@ return function(t)
 			end
 		end)
 		it("deals every kind in exactly one suit", function()
+			expect(#Cosmetics.KINDS).to.equal(10)
 			for _, kind in ipairs(Cosmetics.KINDS) do
 				local suits = 0
 				for _, suit in ipairs(Cosmetics.SUITS) do

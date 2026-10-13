@@ -1,7 +1,10 @@
 -- "Your look" in the shop: a still copy of your own character in a 3D view, facing you at three
 -- quarters, wearing what you have equipped plus the item you are looking at: a hat, a tie or a Manual
 -- cover on the copy, a trail as a ribbon flowing behind it, a Deathsinger form as the copy turned to a
--- tinted ghost, a title over its head (the words over the view: a 3D view draws no billboards). The copy is taken once
+-- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
+-- billboards). Styles and gestures play once when picked (again when picked again): an emote on the
+-- copy, a writing style writing a name on a strip of page, a verdict's little scene, a death style on
+-- the copy (which is taken again afterwards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
 -- little on its own; drag it to turn it, and it comes back to face you a few seconds later.
@@ -22,6 +25,9 @@ local Models = require(Shared:WaitForChild("Models"))
 
 local Motion = require(script.Parent.Parent.Core.Motion)
 local Tokens = require(script.Parent.Parent.Kit.Tokens)
+local EmoteController = require(script.Parent.Parent.Parent.Controllers.EmoteController)
+local PoseController = require(script.Parent.Parent.Parent.Anim.PoseController)
+local Styles = require(script.Parent.Parent.Parent.Presentation.Styles)
 local Stage = require(script.Parent.Parent.Parent.Presentation.Stage)
 
 local LocalPlayer = Players.LocalPlayer
@@ -46,6 +52,7 @@ export type YourLook = typeof(setmetatable(
 		item: Cosmetics.Item?,
 		profile: any,
 		titleLabel: TextLabel,
+		stopPreview: (() -> ())?,
 		wearing: string,
 		spin: number,
 		lastDrag: number,
@@ -160,6 +167,7 @@ function YourLook.new(holder: GuiObject, props: { [string]: any }?): YourLook
 		item = nil,
 		profile = nil,
 		titleLabel = titleLabel,
+		stopPreview = nil,
 		wearing = "",
 		spin = 0,
 		lastDrag = 0,
@@ -273,6 +281,7 @@ local function dress(self: YourLook)
 	local title = if looking == "title" then item else Cosmetics.byId(equipped.title)
 	self.titleLabel.Text = if title then title.name else ""
 	ghost(copy, if looking == "specter" and item then item.color else nil)
+	Styles.form(copy, if looking == "specter" and item then item.form else nil, if item then item.color else nil)
 	local head = copy:FindFirstChild("Head")
 	local torso = copy:FindFirstChild("Torso")
 	local equippedHat = copy:FindFirstChild("LCosmeticHat")
@@ -403,10 +412,128 @@ function YourLook.capture(self: YourLook, profile)
 	dress(self)
 end
 
--- Shows `item` on the copy (nil = just what you wear).
+local SAMPLE_NAME = "Kenji Mori" -- (a name from the pools, nobody's in a case)
+
+local function stopPreview(self: YourLook)
+	local stop = self.stopPreview
+	self.stopPreview = nil
+	if stop then
+		stop()
+	end
+end
+
+-- A name written on a strip of page at the foot of the view, in a writing style.
+local function writePreview(self: YourLook, style: string): () -> ()
+	local page = Create("Frame", {
+		Name = "Page",
+		BackgroundColor3 = Color3.fromRGB(172, 98, 36),
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -12),
+		Size = UDim2.new(0.86, 0, 0, 58),
+		ZIndex = 6,
+		Parent = self.viewport,
+	})
+	local ink, font = Styles.ink(style)
+	local clip = Create("Frame", {
+		BackgroundTransparency = 1,
+		ClipsDescendants = true,
+		Position = UDim2.fromOffset(12, 6),
+		Size = UDim2.fromOffset(0, 46),
+		ZIndex = 7,
+		Parent = page,
+	}) :: Frame
+	local label = Create("TextLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(240, 46),
+		Text = SAMPLE_NAME,
+		FontFace = font,
+		TextSize = 30,
+		TextColor3 = ink,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Bottom,
+		ZIndex = 7,
+		Parent = clip,
+	}) :: TextLabel
+	label:SetAttribute("KeepFont", true)
+	task.spawn(function()
+		task.wait()
+		local shown = math.min(240, (if label.TextBounds.X > 1 then label.TextBounds.X else 160) + 6)
+		Styles.write(clip, label, shown, 0.08, style)
+	end)
+	return function()
+		page:Destroy()
+	end
+end
+
+-- An emote on the copy: its joints let go for as long as it plays, and it is put back at rest after.
+local function emotePreview(self: YourLook, clip: string): () -> ()
+	local copy = self.copy
+	if not copy then
+		return function() end
+	end
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and not part:FindFirstAncestor("Trying") then
+			part.Anchored = false
+		end
+	end
+	PoseController.bindWhenReady(copy, 1)
+	PoseController.play(copy, clip, { fadeIn = 0.1, fadeOut = 0.2, duration = 3.4 })
+	local removeProp = EmoteController.dress(copy, clip)
+	local done = false
+	local function stop()
+		if done then
+			return
+		end
+		done = true
+		removeProp()
+		PoseController.stop(copy, clip, 0)
+		if copy.Parent then
+			restPose(copy)
+		end
+	end
+	task.delay(3.6, stop)
+	return stop
+end
+
+-- Plays a style or a gesture once, for the item picked (nothing for other kinds).
+local function preview(self: YourLook, item: Cosmetics.Item)
+	stopPreview(self)
+	if item.kind == "emote" and type(item.emote) == "string" then
+		self.stopPreview = emotePreview(self, item.emote)
+	elseif item.kind == "writing" and type(item.style) == "string" then
+		self.stopPreview = writePreview(self, item.style)
+	elseif item.kind == "verdict" and type(item.style) == "string" then
+		self.stopPreview =
+			Styles.verdict(item.style, self.viewport, UDim2.fromScale(0.5, 0.62), UDim2.fromScale(0.95, 0.6))
+	elseif item.kind == "death" and type(item.style) == "string" and self.copy then
+		local style = item.style
+		Styles.death(style, self.copy)
+		local alive = true
+		task.delay(3.2, function()
+			if alive and self.world and self.item == item then
+				self:capture(self.profile)
+			end
+		end)
+		self.stopPreview = function()
+			alive = false
+		end
+	end
+end
+
+-- Shows `item` on the copy (nil = just what you wear), and plays it if it is a style or a gesture.
 function YourLook.show(self: YourLook, item: Cosmetics.Item?)
+	stopPreview(self)
+	if self.item ~= item and self.item and self.item.kind == "death" and self.world then
+		-- (A death style left the copy as it left it: take it again.)
+		self.item = item
+		self:capture(self.profile)
+	end
 	self.item = item
 	dress(self)
+	if item then
+		preview(self, item)
+	end
 end
 
 -- The profile changed: take a new copy only if what you wear changed (after the server has
@@ -477,6 +604,7 @@ function YourLook.open(self: YourLook, profile)
 end
 
 function YourLook.close(self: YourLook)
+	stopPreview(self)
 	for _, connection in ipairs(self.connections) do
 		connection:Disconnect()
 	end

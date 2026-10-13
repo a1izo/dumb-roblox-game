@@ -7,8 +7,9 @@
 --   epic       ornate corners
 --   legendary  amber gold leaf, a slow shine passing over it (still under reduced motion)
 --
--- Objects (hats, ties, trails, Manual covers, Deathsinger forms) are a small 3D view; the rest (titles,
--- styles, gestures) a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand
+-- Objects (hats, ties, trails, Manual covers) are a small 3D view, and so are the styles, forms and
+-- gestures that have a prop of their own once the Core models are imported (a quill, a gavel, a chess
+-- king, a crow cloak, a coin...); the rest is a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand
 -- can lie face down (the back of the deck) and be turned over.
 --
 --   local card = Card.new(item, { Parent = slot, chip = "300", onPick = fn })
@@ -21,6 +22,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local Kit = require(script.Parent.Parent.Kit)
 local Motion = require(script.Parent.Parent.Core.Motion)
@@ -101,10 +103,28 @@ local function part(
 	})
 end
 
+-- The prop a style, form or gesture shows on its card (a Core model; nil when it has none).
+local PROP = {
+	writing = { quill = "Quill", typewriter = "Typewriter", fire = "Quill", knife = "Knife" },
+	verdict = { gavel = "Gavel", cuffs = "Handcuffs", checkmate = "ChessKing", sugar = "SugarCube" },
+	specter = { chains = "Chain", crows = "CrowCloak", marionette = "MarionetteBar", veil = "Hood" },
+	emote = { coinFlip = "Coin", appleBite = "Apple" },
+}
+
+local function propOf(item: Cosmetics.Item): string?
+	local table_ = PROP[item.kind]
+	if not table_ then
+		return nil
+	end
+	local key = table_[item.style or item.form or item.emote or ""]
+	return if key and ModelLibrary.has(key) then key else nil
+end
+
 -- The thing itself, small, in a 3D view (nil for kinds that have none).
 local function picture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 	local kind = item.kind
-	if kind ~= "hat" and kind ~= "tie" and kind ~= "trail" and kind ~= "grimoire" then
+	local key = propOf(item)
+	if kind ~= "hat" and kind ~= "tie" and kind ~= "trail" and kind ~= "grimoire" and not key then
 		return nil
 	end
 	local view = Create("ViewportFrame", {
@@ -117,7 +137,11 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 		Parent = parent,
 	}) :: ViewportFrame
 	local holder = Create("Model", { Name = "Thing", Parent = view }) :: Model
-	if kind == "hat" then
+	local model = if key then ModelLibrary.get(key) else nil
+	if model then
+		model.Parent = holder
+		frameView(view, holder, -28)
+	elseif kind == "hat" then
 		-- On a head nobody sees.
 		local head = part(holder, Vector3.new(2, 1, 1), CFrame.new(), C.void)
 		head.Transparency = 1

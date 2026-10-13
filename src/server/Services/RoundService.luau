@@ -283,6 +283,9 @@ local function outroData(winner: string)
 		center = meetingCenter(),
 		-- Every name written in the Manual this match (filtered when written), struck once it killed.
 		written = Match.written,
+		-- The case is closed: Diavolo's writing style and Ace's verdict style, for everyone.
+		writing = if hand then CosmeticsService.style(hand.player, "writing") else nil,
+		verdict = if zero then CosmeticsService.style(zero.player, "verdict") else nil,
 		duration = math.max(outroLength(), 10),
 	}
 end

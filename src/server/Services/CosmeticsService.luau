@@ -1,7 +1,9 @@
 -- Puts equipped cosmetics on players: hats and trails on the character, the tie, notebook
--- cover and Specter outline as player attributes (read wherever they show),
--- and the title tag over the head in the lobby (never inside a match, where it would give
--- away who is behind an alias).
+-- cover and Deathsinger form (its outline colour and what it wears) as player attributes (read
+-- wherever they show), and the title tag over the head in the lobby (never inside a match, where it
+-- would give away who is behind an alias). Styles (writing, verdict, death) are never attributes:
+-- the services that play them read them here and send them in their cues (Shared/Cosmetics).
+-- A complete matching set earns its title (Shared/Sets).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -9,6 +11,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
+local Mastery = require(Shared:WaitForChild("Progression"):WaitForChild("Mastery"))
+local Sets = require(Shared:WaitForChild("Sets"))
 
 local CharacterService = require(script.Parent.CharacterService)
 local DataService = require(script.Parent.DataService)
@@ -21,10 +25,14 @@ local HAT = "LCosmeticHat"
 local TITLE_TAG = "LTitleTag"
 local TRAIL_NAMES = { "LCosmeticTrail", "LTrailTop", "LTrailBottom" }
 
--- True when the player may use the item (bought, earned, or free with VIP).
+-- True when the player may use the item (bought, earned, free with VIP, or an emote that came with
+-- the Emote Pack).
 function CosmeticsService.owns(player: Player, item: Cosmetics.Item): boolean
 	if item.source == "vip" then
 		return PassService.owns(player, "vip")
+	end
+	if item.pass and PassService.owns(player, item.pass) then
+		return true
 	end
 	local data = DataService.get(player)
 	if not data then
@@ -45,6 +53,62 @@ local function equipped(player: Player, data, kind: string): Cosmetics.Item?
 		return item
 	end
 	return nil
+end
+
+-- The style a player has on for a kind ("writing", "verdict" or "death"): the item's style name, or
+-- nil (the plain one). Bots and players without a profile have none.
+function CosmeticsService.style(player: any, kind: string): string?
+	if typeof(player) ~= "Instance" then
+		return nil
+	end
+	local data = DataService.get(player)
+	if not data then
+		return nil
+	end
+	local item = equipped(player, data, kind)
+	return if item then item.style else nil
+end
+
+-- Hands out the titles of the sets now complete. Returns the sets completed (a toast each).
+function CosmeticsService.grantSets(player: Player): { Sets.Set }
+	local data = DataService.get(player)
+	if not data then
+		return {}
+	end
+	local done = Sets.completed(function(id: string): boolean
+		local item = Cosmetics.byId(id)
+		return item ~= nil and CosmeticsService.owns(player, item)
+	end)
+	for _, set in ipairs(done) do
+		data.owned[set.title] = true
+		Match.notify(player, "Set complete: " .. set.name .. ". Its title is yours.", "good")
+	end
+	return done
+end
+
+-- On arriving: what was earned before it existed (a mastery level's unlock, a set's title).
+local function catchUp(player: Player)
+	local data = DataService.get(player)
+	if not data then
+		return
+	end
+	local changed = false
+	for role, unlocks in pairs(Mastery.UNLOCKS) do
+		local level = Mastery.level(tonumber(data.mastery and data.mastery[role]) or 0)
+		for at, id in pairs(unlocks) do
+			if at <= level and not data.owned[id] then
+				data.owned[id] = true
+				changed = true
+			end
+		end
+	end
+	if #CosmeticsService.grantSets(player) > 0 then
+		changed = true
+	end
+	if changed then
+		DataService.push(player)
+		DataService.saveSoon(player)
+	end
 end
 
 -- The title to show on the results screen, or nil.
@@ -119,6 +183,8 @@ function CosmeticsService.apply(player: Player)
 	player:SetAttribute("LTieColor", if tie then tie.color else nil)
 	player:SetAttribute("LGrimoireColor", if book then book.color else nil)
 	player:SetAttribute("LSpecterColor", if specter then specter.color else nil)
+	-- (Only Deathsingers and spectators ever see a form: GhostVisibility.)
+	player:SetAttribute("LSpecterForm", if specter then specter.form else nil)
 
 	local character = player.Character
 	if not character then
@@ -148,6 +214,7 @@ function CosmeticsService.init()
 		CosmeticsService.apply(player)
 	end)
 	DataService.ProfileLoaded:Connect(function(player)
+		catchUp(player)
 		CosmeticsService.apply(player)
 	end)
 	PassService.Changed:Connect(function(player)

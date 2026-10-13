@@ -27,14 +27,18 @@ export type Options = {
 	to: { Player }?, -- only these players (everyone by default)
 	lead: number?, -- seconds from now until the cue starts (0.35 by default)
 	hold: number?, -- keep the match loop waiting this long after the cue starts
+	-- The id of a cue already sent: this is the same cue in another version (a style only its owner may
+	-- see goes in one copy), so every screen draws the same things from it (Presenters/Death's witnesses).
+	sameAs: number?,
 }
 
 -- kind: "intro", "death", "verdict", "arrest", "eyesDeal", "manualWrite", "outro"
 function Cues.fire(kind: string, data: { [string]: any }?, options: Options?): number
-	counter += 1
+	local id = if options and options.sameAs then options.sameAs else counter + 1
+	counter = math.max(counter, id)
 	local lead = if options and options.lead then options.lead else 0.35
 	local payload = {
-		id = counter,
+		id = id,
 		matchId = Match.id,
 		kind = kind,
 		at = now() + lead,
@@ -52,7 +56,7 @@ function Cues.fire(kind: string, data: { [string]: any }?, options: Options?): n
 	if options and options.hold then
 		Cues.hold(lead + options.hold)
 	end
-	return counter
+	return id
 end
 
 function Cues.hold(seconds: number)

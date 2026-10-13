@@ -1,6 +1,8 @@
 -- A warrant is served: a huge Aktura "A" slams onto the screen, two faceless operatives in black
 -- close in on the suspect, the cuffs click under flashing light, and a stamp says how it went. The
--- operatives are shadows made on this screen, never anyone's avatar (Ace stays hidden).
+-- operatives are shadows made on this screen, never anyone's avatar (Ace stays hidden). Ace's verdict
+-- style (gavel, cuffs, checkmate, sugar cubes) plays beside the arrest: on Ace's screen alone, or on
+-- everyone's when the one arrested is Diavolo (the server decides who gets it).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -17,6 +19,7 @@ local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local Stage = require(script.Parent.Parent.Stage)
+local Styles = require(script.Parent.Parent.Styles)
 
 local C = Kit.color
 
@@ -119,8 +122,12 @@ return function(cue)
 		Motion.pop(stamp)
 		Sfx.play("gavel")
 	end)
+	-- Ace's verdict style, beside the suspect.
+	local removeVerdict =
+		Styles.verdict(if type(data.verdict) == "string" then data.verdict else nil, Screens.cinematic)
 	task.wait(SHOT)
 	stamp:Destroy()
+	removeVerdict()
 	removeOutline()
 	stage:destroy()
 	Cinema.letterbox(false)

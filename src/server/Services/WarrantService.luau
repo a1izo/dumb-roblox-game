@@ -2,6 +2,7 @@
 -- and types that player's full real name. A wrong name rejects the warrant (only Zero is
 -- told) and Zero must wait for the next round to try again.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -11,6 +12,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
+local CosmeticsService = require(script.Parent.CosmeticsService)
 local Cues = require(script.Parent.Cues)
 local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
@@ -74,12 +76,31 @@ end
 
 -- A valid warrant is served: the arrest cutscene and its outcome.
 serve = function(l, suspect)
-	-- The arrest cutscene: the result is announced publicly anyway.
-	Cues.fire("arrest", {
+	-- The arrest cutscene: the result is announced publicly anyway. Ace's verdict style shows on Ace's
+	-- own screen, and on everyone's when the arrest is right (Ace is out then, as Diavolo is).
+	local data = {
 		userId = suspect.userId,
 		alias = suspect.alias,
 		result = if suspect.role == "Kira" then "hand" elseif suspect.role == "Follower" then "cultist" else "innocent",
-	}, { hold = 4 })
+	}
+	local verdict = CosmeticsService.style(l.player, "verdict")
+	if verdict and suspect.role == "Kira" then
+		data.verdict = verdict
+		Cues.fire("arrest", data, { hold = 4 })
+	elseif verdict and typeof(l.player) == "Instance" then
+		local others = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= l.player then
+				table.insert(others, player)
+			end
+		end
+		local mine = table.clone(data)
+		mine.verdict = verdict
+		local id = Cues.fire("arrest", mine, { hold = 4, to = { l.player } })
+		Cues.fire("arrest", data, { to = others, sameAs = id })
+	else
+		Cues.fire("arrest", data, { hold = 4 })
+	end
 	if suspect.role == "Kira" then
 		l.stats.arrestedKira = true
 		EventLog.add(

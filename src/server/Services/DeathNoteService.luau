@@ -8,6 +8,7 @@
 -- and the cause written in it, and the body falls when that shot is over; the ending shows every name
 -- written in the match (Match.written).
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -19,6 +20,7 @@ local Util = require(Shared:WaitForChild("Util"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local CharacterService = require(script.Parent.CharacterService)
+local CosmeticsService = require(script.Parent.CosmeticsService)
 local Cues = require(script.Parent.Cues)
 local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
@@ -42,14 +44,32 @@ local function kill(target, kira, cause: string, matchId: number, writtenAt: num
 		return
 	end
 	-- The book first, then the death: the cutscene opens on the name being written (its real name,
-	-- public from now on: the owner's choice), and the body falls as that shot ends.
-	Cues.fire("death", {
+	-- public from now on: the owner's choice), and the body falls as that shot ends. The victim's death
+	-- style plays for everyone; the writer's writing style only on the writer's own screen (who wrote is
+	-- secret while the case runs).
+	local data = {
 		userId = target.userId,
 		alias = target.alias,
 		cause = cause,
 		realName = target.realName,
 		written = true,
-	}, { hold = ManualTiming.HOLD, lead = CUE_LEAD })
+		death = CosmeticsService.style(target.player, "death"),
+	}
+	local writing = CosmeticsService.style(kira.player, "writing")
+	if writing and typeof(kira.player) == "Instance" then
+		local others = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= kira.player then
+				table.insert(others, player)
+			end
+		end
+		local mine = table.clone(data)
+		mine.writing = writing
+		local id = Cues.fire("death", mine, { hold = ManualTiming.HOLD, lead = CUE_LEAD, to = { kira.player } })
+		Cues.fire("death", data, { lead = CUE_LEAD, to = others, sameAs = id })
+	else
+		Cues.fire("death", data, { hold = ManualTiming.HOLD, lead = CUE_LEAD })
+	end
 	task.delay(CUE_LEAD + ManualTiming.BOOK, function()
 		if not stillOn() then
 			return
@@ -131,7 +151,11 @@ local function onWrite(player: Player, payload)
 	Match.pushPrivate(ps)
 	-- The writer, and only the writer, sees it go into the book: the same shot for a right name and a
 	-- wrong one.
-	Cues.fire("manualWrite", { name = shown }, { to = { player }, lead = 0.25 })
+	Cues.fire(
+		"manualWrite",
+		{ name = shown, writing = CosmeticsService.style(player, "writing") },
+		{ to = { player }, lead = 0.25 }
+	)
 end
 
 local function onReport(player: Player, payload)

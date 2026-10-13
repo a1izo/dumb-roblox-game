@@ -32,6 +32,11 @@ nothing, so you can fill them in any order.
 | `game_dive_wind.wav` | `gameDiveWind` | the rift dive: air rushing past, rising over six seconds | no |
 | `game_dive_crash.wav` | `gameDiveCrash` | the rift dive, braked too late: a heavy thud on a roof | no |
 | `trial_chime.wav` | `trialChime` | the Trial's wisp setting off: two soft glassy notes | no |
+| `style_typewriter.wav` | `typewriter` | the Typewriter writing style: one key striking | no |
+| `style_knife.wav` | `knifeScrape` | The Knife writing style: a blade cutting into paper | no |
+| `style_crows.wav` | `crows` | the Murder of Crows death style: crows taking off, cawing | no |
+| `style_stone.wav` | `stoneCrack` | the Petrified death style: a grinding crack, grit settling | no |
+| `style_strings.wav` | `stringsSnap` | the Cut Strings death style: taut strings snapping | no |
 
 The beds are meant to be heard only just: their levels are the slot's `volume` in `Assets.sfx` times
 the Ambience slider (and the player's own setting). The lobby music is ducked to about a third while the

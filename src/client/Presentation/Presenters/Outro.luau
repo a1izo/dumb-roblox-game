@@ -2,8 +2,9 @@
 -- despairing in their own way (ActingController). The camera stands in the middle of the table,
 -- under the ceiling, and turns slowly across their faces while the winning side is written in;
 -- then Death's Manual lies open on every name written in it this match, those that killed struck
--- through (when any name was written); then the lights find the Hand. Winners and losers each hear
--- their own music; the roster and rewards follow on the results screen.
+-- through (when any name was written), in the Hand's writing style; then the lights find the Hand, and
+-- when the Bureau won, Ace's verdict style lands beside them. Winners and losers each hear their own
+-- music; the roster and rewards follow on the results screen.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,9 +19,11 @@ local Kit = require(script.Parent.Parent.Parent.UI.Kit)
 local MusicController = require(script.Parent.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local BookStage = require(script.Parent.Parent.BookStage)
+local Screens = require(script.Parent.Parent.Parent.UI.Screens)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local Styles = require(script.Parent.Parent.Styles)
 
 local C = Kit.color
 local LocalPlayer = Players.LocalPlayer
@@ -105,7 +108,8 @@ return function(cue)
 
 	-- Every name written in the Manual.
 	if bookTime > 0 then
-		local stop = BookStage.play(token, lines, bookTime - 0.4)
+		local writing = if type(data.writing) == "string" then data.writing else nil
+		local stop = BookStage.play(token, lines, bookTime - 0.4, writing)
 		task.wait(bookTime)
 		stop()
 	end
@@ -117,6 +121,9 @@ return function(cue)
 		table.insert(cleanup, Cinema.spotlight(hand, if handWon then C.red else Color3.new(1, 1, 1)))
 		table.insert(cleanup, Cinema.outline(hand, C.red))
 		CameraDirector.cut(token, ShotSolver.frame(hand, { distance = 9, height = 2, angle = 20 }), 55)
+		if not handWon and type(data.verdict) == "string" then
+			table.insert(cleanup, Styles.verdict(data.verdict, Screens.cinematic))
+		end
 		local rest = math.max(0.5, endAt - workspace:GetServerTimeNow())
 		CameraDirector.move(token, ShotSolver.frame(hand, { distance = 5, height = 0.8, angle = 8 }), rest * 0.9, 40)
 	end

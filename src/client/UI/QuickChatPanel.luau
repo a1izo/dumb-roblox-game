@@ -82,14 +82,21 @@ function QuickChatPanel.init()
 		firstButton = firstButton or button
 	end
 	caption("Emotes", 176, content)
-	local emotes = Kit.frame({
+	-- One row that scrolls sideways: everyone's emotes, then the gestures you own from the shop.
+	local emotes = Kit.Base.make("ScrollingFrame", {
 		Name = "Emotes",
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
 		Position = UDim2.fromOffset(0, 198),
-		Size = UDim2.new(1, 0, 0, 40),
+		Size = UDim2.new(1, 0, 0, 48),
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		ScrollBarThickness = 3,
 		Parent = content,
 	})
 	Kit.list(emotes, T.space.s, true)
-	local passEmotes: { [TextButton]: string } = {}
+	local shopEmotes: { [TextButton]: { item: string?, pass: string? } } = {}
 	for index, emote in ipairs(QuickChat.EMOTES) do
 		local button = Kit.button({
 			text = emote.name,
@@ -101,14 +108,17 @@ function QuickChatPanel.init()
 			EmoteController.play(emote.id)
 			QuickChatPanel.close()
 		end)
-		if emote.pass then
-			passEmotes[button] = emote.pass
+		if emote.pass or emote.item then
+			shopEmotes[button] = { item = emote.item, pass = emote.pass }
 		end
 	end
 	local function refreshPassEmotes()
-		local passes = if ClientState.profile then ClientState.profile.passes or {} else {}
-		for button, pass in pairs(passEmotes) do
-			button.Visible = table.find(passes, pass) ~= nil
+		local profile = ClientState.profile
+		local passes = if profile then profile.passes or {} else {}
+		local owned = if profile then profile.owned or {} else {}
+		for button, gate in pairs(shopEmotes) do
+			button.Visible = (gate.pass ~= nil and table.find(passes, gate.pass) ~= nil)
+				or (gate.item ~= nil and table.find(owned, gate.item) ~= nil)
 		end
 	end
 	ClientState.ProfileChanged:Connect(refreshPassEmotes)

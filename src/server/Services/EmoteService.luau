@@ -6,9 +6,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
+local CosmeticsService = require(script.Parent.CosmeticsService)
 local Match = require(script.Parent.Match)
 local PassService = require(script.Parent.PassService)
 local RateLimit = require(script.Parent.RateLimit)
@@ -35,7 +37,16 @@ local function onEmote(player: Player, emoteId)
 			emote = candidate
 		end
 	end
-	if not emote or (emote.pass and not PassService.owns(player, emote.pass)) then
+	if not emote then
+		return
+	end
+	local item = if emote.item then Cosmetics.byId(emote.item) else nil
+	if item then
+		-- (owns counts the Emote Pack for the four it brings)
+		if not CosmeticsService.owns(player, item) then
+			return
+		end
+	elseif emote.pass and not PassService.owns(player, emote.pass) then
 		return
 	end
 	-- A Specter waiting in the lobby is hidden; an emote would only show where they stand.

@@ -1,8 +1,10 @@
 -- Cosmetic catalog. Item ids never change (they are saved in profiles).
 --
 --   kind    hat, trail, tie (the noir tie in matches), grimoire (the manual cover in the
---           Grimoire phase), specter (your
---           outline as a ghost), title (shown in the lobby and on the results screen only)
+--           Grimoire phase), specter (your form as a Deathsinger: `form` names what it wears),
+--           title (shown in the lobby and on the results screen only), writing (how Diavolo's
+--           names go into the Manual: `style`), verdict (how Ace's arrest lands: `style`), death
+--           (what becomes of you when you die: `style`), emote (a gesture: `emote` is its clip)
 --   rarity  common, rare, epic, legendary
 --   source  shop (always for sale), rotation (for sale on days it is featured), vip
 --           (free with the VIP pass), rank / achievement / streak / mastery (earned)
@@ -10,7 +12,9 @@
 --
 -- Role neutrality: nothing here may show or hide what role someone has. Everyone holds a
 -- notebook and writes in the Grimoire phase whatever they own, and ghosts are only ever
--- seen by other ghosts.
+-- seen by other ghosts. A writing or verdict style is never a public attribute: during a case
+-- only its owner sees it, and everyone once that identity is out (the server sends it in the
+-- cues). A death style is the victim's and plays for everyone.
 
 local Terms = require(script.Parent.Terms)
 
@@ -258,6 +262,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 300,
 		color = Color3.fromRGB(255, 120, 60),
+		form = "embers",
 	},
 	{
 		id = "specter_violet",
@@ -267,6 +272,7 @@ Cosmetics.ITEMS = {
 		source = "rotation",
 		price = 600,
 		color = Color3.fromRGB(170, 100, 255),
+		form = "veil",
 	},
 	{
 		id = "specter_blood",
@@ -275,6 +281,237 @@ Cosmetics.ITEMS = {
 		rarity = "legendary",
 		source = "vip",
 		color = RED,
+		form = "chains",
+	},
+	{
+		id = "specter_crow",
+		kind = "specter",
+		name = "Crow Shroud",
+		rarity = "epic",
+		source = "shop",
+		price = 650,
+		color = Color3.fromRGB(60, 62, 74),
+		form = "crows",
+	},
+	{
+		id = "specter_marionette",
+		kind = "specter",
+		name = "Cut Marionette",
+		rarity = "legendary",
+		source = "shop",
+		price = 1200,
+		color = Color3.fromRGB(214, 200, 176),
+		form = "marionette",
+	},
+	-- Writing styles (Diavolo's names going into the Manual)
+	{
+		id = "writing_quill",
+		kind = "writing",
+		name = "Bleeding Quill",
+		rarity = "rare",
+		source = "shop",
+		price = 350,
+		style = "quill",
+		color = Color3.fromRGB(150, 14, 26),
+	},
+	{
+		id = "writing_typewriter",
+		kind = "writing",
+		name = "Typewriter",
+		rarity = "rare",
+		source = "shop",
+		price = 300,
+		style = "typewriter",
+		color = Color3.fromRGB(214, 210, 200),
+	},
+	{
+		id = "writing_fire",
+		kind = "writing",
+		name = "Burning Letters",
+		rarity = "epic",
+		source = "shop",
+		price = 650,
+		style = "fire",
+		color = Color3.fromRGB(255, 140, 60),
+	},
+	{
+		id = "writing_knife",
+		kind = "writing",
+		name = "The Knife",
+		rarity = "legendary",
+		source = "mastery",
+		style = "knife",
+		color = Color3.fromRGB(196, 198, 206),
+	},
+
+	-- Verdict styles (Ace's arrest)
+	{
+		id = "verdict_gavel",
+		kind = "verdict",
+		name = "Gavel",
+		rarity = "rare",
+		source = "shop",
+		price = 300,
+		style = "gavel",
+		color = Color3.fromRGB(120, 78, 50),
+	},
+	{
+		id = "verdict_cuffs",
+		kind = "verdict",
+		name = "Cuffs",
+		rarity = "rare",
+		source = "shop",
+		price = 350,
+		style = "cuffs",
+		color = Color3.fromRGB(190, 194, 204),
+	},
+	{
+		id = "verdict_checkmate",
+		kind = "verdict",
+		name = "Checkmate",
+		rarity = "epic",
+		source = "shop",
+		price = 650,
+		style = "checkmate",
+		color = Color3.fromRGB(40, 40, 44),
+	},
+	{
+		id = "verdict_sugar",
+		kind = "verdict",
+		name = "Sugar Cubes",
+		rarity = "legendary",
+		source = "mastery",
+		style = "sugar",
+		color = Color3.fromRGB(244, 242, 236),
+	},
+
+	-- Death styles (what becomes of you, after the collapse)
+	{
+		id = "death_ash",
+		kind = "death",
+		name = "Ash",
+		rarity = "rare",
+		source = "shop",
+		price = 300,
+		style = "ash",
+		color = Color3.fromRGB(120, 116, 112),
+	},
+	{
+		id = "death_strings",
+		kind = "death",
+		name = "Cut Strings",
+		rarity = "epic",
+		source = "shop",
+		price = 550,
+		style = "strings",
+		color = Color3.fromRGB(214, 200, 176),
+	},
+	{
+		id = "death_crows",
+		kind = "death",
+		name = "Murder of Crows",
+		rarity = "epic",
+		source = "shop",
+		price = 650,
+		style = "crows",
+		color = Color3.fromRGB(30, 30, 36),
+	},
+	{
+		id = "death_stone",
+		kind = "death",
+		name = "Petrified",
+		rarity = "legendary",
+		source = "shop",
+		price = 1200,
+		style = "stone",
+		color = Color3.fromRGB(150, 148, 142),
+	},
+
+	-- Gestures (emotes; `emote` is the clip). The Emote Pack pass still unlocks its four (`pass`).
+	{
+		id = "emote_groove",
+		kind = "emote",
+		name = "Groove",
+		rarity = "common",
+		source = "shop",
+		price = 250,
+		emote = "dance2",
+		pass = "emotes",
+	},
+	{
+		id = "emote_spin",
+		kind = "emote",
+		name = "Spin",
+		rarity = "common",
+		source = "shop",
+		price = 250,
+		emote = "dance3",
+		pass = "emotes",
+	},
+	{
+		id = "emote_chip",
+		kind = "emote",
+		name = "Potato chip",
+		rarity = "common",
+		source = "shop",
+		price = 250,
+		emote = "chip",
+		pass = "emotes",
+	},
+	{
+		id = "emote_think",
+		kind = "emote",
+		name = "Thinker",
+		rarity = "common",
+		source = "shop",
+		price = 250,
+		emote = "think",
+		pass = "emotes",
+	},
+	{
+		id = "emote_coin",
+		kind = "emote",
+		name = "Coin Flip",
+		rarity = "common",
+		source = "shop",
+		price = 150,
+		emote = "coinFlip",
+	},
+	{
+		id = "emote_apple",
+		kind = "emote",
+		name = "Apple Bite",
+		rarity = "rare",
+		source = "shop",
+		price = 300,
+		emote = "appleBite",
+	},
+	{
+		id = "emote_puppet",
+		kind = "emote",
+		name = "Puppet Dance",
+		rarity = "rare",
+		source = "shop",
+		price = 350,
+		emote = "puppetDance",
+	},
+	{
+		id = "emote_air",
+		kind = "emote",
+		name = "Write in the Air",
+		rarity = "epic",
+		source = "shop",
+		price = 500,
+		emote = "writeAir",
+	},
+	{
+		id = "emote_crouch",
+		kind = "emote",
+		name = Terms.f("{Zero}'s Crouch"),
+		rarity = "epic",
+		source = "shop",
+		price = 500,
+		emote = "aceCrouch",
 	},
 
 	-- Titles (lobby and results only)
@@ -282,6 +519,12 @@ Cosmetics.ITEMS = {
 	{ id = "title_detective", kind = "title", name = "Detective", rarity = "common", source = "shop", price = 150 },
 	{ id = "title_insomniac", kind = "title", name = "Insomniac", rarity = "rare", source = "rotation", price = 300 },
 	{ id = "title_vip", kind = "title", name = "Patron of the Arts", rarity = "epic", source = "vip" },
+	-- Earned: a whole set (Shared/Sets)
+	{ id = "title_set_noir", kind = "title", name = "Film Noir", rarity = "rare", source = "set" },
+	{ id = "title_set_ivory", kind = "title", name = "Ivory Tower", rarity = "epic", source = "set" },
+	{ id = "title_set_gilded", kind = "title", name = "Gilded Age", rarity = "legendary", source = "set" },
+	{ id = "title_set_red", kind = "title", name = "Seeing Red", rarity = "epic", source = "set" },
+	{ id = "title_set_ninelives", kind = "title", name = "Nine Lives", rarity = "legendary", source = "set" },
 
 	-- Earned: the 7-day streak
 	{ id = "title_nightowl", kind = "title", name = "Night Owl", rarity = "rare", source = "streak" },
@@ -354,7 +597,7 @@ Cosmetics.ITEMS = {
 	{ id = "title_rank_8", kind = "title", name = "Legendary Detective", rarity = "legendary", source = "rank" },
 } :: { Item }
 
-Cosmetics.KINDS = { "hat", "trail", "tie", "grimoire", "specter", "title" }
+Cosmetics.KINDS = { "hat", "trail", "tie", "grimoire", "specter", "title", "writing", "verdict", "death", "emote" }
 
 Cosmetics.KIND_NAMES = {
 	hat = "Hats",
@@ -363,6 +606,10 @@ Cosmetics.KIND_NAMES = {
 	grimoire = "Manual covers",
 	specter = "Deathsinger forms",
 	title = "Titles",
+	writing = "Writing styles",
+	verdict = "Verdict styles",
+	death = "Death styles",
+	emote = "Emotes",
 }
 
 -- The shop's suits ("Death's hand": the shop is a table of cards dealt by Death), in order, each with
@@ -388,6 +635,10 @@ Cosmetics.KIND_SINGULAR = {
 	grimoire = "Manual cover",
 	specter = "Deathsinger form",
 	title = "Title",
+	writing = "Writing style",
+	verdict = "Verdict style",
+	death = "Death style",
+	emote = "Emote",
 }
 
 Cosmetics.RARITIES = { "common", "rare", "epic", "legendary" }
@@ -439,6 +690,16 @@ function Cosmetics.ofKind(kind: string): { Item }
 		end
 	end
 	return list
+end
+
+-- The emote item for a clip id, or nil (the free emotes have none).
+function Cosmetics.emote(clip: string): Item?
+	for _, item in ipairs(Cosmetics.ITEMS) do
+		if item.kind == "emote" and item.emote == clip then
+			return item
+		end
+	end
+	return nil
 end
 
 -- Items that can appear in the daily rotation.
