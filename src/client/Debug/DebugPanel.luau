@@ -863,6 +863,7 @@ builders.Profile = function()
 	for _, spec in ipairs({
 		{ "tipsSeen", "Hints" },
 		{ "training", "Academy" },
+		{ "trial", "Trial" },
 		{ "streak", "Streak" },
 		{ "quests", "Quests" },
 		{ "achievements", "Achievements" },

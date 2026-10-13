@@ -31,6 +31,7 @@ nothing, so you can fill them in any order.
 | `game_bell_toll.wav` | `gameBellToll` | Death's mark: one stroke of a great cracked bell | no |
 | `game_dive_wind.wav` | `gameDiveWind` | the rift dive: air rushing past, rising over six seconds | no |
 | `game_dive_crash.wav` | `gameDiveCrash` | the rift dive, braked too late: a heavy thud on a roof | no |
+| `trial_chime.wav` | `trialChime` | the Trial's wisp setting off: two soft glassy notes | no |
 
 The beds are meant to be heard only just: their levels are the slot's `volume` in `Assets.sfx` times
 the Ambience slider (and the player's own setting). The lobby music is ducked to about a third while the

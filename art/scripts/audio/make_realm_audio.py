@@ -302,11 +302,21 @@ def game_dive_crash():
     save("game_dive_crash.wav", fade(reverb(thud + slap + rattle, 1.2, 0.25, 1800), 0.001, 0.3), 0.8)
 
 
+def trial_chime():
+    """The Trial's wisp setting off: two soft glassy notes a fifth apart, warm, with a short shimmer after."""
+    soft = ((1.0, 1.0), (2.0, 0.18), (3.01, 0.07))
+    a = bell(659.3, 1.6, 4.2, soft)
+    b = np.zeros_like(a)
+    shift = int(SR * 0.16)
+    b[shift:] = bell(987.8, 1.6, 4.6, soft)[: len(a) - shift]
+    save("trial_chime.wav", fade(reverb(a + 0.8 * b, 1.6, 0.3, 5000), 0.001, 0.35), 0.5)
+
+
 def main():
     # (New sounds go at the end: the random stream is shared, so the earlier files stay as they were.)
     for make in (wind, drone, rumble, rocks, stone1, stone2, metal1, metal2, far1, far2, game_rune, game_wrong,
                  game_checkpoint, game_finish, game_dice, game_throw, game_fall, game_bell_toll, game_dive_wind,
-                 game_dive_crash):
+                 game_dive_crash, trial_chime):
         make()
 
 

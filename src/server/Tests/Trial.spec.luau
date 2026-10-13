@@ -64,8 +64,68 @@ return function(t)
 			expect(data.trial.done).to.equal(false)
 			expect(data.trial.skipped).to.equal(false)
 			expect(data.trial.paid).to.equal(false)
+			expect(data.trial.step).to.equal(0)
 			local old = Migrations.migrate({ coins = 10, stats = { matches = 3 } }, 50)
 			expect(old.trial.paid).to.equal(false)
+			-- A record from before steps were saved gets the field.
+			local earlier =
+				Migrations.migrate({ coins = 10, trial = { done = false, skipped = true, paid = false } }, 50)
+			expect(earlier.trial.step).to.equal(0)
+			expect(earlier.trial.skipped).to.equal(true)
+			for key, value in pairs(Trial.defaults()) do
+				expect(data.trial[key]).to.equal(value)
+			end
+		end)
+
+		it("counts steps in order and rebuilds them for a rejoin", function()
+			expect(Trial.count({})).to.equal(0)
+			expect(Trial.count({ card = true, file = true })).to.equal(2)
+			-- A gap ends the count: a step done ahead of its turn is not counted yet.
+			expect(Trial.count({ card = true, write = true })).to.equal(1)
+			local done = Trial.doneUpTo(3)
+			expect(Trial.count(done)).to.equal(3)
+			expect(Trial.next(done).id).to.equal("warrant")
+			expect(Trial.next(Trial.doneUpTo(0)).id).to.equal("card")
+			expect(Trial.next(Trial.doneUpTo(99))).to.equal(nil)
+		end)
+
+		it("saves progress forward only, and not after it is done", function()
+			local data = fresh()
+			expect(Trial.advance(data, 2)).to.equal(true)
+			expect(data.trial.step).to.equal(2)
+			expect(Trial.advance(data, 1)).to.equal(false)
+			expect(data.trial.step).to.equal(2)
+			expect(Trial.advance(data, 50)).to.equal(true)
+			expect(data.trial.step).to.equal(#Trial.STEPS)
+			expect(Trial.advance(data, "3")).to.equal(false)
+			expect(Trial.advance(data, 0 / 0)).to.equal(false)
+			local finished = fresh()
+			Trial.finish(finished, REWARD)
+			expect(finished.trial.step).to.equal(#Trial.STEPS)
+			expect(Trial.advance(finished, 1)).to.equal(false)
+		end)
+
+		it("writes every step's lines with no placeholder left over", function()
+			for _, step in ipairs(Trial.STEPS) do
+				for _, line in ipairs({
+					step.line,
+					Trial.text(step.how, { cardKey = "Hold C" }),
+					Trial.text(step.why),
+				}) do
+					expect(string.find(line, "{", 1, true)).to.equal(nil)
+					expect(#line > 0).to.equal(true)
+				end
+			end
+			expect(Trial.text(Trial.BY_ID.card.how, { cardKey = "Hold C" })).to.equal("Hold C to turn it over.")
+			expect(string.find(Trial.text(Trial.BY_ID.ready.why), "Six players", 1, true) ~= nil).to.equal(
+				Config.MIN_PLAYERS == 6
+			)
+		end)
+
+		it("knows when the profile is loaded far enough to decide the offer", function()
+			expect(Trial.known(nil)).to.equal(false)
+			expect(Trial.known({ stats = { matches = 0 } })).to.equal(false)
+			expect(Trial.known({ stats = { matches = 0 }, trial = Trial.defaults() })).to.equal(true)
 		end)
 
 		it("pays a new player once", function()

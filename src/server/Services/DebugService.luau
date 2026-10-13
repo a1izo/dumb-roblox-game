@@ -949,6 +949,7 @@ end
 local RESETTABLE = {
 	tipsSeen = true,
 	training = true,
+	trial = true,
 	streak = true,
 	quests = true,
 	achievements = true,

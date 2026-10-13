@@ -1,12 +1,17 @@
 -- The role card: your role, how you win, your alias and your real name, your allies and
 -- (for the Butler) the hint. It shows only while you hold C, the left bumper, or press and
 -- hold your role badge, so a glance at your screen never gives your name away.
+--
+-- The Trial (Onboarding/TrialController) shows a practice card in the lobby: RoleCard.setPractice({ role,
+-- alias, realName }) makes the same controls open that card until setPractice(nil). Changed fires (shown)
+-- whenever the card opens or closes.
 
 local Players = game:GetService("Players")
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Signal = require(Shared:WaitForChild("Signal"))
 local RoleCopy = require(Shared:WaitForChild("Copy"):WaitForChild("RoleCopy"))
 local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -21,6 +26,12 @@ local C = Kit.color
 local T = Kit.Tokens
 
 local RoleCard = {}
+
+-- Fired as (shown) when the card opens or closes.
+RoleCard.Changed = Signal.new()
+
+-- The Trial's practice identity while it is being taught (nil otherwise).
+local practice: { [string]: any }? = nil
 
 local card: Frame
 local sealHolder: Frame
@@ -43,8 +54,14 @@ local function alliesText(private): string
 	return if #parts > 0 then table.concat(parts, "   ") else "You know nobody else's role."
 end
 
+-- Whether the card can be opened now: in a case, or while the Trial teaches it.
+local function usable(): boolean
+	return ClientState.private.inMatch == true or practice ~= nil
+end
+
 local function fill()
-	local private = ClientState.private
+	-- In a case the real card, always; the practice card only in the lobby.
+	local private = if ClientState.private.inMatch then ClientState.private else practice or ClientState.private
 	local role = private.role or "TaskForce"
 	local info = Roles.get(role)
 	local copy = RoleCopy[role] or RoleCopy.TaskForce
@@ -79,21 +96,36 @@ local function fill()
 end
 
 function RoleCard.show()
-	if not ClientState.private.inMatch then
+	if not usable() then
 		return
 	end
 	fill()
 	if not card.Visible then
 		card.Visible = true
 		Motion.pop(card)
+		RoleCard.Changed:Fire(true)
 	end
 end
 
 function RoleCard.hide()
+	local was = card.Visible
 	card.Visible = false
 	-- Nothing secret stays in the UI while the card is hidden.
 	nameText:set("")
 	hintLabel.Text = ""
+	if was then
+		RoleCard.Changed:Fire(false)
+	end
+end
+
+-- The Trial's practice card ({ role, alias, realName }), or nil to end it. In a case the real card wins.
+function RoleCard.setPractice(identity: { [string]: any }?)
+	practice = if identity
+		then { role = identity.role, alias = identity.alias, realName = identity.realName, allies = {} }
+		else nil
+	if not usable() then
+		RoleCard.hide()
+	end
 end
 
 function RoleCard.init()
@@ -171,7 +203,7 @@ function RoleCard.init()
 
 	-- Hold C (keyboard) or the left bumper (gamepad).
 	ContextActionService:BindAction("DeathsGambitRoleCard", function(_, state: Enum.UserInputState)
-		if not ClientState.private.inMatch then
+		if not usable() then
 			return Enum.ContextActionResult.Pass
 		end
 		if state == Enum.UserInputState.Begin then
@@ -205,7 +237,7 @@ function RoleCard.init()
 		if card.Visible then
 			fill()
 		end
-		if not ClientState.private.inMatch then
+		if not usable() then
 			RoleCard.hide()
 		end
 	end)

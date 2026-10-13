@@ -28,6 +28,8 @@ type Dummy = { part: BasePart, model: Model, alias: string, name: string, first:
 local win: any
 local body: ScrollingFrame
 local onFinished: (() -> ())? = nil
+-- The dummy the Manual drill uses while the Trial points at one (nil: any dummy).
+local preferred: string? = nil
 
 local function dummies(): { Dummy }
 	local list = {}
@@ -110,6 +112,11 @@ local function grimoireDrill()
 		return
 	end
 	local target = list[math.random(1, #list)]
+	for _, entry in ipairs(list) do
+		if entry.alias == preferred then
+			target = entry
+		end
+	end
 	win.setTitle(Terms.f("Practice {grimoire}"))
 	Kit.label({
 		Text = Terms.f(
@@ -288,6 +295,11 @@ end
 local DRILLS = { grimoire = grimoireDrill, warrant = warrantDrill, eyes = eyesDrill }
 
 -- Opens a drill; onDone runs once when it is finished.
+-- The Manual drill uses this dummy (its alias, "Dummy B") until set back to nil (the Trial points at one).
+function PracticePanel.prefer(alias: string?)
+	preferred = alias
+end
+
 function PracticePanel.open(drill: string, onDone: () -> ())
 	local build = DRILLS[drill]
 	if not build then
