@@ -131,6 +131,7 @@ function DataService.payload(player: Player)
 		achievements = data.achievements,
 		mastery = data.mastery,
 		weekly = data.weekly,
+		shopTurned = data.shopTurned,
 		today = TimeUtil.day(now),
 		nextDayIn = TimeUtil.secondsToNextDay(now),
 		nextWeekIn = TimeUtil.secondsToNextWeek(now),

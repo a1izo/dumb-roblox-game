@@ -50,6 +50,14 @@ local function onRequest(player: Player, payload)
 		return
 	end
 	local action = payload.action
+	if action == "turn" then
+		-- A card of Today's hand turned over (only to see it).
+		if ShopRotation.turn(data.shopTurned, ShopRotation.dayOf(os.time()), item.id) then
+			DataService.push(player)
+			DataService.saveSoon(player)
+		end
+		return
+	end
 	if action == "buy" then
 		if CosmeticsService.owns(player, item) then
 			Match.notify(player, "You already own " .. item.name .. ".", "info")

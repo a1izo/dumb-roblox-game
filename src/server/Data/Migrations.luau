@@ -105,6 +105,8 @@ function Migrations.defaults(startingCoins: number)
 		receipts = {}, -- [purchaseId] = unix time
 		privateSettings = {},
 		weekly = { week = -1, wins = 0, xp = 0 },
+		-- The shop's Today's hand: the cards turned so far, on which day (Shared/ShopRotation.turn).
+		shopTurned = { day = -1, cards = {} },
 	}
 end
 

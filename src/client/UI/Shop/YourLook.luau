@@ -1,5 +1,7 @@
 -- "Your look" in the shop: a still copy of your own character in a 3D view, facing you at three
--- quarters, wearing what you have equipped plus the item you are looking at. The copy is taken once
+-- quarters, wearing what you have equipped plus the item you are looking at: a hat, a tie or a Manual
+-- cover on the copy, a trail as a ribbon flowing behind it, a Deathsinger form as the copy turned to a
+-- tinted ghost, a title over its head (the words over the view: a 3D view draws no billboards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
 -- little on its own; drag it to turn it, and it comes back to face you a few seconds later.
@@ -19,6 +21,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
 
 local Motion = require(script.Parent.Parent.Core.Motion)
+local Tokens = require(script.Parent.Parent.Kit.Tokens)
 local Stage = require(script.Parent.Parent.Parent.Presentation.Stage)
 
 local LocalPlayer = Players.LocalPlayer
@@ -41,6 +44,8 @@ export type YourLook = typeof(setmetatable(
 		extras: { Instance },
 		camera: Camera,
 		item: Cosmetics.Item?,
+		profile: any,
+		titleLabel: TextLabel,
 		wearing: string,
 		spin: number,
 		lastDrag: number,
@@ -131,6 +136,21 @@ function YourLook.new(holder: GuiObject, props: { [string]: any }?): YourLook
 	camera.FieldOfView = FOV
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
+	local titleLabel = Create("TextLabel", {
+		Name = "Title",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 10),
+		Size = UDim2.new(1, -20, 0, 28),
+		FontFace = Tokens.font.bodyBold,
+		Text = "",
+		TextColor3 = Color3.fromRGB(244, 245, 247),
+		TextSize = 22,
+		TextStrokeTransparency = 0.4,
+		TextWrapped = true,
+		ZIndex = 5,
+		Parent = viewport,
+	}) :: TextLabel
 	local self = setmetatable({
 		viewport = viewport,
 		world = nil,
@@ -138,6 +158,8 @@ function YourLook.new(holder: GuiObject, props: { [string]: any }?): YourLook
 		extras = {},
 		camera = camera,
 		item = nil,
+		profile = nil,
+		titleLabel = titleLabel,
 		wearing = "",
 		spin = 0,
 		lastDrag = 0,
@@ -191,13 +213,66 @@ local function hide(part: BasePart, hidden: boolean)
 	part.Transparency = if hidden then 1 else part:GetAttribute("LookBase") :: number
 end
 
--- Builds the item you are looking at onto the copy (hats, ties, the Manual's cover).
+-- The copy as a Deathsinger in that form (a translucent ghost in its colour), or back as it was.
+local function ghost(copy: Model, color: Color3?)
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and not part:FindFirstAncestor("Trying") then
+			if part:GetAttribute("LookColor") == nil then
+				part:SetAttribute("LookColor", part.Color)
+				part:SetAttribute("LookMaterial", part.Material.Name)
+			end
+			if part:GetAttribute("LookBase") == nil then
+				part:SetAttribute("LookBase", part.Transparency)
+			end
+			local base = part:GetAttribute("LookBase") :: number
+			if color then
+				part.Color = (part:GetAttribute("LookColor") :: Color3):Lerp(color, 0.75)
+				part.Material = Enum.Material.Neon
+				part.Transparency = math.max(base, 0.45)
+			else
+				part.Color = part:GetAttribute("LookColor") :: Color3
+				part.Material = (Enum.Material :: any)[part:GetAttribute("LookMaterial")] or part.Material
+				part.Transparency = base
+			end
+		end
+	end
+end
+
+-- A trail as a ribbon flowing out from the copy's waist, back and away to its side (straight behind,
+-- the copy would hide it), its colours running along it.
+local function ribbon(holder: Model, torso: BasePart, item: Cosmetics.Item)
+	local colors = item.colors or { Color3.new(1, 1, 1), Color3.new(0.5, 0.5, 0.5) }
+	local count = 12
+	for index = 0, count - 1 do
+		local t = index / (count - 1)
+		local back = 0.7 + t * 4.2
+		local rise = math.sin(t * math.pi * 1.4) * 0.5 - t * 0.4
+		Create("Part", {
+			Anchored = true,
+			Size = Vector3.new(0.9 - t * 0.6, 0.06, 0.46),
+			Color = colors[1]:Lerp(colors[2], t),
+			Material = Enum.Material.Neon,
+			Transparency = 0.15 + t * 0.6,
+			CFrame = torso.CFrame * CFrame.new(-0.7 - t * 2.6, -0.6 + rise, 0.3 + back * 0.35),
+			Parent = holder,
+		})
+	end
+end
+
+-- Builds what you wear that the copy cannot show by itself (a trail, a title) and the item you are
+-- looking at onto it (hats, ties, the Manual's cover, a trail, a Deathsinger form, a title).
 local function dress(self: YourLook)
 	clearExtras(self)
 	local copy, world, item = self.copy, self.world, self.item
 	if not copy or not world then
 		return
 	end
+	local equipped = (self.profile and self.profile.equipped) or {}
+	local looking = item and item.kind
+	local trail = if looking == "trail" then item else Cosmetics.byId(equipped.trail)
+	local title = if looking == "title" then item else Cosmetics.byId(equipped.title)
+	self.titleLabel.Text = if title then title.name else ""
+	ghost(copy, if looking == "specter" and item then item.color else nil)
 	local head = copy:FindFirstChild("Head")
 	local torso = copy:FindFirstChild("Torso")
 	local equippedHat = copy:FindFirstChild("LCosmeticHat")
@@ -218,11 +293,14 @@ local function dress(self: YourLook)
 			end
 		end
 	end
+	local holder = Create("Model", { Name = "Trying", Parent = copy })
+	table.insert(self.extras, holder)
+	if trail and torso and torso:IsA("BasePart") then
+		ribbon(holder, torso, trail)
+	end
 	if not item then
 		return
 	end
-	local holder = Create("Model", { Name = "Trying", Parent = copy })
-	table.insert(self.extras, holder)
 	if item.kind == "hat" and head and head:IsA("BasePart") then
 		for _, part in ipairs(CosmeticBuild.hat(item, head.CFrame, head)) do
 			part.Anchored = true
@@ -289,6 +367,7 @@ function YourLook.capture(self: YourLook, profile)
 		table.clear(self.extras)
 	end
 	self.wearing = wearingKey(profile)
+	self.profile = profile
 	local character = LocalPlayer.Character
 	if not character then
 		return
@@ -333,6 +412,7 @@ end
 -- The profile changed: take a new copy only if what you wear changed (after the server has
 -- dressed your character), otherwise leave the view alone.
 function YourLook.profileChanged(self: YourLook, profile)
+	self.profile = profile
 	if wearingKey(profile) == self.wearing then
 		return
 	end
