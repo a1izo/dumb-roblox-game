@@ -48,6 +48,23 @@ EmoteMedia.SOUNDS = {
 	goalCelebration = "",
 	takeTheL = "",
 	twoWeeksNotice = "",
+	-- The emote pack: poses
+	impossibleLean = "",
+	nahIdWin = "",
+	jawlineCheck = "",
+	theEyebrow = "",
+	itsYou = "",
+	menacingPose = "",
+	susLean = "",
+	lowBattery = "",
+	deducing = "",
+	justAsPlanned = "",
+	reapersCackle = "",
+	finalBreakdown = "",
+	newWorld = "",
+	reapersEyes = "",
+	footScratch = "",
+	hairTwirl = "",
 } :: { [string]: string }
 
 -- [expression] = decal asset id (a face drawn in art/textures/faces, uploaded as a Decal)

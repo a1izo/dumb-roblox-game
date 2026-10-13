@@ -354,3 +354,215 @@ quit_.key(2.7, offset=(0, -0.08, 0), root=(-10, 0, 0), neck=(-24, 0, 0),
 quit_.key(3.2, **REST)
 soft(quit_, arms=3.2).plant(stance=0.12)
 quit_.build()
+
+
+# Poses -----------------------------------------------------------------------------------------------------
+# The ones with a face swap a drawn expression onto the head while they play (Shared/EmoteMedia FACES); the
+# body has to carry them alone until the owner has uploaded the faces.
+
+# Impossible Lean: a touch of the hat brim, the hands down at the sides, then the whole body tipping
+# forward from the ankles, rigid as a plank, held there, and back. The body turns about its middle, so it
+# is moved forward and down to keep the feet where they stand.
+lean = Motion("impossibleLean", 3.8, note="A touch of the hat, then the whole body leaning far forward from the ankles, held.")
+lean.key(0.0, **REST)
+lean.key(0.35, root=(0, 0, 0), neck=(-4, 0, 0), rShoulder=J((150, 0, -30), (-0.2, 0.24, -0.1)), lShoulder=J((2, 0, -4)))
+lean.key(0.75, root=(0, 0, 0), neck=(-6, 0, 0), rShoulder=J((3, 0, 5)), lShoulder=J((3, 0, -5)))
+TIP = 32.0
+for i in range(11):  # the tip forward and the way back, keyed finely so the feet stay put
+    for t0, t1, a0, a1 in ((0.75, 1.65, 0.0, 1.0), (2.85, 3.6, 1.0, 0.0)):
+        t = t0 + (t1 - t0) * i / 10
+        u = a0 + (a1 - a0) * (0.5 - 0.5 * math.cos(math.pi * i / 10))
+        theta = math.radians(TIP * u)
+        lean.key(t, "linear", offset=(0, -3 + 3 * math.cos(theta), -3 * math.sin(theta)), root=(-TIP * u, 0, 0),
+                 neck=(-6 + 14 * u, 0, 0), rShoulder=J((3, 0, 5)), lShoulder=J((3, 0, -5)), rHip=J((0, 0, 0)), lHip=J((0, 0, 0)))
+lean.key(3.8, **REST, rHip=J((0, 0, 0)), lHip=J((0, 0, 0)), offset=(0, 0, 0))
+lean.follow(ARMS, 3.0, 0.7)
+lean.build()
+
+# Nah, I'd Win: leaning back on one hip, the chin up, hands in the pockets, utterly sure. A loop (also a
+# stance).
+win = Motion("nahIdWin", 4.0, loop=True, note="Leaning back on one hip, chin up, hands in the pockets, utterly sure.")
+for t, b in ((0.0, 0.0), (2.0, 1.0)):
+    win.key(t, offset=(0.07, -0.03, 0), root=(6 + 0.6 * b, 8, 4), neck=(9 - b, -10 + 2 * b, -4),
+            rShoulder=J((10, 0, -4), (-0.08, 0.12 + 0.01 * b, -0.02)), lShoulder=J((10, 0, 4), (0.08, 0.12 + 0.01 * b, -0.02)))
+soft(win, head=1.4, arms=1.4).plant(stance=0.12)
+win.build()
+
+# Jawline Check: a thumb run along the jaw from under the ear to the chin, the chin lifted, a flick off the
+# end, and a smug stare.
+jaw = Motion("jawlineCheck", 3.2, note="A thumb run along the jaw to the chin, chin up, a flick, a smug stare.")
+jaw.key(0.0, **REST)
+jaw.key(0.45, "out", root=(2, 0, 0), neck=(10, 10, 0), rShoulder=J((112, 0, -14), (-0.16, 0.16, -0.16)), lShoulder=J((4, 0, -4)))
+jaw.key(1.05, root=(2, -2, 0), neck=(13, 2, 0), rShoulder=J((116, 0, -24), (-0.22, 0.15, -0.2)), lShoulder=J((4, 0, -4)))
+jaw.key(1.6, root=(2, -4, 0), neck=(15, -6, 0), rShoulder=J((118, 0, -34), (-0.3, 0.14, -0.24)), lShoulder=J((4, 0, -4)))
+jaw.key(1.85, "snap", root=(2, -4, 0), neck=(12, -4, 2), rShoulder=J((100, 0, 12), (-0.08, 0.1, -0.14)), lShoulder=J((4, 0, -4)))
+jaw.key(2.5, root=(1, -4, 0), neck=(10, -2, 4), rShoulder=J((20, 0, 8)), lShoulder=J((4, 0, -4)))
+jaw.key(3.2, **REST)
+soft(jaw).plant(stance=0.04)
+jaw.build()
+
+# The Eyebrow: the head turned a little and tilted, the chin dipped, a hand on the hip, one brow going up
+# (the face) and staying up.
+brow = Motion("theEyebrow", 3.4, note="A slow head tilt, a hand on the hip, one eyebrow going up and staying there.")
+brow.key(0.0, **REST)
+brow.key(0.8, "sine", root=(0, 6, 0), neck=(-6, 14, 8), rShoulder=J((4, 0, 4)), lShoulder=J((14, 0, -34), (0.12, 0.1, 0.06)))
+brow.key(2.0, root=(0, 6, 0), neck=(-7, 16, 10), rShoulder=J((4, 0, 4)), lShoulder=J((14, 0, -34), (0.12, 0.1, 0.06)))
+brow.key(2.7, root=(0, 6, 0), neck=(-7, 16, 10), rShoulder=J((4, 0, 4)), lShoulder=J((14, 0, -34), (0.12, 0.1, 0.06)))
+brow.key(3.4, **REST)
+soft(brow, head=1.8).plant(stance=0.06)
+brow.build()
+
+# It's You: a sharp turn three-quarters on, the arm thrown out straight at someone, the other hand at the
+# brim of the hat, the chin down. Held.
+you = Motion("itsYou", 2.6, note="A sharp three-quarter turn, the arm thrown out straight at someone, a hand at the hat brim.")
+you.key(0.0, **REST)
+you.key(0.22, "snap", root=(-2, -20, 0), neck=(-10, 18, 0), rShoulder=J((92, 0, 2), (0, 0.1, -0.12)),
+        lShoulder=J((150, 0, 30), (0.2, 0.24, -0.1)))
+you.key(2.0, root=(-3, -20, 0), neck=(-11, 18, 0), rShoulder=J((90, 0, 2), (0, 0.1, -0.12)), lShoulder=J((150, 0, 30), (0.2, 0.24, -0.1)))
+you.key(2.6, **REST)
+soft(you, arms=4.5).plant(stance=0.18, forward=(0.15, -0.15))
+you.build()
+
+# Menacing Pose: a twisted, impossible stance, a hand spread across the face, the other arm flung down and
+# back, the head turned over the shoulder; floating signs rise round the body (EmoteFx). A loop.
+menace = Motion("menacingPose", 4.0, loop=True, note="A twisted dramatic stance, a hand across the face, the head over the shoulder.")
+for t, b in ((0.0, 0.0), (2.0, 1.0)):
+    menace.key(t, offset=(0.1, -0.12 - 0.02 * b, 0), root=(-4 + b, 30, -10), neck=(6, -40 + 2 * b, 12),
+               rShoulder=J((-30, 0, 40 + 2 * b)), lShoulder=J((132, 0, 42), (0.3, 0.2, -0.2)))
+soft(menace, head=1.2, arms=1.2).plant(stance=0.3, forward=(0.3, -0.2))
+menace.build()
+
+# Sus Lean: leaning in sideways with the head cocked, a hand at the chin and the other arm propping its
+# elbow, peering. A loop (also a stance).
+sus = Motion("susLean", 4.0, loop=True, note="Leaning in sideways, head cocked, a hand at the chin, peering at someone.")
+for t, b in ((0.0, 0.0), (2.0, 1.0)):
+    sus.key(t, offset=(0.15, -0.06, -0.05), root=(-10, -10, 10), neck=(-4, 12 + 4 * b, -10),
+            rShoulder=J((108, 0, -30), (-0.26, 0.12, -0.2)), lShoulder=J((44, 0, 36), (0.26, 0.02, -0.18)))
+soft(sus, head=1.5, arms=1.5).plant(stance=0.08)
+sus.build()
+
+# Low Battery: powering down by stages, a stutter at each, the head dropping, then the knees going and
+# down to sit slumped on the floor. Lobby only (it looks too much like a death).
+low = Motion("lowBattery", 4.6, note="Powering down by stages with a stutter at each, down to sit slumped on the floor.")
+low.key(0.0, **REST)
+low.key(0.6, "snap", offset=(0, -0.12, 0), root=(-6, 0, 0), neck=(-14, 0, 0),
+        rShoulder=J((6, 0, 2), (0, -0.05, 0)), lShoulder=J((6, 0, -2), (0, -0.05, 0)))
+low.key(0.75, offset=(0, -0.08, 0), root=(-5, 0, 0), neck=(-12, 0, 0), rShoulder=J((5, 0, 2)), lShoulder=J((5, 0, -2)))
+low.key(1.4, "snap", offset=(0, -0.35, 0), root=(-14, 0, 2), neck=(-26, 0, 4),
+        rShoulder=J((10, 0, 0), (0, -0.08, 0)), lShoulder=J((10, 0, 0), (0, -0.08, 0)))
+low.key(1.55, offset=(0, -0.3, 0), root=(-13, 0, 2), neck=(-24, 0, 4), rShoulder=J((9, 0, 0)), lShoulder=J((9, 0, 0)))
+low.key(2.3, "in", offset=(0, -0.9, 0.1), root=(-20, 0, 4), neck=(-30, 0, 6), rShoulder=J((14, 0, 2)), lShoulder=J((14, 0, -2)),
+        rHip=J((40, 0, 4), (0, 0.5, -0.1)), lHip=J((40, 0, -4), (0, 0.5, -0.1)))
+low.key(2.9, "in", offset=(0, 0, 0.2), floor=True, root=(-24, 0, 6), neck=(-36, 0, 8),
+        rShoulder=J((12, 0, 6)), lShoulder=J((12, 0, -6)), rHip=J((86, 0, 6)), lHip=J((86, 0, -6)))
+low.key(4.6, offset=(0, 0, 0.2), floor=True, root=(-28, 0, 8), neck=(-40, 0, 10),
+        rShoulder=J((10, 0, 8)), lShoulder=J((10, 0, -8)), rHip=J((86, 0, 6)), lHip=J((86, 0, -6)))
+low.plant(0.0, 1.6, stance=0.04)
+soft(low, head=2.0, arms=1.6)
+low.build()
+
+# Deducing: hunched, a thumb pressed to the lip, the other hand in a pocket, the eyes going over the room.
+# A loop (also a stance).
+deduce = Motion("deducing", 4.0, loop=True, note="Hunched, a thumb pressed to the lip, the eyes going over the room.")
+for t, look in ((0.0, 0), (1.0, 10), (2.4, -8), (3.0, -6)):
+    tap = 6 if t == 3.0 else 0
+    deduce.key(t, offset=(0, -0.1, 0), root=(-12, 0, 0), neck=(-6, look, 0),
+               rShoulder=r_face(118 + tap, -34), lShoulder=J((8, 0, 4), (0.08, 0.1, -0.02)))
+soft(deduce, head=1.6, arms=2.0).plant(stance=0.18)
+deduce.build()
+
+# Just As Planned: a slow tilt of the head down and to the side, the eyes up from under the brows, a hand
+# at the cheek and the other arm folded under its elbow; the smile (the face) grows.
+planned = Motion("justAsPlanned", 3.6, note="A slow tilt of the head, the eyes up from under the brows, a hand at the cheek.")
+planned.key(0.0, **REST)
+planned.key(1.0, "sine", root=(-4, 6, 0), neck=(-16, -8, 10), rShoulder=J((100, 0, -30), (-0.24, 0.14, -0.2)),
+            lShoulder=J((54, 0, 34), (0.26, 0.06, -0.2)))
+planned.key(2.8, root=(-5, 6, 0), neck=(-17, -8, 15), rShoulder=J((102, 0, -30), (-0.24, 0.15, -0.2)),
+            lShoulder=J((54, 0, 34), (0.26, 0.06, -0.2)))
+planned.key(3.6, **REST)
+soft(planned, head=1.4, arms=2.0).plant(stance=0.06)
+planned.build()
+
+# Reaper's Cackle: hunched over, shoulders up round the ears, the arms hanging loose in front, shaking
+# with a wide grin (the face). A loop.
+cackle = Motion("reapersCackle", 1.2, loop=True, note="Hunched, shoulders up, arms hanging loose, shaking with a wide grin.")
+for i in range(12):
+    t = i * 0.1
+    j = 1 if i % 2 == 0 else -1
+    sway = math.sin(2 * math.pi * t / 1.2)
+    cackle.key(t, offset=(0.04 * sway, -0.12 + 0.03 * j, 0), root=(-18 + 2 * j, 4 * sway, 3 * sway), neck=(10 + 4 * j, -4 * sway, 0),
+               rShoulder=J((20 + 4 * j, 0, -6), (0, 0.12, -0.05)), lShoulder=J((20 - 4 * j, 0, 6), (0, 0.12, -0.05)))
+cackle.follow(ARMS, 6.0, 0.5).plant(stance=0.15)
+cackle.build()
+
+# Final Breakdown: thrown back laughing with the arms flung wide, shaking, then doubled over clutching the
+# stomach, then back once more. Unhinged (the face: a wide grin).
+breakdown = Motion("finalBreakdown", 4.4, note="Thrown back laughing, arms flung wide, then doubled over, then back again.")
+breakdown.key(0.0, **REST)
+breakdown.key(0.5, "out", offset=(0, -0.1, 0.25), root=(22, 0, 0), neck=(30, 0, 0), rShoulder=J((70, 0, 70)), lShoulder=J((70, 0, -70)))
+for i in range(1, 12):
+    t = 0.5 + 0.12 * i
+    j = 1 if i % 2 == 0 else -1
+    breakdown.key(t, offset=(0, -0.1, 0.25), root=(22 + 3 * j, 0, 0), neck=(30 + 5 * j, 0, 0),
+                  rShoulder=J((70 + 6 * j, 0, 70)), lShoulder=J((70 - 6 * j, 0, -70)))
+breakdown.key(2.25, "in", offset=(0, -0.2, -0.1), root=(-26, 0, 0), neck=(-10, 0, 0),
+              rShoulder=J((40, 0, -40), (-0.25, 0, -0.15)), lShoulder=J((40, 0, 40), (0.25, 0, -0.15)))
+for i in range(1, 8):
+    t = 2.25 + 0.12 * i
+    j = 1 if i % 2 == 0 else -1
+    breakdown.key(t, offset=(0, -0.2 + 0.02 * j, -0.1), root=(-26 + 3 * j, 0, 0), neck=(-10 + 4 * j, 0, 0),
+                  rShoulder=J((40, 0, -40), (-0.25, 0, -0.15)), lShoulder=J((40, 0, 40), (0.25, 0, -0.15)))
+breakdown.key(3.55, "out", offset=(0, -0.08, 0.2), root=(16, 0, 0), neck=(24, 0, 0), rShoulder=J((54, 0, 54)), lShoulder=J((54, 0, -54)))
+breakdown.key(4.4, **REST)
+soft(breakdown, arms=3.6).plant(stance=0.2, forward=(0.1, -0.1))
+breakdown.build()
+
+# New World: the arms spread wide and lifted, the chest out, the face up, rising off the floor into a beam of
+# light from above (EmoteFx), held, and back down.
+world = Motion("newWorld", 4.4, note="Arms spread wide and lifted, face up, rising off the floor into a beam of light.")
+world.key(0.0, **REST, rHip=J((0, 0, 0)), lHip=J((0, 0, 0)), offset=(0, 0, 0))
+world.key(1.4, "sine", offset=(0, 0.35, 0), root=(8, 0, 0), neck=(22, 0, 0), rShoulder=J((40, 0, 110), (0, 0.1, 0)),
+          lShoulder=J((40, 0, -110), (0, 0.1, 0)), rHip=J((4, 0, 3)), lHip=J((4, 0, -3)))
+world.key(2.5, offset=(0, 0.4, 0), root=(9, 0, 0), neck=(24, 0, 0), rShoulder=J((42, 0, 112), (0, 0.1, 0)),
+          lShoulder=J((42, 0, -112), (0, 0.1, 0)), rHip=J((5, 0, 3)), lHip=J((5, 0, -3)))
+world.key(3.6, offset=(0, 0.36, 0), root=(8, 0, 0), neck=(22, 0, 0), rShoulder=J((40, 0, 110), (0, 0.1, 0)),
+          lShoulder=J((40, 0, -110), (0, 0.1, 0)), rHip=J((4, 0, 3)), lHip=J((4, 0, -3)))
+world.key(4.4, "sine", **REST, rHip=J((0, 0, 0)), lHip=J((0, 0, 0)), offset=(0, 0, 0))
+soft(world, head=1.6, arms=1.8).follow(("rHip", "lHip"), 1.4, 0.8)
+world.build()
+
+# Reaper's Eyes: looking away over the shoulder, then the head turning slowly round to stare, the eyes
+# glowing red (EmoteFx). Lobby only (it looks like the Eyes).
+eyes = Motion("reapersEyes", 3.2, note="Looking away, then the head turning slowly round to stare, eyes glowing.")
+eyes.key(0.0, **REST)
+eyes.key(0.5, root=(0, 12, 0), neck=(0, 70, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+eyes.key(0.9, root=(0, 12, 0), neck=(0, 70, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+eyes.key(2.5, "sine", root=(-2, 0, 0), neck=(-8, 0, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+eyes.key(3.2, root=(-2, 0, 0), neck=(-9, 0, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+eyes.follow("neck", 1.6, 0.9).plant(stance=0.06)
+eyes.build()
+
+# Foot Scratch: standing on one leg, the bare foot of the other rubbing up and down the shin, hunched, the
+# head down watching. A loop (also a stance).
+scratch = Motion("footScratch", 2.0, loop=True, note="On one leg, the other foot rubbing up and down the shin, hunched.")
+for t, b in ((0.0, 0.0), (1.0, 1.0)):
+    scratch.key(t, offset=(-0.08, -0.05, 0), root=(-8, 4, -3), neck=(-18, 4, 0),
+                rShoulder=J((12, 0, 4)), lShoulder=J((12, 0, -4)))
+rub_low, rub_high = J((10, 0, -12), (-0.22, 0.34, -0.1)), J((10, 0, -12), (-0.22, 0.6, -0.1))
+lift(scratch, "rHip", ((0.0, 1, rub_low), (0.5, 1, rub_high), (1.0, 1, rub_low), (1.5, 1, rub_high), (2.0, 1, rub_low)))
+soft(scratch, head=1.6, arms=1.6).plant(stance=0.0)
+scratch.build()
+
+# Hair Twirl: sitting on the floor with the legs out in front in a V, slouched, the other hand propped on
+# the floor, a hand at the side of the head twisting a lock of hair round a finger. A loop (also a stance;
+# rigid R6 legs cannot draw a knee up).
+twirl = Motion("hairTwirl", 2.4, loop=True, note="Sitting on the floor, legs out, twisting a lock of hair by the head.")
+for i in range(4):
+    t = i * 0.6
+    a = 2 * math.pi * i / 4
+    twirl.key(t, offset=(0, 0, 0.3), floor=True, root=(-10, 8, 0), neck=(-10, 10, 8),
+              rShoulder=J((150, 0, -10), (-0.08 + 0.04 * math.cos(a), 0.26, 0.04 * math.sin(a))),
+              lShoulder=J((-16, 0, -26), (0, -0.1, 0.1)),
+              rHip=J((90, 0, 14)), lHip=J((90, 0, -18)))
+soft(twirl, head=1.2, arms=4.0)
+twirl.build()

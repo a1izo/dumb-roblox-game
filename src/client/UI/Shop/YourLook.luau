@@ -3,7 +3,7 @@
 -- cover on the copy, a trail as a ribbon flowing behind it, a Deathsinger form as the copy turned to a
 -- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
 -- billboards). Styles and emotes play once when picked (again when picked again): an emote on the
--- copy (with its sound, if it has one), a writing style writing a name on a strip of page, a verdict's little scene, a death style on
+-- copy (with its sound and face, if it has them), a writing style writing a name on a strip of page, a verdict's little scene, a death style on
 -- the copy (which is taken again afterwards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
@@ -481,6 +481,8 @@ local function emotePreview(self: YourLook, clip: string): () -> ()
 	PoseController.play(copy, clip, { fadeIn = 0.1, fadeOut = 0.2, duration = 3.4 })
 	local removeProp = EmoteController.dress(copy, clip)
 	local stopSound = EmoteController.previewSound(clip, 3.4)
+	local undoFace = EmoteController.face(copy, clip)
+	local stopEffect = EmoteController.effect(copy, clip, true)
 	local done = false
 	local function stop()
 		if done then
@@ -489,6 +491,8 @@ local function emotePreview(self: YourLook, clip: string): () -> ()
 		done = true
 		removeProp()
 		stopSound()
+		undoFace()
+		stopEffect()
 		PoseController.stop(copy, clip, 0)
 		if copy.Parent then
 			restPose(copy)

@@ -5,7 +5,9 @@
 -- move together. Two shop emotes hold something in the right hand while they play: Coin Flip a coin
 -- (thrown up and caught on the clip's beats), Apple Bite an apple (the Core models' Coin and Apple, plain
 -- parts until they are imported). An emote with a sound in Shared/EmoteMedia plays it around the dancer
--- while it lasts (others' can be muted in Settings; never in a meeting or a cutscene).
+-- while it lasts (others' can be muted in Settings; never in a meeting or a cutscene); one with a `face`
+-- puts that drawn expression on the head while it plays (once the owner has uploaded it); a few have an
+-- effect round the body (EmoteFx).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
+local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
@@ -21,6 +24,7 @@ local Net = require(Shared:WaitForChild("Net"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local ClientState = require(script.Parent.Parent.ClientState)
+local EmoteFx = require(script.Parent.EmoteFx)
 local Mixer = require(script.Parent.Parent.Audio.Mixer)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 
@@ -33,6 +37,17 @@ local HOLD = 0.6
 
 function EmoteController.play(emoteId: string)
 	EmoteRemote:FireServer(emoteId)
+end
+
+-- Calls `done` once the clip stops playing on the character (it ended, was stopped, or the body went).
+local function watch(character: Model, clip: string, done: () -> ())
+	task.spawn(function()
+		task.wait(0.3)
+		while character.Parent and PoseController.isPlaying(character, clip) do
+			task.wait(0.2)
+		end
+		done()
+	end)
 end
 
 local GRIP = CFrame.new(0, -1.05, -0.25) -- in the right hand, from the arm's middle
@@ -188,13 +203,54 @@ function EmoteController.sound(character: Model, clip: string, own: boolean): ()
 			sound:Destroy()
 		end
 	end
-	task.spawn(function()
-		task.wait(0.3)
-		while not gone and character.Parent and PoseController.isPlaying(character, clip) do
-			task.wait(0.2)
+	watch(character, clip, stop)
+	return stop
+end
+
+-- Puts an emote's face (a drawn expression, Shared/EmoteMedia FACES) on the head while it plays; the head's
+-- own face comes back after. Nothing while that face has no picture, or on a head with no face decal.
+-- Returns a function that puts the own face back.
+function EmoteController.face(character: Model, clip: string): () -> ()
+	local item = Cosmetics.emote(clip)
+	local id = EmoteMedia.face(if item then item.face else nil)
+	local head = character:FindFirstChild("Head")
+	local decal = if head then head:FindFirstChild("face") else nil
+	if not id or not decal or not decal:IsA("Decal") then
+		return function() end
+	end
+	if decal:GetAttribute("OwnFace") == nil then
+		decal:SetAttribute("OwnFace", decal.Texture)
+	end
+	local token = ((decal:GetAttribute("EmoteFace") :: number?) or 0) + 1
+	decal:SetAttribute("EmoteFace", token)
+	decal.Texture = id
+	local done = false
+	local function undo()
+		if done then
+			return
 		end
-		stop()
-	end)
+		done = true
+		-- (a later emote's face stays; it puts the own face back itself)
+		if decal.Parent and decal:GetAttribute("EmoteFace") == token then
+			decal.Texture = (decal:GetAttribute("OwnFace") :: string?) or decal.Texture
+			decal:SetAttribute("OwnFace", nil)
+		end
+	end
+	watch(character, clip, undo)
+	return undo
+end
+
+-- An emote's effect round the body (EmoteFx) for as long as it plays. Returns a function that clears it.
+function EmoteController.effect(character: Model, clip: string, preview: boolean?): () -> ()
+	local clear = EmoteFx.play(character, clip, preview)
+	local done = false
+	local function stop()
+		if not done then
+			done = true
+			clear()
+		end
+	end
+	watch(character, clip, stop)
 	return stop
 end
 
@@ -244,6 +300,8 @@ local function onEmote(payload)
 	})
 	EmoteController.dress(character, payload.emote)
 	EmoteController.sound(character, payload.emote, player == Players.LocalPlayer)
+	EmoteController.face(character, payload.emote)
+	EmoteController.effect(character, payload.emote)
 end
 
 function EmoteController.init()

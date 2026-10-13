@@ -9,6 +9,13 @@ local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
+-- The emotes that look like one of a case's signals, and which: lobby-only, and no others.
+local SIGNALS = {
+	emote_low_battery = "a death",
+	emote_reapers_eyes = "the Eyes",
+	emote_cuffed_together = "an arrest",
+}
+
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
 
@@ -33,6 +40,11 @@ return function(t)
 			end
 			for _, item in ipairs(Cosmetics.ofKind("emote")) do
 				expect(sections[item.category]).to.equal(true)
+			end
+		end)
+		it("keeps to the lobby exactly the emotes that look like a case's signals", function()
+			for _, item in ipairs(Cosmetics.ofKind("emote")) do
+				expect(item.lobbyOnly == true).to.equal(SIGNALS[item.id] ~= nil)
 			end
 		end)
 		it("has a sound slot for every emote and only known faces", function()
