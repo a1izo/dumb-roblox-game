@@ -8,7 +8,8 @@ Built for the map TokyoDistrict: the gameplay spots are placed here with the arc
 exported with it (src/server/Maps/Scenes/Tokyo/). The layout is in plan.py.
 """
 
-from maps import buildings, city
+from maps import buildings, city, relief
+from maps import geo2d as g2
 from maps.venues.tokyo import boats, decor, dressing, edges, gameplay, ground, interiors, mood, plan, river, station
 from maps.venues.tokyo import clutter, crowd, styles
 
@@ -76,11 +77,30 @@ def build(s):
     decor.build(s)
     edges.build(s, g)
     mood.build(s)
+    stone_relief(s)
     g.finish()
     gameplay.build(s)
     crowd.build(s)
     noir_signs(s)
     s.set_bounds(*plan.BOUNDS)
+
+
+# The stone the shopping street passes, cut in (maps/relief.py): twice the stone's measured depth, from
+# the ground to the bed joint above head height, at most this many triangles (Tokyo's budget was raised
+# by what it adds, the owner's call of 2026-10-12).
+RELIEF_TOP = 12.0
+RELIEF_CAP = 8000
+
+
+def stone_relief(s):
+    """The department store's stone along the shopping street: the walls shoppers walk past within
+    reach, seen at a glance along the street, get their joints cut into the mesh."""
+    store = next(b for b in plan.BUILDINGS if b["name"] == "dept_store")
+    street = plan.STREETS["arcade"]["points"]
+    poly = store["poly"]
+    sides = [(a, b) for a, b in zip(poly, poly[1:] + poly[:1])
+             if min(g2.dist_point_segment(g2.lerp(a, b, 0.5), p, q) for p, q in zip(street, street[1:])) < 9.0]
+    relief.apply(s, "Stone", "medieval_blocks_03", sides, street, RELIEF_TOP, RELIEF_CAP)
 
 
 def noir_signs(s):

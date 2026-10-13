@@ -71,7 +71,7 @@ def security(s):
     fit.panel(s, -80.0, -63.0, C, color=fit.COOL, brightness=0.8, range_=20, flicker=True)  # the CCTV wall's tube
     fit.panel(s, -70.0, -56.0, C, on=False)
     fit.panel(s, -92.0, -54.0, C, on=False)
-    fit.plaque(s, -86.0, 10.6, -47.7, 0, 5.2, 0.9, "警備室 SECURITY")
+    fit.plaque(s, -86.0, 10.6, -47.7, 180, 5.2, 0.9, "警備室 SECURITY")
 
 
 def observation(s):
@@ -141,7 +141,7 @@ def copy_room(s):
     s.prop("TrashCan", 21.8, -66.0, 0)
     fit.panel(s, 0.0, -64.0, C, color=fit.COOL, brightness=0.8)
     fit.panel(s, 14.0, -58.0, C, on=False)
-    fit.plaque(s, 8.0, 10.6, -47.7, 0, 5.0, 0.9, "複写室 COPY ROOM")
+    fit.plaque(s, 8.0, 10.6, -47.7, 180, 5.0, 0.9, "複写室 COPY ROOM")
 
 
 def lockers(s):
@@ -156,7 +156,7 @@ def lockers(s):
     s.prop("CoatStand", 44.5, -51.5, 0)
     s.hood(28.5, -52.5)
     fit.panel(s, 37.0, -64.0, C, color=fit.COOL, brightness=0.75)
-    fit.plaque(s, 37.0, 10.6, -47.7, 0, 5.4, 0.9, "更衣室 LOCKERS")
+    fit.plaque(s, 37.0, 10.6, -47.7, 180, 5.4, 0.9, "更衣室 LOCKERS")
 
 
 def break_room(s):
@@ -178,8 +178,8 @@ def break_room(s):
     s.sheet(80.0, 2.8, -58.0)
     s.prop("Sofa", 88.0, -44.2, 180)
     s.prop("Plant", 97.2, -43.2, 0)
-    s.box("BlackMetal", (88.0, 8.6, -40.15), (7.6, 4.6, 0.3))
-    s.screen((88.0, 8.6, -40.4), 0, 7.0, 4.0, "news")
+    s.box("BlackMetal", (88.0, 8.6, -40.45), (7.6, 4.6, 0.3))  # on the wall's face (-40.3), not in it
+    s.screen((88.0, 8.6, -40.65), 0, 7.0, 4.0, "news")
     for x, z in ((64.0, -60.0), (84.0, -64.0)):
         fit.panel(s, x, z, C, brightness=0.95, range_=20)
     fit.panel(s, 90.0, -50.0, C, on=False)
@@ -190,7 +190,7 @@ def break_room(s):
 def night_desk(s):
     fit.partition(s, (50.0, -40.0), (50.0, 16.3), Y, C, "PlasterGrey", "PlasterGrey", doors=[(20.0, 5.0), (48.0, 5.0)],
                   glass="clear")
-    fit.partition(s, (50.0, 16.0), (100.0, 16.0), Y, C, "PlasterGrey", "PlasterLight", doors=[(38.0, 5.0)])
+    fit.partition(s, (50.3, 16.0), (100.0, 16.0), Y, C, "PlasterGrey", "PlasterLight", doors=[(37.7, 5.0)])
     s.station("Phone", "Call Log Desk", 88.0, -29.0, 0, prop="StationPhoneDesk")
     kit.column_square(s, 75.0, -12.0, C, 2.4, "PlasterLight", trim="BlackTrim")
     for x, z, rot in ((62.0, -30.0, 0), (62.0, -14.0, 0), (88.0, -8.0, 90), (62.0, 2.0, 0)):
@@ -329,8 +329,8 @@ def bullpen(s):
 
 
 def sergeant(s):
-    fit.partition(s, (-100.0, 53.0), (-75.7, 53.0), Y, C, "PlasterGrey", "WoodPanel", glass="blinds")
-    fit.partition(s, (-76.0, 53.0), (-76.0, 75.0), Y, C, "PlasterGrey", "WoodPanel", doors=[(5.0, 4.2)], glass="blinds")
+    fit.partition(s, (-100.0, 53.0), (-76.3, 53.0), Y, C, "PlasterGrey", "WoodPanel", glass="blinds")
+    fit.partition(s, (-76.0, 52.7), (-76.0, 75.0), Y, C, "PlasterGrey", "WoodPanel", doors=[(5.3, 4.2)], glass="blinds")
     fit.desk(s, -88.0, 66.0, 180, Y)
     s.prop("Bookshelf", -98.0, 60.0, -90)
     s.prop("Bookshelf", -98.0, 63.4, -90)

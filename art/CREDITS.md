@@ -84,6 +84,13 @@ gave these away.
 | [kloofendal_overcast_puresky](https://polyhaven.com/a/kloofendal_overcast_puresky) | Poly Haven | Campus (snow sky) |
 | [overcast_soil_puresky](https://polyhaven.com/a/overcast_soil_puresky) | Poly Haven | Bureau HQ (storm cloud) |
 
+## Old prints (Public Domain Mark 1.0)
+
+| Name | From | Used for |
+| --- | --- | --- |
+| [Skull: anterior view (V0007916)](https://wellcomecollection.org/works/zs6gser7) | Wellcome Collection | the skull on the cover of Death's Manual |
+| [J. Gamelin, Nouveau recueil d'osteologie et de myologie, 1779, canvas 59](https://wellcomecollection.org/works/u9ecexq2/items?canvas=59) | Wellcome Collection | tried for that cover, not used |
+
 ## Typefaces (SIL Open Font License 1.1)
 
 | Name | From | Used for |
@@ -98,5 +105,6 @@ gave these away.
 | [bebasneue](https://github.com/google/fonts/tree/main/ofl/bebasneue) | Google Fonts | Latin poster capitals |
 
 Poly Haven: https://polyhaven.com (CC0). ambientCG: https://ambientcg.com (CC0; only its photographed
-assets are used, never the procedural ones). Google Fonts: https://github.com/google/fonts (each family's
+assets are used, never the procedural ones). Wellcome Collection: https://wellcomecollection.org (public
+domain works, marked so). Google Fonts: https://github.com/google/fonts (each family's
 `OFL.txt` is kept next to its file).

@@ -189,7 +189,8 @@ return function(cue)
 		table.insert(cleanup, function()
 			book:Destroy()
 		end)
-		local landing = CFrame.new(landmark + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, math.rad(20), 0)
+		-- (Its pivot is its middle: half the closed book's thickness above the ground.)
+		local landing = CFrame.new(landmark + Vector3.new(0, 0.22, 0)) * CFrame.Angles(0, math.rad(20), 0)
 		dropBook(book, landing, math.min(0.9, math.max(0.4, endAt - now() - 0.8)), function()
 			if finished then
 				return

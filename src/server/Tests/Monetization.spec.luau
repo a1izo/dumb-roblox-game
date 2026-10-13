@@ -100,6 +100,19 @@ return function(t)
 				expect(found).to.equal(true)
 			end
 		end)
+		it("turns today's cards once each, and starts again on a new day", function()
+			local record = { day = -1, cards = {} }
+			local hand = ShopRotation.forDay(20002)
+			expect(ShopRotation.turn(record, 20002, hand[1])).to.equal(true)
+			expect(ShopRotation.turn(record, 20002, hand[1])).to.equal(false)
+			expect(ShopRotation.turn(record, 20002, "hat_cap")).to.equal(false)
+			expect(#ShopRotation.turned(record, 20002)).to.equal(1)
+			expect(#ShopRotation.turned(record, 20003)).to.equal(0)
+			local next = ShopRotation.forDay(20003)
+			expect(ShopRotation.turn(record, 20003, next[1])).to.equal(true)
+			expect(record.day).to.equal(20003)
+			expect(#record.cards).to.equal(1)
+		end)
 		it("only features rotation items, without repeats", function()
 			local seen = {}
 			for _, id in ipairs(ShopRotation.forDay(20001)) do
@@ -175,6 +188,17 @@ return function(t)
 				if item.source == "shop" or item.source == "rotation" then
 					expect(type(item.price)).to.equal("number")
 				end
+			end
+		end)
+		it("deals every kind in exactly one suit", function()
+			for _, kind in ipairs(Cosmetics.KINDS) do
+				local suits = 0
+				for _, suit in ipairs(Cosmetics.SUITS) do
+					if suit.kinds and table.find(suit.kinds, kind) then
+						suits += 1
+					end
+				end
+				expect(suits).to.equal(1)
 			end
 		end)
 	end)

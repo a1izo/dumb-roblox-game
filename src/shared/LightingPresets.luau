@@ -21,9 +21,6 @@ export type Preset = {
 	outdoorAmbient: Color3,
 	envDiffuse: number,
 	envSpecular: number,
-	fogStart: number,
-	fogEnd: number,
-	fogColor: Color3,
 	-- Atmosphere
 	density: number,
 	haze: number,
@@ -48,6 +45,9 @@ export type Preset = {
 	snow: number,
 	-- The Grey Realm's sky: no sun, moon or stars, and the layered moving clouds (World/RealmSky).
 	realmSky: boolean?,
+	-- A map's own overcast sky: the six faces Sky<name>Ft..Dn (art/scripts/skies.py, carried in its FBX).
+	-- Under it there are no stars and no moon's disc; the moon is only a dim cold light through the cloud.
+	sky: string?,
 }
 
 export type Mood = {
@@ -58,7 +58,6 @@ export type Mood = {
 	contrast: number, -- added
 	tint: Color3, -- the grade leans towards this colour...
 	tintAmount: number, -- ...by this much (0 to 1)
-	fog: number, -- times the fog distances
 	density: number, -- added to the haze
 	bloom: number, -- times the bloom
 	key: number, -- times the key lamps (the ones casting shadows)
@@ -76,9 +75,6 @@ export type Look = {
 	outdoorAmbient: Color3,
 	envDiffuse: number,
 	envSpecular: number,
-	fogStart: number,
-	fogEnd: number,
-	fogColor: Color3,
 	density: number,
 	haze: number,
 	glare: number,
@@ -95,6 +91,8 @@ export type Look = {
 	rangeScale: number,
 	keyLights: number,
 	vignette: number,
+	sky: string?,
+	realmSky: boolean,
 }
 
 local rgb = Color3.fromRGB
@@ -110,7 +108,7 @@ end
 -- ground ahead still easy to see and pools of pale light where people gather). No sun (the light comes
 -- from the whole overcast sky: low, even, cool), almost no colour left, heavy haze: things close by are
 -- clear, the far rocks and the colossal blade thin into near-black over a kilometre; the plain runs on past
--- the fog's end, so its edge is never seen. The braziers' pale fire,
+-- where the haze has swallowed it, so its edge is never seen. The braziers' pale fire,
 -- the cold glow of the relics and the rift are the only light that is not the sky's. The sky itself
 -- (clouds, no sun) and its slow breathing are World/RealmSky's; these are the values it breathes around.
 LightingPresets.lobby = preset({
@@ -121,9 +119,6 @@ LightingPresets.lobby = preset({
 	outdoorAmbient = rgb(76, 80, 88),
 	envDiffuse = 0.5,
 	envSpecular = 0.3,
-	fogStart = 110,
-	fogEnd = 1300,
-	fogColor = rgb(24, 25, 29),
 	density = 0.34,
 	haze = 1.2,
 	glare = 0,
@@ -153,9 +148,6 @@ LightingPresets.meeting = preset({
 	outdoorAmbient = rgb(20, 20, 26),
 	envDiffuse = 0.35,
 	envSpecular = 0.3,
-	fogStart = 60,
-	fogEnd = 900,
-	fogColor = rgb(10, 9, 12),
 	density = 0.18,
 	haze = 0.4,
 	glare = 0,
@@ -188,9 +180,6 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(70, 72, 98),
 		envDiffuse = 0.5,
 		envSpecular = 0.45,
-		fogStart = 300,
-		fogEnd = 3000,
-		fogColor = rgb(30, 28, 48),
 		density = 0.22,
 		haze = 1.7,
 		glare = 0.05,
@@ -208,6 +197,7 @@ LightingPresets.maps = {
 		rain = 0.7,
 		lightning = true,
 		snow = 0,
+		sky = "Agency",
 	}),
 	-- University Campus: the eve of the entrance exam, a winter night in light snow. Low snow
 	-- clouds glow a faint orange with the city's light and the snow on the ground throws the warm
@@ -221,9 +211,6 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(84, 88, 112),
 		envDiffuse = 0.6,
 		envSpecular = 0.4,
-		fogStart = 90,
-		fogEnd = 760,
-		fogColor = rgb(58, 52, 60),
 		density = 0.4,
 		haze = 2.2,
 		glare = 0,
@@ -241,6 +228,7 @@ LightingPresets.maps = {
 		rain = 0,
 		lightning = false,
 		snow = 0.85,
+		sky = "Campus",
 	}),
 	-- Inside the campus buildings: a plainer look a step darker than the snow outside, so lit
 	-- plaster and tiles never blow out. The snow stays at the outdoor amount: the flakes stop
@@ -254,9 +242,6 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(70, 70, 88),
 		envDiffuse = 0.35,
 		envSpecular = 0.3,
-		fogStart = 120,
-		fogEnd = 760,
-		fogColor = rgb(58, 52, 60),
 		density = 0,
 		haze = 0,
 		glare = 0,
@@ -274,6 +259,7 @@ LightingPresets.maps = {
 		rain = 0,
 		lightning = false,
 		snow = 0.85,
+		sky = "Campus",
 	}),
 	-- Tokyo District: neon night in the rain, but readable. A violet night glow fills the
 	-- streets so nothing is pitch black, lamps and shop windows make the pools of light, and the
@@ -290,9 +276,6 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(112, 102, 142),
 		envDiffuse = 0.65,
 		envSpecular = 0.55,
-		fogStart = 90,
-		fogEnd = 650,
-		fogColor = rgb(40, 32, 58),
 		density = 0.4,
 		haze = 3.3,
 		glare = 0.1,
@@ -310,6 +293,7 @@ LightingPresets.maps = {
 		rain = 1,
 		lightning = true,
 		snow = 0,
+		sky = "Tokyo",
 	}),
 	-- Under Tokyo: the station hall and the metro. Cool and dim like a real platform at night,
 	-- lit by its fluorescent fittings alone; the street's glow and rain stay up top. Picked by
@@ -322,9 +306,6 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(34, 36, 44),
 		envDiffuse = 0.3,
 		envSpecular = 0.3,
-		fogStart = 80,
-		fogEnd = 500,
-		fogColor = rgb(20, 22, 28),
 		density = 0,
 		haze = 0,
 		glare = 0,
@@ -342,6 +323,7 @@ LightingPresets.maps = {
 		rain = 1,
 		lightning = false,
 		snow = 0,
+		sky = "Tokyo",
 	}),
 	-- Inside Tokyo's shops and rooms: the street's exposure and bloom would blow their lit walls
 	-- out to white, so indoors the camera takes a plainer look, a step darker than the street.
@@ -354,9 +336,6 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(70, 66, 90),
 		envDiffuse = 0.35,
 		envSpecular = 0.3,
-		fogStart = 120,
-		fogEnd = 720,
-		fogColor = rgb(40, 32, 58),
 		density = 0,
 		haze = 0,
 		glare = 0,
@@ -374,6 +353,7 @@ LightingPresets.maps = {
 		rain = 1,
 		lightning = false,
 		snow = 0,
+		sky = "Tokyo",
 	}),
 } :: { [string]: Preset }
 
@@ -435,7 +415,6 @@ local function mood(overrides: { [string]: any }): Mood
 		contrast = 0,
 		tint = WHITE,
 		tintAmount = 0,
-		fog = 1,
 		density = 0,
 		bloom = 1,
 		key = 1,
@@ -460,7 +439,6 @@ LightingPresets.moods = {
 		contrast = 0.25,
 		tint = rgb(255, 96, 96),
 		tintAmount = 0.55,
-		fog = 0.35,
 		density = 0.18,
 		key = 0.4,
 		fill = 0.2,
@@ -498,7 +476,6 @@ LightingPresets.moods = {
 		ambient = 0.08,
 		saturation = -0.5,
 		contrast = 0.35,
-		fog = 0.5,
 		key = 0.12,
 		fill = 0.04,
 		vignette = 1,
@@ -589,9 +566,6 @@ function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 		outdoorAmbient = scaled(p.outdoorAmbient, m.ambient),
 		envDiffuse = p.envDiffuse,
 		envSpecular = p.envSpecular,
-		fogStart = p.fogStart * m.fog,
-		fogEnd = p.fogEnd * m.fog,
-		fogColor = p.fogColor,
 		density = math.clamp((p.density + m.density) * (if noGlow then 0.6 else 1), 0, 1),
 		haze = if noGlow then 0 else p.haze,
 		glare = if noGlow then 0 else p.glare,
@@ -608,6 +582,8 @@ function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 		rangeScale = p.lampRange * (if fewShadows then 0.8 else 1),
 		keyLights = if fewShadows then math.min(2, p.keyLights) else p.keyLights,
 		vignette = m.vignette,
+		sky = p.sky,
+		realmSky = p.realmSky == true,
 	}
 end
 

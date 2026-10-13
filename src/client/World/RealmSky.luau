@@ -10,8 +10,9 @@
 --     with it, one layer out of step with the next because they live at different distances.
 --
 -- Only while the camera is in the lobby (LightingController.Changed says which venue it is);
--- elsewhere the sky and clouds are put back as they were. Everything slow and local to this
--- client. The numbers to tune are all in TUNING.
+-- elsewhere the clouds are put back as they were (none, unless the place had its own). The Sky itself
+-- (no sun, moon or stars here) is LightingController's, like every other venue's. Everything slow and
+-- local to this client. The numbers to tune are all in TUNING.
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -48,13 +49,8 @@ type Saved = {
 	cover: number,
 	density: number,
 	color: Color3,
-	stars: number,
-	bodies: boolean,
-	sun: number,
-	moon: number,
 }
 
-local sky: Sky? = nil
 local clouds: Clouds? = nil
 local saved: Saved? = nil
 local active = false
@@ -70,13 +66,15 @@ local function wander(t: number, periods: { number }, phase: number): number
 	return sum / #periods
 end
 
+-- The place's own clouds, or a new layer that starts switched off (so leaving the lobby puts back
+-- "no clouds", not Roblox's default half-cover over a night map).
 local function findClouds(): Clouds
 	local terrain = workspace.Terrain
 	local found = terrain:FindFirstChildOfClass("Clouds")
 	if found then
 		return found
 	end
-	return Create("Clouds", { Parent = terrain })
+	return Create("Clouds", { Enabled = false, Parent = terrain })
 end
 
 local function remember()
@@ -85,29 +83,16 @@ local function remember()
 	end
 	local current = findClouds()
 	clouds = current
-	local s = sky
 	saved = {
 		clouds = current.Enabled,
 		cover = current.Cover,
 		density = current.Density,
 		color = current.Color,
-		stars = if s then s.StarCount else 2500,
-		bodies = if s then s.CelestialBodiesShown else true,
-		sun = if s then s.SunAngularSize else 8,
-		moon = if s then s.MoonAngularSize else 14,
 	}
 end
 
 local function enter()
-	sky = Lighting:FindFirstChild("DeathsGambitSky") :: Sky?
 	remember()
-	local s = sky
-	if s then
-		s.StarCount = 0
-		s.CelestialBodiesShown = false
-		s.SunAngularSize = 0
-		s.MoonAngularSize = 0
-	end
 	local c = clouds
 	if c then
 		c.Enabled = true
@@ -123,13 +108,6 @@ local function leave()
 	local restore = saved
 	if not restore then
 		return
-	end
-	local s = sky
-	if s then
-		s.StarCount = restore.stars
-		s.CelestialBodiesShown = restore.bodies
-		s.SunAngularSize = restore.sun
-		s.MoonAngularSize = restore.moon
 	end
 	local c = clouds
 	if c then

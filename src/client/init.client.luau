@@ -93,6 +93,7 @@ local NameTags = require(World:WaitForChild("NameTags"))
 local Champion = require(World:WaitForChild("Champion"))
 local ReadyCircle = require(World:WaitForChild("ReadyCircle"))
 local Tableaux = require(World:WaitForChild("Tableaux"))
+local Puppets = require(World:WaitForChild("Puppets"))
 
 local Specter = script:WaitForChild("Specter")
 local FollowCam = require(Specter:WaitForChild("FollowCam"))
@@ -203,11 +204,12 @@ WindSway.init()
 MovementRules.init()
 RealmAmbience.init()
 
--- The lobby's own: a candle for everyone who is ready, the stone tableaux round the plaza, and whoever has
--- the most wins seated on the throne.
+-- The lobby's own: a candle for everyone who is ready, the stone tableaux round the plaza, whoever has
+-- the most wins seated on the throne, and the Academy's puppets under the hand that holds their strings.
 ReadyCircle.init()
 Tableaux.init()
 Champion.init()
+Puppets.init()
 
 -- Specters: hidden from the living, flying for yourself.
 NameTags.init()

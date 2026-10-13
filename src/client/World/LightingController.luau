@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local LightingPresets = require(Shared:WaitForChild("LightingPresets"))
 local Signal = require(Shared:WaitForChild("Signal"))
@@ -39,6 +40,10 @@ type Lamp = { brightness: number, range: number, shadows: boolean }
 local atmosphere: Atmosphere
 local grade: ColorCorrectionEffect
 local bloom: BloomEffect
+local sky: Sky
+local defaultFaces: { [string]: string } = {} -- Roblox's own sky, for venues without a sky of their own
+local skyShown = "" -- what the Sky shows now ("" = Roblox's night sky, "realm", or a map's sky name)
+local pendingApply = false -- a change of look came during a lightning flash
 local vignetteHolder: Frame
 local currentKey = ""
 local currentPreset: LightingPresets.Preset = LightingPresets.lobby
@@ -172,7 +177,10 @@ local function applyLamps(look: LightingPresets.Look, time: number)
 	for light, lamp in pairs(lamps) do
 		if light.Parent and lampVenue == currentVenue then
 			local at = lampPosition(light)
-			if at and Venues.at(at) == currentVenue then
+			if at and Venues.at(at) ~= currentVenue then
+				-- A key of the venue the camera has left: it would go on drawing its shadows for nobody.
+				light.Shadows = false
+			elseif at then
 				local key = keys[light] == true
 				local target = lamp.brightness * (if key then look.keyScale else look.fillScale)
 				light.Range = lamp.range * look.rangeScale
@@ -231,21 +239,60 @@ local function setVignette(strength: number, time: number)
 	end
 end
 
+local SKY_FACES = { "Bk", "Dn", "Ft", "Lf", "Rt", "Up" }
+
+-- The sky a look asks for: a map's own overcast faces (no stars, no moon's disc), the Grey Realm's
+-- (nothing at all: World/RealmSky lays its clouds over it), or Roblox's night sky (the meeting room's
+-- windowless war room never shows it). A map whose sky textures are not imported yet keeps Roblox's
+-- faces but loses the stars and the moon all the same: it is raining or snowing there.
+local function applySky(look: LightingPresets.Look)
+	local want = if look.realmSky then "realm" else (look.sky or "")
+	if want == skyShown then
+		return
+	end
+	local faces: { [string]: string }? = nil
+	if look.sky then
+		local found = {}
+		for _, face in ipairs(SKY_FACES) do
+			local id = Assets.texture("Sky" .. look.sky .. face)
+			if id == "" then
+				found = nil
+				break
+			end
+			found[face] = id
+		end
+		faces = found
+	end
+	for _, face in ipairs(SKY_FACES) do
+		(sky :: any)["Skybox" .. face] = if faces then faces[face] else defaultFaces[face]
+	end
+	local open = want == ""
+	sky.StarCount = if open then 2500 else 0
+	sky.CelestialBodiesShown = open
+	sky.MoonAngularSize = if open then 14 else 0
+	sky.SunAngularSize = if open then 8 else 0
+	-- (A sky still waiting for its textures is asked for again on the next change of look.)
+	skyShown = if look.sky and not faces then "" else want
+end
+
 local function apply(look: LightingPresets.Look, time: number)
+	local previous = currentLook
 	currentLook = look
 	blendEndsAt = os.clock() + time
 	local info = TweenInfo.new(time, Enum.EasingStyle.Sine)
+	-- The hour is never blended: from the Grey Realm's afternoon to a map's midnight the sun would
+	-- sweep back across the sky. It changes at once, with the venue.
+	if not previous or previous.clockTime ~= look.clockTime then
+		Lighting.ClockTime = look.clockTime
+	end
+	applySky(look)
 	TweenService:Create(Lighting, info, {
-		ClockTime = look.clockTime,
 		Brightness = look.brightness,
 		ExposureCompensation = look.exposure,
 		Ambient = look.ambient,
 		OutdoorAmbient = look.outdoorAmbient,
 		EnvironmentDiffuseScale = look.envDiffuse,
 		EnvironmentSpecularScale = look.envSpecular,
-		FogStart = look.fogStart,
-		FogEnd = look.fogEnd,
-		FogColor = look.fogColor,
 	}):Play()
 	TweenService:Create(atmosphere, info, {
 		Density = look.density,
@@ -331,6 +378,9 @@ local function update(force: boolean?)
 	if not flashing then
 		-- Stepping into or out of a zone (down to the metro) changes quicker than a venue.
 		apply(resolve(), if instant then 0 elseif presetChanged and not venueChanged then ZONE_BLEND else BLEND)
+	else
+		-- A lightning flash owns the exposure for a moment: the new look is applied when it ends.
+		pendingApply = true
 	end
 	if venueChanged or presetChanged or instant then
 		LightingController.Changed:Fire(venue, currentPreset)
@@ -389,8 +439,13 @@ function LightingController.lightning()
 			Lighting.ExposureCompensation = base + pulse[1]
 			task.wait(pulse[2])
 		end
-		Lighting.ExposureCompensation = base
 		flashing = false
+		if pendingApply then
+			pendingApply = false
+			apply(resolve(), ZONE_BLEND)
+		else
+			Lighting.ExposureCompensation = base
+		end
 	end)
 end
 
@@ -407,8 +462,8 @@ function LightingController.init()
 	atmosphere = Create("Atmosphere", { Name = "DeathsGambitAtmosphere", Parent = Lighting })
 	grade = Create("ColorCorrectionEffect", { Name = "DeathsGambitGrade", Parent = Lighting })
 	bloom = Create("BloomEffect", { Name = "DeathsGambitBloom", Parent = Lighting })
-	-- Roblox's own night sky: stars and a small moon, nothing to upload.
-	Create("Sky", {
+	-- Roblox's own night sky (stars and a small moon) until a look asks for another (applySky).
+	sky = Create("Sky", {
 		Name = "DeathsGambitSky",
 		StarCount = 2500,
 		CelestialBodiesShown = true,
@@ -416,6 +471,9 @@ function LightingController.init()
 		SunAngularSize = 8,
 		Parent = Lighting,
 	})
+	for _, face in ipairs(SKY_FACES) do
+		defaultFaces[face] = (sky :: any)["Skybox" .. face]
+	end
 	-- The mood's vignette, under the HUD.
 	vignetteHolder = Create("Frame", {
 		Name = "Vignette",

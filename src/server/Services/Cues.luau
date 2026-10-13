@@ -29,7 +29,7 @@ export type Options = {
 	hold: number?, -- keep the match loop waiting this long after the cue starts
 }
 
--- kind: "intro", "death", "verdict", "arrest", "eyesDeal", "outro"
+-- kind: "intro", "death", "verdict", "arrest", "eyesDeal", "manualWrite", "outro"
 function Cues.fire(kind: string, data: { [string]: any }?, options: Options?): number
 	counter += 1
 	local lead = if options and options.lead then options.lead else 0.35

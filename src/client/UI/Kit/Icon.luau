@@ -6,7 +6,9 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Icons = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("Icons"))
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Icons = require(Shared:WaitForChild("UI"):WaitForChild("Icons"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local Base = require(script.Parent.Base)
 local Textures = require(script.Parent.Textures)
@@ -15,6 +17,19 @@ local Tokens = require(script.Parent.Tokens)
 local Icon = {}
 
 type Props = { [string]: any }
+
+-- Icons the atlas only has from the Core models' version 6 on (the shop's suits, 2026-10-13), and the
+-- older icon each shows until that import is in.
+local SINCE_CORE_6 = { cards = "dice", fedora = "hood", palm = "hand", set = "seal" }
+local CORE_KIND = "ModelsCore"
+
+local function drawn(name: any): any
+	local older = if type(name) == "string" then SINCE_CORE_6[name] else nil
+	if older and ModelLibrary.version(CORE_KIND) < 6 then
+		return older
+	end
+	return name
+end
 
 -- True when the atlas has an icon with this name.
 function Icon.exists(name: string): boolean
@@ -57,7 +72,7 @@ end
 
 -- Redraws an icon made by Icon.new (after its name changed or the atlas arrived).
 function Icon.refresh(image: ImageLabel)
-	local name = image:GetAttribute("IconName")
+	local name = drawn(image:GetAttribute("IconName"))
 	local cell = if type(name) == "string" then (Icons :: any).cells[name] else nil
 	local id = Textures.id((Icons :: any).atlas)
 	local fallback = image:FindFirstChild("Fallback")

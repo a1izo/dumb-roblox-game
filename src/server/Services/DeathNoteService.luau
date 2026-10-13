@@ -2,6 +2,11 @@
 -- one full real name into the Death Note, everyone else files a short report and picks
 -- the player they suspect most. A correct name kills its target when the phase is over (resolve(),
 -- before the meeting), each death its own scene. A wrong name fails silently.
+--
+-- Death's Manual is seen at work (the owner, 2026-10-12): Kira alone sees the name he wrote go into
+-- the book (the same for a wrong name); a death by it opens on the book with the victim's real name
+-- and the cause written in it, and the body falls when that shot is over; the ending shows every name
+-- written in the match (Match.written).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,6 +16,7 @@ local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
+local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local CharacterService = require(script.Parent.CharacterService)
 local Cues = require(script.Parent.Cues)
@@ -27,23 +33,44 @@ local LInboxRemote = Net.event("LInbox")
 local DeathNoteService = {}
 
 -- The deaths written this phase, in the order they were written (resolve() carries them out).
-local pending: { { target: any, kira: any, cause: string, matchId: number, writtenAt: number } } = {}
+local pending: { { target: any, kira: any, cause: string, matchId: number, writtenAt: number, entry: any } } = {}
 
-local function kill(target, kira, cause: string, matchId: number, writtenAt: number?)
-	if Match.id ~= matchId or not Match.active or Match.winner ~= nil or not target.alive then
+local CUE_LEAD = 0.35
+
+local function kill(target, kira, cause: string, matchId: number, writtenAt: number?, entry)
+	local function stillOn(): boolean
+		return Match.id == matchId and Match.active and Match.winner == nil and target.alive
+	end
+	if not stillOn() then
 		return
 	end
-	kira.stats.kills += 1
-	EventLog.ink(kira, target, writtenAt or Match.elapsed())
-	Elimination.eliminate(
-		target,
-		"dead",
-		cause,
-		string.format("%s collapsed. Cause of death: %s.", target.alias, string.lower(cause)),
-		{ byKira = true }
-	)
-	Match.announce(target.alias .. " is dead", "Cause of death: " .. cause, "danger")
-	Cues.fire("death", { userId = target.userId, alias = target.alias, cause = cause }, { hold = 5.5 })
+	-- The book first, then the death: the cutscene opens on the name being written (its real name,
+	-- public from now on: the owner's choice), and the body falls as that shot ends.
+	Cues.fire("death", {
+		userId = target.userId,
+		alias = target.alias,
+		cause = cause,
+		realName = target.realName,
+		written = true,
+	}, { hold = ManualTiming.HOLD, lead = CUE_LEAD })
+	task.delay(CUE_LEAD + ManualTiming.BOOK, function()
+		if not stillOn() then
+			return
+		end
+		kira.stats.kills += 1
+		EventLog.ink(kira, target, writtenAt or Match.elapsed())
+		Elimination.eliminate(
+			target,
+			"dead",
+			cause,
+			string.format("%s collapsed. Cause of death: %s.", target.alias, string.lower(cause)),
+			{ byKira = true }
+		)
+		Match.announce(target.alias .. " is dead", "Cause of death: " .. cause, "danger")
+		if entry then
+			entry.struck = true
+		end
+	end)
 end
 
 local function onWrite(player: Player, payload)
@@ -78,6 +105,9 @@ local function onWrite(player: Player, payload)
 	end
 
 	local shown = TextFilter.broadcast(typed, player.UserId) or "(unreadable)"
+	-- Every name written, for the ending's page (struck through once it kills).
+	local entry = { name = shown, struck = false }
+	table.insert(Match.written, entry)
 	if target then
 		EventLog.add(
 			Terms.f(
@@ -92,6 +122,7 @@ local function onWrite(player: Player, payload)
 			cause = cause,
 			matchId = Match.id,
 			writtenAt = Match.elapsed(),
+			entry = entry,
 		})
 	else
 		EventLog.add(
@@ -104,6 +135,9 @@ local function onWrite(player: Player, payload)
 	end
 	Match.notify(player, "The name has been written.", "secret")
 	Match.pushPrivate(ps)
+	-- The writer, and only the writer, sees it go into the book: the same shot for a right name and a
+	-- wrong one.
+	Cues.fire("manualWrite", { name = shown }, { to = { player }, lead = 0.25 })
 end
 
 local function onReport(player: Player, payload)
@@ -170,7 +204,7 @@ function DeathNoteService.resolve()
 	local due = pending
 	pending = {}
 	for _, death in ipairs(due) do
-		kill(death.target, death.kira, death.cause, death.matchId, death.writtenAt)
+		kill(death.target, death.kira, death.cause, death.matchId, death.writtenAt, death.entry)
 	end
 end
 
@@ -178,7 +212,7 @@ end
 function DeathNoteService.queue(target, kira, cause: string)
 	table.insert(
 		pending,
-		{ target = target, kira = kira, cause = cause, matchId = Match.id, writtenAt = Match.elapsed() }
+		{ target = target, kira = kira, cause = cause, matchId = Match.id, writtenAt = Match.elapsed(), entry = nil }
 	)
 end
 

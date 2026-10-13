@@ -7,9 +7,10 @@
 -- screen it ends just above Roblox's jump button, and on a phone it is cut down to your portrait, name and
 -- coins over the two buttons.
 --
--- The title, READY, the menu and the profile buttons blip every couple of seconds; hovered buttons glitch
--- hard (Core/HoverGlitch). The lobby comes in from black (UI/LobbyIntro) on joining and on coming back from a
--- case, then plays its entrance: the title cards fall in, everything else glitches in over 1.5 s. The VHS
+-- Only the wordmark and the red "Diavolo" blip, every few seconds; READY, the menu and the profile buttons
+-- stay still and blip once when hovered (Core/HoverGlitch). The lobby comes in from black (UI/LobbyIntro) on
+-- joining and on coming back from a case, then plays its entrance: the title cards fall in, everything else
+-- glitches in over 1.5 s. The VHS
 -- look belongs to the lobby only, so this page turns Glitch off while you are in a case or watching one.
 -- "Hide UI" in the menu hides all of it (and chat) to look at the world; an eye button at the top left brings
 -- it back. For a Specter waiting here (away from the case, hidden), "Spectate" takes them back in as a ghost.
@@ -408,10 +409,7 @@ function buildContents(phone: boolean)
 				Router.toggle(item.screen)
 			end
 		end)
-		table.insert(
-			menuRows,
-			{ wrap = wrap, glitch = Glitch.attach(wrap, { loop = true, enter = false, band = false }) }
-		)
+		table.insert(menuRows, { wrap = wrap, glitch = Glitch.attach(wrap, { loop = false, enter = false }) })
 		float(drift, 2, 2.6 + (shown % 3) * 0.45, shown * 0.55)
 	end
 end
@@ -526,7 +524,7 @@ local function buildMenu()
 	Kit.list(menu, T.space.s)
 	readyHolder = wrapper({ Name = "Ready", Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 1, Parent = menu })
 	slot(readyHolder, 1, menu)
-	readyGlitch = Glitch.attach(readyHolder, { loop = true, enter = false })
+	readyGlitch = Glitch.attach(readyHolder, { loop = false, enter = false })
 	-- The status line and the rule under it glitch in together.
 	statusGroup = wrapper({ Name = "Status", Size = UDim2.new(1, 0, 0, 34), LayoutOrder = 3, Parent = menu })
 	slot(statusGroup, 3, menu)
@@ -678,7 +676,7 @@ local function buildCard(phone: boolean)
 		}, function()
 			Router.toggle(item[2])
 		end)
-		linkGlitches[index] = Glitch.attach(wrap, { loop = true, enter = false, band = false })
+		linkGlitches[index] = Glitch.attach(wrap, { loop = false, enter = false })
 	end
 	lastRank = ""
 	lastCoins = nil

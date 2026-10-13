@@ -482,15 +482,16 @@ function Surfaces.heading(props: Props): (Frame, (string, string?) -> ())
 		ZIndex = z,
 		Parent = frame,
 	})
+	-- In sentence case, as wide as the title leaves room for (cut short with "…" past that).
 	local detail = Base.label({
 		Name = "Detail",
 		Text = props.detail or "",
 		font = "label",
-		size = "micro",
-		upper = true,
+		size = "small",
 		color = if ink == C.ink then C.inkDim else C.dim,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, 0, 1, -10),
@@ -498,6 +499,11 @@ function Surfaces.heading(props: Props): (Frame, (string, string?) -> ())
 		ZIndex = z,
 		Parent = frame,
 	})
+	local function fitDetail()
+		detail.Size = UDim2.new(1, -(math.ceil(title.width) + 2 * Tokens.space.l), 0, 20)
+	end
+	title.Changed:Connect(fitDetail)
+	fitDetail()
 	Base.make("Frame", {
 		Name = "Hairline",
 		BackgroundColor3 = ink,

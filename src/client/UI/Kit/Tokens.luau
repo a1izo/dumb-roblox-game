@@ -79,8 +79,8 @@ Tokens.alpha = {
 -- Type ---------------------------------------------------------------------------------------
 
 -- Glyph faces (Kit/GlyphText), each an atlas drawn from a Fontshare font. Every size is the on-screen
--- font size in px. Headings and numbers are Melodrama and only used at 18 px and up; below that, text is
--- a real Montserrat label.
+-- font size in px. Melodrama is only drawn at 22 px and up (GlyphText.MIN_ATLAS); below that the same
+-- text is a real Montserrat label (Core/FontMirror and GlyphText switch over by themselves).
 Tokens.face = {
 	title = "Title", -- Aktura: the game title, CASE CLOSED, big slams. Mixed case only, never all caps.
 	display = "Head", -- Melodrama Bold: headings, buttons, menu items, names, numbers
@@ -89,13 +89,14 @@ Tokens.face = {
 
 local MONTSERRAT = "rbxasset://fonts/families/Montserrat.json"
 
--- Real fonts: small text, typing, chat, and the stand-in until the glyph atlases are imported.
+-- Real fonts: all text under 22 px, typing, chat, and the stand-in until the glyph atlases are imported.
+-- SemiBold reads cleanly on the dark panels at small sizes.
 Tokens.font = {
-	body = Font.new(MONTSERRAT, Enum.FontWeight.Medium),
+	body = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
 	bodyBold = Font.new(MONTSERRAT, Enum.FontWeight.Bold),
-	bodyItalic = Font.new(MONTSERRAT, Enum.FontWeight.Medium, Enum.FontStyle.Italic),
-	label = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold), -- small caps labels (upper-cased, spaced)
-	document = Font.new(MONTSERRAT, Enum.FontWeight.Medium), -- reading text and fields
+	bodyItalic = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold, Enum.FontStyle.Italic),
+	label = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold), -- labels and tabs
+	document = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold), -- reading text and fields
 	mono = Font.new(MONTSERRAT, Enum.FontWeight.Bold), -- counts; the HUD uses Kit.num digits instead
 	-- fallbacks for the glyph faces
 	title = Font.new(MONTSERRAT, Enum.FontWeight.ExtraBold),
@@ -160,11 +161,11 @@ Tokens.motion = {
 	scene = 0.6,
 }
 
--- The videotape glitch on loud elements: a stepped entrance, then a short blip every couple of seconds.
+-- The videotape glitch on the few loud lobby elements: a stepped entrance, then a short blip every few seconds.
 Tokens.glitch = {
 	enter = 0.5, -- seconds of the entrance
 	blip = 0.15, -- seconds of one loop glitch
-	period = 2.1, -- average seconds between blips (each element varies 1.8 to 2.3)
+	period = 6, -- average seconds between blips (each element varies about 5 to 6.6)
 	shift = 9, -- px of sideways jitter at most
 }
 

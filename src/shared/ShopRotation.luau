@@ -62,6 +62,35 @@ function ShopRotation.forDay(day: number): { string }
 	return picked
 end
 
+-- Today's hand is dealt face down; a player turns the cards one by one (only to see them: the six are
+-- the same for everyone). `record` is the profile's shopTurned { day, cards }: a new day starts it
+-- again. Returns whether anything changed (false for a card not in that day's hand, or already turned).
+function ShopRotation.turn(record: any, day: number, itemId: any): boolean
+	if type(record) ~= "table" or type(itemId) ~= "string" then
+		return false
+	end
+	if not table.find(ShopRotation.forDay(day), itemId) then
+		return false
+	end
+	if record.day ~= day or type(record.cards) ~= "table" then
+		record.day = day
+		record.cards = {}
+	end
+	if table.find(record.cards, itemId) then
+		return false
+	end
+	table.insert(record.cards, itemId)
+	return true
+end
+
+-- The cards of `day`'s hand turned so far (none on another day).
+function ShopRotation.turned(record: any, day: number): { string }
+	if type(record) == "table" and record.day == day and type(record.cards) == "table" then
+		return record.cards
+	end
+	return {}
+end
+
 -- True when a rotation item can be bought at this time.
 function ShopRotation.isFeatured(itemId: string, unixTime: number): boolean
 	local day = ShopRotation.dayOf(unixTime)

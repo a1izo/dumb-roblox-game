@@ -595,6 +595,45 @@ def draw_icons():
         for x in (30, 50, 70):
             c.line((x, 70), (x - 6, 88), 5)
 
+    # The shop's suits (Death's hand, 2026-10-13). New icons go last: the cells before keep their places.
+    def card_at(angle, pivot=(50, 92), w=34, h=54, lift=6):
+        """The corners of a playing card standing on `pivot`, turned by `angle` degrees."""
+        a = math.radians(angle)
+        corners = [(-w / 2, -lift), (w / 2, -lift), (w / 2, -lift - h), (-w / 2, -lift - h)]
+        return [(pivot[0] + x * math.cos(a) - y * math.sin(a), pivot[1] + x * math.sin(a) + y * math.cos(a))
+                for x, y in corners]
+
+    @icon
+    def cards(c):
+        for angle in (-24, 24):
+            c.poly(card_at(angle), 6, True)
+        front = card_at(0)
+        c.fill(front, erase=True)
+        c.poly(front, 6, True)
+        c.fill(star((50, 59), 9, 4, 4, -90))
+
+    @icon
+    def fedora(c):
+        c.ellipse((50, 66), 42, 10, 6)
+        c.fill([(26, 64), (30, 30), (42, 24), (50, 32), (58, 24), (70, 30), (74, 64)])
+        c.line((27, 54), (73, 54), 7, erase=True)
+
+    @icon
+    def palm(c):
+        c.fill([(30, 54), (32, 84), (66, 88), (72, 60)])
+        for (x0, y0), (x1, y1) in (((34, 58), (24, 22)), ((44, 56), (40, 12)), ((55, 56), (58, 12)),
+                                   ((64, 58), (74, 22)), ((70, 66), (90, 50))):
+            c.line((x0, y0), (x1, y1), 9)
+
+    @icon
+    def set_(c):
+        left, right = card_at(-14, (34, 90), 30, 50, 4), card_at(14, (66, 90), 30, 50, 4)
+        c.poly(left, 6, True)
+        c.fill(right, erase=True)
+        c.poly(right, 6, True)
+        c.circle((44, 18), 9, 5)
+        c.circle((56, 18), 9, 5)
+
     return icons
 
 

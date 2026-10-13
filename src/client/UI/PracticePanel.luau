@@ -15,6 +15,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
+local Puppets = require(script.Parent.Parent.World.Puppets)
 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
@@ -28,6 +29,8 @@ type Dummy = { part: BasePart, model: Model, alias: string, name: string, first:
 local win: any
 local body: ScrollingFrame
 local onFinished: (() -> ())? = nil
+-- The dummy the Manual drill uses while the Trial points at one (nil: any dummy).
+local preferred: string? = nil
 
 local function dummies(): { Dummy }
 	local list = {}
@@ -61,8 +64,12 @@ local function finish()
 	end
 end
 
--- The dummy tips over, then stands up again a few seconds later (only on this screen).
+-- The puppet's strings go slack and it drops in a heap, then is hauled back up (only on this screen); the
+-- grey stand-in (before the Lobby models are imported) tips over and stands up again.
 local function collapse(target: Dummy)
+	if Puppets.drop(target.part) then
+		return
+	end
 	local model = target.model
 	local start = model:GetPivot()
 	local feet = start * CFrame.new(0, -3.8, 0)
@@ -110,6 +117,11 @@ local function grimoireDrill()
 		return
 	end
 	local target = list[math.random(1, #list)]
+	for _, entry in ipairs(list) do
+		if entry.alias == preferred then
+			target = entry
+		end
+	end
 	win.setTitle(Terms.f("Practice {grimoire}"))
 	Kit.label({
 		Text = Terms.f(
@@ -216,6 +228,8 @@ local function warrantDrill()
 			elseif not NameUtil.matches(box.Text, target.first, target.last) then
 				result = feedback("Right suspect, wrong name. A rejected warrant blocks you until the next round.")
 			else
+				-- Arrested: the puppet is yanked upright on its strings.
+				Puppets.jerk(target.part)
 				finish()
 			end
 		end
@@ -256,12 +270,13 @@ local function eyesDrill()
 		})
 		local labels = {}
 		for _, entry in ipairs(dummies()) do
+			local head = Puppets.headOf(entry.part)
 			local gui = Create("BillboardGui", {
-				Adornee = entry.part,
+				Adornee = head or entry.part,
 				AlwaysOnTop = true,
 				LightInfluence = 0,
 				Size = UDim2.fromScale(7, 1.2),
-				StudsOffset = Vector3.new(0, 3.4, 0),
+				StudsOffset = Vector3.new(0, if head then 1.2 else 3.4, 0),
 				Parent = playerGui,
 			})
 			Create("TextLabel", {
@@ -288,6 +303,11 @@ end
 local DRILLS = { grimoire = grimoireDrill, warrant = warrantDrill, eyes = eyesDrill }
 
 -- Opens a drill; onDone runs once when it is finished.
+-- The Manual drill uses this dummy (its alias, "Dummy B") until set back to nil (the Trial points at one).
+function PracticePanel.prefer(alias: string?)
+	preferred = alias
+end
+
 function PracticePanel.open(drill: string, onDone: () -> ())
 	local build = DRILLS[drill]
 	if not build then

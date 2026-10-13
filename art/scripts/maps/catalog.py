@@ -64,9 +64,15 @@ def load():
                 at = re.search(r"at = \{([^}]*)\}", entry)
                 rng = re.search(r"range = ([-\d.]+)", entry)
                 bright = re.search(r"brightness = ([-\d.]+)", entry)
+                kind = re.search(r'kind = "(\w+)"', entry)
+                angle = re.search(r"angle = ([-\d.]+)", entry)
+                face = re.search(r'face = "(\w+)"', entry)
                 lights.append({"at": _numbers(at.group(1)) if at else [0.0, 0.0, 0.0],
                                "range": float(rng.group(1)) if rng else 10.0,
-                               "brightness": float(bright.group(1)) if bright else 1.0})
+                               "brightness": float(bright.group(1)) if bright else 1.0,
+                               "kind": kind.group(1) if kind else "point",
+                               "angle": float(angle.group(1)) if angle else 90.0,
+                               "face": face.group(1) if face else "Bottom"})
         if size:
             _CACHE[key] = {
                 "size": _numbers(size.group(1)),

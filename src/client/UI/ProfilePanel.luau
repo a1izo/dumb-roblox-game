@@ -19,6 +19,7 @@ local T = Kit.Tokens
 local ProfilePanel = {}
 
 local ROLE_ORDER = { "Kira", "Follower", "L", "Watari", "TaskForce" } -- terms:ok (internal ids)
+local CELL = 80 -- height of a number's cell
 
 local list: ScrollingFrame
 
@@ -74,21 +75,22 @@ end
 local function statGrid(entries: { { string } }, order: number)
 	local grid = Kit.frame({
 		Name = "Numbers",
-		Size = UDim2.new(1, 0, 0, math.ceil(#entries / 4) * (68 + T.space.s)),
+		Size = UDim2.new(1, 0, 0, math.ceil(#entries / 4) * (CELL + T.space.s)),
 		LayoutOrder = order,
 		Parent = list,
 	})
-	Kit.grid(grid, UDim2.new(0.25, -T.space.s, 0, 68), T.space.s)
+	Kit.grid(grid, UDim2.new(0.25, -T.space.s, 0, CELL), T.space.s)
 	for _, entry in ipairs(entries) do
+		-- The number, and under it what it counts (stacked, so a long caption never runs into the number).
 		local cell = Kit.card({ Size = UDim2.fromScale(1, 1), padding = T.space.m, Parent = grid })
-		Kit.label({ Text = entry[2], font = "bodyBold", size = "title", Parent = cell })
+		Kit.list(cell, T.space.xxs)
+		Kit.label({ Text = entry[2], font = "bodyBold", size = "title", LayoutOrder = 1, Parent = cell })
 		Kit.label({
-			Text = string.upper(entry[1]),
+			Text = entry[1],
 			font = "label",
-			size = "micro",
+			size = "small",
 			color = C.dim,
-			AnchorPoint = Vector2.new(0, 1),
-			Position = UDim2.fromScale(0, 1),
+			LayoutOrder = 2,
 			Parent = cell,
 		})
 	end

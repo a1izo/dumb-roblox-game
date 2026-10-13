@@ -71,8 +71,9 @@ function Migrations.defaults(startingCoins: number)
 		-- that they pay nothing by themselves; it is deliberately not a default, so profiles that finished
 		-- them when they did pay can be told apart.
 		training = { done = false, drills = {} },
-		-- The Trial (Shared/Trial): done, the offer turned down, the Academy's one reward paid for it.
-		trial = { done = false, skipped = false, paid = false },
+		-- The Trial (Shared/Trial): done, the offer turned down, the Academy's one reward paid for it, and how many
+		-- of its steps were done (a rejoin carries on from there).
+		trial = { done = false, skipped = false, paid = false, step = 0 },
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
 		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds), the fastest
 		-- spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls survived in a row with
@@ -104,6 +105,8 @@ function Migrations.defaults(startingCoins: number)
 		receipts = {}, -- [purchaseId] = unix time
 		privateSettings = {},
 		weekly = { week = -1, wins = 0, xp = 0 },
+		-- The shop's Today's hand: the cards turned so far, on which day (Shared/ShopRotation.turn).
+		shopTurned = { day = -1, cards = {} },
 	}
 end
 

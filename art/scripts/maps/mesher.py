@@ -382,10 +382,15 @@ class Scene(LayoutMixin):
         self.preview_props.append((key, x, y, z, rot, scale_))
 
     def light(self, kind, pos, color, range_, brightness, shadows=False, face="Bottom", angle=90, flicker=False,
-              role=None):
-        """role "emergency": a lamp that stays off until the map's blackout (Bureau HQ's breaker)."""
+              role=None, rot=0.0, glow=None):
+        """role "emergency": a lamp that stays off until the map's blackout (Bureau HQ's breaker). rot: degrees
+        about +Y the lamp is turned by (a spot facing "Front" then shines the way rot faces, out of a wall).
+        glow: (size (x, y, z), colour) of the fitting's glowing face, centred on the lamp and turned with it,
+        drawn by the game as the lamp's own part instead of in the scene's meshes (a flickering lamp: its
+        glow goes dark with it)."""
         self.lights.append({"kind": kind, "pos": pos, "color": color, "range": range_, "brightness": brightness,
-                            "shadows": shadows, "face": face, "angle": angle, "flicker": flicker, "role": role})
+                            "shadows": shadows, "face": face, "angle": angle, "flicker": flicker, "role": role,
+                            "rot": rot, "glow": glow})
 
     def sign(self, pos, rot, w, h, text, font="GothamBlack", color=(255, 255, 255), bg=None, glow=None,
              align="Center"):
@@ -492,8 +497,12 @@ class Scene(LayoutMixin):
 
 def planar_uvs(points, tile):
     """UVs for a flat face, projected on the world plane it faces most."""
-    a, b, c = points[0], points[1], points[2]
-    n = cross(sub(b, a), sub(c, a))
+    n = [0.0, 0.0, 0.0]
+    for i, p in enumerate(points):
+        q = points[(i + 1) % len(points)]
+        n[0] += (p[1] - q[1]) * (p[2] + q[2])
+        n[1] += (p[2] - q[2]) * (p[0] + q[0])
+        n[2] += (p[0] - q[0]) * (p[1] + q[1])
     ax, ay, az = abs(n[0]), abs(n[1]), abs(n[2])
     uvs = []
     for x, y, z in points:

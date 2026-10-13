@@ -9,6 +9,7 @@ when you walk from a to b seen from above with -z up (n = the direction rotated 
 import math
 import random
 
+from maps import lightbook
 from maps.mesher import add, cross, norm, ry, scale, sub
 
 WARM = (255, 214, 170)
@@ -140,8 +141,9 @@ def trims(s, a, t, outward, spans, height, spec, base=0.0):
 
 
 def wall(s, a, b, height, *, thick=1.0, base=0.0, core="PlasterDark", side_n=None, side_s=None,
-         openings=(), trim_n=None, trim_s=None, collide=True, top=None):
-    """A wall from a to b with doors and windows cut out.
+         openings=(), trim_n=None, trim_s=None, collide=True, top=None, covered=False):
+    """A wall from a to b with doors and windows cut out. covered: a floor rests on its top (no top
+    face: it would lie in the floor's plane and flicker with it).
 
     openings: dicts with at (distance from a to the middle), w, bottom, top, and kind:
       "door"   open doorway with a frame (and casings when frame is given)
@@ -187,6 +189,8 @@ def wall(s, a, b, height, *, thick=1.0, base=0.0, core="PlasterDark", side_n=Non
     for u0, u1, y0, y1, lintel in segments:
         centre = point_on(a, t, (u0 + u1) / 2, (y0 + y1) / 2)
         skip = () if lintel else ("-y",)
+        if covered and y1 >= height - 1e-6:
+            skip = skip + ("+y",)
         s.box(core, centre, (u1 - u0, y1 - y0, thick), rot, collide=collide, skip=skip, mats=mats)
     for op in ops:
         opening(s, a, t, n, rot, thick, base, op, collide)
@@ -236,16 +240,17 @@ def opening(s, a, t, n, rot, thick, base, op, collide):
     if kind == "gap":
         return
     if frame:
-        # Linings inside the opening and casings on both faces.
-        lining = 0.12
-        for u in (u0 + lining / 2, u1 - lining / 2):
-            s.box(frame, point_on(a, t, u, (bottom + top_y) / 2), (lining, top_y - bottom, thick + 0.1), rot)
-        s.box(frame, point_on(a, t, op["at"], top_y - lining / 2), (u1 - u0, lining, thick + 0.1), rot)
-        if kind == "window":
-            s.box(frame, point_on(a, t, op["at"], bottom + lining / 2), (u1 - u0, lining, thick + 0.1), rot)
-        # Casings on both faces; none (casing 0) on an arched opening, whose arch head and voussoirs
-        # frame it instead (a square casing there overlaps the brick and flickers).
+        # Linings inside the opening and casings on both faces. Casings on both faces; none (casing 0) on an
+        # arched opening, whose arch head and voussoirs frame it instead (a square casing there overlaps the
+        # brick and flickers); its lining then stops at the wall's faces too (proud of them, it lay in the
+        # plane of the arch's corner fills).
         casing = op.get("casing", 0.35)
+        lining, deep = 0.12, thick + (0.1 if casing > 0 else 0.0)
+        for u in (u0 + lining / 2, u1 - lining / 2):
+            s.box(frame, point_on(a, t, u, (bottom + top_y) / 2), (lining, top_y - bottom, deep), rot)
+        s.box(frame, point_on(a, t, op["at"], top_y - lining / 2), (u1 - u0, lining, deep), rot)
+        if kind == "window":
+            s.box(frame, point_on(a, t, op["at"], bottom + lining / 2), (u1 - u0, lining, deep), rot)
         if kind == "window":
             post_y, post_h = (bottom + top_y) / 2, top_y - bottom + casing * 2
         else:
@@ -427,7 +432,7 @@ def panel_light(s, x, y, z, w=4.0, d=2.0, color=WARM, range_=24, brightness=1.1,
     else:
         glow = "NeonWarm" if warm else "NeonCool"
     s.box(glow, (x, y - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
-    s.light("point", (x, y - 1.0, z), color, range_, brightness, shadows)
+    lightbook.ceiling(s, (x, y - lightbook.CEILING_DROP, z), color, range_, brightness, shadows)
 
 
 def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18, brightness=0.7, tubes=2,
@@ -443,7 +448,7 @@ def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18
     for u in (-length / 2 + 0.15, length / 2 - 0.15):
         dx, dz = u * math.cos(a), -u * math.sin(a)
         s.box("DarkMetal", (x + dx, y - 0.3, z + dz), (0.2, 0.3, 0.5 + 0.35 * tubes), rot)
-    s.light("point", (x, y - 1.0, z), color, range_, brightness, shadows)
+    lightbook.ceiling(s, (x, y - lightbook.CEILING_DROP, z), color, range_, brightness, shadows)
 
 
 def pendant(s, x, ceiling_y, z, drop=4.0, shade="BlackMetal", color=WARM, range_=22, brightness=1.4,
@@ -481,7 +486,7 @@ def sconce(s, x, y, z, rot, color=WARM, range_=14, brightness=0.9):
     shade = add((x, y + 0.2, z), turn((0, 0, -0.65)))
     s.lathe("CreamTrim", (shade[0], shade[1] - 0.1, shade[2]), [(0.32, 0), (0.22, 0.55)], 12, caps=(False, False))
     s.lathe("NeonWarm", (shade[0], shade[1] - 0.05, shade[2]), [(0.0, 0), (0.12, 0.1), (0.0, 0.3)], 8)
-    s.light("point", (shade[0], shade[1] + 0.2, shade[2]), color, range_, brightness)
+    lightbook.wall(s, (shade[0], shade[1] + 0.2, shade[2]), rot, color, range_, brightness)
 
 
 def spotlight_rig(s, x, y, z, color=(255, 236, 214), range_=26, brightness=5, angle=60, shadows=True):
@@ -557,7 +562,7 @@ def whiteboard(s, x, y, z, rot, w=6.0, h=3.4, scribbles=True):
 
 def picture(s, x, y, z, rot, w=2.4, h=3.0, frame="Wood", inner="Paper", border=0.2):
     s.box(frame, _on_wall(x, y, z, rot, 0.07), (w, h, 0.14), rot)
-    s.box(inner, _on_wall(x, y, z, rot, 0.145), (w - border * 2, h - border * 2, 0.02), rot)
+    s.box(inner, _on_wall(x, y, z, rot, 0.165), (w - border * 2, h - border * 2, 0.02), rot)
 
 
 def wall_clock(s, x, y, z, rot, r=1.0):
@@ -565,13 +570,14 @@ def wall_clock(s, x, y, z, rot, r=1.0):
     turn = ry(rot)
     normal = turn((0, 0, -1))
     s.tube("BlackMetal", add(centre, scale(normal, -0.1)), add(centre, scale(normal, 0.08)), r, 20)
-    face = add(centre, scale(normal, 0.1))
+    face = add(centre, scale(normal, 0.12))
     side = turn((1, 0, 0))
     pts = [add(face, add(scale(side, math.cos(a) * (r - 0.1)), (0, math.sin(a) * (r - 0.1), 0)))
            for a in (2 * math.pi * k / 20 for k in range(20))]
     s.polygon("Paper", list(reversed(pts)))  # side x up points into the wall, so wind it backwards
-    s.box("BlackTrim", add(face, add(scale(side, 0.0), (0, 0.3, 0))), (0.06, 0.6, 0.02), rot)
-    s.box("BlackTrim", add(face, scale(side, 0.22)), (0.45, 0.06, 0.02), rot)
+    hands = add(face, scale(normal, 0.03))
+    s.box("BlackTrim", add(hands, add(scale(side, 0.0), (0, 0.3, 0))), (0.06, 0.6, 0.02), rot)
+    s.box("BlackTrim", add(hands, scale(side, 0.22)), (0.45, 0.06, 0.02), rot)
 
 
 def exit_sign(s, x, y, z, rot):

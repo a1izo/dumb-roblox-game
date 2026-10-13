@@ -26,6 +26,8 @@ FLAT = {
     "Water": ("Glass", (40, 90, 120), 0.35, 0.3),
     "Puddle": ("Glass", (16, 16, 22), 0.15, 0.35),
     "Screen": ("SmoothPlastic", (14, 16, 22), 0, 0.1),
+    # A ceiling panel switched off: pale plastic that takes the room's light (a glowing look there lit nothing).
+    "DiffuserOff": ("SmoothPlastic", (150, 154, 160), 0, 0.05),
     "Foliage": ("Grass", (44, 74, 40), 0, 0),
     "NeonWarm": ("Neon", (255, 214, 160), 0, 0),
     "NeonCool": ("Neon", (200, 225, 255), 0, 0),
@@ -49,7 +51,9 @@ FLAT = {
     "WindowGlass": ("Glass", (70, 80, 96), 0.55, 0.3),
     # Agency HQ: the tower's floor-to-ceiling glass (clear enough to see the city far below), frosted
     # office glass and the interrogation room's one-way mirror (dark, reflective).
-    "CurtainGlass": ("Glass", (70, 82, 100), 0.72, 0.12),
+    # Not Roblox's Glass: its own surface pattern smeared every lamp's reflection on the Bureau's big panes into
+    # a cloudy blotch (seen in the game, 2026-10-12); plain and see-through, the lamps reflect as points.
+    "CurtainGlass": ("SmoothPlastic", (70, 82, 100), 0.72, 0.12),
     "GlassFrosted": ("Glass", (196, 204, 212), 0.2, 0.05),
     "MirrorGlass": ("Glass", (30, 34, 40), 0.25, 0.6),
     # The city seen from high up (Agency HQ's windows): flat, cheap, dark.
@@ -146,7 +150,7 @@ def fallback_look(name):
     """(Roblox material, sRGB colour) for a textured material whose texture did not load: the
     closest Roblox material and the average colour of its colour map."""
     kind = next((k for key, k in FALLBACK_KIND if key in name), "SmoothPlastic")
-    path = os.path.join(TEX_DIR, f"{name}_color.jpg")
+    path = os.path.join(TEX_DIR, f"{SHARED.get(name, name)}_color.jpg")
     if name in SHEETS:
         path = os.path.join(common.TEXTURES, SHEETS[name])
     rgb = (128, 128, 128)
@@ -190,6 +194,9 @@ def _save(name, array, non_color, quality=90):
 
 
 KINDS = ("color", "normal", "rough", "metal")
+# Surfaces that wear another's colour and roughness maps (one upload for both) and have a normal map of
+# their own: a wall with real relief (maps/relief.py), whose normal map is made for its facets.
+SHARED = {"StoneRelief": "Stone"}
 
 
 def make_textures(names=None, force=False):
@@ -201,7 +208,9 @@ def make_textures(names=None, force=False):
     for name, (generator, _) in scanlib.LIBRARY.items():
         if names and name not in names:
             continue
-        paths = {kind: os.path.join(TEX_DIR, f"{name}_{kind}.jpg") for kind in KINDS}
+        base = SHARED.get(name)
+        paths = {kind: os.path.join(TEX_DIR, f"{base if base and kind != 'normal' else name}_{kind}.jpg")
+                 for kind in KINDS}
         if not force and all(os.path.exists(paths[kind]) for kind in ("color", "normal", "rough")):
             images = {}
             for kind, path in paths.items():
@@ -214,6 +223,16 @@ def make_textures(names=None, force=False):
             out[name] = images
             continue
         maps = generator()
+        if base:
+            # (The base surface was made first in this loop, or is on disk.)
+            out[name] = {"normal": _save(f"{name}_normal", maps["normal"], True, quality=90)}
+            for kind in ("color", "rough"):
+                img = bpy.data.images.load(paths[kind], check_existing=True)
+                if kind != "color":
+                    img.colorspace_settings.name = "Non-Color"
+                out[name][kind] = img
+            print("[maps] texture", name, "(colour and roughness of " + base + ")")
+            continue
         out[name] = {
             "color": _save(f"{name}_color", maps["color"], False, quality=90),
             "normal": _save(f"{name}_normal", maps["normal"], True, quality=90),

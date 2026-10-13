@@ -12,6 +12,8 @@
 -- notebook and writes in the Grimoire phase whatever they own, and ghosts are only ever
 -- seen by other ghosts.
 
+local Terms = require(script.Parent.Terms)
+
 local Cosmetics = {}
 
 export type Item = {
@@ -363,6 +365,31 @@ Cosmetics.KIND_NAMES = {
 	title = "Titles",
 }
 
+-- The shop's suits ("Death's hand": the shop is a table of cards dealt by Death), in order, each with
+-- its icon and the kinds it deals. Today's hand is the day's rotation (dealt face down, turned by
+-- the player); Sets are the matching sets; Robux shows only once a product is on sale.
+export type Suit = { id: string, name: string, icon: string, kinds: { string }? }
+Cosmetics.SUITS = {
+	{ id = "today", name = "Today's hand", icon = "cards" },
+	{ id = "wardrobe", name = "Wardrobe", icon = "fedora", kinds = { "hat", "tie", "trail" } },
+	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
+	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
+	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },
+	{ id = "gestures", name = "Gestures", icon = "palm", kinds = { "emote", "title" } },
+	{ id = "sets", name = "Sets", icon = "set" },
+	{ id = "robux", name = "Robux", icon = "coin" },
+} :: { Suit }
+
+-- One item of a kind ("Epic · Manual cover").
+Cosmetics.KIND_SINGULAR = {
+	hat = "Hat",
+	trail = "Trail",
+	tie = "Tie",
+	grimoire = "Manual cover",
+	specter = "Deathsinger form",
+	title = "Title",
+}
+
 Cosmetics.RARITIES = { "common", "rare", "epic", "legendary" }
 
 Cosmetics.RARITY_COLORS = {
@@ -382,6 +409,26 @@ function Cosmetics.byId(id: string?): Item?
 		return nil
 	end
 	return byId[id]
+end
+
+-- A suit by id, or nil.
+function Cosmetics.suit(id: string): Suit?
+	for _, suit in ipairs(Cosmetics.SUITS) do
+		if suit.id == id then
+			return suit
+		end
+	end
+	return nil
+end
+
+-- The suit an item is dealt in (by its kind), or nil.
+function Cosmetics.suitOf(item: Item): Suit?
+	for _, suit in ipairs(Cosmetics.SUITS) do
+		if suit.kinds and table.find(suit.kinds, item.kind) then
+			return suit
+		end
+	end
+	return nil
 end
 
 function Cosmetics.ofKind(kind: string): { Item }

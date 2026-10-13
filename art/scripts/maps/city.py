@@ -11,7 +11,7 @@ import math
 import random
 
 from maps import geo2d as g2
-from maps import kit
+from maps import kit, lightbook
 from maps.mesher import add, cross, dot, ry, sub
 
 # Faces and floors ---------------------------------------------------------------------------------
@@ -197,7 +197,7 @@ def pole_lamp(s, x, z, y=0.0, h=9.0, color=(255, 200, 140), range_=24.0, brightn
     s.box("DarkMetal", (x, y + h / 2, z), (0.3, h, 0.3), skip=("-y",))
     s.box("BlackMetal", (x, y + h + 0.1, z), (1.2, 0.2, 1.2))
     s.box("NeonWarm", (x, y + h - 0.2, z), (0.8, 0.4, 0.8), skip=("+y",))
-    s.light("point", (x, y + h - 0.8, z), color, range_, brightness)
+    lightbook.post(s, (x, y + h - 0.5, z), color, range_, brightness)
     s.collider((x, y + h / 2, z), (0.5, h, 0.5), 0, True, None)
 
 
@@ -215,8 +215,9 @@ def wall_lamps(s, points, offset, spacing=18.0, y=0.0, h=8.0, color=(255, 196, 1
         rot = g2.rot_of(d)
         s.box("BlackMetal", (x, y + h + 0.3, z), (0.4, 0.6, 0.4), rot)
         s.box("NeonWarm", (x, y + h - 0.15, z), (0.5, 0.3, 0.5), rot)
-        s.light("point", (x - n[0] * side * 0.8, y + h - 0.6, z - n[1] * side * 0.8), color, range_, brightness,
-                flicker=bool(flicker_every) and k % flicker_every == flicker_every - 1)
+        lightbook.facade(s, (x - n[0] * side * 0.5, y + h - 0.4, z - n[1] * side * 0.5),
+                       lightbook.facing(-n[0] * side, -n[1] * side), color, range_, brightness,
+                       flicker=bool(flicker_every) and k % flicker_every == flicker_every - 1)
         k += 1
         u += spacing
 
@@ -296,6 +297,8 @@ def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="ConcreteDark", step
     for i in range(count):
         t0, t1 = i / count, (i + 1) / count
         top = y0 + rise * (t1 if rise > 0 else t0)
+        if top >= max(y0, y1) - 1e-6:
+            top -= 0.03  # the top step a hair under the landing it meets (in its plane, the two flickered)
         c = (a[0] + d[0] * run * (t0 + t1) / 2, a[1] + d[1] * run * (t0 + t1) / 2)
         h = max(0.2, top - low)
         s.box(mat, (c[0], low + h / 2, c[1]), (width, h, run / count), rot, skip=("-y",),

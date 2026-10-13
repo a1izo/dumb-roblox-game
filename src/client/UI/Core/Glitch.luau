@@ -1,28 +1,28 @@
 --!strict
--- The videotape glitch for loud elements: titles, the lobby wordmark, windows as they open, the vote
--- header, results. An element cuts in over half a second (it blinks, jumps sideways, tears, and shows a red
--- and a white ghost of itself), then every couple of seconds it glitches again for a moment.
+-- The videotape glitch, kept for a few loud moments of the lobby. An element cuts in (it blinks, jumps
+-- sideways, tears, and shows a red and a white ghost of itself); the two that loop (the wordmark and the red
+-- "Diavolo" of the quote) glitch again for a moment every few seconds. Everything else stays still.
 --
---   local handle = Glitch.attach(canvasGroup, { loop = true })   -- enters now, then blips every ~2 s
---   handle:enter()      -- play the entrance again (a window that was shown)
+--   local handle = Glitch.attach(canvasGroup, { loop = true })   -- enters now, then blips every ~6 s
+--   handle:enter()      -- play the entrance again
 --   handle:enter(true)  -- the long entrance (about 1.5 s), used when the lobby comes in
---   handle:pulse()      -- one blip now (a toast arrived, an objective was done)
---   handle:hover(true)  -- glitch hard and fast until hover(false) (a hovered button)
+--   handle:pulse()      -- one blip now
+--   handle:hover(true)  -- one short blip as the pointer arrives (a hovered button); hover(false) lets it finish
 --   handle:destroy()
 --
 -- The look belongs to the lobby only: Glitch.setEnabled(false) (in a match) stops every element at once and
 -- nothing glitches until it is turned back on. Attaching to a target that already has an entry shares it, so a
 -- hovered button inside a looping wrapper does not fight the wrapper's own blips.
 --
--- While a window is open the lobby behind it goes quiet (Glitch.setQuiet): no blip starts and the full-screen
--- scan band stays off, so nothing rolls over what is being read. An element can still be made to glitch
--- (the window's own title cuts in as it opens). And a hovered button's tear bars are drawn behind it, never
--- across its lettering.
+-- While a window is open the lobby behind it goes quiet (Glitch.setQuiet): no blip starts by itself. There is
+-- no full-screen scan band any more; a faint film grain shows over the screen only while something cuts in.
+-- A hovered button's tear bars are drawn behind it, never across its lettering.
 --
 -- Parent the target before attaching (an element with no parent is dropped). The target should be a
--- CanvasGroup (it blinks through GroupTransparency); on anything else it only jumps sideways. Ghosts are copies of its children, tinted and shifted, built only for the 0.15 s a blip
--- lasts (not on a target that lays out its children). One Heartbeat connection serves every element, and exists only while there is at least one.
--- The HUD does not loop: its elements only pulse when something changes. Reduced motion turns it all off.
+-- CanvasGroup (it blinks through GroupTransparency); on anything else it only jumps sideways. Ghosts are
+-- copies of its children, tinted and shifted, built only for the 0.15 s a blip lasts (not on a target that
+-- lays out its children). One Heartbeat connection serves every element, and exists only while there is at
+-- least one. Reduced motion turns it all off.
 
 local RunService = game:GetService("RunService")
 
@@ -68,21 +68,9 @@ local ENTER_LONG = {
 	{ 1.30, 1, 2, 1, false },
 	{ 1.50, 1, 0, 0, false },
 }
--- While hovered: a fast, heavy cycle that repeats until the hover ends. Hard to read, never gone.
-local HOVER = {
-	{ 0.00, 0.85, -8, 3, true },
-	{ 0.05, 1, 6, 4, true },
-	{ 0.10, 0.45, -3, 2, false },
-	{ 0.15, 1, 9, 3, true },
-	{ 0.20, 0.7, -6, 2, true },
-	{ 0.25, 1, 2, 4, false },
-	{ 0.30, 0.55, -9, 3, true },
-	{ 0.35, 1, 5, 2, false },
-}
-local HOVER_CYCLE = 0.4
-local KEYS = { enter = ENTER, enterLong = ENTER_LONG, blip = BLIP, hover = HOVER }
--- Where the scanline band sits (fraction of the screen height) at each blip step.
-local BAND = { 0.12, 0.44, 0.76, 1.1 }
+-- A hovered button blips once, the same short blip (its tears drawn behind the lettering).
+local KEYS = { enter = ENTER, enterLong = ENTER_LONG, blip = BLIP, hoverBlip = BLIP }
+local GRAIN_TRANSPARENCY = 0.94
 
 type Entry = {
 	target: GuiObject,
@@ -99,12 +87,10 @@ type Entry = {
 	frameIndex: number,
 	token: number,
 	hovering: boolean,
-	lap: number,
 }
 
 local entries: { [Entry]: boolean } = {}
 local connection: RBXScriptConnection? = nil
-local band: Frame? = nil
 local grain: ImageLabel? = nil
 local overlayVisible = false
 local counter = 0
@@ -112,20 +98,7 @@ local enabled = true
 local quiet = false
 local byTarget: { [GuiObject]: Entry } = setmetatable({}, { __mode = "k" }) :: any
 
-local function overlay(): (Frame, ImageLabel?)
-	if band == nil then
-		local frame = Instance.new("Frame")
-		frame.Name = "GlitchBand"
-		frame.BackgroundColor3 = Tokens.color.white
-		frame.BackgroundTransparency = 0.93
-		frame.BorderSizePixel = 0
-		frame.Size = UDim2.new(1, 0, 0, 70)
-		frame.Visible = false
-		frame.ZIndex = 100
-		frame.Active = false
-		frame.Parent = Screens.overlay
-		band = frame
-	end
+local function overlay(): ImageLabel?
 	if grain == nil and Textures.has("UiGrain") then
 		local image = Instance.new("ImageLabel")
 		image.Name = "GlitchGrain"
@@ -133,7 +106,7 @@ local function overlay(): (Frame, ImageLabel?)
 		image.Image = Textures.id("UiGrain")
 		image.ScaleType = Enum.ScaleType.Tile
 		image.TileSize = UDim2.fromOffset(128, 128)
-		image.ImageTransparency = 0.88
+		image.ImageTransparency = GRAIN_TRANSPARENCY
 		image.Size = UDim2.fromScale(1, 1)
 		image.Visible = false
 		image.ZIndex = 99
@@ -141,21 +114,17 @@ local function overlay(): (Frame, ImageLabel?)
 		image.Parent = Screens.overlay
 		grain = image
 	end
-	return band :: Frame, grain
+	return grain
 end
 
-local function setOverlay(on: boolean, step: number)
+local function setOverlay(on: boolean)
 	if not on and not overlayVisible then
 		return
 	end
-	local bar, noise = overlay()
 	overlayVisible = on
-	bar.Visible = on
+	local noise = overlay()
 	if noise then
 		noise.Visible = on
-	end
-	if on then
-		bar.Position = UDim2.fromScale(0, BAND[math.clamp(step, 1, #BAND)])
 	end
 end
 
@@ -296,9 +265,9 @@ local function apply(entry: Entry, keys: { { any } }, elapsed: number)
 			bar.BackgroundColor3 = Tokens.color.white
 			bar.BackgroundTransparency = 0.3
 			bar.BorderSizePixel = 0
-			-- Over the element as it cuts in or blips; behind it while it is hovered, so the bars never
+			-- Over the element as it cuts in or blips; behind it when it is hovered, so the bars never
 			-- cross the lettering of the thing about to be pressed.
-			bar.ZIndex = if entry.mode == "hover" then 0 else 50
+			bar.ZIndex = if entry.mode == "hoverBlip" then 0 else 50
 			bar.Active = false
 			local at = ((entry.token * 37 + index * 11 + n * 23) % 100) / 100
 			bar.Size = UDim2.new(0.3 + (((entry.token + n) * 17) % 7) / 10, 0, 0, 2 + (n * 2))
@@ -312,7 +281,6 @@ end
 local function step()
 	local now = os.clock()
 	local active = 0
-	local bandStep = 1
 	for entry in pairs(entries) do
 		if not entry.target.Parent then
 			entries[entry] = nil
@@ -325,21 +293,7 @@ local function step()
 			if entry.mode == nil and entry.loop and not quiet and now >= entry.nextBlip and shown(entry.target) then
 				start(entry, "blip", now)
 			end
-			if entry.mode == "hover" and not shown(entry.target) then
-				-- The button went away under the pointer (its window closed): stop.
-				entry.mode = nil
-				entry.hovering = false
-				rest(entry)
-			elseif entry.mode == "hover" then
-				-- The hover cycle repeats; each lap tears in new places.
-				local lap = math.floor((now - entry.started) / HOVER_CYCLE)
-				if lap ~= entry.lap then
-					entry.lap = lap
-					entry.token += 1
-					entry.frameIndex = 0
-				end
-				apply(entry, HOVER, (now - entry.started) % HOVER_CYCLE)
-			elseif entry.mode then
+			if entry.mode then
 				local keys = KEYS[entry.mode] or BLIP
 				local elapsed = now - entry.started
 				if elapsed >= keys[#keys][1] then
@@ -348,15 +302,15 @@ local function step()
 					entry.nextBlip = now + entry.period * (0.9 + 0.2 * ((entry.token * 0.618) % 1))
 				else
 					apply(entry, keys, elapsed)
-					if entry.band or entry.mode ~= "blip" then
+					-- The grain shows while something cuts in, or while an element that asks for it blips.
+					if entry.mode == "enter" or entry.mode == "enterLong" or (entry.band and entry.mode == "blip") then
 						active += 1
 					end
-					bandStep = math.max(bandStep, math.min(#BAND, 1 + math.floor(elapsed / keys[#keys][1] * #BAND)))
 				end
 			end
 		end
 	end
-	setOverlay(active > 0 and not quiet, bandStep)
+	setOverlay(active > 0 and not quiet)
 	if next(entries) == nil and connection then
 		connection:Disconnect()
 		connection = nil
@@ -371,8 +325,8 @@ export type Handle = {
 }
 
 export type Options = {
-	loop: boolean?, -- blip every couple of seconds (default true)
-	band: boolean?, -- its blips also roll the full-screen scan band (default true)
+	loop: boolean?, -- blip every few seconds (default true)
+	band: boolean?, -- its blips also show the film grain over the screen (default true)
 	enter: boolean?, -- play the entrance now (default true)
 	long: boolean?, -- the long entrance (about 1.5 s) instead of the short one
 	period: number?, -- average seconds between blips
@@ -392,7 +346,7 @@ function Glitch.setEnabled(on: boolean)
 				rest(entry)
 			end
 		end
-		setOverlay(false, 1)
+		setOverlay(false)
 	end
 end
 
@@ -400,8 +354,8 @@ function Glitch.isEnabled(): boolean
 	return enabled
 end
 
--- Quiet (a window is open): no blip starts by itself and the full-screen band stays off. Blips already
--- running play out their fraction of a second.
+-- Quiet (a window is open): no blip starts by itself and the grain stays off. Blips already running play
+-- out their fraction of a second.
 function Glitch.setQuiet(on: boolean)
 	quiet = on
 end
@@ -410,22 +364,18 @@ function Glitch.isQuiet(): boolean
 	return quiet
 end
 
+-- The pointer arrives: one short blip (unless the element is already glitching). Leaving lets it finish.
 local function hover(entry: Entry, on: boolean)
 	entry.hovering = on
-	if on then
-		entry.lap = -1
-		start(entry, "hover", os.clock())
-	elseif entry.mode == "hover" then
-		entry.mode = nil
-		rest(entry)
-		entry.nextBlip = os.clock() + entry.period * 0.6
+	if on and entry.mode == nil then
+		start(entry, "hoverBlip", os.clock())
 	end
 end
 
 local function handleFor(entry: Entry, owner: boolean): Handle
 	return {
 		enter = function(_self: Handle, long: boolean?)
-			if entry.mode ~= "hover" then
+			if entry.mode ~= "hoverBlip" then
 				start(entry, if long then "enterLong" else "enter", os.clock())
 			end
 		end,
@@ -459,7 +409,7 @@ function Glitch.attach(target: GuiObject, options: Options?): Handle
 		return handleFor(existing, false)
 	end
 	counter += 1
-	-- Every element gets its own rhythm (1.8 to 2.3 s) so they do not fire together.
+	-- Every element gets its own rhythm (about 5 to 6.6 s) so they do not fire together.
 	local period = (opts.period or Tokens.glitch.period) * (0.86 + 0.24 * ((counter * 0.37) % 1))
 	local now = os.clock()
 	local entry: Entry = {
@@ -477,7 +427,6 @@ function Glitch.attach(target: GuiObject, options: Options?): Handle
 		frameIndex = 0,
 		token = counter,
 		hovering = false,
-		lap = -1,
 	}
 	entries[entry] = true
 	byTarget[target] = entry

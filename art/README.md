@@ -267,6 +267,27 @@ assets are left out), fitted to the game:
   laid side by side; plain ones (ash, asphalt, plaster, snow) are shuffled into patches so no
   repeat shows. The sets on disk are only made again with `run_maps.py -- <Venue> --retexture`,
   which needs `art/source/`; a plain export reads the committed files.
+- `scripts/heightmap.py` rebuilds a scan's height map from its normal map when the scan's own is
+  missing or blank, and makes the relief tile for real geometry. It runs in a plain Python with numpy,
+  scipy and Pillow (`python -m venv <dir>`, `<dir>/Scripts/pip install numpy scipy pillow`), not
+  Blender's: `python art/scripts/heightmap.py medieval_blocks_03 [--qc <dir>]`. It writes into
+  `art/source/prepared/`: the height map as a 16-bit grey PNG at the scan's size (blocks' face plane
+  at mid-grey; metres per step in the `.json` beside it), an 8-bit copy, the height's own normal map,
+  and the relief tile (`_relief.npz`) with the normal map for its facets. `--qc` measures it
+  (`heightmap_qc.py`: normals rebuilt from the height against the scan's, seams, banding, whether the
+  photograph's light got in) and draws the sheets. `medieval_blocks_03` (`Stone`) needs it: its
+  height file is blank and its normal map has red and green swapped (the game lit that wall from the
+  side until 2026-10-13); `Stone` takes its normal map from the rebuilt height (`surface(normal=...)`).
+  `RuinStone` (the lobby) still reads the scan's own.
+- Real relief (`scripts/maps/relief.py`): the relief tile laid over chosen faces of a scene, so a
+  stone wall's joints are cut into the mesh. The tile is the wall as a mason laid it (courses between
+  straight bed joints, straight head joints, every joint a groove of the measured shape and depth,
+  at twice the stone's depth), it only goes into the wall (colliders, props and signs stay against
+  the face), and it comes up to nothing at a face's edges. The faces it covers become `StoneRelief`,
+  which wears `Stone`'s colour and roughness (`matlib.SHARED`) with a normal map made for its facets.
+  Tokyo has it on the department store along the shopping street, ground to 11.2 studs
+  (`venues/tokyo.stone_relief`, at most 8,000 triangles; Tokyo's triangle baseline was raised by
+  what it adds).
 - Props take the same scans (`modelkit.SCANS`, by the helper that made the material or the last word
   of its name), prepared without their broad stains (`scanlib.prepared`), and `modelkit.bake` writes
   four maps per prop at the size the rulebook gives its surface. Edges are rounded in the mesh

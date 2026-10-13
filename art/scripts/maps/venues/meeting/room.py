@@ -138,14 +138,15 @@ def gallery(s):
         mid = ((ax + bx) / 2, (az + bz) / 2)
         length = math.dist((ax, az), (bx, bz))
         rot = 0.0 if abs(az - bz) < 1e-3 else 90.0
-        s.box("Wood", (mid[0], y - 0.35, mid[1]), (length + (0.3 if rot == 0 else 0.0), 0.7, 0.3) if rot == 0 else
+        # (Its top a hair under the deck: flush, the two drew over each other along every edge.)
+        s.box("Wood", (mid[0], y - 0.385, mid[1]), (length + (0.3 if rot == 0 else 0.0), 0.7, 0.3) if rot == 0 else
               (0.3, 0.7, length), 0.0)
     rail = [(gap, -inner), (inner, -inner), (inner, inner), (-inner, inner), (-inner, -inner), (-gap, -inner)]
     kit.railing(s, rail, 3.0, "BlackMetal", 1.2, base=y, collide=False)
     for x in (gap, -gap):
         s.tube("BlackMetal", (x, y, -inner), (x, y, -edge), 0.12, 8)
         s.tube("BlackMetal", (x, y + 3.0, -inner), (x, y + 3.0, -edge), 0.12, 8)
-    s.tube("Brass", (gap, y + 3.0, -inner), (inner, y + 3.0, -inner), 0.14, 8)
+    s.tube("Brass", (gap, y + 3.0, -inner), (inner, y + 3.0, -inner), 0.17, 8)  # well over the black rail it caps
     # Brackets under the deck: curved walnut struts from the wall.
     # (Placed clear of the board, the photographs, the windows, the clock and the speakers.)
     spots = [(edge, z, (-1, 0)) for z in (-18.5, -10.2, 10.2, 27.0)]

@@ -5,10 +5,14 @@
 --              `plainCaps` sets A H I J K N as lower case at capital height (default on for this face),
 --              and a word written all in capitals (HQ, ACE) is drawn in Melodrama Bold at Aktura's
 --              capital height, so it reads.
---   "Head"     Melodrama Bold: headings, buttons, names, numbers (18 px and up)
+--   "Head"     Melodrama Bold: headings, names, numbers
 --   "Semi"     Melodrama Semibold: the lighter heading weight
 --   "RnLight", "RnMedium": letters only, for the ransom note (Kit.ransom)
 -- The old names still work: "Gothic" is "Head" and "Scrawl" is "Semi".
+-- Melodrama is a display face with hairline strokes: under MIN_ATLAS px (a button, a card's name) it is not
+-- drawn at all, and the same text is a real Montserrat label instead (Bold for Head, SemiBold for Semi), with
+-- `tracking` turned into hair spaces between the letters. Melodrama's zero is slashed; it is drawn with the
+-- shape of the O, narrowed to the zero's width, so 300 never reads as 3ØØ.
 -- Text is kerned with the font's own pair kerning. With `tabular = true` every digit gets the same slot
 -- width (Melodrama's digits are proportional), so a clock does not shift as it counts.
 -- Until the atlases are imported and loaded the same text shows in Montserrat, and it switches over by
@@ -102,6 +106,11 @@ export type Face = {
 local LEGACY = { Gothic = "Head", Scrawl = "Semi" }
 -- Which Roblox font stands in for each face until its atlas loads.
 local STAND_IN = { Title = "title", Head = "display", Semi = "hand", RnLight = "hand", RnMedium = "hand" }
+-- Melodrama is drawn from its atlas only from this size up; smaller, it is real Montserrat.
+local MIN_ATLAS = 22
+GlyphText.MIN_ATLAS = MIN_ATLAS
+local MELODRAMA = { Head = true, Semi = true }
+local HAIR_SPACE = utf8.char(0x200A)
 -- Aktura capitals that are hard to read; they are set as lower case scaled up to capital height.
 local PLAIN_CAPS = { A = true, H = true, I = true, J = true, K = true, N = true }
 local PLAIN_CAP_SCALE = 1.3
@@ -250,6 +259,17 @@ local function layout(
 	return lines
 end
 
+-- Letter spacing for a real (Montserrat) label, which has none of its own: a hair space between the
+-- letters of each word, and the gap between words widened to match (one plain space is lost among the
+-- spaced letters: MOST WINS read as MOSTWINS). For short capitals (buttons, tabs).
+function GlyphText.spaced(text: string): string
+	local out = string.gsub(text, "([^ \n\128-\191][\128-\191]*)", "%1" .. HAIR_SPACE)
+	out = string.gsub(out, HAIR_SPACE .. "([ \n])", "%1")
+	out = string.gsub(out, HAIR_SPACE .. "$", "")
+	out = string.gsub(out, " ", "  ")
+	return out
+end
+
 -- The width of `text` in a face at a size (px), without building anything. Used by the ransom note.
 function GlyphText.measure(faceName: string, text: string, size: number, tracking: number?, tabular: boolean?): number
 	local face = faceOf(faceName)
@@ -389,17 +409,25 @@ function GlyphText._render(self: GlyphText)
 	local zIndex = props.ZIndex or 1
 	local tabular = props.tabular == true
 	local ids = atlasIds(face)
-	if not ids then
-		-- Montserrat stands in until the atlases load (Roblox places its own text on whole pixels).
+	-- Small Melodrama is set in Montserrat for good (see the top of the file).
+	local plain = MELODRAMA[faceKey] == true and size < MIN_ATLAS
+	if not ids or plain then
+		-- Montserrat: for good under MIN_ATLAS, or standing in until the atlases load (Roblox places its own
+		-- text on whole pixels).
 		self.baseline = 0
 		self.nudge = 0
 		self.ink.Position = UDim2.new()
+		if plain and (props.tracking or 0) > 0 then
+			text = GlyphText.spaced(text)
+		end
 		local label = Create("TextLabel", {
 			Name = "Fallback",
 			BackgroundTransparency = 1,
-			FontFace = (Tokens.font :: any)[STAND_IN[faceKey] or "display"],
+			FontFace = if plain
+				then (if faceKey == "Head" then Tokens.font.bodyBold else Tokens.font.label)
+				else (Tokens.font :: any)[STAND_IN[faceKey] or "display"],
 			Text = text,
-			TextSize = size * 0.92,
+			TextSize = if plain then size else size * 0.92,
 			TextColor3 = color,
 			TextTransparency = transparency,
 			TextWrapped = props.maxWidth ~= nil,
@@ -502,8 +530,19 @@ function GlyphText._render(self: GlyphText)
 					glyph = face.glyphs[string.lower(item.char)]
 					glyphScale = scale * PLAIN_CAP_SCALE
 				end
+				-- How wide the image is drawn (the glyph's own width, except for the zero below).
+				local drawWidth = glyph[4]
+				local zeroFace = if item.alt then alt else face
+				if item.char == "0" and zeroFace and (item.alt or MELODRAMA[faceKey]) then
+					-- Melodrama's slashed zero: the O's shape in the zero's place and width.
+					local o = zeroFace.glyphs["O"]
+					if o and #o >= 8 then
+						drawWidth = glyph[4]
+						glyph = { o[1], o[2], o[3], o[4], o[5], glyph[6], o[7], glyph[8] }
+					end
+				end
 				local left = if item.slot
-					then item.x + (face.digit / 2 - glyph[4] / 2) * scale
+					then item.x + (face.digit / 2 - drawWidth / 2) * scale
 					else item.x + glyph[6] * glyphScale
 				local image = Create("ImageLabel", {
 					Name = "Glyph",
@@ -513,7 +552,7 @@ function GlyphText._render(self: GlyphText)
 					ImageRectSize = Vector2.new(glyph[4], glyph[5]),
 					ImageColor3 = color,
 					ImageTransparency = transparency,
-					Size = UDim2.fromOffset(glyph[4] * glyphScale, glyph[5] * glyphScale),
+					Size = UDim2.fromOffset(drawWidth * glyphScale, glyph[5] * glyphScale),
 					Position = UDim2.fromOffset(shift + left, baseline - glyph[7] * glyphScale),
 					ZIndex = zIndex,
 					Parent = self.ink,

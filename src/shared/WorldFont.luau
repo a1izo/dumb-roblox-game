@@ -20,4 +20,10 @@ function WorldFont.face(font: Enum.Font?): Font
 	return Font.new(MONTSERRAT, weight or Enum.FontWeight.Medium)
 end
 
+-- The one exception (the owner, 2026-10-12): names written in Death's Manual are in a pen's hand,
+-- Kalam, which Roblox also ships.
+function WorldFont.hand(): Font
+	return Font.fromEnum(Enum.Font.Kalam)
+end
+
 return WorldFont

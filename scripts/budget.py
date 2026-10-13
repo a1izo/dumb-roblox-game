@@ -11,6 +11,10 @@ get imported (art/export):
 Pixels and megabytes may not grow at all. Triangles may grow by the venue's allowance (ALLOW):
 edges and trims cost a few, and Tokyo, the heaviest map, gets none.
 
+Growth the owner said yes to is written in art/budget.json's "exceptions" (what, when, how many
+megapixels and megabytes, in every scene) and allowed on top of the baseline. Recording a new
+baseline takes them in: they stay in the file, marked absorbed, as the record of the yes.
+
 Run: python scripts/budget.py            compare with art/budget.json, exit 1 when over
      python scripts/budget.py record     write art/budget.json from what is exported now
 """
@@ -95,16 +99,22 @@ def measure():
 def main():
     now = measure()
     if sys.argv[1:] == ["record"]:
-        BASELINE.write_text(json.dumps(now, indent=2) + "\n", encoding="utf-8", newline="\n")
+        old = json.loads(BASELINE.read_text(encoding="utf-8")) if BASELINE.exists() else {}
+        record = dict(now)
+        exceptions = [dict(e, absorbed=True) for e in old.get("exceptions", [])]
+        if exceptions:
+            record["exceptions"] = exceptions
+        BASELINE.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(f"Recorded {BASELINE.relative_to(ROOT).as_posix()}")
     base = json.loads(BASELINE.read_text(encoding="utf-8"))
+    allowed = [e for e in base.get("exceptions", []) if not e.get("absorbed")]
     over = []
     print(f"{'':8}{'megapixels':>20}{'megabytes':>20}{'triangles':>22}{'textures':>12}")
     for venue in VENUES:
         was, cur = base[venue], now[venue]
         limits = {
-            "megapixels": was["megapixels"],
-            "megabytes": was["megabytes"],
+            "megapixels": round(was["megapixels"] + sum(e["megapixels"] for e in allowed), 2),
+            "megabytes": round(was["megabytes"] + sum(e["megabytes"] for e in allowed), 2),
             "triangles": int(was["triangles"] * (1 + ALLOW[venue])),
         }
         cells = []
@@ -115,6 +125,9 @@ def main():
                 over.append(f"{venue}: {key} {cur[key]} is over {limits[key]}")
             cells.append(f"{cur[key]} / {limits[key]}{mark}".rjust(width))
         print(f"{venue:8}{''.join(cells)}{cur['textures']:>12}")
+    for e in allowed:
+        print(f"\nAllowed on top (the owner's yes, {e['approved']}): {e['what']}, "
+              f"+{e['megapixels']} megapixels and +{e['megabytes']} megabytes in every scene")
     if over:
         print("\nOver budget:\n  " + "\n  ".join(over))
         return 1

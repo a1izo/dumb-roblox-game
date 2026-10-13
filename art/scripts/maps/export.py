@@ -28,7 +28,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
-VERSION = {"ModelsCore": 5, "ModelsTokyo": 4, "ModelsAgency": 3, "ModelsCampus": 2, "ModelsLobby": 2,
+VERSION = {"ModelsCore": 6, "ModelsTokyo": 4, "ModelsAgency": 3, "ModelsCampus": 2, "ModelsLobby": 3,
            "ModelsMeeting": 2}
 
 
@@ -126,10 +126,11 @@ def venue_fbx(venue):
     return os.path.join(common.EXPORT, f"DeathsGambitMaps_{venue}.fbx")
 
 
-def mesh_digest(scene):
+def mesh_digest(scene, carried=()):
     """A fingerprint of the meshes (what the Studio import carries): it changes when the
-    geometry changes or the surfaces do (their textures and how often they repeat), not when only
-    colliders, props or lights do."""
+    geometry changes or the surfaces do (their textures and how often they repeat), or one of the
+    textures the import carries on its own quads does (carried: the venue's TEXTURES, its sky and
+    effects), not when only colliders, props or lights do."""
     h = hashlib.sha1()
     for mat in sorted(scene.pieces):
         pieces = scene.pieces[mat]
@@ -142,6 +143,11 @@ def mesh_digest(scene):
                 sz += z
         h.update(f"{mat}:{tris}:{sx:.1f}:{sy:.1f}:{sz:.1f}:{matlib.tile_size(mat)};".encode())
     h.update(f"chunk:{scene.chunk};prefix:{scene.prefix};surfaces:{scanlib.REVISION}".encode())
+    for name in carried:
+        path = os.path.join(common.TEXTURES, name + ".png")
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                h.update(f"{name}:{hashlib.sha1(f.read()).hexdigest()};".encode())
     return h.hexdigest()[:16]
 
 
@@ -155,12 +161,12 @@ def _previous(folder):
     return (int(version.group(1)) if version else 0), (digest.group(1) if digest else "")
 
 
-def next_version(scene):
-    """(version, digest): the version goes up only when the meshes changed since the last
-    export, so the Studio import is only needed again then."""
+def next_version(scene, carried=()):
+    """(version, digest): the version goes up only when the meshes (or the textures the import
+    carries) changed since the last export, so the Studio import is only needed again then."""
     folder = os.path.join(SCENES_DIR, scene.venue)
     old_version, old_digest = _previous(folder)
-    digest = mesh_digest(scene)
+    digest = mesh_digest(scene, carried)
     if digest == old_digest and old_version > 0:
         return old_version, digest
     return old_version + 1, digest
@@ -290,7 +296,7 @@ def write_scene_v2(scene, module, source):
     copy the checks read. Returns (version, paths)."""
     venue = scene.venue
     folder = os.path.join(SCENES_DIR, venue)
-    version, digest = next_version(scene)
+    version, digest = next_version(scene, getattr(module, "TEXTURES", ()))
     if os.path.isdir(folder):
         shutil.rmtree(folder)
     os.makedirs(folder, exist_ok=True)
@@ -390,7 +396,9 @@ def write_scene_v2(scene, module, source):
         f'range = {num(li["range"], 1)}, brightness = {num(li["brightness"], 2)}, '
         f'shadows = {"true" if li["shadows"] else "false"}, face = "{li["face"]}", angle = {num(li["angle"], 1)}, '
         f'flicker = {"true" if li["flicker"] else "false"}'
-        + (f', role = "{li["role"]}"' if li.get("role") else "") + " }"
+        + (f', role = "{li["role"]}"' if li.get("role") else "")
+        + (f', rot = {num(li["rot"], 1)}' if li.get("rot") else "")
+        + (f', size = {vec(li["glow"][0])}, glow = {rgb(li["glow"][1])}' if li.get("glow") else "") + " }"
         for li in scene.lights
     ]
     signs = []
@@ -453,6 +461,15 @@ def write_scene_v2(scene, module, source):
     paths += _module(os.path.join(folder, "Dressing"), source,
                      "Props from the prop library, lights, signs and particle emitters.", dressing_fields)
     os.makedirs(SIDECAR_DIR, exist_ok=True)
+    # The likely visual defects (maps/finders.py: flicker, floating or sunk props, lamps and fittings, light
+    # through walls, stretched pictures, signs in walls), for check_v2's report and its gate.
+    try:
+        from maps import catalog as prop_catalog
+        from maps import finders
+
+        finds = finders.run(scene, prop_catalog.load(), venue)[0]
+    except ImportError:  # (outside Blender there is no mathutils: no finds)
+        finds = None
     sidecar = {
         "venue": venue,
         "mapId": map_id,
@@ -473,6 +490,7 @@ def write_scene_v2(scene, module, source):
         "traffic": scene.traffic,
         "stats": stats,
         "checks": scene.checks,
+        "finds": finds,
     }
     side_path = os.path.join(SIDECAR_DIR, venue + ".json")
     with open(side_path, "w", encoding="utf-8") as f:

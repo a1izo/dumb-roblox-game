@@ -171,6 +171,13 @@ Assets.sfx = {
 		ref = "a body landing hard on a flat roof, a dull heavy thud, one shot",
 		fallbackId = "",
 	},
+	-- The Trial's wisp setting off somewhere new (art/audio/trial_chime.wav).
+	trialChime = {
+		id = "",
+		ref = "a soft warm two-note glass chime, quiet, a short shimmer after it, one shot",
+		fallbackId = "",
+		volume = 0.6,
+	},
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

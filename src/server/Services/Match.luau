@@ -42,6 +42,9 @@ Match.eyesDealMade = false
 Match.phoneFacts = 0
 -- Forensics clues given so far, by Grimoire death (CaseFileService).
 Match.forensics = {} :: { [number]: any }
+-- Every name written in the Grimoire this match, filtered, in order; struck once it killed
+-- (DeathNoteService). The ending shows them.
+Match.written = {} :: { { name: string, struck: boolean } }
 Match.butlerHint = nil :: string?
 Match.rng = Random.new()
 
@@ -122,6 +125,7 @@ function Match.begin(players: { Player })
 	Match.eyesDealMade = false
 	Match.phoneFacts = 0
 	Match.forensics = {}
+	Match.written = {}
 	Match.butlerHint = nil
 	Match.startClock = os.clock()
 	Match.list = {}

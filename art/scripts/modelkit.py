@@ -148,6 +148,19 @@ def extrude_shape(name, points, depth, loc=(0, 0, 0), rot=(0, 0, 0), mat=None, b
     return obj
 
 
+def sheet(name, grid, mat=None, apart=0.002):
+    """A thin sheet (a leaf of paper) through a grid of points [[(x, y, z), ...], ...]: a face on each
+    of its sides, `apart` from one another, so it shows from both."""
+    bm = bmesh.new()
+    for flip, drop in ((False, 0.0), (True, apart)):
+        verts = [[bm.verts.new((x, y, z - drop)) for x, y, z in row] for row in grid]
+        for j in range(len(grid) - 1):
+            for i in range(len(grid[0]) - 1):
+                quad = (verts[j][i], verts[j][i + 1], verts[j + 1][i + 1], verts[j + 1][i])
+                bm.faces.new(quad[::-1] if flip else quad)
+    return _obj_from_bm(name, bm, mat)
+
+
 def tube(name, start, end, radius, radius_end=None, mat=None, verts=12):
     """A (tapered) cylinder from one point to another."""
     start, end = Vector(start), Vector(end)
@@ -613,7 +626,42 @@ def _select_only(obj):
     view_layer.objects.active = obj
 
 
-def unwrap(obj, margin=0.02, angle=60):
+def faces(obj, normal, where=None):
+    """The faces of a mesh that look along `normal` (and whose middle `where` accepts), by number."""
+    normal = Vector(normal).normalized()
+    return [poly.index for poly in obj.data.polygons
+            if poly.normal.dot(normal) > 0.95 and (where is None or where(poly.center))]
+
+
+def lay(obj, picked, rect, u, v, span=None):
+    """Flat UVs for the faces `picked`: seen along the axes u and v, their outline fills rect
+    (u0, v0, u1, v1) of the texture. For a face that carries a picture, which has to know where it is.
+    span: (low u, high u, low v, high v) along those axes to fill the rect with, when it is not the
+    faces' own outline (a bevelled board's face is a little smaller than the board)."""
+    mesh = obj.data
+    layer = mesh.uv_layers.active or mesh.uv_layers.new(name="UVMap")
+    u, v = Vector(u), Vector(v)
+    spots = {}
+    for index in picked:
+        for loop in mesh.polygons[index].loop_indices:
+            co = mesh.vertices[mesh.loops[loop].vertex_index].co
+            spots[loop] = (co.dot(u), co.dot(v))
+    if not spots:
+        raise ValueError(f"{obj.name}: no face to lay on {rect}")
+    if span:
+        lo_u, hi_u, lo_v, hi_v = span
+    else:
+        lo_u, hi_u = min(s[0] for s in spots.values()), max(s[0] for s in spots.values())
+        lo_v, hi_v = min(s[1] for s in spots.values()), max(s[1] for s in spots.values())
+    for loop, (a, b) in spots.items():
+        layer.data[loop].uv = (rect[0] + (a - lo_u) / max(hi_u - lo_u, 1e-9) * (rect[2] - rect[0]),
+                               rect[1] + (b - lo_v) / max(hi_v - lo_v, 1e-9) * (rect[3] - rect[1]))
+    return set(picked)
+
+
+def unwrap(obj, margin=0.02, angle=60, laid=None, into=(0.0, 0.0, 1.0, 1.0)):
+    """laid: a function (obj) -> the faces it gave UVs by hand (lay); the others are unwrapped into the
+    part `into` of the texture."""
     # Faces with a zero-length edge go first (where a lathe's profile touches its axis, a whole ring of
     # points is one point): they have no direction for a normal map to be measured against, and baked
     # as random tilts, which showed as smears on a polished table top.
@@ -623,11 +671,27 @@ def unwrap(obj, margin=0.02, angle=60):
     bm.to_mesh(obj.data)
     bm.free()
     obj.data.update()
+    kept = laid(obj) if laid else set()
+    if len(kept) == len(obj.data.polygons):
+        return
     _select_only(obj)
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
+    if kept:
+        bpy.ops.mesh.select_all(action="DESELECT")
+        edit = bmesh.from_edit_mesh(obj.data)
+        for face in edit.faces:
+            face.select_set(face.index not in kept)
+        bmesh.update_edit_mesh(obj.data)
     bpy.ops.uv.smart_project(angle_limit=math.radians(angle), island_margin=margin, area_weight=0.0)
     bpy.ops.object.mode_set(mode="OBJECT")
+    if kept or tuple(into) != (0.0, 0.0, 1.0, 1.0):
+        layer = obj.data.uv_layers.active
+        for poly in obj.data.polygons:
+            if poly.index not in kept:
+                for loop in poly.loop_indices:
+                    uv = layer.data[loop].uv
+                    layer.data[loop].uv = (into[0] + uv.x * (into[2] - into[0]), into[1] + uv.y * (into[3] - into[1]))
 
 
 def texture_size(obj, limit=1024, where="prop"):
@@ -660,13 +724,15 @@ def _save_map(name, pixels, size, non_color, quality):
     return img
 
 
-def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop"):
+def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False, finish=None):
     """Bakes the object's materials into one set of textures, then gives the object a single material
     using them: <name>_color.jpg (colour with the shade of its own hollows), <name>_normal.jpg (the
     scans' relief, at half the colour's size), <name>_rough.jpg and, when part of
     it is metal, <name>_metal.jpg (a quarter). `size` is the most the colour may take; the look
-    rulebook may give it less. The split is what lets a prop carry four maps in the memory its one
-    colour map took before.
+    rulebook may give it less (exact: it takes `size` as given, for a face that carries a picture).
+    The split is what lets a prop carry four maps in the memory its one colour map took before.
+    finish: a function (colour, normal, roughness), each a pixel array [v, u, 4], called before they
+    are saved, to change them in place (pictures drawn straight onto faces laid by hand).
     Returns the colour map's path."""
     scene = bpy.context.scene
     previous_engine = scene.render.engine
@@ -674,7 +740,7 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop"):
     scene.cycles.device = "CPU"
     scene.cycles.samples = samples
     common.ensure_dirs()
-    size = texture_size(obj, size, where)
+    size = size if exact else texture_size(obj, size, where)
     half = max(lookbook.SMALLEST // 2, size // 2)
     small = max(lookbook.SMALLEST // 2, size // 4)
 
@@ -758,10 +824,13 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop"):
     final[..., :3] = color[..., :3] * shade
     final[..., 3] = 1.0
     metal = read(metal_img, small)
+    normal, rough = read(normal_img, half), read(rough_img, small)
+    if finish:
+        finish(final, normal, rough)
     maps = {
         "color": _save_map(obj.name + "_color", final, size, False, 90),
-        "normal": _save_map(obj.name + "_normal", read(normal_img, half), half, True, 90),
-        "rough": _save_map(obj.name + "_rough", read(rough_img, small), small, True, 88),
+        "normal": _save_map(obj.name + "_normal", normal, half, True, 90),
+        "rough": _save_map(obj.name + "_rough", rough, small, True, 88),
     }
     metal_path = os.path.join(common.TEXTURES, obj.name + "_metal.jpg")
     if float(metal[..., 0].max()) > 0.1:

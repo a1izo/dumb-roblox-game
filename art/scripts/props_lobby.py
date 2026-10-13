@@ -1,8 +1,9 @@
 """The lobby's props (set "Lobby", exported to DeathsGambitModels_Lobby.fbx): the Grey Realm, the ashen
 wasteland beyond the world where the Grimoire comes from.
 
-- What the game dresses: the Academy's practice altar (round the game's invisible drill desk) and
-  the effigy the drills point at (round the practice dummy).
+- What the game dresses: the Academy's practice altar (round the game's invisible drill desk), the
+  three puppets the drills point at (round the practice dummies) and the hand above that holds their
+  strings.
 - The wasteland: two kinds of dead tree, a withered apple tree still hung with a few dull grey-brown apples,
   skull piles and scattered bones, a colossal horned skull, stone cairns.
 - Fire and light: bone braziers burning pale, a crooked lantern post, candle clusters.
@@ -15,10 +16,15 @@ has a name of its own per colour (modelkit reuses a material by name within a bu
 import math
 import random
 
+import bpy
+from mathutils import Matrix, Vector
+
+import common
+
 import modelkit as mk
 import propkit as pk
 from common import srgb
-from props import prop
+from props import piece, prop
 
 PALE_FIRE = (196, 222, 255)  # the realm's fire: cold, blue-white
 CANDLE = (232, 226, 214)  # a candle's light here is pale and neutral, nothing warm lives in the realm
@@ -491,71 +497,311 @@ def practice_altar():
     return parts, glows
 
 
-@prop("Effigy", pivot="bottom", material="Fabric", collide=False, texture=1024, set="Lobby")
-def effigy():
-    """The practice effigy the Academy's drills point at: a stuffed sackcloth figure the size of a
-    person, bound to a stake by its arms like a scarecrow, a tattered dark cloak hanging from its
-    shoulders, a sack for a head tied off at the neck and the crown with a stitched face, and a
-    blank paper tag pinned to its chest for a name. It stands on a heap of stones."""
-    rng = random.Random(17)
-    sack = mk.noisy("Eff_Sack", srgb(104, 98, 86), srgb(146, 138, 122), scale=34, roughness=0.95)
-    cloak = mk.noisy("Eff_Cloak", srgb(26, 26, 28), srgb(50, 48, 50), scale=20, roughness=0.9)
-    straw = mk.noisy("Eff_Straw", srgb(120, 108, 76), srgb(160, 146, 104), scale=40, roughness=0.9)
-    wood = bark_mat("Eff")
-    rope = mk.noisy("Eff_Rope", srgb(72, 66, 54), srgb(110, 100, 80), scale=30, roughness=0.95)
-    thread = mk.flat("Eff_Thread", srgb(20, 18, 18), 0.8)
-    paper = mk.noisy("Eff_Paper", srgb(200, 190, 164), srgb(226, 218, 196), scale=30, roughness=0.8)
-    stone = stone_mat("Eff")
-    parts = [mk.tube("Stake", (0, 0.4, 0.0), (0, 0.4, 5.2), 0.16, 0.13, mat=wood, verts=7),
-             mk.tube("Bar", (-2.0, 0.4, 4.55), (2.0, 0.4, 4.55), 0.11, mat=wood, verts=6)]
-    for k, (x, y, r) in enumerate(((-0.5, 0.1, 0.55), (0.45, -0.1, 0.5), (0.0, 0.6, 0.5), (0.1, 0.0, 0.35))):
-        parts.append(mk.sphere(f"Stone{k}", r, (x, y, r * 0.55), scale=(1.2, 1, 0.7), mat=stone, segments=8, rings=6))
-    # The body: legs, the stuffed torso, the arms bound along the bar, straw spilling from the cuffs.
-    for sx in (-1, 1):
-        parts.append(mk.tube("Leg", (sx * 0.4, 0.1, 0.55), (sx * 0.4, 0.1, 2.7), 0.3, 0.36, mat=sack, verts=8))
-        parts.append(mk.tube("Arm", (sx * 0.9, 0.2, 4.5), (sx * 1.75, 0.3, 4.55), 0.28, 0.24, mat=sack, verts=8))
-        parts.append(mk.torus("Tie", 0.26, 0.05, (sx * 1.45, 0.3, 4.55), rot=(0, 90, 0), mat=rope, major_segments=10,
-                              minor_segments=4))
-        parts.append(mk.torus("TieLeg", 0.34, 0.05, (sx * 0.4, 0.1, 1.5), mat=rope, major_segments=10, minor_segments=4))
-        for k in range(4):
-            a = rng.uniform(-0.5, 0.5)
-            parts.append(mk.tube("Straw", (sx * 1.8, 0.3, 4.55), (sx * 2.25, 0.3 + math.sin(a) * 0.3, 4.4 + math.cos(a) * 0.3),
-                                 0.04, 0.01, mat=straw, verts=3))
-            parts.append(mk.tube("Straw", (sx * 0.4, 0.1, 0.6), (sx * (0.4 + rng.uniform(-0.3, 0.3)), rng.uniform(-0.4, 0.4), 0.05),
-                                 0.04, 0.01, mat=straw, verts=3))
-    parts += [pk.rounded("Torso", (1.7, 0.95, 2.1), (0, 0.15, 3.7), sack, r=0.32),
-              mk.torus("Waist", 0.85, 0.07, (0, 0.15, 2.75), mat=rope, major_segments=16, minor_segments=4),
-              mk.sphere("Head", 0.6, (0, 0.1, 5.45), scale=(1, 0.95, 1.1), mat=sack, segments=12, rings=8),
-              mk.cylinder("Neck", 0.28, 0.35, (0, 0.15, 4.85), mat=sack, verts=10),
-              mk.torus("NeckTie", 0.28, 0.06, (0, 0.15, 4.88), mat=rope, major_segments=12, minor_segments=4),
-              mk.cylinder("Gather", 0.26, 0.45, (0, 0.1, 6.2), mat=sack, verts=10, radius2=0.06),
-              mk.torus("CrownTie", 0.16, 0.05, (0, 0.1, 6.12), mat=rope, major_segments=10, minor_segments=4)]
-    for k in range(5):
-        a = k * 1.3
-        parts.append(mk.tube("Tuft", (0, 0.1, 6.4), (math.cos(a) * 0.35, 0.1 + math.sin(a) * 0.3, 6.75), 0.04, 0.01, mat=straw,
-                             verts=3))
-    # The cloak: tattered strips hung from the shoulders round the back and sides.
+# The Academy's puppets (the owner's reference of 2026-10-13: a wooden artist's mannequin on strings, held
+# by a hand) -------------------------------------------------------------------------------------------------
+
+
+def spindle(name, a, b, radii, mat, segments=12):
+    """A turned limb from a to b, its radius at evenly spaced stations along it (radii[0] at a), the
+    ends rounded off a little."""
+    a, b = Vector(a), Vector(b)
+    axis = b - a
+    length = axis.length
+    n = len(radii) - 1
+    profile = [(radii[0] * 0.55, 0.0)]
+    for k, r in enumerate(radii):
+        profile.append((r, length * (0.06 + 0.88 * k / n)))
+    profile.append((radii[-1] * 0.55, length))
+    obj = mk.lathe(name, profile, mat=mat, segments=segments)
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = axis.normalized().to_track_quat("Z", "Y")
+    obj.location = a
+    return obj
+
+
+def squashed(obj, sx=1.0, sy=1.0, sz=1.0, about=(0.0, 0.0, 0.0)):
+    """Scales a part's mesh about a point (builder coordinates), after it is placed."""
+    about = Vector(about)
+    obj.data.transform(obj.matrix_basis)
+    obj.matrix_basis = Matrix.Identity(4)
+    obj.data.transform(Matrix.Translation(about) @ Matrix.Diagonal((sx, sy, sz, 1.0)) @ Matrix.Translation(-about))
+    return obj
+
+
+def grid_rects(count, cols):
+    """`count` cells of a texture in a grid `cols` wide, each with a little margin, as (u0, v0, u1, v1)."""
+    rows = math.ceil(count / cols)
+    w, h = 1.0 / cols, 1.0 / rows
+    return [((k % cols) * w + 0.006, (k // cols) * h + 0.006, (k % cols + 1) * w - 0.006, (k // cols + 1) * h - 0.006)
+            for k in range(count)]
+
+
+# Where the puppet bends (builder coordinates: it faces -Y, its left is +X, its feet on z = 0). Each moving
+# piece turns about the joint at its top, which is the ball it carries.
+def puppet_joints():
+    joints = {"waist": (0.0, 0.0, 3.98), "neck": (0.0, 0.0, 5.38)}
+    for side, s in (("L", 1), ("R", -1)):
+        joints["shoulder" + side] = (s * 0.74, 0.0, 5.06)
+        joints["elbow" + side] = (s * 0.9, 0.02, 3.98)
+        joints["wrist" + side] = (s * 1.02, 0.0, 2.92)
+        joints["hip" + side] = (s * 0.34, 0.0, 3.42)
+        joints["knee" + side] = (s * 0.32, -0.02, 2.04)
+        joints["ankle" + side] = (s * 0.32, 0.04, 0.44)
+    return joints
+
+
+@prop("Puppet", pivot="bottom", material="Wood", collide=False, texture=512, set="Lobby")
+def puppet():
+    """One of the Academy's three practice puppets: a life-size wooden artist's mannequin, pale wood gone
+    a little grey, a faceless egg of a head, a dark oval on its chest (where its name tag is pinned) and
+    a ball at every joint. It hangs on strings from the hand above (the game draws the strings and moves
+    the pieces: the pelvis is the prop itself, every other piece turns about the ball at its top)."""
+    wood = mk.wood("Pup_Wood", srgb(206, 198, 182), srgb(156, 148, 132))
+    ball = mk.wood("Pup_JointWood", srgb(168, 160, 146), srgb(122, 114, 102))
+    oval = mk.flat("Pup_Oval", srgb(22, 21, 21), 0.85)
+    j = puppet_joints()
+
+    pelvis = [pk.rounded("Pelvis", (1.0, 0.62, 0.62), (0, 0, 3.6), wood, r=0.24)]
+    chest = [squashed(mk.lathe("Chest", [(0.3, 4.1), (0.46, 4.16), (0.52, 4.35), (0.6, 4.7), (0.64, 4.95), (0.6, 5.15),
+                                         (0.46, 5.28), (0.24, 5.34)], mat=wood, segments=16), sy=0.62),
+             mk.sphere("Waist", 0.24, j["waist"], scale=(1.0, 0.8, 0.85), mat=ball, segments=12, rings=8),
+             mk.sphere("Oval", 0.3, (0, -0.33, 4.62), scale=(0.9, 0.2, 1.22), mat=oval, segments=14, rings=8)]
+    head = [mk.sphere("Neck", 0.13, j["neck"], mat=ball, segments=10, rings=6),
+            mk.tube("NeckPeg", (0, 0, 5.3), (0, 0, 5.6), 0.1, 0.09, mat=wood, verts=10),
+            squashed(mk.lathe("Head", [(0.16, 5.5), (0.27, 5.56), (0.33, 5.68), (0.36, 5.86), (0.355, 6.04), (0.31, 6.2),
+                                       (0.22, 6.33), (0.1, 6.4)], loc=(0, -0.03, 0), mat=wood, segments=16), sy=0.94,
+                     about=(0, -0.03, 0))]
+    pieces = {"Chest": chest, "Head": head}
+    hinge = {"Chest": j["waist"], "Head": j["neck"]}
+    for side, s in (("L", 1), ("R", -1)):
+        sh, el, wr = j["shoulder" + side], j["elbow" + side], j["wrist" + side]
+        hp, kn, an = j["hip" + side], j["knee" + side], j["ankle" + side]
+        pieces["UpperArm" + side] = [mk.sphere("Shoulder", 0.2, sh, mat=ball, segments=12, rings=8),
+                                     spindle("UpperArm", sh, el, [0.16, 0.17, 0.15, 0.12], wood)]
+        pieces["Forearm" + side] = [mk.sphere("Elbow", 0.14, el, mat=ball, segments=10, rings=8),
+                                    spindle("Forearm", el, wr, [0.12, 0.14, 0.12, 0.09], wood)]
+        pieces["Hand" + side] = [mk.sphere("Wrist", 0.1, wr, mat=ball, segments=10, rings=6),
+                                 mk.sphere("Hand", 0.2, (wr[0] + s * 0.02, wr[1], wr[2] - 0.34), scale=(0.42, 0.85, 1.55),
+                                           mat=wood, segments=12, rings=8)]
+        pieces["Thigh" + side] = [mk.sphere("Hip", 0.23, hp, mat=ball, segments=12, rings=8),
+                                  spindle("Thigh", hp, kn, [0.26, 0.29, 0.25, 0.19], wood)]
+        pieces["Shin" + side] = [mk.sphere("Knee", 0.2, kn, mat=ball, segments=12, rings=8),
+                                 spindle("Shin", kn, an, [0.18, 0.21, 0.17, 0.12], wood)]
+        pieces["Foot" + side] = [mk.sphere("Ankle", 0.13, an, mat=ball, segments=10, rings=6),
+                                 pk.rounded("Foot", (0.32, 0.8, 0.24), (s * 0.32, -0.16, 0.13), wood, r=0.1)]
+        for name, joint in (("UpperArm", sh), ("Forearm", el), ("Hand", wr), ("Thigh", hp), ("Shin", kn),
+                            ("Foot", an)):
+            hinge[name + side] = joint
+    # Not pieces: where the head's string is tied, and where the name tag is pinned (the oval's middle).
+    hinge["HeadTop"] = (0, -0.03, 6.4)
+    hinge["Tag"] = (0, -0.39, 4.62)
+    # One texture: the pelvis and each piece in a cell of their own.
+    rects = grid_rects(1 + len(pieces), 4)
+    more = {
+        "into": rects[0],
+        "pieces": {name: piece(parts, into=rects[k + 1]) for k, (name, parts) in enumerate(pieces.items())},
+        "hinge": hinge,
+    }
+    return pelvis, [], more
+
+
+# The hand that holds the strings (builder coordinates; it is made flat, palm down, fingers towards -Y and
+# the wrist towards +Y, then tilted, so the fingers hang down in front, like the reference's). Skin is one
+# smooth surface: each piece is a metaball (balls and capsules that melt into one another, which gives the
+# soft swell of knuckles and the heel of the palm), turned into a mesh and thinned.
+HAND_SCALE = 1.15
+HAND_TILT = 25.0  # degrees the hand is tipped forward about X (the knuckles go down, the wrist up)
+# finger: (knuckle x, sideways lean per unit forward, phalanx lengths, base radius)
+FINGERS = {
+    "Index": (3.0, 0.13, (3.6, 2.4, 1.9), 0.92),
+    "Middle": (1.0, 0.03, (4.0, 2.8, 2.1), 0.95),
+    "Ring": (-1.1, -0.07, (3.7, 2.6, 2.0), 0.88),
+    "Little": (-3.2, -0.2, (2.9, 1.9, 1.7), 0.75),
+}
+CURL = (30.0, 75.0, 105.0)  # each phalanx's angle below the palm's plane, knuckle to tip
+BLOB = 0.575  # an element's surface radius, as a share of its field radius (stiffness 2, threshold 0.6)
+ARM_FADE = 12  # steps in which the arm darkens into the haze
+
+
+def _blob(name, elements, resolution, keep, mat):
+    """A smooth surface from metaball elements, as a mesh: ("ball", centre, radius), ("ellipsoid", centre,
+    radius, (sx, sy, sz)) or ("capsule", a, b, radius), radii being the surface's own. keep: the share of
+    its triangles kept (decimated)."""
+    meta = bpy.data.metaballs.new(name)
+    meta.resolution = resolution
+    meta.render_resolution = resolution
+    meta.threshold = 0.6
+    holder = bpy.data.objects.new(name, meta)
+    common.collection("Build").objects.link(holder)
+    for element in elements:
+        if element[0] == "ball":
+            _, centre, r = element
+            el = meta.elements.new(type="BALL")
+            el.co = centre
+        elif element[0] == "ellipsoid":
+            _, centre, r, (sx, sy, sz) = element
+            el = meta.elements.new(type="ELLIPSOID")
+            el.co = centre
+            el.size_x, el.size_y, el.size_z = sx, sy, sz
+        else:
+            _, a, b, r = element
+            a, b = Vector(a), Vector(b)
+            el = meta.elements.new(type="CAPSULE")
+            el.co = (a + b) / 2
+            el.size_x = (b - a).length / 2
+            el.rotation = Vector((1.0, 0.0, 0.0)).rotation_difference((b - a).normalized())
+        el.radius = r / BLOB
+        el.stiffness = 2.0
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    mesh = bpy.data.meshes.new_from_object(holder.evaluated_get(depsgraph))
+    bpy.data.objects.remove(holder, do_unlink=True)
+    bpy.data.metaballs.remove(meta)
+    mesh.name = name
+    mesh.materials.append(mat)
+    obj = bpy.data.objects.new(name, mesh)
+    common.collection("Build").objects.link(obj)
+    mk.smooth(obj)
+    if keep < 1.0:
+        mod = obj.modifiers.new("Thin", "DECIMATE")
+        mod.ratio = keep
+    return obj
+
+
+def _basis(origin, along, out, scale):
+    """A matrix placing a unit shape at `origin`, its local Y along `along`, local Z towards `out`, scaled
+    by `scale` (x, y, z)."""
+    y = Vector(along).normalized()
+    z = (Vector(out) - y * Vector(out).dot(y)).normalized()
+    x = y.cross(z)
+    rot = Matrix((x, y, z)).transposed().to_4x4()
+    return Matrix.Translation(origin) @ rot @ Matrix.Diagonal((*scale, 1.0))
+
+
+def _shaped(obj, matrix):
+    obj.data.transform(matrix)
+    obj.matrix_basis = Matrix.Identity(4)
+    return obj
+
+
+def _nail_and_tie(name, joint, d, length, r, back, nail, string):
+    """The nail on the back of a last phalanx (from `joint`, along `d`), and the string's loop round it."""
+    mid = joint + d * length * 0.62
+    parts = [_shaped(mk.sphere(name + "Nail", 1.0, mat=nail, segments=12, rings=6),
+                     _basis(mid + back * r * 0.86, d, back, (r * 0.74, length * 0.34, r * 0.2)))]
+    tie = joint + d * length * 0.36
+    loop = mk.torus(name + "Tie", r * 1.04, 0.05, mat=string, major_segments=16, minor_segments=4)
+    loop.rotation_mode = "QUATERNION"
+    loop.rotation_quaternion = d.to_track_quat("Z", "Y")
+    loop.location = tie
+    parts.append(loop)
+    return parts, tie
+
+
+def _finger(name, knuckle, lean, lengths, radius, skin, nail, string):
+    """A finger curled down from its knuckle: three phalanges melting into one another, a nail and the
+    string's tie round the last one. Returns the parts, the middle joint and the tie."""
+    at = Vector(knuckle)
+    r = radius
+    elements = [("ball", tuple(at), r * 1.05)]
+    joints = []
+    for length, angle in zip(lengths, CURL):
+        a = math.radians(angle)
+        d = Vector((lean, -math.cos(a), -math.sin(a))).normalized()
+        end = at + d * length
+        elements.append(("capsule", tuple(at), tuple(end), r))
+        joints.append((at, d, length, r))
+        at = end
+        r *= 0.86
+    parts = [_blob("Mb" + name, elements, 0.2, 0.35, skin)]
+    joint, d, length, r = joints[-1]
+    a = math.radians(CURL[-1])
+    back = Vector((0.0, -math.sin(a), math.cos(a)))
+    more, tie = _nail_and_tie(name, joint, d, length, r * 0.92, back, nail, string)
+    return parts + more, joints[1][0], tie
+
+
+@prop("PuppeteerHand", pivot="centre", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
+def puppeteer_hand():
+    """The hand above the Academy that holds the puppets' strings (the game's tagline: the fate Diavolo
+    chose for you): one huge, pale, smooth human hand, palm down, its fingers hanging in front with a
+    string tied round the tip of each, the wrist rising behind into the dark, where the arm fades out.
+    The thumb and each finger are pieces (they move); `hinge` also names each one's tip and middle joint,
+    where the game ties the strings, Anchor (the middle of the fingertips), ArmEnd and Above."""
+    skin = mk.noisy("Hand_Skin", srgb(168, 160, 152), srgb(214, 207, 199), roughness=0.5)
+    nail = mk.flat("Hand_Nail", srgb(194, 184, 180), 0.35)
+    string = mk.flat("Hand_String", srgb(196, 192, 182), 0.8)
+    # The palm and the back of the hand: a slab of melted balls, the knuckles' row along its front, the
+    # heel of the palm under the thumb and the little finger.
+    palm = [("ellipsoid", (x, y, 0.0), 2.3, (1.0, 1.0, 0.6)) for x in (-2.2, 0.0, 2.2) for y in (-2.4, 0.4)]
+    for finger, (x, _, _, r) in FINGERS.items():
+        palm.append(("ball", (x, -4.25, 0.15), r * 1.12))
+    palm += [("ball", (3.2, 1.3, -0.55), 1.75), ("ball", (-3.2, 1.5, -0.35), 1.45),
+             ("ball", (0.0, 3.6, 0.0), 2.2)]
+    # The wrist and the arm, rising behind: a run of balls growing a little wider.
+    arm_from, arm_to = Vector((0.0, 3.6, 0.0)), Vector((0.0, 21.0, 1.9))
     for k in range(9):
-        a = math.radians(160 + k * 27.5)
-        c, s = math.cos(a), math.sin(a)
-        drop = rng.uniform(1.9, 2.7)
-        top = (c * 0.95, 0.15 - s * 0.55, 4.75)
-        bottom = (c * 1.25, 0.15 - s * 0.8, 4.75 - drop)
-        mid = ((top[0] + bottom[0]) / 2, (top[1] + bottom[1]) / 2, (top[2] + bottom[2]) / 2)
-        length = math.dist(top, bottom)
-        strip = mk.box("Cloak", (0.62, 0.06, length), mid, rot=(0, 0, 90 - math.degrees(a)), mat=cloak)
-        parts.append(strip)
-    parts.append(pk.rounded("Mantle", (2.1, 1.25, 0.35), (0, 0.2, 4.8), cloak, r=0.15))
-    # The stitched face and the name tag.
-    for k in (-1, 1):
-        parts.append(mk.box("StitchA", (0.28, 0.03, 0.05), (k * 0.22, -0.46, 5.6), rot=(0, 45, 0), mat=thread))
-        parts.append(mk.box("StitchB", (0.28, 0.03, 0.05), (k * 0.22, -0.46, 5.6), rot=(0, -45, 0), mat=thread))
-    for k in range(5):
-        parts.append(mk.box("Mouth", (0.05, 0.03, 0.14), (-0.2 + k * 0.1, -0.5, 5.2), mat=thread))
-    parts.append(mk.box("MouthLine", (0.5, 0.03, 0.03), (0, -0.5, 5.2), mat=thread))
-    parts += [mk.box("Tag", (0.8, 0.03, 0.5), (0.3, -0.35, 4.0), rot=(0, 6, 0), mat=paper),
-              mk.cylinder("Pin", 0.04, 0.12, (0.3, -0.38, 4.22), rot=(90, 0, 0), mat=thread, verts=6)]
-    return parts, []
+        t = k / 8
+        palm.append(("ball", tuple(arm_from.lerp(arm_to, t)), 2.35 + 0.75 * t))
+    main = [_blob("MbPalm", palm, 0.42, 0.3, skin)]
+    # The arm darkens step by step into the haze (the lobby's atmosphere colour), from the wrist back.
+    steps = [skin]
+    for k in range(1, ARM_FADE + 1):
+        f = 1.0 - 0.9 * (k / ARM_FADE) ** 0.8
+        steps.append(mk.noisy(f"Hand_Skin{k}", srgb(*(int(34 + (c - 34) * f) for c in (168, 160, 152))),
+                              srgb(*(int(36 + (c - 36) * f) for c in (214, 207, 199))), roughness=0.6))
+    blob = main[0]
+    for mat in steps[1:]:
+        blob.data.materials.append(mat)
+    axis = (arm_to - arm_from).normalized()
+    start, span = 6.0, (arm_to - arm_from).length - 6.0
+    for poly in blob.data.polygons:
+        t = (Vector(poly.center) - arm_from).dot(axis)
+        poly.material_index = 0 if t <= start else min(ARM_FADE, 1 + int((t - start) / span * ARM_FADE))
+    pieces = {}
+    points = {}
+    tips = []
+    for finger, (x, lean, lengths, r) in FINGERS.items():
+        knuckle = (x, -4.4, 0.0)
+        parts, middle, tie = _finger(finger, knuckle, lean, lengths, r, skin, nail, string)
+        pieces[finger] = parts
+        points[finger] = knuckle
+        points[finger + "Mid"] = tuple(middle)
+        points[finger + "Tip"] = tuple(tie)
+        tips.append(tie)
+    # The thumb: from the heel of the palm on the thumb's side, forward, out and down.
+    base, knuckle1, knuckle2, tip = (Vector((3.5, 1.0, -0.7)), Vector((5.0, -1.6, -2.0)), Vector((5.6, -4.0, -3.4)),
+                                     Vector((5.75, -5.7, -5.0)))
+    thumb = [_blob("MbThumb", [("ball", tuple(base), 1.35), ("capsule", tuple(base), tuple(knuckle1), 1.2),
+                               ("capsule", tuple(knuckle1), tuple(knuckle2), 1.02),
+                               ("capsule", tuple(knuckle2), tuple(tip), 0.86)], 0.2, 0.35, skin)]
+    d = (tip - knuckle2).normalized()
+    out = Vector((0.6, -0.2, 0.8))
+    back = (out - d * out.dot(d)).normalized()
+    more, tie = _nail_and_tie("Thumb", knuckle2, d, (tip - knuckle2).length, 0.86, back, nail, string)
+    pieces["Thumb"] = thumb + more
+    points["Thumb"] = tuple(base)
+    points["ThumbMid"] = tuple(knuckle1)
+    points["ThumbTip"] = tuple(tie)
+    tips.append(tie)
+    points["Anchor"] = tuple(sum(tips, Vector()) / len(tips))
+    # Where the arm ends in the dark (the game's haze gathers there), and a spot over the back of the hand
+    # (the game's light, from above).
+    points["ArmEnd"] = tuple(arm_to)
+    points["Above"] = (0.0, -1.0, 7.0)
+    # Tilt it all forward and scale it up (meshes and points alike).
+    turn = Matrix.Rotation(math.radians(HAND_TILT), 4, "X") @ Matrix.Diagonal((HAND_SCALE,) * 3 + (1.0,))
+    for obj in main + [p for parts in pieces.values() for p in parts]:
+        obj.matrix_basis = turn @ obj.matrix_basis
+    points = {name: tuple(turn @ Vector(p)) for name, p in points.items()}
+    # One texture: the palm and arm in the biggest square, the thumb and each finger in a small one.
+    rects = [(0.006, 0.006, 0.66, 0.66), (0.67, 0.006, 0.994, 0.33), (0.67, 0.34, 0.994, 0.66),
+             (0.006, 0.67, 0.33, 0.994), (0.34, 0.67, 0.66, 0.994), (0.67, 0.67, 0.994, 0.994)]
+    more = {
+        "into": rects[0],
+        "pieces": {name: piece(parts, into=rects[k + 1]) for k, (name, parts) in enumerate(pieces.items())},
+        "hinge": points,
+    }
+    return main, [], more
 
 
 # Its dwellers' things -------------------------------------------------------------------------------------

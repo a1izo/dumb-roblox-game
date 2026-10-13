@@ -1,6 +1,6 @@
 """The campus's mood and what shelters from its snow: a cold blue-grey ground mist lying low over the
 avenue, the forecourt, the pond hollow and the lawns (thinning with height, so the clock tower's top
-floats above it), warm light on the clock tower's faces so they glow through it, a black feather now
+floats above it; its faces glow through it by their own lamps, masonry.clock_face), a black feather now
 and then falling through the snow, and the invisible cover boxes the client's snow stops under that
 the buildings' roofs do not give: the ginkgos' bare crowns and the pines' (they thin the snow), the
 check-in tents, the red gate's roof and the evidence board's kiosk."""
@@ -28,10 +28,6 @@ MIST = [
     (42.0, 60.0, 12.0, 50.0, 0.0),  # the science building's west lane
 ]
 
-# Where the clock tower's four faces are lit from (just out from each face, at the dial's height).
-TOWER_GLOW = [(-20.0, -42.0), (-35.5, -55.0), (-4.5, -55.0)]
-
-
 def covers(s):
     for key, x, y, z, rot, scale, *_ in list(s.props):
         if key in CROWNS:
@@ -48,10 +44,8 @@ def mist(s):
         s.emitter("mist", (x, y + 0.7, z), 0, (w, 2.5, d))
 
 
-def tower(s):
-    """Warm light on the clock tower's faces, so they glow through the mist."""
-    for x, z in TOWER_GLOW:
-        s.light("point", (x, P.CLOCK_Y, z), (255, 196, 128), 40, 1.3)
+# (The three warm floodlights that hung in mid-air off the clock tower's faces, with no fitting, are gone:
+# the owner's call, 2026-10-12. The dials glow and each has its own lamp.)
 
 
 def feathers(s):
@@ -62,6 +56,5 @@ def feathers(s):
 
 def build(s):
     mist(s)
-    tower(s)
     feathers(s)
     covers(s)

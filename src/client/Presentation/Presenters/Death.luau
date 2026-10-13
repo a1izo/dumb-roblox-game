@@ -1,14 +1,21 @@
--- A death at the table. Quick cuts of two others reacting (their reactions are picked from the
--- cue, the same on every screen, never from roles), then the victim's collapse in close-up while
--- the heart monitor beats twice and flatlines, and the cause is written across the screen.
--- The victim sees their own screen drain of colour instead.
+-- A death at the table. A death by the Manual opens on the book, alone in the dark, the victim's real
+-- name and the cause being written in it (everyone sees it, the victim too). Then quick cuts of two
+-- others reacting (their reactions are picked from the cue, the same on every screen, never from
+-- roles), then the victim's collapse in close-up while the heart monitor beats twice and flatlines,
+-- and the cause is written across the screen. The victim sees their own screen drain of colour
+-- instead.
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ManualTiming =
+	require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Parent.Parent.UI.Kit)
 local Mixer = require(script.Parent.Parent.Parent.Audio.Mixer)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
+local BookStage = require(script.Parent.Parent.BookStage)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
@@ -49,6 +56,22 @@ return function(cue)
 	local data = cue.data
 	Cinema.waitUntil(cue.at)
 	Mixer.duck("death", true)
+	-- The name, written. (The server lets the body fall only when this shot is over.)
+	local book = data.written == true and type(data.realName) == "string"
+	local bookToken = 0
+	if book then
+		bookToken = CameraDirector.take(ManualTiming.BOOK + 0.8)
+		Cinema.letterbox(true)
+		local lines = { { text = data.realName }, { text = tostring(data.cause or ""), small = true } }
+		local stop = BookStage.play(bookToken, lines, ManualTiming.BOOK)
+		task.wait(ManualTiming.BOOK)
+		stop()
+		-- (The cuts below take the camera over; the victim's own screen gets it back.)
+		if data.userId == LocalPlayer.UserId then
+			CameraDirector.release(bookToken)
+			Cinema.letterbox(false)
+		end
+	end
 	Sfx.play("heartbeat")
 	task.delay(0.8, Sfx.play, "heartbeat")
 	task.delay(1.9, Sfx.play, "flatline")
@@ -107,6 +130,10 @@ return function(cue)
 			CameraDirector.release(token)
 		else
 			task.wait(SHOT)
+		end
+		if book then
+			Cinema.letterbox(false)
+			CameraDirector.release(bookToken) -- (no body to cut to: nothing took the camera over)
 		end
 	end
 	removeVignette()

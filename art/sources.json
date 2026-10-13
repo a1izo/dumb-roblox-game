@@ -2640,5 +2640,37 @@
     }
    ]
   }
+ },
+ "engravings": {
+  "skull_anterior": {
+   "source": "Wellcome Collection",
+   "page": "https://wellcomecollection.org/works/zs6gser7",
+   "licence": "Public Domain Mark 1.0",
+   "credit": "Wellcome Collection",
+   "use": "Skull: anterior view. Line engraving. (the skull on the cover of Death's Manual)",
+   "files": [
+    {
+     "name": "skull_anterior.jpg",
+     "url": "https://iiif.wellcomecollection.org/image/V0007916/full/max/0/default.jpg",
+     "bytes": 2278797,
+     "sha256": "122c63aaa4785ab81150ddc7364650c99be4f18a8a09632485fb1941910eef3d"
+    }
+   ]
+  },
+  "gamelin_skull": {
+   "source": "Wellcome Collection",
+   "page": "https://wellcomecollection.org/works/u9ecexq2/items?canvas=59",
+   "licence": "Public Domain Mark 1.0",
+   "credit": "Wellcome Collection",
+   "use": "J. Gamelin, Nouveau recueil d'osteologie et de myologie, 1779: skull with its jaw dropped (second study for the cover of Death's Manual)",
+   "files": [
+    {
+     "name": "gamelin_skull.jpg",
+     "url": "https://iiif.wellcomecollection.org/image/b20265396_epb_g_os_f_2270_0059.JP2/full/max/0/default.jpg",
+     "bytes": 7835318,
+     "sha256": "3d465533278f6e0ffd897ce64738fabb627af41c2d6a08518ec0602ce38c1a98"
+    }
+   ]
+  }
  }
 }

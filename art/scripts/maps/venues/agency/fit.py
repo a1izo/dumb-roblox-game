@@ -10,7 +10,7 @@ for one running south."""
 
 import math
 
-from maps import city, kit
+from maps import city, kit, lightbook
 from maps import geo2d as g2
 
 WARM = (255, 214, 170)
@@ -181,11 +181,16 @@ def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9,
     s.box("DarkMetal", (x, ceiling - 0.08, z), (w + 0.3, 0.16, d + 0.3), rot, skip=("+y",))
     if on:
         glow = "PanelWarm" if color[0] > color[2] else "PanelCool"
-        s.box(glow, (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
-        s.light("point", (x, ceiling - 1.0, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS,
-                flicker=flicker)
+        if flicker:
+            # The face is the lamp's own part, so it goes dark with the light (in the scene's meshes it could not).
+            lightbook.ceiling(s, (x, ceiling - 0.17, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS,
+                              flicker=True, glow=lightbook.glow_of(glow, (w, 0.04, d)), rot=rot)
+        else:
+            s.box(glow, (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
+            lightbook.ceiling(s, (x, ceiling - lightbook.CEILING_DROP, z), color, range_ * ROOM_RANGE,
+                              brightness * ROOM_BRIGHTNESS)
     else:
-        s.box("TubeDiffuser", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
+        s.box("DiffuserOff", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
 
 
 def downlight(s, x, z, ceiling, color=WARM, range_=16, brightness=0.8, angle=90):
@@ -202,14 +207,14 @@ def wall_lamp(s, x, y, z, rot, color=COOL, range_=16, brightness=0.8):
     s.box("BlackMetal", (x + p[0], y, z + p[1]), (1.4, 0.8, 0.4), rot)
     q = turn(rot, 0, -0.42)
     s.box("NeonCool" if color[2] >= color[0] else "NeonWarm", (x + q[0], y, z + q[1]), (1.1, 0.5, 0.04), rot)
-    r = turn(rot, 0, -1.0)
-    s.light("point", (x + r[0], y, z + r[1]), color, range_, brightness)
+    r = turn(rot, 0, -lightbook.WALL_OUT)
+    lightbook.wall(s, (x + r[0], y, z + r[1]), rot, color, range_, brightness)
 
 
 def exit_sign(s, x, y, z, rot):
     kit.exit_sign(s, x, y, z, rot)
-    p = turn(rot, 0, -0.6)
-    s.light("point", (x + p[0], y, z + p[1]), (120, 255, 160), 8, 0.4)
+    p = turn(rot, 0, -0.3)
+    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 8, 0.4)
 
 
 # Stairs and rails ----------------------------------------------------------------------------------------

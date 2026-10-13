@@ -18,6 +18,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local Activities = require(Shared:WaitForChild("Presentation"):WaitForChild("Activities"))
+local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
@@ -124,6 +125,12 @@ local function reactAround(cue, except: number?, serverTime: number, duration: n
 end
 
 local function onDeath(cue)
+	-- A death by the Manual opens on the book: the body falls when that shot is over.
+	local at = cue.at + (if cue.data.written == true then ManualTiming.BOOK else 0)
+	local early = at - now()
+	if early > 0 then
+		task.wait(early)
+	end
 	local character = characterOf(tonumber(cue.data.userId))
 	if not character then
 		return
@@ -135,9 +142,9 @@ local function onDeath(cue)
 		character,
 		poseId,
 		-- Holds the last frame until the server locks the pose into the body (LPoseBaked).
-		{ startAt = localTime(cue.at), fadeIn = 0.15 }
+		{ startAt = localTime(at), fadeIn = 0.15 }
 	)
-	reactAround(cue, tonumber(cue.data.userId), cue.at + 0.3, 3.4)
+	reactAround(cue, tonumber(cue.data.userId), at + 0.3, 3.4)
 end
 
 local function onArrest(cue)

@@ -136,6 +136,18 @@ local function trialEvent(player: Player, payload)
 	DataService.saveSoon(player)
 end
 
+-- How far the Trial got (payload.step: steps done), saved so a rejoin carries on from there. Quietly: the
+-- client already knows, so nothing is pushed back. Its own action, so it never eats the "done" event's turn.
+local function trialStep(player: Player, payload)
+	local data = DataService.get(player)
+	if not data or Match.getLiving(player) then
+		return
+	end
+	if Trial.advance(data, payload.step) then
+		DataService.saveSoon(player)
+	end
+end
+
 -- action -> { cooldown in seconds, handler }
 local ACTIONS: { [string]: { cooldown: number, handler: (Player, any) -> () } } = {
 	settings = { cooldown = 0.5, handler = setSettings },
@@ -143,6 +155,7 @@ local ACTIONS: { [string]: { cooldown: number, handler: (Player, any) -> () } } 
 	resetHints = { cooldown = 2, handler = resetHints },
 	training = { cooldown = 1, handler = drillDone },
 	trial = { cooldown = 1, handler = trialEvent },
+	trialStep = { cooldown = 0.5, handler = trialStep },
 }
 
 -- Other services add their actions here (for example hints or the custom alias).

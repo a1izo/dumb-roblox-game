@@ -95,7 +95,7 @@ def forensics(s):
     s.box("NeonCool", (-50.42, Y + 8.0, -61.0), (0.04, 3.2, 5.6))
     for x, z in ((-86.0, -64.0), (-66.0, -64.0), (-76.0, -54.0)):
         fit.panel(s, x, z, C, color=fit.COOL, brightness=0.9, range_=20, flicker=True)
-    fit.plaque(s, -88.0, Y + 10.6, -47.7, 0, 6.0, 0.9, "鑑識課 FORENSICS")
+    fit.plaque(s, -88.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "鑑識課 FORENSICS")
 
 
 def lockup(s):
@@ -112,7 +112,7 @@ def lockup(s):
     hood(s, -47.0, -51.5)
     for x in (-40.0, -26.0):
         kit.tube_light(s, x, C, -62.0, length=7.0, rot=90, range_=18, brightness=0.75)
-    fit.plaque(s, -33.0, Y + 10.6, -47.7, 0, 6.0, 0.9, "証拠品保管庫 EVIDENCE")
+    fit.plaque(s, -33.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "証拠品保管庫 EVIDENCE")
 
 
 def server_room(s):
@@ -133,7 +133,7 @@ def server_room(s):
     fit.panel(s, -9.0, -62.0, C, color=fit.COOL, brightness=0.8, range_=18, flicker=True)  # the server room
     fit.panel(s, 14.0, -54.0, C, color=fit.COOL, brightness=0.5, range_=16)
     s.sound("mapServerHum", (14.0, Y + 6.0, -66.0), 34.0, 0.3)
-    fit.plaque(s, -7.0, Y + 10.6, -47.7, 0, 6.0, 0.9, "サーバー室 SERVERS")
+    fit.plaque(s, -7.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "サーバー室 SERVERS")
 
 
 def archive(s):
@@ -154,7 +154,7 @@ def archive(s):
         fit.panel(s, x, z, C, brightness=0.8, range_=18)
     for x in (57.5, 71.5, 85.5):
         fit.panel(s, x, -64.8, C, w=3.0, brightness=0.55, range_=16, rot=90)
-    fit.plaque(s, 40.0, Y + 10.6, -47.7, 0, 5.0, 0.9, "資料室 ARCHIVE")
+    fit.plaque(s, 40.0, Y + 10.6, -47.7, 180, 5.0, 0.9, "資料室 ARCHIVE")
 
 
 # The east, the director ------------------------------------------------------------------------------------
@@ -163,8 +163,8 @@ def archive(s):
 def canteen(s):
     fit.partition(s, (50.0, -48.0), (50.0, 16.3), Y, C, "PlasterLight", "PlasterGrey", doors=[(18.0, 5.0), (54.0, 5.0)],
                   glass="clear")
-    fit.partition(s, (50.0, 16.0), (100.0, 16.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(5.0, 4.4)],
-                  glass="frosted", spans=[(10.4, 49.4)])
+    fit.partition(s, (50.3, 16.0), (100.0, 16.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(4.7, 4.4)],
+                  glass="frosted", spans=[(10.1, 49.1)])
     prop(s, "MealTicketMachine", 53.2, -45.6, 180)
     top = fit.counter(s, 70.5, -45.8, 180, 11.0, d=2.4, y=Y, top="WhiteTrim", body="WoodPanel")
     prop(s, "CoffeeMachine", 68.0, -45.9, 180, 1.0, top)

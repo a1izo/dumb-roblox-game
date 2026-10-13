@@ -79,7 +79,7 @@ function Stage.hide(self: Stage, model: Model)
 	end
 end
 
--- A still copy of a character: no scripts, no physics, no name tag.
+-- A still copy of a character: no scripts, no physics, no name tag. (The shop's Your Look uses it too.)
 local function copyOf(source: Model): Model?
 	local archivable = source.Archivable
 	source.Archivable = true
@@ -120,6 +120,7 @@ local function copyOf(source: Model): Model?
 	clone:SetAttribute("Specter", nil)
 	return clone
 end
+Stage.copyOf = copyOf
 
 -- The R6 rig's standard joints: name, the part that holds it, the part it moves, C0, C1.
 local R6_FRONT = CFrame.fromMatrix(Vector3.zero, Vector3.new(-1, 0, 0), Vector3.new(0, 0, 1))
@@ -347,10 +348,6 @@ local PROPS: { [string]: { string | CFrame | (() -> Instance) } } = {
 		"LeftHand",
 		CFrame.new(0.6, -0.3, -0.5) * CFrame.Angles(math.rad(-70), 0, 0),
 		function()
-			local model = ModelLibrary.get("Grimoire")
-			if model then
-				return model
-			end
 			return Models.grimoire()
 		end,
 	},
@@ -394,7 +391,8 @@ function Stage.hold(_self: Stage, actor: Model, prop: string)
 	if built:IsA("Model") then
 		built:PivotTo(target)
 		for _, item in ipairs(built:GetDescendants()) do
-			if item:IsA("BasePart") and item ~= anchor then
+			-- (A piece with a joint of its own, the Manual's board and leaves, moves on that joint.)
+			if item:IsA("BasePart") and item ~= anchor and not item:FindFirstChildWhichIsA("JointInstance") then
 				Create("WeldConstraint", { Part0 = anchor, Part1 = item, Parent = item })
 			end
 		end

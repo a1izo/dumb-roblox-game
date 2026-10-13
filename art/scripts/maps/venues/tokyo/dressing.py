@@ -10,7 +10,7 @@ a sign (props carry their own lights; map fittings are built next to theirs)."""
 import math
 import random
 
-from maps import city, kit
+from maps import city, kit, lightbook
 from maps import geo2d as g2
 from maps.buildings import edges_of
 from maps.venues.tokyo import plan as P
@@ -234,7 +234,7 @@ def arcade(s):
             s.tube("BlackMetal", (p[0], y, p[1]), (p[0], y - 6.0, p[1]), 0.05, 4)
             s.cylinder("BlackMetal", (p[0], y - 6.8, p[1]), 1.1, 0.8, segments=12, radius_top=0.4)
             s.box("NeonWarm", (p[0], y - 6.85, p[1]), (1.2, 0.1, 1.2))
-            s.light("point", (p[0], y - 8.0, p[1]), (255, 226, 190), 24, 1.4)
+            lightbook.ceiling(s, (p[0], y - 8.0, p[1]), (255, 226, 190), 24, 1.4)  # the arcade's roof and shops too
         else:
             colour = RNG.choice(("FabricRed", "CreamTrim", "NeonPink", "Fabric"))
             s.box(colour, (p[0], y - 5.0, p[1]), (0.1, 5.0, 3.0), rot + 90)
@@ -361,7 +361,7 @@ def viaduct_lane(s):
     for x in (-186.0, -150.0, -110.0, -70.0, -20.0, 30.0, 46.0, 100.0, 140.0, 184.0):
         s.box("BlackMetal", (x, 11.5, z - 0.3), (0.8, 1.0, 0.8), 0)
         s.box("NeonWarm", (x, 10.95, z - 0.3), (0.6, 0.1, 0.6), 0)
-        s.light("point", (x, 10.2, z - 0.8), (255, 196, 140), 20, 1.1)
+        lightbook.facade(s, (x, 10.6, z - 0.6), 0, (255, 196, 140), 20, 1.1)  # out over the lane, not into the arches
 
 
 # Alleys ---------------------------------------------------------------------------------------------------
@@ -372,17 +372,26 @@ def wall_lamp(s, x, z, rot, y=9.0, color=(255, 200, 150)):
     s.box("BlackMetal", (x, y + 0.3, z), (0.6, 0.8, 0.6), rot)
     s.box("NeonWarm", (x, y - 0.15, z), (0.45, 0.1, 0.45), rot)
     a = math.radians(rot)
-    s.light("point", (x - math.sin(a) * 0.8, y - 0.6, z - math.cos(a) * 0.8), color, 16, 0.9)
+    lightbook.facade(s, (x - math.sin(a) * 0.5, y - 0.4, z - math.cos(a) * 0.5), rot, color, 16, 0.9)
+
+
+# Where the back alley's south wall stands at x (the faces of the buildings behind the east street,
+# measured: they lean a little, so it is a table, not a line).
+ALLEY_WALL = {26.0: -17.35, 32.0: -17.2, 40.0: -17.0, 53.0: -16.93, 60.0: -16.5, 70.0: -16.2, 78.0: -15.41,
+              84.0: -15.05, 85.0: -14.99}
 
 
 def alleys(s):
-    # The back alley behind the east street: AC units on the walls, bins, a lamp at each end.
-    for x, z, rot in ((26.0, -17.2, 0), (60.0, -16.9, 0), (88.0, -15.8, 0)):
-        wall_lamp(s, x, z, rot + 180, 8.0)
+    # The back alley behind the east street: AC units on the walls, bins, a lamp at each end. Everything
+    # stands against the south wall's face (they were once placed for a wider alley and ended up inside
+    # the buildings); the last lamp is on the corner before the gap at x 88, where there is no wall.
+    for x in (26.0, 60.0, 85.0):
+        wall_lamp(s, x, ALLEY_WALL[x] + 0.3, 180, 8.0)
     for x in (32.0, 40.0, 70.0, 78.0):
-        s.box("WhiteTrim", (x, 3.0, -18.4), (2.4, 2.0, 1.2), 3)
-    s.prop("TrashCan", 53.0, -17.2, 0)
-    s.prop("Crate", 84.0, -17.6, 12, 0.6)
+        s.box("WhiteTrim", (x, 3.0, ALLEY_WALL[x] + 0.65), (2.4, 2.0, 1.2), 3)
+    s.prop("TrashCan", 53.0, ALLEY_WALL[53.0] + 0.76, 0)
+    # (Smaller than the others: the alley is 6.3 wide here and keeps 4 clear.)
+    s.prop("Crate", 84.0, ALLEY_WALL[84.0] + 1.15, 12, 0.5)
     # The service alley off the east street behind the shopping street's shops, its mouth kept
     # clear (the dumpster along it: the alley is narrower than a dumpster is long; it widens
     # towards the dead end).
@@ -408,9 +417,14 @@ def lamps_on_walls(s, name, offset, spacing=18.0, h=8.0, start=5.0, flicker_ever
                 x, z = p[0] + n[0] * side * (wall - 0.35), p[1] + n[1] * side * (wall - 0.35)
                 flicker = bool(flicker_every) and k % flicker_every == flicker_every - 1
                 s.box("BlackMetal", (x, h + 0.3, z), (0.4, 0.6, 0.4), g2.rot_of(d))
-                s.box("NeonWarm", (x, h - 0.15, z), (0.5, 0.3, 0.5), g2.rot_of(d))
-                s.light("point", (x - n[0] * side * 0.8, h - 0.6, z - n[1] * side * 0.8), (255, 196, 140), 20.0, 1.1,
-                        flicker=flicker)
+                out = lightbook.facing(-n[0] * side, -n[1] * side)
+                if flicker:
+                    lightbook.facade(s, (x, h - 0.15, z), out, (255, 196, 140), 20.0, 1.1, flicker=True,
+                                   glow=lightbook.glow_of("NeonWarm", (0.5, 0.3, 0.5)))
+                else:
+                    s.box("NeonWarm", (x, h - 0.15, z), (0.5, 0.3, 0.5), g2.rot_of(d))
+                    lightbook.facade(s, (x - n[0] * side * 0.5, h - 0.4, z - n[1] * side * 0.5), out, (255, 196, 140),
+                                   20.0, 1.1)
                 break
         k += 1
         u += spacing

@@ -60,7 +60,7 @@ def law_rooms(s, g):
     # Plaster over the hall, the seminar room and the professor's office; office tiles over student affairs.
     ceiling(s, (LX0, LZ0, LX1, LZ1), "CeilingPlaster")
     fit.ceiling_faces(s, P.rect_of(P.AFFAIRS), C - 0.06, "Ceiling")
-    fit.coffers(s, *P.LAW_HALL, C, spacing=8.0)
+    fit.coffers(s, *P.LAW_HALL, C, spacing=8.0, wall=0.3)
     fit.partition(s, (-98.0, LZ0), (-98.0, LZ1), 0.0, C, "PlasterLight", "PlasterLight",
                   doors=[(-90.0 - LZ0, 4.4), (-66.0 - LZ0, 5.0)], glass="clear", spans=[(30.0, 39.3), (45.9, 56.4)])
     fit.partition(s, (LX0, -80.0), (-98.0, -80.0), 0.0, C, "PlasterLight", "PlasterLight", doors=[(-126.0 - LX0, 4.4)])

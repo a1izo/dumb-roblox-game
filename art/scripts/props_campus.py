@@ -565,7 +565,8 @@ def snow_tools():
 
 
 @prop("CampusLamp", pivot="bottom", material="Metal", collide=False, texture=512, set="Campus", anchor=(0, 0),
-      lights=[dict(at=(0, 0, 10.4), kind="point", color=LAMP_WARM, range=24, brightness=1.35)])
+      lights=[dict(at=(0, 0, 10.4), kind="spot", face="Bottom", angle=160, color=LAMP_WARM, range=24,
+                   brightness=1.35)])  # a post's head: shaded above (maps/lightbook.py)
 def campus_lamp():
     """A Meiji-style cast-iron lamp standard: a fluted base, the slender post with its ladder bar,
     a four-sided glass lantern with its gas mantle glowing, a pointed cap with snow on it."""

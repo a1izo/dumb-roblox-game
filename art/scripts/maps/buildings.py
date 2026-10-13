@@ -21,7 +21,7 @@ city beyond the map.
 import math
 import random
 
-from maps import city
+from maps import city, lightbook
 from maps import geo2d as g2
 
 FLOOR_GF = 14.0
@@ -526,7 +526,7 @@ def shop_set(s, e, u0, u1, y0, y1, rng, lit=True, depth=SET_DEPTH):
     if lit:
         e.box(s, "NeonWarm", (u0 + u1) / 2, y1 - 0.15, -depth / 2, (width * 0.6, 0.1, min(0.6, depth - 0.4)))
         x, z = e.at((u0 + u1) / 2, -depth / 2)
-        s.light("point", (x, y1 - 1.0, z), (255, 220, 180), 12, 0.7)
+        lightbook.ceiling(s, (x, y1 - lightbook.CEILING_DROP, z), (255, 220, 180), 12, 0.7)
 
 
 SET_DEPTHS = (SET_DEPTH, 3.0, 2.0, 1.2)  # shallower sets where a full one does not fit
@@ -580,7 +580,7 @@ def lobby(s, e, style, rng):
     for du in (-w / 4, w / 4):
         e.box(s, "PanelWarm", mid + du, 9.9, -depth / 2, (1.2, 0.08, 1.2))
     x, z = e.at(mid, -depth / 2)
-    s.light("point", (x, 8.6, z), (255, 222, 180), 14, 0.7)
+    lightbook.ceiling(s, (x, 9.9 - lightbook.CEILING_DROP, z), (255, 222, 180), 14, 0.7)
     if w >= 8.0 and depth >= 3.0:
         bx, bz = e.at(a + 1.6, -(depth - 0.16))
         s.sign((bx, 6.2, bz), e.rot, 2.2, 3.0, "テナント\nご案内\n\n1F  受付\n2F-  各社", "GothamBlack",
@@ -736,7 +736,7 @@ def screen(s, e, top, size):
     s.screen((x, y, z), e.rot, w, h)
     # The screen's glow on the street below it (a crossing lit by its screens).
     gx, gz = e.at(u, 8.0)
-    s.light("spot", (gx, y - h / 2, gz), (196, 204, 255), 64, 1.3, False, "Bottom", 120)
+    s.light("spot", (gx, y - h / 2, gz), (196, 204, 255), lightbook.MAX_RANGE, 1.3, False, "Bottom", 120)
 
 
 # Building ----------------------------------------------------------------------------------------------
