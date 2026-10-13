@@ -224,20 +224,26 @@ function PoseController.stop(character: Model?, id: string?, fadeOut: number?)
 	end
 end
 
+-- A track still plays until its stop time (a one-shot clip is given one when it starts).
+local function running(track: Track, now: number): boolean
+	return track.stopAt == nil or track.stopAt > now
+end
+
 -- Stops every emote on a character (it started moving).
 function PoseController.stopEmotes(character: Model?)
 	local rig = if character then rigs[character] else nil
 	if not rig then
 		return
 	end
+	local now = os.clock()
 	for _, track in ipairs(rig.tracks) do
-		if track.emote and not track.stopAt then
+		if track.emote and running(track, now) then
 			if track.animTrack then
 				track.animTrack:Stop(0.25)
-				track.stopAt = os.clock()
+				track.stopAt = now
 				track.fadeOut = 0
 			else
-				track.stopAt = os.clock()
+				track.stopAt = now
 				track.fadeOut = 0.25
 			end
 		end
@@ -250,7 +256,7 @@ function PoseController.isPlaying(character: Model?, id: string): boolean
 		return false
 	end
 	for _, track in ipairs(rig.tracks) do
-		if track.id == id and not track.stopAt then
+		if track.id == id and running(track, os.clock()) then
 			return true
 		end
 	end
@@ -264,7 +270,7 @@ function PoseController.busy(character: Model?): boolean
 		return false
 	end
 	for _, track in ipairs(rig.tracks) do
-		if not track.stopAt then
+		if running(track, os.clock()) then
 			return true
 		end
 	end
@@ -277,7 +283,7 @@ function PoseController.hasEmote(character: Model?): boolean
 		return false
 	end
 	for _, track in ipairs(rig.tracks) do
-		if track.emote and not track.stopAt then
+		if track.emote and running(track, os.clock()) then
 			return true
 		end
 	end
