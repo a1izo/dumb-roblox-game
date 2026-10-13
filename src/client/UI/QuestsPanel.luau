@@ -46,7 +46,7 @@ local function questCard(item, canSwap: boolean, order: number)
 	if not quest then
 		return
 	end
-	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 84), LayoutOrder = order, Parent = list })
+	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 96), LayoutOrder = order, Parent = list })
 	Kit.label({
 		Text = (if item.done then "Done  ·  " else "") .. quest.text,
 		font = "bodyBold",

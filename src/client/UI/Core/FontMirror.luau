@@ -211,7 +211,11 @@ local function render(m: Mirror)
 	local onScreen = label:FindFirstAncestorWhichIsA("ScreenGui") ~= nil
 	local floor = if onScreen and label:IsDescendantOf(Screens.modal) then WINDOW_MIN else MIN_SIZE
 	if text == "" or not covered(text) then
+		-- Montserrat for good (spaced capitals, the Japanese accents), and never under the floor either.
 		setMirrored(m, false)
+		if onScreen and not label.TextScaled and label.TextSize < floor then
+			label.TextSize = floor
+		end
 		return
 	end
 	local weight = label.FontFace.Weight

@@ -1081,13 +1081,14 @@ local function labelledRow(props: Props, label: string, height: number?): (Frame
 		ZIndex = props.ZIndex or 1,
 		Parent = props.Parent,
 	})
+	-- A long label takes a second line inside the row rather than running under the control.
 	Base.label({
 		Name = "Label",
 		Text = label,
 		font = "body",
 		size = "body",
 		color = C.bone,
-		TextWrapped = false,
+		TextWrapped = true,
 		AutomaticSize = Enum.AutomaticSize.None,
 		Size = UDim2.new(0.42, 0, 1, 0),
 		ZIndex = row.ZIndex,

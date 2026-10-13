@@ -260,11 +260,13 @@ local function layout(
 end
 
 -- Letter spacing for a real (Montserrat) label, which has none of its own: a hair space between the
--- letters of each word. For short capitals (buttons, tabs).
+-- letters of each word, and the gap between words widened to match (one plain space is lost among the
+-- spaced letters: MOST WINS read as MOSTWINS). For short capitals (buttons, tabs).
 function GlyphText.spaced(text: string): string
 	local out = string.gsub(text, "([^ \n\128-\191][\128-\191]*)", "%1" .. HAIR_SPACE)
 	out = string.gsub(out, HAIR_SPACE .. "([ \n])", "%1")
 	out = string.gsub(out, HAIR_SPACE .. "$", "")
+	out = string.gsub(out, " ", "  ")
 	return out
 end
 

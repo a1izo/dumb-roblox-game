@@ -15,8 +15,22 @@ local Toasts = {}
 local MAX_TOASTS = 4
 local LIFETIME = 6
 
+local GAP = 8 -- px between a panel holding the top right corner and the first toast
+
 local container: Frame? = nil
 local order = 0
+local below = 0 -- how far down (design px) a panel in the top right corner reaches (0: none)
+
+-- Where the stack starts: its zone, or under the panel in the top right corner when that reaches lower.
+local function place()
+	local holder = container
+	if not holder then
+		return
+	end
+	local base = if Kit.Layout.isPhone() then UDim2.new(1, -12, 0, 64) else Kit.Layout.ZONES.right.position
+	local y = if below > 0 then math.max(base.Y.Offset, below + GAP) else base.Y.Offset
+	holder.Position = UDim2.new(base.X.Scale, base.X.Offset, base.Y.Scale, y)
+end
 
 local function trim(holder: Frame)
 	local current = {}
@@ -65,6 +79,13 @@ function Toasts.show(text: string, kind: string?)
 	end)
 end
 
+-- A panel holds the top right corner down to `bottom` design px (the Trial's step; 0 when it is gone): the
+-- toasts start under it instead of over it.
+function Toasts.keepBelow(bottom: number)
+	below = bottom
+	place()
+end
+
 function Toasts.init()
 	local holder = Kit.frame({
 		Name = "Toasts",
@@ -74,9 +95,7 @@ function Toasts.init()
 	Kit.Layout.place(holder, "right")
 	Kit.list(holder, Kit.space.s, false, Enum.HorizontalAlignment.Right)
 	container = holder
-	Kit.Layout.watch(function(class)
-		holder.Position = if class == "phone" then UDim2.new(1, -12, 0, 64) else Kit.Layout.ZONES.right.position
-	end)
+	Kit.Layout.watch(place)
 	Net.event("Notify").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" and type(payload.text) == "string" then
 			Toasts.show(payload.text, payload.kind)

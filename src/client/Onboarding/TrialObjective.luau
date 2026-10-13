@@ -13,6 +13,7 @@ local Kit = require(UI.Kit)
 local LobbyChrome = require(UI.Core.LobbyChrome)
 local Motion = require(UI.Core.Motion)
 local Screens = require(UI.Screens)
+local Toasts = require(UI.Toasts)
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -26,6 +27,7 @@ local AMBER = Color3.fromRGB(255, 166, 72)
 
 local holder: CanvasGroup
 local page: Frame
+local top: Frame
 local counterLabel: TextLabel
 local tick: ImageLabel
 local lineText: any
@@ -48,8 +50,18 @@ local function width(): number
 	return if Kit.Layout.isPhone() then PHONE_WIDTH else WIDTH
 end
 
+-- How far down the panel reaches, for the toasts (they start under it).
+local function tellToasts()
+	local bottom = 0
+	if holder.Visible then
+		bottom = holder.Position.Y.Offset + math.ceil(holder.AbsoluteSize.Y / Kit.Base.scaleOf(holder))
+	end
+	Toasts.keepBelow(bottom)
+end
+
 local function apply()
 	holder.Visible = wanted and allowed and not LobbyChrome.isHidden()
+	tellToasts()
 end
 
 -- Shows the panel with new contents: it slides in from the right.
@@ -72,13 +84,15 @@ local function reset()
 	actions.Visible = false
 	closeButton.Visible = false
 	counterLabel.Visible = true
+	top.Visible = true
 end
 
 -- The offer: begin now, or skip it (it is not offered again; the Academy's gate can still start it).
 function TrialObjective.offer(title: string, line: string, begin: () -> (), skip: () -> ())
 	reset()
 	onBegin, onSkip = begin, skip
-	counterLabel.Visible = false
+	-- No step count and no X yet: the top row would be a lone dot.
+	top.Visible = false
 	lineText:set(title)
 	howLabel.Text = line
 	howLabel.Visible = true
@@ -133,7 +147,7 @@ end
 function TrialObjective.finish(line: string, why: string)
 	reset()
 	local mine = token
-	counterLabel.Visible = false
+	top.Visible = false
 	tick.Visible = true
 	lineText:set(line)
 	whyLabel.Text = why
@@ -186,7 +200,7 @@ function TrialObjective.init()
 	})
 	Kit.list(content, T.space.xs)
 	-- The top row: the wisp's dot and "Step 2 of 5"; the X to stop on the right.
-	local top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 22), LayoutOrder = 1, Parent = content })
+	top = Kit.frame({ Name = "Top", Size = UDim2.new(1, 0, 0, 22), LayoutOrder = 1, Parent = content })
 	local dot = Kit.Base.make("Frame", {
 		Name = "Wisp",
 		BackgroundColor3 = AMBER,
@@ -307,6 +321,7 @@ function TrialObjective.init()
 		lineText.props.maxWidth = w - 2 * T.space.m - 30
 		lineText:refresh()
 	end)
+	holder:GetPropertyChangedSignal("AbsoluteSize"):Connect(tellToasts)
 	LobbyChrome.Changed:Connect(apply)
 end
 

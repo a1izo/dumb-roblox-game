@@ -57,7 +57,9 @@ local BEGIN_REACH = 7 -- walking this close to the waiting wisp is a yes
 -- "idle", "offer" (the panel and the wisp wait for a yes) or "run".
 local state = "idle"
 local done: { [string]: boolean } = {}
-local early: { [string]: boolean } = {} -- drills finished before their step came
+-- Steps done before their turn (a drill finished ahead, or the next step done while the last one's "why"
+-- still shows), by step id: each counts as soon as it comes up.
+local early: { [string]: boolean } = {}
 local between = false -- a step was just done: its "why" is showing
 local offeredThisSession = false
 local cardOpenSince: number? = nil
@@ -232,7 +234,12 @@ end
 
 local function completeStep(id: string)
 	local step = current()
-	if between or not step or step.id ~= id then
+	if not step or step.id ~= id then
+		return
+	end
+	if between then
+		-- Done while the last step's "why" still shows: it counts the moment it comes up.
+		early[id] = true
 		return
 	end
 	done[id] = true
@@ -275,7 +282,7 @@ function showStep()
 	end
 	-- Already done ahead of its turn: it counts now.
 	local lobby = ClientState.lobby
-	if (step.drill and early[step.drill]) or (step.id == "ready" and lobby and lobby.ready == true) then
+	if early[step.id] or (step.id == "ready" and lobby and lobby.ready == true) then
 		task.delay(0.8, function()
 			completeStep(step.id)
 		end)
@@ -445,11 +452,11 @@ function TrialController.init()
 			end
 		end
 		local now = current()
-		if now and now.id == step.id and not between then
+		if now and now.id == step.id then
 			completeStep(step.id)
 		else
 			-- Not its turn yet: it counts when its step comes.
-			early[drill] = true
+			early[step.id] = true
 		end
 	end)
 	ClientState.LobbyChanged:Connect(function()
