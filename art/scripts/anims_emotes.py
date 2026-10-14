@@ -566,3 +566,232 @@ for i in range(4):
               rHip=J((90, 0, 14)), lHip=J((90, 0, -18)))
 soft(twirl, head=1.2, arms=4.0)
 twirl.build()
+
+
+# Emotes with props ---------------------------------------------------------------------------------------
+# What each holds or sets down, and when, is in src/shared/Anim/EmoteProps.luau; the timings here and there
+# go together.
+
+import posekit  # noqa: E402
+from motion import SOLE_X  # noqa: E402
+
+
+def crouch_legs(offset, root, stance, tilt):
+    """The legs of a crouch on the heels (plant() with a tilt), worked out once, so a crouch can be done
+    somewhere else than on the floor: on a chair's seat."""
+    legs = {}
+    for key, side in (("rHip", 1), ("lHip", -1)):
+        angles, slide = posekit.planted_slide(side, (side * (SOLE_X + stance), 0.0, 0.0), root, offset, pitch=tilt)
+        legs[key] = J(angles, slide)
+    return legs
+
+
+# Pre-Dawn Bonk: stiff as a post, the club brought down three times with a stamp each, then once more
+# from high over the head, hard. One shot.
+bonk = Motion("preDawnBonk", 3.6, note="Stiff, the club brought down three times with a stamp each, then once from on high.")
+bonk.key(0.0, **REST)
+bonk.key(0.3, root=(2, 0, 0), neck=(4, 0, 0), rShoulder=J((60, 0, 10), (0, 0.05, -0.1)), lShoulder=J((4, 0, -6)))
+stamp = J((26, 0, 4), (0, 0.28, -0.06))
+for t in (0.75, 1.25, 1.75):
+    bonk.key(t - 0.2, "out", offset=(0, 0.04, 0), root=(4, 0, 0), neck=(6, 0, 0), rShoulder=J((150, 0, 14), (0, 0.2, 0)),
+             lShoulder=J((10, 0, -14)))
+    bonk.key(t, "snap", offset=(0, -0.1, 0), root=(-8, 0, 0), neck=(-8, 0, 0), rShoulder=J((62, 0, 6), (0, 0.05, -0.14)),
+             lShoulder=J((16, 0, -18)))
+    raise_leg(bonk, "rHip", t - 0.24, t - 0.12, t - 0.1, t, stamp)
+bonk.key(2.3, "out", offset=(0, 0.06, 0.04), root=(12, 0, 0), neck=(14, 0, 0), rShoulder=J((178, 0, 10), (0, 0.26, 0.06)),
+         lShoulder=J((30, 0, -30)))
+bonk.key(2.55, "snap", offset=(0, -0.2, -0.05), root=(-16, 0, 0), neck=(-14, 0, 0), rShoulder=J((48, 0, 4), (0, 0.02, -0.16)),
+         lShoulder=J((26, 0, -24)))
+bonk.key(3.05, offset=(0, -0.16, 0), root=(-12, 0, 0), neck=(-10, 0, 0), rShoulder=J((50, 0, 4), (0, 0.02, -0.16)),
+         lShoulder=J((22, 0, -20)))
+bonk.key(3.6, **REST)
+soft(bonk, arms=4.0).plant(stance=0.18)
+bonk.build()
+
+# Blindfold Lift: two fingers up to the blindfold over the eyes, pushed up onto the brow, the chin lifting
+# to a stare (the face), the hand coming down to a sign before the chest. One shot.
+blind = Motion("blindfoldLift", 3.6, note="Fingers to the blindfold, pushed up onto the brow, a stare, a hand sign.")
+blind.key(0.0, root=(0, 0, 0), neck=(-4, 0, 0), rShoulder=J((0, 0, 3)), lShoulder=J((0, 0, -3)))
+blind.key(0.55, root=(0, 0, 0), neck=(-4, 0, 0), rShoulder=J((150, 0, -24), (-0.18, 0.3, -0.06)), lShoulder=J((2, 0, -4)))
+blind.key(0.95, root=(0, 0, 0), neck=(-3, 0, 0), rShoulder=J((151, 0, -24), (-0.18, 0.3, -0.06)), lShoulder=J((2, 0, -4)))
+blind.key(1.35, "out", root=(2, 0, 0), neck=(7, 0, 0), rShoulder=J((168, 0, -18), (-0.14, 0.36, 0.02)), lShoulder=J((2, 0, -4)))
+blind.key(1.9, root=(2, 0, 0), neck=(6, 0, 0), rShoulder=J((80, 0, -30), (-0.2, 0.1, -0.18)), lShoulder=J((2, 0, -4)))
+blind.key(3.0, root=(2, 0, 0), neck=(6, 0, 0), rShoulder=J((81, 0, -30), (-0.2, 0.1, -0.18)), lShoulder=J((2, 0, -4)))
+blind.key(3.6, **REST)
+soft(blind, head=2.0).plant(stance=0.08)
+blind.build()
+
+# Chair Perch: crouched on the seat of a chair (the game puts one under the body), knees drawn up, a thumb
+# at the lip, the other hand on a knee, rocking a little. A loop.
+SEAT = 1.75
+perch = Motion("chairPerch", 4.0, loop=True, note="Crouched on a chair's seat, knees up, a thumb at the lip, rocking a little.")
+perch_off, perch_root = (0, -1.35 + SEAT, 0.1), (-10, 0, 0)
+for t, b in ((0.0, 0.0), (2.0, 1.0)):
+    perch.key(t, offset=(0, perch_off[1] + 0.03 * b, perch_off[2]), root=(-10 + 2 * b, 0, -2 + 4 * b), neck=(0, 6 - 12 * b, 2 * b),
+              rShoulder=r_face(116, -34), lShoulder=J((62, 0, 6), (0.0, 0.06, -0.36)))
+# (the legs of the same crouch on the floor: relative to the body they are the same up on the seat)
+for key, value in crouch_legs((0, -1.35, perch_off[2]), perch_root, 0.14, 34).items():
+    lift(perch, key, ((0.0, 1, value), (4.0, 1, value)))
+soft(perch, head=1.4, arms=1.4)
+perch.build()
+
+# Two-Finger Grip: hunched, a phone dangled from two fingertips at eye level and looked at, the other hand
+# in a pocket. A loop (also a stance).
+grip = Motion("twoFingerGrip", 3.0, loop=True, note="Hunched, a phone dangled from two fingertips at eye level.")
+for t, b in ((0.0, 0.0), (1.5, 1.0)):
+    grip.key(t, offset=(0, -0.08, 0), root=(-10, 0, 0), neck=(-2, 6 + 2 * b, 4),
+             rShoulder=J((118 + b, 0, -16), (-0.08, 0.12, -0.12)), lShoulder=J((8, 0, 4), (0.08, 0.1, -0.02)))
+soft(grip, head=1.5, arms=1.5).plant(stance=0.16)
+grip.build()
+
+# Sugar Tower: crouched on the heels, sugar cubes set one on another into a tower in front, the last one
+# slowly; then a look at it. One shot.
+sugar = Motion("sugarTower", 5.6, note="Crouched, sugar cubes stacked into a tower one by one, the last one slowly.")
+SUGAR = (1.0, 1.8, 2.6, 3.4, 4.4)
+sugar.key(0.0, offset=(0, -1.35, 0), root=(-14, 0, 0), neck=(-20, 0, 0), rShoulder=J((40, 0, 30), (0, 0, -0.2)),
+          lShoulder=J((62, 0, 6), (0.0, 0.06, -0.36)))
+for i, t in enumerate(SUGAR):
+    reach = 26 + 11 * i
+    sugar.key(t - 0.45, offset=(0, -1.35, 0), root=(-14, 0, 0), neck=(-20, 0, 0), rShoulder=J((40, 0, 34), (0, 0, -0.2)),
+              lShoulder=J((62, 0, 6), (0.0, 0.06, -0.36)))
+    sugar.key(t, "sine" if i == 4 else "smooth", offset=(0, -1.35, 0), root=(-16, 0, 0), neck=(-22 + 3 * i, 0, 0),
+              rShoulder=J((reach, 0, -6), (-0.12, 0.02, -0.3)), lShoulder=J((62, 0, 6), (0.0, 0.06, -0.36)))
+sugar.key(4.9, offset=(0, -1.35, 0), root=(-8, 0, 0), neck=(-6, 0, 0), rShoulder=J((60, 0, -6), (0, 0.06, -0.36)),
+          lShoulder=J((62, 0, 6), (0.0, 0.06, -0.36)))
+sugar.key(5.6, offset=(0, -1.35, 0), root=(-8, 0, 0), neck=(-6, 4, 0), rShoulder=J((60, 0, -6), (0, 0.06, -0.36)),
+          lShoulder=J((62, 0, 6), (0.0, 0.06, -0.36)))
+soft(sugar, head=1.6, arms=2.4).plant(stance=0.14, tilt=(34, 34))
+sugar.build()
+
+
+def scribble(m, t0, t1, rate=0.1, frantic=1.0):
+    """Writing fast in the notebook held at the chest by the left hand, the pen racing along the lines."""
+    n = int(round((t1 - t0) / rate))
+    for i in range(n + 1):
+        t = t0 + i * rate
+        along = (i % 5) / 4
+        stroke = 1 if i % 2 == 0 else -1
+        m.key(t, root=(-7, 3, 0), neck=(-30 + 3 * stroke * frantic, 4 - 6 * along, 0),
+              lShoulder=J((54, 0, 30), (0.28, 0.1, -0.22)),
+              rShoulder=J((50 + 3 * stroke * frantic, -4 + 8 * along, -16 + 7 * along),
+                          (-0.18 + 0.13 * along, 0.06 + 0.02 * stroke * frantic, -0.24)))
+
+
+# Chip and Pen: writing in the notebook, then a chip taken from the side and lifted into the light, held,
+# and eaten in one decisive bite; a smug look. One shot.
+chip_pen = Motion("chipAndPen", 4.8, note="Writing, then a chip lifted into the light and eaten in one decisive bite.")
+chip_pen.key(0.0, **REST)
+scribble(chip_pen, 0.3, 1.9, rate=0.12)
+chip_pen.key(2.2, root=(-3, -4, 0), neck=(-8, -10, 0), lShoulder=J((54, 0, 30), (0.28, 0.1, -0.22)),
+             rShoulder=J((10, 0, 26), (0, 0, 0.05)))
+chip_pen.key(2.75, "out", root=(5, 0, 3), neck=(8, 0, 5), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)),
+             rShoulder=J((116, 0, 14), (0, 0.18, -0.12)))
+chip_pen.key(3.15, root=(6, 0, 3), neck=(10, 0, 5), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)),
+             rShoulder=J((120, 0, 14), (0, 0.2, -0.12)))
+chip_pen.key(3.3, "snap", root=(-5, 0, 0), neck=(-6, 0, 0), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)), rShoulder=r_face(130, -30))
+chip_pen.key(3.75, root=(-4, 0, 0), neck=(-2, 0, 0), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)), rShoulder=J((40, 0, -10)))
+chip_pen.key(4.2, root=(-2, 6, 0), neck=(-4, 12, 6), lShoulder=J((46, 0, 28), (0.26, 0.08, -0.2)), rShoulder=J((16, 0, 6)))
+chip_pen.key(4.8, **REST)
+chip_pen.follow("neck", 4.0, 0.7).follow("rShoulder", 6.0, 0.6).follow("lShoulder", 2.0, 0.8).plant(stance=0.04)
+chip_pen.build()
+
+# Furious Scribbling: writing in a frenzy, the head bobbing with every stroke; one time in three it ends with
+# the whole line slashed out (furiousScribblingSlash, chosen by the server). One shot each.
+for name, slash in (("furiousScribbling", False), ("furiousScribblingSlash", True)):
+    fury = Motion(name, 4.4 if slash else 3.6, note="Writing in a frenzy" + (", then the line slashed out." if slash else "."))
+    fury.key(0.0, **REST)
+    scribble(fury, 0.25, 3.0, rate=0.08, frantic=2.2)
+    if slash:
+        fury.key(3.25, "out", root=(-2, -6, 0), neck=(-18, -6, 0), lShoulder=J((54, 0, 30), (0.28, 0.1, -0.22)),
+                 rShoulder=J((112, 0, 36), (0, 0.16, -0.16)))
+        fury.key(3.45, "snap", root=(-9, 8, 0), neck=(-30, 6, 0), lShoulder=J((54, 0, 30), (0.28, 0.1, -0.22)),
+                 rShoulder=J((46, 0, -40), (-0.22, 0.04, -0.24)))
+        fury.key(3.9, root=(-8, 8, 0), neck=(-26, 4, 0), lShoulder=J((54, 0, 30), (0.28, 0.1, -0.22)),
+                 rShoulder=J((44, 0, -40), (-0.22, 0.04, -0.24)))
+        fury.key(4.4, **REST)
+    else:
+        fury.key(3.6, **REST)
+    fury.follow("neck", 5.0, 0.6).follow("rShoulder", 7.0, 0.55).follow("lShoulder", 2.0, 0.8).plant(stance=0.04)
+    fury.build()
+
+# Apple Toss: an apple tossed up and caught, twice, the eyes following it, then held out to someone who is
+# not there. One shot.
+toss = Motion("appleToss", 3.6, note="An apple tossed up and caught twice, then held out to someone unseen.")
+toss.key(0.0, **REST)
+for up, back in ((0.5, 1.25), (1.55, 2.3)):
+    toss.key(up - 0.15, root=(-2, 0, 0), neck=(-6, 0, 0), rShoulder=J((42, 0, -8), (-0.05, 0.04, -0.12)), lShoulder=J((4, 0, -4)))
+    toss.key(up, "snap", root=(1, 0, 0), neck=(10, 0, 0), rShoulder=J((82, 0, -8), (-0.05, 0.08, -0.14)), lShoulder=J((4, 0, -4)))
+    toss.key((up + back) / 2, root=(2, 0, 0), neck=(24, 0, 0), rShoulder=J((70, 0, -8), (-0.05, 0.06, -0.14)), lShoulder=J((4, 0, -4)))
+    toss.key(back, "in", root=(-1, 0, 0), neck=(2, 0, 0), rShoulder=J((66, 0, -8), (-0.05, 0.06, -0.14)), lShoulder=J((4, 0, -4)))
+toss.key(2.85, "out", root=(0, 10, 0), neck=(2, 16, 0), rShoulder=J((88, 0, 8), (0, 0.06, -0.12)), lShoulder=J((4, 0, -4)))
+toss.key(3.2, root=(0, 10, 0), neck=(2, 16, 0), rShoulder=J((88, 0, 8), (0, 0.06, -0.12)), lShoulder=J((4, 0, -4)))
+toss.key(3.6, **REST)
+soft(toss, head=3.0, arms=3.6).plant(stance=0.06)
+toss.build()
+
+# Strawberry on Top: a plate of cake held up in one hand, the strawberry on top plucked off with care,
+# admired at eye level, eaten, savoured. One shot.
+straw = Motion("strawberryOnTop", 4.0, note="A plate of cake held up, the strawberry plucked off, admired, eaten.")
+plate = J((70, 0, 22), (0.2, 0.08, -0.22))
+straw.key(0.0, **REST)
+straw.key(0.4, root=(-2, 0, 0), neck=(-14, 0, 0), lShoulder=plate, rShoulder=J((12, 0, 6)))
+straw.key(0.8, root=(-4, 0, 0), neck=(-18, 0, 0), lShoulder=plate, rShoulder=J((72, 0, -30), (-0.25, 0.12, -0.25)))
+straw.key(1.0, "snap", root=(-3, 0, 0), neck=(-16, 0, 0), lShoulder=plate, rShoulder=J((80, 0, -28), (-0.24, 0.14, -0.24)))
+straw.key(1.55, root=(0, 0, 0), neck=(4, 0, 0), lShoulder=plate, rShoulder=J((118, 0, -12), (-0.1, 0.16, -0.16)))
+straw.key(2.35, root=(0, 0, 0), neck=(6, 0, 4), lShoulder=plate, rShoulder=J((119, 0, -10), (-0.1, 0.16, -0.16)))
+straw.key(2.75, "snap", root=(-3, 0, 0), neck=(-4, 0, 0), lShoulder=plate, rShoulder=r_face(126, -30))
+straw.key(3.1, root=(-2, 0, 0), neck=(2, 0, 0), lShoulder=plate, rShoulder=J((30, 0, -6)))
+straw.key(3.5, root=(0, 0, 0), neck=(6, 0, 6), lShoulder=plate, rShoulder=J((14, 0, 4)))
+straw.key(4.0, **REST)
+soft(straw, head=2.4, arms=3.0).plant(stance=0.06)
+straw.build()
+
+# Dice Tower: sitting on the floor, legs out, a tower of dice built between them one at a time; then
+# leaning back on a hand to look at it. One shot.
+dice = Motion("diceTower", 6.0, note="Sitting on the floor, a tower of dice built between the legs, then admired.")
+DICE = (0.9, 1.6, 2.3, 3.0, 3.7, 4.6)
+sit_legs = dict(rHip=J((90, 0, 14)), lHip=J((90, 0, -18)))
+dice.key(0.0, offset=(0, 0, 0.3), floor=True, root=(-12, 0, 0), neck=(-14, 0, 0), rShoulder=J((30, 0, 20)),
+         lShoulder=J((-16, 0, -26), (0, -0.1, 0.1)), **sit_legs)
+for i, t in enumerate(DICE):
+    reach = 38 + 12 * i
+    dice.key(t - 0.4, offset=(0, 0, 0.3), floor=True, root=(-12, 0, 0), neck=(-14 + 2 * i, 0, 0), rShoulder=J((34, 0, 30)),
+             lShoulder=J((-16, 0, -26), (0, -0.1, 0.1)), **sit_legs)
+    dice.key(t, offset=(0, 0, 0.3), floor=True, root=(-14, 0, 0), neck=(-16 + 3 * i, 0, 0),
+             rShoulder=J((reach, 0, -4), (-0.1, 0.04, -0.28)), lShoulder=J((-16, 0, -26), (0, -0.1, 0.1)), **sit_legs)
+dice.key(5.2, "sine", offset=(0, 0, 0.3), floor=True, root=(-2, 6, 0), neck=(0, 8, 6), rShoulder=J((20, 0, 10)),
+         lShoulder=J((-24, 0, -30), (0, -0.14, 0.14)), **sit_legs)
+dice.key(6.0, offset=(0, 0, 0.3), floor=True, root=(-2, 6, 0), neck=(0, 10, 8), rShoulder=J((20, 0, 10)),
+         lShoulder=J((-24, 0, -30), (0, -0.14, 0.14)), **sit_legs)
+soft(dice, head=1.6, arms=2.6)
+dice.build()
+
+# Chocolate Snap: a bar of chocolate bitten with a hard jerk of the head, chewed with attitude, bitten
+# again. One shot.
+choc = Motion("chocolateSnap", 3.2, note="A chocolate bar bitten with a hard jerk of the head, chewed, bitten again.")
+choc.key(0.0, **REST)
+for bite, away in ((0.7, 0.9), (1.9, 2.1)):
+    choc.key(bite - 0.3, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=r_face(124, -30), lShoulder=J((10, 0, -10)))
+    choc.key(bite, "snap", root=(-3, -8, 0), neck=(-6, -24, 10), rShoulder=r_face(126, -30), lShoulder=J((10, 0, -10)))
+    choc.key(away, "snap", root=(-2, -6, 0), neck=(-4, -16, 6), rShoulder=J((96, 0, -6), (-0.05, 0.08, -0.12)),
+             lShoulder=J((10, 0, -10)))
+    for k, nod in enumerate((4, -2, 4, -2)):
+        choc.key(away + 0.15 + 0.15 * k, root=(-2, -4, 0), neck=(-4 + nod, -10, 4), rShoulder=J((92, 0, -6), (-0.05, 0.08, -0.12)),
+                 lShoulder=J((10, 0, -10)))
+choc.key(3.2, **REST)
+soft(choc, head=3.0, arms=4.0).plant(stance=0.08)
+choc.build()
+
+# Forty Seconds: the left wrist brought up and the watch on it read, the head counting the seconds off
+# with small nods, then snapping up to stare (the face) as the time runs out. One shot.
+watch_ = Motion("fortySeconds", 4.6, note="The watch on the wrist read, the seconds counted off, then a snap up to stare.")
+wrist = J((62, 0, 42), (0.25, 0.16, -0.25))
+watch_.key(0.0, **REST)
+watch_.key(0.5, root=(-3, -6, 0), neck=(-24, -8, 0), lShoulder=wrist, rShoulder=J((4, 0, 4)))
+for k in range(7):
+    t = 0.85 + 0.38 * k
+    watch_.key(t, root=(-3, -6, 0), neck=(-26 if k % 2 == 0 else -21, -8, 0), lShoulder=wrist, rShoulder=J((4, 0, 4)))
+watch_.key(3.45, "snap", root=(3, 0, 0), neck=(8, 0, 0), lShoulder=J((40, 0, 30), (0.2, 0.1, -0.2)), rShoulder=J((6, 0, 6)))
+watch_.key(4.6, root=(3, 0, 0), neck=(8, 0, 0), lShoulder=J((38, 0, 28), (0.2, 0.1, -0.2)), rShoulder=J((6, 0, 6)))
+soft(watch_, head=3.0, arms=2.4).plant(stance=0.06)
+watch_.build()

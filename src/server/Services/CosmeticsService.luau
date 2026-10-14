@@ -102,6 +102,11 @@ local function catchUp(player: Player)
 			end
 		end
 	end
+	-- (all seven grey apples found before Apple Toss came with them)
+	if data.titles.realmwalker and not data.owned.emote_apple_toss then
+		data.owned.emote_apple_toss = true
+		changed = true
+	end
 	if #CosmeticsService.grantSets(player) > 0 then
 		changed = true
 	end

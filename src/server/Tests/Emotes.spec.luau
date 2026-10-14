@@ -5,7 +5,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
+local Anim = Shared:WaitForChild("Anim")
+local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
+local EmoteProps = require(Anim:WaitForChild("EmoteProps"))
+local ModelCatalog = require(Shared:WaitForChild("ModelCatalog"))
 local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
@@ -45,6 +49,24 @@ return function(t)
 		it("keeps to the lobby exactly the emotes that look like a case's signals", function()
 			for _, item in ipairs(Cosmetics.ofKind("emote")) do
 				expect(item.lobbyOnly == true).to.equal(SIGNALS[item.id] ~= nil)
+			end
+		end)
+		it("gives every other ending a clip, found by its item", function()
+			for _, item in ipairs(Cosmetics.ofKind("emote")) do
+				if item.alt ~= nil then
+					expect(ClipPlayer.exists(item.alt)).to.equal(true)
+					expect(Cosmetics.emote(item.alt)).to.equal(item)
+					expect(type(item.altChance)).to.equal("number")
+				end
+			end
+		end)
+		it("holds only props that exist, in clips that exist", function()
+			for _, clip in ipairs(EmoteProps.clips()) do
+				expect(ClipPlayer.exists(clip)).to.equal(true)
+				for _, prop in ipairs(EmoteProps.of(clip)) do
+					expect((ModelCatalog :: any)[prop.model] ~= nil).to.equal(true)
+					expect(prop.size > 0).to.equal(true)
+				end
 			end
 		end)
 		it("has a sound slot for every emote and only known faces", function()

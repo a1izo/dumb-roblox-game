@@ -16,8 +16,8 @@ Mastery.UNLOCKS = {
 	Kira = { [5] = "title_m_hand", [7] = "writing_knife", [8] = "emote_just_as_planned", [10] = "tie_m_hand" }, -- terms:ok (internal role id)
 	Follower = { [5] = "title_m_cultist", [8] = "emote_reapers_cackle", [10] = "tie_m_cultist" },
 	L = { [5] = "title_m_zero", [7] = "verdict_sugar", [8] = "emote_its_you", [10] = "tie_m_zero" },
-	Watari = { [5] = "title_m_butler", [10] = "tie_m_butler" }, -- terms:ok (internal role id)
-	TaskForce = { [5] = "title_m_agent", [10] = "tie_m_agent" },
+	Watari = { [5] = "title_m_butler", [8] = "emote_strawberry_on_top", [10] = "tie_m_butler" }, -- terms:ok (internal role id)
+	TaskForce = { [5] = "title_m_agent", [8] = "emote_forty_seconds", [10] = "tie_m_agent" },
 } :: { [string]: { [number]: string } }
 
 function Mastery.level(xp: number): number

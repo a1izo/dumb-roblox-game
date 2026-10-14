@@ -65,6 +65,19 @@ EmoteMedia.SOUNDS = {
 	reapersEyes = "",
 	footScratch = "",
 	hairTwirl = "",
+	-- The emote pack: with props (Furious Scribbling's slashed ending plays its sound too)
+	preDawnBonk = "",
+	blindfoldLift = "",
+	chairPerch = "",
+	twoFingerGrip = "",
+	sugarTower = "",
+	chipAndPen = "",
+	furiousScribbling = "",
+	appleToss = "",
+	strawberryOnTop = "",
+	diceTower = "",
+	chocolateSnap = "",
+	fortySeconds = "",
 } :: { [string]: string }
 
 -- [expression] = decal asset id (a face drawn in art/textures/faces, uploaded as a Decal)

@@ -64,7 +64,13 @@ local function onEmote(player: Player, emoteId)
 	if player.Character and player.Character:GetAttribute("Away") then
 		return
 	end
-	local payload = { userId = player.UserId, emote = emote.id }
+	-- Now and then an emote plays its other ending (Furious Scribbling's slash), the same on every screen.
+	local clip = emote.id
+	local item = if emote.item then Cosmetics.byId(emote.item) else nil
+	if item and type(item.alt) == "string" and math.random() < (tonumber(item.altChance) or 0.5) then
+		clip = item.alt
+	end
+	local payload = { userId = player.UserId, emote = clip }
 	if isSpecter(player) then
 		for _, other in ipairs(Players:GetPlayers()) do
 			if isSpecter(other) then
