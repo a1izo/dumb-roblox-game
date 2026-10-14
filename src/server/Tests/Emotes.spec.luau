@@ -12,6 +12,7 @@ local EmoteProps = require(Anim:WaitForChild("EmoteProps"))
 local ModelCatalog = require(Shared:WaitForChild("ModelCatalog"))
 local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
+local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 -- The emotes that look like one of a case's signals, and which: lobby-only, and no others.
 local SIGNALS = {
@@ -159,6 +160,44 @@ return function(t)
 			expect(EmoteWheel.owns({ owned = {}, passes = { "emotes" } }, groove)).to.equal(true)
 			expect(EmoteWheel.owns({ owned = {}, passes = { "emotes" } }, coin)).to.equal(false)
 			expect(EmoteWheel.owns({ owned = { "emote_coin" }, passes = {} }, coin)).to.equal(true)
+		end)
+	end)
+
+	describe("Win scenes and the shop window", function()
+		it("lets any emote be a win scene but strolls, duos and the case's signals", function()
+			for _, item in ipairs(Cosmetics.ofKind("emote")) do
+				local ok = not item.stroll and not item.duo and not item.lobbyOnly
+				expect(Cosmetics.winSceneOk(item)).to.equal(ok)
+			end
+			expect(Cosmetics.winSceneOk(Cosmetics.byId("emote_office_party"))).to.equal(true)
+			expect(Cosmetics.winSceneOk(Cosmetics.byId("emote_griddy"))).to.equal(false)
+			expect(Cosmetics.winSceneOk(Cosmetics.byId("emote_low_battery"))).to.equal(false)
+			expect(Cosmetics.winSceneOk(Cosmetics.byId("hat_fedora"))).to.equal(false)
+			expect(Cosmetics.winSceneOk(nil)).to.equal(false)
+		end)
+		it("shows one emote a day in the window, the same for everyone, one body can play", function()
+			local shown = {}
+			for day = 20000, 20040 do
+				local id = ShopRotation.windowFor(day) :: string
+				expect(ShopRotation.windowFor(day)).to.equal(id)
+				local item = Cosmetics.byId(id) :: any
+				expect(item ~= nil and item.kind == "emote" and item.price ~= nil and not item.duo).to.equal(true)
+				expect(ClipPlayer.exists(item.emote)).to.equal(true)
+				-- (an emote dealt in Today's hand is the one shown)
+				for _, card in ipairs(ShopRotation.hand(day)) do
+					local inHand = Cosmetics.byId(card) :: any
+					if inHand.kind == "emote" and not inHand.duo then
+						expect(id).to.equal(card)
+						break
+					end
+				end
+				shown[id] = true
+			end
+			local count = 0
+			for _ in pairs(shown) do
+				count += 1
+			end
+			expect(count > 5).to.equal(true)
 		end)
 	end)
 end

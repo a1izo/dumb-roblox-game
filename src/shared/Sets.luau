@@ -1,7 +1,8 @@
 --!strict
 -- Matching sets in the shop (the Sets suit): own every piece of one and its title is yours, with a
 -- "Set complete" on screen. Pieces are cosmetic ids (Shared/Cosmetics); a set's title is a title item
--- whose source is "set".
+-- whose source is "set". The last five are emote sets (a few of their pieces are only sold on the days
+-- they are in Today's hand).
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
@@ -39,6 +40,66 @@ Sets.LIST = {
 		name = "Nine Lives",
 		pieces = { "death_ash", "death_strings", "death_crows", "death_stone" },
 		title = "title_set_ninelives",
+	},
+	{
+		id = "desk",
+		name = "Detective's Desk",
+		pieces = {
+			"emote_deducing",
+			"emote_chair_perch",
+			"emote_sugar_tower",
+			"emote_two_finger_grip",
+			"emote_foot_scratch",
+		},
+		title = "title_set_desk",
+	},
+	{
+		id = "successors",
+		name = "The Successors",
+		pieces = { "emote_hair_twirl", "emote_dice_tower", "emote_chocolate_snap" },
+		title = "title_set_successors",
+	},
+	{
+		id = "main",
+		name = "Main Character",
+		pieces = {
+			"emote_impossible_lean",
+			"emote_nah_id_win",
+			"emote_blindfold_lift",
+			"emote_menacing_pose",
+			"emote_the_long_climb",
+		},
+		title = "title_set_main",
+	},
+	{
+		id = "online",
+		name = "Terminally Online",
+		-- (emote_sus_lean is Animatronic Welcome now)
+		pieces = {
+			"emote_pre_dawn_bonk",
+			"emote_mushroom_stroll",
+			"emote_rat_dance",
+			"emote_jawline_check",
+			"emote_the_eyebrow",
+			"emote_take_the_l",
+			"emote_sus_lean",
+		},
+		title = "title_set_online",
+	},
+	{
+		id = "floor",
+		name = "Floor Filler",
+		-- (emote_floss is The Smiling Lord now, emote_jumpstyle Excuse Me, Sir)
+		pieces = {
+			"emote_floss",
+			"emote_the_classic",
+			"emote_bounce_pump",
+			"emote_griddy",
+			"emote_jumpstyle",
+			"emote_puppet_pop",
+			"emote_office_party",
+		},
+		title = "title_set_floor",
 	},
 } :: { Set }
 

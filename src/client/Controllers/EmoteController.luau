@@ -82,6 +82,7 @@ local function build(spec: EmoteProps.Prop): Model
 	holder.PrimaryPart = part
 	return holder
 end
+EmoteController.propModel = build
 
 -- Where a prop goes on a body: a part's middle, or for "floor" the floor under the root (an R6 root stands
 -- 3 studs up), turned the way the body faces.

@@ -3,7 +3,8 @@
 -- wherever they show), and the title tag over the head in the lobby (never inside a match, where it
 -- would give away who is behind an alias). Styles (writing, verdict, death) are never attributes:
 -- the services that play them read them here and send them in their cues (Shared/Cosmetics).
--- A complete matching set earns its title (Shared/Sets).
+-- A complete matching set earns its title (Shared/Sets), and owning so many emotes pays coins and a title
+-- once (Progression/Collection).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,9 +12,11 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
+local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 local Mastery = require(Shared:WaitForChild("Progression"):WaitForChild("Mastery"))
 local Sets = require(Shared:WaitForChild("Sets"))
 
+local Analytics = require(script.Parent.Analytics)
 local CharacterService = require(script.Parent.CharacterService)
 local DataService = require(script.Parent.DataService)
 local Match = require(script.Parent.Match)
@@ -86,6 +89,38 @@ function CosmeticsService.grantSets(player: Player): { Sets.Set }
 	return done
 end
 
+-- Pays the collection milestones now reached (coins and a title, once each). Returns them (a toast each).
+function CosmeticsService.grantMilestones(player: Player): { Collection.Milestone }
+	local data = DataService.get(player)
+	if not data then
+		return {}
+	end
+	local count = Collection.count(function(item: Cosmetics.Item): boolean
+		return CosmeticsService.owns(player, item)
+	end)
+	local due = Collection.due(count, function(id: string): boolean
+		local title = Cosmetics.byId(id)
+		return title ~= nil and CosmeticsService.owns(player, title)
+	end)
+	for _, milestone in ipairs(due) do
+		data.owned[milestone.title] = true
+		data.coins += milestone.coins
+		Analytics.coins(player, milestone.coins, data.coins, "Gameplay", milestone.title)
+		local title = Cosmetics.byId(milestone.title)
+		Match.notify(
+			player,
+			string.format(
+				"%d emotes: +%d coins and the title %s.",
+				milestone.count,
+				milestone.coins,
+				if title then title.name else milestone.title
+			),
+			"good"
+		)
+	end
+	return due
+end
+
 -- On arriving: what was earned before it existed (a mastery level's unlock, a set's title).
 local function catchUp(player: Player)
 	local data = DataService.get(player)
@@ -110,10 +145,23 @@ local function catchUp(player: Player)
 	if #CosmeticsService.grantSets(player) > 0 then
 		changed = true
 	end
+	if #CosmeticsService.grantMilestones(player) > 0 then
+		changed = true
+	end
 	if changed then
 		DataService.push(player)
 		DataService.saveSoon(player)
 	end
+end
+
+-- The clip a winner plays in "The end" (their win scene: an owned emote that can be one), or nil for the cheer.
+function CosmeticsService.winScene(player: Player): string?
+	local data = DataService.get(player)
+	local item = if data then Cosmetics.byId(data.winScene) else nil
+	if item and Cosmetics.winSceneOk(item) and CosmeticsService.owns(player, item) then
+		return item.emote
+	end
+	return nil
 end
 
 -- The title to show on the results screen, or nil.
@@ -223,6 +271,15 @@ end
 function CosmeticsService.init()
 	CharacterService.CharacterSpawned:Connect(function(player)
 		CosmeticsService.apply(player)
+		-- Back in the lobby after a case: what it earned (a mastery emote) may finish a set or a milestone.
+		if not Match.get(player) and DataService.get(player) then
+			local sets = CosmeticsService.grantSets(player)
+			local milestones = CosmeticsService.grantMilestones(player)
+			if #sets + #milestones > 0 then
+				DataService.push(player)
+				DataService.saveSoon(player)
+			end
+		end
 	end)
 	DataService.ProfileLoaded:Connect(function(player)
 		catchUp(player)

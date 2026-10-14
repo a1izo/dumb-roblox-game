@@ -578,9 +578,10 @@ function Controls.keycap(props: Props): Frame
 	return frame
 end
 
--- Bookmark tabs. Props: items ({ { id, label, icon? } }), selected (id), vertical, plus frame
--- properties. Returns the frame and select(id) (which also calls onSelect).
-function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string) -> ())
+-- Bookmark tabs. Props: items ({ { id, label, icon?, dot? } }), selected (id), vertical, plus frame
+-- properties. Returns the frame, select(id) (which also calls onSelect) and setDot(id, on) (the small
+-- dot after a tab's label: something new in it).
+function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string) -> (), (string, boolean) -> ())
 	local frame = Base.frame({
 		Name = props.Name or "Tabs",
 		Size = props.Size or UDim2.new(1, 0, 0, Tokens.touch),
@@ -591,7 +592,7 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 		Parent = props.Parent,
 	})
 	Base.list(frame, Tokens.space.xs, not props.vertical)
-	local buttons: { [string]: { button: TextButton, ribbon: any, label: TextLabel } } = {}
+	local buttons: { [string]: { button: TextButton, ribbon: any, label: TextLabel, dot: Frame } } = {}
 	local current: string? = nil
 	local function paint()
 		for id, parts in pairs(buttons) do
@@ -671,10 +672,22 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			ZIndex = button.ZIndex + 2,
 			Parent = row,
 		})
+		-- A small dot after the label: something new in there.
+		local dot = Base.make("Frame", {
+			Name = "Dot",
+			BackgroundColor3 = C.bone,
+			BorderSizePixel = 0,
+			Size = UDim2.fromOffset(6, 6),
+			Visible = item.dot == true,
+			LayoutOrder = 3,
+			ZIndex = button.ZIndex + 2,
+			Parent = row,
+		})
+		Base.round(dot)
 		if not props.vertical then
 			Base.fit(button, row, "X")
 		end
-		buttons[item.id] = { button = button, ribbon = ribbon, label = label }
+		buttons[item.id] = { button = button, ribbon = ribbon, label = label, dot = dot }
 		HoverGlitch.wire(button)
 		button.MouseEnter:Connect(function()
 			if current ~= item.id then
@@ -688,7 +701,14 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 	end
 	current = props.selected
 	paint()
-	return frame, choose
+	return frame,
+		choose,
+		function(id: string, on: boolean)
+			local parts = buttons[id]
+			if parts then
+				parts.dot.Visible = on
+			end
+		end
 end
 
 export type NameLine = {

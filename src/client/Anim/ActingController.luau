@@ -4,7 +4,8 @@
 --   death          : the collapse for the public cause of death; everyone else reacts
 --   arrest         : hands cuffed behind the back; everyone else reacts
 --   verdict        : the player voted out slumps and fades away; everyone else reacts
---   ending         : winners celebrate, losers hang their heads, the Hand laughs or kneels
+--   ending         : winners celebrate (or play their win scene, an emote they chose in the shop), losers
+--                    hang their heads, the Hand laughs or kneels (a win scene never replaces its laugh)
 -- Reactions and endings are picked from the cue and the user id (Presentation/Activities), so
 -- every screen shows the same thing and nothing depends on roles.
 --   station work   : a player working a case file (real or faked) types at the console
@@ -25,6 +26,7 @@ local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
 local DeathFx = require(script.Parent.Parent.Presentation.DeathFx)
 local PoseController = require(script.Parent.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
+local EmoteController = require(script.Parent.Parent.Controllers.EmoteController)
 
 local ActingController = {}
 
@@ -213,16 +215,36 @@ local function onHandoff(cue)
 	paper:Destroy()
 end
 
-local function onOutro(cue)
-	local data = cue.data
-	local winners: { [number]: boolean } = {}
-	if type(data.winners) == "table" then
-		for _, userId in ipairs(data.winners) do
-			winners[userId] = true
+-- What a body does in "The end" (cue data: winners, winner, handUserId, winScenes): its clip, and whether that
+-- is its win scene. The Hand laughs when it won and kneels when it lost; another winner plays their win
+-- scene, or else a cheer; the rest hang their heads. Picked from the cue and the user id, so every screen
+-- shows the same.
+function ActingController.endingPose(userId: number, data: { [string]: any }, cueId: number): (string, boolean)
+	local handId = tonumber(data.handUserId)
+	if userId == handId then
+		return if data.winner ~= "Team" then "laugh" else "slump", false
+	end
+	local won = type(data.winners) == "table" and table.find(data.winners, userId) ~= nil
+	if not won then
+		return Activities.pick(Activities.DEFEAT, cueId, userId), false
+	end
+	if type(data.winScenes) == "table" then
+		for _, scene in ipairs(data.winScenes) do
+			if
+				type(scene) == "table"
+				and tonumber(scene.userId) == userId
+				and type(scene.emote) == "string"
+				and PoseController.exists(scene.emote)
+			then
+				return scene.emote, true
+			end
 		end
 	end
-	local handId = tonumber(data.handUserId)
-	local handWon = data.winner ~= "Team"
+	return Activities.pick(Activities.VICTORY, cueId, userId), false
+end
+
+local function onOutro(cue)
+	local data = cue.data
 	local wait = cue.at - now()
 	if wait > 0 then
 		task.wait(wait)
@@ -231,19 +253,18 @@ local function onOutro(cue)
 	for _, entry in ipairs(ClientState.public.players) do
 		local character = characterOf(entry.userId)
 		if character and entry.alive then
-			local poseId
-			if entry.userId == handId then
-				poseId = if handWon then "laugh" else "slump"
-			elseif winners[entry.userId] then
-				poseId = Activities.pick(Activities.VICTORY, tonumber(cue.id) or 1, entry.userId)
-			else
-				poseId = Activities.pick(Activities.DEFEAT, tonumber(cue.id) or 1, entry.userId)
-			end
+			local poseId, scene = ActingController.endingPose(entry.userId, data, tonumber(cue.id) or 1)
 			PoseController.play(character, poseId, {
-				startAt = os.clock() - math.random() * 0.4,
+				startAt = os.clock() - (if scene then 0 else math.random() * 0.4),
 				fadeIn = 0.5,
 				duration = length,
 			})
+			if scene then
+				-- A win scene comes with its props, face and effect (no music: the ending has its own).
+				EmoteController.dress(character, poseId)
+				EmoteController.face(character, poseId)
+				EmoteController.effect(character, poseId)
+			end
 		end
 	end
 end

@@ -1,16 +1,24 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
 -- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Emotes, Titles, Sets, and Robux
--- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six,
--- dealt face down (the same six for everyone): each is turned over with a click, and stays turned that
--- day (ShopService "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances,
--- poses, with props, strolls, duo); Sets lays out each set (Shared/Sets) with how many of its pieces you
--- own, and the title it earns.
+-- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six
+-- and the day's deal (a card of the shop's own stock, a quarter off: Shared/ShopRotation), dealt face
+-- down (the same for everyone): each is turned over with a click, and stays turned that day (ShopService
+-- "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances, poses, with
+-- props, strolls, duo, with how many you own and the next collection milestone); Sets lays out each set
+-- (Shared/Sets) with how many of its pieces you own, and the title it earns.
+--
+-- Over a suit of kinds, a row to browse it (Shared/ShopBrowse): a search, what to show (all, not owned,
+-- can afford, wished) and an order (as dealt, cheapest, dearest, rarest, newest). A card new to the shop
+-- wears a "New" ribbon until you leave the suit it is in (ShopService "seen"), and a suit with new cards
+-- has a dot on its tab (Today's hand: while a card lies face down). A heart on a card not owned puts it on
+-- the wishlist (ShopService "wish"); arriving on a day one of them is in Today's hand, you are told.
 --
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
 -- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
 -- the emote wheel's first empty slot), "N more coins" when you are short, or wear / take off what you
 -- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel);
--- one that can be a stance also offers to be yours (stand still a while and you settle into it).
+-- under them, whether it is your stance (stand still a while and you settle into it; only some can be) and
+-- your win scene (what you play in "The end" when you win, instead of a cheer).
 -- On a phone the cards fill the window and Your look rises as a sheet from the bottom when a card is
 -- picked. Open in the lobby only.
 
@@ -24,7 +32,9 @@ local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 local Sets = require(Shared:WaitForChild("Sets"))
+local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
+local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
@@ -45,6 +55,8 @@ local ShopPanel = {}
 -- Layout (design px).
 local TOP = 40 -- the purse line
 local SUITS_HEIGHT = 48
+local BROWSE_HEIGHT = 40 -- the search, show and order row over a suit of kinds
+local CHOICE_WIDTH = 176 -- its two buttons
 local LOOK_WIDTH = 300
 local INFO_HEIGHT = 226 -- under Your look: the name, its line, the button, the stance button, a note
 local GAP = T.space.l
@@ -55,6 +67,11 @@ local noteLabel: TextLabel
 local suitScroll: ScrollingFrame
 local suitTabs: Frame?
 local chooseSuit: ((string) -> ())? = nil
+local setTabDot: ((string, boolean) -> ())? = nil
+local browseRow: Frame
+local showButton: TextButton
+local sortButton: TextButton
+local searchBox: TextBox
 local tableScroll: ScrollingFrame
 local lookPanel: Frame
 local look: YourLook.YourLook
@@ -71,6 +88,12 @@ local cards: { [string]: Card.Card } = {}
 local turnedHere: { [string]: boolean } = {} -- turned on this screen, before the profile says so
 local shownSuits = ""
 local firstButton: GuiObject? = nil
+local showing = "all" -- ShopBrowse.SHOW
+local sorting = "order" -- ShopBrowse.SORTS
+local searching = ""
+local newHere: { string } = {} -- the new cards dealt in this suit, seen once you leave it
+local arrange: () -> ()
+local price: (Cosmetics.Item) -> number?
 
 local function owns(profile, item): boolean
 	if item.source == "vip" then
@@ -146,6 +169,41 @@ local function suits(): { Cosmetics.Suit }
 	return list
 end
 
+-- New to the shop and not yet looked at.
+local function isNew(profile, item: Cosmetics.Item): boolean
+	return ShopBrowse.isNew(item, os.time()) and not (profile.shopSeen and profile.shopSeen[item.id])
+end
+
+-- Whether a suit has a card for the dot on its tab.
+local function suitHasNews(profile, suit: Cosmetics.Suit): boolean
+	if suit.id == "today" then
+		local day = ShopRotation.dayOf(os.time())
+		local turned = ShopRotation.turned(profile.shopTurned, day)
+		for _, id in ipairs(ShopRotation.hand(day)) do
+			if not table.find(turned, id) and not turnedHere[id] then
+				return true
+			end
+		end
+		return false
+	end
+	for _, kind in ipairs(suit.kinds or {}) do
+		for _, item in ipairs(Cosmetics.ofKind(kind)) do
+			if isNew(profile, item) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- The new cards dealt in the suit being left: their ribbons go.
+local function leaveSuit()
+	if #newHere > 0 then
+		ShopRequest:FireServer({ action = "seen", itemIds = newHere })
+		newHere = {}
+	end
+end
+
 -- What a card's chip says: its price, or where you stand with it.
 local function chipFor(profile, item: Cosmetics.Item): (string, boolean)
 	if owns(profile, item) and item.kind == "emote" then
@@ -159,7 +217,14 @@ local function chipFor(profile, item: Cosmetics.Item): (string, boolean)
 	elseif item.source == "rotation" and not ShopRotation.isFeatured(item.id, os.time()) then
 		return "Not today", false
 	end
-	return tostring(item.price), true
+	return tostring(ShopRotation.priceOf(item, os.time())), true
+end
+
+-- How many emotes the profile owns.
+local function emotesOwned(profile): number
+	return Collection.count(function(item: Cosmetics.Item): boolean
+		return owns(profile, item)
+	end)
 end
 
 -- Your look -------------------------------------------------------------------------------------------------
@@ -198,18 +263,28 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 	actionNote.Text = if at
 		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
 		else "Pick a number to put it on your emote wheel (Q)."
+	-- Its other uses, each a switch: your stance, your win scene.
+	local switches = {}
 	if item.stance then
-		local mine = profile.stance == item.id
-		stanceHolder.Visible = true
+		table.insert(switches, { label = "Stance", on = profile.stance == item.id, action = "stance" })
+	end
+	if Cosmetics.winSceneOk(item) then
+		table.insert(switches, { label = "Win scene", on = profile.winScene == item.id, action = "winScene" })
+	end
+	stanceHolder.Visible = #switches > 0
+	for index, switch in ipairs(switches) do
+		local gap = if #switches > 1 then T.space.s / 2 else 0
 		Kit.button({
-			text = if mine then "Your stance  ·  take it off" else "Make it your stance",
-			variant = if mine then "ghost" else "secondary",
+			Name = "Switch_" .. switch.action,
+			text = switch.label .. (if switch.on then "  ·  on" else "  ·  off"),
+			variant = if switch.on then "primary" else "secondary",
 			size = "s",
 			upper = false,
-			Size = UDim2.fromScale(1, 1),
+			Position = UDim2.new((index - 1) / #switches, if index > 1 then gap else 0, 0, 0),
+			Size = UDim2.new(1 / #switches, -gap, 1, 0),
 			Parent = stanceHolder,
 		}, function()
-			ShopRequest:FireServer({ action = "stance", itemId = item.id })
+			ShopRequest:FireServer({ action = switch.action, itemId = item.id })
 		end)
 	end
 end
@@ -255,19 +330,31 @@ local function showAction(profile, item: Cosmetics.Item?)
 	elseif item.source == "set" then
 		closed("Set title")
 		actionNote.Text = "Yours with every piece of its set."
+	elseif item.source == "collection" then
+		local milestone = Collection.ofTitle(item.id)
+		closed("Collection title")
+		actionNote.Text = if milestone
+			then string.format(
+				"Yours, with %d coins, once you own %d emotes (you have %d).",
+				milestone.coins,
+				milestone.count,
+				emotesOwned(profile)
+			)
+			else "Earned by collecting emotes."
 	elseif not item.price then
 		closed("Earned")
 		actionNote.Text = "Earned in play, never sold."
 	elseif item.source == "rotation" and not ShopRotation.isFeatured(item.id, os.time()) then
 		closed("Not today")
 		actionNote.Text = "Only sold on a day it is in Today's hand."
-	elseif profile.coins < item.price then
-		closed(string.format("%d more coins", item.price - profile.coins))
-		actionNote.Text = string.format("It costs %d coins.", item.price)
+	elseif profile.coins < (price(item) :: number) then
+		local cost = price(item) :: number
+		closed(string.format("%d more coins", cost - profile.coins))
+		actionNote.Text = string.format("It costs %d coins.", cost)
 	else
 		Kit.hold(
 			{
-				text = string.format("Buy  ·  %d", item.price),
+				text = string.format("Buy  ·  %d", price(item) :: number),
 				icon = "coin",
 				variant = "primary",
 				size = "m",
@@ -279,7 +366,13 @@ local function showAction(profile, item: Cosmetics.Item?)
 				ShopRequest:FireServer({ action = "buy", itemId = item.id })
 			end
 		)
-		actionNote.Text = "Hold to buy. You wear it at once."
+		actionNote.Text = if item.kind == "emote"
+			then "Hold to buy. It goes on your emote wheel."
+			else "Hold to buy. You wear it at once."
+	end
+	if price(item) ~= item.price and not owns(profile, item) then
+		actionNote.Text = string.format("The day's deal: a quarter off its %d coins. ", item.price :: number)
+			.. actionNote.Text
 	end
 end
 
@@ -333,14 +426,32 @@ local function section(title: string?, order: number): Frame
 	return grid
 end
 
+-- What an item costs now (the day's deal at its price).
+function price(item: Cosmetics.Item): number?
+	return ShopRotation.priceOf(item, os.time())
+end
+
 local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, faceDown: boolean)
 	local text, coin = chipFor(profile, item)
+	local fresh = isNew(profile, item)
+	-- (a card lying face down has not been seen yet)
+	if fresh and not faceDown and not table.find(newHere, item.id) then
+		table.insert(newHere, item.id)
+	end
 	local card = Card.new(item, {
 		Parent = grid,
 		LayoutOrder = order,
 		chip = text,
 		chipCoin = coin,
 		faceDown = faceDown,
+		isNew = fresh,
+		offer = if price(item) ~= item.price then "25% OFF" else nil,
+		wished = profile.wishlist ~= nil and profile.wishlist[item.id] == true,
+		onWish = if ShopBrowse.wishable(item) and not owns(profile, item)
+			then function(on: boolean)
+				ShopRequest:FireServer({ action = "wish", itemId = item.id, on = on })
+			end
+			else nil,
 		onPick = function()
 			ShopPanel.choose(item.id)
 		end,
@@ -473,13 +584,14 @@ local function buildSuits()
 	if suitTabs then
 		suitTabs:Destroy()
 	end
-	local tabs, choose = Kit.tabs({
+	local tabs, choose, dot = Kit.tabs({
 		items = items,
 		selected = currentSuit,
 		Size = UDim2.fromOffset(0, SUITS_HEIGHT),
 		Parent = suitScroll,
 	}, function(id: string)
 		if id ~= currentSuit then
+			leaveSuit()
 			currentSuit = id
 			pick(nil)
 			ShopPanel.rebuild()
@@ -488,6 +600,19 @@ local function buildSuits()
 	tabs.AutomaticSize = Enum.AutomaticSize.X
 	suitTabs = tabs
 	chooseSuit = choose
+	setTabDot = dot
+end
+
+-- The browse row's words, for what is chosen now.
+local function paintBrowse()
+	Kit.setText(showButton, "Show  ·  " .. ShopBrowse.nameOf(ShopBrowse.SHOW, showing), false)
+	Kit.setText(sortButton, "Order  ·  " .. ShopBrowse.nameOf(ShopBrowse.SORTS, sorting), false)
+end
+
+-- The table's top: under the suits, and under the browse row when it shows.
+local function tableTop(): number
+	local top = TOP + SUITS_HEIGHT + T.space.s
+	return if browseRow.Visible then top + BROWSE_HEIGHT + T.space.s else top
 end
 
 function ShopPanel.rebuild()
@@ -503,6 +628,17 @@ function ShopPanel.rebuild()
 		return
 	end
 	buildSuits()
+	if setTabDot then
+		for _, suit in ipairs(suits()) do
+			setTabDot(suit.id, suitHasNews(profile, suit))
+		end
+	end
+	local shown = Cosmetics.suit(currentSuit)
+	local browsing = shown ~= nil and shown.kinds ~= nil
+	if browseRow.Visible ~= browsing then
+		browseRow.Visible = browsing
+		arrange()
+	end
 	purseLabel.Text = string.format("%d coins", profile.coins)
 	noteLabel.Text = ""
 	local now = os.time()
@@ -511,7 +647,7 @@ function ShopPanel.rebuild()
 		local turned = ShopRotation.turned(profile.shopTurned, day)
 		local grid = section(nil, 1)
 		local faceDown = 0
-		for index, id in ipairs(ShopRotation.forDay(day)) do
+		for index, id in ipairs(ShopRotation.hand(day)) do
 			local item = Cosmetics.byId(id)
 			if item then
 				local down = not table.find(turned, id) and not turnedHere[id]
@@ -521,7 +657,7 @@ function ShopPanel.rebuild()
 				deal(profile, item, grid, index, down)
 			end
 		end
-		noteLabel.Text = (if faceDown > 0 then "Six cards, dealt today: turn them over.  ·  " else "")
+		noteLabel.Text = (if faceDown > 0 then "Six cards and a deal, dealt today: turn them over.  ·  " else "")
 			.. "A new hand in "
 			.. formatTime(ShopRotation.secondsLeft(now))
 	elseif currentSuit == "robux" then
@@ -565,8 +701,21 @@ function ShopPanel.rebuild()
 				end
 			end
 		end
+		local options: ShopBrowse.Options = {
+			show = showing,
+			sort = sorting,
+			search = searching,
+			coins = profile.coins,
+			now = now,
+			owns = function(item: Cosmetics.Item): boolean
+				return owns(profile, item)
+			end,
+			wished = function(item: Cosmetics.Item): boolean
+				return profile.wishlist ~= nil and profile.wishlist[item.id] == true
+			end,
+		}
 		for _, kind in ipairs((suit and suit.kinds) or {}) do
-			local items = Cosmetics.ofKind(kind)
+			local items = ShopBrowse.apply(Cosmetics.ofKind(kind), options)
 			if kind == "emote" then
 				-- Emotes by their sections.
 				for _, category in ipairs(Cosmetics.EMOTE_CATEGORIES) do
@@ -582,14 +731,43 @@ function ShopPanel.rebuild()
 				lay(Cosmetics.KIND_NAMES[kind] or kind, items)
 			end
 		end
+		if currentSuit == "emotes" then
+			local count = emotesOwned(profile)
+			local milestone = Collection.nextAfter(count)
+			local title = milestone and Cosmetics.byId(milestone.title)
+			noteLabel.Text = string.format("You own %d emotes", count)
+				.. (
+					if milestone and title
+						then string.format(
+							"  ·  %d more for %s and %d coins",
+							milestone.count - count,
+							title.name,
+							milestone.coins
+						)
+						else ""
+				)
+		end
+		if order == 0 then
+			Kit.label({
+				Text = if showing == "wished"
+					then "Nothing on your wishlist here. The heart on a card puts it there."
+					else "Nothing here matches.",
+				font = "bodyItalic",
+				color = C.dim,
+				Parent = tableScroll,
+			})
+		end
 	end
 	local picked = Cosmetics.byId(pickedId)
 	showAction(profile, picked)
 end
 
-local function arrange()
+function arrange()
 	local phone = Kit.Layout.isPhone()
-	local top = TOP + SUITS_HEIGHT + T.space.s
+	local top = tableTop()
+	browseRow.Size = if phone
+		then UDim2.new(1, 0, 0, BROWSE_HEIGHT)
+		else UDim2.new(1, -(LOOK_WIDTH + GAP), 0, BROWSE_HEIGHT)
 	if phone then
 		tableScroll.Position = UDim2.fromOffset(0, top)
 		tableScroll.Size = UDim2.new(1, 0, 1, -top)
@@ -611,6 +789,9 @@ end
 
 -- For checks: shows a suit, as its tab does.
 function ShopPanel.showSuit(id: string)
+	if id ~= currentSuit then
+		leaveSuit()
+	end
 	currentSuit = id
 	if chooseSuit then
 		chooseSuit(id) -- (lights its tab; the suit is already the current one, so nothing is rebuilt twice)
@@ -637,15 +818,89 @@ function ShopPanel.choose(id: string)
 end
 
 -- For checks: the suit shown, the card picked, the cards on the table and how many lie face down.
-function ShopPanel.state(): { suit: string, picked: string?, cards: number, faceDown: number }
-	local count, down = 0, 0
+-- (and how many wear the "New" ribbon, how many have a heart, and the cards' ids in the order they lie)
+function ShopPanel.state(): {
+	suit: string,
+	picked: string?,
+	cards: number,
+	faceDown: number,
+	fresh: number,
+	hearts: number,
+	order: { string },
+}
+	local count, down, fresh, hearts = 0, 0, 0, 0
+	local laid = {}
 	for _, card in pairs(cards) do
 		count += 1
 		if card.faceDown then
 			down += 1
 		end
+		if card.ribbon and card.ribbon.Visible then
+			fresh += 1
+		end
+		if card.heart then
+			hearts += 1
+		end
+		local grid = card.slot.Parent
+		local holder = grid and grid.Parent
+		table.insert(laid, {
+			id = card.item.id,
+			section = if holder and holder:IsA("GuiObject") then holder.LayoutOrder else 0,
+			at = card.slot.LayoutOrder,
+		})
 	end
-	return { suit = currentSuit, picked = pickedId, cards = count, faceDown = down }
+	table.sort(laid, function(a, b)
+		if a.section ~= b.section then
+			return a.section < b.section
+		end
+		return a.at < b.at
+	end)
+	local order = {}
+	for _, entry in ipairs(laid) do
+		table.insert(order, entry.id)
+	end
+	return {
+		suit = currentSuit,
+		picked = pickedId,
+		cards = count,
+		faceDown = down,
+		fresh = fresh,
+		hearts = hearts,
+		order = order,
+	}
+end
+
+-- Opens the shop on a card (the lobby's shop window): in Today's hand when it is dealt there today (turned
+-- over), else in its suit with nothing filtered out; picked, and scrolled to.
+function ShopPanel.focus(itemId: string)
+	local item = Cosmetics.byId(itemId)
+	if not item or (not Router.isOpen("shop") and not Router.open("shop")) then
+		return
+	end
+	searching, showing, sorting = "", "all", "order"
+	searchBox.Text = ""
+	paintBrowse()
+	local inHand = table.find(ShopRotation.hand(ShopRotation.dayOf(os.time())), itemId) ~= nil
+	local suit = Cosmetics.suitOf(item)
+	ShopPanel.showSuit(if inHand or not suit then "today" else suit.id)
+	ShopPanel.choose(itemId)
+	task.delay(0.1, function()
+		local card = cards[itemId]
+		if card and card.slot.Parent then
+			local y = card.slot.AbsolutePosition.Y - tableScroll.AbsolutePosition.Y + tableScroll.CanvasPosition.Y
+			tableScroll.CanvasPosition = Vector2.new(0, math.max(0, y - T.space.l))
+		end
+	end)
+end
+
+-- For checks: browses the suit (a search, what to show, the order), as the row does.
+function ShopPanel.browse(search: string?, show: string?, sort: string?)
+	searching = search or ""
+	showing = show or "all"
+	sorting = sort or "order"
+	searchBox.Text = searching
+	paintBrowse()
+	ShopPanel.rebuild()
 end
 
 function ShopPanel.init()
@@ -690,6 +945,66 @@ function ShopPanel.init()
 		ScrollBarThickness = 0,
 		Parent = body,
 	}) :: any
+	-- Browsing a suit of kinds: a search, what to show, the order.
+	browseRow = Kit.frame({
+		Name = "Browse",
+		Position = UDim2.fromOffset(0, TOP + SUITS_HEIGHT + T.space.s),
+		Size = UDim2.new(1, 0, 0, BROWSE_HEIGHT),
+		Visible = false,
+		Parent = body,
+	})
+	Kit.list(browseRow, T.space.s, true)
+	local _, box = Kit.field({
+		placeholder = "Search by name",
+		maxLength = 30,
+		size = "body",
+		Size = UDim2.new(1, -2 * (CHOICE_WIDTH + T.space.s), 1, 0),
+		LayoutOrder = 1,
+		Parent = browseRow,
+	})
+	searchBox = box
+	local typed = 0
+	box:GetPropertyChangedSignal("Text"):Connect(function()
+		if box.Text == searching then
+			return
+		end
+		-- (the cards are dealt again once the typing pauses)
+		typed += 1
+		local mine = typed
+		task.delay(0.3, function()
+			if mine == typed and box.Text ~= searching then
+				searching = box.Text
+				ShopPanel.rebuild()
+			end
+		end)
+	end)
+	showButton = Kit.button({
+		text = "Show",
+		variant = "secondary",
+		size = "s",
+		upper = false,
+		Size = UDim2.new(0, CHOICE_WIDTH, 1, 0),
+		LayoutOrder = 2,
+		Parent = browseRow,
+	}, function()
+		showing = ShopBrowse.after(ShopBrowse.SHOW, showing).id
+		paintBrowse()
+		ShopPanel.rebuild()
+	end)
+	sortButton = Kit.button({
+		text = "Order",
+		variant = "secondary",
+		size = "s",
+		upper = false,
+		Size = UDim2.new(0, CHOICE_WIDTH, 1, 0),
+		LayoutOrder = 3,
+		Parent = browseRow,
+	}, function()
+		sorting = ShopBrowse.after(ShopBrowse.SORTS, sorting).id
+		paintBrowse()
+		ShopPanel.rebuild()
+	end)
+	paintBrowse()
 	tableScroll = Kit.scroll({ Name = "Table", Parent = body })
 	Kit.pad(tableScroll, T.space.xs, T.space.xs)
 	Kit.list(tableScroll, T.space.l)
@@ -771,6 +1086,7 @@ function ShopPanel.init()
 			end
 		end,
 		hide = function()
+			leaveSuit()
 			look:close()
 		end,
 		firstSelection = function()

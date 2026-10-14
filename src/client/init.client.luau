@@ -93,6 +93,7 @@ local MapPreloader = require(World:WaitForChild("MapPreloader"))
 local CharacterDetail = require(World:WaitForChild("CharacterDetail"))
 local NameTags = require(World:WaitForChild("NameTags"))
 local Champion = require(World:WaitForChild("Champion"))
+local ShopWindow = require(World:WaitForChild("ShopWindow"))
 local ReadyCircle = require(World:WaitForChild("ReadyCircle"))
 local Tableaux = require(World:WaitForChild("Tableaux"))
 local Puppets = require(World:WaitForChild("Puppets"))
@@ -208,11 +209,13 @@ MovementRules.init()
 RealmAmbience.init()
 
 -- The lobby's own: a candle for everyone who is ready, the stone tableaux round the plaza, whoever has
--- the most wins seated on the throne, and the Academy's puppets under the hand that holds their strings.
+-- the most wins seated on the throne, the Academy's puppets under the hand that holds their strings, and
+-- the shop window's mannequin showing the day's emote.
 ReadyCircle.init()
 Tableaux.init()
 Champion.init()
 Puppets.init()
+ShopWindow.init()
 
 -- Specters: hidden from the living, flying for yourself.
 NameTags.init()

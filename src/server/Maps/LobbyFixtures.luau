@@ -9,7 +9,10 @@
 --     (throne: a part tagged LThroneSeat at the seat's top, facing the way the throne does). See client
 --     World/Tableaux and World/Champion;
 --   * the spot under the Academy's gate where the Trial can be begun (a part tagged LTrialStart; client
---     Onboarding/TrialController puts the prompt on it).
+--     Onboarding/TrialController puts the prompt on it);
+--   * the shop window: a stone plinth on the spawn terrace, east of where players appear, its top marked
+--     (a part tagged LShopWindow, facing the terrace) for the mannequin each client puts on it showing the
+--     day's emote (client World/ShopWindow).
 --
 -- Nothing here has rules of its own.
 
@@ -24,8 +27,14 @@ LobbyFixtures.CANDLE_TAG = "LReadyCandle"
 LobbyFixtures.TABLEAU_TAG = "LTableau"
 LobbyFixtures.THRONE_TAG = "LThroneSeat"
 LobbyFixtures.TRIAL_TAG = "LTrialStart"
+LobbyFixtures.SHOP_WINDOW_TAG = "LShopWindow"
 
 local WAX = Color3.fromRGB(206, 200, 186)
+local PLINTH = Color3.fromRGB(88, 88, 94)
+-- The shop window from where players appear: across the terrace to the east (clear of the spawn ring, the
+-- braziers by the steps, the pillars and the balustrade), and the height of its plinth.
+local WINDOW_OFFSET = Vector2.new(15, -2)
+local WINDOW_HEIGHT = 1.4
 local FLAME = Color3.fromRGB(205, 222, 245)
 
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number?, rx: number?, rz: number? }
@@ -118,6 +127,32 @@ function LobbyFixtures.build(b, anchors: { [string]: Anchor })
 	local gate = anchors.academyGate
 	if gate then
 		mark(b, folder, "TrialStart", LobbyFixtures.TRIAL_TAG, { x = gate.x, y = 3, z = gate.z, rot = gate.rot })
+	end
+	local spawn = anchors.spawn
+	if spawn then
+		local x, z = spawn.x + WINDOW_OFFSET.X, spawn.z + WINDOW_OFFSET.Y
+		-- Facing back across the terrace, a little towards the steps.
+		local dx, dz = spawn.x - x, (spawn.z - 5) - z
+		local rot = math.deg(math.atan2(-dx, -dz))
+		local plinth = Create("Part", {
+			Name = "ShopWindowPlinth",
+			Size = Vector3.new(3.2, WINDOW_HEIGHT, 3.2),
+			CFrame = b:world(b:cf(x, spawn.y + WINDOW_HEIGHT / 2, z, rot)),
+			Color = PLINTH,
+			Material = Enum.Material.Slate,
+			TopSurface = Enum.SurfaceType.Smooth,
+			BottomSurface = Enum.SurfaceType.Smooth,
+			Anchored = true,
+			Parent = folder,
+		}) :: BasePart
+		plinth.CanCollide = true
+		mark(
+			b,
+			folder,
+			"ShopWindow",
+			LobbyFixtures.SHOP_WINDOW_TAG,
+			{ x = x, y = spawn.y + WINDOW_HEIGHT, z = z, rot = rot }
+		)
 	end
 	return folder
 end
