@@ -13,6 +13,10 @@ local KINDS = {
 	eyesDeal = "EyesDeal",
 	manualWrite = "ManualWrite",
 	outro = "Outro",
+	gambit = "Gambit",
+	meetingIntro = "MeetingIntro",
+	roundStart = "RoundStart",
+	shot = "Shot",
 }
 
 function Cutscenes.init()

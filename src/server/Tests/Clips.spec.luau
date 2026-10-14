@@ -8,6 +8,7 @@ local Clips = require(Anim:WaitForChild("Clips"))
 local Joints = require(Anim:WaitForChild("Joints"))
 local Causes = require(Anim:WaitForChild("Causes"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
+local RagdollService = require(script.Parent.Parent:WaitForChild("Services"):WaitForChild("RagdollService"))
 
 local REQUIRED = {
 	"idle",
@@ -64,6 +65,14 @@ return function(t)
 				expect(clip.length > 0).to.equal(true)
 				local sample = ClipPlayer.sample(ClipPlayer.get(id) :: any, clip.length * 0.5)
 				expect(next(sample) ~= nil).to.equal(true)
+			end
+		end)
+		it("lets every collapse play to its last frame before the body goes limp", function()
+			-- The server locks the clip's last frame into the joints: earlier, every client would jump to it.
+			for _, id in pairs(Causes.CLIP) do
+				local limp = RagdollService.collapseTime(id)
+				expect(limp >= ClipPlayer.length(id)).to.equal(true)
+				expect(limp >= RagdollService.COLLAPSE_DELAY).to.equal(true)
 			end
 		end)
 	end)

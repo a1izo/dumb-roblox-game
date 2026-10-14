@@ -112,10 +112,73 @@ local function copyOf(source: Model): Model?
 			(humanoid :: any).EvaluateStateMachine = false
 		end)
 	end
+	-- Placed by the root: Roblox's R6 models pivot on the Head, which puts a posed body off its mark.
+	local root = clone:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		clone.PrimaryPart = root
+	end
 	clone:SetAttribute("Specter", nil)
 	return clone
 end
 Stage.copyOf = copyOf
+
+-- The R6 rig's standard joints: name, the part that holds it, the part it moves, C0, C1.
+local R6_FRONT = CFrame.fromMatrix(Vector3.zero, Vector3.new(-1, 0, 0), Vector3.new(0, 0, 1))
+local R6_RIGHT = CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, -1), Vector3.new(0, 1, 0))
+local R6_LEFT = CFrame.fromMatrix(Vector3.zero, Vector3.new(0, 0, 1), Vector3.new(0, 1, 0))
+local R6_JOINTS = {
+	{ "RootJoint", "HumanoidRootPart", "Torso", R6_FRONT, R6_FRONT },
+	{ "Neck", "Torso", "Head", CFrame.new(0, 1, 0) * R6_FRONT, CFrame.new(0, -0.5, 0) * R6_FRONT },
+	{ "Right Shoulder", "Torso", "Right Arm", CFrame.new(1, 0.5, 0) * R6_RIGHT, CFrame.new(-0.5, 0.5, 0) * R6_RIGHT },
+	{ "Left Shoulder", "Torso", "Left Arm", CFrame.new(-1, 0.5, 0) * R6_LEFT, CFrame.new(0.5, 0.5, 0) * R6_LEFT },
+	{ "Right Hip", "Torso", "Right Leg", CFrame.new(1, -1, 0) * R6_RIGHT, CFrame.new(0.5, 1, 0) * R6_RIGHT },
+	{ "Left Hip", "Torso", "Left Leg", CFrame.new(-1, -1, 0) * R6_LEFT, CFrame.new(-0.5, 1, 0) * R6_LEFT },
+}
+
+-- A faceless stand-in (an R6 body in a black suit, no face, no name): for the cutscene parts that are
+-- nobody in particular, or someone the viewer must not know. Not parented; cast() copies it.
+function Stage.figure(): Model
+	local model = Instance.new("Model")
+	model.Name = "Figure"
+	local suit, skin = Color3.fromRGB(16, 16, 19), Color3.fromRGB(28, 26, 26)
+	local sizes = {
+		HumanoidRootPart = Vector3.new(2, 2, 1),
+		Torso = Vector3.new(2, 2, 1),
+		Head = Vector3.new(2, 1, 1),
+		["Right Arm"] = Vector3.new(1, 2, 1),
+		["Left Arm"] = Vector3.new(1, 2, 1),
+		["Right Leg"] = Vector3.new(1, 2, 1),
+		["Left Leg"] = Vector3.new(1, 2, 1),
+	}
+	local parts: { [string]: BasePart } = {}
+	for name, size in pairs(sizes) do
+		parts[name] = Create("Part", {
+			Name = name,
+			Size = size,
+			Color = if name == "Head" then skin else suit,
+			Material = Enum.Material.SmoothPlastic,
+			Transparency = if name == "HumanoidRootPart" then 1 else 0,
+			CanCollide = false,
+			Anchored = name == "HumanoidRootPart",
+			CFrame = CFrame.new(0, 3, 0),
+			Parent = model,
+		})
+	end
+	Create("SpecialMesh", { MeshType = Enum.MeshType.Head, Scale = Vector3.new(1.25, 1.25, 1.25), Parent = parts.Head })
+	for _, joint in ipairs(R6_JOINTS) do
+		Create("Motor6D", {
+			Name = joint[1],
+			Part0 = parts[joint[2]],
+			Part1 = parts[joint[3]],
+			C0 = joint[4],
+			C1 = joint[5],
+			Parent = parts[joint[2]],
+		})
+	end
+	Create("Humanoid", { RigType = Enum.HumanoidRigType.R6, Parent = model })
+	model.PrimaryPart = parts.HumanoidRootPart
+	return model
+end
 
 -- Puts a copy of `userId`'s avatar (or of `model`) on a mark (feet on the mark, facing its look
 -- vector), playing `clip`, holding `props`. Returns the copy, or nil if there is no body.

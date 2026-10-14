@@ -17,6 +17,7 @@ local EVENTS = {
 	"LobbyState",
 	"PartyState",
 	"Briefing",
+	"MapReady", -- client -> server: the match map and its content are loaded (LoadGate)
 	"Notify",
 	"Announce",
 	"Elimination",

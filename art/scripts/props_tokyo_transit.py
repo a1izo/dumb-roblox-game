@@ -264,6 +264,108 @@ def train_middle():
     return train_car("TM_", False)
 
 
+# The intro cutscene's car: one door on the +X side stands open on a lit interior, so someone can be seen
+# standing in it (the door leaves are TrainDoorLeaf props the cutscene slides shut).
+
+DOOR_Y = -51.0 / 2 + 6.5 + 12.6  # the second door's middle along the car
+
+
+@prop("TrainCarOpen", pivot="bottom", material="Metal", collide=False, texture=1024, set="Tokyo",
+      lights=[dict(at=(0, DOOR_Y, 9.6), kind="point", color=(236, 244, 255), range=16, brightness=1.0)])
+def train_car_open():
+    """A metro car 51 long, facing -Y, like TrainMiddle but hollow round one door on its +X side: the
+    doorway open on a lit interior (vinyl floor, the long seat, poles and straps, adverts, the ceiling's
+    light strips). Used only by the Tokyo intro."""
+    steel = pk.metal("TO_Steel", (170, 174, 180), (206, 210, 214), rough=0.3, metallic=0.8, scale=6)
+    band = pk.paint("TO_Band", (110, 60, 170), rough=0.3, wear=6)
+    trim = pk.metal("TO_Trim", (30, 30, 34), (46, 46, 50), rough=0.5, metallic=0.3)
+    glass = pk.dark_glass("TO_Glass", (40, 50, 60))
+    rubber = pk.rubber("TO_Rubber")
+    vinyl = pk.plastic("TO_Floor", (92, 88, 84), rough=0.7)
+    wall = pk.plastic("TO_Wall", (214, 214, 206), rough=0.5)
+    seat = pk.paint("TO_Seat", (140, 40, 50), rough=0.8)
+    pole = pk.metal("TO_Pole", (190, 194, 198), (220, 224, 228), rough=0.2, metallic=0.9)
+    advert = pk.plastic("TO_Advert", (236, 220, 180))
+    L, W, H = 51.0, 8.8, 11.8
+    front = -L / 2
+    y0, y1 = DOOR_Y - 7.2, DOOR_Y + 7.2  # the hollow section
+    floor_z, roof_z = 1.5, 10.6
+    door0, door1, door_top = DOOR_Y - 2.2, DOOR_Y + 2.2, 8.9
+    parts = [
+        mk.box("BodyFront", (W, y0 - front, H - 1.4), (0, (front + y0) / 2, (H - 1.4) / 2 + 1.4), mat=steel, bevel=0.3),
+        mk.box("BodyBack", (W, -front - y1, H - 1.4), (0, (y1 - front) / 2, (H - 1.4) / 2 + 1.4), mat=steel, bevel=0.3),
+        mk.box("FarSide", (0.4, y1 - y0, H - 1.4), (-W / 2 + 0.2, DOOR_Y, (H - 1.4) / 2 + 1.4), mat=steel),
+        mk.box("Roof", (W, y1 - y0, H - roof_z), (0, DOOR_Y, (H + roof_z) / 2), mat=steel),
+        mk.box("Skirt", (W, y1 - y0, floor_z - 1.0), (0, DOOR_Y, (floor_z + 1.0) / 2), mat=steel),
+        mk.box("NearA", (0.3, door0 - y0, H - 1.4), (W / 2 - 0.15, (y0 + door0) / 2, (H - 1.4) / 2 + 1.4), mat=steel),
+        mk.box("NearB", (0.3, y1 - door1, H - 1.4), (W / 2 - 0.15, (door1 + y1) / 2, (H - 1.4) / 2 + 1.4), mat=steel),
+        mk.box("Lintel", (0.3, door1 - door0, H - door_top), (W / 2 - 0.15, DOOR_Y, (H + door_top) / 2), mat=steel),
+        mk.box("Under", (W - 0.6, L - 4.0, 1.4), (0, 0, 0.8), mat=trim),
+        mk.box("RoofTop", (W - 1.0, L - 1.0, 0.4), (0, 0, H + 0.1), mat=steel, bevel=0.15),
+        # inside
+        mk.box("Floor", (W - 0.7, y1 - y0, 0.1), (0.05, DOOR_Y, floor_z + 0.05), mat=vinyl),
+        mk.box("Ceiling", (W - 0.7, y1 - y0, 0.1), (0.05, DOOR_Y, roof_z - 0.05), mat=wall),
+        mk.box("InnerWall", (0.1, y1 - y0, roof_z - floor_z), (-W / 2 + 0.45, DOOR_Y, (floor_z + roof_z) / 2), mat=wall),
+        mk.box("EndA", (W - 0.7, 0.1, roof_z - floor_z), (0.05, y0 + 0.05, (floor_z + roof_z) / 2), mat=wall),
+        mk.box("EndB", (W - 0.7, 0.1, roof_z - floor_z), (0.05, y1 - 0.05, (floor_z + roof_z) / 2), mat=wall),
+        mk.box("Threshold", (0.5, door1 - door0, 0.1), (W / 2 - 0.2, DOOR_Y, floor_z + 0.06), mat=trim),
+    ]
+    for sy in (-1, 1):  # the long seats either side of the doorway, along the far wall
+        cy = DOOR_Y + sy * 4.6
+        parts += [mk.box("Seat", (1.6, 4.0, 0.5), (-W / 2 + 1.35, cy, floor_z + 1.6), mat=seat, bevel=0.1),
+                  mk.box("SeatBack", (0.4, 4.0, 1.6), (-W / 2 + 0.75, cy, floor_z + 2.6), mat=seat, bevel=0.1),
+                  mk.box("SeatBase", (1.4, 4.0, 1.4), (-W / 2 + 1.25, cy, floor_z + 0.7), mat=trim),
+                  mk.box("Advert", (0.05, 3.2, 1.2), (-W / 2 + 0.52, cy, roof_z - 1.4), mat=advert)]
+    for py in (door0 - 0.4, door1 + 0.4):  # poles by the doorway and down the middle
+        parts.append(mk.cylinder("Pole", 0.08, roof_z - floor_z, (W / 2 - 0.8, py, (floor_z + roof_z) / 2), mat=pole, verts=10))
+    parts.append(mk.cylinder("Pole", 0.08, roof_z - floor_z, (0.0, DOOR_Y, (floor_z + roof_z) / 2), mat=pole, verts=10))
+    parts.append(mk.cylinder("Rail", 0.06, y1 - y0 - 0.6, (0.6, DOOR_Y, roof_z - 0.9), rot=(90, 0, 0), mat=pole, verts=8))
+    for k in range(6):
+        sy = y0 + 1.5 + k * 2.3
+        parts.append(mk.box("Strap", (0.06, 0.4, 0.9), (0.6, sy, roof_z - 1.5), mat=trim))
+    # outside, as the other cars
+    for sx in (-1, 1):
+        x = sx * (W / 2 + 0.01)
+        parts += [mk.box("Band", (0.05, L - 0.6, 0.55), (x, 0, 3.4), mat=band),
+                  mk.box("BandTop", (0.05, L - 0.6, 0.3), (x, 0, 9.6), mat=band)]
+        for k in range(4):
+            y = front + 6.5 + k * 12.6
+            if sx > 0 and abs(y - DOOR_Y) < 0.1:
+                continue  # the open doorway
+            parts += [mk.box("Door", (0.08, 4.4, 7.4), (x, y, 5.2), mat=steel),
+                      mk.box("DoorGap", (0.1, 0.1, 7.4), (x, y, 5.2), mat=rubber),
+                      mk.box("DoorWinL", (0.1, 1.4, 3.0), (x, y - 1.0, 6.5), mat=glass),
+                      mk.box("DoorWinR", (0.1, 1.4, 3.0), (x, y + 1.0, 6.5), mat=glass)]
+        for k in range(3):
+            y = front + 12.8 + k * 12.6
+            if sx > 0 and y0 < y < y1:
+                continue
+            parts.append(mk.box("Window", (0.1, 7.2, 3.2), (x, y, 6.6), mat=glass))
+        for y in (front + 3.0, -front - 3.0):
+            parts.append(mk.box("Bogie", (W - 1.8, 6.0, 1.2), (0, y, 0.8), mat=trim))
+    glows = [mk.box("StripA", (0.4, y1 - y0 - 1.0, 0.08), (1.6, DOOR_Y, roof_z - 0.12), mat=pk.glow("TO_Strip", (236, 242, 250), 3)),
+             mk.box("StripB", (0.4, y1 - y0 - 1.0, 0.08), (-1.6, DOOR_Y, roof_z - 0.12), mat=pk.glow("TO_Strip", (236, 242, 250), 3))]
+    for sx in (-1, 1):
+        for k in range(3):
+            y = front + 12.8 + k * 12.6
+            if sx > 0 and y0 < y < y1:
+                continue
+            glows.append(mk.box("Lit", (0.05, 7.0, 3.0), (sx * (W / 2 - 0.06), y, 6.6),
+                                mat=pk.glow("TO_Lit", (220, 228, 236), 1.4)))
+    return parts, glows
+
+
+@prop("TrainDoorLeaf", pivot="center", material="Metal", collide=False, texture=256, set="Tokyo")
+def train_door_leaf():
+    """One leaf of a metro car's sliding door (2.2 wide, 7.4 tall), its window in the upper half."""
+    steel = pk.metal("TD_Steel", (170, 174, 180), (206, 210, 214), rough=0.3, metallic=0.8, scale=6)
+    glass = pk.dark_glass("TD_Glass", (40, 50, 60))
+    rubber = pk.rubber("TD_Rubber")
+    return [mk.box("Leaf", (0.08, 2.2, 7.4), (0, 0, 0), mat=steel),
+            mk.box("Win", (0.1, 1.4, 3.0), (0, 0, 1.3), mat=glass),
+            mk.box("Edge", (0.1, 0.1, 7.4), (0, 1.08, 0), mat=rubber)], []
+
+
 # The bus stop and the taxi rank ---------------------------------------------------------------------------
 
 

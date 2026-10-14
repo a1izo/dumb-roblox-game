@@ -650,6 +650,11 @@ local function replaceWithR6(player: Player, character: Model, humanoid: Humanoi
 		return false
 	end
 	model.Name = player.Name
+	-- Roblox's R6 models pivot on the Head; everything that places a body (spawns, cutscenes) means its root.
+	local newRoot = model:FindFirstChild("HumanoidRootPart")
+	if newRoot and newRoot:IsA("BasePart") then
+		model.PrimaryPart = newRoot
+	end
 	local pivot = character:GetPivot()
 	player.Character = model
 	model:PivotTo(pivot)

@@ -290,6 +290,183 @@ def handcuffs():
     return parts, []
 
 
+def _cup(tag, x, y, porcelain, gold, tea):
+    """A teacup on its saucer, standing at (x, y): a gold rim, tea in it, the handle to +x."""
+    return [
+        mk.lathe(tag + "Saucer", [(0.001, 0.0), (0.22, 0.0), (0.36, 0.035), (0.38, 0.06), (0.34, 0.05), (0.12, 0.025),
+                                  (0.001, 0.025)], (x, y, 0), mat=porcelain, segments=28),
+        mk.lathe(tag + "Cup", [(0.001, 0.03), (0.1, 0.03), (0.12, 0.05), (0.16, 0.12), (0.2, 0.26), (0.21, 0.28),
+                               (0.195, 0.28), (0.185, 0.25), (0.15, 0.12), (0.001, 0.08)], (x, y, 0), mat=porcelain,
+                 segments=28),
+        mk.torus(tag + "Rim", 0.205, 0.006, (x, y, 0.28), mat=gold, major_segments=28, minor_segments=4),
+        mk.cylinder(tag + "Tea", 0.183, 0.01, (x, y, 0.22), mat=tea, verts=24),
+        mk.torus(tag + "Handle", 0.07, 0.018, (x + 0.23, y, 0.17), rot=(90, 0, 0), mat=porcelain, major_segments=16,
+                 minor_segments=6),
+    ]
+
+
+def _tea_mats():
+    porcelain = mk.flat("Tea_Porcelain", srgb(240, 238, 232), 0.22)
+    gold = mk.noisy("Tea_Gold", BRASS_B, BRASS_A, scale=20, roughness=0.3, metallic=1.0)
+    tea = mk.flat("Tea_Tea", srgb(96, 46, 18), 0.1)
+    return porcelain, gold, tea
+
+
+@prop("Teacup", pivot="bottom", material="SmoothPlastic", collide=False, texture=256)
+def teacup():
+    """A white bone-china cup of tea on its saucer, gold at the rim (Ace's tea, the Butler's tray)."""
+    return _cup("", 0.0, 0.0, *_tea_mats()), []
+
+
+@prop("TeaTray", pivot="bottom", material="Metal", collide=False, texture=512)
+def tea_tray():
+    """The Butler's silver tray: a teapot, two cups on saucers, the milk jug, the sugar bowl and a plate
+    of small cakes (Ace's sweets)."""
+    porcelain, gold, tea = _tea_mats()
+    silver = mk.noisy("Tray_Silver", STEEL_B, STEEL_A, scale=18, roughness=0.18, metallic=1.0)
+    parts = [mk.box("Tray", (2.0, 1.3, 0.04), (0, 0, 0.02), mat=silver, bevel=0.01)]
+    for x, y, w, d in ((0, 0.64, 2.0, 0.03), (0, -0.64, 2.0, 0.03), (0.99, 0, 0.03, 1.3), (-0.99, 0, 0.03, 1.3)):
+        parts.append(mk.box("Lip", (w, d, 0.08), (x, y, 0.06), mat=silver))
+    for side in (-1, 1):
+        parts.append(mk.torus("Grip", 0.16, 0.025, (side * 1.04, 0, 0.1), rot=(0, 90, 90), mat=silver,
+                              major_segments=16, minor_segments=6))
+    # The teapot: round porcelain body, lid and knob, spout and handle.
+    px, py = -0.5, 0.15
+    parts += [
+        mk.lathe("Pot", [(0.001, 0.04), (0.2, 0.04), (0.32, 0.14), (0.36, 0.3), (0.31, 0.46), (0.19, 0.53),
+                         (0.001, 0.53)], (px, py, 0), mat=porcelain, segments=28),
+        mk.lathe("Lid", [(0.2, 0.53), (0.17, 0.58), (0.06, 0.6), (0.001, 0.6)], (px, py, 0), mat=porcelain, segments=24),
+        mk.sphere("Knob", 0.05, (px, py, 0.64), mat=gold, segments=12, rings=8),
+        mk.tube("Spout", (px + 0.3, py, 0.2), (px + 0.58, py, 0.5), 0.06, 0.03, mat=porcelain),
+        mk.torus("PotHandle", 0.14, 0.025, (px - 0.38, py, 0.32), rot=(90, 0, 0), mat=porcelain, major_segments=16,
+                 minor_segments=6),
+        mk.torus("PotBand", 0.355, 0.008, (px, py, 0.3), mat=gold, major_segments=28, minor_segments=4),
+    ]
+    parts += _cup("A", 0.25, 0.3, porcelain, gold, tea)
+    parts += _cup("B", 0.62, -0.2, porcelain, gold, tea)
+    # Milk jug, sugar bowl with its cubes, a plate of cakes.
+    parts.append(mk.lathe("Jug", [(0.001, 0.04), (0.09, 0.04), (0.1, 0.14), (0.08, 0.22), (0.1, 0.26), (0.001, 0.2)],
+                          (-0.15, -0.35, 0), mat=porcelain, segments=20))
+    parts.append(mk.lathe("Bowl", [(0.001, 0.04), (0.08, 0.04), (0.14, 0.14), (0.13, 0.15), (0.001, 0.08)],
+                          (-0.62, -0.38, 0), mat=porcelain, segments=20))
+    white = mk.flat("Tray_Sugar", srgb(250, 250, 248), 0.6)
+    for k, (dx, dy) in enumerate(((-0.03, 0.02), (0.04, -0.03), (0.0, 0.05))):
+        parts.append(mk.box("Sugar", (0.05, 0.05, 0.05), (-0.62 + dx, -0.38 + dy, 0.13 + 0.02 * k), rot=(0, 0, 20 * k),
+                            mat=white))
+    parts.append(mk.cylinder("Plate", 0.26, 0.02, (0.3, -0.38, 0.05), mat=porcelain, verts=28))
+    for k, (dx, dy, color) in enumerate(((-0.1, 0.0, (250, 214, 220)), (0.08, 0.06, (246, 236, 214)),
+                                          (0.06, -0.1, (232, 200, 150)))):
+        cake = mk.flat(f"Tray_Cake{k}", srgb(*color), 0.7)
+        parts.append(mk.box("Cake", (0.12, 0.12, 0.08), (0.3 + dx, -0.38 + dy, 0.1), rot=(0, 0, 30 * k), mat=cake,
+                            bevel=0.01))
+        parts.append(mk.sphere("Berry", 0.025, (0.3 + dx, -0.38 + dy, 0.155), mat=mk.flat("Tray_Berry", RED, 0.3),
+                               segments=8, rings=6))
+    return parts, []
+
+
+@prop("BureauBadge", pivot="centre", material="Leather", collide=False, texture=256)
+def bureau_badge():
+    """An Operative's badge wallet held open: the gold shield on the right, the ID card on the left
+    (upright, its face to -Y)."""
+    leather = mk.noisy("Badge_Leather", LEATHER_A, LEATHER_B, scale=16, roughness=0.6)
+    gold = mk.noisy("Badge_Gold", BRASS_B, BRASS_A, scale=20, roughness=0.3, metallic=1.0)
+    card = mk.flat("Badge_Card", srgb(236, 238, 240), 0.5)
+    band = mk.flat("Badge_Band", srgb(24, 52, 110), 0.5)
+    photo = mk.flat("Badge_Photo", srgb(90, 92, 98), 0.6)
+    shield = [(0.0, 0.2), (0.12, 0.16), (0.16, 0.04), (0.11, -0.1), (0.0, -0.2), (-0.11, -0.1), (-0.16, 0.04),
+              (-0.12, 0.16)]
+    parts = [
+        mk.box("Left", (0.42, 0.03, 0.6), (-0.22, 0, 0), mat=leather, bevel=0.01),
+        mk.box("Right", (0.42, 0.03, 0.6), (0.22, 0, 0), mat=leather, bevel=0.01),
+        mk.extrude_shape("Shield", shield, 0.03, (0.22, -0.03, 0.02), rot=(90, 0, 0), mat=gold, bevel=0.008),
+        mk.cylinder("Seal", 0.07, 0.02, (0.22, -0.05, 0.03), rot=(90, 0, 0), mat=band, verts=20),
+        mk.box("Card", (0.34, 0.008, 0.5), (-0.22, -0.02, 0), mat=card),
+        mk.box("Band", (0.34, 0.01, 0.08), (-0.22, -0.022, 0.19), mat=band),
+        mk.box("Photo", (0.12, 0.01, 0.15), (-0.31, -0.022, 0.0), mat=photo),
+    ]
+    for k in range(3):
+        parts.append(mk.box("Line", (0.14, 0.01, 0.015), (-0.15, -0.022, 0.04 - 0.05 * k), mat=band))
+    return parts, []
+
+
+@prop("NotebookOpen", pivot="bottom", material="SmoothPlastic", collide=False, texture=512)
+def notebook_open():
+    """The plain black notebook lying open (Diavolo writing): both covers flat, the pages lined, the left
+    page full of cramped handwriting, the right half written, the red ribbon across."""
+    cover = mk.noisy("NoteO_Cover", srgb(28, 26, 30), srgb(48, 44, 48), scale=14, roughness=0.7)
+    pages = mk.flat("NoteO_Pages", PAPER_A, 0.85)
+    ink = mk.flat("NoteO_Ink", srgb(26, 22, 30), 0.6)
+    band = mk.flat("NoteO_Band", DEEP_RED, 0.7)
+    parts = [mk.box("CoverL", (1.32, 0.97, 0.04), (-0.66, 0, 0.02), mat=cover, bevel=0.01),
+             mk.box("CoverR", (1.32, 0.97, 0.04), (0.66, 0, 0.02), mat=cover, bevel=0.01),
+             mk.box("PagesL", (1.24, 0.9, 0.06), (-0.63, 0, 0.07), mat=pages, bevel=0.005),
+             mk.box("PagesR", (1.24, 0.9, 0.06), (0.63, 0, 0.07), mat=pages, bevel=0.005),
+             mk.box("Spine", (0.06, 0.95, 0.08), (0, 0, 0.05), mat=cover),
+             mk.box("Ribbon", (0.05, 1.05, 0.005), (0.25, -0.02, 0.105), rot=(0, 0, 8), mat=band)]
+    rng = __import__("random").Random(7)
+    for side, rows in ((-1, 8), (1, 4)):
+        for r in range(rows):
+            y = 0.34 - r * 0.09
+            x = side * 0.14
+            while abs(x) < 1.05:
+                w = rng.uniform(0.06, 0.16)
+                parts.append(mk.box("Word", (w, 0.012, 0.004), (x + side * w / 2, y, 0.102), mat=ink))
+                x += side * (w + rng.uniform(0.06, 0.1))
+    return parts, []
+
+
+@prop("Smartphone", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def smartphone():
+    """A black phone held up, its screen lit a hard red (the summons)."""
+    body = mk.flat("Phone_Body", srgb(14, 14, 16), 0.3, 0.2)
+    rim = mk.noisy("Phone_Rim", STEEL_B, STEEL_A, scale=20, roughness=0.3, metallic=1.0)
+    parts = [mk.box("Body", (0.52, 1.02, 0.07), (0, 0, 0), mat=body, bevel=0.04),
+             mk.box("Rim", (0.54, 1.04, 0.04), (0, 0, 0), mat=rim, bevel=0.04),
+             mk.box("Lens", (0.08, 0.08, 0.02), (-0.16, 0.42, -0.04), mat=body)]
+    glows = [mk.box("Screen", (0.46, 0.92, 0.01), (0, 0, 0.04), mat=mk.emissive("Phone_Glow", srgb(255, 40, 46), 4))]
+    return parts, glows
+
+
+@prop("CRTTelevision", pivot="bottom", material="SmoothPlastic", collide=True, texture=512,
+      lights=[dict(at=(0, -1.6, 1.4), kind="point", color=(170, 196, 255), range=12, brightness=0.9)])
+def crt_television():
+    """An old television on its own short legs: a wood-grain cabinet, the glass bulging out of a dark
+    bezel and lit a cold blue, two dials and a speaker grille, rabbit-ear antennas."""
+    wood = mk.wood("TV_Wood", srgb(96, 62, 38), srgb(54, 32, 20), scale=4)
+    dark = mk.flat("TV_Dark", srgb(20, 20, 22), 0.5)
+    chrome = mk.noisy("TV_Chrome", STEEL_B, STEEL_A, scale=20, roughness=0.25, metallic=1.0)
+    parts = [mk.box("Cabinet", (3.0, 2.2, 2.2), (0, 0, 1.75), mat=wood, bevel=0.1),
+             mk.box("Bezel", (2.2, 0.08, 1.8), (-0.3, -1.1, 1.75), mat=dark, bevel=0.06)]
+    for k, z in enumerate((2.15, 1.65)):
+        parts.append(mk.cylinder("Dial", 0.14, 0.12, (1.1, -1.14, z), rot=(90, 0, 0), mat=chrome, verts=16))
+    for k in range(5):
+        parts.append(mk.box("Grille", (0.45, 0.04, 0.04), (1.1, -1.12, 1.2 - k * 0.12), mat=dark))
+    for sx in (-1, 1):
+        parts.append(mk.tube("Leg", (sx * 1.2, 0.0, 0.66), (sx * 1.35, 0.0, 0.0), 0.06, mat=dark))
+        parts.append(mk.tube("Ear", (0, 0.3, 2.84), (sx * 0.9, 0.5, 4.2), 0.025, mat=chrome))
+    parts.append(mk.sphere("EarBase", 0.18, (0, 0.3, 2.86), mat=dark, segments=12, rings=8))
+    glows = [mk.box("Screen", (1.9, 0.06, 1.5), (-0.3, -1.12, 1.75), mat=mk.emissive("TV_Glow", srgb(170, 196, 255), 3),
+                    bevel=0.12)]
+    return parts, glows
+
+
+@prop("ShrineDoor", pivot="bottom", material="WoodPlanks", collide=True, texture=512)
+def shrine_door():
+    """One leaf of the shrine's heavy double door: dark planks, three iron bands with studs, a ring pull.
+    Its hinge is on its left edge (seen from the outside), x = -1.6; the door is 3.2 wide, 8 high."""
+    wood = mk.wood("Door_Wood", srgb(62, 40, 28), srgb(30, 18, 12), scale=3)
+    iron = mk.noisy("Door_Iron", IRON_A, IRON_B, scale=18, roughness=0.6, metallic=0.8)
+    parts = [mk.box("Leaf", (3.2, 0.4, 8.0), (0, 0, 4.0), mat=wood, bevel=0.04)]
+    for k in range(4):
+        parts.append(mk.box("Plank", (0.04, 0.42, 7.9), (-1.2 + k * 0.8, 0, 4.0), mat=iron))
+    for z in (1.2, 4.0, 6.8):
+        parts.append(mk.box("Band", (3.24, 0.46, 0.3), (0, 0, z), mat=iron, bevel=0.02))
+        for k in range(5):
+            parts.append(mk.sphere("Stud", 0.06, (-1.3 + k * 0.65, -0.25, z), mat=iron, segments=8, rings=6))
+    parts.append(mk.torus("Ring", 0.28, 0.05, (1.1, -0.32, 3.8), rot=(90, 0, 0), mat=iron, major_segments=20))
+    return parts, []
+
+
 @prop("Notebook", pivot="centre", material="SmoothPlastic", collide=False, texture=512)
 def notebook():
     cover = mk.noisy("Note_Cover", srgb(28, 26, 30), srgb(48, 44, 48), scale=14, roughness=0.7)

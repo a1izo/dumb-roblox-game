@@ -45,6 +45,8 @@ local rotationIndex = 0
 -- The debug panel can pick the next map (it is used once).
 local forcedNext: string? = nil
 
+local loadToken = 0
+
 local function newModel(name: string): Model
 	return Create("Model", {
 		Name = name,
@@ -145,6 +147,7 @@ function MapService.build(mapId: string)
 
 	local info = {
 		id = mapId,
+		loadToken = 0,
 		name = def.name,
 		model = model,
 		stations = {},
@@ -193,7 +196,15 @@ function MapService.build(mapId: string)
 	local meeting = MeetingRoom.build(Builder.new(model, MEETING_ORIGIN))
 	info.meeting = meeting
 	table.insert(info.boardLabels, meeting.boardLabel)
+	-- The cutscene sets, far off along X (role and win cutscenes play there).
+	SceneBuilder.build(Builder.new(model, Venues.SETS), "Sets")
 
+	-- For the clients' preloader (Presentation/MapPreloader) and the load gate (LoadGate): how many pieces
+	-- to wait for, and which build this is.
+	loadToken += 1
+	model:SetAttribute("Pieces", #model:GetDescendants())
+	model:SetAttribute("LoadToken", loadToken)
+	info.loadToken = loadToken
 	model.Parent = workspace
 	currentModel = model
 	if RunService:IsStudio() then

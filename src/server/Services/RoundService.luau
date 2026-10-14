@@ -7,6 +7,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Casting = require(Shared:WaitForChild("Cinema"):WaitForChild("Casting"))
+local LoadGate = require(script.Parent.LoadGate)
+
+-- The longest a match start waits for slow clients to load the map (LoadGate).
+local LOAD_TIMEOUT = 30
 local Config = require(Shared:WaitForChild("Config"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 local Net = require(Shared:WaitForChild("Net"))
@@ -113,10 +118,41 @@ end
 -- The intro cutscene: every player's avatar somewhere on the map doing something (Staging picks
 -- the marks and activities), the camera visiting a few of them, and the Grimoire landing in
 -- the middle of the map. Cameras are worked out on each client (Presentation/ShotSolver).
+-- The intro shot made in Blender for each map (art/scripts/cinema/shots).
+local INTRO_SHOTS = { UniversityCampus = "IntroCampus", TokyoDistrict = "IntroTokyo", TaskForceHQ = "IntroAgency" }
+
+-- A shot's data by name (nil when it has not been exported).
+local function shotData(name: string?): any
+	local shots = Shared:WaitForChild("Cinema"):FindFirstChild("Shots")
+	local module = if shots and name then shots:FindFirstChild(name) else nil
+	if module and module:IsA("ModuleScript") then
+		return require(module) :: any
+	end
+	return nil
+end
+
+local function introShot(): (string?, any)
+	local name = INTRO_SHOTS[Match.mapId or ""]
+	local shot = shotData(name)
+	return if shot then name else nil, shot
+end
+
 local function introData(map)
 	local userIds = {}
 	for _, ps in ipairs(Match.living()) do
 		table.insert(userIds, ps.userId)
+	end
+	local shotName, shot = introShot()
+	if shot then
+		-- Every named part (the one who sees the book...) goes to a random player, never by role.
+		return {
+			shot = shotName,
+			cast = Casting.cast(shot, userIds, Match.rng),
+			mapName = map.name or Match.mapName,
+			playerCount = #Match.list,
+			caseNumber = Match.rng:NextInteger(100, 999),
+			duration = math.max(Match.phaseLength("Intro"), 8),
+		}
 	end
 	local cast, vignettes = Staging.cast(map, userIds, Match.rng)
 	return {
@@ -149,11 +185,44 @@ local function meetingCenter(): Vector3?
 	return sum / #seats
 end
 
+-- Each role's own cutscene for the briefing (art/scripts/cinema/shots/role_*.py), and who plays in it:
+-- the player themself, and the allies they know (and only those).
+local ROLE_SHOTS = {
+	Kira = "RoleDiavolo",
+	Follower = "RoleMuerto",
+	L = "RoleAce",
+	Watari = "RoleButler",
+	TaskForce = "RoleOperative",
+}
+
+local function roleCast(ps): { [string]: number }
+	local cast: { [string]: number } = { self = ps.userId }
+	local n = 0
+	for _, ally in ipairs(Match.allies(ps)) do
+		if ps.role == "Follower" and ally.role == "Kira" then
+			cast.diavolo = ally.userId
+		elseif ps.role == "L" and ally.role == "Watari" then
+			cast.butler = ally.userId
+		elseif ally.role == "Follower" then
+			n += 1
+			cast["ally:" .. n] = ally.userId
+		end
+	end
+	return cast
+end
+
 local function sendBriefings()
 	local hint = NameService.watariHint()
 	Match.butlerHint = hint
+	-- Every role's cutscene is the same length, so it says nothing to anyone watching the clock.
+	local at = workspace:GetServerTimeNow() + 0.4
 	for _, ps in ipairs(Match.list) do
+		local shotName = ROLE_SHOTS[ps.role]
+		local hasShot = shotData(shotName) ~= nil
 		BriefingRemote:FireClient(ps.player, {
+			shot = if hasShot then shotName else nil,
+			cast = if hasShot then roleCast(ps) else nil,
+			at = at,
 			role = ps.role,
 			alias = ps.alias,
 			realName = ps.realName,
@@ -168,6 +237,32 @@ local function sendBriefings()
 	if hint then
 		EventLog.add(Terms.f("{Butler}'s hint: ") .. hint, "hint")
 	end
+end
+
+-- Short cutscenes between phases, played to everyone while the match loop waits for them (not while
+-- the debug panel is skipping ahead). Their lengths are the shots' (art/scripts/cinema/shots).
+local GAMBIT_OPENER = 4
+local MEETING_INTRO = 6
+local ROUND_COVER = 0.5 -- the round card's fade to black (Presenters/RoundStart)
+
+local function interlude(kind: string, data: { [string]: any }, seconds: number)
+	if Match.debugSkipTo then
+		return
+	end
+	Cues.fire(kind, data, { lead = 0.25, hold = seconds })
+	Cues.waitHolds(seconds + 1)
+end
+
+-- The meeting intro's cast: each standing place's player ("seat:k" is the scene's place k, the
+-- game's seat k + 1; MeetingService.gather puts the i-th player at seat i).
+local function meetingCast(): { [string]: number }
+	local cast = {}
+	for i, ps in ipairs(Match.list) do
+		if ps.alive then
+			cast["seat:" .. ((i - 1) % 12)] = ps.userId
+		end
+	end
+	return cast
 end
 
 local function placeAtSpawns()
@@ -341,6 +436,36 @@ function RoundService.debugCue(kind: string, player: Player, target, extra: stri
 		}, to)
 	elseif kind == "eyesDeal" then
 		Cues.fire("eyesDeal", { reads = Config.EYES_READS, deathRound = Match.round + 1 }, to)
+	elseif kind == "shot" then
+		-- Any Blender cutscene by name: you play the lead ("self" or the first part), the others fill the
+		-- rest of its parts in match order.
+		local shot = shotData(extra)
+		if not shot then
+			return "No cutscene called " .. tostring(extra) .. " (exported to Shared/Cinema/Shots?)"
+		end
+		local cast: { [string]: number } = {}
+		local named, crowd = Casting.slots(shot)
+		local others = {}
+		for _, ps in ipairs(Match.list) do
+			if ps.userId ~= player.UserId then
+				table.insert(others, ps.userId)
+			end
+		end
+		local lead = if table.find(named, "self") then "self" else named[1]
+		if lead then
+			cast[lead] = player.UserId
+		end
+		for _, slot in ipairs(named) do
+			if slot ~= lead and #others > 0 then
+				cast[slot] = table.remove(others, 1) :: number
+			end
+		end
+		for _, slot in ipairs(crowd) do
+			if #others > 0 then
+				cast[slot] = table.remove(others, 1) :: number
+			end
+		end
+		Cues.fire("shot", { shot = extra, cast = cast }, to)
 	else
 		return "Unknown cutscene " .. kind
 	end
@@ -470,6 +595,13 @@ local function runMatch(players: { Player })
 		end
 	end
 
+	-- Everyone's client must have the map and its content before anything plays on it.
+	local players = {}
+	for _, ps in ipairs(Match.list) do
+		table.insert(players, ps.player)
+	end
+	LoadGate.wait(map.loadToken, players, LOAD_TIMEOUT)
+
 	Cues.reset()
 	runPhase("Intro", startIntro)
 	runPhase("Briefing", sendBriefings)
@@ -479,15 +611,26 @@ local function runMatch(players: { Player })
 			break
 		end
 		Match.round = round
+		-- Back to the round: "Round N of M" on black; everyone is moved to their places under it.
+		if not Match.debugSkipTo then
+			Cues.fire("roundStart", { round = round, rounds = ServerSettings.rounds() }, { lead = 0.2 })
+			task.wait(0.2 + ROUND_COVER)
+		end
 		startRound(round)
 		runPhase("Investigation", startInvestigation, endInvestigation)
 		if Match.winner then
 			break
 		end
+		interlude("gambit", { round = round }, GAMBIT_OPENER)
 		runPhase("DeathNote", DeathNoteService.open, DeathNoteService.close)
+		-- The names written this round take their victims now, one scene after another.
+		DeathNoteService.resolve()
+		Cues.waitHolds(40)
 		if Match.winner then
 			break
 		end
+		MeetingService.gather()
+		interlude("meetingIntro", { cast = meetingCast() }, MEETING_INTRO)
 		runPhase("Meeting", function()
 			MeetingService.gather()
 			ChatService.setMeetingOpen(true)

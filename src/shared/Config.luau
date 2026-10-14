@@ -12,7 +12,7 @@ Config.MAX_ROUNDS = 5
 -- Phase lengths in seconds. Five rounds of 200 seconds plus briefing and reveal is about 18 minutes.
 Config.PHASE_TIME = {
 	-- Presentation phases: cutscenes play in full, even in sped-up Studio runs.
-	Intro = 10,
+	Intro = 15,
 	Verdict = 7,
 	Outro = 10,
 	Briefing = 15,
@@ -42,7 +42,6 @@ Config.LETTERS_PER_FLASH = 3
 Config.WITNESS_RANGE = 30
 
 -- The Grimoire (internal phase id "DeathNote")
-Config.DEATH_DELAY = 40
 Config.DEATH_CAUSES = { "Heart attack", "Disease", "Accident" }
 Config.NAME_MAX_LENGTH = 40
 

@@ -126,15 +126,74 @@ local function spawnPoint(bot): CFrame
 	return base * CFrame.new(math.sin(angle) * 9, 3, math.cos(angle) * 9 + 10)
 end
 
-function Bots.spawnCharacter(bot)
-	if bot.Parent ~= Players then
-		return
+-- Bots wear the avatars of the tester's friends (the first real player in the server): fetched once,
+-- then bot n takes friend n. Without friends (or offline in Studio) they get plain bodies.
+local FRIENDS_MAX = 60
+local friendsOf: number? = nil
+local friends: { { id: number, name: string } } = {}
+
+local function friendPool(): { { id: number, name: string } }
+	local tester = nil
+	for _, player in ipairs(Players:GetPlayers()) do
+		tester = player
+		break
 	end
+	if not tester or friendsOf == tester.UserId then
+		return friends
+	end
+	friendsOf = tester.UserId
+	friends = {}
+	local ok, pages = pcall(function()
+		return Players:GetFriendsAsync(tester.UserId)
+	end)
+	while ok and pages and #friends < FRIENDS_MAX do
+		for _, item in ipairs(pages:GetCurrentPage()) do
+			table.insert(friends, { id = item.Id, name = item.DisplayName or item.Username })
+		end
+		if pages.IsFinished then
+			break
+		end
+		ok = pcall(function()
+			pages:AdvanceToNextPageAsync()
+		end)
+	end
+	return friends
+end
+
+-- The friend whose avatar bot `bot` wears, if any.
+local function friendFor(bot): { id: number, name: string }?
+	local pool = friendPool()
+	return if #pool > 0 then pool[((bot.Number - 1) % #pool) + 1] else nil
+end
+
+local function plainBody(bot): HumanoidDescription
 	local description = Instance.new("HumanoidDescription")
 	local skin = SKIN[((bot.Number - 1) % #SKIN) + 1]
 	for _, key in ipairs({ "HeadColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor", "TorsoColor" }) do
 		(description :: any)[key] = skin
 	end
+	return description
+end
+
+function Bots.spawnCharacter(bot)
+	if bot.Parent ~= Players then
+		return
+	end
+	local description: HumanoidDescription? = nil
+	local friend = friendFor(bot)
+	if friend then
+		local ok, found = pcall(function()
+			return Players:GetHumanoidDescriptionFromUserId(friend.id)
+		end)
+		if ok and found then
+			description = found
+			bot.DisplayName = friend.name .. " (bot)"
+		end
+	end
+	if bot.Parent ~= Players then
+		return
+	end
+	description = description or plainBody(bot)
 	local ok, model = pcall(function()
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
 	end)
@@ -143,6 +202,10 @@ function Bots.spawnCharacter(bot)
 		return
 	end
 	model.Name = bot.Name
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		model.PrimaryPart = root -- R6 models pivot on the Head otherwise
+	end
 	model:SetAttribute("BotUserId", bot.UserId)
 	CollectionService:AddTag(model, Bots.TAG)
 	-- Characters normally start without the default Animate script; bots never had one.

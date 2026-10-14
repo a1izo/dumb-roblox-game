@@ -113,8 +113,13 @@ class Channel:
         return h00 * v0 + h10 * span * m0 + h01 * v1 + h11 * span * m1
 
 
+# Every Motion by name, so a cutscene camera can work out where an actor's head is at any moment.
+MOTIONS = {}
+
+
 class Motion:
     def __init__(self, name, length, loop=False, note="", floor=False, rate=30):
+        MOTIONS[name] = self
         self.name = name
         self.length = float(length)
         self.loop = loop
@@ -127,6 +132,8 @@ class Motion:
         self.plants = []  # (t0, t1, stance, forward, tilt)
         self.extras = []  # f(t, pose, offset) -> None, edits in place
         self.stride = None
+        self.stance = None
+        self.additive = False
 
     def key(self, t, ease="smooth", offset=None, floor=False, **joints):
         """A key pose. floor=True works out the body's height so it rests on the floor (offset gives
@@ -224,6 +231,8 @@ class Motion:
     def build(self):
         c = clip(self.name, self.length, loop=self.loop, note=self.note, floor=self.floor)
         c.stride = self.stride
+        c.stance = self.stance
+        c.additive = self.additive
         count = max(2, int(round(self.length * self.rate)))
         times = [self.length * i / count for i in range(count + (0 if self.loop else 1))]
         sprung = self._sprung(times) if self.springs else None
@@ -234,4 +243,4 @@ class Motion:
         return c
 
 
-__all__ = ["Motion", "J"]
+__all__ = ["Motion", "J", "MOTIONS"]

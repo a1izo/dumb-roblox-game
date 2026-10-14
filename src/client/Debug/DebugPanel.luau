@@ -698,6 +698,45 @@ builders.Show = function()
 		send("cue", { kind = "outro", extra = "Kira" })
 	end)
 	note("Death, verdict and arrest use the person picked in People (" .. selectedName() .. ").")
+	heading("Blender cutscenes (you play the lead, bots the rest)")
+	local shots = ReplicatedStorage:WaitForChild("Shared"):FindFirstChild("Cinema")
+	shots = if shots then shots:FindFirstChild("Shots") else nil
+	if shots then
+		local names = {}
+		for _, module in ipairs(shots:GetChildren()) do
+			table.insert(names, module.Name)
+		end
+		table.sort(names)
+		r = row()
+		for i, name in ipairs(names) do
+			if i > 1 and (i - 1) % 5 == 0 then
+				r = row()
+			end
+			button(r, name, function()
+				send("cue", { kind = "shot", extra = name })
+			end)
+		end
+		-- Slow motion for the Blender cutscenes (on this screen only), with the shot's clock shown on top.
+		r = row()
+		local speeds = { 1, 0.5, 0.25, 0.1 }
+		local speedButtons: { TextButton } = {}
+		local function paint()
+			local rate = Players.LocalPlayer:GetAttribute("ShotRate") or 1
+			for i, b in ipairs(speedButtons) do
+				b.BackgroundColor3 = if speeds[i] == rate then COLORS.on else COLORS.button
+			end
+		end
+		for _, speed in ipairs(speeds) do
+			table.insert(
+				speedButtons,
+				button(r, "Shot x" .. speed, function()
+					Players.LocalPlayer:SetAttribute("ShotRate", if speed == 1 then nil else speed)
+					paint()
+				end)
+			)
+		end
+		paint()
+	end
 	heading("Screens")
 	r = row()
 	for _, tone in ipairs({ "neutral", "danger", "team", "kira" }) do
