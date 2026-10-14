@@ -660,8 +660,10 @@ def build_fidgets():
 
     cross = Motion("idleArmsCross", 4.0, note="A fidget in a case: the arms fold across the chest for a while.")
     cross.key(0.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=HANG_R, lShoulder=HANG_L)
-    cross.key(0.8, root=(-1, 0, 0), neck=(-3, 0, 0), rShoulder=r_chest(70, -44), lShoulder=l_chest(62, 40))
-    cross.key(3.1, root=(-1, 3, 0), neck=(-3, 8, 0), rShoulder=r_chest(71, -44), lShoulder=l_chest(63, 40))
+    # folded low across the chest (not up at the throat): the forearms over the stomach and ribs
+    folded_r, folded_l = J((54, 0, -48), (-0.32, 0.0, -0.24)), J((48, 0, 44), (0.32, 0.06, -0.3))
+    cross.key(0.8, root=(-1, 0, 0), neck=(-3, 0, 0), rShoulder=folded_r, lShoulder=folded_l)
+    cross.key(3.1, root=(-1, 3, 0), neck=(-3, 8, 0), rShoulder=J((55, 0, -48), (-0.32, 0.0, -0.24)), lShoulder=folded_l)
     cross.key(4.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=HANG_R, lShoulder=HANG_L)
     soft(cross).build()
 
@@ -817,15 +819,16 @@ def build_start_stop():
 
 
 def build_flight():
-    hover = Motion("flyHover", 4.0, loop=True, note="Hovering: upright, legs hanging loose, arms drifting, a slow float.")
+    hover = Motion("flyHover", 4.0, loop=True, note="Hovering: weightless, knees drawn up a little and the feet hanging, "
+                                                     "arms adrift away from the body, a slow float.")
     for i in range(8):
         t = i * 0.5
         f = math.sin(2 * math.pi * t / 4.0)
         g = math.sin(2 * math.pi * t / 4.0 + 1.3)
-        hover.key(t, offset=(0, 0.12 * f, 0), root=(-2 + 1.2 * g, 0, 1.5 * g), neck=(-6 - 1.0 * f, 0, -1.0 * g),
-                  rShoulder=J((6 + 3 * g, 0, 12 + 2 * f), (0, 0.03, 0)), lShoulder=J((6 - 3 * g, 0, -12 + 2 * f), (0, 0.03, 0)),
-                  rHip=J((8 + 3 * f, 0, 4), (0, 0.12, 0)), lHip=J((-2 - 3 * f, 0, -4), (0, 0.06, 0)))
-    soft(hover, arms_hz=1.2).build()
+        hover.key(t, offset=(0, 0.14 * f, 0), root=(-4 + 1.4 * g, 2.0 * g, 1.8 * g), neck=(-8 - 1.2 * f, -1.5 * g, -1.2 * g),
+                  rShoulder=J((10 + 4 * g, 0, 20 + 3 * f), (0, 0.04, 0)), lShoulder=J((8 - 4 * g, 0, -22 + 3 * f), (0, 0.04, 0)),
+                  rHip=J((18 + 4 * f, 0, 6), (0, 0.3, -0.04)), lHip=J((4 - 4 * f, 0, -6), (0, 0.16, 0)))
+    soft(hover, arms_hz=1.0, arm_damp=0.6).build()
 
     glide = Motion("flyGlide", 2.4, loop=True, note="Gliding forward: leaning far into it, legs trailing, arms swept back.")
     for i in range(6):
