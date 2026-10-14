@@ -58,6 +58,7 @@ type State = {
 	rising: boolean,
 	still: number,
 	settled: boolean,
+	stanceClip: string?,
 }
 
 local states: { [Model]: State } = {}
@@ -212,6 +213,7 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		state.still += dt
 		if state.still >= STANCE_AFTER and not state.settled and not PoseController.busy(character) then
 			state.settled = true
+			state.stanceClip = stance
 			if ClipPlayer.exists(stance) then
 				PoseController.play(character, stance, { emote = true, fadeIn = 0.8, fadeOut = 0.4 })
 				LocomotionController.Settled:Fire(character, stance)
@@ -220,6 +222,11 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	else
 		state.still = 0
 		state.settled = false
+		-- A stance taken off while the body stands in it ends at once.
+		if state.stanceClip and not hasStance then
+			PoseController.stop(character, state.stanceClip, 0.4)
+		end
+		state.stanceClip = nil
 	end
 
 	-- A fidget now and then, when standing still with nothing else to do (not with a stance or a stroll).

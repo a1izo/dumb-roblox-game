@@ -209,11 +209,18 @@ local function watchChain(character: Model)
 		end
 		local follow: RBXScriptConnection? = nil
 		local jump: RBXScriptConnection? = nil
+		local jumpAsked: RBXScriptConnection? = nil
 		if character == LocalPlayer.Character then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
 			if humanoid then
+				-- A jump (asked for, or happening) lets go.
 				jump = humanoid.StateChanged:Connect(function(_, state)
 					if state == Enum.HumanoidStateType.Jumping then
+						DuoRemote:FireServer({ action = "break" })
+					end
+				end)
+				jumpAsked = humanoid:GetPropertyChangedSignal("Jump"):Connect(function()
+					if humanoid.Jump then
 						DuoRemote:FireServer({ action = "break" })
 					end
 				end)
@@ -245,6 +252,9 @@ local function watchChain(character: Model)
 			end
 			if jump then
 				jump:Disconnect()
+			end
+			if jumpAsked then
+				jumpAsked:Disconnect()
 			end
 		end
 	end
