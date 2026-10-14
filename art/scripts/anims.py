@@ -91,10 +91,12 @@ fall.key(0.6, root=(4, 0, -2), neck=(-8, 0, 0), rShoulder=J((45, 0, 46), (0, 0.1
 soft(fall, arms=1.6)
 fall.build()
 
-sit = Motion("sit", 4.0, loop=True, note="Seated (a Seat): thighs level, hands resting on the lap, breathing.")
+sit = Motion("sit", 4.0, loop=True, note="Seated (a Seat): perched, thighs sloping down, hands on the knees, breathing.")
+# R6 legs do not bend at the knee: level thighs stick 2.5 studs straight out and go through whatever is in
+# front (the dice rock, a desk). Sloped down they reach 0.6 less and pass under a table's edge.
 for t, b in ((0.0, 0.0), (2.0, 1.0)):
-    sit.key(t, root=(-3 + 0.8 * b, 0, 0), neck=(-4 - 0.6 * b, 2 * b, 0), rHip=J((88, 0, 2), (0, 0, 0)), lHip=J((88, 0, -2)),
-            rShoulder=J((42 + b, 0, -6), (-0.05, 0.03 * b, -0.15)), lShoulder=J((42 + b, 0, 6), (0.05, 0.03 * b, -0.15)))
+    sit.key(t, root=(-6 + 0.8 * b, 0, 0), neck=(-2 - 0.6 * b, 2 * b, 0), rHip=J((52, 0, 6), (0, 0, 0)), lHip=J((50, 0, -6)),
+            rShoulder=J((30 + b, 0, -8), (-0.05, 0.03 * b, -0.15)), lShoulder=J((30 + b, 0, 8), (0.05, 0.03 * b, -0.15)))
 soft(sit)
 sit.build()
 
