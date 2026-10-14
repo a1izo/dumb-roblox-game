@@ -207,7 +207,7 @@ def clip_lua(name, action, length, times, samples, offsets, positions=None):
     return lines
 
 
-ACTING_DIR = os.path.join(ROOT, "src", "shared", "Cinema", "Acting")
+ACTING_DIR = os.path.join(common.ROOT, "src", "shared", "Cinema", "Acting")
 NL = chr(10)
 
 HEADER = [
