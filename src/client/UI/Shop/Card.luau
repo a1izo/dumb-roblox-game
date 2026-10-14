@@ -7,13 +7,15 @@
 --   epic       ornate corners
 --   legendary  amber gold leaf, a slow shine passing over it (still under reduced motion)
 --
--- Objects (hats, ties, trails, Manual covers) are a small 3D view, and so are the styles, forms and
--- emotes that have a prop of their own once the Core models are imported (a quill, a gavel, a chess
--- king, a crow cloak, a coin...); the rest is a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand
--- can lie face down (the back of the deck) and be turned over.
+-- Objects (hats, ties, trails, Manual covers) are a small 3D view, and so are the styles and forms that
+-- have a prop of their own once the Core models are imported (a quill, a gavel, a chess king, a crow
+-- cloak...); an emote is a small pale mannequin caught in its move (Shop/PoseFigure), with its props; the
+-- rest is a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand can lie face
+-- down (the back of the deck) and be turned over. A card new to the shop wears a "New" ribbon until it is
+-- seen, and a card not yet owned has a heart to put it on the wishlist.
 --
---   local card = Card.new(item, { Parent = slot, chip = "300", onPick = fn })
---   card:setPicked(true)  card:setChip("Worn")  card:turn(fn)
+--   local card = Card.new(item, { Parent = slot, chip = "300", onPick = fn, isNew = true, onWish = fn })
+--   card:setPicked(true)  card:setChip("Worn")  card:turn(fn)  card:setNew(false)  card:setWished(true)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -26,6 +28,7 @@ local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local Kit = require(script.Parent.Parent.Kit)
 local Motion = require(script.Parent.Parent.Core.Motion)
+local PoseFigure = require(script.Parent.PoseFigure)
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -39,6 +42,7 @@ local LIFT = 10 -- px a picked card rises
 local PICTURE = 118 -- the picture's height
 local GOLD = Color3.fromRGB(212, 168, 92) -- the legendary card's gold leaf
 local FOV = 28
+local HEART_HIT = 40 -- px, the heart's button
 
 -- The still for kinds with no 3D view: an icon (styles and emotes come in suits of their own).
 local STILL_ICON = {
@@ -61,6 +65,9 @@ export type Card = typeof(setmetatable(
 		picked: boolean,
 		hit: TextButton,
 		faceDown: boolean,
+		ribbon: Frame?,
+		heart: ImageButton?,
+		wished: boolean,
 	},
 	Card
 ))
@@ -103,12 +110,11 @@ local function part(
 	})
 end
 
--- The prop a style, form or emote shows on its card (a Core model; nil when it has none).
+-- The prop a style or form shows on its card (a Core model; nil when it has none).
 local PROP = {
 	writing = { quill = "Quill", typewriter = "Typewriter", fire = "Quill", knife = "Knife" },
 	verdict = { gavel = "Gavel", cuffs = "Handcuffs", checkmate = "ChessKing", sugar = "SugarCube" },
 	specter = { chains = "Chain", crows = "CrowCloak", marionette = "MarionetteBar", veil = "Hood" },
-	emote = { coinFlip = "Coin", appleBite = "Apple" },
 }
 
 local function propOf(item: Cosmetics.Item): string?
@@ -116,15 +122,33 @@ local function propOf(item: Cosmetics.Item): string?
 	if not table_ then
 		return nil
 	end
-	local key = table_[item.style or item.form or item.emote or ""]
+	local key = table_[item.style or item.form or ""]
 	return if key and ModelLibrary.has(key) then key else nil
+end
+
+-- An emote's mannequin, caught in the move (a stroll in its walk, holding the stroll's props). Posed once
+-- per emote; each card gets a copy (the shop deals its cards again whenever the profile changes).
+local figures: { [string]: Model | false } = {}
+local function figureOf(item: Cosmetics.Item): Model?
+	local clip = item.emote
+	if item.kind ~= "emote" or not clip then
+		return nil
+	end
+	local figure = figures[item.id]
+	if figure == nil then
+		local walking = if item.stroll then PoseFigure.build(clip .. "Walk", nil, clip) else nil
+		figure = walking or PoseFigure.build(clip, (item :: any).card) or false
+		figures[item.id] = figure
+	end
+	return if figure then figure:Clone() else nil
 end
 
 -- The thing itself, small, in a 3D view (nil for kinds that have none).
 local function picture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 	local kind = item.kind
 	local key = propOf(item)
-	if kind ~= "hat" and kind ~= "tie" and kind ~= "trail" and kind ~= "grimoire" and not key then
+	local figure = figureOf(item)
+	if kind ~= "hat" and kind ~= "tie" and kind ~= "trail" and kind ~= "grimoire" and not key and not figure then
 		return nil
 	end
 	local view = Create("ViewportFrame", {
@@ -138,7 +162,11 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 	}) :: ViewportFrame
 	local holder = Create("Model", { Name = "Thing", Parent = view }) :: Model
 	local model = if key then ModelLibrary.get(key) else nil
-	if model then
+	if figure then
+		-- Seen from the front, a little to its right (the mannequin faces -Z).
+		figure.Parent = holder
+		frameView(view, holder, 152)
+	elseif model then
 		model.Parent = holder
 		frameView(view, holder, -28)
 	elseif kind == "hat" then
@@ -328,7 +356,8 @@ end
 -- The card ---------------------------------------------------------------------------------------------
 
 -- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipCoin (the chip shows a coin),
--- onPick (clicked), faceDown (lies on its back: onPick still fires, the caller turns it).
+-- onPick (clicked), faceDown (lies on its back: onPick still fires, the caller turns it), isNew (the "New"
+-- ribbon), onWish (a heart: called with true to wish for it, false to take the wish back) and wished.
 function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	local slot = Kit.Base.make("Frame", {
 		Name = "Card_" .. item.id,
@@ -414,8 +443,40 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		picked = false,
 		hit = hit,
 		faceDown = false,
+		ribbon = nil,
+		heart = nil,
+		wished = props.wished == true,
 	}, Card)
 	self:setChip(props.chip or "", props.chipCoin == true)
+	self:setNew(props.isNew == true)
+	if props.onWish then
+		-- Over the picture's top right corner, above the card's own button (so it lifts with the face).
+		local heart = Kit.Base.make("ImageButton", {
+			Name = "Wish",
+			BackgroundTransparency = 1,
+			Image = "",
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -8, 0, LIFT + 10),
+			Size = UDim2.fromOffset(HEART_HIT, HEART_HIT),
+			ZIndex = 21,
+			Parent = slot,
+		}) :: ImageButton
+		Kit.Controls.focusable(heart)
+		Kit.icon({
+			name = "heart",
+			size = 20,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			ZIndex = 22,
+			Parent = heart,
+		})
+		self.heart = heart
+		self:setWished(self.wished)
+		heart.Activated:Connect(function()
+			self:setWished(not self.wished)
+			props.onWish(self.wished)
+		end)
+	end
 	hit.Activated:Connect(function()
 		if props.onPick then
 			props.onPick(self)
@@ -423,12 +484,12 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	end)
 	hit.MouseEnter:Connect(function()
 		if not self.picked then
-			Motion.tween(face, { Position = UDim2.new(0.5, 0, 0, LIFT - 3) }, T.motion.quick)
+			self:rise(LIFT - 3)
 		end
 	end)
 	hit.MouseLeave:Connect(function()
 		if not self.picked then
-			Motion.tween(face, { Position = UDim2.new(0.5, 0, 0, LIFT) }, T.motion.quick)
+			self:rise(LIFT)
 		end
 	end)
 	if props.faceDown then
@@ -445,16 +506,71 @@ function Card.setChip(self: Card, text: string, coin: boolean)
 	frame.Visible = text ~= ""
 end
 
+-- Moves the face (and its heart) to `top` px down the slot.
+function Card.rise(self: Card, top: number)
+	Motion.tween(self.face, { Position = UDim2.new(0.5, 0, 0, top) }, T.motion.quick)
+	if self.heart then
+		Motion.tween(self.heart, { Position = UDim2.new(1, -8, 0, top + 10) }, T.motion.quick)
+	end
+end
+
+-- The "New" ribbon over the picture's top left corner, on or off.
+function Card.setNew(self: Card, on: boolean)
+	if self.ribbon then
+		self.ribbon.Visible = on
+		return
+	end
+	if not on then
+		return
+	end
+	local ribbon = Kit.Base.make("Frame", {
+		Name = "New",
+		BackgroundColor3 = C.bone,
+		BorderSizePixel = 0,
+		Position = UDim2.fromOffset(12, 14),
+		Size = UDim2.fromOffset(44, 20),
+		ZIndex = 4,
+		Parent = self.face,
+	}) :: Frame
+	Kit.Base.corner(ribbon, 2)
+	Kit.label({
+		Text = "NEW",
+		font = "bodyBold",
+		size = "micro",
+		color = C.void,
+		AutomaticSize = Enum.AutomaticSize.None,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 5,
+		Parent = ribbon,
+	})
+	self.ribbon = ribbon
+end
+
+-- The heart, full when the card is on the wishlist.
+function Card.setWished(self: Card, on: boolean)
+	self.wished = on
+	local heart = self.heart
+	local icon = heart and heart:FindFirstChildWhichIsA("ImageLabel")
+	if icon then
+		icon.ImageColor3 = if on then C.bone else C.dim
+		icon.ImageTransparency = if on then 0 else 0.45
+	end
+end
+
 -- Picked: the card lifts and its edge brightens.
 function Card.setPicked(self: Card, on: boolean)
 	self.picked = on
-	Motion.tween(self.face, { Position = UDim2.new(0.5, 0, 0, if on then 0 else LIFT) }, T.motion.quick)
+	self:rise(if on then 0 else LIFT)
 	self.edge.Transparency = if on then 0 elseif tier(self.item.rarity) == 1 then 0.62 else 0.3
 end
 
 -- Face down: the back of Death's deck covers it.
 function Card.lieDown(self: Card)
 	self.faceDown = true
+	if self.heart then
+		self.heart.Visible = false
+	end
 	if self.back then
 		self.back.Visible = true
 		return
@@ -504,6 +620,9 @@ function Card.turn(self: Card, after: (() -> ())?)
 	task.delay(half, function()
 		if self.back then
 			self.back.Visible = false
+		end
+		if self.heart then
+			self.heart.Visible = true
 		end
 		Motion.tween(face, { Size = UDim2.fromOffset(Card.WIDTH, Card.HEIGHT) }, half)
 		if after then

@@ -1,13 +1,16 @@
 -- The cosmetic shop: buy with coins earned in matches, then equip in the lobby. Items from
 -- the daily rotation can only be bought while they are featured; VIP and earned items
 -- cannot be bought at all. An emote is not worn: a bought one goes on the emote wheel's first
--- empty slot (EmoteService).
+-- empty slot (EmoteService). It also keeps what the shop needs to remember for browsing
+-- (Shared/ShopBrowse): the new cards already looked at, and the wishlist, announced on arriving
+-- when a wished card is in Today's hand.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
+local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 local Analytics = require(script.Parent.Analytics)
@@ -35,11 +38,103 @@ function ShopService.canBuy(item: Cosmetics.Item, now: number): (boolean, string
 	return true, ""
 end
 
+-- The new cards of a suit, looked at (their "New" ribbons go).
+local function markSeen(player: Player, ids: any)
+	local data = DataService.get(player)
+	if not data or type(ids) ~= "table" then
+		return
+	end
+	local now = os.time()
+	local changed = false
+	for index, id in ipairs(ids) do
+		local item = if type(id) == "string" then Cosmetics.byId(id) else nil
+		if index > 200 then
+			break
+		elseif item and ShopBrowse.isNew(item, now) and not data.shopSeen[id] then
+			data.shopSeen[id] = true
+			changed = true
+		end
+	end
+	if changed then
+		ShopBrowse.prune(data.shopSeen, now)
+		DataService.push(player)
+		DataService.saveSoon(player)
+	end
+end
+
+-- A heart on a card: on the wishlist, or off it.
+local function wish(player: Player, item: Cosmetics.Item, on: boolean)
+	local data = DataService.get(player)
+	if not data then
+		return
+	end
+	if on then
+		if not ShopBrowse.wishable(item) or CosmeticsService.owns(player, item) then
+			return
+		end
+		local count = 0
+		for _ in pairs(data.wishlist) do
+			count += 1
+		end
+		if count >= ShopBrowse.WISH_LIMIT then
+			Match.notify(player, "Your wishlist is full (" .. ShopBrowse.WISH_LIMIT .. ").", "info")
+			return
+		end
+		data.wishlist[item.id] = true
+	elseif data.wishlist[item.id] then
+		data.wishlist[item.id] = nil
+	else
+		return
+	end
+	DataService.push(player)
+	DataService.saveSoon(player)
+end
+
+-- On arriving: the wished cards in Today's hand (bought ones leave the wishlist).
+function ShopService.announceWishes(player: Player)
+	local data = DataService.get(player)
+	if not data then
+		return
+	end
+	local owns = function(item: Cosmetics.Item): boolean
+		return CosmeticsService.owns(player, item)
+	end
+	for id in pairs(data.wishlist) do
+		local item = Cosmetics.byId(id)
+		if not item or owns(item) then
+			data.wishlist[id] = nil
+		end
+	end
+	local found = ShopBrowse.wishedToday(data.wishlist, owns, ShopRotation.dayOf(os.time()))
+	if #found == 0 then
+		return
+	end
+	local names = {}
+	for _, item in ipairs(found) do
+		table.insert(names, item.name)
+	end
+	Match.notify(
+		player,
+		string.format(
+			"From your wishlist, in Today's hand: %s.",
+			if #names == 1 then names[1] else table.concat(names, ", ", 1, #names - 1) .. " and " .. names[#names]
+		),
+		"good"
+	)
+end
+
 local function onRequest(player: Player, payload)
-	if type(payload) ~= "table" or type(payload.itemId) ~= "string" then
+	if type(payload) ~= "table" then
 		return
 	end
 	if not RateLimit.allow(player, "shop", 0.3) then
+		return
+	end
+	if payload.action == "seen" then
+		markSeen(player, payload.itemIds)
+		return
+	end
+	if type(payload.itemId) ~= "string" then
 		return
 	end
 	local data = DataService.get(player)
@@ -52,6 +147,10 @@ local function onRequest(player: Player, payload)
 		return
 	end
 	local action = payload.action
+	if action == "wish" then
+		wish(player, item, payload.on == true)
+		return
+	end
 	if action == "turn" then
 		-- A card of Today's hand turned over (only to see it).
 		if ShopRotation.turn(data.shopTurned, ShopRotation.dayOf(os.time()), item.id) then
@@ -78,6 +177,7 @@ local function onRequest(player: Player, payload)
 		data.coins -= price
 		Analytics.coins(player, -price, data.coins, "Shop", item.id)
 		data.owned[item.id] = true
+		data.wishlist[item.id] = nil
 		if item.kind == "emote" then
 			local slot = EmoteService.placeBought(data, item.emote)
 			Match.notify(
@@ -117,6 +217,14 @@ end
 
 function ShopService.init()
 	ShopRequest.OnServerEvent:Connect(onRequest)
+	DataService.ProfileLoaded:Connect(function(player)
+		-- (a moment after arriving, once the lobby is on screen)
+		task.delay(6, function()
+			if player.Parent then
+				ShopService.announceWishes(player)
+			end
+		end)
+	end)
 end
 
 return ShopService

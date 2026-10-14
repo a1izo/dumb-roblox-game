@@ -134,6 +134,8 @@ function DataService.payload(player: Player)
 		shopTurned = data.shopTurned,
 		emoteWheel = data.emoteWheel,
 		stance = data.stance,
+		shopSeen = data.shopSeen,
+		wishlist = data.wishlist,
 		today = TimeUtil.day(now),
 		nextDayIn = TimeUtil.secondsToNextDay(now),
 		nextWeekIn = TimeUtil.secondsToNextWeek(now),

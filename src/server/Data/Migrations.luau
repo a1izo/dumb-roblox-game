@@ -112,6 +112,9 @@ function Migrations.defaults(startingCoins: number)
 		emoteWheel = {},
 		-- The stance (an owned emote item that can be one), "" for none (Shared/Cosmetics `stance`).
 		stance = "",
+		-- Browsing the shop (Shared/ShopBrowse): new cards already looked at, and the wishlist.
+		shopSeen = {}, -- [itemId] = true
+		wishlist = {}, -- [itemId] = true
 	}
 end
 
