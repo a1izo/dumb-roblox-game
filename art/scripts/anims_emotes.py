@@ -1006,3 +1006,60 @@ for i in range(8):
             rShoulder=J((-8, 0, 8), (0, 0.06 if beat else 0.0, 0)), lShoulder=J((-8, 0, -8), (0, 0.06 if beat else 0.0, 0)))
 sky.follow("neck", 5.0, 0.45).follow(ARMS, 4.0, 0.5).plant(stance=0.1)
 sky.build()
+
+
+# Duos ----------------------------------------------------------------------------------------------------
+# Played by two (DuoService asks the nearest player; DuoController plays it on both, on every screen).
+
+# Match Point: a rally, each player with a racket. The ball's timetable (DuoController.RALLY) goes with
+# these swings: the first player serves at 0.35 s and hits again at 1.95 and 3.55, then smashes at 5.15;
+# the second returns at 1.15, 2.75 and 4.35 and lunges too late at 5.45. One shot each.
+READY_R, READY_L = J((40, 0, 18), (0, 0.04, -0.12)), J((34, 0, -14), (0, 0.04, -0.12))
+
+
+def forehand(m, t, wind=0.32):
+    m.key(t - wind, offset=(0, -0.16, 0), root=(-8, -32, 0), neck=(-4, 26, 0), rShoulder=J((26, 0, 72), (0, 0.04, 0.18)),
+          lShoulder=J((40, 0, -30), (0, 0.04, -0.14)))
+    m.key(t, "snap", offset=(0, -0.12, -0.04), root=(-6, 24, 0), neck=(-2, -18, 0), rShoulder=J((84, 0, -34), (-0.1, 0.1, -0.16)),
+          lShoulder=J((20, 0, -20)))
+    m.key(t + 0.3, offset=(0, -0.16, 0), root=(-8, 0, 0), neck=(-4, 0, 0), rShoulder=READY_R, lShoulder=READY_L)
+
+
+serve = Motion("matchPointServe", 6.2, note="A tennis rally: the serve, two forehands, then a smash and a fist.")
+serve.key(0.0, offset=(0, -0.04, 0), root=(-2, 0, 0), neck=(0, 0, 0), rShoulder=J((150, 0, 40), (0, 0.2, 0.1)),
+          lShoulder=J((60, 0, -10), (0, 0.06, -0.12)))
+serve.key(0.18, offset=(0, 0.04, 0.04), root=(6, 0, 0), neck=(18, 0, 0), rShoulder=J((168, 0, 40), (0, 0.24, 0.12)),
+          lShoulder=J((160, 0, -10), (0, 0.24, 0)))
+serve.key(0.35, "snap", offset=(0, -0.06, -0.08), root=(-12, 0, 0), neck=(-4, 0, 0), rShoulder=J((60, 0, -24), (-0.1, 0.06, -0.16)),
+          lShoulder=J((10, 0, -16)))
+serve.key(0.7, offset=(0, -0.16, 0), root=(-8, 0, 0), neck=(-4, 0, 0), rShoulder=READY_R, lShoulder=READY_L)
+forehand(serve, 1.95)
+forehand(serve, 3.55)
+serve.key(4.8, "out", offset=(0, 0.12, 0.04), root=(8, 0, 0), neck=(20, 0, 0), rShoulder=J((176, 0, 30), (0, 0.26, 0.14)),
+          lShoulder=J((130, 0, -20), (0, 0.18, 0)))
+serve.key(5.15, "snap", offset=(0, -0.18, -0.1), root=(-16, 0, 0), neck=(-8, 0, 0), rShoulder=J((54, 0, -30), (-0.12, 0.04, -0.18)),
+          lShoulder=J((16, 0, -20)))
+serve.key(5.6, "out", offset=(0, -0.04, 0), root=(4, 0, 0), neck=(10, 0, 0), rShoulder=J((40, 0, 14)), lShoulder=J((166, 0, -8), (0, 0.3, 0)))
+serve.key(6.2, offset=(0, -0.04, 0), root=(4, 0, 0), neck=(10, 0, 0), rShoulder=J((38, 0, 14)), lShoulder=J((164, 0, -8), (0, 0.28, 0)))
+soft(serve, head=3.0, arms=4.5).plant(stance=0.26, forward=(0.2, -0.2))
+serve.build()
+
+ret = Motion("matchPointReturn", 6.2, note="A tennis rally's other side: three returns, then a lunge too late for the smash.")
+ret.key(0.0, offset=(0, -0.16, 0), root=(-8, 0, 0), neck=(-4, 0, 0), rShoulder=READY_R, lShoulder=READY_L)
+for t in (1.15, 2.75, 4.35):
+    forehand(ret, t)
+ret.key(5.45, "snap", offset=(0.5, -0.4, 0), root=(-10, -20, 18), neck=(-4, 30, 0), rShoulder=J((80, 0, 70), (0, 0.06, 0)),
+        lShoulder=J((20, 0, -40)))
+ret.key(5.85, offset=(0.4, -0.3, 0), root=(-14, -10, 10), neck=(-20, 40, 0), rShoulder=J((30, 0, 30)), lShoulder=J((14, 0, -20)))
+ret.key(6.2, offset=(0.3, -0.2, 0), root=(-12, 0, 4), neck=(-24, 30, 0), rShoulder=J((12, 0, 10)), lShoulder=J((10, 0, -10)))
+soft(ret, head=3.0, arms=4.5).plant(stance=0.26, forward=(0.2, -0.2))
+ret.build()
+
+# Cuffed Together: two chained at the wrist (the leader's left, the follower's right). Only the chained arm is
+# keyed, so the body walks as it always does underneath; the arm hangs a little out towards the other.
+for name, joint, value in (("cuffedLead", "lShoulder", -1), ("cuffedFollow", "rShoulder", 1)):
+    cuff = Motion(name, 2.0, loop=True, note="Chained at the wrist: the arm hanging a little out towards the other one.")
+    for t, b in ((0.0, 0.0), (1.0, 1.0)):
+        cuff.key(t, **{joint: J((12 + 3 * b, 0, value * (20 + 2 * b)), (0, -0.02 * b, 0))})
+    cuff.follow(joint, 2.0, 0.7)
+    cuff.build()

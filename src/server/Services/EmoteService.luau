@@ -16,6 +16,7 @@ local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local DataService = require(script.Parent.DataService)
+local DuoService = require(script.Parent.DuoService)
 local Match = require(script.Parent.Match)
 local PassService = require(script.Parent.PassService)
 local ProfileService = require(script.Parent.ProfileService)
@@ -88,6 +89,13 @@ local function onEmote(player: Player, emoteId)
 		return
 	end
 	local item = if emote.item then Cosmetics.byId(emote.item) else nil
+	if item and item.duo then
+		-- Played by two: ask the nearest player first (DuoService).
+		DuoService.request(player, emote)
+		return
+	end
+	-- Any other emote lets go of a chain.
+	DuoService.stop(player)
 	local walking = player.Character and player.Character:GetAttribute("Stroll")
 	if item and item.stroll then
 		-- Picked again: it ends; otherwise it starts (or takes over from another stroll).

@@ -55,6 +55,16 @@ end
 local NOTEBOOK_STAND = stand("Block", 1.3, 0.14, 0.95, 22, 22, 26)
 local PEN_STAND = stand("Cylinder", 0.9, 0.09, 0.09, 14, 14, 16)
 
+-- A racket in the right hand, its handle in the fist and its head out beyond it (DuoController reckons the
+-- strings are 2.55 studs down the arm).
+local RACKET: Prop = {
+	model = "Racket",
+	size = 2.1,
+	stand = stand("Block", 0.8, 2.1, 0.08, 150, 112, 72),
+	mount = "Right Arm",
+	at = CFrame.new(0, -1.05, -0.05) * CFrame.Angles(rad(180), 0, 0) * CFrame.new(0, 0.95, 0),
+}
+
 local CLIPS: { [string]: { Prop } } = {
 	coinFlip = {
 		{
@@ -202,6 +212,8 @@ local CLIPS: { [string]: { Prop } } = {
 			at = CFrame.new(0, -1.05, -0.1) * CFrame.Angles(rad(-124), 0, 0) * CFrame.new(0, 0.35, 0),
 		},
 	},
+	matchPointServe = { RACKET },
+	matchPointReturn = { RACKET },
 	smilingLord = {
 		{
 			model = "Cane",

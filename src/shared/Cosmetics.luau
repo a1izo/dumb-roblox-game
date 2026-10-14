@@ -1082,6 +1082,32 @@ Cosmetics.ITEMS = {
 		stroll = true,
 		added = "2026-10-14",
 	},
+	-- The emote pack: duos (`duo`: played with the nearest player, who is asked first; DuoService).
+	{
+		id = "emote_match_point",
+		kind = "emote",
+		category = "duo",
+		name = "Match Point",
+		rarity = "legendary",
+		source = "shop",
+		price = 1200,
+		emote = "matchPointServe",
+		duo = true,
+		added = "2026-10-14",
+	},
+	{
+		id = "emote_cuffed_together",
+		kind = "emote",
+		category = "duo",
+		name = "Cuffed Together",
+		rarity = "legendary",
+		source = "shop",
+		price = 1100,
+		emote = "cuffedLead",
+		duo = true,
+		lobbyOnly = true,
+		added = "2026-10-14",
+	},
 
 	-- Titles (lobby and results only)
 	{ id = "title_trainee", kind = "title", name = "Trainee", rarity = "common", source = "achievement" },

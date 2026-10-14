@@ -84,6 +84,9 @@ EmoteMedia.SOUNDS = {
 	griddy = "",
 	mushroomStroll = "",
 	notMyProblem = "",
+	-- The emote pack: duos
+	matchPointServe = "",
+	cuffedLead = "",
 } :: { [string]: string }
 
 -- [expression] = decal asset id (a face drawn in art/textures/faces, uploaded as a Decal)

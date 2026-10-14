@@ -64,6 +64,19 @@ return function(t)
 				end
 			end
 		end)
+		it("makes duos of the duo emotes only, with their partner's clips", function()
+			local duos = 0
+			for _, item in ipairs(Cosmetics.ofKind("emote")) do
+				if item.duo then
+					duos += 1
+					expect(item.category).to.equal("duo")
+				end
+			end
+			expect(duos).to.equal(2)
+			for _, clip in ipairs({ "matchPointServe", "matchPointReturn", "cuffedLead", "cuffedFollow" }) do
+				expect(ClipPlayer.exists(clip)).to.equal(true)
+			end
+		end)
 		it("gives every other ending a clip, found by its item", function()
 			for _, item in ipairs(Cosmetics.ofKind("emote")) do
 				if item.alt ~= nil then
