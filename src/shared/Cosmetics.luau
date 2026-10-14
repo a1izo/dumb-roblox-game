@@ -1324,6 +1324,12 @@ function Cosmetics.emote(clip: string): Item?
 	return nil
 end
 
+-- An emote that can be a win scene (played by a winner in "The end", for everyone): not a stroll, not a duo,
+-- and nothing that looks like one of a case's signals.
+function Cosmetics.winSceneOk(item: Item?): boolean
+	return item ~= nil and item.kind == "emote" and not item.stroll and not item.duo and not item.lobbyOnly
+end
+
 -- Items that can appear in the daily rotation.
 function Cosmetics.rotationPool(): { Item }
 	local list = {}

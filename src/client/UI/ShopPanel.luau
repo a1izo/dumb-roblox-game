@@ -17,7 +17,8 @@
 -- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
 -- the emote wheel's first empty slot), "N more coins" when you are short, or wear / take off what you
 -- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel);
--- one that can be a stance also offers to be yours (stand still a while and you settle into it).
+-- under them, whether it is your stance (stand still a while and you settle into it; only some can be) and
+-- your win scene (what you play in "The end" when you win, instead of a cheer).
 -- On a phone the cards fill the window and Your look rises as a sheet from the bottom when a card is
 -- picked. Open in the lobby only.
 
@@ -262,18 +263,28 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 	actionNote.Text = if at
 		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
 		else "Pick a number to put it on your emote wheel (Q)."
+	-- Its other uses, each a switch: your stance, your win scene.
+	local switches = {}
 	if item.stance then
-		local mine = profile.stance == item.id
-		stanceHolder.Visible = true
+		table.insert(switches, { label = "Stance", on = profile.stance == item.id, action = "stance" })
+	end
+	if Cosmetics.winSceneOk(item) then
+		table.insert(switches, { label = "Win scene", on = profile.winScene == item.id, action = "winScene" })
+	end
+	stanceHolder.Visible = #switches > 0
+	for index, switch in ipairs(switches) do
+		local gap = if #switches > 1 then T.space.s / 2 else 0
 		Kit.button({
-			text = if mine then "Your stance  ·  take it off" else "Make it your stance",
-			variant = if mine then "ghost" else "secondary",
+			Name = "Switch_" .. switch.action,
+			text = switch.label .. (if switch.on then "  ·  on" else "  ·  off"),
+			variant = if switch.on then "primary" else "secondary",
 			size = "s",
 			upper = false,
-			Size = UDim2.fromScale(1, 1),
+			Position = UDim2.new((index - 1) / #switches, if index > 1 then gap else 0, 0, 0),
+			Size = UDim2.new(1 / #switches, -gap, 1, 0),
 			Parent = stanceHolder,
 		}, function()
-			ShopRequest:FireServer({ action = "stance", itemId = item.id })
+			ShopRequest:FireServer({ action = switch.action, itemId = item.id })
 		end)
 	end
 end
@@ -857,6 +868,29 @@ function ShopPanel.state(): {
 		hearts = hearts,
 		order = order,
 	}
+end
+
+-- Opens the shop on a card (the lobby's shop window): in Today's hand when it is dealt there today (turned
+-- over), else in its suit with nothing filtered out; picked, and scrolled to.
+function ShopPanel.focus(itemId: string)
+	local item = Cosmetics.byId(itemId)
+	if not item or (not Router.isOpen("shop") and not Router.open("shop")) then
+		return
+	end
+	searching, showing, sorting = "", "all", "order"
+	searchBox.Text = ""
+	paintBrowse()
+	local inHand = table.find(ShopRotation.hand(ShopRotation.dayOf(os.time())), itemId) ~= nil
+	local suit = Cosmetics.suitOf(item)
+	ShopPanel.showSuit(if inHand or not suit then "today" else suit.id)
+	ShopPanel.choose(itemId)
+	task.delay(0.1, function()
+		local card = cards[itemId]
+		if card and card.slot.Parent then
+			local y = card.slot.AbsolutePosition.Y - tableScroll.AbsolutePosition.Y + tableScroll.CanvasPosition.Y
+			tableScroll.CanvasPosition = Vector2.new(0, math.max(0, y - T.space.l))
+		end
+	end)
 end
 
 -- For checks: browses the suit (a search, what to show, the order), as the row does.

@@ -154,6 +154,16 @@ local function catchUp(player: Player)
 	end
 end
 
+-- The clip a winner plays in "The end" (their win scene: an owned emote that can be one), or nil for the cheer.
+function CosmeticsService.winScene(player: Player): string?
+	local data = DataService.get(player)
+	local item = if data then Cosmetics.byId(data.winScene) else nil
+	if item and Cosmetics.winSceneOk(item) and CosmeticsService.owns(player, item) then
+		return item.emote
+	end
+	return nil
+end
+
 -- The title to show on the results screen, or nil.
 function CosmeticsService.titleOf(player: Player): string?
 	local data = DataService.get(player)

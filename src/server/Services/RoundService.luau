@@ -360,9 +360,15 @@ local function outroData(winner: string)
 	local hand = Match.findRole("Kira")
 	local zero = Match.findRole("L")
 	local winners = {}
+	-- What each winner plays instead of a cheer (their win scene), by user id.
+	local scenes = {}
 	for _, ps in ipairs(Match.list) do
 		if (winner == "Team") ~= Match.isKiraSide(ps) then
 			table.insert(winners, ps.userId)
+			local scene = if ps.player then CosmeticsService.winScene(ps.player) else nil
+			if scene then
+				table.insert(scenes, { userId = ps.userId, emote = scene })
+			end
 		end
 	end
 	return {
@@ -375,6 +381,7 @@ local function outroData(winner: string)
 		zeroUserId = if zero then zero.userId else nil,
 		zeroAlias = if zero then zero.alias else nil,
 		winners = winners,
+		winScenes = scenes,
 		center = meetingCenter(),
 		-- Every name written in the Manual this match (filtered when written), struck once it killed.
 		written = Match.written,

@@ -112,6 +112,8 @@ function Migrations.defaults(startingCoins: number)
 		emoteWheel = {},
 		-- The stance (an owned emote item that can be one), "" for none (Shared/Cosmetics `stance`).
 		stance = "",
+		-- The emote played in "The end" when you win (an owned one, Cosmetics.winSceneOk), "" for a cheer.
+		winScene = "",
 		-- Browsing the shop (Shared/ShopBrowse): new cards already looked at, and the wishlist.
 		shopSeen = {}, -- [itemId] = true
 		wishlist = {}, -- [itemId] = true

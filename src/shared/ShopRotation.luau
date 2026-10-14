@@ -129,6 +129,30 @@ function ShopRotation.hand(day: number): { string }
 	return cards
 end
 
+-- The emote the lobby's shop window shows on a day (client World/ShopWindow): the first emote of that day's
+-- hand that one body can show, else one of the shop's own emotes by a seed of the day. Nil when there is none.
+function ShopRotation.windowFor(day: number): string?
+	local function showable(item: Cosmetics.Item?): boolean
+		return item ~= nil and item.kind == "emote" and item.price ~= nil and not item.duo
+	end
+	for _, id in ipairs(ShopRotation.hand(day)) do
+		if showable(Cosmetics.byId(id)) then
+			return id
+		end
+	end
+	local pool = {}
+	for _, item in ipairs(Cosmetics.ITEMS) do
+		if showable(item) and item.source == "shop" then
+			table.insert(pool, item.id)
+		end
+	end
+	if #pool == 0 then
+		return nil
+	end
+	table.sort(pool)
+	return pool[Random.new(day * 7177 + 3):NextInteger(1, #pool)]
+end
+
 -- Today's hand is dealt face down; a player turns the cards one by one (only to see them: the hand is
 -- the same for everyone). `record` is the profile's shopTurned { day, cards }: a new day starts it
 -- again. Returns whether anything changed (false for a card not in that day's hand, or already turned).
