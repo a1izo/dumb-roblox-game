@@ -197,9 +197,10 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
 
 - **Animations** (movement, actions, deaths, reactions and emotes) are made on the R6 rig (see
   `art/README.md`) and exported to `src/shared/Anim/Clips/`; the game plays them itself on every
-  character, so there is nothing to upload. Walking and running are generated so a stance leg rolls
-  over its sole and advances by distance, so feet do not slide. The default Animate script is
-  replaced by an empty one, and R15 avatars are rebuilt as R6.
+  character, so there is nothing to upload. The movement set (two idles, a walk and a run each way,
+  jumps, falls, three landings, stops, flight) is described in `docs/animation.md`: planted legs roll
+  heel to toe, every cycle advances by distance, and standing feet stay on their marks, so feet do not
+  slide. The default Animate script is replaced by an empty one, and R15 avatars are rebuilt as R6.
 - **Props and scenes** are imported in Studio with **Import 3D**: the props every venue and the
   game use, with the effect and UI textures, `art/export/DeathsGambitModels_Core.fbx`; and for each
   venue (the lobby, the meeting room, Bureau HQ, University Campus, Tokyo) its props and its scene,

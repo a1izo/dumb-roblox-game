@@ -51,6 +51,12 @@ def main():
         anims.build(arm)
     print("[anims]", export_anims.export(arm))
     common.save_blend("Animations.blend")
+    # The movement set must pass check_anims.py (soles that hold, nothing through the floor, no gaps at the hip,
+    # clean loops); a failure fails the run.
+    import check_anims
+
+    if check_anims.run(quiet=True):
+        raise SystemExit("[anims] check_anims.py found faults in the movement set (see above)")
 
 
 main()

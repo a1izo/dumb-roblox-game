@@ -10,7 +10,8 @@ For each clip, sampled 60 times a second on a standing R6 body:
     floor   how far any corner of the body goes below the floor (studs), for clips that stand on it
     gap     how far the top of a leg drops out of the torso (R6 fakes knees by sliding legs; past a
             hair the gap shows), and how deep a leg sinks into the torso
-    seam    for loops: the jump in pose and in turning speed where the loop starts again
+    seam    for loops: the jump in pose where the loop starts again, and how much more sharply a joint's
+            turning speed changes there than anywhere inside the clip
     pop     the fastest a joint turns (degrees a second); a sudden snap shows as a spike
 Clips marked strict (STRICT below: the movement set) fail the run when a limit is passed; every other
 clip is only reported (with --all, or when named). Exit code 1 on a failure.
@@ -46,7 +47,7 @@ LIMITS = {
     "gap": 0.12,  # studs the top of a leg may drop out of the torso
     "sink": 0.6,  # studs a leg may slide up inside the torso
     "seam": 0.5,  # degrees the pose may jump where a loop restarts
-    "seam_speed": 120.0,  # degrees a second the turning speed may jump there
+    "seam_speed": 60.0,  # degrees a second the turning speed may change there beyond its sharpest change inside
     "pop": 900.0,  # degrees a second a joint may turn
 }
 
@@ -88,7 +89,9 @@ def check_clip(name, clip, rig):
     times = [length * i / count for i in range(count + 1)]
     poses = [pose(rig, clip, t) for t in times]
     sizes = {p: rig["parts"][p]["size"] for p in BODY}
-    standing = name not in AIRBORNE
+    # an additive clip without legs is laid over a pose whose legs the game keeps planted
+    legless = clip.get("additive") and "rHip" not in clip["joints"]
+    standing = name not in AIRBORNE and not legless
     out = {}
 
     if standing:
@@ -100,19 +103,24 @@ def check_clip(name, clip, rig):
     stride = clip.get("stride")
     if stride and standing:
         speed = stride / length
+        heading = math.radians(clip.get("heading") or 0.0)
+        travel = np.array([-math.sin(heading), 0.0, -math.cos(heading)])  # 0 forward (-z), 90 left (-x)
+        # Each bottom corner of a leg, while it touches the floor, must stay where it touched down: a leg
+        # that rolls from heel to toe hands the weight from corner to corner, a sliding one drags them.
+        bottom = [i for i, c in enumerate(corners(sizes[LEGS[0]])) if c[1] < 0]
         worst = 0.0
         for leg in LEGS:
-            down = None
+            down = {}
             for t, parts in zip(times, poses):
                 pts = box_points(parts[leg], sizes[leg])
-                low = pts[np.argsort(pts[:, 1])[:2]].mean(axis=0)  # the lowest edge's middle
-                world = low + np.array([0.0, 0.0, -speed * t])
-                if low[1] < SOLE_DOWN:
-                    if down is None:
-                        down = world
-                    worst = max(worst, float(np.linalg.norm((world - down)[[0, 2]])))
-                else:
-                    down = None
+                for i in bottom:
+                    p = pts[i]
+                    world = p + travel * speed * t
+                    if p[1] < SOLE_DOWN:
+                        start = down.setdefault(i, world)
+                        worst = max(worst, float(np.linalg.norm((world - start)[[0, 2]])))
+                    else:
+                        down.pop(i, None)
         out["slide"] = worst
 
     # gap / sink: the top of each leg in the torso's frame (the torso's bottom face is at y = -1)
@@ -139,17 +147,19 @@ def check_clip(name, clip, rig):
     out["pop"] = fastest
     out["pop_at"] = where
 
-    # seam: a loop restarts without a jump in pose or in turning speed
+    # seam: a loop restarts without a jump in pose, and its turning speed changes there no more than it does
+    # anywhere inside the clip (a foot landing at the seam may change it sharply; a badly closed loop more)
     if clip["loop"]:
-        jump, speed_jump = 0.0, 0.0
+        jump, worse = 0.0, 0.0
         end = joint_rotations(clip, length - 1e-6)
         for j in clip["joints"]:
             jump = max(jump, angle_between(rots[0][j], end[j]))
-            start_speed = angle_between(rots[0][j], rots[1][j]) / dt
-            end_speed = angle_between(rots[-2][j], end[j]) / dt
-            speed_jump = max(speed_jump, abs(start_speed - end_speed))
+            speeds = [angle_between(rots[i - 1][j], rots[i][j]) / dt for i in range(1, len(rots))]
+            inside = max((abs(b - a) for a, b in zip(speeds, speeds[1:])), default=0.0)
+            at_seam = abs(speeds[0] - angle_between(rots[-2][j], end[j]) / dt)
+            worse = max(worse, at_seam - inside)
         out["seam"] = jump
-        out["seam_speed"] = speed_jump
+        out["seam_speed"] = max(0.0, worse)
     return out
 
 

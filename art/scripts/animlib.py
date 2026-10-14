@@ -64,6 +64,7 @@ class Clip:
         self.offsets = []  # [(t, (x, y, z), ease)]
         self.stride = None  # studs per cycle, for movement clips the game plays by speed
         self.stance = None  # movement clips: the part of a cycle each foot is on the ground (0..1)
+        self.heading = None  # movement clips: the way the body travels (degrees: 0 forward, 90 left)
         self.additive = False  # played on top of the pose underneath, as a change from the clip's first frame
 
     def pose(self, t, ease="smooth", offset=None, **joints):
@@ -160,6 +161,8 @@ def build_action(arm, c):
         action["stride"] = c.stride
     if c.stance:
         action["stance"] = c.stance
+    if c.heading is not None:
+        action["heading"] = c.heading
     action["additive"] = bool(c.additive)
     action["floor"] = c.floor
     arm.animation_data_create()

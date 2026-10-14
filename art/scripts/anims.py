@@ -18,7 +18,7 @@ writes src/shared/Anim/Clips/ (clipfile.py).
 
 import math
 
-import gait
+import locomotion
 from animlib import J
 from motion import Motion
 
@@ -49,85 +49,9 @@ def r_face(x=122, across=-32):
 
 
 # Locomotion --------------------------------------------------------------------------------------------
+# The movement set (standing, walking and running every way) lives in locomotion.py.
 
-gait.build()
-
-idle = Motion("idle", 4.0, loop=True, note="Standing: breathing, the weight settling from foot to foot.")
-for i in range(8):
-    t = i * 0.5
-    breath = math.sin(2 * math.pi * t / 2.0)
-    shift = math.sin(2 * math.pi * t / 4.0)
-    idle.key(t, offset=(0.05 * shift, 0.018 * breath - 0.02, 0), root=(0.7 * breath, 1.5 * math.sin(2 * math.pi * t / 4 + 0.7), -1.2 * shift),
-             neck=(-0.6 * breath, 3 * math.sin(2 * math.pi * t / 4 + 2.0), 0.8 * shift),
-             rShoulder=J((1.5 + breath, 0, 3 + 0.8 * breath), (0, 0.02 * breath, 0)),
-             lShoulder=J((1.5 + breath, 0, -3 - 0.8 * breath), (0, 0.02 * breath, 0)))
-soft(idle).plant(stance=0.04)
-idle.build()
-
-land = Motion("land", 0.5, note="Landing: the knees give, the arms float out, then up again.")
-land.key(0.0, offset=(0, -0.05, 0), root=(-4, 0, 0), neck=(2, 0, 0), rShoulder=J((25, 0, 18)), lShoulder=J((25, 0, -18)))
-land.key(0.1, "out", offset=(0, -0.38, 0.05), root=(-12, 0, 0), neck=(4, 0, 0), rShoulder=J((30, 0, 22), (0, 0.05, 0)),
-         lShoulder=J((30, 0, -22), (0, 0.05, 0)))
-land.key(0.32, offset=(0, -0.1, 0.02), root=(-4, 0, 0), neck=(1, 0, 0), rShoulder=J((8, 0, 6)), lShoulder=J((8, 0, -6)))
-land.key(0.5, offset=(0, -0.02, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((2, 0, 3)), lShoulder=J((2, 0, -3)))
-soft(land, arms=3.0).plant(stance=0.08)
-land.build()
-
-jump = Motion("jump", 0.5, note="Take-off: a crouch, then up with one knee driving and the arms swinging.")
-jump.key(0.0, offset=(0, -0.3, 0), root=(-12, 0, 0), neck=(6, 0, 0), rShoulder=J((-20, 0, 8)), lShoulder=J((-20, 0, -8)),
-         rHip=J((14, 0, 0), (0, 0.3, 0)), lHip=J((14, 0, 0), (0, 0.3, 0)))
-jump.key(0.16, "out", offset=(0, 0.1, 0), root=(-3, 0, 0), neck=(4, 0, 0), rShoulder=J((70, 0, 14), (0, 0.1, -0.15)),
-         lShoulder=J((55, 0, -14), (0, 0.1, -0.1)), rHip=J((40, 0, 3), (0, 0.6, -0.1)), lHip=J((-12, 0, -2), (0, 0.1, 0)))
-jump.key(0.5, offset=(0, 0.05, 0), root=(-1, 0, 0), neck=(2, 0, 0), rShoulder=J((50, 0, 18), (0, 0.06, -0.1)),
-         lShoulder=J((40, 0, -18), (0, 0.06, -0.08)), rHip=J((30, 0, 4), (0, 0.45, -0.05)), lHip=J((-4, 0, -3), (0, 0.15, 0)))
-soft(jump, arms=3.2)
-jump.build()
-
-fall = Motion("fall", 1.2, loop=True, note="Falling: arms out for balance, legs drifting.")
-fall.key(0.0, root=(4, 0, 2), neck=(-8, 0, 0), rShoulder=J((60, 0, 40), (0, 0.1, 0)), lShoulder=J((45, 0, -46), (0, 0.1, 0)),
-         rHip=J((20, 0, 5), (0, 0.4, -0.05)), lHip=J((-8, 0, -5), (0, 0.1, 0)))
-fall.key(0.6, root=(4, 0, -2), neck=(-8, 0, 0), rShoulder=J((45, 0, 46), (0, 0.1, 0)), lShoulder=J((60, 0, -40), (0, 0.1, 0)),
-         rHip=J((-8, 0, 5), (0, 0.1, 0)), lHip=J((20, 0, -5), (0, 0.4, -0.05)))
-soft(fall, arms=1.6)
-fall.build()
-
-sit = Motion("sit", 4.0, loop=True, note="Seated (a Seat): perched, thighs sloping down, hands on the knees, breathing.")
-# R6 legs do not bend at the knee: level thighs stick 2.5 studs straight out and go through whatever is in
-# front (the dice rock, a desk). Sloped down they reach 0.6 less and pass under a table's edge.
-for t, b in ((0.0, 0.0), (2.0, 1.0)):
-    sit.key(t, root=(-6 + 0.8 * b, 0, 0), neck=(-2 - 0.6 * b, 2 * b, 0), rHip=J((52, 0, 6), (0, 0, 0)), lHip=J((50, 0, -6)),
-            rShoulder=J((30 + b, 0, -8), (-0.05, 0.03 * b, -0.15)), lShoulder=J((30 + b, 0, 8), (0.05, 0.03 * b, -0.15)))
-soft(sit)
-sit.build()
-
-# Fidgets (now and then while standing; played over the idle) -----------------------------------------
-
-look = Motion("idleLook", 3.2, note="A fidget: a look over one shoulder, then the other.")
-look.key(0.0, root=(0, 0, 0), neck=(0, 0, 0))
-look.key(0.8, root=(0, 10, 0), neck=(-2, 34, 2))
-look.key(1.5, root=(0, 10, 0), neck=(-3, 36, 2))
-look.key(2.2, root=(0, -6, 0), neck=(-1, -26, -2))
-look.key(3.2, root=(0, 0, 0), neck=(0, 0, 0))
-look.follow("neck", 2.2, 0.8)
-look.build()
-
-watch = Motion("idleWatch", 3.2, note="A fidget: the wrist comes up and the head bends to the watch.")
-watch.key(0.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((0, 0, 3)))
-watch.key(0.7, root=(-3, 6, 0), neck=(-24, 8, 0), rShoulder=J((62, 0, -42), (-0.25, 0.16, -0.25)))
-watch.key(2.1, root=(-3, 6, 0), neck=(-25, 9, 0), rShoulder=J((63, 0, -42), (-0.25, 0.16, -0.25)))
-watch.key(3.2, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((0, 0, 3)))
-soft(watch)
-watch.build()
-
-tie = Motion("idleTie", 2.8, note="A fidget: a tug at the knot of the tie, chin up.")
-tie.key(0.0, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((0, 0, 3)), lShoulder=J((0, 0, -3)))
-tie.key(0.6, root=(-2, 0, 0), neck=(6, 0, 4), rShoulder=J((96, 0, -42), (-0.3, 0.3, -0.18)), lShoulder=J((22, 0, 20), (0.15, 0.05, -0.1)))
-for t, d in ((0.9, 0.06), (1.2, -0.02), (1.5, 0.05)):
-    tie.key(t, root=(-2, 0, 0), neck=(7, 0, 5), rShoulder=J((96, 0, -42), (-0.3, 0.3 + d, -0.18)),
-            lShoulder=J((22, 0, 20), (0.15, 0.05, -0.1)))
-tie.key(2.8, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((0, 0, 3)), lShoulder=J((0, 0, -3)))
-soft(tie)
-tie.build()
+locomotion.build()
 
 # Actions -----------------------------------------------------------------------------------------------
 

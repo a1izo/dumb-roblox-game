@@ -1,7 +1,9 @@
 -- Animates every R6 character on this client, from public events only, by writing each
 -- joint's Transform every frame (Motor6D or AnimationConstraint; it never replicates):
---   1. a base layer from the locomotion controller (idle, walk, run, jump, fall), then
---   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight.
+--   1. a base layer from the locomotion controller (standing, walking, running, the air), then
+--   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight, then
+--   3. an after-pass from the locomotion controller that keeps a standing body's soles planted under
+--      whatever the layers above did to it.
 -- Clips come from Blender (Anim/Clips). A clip with an uploaded animation id in
 -- Assets.anim plays that animation instead.
 
@@ -45,21 +47,33 @@ export type Rig = {
 	motors: { [string]: Joints.Instance6D },
 	basis: { [string]: CFrame },
 	inverse: { [string]: CFrame }, -- each basis inverted, worked out with it
+	c0: { [string]: CFrame }, -- each joint's C0 and C1, for the after-pass (LocomotionController's feet)
+	c1: { [string]: CFrame },
 	watch: RBXScriptConnection?, -- joints added later refresh the rig
 	gone: RBXScriptConnection?, -- the body is destroyed
 	tracks: { Track },
+	-- How much of this frame's pose comes from clips that move the legs (dances, actions): the after-pass
+	-- leaves the legs to them that much.
+	legsTaken: number,
 	baked: boolean,
-	-- Posed once every `every` frames (far-off bodies of the Tokyo crowd); nil: every frame.
+	-- Posed once every `every` frames (far-off bodies); nil: every frame. Between, the joints are given the
+	-- pose of the last posed frame again (`held`): an Animator puts them back to rest each frame otherwise.
 	every: number?,
+	held: { [string]: CFrame }?,
 	turn: number?,
 	owed: number?,
 }
 
 -- provider(character, dt) -> (rotations by joint, body offset) or nil to leave the base alone.
 type BaseProvider = (Model, number) -> ({ [string]: CFrame }?, Vector3?)
+-- after(rig, dt): once every layer is on, may adjust the joints (LocomotionController plants the feet).
+type AfterPass = (Rig, number) -> ()
 
 local rigs: { [Model]: Rig } = {}
 local baseProvider: BaseProvider? = nil
+local afterPass: AfterPass? = nil
+-- What posing costs this client (for the debug panel's performance stats and the test harness).
+local cost = { rigs = 0, posed = 0, last = 0, average = 0 }
 local IDENTITY = CFrame.identity
 local scratch: { [string]: CFrame } = {}
 
@@ -72,14 +86,19 @@ local MIN_JOINTS = Joints.COUNT
 
 local function refresh(rig: Rig)
 	local motors = Joints.find(rig.character)
-	local basis, inverse = {}, {}
+	local basis, inverse, c0s, c1s = {}, {}, {}, {}
 	for name, motor in pairs(motors) do
-		basis[name] = rotation(Joints.c0(motor))
+		local c0 = Joints.c0(motor)
+		basis[name] = rotation(c0)
 		inverse[name] = basis[name]:Inverse()
+		c0s[name] = c0
+		c1s[name] = Joints.c1(motor)
 	end
 	rig.motors = motors
 	rig.basis = basis
 	rig.inverse = inverse
+	rig.c0 = c0s
+	rig.c1 = c1s
 end
 
 -- Forgets a rig (its body was destroyed, or left the world: a crowd walker that is no longer drawn
@@ -125,7 +144,10 @@ function PoseController.bind(character: Model?): Rig?
 		motors = motors,
 		basis = {},
 		inverse = {},
+		c0 = {},
+		c1 = {},
 		tracks = {},
+		legsTaken = 0,
 		baked = false,
 	}
 	refresh(rig)
@@ -159,6 +181,21 @@ end
 
 function PoseController.setBaseProvider(provider: BaseProvider)
 	baseProvider = provider
+end
+
+function PoseController.setAfterPass(pass: AfterPass)
+	afterPass = pass
+end
+
+-- The rig of a bound body (nil if it is not bound).
+function PoseController.rigOf(character: Model?): Rig?
+	return if character then rigs[character] else nil
+end
+
+-- How many bodies are bound, how many were posed last frame, and what posing them took (milliseconds: the
+-- last frame, and an average over the last second or so).
+function PoseController.stats(): { rigs: number, posed: number, last: number, average: number }
+	return table.clone(cost)
 end
 
 -- Poses a body only once every `every` frames (1: every frame). For bodies too far off for anyone to
@@ -352,6 +389,9 @@ local function playTrack(rig: Rig, track: Track, now: number)
 	local elapsed = math.max(0, now - track.started) * track.speed + track.phase
 	local clip = track.clip
 	if clip then
+		if clip.joints.rHip or clip.joints.lHip then
+			rig.legsTaken = math.max(rig.legsTaken, w)
+		end
 		table.clear(scratch)
 		local rotations, offset = ClipPlayer.sample(clip, elapsed, scratch)
 		for joint, rot in pairs(rotations) do
@@ -372,7 +412,9 @@ end
 
 local function step(dt: number)
 	local now = os.clock()
+	local bound, posed = 0, 0
 	for character, rig in pairs(rigs) do
+		bound += 1
 		if not character.Parent then
 			unbind(character)
 			continue
@@ -389,11 +431,21 @@ local function step(dt: number)
 			rig.owed = (rig.owed or 0) + dt
 			rig.turn = ((rig.turn or 0) + 1) % every
 			if rig.turn ~= 0 then
+				local held = rig.held
+				if held then
+					for joint, motor in pairs(rig.motors) do
+						local pose = held[joint]
+						if pose then
+							motor.Transform = pose
+						end
+					end
+				end
 				continue
 			end
 		end
 		local elapsed = if every then rig.owed or dt else dt
 		rig.owed = 0
+		posed += 1
 		-- Finished tracks leave.
 		for index = #rig.tracks, 1, -1 do
 			local track = rig.tracks[index]
@@ -425,10 +477,25 @@ local function step(dt: number)
 			end
 		end
 		-- 2. clip tracks on top
+		rig.legsTaken = 0
 		for _, track in ipairs(rig.tracks) do
 			playTrack(rig, track, now)
 		end
+		-- 3. the after-pass (planted feet), once everything above has moved the body
+		if afterPass and not uploaded then
+			afterPass(rig, elapsed)
+		end
+		if every and not uploaded then
+			local held = rig.held or {}
+			for joint, motor in pairs(rig.motors) do
+				held[joint] = motor.Transform
+			end
+			rig.held = held
+		end
 	end
+	local spent = (os.clock() - now) * 1000
+	cost.rigs, cost.posed, cost.last = bound, posed, spent
+	cost.average += (spent - cost.average) * math.min(1, dt * 2)
 end
 
 function PoseController.init()

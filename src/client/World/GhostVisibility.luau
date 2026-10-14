@@ -120,13 +120,9 @@ local function apply(character: Model)
 		local tint = if owner then owner:GetAttribute("LSpecterColor") else nil
 		Styles.form(character, form, if typeof(tint) == "Color3" then tint else nil)
 	end
-	if alpha < 1 and not character:GetAttribute("Away") then
-		if not PoseController.isPlaying(character, "specterFloat") then
-			PoseController.play(character, "specterFloat", { startAt = os.clock() - math.random() * 2, fadeIn = 0.6 })
-		end
-	else
-		PoseController.stop(character, "specterFloat", 0)
-	end
+	-- (A flying body hovers, glides, rises and dives in the movement controller's own flight poses; the old
+	-- float played over it is no longer needed.)
+	PoseController.stop(character, "specterFloat", 0)
 end
 
 local function unwatch(character: Model)

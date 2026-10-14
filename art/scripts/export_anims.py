@@ -20,6 +20,10 @@ from rig import JOINTS, LEG, PARENT
 SAMPLE_FPS = 60
 ANGLE_TOLERANCE = math.radians(0.6)
 OFFSET_TOLERANCE = 0.01
+# Movement clips are kept closer to their curves: a planted foot must not drift, nor a heel sink, by the
+# little the key reduction lets through elsewhere.
+MOVEMENT_ANGLE_TOLERANCE = math.radians(0.2)
+MOVEMENT_OFFSET_TOLERANCE = 0.003
 
 
 def _delta(arm, bone_name):
@@ -61,7 +65,7 @@ def _angle(a, b):
     return 2 * math.acos(min(1.0, d))
 
 
-def reduce_quats(times, quats):
+def reduce_quats(times, quats, tolerance=ANGLE_TOLERANCE):
     """Douglas-Peucker on quaternions: keeps keys whose removal would bend the curve too much."""
     keep = {0, len(quats) - 1}
 
@@ -75,7 +79,7 @@ def reduce_quats(times, quats):
             err = _angle(approx, quats[k])
             if err > worst:
                 worst, worst_k = err, k
-        if worst > ANGLE_TOLERANCE:
+        if worst > tolerance:
             keep.add(worst_k)
             recurse(i, worst_k)
             recurse(worst_k, j)
@@ -84,7 +88,7 @@ def reduce_quats(times, quats):
     return sorted(keep)
 
 
-def reduce_vectors(times, vectors):
+def reduce_vectors(times, vectors, tolerance=OFFSET_TOLERANCE):
     keep = {0, len(vectors) - 1}
 
     def recurse(i, j):
@@ -97,7 +101,7 @@ def reduce_vectors(times, vectors):
             err = (approx - vectors[k]).length
             if err > worst:
                 worst, worst_k = err, k
-        if worst > OFFSET_TOLERANCE:
+        if worst > tolerance:
             keep.add(worst_k)
             recurse(i, worst_k)
             recurse(worst_k, j)
@@ -174,17 +178,23 @@ def clip_lua(name, action, length, times, samples, offsets, positions=None):
     if action.get("stance"):
         # The part of a cycle each foot is down (the right foot lands at 0, the left at 0.5).
         lines.append(f"\t\tstance = {fmt(float(action['stance']), 3)},")
+    if action.get("heading") is not None and action.get("stride"):
+        # The way the body travels (degrees round from straight ahead, + to the left).
+        lines.append(f"\t\theading = {fmt(float(action['heading']), 1)},")
     if action.get("additive"):
         # Played on top of the pose underneath, as a change from its own first frame.
         lines.append("\t\tadditive = true,")
     lines.append("\t\tjoints = {")
     positions = positions or {}
+    movement = bool(action.get("stride"))
+    angle_tol = MOVEMENT_ANGLE_TOLERANCE if movement else ANGLE_TOLERANCE
+    offset_tol = MOVEMENT_OFFSET_TOLERANCE if movement else OFFSET_TOLERANCE
     for joint in sorted(samples):
         quats = samples[joint]
-        keep = set(reduce_quats(times, quats))
+        keep = set(reduce_quats(times, quats, angle_tol))
         moved = positions.get(joint)
         if moved and max(p.length for p in moved) > 0.002:
-            keep |= set(reduce_vectors(times, moved))
+            keep |= set(reduce_vectors(times, moved, offset_tol))
         else:
             moved = None
         keep = sorted(keep)
@@ -199,7 +209,7 @@ def clip_lua(name, action, length, times, samples, offsets, positions=None):
         lines.append(line + " },")
     lines.append("\t\t},")
     if offsets:
-        keep = reduce_vectors(times, offsets)
+        keep = reduce_vectors(times, offsets, offset_tol)
         t_text = ", ".join(fmt(times[i], 3) for i in keep)
         p_text = ", ".join(f"{fmt(offsets[i].x, 3)}, {fmt(offsets[i].y, 3)}, {fmt(offsets[i].z, 3)}" for i in keep)
         lines.append(f"\t\toffset = {{ t = {{ {t_text} }}, p = {{ {p_text} }} }},")
@@ -241,6 +251,7 @@ def export(arm):
     """Game clips go to Shared/Anim/Clips.luau; each cutscene's acting to Shared/Cinema/Acting/<Shot>.luau
     (ClipPlayer finds them by the clip's prefix), so no module grows too big."""
     try:
+        import cinema.shots  # noqa: F401  (defines every cutscene, also when only exporting a saved .blend)
         from cinema.shot import SHOTS
     except ImportError:
         SHOTS = {}

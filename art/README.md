@@ -51,10 +51,12 @@ keys go straight on the joints the game plays. Its bones keep the frames of the 
 were made on (Aeresei's "R6 IK + FK Blender Rig" V2.22, which earlier versions loaded from a
 downloaded file), so old and new clips export to the same numbers. Nothing has to be downloaded.
 
-`gait.py` generates the movement clips (idle, walk, run, land): a stance leg rolls over its sole
-(heel edge, then toe edge) exactly as fast as the body moves, so planted feet never slide, and each
-clip exports its stride so the game advances the cycle by distance (scaled to each avatar's leg
-length). `anims.py` keys the other animations in the game's joint convention; `posekit.py` keeps feet
+`locomotion.py` builds the movement set (see `docs/animation.md`): the eight walk and run cycles (a
+planted leg rolls over its sole exactly as fast as the body moves, so planted feet never slide; each
+clip exports its stride and stance so the game advances the cycle by distance and blends them on one
+phase), the two idles, the fidgets, the air, the landings, the stops, flight and sitting. `gait.py`
+holds the simpler cycle maker the shop's strolls and the cutscenes' walks use. `anims.py` keys the other
+animations in the game's joint convention; `posekit.py` keeps feet
 where they are when the hips move (rigid legs reach in or splay out as far as they can) and fits poses
 that end on the ground to the floor. `export_anims.py` writes `src/shared/Anim/Clips/` (parts joined by `init.luau`, `clipfile.py`), which the
 game plays on every character itself.

@@ -1,4 +1,8 @@
-"""Movement clips (walk, run) for the R6 rig, in the R6 way: legs swing from the hip and slide in
+"""A simple cycle maker for the R6 rig (the shop's strolls and the cutscenes' walks use it; the game's own
+movement set is built in locomotion.py), and the earlier walk's
+measures the cutscenes' walks are sized from (WALK below).
+
+The R6 way: legs swing from the hip and slide in
 and out of it like knees bending, so a planted sole stays exactly where it lands while the body
 travels over it, and a swinging leg lifts by shortening (sliding up) rather than kicking out.
 
@@ -82,59 +86,7 @@ def build_cycle(g, samples, pose_fn):
     return c
 
 
-# Run ------------------------------------------------------------------------------------------------
-# Full speed in the game is 16 studs/s.
-
-RUN = Gait("run", period=0.72, stride=16 * 0.72, stance=0.32, lift=0.6,
-           note="Run at 16 studs/s: long, driven strides, leaning in; soles planted while down.")
-
-
-def run_pose(phase):
-    s = RUN.stance
-    # the body is lowest just after a foot lands and highest in the air between steps
-    bob = math.cos(4 * math.pi * (phase - s * 0.45))
-    yaw = 8 * wave(phase, 0.04)  # hips turn with the leading leg
-    roll = 2.5 * wave(phase, 0.12)
-    root = (-15 + 1.5 * bob, yaw, roll)  # leaning into the run
-    offset = (0.04 * wave(phase, 0.1), -0.12 - 0.12 * bob, 0.0)
-    swing = wave(phase, 0.06)  # +1: right arm back, left arm forward (the arms trail the legs)
-    lift = abs(swing)
-    joints = dict(
-        root=root,
-        neck=(14 - 1.5 * bob, -0.85 * yaw, -0.5 * roll),  # head up, eyes ahead
-        rShoulder=J((14 - 42 * swing, -6 * swing, -4 + 6 * max(0.0, swing)), (-0.05, 0.05 * lift, -0.06 + 0.16 * swing)),
-        lShoulder=J((14 + 42 * swing, 6 * swing, 4 - 6 * max(0.0, -swing)), (0.05, 0.05 * lift, -0.06 - 0.16 * swing)),
-    )
-    joints.update(RUN.legs(phase, root, offset))
-    return joints, offset
-
-
-# Walk -----------------------------------------------------------------------------------------------
-# An easy walk, used while speeding up and slowing down.
+# The earlier walk's measures: the cutscenes size their actors' walks from them (cinema/acting.py).
 
 WALK = Gait("walk", period=1.15, stride=4.6, stance=0.62, lift=0.3,
             note="A serious walk: long steps, slouched, shoulders rolled forward, arms low and close.")
-
-
-def walk_pose(phase):
-    s = WALK.stance
-    bob = math.cos(4 * math.pi * (phase - s * 0.25))
-    yaw = 5 * wave(phase, 0.03)
-    roll = 1.6 * wave(phase, 0.1)
-    root = (-9 + 0.8 * bob, yaw, roll)  # slouched forward
-    offset = (0.05 * wave(phase, 0.12), -0.1 - 0.05 * bob, 0.0)
-    swing = wave(phase, 0.09)
-    joints = dict(
-        root=root,
-        neck=(10, -0.8 * yaw, -0.4 * roll),  # head pushed forward, eyes up
-        rShoulder=J((6 - 14 * swing, -3 * swing, -2), (-0.06, -0.04, -0.12 + 0.06 * swing)),
-        lShoulder=J((6 + 14 * swing, 3 * swing, 2), (0.06, -0.04, -0.12 - 0.06 * swing)),
-    )
-    joints.update(WALK.legs(phase, root, offset))
-    return joints, offset
-
-
-def build():
-    run = build_cycle(RUN, 40, run_pose)
-    walk = build_cycle(WALK, 40, walk_pose)
-    return {"run": run, "walk": walk}
