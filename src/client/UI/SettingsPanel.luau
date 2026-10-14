@@ -62,6 +62,7 @@ function SettingsPanel.init()
 	volume("sfx", "Sound effects")
 	volume("ambience", "Ambience")
 	volume("ui", "Interface sounds")
+	toggle("emoteMusic", "Other players' emote music")
 
 	header("Display")
 	local _, setScale = Kit.slider(

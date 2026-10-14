@@ -102,6 +102,11 @@ local function catchUp(player: Player)
 			end
 		end
 	end
+	-- (all seven grey apples found before Apple Toss came with them)
+	if data.titles.realmwalker and not data.owned.emote_apple_toss then
+		data.owned.emote_apple_toss = true
+		changed = true
+	end
 	if #CosmeticsService.grantSets(player) > 0 then
 		changed = true
 	end
@@ -207,6 +212,12 @@ function CosmeticsService.apply(player: Player)
 	CharacterService.recolorTie(player)
 	local title = equipped(player, data, "title")
 	titleTag(player, character, if title then title.name else nil)
+	-- The stance the body settles into when it stands still (LocomotionController).
+	local stance = Cosmetics.byId(data.stance)
+	character:SetAttribute(
+		"Stance",
+		if stance and stance.stance and CosmeticsService.owns(player, stance) then stance.emote else nil
+	)
 end
 
 function CosmeticsService.init()

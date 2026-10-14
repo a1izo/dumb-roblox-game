@@ -13,7 +13,7 @@ Rigid arms: shoulder x 0 = hanging, 90 = straight out in front, 180 = overhead. 
 to the chest or face, raise the arm, turn it across (right -z, left +z) and slide it in and forward.
 
 Run build() in Blender (see art/README.md) to rebuild the actions on the rig, then export_anims.py
-writes src/shared/Anim/Clips.luau.
+writes src/shared/Anim/Clips/ (clipfile.py).
 """
 
 import math
@@ -433,7 +433,7 @@ for t, b in ((0.0, 0.0), (2.0, 1.0)):
 soft(think, head=1.5, arms=1.5).plant(stance=0.12, forward=(0.55, 0.55), tilt=(62, 62))
 think.build()
 
-# The shop's gestures (2026-10-13). Coin Flip and Apple Bite hold props the game puts in the right hand
+# The shop's emotes (2026-10-13). Coin Flip and Apple Bite hold props the game puts in the right hand
 # (EmoteController: the coin is thrown and caught on these timings).
 
 coin = Motion("coinFlip", 2.6, note="A coin flicked up off the thumb, watched up and down, caught and slapped onto the back of the other hand.")
@@ -521,6 +521,9 @@ for t, b in ((0.0, 0.0), (1.5, 1.0)):
                rHip=J((10 + 4 * b, 0, 6), (0, 0.2, 0)), lHip=J((-4 - 4 * b, 0, -6), (0, 0.1, 0)))
 soft(caught, head=1.2, arms=1.0).follow(("rHip", "lHip"), 1.0, 0.8)
 caught.build()
+
+# The emote pack (2026-10-14): its clips live in their own file, which uses the helpers above.
+import anims_emotes  # noqa: E402,F401
 
 
 # The cutscenes' actors: their acting clips are built with everything else.

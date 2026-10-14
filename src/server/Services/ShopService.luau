@@ -1,6 +1,7 @@
 -- The cosmetic shop: buy with coins earned in matches, then equip in the lobby. Items from
 -- the daily rotation can only be bought while they are featured; VIP and earned items
--- cannot be bought at all.
+-- cannot be bought at all. An emote is not worn: a bought one goes on the emote wheel's first
+-- empty slot (EmoteService).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -12,6 +13,7 @@ local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 local Analytics = require(script.Parent.Analytics)
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local DataService = require(script.Parent.DataService)
+local EmoteService = require(script.Parent.EmoteService)
 local Match = require(script.Parent.Match)
 local RateLimit = require(script.Parent.RateLimit)
 
@@ -76,11 +78,22 @@ local function onRequest(player: Player, payload)
 		data.coins -= price
 		Analytics.coins(player, -price, data.coins, "Shop", item.id)
 		data.owned[item.id] = true
-		data.equipped[item.kind] = item.id
-		Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")
+		if item.kind == "emote" then
+			local slot = EmoteService.placeBought(data, item.emote)
+			Match.notify(
+				player,
+				if slot
+					then string.format("Bought %s. It is on your emote wheel (%d).", item.name, slot)
+					else "Bought " .. item.name .. ". Put it on your emote wheel in Your look.",
+				"good"
+			)
+		else
+			data.equipped[item.kind] = item.id
+			Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")
+		end
 		CosmeticsService.grantSets(player)
 	elseif action == "equip" then
-		if not CosmeticsService.owns(player, item) then
+		if item.kind == "emote" or not CosmeticsService.owns(player, item) then
 			return
 		end
 		data.equipped[item.kind] = item.id
@@ -88,6 +101,12 @@ local function onRequest(player: Player, payload)
 		if data.equipped[item.kind] == item.id then
 			data.equipped[item.kind] = nil
 		end
+	elseif action == "stance" then
+		-- An emote that can be a stance becomes yours (picked again: none).
+		if not item.stance or not CosmeticsService.owns(player, item) then
+			return
+		end
+		data.stance = if data.stance == item.id then "" else item.id
 	else
 		return
 	end

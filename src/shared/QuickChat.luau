@@ -1,6 +1,6 @@
 -- Quick-chat phrases and emotes. Outside meetings these are the only way to talk.
 
-local Terms = require(script.Parent.Terms)
+local Cosmetics = require(script.Parent.Cosmetics)
 
 local QuickChat = {}
 
@@ -19,9 +19,16 @@ QuickChat.PHRASES = {
 	"No",
 }
 
--- Emotes are clips from Blender (Anim/Clips.luau), named by id. The first nine are everyone's; the
--- rest are gestures from the shop (`item`, Shared/Cosmetics), and the Emote Pack pass still unlocks
--- its four (`pass`).
+export type Emote = {
+	id: string, -- the clip (Anim/Clips)
+	name: string,
+	item: string?, -- the shop item that unlocks it (Shared/Cosmetics); nil: everyone's
+	pass: string?, -- a pass that unlocks it too (the Emote Pack's four)
+	lobbyOnly: boolean?,
+}
+
+-- Emotes are clips from Blender (Anim/Clips), named by id. The first nine are everyone's; the rest are
+-- every emote in the shop's catalog, in its order (so a new emote is one entry in Shared/Cosmetics).
 QuickChat.EMOTES = {
 	{ id = "wave", name = "Wave" },
 	{ id = "point", name = "Point" },
@@ -32,16 +39,29 @@ QuickChat.EMOTES = {
 	{ id = "bow", name = "Bow" },
 	{ id = "shrug", name = "Shrug" },
 	{ id = "facepalm", name = "Facepalm" },
-	-- From the shop (the first four also with the Emote Pack pass)
-	{ id = "dance2", name = "Groove", pass = "emotes", item = "emote_groove" },
-	{ id = "dance3", name = "Spin", pass = "emotes", item = "emote_spin" },
-	{ id = "chip", name = "Potato chip", pass = "emotes", item = "emote_chip" },
-	{ id = "think", name = "Thinker", pass = "emotes", item = "emote_think" },
-	{ id = "coinFlip", name = "Coin Flip", item = "emote_coin" },
-	{ id = "appleBite", name = "Apple Bite", item = "emote_apple" },
-	{ id = "puppetDance", name = "Puppet Dance", item = "emote_puppet" },
-	{ id = "writeAir", name = "Write in the Air", item = "emote_air" },
-	{ id = "aceCrouch", name = Terms.f("{Zero}'s Crouch"), item = "emote_crouch" },
-}
+} :: { Emote }
+
+for _, item in ipairs(Cosmetics.ofKind("emote")) do
+	table.insert(QuickChat.EMOTES, {
+		id = item.emote,
+		name = item.name,
+		item = item.id,
+		pass = item.pass,
+		lobbyOnly = item.lobbyOnly,
+	})
+end
+
+local byId: { [string]: Emote } = {}
+for _, emote in ipairs(QuickChat.EMOTES) do
+	byId[emote.id] = emote
+end
+
+-- The emote for a clip id, or nil.
+function QuickChat.emote(id: string?): Emote?
+	if type(id) ~= "string" then
+		return nil
+	end
+	return byId[id]
+end
 
 return QuickChat

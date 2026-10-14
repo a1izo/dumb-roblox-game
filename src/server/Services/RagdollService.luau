@@ -19,7 +19,8 @@ local Match = require(script.Parent.Match)
 local RagdollService = {}
 
 RagdollService.GROUP = CollisionGroups.RAGDOLL
--- The collapse clip plays for this long (cue lead included) before the body goes limp.
+-- The collapse clip plays for at least this long before the body goes limp (longer clips play to
+-- their end, so the pose locked into the joints is the one every client is showing by then).
 RagdollService.COLLAPSE_DELAY = 1.9
 -- How long the limp body stays physical before it is frozen.
 RagdollService.BODY_TIME = 4.5
@@ -155,6 +156,12 @@ local function freezeCopy(character: Model, alias: string)
 	copy.Parent = folder
 end
 
+-- Seconds from the start of a collapse until the body goes limp: the clip plays out to its last
+-- frame (the one that is locked into the joints), and never less than COLLAPSE_DELAY.
+function RagdollService.collapseTime(clipId: string): number
+	return math.max(RagdollService.COLLAPSE_DELAY, ClipPlayer.length(clipId))
+end
+
 -- Plays out a death: the collapse, the ragdoll, then the frozen copy and the respawn.
 -- respawn(player) is called when the player should get a new character. cause picks the
 -- collapse clip (the same one every client plays).
@@ -166,11 +173,12 @@ function RagdollService.collapse(player: Player, alias: string, respawn: (Player
 	end
 	-- Tells the Died handler not to respawn on its own.
 	character:SetAttribute("LHeldBody", true)
-	task.delay(RagdollService.COLLAPSE_DELAY, function()
+	local clipId = Causes.clipFor(cause)
+	task.delay(RagdollService.collapseTime(clipId), function()
 		if not character.Parent then
 			return
 		end
-		RagdollService.bakePose(character, Causes.clipFor(cause))
+		RagdollService.bakePose(character, clipId)
 		RagdollService.ragdoll(character)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if humanoid then

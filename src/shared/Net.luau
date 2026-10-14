@@ -61,6 +61,7 @@ local EVENTS = {
 	-- presentation cues, Specters, profile settings, private servers and leaderboards
 	"Cue",
 	"Emote",
+	"Duo",
 	"Leaderboard",
 	-- the lobby mini-games: requests (client -> server) and what the server tells the player about their run
 	"LobbyGame",

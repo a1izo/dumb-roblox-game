@@ -1,0 +1,249 @@
+"""The things the emote pack's emotes hold or set down (Core set; see props.py, 2026-10-14): Pre-Dawn
+Bonk's club, Blindfold Lift's blindfold, Two-Finger Grip's phone, Chip and Pen's chip, Strawberry on
+Top's slice of cake and its strawberry, Dice Tower's die, Chocolate Snap's bar, Forty Seconds' watch,
+Mushroom Stroll's stick, Match Point's racket and ball, and The Smiling Lord's cane. The game scales each to the size it needs
+(src/shared/Anim/EmoteProps.luau), so the sizes here are only the shapes' proportions. Small and plain,
+like the shop's props, so their textures stay small."""
+
+import math
+
+from mathutils import Matrix
+
+import modelkit as mk
+import propkit as pk
+from common import srgb
+from props import prop
+
+
+@prop("Bat", pivot="centre", material="Wood", collide=False, texture=256)
+def bat():
+    """A plain wooden club, thick at the end and bound with dark cloth at the grip: Pre-Dawn Bonk's (the
+    striker of a slit drum)."""
+    wood = mk.noisy("Bt_Wood", srgb(118, 84, 52), srgb(170, 128, 84), roughness=0.6, kind="wood")
+    grip = mk.flat("Bt_Cloth", srgb(40, 34, 30), 0.9)
+    profile = [(0.0, -1.3), (0.07, -1.3), (0.08, -1.26), (0.07, -1.2), (0.075, -0.6), (0.11, 0.0), (0.16, 0.7),
+               (0.18, 1.15), (0.15, 1.28), (0.0, 1.32)]
+    return [mk.lathe("Club", profile, mat=wood, segments=16),
+            mk.cylinder("Grip", 0.085, 0.5, (0, 0, -0.95), mat=grip, verts=16)], []
+
+
+@prop("Blindfold", pivot="centre", material="Fabric", collide=False, texture=256)
+def blindfold():
+    """A band of black cloth tied round the head, the knot and its two loose ends at the back: Blindfold
+    Lift's. Round Z (the head's up), the front facing -Y."""
+    cloth = mk.noisy("Bf_Cloth", srgb(12, 12, 14), srgb(34, 34, 38), roughness=0.85, kind="cloth")
+    band = [(0.64, -0.16), (0.69, -0.16), (0.69, 0.16), (0.64, 0.16), (0.64, -0.16)]
+    parts = [mk.lathe("Band", band, mat=cloth, segments=28),
+             mk.sphere("Knot", 0.1, (0, 0.72, 0.02), scale=(1.2, 0.8, 1.0), mat=cloth, segments=10, rings=6)]
+    for side in (-1, 1):
+        parts.append(mk.box("Tail", (0.12, 0.03, 0.42), (0.07 * side, 0.74, -0.2), rot=(-14, 0, 12 * side), mat=cloth,
+                            bevel=0.01))
+    return parts, []
+
+
+@prop("Phone", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def phone():
+    """An old black mobile, a bar with a small grey screen and a keypad: Two-Finger Grip's, held by a corner
+    between two fingertips."""
+    body = mk.noisy("Ph_Plastic", srgb(16, 16, 18), srgb(40, 40, 44), roughness=0.4, kind="plastic")
+    screen = mk.flat("Ph_Screen", srgb(120, 130, 122), 0.2, kind="plastic")
+    keys = mk.flat("Ph_Button", srgb(70, 70, 76), 0.5)
+    parts = [pk.rounded("Body", (0.5, 0.12, 1.05), (0, 0, 0), body, r=0.05),
+             mk.box("Screen", (0.36, 0.012, 0.34), (0, -0.064, 0.24), mat=screen)]
+    for row in range(4):
+        for col in range(3):
+            parts.append(mk.box("Key", (0.09, 0.02, 0.06), (-0.12 + 0.12 * col, -0.064, -0.08 - 0.1 * row), mat=keys,
+                                bevel=0.008))
+    return parts, []
+
+
+@prop("Chip", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def chip():
+    """One potato chip, golden and curled like a saddle: Chip and Pen's."""
+    potato = mk.noisy("Cp_Plastic", srgb(196, 150, 60), srgb(236, 196, 104), roughness=0.5, kind="plastic")
+    grid = []
+    for j in range(9):
+        row = []
+        for i in range(9):
+            u, v = i / 8 * 2 - 1, j / 8 * 2 - 1
+            x = 0.42 * u * math.sqrt(max(0.0, 1 - v * v / 2))
+            y = 0.36 * v * math.sqrt(max(0.0, 1 - u * u / 2))
+            row.append((x, y, 0.5 * (x * x - y * y)))
+        grid.append(row)
+    return [mk.sheet("Crisp", grid, potato, apart=0.012)], []
+
+
+@prop("CakeSlice", pivot="bottom", material="SmoothPlastic", collide=False, texture=256)
+def cake_slice():
+    """A slice of strawberry shortcake on a small white plate: Strawberry on Top's (the strawberry on top is
+    a prop of its own, picked off it)."""
+    plate = mk.flat("Ck_Plastic", srgb(236, 234, 228), 0.3)
+    sponge = mk.noisy("Ck_Sponge", srgb(214, 172, 96), srgb(240, 206, 140), roughness=0.9, kind="matte")
+    cream = mk.noisy("Ck_Cream", srgb(236, 230, 214), srgb(250, 248, 242), roughness=0.7, kind="matte")
+    jam = mk.flat("Ck_Jam", srgb(170, 30, 40), 0.4)
+    wedge = [(-0.38, 0.0), (0.38, -0.24), (0.38, 0.24)]
+    parts = [mk.cylinder("Plate", 0.6, 0.05, (0, 0, 0.025), mat=plate, verts=24, bevel=0.012)]
+    for mat, z, h in ((sponge, 0.05, 0.16), (cream, 0.21, 0.05), (jam, 0.26, 0.03), (sponge, 0.29, 0.14), (cream, 0.43, 0.07)):
+        parts.append(mk.extrude_shape("Layer", wedge, h, loc=(0, 0, z + h / 2), mat=mat))
+    parts.append(mk.sphere("Dollop", 0.07, (0.24, 0.0, 0.53), scale=(1, 1, 0.7), mat=cream, segments=10, rings=6))
+    return parts, []
+
+
+@prop("Strawberry", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def strawberry():
+    """A ripe strawberry with its green cap: on top of Strawberry on Top's cake, then picked and eaten."""
+    flesh = mk.noisy("Sb_Plastic", srgb(150, 18, 26), srgb(210, 40, 44), roughness=0.35, kind="plastic")
+    leaf = mk.flat("Sb_Leaf", srgb(54, 110, 40), 0.6)
+    profile = [(0.0, -0.22), (0.07, -0.19), (0.14, -0.08), (0.17, 0.04), (0.14, 0.13), (0.06, 0.17), (0.0, 0.17)]
+    star = []
+    for k in range(10):
+        a = math.pi * k / 5
+        r = 0.16 if k % 2 == 0 else 0.07
+        star.append((r * math.cos(a), r * math.sin(a)))
+    return [mk.lathe("Berry", profile, mat=flesh, segments=16),
+            mk.extrude_shape("Cap", star, 0.02, loc=(0, 0, 0.175), mat=leaf),
+            mk.tube("Stalk", (0, 0, 0.18), (0.02, 0, 0.26), 0.015, 0.012, mat=leaf, verts=6)], []
+
+
+@prop("Die", pivot="bottom", material="SmoothPlastic", collide=False, texture=256)
+def die():
+    """A white die with black pips, its edges rounded: Dice Tower's (stacked)."""
+    bone = mk.noisy("Di_Plastic", srgb(226, 222, 212), srgb(246, 244, 238), roughness=0.35, kind="plastic")
+    ink = mk.flat("Di_Pip", srgb(18, 18, 20), 0.4, kind="plastic")
+    s = 0.4
+    parts = [pk.rounded("Cube", (s, s, s), (0, 0, s / 2), bone, r=0.05)]
+    d = 0.1
+    patterns = {
+        1: [(0, 0)],
+        2: [(-d, -d), (d, d)],
+        3: [(-d, -d), (0, 0), (d, d)],
+        4: [(-d, -d), (-d, d), (d, -d), (d, d)],
+        5: [(-d, -d), (-d, d), (0, 0), (d, -d), (d, d)],
+        6: [(-d, -d), (-d, 0), (-d, d), (d, -d), (d, 0), (d, d)],
+    }
+    # (face normal, its number): opposite faces add up to seven
+    faces = (((0, 0, 1), 1), ((0, 0, -1), 6), ((1, 0, 0), 3), ((-1, 0, 0), 4), ((0, -1, 0), 2), ((0, 1, 0), 5))
+    for (nx, ny, nz), number in faces:
+        for a, b in patterns[number]:
+            if nz:
+                at = (a, b, s / 2 + nz * s / 2)
+            elif nx:
+                at = (nx * s / 2, a, s / 2 + b)
+            else:
+                at = (a, ny * s / 2, s / 2 + b)
+            flat = (0.35 if nx else 1.0, 0.35 if ny else 1.0, 0.35 if nz else 1.0)
+            parts.append(mk.sphere("Pip", 0.035, at, scale=flat, mat=ink, segments=8, rings=4))
+    return parts, []
+
+
+@prop("ChocolateBar", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def chocolate_bar():
+    """A bar of dark chocolate in a deep red wrapper, the paper and foil torn back from its top to show the
+    squares: Chocolate Snap's."""
+    choc = mk.noisy("Cb_Plastic", srgb(46, 26, 16), srgb(80, 48, 30), roughness=0.4, kind="plastic")
+    paper = mk.flat("Cb_Paper", srgb(110, 20, 28), 0.7)
+    foil = mk.flat("Cb_Foil", srgb(190, 190, 196), 0.25, metallic=1.0)
+    parts = [mk.box("Wrapper", (0.46, 0.12, 0.72), (0, 0, -0.16), mat=paper, bevel=0.01),
+             mk.box("Foil", (0.47, 0.13, 0.08), (0, 0, 0.22), rot=(0, 4, 0), mat=foil, bevel=0.01)]
+    for col in (-0.105, 0.105):
+        for row, z in enumerate((0.33, 0.5)):
+            parts.append(pk.rounded("Square", (0.19, 0.09, 0.15), (col, 0, z), choc, r=0.02))
+    return parts, []
+
+
+@prop("Wristwatch", pivot="centre", material="Metal", collide=False, texture=256)
+def wristwatch():
+    """A plain steel watch on a black leather strap, round the left wrist: Forty Seconds'. The strap goes
+    round Z (along the arm), the face looks out at -Y."""
+    steel = mk.noisy("Ww_Steel", srgb(120, 122, 128), srgb(186, 188, 194), roughness=0.25, metallic=1.0)
+    strap = mk.noisy("Ww_Leather", srgb(14, 14, 16), srgb(36, 34, 34), roughness=0.6, kind="leather")
+    dial = mk.flat("Ww_Face", srgb(232, 228, 218), 0.3, kind="plastic")
+    hands = mk.flat("Ww_Iron", srgb(20, 20, 22), 0.4, metallic=0.8)
+    ring = [(0.56, -0.1), (0.6, -0.1), (0.6, 0.1), (0.56, 0.1), (0.56, -0.1)]
+    parts = [mk.lathe("Strap", ring, mat=strap, segments=24),
+             mk.cylinder("Case", 0.22, 0.09, (0, -0.63, 0), rot=(90, 0, 0), mat=steel, verts=20, bevel=0.015),
+             mk.cylinder("Dial", 0.185, 0.01, (0, -0.68, 0), rot=(90, 0, 0), mat=dial, verts=20),
+             mk.box("Hour", (0.02, 0.006, 0.1), (0.0, -0.687, 0.04), mat=hands),
+             mk.box("Minute", (0.015, 0.006, 0.15), (0.05, -0.687, -0.03), rot=(0, 40, 0), mat=hands)]
+    return parts, []
+
+
+@prop("WalkingStick", pivot="centre", material="Wood", collide=False, texture=256)
+def walking_stick():
+    """A crooked branch for a walking stick, with a small red-capped mushroom tied near its top: Mushroom
+    Stroll's, carried over the shoulder."""
+    bark = mk.noisy("Ws_Bark", srgb(70, 52, 38), srgb(112, 88, 64), roughness=0.8, kind="bark")
+    cap = mk.noisy("Ws_Cap", srgb(150, 24, 26), srgb(196, 44, 40), roughness=0.5, kind="plastic")
+    pale = mk.flat("Ws_Stalk", srgb(226, 218, 200), 0.7)
+    spots = mk.flat("Ws_Spot", srgb(240, 236, 226), 0.6)
+    bends = [(0, 0, -2.0), (0.06, 0, -0.7), (-0.05, 0, 0.6), (0.08, 0, 1.9)]
+    parts = []
+    for (a, b), r in zip(zip(bends, bends[1:]), (0.11, 0.1, 0.09)):
+        parts.append(mk.tube("Stick", a, b, r, r * 0.92, mat=bark, verts=8))
+    parts.append(mk.tube("Twig", (0.0, 0, 0.2), (0.22, 0.02, 0.5), 0.03, 0.015, mat=bark, verts=6))
+    parts.append(mk.tube("Mushroom", (0.1, 0, 1.5), (0.26, 0, 1.76), 0.05, 0.045, mat=pale, verts=8))
+    parts.append(mk.sphere("Cap", 0.24, (0.3, 0, 1.82), scale=(1, 1, 0.55), mat=cap, segments=14, rings=7))
+    for k in range(5):
+        a = 2 * math.pi * k / 5
+        parts.append(mk.sphere("Spot", 0.035, (0.3 + 0.13 * math.cos(a), 0.13 * math.sin(a), 1.9), mat=spots,
+                               segments=6, rings=4))
+    return parts, []
+
+
+@prop("Cane", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def cane():
+    """A gentleman's cane, black lacquer with a silver knob and tip: The Smiling Lord's."""
+    lacquer = mk.noisy("Cn_Plastic", srgb(12, 12, 14), srgb(34, 34, 38), roughness=0.25, kind="plastic")
+    silver = mk.noisy("Cn_Steel", srgb(150, 152, 158), srgb(206, 208, 214), roughness=0.2, metallic=1.0)
+    return [mk.tube("Shaft", (0, 0, -1.1), (0, 0, 1.02), 0.05, 0.055, mat=lacquer, verts=12),
+            mk.sphere("Knob", 0.11, (0, 0, 1.1), scale=(1, 1, 0.85), mat=silver, segments=14, rings=8),
+            mk.cylinder("Collar", 0.07, 0.08, (0, 0, 0.98), mat=silver, verts=12),
+            mk.cylinder("Tip", 0.055, 0.1, (0, 0, -1.12), mat=silver, verts=12)], []
+
+
+@prop("Racket", pivot="centre", material="Wood", collide=False, texture=256)
+def racket():
+    """An old wooden tennis racket with gut strings and a leather grip: Match Point's (each player holds one).
+    Along Z, the strings in the XZ plane."""
+    wood = mk.noisy("Rk_Wood", srgb(150, 110, 70), srgb(196, 154, 106), roughness=0.5, kind="wood")
+    gut = mk.flat("Rk_String", srgb(230, 222, 196), 0.6)
+    grip = mk.noisy("Rk_Leather", srgb(40, 28, 22), srgb(70, 52, 40), roughness=0.7, kind="leather")
+    width, height, centre = 0.4, 0.52, 0.62
+    frame = mk.torus("Frame", 0.5, 0.045, mat=wood, major_segments=32, minor_segments=6)
+    # (made round Z: stood up into the XZ plane, stretched to an oval and lifted, in the mesh itself)
+    frame.data.transform(Matrix.Translation((0, 0, centre)) @ Matrix.Diagonal((width / 0.5, 1.0, height / 0.5, 1.0))
+                         @ Matrix.Rotation(math.radians(90), 4, "X"))
+    parts = [frame]
+    for k in range(-3, 4):
+        x = k * 0.1
+        half = height * math.sqrt(max(0.0, 1 - (x / width) ** 2))
+        parts.append(mk.box("String", (0.012, 0.012, 2 * half), (x, 0, centre), mat=gut))
+    for k in range(-4, 5):
+        z = k * 0.1
+        half = width * math.sqrt(max(0.0, 1 - (z / height) ** 2))
+        parts.append(mk.box("String", (2 * half, 0.012, 0.012), (0, 0, centre + z), mat=gut))
+    for side in (-1, 1):
+        parts.append(mk.tube("Throat", (0.16 * side, 0, centre - height + 0.04), (0.03 * side, 0, -0.02), 0.04, 0.035,
+                             mat=wood, verts=8))
+    parts.append(pk.rounded("Handle", (0.13, 0.12, 0.95), (0, 0, -0.5), grip, r=0.03))
+    return parts, []
+
+
+@prop("TennisBall", pivot="centre", material="Fabric", collide=False, texture=256)
+def tennis_ball():
+    """A tennis ball, yellow-green felt with its pale seam: Match Point's."""
+    felt = mk.noisy("Tb_Felt", srgb(196, 214, 60), srgb(222, 236, 96), roughness=0.95, kind="cloth")
+    seam = mk.flat("Tb_Rubber", srgb(236, 236, 226), 0.6)
+    parts = [mk.sphere("Ball", 0.3, mat=felt, segments=20, rings=12)]
+    a, b = 0.7, 0.3
+    points = []
+    for i in range(33):
+        t = 2 * math.pi * i / 32
+        x = a * math.cos(t) + b * math.cos(3 * t)
+        y = a * math.sin(t) - b * math.sin(3 * t)
+        z = 2 * math.sqrt(a * b) * math.sin(2 * t)
+        n = math.sqrt(x * x + y * y + z * z)
+        points.append((0.302 * x / n, 0.302 * y / n, 0.302 * z / n))
+    for p, q in zip(points, points[1:]):
+        parts.append(mk.tube("Seam", p, q, 0.012, 0.012, mat=seam, verts=5))
+    return parts, []

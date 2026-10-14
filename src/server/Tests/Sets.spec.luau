@@ -33,7 +33,7 @@ return function(t)
 		end)
 	end)
 
-	describe("Styles and gestures", function()
+	describe("Styles and emotes", function()
 		it("gives every style a style and every emote a clip", function()
 			for _, item in ipairs(Cosmetics.ITEMS) do
 				if item.kind == "writing" or item.kind == "verdict" or item.kind == "death" then

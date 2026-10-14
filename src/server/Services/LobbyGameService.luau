@@ -696,7 +696,12 @@ local function takeApple(player: Player, index: number)
 	end
 	if count >= #spots and not data.titles.realmwalker then
 		data.titles.realmwalker = true
-		Match.notify(player, "All seven grey apples. The title Realm Walker is yours.", "good")
+		data.owned.emote_apple_toss = true
+		Match.notify(
+			player,
+			"All seven grey apples. The title Realm Walker and the emote Apple Toss are yours.",
+			"good"
+		)
 	end
 	saved(player)
 	tell(player, { game = "apples", kind = "took", index = index, count = count, total = #spots })

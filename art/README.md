@@ -11,8 +11,7 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | `sources.json`, `CREDITS.md` | Where every source file came from, its licence, size and checksum |
 | `budget.json` | What each scene weighed before the surfaces were remade (see "Weight") |
 | `data/r6_rig.json` | Roblox's classic R6 rig (joints and part sizes), the maths the game plays by |
-| `rig/BlenderR6Rig_V2.22.blend` | The R6 IK + FK Blender rig by Aeresei (Roblox DevForum, https://devforum.roblox.com/t/r6-ik-fk-blender-rig-v222/3586405), used as the rig for every animation. Not committed: download "Blender R6 Rig.blend" from that post into `art/rig/` under this name before running `run_anims.py` |
-| `blend/Animations.blend` | The R6 rig with every animation as an action (open it to tweak curves) |
+| `blend/Animations.blend` | The R6 rig (built by `scripts/rig.py`) with every animation as an action (open it to tweak curves); `run_anims.py` rebuilds it from the scripts |
 | `blend/Props.blend` | Every prop, baked |
 | `blend/Maps_<Venue>.blend` | Each venue's scene (Lobby, Meeting, Agency, Campus, Tokyo) |
 | `export/DeathsGambitModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
@@ -46,18 +45,18 @@ import of each kind and sets the others aside (into `ServerStorage > DeathsGambi
 ## Animations: no upload needed
 
 R6 has six joints (the RootJoint, which also bends the waist, the Neck, both Shoulders and both Hips)
-and rigid limbs. `rig.py` opens the downloaded rig, keeps its `InternalArmature` (the six real joints,
-one bone each, their heads on Roblox's Motor6D pivots) and cuts the constraints that tie it to the
-control rig, so keys go straight on the joints the game plays. A clip that someone hand-animates on
-the control rig exports just the same, because the exporter samples the evaluated `InternalArmature`.
-The rig's own Python scripts are never run (headless Blender has scripts off).
+and rigid limbs. `rig.py` builds the rig from code: an armature with one bone per part of
+`data/r6_rig.json`, each bone's head on its Motor6D pivot, and the blocky mannequin parented to it, so
+keys go straight on the joints the game plays. Its bones keep the frames of the rig the first clips
+were made on (Aeresei's "R6 IK + FK Blender Rig" V2.22, which earlier versions loaded from a
+downloaded file), so old and new clips export to the same numbers. Nothing has to be downloaded.
 
 `gait.py` generates the movement clips (idle, walk, run, land): a stance leg rolls over its sole
 (heel edge, then toe edge) exactly as fast as the body moves, so planted feet never slide, and each
 clip exports its stride so the game advances the cycle by distance (scaled to each avatar's leg
 length). `anims.py` keys the other animations in the game's joint convention; `posekit.py` keeps feet
 where they are when the hips move (rigid legs reach in or splay out as far as they can) and fits poses
-that end on the ground to the floor. `export_anims.py` writes `src/shared/Anim/Clips.luau`, which the
+that end on the ground to the floor. `export_anims.py` writes `src/shared/Anim/Clips/` (parts joined by `init.luau`, `clipfile.py`), which the
 game plays on every character itself.
 
 ```
@@ -70,8 +69,15 @@ blender -b --factory-startup --python art/scripts/verify_ingame.py -- out.png cl
 
 `video_anims.py` renders a row of labelled mannequins playing clips in `art/export/previews/anims/`
 (a few at a time, for reviewing motion). `check_export.py` compares every part of the Blender rig with
-the same part posed from `Clips.luau` using the game's maths (`rbxsim.py`) and prints the worst error in
-studs; `verify_ingame.py` draws the two side by side.
+the same part posed from the exported clips using the game's maths (`rbxsim.py`) and prints the worst error in
+studs; `verify_ingame.py` draws the two side by side. `check_anims.py` (plain Python, no Blender)
+measures what the eye catches in game on the exported clips: soles that slide or scuff while on the
+ground, corners below the floor, legs whose top drops out of the torso (R6's faked knees), jumps at a
+loop's seam and joints that snap. The movement set must pass it; every other clip is reported.
+
+```
+python art/scripts/check_anims.py [clip ...] [--all] [--quiet]   # Blender's Python works too
+```
 
 ## Map scenes
 

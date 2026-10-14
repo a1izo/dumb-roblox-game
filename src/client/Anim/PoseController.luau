@@ -2,7 +2,7 @@
 -- joint's Transform every frame (Motor6D or AnimationConstraint; it never replicates):
 --   1. a base layer from the locomotion controller (idle, walk, run, jump, fall), then
 --   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight.
--- Clips come from Blender (Anim/Clips.luau). A clip with an uploaded animation id in
+-- Clips come from Blender (Anim/Clips). A clip with an uploaded animation id in
 -- Assets.anim plays that animation instead.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +21,7 @@ export type Options = {
 	fadeIn: number?,
 	fadeOut: number?,
 	startAt: number?, -- os.clock() time the clip counts from (to sync with a cue)
+	phase: number?, -- seconds into the clip it starts at (looping emotes start on a shared beat)
 	speed: number?,
 	emote: boolean?, -- emotes stop when the character moves
 }
@@ -34,6 +35,7 @@ type Track = {
 	fadeOut: number,
 	stopAt: number?,
 	speed: number,
+	phase: number,
 	emote: boolean,
 }
 
@@ -42,6 +44,9 @@ export type Rig = {
 	humanoid: Humanoid,
 	motors: { [string]: Joints.Instance6D },
 	basis: { [string]: CFrame },
+	inverse: { [string]: CFrame }, -- each basis inverted, worked out with it
+	watch: RBXScriptConnection?, -- joints added later refresh the rig
+	gone: RBXScriptConnection?, -- the body is destroyed
 	tracks: { Track },
 	baked: boolean,
 	-- Posed once every `every` frames (far-off bodies of the Tokyo crowd); nil: every frame.
@@ -67,12 +72,30 @@ local MIN_JOINTS = Joints.COUNT
 
 local function refresh(rig: Rig)
 	local motors = Joints.find(rig.character)
-	local basis = {}
+	local basis, inverse = {}, {}
 	for name, motor in pairs(motors) do
 		basis[name] = rotation(Joints.c0(motor))
+		inverse[name] = basis[name]:Inverse()
 	end
 	rig.motors = motors
 	rig.basis = basis
+	rig.inverse = inverse
+end
+
+-- Forgets a rig (its body was destroyed, or left the world: a crowd walker that is no longer drawn
+-- is bound again when it comes back).
+local function unbind(character: Model)
+	local rig = rigs[character]
+	if rig then
+		if rig.watch then
+			rig.watch:Disconnect()
+		end
+		if rig.gone then
+			rig.gone:Disconnect()
+		end
+		rig.watch, rig.gone = nil, nil
+	end
+	rigs[character] = nil
 end
 
 -- The rig for a character (built once), or nil while it has no R6 joints.
@@ -101,20 +124,22 @@ function PoseController.bind(character: Model?): Rig?
 		humanoid = humanoid,
 		motors = motors,
 		basis = {},
+		inverse = {},
 		tracks = {},
 		baked = false,
 	}
 	refresh(rig)
 	rigs[character] = rig
 	-- Joints that arrive (or are replaced) later join the rig.
-	local connection = character.DescendantAdded:Connect(function(item)
+	rig.watch = character.DescendantAdded:Connect(function(item)
 		if (item:IsA("Motor6D") or item:IsA("AnimationConstraint")) and rigs[character] == rig then
 			task.defer(refresh, rig)
 		end
 	end)
-	character.Destroying:Once(function()
-		connection:Disconnect()
-		rigs[character] = nil
+	rig.gone = character.Destroying:Once(function()
+		if rigs[character] == rig then
+			unbind(character)
+		end
 	end)
 	return rig
 end
@@ -187,6 +212,7 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 		fadeOut = if options and options.fadeOut then options.fadeOut else 0.3,
 		stopAt = if options and options.duration then now + options.duration else nil,
 		speed = if options and options.speed then options.speed else 1,
+		phase = if options and options.phase then options.phase else 0,
 		emote = options ~= nil and options.emote == true,
 	}
 	local animTrack = animationFor(rig.character, id)
@@ -323,7 +349,7 @@ local function playTrack(rig: Rig, track: Track, now: number)
 	if w <= 0 then
 		return
 	end
-	local elapsed = math.max(0, now - track.started) * track.speed
+	local elapsed = math.max(0, now - track.started) * track.speed + track.phase
 	local clip = track.clip
 	if clip then
 		table.clear(scratch)
@@ -331,12 +357,13 @@ local function playTrack(rig: Rig, track: Track, now: number)
 		for joint, rot in pairs(rotations) do
 			local basis = rig.basis[joint]
 			if basis then
-				apply(rig, joint, ClipPlayer.transform(basis, rot, if joint == "root" then offset else nil), w)
+				local moved = if joint == "root" then offset else nil
+				apply(rig, joint, ClipPlayer.transform(basis, rot, moved, rig.inverse[joint]), w)
 			end
 		end
 		if offset and not rotations.root and rig.basis.root then
 			local motor = rig.motors.root
-			local shifted = CFrame.new(rig.basis.root:Inverse() * offset) * rotation(motor.Transform)
+			local shifted = CFrame.new(rig.inverse.root * offset) * rotation(motor.Transform)
 			apply(rig, "root", shifted, w)
 		end
 		return
@@ -347,7 +374,7 @@ local function step(dt: number)
 	local now = os.clock()
 	for character, rig in pairs(rigs) do
 		if not character.Parent then
-			rigs[character] = nil
+			unbind(character)
 			continue
 		end
 		if rig.baked then
@@ -388,11 +415,11 @@ local function step(dt: number)
 			local rotations, offset = baseProvider(character, elapsed)
 			if rotations then
 				for joint, motor in pairs(rig.motors) do
-					local basis = rig.basis[joint]
 					motor.Transform = ClipPlayer.transform(
-						basis,
+						rig.basis[joint],
 						rotations[joint] or IDENTITY,
-						if joint == "root" then offset else nil
+						if joint == "root" then offset else nil,
+						rig.inverse[joint]
 					)
 				end
 			end

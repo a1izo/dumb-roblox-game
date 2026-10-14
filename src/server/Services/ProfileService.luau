@@ -30,6 +30,7 @@ local SETTINGS = {
 	cameraShake = "boolean",
 	hints = "boolean",
 	lowGraphics = "boolean",
+	emoteMusic = "boolean",
 }
 
 local function setSettings(player: Player, payload)

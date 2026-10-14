@@ -1,14 +1,18 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
--- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Gestures, Sets, and Robux once a
--- product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six, dealt
--- face down (the same six for everyone): each is turned over with a click, and stays turned that day
--- (ShopService "turn"). The other suits lay their cards out by kind; Sets lays out each set (Shared/Sets)
--- with how many of its pieces you own, and the title it earns.
+-- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Emotes, Titles, Sets, and Robux
+-- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six,
+-- dealt face down (the same six for everyone): each is turned over with a click, and stays turned that
+-- day (ShopService "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances,
+-- poses, with props, strolls, duo); Sets lays out each set (Shared/Sets) with how many of its pieces you
+-- own, and the title it earns.
 --
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
--- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once), "N more coins" when
--- you are short, or wear / take off what you own. On a phone the cards fill the window and Your look
--- rises as a sheet from the bottom when a card is picked. Open in the lobby only.
+-- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
+-- the emote wheel's first empty slot), "N more coins" when you are short, or wear / take off what you
+-- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel);
+-- one that can be a stance also offers to be yours (stand still a while and you settle into it).
+-- On a phone the cards fill the window and Your look rises as a sheet from the bottom when a card is
+-- picked. Open in the lobby only.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -16,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
+local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 local Sets = require(Shared:WaitForChild("Sets"))
@@ -41,7 +46,7 @@ local ShopPanel = {}
 local TOP = 40 -- the purse line
 local SUITS_HEIGHT = 48
 local LOOK_WIDTH = 300
-local INFO_HEIGHT = 178 -- under Your look: the name, its line, the button, a note
+local INFO_HEIGHT = 226 -- under Your look: the name, its line, the button, the stance button, a note
 local GAP = T.space.l
 local HOLD_SECONDS = 0.5
 
@@ -56,6 +61,7 @@ local look: YourLook.YourLook
 local lookName: any
 local lookLine: TextLabel
 local actionHolder: Frame
+local stanceHolder: Frame
 local actionNote: TextLabel
 local sheetClose: TextButton
 
@@ -69,6 +75,10 @@ local firstButton: GuiObject? = nil
 local function owns(profile, item): boolean
 	if item.source == "vip" then
 		return table.find(profile.passes or {}, "vip") ~= nil
+	end
+	-- (the Emote Pack's four emotes come with the pass)
+	if item.pass and table.find(profile.passes or {}, item.pass) then
+		return true
 	end
 	if item.kind == "title" then
 		local key = string.gsub(item.id, "^title_", "")
@@ -138,7 +148,9 @@ end
 
 -- What a card's chip says: its price, or where you stand with it.
 local function chipFor(profile, item: Cosmetics.Item): (string, boolean)
-	if owns(profile, item) then
+	if owns(profile, item) and item.kind == "emote" then
+		return if EmoteWheel.slotOf(profile.emoteWheel, item.emote) then "On wheel" else "Owned", false
+	elseif owns(profile, item) then
 		return if profile.equipped[item.kind] == item.id then "Worn" else "Owned", false
 	elseif item.source == "vip" then
 		return "VIP", false
@@ -153,10 +165,52 @@ end
 -- Your look -------------------------------------------------------------------------------------------------
 
 local function clearAction()
-	for _, child in ipairs(actionHolder:GetChildren()) do
-		if child:IsA("GuiObject") then
-			child:Destroy()
+	for _, holder in ipairs({ actionHolder, stanceHolder }) do
+		for _, child in ipairs(holder:GetChildren()) do
+			if child:IsA("GuiObject") then
+				child:Destroy()
+			end
 		end
+	end
+	stanceHolder.Visible = false
+end
+
+-- An emote you own: the wheel's eight slots, numbered, its own lit; a click puts it there (or takes it off
+-- the slot it is in).
+local function wheelSlots(profile, item: Cosmetics.Item)
+	local slots = EmoteWheel.slots(profile.emoteWheel)
+	local at = table.find(slots, item.emote)
+	local row = Kit.frame({ Name = "Wheel", Size = UDim2.fromScale(1, 1), Parent = actionHolder })
+	Kit.list(row, 4, true)
+	for index = 1, EmoteWheel.SLOTS do
+		local here = index == at
+		Kit.button({
+			text = tostring(index),
+			variant = if here then "primary" else "secondary",
+			size = "s",
+			Size = UDim2.new(1 / EmoteWheel.SLOTS, -4 * (EmoteWheel.SLOTS - 1) / EmoteWheel.SLOTS, 1, 0),
+			LayoutOrder = index,
+			Parent = row,
+		}, function()
+			ProfileRequest:FireServer({ action = "emoteWheel", slot = index, emote = if here then "" else item.emote })
+		end)
+	end
+	actionNote.Text = if at
+		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
+		else "Pick a number to put it on your emote wheel (Q)."
+	if item.stance then
+		local mine = profile.stance == item.id
+		stanceHolder.Visible = true
+		Kit.button({
+			text = if mine then "Your stance  ·  take it off" else "Make it your stance",
+			variant = if mine then "ghost" else "secondary",
+			size = "s",
+			upper = false,
+			Size = UDim2.fromScale(1, 1),
+			Parent = stanceHolder,
+		}, function()
+			ShopRequest:FireServer({ action = "stance", itemId = item.id })
+		end)
 	end
 end
 
@@ -170,8 +224,11 @@ local function showAction(profile, item: Cosmetics.Item?)
 		return
 	end
 	lookName:set(item.name)
-	lookLine.Text =
-		string.format("%s  ·  %s", capitalised(item.rarity), Cosmetics.KIND_SINGULAR[item.kind] or item.kind)
+	lookLine.Text = string.format(
+		"%s  ·  %s",
+		capitalised(item.rarity),
+		Cosmetics.KIND_SINGULAR[item.kind] or item.kind
+	) .. (if item.stance then "  ·  Stance" elseif item.stroll then "  ·  Stroll" else "")
 	local size = UDim2.new(1, 0, 0, T.touch)
 	local function press(text: string, action: string, variant: string)
 		Kit.button({ text = text, variant = variant, size = "m", Size = size, Parent = actionHolder }, function()
@@ -183,7 +240,9 @@ local function showAction(profile, item: Cosmetics.Item?)
 			Kit.button({ text = text, variant = "secondary", size = "m", Size = size, Parent = actionHolder })
 		Kit.setEnabled(button, false)
 	end
-	if owns(profile, item) then
+	if owns(profile, item) and item.kind == "emote" then
+		wheelSlots(profile, item)
+	elseif owns(profile, item) then
 		if profile.equipped[item.kind] == item.id then
 			press("Take off", "unequip", "ghost")
 			actionNote.Text = "You are wearing it."
@@ -497,14 +556,30 @@ function ShopPanel.rebuild()
 	else
 		local suit = Cosmetics.suit(currentSuit)
 		local order = 0
-		for _, kind in ipairs((suit and suit.kinds) or {}) do
-			local items = Cosmetics.ofKind(kind)
+		local function lay(title: string, items: { Cosmetics.Item })
 			if #items > 0 then
 				order += 1
-				local grid = section(Cosmetics.KIND_NAMES[kind] or kind, order)
+				local grid = section(title, order)
 				for index, item in ipairs(items) do
 					deal(profile, item, grid, index, false)
 				end
+			end
+		end
+		for _, kind in ipairs((suit and suit.kinds) or {}) do
+			local items = Cosmetics.ofKind(kind)
+			if kind == "emote" then
+				-- Emotes by their sections.
+				for _, category in ipairs(Cosmetics.EMOTE_CATEGORIES) do
+					local inSection = {}
+					for _, item in ipairs(items) do
+						if item.category == category.id then
+							table.insert(inSection, item)
+						end
+					end
+					lay(category.name, inSection)
+				end
+			else
+				lay(Cosmetics.KIND_NAMES[kind] or kind, items)
 			end
 		end
 	end
@@ -649,7 +724,14 @@ function ShopPanel.init()
 		Parent = info,
 	})
 	actionHolder = Kit.frame({ Name = "Action", Size = UDim2.new(1, 0, 0, T.touch), LayoutOrder = 3, Parent = info })
-	actionNote = Kit.label({ font = "bodyItalic", color = C.dim, LayoutOrder = 4, Parent = info })
+	stanceHolder = Kit.frame({
+		Name = "Stance",
+		Size = UDim2.new(1, 0, 0, T.touch),
+		Visible = false,
+		LayoutOrder = 4,
+		Parent = info,
+	})
+	actionNote = Kit.label({ font = "bodyItalic", color = C.dim, LayoutOrder = 5, Parent = info })
 	sheetClose = Kit.iconButton({
 		icon = "cross",
 		size = 28,

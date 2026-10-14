@@ -2,8 +2,8 @@
 -- quarters, wearing what you have equipped plus the item you are looking at: a hat, a tie or a Manual
 -- cover on the copy, a trail as a ribbon flowing behind it, a Deathsinger form as the copy turned to a
 -- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
--- billboards). Styles and gestures play once when picked (again when picked again): an emote on the
--- copy, a writing style writing a name on a strip of page, a verdict's little scene, a death style on
+-- billboards). Styles and emotes play once when picked (again when picked again): an emote on the
+-- copy (with its sound and face, if it has them), a writing style writing a name on a strip of page, a verdict's little scene, a death style on
 -- the copy (which is taken again afterwards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
@@ -466,8 +466,9 @@ local function writePreview(self: YourLook, style: string): () -> ()
 	end
 end
 
--- An emote on the copy: its joints let go for as long as it plays, and it is put back at rest after.
-local function emotePreview(self: YourLook, clip: string): () -> ()
+-- An emote on the copy: its joints let go for as long as it plays, and it is put back at rest after. `held`:
+-- the emote whose props, face and sound go with it (a stroll previews its walk, with the stroll's stick).
+local function emotePreview(self: YourLook, clip: string, held: string?): () -> ()
 	local copy = self.copy
 	if not copy then
 		return function() end
@@ -479,7 +480,14 @@ local function emotePreview(self: YourLook, clip: string): () -> ()
 	end
 	PoseController.bindWhenReady(copy, 1)
 	PoseController.play(copy, clip, { fadeIn = 0.1, fadeOut = 0.2, duration = 3.4 })
-	local removeProp = EmoteController.dress(copy, clip)
+	local own = held or clip
+	local function alive(): boolean
+		return PoseController.isPlaying(copy, clip)
+	end
+	local removeProp = EmoteController.dress(copy, own, alive)
+	local stopSound = EmoteController.previewSound(own, 3.4)
+	local undoFace = EmoteController.face(copy, own, alive)
+	local stopEffect = EmoteController.effect(copy, own, true)
 	local done = false
 	local function stop()
 		if done then
@@ -487,6 +495,9 @@ local function emotePreview(self: YourLook, clip: string): () -> ()
 		end
 		done = true
 		removeProp()
+		stopSound()
+		undoFace()
+		stopEffect()
 		PoseController.stop(copy, clip, 0)
 		if copy.Parent then
 			restPose(copy)
@@ -496,11 +507,14 @@ local function emotePreview(self: YourLook, clip: string): () -> ()
 	return stop
 end
 
--- Plays a style or a gesture once, for the item picked (nothing for other kinds).
+-- Plays a style or an emote once, for the item picked (nothing for other kinds).
 local function preview(self: YourLook, item: Cosmetics.Item)
 	stopPreview(self)
 	if item.kind == "emote" and type(item.emote) == "string" then
-		self.stopPreview = emotePreview(self, item.emote)
+		local walk = item.emote .. "Walk"
+		self.stopPreview = if item.stroll and PoseController.exists(walk)
+			then emotePreview(self, walk, item.emote)
+			else emotePreview(self, item.emote)
 	elseif item.kind == "writing" and type(item.style) == "string" then
 		self.stopPreview = writePreview(self, item.style)
 	elseif item.kind == "verdict" and type(item.style) == "string" then
@@ -521,7 +535,7 @@ local function preview(self: YourLook, item: Cosmetics.Item)
 	end
 end
 
--- Shows `item` on the copy (nil = just what you wear), and plays it if it is a style or a gesture.
+-- Shows `item` on the copy (nil = just what you wear), and plays it if it is a style or an emote.
 function YourLook.show(self: YourLook, item: Cosmetics.Item?)
 	stopPreview(self)
 	if self.item ~= item and self.item and self.item.kind == "death" and self.world then

@@ -76,7 +76,7 @@ ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 | V | Scratchpad (private notes, never sent anywhere) |
 | H | How to Play |
 | B | Evidence board |
-| Q | Quick-chat and emotes (the only chat outside meetings) |
+| Q | Quick chat (the only chat outside meetings) and the emote wheel; 1 to 8 play its emotes. In the lobby, the emote wheel alone |
 | N / G | Write or read your note / drop it |
 | R | Oculus of the Dead read (the Muerto who accepted the deal) |
 | Z | Ace's desk: suspicion meter, tips and reports |
@@ -166,9 +166,14 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   read the meeting without typing, watch the cutscenes, and go back to the lobby when they
   leave or the case closes. You cannot be queued and watching at once; a party member readying
   up brings you back.
-- **Shop and Robux**: hats, trails, ties, notebook covers, victory poses, Deathsinger forms and titles,
-  a daily featured rotation, coin packs, and passes (VIP, Double Coins, Custom Alias, Emote Pack,
-  Director). Titles and VIP tags show only in the lobby and on the results screen.
+- **Shop and Robux** ("Death's hand"): hats, trails, ties, notebook covers, writing, verdict and death
+  styles, Deathsinger forms, emotes and titles, matching sets, a daily hand of six, coin packs, and
+  passes (VIP, Double Coins, Custom Alias, Emote Pack, Director). Titles and VIP tags show only in the
+  lobby and on the results screen.
+- **Emotes**: Q (or Emotes in the lobby menu) opens the emote wheel, eight emotes you choose in the
+  shop's Your look, played with a click, a tap or 1 to 8; More lists all of yours. They work in the
+  lobby and in a case; the few that look like a death, an arrest or the Eyes are lobby-only. Sounds and
+  faces for them go in `src/shared/EmoteMedia.luau` (empty until the owner uploads them).
 - **Retention**: a daily streak, 3 daily and 3 weekly quests, 31 achievements (with optional
   badges), 10 mastery levels per role, rank titles, global and weekly leaderboards.
 
@@ -189,7 +194,7 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
 `art/README.md`).
 
 - **Animations** (movement, actions, deaths, reactions and emotes) are made on the R6 rig (see
-  `art/README.md`) and exported to `src/shared/Anim/Clips.luau`; the game plays them itself on every
+  `art/README.md`) and exported to `src/shared/Anim/Clips/`; the game plays them itself on every
   character, so there is nothing to upload. Walking and running are generated so a stance leg rolls
   over its sole and advances by distance, so feet do not slide. The default Animate script is
   replaced by an empty one, and R15 avatars are rebuilt as R6.

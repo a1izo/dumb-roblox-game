@@ -132,6 +132,8 @@ function DataService.payload(player: Player)
 		mastery = data.mastery,
 		weekly = data.weekly,
 		shopTurned = data.shopTurned,
+		emoteWheel = data.emoteWheel,
+		stance = data.stance,
 		today = TimeUtil.day(now),
 		nextDayIn = TimeUtil.secondsToNextDay(now),
 		nextWeekIn = TimeUtil.secondsToNextWeek(now),

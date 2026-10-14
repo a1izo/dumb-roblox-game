@@ -74,6 +74,7 @@ def build_cycle(g, samples, pose_fn):
     """Keys `samples` poses per cycle. pose_fn(phase) -> (joints, offset)."""
     c = clip(g.name, g.period, loop=True, note=g.note)
     c.stride = g.stride
+    c.stance = g.stance
     for i in range(samples):
         phase = i / samples
         joints, offset = pose_fn(phase)
