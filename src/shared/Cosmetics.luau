@@ -583,14 +583,15 @@ Cosmetics.ITEMS = {
 		added = "2026-10-14",
 	},
 	{
+		-- (sold as Floss for a few hours on 2026-10-14: the id stays, the owner swapped the dance)
 		id = "emote_floss",
 		kind = "emote",
 		category = "dance",
-		name = "Floss",
-		rarity = "common",
+		name = "The Smiling Lord",
+		rarity = "rare",
 		source = "shop",
-		price = 200,
-		emote = "floss",
+		price = 400,
+		emote = "smilingLord",
 		added = "2026-10-14",
 	},
 	{
@@ -638,14 +639,16 @@ Cosmetics.ITEMS = {
 		added = "2026-10-14",
 	},
 	{
+		-- (sold as Jumpstyle for a few hours on 2026-10-14: the id stays, the owner swapped the dance)
 		id = "emote_jumpstyle",
 		kind = "emote",
 		category = "dance",
-		name = "Jumpstyle",
+		name = "Excuse Me, Sir",
 		rarity = "rare",
 		source = "shop",
 		price = 350,
-		emote = "jumpstyle",
+		emote = "excuseMeSir",
+		face = "smug",
 		added = "2026-10-14",
 	},
 	{
@@ -764,15 +767,16 @@ Cosmetics.ITEMS = {
 		added = "2026-10-14",
 	},
 	{
+		-- (sold as Sus Lean for a few hours on 2026-10-14: the id stays, the owner swapped the dance)
 		id = "emote_sus_lean",
 		kind = "emote",
-		category = "pose",
-		name = "Sus Lean",
+		category = "dance",
+		name = "Animatronic Welcome",
 		rarity = "rare",
 		source = "shop",
-		price = 300,
-		emote = "susLean",
-		stance = true,
+		price = 350,
+		emote = "animatronicWelcome",
+		face = "wideGrin",
 		added = "2026-10-14",
 	},
 	{

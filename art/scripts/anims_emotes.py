@@ -160,15 +160,6 @@ for i in range(4):
 soft(classic, arms=3.6).plant(stance=0.14)
 classic.build()
 
-# Floss: straight arms swung from side to side, one in front of the body and one behind, changing over
-# as they pass, the hips swinging the other way. Two swings of 0.25 s.
-floss = Motion("floss", 0.5, loop=True, note="Straight arms swung side to side, one in front and one behind, hips the other way.")
-for t, s in ((0.0, 1), (0.25, -1)):
-    floss.key(t, "sine", offset=(-0.12 * s, -0.06, 0), root=(-2, 4 * s, 6 * s), neck=(0, -4 * s, -3 * s),
-              rShoulder=J((-24 * s, 0, 38 * s)), lShoulder=J((24 * s, 0, 38 * s)))
-floss.plant(stance=0.1)
-floss.build()
-
 # Bounce Pump (the big bouncy arm pump): arms swung low across the body while a leg swings out to the
 # side, then the other way, a bounce through every beat. 4 beats of 0.3 s.
 pump = Motion("bouncePump", 1.2, loop=True, note="Arms swung low across the body as a leg swings out, side to side, bouncing.")
@@ -241,24 +232,6 @@ pop.key(2.6, offset=(0, 0, 0), root=(2, -4, 0), neck=(6, 6, 0), rShoulder=J((148
 pop.key(2.8, "snap", offset=(0, -0.12, 0), root=(-6, 0, 0), neck=(-14, -28, 0), rShoulder=limp_r, lShoulder=limp_l)
 pop.follow("neck", 5.0, 0.6).follow(ARMS, 6.0, 0.55).plant(stance=0.14)
 pop.build()
-
-# Jumpstyle: hops on the beat, a leg kicked out in front then flicked back behind, then the other.
-# 4 beats of 0.41 s (about 146 to the minute).
-jump = Motion("jumpstyle", 1.64, loop=True, note="Hopping on the beat, kicking a leg forward then back, then the other.")
-BEAT = 0.41
-for i in range(4):
-    t = i * BEAT
-    s = 1 if i < 2 else -1  # which leg kicks
-    front = i % 2 == 0
-    kick = J((54, 0, 4 * s), (0, 0.12, -0.08)) if front else J((-36, 0, 4 * s), (0, 0.14, 0.04))
-    stand = J((-6, 0, -3 * s), (0, 0.02, 0))
-    jump.key(t, "out", offset=(0, 0.3, 0), root=(-3 if front else 6, 0, 0), neck=(4 if front else -4, 0, 0),
-             rHip=kick if s > 0 else stand, lHip=stand if s > 0 else kick,
-             rShoulder=J((-20 if (s > 0) == front else 30, 0, 16)), lShoulder=J((30 if (s > 0) == front else -20, 0, -16)))
-    jump.key(t + BEAT / 2, "in", offset=(0, 0.0, 0), root=(-2, 0, 0), neck=(0, 0, 0),
-             rHip=J((4, 0, 3)), lHip=J((4, 0, -3)), rShoulder=J((6, 0, 12)), lShoulder=J((6, 0, -12)))
-soft(jump, arms=3.2)
-jump.build()
 
 # Glitch Step: a robot's dance that stutters like a tape skipping, held poses and repeats, cut, not
 # eased. 12 frames of 0.2 s.
@@ -431,15 +404,6 @@ for t, b in ((0.0, 0.0), (2.0, 1.0)):
                rShoulder=J((-30, 0, 40 + 2 * b)), lShoulder=J((132, 0, 42), (0.3, 0.2, -0.2)))
 soft(menace, head=1.2, arms=1.2).plant(stance=0.3, forward=(0.3, -0.2))
 menace.build()
-
-# Sus Lean: leaning in sideways with the head cocked, a hand at the chin and the other arm propping its
-# elbow, peering. A loop (also a stance).
-sus = Motion("susLean", 4.0, loop=True, note="Leaning in sideways, head cocked, a hand at the chin, peering at someone.")
-for t, b in ((0.0, 0.0), (2.0, 1.0)):
-    sus.key(t, offset=(0.15, -0.06, -0.05), root=(-10, -10, 10), neck=(-4, 12 + 4 * b, -10),
-            rShoulder=J((108, 0, -30), (-0.26, 0.12, -0.2)), lShoulder=J((44, 0, 36), (0.26, 0.02, -0.18)))
-soft(sus, head=1.5, arms=1.5).plant(stance=0.08)
-sus.build()
 
 # Low Battery: powering down by stages, a stutter at each, the head dropping, then the knees going and
 # down to sit slumped on the floor. Lobby only (it looks too much like a death).
@@ -957,3 +921,88 @@ shrugger.key(1.1, offset=(0, -0.02, 0), root=(-4, 0, 3), neck=(0, 0, 8), rShould
 shrugger.key(1.6, offset=(0, -0.06, 0), root=(-10, 0, 0), neck=(-6, 0, 7), rShoulder=POCKET_R, lShoulder=POCKET_L)
 soft(shrugger).plant(stance=0.08)
 shrugger.build()
+
+
+# The owner's replacements (2026-10-14) -------------------------------------------------------------------
+
+# The Smiling Lord (in the place of Floss; the Lord Verity dance): a showman with a cane. A touch of the hat
+# brim with the hip cocked and a knee turned in, a pop of the hip the other way, a lean on the cane with
+# both hands and a sway, the cane flicked out with a kick behind, a turn on the spot with an arm out, the
+# arms flung wide leaning back, and the hat again. 8 beats of 0.6 s; the cane is in the left hand
+# (Anim/EmoteProps).
+lord = Motion("smilingLord", 4.8, loop=True, note="A showman with a cane: hat tip, hip pops, a lean on the cane, a kick, a turn, arms wide.")
+HAT = J((150, 0, -30), (-0.2, 0.24, -0.1))
+CANE_DOWN = J((14, 0, -14))
+lord.key(0.0, offset=(0.1, -0.04, 0), root=(0, 0, -4), neck=(-6, 6, 0), rShoulder=HAT, lShoulder=CANE_DOWN)
+lord.key(0.6, "snap", offset=(-0.1, -0.04, 0), root=(0, 0, 4), neck=(-6, -6, 0), rShoulder=HAT, lShoulder=CANE_DOWN)
+for i, s in enumerate((1, -1, 1, -1)):
+    t = 1.2 + 0.3 * i
+    lord.key(t, offset=(0.12 * s, -0.14, -0.05), root=(-10, 6 * s, -3 * s), neck=(4, -4 * s, 0),
+             rShoulder=J((42, 0, -26), (-0.22, 0.02, -0.2)), lShoulder=J((40, 0, 12), (0.16, 0.0, -0.2)))
+lord.key(2.4, "snap", offset=(0, 0, 0), root=(4, -12, 0), neck=(6, 18, 0), rShoulder=J((60, 0, 20)), lShoulder=J((34, 0, -66)))
+lord.key(2.95, offset=(0, 0, 0), root=(2, 0, 0), neck=(0, 0, 0), rShoulder=J((90, 0, 56)), lShoulder=J((10, 0, -16)))
+for i in range(1, 5):  # the turn, linear, all the way round
+    lord.key(2.95 + 0.15 * i, "linear", offset=(0, 0, 0), root=(2, 90 * i, 0), neck=(0, -10 if i < 4 else 0, 0),
+             rShoulder=J((90, 0, 56)), lShoulder=J((10, 0, -16)))
+lord.key(3.95, "out", offset=(0, -0.06, 0.12), root=(12, 360, 0), neck=(18, 0, 0), rShoulder=J((110, 0, 82)),
+         lShoulder=J((110, 0, -82)))
+lord.key(4.35, offset=(0, -0.06, 0.12), root=(12, 360, 0), neck=(18, 0, 0), rShoulder=J((108, 0, 80)), lShoulder=J((108, 0, -80)))
+lord.key(4.8, offset=(0.1, -0.04, 0), root=(0, 360, -4), neck=(-6, 6, 0), rShoulder=HAT, lShoulder=CANE_DOWN)
+lift(lord, "lHip", ((0.0, 1, J((12, 0, 12), (0.08, 0.14, -0.04))), (0.5, 1, J((12, 0, 12), (0.08, 0.14, -0.04))), (0.7, 0, J((0, 0, 0)))))
+lift(lord, "rHip", ((0.55, 0, J((0, 0, 0))), (0.75, 1, J((12, 0, -12), (-0.08, 0.14, -0.04))), (1.1, 1, J((12, 0, -12), (-0.08, 0.14, -0.04))),
+                    (1.25, 0, J((0, 0, 0)))))
+raise_leg(lord, "rHip", 2.2, 2.4, 2.6, 2.85, J((-40, 0, 4), (0, 0.12, 0.06)))
+lord.plant(0.0, 2.9, stance=0.1)
+lord.plant(3.9, 4.8, stance=0.1)
+lord.follow("neck", 4.0, 0.7).follow(ARMS, 4.5, 0.62)
+lord.build()
+
+# Animatronic Welcome (in the place of Sus Lean; the animatronic family dance): stiff, jerky, held between
+# moves like a stage robot, a wide grin (the face). A hand cupped to the ear, a spread hand waving by the
+# face, two hands beckoning, a hand to the chest and a point out at you, two hands snapping together like
+# jaws, the head jerking from side to side, the arms opened wide in welcome. 8 beats of 0.6 s.
+bot = Motion("animatronicWelcome", 4.8, loop=True, note="A stage robot's welcome: ear, wave, beckon, point, a biting snap, jerks, arms wide.")
+REST_R, REST_L = J((4, 0, 6)), J((4, 0, -6))
+
+
+def jerk(t, neck, r, l, root=(0, 0, 0), offset=(0, -0.02, 0)):
+    """A pose snapped to and held: the move into it is quick, the stop is dead."""
+    bot.key(t, "snap", offset=offset, root=root, neck=neck, rShoulder=r, lShoulder=l)
+    bot.key(t + 0.12, "hold", offset=offset, root=root, neck=neck, rShoulder=r, lShoulder=l)
+
+
+jerk(0.0, (0, 0, 12), J((140, 0, -6), (-0.05, 0.3, 0.02)), REST_L)
+for i, z in enumerate((22, 44, 22, 44)):
+    jerk(0.6 + 0.15 * i, (0, -10, -6), J((140, 0, z), (0, 0.24, 0)), REST_L)
+for i in range(2):
+    t = 1.2 + 0.3 * i
+    jerk(t, (4, 0, 0), J((72, 0, -6), (0, 0.06, -0.2)), J((72, 0, 6), (0, 0.06, -0.2)), root=(-4, 0, 0))
+    jerk(t + 0.15, (2, 0, 0), J((60, 0, -6), (0, 0.06, 0.05)), J((60, 0, 6), (0, 0.06, 0.05)), root=(2, 0, 0))
+jerk(1.8, (-4, 0, 0), r_chest(66, -40), REST_L)
+jerk(2.1, (-6, 0, 0), J((92, 0, 2), (0, 0.1, -0.14)), REST_L, root=(-4, 0, 0))
+for i in range(2):
+    t = 2.4 + 0.3 * i
+    jerk(t, (8, 0, 0), J((116, 0, -16), (-0.1, 0.18, -0.2)), J((76, 0, 16), (0.1, 0.06, -0.2)), root=(2, 0, 0))
+    jerk(t + 0.15, (-6, 0, 0), J((96, 0, -16), (-0.1, 0.1, -0.24)), J((92, 0, 16), (0.1, 0.1, -0.24)), root=(-6, 0, 0),
+         offset=(0, -0.02, -0.06))
+for i, y in enumerate((30, -30, 30, 0)):
+    jerk(3.0 + 0.15 * i, (0, y, 6 if y else 0), J((40, 0, 30), (0, 0.04, -0.1)), J((40, 0, -30), (0, 0.04, -0.1)))
+jerk(3.6, (10, 0, 0), J((62, 0, 62)), J((62, 0, -62)), root=(6, 0, 0), offset=(0, -0.02, 0.06))
+jerk(4.2, (6, 0, -8), J((60, 0, 58)), J((60, 0, -58)), root=(4, 0, -3), offset=(0, -0.02, 0.06))
+bot.key(4.8, "snap", offset=(0, -0.02, 0), root=(0, 0, 0), neck=(0, 0, 12), rShoulder=J((140, 0, -6), (-0.05, 0.3, 0.02)), lShoulder=REST_L)
+bot.plant(stance=0.12)
+bot.build()
+
+# Excuse Me, Sir (in the place of Jumpstyle; the "excuse me sir" meme): blissful, eyes shut and smiling
+# (the face), the face tipped up to the sky, the whole body wobbling and bouncing on the beat like the
+# meme's jelly-wobble edit of a still. 4 beats of 0.4 s.
+sky = Motion("excuseMeSir", 1.6, loop=True, note="Blissful, face up to the sky, smiling, the whole body wobbling on the beat.")
+for i in range(8):
+    t = i * 0.2
+    beat = i % 2 == 0
+    s_ = 1 if (i // 2) % 2 == 0 else -1
+    sky.key(t, "out" if beat else "smooth", offset=(0.03 * s_, -0.1 if beat else -0.02, 0.04),
+            root=(10 + (2 if beat else 0), 3 * s_, 4 * s_), neck=(30 + (5 if beat else 0), -4 * s_, -7 * s_),
+            rShoulder=J((-8, 0, 8), (0, 0.06 if beat else 0.0, 0)), lShoulder=J((-8, 0, -8), (0, 0.06 if beat else 0.0, 0)))
+sky.follow("neck", 5.0, 0.45).follow(ARMS, 4.0, 0.5).plant(stance=0.1)
+sky.build()

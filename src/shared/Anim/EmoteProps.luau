@@ -202,6 +202,16 @@ local CLIPS: { [string]: { Prop } } = {
 			at = CFrame.new(0, -1.05, -0.1) * CFrame.Angles(rad(-124), 0, 0) * CFrame.new(0, 0.35, 0),
 		},
 	},
+	smilingLord = {
+		{
+			model = "Cane",
+			size = 2.2,
+			stand = stand("Cylinder", 2.2, 0.12, 0.12, 14, 14, 16),
+			mount = "Left Arm",
+			-- A walking cane, down from the fist to the floor.
+			at = CFrame.new(0, -1.05, -0.1) * CFrame.new(0, -1.05, 0),
+		},
+	},
 	mushroomStroll = {
 		{
 			model = "WalkingStick",

@@ -37,6 +37,7 @@ return {
 	CakeSlice = { size = { 1.2, 0.579, 1.2 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 144, 131, 118 }, set = "Core", tris = 424 },
 	CampusLamp = { size = { 1.84, 12.15, 1.24 }, pivot = "bottom", material = "Metal", collide = false, color = { 38, 39, 40 }, lights = { { angle = 160, at = { -0, 10.4, 0 }, brightness = 1.35, color = { 255, 210, 150 }, face = "Bottom", kind = "spot", range = 24 } }, anchor = { -0, 0 }, set = "Campus", tris = 730, glow = { { 255, 214, 150 } } },
 	CandleCluster = { size = { 1.755, 1.429, 1.8 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 154, 149, 136 }, lights = { { at = { -0, 1.6, 0 }, brightness = 0.55, color = { 232, 226, 214 }, kind = "point", range = 10 } }, set = "Lobby", tris = 856, glow = { { 232, 226, 214 } } },
+	Cane = { size = { 0.214, 2.364, 0.22 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 24, 25, 26 }, set = "Core", tris = 328 },
 	Car = { size = { 5.4, 3.444, 10.9 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 26, 27, 30 }, set = "Core", tris = 2560, glow = { { 255, 236, 200 }, { 200, 22, 38 } } },
 	CardCatalog = { size = { 5.1, 4.7, 2.1 }, pivot = "bottom", material = "Wood", collide = true, color = { 28, 21, 14 }, set = "Campus", tris = 3012 },
 	CaseFiles = { size = { 2.721, 3.28, 1.936 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 77, 67, 54 }, set = "Meeting", tris = 1272 },

@@ -1,7 +1,7 @@
 """The things the emote pack's emotes hold or set down (Core set; see props.py, 2026-10-14): Pre-Dawn
 Bonk's club, Blindfold Lift's blindfold, Two-Finger Grip's phone, Chip and Pen's chip, Strawberry on
 Top's slice of cake and its strawberry, Dice Tower's die, Chocolate Snap's bar, Forty Seconds' watch,
-Mushroom Stroll's stick, and Match Point's racket and ball. The game scales each to the size it needs
+Mushroom Stroll's stick, Match Point's racket and ball, and The Smiling Lord's cane. The game scales each to the size it needs
 (src/shared/Anim/EmoteProps.luau), so the sizes here are only the shapes' proportions. Small and plain,
 like the shop's props, so their textures stay small."""
 
@@ -188,6 +188,17 @@ def walking_stick():
         parts.append(mk.sphere("Spot", 0.035, (0.3 + 0.13 * math.cos(a), 0.13 * math.sin(a), 1.9), mat=spots,
                                segments=6, rings=4))
     return parts, []
+
+
+@prop("Cane", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def cane():
+    """A gentleman's cane, black lacquer with a silver knob and tip: The Smiling Lord's."""
+    lacquer = mk.noisy("Cn_Plastic", srgb(12, 12, 14), srgb(34, 34, 38), roughness=0.25, kind="plastic")
+    silver = mk.noisy("Cn_Steel", srgb(150, 152, 158), srgb(206, 208, 214), roughness=0.2, metallic=1.0)
+    return [mk.tube("Shaft", (0, 0, -1.1), (0, 0, 1.02), 0.05, 0.055, mat=lacquer, verts=12),
+            mk.sphere("Knob", 0.11, (0, 0, 1.1), scale=(1, 1, 0.85), mat=silver, segments=14, rings=8),
+            mk.cylinder("Collar", 0.07, 0.08, (0, 0, 0.98), mat=silver, verts=12),
+            mk.cylinder("Tip", 0.055, 0.1, (0, 0, -1.12), mat=silver, verts=12)], []
 
 
 @prop("Racket", pivot="centre", material="Wood", collide=False, texture=256)
