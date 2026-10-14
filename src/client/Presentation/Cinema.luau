@@ -421,6 +421,55 @@ function Cinema.flash(color: Color3, strength: number?, seconds: number?)
 	end
 end
 
+-- An anime impact frame: for a blink the screen washes over in `color` and thin streaks of light shoot out
+-- from the middle, then everything fades. Lands on a hit (a pen driven into the page, a slam).
+function Cinema.impact(color: Color3, strength: number?, seconds: number?)
+	local life = seconds or 0.22
+	local holder = Kit.Base.make("Frame", {
+		BackgroundTransparency = 1 - (strength or 0.55),
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 4,
+		ClipsDescendants = true,
+		Parent = Screens.cinematic,
+	})
+	local streaks = {}
+	for k = 1, 14 do
+		local angle = (k / 14) * 360 + math.random(-10, 10)
+		local length = 0.5 + math.random() * 0.6
+		local streak = Kit.Base.make("Frame", {
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(length, 0, 0, math.random(2, 6)),
+			Rotation = angle,
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			BackgroundTransparency = 0.15,
+			BorderSizePixel = 0,
+			ZIndex = 5,
+			Parent = holder,
+		})
+		-- the streak starts a little out from the middle, so the centre of the hit stays clear
+		Kit.Base.make("UIGradient", {
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.25, 1),
+				NumberSequenceKeypoint.new(0.3, 0),
+				NumberSequenceKeypoint.new(1, 0.6),
+			}),
+			Parent = streak,
+		})
+		table.insert(streaks, streak)
+	end
+	Motion.tween(holder, { BackgroundTransparency = 1 }, life)
+	for _, streak in ipairs(streaks) do
+		Motion.tween(streak, { BackgroundTransparency = 1 }, life * 0.8)
+	end
+	task.delay(life + 0.05, function()
+		holder:Destroy()
+	end)
+end
+
 -- A coloured vignette at the edges of the screen. Returns a function that removes it.
 function Cinema.vignette(color: Color3?, strength: number?): () -> ()
 	local holder = Kit.frame({ Name = "Vignette", Parent = Screens.cinematic })

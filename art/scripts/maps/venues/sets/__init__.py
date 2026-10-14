@@ -8,10 +8,11 @@ the camera does not look.
     ace         Ace's dark room of monitors, a single armchair facing them
     pantry      the Butler's pantry next door: the tea things, one warm lamp
     locker      the Bureau's locker room: steel lockers, a bench, fluorescent light
+    flat        the Muerto's bare flat over the city: a lone desk, red neon through the glass behind it
     warehouse   the abandoned warehouse of the finale: steel, crates, moonlight through the roof
 """
 
-from maps.venues.sets import ace, locker, shrine, study, warehouse
+from maps.venues.sets import ace, flat, locker, shrine, study, warehouse
 from maps.venues.sets import plan as P
 
 FORMAT = 2
@@ -24,6 +25,7 @@ VIEWS = [
     ((236.0, 5.5, 7.0), (240.0, 5.0, -9.0), 20),  # Ace's room to the monitors
     ((258.0, 5.0, 5.0), (256.0, 3.0, -5.0), 20),  # the pantry
     ((360.0, 5.5, 6.0), (360.0, 4.0, -6.0), 20),  # the locker room
+    ((360.0, 5.0, 66.0), (360.0, 3.5, 56.0), 20),  # the Muerto's flat, the desk against the window
     ((520.0, 12.0, 24.0), (520.0, 3.0, 0.0), 22),  # the warehouse floor
 ]
 
@@ -35,6 +37,7 @@ def build(s):
     shrine.build(s)
     ace.build(s)
     locker.build(s)
+    flat.build(s)
     warehouse.build(s)
     s.set_bounds(*P.BOUNDS)
     s.checks = CHECKS

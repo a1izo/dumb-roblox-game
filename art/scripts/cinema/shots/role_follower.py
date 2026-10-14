@@ -1,189 +1,170 @@
-"""The Muerto's role cutscene (the briefing, seen only by that Muerto), 15 s, four shots: summoned.
+"""The Muerto's role cutscene (the briefing, seen only by that Muerto), 15 s: delete. After the anime's Mikami,
+the follower who writes for his god: alone at a desk at night, the red of the city behind him, writing, then
+stabbing the pen into the page with each name, faster and faster, until he rises to his god in ecstasy.
 
-A  0.0-3.4   A back alley in the rain under a sodium lamp. The Muerto's phone buzzes; the screen glows red; they
-             read it ("COME."), put it away and walk to the stair going down beside the lamp.
-B  3.4-7.4   From inside the shrine's open doors, up the stairs: the Muerto comes down between the candles,
-             the alley's light behind them.
-C  7.4-11.4  Low in the nave, towards the altar: the Muerto walks up between the kneeling Muertos, who all turn
-             their heads to them at once, eyes red. On the steps Diavolo's black shape raises a hand: come.
-D  11.4-15.0 Over Diavolo's shoulder, down the nave: the doors slam shut behind the Muerto; they flinch, look
-             back, then turn and come on.
+A  0.0-2.6   Wide from the room: a black shape at the desk against the red window, writing, steady.
+B..H 2.6-6.8 The frenzy, cut to its beat: the pen driven into the page (an impact frame and "DELETE."), his
+             face with the red eyes snapping down at the page or whipping aside, the pen again, closer, faster:
+             strokes 1.0 s apart, then 0.7, 0.6, 0.5, 0.4.
+I  6.8-9.6   In front of him: the last flurry, then the stop; he pants over the page, then lifts his head
+             slowly into the camera, the eyes red.
+J  9.6-12.6  In front: he throws himself back in the chair, head flung back, arms flung up and wide to the
+             window: "Diavolo... I am your hand."
+K  12.6-15.0 High, pulling away: the black shape with its arms wide against the red city.
 
-The shrine (maps/venues/sets/shrine.py, Sets scene space, origin x 120): the hall x 109..131, z -16..14, with
-the doorway in the south wall (x 116.8..123.2); the stair climbs south from it (z 14.5..24.7, up to y 6) to a
-landing and the alley (y 6, z 28..48, x 110..130; its entrance at x 116.8..123.2 in the wall at z 28). Kneeling
-pairs at x 116.2 / 123.8; Diavolo on the middle altar step at (120, 1.2, -7.4)."""
-
-import math
+The flat (maps/venues/sets/flat.py, Sets scene space, origin (360, 60)): the room x -9..9, z -7..7, 10 high;
+the window across the north wall; the desk at (0, -2.6) (top 3.05, screen on its west half, lamp at the east
+end), the chair behind it at (0, -5.0); the writer sits facing south, the window at his back."""
 
 from animlib import J
-from cinema.acting import PRAY, alive, beat, facing, hold, kneel, soft, walking
+from cinema.acting import alive, seated, soft
 from cinema.shot import Shot
 from motion import Motion
 
 NAME = "RoleMuerto"
 LENGTH = 15.0
-OX = 120.0
-ALLEY_Y = 6.0
-SPEED = 3.2
-SLOPE = math.hypot(10.2, 6.0) / 10.2  # path length per stud of stair run
-START = (OX + 1.0, 33.0)
-LANDING = (OX + 0.1, 27.3)
-STAIR_TOP = (OX, 24.7)
-INSIDE = (OX, 13.4)  # just inside the doors (after the cut)
-STOP = (OX, 0.6)
-ON = (OX, -2.0)  # two steps further, at the end
-DIAVOLO = (OX, 1.2, -7.4)
-OTHERS = [(OX - 3.8, 1.4), (OX + 3.8, 1.4), (OX - 3.8, 6.6), (OX + 3.8, 6.6)]
+OX, OZ = 360.0, 60.0
+TOP = 3.05  # the desk top
+SEAT = 2.05  # the office chair's seat
+SIT = (1.3, -4.5)  # on the floor under the hips, facing south (180), east of the screen
+BOOK = (0.3, -3.25)  # under the right hand
 
 
-def walk_time(a, b, slope=1.0):
-    return math.hypot(b[0] - a[0], b[1] - a[1]) * slope / SPEED
+def at(x, y, z):
+    return (OX + x, y, OZ + z)
 
 
-T_LANDING = 3.0 + walk_time(START, LANDING)
-T_TOP = T_LANDING + walk_time(LANDING, STAIR_TOP)
-T_CUT = 7.4
-T_STOP = T_CUT + walk_time(INSIDE, STOP)
-T_ON = (13.6, 13.6 + walk_time(STOP, ON))
+# The strokes, faster and faster; the head snaps down to the page (0) or whips aside (+1 left, -1 right).
+STABS = [(3.0, 0), (4.0, 1), (4.7, 0), (5.3, -1), (5.8, 0), (6.2, 1), (6.6, 0), (7.0, -1), (7.3, 0), (7.6, 1),
+         (7.9, 0)]
 
-# The Muerto ------------------------------------------------------------------------------------------
+# The Muerto ----------------------------------------------------------------------------------------------
 
-ARMS = dict(rShoulder=J((4, 0, -2), (-0.06, 0, 0)), lShoulder=J((4, 0, 2), (0.06, 0, 0)))
-PHONE = dict(rShoulder=J((104, 0, -20), (-0.12, 0.2, -0.3)))
+STILL_L = J((50, 0, 20), (0.2, 0.04, -0.3))  # the left hand flat on the desk
 
-me = Motion("RoleMuerto_self", LENGTH, note="The Muerto's role cutscene: the summons, the stair, the doors.")
-me.key(0.0, root=(-2, 0, 0), neck=(-4, 0, 0), **ARMS)
-beat(me, 0.9, 0.5, antic=0.1, neck=(-26, 0, 0), **PHONE)  # the phone up to read
-hold(me, 2.4)
-beat(me, 2.8, 0.4, neck=(4, 0, 0))  # looks up: resolve
-beat(me, 3.1, 0.4, **ARMS)  # the phone away
-hold(me, T_STOP)
-beat(me, T_STOP + 0.4, 0.4, root=(-2, 0, 0), neck=(6, 0, 0))  # stops, looks up at the altar
-beat(me, 11.75, 0.2, antic=0.0, over=0.3, root=(6, 0, 0), neck=(10, 0, 0),  # the slam: a flinch
-     rShoulder=J((24, 0, -14), (-0.1, 0.06, -0.1)), lShoulder=J((24, 0, 14), (0.1, 0.06, -0.1)))
-beat(me, 12.6, 0.6, root=(-2, 34, 0), neck=(0, 62, 0))  # a look back over the shoulder at the doors
-hold(me, 13.0)
-beat(me, 13.5, 0.5, root=(-4, 0, 0), neck=(-2, 0, 0), **ARMS)  # and turns to the altar again
-me.key(LENGTH, root=(-4, 0, 0), neck=(-4, 0, 0))
-soft(me, head=2.6, arms=2.4)
-for t0, t1 in ((None, 2.95), (T_STOP + 0.1, T_ON[0] - 0.05), (T_ON[1] + 0.1, None)):
-    me.plant(t0, t1, stance=0.05)
-walking(me, 3.0, T_CUT - 0.02, speed=SPEED)
-walking(me, T_CUT, T_STOP, speed=SPEED)
-walking(me, *T_ON, speed=SPEED)
-alive(me, 0.7, seed=2)
+
+def write(m, t0, t1, speed=1.0):
+    """Writing steadily: small quick strokes, the head over the page (high enough to see the face)."""
+    t, x = t0, -1.0
+    while t < t1:
+        x += 0.28
+        if x > 1.0:
+            x = -1.0
+        r = J((60 + 4 * x, -4 + 8 * x, -14 + 6 * x), (-0.12 + 0.14 * x, 0.04, -0.3))
+        seated(m, t, seat=SEAT, lean=-22, legs=86, neck=(-8, 6 * x, 0), rShoulder=r, lShoulder=STILL_L)
+        t += 0.2 / speed
+
+
+me = Motion("RoleMuerto_self", LENGTH, note="The Muerto's role cutscene: delete.")
+write(me, 0.0, 2.75)
+for k, (t, whip) in enumerate(STABS):
+    gap = (STABS[k + 1][0] - t) if k + 1 < len(STABS) else 0.6
+    antic = min(0.14, gap * 0.35)  # the wind-up shortens as the strokes come faster
+    rage = min(1.0, 0.55 + 0.05 * k)  # and the body throws more into each
+    # Wind up: the pen high over the shoulder, the body rearing back, the head lifting.
+    seated(me, t - 0.06, "out", seat=SEAT, lean=-2 + 4 * rage, legs=86, neck=(10 * rage, -whip * 8, 0),
+           rShoulder=J((150 + 15 * rage, -10, -24), (0.0, 0.3, -0.1)), lShoulder=STILL_L)
+    # The stab: snapped down through the page, past it, the head thrown down or aside with it.
+    seated(me, t, "snap", seat=SEAT, lean=-30 * rage, legs=86, neck=(-26 * rage, whip * 38 * rage, whip * 10),
+           rShoulder=J((46, -6, -10), (-0.12, 0.04, -0.34)), lShoulder=STILL_L)
+    # Settling into the next breath (if there is time before the next wind-up).
+    settle = t + min(0.22, gap - antic - 0.1)
+    if settle > t + 0.05:
+        seated(me, settle, seat=SEAT, lean=-24 * rage, legs=86, neck=(-18 * rage, whip * 26 * rage, whip * 6),
+               rShoulder=J((48, -6, -10), (-0.12, 0.04, -0.32)), lShoulder=STILL_L)
+# The stop: frozen over the page, panting; then the head comes up, slowly, into the camera.
+seated(me, 8.25, seat=SEAT, lean=-28, legs=86, neck=(-20, 0, 0), rShoulder=J((46, -6, -10), (-0.12, 0.04, -0.34)),
+       lShoulder=STILL_L)
+for k in range(3):  # three hard breaths
+    tb = 8.35 + 0.22 * k
+    seated(me, tb, "sine", seat=SEAT, lean=-28 + (4 if k % 2 == 0 else 0), legs=86, neck=(-20 + (3 if k % 2 == 0 else 0), 0, 0),
+           rShoulder=J((46, -6, -10), (-0.12, 0.04, -0.34)), lShoulder=STILL_L)
+seated(me, 9.35, "sine", seat=SEAT, lean=-14, legs=86, neck=(-2, 0, 6), rShoulder=J((50, -6, -10), (-0.12, 0.04, -0.3)),
+       lShoulder=STILL_L)
+# The release, still in the chair (an R6 body sat here stands lower than it sits): a crouch over the page,
+# then he throws himself back, head flung back, arms flung up and wide to the red window behind him.
+UP_R = J((168, -18, 46), (0.1, 0.3, 0))
+UP_L = J((168, 18, -46), (-0.1, 0.3, 0))
+seated(me, 9.75, "in", seat=SEAT, lean=-34, legs=86, neck=(-24, 0, 0), rShoulder=J((40, 0, -16)), lShoulder=J((40, 0, 16)))
+seated(me, 10.0, "snap", seat=SEAT, lean=16, legs=80, neck=(40, 0, 0), rShoulder=UP_R, lShoulder=UP_L)
+seated(me, 10.3, seat=SEAT, lean=12, legs=82, neck=(34, 0, 0), rShoulder=UP_R, lShoulder=UP_L)
+for k in range(10):  # trembling with it, a silent laugh shaking the shoulders
+    tk = 10.6 + 0.2 * k
+    seated(me, tk, "sine", seat=SEAT, lean=12 + (3 if k % 2 else 0), legs=82, turn=(2 if k % 2 else -2),
+           neck=(34 + (5 if k % 2 else 0), 0, 0), rShoulder=UP_R, lShoulder=UP_L)
+seated(me, LENGTH, seat=SEAT, lean=14, legs=82, neck=(38, 0, 0), rShoulder=UP_R, lShoulder=UP_L)
+soft(me, head=3.6, arms=3.2, head_damp=0.6, arm_damp=0.5)
+alive(me, 0.6, seed=7, t1=2.7)
+alive(me, 0.5, seed=8, t0=12.6)
 me.build()
 
-# Diavolo, a black shape on the altar steps -----------------------------------------------------------
+# The shot ------------------------------------------------------------------------------------------------
 
-HANG = dict(rShoulder=J((4, 0, 2)), lShoulder=J((4, 0, -2)))
-OUT = dict(rShoulder=J((86, 0, -6), (0, 0.12, -0.3)))
-CURL = dict(rShoulder=J((104, 0, -6), (0, 0.24, -0.1)))
+shot = Shot(NAME, "Sets", LENGTH, note="The Muerto's role cutscene: delete.")
+shot.room = (OX - 9.0, OZ - 7.0, OX + 9.0, OZ + 7.0, 10.0)
+shot.allow = {"self": ["Desk", "OfficeChair"]}  # sat at the desk, in the chair
 
-dv = Motion("RoleMuerto_diavolo", LENGTH, note="The Muerto's role cutscene: Diavolo beckons from the altar.")
-dv.key(0.0, root=(4, 0, 0), neck=(-6, 0, 0), **HANG)
-hold(dv, 9.6)
-beat(dv, 10.2, 0.6, antic=0.15, **OUT)  # the hand comes out...
-for k, t in enumerate((10.6, 11.0, 13.6, 14.0)):  # ...and draws them in
-    beat(dv, t, 0.2, antic=0.0, **(CURL if k % 2 == 0 else OUT))
-soft(dv, head=2.4, arms=2.4).plant(stance=0.06)
-alive(dv, 0.5, seed=4)
-dv.build()
+a = shot.actor("self", me, eyes=(3.3, LENGTH))
+a.mark(0.0, at(SIT[0], 0.0, SIT[1]), 180.0)
+a.hold("Pen", "Right Arm", (0, -1.0, -0.15), (60, 0, 0))
 
-# The other Muertos -----------------------------------------------------------------------------------
+book = shot.prop("NotebookOpen")
+book.at(0.0, at(BOOK[0], TOP, BOOK[1]), (0, 180, 0))
+book.at(LENGTH, at(BOOK[0], TOP, BOOK[1]), (0, 180, 0))
 
 
-def kneeler(k, x):
-    """Kneeling, head bowed; at 8.8 every head turns to the aisle at once, then follows the Muerto past."""
-    m = Motion(f"RoleMuerto_kneel{k}", LENGTH, note="The Muerto's role cutscene: the heads that turn.")
-    side = 1 if x < OX else -1  # turn right (-) from the west side, left (+) from the east
-    kneel(m, 0.0, lean=-14, head=-30, **PRAY)
-    kneel(m, 8.6, lean=-14, head=-30, **PRAY)
-    kneel(m, 8.8, "snap", lean=-8, head=-4, turn=-side * 22, neck=(-4, -side * 66, 0), **PRAY)
-    back = 1.0 if k < 2 else 0.0  # the front pair turns further as the Muerto passes them
-    kneel(m, 10.6, lean=-8, head=-4, turn=-side * (22 - 44 * back), neck=(-4, -side * (66 - 132 * back), 0), **PRAY)
-    kneel(m, LENGTH, lean=-8, head=-4, turn=-side * (22 - 44 * back), neck=(-4, -side * (66 - 132 * back), 0), **PRAY)
-    soft(m, head=4.0, arms=2.4)
-    return m
+def page(t0, t1, eye, look_dy=0.05, fov=30.0):
+    """A cut to the page: the pen and the hand on the notebook."""
+    shot.subjects.append((t0, t1, None, True))
+    target = at(BOOK[0], TOP + look_dy, BOOK[1])
+    shot.cam(t0, eye, target, fov=fov, cut=True)
+    shot.cam(t1, (eye[0] - 0.1, eye[1] - 0.1, eye[2] - 0.15), target, fov=fov - 1.0, ease="linear")
 
 
-for k, (x, z) in enumerate(OTHERS):
-    kneeler(k, x).build()
-
-# The shot --------------------------------------------------------------------------------------------
-
-shot = Shot(NAME, "Sets", LENGTH, note="The Muerto's role cutscene: summoned.")
-shot.room = (109.0, -16.0, 131.0, 48.0, 32.0)
-
-a = shot.actor("self", me)
-a.mark(0.0, (START[0], ALLEY_Y, START[1]), facing(START, LANDING))
-a.mark(3.0, (START[0], ALLEY_Y, START[1]), facing(START, LANDING), "linear")
-a.mark(T_LANDING, (LANDING[0], ALLEY_Y, LANDING[1]), facing(START, LANDING), "linear")
-a.mark(T_TOP, (STAIR_TOP[0], ALLEY_Y, STAIR_TOP[1]), 0.0, "linear")
-run = (T_CUT - T_TOP) * SPEED / SLOPE  # how far down the stair they get before the cut
-a.mark(T_CUT - 0.02, (OX, ALLEY_Y - run * 6.0 / 10.2, STAIR_TOP[1] - run), 0.0, "linear")
-a.mark(T_CUT, (INSIDE[0], 0.0, INSIDE[1]), 0.0, "linear")
-a.mark(T_STOP, (STOP[0], 0.0, STOP[1]), 0.0, "linear")
-a.mark(T_ON[0], (STOP[0], 0.0, STOP[1]), 0.0, "linear")
-a.mark(T_ON[1], (ON[0], 0.0, ON[1]), 0.0, "linear")
-a.mark(LENGTH, (ON[0], 0.0, ON[1]), 0.0)
-a.hold("Smartphone", "Right Arm", (0.0, -1.05, -0.2), (-14, 0, 0), t0=0.4, t1=3.2)
-
-d = shot.actor("diavolo", dv, silhouette=(0.0, LENGTH))
-d.mark(0.0, DIAVOLO, 180.0)
-
-for k, (x, z) in enumerate(OTHERS):
-    o = shot.actor(f"ally:{k + 1}", clip=f"RoleMuerto_kneel{k}")
-    o.mark(0.0, (x, 0.0, z), 0.0)
-
-
-def door(hinge, side, close=(11.55, 11.85)):
-    """One leaf of the double door, standing open into the shrine, slammed shut at `close`."""
-    leaf = shot.prop("ShrineDoor")
-    hx, hz = hinge
-    keys = [(0.0, 90.0), (close[0], 90.0)]
-    keys += [(close[0] + (close[1] - close[0]) * u, 90.0 * (1 - u) ** 0.6) for u in (0.25, 0.5, 0.75, 1.0)]
-    keys.append((LENGTH, 0.0))
-    for t, phi in keys:
-        ang = math.radians(phi)
-        cx = hx + side * 1.6 * math.cos(ang)
-        cz = hz - 1.6 * math.sin(ang)
-        yaw = phi if side > 0 else 180.0 - phi
-        leaf.at(t, (cx, 0.0, cz), (0, yaw, 0), "in" if t > close[0] else "smooth")
-
-
-door((OX - 3.2, 13.2), 1)
-door((OX + 3.2, 13.2), -1)
-
-# A: the alley, low in front of the Muerto (under the bowed head, into the phone's glow), backing off as they come.
-shot.pan(0.0, 3.4, "self", (OX - 2.8, ALLEY_Y + 3.6, 28.4), aim="Head", dy=-0.2, fov=44, drift=(-0.6, 0.2, 0.1))
-# B: from inside the doors, up the stair.
-shot.pan(3.4, T_CUT, "self", (OX + 1.2, 2.2, 12.8), aim="Torso", dy=0.6, fov=44, cut=True)
-# C: low in the nave, the heads turning.
-shot.pan(T_CUT, 11.4, "self", (OX + 1.0, 2.4, -3.6), aim="Head", dy=-0.4, fov=50, cut=True, drift=(0.0, 0.0, -0.4))
-# D: over Diavolo's shoulder: the doors slam, the look back, the walk on.
-shot.pan(11.4, LENGTH, "self", (OX + 3.6, 5.4, -9.0), aim="Torso", dy=0.6, fov=44, cut=True, drift=(-0.3, 0.0, 0.3))
+# A: wide from the room, a slow push: the black shape writing against the red window.
+shot.pan(0.0, 2.6, "self", at(6.9, 4.6, 5.0), aim="Torso", dy=0.6, fov=44, drift=(-1.2, -0.3, -1.4), back=True)
+# The frenzy, cut to the strokes.
+page(2.6, 3.45, at(3.2, 5.7, -1.3))  # B
+shot.pan(3.45, 4.4, "self", at(2.0, 5.5, 0.9), aim="Head", dy=-0.3, fov=40, cut=True)  # C: the face, over the lamp
+page(4.4, 4.95, at(0.8, 5.9, -1.5), fov=28)  # D
+shot.subjects.append((4.95, 5.55, "self", False))  # E: a tilted close from the screen's side
+shot.cam(4.95, at(-1.8, 5.9, 0.5), at(1.3, 4.8, -4.2), fov=44, roll=12.0, cut=True)
+shot.cam(5.55, at(-1.7, 5.8, 0.3), at(1.3, 4.7, -4.2), fov=43, roll=14.0, ease="linear")
+page(5.55, 6.0, at(2.8, 5.1, -2.0), fov=27)  # F
+shot.pan(6.0, 6.4, "self", at(0.6, 5.0, 0.4), aim="Head", dy=-0.2, fov=44, cut=True)  # G: low, the head whipping
+page(6.4, 6.8, at(2.1, 6.4, -2.9), look_dy=0.0, fov=32)  # H: straight down on the page
+# I: in front of him, pushing in: the last flurry, the stop, the head coming up into the camera.
+shot.pan(6.8, 9.6, "self", at(1.9, 5.4, 2.0), aim="Head", dy=-0.4, fov=40, cut=True, drift=(-0.3, 0.0, -0.6))
+# J: straight on over the desk, the screen to one side and the lamp to the other, pulling back as he rises.
+shot.pan(9.6, 12.6, "self", at(1.3, 4.6, 1.8), aim="Head", dy=0.5, fov=60, cut=True, drift=(0.0, 0.2, 1.2),
+         back=True)  # the head thrown back: the face to the ceiling is the point
+# K: high, pulling away from the black shape against the red city.
+shot.subjects.append((12.6, LENGTH, None, True))
+shot.cam(12.6, at(5.5, 6.4, 4.2), at(1.3, 4.6, -4.6), fov=46, cut=True)
+shot.cam(LENGTH, at(6.7, 7.2, 5.8), at(1.3, 4.6, -4.6), fov=48, ease="linear")
 
 # Faces
 shot.face(0.0, "self", "Stern")
-shot.face(1.0, "self", "Shock")
-shot.face(2.6, "self", "Stern")
-shot.face(11.7, "self", "Fear")
-shot.face(13.4, "self", "Stern")
-shot.face(14.4, "self", "Devoted")
-for k in range(len(OTHERS)):
-    shot.face(8.8, f"ally:{k + 1}", "Devoted")
+shot.face(2.9, "self", "Crazed")
+shot.face(9.8, "self", "Laugh")
+shot.face(12.6, "self", "Devoted")
 
-shot.event(0.0, "sfx", slot="rainLoop")
-shot.event(0.5, "sfx", slot="mapPhoneRing")
-shot.event(1.0, "subtitle", text="COME.", dur=1.6)
-shot.event(5.0, "sfx", slot="hauntWhisper")
-shot.event(8.8, "sfx", slot="wisp")
-shot.event(11.82, "sfx", slot="slam")
-shot.event(11.82, "fx", name="shake", strength=0.45, dur=0.3)
-shot.event(14.4, "sfx", slot="heartbeat")
-shot.event(0.8, "card", key="role", dur=3.6)
-shot.event(5.0, "card", key="win", dur=2.3)
-shot.event(7.8, "card", key="move", dur=3.4)
-shot.event(12.0, "card", key="names", dur=2.9)
+# Sound, light and the words, on the strokes.
+shot.event(0.0, "sfx", slot="penScratch")
+for k, (t, _) in enumerate(STABS):
+    shot.event(t, "sfx", slot="slam")
+    if k < 7:  # the strokes we cut to; the last flurry is one blur
+        shot.event(t, "fx", name="impact", r=255, g=40 + 20 * (k % 2), b=60, strength=0.45, dur=0.2)
+        shot.event(t, "subtitle", text="DELETE." if k < 4 else "DELETE!", dur=min(0.9, (STABS[k + 1][0] - t) - 0.05))
+    else:
+        shot.event(t, "fx", name="flash", r=255, g=30, b=50, strength=0.3, dur=0.15)
+    shot.event(t, "fx", name="shake", strength=0.12 + 0.03 * k, dur=0.15)
+shot.event(9.5, "sfx", slot="hauntWhisper")
+shot.event(10.0, "fx", name="impact", r=255, g=20, b=40, strength=0.6, dur=0.4)
+shot.event(10.0, "sfx", slot="heartbeat")
+shot.event(10.2, "subtitle", text="Diavolo... I am your hand.", dur=2.2)
+# The role card, as captions over the calmer moments (the game fills them in).
+shot.event(0.4, "card", key="role", dur=2.1)
+shot.event(7.0, "card", key="win", dur=2.4)
+shot.event(10.6, "card", key="names", dur=1.9)
+shot.event(12.7, "card", key="move", dur=2.2)

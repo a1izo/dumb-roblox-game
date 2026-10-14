@@ -279,6 +279,12 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 				event.strength or 0.6,
 				event.dur or 0.4
 			)
+		elseif name == "impact" then
+			Cinema.impact(
+				Color3.fromRGB(event.r or 255, event.g or 255, event.b or 255),
+				event.strength or 0.55,
+				event.dur or 0.22
+			)
 		elseif name == "shake" then
 			CameraDirector.shake(token, event.strength or 0.4, event.dur or 0.4)
 		elseif name == "snowburst" and at then

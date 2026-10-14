@@ -122,6 +122,37 @@ def beat(m, t, dur=0.4, antic=0.15, over=0.1, offset=None, **joints):
     return m
 
 
+def strike(m, t, wind, hit, antic=0.12, travel=0.06, over=0.2, settle=0.22):
+    """Anime-fighter timing for a hit (a stab, a slam, a head whipped round): the body holds, winds up into
+    `wind` over `antic` seconds, snaps through to `hit` in `travel` (two or three frames, landing at `t`)
+    and past it by `over`, then settles back over `settle`. `wind` and `hit` are {joint: value}; an
+    "offset" entry moves the body. Fast moves between held poses read as power; even glides read as stiff."""
+    from motion import _vec
+
+    start, cock = t - travel - antic, t - travel
+    for joint in set(wind) | set(hit):
+        if joint == "offset":
+            continue
+        ch = m.channels.get(joint)
+        now = ch.value(start) if ch is not None and ch.keys else np.zeros(6)
+        w = _vec(wind[joint]) if joint in wind else now
+        h = _vec(hit[joint]) if joint in hit else w
+        past = h + (h - w) * over
+        for time, vec, ease in ((start, now, "smooth"), (cock, w, "out"), (t, past, "snap"), (t + settle, h, "smooth")):
+            if time >= 0 and not (ch is not None and any(abs(k[0] - time) < 1e-6 for k in ch.keys)):
+                m.key(time, ease, **{joint: J(vec[:3], vec[3:])})
+                ch = m.channels[joint]
+    if "offset" in wind or "offset" in hit:
+        now = m.offset.value(start) if m.offset.keys else np.zeros(3)
+        w = np.array(wind.get("offset", now), float)
+        h = np.array(hit.get("offset", w), float)
+        for time, vec, ease in ((start, now, "smooth"), (cock, w, "out"), (t, h + (h - w) * over * 0.5, "snap"),
+                                (t + settle, h, "smooth")):
+            if time >= 0 and not any(abs(k[0] - time) < 1e-6 for k in m.offset.keys):
+                m.offset.add(time, vec, ease)
+    return m
+
+
 def hold(m, t, **joints):
     """Keys the joints at their current values at t (a pose held until the next beat)."""
     for joint in joints or m.channels:
