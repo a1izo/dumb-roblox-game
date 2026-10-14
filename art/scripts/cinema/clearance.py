@@ -60,6 +60,12 @@ def depth(a, b):
     return best
 
 
+# Desks are open underneath: a seated body's legs go under the top. For these the check uses the top
+# slab alone (its height above the floor), not the whole bounding box down to the floor.
+DESK_TOPS = {"Desk": 3.05, "ExecutiveDesk": 2.7}
+SLAB = 0.35
+
+
 def set_boxes(scene, catalog):
     """The set's solid boxes: (label, key, centre, rotation, half sizes). The floor is left out."""
     out = []
@@ -74,6 +80,8 @@ def set_boxes(scene, catalog):
             continue
         sx, sy, sz = (v * scale for v in info["size"])
         cy = y + sy / 2 if info.get("pivot", "bottom") == "bottom" else y
+        if key in DESK_TOPS:
+            sy, cy = SLAB, y + DESK_TOPS[key] * scale - SLAB / 2
         out.append((f"{key} at ({x:.0f}, {z:.0f})", key, np.array([x, cy, z]), ry(rot), np.array([sx, sy, sz]) / 2))
     return out
 
@@ -116,7 +124,7 @@ def report(shot, scene, step=0.2):
     lines = []
     for (slot, what), items in sorted(hits.items(), key=lambda kv: kv[1][0][0]):
         worst = max(items, key=lambda i: i[1])
-        lines.append(f"{items[0][0]:5.2f}-{items[-1][0]:5.2f}s {slot} into {what}: {worst[1]:.2f} deep ({worst[2]})")
+        lines.append(f"{items[0][0]:5.2f}-{items[-1][0]:5.2f}s {slot} into {what}: {worst[1]:.2f} deep ({worst[2]} at {worst[0]:.1f}s)")
     return lines
 
 

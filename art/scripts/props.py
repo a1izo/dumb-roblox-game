@@ -427,6 +427,23 @@ def smartphone():
     return parts, glows
 
 
+@prop("ChipBag", pivot="bottom", material="SmoothPlastic", collide=False, texture=256)
+def chip_bag():
+    """An open bag of potato chips stood on the desk: puffed red foil with a yellow band, the top rolled
+    open and chips showing (Diavolo's role cutscene: the hidden page is in the bag)."""
+    foil = mk.noisy("CB_Foil", srgb(150, 20, 26), srgb(196, 36, 40), scale=18, roughness=0.25, metallic=0.6)
+    band = mk.flat("CB_Band", srgb(236, 196, 60), 0.4)
+    inside = mk.noisy("CB_Inside", srgb(150, 150, 156), srgb(196, 196, 204), scale=20, roughness=0.2, metallic=0.9)
+    potato = mk.noisy("CB_Chip", srgb(196, 150, 60), srgb(236, 196, 104), roughness=0.5, kind="plastic")
+    parts = [mk.box("Bag", (0.9, 0.4, 1.05), (0, 0, 0.525), mat=foil, bevel=0.16),
+             mk.box("Band", (0.92, 0.42, 0.22), (0, 0, 0.58), mat=band, bevel=0.08),
+             mk.box("Mouth", (0.76, 0.3, 0.08), (0, 0, 1.06), mat=inside, bevel=0.03)]
+    for k, (x, y, r) in enumerate(((-0.17, -0.03, 20), (0.14, 0.04, -15), (0.0, -0.07, 40))):
+        parts.append(mk.box("Chip", (0.3, 0.03, 0.26), (x, y, 1.12 + 0.03 * k), rot=(70 + r * 0.3, r, 0), mat=potato,
+                            bevel=0.01))
+    return parts, []
+
+
 @prop("CRTTelevision", pivot="bottom", material="SmoothPlastic", collide=True, texture=512,
       lights=[dict(at=(0, -1.6, 1.4), kind="point", color=(170, 196, 255), range=12, brightness=0.9)])
 def crt_television():

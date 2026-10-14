@@ -74,21 +74,67 @@ local function isMeshSource(instance: Instance): boolean
 		or (instance:IsA("Model") and instance:FindFirstChildWhichIsA("MeshPart", true) ~= nil)
 end
 
--- name -> the first mesh (or model of meshes) with that name in the store.
+local importVersion: (Instance) -> (string, number, boolean)
+
+-- The store's imports, the ones to trust first: our versioned exports, newest first, then anything else
+-- (an import from before the versions, or from the game's old name, that nobody has deleted).
+local function importsInOrder(root: Instance): { Instance }
+	local list = {}
+	for order, child in ipairs(root:GetChildren()) do
+		local _, version, marked = importVersion(child)
+		table.insert(list, { item = child, rank = (if marked then 1e6 else 0) + version, order = order })
+	end
+	table.sort(list, function(a, b)
+		if a.rank ~= b.rank then
+			return a.rank > b.rank
+		end
+		return a.order < b.order
+	end)
+	local out = {}
+	for _, entry in ipairs(list) do
+		table.insert(out, entry.item)
+	end
+	return out
+end
+
+-- name -> the first mesh (or model of meshes) with that name in the store, the newest import's first.
 local function buildIndex(): { [string]: Instance }
 	local found = {}
 	local root = store()
 	if root then
-		for _, item in ipairs(root:GetDescendants()) do
-			if found[item.Name] == nil and isMeshSource(item) then
-				found[item.Name] = item
+		for _, import in ipairs(importsInOrder(root)) do
+			for _, item in ipairs(import:GetDescendants()) do
+				if found[item.Name] == nil and isMeshSource(item) then
+					found[item.Name] = item
+				end
 			end
 		end
 	end
 	return found
 end
 
-local function findSource(name: string): Instance?
+-- The import (a child of the store) that holds `item`.
+local function importOf(item: Instance): Instance?
+	local root = store()
+	local at: Instance? = item
+	while at and at.Parent ~= root do
+		at = at.Parent
+	end
+	return at
+end
+
+-- The mesh called `name`; with `within`, from that import when it has one (a prop's pieces must come
+-- from the same import as its body: two imports stand in different places, and a body from one with
+-- pieces from another made a prop as wide as the gap between them, which the scaling then shrank to
+-- nothing).
+local function findSource(name: string, within: Instance?): Instance?
+	if within then
+		for _, item in ipairs(within:GetDescendants()) do
+			if item.Name == name and isMeshSource(item) then
+				return item
+			end
+		end
+	end
 	if not index then
 		index = buildIndex()
 	end
@@ -265,7 +311,7 @@ end
 
 -- The import's kind and version from its marker, and whether it has one (without, the kind is
 -- the folder's own name: an early import, or your own models).
-local function importVersion(root: Instance): (string, number, boolean)
+function importVersion(root: Instance): (string, number, boolean)
 	for _, item in ipairs(root:GetDescendants()) do
 		local kind, version = string.match(item.Name, "^DeathsGambit(%a+)_Version_(%d+)$")
 		if kind then
@@ -465,15 +511,15 @@ local function partsOf(instance: Instance): { BasePart }
 end
 
 -- <key>_Glow, <key>_Glow2, ... in order.
-local function glowSources(key: string): { Instance }
+local function glowSources(key: string, within: Instance?): { Instance }
 	local list = {}
-	local first = findSource(key .. "_Glow")
-	if first then
+	local first = findSource(key .. "_Glow", within)
+	if first and (not within or first:IsDescendantOf(within)) then
 		table.insert(list, first)
 		local n = 2
 		while true do
-			local extra = findSource(key .. "_Glow" .. n)
-			if not extra then
+			local extra = findSource(key .. "_Glow" .. n, within)
+			if not extra or (within and not extra:IsDescendantOf(within)) then
 				break
 			end
 			table.insert(list, extra)
@@ -530,6 +576,7 @@ local function build(key: string): Model?
 	model.Name = key
 	-- Kept when dress() renames the copy, so clients know which prop a mesh belongs to.
 	model:SetAttribute("DeathsGambitProp", key)
+	local import = importOf(source :: Instance)
 	local main = source:Clone()
 	main.Parent = model
 	for _, part in ipairs(partsOf(main)) do
@@ -543,7 +590,7 @@ local function build(key: string): Model?
 			part.Material = material
 		end
 	end
-	for n, glowSource in ipairs(glowSources(key)) do
+	for n, glowSource in ipairs(glowSources(key, import)) do
 		local glow = glowSource:Clone()
 		for _, part in ipairs(partsOf(glow)) do
 			prepareGlow(part, info.glow and info.glow[n])
@@ -553,8 +600,8 @@ local function build(key: string): Model?
 	-- Pieces that move by themselves come with the prop. An import from before it had them is not
 	-- used at all: callers then build their stand-in, which has them.
 	for _, name in ipairs(info.parts or {}) do
-		local pieceSource = findSource(key .. "_" .. name)
-		if not pieceSource then
+		local pieceSource = findSource(key .. "_" .. name, import)
+		if not pieceSource or (import and not pieceSource:IsDescendantOf(import)) then
 			model:Destroy()
 			return nil
 		end

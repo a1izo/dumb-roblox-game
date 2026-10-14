@@ -378,6 +378,26 @@ def add_props(shot, library):
             continue
         obj = src.copy()
         common.collection("Actors").objects.link(obj)
+        # The pieces that move by themselves (Death's Manual's board and leaves), turned open as the game
+        # does (ManualBook.pose: about the catalog's hinge line, by its turn about -Y here).
+        hinges = json.loads(src["hinge"]) if src.get("hinge") else {}
+        turns = json.loads(src["turn"]) if src.get("turn") else {}
+        for name in json.loads(src["parts"]) if src.get("parts") else []:
+            part = library.get(p.model + "_" + name)
+            if part is None:
+                continue
+            piece = part.copy()
+            common.collection("Actors").objects.link(piece)
+            piece.parent = obj
+            piece.matrix_parent_inverse = Matrix.Identity(4)
+            share = p.open or 0.0
+            if share and name in hinges and name in turns:
+                hx, hy, hz = hinges[name]
+                at = Vector((-hx, hz, hy))
+                swing = Matrix.Rotation(math.radians(-turns[name] * share), 4, "Y")
+                piece.matrix_basis = Matrix.Translation(at) @ swing @ Matrix.Translation(-at)
+            else:
+                piece.matrix_basis = Matrix.Identity(4)
         for name in [k for k in library if k.startswith(p.model + "_Glow")]:
             glow = library[name].copy()
             common.collection("Actors").objects.link(glow)
@@ -397,6 +417,7 @@ def add_props(shot, library):
         for t in shot.times():
             v = p.path.value(t)
             m = Matrix.Translation(b_pos(v[:3])) @ b_rot(shotlib.euler_rotation(*v[3:6]), False).to_4x4()
+            m = m @ Matrix.Scale(p.scale, 4)
             if not (p.show[0] - 1e-6 <= t <= p.show[1] + 1e-6):
                 m = m @ Matrix.Scale(0.0001, 4)
             key_transform(obj, t * FPS, m)
@@ -415,6 +436,7 @@ def add_camera(shot):
     bpy.context.scene.collection.objects.link(cam)
     bpy.context.scene.camera = cam
     samples, _ = shot.camera_samples()
+    previous = None
     for t, p, q, fov in samples:
         m = shotlib.look_rotation  # noqa: F841 (rotation comes from the quaternion)
         x, y, z, w = q
@@ -424,6 +446,11 @@ def add_camera(shot):
             [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
         ])
         cam.matrix_world = Matrix.Translation(b_pos(p)) @ b_rot(rot, True).to_4x4()
+        # Keep each key's angles next to the last one's: a jump of 360 degrees between keys spun the
+        # camera through a frame upside down in the previews (the game's own keys are quaternions).
+        if previous is not None:
+            cam.rotation_euler = cam.matrix_world.to_euler("XYZ", previous)
+        previous = cam.rotation_euler.copy()
         cam.keyframe_insert("location", frame=t * FPS)
         cam.keyframe_insert("rotation_euler", frame=t * FPS)
         data.angle_y = math.radians(fov)

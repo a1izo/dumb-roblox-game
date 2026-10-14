@@ -36,6 +36,15 @@ def seated(m, t, ease="smooth", seat=1.6, lean=-8.0, legs=82.0, turn=0.0, xz=(0.
     return off
 
 
+def perched(m, t, ease="smooth", hip=2.15, legs=52.0, lean=-8.0, turn=0.0, **upper):
+    """A key sitting at a desk with the thighs sloping down (R6 legs do not bend: level thighs at chair
+    height go through a desk top). `hip` is how high the hips sit, on the chair's cushion; seated() would
+    rest the low end of the sloping legs on the seat instead, which lifts the body."""
+    joints = dict(root=(lean, turn, 0), rHip=J((legs, -turn, 4)), lHip=J((legs, -turn, -4)))
+    joints.update(upper)
+    m.key(t, ease, offset=(0.0, hip - 2.0, 0.0), **joints)
+
+
 # Arms at a desk: hands on the desk top in front of a seated body.
 def desk_arms(write=0.0, look=0.0):
     """(rShoulder, lShoulder) for writing at a desk; write in -1..1 moves the pen along the line."""

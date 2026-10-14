@@ -12,7 +12,8 @@ OX, OZ = P.FLAT
 X0, X1, Z0, Z1, H = -9.0, 9.0, -7.0, 7.0, 10.0
 NEON = (255, 40, 70)  # the city's red through the window
 DESK = (0.0, -2.6)  # the desk (its writer sits north of it, facing south, the window at their back)
-CHAIR = (1.3, -4.9)  # east of the screen, where the writer sits
+CHAIR = (1.3, -5.5)  # east of the screen, where the writer sits
+DESK_SCALE = 1.12  # a seated R6 body's thighs (a stud thick, knees that do not bend) pass under its top
 
 
 def at(x, z):
@@ -42,9 +43,9 @@ def build(s):
     s.light("spot", (cx + 5.0, 9.0, cz - 2.0), (90, 110, 200), 26, 0.35, shadows=False, face="Back", angle=60)
     # The desk and its chair; the desk's own lamp and screen light the face in front.
     px, pz = at(*DESK)
-    s.prop("Desk", px, pz, 0)  # its drawers, keyboard and screen face the writer (north side)
+    s.prop("Desk", px, pz, 0, DESK_SCALE)  # drawers, keyboard and screen face the writer (north side)
     px, pz = at(*CHAIR)
-    s.prop("OfficeChair", px, pz, 180)
+    s.prop("OfficeChair", px, pz, 180, 0.85)  # low enough for a seated R6 body to go under the desk
     # The writer's face: the screen's green glow from their right, the lamp from their left, and a dim light
     # from above so the black suit holds its shape against the dark.
     s.light("point", (OX - 1.1, 4.1, OZ + DESK[1] - 1.0), (90, 230, 170), 8, 1.3, shadows=False)
