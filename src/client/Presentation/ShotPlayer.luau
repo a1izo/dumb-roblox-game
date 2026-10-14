@@ -17,7 +17,9 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
+local Models = require(Shared:WaitForChild("Models"))
 local Venues = require(Shared:WaitForChild("Venues"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
@@ -388,7 +390,8 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 
 	local props = {}
 	for _, data in ipairs(shot.props or {}) do
-		local model = propModel(data.model)
+		-- Death's Manual comes rigged (its board and leaves turn), imported or part-built.
+		local model: Instance? = if data.model == ManualBook.KEY then Models.grimoire() else propModel(data.model)
 		if model then
 			for _, item in ipairs(model:GetDescendants()) do
 				if item:IsA("BasePart") then
@@ -397,6 +400,14 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 			end
 			if model:IsA("BasePart") then
 				model.Anchored = true
+			end
+			if model:IsA("Model") then
+				if type(data.open) == "number" and data.model == ManualBook.KEY then
+					ManualBook.pose(model, data.open, data.open)
+				end
+				if type(data.scale) == "number" and math.abs(data.scale - 1) > 1e-3 then
+					model:ScaleTo(model:GetScale() * data.scale)
+				end
 			end
 			table.insert(props, { model = model, data = data, times = data.t, frames = pathFrames(data) })
 		end

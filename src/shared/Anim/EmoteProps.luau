@@ -136,7 +136,7 @@ local CLIPS: { [string]: { Prop } } = {
 		},
 	},
 	chipAndPen = {
-		{ model = "Notebook", size = 1.3, stand = NOTEBOOK_STAND, mount = "Torso", at = NOTEBOOK, hide = 4.4 },
+		{ model = "Grimoire", size = 1.3, stand = NOTEBOOK_STAND, mount = "Torso", at = NOTEBOOK, hide = 4.4 },
 		{ model = "Pen", size = 1.07, stand = PEN_STAND, mount = "Right Arm", at = PEN, hide = 2.0 },
 		{
 			model = "Chip",
@@ -149,11 +149,11 @@ local CLIPS: { [string]: { Prop } } = {
 		},
 	},
 	furiousScribbling = {
-		{ model = "Notebook", size = 1.3, stand = NOTEBOOK_STAND, mount = "Torso", at = NOTEBOOK },
+		{ model = "Grimoire", size = 1.3, stand = NOTEBOOK_STAND, mount = "Torso", at = NOTEBOOK },
 		{ model = "Pen", size = 1.07, stand = PEN_STAND, mount = "Right Arm", at = PEN },
 	},
 	furiousScribblingSlash = {
-		{ model = "Notebook", size = 1.3, stand = NOTEBOOK_STAND, mount = "Torso", at = NOTEBOOK },
+		{ model = "Grimoire", size = 1.3, stand = NOTEBOOK_STAND, mount = "Torso", at = NOTEBOOK },
 		{ model = "Pen", size = 1.07, stand = PEN_STAND, mount = "Right Arm", at = PEN },
 	},
 	appleToss = {

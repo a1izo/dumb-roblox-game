@@ -170,9 +170,11 @@ class Actor:
 
 
 class Prop:
-    def __init__(self, shot, model, show=(0.0, None)):
+    def __init__(self, shot, model, show=(0.0, None), scale=1.0, open=None):
         self.shot = shot
         self.model = model  # a ModelLibrary / Props.blend name
+        self.scale = float(scale)  # the prop's size, times the catalog's
+        self.open = open  # Death's Manual (Grimoire): 0 closed .. 1 lying open; None for every other prop
         self.show = (show[0], show[1] if show[1] is not None else shot.length)
         self.path = Track(shot.length, full_rotation=True)
 
@@ -230,8 +232,8 @@ class Shot:
         self.actors.append(a)
         return a
 
-    def prop(self, model, show=(0.0, None)):
-        p = Prop(self, model, show)
+    def prop(self, model, show=(0.0, None), scale=1.0, open=None):
+        p = Prop(self, model, show, scale, open)
         self.props.append(p)
         return p
 
@@ -557,6 +559,10 @@ def export(shot):
         lines.append("\t\t{")
         lines.append(f"\t\t\tmodel = {lua_string(p.model)},")
         lines.append(f"\t\t\tshow = {lua_value(list(p.show))},")
+        if abs(p.scale - 1.0) > 1e-6:
+            lines.append(f"\t\t\tscale = {num(p.scale)},")
+        if p.open is not None:
+            lines.append(f"\t\t\topen = {num(p.open)},")
         lines += _path_lines(p.path, shot.length, "\t\t\t")
         lines.append("\t\t},")
     lines.append("\t},")

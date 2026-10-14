@@ -62,7 +62,7 @@ def depth(a, b):
 
 # Desks are open underneath: a seated body's legs go under the top. For these the check uses the top
 # slab alone (its height above the floor), not the whole bounding box down to the floor.
-DESK_TOPS = {"Desk": 3.16, "ExecutiveDesk": 2.7}
+DESK_TOPS = {"Desk": 3.05, "ExecutiveDesk": 2.7}
 SLAB = 0.35
 
 

@@ -294,7 +294,7 @@ local function modelParts(model: Model, placed: CFrame): { BasePart }
 	return parts
 end
 
--- Everyone holds the same notebook during the Death Note phase, so the screens look
+-- Everyone holds the same Death's Manual, open, during the Death's Gambit phase, so the screens look
 -- identical from the outside.
 function CharacterService.setWriting(player: Player, on: boolean)
 	if not on then
@@ -318,38 +318,11 @@ function CharacterService.setWriting(player: Player, on: boolean)
 		}
 	end)
 	CharacterService.attachBuilt(player, "LWriting", TORSO, function(anchor: CFrame)
+		-- Death's Manual, held open (Models.heldManual); a cover cosmetic colours its board.
 		local coverColor = player:GetAttribute("LGrimoireColor")
 		local held = anchor * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)
-		local notebook = Models.notebook()
-		if notebook then
-			local parts = modelParts(notebook, held)
-			if typeof(coverColor) == "Color3" then
-				-- A cover cosmetic: a coloured plate over the front cover.
-				table.insert(
-					parts,
-					Create("Part", {
-						Size = Vector3.new(1.26, 0.02, 0.9),
-						Color = coverColor,
-						Material = Enum.Material.SmoothPlastic,
-						CFrame = held * CFrame.new(0, 0.115, 0),
-					})
-				)
-			end
-			return parts
-		end
-		local cover = Create("Part", {
-			Size = Vector3.new(1.3, 0.12, 0.95),
-			Color = if typeof(coverColor) == "Color3" then coverColor else Color3.fromRGB(22, 22, 26),
-			Material = Enum.Material.SmoothPlastic,
-			CFrame = anchor * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0),
-		})
-		local pages = Create("Part", {
-			Size = Vector3.new(1.2, 0.06, 0.88),
-			Color = Color3.fromRGB(240, 236, 225),
-			Material = Enum.Material.SmoothPlastic,
-			CFrame = cover.CFrame * CFrame.new(0, 0.09, 0),
-		})
-		return { cover, pages }
+		local book = Models.heldManual(held, if typeof(coverColor) == "Color3" then coverColor else nil)
+		return modelParts(book, book:GetPivot())
 	end)
 end
 

@@ -64,11 +64,6 @@ local function custom(key: string): Model?
 	return nil
 end
 
--- The notebook everyone holds in the Grimoire phase (lying flat), or nil (parts are used).
-function Models.notebook(): Model?
-	return custom("Notebook")
-end
-
 -- A fountain pen standing along Y, or nil.
 function Models.pen(): Model?
 	return custom("Pen")
@@ -361,6 +356,57 @@ function Models.memorial(alias: string): Model
 	})
 	model.PrimaryPart = base
 	return model
+end
+
+-- Death's Manual held open in the hands (everyone writes in it in the Death's Gambit phase, the shop's
+-- preview of a cover): opened, at a hand's size, the board lying over to the holder's left as a book's
+-- does and the page's head away from them, its open middle at `at`. With `coverColor`, the outside of the
+-- board (facing down and out, what the others see) wears that colour. Anchored; the caller places it.
+local HELD_SCALE = 0.43
+
+function Models.heldManual(at: CFrame, coverColor: Color3?): Model
+	local book = Models.grimoire()
+	for _, piece in ipairs(book:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.Anchored = true
+		end
+	end
+	ManualBook.pose(book, 1, 1)
+	book:ScaleTo(book:GetScale() * HELD_SCALE)
+	-- The open book's middle, from its pivot (the board lies over on the spine's side, +X).
+	local box = book:GetBoundingBox()
+	local middle = book:GetPivot():PointToObjectSpace(box.Position)
+	local turned = at * CFrame.Angles(0, math.pi, 0)
+	book:PivotTo(turned * CFrame.new(-middle.X, -middle.Y, -middle.Z))
+	if coverColor then
+		-- The board's extent in the book's own frame, from its parts' corners.
+		local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+		for _, piece in ipairs(book:GetDescendants()) do
+			if piece:IsA("BasePart") and piece:GetAttribute("ManualPiece") == "Cover" then
+				local half = piece.Size / 2
+				for _, sx in ipairs({ -1, 1 }) do
+					for _, sy in ipairs({ -1, 1 }) do
+						for _, sz in ipairs({ -1, 1 }) do
+							local corner = turned:PointToObjectSpace(
+								piece.CFrame:PointToWorldSpace(Vector3.new(sx * half.X, sy * half.Y, sz * half.Z))
+							)
+							lo, hi = lo:Min(corner), hi:Max(corner)
+						end
+					end
+				end
+			end
+		end
+		if lo.X < hi.X then
+			part(book, {
+				Name = "ManualCoverColor",
+				Size = Vector3.new((hi.X - lo.X) * 0.96, 0.02, (hi.Z - lo.Z) * 0.96),
+				Color = coverColor,
+				Material = Enum.Material.Leather,
+				CFrame = turned * CFrame.new((lo.X + hi.X) / 2, lo.Y - 0.012, (lo.Z + hi.Z) / 2),
+			})
+		end
+	end
+	return book
 end
 
 return Models

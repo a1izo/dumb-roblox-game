@@ -1,12 +1,12 @@
 """Diavolo's role cutscene (the briefing, seen only by Diavolo), 15 s: "...and EAT IT." After the anime's potato
 chip scene: Diavolo at the desk at night, studying, the news on, eating chips; under the bag's edge a torn page
-of the Manual, and between the chips a name goes on it. The television flatlines. Then the chip, held up, and
+and between the chips a name goes into it. The television flatlines. Then the chip, held up, and
 eaten like a verdict.
 
 A  0.0-2.6   Wide from the television's corner: night, the lamp, rain on the window. Diavolo reads, calm; a hand
              goes into the bag of chips.
 B  2.6-4.0   Across the desk: a chip eaten without looking up, eyes on the book.
-C  4.0-6.2   On the desk by the lamp: the torn page, the pen writing a name in hard quick strokes.
+C  4.0-6.2   On the desk: the open Manual, the pen writing a name in hard quick strokes.
 D  6.2-7.4   His face, the eyes sliding to the television: the news, a man collapses live; a flatline.
 E  7.4-9.0   Low: the hand takes a chip and lifts it, slowly.
 F  9.0-10.6  Close, tilted: the chip held up before the face... and bitten: "...and EAT IT."
@@ -27,17 +27,18 @@ LENGTH = 15.0
 TOP = 2.7  # the desk top
 HIP = 2.15  # on the chair's cushion
 SIT = (0.0, -7.8)  # under the hips, facing south (180): thighs sloping under the desk's edge (z -7.0)
-BOOK = (0.3, -6.4)  # the open book he studies
+MANUAL = 0.55  # Death's Manual at this size: open, about 2.2 by 1.7 studs
+BOOK = (-0.85, -6.3)  # its open page, under his right hand; the board lies over to his left (+x)
+BOOK_Y = TOP + 0.215 * MANUAL  # (its pivot is its middle)
 BAG = (2.4, -6.2)  # the bag of chips, east of the book (by his left hand)
-PAGE = (-1.3, -6.5)  # the torn page, under his right hand, by the lamp
 SINGER = (-2.6, -10.0)
 
 # Diavolo --------------------------------------------------------------------------------------------------
 
 READ_R = J((84, -8, -14), (-0.1, 0.04, -0.3))  # the right hand on the book (the pen in it)
-READ_L = J((80, 8, 16), (0.1, 0.04, -0.3))
-WRITE_R = J((80, -14, -20), (-0.14, 0.04, -0.3))  # the pen over the page, out to the right
-BAG_L = J((76, 12, 30), (0.0, 0.06, -0.3))  # the left hand in the bag (across the body)
+READ_L = J((86, 8, 16), (0.1, 0.04, -0.3))
+WRITE_R = J((86, -14, -20), (-0.14, 0.04, -0.3))  # the pen over the page, out to the right
+BAG_L = J((86, 12, 30), (0.0, 0.06, -0.3))  # the left hand in the bag (across the body)
 MOUTH_L = J((128, -34, 18), (0.0, 0.22, -0.2))  # the chip at the mouth
 HELD_L = J((112, -24, 30), (0.0, 0.2, -0.24))  # the chip held up before the face
 DOWN = (-14, 0, 0)  # the head over the book
@@ -60,7 +61,7 @@ sit(3.7, l=READ_L)
 # The name: the pen goes to the page, then hard quick strokes (hold, a tiny wind-up, snap down, settle).
 sit(4.15, "out", r=WRITE_R, neck=(-18, -10, 0))
 for k, t in enumerate((4.5, 4.75, 5.0, 5.3, 5.55, 5.8)):
-    up = J((82, -14 + 4 * (k % 3), -20), (-0.14, 0.12, -0.3))
+    up = J((94, -14 + 4 * (k % 3), -20), (-0.14, 0.12, -0.3))
     strike(d, t, {"rShoulder": up}, {"rShoulder": WRITE_R}, antic=0.07, travel=0.05, over=0.15, settle=0.1)
 sit(6.1, neck=(-18, -10, 0), r=WRITE_R)
 # The eyes go to the television (towards the camera), the head following a beat later.
@@ -102,15 +103,12 @@ me.hold("Pen", "Right Arm", (0, -1.0, -0.15), (60, 0, 0))
 me.hold("Chip", "Left Arm", (0.0, -1.05, -0.2), (70, 0, 0), t0=2.3, t1=3.2)
 me.hold("Chip", "Left Arm", (0.0, -1.05, -0.2), (70, 0, 0), t0=8.2, t1=10.05)
 
-book = shot.prop("NotebookOpen")
-book.at(0.0, (BOOK[0], TOP, BOOK[1]), (0, 180, 0))
-book.at(LENGTH, (BOOK[0], TOP, BOOK[1]), (0, 180, 0))
+book = shot.prop("Grimoire", scale=MANUAL, open=1.0)  # the page's head away from him
+book.at(0.0, (BOOK[0], BOOK_Y, BOOK[1]), (0, 0, 0))
+book.at(LENGTH, (BOOK[0], BOOK_Y, BOOK[1]), (0, 0, 0))
 bag = shot.prop("ChipBag")
 bag.at(0.0, (BAG[0], TOP, BAG[1]), (0, 200, 0))
 bag.at(LENGTH, (BAG[0], TOP, BAG[1]), (0, 200, 0))
-page = shot.prop("PaperNote")
-page.at(0.0, (PAGE[0], TOP + 0.01, PAGE[1]), (0, 170, 0))
-page.at(LENGTH, (PAGE[0], TOP + 0.01, PAGE[1]), (0, 170, 0))
 
 singer = shot.prop("Specter", show=(10.6, None))
 singer.at(10.6, (SINGER[0], -11.0, SINGER[1]), (0, 180, 0))
@@ -126,8 +124,8 @@ shot.pan(0.0, 2.6, "self", (2.6, 8.0, 7.2), aim="Torso", dy=0.6, fov=44, drift=(
 shot.pan(2.6, 4.0, "self", (2.4, 4.6, -0.6), aim="Head", dy=-0.5, fov=40, cut=True, drift=(-0.2, 0.0, -0.4))
 # C: the page by the bag, the pen writing.
 shot.subjects.append((4.0, 6.2, None, True))
-shot.cam(4.0, (-2.9, 4.9, -4.3), (PAGE[0], TOP + 0.1, PAGE[1]), fov=30, cut=True)
-shot.cam(6.2, (-2.7, 4.6, -4.6), (PAGE[0], TOP + 0.1, PAGE[1]), fov=28, ease="linear")
+shot.cam(4.0, (-1.6, 6.3, -4.5), (BOOK[0] - 0.1, BOOK_Y, BOOK[1]), fov=32, cut=True)
+shot.cam(6.2, (-1.5, 5.9, -4.8), (BOOK[0] - 0.1, BOOK_Y, BOOK[1]), fov=29, ease="linear")
 # D: his face, the eyes sliding to the television (towards us).
 shot.pan(6.2, 7.4, "self", (0.6, 4.9, -1.6), aim="Head", dy=-0.2, fov=40, cut=True, drift=(0.0, 0.0, -0.3))
 # E: low, the chip lifted.

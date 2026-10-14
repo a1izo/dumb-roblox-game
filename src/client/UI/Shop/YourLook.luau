@@ -326,44 +326,10 @@ local function dress(self: YourLook)
 			Parent = holder,
 		})
 	elseif item.kind == "grimoire" and torso and torso:IsA("BasePart") then
-		-- A Manual cover colours the notebook everyone holds while writing (CharacterService.setWriting),
-		-- held as it is there: a coloured plate over its front cover.
+		-- A Manual cover colours the open Death's Manual everyone holds while writing
+		-- (CharacterService.setWriting), held as it is there.
 		local held = torso.CFrame * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)
-		local notebook = Models.notebook()
-		if notebook then
-			for _, part in ipairs(notebook:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = true
-				end
-			end
-			notebook:PivotTo(held)
-			notebook.Parent = holder
-			Create("Part", {
-				Anchored = true,
-				Size = Vector3.new(1.26, 0.02, 0.9),
-				Color = item.color,
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = held * CFrame.new(0, 0.115, 0),
-				Parent = holder,
-			})
-		else
-			Create("Part", {
-				Anchored = true,
-				Size = Vector3.new(1.3, 0.12, 0.95),
-				Color = item.color,
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = held,
-				Parent = holder,
-			})
-			Create("Part", {
-				Anchored = true,
-				Size = Vector3.new(1.2, 0.06, 0.88),
-				Color = Color3.fromRGB(240, 236, 225),
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = held * CFrame.new(0, 0.09, 0),
-				Parent = holder,
-			})
-		end
+		Models.heldManual(held, item.color).Parent = holder
 	end
 end
 
