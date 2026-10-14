@@ -12,7 +12,7 @@
 -- cloak...); an emote is a small pale mannequin caught in its move (Shop/PoseFigure), with its props; the
 -- rest is a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand can lie face
 -- down (the back of the deck) and be turned over. A card new to the shop wears a "New" ribbon until it is
--- seen, and a card not yet owned has a heart to put it on the wishlist.
+-- seen, the day's deal a "25% off" one, and a card not yet owned has a heart to put it on the wishlist.
 --
 --   local card = Card.new(item, { Parent = slot, chip = "300", onPick = fn, isNew = true, onWish = fn })
 --   card:setPicked(true)  card:setChip("Worn")  card:turn(fn)  card:setNew(false)  card:setWished(true)
@@ -353,11 +353,44 @@ local function dress(face: Frame, rarity: string): UIStroke
 	return edge
 end
 
+-- A small ribbon over the picture: filled (New), or an outline (an offer).
+local function tag(face: Frame, name: string, text: string, position: UDim2, filled: boolean): Frame
+	local ribbon = Kit.Base.make("Frame", {
+		Name = name,
+		BackgroundColor3 = if filled then C.bone else C.void,
+		BackgroundTransparency = if filled then 0 else 0.1,
+		BorderSizePixel = 0,
+		Position = position,
+		Size = UDim2.fromOffset(0, 20),
+		AutomaticSize = Enum.AutomaticSize.X,
+		ZIndex = 4,
+		Parent = face,
+	}) :: Frame
+	Kit.Base.corner(ribbon, 2)
+	if not filled then
+		Kit.Base.stroke(ribbon, C.bone, 1, 0.2)
+	end
+	Kit.pad(ribbon, 0, 7)
+	Kit.label({
+		Text = text,
+		font = "bodyBold",
+		size = "micro",
+		color = if filled then C.void else C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
+		ZIndex = 5,
+		Parent = ribbon,
+	})
+	return ribbon
+end
+
 -- The card ---------------------------------------------------------------------------------------------
 
 -- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipCoin (the chip shows a coin),
 -- onPick (clicked), faceDown (lies on its back: onPick still fires, the caller turns it), isNew (the "New"
--- ribbon), onWish (a heart: called with true to wish for it, false to take the wish back) and wished.
+-- ribbon), offer (a second ribbon's words, under the picture: the day's deal), onWish (a heart: called with
+-- true to wish for it, false to take the wish back) and wished.
 function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	local slot = Kit.Base.make("Frame", {
 		Name = "Card_" .. item.id,
@@ -449,6 +482,9 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	}, Card)
 	self:setChip(props.chip or "", props.chipCoin == true)
 	self:setNew(props.isNew == true)
+	if props.offer then
+		tag(face, "Offer", props.offer, UDim2.fromOffset(12, 14 + PICTURE - 20), false)
+	end
 	if props.onWish then
 		-- Over the picture's top right corner, above the card's own button (so it lifts with the face).
 		local heart = Kit.Base.make("ImageButton", {
@@ -520,31 +556,9 @@ function Card.setNew(self: Card, on: boolean)
 		self.ribbon.Visible = on
 		return
 	end
-	if not on then
-		return
+	if on then
+		self.ribbon = tag(self.face, "New", "NEW", UDim2.fromOffset(12, 14), true)
 	end
-	local ribbon = Kit.Base.make("Frame", {
-		Name = "New",
-		BackgroundColor3 = C.bone,
-		BorderSizePixel = 0,
-		Position = UDim2.fromOffset(12, 14),
-		Size = UDim2.fromOffset(44, 20),
-		ZIndex = 4,
-		Parent = self.face,
-	}) :: Frame
-	Kit.Base.corner(ribbon, 2)
-	Kit.label({
-		Text = "NEW",
-		font = "bodyBold",
-		size = "micro",
-		color = C.void,
-		AutomaticSize = Enum.AutomaticSize.None,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.fromScale(1, 1),
-		ZIndex = 5,
-		Parent = ribbon,
-	})
-	self.ribbon = ribbon
 end
 
 -- The heart, full when the card is on the wishlist.

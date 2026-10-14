@@ -86,9 +86,10 @@ function ShopBrowse.wishable(item: Cosmetics.Item): boolean
 	return item.price ~= nil and (item.source == "shop" or item.source == "rotation")
 end
 
--- Can be bought at `now` for `coins` (owning it is the caller's to check).
+-- Can be bought at `now` for `coins` (owning it is the caller's to check; the day's deal at its price).
 function ShopBrowse.affordable(item: Cosmetics.Item, coins: number, now: number): boolean
-	if not item.price or item.price > coins then
+	local price = ShopRotation.priceOf(item, now)
+	if not price or price > coins then
 		return false
 	end
 	if item.source == "rotation" then
@@ -149,14 +150,16 @@ function ShopBrowse.apply(items: { Cosmetics.Item }, options: Options): { Cosmet
 	if sort == "order" then
 		return kept
 	end
-	-- Items with no price (earned) go last when sorting by price; ties keep the catalog's order.
+	-- Items with no price (earned) go last when sorting by price (the deal at its price); ties keep the
+	-- catalog's order.
 	local function key(item: Cosmetics.Item): (number, number)
+		local price = ShopRotation.priceOf(item, now)
 		if sort == "cheapest" then
-			return if item.price then -item.price else -math.huge, 0
+			return if price then -price else -math.huge, 0
 		elseif sort == "dearest" then
-			return item.price or -math.huge, 0
+			return price or -math.huge, 0
 		elseif sort == "rarest" then
-			return rarityRank(item), item.price or 0
+			return rarityRank(item), price or 0
 		end
 		return ShopBrowse.addedAt(item) or -math.huge, 0
 	end
@@ -173,14 +176,14 @@ function ShopBrowse.apply(items: { Cosmetics.Item }, options: Options): { Cosmet
 	return kept
 end
 
--- The wished items (not owned) in the day's hand, in its order.
+-- The wished items (not owned) in the day's hand (its deal too), in its order.
 function ShopBrowse.wishedToday(
 	wishlist: { [string]: any },
 	owns: (Cosmetics.Item) -> boolean,
 	day: number
 ): { Cosmetics.Item }
 	local found = {}
-	for _, id in ipairs(ShopRotation.forDay(day)) do
+	for _, id in ipairs(ShopRotation.hand(day)) do
 		local item = Cosmetics.byId(id)
 		if item and wishlist[id] and not owns(item) then
 			table.insert(found, item)

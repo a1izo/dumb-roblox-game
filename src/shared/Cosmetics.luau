@@ -10,7 +10,8 @@
 --   rarity  common, rare, epic, legendary
 --   source  shop (always for sale), rotation (for sale on days it is featured), vip
 --           (free with the VIP pass), rank / achievement / streak / mastery (earned), season (a
---           reward of the Season ledger)
+--           reward of the Season ledger), set (a title: every piece of a set, Shared/Sets),
+--           collection (a title: owning so many emotes, Progression/Collection)
 --   price   coins; nil when it cannot be bought
 --
 -- Role neutrality: nothing here may show or hide what role someone has. Everyone holds a
@@ -1120,6 +1121,22 @@ Cosmetics.ITEMS = {
 	{ id = "title_set_gilded", kind = "title", name = "Gilded Age", rarity = "legendary", source = "set" },
 	{ id = "title_set_red", kind = "title", name = "Seeing Red", rarity = "epic", source = "set" },
 	{ id = "title_set_ninelives", kind = "title", name = "Nine Lives", rarity = "legendary", source = "set" },
+	-- (the emote sets)
+	{ id = "title_set_desk", kind = "title", name = "Sweet Tooth", rarity = "epic", source = "set" },
+	{ id = "title_set_successors", kind = "title", name = "Next in Line", rarity = "rare", source = "set" },
+	{ id = "title_set_main", kind = "title", name = "Main Character", rarity = "legendary", source = "set" },
+	{ id = "title_set_online", kind = "title", name = "Terminally Online", rarity = "legendary", source = "set" },
+	{ id = "title_set_floor", kind = "title", name = "Floor Filler", rarity = "epic", source = "set" },
+	-- Earned: owning so many emotes (Progression/Collection)
+	{ id = "title_c_mover", kind = "title", name = "Mover", rarity = "rare", source = "collection" },
+	{ id = "title_c_showstopper", kind = "title", name = "Showstopper", rarity = "epic", source = "collection" },
+	{
+		id = "title_c_living_legend",
+		kind = "title",
+		name = "Living Legend",
+		rarity = "legendary",
+		source = "collection",
+	},
 
 	-- Earned: the 7-day streak
 	{ id = "title_nightowl", kind = "title", name = "Night Owl", rarity = "rare", source = "streak" },

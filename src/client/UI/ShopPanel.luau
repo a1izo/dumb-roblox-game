@@ -1,10 +1,11 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
 -- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Emotes, Titles, Sets, and Robux
--- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six,
--- dealt face down (the same six for everyone): each is turned over with a click, and stays turned that
--- day (ShopService "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances,
--- poses, with props, strolls, duo); Sets lays out each set (Shared/Sets) with how many of its pieces you
--- own, and the title it earns.
+-- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six
+-- and the day's deal (a card of the shop's own stock, a quarter off: Shared/ShopRotation), dealt face
+-- down (the same for everyone): each is turned over with a click, and stays turned that day (ShopService
+-- "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances, poses, with
+-- props, strolls, duo, with how many you own and the next collection milestone); Sets lays out each set
+-- (Shared/Sets) with how many of its pieces you own, and the title it earns.
 --
 -- Over a suit of kinds, a row to browse it (Shared/ShopBrowse): a search, what to show (all, not owned,
 -- can afford, wished) and an order (as dealt, cheapest, dearest, rarest, newest). A card new to the shop
@@ -32,6 +33,7 @@ local Products = require(Shared:WaitForChild("Products"))
 local Sets = require(Shared:WaitForChild("Sets"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
+local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
@@ -90,6 +92,7 @@ local sorting = "order" -- ShopBrowse.SORTS
 local searching = ""
 local newHere: { string } = {} -- the new cards dealt in this suit, seen once you leave it
 local arrange: () -> ()
+local price: (Cosmetics.Item) -> number?
 
 local function owns(profile, item): boolean
 	if item.source == "vip" then
@@ -175,7 +178,7 @@ local function suitHasNews(profile, suit: Cosmetics.Suit): boolean
 	if suit.id == "today" then
 		local day = ShopRotation.dayOf(os.time())
 		local turned = ShopRotation.turned(profile.shopTurned, day)
-		for _, id in ipairs(ShopRotation.forDay(day)) do
+		for _, id in ipairs(ShopRotation.hand(day)) do
 			if not table.find(turned, id) and not turnedHere[id] then
 				return true
 			end
@@ -213,7 +216,14 @@ local function chipFor(profile, item: Cosmetics.Item): (string, boolean)
 	elseif item.source == "rotation" and not ShopRotation.isFeatured(item.id, os.time()) then
 		return "Not today", false
 	end
-	return tostring(item.price), true
+	return tostring(ShopRotation.priceOf(item, os.time())), true
+end
+
+-- How many emotes the profile owns.
+local function emotesOwned(profile): number
+	return Collection.count(function(item: Cosmetics.Item): boolean
+		return owns(profile, item)
+	end)
 end
 
 -- Your look -------------------------------------------------------------------------------------------------
@@ -309,19 +319,31 @@ local function showAction(profile, item: Cosmetics.Item?)
 	elseif item.source == "set" then
 		closed("Set title")
 		actionNote.Text = "Yours with every piece of its set."
+	elseif item.source == "collection" then
+		local milestone = Collection.ofTitle(item.id)
+		closed("Collection title")
+		actionNote.Text = if milestone
+			then string.format(
+				"Yours, with %d coins, once you own %d emotes (you have %d).",
+				milestone.coins,
+				milestone.count,
+				emotesOwned(profile)
+			)
+			else "Earned by collecting emotes."
 	elseif not item.price then
 		closed("Earned")
 		actionNote.Text = "Earned in play, never sold."
 	elseif item.source == "rotation" and not ShopRotation.isFeatured(item.id, os.time()) then
 		closed("Not today")
 		actionNote.Text = "Only sold on a day it is in Today's hand."
-	elseif profile.coins < item.price then
-		closed(string.format("%d more coins", item.price - profile.coins))
-		actionNote.Text = string.format("It costs %d coins.", item.price)
+	elseif profile.coins < (price(item) :: number) then
+		local cost = price(item) :: number
+		closed(string.format("%d more coins", cost - profile.coins))
+		actionNote.Text = string.format("It costs %d coins.", cost)
 	else
 		Kit.hold(
 			{
-				text = string.format("Buy  ·  %d", item.price),
+				text = string.format("Buy  ·  %d", price(item) :: number),
 				icon = "coin",
 				variant = "primary",
 				size = "m",
@@ -333,7 +355,13 @@ local function showAction(profile, item: Cosmetics.Item?)
 				ShopRequest:FireServer({ action = "buy", itemId = item.id })
 			end
 		)
-		actionNote.Text = "Hold to buy. You wear it at once."
+		actionNote.Text = if item.kind == "emote"
+			then "Hold to buy. It goes on your emote wheel."
+			else "Hold to buy. You wear it at once."
+	end
+	if price(item) ~= item.price and not owns(profile, item) then
+		actionNote.Text = string.format("The day's deal: a quarter off its %d coins. ", item.price :: number)
+			.. actionNote.Text
 	end
 end
 
@@ -387,6 +415,11 @@ local function section(title: string?, order: number): Frame
 	return grid
 end
 
+-- What an item costs now (the day's deal at its price).
+function price(item: Cosmetics.Item): number?
+	return ShopRotation.priceOf(item, os.time())
+end
+
 local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, faceDown: boolean)
 	local text, coin = chipFor(profile, item)
 	local fresh = isNew(profile, item)
@@ -401,6 +434,7 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 		chipCoin = coin,
 		faceDown = faceDown,
 		isNew = fresh,
+		offer = if price(item) ~= item.price then "25% OFF" else nil,
 		wished = profile.wishlist ~= nil and profile.wishlist[item.id] == true,
 		onWish = if ShopBrowse.wishable(item) and not owns(profile, item)
 			then function(on: boolean)
@@ -602,7 +636,7 @@ function ShopPanel.rebuild()
 		local turned = ShopRotation.turned(profile.shopTurned, day)
 		local grid = section(nil, 1)
 		local faceDown = 0
-		for index, id in ipairs(ShopRotation.forDay(day)) do
+		for index, id in ipairs(ShopRotation.hand(day)) do
 			local item = Cosmetics.byId(id)
 			if item then
 				local down = not table.find(turned, id) and not turnedHere[id]
@@ -612,7 +646,7 @@ function ShopPanel.rebuild()
 				deal(profile, item, grid, index, down)
 			end
 		end
-		noteLabel.Text = (if faceDown > 0 then "Six cards, dealt today: turn them over.  ·  " else "")
+		noteLabel.Text = (if faceDown > 0 then "Six cards and a deal, dealt today: turn them over.  ·  " else "")
 			.. "A new hand in "
 			.. formatTime(ShopRotation.secondsLeft(now))
 	elseif currentSuit == "robux" then
@@ -685,6 +719,22 @@ function ShopPanel.rebuild()
 			else
 				lay(Cosmetics.KIND_NAMES[kind] or kind, items)
 			end
+		end
+		if currentSuit == "emotes" then
+			local count = emotesOwned(profile)
+			local milestone = Collection.nextAfter(count)
+			local title = milestone and Cosmetics.byId(milestone.title)
+			noteLabel.Text = string.format("You own %d emotes", count)
+				.. (
+					if milestone and title
+						then string.format(
+							"  ·  %d more for %s and %d coins",
+							milestone.count - count,
+							title.name,
+							milestone.coins
+						)
+						else ""
+				)
 		end
 		if order == 0 then
 			Kit.label({

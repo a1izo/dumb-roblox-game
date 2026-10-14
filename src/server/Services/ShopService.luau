@@ -169,7 +169,7 @@ local function onRequest(player: Player, payload)
 			Match.notify(player, reason, "bad")
 			return
 		end
-		local price = item.price :: number
+		local price = ShopRotation.priceOf(item, os.time()) :: number
 		if data.coins < price then
 			Match.notify(player, "Not enough coins for " .. item.name .. ".", "bad")
 			return
@@ -192,6 +192,7 @@ local function onRequest(player: Player, payload)
 			Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")
 		end
 		CosmeticsService.grantSets(player)
+		CosmeticsService.grantMilestones(player)
 	elseif action == "equip" then
 		if item.kind == "emote" or not CosmeticsService.owns(player, item) then
 			return
