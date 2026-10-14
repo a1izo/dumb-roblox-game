@@ -132,7 +132,7 @@ shot.cam(4.95, at(-1.8, 5.9, 0.5), at(1.3, 4.8, -4.2), fov=44, roll=12.0, cut=Tr
 shot.cam(5.55, at(-1.7, 5.8, 0.3), at(1.3, 4.7, -4.2), fov=43, roll=14.0, ease="linear")
 page(5.55, 6.0, at(2.8, 5.1, -2.0), fov=27)  # F
 shot.pan(6.0, 6.4, "self", at(0.6, 5.0, 0.4), aim="Head", dy=-0.2, fov=44, cut=True)  # G: low, the head whipping
-page(6.4, 6.8, at(2.1, 6.4, -2.9), look_dy=0.0, fov=32)  # H: straight down on the page
+page(6.4, 6.8, at(-0.2, 6.2, -1.3), look_dy=0.0, fov=32)  # H: down on the page, from in front
 # I: in front of him, pushing in: the last flurry, the stop, the head coming up into the camera.
 shot.pan(6.8, 9.6, "self", at(1.9, 5.4, 2.0), aim="Head", dy=-0.4, fov=40, cut=True, drift=(-0.3, 0.0, -0.6))
 # J: straight on over the desk, the screen to one side and the lamp to the other, pulling back as he rises.
