@@ -466,8 +466,9 @@ local function writePreview(self: YourLook, style: string): () -> ()
 	end
 end
 
--- An emote on the copy: its joints let go for as long as it plays, and it is put back at rest after.
-local function emotePreview(self: YourLook, clip: string): () -> ()
+-- An emote on the copy: its joints let go for as long as it plays, and it is put back at rest after. `held`:
+-- the emote whose props, face and sound go with it (a stroll previews its walk, with the stroll's stick).
+local function emotePreview(self: YourLook, clip: string, held: string?): () -> ()
 	local copy = self.copy
 	if not copy then
 		return function() end
@@ -479,10 +480,14 @@ local function emotePreview(self: YourLook, clip: string): () -> ()
 	end
 	PoseController.bindWhenReady(copy, 1)
 	PoseController.play(copy, clip, { fadeIn = 0.1, fadeOut = 0.2, duration = 3.4 })
-	local removeProp = EmoteController.dress(copy, clip)
-	local stopSound = EmoteController.previewSound(clip, 3.4)
-	local undoFace = EmoteController.face(copy, clip)
-	local stopEffect = EmoteController.effect(copy, clip, true)
+	local own = held or clip
+	local function alive(): boolean
+		return PoseController.isPlaying(copy, clip)
+	end
+	local removeProp = EmoteController.dress(copy, own, alive)
+	local stopSound = EmoteController.previewSound(own, 3.4)
+	local undoFace = EmoteController.face(copy, own, alive)
+	local stopEffect = EmoteController.effect(copy, own, true)
 	local done = false
 	local function stop()
 		if done then
@@ -506,7 +511,10 @@ end
 local function preview(self: YourLook, item: Cosmetics.Item)
 	stopPreview(self)
 	if item.kind == "emote" and type(item.emote) == "string" then
-		self.stopPreview = emotePreview(self, item.emote)
+		local walk = item.emote .. "Walk"
+		self.stopPreview = if item.stroll and PoseController.exists(walk)
+			then emotePreview(self, walk, item.emote)
+			else emotePreview(self, item.emote)
 	elseif item.kind == "writing" and type(item.style) == "string" then
 		self.stopPreview = writePreview(self, item.style)
 	elseif item.kind == "verdict" and type(item.style) == "string" then

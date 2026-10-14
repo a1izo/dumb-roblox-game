@@ -22,7 +22,9 @@ local EmoteProps = require(Shared:WaitForChild("Anim"):WaitForChild("EmoteProps"
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 
+local LocomotionController = require(script.Parent.Parent.Anim.LocomotionController)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
+local Characters = require(script.Parent.Parent.Characters)
 local ClientState = require(script.Parent.Parent.ClientState)
 local EmoteFx = require(script.Parent.EmoteFx)
 local Mixer = require(script.Parent.Parent.Audio.Mixer)
@@ -39,11 +41,13 @@ function EmoteController.play(emoteId: string)
 	EmoteRemote:FireServer(emoteId)
 end
 
--- Calls `done` once the clip stops playing on the character (it ended, was stopped, or the body went).
-local function watch(character: Model, clip: string, done: () -> ())
+-- Calls `done` once the clip stops playing on the character (it ended, was stopped, or the body went), or,
+-- with `alive`, once that says it is over (a stroll lasts as long as its attribute).
+export type Alive = (() -> boolean)?
+local function watch(character: Model, clip: string, done: () -> (), alive: Alive)
 	task.spawn(function()
 		task.wait(0.3)
-		while character.Parent and PoseController.isPlaying(character, clip) do
+		while character.Parent and (if alive then alive() else PoseController.isPlaying(character, clip)) do
 			task.wait(0.2)
 		end
 		done()
@@ -140,7 +144,7 @@ end
 -- Puts an emote's props on the character for as long as the clip plays (Anim/EmoteProps: held in a hand,
 -- worn, set on the floor; carried from hand to hand, thrown up and caught, stacked). Returns a function that
 -- takes them away (they also go by themselves). Your look uses it too.
-function EmoteController.dress(character: Model, clip: string): () -> ()
+function EmoteController.dress(character: Model, clip: string, alive: Alive): () -> ()
 	local specs = EmoteProps.of(clip)
 	if #specs == 0 then
 		return function() end
@@ -263,11 +267,11 @@ function EmoteController.dress(character: Model, clip: string): () -> ()
 		end)
 	end
 	local prepared = ClipPlayer.get(clip)
-	if prepared and not prepared.loop then
+	if prepared and not prepared.loop and not alive then
 		task.delay(prepared.length + HOLD, remove)
 	end
 	-- Moving stops the emote (and the props go with it).
-	watch(character, clip, remove)
+	watch(character, clip, remove, alive)
 	return remove
 end
 
@@ -275,7 +279,7 @@ end
 local QUIET_PHASES = { Meeting = true, Intro = true, Verdict = true, Outro = true, Reveal = true }
 
 -- An emote's sound around the dancer, for as long as the emote plays. Returns a function that stops it.
-function EmoteController.sound(character: Model, clip: string, own: boolean): () -> ()
+function EmoteController.sound(character: Model, clip: string, own: boolean, alive: Alive): () -> ()
 	local item = Cosmetics.emote(clip)
 	local id = EmoteMedia.sound(if item then item.emote else clip)
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -312,14 +316,14 @@ function EmoteController.sound(character: Model, clip: string, own: boolean): ()
 			sound:Destroy()
 		end
 	end
-	watch(character, clip, stop)
+	watch(character, clip, stop, alive)
 	return stop
 end
 
 -- Puts an emote's face (a drawn expression, Shared/EmoteMedia FACES) on the head while it plays; the head's
 -- own face comes back after. Nothing while that face has no picture, or on a head with no face decal.
 -- Returns a function that puts the own face back.
-function EmoteController.face(character: Model, clip: string): () -> ()
+function EmoteController.face(character: Model, clip: string, alive: Alive): () -> ()
 	local item = Cosmetics.emote(clip)
 	local id = EmoteMedia.face(if item then item.face else nil)
 	local head = character:FindFirstChild("Head")
@@ -345,7 +349,7 @@ function EmoteController.face(character: Model, clip: string): () -> ()
 			decal:SetAttribute("OwnFace", nil)
 		end
 	end
-	watch(character, clip, undo)
+	watch(character, clip, undo, alive)
 	return undo
 end
 
@@ -413,8 +417,35 @@ local function onEmote(payload)
 	EmoteController.effect(character, payload.emote)
 end
 
+-- A stroll (the server's "Stroll" attribute; LocomotionController walks the body in it) carries its props,
+-- face and sound for as long as it lasts.
+local function watchStrolls(character: Model)
+	local function changed()
+		local clip = character:GetAttribute("Stroll")
+		if type(clip) ~= "string" then
+			return
+		end
+		local function alive(): boolean
+			return character.Parent ~= nil and character:GetAttribute("Stroll") == clip
+		end
+		PoseController.stopEmotes(character)
+		local player = Players:GetPlayerFromCharacter(character)
+		EmoteController.dress(character, clip, alive)
+		EmoteController.sound(character, clip, player == Players.LocalPlayer, alive)
+		EmoteController.face(character, clip, alive)
+	end
+	character:GetAttributeChangedSignal("Stroll"):Connect(changed)
+	changed()
+end
+
 function EmoteController.init()
 	EmoteRemote.OnClientEvent:Connect(onEmote)
+	Characters.each(watchStrolls)
+	-- A stance settled into holds its props and wears its face (no sound: it is how you stand).
+	LocomotionController.Settled:Connect(function(character: Model, clip: string)
+		EmoteController.dress(character, clip)
+		EmoteController.face(character, clip)
+	end)
 end
 
 return EmoteController

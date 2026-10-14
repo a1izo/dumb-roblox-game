@@ -4,7 +4,7 @@
 -- Every clip by id, joined from the parts (each part is a table of clips, see Part1).
 
 local clips = {}
-for _, part in ipairs({ require(script.Part1) :: any, require(script.Part2) :: any, require(script.Part3) :: any, require(script.Part4) :: any }) do
+for _, part in ipairs({ require(script.Part1) :: any, require(script.Part2) :: any, require(script.Part3) :: any, require(script.Part4) :: any, require(script.Part5) :: any }) do
 	for id, clip in pairs(part) do
 		clips[id] = clip
 	end

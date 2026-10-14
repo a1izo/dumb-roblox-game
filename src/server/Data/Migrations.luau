@@ -110,6 +110,8 @@ function Migrations.defaults(startingCoins: number)
 		shopTurned = { day = -1, cards = {} },
 		-- The emote wheel's eight clip ids, "" for an empty slot; empty = never changed (Shared/EmoteWheel).
 		emoteWheel = {},
+		-- The stance (an owned emote item that can be one), "" for none (Shared/Cosmetics `stance`).
+		stance = "",
 	}
 end
 

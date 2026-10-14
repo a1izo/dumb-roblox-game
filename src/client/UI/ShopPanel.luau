@@ -9,7 +9,8 @@
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
 -- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
 -- the emote wheel's first empty slot), "N more coins" when you are short, or wear / take off what you
--- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel).
+-- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel);
+-- one that can be a stance also offers to be yours (stand still a while and you settle into it).
 -- On a phone the cards fill the window and Your look rises as a sheet from the bottom when a card is
 -- picked. Open in the lobby only.
 
@@ -45,7 +46,7 @@ local ShopPanel = {}
 local TOP = 40 -- the purse line
 local SUITS_HEIGHT = 48
 local LOOK_WIDTH = 300
-local INFO_HEIGHT = 178 -- under Your look: the name, its line, the button, a note
+local INFO_HEIGHT = 226 -- under Your look: the name, its line, the button, the stance button, a note
 local GAP = T.space.l
 local HOLD_SECONDS = 0.5
 
@@ -60,6 +61,7 @@ local look: YourLook.YourLook
 local lookName: any
 local lookLine: TextLabel
 local actionHolder: Frame
+local stanceHolder: Frame
 local actionNote: TextLabel
 local sheetClose: TextButton
 
@@ -163,11 +165,14 @@ end
 -- Your look -------------------------------------------------------------------------------------------------
 
 local function clearAction()
-	for _, child in ipairs(actionHolder:GetChildren()) do
-		if child:IsA("GuiObject") then
-			child:Destroy()
+	for _, holder in ipairs({ actionHolder, stanceHolder }) do
+		for _, child in ipairs(holder:GetChildren()) do
+			if child:IsA("GuiObject") then
+				child:Destroy()
+			end
 		end
 	end
+	stanceHolder.Visible = false
 end
 
 -- An emote you own: the wheel's eight slots, numbered, its own lit; a click puts it there (or takes it off
@@ -193,6 +198,20 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 	actionNote.Text = if at
 		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
 		else "Pick a number to put it on your emote wheel (Q)."
+	if item.stance then
+		local mine = profile.stance == item.id
+		stanceHolder.Visible = true
+		Kit.button({
+			text = if mine then "Your stance  ·  take it off" else "Make it your stance",
+			variant = if mine then "ghost" else "secondary",
+			size = "s",
+			upper = false,
+			Size = UDim2.fromScale(1, 1),
+			Parent = stanceHolder,
+		}, function()
+			ShopRequest:FireServer({ action = "stance", itemId = item.id })
+		end)
+	end
 end
 
 -- The button under Your look for the picked item, and the note under it.
@@ -205,8 +224,11 @@ local function showAction(profile, item: Cosmetics.Item?)
 		return
 	end
 	lookName:set(item.name)
-	lookLine.Text =
-		string.format("%s  ·  %s", capitalised(item.rarity), Cosmetics.KIND_SINGULAR[item.kind] or item.kind)
+	lookLine.Text = string.format(
+		"%s  ·  %s",
+		capitalised(item.rarity),
+		Cosmetics.KIND_SINGULAR[item.kind] or item.kind
+	) .. (if item.stance then "  ·  Stance" elseif item.stroll then "  ·  Stroll" else "")
 	local size = UDim2.new(1, 0, 0, T.touch)
 	local function press(text: string, action: string, variant: string)
 		Kit.button({ text = text, variant = variant, size = "m", Size = size, Parent = actionHolder }, function()
@@ -702,7 +724,14 @@ function ShopPanel.init()
 		Parent = info,
 	})
 	actionHolder = Kit.frame({ Name = "Action", Size = UDim2.new(1, 0, 0, T.touch), LayoutOrder = 3, Parent = info })
-	actionNote = Kit.label({ font = "bodyItalic", color = C.dim, LayoutOrder = 4, Parent = info })
+	stanceHolder = Kit.frame({
+		Name = "Stance",
+		Size = UDim2.new(1, 0, 0, T.touch),
+		Visible = false,
+		LayoutOrder = 4,
+		Parent = info,
+	})
+	actionNote = Kit.label({ font = "bodyItalic", color = C.dim, LayoutOrder = 5, Parent = info })
 	sheetClose = Kit.iconButton({
 		icon = "cross",
 		size = 28,

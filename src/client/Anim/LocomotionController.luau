@@ -4,6 +4,10 @@
 -- over in the air, and a knee dip plays on landing. Roblox's default Animate script is removed
 -- (by the server, and here for this player's own body), so these are the only movement
 -- animations. Each time a stride plants a foot, Footfall fires (the snow's footprints use it).
+-- A stroll (the server's "Stroll" attribute on a body: an emote of the shop) puts its own clips in the place
+-- of the idle and of the walk and run while it lasts, so moving does not end it. A body with a stance (the
+-- "Stance" attribute) that stands still for a while settles into it (Settled fires), as an emote that moving
+-- ends.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +25,12 @@ local LocomotionController = {}
 
 -- Fired with (character) when a walking or running character's foot comes down on the ground.
 LocomotionController.Footfall = Signal.new()
+
+-- Fired with (character, clip) when a still body settles into its stance.
+LocomotionController.Settled = Signal.new()
+
+-- Seconds of standing still before a body settles into its stance.
+local STANCE_AFTER = 6
 
 -- Speeds (studs/s) where walking starts, where running begins to take over and where only
 -- the run plays. Each clip knows its stride (studs per cycle); strides scale with the length
@@ -46,6 +56,8 @@ type State = {
 	grounded: boolean,
 	lastCheck: number,
 	rising: boolean,
+	still: number,
+	settled: boolean,
 }
 
 local states: { [Model]: State } = {}
@@ -83,6 +95,8 @@ local function stateFor(character: Model): State
 			grounded = true,
 			lastCheck = 0,
 			rising = false,
+			still = 0,
+			settled = false,
 		}
 		states[character] = state
 		character.Destroying:Once(function()
@@ -139,6 +153,16 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	end
 	local state = stateFor(character)
 	local idle, walk, run = clips.idle, clips.walk, clips.run
+	-- A stroll: its own clips standing and walking (at any speed: the stride keeps the feet planted).
+	local stroll = character:GetAttribute("Stroll")
+	local strolling = false
+	if type(stroll) == "string" then
+		local standing, moving = ClipPlayer.get(stroll), ClipPlayer.get(stroll .. "Walk")
+		if standing and moving then
+			idle, walk, run = standing, moving, moving
+			strolling = true
+		end
+	end
 	state.idleTime += dt
 
 	-- Specters float; only the idle body sits under their float clip.
@@ -181,8 +205,25 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		then math.max(0, state.airWeight - dt * 10)
 		else math.min(1, state.airWeight + dt * 8)
 
-	-- A fidget now and then, when standing still with nothing else to do.
-	if speed < 0.3 and state.grounded and os.clock() >= state.fidgetAt then
+	-- Standing still a while with a stance: settle into it (an emote, so moving ends it).
+	local stance = character:GetAttribute("Stance")
+	local hasStance = type(stance) == "string" and not strolling
+	if hasStance and speed < 0.3 and state.grounded then
+		state.still += dt
+		if state.still >= STANCE_AFTER and not state.settled and not PoseController.busy(character) then
+			state.settled = true
+			if ClipPlayer.exists(stance) then
+				PoseController.play(character, stance, { emote = true, fadeIn = 0.8, fadeOut = 0.4 })
+				LocomotionController.Settled:Fire(character, stance)
+			end
+		end
+	else
+		state.still = 0
+		state.settled = false
+	end
+
+	-- A fidget now and then, when standing still with nothing else to do (not with a stance or a stroll).
+	if speed < 0.3 and state.grounded and not hasStance and not strolling and os.clock() >= state.fidgetAt then
 		state.fidgetAt = os.clock() + FIDGET_EVERY[1] + math.random() * (FIDGET_EVERY[2] - FIDGET_EVERY[1])
 		if not PoseController.busy(character) then
 			local id = FIDGETS[math.random(#FIDGETS)]

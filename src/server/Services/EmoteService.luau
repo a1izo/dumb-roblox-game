@@ -1,7 +1,9 @@
 -- Emotes are animated on every client, so the server passes them on: it checks the emote (owned from the
 -- shop, or the Emote Pack pass, and never a lobby-only emote in a match) and sends it to everyone who can
 -- see the player (Specters' emotes only reach other Specters). It also keeps the emote wheel
--- (Shared/EmoteWheel): the eight emotes a player put on it.
+-- (Shared/EmoteWheel): the eight emotes a player put on it. A stroll is not sent: it is an attribute on the
+-- body ("Stroll", the clip) that every client walks it in, until it is picked again, another emote is
+-- played, or STROLL_SECONDS go by.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +24,27 @@ local RateLimit = require(script.Parent.RateLimit)
 local EmoteRemote = Net.event("Emote")
 
 local EmoteService = {}
+
+local STROLL_SECONDS = 30
+local strollTokens: { [Player]: number } = {}
+
+-- Starts a stroll on the player's body (nil ends it).
+function EmoteService.setStroll(player: Player, clip: string?)
+	local character = player.Character
+	if not character then
+		return
+	end
+	local token = (strollTokens[player] or 0) + 1
+	strollTokens[player] = token
+	character:SetAttribute("Stroll", clip)
+	if clip then
+		task.delay(STROLL_SECONDS, function()
+			if strollTokens[player] == token and player.Character == character then
+				character:SetAttribute("Stroll", nil)
+			end
+		end)
+	end
+end
 
 local function isSpecter(player: Player): boolean
 	if not Match.active then
@@ -64,9 +87,17 @@ local function onEmote(player: Player, emoteId)
 	if player.Character and player.Character:GetAttribute("Away") then
 		return
 	end
+	local item = if emote.item then Cosmetics.byId(emote.item) else nil
+	local walking = player.Character and player.Character:GetAttribute("Stroll")
+	if item and item.stroll then
+		-- Picked again: it ends; otherwise it starts (or takes over from another stroll).
+		EmoteService.setStroll(player, if walking == emote.id then nil else emote.id)
+		return
+	elseif walking then
+		EmoteService.setStroll(player, nil)
+	end
 	-- Now and then an emote plays its other ending (Furious Scribbling's slash), the same on every screen.
 	local clip = emote.id
-	local item = if emote.item then Cosmetics.byId(emote.item) else nil
 	if item and type(item.alt) == "string" and math.random() < (tonumber(item.altChance) or 0.5) then
 		clip = item.alt
 	end
@@ -109,6 +140,9 @@ end
 
 function EmoteService.init()
 	EmoteRemote.OnServerEvent:Connect(onEmote)
+	Players.PlayerRemoving:Connect(function(player)
+		strollTokens[player] = nil
+	end)
 	ProfileService.register("emoteWheel", 0.15, setWheel)
 end
 

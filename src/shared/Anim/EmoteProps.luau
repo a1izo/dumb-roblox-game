@@ -202,6 +202,16 @@ local CLIPS: { [string]: { Prop } } = {
 			at = CFrame.new(0, -1.05, -0.1) * CFrame.Angles(rad(-124), 0, 0) * CFrame.new(0, 0.35, 0),
 		},
 	},
+	mushroomStroll = {
+		{
+			model = "WalkingStick",
+			size = 4.0,
+			stand = stand("Cylinder", 4.0, 0.2, 0.2, 90, 66, 46),
+			mount = "Torso",
+			-- Over the right shoulder, pointing back and up, its foot in the raised hand.
+			at = CFrame.new(0.72, 1.35, 0.55) * CFrame.Angles(rad(54), 0, 0),
+		},
+	},
 	fortySeconds = {
 		{
 			model = "Wristwatch",

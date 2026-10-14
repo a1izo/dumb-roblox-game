@@ -78,6 +78,12 @@ EmoteMedia.SOUNDS = {
 	diceTower = "",
 	chocolateSnap = "",
 	fortySeconds = "",
+	-- The emote pack: strolls (heard for as long as the stroll lasts)
+	theLongClimb = "",
+	paradeMarch = "",
+	griddy = "",
+	mushroomStroll = "",
+	notMyProblem = "",
 } :: { [string]: string }
 
 -- [expression] = decal asset id (a face drawn in art/textures/faces, uploaded as a Decal)

@@ -51,6 +51,19 @@ return function(t)
 				expect(item.lobbyOnly == true).to.equal(SIGNALS[item.id] ~= nil)
 			end
 		end)
+		it("gives every stroll its walk, with a stride, and every stance a loop", function()
+			for _, item in ipairs(Cosmetics.ofKind("emote")) do
+				if item.stroll then
+					local walk = ClipPlayer.get(item.emote .. "Walk")
+					expect(walk ~= nil and walk.loop and (walk.stride or 0) > 0).to.equal(true)
+					expect((ClipPlayer.get(item.emote) :: any).loop).to.equal(true)
+					expect(item.category).to.equal("stroll")
+				end
+				if item.stance then
+					expect((ClipPlayer.get(item.emote) :: any).loop).to.equal(true)
+				end
+			end
+		end)
 		it("gives every other ending a clip, found by its item", function()
 			for _, item in ipairs(Cosmetics.ofKind("emote")) do
 				if item.alt ~= nil then

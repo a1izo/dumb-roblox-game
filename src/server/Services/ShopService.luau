@@ -101,6 +101,12 @@ local function onRequest(player: Player, payload)
 		if data.equipped[item.kind] == item.id then
 			data.equipped[item.kind] = nil
 		end
+	elseif action == "stance" then
+		-- An emote that can be a stance becomes yours (picked again: none).
+		if not item.stance or not CosmeticsService.owns(player, item) then
+			return
+		end
+		data.stance = if data.stance == item.id then "" else item.id
 	else
 		return
 	end
