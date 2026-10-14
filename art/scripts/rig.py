@@ -1,13 +1,11 @@
-"""The R6 reference rig, taken from Aeresei's "R6 IK + FK Blender Rig" V2.22 (Roblox DevForum,
-art/rig/BlenderR6Rig_V2.22.blend, credited in art/README.md).
+"""The R6 reference rig, built here from code: an armature "R6" with one bone per part of Roblox's
+classic R6 body (art/data/r6_rig.json), each bone's head on its Motor6D pivot, and the blocky body
+parented to those bones in the noir mannequin colours. Keyed actions go straight on its bones.
 
-That file holds a control rig (IK/FK, `__PrimaryArmature`) that drives an `InternalArmature`:
-the six real R6 joints, each bone's head on a Motor6D pivot. The game plays joint rotations,
-so everything here works on the InternalArmature. build_rig() opens the file, keeps that
-armature (renamed "R6") and the blocky body, cuts the constraints that tied it to the control
-rig, and dresses the body in the noir mannequin colours. Keyed actions go straight on its bones.
-A clip someone animates by hand on the control rig exports just the same, because the exporter
-reads the InternalArmature's evaluated pose.
+The bones keep the frames of the rig the first clips were made on (Aeresei's "R6 IK + FK Blender
+Rig" V2.22, whose InternalArmature this used to load from a downloaded file): the same heads,
+lengths and axes, so a clip keyed on either rig exports to the same numbers. (A joint's exported
+rotation is its pose relative to its bone's rest frame, so the frames cancel out in any case.)
 
 Bone names are Roblox's part names. JOINTS maps the short joint names used by the game
 (src/shared/Anim/Joints.luau) to the bone that joint moves. Roblox's six joints:
@@ -18,6 +16,7 @@ Bone names are Roblox's part names. JOINTS maps the short joint names used by th
 """
 
 import json
+import math
 import os
 
 import bmesh
@@ -26,8 +25,6 @@ from mathutils import Matrix, Vector
 
 import common
 from common import rbx_to_blender, srgb
-
-RIG_FILE = os.path.join(common.ART, "rig", "BlenderR6Rig_V2.22.blend")
 
 _R6 = json.load(open(os.path.join(common.ART, "data", "r6_rig.json")))
 
@@ -83,13 +80,19 @@ SKIN = srgb(232, 196, 160)
 SHIRT = srgb(236, 233, 226)
 TIE = srgb(190, 22, 36)
 
-_BODY = {  # part -> the mesh object in the downloaded file
-    "Torso": "Torso_MBlocky",
-    "Head": "Head_MBlocky",
-    "Right Arm": "Right Arm_MBlocky",
-    "Left Arm": "Left Arm_MBlocky",
-    "Right Leg": "Right Leg_MBlocky",
-    "Left Leg": "Left Leg_MBlocky",
+_S2 = 1 / math.sqrt(2)
+_A5, _B5 = 2 / math.sqrt(5), 1 / math.sqrt(5)
+
+# bone -> (rest frame, rows of its 3x3 in Blender space; head (Blender space); length). An arm's bone
+# points from the shoulder pivot down and out, a leg's from the hip pivot to the middle of the floor.
+BONES = {
+    "HumanoidRootPart": (((1, 0, 0), (0, 0, -1), (0, 1, 0)), (0, 0, 3), 0.01),
+    "Torso": (((-1, 0, 0), (0, -1, 0), (0, 0, 1)), (0, 0, 3), 0.25),
+    "Head": (((1, 0, 0), (0, 0, -1), (0, 1, 0)), (0, 0, 4), 1.0),
+    "Right Arm": (((-_S2, _S2, 0), (0, 0, -1), (-_S2, -_S2, 0)), (1, 0, 3.5), math.sqrt(2)),
+    "Left Arm": (((-_S2, -_S2, 0), (0, 0, -1), (_S2, -_S2, 0)), (-1, 0, 3.5), math.sqrt(2)),
+    "Right Leg": (((-_A5, -_B5, 0), (0, 0, -1), (_B5, -_A5, 0)), (1, 0, 2), math.sqrt(5)),
+    "Left Leg": (((-_A5, _B5, 0), (0, 0, -1), (-_B5, -_A5, 0)), (-1, 0, 2), math.sqrt(5)),
 }
 
 
@@ -143,64 +146,71 @@ def reset_pose(arm):
         pb.scale = (1, 1, 1)
 
 
-def build_rig():
-    """Opens the downloaded rig and returns the R6 armature, ready to be keyed."""
-    if not os.path.exists(RIG_FILE):
-        raise SystemExit(f"The rig is missing: {RIG_FILE} (see art/README.md)")
-    bpy.ops.wm.open_mainfile(filepath=RIG_FILE)
-    arm = bpy.data.objects["InternalArmature"]
-    keep = {arm.name} | set(_BODY.values())
-    for obj in list(bpy.data.objects):
-        if obj.name not in keep:
-            bpy.data.objects.remove(obj, do_unlink=True)
-    for action in list(bpy.data.actions):
-        bpy.data.actions.remove(action)
-    for text in list(bpy.data.texts):
-        bpy.data.texts.remove(text)
-    for coll in list(bpy.data.collections):
-        bpy.data.collections.remove(coll)
-    arm.name = "R6"
-    arm.data.name = "R6"
-    # The file's own drivers (body type, visibility) need its Python scripts and the control rig.
-    for obj in list(bpy.data.objects):
-        obj.animation_data_clear()
-        if obj.data is not None and getattr(obj.data, "animation_data", None):
-            obj.data.animation_data_clear()
-    for pb in arm.pose.bones:
-        for con in list(pb.constraints):
-            pb.constraints.remove(con)
-    arm.hide_viewport = arm.hide_render = False
-    arm.hide_set(False)
-    # The file switches rotation inheritance off (its control rig drives each bone separately). Roblox's
-    # Motor6Ds chain: a limb turns with the torso it hangs from, and the clips are keyed that way.
-    for bone in arm.data.bones:
-        bone.use_inherit_rotation = True
-    reset_pose(arm)
+def head_mesh(name, center, mat):
+    """The classic R6 head: a rounded cylinder 1.2 studs across and tall, standing up (Blender z)."""
+    mesh = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=32, radius1=0.6, radius2=0.6, depth=1.2)
+    bm.to_mesh(mesh)
+    bm.free()
+    obj = bpy.data.objects.new(name, mesh)
+    obj.location = center
+    mesh.materials.append(mat)
+    mod = obj.modifiers.new("Bevel", "BEVEL")
+    mod.width = 0.16
+    mod.segments = 4
+    mod.limit_method = "ANGLE"
+    for poly in mesh.polygons:
+        poly.use_smooth = True
+    return obj
 
+
+def _armature():
+    data = bpy.data.armatures.new("R6")
+    arm = bpy.data.objects.new("R6", data)
+    common.collection("Rig").objects.link(arm)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    edit = {}
+    for name, (rows, head, length) in BONES.items():
+        eb = data.edit_bones.new(name)
+        frame = Matrix(rows).to_4x4()
+        frame.translation = Vector(head)
+        eb.head = Vector(head)
+        eb.tail = Vector(head) + Vector((0, 1, 0))
+        eb.matrix = frame
+        eb.length = length
+        eb.use_connect = False
+        eb.use_inherit_rotation = True
+        eb.use_local_location = True
+        edit[name] = eb
+    for name, eb in edit.items():
+        parent = PARENT.get(name)
+        if parent:
+            eb.parent = edit[parent]
+    bpy.ops.object.mode_set(mode="OBJECT")
+    reset_pose(arm)
+    return arm
+
+
+def build_rig():
+    """A fresh scene holding the R6 armature and its mannequin; returns the armature, ready to be keyed."""
+    common.clear_scene()
     scene = bpy.context.scene
-    for coll in list(scene.collection.children):
-        scene.collection.children.unlink(coll)
-    rig_coll = common.collection("Rig")
-    mannequin = common.collection("Mannequin")
     for coll_obj in list(scene.collection.objects):
         scene.collection.objects.unlink(coll_obj)
-    rig_coll.objects.link(arm)
+    arm = _armature()
+    mannequin = common.collection("Mannequin")
     bpy.context.view_layer.update()
 
-    for part, mesh_name in _BODY.items():
-        obj = bpy.data.objects[mesh_name]
-        obj.name = part + "_Mesh"
-        obj.hide_viewport = obj.hide_render = False
+    for part in JOINTS.values():
+        center, size = PARTS[part]
+        mat = part_material(part)
+        if part == "Head":
+            obj = head_mesh(part + "_Mesh", rbx_to_blender(center), mat)
+        else:
+            obj = box(part + "_Mesh", rbx_to_blender(center), (size[0], size[2], size[1]), mat, bevel=0.04)
         mannequin.objects.link(obj)
-        obj.hide_set(False)
-        obj.data.materials.clear()
-        obj.data.materials.append(part_material(part))
-        bpy.context.view_layer.update()
-        # The file follows a bone with a Child Of constraint; the bone parent below does the same.
-        world = obj.matrix_world.copy()
-        for con in list(obj.constraints):
-            obj.constraints.remove(con)
-        obj.matrix_world = world
         bpy.context.view_layer.update()
         parent_to_bone(obj, arm, part)
 

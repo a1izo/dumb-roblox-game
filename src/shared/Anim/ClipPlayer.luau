@@ -16,9 +16,13 @@ export type Prepared = {
 	offsetTimes: { number }?,
 	offsets: { Vector3 }?,
 	-- Movement clips: studs the body covers in one cycle, on a rig whose leg (hip to ankle)
-	-- is `leg` studs long.
+	-- is `leg` studs long, and the part of the cycle each foot is on the ground (the right foot
+	-- lands at 0, the left at 0.5).
 	stride: number?,
 	leg: number?,
+	stance: number?,
+	-- Played on top of the pose underneath, as a change from the clip's first frame.
+	additive: boolean?,
 }
 
 local prepared: { [string]: Prepared } = {}
@@ -56,6 +60,8 @@ function ClipPlayer.get(id: string): Prepared?
 		joints = joints,
 		stride = raw.stride,
 		leg = raw.leg,
+		stance = raw.stance,
+		additive = raw.additive == true,
 	}
 	if raw.offset then
 		local offsets = {}
@@ -147,9 +153,10 @@ end
 
 -- A joint's sampled CFrame (rotation and slide, parent frame) turned into the joint's Transform for
 -- a joint whose C0 has rotation `basis` (so clips work on any rig whose joints are rotated
--- differently): the slide is carried into the C0 frame along with the rotation.
-function ClipPlayer.transform(basis: CFrame, rotation: CFrame, offset: Vector3?): CFrame
-	local inverse = basis:Inverse()
+-- differently): the slide is carried into the C0 frame along with the rotation. Callers that pose
+-- every frame pass the basis's inverse too (worked out once per rig).
+function ClipPlayer.transform(basis: CFrame, rotation: CFrame, offset: Vector3?, inverseBasis: CFrame?): CFrame
+	local inverse = inverseBasis or basis:Inverse()
 	local result = inverse * rotation * basis
 	if offset then
 		result = CFrame.new(inverse * offset) * result

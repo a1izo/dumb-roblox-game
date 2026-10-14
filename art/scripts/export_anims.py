@@ -1,7 +1,7 @@
 """Samples every Death's Gambit action on the R6 rig and writes src/shared/Anim/Clips (clipfile.py).
 
 For each clip and each joint it uses, the rotation of the joint in its parent's frame is
-sampled 30 times a second, converted to Roblox space, and reduced to the fewest keys that
+sampled 60 times a second, converted to Roblox space, and reduced to the fewest keys that
 stay within a small angle of the curve (so snappy moves keep their shape). The game plays the
 keys back with spherical interpolation.
 """
@@ -171,6 +171,12 @@ def clip_lua(name, action, length, times, samples, offsets, positions=None):
         # Studs the body moves in one cycle, on a rig whose leg is `leg` studs long.
         lines.append(f"\t\tstride = {fmt(float(action['stride']), 3)},")
         lines.append(f"\t\tleg = {fmt(LEG['length'], 3)},")
+    if action.get("stance"):
+        # The part of a cycle each foot is down (the right foot lands at 0, the left at 0.5).
+        lines.append(f"\t\tstance = {fmt(float(action['stance']), 3)},")
+    if action.get("additive"):
+        # Played on top of the pose underneath, as a change from its own first frame.
+        lines.append("\t\tadditive = true,")
     lines.append("\t\tjoints = {")
     positions = positions or {}
     for joint in sorted(samples):

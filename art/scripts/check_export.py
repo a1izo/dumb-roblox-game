@@ -2,10 +2,12 @@
 
     blender -b --factory-startup --python art/scripts/check_export.py -- [clip ...]
 
-For every clip and a spread of times, compares each body part's corners in the Blender rig
+For every clip and a spread of times, compares each body part's centre in the Blender rig
 (posed by its action) with the same part posed from src/shared/Anim/Clips/ using the
-game's maths (rbxsim). Prints the worst corner distance in studs per clip; anything over a
-few hundredths means the export or the playback is wrong.
+game's maths (rbxsim). Prints the worst distance in studs per clip; anything over a few
+hundredths means the export or the playback is wrong. Clips that end on the floor are lifted out
+of it by the export (export_anims.lift_to_floor), so for them the whole body's height is matched
+first (the torso's) and only the pose is compared.
 """
 
 import math
@@ -44,7 +46,9 @@ def main():
     worst_all = 0.0
     for name in names:
         clip = clips[name]
-        arm.animation_data.action = bpy.data.actions[name]
+        action = bpy.data.actions[name]
+        arm.animation_data.action = action
+        lifted = bool(action.get("floor"))
         worst = 0.0
         steps = max(4, int(clip["length"] * 4))
         for i in range(steps + 1):
@@ -57,19 +61,17 @@ def main():
             bpy.context.view_layer.update()
             sim = pose_parts(rig, clip, t)
             hrp = rig["parts"]["HumanoidRootPart"]["cframe"]["p"]
+            centres = {}
             for part in PARTS:
                 obj = bpy.data.objects[part + "_Mesh"]
-                half = np.array(rig["parts"][part]["size"]) / 2
-                # a part's own axes in Blender, turned into Roblox axes
-                rot_b = np.array(obj.matrix_world.to_3x3().normalized())
                 centre_b = np.array(common.blender_to_rbx(obj.matrix_world @ ((Vector(obj.bound_box[0]) + Vector(obj.bound_box[6])) / 2)))
-                m = sim[part]
-                centre_s = m[:3, 3] - np.array([hrp[0], 0, hrp[2]])
-                err = float(np.linalg.norm(centre_b - centre_s))
-                # orientation: compare where the part's local up axis points
-                M = np.array(common.M)
-                up_b = M @ rot_b @ np.array([0, 0, 1.0]) if False else None
-                worst = max(worst, err)
+                centre_s = sim[part][:3, 3] - np.array([hrp[0], 0, hrp[2]])
+                centres[part] = (centre_b, centre_s)
+            lift = np.zeros(3)
+            if lifted:
+                lift[1] = centres["Torso"][1][1] - centres["Torso"][0][1]
+            for centre_b, centre_s in centres.values():
+                worst = max(worst, float(np.linalg.norm(centre_b + lift - centre_s)))
         worst_all = max(worst_all, worst)
         print(f"[check] {name}: worst part-centre error {worst:.4f} studs")
     arm.animation_data.action = None

@@ -127,6 +127,8 @@ class Motion:
         self.plants = []  # (t0, t1, stance, forward, tilt)
         self.extras = []  # f(t, pose, offset) -> None, edits in place
         self.stride = None
+        self.stance = None
+        self.additive = False
 
     def key(self, t, ease="smooth", offset=None, floor=False, **joints):
         """A key pose. floor=True works out the body's height so it rests on the floor (offset gives
@@ -224,6 +226,8 @@ class Motion:
     def build(self):
         c = clip(self.name, self.length, loop=self.loop, note=self.note, floor=self.floor)
         c.stride = self.stride
+        c.stance = self.stance
+        c.additive = self.additive
         count = max(2, int(round(self.length * self.rate)))
         times = [self.length * i / count for i in range(count + (0 if self.loop else 1))]
         sprung = self._sprung(times) if self.springs else None
