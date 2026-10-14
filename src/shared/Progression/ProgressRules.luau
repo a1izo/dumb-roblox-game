@@ -4,6 +4,7 @@
 -- once per player after the rewards are paid; the result lists what to tell the player.
 
 local Achievements = require(script.Parent.Achievements)
+local Ledger = require(script.Parent.Ledger)
 local Mastery = require(script.Parent.Mastery)
 local Quests = require(script.Parent.Quests)
 local TimeUtil = require(script.Parent.TimeUtil)
@@ -44,6 +45,7 @@ export type Result = {
 	xp: number,
 	masteryLevel: { from: number, to: number }?,
 	rankUp: { from: number, to: number }?,
+	ledger: { points: number, tier: number, season: number }?,
 }
 
 -- Rank titles: reaching a rank unlocks its title.
@@ -214,6 +216,20 @@ function ProgressRules.apply(data: any, summary: Summary, now: number): Result
 				unlock(data, result, unlocks[level])
 			end
 		end
+	end
+
+	-- The Season ledger: the case's points (more for a win and for each quest finished in it), each tier
+	-- reached paid at once.
+	local season = Ledger.season(now)
+	if season > 0 and type(data.ledger) == "table" then
+		local points = Ledger.pointsFor(summary.won, #result.quests)
+		for _, step in ipairs(Ledger.add(data.ledger, season, points)) do
+			if step.reward.coins then
+				add(string.format("Ledger, tier %d", step.tier), step.reward.coins, 0)
+			end
+			unlock(data, result, step.reward.item)
+		end
+		result.ledger = { points = points, tier = data.ledger.tier, season = season }
 	end
 
 	-- Achievements (after the stats above).

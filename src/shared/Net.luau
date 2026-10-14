@@ -62,6 +62,8 @@ local EVENTS = {
 	"Cue",
 	"Emote",
 	"Duo",
+	-- the card Fate's draw dealt (server -> client), for the shop to turn it over
+	"Fate",
 	"Leaderboard",
 	-- the lobby mini-games: requests (client -> server) and what the server tells the player about their run
 	"LobbyGame",

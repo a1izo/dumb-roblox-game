@@ -167,9 +167,11 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   leave or the case closes. You cannot be queued and watching at once; a party member readying
   up brings you back.
 - **Shop and Robux** ("Death's hand"): hats, trails, ties, notebook covers, writing, verdict and death
-  styles, Deathsinger forms, emotes and titles, matching sets, a daily hand of six, coin packs, and
-  passes (VIP, Double Coins, Custom Alias, Emote Pack, Director). Titles and VIP tags show only in the
-  lobby and on the results screen.
+  styles, Deathsinger forms, emotes and titles, matching sets, a daily hand of six plus a deal at a
+  quarter off, Fate's weekly draw (odds shown, coins only), the Season ledger (free line), collection
+  milestones, win scenes, coin packs, and passes (VIP, Double Coins, Custom Alias, Emote Pack,
+  Director). Search, filters, "New" ribbons and a wishlist; a mannequin by the lobby spawn shows the
+  day's emote. Titles and VIP tags show only in the lobby and on the results screen.
 - **Emotes**: Q (or Emotes in the lobby menu) opens the emote wheel, eight emotes you choose in the
   shop's Your look, played with a click, a tap or 1 to 8; More lists all of yours. They work in the
   lobby and in a case; the few that look like a death, an arrest or the Eyes are lobby-only. Sounds and

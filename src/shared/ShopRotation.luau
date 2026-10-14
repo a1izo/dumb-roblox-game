@@ -28,8 +28,19 @@ function ShopRotation.secondsLeft(unixTime: number): number
 	return DAY - (unixTime % DAY)
 end
 
+-- True when an item is sold only on the days it is in Today's hand (a rotation item, or a thing sold later
+-- once its day has come).
+function ShopRotation.rotates(item: Cosmetics.Item, unixTime: number): boolean
+	return item.source == "rotation" or Cosmetics.laterPrice(item, unixTime) ~= nil
+end
+
 function ShopRotation.forDay(day: number): { string }
 	local pool = Cosmetics.rotationPool()
+	for _, item in ipairs(Cosmetics.ITEMS) do
+		if item.source ~= "rotation" and Cosmetics.laterPrice(item, day * DAY) ~= nil then
+			table.insert(pool, item)
+		end
+	end
 	table.sort(pool, function(a, b)
 		return a.id < b.id
 	end)
@@ -110,9 +121,10 @@ function ShopRotation.isDeal(itemId: string, unixTime: number): boolean
 	return unixTime % DAY < ShopRotation.GRACE and ShopRotation.dealFor(day - 1) == itemId
 end
 
--- What an item costs at this time (the deal's price on its day), or nil when it is not sold.
+-- What an item costs at this time (the deal's price on its day; a thing sold later, its price once its day
+-- has come), or nil when it is not sold.
 function ShopRotation.priceOf(item: Cosmetics.Item, unixTime: number): number?
-	local price = item.price
+	local price = item.price or Cosmetics.laterPrice(item, unixTime)
 	if price and item.source == "shop" and ShopRotation.isDeal(item.id, unixTime) then
 		return ShopRotation.dealPrice(price)
 	end

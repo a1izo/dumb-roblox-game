@@ -114,6 +114,8 @@ function Migrations.defaults(startingCoins: number)
 		stance = "",
 		-- The emote played in "The end" when you win (an owned one, Cosmetics.winSceneOk), "" for a cheer.
 		winScene = "",
+		-- The Season ledger (Progression/Ledger): the season it is for, its points and the tier paid up to.
+		ledger = { season = 0, points = 0, tier = 0 },
 		-- Browsing the shop (Shared/ShopBrowse): new cards already looked at, and the wishlist.
 		shopSeen = {}, -- [itemId] = true
 		wishlist = {}, -- [itemId] = true

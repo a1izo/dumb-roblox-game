@@ -13,6 +13,8 @@
 --           reward of the Season ledger), set (a title: every piece of a set, Shared/Sets),
 --           collection (a title: owning so many emotes, Progression/Collection)
 --   price   coins; nil when it cannot be bought
+--   later   sold only from a day on, on the days it is in Today's hand: { from = "YYYY-MM-DD", price } (a
+--           season's emote once its season is over, Progression/Ledger)
 --
 -- Role neutrality: nothing here may show or hide what role someone has. Everyone holds a
 -- notebook and writes in the Grimoire phase whatever they own, and ghosts are only ever
@@ -847,6 +849,8 @@ Cosmetics.ITEMS = {
 		source = "season",
 		emote = "newWorld",
 		added = "2026-10-14",
+		-- (the Season ledger's last tier until season 1 ends; then in Today's hand)
+		later = { from = "2026-11-25", price = 1200 },
 	},
 	{
 		id = "emote_reapers_eyes",
@@ -1127,6 +1131,9 @@ Cosmetics.ITEMS = {
 	{ id = "title_set_main", kind = "title", name = "Main Character", rarity = "legendary", source = "set" },
 	{ id = "title_set_online", kind = "title", name = "Terminally Online", rarity = "legendary", source = "set" },
 	{ id = "title_set_floor", kind = "title", name = "Floor Filler", rarity = "epic", source = "set" },
+	-- Earned: the Season ledger (Progression/Ledger)
+	{ id = "title_s1_bookkeeper", kind = "title", name = "Bookkeeper", rarity = "rare", source = "season" },
+	{ id = "title_s1_accountant", kind = "title", name = "Death's Accountant", rarity = "epic", source = "season" },
 	-- Earned: owning so many emotes (Progression/Collection)
 	{ id = "title_c_mover", kind = "title", name = "Mover", rarity = "rare", source = "collection" },
 	{ id = "title_c_showstopper", kind = "title", name = "Showstopper", rarity = "epic", source = "collection" },
@@ -1230,6 +1237,8 @@ Cosmetics.KIND_NAMES = {
 export type Suit = { id: string, name: string, icon: string, kinds: { string }? }
 Cosmetics.SUITS = {
 	{ id = "today", name = "Today's hand", icon = "cards" },
+	{ id = "fate", name = "Fate", icon = "dice" },
+	{ id = "ledger", name = "Ledger", icon = "note" },
 	{ id = "wardrobe", name = "Wardrobe", icon = "fedora", kinds = { "hat", "tie", "trail" } },
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
@@ -1328,6 +1337,24 @@ end
 -- and nothing that looks like one of a case's signals.
 function Cosmetics.winSceneOk(item: Item?): boolean
 	return item ~= nil and item.kind == "emote" and not item.stroll and not item.duo and not item.lobbyOnly
+end
+
+-- A thing sold only later (`later`): its price from its day on, else nil.
+function Cosmetics.laterPrice(item: Item, unixTime: number): number?
+	local later = item.later
+	if type(later) ~= "table" or type(later.from) ~= "string" then
+		return nil
+	end
+	local year, month, day = string.match(later.from, "^(%d%d%d%d)-(%d%d)-(%d%d)$")
+	if not year then
+		return nil
+	end
+	local from = DateTime.fromUniversalTime(
+		tonumber(year) :: number,
+		tonumber(month) :: number,
+		tonumber(day) :: number
+	).UnixTimestamp
+	return if unixTime >= from then later.price else nil
 end
 
 -- Items that can appear in the daily rotation.

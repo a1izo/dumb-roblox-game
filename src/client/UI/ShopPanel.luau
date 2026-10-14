@@ -5,7 +5,10 @@
 -- down (the same for everyone): each is turned over with a click, and stays turned that day (ShopService
 -- "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances, poses, with
 -- props, strolls, duo, with how many you own and the next collection milestone); Sets lays out each set
--- (Shared/Sets) with how many of its pieces you own, and the title it earns.
+-- (Shared/Sets) with how many of its pieces you own, and the title it earns. Fate lays out the week's deck
+-- face up with the odds of each card, and draws one you do not own for 250 coins (hold "Draw"; the card
+-- dealt turns over: Shared/Fate). The Ledger shows the season's thirty tiers, how far you are and what each
+-- pays (Progression/Ledger).
 --
 -- Over a suit of kinds, a row to browse it (Shared/ShopBrowse): a search, what to show (all, not owned,
 -- can afford, wished) and an order (as dealt, cheapest, dearest, rarest, newest). A card new to the shop
@@ -35,6 +38,9 @@ local Sets = require(Shared:WaitForChild("Sets"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
+local Fate = require(Shared:WaitForChild("Fate"))
+local Ledger = require(Shared:WaitForChild("Progression"):WaitForChild("Ledger"))
+local TimeUtil = require(Shared:WaitForChild("Progression"):WaitForChild("TimeUtil"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
@@ -44,6 +50,7 @@ local Card = require(script.Parent.Shop.Card)
 local YourLook = require(script.Parent.Shop.YourLook)
 
 local ShopRequest = Net.event("ShopRequest")
+local FateRemote = Net.event("Fate")
 local ProfileRequest = Net.event("ProfileRequest")
 local LocalPlayer = Players.LocalPlayer
 
@@ -92,8 +99,10 @@ local showing = "all" -- ShopBrowse.SHOW
 local sorting = "order" -- ShopBrowse.SORTS
 local searching = ""
 local newHere: { string } = {} -- the new cards dealt in this suit, seen once you leave it
+local fateDealt: string? = nil -- the card Fate just dealt, turned over once the profile says it is yours
 local arrange: () -> ()
 local price: (Cosmetics.Item) -> number?
+local isDeal: (Cosmetics.Item) -> boolean
 
 local function owns(profile, item): boolean
 	if item.source == "vip" then
@@ -122,6 +131,14 @@ local function formatTime(seconds: number): string
 	return string.format("%dh %02dm", hours, minutes)
 end
 
+-- A longer wait: days and hours (or hours and minutes under a day).
+local function formatSpan(seconds: number): string
+	if seconds < 86400 then
+		return formatTime(seconds)
+	end
+	return string.format("%dd %dh", math.floor(seconds / 86400), math.floor((seconds % 86400) / 3600))
+end
+
 local function capitalised(text: string): string
 	return string.upper(string.sub(text, 1, 1)) .. string.sub(text, 2)
 end
@@ -146,7 +163,7 @@ local function suits(): { Cosmetics.Suit }
 	local list = {}
 	for _, suit in ipairs(Cosmetics.SUITS) do
 		local show
-		if suit.id == "today" then
+		if suit.id == "today" or suit.id == "fate" or suit.id == "ledger" then
 			show = true
 		elseif suit.id == "robux" then
 			show = onSale()
@@ -212,9 +229,9 @@ local function chipFor(profile, item: Cosmetics.Item): (string, boolean)
 		return if profile.equipped[item.kind] == item.id then "Worn" else "Owned", false
 	elseif item.source == "vip" then
 		return "VIP", false
-	elseif not item.price then
+	elseif not price(item) then
 		return "Earned", false
-	elseif item.source == "rotation" and not ShopRotation.isFeatured(item.id, os.time()) then
+	elseif ShopRotation.rotates(item, os.time()) and not ShopRotation.isFeatured(item.id, os.time()) then
 		return "Not today", false
 	end
 	return tostring(ShopRotation.priceOf(item, os.time())), true
@@ -341,10 +358,13 @@ local function showAction(profile, item: Cosmetics.Item?)
 				emotesOwned(profile)
 			)
 			else "Earned by collecting emotes."
-	elseif not item.price then
+	elseif item.source == "season" and not price(item) then
+		closed("Season ledger")
+		actionNote.Text = "Earned on the Season ledger."
+	elseif not price(item) then
 		closed("Earned")
 		actionNote.Text = "Earned in play, never sold."
-	elseif item.source == "rotation" and not ShopRotation.isFeatured(item.id, os.time()) then
+	elseif ShopRotation.rotates(item, os.time()) and not ShopRotation.isFeatured(item.id, os.time()) then
 		closed("Not today")
 		actionNote.Text = "Only sold on a day it is in Today's hand."
 	elseif profile.coins < (price(item) :: number) then
@@ -370,7 +390,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 			then "Hold to buy. It goes on your emote wheel."
 			else "Hold to buy. You wear it at once."
 	end
-	if price(item) ~= item.price and not owns(profile, item) then
+	if isDeal(item) and not owns(profile, item) then
 		actionNote.Text = string.format("The day's deal: a quarter off its %d coins. ", item.price :: number)
 			.. actionNote.Text
 	end
@@ -431,6 +451,12 @@ function price(item: Cosmetics.Item): number?
 	return ShopRotation.priceOf(item, os.time())
 end
 
+-- The day's deal (sold for less than its price today).
+function isDeal(item: Cosmetics.Item): boolean
+	local now = price(item)
+	return item.price ~= nil and now ~= nil and now < item.price
+end
+
 local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, faceDown: boolean)
 	local text, coin = chipFor(profile, item)
 	local fresh = isNew(profile, item)
@@ -445,7 +471,7 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 		chipCoin = coin,
 		faceDown = faceDown,
 		isNew = fresh,
-		offer = if price(item) ~= item.price then "25% OFF" else nil,
+		offer = if isDeal(item) then "25% OFF" else nil,
 		wished = profile.wishlist ~= nil and profile.wishlist[item.id] == true,
 		onWish = if ShopBrowse.wishable(item) and not owns(profile, item)
 			then function(on: boolean)
@@ -461,6 +487,204 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 	if item.id == pickedId then
 		card:setPicked(true)
 	end
+end
+
+-- A row over the cards, in the table (for Fate's draw and the Ledger's standing).
+local function banner(order: number, height: number): Frame
+	return Kit.frame({
+		Name = "Banner",
+		Size = UDim2.new(1, 0, 0, height),
+		LayoutOrder = order,
+		Parent = tableScroll,
+	})
+end
+
+-- Fate: the draw, and the week's deck face up with each card's odds.
+local function buildFate(profile)
+	local now = os.time()
+	local deck = Fate.deck(Fate.week(now))
+	local ownsItem = function(item: Cosmetics.Item): boolean
+		return owns(profile, item)
+	end
+	local odds = Fate.odds(deck, ownsItem)
+	local left = 0
+	for _ in pairs(odds) do
+		left += 1
+	end
+	local row = banner(1, T.touch)
+	local size = UDim2.new(0, 280, 1, 0)
+	if left == 0 then
+		local button =
+			Kit.button({ text = "Every card is yours", variant = "secondary", size = "m", Size = size, Parent = row })
+		Kit.setEnabled(button, false)
+	elseif profile.coins < Fate.PRICE then
+		local button = Kit.button({
+			text = string.format("%d more coins", Fate.PRICE - profile.coins),
+			variant = "secondary",
+			size = "m",
+			Size = size,
+			Parent = row,
+		})
+		Kit.setEnabled(button, false)
+	else
+		local button = Kit.hold(
+			{
+				Name = "Draw",
+				text = string.format("Draw  ·  %d", Fate.PRICE),
+				icon = "coin",
+				variant = "primary",
+				size = "m",
+				Size = size,
+				Parent = row,
+			},
+			HOLD_SECONDS,
+			function()
+				ShopRequest:FireServer({ action = "fate" })
+			end
+		)
+		firstButton = button
+	end
+	Kit.label({
+		Text = string.format("%d of %d cards still to be dealt to you", left, #deck),
+		font = "bodyItalic",
+		color = C.dim,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(280 + T.space.l, 0),
+		Size = UDim2.new(1, -(280 + T.space.l), 1, 0),
+		Parent = row,
+	})
+	local grid = section("This week's deck", 2)
+	for index, id in ipairs(deck) do
+		local item = Cosmetics.byId(id)
+		if item then
+			local dealt = fateDealt == id and owns(profile, item)
+			deal(profile, item, grid, index, dealt)
+			local chance = odds[id]
+			if chance then
+				cards[id]:setChip(string.format("%d%%", math.max(1, math.floor(chance * 100 + 0.5))), false)
+			end
+		end
+	end
+	-- The card just dealt: turned over, and shown on you.
+	local dealtCard = if fateDealt then cards[fateDealt] else nil
+	if dealtCard and dealtCard.faceDown then
+		fateDealt = nil
+		dealtCard:turn(function()
+			pick(dealtCard.item)
+		end)
+	end
+	noteLabel.Text = string.format(
+		"Each draw deals a card you do not own.  ·  A new deck in %s",
+		formatSpan(TimeUtil.secondsToNextWeek(now))
+	)
+end
+
+-- The Ledger: the season, how far you are, what each tier pays; its things as cards.
+local function buildLedger(profile)
+	local now = os.time()
+	local season = Ledger.season(now)
+	if season <= 0 then
+		noteLabel.Text = "The ledger opens with its first season."
+		return
+	end
+	local record = Ledger.view(profile.ledger, season)
+	local _, ends = Ledger.bounds(season)
+	local top = banner(1, 64)
+	Kit.text({ face = "Head", text = Ledger.name(season), size = 26, color = C.bone, Parent = top })
+	local into = record.points - record.tier * Ledger.PER_TIER
+	Kit.label({
+		Name = "Standing",
+		Text = if record.tier >= Ledger.TIERS
+			then string.format("Every tier written  ·  %d points", record.points)
+			else string.format(
+				"Tier %d of %d  ·  %d of %d points to the next",
+				record.tier,
+				Ledger.TIERS,
+				into,
+				Ledger.PER_TIER
+			),
+		color = C.dim,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(0, 34),
+		Size = UDim2.new(1, 0, 0, 20),
+		Parent = top,
+	})
+	local _, setMeter = Kit.meter({ Position = UDim2.new(0, 0, 1, -6), Parent = top })
+	setMeter(if record.tier >= Ledger.TIERS then 1 else into / Ledger.PER_TIER, false)
+	-- The thirty tiers, small, each with what it pays.
+	local holder = Kit.frame({
+		Name = "Tiers",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 2,
+		Parent = tableScroll,
+	})
+	Kit.grid(holder, UDim2.fromOffset(104, 58), T.space.s)
+	local things: { { tier: number, item: Cosmetics.Item } } = {}
+	for tier = 1, Ledger.TIERS do
+		local reward = Ledger.reward(season, tier)
+		local reached = tier <= record.tier
+		local tile = Kit.Base.make("Frame", {
+			Name = "Tier" .. tier,
+			BackgroundColor3 = C.void,
+			BackgroundTransparency = if reached then 0.1 else 0.5,
+			BorderSizePixel = 0,
+			LayoutOrder = tier,
+			Parent = holder,
+		})
+		Kit.Base.corner(tile, 4)
+		Kit.Base.stroke(tile, C.bone, 1, if reached then 0.2 else 0.8)
+		Kit.pad(tile, T.space.xs, T.space.s)
+		local item = if reward.item then Cosmetics.byId(reward.item) else nil
+		if item then
+			table.insert(things, { tier = tier, item = item })
+		end
+		Kit.label({
+			Text = string.format("TIER %d", tier),
+			font = "bodyBold",
+			size = "micro",
+			color = if reached then C.bone else C.dim,
+			AutomaticSize = Enum.AutomaticSize.None,
+			Size = UDim2.new(1, 0, 0, 16),
+			Parent = tile,
+		})
+		Kit.label({
+			Text = if item then item.name else string.format("%d coins", reward.coins or 0),
+			size = "small",
+			color = if reached then C.bone else C.dim,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.None,
+			Position = UDim2.fromOffset(0, 18),
+			Size = UDim2.new(1, 0, 0, 20),
+			Parent = tile,
+		})
+		if reached then
+			Kit.icon({
+				name = "check",
+				size = 14,
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.fromScale(1, 0),
+				Parent = tile,
+			})
+		end
+	end
+	if #things > 0 then
+		local grid = section("Earned on the ledger", 3)
+		for index, thing in ipairs(things) do
+			deal(profile, thing.item, grid, index, false)
+			if not owns(profile, thing.item) then
+				cards[thing.item.id]:setChip(string.format("Tier %d", thing.tier), false)
+			end
+		end
+	end
+	noteLabel.Text = string.format(
+		"%d points a case, +%d for a win, +%d a quest.  ·  Ends in %s",
+		Ledger.PLAY,
+		Ledger.WIN,
+		Ledger.QUEST,
+		formatSpan(math.max(0, ends - now))
+	)
 end
 
 -- Robux (only once something is on sale): coin packs, passes, the custom alias.
@@ -662,6 +886,10 @@ function ShopPanel.rebuild()
 			.. formatTime(ShopRotation.secondsLeft(now))
 	elseif currentSuit == "robux" then
 		buildRobux(profile)
+	elseif currentSuit == "fate" then
+		buildFate(profile)
+	elseif currentSuit == "ledger" then
+		buildLedger(profile)
 	elseif currentSuit == "sets" then
 		for index, set in ipairs(Sets.LIST) do
 			local have = Sets.progress(set, function(id: string): boolean
@@ -1056,6 +1284,12 @@ function ShopPanel.init()
 		Parent = lookPanel,
 	}, function()
 		openSheet(false)
+	end)
+	FateRemote.OnClientEvent:Connect(function(payload)
+		if type(payload) == "table" and type(payload.itemId) == "string" then
+			-- (turned over when the profile that owns it comes)
+			fateDealt = payload.itemId
+		end
 	end)
 	ClientState.ProfileChanged:Connect(function()
 		if Router.isOpen("shop") then
