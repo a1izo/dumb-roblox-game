@@ -124,7 +124,7 @@ def report(shot, scene, step=0.2):
     lines = []
     for (slot, what), items in sorted(hits.items(), key=lambda kv: kv[1][0][0]):
         worst = max(items, key=lambda i: i[1])
-        lines.append(f"{items[0][0]:5.2f}-{items[-1][0]:5.2f}s {slot} into {what}: {worst[1]:.2f} deep ({worst[2]})")
+        lines.append(f"{items[0][0]:5.2f}-{items[-1][0]:5.2f}s {slot} into {what}: {worst[1]:.2f} deep ({worst[2]} at {worst[0]:.1f}s)")
     return lines
 
 

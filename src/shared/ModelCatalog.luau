@@ -47,6 +47,7 @@ return {
 	Chair = { size = { 1.8, 3.9, 1.8 }, pivot = "bottom", material = "Wood", collide = true, color = { 82, 45, 32 }, set = "Core", tris = 864 },
 	ChessKing = { size = { 0.88, 1.791, 0.88 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 23, 24, 21 }, set = "Core", tris = 812 },
 	Chip = { size = { 0.84, 0.165, 0.72 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 115, 93, 46 }, set = "Core", tris = 256 },
+	ChipBag = { size = { 0.92, 1.296, 0.42 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 146, 77, 51 }, set = "Core", tris = 648 },
 	Chochin = { size = { 0.84, 2.725, 1.1 }, pivot = "centre", material = "Fabric", collide = false, color = { 22, 19, 18 }, lights = { { at = { -0, -0.288, 0.13 }, brightness = 0.9, color = { 255, 150, 90 }, kind = "point", range = 12 } }, set = "Tokyo", tris = 464, glow = { { 240, 60, 40 } } },
 	ChocolateBar = { size = { 0.473, 1.095, 0.13 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 91, 41, 41 }, set = "Core", tris = 968 },
 	ClawMachine = { size = { 3.9, 7.3, 4.25 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 128, 77, 100 }, lights = { { at = { -0, 5.2, 0.175 }, brightness = 0.8, color = { 255, 120, 200 }, kind = "point", range = 8 } }, set = "Tokyo", tris = 1344, glow = { { 255, 150, 210 } } },
