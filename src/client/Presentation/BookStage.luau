@@ -58,17 +58,19 @@ local function buildSet(stage: any, page: Vector3)
 	local dark = Color3.fromRGB(9, 8, 10)
 	block(set, Vector3.new(60, 1, 60), CFrame.new(SET - Vector3.new(0, 0.5, 0)), dark)
 	block(set, Vector3.new(60, 1, 60), CFrame.new(SET + Vector3.new(0, 14, 0)), dark)
-	local lamp = block(set, Vector3.new(0.2, 0.2, 0.2), CFrame.lookAt(page + Vector3.new(0.6, 6, -1.4), page), dark)
+	-- The light hangs a little over the page. (A spotlight from higher up lit nothing in the game, which left
+	-- the Manual's whole shot black: a point light close over the book is what reads, its falloff giving the
+	-- pool of light in the dark.)
+	local lamp = block(set, Vector3.new(0.2, 0.2, 0.2), CFrame.new(page + Vector3.new(0.4, 3.2, -0.8)), dark)
 	lamp.Transparency = 1
+	lamp.CastShadow = false
 	-- (Each mood sets its own exposure: the lamp makes up for it, so the page reads in every phase.)
 	local exposure = math.clamp(Lighting.ExposureCompensation, -3, 3)
-	Create("SpotLight", {
-		Angle = 48,
-		Range = 14,
-		Brightness = LIGHT * 2 ^ -exposure,
+	Create("PointLight", {
+		Range = 9,
+		Brightness = LIGHT * 1.6 * 2 ^ -exposure,
 		Color = Color3.fromRGB(255, 240, 222),
-		Face = Enum.NormalId.Front,
-		Shadows = true,
+		Shadows = false,
 		Parent = lamp,
 	})
 	stage:add(set)
