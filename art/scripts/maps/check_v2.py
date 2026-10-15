@@ -605,6 +605,32 @@ def ramps(data, problems):
             problems.append(f"ramp at {r['a']}: {r['width']:.1f} wide is too narrow")
 
 
+def stair_ends(data, world, problems):
+    """Every flight (and slope) meets something to stand on at both ends: at its head a floor or a landing
+    at the head's height with room for a body over it, at its foot the same. A flight that climbs on into
+    the dark on purpose (a stairwell closed off by a gate) says so ("closed": the head is not checked)."""
+    for r in data["ramps"]:
+        (ax, az), (bx, bz) = r["a"], r["b"]
+        run = math.dist((ax, az), (bx, bz))
+        if run < 1e-6:
+            continue
+        dx, dz = (bx - ax) / run, (bz - az) / run
+        nx, nz = dz, -dx
+        ends = [("foot", (ax, az), r["y0"], -1)]
+        if not r.get("closed"):
+            ends.append(("head", (bx, bz), r["y1"], 1))
+        for label, (px, pz), y, out in ends:
+            missing = 0
+            for across in (-0.3, 0.0, 0.3):
+                x = px + dx * out * 0.8 + nx * across * r["width"]
+                z = pz + dz * out * 0.8 + nz * across * r["width"]
+                if not any(abs(h - y) <= 0.6 for h in world.tops(x, z)):
+                    missing += 1
+            if missing >= 2:
+                problems.append(f"stair {label} at ({px:.1f}, {y:.1f}, {pz:.1f}): nothing to stand on past it "
+                                f"({missing} of 3 spots)")
+
+
 # Props that stand on the floor and may overlap by design: a bike in its rack, tape strung
 # across a fence or a barricade.
 MAY_TOUCH = {frozenset(p) for p in (("Bicycle", "BikeRack"), ("PoliceTape", "SiteFence"),
@@ -873,7 +899,7 @@ def _rect_of(poly, grow):
 
 
 # Finds that are never right unless a venue says so (CHECKS["finds_ok"]).
-GATED_FINDS = {"buried", "float", "sunk"}
+GATED_FINDS = {"buried", "float", "sunk", "oneside", "pane", "bare"}
 
 
 def finds(data, problems):
@@ -902,6 +928,7 @@ def check(venue, full=True):
     print(f"{venue}: {len(world.solids)} solids, {len(data['zones'])} zones, {len(data['lights'])} lights")
     contract(data, world, zones, problems)
     ramps(data, problems)
+    stair_ends(data, world, problems)
     overlaps(data, problems)
     doorways(data, problems)
     crowd_and_traffic(data, world, zones, problems)

@@ -467,6 +467,9 @@ LIBRARY = {
     "PlasterDark": surface("beige_wall_001", (46, 50, 56), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=22),
     "PlasterLight": surface("beige_wall_001", (150, 144, 132), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=23),
     "PlasterGrey": surface("beige_wall_001", (104, 110, 120), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=42),
+    # The Campus's rooms: a warm cream over the dado, and the 1960s block's painted sage dado.
+    "PlasterCream": surface("beige_wall_001", (168, 156, 132), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=108),
+    "PlasterGreen": surface("beige_wall_001", (92, 106, 96), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=109),
     # (The scan's own normal map has its red and green swapped, and its height map is blank: both come from
     # the height art/scripts/heightmap.py rebuilt. StoneRelief is the same wall where its joints are cut
     # into the mesh, maps/relief.py.)

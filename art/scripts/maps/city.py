@@ -348,6 +348,9 @@ def slope(s, g, a, b, y0, y1, width, mat="PaversWarm", side_mat="Stone", name=No
         for p, q, out in ((pa_l, pb_l, n), (pa_r, pb_r, (-n[0], -n[1]))):
             yp, yq = y0, y1
             quad = [(p[0], base, p[1]), (q[0], base, q[1]), (q[0], yq, q[1]), (p[0], yp, p[1])]
+            # At its low end the side is only a point high: a triangle (with the corner twice, its first three
+            # points made no normal to face it by, and one side faced in).
+            quad = [v for k, v in enumerate(quad) if v != quad[k - 1]]
             nn = cross(sub(quad[1], quad[0]), sub(quad[2], quad[0]))
             if nn[0] * out[0] + nn[2] * out[1] < 0:
                 quad.reverse()

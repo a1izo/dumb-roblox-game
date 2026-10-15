@@ -20,6 +20,7 @@ import random
 
 from maps import city, kit
 from maps import geo2d as g2
+from maps.mesher import cross, dot, sub
 from maps.venues.campus import fit
 from maps.venues.campus import plan as P
 
@@ -56,18 +57,121 @@ def along(r, face, c):
     return a[1] - c
 
 
-def spaced(length, avoid, width=4.0, spacing=9.0, margin=5.0, gap=2.5):
-    """Window positions along a wall of `length`, clear of the openings avoid [(at, w)]."""
+JOIN_CLEAR = 1.2  # studs kept between a window's side and an inner wall meeting the outer one
+
+
+def spaced(length, avoid, width=4.0, spacing=9.0, margin=5.0, gap=2.5, joins=()):
+    """Window positions along a wall of `length`, clear of the openings avoid [(at, w)] by `gap` (or by their
+    own, [(at, w, gap)]), and centred in the bays between `joins` (where inner walls meet this wall: a window
+    never straddles one)."""
+    bays, lo = [], margin
+    for j in sorted(joins):
+        bays.append((lo, j - width / 2 - JOIN_CLEAR))
+        lo = j + width / 2 + JOIN_CLEAR
+    bays.append((lo, length - margin))
     spots = []
-    count = int((length - margin * 2) // spacing) + 1
-    if count < 1:
-        return spots
-    start = (length - (count - 1) * spacing) / 2
-    for i in range(count):
-        at = start + i * spacing
-        if all(abs(at - a_at) > a_w / 2 + width / 2 + gap for a_at, a_w in avoid):
-            spots.append(at)
+    for b0, b1 in bays:
+        if b1 < b0 - 1e-6:
+            continue
+        count = int((b1 - b0) // spacing) + 1
+        start = (b0 + b1) / 2 - (count - 1) * spacing / 2
+        for i in range(count):
+            at = start + i * spacing
+            if all(abs(at - a[0]) > a[1] / 2 + width / 2 + (a[2] if len(a) > 2 else gap) for a in avoid):
+                spots.append(at)
     return spots
+
+
+def blocked_on(a, b, length, boxes=None):
+    """[(centre along the wall a..b, width)] of what stands against it (fit.BLOCKERS, or `boxes`), for avoid."""
+    tx, tz = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+    out = []
+    for box in fit.BLOCKERS if boxes is None else boxes:
+        x0, z0, x1, z1 = box[:4]
+        corners = [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
+        offs = [abs((p[0] - a[0]) * -tz + (p[1] - a[1]) * tx) for p in corners]
+        if min(offs) > T / 2 + 1.0:
+            continue
+        us = [(p[0] - a[0]) * tx + (p[1] - a[1]) * tz for p in corners]
+        lo, hi = max(min(us), 0.0), min(max(us), length)
+        if hi > lo:
+            out.append(((lo + hi) / 2, hi - lo) + tuple(box[4:5]))
+    return out
+
+
+def joins_on(a, b, length):
+    """How far along the wall a..b (its centre line) the inner walls built so far meet it."""
+    tx, tz = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+    out = []
+    for pa, pb, thick in fit.JOINS:
+        for p in (pa, pb):
+            u = (p[0] - a[0]) * tx + (p[1] - a[1]) * tz
+            off = abs((p[0] - a[0]) * -tz + (p[1] - a[1]) * tx)
+            if -0.5 <= u <= length + 0.5 and off <= T / 2 + 0.8:
+                out.append(u)
+    return out
+
+
+ROOM_DEPTH = 2.2  # how deep the shallow room behind an upper storey's lit window is
+
+
+def _flat(s, mat, pts, up):
+    """A flat horizontal polygon facing up (or down)."""
+    p0, p1, p2 = pts[0], pts[1], pts[2]
+    ny = (p1[2] - p0[2]) * (p2[0] - p0[0]) - (p1[0] - p0[0]) * (p2[2] - p0[2])
+    if (ny > 0) != up:
+        pts = pts[:1] + pts[:0:-1]  # (the first point stays first: the face is fanned from it)
+    s.polygon(mat, pts)
+
+
+ROOM_LOOKS = {  # back, sides, ceiling
+    "lit": ("RoomLitBack", "RoomLitSide", "RoomLitCeiling"),
+    "cool": ("RoomCoolBack", "RoomCoolSide", "RoomCoolCeiling"),
+}
+
+
+def window_room(s, a, t, n, at, w, sill, head, rng, look="lit"):
+    """A shallow room behind an upper window's clear glass (the storeys above the ground floor are never
+    visited), lit warm or cool: back wall, sides, floor and ceiling; now and then a curtain half drawn, or a
+    dark shape of furniture against the back."""
+    back_mat, side_mat, ceiling_mat = ROOM_LOOKS[look]
+    lo, hi = sill - 0.6, head + 0.9
+    u0, u1 = at - w / 2 - 0.5, at + w / 2 + 0.5
+    face_in = -T / 2 - 0.02
+    back = face_in - ROOM_DEPTH
+
+    def p(u, y, d):
+        return _world(a, t, n, u, y, d)
+
+    _face(s, back_mat, [p(u0, lo, back), p(u1, lo, back), p(u1, hi, back), p(u0, hi, back)], (n[0], n[2]))
+    for u, side in ((u0, 1), (u1, -1)):
+        _face(s, side_mat, [p(u, lo, face_in), p(u, lo, back), p(u, hi, back), p(u, hi, face_in)],
+              (t[0] * side, t[2] * side))
+    _flat(s, "WoodFloor", [p(u0, lo, face_in), p(u1, lo, face_in), p(u1, lo, back), p(u0, lo, back)], True)
+    _flat(s, ceiling_mat, [p(u0, hi, face_in), p(u1, hi, face_in), p(u1, hi, back), p(u0, hi, back)], False)
+    roll = rng.random()
+    if roll < 0.35:
+        cut = at - w / 2 + w * rng.uniform(0.3, 0.6)
+        _face(s, rng.choice(("Fabric", "CreamTrim")), [p(at - w / 2, sill, face_in - 0.15), p(cut, sill, face_in - 0.15),
+                                                       p(cut, head, face_in - 0.15), p(at - w / 2, head, face_in - 0.15)],
+              (n[0], n[2]))
+    elif roll < 0.65:
+        tall = rng.uniform(1.6, 3.2)
+        mid = at + rng.uniform(-0.5, 0.5)
+        _face(s, "RoomDark", [p(mid - w * 0.3, lo, back + 0.05), p(mid + w * 0.3, lo, back + 0.05),
+                              p(mid + w * 0.3, lo + tall, back + 0.05), p(mid - w * 0.3, lo + tall, back + 0.05)],
+              (n[0], n[2]))
+
+
+# Built last: the shells wait (PENDING) until every inner wall of the build is known (flush).
+PENDING = []
+
+
+def flush(s):
+    """Puts up the outer walls asked for so far (see shell)."""
+    for args, kwargs in PENDING:
+        _shell(s, *args, **kwargs)
+    PENDING.clear()
 
 
 # Arched heads ---------------------------------------------------------------------------------------------
@@ -95,7 +199,9 @@ def _face(s, mat, pts, normal):
     vx, vy, vz = p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]
     nx, nz = uy * vz - uz * vy, ux * vy - uy * vx
     if nx * normal[0] + nz * normal[1] < 0:
-        pts = list(reversed(pts))
+        # Turned round with the first point kept first: the face is fanned from it, and from a spandrel's
+        # corner the whole arc can be seen (fanned from the arch's apex, part of it came out back to front).
+        pts = pts[:1] + pts[:0:-1]
     s.polygon(mat, pts)
 
 
@@ -112,6 +218,20 @@ def arch_head(s, a, t, n, thick, u, w, top, rise, outer, inner, stone=STONE, rin
             corner = _world(a, t, n, u + sign * hw, top, off)
             arc = [_world(a, t, n, u + sign * cu_, spring + cy, off) for cu_, cy in curve]
             _face(s, mat, [corner] + arc, normal)
+    # The arch's underside, through the wall from one face to the other, looking at the arc's centre (without
+    # it, a look up into an arch saw the backs of both spandrels: 2026-10-15).
+    off = thick / 2 + 0.04
+    for sign in (1, -1):
+        centre = _world(a, t, n, u + sign * cu, spring, 0.0)
+        for k in range(len(curve) - 1):
+            (u0, y0), (u1, y1) = curve[k], curve[k + 1]
+            quad = [_world(a, t, n, u + sign * u0, spring + y0, off), _world(a, t, n, u + sign * u1, spring + y1, off),
+                    _world(a, t, n, u + sign * u1, spring + y1, -off), _world(a, t, n, u + sign * u0, spring + y0, -off)]
+            normal = cross(sub(quad[1], quad[0]), sub(quad[3], quad[0]))
+            mid = tuple(sum(p[i] for p in quad) / 4 for i in range(3))
+            if dot(normal, sub(centre, mid)) < 0:
+                quad = quad[:1] + quad[:0:-1]
+            s.polygon(outer, quad)
     # The voussoirs: a band round the arch on the outside face.
     for sign in (1, -1):
         for k in range(len(curve) - 1):
@@ -130,7 +250,13 @@ def arch_head(s, a, t, n, thick, u, w, top, rise, outer, inner, stone=STONE, rin
 # The outer walls -----------------------------------------------------------------------------------------
 
 
-def shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storeys=None, arch="pointed",
+def shell(s, r, eaves, doors, **kwargs):
+    """A building's outer walls (see _shell): put up by flush(), once the build's inner walls are all known,
+    so no window lands where one of them meets the outer wall."""
+    PENDING.append(((r, eaves, doors), kwargs))
+
+
+def _shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storeys=None, arch="pointed",
           ground_windows=("n", "e", "s", "w"), upper_windows=("n", "e", "s", "w"), window_w=3.6, spacing=9.0,
           door_top=fit.DOOR_H, lit=0.4, seed=1, skip=(), gaps=None, plinth=True, cornice=True, faces=None,
           avoid=None, pane=None, trim=STONE, see_through=False):
@@ -167,7 +293,12 @@ def shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storey
         if face == "w" and "n" in skip:
             b = (b[0], r[1])
         length, t, n, rot = kit.wall_frame(a, b)
+        joins = joins_on(a, b, length)
+        blocked = blocked_on(a, b, length)
+        wells = blocked_on(a, b, length, fit.WELLS)
+        low = blocked_on(a, b, length, fit.LOW_BLOCKERS)
         ops, arches = [], []
+        rooms = []
         door_spans = []
         for f, c, w in doors:
             if f != face:
@@ -179,7 +310,7 @@ def shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storey
             if rise:
                 arches.append((at, w, door_top + rise, rise))
             door_spans.append((at, w))
-        door_spans += (avoid or {}).get(face, [])
+        door_spans += (avoid or {}).get(face, []) + blocked
         for u0, u1 in (gaps or {}).get(face, []):
             ops.append({"at": (u0 + u1) / 2, "w": u1 - u0, "bottom": 0.0, "top": eaves, "kind": "gap"})
             door_spans.append(((u0 + u1) / 2, u1 - u0 + 4))
@@ -193,22 +324,28 @@ def shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", storey
             if head - sill < 3:
                 continue
             rise = 0.0 if arch is None else (window_w / 2 if arch == "round" else window_w * 0.6)
-            for at in spaced(length, door_spans, window_w, spacing):
+            for at in spaced(length, door_spans + (low if ground else wells), window_w, spacing, joins=joins):
                 glass = pane(face, at, level_i) if (pane and not ground) else None
                 if glass is None and ground:
                     glass = "Glass"
                 elif glass is None:
                     roll = rng.random()
                     glass = "WindowLit" if roll < lit else ("WindowCool" if roll < lit + 0.12 else "WindowDark")
+                    if glass in ("WindowLit", "WindowCool"):
+                        # A lit room seen through the glass, not a glowing pane.
+                        rooms.append((at, window_w, sill, head, "lit" if glass == "WindowLit" else "cool"))
+                        glass = "WindowGlass"
                 ops.append({"at": at, "w": window_w, "bottom": sill, "top": head, "kind": "window", "frame": trim,
                             "mullions": "BlackMetal", "cols": 2 if window_w < 5 else 3, "rows": 3, "glass": glass,
                             "sill": trim, "casing": 0.0 if rise else 0.35, "see_through": see_through and ground})
                 if rise:
                     arches.append((at, window_w, head, rise))
-        kit.wall(s, a, b, eaves, thick=T, core=brick, side_n=brick, side_s=inside, openings=ops,
-                 trim_s={"base": "BlackTrim", "grime": True})
+        face_in, trim_in = fit.dressed(inside, {"base": "BlackTrim", "grime": True})
+        kit.wall(s, a, b, eaves, thick=T, core=brick, side_n=brick, side_s=face_in, openings=ops, trim_s=trim_in)
         for at, w, top, rise in arches:
             arch_head(s, a, t, n, T, at, w, top, rise, brick, inside)
+        for at, w, sill, head, look in rooms:
+            window_room(s, a, t, n, at, w, sill, head, rng, look)
         if plinth:
             cursor = 0.0
             profile = [(o + T / 2, y) for o, y in ((0, 0), (0.35, 0), (0.35, 1.3), (0.1, 1.6), (0, 1.7))]
@@ -238,6 +375,10 @@ def buttress(s, x, z, face_dir, h, w=1.6, depth=1.6, mat="BrickRed"):
     (x, z), h tall with a sloped stone top and a stone base."""
     rot = g2.rot_of((face_dir[1], -face_dir[0]))
     cx, cz = x + face_dir[0] * depth / 2, z + face_dir[1] * depth / 2
+    # (No window behind it, nor half behind it: a little clear of it is enough.)
+    hx = abs(face_dir[0]) * depth / 2 + abs(face_dir[1]) * w / 2
+    hz = abs(face_dir[1]) * depth / 2 + abs(face_dir[0]) * w / 2
+    fit.BLOCKERS.append((cx - hx, cz - hz, cx + hx, cz + hz, 0.4))
     s.box(mat, (cx, h / 2, cz), (w, h, depth), rot, collide=True)
     s.box(STONE, (cx, 0.8, cz), (w + 0.3, 1.6, depth + 0.3), rot)
     top = [(x + face_dir[0] * depth + dx, h, z + face_dir[1] * depth + dz) for dx, dz in
@@ -257,9 +398,27 @@ def roof_collider(s, r, eaves):
 
 
 def _plane(s, pts, top_mat=SNOW, under="Slate", lift=0.35):
-    """A roof plane: its snowy top face, and its underside (seen under the eaves) just below."""
+    """A roof plane: its snowy top face, its underside (seen under the eaves) just below, and the edge between
+    them all round (open, it let a glancing look in between the two: 2026-10-15)."""
     s.polygon(top_mat, pts)
     s.polygon(under, [(x, y - lift, z) for x, y, z in reversed(pts)])
+    cx = sum(p[0] for p in pts) / len(pts)
+    cz = sum(p[2] for p in pts) / len(pts)
+    for k, p in enumerate(pts):
+        q = pts[(k + 1) % len(pts)]
+        out = ((p[0] + q[0]) / 2 - cx, (p[2] + q[2]) / 2 - cz)
+        _face(s, under, [p, q, (q[0], q[1] - lift, q[2]), (p[0], p[1] - lift, p[2])], out)
+
+
+# A gable's stone verge, in section: closed, so its back against the gable shows nothing hollow from under an
+# open roof.
+VERGE = [(0, 0), (0.4, 0), (0.4, 0.5), (0, 0.5), (0, 0)]
+
+
+def _gable_inside(s, mat, tri, out):
+    """A gable's inside face, a hair in from its outside one: under an open roof (the red gate's passage) it is
+    seen from below, and one-sided it was a hole onto the sky (2026-10-15)."""
+    _face(s, mat, [(x - out[0] * 0.03, y, z - out[1] * 0.03) for x, y, z in tri], (-out[0], -out[1]))
 
 
 def gable_roof(s, r, eaves, rise, gable="BrickRed", overhang=1.3, along_x=None):
@@ -279,10 +438,11 @@ def gable_roof(s, r, eaves, rise, gable="BrickRed", overhang=1.3, along_x=None):
         for x, out in ((x0, (-1, 0)), (x1, (1, 0))):
             city_tri = [(x, eaves, z0), (x, eaves, z1), (x, eaves + rise - 0.3, zm)]
             _face(s, gable, city_tri, out)
+            _gable_inside(s, gable, city_tri, out)
             out3 = (out[0], 0.0, out[1])
-            s.sweep(STONE, (x, eaves, z0), (x, eaves + rise, zm), [(0, 0), (0.4, 0), (0.4, 0.5), (0, 0.5)], out3,
+            s.sweep(STONE, (x, eaves, z0), (x, eaves + rise, zm), VERGE, out3,
                     caps=True)
-            s.sweep(STONE, (x, eaves + rise, zm), (x, eaves, z1), [(0, 0), (0.4, 0), (0.4, 0.5), (0, 0.5)], out3,
+            s.sweep(STONE, (x, eaves + rise, zm), (x, eaves, z1), VERGE, out3,
                     caps=True)
         s.tube(STONE, ridge[0], ridge[1], 0.3, 6)
         s.tube(SNOW, (ridge[0][0], ridge[0][1] + 0.3, zm), (ridge[1][0], ridge[1][1] + 0.3, zm), 0.28, 5)
@@ -294,7 +454,9 @@ def gable_roof(s, r, eaves, rise, gable="BrickRed", overhang=1.3, along_x=None):
         _plane(s, [west[0], ridge[1], ridge[0], west[1]])
         _plane(s, [east[0], ridge[0], ridge[1], east[1]])
         for z, out in ((z0, (0, -1)), (z1, (0, 1))):
-            _face(s, gable, [(x0, eaves, z), (x1, eaves, z), (xm, eaves + rise - 0.3, z)], out)
+            tri = [(x0, eaves, z), (x1, eaves, z), (xm, eaves + rise - 0.3, z)]
+            _face(s, gable, tri, out)
+            _gable_inside(s, gable, tri, out)
         s.tube(STONE, ridge[0], ridge[1], 0.3, 6)
         s.tube(SNOW, (xm, ridge[0][1] + 0.3, ridge[0][2]), (xm, ridge[1][1] + 0.3, ridge[1][2]), 0.28, 5)
     roof_collider(s, r, eaves)

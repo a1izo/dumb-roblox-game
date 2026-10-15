@@ -13,28 +13,82 @@ The Faculty of Science (理学部), red brick with round-arched windows:
   (a sheet on one).
 - The specimen room is lined with jars; the lecture room is shut."""
 
-from maps import kit
+from maps import city, kit
 from maps.venues.campus import fit, masonry
 from maps.venues.campus import plan as P
 
 C = P.CEIL
 
 
-def ceiling(s, r, mat="Ceiling"):
+def ceiling(s, r, mat="Ceiling", holes=()):
     x0, z0, x1, z1 = r
-    fit.ceiling_faces(s, P.box(x0, z0, x1, z1), C, mat)
+    fit.ceiling_faces(s, P.box(x0, z0, x1, z1), C, mat, holes=[P.box(*h) for h in holes])
     s.collider(((x0 + x1) / 2, C + 0.5, (z0 + z1) / 2), (x1 - x0, 1.0, z1 - z0), 0, True, None)
 
 
-def closed_stair(s, g, x, z_foot, z_top, width=5.0, landing_z=None, mat="Stone", side="WoodPanel"):
-    """A stair up to the storeys nobody visits: it climbs from z_foot to z_top (reaching 11), a
-    landing block beyond it against the wall, its foot roped off."""
-    fit.stairs(s, g, (x, z_foot), (x, z_top), 0.0, 11.0, width, mat, side, step=0.7)
-    if landing_z is not None:
-        z0, z1 = sorted((z_top, landing_z))
-        s.box(mat, (x, 5.5, (z0 + z1) / 2), (width, 11.0, z1 - z0), collide=True, mats={"+y": mat})
+HALF = P.GF / 2  # a closed stair's half landing
+SHAFT = 9.0  # how high the dark stairwell rises over the ceiling's opening
+
+
+def stair_well(x, z_foot, z_top, width=5.0):
+    """The opening in the ceiling over a closed stair's upper flight (x0, z0, x1, z1): the one against the
+    wall, at x."""
+    return (x - width / 2, min(z_foot, z_top), x + width / 2, max(z_foot, z_top))
+
+
+def closed_stair(s, g, x, z_foot, z_top, width=5.0, landing_z=None, mat="Stone", side="WoodPanel", turn=-1,
+                 face="PlasterCream"):
+    """A stair up to the storeys nobody visits, its foot roped off: a flight on the hall's side (`turn`: -1
+    west of x, 1 east) from z_foot to a half landing at z_top (against the wall at landing_z), and the upper
+    flight turning back against the wall (at x) over a solid base, climbing on up through an opening in the
+    ceiling (stair_well) into a dark stairwell; a locked steel gate across the landing at the upper flight's
+    foot. The upper flight's end towards the hall is finished like a wall (`face`, a wood dado), with a
+    cupboard door under the stairs."""
+    x1 = x + turn * width
+    fit.stairs(s, g, (x1, z_foot), (x1, z_top), 0.0, HALF, width, mat, side, step=0.7)
+    lx0, lx1 = min(x, x1) - width / 2, max(x, x1) + width / 2
+    z0, z1 = sorted((z_top, landing_z))
+    fit.BLOCKERS.append((lx0, z0, lx1, z1))  # (no window behind the landing)
+    s.box(mat, ((lx0 + lx1) / 2, HALF / 2, (z0 + z1) / 2), (lx1 - lx0, HALF, z1 - z0), collide=True,
+          mats={"+x": side, "-x": side, "+z": side, "-z": side})
+    # The upper flight's solid base, then the flight.
+    f0, f1 = sorted((z_foot, z_top))
+    s.box(side, (x, HALF / 2, (f0 + f1) / 2), (width, HALF, f1 - f0), collide=True, skip=("+y",))
+    fit.stairs(s, g, (x, z_top), (x, z_foot), HALF, P.GF, width, mat, side, step=0.7, rails=(False, False))
+    s.ramps[-1]["closed"] = True  # (it climbs on into the dark: check_v2 looks for no floor at its head)
+    # Its end towards the hall: a wall face up to the ceiling, a dado, the cupboard door under the stairs.
+    out = 1 if z_foot > z_top else -1
+    ez = z_foot + out * 0.08
+    s.box(face, (x, C / 2, ez), (width, C, 0.16), skip=("-y", "+y"))
+    s.box("WoodPanel", (x, 2.0, ez + out * 0.04), (width, 4.0, 0.12), skip=("-y",))
+    s.box("BlackTrim", (x, 4.05, ez + out * 0.06), (width, 0.12, 0.16))
+    fit.closed_door(s, x, ez + out * 0.1, 180 if out > 0 else 0, 0.0, 3.2, "WoodPanel")
+    wx0, wz0, wx1, wz1 = stair_well(x, z_foot, z_top, width)
+    fit.WELLS.append((wx0, wz0, wx1, wz1))
+    top = C + SHAFT
+    for p, q, out in (((wx0, wz0), (wx1, wz0), (0, 1)), ((wx1, wz0), (wx1, wz1), (-1, 0)),
+                      ((wx1, wz1), (wx0, wz1), (0, -1)), ((wx0, wz1), (wx0, wz0), (1, 0))):
+        city.vquad(s, "CoreDark", p, q, C, top, out)
+    city.down_face(s, "CoreDark", P.box(wx0, wz0, wx1, wz1), top)
+    # The gate across the landing, at the second flight's foot: bars, rails, a chain and its padlock.
+    gz = z_top + (0.3 if z_landing_side(z_top, landing_z) > 0 else -0.3)
+    gx0, gx1 = x - width / 2 + 0.15, x + width / 2 - 0.15
+    bars = int((gx1 - gx0) / 0.45)
+    for k in range(bars + 1):
+        bx = gx0 + (gx1 - gx0) * k / bars
+        s.box("DarkMetal", (bx, HALF + 3.1, gz), (0.12, 6.2, 0.12))
+    for y in (HALF + 0.3, HALF + 5.9):
+        s.box("DarkMetal", ((gx0 + gx1) / 2, y, gz), (gx1 - gx0 + 0.2, 0.22, 0.2))
+    s.box("Steel", (x + 0.6, HALF + 3.0, gz), (1.6, 0.18, 0.3), 25.0)
+    s.box("Brass", (x + 0.6, HALF + 2.6, gz), (0.45, 0.55, 0.25))
+    s.collider((x, HALF + 3.1, gz), (gx1 - gx0, 6.2, 0.4), 0.0, False, None)
     dz = 0.4 if z_top < z_foot else -0.4
-    fit.roped_off(s, (x - width / 2, z_foot + dz), (x + width / 2, z_foot + dz))
+    fit.roped_off(s, (x1 - width / 2, z_foot + dz), (x1 + width / 2, z_foot + dz))
+
+
+def z_landing_side(z_top, landing_z):
+    """Which way from the flight's top the landing lies (+1 or -1 along z)."""
+    return 1 if landing_z > z_top else -1
 
 
 # Law & Letters ------------------------------------------------------------------------------------------
@@ -58,9 +112,10 @@ def law_rooms(s, g):
                    (P.PROFESSOR, "WoodFloorDark")):
         fit.floor_faces(s, P.rect_of(r), 0.0, mat)
     # Plaster over the hall, the seminar room and the professor's office; office tiles over student affairs.
-    ceiling(s, (LX0, LZ0, LX1, LZ1), "CeilingPlaster")
+    well = stair_well(-85.9, -85.6, -100.0)
+    ceiling(s, (LX0, LZ0, LX1, LZ1), "CeilingPlaster", holes=[well])
     fit.ceiling_faces(s, P.rect_of(P.AFFAIRS), C - 0.06, "Ceiling")
-    fit.coffers(s, *P.LAW_HALL, C, spacing=8.0, wall=0.3)
+    fit.coffers(s, *P.LAW_HALL, C, spacing=8.0, wall=0.3, holes=[well])
     fit.partition(s, (-98.0, LZ0), (-98.0, LZ1), 0.0, C, "PlasterLight", "PlasterLight",
                   doors=[(-90.0 - LZ0, 4.4), (-66.0 - LZ0, 5.0)], glass="clear", spans=[(30.0, 39.3), (45.9, 56.4)])
     fit.partition(s, (LX0, -80.0), (-98.0, -80.0), 0.0, C, "PlasterLight", "PlasterLight", doors=[(-126.0 - LX0, 4.4)])
@@ -70,7 +125,7 @@ def law_rooms(s, g):
         s.zone("interior", P.rect_of(r), 0.0, name=name)
     s.look_zone("UniversityCampus_Inside", (LX0, 0.0, LZ0), (LX1, C, LZ1))
     # The hall: the roped-off stair along its outer wall, benches, the faculty's notices.
-    closed_stair(s, g, -85.9, -85.6, -100.0, landing_z=LZ0)
+    closed_stair(s, g, -85.9, -85.6, -100.0, landing_z=LZ0, turn=-1)
     s.prop("Bench", -97.0 + 1.0, -58.0, -90)
     s.prop("DisplayCase", -97.0 + 1.3, -73.0, -90)
     s.prop("UmbrellaStand", -85.0, -53.0, 0)
@@ -104,6 +159,7 @@ def seminar(s):
     s.sheet(-136.0, top, -94.0, spare=True)
     # The chalkboard on the west wall, today's lecture still on it.
     s.box("WoodPanel", (LX0 + 0.3, 7.0, -94.0), (0.4, 6.0, 16.0))
+    fit.LOW_BLOCKERS.append((LX0, -102.0, LX0 + 0.5, -86.0, 0.6))  # (no window behind the board)
     s.box("BlackTrim", (LX0 + 0.52, 7.0, -94.0), (0.06, 5.2, 15.0))
     s.sign((LX0 + 0.6, 8.2, -94.0), -90, 13.0, 1.6, "刑法 第三十八条  罪を犯す意思", "GothamBold", (224, 224, 214), None)
     s.sign((LX0 + 0.6, 6.2, -94.0), -90, 13.0, 1.2, "INTENT  →  MOTIVE  →  OPPORTUNITY", "GothamBold", (200, 200, 190),
@@ -146,7 +202,7 @@ def science_rooms(s, g):
     for r, mat in ((P.SCI_HALL, "Terrazzo"), (P.FORENSIC, "VinylLab"), (P.CHEMISTRY, "VinylClinic"),
                    (P.SPECIMENS, "WoodFloorDark"), (P.LECTURE_ROOM, "WoodFloor")):
         fit.floor_faces(s, P.rect_of(r), 0.0, mat)
-    ceiling(s, (SX0, SZ0, SX1, SZ1))
+    ceiling(s, (SX0, SZ0, SX1, SZ1), holes=[stair_well(52.2, 90.0, 104.0)])
     fit.partition(s, (68.0, SZ0), (68.0, SZ1), 0.0, C, "TileWhite", "PlasterLight",
                   doors=[(55.0 - SZ0, 5.0), (90.0 - SZ0, 4.4)], glass="clear", spans=[(2.0, 14.3), (20.9, 33.8)])
     fit.partition(s, (68.0, 72.0), (SX1, 72.0), 0.0, C, "TileWhite", "PlasterLight", doors=[(88.0 - 68.0, 4.4)])
@@ -158,8 +214,10 @@ def science_rooms(s, g):
         s.zone("interior", P.rect_of(r), 0.0, name=name)
     s.look_zone("UniversityCampus_Inside", (SX0, 0.0, SZ0), (108.0, C, SZ1))
     s.look_zone("UniversityCampus_Inside", (108.0, 0.0, SZ0), (SX1, C, 72.0))
+    # (The shut lecture room too: nobody goes in, but no snow may fall in it, seen through its windows.)
+    s.look_zone("UniversityCampus_Inside", (108.0, 0.0, 72.0), (SX1, C, SZ1))
     # The hall: the roped-off stair at its south end, the back corridor's hood, a bench, notices.
-    closed_stair(s, g, 52.2, 90.0, 104.0, landing_z=SZ1, mat="TileMetroGrey")
+    closed_stair(s, g, 52.2, 90.0, 104.0, landing_z=SZ1, mat="TileMetroGrey", turn=1)
     s.hood(62.0, 104.0)
     s.prop("Bench", 50.4 + 0.9, 60.0, -90)
     s.prop("DisplayCase", 66.3, 80.0, 90)

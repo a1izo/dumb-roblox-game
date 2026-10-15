@@ -20,7 +20,7 @@ def science(s):
         s.prop("NoticeBoard", 50.2, z, -90)
     s.prop("Bench", 67.0, 45.0, 90)
     s.prop("WaterCooler", 66.9, 64.0, 90)
-    s.prop("BustStatue", 58.0, 106.4, 180)
+    s.prop("BustStatue", 62.2, 106.4, 180)  # (beside the stair's landing, not in it)
     s.prop("Plant", 65.4, 104.6, 0)
     # The forensic lab: two fume hoods on the south wall, a second microscope table, a whiteboard.
     for x in (80.0, 96.0):
@@ -48,7 +48,7 @@ def library(s):
 def law(s):
     s.prop("NoticeBoard", -97.2, -78.0, -90)
     s.prop("Bench", -96.8, -100.0, -90)
-    s.prop("BustStatue", -90.6, -106.6, 0)
+    s.prop("BustStatue", -95.6, -106.6, 0)  # (beside the stair's landing, not in it)
     # The seminar room: a lectern at the chalkboard, a coat stand by the door.
     s.prop("Lectern", -145.0, -86.0, -90)
     s.prop("CoatStand", -123.4, -85.4, 0)

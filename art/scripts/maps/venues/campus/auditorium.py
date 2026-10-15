@@ -179,6 +179,7 @@ def exam_hall(s):
         s.prop("Chair", x, -107.9, 180, 1.0, 1.2)
     # The blackboard and the great clock on the back wall; the room's name.
     s.box("WoodPanel", (-20.0, 9.0, Z0 + 0.3), (26.0, 8.0, 0.4))
+    fit.LOW_BLOCKERS.append((-33.0, Z0, -7.0, Z0 + 0.5, 0.6))  # (no window behind the board)
     s.box("BlackTrim", (-20.0, 9.0, Z0 + 0.52), (25.0, 7.2, 0.06))
     s.sign((-20.0, 10.2, Z0 + 0.6), 180, 22.0, 2.4, "入学試験  第一日", "GothamBold", (226, 226, 216), None)
     s.sign((-20.0, 7.6, Z0 + 0.6), 180, 22.0, 1.4, "試験開始  9:30     携帯電話の電源を切ること", "GothamBold",

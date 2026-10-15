@@ -298,9 +298,11 @@ class Scene(LayoutMixin):
             self.polygon(mat, pts, uv, tile)
             along += seg
         if caps:
-            # In profile order the end face points along -w (or +w when flipped).
-            cap_a = list(ends[0])
-            cap_b = list(ends[1])
+            # In profile order the end face points along -w (or +w when flipped). A closed profile (its last point
+            # its first again) has that point once in a cap.
+            closed = len(profile) > 3 and tuple(profile[0]) == tuple(profile[-1])
+            cap_a = list(ends[0][:-1] if closed else ends[0])
+            cap_b = list(ends[1][:-1] if closed else ends[1])
             if flip:
                 self.polygon(mat, list(reversed(cap_a)), tile=tile)
                 self.polygon(mat, cap_b, tile=tile)

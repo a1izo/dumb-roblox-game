@@ -1,9 +1,12 @@
 -- Rain and snow built from small cells round the camera, not one big box that follows it. Each
 -- cell looks at its own patch of ground (Weather/Probe): where the ground really is (a street, a
--- bridge, the river's surface, a floor) and how much of it is under a roof, an awning or a tree.
--- A cell's drops start high enough, and live exactly long enough, to land on that ground, with
--- a splash where they do; under cover the cell stops, so the rain ends at a roof's edge and
--- over the river it falls to the water, not to the street beside it.
+-- bridge, the river's surface, a floor) and, patch by patch (3 x 3 to a cell), which of it is open
+-- sky: not under a roof, an awning or a tree, and not in a room or near one (the look zones whose
+-- preset ends in "_Inside" or "_Under", grown by a margin). A cell sends its weather only from the
+-- largest rectangle of open patches, from under the lowest roof round it, and its drops start high
+-- enough, and live exactly long enough, to land on that ground, with a splash where they do; so the
+-- rain ends at a roof's edge, over the river it falls to the water, and no flake is ever born in a
+-- room or blown into one (2026-10-15: it was, on the Campus).
 --
 -- The rain is heavy and slanted (a storm) with gusts, in near cells of long bright streaks and a
 -- few coarse far cells for the veil of it behind; now and then the sky flashes and thunder rolls
@@ -13,6 +16,7 @@
 --
 -- Every number you might want to turn lives in TUNING.
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -61,13 +65,26 @@ local TUNING = {
 		fineSpeed = 3.8,
 		bigSize = 0.42,
 		fineSize = 0.17,
-		sway = Vector3.new(0.5, 0, 0.3), -- the steady drift (studs/s^2)
-		gust = 6,
+		-- The steady drift (studs/s^2) and the flakes' spread (degrees): together they carry a flake no more than
+		-- about 4 studs sideways in its fall, well inside the margin kept from every room.
+		sway = Vector3.new(0.12, 0, 0.08),
+		bigSpread = 6,
+		fineSpread = 8,
+		margin = 9, -- studs kept clear of every room (the snow's start, its drift and a gust's slant fit in it)
+		-- A gust: the fall leans downwind (the flakes start that much upwind, so they still land where they
+		-- should), comes heavier and a little quicker, and over open ground the snow blows along it.
+		gustSlant = 10, -- degrees at the height of a gust
+		gustRate = 0.5, -- more flakes, as a share
+		gustSpeed = 0.25, -- quicker, as a share
+		driftShare = 0.35, -- blowing snow over open ground, as a share of the rate (only in a gust)
+		driftSpeed = 7.5,
 	},
+	rainMargin = 5, -- studs the rain keeps clear of every room (its slant and its gusts fit in it)
 	gustEvery = { 20, 40 }, -- seconds between gusts (a gust builds, holds and fades over ~9 s)
 	probesPerFrame = 8, -- cells looked at a frame when new ground comes into range
 	refreshPerFrame = 0.5, -- and cells looked at again a frame, in turn (the world seldom changes)
 	updateEvery = 0.25, -- seconds between rate and wind updates
+	lookAgainAt = 8, -- studs up or down the camera moves before every cell is looked at again (over a jump)
 }
 
 local FALLBACK_TEXTURE = "rbxasset://textures/particles/smoke_main.dds"
@@ -75,6 +92,9 @@ local RING_FALLBACK = FALLBACK_TEXTURE
 local SLANT = CFrame.Angles(math.rad(TUNING.rain.slant.pitch), 0, math.rad(TUNING.rain.slant.roll))
 local FALL = -SLANT.UpVector -- the way a drop falls (a unit vector, going down)
 local WIND = Vector3.new(FALL.X, 0, FALL.Z).Unit -- the way the wind blows, across the ground
+local LEAN_AXIS = Vector3.new(0, 1, 0):Cross(WIND) -- the axis a gust leans the falling snow about
+-- How far upwind a drop is a stud higher (it falls along the slant: Probe.dropStart).
+local RAIN_LEAN = Vector3.new(-FALL.X, 0, -FALL.Z) / -FALL.Y
 
 type Layer = { part: Part, emitter: ParticleEmitter }
 type Cell = {
@@ -87,9 +107,15 @@ type Cell = {
 	cover: number,
 	weight: number,
 	probed: boolean,
+	-- Near cells: the open rectangle the weather comes from (world x0, z0, x1, z1), the lowest roof round it,
+	-- and whether the whole cell is open ground far from any room (blowing snow).
+	rect: { number }?,
+	ceiling: number?,
+	open: boolean,
 	rain: Layer?,
 	splash: Layer?,
 	flakes: { Layer }?,
+	drift: Layer?,
 }
 
 local container: Folder
@@ -108,11 +134,17 @@ local gustAt = 0
 local nextGust = os.clock() + 12
 local loop: Sound? = nil
 local windLoop: Sound? = nil
+local zones: { Probe.Zone } = {} -- the rooms of the map in the world (see the top)
+-- Where the near cells were last all looked at from (see step).
+local probedY: number? = nil
+local probedMargin, probedHeight = 0, 0
 
 -- Set from the debug panel (setDebug): rain and snow from 0 to 1 whatever the preset says
 -- (nil = the preset).
 RainController.debugRain = nil :: number?
 RainController.debugSnow = nil :: number?
+-- A gust held at this strength (0 to 1; nil: the weather's own), for the debug panel and checks.
+RainController.debugGust = nil :: number?
 
 local function rainAmount(): number
 	return RainController.debugRain or LightingController.preset().rain
@@ -243,9 +275,40 @@ local function flakeEmitter(part: Part, big: boolean): ParticleEmitter
 		LightInfluence = 0.35,
 		LightEmission = if big then 0.3 else 0.2,
 		Acceleration = snow.sway,
-		SpreadAngle = Vector2.new(if big then 18 else 26, if big then 18 else 26),
+		SpreadAngle = Vector2.new(
+			if big then snow.bigSpread else snow.fineSpread,
+			if big then snow.bigSpread else snow.fineSpread
+		),
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(-70, 70),
+		Texture = if flake ~= "" then flake else FALLBACK_TEXTURE,
+		Parent = part,
+	}) :: ParticleEmitter
+end
+
+-- Blowing snow: flakes streaming low over open ground along the wind, in a gust.
+local function driftEmitter(part: Part): ParticleEmitter
+	local snow = TUNING.snow
+	local flake = texture("CampusFlake", "Snowflake")
+	return Create("ParticleEmitter", {
+		EmissionDirection = Enum.NormalId.Front,
+		Speed = NumberRange.new(snow.driftSpeed * 0.8, snow.driftSpeed * 1.2),
+		Lifetime = NumberRange.new(0.7, 1.1),
+		Rate = 0,
+		Enabled = false,
+		Size = NumberSequence.new(snow.fineSize * 0.9),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.2, 0.45),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Color = ColorSequence.new(Color3.fromRGB(240, 244, 255)),
+		LightInfluence = 0.35,
+		LightEmission = 0.15,
+		Acceleration = Vector3.new(0, -0.6, 0),
+		SpreadAngle = Vector2.new(8, 22),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-120, 120),
 		Texture = if flake ~= "" then flake else FALLBACK_TEXTURE,
 		Parent = part,
 	}) :: ParticleEmitter
@@ -262,9 +325,13 @@ local function newCell(size: number): Cell
 		cover = 1,
 		weight = 1,
 		probed = false,
+		rect = nil,
+		ceiling = nil,
+		open = false,
 		rain = nil,
 		splash = nil,
 		flakes = nil,
+		drift = nil,
 	}
 end
 
@@ -289,6 +356,59 @@ local function ensureSnow(cell: Cell)
 	local part = holder("Snow", Vector3.new(cell.size, 1, cell.size))
 	cell.flakes =
 		{ { part = part, emitter = flakeEmitter(part, true) }, { part = part, emitter = flakeEmitter(part, false) } }
+	local low = holder("SnowDrift", Vector3.new(cell.size, 0.8, cell.size))
+	cell.drift = { part = low, emitter = driftEmitter(low) }
+end
+
+-- The open rectangle's middle and size (the whole cell for a far cell, which has none).
+local function area(cell: Cell): (number, number, number, number)
+	local rect = cell.rect
+	if rect then
+		return (rect[1] + rect[3]) / 2, (rect[2] + rect[4]) / 2, rect[3] - rect[1], rect[4] - rect[2]
+	end
+	return cell.x, cell.z, cell.size, cell.size
+end
+
+-- How far over its ground a near cell's weather may start (under the lowest roof round it), at most `wanted`.
+local function headroom(cell: Cell, wanted: number): number
+	local landing, ceiling = cell.landing, cell.ceiling
+	if landing and ceiling then
+		return math.min(wanted, ceiling - 1 - landing)
+	end
+	return wanted
+end
+
+-- Puts a cell's snow where it falls from, leaning downwind in a gust (the flakes start that much upwind,
+-- so they still land on the open ground they were given).
+local function placeSnow(cell: Cell)
+	local landing = cell.landing
+	local flakes = cell.flakes
+	if not landing or not flakes then
+		return
+	end
+	local snow = TUNING.snow
+	local x, z, w, d = area(cell)
+	local height = headroom(cell, snow.height)
+	local lean = math.rad(snow.gustSlant) * gust
+	local tilt = CFrame.fromAxisAngle(LEAN_AXIS, -lean)
+	local back = WIND * height * math.tan(lean)
+	local part = flakes[1].part
+	part.Size = Vector3.new(w, 1, d)
+	part.CFrame = CFrame.new(Vector3.new(x, landing + height, z) - back) * tilt
+	local quick = 1 + snow.gustSpeed * gust
+	local path = height / math.cos(lean)
+	for index, layer in ipairs(flakes) do
+		local speed = (if index == 1 then snow.bigSpeed else snow.fineSpeed) * quick
+		layer.emitter.Speed = NumberRange.new(speed * 0.97, speed * 1.03)
+		local life = path / speed
+		layer.emitter.Lifetime = NumberRange.new(life, life)
+	end
+	local drift = cell.drift
+	if drift then
+		local at = Vector3.new(x, landing + 0.6, z)
+		drift.part.Size = Vector3.new(w, 0.8, d)
+		drift.part.CFrame = CFrame.lookAt(at, at + WIND)
+	end
 end
 
 -- Puts a cell's emitters over the ground it has found: drops start where they will land.
@@ -298,33 +418,100 @@ local function place(cell: Cell, far: boolean)
 		return
 	end
 	local rain = TUNING.rain
+	local x, z, w, d = area(cell)
 	if cell.rain then
-		local height = if far then rain.farHeight else rain.height
-		local start, length = Probe.dropStart(cell.x, cell.z, landing, height, FALL)
+		local height = if far then rain.farHeight else headroom(cell, rain.height)
+		local start, length = Probe.dropStart(x, z, landing, height, FALL)
+		cell.rain.part.Size = Vector3.new(w, 1, d)
 		cell.rain.part.CFrame = CFrame.new(start) * SLANT
 		local life = length / rain.speed
 		cell.rain.emitter.Lifetime = NumberRange.new(life, life)
 	end
 	if cell.splash then
-		cell.splash.part.CFrame = CFrame.new(cell.x, landing + 0.07, cell.z)
+		cell.splash.part.Size = Vector3.new(w, 0.1, d)
+		cell.splash.part.CFrame = CFrame.new(x, landing + 0.07, z)
 	end
-	if cell.flakes then
-		local snow = TUNING.snow
-		cell.flakes[1].part.CFrame = CFrame.new(cell.x, landing + snow.height, cell.z)
-		local big = snow.height / snow.bigSpeed
-		local fine = snow.height / snow.fineSpeed
-		cell.flakes[1].emitter.Lifetime = NumberRange.new(big, big)
-		cell.flakes[2].emitter.Lifetime = NumberRange.new(fine, fine)
-	end
+	placeSnow(cell)
 end
 
 -- Looking at the ground ---------------------------------------------------------------------------
 
+-- Does a cell's square come within `margin` of a room?
+local function nearRoom(cell: Cell, margin: number): boolean
+	local reach = cell.size / 2 + margin
+	for _, zone in ipairs(zones) do
+		local p = zone.cf:PointToObjectSpace(Vector3.new(cell.x, zone.cf.Y, cell.z))
+		if math.abs(p.X) <= zone.half.X + reach and math.abs(p.Z) <= zone.half.Z + reach then
+			return true
+		end
+	end
+	return false
+end
+
+-- How a near cell is looked at in this weather: the margin kept from every room, how high the weather starts
+-- over the ground, whether a patch with air under it closes (the snow, which drifts), and the slant its fall
+-- comes down (the rain's; nil: straight down). See Probe.cell.
+local function shape(): (number, number, boolean, Vector3?)
+	local rain = rainAmount() > 0
+	if RainController.snowAmount() > 0 then
+		return TUNING.snow.margin,
+			if rain then math.max(TUNING.snow.height, TUNING.rain.height) else TUNING.snow.height,
+			true,
+			if rain then RAIN_LEAN else nil
+	end
+	return TUNING.rainMargin, TUNING.rain.height, false, RAIN_LEAN
+end
+
+-- Stops everything a cell sends at once (it was moved, or found to be under cover).
+local function silence(cell: Cell)
+	for _, layer in ipairs({ cell.rain, cell.splash, cell.drift } :: { Layer? }) do
+		if layer then
+			layer.emitter.Enabled = false
+			layer.emitter.Rate = 0
+		end
+	end
+	if cell.flakes then
+		for _, layer in ipairs(cell.flakes) do
+			layer.emitter.Enabled = false
+			layer.emitter.Rate = 0
+		end
+	end
+end
+
 local function probe(cell: Cell, far: boolean, originY: number)
-	local landing, cover = Probe.patch(cell.x, cell.z, cell.size, originY, Shelter.rayParams(), Shelter.index())
-	cell.landing = landing
-	cell.cover = cover
+	if far then
+		local landing, cover = Probe.patch(cell.x, cell.z, cell.size, originY, Shelter.rayParams(), Shelter.index())
+		cell.landing = landing
+		-- (A far cell near a room stays off: it would send its veil over the whole of its square.)
+		cell.cover = if nearRoom(cell, TUNING.rainMargin) then 1 else cover
+		cell.rect, cell.ceiling, cell.open = nil, nil, false
+	else
+		local margin, height, overhangs, lean = shape()
+		local landing, share, rect, ceiling, open = Probe.cell(
+			cell.x,
+			cell.z,
+			cell.size,
+			originY,
+			Shelter.rayParams(),
+			Shelter.index(),
+			zones,
+			margin,
+			height,
+			overhangs,
+			lean
+		)
+		cell.landing = landing
+		cell.rect, cell.ceiling, cell.open = rect, ceiling, open
+		-- Too little room under the roof round it: nothing falls there.
+		local room = if landing and ceiling then ceiling - 1 - landing else math.huge
+		cell.cover = if rect and room >= 3 then 1 - share else 1
+	end
 	cell.probed = true
+	-- Closed now: off at once, not at the next rate update (the rates only ever open a cell late).
+	if not cell.landing or cell.cover >= 1 then
+		silence(cell)
+	end
+	local landing = cell.landing
 	if landing then
 		if far then
 			ensureRain(cell, true)
@@ -337,6 +524,17 @@ local function probe(cell: Cell, far: boolean, originY: number)
 			end
 		end
 		place(cell, far)
+	end
+end
+
+-- Every cell is to be looked at again (the rooms changed, or where they are looked at from).
+local function markAll()
+	for _, cells in ipairs({ nearCells, farCells }) do
+		for _, cell in ipairs(cells) do
+			if not table.find(dirty, cell) then
+				table.insert(dirty, cell)
+			end
+		end
 	end
 end
 
@@ -395,18 +593,7 @@ local function assign(
 			cell.probed = false
 			assigned[key] = cell
 			table.insert(dirty, cell)
-			if cell.rain then
-				cell.rain.emitter.Enabled = false
-				cell.rain.emitter.Rate = 0
-			end
-			if cell.splash then
-				cell.splash.emitter.Enabled = false
-			end
-			if cell.flakes then
-				for _, layer in ipairs(cell.flakes) do
-					layer.emitter.Enabled = false
-				end
-			end
+			silence(cell)
 		end
 	end
 	-- Weights fall off towards the edge of the area, so its border does not show.
@@ -475,8 +662,12 @@ local function applyRates()
 		setLayer(cell.rain, rainTotal * rate * open)
 		setLayer(cell.splash, rainTotal * rain.splashShare * rate * open)
 		if cell.flakes then
-			setLayer(cell.flakes[1], snowTotal * snow.bigShare * rate * open)
-			setLayer(cell.flakes[2], snowTotal * (1 - snow.bigShare) * rate * open)
+			local heavier = 1 + snow.gustRate * gust
+			setLayer(cell.flakes[1], snowTotal * snow.bigShare * rate * open * heavier)
+			setLayer(cell.flakes[2], snowTotal * (1 - snow.bigShare) * rate * open * heavier)
+		end
+		if cell.drift then
+			setLayer(cell.drift, if cell.open then snowTotal * snow.driftShare * rate * gust else 0)
 		end
 	end
 	for _, cell in pairs(assignedFar) do
@@ -504,16 +695,15 @@ function RainController.setDebug(rain: number?, snow: number?)
 end
 
 local function applyWind()
-	local rain, snow = TUNING.rain, TUNING.snow
+	local rain = TUNING.rain
 	local push = WIND * (rain.gust * gust)
 	for _, cell in pairs(assignedNear) do
 		if cell.rain then
 			cell.rain.emitter.Acceleration = push
 		end
 		if cell.flakes then
-			local sideways = snow.sway + WIND * (snow.gust * gust)
-			cell.flakes[1].emitter.Acceleration = sideways
-			cell.flakes[2].emitter.Acceleration = sideways
+			-- (A gust leans the snow rather than pushing it: see placeSnow.)
+			placeSnow(cell)
 		end
 	end
 	for _, cell in pairs(assignedFar) do
@@ -524,6 +714,10 @@ local function applyWind()
 end
 
 local function stepGust(now: number)
+	if RainController.debugGust then
+		gust = RainController.debugGust
+		return
+	end
 	if now >= nextGust then
 		gustAt = now
 		nextGust = now + math.random(TUNING.gustEvery[1], TUNING.gustEvery[2])
@@ -546,6 +740,19 @@ local function step()
 	local origin, originY = cameraOrigin()
 	if not origin then
 		return
+	end
+	-- Ground looked at from much higher or lower (a stair, a roof, a camera above the map) or in other weather
+	-- (the margin from the rooms) is looked at again, all of it (2026-10-15: cells kept what they had seen from
+	-- a roof after the body went down to the street).
+	local margin, height = shape()
+	if
+		not probedY
+		or math.abs(originY - probedY) > TUNING.lookAgainAt
+		or margin ~= probedMargin
+		or height ~= probedHeight
+	then
+		probedY, probedMargin, probedHeight = originY, margin, height
+		markAll()
 	end
 	local size, farSize = TUNING.cell, TUNING.farCell
 	local gx, gz = math.floor(origin.X / size + 0.5), math.floor(origin.Z / size + 0.5)
@@ -640,8 +847,63 @@ local function refreshTextures()
 					layer.emitter.Texture = flake
 				end
 			end
+			if cell.drift and flake ~= "" then
+				cell.drift.emitter.Texture = flake
+			end
 		end
 	end
+end
+
+-- The rooms: every look zone whose preset ends in "_Inside" or "_Under" (SceneBuilder tags them). Cells are
+-- looked at again when they change (a map built or taken down).
+local function readZones()
+	table.clear(zones)
+	for _, zone in ipairs(CollectionService:GetTagged("LLookZone")) do
+		local preset = zone:GetAttribute("Preset")
+		if
+			zone:IsA("BasePart")
+			and type(preset) == "string"
+			and (string.sub(preset, -7) == "_Inside" or string.sub(preset, -6) == "_Under")
+		then
+			table.insert(zones, { cf = zone.CFrame, half = zone.Size / 2 })
+		end
+	end
+	markAll()
+end
+
+-- The rooms the weather never reaches (for checks).
+function RainController.rooms(): { Probe.Zone }
+	return zones
+end
+
+-- The big flakes a second the near cells would send together if every one of them were open ground (for checks).
+function RainController.snowBudget(): number
+	return TUNING.snow.rate[device()] * budget() * RainController.snowAmount() * TUNING.snow.bigShare
+end
+
+-- The same for the rain's streaks.
+function RainController.rainBudget(): number
+	return TUNING.rain.rate[device()] * budget() * rainAmount()
+end
+
+-- What the near cells send now (for checks): each one's open rectangle, the box its snow (or with "rain", its
+-- rain) comes from, how much, and what its ground probe found.
+function RainController.snowBoxes(kind: string?): { { [string]: any } }
+	local out = {}
+	for _, cell in pairs(assignedNear) do
+		local layer = if kind == "rain" then cell.rain else (if cell.flakes then cell.flakes[1] else nil)
+		table.insert(out, {
+			rect = cell.rect,
+			part = if layer then layer.part else nil,
+			rate = if layer and layer.emitter.Enabled then layer.emitter.Rate else 0,
+			landing = cell.landing,
+			cover = cell.cover,
+			ceiling = cell.ceiling,
+			x = cell.x,
+			z = cell.z,
+		})
+	end
+	return out
 end
 
 function RainController.init()
@@ -664,6 +926,19 @@ function RainController.init()
 	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 		container.Parent = workspace.CurrentCamera
 	end)
+	local pending = false
+	local function soon()
+		if not pending then
+			pending = true
+			task.delay(0.5, function()
+				pending = false
+				readZones()
+			end)
+		end
+	end
+	CollectionService:GetInstanceAddedSignal("LLookZone"):Connect(soon)
+	CollectionService:GetInstanceRemovedSignal("LLookZone"):Connect(soon)
+	readZones()
 	applyRates()
 	task.spawn(lightningLoop)
 end

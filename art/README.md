@@ -187,7 +187,11 @@ the hollow and the pond), `auditorium.py`, `library.py`, `faculties.py`, `studen
 the city, the Central Tower on the skyline) and `gameplay.py`. Its props are the `Campus` set
 (`props_campus.py`, `DeathsGambitModels_Campus.fbx`). Snow lies where the ground's look is `Snow`:
 the client leaves footprints there (`World/FootprintController`), never on the shovelled
-`SnowPath`.
+`SnowPath`. Inside, the rooms are warm cream plaster over a walnut wainscot (the old halls) or a
+painted sage dado (the club house), `fit.DADO`; windows keep clear of inner walls, stairs, boards and
+buttresses (`fit.JOINS`, `BLOCKERS`, `LOW_BLOCKERS`); the two roped-off stairs turn at a half landing
+and climb on through the ceiling into a dark stairwell behind a locked gate (no window opens on it,
+`fit.WELLS`).
 
 ```
 blender -b --factory-startup --python art/scripts/run_maps.py -- Tokyo --plan      # top-down plans

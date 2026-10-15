@@ -62,11 +62,52 @@ GLASS = {
 }
 
 
+# Every inner wall built so far, (a, b, thickness): masonry.shell keeps its windows clear of where they meet
+# the outer walls. Emptied for each build (reset).
+JOINS = []
+# Things built against an outer wall that no window may open behind, as rectangles (x0, z0, x1, z1), with the
+# clearance a window keeps from them along the wall as a fifth number when it is not masonry.spaced's own.
+BLOCKERS = []
+# The same for what stands only as high as the ground floor's windows (a flight of stairs, a blackboard): the
+# storeys above keep theirs.
+LOW_BLOCKERS = []
+# Stairwells rising through the ceiling against an outer wall: no upper storey's window opens on them (its lit
+# room behind the glass stood in the well, seen from the stairs below).
+WELLS = []
+
+
+def reset():
+    JOINS.clear()
+    BLOCKERS.clear()
+    LOW_BLOCKERS.clear()
+    WELLS.clear()
+
+
+# The rooms' plaster walls (2026-10-15: they read as flat grey boxes): a warm cream over a dado, dark walnut
+# panelling in the old halls (their plaster, PlasterLight), a painted sage band in the 1960s block (PlasterGrey).
+# A face asked for in one of these plasters gets the cream and its dado: (dado material, height), its rail.
+DADO = {
+    "PlasterLight": (("WoodPanel", 3.0, 0.03), "Wood"),
+    "PlasterGrey": (("PlasterGreen", 3.0, 0.03), "BlackTrim"),  # (under the ground floor's sills, 3.2 and up)
+}
+CREAM = "PlasterCream"
+
+
+def dressed(mat, trims):
+    """(the face's material, its mouldings) for a room's wall face asked for in `mat` with `trims` (a kit.trims
+    spec, or None)."""
+    if mat not in DADO or trims is None:
+        return (CREAM if mat in DADO else mat), trims
+    wainscot, rail = DADO[mat]
+    return CREAM, dict(trims, wainscot=wainscot, rail=rail)
+
+
 def partition(s, a, b, y0, y1, mat_n="PlasterLight", mat_s="PlasterLight", doors=(), glass=None, spans=None,
               sill=3.2, head=9.4, thick=0.6, trim=True, core=None, door_frame="DarkMetal"):
     """An inner wall from a to b (x, z) between floor y0 and ceiling y1. doors: [(distance from a
     to the door's middle, width)]. glass: a GLASS kind for windows along the wall above waist
     height, all along it between the doors, or only over spans [(u0, u1)] when given."""
+    JOINS.append((tuple(a), tuple(b), thick))
     length = math.dist(a, b)
     ops = []
     for at, w in doors:
@@ -89,8 +130,10 @@ def partition(s, a, b, y0, y1, mat_n="PlasterLight", mat_s="PlasterLight", doors
                         "rows": 1, "glass": pane, "blinds": blinds, "blinds_side": 1, "slat": "CreamTrim",
                         "sill": "BlackMetal", "casing": 0.2, "see_through": through})
     trims = {"base": "BlackTrim", "grime": True} if trim else None
-    kit.wall(s, a, b, y1, thick=thick, base=y0, core=core or mat_n, side_n=mat_n, side_s=mat_s, openings=ops,
-             trim_n=trims, trim_s=trims)
+    side_n, trim_n = dressed(mat_n, trims)
+    side_s, trim_s = dressed(mat_s, trims)
+    kit.wall(s, a, b, y1, thick=thick, base=y0, core=core or side_n, side_n=side_n, side_s=side_s, openings=ops,
+             trim_n=trim_n, trim_s=trim_s)
 
 
 def closed_door(s, x, z, rot, y=0.0, w=4.0, leaf="WoodPanel", sign=None):
@@ -219,6 +262,10 @@ def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="Stone", step=0.7, r
     run = math.dist(a, b)
     d = ((b[0] - a[0]) / run, (b[1] - a[1]) / run)
     n = g2.normal_left(d)
+    # (No ground-floor window behind a flight against an outer wall: its steps cut across the glass.)
+    corners = [(p[0] + n[0] * k * width / 2, p[1] + n[1] * k * width / 2) for p in (a, b) for k in (1, -1)]
+    LOW_BLOCKERS.append((min(c[0] for c in corners), min(c[1] for c in corners), max(c[0] for c in corners),
+                         max(c[1] for c in corners), 0.6))
     rot = g2.rot_of(n)
     rise = y1 - y0
     count = max(2, round(abs(rise) / 0.7))
@@ -322,19 +369,41 @@ def floor_faces(s, poly, y, mat, holes=()):
             city.up_face(s, mat, piece, y)
 
 
-def coffers(s, x0, z0, x1, z1, y, spacing=8.0, mat="CreamTrim", depth=0.7, w=0.6, wall=0.0):
+def _runs(lo, hi, cuts):
+    """The parts of lo..hi outside the spans `cuts` [(c0, c1)]."""
+    out = [(lo, hi)]
+    for c0, c1 in cuts:
+        nxt = []
+        for a, b in out:
+            if c1 <= a or c0 >= b:
+                nxt.append((a, b))
+                continue
+            if c0 > a:
+                nxt.append((a, c0))
+            if c1 < b:
+                nxt.append((c1, b))
+        out = nxt
+    return [(a, b) for a, b in out if b - a > 0.3]
+
+
+def coffers(s, x0, z0, x1, z1, y, spacing=8.0, mat="CreamTrim", depth=0.7, w=0.6, wall=0.0, holes=()):
     """Plaster beams under a ceiling at y in both directions, every `spacing` studs: the coffered
     ceiling of the old halls (look-only). wall: how far the walls' faces stand in from the rectangle's
     edges (half their thickness when the rectangle runs along their middles), so the cornice round the
-    edge sits against them instead of inside them."""
+    edge sits against them instead of inside them. holes: openings in the ceiling (x0, z0, x1, z1) the
+    beams stop at."""
     nx = max(1, round((x1 - x0) / spacing))
     nz = max(1, round((z1 - z0) / spacing))
     for i in range(1, nx):
         x = x0 + (x1 - x0) * i / nx
-        s.box(mat, (x, y - depth / 2, (z0 + z1) / 2), (w, depth, z1 - z0), skip=("+y",))
+        cuts = [(h[1], h[3]) for h in holes if h[0] - w / 2 < x < h[2] + w / 2]
+        for a, b in _runs(z0, z1, cuts):
+            s.box(mat, (x, y - depth / 2, (a + b) / 2), (w, depth, b - a), skip=("+y",))
     for j in range(1, nz):
         z = z0 + (z1 - z0) * j / nz
-        s.box(mat, ((x0 + x1) / 2, y - depth / 2 - 0.01, z), (x1 - x0, depth, w), skip=("+y",))
+        cuts = [(h[0], h[2]) for h in holes if h[1] - w / 2 < z < h[3] + w / 2]
+        for a, b in _runs(x0, x1, cuts):
+            s.box(mat, ((a + b) / 2, y - depth / 2 - 0.01, z), (b - a, depth, w), skip=("+y",))
     # A moulding round the edge, where the ceiling meets the walls.
     inset = wall - 0.03 + w / 2 if wall else 0.0  # (0.03 into the wall: no seam, no shared plane)
     for (a, b), (ix, iz) in zip((((x0, z0), (x1, z0)), ((x1, z0), (x1, z1)), ((x1, z1), (x0, z1)), ((x0, z1), (x0, z0))),

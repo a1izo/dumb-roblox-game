@@ -10,6 +10,15 @@ candidates only; every one is looked at (a Blender eye render, or the game) befo
   stretch   textured faces whose picture is stretched one way or sheared (or has no extent at all)
   buried    signs, plaques, screens and clock faces the game draws that stand inside a wall (their
             front looks at the back of a face: nobody can see them)
+  oneside   faces seen from behind from where someone stands: a mesh face has one side in Roblox, so
+            from behind it is a hole (a wall seen through, a floor seen through from below)
+  pane      a window cut by a wall: an inside wall (or any wall) ending against a pane, within its width
+  seam      a slit of light between two pieces of one wall: the wall goes on, in the same plane, on
+            both sides of it
+  bare      faces in a material with no picture of its own (it falls back to plain grey), in a massing
+            material, or in the dark core material close to where someone stands
+  blank     big stretches of plain wall with nothing on them or in front of them (candidates for a
+            dado, a notice board, a door, a picture: reported, never gated)
 
 Runs inside Blender (it needs mathutils): art/scripts/find_defects.py builds each venue and calls
 run(). Coordinates are Roblox studs, like the scene's (x right, y up, z backwards).
@@ -98,11 +107,16 @@ class Tris:
 
 
 class Eyes:
-    """Where a player's eye can be: 5 studs over the walkable floors (scene.floors), every 4 studs. A face
+    """Where a player's eye can be: 5 studs over the walkable floors (scene.floors), every 4 studs, or over
+    every spot check_v2's walk reaches from the spawns (`points`: venues whose ground is colliders). A face
     counts as seen when one of these points near it has a clear line to it, from its front."""
 
-    def __init__(self, scene, step=4.0):
+    def __init__(self, scene, step=4.0, points=None):
         self.points = []
+        if points is not None:
+            self.points = list(points)
+            self._index()
+            return
         for f in scene.floors:
             (x1, z1, x2, z2, x3, z3, y) = f[:7]
             xs, zs = (x1, x2, x3), (z1, z2, z3)
@@ -114,10 +128,31 @@ class Eyes:
                     d3 = (px - x1) * (z3 - z1) - (x3 - x1) * (pz - z1)
                     if not ((d1 < 0 or d2 < 0 or d3 < 0) and (d1 > 0 or d2 > 0 or d3 > 0)):
                         self.points.append(Vector((px, y + 5.0, pz)))
+        self._index()
+
+    def _index(self):
         self.tree = KDTree(max(1, len(self.points)))
         for i, p in enumerate(self.points):
             self.tree.insert(p, i)
         self.tree.balance()
+
+    def prune(self, everything):
+        """Drops the eyes inside something solid (a floor under a pillar, a stair's mass): from in there
+        every face is seen from behind. An eye is inside when most of six rays from it meet a face's back."""
+        if everything is None:
+            return
+        axes = [Vector(v) for v in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))]
+        keep = []
+        for p in self.points:
+            backs = 0
+            for d in axes:
+                hit = everything.ray_cast(p, d, 40.0)
+                if hit[0] is not None and hit[1].dot(d) > 0.05:
+                    backs += 1
+            if backs < 4:
+                keep.append(p)
+        self.points = keep
+        self._index()
 
     def sees(self, everything, point, normal, reach=60.0, tries=48):
         """Whether any eye within reach has a clear line to point, on the side normal faces."""
@@ -537,6 +572,303 @@ def stretch(tris):
     return out
 
 
+# oneside ------------------------------------------------------------------------------------------
+
+ONESIDE_AREA = 1.0  # square studs of one piece seen from behind worth a look
+ONESIDE_REACH = 40.0
+
+
+def oneside(tris, eyes):
+    everything, keep = tris.tree("all")
+    index_of = {t: k for k, t in enumerate(keep)}
+    found = {}
+    for i in range(len(tris.polys)):
+        mat = tris.mats[i]
+        if see_through(mat):
+            continue
+        a, b, c = tris.tri(i)
+        n = (b - a).cross(c - a)
+        area = n.length / 2
+        if area < 0.05:
+            continue
+        n.normalize()
+        centre = (a + b + c) / 3
+        near = sorted(eyes.tree.find_range(centre, ONESIDE_REACH), key=lambda e: e[2])
+        tries = 0
+        for co, _, dist in near:
+            if (co - centre).dot(n) >= -0.05 * dist:
+                continue  # in front of it (or edge on)
+            tries += 1
+            ray = (centre - co).normalized()
+            hit = everything.ray_cast(co, ray, dist + 0.05)
+            # The first thing the ray meets is this face, or a face of its plane, from behind (a thin bar's front
+            # face can lie a hundredth of a stud before its back: that is not the back seen).
+            if hit[0] is not None and (index_of.get(i) == hit[2] or (hit[3] >= dist - 0.01 and hit[1].dot(ray) > 0.5)):
+                entry = found.setdefault(tris.pieces[i], {"area": 0.0, "at": centre.copy(), "big": 0.0, "mat": mat,
+                                                          "eye": co.copy()})
+                entry["area"] += area
+                if area > entry["big"]:
+                    entry["big"], entry["at"], entry["eye"] = area, centre.copy(), co.copy()
+                break
+            if tries >= 8:
+                break
+    out = []
+    for pid, e in found.items():
+        if e["area"] >= ONESIDE_AREA:
+            out.append({"kind": "oneside", "at": _where(e["at"]), "detail": e["mat"], "area": round(e["area"], 1),
+                        "from": _where(e["eye"]), "src": tris.src[pid]})
+    return out
+
+
+# pane ---------------------------------------------------------------------------------------------
+
+PANE_OFF = 1.2  # how far either side of a pane a wall ending against it is looked for
+
+
+def _glass(mat):
+    return matlib.is_flat(mat) and mat not in ("Water", "Puddle") and (
+        matlib.FLAT[mat][0] == "Glass" or matlib.FLAT[mat][2] > 0)
+
+
+def pane(scene, tris):
+    opaque, keep = tris.tree("opaque")
+    if opaque is None:
+        return []
+    out = []
+    up = Vector((0, 1, 0))
+    for mat, pieces in scene.pieces.items():
+        if not _glass(mat):
+            continue
+        for piece in pieces:
+            best, normal = 0.0, None
+            for face in piece.faces:
+                if len(face) < 3:
+                    continue
+                p0, p1, p2 = (Vector(piece.verts[k]) for k in face[:3])
+                n = (p1 - p0).cross(p2 - p0)
+                if n.length > best:
+                    best, normal = n.length, n.normalized()
+            if normal is None or abs(normal.y) > 0.2:
+                continue
+            u = up.cross(normal).normalized()
+            pts = [Vector(v) for v in piece.verts]
+            us = [p.dot(u) for p in pts]
+            ys = [p.y for p in pts]
+            ns = [p.dot(normal) for p in pts]
+            width, height = max(us) - min(us), max(ys) - min(ys)
+            if width < 1.5 or height < 1.5:
+                continue
+            u0, ymid, nmid = min(us), (min(ys) + max(ys)) / 2, sum(ns) / len(ns)
+            base = u * (u0 + 0.25) + normal * nmid
+            for side in (1, -1):
+                start = base + normal * (side * PANE_OFF)
+                start.y = ymid
+                hit = opaque.ray_cast(start, u, width - 0.5)
+                if hit[0] is not None and abs(hit[1].dot(u)) > 0.8:
+                    out.append({"kind": "pane", "at": _where(hit[0]), "detail": f"{mat} {tris.mats[keep[hit[2]]]}",
+                                "side": "front" if side > 0 else "back", "width": round(width, 1),
+                                "into": round(hit[3] + 0.25, 2), "src": tris.src[tris.pieces[keep[hit[2]]]]})
+                    break
+    return out
+
+
+# seam ---------------------------------------------------------------------------------------------
+
+SEAM_STEP = 0.25  # degrees between the rays of a sweep
+SEAM_NEAR = 30.0  # slits nearer than this
+SEAM_WIDE = 0.6  # studs: a gap wider than this is an opening, not a slit
+SEAM_EYES = 3  # every third eye sweeps
+
+
+def _sweep(everything, eye, dirs):
+    hits = []
+    for d in dirs:
+        hit = everything.ray_cast(eye, d, 120.0)
+        hits.append((hit[3], hit[1]) if hit[0] is not None else (999.0, None))
+    return hits
+
+
+def _plane_gap(eye, d0, h0, d1, h1):
+    """How far apart the planes of two hits are (0 for one plane)."""
+    p0, p1 = eye + d0 * h0[0], eye + d1 * h1[0]
+    return abs((p1 - p0).dot(h0[1]))
+
+
+def seam(tris, eyes):
+    everything, _ = tris.tree("all")
+    if everything is None or not eyes.points:
+        return []
+    step = math.radians(SEAM_STEP)
+    count = int(round(2 * math.pi / step))
+    flat = [Vector((math.sin(k * step), 0.0, math.cos(k * step))) for k in range(count)]
+    fans = []
+    for k in range(16):
+        az = k * math.pi / 8
+        fans.append([Vector((math.cos(e) * math.sin(az), math.sin(e), math.cos(e) * math.cos(az)))
+                     for e in (math.radians(-40 + j * SEAM_STEP) for j in range(int(110 / SEAM_STEP)))])
+    found = {}
+    for idx in range(0, len(eyes.points), SEAM_EYES):
+        eye = eyes.points[idx]
+        sweeps = [(flat, True)]
+        if idx % (SEAM_EYES * 4) == 0:
+            sweeps += [(fan, False) for fan in fans]
+        for dirs, ring in sweeps:
+            hits = _sweep(everything, eye, dirs)
+            n = len(hits)
+            j = 0
+            while j < n:
+                dist = hits[j][0]
+                prev = hits[(j - 1) % n] if ring else (hits[j - 1] if j else None)
+                if prev is None or prev[1] is None or prev[0] > SEAM_NEAR or dist < prev[0] + 2.0:
+                    j += 1
+                    continue
+                # A run of rays that go on past the wall either side of them.
+                e = j
+                while e + 1 < (n if not ring else j + 6) and hits[(e + 1) % n][0] > prev[0] + 2.0 and e - j < 6:
+                    e += 1
+                after = hits[(e + 1) % n] if (ring or e + 1 < n) else None
+                if after is None or after[1] is None or e - j >= 5:
+                    j = e + 1
+                    continue
+                wide = (e - j + 1) * step * prev[0]
+                d_prev, d_after = dirs[(j - 1) % n], dirs[(e + 1) % n]
+                # The wall goes on, in one plane, five rays beyond each side.
+                far_prev, far_after = hits[(j - 6) % n], hits[(e + 6) % n]
+                ok = (wide <= SEAM_WIDE and prev[1].dot(after[1]) > 0.95
+                      and _plane_gap(eye, d_prev, prev, d_after, after) < 0.1
+                      and far_prev[1] is not None and far_after[1] is not None
+                      and (ring or (j - 6 >= 0 and e + 6 < n))
+                      and _plane_gap(eye, d_prev, prev, dirs[(j - 6) % n], far_prev) < 0.1
+                      and _plane_gap(eye, d_after, after, dirs[(e + 6) % n], far_after) < 0.1)
+                if ok:
+                    at = eye + d_prev * prev[0]
+                    key = (math.floor(at.x / 2), math.floor(at.y / 2), math.floor(at.z / 2))
+                    entry = found.setdefault(key, {"at": at.copy(), "eyes": 0, "wide": wide, "eye": eye.copy()})
+                    entry["eyes"] += 1
+                    entry["wide"] = max(entry["wide"], wide)
+                j = e + 1
+    out = []
+    for e in found.values():
+        if e["eyes"] < 2:
+            continue  # (one ray through the edge between two faces, now and then: not a slit)
+        out.append({"kind": "seam", "at": _where(e["at"]), "detail": f"{round(e['wide'], 2)} wide",
+                    "eyes": e["eyes"], "from": _where(e["eye"])})
+    return out
+
+
+# bare / blank -------------------------------------------------------------------------------------
+
+BARE_NEAR = 8.0  # the dark core material this close to an eye is seen for what it is
+QUIET = {"PlasterLight", "PlasterDark", "PlasterGrey", "Concrete", "ConcreteDark", "FacadeTileGrey"}
+BLANK_GRID = 2.0
+BLANK_CELLS = 20  # cells of BLANK_GRID x BLANK_GRID with nothing on them, in one stretch
+
+
+def bare(tris, eyes):
+    everything, _ = tris.tree("all")
+    found = {}
+    for i, mat in enumerate(tris.mats):
+        massing = mat.startswith("Mass")
+        if not massing and mat != "CoreDark":
+            continue
+        a, b, c = tris.tri(i)
+        n = (b - a).cross(c - a)
+        if n.length < 1e-4:
+            continue
+        centre = (a + b + c) / 3
+        if massing or eyes.sees(everything, centre + n.normalized() * 0.02, n.normalized(), reach=BARE_NEAR):
+            entry = found.setdefault((mat, tris.pieces[i]), {"area": 0.0, "at": centre.copy()})
+            entry["area"] += n.length / 2
+    return [{"kind": "bare", "at": _where(e["at"]), "detail": mat, "area": round(e["area"], 1), "src": tris.src[pid]}
+            for (mat, pid), e in found.items() if e["area"] >= 1.0]
+
+
+def blank(scene, tris, eyes, catalog):
+    everything, _ = tris.tree("all")
+    boxes = []
+    for key, x, y, z, rot, sc, *_ in scene.props:
+        info = catalog.get(key)
+        if info:
+            sx, sy, sz = (v * sc for v in info["size"])
+            base = y if info["pivot"] == "bottom" else y - sy / 2
+            boxes.append((x, base, z, sx, sy, sz, rot))
+    for s in scene.signs:
+        boxes.append((s["pos"][0], s["pos"][1] - 1.5, s["pos"][2], 3.0, 3.0, 3.0, s["rot"]))
+    near_props = KDTree(max(1, len(boxes)))
+    for k, b in enumerate(boxes):
+        near_props.insert(Vector((b[0], b[1] + b[4] / 2, b[2])), k)
+    near_props.balance()
+    planes = {}
+    for i, mat in enumerate(tris.mats):
+        if mat not in QUIET:
+            continue
+        a, b, c = tris.tri(i)
+        n = (b - a).cross(c - a)
+        if n.length < 1e-4:
+            continue
+        n.normalize()
+        if abs(n.y) > 0.05:
+            continue
+        key = (mat, round(n.x * 20), round(n.z * 20), round(n.dot(a) * 4))
+        planes.setdefault(key, []).append(i)
+    out = []
+    up = Vector((0, 1, 0))
+    for (mat, *_), members in planes.items():
+        a, b, c = tris.tri(members[0])
+        n = (b - a).cross(c - a).normalized()
+        u = up.cross(n).normalized()
+        d = n.dot(a)
+        cells = set()
+        for i in members:
+            pts = tris.tri(i)
+            flat = [(p.dot(u), p.y) for p in pts]
+            lo_u, hi_u = min(q[0] for q in flat), max(q[0] for q in flat)
+            lo_y, hi_y = min(q[1] for q in flat), max(q[1] for q in flat)
+            for gu in range(math.floor(lo_u / BLANK_GRID), math.floor(hi_u / BLANK_GRID) + 1):
+                for gy in range(math.floor(lo_y / BLANK_GRID), math.floor(hi_y / BLANK_GRID) + 1):
+                    pu, py = (gu + 0.5) * BLANK_GRID, (gy + 0.5) * BLANK_GRID
+                    (x1, y1), (x2, y2), (x3, y3) = flat
+                    d1 = (pu - x2) * (y1 - y2) - (x1 - x2) * (py - y2)
+                    d2 = (pu - x3) * (y2 - y3) - (x2 - x3) * (py - y3)
+                    d3 = (pu - x1) * (y3 - y1) - (x3 - x1) * (py - y1)
+                    if (d1 < 0 or d2 < 0 or d3 < 0) and (d1 > 0 or d2 > 0 or d3 > 0):
+                        continue
+                    cells.add((gu, gy))
+        empty = set()
+        for gu, gy in cells:
+            p = u * ((gu + 0.5) * BLANK_GRID) + n * d
+            p.y = (gy + 0.5) * BLANK_GRID
+            back = everything.ray_cast(p + n * 1.2, -n, 1.25)
+            if back[0] is not None and back[3] < 1.1:
+                continue  # something on the wall (trim, a board, a frame)
+            if any((Vector(co) - p).length < 1.5 + max(boxes[k][3], boxes[k][5]) / 2
+                   for co, k, _ in near_props.find_range(p, 6.0)):
+                continue  # a prop in front of it
+            if not eyes.sees(everything, p + n * 0.02, n, reach=30.0, tries=6):
+                continue
+            empty.add((gu, gy))
+        while empty:
+            seed = empty.pop()
+            group, todo = [seed], [seed]
+            while todo:
+                gu, gy = todo.pop()
+                for nb in ((gu + 1, gy), (gu - 1, gy), (gu, gy + 1), (gu, gy - 1)):
+                    if nb in empty:
+                        empty.discard(nb)
+                        group.append(nb)
+                        todo.append(nb)
+            if len(group) >= BLANK_CELLS:
+                gus, gys = [g[0] for g in group], [g[1] for g in group]
+                mid_u = (min(gus) + max(gus) + 1) / 2 * BLANK_GRID
+                mid_y = (min(gys) + max(gys) + 1) / 2 * BLANK_GRID
+                at = u * mid_u + n * d
+                at.y = mid_y
+                out.append({"kind": "blank", "at": _where(at), "detail": mat,
+                            "size": [round((max(gus) - min(gus) + 1) * BLANK_GRID), round((max(gys) - min(gys) + 1) * BLANK_GRID)],
+                            "normal": _where(n), "area": len(group) * BLANK_GRID ** 2})
+    return out
+
+
 def inside(scene, at, margin=6.0):
     """Whether a point is within the venue's playable bounds (plus a margin): far scenery is seen only
     from afar, where a flicker or a stray glow is a few pixels."""
@@ -546,7 +878,25 @@ def inside(scene, at, margin=6.0):
     return all(lo[k] - margin <= at[k] <= hi[k] + margin for k in range(3))
 
 
-def run(scene, catalog, venue, kinds=("zfight", "rest", "fixture", "leak", "stretch", "buried")):
+KINDS = ("zfight", "rest", "fixture", "leak", "stretch", "buried", "oneside", "pane", "seam", "bare", "blank")
+WALK_KINDS = ("oneside", "seam", "bare", "blank")  # the finds that look from where people stand
+
+
+def walk_points(scene, step=4.0):
+    """Eye points 5 studs over every spot check_v2's walk reaches from the spawns, every `step` studs."""
+    from maps import check_v2
+
+    lo, hi = scene.bounds or ((-100, -10, -100), (100, 60, 100))
+    data = {"bounds": {"min": list(lo), "max": list(hi)}, "colliders": [list(c) for c in scene.colliders],
+            "floors": [list(f) for f in scene.floors], "ramps": scene.ramps, "props": [list(p) for p in scene.props],
+            "layout": scene.layout}
+    world = check_v2.World(data, check_v2.load_catalog())
+    dist = check_v2.walk(data, world, [])
+    k = max(1, round(step / check_v2.GRID))
+    return [Vector((i * check_v2.GRID, h + 5.0, j * check_v2.GRID)) for (i, j, h) in dist if i % k == 0 and j % k == 0]
+
+
+def run(scene, catalog, venue, kinds=KINDS):
     """(finds inside the playable bounds, stats); the stats count the far ones left out."""
     found, stats = _run(scene, catalog, venue, kinds)
     near = [f for f in found if inside(scene, f["at"])]
@@ -571,4 +921,17 @@ def _run(scene, catalog, venue, kinds):
         out += stretch(tris)
     if "buried" in kinds:
         out += buried(scene, tris)
-    return out, {"triangles": len(tris.polys), "lamps": len(all_lamps)}
+    if any(k in kinds for k in WALK_KINDS):
+        eyes = Eyes(scene, points=walk_points(scene)) if getattr(scene, "layout", None) else eyes
+        eyes.prune(tris.tree("all")[0])
+    if "oneside" in kinds:
+        out += oneside(tris, eyes)
+    if "pane" in kinds:
+        out += pane(scene, tris)
+    if "seam" in kinds:
+        out += seam(tris, eyes)
+    if "bare" in kinds:
+        out += bare(tris, eyes)
+    if "blank" in kinds:
+        out += blank(scene, tris, eyes, catalog)
+    return out, {"triangles": len(tris.polys), "lamps": len(all_lamps), "eyes": len(eyes.points)}

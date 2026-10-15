@@ -98,4 +98,90 @@ return function(t)
 			folder:Destroy()
 		end)
 	end)
+
+	describe("Weather.Probe.cell", function()
+		-- Another made-up world: a street at 6000 (top 0.5), a roof over x 5985..5995 (underside 13.5, top 14.5)
+		-- and a solid step at the far end (x 6018.5..6024.5, z 5970..5980, top 3.5). Looked at from 40 up, as a
+		-- camera over the roofs would.
+		local folder: Folder
+		local function build()
+			folder = Instance.new("Folder")
+			folder.Name = "SpecWeatherCell"
+			folder.Parent = workspace
+			slab(folder, Vector3.new(6000, 0, 6000), Vector3.new(60, 1, 60))
+			slab(folder, Vector3.new(5990, 14, 6000), Vector3.new(10, 1, 60))
+			slab(folder, Vector3.new(6021.5, 2, 5975), Vector3.new(6, 3, 10))
+		end
+		local params = RaycastParams.new()
+
+		it("sends from the whole of an open cell far from any room", function()
+			build()
+			local landing, share, rect, ceiling, all =
+				Probe.cell(6010, 6000, 9, 40, params, CoverIndex.new(), {}, 9, 15, true)
+			expect(landing :: number).to.be.near(0.5, 1e-3)
+			expect(share).to.be.near(1)
+			expect(rect).to.be.ok()
+			local r = rect :: { number }
+			expect(r[1]).to.be.near(6005.5)
+			expect(r[3]).to.be.near(6014.5)
+			expect(ceiling).to.equal(nil)
+			expect(all).to.equal(true)
+			folder:Destroy()
+		end)
+
+		it("keeps clear of a room by the margin, but only where its fall passes the room's height", function()
+			build()
+			local index = CoverIndex.new()
+			local room = { cf = CFrame.new(6014, 6.5, 6020), half = Vector3.new(4, 6, 4) }
+			-- Patches at x 5997, 6000 and 6003: the last is within 9 of the room (x 6010..6018).
+			local _, share, rect, _, all = Probe.cell(6000, 6020, 9, 40, params, index, { room }, 9, 15, true)
+			expect(share).to.be.near(2 / 3)
+			expect((rect :: { number })[3]).to.be.near(6001.5)
+			expect(all).to.equal(false)
+			-- The same room up high: snow falling 15 studs to the street never reaches it.
+			local high = { cf = CFrame.new(6014, 60, 6020), half = Vector3.new(4, 6, 4) }
+			local _, whole, wide = Probe.cell(6000, 6020, 9, 40, params, index, { high }, 9, 15, true)
+			expect(whole).to.be.near(1)
+			expect((wide :: { number })[3]).to.be.near(6004.5)
+			folder:Destroy()
+		end)
+
+		it("follows a slanted fall up its slant to the rooms upwind", function()
+			build()
+			local index = CoverIndex.new()
+			-- A room upwind (x 6016..6024): straight down, all three patches (x 5997, 6000, 6003) are clear of it;
+			-- leaning a stud upwind a stud higher, the drops over 6000 and 6003 would come through it.
+			local room = { cf = CFrame.new(6020, 6.5, 6020), half = Vector3.new(4, 6, 4) }
+			local _, straight = Probe.cell(6000, 6020, 9, 40, params, index, { room }, 5, 34, false)
+			expect(straight).to.be.near(1)
+			local _, share, rect =
+				Probe.cell(6000, 6020, 9, 40, params, index, { room }, 5, 34, false, Vector3.new(1, 0, 0))
+			expect(share).to.be.near(1 / 3)
+			expect((rect :: { number })[3]).to.be.near(5998.5)
+			folder:Destroy()
+		end)
+
+		it("never starts the weather under a roof whose top it sees from above", function()
+			build()
+			local index = CoverIndex.new()
+			-- Patches at x 5993 (the roof's top), 5996 and 5999 (the street beside it).
+			local landing, _, rect, ceiling = Probe.cell(5996, 6000, 9, 40, params, index, {}, 5, 34, false)
+			expect(landing :: number).to.be.near(0.5, 1e-3)
+			expect((rect :: { number })[1]).to.be.near(5994.5)
+			expect(ceiling :: number).to.be.near(13.5, 1e-3)
+			-- The snow closes the roof's patch for the air under it, whatever the height.
+			local _, _, snowRect = Probe.cell(5996, 6000, 9, 40, params, index, {}, 9, 40, true)
+			expect((snowRect :: { number })[1]).to.be.near(5994.5)
+			folder:Destroy()
+		end)
+
+		it("lets the snow fall over a solid step", function()
+			build()
+			-- Patches at x 6017 (the street) and 6020, 6023 (the step, solid down to the street).
+			local landing, share = Probe.cell(6020, 5975, 9, 40, params, CoverIndex.new(), {}, 9, 15, true)
+			expect(landing :: number).to.be.near(0.5, 1e-3)
+			expect(share).to.be.near(1)
+			folder:Destroy()
+		end)
+	end)
 end

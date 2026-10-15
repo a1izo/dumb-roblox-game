@@ -125,11 +125,13 @@ def trims(s, a, t, outward, spans, height, spec, base=0.0):
         p0 = point_on(a, t, u0, base)
         p1 = point_on(a, t, u1, base)
         if spec.get("wainscot"):
-            mat, top = spec["wainscot"]
+            # (mat, height[, gap]): a gap keeps its back off the wall's plane, where another wall's end can lie.
+            mat, top = spec["wainscot"][:2]
+            gap = spec["wainscot"][2] if len(spec["wainscot"]) > 2 else 0.0
             mid_u = (u0 + u1) / 2
-            centre = add(point_on(a, t, mid_u, base + top / 2), scale(outward, 0.04))
+            centre = add(point_on(a, t, mid_u, base + top / 2), scale(outward, 0.04 + gap / 2))
             rot = math.degrees(math.atan2(-t[2], t[0]))
-            s.box(mat, centre, (u1 - u0, top, 0.08), rot, skip=("-y",))
+            s.box(mat, centre, (u1 - u0, top, 0.08 - gap), rot, skip=("-y",))
             rail = spec.get("rail", "Wood")
             s.sweep(rail, add(p0, (0, top, 0)), add(p1, (0, top, 0)),
                     [(o + 0.08, h) for o, h in CHAIR_RAIL], outward)

@@ -78,7 +78,11 @@ def drift(s, a, b, out):
     against the wall, a long tail onto the lawn (look-only, like the banks)."""
     if math.dist(a, b) < 3.0:
         return
-    profile = [(0.0, 0.0), (0.0, 0.7), (0.4, 0.78), (1.2, 0.62), (2.2, 0.32), (3.2, 0.08), (3.6, 0.0)]
+    # (Out along the ground to the tail, over the top back to the wall and down it, closed: the sweep's faces look
+    # to the right of the way the profile runs, so the other way round they all faced down into the ground and
+    # the drifts could not be seen from above; and against a fence you can see through, the drift's back shows.
+    # The wall's foot comes first: the end caps are fanned from it.)
+    profile = [(0.0, 0.0), (3.6, 0.0), (3.2, 0.08), (2.2, 0.32), (1.2, 0.62), (0.4, 0.78), (0.0, 0.7), (0.0, 0.0)]
     s.sweep("Snow", (a[0], 0.0, a[1]), (b[0], 0.0, b[1]), profile, (out[0], 0.0, out[1]), caps=True)
 
 
@@ -145,7 +149,7 @@ def bank(s, a, b, out, length_min=2.0):
     """A low bank of shovelled snow along a path's edge from a to b, on the side `out` (x, z)."""
     if math.dist(a, b) < length_min:
         return
-    profile = [(0.0, 0.0), (0.35, 0.3), (0.8, 0.55), (1.3, 0.42), (1.8, 0.0)]
+    profile = [(1.8, 0.0), (1.3, 0.42), (0.8, 0.55), (0.35, 0.3), (0.0, 0.0)]  # (outer foot first: see drift)
     s.sweep("Snow", (a[0], 0.0, a[1]), (b[0], 0.0, b[1]), profile, (out[0], 0.0, out[1]), caps=True)
 
 
@@ -337,10 +341,12 @@ def bridge(s, g):
                 s.collider((x, Y + under / 2, (za + zb) / 2), (w, under, abs(zb - za)), 0, False, None)
         s.box("Vermilion", (x, (Y + top) / 2 - 0.5, (z_lo + z_hi) / 2), (w + 0.4, top - Y - 0.8, abs(z_hi - z_lo) * 0.6),
               0)
-    # Piers under the deck, standing on the ice.
+    # Piers under the deck, standing on the ice (up to its underside: their tops level with the planks flickered
+    # through them).
     for zz in (d0 + 2.0, (d0 + d1) / 2, d1 - 2.0):
         for sx in (-1, 1):
-            s.box("Vermilion", (x + sx * (w / 2 - 0.3), (P.POND_Y + top) / 2, zz), (0.5, top - P.POND_Y, 0.5), 0)
+            s.box("Vermilion", (x + sx * (w / 2 - 0.3), (P.POND_Y + top - 0.3) / 2, zz), (0.5, top - 0.3 - P.POND_Y, 0.5),
+                  0, skip=("+y",))
     # The railings: posts along both sides following the arch, a top rail, brass caps.
     profile = [(zn, Y), (d0, top), (d1, top), (zs, Y)]
     for sx in (-1, 1):
@@ -372,8 +378,10 @@ FOUNTAIN = (8.0, -48.0, 6.5)  # centre x, z, basin radius
 
 def fountain(s):
     x, z, r = FOUNTAIN
+    # (The basin's inner face goes on down under the ice: without it, the gap round the ice's edge showed the
+    # outer wall from inside.)
     s.lathe("Stone", (x, 0, z), [(r + 0.9, 0), (r + 0.9, 1.6), (r + 1.2, 1.8), (r + 1.2, 2.1), (r + 0.2, 2.1),
-                                 (r, 1.8)], 32, caps=(False, False))
+                                 (r, 1.8), (r, 1.1)], 32, caps=(False, False))
     s.polygon("Ice", [(x + math.cos(a) * r, 1.3, z + math.sin(a) * r)
                       for a in reversed([2 * math.pi * k / 32 for k in range(32)])])
     s.lathe("Snow", (x, 2.05, z), [(r + 1.15, 0.0), (r + 0.95, 0.14), (r + 0.3, 0.14), (r + 0.25, 0.0)], 32,

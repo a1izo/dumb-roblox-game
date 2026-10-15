@@ -51,7 +51,7 @@ POLYHAVEN = {
     "walnut_veneer_02": "WoodPanel, dark furniture",
     "oak_veneer_01": "Wood, CeilingSlats, light furniture",
     "wood_table_001": "varnished desk and table tops",
-    "beige_wall_001": "PlasterLight, PlasterGrey, PlasterDark, CeilingPlaster",
+    "beige_wall_001": "PlasterLight, PlasterGrey, PlasterDark, PlasterCream, PlasterGreen, CeilingPlaster",
     "white_plaster_02": "aged plaster (back rooms, old halls)",
     "plaster_grey_04": "outside render",
     "linoleum_brown": "Linoleum, VinylLab, VinylClinic",
