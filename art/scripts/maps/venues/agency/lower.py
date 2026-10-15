@@ -64,8 +64,10 @@ def security(s):
     # Filing cabinets along the west glass, a weapons locker, the duty sergeant's desk.
     for z in (-72.0, -69.5, -67.0, -64.5):
         s.prop("FilingCabinet", -98.0, z, -90)
-    s.box("DarkMetal", (-98.0, 3.6, -56.0), (2.2, 7.2, 5.0), collide=True)
-    s.box("BlackTrim", (-96.85, 3.6, -56.0), (0.05, 6.6, 0.1))
+    # (The weapons locker on the solid east wall, between the monitors' counter and the staff door: on the
+    # glass, it stood in a pane.)
+    s.box("DarkMetal", (-59.45, 3.6, -57.1), (2.2, 7.2, 5.0), collide=True)
+    s.box("BlackTrim", (-60.6, 3.6, -57.1), (0.05, 6.6, 0.1))
     fit.desk(s, -84.0, -57.0, 90, Y)
     s.prop("CoatStand", -62.5, -51.5, 0)
     fit.panel(s, -80.0, -63.0, C, color=fit.COOL, brightness=0.8, range_=20, flicker=True)  # the CCTV wall's tube

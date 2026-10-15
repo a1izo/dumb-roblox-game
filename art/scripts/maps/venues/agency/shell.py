@@ -14,6 +14,7 @@ from maps.venues.agency import plan as P
 
 MULLION = 5.0  # studs between the curtain wall's mullions
 GLASS_T = 0.5  # the curtain wall's collider sits this far inside the glass line
+JOIN_W = 0.9  # the broad mullion where an inner wall meets the glass (the walls are 0.6 thick)
 
 
 def edges():
@@ -48,9 +49,11 @@ def slabs(s):
             length = math.dist(a, b)
             away = ((b[1] - a[1]) / length, -(b[0] - a[0]) / length)  # out of the hole
             city.vquad(s, "ConcreteDark", a, b, P.CEIL1, P.L2, (-away[0], -away[1]))
-            lip = (-away[0] * 0.05, -away[1] * 0.05)  # 0.05 proud of the concrete, so the two never flicker
-            city.vquad(s, "BlackMetal", (a[0] + lip[0], a[1] + lip[1]), (b[0] + lip[0], b[1] + lip[1]), P.L2 - 0.02,
-                       P.L2 + 0.02, (-away[0], -away[1]))
+            # The black lip at the floor line: a thin bar 0.05 proud of the concrete (so the two never flicker), its
+            # top just under the floor's (a strip alone, its back showed down the slot from the floor).
+            mid = ((a[0] + b[0]) / 2 - away[0] * 0.025, (a[1] + b[1]) / 2 - away[1] * 0.025)
+            s.box("BlackMetal", (mid[0], P.L2 - 0.035, mid[1]), (length, 0.06, 0.05),
+                  g2.rot_of(((b[0] - a[0]) / length, (b[1] - a[1]) / length)))
     # Ceilings: 38F's everywhere but over the atrium; 39F's everywhere (the atrium's too).
     core = P.rect_of(P.CORE)
     landing1 = P.box(P.SHAFT[0], P.LANDING[0], P.SHAFT[2], P.LANDING[1])
@@ -72,7 +75,37 @@ def slabs(s):
 # The curtain wall ---------------------------------------------------------------------------------------
 
 
+# The curtain wall waits (PENDING) until every inner wall of the build is known (flush).
+PENDING = []
+
+
 def curtain(s):
+    """The curtain wall, put up by flush() once the floors' inner walls are all known: wherever one meets the
+    glass a mullion stands there (2026-10-15: they ran into the middle of a pane), and the glass is a pane per
+    bay between the mullions."""
+    PENDING.append(True)
+
+
+def flush(s):
+    if PENDING:
+        PENDING.clear()
+        _curtain(s)
+
+
+def _joins_on(a, t, n, length):
+    """How far along the glass line from a the inner walls built so far meet it."""
+    out = []
+    for pa, pb, _ in fit.JOINS:
+        for p in (pa, pb):
+            dx, dz = p[0] - a[0], p[1] - a[1]
+            u = dx * t[0] + dz * t[1]
+            off = dx * n[0] + dz * n[1]  # (outward from the glass)
+            if -0.5 <= u <= length + 0.5 and -2.5 <= off <= 0.5:  # (at a corner too)
+                out.append(u)
+    return sorted(out)
+
+
+def _curtain(s):
     rng = random.Random(38)
     for a, b in edges():
         length = math.dist(a, b)
@@ -81,6 +114,14 @@ def curtain(s):
         rot = g2.rot_of(t)
         bays = max(1, round(length / MULLION))
         step = length / bays
+        # The bays' edges: the even mullions, and one more where an inner wall meets the glass between two. Where
+        # one meets it (at an even mullion or between two), the mullion is a broad one.
+        regular = [k * step for k in range(bays + 1)]
+        joins = set()
+        for u in _joins_on(a, t, n, length):
+            near = min(regular, key=lambda r: abs(u - r))
+            joins.add(near if abs(u - near) <= 0.6 else u)
+        bounds = sorted(set(regular) | joins)
 
         def at(u, out=0.0):
             return (a[0] + t[0] * u + n[0] * out, a[1] + t[1] * u + n[1] * out)
@@ -90,30 +131,40 @@ def curtain(s):
         s.collider((c[0], (P.ROOF - 1.0) / 2, c[1]), (length + 1.0, P.ROOF + 1.0, 1.0), rot, True, "CurtainGlass")
         for level in P.LEVELS:
             top = level + (P.CEIL1 - P.L1)
-            # The glass, inside and out, and a spandrel band at the slab.
+            # The glass, a pane a bay, inside and out, and a spandrel band at the slab.
             mid = at(length / 2)
-            s.box("CurtainGlass", (mid[0], (level + 0.35 + top) / 2, mid[1]), (length, top - level - 0.35, 0.08), rot,
-                  skip=("+x", "-x", "+y", "-y"))
+            for b0, b1 in zip(bounds, bounds[1:]):
+                # (Stopping at a broad mullion's faces: the wall ending against it is not behind the glass.)
+                u0 = b0 + (JOIN_W / 2 if b0 in joins else 0.0)
+                u1 = b1 - (JOIN_W / 2 if b1 in joins else 0.0)
+                pane = at((u0 + u1) / 2)
+                s.box("CurtainGlass", (pane[0], (level + 0.35 + top) / 2, pane[1]), (u1 - u0, top - level - 0.35, 0.08),
+                      rot, skip=("+x", "-x", "+y", "-y"))
             s.box("BlackMetal", (mid[0], top + 0.7, mid[1]), (length, 1.4, 0.5), rot, skip=("-y",))
             s.box("BlackMetal", (mid[0], level + 0.18, mid[1]), (length, 0.36, 0.4), rot)
             # The low sill inside, along the glass (a heater cover).
             sill = at(length / 2, -0.9)
             s.box("DarkMetal", (sill[0], level + 0.45, sill[1]), (length - 1.2, 0.9, 0.9), rot)
-            for k in range(bays):
-                u0 = k * step
-                # Roller blinds: their box under the ceiling; some pulled part-way down.
-                p = at(u0 + step / 2, -0.35)
-                s.box("DarkMetal", (p[0], top - 0.35, p[1]), (step - 0.3, 0.4, 0.35), rot, skip=("+y",))
+            for b0, b1 in zip(bounds, bounds[1:]):
+                # Roller blinds, a bay each: their box under the ceiling; some pulled part-way down. (Clear of a
+                # broad mullion, and of the glass round a corner.)
+                u0 = b0 + (JOIN_W / 2 if b0 in joins else 0.0) + (1.0 if b0 == 0 else 0.0)
+                u1 = b1 - (JOIN_W / 2 if b1 in joins else 0.0) - (1.0 if b1 == bounds[-1] else 0.0)
+                p = at((u0 + u1) / 2, -0.35)
+                s.box("DarkMetal", (p[0], top - 0.35, p[1]), (u1 - u0 - 0.3, 0.4, 0.35), rot, skip=("+y",))
                 if rng.random() < 0.22:
                     drop = rng.uniform(2.0, 7.0)
-                    s.box("Fabric", (p[0], top - 0.55 - drop / 2, p[1]), (step - 0.4, drop, 0.04), rot)
+                    s.box("Fabric", (p[0], top - 0.55 - drop / 2, p[1]), (u1 - u0 - 0.4, drop, 0.04), rot)
         # Mullions inside and fins outside, the full height of both floors.
-        for k in range(bays + 1):
-            u = k * step
+        for u in regular:
             p = at(u)
             s.box("BlackMetal", (p[0], P.ROOF / 2, p[1]), (0.18, P.ROOF, 0.3), rot)
             q = at(u, 0.5)
             s.box("DarkMetal", (q[0], P.ROOF / 2 + 0.5, q[1]), (0.25, P.ROOF + 1.0, 0.8), rot, skip=("-y",))
+        # Where an inner wall meets the glass: a broad mullion inside, wider than the wall, that it ends against.
+        for u in sorted(joins):
+            p = at(u, -0.45)
+            s.box("BlackMetal", (p[0], P.ROOF / 2, p[1]), (JOIN_W, P.ROOF, 0.9), rot)
 
 
 # The core ------------------------------------------------------------------------------------------------
@@ -170,7 +221,8 @@ def lifts(s):
     s.light("spot", (-1.0, 12.4, z + 1.5), fit.WARM, 16, 1.0, False, "Bottom", 70)
     # The grand stair's head, faced in stone (38F sees its tall end from the lifts).
     x0, x1 = P.GRAND["x"]
-    s.box("MarbleBlack", ((x0 + x1) / 2, P.L2 / 2, P.GRAND["z1"] - 0.01), (x1 - x0, P.L2, 0.1), 180)
+    # (Its ends tucked inside the flight's sides: in their planes, the two flickered.)
+    s.box("MarbleBlack", ((x0 + x1) / 2, P.L2 / 2, P.GRAND["z1"] - 0.01), (x1 - x0 - 0.2, P.L2, 0.1), 180)
 
 
 def video_wall(s):

@@ -59,7 +59,8 @@ def stairs_and_alley(s):
     z1 = OZ + Z1
     # the doorway's stone frame
     for side in (-1, 1):
-        s.box("Stone", (OX + side * (DOOR_W / 2 + 0.4), (DOOR_H + 0.4) / 2, z1), (0.8, DOOR_H + 0.4, 1.4), collide=True)
+        # (A hair proud of the wall's ends in the doorway: level with them, the two flickered.)
+        s.box("Stone", (OX + side * (DOOR_W / 2 + 0.38), (DOOR_H + 0.4) / 2, z1), (0.84, DOOR_H + 0.4, 1.4), collide=True)
     s.box("Stone", (OX, DOOR_H + 0.6, z1), (DOOR_W + 1.6, 0.8, 1.4), collide=True)
     # the flight, its walls and vault, the landing at the top
     kit.stairs(s, OX, z1 + 0.5, 180, DOOR_W, FLIGHT["rise"], FLIGHT["run"], FLIGHT["steps"], "Stone")
@@ -67,7 +68,10 @@ def stairs_and_alley(s):
     s.box("Stone", (OX, ALLEY_Y / 2, (top + OZ + ALLEY[0]) / 2), (DOOR_W, ALLEY_Y, OZ + ALLEY[0] - top), collide=True)
     for side in (-1, 1):
         x = OX + side * (DOOR_W / 2 + 0.5)
-        kit.wall(s, (x, z1), (x, OZ + ALLEY[0]), ALLEY_Y + 9.0, core="RockGrey", side_s="RuinStone", side_n="RuinStone")
+        # (From the shrine wall's face to the alley wall's: running into them, their faces lay in the planes of the
+        # doorways' sides and flickered.)
+        kit.wall(s, (x, z1 + 0.5), (x, OZ + ALLEY[0] - 0.5), ALLEY_Y + 9.0, core="RockGrey", side_s="RuinStone",
+                 side_n="RuinStone")
     s.box("RuinStone", (OX, ALLEY_Y + 7.5, (z1 + OZ + ALLEY[0]) / 2), (DOOR_W + 2.0, 1.0, OZ + ALLEY[0] - z1),
           skip=("+y",))
     for i in (1, 4, 7, 10):

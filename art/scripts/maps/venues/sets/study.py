@@ -53,9 +53,9 @@ def build(s):
     px, pz = at(0.0, -8.0)
     s.prop("OfficeChair", px, pz, 180)
     s.light("point", (OX - 2.3, 3.55, OZ - 5.75), (255, 214, 150), 20, 2.6, shadows=True)  # under the shade
-    px, pz = at(0.0, 6.6)
+    px, pz = at(1.0, 6.6)  # (a stud east of the doorway, x -5..-1: in front of it, it narrowed the way out)
     s.prop("CRTTelevision", px, pz, 0)
-    s.screen((OX + 0.3, 1.75, OZ + 5.43), 0, 1.9, 1.5, "news")
+    s.screen((OX + 1.3, 1.75, OZ + 5.43), 0, 1.9, 1.5, "news")
     s.light("spot", (OX, H - 1.0, OZ + 0.5), (255, 196, 140), 26, 0.8, shadows=True, angle=70)  # a little fill
     # Candles in the corners by the window; a brass sconce either side of the door.
     for x in (-8.5, 8.5):

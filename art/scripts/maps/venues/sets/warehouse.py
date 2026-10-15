@@ -21,13 +21,13 @@ def build(s):
     for a, b, ops in runs:
         kit.wall(s, a, b, H, core="ConcreteDark", side_s="Shutter", openings=ops)
     # The roll-up door, raised to 9: its curtain above the opening, the night outside.
-    s.box("Shutter", (OX + 10.0, (9.0 + 16.0) / 2, OZ + Z1 - 0.6), (16.0, 7.0, 0.3))
+    s.box("Shutter", (OX + 10.0, (9.0 + 16.0) / 2, OZ + Z1 - 0.7), (16.0, 7.0, 0.3))  # (clear of the wall's face)
     s.box("CityRoad", (OX + 10.0, -0.01, OZ + Z1 + 20.0), (40.0, 0.1, 40.0))
     s.light("point", (OX + 10.0, 6.0, OZ + Z1 + 6.0), (200, 150, 90), 26, 0.8)
     # The roof: a dark deck on steel trusses, skylight strips letting the moon in.
     s.box("DarkMetal", (OX, H + 0.5, OZ), (X1 - X0, 1.0, Z1 - Z0), skip=("+y",))
     for x in range(int(X0) + 8, int(X1) - 4, 12):
-        s.box("BlackMetal", (OX + x, H - 1.2, OZ), (0.8, 2.4, Z1 - Z0))
+        s.box("BlackMetal", (OX + x, H - 1.25, OZ), (0.8, 2.3, Z1 - Z0))  # (under the deck and the skylights' glass)
         s.box("BlackMetal", (OX + x, H - 3.8, OZ), (0.4, 0.4, Z1 - Z0))
         for z in range(int(Z0) + 4, int(Z1), 8):
             s.tube("BlackMetal", (OX + x, H - 3.8, OZ + z), (OX + x, H - 1.2, OZ + z + 4), 0.15, 5)
@@ -50,4 +50,5 @@ def build(s):
     kit.pendant(s, OX, H, OZ, drop=10.0, shade="BlackMetal", range_=30, brightness=2.2, shadows=True, wide=2.2)
     s.light("spot", (OX, H - 10.5, OZ), (255, 214, 160), 28, 2.0, shadows=True, angle=60)
     s.emitter("dust", (OX, 10.0, OZ), 0, (60.0, 18.0, 44.0))
-    s.sign((OX - 35.6, 14.0, OZ), 90, 10.0, 3.0, "倉庫 B", "GothamBlack", (40, 40, 36), (200, 170, 30))
+    # (On the west wall's face, x -35.5, turned to the room: inside it and turned to the wall, it was not seen.)
+    s.sign((OX - 35.4, 14.0, OZ), -90, 10.0, 3.0, "倉庫 B", "GothamBlack", (40, 40, 36), (200, 170, 30))

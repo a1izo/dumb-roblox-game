@@ -54,16 +54,18 @@ def case_wall(s):
     face = IN - 0.12
     rng = random.Random(55)
     pins = []
-    for zc, yc in ((14.5, 8.5), (19.5, 6.0), (16.0, 4.0), (21.5, 9.5), (13.5, 10.5), (18.5, 11.0), (-13.0, 9.0),
-                   (-15.5, 5.5), (-12.0, 4.2), (-16.3, 11.0), (24.3, 5.0), (13.0, 6.5)):
+    for k, (zc, yc) in enumerate(((14.5, 8.5), (19.5, 6.0), (16.0, 4.0), (21.5, 9.5), (13.5, 10.5), (18.5, 11.0),
+                                  (-13.0, 9.0), (-15.5, 5.5), (-12.0, 4.2), (-16.3, 11.0), (24.3, 5.0), (13.0, 6.5))):
         wz, hy = rng.uniform(1.4, 2.3), rng.uniform(1.6, 2.4)
         mat = rng.choice(("Photo", "PhotoPale", "Paper"))
         tilt = rng.uniform(-6, 6)
-        s.obox(mat, (face, yc, zc), (0.04, hy, wz), (1, 0, 0), (0, math.cos(math.radians(tilt)), math.sin(math.radians(tilt))),
+        # (Each pinned over the last, a hair proud of it: overlapping in one plane they flickered.)
+        lay = face - 0.012 * k
+        s.obox(mat, (lay, yc, zc), (0.04, hy, wz), (1, 0, 0), (0, math.cos(math.radians(tilt)), math.sin(math.radians(tilt))),
                (0, -math.sin(math.radians(tilt)), math.cos(math.radians(tilt))))
         if mat != "Paper":
-            s.box("PhotoPale", (face - 0.03, yc - hy / 2 + 0.25, zc), (0.03, 0.35, wz * 0.9))
-        pin = (face - 0.1, yc + hy / 2 - 0.2, zc)
+            s.box("PhotoPale", (lay - 0.03, yc - hy / 2 + 0.25, zc), (0.03, 0.35, wz * 0.9))
+        pin = (lay - 0.1, yc + hy / 2 - 0.2, zc)
         s.box("RedTrim", pin, (0.14, 0.14, 0.14))
         pins.append(pin)
     board_pins = [(face - 0.12, y + h / 2 - 0.6, z + w / 2 - 0.8), (face - 0.12, y - h / 2 + 0.8, z + w / 2 - 1.2),

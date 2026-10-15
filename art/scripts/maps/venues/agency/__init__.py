@@ -74,9 +74,11 @@ def s_layout(s):
 
 def build(s):
     g = city.Ground(s)
+    fit.reset()
     shell.build(s, g)
     lower.build(s, g)
     upper.build(s, g)
+    shell.flush(s)  # the curtain wall, now that every inner wall is known (a mullion where one meets the glass)
     clutter.build(s)
     outside.build(s)
     gameplay.build(s)

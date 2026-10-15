@@ -51,11 +51,12 @@ def build(s):
     s.light("point", (OX - 1.1, 4.1, OZ + DESK[1] - 1.0), (90, 230, 170), 8, 1.3, shadows=False)
     s.light("point", (OX + 2.4, 4.3, OZ + DESK[1] - 0.6), (255, 200, 140), 9, 1.8, shadows=True)
     s.light("spot", (OX + 1.3, H - 0.4, OZ + DESK[1] - 0.6), (170, 175, 210), 14, 0.7, shadows=True, angle=40)
-    # Sparse: a shelf, the sofa against the east wall, a plant by the door.
-    px, pz = at(X0 + 1.0, 1.5)
+    # Sparse: a shelf, the sofa against the east wall, a plant in the corner by the window (all clear of the walls'
+    # faces at +-8.5 and +-6.5, and of the doorway, x -6.8..-3.2: they stood in them).
+    px, pz = at(X0 + 1.6, 1.5)
     s.prop("Bookshelf", px, pz, -90)
-    px, pz = at(X1 - 1.6, 2.0)
+    px, pz = at(X1 - 2.2, 2.0)
     s.prop("Sofa", px, pz, 90)
-    px, pz = at(-6.4, 5.4)
+    px, pz = at(-7.0, -5.0)
     s.prop("Plant", px, pz, 0)
     s.light("spot", (OX, H - 0.6, OZ + 3.0), (120, 130, 170), 22, 0.25, shadows=False, angle=80)  # a breath of fill

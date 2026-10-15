@@ -42,11 +42,21 @@ GLASS = {
 }
 
 
+# Every inner wall built so far, (a, b, thickness): the curtain wall puts a mullion where one meets its glass
+# (shell.flush). Emptied for each build (reset).
+JOINS = []
+
+
+def reset():
+    JOINS.clear()
+
+
 def partition(s, a, b, y0, y1, mat_n="PlasterGrey", mat_s="PlasterGrey", doors=(), glass=None, spans=None,
               sill=3.2, head=9.4, thick=0.6, trim=True, core=None):
     """An inner wall from a to b (x, z) between floor y0 and ceiling y1. doors: [(distance from a
     to the door's middle, width)]. glass: a GLASS kind for windows along the wall above waist
     height, all along it between the doors, or only over spans [(u0, u1)] when given."""
+    JOINS.append((tuple(a), tuple(b), thick))
     length = math.dist(a, b)
     ops = []
     for at, w in doors:
@@ -69,8 +79,9 @@ def partition(s, a, b, y0, y1, mat_n="PlasterGrey", mat_s="PlasterGrey", doors=(
                         "rows": 1, "glass": pane, "blinds": blinds, "blinds_side": 1, "slat": "CreamTrim",
                         "sill": "BlackMetal", "casing": 0.2, "see_through": through})
     trims = {"base": "BlackTrim", "grime": True} if trim else None
+    # (Up to the ceiling: no top, which only lay over other walls' tops above it and flickered with them.)
     kit.wall(s, a, b, y1, thick=thick, base=y0, core=core or mat_n, side_n=mat_n, side_s=mat_s, openings=ops,
-             trim_n=trims, trim_s=trims)
+             trim_n=trims, trim_s=trims, covered=True)
 
 
 def closed_door(s, x, z, rot, y=0.0, w=4.0, leaf="WoodPanel", sign=None):

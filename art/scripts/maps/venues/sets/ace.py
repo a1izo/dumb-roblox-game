@@ -43,7 +43,7 @@ def ace_room(s):
     for k in range(4):
         s.tube("Rubber", (AX - 9.0 + k * 3.0, 0.08, AZ - 6.8), (AX - 3.0 + k * 1.6, 0.08, AZ + 2.0), 0.08, 5)
     s.prop("FilingCabinet", AX + 8.2, AZ - 7.4, 0)
-    s.box("FabricRed", (AX - 11.6, 6.0, AZ + 2.0), (0.2, 10.0, 8.0))
+    s.box("FabricRed", (AX - 11.55, 6.0, AZ + 2.0), (0.2, 10.0, 8.0))  # (off the wall's face: flush, they flickered)
 
 
 def pantry(s):

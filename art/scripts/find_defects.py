@@ -22,8 +22,8 @@ import common  # noqa: E402
 from maps import catalog, finders, mesher  # noqa: E402
 
 # (run_maps.py runs on import, so its venue list is repeated here.)
-VENUES = ["Lobby", "Meeting", "Agency", "Campus", "Tokyo"]
-MODULES = {"Lobby": "lobby", "Meeting": "meeting", "Agency": "agency", "Campus": "campus", "Tokyo": "tokyo"}
+VENUES = ["Lobby", "Meeting", "Agency", "Campus", "Tokyo", "Sets"]
+MODULES = {"Lobby": "lobby", "Meeting": "meeting", "Agency": "agency", "Campus": "campus", "Tokyo": "tokyo", "Sets": "sets"}
 
 
 def _caller():

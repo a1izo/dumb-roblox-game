@@ -15,7 +15,7 @@ return {
 		{ "Sideboard", 7.6, 0, 8.5, 180, 0.7 },
 		{ "ExecutiveDesk", 0, 0, -5.4, 180, 1 },
 		{ "OfficeChair", 0, 0, -8, 180, 1 },
-		{ "CRTTelevision", 0, 0, 6.6, 0, 1 },
+		{ "CRTTelevision", 1, 0, 6.6, 0, 1 },
 		{ "CandleCluster", -8.5, 0, -8.4, 0, 1 },
 		{ "CandleCluster", 8.5, 0, -8.4, 0, 1 },
 		{ "Effigy", 120, 1.8, -13.6, 0, 1.8 },
@@ -47,9 +47,9 @@ return {
 		{ "Bench", 365.5, 0, 0, 0, 1 },
 		{ "Desk", 360, 0, 57.4, 0, 1.12 },
 		{ "OfficeChair", 361.3, 0, 54.5, 180, 0.85 },
-		{ "Bookshelf", 352, 0, 61.5, -90, 1 },
-		{ "Sofa", 367.4, 0, 62, 90, 1 },
-		{ "Plant", 353.6, 0, 65.4, 0, 1 },
+		{ "Bookshelf", 352.6, 0, 61.5, -90, 1 },
+		{ "Sofa", 366.8, 0, 62, 90, 1 },
+		{ "Plant", 353, 0, 55, 0, 1 },
 		{ "Crate", 489, 0, -21, 5, 1.25 },
 		{ "Crate", 489, 5, -21, 18, 1.25 },
 		{ "Crate", 495, 0, -21.5, -8, 1.25 },
@@ -107,8 +107,8 @@ return {
 		{ kind = "spot", at = { 520, 15.5, 0 }, color = { 255, 214, 160 }, range = 28, brightness = 2, shadows = true, face = "Bottom", angle = 60, flicker = false },
 	},
 	signs = {
-		{ at = { 349.2, 7.2, 0 }, rot = 90, w = 6, h = 1.2, text = "BUREAU", font = "GothamBlack", color = { 220, 222, 226 }, bg = { 24, 26, 32 }, glow = nil, align = "Center" },
-		{ at = { 484.4, 14, 0 }, rot = 90, w = 10, h = 3, text = "倉庫 B", font = "GothamBlack", color = { 40, 40, 36 }, bg = { 200, 170, 30 }, glow = nil, align = "Center" },
+		{ at = { 349.6, 7.2, 0 }, rot = -90, w = 6, h = 1.2, text = "BUREAU", font = "GothamBlack", color = { 220, 222, 226 }, bg = { 24, 26, 32 }, glow = nil, align = "Center" },
+		{ at = { 484.6, 14, 0 }, rot = -90, w = 10, h = 3, text = "倉庫 B", font = "GothamBlack", color = { 40, 40, 36 }, bg = { 200, 170, 30 }, glow = nil, align = "Center" },
 	},
 	emitters = {
 		{ kind = "windowrain", at = { 0, 8.9, -10.4 }, rot = 0, size = { 6, 7, 0.3 } },
@@ -121,7 +121,7 @@ return {
 	covers = {},
 	-- giant screens the client plays loops on: where the face is, facing rot
 	screens = {
-		{ at = { 0.3, 1.75, 5.43 }, rot = 0, w = 1.9, h = 1.5, loop = "news" },
+		{ at = { 1.3, 1.75, 5.43 }, rot = 0, w = 1.9, h = 1.5, loop = "news" },
 		{ at = { 232.5, 9.4, -8.26 }, rot = 0, w = 4.4, h = 2.4, loop = "cctv" },
 		{ at = { 238, 9.4, -8.26 }, rot = 0, w = 4.4, h = 2.4, loop = "news" },
 		{ at = { 243.5, 9.4, -8.26 }, rot = 0, w = 4.4, h = 2.4, loop = "cctv" },

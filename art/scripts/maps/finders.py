@@ -145,11 +145,15 @@ class Eyes:
         keep = []
         for p in self.points:
             backs = 0
+            near = []  # (each axis, both ways) a back face within 2 studs
             for d in axes:
                 hit = everything.ray_cast(p, d, 40.0)
-                if hit[0] is not None and hit[1].dot(d) > 0.05:
-                    backs += 1
-            if backs < 4:
+                back = hit[0] is not None and hit[1].dot(d) > 0.05
+                backs += back
+                near.append(back and hit[3] < 2.0)
+            # (Or both ways along one axis close by: inside a thin solid whose ends other pieces overlap, a door's
+            # lining under its casings.)
+            if backs < 4 and not any(near[k] and near[k + 1] for k in (0, 2, 4)):
                 keep.append(p)
         self.points = keep
         self._index()
@@ -604,6 +608,12 @@ def oneside(tris, eyes):
             # The first thing the ray meets is this face, or a face of its plane, from behind (a thin bar's front
             # face can lie a hundredth of a stud before its back: that is not the back seen).
             if hit[0] is not None and (index_of.get(i) == hit[2] or (hit[3] >= dist - 0.01 and hit[1].dot(ray) > 0.5)):
+                # Back to back with a face that looks at the eye in the same place (the jambs of two panes side by
+                # side): that one is drawn, this one is not seen.
+                if any(n2.dot(ray) < -0.05 for _, n2, _, _ in everything.find_nearest_range(hit[0], 0.015)):
+                    if tries >= 8:
+                        break
+                    continue
                 entry = found.setdefault(tris.pieces[i], {"area": 0.0, "at": centre.copy(), "big": 0.0, "mat": mat,
                                                           "eye": co.copy()})
                 entry["area"] += area
@@ -626,8 +636,8 @@ PANE_OFF = 1.2  # how far either side of a pane a wall ending against it is look
 
 
 def _glass(mat):
-    return matlib.is_flat(mat) and mat not in ("Water", "Puddle") and (
-        matlib.FLAT[mat][0] == "Glass" or matlib.FLAT[mat][2] > 0)
+    # (See-through only: glass with no transparency is drawn opaque in Roblox, a dark pane hides what is behind it.)
+    return matlib.is_flat(mat) and mat not in ("Water", "Puddle") and matlib.FLAT[mat][2] > 0
 
 
 def pane(scene, tris):
@@ -658,16 +668,26 @@ def pane(scene, tris):
             width, height = max(us) - min(us), max(ys) - min(ys)
             if width < 1.5 or height < 1.5:
                 continue
+            # A sloped one is a stair's glass balustrade, the flight under it by design.
+            low_a = min(p.y for p, u in zip(pts, us) if u < min(us) + 0.3)
+            low_b = min(p.y for p, u in zip(pts, us) if u > max(us) - 0.3)
+            if abs(low_a - low_b) > 1.0:
+                continue
             u0, ymid, nmid = min(us), (min(ys) + max(ys)) / 2, sum(ns) / len(ns)
             base = u * (u0 + 0.25) + normal * nmid
             for side in (1, -1):
                 start = base + normal * (side * PANE_OFF)
                 start.y = ymid
                 hit = opaque.ray_cast(start, u, width - 0.5)
+                # (What a window is meant to show behind it is no wall cutting it: the dark core of a block, the
+                # sides of the lit room behind an upper window.)
+                behind = tris.mats[keep[hit[2]]] if hit[0] is not None else ""
+                if behind == "CoreDark" or behind.startswith("Room"):
+                    break
                 if hit[0] is not None and abs(hit[1].dot(u)) > 0.8:
                     out.append({"kind": "pane", "at": _where(hit[0]), "detail": f"{mat} {tris.mats[keep[hit[2]]]}",
                                 "side": "front" if side > 0 else "back", "width": round(width, 1),
-                                "into": round(hit[3] + 0.25, 2), "src": tris.src[tris.pieces[keep[hit[2]]]]})
+                                "into": round(hit[3] + 0.25, 2), "normal": _where(normal), "src": tris.src[tris.pieces[keep[hit[2]]]]})
                     break
     return out
 

@@ -18,11 +18,12 @@ def lockers(s, x_from, count, z_back, face, seed):
         s.box("PaintSteel", (x, 0.4 + TALL / 2, OZ + z), (W - 0.04, TALL, DEEP), collide=True)
         s.box("BlackTrim", (x, 0.2, OZ + z - face * 0.1), (W, 0.4, DEEP - 0.2))
         s.box("PaintSteel", (x, 0.4 + TALL / 2, OZ + front), (W - 0.16, TALL - 0.3, 0.06))
+        # (Vents and cards stand well proud of the door: a hundredth off it, they flickered.)
         for y in (TALL - 0.2, TALL - 0.45, TALL - 0.7, 1.0, 1.25):
-            s.box("DarkMetal", (x, y, OZ + front + face * 0.035), (W - 0.6, 0.06, 0.02))
+            s.box("DarkMetal", (x, y, OZ + front + face * 0.06), (W - 0.6, 0.06, 0.03))
         s.box("Steel", (x + 0.5, 3.9, OZ + front + face * 0.07), (0.08, 0.55, 0.1))
         if (k * 7 + seed) % 3:
-            s.box("Paper", (x, TALL - 1.2, OZ + front + face * 0.035), (0.6, 0.25, 0.02))
+            s.box("Paper", (x, TALL - 1.2, OZ + front + face * 0.06), (0.6, 0.25, 0.03))
 
 
 def build(s):
@@ -36,13 +37,14 @@ def build(s):
                  trim_s={"base": "BlackTrim"})
     lockers(s, -9.75, 13, -6.5, 1, 0)
     lockers(s, -9.75, 5, 6.5, -1, 1)
-    lockers(s, 2.25, 5, 6.5, -1, 2)
+    lockers(s, 3.6, 4, 6.5, -1, 2)  # (clear of the doorway, x -0.5..3.5: the row ran across its edge)
     # Two benches down the middle, a gap between them on the way to the door.
     s.prop("Bench", OX - 2.5, OZ, 0)
     s.prop("Bench", OX + 5.5, OZ, 0)
-    # The seal on the west wall, a mirror and a sink on the east wall.
-    s.sign((OX - 10.8, 7.2, OZ), 90, 6.0, 1.2, "BUREAU", "GothamBlack", (220, 222, 226), (24, 26, 32))
-    s.box("MirrorGlass", (OX + 10.8, 6.0, OZ - 1.0), (0.1, 3.0, 4.0))
-    s.box("WhiteTrim", (OX + 10.4, 3.2, OZ - 1.0), (0.8, 0.4, 2.2))
+    # The seal on the west wall, a mirror and a sink on the east wall (the walls' faces at x +-10.5: inside them
+    # and turned to the wall, the seal could not be seen).
+    s.sign((OX - 10.4, 7.2, OZ), -90, 6.0, 1.2, "BUREAU", "GothamBlack", (220, 222, 226), (24, 26, 32))
+    s.box("MirrorGlass", (OX + 10.42, 6.0, OZ - 1.0), (0.1, 3.0, 4.0))
+    s.box("WhiteTrim", (OX + 10.05, 3.2, OZ - 1.0), (0.8, 0.4, 2.2))
     for x in (-6.0, 0.0, 6.0):
         kit.tube_light(s, OX + x, h, OZ, length=6.0, rot=90, range_=16, brightness=0.8)
