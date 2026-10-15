@@ -19,6 +19,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
+local Venues = require(Shared:WaitForChild("Venues"))
 local Games = Shared:WaitForChild("LobbyGames")
 local Parkour = require(Games:WaitForChild("Parkour"))
 local Runes = require(Games:WaitForChild("Runes"))
@@ -486,7 +487,9 @@ local function catchFallen()
 	for _, player in ipairs(Players:GetPlayers()) do
 		local part = root(player)
 		-- (A diver is far under the lobby on purpose: the rift gives them back itself.)
-		if part and inLobby(player) and not LobbyRift.diving(player) then
+		-- (Only in the lobby's own part of the world: a map being looked at between cases, the meeting room
+		-- and the cutscene sets stand far from it.)
+		if part and inLobby(player) and not LobbyRift.diving(player) and Venues.at(part.Position) == "lobby" then
 			local box = games.bounds
 			local p = part.Position
 			local out = box ~= nil
