@@ -19,10 +19,58 @@ from maps.venues.lobby.terrain import blade, column, floating_rock, islet_poly, 
 H = P.PLATEAU_H
 
 
-def causeway(s, g, a, b, seed, chasm):
+PARAPET_T = 1.0  # a parapet's thickness
+PARAPET_LOW = 2.4  # the lowest a parapet ever stands over the deck (a breach), so it always reads as a wall
+CAP = 13.5  # how high over the deck the parapets' collision reaches: an R6 body's legs do not collide, so its torso
+# clears a wall at the top of a jump (about 10.4 over the deck): this is over that, so a jump never clears it
+LIP = 2.5  # how far the cap's lip leans in over the deck
+
+
+def parapet(s, a, ux, uz, rot, off, u0, u1, rng):
+    """One side's parapet from u0 to u1 along the causeway: a continuous wall of old blocks, its top worn
+    uneven, a coping slab on the whole runs and a squat pier now and then; where it has broken down (a breach)
+    it is lower, never open. Visual only: its collision is laid along it by the caller."""
+    side = (-uz, ux)
+
+    def at(u, y):
+        return (a[0] + ux * u + side[0] * off, y, a[1] + uz * u + side[1] * off)
+
+    u = u0
+    next_pier = u0 + rng.uniform(7.0, 11.0)
+    while u < u1 - 0.05:
+        run = min(rng.uniform(2.8, 7.0), u1 - u)
+        if u1 - (u + run) < 1.6:
+            run = u1 - u  # no sliver at the end
+        breach = rng.random() < 0.18
+        h = rng.uniform(PARAPET_LOW, 2.6) if breach else rng.uniform(2.9, 3.4)
+        x, _, z = at(u + run / 2, 0.0)
+        s.box("RuinStone", (x, h / 2, z), (run, h, PARAPET_T), rot, skip=("-y",))
+        if not breach and run > 1.6:
+            cut = rng.uniform(0.1, 0.3)
+            s.box("RuinStone", (x, h + 0.17, z), (run - cut, 0.34, PARAPET_T + 0.3), rot, skip=("-y",))
+        elif breach:
+            # A broken top: a chunk still standing on it, off-centre.
+            du = rng.uniform(-run / 2 + 0.4, run / 2 - 0.4) if run > 1.2 else 0.0
+            bh = rng.uniform(0.3, 0.7)
+            bx, _, bz = at(u + run / 2 + du, 0.0)
+            s.box("RuinStone", (bx, h + bh / 2, bz), (rng.uniform(0.6, 1.1), bh, PARAPET_T * 0.8), rot + rng.uniform(-6, 6),
+                  skip=("-y",))
+        if u + run >= next_pier and u + run < u1 - 1.0:
+            px, _, pz = at(u + run, 0.0)
+            ph = rng.uniform(3.6, 4.2)
+            s.box("RuinStone", (px, ph / 2, pz), (1.5, ph, PARAPET_T + 0.5), rot, skip=("-y",))
+            s.box("RuinStone", (px, ph + 0.2, pz), (1.8, 0.4, PARAPET_T + 0.8), rot, skip=("-y",))
+            next_pier = u + run + rng.uniform(8.0, 12.0)
+        u += run
+
+
+def causeway(s, g, a, b, seed, chasm, name):
     """An old stone causeway from a (the basin's rim) to b (on the plateau): flagstones on a thick slab over the
-    plain and across a chasm, broken parapets, piers down into the dark, invisible rails all along (nobody
-    falls into a chasm), and a flight of steps up onto the plateau at the far end."""
+    plain and across a chasm, piers down into the dark, a flight of steps up onto the plateau at the far end.
+    Both sides carry a parapet that is old and broken-topped but never open, and its collision is the parapet
+    itself, reaching on over a jump's height (nobody leaves a causeway: the plain beside it is not ground).
+    Anchors <name>A (at the rim end) and <name>B (at the head of the steps), each facing along the way
+    from there: where someone who falls into the chasm is set back (the end they came from)."""
     rng = random.Random(seed)
     length = math.dist(a, b)
     ux, uz = (b[0] - a[0]) / length, (b[1] - a[1]) / length
@@ -37,24 +85,36 @@ def causeway(s, g, a, b, seed, chasm):
     s.box("RuinStone", (mid[0], -1.6, mid[1]), (flat, 3.2, w + 1.4), rot, skip=("+y",))
     s.box("RuinStone", (mid[0], -4.0, mid[1]), (flat * 0.96, 1.6, w - 3.0), rot, skip=("+y",))
     side = (-uz, ux)
-    # The parapets: low walls along both sides, in broken runs (visual); a rail all along (invisible).
+    off_abs = w / 2 + 0.2
+    # The parapets, from a little inside the basin's rim (the rim's wall leaves its gap there) to the steps'
+    # foot; then along the flight, stepping up with it.
+    start = -3.0
     for sgn in (-1, 1):
-        off = sgn * (w / 2 + 0.2)
-        u = rng.uniform(0.0, 4.0)
-        while u < flat - 2.0:
-            run = rng.uniform(3.0, 11.0)
-            if rng.random() < 0.28:
-                u += rng.uniform(4.0, 9.0)  # a gap where the parapet has fallen
-                continue
-            run = min(run, flat - 1.0 - u)
-            h = rng.uniform(1.2, 3.4)
-            cx = a[0] + ux * (u + run / 2) + side[0] * off
-            cz = a[1] + uz * (u + run / 2) + side[1] * off
-            s.box("RuinStone", (cx, h / 2, cz), (run, h, 1.0), rot, skip=("-y",))
-            u += run + rng.uniform(0.0, 1.5)
-        # The rail runs a few studs on along the steps' foot, where their own guard has not begun yet.
-        s.collider((mid[0] + ux * 4.0 + side[0] * off, 3.0, mid[1] + uz * 4.0 + side[1] * off), (flat + 8.0, 6.0, 0.6), rot,
-                   False, None)
+        off = sgn * off_abs
+        parapet(s, a, ux, uz, rot, off, start, flat, rng)
+        # Collision along it: the wall itself (seen in the greybox) and over it, unseen, up to CAP; it runs on
+        # past the steps' foot until their own guard has begun.
+        u0, u1 = start, flat + 4.5
+        cu = (u0 + u1) / 2
+        cx, cz = a[0] + ux * cu + side[0] * off, a[1] + uz * cu + side[1] * off
+        s.collider((cx, 1.45, cz), (u1 - u0, 2.9, PARAPET_T), rot, False, "RuinStone")
+        s.collider((cx, 2.9 + (CAP - 2.9) / 2, cz), (u1 - u0, CAP - 2.9, PARAPET_T), rot, False, None)
+        # A lip leaning over the deck at the top of it: a body climbing the wall by wall-hops (jumping off it,
+        # Roblox's trick) meets it overhead; a jump on the deck never reaches it (the head tops out near 12).
+        lx = cx - side[0] * sgn * (PARAPET_T / 2 + LIP / 2)
+        lz = cz - side[1] * sgn * (PARAPET_T / 2 + LIP / 2)
+        s.collider((lx, CAP - 0.25, lz), (u1 - u0, 0.5, LIP), rot, False, None)
+        # The flight's parapet: blocks stepping up beside the steps (their guard is CAP high too).
+        steps = 6
+        for k in range(steps):
+            t0, t1 = k / steps, (k + 1) / steps
+            top = H * t1 + 2.9
+            uc = flat + P.STAIR_RUN * (t0 + t1) / 2
+            x, z = a[0] + ux * uc + side[0] * off, a[1] + uz * uc + side[1] * off
+            s.box("RuinStone", (x, top / 2, z), (P.STAIR_RUN / steps + 0.02, top, PARAPET_T), rot, skip=("-y",))
+            s.box("RuinStone", (x, top + 0.17, z), (P.STAIR_RUN / steps - 0.1, 0.34, PARAPET_T + 0.3), rot, skip=("-y",))
+    s.anchor(name + "A", a[0] + ux * 6.0, 0.0, a[1] + uz * 6.0, P.rot_towards(a, b))
+    s.anchor(name + "B", b[0] - ux * 2.0, H, b[1] - uz * 2.0, P.rot_towards(b, a))
     # Piers down into the chasm, now and then a block fallen on the deck.
     for dt in (-11.0, 0.0, 11.0):
         px = chasm[0] + ux * dt
@@ -70,7 +130,7 @@ def causeway(s, g, a, b, seed, chasm):
                   (rng.uniform(1.2, 2.2), 1.0, rng.uniform(1.2, 2.2)), rng.uniform(0, 90))
     # The steps up onto the plateau.
     city.stairs(s, g, foot, b, 0.0, H, w, mat="RuinStone", side_mat="RuinStone", step=0.85, name="the causeway steps",
-                guard=6.0)
+                guard=CAP)
 
 
 def plateau(s, g, c, r, seed, centre_dir_pt, wall_h):
@@ -197,7 +257,7 @@ def parkour(s, g):
 
 
 def build(s, g):
-    causeway(s, g, P.BRIDGE_RUNE[0], P.BRIDGE_RUNE[1], 301, P.CHASMS[0])
-    causeway(s, g, P.BRIDGE_PARKOUR[0], P.BRIDGE_PARKOUR[1], 302, P.CHASMS[1])
+    causeway(s, g, P.BRIDGE_RUNE[0], P.BRIDGE_RUNE[1], 301, P.CHASMS[0], "bridgeRune")
+    causeway(s, g, P.BRIDGE_PARKOUR[0], P.BRIDGE_PARKOUR[1], 302, P.CHASMS[1], "bridgeParkour")
     runes(s, g)
     parkour(s, g)

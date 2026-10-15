@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 3
+Migrations.CURRENT = 4
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -76,13 +76,11 @@ function Migrations.defaults(startingCoins: number)
 		-- of its steps were done (a rejoin carries on from there).
 		trial = { done = false, skipped = false, paid = false, step = 0 },
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
-		-- rounds cleared, the longest dice win-streak, the longest stone-toss echo (seconds), the fastest
-		-- spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls survived in a row with
+		-- rounds cleared, the longest stone-toss echo (seconds), the fastest spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls survived in a row with
 		-- Death's mark; the grey apples found (a bit for each of the seven); and the name duels won.
 		lobbyGames = {
 			parkourBest = 0,
 			runesBest = 0,
-			diceBest = 0,
 			tossBest = 0,
 			spiritBest = 0,
 			riftBest = 0,
@@ -159,6 +157,19 @@ local STEPS: { [number]: (any) -> () } = {
 		end
 		if refunded > 0 then
 			data.coins = (tonumber(data.coins) or 0) + refunded
+		end
+	end,
+	-- v3 -> v4: the rift's dive became about three times as deep (2026-10-15), so the old smallest gaps
+	-- are not comparable: each is kept as riftBestV1 (shown nowhere) and the best starts again. The
+	-- retired bone dice's best goes.
+	[3] = function(data)
+		local games = data.lobbyGames
+		if type(games) == "table" then
+			if (tonumber(games.riftBest) or 0) > 0 then
+				games.riftBestV1 = games.riftBest
+			end
+			games.riftBest = 0
+			games.diceBest = nil
 		end
 	end,
 }

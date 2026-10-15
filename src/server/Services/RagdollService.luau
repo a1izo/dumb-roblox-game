@@ -11,6 +11,7 @@ local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
 local Joints = require(Anim:WaitForChild("Joints"))
+local Limp = require(Anim:WaitForChild("Limp"))
 local Causes = require(Anim:WaitForChild("Causes"))
 
 local CollisionGroups = require(script.Parent.CollisionGroups)
@@ -24,19 +25,6 @@ RagdollService.GROUP = CollisionGroups.RAGDOLL
 RagdollService.COLLAPSE_DELAY = 1.9
 -- How long the limp body stays physical before it is frozen.
 RagdollService.BODY_TIME = 4.5
-
--- Ball-socket limits per joint: { cone angle, twist }.
-local LIMITS = {
-	Neck = { 35, 30 },
-	["Left Shoulder"] = { 80, 45 },
-	["Right Shoulder"] = { 80, 45 },
-	["Left Hip"] = { 55, 20 },
-	["Right Hip"] = { 55, 20 },
-}
-
--- Which way each limb points from its joint, in the parent part's frame (the neck goes up).
-local LIMB_UP = Vector3.new(0, 1, 0)
-local LIMB_DOWN = Vector3.new(0, -1, 0)
 
 local function bodiesFolder(): Instance?
 	local map = Match.map
@@ -73,33 +61,8 @@ end
 -- Turns every joint (Motor6D or AnimationConstraint) into a limited ball socket so the body
 -- falls naturally.
 function RagdollService.ragdoll(character: Model)
-	for name, joint in pairs(Joints.find(character)) do
-		local parent, child = Joints.parent(joint), Joints.child(joint)
-		if name ~= "root" and parent and child then
-			local limit = LIMITS[Joints.R6[name].motor] or { 45, 20 }
-			-- A ball socket's cone and twist run along its attachments' X axis, so the attachments
-			-- point down the limb (R6 joints are turned a quarter, which would aim them sideways).
-			local c0, c1 = Joints.c0(joint), Joints.c1(joint)
-			local along = if name == "neck" then LIMB_UP else LIMB_DOWN
-			local side = if math.abs(along.Z) > 0.9 then Vector3.xAxis else Vector3.zAxis
-			local frame0 = CFrame.fromMatrix(c0.Position, along, along:Cross(side).Unit:Cross(along))
-			local frame1 = c1 * c0:Inverse() * frame0
-			local a0 = Create("Attachment", { Name = "RagdollA0", CFrame = frame0, Parent = parent })
-			local a1 = Create("Attachment", { Name = "RagdollA1", CFrame = frame1, Parent = child })
-			Create("BallSocketConstraint", {
-				Name = "RagdollSocket",
-				Attachment0 = a0,
-				Attachment1 = a1,
-				LimitsEnabled = true,
-				UpperAngle = limit[1],
-				TwistLimitsEnabled = true,
-				TwistLowerAngle = -limit[2],
-				TwistUpperAngle = limit[2],
-				Parent = child,
-			})
-			joint.Enabled = false
-		end
-	end
+	-- (The sockets' layout and limits are Shared/Anim/Limp's: a diver's crash on the rift's roof uses it too.)
+	Limp.apply(character)
 	for _, part in ipairs(character:GetDescendants()) do
 		if part:IsA("BasePart") then
 			part.CollisionGroup = RagdollService.GROUP

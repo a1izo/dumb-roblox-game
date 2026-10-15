@@ -4,8 +4,9 @@
 -- A client says when its player has gone over the rim ("enter") and when they brake ("brake"); nothing
 -- else. The server checks the first against where the character really is, and scores the dive from its
 -- own clock: the fall is one curve of time, so the two moments settle the gap. What a diver is doing shows
--- on their character for every client to pose it (attribute Dive: "fall", "brake", "caught", "crash"; and
--- DiveGap, the studs left, while they hang there). A moment after coming to rest the rift gives the diver
+-- on their character for every client to pose it (attribute Dive: "fall", "brake", "caught", "crash";
+-- DiveSeed, the seed of the body's tumble, which the diver's client chose; and DiveGap, the studs left, while
+-- they hang there). A moment after coming to rest the rift gives the diver
 -- back, at the rim. Divers whose falls begin together are told how they ranked.
 --
 -- Part of the lobby's games: Services/LobbyGameService owns the loop and the requests, and hands this
@@ -59,6 +60,9 @@ local function pose(player: Player, value: string?, gap: number?)
 	if character then
 		character:SetAttribute("Dive", value)
 		character:SetAttribute("DiveGap", gap)
+		if value == nil then
+			character:SetAttribute("DiveSeed", nil)
+		end
 	end
 end
 
@@ -131,7 +135,7 @@ function LobbyRift.cancel(player: Player)
 	backAt[player] = nil
 end
 
-local function enter(player: Player)
+local function enter(player: Player, seed: any)
 	local context = ctx
 	if not context or not info or dives[player] or not context.playable(player) then
 		return
@@ -161,6 +165,11 @@ local function enter(player: Player)
 	}
 	dives[player] = dive
 	table.insert(dive.wave.dives, dive)
+	local character = player.Character
+	if character then
+		-- (Before Dive, so every client has the seed when it starts drawing the tumble.)
+		character:SetAttribute("DiveSeed", if type(seed) == "number" then math.floor(seed) % 16777216 else 1)
+	end
 	pose(player, "fall", nil)
 	context.tell(player, { game = "rift", kind = "start" })
 end
@@ -182,9 +191,9 @@ local function brake(player: Player)
 	context.tell(player, { game = "rift", kind = "brake", at = at, crashed = outcome.crashed, gap = outcome.gap })
 end
 
-function LobbyRift.request(player: Player, action: string)
+function LobbyRift.request(player: Player, action: string, payload: any)
 	if action == "enter" then
-		enter(player)
+		enter(player, if type(payload) == "table" then payload.seed else nil)
 	elseif action == "brake" then
 		brake(player)
 	end

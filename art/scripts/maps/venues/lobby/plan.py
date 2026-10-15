@@ -16,8 +16,10 @@ reached by an old stone causeway that crosses a deep chasm; they carry the mini-
   player with the most wins on it, in stone); at the mesa's foot a low slab, the one board left: Most Wins.
 - South-west: the Academy, a ring of broken pillars with the practice altars and effigies.
 - East: the rift, a hole in the ground looking down on Kagegaoka at night far below (the stone toss stands at
-  its rim). Its rim is open: far beneath its middle a hall's roof with a lit ring is where a dive ends.
-- North-west: the dice rock; the cleft. North-east: the needle ledge, where a small blade glows.
+  its rim). Its rim is open: a throat of rock drops through the ground into the cloud the realm floats on;
+  under the cloud lies the night sky over the city, and far beneath the rift's middle a hall's roof with a
+  lit ring is where a dive ends (about 650 studs down).
+- North-west: a wayside rock; the cleft. North-east: the needle ledge, where a small blade glows.
   South-east: a colossal carcass, its ribcage arching over the ash; two slates face each other under it (the
   name duel).
 - West plateau (over the west causeway): the Spire Ascent. North-east plateau: the rune courtyard.
@@ -155,8 +157,14 @@ GATE_DIR = math.degrees(math.atan2(PLAZA_C[1] - ACADEMY_C[1], PLAZA_C[0] - ACADE
 RIFT_C = (98.0, 22.0)
 RIFT_AXES = (23.0, 15.0)
 RIFT_TURN = 20.0
-RIFT_DEPTH = 50.0  # the rock walls down into it, then it opens on the sky of another world
-BELOW_Y = -260.0  # Kagegaoka, far beneath
+RIFT_DEPTH = 76.0  # the throat of rock down through the ground, to the cloud
+# The cloud the realm floats on: its underside, a flat deck at CLOUD_Y with heavy lobes hanging from it, out
+# to CLOUD_FAR from the rift (past where the haze swallows it); seen from under it only, it seals the realm's
+# underside in every direction. The rift's throat opens through it.
+CLOUD_Y = -RIFT_DEPTH
+CLOUD_FAR = 1300.0
+BELOW_Y = -700.0  # Kagegaoka, far beneath (its ground)
+CITY_FAR = 1100.0  # how far the city runs out from the point under the rift (studs)
 GUARD = 3.5
 
 
@@ -199,10 +207,8 @@ CITY_SCALE = 1 / 3
 LANDING_Y = BELOW_Y + (LANDING[2] * 12.0 + 1.5) * CITY_SCALE  # its roof
 LANDING_RING = 10.5  # the lit ring on the roof (studs)
 
-# The dice rock and the carcass.
-DICE_ROCK = (-66.0, -44.0, 3.6, 2.4)  # x, z, radius, height of its flat top
-DICE_SEATS = [(DICE_ROCK[0] + math.cos(math.radians(30 + k * 90)) * (DICE_ROCK[2] + 2.6),
-               DICE_ROCK[1] + math.sin(math.radians(30 + k * 90)) * (DICE_ROCK[2] + 2.6)) for k in range(4)]
+# The wayside rock (where the dice game was) and the carcass.
+WAYSIDE_ROCK = (-66.0, -44.0, 3.6, 2.4)  # x, z, radius, height of its flat top
 CARCASS_SKULL = (14.0, 116.0, 70.0)  # x, z, rot (facing west-north-west, its spine running east)
 SPINE = [(46.0, 118.0), (62.0, 112.0), (78.0, 108.0), (94.0, 106.0), (110.0, 106.0)]
 RIB_SPAN = 13.0  # how far each rib's foot lands from the spine
@@ -325,7 +331,7 @@ def footprints():
         "monolith": g2.rect(MONO[0], MONO[1], MONO[2] + 22.0, MONO[3] + 10.0),  # its base and tusks too
         "throne mesa": circle(THRONE_MESA[:2], THRONE_MESA[2]),
         "rift guard": RIFT_GUARD,
-        "dice rock": circle(DICE_ROCK[:2], DICE_ROCK[2] + 5.0),
+        "wayside rock": circle(WAYSIDE_ROCK[:2], WAYSIDE_ROCK[2] + 5.0),
         "carcass skull": circle(CARCASS_SKULL[:2], 12.0),
         "carcass ribs": g2.convex_hull([(x + dx, z + dz) for x, z in SPINE for dx, dz in
                                         ((0.0, -RIB_SPAN - 3.0), (0.0, RIB_SPAN + 3.0), (-3.0, 0.0), (3.0, 0.0))]),
@@ -360,7 +366,7 @@ def check():
             hit = g2.intersect(g2.ccw(items[a]), g2.ccw(items[b])) if g2.is_convex(items[b]) else []
             if hit and abs(g2.area(hit)) > 0.5:
                 problems.append(f"{a} overlaps {b}")
-    inside = ["ready ring", "bell", "monolith", "rift guard", "dice rock", "apple tree", "terrace", "toss cairn",
+    inside = ["ready ring", "bell", "monolith", "rift guard", "wayside rock", "apple tree", "terrace", "toss cairn",
               "cleft ledge", "needle ledge", "stele wins"] + [f"tableau {k + 1}" for k in range(len(TABLEAUX))]
     for name in inside:
         if not all(g2.contains(basin, p) for p in items[name]):

@@ -858,9 +858,9 @@ def build_flight():
     soft(dive, arms_hz=1.4).build()
 
 
-# Seated (a Seat: the lobby's dice stools; the throne's stone champion holds a moment of it) --------------
+# Seated (a Seat in the world; the throne's stone champion holds a moment of it) ---------------------------
 # R6 legs do not bend at the knee: level thighs stick 2.5 studs straight out and go through whatever is in
-# front (the dice rock, a desk). Sloped down they reach 0.6 less and pass under a table's edge.
+# front (a desk, a table's edge). Sloped down they reach 0.6 less and pass under a table's edge.
 
 
 def build_sit():

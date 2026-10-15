@@ -61,6 +61,20 @@ return function(t)
 			local again = Migrations.migrate(data, START)
 			expect(again.coins).to.equal(1200)
 		end)
+		it("starts the rift's best again on the deeper dive, keeping the old one aside", function()
+			local old = v1Profile()
+			old.v = 3
+			old.lobbyGames = { riftBest = 1.42, diceBest = 4, parkourBest = 61.5 }
+			local data = Migrations.migrate(old, START)
+			expect(data.lobbyGames.riftBest).to.equal(0)
+			expect(data.lobbyGames.riftBestV1).to.equal(1.42)
+			expect(data.lobbyGames.diceBest).to.equal(nil)
+			expect(data.lobbyGames.parkourBest).to.equal(61.5)
+			data.lobbyGames.riftBest = 3.1
+			local again = Migrations.migrate(data, START)
+			expect(again.lobbyGames.riftBest).to.equal(3.1)
+			expect(again.lobbyGames.riftBestV1).to.equal(1.42)
+		end)
 		it("changes nothing when run twice", function()
 			local once = Migrations.migrate(v1Profile(), START)
 			once.coins = 777

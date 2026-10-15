@@ -33,6 +33,8 @@ LightingController.Changed = Signal.new()
 local BLEND = 3.5 -- seconds for a change of venue or mood
 local ZONE_BLEND = 1.2 -- seconds for stepping into or out of a part of a map with its own look
 local LOOK_TAG = "LLookZone"
+local RIFT_TAG = "LRift" -- the rift's marker in the lobby (its heights: CloudY, RoofY)
+local CITY_NEAR = 220 -- studs over the landing roof from which a diver sees the city's own look
 local CREEP_BLEND = 0.6 -- the vote's slow creep, applied in small steps
 
 type Lamp = { brightness: number, range: number, shadows: boolean }
@@ -48,7 +50,7 @@ local vignetteHolder: Frame
 local currentKey = ""
 local currentPreset: LightingPresets.Preset = LightingPresets.lobby
 local currentVenue = "lobby"
-local currentZone: string? = nil -- the part of a map the camera is in that has a look of its own
+local currentZone: string? = nil -- the part of a map (or the lobby's depths) the camera is in, with a look of its own
 local currentLook: LightingPresets.Look? = nil
 local flashing = false
 local debugKey: string? = nil -- "lobby", "meeting" or "map:<mapId>", set from the debug panel
@@ -344,6 +346,23 @@ local function lookZone(position: Vector3): string?
 	return nil
 end
 
+-- Far under the lobby on a dive into the rift: under the cloud the realm floats on ("lobbyBelow"), and the
+-- last stretch over the city ("lobbyCity"); nil above the cloud's underside.
+local function depthZone(position: Vector3): string?
+	for _, marker in ipairs(CollectionService:GetTagged(RIFT_TAG)) do
+		local cloudY, roofY = marker:GetAttribute("CloudY"), marker:GetAttribute("RoofY")
+		if type(cloudY) == "number" and type(roofY) == "number" and marker:IsDescendantOf(workspace) then
+			if position.Y < roofY + CITY_NEAR then
+				return "lobbyCity"
+			elseif position.Y < cloudY then
+				return "lobbyBelow"
+			end
+			return nil
+		end
+	end
+	return nil
+end
+
 -- The map built in the world (outside a match, a debug preview has no map id in the state).
 local function builtMapId(): string?
 	local model = workspace:FindFirstChild("LGameMap")
@@ -362,14 +381,20 @@ local function update(force: boolean?)
 		venue = string.match(debugKey, "^(%a+)") or venue
 		mapId = string.match(debugKey, "^map:(.+)$") or mapId
 	end
-	local zone = if venue == "map" and not debugKey then lookZone(position) else nil
+	local zone = if debugKey
+		then nil
+		elseif venue == "map" then lookZone(position)
+		elseif venue == "lobby" then depthZone(position)
+		else nil
 	currentZone = zone
-	local key = venue .. ":" .. (if venue == "map" then (zone or mapId or "") else "") .. ":" .. moodName()
+	local key = venue .. ":" .. (if venue == "map" then (zone or mapId or "") else (zone or "")) .. ":" .. moodName()
 	if key == currentKey and not force then
 		return
 	end
 	local instant = currentKey == ""
-	local preset = if zone then LightingPresets.maps[zone] else LightingPresets.pick(venue, mapId)
+	local preset = if zone
+		then (LightingPresets.maps[zone] or (LightingPresets :: any)[zone] or LightingPresets.pick(venue, mapId))
+		else LightingPresets.pick(venue, mapId)
 	local venueChanged = venue ~= currentVenue
 	local presetChanged = preset ~= currentPreset
 	currentKey = key

@@ -48,7 +48,8 @@ local STORES = {
 	parkour = "LGameLB_Parkour_v1",
 	runes = "LGameLB_Runes_v1",
 	spirit = "LGameLB_Spirit_v1",
-	rift = "LGameLB_Rift_v1",
+	-- (v2: the dive became about 650 studs deep on 2026-10-15; the old board measured a 205-stud fall.)
+	rift = "LGameLB_Rift_v2",
 }
 -- Until the spirit trial had a store of its own, its times fell through to the weekly store's name with no
 -- week ("..._Wnil"). They are copied across once (see moveSpirit).

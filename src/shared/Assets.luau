@@ -148,7 +148,6 @@ Assets.sfx = {
 	gameWrong = { id = "", ref = "a dull low stone thud, one shot", fallbackId = "" },
 	gameCheckpoint = { id = "", ref = "a pale bell tone, short, one shot", fallbackId = "" },
 	gameFinish = { id = "", ref = "two soft bell tones rising, one shot", fallbackId = "" },
-	gameDice = { id = "", ref = "bone dice rattled and thrown on stone, one shot", fallbackId = "" },
 	gameThrow = { id = "", ref = "a pebble thrown, a short whoosh, one shot", fallbackId = "" },
 	gameFall = {
 		id = "",
@@ -169,6 +168,23 @@ Assets.sfx = {
 	gameDiveCrash = {
 		id = "",
 		ref = "a body landing hard on a flat roof, a dull heavy thud, one shot",
+		fallbackId = "",
+	},
+	-- The deeper dive (2026-10-15): art/audio/game_dive_fall.wav, game_dive_string.wav, game_dive_impact.wav.
+	-- Until they have ids, the dive plays gameDiveWind (looped) and gameDiveCrash instead.
+	gameDiveFall = {
+		id = "",
+		ref = "air tearing past a tumbling falling body, from a hush to a roar, about twelve seconds, one shot",
+		fallbackId = "",
+	},
+	gameDiveString = {
+		id = "",
+		ref = "a taut string snapping tight: a dry twang dying quickly, a soft whip of air, one shot",
+		fallbackId = "",
+	},
+	gameDiveImpact = {
+		id = "",
+		ref = "a body slamming into a flat roof: a heavy low thud with a dry crack on it, a short slap, one shot",
 		fallbackId = "",
 	},
 	-- The Trial's wisp setting off somewhere new (art/audio/trial_chime.wav).

@@ -1,9 +1,9 @@
 --!strict
--- The lobby mini-games, run by the server: the Spire Ascent, the rune courtyard, the bone dice and the
--- rift stone-toss. The rules are in Shared/LobbyGames (and tested); the objects are Maps/LobbyGames'.
--- Everything here is the server's say: a run is checked against where the character really is
--- (checkpoints in order and in a believable time, tiles actually stepped on), the dice and the
--- throws are rolled here, and a client only ever asks to start, sit, roll or throw.
+-- The lobby mini-games, run by the server: the Spire Ascent, the rune courtyard and the rift stone-toss.
+-- The rules are in Shared/LobbyGames (and tested); the objects are Maps/LobbyGames'. Everything here is the
+-- server's say: a run is checked against where the character really is (checkpoints in order and in a
+-- believable time, tiles actually stepped on), the throws are rolled here, and a client only ever asks to
+-- start or throw.
 --
 -- A player in a case (or watching one) is in none of these: their runs end the moment they are
 -- called to a match. Nothing here pays coins or XP; bests are saved in the profile and the Spire
@@ -16,12 +16,10 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 local Games = Shared:WaitForChild("LobbyGames")
-local Dice = require(Games:WaitForChild("Dice"))
 local Parkour = require(Games:WaitForChild("Parkour"))
 local Runes = require(Games:WaitForChild("Runes"))
 local Toss = require(Games:WaitForChild("Toss"))
@@ -41,7 +39,7 @@ local requestRemote = Net.event("LobbyGame")
 local stateRemote = Net.event("LobbyGameState")
 
 local POLL = 0.2
-local START_RANGE = 16 -- studs from a pad or a seat within which a request counts
+local START_RANGE = 16 -- studs from a pad within which a request counts
 
 type Session = {
 	game: string,
@@ -58,11 +56,6 @@ local games: any = nil -- what Maps/LobbyGames built, set by MapService
 local sessions: { [Player]: Session } = {}
 local rng = Random.new()
 
--- The dice table.
-local seats: { [number]: Player? } = {}
-local rolls: { [Player]: { d1: number, d2: number, total: number } } = {}
-local streaks: { [Player]: number } = {}
-local windowEndsAt: number? = nil
 local lastToss: { [Player]: number } = {}
 
 local function root(player: Player): BasePart?
@@ -77,13 +70,14 @@ local function humanoid(player: Player): Humanoid?
 end
 
 -- Why a player may not play `game` now (in a case, or watching one from the lobby), nil when they may. A
--- Specter waiting in the lobby (hidden) may play the solo games, not the shared dice table.
+-- Specter waiting in the lobby (hidden) may play the solo games, not the ones played in front of others
+-- ("shared": the rift, Death's mark, the duel).
 local function blocked(player: Player, game: string?): string?
 	local ok, ghost = pcall(function()
 		return require(script.Parent.GhostService)
 	end)
 	if Match.active and Match.get(player) ~= nil then
-		if ok and ghost.isAway(player) and game ~= "dice" then
+		if ok and ghost.isAway(player) and game ~= "shared" then
 			return nil
 		end
 		return "in a case"
@@ -373,209 +367,6 @@ local function runesStep(player: Player, session: Session, position: Vector3)
 	end
 end
 
--- The bone dice -----------------------------------------------------------------------------------------
-
-local function seatOf(player: Player): number?
-	for index = 1, Dice.SEATS do
-		if seats[index] == player then
-			return index
-		end
-	end
-	return nil
-end
-
-local function seated(): { Player }
-	local out = {}
-	for index = 1, Dice.SEATS do
-		local player = seats[index]
-		if player then
-			table.insert(out, player)
-		end
-	end
-	return out
-end
-
-local function setBoard(text: string)
-	if games then
-		games.dice.board.Text = text
-	end
-end
-
-local function refreshBoard()
-	local here = seated()
-	if #here == 0 then
-		-- Nothing hangs over an empty table (the stools' own prompt says what to do).
-		setBoard("")
-	else
-		local names = {}
-		for _, player in ipairs(here) do
-			table.insert(names, player.DisplayName)
-		end
-		setBoard("BONE DICE\n" .. table.concat(names, ", "))
-	end
-end
-
-local function tumble(d1: number, d2: number)
-	for index, value in ipairs({ d1, d2 }) do
-		local die: BasePart = games.dice.dice[index]
-		local face: TextLabel = games.dice.faces[index]
-		face.Text = "?"
-		local spin = CFrame.Angles(
-			math.rad(rng:NextInteger(180, 540)),
-			math.rad(rng:NextInteger(0, 360)),
-			math.rad(rng:NextInteger(180, 540))
-		)
-		local settle = CFrame.new(die.Position) * CFrame.Angles(0, math.rad(rng:NextInteger(0, 360)), 0)
-		local tween = TweenService:Create(
-			die,
-			TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{ CFrame = settle * spin }
-		)
-		tween.Completed:Once(function()
-			die.CFrame = settle
-			face.Text = tostring(value)
-		end)
-		tween:Play()
-	end
-end
-
-local function settleDice()
-	windowEndsAt = nil
-	local totals: { [Player]: number } = {}
-	local count = 0
-	for player, roll in pairs(rolls) do
-		if player.Parent and seatOf(player) then
-			totals[player] = roll.total
-			count += 1
-		end
-	end
-	if count == 0 then
-		table.clear(rolls)
-		return
-	end
-	local house: number? = nil
-	if count == 1 then
-		local a, b = Dice.roll(rng)
-		house = a + b
-	end
-	local outcome = Dice.settle(totals, house)
-	local lines = {}
-	for player, total in pairs(totals) do
-		table.insert(lines, string.format("%s %d", player.DisplayName, total))
-	end
-	table.sort(lines)
-	for player, total in pairs(totals) do
-		local result = "push"
-		if table.find(outcome.winners, player) then
-			result = "win"
-		elseif table.find(outcome.losers, player) then
-			result = "lose"
-		end
-		streaks[player] = Dice.streak(streaks[player] or 0, result)
-		local isBest, best = improve(player, "diceBest", streaks[player], function(old, value)
-			return value > old
-		end)
-		tell(player, {
-			game = "dice",
-			kind = "result",
-			total = total,
-			house = house,
-			result = result,
-			streak = streaks[player],
-			best = best,
-			newBest = isBest,
-		})
-	end
-	local headline = if outcome.push
-		then "A tie."
-		elseif #outcome.winners > 0 then "Won: " .. (outcome.winners[1] :: Player).DisplayName
-		else "Lost to the realm."
-	setBoard(
-		"BONE DICE\n"
-			.. table.concat(lines, "  ·  ")
-			.. (if house then "  ·  realm " .. house else "")
-			.. "\n"
-			.. headline
-	)
-	table.clear(rolls)
-end
-
-local function sit(player: Player, index: number)
-	local seat: Seat? = games.dice.seats[index]
-	local hum = humanoid(player)
-	local part = root(player)
-	if not seat or not hum or not part or seats[index] ~= nil then
-		return
-	end
-	if (part.Position - seat.Position).Magnitude > START_RANGE then
-		return
-	end
-	for other, who in pairs(seats) do
-		if who == player then
-			seats[other] = nil
-		end
-	end
-	seats[index] = player
-	seat:Sit(hum)
-	tell(player, { game = "dice", kind = "seated", seat = index, streak = streaks[player] or 0 })
-	refreshBoard()
-end
-
-local function leaveDice(player: Player)
-	for index, who in pairs(seats) do
-		if who == player then
-			seats[index] = nil
-		end
-	end
-	rolls[player] = nil
-	refreshBoard()
-end
-
-local function rollDice(player: Player)
-	if not seatOf(player) or rolls[player] or not RateLimit.allow(player, "diceRoll", Dice.COOLDOWN) then
-		return
-	end
-	local d1, d2 = Dice.roll(rng)
-	rolls[player] = { d1 = d1, d2 = d2, total = d1 + d2 }
-	tumble(d1, d2)
-	tell(player, { game = "dice", kind = "rolled", d1 = d1, d2 = d2 })
-	local here = seated()
-	if #here <= 1 then
-		task.delay(1, settleDice)
-	elseif not windowEndsAt then
-		windowEndsAt = os.clock() + Dice.WINDOW
-	end
-end
-
-local function diceStep()
-	for index = 1, Dice.SEATS do
-		local player = seats[index]
-		if player then
-			local hum = humanoid(player)
-			local seat: Seat = games.dice.seats[index]
-			if not player.Parent or not hum or hum.SeatPart ~= seat or blocked(player, "dice") then
-				seats[index] = nil
-				rolls[player] = nil
-				if player.Parent then
-					tell(player, { game = "dice", kind = "left" })
-				end
-				refreshBoard()
-			end
-		end
-	end
-	if windowEndsAt then
-		local all = true
-		for _, player in ipairs(seated()) do
-			if not rolls[player] then
-				all = false
-			end
-		end
-		if all or os.clock() >= windowEndsAt then
-			settleDice()
-		end
-	end
-end
-
 -- The stone-toss -------------------------------------------------------------------------------------------
 
 local function throwStone(player: Player, look: any)
@@ -623,8 +414,16 @@ end
 -- The catch under the lobby -------------------------------------------------------------------------------
 
 -- Nothing under the lobby's ground is solid (the rift opens on another world's sky, the causeways cross
--- chasms), so whoever has fallen this far below it is set back on the terrace.
+-- chasms), so whoever has fallen this far below it, or has left the lobby's walkable box, is set back: at
+-- the end of the causeway they were on (the end they came from), or else on the terrace. The causeways'
+-- parapets keep everyone on them; this is for whatever gets past (a push, a glitch, a wall-hop: Roblox's
+-- trick of jumping off a wall, which no height of wall stops).
 local CATCH_DEPTH = 60
+local OUT_MARGIN = 12 -- studs past the walkable box before a player counts as out of it
+local BRIDGE_REACH = 9 -- studs from a causeway's line within which a player counts as on it
+
+-- Who is on a causeway, and from which end they came on to it.
+local onBridge: { [Player]: { cf: CFrame, index: number } } = {}
 
 local lobbySpawn: BasePart? = nil
 
@@ -649,6 +448,35 @@ local function inLobby(player: Player): boolean
 	return true
 end
 
+-- Which causeway a point is over (its index), and the end nearer to it.
+local function bridgeAt(position: Vector3): (number?, CFrame?)
+	for index, bridge in ipairs(games.bridges or {}) do
+		local a, b = flat(bridge.a.Position), flat(bridge.b.Position)
+		local ab = b - a
+		local t = math.clamp((flat(position) - a):Dot(ab) / ab:Dot(ab), 0, 1)
+		if (flat(position) - (a + ab * t)).Magnitude <= BRIDGE_REACH then
+			return index, if t < 0.5 then bridge.a else bridge.b
+		end
+	end
+	return nil, nil
+end
+
+-- Keeps onBridge: set on stepping on to a causeway (the end nearest then), kept while on it or in the air
+-- (a fall off it), dropped once standing anywhere else.
+local function watchBridges(player: Player, part: BasePart)
+	local index, near = bridgeAt(part.Position)
+	local hum = humanoid(player)
+	local airborne = hum ~= nil and hum.FloorMaterial == Enum.Material.Air
+	local mine = onBridge[player]
+	if index and near then
+		if not mine or mine.index ~= index then
+			onBridge[player] = { cf = near, index = index }
+		end
+	elseif mine and not airborne then
+		onBridge[player] = nil
+	end
+end
+
 local function catchFallen()
 	local spawn = spawnPart()
 	if not spawn then
@@ -658,10 +486,32 @@ local function catchFallen()
 	for _, player in ipairs(Players:GetPlayers()) do
 		local part = root(player)
 		-- (A diver is far under the lobby on purpose: the rift gives them back itself.)
-		if part and part.Position.Y < floor and inLobby(player) and not LobbyRift.diving(player) then
-			cancel(player, "fell")
-			sendHome(player, spawn.Position)
-			tell(player, { game = "lobby", kind = "caught" })
+		if part and inLobby(player) and not LobbyRift.diving(player) then
+			local box = games.bounds
+			local p = part.Position
+			local out = box ~= nil
+				and (
+					p.X < box.min.X - OUT_MARGIN
+					or p.X > box.max.X + OUT_MARGIN
+					or p.Z < box.min.Z - OUT_MARGIN
+					or p.Z > box.max.Z + OUT_MARGIN
+				)
+			if p.Y < floor or out then
+				cancel(player, "fell")
+				local from = onBridge[player]
+				onBridge[player] = nil
+				if from then
+					local character = player.Character
+					if character then
+						character:PivotTo(from.cf + Vector3.new(0, 4, 0))
+					end
+				else
+					sendHome(player, spawn.Position)
+				end
+				tell(player, { game = "lobby", kind = "caught" })
+			else
+				watchBridges(player, part)
+			end
 		end
 	end
 end
@@ -711,13 +561,12 @@ end
 
 -- A lobby player in plain sight: not in a case, not watching one, not a hidden Deathsinger.
 local function playable(player: Player): boolean
-	return blocked(player, "dice") == nil
+	return blocked(player, "shared") == nil
 end
 
 -- Ends whatever a player is doing in the lobby's games (they began another, or dived into the rift).
 local function leaveOthers(player: Player)
 	cancel(player, "left")
-	leaveDice(player)
 	LobbyMark.cancel(player)
 	LobbyDuel.cancel(player)
 end
@@ -756,7 +605,6 @@ local function step()
 			spiritStep(player, session, part.Position)
 		end
 	end
-	diceStep()
 end
 
 local function onRequest(player: Player, payload: any)
@@ -788,26 +636,10 @@ local function onRequest(player: Player, payload: any)
 		elseif action == "leave" then
 			cancel(player, "left")
 		end
-	elseif game == "dice" then
-		if action == "sit" and type(payload.seat) == "number" then
-			local index = math.floor(payload.seat)
-			if index >= 1 and index <= Dice.SEATS then
-				sit(player, index)
-			end
-		elseif action == "roll" then
-			rollDice(player)
-		elseif action == "leave" then
-			leaveDice(player)
-			tell(player, { game = "dice", kind = "left" })
-			local hum = humanoid(player)
-			if hum then
-				hum.Sit = false
-			end
-		end
 	elseif game == "toss" and action == "throw" then
 		throwStone(player, payload.look)
 	elseif game == "rift" then
-		LobbyRift.request(player, action)
+		LobbyRift.request(player, action, payload)
 	elseif game == "mark" then
 		LobbyMark.request(player, action)
 	elseif game == "duel" then
@@ -822,11 +654,7 @@ function LobbyGameService.setup(built: any)
 	for player in pairs(sessions) do
 		cancel(player, "reset")
 	end
-	table.clear(seats)
-	table.clear(rolls)
-	windowEndsAt = nil
 	games = built
-	refreshBoard()
 	LobbyRift.setup({
 		tell = tell,
 		improve = improve,
@@ -855,11 +683,8 @@ function LobbyGameService.init()
 	requestRemote.OnServerEvent:Connect(onRequest)
 	Players.PlayerRemoving:Connect(function(player)
 		sessions[player] = nil
-		streaks[player] = nil
 		lastToss[player] = nil
-		if games then
-			leaveDice(player)
-		end
+		onBridge[player] = nil
 		LobbyRift.cancel(player)
 		LobbyMark.cancel(player)
 		LobbyDuel.cancel(player)

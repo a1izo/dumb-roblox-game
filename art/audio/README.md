@@ -25,12 +25,14 @@ nothing, so you can fill them in any order.
 | `game_wrong.wav` | `gameWrong` | a dull stone thud | no |
 | `game_checkpoint.wav` | `gameCheckpoint` | a pale bell | no |
 | `game_finish.wav` | `gameFinish` | two rising bells | no |
-| `game_dice.wav` | `gameDice` | bone dice thrown on stone | no |
 | `game_throw.wav` | `gameThrow` | a pebble thrown | no |
 | `game_fall.wav` | `gameFall` | a pebble knocking down a very long fall | no |
 | `game_bell_toll.wav` | `gameBellToll` | Death's mark: one stroke of a great cracked bell | no |
 | `game_dive_wind.wav` | `gameDiveWind` | the rift dive: air rushing past, rising over six seconds | no |
 | `game_dive_crash.wav` | `gameDiveCrash` | the rift dive, braked too late: a heavy thud on a roof | no |
+| `game_dive_fall.wav` | `gameDiveFall` | the deeper rift dive: air tearing past a tumbling body, about twelve seconds | no |
+| `game_dive_string.wav` | `gameDiveString` | the dive's catch: a taut string snapping tight | no |
+| `game_dive_impact.wav` | `gameDiveImpact` | the dive, too late: a heavy thud with a dry crack on it | no |
 | `trial_chime.wav` | `trialChime` | the Trial's wisp setting off: two soft glassy notes | no |
 | `style_typewriter.wav` | `typewriter` | the Typewriter writing style: one key striking | no |
 | `style_knife.wav` | `knifeScrape` | The Knife writing style: a blade cutting into paper | no |

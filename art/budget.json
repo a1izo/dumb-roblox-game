@@ -47,6 +47,14 @@
       "approved": "2026-10-14",
       "megapixels": 0.33,
       "megabytes": 0.38
+    },
+    {
+      "what": "The lobby's redesign in the whole-game audit (the fall between worlds: the cloud deck and the city far below the rift; the causeways' parapets; later the throne's dais, the chessboard, the notebook and the sculpted statues), the owner's one-time +20% triangles and +15% megabytes for it; and the megapixels the Core set gained after this baseline without a recorded yes (the cutscene props and the emote faces), which put this scene over before the audit began",
+      "approved": "2026-10-15",
+      "venue": "Lobby",
+      "megapixels": 3.5,
+      "megabytes": 4.86,
+      "triangles": 0.1
     }
   ]
 }

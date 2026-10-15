@@ -80,6 +80,10 @@ FLAT = {
     # the city below the rift seen dim and pale (a few faint warm windows, no neon).
     "RelicGlow": ("Neon", (176, 196, 224), 0, 0),
     "CloudBank": ("SmoothPlastic", (126, 130, 138), 0, 0),
+    # The underside of the cloud the realm floats on (seen only from under it, on a dive): dark storm cloud,
+    # its hanging lobes a little paler where the city's glow catches them.
+    "CloudUnder": ("SmoothPlastic", (50, 52, 62), 0, 0),
+    "CloudUnderPale": ("SmoothPlastic", (72, 74, 86), 0, 0),
     "DimWindow": ("Neon", (112, 128, 156), 0, 0),
     "DimWarm": ("Neon", (150, 124, 94), 0, 0),
     "DimLamp": ("Neon", (92, 102, 124), 0, 0),

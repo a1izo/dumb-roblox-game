@@ -2,7 +2,7 @@
 -- The lobby mini-games on this client: prompts on the tagged objects the server built (Maps/LobbyGames),
 -- a small card at the top of the screen while you are playing, the rune tiles lit for you alone, and the
 -- thrown pebble's flight. Every rule and score is the server's (Services/LobbyGameService); this only
--- asks (start, sit, roll, throw, leave) and shows what the server says. Nothing here runs for a player
+-- asks (start, throw, leave) and shows what the server says. Nothing here runs for a player
 -- who is in a case or watching one.
 --
 -- Also here: the bell of Death's mark (join or leave at it; the card says who carries the mark and when
@@ -42,7 +42,6 @@ type Offer = { action: string, object: string, distance: number }
 local OFFERS: { [string]: Offer } = {
 	LParkourStart = { action = "Begin the climb", object = "Spire Ascent", distance = 9 },
 	LRuneStart = { action = "Begin the runes", object = "Rune courtyard", distance = 8 },
-	LDiceSeat = { action = "Sit", object = "Bone dice", distance = 6 },
 	LTossCairn = { action = "Throw a stone", object = "Look at the rift; aim higher to throw farther", distance = 10 },
 	LMarkBell = { action = "Take the mark", object = "Death's mark", distance = 10 },
 	LApple = { action = "Take", object = "A grey apple", distance = 7 },
@@ -56,10 +55,9 @@ local glyphs: { [number]: { BasePart } } = {}
 local card: Frame
 local titleLabel: TextLabel
 local statusLabel: TextLabel
-local rollButton: TextButton
 
 -- What the player is doing now.
-local current: string? = nil -- "parkour", "runes", "dice", "mark"
+local current: string? = nil -- "parkour", "runes", "spirit", "mark"
 -- Is this player in a name duel now (between its start and its end)?
 local duelling = false
 -- Death's mark, as the server last told it.
@@ -81,7 +79,6 @@ end
 local function hideCard()
 	current = nil
 	card.Visible = false
-	rollButton.Visible = false
 end
 
 -- The apples this player has found already are not there for them: unseen, and nothing to take.
@@ -113,10 +110,9 @@ local function refresh()
 	local me = Players.LocalPlayer.UserId
 	for object, entry in pairs(prompts) do
 		-- A Deathsinger waiting here (hidden) plays the solo games only, not the ones played with others.
-		local dice = entry.tag == "LDiceSeat"
 		local stone = entry.tag == "LDuelStone"
-		local shared = dice or stone or entry.tag == "LMarkBell"
-		local enabled = ok and not (dice and current == "dice") and not (shared and ClientState.isAway())
+		local shared = stone or entry.tag == "LMarkBell"
+		local enabled = ok and not (shared and ClientState.isAway())
 		if stone then
 			-- A stone someone else stands at offers nothing; your own lets you step down, but not by a slip
 			-- of the key in the middle of a duel (the card has a button for giving up).
@@ -233,7 +229,6 @@ local function onParkour(p: any)
 		run.startedAt = tonumber(p.at) or workspace:GetServerTimeNow()
 		run.reached = 0
 		run.total = tonumber(p.total) or Parkour.CHECKPOINTS
-		rollButton.Visible = false
 		setStatus("SPIRE ASCENT", "Stone 0/" .. run.total .. "   0:00.0")
 	elseif kind == "checkpoint" then
 		run.reached = tonumber(p.index) or run.reached
@@ -306,7 +301,6 @@ local function onSpirit(p: any)
 			end
 		end
 		lightRing(1)
-		rollButton.Visible = false
 		setStatus("SPIRIT TRIAL", "Ring 0/" .. run.total .. "   0:00.0")
 	elseif kind == "ring" then
 		run.reached = tonumber(p.reached) or run.reached
@@ -338,7 +332,6 @@ local function onRunes(p: any)
 	local kind = p.kind
 	if kind == "start" then
 		current = "runes"
-		rollButton.Visible = false
 		dimAll()
 	elseif kind == "show" then
 		setStatus("RUNES", "Round " .. tostring(p.round) .. "   Watch the stones.")
@@ -376,38 +369,6 @@ local function onRunes(p: any)
 		showToken += 1
 		dimAll()
 		hideCard()
-	end
-end
-
-local function onDice(p: any)
-	local kind = p.kind
-	if kind == "seated" then
-		current = "dice"
-		rollButton.Visible = true
-		setStatus("BONE DICE", "Seated. Roll the bones.   Streak " .. tostring(p.streak or 0))
-		refresh()
-	elseif kind == "rolled" then
-		Sfx.play("gameDice")
-		statusLabel.Text = string.format("You rolled %d + %d = %d.", p.d1, p.d2, p.d1 + p.d2)
-	elseif kind == "result" then
-		local line = if p.house
-			then string.format("You %d  ·  the realm %d", p.total, p.house)
-			else string.format("You %d", p.total)
-		local result = if p.result == "win" then "You win." elseif p.result == "lose" then "You lose." else "A tie."
-		setStatus(
-			"BONE DICE",
-			string.format(
-				"%s\n%s  Streak %d  Best %d%s",
-				line,
-				result,
-				p.streak,
-				p.best,
-				if p.newBest then "  New best!" else ""
-			)
-		)
-	elseif kind == "left" then
-		hideCard()
-		refresh()
 	end
 end
 
@@ -490,8 +451,6 @@ local function onState(payload: any)
 		onSpirit(payload)
 	elseif payload.game == "runes" then
 		onRunes(payload)
-	elseif payload.game == "dice" then
-		onDice(payload)
 	elseif payload.game == "toss" then
 		onToss(payload)
 	elseif payload.game == "mark" then
@@ -527,8 +486,6 @@ local function trigger(tag: string, object: BasePart)
 		request:FireServer({ game = "parkour", action = "start" })
 	elseif tag == "LRuneStart" then
 		request:FireServer({ game = "runes", action = "start" })
-	elseif tag == "LDiceSeat" then
-		request:FireServer({ game = "dice", action = "sit", seat = object:GetAttribute("Seat") })
 	elseif tag == "LMarkBell" then
 		request:FireServer({ game = "mark", action = if current == "mark" then "leave" else "join" })
 	elseif tag == "LApple" then
@@ -625,18 +582,10 @@ local function build()
 		Parent = card,
 	})
 	Kit.list(row, T.space.s, true)
-	rollButton = Kit.button(
-		{ text = "Roll", variant = "primary", size = "s", Visible = false, LayoutOrder = 1, Parent = row },
-		function()
-			request:FireServer({ game = "dice", action = "roll" })
-		end
-	)
 	Kit.button({ text = "Leave", variant = "ghost", size = "s", LayoutOrder = 2, Parent = row }, function()
 		if current then
 			request:FireServer({ game = current, action = "leave" })
-			if current ~= "dice" then
-				hideCard()
-			end
+			hideCard()
 		else
 			hideCard()
 		end

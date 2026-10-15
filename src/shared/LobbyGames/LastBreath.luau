@@ -13,7 +13,7 @@
 local LastBreath = {}
 
 LastBreath.ACCEL = 16
-LastBreath.MAX_SPEED = 70
+LastBreath.MAX_SPEED = 80
 LastBreath.BRAKE = 90
 -- Divers who begin within this many seconds of a wave's first diver belong to it.
 LastBreath.WAVE = 4

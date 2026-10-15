@@ -1,10 +1,9 @@
 --!strict
 -- The lobby mini-games' objects, built at the scene's anchors (art/scripts/maps/venues/lobby): the
 -- Spire Ascent's start pad and checkpoint pylons, the rune courtyard's nine tiles and start pad, the
--- dice rock's two dice, board and four seats, the stone-toss cairn, the rift's numbers for the dive, the
--- bell of Death's mark, the seven grey apples and the name duel's two stones. Everything is tagged
--- (LParkourStart, LParkourCheckpoint, LRuneStart, LRuneTile, LDiceSeat, LTossCairn, LRift, LMarkBell,
--- LApple, LDuelStone) so each client puts up its own prompts (client Controllers/LobbyGamesController); the rules and every score
+-- stone-toss cairn, the rift's numbers for the dive, the bell of Death's mark, the seven grey apples and
+-- the name duel's two stones. Everything is tagged (LParkourStart, LParkourCheckpoint, LRuneStart,
+-- LRuneTile, LTossCairn, LRift, LMarkBell, LApple, LDuelStone) so each client puts up its own prompts (client Controllers/LobbyGamesController); the rules and every score
 -- are the server's (Services/LobbyGameService), which is handed the table this returns.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,7 +18,6 @@ local SLATE = Color3.fromRGB(34, 34, 40)
 local STONE = Color3.fromRGB(58, 58, 64)
 local GLOW = Color3.fromRGB(176, 196, 224)
 local DIM = Color3.fromRGB(74, 82, 100)
-local BONE = Color3.fromRGB(206, 200, 186)
 local INK = Color3.fromRGB(16, 16, 20)
 
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number?, rx: number?, rz: number? }
@@ -27,7 +25,6 @@ type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: num
 export type Games = {
 	parkour: { start: Vector3, center: Vector3, marks: { Vector3 } },
 	runes: { start: Vector3, center: Vector3, tile: number, gap: number },
-	dice: { rock: Vector3, seats: { Seat }, dice: { BasePart }, faces: { TextLabel }, board: TextLabel },
 	toss: { cairn: Vector3, rift: { cx: number, cz: number, rx: number, rz: number, turn: number } },
 	-- The dive: the rift's shape, the rim's and the landing roof's heights, where a diver is set down after.
 	dive: {
@@ -40,6 +37,12 @@ export type Games = {
 	apples: { Vector3 },
 	-- The name duel's two stones: the foot of each, the part its prompt is on, the writing on its slate.
 	duel: { stones: { { at: Vector3, part: BasePart, label: TextLabel } } }?,
+	-- The two causeways: each end's spot on the deck, facing along the way from there (a = at the basin's
+	-- rim, b = at the head of the steps on the plateau).
+	bridges: { { a: CFrame, b: CFrame } },
+	-- The walkable box of the lobby, in the world (set by Maps/Lobby from the scene): whoever leaves it is set
+	-- back like a fall.
+	bounds: { min: Vector3, max: Vector3 }?,
 }
 
 -- Glyphs for the nine tiles: bars (x, z, width, depth, turn in degrees) on a 7-stud tile.
@@ -197,99 +200,6 @@ local function runes(b, folder: Instance, anchors: { [string]: Anchor })
 	}
 end
 
-local function dice(b, folder: Instance, anchors: { [string]: Anchor })
-	local rock = anchors.diceRock
-	local seats = {}
-	for index = 1, 4 do
-		local a = anchors["diceSeat" .. index]
-		local seat = Create("Seat", {
-			Name = "DiceSeat" .. index,
-			Size = Vector3.new(2.2, 0.4, 2.2),
-			CFrame = b:world(b:cf(a.x, 1.85, a.z, a.rot)),
-			Transparency = 1,
-			Anchored = true,
-			CanCollide = false,
-			CanQuery = true,
-			CanTouch = false,
-			CastShadow = false,
-			Parent = folder,
-		}) :: Seat
-		seat:SetAttribute("Seat", index)
-		seat:AddTag("LDiceSeat")
-		table.insert(seats, seat)
-	end
-	local dies, faces = {}, {}
-	for index, offset in ipairs({ Vector3.new(-1.7, 0, 1.5), Vector3.new(-0.3, 0, 2.1) }) do
-		local die = part(
-			folder,
-			"Die" .. index,
-			Vector3.new(1.1, 1.1, 1.1),
-			b:world(
-				CFrame.new(rock.x + offset.X, rock.y + 0.58, rock.z + offset.Z)
-					* CFrame.Angles(0, math.rad(index * 31), 0)
-			),
-			BONE,
-			Enum.Material.SmoothPlastic
-		)
-		inert(die)
-		die.CanCollide = false
-		local gui = Create("SurfaceGui", {
-			Face = Enum.NormalId.Top,
-			SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
-			PixelsPerStud = 80,
-			LightInfluence = 1,
-			Parent = die,
-		})
-		local face = Create("TextLabel", {
-			BackgroundTransparency = 1,
-			Size = UDim2.fromScale(1, 1),
-			Text = "?",
-			TextColor3 = INK,
-			TextScaled = true,
-			FontFace = WorldFont.face(Enum.Font.GrenzeGotisch),
-			Parent = gui,
-		}) :: TextLabel
-		table.insert(dies, die)
-		table.insert(faces, face)
-	end
-	local boardPart = part(
-		folder,
-		"DiceBoard",
-		Vector3.new(1, 1, 1),
-		b:world(CFrame.new(rock.x, rock.y + 5.2, rock.z)),
-		SLATE,
-		Enum.Material.SmoothPlastic
-	)
-	inert(boardPart)
-	boardPart.CanCollide = false
-	boardPart.Transparency = 1
-	local gui = Create("BillboardGui", {
-		Size = UDim2.fromOffset(300, 78),
-		StudsOffset = Vector3.new(0, 0, 0),
-		MaxDistance = 70,
-		LightInfluence = 0,
-		AlwaysOnTop = false,
-		Parent = boardPart,
-	})
-	local board = Create("TextLabel", {
-		BackgroundTransparency = 1,
-		Size = UDim2.fromScale(1, 1),
-		Text = "BONE DICE",
-		TextColor3 = Color3.fromRGB(226, 222, 212),
-		TextStrokeTransparency = 0.4,
-		TextScaled = true,
-		FontFace = WorldFont.face(Enum.Font.SpecialElite),
-		Parent = gui,
-	}) :: TextLabel
-	return {
-		rock = b:worldPos(rock.x, rock.y, rock.z),
-		seats = seats,
-		dice = dies,
-		faces = faces,
-		board = board,
-	}
-end
-
 -- The rift, for the dive: an unseen part tagged LRift carrying the numbers every client flies by (the rift's
 -- ellipse, the rim's height and the landing roof's), and where a diver is set down afterwards (on the
 -- plaza's side of the rim).
@@ -301,6 +211,13 @@ local function dive(b, folder: Instance, anchors: { [string]: Anchor })
 	local rx, rz = rift.rx or 23, rift.rz or 15
 	local rim = b:worldPos(rift.x, 0, rift.z)
 	local roof = b:worldPos(landing.x, landing.y, landing.z)
+	-- A dive ends far under the lobby (about 650 studs): Roblox's default fall-out height (-500) would take the
+	-- diver's body before the roof. The project file sets it; this is for a place whose settings were not synced.
+	pcall(function()
+		if workspace.FallenPartsDestroyHeight > roof.Y - 300 then
+			workspace.FallenPartsDestroyHeight = roof.Y - 1300
+		end
+	end)
 	-- Towards the lobby's middle, a few studs outside the balustrade.
 	local toMiddle = Vector3.new(-rift.x, 0, -rift.z)
 	toMiddle = if toMiddle.Magnitude > 1 then toMiddle.Unit else Vector3.new(-1, 0, 0)
@@ -316,6 +233,9 @@ local function dive(b, folder: Instance, anchors: { [string]: Anchor })
 	mark:SetAttribute("Turn", rift.rot)
 	mark:SetAttribute("RimY", rim.Y)
 	mark:SetAttribute("RoofY", roof.Y)
+	-- The underside of the cloud the realm floats on (the dive's lighting changes under it).
+	local cloud = anchors.cloud
+	mark:SetAttribute("CloudY", if cloud then b:worldPos(cloud.x, cloud.y, cloud.z).Y else rim.Y - 76)
 	mark:AddTag("LRift")
 	return {
 		rift = { cx = rim.X, cz = rim.Z, rx = rx, rz = rz, turn = rift.rot },
@@ -466,17 +386,29 @@ local function toss(b, folder: Instance, anchors: { [string]: Anchor })
 	}
 end
 
+-- The causeways' ends (anchors bridge<Name>A / B, from the scene).
+local function bridges(b, anchors: { [string]: Anchor })
+	local out = {}
+	for _, name in ipairs({ "bridgeRune", "bridgeParkour" }) do
+		local a, z = anchors[name .. "A"], anchors[name .. "B"]
+		if a and z then
+			table.insert(out, { a = b:world(b:cf(a.x, a.y, a.z, a.rot)), b = b:world(b:cf(z.x, z.y, z.z, z.rot)) })
+		end
+	end
+	return out
+end
+
 function LobbyGames.build(b, anchors: { [string]: Anchor }): Games
 	local folder = Create("Folder", { Name = "Games", Parent = b.parent })
 	return {
 		parkour = parkour(b, folder, anchors),
 		runes = runes(b, folder, anchors),
-		dice = dice(b, folder, anchors),
 		toss = toss(b, folder, anchors),
 		dive = dive(b, folder, anchors),
 		mark = bell(b, folder, anchors),
 		apples = apples(b, folder, anchors),
 		duel = duel(b, folder, anchors),
+		bridges = bridges(b, anchors),
 	}
 end
 

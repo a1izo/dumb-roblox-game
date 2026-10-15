@@ -27,7 +27,7 @@ is kept for the air and the landings. Nothing about how a body moves depends on 
 | Stopping | `stopRight`, `stopLeft` | From a run, on whichever foot is down: the weight catches, the other foot steps up beside it. |
 | In the air | `jump`, `jumpApex`, `fall`, `fallLong` | The take-off when it jumped (stepping off a ledge goes straight to the hang), the top, the fall, a long drop's wider shape. |
 | Landing | `landLight`, `landNormal`, `landHeavy` (additive) | By the height the impact is like falling from: under 0.6 studs nothing, then light, normal (from 4) and heavy (from 14). Never slows the body. |
-| Seated | `sit` | The lobby's dice stools; the throne's stone champion holds a moment of it. |
+| Seated | `sit` | Seats in the world; the throne's stone champion holds a moment of it. |
 | Flying | `flyHover`, `flyGlide`, `flyRise`, `flyDive` | Deathsingers and spectators: a hover easing into a glide with speed, a rise and a dive with vertical speed, a bank into sideways drift. |
 
 Timing chart (seconds):

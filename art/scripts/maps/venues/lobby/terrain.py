@@ -507,14 +507,35 @@ def far_plain(s):
                     city.up_face(s, "Ash", piece, -0.15)
     inner, outer = 195.0, P.FAR
     mid = (inner + outer) / 2
+    # (Never over a chasm: the strips are cut round each chasm's box, so no unseen floor hangs over a hole.)
+    holes = []
+    for c in P.CHASMS:
+        xs = [p[0] for p in P.chasm_poly(c)]
+        zs = [p[1] for p in P.chasm_poly(c)]
+        holes.append((min(xs) - 1.0, min(zs) - 1.0, max(xs) + 1.0, max(zs) + 1.0))
     for cx, cz, w, d in ((0.0, -mid, 2 * outer, outer - inner), (0.0, mid, 2 * outer, outer - inner),
                          (-mid, 0.0, outer - inner, 2 * inner), (mid, 0.0, outer - inner, 2 * inner)):
-        pieces = max(1, math.ceil(max(w, d) / 1000.0))
-        for k in range(pieces):
-            if w >= d:
-                s.collider((cx - w / 2 + w * (k + 0.5) / pieces, -0.5, cz), (w / pieces, 1.0, d), 0, False, "Ash")
-            else:
-                s.collider((cx, -0.5, cz - d / 2 + d * (k + 0.5) / pieces), (w, 1.0, d / pieces), 0, False, "Ash")
+        rects = [(cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2)]
+        for hole in holes:
+            rects = [piece for r in rects for piece in rect_minus(r, hole)]
+        for x0, z0, x1, z1 in rects:
+            w2, d2 = x1 - x0, z1 - z0
+            pieces = max(1, math.ceil(max(w2, d2) / 1000.0))
+            for k in range(pieces):
+                if w2 >= d2:
+                    s.collider((x0 + w2 * (k + 0.5) / pieces, -0.5, (z0 + z1) / 2), (w2 / pieces, 1.0, d2), 0, False, "Ash")
+                else:
+                    s.collider(((x0 + x1) / 2, -0.5, z0 + d2 * (k + 0.5) / pieces), (w2, 1.0, d2 / pieces), 0, False, "Ash")
+
+
+def rect_minus(r, h):
+    """An axis-aligned rectangle (x0, z0, x1, z1) less another: up to four rectangles."""
+    x0, z0, x1, z1 = r
+    hx0, hz0, hx1, hz1 = max(h[0], x0), max(h[1], z0), min(h[2], x1), min(h[3], z1)
+    if hx0 >= hx1 or hz0 >= hz1:
+        return [r]
+    out = [(x0, z0, x1, hz0), (x0, hz1, x1, z1), (x0, hz0, hx0, hz1), (hx1, hz0, x1, hz1)]
+    return [p for p in out if p[2] - p[0] > 0.05 and p[3] - p[1] > 0.05]
 
 
 def chasm(s, c, seed):

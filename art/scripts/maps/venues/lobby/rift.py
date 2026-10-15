@@ -40,9 +40,11 @@ def hole(s):
     cx, cz = g2.centroid(P.RIFT)
     poly = g2.ccw(P.RIFT)
     n = len(poly)
-    levels = [0.0, -9.0, -20.0, -34.0, -P.RIFT_DEPTH]
-    foot = P.grown(poly, 3.5)  # the last ring: the opening in the island's underside
-    # Each rim point, pushed in or out a little at each level (the walls bulge and overhang).
+    levels = [0.0, -9.0, -20.0, -34.0, -50.0, -63.0, -P.RIFT_DEPTH]
+    foot = P.grown(poly, 6.0)  # the last ring: the throat's mouth, flaring out into the cloud
+    # Each rim point, pushed in or out a little at each level (the walls bulge and overhang). (The levels
+    # under -34 draw from a stream of their own, so the rim and everything round it are as they were.)
+    deep = random.Random(612)
     rings = []
     for li, y in enumerate(levels):
         ring = []
@@ -52,7 +54,7 @@ def hole(s):
             if li == len(levels) - 1:
                 ring.append((foot[k][0], y, foot[k][1]))
                 continue
-            push = 0.0 if li == 0 else rng.uniform(-1.8, 2.6) + li * 0.4
+            push = 0.0 if li == 0 else (rng if li <= 3 else deep).uniform(-1.8, 2.6) + min(li, 3) * 0.4
             ring.append((x + dx / r * push, y, z + dz / r * push))
         rings.append(ring)
     for li in range(len(levels) - 1):
@@ -68,11 +70,15 @@ def hole(s):
         for t0, t1 in ((0.08, 0.4), (0.55, 0.9)):
             a = (p[0] + (q[0] - p[0]) * t0, p[1] + (q[1] - p[1]) * t0)
             b = (p[0] + (q[0] - p[0]) * t1, p[1] + (q[1] - p[1]) * t1)
+            # (A hair in front of the rock, towards the rift's middle: on it, the two flickered.)
+            a = (a[0] + (cx - a[0]) / math.dist(a, (cx, cz)) * 0.08, a[1] + (cz - a[1]) / math.dist(a, (cx, cz)) * 0.08)
+            b = (b[0] + (cx - b[0]) / math.dist(b, (cx, cz)) * 0.08, b[1] + (cz - b[1]) / math.dist(b, (cx, cz)) * 0.08)
             y0 = -rng.uniform(0.5, 1.2)
             y1 = y0 - rng.uniform(0.3, 0.7)
             face_to(s, "RiftGlow", [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])], (cx, -5.0, cz))
     s.light("point", (cx, -7.0, cz), (170, 196, 232), 40, 1.0)
     s.light("point", (cx, -22.0, cz), (150, 176, 214), 30, 0.6)
+    throat(s, rings, levels, cx, cz, rng)
     # The lip: broken rocks round the edge, solid, low enough to hop over.
     for k in range(n):
         p, q = poly[k], poly[(k + 1) % n]
@@ -96,6 +102,97 @@ def hole(s):
         x, z = cx + math.cos(a) * d, cz + math.sin(a) * d * 0.8
         if g2.contains(P.BASIN, (x, z)):
             rock(s, x, z, r, h, 7100 + k, tiers=2, sides=8, taper=0.35, flat_top=True)
+
+
+def throat(s, rings, levels, cx, cz, _rng):
+    """The throat's dressing under the glow: dead roots hanging from its walls (gone to stone, like the rest of
+    the realm), and ledges of broken stone standing out of them, all out of a diver's way (outside the rift's
+    own outline, which no diver leaves)."""
+    rng = random.Random(613)
+    n = len(rings[0])
+    for li in range(2, len(levels) - 1):
+        ring = rings[li]
+        for k in range(n):
+            if rng.random() > 0.42:
+                continue
+            x, y, z = ring[k]
+            dx, dz = x - cx, z - cz
+            r = math.hypot(dx, dz)
+            ox, oz = dx / r, dz / r
+            # A root: out of the wall a little above this ring, hanging down, curling in a little at its tip.
+            top = (x + ox * 0.6, y + rng.uniform(1.0, 4.0), z + oz * 0.6)
+            length = rng.uniform(6.0, 14.0)
+            bend = rng.uniform(0.3, 1.0)
+            mid = (top[0] - ox * bend * 0.5, top[1] - length * 0.55, top[2] - oz * bend * 0.5)
+            tip = (top[0] - ox * bend, top[1] - length, top[2] - oz * bend)
+            radius = rng.uniform(0.28, 0.55)
+            s.tube("RockGrey", top, mid, radius, 6, caps=False, radius_b=radius * 0.65)
+            s.tube("RockGrey", mid, tip, radius * 0.65, 6, caps=True, radius_b=radius * 0.15)
+        # Now and then a ledge of broken stone standing out of the wall, sloping a little.
+        k = rng.randrange(n)
+        x, y, z = ring[k]
+        dx, dz = x - cx, z - cz
+        r = math.hypot(dx, dz)
+        rot = math.degrees(math.atan2(-dz, dx))
+        s.box("RuinStone", (x + dx / r * 0.4, y - 1.0, z + dz / r * 0.4), (rng.uniform(4.0, 7.0), 1.4, 2.4), rot + 90.0)
+        s.box("RuinStone", (x + dx / r * 0.9, y - 2.2, z + dz / r * 0.9), (rng.uniform(2.0, 3.5), 1.0, 1.6), rot + 87.0)
+
+
+def cloud(s):
+    """The cloud the Grey Realm floats on, seen from under it: a deck of dark storm cloud at CLOUD_Y, out past
+    where the haze swallows it, with heavy lobes hanging from it (mammatus: big and close round the rift's
+    throat, sparser and larger further out), and the throat opening through its middle. Its faces look down
+    only: from the realm above nothing of it shows, and from under it nothing of the realm ever does."""
+    rng = random.Random(9090)
+    cx, cz = g2.centroid(P.RIFT)
+    s.anchor("cloud", cx, P.CLOUD_Y, cz, 0.0)  # (the game reads the deck's height from it: the dive's lighting)
+    mouth = P.grown(g2.ccw(P.RIFT), 6.0)
+    hole_r = max(math.dist((cx, cz), p) for p in mouth)
+    step = 250.0
+    far = P.CLOUD_FAR
+    n = int(math.ceil(far / step))
+    y = P.CLOUD_Y
+    for i in range(-n, n):
+        for j in range(-n, n):
+            x0, z0 = cx + i * step, cz + j * step
+            pieces = [[(x0, z0), (x0 + step, z0), (x0 + step, z0 + step), (x0, z0 + step)]]
+            pieces = g2.subtract_all(pieces, [mouth])
+            for piece in pieces:
+                if abs(g2.area(piece)) > 0.05:
+                    for part in g2.convex_pieces(piece):
+                        city.down_face(s, "CloudUnder", part, y)
+
+    def lobe(x, z, r, depth, mat):
+        s.lathe(mat, (x, y + 0.6, z), [(0.0, -depth), (0.7 * r, -depth * 0.62), (r, 0.0)], 6, caps=(False, False))
+
+    # Close round the throat: a ragged collar of lobes hugging the mouth, then a jittered field out to 460.
+    for k in range(14):
+        a = math.tau * k / 14 + rng.uniform(-0.1, 0.1)
+        d = hole_r + rng.uniform(6.0, 14.0)
+        r = rng.uniform(9.0, 15.0)
+        lobe(cx + math.cos(a) * d, cz + math.sin(a) * d, r, r * rng.uniform(0.7, 1.0), "CloudUnderPale")
+    spacing = 88.0
+    q = int(460.0 // spacing)
+    for i in range(-q, q + 1):
+        for j in range(-q, q + 1):
+            x = cx + i * spacing + rng.uniform(-24.0, 24.0)
+            z = cz + j * spacing + rng.uniform(-24.0, 24.0)
+            d = math.hypot(x - cx, z - cz)
+            if d > 460.0 or d < hole_r + 26.0:
+                continue
+            r = rng.uniform(22.0, 40.0)
+            lobe(x, z, r, r * rng.uniform(0.5, 0.8), "CloudUnderPale" if rng.random() < 0.4 else "CloudUnder")
+    spacing = 230.0
+    q = int(far // spacing)
+    for i in range(-q, q + 1):
+        for j in range(-q, q + 1):
+            x = cx + i * spacing + rng.uniform(-60.0, 60.0)
+            z = cz + j * spacing + rng.uniform(-60.0, 60.0)
+            d = math.hypot(x - cx, z - cz)
+            if d <= 470.0 or d > far - 80.0:
+                continue
+            r = rng.uniform(55.0, 95.0)
+            lobe(x, z, r, r * rng.uniform(0.4, 0.65), "CloudUnder")
 
 
 def rim(s, poly, cx, cz, rng):
@@ -189,6 +286,11 @@ def below(s):
     b = Below(s)
     rng = random.Random(8080)
     half = 1000.0
+    outer = P.CITY_FAR / K
+    # The ground runs out to the far ring (the inner square is drawn on its own, as it always was).
+    for x0, z0, x1, z1 in ((-outer, -outer, outer, -half), (-outer, half, outer, outer), (-outer, -half, -half, half),
+                           (half, -half, outer, half)):
+        b.up("CityGround", x0, z0, x1, z1, 0.0)
     b.up("CityGround", -half, -half, half, half, 0.0)
     step, road = 96.0, 14.0
     # The river: a band across the city, north-west to south-east. It passes north of the point under the rift,
@@ -271,7 +373,74 @@ def below(s):
         for sz in (tz0, tz1):
             s.blinker(b.p(sx, top + 1.5, sz), (190, 205, 230), 2.2, 0.9, rng.uniform(0, 2.2))
     s.box("DarkMetal", b.p((tx0 + tx1) / 2, top + 15.0, (tz0 + tz1) / 2), (1.6 * K * 3, 30 * K, 1.6 * K * 3), skip=("-y",))
+    far_city(s, b, half, outer, river)
     landing(s, b)
+
+
+def far_city(s, b, half, outer, river):
+    """The city past the middle, out to where the haze takes it: bigger blocks, plain, fewer lit windows,
+    a lit avenue every other block, and now and then a tall tower standing up dark against the haze (what a
+    diver sees all round). Cheap: a block is four walls and a roof, a band of windows on some sides."""
+    rng = random.Random(8181)
+    step = 192.0
+    n = int(outer // step)
+    (ax, az), (bx, bz) = river
+    rdx, rdz = bx - ax, bz - az
+    # The river carried on out of the middle both ways, to the far ring's edge.
+    length = math.hypot(rdx, rdz)
+    ux, uz = rdx / length, rdz / length
+    rot = math.degrees(math.atan2(-rdz, rdx))
+    run = (outer - half) / max(abs(ux), 1e-3)
+    for (ex, ez), sgn in (((bx, bz), 1), ((ax, az), -1)):
+        mx, mz = ex + sgn * ux * run / 2, ez + sgn * uz * run / 2
+        s.polygon("WindowDark", [b.p(x, 0.3, z) for x, z in g2.cw(g2.rect(mx, mz, run, 80.0, rot))])
+        for side in (-1, 1):
+            edge = g2.rect(mx + math.sin(math.radians(rot)) * side * 41.0, mz + math.cos(math.radians(rot)) * side * 41.0,
+                           run, 2.0, rot)
+            s.polygon("DimBand", [b.p(x, 0.5, z) for x, z in g2.cw(edge)])
+    for i in range(-n, n + 1):
+        c = i * step
+        if abs(c) < half:
+            continue
+        for lo, hi in ((-outer, outer),):
+            b.up("CityRoad", c - 9.0, lo, c + 9.0, hi, 0.2)
+            b.up("CityRoad", lo, c - 9.0, hi, c + 9.0, 0.2)
+            if i % 2 == 0:
+                b.up("DimLamp", c - 0.8, lo, c + 0.8, hi, 0.35)
+                b.up("DimLamp", lo, c - 0.8, hi, c + 0.8, 0.35)
+    for i in range(-n, n):
+        for j in range(-n, n):
+            x0, z0 = i * step + 14.0, j * step + 14.0
+            x1, z1 = (i + 1) * step - 14.0, (j + 1) * step - 14.0
+            mx, mz = (x0 + x1) / 2, (z0 + z1) / 2
+            if max(abs(mx), abs(mz)) < half + step * 0.5 or math.hypot(mx, mz) > outer - step * 0.5:
+                continue
+            # (Clear of the river's line, carried on past the middle.)
+            t = ((mx - ax) * rdx + (mz - az) * rdz) / (rdx * rdx + rdz * rdz)
+            px, pz = ax + rdx * t, az + rdz * t
+            if math.hypot(mx - px, mz - pz) < 150.0:
+                continue
+            if rng.random() < 0.55:
+                continue
+            tall = rng.random() < 0.07
+            floors = int(rng.uniform(30, 60)) if tall else int(rng.uniform(3, 16))
+            inset = rng.uniform(0.0, 30.0)
+            top = floors * 12.0
+            bx0, bz0, bx1, bz1 = x0 + inset, z0 + inset, x1 - inset, z1 - inset
+            clad = "CityFacade" if rng.random() < 0.75 else "CityFacadeWarm"
+            sides = (((bx0, bz0), (bx1, bz0), (0, -1)), ((bx1, bz0), (bx1, bz1), (1, 0)), ((bx1, bz1), (bx0, bz1), (0, 1)),
+                     ((bx0, bz1), (bx0, bz0), (-1, 0)))
+            for a, bb, out in sides:
+                b.side(clad, a, bb, 0.0, top, out)
+                if rng.random() < 0.22:
+                    y = rng.randrange(0, max(1, floors)) * 12.0 + 4.0
+                    pa = (a[0] + out[0] * 0.6, a[1] + out[1] * 0.6)
+                    pb = (bb[0] + out[0] * 0.6, bb[1] + out[1] * 0.6)
+                    b.side("DimWarm" if rng.random() < 0.2 else "DimWindow", pa, pb, y, y + 5.0, out)
+            b.up("CityRoof", bx0, bz0, bx1, bz1, top)
+            if tall and rng.random() < 0.5:
+                s.blinker(b.p((bx0 + bx1) / 2, top + 3.0, (bz0 + bz1) / 2), (190, 205, 230), 1.8 + rng.random(), 1.2,
+                          rng.uniform(0, 2.0))
 
 
 def landing(s, b):
@@ -301,4 +470,5 @@ def landing(s, b):
 
 def build(s):
     hole(s)
+    cloud(s)
     below(s)

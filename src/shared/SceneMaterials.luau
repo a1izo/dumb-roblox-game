@@ -40,6 +40,8 @@ return {
 	CityRoad = { material = "SmoothPlastic", color = { 15, 15, 19 }, transparency = 0, reflectance = 0 },
 	CityRoof = { material = "SmoothPlastic", color = { 31, 32, 38 }, transparency = 0, reflectance = 0 },
 	CloudBank = { material = "SmoothPlastic", color = { 126, 130, 138 }, transparency = 0, reflectance = 0 },
+	CloudUnder = { material = "SmoothPlastic", color = { 50, 52, 62 }, transparency = 0, reflectance = 0 },
+	CloudUnderPale = { material = "SmoothPlastic", color = { 72, 74, 86 }, transparency = 0, reflectance = 0 },
 	Concrete = { textured = true, fallback = { material = "Concrete", color = { 114, 115, 119 } } },
 	ConcreteDark = { textured = true, fallback = { material = "Concrete", color = { 64, 63, 68 } } },
 	CoreDark = { material = "SmoothPlastic", color = { 14, 15, 18 }, transparency = 0, reflectance = 0 },

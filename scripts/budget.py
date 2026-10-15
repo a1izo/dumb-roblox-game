@@ -12,8 +12,9 @@ Pixels and megabytes may not grow at all. Triangles may grow by the venue's allo
 edges and trims cost a few, and Tokyo, the heaviest map, gets none.
 
 Growth the owner said yes to is written in art/budget.json's "exceptions" (what, when, how many
-megapixels and megabytes, in every scene) and allowed on top of the baseline. Recording a new
-baseline takes them in: they stay in the file, marked absorbed, as the record of the yes.
+megapixels and megabytes, in every scene) and allowed on top of the baseline. An exception that names a
+"venue" is for that scene alone, and may also allow its triangles to grow by a further share ("triangles").
+Recording a new baseline takes them in: they stay in the file, marked absorbed, as the record of the yes.
 
 Run: python scripts/budget.py            compare with art/budget.json, exit 1 when over
      python scripts/budget.py record     write art/budget.json from what is exported now
@@ -112,10 +113,11 @@ def main():
     print(f"{'':8}{'megapixels':>20}{'megabytes':>20}{'triangles':>22}{'textures':>12}")
     for venue in VENUES:
         was, cur = base[venue], now[venue]
+        mine = [e for e in allowed if e.get("venue") in (None, venue)]
         limits = {
-            "megapixels": round(was["megapixels"] + sum(e["megapixels"] for e in allowed), 2),
-            "megabytes": round(was["megabytes"] + sum(e["megabytes"] for e in allowed), 2),
-            "triangles": int(was["triangles"] * (1 + ALLOW[venue])),
+            "megapixels": round(was["megapixels"] + sum(e["megapixels"] for e in mine), 2),
+            "megabytes": round(was["megabytes"] + sum(e["megabytes"] for e in mine), 2),
+            "triangles": int(was["triangles"] * (1 + ALLOW[venue] + sum(e.get("triangles", 0) for e in mine))),
         }
         cells = []
         for key, width in (("megapixels", 20), ("megabytes", 20), ("triangles", 22)):
@@ -126,8 +128,10 @@ def main():
             cells.append(f"{cur[key]} / {limits[key]}{mark}".rjust(width))
         print(f"{venue:8}{''.join(cells)}{cur['textures']:>12}")
     for e in allowed:
+        where = f"in the {e['venue']} scene" if e.get("venue") else "in every scene"
+        extra = f", triangles +{round(e['triangles'] * 100)}%" if e.get("triangles") else ""
         print(f"\nAllowed on top (the owner's yes, {e['approved']}): {e['what']}, "
-              f"+{e['megapixels']} megapixels and +{e['megabytes']} megabytes in every scene")
+              f"+{e['megapixels']} megapixels and +{e['megabytes']} megabytes{extra} {where}")
     if over:
         print("\nOver budget:\n  " + "\n  ".join(over))
         return 1

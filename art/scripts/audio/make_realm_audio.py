@@ -228,6 +228,8 @@ def game_finish():
 
 
 def game_dice():
+    """(Retired with the bone dice: the file is no longer written, but its random draws are still made so
+    every sound after it in main() comes out as before.)"""
     n = int(SR * 1.3)
     x = np.zeros(n)
     t0 = 0.0
@@ -239,7 +241,7 @@ def game_dice():
         click = rng.normal(size=1600) * np.exp(-np.arange(1600) / rng.uniform(50, 160))
         x[i: i + 1600] += click * rng.uniform(0.3, 1.0) * np.exp(-t0 * 1.6)
     x = np.convolve(x, np.sin(2 * np.pi * 900 * np.arange(60) / SR) * np.hanning(60), "same") + 0.4 * x
-    save("game_dice.wav", fade(reverb(x, 0.8, 0.2), 0.001, 0.2), 0.7)
+    fade(reverb(x, 0.8, 0.2), 0.001, 0.2)
 
 
 def game_throw():
@@ -373,12 +375,59 @@ def style_strings():
     save("style_strings.wav", fade(reverb(twang * 0.6 + snap, 1.0, 0.2, 6000), 0.0005, 0.2), 0.7)
 
 
+def game_dive_fall():
+    """The dive as it is now (2026-10-15: about eleven seconds down): air tearing past a tumbling body, from
+    a hush to a roar, a slow beat in it as the body turns over."""
+    seconds = 11.8
+    t = t_axis(seconds)
+    n = len(t)
+    u = np.clip(t / 10.6, 0, 1)
+    low = shaped_noise(n, lambda f: lowpass(f, 420, 2) / np.sqrt(np.maximum(f, 30) / 30))
+    high = shaped_noise(n, lambda f: bandpass(f, 800, 4800, 2))
+    tumble = 0.75 + 0.25 * np.sin(2 * np.pi * 0.35 * t + 0.6)
+    flutter = slow_envelope(n, 2.5, 11.0)
+    x = low / np.abs(low).max() * (0.2 + 0.8 * u) * tumble
+    x = x + high / np.abs(high).max() * u ** 1.6 * (0.45 + 0.55 * flutter) * 0.65
+    save("game_dive_fall.wav", fade(x, 0.5, 0.25), 0.62)
+
+
+def game_dive_string():
+    """The catch: a taut string snapping tight, a dry twang that dies quickly, with a soft whip of air."""
+    t = t_axis(0.9)
+    n = len(t)
+    twang = np.zeros(n)
+    for hz, amp in ((196.0, 1.0), (392.6, 0.45), (589.4, 0.22), (786.0, 0.12)):
+        twang += amp * np.sin(2 * np.pi * hz * t * (1 + 0.012 * np.exp(-t * 18))) * np.exp(-t * 7.5)
+    snap = shaped_noise(n, lambda f: bandpass(f, 2500, 9000, 2))
+    snap = snap / np.abs(snap).max() * np.exp(-t * 90) * 0.9
+    whip = shaped_noise(n, lambda f: bandpass(f, 400, 2400, 2))
+    whip = whip / np.abs(whip).max() * np.exp(-((t - 0.05) / 0.06) ** 2) * 0.35
+    save("game_dive_string.wav", fade(reverb(twang * 0.5 + snap + whip, 0.9, 0.18, 5000), 0.0005, 0.2), 0.7)
+
+
+def game_dive_impact():
+    """Braked too late: a body slamming into a flat roof: a heavy low thud, a dry crack on it, a short slap
+    and a little rattle of grit. No blood, no scream."""
+    t = t_axis(1.4)
+    n = len(t)
+    thud = np.sin(2 * np.pi * (46 + 38 * np.exp(-t * 26)) * t) * np.exp(-6 * t)
+    crack = shaped_noise(n, lambda f: bandpass(f, 1800, 7000, 2))
+    crack = crack / np.abs(crack).max() * np.exp(-((t - 0.012) / 0.008) ** 2) * 0.8
+    crack2 = shaped_noise(n, lambda f: bandpass(f, 1200, 5000, 2))
+    crack2 = crack2 / np.abs(crack2).max() * np.exp(-((t - 0.05) / 0.01) ** 2) * 0.35
+    slap = shaped_noise(n, lambda f: lowpass(f, 1100, 2))
+    slap = slap / np.abs(slap).max() * np.exp(-30 * t) * 0.6
+    grit = shaped_noise(n, lambda f: bandpass(f, 2000, 6000, 2))
+    grit = grit / np.abs(grit).max() * np.exp(-9 * np.clip(t - 0.1, 0, None)) * (t > 0.1) * 0.08
+    save("game_dive_impact.wav", fade(reverb(thud + crack + crack2 + slap + grit, 1.1, 0.22, 2200), 0.0005, 0.3), 0.85)
+
+
 def main():
     # (New sounds go at the end: the random stream is shared, so the earlier files stay as they were.)
     for make in (wind, drone, rumble, rocks, stone1, stone2, metal1, metal2, far1, far2, game_rune, game_wrong,
                  game_checkpoint, game_finish, game_dice, game_throw, game_fall, game_bell_toll, game_dive_wind,
                  game_dive_crash, trial_chime, style_typewriter, style_knife, style_crows, style_stone,
-                 style_strings):
+                 style_strings, game_dive_fall, game_dive_string, game_dive_impact):
         make()
 
 

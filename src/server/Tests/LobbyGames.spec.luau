@@ -1,9 +1,8 @@
--- The lobby mini-games' rules: the Spire Ascent, the rune courtyard, the bone dice and the stone-toss.
+-- The lobby mini-games' rules: the Spire Ascent, the rune courtyard and the stone-toss.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Games = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames")
-local Dice = require(Games:WaitForChild("Dice"))
 local Parkour = require(Games:WaitForChild("Parkour"))
 local Runes = require(Games:WaitForChild("Runes"))
 local Toss = require(Games:WaitForChild("Toss"))
@@ -110,36 +109,6 @@ return function(t)
 
 		it("takes longer to show a longer sequence", function()
 			expect(Runes.showTime(6) > Runes.showTime(3)).to.equal(true)
-		end)
-	end)
-
-	describe("Dice", function()
-		it("rolls two dice from one to six", function()
-			local rng = Random.new(5)
-			for _ = 1, 200 do
-				local a, b = Dice.roll(rng)
-				expect(a >= 1 and a <= 6 and b >= 1 and b <= 6).to.equal(true)
-			end
-		end)
-
-		it("beats the house alone, pushes on a tie", function()
-			expect(#Dice.settle({ a = 9 }, 7).winners).to.equal(1)
-			expect(#Dice.settle({ a = 5 }, 7).losers).to.equal(1)
-			expect(Dice.settle({ a = 7 }, 7).push).to.equal(true)
-		end)
-
-		it("gives the round to the highest of several, sharing a tie", function()
-			local o = Dice.settle({ a = 6, b = 11, c = 11 })
-			expect(#o.winners).to.equal(2)
-			expect(#o.losers).to.equal(1)
-			expect(o.push).to.equal(false)
-			expect(Dice.settle({ a = 8, b = 8 }).push).to.equal(true)
-		end)
-
-		it("counts a streak of wins and resets it on a loss", function()
-			expect(Dice.streak(2, "win")).to.equal(3)
-			expect(Dice.streak(2, "push")).to.equal(2)
-			expect(Dice.streak(2, "lose")).to.equal(0)
 		end)
 	end)
 

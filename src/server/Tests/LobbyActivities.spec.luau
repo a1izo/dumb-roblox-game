@@ -6,7 +6,7 @@ local Games = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames"
 local LastBreath = require(Games:WaitForChild("LastBreath"))
 local Mark = require(Games:WaitForChild("Mark"))
 
-local HEIGHT = 205
+local HEIGHT = 650 -- about the rift's depth (rim to the landing roof)
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -25,7 +25,7 @@ return function(t)
 				expect(LastBreath.fallen(LastBreath.timeToFall(distance))).to.be.near(distance, 1e-6)
 			end
 			local impact = LastBreath.timeToFall(HEIGHT)
-			expect(impact > 4 and impact < 7).to.equal(true)
+			expect(impact > 9 and impact < 12).to.equal(true)
 		end)
 
 		it("crashes a diver who never brakes, or brakes too late", function()
@@ -49,7 +49,7 @@ return function(t)
 			local last = math.huge
 			local stopped, crashed = 0, 0
 			for step = 0, 60 do
-				local at = 3 + step * 0.05
+				local at = 9 + step * 0.05
 				local outcome = LastBreath.outcome(HEIGHT, at)
 				if outcome.crashed then
 					crashed += 1

@@ -7,7 +7,7 @@ wasteland beyond the world where the Grimoire comes from.
 - The wasteland: two kinds of dead tree, a withered apple tree still hung with a few dull grey-brown apples,
   skull piles and scattered bones, a colossal horned skull, stone cairns.
 - Fire and light: bone braziers burning pale, a crooked lantern post, candle clusters.
-- Its dwellers' things: the bone throne, a dice game left on a rock, vertebra stools.
+- Its dwellers' things: the bone throne.
 
 Built to the semi-real standard (propkit): real sizes at about 3.5 studs to the metre, bevelled
 edges, baked colour and ambient occlusion. Props face -Y and stand on z = 0. Every glow material
@@ -841,44 +841,4 @@ def bone_throne():
     parts += beast_skull("Crown", 0, 3.0, 11.6, 1.5, bone, void, horn, jaw=False)
     for k in (-1, 1):
         parts.append(mk.sphere("Orb", 0.4, (k * 2.4, 1.0, 1.9), mat=grey, segments=10, rings=8))
-    return parts, []
-
-
-@prop("DiceGame", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
-def dice_game():
-    """A dice game abandoned mid-throw: bone dice, a cup carved from a skull, tally sticks and a
-    little heap of bone tokens, laid out on a scrap of dark cloth."""
-    bone = bone_mat("Dcg")
-    old = old_bone_mat("Dcg")
-    void = void_mat("Dcg")
-    cloth = mk.noisy("Dcg_Cloth", srgb(40, 34, 36), srgb(64, 54, 56), scale=24, roughness=0.95)
-    parts = [mk.box("Cloth", (3.2, 2.2, 0.04), (0, 0, 0.02), rot=(0, 0, 8), mat=cloth)]
-    for k, (x, y, yaw) in enumerate(((-0.6, -0.3, 15), (0.1, -0.5, -30), (0.5, 0.1, 50))):
-        parts.append(mk.box(f"Die{k}", (0.4, 0.4, 0.4), (x, y, 0.24), rot=(0, 0, yaw), mat=bone, bevel=0.06))
-        a = math.radians(yaw)
-        for dx, dy in ((-0.1, -0.1), (0.1, 0.1), (0.0, 0.0))[:k + 1]:
-            parts.append(mk.cylinder("Pip", 0.04, 0.02, (x + dx * math.cos(a) - dy * math.sin(a),
-                                                        y + dx * math.sin(a) + dy * math.cos(a), 0.445), mat=void, verts=6))
-    parts += skull("Cup", 1.1, 0.5, 0.42, 0.4, old, void, yaw=160, jaw=False)
-    for k in range(5):
-        parts.append(mk.box("Tally", (0.05, 0.9, 0.05), (-1.2 + k * 0.12, 0.6, 0.07), rot=(0, 0, 4 * k), mat=old))
-    for k in range(6):
-        a = k * 1.9
-        parts.append(mk.cylinder("Token", 0.13, 0.05, (-0.6 + math.cos(a) * 0.2, 0.5 + math.sin(a) * 0.2, 0.07 + (k % 3) * 0.05),
-                                 mat=bone, verts=10))
-    return parts, []
-
-
-@prop("BoneStool", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Lobby")
-def bone_stool():
-    """A stool made from one great vertebra: the round body to sit on, its spines and wings worn
-    smooth."""
-    bone = old_bone_mat("Bst")
-    void = void_mat("Bst")
-    parts = [mk.lathe("Body", [(0.0, 0.0), (0.95, 0.0), (1.05, 0.2), (0.85, 0.9), (1.0, 1.6), (0.9, 1.75), (0.0, 1.75)],
-                      (0, 0, 0), mat=bone, segments=16),
-             mk.cylinder("Canal", 0.3, 0.1, (0, 0.2, 1.75), mat=void, verts=10)]
-    for sx in (-1, 1):
-        parts.append(mk.tube("Wing", (sx * 0.8, 0.2, 1.3), (sx * 1.6, 0.5, 1.5), 0.25, 0.1, mat=bone, verts=7))
-    parts.append(mk.tube("Spine", (0, 0.7, 1.2), (0, 1.5, 1.0), 0.22, 0.08, mat=bone, verts=7))
     return parts, []

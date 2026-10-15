@@ -4,7 +4,7 @@ out of the fog, and far to the north one colossal blade. Players appear on a rui
 flagstone plaza, facing north. No wall here explains anything: round the plaza five low bases carry the
 tableaux (stone figures acting out how a case goes) and a sixth place a bell; a ring of candle stones at the
 plaza's middle shows who is ready. South-west, the Academy's ring of broken pillars holds the practice altars;
-east, the rift looks down on Kagegaoka at night, its rim open; north-west lies the dice rock and the cleft,
+east, the rift looks down on Kagegaoka at night, its rim open; north-west lies the cleft,
 north-east the needle ledge; south-east a colossal carcass, the duel's two slates under its ribs; and behind
 the title monolith, up on its mesa, the bone throne, with the one board left (Most Wins) on a low slab at the
 mesa's foot. A ridge of rock and needles borders the walkable basin; two old stone causeways cross deep chasms
@@ -13,7 +13,7 @@ to two plateaus: the Spire Ascent (west) and the rune courtyard (north-east).
 Everything that shows text or does something is built by the game (src/server/Maps/Lobby.luau and
 the lobby games) at the anchors this scene exports: the title and tagline, the Most Wins board, the
 spawn, the Academy's gate sign, its seven drill altars and three effigies, the candles, the tableaux'
-figures, the figure on the throne, the bell, the duel, the apples, the dice seats, the stone-toss, the rift
+figures, the figure on the throne, the bell, the duel, the apples, the stone-toss, the rift
 and its landing, the rune tiles, the parkour's checkpoints, the roots and banners that sway. The layout is in
 plan.py."""
 
@@ -42,7 +42,7 @@ VIEWS = [
     ((-80.0, 7.0, 76.0), (-86.0, 4.0, 100.0), 14),  # inside the ring: the altars and effigies
     ((80.0, 12.0, 22.0), (106.0, -200.0, 22.0), 16),  # down through the rift (from over its lip)
     ((66.0, 7.0, 44.0), (98.0, 0.0, 22.0), 18),  # the rift and the apple tree
-    ((-70.0, 6.0, -40.0), (-88.0, 3.0, -54.0), 16),  # the dice rock
+    ((-70.0, 6.0, -40.0), (-88.0, 3.0, -54.0), 16),  # the wayside rock
     ((-70.0, 7.0, -92.0), (-110.0, 20.0, -140.0), 18),  # the cleft
     ((104.0, 7.0, -48.0), (140.0, 14.0, -80.0), 18),  # the needle ledge and its blade
     ((20.0, 8.0, 90.0), (70.0, 10.0, 110.0), 16),  # under the carcass's ribs

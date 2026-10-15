@@ -52,14 +52,12 @@ return function(t)
 				table.insert(names, "drill" .. index)
 			end
 			-- The mini-games: the Spire Ascent's pad, centre and ten checkpoints, the rune courtyard's pad,
-			-- centre and nine tiles, the dice rock and its four seats, the stone-toss, the rift's shape and
-			-- the roof far under it.
+			-- centre and nine tiles, the stone-toss, the rift's shape and the roof far under it.
 			for _, name in ipairs({
 				"pkStart",
 				"pkCenter",
 				"runeStart",
 				"runeCenter",
-				"diceRock",
 				"toss",
 				"rift",
 				"landing",
@@ -71,9 +69,6 @@ return function(t)
 			end
 			for index = 1, 9 do
 				table.insert(names, "rune" .. index)
-			end
-			for index = 1, 4 do
-				table.insert(names, "diceSeat" .. index)
 			end
 			for _, name in ipairs(names) do
 				if not anchors[name] then

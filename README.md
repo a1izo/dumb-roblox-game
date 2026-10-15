@@ -110,9 +110,11 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   trees, bones and a colossal carcass stand about, and behind the title, up on its mesa, the bone
   throne: whoever has the most wins sits on it in stone, over the one board left in the world (Most
   Wins; every other board is in the Leaderboards window). **More to do while waiting** (no rewards but
-  bests, a board and a title): *Last breath*, the dive into the rift: step over the rim, fall towards a
-  lit roof far below, and brake with one press; the smallest gap left wins, too late and you land on
-  it, and divers who jump together are ranked together. *Death's mark*, tag from the bell by the plaza:
+  bests, a board and a title): *Last breath*, the dive into the rift: step over the rim and tumble,
+  helpless, down a throat of rock, through the cloud the realm floats on and over Kagegaoka at night,
+  about eleven seconds towards a lit roof; one press and a string from the cloud catches you. The
+  smallest gap left wins; too late and you slam onto the roof, limp. Divers who jump together are
+  ranked together. *Death's mark*, tag from the bell by the plaza:
   whoever carries the mark when the bell tolls goes down, and the score is the tolls survived in a row.
   The *name duel*, at the two stones under the carcass's ribs: each of two players is given an invented
   name that leaks to the other three letters at a time, and the first to write the other's whole name
@@ -120,7 +122,7 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   And seven grey apples lie in the realm's far corners, for a title. **Mini-games for the wait**
   (solo-capable, no rewards, global top-10 boards for the first two): the *Spire Ascent*, a parkour up
   floating stones on a plateau over the west causeway; the *rune courtyard*, a memory game on the
-  north-east plateau; *bone dice* at the dice rock; and the *stone-toss* at the rift's rim. Wind, drones
+  north-east plateau; and the *stone-toss* at the rift's rim. Wind, drones
   and far-off knocks make a quiet soundscape (upload `art/audio/*.wav`, see its README).
 - **The meeting room** is the Bureau's war room high in the Central Tower: a round table under one
   hard light, Ace's screen between two speaker columns, the evidence board on a wall of pinned

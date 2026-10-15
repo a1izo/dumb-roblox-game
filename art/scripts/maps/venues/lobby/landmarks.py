@@ -1,6 +1,6 @@
 """The Grey Realm's landmarks: the flagstone plaza with its ring of candle stones, the five bases of
 the tableaux and the bell round it, the title monolith, the bone throne on its mesa and the Most Wins
-slab at its foot, the Academy's ring of broken pillars, the dice rock, the colossal carcass and the
+slab at its foot, the Academy's ring of broken pillars, a wayside rock, the colossal carcass and the
 duel's two slates under its ribs. Each records the anchors the lobby's Luau builds its own things at
 (the board, signs, candles, stone figures, drill desks, effigies, apples, the spawn).
 
@@ -330,23 +330,15 @@ def pillar(s, x, z, h, rng, whole=False, y=0.0):
     s.collider((x, y + h / 2 + 0.6, z), (2.4, h, 2.4), 0.0, True, "RuinStone")
 
 
-# The dice rock and the carcass --------------------------------------------------------------------------------
+# The wayside rock and the carcass ----------------------------------------------------------------------------
 
 
-def dice_rock(s):
-    x, z, r, h = P.DICE_ROCK
+def wayside_rock(s):
+    """A low flat-topped rock by the north-west path, a few bones about it (once the dice rock)."""
+    x, z, r, h = P.WAYSIDE_ROCK
     rock(s, x, z, r, h, 211, tiers=2, sides=10, taper=0.12, flat_top=True, top_mat="RuinFlag")
-    s.prop("DiceGame", x, z, 20.0, 1.0, h + 0.02)
-    for k in range(4):
-        a = math.radians(30 + k * 90)
-        s.prop("BoneStool", x + math.cos(a) * (r + 2.6), z + math.sin(a) * (r + 2.6), -math.degrees(a) + 90.0)
-    s.anchor("diceRock", x, h, z, 0.0, r=r)
-    for k, (sx, sz) in enumerate(P.DICE_SEATS):
-        s.anchor(f"diceSeat{k + 1}", sx, 0.0, sz, P.rot_towards((sx, sz), (x, z)))
     s.prop("SkullPile", x - 9.0, z - 5.0, 40.0, 1.2)
-    s.prop("LanternPost", x + 7.5, z - 5.5, 220.0)
     s.prop("BoneScatter", x + 3.0, z + 9.0, 70.0)
-    pool(s, x, h + 6.0, z, 22, 0.9)
 
 
 def carcass(s):
@@ -556,7 +548,7 @@ def build(s, g):
     throne(s)
     steles(s)
     academy(s, g)
-    dice_rock(s)
+    wayside_rock(s)
     carcass(s)
     duel(s)
     apples(s)

@@ -6,13 +6,13 @@
 -- throne's mesa) and the names on the Academy's gate and altars.
 -- South-west lies the Academy, a ring of broken pillars with a practice altar for every skill and three
 -- wooden puppets to practise on, hung on strings from a great hand; two old causeways over chasms lead to the plateaus of the Spire Ascent and the
--- rune courtyard, and the dice rock and the stone-toss wait in the basin itself.
+-- rune courtyard, and the stone-toss waits at the rift's rim in the basin itself.
 --
 -- SceneBuilder puts up the scene (or its greybox, without the import); this module builds what
 -- shows text or does something, at the scene's anchors. The Academy only tags parts (LTraining
 -- drill desks, LDummy torsos); the drills run on each player's client and never touch a match.
 -- The mini-games' objects are LobbyGames', the things that sway in the wind LobbyDecor's, and the
--- candles, the rift's guard and the other fixtures LobbyFixtures'.
+-- candles and the other fixtures LobbyFixtures'.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -266,6 +266,12 @@ function Lobby.build(b)
 	LobbyDecor.build(b, anchors)
 	LobbyFixtures.build(b, anchors)
 	local games = LobbyGames.build(b, anchors)
+	if data.bounds then
+		games.bounds = {
+			min = b:worldPos(data.bounds.min[1], data.bounds.min[2], data.bounds.min[3]),
+			max = b:worldPos(data.bounds.max[1], data.bounds.max[2], data.bounds.max[3]),
+		}
+	end
 
 	-- Where players appear: the ring on the terrace (the scene's floor is under it, so the pad
 	-- itself only marks the place).

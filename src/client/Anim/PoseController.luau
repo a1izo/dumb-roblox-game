@@ -5,7 +5,8 @@
 --   3. an after-pass from the locomotion controller that keeps a standing body's soles planted under
 --      whatever the layers above did to it.
 -- Clips come from Blender (Anim/Clips). A clip with an uploaded animation id in
--- Assets.anim plays that animation instead.
+-- Assets.anim plays that animation instead. A track can also be procedural (playProcedural): a function
+-- that gives the joints' rotations each frame, like a clip's sample (the rift dive's tumble, Anim/Tumble).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -28,9 +29,13 @@ export type Options = {
 	emote: boolean?, -- emotes stop when the character moves
 }
 
+-- A procedural track's source: the joints' rotations (and a body offset) `elapsed` seconds in.
+export type Sampler = (elapsed: number) -> ({ [string]: CFrame }, Vector3?)
+
 type Track = {
 	id: string,
 	clip: ClipPlayer.Prepared?,
+	sampler: Sampler?,
 	animTrack: AnimationTrack?,
 	started: number,
 	fadeIn: number,
@@ -263,6 +268,28 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 	table.insert(rig.tracks, track)
 end
 
+-- Starts a procedural track (replacing a track of the same id): `sampler` is asked for the pose every frame
+-- the body is posed, and is blended in and out like a clip.
+function PoseController.playProcedural(character: Model?, id: string, sampler: Sampler, options: Options?)
+	local rig = PoseController.bind(character)
+	if not rig or rig.baked then
+		return
+	end
+	PoseController.stop(character, id, 0)
+	local now = os.clock()
+	table.insert(rig.tracks, {
+		id = id,
+		sampler = sampler,
+		started = now,
+		fadeIn = if options and options.fadeIn then options.fadeIn else 0.2,
+		fadeOut = if options and options.fadeOut then options.fadeOut else 0.3,
+		stopAt = if options and options.duration then now + options.duration else nil,
+		speed = 1,
+		phase = 0,
+		emote = false,
+	})
+end
+
 -- Stops a clip (all clips when id is nil).
 function PoseController.stop(character: Model?, id: string?, fadeOut: number?)
 	local rig = if character then rigs[character] else nil
@@ -387,6 +414,25 @@ local function playTrack(rig: Rig, track: Track, now: number)
 		return
 	end
 	local elapsed = math.max(0, now - track.started) * track.speed + track.phase
+	local sampler = track.sampler
+	if sampler then
+		local rotations, offset = sampler(elapsed)
+		if rotations.rHip or rotations.lHip then
+			rig.legsTaken = math.max(rig.legsTaken, w)
+		end
+		for joint, rot in pairs(rotations) do
+			local basis = rig.basis[joint]
+			if basis then
+				apply(
+					rig,
+					joint,
+					ClipPlayer.transform(basis, rot, if joint == "root" then offset else nil, rig.inverse[joint]),
+					w
+				)
+			end
+		end
+		return
+	end
 	local clip = track.clip
 	if clip then
 		if clip.joints.rHip or clip.joints.lHip then

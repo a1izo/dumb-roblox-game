@@ -139,6 +139,68 @@ LightingPresets.lobby = preset({
 	realmSky = true,
 })
 
+-- A dive into the rift, under the cloud the realm floats on: the night over Kagegaoka. Still no sun (the cloud
+-- is overhead) and the hour is the realm's (it never changes mid-fall); the light is the city's, from far
+-- below, cool and dim. A heavy dark haze closes every horizon, so neither the cloud deck's edge nor the
+-- city's is ever seen; the cloud's lobes overhead stand out a little paler than the deck. A touch of colour
+-- comes back (the warm windows far down). Set by World/LightingController from the camera's depth.
+LightingPresets.lobbyBelow = preset({
+	clockTime = 14.5,
+	brightness = 0.35,
+	exposure = -0.15,
+	ambient = rgb(46, 48, 60),
+	outdoorAmbient = rgb(58, 56, 70),
+	envDiffuse = 0.4,
+	envSpecular = 0.3,
+	density = 0.4,
+	haze = 2.2,
+	glare = 0,
+	atmosphereColor = rgb(30, 30, 44),
+	decay = rgb(52, 40, 40),
+	saturation = -0.5,
+	contrast = 0.18,
+	tint = rgb(214, 218, 232),
+	bloom = 0.35,
+	bloomSize = 20,
+	bloomThreshold = 2.0,
+	lamps = 1,
+	lampRange = 1,
+	keyLights = 3,
+	rain = 0,
+	lightning = false,
+	snow = 0,
+	realmSky = true,
+})
+
+-- The last stretch of a dive, nearing the city: the haze thins, so the roof coming up is sharp.
+LightingPresets.lobbyCity = preset({
+	clockTime = 14.5,
+	brightness = 0.35,
+	exposure = -0.1,
+	ambient = rgb(52, 50, 60),
+	outdoorAmbient = rgb(64, 60, 70),
+	envDiffuse = 0.4,
+	envSpecular = 0.3,
+	density = 0.26,
+	haze = 1.4,
+	glare = 0,
+	atmosphereColor = rgb(34, 32, 44),
+	decay = rgb(56, 42, 40),
+	saturation = -0.42,
+	contrast = 0.18,
+	tint = rgb(218, 220, 232),
+	bloom = 0.4,
+	bloomSize = 20,
+	bloomThreshold = 2.0,
+	lamps = 1,
+	lampRange = 1,
+	keyLights = 3,
+	rain = 0,
+	lightning = false,
+	snow = 0,
+	realmSky = true,
+})
+
 -- The meeting room: one hard key light over the table, everything else falls away.
 LightingPresets.meeting = preset({
 	clockTime = 0,
