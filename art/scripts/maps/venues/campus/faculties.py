@@ -167,7 +167,7 @@ def seminar(s):
     for z in (-104.0, -100.6):
         s.prop("Bookshelf", -123.2, z, 90)
     for x in (-132.0, -138.0):
-        kit.pendant(s, x, C, -94.0, drop=3.5, shade="BlackMetal", color=fit.WARM, range_=18, brightness=0.9, wide=1.0)
+        fit.room_pendant(s, x, C, -94.0, drop=3.5, shade="BlackMetal", range_=18, brightness=0.9, wide=1.0)
 
 
 def professor(s):
@@ -179,7 +179,7 @@ def professor(s):
     s.prop("Sofa", -110.0, -83.0, 0)
     s.prop("CoatStand", -100.0, -83.0, 0)
     s.prop("KeroseneHeater", -119.8, -86.0, 0)
-    kit.pendant(s, -110.0, C, -94.0, drop=3.5, shade="Brass", color=fit.WARM, range_=18, brightness=0.8, wide=1.0)
+    fit.room_pendant(s, -110.0, C, -94.0, drop=3.5, shade="Brass", range_=18, brightness=0.8, wide=1.0)
 
 
 # The Faculty of Science --------------------------------------------------------------------------------
@@ -239,6 +239,7 @@ def forensic(s):
             s.box("Steel", (104.95, y, z + 1.2), (0.12, 0.8, 0.2))
     s.box("BlackMetal", (100.0, 7.6, 71.6), (6.0, 3.6, 0.3))
     s.box("NeonCool", (100.0, 7.6, 71.42), (5.6, 3.2, 0.04))
+    s.light("point", (100.0, 7.6, 70.6), fit.COOL, 10, 0.5)
     s.prop("SpecimenShelf", 76.0, 70.8, 0)
     s.prop("SkeletonModel", 72.0, 66.0, 150)
     top = fit.table(s, 99.0, 64.0, 6.0, 3.0, 0, 0.0, top="WhiteTrim", legs="Steel")

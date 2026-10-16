@@ -396,7 +396,8 @@ def lamps(scene, catalog, venue):
         out.append({"src": l.get("src") or f"light {i}", "pos": Vector(l["pos"]), "kind": l["kind"],
                     "dir": Vector((fx, fy, fz)),
                     "angle": l.get("angle", 90), "range": l["range"], "brightness": l["brightness"],
-                    "role": l.get("role"), "color": tuple(l["color"]), "prop": None, "shadows": l.get("shadows")})
+                    "role": l.get("role"), "color": tuple(l["color"]), "prop": None, "shadows": l.get("shadows"),
+                    "glow": bool(l.get("glow"))})
     for key, x, y, z, rot, sc, *flags in scene.props:
         info = catalog.get(key)
         if not info or (flags and flags[0] == "dark"):
@@ -418,11 +419,55 @@ def lamps(scene, catalog, venue):
     return out
 
 
-def fixture(scene, tris, all_lamps, venue):
+def _glowing_props(scene, catalog):
+    """The boxes (x, base, z, sx, sy, sz, rot) of the placed props that carry glowing parts (a desk's lamp
+    bulb, a projector's lens): a lamp inside one, give or take PROP_FIT, has that prop as its fitting."""
+    placed = [(key, x, y, z, rot, sc, "dark" if flags and flags[0] == "dark" else "")
+              for key, x, y, z, rot, sc, *flags in scene.props]
+    layout = getattr(scene, "layout", None) or {}
+    for st in (layout.get("stations") or []) + ((getattr(scene, "spare", None) or {}).get("stations") or []):
+        placed.append((st["prop"], st["x"], st["y"], st["z"], st["rot"], 1.0, ""))
+    out = []
+    for key, x, y, z, rot, sc, flag in placed:
+        info = catalog.get(key)
+        if not info or not info.get("glows") or flag == "dark":
+            continue
+        sx, sy, sz = (v * sc for v in info["size"])
+        out.append((x, y if info["pivot"] == "bottom" else y - sy / 2, z, sx, sy, sz, rot))
+    return out
+
+
+def _by_screen(pos, screens):
+    """A lamp in front of a screen the game plays on, within its half-width and a stud and a half, is its spill."""
+    for sc in screens:
+        if (pos - Vector(sc["pos"])).length <= max(sc["w"], sc["h"]) / 2 + 1.5:
+            return True
+    return False
+
+
+PROP_FIT = 0.8
+
+
+def _in_glowing_prop(pos, boxes):
+    for x, base, z, sx, sy, sz, rot in boxes:
+        lx, lz = turn(-rot, pos.x - x, pos.z - z)
+        if (abs(lx) <= sx / 2 + PROP_FIT and abs(lz) <= sz / 2 + PROP_FIT
+                and base - PROP_FIT <= pos.y <= base + sy + PROP_FIT):
+            return True
+    return False
+
+
+def fixture(scene, tris, all_lamps, venue, catalog=None):
     glow, keep = tris.tree("glow")
+    boxes = _glowing_props(scene, catalog or {})
+    screens = getattr(scene, "screens", [])
     out = []
     for lamp in all_lamps:
-        if lamp["prop"] or lamp["role"] in ("sign",):
+        if lamp["prop"] or lamp["role"] in ("sign",) or lamp.get("glow"):
+            continue
+        if venue == "Sets":
+            break  # cutscene stages are lit like a film set, from lamps out of shot (judged from the shot cameras)
+        if _in_glowing_prop(lamp["pos"], boxes) or _by_screen(lamp["pos"], screens):
             continue
         if venue == "Lobby" and lamp["color"] == (170, 196, 232):
             continue  # the realm's pools: light through the cloud, by the owner's choice
@@ -444,11 +489,12 @@ def fixture(scene, tris, all_lamps, venue):
             for g in groups:
                 if (g["c"] - c).length < 2.0:
                     g["n"] += 1
+                    g["at"].append(c)
                     break
             else:
-                groups.append({"c": c, "n": 1})
+                groups.append({"c": c, "n": 1, "at": [c]})
         for g in groups:
-            found = tree.find(g["c"])
+            found = min((tree.find(c) for c in g["at"]), key=lambda f: f[2] if f[0] is not None else 1e9)
             if found[0] is None or found[2] > LIT_REACH:
                 out.append({"kind": "dark_fitting", "at": _where(g["c"]), "detail": mat, "pieces": g["n"],
                             "dist": round(found[2], 1) if found[0] is not None else None})
@@ -934,7 +980,7 @@ def _run(scene, catalog, venue, kinds):
     if "rest" in kinds:
         out += rest(scene, tris, catalog)
     if "fixture" in kinds:
-        out += fixture(scene, tris, all_lamps, venue)
+        out += fixture(scene, tris, all_lamps, venue, catalog)
     if "leak" in kinds:
         out += leak(tris, all_lamps)
     if "stretch" in kinds:

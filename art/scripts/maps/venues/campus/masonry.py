@@ -529,7 +529,7 @@ def clock_face(s, cx, cy, cz, rot, radius):
              cz + side[2] * math.cos(a) * radius * 0.82 + n[2] * 0.1)
         s.box("BlackTrim", p, (0.3, 0.7 if k % 3 == 0 else 0.4, 0.08), rot)
     s.clock((cx + n[0] * 0.25, cy, cz + n[2] * 0.25), rot, radius)
-    s.light("point", (cx + n[0] * 2.5, cy, cz + n[2] * 2.5), (255, 220, 160), 18, 0.8)
+    s.light("point", (cx + n[0] * 1.0, cy, cz + n[2] * 1.0), (255, 220, 160), 18, 0.8)
 
 
 def clock_tower(s, r, top, base=P.EAVES["auditorium"], clock_y=P.CLOCK_Y, clock_r=P.CLOCK_R, spire=P.SPIRE,
@@ -586,7 +586,6 @@ def clock_tower(s, r, top, base=P.EAVES["auditorium"], clock_y=P.CLOCK_Y, clock_
         kit.pyramid_roof(s, sx, sz, 1.6, top + 4.5, 3.5, mat="Slate", finial="Brass")
     kit.pyramid_roof(s, cx, cz, min(w, d) - 1.0, top + 1.6, spire, mat="Slate", finial="Brass")
     s.collider((cx, top + 1.0, cz), (w + 1.0, 2.0, d + 1.0), 0, True, None)
-    s.light("point", (cx, top - 4.0, cz), (255, 190, 120), 14, 0.5)
 
 
 # The arcade ------------------------------------------------------------------------------------------------

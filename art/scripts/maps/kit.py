@@ -456,7 +456,9 @@ def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18
 
 
 def pendant(s, x, ceiling_y, z, drop=4.0, shade="BlackMetal", color=WARM, range_=22, brightness=1.4,
-            shadows=False, wide=1.4):
+            shadows=False, wide=1.4, point=False):
+    """A lamp hanging on its rod under a shade. point: a round lamp in the shade's mouth instead of a spot down
+    (a small room's only light: a spot lights the floor under it and leaves the walls black in Roblox)."""
     low = ceiling_y - drop
     s.tube("BlackMetal", (x, ceiling_y, z), (x, low + 0.6, z), 0.04, 5, caps=False)
     s.lathe(shade, (x, low, z), [(wide, 0), (wide * 0.9, 0.2), (wide * 0.45, 0.55), (0.18, 0.7), (0.16, 0.9)], 20,
@@ -464,7 +466,10 @@ def pendant(s, x, ceiling_y, z, drop=4.0, shade="BlackMetal", color=WARM, range_
     s.lathe(shade, (x, low + 0.02, z), [(0.16, 0.88), (0.45 * wide - 0.04, 0.55), (0.9 * wide - 0.04, 0.2),
                                         (wide - 0.05, 0.02)], 20, caps=(False, False))
     s.lathe("NeonWarm", (x, low + 0.25, z), [(0.25, -0.05), (0.3, 0.1), (0.25, 0.3), (0.0, 0.34)], 10)
-    s.light("spot", (x, low + 0.2, z), color, range_, brightness, shadows, "Bottom", 80)
+    if point:
+        s.light("point", (x, low + 0.1, z), color, range_, brightness, shadows)
+    else:
+        s.light("spot", (x, low + 0.2, z), color, range_, brightness, shadows, "Bottom", 80)
 
 
 def chandelier(s, x, ceiling_y, z, r=2.4, drop=5.0, arms=8, color=WARM, range_=34, brightness=1.6, shadows=True):

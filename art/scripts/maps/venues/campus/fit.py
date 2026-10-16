@@ -213,6 +213,22 @@ ROOM_BRIGHTNESS = 1.35
 ROOM_RANGE = 1.25
 
 
+def room_tube(s, x, ceiling, z, length=6.0, rot=0.0, range_=16, brightness=0.6):
+    """kit.tube_light with the rooms' scaling (ROOM_RANGE, ROOM_BRIGHTNESS), like every other ceiling fitting
+    here: the stacks and the lockers hung theirs straight from the kit and stayed a step darker than the rest."""
+    kit.tube_light(s, x, ceiling, z, length=length, rot=rot, range_=range_ * ROOM_RANGE,
+                   brightness=brightness * ROOM_BRIGHTNESS)
+
+
+def room_pendant(s, x, ceiling, z, drop=3.5, shade="BlackMetal", color=WARM, range_=18, brightness=0.9, wide=1.0,
+                 scaled=True):
+    """kit.pendant for a small room lit by it alone: a round lamp in the shade, scaled like the other fittings
+    (scaled=False: a room its pendant already lit well enough, only the round lamp)."""
+    k_range, k_bright = (ROOM_RANGE, ROOM_BRIGHTNESS) if scaled else (1.0, 1.0)
+    kit.pendant(s, x, ceiling, z, drop=drop, shade=shade, color=color, range_=range_ * k_range,
+                brightness=brightness * k_bright, wide=wide, point=True)
+
+
 def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9, rot=0.0, on=True):
     """A frosted ceiling panel; off after hours unless on (the fitting is there either way)."""
     s.box("DarkMetal", (x, ceiling - 0.08, z), (w + 0.3, 0.16, d + 0.3), rot, skip=("+y",))

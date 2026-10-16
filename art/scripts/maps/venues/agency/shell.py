@@ -218,7 +218,9 @@ def lifts(s):
     fit.plaque(s, -1.0, 9.6, z + 0.2, 180, 10.0, 1.4, P.TOWER + " 38F", (230, 214, 170), (20, 20, 24))
     fit.plaque(s, -1.0, 7.6, z + 0.2, 180, 10.0, 1.0, "THE BUREAU  ·  RECEPTION", (200, 200, 205), (20, 20, 24))
     s.box("Brass", (-1.0, 5.9, z + 0.3), (9.0, 0.12, 0.06), 180)
-    s.light("spot", (-1.0, 12.4, z + 1.5), fit.WARM, 16, 1.0, False, "Bottom", 70)
+    s.cylinder("DarkMetal", (-1.0, P.CEIL1 - 0.12, z + 1.5), 0.5, 0.12, 12)
+    s.cylinder("NeonWarm", (-1.0, P.CEIL1 - 0.16, z + 1.5), 0.36, 0.04, 12)
+    s.light("spot", (-1.0, P.CEIL1 - 0.4, z + 1.5), fit.WARM, 16, 1.0, False, "Bottom", 70)
     # The grand stair's head, faced in stone (38F sees its tall end from the lifts).
     x0, x1 = P.GRAND["x"]
     # (Its ends tucked inside the flight's sides: in their planes, the two flickered.)
@@ -243,8 +245,8 @@ def video_wall(s):
             s.screen((x, y, z + 0.55), 180, w - 0.5, h - 0.4, loops[k])
             k += 1
     # Blue spill from the screens onto the deck, and a console ledge under them.
-    for x in (x0 + 8, (x0 + x1) / 2, x1 - 8):
-        s.light("point", (x, P.L2 + 10.0, z + 5.0), (120, 170, 255), 22, 0.7)
+    for x in (x0 + 0.6 + w * 1.5, x0 + 0.6 + w * 2.5):  # in front of the two middle columns
+        s.light("point", (x, P.L2 + 10.0, z + 5.0), (120, 170, 255), 24, 0.75)
     s.box("DarkMetal", ((x0 + x1) / 2, P.L2 + 2.6, z + 0.9), (x1 - x0 - 4, 0.3, 1.6), 180)
     s.box("BlackMetal", ((x0 + x1) / 2, P.L2 + 1.3, z + 0.3), (x1 - x0 - 4, 2.6, 0.4), 180)
     s.collider(((x0 + x1) / 2, P.L2 + 1.4, z + 0.9), (x1 - x0 - 4, 2.8, 1.6), 180, True, "DarkMetal")

@@ -52,6 +52,7 @@ def load():
         collide = re.search(r"collide = (true|false)", body)
         anchor = re.search(r"anchor = \{([^}]*)\}", body)
         screen = re.search(r"screen = \{ at = \{([^}]*)\}, size = \{([^}]*)\}", body)
+        glows = re.search(r"\bglow = \{", body)
         lights = []
         start = body.find("lights = {")
         if start >= 0:
@@ -81,5 +82,6 @@ def load():
                 "anchor": _numbers(anchor.group(1)) if anchor else [0.0, 0.0],
                 "lights": lights,
                 "screen": {"at": _numbers(screen.group(1)), "size": _numbers(screen.group(2))} if screen else None,
+                "glows": bool(glows),
             }
     return _CACHE

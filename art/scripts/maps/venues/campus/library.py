@@ -150,8 +150,8 @@ def stacks(s):
             s.prop("Bookshelf", x + 0.9, z, -90)
     s.hood(78.0, -106.0)
     for x in (89.0, 110.0, 131.0):
-        kit.tube_light(s, x, SLAB, -96.0, length=6.0, rot=90, range_=18, brightness=0.65)
-    kit.tube_light(s, 145.0, SLAB, -100.0, length=4.0, rot=90, range_=12, brightness=0.4)
+        fit.room_tube(s, x, SLAB, -96.0, length=6.0, rot=90, range_=18, brightness=0.65)
+    fit.room_tube(s, 145.0, SLAB, -100.0, length=4.0, rot=90, range_=12, brightness=0.4)
 
 
 def rare_books(s):

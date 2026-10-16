@@ -93,6 +93,7 @@ def forensics(s):
     s.box("BlackTrim", (-53.52, Y + 4.6, -72.0), (0.05, 0.1, 2.0))
     s.box("BlackMetal", (-50.35, Y + 8.0, -61.0), (0.1, 3.6, 6.0))  # the X-ray light box on the east wall
     s.box("NeonCool", (-50.42, Y + 8.0, -61.0), (0.04, 3.2, 5.6))
+    s.light("point", (-51.3, Y + 8.0, -61.0), fit.COOL, 10, 0.5)
     for x, z in ((-86.0, -64.0), (-66.0, -64.0), (-76.0, -54.0)):
         fit.panel(s, x, z, C, color=fit.COOL, brightness=0.9, range_=20, flicker=True)
     fit.plaque(s, -88.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "鑑識課 FORENSICS")
@@ -128,7 +129,7 @@ def server_room(s):
         for x in (2.0, 13.8, 25.6):
             s.tube("DarkMetal", (x, C - 2.2, z), (x, C, z), 0.05, 5)
     for x in (6.0, 20.0):
-        s.light("point", (x, Y + 6.0, -67.5), (100, 150, 255), 16, 0.6)
+        s.light("point", (x + 0.5, Y + 6.0, -65.6), (100, 150, 255), 16, 0.6)  # at the racks' faces
     station(s, "Phone", "Records Terminal", -9.0, -58.0, -90, prop="StationPhoneDesk")
     fit.panel(s, -9.0, -62.0, C, color=fit.COOL, brightness=0.8, range_=18, flicker=True)  # the server room
     fit.panel(s, 14.0, -54.0, C, color=fit.COOL, brightness=0.5, range_=16)

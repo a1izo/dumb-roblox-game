@@ -87,7 +87,7 @@ def observation(s):
     s.prop("CoffeeMachine", -55.8, -58.2, -90, 1.0, top)  # front to the room, back to the wall
     s.box("NeonRed", (-51.0, 10.1, -48.34), (1.2, 0.35, 0.05))  # the red lamp over the door: recording
     s.sign((-51.0, 10.9, -48.36), 0, 3.0, 0.5, "録音中 ON AIR", "GothamBlack", (255, 90, 90), None)
-    s.light("point", (-51.0, 9.6, -50.0), (255, 60, 60), 8, 0.5)
+    s.light("point", (-51.0, 9.8, -49.1), (255, 60, 60), 8, 0.5)
     fit.panel(s, -52.0, -62.0, C, w=3.0, color=fit.WARM, brightness=0.55, range_=14)
 
 
@@ -245,6 +245,7 @@ def lobby(s):
     s.screen((17.0, 11.3, 43.4), 0, 9.0, 2.6, "news")
     for x in (6.0, 28.0):
         s.cylinder("DarkMetal", (x, C - 0.12, 40.0), 0.5, 0.12, 12)
+        s.cylinder("NeonWarm", (x, C - 0.16, 40.0), 0.36, 0.04, 12)  # (its lens: the can lit nothing before)
         s.light("spot", (x, C - 0.4, 40.0), fit.WARM, 16, 1.1, False, "Bottom", 60)
     for x, z in ((-10.0, -1.0), (-10.0, 20.0), (44.0, 2.0), (44.0, 20.0), (44.0, 36.0), (-10.0, 32.0)):
         fit.downlight(s, x, z, C, range_=16, brightness=0.75)

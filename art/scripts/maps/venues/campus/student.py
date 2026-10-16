@@ -14,7 +14,6 @@ the kitchen behind it look-only.
 
 The alley between them runs to the campus wall. The club house's vending machines stand in it."""
 
-from maps import kit
 from maps.venues.campus import fit, masonry
 from maps.venues.campus import plan as P
 
@@ -89,7 +88,7 @@ def club_rooms(s):
         poster(s, x, y, 71.3 if rot == 180 else 76.7, rot, w, h, sheet)
     s.hood(-146.4, 74.0)
     for x in (-140.0, -118.0, -98.0):
-        kit.tube_light(s, x, C, 74.0, length=6.0, range_=16, brightness=0.6)
+        fit.room_tube(s, x, C, 74.0, length=6.0, range_=16, brightness=0.6)
     fit.exit_sign(s, KX1 - 0.3, 10.0, 74.0, 90)
 
 
@@ -99,7 +98,7 @@ def newsroom(s):
     s.prop("Typewriter", -133.5, 61.6, 180, 1.0, top)
     s.prop("PinBoard", -128.44, 66.5, 90, 1.0, 6.6)
     s.prop("FilingCabinet", -130.4, 67.9, 90)
-    kit.pendant(s, -138.0, C, 64.7, drop=3.5, shade="BlackMetal", color=fit.WARM, range_=16, brightness=0.9, wide=0.9)
+    fit.room_pendant(s, -138.0, C, 64.7, drop=3.5, shade="BlackMetal", range_=16, brightness=0.9, wide=0.9, scaled=False)
     s.sound("mapNewsRadio", (-131.0, 3.0, 62.0), 20.0, 0.3)
     fit.plaque(s, -138.0, 10.2, 71.3, 180, 4.4, 0.8, "新聞部  NEWSPAPER")
 
@@ -111,7 +110,7 @@ def film_club(s):
     for z in (62.2, 64.7):
         s.prop("Chair", -96.0, z, -90)
     poster(s, -106.0, 7.0, 70.7, 180, 2.4, 3.4, 1)
-    s.light("point", (-96.0, 6.0, 64.7), (200, 210, 255), 12, 0.5)
+    s.light("point", (KX1 - 1.6, 6.0, 64.7), (200, 210, 255), 12, 0.5)  # the screen's spill
     fit.plaque(s, -99.0, 10.2, 71.3, 180, 4.4, 0.8, "映画研究会  FILM CLUB")
 
 
@@ -127,7 +126,7 @@ def kotatsu_room(s):
     s.box("BlackMetal", (-139.0, 1.2, 107.6), (4.0, 2.4, 1.6), collide=True)
     s.box("CreamTrim", (-139.0, 3.6, 107.4), (3.0, 2.4, 2.0))
     s.screen((-139.0, 3.6, 106.35), 0, 2.4, 1.8, "news")
-    kit.pendant(s, -139.0, C, 94.0, drop=4.5, shade="Brass", color=fit.WARM, range_=18, brightness=1.0, wide=1.0)
+    fit.room_pendant(s, -139.0, C, 94.0, drop=4.5, shade="Brass", range_=18, brightness=1.0, wide=1.0, scaled=False)
     fit.plaque(s, -139.0, 10.2, 76.7, 0, 4.4, 0.8, "囲碁将棋部  GO CLUB")
 
 
@@ -139,7 +138,7 @@ def band_room(s):
         s.box("Fabric", (x, 1.5, 105.98), (2.0, 2.0, 0.04))
     s.prop("Sofa", -110.9, 88.0, 90)
     poster(s, -110.6, 7.0, 95.0, 90, 3.0, 4.0, 2)
-    kit.pendant(s, -119.0, C, 92.0, drop=4.0, shade="BlackMetal", color=fit.WARM, range_=18, brightness=0.9, wide=1.0)
+    fit.room_pendant(s, -119.0, C, 92.0, drop=4.0, shade="BlackMetal", range_=18, brightness=0.9, wide=1.0, scaled=False)
     fit.panel(s, -119.0, 82.0, C, brightness=0.7, range_=16)
     s.sound("mapPianoFar", (-124.0, 4.0, 88.0), 34.0, 0.35)
     fit.plaque(s, -119.0, 10.2, 76.7, 0, 4.4, 0.8, "軽音楽部  BAND ROOM")
@@ -153,7 +152,7 @@ def locker_room(s):
     s.prop("Bench", -99.0, 91.0, 90)
     s.station("Fingerprint", "Club Locker Prints", -99.0, 106.3, 0, prop="StationPrintKit", spare=True)
     for z in (84.0, 98.0):
-        kit.tube_light(s, -99.0, C, z, length=6.0, rot=90, range_=16, brightness=0.6)
+        fit.room_tube(s, -99.0, C, z, length=6.0, rot=90, range_=16, brightness=0.6)
     fit.plaque(s, -99.0, 10.2, 76.7, 0, 4.4, 0.8, "更衣室  LOCKERS")
 
 
