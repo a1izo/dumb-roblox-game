@@ -807,38 +807,216 @@ def puppeteer_hand():
 # Its dwellers' things -------------------------------------------------------------------------------------
 
 
-@prop("BoneThrone", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Lobby")
+# The throne (2026-10-16, after the Sedlec ossuary's order of bones and a stone bishop's chair): a cathedra of dark
+# stone, heavy arms, a tall back between two pilasters of stacked long bones, a row of skulls along its top, a
+# horned skull crowning it between crossed bones; nothing higher than THRONE_H. The game seats its stone
+# champion on it: the seat's top is SEAT_TOP over the foot, the seat's middle SEAT_Y in front of the prop's
+# middle (maps/venues/lobby/landmarks.throne reads both), the backrest's face BACK_Y behind it.
+THRONE_H = 12.1
+SEAT_TOP = 3.42
+SEAT_Y = -0.3
+BACK_Y = 1.45
+
+
+@prop("BoneThrone", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
 def bone_throne():
-    """The throne of whatever rules this place: a seat hewn from dark stone on a stepped dais, its
-    tall back a fan of great ribs, a horned skull crowning it and skulls on the ends of its arms."""
+    """The throne of whatever rules this place: a cathedra hewn from dark stone, its arms ending in skulls, its
+    tall back framed by pilasters of stacked long bones and crowned with a row of skulls and a horned skull over
+    crossed bones; crossed bones and a skull cut in the seat's front."""
     stone = dark_stone_mat("Thr")
     grey = stone_mat("Thr")
     bone = old_bone_mat("Thr")
+    pale = bone_mat("Thr")
     horn = mk.noisy("Thr_Horn", srgb(34, 30, 30), srgb(70, 64, 58), scale=8, roughness=0.8)
     void = void_mat("Thr")
-    parts = [mk.box("Dais1", (12.0, 9.0, 0.8), (0, 0.6, 0.4), mat=grey, bevel=0.1),
-             mk.box("Dais2", (10.0, 7.2, 0.8), (0, 0.9, 1.2), mat=stone, bevel=0.1),
-             mk.box("Seat", (6.4, 4.4, 2.6), (0, 1.2, 2.9), mat=stone, bevel=0.2),
-             mk.box("Cushion", (5.6, 3.6, 0.3), (0, 1.0, 4.3), mat=grey, bevel=0.1),
-             mk.box("Back", (6.0, 1.4, 8.0), (0, 3.2, 6.2), mat=stone, bevel=0.2),
-             mk.box("BackPanel", (4.4, 0.1, 5.6), (0, 2.46, 6.6), mat=grey, bevel=0.05),
-             mk.box("BackInset", (3.8, 0.1, 5.0), (0, 2.42, 6.6), mat=stone, bevel=0.05)]
+    depth = 6.8  # the plinth runs -3.4..3.4 (the prop's middle): nothing reaches past it, so it stays centred
+    parts = [mk.box("Plinth", (7.8, depth, 0.6), (0, 0, 0.3), mat=grey, bevel=0.12),
+             mk.box("Seat", (6.2, 3.6, 2.76), (0, SEAT_Y + 0.05, 0.6 + 1.38), mat=stone, bevel=0.14),
+             mk.box("SeatSlab", (5.6, 3.4, 0.12), (0, SEAT_Y, SEAT_TOP - 0.06), mat=grey, bevel=0.04),
+             mk.box("Back", (6.2, 1.0, 6.6), (0, BACK_Y + 0.5, SEAT_TOP + 3.3 - 0.06), mat=stone, bevel=0.14),
+             mk.box("BackPanel", (4.2, 0.12, 4.6), (0, BACK_Y - 0.04, SEAT_TOP + 3.4), mat=grey, bevel=0.04),
+             mk.box("BackInset", (3.6, 0.12, 4.0), (0, BACK_Y - 0.08, SEAT_TOP + 3.4), mat=stone, bevel=0.03)]
+    # Carved in the inset, over where the champion's head comes: a skull, flattened into the stone.
+    relief = skull("Relief", 0, BACK_Y - 0.05, SEAT_TOP + 4.85, 0.5, grey, void, jaw=True)
+    for obj in relief:
+        obj.scale = (obj.scale[0], obj.scale[1] * 0.4, obj.scale[2])
+    parts += relief
+    # Arms: solid blocks over the seat's sides, a skull on each front end.
     for sx in (-1, 1):
-        parts += [mk.box("Arm", (1.1, 4.4, 1.8), (sx * 3.6, 1.0, 4.9), mat=stone, bevel=0.15)]
-        parts += skull(f"ArmSkull{sx}", sx * 3.6, -1.4, 6.1, 0.55, bone, void)
-    # The fan of great ribs rising behind the back, each curving out and up to a point.
+        parts.append(mk.box("Arm", (1.3, 3.5, 1.0), (sx * 2.45, SEAT_Y + 0.2, SEAT_TOP + 0.5), mat=stone, bevel=0.14))
+        parts.append(mk.box("ArmFoot", (1.3, 0.9, 0.9), (sx * 2.45, SEAT_Y - 1.2, SEAT_TOP - 0.1), mat=stone, bevel=0.1))
+        parts += skull(f"ArmSkull{sx}", sx * 2.45, SEAT_Y - 1.6, SEAT_TOP + 1.25, 0.42, pale, void)
+    # The pilasters: three long bones stacked upright beside the back, a skull at the head of each.
+    for sx in (-1, 1):
+        for k, (dx, dy) in enumerate(((0.0, 0.0), (0.32, 0.12), (-0.3, 0.14))):
+            x = sx * (3.42 + dx)
+            parts += long_bone(f"Pilaster{sx}{k}", (x, BACK_Y + 0.5 + dy, 1.0), (x, BACK_Y + 0.5 + dy, SEAT_TOP + 6.3),
+                               0.16, bone if k else pale)
+        parts += skull(f"PilasterSkull{sx}", sx * 3.42, BACK_Y + 0.3, SEAT_TOP + 6.95, 0.48, pale, void)
+    # A row of skulls along the back's top, as in the ossuary's garlands, long bones laid between them.
+    for k in range(5):
+        x = (k - 2) * 1.1
+        parts += skull(f"Row{k}", x, BACK_Y + 0.25, SEAT_TOP + 6.95, 0.38, pale if k % 2 == 0 else bone, void, jaw=k == 2)
+    for k in range(4):
+        x = (k - 1.5) * 1.1
+        parts += long_bone(f"RowBone{k}", (x - 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62), (x + 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62),
+                           0.09, bone)
+    # The crest: two long bones crossed behind a horned skull.
+    crest_z = SEAT_TOP + 7.7
+    for sx in (-1, 1):
+        parts += long_bone(f"Cross{sx}", (sx * -1.5, BACK_Y + 0.75, crest_z - 1.0), (sx * 1.5, BACK_Y + 0.75, crest_z + 0.6),
+                           0.17, bone)
+    parts += beast_skull("Crown", 0, BACK_Y + 0.1, crest_z, 0.62, pale, void, horn, jaw=False)
+    # The seat's front: two long bones crossed and a skull where they cross, cut in low relief.
+    front = SEAT_Y - 1.75
+    for sx in (-1, 1):
+        parts += long_bone(f"FrontBone{sx}", (sx * -1.7, front - 0.05, 0.95), (sx * 1.7, front - 0.05, 2.75), 0.13, bone)
+    parts += skull("FrontSkull", 0, front - 0.1, 1.85, 0.42, pale, void)
+    return parts, []
+
+
+# The chess game sunk in the ash (maps/venues/lobby/plan.py CHESS_GAME): Staunton silhouettes, so a piece reads at a
+# glance, carved like the Lewis chessmen (heavy, worn, chipped). A square is 3.2 studs; the king stands 5.2.
+CHESS_SQUARE = 3.2
+
+
+def _piece_mats(colour):
+    if colour == "w":
+        return (mk.noisy("Chs_Bone", srgb(150, 144, 128), srgb(206, 199, 180), scale=14, roughness=0.8),
+                mk.noisy("Chs_BoneDark", srgb(96, 90, 80), srgb(140, 132, 116), scale=14, roughness=0.85))
+    return (mk.noisy("Chs_Ebony", srgb(22, 22, 25), srgb(48, 47, 52), scale=12, roughness=0.75),
+            mk.noisy("Chs_EbonyDark", srgb(14, 14, 16), srgb(30, 30, 34), scale=12, roughness=0.8))
+
+
+def _staunton(name, kind, colour, x, y, z=0.0, axis=None):
+    """One piece, standing at (x, y) (or lying along `axis`, a unit (x, y) direction: its foot at (x, y)),
+    as parts. Kinds: K Q R B N P."""
+    body, dark = _piece_mats(colour)
+    base = [(0.0, 0.0), (1.15, 0.0), (1.18, 0.16), (1.05, 0.32), (0.86, 0.42), (0.9, 0.56), (0.66, 0.7)]
+    profiles = {
+        "K": base + [(0.46, 2.55), (0.76, 2.7), (0.8, 2.86), (0.52, 2.98), (0.64, 3.66), (0.72, 3.9), (0.5, 4.02),
+                     (0.0, 4.1)],
+        "Q": base + [(0.44, 2.4), (0.74, 2.55), (0.78, 2.7), (0.5, 2.82), (0.66, 3.5), (0.78, 3.78), (0.6, 3.84),
+                     (0.0, 3.9)],
+        "B": [(0.0, 0.0), (1.0, 0.0), (1.03, 0.15), (0.9, 0.3), (0.74, 0.4), (0.78, 0.52), (0.56, 0.66), (0.38, 2.05),
+              (0.66, 2.18), (0.68, 2.32), (0.4, 2.42), (0.0, 2.44)],
+        "R": [(0.0, 0.0), (1.05, 0.0), (1.08, 0.16), (0.96, 0.3), (0.84, 0.42), (0.84, 2.4), (0.98, 2.6), (1.0, 3.0),
+              (0.72, 3.0), (0.72, 2.84), (0.0, 2.84)],
+        "N": [(0.0, 0.0), (1.05, 0.0), (1.08, 0.16), (0.96, 0.3), (0.82, 0.42), (0.86, 0.6), (0.7, 0.78), (0.0, 0.8)],
+        "P": [(0.0, 0.0), (0.92, 0.0), (0.95, 0.14), (0.82, 0.28), (0.66, 0.36), (0.7, 0.48), (0.48, 0.6), (0.3, 1.5),
+              (0.56, 1.6), (0.58, 1.7), (0.3, 1.78), (0.0, 1.8)],
+    }
+    parts = [mk.lathe(name + "Body", profiles[kind], mat=body, segments=16)]
+    if kind == "K":
+        parts += [mk.box(name + "CrossV", (0.32, 0.32, 1.0), (0, 0, 4.5), mat=body, bevel=0.06),
+                  mk.box(name + "CrossH", (0.86, 0.32, 0.3), (0, 0, 4.66), mat=body, bevel=0.06)]
+    elif kind == "Q":
+        for k in range(8):
+            a = math.tau * k / 8
+            parts.append(mk.sphere(name + "Point", 0.15, (math.cos(a) * 0.66, math.sin(a) * 0.66, 3.92), mat=body,
+                                   segments=8, rings=5))
+        parts.append(mk.sphere(name + "Orb", 0.3, (0, 0, 4.15), mat=body, segments=10, rings=7))
+    elif kind == "B":
+        parts.append(mk.sphere(name + "Mitre", 0.62, (0, 0, 3.0), scale=(1.0, 1.0, 1.4), mat=body, segments=14, rings=10))
+        parts.append(mk.box(name + "Slit", (0.12, 1.3, 0.5), (0.18, 0, 3.15), rot=(0, -38, 0), mat=dark))
+        parts.append(mk.sphere(name + "Knob", 0.2, (0, 0, 3.92), mat=body, segments=8, rings=6))
+    elif kind == "P":
+        parts.append(mk.sphere(name + "Head", 0.5, (0, 0, 2.2), mat=body, segments=14, rings=10))
+    elif kind == "R":
+        for k in range(5):
+            a = math.tau * (k + 0.5) / 5
+            parts.append(mk.box(name + "Merlon", (0.5, 0.36, 0.42), (math.cos(a) * 0.82, math.sin(a) * 0.82, 3.2),
+                                rot=(0, 0, math.degrees(a) + 90), mat=body, bevel=0.05))
+    elif kind == "N":
+        # The horse's head and neck, a side outline cut from a thick slab, the mane a ridge down its back.
+        outline = [(-0.6, 0.0), (0.45, 0.0), (0.58, 0.62), (0.36, 1.2), (0.98, 1.55), (1.08, 1.86), (0.62, 2.36), (0.36, 2.76),
+                   (0.2, 2.96), (0.04, 2.62), (-0.18, 2.54), (-0.52, 2.1), (-0.68, 1.2), (-0.64, 0.5)]
+        head = mk.extrude_shape(name + "Head", outline, 0.92, (0, 0, 0.78), rot=(90, 0, 0), mat=body, bevel=0.1)
+        head.rotation_euler = (math.radians(90), 0, math.radians(-90))  # facing -Y (forward), like the others
+        parts.append(head)
+        parts.append(mk.tube(name + "Mane", (0.0, 0.62, 3.0), (0.0, 0.66, 1.0), 0.14, 0.18, mat=dark, verts=6))
+        for k in (-1, 1):
+            parts.append(mk.sphere(name + "Eye", 0.09, (k * 0.47, -0.55, 2.95), mat=dark, segments=6, rings=4))
+    for obj in parts:
+        mk.displace_noise(obj, strength=0.035, scale=0.45, name=name + "Wear")
+        if axis is None:
+            obj.location = (obj.location[0] + x, obj.location[1] + y, obj.location[2] + z)
+    if axis is not None:
+        # Lying down: turned about the piece's foot so its length runs along `axis`, resting on its widest rings.
+        ang = math.atan2(axis[1], axis[0])
+        turn = Matrix.Translation(Vector((x, y, z + 1.12))) @ Matrix.Rotation(ang, 4, "Z") @ Matrix.Rotation(math.radians(90), 4, "Y")
+        for obj in parts:
+            obj.matrix_basis = turn @ obj.matrix_basis
+    return parts
+
+
+@prop("ChessGame", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby", anchor=(0, 0))
+def chess_game():
+    """The pieces of a game left on the sunk board, where the plan's position stands them (the toppled king is
+    a prop of its own). Its origin is the board's middle; the board itself is the map's."""
+    from maps.venues.lobby import plan as LP
+
+    parts = []
+    for square, (kind, colour) in sorted(LP.CHESS_GAME.items()):
+        lx, lz = LP.chess_square(square)
+        # (Roblox's local x is the builder's -x, its local z the builder's y.)
+        parts += _staunton(square + kind + colour, kind, colour, -lx, lz)
+    # The white king toppled on its square, lying along the first rank, its cross snapped off beside it.
+    lx, lz = LP.chess_square(LP.CHESS_FALLEN)
+    king = [obj for obj in _staunton("Fallen", "K", "w", -lx - 2.0, lz, axis=(1.0, 0.0)) if "Cross" not in obj.name]
+    body, _ = _piece_mats("w")
+    king.append(mk.box("FallenCross", (1.0, 0.32, 0.32), (-lx + 2.6, lz + 0.9, 0.16), rot=(0, 0, 24), mat=body, bevel=0.06))
+    return parts + king, []
+
+
+@prop("ChessKingFallen", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Lobby")
+def chess_king_fallen():
+    """A white king of the sunk board's set, toppled: lying on its side, its cross snapped off beside it."""
+    body, dark = _piece_mats("w")
+    parts = [obj for obj in _staunton("King", "K", "w", -2.3, 0.0, axis=(1.0, 0.0)) if "Cross" not in obj.name]
+    d = (math.cos(math.radians(24)), math.sin(math.radians(24)))
+    cx, cy = 3.5, 0.9
+    parts += [mk.box("CrossV", (1.0, 0.32, 0.32), (cx, cy, 0.16), rot=(0, 0, 24), mat=body, bevel=0.06),
+              mk.box("CrossH", (0.3, 0.86, 0.3), (cx + d[0] * 0.16, cy + d[1] * 0.16, 0.15), rot=(0, 0, 24), mat=body,
+                     bevel=0.06),
+              mk.box("Chip", (0.4, 0.3, 0.2), (2.6, -1.1, 0.1), rot=(10, 4, 50), mat=dark, bevel=0.05)]
+    return parts, []
+
+
+@prop("StoneNotebook", pivot="centre", material="Slate", collide=False, texture=256, set="Lobby")
+def stone_notebook():
+    """A black notebook turned to stone, stopped in its fall over the rift: tumbling, its covers spread a third
+    open, the pages fanned between them, two leaves torn loose and stopped beside it. Lines run across the
+    one page that shows, too worn to read."""
+    cover = mk.noisy("Snb_Cover", srgb(16, 16, 18), srgb(38, 37, 40), scale=10, roughness=0.85)
+    page = mk.noisy("Snb_Page", srgb(150, 146, 136), srgb(190, 186, 174), scale=16, roughness=0.9)
+    ink = mk.flat("Snb_Ink", srgb(40, 38, 40), 0.9)
+    w, h, t = 4.2, 6.0, 0.22  # a cover: across (from the spine), up, thick
+    parts = []
+    opening = 128.0  # degrees between the covers
+    for k, ang in enumerate((-opening / 2, opening / 2)):
+        board = mk.box(f"Cover{k}", (w, t, h), (w / 2, 0, 0), mat=cover, bevel=0.05)
+        board.matrix_basis = Matrix.Rotation(math.radians(ang), 4, "Z") @ board.matrix_basis
+        parts.append(board)
+    for k in range(7):
+        ang = -opening / 2 + 4.0 + k * (opening - 8.0) / 6
+        leaf = mk.box(f"Leaf{k}", (w - 0.25, 0.05, h - 0.3), ((w - 0.25) / 2 + 0.08, 0, 0), mat=page)
+        leaf.matrix_basis = Matrix.Rotation(math.radians(ang), 4, "Z") @ leaf.matrix_basis
+        parts.append(leaf)
+    # The lines on the last leaf before the open cover (the one that shows), worn and broken.
+    rng = random.Random(41)
+    last = -opening / 2 + 4.0 + 6 * (opening - 8.0) / 6
     for k in range(9):
-        t = (k - 4) / 4
-        pts = []
-        for j in range(5):
-            u = j / 4
-            spread = t * (2.4 + 3.8 * math.sin(u * math.pi / 2))
-            pts.append((spread, 3.7 + 0.9 * u * u, 4.6 + (11.0 - abs(t) * 4.2) * u - 0.8 * abs(t) * u * u))
-        r = 0.36 - abs(t) * 0.1
-        for j in range(4):
-            parts.append(mk.tube("Rib", pts[j], pts[j + 1], r * (1 - j * 0.2), max(0.04, r * (1 - (j + 1) * 0.22)), mat=bone,
-                                 verts=7))
-    parts += beast_skull("Crown", 0, 3.0, 11.6, 1.5, bone, void, horn, jaw=False)
-    for k in (-1, 1):
-        parts.append(mk.sphere("Orb", 0.4, (k * 2.4, 1.0, 1.9), mat=grey, segments=10, rings=8))
+        length = rng.uniform(1.4, 3.2)
+        line = mk.box(f"Line{k}", (length, 0.02, 0.07), (0.4 + length / 2, -0.04, h / 2 - 0.9 - k * 0.5), mat=ink)
+        line.matrix_basis = Matrix.Rotation(math.radians(last), 4, "Z") @ line.matrix_basis
+        parts.append(line)
+    parts.append(mk.cylinder("Spine", t * 1.2, h, (0, 0, 0), mat=cover, verts=10))
+    # Two leaves torn loose, stopped where they flew.
+    for k, (pos, rot) in enumerate((((5.4, 1.8, 3.4), (20, 35, 70)), ((-3.6, 2.4, -3.8), (-30, 15, 140)))):
+        parts.append(mk.box(f"Loose{k}", (w * 0.8, 0.05, h * 0.8), pos, rot=rot, mat=page))
+    # The whole book tumbling: tipped forward and over.
+    tumble = Matrix.Rotation(math.radians(-28), 4, "X") @ Matrix.Rotation(math.radians(18), 4, "Y")
+    for obj in parts:
+        obj.matrix_basis = tumble @ obj.matrix_basis
     return parts, []

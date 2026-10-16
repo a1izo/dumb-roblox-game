@@ -6,8 +6,9 @@
 --     PointLight). Every client lights as many as there are players ready (client World/ReadyCircle);
 --   * marks for what each client builds for itself, in stone: the five tableaux (tableau<n>: a part tagged
 --     LTableau, attributes Index and Radius, at the base's top, facing the plaza) and the throne's seat
---     (throne: a part tagged LThroneSeat at the seat's top, facing the way the throne does). See client
---     World/Tableaux and World/Champion;
+--     (throne: a part tagged LThroneSeat at the seat's top, facing the way the throne does), and the plaque at
+--     the throne's foot (throneplaque: a part tagged LThronePlaque at the slate's face, facing out, attributes
+--     W and H for the slate). See client World/Tableaux and World/Champion;
 --   * the spot under the Academy's gate where the Trial can be begun (a part tagged LTrialStart; client
 --     Onboarding/TrialController puts the prompt on it);
 --   * the shop window: a stone plinth on the spawn terrace, east of where players appear, its top marked
@@ -26,6 +27,7 @@ local LobbyFixtures = {}
 LobbyFixtures.CANDLE_TAG = "LReadyCandle"
 LobbyFixtures.TABLEAU_TAG = "LTableau"
 LobbyFixtures.THRONE_TAG = "LThroneSeat"
+LobbyFixtures.PLAQUE_TAG = "LThronePlaque"
 LobbyFixtures.TRIAL_TAG = "LTrialStart"
 LobbyFixtures.SHOP_WINDOW_TAG = "LShopWindow"
 
@@ -122,6 +124,12 @@ function LobbyFixtures.build(b, anchors: { [string]: Anchor })
 	end
 	if anchors.throne then
 		mark(b, folder, "ThroneSeat", LobbyFixtures.THRONE_TAG, anchors.throne)
+	end
+	local plaque = anchors.throneplaque
+	if plaque then
+		local part = mark(b, folder, "ThronePlaque", LobbyFixtures.PLAQUE_TAG, plaque)
+		part:SetAttribute("W", plaque.w or 4.6)
+		part:SetAttribute("H", plaque.h or 1.3)
 	end
 	-- Where the Trial can be begun by anyone: under the Academy's gate (its sign's anchor is up on the lintel).
 	local gate = anchors.academyGate

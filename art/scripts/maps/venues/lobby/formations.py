@@ -13,7 +13,7 @@ import random
 
 from maps import geo2d as g2
 from maps.venues.lobby import plan as P
-from maps.venues.lobby.terrain import (arch, blade, boulder, cloud_bank, column, floating_rock, horn, mesa,
+from maps.venues.lobby.terrain import (arch, blade, boulder, cloud_bank, column, face, floating_rock, horn, mesa,
                                        needle_field, rock, spire)
 
 
@@ -216,5 +216,26 @@ def far_world(s):
                    rot=math.degrees(a) + 90.0 + rng.uniform(-25.0, 25.0), puffs=rng.randint(6, 9))
 
 
+# The skyline's foot: a low wall of dark cloud all round, inside the plain's edge. Where the plain stopped, the
+# sky's dark lower half showed under the cloud walls as a black band along the horizon (the 2026-10-12
+# pictures); this rises over that edge from every place people stand (the basin, the plateaus, the Spire's
+# top), and the haze turns it into a soft dark line. It faces inwards only: nothing of it shows from outside.
+SKIRT_R = 1400.0
+SKIRT = (-1.0, 28.0)
+
+
+def horizon_skirt(s):
+    n = 64
+    y0, y1 = SKIRT
+    for k in range(n):
+        a0, a1 = math.tau * k / n, math.tau * (k + 1) / n
+        p0 = (math.cos(a0) * SKIRT_R, math.sin(a0) * SKIRT_R)
+        p1 = (math.cos(a1) * SKIRT_R, math.sin(a1) * SKIRT_R)
+        mid = ((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2)
+        face(s, "CloudUnder", [(p0[0], y0, p0[1]), (p1[0], y0, p1[1]), (p1[0], y1, p1[1]), (p0[0], y1, p0[1])],
+             (mid[0] * 1.5, (y0 + y1) / 2, mid[1] * 1.5))
+
+
 def build(s):
     far_world(s)
+    horizon_skirt(s)

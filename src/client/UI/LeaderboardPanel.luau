@@ -1,7 +1,7 @@
 -- The global leaderboards, kept like a ledger: all-time wins, experience, this week's wins, and the
 -- lobby's own games (the Spire Ascent, the rune courtyard, the spirit trial). Top 10 each, refreshed every
 -- few minutes by the server; your own line is lit. Only Most Wins is also written in the world (on its
--- slab under the throne): every other board lives here. The boards are a column of tabs on a desktop and
+-- slab beside the throne): every other board lives here. The boards are a column of tabs on a desktop and
 -- a row to swipe on a phone.
 
 local Players = game:GetService("Players")

@@ -2,8 +2,8 @@
 -- (art/scripts/maps/venues/lobby/). Players appear on a ruined terrace over its old flagstone
 -- plaza, facing north. No wall in it explains anything: the game is learnt by doing (the Trial, in the
 -- Academy) and by looking (the stone tableaux round the plaza, the candles at its middle). The only
--- writing left is the title on its monolith, one board (Most Wins, on a low slab at the foot of the
--- throne's mesa) and the names on the Academy's gate and altars.
+-- writing left is the title on its monolith, one board (Most Wins, on a low slab beside the bone throne), the
+-- champion's name on the throne's plaque and the names on the Academy's gate and altars.
 -- South-west lies the Academy, a ring of broken pillars with a practice altar for every skill and three
 -- wooden puppets to practise on, hung on strings from a great hand; two old causeways over chasms lead to the plateaus of the Spire Ascent and the
 -- rune courtyard, and the stone-toss waits at the rift's rim in the basin itself.
@@ -249,7 +249,7 @@ function Lobby.build(b)
 	end
 	sign(b, anchors.tagline, Terms.TAGLINE, GOLD, INK, Enum.Font.SpecialElite)
 
-	-- The one board in the world: Most Wins, on the low slab at the foot of the throne's mesa. The other
+	-- The one board in the world: Most Wins, on the low slab beside the throne. The other
 	-- boards (experience, the week, the mini-games) are in the Leaderboards window; the next case and the
 	-- quests are on the lobby's own page.
 	local boards = {}

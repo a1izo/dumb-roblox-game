@@ -39,7 +39,7 @@ STRICT = {
     "startStep", "stopLeft", "stopRight", "turnLeft", "turnRight", "sit",
 }
 # Clips played in the air (or seated): no floor to stand on, no soles to plant.
-AIRBORNE = {"jump", "jumpApex", "fall", "fallLong", "flyHover", "flyGlide", "flyRise", "flyDive", "sit",
+AIRBORNE = {"jump", "jumpApex", "fall", "fallLong", "flyHover", "flyGlide", "flyRise", "flyDive", "sit", "enthroned",
             "specterFloat", "dive", "diveBrake", "diveCaught"}
 LIMITS = {
     "slide": 0.03,  # studs a sole may drift while it touches the floor

@@ -1,7 +1,8 @@
 """The Grey Realm's landmarks: the flagstone plaza with its ring of candle stones, the five bases of
-the tableaux and the bell round it, the title monolith, the bone throne on its mesa and the Most Wins
-slab at its foot, the Academy's ring of broken pillars, a wayside rock, the colossal carcass and the
-duel's two slates under its ribs. Each records the anchors the lobby's Luau builds its own things at
+the tableaux and the bell round it, the bone throne on its dais at the plaza's north edge with its plaque
+and the Most Wins slab beside it, the title monolith behind them, the old mesa with the fallen king, the
+Academy's ring of broken pillars, the chessboard sunk in the ash, the stone notebook over the rift, the
+colossal carcass and the duel's two slates under its ribs. Each records the anchors the lobby's Luau builds its own things at
 (the board, signs, candles, stone figures, drill desks, effigies, apples, the spawn).
 
 A pale light hangs over every place where something is done or read (the lobby is dark, on purpose)."""
@@ -9,7 +10,7 @@ A pale light hangs over every place where something is done or read (the lobby i
 import math
 import random
 
-from maps import city
+from maps import city, scratches
 from maps import geo2d as g2
 from maps.city import Frame
 from maps.mesher import cross, dot, sub
@@ -100,17 +101,20 @@ def monolith(s):
         cx = x - w / 2 + cw * (k + 0.5)
         edge_drop = 5.0 if k in (0, cols - 1) else 2.5 if k in (1, cols - 2) else 0.0
         top = h - edge_drop - rng.uniform(0, 2.2)
-        s.box("RuinStone", (cx, (body + 0.8 + top) / 2, z - rng.uniform(0, 0.3)),
-              (cw + 0.02, top - body - 0.8 + 0.02, t - rng.uniform(0, 0.8)), skip=("-y",))
+        back = rng.uniform(0, 0.3)
+        s.box("RuinStone", (cx, (body + 0.8 + top) / 2, z - back),
+              (cw + 0.02, top - body - 0.8 + 0.02, t - 2 * back - rng.uniform(0, 0.8)), skip=("-y",))
     s.collider((x, h / 2, z), (w, h, t), 0.0, True, None)
-    # A carved frame round the title and the tagline (the game writes them on dark panels).
+    # A carved frame round the title and the tagline (the game writes them on a dark panel), raised over the
+    # throne that stands in front.
     fz = P.MONO_FACE + 0.3
+    py, ph = P.PANEL
     for fx in (-23.4, 23.4):
-        s.box("RuinStone", (x + fx, 15.5, fz), (1.2, 14.4, 0.6))
-        s.box("BoneOld", (x + fx, 23.4, fz + 0.1), (2.0, 1.2, 0.8))
-    for fy in (8.2, 22.7):
+        s.box("RuinStone", (x + fx, py, fz), (1.2, ph + 0.4, 0.6))
+        s.box("BoneOld", (x + fx, py + ph / 2 + 1.15, fz + 0.1), (2.0, 1.2, 0.8))
+    for fy in (py - ph / 2 - 0.45, py + ph / 2 + 0.45):
         s.box("RuinStone", (x, fy, fz), (48.0, 0.9, 0.6))
-    s.box("BlackTrim", (x, 15.4, P.MONO_FACE + 0.05), (46.0, 14.0, 0.1))
+    s.box("BlackTrim", (x, py, P.MONO_FACE + 0.05), (46.0, ph, 0.1))
     # Great tusks either side, curving up and in.
     for side in (-1, 1):
         base = (x + side * 33.0, -0.5, z + 3.0)
@@ -118,29 +122,125 @@ def monolith(s):
         for q in range(1, 9):
             u = q / 8
             p = (x + side * (33.0 + 4.0 * math.sin(u * math.pi) - 9.0 * u * u), 30.0 * u, z + 3.0 + 6.0 * u)
-            s.tube("BoneWhite", prev, p, 2.4 * (1 - u * 0.8), 9, caps=False, radius_b=2.4 * (1 - u * 0.8) * 0.93)
+            r0 = 2.4 * (1 - (q - 1) / 8 * 0.8)
+            r1 = 2.4 * (1 - u * 0.8) if q < 8 else 0.08
+            s.tube("BoneWhite", prev, p, r0, 9, caps=True, radius_b=r1)
             prev = p
         s.collider((base[0] + side * 0.6, 4.0, base[2] + 0.5), (5.0, 8.0, 5.0), 0.0, True, "BoneWhite")
     for side in (-1, 1):
         s.prop("BoneBrazier", x + side * 21.0, P.MONO_FACE + 5.5, side * 30.0)
+    # Under the panel, either side of where the throne stands: two carved eyes, and names scratched over the face.
+    f = Frame(x, z, 180.0)
+    for ex, ey in P.MONO_EYES:
+        carved_eye(s, f, -ex, ey, -t / 2, 5.0, 2.1)
+    scratches.overlay(s, (x - w / 2 + 0.6, P.MONO_FACE), (x + w / 2 - 0.6, P.MONO_FACE), 1.2, 13.8, (0.0, 1.0))
     s.anchor("title", *P.TITLE[:3], P.TITLE[3], w=P.TITLE[4], h=P.TITLE[5])
     s.anchor("tagline", *P.TAGLINE[:3], P.TAGLINE[3], w=P.TAGLINE[4], h=P.TAGLINE[5])
 
 
+# The throne prop's own measures (props_lobby.bone_throne): its seat's top over its foot, the seat's middle in
+# front of the prop's middle, its backrest's face behind it, the seat's width, the back's top.
+SEAT_TOP, SEAT_Y, BACK_Y, SEAT_W, BACK_TOP = 3.42, -0.3, 1.45, 6.2, 9.96
+THRONE_BACK = 1.0  # how far behind the dais' middle the throne stands (room for the plaque's reader in front)
+
+
+def carved_eye(s, f, lx, ly, lz, w, h):
+    """An eye carved in an upright face (the face at local depth lz of frame f, looking out along -z): its
+    almond of pale stone standing a little proud, the dark round iris, a glint, a heavy brow over it."""
+    inside = f.w3(lx, ly, lz + 1.0)
+    n = 12
+    upper = [(-w / 2 * math.cos(math.pi * k / n), h / 2 * math.sin(math.pi * k / n) ** 0.8) for k in range(n + 1)]
+    lower = [(x, -y * 0.8) for x, y in reversed(upper[1:-1])]
+    almond = [f.w3(lx + x, ly + y, lz - 0.06) for x, y in upper + lower]
+    away(s, "BoneOld", almond, inside)
+    for r, mat, dz, (ox, oy) in ((h * 0.4, "BlackTrim", 0.1, (0.0, -0.04 * h)), (h * 0.09, "BoneWhite", 0.13, (-0.12 * h, 0.08 * h))):
+        ring = [f.w3(lx + ox + math.cos(math.tau * k / 14) * r, ly + oy + math.sin(math.tau * k / 14) * r, lz - dz)
+                for k in range(14)]
+        away(s, mat, ring, inside)
+    bx, by, bz = f.w3(lx, ly + h * 0.62, lz - 0.12)
+    s.box("RuinStone", (bx, by, bz), (w * 0.95, h * 0.18, 0.36), f.rot)
+
+
+def eye_stones(s):
+    """Standing stones at the ridge's foot, each a carved eye turned on the plaza, names scratched under it."""
+    rng = random.Random(311)
+    for k, (x, z, rot) in enumerate(P.eye_stones()):
+        f = Frame(x, z, rot)
+        w, h, t = 3.4, 6.6, 1.3
+        s.box("RuinStone", (x, 0.25, z), (w + 1.0, 0.5, t + 1.0), rot, collide=True, skip=("-y",))
+        s.box("RuinStone", (x, 0.5 + (h - 1.5) / 2, z), (w, h - 1.5, t), rot, collide=True, skip=("-y",))
+        # The broken top: two blocks of different heights, set back from the face.
+        for side in (-1, 1):
+            top = h - rng.uniform(0.0, 1.0)
+            cx, cy, cz = f.w3(side * w / 4, 0.0, rng.uniform(0.05, 0.2))
+            s.box("RuinStone", (cx, (h - 1.0 + top) / 2, cz), (w / 2 + 0.02, top - h + 1.0 + 0.02, t - 0.3), rot,
+                  skip=("-y",))
+        carved_eye(s, f, 0.0, 4.2, -t / 2, 2.4, 1.0)
+        a, b = f.w(-w / 2 + 0.15, -t / 2), f.w(w / 2 - 0.15, -t / 2)
+        scratches.overlay(s, a, b, 0.8, 3.3, f.dir(0.0, -1.0), u0=0.31 * k, v0=0.17 * k)
+
+
 def throne(s):
-    x, z, r, h = P.THRONE_MESA
-    s.prop("BoneThrone", x, z, P.THRONE_ROT, 1.0, h)
-    # Where the game seats the player with the most wins, in stone: the seat's top (the throne's seat is
-    # 4.45 over its foot, its middle a stud behind the throne's own), facing the plaza.
-    fx, fz = P.facing(P.THRONE_ROT)
-    s.anchor("throne", x - fx * 1.0, h + 4.45, z - fz * 1.0, P.THRONE_ROT, w=5.6, h=8.0)
-    f = Frame(x, z, P.THRONE_ROT)
-    for lx, lz, rot in ((-5.5, -7.5, 30.0), (6.0, -7.0, 200.0)):
-        px, pz = f.w(lx, lz)
-        s.prop("SkullPile", px, pz, rot, 1.0, h)
+    """The bone throne on its dais at the plaza's north edge, on the spawn's line, facing it: three steps of old
+    stone, the throne at the back of the top one, a plaque stone at the dais' foot (the game writes the
+    champion's name and wins on it), two braziers at its front corners and one cold light from above."""
+    x, z = P.THRONE
+    w, d, steps, rise = P.DAIS
+    rot = P.THRONE_ROT
+    f = Frame(x, z, rot)
+    # The steps: each set back from the front and the sides, flush at the back.
+    for k in range(steps):
+        sw, sd = w - 2.4 * k, d - 1.4 * k
+        lz = 0.7 * k
+        cx, cz = f.w(0.0, lz)
+        top = rise * (k + 1)
+        s.box("RuinStone", (cx, top - rise / 2, cz), (sw, rise, sd), rot, collide=True, skip=("-y", "+y"))
+        city.up_face(s, "RuinFlag", g2.rect(cx, cz, sw, sd, rot), top)
+    s.zone("plaza", g2.rect(x, z, w, d, rot), 0.0, name="the throne's dais")
+    floor = rise * steps
+    tx, tz = f.w(0.0, THRONE_BACK)
+    s.prop("BoneThrone", tx, tz, rot, 1.0, floor)
+    # Where the game seats the player with the most wins, in stone: the seat's top, at its middle, facing the
+    # spawn; w the seat's width, h the room up to the back's top.
+    ax, ay, az = f.w3(0.0, floor + SEAT_TOP, THRONE_BACK + SEAT_Y)
+    s.anchor("throne", ax, ay, az, rot, w=SEAT_W, h=BACK_TOP - SEAT_TOP)
+    # Nobody stands on the seat or walks through the throne: its plinth and the whole seated room up to the
+    # back's top are solid (the stone champion fills it).
+    cx, cz = f.w(0.0, THRONE_BACK)
+    s.collider((cx, floor + 0.3, cz), (7.8, 0.6, 6.8), rot, True, "RuinStone")
+    front, back = SEAT_Y + 0.05 - 1.8, BACK_Y + 1.0  # the seat block's front, the back's rear face
+    sx, sz = f.w(0.0, THRONE_BACK + (front + back) / 2)
+    s.collider((sx, floor + 0.6 + (BACK_TOP - 0.6) / 2, sz), (SEAT_W, BACK_TOP - 0.6, back - front), rot, True,
+               "RuinStone")
+    # The plaque stone at the dais' foot: a squat block, a dark slate let into its face.
+    pw, ph, pd, pt = 5.6, 2.6, 1.2, 1.9  # block width, height, depth; the slate's middle above the ground
+    px, pz = f.w(0.0, -d / 2 - 2.4)
+    s.box("RuinStone", (px, 0.3, pz), (pw + 0.8, 0.6, pd + 0.8), rot, collide=True, skip=("-y",))
+    s.box("RuinStone", (px, 0.6 + (ph - 0.6) / 2, pz), (pw, ph - 0.6, pd), rot, collide=True, skip=("-y",))
+    s.box("RuinStone", (px, ph + 0.12, pz), (pw + 0.3, 0.24, pd + 0.3), rot)
+    bx, by, bz = f.w3(0.0, pt, -d / 2 - 2.4 - pd / 2 - 0.03)
+    s.box("BlackTrim", (bx, by, bz), (pw - 0.8, 1.5, 0.06), rot)
+    qx, qy, qz = f.w3(0.0, pt, -d / 2 - 2.4 - pd / 2 - 0.08)
+    s.anchor("throneplaque", qx, qy, qz, rot, w=pw - 1.0, h=1.3)
+    # Braziers at the dais' front corners (the two that stood by the throne on the mesa).
     for side in (-1, 1):
-        bx, bz = f.w(side * 8.5, -3.0)
-        s.prop("BoneBrazier", bx, bz, 0.0, 1.2, h)
+        bx2, bz2 = f.w(side * (w / 2 + 2.2), -d / 2 + 1.0)
+        s.prop("BoneBrazier", bx2, bz2, 0.0, 1.2)
+    # One cold light from above: the realm's pale light, a pool over the throne.
+    lx, ly, lz2 = f.w3(0.0, floor + SEAT_TOP + 13.0, THRONE_BACK - 1.0)
+    pool(s, lx, ly, lz2, 26, 1.2)
+
+
+def old_mesa(s):
+    """The mesa the throne stood on (nobody climbs it): a chess king lies fallen across its top, the skull piles
+    left round it."""
+    x, z, r, h = P.OLD_MESA
+    kx, kz, krot, ks = P.FALLEN_KING
+    s.prop("ChessKingFallen", kx, kz, krot, ks, h)
+    f = Frame(kx, kz, krot)
+    for lz, rot in ((-8.5, 30.0), (8.5, 200.0)):
+        px, pz = f.w(0.0, lz)
+        s.prop("SkullPile", px, pz, rot, 1.0, h)
 
 
 # The steles -----------------------------------------------------------------------------------------------
@@ -333,12 +433,62 @@ def pillar(s, x, z, h, rng, whole=False, y=0.0):
 # The wayside rock and the carcass ----------------------------------------------------------------------------
 
 
-def wayside_rock(s):
-    """A low flat-topped rock by the north-west path, a few bones about it (once the dice rock)."""
-    x, z, r, h = P.WAYSIDE_ROCK
-    rock(s, x, z, r, h, 211, tiers=2, sides=10, taper=0.12, flat_top=True, top_mat="RuinFlag")
-    s.prop("SkullPile", x - 9.0, z - 5.0, 40.0, 1.2)
-    s.prop("BoneScatter", x + 3.0, z + 9.0, 70.0)
+# The chessboard's squares under the pieces stand level at this height (the pieces' prop stands on it); the
+# others are sunk, lifted or broken out.
+BOARD_TOP = 0.2
+
+
+def chessboard(s):
+    """A chessboard sunk in the ash by the north-west path (where the dice rock stood): squares of bone-pale and
+    black stone, many sunk or lifted, cracked or gone; its pieces left mid-game (the ChessGame prop, on the
+    squares the plan names) and the white king toppled on its own square."""
+    x, z, rot, sq = P.CHESS
+    f = Frame(x, z, rot)
+    rng = random.Random(281)
+    taken = set(P.CHESS_GAME) | {P.CHESS_FALLEN}
+    for file in "abcdefgh":
+        for rank in range(1, 9):
+            name = f"{file}{rank}"
+            lx, lz = P.chess_square(name)
+            cx, cz = f.w(lx, lz)
+            light = ("abcdefgh".index(file) + rank) % 2 == 1
+            mat = "BoneOld" if light else "BlackTrim"
+            edge = file in "ah" or rank in (1, 8)
+            if name not in taken and rng.random() < (0.16 if edge else 0.07):
+                continue  # gone: the ash shows through
+            if name in taken:
+                top, turn, size = BOARD_TOP, 0.0, sq - 0.12
+            else:
+                top = BOARD_TOP + rng.choice((0.0, 0.0, -0.06, -0.3, 0.1, 0.16))
+                turn = rng.uniform(-4.0, 4.0)
+                size = sq - rng.uniform(0.12, 0.4)
+            if name not in taken and rng.random() < 0.18:
+                # Cracked in two, the halves apart a little and at different heights.
+                for half, dz2, dy in ((-1, -0.05, 0.0), (1, 0.08, rng.uniform(-0.05, 0.08))):
+                    hx, hz = f.w(lx + half * size / 4, lz + dz2)
+                    s.box(mat, (hx, top + dy - 0.2, hz), (size / 2 - 0.1, 0.4, size), rot + turn, skip=("-y",))
+                continue
+            s.box(mat, (cx, top - 0.2, cz), (size, 0.4, size), rot + turn, skip=("-y",))
+    # A collider under the whole board (its squares are low enough to walk over), and one round each piece.
+    s.collider((x, BOARD_TOP / 2 - 0.1, z), (sq * 8, BOARD_TOP + 0.2, sq * 8), rot, True, "BoneOld")
+    for name, (kind, colour) in P.CHESS_GAME.items():
+        cx, cz = f.w(*P.chess_square(name))
+        radius = {"K": 1.15, "Q": 1.15, "B": 1.0, "N": 1.05, "R": 1.05, "P": 0.92}[kind]
+        height = {"K": 5.2, "Q": 4.6, "B": 4.1, "N": 3.8, "R": 3.4, "P": 2.7}[kind]
+        s.collider((cx, BOARD_TOP + height / 2, cz), (radius * 1.7, height, radius * 1.7), rot + 45.0, True, None)
+    s.prop("ChessGame", x, z, rot, 1.0, BOARD_TOP)
+    # The toppled king on its square (in the set's mesh), lying along the first rank.
+    kx, kz = f.w(*P.chess_square(P.CHESS_FALLEN))
+    s.collider((kx, BOARD_TOP + 1.1, kz), (5.6, 2.2, 2.4), rot, True, None)
+    # (No light of its own: bone-white and black, the pieces read in the realm's dusk, and the lobby keeps to its
+    # number of lights.)
+
+
+def notebook(s):
+    """The stone notebook over the rift, stopped in its fall (it neither collides nor casts a shadow on
+    anyone's dive: a diver goes in under it)."""
+    x, y, z, rot = P.NOTEBOOK
+    s.prop("StoneNotebook", x, z, rot, 1.0, y)
 
 
 def carcass(s):
@@ -450,7 +600,7 @@ def terrace(s, g):
     cx, cz, w, d, h = P.TERRACE
     poly = g2.rect(cx, cz, w, d)
     city.terrace(s, g, poly, h, 0.0, top_mat="RuinFlag", wall_mat="RuinStone", zone="plaza", name="the terrace",
-                 coping="RuinStone")
+                 coping="RuinStone", coping_under=True)
     (ax, az), (bx, bz), sw = P.TERRACE_STEPS
     city.stairs(s, g, (ax, az), (bx, bz), h, 0.0, sw, mat="RuinStone", side_mat="RuinStone", step=0.85, name="the steps")
     sx, sz = P.SPAWN
@@ -458,7 +608,7 @@ def terrace(s, g):
         a0, a1 = 2 * math.pi * k / 28, 2 * math.pi * (k + 1) / 28
         if k % 6 == 4:
             continue
-        pts = [(sx + math.cos(a) * r, sz + math.sin(a) * r) for a, r in ((a0, 9.0), (a1, 9.0), (a1, 10.0), (a0, 10.0))]
+        pts = [(sx + math.cos(a) * r, sz + math.sin(a) * r) for a, r in ((a0, 7.6), (a1, 7.6), (a1, 8.4), (a0, 8.4))]
         s.polygon("RuinStone", [(x, h + 0.06, z) for x, z in reversed(g2.ccw(pts))])
     s.anchor("spawn", sx, h, sz, 0.0)
     rng = random.Random(14)
@@ -469,8 +619,8 @@ def terrace(s, g):
                               (21.0, front, 10.0, False)):
         pillar(s, cx + qx, qz, hh, rng, whole=whole, y=h)
     # A worn balustrade along the back and the sides (low blocks, gaps where it has fallen).
-    for (x0, z0, x1, z1) in ((-23.0, back + 1.1, 23.0, back + 1.1), (-22.7, front - 0.5, -22.7, back + 1.5),
-                             (22.7, front - 0.5, 22.7, back + 1.5)):
+    for (x0, z0, x1, z1) in ((-23.0, back + 0.8, 23.0, back + 0.8), (-22.4, front - 0.5, -22.4, back + 1.2),
+                             (22.4, front - 0.5, 22.4, back + 1.2)):
         length = math.dist((x0, z0), (x1, z1))
         along_x = z0 == z1
         u = 2.0
@@ -479,6 +629,7 @@ def terrace(s, g):
             if rng.random() < 0.3:
                 u += run
                 continue
+            run = min(run, length - u)  # (the last block stops at the line's end, on the terrace)
             mx = x0 + (x1 - x0) * (u + run / 2) / length
             mz = z0 + (z1 - z0) * (u + run / 2) / length
             bh = rng.uniform(1.0, 2.8)
@@ -521,7 +672,7 @@ def vistas(s, g):
     top = rock(s, rx, rz, 3.4, 4.6, 253, tiers=3, sides=8, taper=0.4, flat_top=True)
     blade(s, rx, top - 0.6, rz, 1.5, 9.5, 0.4, rot=P.rot_towards((rx, rz), (nx, nz)))
     s.light("point", (rx, top + 6.0, rz), (170, 196, 232), 30, 1.1)
-    s.light("point", (nx, 4.0, nz), (150, 176, 214), 22, 0.5)
+    pool(s, nx, 4.0, nz, 22, 0.5)
 
 
 def toss(s):
@@ -546,9 +697,12 @@ def build(s, g):
     monolith(s)
     toss(s)
     throne(s)
+    old_mesa(s)
     steles(s)
     academy(s, g)
-    wayside_rock(s)
+    chessboard(s)
+    notebook(s)
+    eye_stones(s)
     carcass(s)
     duel(s)
     apples(s)

@@ -32,8 +32,8 @@ return function(t)
 		it("gives the lobby every anchor it builds at", function()
 			local anchors = SceneBuilder.data("Lobby").layout.anchors
 			local missing = {}
-			-- The title, the one board (Most Wins), the throne's seat, the bell, the duel's two slates.
-			local names = { "spawn", "title", "tagline", "wins", "throne", "bell", "duel1", "duel2" }
+			-- The title, the one board (Most Wins), the throne's seat and plaque, the bell, the duel's two slates.
+			local names = { "spawn", "title", "tagline", "wins", "throne", "throneplaque", "bell", "duel1", "duel2" }
 			for _, name in ipairs({ "academyGate", "dummy1", "dummy2", "dummy3" }) do
 				table.insert(names, name)
 			end

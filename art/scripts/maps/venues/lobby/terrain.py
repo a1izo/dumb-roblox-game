@@ -27,11 +27,53 @@ def face(s, mat, pts, inside):
     s.polygon(mat, pts)
 
 
+# A rock's foot: how high people walk, jump and stand against it, and how far its walls reach in.
+FOOT_H = 9.0
+FOOT_T = 3.0
+
+
+def foot_walls(s, rings, y, mat, r, facing=None):
+    """Solid slabs along the outline of a rock's foot (its widest outline from the ground to 4 studs up), so
+    nobody stands inside the rock where it looks solid. facing (x, z): only the sides that face that way (a
+    ridge rock, whose back is past the wall). Small rocks need none."""
+    if r < 3.0:
+        return
+    pts = []
+    for yy in (y - 0.5, y + 2.0, y + 4.0):
+        for t in range(len(rings) - 1):
+            lo, hi = rings[t], rings[t + 1]
+            y0, y1 = lo[0][1], hi[0][1]
+            if not (min(y0, y1) <= yy <= max(y0, y1)) or abs(y1 - y0) < 1e-6:
+                continue
+            f = (yy - y0) / (y1 - y0)
+            pts += [(a[0] + (b[0] - a[0]) * f, a[2] + (b[2] - a[2]) * f) for a, b in zip(lo, hi)]
+            break
+    hull = g2.convex_hull(pts)
+    cx, cz = g2.centroid(hull)
+    t = min(FOOT_T, r * 0.5)
+    for k in range(len(hull)):
+        a, b = hull[k], hull[(k + 1) % len(hull)]
+        length = math.dist(a, b)
+        if length < 0.3:
+            continue
+        nx, nz = (b[1] - a[1]) / length, -(b[0] - a[0]) / length
+        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        if nx * (mx - cx) + nz * (mz - cz) < 0:
+            nx, nz = -nx, -nz
+        if facing is not None and nx * facing[0] + nz * facing[1] < -0.2:
+            continue
+        inset = 0.25 + t / 2
+        rot = math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0]))
+        s.collider((mx - nx * inset, y + FOOT_H / 2 - 0.5, mz - nz * inset), (length + 0.4, FOOT_H + 1.0, t), rot, True,
+                   mat)
+
+
 def rock(s, x, z, r, h, seed, mat="RockGrey", y=0.0, tiers=3, sides=9, taper=0.5, lean=(0.0, 0.0), collide=True,
-         flat_top=False, squash=1.0, turn=0.0, top_mat=None, collide_h=None):
+         flat_top=False, squash=1.0, turn=0.0, top_mat=None, collide_h=None, facing=None):
     """A rock: rings of jittered points stacked `tiers` high, narrowing by taper, leaning; sides
     and a top joined between them. Sunk half a stud into the ground. With collide, a box inside
-    its foot stops people (up to collide_h)."""
+    its foot stops people (up to collide_h), and slabs along its foot's outline keep them out of
+    it (facing: only on the sides that face that way)."""
     rng = random.Random(seed)
     phase = rng.uniform(0, math.tau)
     rings = []
@@ -65,6 +107,7 @@ def rock(s, x, z, r, h, seed, mat="RockGrey", y=0.0, tiers=3, sides=9, taper=0.5
         inner = r * 0.72
         s.collider((x, y + ch / 2 - 0.5, z), (inner * 1.6, ch + 1.0, inner * 1.6 * squash), math.degrees(phase) % 90, True,
                    mat)
+        foot_walls(s, rings, y, mat, r, facing)
     return tc[1]
 
 
@@ -269,19 +312,19 @@ def blade(s, x, y, z, w, length, thick, rot=0.0, mat="RuinStone", glow="RelicGlo
 
     profile = [(0.0, 0.0), (-0.5 * w, 0.16 * length), (-0.5 * w, length), (0.5 * w, length), (0.5 * w, 0.16 * length)]
     t2 = thick / 2
+    middle = at(0.0, length * 0.6, 0.0)
     for sign in (-1, 1):
-        pts = [at(px, py, sign * t2) for px, py in profile]
-        s.polygon(mat, pts if sign > 0 else list(reversed(pts)))
+        face(s, mat, [at(px, py, sign * t2) for px, py in profile], at(0.0, length * 0.6, -sign * t2))
     n = len(profile)
     for i in range(n):
         (ax, ay), (bx, by) = profile[i], profile[(i + 1) % n]
-        s.polygon(mat, [at(ax, ay, -t2), at(bx, by, -t2), at(bx, by, t2), at(ax, ay, t2)])
+        face(s, mat, [at(ax, ay, -t2), at(bx, by, -t2), at(bx, by, t2), at(ax, ay, t2)], middle)
     if glow:
         for sign in (-1, 1):
             gw, g0, g1 = w * 0.13, length * 0.22, length * 0.97
             e = t2 + max(0.03, thick * 0.03)
-            pts = [at(-gw, g0, sign * e), at(gw, g0, sign * e), at(gw, g1, sign * e), at(-gw, g1, sign * e)]
-            s.polygon(glow, pts if sign < 0 else list(reversed(pts)))
+            face(s, glow, [at(-gw, g0, sign * e), at(gw, g0, sign * e), at(gw, g1, sign * e), at(-gw, g1, sign * e)],
+                 at(0.0, (g0 + g1) / 2, 0.0))
     if guard:
         gy = length + w * 0.1
         s.box(mat, at(0, gy, 0), (w * 3.0, w * 0.22, thick * 1.7), rot)
@@ -424,7 +467,7 @@ def edge(s):
             off = rng.uniform(-r * 0.15, r * 0.45)
             rx, rz = px + ox * off, pz + oz * off
             rock(s, rx, rz, r, h, 1000 + k * 37 + int(u), tiers=rng.choice((3, 4)), sides=rng.choice((7, 8, 9)),
-                 taper=rng.uniform(0.4, 0.75), lean=(ox * 0.05, oz * 0.05))
+                 taper=rng.uniform(0.4, 0.75), lean=(ox * 0.05, oz * 0.05), facing=(-ox, -oz))
             solids.append((rx, rz, r))
             u += r * rng.uniform(0.95, 1.5)
         # Between the rocks of some stretches: needles, a bone stake, a cairn.
@@ -471,7 +514,7 @@ def bone_stake(s, x, z, h, rng, mat="BoneOld"):
     s.lathe(mat, top, [(0.0, -0.1), (0.42, 0.1), (0.36, 0.45), (0.0, 0.55)], 7)
 
 
-# Outcrops and the throne's mesa -----------------------------------------------------------------------------
+# Outcrops and the old mesa (where the throne stood) ------------------------------------------------------------
 
 
 def outcrops(s):
@@ -482,9 +525,9 @@ def outcrops(s):
             a = rng.uniform(0, math.tau)
             d = r + rng.uniform(1.5, 4.0)
             boulder(s, x + math.cos(a) * d, z + math.sin(a) * d, rng.uniform(0.9, 2.2), seed * 10 + k)
-    x, z, r, h = P.THRONE_MESA
+    x, z, r, h = P.OLD_MESA
     mesa(s, x, z, r, h, 91)
-    # Steps of rock up its south face, broken off halfway (nobody climbs to the throne).
+    # Steps of rock up its south face, broken off halfway (nobody climbs it).
     for k in range(3):
         rock(s, x - 6 + k * 3, z + r + 2.5 - k * 1.2, 3.2, 2.5 + k * 3.0, 92 + k, tiers=2, sides=7, taper=0.3,
              flat_top=True)

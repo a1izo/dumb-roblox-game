@@ -122,6 +122,7 @@ return {
 	Rubber = { textured = true, fallback = { material = "SmoothPlastic", color = { 38, 39, 41 } } },
 	RuinFlag = { textured = true, fallback = { material = "SmoothPlastic", color = { 88, 89, 93 } } },
 	RuinStone = { textured = true, fallback = { material = "Cobblestone", color = { 77, 77, 82 } } },
+	ScratchNames = { textured = true, alpha = true, fallback = { material = "SmoothPlastic", color = { 171, 165, 155 } } },
 	Screen = { material = "SmoothPlastic", color = { 14, 16, 22 }, transparency = 0, reflectance = 0.1 },
 	Shutter = { textured = true, fallback = { material = "CorrodedMetal", color = { 149, 152, 155 } } },
 	Slate = { textured = true, fallback = { material = "Slate", color = { 47, 48, 53 } } },

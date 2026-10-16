@@ -102,7 +102,7 @@ def bones(s, taken):
         a = rng.uniform(0, math.tau)
         d = rng.uniform(36, 150)
         x, z = math.cos(a) * d, math.sin(a) * d
-        if blocked(x, z, 2.6, taken):
+        if blocked(x, z, 2.6, taken) or g2.dist_to_poly_edge(P.RIFT_GUARD, (x, z)) < 2.6 + 9.0:
             continue
         s.prop("BoneScatter", x, z, rng.uniform(0, 360), rng.uniform(0.9, 1.4))
         taken.append((x, z, 2.6))

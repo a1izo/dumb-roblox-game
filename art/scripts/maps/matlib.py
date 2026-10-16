@@ -101,11 +101,12 @@ FLAT = {
 
 
 # Printed sheets (maps/prints.py): one picture a map shows a poster at a time, never as a repeat.
-SHEETS = {"PrintsTokyo": "PrintsTokyo.png", "PrintsCampus": "PrintsCampus.png", "GrimeWall": "GrimeWall.png"}
+SHEETS = {"PrintsTokyo": "PrintsTokyo.png", "PrintsCampus": "PrintsCampus.png", "GrimeWall": "GrimeWall.png",
+          "ScratchNames": "ScratchNames.png"}
 
 # Sheets whose alpha channel is their shape (maps/grime.py): the game shows them with the surface's
 # AlphaMode set to Transparency, and not at all where it cannot (SceneBuilder.dress).
-ALPHA = {"GrimeWall"}
+ALPHA = {"GrimeWall", "ScratchNames"}  # (ScratchNames: maps/scratches.py)
 
 # Textured material name fragment -> the Roblox material closest to it (first match wins).
 FALLBACK_KIND = [

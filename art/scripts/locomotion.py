@@ -880,6 +880,22 @@ def build_sit():
     soft(sit).build()
 
 
+def build_enthroned():
+    """The throne's stone champion (World/Champion holds a moment of it): sat back against the backrest, chin
+    up, the legs out level as a seated avatar's are (an R6 leg has no knee: sloped down, it would go through the
+    seat), the right arm laid along the throne's arm, the left reaching past the end of it, its hand loose."""
+    seat = Motion("enthroned", 8.0, loop=True, note="Enthroned: back to the backrest, chin up, the right arm along the "
+                                                    "throne's arm, the left hand hanging loose over its end; a slow breath.")
+    for i in range(32):
+        t = i * 0.25
+        b = breathing(t, 4.0, (1.0, 0.85))
+        root = (-6 + 0.5 * b, 0, 0)
+        neck = euler(R(*root).T @ R(-14 - 0.4 * b, 0, 0))
+        seat.key(t, root=root, neck=neck, rHip=J((88, 0, 4)), lHip=J((87, 0, -4)),
+                 rShoulder=J((74 + 0.5 * b, 0, -4)), lShoulder=J((86 + 0.5 * b, 0, 4)))
+    soft(seat).build()
+
+
 GROUPS = {
     "standing": (("idle", "idleGuarded"), build_standing),
     "fidgets": (tuple(sorted(set(LOBBY_FIDGETS + CASE_FIDGETS))), build_fidgets),
@@ -888,6 +904,7 @@ GROUPS = {
     "startstop": (("startStep", "stopRight", "stopLeft"), build_start_stop),
     "flight": (("flyHover", "flyGlide", "flyRise", "flyDive"), build_flight),
     "sit": (("sit",), build_sit),
+    "enthroned": (("enthroned",), build_enthroned),
 }
 
 

@@ -252,15 +252,16 @@ def zebra(s, centre, direction, width, depth=4.0, y=0.0, stripe=1.0, mat="WhiteT
 
 
 def terrace(s, g, poly, y, base=0.0, top_mat="PaversWarm", wall_mat="Stone", zone="lane", name=None, walls=True,
-            priority=1, coping="ConcreteDark"):
-    """Raised solid ground over a polygon: top at y, retaining walls down to base."""
+            priority=1, coping="ConcreteDark", coping_under=False):
+    """Raised solid ground over a polygon: top at y, retaining walls down to base. coping_under: the coping
+    closed underneath too (where people walk round the terrace's foot and see under its lip)."""
     g.add(poly, top_mat, y, priority, zone, name)
     floor(s, poly, y, y - base, wall_mat)
     if walls:
-        retaining(s, poly, y, base, wall_mat, coping)
+        retaining(s, poly, y, base, wall_mat, coping, under=coping_under)
 
 
-def retaining(s, poly, y, base, wall_mat="Stone", coping="ConcreteDark", edges=None):
+def retaining(s, poly, y, base, wall_mat="Stone", coping="ConcreteDark", edges=None, under=False):
     p = g2.ccw(poly)
     n = len(p)
     for i in range(n):
@@ -275,7 +276,7 @@ def retaining(s, poly, y, base, wall_mat="Stone", coping="ConcreteDark", edges=N
         vquad(s, wall_mat, a, b, base, y, out)
         mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
         s.box(coping, (mid[0] + out[0] * 0.15, y + 0.12, mid[1] + out[1] * 0.15), (length + 0.3, 0.24, 0.6),
-              g2.rot_of((dx / length, dz / length)), skip=("-y",))
+              g2.rot_of((dx / length, dz / length)), skip=() if under else ("-y",))
 
 
 GUARD_FROM = 2.0  # how high a flight climbs before its side guards begin

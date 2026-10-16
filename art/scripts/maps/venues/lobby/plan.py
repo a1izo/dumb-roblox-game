@@ -12,11 +12,15 @@ reached by an old stone causeway that crosses a deep chasm; they carry the mini-
   player who is ready). Round the plaza, where boards once stood, five low stone bases carry the tableaux
   (stone figures the game stands on them, acting out how a case goes), and a sixth place the bell of
   Death's mark.
-- North: the title monolith; behind it, up on a mesa nobody can climb, the bone throne (the game seats the
-  player with the most wins on it, in stone); at the mesa's foot a low slab, the one board left: Most Wins.
+- North: the bone throne on its stepped dais at the plaza's north edge, on the line from the spawn, facing it
+  (the game seats the player with the most wins on it, in stone, a plaque at its foot with their name); the
+  slab beside it is the one board left, Most Wins; behind both, the title monolith, its title raised over the
+  throne. North-east, the mesa where the throne stood: a chess king lies fallen across its top.
+- North-west, where the wayside rock stood: a chessboard sunk in the ash, its pieces left mid-game, one king
+  toppled.
 - South-west: the Academy, a ring of broken pillars with the practice altars and effigies.
 - East: the rift, a hole in the ground looking down on Kagegaoka at night far below (the stone toss stands at
-  its rim). Its rim is open: a throat of rock drops through the ground into the cloud the realm floats on;
+  its rim); over it a stone notebook hangs, stopped in its fall. Its rim is open: a throat of rock drops through the ground into the cloud the realm floats on;
   under the cloud lies the night sky over the city, and far beneath the rift's middle a hall's roof with a
   lit ring is where a dive ends (about 650 studs down).
 - North-west: a wayside rock; the cleft. North-east: the needle ledge, where a small blade glows.
@@ -96,13 +100,22 @@ SPAWNS = [(x, z) for z in (58.0, 64.0) for x in (-9.0, -3.0, 3.0, 9.0)]
 # The two twisted columns that frame the first view (x, z, radius, height, seed).
 COLUMNS = [(-84.0, -28.0, 5.6, 62.0, 31), (74.0, -44.0, 5.0, 68.0, 32)]
 
-# The title monolith (its face at MONO_FACE, facing south) and the throne's mesa.
-MONO = (0.0, -66.0, 52.0, 6.0, 30.0)  # x, z, width, thickness, height
+# The title monolith (its face at MONO_FACE, facing south), raised so the title and the tagline stand over the
+# throne in front of it: seen from the spawn and from the plaza's middle, nothing on the throne reaches them.
+MONO = (0.0, -66.0, 52.0, 6.0, 40.0)  # x, z, width, thickness, height
 MONO_FACE = MONO[1] + MONO[3] / 2
-TITLE = (0.0, 17.0, MONO_FACE + 0.35, 180.0, 44.0, 9.0)  # x, y, z, rot, w, h (the game writes it)
-TAGLINE = (0.0, 10.5, MONO_FACE + 0.35, 180.0, 36.0, 3.0)
-THRONE_MESA = (58.0, -112.0, 19.0, 14.0)  # x, z, radius, height
-THRONE_ROT = 154.0
+TITLE = (0.0, 27.5, MONO_FACE + 0.35, 180.0, 44.0, 9.0)  # x, y, z, rot, w, h (the game writes it)
+TAGLINE = (0.0, 20.0, MONO_FACE + 0.35, 180.0, 36.0, 3.0)
+PANEL = (23.6, 16.0)  # the dark panel they are written on: its middle's height, its height
+# The throne: on the line from the spawn (about 100 studs off), at the plaza's north edge, on a stepped dais,
+# facing the spawn. THRONE_TOP is the most anything on it (the crown's tip) may reach over the ground.
+THRONE = (0.0, -38.0)
+THRONE_ROT = 180.0
+DAIS = (18.0, 14.0, 3, 0.45)  # width (x), depth (z), steps, each step's rise
+THRONE_TOP = 13.5
+# The mesa the throne stood on, nobody can climb it: the chess king lies fallen across its top.
+OLD_MESA = (58.0, -112.0, 19.0, 14.0)  # x, z, radius, height
+FALLEN_KING = (56.0, -110.0, 118.0, 3.4)  # x, z, rot, scale
 
 # The two islets (x, z, radius) and the bridges to them from the island's rim.
 ISLET_RUNE = (214.0, -216.0, 40.0)  # the plateaus: x, z, radius
@@ -195,6 +208,8 @@ def grown(poly, d):
 
 
 RIFT_GUARD = grown(RIFT, GUARD)
+# The stone notebook over the rift, stopped in its fall: x, y, z, rot (high enough that a dive goes under it).
+NOTEBOOK = (100.0, 21.0, 20.0, 35.0)
 APPLE_TREE = (76.0, -6.0)
 TOSS = (64.0, 42.0, -59.5)  # the stone-toss cairn (x, z) and the rot facing the rift's middle
 RIFT_MID = g2.centroid(RIFT)
@@ -207,8 +222,27 @@ CITY_SCALE = 1 / 3
 LANDING_Y = BELOW_Y + (LANDING[2] * 12.0 + 1.5) * CITY_SCALE  # its roof
 LANDING_RING = 10.5  # the lit ring on the roof (studs)
 
-# The wayside rock (where the dice game was) and the carcass.
-WAYSIDE_ROCK = (-66.0, -44.0, 3.6, 2.4)  # x, z, radius, height of its flat top
+# The chessboard sunk in the ash, where the wayside rock (the dice game's) stood: x, z, its turn, a square's
+# side. Its pieces stand mid-game; the white king lies toppled.
+CHESS = (-70.0, -56.0, 18.0, 3.2)
+# The game left on it: black has just mated on the back rank (the rook on e1; the white king, hemmed in by
+# its own pawns, lies toppled on g1). White's pieces are bone, black's dark stone. Square -> (piece, colour).
+# The pieces' prop (props_lobby.chess_game) stands them on these squares; the toppled king is its own prop.
+CHESS_GAME = {
+    "a7": ("R", "w"), "c3": ("N", "w"), "a3": ("P", "w"), "b2": ("P", "w"), "f2": ("P", "w"), "g2": ("P", "w"),
+    "h2": ("P", "w"),
+    "g8": ("K", "b"), "e1": ("R", "b"), "b6": ("Q", "b"), "b7": ("B", "b"), "f6": ("N", "b"), "c5": ("P", "b"),
+    "f7": ("P", "b"), "g6": ("P", "b"), "h7": ("P", "b"),
+}
+CHESS_FALLEN = "g1"  # the white king's square
+
+
+def chess_square(name):
+    """A square's middle in the board's own frame (x, z): white plays up the board from its south edge (+z),
+    the a-file to the west (-x)."""
+    f = "abcdefgh".index(name[0])
+    r = int(name[1]) - 1
+    return ((f - 3.5) * CHESS[3], (3.5 - r) * CHESS[3])
 CARCASS_SKULL = (14.0, 116.0, 70.0)  # x, z, rot (facing west-north-west, its spine running east)
 SPINE = [(46.0, 118.0), (62.0, 112.0), (78.0, 108.0), (94.0, 106.0), (110.0, 106.0)]
 RIB_SPAN = 13.0  # how far each rib's foot lands from the spine
@@ -229,6 +263,21 @@ NEEDLE_DEG = 334.0
 CLEFT = rim_at(CLEFT_DEG, 22.0)
 NEEDLE = rim_at(NEEDLE_DEG, 22.0)
 LEDGE_R = 10.0
+
+# Standing stones at the ridge's foot, each with a carved eye watching the plaza (degrees round the rim, and how
+# far inside it), and the eyes on the monolith's face either side of the throne (x, y).
+EYE_STONES = [(75.0, 15.0), (140.0, 15.0), (205.0, 15.0), (262.0, 15.0)]
+MONO_EYES = [(-14.0, 8.0), (14.0, 8.0)]
+
+
+def eye_stones():
+    """(x, z, rot facing the plaza's middle) of each standing stone."""
+    out = []
+    for deg, inset in EYE_STONES:
+        x, z = rim_at(deg, inset)
+        out.append((x, z, rot_towards((x, z), PLAZA_C)))
+    return out
+
 
 # Rock outcrops inside the island: x, z, radius, height, seed.
 OUTCROPS = [
@@ -268,12 +317,8 @@ def rot_towards(frm, to):
 
 
 def _wins_slab():
-    """At the foot of the throne's mesa, a little to the side of the line from the plaza to the throne (so it
-    never stands in front of whoever sits there), facing the plaza."""
-    fx, fz = facing(THRONE_ROT)
-    a = math.atan2(fz, fx) + math.radians(35.0)
-    d = THRONE_MESA[2] + 6.0
-    x, z = THRONE_MESA[0] + math.cos(a) * d, THRONE_MESA[1] + math.sin(a) * d
+    """Beside the throne (east of its dais, never in front of whoever sits there), facing the plaza's middle."""
+    x, z = THRONE[0] + DAIS[0] / 2 + 10.0, THRONE[1] + 2.0
     return (round(x, 2), round(z, 2), round(rot_towards((x, z), PLAZA_C), 1), 10.0, 10.0, 6.0)
 
 
@@ -285,7 +330,7 @@ STELES = {"wins": _wins_slab()}
 def apples():
     """The seven grey apples: (x, y of the ground there, z). The first lies under the withered tree, where
     anyone finds it; the others in the far corners: the cleft, the needle ledge, by the carcass's skull, behind
-    the throne's mesa, behind the spire, behind the rune courtyard."""
+    the old mesa, behind the spire, behind the rune courtyard."""
     ca, na = math.radians(CLEFT_DEG), math.radians(NEEDLE_DEG)
     out = [
         (APPLE_TREE[0] + 3.0, 0.0, APPLE_TREE[1] + 3.0),
@@ -329,9 +374,10 @@ def footprints():
         "ready ring": circle(PLAZA_C, READY_R + 1.5),
         "bell": circle(BELL, BELL_R),
         "monolith": g2.rect(MONO[0], MONO[1], MONO[2] + 22.0, MONO[3] + 10.0),  # its base and tusks too
-        "throne mesa": circle(THRONE_MESA[:2], THRONE_MESA[2]),
+        "throne dais": g2.rect(THRONE[0], THRONE[1], DAIS[0], DAIS[1]),
+        "old mesa": circle(OLD_MESA[:2], OLD_MESA[2]),
         "rift guard": RIFT_GUARD,
-        "wayside rock": circle(WAYSIDE_ROCK[:2], WAYSIDE_ROCK[2] + 5.0),
+        "chessboard": g2.rect(CHESS[0], CHESS[1], CHESS[3] * 8 + 3.0, CHESS[3] * 8 + 3.0, CHESS[2]),
         "carcass skull": circle(CARCASS_SKULL[:2], 12.0),
         "carcass ribs": g2.convex_hull([(x + dx, z + dz) for x, z in SPINE for dx, dz in
                                         ((0.0, -RIB_SPAN - 3.0), (0.0, RIB_SPAN + 3.0), (-3.0, 0.0), (3.0, 0.0))]),
@@ -353,6 +399,8 @@ def footprints():
         items[f"outcrop {k}"] = circle((x, z), r)
     for k, (x, z, rot) in enumerate(altars()):
         items[f"altar {k + 1}"] = g2.rect(x, z, 5.6, 2.9, rot)
+    for k, (x, z, rot) in enumerate(eye_stones()):
+        items[f"eye stone {k + 1}"] = g2.rect(x, z, 5.0, 3.6, rot)
     return items
 
 
@@ -366,8 +414,9 @@ def check():
             hit = g2.intersect(g2.ccw(items[a]), g2.ccw(items[b])) if g2.is_convex(items[b]) else []
             if hit and abs(g2.area(hit)) > 0.5:
                 problems.append(f"{a} overlaps {b}")
-    inside = ["ready ring", "bell", "monolith", "rift guard", "wayside rock", "apple tree", "terrace", "toss cairn",
-              "cleft ledge", "needle ledge", "stele wins"] + [f"tableau {k + 1}" for k in range(len(TABLEAUX))]
+    inside = ["ready ring", "bell", "monolith", "throne dais", "rift guard", "chessboard", "apple tree", "terrace",
+              "toss cairn", "cleft ledge", "needle ledge", "stele wins"] + [f"tableau {k + 1}" for k in range(len(TABLEAUX))]
+    inside += [f"eye stone {k + 1}" for k in range(len(EYE_STONES))]
     for name in inside:
         if not all(g2.contains(basin, p) for p in items[name]):
             problems.append(f"{name} leaves the island")
@@ -377,6 +426,22 @@ def check():
             problems.append(f"{name} stands on the plaza")
     if READY_R + 2.0 > PLAZA_R - 8.0:
         problems.append("the candle ring reaches the plaza's edge")
+    # The throne: on the spawn's line, about 100 studs off, its dais clear of the plaza, the title and the
+    # tagline over anything on it from the spawn (eye 5 over the terrace) and from the plaza's middle (eye 5.5).
+    if abs(THRONE[0] - SPAWN[0]) > 0.01:
+        problems.append("the throne is off the spawn's line")
+    if not 90.0 <= math.dist(THRONE, SPAWN) <= 110.0:
+        problems.append(f"the throne is {math.dist(THRONE, SPAWN):.0f} from the spawn")
+    if PLAZA_C[1] - PLAZA_R < THRONE[1] + DAIS[1] / 2:
+        problems.append("the throne's dais reaches into the plaza")
+    for eye, eye_y in (((SPAWN[0], SPAWN[1]), TERRACE[4] + 5.0), (PLAZA_C, 5.5)):
+        for name, (_, y, _, _, _, h) in (("title", TITLE), ("tagline", TAGLINE)):
+            bottom = y - h / 2
+            k = (eye[1] - THRONE[1]) / (eye[1] - MONO_FACE)
+            if eye_y + (bottom - eye_y) * k < THRONE_TOP:
+                problems.append(f"the throne hides the {name}'s foot from {eye}")
+    if TITLE[1] + TITLE[5] / 2 > MONO[4] - 6.0 or PANEL[0] + PANEL[1] / 2 > MONO[4] - 5.0:
+        problems.append("the title reaches the monolith's broken top")
     # The duel's slates: under the ribs, on the spine's line, clear of every rib's foot, a fair way apart.
     ribs = items["carcass ribs"]
     for k, p in enumerate(DUEL):
@@ -449,5 +514,5 @@ if __name__ == "__main__":
         print("  -", p)
     print("bridge rune", BRIDGE_RUNE, "bridge parkour", BRIDGE_PARKOUR)
     print("cleft", CLEFT, "needle", NEEDLE)
-    print("wins slab", STELES["wins"], "duel", DUEL, "landing roof y", LANDING_Y)
+    print("wins slab", STELES["wins"], "duel", DUEL, "landing roof y", LANDING_Y, "notebook", NOTEBOOK)
     print("apples", apples())

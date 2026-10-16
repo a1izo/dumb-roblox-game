@@ -112,7 +112,7 @@ def causeway(s, g, a, b, seed, chasm, name):
             uc = flat + P.STAIR_RUN * (t0 + t1) / 2
             x, z = a[0] + ux * uc + side[0] * off, a[1] + uz * uc + side[1] * off
             s.box("RuinStone", (x, top / 2, z), (P.STAIR_RUN / steps + 0.02, top, PARAPET_T), rot, skip=("-y",))
-            s.box("RuinStone", (x, top + 0.17, z), (P.STAIR_RUN / steps - 0.1, 0.34, PARAPET_T + 0.3), rot, skip=("-y",))
+            s.box("RuinStone", (x, top + 0.17, z), (P.STAIR_RUN / steps - 0.1, 0.34, PARAPET_T + 0.3), rot)
     s.anchor(name + "A", a[0] + ux * 6.0, 0.0, a[1] + uz * 6.0, P.rot_towards(a, b))
     s.anchor(name + "B", b[0] - ux * 2.0, H, b[1] - uz * 2.0, P.rot_towards(b, a))
     # Piers down into the chasm, now and then a block fallen on the deck.
