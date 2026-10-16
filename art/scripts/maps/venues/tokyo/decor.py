@@ -263,7 +263,7 @@ def build(s):
     air_conditioner(s, wall("yd_s1", 3), 6.0, 4.8)
     air_conditioner(s, wall("yc_s1", 3), 10.0, 5.6)
     air_conditioner(s, wall("yokocho_gate", 3), 8.0, 6.0)
-    air_conditioner(s, wall("east_n1", 3), 6.0, 5.0)
+    air_conditioner(s, wall("east_n1", 0), 2.0, 5.0)  # (on the pier by the lobby's glass, not over it)
     # Plants by the business hotel's doors and by the flats and offices on the water.
     potted_plants(s, wall("hotel_se", 2), 22.5, 1.0)
     potted_plants(s, wall("hotel_se", 2), 37.5, 1.0)

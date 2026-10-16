@@ -105,6 +105,12 @@ class Edge:
         self.party = 0.0  # height up to which a neighbour hides it (0: open)
         self.front = False
         self.recesses = None  # the building's Recesses (set by build)
+        # (Set by build: the wall's own material, the neighbours close enough to stand in front of its windows,
+        # and [(u0, u1, y0, y1)] of what is fixed on it over them: the giant screen, the vertical signs.)
+        self.clad = None
+        self.near = ()
+        self.near_far = ()  # (...and those close enough to meet an awning)
+        self.blocks = []
 
     def at(self, u, depth=0.0):
         return (self.a[0] + self.t[0] * u + self.n[0] * depth, self.a[1] + self.t[1] * u + self.n[1] * depth)
@@ -278,11 +284,93 @@ def fake_room(s, e, u0, u1, y0, y1, depth, look, rng, span):
         e.box(s, "NeonWarm", (u0 + u1) / 2, hi - 0.1, -(depth + ROOM_DEPTH / 2), ((u1 - u0) * 0.5, 0.12, 0.5))
 
 
+class _Void:
+    """A scene that keeps nothing: a covered window is still worked out against it, so it draws its
+    random look and takes its recess like any other and the windows after it stay as they were."""
+
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: None
+
+
+# A neighbour standing this close in front of a wall (or against it) covers its windows: a window there
+# would look at a wall a stud away, or run on behind the neighbour's corner.
+COVER_REACH = (0.6, 1.2, 1.8)
+CANOPY_ROOM = 9.0  # how far ahead of a door the space its canopy may take is looked at
+
+
+def covered(e, u0, u1, y0, y1):
+    """True when something stands in front of the window u0..u1, y0..y1 on edge e: a neighbour
+    (taller than its sill) within COVER_REACH, or what is fixed on the wall (e.blocks)."""
+    for a, b, lo, hi in e.blocks:
+        if u0 < b and u1 > a and y0 < hi and y1 > lo:
+            return True
+    for k in range(5):
+        u = u0 + 0.1 + (u1 - u0 - 0.2) * k / 4
+        for out in COVER_REACH:
+            p = e.at(u, out)
+            if any(h > y0 + 0.5 and g2.contains(poly, p) for poly, h in e.near):
+                return True
+    return False
+
+
+def joined_ends(e, tall):
+    """[start, end]: whether a neighbour taller than `tall` carries on past each end of edge e (in
+    line with its wall, or across it, either side of it)."""
+    out = []
+    for u, step in ((0.0, -1.0), (e.length, 1.0)):
+        points = (e.at(u + step * 0.3, 0.3), e.at(u + step * 0.3, -0.3))
+        out.append(any(h > tall and g2.contains(poly, p) for poly, h in e.near for p in points))
+    return out
+
+
+def clear_ahead(e, u0, u1, reach):
+    """How far out from edge e (between u0 and u1) the nearest neighbour stands, up to `reach`."""
+    out = 0.5
+    while out < reach:
+        for k in range(5):
+            p = e.at(u0 + (u1 - u0) * k / 4, out)
+            if any(g2.contains(poly, p) for poly, _ in e.near_far):
+                return out
+        out += 0.5
+    return reach
+
+
+def band(s, e, mat, y, out, size, over, back, tall=None):
+    """A box along edge e (size: (up, out)), `over` past each end, round the corner; but at an end
+    where a neighbour taller than `tall` (y) carries on, `back` short of it, clear of whatever band
+    runs along the neighbour's wall at the same height (in the same plane the two would flicker); and
+    nowhere a neighbour that tall stands against the wall (it would lie inside it)."""
+    tall = y if tall is None else tall
+    joined = joined_ends(e, tall)
+    count = max(1, int(e.length / 0.25))
+    against = [any(h > tall and g2.contains(poly, e.at(e.length * k / count, 0.4)) for poly, h in e.near)
+               for k in range(count + 1)]
+    k = 0
+    while k <= count:
+        if against[k]:
+            k += 1
+            continue
+        k0 = k
+        while k <= count and not against[k]:
+            k += 1
+        k1 = k - 1
+        lo, hi = e.length * k0 / count, e.length * k1 / count
+        lo = lo + back if k0 > 0 or joined[0] else lo - over
+        hi = hi - back if k1 < count or joined[1] else hi + over
+        if hi - lo > 0.1:
+            e.box(s, mat, (lo + hi) / 2, y, out, (hi - lo, size[0], size[1]))
+
+
 def window(s, e, u0, u1, y0, y1, frame, rng, lit, depth=0.45, sill=True, mullion=True, room=False, reach=0.5,
            level=None):
     """A recessed window between u0..u1 and y0..y1 on edge e, the glass set `depth` back. With
     room, clear glass and a shallow room behind it; without, an opaque pane that glows like a lit
-    room, or shows a cool-lit or dark one."""
+    room, or shows a cool-lit or dark one. Where something covers it (covered), the wall goes on
+    plain instead ("covered")."""
+    if e.clad and not isinstance(s, _Void) and covered(e, u0, u1, y0, y1):
+        window(_Void(), e, u0, u1, y0, y1, frame, rng, lit, depth, sill, mullion, room, reach, level)
+        e.quad(s, e.clad, u0, u1, y0, y1)
+        return "covered"
     look = room_light(rng, lit)
     span = room_span(e, u0, u1, y0, y1, depth, reach, level) if room else None
     if span:
@@ -364,7 +452,7 @@ def punched(s, e, y0, y1, levels, style, rng):
             cursor = w1
         e.quad(s, clad, cursor, e.length, wy0, wy1)
         # A band at the floor line.
-        e.box(s, trim, e.length / 2, level + 0.15, 0.15, (e.length + 0.3, 0.3, 0.3))
+        band(s, e, trim, level + 0.15, 0.15, (0.3, 0.3), 0.15, 0.35)
 
 
 def ribbon(s, e, y0, y1, levels, style, rng):
@@ -376,8 +464,10 @@ def ribbon(s, e, y0, y1, levels, style, rng):
         wy0, wy1 = level + 3.4, min(level + 10.4, top - 0.8)
         e.quad(s, clad, 0, e.length, level, wy0)
         e.quad(s, clad, 0, e.length, wy1, top)
-        e.box(s, clad, e.length / 2, level + 0.4, 0.45, (e.length + 0.9, 0.8, 0.9))
+        # The slab: its underside a hair over the floor line, where a punched neighbour's band has its own.
+        slab = (clad, level + 0.425, 0.45, (0.75, 0.9), 0.45, 0.95)
         if e.length < 3.0:
+            band(s, e, *slab)
             e.quad(s, clad, 0, e.length, wy0, wy1)
             continue
         e.quad(s, clad, 0, 0.8, wy0, wy1)
@@ -385,11 +475,18 @@ def ribbon(s, e, y0, y1, levels, style, rng):
         # Panes of (about) `pane` studs filling the band exactly, so no slit is left at its end.
         count = max(1, round((e.length - 1.6) / pane))
         width = (e.length - 1.6) / count
+        open_ = 0
         for i in range(count):
             u, u1 = 0.8 + width * i, 0.8 + width * (i + 1)
-            window(s, e, u, u1, wy0, wy1, trim, rng, style.get("lit", 0.5), depth=0.3, sill=False, mullion=False,
-                   room=room_at(style, wy0), reach=0.0)
-            e.box(s, trim, u1, (wy0 + wy1) / 2, 0.02, (0.25, wy1 - wy0, 0.25))
+            look = window(s, e, u, u1, wy0, wy1, trim, rng, style.get("lit", 0.5), depth=0.3, sill=False,
+                          mullion=False, room=room_at(style, wy0), reach=0.0)
+            if look != "covered":
+                open_ += 1
+                e.box(s, trim, u1, (wy0 + wy1) / 2, 0.02, (0.25, wy1 - wy0, 0.25))
+        if open_:
+            # (None where every pane of the floor is covered: in a slot a stud wide it would run into the
+            # neighbour's.)
+            band(s, e, *slab)
 
 
 def curtain(s, e, y0, y1, levels, style, rng):
@@ -473,7 +570,8 @@ def fascia(s, e, text, colour, y=11.4, h=3.0, u0=None, u1=None):
     if u1 - u0 < 2.0:
         return
     bg, fg = SIGN_COLOURS.get(colour, SIGN_COLOURS["white"])
-    e.box(s, "BlackTrim", (u0 + u1) / 2, y, 0.35, (u1 - u0, h + 0.3, 0.7))
+    # (Its back lies on the wall: left out, as where a door's canopy runs through it the two would flicker.)
+    e.box(s, "BlackTrim", (u0 + u1) / 2, y, 0.35, (u1 - u0, h + 0.3, 0.7), skip=("+z",))
     x, z = e.at((u0 + u1) / 2, 0.75)
     s.sign((x, y, z), e.rot, u1 - u0 - 0.6, h - 0.4, text, "GothamBlack", fg, bg, glow=bg)
 
@@ -524,7 +622,8 @@ def shop_set(s, e, u0, u1, y0, y1, rng, lit=True, depth=SET_DEPTH):
             hh = rng.uniform(0.6, 1.4)
             e.box(s, rng.choice(goods), u, y0 + h + 0.08 + hh / 2, -(depth - 0.6), (0.7, hh, 0.6))
     if lit:
-        e.box(s, "NeonWarm", (u0 + u1) / 2, y1 - 0.15, -depth / 2, (width * 0.6, 0.1, min(0.6, depth - 0.4)))
+        # (Behind the glass, which stands 0.3 back from the wall: in a shallow set the strip would reach it.)
+        e.box(s, "NeonWarm", (u0 + u1) / 2, y1 - 0.15, -depth / 2, (width * 0.6, 0.1, min(0.6, depth - 0.7)))
         x, z = e.at((u0 + u1) / 2, -depth / 2)
         lightbook.ceiling(s, (x, y1 - lightbook.CEILING_DROP, z), (255, 220, 180), 12, 0.7)
 
@@ -591,8 +690,11 @@ def lobby(s, e, style, rng):
     for k in range(5):
         u = a + w * k / 4
         e.box(s, "DarkMetal", u, 5.0, -0.2, (0.25, 10.0, 0.3))
-    e.box(s, style["trim"], mid, 10.6, 2.0, (w + 2.0, 0.5, 4.0))
-    e.cover(s, mid, 10.6, 2.0, (w + 2.0, 0.8, 4.0))  # the canopy keeps the rain off the doors
+    # The canopy (its back, against the wall, left out): across an alley from another building's door it
+    # takes half the way over at most, so the two never meet.
+    deep = min(4.0, max(1.0, clear_ahead(e, a - 1.0, b + 1.0, CANOPY_ROOM) / 2 - 0.1))
+    e.box(s, style["trim"], mid, 10.6, deep / 2, (w + 2.0, 0.5, deep), skip=("+z",))
+    e.cover(s, mid, 10.6, deep / 2, (w + 2.0, 0.8, deep))  # the canopy keeps the rain off the doors
 
 
 def potted_plant(s, x, z):
@@ -650,7 +752,7 @@ def roof(s, poly, top, style, rng, edges, others=()):
         e.quad(s, style["clad"], 0, e.length, top, top + 1.6)
         # The parapet's inner face and its cap.
         city.vquad(s, "ConcreteDark", e.at(0, -0.6), e.at(e.length, -0.6), top, top + 1.6, (-e.n[0], -e.n[1]))
-        e.box(s, trim, e.length / 2, top + 1.7, -0.3, (e.length + 0.2, 0.2, 0.8))
+        band(s, e, trim, top + 1.7, -0.3, (0.2, 0.8), 0.1, 0.12, tall=top - 0.1)
     c = g2.centroid(poly)
     area = abs(g2.area(poly))
     for item in style.get("roof", ()):
@@ -724,12 +826,28 @@ def vertical_signs(s, e, top, signs, u=1.4):
         y += FLOOR_UP
 
 
-def screen(s, e, top, size):
-    """A giant screen on the front: its frame and a dark face the game plays loops on."""
+def vertical_signs_box(top, signs, u):
+    """(u0, u1, y0, y1) the stack of vertical_signs takes on its wall (None when none fits)."""
+    count = 0
+    y = FLOOR_GF + 0.6
+    while count < len(signs) and y + 10.0 <= top:
+        count += 1
+        y += FLOOR_UP
+    if not count:
+        return None
+    return (u - 0.75, u + 0.75, FLOOR_GF + 0.3, FLOOR_GF + 0.6 + FLOOR_UP * (count - 1) + 10.4)
+
+
+def screen_place(e, top, size):
+    """(u, y, w, h) of the giant screen on edge e: its middle, and the size of its face."""
     w, h = size
     w = min(w, e.length - 2)
-    u = e.length / 2
-    y = min(top - h / 2 - 4, FLOOR_GF + 8 + h / 2)
+    return e.length / 2, min(top - h / 2 - 4, FLOOR_GF + 8 + h / 2), w, h
+
+
+def screen(s, e, top, size):
+    """A giant screen on the front: its frame and a dark face the game plays loops on."""
+    u, y, w, h = screen_place(e, top, size)
     e.box(s, "BlackMetal", u, y, 0.6, (w + 1.6, h + 1.6, 1.2))
     e.quad(s, "Screen", u - w / 2, u + w / 2, y - h / 2, y + h / 2, 1.25)
     x, z = e.at(u, 1.3)
@@ -813,6 +931,34 @@ def build(s, b, style, others=(), fronts=None, y=0.0):
         e.recesses = recesses
     for i in fronts or ():
         edges[i].front = True
+    # In the order given (the venue lists the main front first).
+    front_edges = [edges[i] for i in fronts or ()] or sorted(edges, key=lambda e: -e.length)[:1]
+    signs_at = None
+    if style.get("vsign"):
+        for e in front_edges:
+            u = sign_corner(e, others, top)
+            if u is not None:
+                signs_at = (e, u)
+                break
+    screen_edge = max(front_edges, key=lambda e: e.length) if style.get("screen") else None
+    # What would stand in front of a window: the neighbours near each wall, the screen's frame, the signs.
+    for e in edges:
+        e.clad = style["clad"]
+        xs, zs = (e.a[0], e.b[0]), (e.a[1], e.b[1])
+        e.near_far = [(p, h) for p, h in others
+                      if min(q[0] for q in p) < max(xs) + CANOPY_ROOM and max(q[0] for q in p) > min(xs) - CANOPY_ROOM
+                      and min(q[1] for q in p) < max(zs) + CANOPY_ROOM and max(q[1] for q in p) > min(zs) - CANOPY_ROOM]
+        reach = COVER_REACH[-1] + 0.5
+        e.near = [(p, h) for p, h in e.near_far
+                  if min(q[0] for q in p) < max(xs) + reach and max(q[0] for q in p) > min(xs) - reach
+                  and min(q[1] for q in p) < max(zs) + reach and max(q[1] for q in p) > min(zs) - reach]
+        if signs_at and signs_at[0] is e:
+            box = vertical_signs_box(top, style["vsign"], signs_at[1])
+            if box:
+                e.blocks.append(box)
+        if e is screen_edge:
+            u, sy, w, h = screen_place(e, top, style["screen"])
+            e.blocks.append((u - w / 2 - 0.9, u + w / 2 + 0.9, sy - h / 2 - 0.9, sy + h / 2 + 0.9))
     levels = [y + level for level in floor_levels(floors)]
     facade = FACADES.get(style.get("windows", "punched"))
     interior = style.get("ground") == "interior"
@@ -823,8 +969,9 @@ def build(s, b, style, others=(), fronts=None, y=0.0):
     for e in edges:
         hidden = e.party
         if hidden < 1.0:
-            # On down a little below the pavement, so no view skimming the street finds the seam.
-            e.quad(s, style["clad"], 0, e.length, y - 0.5, y + 0.03)
+            # On down a little below the pavement, so no view skimming the street finds the seam; a hair
+            # behind the ground floor's faces, which it overlaps (in their plane the two would flicker).
+            e.quad(s, style["clad"], 0, e.length, y - 0.5, y + 0.03, -0.06)
         if hidden < FLOOR_GF - 0.5 and not interior:
             ground = GROUNDS.get(style.get("ground", "shutters"), shutters) if e.front else None
             if ground:
@@ -852,16 +999,10 @@ def build(s, b, style, others=(), fronts=None, y=0.0):
                 s.collider((x, y + PIER_SOLID / 2, z), (0.8, PIER_SOLID, 0.8), e.rot, False, None)
         if e.front and style.get("fascia") and not interior and hidden < 1:
             fascia(s, e, *style["fascia"])
-    # In the order given (the venue lists the main front first).
-    front_edges = [edges[i] for i in fronts or ()] or sorted(edges, key=lambda e: -e.length)[:1]
-    if style.get("vsign"):
-        for e in front_edges:
-            u = sign_corner(e, others, top)
-            if u is not None:
-                vertical_signs(s, e, top, style["vsign"], u)
-                break
-    if style.get("screen"):
-        screen(s, max(front_edges, key=lambda e: e.length), top, style["screen"])
+    if signs_at:
+        vertical_signs(s, signs_at[0], top, style["vsign"], signs_at[1])
+    if screen_edge:
+        screen(s, screen_edge, top, style["screen"])
     roof(s, poly, top, style, rng, edges, others)
     city.floor(s, poly, top, max(1.0, top - bottom), look=style["clad"])
     # A dark core inside the body, deeper than any room or shop set: whatever the street sees

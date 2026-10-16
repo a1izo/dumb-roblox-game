@@ -171,9 +171,10 @@ def viaduct(s):
     s.tube("BlackMetal", (-FAR, top + 13.5, (z0 + z1) / 2 - 3), (FAR, top + 13.5, (z0 + z1) / 2 - 3), 0.06, 4)
     s.tube("BlackMetal", (-FAR, top + 13.5, (z0 + z1) / 2 + 3), (FAR, top + 13.5, (z0 + z1) / 2 + 3), 0.06, 4)
     if hits:
-        # (A hair deeper than the brick it rests in, so its faces stand clear of the brick's.)
-        s.box("DarkMetal", ((gap[0] + gap[1]) / 2, top - 1.0, (z0 + z1) / 2), (gap[1] - gap[0] + 4, 2.0, z1 - z0 + 0.06),
-              0)
+        # (A hair deeper than the brick it rests in, so its faces stand clear of the brick's; and a hair longer,
+        # so its ends lie inside the brick, never in the plane of a pier's face.)
+        s.box("DarkMetal", ((gap[0] + gap[1]) / 2, top - 1.0, (z0 + z1) / 2),
+              (gap[1] - gap[0] + 4.06, 2.0, z1 - z0 + 0.06), 0)
     s.zone("offlimits", P.box(P.X0, z0 + niche, P.X1, z1), 0.0)
 
 

@@ -724,18 +724,59 @@ def pane(scene, tris):
             for side in (1, -1):
                 start = base + normal * (side * PANE_OFF)
                 start.y = ymid
-                hit = opaque.ray_cast(start, u, width - 0.5)
+                hit = _pane_cut(opaque, start, u, width)
                 # (What a window is meant to show behind it is no wall cutting it: the dark core of a block, the
                 # sides of the lit room behind an upper window.)
-                behind = tris.mats[keep[hit[2]]] if hit[0] is not None else ""
+                behind = tris.mats[keep[hit[2]]] if hit else ""
                 if behind == "CoreDark" or behind.startswith("Room"):
                     break
-                if hit[0] is not None and abs(hit[1].dot(u)) > 0.8:
+                # A wall that cuts a pane stands about its height; goods on a shelf behind shop glass do not.
+                if hit and abs(hit[1].dot(u)) > 0.8 and _tall(tris, keep[hit[2]]) >= 0.6 * height:
                     out.append({"kind": "pane", "at": _where(hit[0]), "detail": f"{mat} {tris.mats[keep[hit[2]]]}",
                                 "side": "front" if side > 0 else "back", "width": round(width, 1),
-                                "into": round(hit[3] + 0.25, 2), "normal": _where(normal), "src": tris.src[tris.pieces[keep[hit[2]]]]})
+                                "into": round(hit[4] + 0.25, 2), "normal": _where(normal),
+                                "src": tris.src[tris.pieces[keep[hit[2]]]]})
                     break
     return out
+
+
+PANE_SEAT = 1.0  # a pane's end may sit this far inside the wall that frames it: its seat, not a wall cutting it
+PANE_TRIM = 0.15  # ...and that wall's trims (a casing, a skirting) stand this far proud of it
+
+
+def _tall(tris, i):
+    ys = [tris.verts[k].y for k in tris.polys[i]]
+    return max(ys) - min(ys)
+
+
+def _inside(tree, p, d):
+    """True when p lies inside a solid: the first face along d from it is seen from behind."""
+    hit = tree.ray_cast(p, d, 3.0)
+    return hit[0] is not None and hit[1].dot(d) > 0
+
+
+def _pane_cut(opaque, start, u, width):
+    """The first face the ray from start (a quarter stud in from the pane's near end) along u meets before the
+    far end, past the walls either end of the pane sits in: (location, normal, index, distance, along) or None
+    (`along` is measured from start). (Seen from behind, or with the ray's start inside a solid: a casing's
+    back can lie in the plane of the wall's face.)"""
+    length = width - 0.5
+    hit = opaque.ray_cast(start, u, length)
+    gone = 0.0
+    if hit[0] is not None and hit[3] + 0.25 <= PANE_SEAT and (hit[1].dot(u) > 0 or _inside(opaque, start, -u)):
+        # The ray began inside the wall the pane's near end is set into: on from where it leaves it.
+        gone = hit[3] + 0.01
+        hit = opaque.ray_cast(start + u * gone, u, length - gone)
+    if hit[0] is None:
+        return None
+    along = gone + hit[3]
+    far = start + u * length
+    back = opaque.ray_cast(far, -u, length)
+    if back[0] is not None and back[3] + 0.25 <= PANE_SEAT and (back[1].dot(-u) > 0 or _inside(opaque, far, u)):
+        # ...and the wall its far end is set into (with any trim on it) is no cut either.
+        if along >= length - back[3] - PANE_TRIM:
+            return None
+    return hit[0], hit[1], hit[2], hit[3], along
 
 
 # seam ---------------------------------------------------------------------------------------------
