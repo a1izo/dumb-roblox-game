@@ -130,18 +130,18 @@ def mesh_digest(scene, carried=()):
     """A fingerprint of the meshes (what the Studio import carries): it changes when the
     geometry changes or the surfaces do (their textures and how often they repeat), or one of the
     textures the import carries on its own quads does (carried: the venue's TEXTURES, its sky and
-    effects), not when only colliders, props or lights do."""
+    effects), not when only colliders, props or lights do. Every corner goes in, to a thousandth of a
+    stud: a sum of the corners missed faces moved both ways at once (trims pulled in at both ends of
+    their wall), and the import stayed on its old version with new meshes."""
     h = hashlib.sha1()
     for mat in sorted(scene.pieces):
         pieces = scene.pieces[mat]
         tris = sum(len(p.faces) for p in pieces)
-        sx = sy = sz = 0.0
+        corners = hashlib.sha1()
         for p in pieces:
             for x, y, z in p.verts:
-                sx += x
-                sy += y
-                sz += z
-        h.update(f"{mat}:{tris}:{sx:.1f}:{sy:.1f}:{sz:.1f}:{matlib.tile_size(mat)};".encode())
+                corners.update(b"%.3f,%.3f,%.3f;" % (x, y, z))
+        h.update(f"{mat}:{tris}:{corners.hexdigest()}:{matlib.tile_size(mat)};".encode())
     h.update(f"chunk:{scene.chunk};prefix:{scene.prefix};surfaces:{scanlib.REVISION}".encode())
     for name in carried:
         path = os.path.join(common.TEXTURES, name + ".png")

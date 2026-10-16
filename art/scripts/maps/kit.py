@@ -34,6 +34,13 @@ def point_on(a, t, along, y=0.0):
 
 BASEBOARD = [(0, 0), (0.14, 0), (0.14, 0.5), (0.08, 0.62), (0, 0.66)]
 CHAIR_RAIL = [(0, -0.12), (0.1, -0.08), (0.14, 0.0), (0.1, 0.08), (0, 0.12)]
+# Trims stop this short of their wall's own ends. At a corner the next wall runs across the end, its outer face
+# in the plane of the trims' end caps (they flickered there, on the outside of the building); short of it the caps
+# lie inside that wall, clear of the floor's edge strip a building's shell keeps 0.03 inside its face.
+TRIM_INSET = 0.08
+# A casing's posts run this far into the opening, over the lining's edge. Level with the jamb, a post's inner face
+# lay in the face of a wall carried on flush with the jamb (the post buried in it), and the two flickered.
+CASING_LAP = 0.04
 
 
 def crown(h):
@@ -209,12 +216,13 @@ def wall(s, a, b, height, *, thick=1.0, base=0.0, core="PlasterDark", side_n=Non
         spans.append((cursor, max(cursor, d0)))
         cursor = max(cursor, d1)
     spans.append((cursor, length))
+    runs = [(max(u0, TRIM_INSET), min(u1, length - TRIM_INSET)) for u0, u1 in spans]
     if trim_n:
-        trims(s, add3(a, scale(n, thick / 2)), t, n, spans, height, trim_n, base)
+        trims(s, add3(a, scale(n, thick / 2)), t, n, runs, height, trim_n, base)
         if trim_n.get("grime"):
             grime(s, add3(a, scale(n, thick / 2)), t, n, length, spans, doors, ops, base, _hash(a[0], a[1], 1))
     if trim_s:
-        trims(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), spans, height, trim_s, base)
+        trims(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), runs, height, trim_s, base)
         if trim_s.get("grime"):
             grime(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), length, spans, doors, ops, base,
                   _hash(a[0], a[1], 2))
@@ -261,8 +269,8 @@ def opening(s, a, t, n, rot, thick, base, op, collide):
             post_y, post_h = (bottom + top_y + casing) / 2, top_y - bottom + casing
         for side in ((1, -1) if casing > 0 else ()):
             off = scale(n, side * (thick / 2 + 0.05))
-            for u in (u0 - casing / 2, u1 + casing / 2):
-                s.box(frame, add(point_on(a, t, u, post_y), off), (casing, post_h, 0.1), rot)
+            for u in (u0 - casing / 2 + CASING_LAP / 2, u1 + casing / 2 - CASING_LAP / 2):
+                s.box(frame, add(point_on(a, t, u, post_y), off), (casing + CASING_LAP, post_h, 0.1), rot)
             s.box(frame, add(point_on(a, t, op["at"], top_y + casing / 2), off), (u1 - u0 + casing * 2, casing, 0.12),
                   rot)
     if kind == "window":
@@ -734,7 +742,9 @@ def counter(s, x, z, rot, w, top="MarbleWhite", body="WhiteTrim", h=3.5, d=2.4):
         u = -w / 2 + (i + 0.5) * w / doors
         p = turn((u, 0, -d / 2 - 0.02))
         s.box("BlackTrim", (x + p[0], h * 0.45, z + p[2]), (w / doors - 0.2, h * 0.7, 0.04), rot)
-        k = turn((u + w / doors * 0.3, 0, -d / 2 - 0.06))
+        # (The handle's back stands inside the door, 0.03 off the door's own back: at 0.02, inside or not, the two
+        # read as faces that flicker.)
+        k = turn((u + w / doors * 0.3, 0, -d / 2 - 0.07))
         s.box("Steel", (x + k[0], h * 0.62, z + k[2]), (0.1, 0.5, 0.08), rot)
 
 
