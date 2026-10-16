@@ -492,12 +492,13 @@ def notebook(s):
 
 
 def carcass(s):
-    """A colossal thing's remains: its horned skull sunk in the ash, the spine running away from
+    """A dead death god's remains: its skull sunk in the ash on its open jaw, the spine running away from
     it, the ribs arching over the ground either side (people walk between them)."""
     sx, sz, srot = P.CARCASS_SKULL
-    s.prop("GiantSkull", sx, sz, srot, 1.0, -0.3)  # resting on its jaw, just settled into the ash
+    s.prop("GiantSkull", sx, sz, srot, 1.0, -0.3)  # a dead death god's, resting on its open jaw in the ash
     f = Frame(sx, sz, srot)
-    for lx, lz, w, d, hh in ((0.0, 4.5, 11.0, 11.0, 9.0), (0.0, -8.0, 7.0, 12.0, 5.0)):
+    # Its vault (13 long, 9.5 wide, the horn stumps over it) and its muzzle with the jaw under it.
+    for lx, lz, w, d, hh in ((0.0, 5.0, 9.5, 13.0, 13.0), (0.0, -7.0, 8.0, 11.0, 7.5)):
         cx, cz = f.w(lx, lz)
         s.collider((cx, hh / 2, cz), (w, hh, d), srot, True, "BoneOld")
     spine = P.SPINE

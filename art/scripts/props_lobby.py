@@ -235,20 +235,80 @@ def dead_tree(seed, prefix, height, lean, limbs, spread, rise, twist):
     return parts, tips
 
 
+# The realm's pines (2026-10-16, after Japanese black pines bent by the sea wind, and the way an ink brush draws
+# them): a thick trunk curving away from the wind, a few limbs reaching nearly level the same way, and on their
+# ends flat clouds of needles, layered, almost black against the grey sky. Same keys, sizes and places as the dead
+# trees they replace.
+def _needle_pad(parts, rng, centre, size, mat, prefix):
+    """A cloud of needles: overlapping flattened lumps, its underside flat, its edge ragged."""
+    cx, cy, cz = centre
+    for k in range(rng.randint(4, 6)):
+        r = size * rng.uniform(0.36, 0.56)
+        at = (cx + rng.uniform(-0.5, 0.5) * size, cy + rng.uniform(-0.45, 0.45) * size, cz + rng.uniform(-0.06, 0.16) * size)
+        lump = mk.sphere(prefix + "Pad", r, at, scale=(1.0, 0.85, 0.36), mat=mat, segments=12, rings=6)
+        mk.displace_noise(lump, strength=r * 0.24, scale=r * 0.38, name=prefix + "Needles")
+        parts.append(lump)
+
+
+def black_pine(seed, prefix, height, lean, limbs, reach, droop):
+    """A wind-bent black pine `height` tall, its top `lean` (x, y) downwind of its foot."""
+    rng = random.Random(seed)
+    bark = mk.noisy(prefix + "_Bark", srgb(22, 20, 20), srgb(50, 46, 44), scale=10, roughness=0.95, stretch=(1, 1, 0.35))
+    needles = mk.noisy(prefix + "_Needles", srgb(12, 15, 13), srgb(32, 38, 33), scale=14, roughness=0.9)
+    parts = []
+    r = 0.82
+    _roots(parts, rng, r, bark, count=4)
+    parts.append(mk.cylinder("Flare", r * 1.6, 1.1, (0, 0, 0.55), mat=bark, verts=9, radius2=r))
+    # The trunk: five pieces curving away from the wind and back, as a pine's does.
+    wind = math.atan2(lean[1], lean[0])
+    side = (-math.sin(wind), math.cos(wind))
+    pts = [(0.0, 0.0, 0.0)]
+    for k in range(1, 6):
+        u = k / 5
+        sway = math.sin(u * math.pi * 1.4) * 0.7
+        pts.append((lean[0] * u ** 1.5 + side[0] * sway, lean[1] * u ** 1.5 + side[1] * sway, height * 0.8 * u))
+    for k in range(5):
+        parts.append(mk.tube("Trunk", pts[k], pts[k + 1], r * (1 - 0.12 * k), r * (1 - 0.12 * (k + 1)), mat=bark, verts=9))
+    # The limbs: nearly level, most of them downwind, the short ones upwind; a pad at each end, sometimes one
+    # more along the way.
+    for k in range(limbs):
+        start = pts[3 + k % 3]  # (from the upper trunk: lower down, the pads heaped into a bush)
+        downwind = k % 3 != 2
+        yaw = wind + (rng.uniform(-0.9, 0.9) if downwind else math.pi + rng.uniform(-0.6, 0.6))
+        length = reach * rng.uniform(0.7, 1.0) * (1.0 if downwind else 0.45)
+        d = (math.cos(yaw), math.sin(yaw))
+        prev = start
+        rr = r * 0.42
+        for q in range(1, 4):
+            u = q / 3
+            p = (start[0] + d[0] * length * u, start[1] + d[1] * length * u,
+                 start[2] + length * (0.18 * u - droop * u * u) + rng.uniform(-0.2, 0.2))
+            parts.append(mk.tube("Limb", prev, p, rr * (1 - 0.25 * (q - 1)), rr * (1 - 0.25 * q), mat=bark, verts=6))
+            prev = p
+        _needle_pad(parts, rng, (prev[0], prev[1], prev[2] + 0.5), rng.uniform(2.4, 3.4) * (1.0 if downwind else 0.7),
+                    needles, prefix)
+        if downwind and rng.random() < 0.5:
+            mid = (start[0] + d[0] * length * 0.55, start[1] + d[1] * length * 0.55, start[2] + length * 0.04 + 0.5)
+            _needle_pad(parts, rng, mid, rng.uniform(1.6, 2.2), needles, prefix)
+    # The crown: a flat pad over the trunk's top, a smaller one above it.
+    top = pts[-1]
+    _needle_pad(parts, rng, (top[0], top[1], top[2] + 0.6), 3.4, needles, prefix)
+    _needle_pad(parts, rng, (top[0] + lean[0] * 0.15, top[1] + lean[1] * 0.15, top[2] + 1.9), 2.2, needles, prefix)
+    return parts
+
+
 @prop("DeadTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
 def dead_tree_tall():
-    """A tall dead tree of the wasteland: a leaning trunk split into bare, twisting limbs that
-    reach up and out, roots clawing over the ash."""
-    parts, _ = dead_tree(11, "Dtr", 17.0, (1.2, 0.6), 5, 0.55, 0.15, 0.35)
-    return parts, []
+    """A tall black pine of the wasteland (the key is the dead tree's it replaced): a trunk curving away from
+    the wind, its limbs reaching downwind, flat dark clouds of needles on their ends."""
+    return black_pine(11, "Pnt", 15.5, (3.4, 1.6), 6, 6.2, 0.22), []
 
 
 @prop("DeadTreeGnarled", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
 def dead_tree_gnarled():
-    """A low, gnarled dead tree: a squat bent trunk, its crooked limbs spreading wide and flat, the
-    kind the realm's dwellers hang their lanterns in."""
-    parts, _ = dead_tree(23, "Dtg", 11.0, (2.2, -0.8), 4, 0.8, -0.1, 0.6)
-    return parts, []
+    """A low black pine flattened by the wind (the key is the gnarled dead tree's it replaced): a squat trunk
+    bent far over, its limbs spreading wide and flat, the kind the realm's dwellers hang their lanterns in."""
+    return black_pine(23, "Png", 10.0, (5.0, -1.8), 5, 5.0, 0.3), []
 
 
 @prop("WitheredAppleTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
@@ -321,14 +381,69 @@ def bone_scatter():
     return parts, []
 
 
-@prop("GiantSkull", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Lobby")
+@prop("GiantSkull", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
 def giant_skull():
-    """The skull of something colossal that died here long ago: a horned, long-snouted head the
-    size of a house, its dark sockets and the stumps of its teeth, sinking into the ash."""
+    """The skull of a dead death god, the size of a house, settled into the ash on its open jaw (2026-10-16; the
+    key is the beast's skull it replaced, same size and place): a tall narrow vault, a long muzzle, sockets so
+    deep they are black, heavy brows and cheek arches, two horns broken off at the stump, a crest of small spines
+    down the crown, the long jaw dropped open with its fangs."""
     bone = old_bone_mat("Gsk")
-    horn = mk.noisy("Gsk_Horn", srgb(38, 34, 32), srgb(80, 72, 64), scale=8, roughness=0.8, stretch=(1, 1, 0.4))
+    pale = bone_mat("Gsk")
+    horn = mk.noisy("Gsk_Horn", srgb(30, 27, 26), srgb(70, 64, 58), scale=8, roughness=0.85, stretch=(1, 1, 0.4))
     dark = void_mat("Gsk")
-    parts = beast_skull("B", 0, 0, 5.0, 6.0, bone, dark, horn)
+    # (Builder coordinates: it faces -Y, its jaw on the ground.)
+    head = [
+        ("ellipsoid", (0.0, 5.2, 8.2), 6.2, (0.72, 1.18, 0.9)),  # the vault
+        ("ellipsoid", (0.0, -5.6, 6.2), 3.6, (0.66, 1.75, 0.62)),  # the muzzle
+        ("capsule", (-4.6, -0.6, 9.4), (4.6, -0.6, 9.4), 1.7),  # the brows
+        ("capsule", (-3.9, -3.2, 5.0), (-4.9, 3.6, 5.6), 1.05),  # the cheek arches
+        ("capsule", (3.9, -3.2, 5.0), (4.9, 3.6, 5.6), 1.05),
+        ("ellipsoid", (0.0, 11.0, 6.6), 3.2, (0.9, 0.7, 0.9)),  # the back of the skull, over the spine's socket
+        ("hollow", (-2.7, -1.6, 7.9), 2.25, (1.0, 0.9, 1.2)),  # the sockets
+        ("hollow", (2.7, -1.6, 7.9), 2.25, (1.0, 0.9, 1.2)),
+        ("hollow", (0.0, -8.4, 6.9), 1.1, (0.6, 1.4, 1.2)),  # the nose
+    ]
+    parts = [_blob("GskHead", head, 0.55, 0.45, bone)]
+    # Deep in the sockets and the nose, black.
+    for x in (-2.7, 2.7):
+        parts.append(mk.sphere("Socket", 1.6, (x, -0.6, 7.8), scale=(1.0, 0.8, 1.15), mat=dark, segments=12, rings=8))
+    parts.append(mk.sphere("Nose", 0.75, (0.0, -7.8, 6.8), scale=(0.6, 1.1, 1.1), mat=dark, segments=8, rings=6))
+    # The horns, broken off: thick stumps curving back, their ends snapped and splintered.
+    for sx in (-1, 1):
+        base, mid, end = (sx * 3.4, 0.6, 11.6), (sx * 4.6, 2.4, 13.4), (sx * 5.3, 4.4, 14.3)
+        parts.append(mk.tube("HornStump", base, mid, 1.55, 1.3, mat=horn, verts=10))
+        parts.append(mk.tube("HornStump", mid, end, 1.3, 1.08, mat=horn, verts=10))
+        for k in range(4):
+            a = math.tau * k / 4 + 0.4
+            at = (end[0] + math.cos(a) * 0.6, end[1] + math.sin(a) * 0.5, end[2] + 0.3)
+            parts.append(mk.cylinder("Splinter", 0.32, 0.9, at, rot=(18 * math.cos(a), 18 * math.sin(a), 0), mat=horn, verts=5,
+                                     radius2=0.04))
+    # A crest of small spines down the crown.
+    for k in range(6):
+        y = -0.4 + k * 2.3
+        h = 1.6 - abs(k - 2) * 0.22
+        top = 8.2 + 6.2 * 0.9 * math.sqrt(max(0.0, 1.0 - ((y - 5.2) / (6.2 * 1.18)) ** 2))  # the vault's crown there
+        parts.append(mk.cylinder("Crest", 0.32, h, (0.0, y, top - 0.35 + h / 2), rot=(-14, 0, 0), mat=pale, verts=6,
+                                 radius2=0.03))
+    # The fangs of the upper jaw, long and uneven.
+    rng = random.Random(29)
+    for sx in (-1, 1):
+        for k in range(7):
+            y = -10.4 + k * 1.55
+            length = rng.uniform(1.0, 2.2) * (1.25 if k == 1 else 1.0)
+            parts.append(mk.cylinder("Fang", 0.26, length, (sx * (1.7 - k * 0.05), y, 4.25 - length / 2), rot=(180, 0, 0),
+                                     mat=pale, verts=6, radius2=0.03))
+    # The jaw, dropped open and lying in the ash: two long rami meeting at the chin, fangs up.
+    jaw = [("capsule", (-4.2, 6.4, 3.4), (-2.0, -6.0, 1.0), 1.15), ("capsule", (4.2, 6.4, 3.4), (2.0, -6.0, 1.0), 1.15),
+           ("capsule", (-2.0, -6.0, 1.0), (0.0, -11.6, 0.9), 1.05), ("capsule", (2.0, -6.0, 1.0), (0.0, -11.6, 0.9), 1.05)]
+    parts.append(_blob("GskJaw", jaw, 0.45, 0.45, bone))
+    for sx in (-1, 1):
+        for k in range(6):
+            u = (k + 0.5) / 6
+            x = sx * (2.0 - 1.9 * u) if u > 0.5 else sx * (3.6 - 3.2 * u)
+            y = -1.0 - 9.6 * u
+            length = rng.uniform(0.8, 1.7)
+            parts.append(mk.cylinder("JawFang", 0.22, length, (x, y, 1.6 + length / 2), mat=pale, verts=6, radius2=0.03))
     return parts, []
 
 
@@ -605,6 +720,90 @@ def puppet():
     return pelvis, [], more
 
 
+# The tableaux's statues (2026-10-16, after robed and veiled figures in stone): the game's stone figures wear this
+# instead of plain blocks once the Lobby set is imported (client World/StoneFigures), one piece on each of the six
+# R6 parts, so the tableaux keep their gestures and their short loops. Hooded, faceless, a long robe with its
+# folds cut deep (the bake leaves ash dark in them), bell sleeves with blunt stone hands, the skirt in two halves
+# that meet down the middle. Made standing at rest as R6 is: torso 2 x 2 x 1 at z 2..4, the arms beside it, the
+# legs under it, the head over it; it faces -Y, its right is -X.
+def _folds(obj, count, depth, z0, z1, phase=0.0, fade_top=True):
+    """Cuts `count` vertical folds into a turned shape (its axis the object's local Z): pushed in and out by
+    `depth`, fading out towards z1 (or towards both ends)."""
+    for v in obj.data.vertices:
+        x, y, z = v.co
+        r = math.hypot(x, y)
+        if r < 1e-4:
+            continue
+        u = min(1.0, max(0.0, (z - z0) / max(1e-6, z1 - z0)))
+        w = (1.0 - u) if fade_top else math.sin(u * math.pi)
+        k = depth * math.sin(count * math.atan2(y, x) + phase) * w
+        v.co.x += x / r * k
+        v.co.y += y / r * k
+
+
+def _halved(obj, keep_sign, at=0.0):
+    """Flattens a turned shape's far side onto the plane x = at (builder coordinates), so two halves meet there
+    without passing through each other (where they did, the bake left both dark)."""
+    for v in obj.data.vertices:
+        if (v.co.x - at) * keep_sign < 0:
+            v.co.x = at
+    return obj
+
+
+@prop("RobedStatue", pivot="bottom", material="Slate", collide=False, texture=256, set="Lobby")
+def robed_statue():
+    """A tableau's statue: a hooded, faceless figure in a long robe, cut in pale stone, in six pieces the game
+    moves as it moves a body (the torso is the prop itself)."""
+    stone = mk.noisy("Rst_Stone", srgb(118, 116, 112), srgb(166, 163, 156), scale=12, roughness=0.9, kind="stone")
+    worn = mk.noisy("Rst_Worn", srgb(92, 90, 88), srgb(128, 125, 120), scale=14, roughness=0.92, kind="stone")
+    void = void_mat("Rst")
+    # The torso: the robe over the chest and shoulders, a cowl round the neck, a cord at the waist.
+    body = mk.lathe("Robe", [(0.0, 1.92), (0.98, 1.92), (1.0, 2.3), (1.02, 2.9), (1.04, 3.4), (1.0, 3.8), (0.9, 3.98),
+                             (0.62, 4.08), (0.0, 4.1)], mat=stone, segments=24)
+    _folds(body, 7, 0.06, 1.92, 4.0)
+    # A short mantle over the shoulders, the sleeves' tops under it.
+    # (Every profile here runs from the bottom up: run downwards, a turned shape's faces look inwards.)
+    mantle = mk.lathe("Mantle", [(0.0, 3.6), (1.36, 3.34), (1.56, 3.38), (1.46, 3.58), (1.02, 3.92), (0.66, 4.12),
+                                 (0.0, 4.14)], mat=stone, segments=24)
+    _folds(mantle, 9, 0.05, 3.34, 4.12)
+    torso = [squashed(body, sx=0.98, sy=0.6), squashed(mantle, sy=0.66),
+             squashed(mk.torus("Cowl", 0.6, 0.2, (0, 0, 4.02), mat=stone, major_segments=20, minor_segments=8), sy=0.72),
+             squashed(mk.torus("Cord", 1.03, 0.06, (0, 0, 2.28), mat=worn, major_segments=24, minor_segments=6), sy=0.6)]
+    # The head: the hood drawn forward over a face that is only shadow.
+    hood = mk.lathe("Hood", [(0.6, 4.02), (0.78, 4.3), (0.84, 4.72), (0.8, 5.12), (0.62, 5.42), (0.32, 5.58), (0.0, 5.62)],
+                    mat=stone, segments=20)
+    _folds(hood, 5, 0.03, 4.02, 5.6, fade_top=False)
+    head = [squashed(hood, sy=0.92),
+            mk.sphere("Face", 0.5, (0, -0.5, 4.72), scale=(0.88, 0.62, 1.12), mat=void, segments=14, rings=10),
+            mk.cylinder("Peak", 0.18, 0.5, (0, -0.42, 5.36), rot=(-62, 0, 0), mat=stone, verts=8, radius2=0.02)]
+    pieces = {"Head": head}
+    hinge = {"Head": (0.0, 0.0, 4.0)}
+    for name, x in (("RightArm", -1.5), ("LeftArm", 1.5)):
+        sleeve = mk.lathe("Sleeve", [(0.0, 2.04), (0.38, 2.04), (0.55, 2.08), (0.58, 2.2), (0.5, 2.9), (0.47, 3.5),
+                                      (0.44, 3.8), (0.3, 3.93), (0.0, 3.97)], loc=(x, 0, 0), mat=stone, segments=16)
+        _folds(sleeve, 5, 0.04, 2.0, 4.1)
+        hand = mk.sphere("Hand", 0.3, (x, -0.04, 1.84), scale=(0.72, 0.9, 1.35), mat=worn, segments=12, rings=8)
+        pieces[name] = [squashed(sleeve, sy=0.86, about=(x, 0, 0)), hand]  # (just clear of the robe's side)
+        hinge[name] = (x * 2 / 3, 0.0, 3.5)
+    for name, x in (("RightLeg", -0.5), ("LeftLeg", 0.5)):
+        skirt = mk.lathe("Skirt", [(0.0, 0.02), (0.9, 0.02), (0.93, 0.12), (0.78, 0.72), (0.7, 1.4), (0.66, 2.02),
+                                    (0.0, 2.06)], loc=(x, 0, 0), mat=stone, segments=18)
+        _folds(skirt, 6, 0.07, 0.0, 2.05, phase=0.6 if x > 0 else 0.0)
+        squashed(skirt, sy=0.82, about=(x, 0, 0))
+        pieces[name] = [_halved(skirt, 1 if x > 0 else -1)]
+        hinge[name] = (x * 2, 0.0, 2.0)
+    for parts in [torso] + list(pieces.values()):
+        for obj in parts:
+            mk.displace_noise(obj, strength=0.018, scale=0.32, name="RstChips")
+    rects = grid_rects(1 + len(pieces), 3)
+    more = {
+        "into": rects[0],
+        "pieces": {name: piece(parts, into=rects[k + 1]) for k, (name, parts) in enumerate(pieces.items())},
+        "hinge": hinge,
+    }
+    return torso, [], more
+
+
 # The hand that holds the strings (builder coordinates; it is made flat, palm down, fingers towards -Y and
 # the wrist towards +Y, then tilted, so the fingers hang down in front, like the reference's). Skin is one
 # smooth surface: each piece is a metaball (balls and capsules that melt into one another, which gives the
@@ -625,8 +824,8 @@ ARM_FADE = 12  # steps in which the arm darkens into the haze
 
 def _blob(name, elements, resolution, keep, mat):
     """A smooth surface from metaball elements, as a mesh: ("ball", centre, radius), ("ellipsoid", centre,
-    radius, (sx, sy, sz)) or ("capsule", a, b, radius), radii being the surface's own. keep: the share of
-    its triangles kept (decimated)."""
+    radius, (sx, sy, sz)), ("capsule", a, b, radius) or ("hollow", centre, radius, (sx, sy, sz)) (an ellipsoid
+    that carves the others), radii being the surface's own. keep: the share of its triangles kept (decimated)."""
     meta = bpy.data.metaballs.new(name)
     meta.resolution = resolution
     meta.render_resolution = resolution
@@ -638,11 +837,12 @@ def _blob(name, elements, resolution, keep, mat):
             _, centre, r = element
             el = meta.elements.new(type="BALL")
             el.co = centre
-        elif element[0] == "ellipsoid":
+        elif element[0] in ("ellipsoid", "hollow"):
             _, centre, r, (sx, sy, sz) = element
             el = meta.elements.new(type="ELLIPSOID")
             el.co = centre
             el.size_x, el.size_y, el.size_z = sx, sy, sz
+            el.use_negative = element[0] == "hollow"
         else:
             _, a, b, r = element
             a, b = Vector(a), Vector(b)

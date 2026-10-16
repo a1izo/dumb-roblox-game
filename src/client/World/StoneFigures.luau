@@ -11,7 +11,9 @@
 --   StoneFigures.hold(figure)                             -- stop where it is
 --
 -- A body can also be made from someone's avatar (StoneFigures.adopt): its shape stays, everything else
--- turns to stone.
+-- turns to stone. A plain figure (StoneFigures.new) wears the Lobby set's sculpted statue once it is imported
+-- (ModelLibrary "RobedStatue": hooded, faceless, robed, a piece on each of its six parts, which then do not
+-- show), so it keeps moving as a body does; without the import it is the plain blocks.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -21,6 +23,7 @@ local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
 local Joints = require(Anim:WaitForChild("Joints"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local StoneFigures = {}
 
@@ -38,6 +41,8 @@ export type Figure = {
 	cycle: number?,
 	-- Whether the clip may move the whole body (a collapse sinks to the floor; a seated figure stays put).
 	travel: boolean,
+	-- Whether it wears the sculpted statue (StoneFigures.new, with the Lobby set imported).
+	robed: boolean?,
 }
 
 export type Options = {
@@ -204,8 +209,81 @@ function StoneFigures.adopt(model: Model, parent: Instance, feet: CFrame, scale:
 	}
 end
 
+-- The statue's pieces (meshes "RobedStatue_<piece>"; the torso is the prop itself), by the part each covers.
+local ROBE = "RobedStatue"
+local ROBE_PIECES = {
+	Head = "Head",
+	["Right Arm"] = "RightArm",
+	["Left Arm"] = "LeftArm",
+	["Right Leg"] = "RightLeg",
+	["Left Leg"] = "LeftLeg",
+}
+
+-- Dresses a plain figure, still at rest on its feet, in the sculpted statue: the statue stands where the body
+-- stands, each piece is welded to the part under it, and the parts stop showing. Returns whether it did.
+local function robe(figure: Figure, feet: CFrame): boolean
+	local statue = ModelLibrary.get(ROBE)
+	if not statue then
+		return false
+	end
+	if math.abs(figure.scale - 1) > 1e-3 then
+		statue:ScaleTo(statue:GetScale() * figure.scale)
+	end
+	statue:PivotTo(feet)
+	local found: { [string]: Instance } = {}
+	for limb, name in pairs(ROBE_PIECES) do
+		local piece = statue:FindFirstChild(ROBE .. "_" .. name, true)
+		if not piece then
+			statue:Destroy()
+			return false
+		end
+		found[limb] = piece
+	end
+	local covered: { [Instance]: boolean } = {}
+	for _, piece in pairs(found) do
+		covered[piece] = true
+	end
+	local main = {}
+	for _, item in ipairs(statue:GetChildren()) do
+		if not covered[item] then
+			table.insert(main, item)
+		end
+	end
+	local function weld(home: BasePart, items: { Instance })
+		for _, item in ipairs(items) do
+			local parts = if item:IsA("BasePart") then { item } else {}
+			for _, inner in ipairs(item:GetDescendants()) do
+				if inner:IsA("BasePart") then
+					table.insert(parts, inner)
+				end
+			end
+			for _, part in ipairs(parts) do
+				part.Anchored = false
+				still(part)
+				part.CastShadow = true
+				Create("WeldConstraint", { Part0 = home, Part1 = part, Parent = part })
+			end
+			item.Parent = figure.model
+		end
+	end
+	for limb, piece in pairs(found) do
+		local home = figure.model:FindFirstChild(limb)
+		if home and home:IsA("BasePart") then
+			weld(home, { piece })
+			home.Transparency = 1
+		end
+	end
+	local torso = figure.model:FindFirstChild("Torso") :: BasePart?
+	if torso then
+		weld(torso, main)
+		torso.Transparency = 1
+	end
+	statue:Destroy()
+	return true
+end
+
 -- A faceless stone figure standing on `feet`. Props: parent, feet, scale (1), collide (people cannot walk
--- through it), name.
+-- through it), name. It wears the sculpted statue when the Lobby set is imported (figure.robed).
 function StoneFigures.new(
 	props: { parent: Instance, feet: CFrame, scale: number?, collide: boolean?, name: string? }
 ): Figure
@@ -213,6 +291,8 @@ function StoneFigures.new(
 	model.Name = props.name or "StoneFigure"
 	local figure = StoneFigures.adopt(model, props.parent, props.feet, props.scale, props.collide)
 	assert(figure, "a plain rig has every joint")
+	local ok, dressed = pcall(robe, figure, props.feet)
+	figure.robed = ok and dressed == true
 	return figure
 end
 
