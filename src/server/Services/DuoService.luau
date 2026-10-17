@@ -367,6 +367,11 @@ function DuoService.partner(player: any): any
 	return chained[player]
 end
 
+-- For checks: the rally a player is in (who the ball goes to, when it gets there, the hits so far).
+function DuoService.rallyOf(player: any): Rally?
+	return rallies[player]
+end
+
 function DuoService.asked(player: any): boolean
 	return asks[player] ~= nil
 end
