@@ -437,6 +437,96 @@ FX.justAsPlanned = function(character, preview)
 	end
 end
 
+-- Diavolo's Potato Chip, timed to the clip (art/scripts/emotes/props.py): at the bite (7.05 s) the crisp bursts
+-- into glittering crumbs and a warm light flares on the face (no flare under reduced motion); as he stands, ink
+-- spreads under the desk (8.9 s) for it to sink into (EmoteMeta `sink`, 9.1 s), then draws back in (10.1 s).
+FX.chipAndPen = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local head = character:FindFirstChild("Head")
+	if preview or not root or not root:IsA("BasePart") or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local calm = Motion.isReduced()
+	local gone = false
+	local made: { Instance } = {}
+	local function at(seconds: number, fn: () -> ())
+		task.delay(seconds, function()
+			if not gone and root.Parent then
+				fn()
+			end
+		end)
+	end
+	local floor = floorUnder(root.Position, character)
+	local look = root.CFrame.LookVector
+	local yaw = math.atan2(-look.X, -look.Z)
+	-- the bite: crumbs from the mouth, and the flare
+	local mouth = Create("Attachment", { Name = "EmoteCrumbs", Position = Vector3.new(0, -0.25, -0.6), Parent = head })
+	mouth:SetAttribute("DGEmote", true)
+	table.insert(made, mouth)
+	local crumbs = Create("ParticleEmitter", {
+		Texture = SPARKLE,
+		Color = ColorSequence.new(Color3.fromRGB(255, 214, 120), Color3.fromRGB(222, 170, 80)),
+		LightEmission = 0.6,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) }),
+		Lifetime = NumberRange.new(0.5, 0.9),
+		Speed = NumberRange.new(5, 9),
+		SpreadAngle = Vector2.new(60, 60),
+		Acceleration = Vector3.new(0, -18, 0),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-200, 200),
+		Rate = 0,
+		Parent = mouth,
+	}) :: ParticleEmitter
+	local flare = Create("PointLight", {
+		Color = Color3.fromRGB(255, 220, 160),
+		Range = 10,
+		Brightness = 0,
+		Shadows = false,
+		Parent = mouth,
+	}) :: PointLight
+	at(7.05, function()
+		crumbs:Emit(26)
+		if not calm then
+			flare.Brightness = 6
+			TweenService:Create(flare, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
+		end
+	end)
+	-- the ink under the desk
+	local splat = Assets.texture("InkSplat2")
+	local pool = Create("Part", {
+		Name = "EmoteInkPool",
+		Size = Vector3.new(0.2, 0.04, 0.2),
+		CFrame = CFrame.new(floor + Vector3.new(0, 0.03, 0)) * CFrame.Angles(0, yaw, 0) * CFrame.new(0, 0, -0.4),
+		Color = INK,
+		Material = Enum.Material.SmoothPlastic,
+		Transparency = 1,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Parent = workspace.CurrentCamera,
+	}) :: BasePart
+	table.insert(made, pool)
+	if splat ~= "" then
+		Create("Decal", { Face = Enum.NormalId.Top, Texture = splat, Color3 = INK, Transparency = 0.1, Parent = pool })
+	else
+		pool.Transparency = 0.3
+	end
+	at(8.9, function()
+		TweenService:Create(pool, TweenInfo.new(0.5, Enum.EasingStyle.Quart), { Size = Vector3.new(9, 0.04, 9) }):Play()
+	end)
+	at(10.1, function()
+		TweenService:Create(pool, TweenInfo.new(0.3), { Size = Vector3.new(0.2, 0.04, 0.2) }):Play()
+	end)
+	return function()
+		gone = true
+		for _, instance in ipairs(made) do
+			instance:Destroy()
+		end
+	end
+end
+
 -- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
 -- light, 3 layered, 4 the cutscene emotes'. The four above keep their own looks; the rest come with each emote.
 local RUNG: { [string]: number } = {
@@ -445,6 +535,7 @@ local RUNG: { [string]: number } = {
 	reapersEyes = 1,
 	newWorld = 2,
 	justAsPlanned = 3,
+	chipAndPen = 2,
 }
 
 -- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in
