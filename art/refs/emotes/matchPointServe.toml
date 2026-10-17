@@ -20,8 +20,8 @@ alt = ["https://www.youtube.com/watch?v=AfKd7trRIhU"]
 history = ["https://www.imdb.com/title/tt0919368/plotsummary"]
 
 [timing]
-loop = false
-length = 6.2                   # the ball's timetable: DuoController.RALLY
+loop = true
+length = 0.8                   # 2026-10-18 rework: the ready loop; the rally is played (DuoService), strokes laid over it
 
 [[beat]]
 src = 16.0
