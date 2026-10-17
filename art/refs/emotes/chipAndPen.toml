@@ -1,0 +1,76 @@
+# Diavolo's Potato Chip (clip chipAndPen, item emote_chip_and_pen). Reference notes.
+id = "chipAndPen"
+item = "emote_chip_and_pen"
+name = "Diavolo's Potato Chip"
+family = "prop"
+status = "authored"
+uses = []
+
+[origin]
+what = "Death Note, episode 8 'Glare' (2006): under L's hidden cameras Light studies; inside a bag of crisps on his desk are a torn page of the notebook and a tiny TV. He writes names through the bag's mouth, then takes a crisp, raises it slowly and bites it with a flourish ('I'll take a potato chip... and eat it!'), the crisp bursting into glittering crumbs."
+recognisable = "The crisp raised high and slow, the dramatic pause, the snap to the mouth and the crunch."
+
+[source]
+url = "https://www.youtube.com/watch?v=eehdWTyQrjg"
+title = "[Death note] Original 'potato chip' scene in Japanese"
+kind = "anime clip, 1:18"
+watched = "2026-10-17, sheets every 3.25 s, 1 s over 12-30 s and 36-77 s, 0.4 s over 62.5-70.5 s"
+mirror = false
+alt = []
+history = ["https://knowyourmeme.com/memes/ill-take-a-potato-chip-and-eat-it"]
+
+[timing]
+segment = [39.0, 69.0]         # writing in the bag (39-40), the hand into the bag (63.7-64.9), the raise (65.3-66.1), the crisp at the mouth (66.5-67.7), the bite (68.1-68.5)
+loop = false
+length = 5.0
+
+[[beat]]
+src = 40.0
+pose = "the pen writing on the page hidden in the bag"
+[[beat]]
+src = 64.3
+pose = "the hand going into the bag"
+[[beat]]
+src = 65.7
+pose = "a crisp raised slowly, elbow out"
+[[beat]]
+src = 67.1
+pose = "the crisp held at the mouth, the head in profile"
+[[beat]]
+src = 68.3
+pose = "the bite: the crisp shatters into glittering crumbs"
+
+[[prop]]
+model = "ChipBag"
+hand = "left"
+note = "held at the belly, the page inside"
+[[prop]]
+model = "Pen"
+hand = "right"
+note = "writes through the bag's mouth, dropped in at 1.88 s"
+[[prop]]
+model = "Chip"
+hand = "right"
+note = "taken from the bag at 2.25 s, bitten at 3.5 s"
+
+[face]
+key = "focused"
+
+[sound]
+cues = ["pen scratches 0.6-1.8 s", "rustle of the bag 2.0 s", "the crunch at 3.5 s (owner's)"]
+match = true
+
+[vfx]
+rung = 3                       # Sealed
+ideas = ["glittering crumbs burst from the bite (3.5 s)"]
+
+[camera]
+showpiece = true
+
+[r6]
+notes = "Seated at a desk in the anime; standing with the bag in the hand here. The crisp is raised beside the face (an R6 arm across the face hides it). Holds solved from the key poses (emotes/props.py HOLDS)."
+
+[check]
+by_eye = "2026-10-17: stills at 12 moments from 20 degrees: bag at the chest, writing, the crisp raised beside the face, the bite."
+contacts = "the crisp 0.28 studs from the mouth at the bite (limit 0.3); no prop into the body (check_props ok)"
+issues = []

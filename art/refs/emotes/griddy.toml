@@ -1,0 +1,57 @@
+# Griddy (clips griddy + griddyWalk, item emote_griddy). Reference notes.
+id = "griddy"
+item = "emote_griddy"
+name = "Griddy"
+family = "stroll"
+status = "authored"
+uses = []
+
+[origin]
+what = "Created by Allen 'Griddy' Davis at Landry-Walker High School, New Orleans (2017-18), viral on TikTok in 2019, carried to the NFL by Justin Jefferson's touchdown celebrations (LSU, then the Vikings from 2020)."
+recognisable = "Heels tapped out in front by turns on a low bouncing crouch, bent arms swinging across the body, the hands made into goggles round the eyes."
+
+[source]
+url = "https://www.youtube.com/watch?v=jh5gzKOIHCk"
+title = "HOW TO: GRIDDY IN 15 SECONDS (LESSON #18)"
+kind = "short lesson, one dancer, at speed then on the move"
+watched = "2026-10-17, frames every 0.8 s, then every 0.15 s over 10.4-15 s"
+mirror = false
+alt = []
+history = ["https://en.wikipedia.org/wiki/Griddy", "https://knowyourmeme.com/memes/griddy"]
+
+[timing]
+segment = [10.4, 15.0]
+tap = 0.3                      # a heel every 0.3 s
+loop = true
+length = 3.6                   # 12 taps: 8 with the arms swinging, 4 with the goggles
+
+[[beat]]
+src = 11.6
+pose = "a heel out in front, the other knee bent, both arms swung across"
+[[beat]]
+src = 13.4
+pose = "hands round the eyes as goggles, elbows out, the heels still tapping"
+[[beat]]
+src = 14.75
+pose = "on the move: low, leaning, arms swinging back"
+
+[face]
+key = ""
+
+[sound]
+cues = ["loop: the owner's music, a heel-tap accent per tap"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a puff of dust at each heel tap"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "No ankles: a heel tap is the leg kicked out straight in front. The goggles go beside the eyes (an R6 arm in front of the face hides it). The walk is the stroll cycle at the game's speed (stride 9 studs per 0.6 s)."
+
+[check]
+by_eye = "2026-10-17: stills (taps, swing, goggles) from 35 degrees and the walk cycle from the side."
+issues = []

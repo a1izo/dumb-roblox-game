@@ -1,0 +1,57 @@
+# Just As Planned (clip justAsPlanned, item emote_just_as_planned; Diavolo's mastery 8). Reference notes.
+id = "justAsPlanned"
+item = "emote_just_as_planned"
+name = "Just As Planned"
+family = "pose"
+status = "authored"
+uses = []
+
+[origin]
+what = "Death Note (anime, 2006-07): Light Yagami, his memories of the notebook back, turns his head; the eyes slide to the side and catch a red glint; the head drops, the eyes glare up from under the hair and a slow grin spreads. The fansub line 'just as planned' (keikaku doori) made it a meme."
+recognisable = "The slow turn into the sideways stare, the chin dropping into the grin with the eyes looking up."
+
+[source]
+url = "https://www.youtube.com/watch?v=BLnpA_bxMy8"
+title = "Death Note - Just As Planned (Japanese)"
+kind = "anime clip, 11 s"
+watched = "2026-10-17, frame sheet every 0.6 s"
+mirror = false
+alt = ["https://www.youtube.com/watch?v=lt4329_W_s0 (English dub)"]
+history = ["https://zh.moegirl.org.cn/en/%E8%AE%A1%E5%88%92%E9%80%9A (the phrase)"]
+
+[timing]
+segment = [1.4, 9.2]           # the anime cuts between shots; compressed into one 4.4 s move
+loop = false
+length = 4.4
+
+[[beat]]
+src = 2.0
+pose = "the head turning to the side"
+[[beat]]
+src = 3.2
+pose = "the stare: eyes sliding sideways, a red glint"
+[[beat]]
+src = 6.2
+pose = "the chin dropped, the eyes glaring up, the grin"
+
+[face]
+key = "smirk"                  # timeline: stare at the turn, the scheming grin when the chin drops (faces push)
+
+[sound]
+cues = ["a low swell under the grin (owner's)"]
+match = true
+
+[vfx]
+rung = 4                       # Godhood (private cutscene)
+ideas = ["the red glint in the eyes at the stare", "the face shadowed from above in the cutscene"]
+
+[camera]
+showpiece = true
+cinematic = "close on the face for the turn, slow push-in on the grin, red glint, vignette"
+
+[r6]
+notes = "Seated in the anime; standing here. The meaning lives in the head and the face (owner uploads the faces)."
+
+[check]
+by_eye = "2026-10-17: stills at 0, 0.6, 1.15, 1.85, 2.45, 2.75, 3.2, 3.55, 4.0, 4.4 from 25 degrees: the turn, the hunch and the chuckle read."
+issues = ["without the face pictures the grin is only posture"]

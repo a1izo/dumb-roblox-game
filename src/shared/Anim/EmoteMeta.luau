@@ -22,7 +22,7 @@ local RACKET = {
 	size = 2.1,
 	stand = { shape = "Block", size = { 0.8, 2.1, 0.08 }, color = { 150, 112, 72 } },
 	mount = "Right Arm",
-	at = { { p = { 0, -1.05, -0.05 } }, { r = { 180, 0, 0 } }, { p = { 0, 0.95, 0 } } },
+	at = { { p = { 0, -1.8, 0 } }, { r = { 180, -62.22, 0 } } }, -- hold: matchPointServe/Racket
 }
 local NOTEBOOK = {
 	model = "Grimoire",
@@ -38,14 +38,6 @@ local PEN = {
 	mount = "Right Arm",
 	at = { { p = { 0, -0.35, -0.2 } }, { r = { -55, 0, 0 } } },
 }
-
-local function with(base, extra)
-	local copy = table.clone(base)
-	for key, value in pairs(extra) do
-		copy[key] = value
-	end
-	return copy
-end
 
 return {
 	coinFlip = {
@@ -132,20 +124,42 @@ return {
 			},
 		},
 	},
+	-- Diavolo's Potato Chip: the bag in the left hand (the page hidden inside), the pen writing through its mouth
+	-- and dropped in, a crisp taken out, raised and bitten. Holds solved from the clip's key poses
+	-- (art/scripts/emotes/props.py).
 	chipAndPen = {
 		props = {
-			with(NOTEBOOK, { hide = 4.4 }),
-			with(PEN, { hide = 2.0 }),
+			{
+				model = "ChipBag",
+				size = 1.25,
+				stand = { shape = "Block", size = { 0.7, 1.0, 0.32 }, color = { 170, 28, 32 } },
+				mount = "Left Arm",
+				at = { { p = { 0.388, -1.694, 0.608 } }, { r = { -46.14, 16.47, -21.24 } } }, -- hold: chipAndPen/ChipBag
+				show = 0.4,
+				hide = 4.5,
+			},
+			{
+				model = "Pen",
+				size = 0.8,
+				stand = { shape = "Cylinder", size = { 0.8, 0.08, 0.08 }, color = { 14, 14, 16 } },
+				mount = "Right Arm",
+				at = { { p = { -0.017, -0.836, 0.27 } }, { r = { -55.84, -54.26, 20.85 } } }, -- hold: chipAndPen/Pen
+				show = 0.45,
+				hide = 1.88,
+			},
 			{
 				model = "Chip",
 				size = 0.5,
 				stand = { shape = "Block", size = { 0.5, 0.05, 0.42 }, color = { 222, 178, 86 } },
 				mount = "Right Arm",
-				at = { { p = { 0, -1.05, -0.25 } }, { r = { 70, 0, 0 } } },
-				show = 2.05,
-				hide = 3.32,
+				at = { { p = { 0.023, -1.145, -0.146 } }, { r = { -49.62, -0.44, 0.37 } } }, -- hold: chipAndPen/Chip
+				show = 2.25,
+				hide = 3.52,
 			},
 		},
+		contacts = { { at = 3.5, prop = 3, to = "mouth", within = 0.3 } },
+		-- the right hand writes at the bag's mouth, then goes into it for the crisp
+		allow = { { prop = 1, part = "Right Arm", from = 0.42, to = 2.4 } },
 	},
 	furiousScribbling = { props = { NOTEBOOK, PEN } },
 	furiousScribblingSlash = { props = { NOTEBOOK, PEN } },

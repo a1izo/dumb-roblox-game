@@ -14,6 +14,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
+local EmoteProps = require(Shared:WaitForChild("Anim"):WaitForChild("EmoteProps"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 
@@ -41,10 +42,13 @@ DuoController.RALLY = {
 local PAST = 0.55 -- seconds the smash takes to fly past
 local LENGTH = 6.2
 
--- Where the racket's strings are, on a body holding it in the right hand.
+-- Where the racket's strings are, on a body holding it in the right hand: the racket's hold (Anim/EmoteProps)
+-- and the strings' middle on the model (0.52 studs up from its pivot once scaled; art/scripts/emotes/duos.py).
+local held = EmoteProps.of("matchPointServe")[1]
+local STRINGS = (if held then held.at else CFrame.new(0, -1.05, 0)) * CFrame.new(0, 0.52, 0)
 local function racketHead(character: Model): Vector3?
 	local arm = character:FindFirstChild("Right Arm")
-	return if arm and arm:IsA("BasePart") then (arm.CFrame * CFrame.new(0, -2.55, -0.05)).Position else nil
+	return if arm and arm:IsA("BasePart") then (arm.CFrame * STRINGS).Position else nil
 end
 
 local function leftHand(character: Model): Vector3?
