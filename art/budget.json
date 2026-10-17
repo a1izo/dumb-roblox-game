@@ -55,6 +55,12 @@
       "megapixels": 3.5,
       "megabytes": 4.86,
       "triangles": 0.1
+    },
+    {
+      "what": "The emote overhaul's Core v8 props: the cuff for Cuffed Together (four 256 px maps) and the wristwatch's square strap (the owner's cap for the overhaul's props: +0.3 megapixels, +0.35 megabytes)",
+      "approved": "2026-10-17",
+      "megapixels": 0.27,
+      "megabytes": 0.07
     }
   ]
 }

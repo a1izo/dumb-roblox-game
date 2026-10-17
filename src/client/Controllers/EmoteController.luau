@@ -101,9 +101,11 @@ local function watch(character: Model, clip: string, done: () -> (), alive: Aliv
 end
 
 -- One prop of an emote: the Core model scaled to its size, or its stand-in part (a Roblox cylinder runs
--- along X, the models along Y: the stand-in is turned to match through its pivot).
+-- along X, the models along Y: the stand-in is turned to match through its pivot). A prop whose hold is made
+-- for a newer Core mesh (`core`) keeps its stand-in until that import is in.
 local function build(spec: EmoteProps.Prop): Model
-	local model = ModelLibrary.get(spec.model)
+	local current = spec.core == nil or ModelLibrary.version("Core") >= spec.core
+	local model = if current then ModelLibrary.get(spec.model) else nil
 	if model then
 		local _, size = model:GetBoundingBox()
 		local biggest = math.max(size.X, size.Y, size.Z)
@@ -130,8 +132,23 @@ local function build(spec: EmoteProps.Prop): Model
 end
 EmoteController.propModel = build
 
--- Where a prop goes on a body: a part's middle, or for "floor" the floor under the root (an R6 root stands
--- 3 studs up), turned the way the body faces.
+-- The floor under a body: what is really under the root (a step, a slope, a raised plinth), or 3 studs
+-- down (where an R6 root's floor is) when nothing is found.
+local function floorUnder(character: Model, root: BasePart): Vector3
+	-- (in its own world: the game's, or a 3D view's for Your look)
+	local world = character:FindFirstAncestorWhichIsA("WorldRoot")
+	if not world then
+		return root.Position - Vector3.new(0, 3, 0)
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character, workspace.CurrentCamera }
+	local hit = world:Raycast(root.Position, Vector3.new(0, -8, 0), params)
+	return if hit then hit.Position else root.Position - Vector3.new(0, 3, 0)
+end
+
+-- Where a prop goes on a body: a part's middle, or for "floor" the floor under the root, turned the way the
+-- body faces.
 local function placeOn(character: Model, mount: string, at: CFrame): (CFrame?, BasePart?)
 	if mount == "floor" then
 		local root = character:FindFirstChild("HumanoidRootPart")
@@ -140,7 +157,7 @@ local function placeOn(character: Model, mount: string, at: CFrame): (CFrame?, B
 		end
 		local look = root.CFrame.LookVector
 		local yaw = math.atan2(-look.X, -look.Z)
-		return CFrame.new(root.Position - Vector3.new(0, 3, 0)) * CFrame.Angles(0, yaw, 0) * at, nil
+		return CFrame.new(floorUnder(character, root)) * CFrame.Angles(0, yaw, 0) * at, nil
 	end
 	local part = character:FindFirstChild(mount)
 	if not part or not part:IsA("BasePart") then

@@ -1,7 +1,7 @@
 """The things the emote pack's emotes hold or set down (Core set; see props.py, 2026-10-14): Pre-Dawn
 Bonk's club, Blindfold Lift's blindfold, Two-Finger Grip's phone, Chip and Pen's chip, Strawberry on
 Top's slice of cake and its strawberry, Dice Tower's die, Chocolate Snap's bar, Forty Seconds' watch,
-Mushroom Stroll's stick, Match Point's racket and ball, and The Smiling Lord's cane. The game scales each to the size it needs
+Mushroom Stroll's stick, Match Point's racket and ball, The Smiling Lord's cane, and Cuffed Together's cuff. The game scales each to the size it needs
 (src/shared/Anim/EmoteProps.luau), so the sizes here are only the shapes' proportions. Small and plain,
 like the shop's props, so their textures stay small."""
 
@@ -151,20 +151,47 @@ def chocolate_bar():
     return parts, []
 
 
+def _square_band(tag, inner, outer, half_height, mat):
+    """A band round Z with a square inside `inner` studs from the middle to each flat side, open through the
+    middle: an R6 arm is a square 1 stud across, so a round strap lets its corners through. Four flat sides (a
+    lathe would cap the hole and round the shading)."""
+    t = outer - inner
+    mid = (inner + outer) / 2
+    h = half_height * 2
+    return [mk.box(tag + "Front", (outer * 2, t, h), (0, -mid, 0), mat=mat, bevel=0.01),
+            mk.box(tag + "Back", (outer * 2, t, h), (0, mid, 0), mat=mat, bevel=0.01),
+            mk.box(tag + "Left", (t, inner * 2, h), (-mid, 0, 0), mat=mat, bevel=0.01),
+            mk.box(tag + "Right", (t, inner * 2, h), (mid, 0, 0), mat=mat, bevel=0.01)]
+
+
 @prop("Wristwatch", pivot="centre", material="Metal", collide=False, texture=256)
 def wristwatch():
     """A plain steel watch on a black leather strap, round the left wrist: Forty Seconds'. The strap goes
-    round Z (along the arm), the face looks out at -Y."""
+    round Z (along the arm) and lies flat on the arm's four sides (2026-10-17: it was round, and the square arm's
+    corners came through it); the face looks out at -Y."""
     steel = mk.noisy("Ww_Steel", srgb(120, 122, 128), srgb(186, 188, 194), roughness=0.25, metallic=1.0)
     strap = mk.noisy("Ww_Leather", srgb(14, 14, 16), srgb(36, 34, 34), roughness=0.6, kind="leather")
     dial = mk.flat("Ww_Face", srgb(232, 228, 218), 0.3, kind="plastic")
     hands = mk.flat("Ww_Iron", srgb(20, 20, 22), 0.4, metallic=0.8)
-    ring = [(0.56, -0.1), (0.6, -0.1), (0.6, 0.1), (0.56, 0.1), (0.56, -0.1)]
-    parts = [mk.lathe("Strap", ring, mat=strap, segments=24),
-             mk.cylinder("Case", 0.22, 0.09, (0, -0.63, 0), rot=(90, 0, 0), mat=steel, verts=20, bevel=0.015),
-             mk.cylinder("Dial", 0.185, 0.01, (0, -0.68, 0), rot=(90, 0, 0), mat=dial, verts=20),
-             mk.box("Hour", (0.02, 0.006, 0.1), (0.0, -0.687, 0.04), mat=hands),
-             mk.box("Minute", (0.015, 0.006, 0.15), (0.05, -0.687, -0.03), rot=(0, 40, 0), mat=hands)]
+    parts = [*_square_band("Strap", 0.53, 0.58, 0.1, strap),
+             mk.cylinder("Case", 0.22, 0.09, (0, -0.625, 0), rot=(90, 0, 0), mat=steel, verts=20, bevel=0.015),
+             mk.cylinder("Dial", 0.185, 0.01, (0, -0.675, 0), rot=(90, 0, 0), mat=dial, verts=20),
+             mk.box("Hour", (0.02, 0.006, 0.1), (0.0, -0.682, 0.04), mat=hands),
+             mk.box("Minute", (0.015, 0.006, 0.15), (0.05, -0.682, -0.03), rot=(0, 40, 0), mat=hands)]
+    return parts, []
+
+
+@prop("Cuff", pivot="centre", material="Metal", collide=False, texture=256)
+def cuff():
+    """One steel handcuff closed round an R6 wrist: Cuffed Together's, one on each of the two chained wrists,
+    the chain hung from the ring on its outer side. A square band round Z (the arm), the lock at -Y, the ring at
+    +X (in the game, the arm's outside for a left wrist: turned round for a right one)."""
+    steel = mk.noisy("Cf_Steel", srgb(88, 90, 96), srgb(170, 172, 178), scale=25, roughness=0.25, metallic=1.0)
+    parts = [*_square_band("Band", 0.53, 0.6, 0.11, steel),
+             mk.box("Lock", (0.36, 0.08, 0.2), (0, -0.64, 0), mat=steel, bevel=0.02),
+             mk.box("Hinge", (0.12, 0.1, 0.22), (0, 0.64, 0), mat=steel, bevel=0.02),
+             mk.torus("Ring", 0.07, 0.022, (0.68, 0, 0), rot=(90, 0, 0), mat=steel, major_segments=14,
+                      minor_segments=6)]
     return parts, []
 
 
