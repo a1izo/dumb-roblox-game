@@ -446,6 +446,8 @@ local function tryOnLength(clip: string): number
 	return prepared.length + 0.6
 end
 YourLook.tryOnLength = tryOnLength
+-- (the emote wheel's preview puts its own copy of you at rest the same way)
+YourLook.restPose = restPose
 
 -- An emote on the copy, all of it: its joints let go for as long as it plays, and it is put back at rest
 -- after. `held`: the emote whose props, face and sound go with it (a stroll previews its walk, with the

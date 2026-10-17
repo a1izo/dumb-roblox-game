@@ -81,6 +81,9 @@ function SettingsPanel.init()
 	toggle("cameraShake", "Camera shake")
 	-- Low graphics: no bloom or haze, fewer shadows and shorter lamp light (slower devices).
 	toggle("lowGraphics", "Low graphics")
+	-- Your own emotes, in the lobby (both stay still under Reduce motion).
+	toggle("emoteCamera", "Camera moves round your showpiece emotes")
+	toggle("emoteCutscenes", "Godhood emote cutscenes")
 
 	header("Help")
 	-- How to Play opens over Settings and comes back here when it closes.
