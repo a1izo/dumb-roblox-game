@@ -54,16 +54,7 @@ Tokens.color = {
 	secret = rgb(163, 170, 181),
 }
 
--- Rarity edges for shop cards: greyscale, rising from dark grey to white. The shop adds slashes (1 to 4)
--- and a moving shine on the top tier.
-Tokens.rarity = {
-	Common = rgb(58, 64, 75),
-	Uncommon = rgb(107, 115, 128),
-	Rare = rgb(163, 170, 181),
-	Epic = rgb(244, 245, 247),
-	Legendary = rgb(244, 245, 247),
-	Mythic = rgb(244, 245, 247),
-}
+-- (Rarity's colours and names, and how a shop card wears each tier, are in Shared/Rarity and UI/Shop/Card.)
 
 -- Transparency steps for layered surfaces.
 Tokens.alpha = {

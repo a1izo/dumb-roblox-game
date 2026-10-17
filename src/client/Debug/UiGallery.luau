@@ -6,6 +6,7 @@
 local Icons =
 	require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("Icons"))
 
+local Rarity = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Rarity"))
 local Terms = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Terms"))
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Router = require(script.Parent.Parent.UI.Core.Router)
@@ -108,7 +109,7 @@ local function build()
 	for _, tone in ipairs({ "raised", "lifted", "page", "parchment" }) do
 		local card = Kit.card({
 			tone = tone,
-			accent = if tone == "raised" then T.rarity.Epic else nil,
+			accent = if tone == "raised" then Rarity.color("epic") else nil,
 			Size = UDim2.fromOffset(200, 80),
 			Parent = cards,
 		})

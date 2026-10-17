@@ -17,7 +17,7 @@ ShopRotation.GRACE = 5 * 60
 ShopRotation.DEAL_OFF = 0.25
 local DAY = 86400
 
-local WEIGHTS = { common = 60, rare = 28, epic = 10, legendary = 3 }
+local WEIGHTS = { common = 60, rare = 28, epic = 10, legendary = 3, godhood = 1 }
 
 function ShopRotation.dayOf(unixTime: number): number
 	return math.floor(unixTime / DAY)

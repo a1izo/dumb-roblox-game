@@ -5,8 +5,10 @@
 --
 --   local figure = PoseFigure.build("wave")   -- a Model, or nil for a clip that does not exist
 --   PoseFigure.build("griddyWalk", nil, "griddy")   -- a stroll's walk, holding the stroll's props
+--   local stop = PoseFigure.play(figure)   -- the move itself, live (the shop's card under the pointer)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Anim = Shared:WaitForChild("Anim")
@@ -129,6 +131,7 @@ function PoseFigure.build(clipId: string, at: number?, propsOf: string?): Model?
 		if base and (spec.show or 0) <= moment and moment < (spec.hide or math.huge) then
 			local prop = EmoteController.propModel(spec)
 			prop:PivotTo(base * spec.at)
+			prop:SetAttribute("Mount", spec.mount)
 			for _, item in ipairs(prop:GetDescendants()) do
 				if item:IsA("BasePart") then
 					item.Anchored = true
@@ -138,7 +141,81 @@ function PoseFigure.build(clipId: string, at: number?, propsOf: string?): Model?
 		end
 	end
 	model.PrimaryPart = parts.Torso
+	model:SetAttribute("Clip", clipId)
+	model:SetAttribute("Moment", moment)
 	return model
+end
+
+-- How long a one-shot holds its last moment before it plays again, in a live card.
+local HOLD = 1.0
+
+-- Plays the clip on a figure from build() (or a copy of one), from its moment on: a loop goes round, a one-shot
+-- holds its end a while and starts again; its props go with the parts that hold them. Returns a function that
+-- stops it and puts it back at its moment.
+function PoseFigure.play(model: Model): () -> ()
+	local clip = ClipPlayer.get(model:GetAttribute("Clip") :: string? or "")
+	local moment = (model:GetAttribute("Moment") :: number?) or 0
+	if not clip then
+		return function() end
+	end
+	local parts: { [string]: BasePart } = {}
+	for _, piece in ipairs(BODY) do
+		local found = model:FindFirstChild(piece.part)
+		if found and found:IsA("BasePart") then
+			parts[piece.part] = found
+		end
+	end
+	-- each prop where it is now from the part that holds it (the floor: from the root, at the origin)
+	local props: { { model: Model, mount: string, offset: CFrame } } = {}
+	for _, child in ipairs(model:GetChildren()) do
+		local mount = child:GetAttribute("Mount")
+		if child:IsA("Model") and type(mount) == "string" then
+			local base = if mount == "floor" then CFrame.identity else (parts[mount] and parts[mount].CFrame)
+			if base then
+				table.insert(props, { model = child, mount = mount, offset = base:ToObjectSpace(child:GetPivot()) })
+			end
+		end
+	end
+	local cycle = if clip.loop then clip.length else clip.length + HOLD
+	local scratch: { [string]: CFrame } = {}
+	local function pose(t: number)
+		table.clear(scratch)
+		local rotations, offset = ClipPlayer.sample(clip, math.min(t, clip.length), scratch)
+		local placed: { [string]: CFrame } = { HumanoidRootPart = CFrame.new() }
+		for _, piece in ipairs(BODY) do
+			local rot = rotations[piece.joint] or CFrame.identity
+			local transform =
+				ClipPlayer.transform(rotation(piece.c0), rot, if piece.joint == "root" then offset else nil)
+			local cf = placed[piece.from] * piece.c0 * transform * piece.c1:Inverse()
+			placed[piece.part] = cf
+			local part = parts[piece.part]
+			if part then
+				part.CFrame = cf
+			end
+		end
+		for _, prop in ipairs(props) do
+			local base = if prop.mount == "floor" then CFrame.identity else placed[prop.mount]
+			if base then
+				prop.model:PivotTo(base * prop.offset)
+			end
+		end
+	end
+	local started = os.clock()
+	local connection: RBXScriptConnection
+	connection = RunService.RenderStepped:Connect(function()
+		if not model.Parent then
+			-- (the card was dealt away)
+			connection:Disconnect()
+			return
+		end
+		pose((moment + os.clock() - started) % cycle)
+	end)
+	return function()
+		connection:Disconnect()
+		if model.Parent then
+			pose(moment)
+		end
+	end
 end
 
 return PoseFigure

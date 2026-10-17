@@ -7,7 +7,8 @@
 --           (what becomes of you when you die: `style`), emote (`emote` is its clip, `category` its
 --           section in the shop: dance, pose, prop, stroll or duo; `lobbyOnly` when it looks like a
 --           game signal, a death, an arrest or the Eyes, so it is never played in a match)
---   rarity  common, rare, epic, legendary
+--   rarity  common, rare, epic, legendary, godhood (shown as Scrawl, Inked, Sealed, Condemned, Godhood:
+--           Shared/Rarity)
 --   source  shop (always for sale), rotation (for sale on days it is featured), vip
 --           (free with the VIP pass), rank / achievement / streak / mastery (earned), season (a
 --           reward of the Season ledger), set (a title: every piece of a set, Shared/Sets),
@@ -22,6 +23,7 @@
 -- only its owner sees it, and everyone once that identity is out (the server sends it in the
 -- cues). A death style is the victim's and plays for everyone.
 
+local Rarity = require(script.Parent.Rarity)
 local Terms = require(script.Parent.Terms)
 
 local Cosmetics = {}
@@ -811,7 +813,7 @@ Cosmetics.ITEMS = {
 		kind = "emote",
 		category = "pose",
 		name = "Just As Planned",
-		rarity = "rare",
+		rarity = "godhood",
 		source = "mastery",
 		emote = "justAsPlanned",
 		face = "smirk",
@@ -833,9 +835,10 @@ Cosmetics.ITEMS = {
 		kind = "emote",
 		category = "pose",
 		name = "Final Breakdown",
-		rarity = "epic",
+		-- (Godhood, with its private cutscene, at 1500 since 2026-10-17: it was 650, and whoever bought it keeps it)
+		rarity = "godhood",
 		source = "shop",
-		price = 650,
+		price = 1500,
 		emote = "finalBreakdown",
 		face = "wideGrin",
 		added = "2026-10-14",
@@ -845,7 +848,7 @@ Cosmetics.ITEMS = {
 		kind = "emote",
 		category = "pose",
 		name = "New World",
-		rarity = "legendary",
+		rarity = "godhood",
 		source = "season",
 		emote = "newWorld",
 		added = "2026-10-14",
@@ -857,9 +860,10 @@ Cosmetics.ITEMS = {
 		kind = "emote",
 		category = "pose",
 		name = "Reaper's Eyes",
-		rarity = "epic",
+		-- (Godhood, with its private cutscene, at 1500 since 2026-10-17: it was 600, and whoever bought it keeps it)
+		rarity = "godhood",
 		source = "shop",
-		price = 600,
+		price = 1500,
 		emote = "reapersEyes",
 		face = "stare",
 		lobbyOnly = true,
@@ -1272,14 +1276,9 @@ Cosmetics.KIND_SINGULAR = {
 	emote = "Emote",
 }
 
-Cosmetics.RARITIES = { "common", "rare", "epic", "legendary" }
-
-Cosmetics.RARITY_COLORS = {
-	common = Color3.fromRGB(150, 146, 138),
-	rare = Color3.fromRGB(62, 139, 255),
-	epic = Color3.fromRGB(176, 108, 255),
-	legendary = Color3.fromRGB(255, 176, 46),
-}
+-- (the tiers, their names and colours live in Shared/Rarity)
+Cosmetics.RARITIES = Rarity.ORDER
+Cosmetics.RARITY_COLORS = Rarity.COLORS
 
 local byId: { [string]: Item } = {}
 for _, item in ipairs(Cosmetics.ITEMS) do

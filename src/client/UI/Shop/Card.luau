@@ -1,11 +1,13 @@
 -- One card on Death's table (the shop, "Death's hand"): tarot-shaped, the thing itself as a big picture,
--- its name in Melodrama and its price in a plain coin chip. Rarity is in the frame, never in a colour of
--- the text:
+-- its name in Melodrama and its price in a plain coin chip. Its tier (Shared/Rarity) is in its frame and its
+-- colour, and written at the foot of the picture, so it never rests on colour alone:
 --
---   common     a thin bone line
---   rare       a double line
---   epic       ornate corners
---   legendary  amber gold leaf, a slow shine passing over it (still under reduced motion)
+--   Scrawl     a thin ash line
+--   Inked      an ink-blue line and a stroke of ink under the picture
+--   Sealed     a violet frame inside the edge, ornate corners
+--   Condemned  that frame in amber, the grain of an old page, a slow shine passing over it
+--   Godhood    a crimson edge with ink bleeding in from it, and motes of page drifting up
+--   (no shine and no drifting under reduced motion)
 --
 -- Objects (hats, ties, trails, Manual covers) are a small 3D view, and so are the styles and forms that
 -- have a prop of their own once the Core models are imported (a quill, a gavel, a chess king, a crow
@@ -25,9 +27,11 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
+local Rarity = require(Shared:WaitForChild("Rarity"))
 
 local Kit = require(script.Parent.Parent.Kit)
 local Motion = require(script.Parent.Parent.Core.Motion)
+local Textures = require(script.Parent.Parent.Kit.Textures)
 local PoseFigure = require(script.Parent.PoseFigure)
 
 local C = Kit.color
@@ -40,9 +44,9 @@ Card.WIDTH = 150
 Card.HEIGHT = 236
 local LIFT = 10 -- px a picked card rises
 local PICTURE = 118 -- the picture's height
-local GOLD = Color3.fromRGB(212, 168, 92) -- the legendary card's gold leaf
 local FOV = 28
 local HEART_HIT = 40 -- px, the heart's button
+local CHIP_ICONS = { "coin", "check", "lock" }
 
 -- The still for kinds with no 3D view: an icon (styles and emotes come in suits of their own).
 local STILL_ICON = {
@@ -60,7 +64,7 @@ export type Card = typeof(setmetatable(
 		face: Frame,
 		back: Frame?,
 		chip: TextLabel,
-		chipIcon: ImageLabel,
+		chipIcons: { [string]: GuiObject },
 		edge: UIStroke,
 		picked: boolean,
 		hit: TextButton,
@@ -68,12 +72,16 @@ export type Card = typeof(setmetatable(
 		ribbon: Frame?,
 		heart: ImageButton?,
 		wished: boolean,
+		figure: Model?,
+		stopLive: (() -> ())?,
+		hovered: boolean,
 	},
 	Card
 ))
 
-local function tier(rarity: string): number
-	return ({ common = 1, uncommon = 1, rare = 2, epic = 3, legendary = 4, mythic = 4 })[rarity] or 1
+-- How strongly a card's outer edge shows while it is not picked (a Scrawl's faintly).
+local function restingEdge(rarity: string): number
+	return if Rarity.rank(rarity) == 1 then 0.62 else 0.3
 end
 
 -- 3D pictures ------------------------------------------------------------------------------------------
@@ -143,13 +151,13 @@ local function figureOf(item: Cosmetics.Item): Model?
 	return if figure then figure:Clone() else nil
 end
 
--- The thing itself, small, in a 3D view (nil for kinds that have none).
-local function picture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
+-- The thing itself, small, in a 3D view (nil for kinds that have none), and an emote's mannequin in it.
+local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Model?)
 	local kind = item.kind
 	local key = propOf(item)
 	local figure = figureOf(item)
 	if kind ~= "hat" and kind ~= "tie" and kind ~= "trail" and kind ~= "grimoire" and not key and not figure then
-		return nil
+		return nil, nil
 	end
 	local view = Create("ViewportFrame", {
 		Name = "Picture",
@@ -217,7 +225,7 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 		part(holder, Vector3.new(0.06, 0.18, 0.95), CFrame.new(-0.63, 0, 0), item.color or C.void)
 		frameView(view, holder, -20)
 	end
-	return view
+	return view, figure
 end
 
 -- The still for what has no 3D view: a title's words, or the kind's glyph in the item's colour.
@@ -304,13 +312,13 @@ local function corners(parent: Instance, color: Color3, inset: number)
 	end
 end
 
-local function shine(parent: GuiObject)
+local function shine(parent: GuiObject, color: Color3)
 	if Motion.isReduced() then
 		return
 	end
 	local sheen = Kit.Base.make("Frame", {
 		Name = "Shine",
-		BackgroundColor3 = GOLD,
+		BackgroundColor3 = color,
 		BackgroundTransparency = 0.82,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
@@ -336,20 +344,164 @@ local function shine(parent: GuiObject)
 	):Play()
 end
 
--- Dresses a card's face in its rarity's frame. Returns the outer edge (it brightens when picked).
+-- Inked: a stroke of ink under the picture, thick in the middle and running out at both ends.
+local function inkUnderline(face: Frame, color: Color3)
+	local stroke = Kit.Base.make("Frame", {
+		Name = "InkUnderline",
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0, 14 + PICTURE + 5),
+		Size = UDim2.new(0.72, 0, 0, 2),
+		Rotation = -1.5,
+		Parent = face,
+	})
+	Kit.Base.make("UIGradient", {
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.18, 0.25),
+			NumberSequenceKeypoint.new(0.6, 0),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Parent = stroke,
+	})
+end
+
+-- Condemned: the grain of an old page over the card, in its colour (once the UI textures are in).
+local function grain(face: Frame, color: Color3)
+	local id = Textures.id("UiGrain")
+	if id == "" then
+		return
+	end
+	Kit.Base.make("ImageLabel", {
+		Name = "PageGrain",
+		BackgroundTransparency = 1,
+		Image = id,
+		ImageColor3 = color,
+		ImageTransparency = 0.78,
+		ScaleType = Enum.ScaleType.Tile,
+		TileSize = UDim2.fromOffset(128, 128),
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 2,
+		Parent = face,
+	})
+end
+
+-- Godhood: ink bleeding in from the card's edges (the screen-edge shade in its colour, or two soft lines
+-- inside the edge until the UI textures are in), and motes of page drifting up through it.
+local function bleed(face: Frame, color: Color3)
+	local id = Textures.id("UiVignette")
+	if id ~= "" then
+		Kit.Base.make("ImageLabel", {
+			Name = "InkBleed",
+			BackgroundTransparency = 1,
+			Image = id,
+			ImageColor3 = color,
+			ImageTransparency = 0.2,
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = 2,
+			Parent = face,
+		})
+	else
+		line(face, 3, color, 0.45, 3).Name = "InkBleed"
+		line(face, 7, color, 0.75, 2).Name = "InkBleed"
+	end
+end
+
+local MOTES = 7
+local function motes(face: Frame, color: Color3)
+	local random = Random.new(#face:GetFullName())
+	for index = 1, MOTES do
+		local size = random:NextInteger(2, 3)
+		local x = random:NextNumber(0.12, 0.88)
+		local from = random:NextNumber(0.35, 0.95)
+		local mote = Kit.Base.make("Frame", {
+			Name = "Mote",
+			BackgroundColor3 = if index % 3 == 0 then color:Lerp(C.bone, 0.5) else C.bone,
+			BackgroundTransparency = random:NextNumber(0.35, 0.6),
+			BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(x, from),
+			Size = UDim2.fromOffset(size, size),
+			ZIndex = 7,
+			Parent = face,
+		}) :: Frame
+		if not Motion.isReduced() then
+			-- Up the card and fading, over and over, each at its own pace.
+			local seconds = random:NextNumber(5, 9)
+			TweenService:Create(
+				mote,
+				TweenInfo.new(
+					seconds,
+					Enum.EasingStyle.Sine,
+					Enum.EasingDirection.Out,
+					-1,
+					false,
+					random:NextNumber(0, 3)
+				),
+				{
+					Position = UDim2.fromScale(x + random:NextNumber(-0.08, 0.08), from - 0.45),
+					BackgroundTransparency = 1,
+				}
+			):Play()
+		end
+	end
+end
+
+-- The tier's name in small capitals at the foot of the picture, in its colour (never colour alone).
+local function rarityTag(face: Frame, rarity: string)
+	local color = Rarity.color(rarity)
+	local holder = Kit.Base.make("Frame", {
+		Name = "Rarity",
+		BackgroundColor3 = C.void,
+		BackgroundTransparency = 0.25,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -16, 0, 14 + PICTURE - 4),
+		Size = UDim2.fromOffset(0, 16),
+		AutomaticSize = Enum.AutomaticSize.X,
+		ZIndex = 4,
+		Parent = face,
+	})
+	Kit.Base.corner(holder, 2)
+	Kit.pad(holder, 0, 5)
+	Kit.label({
+		Text = string.upper(Rarity.name(rarity)),
+		font = "label",
+		size = "micro",
+		-- (the line work wears the colour itself; the letters a lighter shade of it, to read on the dark)
+		color = color:Lerp(C.bone, if Rarity.rank(rarity) == 5 then 0.38 else 0.18),
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
+		ZIndex = 5,
+		Parent = holder,
+	})
+end
+
+-- Dresses a card's face in its tier (Shared/Rarity): Scrawl a plain line; Inked an ink underline; Sealed an
+-- ink-edged frame; Condemned that frame with page grain and a slow sheen; Godhood an edge bleeding ink and
+-- motes of page. Returns the outer edge (it brightens when picked).
 local function dress(face: Frame, rarity: string): UIStroke
-	local level = tier(rarity)
-	local edgeColor = if level == 4 then GOLD else C.bone
-	local edge = Kit.Base.stroke(face, edgeColor, if level >= 3 then 1.5 else 1, if level == 1 then 0.62 else 0.3)
-	if level >= 2 then
-		line(face, 5, edgeColor, if level == 4 then 0.35 else 0.55)
+	local rank = Rarity.rank(rarity)
+	local color = Rarity.color(rarity)
+	local edge = Kit.Base.stroke(face, color, if rank >= 3 then 1.5 else 1, restingEdge(rarity))
+	if rank == 2 then
+		inkUnderline(face, color)
 	end
-	if level >= 3 then
-		corners(face, edgeColor, 9)
+	if rank >= 3 then
+		line(face, 5, color, if rank >= 4 then 0.35 else 0.5)
+		corners(face, color, 9)
 	end
-	if level == 4 then
-		shine(face)
+	if rank == 4 then
+		grain(face, color)
+		shine(face, color)
 	end
+	if rank == 5 then
+		bleed(face, color)
+		motes(face, color)
+	end
+	rarityTag(face, rarity)
 	return edge
 end
 
@@ -387,7 +539,8 @@ end
 
 -- The card ---------------------------------------------------------------------------------------------
 
--- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipCoin (the chip shows a coin),
+-- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipIcon (before it: "coin", "check"
+-- or "lock"),
 -- onPick (clicked), faceDown (lies on its back: onPick still fires, the caller turns it), isNew (the "New"
 -- ribbon), offer (a second ribbon's words, under the picture: the day's deal), onWish (a heart: called with
 -- true to wish for it, false to take the wish back) and wished.
@@ -421,7 +574,8 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		Parent = face,
 	})
 	Kit.Base.corner(pictureBox, 4)
-	if not picture(item, pictureBox) then
+	local view, figure = picture(item, pictureBox)
+	if not view then
 		still(item, pictureBox)
 	end
 	Kit.text({
@@ -451,7 +605,18 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	Kit.Base.stroke(chipFrame, C.bone, 1, 0.78)
 	Kit.list(chipFrame, T.space.xs, true, Enum.HorizontalAlignment.Center)
 	Kit.pad(chipFrame, 0, T.space.m)
-	local chipIcon = Kit.icon({ name = "coin", size = 18, color = C.bone, LayoutOrder = 1, Parent = chipFrame })
+	-- (a coin before a price, a check when it is yours, a lock when it cannot be bought now)
+	local chipIcons: { [string]: GuiObject } = {}
+	for _, name in ipairs(CHIP_ICONS) do
+		chipIcons[name] = Kit.icon({
+			name = name,
+			size = if name == "coin" then 18 else 14,
+			color = if name == "lock" then C.dim else C.bone,
+			LayoutOrder = 1,
+			Visible = false,
+			Parent = chipFrame,
+		})
+	end
 	local chip = Kit.label({
 		Text = "",
 		font = "bodyBold",
@@ -471,7 +636,7 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		face = face,
 		back = nil,
 		chip = chip,
-		chipIcon = chipIcon,
+		chipIcons = chipIcons,
 		edge = edge,
 		picked = false,
 		hit = hit,
@@ -479,8 +644,11 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		ribbon = nil,
 		heart = nil,
 		wished = props.wished == true,
+		figure = figure,
+		stopLive = nil,
+		hovered = false,
 	}, Card)
-	self:setChip(props.chip or "", props.chipCoin == true)
+	self:setChip(props.chip or "", props.chipIcon)
 	self:setNew(props.isNew == true)
 	if props.offer then
 		tag(face, "Offer", props.offer, UDim2.fromOffset(12, 14 + PICTURE - 20), false)
@@ -519,14 +687,18 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		end
 	end)
 	hit.MouseEnter:Connect(function()
+		self.hovered = true
 		if not self.picked then
 			self:rise(LIFT - 3)
 		end
+		self:setLive(true)
 	end)
 	hit.MouseLeave:Connect(function()
+		self.hovered = false
 		if not self.picked then
 			self:rise(LIFT)
 		end
+		self:setLive(self.picked)
 	end)
 	if props.faceDown then
 		self:lieDown()
@@ -534,10 +706,12 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	return self
 end
 
--- The chip's words (and whether a coin goes before them).
-function Card.setChip(self: Card, text: string, coin: boolean)
+-- The chip's words, and the icon before them ("coin", "check", "lock"; none when nil or false).
+function Card.setChip(self: Card, text: string, icon: (string | boolean)?)
 	self.chip.Text = text
-	self.chipIcon.Visible = coin
+	for name, image in pairs(self.chipIcons) do
+		image.Visible = icon == name
+	end
 	local frame = self.chip.Parent :: Frame
 	frame.Visible = text ~= ""
 end
@@ -572,11 +746,112 @@ function Card.setWished(self: Card, on: boolean)
 	end
 end
 
--- Picked: the card lifts and its edge brightens.
+-- Picked: the card lifts and its edge brightens (and an emote's mannequin does its move).
 function Card.setPicked(self: Card, on: boolean)
 	self.picked = on
 	self:rise(if on then 0 else LIFT)
-	self.edge.Transparency = if on then 0 elseif tier(self.item.rarity) == 1 then 0.62 else 0.3
+	self.edge.Transparency = if on then 0 else restingEdge(self.item.rarity)
+	self:setLive(on or self.hovered)
+end
+
+-- An emote card's mannequin doing its move, live (Shop/PoseFigure), while it is under the pointer or picked:
+-- one card at a time (the one before stops), and never under reduced motion.
+local live: Card? = nil
+function Card.setLive(self: Card, on: boolean)
+	local figure = self.figure
+	if not figure then
+		return
+	end
+	if on and not self.stopLive and not Motion.isReduced() and not self.faceDown then
+		if live and live ~= self then
+			live:setLive(false)
+		end
+		self.stopLive = PoseFigure.play(figure)
+		live = self
+	elseif not on and self.stopLive then
+		local stop = self.stopLive
+		self.stopLive = nil
+		stop()
+		if live == self then
+			live = nil
+		end
+	end
+end
+
+-- Bought: an ink seal stamped over the picture in the tier's colour, pressed down from a little above (simply
+-- there under reduced motion), fading after a moment.
+local SEAL = 78
+function Card.seal(self: Card)
+	local color = Rarity.color(self.item.rarity)
+	local seal = Kit.Base.make("CanvasGroup", {
+		Name = "Seal",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0, 14 + PICTURE / 2),
+		Size = UDim2.fromOffset(SEAL, SEAL),
+		Rotation = -12,
+		GroupTransparency = if Motion.isReduced() then 0 else 1,
+		ZIndex = 8,
+		Parent = self.face,
+	}) :: CanvasGroup
+	local disc = Kit.Base.make("Frame", {
+		Name = "Disc",
+		BackgroundColor3 = C.void,
+		BackgroundTransparency = 0.3,
+		BorderSizePixel = 0,
+		Position = UDim2.fromOffset(3, 3),
+		Size = UDim2.new(1, -6, 1, -6),
+		ZIndex = 8,
+		Parent = seal,
+	})
+	Kit.Base.corner(disc, SEAL / 2)
+	Kit.Base.stroke(disc, color, 3, 0)
+	local inner = Kit.Base.make("Frame", {
+		Name = "Inner",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(9, 9),
+		Size = UDim2.new(1, -18, 1, -18),
+		ZIndex = 8,
+		Parent = seal,
+	})
+	Kit.Base.corner(inner, SEAL / 2)
+	Kit.Base.stroke(inner, color, 1, 0.3)
+	Kit.label({
+		Text = "YOURS",
+		font = "bodyBold",
+		size = "small",
+		color = color:Lerp(C.bone, if Rarity.rank(self.item.rarity) == 5 then 0.38 else 0.18),
+		TextWrapped = false,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AutomaticSize = Enum.AutomaticSize.None,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0.9, 0.3),
+		ZIndex = 9,
+		Parent = seal,
+	})
+	if not Motion.isReduced() then
+		local scale = Instance.new("UIScale")
+		scale.Scale = 1.7
+		scale.Parent = seal
+		TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+			:Play()
+		TweenService:Create(seal, TweenInfo.new(0.14), { GroupTransparency = 0 }):Play()
+	end
+	task.delay(2.6, function()
+		if seal.Parent then
+			local fade = TweenService:Create(seal, TweenInfo.new(0.6), { GroupTransparency = 1 })
+			fade.Completed:Once(function()
+				seal:Destroy()
+			end)
+			fade:Play()
+		end
+	end)
+end
+
+-- For checks: whether this card's mannequin is moving now.
+function Card.isLive(self: Card): boolean
+	return self.stopLive ~= nil
 end
 
 -- Face down: the back of Death's deck covers it.
@@ -646,6 +921,7 @@ function Card.turn(self: Card, after: (() -> ())?)
 end
 
 function Card.destroy(self: Card)
+	self:setLive(false)
 	self.slot:Destroy()
 end
 
