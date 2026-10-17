@@ -28,6 +28,8 @@ Settings.DEFAULTS = {
 	hints = true,
 	lowGraphics = false,
 	emoteMusic = true,
+	emoteCamera = true,
+	emoteCutscenes = true,
 }
 
 local values = table.clone(Settings.DEFAULTS)

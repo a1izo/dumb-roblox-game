@@ -31,6 +31,8 @@ local SETTINGS = {
 	hints = "boolean",
 	lowGraphics = "boolean",
 	emoteMusic = "boolean",
+	emoteCamera = "boolean",
+	emoteCutscenes = "boolean",
 }
 
 local function setSettings(player: Player, payload)

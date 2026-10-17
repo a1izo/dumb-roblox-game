@@ -66,6 +66,8 @@ function Migrations.defaults(startingCoins: number)
 			hints = true,
 			lowGraphics = false,
 			emoteMusic = true, -- other players' emote sounds (Shared/EmoteMedia)
+			emoteCamera = true, -- the camera moving round your own showpiece emotes, in the lobby
+			emoteCutscenes = true, -- the private cutscenes of the Godhood emotes, in the lobby
 		},
 		tipsSeen = {}, -- [tipId] = true
 		-- The Academy's drills. `unrewarded` is set (by Shared/Trial) on a profile that finishes all seven now

@@ -35,6 +35,7 @@ local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
 local ClientState = require(script.Parent.Parent.ClientState)
 local EmoteFx = require(script.Parent.EmoteFx)
+local EmoteCamera = require(script.Parent.Parent.Presentation.EmoteCamera)
 local Mixer = require(script.Parent.Parent.Audio.Mixer)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 
@@ -61,6 +62,8 @@ export type Session = {
 	owned: boolean?, -- false: joined in on a dance this player does not own (the lobby lets anyone)
 	from: string?, -- the emote whose press-to-do moment played it (EmoteInfo `context`)
 	handle: PoseController.Handle?,
+	camera: ((atOnce: boolean?) -> ())?, -- the showpiece camera's way back (Presentation/EmoteCamera)
+	wisp: boolean?, -- ends in the ink wisp it began with
 	cleanups: { () -> () },
 	connections: { RBXScriptConnection },
 }
@@ -602,6 +605,14 @@ local function finish(session: Session, reason: string)
 	if handle and handle.playing() then
 		handle.stop(0.3, reason)
 	end
+	local camera = session.camera
+	if camera then
+		-- (gliding back when the emote ends by itself; at once when the player moved off, or the body went)
+		camera(reason ~= "finished" and reason ~= "replaced")
+	end
+	if session.wisp and reason ~= "replaced" and reason ~= "gone" and session.character.Parent then
+		EmoteFx.wisp(session.character)
+	end
 	-- This player walked out of an emote the server started: it forgets it (no Join in on a dance that stopped).
 	if
 		session.at
@@ -692,6 +703,16 @@ function EmoteController.start(character: Model, clip: string, options: StartOpt
 			finish(session, "gone")
 		end)
 	)
+	-- Every emote begins and ends in the ink wisp (a stance does not: it is how you stand).
+	if not opts.silent then
+		session.wisp = true
+		EmoteFx.wisp(character)
+	end
+	-- This player's own showpiece: the camera turns round them (Presentation/EmoteCamera).
+	if opts.pose ~= false and opts.own and character == Players.LocalPlayer.Character and EmoteCamera.wants(clip) then
+		local seconds = if prepared and not prepared.loop then prepared.length + HOLD else math.huge
+		session.camera = EmoteCamera.start(character, seconds)
+	end
 	EmoteController.Started:Fire(character, session)
 	return session
 end

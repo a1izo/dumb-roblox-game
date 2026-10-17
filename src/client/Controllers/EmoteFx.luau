@@ -9,9 +9,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
+local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
+local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
 
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
+local ClientState = require(script.Parent.Parent.ClientState)
+local Motion = require(script.Parent.Parent.UI.Core.Motion)
+local Governor = require(script.Parent.Parent.World.Governor)
 
 local EmoteFx = {}
 
@@ -218,11 +224,39 @@ FX.reapersEyes = function(character, preview)
 	end
 end
 
--- Starts an emote's effect on a character (nothing for emotes without one). Returns a function that clears
--- it away.
+-- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
+-- light, 3 layered, 4 the cutscene emotes'. The four above keep their own looks; the rest come with each emote.
+local RUNG: { [string]: number } = {
+	menacingPose = 1,
+	lowBattery = 1,
+	reapersEyes = 1,
+	newWorld = 2,
+}
+
+-- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in
+-- a case (Shared/EmotePolicy) or on low graphics (World/Governor).
+function EmoteFx.rung(clip: string): number
+	local info = EmoteInfo.of(clip)
+	local rung = EmotePolicy.fxRung(info, {
+		inCase = ClientState.isParticipant(),
+		phase = ClientState.phase(),
+		deathsinger = ClientState.isSpecter(),
+		cutscene = false,
+	})
+	if Governor.low("emoteFx") then
+		rung = math.min(rung, 1)
+	end
+	return rung
+end
+
+-- Starts an emote's effect on a character (nothing for emotes without one, or when its rung is out of reach
+-- here; a preview always shows it). Returns a function that clears it away.
 function EmoteFx.play(character: Model, clip: string, preview: boolean?): () -> ()
 	local fx = FX[clip]
 	if not fx then
+		return nothing
+	end
+	if not preview and EmoteFx.rung(clip) < (RUNG[clip] or 1) then
 		return nothing
 	end
 	return fx(character, preview == true)
@@ -231,6 +265,51 @@ end
 -- Clip ids that have an effect (for checks).
 function EmoteFx.has(clip: string): boolean
 	return FX[clip] ~= nil
+end
+
+-- The ink wisp: every emote begins and ends in a little breath of ink round the feet, rising and gone (the Core
+-- set's ink texture; nothing before it is imported, on low graphics, or under reduced motion).
+local WISP_TEXTURES = { "InkDrop", "Smoke" }
+function EmoteFx.wisp(character: Model)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") or Governor.low("emoteFx") or Motion.isReduced() then
+		return
+	end
+	local texture = ""
+	for _, name in ipairs(WISP_TEXTURES) do
+		texture = Assets.texture(name)
+		if texture ~= "" then
+			break
+		end
+	end
+	if texture == "" then
+		return
+	end
+	local at = Create("Attachment", { Name = "EmoteWisp", Position = Vector3.new(0, -2.6, 0), Parent = root })
+	at:SetAttribute("DGEmote", true)
+	local emitter = Create("ParticleEmitter", {
+		Texture = texture,
+		Color = ColorSequence.new(Color3.fromRGB(12, 12, 16)),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.55),
+			NumberSequenceKeypoint.new(0.7, 0.75),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 1.6) }),
+		Lifetime = NumberRange.new(0.7, 1.1),
+		Speed = NumberRange.new(1.2, 2.4),
+		SpreadAngle = Vector2.new(70, 70),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-40, 40),
+		Acceleration = Vector3.new(0, 1.5, 0),
+		LightInfluence = 0.6,
+		Rate = 0,
+		Parent = at,
+	}) :: ParticleEmitter
+	emitter:Emit(9)
+	task.delay(1.6, function()
+		at:Destroy()
+	end)
 end
 
 return EmoteFx
