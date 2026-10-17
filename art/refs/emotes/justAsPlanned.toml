@@ -20,30 +20,33 @@ alt = ["https://www.youtube.com/watch?v=lt4329_W_s0 (English dub)"]
 history = ["https://zh.moegirl.org.cn/en/%E8%AE%A1%E5%88%92%E9%80%9A (the phrase)"]
 
 [timing]
-segment = [1.4, 9.2]           # the anime cuts between shots; compressed into one 4.4 s move
+segment = [1.4, 9.2]           # the anime cuts between shots; the stare and the grin, built out into a 9.2 s scene
 loop = false
-length = 4.4
+length = 9.2                   # 2026-10-17 rework (owner: more dramatic, longer, effects: Godhood)
 
 [[beat]]
 src = 2.0
-pose = "the head turning to the side"
+pose = "the head turning to the side (clip 1.4-2.05)"
 [[beat]]
 src = 3.2
-pose = "the stare: eyes sliding sideways, a red glint"
+pose = "the stare: eyes sliding sideways, a red glint (clip 2.05)"
 [[beat]]
 src = 6.2
-pose = "the chin dropped, the eyes glaring up, the grin"
+pose = "the chin dropped, the eyes glaring up, the grin (clip 3.6-4.7)"
+# Added for the scene (not in the clip): the plan closed in a fist (clip 2.5-3.55), Light's laugh thrown back with the
+# arms open (clip 4.95-6.45, from his laugh as Kira in the anime's last episodes), the tie straightened (7.2), a last
+# look aside with the glint (7.75).
 
 [face]
 key = "smirk"                  # timeline: stare at the turn, the scheming grin when the chin drops (faces push)
 
 [sound]
-cues = ["a low swell under the grin (owner's)"]
+cues = ["a low swell under the stare (2.05)", "a hit as the fist closes (3.55)", "the laugh (4.95-6.45)", "a sting at the last glint (7.75); all the owner's"]
 match = true
 
 [vfx]
-rung = 4                       # Godhood (private cutscene)
-ideas = ["the red glint in the eyes at the stare", "the face shadowed from above in the cutscene"]
+rung = 4                       # Godhood (private cutscene); the world effect is rung 3 (EmoteFx.justAsPlanned)
+ideas = ["ink spreading across the floor round him, motes of it rising (0.3-8.4)", "the red glint in the eye (2.05, 7.75)", "a red light under the face from the grin (3.55)", "the laugh bursts a ring of ink across the floor (4.95)", "the ink sinks away at the end (8.4)", "the face shadowed from above in the cutscene"]
 
 [camera]
 showpiece = true
@@ -53,5 +56,5 @@ cinematic = "close on the face for the turn, slow push-in on the grin, red glint
 notes = "Seated in the anime; standing here. The meaning lives in the head and the face (owner uploads the faces)."
 
 [check]
-by_eye = "2026-10-17: stills at 0, 0.6, 1.15, 1.85, 2.45, 2.75, 3.2, 3.55, 4.0, 4.4 from 25 degrees: the turn, the hunch and the chuckle read."
+by_eye = "2026-10-17 rework: stills at every beat from 15-20 degrees (turn, hand, fist, grin, laugh, tie, last look); the head's turn measured in Blender (49 degrees at the stare). First build: stills at 0-4.4 s from 25 degrees."
 issues = ["without the face pictures the grin is only posture"]

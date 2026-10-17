@@ -224,6 +224,219 @@ FX.reapersEyes = function(character, preview)
 	end
 end
 
+-- Just As Planned, timed to the clip (art/scripts/emotes/poses.py): ink spreads across the floor round him and
+-- motes of it drift up; the eye catches red at the stare (2.05 s) and at the last look (7.75 s); a red light
+-- comes up under the face with the grin (3.55 s); the laugh (4.95 s) bursts a ring of ink out across the floor
+-- with a pulse of the light; everything sinks away as he comes to rest (8.4 s). Under reduced motion there is
+-- no burst and no pulse.
+local CRIMSON = Color3.fromRGB(163, 25, 47)
+local INK = Color3.fromRGB(10, 10, 14)
+local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+
+FX.justAsPlanned = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local head = character:FindFirstChild("Head")
+	if preview or not root or not root:IsA("BasePart") or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local calm = Motion.isReduced()
+	local gone = false
+	local made: { Instance } = {}
+	local function keep<T>(instance: T): T
+		table.insert(made, instance :: any)
+		return instance
+	end
+	local function at(seconds: number, fn: () -> ())
+		task.delay(seconds, function()
+			if not gone and root.Parent then
+				fn()
+			end
+		end)
+	end
+	local function tween(instance: Instance, seconds: number, goal: { [string]: any }, style: Enum.EasingStyle?)
+		TweenService:Create(instance, TweenInfo.new(seconds, style or Enum.EasingStyle.Sine), goal):Play()
+	end
+
+	-- the ink on the floor: the splat texture on a flat plate, or a dark disc when the texture is not imported
+	local floor = floorUnder(root.Position, character)
+	local splat = Assets.texture("InkSplat1")
+	local pool = keep(Create("Part", {
+		Name = "EmoteInkPool",
+		Size = Vector3.new(0.2, 0.04, 0.2),
+		CFrame = CFrame.new(floor + Vector3.new(0, 0.03, 0)) * CFrame.Angles(0, math.rad(math.random(0, 359)), 0),
+		Color = INK,
+		Material = Enum.Material.SmoothPlastic,
+		Transparency = if splat ~= "" then 1 else 0.3,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Parent = workspace.CurrentCamera,
+	}) :: BasePart)
+	local decal: Decal? = nil
+	if splat ~= "" then
+		decal = Create("Decal", {
+			Face = Enum.NormalId.Top,
+			Texture = splat,
+			Color3 = INK,
+			Transparency = 0.12,
+			Parent = pool,
+		}) :: Decal
+	end
+	tween(pool, 1.3, { Size = Vector3.new(8.5, 0.04, 8.5) }, Enum.EasingStyle.Quart)
+
+	-- motes of ink drifting up off the pool the whole time
+	local inkDrop = Assets.texture("InkDrop")
+	local motes = keep(Create("ParticleEmitter", {
+		Texture = if inkDrop ~= "" then inkDrop else SPARKLE,
+		Color = ColorSequence.new(INK),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.2, 0.35),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0.45) }),
+		Lifetime = NumberRange.new(1.6, 2.6),
+		Speed = NumberRange.new(0.6, 1.4),
+		Acceleration = Vector3.new(0, 1.2, 0),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-60, 60),
+		EmissionDirection = Enum.NormalId.Top,
+		Shape = Enum.ParticleEmitterShape.Disc,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		LightInfluence = 0.4,
+		Rate = 0,
+		Parent = pool,
+	}) :: ParticleEmitter)
+	at(0.5, function()
+		motes.Rate = 16
+	end)
+
+	-- the red glint in the eye, and a flash of red light with it
+	local eye =
+		keep(Create("Attachment", { Name = "EmoteGlint", Position = Vector3.new(0.22, 0.12, -0.62), Parent = head }))
+	eye:SetAttribute("DGEmote", true)
+	local glint = Create("ParticleEmitter", {
+		Texture = SPARKLE,
+		Color = ColorSequence.new(Color3.fromRGB(255, 40, 50)),
+		LightEmission = 1,
+		LightInfluence = 0,
+		Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.2),
+			NumberSequenceKeypoint.new(0.35, 1.1),
+			NumberSequenceKeypoint.new(1, 0),
+		}),
+		Lifetime = NumberRange.new(0.45),
+		Speed = NumberRange.new(0),
+		Rotation = NumberRange.new(0, 45),
+		RotSpeed = NumberRange.new(90),
+		LockedToPart = true,
+		ZOffset = 1,
+		Rate = 0,
+		Parent = eye,
+	}) :: ParticleEmitter
+	local glow =
+		Create("PointLight", { Color = CRIMSON, Range = 7, Brightness = 0, Shadows = false, Parent = eye }) :: PointLight
+	local function catchRed()
+		glint:Emit(1)
+		if not calm then
+			glow.Brightness = 5
+			tween(glow, 0.5, { Brightness = 0 })
+		end
+	end
+	at(2.05, catchRed)
+	at(7.75, catchRed)
+
+	-- the red light under the face from the grin on
+	local torso = character:FindFirstChild("Torso")
+	local under = keep(Create("Attachment", {
+		Name = "EmoteUnderlight",
+		Position = Vector3.new(0, 0.4, -1.4),
+		Parent = if torso and torso:IsA("BasePart") then torso else root,
+	}))
+	under:SetAttribute("DGEmote", true)
+	local below = Create("SpotLight", {
+		Color = CRIMSON,
+		Face = Enum.NormalId.Top,
+		Angle = 70,
+		Range = 9,
+		Brightness = 0,
+		Shadows = false,
+		Parent = under,
+	}) :: SpotLight
+	at(3.55, function()
+		tween(below, 0.8, { Brightness = 2.2 })
+	end)
+
+	-- the laugh: a ring of ink bursts out across the floor, the pool flares, the light pulses
+	at(4.95, function()
+		tween(pool, 0.35, { Size = Vector3.new(11.5, 0.04, 11.5) }, Enum.EasingStyle.Back)
+		at(0.45, function()
+			tween(pool, 1.2, { Size = Vector3.new(9, 0.04, 9) })
+		end)
+		if calm then
+			return
+		end
+		below.Brightness = 6
+		tween(below, 0.9, { Brightness = 2.6 })
+		local ring = keep(Create("Part", {
+			Name = "EmoteInkRing",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.05, 2, 2),
+			CFrame = CFrame.new(floor + Vector3.new(0, 0.06, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = CRIMSON,
+			Material = Enum.Material.Neon,
+			Transparency = 0.35,
+			Anchored = true,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			CastShadow = false,
+			Parent = workspace.CurrentCamera,
+		}) :: BasePart)
+		tween(ring, 0.7, { Size = Vector3.new(0.05, 22, 22), Transparency = 1 }, Enum.EasingStyle.Quart)
+		local splash = Create("ParticleEmitter", {
+			Texture = if inkDrop ~= "" then inkDrop else SPARKLE,
+			Color = ColorSequence.new(INK),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.15) }),
+			Lifetime = NumberRange.new(0.6, 1.0),
+			Speed = NumberRange.new(9, 15),
+			Drag = 3,
+			Acceleration = Vector3.new(0, -14, 0),
+			SpreadAngle = Vector2.new(80, 80),
+			EmissionDirection = Enum.NormalId.Top,
+			Rotation = NumberRange.new(0, 360),
+			LightInfluence = 0.4,
+			Rate = 0,
+			Parent = pool,
+		}) :: ParticleEmitter
+		splash:Emit(28)
+	end)
+	at(6.9, function()
+		tween(below, 0.6, { Brightness = 0.8 })
+	end)
+
+	-- the ink sinks away as he comes to rest
+	at(8.4, function()
+		motes.Rate = 0
+		tween(below, 0.6, { Brightness = 0 })
+		tween(pool, 0.8, { Size = Vector3.new(0.2, 0.04, 0.2) }, Enum.EasingStyle.Quart)
+		local fadeOut = decal
+		if fadeOut then
+			tween(fadeOut, 0.8, { Transparency = 1 })
+		end
+	end)
+
+	return function()
+		gone = true
+		for _, instance in ipairs(made) do
+			instance:Destroy()
+		end
+	end
+end
+
 -- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
 -- light, 3 layered, 4 the cutscene emotes'. The four above keep their own looks; the rest come with each emote.
 local RUNG: { [string]: number } = {
@@ -231,6 +444,7 @@ local RUNG: { [string]: number } = {
 	lowBattery = 1,
 	reapersEyes = 1,
 	newWorld = 2,
+	justAsPlanned = 3,
 }
 
 -- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in

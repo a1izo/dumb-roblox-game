@@ -101,9 +101,13 @@ showpiece = false
 notes = "No elbows or wrists: bent arms are the forearm direction with the fist slid to the hand's place (kit.reach); palms-out reads from the arm angle. Knee pops are a leg lifted forward and slid up. Hands on hips: arm angled out at the bottom, fist slid in."
 pop_limit = 1800               # the 'hey' flicks are snaps
 
+[mocap]
+take = "art/refs/mocap/puppetPop.json"
+notes = "2026-10-17 rework (owner: weird legs, arms pulled in, no real weight): tracked with MediaPipe Pose (heavy) on 111 frames, 3.92-11.32 s at 15 a second, each flipped back from the mirror first; the clip is the tracked frames from 4.0 s over 20 beats, then 2 beats easing home."
+
 [check]
-by_eye = "2026-10-17: mirrored stills at 24 reference times match the tutorial's silhouettes (flicks, cross, tilt, push, palms up, spread, hips + look, knee pops, kick back, wide bounce, swing, fist)."
+by_eye = "2026-10-17 rework: 16 reference frames side by side with the render (mirrored like the source), consecutive frames for smoothness, the loop's way home. First build: mirrored stills at 24 reference times (flicks, cross, tilt, push, palms up, spread, hips + look, knee pops, kick back, wide bounce, swing, fist)."
 silhouettes = "ok"
 timing = "keys on the source times, 173 bpm; loop 22 beats"
 contacts = "none (no props)"
-issues = ["forward push reads as arms out from the front view: check from the side in the video"]
+issues = ["the hands pulled to the chest (4.25) show as the arms bent out to the sides: an R6 arm cannot fold in that far"]

@@ -1,7 +1,8 @@
 """The things the emote pack's emotes hold or set down (Core set; see props.py, 2026-10-14): Pre-Dawn
 Bonk's club, Blindfold Lift's blindfold, Two-Finger Grip's phone, Chip and Pen's chip, Strawberry on
 Top's slice of cake and its strawberry, Dice Tower's die, Chocolate Snap's bar, Forty Seconds' watch,
-Mushroom Stroll's stick, Match Point's racket and ball, The Smiling Lord's cane, and Cuffed Together's cuff. The game scales each to the size it needs
+Mushroom Stroll's stick, Match Point's racket and ball, The Smiling Lord's cane, Cuffed Together's cuff, and
+the radio on the Potato Chip's desk. The game scales each to the size it needs
 (src/shared/Anim/EmoteProps.luau), so the sizes here are only the shapes' proportions. Small and plain,
 like the shop's props, so their textures stay small."""
 
@@ -274,3 +275,35 @@ def tennis_ball():
     for p, q in zip(points, points[1:]):
         parts.append(mk.tube("Seam", p, q, 0.012, 0.012, mat=seam, verts=5))
     return parts, []
+
+
+@prop("Radio", pivot="bottom", material="SmoothPlastic", collide=False, texture=256)
+def radio():
+    """A small silver portable radio of the 2000s, a round speaker on the left of its black face, the tuning dial
+    and two knobs on the right, a carrying handle and a telescopic aerial: on Light's desk in Diavolo's Potato
+    Chip (on the right; the notebook and the bag of crisps on the left). The face looks out at -Y."""
+    body = mk.noisy("Rd_Body", srgb(132, 134, 140), srgb(188, 190, 196), scale=12, roughness=0.35, metallic=0.55,
+                    kind="plastic")
+    face = mk.flat("Rd_Face", srgb(22, 22, 25), 0.5, kind="plastic")
+    grille = mk.banded("Rd_Grille", srgb(46, 46, 50), srgb(12, 12, 14), frequency=70, axis="Z", roughness=0.7)
+    chrome = mk.flat("Rd_Chrome", srgb(196, 198, 204), 0.2, metallic=1.0)
+    needle = mk.flat("Rd_Needle", srgb(190, 30, 30), 0.4)
+    dial = mk.emissive("Rd_Dial", srgb(255, 196, 120), 1.6)
+    parts = [
+        pk.rounded("Body", (1.4, 0.5, 0.85), (0, 0, 0.425), body, r=0.07),
+        mk.box("Face", (1.3, 0.02, 0.66), (0, -0.252, 0.4), mat=face, bevel=0.01),
+        mk.cylinder("Speaker", 0.25, 0.02, (-0.33, -0.266, 0.4), rot=(90, 0, 0), mat=grille, verts=28),
+        mk.torus("SpeakerRim", 0.255, 0.018, (-0.33, -0.268, 0.4), rot=(90, 0, 0), mat=chrome, major_segments=28,
+                 minor_segments=5),
+        mk.box("Needle", (0.014, 0.008, 0.13), (0.24, -0.27, 0.56), mat=needle),
+        mk.cylinder("Knob", 0.075, 0.07, (0.18, -0.29, 0.24), rot=(90, 0, 0), mat=chrome, verts=16, bevel=0.01),
+        mk.cylinder("Knob", 0.075, 0.07, (0.46, -0.29, 0.24), rot=(90, 0, 0), mat=chrome, verts=16, bevel=0.01),
+        mk.tube("Handle", (-0.5, 0.0, 0.84), (-0.46, 0.0, 1.06), 0.035, 0.035, mat=face, verts=8),
+        mk.tube("Handle", (-0.46, 0.0, 1.06), (0.46, 0.0, 1.06), 0.035, 0.035, mat=face, verts=8),
+        mk.tube("Handle", (0.46, 0.0, 1.06), (0.5, 0.0, 0.84), 0.035, 0.035, mat=face, verts=8),
+        mk.tube("Aerial", (0.6, 0.12, 0.84), (0.98, 0.22, 1.9), 0.022, 0.012, mat=chrome, verts=6),
+        mk.sphere("AerialTip", 0.03, (0.98, 0.22, 1.9), mat=chrome, segments=8, rings=5),
+    ]
+    for x in (-0.55, 0.55):
+        parts.append(mk.box("Foot", (0.2, 0.36, 0.04), (x, 0, -0.0), mat=face, bevel=0.01))
+    return parts, [mk.box("Dial", (0.52, 0.012, 0.16), (0.31, -0.264, 0.56), mat=dial)]

@@ -146,6 +146,7 @@ return {
 	Quill = { size = { 0.588, 2.54, 0.075 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 41, 40, 39 }, set = "Core", tris = 250 },
 	Racket = { size = { 0.872, 2.162, 0.12 }, pivot = "centre", material = "Wood", collide = false, color = { 109, 98, 82 }, set = "Core", tris = 820 },
 	Radiator = { size = { 6.02, 2.69, 0.8 }, pivot = "bottom", material = "Metal", collide = true, color = { 109, 102, 87 }, set = "Meeting", tris = 3040 },
+	Radio = { size = { 1.709, 1.95, 0.575 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 90, 91, 94 }, set = "Core", tris = 1444, glow = { { 255, 196, 120 } } },
 	RamenCounter = { size = { 12.2, 4.875, 2.7 }, pivot = "bottom", material = "Wood", collide = true, color = { 50, 32, 21 }, set = "Tokyo", tris = 744 },
 	ReadingTable = { size = { 10, 4.29, 4 }, pivot = "bottom", material = "Wood", collide = false, color = { 65, 51, 33 }, lights = { { at = { 2.5, 3.7, 0 }, brightness = 0.55, color = { 255, 220, 170 }, kind = "point", range = 11 }, { at = { -2.5, 3.7, 0 }, brightness = 0.55, color = { 255, 220, 170 }, kind = "point", range = 11 } }, set = "Campus", tris = 1848, glow = { { 255, 222, 170 } } },
 	RecycleBins = { size = { 3.4, 3.175, 1.275 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 122, 126, 124 }, set = "Tokyo", tris = 804 },
