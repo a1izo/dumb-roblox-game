@@ -15,6 +15,7 @@
 --   moves   carried somewhere else at a time: { at = seconds, mount = part?, to = steps }
 --   tosses  thrown up off the hand and caught: { at, back, height, spin (turns) }
 --   stack   copies set one on another: { step = steps, times = { seconds, ... } } (one at each time)
+--   core    the Core import the hold is made for (a remodelled mesh): an older import shows the stand-in
 
 local GRIP = { { p = { 0, -1.05, -0.25 } } }
 local RACKET = {
@@ -257,10 +258,38 @@ return {
 		props = {
 			{
 				model = "Wristwatch",
-				size = 1.25,
+				-- (the Core v8 watch: its strap square round the wrist, at full size so it sits just clear)
+				size = 1.265,
+				core = 8,
 				stand = { shape = "Block", size = { 0.4, 0.22, 0.12 }, color = { 190, 190, 196 } },
 				mount = "Left Arm",
 				at = { { p = { 0, -0.62, 0 } } },
+			},
+		},
+	},
+	-- Cuffed Together: a cuff on each chained wrist (the leader's left, the follower's right), its ring on the
+	-- arm's outer side where the chain hangs from (Controllers/DuoController).
+	cuffedLead = {
+		props = {
+			{
+				model = "Cuff",
+				size = 1.372,
+				core = 8,
+				stand = { shape = "Block", size = { 1.2, 0.22, 1.2 }, color = { 120, 122, 128 } },
+				mount = "Left Arm",
+				at = { { p = { 0, -0.75, 0 } } },
+			},
+		},
+	},
+	cuffedFollow = {
+		props = {
+			{
+				model = "Cuff",
+				size = 1.372,
+				core = 8,
+				stand = { shape = "Block", size = { 1.2, 0.22, 1.2 }, color = { 120, 122, 128 } },
+				mount = "Right Arm",
+				at = { { p = { 0, -0.75, 0 } }, { r = { 0, 180, 0 } } },
 			},
 		},
 	},

@@ -13,6 +13,7 @@
 --   moves   carried somewhere else at a time: { at = seconds, mount = part?, to = CFrame }
 --   tosses  thrown up off the hand and caught: { at, back, height, spin (turns) }
 --   stack   copies set one on another: { step = CFrame, times = { seconds, ... } } (one at each time)
+--   core    the Core import whose mesh this hold is made for: an older import shows the stand-in instead
 
 local EmoteMeta = require(script.Parent.EmoteMeta) :: any
 
@@ -33,6 +34,7 @@ export type Prop = {
 	moves: { Move }?,
 	tosses: { Toss }?,
 	stack: Stack?,
+	core: number?,
 }
 
 local rad = math.rad
@@ -83,6 +85,7 @@ local function prop(raw: any): Prop
 		moves = moves,
 		tosses = raw.tosses,
 		stack = stack,
+		core = raw.core,
 	}
 end
 

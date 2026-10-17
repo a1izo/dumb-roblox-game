@@ -62,6 +62,7 @@ return {
 	Crate = { size = { 4.08, 4, 4.16 }, pivot = "bottom", material = "WoodPlanks", collide = true, color = { 33, 24, 15 }, set = "Core", tris = 4092 },
 	Crow = { size = { 0.96, 1.8, 2.83 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 21, 21, 28 }, set = "Tokyo", tris = 1604 },
 	CrowCloak = { size = { 4.997, 3.014, 4.395 }, pivot = "centre", material = "Fabric", collide = false, color = { 22, 21, 26 }, set = "Core", tris = 3512 },
+	Cuff = { size = { 1.372, 0.22, 1.37 }, pivot = "centre", material = "Metal", collide = false, color = { 112, 113, 117 }, set = "Core", tris = 816 },
 	DeadTree = { size = { 13.08, 15.206, 10.226 }, pivot = "bottom", material = "Wood", collide = false, color = { 5, 6, 5 }, anchor = { 4.228, -2.902 }, set = "Lobby", tris = 6216 },
 	DeadTreeGnarled = { size = { 12.498, 10.906, 9.41 }, pivot = "bottom", material = "Wood", collide = false, color = { 5, 5, 4 }, anchor = { 4.073, 2.854 }, set = "Lobby", tris = 7236 },
 	Desk = { size = { 6, 4.595, 3.25 }, pivot = "bottom", material = "Wood", collide = true, color = { 62, 49, 37 }, set = "Core", tris = 1752, glow = { { 80, 220, 150 }, { 255, 214, 160 } } },
@@ -231,7 +232,7 @@ return {
 	WaterCooler = { size = { 1.394, 5.2, 1.41 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 159, 172, 181 }, set = "Agency", tris = 424, glow = { { 80, 160, 255 } } },
 	Whiteboard = { size = { 6.34, 6.1, 2.1 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 144, 143, 147 }, set = "Agency", tris = 972 },
 	WitheredAppleTree = { size = { 14.334, 14.009, 10.603 }, pivot = "bottom", material = "Wood", collide = false, color = { 10, 9, 9 }, anchor = { -0.413, -0.627 }, set = "Lobby", tris = 4536 },
-	Wristwatch = { size = { 1.2, 0.44, 1.29 }, pivot = "centre", material = "Metal", collide = false, color = { 35, 35, 35 }, set = "Core", tris = 572 },
+	Wristwatch = { size = { 1.16, 0.44, 1.265 }, pivot = "centre", material = "Metal", collide = false, color = { 47, 47, 47 }, set = "Core", tris = 768 },
 	XRayScanner = { size = { 4.261, 5.5, 9.8 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 58, 59, 62 }, set = "Agency", tris = 864, glow = { { 120, 170, 230 }, { 255, 190, 60 } } },
 	YakitoriGrill = { size = { 4, 4.06, 2.2 }, pivot = "bottom", material = "Metal", collide = true, color = { 95, 78, 63 }, lights = { { at = { -0, 4.2, 0 }, brightness = 0.7, color = { 255, 140, 60 }, kind = "point", range = 8 } }, set = "Tokyo", tris = 544, glow = { { 255, 110, 40 } } },
 }

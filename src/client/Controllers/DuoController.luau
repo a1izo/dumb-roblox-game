@@ -166,6 +166,9 @@ end
 
 -- The chain between two cuffed wrists, while the link lasts.
 local chains: { [Model]: () -> () } = {}
+-- Where the chain hangs from on a left wrist: the ring on the cuff's outer side (Anim/EmoteMeta cuffedLead; the
+-- right wrist's is mirrored).
+local CUFF_RING = Vector3.new(-0.68, -0.75, 0)
 
 local function watchChain(character: Model)
 	local function changed()
@@ -183,14 +186,21 @@ local function watchChain(character: Model)
 		local lead = link:GetAttribute("Role") == "lead"
 		local clip = if lead then "cuffedLead" else "cuffedFollow"
 		PoseController.play(character, clip, { fadeIn = 0.3, fadeOut = 0.3 })
+		-- A cuff on the chained wrist (Anim/EmoteMeta), for as long as the link lasts.
+		local linked = true
+		local removeCuff = EmoteController.dress(character, clip, function(): boolean
+			return linked
+		end)
 		local parts: { Instance } = {}
 		local arm = character:FindFirstChild(if lead then "Left Arm" else "Right Arm")
 		local otherArm = partner and (partner :: Model):FindFirstChild(if lead then "Right Arm" else "Left Arm")
-		-- The leader's body draws the chain, so it is drawn once.
+		-- The leader's body draws the chain, so it is drawn once: from the ring on each cuff's outer side.
 		if lead and arm and otherArm then
-			local a0 = Create("Attachment", { Name = "ChainEnd", Position = Vector3.new(0, -0.8, 0), Parent = arm })
-			local a1 =
-				Create("Attachment", { Name = "ChainEnd", Position = Vector3.new(0, -0.8, 0), Parent = otherArm })
+			local a0 = Create("Attachment", { Name = "ChainEnd", Position = CUFF_RING, Parent = arm })
+			local a1 = Create(
+				"Attachment",
+				{ Name = "ChainEnd", Position = CUFF_RING * Vector3.new(-1, 1, 1), Parent = otherArm }
+			)
 			local beam = Create("Beam", {
 				Name = "DuoChainBeam",
 				Attachment0 = a0,
@@ -246,6 +256,8 @@ local function watchChain(character: Model)
 			end
 		end
 		chains[character] = function()
+			linked = false
+			removeCuff()
 			PoseController.stop(character, clip)
 			for _, item in ipairs(parts) do
 				item:Destroy()
