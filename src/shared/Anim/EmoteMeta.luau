@@ -250,4 +250,24 @@ return {
 			},
 		},
 	},
+
+	-- What else a clip is (Shared/EmoteInfo, Shared/EmotePolicy):
+	--   lowBody    its legs are the point (a collapse, a crouch, a leap): never while seated at a meeting
+	--   cinematic  its owner sees it as a private cutscene (in the lobby)
+	--   fx         how strong its effects are, 0..4, when its rarity's default is not right
+	--   loud       its sound would carry over a case: kept quiet there
+	--   context    a press-to-do moment: { label = "LOOK UP", from = s, to = s, branch = clip } (the button shows
+	--              between from and to; one press plays the branch, the same on every screen)
+	--   formation  a group dance's places for those who join in: { { x, z }, ... } studs round the first dancer
+	--              (x to their right, z behind them), at most 5
+	lowBattery = { lowBody = true },
+	footScratch = { lowBody = true },
+	hairTwirl = { lowBody = true },
+	goalCelebration = { lowBody = true },
+	aceCrouch = { lowBody = true },
+	takeTheL = { lowBody = true },
+	newWorld = { cinematic = true, fx = 4 },
+	finalBreakdown = { cinematic = true, fx = 4 },
+	reapersEyes = { cinematic = true, fx = 4 },
+	justAsPlanned = { cinematic = true, fx = 4 },
 }

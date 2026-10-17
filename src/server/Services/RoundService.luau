@@ -25,6 +25,7 @@ local ChatService = require(script.Parent.ChatService)
 local Cues = require(script.Parent.Cues)
 local DeathNoteService = require(script.Parent.DeathNoteService)
 local Elimination = require(script.Parent.Elimination)
+local EmoteService = require(script.Parent.EmoteService)
 local EventLog = require(script.Parent.EventLog)
 local EvidenceService = require(script.Parent.EvidenceService)
 local EyesService = require(script.Parent.EyesService)
@@ -84,6 +85,7 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 	Match.phase = name
 	GhostService.onPhase(name)
 	Mechanics.onPhase(name)
+	EmoteService.onPhase(name)
 	Match.phaseStartedAt = workspace:GetServerTimeNow()
 	Match.phaseEndsAt = Match.phaseStartedAt + length
 	if onStart then
@@ -482,6 +484,7 @@ end
 local function reveal()
 	Match.phase = "Reveal"
 	Mechanics.onPhase("Reveal")
+	EmoteService.onPhase("Reveal")
 	Match.phaseStartedAt = workspace:GetServerTimeNow()
 	Match.phaseEndsAt = Match.phaseStartedAt + Match.phaseLength("Reveal")
 	CaseFileService.cancelAll(nil)

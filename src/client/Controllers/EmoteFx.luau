@@ -1,7 +1,8 @@
 -- The emote pack's effects round a character while its emote plays (EmoteController starts them and clears
 -- them when the emote ends; each returns a function that clears it away): a beam of light from above for
 -- New World, signs rising round Menacing Pose, a battery running down over Low Battery's head, red eyes
--- for Reaper's Eyes. Everything is made on this client only. A preview (the shop's copy in its 3D view)
+-- for Reaper's Eyes. Everything is made on this client only, and what is put on the body is marked "DGEmote"
+-- (a copy of the body leaves it out). A preview (the shop's copy in its 3D view)
 -- gets only what a 3D view can show: no lights, no billboards.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -87,6 +88,7 @@ FX.menacingPose = function(character, preview)
 				StudsOffset = start,
 				Parent = root,
 			}) :: BillboardGui
+			sign:SetAttribute("DGEmote", true)
 			local label = Create("TextLabel", {
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
@@ -128,6 +130,7 @@ FX.lowBattery = function(character, preview)
 		LightInfluence = 0,
 		Parent = head,
 	}) :: BillboardGui
+	gui:SetAttribute("DGEmote", true)
 	local case = Create("Frame", {
 		BackgroundColor3 = Color3.fromRGB(14, 14, 16),
 		BackgroundTransparency = 0.25,
@@ -194,6 +197,7 @@ FX.reapersEyes = function(character, preview)
 				CFrame = head.CFrame * CFrame.new(side, 0.12, -head.Size.Z / 2 - 0.03),
 				Parent = character,
 			}) :: BasePart
+			part:SetAttribute("DGEmote", true)
 			Create("WeldConstraint", { Part0 = head, Part1 = part, Parent = part })
 			table.insert(parts, part)
 		end

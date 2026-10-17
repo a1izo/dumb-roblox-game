@@ -5,6 +5,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Clips = require(Anim:WaitForChild("Clips"))
+local Index = require(Anim:WaitForChild("Clips"):WaitForChild("Index")) :: any
 local Joints = require(Anim:WaitForChild("Joints"))
 local Causes = require(Anim:WaitForChild("Causes"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
@@ -75,8 +76,21 @@ return function(t)
 				expect(ClipPlayer.exists(emote.id)).to.equal(true)
 			end
 		end)
+		it("indexes every clip with its part, length and loop", function()
+			-- (the parts load lazily: the index is how the server and the menus know a clip)
+			local count = 0
+			for id, entry in pairs(Index) do
+				count += 1
+				local clip = Clips[id]
+				expect(clip ~= nil).to.equal(true)
+				expect(entry.length).to.be.near(clip.length, 1e-3)
+				expect(entry.loop).to.equal(clip.loop == true)
+			end
+			expect(count > 100).to.equal(true)
+		end)
 		it("uses known joints, rising times and unit quaternions", function()
-			for id, clip in pairs(Clips) do
+			for id in pairs(Index) do
+				local clip = Clips[id]
 				for joint, track in pairs(clip.joints) do
 					expect(Joints.R6[joint] ~= nil).to.equal(true)
 					expect(#track.q).to.equal(#track.t * 4)

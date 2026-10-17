@@ -3,7 +3,7 @@
 -- cover on the copy, a trail as a ribbon flowing behind it, a Deathsinger form as the copy turned to a
 -- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
 -- billboards). Styles and emotes play once when picked (again when picked again): an emote on the
--- copy (with its sound and face, if it has them), a writing style writing a name on a strip of page, a verdict's little scene, a death style on
+-- copy, all of it (with its props, sound and face, if it has them), a writing style writing a name on a strip of page, a verdict's little scene, a death style on
 -- the copy (which is taken again afterwards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
@@ -18,6 +18,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
@@ -432,8 +433,23 @@ local function writePreview(self: YourLook, style: string): () -> ()
 	end
 end
 
--- An emote on the copy: its joints let go for as long as it plays, and it is put back at rest after. `held`:
--- the emote whose props, face and sound go with it (a stroll previews its walk, with the stroll's stick).
+-- How long a try-on lasts: all of a one-shot emote and its held last pose, or one whole loop of a dance (a
+-- short walk cycle a few times over).
+local function tryOnLength(clip: string): number
+	local prepared = ClipPlayer.get(clip)
+	if not prepared then
+		return 3.4
+	end
+	if prepared.loop then
+		return math.max(prepared.length, 3.4)
+	end
+	return prepared.length + 0.6
+end
+YourLook.tryOnLength = tryOnLength
+
+-- An emote on the copy, all of it: its joints let go for as long as it plays, and it is put back at rest
+-- after. `held`: the emote whose props, face and sound go with it (a stroll previews its walk, with the
+-- stroll's stick).
 local function emotePreview(self: YourLook, clip: string, held: string?): () -> ()
 	local copy = self.copy
 	if not copy then
@@ -444,14 +460,15 @@ local function emotePreview(self: YourLook, clip: string, held: string?): () -> 
 			part.Anchored = false
 		end
 	end
+	local seconds = tryOnLength(clip)
 	PoseController.bindWhenReady(copy, 1)
-	PoseController.play(copy, clip, { fadeIn = 0.1, fadeOut = 0.2, duration = 3.4 })
+	PoseController.play(copy, clip, { fadeIn = 0.1, fadeOut = 0.2, duration = seconds })
 	local own = held or clip
 	local function alive(): boolean
 		return PoseController.isPlaying(copy, clip)
 	end
 	local removeProp = EmoteController.dress(copy, own, alive)
-	local stopSound = EmoteController.previewSound(own, 3.4)
+	local stopSound = EmoteController.previewSound(own, seconds)
 	local undoFace = EmoteController.face(copy, own, alive)
 	local stopEffect = EmoteController.effect(copy, own, true)
 	local done = false
@@ -469,7 +486,7 @@ local function emotePreview(self: YourLook, clip: string, held: string?): () -> 
 			restPose(copy)
 		end
 	end
-	task.delay(3.6, stop)
+	task.delay(seconds + 0.2, stop)
 	return stop
 end
 

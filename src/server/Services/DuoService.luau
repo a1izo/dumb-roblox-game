@@ -1,8 +1,9 @@
--- Duo emotes (Shared/Cosmetics `duo`): played near someone, they ask first. The nearest player within REACH
--- is asked "Join?" (UI/DuoPanel); if they say yes in time, both play it together, the same on every screen
--- (Controllers/DuoController):
---   Match Point  a rally: the one asked is stood facing the one asking, RALLY studs off (or, with no room,
---                both just turn to face each other if they are near enough), and every client plays it
+-- Duo emotes (Shared/Cosmetics `duo`), in the lobby only: played near someone, they ask first. The nearest player
+-- within REACH is asked "Join?" (UI/DuoPanel); if they say yes in time, both play it together, the same on every
+-- screen (Controllers/DuoController):
+--   Match Point  a rally: the one asked walks to a spot facing the one asking, RALLY studs off (with no room
+--                there, both just turn to face each other if they are near enough); once there, every client
+--                plays it from the same moment. Not there in WALK_SECONDS: it is called off.
 --   Cuffed Together  lobby only: the two are chained wrist to wrist (a "DuoChain" ObjectValue in each body
 --                naming the other, the asker leading); the one asked walks after the leader, and a jump,
 --                another emote, going CHAIN_BREAK studs apart or a case ends it
@@ -26,6 +27,7 @@ local REACH = 10
 local ASK_SECONDS = 15
 local RALLY = 12
 local CHAIN_BREAK = 12
+local WALK_SECONDS = 4 -- to walk into place for a rally
 
 type Ask = { from: any, emote: string, name: string, expires: number }
 local asks: { [any]: Ask } = {}
@@ -56,18 +58,11 @@ local function candidates(): { any }
 	return list
 end
 
--- Somewhere duos are played together: both in the lobby, or both alive in the same case.
+-- Somewhere duos are played together: both in the lobby (Shared/EmotePolicy keeps duos out of cases).
 local function together(a: any, b: any): boolean
 	local inA = Match.active and Match.get(a) ~= nil
 	local inB = Match.active and Match.get(b) ~= nil
-	if inA ~= inB then
-		return false
-	end
-	if inA then
-		local psA, psB = Match.get(a), Match.get(b)
-		return psA.alive == true and psB.alive == true
-	end
-	return true
+	return not inA and not inB
 end
 
 local function busy(who: any): boolean
@@ -134,6 +129,21 @@ local function face(root: BasePart, at: Vector3)
 	end
 end
 
+local function begin(a: any, b: any)
+	local ra, rb = rootOf(a), rootOf(b)
+	if not ra or not rb then
+		return
+	end
+	face(rb, ra.Position)
+	face(ra, rb.Position)
+	DuoRemote:FireAllClients({
+		kind = "rally",
+		a = a.Character,
+		b = b.Character,
+		at = workspace:GetServerTimeNow() + 0.25,
+	})
+end
+
 local function startRally(a: any, b: any)
 	local ra, rb = rootOf(a), rootOf(b)
 	if not ra or not rb then
@@ -147,23 +157,43 @@ local function startRally(a: any, b: any)
 	local spot = ra.Position + look * RALLY
 	local clear = workspace:Raycast(ra.Position, spot - ra.Position, params) == nil
 	local floor = workspace:Raycast(spot + Vector3.new(0, 2, 0), Vector3.new(0, -8, 0), params)
-	local anchored = ra.Anchored or rb.Anchored
-	if clear and floor and not anchored then
-		rb.CFrame = CFrame.lookAt(
-			floor.Position + Vector3.new(0, 3, 0),
-			Vector3.new(ra.Position.X, floor.Position.Y + 3, ra.Position.Z)
-		)
-	else
+	if not clear or not floor or ra.Anchored or rb.Anchored then
+		-- No room in front: play where they stand, if that is a rally's distance.
 		local apart = (rb.Position - ra.Position).Magnitude
 		if apart < 5 or apart > RALLY + 3 then
 			Match.notify(a, "No room for a rally here.", "info")
 			Match.notify(b, "No room for a rally here.", "info")
 			return
 		end
-		face(rb, ra.Position)
+		begin(a, b)
+		return
 	end
-	face(ra, rb.Position)
-	DuoRemote:FireAllClients({ kind = "rally", a = a.Character, b = b.Character, at = workspace:GetServerTimeNow() })
+	-- The one asked walks to the spot (their own client walks them; a test bot is walked here), then it starts.
+	local target = floor.Position + Vector3.new(0, 3, 0)
+	local humanoid = b.Character and b.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid:MoveTo(target)
+	end
+	if typeof(b) == "Instance" and b:IsA("Player") then
+		DuoRemote:FireClient(b, { kind = "walk", to = target, face = ra.Position, seconds = WALK_SECONDS })
+	end
+	task.spawn(function()
+		local deadline = os.clock() + WALK_SECONDS
+		while os.clock() < deadline do
+			task.wait(0.1)
+			local nowA, nowB = rootOf(a), rootOf(b)
+			if not nowA or not nowB or (nowA.Position - ra.Position).Magnitude > 3 then
+				return -- the asker moved off or a body went: called off quietly
+			end
+			local flat = Vector3.new(nowB.Position.X - target.X, 0, nowB.Position.Z - target.Z)
+			if flat.Magnitude < 1.6 then
+				begin(a, b)
+				return
+			end
+		end
+		Match.notify(a, "Couldn't get into place for the rally.", "info")
+		Match.notify(b, "Couldn't get into place for the rally.", "info")
+	end)
 end
 
 local function startChain(leader: any, follower: any)

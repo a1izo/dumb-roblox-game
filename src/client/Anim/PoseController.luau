@@ -27,6 +27,17 @@ export type Options = {
 	phase: number?, -- seconds into the clip it starts at (looping emotes start on a shared beat)
 	speed: number?,
 	emote: boolean?, -- emotes stop when the character moves
+	-- "upper": only the waist up (the legs, the body's height and its hops stay with the base layer, so a body
+	-- standing at a meeting's seat keeps its feet where they are)
+	mask: string?,
+	-- called once when the track leaves, with why: "finished", "stopped", "moved", "replaced", "baked", "gone"
+	onEnd: ((reason: string) -> ())?,
+}
+
+-- What play() hands back: stops that one track (and only it).
+export type Handle = {
+	stop: (fadeOut: number?, reason: string?) -> (),
+	playing: () -> boolean,
 }
 
 -- A procedural track's source: the joints' rotations (and a body offset) `elapsed` seconds in.
@@ -44,6 +55,9 @@ type Track = {
 	speed: number,
 	phase: number,
 	emote: boolean,
+	mask: string?,
+	onEnd: ((reason: string) -> ())?,
+	why: string?, -- why it was told to stop (passed to onEnd when it leaves)
 }
 
 export type Rig = {
@@ -86,6 +100,15 @@ local function rotation(cf: CFrame): CFrame
 	return cf - cf.Position
 end
 
+-- A track has left the body: tell whoever started it (once, and never from inside the frame's loop).
+local function ended(track: Track, reason: string)
+	local onEnd = track.onEnd
+	if onEnd then
+		track.onEnd = nil
+		task.spawn(onEnd, track.why or reason)
+	end
+end
+
 -- Fewer joints than this and the body is still being assembled (or is not R6).
 local MIN_JOINTS = Joints.COUNT
 
@@ -118,6 +141,9 @@ local function unbind(character: Model)
 			rig.gone:Disconnect()
 		end
 		rig.watch, rig.gone = nil, nil
+		for _, track in ipairs(rig.tracks) do
+			ended(track, "gone")
+		end
 	end
 	rigs[character] = nil
 end
@@ -234,17 +260,60 @@ function PoseController.exists(id: string): boolean
 	return ClipPlayer.exists(id)
 end
 
--- Starts a clip (replacing the same clip if it is already playing).
-function PoseController.play(character: Model?, id: string, options: Options?)
+local function running(track: Track, now: number): boolean
+	return track.stopAt == nil or track.stopAt > now
+end
+
+-- Tells one track to stop (fading over `fade` seconds, at once when 0), remembering why.
+local function stopTrack(rig: Rig, track: Track, fade: number, why: string)
+	local now = os.clock()
+	if not running(track, now) and fade > 0 then
+		return
+	end
+	track.why = track.why or why
+	if track.animTrack then
+		track.animTrack:Stop(fade)
+		local index = table.find(rig.tracks, track)
+		if index then
+			table.remove(rig.tracks, index)
+		end
+		ended(track, why)
+	elseif fade <= 0 then
+		local index = table.find(rig.tracks, track)
+		if index then
+			table.remove(rig.tracks, index)
+		end
+		ended(track, why)
+	else
+		track.fadeOut = fade
+		track.stopAt = math.min(track.stopAt or math.huge, now)
+	end
+end
+
+local function handleFor(rig: Rig, track: Track): Handle
+	return {
+		stop = function(fadeOut: number?, reason: string?)
+			if table.find(rig.tracks, track) then
+				stopTrack(rig, track, fadeOut or track.fadeOut, reason or "stopped")
+			end
+		end,
+		playing = function(): boolean
+			return table.find(rig.tracks, track) ~= nil and running(track, os.clock())
+		end,
+	}
+end
+
+-- Starts a clip (replacing the same clip if it is already playing). Returns a handle on the new track.
+function PoseController.play(character: Model?, id: string, options: Options?): Handle?
 	local rig = PoseController.bind(character)
 	if not rig or rig.baked then
-		return
+		return nil
 	end
 	local clip = ClipPlayer.get(id)
 	if not clip then
-		return
+		return nil
 	end
-	PoseController.stop(character, id, 0)
+	PoseController.stop(character, id, 0, "replaced")
 	local now = os.clock()
 	local track: Track = {
 		id = id,
@@ -256,6 +325,8 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 		speed = if options and options.speed then options.speed else 1,
 		phase = if options and options.phase then options.phase else 0,
 		emote = options ~= nil and options.emote == true,
+		mask = if options then options.mask else nil,
+		onEnd = if options then options.onEnd else nil,
 	}
 	local animTrack = animationFor(rig.character, id)
 	if animTrack then
@@ -266,6 +337,7 @@ function PoseController.play(character: Model?, id: string, options: Options?)
 		animTrack:Play(track.fadeIn)
 	end
 	table.insert(rig.tracks, track)
+	return handleFor(rig, track)
 end
 
 -- Starts a procedural track (replacing a track of the same id): `sampler` is asked for the pose every frame
@@ -275,7 +347,7 @@ function PoseController.playProcedural(character: Model?, id: string, sampler: S
 	if not rig or rig.baked then
 		return
 	end
-	PoseController.stop(character, id, 0)
+	PoseController.stop(character, id, 0, "replaced")
 	local now = os.clock()
 	table.insert(rig.tracks, {
 		id = id,
@@ -287,55 +359,33 @@ function PoseController.playProcedural(character: Model?, id: string, sampler: S
 		speed = 1,
 		phase = 0,
 		emote = false,
+		onEnd = if options then options.onEnd else nil,
 	})
 end
 
--- Stops a clip (all clips when id is nil).
-function PoseController.stop(character: Model?, id: string?, fadeOut: number?)
+-- Stops a clip (all clips when id is nil). `reason` reaches the tracks' onEnd ("stopped" by default).
+function PoseController.stop(character: Model?, id: string?, fadeOut: number?, reason: string?)
 	local rig = if character then rigs[character] else nil
 	if not rig then
 		return
 	end
-	local now = os.clock()
 	for index = #rig.tracks, 1, -1 do
 		local track = rig.tracks[index]
 		if id == nil or track.id == id then
-			local fade = fadeOut or track.fadeOut
-			if track.animTrack then
-				track.animTrack:Stop(fade)
-				table.remove(rig.tracks, index)
-			elseif fade <= 0 then
-				table.remove(rig.tracks, index)
-			else
-				track.fadeOut = fade
-				track.stopAt = math.min(track.stopAt or math.huge, now)
-			end
+			stopTrack(rig, track, fadeOut or track.fadeOut, reason or "stopped")
 		end
 	end
 end
 
--- A track still plays until its stop time (a one-shot clip is given one when it starts).
-local function running(track: Track, now: number): boolean
-	return track.stopAt == nil or track.stopAt > now
-end
-
--- Stops every emote on a character (it started moving).
-function PoseController.stopEmotes(character: Model?)
+-- Stops every emote on a character (it started moving, by default: the reason its onEnd hears).
+function PoseController.stopEmotes(character: Model?, reason: string?)
 	local rig = if character then rigs[character] else nil
 	if not rig then
 		return
 	end
-	local now = os.clock()
-	for _, track in ipairs(rig.tracks) do
-		if track.emote and running(track, now) then
-			if track.animTrack then
-				track.animTrack:Stop(0.25)
-				track.stopAt = now
-				track.fadeOut = 0
-			else
-				track.stopAt = now
-				track.fadeOut = 0.25
-			end
+	for _, track in ipairs(table.clone(rig.tracks)) do
+		if track.emote then
+			stopTrack(rig, track, 0.3, reason or "moved")
 		end
 	end
 end
@@ -380,16 +430,26 @@ function PoseController.hasEmote(character: Model?): boolean
 	return false
 end
 
+-- Eased in and out (smoothstep): a pose leaves and arrives slowly at both ends of the blend, never with a
+-- corner where the fade starts or stops.
+local function ease(u: number): number
+	u = math.clamp(u, 0, 1)
+	return u * u * (3 - 2 * u)
+end
+
 local function weight(track: Track, now: number): number
 	local w = 1
 	if track.fadeIn > 0 then
-		w = math.clamp((now - track.started) / track.fadeIn, 0, 1)
+		w = ease((now - track.started) / track.fadeIn)
 	end
 	if track.stopAt and now > track.stopAt then
-		w *= if track.fadeOut > 0 then 1 - math.clamp((now - track.stopAt) / track.fadeOut, 0, 1) else 0
+		w *= if track.fadeOut > 0 then 1 - ease((now - track.stopAt) / track.fadeOut) else 0
 	end
 	return w
 end
+
+-- Joints an "upper" track leaves alone (the base layer keeps them).
+local LOWER = { rHip = true, lHip = true }
 
 local function apply(rig: Rig, joint: string, target: CFrame, w: number)
 	local motor = rig.motors[joint]
@@ -402,6 +462,9 @@ end
 -- Once the server has locked a pose into the joints (a death), this client stops posing.
 local function bake(rig: Rig)
 	rig.baked = true
+	for _, track in ipairs(rig.tracks) do
+		ended(track, "baked")
+	end
 	rig.tracks = {}
 	for _, motor in pairs(rig.motors) do
 		motor.Transform = IDENTITY
@@ -435,11 +498,24 @@ local function playTrack(rig: Rig, track: Track, now: number)
 	end
 	local clip = track.clip
 	if clip then
-		if clip.joints.rHip or clip.joints.lHip then
+		local upper = track.mask == "upper"
+		if not upper and (clip.joints.rHip or clip.joints.lHip) then
 			rig.legsTaken = math.max(rig.legsTaken, w)
 		end
 		table.clear(scratch)
 		local rotations, offset = ClipPlayer.sample(clip, elapsed, scratch)
+		if upper then
+			-- The waist up only: the legs and the body's height stay with the base layer (the after-pass keeps the
+			-- soles planted), and the torso turns half as far, so a body standing at its seat never hops or slides.
+			offset = nil
+			for joint in pairs(LOWER) do
+				rotations[joint] = nil
+			end
+			local root = rotations.root
+			if root then
+				rotations.root = IDENTITY:Lerp(root, 0.5)
+			end
+		end
 		for joint, rot in pairs(rotations) do
 			local basis = rig.basis[joint]
 			if basis then
@@ -500,6 +576,7 @@ local function step(dt: number)
 					track.animTrack:Stop(track.fadeOut)
 				end
 				table.remove(rig.tracks, index)
+				ended(track, "finished")
 			end
 		end
 		-- 1. base layer (skipped while an uploaded animation plays, so the Animator drives it)

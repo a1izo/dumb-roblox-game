@@ -9,12 +9,17 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
+local Signal = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Signal"))
 
 local Match = require(script.Parent.Match)
 
 local CueRemote = Net.event("Cue")
 
 local Cues = {}
+
+-- Fired as (kind, starts at (server time), hold seconds or nil) for every cue sent (EmoteService stops the case's
+-- emotes for the cutscenes everyone sees).
+Cues.Started = Signal.new()
 
 local counter = 0
 local holdUntil = 0
@@ -55,6 +60,9 @@ function Cues.fire(kind: string, data: { [string]: any }?, options: Options?): n
 	end
 	if options and options.hold then
 		Cues.hold(lead + options.hold)
+	end
+	if not (options and options.sameAs) then
+		Cues.Started:Fire(kind, payload.at, if options then options.hold else nil)
 	end
 	return id
 end

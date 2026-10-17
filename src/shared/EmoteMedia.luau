@@ -99,6 +99,19 @@ EmoteMedia.FACES = {
 	stare = "",
 } :: { [string]: string }
 
+-- An emote's sound cues, besides its music above: short sounds at moments of the clip (a pen's scratch, the
+-- crunch of a bite, a stamp), each fired from the emote's own clock (on every turn of a loop). The list for each
+-- emote is in its notes (art/refs/emotes/<clip>.toml, [sound]); fill a cue's id as for the music.
+--   at      seconds into the clip
+--   id      the sound asset id ("" plays nothing)
+--   volume  0 to 1, times VOLUME (1 when left out)
+--   own     heard by the dancer alone (a cue that would give something away, or only matters to them)
+--   loud    a prominent cue: kept quiet in a case
+export type Cue = { at: number, id: string, volume: number?, own: boolean?, loud: boolean? }
+
+-- [clip id] = its cues, in order
+EmoteMedia.CUES = {} :: { [string]: { Cue } }
+
 -- How loud an emote's sound plays (0 to 1).
 EmoteMedia.VOLUME = 0.5
 
@@ -115,6 +128,21 @@ end
 -- The sound for an emote, as a content id, or nil.
 function EmoteMedia.sound(clip: string): string?
 	return content(EmoteMedia.SOUNDS[clip])
+end
+
+-- An emote's cues that have a sound, in order of their moment, each with its content id.
+function EmoteMedia.cues(clip: string): { Cue }
+	local filled = {}
+	for _, cue in ipairs(EmoteMedia.CUES[clip] or {}) do
+		local id = content(cue.id)
+		if id then
+			table.insert(filled, { at = cue.at, id = id, volume = cue.volume, own = cue.own, loud = cue.loud })
+		end
+	end
+	table.sort(filled, function(a, b)
+		return a.at < b.at
+	end)
+	return filled
 end
 
 -- The face for an expression, as a content id, or nil.
