@@ -22,7 +22,7 @@ history = ["https://knowyourmeme.com/memes/ill-take-a-potato-chip-and-eat-it"]
 [timing]
 segment = [39.0, 69.0]         # writing in the bag (39-40), the hand into the bag (63.7-64.9), the raise (65.3-66.1), the crisp at the mouth (66.5-67.7), the bite (68.1-68.5)
 loop = false
-length = 5.0
+length = 10.4                  # 2026-10-17 rework: the desk falls from the sky, he sits, writes, eats the crisp, it sinks into ink
 
 [[beat]]
 src = 40.0
