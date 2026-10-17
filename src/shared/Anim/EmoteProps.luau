@@ -14,6 +14,8 @@
 --   tosses  thrown up off the hand and caught: { at, back, height, spin (turns) }
 --   stack   copies set one on another: { step = CFrame, times = { seconds, ... } } (one at each time)
 --   core    the Core import whose mesh this hold is made for: an older import shows the stand-in instead
+--   drop    falls into place from above when it shows: { height = studs, time = seconds } (a thud as it lands)
+--   sink    sinks down through the floor and goes: { at = seconds, time = seconds }
 
 local EmoteMeta = require(script.Parent.EmoteMeta) :: any
 
@@ -23,6 +25,8 @@ export type Move = { at: number, mount: string?, to: CFrame }
 export type Toss = { at: number, back: number, height: number, spin: number }
 export type Stack = { step: CFrame, times: { number } }
 export type Stand = { shape: string, size: Vector3, color: Color3 }
+export type Drop = { height: number, time: number }
+export type Sink = { at: number, time: number }
 export type Prop = {
 	model: string,
 	size: number,
@@ -35,6 +39,8 @@ export type Prop = {
 	tosses: { Toss }?,
 	stack: Stack?,
 	core: number?,
+	drop: Drop?,
+	sink: Sink?,
 }
 
 local rad = math.rad
@@ -86,6 +92,8 @@ local function prop(raw: any): Prop
 		tosses = raw.tosses,
 		stack = stack,
 		core = raw.core,
+		drop = raw.drop,
+		sink = raw.sink,
 	}
 end
 

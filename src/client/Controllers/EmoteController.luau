@@ -283,6 +283,45 @@ function EmoteController.dress(character: Model, clip: string, alive: Alive, man
 				return
 			end
 			local mount, at = spec.mount, spec.at
+			-- falling into place from above, tipped a little and levelling out as it comes down, then a thud
+			local drop = spec.drop
+			if drop then
+				local home = prop:GetPivot()
+				local tilt = CFrame.Angles(math.rad(10), 0, math.rad(-7))
+				local level = CFrame.new()
+				prop:PivotTo(home * tilt + Vector3.new(0, drop.height, 0))
+				over(drop.time, function(t: number)
+					if not gone then
+						prop:PivotTo(home * tilt:Lerp(level, t) + Vector3.new(0, drop.height * (1 - t * t), 0))
+					end
+				end, function()
+					if not gone then
+						prop:PivotTo(home)
+						if character:IsDescendantOf(workspace) then
+							EmoteFx.thud(home, spec.size)
+						end
+					end
+				end)
+			end
+			-- sinking down through the floor, and gone
+			local sink = spec.sink
+			if sink then
+				after(sink.at - (spec.show or 0), function()
+					local from = prop:GetPivot()
+					local _, size = prop:GetBoundingBox()
+					over(sink.time, function(t: number)
+						if not gone then
+							prop:PivotTo(from - Vector3.new(0, (size.Y + 0.2) * t * t, 0))
+						end
+					end, function()
+						local index = table.find(made, prop)
+						if index then
+							table.remove(made, index)
+						end
+						prop:Destroy()
+					end)
+				end)
+			end
 			for _, move in ipairs(spec.moves or {}) do
 				after(move.at - (spec.show or 0), function()
 					local toMount = move.mount or mount

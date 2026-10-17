@@ -481,6 +481,56 @@ function EmoteFx.has(clip: string): boolean
 	return FX[clip] ~= nil
 end
 
+-- A thud where something dropped from above lands (EmoteProps `drop`): a ring of dark dust thrown out low along
+-- the floor, wider for bigger things (nothing on low graphics or under reduced motion).
+function EmoteFx.thud(at: CFrame, size: number)
+	if Governor.low("emoteFx") or Motion.isReduced() then
+		return
+	end
+	local texture = Assets.texture("Smoke")
+	if texture == "" then
+		texture = Assets.texture("InkDrop")
+	end
+	if texture == "" then
+		return
+	end
+	local holder = Create("Part", {
+		Name = "EmoteThud",
+		Size = Vector3.new(size * 0.8, 0.05, size * 0.8),
+		CFrame = CFrame.new(at.Position + Vector3.new(0, 0.1, 0)),
+		Transparency = 1,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		Parent = workspace.CurrentCamera,
+	}) :: BasePart
+	local dust = Create("ParticleEmitter", {
+		Texture = texture,
+		Color = ColorSequence.new(Color3.fromRGB(40, 38, 40)),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) }),
+		Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.5),
+			NumberSequenceKeypoint.new(1, 1.4 + size * 0.15),
+		}),
+		Lifetime = NumberRange.new(0.5, 0.9),
+		Speed = NumberRange.new(4, 7),
+		Drag = 4,
+		SpreadAngle = Vector2.new(85, 5),
+		EmissionDirection = Enum.NormalId.Front,
+		Shape = Enum.ParticleEmitterShape.Box,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		Rotation = NumberRange.new(0, 360),
+		LightInfluence = 0.6,
+		Rate = 0,
+		Parent = holder,
+	}) :: ParticleEmitter
+	dust:Emit(math.clamp(math.floor(size * 4), 8, 28))
+	task.delay(1.2, function()
+		holder:Destroy()
+	end)
+end
+
 -- The ink wisp: every emote begins and ends in a little breath of ink round the feet, rising and gone (the Core
 -- set's ink texture; nothing before it is imported, on low graphics, or under reduced motion).
 local WISP_TEXTURES = { "InkDrop", "Smoke" }
