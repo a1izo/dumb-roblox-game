@@ -118,8 +118,9 @@ MOTIONS = {}
 
 
 class Motion:
-    def __init__(self, name, length, loop=False, note="", floor=False, rate=30):
+    def __init__(self, name, length, loop=False, note="", floor=False, rate=30, unwrap=False):
         MOTIONS[name] = self
+        self.unwrap = unwrap  # each key's angles turned the short way from the key before (solved poses)
         self.name = name
         self.length = float(length)
         self.loop = loop
@@ -221,14 +222,33 @@ class Motion:
             for key, side in LEGS.items():
                 ahead = forward[0] if side > 0 else forward[1]
                 lean = tilt[0] if side > 0 else tilt[1]
-                foot = (side * (SOLE_X + stance), 0.0, -ahead)
+                # stance: how far out both soles stand, or (right, left) for each its own
+                wide = stance if not isinstance(stance, (tuple, list)) else (stance[0] if side > 0 else stance[1])
+                foot = (side * (SOLE_X + wide), 0.0, -ahead)
                 angles, slide = posekit.planted_slide(side, foot, root, tuple(off), pitch=lean)
                 pose[key] = np.array([*angles, *slide])
         for fn in self.extras:
             fn(t, pose, off)
         return pose, off
 
+    def _unwrap(self):
+        """Angles solved from directions come back in -180..180, so a turn from 150 to -117 degrees would swing
+        the long way round (through 0); this shifts each key by whole turns to be nearest the key before."""
+        for ch in self.channels.values():
+            for i in range(1, len(ch.keys)):
+                t, v, ease = ch.keys[i]
+                prev = ch.keys[i - 1][1]
+                v = v.copy()
+                for a in range(3):
+                    while v[a] - prev[a] > 180:
+                        v[a] -= 360
+                    while v[a] - prev[a] < -180:
+                        v[a] += 360
+                ch.keys[i] = (t, v, ease)
+
     def build(self):
+        if self.unwrap:
+            self._unwrap()
         c = clip(self.name, self.length, loop=self.loop, note=self.note, floor=self.floor)
         c.stride = self.stride
         c.stance = self.stance

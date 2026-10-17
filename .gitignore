@@ -27,5 +27,6 @@ art/uiboard/
 # Preview videos (rendered by art/scripts/video_anims.py)
 art/export/previews/anims/
 art/export/previews/cinema/
+art/export/previews/emotes/
 art/export/previews/_*.png
 art/export/previews/_manual/
