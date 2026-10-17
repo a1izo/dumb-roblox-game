@@ -39,37 +39,81 @@ def _write(path, lines):
     return path
 
 
+def _facts(lines):
+    """(length, loop) from a clip's lines (its second and third lines, as clip_lua writes them)."""
+    length, loop = 0.0, False
+    for line in lines[1:4]:
+        m = re.match(r"^\t\tlength = ([-\d.]+),$", line)
+        if m:
+            length = float(m.group(1))
+        if line.strip() == "loop = true,":
+            loop = True
+    return length, loop
+
+
 def write(clips):
     """clips: [(name, [lines])] in order, each clip's lines as export_anims.clip_lua makes them
     (starting "\\t<name> = {" and ending "\\t},"). Returns the files written."""
     parts, current, size = [], [], 0
-    for _, lines in clips:
+    index = []  # (name, part, length, loop)
+    for name, lines in clips:
         chars = sum(len(line) + 1 for line in lines)
         if current and size + chars > CHUNK_CHARS:
             parts.append(current)
             current, size = [], 0
         current.extend(lines)
         size += chars
+        length, loop = _facts(lines)
+        index.append((name, len(parts) + 1, length, loop))
     if current:
         parts.append(current)
     os.makedirs(FOLDER, exist_ok=True)
     for name in os.listdir(FOLDER):
-        if re.fullmatch(r"Part\d+\.luau", name):
+        if re.fullmatch(r"Part\d+\.luau|Index\.luau", name):
             os.remove(os.path.join(FOLDER, name))
     written = []
     for i, lines in enumerate(parts, 1):
         head = HEADER + [f"-- Part {i} of {len(parts)} of the clips (Clips/init.luau joins them)."] + FORMAT
         written.append(_write(os.path.join(FOLDER, f"Part{i}.luau"), head + ["", "return {"] + lines + ["}"]))
-    requires = ", ".join(f"require(script.Part{i}) :: any" for i in range(1, len(parts) + 1))
-    init = HEADER + [
-        "-- Every clip by id, joined from the parts (each part is a table of clips, see Part1).",
+    index_lines = HEADER + [
+        "-- Every clip by id: the part that holds it, its length (seconds) and whether it loops. Small, so the server",
+        "-- and the menus can know a clip without loading its keys.",
         "",
+        "return {",
+    ] + [f"\t{name} = {{ part = {part}, length = {length:g}, loop = {'true' if loop else 'false'} }},"
+         for name, part, length, loop in index] + ["}"]
+    written.append(_write(os.path.join(FOLDER, "Index.luau"), index_lines))
+    refs = ", ".join(f"script.Part{i}" for i in range(1, len(parts) + 1))
+    init = HEADER + [
+        "-- Every clip by id. A part (each a table of clips, see Part1) loads the first time one of its clips is asked",
+        "-- for, so a client only parses the keys it plays; Index knows every clip's part. To go through all of them,",
+        "-- go through Index.",
+        "",
+        "local Index = require(script.Index) :: { [string]: { part: number, length: number, loop: boolean } }",
+        f"local parts = {{ {refs} }}",
+        "local loaded: { [number]: boolean } = {}",
         "local clips = {}",
-        f"for _, part in ipairs({{ {requires} }}) do",
-        "\tfor id, clip in pairs(part) do",
-        "\t\tclips[id] = clip",
+        "",
+        "local function load(n: number)",
+        "\tif loaded[n] then",
+        "\t\treturn",
+        "\tend",
+        "\tloaded[n] = true",
+        "\tfor id, clip in pairs(require(parts[n]) :: any) do",
+        "\t\trawset(clips, id, clip)",
         "\tend",
         "end",
+        "",
+        "setmetatable(clips, {",
+        "\t__index = function(_, id)",
+        "\t\tlocal entry = Index[id]",
+        "\t\tif entry then",
+        "\t\t\tload(entry.part)",
+        "\t\t\treturn rawget(clips, id)",
+        "\t\tend",
+        "\t\treturn nil",
+        "\tend,",
+        "})",
         "return clips :: { [string]: any }",
     ]
     written.insert(0, _write(os.path.join(FOLDER, "init.luau"), init))

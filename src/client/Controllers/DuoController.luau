@@ -1,5 +1,6 @@
 -- Duo emotes on this client (DuoService decides who and when):
 --   asked     the "Join?" card (UI/DuoPanel); the answer goes back to the server
+--   a walk    asked into a rally, this player walks to their spot facing the one who asked
 --   a rally   Match Point on both bodies at once, on every screen from the same start (the server's clock):
 --             each holds a racket (Anim/EmoteProps) and a ball flies between them on RALLY, the timetable of
 --             the clips' swings, until the smash sends it past the second player
@@ -131,22 +132,19 @@ local function rally(payload)
 	if typeof(a) ~= "Instance" or typeof(b) ~= "Instance" or type(payload.at) ~= "number" then
 		return
 	end
-	-- Everyone starts from the same moment, however late the message came.
+	-- Everyone starts from the same moment, however late the message came (the two sessions catch up all the
+	-- way, so the swings meet the ball).
 	local late = math.max(0, workspace:GetServerTimeNow() - payload.at)
 	local startAt = os.clock() - late
 	for _, pair in ipairs({ { a, "matchPointServe" }, { b, "matchPointReturn" } }) do
 		local character, clip = pair[1], pair[2]
-		PoseController.stopEmotes(character)
-		PoseController.play(character, clip, {
-			emote = true,
-			fadeIn = 0.15,
-			fadeOut = 0.3,
-			startAt = startAt,
-			duration = ClipPlayer.length(clip) + 0.6 - late,
+		PoseController.stopEmotes(character, "replaced")
+		EmoteController.start(character, clip, {
+			at = payload.at,
+			catchUp = ClipPlayer.length(clip),
+			own = Players:GetPlayerFromCharacter(character) == LocalPlayer,
 		})
-		EmoteController.dress(character, clip)
 	end
-	EmoteController.sound(a, "matchPointServe", Players:GetPlayerFromCharacter(a) == LocalPlayer)
 	local ball = ballModel()
 	ball.Parent = workspace.CurrentCamera
 	local connection
@@ -207,9 +205,10 @@ local function watchChain(character: Model)
 				LightInfluence = 1,
 				Parent = arm,
 			})
-			table.insert(parts, a0)
-			table.insert(parts, a1)
-			table.insert(parts, beam)
+			for _, item in ipairs({ a0, a1, beam }) do
+				item:SetAttribute("DGEmote", true) -- (a copy of the body leaves it out)
+				table.insert(parts, item)
+			end
 		end
 		local follow: RBXScriptConnection? = nil
 		local jump: RBXScriptConnection? = nil
@@ -282,6 +281,18 @@ local function watchChain(character: Model)
 	changed()
 end
 
+-- Asked into a rally: this player walks to their spot and turns to face the one who asked (the server checks
+-- they got there in time; pressing a move key takes the walk back, and the rally is called off).
+local function walk(payload)
+	if typeof(payload.to) == "Vector3" then
+		EmoteController.walkTo(
+			payload.to,
+			if typeof(payload.face) == "Vector3" then payload.face else nil,
+			tonumber(payload.seconds)
+		)
+	end
+end
+
 local function onEvent(payload)
 	if type(payload) ~= "table" then
 		return
@@ -297,6 +308,8 @@ local function onEvent(payload)
 		)
 	elseif payload.kind == "rally" then
 		rally(payload)
+	elseif payload.kind == "walk" then
+		walk(payload)
 	end
 end
 

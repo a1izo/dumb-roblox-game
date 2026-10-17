@@ -43,11 +43,14 @@ local LocomotionController = {}
 -- Fired with (character) when a walking or running character's foot comes down on the ground.
 LocomotionController.Footfall = Signal.new()
 
--- Fired with (character, clip) when a still body settles into its stance.
+-- Fired with (character, clip) when a still body settles into its stance, and Unsettled when that ends.
 LocomotionController.Settled = Signal.new()
+LocomotionController.Unsettled = Signal.new()
 
 -- Seconds of standing still before a body settles into its stance.
 local STANCE_AFTER = 6
+-- Seconds a stroll's own clips take to fade in, and out when it ends.
+local STROLL_FADE = 0.4
 
 -- Speeds (studs/s): below MOVE_FULL a body is still easing out of its idle; the walk is at its own speed at
 -- the bottom of the band and the run takes over towards the top (both clips say their own stride).
@@ -145,6 +148,9 @@ type State = {
 	settled: boolean,
 	stanceClip: string?,
 	farCheck: number,
+	-- a stroll, faded in and out (the last one kept while it fades)
+	strollWeight: number,
+	strollClip: string?,
 }
 
 local states: { [Model]: State } = {}
@@ -216,6 +222,7 @@ local function stateFor(character: Model): State
 			still = 0,
 			settled = false,
 			farCheck = 0,
+			strollWeight = 0,
 		}
 		states[character] = state
 		character.Destroying:Once(function()
@@ -307,11 +314,6 @@ local function advance(layer: Layer?, dt: number, fadeIn: number, fadeOut: numbe
 	return layer
 end
 
--- The forward cycle of a stroll (its walk), or of the movement set.
-local function forwardClip(family: string, stroll: ClipPlayer.Prepared?): ClipPlayer.Prepared
-	return stroll or clips[CYCLE[family].F]
-end
-
 -- Flying (a Deathsinger, a spectator): a hover easing into a glide with horizontal speed, and into a rise or a
 -- dive with vertical speed.
 local function flying(state: State, root: BasePart, dt: number): ({ [string]: CFrame }, Vector3)
@@ -370,6 +372,11 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	-- Flying and sitting take the whole body.
 	if character:GetAttribute("Specter") or character:GetAttribute("Spectator") then
 		Feet.reset(state.feet)
+		-- (a Deathsinger's emote ends when it moves off, as anyone's does)
+		local drift = root.AssemblyLinearVelocity
+		if Vector3.new(drift.X, 0, drift.Z).Magnitude > MOVE_FULL * 2 then
+			PoseController.stopEmotes(character)
+		end
 		return flying(state, root, dt)
 	end
 	if humanoid.Sit then
@@ -379,19 +386,24 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		return P.out.joints, P.out.offset
 	end
 
-	-- A stroll's own clips in the place of the idle and the forward cycles.
+	-- A stroll's own clips in the place of the idle and the forward cycles, faded in and out over STROLL_FADE
+	-- (the last stroll kept while it fades out).
 	local idle, guarded = clips.idle, clips.idleGuarded
-	local strollWalk: ClipPlayer.Prepared? = nil
 	local strolling = false
 	local stroll = character:GetAttribute("Stroll")
-	if type(stroll) == "string" then
-		local standing, moving = ClipPlayer.get(stroll), ClipPlayer.get(stroll .. "Walk")
-		if standing and moving then
-			idle, guarded = standing, standing
-			strollWalk = moving
-			strolling = true
-		end
+	if type(stroll) == "string" and ClipPlayer.get(stroll) and ClipPlayer.get(stroll .. "Walk") then
+		state.strollClip = stroll
+		strolling = true
 	end
+	state.strollWeight = math.clamp(state.strollWeight + (if strolling then dt else -dt) / STROLL_FADE, 0, 1)
+	local strollStand: ClipPlayer.Prepared?, strollWalk: ClipPlayer.Prepared? = nil, nil
+	local strollClip = state.strollClip
+	if state.strollWeight > 0 and strollClip then
+		strollStand, strollWalk = ClipPlayer.get(strollClip), ClipPlayer.get(strollClip .. "Walk")
+	elseif state.strollWeight <= 0 then
+		state.strollClip = nil
+	end
+	local strollW = if strollStand and strollWalk then smoothstep(state.strollWeight) else 0
 
 	-- How fast, and which way in the body's own frame (an adopted walker only goes forward).
 	local velocity = root.AssemblyLinearVelocity
@@ -446,7 +458,14 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 			state.settled = true
 			state.stanceClip = stance
 			if ClipPlayer.exists(stance) then
-				PoseController.play(character, stance, { emote = true, fadeIn = 0.8, fadeOut = 0.4 })
+				PoseController.play(character, stance, {
+					emote = true,
+					fadeIn = 0.8,
+					fadeOut = 0.4,
+					onEnd = function()
+						LocomotionController.Unsettled:Fire(character, stance)
+					end,
+				})
 				LocomotionController.Settled:Fire(character, stance)
 			end
 		end
@@ -489,6 +508,10 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		Pose.sample(guarded, state.idleTime, P.guarded)
 		Pose.blend(P.idle, P.guarded, smoothstep(state.mood))
 	end
+	if strollW > 0 and strollStand then
+		Pose.sample(strollStand, state.idleTime, P.extra)
+		Pose.blend(P.idle, P.extra, strollW)
+	end
 	Pose.copy(P.idle, out)
 
 	-- Moving: the eight cycles by direction and speed, on the shared phase. Humanoids start and stop almost
@@ -506,11 +529,17 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	if not state.legScale then
 		state.legScale = legScale(character, clips.run.leg)
 	end
-	local walkClip, runClip = forwardClip("walk", strollWalk), forwardClip("run", strollWalk)
+	local walkClip, runClip = clips[CYCLE.walk.F], clips[CYCLE.run.F]
 	local walkStride = (walkClip.stride or 4) * (state.legScale :: number)
 	local runStride = (runClip.stride or 10) * (state.legScale :: number)
 	local stride = walkStride + (runStride - walkStride) * running
 	local travel = (walkClip.stride or 4) * (walkClip.stance or 0.6) -- studs a body moves over a planted foot
+	if strollW > 0 and strollWalk then
+		-- a stroll's walk takes the place of both the walk and the run forward
+		local strollStride = (strollWalk.stride or 4) * (state.legScale :: number)
+		stride += (strollStride - stride) * strollW
+		travel += ((strollWalk.stride or 4) * (strollWalk.stance or 0.6) - travel) * strollW
+	end
 	local shared = math.clamp(travel / (stride / (state.legScale :: number)), 0.05, 0.95)
 	local previous = state.phase
 	-- The stride advances by the ground the body really covered since the last pose (another player's body is
@@ -534,12 +563,14 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		for _, d in ipairs(DIRECTIONS) do
 			local w = state.directions[d]
 			if w > 0.002 then
-				local walk = if d == "F" then walkClip else clips[CYCLE.walk[d]]
-				local run = if d == "F" then runClip else clips[CYCLE.run[d]]
-				Pose.sampleCycle(walk, state.phase, shared, P.walk)
+				Pose.sampleCycle(clips[CYCLE.walk[d]], state.phase, shared, P.walk)
 				if running > 0 then
-					Pose.sampleCycle(run, state.phase, shared, P.run)
+					Pose.sampleCycle(clips[CYCLE.run[d]], state.phase, shared, P.run)
 					Pose.blend(P.walk, P.run, running)
+				end
+				if d == "F" and strollW > 0 and strollWalk then
+					Pose.sampleCycle(strollWalk, state.phase, shared, P.extra)
+					Pose.blend(P.walk, P.extra, strollW)
 				end
 				total = Pose.mix(P.cycle, P.walk, w, total)
 			end

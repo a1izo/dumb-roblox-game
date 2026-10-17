@@ -79,7 +79,8 @@ function Stage.hide(self: Stage, model: Model)
 	end
 end
 
--- A still copy of a character: no scripts, no physics, no name tag. (The shop's Your Look uses it too.)
+-- A still copy of a character: no scripts, no physics, no name tag, nothing an emote put on it. (The shop's
+-- Your Look uses it too.)
 local function copyOf(source: Model): Model?
 	local archivable = source.Archivable
 	source.Archivable = true
@@ -89,6 +90,24 @@ local function copyOf(source: Model): Model?
 	source.Archivable = archivable
 	if not ok or not clone then
 		return nil
+	end
+	-- What an emote or a duo put on the body (props, effects, a chain: all marked "DGEmote") stays with it.
+	local leftovers: { Instance } = {}
+	for _, item in ipairs(clone:GetDescendants()) do
+		if item:GetAttribute("DGEmote") or item.Name == "DuoChain" then
+			table.insert(leftovers, item)
+		end
+	end
+	for _, item in ipairs(leftovers) do
+		item:Destroy()
+	end
+	-- and the head wears its own face, not the emote's
+	local head = clone:FindFirstChild("Head")
+	local face = head and head:FindFirstChild("face")
+	if face and face:IsA("Decal") and type(face:GetAttribute("OwnFace")) == "string" then
+		face.Texture = face:GetAttribute("OwnFace") :: string
+		face:SetAttribute("OwnFace", nil)
+		face:SetAttribute("EmoteFace", nil)
 	end
 	for _, item in ipairs(clone:GetDescendants()) do
 		if item:IsA("LuaSourceContainer") or item:IsA("Sound") or item:IsA("ProximityPrompt") then

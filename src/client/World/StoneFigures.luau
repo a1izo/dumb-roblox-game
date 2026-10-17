@@ -8,6 +8,7 @@
 --   StoneFigures.pose(figure, "point", 0.8)               -- one moment of a clip, held
 --   StoneFigures.play(figure, "write")                    -- the clip, over and over
 --   StoneFigures.play(figure, "collapseHeart", { cycle = 6 })   -- once every 6 s, holding its end between
+--                                                         -- (and easing back to its start before it begins again)
 --   StoneFigures.hold(figure)                             -- stop where it is
 --
 -- A body can also be made from someone's avatar (StoneFigures.adopt): its shape stays, everything else
@@ -54,6 +55,7 @@ export type Options = {
 local playing: { [Figure]: boolean } = {}
 local connection: RBXScriptConnection? = nil
 local scratch: { [string]: CFrame } = {}
+local first: { [string]: CFrame } = {}
 local IDENTITY = CFrame.identity
 
 local function still(part: BasePart)
@@ -320,6 +322,10 @@ function StoneFigures.attach(figure: Figure, limb: string, size: Vector3, offset
 	return part
 end
 
+-- How long a cycled one-shot takes, at the end of its rest, to ease from its last moment back to its first
+-- (so it never snaps back when it starts again).
+local EASE_BACK = 0.8
+
 local function write(figure: Figure, time: number)
 	local clip = figure.clip
 	if not clip then
@@ -327,6 +333,23 @@ local function write(figure: Figure, time: number)
 	end
 	table.clear(scratch)
 	local rotations, offset = ClipPlayer.sample(clip, time, scratch)
+	local cycle = figure.cycle
+	if cycle and not clip.loop then
+		local window = math.min(EASE_BACK, cycle - clip.length)
+		local into = time - (cycle - window)
+		if window > 0 and into > 0 then
+			local u = math.clamp(into / window, 0, 1)
+			u = u * u * (3 - 2 * u)
+			table.clear(first)
+			local start, startOffset = ClipPlayer.sample(clip, 0, first)
+			for joint, rotation in pairs(rotations) do
+				rotations[joint] = rotation:Lerp(start[joint] or IDENTITY, u)
+			end
+			if offset or startOffset then
+				offset = (offset or Vector3.zero):Lerp(startOffset or Vector3.zero, u)
+			end
+		end
+	end
 	local shift = if offset and figure.travel then offset * figure.scale else nil
 	for joint, motor in pairs(figure.motors) do
 		local basis = figure.basis[joint]
