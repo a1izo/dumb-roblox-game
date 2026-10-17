@@ -54,10 +54,22 @@ function Feet.update(feet: Feet, turned: number, body: number, dt: number)
 	end
 end
 
--- The feet back under the body at once (it moved off, sat down, took off).
+-- The feet back under the body at once (it sat down, took off, flies).
 function Feet.reset(feet: Feet)
 	feet.yaw[1], feet.yaw[-1] = 0, 0
 	feet.lift[1], feet.lift[-1] = 0, 0
+	feet.stepping = nil
+end
+
+-- The feet coming back under the body over a moment, while the stride takes them from their marks (setting off:
+-- they are still partly planted, so a reset in one frame would snap the hips).
+local RELAX = 12 -- per second
+function Feet.relax(feet: Feet, dt: number)
+	local k = math.min(1, dt * RELAX)
+	for _, side in ipairs({ 1, -1 }) do
+		feet.yaw[side] -= feet.yaw[side] * k
+		feet.lift[side] -= feet.lift[side] * k
+	end
 	feet.stepping = nil
 end
 

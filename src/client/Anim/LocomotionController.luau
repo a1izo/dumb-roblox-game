@@ -56,11 +56,19 @@ local STROLL_FADE = 0.4
 -- the bottom of the band and the run takes over towards the top (both clips say their own stride).
 local MOVE_FULL = 1.5
 local RUN_FROM, RUN_FULL = 5, 13
+-- Seconds the cycle (and the feet letting go of their marks) takes to come in when a body sets off: a humanoid is
+-- at full speed a frame after it starts, and the speed alone would bring the whole stride in that one frame.
+local MOVE_IN = 0.16
 
 local GROUND_REACH = 0.6 -- studs below the soles a body still counts as on the ground
 local NEAR = 80 -- studs from the camera within which a body is checked for the ground every frame
 local FAR = 110 -- studs beyond which a body is posed every second frame
 local LAND_AFTER = 0.08 -- seconds in the air before a landing can play
+local LAND_IN = 0.06 -- seconds a landing's dip takes to come in
+-- The direction weights (the eight cycles by which way the body moves) follow the velocity on a critically damped
+-- spring this stiff (rad/s): a sudden change of direction starts the new side-step gently, never at its fastest
+-- in the first frame, and settles in about a fifth of a second.
+local DIR_OMEGA = 14
 
 -- The mood of a standing body: in a case guarded, else at ease (crossfaded over MOOD_TIME seconds).
 local MOOD_TIME = 1.5
@@ -113,10 +121,15 @@ type State = {
 	idleTime: number,
 	legScale: number?,
 	blendSpeed: number,
+	moveIn: number, -- 0..1: how far the cycle has come in (eased: `moving`)
 	lastSpeed: number,
 	lastPosition: Vector3?,
 	stride: number,
 	directions: { [string]: number },
+	directionSpeeds: { [string]: number }, -- the direction weights' own speeds, on their spring
+	airUp: number, -- the air pose's make-up (rising, falling, a long fall), held from the landing
+	airDown: number,
+	airLong: number,
 	mood: number,
 	moodAt: number,
 	guarded: boolean,
@@ -197,9 +210,14 @@ local function stateFor(character: Model): State
 			phase = random:NextNumber(),
 			idleTime = random:NextNumber(0, 24),
 			blendSpeed = 0,
+			moveIn = 0,
 			lastSpeed = 0,
 			stride = 10,
 			directions = { F = 1, B = 0, L = 0, R = 0 },
+			directionSpeeds = { F = 0, B = 0, L = 0, R = 0 },
+			airUp = 0,
+			airDown = 0,
+			airLong = 0,
 			mood = 0,
 			moodAt = 0,
 			guarded = false,
@@ -448,6 +466,8 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	if state.airWeight > 0 then
 		state.airClock += dt
 	end
+	-- (applied eased in and out: the fall's pose never starts to leave, or to come, at its fastest)
+	local airW = smoothstep(state.airWeight)
 
 	-- Standing still a while with a stance: settle into it (an emote, so moving ends it).
 	local stance = character:GetAttribute("Stance")
@@ -518,13 +538,25 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	-- at once; the poses ease between speeds instead.
 	local before = state.blendSpeed
 	state.blendSpeed = approach(state.blendSpeed, speed, if speed > state.blendSpeed then 14 else 10, dt)
-	local moving = math.clamp(state.blendSpeed / MOVE_FULL, 0, 1)
+	-- (setting off, the cycle comes in over MOVE_IN at most; slowing down, it follows the speed)
+	local wanted = math.clamp(state.blendSpeed / MOVE_FULL, 0, 1)
+	state.moveIn = if wanted > state.moveIn then math.min(wanted, state.moveIn + dt / MOVE_IN) else wanted
+	local moving = smoothstep(state.moveIn)
 	state.moving = moving
 	local running = smoothstep((state.blendSpeed - RUN_FROM) / (RUN_FULL - RUN_FROM))
-	local target = Gait.directions(localVelocity)
-	for _, d in ipairs(DIRECTIONS) do
-		state.directions[d] =
-			approach(state.directions[d], if speed > 0.5 then target[d] else state.directions[d], 9, dt)
+	-- (on the spring: DIR_OMEGA; a long frame is taken in short steps so the spring stays steady)
+	local headings = Gait.directions(localVelocity)
+	local left = math.min(dt, 0.25)
+	while left > 0 do
+		local h = math.min(left, 1 / 60)
+		left -= h
+		for _, d in ipairs(DIRECTIONS) do
+			local goal = if speed > 0.5 then headings[d] else state.directions[d]
+			local w, v = state.directions[d], state.directionSpeeds[d]
+			v += (DIR_OMEGA * DIR_OMEGA * (goal - w) - 2 * DIR_OMEGA * v) * h
+			state.directions[d] = math.clamp(w + v * h, 0, 1)
+			state.directionSpeeds[d] = v
+		end
 	end
 	if not state.legScale then
 		state.legScale = legScale(character, clips.run.leg)
@@ -594,15 +626,21 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	local stopping = 0
 	if state.stop then
 		Pose.sample(state.stop.clip, state.stop.time, P.part)
-		stopping = state.stop.weight
+		stopping = smoothstep(state.stop.weight)
 		Pose.blend(out, P.part, stopping)
 	end
 
 	-- The air: the take-off when it jumped (or the hang when it stepped off), the top, the fall, a long fall.
+	-- Its make-up follows the body's rise and fall while it is in the air, and is held as it was from the moment
+	-- it lands (the speed drops to nothing then, and would swap the pose in one frame while it is still fading).
+	if not state.grounded then
+		state.airUp = smoothstep((velocity.Y - 2) / 10)
+		state.airDown = smoothstep((-velocity.Y - 4) / 12)
+		state.airLong = math.max(smoothstep((-velocity.Y - 40) / 25), smoothstep((state.airClock - 1.2) / 0.6))
+	end
 	if state.airWeight > 0 then
 		local air = P.air
-		local up = smoothstep((velocity.Y - 2) / 10)
-		local down = smoothstep((-velocity.Y - 4) / 12)
+		local up, down = state.airUp, state.airDown
 		Pose.sample(clips.jumpApex, state.airClock, air)
 		if up > 0 and state.jumped then
 			Pose.sample(clips.jump, math.min(state.airClock, clips.jump.length), P.part)
@@ -610,25 +648,26 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		end
 		if down > 0 then
 			Pose.sample(clips.fall, state.airClock, P.part)
-			local long = math.max(smoothstep((-velocity.Y - 40) / 25), smoothstep((state.airClock - 1.2) / 0.6))
+			local long = state.airLong
 			if long > 0 then
 				Pose.sample(clips.fallLong, state.airClock, P.extra)
 				Pose.blend(P.part, P.extra, long)
 			end
 			Pose.blend(air, P.part, down)
 		end
-		Pose.blend(out, air, state.airWeight)
+		Pose.blend(out, air, airW)
 	end
 
 	-- Layers over it all: the first step, the landing (the dip shallower while moving, the legs left to the
-	-- cycle or the planted feet).
+	-- cycle or the planted feet). Their weights are eased in and out, and a landing comes in over LAND_IN: in
+	-- one frame its dip would snap the arms.
 	state.start = advance(state.start, dt, 0.04, 0.14)
 	if state.start then
-		Pose.add(out, state.start.clip, state.start.time, state.start.weight * moving, 1, false)
+		Pose.add(out, state.start.clip, state.start.time, smoothstep(state.start.weight) * moving, 1, false)
 	end
-	state.land = advance(state.land, dt, 0.02, 0.12)
+	state.land = advance(state.land, dt, LAND_IN, 0.12)
 	if state.land then
-		Pose.add(out, state.land.clip, state.land.time, state.land.weight, 1 - 0.45 * moving, false)
+		Pose.add(out, state.land.clip, state.land.time, smoothstep(state.land.weight), 1 - 0.45 * moving, false)
 	end
 
 	-- Leaning into a curve (the root turning while it runs) and against a change of speed.
@@ -636,13 +675,13 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	local turned = if state.lastYaw then wrap(yaw - state.lastYaw) else 0
 	state.lastYaw = yaw
 	local yawRate = turned / math.max(dt, 1e-3)
-	local bank = math.clamp(yawRate * speed * 0.0021, -LEAN_MAX, LEAN_MAX) * moving * (1 - state.airWeight)
+	local bank = math.clamp(yawRate * speed * 0.0021, -LEAN_MAX, LEAN_MAX) * moving * (1 - airW)
 	state.lean = approach(state.lean, bank, 5, dt)
-	state.tip = approach(state.tip, math.clamp(-accel * 0.03, -5, 3) * moving * (1 - state.airWeight), 6, dt)
+	state.tip = approach(state.tip, math.clamp(-accel * 0.03, -5, 3) * moving * (1 - airW), 6, dt)
 
 	-- Turning on the spot: the body lags the root, the head leads, then the body comes round and the feet
 	-- step after it. Moving, the lag goes at once.
-	local standing = (1 - moving) * (1 - state.airWeight)
+	local standing = (1 - moving) * (1 - airW)
 	if standing > 0.5 and state.grounded then
 		state.body = math.clamp(state.body - turned, -100, 100)
 		if math.abs(state.body) > TURN_AFTER then
@@ -658,7 +697,13 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	else
 		state.body = approach(state.body, 0, 14, dt)
 		state.turning = false
-		Feet.reset(state.feet)
+		-- (the feet let go of their marks as the stride takes them: over a moment, while they are still partly
+		-- planted; at once only when nothing plants them any more)
+		if standing <= 0.01 then
+			Feet.reset(state.feet)
+		else
+			Feet.relax(state.feet, dt)
+		end
 	end
 	local rootRotation = out.joints.root or IDENTITY
 	out.joints.root = CFrame.Angles(math.rad(state.tip), math.rad(state.body), math.rad(state.lean)) * rootRotation
