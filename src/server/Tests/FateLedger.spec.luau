@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Fate = require(Shared:WaitForChild("Fate"))
+local Rarity = require(Shared:WaitForChild("Rarity"))
 local Progression = Shared:WaitForChild("Progression")
 local Ledger = require(Progression:WaitForChild("Ledger"))
 local ProgressRules = require(Progression:WaitForChild("ProgressRules"))
@@ -36,7 +37,8 @@ return function(t)
 					expect(item.price >= Fate.PRICE).to.equal(true)
 					expect(seen[id]).to.equal(nil)
 					seen[id] = true
-					rarities[item.rarity] = true
+					-- (a Godhood card counts among the legendary ones: Shared/Rarity)
+					rarities[Rarity.fateGroup(item.rarity)] = true
 				end
 				expect(rarities.legendary).to.equal(true)
 			end
@@ -54,7 +56,7 @@ return function(t)
 			local byRarity: { [string]: number } = {}
 			for id, chance in pairs(odds) do
 				total += chance
-				byRarity[(Cosmetics.byId(id) :: any).rarity] = chance
+				byRarity[Rarity.fateGroup((Cosmetics.byId(id) :: any).rarity)] = chance
 			end
 			expect(total).to.be.near(1, 1e-9)
 			if byRarity.legendary and byRarity.rare then

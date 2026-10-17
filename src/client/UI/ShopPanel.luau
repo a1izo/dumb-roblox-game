@@ -34,6 +34,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
+local Rarity = require(Shared:WaitForChild("Rarity"))
 local Sets = require(Shared:WaitForChild("Sets"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
@@ -43,6 +44,7 @@ local Ledger = require(Shared:WaitForChild("Progression"):WaitForChild("Ledger")
 local TimeUtil = require(Shared:WaitForChild("Progression"):WaitForChild("TimeUtil"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
@@ -68,6 +70,7 @@ local LOOK_WIDTH = 300
 local INFO_HEIGHT = 226 -- under Your look: the name, its line, the button, the stance button, a note
 local GAP = T.space.l
 local HOLD_SECONDS = 0.5
+local CONFIRM_SECONDS = 6 -- a Condemned or Godhood card's confirm stays this long
 
 local purseLabel: TextLabel
 local noteLabel: TextLabel
@@ -100,6 +103,9 @@ local sorting = "order" -- ShopBrowse.SORTS
 local searching = ""
 local newHere: { string } = {} -- the new cards dealt in this suit, seen once you leave it
 local fateDealt: string? = nil -- the card Fate just dealt, turned over once the profile says it is yours
+local confirming: string? = nil -- the Condemned or Godhood card whose buy is waiting to be confirmed
+local sealing: string? = nil -- the card just bought: sealed once the profile says it is yours
+local heldAction: (() -> ())? = nil -- what the hold button under Your look does (for checks)
 local arrange: () -> ()
 local price: (Cosmetics.Item) -> number?
 local isDeal: (Cosmetics.Item) -> boolean
@@ -137,10 +143,6 @@ local function formatSpan(seconds: number): string
 		return formatTime(seconds)
 	end
 	return string.format("%dd %dh", math.floor(seconds / 86400), math.floor((seconds % 86400) / 3600))
-end
-
-local function capitalised(text: string): string
-	return string.upper(string.sub(text, 1, 1)) .. string.sub(text, 2)
 end
 
 local function onSale(): boolean
@@ -222,19 +224,20 @@ local function leaveSuit()
 end
 
 -- What a card's chip says: its price, or where you stand with it.
-local function chipFor(profile, item: Cosmetics.Item): (string, boolean)
+-- A card's chip: its price with a coin; a check when it is yours; a lock when it cannot be bought now.
+local function chipFor(profile, item: Cosmetics.Item): (string, string)
 	if owns(profile, item) and item.kind == "emote" then
-		return if EmoteWheel.slotOf(profile.emoteWheel, item.emote) then "On wheel" else "Owned", false
+		return if EmoteWheel.slotOf(profile.emoteWheel, item.emote) then "On wheel" else "Owned", "check"
 	elseif owns(profile, item) then
-		return if profile.equipped[item.kind] == item.id then "Worn" else "Owned", false
+		return if profile.equipped[item.kind] == item.id then "Worn" else "Owned", "check"
 	elseif item.source == "vip" then
-		return "VIP", false
+		return "VIP", "lock"
 	elseif not price(item) then
-		return "Earned", false
+		return "Earned", "lock"
 	elseif ShopRotation.rotates(item, os.time()) and not ShopRotation.isFeatured(item.id, os.time()) then
-		return "Not today", false
+		return "Not today", "lock"
 	end
-	return tostring(ShopRotation.priceOf(item, os.time())), true
+	return tostring(ShopRotation.priceOf(item, os.time())), "coin"
 end
 
 -- How many emotes the profile owns.
@@ -309,18 +312,21 @@ end
 -- The button under Your look for the picked item, and the note under it.
 local function showAction(profile, item: Cosmetics.Item?)
 	clearAction()
+	heldAction = nil
 	actionNote.Text = ""
 	if not item then
 		lookName:set("Your look")
 		lookLine.Text = "Pick a card to see it on you."
+		lookLine.TextColor3 = C.dim
 		return
 	end
 	lookName:set(item.name)
 	lookLine.Text = string.format(
 		"%s  ·  %s",
-		capitalised(item.rarity),
+		Rarity.name(item.rarity),
 		Cosmetics.KIND_SINGULAR[item.kind] or item.kind
 	) .. (if item.stance then "  ·  Stance" elseif item.stroll then "  ·  Stroll" else "")
+	lookLine.TextColor3 = Rarity.color(item.rarity):Lerp(C.bone, 0.3)
 	local size = UDim2.new(1, 0, 0, T.touch)
 	local function press(text: string, action: string, variant: string)
 		Kit.button({ text = text, variant = variant, size = "m", Size = size, Parent = actionHolder }, function()
@@ -372,22 +378,40 @@ local function showAction(profile, item: Cosmetics.Item?)
 		closed(string.format("%d more coins", cost - profile.coins))
 		actionNote.Text = string.format("It costs %d coins.", cost)
 	else
-		Kit.hold(
-			{
-				text = string.format("Buy  ·  %d", price(item) :: number),
-				icon = "coin",
-				variant = "primary",
-				size = "m",
-				Size = size,
-				Parent = actionHolder,
-			},
-			HOLD_SECONDS,
-			function()
-				ShopRequest:FireServer({ action = "buy", itemId = item.id })
+		local cost = price(item) :: number
+		local asking = Rarity.confirms(item.rarity) and confirming ~= item.id
+		local function held()
+			if asking then
+				-- Condemned and Godhood: the first hold asks, a second within CONFIRM_SECONDS buys.
+				confirming = item.id
+				showAction(ClientState.profile, item)
+				task.delay(CONFIRM_SECONDS, function()
+					if confirming == item.id then
+						confirming = nil
+						if pickedId == item.id then
+							showAction(ClientState.profile, item)
+						end
+					end
+				end)
+				return
 			end
-		)
-		actionNote.Text = if item.kind == "emote"
-			then "Hold to buy. It goes on your emote wheel."
+			confirming = nil
+			sealing = item.id
+			ShopRequest:FireServer({ action = "buy", itemId = item.id })
+		end
+		heldAction = held
+		Kit.hold({
+			text = string.format(if confirming == item.id then "Confirm  ·  %d" else "Buy  ·  %d", cost),
+			icon = "coin",
+			variant = "primary",
+			size = "m",
+			Size = size,
+			Parent = actionHolder,
+		}, HOLD_SECONDS, held)
+		actionNote.Text = if confirming == item.id
+			then string.format("Hold again to spend %d coins on %s.", cost, item.name)
+			elseif asking then string.format("%s: hold to buy, then confirm.", Rarity.name(item.rarity))
+			elseif item.kind == "emote" then "Hold to buy. It goes on your emote wheel."
 			else "Hold to buy. You wear it at once."
 	end
 	if isDeal(item) and not owns(profile, item) then
@@ -411,6 +435,9 @@ end
 
 local function pick(item: Cosmetics.Item?)
 	pickedId = if item then item.id else nil
+	if confirming and confirming ~= pickedId then
+		confirming = nil
+	end
 	for id, card in pairs(cards) do
 		card:setPicked(id == pickedId)
 	end
@@ -458,7 +485,7 @@ function isDeal(item: Cosmetics.Item): boolean
 end
 
 local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, faceDown: boolean)
-	local text, coin = chipFor(profile, item)
+	local text, icon = chipFor(profile, item)
 	local fresh = isNew(profile, item)
 	-- (a card lying face down has not been seen yet)
 	if fresh and not faceDown and not table.find(newHere, item.id) then
@@ -468,7 +495,7 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 		Parent = grid,
 		LayoutOrder = order,
 		chip = text,
-		chipCoin = coin,
+		chipIcon = icon,
 		faceDown = faceDown,
 		isNew = fresh,
 		offer = if isDeal(item) then "25% OFF" else nil,
@@ -1098,6 +1125,18 @@ function ShopPanel.state(): {
 	}
 end
 
+-- For checks: the card laid for an item (nil when it is not on the table), and the action under Your look as
+-- if its hold button had been held to the end (nothing when there is no hold button).
+function ShopPanel.card(itemId: string): Card.Card?
+	return cards[itemId]
+end
+
+function ShopPanel.holdAction()
+	if heldAction then
+		heldAction()
+	end
+end
+
 -- Opens the shop on a card (the lobby's shop window): in Today's hand when it is dealt there today (turned
 -- over), else in its suit with nothing filtered out; picked, and scrolled to.
 function ShopPanel.focus(itemId: string)
@@ -1296,6 +1335,17 @@ function ShopPanel.init()
 			-- The cards follow the profile; the 3D copy is taken again only if what you wear changed.
 			ShopPanel.rebuild()
 			look:profileChanged(ClientState.profile)
+			-- A card just bought is sealed: yours.
+			local bought = sealing
+			local item = bought and Cosmetics.byId(bought)
+			if item and owns(ClientState.profile, item) then
+				sealing = nil
+				local card = cards[item.id]
+				if card then
+					card:seal()
+				end
+				Sfx.play("stamp")
+			end
 		end
 	end)
 	Kit.Layout.watch(function()

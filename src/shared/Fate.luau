@@ -6,15 +6,18 @@
 -- next week's. The server draws (ShopService "fate").
 
 local Cosmetics = require(script.Parent.Cosmetics)
+local Rarity = require(script.Parent.Rarity)
 local TimeUtil = require(script.Parent.Progression.TimeUtil)
 
 local Fate = {}
 
 Fate.SIZE = 12
 Fate.PRICE = 250
+-- (by Rarity.fateGroup: a Godhood card counts as a legendary one, in the quota and the odds)
 Fate.WEIGHTS = { common = 40, rare = 30, epic = 18, legendary = 8 }
 -- How many of each rarity a deck holds (then filled from the rest when a rarity runs short).
 local QUOTA = { legendary = 2, epic = 3, rare = 4, common = 3 }
+Fate.QUOTA = QUOTA
 
 function Fate.week(unixTime: number): number
 	return TimeUtil.week(unixTime)
@@ -47,7 +50,7 @@ function Fate.deck(week: number): { string }
 	for _, rarity in ipairs(Cosmetics.RARITIES) do
 		local want = QUOTA[rarity] or 0
 		for _, item in ipairs(pool) do
-			if want > 0 and item.rarity == rarity and #deck < Fate.SIZE then
+			if want > 0 and Rarity.fateGroup(item.rarity) == rarity and #deck < Fate.SIZE then
 				table.insert(deck, item.id)
 				taken[item.id] = true
 				want -= 1
@@ -70,7 +73,7 @@ function Fate.odds(deck: { string }, owns: (Cosmetics.Item) -> boolean): { [stri
 	for _, id in ipairs(deck) do
 		local item = Cosmetics.byId(id)
 		if item and not owns(item) then
-			local weight = Fate.WEIGHTS[item.rarity] or 1
+			local weight = Fate.WEIGHTS[Rarity.fateGroup(item.rarity)] or 1
 			weights[id] = weight
 			total += weight
 		end
