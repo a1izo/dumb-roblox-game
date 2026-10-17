@@ -292,23 +292,25 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 	local look = leaderRoot.CFrame.LookVector
 	local face = to + Vector3.new(look.X, 0, look.Z) * 10
 	formations[leader][index] = { who = player, clip = clip, walking = os.clock() + FORMATION_WALK + 0.5 }
-	local function arrived(): boolean
+	-- (there: within 2 studs; when time is up, near enough within 3, as a body brushing past the first
+	-- dancer on its way can stop a little short)
+	local function within(studs: number): boolean
 		local flat = Vector3.new(root.Position.X - to.X, 0, root.Position.Z - to.Z)
-		return flat.Magnitude < 1.6
+		return flat.Magnitude < studs
 	end
-	if not arrived() then
+	if not within(2) then
 		humanoid:MoveTo(to)
 		if typeof(player) == "Instance" and player:IsA("Player") then
 			EmoteRemote:FireClient(player, { walk = { to = to, face = face, seconds = FORMATION_WALK } })
 		end
 		local deadline = os.clock() + FORMATION_WALK
-		while os.clock() < deadline and not arrived() do
+		while os.clock() < deadline and not within(2) do
 			task.wait(0.1)
 			if not root.Parent then
 				return
 			end
 		end
-		if not arrived() then
+		if not within(3) then
 			formations[leader][index] = nil
 			refuse(player, clip, "Couldn't get into place")
 			return
