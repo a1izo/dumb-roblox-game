@@ -20,6 +20,8 @@ local Create = require(Shared:WaitForChild("Create"))
 local EmoteProps = require(Shared:WaitForChild("Anim"):WaitForChild("EmoteProps"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
+local Bindings = require(Shared:WaitForChild("Bindings"))
+local ClientState = require(script.Parent.Parent.ClientState)
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
@@ -146,6 +148,24 @@ local function ballAt(flight: Flight, t: number): Vector3?
 	return Vector3.new(ground.X, to.Y + (floorY - to.Y) * k * k, ground.Z)
 end
 
+-- The rally's hit keys: F and ButtonX unless the player set their own (Shared/Bindings "rallyHit").
+local function hitKeys(): { Enum.KeyCode }
+	local profile = ClientState.profile
+	local saved = profile and profile.keybinds or nil
+	local keys = {}
+	for _, platform in ipairs(Bindings.PLATFORMS) do
+		for _, name in ipairs(Bindings.keys("rallyHit", platform, saved)) do
+			local ok, key = pcall(function()
+				return (Enum.KeyCode :: any)[name]
+			end)
+			if ok and key then
+				table.insert(keys, key)
+			end
+		end
+	end
+	return keys
+end
+
 local function hidePrompt(rally: Rally)
 	if rally.prompt then
 		rally.prompt:Destroy()
@@ -180,7 +200,9 @@ local function showPrompt(rally: Rally)
 		Position = UDim2.fromScale(0.5, 0.72),
 		Size = UDim2.fromOffset(160, 40),
 		BackgroundTransparency = 1,
-		Text = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then "HIT" else "HIT  [F]",
+		Text = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+			then "HIT"
+			else "HIT  [" .. (hitKeys()[1] or Enum.KeyCode.F).Name .. "]",
 		TextColor3 = Color3.fromRGB(236, 232, 222),
 		TextStrokeTransparency = 0.4,
 		Font = Enum.Font.GothamBlack,
@@ -217,7 +239,7 @@ local function bindPress(rally: Rally)
 		hidePrompt(rally)
 		DuoRemote:FireServer({ action = "hit", t = now() })
 		return Enum.ContextActionResult.Sink
-	end, true, Enum.ContextActionPriority.High.Value + 10, Enum.KeyCode.F, Enum.KeyCode.ButtonX)
+	end, true, Enum.ContextActionPriority.High.Value + 10, table.unpack(hitKeys()))
 	ContextActionService:SetTitle("DGRallyHit", "HIT")
 end
 
