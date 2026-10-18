@@ -49,7 +49,9 @@ chip.key(1.3, "sine", offset=(0, 0, 0.1), root=(0, 8, 0), neck=(-4, 58, 0),  # a
 chip.key(1.7, "sine", root=(0, 2, 0), neck=(-14, 2, 0), rShoulder=J((0, 0, 4)), lShoulder=J((0, 0, -4)), **standing)
 chip.key(1.95, offset=(0, 0, 0), root=(-2, 0, 0), neck=(-12, 0, 0), rShoulder=J((0, 0, 4)), lShoulder=J((0, 0, -4)),
          **standing)
-# down into the chair: the hips back, the knees forward
+# down into the chair: the knees forward first (so the legs clear the seat's edge), then the hips back
+chip.key(2.12, "sine", offset=(0, 0.06, 0.12), root=(-10, 0, 0), neck=(-6, 0, 0), rShoulder=J((14, 0, 6)),
+         lShoulder=J((14, 0, -6)), rHip=J((40, 0, 3), (0, 0.02, 0)), lHip=J((40, 0, -3), (0, 0.02, 0)))
 chip.key(2.3, "sine", offset=(0, 0.04, 0.66), root=(-16, 0, 0), neck=(-2, 0, 0), rShoulder=J((24, 0, 8)),
          lShoulder=J((24, 0, -8)), rHip=J((46, 0, 3), (0, 0.04, 0)), lHip=J((46, 0, -3), (0, 0.04, 0)))
 chip.key(2.65, "out", offset=SEAT, root=(-4, 0, 0), neck=(-10, 0, 0), rShoulder=ON_TABLE_R, lShoulder=ON_TABLE_L,
@@ -92,6 +94,8 @@ chip.key(8.35, "sine", offset=SEAT, root=(-4, 0, 0), neck=(-10, 0, 0), rShoulder
 # up out of the chair, and watching it all sink
 chip.key(8.7, "sine", offset=(0, 0.04, 0.66), root=(-16, 0, 0), neck=(-4, 0, 0), rShoulder=J((24, 0, 8)),
          lShoulder=J((24, 0, -8)), rHip=J((46, 0, 3), (0, 0.04, 0)), lHip=J((46, 0, -3), (0, 0.04, 0)))
+chip.key(8.88, "sine", offset=(0, 0.06, 0.12), root=(-10, 0, 0), neck=(-12, 0, 0), rShoulder=J((14, 0, 6)),
+         lShoulder=J((14, 0, -6)), rHip=J((40, 0, 3), (0, 0.02, 0)), lHip=J((40, 0, -3), (0, 0.02, 0)))
 chip.key(9.05, "out", offset=(0, 0, 0), root=(-4, 0, 0), neck=(-22, 0, 0), rShoulder=J((2, 0, 5)),
          lShoulder=J((2, 0, -5)), **standing)
 chip.key(9.9, "sine", root=(-3, 0, 0), neck=(-26, 0, 0), rShoulder=J((2, 0, 5)), lShoulder=J((2, 0, -5)), **standing)
