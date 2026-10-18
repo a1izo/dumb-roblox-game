@@ -85,7 +85,7 @@ Bindings.ACTIONS = {
 	action("slot7", "Wheel slot 7", "wheel", { "Seven" }, {}),
 	action("slot8", "Wheel slot 8", "wheel", { "Eight" }, {}),
 	action("flyUp", "Fly up", "ghost", { "Space" }, { "ButtonA" }),
-	action("flyDown", "Fly down", "ghost", { "LeftControl" }, { "ButtonB" }),
+	action("flyDown", "Fly down", "ghost", { "LeftControl" }, { "ButtonL2" }),
 	action("noteOffer", "Take the offered note", "offer", { "X" }, { "ButtonL1" }),
 	action("emoteContext", "An emote's press-to-do", "plate", { "F" }, { "ButtonX" }),
 	action("joinIn", "Join in", "plate", { "J" }, { "ButtonY" }),

@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Assets = require(Shared:WaitForChild("Assets"))
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
@@ -93,11 +94,32 @@ local function startFlight(character: Model)
 	flight = { velocity = velocity, align = align, attachment = attachment }
 end
 
+-- Whether any key of a flight action is held (the player's own keys or the defaults, Shared/Bindings).
+local function held(id: string): boolean
+	local profile = ClientState.profile
+	local saved = profile and profile.keybinds or nil
+	for _, platform in ipairs(Bindings.PLATFORMS) do
+		for _, name in ipairs(Bindings.keys(id, platform, saved)) do
+			local ok, key = pcall(function()
+				return (Enum.KeyCode :: any)[name]
+			end)
+			if ok and key then
+				if platform == "gamepad" then
+					if UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, key) then
+						return true
+					end
+				elseif UserInputService:IsKeyDown(key) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
 local function lift(): number
-	local up = UserInputService:IsKeyDown(Enum.KeyCode.Space)
-		or UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonA)
-	local down = UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
-		or UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonL2)
+	local up = held("flyUp")
+	local down = held("flyDown")
 	local value = touchLift
 	if up then
 		value = 1
