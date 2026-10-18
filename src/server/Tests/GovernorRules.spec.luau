@@ -115,12 +115,9 @@ return function(t)
 			expect(look.haze).to.be.near(full.haze)
 		end)
 		it("leaves the phase moods and the exposure alone", function()
-			local grim = LightingPresets.resolve(agency, LightingPresets.moodFor("DeathNote"))
-			local cut = LightingPresets.resolve(
-				agency,
-				LightingPresets.moodFor("DeathNote"),
-				{ noGlow = true, fewShadows = true }
-			)
+			local grim = LightingPresets.resolve(agency, LightingPresets.moods.Blackout)
+			local cut =
+				LightingPresets.resolve(agency, LightingPresets.moods.Blackout, { noGlow = true, fewShadows = true })
 			expect(cut.exposure).to.be.near(grim.exposure)
 			expect(cut.tint).to.equal(grim.tint)
 			expect(cut.vignette).to.be.near(grim.vignette)

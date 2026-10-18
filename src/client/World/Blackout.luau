@@ -1,10 +1,10 @@
--- A map's blackout (Bureau HQ's breaker): while the map's BlackoutUntil (server time) is ahead, its
+-- A map's blackout (a Muerto's sabotage): while the map's BlackoutUntil (server time) is ahead, its
 -- emergency lamps (SceneBuilder.EMERGENCY_TAG) glow and pulse a slow red, the building's own glowing
 -- fittings (ceiling panels, tubes, downlights, desk lamps, monitors) go dark with their lights, and the
 -- power dies and comes back with a sound. Red and green glows stay: exit signs, standby lights and the
 -- emergency lamps run on batteries, and the city's windows far below have power. The lighting look
--- itself is LightingController's ("Blackout" mood); the rules (sight, name tags, once per round) are
--- the server's.
+-- itself is LightingController's ("Blackout" mood); the rules (sight, name tags, cooldown) are
+-- the server's (SabotageService).
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

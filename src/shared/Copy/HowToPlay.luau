@@ -10,7 +10,7 @@ local RAW: { { title: string, body: { string } } } = {
 		title = "The case",
 		body = {
 			"One player is {hand}, who kills by writing a player's real name in {grimoire}.",
-			"Everyone else works for {agency}, led by {zero}, whose identity is secret.",
+			"{Cultists} help {hand} in secret. Everyone else works for {agency}, led by {zero}, whose identity is secret.",
 			"Every player has a public alias (like Raven) and a secret real name (like Mei Sato).",
 		},
 	},
@@ -18,29 +18,32 @@ local RAW: { { title: string, body: { string } } } = {
 		title = "Real names",
 		body = {
 			"Your real name is on your role card. Hold C to see it again.",
-			"Finishing a case file flashes 3 letters of your real name to anyone close enough to watch.",
-			"{Hand} needs a full real name to kill. {Zero} needs one to arrest.",
+			"{Hand} and {cultists} learn real names by staring: standing still, close by, for a few seconds. Their eyes glow red while they stare.",
+			"Chat blocks real names everywhere. Only a paper note can carry one.",
 		},
 	},
 	{
-		title = "A round",
+		title = "Free roam",
 		body = {
-			"Investigation: work case files, watch the stations, trade notes.",
-			"{Grimoire} phase: {hand} may write a name. Everyone else files a private report.",
-			"Meeting: free chat. The victim, if any, dies during the meeting.",
-			"Vote: pick a suspect or skip. The player with the most votes is out.",
+			"Work case files, watch each other, pass notes. Anything can happen at any time.",
+			"{Hand} can write in {grimoire} whenever he likes, but the book burns red for a few seconds: whoever sees it knows.",
+			"A written victim dies 20 seconds later. Every death calls a meeting.",
+			"Text chat only reaches players close to you.",
 		},
 	},
 	{
-		title = "Case files and evidence",
+		title = "Meetings",
 		body = {
-			"Camera, fingerprint, phone and forensics stations each post a different kind of clue."
-				.. " Every station has four puzzles; you get one at random.",
-			Terms.f(
-				"Forensics analyses the ink of the last deadly entry in {grimoire}: whose pen could have written it."
-			),
-			"Clues appear on the evidence board (B) and on the board in the meeting room.",
-			"{Hand} and {cultists} can fake a task: no clue, no flash. A missing board entry can expose them.",
+			"A meeting starts when someone dies, when someone rings the bell (once each per match), or after three quiet minutes.",
+			"Talk it over, then vote: pick a suspect or skip. A tie or a skip removes nobody.",
+		},
+	},
+	{
+		title = "Case files",
+		body = {
+			"Camera, fingerprint, phone and forensics stations each have four puzzles; you get one at random.",
+			"Every case file done fills {agency}'s task bar. Fill it and {agency} wins.",
+			"{Hand} and {cultists} cannot work case files. Bureau {specters} still can.",
 		},
 	},
 	{
@@ -48,31 +51,30 @@ local RAW: { { title: string, body: { string } } } = {
 		body = {
 			"Take a blank sheet, write up to 40 characters, then drop it or hand it to someone close by (X).",
 			"A handed note can be taken or left. Anyone watching sees the paper change hands.",
-			"If anyone from {agency} picks up a dropped note naming a living player, it is confiscated and that player gets a hood.",
-			"{Hand} can burn a note, but the smoke makes everyone nearby look suspicious.",
+			"{Hand} can burn a note; the smoke is easy to spot.",
 		},
 	},
 	{
-		title = "Hoods and {eyes}",
+		title = "{Cultists} and {eyes}",
 		body = {
-			"From round 2 one {cultist} may accept {eyes}: up close, they can read real names.",
-			"Their eyes glow red while reading, and they die soon after the deal.",
-			"A hood blocks {eyes} for the round it is worn.",
+			"A {cultist} knows {hand}, but {hand} does not know them.",
+			"{Cultists} sabotage: a blackout, jammed stations, or a barricade across the way.",
+			"A {cultist} may accept {eyes}: fast reads from far off, eyes blazing, and death three minutes later.",
 		},
 	},
 	{
 		title = "{Zero} and {butler}",
 		body = {
-			"{Zero} reads the tip box and reports at {zeroDesk} and speaks on the meeting screen.",
-			"{Butler} knows one letter of {hand}'s real name and should get it to {zero}.",
-			"During the vote {zero} can serve one warrant with a full real name. A wrong arrest loses the match.",
+			"Once per match, during a meeting, {zero} can arrest one player. {Circle} is removed; an innocent costs {zero} their life.",
+			"Any arrest reveals who {zero} is.",
+			"{Butler} knows {zero}. If {zero} dies, {butler} names the next one, who gets a fresh arrest.",
 		},
 	},
 	{
 		title = "Winning",
 		body = {
-			"{Agency} wins when {hand} is voted out or arrested.",
-			"{Hand} wins by killing {zero}, by matching {agency} in number, or by surviving 5 rounds.",
+			"{Agency} wins when {hand} is voted out or arrested, or when the task bar is full.",
+			"{Circle} wins by matching {agency} in number.",
 		},
 	},
 }

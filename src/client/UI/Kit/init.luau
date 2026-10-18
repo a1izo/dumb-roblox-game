@@ -86,7 +86,6 @@ local Kit = {
 	texture = Surfaces.texture,
 	-- controls
 	button = Controls.button,
-	hold = Controls.hold,
 	iconButton = Controls.iconButton,
 	actionChip = Controls.actionChip,
 	keycap = Controls.keycap,

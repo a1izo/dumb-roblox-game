@@ -250,7 +250,6 @@ export type ConfirmOptions = {
 	confirm: string,
 	cancel: string?,
 	variant: string?, -- the confirm button ("primary" or "danger")
-	hold: number?, -- seconds to hold the confirm button (for things that cannot be undone)
 	onConfirm: () -> (),
 	onCancel: (() -> ())?,
 }
@@ -329,11 +328,7 @@ function Window.confirm(options: ConfirmOptions): () -> ()
 		dismiss()
 		options.onConfirm()
 	end
-	if options.hold then
-		Controls.hold(confirmProps, options.hold, confirmed)
-	else
-		Controls.button(confirmProps, confirmed)
-	end
+	Controls.button(confirmProps, confirmed)
 	-- Size the page to its text.
 	task.defer(function()
 		if box.Parent then

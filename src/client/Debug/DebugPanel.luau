@@ -2,7 +2,7 @@
 -- in a Studio play test; listed user ids in live servers). Tabs:
 --   Match    start now, the next map, skip / pause / extend phases, speed, forced wins
 --   People   everyone with their role and real name; change roles now or for the next match,
---            kill, vote out, arrest, revive, give the Eyes / a hood / paper, flash letters, move
+--            kill, vote out, arrest, revive, give the Oculus / paper / every name, finish a case file, move
 --   Bots     add test bots, autoplay, how they vote, orders for one bot (Studio only)
 --   World    teleports, map previews, Blender scenes on or off, fly / noclip / free camera,
 --            collider boxes, role tags, lighting and rain
@@ -272,7 +272,6 @@ builders.Match = function()
 	for _, phase in ipairs({
 		{ "Briefing", "Briefing" },
 		{ "Investigation", "Investigation" },
-		{ "DeathNote", Terms.PHASE.DeathNote },
 		{ "Meeting", "Meeting" },
 		{ "Vote", "Vote" },
 	}) do
@@ -281,10 +280,19 @@ builders.Match = function()
 		end)
 	end
 	r = row()
-	for round = 1, Config.MAX_ROUNDS do
-		button(r, "Round " .. round, function()
-			send("skipTo", { phase = "Investigation", round = round })
-		end, if match.round == round then COLORS.pick else nil)
+	button(r, "Call a meeting now", function()
+		send("meeting")
+	end)
+	for _, share in ipairs({ 0.5, 0.9 }) do
+		button(r, string.format("Task bar %d%%", share * 100), function()
+			send("taskBar", { share = share })
+		end)
+	end
+	button(r, "Butler picks now", function()
+		send("butlerPick")
+	end)
+	if match.taskBar and match.taskBar.total > 0 then
+		note(string.format("Task bar: %d / %d. Meeting %d.", match.taskBar.done, match.taskBar.total, match.round or 0))
 	end
 	heading("Speed")
 	r = row()
@@ -307,9 +315,6 @@ builders.Match = function()
 	button(r, "End match now (no outro)", function()
 		send("endMatch")
 	end, COLORS.danger)
-	if match.butlerHint then
-		note("Butler's hint this match: " .. match.butlerHint)
-	end
 end
 
 builders.People = function()
@@ -323,8 +328,8 @@ builders.People = function()
 			entry.realName or "-",
 			if entry.alive == false then "  [" .. tostring(entry.status) .. "]" else "",
 			if entry.bot then "  [bot]" else "",
-			if entry.eyes then "  [eyes " .. entry.eyes .. "]" else "",
-			if entry.hood then "  [hood]" else ""
+			if entry.eyes then "  [oculus " .. entry.eyes .. " s]" else "",
+			if entry.fakeAce then "  [fake Ace]" elseif entry.ace then "  [Ace]" else ""
 		)
 		local b = make("TextButton", {
 			AutoButtonColor = true,
@@ -374,7 +379,7 @@ builders.People = function()
 	button(r, "Vote out", function()
 		send("voteOut", { userId = selected })
 	end, COLORS.danger)
-	button(r, "Arrest (warrant)", function()
+	button(r, "Arrest", function()
 		send("arrest", { userId = selected })
 	end, COLORS.danger)
 	button(r, "Leave / remove", function()
@@ -388,18 +393,24 @@ builders.People = function()
 	button(r, Terms.NAMES.Eyes, function()
 		send("eyes", { userId = selected })
 	end)
-	button(r, "Hood", function()
-		send("hood", { userId = selected })
-	end)
 	button(r, "Blank paper", function()
 		send("sheet", { userId = selected })
 	end)
-	button(r, "Letter flash now", function()
+	button(r, "Finish a case file", function()
 		send("flash", { userId = selected })
 	end)
-	button(r, "+20 suspicion", function()
-		send("suspicion", { userId = selected, amount = 20 })
+	button(r, "Learn every name", function()
+		send("learnAll", { userId = selected })
 	end)
+	button(r, "Manual + sabotage ready", function()
+		send("manualReady", { userId = selected })
+	end)
+	r = row()
+	for _, kind in ipairs({ "blackout", "jam", "barricade" }) do
+		button(r, "Sabotage: " .. kind, function()
+			send("sabotage", { userId = selected, kind = kind })
+		end)
+	end
 	heading("Move")
 	r = row()
 	button(r, "Go to them", function()
@@ -484,11 +495,12 @@ builders.Bots = function()
 	for _, orderSpec in ipairs({
 		{ "come", "Come to me" },
 		{ "work", "Work a station" },
-		{ "fake", "Fake a case file" },
+		{ "stare", "Stare at the target" },
 		{ "vote", "Vote for the target" },
 		{ "write", "Write the target's name" },
-		{ "warrant", "Warrant on the target" },
-		{ "deal", "Take the Eyes deal" },
+		{ "warrant", "Arrest the target" },
+		{ "deal", "Take the Oculus deal" },
+		{ "bell", "Ring the bell" },
 	}) do
 		button(r, orderSpec[2], function()
 			send("botOrder", { userId = selected, action = orderSpec[1], target = orderTarget })
@@ -572,11 +584,8 @@ builders.World = function()
 	button(r, "Count snow tracks", function()
 		send("mechanic", { command = "tracks" })
 	end)
-	button(r, "Pull the breaker", function()
-		send("mechanic", { command = "blackout" })
-	end)
 	note(
-		"Each map's own mechanic, in a match on that map: Tokyo's scramble (lamps, crowd, cars), the campus's tracks in the snow, Bureau HQ's blackout."
+		"Each map's own mechanic, in a match on that map: Tokyo's scramble (lamps, crowd, cars), the campus's tracks in the snow."
 	)
 	heading("Me")
 	r = row()
@@ -640,7 +649,6 @@ builders.World = function()
 	for _, spec in ipairs({
 		{ "Follow the phase", nil },
 		{ "Investigation", "Investigation" },
-		{ "Grimoire", "DeathNote" },
 		{ "Meeting", "Meeting" },
 		{ "Vote", "Vote" },
 		{ "Verdict", "Verdict" },
@@ -822,7 +830,6 @@ builders.UI = function()
 		"profile",
 		"leaderboards",
 		"party",
-		"evidence",
 		"scratchpad",
 		"quickChat",
 	}) do
@@ -830,7 +837,7 @@ builders.UI = function()
 			Router.toggle(name)
 		end)
 	end
-	note(Terms.f("Screens with rules (the vote, {grimoire}, {zeroDesk}) only open when the match allows them."))
+	note(Terms.f("Screens with rules (the vote, {grimoire}, the arrest) only open when the match allows them."))
 end
 
 builders.Anim = function()
@@ -959,7 +966,7 @@ local function signature(): string
 				tostring(entry.status),
 				tostring(entry.ready),
 				tostring(entry.eyes),
-				tostring(entry.hood),
+				tostring(entry.ace),
 				tostring(entry.forced),
 				tostring(entry.alias),
 			}, ":")

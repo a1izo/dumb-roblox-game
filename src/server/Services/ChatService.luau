@@ -1,7 +1,8 @@
 -- Communication rules, enforced on the server with TextChatService:
---   * Living players cannot type outside meetings; they use quick-chat and emotes.
---   * During the meeting and the vote a separate channel opens for living players.
---     Messages containing the full real name of a living player are blocked.
+--   * The living share one channel of their own. In free roam it is proximity chat: a message only
+--     reaches players within PROXIMITY_CHAT_RANGE studs (bubbles over their heads). During the
+--     meeting and the vote it reaches the whole table. It is closed in the cutscene phases.
+--   * Full real names of living players are blocked in every chat, so only paper notes carry them.
 --   * Specters (players out of the match who stay as ghosts) chat in their own channel,
 --     which only Specters receive. They can read the meeting but not speak in it, and they
 --     cannot use general chat until the match ends.
@@ -27,6 +28,7 @@ local QuickChatMsgRemote = Net.event("QuickChatMsg")
 
 local ChatService = {}
 
+-- The living's channel (named for the meeting it began as).
 local MEETING_CHANNEL = "LGameMeeting"
 local SPECTER_CHANNEL = "LGameSpecters"
 
@@ -41,6 +43,27 @@ local watchers: { [number]: boolean } = {}
 -- Living players are cut off from normal chat until the reveal.
 local function isLiving(userId: number): boolean
 	return Match.phase ~= "Reveal" and Match.phase ~= "Outro" and Match.isLivingUserId(userId)
+end
+
+-- The living's channel is open in free roam (proximity), and in the meeting and vote (the table).
+local function livingChannelOpen(): boolean
+	return meetingOpen or Match.phase == "Investigation"
+end
+
+-- In free roam a message reaches only the living close to the sender (Specters and watchers, who
+-- never speak in it, read everything).
+local function inEarshot(senderId: number, recipientId: number): boolean
+	if Match.phase ~= "Investigation" or meetingOpen or senderId == recipientId then
+		return true
+	end
+	local recipient = Match.getByUserId(recipientId)
+	if not recipient or not recipient.alive then
+		return true
+	end
+	local sender = Match.getByUserId(senderId)
+	local from = if sender then Match.position(sender) else nil
+	local to = Match.position(recipient)
+	return from ~= nil and to ~= nil and (from - to).Magnitude <= Config.PROXIMITY_CHAT_RANGE
 end
 
 -- Out of the match but still in it as a Specter (players who left are not Specters).
@@ -67,7 +90,7 @@ local function applySource(channel: TextChannel, child: Instance)
 	end
 	local source = child :: TextSource
 	if channel == meetingChannel then
-		source.CanSend = meetingOpen and isLiving(source.UserId)
+		source.CanSend = livingChannelOpen() and isLiving(source.UserId)
 	elseif channel == specterChannel then
 		source.CanSend = isSpecter(source.UserId)
 	else
@@ -138,14 +161,18 @@ local function hookChannel(child: Instance)
 	end
 end
 
-local function onMeetingMessage(message: TextChatMessage, _recipient: TextSource): boolean
+local function onMeetingMessage(message: TextChatMessage, recipient: TextSource): boolean
 	local sender = message.TextSource
 	if not sender then
 		return true
 	end
-	if not meetingOpen or not isLiving(sender.UserId) then
+	if not livingChannelOpen() or not isLiving(sender.UserId) then
 		return false
 	end
+	if not inEarshot(sender.UserId, recipient.UserId) then
+		return false
+	end
+
 	if containsLivingRealName(message.Text) then
 		if not blockedNotices[message.MessageId] then
 			blockedNotices[message.MessageId] = true

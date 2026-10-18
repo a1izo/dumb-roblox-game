@@ -1,7 +1,9 @@
 -- Client side of the communication rules. The server enforces them; this controller
 -- keeps the chat bar in the right state:
---   living, outside meetings -> no chat bar (quick-chat only)
---   living, meeting or vote  -> chat bar sends to the meeting channel
+--   living, free roam        -> chat bar sends to the living's channel; the server only delivers it
+--                               to players close by (proximity chat, bubbles over heads)
+--   living, meeting or vote  -> chat bar sends to the same channel, heard by the whole table
+--   living, cutscene phases  -> no chat bar (quick-chat only)
 --   everyone else            -> normal chat (living players never receive it)
 
 local Players = game:GetService("Players")
@@ -59,7 +61,8 @@ local function update()
 		end
 	elseif ClientState.isLiving() and phase ~= "Reveal" and phase ~= "Outro" then
 		local meeting = channel(MEETING_CHANNEL)
-		if (phase == "Meeting" or phase == "Vote" or phase == "Verdict") and meeting then
+		local open = phase == "Investigation" or phase == "Meeting" or phase == "Vote" or phase == "Verdict"
+		if open and meeting then
 			inputBar.TargetTextChannel = meeting
 			inputBar.Enabled = true
 		else

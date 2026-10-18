@@ -1,10 +1,8 @@
 -- Paper notes: blank sheets spawn at fixed spots, a player types a note by hand, then
 -- drops it on the floor or passes it hand to hand (the other has a few seconds to take it).
--- Anyone can pick up and read notes. A team member who finds a note on the floor with a
--- living player's real name confiscates it: it goes to the evidence board with the name
--- hidden and the named player is warned. A note taken from someone's hand never is (else
--- passing your own name to someone would test which side they are on). Kira can burn
--- notes; the smoke is visible and raises suspicion on everyone close by.
+-- Anyone can pick up and read notes. Chat blocks real names, so a note is the only way a Muerto
+-- can hand Diavolo a name, and a note found on the floor is hard evidence. Diavolo can burn
+-- notes; the smoke is visible to everyone close by.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,7 +11,6 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
-local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
@@ -21,11 +18,9 @@ local Util = require(Shared:WaitForChild("Util"))
 local CharacterService = require(script.Parent.CharacterService)
 local Cues = require(script.Parent.Cues)
 local EventLog = require(script.Parent.EventLog)
-local EvidenceService = require(script.Parent.EvidenceService)
 local Match = require(script.Parent.Match)
 local NoteRules = require(script.Parent.NoteRules)
 local RateLimit = require(script.Parent.RateLimit)
-local SuspicionService = require(script.Parent.SuspicionService)
 local TextFilter = require(script.Parent.TextFilter)
 
 local NoteRequest = Net.event("NoteRequest")
@@ -151,59 +146,6 @@ local function destroyNote(note)
 	end
 	note.state = "gone"
 	notes[note.id] = nil
-end
-
--- Returns true when a team member found a note naming a living player (the note is taken).
-local function confiscateIfNamed(finder, note): boolean
-	if Match.isKiraSide(finder) then
-		return false
-	end
-	local named = {}
-	for _, ps in ipairs(Match.living()) do
-		if NameUtil.containsFullName(note.text, ps.first, ps.last) then
-			table.insert(named, ps)
-		end
-	end
-	if #named == 0 then
-		return false
-	end
-	local position = notePosition(note) or Match.position(finder) or Vector3.zero
-	local area = Match.nearestArea(position)
-	local writer = Match.getByUserId(note.writerUserId)
-	destroyNote(note)
-	finder.stats.notesFound += 1
-	EvidenceService.post(
-		finder.alias,
-		"Paper note",
-		"A note with a real name on it was found near "
-			.. area
-			.. ". The name is withheld; the named player has been warned."
-	)
-	Match.notify(
-		finder.player,
-		"This note names a real player. It went to the evidence board with the name hidden.",
-		"good"
-	)
-	local aliases = {}
-	for _, ps in ipairs(named) do
-		table.insert(aliases, ps.alias)
-		ps.hoodNextRound = true
-		Match.notify(
-			ps.player,
-			"Warning: someone wrote your real name on a paper note! You will wear a hood next round.",
-			"bad"
-		)
-	end
-	EventLog.add(
-		string.format(
-			"%s found a note naming %s (written by %s).",
-			finder.alias,
-			table.concat(aliases, ", "),
-			if writer then writer.alias else "someone"
-		),
-		"note"
-	)
-	return true
 end
 
 -- Offers ---------------------------------------------------------------------------------
@@ -344,14 +286,10 @@ local function accept(ps, offerId)
 		return
 	end
 	closeOffer(record, "taken")
-	-- No confiscation here: a note taken from a hand reads the same to both sides.
 	setCarry(giver, nil)
 	note.state = "held"
 	note.holder = ps
 	setCarry(ps, { kind = "note", noteId = note.id })
-	EventLog.print(ps)
-	local position = Match.position(giver) or Match.position(ps) or Vector3.zero
-	EventLog.sighting(giver, "passed a paper note", position, { priority = EventLog.LOW, key = "pass", every = 8 })
 	EventLog.add(string.format("%s passed a note to %s.", giver.alias, ps.alias), "note")
 	Cues.fire("handoff", { from = giver.userId, to = ps.userId }, { lead = 0.05 })
 	Match.notify(giver.player, "Note passed.", "info")
@@ -385,7 +323,6 @@ local function takeSheet(ps, sheetId)
 		end
 	end)
 	setCarry(ps, { kind = "blank" })
-	EventLog.sighting(ps, "took a blank sheet of paper", sheet.position)
 end
 
 local function write(ps, text)
@@ -408,7 +345,6 @@ local function write(ps, text)
 	}
 	notes[note.id] = note
 	setCarry(ps, { kind = "note", noteId = note.id })
-	EventLog.print(ps)
 	Match.notify(ps.player, "Note written. Drop it where someone will find it.", "info")
 end
 
@@ -431,7 +367,6 @@ local function drop(ps)
 	end
 	setCarry(ps, nil)
 	placeInWorld(note, position)
-	EventLog.sighting(ps, "dropped a paper note", position)
 end
 
 local function read(ps, noteId)
@@ -446,9 +381,6 @@ local function read(ps, noteId)
 	else
 		local position = notePosition(note)
 		if Match.phase ~= "Investigation" or not position or not near(ps, position, Config.INTERACT_RANGE + 2) then
-			return
-		end
-		if confiscateIfNamed(ps, note) then
 			return
 		end
 	end
@@ -479,9 +411,6 @@ local function take(ps, noteId)
 		Match.notify(ps.player, "Your hands are full. Drop what you carry first.", "bad")
 		return
 	end
-	if confiscateIfNamed(ps, note) then
-		return
-	end
 	if note.part then
 		note.part:Destroy()
 		note.part = nil
@@ -489,8 +418,10 @@ local function take(ps, noteId)
 	note.state = "held"
 	note.holder = ps
 	setCarry(ps, { kind = "note", noteId = note.id })
-	EventLog.print(ps)
-	EventLog.sighting(ps, "picked up a paper note", position)
+	-- Picking up someone else's dropped note counts as finding one.
+	if note.writerUserId ~= ps.userId then
+		ps.stats.notesFound += 1
+	end
 end
 
 local function smokeAt(position: Vector3, duration: number)
@@ -556,15 +487,7 @@ local function burn(ps, noteId)
 			note.burning = false
 			return
 		end
-		local burnPosition = notePosition(note) or position
 		destroyNote(note)
-		for _, other in ipairs(Match.living()) do
-			local otherPosition = Match.position(other)
-			if otherPosition and (otherPosition - burnPosition).Magnitude <= Config.BURN_SMOKE_RANGE then
-				SuspicionService.add(other, Config.SUSPICION.NEAR_BURN)
-			end
-		end
-		EventLog.sighting(ps, "burned something", burnPosition, { priority = EventLog.HIGH })
 		EventLog.add(Terms.f("{Hand} ({alias}) burned a paper note.", { alias = ps.alias }), "burn")
 		Match.notify(ps.player, "The note is ash.", "secret")
 	end)

@@ -146,7 +146,7 @@ return function(t)
 			for _, kind in ipairs({ "intro", "death", "arrest", "verdict", "outro" }) do
 				expect(EmotePolicy.CUTSCENE_CUES[kind]).to.equal(true)
 			end
-			for _, kind in ipairs({ "eyesDeal", "handoff", "roundStart", "shot" }) do
+			for _, kind in ipairs({ "eyesDeal", "handoff", "shot" }) do
 				expect(EmotePolicy.CUTSCENE_CUES[kind]).to.equal(nil)
 			end
 		end)

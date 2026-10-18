@@ -47,7 +47,7 @@ return function(t)
 			for index = 1, 7 do
 				table.insert(names, "apple" .. index)
 			end
-			-- An altar for each case-file drill, the Grimoire, the warrant and the eyes.
+			-- An altar for each case-file drill, the Manual, the arrest (drill id "warrant") and the Oculus.
 			for index = 1, #TaskTypes.LIST + 3 do
 				table.insert(names, "drill" .. index)
 			end

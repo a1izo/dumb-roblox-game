@@ -43,11 +43,6 @@ function Shelter.cover(): number
 	return cover
 end
 
--- True when the player is inside a building (the rain does not fall there, thunder is far off).
-function Shelter.indoors(): boolean
-	return level >= 0.95
-end
-
 local function track(part: Instance)
 	if not part:IsA("BasePart") or boxes[part] then
 		return

@@ -6,7 +6,7 @@
 -- red ONLY for danger (deaths, Diavolo, Death's Gambit, the vote target, the last 10 seconds, warnings).
 -- Big titles are Aktura, headings and numbers are Melodrama (both drawn from glyph atlases because
 -- Roblox cannot load custom fonts), and small text is Montserrat, which Roblox ships. Ace's surfaces
--- (desk, feed, warrant) are the only black-on-white panels in the game.
+-- (the meeting screen) are the only black-on-white panels in the game.
 
 local Tokens = {}
 
@@ -179,7 +179,7 @@ Tokens.z = {
 -- Modal window sizes at desktop scale.
 Tokens.modal = {
 	S = Vector2.new(420, 300), -- dialogs
-	sheet = Vector2.new(500, 440), -- a single sheet (notes, the tip box)
+	sheet = Vector2.new(500, 440), -- a single sheet (notes)
 	M = Vector2.new(620, 560), -- one page
 	L = Vector2.new(1040, 640), -- a spread
 }

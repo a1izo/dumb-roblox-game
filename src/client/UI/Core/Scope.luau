@@ -18,10 +18,6 @@ function Scope.add<T>(self: Scope, item: T): T
 	return item
 end
 
-function Scope.connect(self: Scope, signal: any, handler: (...any) -> ()): any
-	return self:add(signal:Connect(handler))
-end
-
 -- A child scope is destroyed together with this one, or on its own earlier.
 function Scope.child(self: Scope): Scope
 	local child = Scope.new()

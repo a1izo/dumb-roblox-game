@@ -5,32 +5,26 @@
 local SettingsSchema = {}
 
 export type Settings = {
-	rounds: number,
 	investigation: number,
-	grimoire: number,
 	meeting: number,
 	vote: number,
 	maps: { string },
 }
 
 SettingsSchema.RANGES = {
-	rounds = { min = 3, max = 7, step = 1, default = 5, label = "Rounds" },
-	investigation = { min = 60, max = 180, step = 10, default = 100, label = "Investigation (s)" },
-	grimoire = { min = 15, max = 40, step = 5, default = 20, label = "Death's Gambit (s)" },
+	investigation = { min = 60, max = 300, step = 10, default = 180, label = "Free roam before a meeting (s)" },
 	meeting = { min = 30, max = 120, step = 10, default = 60, label = "Meeting (s)" },
 	vote = { min = 15, max = 40, step = 5, default = 20, label = "Vote (s)" },
 }
 
-SettingsSchema.ORDER = { "rounds", "investigation", "grimoire", "meeting", "vote" }
+SettingsSchema.ORDER = { "investigation", "meeting", "vote" }
 
 SettingsSchema.MAPS = { "TaskForceHQ", "UniversityCampus", "TokyoDistrict" }
 
 function SettingsSchema.defaults(): Settings
 	local R = SettingsSchema.RANGES
 	return {
-		rounds = R.rounds.default,
 		investigation = R.investigation.default,
-		grimoire = R.grimoire.default,
 		meeting = R.meeting.default,
 		vote = R.vote.default,
 		maps = table.clone(SettingsSchema.MAPS),

@@ -11,8 +11,9 @@ Roles.INFO = {
 		color = Color3.fromRGB(215, 35, 50),
 		side = "Kira",
 		blurb = Terms.f(
-			"You hold {grimoire}. Each round you may write one full real name in it. Blend in, fake tasks, "
-				.. "collect names from your {cultists} and never get caught."
+			"You hold {grimoire}. Stare at people up close to learn their real names, then write one in the "
+				.. "book. Writing takes a few seconds and the book burns red: never let anyone see it. You do not "
+				.. "know your {cultists}."
 		),
 	},
 	Follower = {
@@ -20,8 +21,8 @@ Roles.INFO = {
 		color = Color3.fromRGB(235, 90, 70),
 		side = "Kira",
 		blurb = Terms.f(
-			"You serve {hand}. Gather real names, pass them on paper notes, fake tasks, rig flashes and "
-				.. "spread false leads. From round 2 one {cultist} may accept {eyes}."
+			"You know {hand}; nobody knows you. Stare to learn real names and pass them to {hand} on paper "
+				.. "notes. Black out the lights, jam stations and barricade the way. You may accept {eyes}."
 		),
 	},
 	L = {
@@ -29,8 +30,8 @@ Roles.INFO = {
 		color = Color3.fromRGB(240, 240, 240),
 		side = "Team",
 		blurb = Terms.f(
-			"You lead {agency} in secret. Speak through the anonymous screen, read the tip box, "
-				.. "watch the suspicion meter and arrest {hand} with one warrant and a full real name."
+			"You lead {agency} in secret: only {butler} knows it is you. In a meeting you may arrest one "
+				.. "player. {Circle} goes; an innocent walks free and you die. The arrest reveals you."
 		),
 	},
 	Watari = {
@@ -38,8 +39,8 @@ Roles.INFO = {
 		color = Color3.fromRGB(120, 180, 255),
 		side = "Team",
 		blurb = Terms.f(
-			"You are {zero}'s assistant. Only {zero} knows who you are. Pass your letter hint to {zero} through "
-				.. "the tip box. While you live, {zero} keeps the suspicion meter."
+			"You know who {zero} is; {zero} does not know you. If {zero} dies, you name the next {zero} (anyone "
+				.. "but yourself). Choose well: a {cultist} would get a worthless title."
 		),
 	},
 	TaskForce = {
@@ -47,8 +48,8 @@ Roles.INFO = {
 		color = Color3.fromRGB(90, 160, 255),
 		side = "Team",
 		blurb = Terms.f(
-			"Work the case files, watch the other players and vote {hand} out. Every task you finish leaks "
-				.. "three letters of your real name to anyone watching."
+			"Work the case files to fill {agency}'s task bar, watch for glowing eyes and a burning red book, "
+				.. "and vote {hand} out. Ring the bell if you saw something."
 		),
 	},
 }

@@ -100,18 +100,6 @@ function PuzzleKit.flipped(bits: { number }, flips: number, rng: Random): { numb
 	return copy
 end
 
-function PuzzleKit.equalArrays(a: { any }, b: { any }): boolean
-	if #a ~= #b then
-		return false
-	end
-	for i = 1, #a do
-		if a[i] ~= b[i] then
-			return false
-		end
-	end
-	return true
-end
-
 -- A shuffled list of the target and decoys; returns the list and the target's position.
 function PuzzleKit.lineup<T>(target: T, decoys: { T }, rng: Random): ({ T }, number)
 	local items = { target }

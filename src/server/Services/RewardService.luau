@@ -60,11 +60,6 @@ function RewardService.payout(winner: string?)
 		local tasks = math.min(ps.stats.tasks, R.TASK_CAP)
 		add(string.format("Case files x%d", tasks), tasks * R.TASK_COINS, tasks * R.TASK_XP)
 		add(
-			string.format("Notes found x%d", ps.stats.notesFound),
-			ps.stats.notesFound * R.NOTE_FOUND_COINS,
-			ps.stats.notesFound * R.NOTE_FOUND_XP
-		)
-		add(
 			Terms.f("Votes on {hand} x{n}", { n = ps.stats.correctVotes }),
 			ps.stats.correctVotes * R.CORRECT_VOTE_COINS,
 			ps.stats.correctVotes * R.CORRECT_VOTE_XP

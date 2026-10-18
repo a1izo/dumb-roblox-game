@@ -64,8 +64,8 @@ return function(cue)
 		kicker = "The deal is struck",
 		title = Terms.f("{EYES}"),
 		subtitle = Terms.f(
-			"Half your life for {reads} names. Your time runs out at the end of round {round}.",
-			{ reads = tonumber(data.reads) or 0, round = tonumber(data.deathRound) or 0 }
+			"Names come fast now, from far away. You have {minutes} minutes of investigation left to live.",
+			{ minutes = math.floor((tonumber(data.lifespan) or 180) / 60 + 0.5) }
 		),
 		color = C.void,
 		textColor = C.red,

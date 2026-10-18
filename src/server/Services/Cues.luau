@@ -3,7 +3,7 @@
 -- screens stay in step. Cues only carry information that is already public.
 --
 -- Holds: a cue can ask the match loop to wait (for example so a death or an arrest finishes
--- playing before the next round or the ending starts). Holds never delay gameplay that is
+-- playing before free roam or the ending starts). Holds never delay gameplay that is
 -- already running; the loop only checks them between phases.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

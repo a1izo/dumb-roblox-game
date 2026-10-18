@@ -7,17 +7,16 @@ local Config = {}
 -- Match size. A server holds between 6 and 12 players.
 Config.MIN_PLAYERS = 6
 Config.MAX_PLAYERS = 12
-Config.MAX_ROUNDS = 5
 
--- Phase lengths in seconds. Five rounds of 200 seconds plus briefing and reveal is about 18 minutes.
+-- Phase lengths in seconds. Investigation is free roam: it ends early on a death or the bell, and
+-- its length is the fallback timer that calls a meeting when nothing else has.
 Config.PHASE_TIME = {
 	-- Presentation phases: cutscenes play in full, even in sped-up Studio runs.
 	Intro = 15,
 	Verdict = 7,
 	Outro = 10,
 	Briefing = 15,
-	Investigation = 100,
-	DeathNote = 20,
+	Investigation = 180,
 	Meeting = 60,
 	Vote = 20,
 	Reveal = 30,
@@ -33,30 +32,40 @@ Config.CROSS_SERVER_MATCHMAKING = true
 -- Seconds a queued party waits for a match in its own server before it also searches other servers.
 Config.CROSS_SERVER_AFTER = 20
 
--- Case files
-Config.TASK_DURATION = 15
+-- Case files. The Bureau shares one task bar: it is full at TASKS_PER_BUREAU case files for every
+-- Bureau player the match started with.
 Config.TASK_RANGE = 9
-Config.FLASH_RANGE = 16
-Config.FLASH_DURATION = 3
-Config.LETTERS_PER_FLASH = 3
-Config.WITNESS_RANGE = 30
+Config.TASKS_PER_BUREAU = 4
 
--- The Grimoire (internal phase id "DeathNote")
+-- Death's Manual (internal id "DeathNote"): Diavolo writes any time in free roam, in plain sight.
 Config.DEATH_CAUSES = { "Heart attack", "Disease", "Accident" }
 Config.NAME_MAX_LENGTH = 40
+Config.MANUAL_WRITE_TIME = 4 -- seconds standing with the glowing book open
+Config.MANUAL_COOLDOWN = 60
+Config.MANUAL_DELAY = 20 -- free-roam seconds between the writing and the death
 
--- Specter's Eyes (internally "eyes")
-Config.EYES_UNLOCK_ROUND = 2
-Config.EYES_COUNTDOWN = 2
-Config.EYES_READS = 3
-Config.EYES_READS_SMALL_SERVER = 2
-Config.EYES_SMALL_SERVER_BELOW = 8
-Config.EYES_RANGE = 14
-Config.EYES_DURATION = 3
-Config.EYES_COOLDOWN = 4
--- While the eyes are new (the round of the deal) some names blur. Zero's name always blurs in that
--- round, so a blurred read never proves that the target is L.
-Config.EYES_DEAL_ROUND_BLUR_CHANCE = 0.35
+-- Staring (Diavolo and Muertos): stand still, look at someone close, learn their real name.
+Config.STARE_TIME = 4
+Config.STARE_RANGE = 12
+-- The Oculus deal (internally "eyes"): a Muerto only. A visible ritual, then fast reads from far
+-- off, and death after OCULUS_LIFESPAN seconds of free roam.
+Config.OCULUS_RITUAL = 3
+Config.OCULUS_READ_TIME = 1
+Config.OCULUS_RANGE = 30
+Config.OCULUS_LIFESPAN = 180
+Config.EYES_DURATION = 3 -- how long a learned name shows above its owner
+
+-- Muerto sabotage: one shared cooldown per Muerto, never during a meeting.
+Config.SABOTAGE_COOLDOWN = 45
+Config.BLACKOUT_TIME = 15
+Config.JAM_TIME = 30
+Config.BARRICADE_TIME = 10
+
+-- Meetings: one emergency bell per map, one ring per player per match.
+Config.BELL_RANGE = 10
+
+-- Ace's arrest and the Butler's succession.
+Config.BUTLER_PICK_TIME = 30
 
 -- World interaction
 Config.INTERACT_RANGE = 10
@@ -64,7 +73,6 @@ Config.INTERACT_RANGE = 10
 -- Paper notes
 Config.NOTE_MAX_LENGTH = 40
 Config.BURN_TIME = 2
-Config.BURN_SMOKE_RANGE = 20
 Config.SHEET_RESPAWN_TIME = 30
 -- Passing a written note hand to hand: how close, how long the other has to take it, and how
 -- soon the same player may offer again.
@@ -72,22 +80,10 @@ Config.PASS_RANGE = 4
 Config.PASS_TIMEOUT = 5
 Config.PASS_COOLDOWN = 3
 
--- Communication
-Config.TIP_MAX_LENGTH = 150
-Config.TIP_COOLDOWN = 15
-Config.REPORT_MAX_LENGTH = 120
-Config.L_SCREEN_MAX_LENGTH = 150
-Config.L_SCREEN_COOLDOWN = 3
+-- Communication. In free roam the living type in proximity chat; full real names are blocked in
+-- every chat, so only paper notes carry them.
+Config.PROXIMITY_CHAT_RANGE = 20
 Config.QUICK_CHAT_COOLDOWN = 2
-
--- Suspicion meter (0-100, shown to L only)
-Config.SUSPICION = {
-	REPORT = 10,
-	FAKE_TASK_SEEN = 15,
-	NEAR_BURN = 12,
-	IDLE_ROUND = 8,
-	MAX = 100,
-}
 
 -- Rewards paid at the end of a match
 Config.STARTING_COINS = 100
@@ -101,8 +97,6 @@ Config.REWARDS = {
 	TASK_COINS = 4,
 	TASK_XP = 6,
 	TASK_CAP = 10,
-	NOTE_FOUND_COINS = 10,
-	NOTE_FOUND_XP = 10,
 	CORRECT_VOTE_COINS = 10,
 	CORRECT_VOTE_XP = 15,
 	KILL_COINS = 20,
@@ -120,13 +114,6 @@ Config.REWARDS = {
 -- One-time reward for finishing every drill in the Academy (the lobby training wing).
 Config.TRAINING_REWARD = 100
 Config.TRAINING_DRILLS = { "camera", "fingerprint", "phone", "forensics", "grimoire", "warrant", "eyes" }
-
--- Forensics clues: how many names the ink analysis lists (the writer and the rest at random),
--- and how wide (seconds) the "written between" window is on later analyses of the same death.
-Config.FORENSICS = {
-	CANDIDATES = 3,
-	TIME_SLACK = 40,
-}
 
 -- Maps in rotation (module names under ServerScriptService.Server.Maps)
 Config.MAP_ROTATION = { "TaskForceHQ", "UniversityCampus", "TokyoDistrict" }

@@ -65,7 +65,6 @@ SOCKET_COLOURS = {
     "Forensics": (0.85, 0.3, 1.0),
     "spawn": (1.0, 1.0, 1.0),
     "sheet": (1.0, 0.95, 0.75),
-    "hood": (0.05, 0.05, 0.05),
     "area": (1.0, 0.5, 0.1),
     "spare": (0.45, 0.45, 0.45),
     "tip": (1.0, 0.1, 0.2),
@@ -108,7 +107,7 @@ def render_plans(scene, module):
     for st in S["stations"]:
         _marker(coll, "spare", st["x"], st["y"], st["z"], SOCKET_COLOURS["spare"], radius=1.6)
     for kind, items, colour, r in (("spawn", L["spawns"], "spawn", 1.4), ("sheet", L["sheets"], "sheet", 1.0),
-                                   ("hood", L["hoods"], "hood", 1.6), ("spawn_s", S["spawns"], "spare", 0.9)):
+                                   ("spawn_s", S["spawns"], "spare", 0.9)):
         for it in items:
             _marker(coll, colour, it["x"], it["y"], it["z"], SOCKET_COLOURS[colour], radius=r)
     for it in L["areas"]:

@@ -1,7 +1,6 @@
-"""Agency HQ's gameplay spots outside the rooms' own (stations, sheets and some hoods
-are placed with their rooms): the spawns (in the lobby and the bullpen, where the lifts and the
-gates bring the Agency in), the named areas with their intro marks, a last hood and the spare
-spawns on both floors."""
+"""Agency HQ's gameplay spots outside the rooms' own (stations and sheets are placed with their
+rooms): the spawns (in the lobby and the bullpen, where the lifts and the gates bring the Agency in),
+the named areas with their intro marks, and the spare spawns on both floors."""
 
 from maps.venues.agency import plan as P
 
@@ -16,10 +15,6 @@ def spawns(s):
     for x, y, z in ((-80, L1, 0), (72, L1, -48), (75, L1, 8), (20, L1, 58), (-58, L1, 58),
                     (17, L2, 70), (70, L2, -18), (-44, L2, -4), (-48, L2, 57), (40, L2, -62), (44, L2, 20), (-10, L2, 20)):
         s.spawn(float(x), float(z), y, spare=True)
-
-
-def spots(s):
-    s.hood(-97.5, 12.0, L1 + 0.6)
 
 
 # Each area: its name, where it is, its floor, and its two intro marks (x, z, the way they face).
@@ -54,5 +49,4 @@ def areas(s):
 
 def build(s):
     spawns(s)
-    spots(s)
     areas(s)

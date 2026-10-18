@@ -3,7 +3,6 @@
 -- shows a white focus mark for gamepads, and can be disabled with Controls.setEnabled.
 --
 --   Controls.button({ text = "Play", variant = "primary", icon = "play", Parent = x }, onClick)
---   Controls.hold({ text = "Write the name" }, 1.2, onConfirm)
 --   Controls.tabs({ items = {{ id = "hats", label = "Hats" }}, selected = "hats" }, onSelect)
 --   Controls.nameLine({ text = "Raven", Parent = list }, onClick)
 --   Controls.field({ placeholder = "Full name", maxLength = 32, Parent = x })
@@ -11,7 +10,6 @@
 --   Controls.toggle({ Parent = list }, "Reduce motion", false, onChanged)
 --   Controls.meter({ Parent = x })
 
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local HoverGlitch = require(script.Parent.Parent.Core.HoverGlitch)
@@ -309,65 +307,6 @@ function Controls.setText(button: GuiObject, text: string, upper: boolean?)
 		label.frame.Visible = text ~= ""
 		label:refresh()
 	end
-end
-
--- A button that fires only after being held for `seconds`: a bar fills it from the left.
--- Guards things that cannot be undone. Works with mouse, touch, Enter and gamepad A.
-function Controls.hold(props: Props, seconds: number, onConfirm: () -> ()): TextButton
-	local p = table.clone(props)
-	p.variant = p.variant or "primary"
-	local button = Controls.button(p)
-	local holdLook = LOOKS[p.variant] or LOOKS.primary
-	local fill = Base.make("Frame", {
-		Name = "HoldInk",
-		BackgroundColor3 = holdLook.text,
-		BackgroundTransparency = 0.7,
-		BorderSizePixel = 0,
-		Size = UDim2.fromScale(0, 1),
-		ZIndex = button.ZIndex + 2,
-		Parent = button,
-	})
-	local holding = false
-	local function reset()
-		holding = false
-		Motion.tween(fill, { Size = UDim2.fromScale(0, 1) }, Tokens.motion.quick)
-	end
-	local function begin()
-		if holding or not button.Active then
-			return
-		end
-		holding = true
-		UiSound.play("holdTick")
-		local started = os.clock()
-		while holding and button.Parent do
-			local progress = (os.clock() - started) / seconds
-			fill.Size = UDim2.fromScale(math.min(progress, 1), 1)
-			if progress >= 1 then
-				holding = false
-				fill.Size = UDim2.fromScale(0, 1)
-				onConfirm()
-				return
-			end
-			RunService.RenderStepped:Wait()
-		end
-		reset()
-	end
-	button.MouseButton1Down:Connect(function()
-		task.spawn(begin)
-	end)
-	button.MouseButton1Up:Connect(reset)
-	button.MouseLeave:Connect(reset)
-	button.InputBegan:Connect(function(input: InputObject)
-		if input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.Return then
-			task.spawn(begin)
-		end
-	end)
-	button.InputEnded:Connect(function(input: InputObject)
-		if input.KeyCode == Enum.KeyCode.ButtonA or input.KeyCode == Enum.KeyCode.Return then
-			reset()
-		end
-	end)
-	return button
 end
 
 -- A square icon-only button (close, back, menu). Props: icon, size (px, default 44), color.
@@ -867,7 +806,7 @@ end
 
 export type PickOption = { id: any, text: string, sub: string? }
 
--- A grid of names on ruled lines where one can be picked (the vote, a warrant's suspect, a
+-- A grid of names on ruled lines where one can be picked (the vote, an arrest's suspect, a
 -- cause of death). Props: paper (ink on a parchment page). Returns render(options, selected,
 -- enabled?), which rebuilds the grid and returns its lines.
 function Controls.pickGrid(

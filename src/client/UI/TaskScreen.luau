@@ -1,14 +1,13 @@
 -- Case-file tasks. The server picks a puzzle from the station type's pool and sends its id and
 -- seed; this builds the same puzzle (Shared/Tasks/Puzzles) and shows it with its view
--- (UI/Puzzles/<id>). The answer is checked here for instant feedback and again by the server,
--- which also only accepts it after the full task time, so a task always takes about 15 s.
--- The Hand's side can fake a task instead, from a second prompt at the station.
+-- (UI/Puzzles/<id>). The answer is checked here for instant feedback and again by the server; a
+-- solved puzzle is filed at once, with no timer.
+-- Every case file done fills the Bureau's shared task bar.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Tasks = Shared:WaitForChild("Tasks")
 local PuzzleSet = require(Tasks:WaitForChild("PuzzleSet"))
@@ -33,7 +32,6 @@ local typeIcon: ImageLabel
 local typeLabel: TextLabel
 local hintLabel: TextLabel
 local area: Frame
-local setProgress: (number, boolean?) -> ()
 local progressLabel: TextLabel
 local firstSelection: GuiObject? = nil
 
@@ -41,37 +39,13 @@ local current = nil
 
 -- Views ---------------------------------------------------------------------------------------
 
-local function fakeView()
-	Kit.text({
-		face = "Semi",
-		text = "Pretending to work…",
-		size = 44,
-		color = C.secret,
-		align = "center",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.45),
-		Parent = area,
-	})
-	Kit.label({
-		Text = "Stay at the station until the bar fills. No clue is posted and no letters flash.",
-		font = "bodyItalic",
-		size = "small",
-		color = C.dim,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.fromScale(0.5, 0.62),
-		Size = UDim2.fromScale(0.8, 0),
-		Parent = area,
-	})
-end
-
 local function mountPuzzle(task_)
 	Kit.clear(area)
 	firstSelection = nil
 	local def = PuzzleSet.get(task_.puzzle)
 	local view = Views:FindFirstChild(task_.puzzle or "")
 	if not def or not view then
-		hintLabel.Text = "This case file is damaged. Wait for the bar and file it anyway."
+		hintLabel.Text = "This case file is damaged. It is filed as it is."
 		task_.solved = true
 		return
 	end
@@ -123,16 +97,11 @@ end
 
 local function start(payload, practice: (() -> ())?)
 	Kit.clear(area)
-	-- Progress follows the server clock, so the bar fills exactly when the server accepts.
-	local startedAt = tonumber(payload.startedAt) or workspace:GetServerTimeNow()
 	current = {
 		stationId = payload.stationId,
-		fake = payload.fake == true,
 		puzzle = payload.puzzle,
 		seed = tonumber(payload.seed) or 0,
-		duration = tonumber(payload.duration) or Config.TASK_DURATION,
-		startedAt = startedAt,
-		solved = payload.fake == true,
+		solved = false,
 		answer = nil,
 		submittedAt = nil,
 		-- Academy practice: runs only on this client and calls this when finished.
@@ -146,14 +115,8 @@ local function start(payload, practice: (() -> ())?)
 	typeLabel.Text = string.upper(info.label)
 	typeLabel.TextColor3 = info.color
 	hintLabel.TextColor3 = C.dim
-	setProgress(0)
 	Router.open("task")
-	if task_.fake then
-		hintLabel.Text = "Faking it."
-		fakeView()
-	else
-		mountPuzzle(task_)
-	end
+	mountPuzzle(task_)
 end
 
 local function update()
@@ -161,23 +124,15 @@ local function update()
 	if not task_ then
 		return
 	end
-	local elapsed = workspace:GetServerTimeNow() - task_.startedAt
-	local progress = math.clamp(elapsed / task_.duration, 0, 1)
-	setProgress(progress)
-	if progress < 1 then
-		progressLabel.Text = string.format("Working…  %d s", math.ceil(task_.duration - elapsed))
-	elseif not task_.solved then
-		progressLabel.Text = "Finish the puzzle to file the report."
-	else
-		progressLabel.Text = "Filing the report…"
-	end
-	if task_.solved and progress >= 1 and task_.practice then
+	progressLabel.Text = if task_.solved then "Filing the report…" else "Solve the puzzle to file the report."
+	-- Solved is done: the report goes in at once (practice finishes on this client).
+	if task_.solved and task_.practice then
 		local done = task_.practice
 		close()
 		done()
 		return
 	end
-	if task_.solved and progress >= 1 then
+	if task_.solved then
 		if task_.submittedAt == nil or os.clock() - task_.submittedAt > 2 then
 			task_.submittedAt = os.clock()
 			TaskRequest:FireServer({ action = "complete", stationId = task_.stationId, answer = task_.answer })
@@ -185,21 +140,19 @@ local function update()
 	end
 end
 
--- Called by the station prompts: "Work case file" (fake = false) or, for the Hand's side
--- only, "Fake it" (fake = true).
-function TaskScreen.request(stationId: string, fake: boolean)
-	if current or not ClientState.isLiving() or ClientState.phase() ~= "Investigation" then
+-- Called by the station prompt "Work case file" (Bureau players, alive or as a Specter).
+function TaskScreen.request(stationId: string)
+	if current or not ClientState.isParticipant() or ClientState.phase() ~= "Investigation" then
 		return
 	end
-	TaskRequest:FireServer({ action = "start", stationId = stationId, fake = fake and ClientState.isKiraSide() })
+	TaskRequest:FireServer({ action = "start", stationId = stationId })
 end
 
 function TaskScreen.isBusy(): boolean
 	return current ~= nil
 end
 
--- An Academy drill: a random puzzle of the station type with a shorter bar, checked only on
--- this client.
+-- An Academy drill: a random puzzle of the station type, checked only on this client.
 function TaskScreen.practice(stationType: string, title: string, onDone: () -> ())
 	if current or not TaskTypes.exists(stationType) then
 		return
@@ -211,8 +164,6 @@ function TaskScreen.practice(stationType: string, title: string, onDone: () -> (
 		stationName = title,
 		puzzle = TaskTypes.pickPuzzle(stationType, rng),
 		seed = rng:NextInteger(1, 2 ^ 30),
-		duration = 6,
-		startedAt = workspace:GetServerTimeNow(),
 	}, onDone)
 end
 
@@ -242,14 +193,6 @@ function TaskScreen.init()
 		Size = UDim2.new(1, 0, 1, -106),
 		Parent = win.body,
 	})
-	local _meter
-	_meter, setProgress = Kit.meter({
-		color = C.white,
-		height = 6,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 0, 1, -26),
-		Parent = win.body,
-	})
 	progressLabel = Kit.label({
 		font = "mono",
 		size = "micro",
@@ -269,25 +212,12 @@ function TaskScreen.init()
 			start(payload)
 		elseif payload.state == "done" then
 			close()
-			if payload.fake then
-				Toasts.show("Fake task done. Nothing was posted.", "secret")
-			else
-				Toasts.show(
-					string.format(
-						"Case file complete. The clue is on the evidence board, and %d letters of your real name flashed on the screen.",
-						Config.LETTERS_PER_FLASH
-					),
-					"good"
-				)
-			end
+			Toasts.show("Case file complete. The Bureau's task bar moved up.", "good")
 		elseif payload.state == "cancelled" then
 			close()
 			if type(payload.reason) == "string" then
 				Toasts.show(payload.reason, "bad")
 			end
-		elseif payload.state == "wait" and current then
-			-- The server has not counted the full task time yet; retry in a second.
-			current.submittedAt = os.clock() - 1
 		elseif payload.state == "wrong" and current then
 			-- The server did not accept the answer: start the same puzzle again.
 			local task_ = current
@@ -304,7 +234,7 @@ function TaskScreen.init()
 			if current and current.practice then
 				return not view.participant
 			end
-			return view.living and view.phase == "Investigation"
+			return (view.living or view.specter) and view.phase == "Investigation"
 		end,
 		firstSelection = function()
 			return firstSelection or win.close

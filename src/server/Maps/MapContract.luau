@@ -66,17 +66,11 @@ function MapContract.validateLayout(layout: any): { string }
 	if #(layout.sheets or {}) < 4 then
 		fail("needs at least 4 paper sheets")
 	end
-	if #(layout.hoods or {}) < 1 then
-		fail("needs at least one hood")
-	end
 	if #(layout.areas or {}) < 6 then
 		fail("needs at least 6 named areas")
 	end
 	if type(layout.tipBox) ~= "table" then
-		fail("needs a tip box")
-	end
-	if type(layout.board) ~= "table" then
-		fail("needs an evidence board")
+		fail("needs a spot for the emergency bell (layout.tipBox)")
 	end
 	return problems
 end
@@ -106,7 +100,7 @@ function MapContract.validateSpare(layout: any): { string }
 			table.insert(problems, "spare station " .. index .. " needs x, z and rot")
 		end
 	end
-	for _, kind in ipairs({ "spawns", "sheets", "hoods", "areas" }) do
+	for _, kind in ipairs({ "spawns", "sheets", "areas" }) do
 		for index, spot in ipairs(spare[kind] or {}) do
 			if not (isNumber(spot.x) and isNumber(spot.z)) then
 				table.insert(problems, "spare " .. kind .. " " .. index .. " needs x and z")
@@ -264,8 +258,8 @@ function MapContract.validateBuilt(info: any): { string }
 			fail(station.name .. ": the screen can be seen from fewer than 3 of 8 sides")
 		end
 	end
-	if not info.tipBox or not info.tipBox.part:HasTag("LTipBox") then
-		fail("the tip box is missing its tag")
+	if not info.bell or not info.bell.part:HasTag("LBell") then
+		fail("the emergency bell is missing its tag")
 	end
 	local down = RaycastParams.new()
 	down.FilterType = Enum.RaycastFilterType.Include

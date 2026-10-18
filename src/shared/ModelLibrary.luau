@@ -64,11 +64,6 @@ local function store(): Instance?
 	return ReplicatedStorage:FindFirstChild(STORE_NAME)
 end
 
--- The folder the imports live in, for the client modules that look for it.
-function ModelLibrary.findStore(): Instance?
-	return store()
-end
-
 local function isMeshSource(instance: Instance): boolean
 	return instance:IsA("MeshPart")
 		or (instance:IsA("Model") and instance:FindFirstChildWhichIsA("MeshPart", true) ~= nil)
@@ -727,17 +722,6 @@ function ModelLibrary.dress(part: BasePart, key: string, offset: CFrame?, scale:
 		end
 	end
 	return model
-end
-
--- The glowing parts of a prop placed with get().
-function ModelLibrary.glowParts(model: Model): { BasePart }
-	local list = {}
-	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") and item:GetAttribute("DeathsGambitGlow") then
-			table.insert(list, item)
-		end
-	end
-	return list
 end
 
 -- The size the prop was made at (studs).

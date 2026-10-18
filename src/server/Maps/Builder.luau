@@ -1,5 +1,5 @@
 -- The parts, props and signs every venue's Blender scene is placed with (SceneBuilder), and the
--- gameplay objects the game builds itself: stations, the tip box, the evidence board.
+-- gameplay objects the game builds itself: stations, the emergency bell, the cork boards.
 -- Coordinates passed to the builder are local to its origin; y = 0 is the floor surface.
 -- Rotations are degrees around Y: 0 faces -Z, 180 faces +Z, 90 faces -X, -90 faces +X.
 -- Gameplay objects wear the Blender props (ModelLibrary) once they are imported, and keep their
@@ -313,116 +313,69 @@ function Builder:station(def, id: string)
 	}
 end
 
--- Anonymous tip box at headquarters. Only L reads the tips.
-function Builder:tipBox(def)
-	local model = Create("Model", { Name = "TipBox", Parent = self.parent })
+-- The emergency bell (it stands where the tip box used to): a post with a brass bell on a
+-- bracket. Ringing it calls a meeting (MeetingService), once per player per match.
+function Builder:bell(def)
+	local model = Create("Model", { Name = "EmergencyBell", Parent = self.parent })
 	local base = self:cf(def.x, def.y or 0, def.z, def.rot)
-	local box = self:part(
-		Vector3.new(2.6, 4, 2.2),
-		base * CFrame.new(0, 2, 0),
-		Color3.fromRGB(140, 30, 35),
+	local post = self:part(
+		Vector3.new(0.6, 6, 0.6),
+		base * CFrame.new(0, 3, 0),
+		Color3.fromRGB(46, 40, 36),
 		Enum.Material.Metal,
-		{ Parent = model }
+		{ Name = "Post", Parent = model }
 	)
-	local slot = self:part(
-		Vector3.new(1.6, 0.2, 0.1),
-		base * CFrame.new(0, 3.2, -1.12),
-		Color3.fromRGB(15, 15, 15),
-		Enum.Material.SmoothPlastic,
-		{ Parent = model }
-	)
-	local lid = self:part(
-		Vector3.new(2.8, 0.3, 2.4),
-		base * CFrame.new(0, 4.15, 0),
-		Color3.fromRGB(90, 20, 25),
+	self:part(
+		Vector3.new(2.6, 0.4, 2.6),
+		base * CFrame.new(0, 0.2, 0),
+		Color3.fromRGB(36, 32, 30),
 		Enum.Material.Metal,
-		{ Parent = model }
+		{ Name = "Foot", Parent = model }
 	)
-	local dressed = ModelLibrary.dress(box, "TipBox", CFrame.new(0, -2, 0)) ~= nil
-	if dressed then
-		slot.Transparency = 1
-		lid.Transparency = 1
-		lid.CanQuery = false
-	end
-	local signAt = (base * CFrame.new(0, 2.2, -1.2)).Position
+	self:part(
+		Vector3.new(0.3, 0.3, 2),
+		base * CFrame.new(0, 5.8, -0.8),
+		Color3.fromRGB(46, 40, 36),
+		Enum.Material.Metal,
+		{ Name = "Bracket", Parent = model }
+	)
+	local bell = self:part(
+		Vector3.new(1.8, 1.8, 1.8),
+		base * CFrame.new(0, 4.9, -1.6),
+		Color3.fromRGB(196, 150, 62),
+		Enum.Material.Metal,
+		{ Name = "Bell", Shape = Enum.PartType.Ball, Parent = model }
+	)
+	local signAt = (base * CFrame.new(0, 2.4, -0.32)).Position
 	local signPart = self:sign(
 		signAt.X,
 		signAt.Y,
 		signAt.Z,
 		def.rot,
-		2.4,
-		0.9,
-		"TIP BOX",
+		1.8,
+		0.8,
+		"MEETING",
 		Color3.fromRGB(255, 240, 220),
 		Color3.fromRGB(110, 20, 25),
-		-- A typewritten plate, like the rest of the case's paperwork.
 		Enum.Font.SpecialElite
 	)
 	signPart.Parent = model
-	if dressed then
-		-- Painted on the box instead of a plate in front of it.
-		signPart.Transparency = 1
-		signPart.CanQuery = false
-		signPart.CanCollide = false
-	end
-	box:AddTag("LTipBox")
-	return { part = box, position = box.Position, model = model }
+	bell:AddTag("LBell")
+	local _ = post
+	return { part = bell, position = bell.Position, model = model }
 end
 
--- Physical evidence board; the returned label shows the latest entries.
-function Builder:board(def)
-	local _, label = self:sign(
-		def.x,
-		def.y or 6,
-		def.z,
-		def.rot,
-		def.w or 12,
-		def.h or 7,
-		"",
-		Color3.fromRGB(235, 235, 225),
-		Color3.fromRGB(30, 34, 30),
-		Enum.Font.SpecialElite
+-- A cork board of pinned photos and red string where the maps' old evidence board stood: decor only.
+function Builder:corkBoard(def)
+	local w, h = def.w or 12, def.h or 7
+	local board = self:part(
+		Vector3.new(w, h, 0.3),
+		self:cf(def.x, def.y or 6, def.z, def.rot),
+		Color3.fromRGB(150, 112, 70),
+		Enum.Material.Wood
 	)
-	label.TextScaled = true
-	label.TextWrapped = true
-	Create("UITextSizeConstraint", { MaxTextSize = 16, MinTextSize = 6, Parent = label })
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.TextYAlignment = Enum.TextYAlignment.Top
-	local boardPart = label:FindFirstAncestorWhichIsA("BasePart")
-	local boardScale = math.min((def.w or 12) / 12, (def.h or 7) / 7)
-	local dressed = boardPart ~= nil
-		and ModelLibrary.dress(boardPart, "EvidenceBoard", CFrame.new(0, 0, 0.05), boardScale) ~= nil
-	if dressed then
-		-- The log is written in ink on the pinned sheet in the middle of the cork.
-		label.TextColor3 = Color3.fromRGB(24, 22, 26)
-		local padding = label:FindFirstChildOfClass("UIPadding")
-		if padding then
-			padding.PaddingLeft = UDim.new(0.19, 0)
-			padding.PaddingRight = UDim.new(0.19, 0)
-			padding.PaddingTop = UDim.new(0.16, 0)
-			padding.PaddingBottom = UDim.new(0.16, 0)
-		end
-	end
-	local _, title = self:sign(
-		def.x,
-		(def.y or 6) + (def.h or 7) / 2 + 0.6,
-		def.z,
-		def.rot,
-		7,
-		1.2,
-		"EVIDENCE BOARD",
-		Color3.fromRGB(255, 255, 255),
-		Color3.fromRGB(120, 25, 30)
-	)
-	title.FontFace = WorldFont.face(Enum.Font.SpecialElite)
-	if dressed then
-		-- The cork board is recognisable on its own; no plate floating above it.
-		local titlePart = title:FindFirstAncestorWhichIsA("BasePart")
-		if titlePart then
-			titlePart:Destroy()
-		end
-	end
-	return label
+	ModelLibrary.dress(board, "EvidenceBoard", CFrame.new(0, 0, 0.05), math.min(w / 12, h / 7))
+	return board
 end
 
 return Builder

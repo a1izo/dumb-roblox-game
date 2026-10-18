@@ -3,14 +3,14 @@
 -- plays nothing), and repeated sounds are spaced out so a fast mouse does not machine-gun the hover tick.
 --
 --   UiSound.play("uiClick")        click, hover ("uiHover"), open ("uiOpen"), tab / pick ("select"),
---                                  hold tick ("holdTick"), toast ("toast"), coin ("coin"), slam ("slam"),
+--                                  toast ("toast"), coin ("coin"), slam ("slam"),
 --                                  glitch ("glitch"), stamp ("stamp"), error ("error")
 
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 
 local UiSound = {}
 
-local GAPS: { [string]: number } = { uiHover = 0.07, glitch = 0.4, holdTick = 0.1, select = 0.05 }
+local GAPS: { [string]: number } = { uiHover = 0.07, glitch = 0.4, select = 0.05 }
 local last: { [string]: number } = {}
 
 function UiSound.play(key: string)

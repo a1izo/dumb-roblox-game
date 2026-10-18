@@ -39,6 +39,10 @@ local function onVote(player: Player, target)
 	if not ps then
 		return
 	end
+	if votes[ps.userId] == nil then
+		-- Votes cast count toward the "vote in a meeting" quests (stat "reports").
+		ps.stats.reports += 1
+	end
 	if target == VoteCounter.SKIP then
 		votes[ps.userId] = VoteCounter.SKIP
 	elseif type(target) == "number" then

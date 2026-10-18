@@ -7,7 +7,7 @@
   - long oak tables under their green lamps, and tall windows onto the snow;
   - along its north side, a gallery at y 12, with a stair up each end wall;
   - off the gallery, behind clear glass, the rare books room with the Rare Books Ink Lab.
-- Under the gallery and the rare books room lie the stacks: rows of shelves, a hood among them,
+- Under the gallery and the rare books room lie the stacks: rows of shelves,
   and the back corner.
 
 Stairs are solid underneath with guards on their rails; the gallery's edge has a railing with
@@ -148,7 +148,6 @@ def stacks(s):
             z = -103.4 + k * 3.2
             s.prop("Bookshelf", x - 0.9, z, 90)
             s.prop("Bookshelf", x + 0.9, z, -90)
-    s.hood(78.0, -106.0)
     for x in (89.0, 110.0, 131.0):
         fit.room_tube(s, x, SLAB, -96.0, length=6.0, rot=90, range_=18, brightness=0.65)
     fit.room_tube(s, 145.0, SLAB, -100.0, length=4.0, rot=90, range_=12, brightness=0.4)

@@ -7,7 +7,7 @@ Law & Letters (法文館), dark brick with pointed windows and a hipped roof:
 - The seminar room has its chalkboard; the professor's office is lined with books.
 
 The Faculty of Science (理学部), red brick with round-arched windows:
-- Its hall runs north to south. Its stair is roped off; the back corridor has a hood.
+- Its hall runs north to south. Its stair is roped off.
 - The forensic medicine lab (the Forensic Medicine Lab's autopsy table) has glass onto the hall.
 - The chemistry lab lies beyond it, with the spare Chemistry Lab Bench, fume hoods and benches
   (a sheet on one).
@@ -216,9 +216,8 @@ def science_rooms(s, g):
     s.look_zone("UniversityCampus_Inside", (108.0, 0.0, SZ0), (SX1, C, 72.0))
     # (The shut lecture room too: nobody goes in, but no snow may fall in it, seen through its windows.)
     s.look_zone("UniversityCampus_Inside", (108.0, 0.0, 72.0), (SX1, C, SZ1))
-    # The hall: the roped-off stair at its south end, the back corridor's hood, a bench, notices.
+    # The hall: the roped-off stair at its south end, a bench, notices.
     closed_stair(s, g, 52.2, 90.0, 104.0, landing_z=SZ1, mat="TileMetroGrey", turn=1)
-    s.hood(62.0, 104.0)
     s.prop("Bench", 50.4 + 0.9, 60.0, -90)
     s.prop("DisplayCase", 66.3, 80.0, 90)
     s.prop("Plant", 50.8, 40.0, 0)

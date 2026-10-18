@@ -1,9 +1,15 @@
--- The Specter's Eyes deal (internally "eyes"). From round 2 one Cultist (Follower) per match
--- may trade their life for the eyes: up close and in plain sight, a target's full real name shows above their head
--- for 3 seconds, on the follower's screen only. The follower's eyes glow red while
--- reading, and the follower dies publicly at the end of the second round after the deal.
+-- Learning real names. Diavolo and the Muertos stare: stand still, look at someone within
+-- STARE_RANGE and hold it for STARE_TIME seconds; their eyes glow red the whole time, so anyone
+-- watching can catch it. A finished stare shows the target's real name on the starer's screen and
+-- adds it to what they know (the Manual lists it).
+--
+-- A Muerto (never Diavolo) may also take the Oculus of the Dead (internally "eyes") at any time in
+-- free roam: a OCULUS_RITUAL-second ritual in plain sight, eyes blazing. After it a read takes
+-- OCULUS_READ_TIME seconds from up to OCULUS_RANGE away, and the Muerto dies publicly after
+-- OCULUS_LIFESPAN seconds of free roam (the clock stops during meetings).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
@@ -21,94 +27,50 @@ local EyesNameRemote = Net.event("EyesName")
 
 local EyesService = {}
 
-local function deal(ps, force: boolean?)
-	if not force and (ps.role ~= "Follower" or Match.phase ~= "Investigation") then
-		return
-	end
-	if not force and Match.round < Config.EYES_UNLOCK_ROUND then
-		Match.notify(ps.player, "The deal unlocks in round " .. Config.EYES_UNLOCK_ROUND .. ".", "bad")
-		return
-	end
-	if not force and (Match.eyesDealMade or ps.eyes) then
-		Match.notify(ps.player, "The deal has already been made this match.", "bad")
-		return
-	end
-	Match.eyesDealMade = true
-	local reads = if Match.initialCount < Config.EYES_SMALL_SERVER_BELOW
-		then Config.EYES_READS_SMALL_SERVER
-		else Config.EYES_READS
-	ps.eyes = {
-		readsLeft = reads,
-		countdown = Config.EYES_COUNTDOWN,
-		dealRound = Match.round,
-		read = {},
-		lastRead = 0,
-	}
-	local deathRound = Match.round + Config.EYES_COUNTDOWN - 1
-	Match.notify(
-		ps.player,
-		string.format(
-			"The deal is made. Get close to a player and press R to see their real name (%d reads). You die at the end of round %d.",
-			reads,
-			deathRound
-		),
-		"secret"
-	)
-	Cues.fire("eyesDeal", { reads = reads, deathRound = deathRound }, { to = { ps.player }, lead = 0.1 })
-	for _, other in ipairs(Match.list) do
-		if other ~= ps and Match.isKiraSide(other) and other.alive then
-			Match.notify(other.player, Terms.f("{alias} accepted {eyes}.", { alias = ps.alias }), "secret")
-		end
-	end
-	EventLog.add(Terms.f("{alias} ({cultist}) accepted {eyes}.", { alias = ps.alias }), "eyes")
-	Match.pushAllPrivate()
+-- Faster than this (studs per second, on the ground) and a stare breaks: staring means standing still.
+local STILL_SPEED = 2.5
+
+-- [playerState] = the stare in progress.
+local stares: { [any]: { target: any, startedAt: number, needed: number } } = {}
+local ticker: RBXScriptConnection? = nil
+local accumulated = 0
+
+local function canStare(ps): boolean
+	return ps.alive and Match.isKiraSide(ps) and Match.phase == "Investigation" and Match.meetingCall == nil
 end
 
-local function read(ps, targetUserId)
-	local eyes = ps.eyes
-	if not eyes or Match.phase ~= "Investigation" or type(targetUserId) ~= "number" then
-		return
-	end
-	if eyes.readsLeft <= 0 then
-		Match.notify(ps.player, "Your eyes have no reads left.", "bad")
-		return
-	end
-	if os.clock() - eyes.lastRead < Config.EYES_COOLDOWN then
-		return
-	end
-	local target = Match.getByUserId(targetUserId)
-	if not target or not target.alive or target == ps then
-		return
-	end
-	if eyes.read[target.userId] then
-		Match.notify(ps.player, "You already know that name.", "bad")
-		return
-	end
-	local targetHead = Match.eyePosition(target)
-	if not targetHead or not Match.canSee(ps, targetHead, Match.sightRange("eyes"), nil) then
-		Match.notify(ps.player, "Too far away, or something is in the way.", "bad")
-		return
-	end
+local function stareRange(ps): number
+	return if ps.eyes then Match.sightRange("eyes") else Match.sightRange("stare")
+end
 
-	eyes.lastRead = os.clock()
-	-- The visible tell happens whether or not the read works.
-	CharacterService.glowEyes(ps.player, Config.EYES_DURATION)
+local function moving(ps): boolean
+	local root = Match.rootPart(ps)
+	if not root then
+		return true
+	end
+	local v = root.AssemblyLinearVelocity
+	return Vector3.new(v.X, 0, v.Z).Magnitude > STILL_SPEED
+end
 
-	if Match.hasHood(target) then
-		Match.notify(ps.player, "A hood hides this person's name.", "bad")
+-- Can the starer still see the target from here?
+local function inSight(ps, target): boolean
+	local head = Match.eyePosition(target)
+	return head ~= nil and Match.canSee(ps, head, stareRange(ps), nil)
+end
+
+local function stopStare(ps, reason: string?)
+	if not stares[ps] then
 		return
 	end
-	-- L cannot be read in the round of the deal. Other names may also blur in that round,
-	-- so a blurred read never proves who L is.
-	if Match.round == eyes.dealRound then
-		if target.role == "L" or Match.rng:NextNumber() < Config.EYES_DEAL_ROUND_BLUR_CHANCE then
-			Match.notify(ps.player, "The name flickers and will not settle. Try again in a later round.", "bad")
-			return
-		end
+	stares[ps] = nil
+	CharacterService.glowEyes(ps.player, 0)
+	if reason then
+		EyesNameRemote:FireClient(ps.player, { failed = reason })
 	end
+end
 
-	eyes.readsLeft -= 1
-	eyes.read[target.userId] = true
+local function learn(ps, target)
+	ps.learned[target.userId] = true
 	ps.stats.reads += 1
 	EyesNameRemote:FireClient(ps.player, {
 		userId = target.userId,
@@ -116,13 +78,102 @@ local function read(ps, targetUserId)
 		duration = Config.EYES_DURATION,
 	})
 	EventLog.add(
-		Terms.f(
-			"{alias} ({cultist}) read {target}'s real name with {eyes}.",
-			{ alias = ps.alias, target = target.alias }
+		string.format(
+			"%s (%s) learned %s's real name%s.",
+			ps.alias,
+			Terms.role(ps.role),
+			target.alias,
+			if ps.eyes then Terms.f(" with {eyes}") else " by staring"
 		),
 		"eyes"
 	)
 	Match.pushPrivate(ps)
+end
+
+local function startStare(ps, targetUserId)
+	if not canStare(ps) or type(targetUserId) ~= "number" or ps.writing or ps.ritual then
+		return
+	end
+	local target = Match.getByUserId(targetUserId)
+	if not target or not target.alive or target == ps then
+		return
+	end
+	if ps.learned[target.userId] then
+		Match.notify(ps.player, "You already know that name.", "bad")
+		return
+	end
+	if not inSight(ps, target) then
+		Match.notify(ps.player, "Too far away, or something is in the way.", "bad")
+		return
+	end
+	local needed = if ps.eyes then Config.OCULUS_READ_TIME else Config.STARE_TIME
+	stares[ps] = { target = target, startedAt = os.clock(), needed = needed }
+	-- The tell: red eyes for as long as the stare lasts (a read with the Oculus flares brighter and
+	-- shorter, but just as visible).
+	CharacterService.glowEyes(ps.player, needed + 0.3)
+end
+
+local function dieOfDeal(ps)
+	ps.eyes = nil
+	EventLog.add(Terms.f("{alias} died after a deal with {eyes}.", { alias = ps.alias }), "death")
+	Match.requestMeeting("death", ps)
+	Cues.fire("death", { userId = ps.userId, alias = ps.alias, cause = Terms.f("{Eyes} deal") }, { hold = 5.5 })
+	Elimination.eliminate(
+		ps,
+		"dead",
+		Terms.f("{Eyes} deal"),
+		Terms.f("{alias} collapsed. The deal with {eyes} claimed them: they were working with {hand}.", {
+			alias = ps.alias,
+		}),
+		{}
+	)
+	Match.announce(
+		ps.alias .. " is dead",
+		Terms.f("Cause of death: the deal with {eyes}. They worked with {hand}."),
+		"danger"
+	)
+end
+
+local function deal(ps, force: boolean?)
+	if not force then
+		if ps.role ~= "Follower" or not canStare(ps) or ps.ritual then
+			return
+		end
+		if ps.eyes then
+			Match.notify(ps.player, "You have already made the deal.", "bad")
+			return
+		end
+	end
+	stopStare(ps, nil)
+	-- The ritual: rooted to the spot, eyes blazing, for everyone to see.
+	ps.ritual = true
+	CharacterService.setFrozen(ps.player, true)
+	CharacterService.glowEyes(ps.player, Config.OCULUS_RITUAL + 0.5)
+	local matchId = Match.id
+	task.delay(if force then 0 else Config.OCULUS_RITUAL, function()
+		ps.ritual = nil
+		if Match.id ~= matchId or not ps.alive then
+			return
+		end
+		if Match.phase == "Investigation" and Match.meetingCall == nil then
+			CharacterService.setFrozen(ps.player, false)
+		end
+		ps.eyes = { lifeLeft = Config.OCULUS_LIFESPAN }
+		local minutes = math.floor(Config.OCULUS_LIFESPAN / 60 + 0.5)
+		Match.notify(
+			ps.player,
+			string.format(
+				"The deal is made. Reading a name now takes %d s from up to %d studs. You die in %d minute(s) of investigation.",
+				Config.OCULUS_READ_TIME,
+				Config.OCULUS_RANGE,
+				minutes
+			),
+			"secret"
+		)
+		Cues.fire("eyesDeal", { lifespan = Config.OCULUS_LIFESPAN }, { to = { ps.player }, lead = 0.1 })
+		EventLog.add(Terms.f("{alias} ({cultist}) accepted {eyes}.", { alias = ps.alias }), "eyes")
+		Match.pushPrivate(ps)
+	end)
 end
 
 local function onRequest(player: Player, payload)
@@ -135,54 +186,92 @@ local function onRequest(player: Player, payload)
 	end
 	if payload.action == "deal" then
 		deal(ps)
-	elseif payload.action == "read" then
-		read(ps, payload.userId)
+	elseif payload.action == "stare" then
+		startStare(ps, payload.userId)
+	elseif payload.action == "stop" then
+		stopStare(ps, nil)
 	end
 end
 
--- Countdowns tick at the end of every round, starting with the round of the deal.
--- Debug panel: gives a player the Specter's Eyes now (any role, any round), with the usual
--- countdown and cutscene.
-function EyesService.debugGrant(ps)
-	ps.eyes = nil
-	deal(ps, true)
-end
-
-function EyesService.onRoundEnd()
+local function tick(dt: number)
+	if not Match.active then
+		return
+	end
+	accumulated += dt
+	if accumulated < 0.1 then
+		return
+	end
+	local step = accumulated
+	accumulated = 0
+	for ps, stare in pairs(table.clone(stares)) do
+		if not canStare(ps) or not stare.target.alive or not inSight(ps, stare.target) then
+			stopStare(ps, "lost")
+		elseif moving(ps) then
+			stopStare(ps, "moved")
+		elseif os.clock() - stare.startedAt >= stare.needed then
+			stares[ps] = nil
+			learn(ps, stare.target)
+		end
+	end
+	-- The Oculus' clock only runs in free roam.
+	if Match.phase ~= "Investigation" or Match.meetingCall ~= nil or Match.debugPaused then
+		return
+	end
 	for _, ps in ipairs(Match.list) do
-		if ps.eyes and ps.alive then
-			ps.eyes.countdown -= 1
-			if ps.eyes.countdown <= 0 then
-				EventLog.add(Terms.f("{alias} died after a deal with {eyes}.", { alias = ps.alias }), "death")
-				Elimination.eliminate(
-					ps,
-					"dead",
-					Terms.f("{Eyes} deal"),
-					Terms.f(
-						"{alias} collapsed. The deal with {eyes} claimed them: they were working with {hand}.",
-						{ alias = ps.alias }
-					),
-					{}
-				)
-				Match.announce(
-					ps.alias .. " is dead",
-					Terms.f("Cause of death: the deal with {eyes}. They worked with {hand}."),
-					"danger"
-				)
-				Cues.fire(
-					"death",
-					{ userId = ps.userId, alias = ps.alias, cause = Terms.f("{Eyes} deal") },
-					{ hold = 5.5 }
-				)
-			else
+		local eyes = ps.eyes
+		if eyes and ps.alive then
+			local before = math.ceil(eyes.lifeLeft)
+			eyes.lifeLeft -= step
+			if eyes.lifeLeft <= 0 then
+				dieOfDeal(ps)
+			elseif math.ceil(eyes.lifeLeft) ~= before and math.ceil(eyes.lifeLeft) % 10 == 0 then
 				Match.pushPrivate(ps)
 			end
 		end
 	end
 end
 
+-- Free roam is over: every stare stops.
+function EyesService.interrupt()
+	for ps in pairs(table.clone(stares)) do
+		stopStare(ps, nil)
+	end
+end
+
+-- Debug panel: gives a player the Oculus now (any role), with its usual clock and cutscene.
+function EyesService.debugGrant(ps)
+	ps.eyes = nil
+	deal(ps, true)
+end
+
+-- Debug panel: this player learns everyone's real name.
+function EyesService.debugLearnAll(ps)
+	for _, other in ipairs(Match.list) do
+		if other ~= ps then
+			ps.learned[other.userId] = true
+		end
+	end
+	Match.pushPrivate(ps)
+end
+
+function EyesService.onMatchEnd()
+	stares = {}
+end
+
 function EyesService.init()
 	EyesRequest.OnServerEvent:Connect(onRequest)
+	if ticker then
+		ticker:Disconnect()
+	end
+	ticker = RunService.Heartbeat:Connect(tick)
+	Match.Eliminated:Connect(function(ps)
+		stares[ps] = nil
+		for other, stare in pairs(table.clone(stares)) do
+			if stare.target == ps then
+				stopStare(other, "lost")
+			end
+		end
+	end)
 end
 
 return EyesService

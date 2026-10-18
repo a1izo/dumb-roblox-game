@@ -69,11 +69,6 @@ function Models.pen(): Model?
 	return custom("Pen")
 end
 
--- The hood worn over the head, or nil.
-function Models.hood(): Model?
-	return custom("Hood")
-end
-
 -- The match suit's cloth for one body part ("SuitTorso" or "SuitLimb"), or nil before the import.
 function Models.suit(key: string): Model?
 	return custom(key)
@@ -358,7 +353,7 @@ function Models.memorial(alias: string): Model
 	return model
 end
 
--- Death's Manual held open in the hands (everyone writes in it in the Death's Gambit phase, the shop's
+-- Death's Manual held open in the hands (Diavolo writes in it in plain sight, the shop's
 -- preview of a cover): opened, at a hand's size, the board lying over to the holder's left as a book's
 -- does and the page's head away from them, its open middle at `at`. With `coverColor`, the outside of the
 -- board (facing down and out, what the others see) wears that colour. Anchored; the caller places it.

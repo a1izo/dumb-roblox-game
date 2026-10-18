@@ -1,8 +1,9 @@
 -- The HUD in a match, drawn with the Notch kit. It is the quiet side of the design: steady, grey, and red
 -- only for danger (the last ten seconds, Diavolo's side). Nothing in a match glitches.
 --   phase banner  (top centre)   the phase in Melodrama on a dark bar; under it one plain shadowed line:
---                                the clock (equal-width digits), a tick per round, and the place under
---                                it. Hidden while a cutscene plays.
+--                                the clock (equal-width digits: in free roam, the time until a meeting is
+--                                called anyway), the Bureau's task bar, and the place under it. Hidden
+--                                while a cutscene plays.
 --   objectives    (top left)     lines, filled in by the objective tracker
 --   identity      (bottom left)  your ID seal, role, alias and, one per line, what you
 --                                carry and can do
@@ -45,16 +46,18 @@ local ROLE_ICON = {
 
 -- Icon per action id.
 local ACTION_ICON = {
-	evidence = "evidence",
 	privateScreen = "grimoire",
 	quickChat = "chat",
 	note = "note",
 	drop = "mail",
 	eyesDeal = "eye",
 	eyesRead = "eye",
+	sabotageBlackout = "candle",
+	sabotageJam = "lock",
+	sabotageBarricade = "cross",
 	scratchpad = "quill",
 	help = "help",
-	zeroDesk = "zero",
+	arrest = "cuffs",
 }
 
 -- Phase banner
@@ -93,17 +96,47 @@ local TOUCH_CHIP = 72
 
 -- Phase banner --------------------------------------------------------------------------------
 
-local function renderMarks(round: number, maxRounds: number)
-	Kit.clear(marks)
-	for i = 1, maxRounds do
-		Kit.Base.make("Frame", {
-			Name = "Round" .. i,
-			BackgroundColor3 = if i <= round then C.white else C.g4,
+-- The Bureau's task bar: a thin track that fills as case files are done (nobody's share is shown).
+local TASK_BAR_WIDTH = 120
+local barFill: Frame? = nil
+local barLabel: TextLabel? = nil
+
+local function renderMarks(done: number, total: number)
+	if not barFill then
+		Kit.clear(marks)
+		local track = Kit.Base.make("Frame", {
+			Name = "TaskBar",
+			BackgroundColor3 = C.g4,
 			BorderSizePixel = 0,
-			Size = UDim2.fromOffset(14, 6),
-			LayoutOrder = i,
+			Size = UDim2.fromOffset(TASK_BAR_WIDTH, 6),
+			LayoutOrder = 1,
 			Parent = marks,
 		})
+		barFill = Kit.Base.make("Frame", {
+			Name = "Fill",
+			BackgroundColor3 = C.white,
+			BorderSizePixel = 0,
+			Size = UDim2.fromScale(0, 1),
+			Parent = track,
+		}) :: Frame
+		barLabel = Kit.label({
+			Text = "",
+			font = "label",
+			size = "micro",
+			color = C.g6,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			Size = UDim2.fromOffset(0, 0),
+			LayoutOrder = 2,
+			Parent = marks,
+		})
+	end
+	local share = if total > 0 then math.clamp(done / total, 0, 1) else 0
+	if barFill then
+		barFill.Size = UDim2.fromScale(share, 1)
+	end
+	if barLabel then
+		barLabel.Text = string.format("%d%%", math.floor(share * 100))
 	end
 end
 
@@ -124,9 +157,11 @@ local function updateBanner()
 		bannerGlitch:enter()
 		Motion.slideIn(banner, Vector2.new(0, -24), T.motion.slow)
 	end
-	local round = state.round or 0
-	marks.Visible = round > 0
-	renderMarks(round, state.maxRounds or 5)
+	local bar = state.taskBar
+	marks.Visible = bar ~= nil and (bar.total or 0) > 0
+	if bar then
+		renderMarks(bar.done or 0, bar.total or 0)
+	end
 	if not ClientState.isLiving() then
 		infoLabel.Text = if ClientState.isParticipant() then "You are out  ·  watching" else "Watching"
 		infoLabel.TextColor3 = C.white
@@ -163,34 +198,35 @@ end
 -- What you carry and what you can do right now, one line each.
 local function abilityLines(private, phase: string): { string }
 	local list = {}
-	if private.hood then
-		table.insert(list, "Hood on")
-	end
 	if private.carrying == "blank" then
 		table.insert(list, "Blank sheet")
 	elseif private.carrying == "note" then
 		table.insert(list, "Written note")
 	end
 	if private.eyes then
+		table.insert(list, Terms.f("{Eyes}: about {s} s of life left", { s = private.eyes.lifeLeft }))
+	end
+	if private.learned and #private.learned > 0 then
+		table.insert(list, string.format("Real names known: %d", #private.learned))
+	end
+	if private.role == "Kira" and phase == "Investigation" then
+		local left = math.ceil((tonumber(private.writeReadyAt) or 0) - workspace:GetServerTimeNow())
 		table.insert(
 			list,
-			Terms.f("{Eyes}: {reads} reads, {rounds} round(s) left", {
-				reads = private.eyes.readsLeft,
-				rounds = private.eyes.countdown,
-			})
+			if private.writing then "Writing..." elseif left > 0 then "Manual closed" else "Manual ready (P)"
 		)
 	end
-	if private.role == "L" then
+	if private.isAce then
 		table.insert(
 			list,
-			if private.warrantUsed
-				then "Warrant used"
-				elseif private.warrantBlocked then "Warrant blocked"
-				else "Warrant ready in the vote"
+			if private.fakeAce
+				then Terms.f("A fake {zero} title")
+				elseif private.arrestUsed then "Arrest used"
+				else "Arrest ready in a meeting (K)"
 		)
 	end
-	if private.role == "Follower" and private.canTamper and phase == "Investigation" then
-		table.insert(list, "Can rig a flash (hold T)")
+	if not private.bellUsed and phase == "Investigation" then
+		table.insert(list, "Emergency bell: one ring")
 	end
 	return list
 end
@@ -543,6 +579,15 @@ function Hud.init()
 	UserInputService.LastInputTypeChanged:Connect(renderActions)
 	Kit.Layout.watch(layout)
 	refresh()
+	-- Cooldowns (the Manual, sabotage) run out between state pushes: look again every second.
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			if ClientState.phase() == "Investigation" and ClientState.isParticipant() then
+				refresh()
+			end
+		end
+	end)
 end
 
 -- Where the phase banner (phase, clock, place) ends on screen, in absolute pixels, or nil while it is hidden.

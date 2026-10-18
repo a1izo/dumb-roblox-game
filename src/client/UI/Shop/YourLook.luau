@@ -445,7 +445,6 @@ local function tryOnLength(clip: string): number
 	end
 	return prepared.length + 0.6
 end
-YourLook.tryOnLength = tryOnLength
 -- (the emote wheel's preview puts its own copy of you at rest the same way)
 YourLook.restPose = restPose
 

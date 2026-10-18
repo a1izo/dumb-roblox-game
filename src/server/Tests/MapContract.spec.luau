@@ -1,5 +1,5 @@
--- Every map keeps the gameplay contract (stations, spawns, sheets, hoods,
--- areas, tip box and board), whatever its dressing looks like.
+-- Every map keeps the gameplay contract (stations, spawns, sheets,
+-- areas and the bell's spot), whatever its dressing looks like.
 
 local Maps = script.Parent.Parent:WaitForChild("Maps")
 local MapContract = require(Maps:WaitForChild("MapContract"))

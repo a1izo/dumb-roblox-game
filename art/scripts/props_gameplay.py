@@ -10,7 +10,7 @@ from mathutils import Vector
 
 import modelkit as mk
 from common import srgb
-from props import BRASS_A, BRASS_B, PAPER_A, PAPER_B, RED, prop
+from props import PAPER_A, PAPER_B, RED, prop
 from props_world import dark_wood
 
 
@@ -78,26 +78,6 @@ def evidence_board():
     for a, b in zip(order, order[1:]):
         parts.append(mk.tube("String", pins[a] + Vector((0, -0.02, 0)), pins[b] + Vector((0, -0.02, 0)), 0.025,
                              mat=string, verts=6))
-    return parts, []
-
-
-@prop("TipBox", pivot="bottom", material="Metal", collide=False, texture=512)
-def tip_box():
-    """A red post box on a short post, flat-fronted for the TIP BOX plate."""
-    paint = mk.noisy("Tip_Paint", srgb(140, 16, 22), srgb(180, 34, 38), scale=14, detail=10, roughness=0.45,
-                     metallic=0.2)
-    dark = mk.noisy("Tip_Dark", srgb(20, 20, 22), srgb(40, 40, 44), scale=14, roughness=0.5)
-    brass = mk.noisy("Tip_Brass", BRASS_B, BRASS_A, scale=14, roughness=0.3, metallic=1.0)
-    parts = [
-        mk.box("Body", (2.6, 2.2, 3.0), (0, 0, 2.5), mat=paint, bevel=0.12),
-        mk.cylinder("Roof", 1.3, 2.4, (0, 0, 4.0), rot=(90, 0, 0), mat=paint, verts=24, bevel=0.05),
-        mk.box("RoofBase", (2.8, 2.4, 0.15), (0, 0, 4.0), mat=paint, bevel=0.04),
-        mk.box("Slot", (1.6, 0.1, 0.18), (0, -1.12, 3.25), mat=dark),
-        mk.box("SlotLip", (1.8, 0.2, 0.08), (0, -1.15, 3.4), mat=paint, bevel=0.02),
-        mk.box("Post", (1.0, 1.0, 1.0), (0, 0, 0.5), mat=dark, bevel=0.05),
-        mk.box("Door", (1.9, 0.06, 1.6), (0, -1.11, 1.9), mat=paint, bevel=0.03),
-        mk.cylinder("Lock", 0.1, 0.12, (0.7, -1.16, 1.9), rot=(90, 0, 0), mat=brass, verts=12),
-    ]
     return parts, []
 
 
@@ -191,14 +171,3 @@ def hood():
     shell.scale = (0.78, 0.8, 0.72)
     return [shell], []
 
-
-@prop("HoodPickup", pivot="bottom", material="Fabric", collide=False, texture=512)
-def hood_pickup():
-    """A hood lying on the ground, ready to be picked up."""
-    cloth = mk.noisy("Hood_Cloth", srgb(22, 20, 26), srgb(44, 40, 50), scale=10, detail=12, roughness=0.95)
-    shell = _hood_shell("Shell", cloth)
-    shell.scale = (0.8, 0.8, 0.45)
-    shell.rotation_euler = (math.radians(-70), 0, math.radians(20))
-    shell.location = (0, 0, 0.45)
-    drape = mk.box("Drape", (1.4, 1.2, 0.12), (0.1, 0.4, 0.06), rot=(0, 0, 12), mat=cloth, bevel=0.05)
-    return [shell, drape], []

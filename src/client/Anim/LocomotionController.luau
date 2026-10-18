@@ -825,30 +825,6 @@ function LocomotionController.setSpeed(character: Model, speed: number)
 	end
 end
 
--- What the movement controller is doing with a body (for the debug panel and the test harness).
-function LocomotionController.debugState(character: Model): { [string]: any }?
-	local state = states[character]
-	if not state then
-		return nil
-	end
-	return {
-		phase = state.phase,
-		stride = state.stride,
-		speed = state.blendSpeed,
-		moving = state.moving,
-		mood = state.mood,
-		grounded = state.grounded,
-		air = state.airWeight,
-		landing = if state.land then state.land.clip.id else nil,
-		stopping = if state.stop then state.stop.clip.id else nil,
-		starting = state.start ~= nil,
-		plant = state.plant,
-		body = state.body,
-		lean = state.lean,
-		directions = table.clone(state.directions),
-	}
-end
-
 function LocomotionController.init()
 	for _, id in ipairs(REQUIRED) do
 		local clip = ClipPlayer.get(id)

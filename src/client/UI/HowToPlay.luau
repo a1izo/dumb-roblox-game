@@ -35,28 +35,27 @@ local function controls(): { string }
 	local last = UserInputService:GetLastInputType()
 	if last == Enum.UserInputType.Touch then
 		return {
-			"Tap the prompts that appear near stations, notes and hoods.",
+			"Tap the prompts that appear near stations, notes and the bell.",
 			"The buttons on the right side are the actions you can take right now.",
 			"Press and hold your role badge to see your role card and real name.",
-			"The chat button opens chat during meetings.",
+			"The chat button opens chat: players close by in free roam, the whole table in meetings.",
 		}
 	elseif string.find(last.Name, "Gamepad") then
 		return {
-			"X / Y / B: use the prompts near stations, notes and hoods.",
-			"D-pad up: evidence board.  D-pad left: quick chat.",
-			"D-pad right / down: read or drop the note you carry.",
-			"Hold LB: role card.  RT: scratchpad.  RB: read a name with the eyes.",
-			Terms.f("LT: {zeroDesk} (only for {zero})."),
+			"X / Y / B: use the prompts near stations, notes and the bell.",
+			"D-pad left: quick chat.  D-pad right / down: read or drop the note you carry.",
+			"Hold LB: role card.  RT: scratchpad.  RB: stare (learn a real name).",
+			Terms.f("Y: {grimoire} (only for {hand}).  LT / D-pad up: sabotage (only for {cultists})."),
 			"B: close the open window.",
 		}
 	end
 	return {
-		Terms.f("E / F / T: use the prompts near stations, notes and hoods (F fakes a task for {Hand}'s side)."),
-		"B: evidence board.  Q: quick chat and emotes.",
-		"N / G: read or write your note / drop it.",
+		"E / F: use the prompts near stations, notes and the bell.",
+		"Q: quick chat and emotes.  N / G: read or write your note / drop it.",
 		"Hold C: role card.  V: scratchpad.  H: this book.",
-		Terms.f("R: read a name with {eyes}.  Z: {zeroDesk}."),
-		Terms.f("P: reopen your private screen during {phase}.", { phase = Terms.PHASE.DeathNote }),
+		Terms.f("R: stare to learn a real name ({hand} and {cultists}).  P: {grimoire} (only for {hand})."),
+		Terms.f("Z / B / T: blackout, jam stations, barricade (only for {cultists})."),
+		Terms.f("K: arrest someone during a meeting (only for {zero})."),
 	}
 end
 

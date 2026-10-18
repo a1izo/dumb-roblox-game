@@ -1,10 +1,12 @@
 # Death's Gambit
 
 A Roblox social-deduction game for 6 to 12 players, in a dark anime-noir style. One player is
-secretly **Diavolo**, who kills by writing a player's **real name** in **Death's Manual**. Everyone
-else works for **the Bureau**, led by a secret **Ace**. Every case-file task leaks three letters
-of the worker's real name to anyone watching, so names become the resource both sides fight over.
-Players who are killed, voted out or arrested stay in the match as invisible **Deathsingers**.
+secretly **Diavolo**, who kills by writing a player's **real name** in **Death's Manual**, at any
+moment of free roam, but never unseen: the book burns red while he writes. He and his **Muertos**
+learn real names by **staring** at people up close (their eyes glow). Everyone else works for
+**the Bureau**, led by a secret **Ace**, and wins by voting out or arresting Diavolo or by filling a
+shared task bar. Players who are killed, voted out or arrested stay in the match as invisible
+**Deathsingers**.
 
 ## Running it
 
@@ -26,9 +28,9 @@ In a Studio play test, press **F2**. Everything below works with just you in the
 
 | Tab | What it does |
 | --- | --- |
-| Match | Start a match now, pick the next map, skip to any phase or round, pause or extend the timer, speed phases up (x0.1 to x2), skip cutscene phases, force a win, end the match at once |
-| People | Everyone with their role and real name. Change anyone's role mid-match (unique roles swap), force roles for the next match, kill (any cause), vote out, arrest, revive, give the Oculus of the Dead, a hood or paper, force a letter flash, add suspicion, teleport, freeze |
-| Bots | Add test bots (Studio only). They join the next match, walk on pathfinding, work and fake case files, vote, and Diavolo writes names. Toggle autoplay and kills, choose how bots vote, or order one bot to come, work, vote, write a name, serve a warrant or take the Eyes deal |
+| Match | Start a match now, pick the next map, skip to any phase, call a meeting, fill the task bar, make the Butler pick, pause or extend the timer, speed phases up (x0.1 to x2), skip cutscene phases, force a win, end the match at once |
+| People | Everyone with their role and real name. Change anyone's role mid-match (unique roles swap), force roles for the next match, kill (any cause), vote out, arrest, revive, give the Oculus of the Dead, paper or every real name, reset the Manual and sabotage cooldowns, run any sabotage, finish a case file, teleport, freeze |
+| Bots | Add test bots (Studio only). They join the next match, walk on pathfinding and vote; Bureau bots work case files, Coven bots stare, Diavolo writes learned names, Muertos sabotage, a Butler bot names the next Ace. Toggle autoplay and kills, choose how bots vote, or order one bot to come, work, stare, vote, write a name, arrest, ring the bell or take the Oculus deal |
 | World | Teleport to the lobby, map, meeting room, any station or area; preview any map between matches; switch Blender scenes and greyboxes; check the map contract; fly, noclip, free camera; show colliders, roles over heads and performance stats; force lighting presets, phase moods, rain and snow |
 | Show | Play any cutscene for yourself during a match (intro, the four deaths, verdict, arrest, Eyes deal, both outros), announcements, every role's briefing card, the results screen, any music slot, every sound |
 | Anim | Play any animation clip on yourself or on the person picked, from x0.1 to x2, looped |
@@ -58,28 +60,50 @@ ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 
 | Phase | What happens |
 | --- | --- |
-| Case opening (8 s) | Cutscene: the camera sweeps the map, the case card, Death's Manual falls. Hold to skip. |
+| Case opening (15 s) | Cutscene: the camera sweeps the map, the case card, Death's Manual falls. Hold to skip. |
 | Briefing (15 s) | Your role card, your secret real name and your first move. |
-| Investigation | Work case files (they flash 3 letters of your name), read notes, drop tips. |
-| Death's Gambit phase | Everyone writes. Diavolo writes a full real name; the others file a report. |
-| Bureau meeting | Free chat. A name written in Death's Manual dies during the meeting (cutscene). |
-| Vote, then Verdict | The tally animates; the player voted out is spotlit and fades. Ace can serve a warrant. |
+| Investigation (free roam) | Work case files to fill the Bureau's task bar, pass notes, talk in proximity chat. Diavolo and Muertos stare to learn names; Diavolo writes in the Manual (4 s, glowing, visible) and the victim dies 20 s later; Muertos sabotage. |
+| Bureau meeting (60 s) | Called by any death (its cutscene plays first), the emergency bell (one ring each per match) or 3 quiet minutes. Free chat at the table; Ace may arrest one player. |
+| Vote, then Verdict | Pick a suspect or skip; a tie or a skip majority removes nobody. Then back to free roam. |
 | The end (10 s) | Everyone gathers; the lights find Diavolo; each side hears its own music. |
 | Case closed | Every role and real name, the timeline, rewards, quests, unlocks. |
+
+There is no round limit. **The Bureau wins** when Diavolo is voted out, arrested or leaves, or when
+the task bar fills (4 case files per Bureau player). **The Coven wins** when living Diavolo and
+Muertos equal or outnumber the living Bureau.
+
+### The roles
+
+- **Diavolo**: stares to learn names and writes them in the Manual (60 s cooldown). He does not know
+  the Muertos, so writing a Muerto's name kills the Muerto. Cannot use stations or sabotage.
+- **Muerto** (1 at 6 to 9 players, 2 at 10 to 12): knows Diavolo; nobody knows them (not even the
+  other Muerto). Stares, passes names on paper notes, sabotages (blackout, jam the stations near
+  them, a barricade across the way; one shared 45 s cooldown). May take the **Oculus of the Dead**
+  at any time: a 3 s visible ritual, then 1 s reads from 30 studs, and death after 3 minutes of
+  free roam.
+- **Ace**: secret; only the Butler knows. One arrest per match during a meeting: a Coven player is
+  removed, an innocent walks free and Ace dies. The arrest reveals Ace.
+- **The Butler**: knows Ace. When Ace dies he has 30 s to name the next Ace (anyone but himself, once
+  per match), who gets a fresh arrest. Naming a Coven player gives them a worthless title.
+- **Operative**: works case files, watches, votes.
+
+Real names are blocked in every chat; only paper notes carry them. Bureau Deathsingers can keep
+working case files.
 
 ## Controls
 
 | Key | Action |
 | --- | --- |
-| E / F / T | Use world prompts (work a station, fake a task on Diavolo's side, rig a flash) |
+| E / F | Use world prompts (work a station, ring the bell, take a sheet or a note) |
 | Hold C | Role card: your role, real name and allies |
 | V | Scratchpad (private notes, never sent anywhere) |
 | H | How to Play |
-| B | Evidence board |
-| Q | Quick chat (the only chat outside meetings) and the emote wheel; 1 to 8 play its emotes. In the lobby, the emote wheel alone |
+| Q | Quick chat and the emote wheel; 1 to 8 play its emotes. In the lobby, the emote wheel alone |
 | N / G | Write or read your note / drop it |
-| R | Oculus of the Dead read (the Muerto who accepted the deal) |
-| Z | Ace's desk: suspicion meter, tips and reports |
+| R | Stare (Diavolo and Muertos): learn the real name of the player you look at |
+| P | Death's Manual (Diavolo) |
+| Z / B / T | Sabotage (Muertos): blackout, jam stations, barricade |
+| K | Ace's arrest, during a meeting |
 | As a Deathsinger or spectator | WASD to fly, Space up, Ctrl down (gamepad: A up, LT down; touch: on-screen buttons) |
 | F2 | Debug panel (Studio play tests only) |
 
@@ -95,7 +119,8 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 - **Teaching**: nothing in the lobby is explained on a wall. **The Trial** teaches by doing: a new
   player is offered it once (a wisp at the foot of the terrace's steps, never forced), anyone can begin
   it under the Academy's gate, and it walks five steps through the Academy's own drills (role card, a
-  case file and its leak of letters, a name in the Manual, a warrant, READY) for a one-time reward.
+  case file, a name in the Manual, an arrest, READY) for a one-time reward. (The Trial's case-file
+  and Manual steps still show the old letter leak; they are due a rework to staring.)
   Round the plaza five **tableaux** of stone figures act out how a case goes, with one line on the
   screen of whoever stands near. In a case: the role card, objectives for your role and phase, and
   one-time tips that name what to press for the player's own input (longer on a first case; the X
@@ -125,25 +150,25 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   north-east plateau; and the *stone-toss* at the rift's rim. Wind, drones
   and far-off knocks make a quiet soundscape (upload `art/audio/*.wav`, see its README).
 - **The meeting room** is the Bureau's war room high in the Central Tower: a round table under one
-  hard light, Ace's screen between two speaker columns, the evidence board on a wall of pinned
-  photographs and red string, the Deathsingers' mezzanine round the walls, and the city at night
-  through half-open blinds.
+  hard light, a screen between two speaker columns that says why the meeting was called, a wall of
+  pinned photographs and red string, the Deathsingers' mezzanine round the walls, and the city at
+  night through half-open blinds.
+- **The emergency bell** stands on every map (where the old tip box stood). Each living player can
+  ring it once per match to call a meeting at once.
 - **Each map has a mechanic of its own** (`server/Maps/Mechanics`, one module per map; a bug in one
   warns and never ends a match):
   - *Tokyo, the Scramble.* The lamps really cycle (50 s: walk 11, blink 4, cars 32, amber 3; worked
     out on every machine from one number, `shared/ScrambleCycle`). A crowd of about 35 walkers and a
     few clerks crosses with the walk lamp, four in five of them in the players' own suit: a player's
-    name tag hides inside the crowd, and a walker's body blocks a letter flash, a witness and the
-    Oculus. A few cars drive on their lamp, brake and honk for anyone in their lane and never touch
+    name tag hides inside the crowd, and a walker's body blocks a stare and the Oculus. A few cars drive on their lamp, brake and honk for anyone in their lane and never touch
     them. Crossing on the cars' lamp is jaywalking: a camera may report it, and it accuses nobody.
     Nothing of the crowd or the cars exists on the server: they are numbers, sent five times a
     second in one small unreliable snapshot (`shared/MapSync`) and drawn by each client
     (`client/World/Crowd`, `client/World/Scramble`).
   - *University Campus, tracks in the snow.* Every living player leaves prints on untrodden snow
     (never on the swept paths) for a minute, and everyone sees them. They are anonymous.
-  - *Bureau HQ, the breaker.* Once a round anyone can pull the main breaker by the fire stair: both
-    floors go dark for 15 s under red emergency lamps, name tags hide, a letter flash reaches half as
-    far and a faked task is only witnessed from close by. The pull is on camera.
+  - *Bureau HQ.* Its old breaker is gone: the Muerto's blackout sabotage now darkens every map, and
+    on this one both floors go dark under red emergency lamps.
 - **Cutscenes** (`client/Presentation`): the server sends timed cues that every client plays at the
   same moment. Case opening, deaths, the verdict, arrests, the Oculus of the Dead deal and the ending.
 - **Characters** (`client/Anim`, `shared/Anim`): procedural poses played on every character from
@@ -153,8 +178,8 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   owned animation packs.
 - **World** (`client/World`, `shared/LightingPresets.luau`): "noir night"
   lighting per venue (the lobby's Grey Realm is a sunless grey day) (cold moonlight, warm lamps with hard shadows, haze, a washed-out grade,
-  bloom only on real lights) with a strong mood per phase, blended slowly: the Death's Gambit phase
-  falls near-black and red, the meeting gets a harsh cold key light, red creeps into the vote,
+  bloom only on real lights) with a strong mood per phase, blended slowly: a blackout falls
+  near-black and red, the meeting gets a harsh cold key light, red creeps into the vote,
   the verdict and the ending black out around the cutscene's spotlight. Settings has Low
   graphics for slower devices. Also rain and snow that stop under roofs (footprints in the
   snow), lightning, flickering lamps, steam and neon.
@@ -183,10 +208,11 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 
 ## Anonymity rules (never break these)
 
-- The server is the only source of truth. Roles, real names, the tip box, the target in Death's Manual and
-  who voted for whom never leave the server except to the one client allowed to see them.
-- Cutscene cues and poses carry only public information. Everyone writes in the Death's Gambit phase;
-  nothing is tied to who really writes.
+- The server is the only source of truth. Roles, real names, the target in Death's Manual and who
+  voted for whom never leave the server except to the one client allowed to see them.
+- Cutscene cues and poses carry only public information. Writing in the Manual and staring are seen
+  on purpose (the glowing book, the glowing eyes); no pop-up tells anyone what they saw, and the name
+  written is never shown to anyone but the writer until it kills.
 - No cosmetic may reveal or hide a role, and no in-match display may reveal who is behind an
   alias (titles and VIP tags are lobby-only).
 - Deathsingers are invisible to the living and cannot touch the world; their chat only reaches
@@ -257,15 +283,17 @@ src/shared/     Config, Terms, Assets, Venues, LightingPresets, Models, ModelLib
                 achievements, mastery, ProgressRules), and the game rules shared by both sides
 src/server/     init.server.luau boots every service
   Data/         Migrations (profile schema), ReceiptLedger (purchases granted exactly once)
-  Services/     Match, RoundService (the match loop), Cues (cutscene timing), the gameplay
-                services, CharacterService, RagdollService, GhostService, CollisionGroups,
+  Services/     Match, RoundService (the match loop: free roam and meetings), Cues (cutscene
+                timing), the gameplay services (DeathNoteService the Manual, EyesService staring
+                and the Oculus, SabotageService, ArrestService and the Butler's succession,
+                MeetingService and the bell, TaskBarService, CaseFileService), CharacterService, RagdollService, GhostService, CollisionGroups,
                 DataService, ProfileService, Cosmetics/Shop, Pass/Monetization/Alias/Director,
                 Progress/Achievement/Leaderboard, Analytics, DebugService (Studio only)
   Maps/         Builder, MapContract, SceneBuilder (places the Blender scenes), Scenes/ (generated
                 layouts, anchors, colliders, props, lights and signs per venue), the
                 lobby (the Grey Realm), the meeting room (the war room) and three maps: Bureau HQ,
                 University Campus, Tokyo; Mechanics/ (each map's own: the scramble's crowd and
-                cars, the tracks in the snow, the breaker's blackout)
+                cars, the tracks in the snow)
   Debug/        test bots for the debug panel (DebugService runs the panel's commands)
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything

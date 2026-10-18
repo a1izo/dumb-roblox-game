@@ -91,18 +91,15 @@ return function(t)
 					Match.occluder = function()
 						return true
 					end
-					Match.sightScale.flash = 0.5
-					Match.sightScale.witness = 0.4
+					Match.sightScale.stare = 0.5
 				end,
 				stop = function() end,
 			})
-			expect(Match.sightRange("flash")).to.be.near(Config.FLASH_RANGE * 0.5)
-			expect(Match.sightRange("witness")).to.be.near(Config.WITNESS_RANGE * 0.4)
-			expect(Match.sightRange("eyes")).to.be.near(Config.EYES_RANGE)
+			expect(Match.sightRange("stare")).to.be.near(Config.STARE_RANGE * 0.5)
+			expect(Match.sightRange("eyes")).to.be.near(Config.OCULUS_RANGE)
 			Mechanics.stop()
 			expect(Match.occluder).to.equal(nil)
-			expect(Match.sightRange("flash")).to.be.near(Config.FLASH_RANGE)
-			expect(Match.sightRange("witness")).to.be.near(Config.WITNESS_RANGE)
+			expect(Match.sightRange("stare")).to.be.near(Config.STARE_RANGE)
 		end)
 	end)
 

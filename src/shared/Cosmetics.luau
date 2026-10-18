@@ -1,7 +1,7 @@
 -- Cosmetic catalog. Item ids never change (they are saved in profiles).
 --
---   kind    hat, trail, tie (the noir tie in matches), grimoire (the manual cover in the
---           Grimoire phase), specter (your form as a Deathsinger: `form` names what it wears),
+--   kind    hat, trail, tie (the noir tie in matches), grimoire (the cover of the Manual
+--           Diavolo holds while writing), specter (your form as a Deathsinger: `form` names what it wears),
 --           title (shown in the lobby and on the results screen only), writing (how Diavolo's
 --           names go into the Manual: `style`), verdict (how Ace's arrest lands: `style`), death
 --           (what becomes of you when you die: `style`), emote (`emote` is its clip, `category` its
@@ -17,8 +17,8 @@
 --   later   sold only from a day on, on the days it is in Today's hand: { from = "YYYY-MM-DD", price } (a
 --           season's emote once its season is over, Progression/Ledger)
 --
--- Role neutrality: nothing here may show or hide what role someone has. Everyone holds a
--- notebook and writes in the Grimoire phase whatever they own, and ghosts are only ever
+-- Role neutrality: nothing here may show or hide what role someone has. A Manual cover only
+-- shows while Diavolo writes, when he is in plain sight anyway, and ghosts are only ever
 -- seen by other ghosts. A writing or verdict style is never a public attribute: during a case
 -- only its owner sees it, and everyone once that identity is out (the server sends it in the
 -- cues). A death style is the victim's and plays for everyone.
@@ -232,7 +232,7 @@ Cosmetics.ITEMS = {
 		color = Color3.fromRGB(90, 16, 40),
 	},
 
-	-- Grimoire covers (every living player holds a notebook in the Grimoire phase)
+	-- Manual covers (Diavolo's book, seen whenever he writes)
 	{
 		id = "book_red",
 		kind = "grimoire",

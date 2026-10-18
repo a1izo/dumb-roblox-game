@@ -85,8 +85,6 @@ local function pick(): string?
 	if phase == "Investigation" then
 		local mapId = ClientState.public.mapId
 		return if type(mapId) == "string" then "inv_" .. mapId else "inv_TaskForceHQ"
-	elseif phase == "DeathNote" then
-		return "grimoire"
 	elseif phase == "Meeting" then
 		return "meeting"
 	elseif phase == "Vote" or phase == "Verdict" then

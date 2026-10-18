@@ -75,8 +75,9 @@ end
 local function refreshInfo()
 	local state = ClientState.public
 	phaseLabel.Text = Terms.phase(ClientState.phase())
-	roundLabel.Text = if state.round and state.round > 0
-		then string.format("Round %d of %d", state.round, state.maxRounds or 5)
+	local bar = state.taskBar
+	roundLabel.Text = if bar and (bar.total or 0) > 0
+		then string.format("Meeting %d  ·  case files %d of %d", state.round or 0, bar.done or 0, bar.total)
 		else ""
 	local alive = {}
 	for _, entry in ipairs(ClientState.living()) do

@@ -27,11 +27,6 @@ def station(s, *args, **kw):
 
 
 
-def hood(s, x, z, **kw):
-    kw.setdefault("y", Y + 0.6)
-    s.hood(x, z, **kw)
-
-
 def floors(s):
     rooms = P.ROOMS_L2
     looks = {"forensics": "VinylLab", "lockup": "ConcreteDark", "server": "MetalFloor", "archive": "Linoleum",
@@ -110,7 +105,6 @@ def lockup(s):
     prop(s, "DeskPhone", -26.0, -52.5, 180, 1.0, top)
     s.box("Paper", (-22.0, top + 0.03, -52.5), (1.0, 0.05, 1.3))
     station(s, "Fingerprint", "Evidence Print Kit", -20.0, -62.5, 90, prop="StationPrintKit", spare=True)
-    hood(s, -47.0, -51.5)
     for x in (-40.0, -26.0):
         kit.tube_light(s, x, C, -62.0, length=7.0, rot=90, range_=18, brightness=0.75)
     fit.plaque(s, -33.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "証拠品保管庫 EVIDENCE")
@@ -180,7 +174,6 @@ def canteen(s):
     for k in range(8):
         prop(s, "BarStool", 95.6, -27.0 + k * 3.7, -90, 1.0, Y)
     prop(s, "WaterCooler", 50.9, 12.4, 0)
-    hood(s, 96.5, 12.5, spare=True)
     for x, z in ((62.0, -27.0), (84.0, -20.0), (62.0, 0.0)):
         fit.panel(s, x, z, C, brightness=0.85, range_=20)
     fit.panel(s, 88.0, -34.0, C, on=False)
@@ -233,7 +226,6 @@ def analysts(s):
     for x, z in ((-96.8, 36.5), (-19.0, -4.0)):
         prop(s, "Plant", x, z, 30)
     prop(s, "CoatStand", -20.0, 36.0, 0)
-    hood(s, -97.0, 25.0)
     for x, z in ((-72.0, 20.0), (-58.0, -28.0), (-30.0, 0.0)):
         fit.panel(s, x, z, C, brightness=0.8, range_=20)
     fit.panel(s, -86.0, 8.0, C, brightness=0.6, range_=18)
@@ -260,7 +252,6 @@ def training(s):
     top = fit.table(s, -58.0, 57.0, 3.0, 4.0, 0, Y)
     s.box("BlackMetal", (-58.0, top + 0.3, 57.0), (1.2, 0.6, 1.4))  # the projector
     prop(s, "Whiteboard", -40.0, 70.0, 180)
-    hood(s, -30.0, 72.5, spare=True)
     for x in (-84.0, -66.0):
         fit.panel(s, x, 57.0, C, brightness=0.55, range_=18)
     fit.panel(s, -36.0, 57.0, C, on=False)

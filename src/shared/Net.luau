@@ -22,34 +22,29 @@ local EVENTS = {
 	"Announce",
 	"Elimination",
 	-- case files
-	"Evidence",
-	"LetterFlash",
 	"TaskRequest",
 	"TaskState",
-	"Tamper",
 	-- communication
 	"QuickChat",
 	"QuickChatMsg",
-	"LScreen",
-	"LScreenMsg",
-	"Tip",
-	"LInbox",
-	-- Grimoire phase (id "DeathNote"), meeting and vote
+	-- Death's Manual (id "DeathNote"), the bell, meetings, the vote and Ace's arrest
 	"DeathNote",
-	"Report",
+	"Bell",
 	"Vote",
 	"VoteUpdate",
 	"VoteResult",
-	"Warrant",
-	"Suspicion",
-	-- notes, eyes and hoods
+	"Arrest",
+	-- the Butler naming the next Ace (both ways)
+	"ButlerPick",
+	-- a Muerto's sabotage (client -> server)
+	"Sabotage",
+	-- notes and eyes (staring and the Oculus)
 	"NoteRequest",
 	"NoteView",
 	-- a note offered hand to hand (server -> giver and receiver)
 	"NoteOffer",
 	"EyesRequest",
 	"EyesName",
-	"HoodRequest",
 	-- lobby, parties and shop
 	"Ready",
 	"PartyRequest",
@@ -74,7 +69,7 @@ local EVENTS = {
 	"Wager",
 	"ProfileRequest",
 	"PrivateServer",
-	-- a map's own mechanic: requests (the breaker) and the snow tracks
+	-- a map's own mechanic: requests and the snow tracks
 	"MapAction",
 	"Tracks",
 	-- Studio debug panel (ignored by live servers)
@@ -88,7 +83,6 @@ local UNRELIABLE = {
 }
 
 local FUNCTIONS = {
-	"GetEvidence",
 	"GetSnapshot",
 }
 

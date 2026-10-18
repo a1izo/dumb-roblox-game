@@ -153,15 +153,16 @@ function MapService.build(mapId: string)
 		stations = {},
 		spawns = {},
 		sheets = {},
-		hoods = {},
 		areas = {},
-		boardLabels = {},
 	}
 	for i, stationDef in ipairs(layout.stations) do
 		table.insert(info.stations, b:station(stationDef, "S" .. i))
 	end
-	info.tipBox = b:tipBox(layout.tipBox)
-	table.insert(info.boardLabels, b:board(layout.board))
+	-- The emergency bell stands at the map's old tip-box spot.
+	info.bell = b:bell(layout.tipBox)
+	if layout.board then
+		b:corkBoard(layout.board)
+	end
 	for _, spot in ipairs(layout.spawns) do
 		-- Face the middle of the map unless a rotation is given.
 		local rot = spot.rot or math.deg(math.atan2(spot.x, spot.z))
@@ -169,9 +170,6 @@ function MapService.build(mapId: string)
 	end
 	for i, sheet in ipairs(layout.sheets) do
 		table.insert(info.sheets, { id = "P" .. i, position = b:worldPos(sheet.x, sheet.y, sheet.z) })
-	end
-	for _, hood in ipairs(layout.hoods) do
-		table.insert(info.hoods, b:worldPos(hood.x, hood.y, hood.z))
 	end
 	for _, area in ipairs(layout.areas) do
 		-- Designed intro marks (where avatars perform), when the map has them.
@@ -188,14 +186,13 @@ function MapService.build(mapId: string)
 	info.zones = Zones.new(layout.zones or {}, MAP_ORIGIN)
 	info.spare = layout.spare
 	-- The map's own data and builder, for its mechanic (Maps/Mechanics): the Tokyo crowd's walks and
-	-- the cars' lanes, the Bureau's breaker panel.
+	-- the cars' lanes.
 	info.layout = layout
 	info.origin = MAP_ORIGIN
 	info.builder = b
 
 	local meeting = MeetingRoom.build(Builder.new(model, MEETING_ORIGIN))
 	info.meeting = meeting
-	table.insert(info.boardLabels, meeting.boardLabel)
 	-- The cutscene sets, far off along X (role and win cutscenes play there).
 	SceneBuilder.build(Builder.new(model, Venues.SETS), "Sets")
 

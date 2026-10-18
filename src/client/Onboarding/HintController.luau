@@ -8,8 +8,8 @@
 -- long (it is read while learning everything else at once). What a tip says to press is named for the
 -- input in the player's hands (Hints.resolve): a key, a gamepad button, or what to tap.
 --
--- Triggers: first match as each role, first time in each phase, first letter flash, first
--- evidence, first sheet / note pass / hood prompt, a note offered, first death seen, being eliminated.
+-- Triggers: first match as each role, first time in each phase, first sheet / note pass prompt, a
+-- note offered, first death seen, being eliminated.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -229,18 +229,9 @@ function HintController.init()
 		end
 		HintController.trigger("phase_" .. phase)
 	end)
-	Net.event("LetterFlash").OnClientEvent:Connect(function()
-		HintController.trigger("flash")
-		HintController.trigger("scratchpad")
-	end)
 	Net.event("NoteOffer").OnClientEvent:Connect(function(payload)
 		if type(payload) == "table" and payload.state == "offered" then
 			HintController.trigger("offer")
-		end
-	end)
-	Net.event("Evidence").OnClientEvent:Connect(function()
-		if ClientState.isParticipant() then
-			HintController.trigger("evidence")
 		end
 	end)
 	Net.event("Elimination").OnClientEvent:Connect(function(payload)
@@ -251,6 +242,7 @@ function HintController.init()
 			HintController.trigger("eliminated")
 		elseif payload.kind == "dead" and ClientState.isParticipant() then
 			HintController.trigger("death")
+			HintController.trigger("scratchpad")
 		end
 	end)
 	ProximityPromptService.PromptShown:Connect(function(prompt: ProximityPrompt)
@@ -258,8 +250,6 @@ function HintController.init()
 			HintController.trigger("sheet")
 		elseif prompt.Name == "LPassNote" then
 			HintController.trigger("pass")
-		elseif prompt.Name == "LWear" then
-			HintController.trigger("hood")
 		end
 	end)
 end

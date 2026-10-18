@@ -55,7 +55,7 @@ function ProgressService.onMatchEnd(rewards: { [any]: any })
 				arrests = if ps.stats.arrestedKira then 1 else 0,
 				duties = ps.stats.duties or 0,
 				reports = ps.stats.reports or 0,
-				rigs = ps.stats.rigs or 0,
+				rigs = 0,
 				wagersWon = ps.stats.wagersWon or 0,
 				haunts = ps.stats.haunts or 0,
 				spiritRuns = ps.stats.spiritRuns or 0,

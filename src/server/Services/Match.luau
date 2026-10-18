@@ -38,14 +38,16 @@ Match.byPlayer = {}
 Match.winner = nil
 Match.winReason = nil
 Match.initialCount = 0
-Match.eyesDealMade = false
-Match.phoneFacts = 0
--- Forensics clues given so far, by Grimoire death (CaseFileService).
-Match.forensics = {} :: { [number]: any }
--- Every name written in the Grimoire this match, filtered, in order; struck once it killed
+-- Every name written in the Manual this match, filtered, in order; struck once it killed
 -- (DeathNoteService). The ending shows them.
 Match.written = {} :: { { name: string, struck: boolean } }
-Match.butlerHint = nil :: string?
+-- The Bureau's shared task bar (TaskBarService): case files done and needed.
+Match.taskBar = { done = 0, total = 0 }
+-- Why free roam should stop for a meeting ("death", "bell"...), set by requestMeeting(); the
+-- match loop picks it up and clears it.
+Match.meetingCall = nil :: { reason: string, by: any? }?
+-- The Butler named the next Ace (once per match).
+Match.successionUsed = false
 Match.rng = Random.new()
 
 -- Debug panel controls (Studio): skip ahead to a phase (and round), pause the phase timer,
@@ -55,12 +57,12 @@ Match.debugPaused = false
 Match.debugFastEnd = false
 
 -- A map's own mechanic can change what blocks sight and how far it reaches (the Tokyo crowd
--- stands in the way; the Bureau HQ blackout shortens every view). Both are reset by finish().
+-- stands in the way; a blackout shortens a stare). Both are reset by finish().
 -- occluder(from, to) -> true when something of the map's (not a player) blocks that line.
 Match.occluder = nil :: ((Vector3, Vector3) -> boolean)?
-Match.sightScale = { flash = 1, witness = 1, eyes = 1 } :: { [string]: number }
+Match.sightScale = { stare = 1, eyes = 1 } :: { [string]: number }
 
-local SIGHT_RANGES = { flash = "FLASH_RANGE", witness = "WITNESS_RANGE", eyes = "EYES_RANGE" }
+local SIGHT_RANGES = { stare = "STARE_RANGE", eyes = "OCULUS_RANGE" }
 
 -- Fired as (playerState, kind) after a player leaves the living: kind is
 -- "dead", "voted", "arrested" or "left".
@@ -80,29 +82,33 @@ local function newState(player: Player)
 		status = "alive",
 		cause = nil,
 		killedBy = nil,
-		revealed = {},
 		tasksThisRound = 0,
 		taskStation = nil,
-		reportRound = 0,
-		dnRound = 0,
-		warrantUsed = false,
-		warrantBlockedRound = 0,
-		tamperRound = 0,
+		-- Real names this player has learned by staring or with the Oculus: [userId] = true.
+		learned = {},
+		-- Diavolo: when the Manual can be written in again (server time), and a writing in progress.
+		writeReadyAt = 0,
+		writing = nil,
+		-- Muerto: the Oculus deal ({ lifeLeft = seconds of free roam }) and the sabotage cooldown.
 		eyes = nil,
-		hoodRound = 0,
-		hoodNextRound = false,
+		sabotageReadyAt = 0,
+		-- The emergency bell: one ring per player per match.
+		bellUsed = false,
+		-- Ace (role "L", or a Coven player the Butler named by mistake: fakeAce).
+		isAce = false,
+		fakeAce = false,
+		arrestUsed = false,
 		carrying = nil,
 		seatCFrame = nil,
 		stats = {
 			tasks = 0,
-			fakeTasks = 0,
 			notesFound = 0,
 			correctVotes = 0,
 			kills = 0,
 			reads = 0,
 			duties = 0,
+			-- Votes cast in meetings (the stat key is older than the meaning).
 			reports = 0,
-			rigs = 0,
 			-- A Deathsinger's: Death's wager winnings and wins, lobby haunts, spirit trial runs.
 			wagerCoins = 0,
 			wagersWon = 0,
@@ -122,11 +128,10 @@ function Match.begin(players: { Player })
 	Match.phaseStartedAt = 0
 	Match.winner = nil
 	Match.winReason = nil
-	Match.eyesDealMade = false
-	Match.phoneFacts = 0
-	Match.forensics = {}
 	Match.written = {}
-	Match.butlerHint = nil
+	Match.taskBar = { done = 0, total = 0 }
+	Match.meetingCall = nil
+	Match.successionUsed = false
 	Match.startClock = os.clock()
 	Match.list = {}
 	Match.byPlayer = {}
@@ -153,11 +158,21 @@ function Match.finish()
 	Match.debugPaused = false
 	Match.debugFastEnd = false
 	Match.occluder = nil
-	Match.sightScale = { flash = 1, witness = 1, eyes = 1 }
+	Match.sightScale = { stare = 1, eyes = 1 }
+	Match.meetingCall = nil
 end
 
--- How far a kind of sight reaches right now: "flash" (a letter flash), "witness" (a faked task
--- seen), "eyes" (the Oculus reading a name).
+-- Asks the match loop to stop free roam for a meeting. The first reason wins until the loop
+-- takes it; outside free roam it does nothing.
+function Match.requestMeeting(reason: string, by: any?)
+	if not Match.active or Match.phase ~= "Investigation" or Match.meetingCall ~= nil then
+		return
+	end
+	Match.meetingCall = { reason = reason, by = by }
+end
+
+-- How far a kind of sight reaches right now: "stare" (learning a name by staring), "eyes" (the
+-- Oculus reading a name).
 function Match.sightRange(kind: string): number
 	return (Config :: any)[SIGHT_RANGES[kind]] * (Match.sightScale[kind] or 1)
 end
@@ -222,8 +237,14 @@ function Match.isKiraSide(ps): boolean
 	return ps.role == "Kira" or ps.role == "Follower"
 end
 
-function Match.hasHood(ps): boolean
-	return Match.active and ps.hoodRound > 0 and ps.hoodRound == Match.round
+-- The living player who holds Ace's arrest right now (real or fake), if any.
+function Match.ace()
+	for _, ps in ipairs(Match.list) do
+		if ps.isAce and ps.alive then
+			return ps
+		end
+	end
+	return nil
 end
 
 -- Time --------------------------------------------------------------------
@@ -385,7 +406,7 @@ function Match.publicState()
 		active = Match.active,
 		phase = Match.phase,
 		round = Match.round,
-		maxRounds = ServerSettings.rounds(),
+		taskBar = Match.taskBar,
 		startedAt = Match.phaseStartedAt,
 		endsAt = Match.phaseEndsAt,
 		mapId = Match.mapId,
@@ -403,19 +424,19 @@ function Match.pushState(player: Player?)
 	end
 end
 
--- Kira and the followers know each other; L knows Watari. Nobody else learns a role.
+-- One-way knowledge: a Muerto knows Diavolo (and nobody else); the Butler knows whoever holds
+-- Ace's title. Diavolo, Ace and everyone else know no one.
 local function allyList(ps)
 	local allies = {}
 	for _, other in ipairs(Match.list) do
 		if other ~= ps then
-			local visible = (ps.role == "Kira" and other.role == "Follower")
-				or (ps.role == "Follower" and (other.role == "Kira" or other.role == "Follower"))
-				or (ps.role == "L" and other.role == "Watari")
+			local visible = (ps.role == "Follower" and other.role == "Kira") or (ps.role == "Watari" and other.isAce)
 			if visible then
 				table.insert(allies, {
 					userId = other.userId,
 					alias = other.alias,
-					role = other.role,
+					-- The Butler sees the title, never the side (a fake Ace shows as Ace too).
+					role = if ps.role == "Watari" then "L" else other.role,
 					alive = other.alive,
 				})
 			end
@@ -439,31 +460,45 @@ function Match.privateState(ps)
 		alias = ps.alias,
 		realName = ps.realName,
 		allies = allyList(ps),
-		hood = Match.hasHood(ps),
 		carrying = if ps.carrying then ps.carrying.kind else nil,
 		noteId = if ps.carrying then ps.carrying.noteId else nil,
 		taskStation = ps.taskStation,
-		reported = ps.reportRound == Match.round,
 		-- A Specter waiting in the lobby (GhostService).
 		away = ps.away == true,
+		bellUsed = ps.bellUsed,
+		isAce = ps.isAce,
+		fakeAce = ps.fakeAce,
+		arrestUsed = ps.arrestUsed,
 	}
+	if Match.isKiraSide(ps) then
+		-- The real names this player has learned, for the Manual (and the notes a Muerto writes).
+		local learned = {}
+		for userId in pairs(ps.learned) do
+			local other = Match.getByUserId(userId)
+			if other then
+				table.insert(learned, {
+					userId = other.userId,
+					alias = other.alias,
+					realName = other.realName,
+					alive = other.alive,
+				})
+			end
+		end
+		table.sort(learned, function(a, b)
+			return a.alias < b.alias
+		end)
+		payload.learned = learned
+	end
 	if ps.role == "Kira" then
-		payload.canWrite = ps.dnRound ~= Match.round
+		payload.writeReadyAt = ps.writeReadyAt
+		payload.writing = ps.writing ~= nil
 	elseif ps.role == "Follower" then
-		payload.canTamper = ps.tamperRound ~= Match.round
-		payload.canDeal = (not Match.eyesDealMade) and Match.round >= Config.EYES_UNLOCK_ROUND
-	elseif ps.role == "L" then
-		payload.warrantUsed = ps.warrantUsed
-		payload.warrantBlocked = ps.warrantBlockedRound == Match.round
-	elseif ps.role == "Watari" then
-		payload.hint = Match.butlerHint
+		payload.canDeal = ps.eyes == nil
+		payload.sabotageReadyAt = ps.sabotageReadyAt
 	end
 	payload.tasksThisRound = ps.tasksThisRound
 	if ps.eyes then
-		payload.eyes = {
-			readsLeft = ps.eyes.readsLeft,
-			countdown = ps.eyes.countdown,
-		}
+		payload.eyes = { lifeLeft = math.ceil(ps.eyes.lifeLeft) }
 	end
 	return payload
 end

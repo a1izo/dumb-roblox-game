@@ -4,7 +4,8 @@
 -- Progress comes only from the end-of-match summary.
 --
 -- stat: a key of the match summary (see ProgressRules): matches, wins, survived, tasks,
--- notesFound, correctVotes, duties, reports, and for the Deathsinger quests (period "ghost": three a
+-- notesFound, correctVotes, duties, reports (votes cast in meetings: the key is older than the
+-- meaning), and for the Deathsinger quests (period "ghost": three a
 -- day, progressing only in cases you ended as a Deathsinger) wagersWon, haunts, spiritRuns.
 
 local Terms = require(script.Parent.Parent.Terms)
@@ -50,7 +51,7 @@ Quests.LIST = {
 	{ id = "d_souls3", text = "Gather 3 lost souls", stat = "duties", goal = 3, coins = 40, xp = 40, period = "daily" },
 	{
 		id = "d_report1",
-		text = "Send a tip or report",
+		text = "Vote in a meeting",
 		stat = "reports",
 		goal = 1,
 		coins = 30,
@@ -163,7 +164,7 @@ Quests.LIST = {
 	},
 	{
 		id = "w_reports5",
-		text = "Send 5 tips or reports",
+		text = "Vote in 5 meetings",
 		stat = "reports",
 		goal = 5,
 		coins = 200,

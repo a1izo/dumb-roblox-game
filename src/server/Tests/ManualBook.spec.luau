@@ -156,16 +156,6 @@ return function(t)
 	end)
 
 	describe("ManualTiming", function()
-		it("lands a death inside the meeting with room for its whole cutscene", function()
-			for _, case in ipairs({ { 30, 60 }, { 5, 60 }, { 45, 40 }, { 0, 25 }, { 60, 90 } }) do
-				local remaining, meeting = case[1], case[2]
-				local delay = ManualTiming.killDelay(40, remaining, meeting)
-				local ends = delay + ManualTiming.BOOK + ManualTiming.DEATH_SLACK
-				expect(delay >= remaining + 3).to.equal(true)
-				expect(ends <= remaining + meeting + 1e-6).to.equal(true)
-			end
-		end)
-
 		it("holds the match loop for the book shot and the cutscene after it", function()
 			expect(ManualTiming.HOLD).to.equal(5.5 + ManualTiming.BOOK)
 		end)

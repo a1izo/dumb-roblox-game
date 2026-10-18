@@ -1,7 +1,7 @@
 -- Bodies. A player who dies first plays their collapse (on every client), then goes limp:
 -- each joint becomes a ball socket with limits. A few seconds later the body is frozen in
 -- place as a lifeless copy at the table and the player respawns. The copies are cleared
--- when the next round starts, and a card with the alias marks the empty place.
+-- when free roam starts again, and a card with the alias marks the empty place.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -158,7 +158,7 @@ function RagdollService.collapse(player: Player, alias: string, respawn: (Player
 	end)
 end
 
--- Removes the bodies (the next round starts).
+-- Removes the bodies (free roam starts again).
 function RagdollService.clearBodies()
 	local map = Match.map
 	local folder = if map and map.model then map.model:FindFirstChild("Bodies") else nil

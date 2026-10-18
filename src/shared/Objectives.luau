@@ -20,59 +20,48 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 	if not living then
 		return {
 			line(Terms.f("You are a {Specter}: fly about the case, unseen by the living")),
-			line("Gather lost souls for a few coins"),
-			line(Terms.f("Chat with other {specters} only")),
+			line(Terms.f("Bureau? You can still work case files for {agency}")),
+			line(Terms.f("Gather lost souls, and chat with other {specters} only")),
 		}
 	end
 	if phase == "Briefing" then
 		return { line("Learn your role and your real name") }
 	end
 	local tasks = tonumber(private.tasksThisRound) or 0
+	local known = if type(private.learned) == "table" then #private.learned else 0
 	local lines: { Line } = {}
 
 	if phase == "Investigation" then
 		if role == "Kira" then
-			table.insert(lines, line("Watch stations: finished case files flash 3 letters of the worker's real name"))
-			table.insert(lines, line("Blend in: work or fake a case file (F)", tasks > 0))
+			table.insert(lines, line("Stare at someone up close (R) to learn their real name", known > 0))
+			table.insert(lines, line("Write a name in {grimoire} (P). Make sure nobody is watching"))
 		elseif role == "Follower" then
-			table.insert(lines, line("Collect real names for {hand}"))
-			if private.canTamper then
-				table.insert(lines, line("Rig a station's next flash (hold T)"))
-			end
+			table.insert(lines, line("Stare to learn real names (R), and pass them to {hand} on a note", known > 0))
+			table.insert(lines, line("Sabotage: blackout (Z), jam stations (B), barricade (T)"))
 			if private.eyes then
-				local left = private.eyes.readsLeft or 0
-				table.insert(lines, line("Read names with {eyes} (R): {n} left", left <= 0, { n = left }))
+				table.insert(lines, line("{Eyes}: about {n} s of life left", nil, { n = private.eyes.lifeLeft }))
 			elseif private.canDeal then
-				table.insert(lines, line("You may accept {eyes} this round"))
+				table.insert(lines, line("You may accept {eyes}: fast reads, a short life"))
 			end
-		elseif role == "L" then
-			table.insert(lines, line("Read tips and the suspicion meter at {zeroDesk} (Z)"))
-			table.insert(lines, line("Work a case file", tasks > 0))
-		elseif role == "Watari" then
-			table.insert(lines, line("Send your hint to {zero} through the tip box"))
-			table.insert(lines, line("Work a case file", tasks > 0))
 		else
-			table.insert(lines, line("Work a case file at a station (E)", tasks > 0))
-			table.insert(lines, line("Watch who works where, and remember the letters"))
+			table.insert(lines, line("Work case files at the stations (E): fill the task bar", tasks > 0))
+			table.insert(lines, line("Watch for glowing eyes and a burning red book"))
+			if role == "Watari" then
+				table.insert(lines, line("You know {zero}. Keep them alive; if they die, you name the next"))
+			end
 		end
 		if private.carrying == "note" then
 			table.insert(lines, line("You carry a written note: read it (N), drop it (G) or pass it (X)"))
 		end
-	elseif phase == "DeathNote" then
-		if role == "Kira" then
-			table.insert(lines, line("Write one full real name in {grimoire}", private.canWrite == false))
-		else
-			table.insert(lines, line("File your case report: pick your top suspect", private.reported == true))
-		end
 	elseif phase == "Meeting" then
-		table.insert(lines, line("Discuss in chat. Full real names of living players are blocked"))
-		if role == "L" then
-			table.insert(lines, line("Speak anonymously on {zeroScreen}"))
+		table.insert(lines, line("Talk it over. Full real names of living players are blocked"))
+		if private.isAce and not private.arrestUsed then
+			table.insert(lines, line("You may arrest one player (K). An innocent costs your life"))
 		end
 	elseif phase == "Vote" then
 		table.insert(lines, line("Vote someone out, or skip"))
-		if role == "L" and not private.warrantUsed then
-			table.insert(lines, line("Serve a warrant if you know {hand}'s full real name"))
+		if private.isAce and not private.arrestUsed then
+			table.insert(lines, line("You may still arrest one player (K)"))
 		end
 	end
 	return lines

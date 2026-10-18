@@ -1,5 +1,5 @@
 --!strict
--- Name comparison rules shared by the Death Note, the warrant, the meeting chat filter
+-- Name comparison rules shared by Death's Manual, the chat filter
 -- and the paper-note check.
 
 local NameUtil = {}

@@ -202,7 +202,7 @@ function NotePanel.init()
 	Net.event("NoteView").OnClientEvent:Connect(onNoteView)
 	Kit.register(win, {
 		allowed = function(view)
-			return view.living and (view.phase == "Investigation" or view.phase == "DeathNote")
+			return view.living and view.phase == "Investigation"
 		end,
 		firstSelection = function()
 			return firstButton

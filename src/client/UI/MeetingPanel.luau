@@ -1,10 +1,13 @@
--- Meeting panel: the feed of Zero's anonymous screen, and Zero's input for it. Opens for
--- every participant during the meeting and the vote, as a page in the lower right.
+-- Meeting panel: a page in the lower right for every participant during the meeting and the vote.
+-- It says how to talk (free chat at the table, no real names) and where the task bar stands. For
+-- whoever holds Ace's title it also carries the arrest: one per match, pointing at a living player
+-- in the "arrest" window. A Coven player handed the title by mistake sees the same button and
+-- knows it is worthless.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
@@ -12,8 +15,10 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
+local Toasts = require(script.Parent.Toasts)
 
-local LScreenRemote = Net.event("LScreen")
+local ArrestRemote = Net.event("Arrest")
+local LocalPlayer = Players.LocalPlayer
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -21,36 +26,96 @@ local T = Kit.Tokens
 local MeetingPanel = {}
 
 local panel: Frame
-local feed: ScrollingFrame
-local inputRow: Frame
-local inputBox: TextBox
-local deskButton: TextButton
-local messageCount = 0
+local barLabel: TextLabel
+local aceNote: TextLabel
+local arrestButton: TextButton
 
-local function addMessage(text: string, clock: string?)
-	messageCount += 1
-	Kit.label({
-		Text = string.format("[%s]  %s", clock or "--:--", text),
-		font = "document",
-		color = C.ink,
-		LayoutOrder = -messageCount,
-		Parent = feed,
-	})
+local renderSuspects: (any, any?, boolean?) -> { any }
+local arrestNote: TextLabel
+local suspect: number? = nil
+
+local function canArrest(view): boolean
+	return view.living
+		and (view.phase == "Meeting" or view.phase == "Vote")
+		and view.private.isAce == true
+		and view.private.arrestUsed ~= true
 end
 
 local function refresh()
-	local isZero = ClientState.role() == "L"
-	inputRow.Visible = isZero and ClientState.isLiving()
-	deskButton.Visible = isZero
+	local private = ClientState.private
+	local bar = ClientState.public.taskBar
+	barLabel.Text = if bar and (bar.total or 0) > 0
+		then string.format("Case files: %d of %d done", bar.done or 0, bar.total)
+		else ""
+	local ace = private.isAce == true and ClientState.isLiving()
+	aceNote.Visible = ace
+	arrestButton.Visible = ace and private.arrestUsed ~= true
+	if ace then
+		aceNote.Text = if private.fakeAce
+			then Terms.f("You hold a fake {zero} title. An arrest will fail and expose you.")
+			elseif private.arrestUsed then "Your arrest is spent."
+			else Terms.f(
+				"You are {zero}. One arrest per match: a {cultist} or {hand} is removed; an innocent costs you your life."
+			)
+	end
 end
 
-local function send()
-	local text = inputBox.Text
-	if #text == 0 then
-		return
+-- The arrest window -------------------------------------------------------------------------
+
+local function refreshArrest()
+	local options = {}
+	for _, entry in ipairs(ClientState.living()) do
+		if entry.userId ~= LocalPlayer.UserId then
+			table.insert(options, { id = entry.userId, text = entry.alias })
+		end
 	end
-	LScreenRemote:FireServer(string.sub(text, 1, Config.L_SCREEN_MAX_LENGTH * 4))
-	inputBox.Text = ""
+	renderSuspects(options, suspect)
+	arrestNote.Text = "Arresting reveals that you are Ace. Pick carefully."
+end
+
+local function buildArrest()
+	local win = Kit.window({ name = "arrest", title = Terms.f("{Zero}'s arrest"), size = "M" })
+	local body = win.body
+	arrestNote = Kit.label({ size = "small", color = C.dim, Parent = body })
+	local list = Kit.scroll({
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, 0, 1, -(44 + 70)),
+		Parent = body,
+	})
+	renderSuspects = Kit.pickGrid(list, UDim2.new(1 / 3, -T.space.s, 0, 48), function(id)
+		suspect = id
+		refreshArrest()
+	end)
+	Kit.button({
+		text = "Arrest",
+		icon = "cuffs",
+		variant = "primary",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 56),
+		Parent = body,
+	}, function()
+		if not suspect then
+			Toasts.show("Choose who to arrest first.", "bad")
+			return
+		end
+		ArrestRemote:FireServer(suspect)
+		Router.close("arrest", "user")
+	end)
+	Kit.register(win, {
+		allowed = canArrest,
+		show = refreshArrest,
+		hide = function(reason)
+			if reason == "rule" then
+				suspect = nil
+			end
+		end,
+	})
+end
+
+-- Opens the arrest window (the vote panel has a button for it too).
+function MeetingPanel.openArrest()
+	Router.open("arrest")
 end
 
 function MeetingPanel.init()
@@ -60,116 +125,56 @@ function MeetingPanel.init()
 		padding = T.space.l,
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -T.space.l, 1, -T.space.l),
-		Size = UDim2.new(0.3, 0, 0.62, 0),
+		Size = UDim2.new(0.3, 0, 0, 0),
+		autoHeight = true,
 		Visible = false,
 		Parent = Screens.panels,
 	})
 	panel = page
 	Kit.Base.make("UISizeConstraint", {
 		MaxSize = Vector2.new(400, 380),
-		MinSize = Vector2.new(280, 300),
+		MinSize = Vector2.new(280, 0),
 		Parent = panel,
 	})
-	Kit.text({ face = "Head", text = Terms.f("{Meeting}"), size = T.size.title, color = C.bone, Parent = content })
+	Kit.list(content, T.space.s)
+	Kit.text({
+		face = "Head",
+		text = Terms.f("{Meeting}"),
+		size = T.size.title,
+		color = C.bone,
+		LayoutOrder = 1,
+		Parent = content,
+	})
 	Kit.label({
-		Text = "Free chat is open. Messages with a living player's full real name are blocked.",
+		Text = "Talk in chat. Messages with a living player's full real name are blocked.",
 		size = "micro",
 		color = C.dim,
-		Position = UDim2.fromOffset(0, 36),
+		LayoutOrder = 2,
 		Parent = content,
 	})
-	local buttons = Kit.frame({
-		Name = "Buttons",
-		Position = UDim2.fromOffset(0, 72),
-		Size = UDim2.new(1, 0, 0, 40),
-		Parent = content,
-	})
-	Kit.list(buttons, T.space.s, true)
-	Kit.button(
-		{ text = "Evidence", icon = "evidence", variant = "secondary", size = "s", LayoutOrder = 1, Parent = buttons },
-		function()
-			Router.toggle("evidence")
-		end
-	)
-	deskButton = Kit.button({
-		text = Terms.f("{ZeroDesk}"),
-		icon = "zero",
+	barLabel = Kit.label({ size = "small", color = C.bone, LayoutOrder = 3, Parent = content })
+	aceNote = Kit.label({ size = "small", color = C.dim, Visible = false, LayoutOrder = 4, Parent = content })
+	arrestButton = Kit.button({
+		text = "Arrest someone",
+		icon = "cuffs",
 		variant = "secondary",
 		size = "s",
-		LayoutOrder = 2,
 		Visible = false,
-		Parent = buttons,
-	}, function()
-		Router.toggle("zeroDesk")
-	end)
-	-- Ace's screen: black type on white, like the screen in the meeting room, and the only such panel here.
-	local screen = Kit.card({
-		Name = "ZeroScreen",
-		tone = "parchment",
-		padding = T.space.s,
-		Position = UDim2.fromOffset(0, 124),
-		Size = UDim2.new(1, 0, 1, -124),
+		LayoutOrder = 5,
 		Parent = content,
-	})
-	Kit.label({
-		Text = string.upper(Terms.f("{ZERO_SCREEN}")),
-		font = "label",
-		size = "micro",
-		color = C.inkDim,
-		Parent = screen,
-	})
-	feed = Kit.scroll({ Position = UDim2.fromOffset(0, 20), Size = UDim2.new(1, 0, 1, -20), Parent = screen })
-	Kit.list(feed, T.space.xs)
-	inputRow = Kit.frame({
-		Name = "Input",
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, T.touch),
-		Visible = false,
-		ZIndex = 2,
-		Parent = content,
-	})
-	local field
-	field, inputBox = Kit.field({
-		placeholder = Terms.f("Speak as {zero} (anonymous)"),
-		size = "body",
-		Size = UDim2.new(1, -96, 1, 0),
-		ZIndex = 2,
-		Parent = inputRow,
-	})
-	local _ = field
-	Kit.button({
-		text = "Send",
-		variant = "primary",
-		size = "s",
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.fromScale(1, 0.5),
-		Size = UDim2.fromOffset(88, 40),
-		ZIndex = 2,
-		Parent = inputRow,
-	}, send)
-	inputBox.FocusLost:Connect(function(enterPressed)
-		if enterPressed then
-			send()
-		end
-	end)
-	-- While Zero can type, the feed makes room for the input.
-	inputRow:GetPropertyChangedSignal("Visible"):Connect(function()
-		screen.Size = UDim2.new(1, 0, 1, if inputRow.Visible then -(124 + T.touch + T.space.s) else -124)
-	end)
+	}, MeetingPanel.openArrest)
+	buildArrest()
 
-	Net.event("LScreenMsg").OnClientEvent:Connect(function(payload)
-		if type(payload) == "table" and type(payload.text) == "string" then
-			addMessage(payload.text, payload.clock)
+	local function refreshOpen()
+		if Router.isOpen("meeting") then
+			refresh()
 		end
-	end)
-	ClientState.PhaseChanged:Connect(function()
-		if not ClientState.public.active then
-			Kit.clear(feed)
-			messageCount = 0
+		if Router.isOpen("arrest") then
+			refreshArrest()
 		end
-	end)
-	ClientState.PrivateChanged:Connect(refresh)
+	end
+	ClientState.PrivateChanged:Connect(refreshOpen)
+	ClientState.PublicChanged:Connect(refreshOpen)
 	local function inMeeting(view): boolean
 		return view.participant and (view.phase == "Meeting" or view.phase == "Vote")
 	end

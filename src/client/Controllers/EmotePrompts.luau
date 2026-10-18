@@ -103,7 +103,6 @@ local function joinable(clip: string): boolean
 	local info = EmoteInfo.of(clip)
 	return not info.stroll and not info.stance and not info.duo
 end
-EmotePrompts.joinable = joinable
 
 -- The press-to-do moment ----------------------------------------------------------------------------------------
 

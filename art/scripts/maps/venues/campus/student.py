@@ -86,7 +86,6 @@ def club_rooms(s):
                                    (-94.0, 6.4, 180, 2.2, 3.0, 5), (-146.0, 6.0, 0, 2.2, 3.0, 3),
                                    (-132.0, 6.2, 0, 2.4, 3.2, 4), (-113.0, 6.0, 0, 2.0, 2.6, 0)):
         poster(s, x, y, 71.3 if rot == 180 else 76.7, rot, w, h, sheet)
-    s.hood(-146.4, 74.0)
     for x in (-140.0, -118.0, -98.0):
         fit.room_tube(s, x, C, 74.0, length=6.0, range_=16, brightness=0.6)
     fit.exit_sign(s, KX1 - 0.3, 10.0, 74.0, 90)

@@ -1,7 +1,7 @@
 -- Each map's own mechanic, kept in one place so nothing else checks map ids:
 --   TokyoDistrict    : the scramble's lights, its cars and the crowd that crosses with them
 --   UniversityCampus : tracks in the snow, seen by everyone
---   TaskForceHQ      : the breaker panel that blacks out both floors
+--   TaskForceHQ      : nothing of its own (the Muerto's blackout darkens every map)
 -- A mechanic is a module returning { start, stop, onPhase?, onPhaseEnd?, stageMarks?, action?,
 -- debug? }. Every hook runs protected: a bug in a map's mechanic warns, it never ends a match.
 
@@ -89,7 +89,7 @@ function Mechanics.stop()
 	currentId = nil
 	-- Whatever the mechanic changed about sight goes back to normal.
 	Match.occluder = nil
-	Match.sightScale = { flash = 1, witness = 1, eyes = 1 }
+	Match.sightScale = { stare = 1, eyes = 1 }
 end
 
 function Mechanics.onPhase(phase: string)

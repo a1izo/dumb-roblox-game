@@ -218,11 +218,6 @@ function PoseController.setAfterPass(pass: AfterPass)
 	afterPass = pass
 end
 
--- The rig of a bound body (nil if it is not bound).
-function PoseController.rigOf(character: Model?): Rig?
-	return if character then rigs[character] else nil
-end
-
 -- How many bodies are bound, how many were posed last frame, and what posing them took (milliseconds: the
 -- last frame, and an average over the last second or so).
 function PoseController.stats(): { rigs: number, posed: number, last: number, average: number }
@@ -411,19 +406,6 @@ function PoseController.busy(character: Model?): boolean
 	end
 	for _, track in ipairs(rig.tracks) do
 		if running(track, os.clock()) then
-			return true
-		end
-	end
-	return false
-end
-
-function PoseController.hasEmote(character: Model?): boolean
-	local rig = if character then rigs[character] else nil
-	if not rig then
-		return false
-	end
-	for _, track in ipairs(rig.tracks) do
-		if track.emote and running(track, os.clock()) then
 			return true
 		end
 	end

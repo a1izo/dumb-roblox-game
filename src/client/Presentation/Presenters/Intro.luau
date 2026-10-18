@@ -1,7 +1,7 @@
 -- "Case opening": everyone's avatar is somewhere on the map doing something (the server's cast:
 -- a coffee break, a file, a newspaper, a wall to lean on). The camera opens on the place, the
 -- case card writes itself in, then it visits up to four of them, each named in handwriting,
--- and the Grimoire falls out of the sky into the middle of the map. Hold to skip.
+-- and the Grimoire falls out of the sky into the middle of the map. A Skip button cuts it short.
 --
 -- Every shot comes from ShotSolver, so indoor maps are filmed from inside the rooms.
 

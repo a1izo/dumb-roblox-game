@@ -36,12 +36,6 @@ function Governor.low(what: string): boolean
 	return Settings.get("lowGraphics") == true or Governor.cut(what)
 end
 
--- Debug: holds the governor at a step (0 to 5), or lets it measure again (nil).
-function Governor.force(step: number?)
-	forced = if step then math.clamp(math.floor(step), 0, #GovernorRules.CUTS) else nil
-	Governor.Changed:Fire(Governor.step())
-end
-
 -- Frames a second as the governor sees them (averaged over about a second).
 function Governor.rate(): number
 	return state.rate

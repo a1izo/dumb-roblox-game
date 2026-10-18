@@ -1,6 +1,6 @@
 -- Spawning, placement, freezing, the look of characters in a match (the noir suit and the
--- game-wide movement set) and the visible props that hang on them (paper in hand, hood,
--- notebook and pen, handcuffs, red Specter's Eyes).
+-- game-wide movement set) and the visible props that hang on them (paper in hand,
+-- notebook and pen, handcuffs, red glowing eyes, the burning Manual).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -229,53 +229,6 @@ function CharacterService.setCarry(player: Player, kind: string?)
 	end)
 end
 
--- The hood blocks the shinigami eyes. It is plainly visible on the character.
-function CharacterService.setHood(player: Player, on: boolean)
-	if not on then
-		CharacterService.detach(player, "LHood")
-		CharacterService.refreshAccessories(player)
-		return
-	end
-	CharacterService.attachBuilt(player, "LHood", HEAD, function(anchor: CFrame, head: BasePart)
-		local hood = Models.hood()
-		if hood then
-			-- The Blender hood, scaled to this head.
-			local width = hood:GetExtentsSize().X
-			hood:ScaleTo(hood:GetScale() * (head.Size.X * 1.4) / math.max(width, 0.1))
-			local pivot = hood:GetPivot()
-			local placed = anchor * CFrame.new(0, -0.05 * head.Size.Y, 0.12 * head.Size.Z)
-			local parts = {}
-			for _, item in ipairs(hood:GetDescendants()) do
-				if item:IsA("BasePart") then
-					item.CFrame = placed * pivot:ToObjectSpace(item.CFrame)
-					table.insert(parts, item)
-				end
-			end
-			for _, part in ipairs(parts) do
-				part.Parent = nil
-			end
-			hood:Destroy()
-			return parts
-		end
-		local size = math.max(head.Size.X, head.Size.Z) + 0.45
-		local shell = Create("Part", {
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(size, size, size),
-			Color = Color3.fromRGB(28, 26, 32),
-			Material = Enum.Material.Fabric,
-			CFrame = anchor * CFrame.new(0, 0.15, 0.22),
-		})
-		local drape = Create("Part", {
-			Size = Vector3.new(size * 0.9, 0.9, size * 0.55),
-			Color = Color3.fromRGB(28, 26, 32),
-			Material = Enum.Material.Fabric,
-			CFrame = anchor * CFrame.new(0, -0.55, 0.35),
-		})
-		return { shell, drape }
-	end)
-	CharacterService.refreshAccessories(player)
-end
-
 -- The parts of a model moved so its pivot sits at `placed`, taken out of the model (for
 -- attachBuilt, which welds them).
 local function modelParts(model: Model, placed: CFrame): { BasePart }
@@ -294,8 +247,7 @@ local function modelParts(model: Model, placed: CFrame): { BasePart }
 	return parts
 end
 
--- Everyone holds the same Death's Manual, open, during the Death's Gambit phase, so the screens look
--- identical from the outside.
+-- Death's Manual held open with its pen, while Diavolo writes in it.
 function CharacterService.setWriting(player: Player, on: boolean)
 	if not on then
 		CharacterService.detach(player, "LWriting")
@@ -326,7 +278,47 @@ function CharacterService.setWriting(player: Player, on: boolean)
 	end)
 end
 
--- The visible tell of a shinigami eyes read: red glowing eyes for a few seconds.
+-- Death's Manual written in free roam: the open book burns with a red light anyone nearby can see.
+-- LManualOpen on the character lets every client add the sound and the embers (WorldFx).
+function CharacterService.setManualGlow(player: Player, on: boolean)
+	local character = player.Character
+	if character then
+		character:SetAttribute("LManualOpen", if on then true else nil)
+	end
+	if not on then
+		CharacterService.detach(player, "LManualGlow")
+		return
+	end
+	CharacterService.attachBuilt(player, "LManualGlow", TORSO, function(anchor: CFrame)
+		local core = Create("Part", {
+			Size = Vector3.new(0.4, 0.4, 0.4),
+			Transparency = 1,
+			CanCollide = false,
+			CanQuery = false,
+			CFrame = anchor * CFrame.new(0, -0.1, -1.2),
+		})
+		Create("PointLight", {
+			Color = Color3.fromRGB(255, 50, 40),
+			Range = 16,
+			Brightness = 6,
+			Shadows = false,
+			Parent = core,
+		})
+		Create("ParticleEmitter", {
+			Color = ColorSequence.new(Color3.fromRGB(255, 80, 50), Color3.fromRGB(120, 10, 10)),
+			LightEmission = 1,
+			Size = NumberSequence.new(0.25, 0),
+			Lifetime = NumberRange.new(0.6, 1.2),
+			Rate = 40,
+			Speed = NumberRange.new(1.5, 3),
+			SpreadAngle = Vector2.new(25, 25),
+			Parent = core,
+		})
+		return { core }
+	end)
+end
+
+-- The visible tell of a stare or an Oculus read: red glowing eyes for a few seconds.
 function CharacterService.glowEyes(player: Player, duration: number)
 	local token = (glowTokens[player] or 0) + 1
 	glowTokens[player] = token
@@ -570,20 +562,17 @@ function CharacterService.recolorTie(player: Player)
 	end
 end
 
--- Hats hide under the hood or a cosmetic hat, and hair hides under the hood, so nothing
--- pokes through.
+-- Hats hide under a cosmetic hat, so nothing pokes through.
 function CharacterService.refreshAccessories(player: Player)
 	local character = player.Character
 	if not character then
 		return
 	end
-	local hood = character:FindFirstChild("LHood") ~= nil
 	local hat = character:FindFirstChild("LCosmeticHat") ~= nil
 	for _, item in ipairs(character:GetChildren()) do
 		if item:IsA("Accessory") then
 			local kind = item.AccessoryType
-			local hide = (kind == Enum.AccessoryType.Hat and (hood or hat))
-				or (kind == Enum.AccessoryType.Hair and hood)
+			local hide = kind == Enum.AccessoryType.Hat and hat
 			local handle = item:FindFirstChild("Handle")
 			if handle and handle:IsA("BasePart") then
 				handle.Transparency = if hide then 1 else 0

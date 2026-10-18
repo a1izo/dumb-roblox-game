@@ -849,11 +849,6 @@ function Card.seal(self: Card)
 	end)
 end
 
--- For checks: whether this card's mannequin is moving now.
-function Card.isLive(self: Card): boolean
-	return self.stopLive ~= nil
-end
-
 -- Face down: the back of Death's deck covers it.
 function Card.lieDown(self: Card)
 	self.faceDown = true

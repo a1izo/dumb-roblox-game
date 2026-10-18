@@ -1,8 +1,8 @@
 -- The Agency's war room. Every map sends its living players here for the meeting and the vote:
--- they stand round the table under one hard light, and Zero speaks through the anonymous screen
--- on the north wall. Made in Blender (art/scripts/maps/venues/meeting/); SceneBuilder puts up the
--- scene (or its greybox, without the import), and this module builds the screen, the evidence
--- board, the standing places and the Specters' spots on the mezzanine at the scene's anchors.
+-- they stand round the table under one hard light, and the screen on the north wall says why the
+-- meeting was called. Made in Blender (art/scripts/maps/venues/meeting/); SceneBuilder puts up the
+-- scene (or its greybox, without the import), and this module builds the screen, the cork board,
+-- the standing places and the Specters' spots on the mezzanine at the scene's anchors.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -39,7 +39,8 @@ local function facingCentre(b, spots: { Anchor }, lift: number): { CFrame }
 	return list
 end
 
--- Ace's anonymous screen: a sigil on the left, what Ace says on the right. The only black-on-white panel in the world.
+-- The meeting screen: a sigil on the left, why the meeting was called on the right. The only black-on-white
+-- panel in the world.
 local function screen(b, a: Anchor): TextLabel
 	local part = b:part(
 		Vector3.new(a.w or 30, a.h or 12, 0.4),
@@ -69,7 +70,7 @@ local function screen(b, a: Anchor): TextLabel
 		BorderSizePixel = 0,
 		Position = UDim2.fromScale(0.3, 0),
 		Size = UDim2.fromScale(0.7, 1),
-		Text = Terms.f("{Zero} is watching."),
+		Text = Terms.f("{Meeting}"),
 		TextColor3 = Color3.fromRGB(8, 9, 11),
 		TextScaled = true,
 		TextWrapped = true,
@@ -93,14 +94,12 @@ function MeetingRoom.build(b)
 	local anchors = data.layout.anchors :: { [string]: Anchor }
 
 	local screenLabel = screen(b, anchors.screen)
-	local board = anchors.board
-	local boardLabel = b:board({ x = board.x, y = board.y, z = board.z, rot = board.rot, w = board.w, h = board.h })
+	b:corkBoard(anchors.board)
 
 	return {
 		-- Where each player stands for the meeting, round the table (a chair behind each).
 		seats = facingCentre(b, numbered(anchors, "seat"), 0),
 		screenLabel = screenLabel,
-		boardLabel = boardLabel,
 		-- Where Specters watch from, on the mezzanine round the walls.
 		gallery = facingCentre(b, numbered(anchors, "gallery"), 0.25),
 	}

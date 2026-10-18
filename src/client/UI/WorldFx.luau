@@ -1,6 +1,7 @@
--- World-space effects only this client sees: letter flashes above stations, names seen
--- with Specter's Eyes, and the overlay when this player is eliminated (a brush stroke of
--- blood with the verdict in Gothic lettering, the rest written beneath in handwriting).
+-- World-space effects: names this client learned by staring or with the Oculus, the hiss of Death's
+-- Manual being written (anyone close by hears it: the server marks the writer with LManualOpen), and
+-- the overlay when this player is eliminated (a brush stroke of blood with the verdict in Gothic
+-- lettering, the rest written beneath in handwriting).
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -35,52 +36,39 @@ local titleGlitch: any
 local overlaySubtitle: any
 local overlayToken = 0
 
-local function findScreen(stationId: string): BasePart?
-	for _, part in ipairs(CollectionService:GetTagged("LStationScreen")) do
-		if part:IsA("BasePart") and part:GetAttribute("StationId") == stationId then
-			return part
+-- Death's Manual open in someone's hands: a whisper from the book, heard near it.
+local manualOpen: { [Model]: boolean } = {}
+
+local function watchManuals()
+	while true do
+		task.wait(0.25)
+		local seen = {}
+		local characters = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player.Character then
+				table.insert(characters, player.Character)
+			end
+		end
+		for _, bot in ipairs(CollectionService:GetTagged("LBotCharacter")) do
+			if bot:IsA("Model") then
+				table.insert(characters, bot)
+			end
+		end
+		for _, character in ipairs(characters) do
+			local open = character:GetAttribute("LManualOpen") == true
+			seen[character] = true
+			if open and not manualOpen[character] then
+				local root = character:FindFirstChild("HumanoidRootPart")
+				Sfx.play("eyesOpen", { volume = 1, parent = root })
+			end
+			manualOpen[character] = if open then true else nil
+		end
+		for character in pairs(manualOpen) do
+			if not seen[character] then
+				manualOpen[character] = nil
+			end
 		end
 	end
-	return nil
-end
-
--- Three letters of the worker's real name, shown above the station for a few seconds.
-local function onLetterFlash(payload)
-	if type(payload) ~= "table" or type(payload.pattern) ~= "string" or type(payload.stationId) ~= "string" then
-		return
-	end
-	local screen = findScreen(payload.stationId)
-	if not screen then
-		return
-	end
-	local gui = Create("BillboardGui", {
-		Name = "LetterFlash",
-		Adornee = screen,
-		AlwaysOnTop = true,
-		LightInfluence = 0,
-		MaxDistance = 60,
-		Size = UDim2.fromScale(15, 1.8),
-		StudsOffset = Vector3.new(0, 2.6, 0),
-		ResetOnSpawn = false,
-		Parent = playerGui,
-	})
-	Kit.label({
-		BackgroundTransparency = 0.15,
-		BackgroundColor3 = C.void,
-		font = "mono",
-		TextScaled = true,
-		AutomaticSize = Enum.AutomaticSize.None,
-		TextColor3 = C.white,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Text = if type(payload.alias) == "string"
-			then string.upper(payload.alias) .. "  ·  " .. payload.pattern
-			else payload.pattern,
-		Size = UDim2.fromScale(1, 1),
-		Parent = gui,
-	})
-	task.delay(tonumber(payload.duration) or 3, function()
-		gui:Destroy()
-	end)
 end
 
 -- A real name seen with Specter's Eyes. Nothing is stored anywhere.
@@ -164,7 +152,7 @@ local function onElimination(payload)
 		subtitle = Terms.f("{Agency} removed you. You rise as a {Specter}.")
 	elseif kind == "arrested" then
 		title = "Arrested"
-		subtitle = Terms.f("{Zero} served a warrant with your real name. You rise as a {Specter}.")
+		subtitle = Terms.f("{Zero} arrested you. You rise as a {Specter}.")
 	else
 		return
 	end
@@ -219,7 +207,7 @@ function WorldFx.init()
 		Position = UDim2.fromScale(0.5, 0.56),
 		Parent = overlay,
 	})
-	Net.event("LetterFlash").OnClientEvent:Connect(onLetterFlash)
+	task.spawn(watchManuals)
 	Net.event("EyesName").OnClientEvent:Connect(onEyesName)
 	Net.event("Elimination").OnClientEvent:Connect(onElimination)
 end

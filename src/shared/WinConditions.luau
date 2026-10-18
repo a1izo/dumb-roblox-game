@@ -1,16 +1,15 @@
 --!strict
 -- Win checks run after every removal from the match.
---   Team wins: Kira is removed (voted out or arrested with a valid warrant).
---   Kira wins: Kira kills L, or living Kira players (Kira + followers) equal or outnumber
---   the living investigation team. Arresting an innocent and surviving round five are
---   handled where they happen.
+--   Bureau wins: Diavolo (role id "Kira") is removed (voted out, arrested or gone).
+--   Coven wins: living Coven players (Diavolo and Muertos) equal or outnumber the living Bureau.
+-- The Bureau's task bar is the other way to win; TaskBarService declares it when it fills.
 
 local WinConditions = {}
 
 export type Entry = { role: string, alive: boolean }
 
 -- Returns "Team" or "Kira" and a short code, or nil when the match goes on.
-function WinConditions.evaluate(entries: { Entry }, lKilledByKira: boolean): (string?, string?)
+function WinConditions.evaluate(entries: { Entry }): (string?, string?)
 	local hasKira = false
 	local kiraAlive = false
 	local kiraSide = 0
@@ -32,13 +31,15 @@ function WinConditions.evaluate(entries: { Entry }, lKilledByKira: boolean): (st
 	if hasKira and not kiraAlive then
 		return "Team", "KiraRemoved"
 	end
-	if lKilledByKira then
-		return "Kira", "LKilled"
-	end
 	if hasKira and kiraSide >= team then
 		return "Kira", "Parity"
 	end
 	return nil, nil
+end
+
+-- How many case files fill the task bar for a match that started with this many Bureau players.
+function WinConditions.taskTotal(bureauCount: number, perBureau: number): number
+	return math.max(1, bureauCount * perBureau)
 end
 
 return WinConditions

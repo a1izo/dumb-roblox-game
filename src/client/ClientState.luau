@@ -17,7 +17,7 @@ ClientState.public = {
 	active = false,
 	phase = "Lobby",
 	round = 0,
-	maxRounds = 5,
+	taskBar = { done = 0, total = 0 },
 	startedAt = 0,
 	endsAt = 0,
 	mapName = "",

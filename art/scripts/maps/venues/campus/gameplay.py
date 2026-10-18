@@ -1,8 +1,8 @@
 """Kagegaoka University's gameplay spots outside the rooms' own (stations, sheets,
-the tip box, the board and most hoods are placed with their rooms and grounds):
+the bell's spot and the board are placed with their rooms and grounds):
 - the spawns, mid-avenue, where the case gathers under the ginkgos;
 - the named areas with their intro marks;
-- spare spawns and hoods all over the campus."""
+- spare spawns all over the campus."""
 
 from maps.venues.campus import plan as P
 
@@ -17,11 +17,6 @@ def spawns(s):
                     (56.0, 0.0, 28.0), (120.0, 0.0, 28.0), (-120.0, 0.0, 51.0), (-60.0, 0.0, 51.0), (20.0, 0.0, 96.0),
                     (-104.0, HY, 30.0), (-110.0, 0.0, -44.0)):
         s.spawn(x, z, y, spare=True)
-
-
-def spots(s):
-    s.hood(13.0, 64.0, spare=True)
-    s.hood(-79.0, -60.0, spare=True)
 
 
 # Each area: its name, where it is, its floor, and its two intro marks (x, z, the way they face).
@@ -65,5 +60,4 @@ def areas(s):
 
 def build(s):
     spawns(s)
-    spots(s)
     areas(s)

@@ -5,17 +5,19 @@
 -- drills:
 --
 --   card     read your role card: an alias for everyone to see, a real name to keep
---   file     work a case file, and see three letters of your real name leak
---   write    write a full real name in the Manual
---   warrant  serve a warrant: the right suspect, the full real name
+--   file     work a case file: it fills the Bureau's shared task bar
+--   write    stare at Dummy B to learn its real name, then write it in full in the Manual
+--   arrest   point at the suspect, as Ace does in a meeting (the Academy's "warrant" drill)
 --   ready    press READY
 --
--- Each step shows one instruction (`line`) and one short line on how to do it (`how`); when it is done, a
--- line on why it matters (`why`) shows for a moment before the next step comes in.
+-- Each step shows one instruction (`line`) and one short line on how to do it (`how`); a step done in two
+-- halves says how to do the second once the first is done (`howNext`: the Manual, once the name is learned).
+-- When it is done, a line on why it matters (`why`) shows for a moment before the next step comes in.
 --
 -- The steps run on the player's client (like the drills); the server keeps four facts in the profile's
 -- `trial`: done, skipped (the offer was turned down: it is not made again), paid, and step (how many steps
--- were done, so a rejoin carries on where it stopped). Finishing pays the Academy's one reward once per
+-- were done, so a rejoin carries on where it stopped: a count, never the steps' ids, so an id can be renamed
+-- but a step added or moved shifts everyone's saved place). Finishing pays the Academy's one reward once per
 -- profile. That reward used to be paid for finishing all seven drills: whoever finished them under that rule
 -- has been paid and is not paid again. (Finishing the drills no longer pays; a profile that finishes them now
 -- is marked `training.unrewarded`, which is how the two are told apart without touching old profiles.)
@@ -29,9 +31,10 @@ local Terms = require(script.Parent.Terms)
 local Trial = {}
 
 -- drill: the Academy drill whose completion is the step (nil: done some other way).
--- how and why are Terms templates; `how` may hold {cardKey} (the control for the role card, filled on the
--- client for the input in the player's hands).
-export type Step = { id: string, line: string, how: string, why: string, drill: string? }
+-- how, howNext and why are Terms templates; `how` may hold {cardKey} and {stareKey} (the controls for the
+-- role card and for staring, filled on the client for the input in the player's hands) and {seconds} (how
+-- long a stare takes).
+export type Step = { id: string, line: string, how: string, howNext: string?, why: string, drill: string? }
 
 local RAW: { Step } = {
 	{
@@ -44,21 +47,23 @@ local RAW: { Step } = {
 		id = "file",
 		line = "Work a case file",
 		how = "Follow the wisp to the fingerprint altar.",
-		why = "In a case, every finished file posts a clue for {agency}.",
+		why = "In a case, every finished file fills {agency}'s task bar. Fill it and {agency} wins.",
 		drill = "fingerprint",
 	},
 	{
 		id = "write",
-		line = "Write a name in {grimoire}",
-		how = "Read Dummy B's leaking letters, then write its name at the Manual's altar.",
-		why = "That is how {hand} kills: a real name, written in full.",
+		line = "Learn a name, then write it",
+		how = "Stand near Dummy B, press {stareKey} and keep still for {seconds} s.",
+		howNext = "You have its real name. Now follow the wisp to {grimoire} and write it in full.",
+		why = "That is how {hand} kills. Watch for anyone standing still with red eyes.",
 		drill = "grimoire",
 	},
 	{
-		id = "warrant",
-		line = "Serve a warrant",
-		how = "At the warrant's altar, name the one you suspect.",
-		why = "{Zero} has one warrant. A wrong name wastes it.",
+		-- The Academy's drill keeps its old id: the profile saves finished drills by id.
+		id = "arrest",
+		line = "Make an arrest",
+		how = "Follow the wisp and point at the one you suspect.",
+		why = "In a meeting, {zero} can arrest once. A wrong pick costs {zero}'s life.",
 		drill = "warrant",
 	},
 	{
@@ -72,7 +77,14 @@ local RAW: { Step } = {
 Trial.STEPS = {} :: { Step }
 Trial.BY_ID = {} :: { [string]: Step }
 for _, raw in ipairs(RAW) do
-	local step: Step = { id = raw.id, line = Terms.f(raw.line), how = raw.how, why = raw.why, drill = raw.drill }
+	local step: Step = {
+		id = raw.id,
+		line = Terms.f(raw.line),
+		how = raw.how,
+		howNext = raw.howNext,
+		why = raw.why,
+		drill = raw.drill,
+	}
 	table.insert(Trial.STEPS, step)
 	Trial.BY_ID[step.id] = step
 end
@@ -88,9 +100,12 @@ Trial.REAL_NAME = "Akira Noda"
 local NUMBER_WORDS =
 	{ "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve" }
 
--- A step's how or why line, with its placeholders filled ({cardKey} from `vars`).
+-- A step's how or why line, with its placeholders filled ({cardKey} and {stareKey} from `vars`).
 function Trial.text(template: string, vars: { [string]: any }?): string
-	local all: { [string]: any } = { players = NUMBER_WORDS[Config.MIN_PLAYERS] or tostring(Config.MIN_PLAYERS) }
+	local all: { [string]: any } = {
+		players = NUMBER_WORDS[Config.MIN_PLAYERS] or tostring(Config.MIN_PLAYERS),
+		seconds = Config.STARE_TIME,
+	}
 	for key, value in pairs(vars or {}) do
 		all[key] = value
 	end

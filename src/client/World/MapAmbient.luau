@@ -6,7 +6,7 @@
 -- aircraft lights blinking on the towers; rain on the glass and snow slipping off branches
 -- (thinner on slower devices); the police helicopter that now and then sweeps its searchlight
 -- across a tower's floors; and the campus clock tower, whose hands creep towards midnight as the
--- investigation runs out and whose bell tolls twelve when the Grimoire phase begins. Nothing
+-- investigation runs out and whose bell tolls twelve when free roam ends in a meeting. Nothing
 -- here collides with anyone.
 
 local CollectionService = game:GetService("CollectionService")
@@ -847,13 +847,13 @@ end
 -- Its hands stand at 23:00 until the investigation starts, then creep to midnight as it runs out
 -- (a rough timer anyone can read from across the campus), and stay at midnight from the Grimoire
 -- phase on; a new round's investigation sends them back to eleven. Twelve strokes of the bell mark
--- the Grimoire phase.
+-- the meeting.
 
 type Clock = { dial: BasePart, hour: BasePart, minute: BasePart }
 
 local clocks: { [Instance]: Clock } = {}
 local shownMinutes = 0 -- minutes past 23:00 the hands show (0 to 60)
-local AFTER_MIDNIGHT = { DeathNote = true, Meeting = true, Vote = true, Verdict = true, Reveal = true, Outro = true }
+local AFTER_MIDNIGHT = { Meeting = true, Vote = true, Verdict = true, Reveal = true, Outro = true }
 local BELL_STROKES = 12
 local BELL_GAP = 2.4
 
@@ -1126,8 +1126,8 @@ function MapAmbient.init()
 	end)
 	RunService.Heartbeat:Connect(stepClocks)
 	ClientState.PhaseChanged:Connect(function(phase, previous)
-		-- (Only as the investigation ends: not for someone joining in the middle of the phase.)
-		if phase == "DeathNote" and previous == "Investigation" and next(clocks) ~= nil then
+		-- (Only as free roam ends: not for someone joining in the middle of the phase.)
+		if phase == "Meeting" and previous == "Investigation" and next(clocks) ~= nil then
 			tollMidnight()
 		end
 	end)

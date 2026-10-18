@@ -3,9 +3,11 @@
 -- sent to it are dropped by Net (Net.botSink), and it acts by "sending" the same requests a
 -- client would (Net.simulate), so every rule, range check and rate limit applies to it.
 --
--- With autoplay on, bots walk the map on pathfinding, work case files (Cultists and the Hand
--- sometimes fake them), vote, and the Hand writes a name in the Grimoire phase. The debug
--- panel can also order any bot to do one thing.
+-- With autoplay on, bots walk the map on pathfinding and vote. Bureau bots work case files; Coven
+-- bots wander and stare at people to learn their names, Diavolo writes the names he has learned
+-- in the Manual (if hand kills are on), and Muertos sometimes sabotage. A Butler bot names the next
+-- Ace, and an Ace bot now and then arrests someone. The debug panel can also order any bot to do
+-- one thing.
 
 local CollectionService = game:GetService("CollectionService")
 local PathfindingService = game:GetService("PathfindingService")
@@ -21,6 +23,7 @@ local Signal = require(Shared:WaitForChild("Signal"))
 local VoteCounter = require(Shared:WaitForChild("VoteCounter"))
 
 local Services = script.Parent.Parent:WaitForChild("Services")
+local ArrestService = require(Services:WaitForChild("ArrestService"))
 local CharacterService = require(Services:WaitForChild("CharacterService"))
 local Elimination = require(Services:WaitForChild("Elimination"))
 local MapService = require(Services:WaitForChild("MapService"))
@@ -404,13 +407,87 @@ local function freeStation(nearTo: Vector3?)
 	return best
 end
 
-local function startWork(bot, ps, station, forceFake: boolean?)
+local function startWork(bot, station)
 	local brain = bot.brain
 	brain.station = station
 	brain.state = "walkToStation"
 	brain.puzzle = nil
 	walkTo(bot, workSpot(station))
-	brain.fake = Match.isKiraSide(ps) and (forceFake == true or math.random() < 0.4)
+end
+
+local function wander(bot)
+	local brain = bot.brain
+	brain.state = "wander"
+	local areas = Match.map and Match.map.areas or {}
+	local area = if #areas > 0 then areas[math.random(1, #areas)] else nil
+	if area then
+		walkTo(bot, area.position + Vector3.new(math.random(-6, 6), 0, math.random(-6, 6)))
+	end
+end
+
+-- Someone close enough to stare at whose name this bot does not know yet.
+local function stareTarget(ps)
+	local here = Match.position(ps)
+	if not here then
+		return nil
+	end
+	local range = if ps.eyes then Config.OCULUS_RANGE else Config.STARE_RANGE
+	for _, other in ipairs(Match.living()) do
+		local there = Match.position(other)
+		if other ~= ps and not ps.learned[other.userId] and there and (there - here).Magnitude < range - 1 then
+			return other
+		end
+	end
+	return nil
+end
+
+-- Stops where it stands and stares at `target` until the stare is done.
+local function startStare(bot, ps, target, now: number)
+	local humanoid, root = parts(bot)
+	if humanoid and root then
+		humanoid:MoveTo(root.Position)
+	end
+	bot.brain.goal = nil
+	bot.brain.state = "staring"
+	bot.brain.doneAt = now + (if ps.eyes then Config.OCULUS_READ_TIME else Config.STARE_TIME) + 0.6
+	Net.simulate("EyesRequest", bot, { action = "stare", userId = target.userId })
+end
+
+-- What a Coven bot does in free roam: write a learned name (Diavolo), sabotage now and then
+-- (Muertos), stare at whoever is close, or wander on.
+local function thinkCoven(bot, ps, now: number)
+	local brain = bot.brain
+	if ps.role == "Kira" and Bots.handKills and not ps.writing and workspace:GetServerTimeNow() >= ps.writeReadyAt then
+		for userId in pairs(ps.learned) do
+			local victim = Match.getByUserId(userId)
+			if victim and victim.alive and math.random() < 0.3 then
+				Net.simulate("DeathNote", bot, {
+					name = victim.realName,
+					cause = Config.DEATH_CAUSES[math.random(1, #Config.DEATH_CAUSES)],
+				})
+				brain.state = "writing"
+				brain.doneAt = now + Config.MANUAL_WRITE_TIME + 0.5
+				return
+			end
+		end
+	end
+	if ps.role == "Follower" then
+		if ps.eyes == nil and math.random() < 0.01 then
+			Net.simulate("EyesRequest", bot, { action = "deal" })
+			brain.state = "writing"
+			brain.doneAt = now + Config.OCULUS_RITUAL + 0.5
+			return
+		end
+		if workspace:GetServerTimeNow() >= ps.sabotageReadyAt and math.random() < 0.15 then
+			Net.simulate("Sabotage", bot, { kind = ({ "blackout", "jam", "barricade" })[math.random(1, 3)] })
+		end
+	end
+	local target = stareTarget(ps)
+	if target and math.random() < 0.6 then
+		startStare(bot, ps, target, now)
+		return
+	end
+	wander(bot)
 end
 
 -- The answer to the puzzle the server gave this bot (from the TaskState it "received").
@@ -430,9 +507,10 @@ local function thinkInvestigation(bot, ps, now: number)
 			local _, root = parts(bot)
 			local station = brain.station
 			if root and station and flat(root.Position, station.position) < Config.TASK_RANGE then
-				Net.simulate("TaskRequest", bot, { action = "start", stationId = station.id, fake = brain.fake })
+				Net.simulate("TaskRequest", bot, { action = "start", stationId = station.id })
 				brain.state = "working"
-				brain.doneAt = now + Config.TASK_DURATION + 0.3
+				-- A few seconds of "solving" before the answer goes in.
+				brain.doneAt = now + 3 + math.random() * 4
 			else
 				brain.state = nil
 			end
@@ -446,12 +524,12 @@ local function thinkInvestigation(bot, ps, now: number)
 					{ action = "complete", stationId = brain.station.id, answer = puzzleAnswer(bot) }
 				)
 			end
-			brain.state = "wander"
-			local areas = Match.map and Match.map.areas or {}
-			local area = if #areas > 0 then areas[math.random(1, #areas)] else nil
-			if area then
-				walkTo(bot, area.position + Vector3.new(math.random(-6, 6), 0, math.random(-6, 6)))
-			end
+			wander(bot)
+		end
+	elseif brain.state == "staring" or brain.state == "writing" then
+		if now >= brain.doneAt then
+			brain.state = nil
+			brain.nextThink = now + math.random(1, 3)
 		end
 	elseif brain.state == "wander" then
 		if followPath(bot) then
@@ -459,10 +537,14 @@ local function thinkInvestigation(bot, ps, now: number)
 			brain.nextThink = now + math.random(1, 4)
 		end
 	elseif now >= brain.nextThink then
+		if Match.isKiraSide(ps) then
+			thinkCoven(bot, ps, now)
+			return
+		end
 		local _, root = parts(bot)
 		local station = freeStation(if root then root.Position else nil)
 		if station then
-			startWork(bot, ps, station)
+			startWork(bot, station)
 		else
 			brain.nextThink = now + 2
 		end
@@ -474,6 +556,11 @@ local function think(bot, now: number)
 	local brain = bot.brain
 	if not ps then
 		return
+	end
+	-- A Butler bot names the next Ace after a few seconds.
+	local pick = ArrestService.pending()
+	if Bots.autoPlay and pick and pick.butler == ps and pick.endsAt - workspace:GetServerTimeNow() < 25 then
+		ArrestService.botPick(ps)
 	end
 	if brain.phase ~= Match.phase or brain.round ~= Match.round then
 		-- A new phase: forget what we were doing.
@@ -496,16 +583,13 @@ local function think(bot, now: number)
 	if brain.acted or now < brain.nextThink then
 		return
 	end
-	if Match.phase == "DeathNote" and ps.role == "Kira" and Bots.autoPlay and Bots.handKills then
+	if Match.phase == "Meeting" and ps.isAce and not ps.arrestUsed and Bots.autoPlay then
 		brain.acted = true
-		local target = randomOther(ps, function(other)
-			return not Match.isKiraSide(other)
-		end)
-		if target then
-			Net.simulate("DeathNote", bot, {
-				name = target.realName,
-				cause = Config.DEATH_CAUSES[math.random(1, #Config.DEATH_CAUSES)],
-			})
+		if math.random() < 0.15 then
+			local target = randomOther(ps)
+			if target then
+				Net.simulate("Arrest", bot, target.userId)
+			end
 		end
 	elseif Match.phase == "Vote" and Bots.autoPlay then
 		brain.acted = true
@@ -542,7 +626,7 @@ function Bots.order(bot, action: string, target: any, from: Vector3?): string
 		if not station then
 			return "No free station."
 		end
-		startWork(bot, ps, station)
+		startWork(bot, station)
 		return bot.Name .. " is going to " .. station.name .. " (only works in the investigation)."
 	elseif action == "vote" then
 		Net.simulate("Vote", bot, if targetPs then targetPs.userId else VoteCounter.SKIP)
@@ -552,24 +636,27 @@ function Bots.order(bot, action: string, target: any, from: Vector3?): string
 			return "Pick a target first."
 		end
 		Net.simulate("DeathNote", bot, { name = targetPs.realName, cause = Config.DEATH_CAUSES[1] })
-		return bot.Name
-			.. Terms.f(" wrote a name (only works for {Hand} during {phase}).", { phase = Terms.PHASE.DeathNote })
+		return bot.Name .. Terms.f(" is writing a name (only works for {Hand}, in the investigation, off cooldown).")
 	elseif action == "deal" then
 		Net.simulate("EyesRequest", bot, { action = "deal" })
-		return bot.Name .. Terms.f(" asked for {eyes} ({cultists}, investigation, round 2 or later).")
+		return bot.Name .. Terms.f(" asked for {eyes} ({cultists} only, in the investigation).")
 	elseif action == "warrant" then
 		if not targetPs then
 			return "Pick a target first."
 		end
-		Net.simulate("Warrant", bot, { name = targetPs.realName, suspect = targetPs.userId })
-		return bot.Name .. Terms.f(" served a warrant (only works for {Zero} during the vote).")
-	elseif action == "fake" then
-		local station = freeStation(nil)
-		if station then
-			startWork(bot, ps, station, true)
+		Net.simulate("Arrest", bot, targetPs.userId)
+		return bot.Name .. Terms.f(" made an arrest (only works for {zero}, during a meeting).")
+	elseif action == "stare" then
+		if not targetPs then
+			return "Pick a target first."
 		end
-		return bot.Name .. Terms.f(" will fake a case file ({Hand}'s side only).")
+		startStare(bot, ps, targetPs, os.clock())
+		return bot.Name .. Terms.f(" is staring (only works for {circle}, close by, in the investigation).")
+	elseif action == "bell" then
+		Net.simulate("Bell", bot, nil)
+		return bot.Name .. " rang the bell (if close enough and unused)."
 	end
+
 	return "Unknown order."
 end
 

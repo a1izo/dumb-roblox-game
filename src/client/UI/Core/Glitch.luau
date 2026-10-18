@@ -360,10 +360,6 @@ function Glitch.setQuiet(on: boolean)
 	quiet = on
 end
 
-function Glitch.isQuiet(): boolean
-	return quiet
-end
-
 -- The pointer arrives: one short blip (unless the element is already glitching). Leaving lets it finish.
 local function hover(entry: Entry, on: boolean)
 	entry.hovering = on

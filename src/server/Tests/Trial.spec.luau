@@ -29,7 +29,7 @@ return function(t)
 				table.insert(order, step.id)
 				done[step.id] = true
 			end
-			expect(table.concat(order, " ")).to.equal("card file write warrant ready")
+			expect(table.concat(order, " ")).to.equal("card file write arrest ready")
 			expect(Trial.complete(done)).to.equal(true)
 			expect(Trial.complete({ card = true })).to.equal(false)
 		end)
@@ -42,6 +42,9 @@ return function(t)
 				end
 			end
 			expect(Trial.stepForDrill("eyes")).to.equal(nil)
+			-- The arrest is the Academy's "warrant" drill, whose id the profile saves.
+			expect(Trial.stepForDrill("warrant").id).to.equal("arrest")
+			expect(Trial.stepForDrill("grimoire").id).to.equal("write")
 		end)
 
 		it("is offered only to someone who has never played, done it or turned it down", function()
@@ -84,7 +87,7 @@ return function(t)
 			expect(Trial.count({ card = true, write = true })).to.equal(1)
 			local done = Trial.doneUpTo(3)
 			expect(Trial.count(done)).to.equal(3)
-			expect(Trial.next(done).id).to.equal("warrant")
+			expect(Trial.next(done).id).to.equal("arrest")
 			expect(Trial.next(Trial.doneUpTo(0)).id).to.equal("card")
 			expect(Trial.next(Trial.doneUpTo(99))).to.equal(nil)
 		end)
@@ -105,21 +108,40 @@ return function(t)
 			expect(Trial.advance(finished, 1)).to.equal(false)
 		end)
 
-		it("writes every step's lines with no placeholder left over", function()
+		it("writes every step's lines with no placeholder left over, and never of letters", function()
+			local keys = { cardKey = "Hold C", stareKey = "R" }
 			for _, step in ipairs(Trial.STEPS) do
 				for _, line in ipairs({
 					step.line,
-					Trial.text(step.how, { cardKey = "Hold C" }),
+					Trial.text(step.how, keys),
+					if step.howNext then Trial.text(step.howNext, keys) else "-",
 					Trial.text(step.why),
 				}) do
 					expect(string.find(line, "{", 1, true)).to.equal(nil)
 					expect(#line > 0).to.equal(true)
+					-- The letter leaks are gone: names are learned by staring.
+					expect(string.find(string.lower(line), "letter", 1, true)).to.equal(nil)
 				end
 			end
-			expect(Trial.text(Trial.BY_ID.card.how, { cardKey = "Hold C" })).to.equal("Hold C to turn it over.")
+			expect(Trial.text(Trial.BY_ID.card.how, keys)).to.equal("Hold C to turn it over.")
 			expect(string.find(Trial.text(Trial.BY_ID.ready.why), "Six players", 1, true) ~= nil).to.equal(
 				Config.MIN_PLAYERS == 6
 			)
+		end)
+
+		it("teaches the stare before the Manual, as long as a stare takes", function()
+			local write = Trial.BY_ID.write
+			local how = Trial.text(write.how, { stareKey = "R" })
+			expect(string.find(how, "Dummy B", 1, true) ~= nil).to.equal(true)
+			expect(string.find(how, "press R", 1, true) ~= nil).to.equal(true)
+			expect(string.find(how, tostring(Config.STARE_TIME) .. " s", 1, true) ~= nil).to.equal(true)
+			-- The second half (the Manual) has its own line; the other steps are done in one go.
+			expect(write.howNext ~= nil).to.equal(true)
+			for _, step in ipairs(Trial.STEPS) do
+				if step ~= write then
+					expect(step.howNext).to.equal(nil)
+				end
+			end
 		end)
 
 		it("knows when the profile is loaded far enough to decide the offer", function()

@@ -124,8 +124,8 @@ local function build()
 	local disabled = Kit.button({ text = "disabled", variant = "primary", Parent = buttons })
 	Kit.setEnabled(disabled, false)
 	local holds = row(list, order)
-	Kit.hold({ text = "Hold to write", icon = "grimoire" }, 1.2, function()
-		print("[DeathsGambit debug] held")
+	Kit.button({ text = "Write", icon = "grimoire" }, function()
+		print("[DeathsGambit debug] pressed")
 	end).Parent =
 		holds
 	Kit.iconButton({ icon = "settings", Parent = holds })
@@ -223,7 +223,7 @@ local function build()
 	section(list, order, "Slips")
 	for kind in pairs(Kit.Slip.KINDS) do
 		Kit.slip({
-			text = "A " .. kind .. " slip: the tip box was emptied.",
+			text = "A " .. kind .. " slip: the emergency bell was rung.",
 			kind = kind,
 			LayoutOrder = order(),
 			Parent = list,

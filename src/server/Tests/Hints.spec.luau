@@ -36,8 +36,8 @@ return function(t)
 		end)
 
 		it("falls back to the keyboard for an input it does not know", function()
-			local text = Hints.resolve(Hints.BY_ID.evidence.text, "mind")
-			expect(string.find(text, "(B)", 1, true) ~= nil).to.equal(true)
+			local text = Hints.resolve(Hints.BY_ID.role_L.text, "mind")
+			expect(string.find(text, "(K)", 1, true) ~= nil).to.equal(true)
 		end)
 	end)
 end

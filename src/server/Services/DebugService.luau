@@ -1,7 +1,8 @@
 -- The debug panel's server side (F2 in a play test). It lets a tester drive every part of the
 -- game alone: start a match at once on any map, skip or pause phases, change roles mid-match,
--- kill / vote out / arrest / revive anyone, hand out the Eyes, hoods and paper, force letter
--- flashes, add test bots that play, preview maps and cutscenes, and change the profile.
+-- kill / vote out / arrest / revive anyone, hand out the Oculus, names and paper, call meetings,
+-- sabotage, fill the task bar, add test bots that play, preview maps and cutscenes, and change
+-- the profile.
 --
 -- Who may use it: everyone in a Studio play test (Config.STUDIO_DEBUG), and in live servers
 -- only the user ids in Config.DEBUG_USER_IDS. Test bots exist in Studio only. Allowed players
@@ -29,6 +30,7 @@ local MapContract = require(Maps:WaitForChild("MapContract"))
 local Mechanics = require(Maps:WaitForChild("Mechanics"))
 local SceneBuilder = require(Maps:WaitForChild("SceneBuilder"))
 
+local ArrestService = require(script.Parent.ArrestService)
 local CaseFileService = require(script.Parent.CaseFileService)
 local CharacterService = require(script.Parent.CharacterService)
 local DataService = require(script.Parent.DataService)
@@ -37,20 +39,17 @@ local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local EyesService = require(script.Parent.EyesService)
 local GhostService = require(script.Parent.GhostService)
-local HoodService = require(script.Parent.HoodService)
 local MapService = require(script.Parent.MapService)
 local Match = require(script.Parent.Match)
 local MatchmakingService = require(script.Parent.MatchmakingService)
 local MonetizationService = require(script.Parent.MonetizationService)
-local NameService = require(script.Parent.NameService)
 local NoteService = require(script.Parent.NoteService)
 local PassService = require(script.Parent.PassService)
 local RoleService = require(script.Parent.RoleService)
 local RoundService = require(script.Parent.RoundService)
-local ServerSettings = require(script.Parent.ServerSettings)
-local SuspicionService = require(script.Parent.SuspicionService)
+local SabotageService = require(script.Parent.SabotageService)
+local TaskBarService = require(script.Parent.TaskBarService)
 local VoteService = require(script.Parent.VoteService)
-local WarrantService = require(script.Parent.WarrantService)
 
 local Bots = require(Server:WaitForChild("Debug"):WaitForChild("Bots"))
 
@@ -125,11 +124,11 @@ local function snapshot(viewer: Player)
 			bot = Bots.is(player),
 			me = player == viewer,
 			ready = MatchmakingService.isReady(player),
-			eyes = if ps and ps.eyes then ps.eyes.readsLeft else nil,
-			hood = ps ~= nil and Match.hasHood(ps),
+			eyes = if ps and ps.eyes then math.ceil(ps.eyes.lifeLeft) else nil,
 			carrying = if ps and ps.carrying then ps.carrying.kind else nil,
 			tasks = if ps then ps.tasksThisRound else nil,
-			suspicion = if ps then SuspicionService.get(ps) else nil,
+			ace = ps ~= nil and ps.isAce,
+			fakeAce = ps ~= nil and ps.fakeAce,
 			forced = RoleService.debugForced[player.UserId],
 		})
 	end
@@ -174,7 +173,7 @@ local function snapshot(viewer: Player)
 			winner = Match.winner,
 			nextMap = MapService.nextMapId(),
 			running = MatchmakingService.isRunning(),
-			butlerHint = Match.butlerHint,
+			taskBar = Match.taskBar,
 		},
 		settings = {
 			timeScale = Config.STUDIO_TIME_SCALE,
@@ -224,9 +223,9 @@ end
 
 local UNIQUE = { Kira = true, L = true, Watari = true }
 
-local PHASES = { Intro = true, Briefing = true, Investigation = true, DeathNote = true, Meeting = true, Vote = true }
--- The order of the phases inside a round.
-local ROUND_ORDER = { Investigation = 1, DeathNote = 2, Meeting = 3, Vote = 4, Verdict = 5 }
+local PHASES = { Intro = true, Briefing = true, Investigation = true, Meeting = true, Vote = true }
+-- The order of the phases inside a cycle (free roam, then its meeting).
+local ROUND_ORDER = { Investigation = 1, Meeting = 2, Vote = 3, Verdict = 4 }
 
 local COMMANDS: { [string]: (Player, any) -> () } = {}
 
@@ -284,7 +283,7 @@ COMMANDS.skipTo = function(player, args)
 	if round then
 		local here = ROUND_ORDER[Match.phase] or 0
 		local later = round > Match.round or (round == Match.round and (ROUND_ORDER[phase] or 0) > here)
-		if not later or round > ServerSettings.rounds() then
+		if not later then
 			reply(player, "That point of the match has passed (or does not exist).", "bad")
 			return
 		end
@@ -371,12 +370,17 @@ COMMANDS.setRole = function(player, args)
 		end
 	end
 	ps.role = role
-	ps.dnRound = 0
-	ps.warrantUsed = false
-	ps.warrantBlockedRound = 0
-	ps.tamperRound = 0
-	if role == "Kira" or old == "Kira" then
-		Match.butlerHint = NameService.watariHint()
+	ps.writeReadyAt = 0
+	ps.sabotageReadyAt = 0
+	ps.arrestUsed = false
+	ps.fakeAce = false
+	-- Ace's title follows the Ace role.
+	for _, other in ipairs(Match.list) do
+		if other.role == "L" then
+			other.isAce = true
+		elseif not other.fakeAce then
+			other.isAce = false
+		end
 	end
 	EventLog.add(string.format("Debug: %s became %s.", ps.alias, Terms.role(role, "a")), "role")
 	Match.pushAllPrivate()
@@ -429,7 +433,7 @@ end
 COMMANDS.arrest = function(player, args)
 	local ps = needTarget(player, args)
 	if ps and ps.alive then
-		WarrantService.debugServe(ps)
+		ArrestService.debugServe(ps)
 	end
 end
 
@@ -473,10 +477,59 @@ COMMANDS.eyes = function(player, args)
 	end
 end
 
-COMMANDS.hood = function(player, args)
+COMMANDS.learnAll = function(player, args)
 	local ps = needTarget(player, args)
-	if ps and ps.alive then
-		HoodService.debugWear(ps)
+	if ps then
+		EyesService.debugLearnAll(ps)
+		reply(player, ps.alias .. " now knows every real name.")
+	end
+end
+
+COMMANDS.manualReady = function(player, args)
+	local ps = needTarget(player, args)
+	if ps then
+		DeathNoteService.debugReady(ps)
+		ps.sabotageReadyAt = 0
+		Match.pushPrivate(ps)
+		reply(player, ps.alias .. ": the Manual and sabotage are ready.")
+	end
+end
+
+COMMANDS.sabotage = function(player, args)
+	local ps = needTarget(player, args)
+	local kind = if type(args) == "table" then args.kind else nil
+	if ps and ps.alive and type(kind) == "string" then
+		local ok = SabotageService.run(ps, kind, true)
+		reply(
+			player,
+			if ok then "Sabotage: " .. kind .. "." else "That sabotage did not work here.",
+			if ok then "good" else "bad"
+		)
+	end
+end
+
+COMMANDS.meeting = function(player)
+	if needMatch(player) then
+		Match.requestMeeting("bell", nil)
+		reply(player, "Meeting called.")
+	end
+end
+
+COMMANDS.taskBar = function(player, args)
+	if needMatch(player) then
+		local share = if type(args) == "table" then tonumber(args.share) or 0.9 else 0.9
+		TaskBarService.debugFill(share)
+		reply(player, string.format("Task bar at %d / %d.", Match.taskBar.done, Match.taskBar.total))
+	end
+end
+
+COMMANDS.butlerPick = function(player)
+	local pending = ArrestService.pending()
+	if pending then
+		ArrestService.botPick(pending.butler)
+		reply(player, "The Butler picked at random.")
+	else
+		reply(player, "The Butler has nothing to pick right now.", "bad")
 	end
 end
 
@@ -490,16 +543,8 @@ end
 COMMANDS.flash = function(player, args)
 	local ps = needTarget(player, args)
 	if ps and ps.alive then
-		local station = CaseFileService.debugFlash(ps)
+		local station = CaseFileService.debugFinish(ps)
 		reply(player, if station then "Case file finished at " .. station .. "." else "No station nearby.")
-	end
-end
-
-COMMANDS.suspicion = function(player, args)
-	local ps = needTarget(player, args)
-	if ps then
-		SuspicionService.add(ps, tonumber(args.amount) or 20)
-		SuspicionService.push()
 	end
 end
 
@@ -675,7 +720,7 @@ COMMANDS.contract = function(player)
 end
 
 -- The running map's own mechanic (Maps/Mechanics): Tokyo's "status", "walk" and "cars" (turn the
--- lamps), the campus's "tracks" (how many prints), Bureau HQ's "blackout" (pull the breaker now).
+-- lamps) and the campus's "tracks" (how many prints).
 COMMANDS.mechanic = function(player, args)
 	if not needMatch(player) then
 		return

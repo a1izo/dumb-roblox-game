@@ -21,41 +21,41 @@ end
 local RoleCopy: { [string]: RoleCopy } = {
 	Kira = card(
 		{
-			"Each {grimoire} phase, write one full real name. That player dies during the next meeting.",
-			"Real names leak 3 letters at a time whenever someone finishes a case file. Watch the flashes.",
-			"Fake tasks and blend in. Your {cultists} can hand you names on paper notes.",
+			"Stare at someone up close (R), standing still, to learn their real name. Your eyes glow while you do.",
+			"Write a learned name in {grimoire} (P) any time. The book burns red for a few seconds: make sure nobody sees.",
+			"The victim dies 20 seconds later. You do not know your {cultists}: write one by mistake and they die too.",
 		},
-		"Kill {zero}, match {agency} in number, or survive all 5 rounds.",
-		"Stand near a busy station and watch whose letters flash."
+		"Match {agency} in number before they vote you out, arrest you or fill their task bar.",
+		"Wander, find someone alone, and stare."
 	),
 	Follower = card(
 		{
-			"You know who {hand} is. Gather real names and pass them to {hand} on paper notes, hand to hand.",
-			"Fake tasks, rig a station's next flash (hold T) and file false reports to frame others.",
-			"From round 2, one {cultist} may accept {eyes}: read real names up close, then die soon after.",
+			"You know {hand}; they do not know you. Stare to learn real names (R) and pass them on a paper note.",
+			"Sabotage: black out the map (Z), jam the stations near you (B), barricade the way (T).",
+			"Accept {eyes} for fast reads from far away, but it kills you three minutes later.",
 		},
-		"{Hand} wins if {zero} dies, if your side matches {agency} in number, or after 5 rounds.",
-		"Check your allies on the role card, then look busy at a station."
+		"{Circle} wins when it matches {agency} in number.",
+		"Find {hand}, then pick up a blank sheet for your first name."
 	),
-	L = card(
+	L = card({
+		"You lead {agency} in secret. Only {butler} knows who you are.",
+		"Once per match, during a meeting, arrest one player (K). A {cultist} or {hand} is removed.",
+		"Arrest an innocent and they walk free while you die. Any arrest reveals that you are {zero}.",
+	}, "Vote out or arrest {hand}, or fill the task bar.", "Work case files and watch for glowing eyes."),
+	Watari = card(
 		{
-			"You lead {agency} in secret. During meetings you speak through the anonymous screen.",
-			"Read tips and reports at {zeroDesk} (Z). The suspicion meter shows who others suspect.",
-			"Once per match, during the vote, arrest a player with their full real name. Arresting an innocent loses the match.",
+			"You know who {zero} is. {Zero} does not know you.",
+			"If {zero} dies, you name the next {zero} within 30 seconds: anyone but yourself. They get a fresh arrest.",
+			"Name someone from {circle} and their title is worthless, so choose carefully.",
 		},
-		"Vote out or arrest {hand}. If {hand} writes your real name, you lose.",
-		"Open {zeroDesk} (Z) between rounds and read the tips."
+		"{Agency} wins when {hand} is voted out or arrested, or the task bar fills.",
+		"Stay near {zero} and watch who stares at them."
 	),
-	Watari = card({
-		"Only {zero} knows who you are. You do not know who {zero} is.",
-		"Your hint is one letter of {hand}'s real name. Send it to {zero} through the tip box.",
-		"While you live, {zero} keeps the suspicion meter.",
-	}, "{Agency} wins when {hand} is voted out or arrested.", "Drop your hint in the tip box early."),
 	TaskForce = card({
-		"Work case files. Each one posts a clue on the evidence board (B).",
-		"Finishing a task flashes 3 letters of your real name to anyone watching. Choose your moments.",
-		"Talk it through in meetings, then vote. Real names of living players are blocked in chat.",
-	}, "Vote out {hand} before {circle} takes over.", "Work a case file, then check the evidence board."),
+		"Work case files (E). Every one fills {agency}'s task bar; fill it and you win.",
+		"Watch for glowing eyes (someone staring) and a burning red book ({hand} writing).",
+		"Ring the bell to call a meeting. Real names of living players are blocked in every chat.",
+	}, "Vote out {hand}, or fill the task bar, before {circle} takes over.", "Pick a station and keep your eyes open."),
 }
 
 return RoleCopy

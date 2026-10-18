@@ -3,7 +3,7 @@
 -- is and on who the next vote removes. Pure rules, used by the server (WagerService) and the client panels,
 -- and tested in Wager.spec.
 --   * "diavolo": one guess per case, not for Diavolo's side (they know who it is); paid when the case closes.
---   * "vote": one guess per round, made before the vote opens (so never after the ballots are seen); the
+--   * "vote": one guess per meeting, made before the vote opens (so never after the ballots are seen); the
 --     guess is a living player or NOBODY (no one removed); settled at that round's verdict.
 -- Every bet is locked once made.
 
@@ -14,7 +14,7 @@ Wager.VOTE_COINS = 10
 Wager.NOBODY = 0 -- a vote guess that no one is removed
 
 -- The phases in which a vote guess may still be made (before the vote opens).
-Wager.VOTE_PHASES = { Investigation = true, DeathNote = true, Meeting = true }
+Wager.VOTE_PHASES = { Investigation = true, Meeting = true }
 
 export type Bettor = {
 	dead: boolean, -- out of the case but still in it (not left)

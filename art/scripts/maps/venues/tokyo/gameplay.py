@@ -1,5 +1,5 @@
 """Tokyo's gameplay spots outside the rooms: the payphone booth by the police box,
-hoods, the spawns round the scramble, named areas with their intro marks, and spare spots of every
+the spawns round the scramble, named areas with their intro marks, and spare spots of every
 kind. The stations, sheets, tip box and board inside buildings are placed with their rooms
 (interiors.py).
 
@@ -22,13 +22,6 @@ def stations(s):
     """The one station that stands outdoors: a real payphone booth on the plaza by the police box,
     off the kerb. The others are in the rooms that hold them (interiors.py)."""
     s.station("Phone", "Crossing Phone Booth", -84.0, -40.0, 60, prop="StationPhoneBooth")
-
-
-def spots(s):
-    s.hood(64.0, -76.0)
-    s.hood(-16.0, 110.5)
-    s.hood(-150.0, 108.0, spare=True)
-    s.hood(114.0, 118.0, spare=True)
 
 
 def spawns(s):
@@ -75,6 +68,5 @@ def areas(s):
 
 def build(s):
     stations(s)
-    spots(s)
     spawns(s)
     areas(s)

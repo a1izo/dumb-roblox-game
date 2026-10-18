@@ -1,5 +1,5 @@
 """The gameplay side of a map scene: where the game puts its stations, spawns, paper sheets,
-hoods, named areas, the tip box and the evidence board, plus spare spots for each
+named areas, the emergency bell (tipBox) and a cork board (board), plus spare spots for each
 (a later rework can change the counts without rebuilding the map), zones (what kind of ground
 each place is: road, sidewalk, interior...) and the box Specters stay inside.
 
@@ -36,12 +36,11 @@ class LayoutMixin:
             "stations": [],
             "spawns": [],
             "sheets": [],
-            "hoods": [],
             "areas": [],
             "tipBox": None,
             "board": None,
         }
-        self.spare = {"stations": [], "spawns": [], "sheets": [], "hoods": [], "areas": []}
+        self.spare = {"stations": [], "spawns": [], "sheets": [], "areas": []}
         self.zones = []
         self.anchors = {}
         # Tokyo's scramble: where its crowd walks (nodes, links between them, posts where some stand)
@@ -70,9 +69,6 @@ class LayoutMixin:
     def sheet(self, x, y, z, spare=False):
         """y is the top of the surface the sheet lies on (tables 2.8, counters 3.55, + floor)."""
         return self._put("sheets", {"x": x, "y": y, "z": z}, spare)
-
-    def hood(self, x, z, y=0.6, spare=False):
-        return self._put("hoods", {"x": x, "y": y, "z": z}, spare)
 
     def area(self, name, x, z, y=0.0, marks=(), spare=False):
         """A named place. marks: (kind, x, z, rot[, y]) with kind "stand", "seat" or "wall":

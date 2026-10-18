@@ -1,7 +1,7 @@
 -- The briefing: your role's own cutscene (made in Blender, art/scripts/cinema/shots/role_*.py, every
 -- one the same length), with you in it and the allies you know, and your role card running over it as
 -- captions: who you are, how you win, your first move, then your alias, your real name in red, your
--- allies and (for the Butler) the hint. Without the cutscene two panels show the same. Everything here
+-- allies. Without the cutscene two panels show the same. Everything here
 -- can be seen again on the role card (hold C).
 
 local Players = game:GetService("Players")
@@ -45,33 +45,22 @@ local function hide()
 end
 
 local function alliesText(role: string, allies): string
-	local kira, followers, watari = nil, {}, nil
+	local kira, ace = nil, nil
 	for _, ally in ipairs(allies or {}) do
 		if ally.role == "Kira" then
 			kira = ally.alias
-		elseif ally.role == "Follower" then
-			table.insert(followers, ally.alias)
-		elseif ally.role == "Watari" then
-			watari = ally.alias
+		elseif ally.role == "L" then
+			ace = ally.alias
 		end
 	end
 	if role == "Kira" then
-		if #followers == 0 then
-			return Terms.f("You have no {cultists} this match.")
-		end
-		return Terms.f("Your {cultists}: ") .. table.concat(followers, ", ")
+		return Terms.f("You do not know your {cultists}, and they know you. A name you write could be theirs.")
 	elseif role == "Follower" then
-		local text = Terms.f("{Hand} is {alias}.", { alias = kira or "unknown" })
-		if #followers > 0 then
-			text ..= Terms.f("  Other {cultist}: ") .. table.concat(followers, ", ")
-		end
-		return text
+		return Terms.f("{Hand} is {alias}. They do not know you.", { alias = kira or "unknown" })
 	elseif role == "L" then
-		return if watari
-			then Terms.f("{Butler} is {alias}. Nobody else knows who you are.", { alias = watari })
-			else "You work alone this match."
+		return Terms.f("Only {butler} knows who you are. You do not know {butler}.")
 	elseif role == "Watari" then
-		return Terms.f("Only {zero} knows who you are. You do not know who {zero} is.")
+		return Terms.f("{Zero} is {alias}. {Zero} does not know you.", { alias = ace or "unknown" })
 	end
 	return "Nobody knows anyone's role. Trust carefully."
 end
@@ -213,16 +202,6 @@ local function build(payload)
 	})
 	Kit.frame({ Size = UDim2.new(1, 0, 0, T.space.m), LayoutOrder = 6, Parent = pageContent })
 	Kit.label({ Text = alliesText(role, payload.allies), size = "small", LayoutOrder = 7, Parent = pageContent })
-	if type(payload.hint) == "string" then
-		Kit.label({
-			Text = Terms.f("{Butler}'s hint: ") .. payload.hint,
-			font = "document",
-			size = "small",
-			color = C.steel,
-			LayoutOrder = 8,
-			Parent = pageContent,
-		})
-	end
 	Kit.label({
 		Text = string.format(
 			"%d players  ·  %d %s  ·  %s",
@@ -264,12 +243,6 @@ local function caption(key: string, payload): (() -> ())?
 			{ text = tostring(payload.realName), head = true, size = 40, color = C.danger },
 			{ text = alliesText(role, payload.allies), size = "small" },
 		}
-		if type(payload.hint) == "string" then
-			table.insert(
-				lines,
-				{ text = Terms.f("{Butler}'s hint: ") .. payload.hint, font = "document", color = C.steel }
-			)
-		end
 		return Cinema.caption("YOUR ALIAS", lines)
 	end
 	return nil

@@ -48,22 +48,6 @@ function Util.cleanText(text: string, maxLength: number): string
 	return cleaned
 end
 
-function Util.ordinal(n: number): string
-	local lastTwo = n % 100
-	if lastTwo >= 11 and lastTwo <= 13 then
-		return tostring(n) .. "th"
-	end
-	local last = n % 10
-	if last == 1 then
-		return tostring(n) .. "st"
-	elseif last == 2 then
-		return tostring(n) .. "nd"
-	elseif last == 3 then
-		return tostring(n) .. "rd"
-	end
-	return tostring(n) .. "th"
-end
-
 function Util.deepCopy(value: any): any
 	if type(value) ~= "table" then
 		return value

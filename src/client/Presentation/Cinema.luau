@@ -49,13 +49,6 @@ function Cinema.character(userId: number?): Model?
 	return nil
 end
 
--- A camera frame looking at a character's face from in front of it, moved round or closer if
--- a wall or the ceiling is in the way. `side` is studs to the right (turned into an angle).
-function Cinema.faceShot(character: Model, distance: number, height: number, side: number?): CFrame
-	local angle = if side and distance > 0 then math.deg(math.atan2(side, distance)) else 0
-	return ShotSolver.frame(character, { distance = distance, height = height, angle = angle })
-end
-
 -- Letterbox ------------------------------------------------------------------------------------
 
 function Cinema.letterbox(on: boolean)
@@ -560,17 +553,17 @@ function Cinema.outline(model: Instance, color: Color3, seconds: number?): () ->
 	return remove
 end
 
--- A "Hold to skip" button at the bottom right. Returns a remover.
+-- A "Skip" button at the bottom right. Returns a remover.
 function Cinema.skipButton(onSkip: () -> ()): () -> ()
-	local button = Kit.hold({
-		text = "Hold to skip",
+	local button = Kit.button({
+		text = "Skip",
 		variant = "ghost",
 		size = "s",
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -24, 1, -24),
 		ZIndex = 6,
 		Parent = Screens.cinematic,
-	}, 0.6, onSkip)
+	}, onSkip)
 	return function()
 		button:Destroy()
 	end

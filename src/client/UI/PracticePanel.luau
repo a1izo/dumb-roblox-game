@@ -1,6 +1,6 @@
--- Academy drills that are not case files: a practice Grimoire, a practice warrant and a look
--- through Specter's Eyes. Everything runs on this client against the practice dummies; the
--- only thing sent to the server is "drill finished".
+-- Academy drills that are not case files: a practice Manual, a practice arrest (the drill's id is still
+-- "warrant") and a look through the Oculus. Everything runs on this client against the practice dummies;
+-- the only thing sent to the server is "drill finished".
 
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
@@ -26,11 +26,16 @@ local PracticePanel = {}
 
 type Dummy = { part: BasePart, model: Model, alias: string, name: string, first: string, last: string }
 
+-- The arrest drill's notes: where each dummy was (one each, so the clue points at one).
+local PLACES = { "the archive", "the courtyard", "the bell tower", "the library", "the chapel" }
+
 local win: any
 local body: ScrollingFrame
 local onFinished: (() -> ())? = nil
--- The dummy the Manual drill uses while the Trial points at one (nil: any dummy).
+-- The dummy the Manual drill uses while the Trial points at one (nil: any dummy), and whether its real name
+-- has been learned by staring yet (the Trial's drill only gives it away once it has).
 local preferred: string? = nil
+local preferredKnown = false
 
 local function dummies(): { Dummy }
 	local list = {}
@@ -93,19 +98,17 @@ local function feedback(text: string): TextLabel
 	return Kit.label({ Text = text, color = C.white, LayoutOrder = 99, Parent = body })
 end
 
--- A name field, handwritten (the Grimoire) or typewritten (a warrant).
-local function nameField(font: string, order: number): TextBox
+-- The Manual's name field, handwritten.
+local function nameField(order: number): TextBox
 	local _, box = Kit.field({
-		placeholder = if font == "hand" then "First name  Last name" else "The suspect's full real name",
-		font = font,
-		size = if font == "hand" then 32 else "lead",
+		placeholder = "First name  Last name",
+		font = "hand",
+		size = 32,
 		Size = UDim2.new(1, 0, 0, 60),
 		LayoutOrder = order,
 		Parent = body,
 	})
-	if font == "hand" then
-		box.TextXAlignment = Enum.TextXAlignment.Center
-	end
+	box.TextXAlignment = Enum.TextXAlignment.Center
 	return box
 end
 
@@ -117,51 +120,74 @@ local function grimoireDrill()
 		return
 	end
 	local target = list[math.random(1, #list)]
+	local trial = false
 	for _, entry in ipairs(list) do
 		if entry.alias == preferred then
 			target = entry
+			trial = true
 		end
 	end
 	win.setTitle(Terms.f("Practice {grimoire}"))
+	if trial and not preferredKnown then
+		-- The Trial's turn to stare comes first: no name to write yet.
+		Kit.label({
+			Text = string.format(
+				"You do not know %s's real name yet. Stand near it and stare first, as the Trial shows.",
+				target.alias
+			),
+			LayoutOrder = 1,
+			Parent = body,
+		})
+		Kit.button({
+			text = "Go and stare",
+			icon = "eye",
+			variant = "primary",
+			Size = UDim2.new(1, 0, 0, 56),
+			LayoutOrder = 2,
+			Parent = body,
+		}, function()
+			onFinished = nil
+			Router.close("practice", "user")
+		end)
+		return
+	end
 	Kit.label({
 		Text = Terms.f(
-			"In a match, {hand} learns names letter by letter. Here you know it already: write {alias}'s real name, {name}.",
+			if trial
+				then "You learned {alias}'s real name by staring: {name}. {Grimoire} lists every name you learn. Write it in full."
+				else "In a match, {hand} learns real names by staring. Here you know it already: write {alias}'s real name, {name}.",
 			{ alias = target.alias, name = string.upper(target.name) }
 		),
 		LayoutOrder = 1,
 		Parent = body,
 	})
 	Kit.label({
-		Text = "Capital letters and extra spaces do not matter. Any other mistake wastes the round.",
+		Text = "Upper or lower case and extra spaces do not matter. Any other mistake and the writing fails.",
 		size = "small",
 		color = C.dim,
 		LayoutOrder = 2,
 		Parent = body,
 	})
-	local box = nameField("hand", 3)
+	local box = nameField(3)
 	local result: TextLabel? = nil
-	Kit.hold(
-		{
-			text = "Hold to write the name",
-			icon = "quill",
-			variant = "primary",
-			Size = UDim2.new(1, 0, 0, 56),
-			LayoutOrder = 4,
-			Parent = body,
-		},
-		1,
-		function()
-			if result then
-				result:Destroy()
-			end
-			if NameUtil.matches(box.Text, target.first, target.last) then
-				collapse(target)
-				finish()
-			else
-				result = feedback("That is not the exact name. Check the spelling and try again.")
-			end
+	Kit.button({
+		text = "Write the name",
+		icon = "quill",
+		variant = "primary",
+		Size = UDim2.new(1, 0, 0, 56),
+		LayoutOrder = 4,
+		Parent = body,
+	}, function()
+		if result then
+			result:Destroy()
 		end
-	)
+		if NameUtil.matches(box.Text, target.first, target.last) then
+			collapse(target)
+			finish()
+		else
+			result = feedback("That is not the exact name. Check the spelling and try again.")
+		end
+	end)
 end
 
 local function warrantDrill()
@@ -170,22 +196,37 @@ local function warrantDrill()
 		return
 	end
 	local target = list[math.random(1, #list)]
-	win.setTitle("Practice warrant")
-	local notes = {}
-	for _, entry in ipairs(list) do
-		table.insert(notes, string.format("%s:  %s", entry.alias, string.upper(entry.name)))
+	win.setTitle("Practice arrest")
+	-- Where everyone was when the victim fell: a place each, shuffled, and the clue points at one.
+	local places = table.clone(PLACES)
+	for index = #places, 2, -1 do
+		local other = math.random(1, index)
+		places[index], places[other] = places[other], places[index]
+	end
+	local where, notes = {}, {}
+	for index, entry in ipairs(list) do
+		where[entry.alias] = places[(index - 1) % #places + 1]
+		table.insert(notes, string.format("%s:  %s", entry.alias, where[entry.alias]))
 	end
 	Kit.label({
-		Text = "Your notes so far:  " .. table.concat(notes, "   ·   "),
-		font = "document",
+		Text = Terms.f("A meeting is on, and you are {zero}. Point at the one you suspect."),
 		LayoutOrder = 1,
 		Parent = body,
 	})
 	Kit.label({
-		Text = Terms.f("New clue: {hand}'s first name has {n} letters.", { n = #target.first }),
+		Text = "Where everyone was:  " .. table.concat(notes, "   ·   "),
+		font = "document",
+		LayoutOrder = 2,
+		Parent = body,
+	})
+	Kit.label({
+		Text = string.format(
+			"New clue: someone stood still in %s, eyes glowing red, staring at the victim.",
+			where[target.alias]
+		),
 		font = "bodyBold",
 		color = C.candle,
-		LayoutOrder = 2,
+		LayoutOrder = 3,
 		Parent = body,
 	})
 	local options = {}
@@ -196,7 +237,7 @@ local function warrantDrill()
 	local grid = Kit.frame({
 		Name = "Suspects",
 		Size = UDim2.new(1, 0, 0, math.ceil(#options / 3) * (48 + T.space.s)),
-		LayoutOrder = 3,
+		LayoutOrder = 4,
 		Parent = body,
 	})
 	local render
@@ -205,48 +246,40 @@ local function warrantDrill()
 		render(options, picked)
 	end)
 	render(options, nil)
-	local box = nameField("document", 4)
 	local result: TextLabel? = nil
-	Kit.hold(
-		{
-			text = "Hold to serve the warrant",
-			icon = "cuffs",
-			variant = "primary",
-			Size = UDim2.new(1, 0, 0, 56),
-			LayoutOrder = 5,
-			Parent = body,
-		},
-		1,
-		function()
-			if result then
-				result:Destroy()
-			end
-			if picked ~= target.alias then
-				result = feedback(
-					Terms.f("Wrong suspect. In a match, arresting an innocent player hands the win to {hand}.")
-				)
-			elseif not NameUtil.matches(box.Text, target.first, target.last) then
-				result = feedback("Right suspect, wrong name. A rejected warrant blocks you until the next round.")
-			else
-				-- Arrested: the puppet is yanked upright on its strings.
-				Puppets.jerk(target.part)
-				finish()
-			end
+	Kit.button({
+		text = "Arrest",
+		icon = "cuffs",
+		variant = "primary",
+		Size = UDim2.new(1, 0, 0, 56),
+		LayoutOrder = 5,
+		Parent = body,
+	}, function()
+		if result then
+			result:Destroy()
 		end
-	)
+		if picked ~= target.alias then
+			result =
+				feedback(Terms.f("Wrong suspect. In a match, arresting an innocent player costs {zero} their life."))
+		else
+			-- Arrested: the puppet is yanked upright on its strings.
+			Puppets.jerk(target.part)
+			finish()
+		end
+	end)
 end
 
 local function eyesDrill()
 	win.setTitle(Terms.f("{Eyes}"))
 	Kit.label({
 		Text = Terms.f(
-			"From round 2, one {cultist} may accept {eyes}. Up close, they see a player's real name for 3 seconds, but their own eyes glow red for everyone to see, and they die soon after."
+			"Anyone on {circle} can stare at someone up close for a few seconds to learn their real name; their eyes glow red while they do. A {cultist} may accept {eyes}: names in a second, from far away, and death three minutes later."
 		),
 		LayoutOrder = 1,
 		Parent = body,
 	})
 	Kit.label({
-		Text = "A hood blocks the eyes for the round it is worn.",
+		Text = "Seen someone standing still with glowing eyes? Remember who they were looking at.",
 		size = "small",
 		color = C.dim,
 		LayoutOrder = 2,
@@ -302,11 +335,14 @@ end
 
 local DRILLS = { grimoire = grimoireDrill, warrant = warrantDrill, eyes = eyesDrill }
 
--- Opens a drill; onDone runs once when it is finished.
 -- The Manual drill uses this dummy (its alias, "Dummy B") until set back to nil (the Trial points at one).
-function PracticePanel.prefer(alias: string?)
+-- known: its real name was learned by staring; until then the drill sends the player to stare first.
+function PracticePanel.prefer(alias: string?, known: boolean?)
 	preferred = alias
+	preferredKnown = known == true
 end
+
+-- Opens a drill; onDone runs once when it is finished.
 
 function PracticePanel.open(drill: string, onDone: () -> ())
 	local build = DRILLS[drill]

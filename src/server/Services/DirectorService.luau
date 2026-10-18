@@ -1,5 +1,5 @@
 -- The private-server Director: the owner of a VIP server who has the Director pass can set
--- rounds, phase times and maps between matches. Everyone in the server is told when the
+-- phase times and maps between matches. Everyone in the server is told when the
 -- rules change, since custom rules only pay participation rewards.
 
 local Players = game:GetService("Players")

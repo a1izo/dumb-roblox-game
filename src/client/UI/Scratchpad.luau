@@ -1,5 +1,5 @@
 -- The scratchpad: a private notepad for the match, kept like a page of a notebook. One ruled
--- line per alias for letters you saw and a suspicion tag, plus free notes in handwriting. It
+-- line per alias for what you saw them do and a suspicion tag, plus free notes in handwriting. It
 -- lives only on this device (never sent to the server) and is wiped when the match ends.
 -- Nothing is filled in automatically.
 
@@ -64,7 +64,7 @@ function rebuild()
 			Parent = row,
 		})
 		local _, box = Kit.field({
-			placeholder = "letters, e.g. H_R_TO K_",
+			placeholder = "what you saw, e.g. stared at Raven",
 			text = entry.letters,
 			font = "mono",
 			size = "body",

@@ -8,7 +8,7 @@
 - The forecourt: the evidence board in its kiosk among the seat-chart boards, the founder's
   bust, the frozen fountain, benches.
 - The pond hollow: pines in their yukizuri, stone lanterns, clipped shrubs under snow, the
-  campus security camera post (the Pond Camera Post), a hood among the pines.
+  campus security camera post (the Pond Camera Post), pines.
 - The tennis court, look-only behind its chain-link fence: the net sagging under snow, the
   umpire's chair, the roller shed beside it.
 - The bike shed, a hot-drinks machine, the avenue's phone box (a spare), snowmen, snow scoops,
@@ -181,7 +181,6 @@ def hollow(s):
                  (-100.0, -34.5), (-132.0, -34.5)):
         s.prop("ShrubSnow", x, z, (x + z) % 180, 1.0, HY)
     s.station("Camera", "Pond Camera Post", -60.0, 24.0, 90, y=HY, prop="StationCameraPost")
-    s.hood(-138.0, -24.0, y=HY + 0.6)
     s.prop("Snowman", -110.0, -24.0, 30, 1.0, HY)
     for x, z in ((-70.0, 12.5), (-126.0, -26.0), (-96.0, 34.0), (-140.0, 30.0), (-100.0, -27.0), (-80.0, -27.0)):
         lamp(s, x, z, HY)

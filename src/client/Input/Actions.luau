@@ -7,9 +7,13 @@ local UserInputService = game:GetService("UserInputService")
 
 local Terms = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Terms"))
 
+local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
+
 local EyesController = require(script.Parent.Parent.Controllers.EyesController)
 local NotePanel = require(script.Parent.Parent.UI.NotePanel)
 local Router = require(script.Parent.Parent.UI.Core.Router)
+
+local SabotageRemote = Net.event("Sabotage")
 
 local Actions = {}
 
@@ -54,34 +58,40 @@ local function fixed(text: string): (View) -> string
 	end
 end
 
+-- A Muerto's sabotage: alive, in free roam (the server checks the shared cooldown).
+local function canSabotage(view: View): boolean
+	return view.living and view.phase == "Investigation" and view.role == "Follower"
+end
+
+local function sabotageLeft(view: View): number
+	local readyAt = tonumber(view.private.sabotageReadyAt) or 0
+	return math.max(0, math.ceil(readyAt - workspace:GetServerTimeNow()))
+end
+
+local function sabotageLabel(text: string): (View) -> string
+	return function(view: View)
+		local left = sabotageLeft(view)
+		return if left > 0 then string.format("%s (%d s)", text, left) else text
+	end
+end
+
+local function sabotage(kind: string)
+	SabotageRemote:FireServer({ kind = kind })
+end
+
 Actions.list = {
 	{
-		id = "evidence",
-		label = fixed("Evidence"),
-		keys = { Enum.KeyCode.B },
-		pad = Enum.KeyCode.DPadUp,
-		padLabel = "D-Up",
-		when = function(view: View)
-			return view.participant
-		end,
-		run = function()
-			Router.toggle("evidence")
-		end,
-	},
-	{
 		id = "privateScreen",
-		label = function(view: View)
-			return if view.role == "Kira" then Terms.f("{Grimoire}") else "Case report"
-		end,
+		label = fixed(Terms.f("{Grimoire}")),
 		keys = { Enum.KeyCode.P },
 		pad = Enum.KeyCode.ButtonY,
 		padLabel = "Y",
 		variant = "primary",
 		when = function(view: View)
-			return view.living and view.phase == "DeathNote"
+			return view.living and view.phase == "Investigation" and view.role == "Kira"
 		end,
 		run = function()
-			Router.toggle(if Router.view().role == "Kira" then "grimoire" else "report")
+			Router.toggle("grimoire")
 		end,
 	},
 	{
@@ -107,7 +117,7 @@ Actions.list = {
 		padLabel = "D-Right",
 		variant = "team",
 		when = function(view: View)
-			return view.living and view.private.carrying ~= nil and inMatchPhase(view, "Investigation", "DeathNote")
+			return view.living and view.private.carrying ~= nil and inMatchPhase(view, "Investigation")
 		end,
 		run = NotePanel.toggle,
 	},
@@ -120,7 +130,7 @@ Actions.list = {
 		pad = Enum.KeyCode.DPadDown,
 		padLabel = "D-Down",
 		when = function(view: View)
-			return view.living and view.private.carrying ~= nil and inMatchPhase(view, "Investigation", "DeathNote")
+			return view.living and view.private.carrying ~= nil and inMatchPhase(view, "Investigation")
 		end,
 		run = NotePanel.drop,
 	},
@@ -139,15 +149,51 @@ Actions.list = {
 	},
 	{
 		id = "eyesRead",
-		label = fixed("Read name"),
+		label = function(view: View)
+			return if view.private.eyes then "Read name" else "Stare"
+		end,
 		keys = { Enum.KeyCode.R },
 		pad = Enum.KeyCode.ButtonR1,
 		padLabel = "RB",
 		variant = "primary",
 		when = function(view: View)
-			return view.living and view.private.eyes ~= nil and view.phase == "Investigation"
+			return view.living and view.phase == "Investigation" and (view.role == "Kira" or view.role == "Follower")
 		end,
-		run = EyesController.read,
+		run = EyesController.stare,
+	},
+	{
+		id = "sabotageBlackout",
+		label = sabotageLabel("Blackout"),
+		keys = { Enum.KeyCode.Z },
+		pad = Enum.KeyCode.ButtonL2,
+		padLabel = "LT",
+		variant = "danger",
+		when = canSabotage,
+		run = function()
+			sabotage("blackout")
+		end,
+	},
+	{
+		id = "sabotageJam",
+		label = sabotageLabel("Jam stations"),
+		keys = { Enum.KeyCode.B },
+		pad = Enum.KeyCode.DPadUp,
+		padLabel = "D-Up",
+		variant = "danger",
+		when = canSabotage,
+		run = function()
+			sabotage("jam")
+		end,
+	},
+	{
+		id = "sabotageBarricade",
+		label = sabotageLabel("Barricade"),
+		keys = { Enum.KeyCode.T },
+		variant = "danger",
+		when = canSabotage,
+		run = function()
+			sabotage("barricade")
+		end,
 	},
 	{
 		id = "scratchpad",
@@ -177,17 +223,18 @@ Actions.list = {
 		end,
 	},
 	{
-		id = "zeroDesk",
-		label = fixed(Terms.f("{ZeroDesk}")),
-		keys = { Enum.KeyCode.Z },
-		pad = Enum.KeyCode.ButtonL2,
-		padLabel = "LT",
+		id = "arrest",
+		label = fixed(Terms.f("{Zero}'s arrest")),
+		keys = { Enum.KeyCode.K },
 		variant = "team",
 		when = function(view: View)
-			return view.participant and view.role == "L"
+			return view.living
+				and (view.phase == "Meeting" or view.phase == "Vote")
+				and view.private.isAce == true
+				and view.private.arrestUsed ~= true
 		end,
 		run = function()
-			Router.toggle("zeroDesk")
+			Router.toggle("arrest")
 		end,
 	},
 } :: { Action }

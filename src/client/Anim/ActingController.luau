@@ -1,5 +1,5 @@
 -- Decides who acts what, from public events only:
---   Grimoire phase : every living player writes (never tied to who really writes)
+--   the Manual     : whoever has it open writes (the server marks them LManualOpen; it is seen on purpose)
 --   vote cast      : that player raises a hand (who voted is public, not for whom)
 --   death          : the collapse for the public cause of death; everyone else reacts
 --   arrest         : hands cuffed behind the back; everyone else reacts
@@ -8,7 +8,7 @@
 --                    hang their heads, the Hand laughs or kneels (a win scene never replaces its laugh)
 -- Reactions and endings are picked from the cue and the user id (Presentation/Activities), so
 -- every screen shows the same thing and nothing depends on roles.
---   station work   : a player working a case file (real or faked) types at the console
+--   station work   : a player working a case file types at the console
 --   note handed    : the giver reaches out and a slip of paper crosses to the other's hand
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -51,10 +51,10 @@ end
 
 local function refreshWriting()
 	local want: { [Model]: boolean } = {}
-	if ClientState.public.active and ClientState.phase() == "DeathNote" then
+	if ClientState.public.active then
 		for _, entry in ipairs(ClientState.living()) do
 			local character = characterOf(entry.userId)
-			if character then
+			if character and character:GetAttribute("LManualOpen") == true then
 				want[character] = true
 			end
 		end
@@ -311,7 +311,8 @@ function ActingController.init()
 	CueRouter.register("verdict", onVerdict)
 	CueRouter.register("outro", onOutro)
 	CueRouter.register("handoff", onHandoff)
-	Characters.each(function()
+	Characters.each(function(character: Model)
+		character:GetAttributeChangedSignal("LManualOpen"):Connect(refreshWriting)
 		task.defer(refreshWriting)
 	end)
 end

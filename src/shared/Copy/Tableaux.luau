@@ -14,19 +14,19 @@ local RAW: { { id: string, line: string } } = {
 	},
 	{
 		id = "leak",
-		line = "Finish a case file, and three letters of your real name show to anyone standing close.",
+		line = "Stare at someone long enough and you learn their real name. Eyes that glow red give a starer away.",
 	},
 	{
 		id = "writing",
-		line = "{Hand} kills by writing a full real name in {grimoire}. Half a name is no use.",
+		line = "{Hand} kills by writing a full real name in {grimoire}. The book burns red: someone may be watching.",
 	},
 	{
 		id = "meeting",
-		line = "The dead are found at the meeting. Talk it over, then vote: the most votes is out.",
+		line = "A death calls the meeting. Talk it over, then vote: the most votes is out.",
 	},
 	{
 		id = "warrant",
-		line = "{Zero} may serve one warrant, with a full real name. Arrest the wrong one and the case is lost.",
+		line = "{Zero} may arrest one player in a meeting. Arrest the wrong one and {zero} pays with their life.",
 	},
 }
 

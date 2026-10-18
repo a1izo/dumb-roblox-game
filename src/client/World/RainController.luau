@@ -871,41 +871,6 @@ local function readZones()
 	markAll()
 end
 
--- The rooms the weather never reaches (for checks).
-function RainController.rooms(): { Probe.Zone }
-	return zones
-end
-
--- The big flakes a second the near cells would send together if every one of them were open ground (for checks).
-function RainController.snowBudget(): number
-	return TUNING.snow.rate[device()] * budget() * RainController.snowAmount() * TUNING.snow.bigShare
-end
-
--- The same for the rain's streaks.
-function RainController.rainBudget(): number
-	return TUNING.rain.rate[device()] * budget() * rainAmount()
-end
-
--- What the near cells send now (for checks): each one's open rectangle, the box its snow (or with "rain", its
--- rain) comes from, how much, and what its ground probe found.
-function RainController.snowBoxes(kind: string?): { { [string]: any } }
-	local out = {}
-	for _, cell in pairs(assignedNear) do
-		local layer = if kind == "rain" then cell.rain else (if cell.flakes then cell.flakes[1] else nil)
-		table.insert(out, {
-			rect = cell.rect,
-			part = if layer then layer.part else nil,
-			rate = if layer and layer.emitter.Enabled then layer.emitter.Rate else 0,
-			landing = cell.landing,
-			cover = cell.cover,
-			ceiling = cell.ceiling,
-			x = cell.x,
-			z = cell.z,
-		})
-	end
-	return out
-end
-
 function RainController.init()
 	container = Create("Folder", { Name = "DeathsGambitWeather", Parent = workspace.CurrentCamera }) :: Folder
 	loop = Sfx.play("rainLoop", { group = "Outdoor", looped = true, volume = 0 })

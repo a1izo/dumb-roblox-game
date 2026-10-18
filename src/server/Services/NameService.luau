@@ -5,7 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local NamePools = require(Shared:WaitForChild("NamePools"))
-local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 
 local AliasService = require(script.Parent.AliasService)
@@ -40,27 +39,9 @@ function NameService.assign()
 			nextPool += 1
 			ps.alias = aliases[nextPool]
 		end
-		ps.revealed = {}
 		ps.player:SetAttribute("Alias", ps.alias)
 		CharacterService.setDisplayName(ps.player, ps.alias)
 	end
-end
-
--- The Butler's (Watari's) hint: one letter of the Hand's (Kira's) real name and its position.
-function NameService.watariHint(): string?
-	local kira = Match.findRole("Kira")
-	if not kira then
-		return nil
-	end
-	local useFirst = Match.rng:NextNumber() < 0.5
-	local word = if useFirst then kira.first else kira.last
-	local position = Match.rng:NextInteger(1, #word)
-	local letter = string.upper(string.sub(word, position, position))
-	return Terms.f('The {nth} letter of {hand}\'s {which} name is "{letter}".', {
-		nth = Util.ordinal(position),
-		which = if useFirst then "first" else "last",
-		letter = letter,
-	})
 end
 
 return NameService

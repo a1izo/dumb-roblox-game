@@ -1,5 +1,5 @@
 -- The role card: your role, how you win, your alias and your real name, your allies and
--- (for the Butler) the hint. It shows only while you hold C, the left bumper, or press and
+-- (for whoever holds Ace's title) the arrest. It shows only while you hold C, the left bumper, or press and
 -- hold your role badge, so a glance at your screen never gives your name away.
 --
 -- The Trial (Onboarding/TrialController) shows a practice card in the lobby: RoleCard.setPractice({ role,
@@ -92,8 +92,14 @@ local function fill()
 	aliasText:set(tostring(private.alias or ""))
 	nameText:set(tostring(private.realName or "?"))
 	alliesLabel.Text = alliesText(private)
-	hintLabel.Visible = type(private.hint) == "string"
-	hintLabel.Text = if type(private.hint) == "string" then Terms.f("{Butler}'s hint: ") .. private.hint else ""
+	hintLabel.Visible = private.isAce == true
+	hintLabel.Text = if private.fakeAce
+		then Terms.f("You were named {zero} by mistake: your arrest will not work.")
+		elseif private.isAce then Terms.f(
+			"You hold {zero}'s arrest{used}.",
+			{ used = if private.arrestUsed then " (spent)" else "" }
+		)
+		else ""
 end
 
 function RoleCard.show()

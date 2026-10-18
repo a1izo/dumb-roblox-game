@@ -5,7 +5,7 @@
 -- Diavolo, {zero} is Ace, {grimoire} is Death's Manual...); only the words they print change.
 --
 -- Internal ids never change: role ids ("Kira", "Follower", "L", "Watari", "TaskForce"),
--- side ids ("Kira", "Team"), the phase id "DeathNote", remote names, tags and DataStore keys.
+-- side ids ("Kira", "Team"), remote names (the Manual's is still "DeathNote"), tags and DataStore keys.
 
 local RunService = game:GetService("RunService")
 
@@ -47,7 +47,6 @@ Terms.PHASE = {
 	Intro = "Case opening",
 	Briefing = "Briefing",
 	Investigation = "Investigation",
-	DeathNote = "Death's Gambit",
 	Meeting = "Bureau meeting",
 	Vote = "Vote",
 	Verdict = "Verdict",
@@ -104,12 +103,6 @@ Terms.NAMES = {
 	eyes = "the Oculus of the Dead",
 	Eyes = "The Oculus of the Dead",
 	EYES = "THE OCULUS OF THE DEAD",
-	zeroDesk = "Ace's desk",
-	ZeroDesk = "Ace's desk",
-	ZERO_DESK = "ACE'S DESK",
-	zeroScreen = "Ace's screen",
-	ZeroScreen = "Ace's screen",
-	ZERO_SCREEN = "ACE'S SCREEN",
 	meeting = "Bureau meeting",
 	Meeting = "Bureau meeting",
 	MEETING = "BUREAU MEETING",

@@ -1,6 +1,6 @@
 -- The Tokyo crowd on the server: CrowdSim's walkers, moved as numbers (no body exists here: every
 -- client draws its own from the snapshots, World/Crowd). What the crowd does to the match:
---   - a walker's body blocks sight (a letter flash, a faked task's witnesses, the Oculus), tested where
+--   - a walker's body blocks sight (a stare, the Oculus), tested where
 --     the clients saw it stand (they draw the crowd DRAWN_BEHIND seconds late);
 --   - a living player's name tag hides while they stand inside the crowd.
 -- Players never block each other's sight, and a walker is never a player: nothing here reads Match.list

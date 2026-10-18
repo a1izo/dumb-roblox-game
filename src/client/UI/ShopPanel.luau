@@ -69,7 +69,6 @@ local CHOICE_WIDTH = 176 -- its two buttons
 local LOOK_WIDTH = 300
 local INFO_HEIGHT = 226 -- under Your look: the name, its line, the button, the stance button, a note
 local GAP = T.space.l
-local HOLD_SECONDS = 0.5
 local CONFIRM_SECONDS = 6 -- a Condemned or Godhood card's confirm stays this long
 
 local purseLabel: TextLabel
@@ -105,7 +104,6 @@ local newHere: { string } = {} -- the new cards dealt in this suit, seen once yo
 local fateDealt: string? = nil -- the card Fate just dealt, turned over once the profile says it is yours
 local confirming: string? = nil -- the Condemned or Godhood card whose buy is waiting to be confirmed
 local sealing: string? = nil -- the card just bought: sealed once the profile says it is yours
-local heldAction: (() -> ())? = nil -- what the hold button under Your look does (for checks)
 local arrange: () -> ()
 local price: (Cosmetics.Item) -> number?
 local isDeal: (Cosmetics.Item) -> boolean
@@ -312,7 +310,6 @@ end
 -- The button under Your look for the picked item, and the note under it.
 local function showAction(profile, item: Cosmetics.Item?)
 	clearAction()
-	heldAction = nil
 	actionNote.Text = ""
 	if not item then
 		lookName:set("Your look")
@@ -399,20 +396,19 @@ local function showAction(profile, item: Cosmetics.Item?)
 			sealing = item.id
 			ShopRequest:FireServer({ action = "buy", itemId = item.id })
 		end
-		heldAction = held
-		Kit.hold({
+		Kit.button({
 			text = string.format(if confirming == item.id then "Confirm  ·  %d" else "Buy  ·  %d", cost),
 			icon = "coin",
 			variant = "primary",
 			size = "m",
 			Size = size,
 			Parent = actionHolder,
-		}, HOLD_SECONDS, held)
+		}, held)
 		actionNote.Text = if confirming == item.id
-			then string.format("Hold again to spend %d coins on %s.", cost, item.name)
-			elseif asking then string.format("%s: hold to buy, then confirm.", Rarity.name(item.rarity))
-			elseif item.kind == "emote" then "Hold to buy. It goes on your emote wheel."
-			else "Hold to buy. You wear it at once."
+			then string.format("Press again to spend %d coins on %s.", cost, item.name)
+			elseif asking then string.format("%s: press to buy, then confirm.", Rarity.name(item.rarity))
+			elseif item.kind == "emote" then "Press to buy. It goes on your emote wheel."
+			else "Press to buy. You wear it at once."
 	end
 	if isDeal(item) and not owns(profile, item) then
 		actionNote.Text = string.format("The day's deal: a quarter off its %d coins. ", item.price :: number)
@@ -554,21 +550,17 @@ local function buildFate(profile)
 		})
 		Kit.setEnabled(button, false)
 	else
-		local button = Kit.hold(
-			{
-				Name = "Draw",
-				text = string.format("Draw  ·  %d", Fate.PRICE),
-				icon = "coin",
-				variant = "primary",
-				size = "m",
-				Size = size,
-				Parent = row,
-			},
-			HOLD_SECONDS,
-			function()
-				ShopRequest:FireServer({ action = "fate" })
-			end
-		)
+		local button = Kit.button({
+			Name = "Draw",
+			text = string.format("Draw  ·  %d", Fate.PRICE),
+			icon = "coin",
+			variant = "primary",
+			size = "m",
+			Size = size,
+			Parent = row,
+		}, function()
+			ShopRequest:FireServer({ action = "fate" })
+		end)
 		firstButton = button
 	end
 	Kit.label({
@@ -1131,12 +1123,6 @@ function ShopPanel.card(itemId: string): Card.Card?
 	return cards[itemId]
 end
 
-function ShopPanel.holdAction()
-	if heldAction then
-		heldAction()
-	end
-end
-
 -- Opens the shop on a card (the lobby's shop window): in Today's hand when it is dealt there today (turned
 -- over), else in its suit with nothing filtered out; picked, and scrolled to.
 function ShopPanel.focus(itemId: string)
@@ -1158,16 +1144,6 @@ function ShopPanel.focus(itemId: string)
 			tableScroll.CanvasPosition = Vector2.new(0, math.max(0, y - T.space.l))
 		end
 	end)
-end
-
--- For checks: browses the suit (a search, what to show, the order), as the row does.
-function ShopPanel.browse(search: string?, show: string?, sort: string?)
-	searching = search or ""
-	showing = show or "all"
-	sorting = sort or "order"
-	searchBox.Text = searching
-	paintBrowse()
-	ShopPanel.rebuild()
 end
 
 function ShopPanel.init()

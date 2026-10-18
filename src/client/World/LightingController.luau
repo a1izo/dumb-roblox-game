@@ -4,7 +4,7 @@
 --
 -- It also tunes the venue's own lamps: the strongest few cast hard shadows (the "keys"), the
 -- rest are fill, and a mood scales the two groups apart: a single cold key over the meeting
--- table, lamps dying in the Grimoire phase, a blackout around the verdict's spotlight.
+-- table, lamps dying in a blackout, a blackout around the verdict's spotlight.
 
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
@@ -210,7 +210,7 @@ local function moodName(): string
 	if public.phase == "Outro" then
 		return if winner == "Team" then "OutroAgency" else "OutroHand"
 	end
-	-- A map's blackout (Bureau HQ's breaker): the map sets BlackoutUntil (server time).
+	-- A map's blackout (a Muerto's sabotage): the map sets BlackoutUntil (server time).
 	local map = workspace:FindFirstChild("LGameMap")
 	local blackout = if map then map:GetAttribute("BlackoutUntil") else nil
 	if public.phase == "Investigation" and type(blackout) == "number" and workspace:GetServerTimeNow() < blackout then

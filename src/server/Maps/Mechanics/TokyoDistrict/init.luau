@@ -4,9 +4,8 @@
 -- Nothing of the crowd or the cars exists on the server: they are numbers, sent to every client five
 -- times a second in one small unreliable snapshot (MapSync) and drawn there.
 --   Intro, Briefing : the crowd walks round the cast on their marks
---   Investigation   : a fresh crowd; jaywalking is seen by the cameras
---   DeathNote       : everyone and every car comes to a stop
---   after that      : nobody about until the next round
+--   Investigation   : a fresh crowd every free roam
+--   after that      : nobody about until free roam starts again
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -131,9 +130,6 @@ function TokyoDistrict.onPhase(phase: string)
 		Crowd.reseed()
 		Scramble.setShown(true, now())
 		Scramble.setPace(1)
-	elseif phase == "DeathNote" then
-		Crowd.setPace(0)
-		Scramble.setPace(0)
 	elseif QUIET[phase] then
 		Crowd.setShown(false)
 		Scramble.setShown(false, now())

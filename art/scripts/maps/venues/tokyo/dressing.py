@@ -395,7 +395,7 @@ def alleys(s):
     # The service alley off the east street behind the shopping street's shops, its mouth kept
     # clear (the dumpster along it: the alley is narrower than a dumpster is long; it widens
     # towards the dead end).
-    s.prop("Dumpster", 71.0, -77.2, 0)  # past the hood's spot, against the shops' back wall
+    s.prop("Dumpster", 71.0, -77.2, 0)  # against the shops' back wall
     wall_lamp(s, 52.0, -78.6, 180, 8.0)
 
 

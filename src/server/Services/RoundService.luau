@@ -1,6 +1,8 @@
--- The match loop: lobby -> intro -> briefing -> up to five rounds of
--- (investigation, Grimoire phase, meeting, vote, verdict) -> outro -> reveal -> lobby.
--- Win checks run after every removal from the match. A winner ends the gameplay phase at
+-- The match loop: lobby -> intro -> briefing -> free roam and meetings, over and over -> outro ->
+-- reveal -> lobby. Free roam ("Investigation") ends early when someone dies, when someone rings the
+-- bell, or when its timer runs out (Match.requestMeeting); then the living meet, talk and vote, and
+-- free roam starts again. There is no round cap: the match ends when a side wins (win checks run
+-- after every removal; the task bar declares its own win). A winner ends the gameplay phase at
 -- once; cutscenes that are still playing (Cues holds) finish before the outro starts.
 
 local Players = game:GetService("Players")
@@ -19,6 +21,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 local WinConditions = require(Shared:WaitForChild("WinConditions"))
 
+local ArrestService = require(script.Parent.ArrestService)
 local CaseFileService = require(script.Parent.CaseFileService)
 local CharacterService = require(script.Parent.CharacterService)
 local ChatService = require(script.Parent.ChatService)
@@ -27,12 +30,10 @@ local DeathNoteService = require(script.Parent.DeathNoteService)
 local Elimination = require(script.Parent.Elimination)
 local EmoteService = require(script.Parent.EmoteService)
 local EventLog = require(script.Parent.EventLog)
-local EvidenceService = require(script.Parent.EvidenceService)
 local EyesService = require(script.Parent.EyesService)
 local Analytics = require(script.Parent.Analytics)
 local Mechanics = require(script.Parent.Parent:WaitForChild("Maps"):WaitForChild("Mechanics"))
 local GhostService = require(script.Parent.GhostService)
-local HoodService = require(script.Parent.HoodService)
 local MapService = require(script.Parent.MapService)
 local Match = require(script.Parent.Match)
 local MatchmakingService = require(script.Parent.MatchmakingService)
@@ -42,13 +43,12 @@ local NoteService = require(script.Parent.NoteService)
 local ProgressService = require(script.Parent.ProgressService)
 local RewardService = require(script.Parent.RewardService)
 local RoleService = require(script.Parent.RoleService)
-local ServerSettings = require(script.Parent.ServerSettings)
+local SabotageService = require(script.Parent.SabotageService)
 local Staging = require(script.Parent.Staging)
 local CosmeticsService = require(script.Parent.CosmeticsService)
-local SuspicionService = require(script.Parent.SuspicionService)
+local TaskBarService = require(script.Parent.TaskBarService)
 local VoteService = require(script.Parent.VoteService)
 local WagerService = require(script.Parent.WagerService)
-local WarrantService = require(script.Parent.WarrantService)
 
 local BriefingRemote = Net.event("Briefing")
 local RevealRemote = Net.event("Reveal")
@@ -107,6 +107,10 @@ local function runPhase(name: string, onStart: (() -> ())?, onEnd: (() -> ())?, 
 				end
 			end
 			if Match.debugSkipTo and Match.debugSkipTo.phase ~= name then
+				break
+			end
+			-- Free roam stops the moment a meeting is called.
+			if name == "Investigation" and Match.meetingCall ~= nil then
 				break
 			end
 		end
@@ -203,8 +207,9 @@ local function roleCast(ps): { [string]: number }
 	for _, ally in ipairs(Match.allies(ps)) do
 		if ps.role == "Follower" and ally.role == "Kira" then
 			cast.diavolo = ally.userId
-		elseif ps.role == "L" and ally.role == "Watari" then
-			cast.butler = ally.userId
+		elseif ps.role == "Watari" and ally.role == "L" then
+			-- The Butler knows Ace now (Ace no longer knows the Butler).
+			cast.ace = ally.userId
 		elseif ally.role == "Follower" then
 			n += 1
 			cast["ally:" .. n] = ally.userId
@@ -214,8 +219,6 @@ local function roleCast(ps): { [string]: number }
 end
 
 local function sendBriefings()
-	local hint = NameService.watariHint()
-	Match.butlerHint = hint
 	-- Every role's cutscene is the same length, so it says nothing to anyone watching the clock.
 	local at = workspace:GetServerTimeNow() + 0.4
 	for _, ps in ipairs(Match.list) do
@@ -229,23 +232,17 @@ local function sendBriefings()
 			alias = ps.alias,
 			realName = ps.realName,
 			allies = Match.allies(ps),
-			hint = if ps.role == "Watari" then hint else nil,
 			playerCount = #Match.list,
 			followers = RoleService.count("Follower"),
 			mapName = Match.mapName,
 			duration = Match.phaseLength("Briefing"),
 		})
 	end
-	if hint then
-		EventLog.add(Terms.f("{Butler}'s hint: ") .. hint, "hint")
-	end
 end
 
 -- Short cutscenes between phases, played to everyone while the match loop waits for them (not while
 -- the debug panel is skipping ahead). Their lengths are the shots' (art/scripts/cinema/shots).
-local GAMBIT_OPENER = 4
 local MEETING_INTRO = 6
-local ROUND_COVER = 0.5 -- the round card's fade to black (Presenters/RoundStart)
 
 local function interlude(kind: string, data: { [string]: any }, seconds: number)
 	if Match.debugSkipTo then
@@ -283,39 +280,44 @@ local function freezeLiving(frozen: boolean)
 end
 
 local function startInvestigation()
+	Match.meetingCall = nil
+	for _, ps in ipairs(Match.list) do
+		ps.tasksThisRound = 0
+	end
 	MeetingService.release()
 	placeAtSpawns()
 	freezeLiving(false)
 	ChatService.refresh()
-end
-
-local function endInvestigation()
-	CaseFileService.cancelAll("The investigation phase is over.")
-	NoteService.cancelOffers("phase")
-	freezeLiving(true)
-end
-
-local function startRound(round: number)
-	for _, ps in ipairs(Match.list) do
-		ps.tasksThisRound = 0
-	end
-	HoodService.onRoundStart(round)
 	Match.announce(
-		"Round " .. round .. " of " .. ServerSettings.rounds(),
-		"Investigation: work the case files and watch each other.",
+		Terms.phase("Investigation"),
+		"Work the case files and watch each other. Anything can happen now.",
 		"neutral"
 	)
 end
 
-local function endRound(round: number)
-	SuspicionService.onRoundEnd()
-	EyesService.onRoundEnd()
-	HoodService.onRoundEnd(round)
+-- Free roam is over: everything that was going on in it stops, and everyone stands still.
+local function endInvestigation()
+	DeathNoteService.interrupt()
+	EyesService.interrupt()
+	SabotageService.clear()
+	CaseFileService.cancelAll("A meeting was called.")
+	NoteService.cancelOffers("phase")
+	freezeLiving(true)
+end
+
+-- What the meeting's announcement says about why it was called.
+local function meetingReason(call): string
+	if call.reason == "death" and call.by then
+		return call.by.alias .. " is dead. The Bureau gathers."
+	elseif call.reason == "bell" and call.by then
+		return call.by.alias .. " rang the emergency bell."
+	end
+	return "Time to compare notes."
 end
 
 -- Win checks --------------------------------------------------------------------------------
 
-local function onEliminated(ps, kind: string, context)
+local function onEliminated(_ps, kind: string, context)
 	if not Match.active or Match.winner ~= nil then
 		return
 	end
@@ -323,8 +325,8 @@ local function onEliminated(ps, kind: string, context)
 	for _, other in ipairs(Match.list) do
 		table.insert(entries, { role = other.role, alive = other.alive })
 	end
-	local lKilled = ps.role == "L" and kind == "dead" and type(context) == "table" and context.byKira == true
-	local side, code = WinConditions.evaluate(entries, lKilled)
+	local _ = context
+	local side, code = WinConditions.evaluate(entries)
 	if not side then
 		return
 	end
@@ -333,14 +335,12 @@ local function onEliminated(ps, kind: string, context)
 		if kind == "voted" then
 			reason = Terms.f("{Agency} voted out {hand}.")
 		elseif kind == "arrested" then
-			reason = Terms.f("{Zero} arrested {hand} with a valid warrant.")
+			reason = Terms.f("{Zero} arrested {hand}.")
 		elseif kind == "left" then
 			reason = Terms.f("{Hand} fled the investigation.")
 		else
 			reason = Terms.f("{Hand} is gone.")
 		end
-	elseif code == "LKilled" then
-		reason = Terms.f("{Hand} wrote {zero}'s real name in {grimoire}.")
 	else
 		reason = Terms.f("{Circle} now matches {agency} in number.")
 	end
@@ -397,7 +397,6 @@ end
 local function startOutro()
 	CaseFileService.cancelAll(nil)
 	VoteService.cancel()
-	WarrantService.close()
 	ChatService.setMeetingOpen(false)
 	MeetingService.gather()
 	if Match.debugFastEnd then
@@ -444,7 +443,7 @@ function RoundService.debugCue(kind: string, player: Player, target, extra: stri
 				else "innocent",
 		}, to)
 	elseif kind == "eyesDeal" then
-		Cues.fire("eyesDeal", { reads = Config.EYES_READS, deathRound = Match.round + 1 }, to)
+		Cues.fire("eyesDeal", { lifespan = Config.OCULUS_LIFESPAN }, to)
 	elseif kind == "shot" then
 		-- Any Blender cutscene by name: you play the lead ("self" or the first part), the others fill the
 		-- rest of its parts in match order.
@@ -489,7 +488,6 @@ local function reveal()
 	Match.phaseEndsAt = Match.phaseStartedAt + Match.phaseLength("Reveal")
 	CaseFileService.cancelAll(nil)
 	VoteService.cancel()
-	WarrantService.close()
 	ChatService.onMatchEnd()
 	freezeLiving(false)
 
@@ -575,6 +573,10 @@ local function runMatch(players: { Player })
 	EventLog.reset()
 	RoleService.assign()
 	NameService.assign()
+	-- Ace's title starts with the Ace role (the Butler can hand it on later).
+	for _, ps in ipairs(Match.list) do
+		ps.isAce = ps.role == "L"
+	end
 	EventLog.add(Terms.f("{n} {agents} were deployed to {map}.", { n = #Match.list, map = map.name }), "start")
 	for _, ps in ipairs(Match.list) do
 		EventLog.add(
@@ -583,11 +585,10 @@ local function runMatch(players: { Player })
 		)
 	end
 
-	EvidenceService.reset()
+	TaskBarService.onMatchStart()
+	DeathNoteService.onMatchStart()
 	CaseFileService.onMatchStart(map)
 	NoteService.onMatchStart(map)
-	HoodService.onMatchStart(map)
-	SuspicionService.onMatchStart()
 	MeetingService.onMatchStart(map)
 	ChatService.onMatchStart()
 	GhostService.onMatchStart()
@@ -616,25 +617,19 @@ local function runMatch(players: { Player })
 	runPhase("Intro", startIntro)
 	runPhase("Briefing", sendBriefings)
 
-	for round = 1, ServerSettings.rounds() do
-		if Match.winner then
-			break
-		end
-		Match.round = round
-		-- Back to the round: "Round N of M" on black; everyone is moved to their places under it.
-		if not Match.debugSkipTo then
-			Cues.fire("roundStart", { round = round, rounds = ServerSettings.rounds() }, { lead = 0.2 })
-			task.wait(0.2 + ROUND_COVER)
-		end
-		startRound(round)
+	-- Match.round counts the meetings (free roam N ends in meeting N).
+	local cycle = 0
+	while not Match.winner do
+		cycle += 1
+		Match.round = cycle
 		runPhase("Investigation", startInvestigation, endInvestigation)
 		if Match.winner then
 			break
 		end
-		interlude("gambit", { round = round }, GAMBIT_OPENER)
-		runPhase("DeathNote", DeathNoteService.open, DeathNoteService.close)
-		-- The names written this round take their victims now, one scene after another.
-		DeathNoteService.resolve()
+		-- The call stays set until the meeting starts, so nothing else in free roam (a second death
+		-- due, the Oculus' clock) runs while the death scenes play.
+		local call = Match.meetingCall or { reason = "timer" }
+		Match.meetingCall = call
 		Cues.waitHolds(40)
 		if Match.winner then
 			break
@@ -642,13 +637,11 @@ local function runMatch(players: { Player })
 		MeetingService.gather()
 		interlude("meetingIntro", { cast = meetingCast() }, MEETING_INTRO)
 		runPhase("Meeting", function()
+			Match.meetingCall = nil
 			MeetingService.gather()
+			MeetingService.setScreen(meetingReason(call))
 			ChatService.setMeetingOpen(true)
-			Match.announce(
-				Terms.f("{Meeting}"),
-				"Free chat is open. Real names of living players are blocked.",
-				"neutral"
-			)
+			Match.announce(Terms.f("{Meeting}"), meetingReason(call), "neutral")
 		end)
 		if Match.winner then
 			break
@@ -656,9 +649,7 @@ local function runMatch(players: { Player })
 		local result = nil
 		runPhase("Vote", function()
 			VoteService.open()
-			WarrantService.open()
 		end, function()
-			WarrantService.close()
 			if Match.winner then
 				VoteService.cancel()
 			else
@@ -679,13 +670,8 @@ local function runMatch(players: { Player })
 		if Match.winner then
 			break
 		end
-		endRound(round)
-		-- Let a death at the end of the round (the eyes deal) play out before moving on.
+		-- Let an arrest's scene play out before free roam starts again.
 		Cues.waitHolds(6)
-	end
-
-	if not Match.winner then
-		Match.declareWinner("Kira", Terms.f("{Hand} survived all {n} rounds.", { n = ServerSettings.rounds() }))
 	end
 	finale()
 end
@@ -693,11 +679,13 @@ end
 local function cleanup()
 	CaseFileService.onMatchEnd()
 	NoteService.onMatchEnd()
-	HoodService.onMatchEnd()
-	SuspicionService.onMatchEnd()
+	DeathNoteService.onMatchEnd()
+	EyesService.onMatchEnd()
+	SabotageService.clear()
+	ArrestService.onMatchEnd()
 	VoteService.cancel()
-	WarrantService.close()
 	ChatService.onMatchEnd()
+
 	MeetingService.onMatchEnd()
 	GhostService.onMatchEnd()
 	WagerService.onMatchEnd()

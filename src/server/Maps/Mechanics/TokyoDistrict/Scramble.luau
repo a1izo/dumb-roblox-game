@@ -1,7 +1,6 @@
 -- The scramble's cars and its jaywalkers on the server. The cars are TrafficSim's numbers (the clients
 -- draw them, World/Scramble); the lamps need no server at all (ScrambleCycle, from the map's
--- ScrambleEpoch). Someone on the crossing while the cars have their light is jaywalking: a car honks
--- and a camera may have seen it (a low sighting: it tells where someone was, it accuses nobody).
+-- ScrambleEpoch). Someone on the crossing while the cars have their light is jaywalking: a car honks.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -10,14 +9,12 @@ local MapSync = require(Shared:WaitForChild("MapSync"))
 local ScrambleCycle = require(Shared:WaitForChild("ScrambleCycle"))
 
 local Services = script.Parent.Parent.Parent.Parent:WaitForChild("Services")
-local EventLog = require(Services:WaitForChild("EventLog"))
 local Match = require(Services:WaitForChild("Match"))
 
 local TrafficSim = require(script.Parent.TrafficSim)
 
 local Scramble = {}
 
-Scramble.JAYWALK_EVERY = 20 -- seconds between two sightings of the same jaywalker
 Scramble.HONK_REACH = 70 -- studs: the nearest car this close honks at a jaywalker
 
 local sim = nil
@@ -123,12 +120,6 @@ function Scramble.watch(now: number, epoch: number)
 	for _, ps in ipairs(Match.living()) do
 		local at = if ps.away ~= true then Match.position(ps) else nil
 		if at and Scramble.on(at, CROSSING) then
-			EventLog.sighting(ps, "was jaywalking", at, {
-				priority = EventLog.LOW,
-				where = "at the scramble",
-				key = "jaywalk",
-				every = Scramble.JAYWALK_EVERY,
-			})
 			if sim and shown then
 				local car, distance = sim:nearest(at.X - origin.X, at.Z - origin.Z)
 				if car and distance <= Scramble.HONK_REACH then

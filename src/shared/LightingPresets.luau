@@ -5,8 +5,8 @@
 --
 -- Two layers make the final look, blended by the client (World/LightingController):
 --   * a venue preset: the lobby, the meeting room and each map;
---   * a phase mood on top: strong, but always blended slowly. The Grimoire phase falls
---     near-black and red, the meeting gets a harsh cold light over the table, the vote
+--   * a phase mood on top: strong, but always blended slowly. A blackout falls near-black
+--     and red, the meeting gets a harsh cold light over the table, the vote
 --     darkens while red creeps in, the verdict and the ending black out around the
 --     cutscene's spotlight.
 -- resolve() combines them (and the Low graphics setting) into the values to apply.
@@ -491,21 +491,8 @@ end
 
 LightingPresets.NEUTRAL = mood({})
 
--- Keyed by phase id ("DeathNote" is the Grimoire phase), plus the two endings.
+-- Keyed by phase id, plus the two endings and the blackout.
 LightingPresets.moods = {
-	DeathNote = mood({
-		exposure = -0.9,
-		brightness = 0.3,
-		ambient = 0.3,
-		saturation = -0.35,
-		contrast = 0.25,
-		tint = rgb(255, 96, 96),
-		tintAmount = 0.55,
-		density = 0.18,
-		key = 0.4,
-		fill = 0.2,
-		vignette = 0.85,
-	}),
 	Meeting = mood({
 		exposure = 0.05,
 		brightness = 0.6,
@@ -554,7 +541,7 @@ LightingPresets.moods = {
 		fill = 0.08,
 		vignette = 1,
 	}),
-	-- Bureau HQ's blackout (someone pulled the breaker): every lamp out but the red emergency ones,
+	-- A blackout (a Muerto's sabotage): every lamp out but the red emergency ones,
 	-- the city's glow through the glass, a red cast.
 	Blackout = mood({
 		exposure = -1.6,

@@ -19,7 +19,7 @@ return function(t)
 				entry("Watari", true),
 				entry("TaskForce", true),
 				entry("TaskForce", false),
-			}, false)
+			})
 			expect(side).to.equal(nil)
 		end)
 		it("gives the team the win when Kira is removed", function()
@@ -28,20 +28,19 @@ return function(t)
 				entry("Follower", true),
 				entry("L", true),
 				entry("TaskForce", true),
-			}, false)
+			})
 			expect(side).to.equal("Team")
 			expect(code).to.equal("KiraRemoved")
 		end)
-		it("gives Kira the win when L is killed", function()
-			local side, code = WinConditions.evaluate({
+		it("keeps going when Ace dies (succession, not a Coven win)", function()
+			local side = WinConditions.evaluate({
 				entry("Kira", true),
 				entry("L", false),
 				entry("TaskForce", true),
 				entry("TaskForce", true),
 				entry("TaskForce", true),
-			}, true)
-			expect(side).to.equal("Kira")
-			expect(code).to.equal("LKilled")
+			})
+			expect(side).to.equal(nil)
 		end)
 		it("gives Kira the win at parity", function()
 			local side, code = WinConditions.evaluate({
@@ -50,9 +49,16 @@ return function(t)
 				entry("L", true),
 				entry("TaskForce", true),
 				entry("TaskForce", false),
-			}, false)
+			})
 			expect(side).to.equal("Kira")
 			expect(code).to.equal("Parity")
+		end)
+	end)
+
+	describe("WinConditions.taskTotal", function()
+		it("needs a few case files per Bureau player", function()
+			expect(WinConditions.taskTotal(8, 4)).to.equal(32)
+			expect(WinConditions.taskTotal(0, 4)).to.equal(1)
 		end)
 	end)
 end

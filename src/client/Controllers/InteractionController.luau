@@ -1,7 +1,7 @@
--- Proximity prompts for everything the player can use in the world. The prompts are
--- created on this client only, so role-specific prompts (the Cultist's rig, the Hand's side
--- "Fake it") never exist on anyone else's screen. The server validates every action.
--- Each prompt on the same object uses a different gamepad button (X, Y, B).
+-- Proximity prompts for everything the player can use in the world: case-file stations (the Bureau
+-- only, Specters included; the Coven never gets the prompt), paper, and the emergency bell. The
+-- prompts are created on this client only. The server validates every action. Each prompt on the
+-- same object uses a different gamepad button (X, Y, B).
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,16 +9,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
-local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local TaskScreen = require(script.Parent.Parent.UI.TaskScreen)
-local TipPanel = require(script.Parent.Parent.UI.TipPanel)
 
 local NoteRequest = Net.event("NoteRequest")
-local TamperRemote = Net.event("Tamper")
-local HoodRequest = Net.event("HoodRequest")
-local MapAction = Net.event("MapAction")
+local BellRemote = Net.event("Bell")
 
 local InteractionController = {}
 
@@ -51,26 +47,36 @@ local function canAct(): boolean
 	return ClientState.isLiving() and ClientState.phase() == "Investigation"
 end
 
+-- Bureau players work case files, alive or as a Specter; the Coven never can.
+local function canWork(): boolean
+	local role = ClientState.role()
+	if role == "Kira" or role == "Follower" or ClientState.phase() ~= "Investigation" then
+		return false
+	end
+	return ClientState.isLiving() or (ClientState.isParticipant() and ClientState.private.away ~= true)
+end
+
+local function jammed(instance: Instance): boolean
+	local untilTime = instance:GetAttribute("JammedUntil")
+	return type(untilTime) == "number" and workspace:GetServerTimeNow() < untilTime
+end
+
 local function refreshEntry(instance: Instance, entry)
 	local private = ClientState.private
 	local active = canAct()
 	local prompts = entry.prompts
 	if entry.kind == "station" then
-		local free = active and instance:GetAttribute("Busy") ~= true and not TaskScreen.isBusy()
-		prompts.work.Enabled = free
-		prompts.fake.Enabled = free and (private.role == "Kira" or private.role == "Follower")
-		prompts.rig.Enabled = active and private.role == "Follower" and private.canTamper == true
-	elseif entry.kind == "tip" then
-		prompts.tip.Enabled = active
+		prompts.work.Enabled = canWork()
+			and instance:GetAttribute("Busy") ~= true
+			and not jammed(instance)
+			and not TaskScreen.isBusy()
+	elseif entry.kind == "bell" then
+		prompts.ring.Enabled = active and private.bellUsed ~= true
 	elseif entry.kind == "sheet" then
 		prompts.take.Enabled = active and private.carrying == nil
 	elseif entry.kind == "note" then
 		prompts.read.Enabled = active
 		prompts.take.Enabled = active and private.carrying == nil
-	elseif entry.kind == "hood" then
-		prompts.wear.Enabled = active and not private.hood
-	elseif entry.kind == "breaker" then
-		prompts.pull.Enabled = active and instance:GetAttribute("Spent") ~= true
 	end
 end
 
@@ -90,38 +96,32 @@ end
 
 local function setupStation(desk: Instance)
 	local stationName = tostring(desk:GetAttribute("StationName") or "Case file")
-	local function start(fake: boolean)
-		local stationId = desk:GetAttribute("StationId")
-		if type(stationId) == "string" then
-			TaskScreen.request(stationId, fake)
-		end
-	end
 	local work = prompt(desk, "Work case file", stationName, Enum.KeyCode.E)
 	work.Triggered:Connect(function()
-		start(false)
+		local stationId = desk:GetAttribute("StationId")
+		if type(stationId) == "string" then
+			TaskScreen.request(stationId)
+		end
 	end)
-	-- The Hand's side only: no clue is posted and no letters flash.
-	local fake = prompt(desk, "Fake it", "No clue, no flash", Enum.KeyCode.F, 0.5, Enum.KeyCode.ButtonY)
-	fake.Triggered:Connect(function()
-		start(true)
-	end)
-	local rig = prompt(desk, "Rig next flash", Terms.f("{Cultist} only"), Enum.KeyCode.T, 1, Enum.KeyCode.ButtonB)
-	rig.Triggered:Connect(function()
-		TamperRemote:FireServer(desk:GetAttribute("StationId"))
-	end)
-	register(desk, "station", { work = work, fake = fake, rig = rig })
-	desk:GetAttributeChangedSignal("Busy"):Connect(function()
+	register(desk, "station", { work = work })
+	local function changed()
 		local entry = entries[desk]
 		if entry then
 			refreshEntry(desk, entry)
 		end
-	end)
+	end
+	desk:GetAttributeChangedSignal("Busy"):Connect(changed)
+	desk:GetAttributeChangedSignal("JammedUntil"):Connect(changed)
 end
 
-local function setupTipBox(box: Instance)
-	local tip = prompt(box, "Drop a tip", "Tip box", Enum.KeyCode.E)
-	tip.Triggered:Connect(TipPanel.open)
-	register(box, "tip", { tip = tip })
+-- The emergency bell: ringing it calls a meeting at once (one ring per player per match).
+local function setupBell(bell: Instance)
+	local ring = prompt(bell, "Ring the bell", "Call a meeting", Enum.KeyCode.E, 1)
+	ring.MaxActivationDistance = 10
+	ring.Triggered:Connect(function()
+		BellRemote:FireServer()
+	end)
+	register(bell, "bell", { ring = ring })
 end
 
 local function setupSheet(sheet: Instance)
@@ -144,24 +144,6 @@ local function setupNote(note: Instance)
 	register(note, "note", { read = read, take = take })
 end
 
-local function setupHood(hood: Instance)
-	local wear = prompt(hood, "Wear", "Hood", Enum.KeyCode.E)
-	wear.Triggered:Connect(function()
-		HoodRequest:FireServer(hood:GetAttribute("HoodId"))
-	end)
-	register(hood, "hood", { wear = wear })
-end
-
--- Bureau HQ's main breaker (its blackout is the server's: Maps/Mechanics/TaskForceHQ).
-local function setupBreaker(panel: Instance)
-	local pull = prompt(panel, "Pull the breaker", "Main breaker", Enum.KeyCode.E, 1.5)
-	pull.Triggered:Connect(function()
-		MapAction:FireServer({ action = "breaker" })
-	end)
-	panel:GetAttributeChangedSignal("Spent"):Connect(refreshAll)
-	register(panel, "breaker", { pull = pull })
-end
-
 local function watchTag(tag: string, setup: (Instance) -> ())
 	local function add(instance: Instance)
 		if entries[instance] == nil and instance:IsA("BasePart") then
@@ -179,11 +161,9 @@ end
 
 function InteractionController.init()
 	watchTag("LStation", setupStation)
-	watchTag("LTipBox", setupTipBox)
+	watchTag("LBell", setupBell)
 	watchTag("LSheet", setupSheet)
 	watchTag("LNote", setupNote)
-	watchTag("LHood", setupHood)
-	watchTag("LBreaker", setupBreaker)
 	ClientState.PublicChanged:Connect(refreshAll)
 	ClientState.PrivateChanged:Connect(refreshAll)
 	-- The task screen opening or closing changes whether stations can be used.

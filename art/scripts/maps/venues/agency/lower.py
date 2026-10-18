@@ -139,7 +139,6 @@ def copy_room(s):
     s.prop("Crate", 20.5, -53.0, 15)
     fit.table(s, 8.0, -60.0, 6.0, 3.0, 0, Y)
     s.sheet(8.0, 2.8, -60.0, spare=True)
-    s.hood(21.0, -60.0, spare=True)
     s.prop("TrashCan", 21.8, -66.0, 0)
     fit.panel(s, 0.0, -64.0, C, color=fit.COOL, brightness=0.8)
     fit.panel(s, 14.0, -58.0, C, on=False)
@@ -156,7 +155,6 @@ def lockers(s):
     s.prop("Bench", 44.6, -64.6, -90)
     fit.closed_door(s, 24.3, -55.0, -90, Y, 4.0, "Steel", sign="シャワー SHOWERS")
     s.prop("CoatStand", 44.5, -51.5, 0)
-    s.hood(28.5, -52.5)
     fit.panel(s, 37.0, -64.0, C, color=fit.COOL, brightness=0.75)
     fit.plaque(s, 37.0, 10.6, -47.7, 180, 5.4, 0.9, "更衣室 LOCKERS")
 
@@ -276,7 +274,6 @@ def lounge(s):
         s.prop("BarStool", x, 20.4, 0)
     s.polygon("FabricRed", [(60.0, 0.08, 36.0), (74.0, 0.08, 36.0), (74.0, 0.08, 24.0), (60.0, 0.08, 24.0)])
     s.polygon("Fabric", [(66.0, 0.08, 56.0), (80.0, 0.08, 56.0), (80.0, 0.08, 44.0), (66.0, 0.08, 44.0)])
-    s.hood(88.0, 22.0, spare=True)
     for x, z in ((-4.0, 62.0), (14.0, 62.0), (32.0, 62.0), (66.0, 36.0), (80.0, 24.0), (60.0, 56.0)):
         fit.downlight(s, x, z, C, range_=15, brightness=0.8)
     s.sound("mapRainGlass", (30.0, 6.0, 72.0), 50.0, 0.25)

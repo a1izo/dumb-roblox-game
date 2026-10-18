@@ -5,7 +5,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared:WaitForChild("Config"))
 local SettingsSchema = require(Shared:WaitForChild("SettingsSchema"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
@@ -18,7 +17,6 @@ ServerSettings.ownerId = game.PrivateServerOwnerId
 ServerSettings.Changed = Signal.new()
 
 local current = SettingsSchema.defaults()
-current.rounds = Config.MAX_ROUNDS
 
 function ServerSettings.get(): SettingsSchema.Settings
 	return current
@@ -33,10 +31,6 @@ function ServerSettings.isCustom(): boolean
 	return ServerSettings.isVipServer and SettingsSchema.isCustom(current)
 end
 
-function ServerSettings.rounds(): number
-	return current.rounds
-end
-
 -- The phase length the owner chose, or nil to use Config.PHASE_TIME.
 function ServerSettings.phaseOverride(phase: string): number?
 	if not ServerSettings.isCustom() then
@@ -44,8 +38,6 @@ function ServerSettings.phaseOverride(phase: string): number?
 	end
 	if phase == "Investigation" then
 		return current.investigation
-	elseif phase == "DeathNote" then
-		return current.grimoire
 	elseif phase == "Meeting" then
 		return current.meeting
 	elseif phase == "Vote" then

@@ -1,5 +1,5 @@
--- Private-server rules. The owner of a private server with the Director pass sets rounds,
--- phase times and maps here between matches; everyone else in the server sees the rules
+-- Private-server rules. The owner of a private server with the Director pass sets phase times
+-- and maps here between matches; everyone else in the server sees the rules
 -- and is reminded that custom rules pay participation rewards only.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

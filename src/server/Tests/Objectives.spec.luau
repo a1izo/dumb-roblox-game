@@ -7,7 +7,7 @@ local Hints = require(Shared:WaitForChild("Hints"))
 local Objectives = require(Shared:WaitForChild("Objectives"))
 local RoleLogic = require(Shared:WaitForChild("RoleLogic"))
 
-local PHASES = { "Briefing", "Investigation", "DeathNote", "Meeting", "Vote" }
+local PHASES = { "Briefing", "Investigation", "Meeting", "Vote" }
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -16,7 +16,7 @@ return function(t)
 		it("gives every living role a line in every phase", function()
 			for _, role in ipairs(RoleLogic.ALL) do
 				for _, phase in ipairs(PHASES) do
-					local private = { role = role, canWrite = true, tasksThisRound = 0 }
+					local private = { role = role, tasksThisRound = 0 }
 					local lines = Objectives.lines(role, phase, private, true)
 					expect(#lines > 0).to.equal(true)
 					for _, line in ipairs(lines) do
@@ -25,8 +25,8 @@ return function(t)
 				end
 			end
 		end)
-		it("ticks the Death's Manual line once a name is written", function()
-			local lines = Objectives.lines("Kira", "DeathNote", { canWrite = false }, true)
+		it("ticks the stare line once a name is known", function()
+			local lines = Objectives.lines("Kira", "Investigation", { learned = { { userId = 1 } } }, true)
 			expect(lines[1].done).to.equal(true)
 		end)
 		it("gives eliminated players the Deathsinger lines", function()
@@ -36,11 +36,11 @@ return function(t)
 				expect(line.done == true).to.equal(false)
 			end
 		end)
-		it("shows the eyes reads left", function()
-			local lines = Objectives.lines("Follower", "Investigation", { eyes = { readsLeft = 2 } }, true)
+		it("shows the Oculus' time left", function()
+			local lines = Objectives.lines("Follower", "Investigation", { eyes = { lifeLeft = 90 } }, true)
 			local found = false
 			for _, line in ipairs(lines) do
-				if string.find(line.text, "2 left", 1, true) then
+				if string.find(line.text, "90 s", 1, true) then
 					found = true
 				end
 			end

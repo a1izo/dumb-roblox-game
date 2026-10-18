@@ -1,5 +1,6 @@
--- The Task Force meeting: living players gather around the table and free chat opens.
--- L speaks through the anonymous screen, which never shows who is typing.
+-- The Bureau meeting. Free roam stops for one when someone dies, when a living player rings the
+-- map's emergency bell (once each per match), or when the free-roam timer runs out. Living players
+-- gather around the table in the meeting room, talk, then vote.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -7,37 +8,36 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
-local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
-local Util = require(Shared:WaitForChild("Util"))
 
 local CharacterService = require(script.Parent.CharacterService)
 local EventLog = require(script.Parent.EventLog)
 local Match = require(script.Parent.Match)
 local RagdollService = require(script.Parent.RagdollService)
 local RateLimit = require(script.Parent.RateLimit)
-local TextFilter = require(script.Parent.TextFilter)
 
-local LScreenRemote = Net.event("LScreen")
-local LScreenMsgRemote = Net.event("LScreenMsg")
+local BellRemote = Net.event("Bell")
 
 local MeetingService = {}
 
 local screenLabel: TextLabel? = nil
 local seats = {}
+local bell: BasePart? = nil
 
 function MeetingService.onMatchStart(map)
 	screenLabel = map.meeting.screenLabel
 	seats = map.meeting.seats
+	bell = if map.bell then map.bell.part else nil
 	if screenLabel then
-		screenLabel.Text = Terms.f("{Zero} is watching.")
+		screenLabel.Text = Terms.f("{Meeting}")
 	end
 end
 
 function MeetingService.onMatchEnd()
 	screenLabel = nil
 	seats = {}
+	bell = nil
 	for _, ps in ipairs(Match.list) do
 		ps.seatCFrame = nil
 	end
@@ -88,46 +88,59 @@ function MeetingService.release()
 	placeMemorials()
 end
 
-local function onScreen(player: Player, text)
-	if type(text) ~= "string" then
-		return
-	end
-	local l = Match.getLiving(player)
-	if not l or l.role ~= "L" then
-		return
-	end
-	if Match.phase ~= "Meeting" and Match.phase ~= "Vote" then
-		Match.notify(player, "The screen only works during meetings.", "bad")
-		return
-	end
-	local cleaned = Util.cleanText(text, Config.L_SCREEN_MAX_LENGTH)
-	if #cleaned == 0 then
-		return
-	end
-	if not RateLimit.allow(player, "lscreen", Config.L_SCREEN_COOLDOWN) then
-		Match.notify(player, "Wait a moment before sending again.", "bad")
-		return
-	end
-	for _, ps in ipairs(Match.living()) do
-		if NameUtil.containsFullName(cleaned, ps.first, ps.last) then
-			Match.notify(player, "Blocked: messages may not contain a living player's full real name.", "bad")
-			return
-		end
-	end
-	local filtered = TextFilter.broadcast(cleaned, player.UserId)
-	if not filtered then
-		Match.notify(player, "The screen could not display that message.", "bad")
-		return
-	end
+-- What the meeting room's screen says while the meeting runs (why it was called).
+function MeetingService.setScreen(text: string)
 	if screenLabel then
-		screenLabel.Text = filtered
+		screenLabel.Text = text
 	end
-	LScreenMsgRemote:FireAllClients({ text = filtered, clock = Match.clock() })
-	EventLog.add('L on the screen: "' .. filtered .. '"', "l")
+end
+
+-- Why this player cannot ring the bell right now (nil: they can).
+function MeetingService.bellProblem(ps): string?
+	if not bell then
+		return "missing"
+	elseif Match.phase ~= "Investigation" or Match.meetingCall ~= nil then
+		return "phase"
+	elseif ps.bellUsed then
+		return "used"
+	end
+	local at = Match.position(ps)
+	if not at or (at - bell.Position).Magnitude > Config.BELL_RANGE + 2 then
+		return "far"
+	end
+	return nil
+end
+
+-- Rings the bell for this player: a meeting is called at once.
+function MeetingService.ring(ps): boolean
+	if MeetingService.bellProblem(ps) then
+		return false
+	end
+	ps.bellUsed = true
+	EventLog.add(string.format("%s rang the emergency bell.", ps.alias), "bell")
+	Match.announce(Terms.f("{Meeting} called"), ps.alias .. " rang the emergency bell.", "neutral")
+	Match.requestMeeting("bell", ps)
+	Match.pushPrivate(ps)
+	return true
+end
+
+local function onBell(player: Player)
+	local ps = Match.getLiving(player)
+	if not ps or not RateLimit.allow(player, "bell", 1) then
+		return
+	end
+	local problem = MeetingService.bellProblem(ps)
+	if problem == "used" then
+		Match.notify(player, "You have already rung the bell this match.", "bad")
+	elseif problem == "far" then
+		Match.notify(player, "Get closer to the bell.", "bad")
+	elseif problem == nil then
+		MeetingService.ring(ps)
+	end
 end
 
 function MeetingService.init()
-	LScreenRemote.OnServerEvent:Connect(onScreen)
+	BellRemote.OnServerEvent:Connect(onBell)
 end
 
 return MeetingService

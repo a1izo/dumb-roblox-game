@@ -1,4 +1,4 @@
--- A warrant is served: a huge Aktura "A" slams onto the screen, two faceless operatives in black
+-- Ace makes an arrest: a huge Aktura "A" slams onto the screen, two faceless operatives in black
 -- close in on the suspect, the cuffs click under flashing light, and a stamp says how it went. The
 -- operatives are shadows made on this screen, never anyone's avatar (Ace stays hidden). Ace's verdict
 -- style (gavel, cuffs, checkmate, sugar cubes) plays beside the arrest: on Ace's screen alone, or on
