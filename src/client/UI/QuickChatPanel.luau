@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local Net = require(Shared:WaitForChild("Net"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
@@ -34,16 +35,17 @@ local WIDTH = 470
 local PAD = T.space.l
 local HEIGHT_CASE = PAD * 2 + TABS + T.space.s + CAPTION + Wheel.HEIGHT
 local HEIGHT_LOBBY = PAD * 2 + CAPTION + Wheel.HEIGHT
-local KEYS = {
-	Enum.KeyCode.One,
-	Enum.KeyCode.Two,
-	Enum.KeyCode.Three,
-	Enum.KeyCode.Four,
-	Enum.KeyCode.Five,
-	Enum.KeyCode.Six,
-	Enum.KeyCode.Seven,
-	Enum.KeyCode.Eight,
-}
+-- The slot a key plays: the wheel's slot keys (1 to 8 unless the player set their own, Shared/Bindings).
+local function slotFor(key: Enum.KeyCode): number?
+	local profile = ClientState.profile
+	local saved = profile and profile.keybinds or nil
+	for index = 1, 8 do
+		if table.find(Bindings.keys("slot" .. index, "keyboard", saved), key.Name) then
+			return index
+		end
+	end
+	return nil
+end
 
 local panel: Frame
 local sizeLimit: UISizeConstraint?
@@ -122,7 +124,7 @@ local function onKey(input: InputObject, processed: boolean)
 	if processed or tab ~= "emotes" then
 		return
 	end
-	local index = table.find(KEYS, input.KeyCode)
+	local index = slotFor(input.KeyCode)
 	if index then
 		Wheel.playSlot(index)
 	end

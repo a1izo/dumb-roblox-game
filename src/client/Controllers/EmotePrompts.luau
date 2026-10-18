@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
@@ -31,6 +32,16 @@ EmotePrompts.CONTEXT_KEY = Enum.KeyCode.F
 EmotePrompts.CONTEXT_PAD = Enum.KeyCode.ButtonX
 EmotePrompts.JOIN_KEY = Enum.KeyCode.J
 EmotePrompts.JOIN_PAD = Enum.KeyCode.ButtonY
+
+-- An action's first key on a platform as the player has it (Shared/Bindings), or the default above.
+local function keyOf(id: string, platform: string, fallback: Enum.KeyCode): Enum.KeyCode
+	local profile = ClientState.profile
+	local name = Bindings.keys(id, platform, profile and profile.keybinds or nil)[1]
+	local ok, key = pcall(function()
+		return (Enum.KeyCode :: any)[name]
+	end)
+	return if name and ok and key then key else fallback
+end
 
 local JOIN_REACH = 10 -- studs (the server allows a little more, for a step taken while the press travels)
 local GET_IT_SECONDS = 8 -- how long "Get it" stays after a joined dance ends
@@ -125,7 +136,13 @@ local function updateContext()
 		if prompt then
 			prompt:Destroy()
 		end
-		local made = make(root, "LEmoteContext", EmotePrompts.CONTEXT_KEY, EmotePrompts.CONTEXT_PAD, 8)
+		local made = make(
+			root,
+			"LEmoteContext",
+			keyOf("emoteContext", "keyboard", EmotePrompts.CONTEXT_KEY),
+			keyOf("emoteContext", "gamepad", EmotePrompts.CONTEXT_PAD),
+			8
+		)
 		made.Triggered:Connect(function()
 			local now = EmoteController.session(LocalPlayer.Character)
 			if now then
@@ -164,7 +181,13 @@ local function offerJoin(character: Model, session: EmoteController.Session)
 	if type(userId) ~= "number" or player == LocalPlayer or not root or not joinable(session.clip) then
 		return
 	end
-	local prompt = make(root, "LEmoteJoin", EmotePrompts.JOIN_KEY, EmotePrompts.JOIN_PAD, JOIN_REACH)
+	local prompt = make(
+		root,
+		"LEmoteJoin",
+		keyOf("joinIn", "keyboard", EmotePrompts.JOIN_KEY),
+		keyOf("joinIn", "gamepad", EmotePrompts.JOIN_PAD),
+		JOIN_REACH
+	)
 	prompt.ActionText = "Join in"
 	prompt.ObjectText = EmoteInfo.of(session.clip).name
 	prompt.Triggered:Connect(function()
@@ -205,7 +228,13 @@ local function offerGetIt(session: EmoteController.Session)
 	if getIt then
 		getIt:Destroy()
 	end
-	local prompt = make(root, "LEmoteGetIt", EmotePrompts.JOIN_KEY, EmotePrompts.JOIN_PAD, 8)
+	local prompt = make(
+		root,
+		"LEmoteGetIt",
+		keyOf("joinIn", "keyboard", EmotePrompts.JOIN_KEY),
+		keyOf("joinIn", "gamepad", EmotePrompts.JOIN_PAD),
+		8
+	)
 	prompt.ActionText = "Get it"
 	prompt.ObjectText = item.name
 	prompt.Enabled = true

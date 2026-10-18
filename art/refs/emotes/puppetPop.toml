@@ -1,0 +1,113 @@
+# Bye Bye Bye (clip puppetPop, item emote_puppet_pop). Reference notes: what was watched, what was copied.
+id = "puppetPop"
+item = "emote_puppet_pop"
+name = "Bye Bye Bye"
+family = "dance"
+status = "authored"            # researched | authored | checked | approved | vetoed
+uses = []                      # other places the clip plays
+
+[origin]
+what = "The chorus routine of *NSYNC's 'Bye Bye Bye' music video (Jan 2000), choreographed by Darrin Henson (MTV VMA for Best Choreography, 2000); the band dance it as marionettes on strings. Revived as a 2024 trend by the opening of Deadpool & Wolverine."
+recognisable = "The 'hey' arm flicks, the hands pulled to the chest and pushed out palms first on 'bye, bye, bye', the arms spread wide, hands on hips with the knee pops and the look over the shoulder, the raised fist with stomping knees."
+
+[source]
+url = "https://www.youtube.com/watch?v=on3NLCroLRI"
+title = "MIRRORED TREND Deadpool Bye Bye Bye NSYNC Dance Tutorial (K-PROJECT Studio)"
+kind = "tutorial, mirrored, front-facing, one dancer, at song speed"
+watched = "2026-10-17, frame sheets every 0.125 s over 3.75-11.25 s, every 0.25-0.75 s over the rest"
+mirror = true                  # screen-left is the dancer's left
+alt = [
+  "https://www.youtube.com/watch?v=RBCnRCZMVtU (official video, 4K remaster upload; stage scenes with the puppet strings, heavily intercut)",
+  "https://www.youtube.com/watch?v=Eo-KmOd3i7s (official video, NSYNC VEVO)",
+]
+history = [
+  "https://www.today.com/today/amp/tdna192941 (Darrin Henson on the choreography)",
+  "https://en.wikipedia.org/wiki/Bye_Bye_Bye",
+]
+
+[timing]
+bpm = 173
+segment = [4.0, 11.0]          # seconds in the source
+first_beat = 4.0
+beats = 22                     # 20 beats of the routine + 2 to come home to the first pose
+loop = true
+length = 7.630
+
+# Signature beats: source time (s) and the pose, in our own words.
+[[beat]]
+src = 4.00
+pose = "arms bent out low in front of the hips, elbows wide"
+[[beat]]
+src = 4.13
+pose = "arms flung out to the sides"
+[[beat]]
+src = 4.25
+pose = "fists pulled in to the chest, elbows out"
+[[beat]]
+src = 4.50
+pose = "forearms crossed in front of the chin"
+[[beat]]
+src = 4.75
+pose = "arms flung open, straight out (T)"
+[[beat]]
+src = 5.38
+pose = "arms hanging, head tilted to the left"
+[[beat]]
+src = 5.50
+pose = "hands together at the chest"
+[[beat]]
+src = 5.63
+pose = "both hands pushed straight forward, palms out"
+[[beat]]
+src = 5.75
+pose = "hands up beside the face, palms out"
+[[beat]]
+src = 6.00
+pose = "arms spread wide, palms out, bouncing on the eighths"
+[[beat]]
+src = 7.25
+pose = "wide stance, fists on the hips, head turned over the left shoulder, hips swaying"
+[[beat]]
+src = 8.00
+pose = "right foot kicked back"
+[[beat]]
+src = 8.50
+pose = "wide stance bounce, arms loose and bent"
+[[beat]]
+src = 9.38
+pose = "left arm swung up over the head, right knee up"
+[[beat]]
+src = 9.75
+pose = "left fist raised high"
+[[beat]]
+src = 10.13
+pose = "fist at head height, knees stomping in turn"
+
+[face]
+key = ""                       # the dancers smile; no drawn face needed
+
+[sound]
+cues = ["loop: the song's chorus at 173 bpm (owner's licensed track), started on the shared beat"]
+match = false                  # loud music: lobby only for the music; the dance itself is match-safe
+
+[vfx]
+rung = 2                       # Inked
+ideas = ["faint marionette strings flicker above the hands on the first flick (4.13) and the push (5.63)"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "No elbows or wrists: bent arms are the forearm direction with the fist slid to the hand's place (kit.reach); palms-out reads from the arm angle. Knee pops are a leg lifted forward and slid up. Hands on hips: arm angled out at the bottom, fist slid in."
+pop_limit = 1800               # the 'hey' flicks are snaps
+
+[mocap]
+take = "art/refs/mocap/puppetPop.json"
+notes = "2026-10-17 rework (owner: weird legs, arms pulled in, no real weight): tracked with MediaPipe Pose (heavy) on 111 frames, 3.92-11.32 s at 15 a second, each flipped back from the mirror first; the clip is the tracked frames from 4.0 s over 20 beats, then 2 beats easing home."
+
+[check]
+by_eye = "2026-10-17 rework: 16 reference frames side by side with the render (mirrored like the source), consecutive frames for smoothness, the loop's way home. First build: mirrored stills at 24 reference times (flicks, cross, tilt, push, palms up, spread, hips + look, knee pops, kick back, wide bounce, swing, fist)."
+silhouettes = "ok"
+timing = "keys on the source times, 173 bpm; loop 22 beats"
+contacts = "none (no props)"
+issues = ["the hands pulled to the chest (4.25) show as the arms bent out to the sides: an R6 arm cannot fold in that far"]

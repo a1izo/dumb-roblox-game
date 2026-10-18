@@ -129,6 +129,40 @@ local function face(root: BasePart, at: Vector3)
 	end
 end
 
+-- The rally (Match Point), played for real (owner's call, 2026-10-17): the server keeps the ball. The first player
+-- serves; each time the ball is on its way, the one it goes to must press as it reaches their racket (within EARLY
+-- before to LATE after); a hit sends it back a little quicker (FLIGHT down to FLIGHT_MIN), and the first miss
+-- (no press in time, or one too early) ends it for both. Every screen is told each hit and the miss, with the
+-- server times the ball leaves and arrives, so all draw the same ball.
+local SERVE_HIT = 0.6 -- seconds from the start to the serve's hit (art/scripts/emotes/duos.py)
+local FLIGHT, FLIGHT_MIN, QUICKER = 1.0, 0.45, 0.93
+local EARLY, LATE = 0.32, 0.16
+local MAX_HITS = 80
+local SLACK = 0.35 -- seconds a press's own clock may be behind the server's (its travel time)
+type Rally = { a: any, b: any, to: any, arrive: number, flight: number, hits: number, done: boolean }
+local rallies: { [any]: Rally } = {}
+
+local function endRally(rally: Rally, missedBy: any?)
+	if rally.done then
+		return
+	end
+	rally.done = true
+	if rallies[rally.a] == rally then
+		rallies[rally.a] = nil
+	end
+	if rallies[rally.b] == rally then
+		rallies[rally.b] = nil
+	end
+	DuoRemote:FireAllClients({
+		kind = "rallyMiss",
+		a = rally.a.Character,
+		b = rally.b.Character,
+		by = if missedBy == rally.a then "a" else "b",
+		at = rally.arrive,
+		hits = rally.hits,
+	})
+end
+
 local function begin(a: any, b: any)
 	local ra, rb = rootOf(a), rootOf(b)
 	if not ra or not rb then
@@ -136,13 +170,61 @@ local function begin(a: any, b: any)
 	end
 	face(rb, ra.Position)
 	face(ra, rb.Position)
+	local at = workspace:GetServerTimeNow() + 0.25
+	local rally: Rally =
+		{ a = a, b = b, to = b, arrive = at + SERVE_HIT + FLIGHT, flight = FLIGHT, hits = 1, done = false }
+	rallies[a], rallies[b] = rally, rally
 	DuoRemote:FireAllClients({
 		kind = "rally",
 		a = a.Character,
 		b = b.Character,
-		at = workspace:GetServerTimeNow() + 0.25,
+		at = at,
+		serve = at + SERVE_HIT,
+		arrive = rally.arrive,
 	})
+	-- the watch: no press by the time the ball has gone past is a miss
+	task.spawn(function()
+		while not rally.done do
+			task.wait(0.03)
+			local gone = not rootOf(a) or not rootOf(b)
+			if gone or workspace:GetServerTimeNow() > rally.arrive + LATE then
+				endRally(rally, rally.to)
+			end
+		end
+	end)
 end
+
+-- A press from a player in a rally: a hit if the ball is theirs and within reach of the racket.
+local function press(player: any, t: any)
+	local rally = rallies[player]
+	if not rally or rally.done or rally.to ~= player then
+		return
+	end
+	local now = workspace:GetServerTimeNow()
+	local at = if type(t) == "number" then math.clamp(t, now - SLACK, now) else now
+	if at < rally.arrive - EARLY or at > rally.arrive + LATE then
+		endRally(rally, player) -- swung at nothing
+		return
+	end
+	local hitAt = rally.arrive
+	rally.hits += 1
+	rally.flight = math.max(FLIGHT_MIN, rally.flight * QUICKER)
+	rally.to = if player == rally.a then rally.b else rally.a
+	rally.arrive = hitAt + rally.flight
+	DuoRemote:FireAllClients({
+		kind = "rallyHit",
+		a = rally.a.Character,
+		b = rally.b.Character,
+		by = if player == rally.a then "a" else "b",
+		at = hitAt,
+		arrive = rally.arrive,
+		hits = rally.hits,
+	})
+	if rally.hits >= MAX_HITS then
+		endRally(rally, rally.to)
+	end
+end
+DuoService.press = press
 
 local function startRally(a: any, b: any)
 	local ra, rb = rootOf(a), rootOf(b)
@@ -216,6 +298,12 @@ local function startChain(leader: any, follower: any)
 end
 
 local function onRequest(player: any, payload)
+	if type(payload) == "table" and payload.action == "hit" then
+		if RateLimit.allow(player, "rallyHit", 0.1) then
+			press(player, payload.t)
+		end
+		return
+	end
 	if type(payload) ~= "table" or not RateLimit.allow(player, "duo", 0.3) then
 		return
 	end
@@ -260,6 +348,10 @@ function DuoService.init()
 	DuoRemote.OnServerEvent:Connect(onRequest)
 	Players.PlayerRemoving:Connect(function(player)
 		asks[player] = nil
+		local rally = rallies[player]
+		if rally then
+			endRally(rally, player)
+		end
 		DuoService.stop(player)
 	end)
 	task.spawn(function()
@@ -273,6 +365,11 @@ end
 -- For checks: who a player is chained to, and whether someone is being asked.
 function DuoService.partner(player: any): any
 	return chained[player]
+end
+
+-- For checks: the rally a player is in (who the ball goes to, when it gets there, the hits so far).
+function DuoService.rallyOf(player: any): Rally?
+	return rallies[player]
 end
 
 function DuoService.asked(player: any): boolean

@@ -39,7 +39,8 @@ def main():
         part, pose, position, rotation = holds[key]
         steps = kit.hold(part, pose, position, rotation)
         line = kit.luau_steps(steps)
-        pattern = re.compile(r"(at = )\{.*?\}(,\s*-- hold: " + re.escape(key) + r"\b)")
+        # (a hold is a prop's `at`, or the `to` of a move into a hand)
+        pattern = re.compile(r"((?:at|to) = )\{.*?\}(,\s*-- hold: " + re.escape(key) + r"\b)")
         new, n = pattern.subn(lambda m: m.group(1) + line + m.group(2), text)
         if n != 1:
             print(f"[holds] {key}: no single `-- hold: {key}` line in EmoteMeta ({n} found)")

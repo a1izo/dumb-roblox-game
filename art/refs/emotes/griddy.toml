@@ -1,0 +1,63 @@
+# Griddy (clips griddy + griddyWalk, item emote_griddy). Reference notes.
+id = "griddy"
+item = "emote_griddy"
+name = "Griddy"
+family = "stroll"
+status = "authored"
+uses = []
+
+[origin]
+what = "Created by Allen 'Griddy' Davis at Landry-Walker High School, New Orleans (2017-18), viral on TikTok in 2019, carried to the NFL by Justin Jefferson's touchdown celebrations (LSU, then the Vikings from 2020)."
+recognisable = "Heels tapped out in front by turns on a low bouncing crouch, bent arms swinging across the body, the hands made into goggles round the eyes."
+
+[source]
+url = "https://www.youtube.com/watch?v=sb1TIBDKGuw"
+title = "Justin Jefferson and Ja'Marr Chase Teach How To Do The Griddy!"
+kind = "the NFL's Griddy dancer himself, filmed by a hand-held camera that follows him (it pans and looks down)"
+watched = "2026-10-17 (rework): frames every 2-4 s over the whole clip, then every 1/15 s over 21.8-25.35 s, motion-captured (mocap/griddy.json)"
+mirror = false
+alt = ["https://www.youtube.com/watch?v=jh5gzKOIHCk (HOW TO: GRIDDY IN 15 SECONDS, the first build's source: captions over the legs, feet out of frame)"]
+history = ["https://en.wikipedia.org/wiki/Griddy", "https://knowyourmeme.com/memes/griddy"]
+
+[timing]
+segment = [22.15, 25.2]
+loop = true
+length = 3.45                  # the 3.05 s take plus 0.4 s easing from the goggles back into the taps
+
+[[beat]]
+src = 22.6
+pose = "the right heel out in front, the body low and turned to it, the left arm swung across the belly"
+[[beat]]
+src = 23.5
+pose = "low over the right heel again, leaning in, the arms swinging"
+[[beat]]
+src = 24.45
+pose = "standing up out of it, the hands rising"
+[[beat]]
+src = 24.85
+pose = "hands round the eyes as goggles, elbows out"
+
+[mocap]
+take = "art/refs/mocap/griddy.json"
+notes = "Tracked with MediaPipe Pose (heavy) on 54 frames. The camera pans, so the hips' sway comes from where the feet are, and it looks down, so the floor is levelled from the line hips-to-ankles. The tracker sees the heel taps mostly as the hips turning; the foot that is ahead is tilted further forward (taps = 120 degrees a metre, at most 28) so a rigid leg shows them."
+
+[face]
+key = ""
+
+[sound]
+cues = ["loop: the owner's music, a heel-tap accent per tap"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a puff of dust at each heel tap"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "No ankles: a heel tap is the leg tilted out in front. The goggles go beside the eyes (an R6 arm in front of the face hides it). The walk is the game's own run cycle (locomotion.Cycle at 16 studs a second) under the Griddy's lean, bounce and the captured arms."
+
+[check]
+by_eye = "2026-10-17 rework: 24 frames side by side with the reference (front), the taps from the side and three quarters, the walk cycle from the side."
+issues = ["only the right heel's taps are in the take; the left foot mostly carries the weight"]

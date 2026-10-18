@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Signal = require(Shared:WaitForChild("Signal"))
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local RoleCopy = require(Shared:WaitForChild("Copy"):WaitForChild("RoleCopy"))
 local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -201,18 +202,43 @@ function RoleCard.init()
 		Parent = content,
 	})
 
-	-- Hold C (keyboard) or the left bumper (gamepad).
-	ContextActionService:BindAction("DeathsGambitRoleCard", function(_, state: Enum.UserInputState)
-		if not usable() then
-			return Enum.ContextActionResult.Pass
+	-- Hold C (keyboard) or the left bumper (gamepad), or the player's own keys (Shared/Bindings "roleCard"),
+	-- bound again when they change.
+	local bound = ""
+	local function bindCard()
+		local profile = ClientState.profile
+		local saved = profile and profile.keybinds or nil
+		local keys = Bindings.keyCodes("roleCard", "keyboard", saved)
+		for _, key in ipairs(Bindings.keyCodes("roleCard", "gamepad", saved)) do
+			table.insert(keys, key)
 		end
-		if state == Enum.UserInputState.Begin then
-			RoleCard.show()
-		else
-			RoleCard.hide()
+		if #keys == 0 then
+			keys = { Enum.KeyCode.C, Enum.KeyCode.ButtonL1 }
 		end
-		return Enum.ContextActionResult.Sink
-	end, false, Enum.KeyCode.C, Enum.KeyCode.ButtonL1)
+		local names = {}
+		for _, key in ipairs(keys) do
+			table.insert(names, key.Name)
+		end
+		local signature = table.concat(names, ",")
+		if signature == bound then
+			return
+		end
+		bound = signature
+		ContextActionService:UnbindAction("DeathsGambitRoleCard")
+		ContextActionService:BindAction("DeathsGambitRoleCard", function(_, state: Enum.UserInputState)
+			if not usable() then
+				return Enum.ContextActionResult.Pass
+			end
+			if state == Enum.UserInputState.Begin then
+				RoleCard.show()
+			else
+				RoleCard.hide()
+			end
+			return Enum.ContextActionResult.Sink
+		end, false, table.unpack(keys))
+	end
+	bindCard()
+	ClientState.ProfileChanged:Connect(bindCard)
 
 	-- Press and hold the role badge (mouse or touch).
 	local badge = Hud.badge()

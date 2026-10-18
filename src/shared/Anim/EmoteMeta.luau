@@ -23,7 +23,7 @@ local RACKET = {
 	size = 2.1,
 	stand = { shape = "Block", size = { 0.8, 2.1, 0.08 }, color = { 150, 112, 72 } },
 	mount = "Right Arm",
-	at = { { p = { 0, -1.05, -0.05 } }, { r = { 180, 0, 0 } }, { p = { 0, 0.95, 0 } } },
+	at = { { p = { 0, -1.8, 0 } }, { r = { 180, -62.22, 0 } } }, -- hold: matchPointServe/Racket
 }
 local NOTEBOOK = {
 	model = "Grimoire",
@@ -39,14 +39,6 @@ local PEN = {
 	mount = "Right Arm",
 	at = { { p = { 0, -0.35, -0.2 } }, { r = { -55, 0, 0 } } },
 }
-
-local function with(base, extra)
-	local copy = table.clone(base)
-	for key, value in pairs(extra) do
-		copy[key] = value
-	end
-	return copy
-end
 
 return {
 	coinFlip = {
@@ -133,19 +125,110 @@ return {
 			},
 		},
 	},
+	-- Diavolo's Potato Chip: the desk falls from the sky (the table in front, the chair behind, then the radio on
+	-- the right, the open notebook with the pen on it and the bag of crisps on the left), he sits, takes the pen
+	-- and the bag, writes through the bag's mouth, puts the pen back, takes a crisp out of the bag, raises it and
+	-- bites it, sets the bag down, stands, and it all sinks into the floor. Floor places from the floor under the
+	-- body (forward -z); hand holds solved from the clip's key poses (art/scripts/emotes/props.py).
 	chipAndPen = {
 		props = {
-			with(NOTEBOOK, { hide = 4.4 }),
-			with(PEN, { hide = 2.0 }),
+			{
+				model = "Table",
+				size = 5,
+				stand = { shape = "Block", size = { 5, 2.75, 3 }, color = { 72, 50, 32 } },
+				mount = "floor",
+				at = { { p = { 0, 0, -2.05 } } },
+				show = 0.35,
+				drop = { height = 26, time = 0.65 },
+				sink = { at = 9.1, time = 1.0 },
+			},
+			{
+				model = "Chair",
+				size = 3.9,
+				stand = { shape = "Block", size = { 1.8, 1.75, 1.8 }, color = { 82, 45, 32 } },
+				mount = "floor",
+				at = { { p = { 0, 0, 1.4 } } },
+				show = 0.6,
+				drop = { height = 26, time = 0.65 },
+				sink = { at = 9.15, time = 1.0 },
+			},
+			{
+				model = "Radio",
+				size = 1.5,
+				stand = { shape = "Block", size = { 1.1, 0.67, 0.4 }, color = { 160, 162, 168 } },
+				mount = "floor",
+				at = { { p = { 1.5, 2.75, -2.2 } }, { r = { 0, -20, 0 } } },
+				show = 0.95,
+				drop = { height = 22, time = 0.55 },
+				sink = { at = 9.1, time = 0.9 },
+				core = 9,
+			},
+			{
+				model = "NotebookOpen",
+				size = 2.0,
+				stand = { shape = "Block", size = { 2.0, 0.08, 0.8 }, color = { 226, 222, 210 } },
+				mount = "floor",
+				at = { { p = { -0.35, 2.75, -1.15 } }, { r = { 0, 8, 0 } } },
+				show = 1.05,
+				drop = { height = 22, time = 0.55 },
+				sink = { at = 9.1, time = 0.9 },
+			},
+			{
+				model = "Pen",
+				size = 0.8,
+				stand = { shape = "Cylinder", size = { 0.8, 0.08, 0.08 }, color = { 14, 14, 16 } },
+				mount = "floor",
+				at = { { p = { 0.05, 2.82, -0.95 } }, { r = { 0, 60, 0 } }, { r = { 90, 0, 0 } } },
+				show = 1.05,
+				drop = { height = 22, time = 0.55 },
+				moves = {
+					{
+						at = 2.85,
+						mount = "Right Arm",
+						to = { { p = { -0.103, -1.057, 0.099 } }, { r = { -86.6, -52.78, -5.29 } } }, -- hold: chipAndPen/Pen
+					},
+					{ at = 4.75, mount = "floor", to = { { p = { 0.05, 2.82, -0.95 } }, { r = { 0, 60, 0 } }, { r = { 90, 0, 0 } } } },
+				},
+				sink = { at = 9.1, time = 0.9 },
+			},
+			{
+				model = "ChipBag",
+				size = 1.25,
+				stand = { shape = "Block", size = { 0.7, 1.0, 0.32 }, color = { 170, 28, 32 } },
+				mount = "floor",
+				at = { { p = { -1.5, 2.75, -1.0 } }, { r = { 0, 15, 0 } } },
+				show = 1.15,
+				drop = { height = 22, time = 0.55 },
+				moves = {
+					{
+						at = 3.05,
+						mount = "Left Arm",
+						to = { { p = { -0.062, -0.977, 0.552 } }, { r = { -74.17, 24.86, -6.8 } } }, -- hold: chipAndPen/ChipBag
+					},
+					{ at = 8.05, mount = "floor", to = { { p = { -1.5, 2.75, -1.0 } }, { r = { 0, 15, 0 } } } },
+				},
+				sink = { at = 9.1, time = 0.9 },
+			},
 			{
 				model = "Chip",
 				size = 0.5,
 				stand = { shape = "Block", size = { 0.5, 0.05, 0.42 }, color = { 222, 178, 86 } },
 				mount = "Right Arm",
-				at = { { p = { 0, -1.05, -0.25 } }, { r = { 70, 0, 0 } } },
-				show = 2.05,
-				hide = 3.32,
+				at = { { p = { 0.029, -1.144, -0.147 } }, { r = { -49.49, -1.37, 1.17 } } }, -- hold: chipAndPen/Chip
+				show = 5.3,
+				hide = 7.08,
 			},
+		},
+		contacts = { { at = 7.05, prop = 7, to = "mouth", within = 0.3 } },
+		-- the right hand writes at the bag's mouth and goes into it for the crisp; seated, the body rests on the
+		-- chair and the legs go under the table
+		allow = {
+			{ prop = 6, part = "Right Arm", from = 3.2, to = 5.4 },
+			{ prop = 2, part = "Torso", from = 2.2, to = 8.9 },
+			{ prop = 2, part = "Right Leg", from = 2.2, to = 8.9 },
+			{ prop = 2, part = "Left Leg", from = 2.2, to = 8.9 },
+			{ prop = 1, part = "Right Leg", from = 2.2, to = 8.9 },
+			{ prop = 1, part = "Left Leg", from = 2.2, to = 8.9 },
 		},
 	},
 	furiousScribbling = { props = { NOTEBOOK, PEN } },

@@ -1,0 +1,68 @@
+# Match Point (clips matchPointServe + matchPointReturn, item emote_match_point; a duo). Reference notes.
+id = "matchPointServe"
+item = "emote_match_point"
+name = "Match Point"
+family = "duo"
+status = "authored"
+uses = []
+
+[origin]
+what = "Death Note, episode 10 'Doubt' (2006): L invites Light, both former junior tennis champions, to a match at To-Oh University in front of the whole school; a rally of hard hits, L's odd hunched style against Light's clean one."
+recognisable = "Two players, a ball between them, the ready crouch with both hands on the racket, the serve, the forehands, the smash past the other."
+
+[source]
+url = "https://www.youtube.com/watch?v=q7E3iq1gc98"
+title = "Death Note HD: Light and L Tennis Match"
+kind = "anime clip, 2:42"
+watched = "2026-10-17, frames every 5 s, then every 0.75 s over 117-135 s"
+mirror = false
+alt = ["https://www.youtube.com/watch?v=AfKd7trRIhU"]
+history = ["https://www.imdb.com/title/tt0919368/plotsummary"]
+
+[timing]
+loop = true
+length = 0.8                   # 2026-10-18 rework: the ready loop; the rally is played (DuoService), strokes laid over it
+
+[[beat]]
+src = 16.0
+pose = "the serve"
+[[beat]]
+src = 122.5
+pose = "the ready crouch, both hands on the racket in front"
+[[beat]]
+src = 130.9
+pose = "the forehand at contact"
+[[beat]]
+src = 132.5
+pose = "L's lunge"
+
+[[prop]]
+model = "Racket"
+hand = "right"
+note = "in line with the arm (no wrist), strings to the shot at contact; DuoController aims the ball at the strings from the same hold"
+[[prop]]
+model = "TennisBall"
+hand = "none"
+note = "flown by DuoController on RALLY"
+
+[face]
+key = ""
+
+[sound]
+cues = ["ball pocks on each hit (owner's)"]
+match = false                  # duos are lobby only
+
+[vfx]
+rung = 3
+ideas = ["a streak behind the ball on the smash"]
+
+[camera]
+showpiece = true
+
+[r6]
+notes = "No wrist: the racket keeps its angle to the arm, so the ready stance holds it out in front at the waist; swings go round (out to the side first) so the racket never passes through the legs."
+
+[check]
+by_eye = "2026-10-17: stills of both sides from 60 degrees."
+contacts = "check_props ok on both clips"
+issues = ["the anime's two-handed ready holds the racket head up; R6 can only hold it forward"]

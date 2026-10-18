@@ -212,26 +212,7 @@ for i in range(8):
 soft(bunny, head=3.0, arms=5.0).plant(stance=0.08)
 bunny.build()
 
-# Puppet Pop (an original routine on the marionette idea): each limb jerked up on a string and
-# dropped, the knees giving way, the "talking hand", a chest pop, the head snapped round, a fist
-# pumped. 8 beats of 0.4 s, snapped rather than flowing.
-pop = Motion("puppetPop", 3.2, loop=True, note="Limbs jerked up by strings and dropped, a talking hand, pops and a fist pump.")
-limp_r, limp_l = J((6, 0, 10)), J((6, 0, -10))
-pop.key(0.0, offset=(0, -0.02, 0), root=(0, 0, 0), neck=(-4, 0, 0), rShoulder=limp_r, lShoulder=limp_l)
-pop.key(0.4, "snap", offset=(0, 0.02, 0), root=(0, 0, 3), neck=(4, 0, -10), rShoulder=J((24, 0, 96), (0, 0.12, 0)), lShoulder=limp_l)
-pop.key(0.8, "snap", offset=(0, 0.02, 0), root=(0, 0, -3), neck=(4, 0, 10),
-        rShoulder=J((24, 0, 96), (0, 0.12, 0)), lShoulder=J((24, 0, -96), (0, 0.12, 0)))
-pop.key(1.2, "in", offset=(0, -0.18, 0), root=(-8, 0, 0), neck=(-22, 0, 0), rShoulder=limp_r, lShoulder=limp_l)
-for i, out in enumerate((0, 1, 0, 1)):  # the talking hand: across the chest, flicked open and shut
-    pop.key(1.6 + i * 0.1, "snap", offset=(0, -0.04, 0), root=(-2, 6, 0), neck=(0, 8, 0),
-            rShoulder=J((70, 0, -36 + 26 * out), (-0.22 + 0.12 * out, 0.1, -0.2)), lShoulder=J((8, 0, -6)))
-pop.key(2.0, "snap", offset=(0, 0, 0.04), root=(-7, 0, 0), neck=(-2, 30, 0), rShoulder=J((12, 0, 8)), lShoulder=J((12, 0, -8)))
-pop.key(2.4, "snap", offset=(0, 0.02, 0), root=(3, -4, 0), neck=(8, 10, 0),
-        rShoulder=J((154, 0, 10), (0, 0.22, 0)), lShoulder=J((20, 0, -22)))
-pop.key(2.6, offset=(0, 0, 0), root=(2, -4, 0), neck=(6, 6, 0), rShoulder=J((148, 0, 10), (0, 0.2, 0)), lShoulder=J((18, 0, -20)))
-pop.key(2.8, "snap", offset=(0, -0.12, 0), root=(-6, 0, 0), neck=(-14, -28, 0), rShoulder=limp_r, lShoulder=limp_l)
-pop.follow("neck", 5.0, 0.6).follow(ARMS, 6.0, 0.55).plant(stance=0.14)
-pop.build()
+# Puppet Pop (puppetPop): rebuilt 2026-10-17 as the real "Bye Bye Bye" chorus, in emotes/dances.py.
 
 # Glitch Step: a robot's dance that stutters like a tape skipping, held poses and repeats, cut, not
 # eased. 12 frames of 0.2 s.
@@ -435,17 +416,7 @@ for t, look in ((0.0, 0), (1.0, 10), (2.4, -8), (3.0, -6)):
 soft(deduce, head=1.6, arms=2.0).plant(stance=0.18)
 deduce.build()
 
-# Just As Planned: a slow tilt of the head down and to the side, the eyes up from under the brows, a hand
-# at the cheek and the other arm folded under its elbow; the smile (the face) grows.
-planned = Motion("justAsPlanned", 3.6, note="A slow tilt of the head, the eyes up from under the brows, a hand at the cheek.")
-planned.key(0.0, **REST)
-planned.key(1.0, "sine", root=(-4, 6, 0), neck=(-16, -8, 10), rShoulder=J((100, 0, -30), (-0.24, 0.14, -0.2)),
-            lShoulder=J((54, 0, 34), (0.26, 0.06, -0.2)))
-planned.key(2.8, root=(-5, 6, 0), neck=(-17, -8, 15), rShoulder=J((102, 0, -30), (-0.24, 0.15, -0.2)),
-            lShoulder=J((54, 0, 34), (0.26, 0.06, -0.2)))
-planned.key(3.6, **REST)
-soft(planned, head=1.4, arms=2.0).plant(stance=0.06)
-planned.build()
+# Just As Planned (justAsPlanned): rebuilt 2026-10-17 from the keikaku doori scene, in emotes/poses.py.
 
 # Reaper's Cackle: hunched over, shoulders up round the ears, the arms hanging loose in front, shaking
 # with a wide grin (the face). A loop.
@@ -641,23 +612,7 @@ def scribble(m, t0, t1, rate=0.1, frantic=1.0):
                           (-0.18 + 0.13 * along, 0.06 + 0.02 * stroke * frantic, -0.24)))
 
 
-# Chip and Pen: writing in the notebook, then a chip taken from the side and lifted into the light, held,
-# and eaten in one decisive bite; a smug look. One shot.
-chip_pen = Motion("chipAndPen", 4.8, note="Writing, then a chip lifted into the light and eaten in one decisive bite.")
-chip_pen.key(0.0, **REST)
-scribble(chip_pen, 0.3, 1.9, rate=0.12)
-chip_pen.key(2.2, root=(-3, -4, 0), neck=(-8, -10, 0), lShoulder=J((54, 0, 30), (0.28, 0.1, -0.22)),
-             rShoulder=J((10, 0, 26), (0, 0, 0.05)))
-chip_pen.key(2.75, "out", root=(5, 0, 3), neck=(8, 0, 5), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)),
-             rShoulder=J((116, 0, 14), (0, 0.18, -0.12)))
-chip_pen.key(3.15, root=(6, 0, 3), neck=(10, 0, 5), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)),
-             rShoulder=J((120, 0, 14), (0, 0.2, -0.12)))
-chip_pen.key(3.3, "snap", root=(-5, 0, 0), neck=(-6, 0, 0), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)), rShoulder=r_face(130, -30))
-chip_pen.key(3.75, root=(-4, 0, 0), neck=(-2, 0, 0), lShoulder=J((50, 0, 30), (0.28, 0.1, -0.22)), rShoulder=J((40, 0, -10)))
-chip_pen.key(4.2, root=(-2, 6, 0), neck=(-4, 12, 6), lShoulder=J((46, 0, 28), (0.26, 0.08, -0.2)), rShoulder=J((16, 0, 6)))
-chip_pen.key(4.8, **REST)
-chip_pen.follow("neck", 4.0, 0.7).follow("rShoulder", 6.0, 0.6).follow("lShoulder", 2.0, 0.8).plant(stance=0.04)
-chip_pen.build()
+# Chip and Pen (chipAndPen): rebuilt 2026-10-17 as Diavolo's Potato Chip, in emotes/props.py.
 
 # Furious Scribbling: writing in a frenzy, the head bobbing with every stroke; one time in three it ends with
 # the whole line slashed out (furiousScribblingSlash, chosen by the server). One shot each.
@@ -842,35 +797,7 @@ raise_leg(parade, "rHip", 1.62, 1.8, 2.3, 2.58, J((150, 0, 4), (0, 0.12, -0.1)))
 parade.follow(ARMS, 6.0, 0.6).plant(stance=0.04)
 parade.build()
 
-# Griddy: heel taps by turns, the arms swinging big and the body bouncing; standing, the taps on the spot,
-# then the hands made into goggles over the eyes.
-GRIDDY = Gait("griddyWalk", period=0.6, stride=9.0, stance=0.45, lift=0.42,
-              note="The griddy on the move: heel taps by turns, arms swinging big, bouncing.")
-
-
-def griddy_pose(phase):
-    bob = math.cos(4 * math.pi * (phase - 0.2))
-    root = (-12 + 2 * bob, 6 * wave(phase, 0.05), 2 * wave(phase, 0.1))
-    offset = (0.04 * wave(phase, 0.1), -0.1 + 0.1 * bob, 0.0)
-    swing = wave(phase, 0.04)
-    joints = dict(neck=(8 - 3 * bob, -0.5 * root[1], 0), rShoulder=J((-58 * swing, 0, 10)), lShoulder=J((58 * swing, 0, -10)))
-    return joints, root, offset
-
-
-stroll(GRIDDY, griddy_pose)
-griddy = Motion("griddy", 2.4, loop=True, note="Heel taps by turns with big arm swings, then the hands made into goggles.")
-for i in range(4):
-    t = i * 0.4
-    s = 1 if i % 2 == 0 else -1
-    griddy.key(t, offset=(0.05 * s, -0.12, 0), root=(-12, 6 * s, 0), neck=(6, -3 * s, 0),
-               rShoulder=J((-56 * s, 0, 10)), lShoulder=J((56 * s, 0, -10)))
-    raise_leg(griddy, "rHip" if s > 0 else "lHip", t - 0.1 if t > 0 else 0.0, t + 0.08, t + 0.16, t + 0.3,
-              J((26, 0, 4 * s), (0, 0.06, -0.1)))
-goggles_r, goggles_l = J((142, 0, -30), (-0.25, 0.25, -0.2)), J((142, 0, 30), (0.25, 0.25, -0.2))
-for t, b in ((1.7, -0.14), (1.9, -0.04), (2.1, -0.14), (2.3, -0.04)):
-    griddy.key(t, offset=(0, b, 0), root=(-6, 0, 0), neck=(4, 0, 0), rShoulder=goggles_r, lShoulder=goggles_l)
-soft(griddy, arms=4.0).plant(stance=0.1)
-griddy.build()
+# Griddy (griddy, griddyWalk): rebuilt 2026-10-17 from the dance itself, in emotes/strolls.py.
 
 # Mushroom Stroll: an easy, unbothered walk with a stick over the shoulder (a mushroom tied to it), the
 # other arm swinging a little; standing, swaying, looking about.
@@ -1011,49 +938,7 @@ sky.build()
 # Duos ----------------------------------------------------------------------------------------------------
 # Played by two (DuoService asks the nearest player; DuoController plays it on both, on every screen).
 
-# Match Point: a rally, each player with a racket. The ball's timetable (DuoController.RALLY) goes with
-# these swings: the first player serves at 0.35 s and hits again at 1.95 and 3.55, then smashes at 5.15;
-# the second returns at 1.15, 2.75 and 4.35 and lunges too late at 5.45. One shot each.
-READY_R, READY_L = J((40, 0, 18), (0, 0.04, -0.12)), J((34, 0, -14), (0, 0.04, -0.12))
-
-
-def forehand(m, t, wind=0.32):
-    m.key(t - wind, offset=(0, -0.16, 0), root=(-8, -32, 0), neck=(-4, 26, 0), rShoulder=J((26, 0, 72), (0, 0.04, 0.18)),
-          lShoulder=J((40, 0, -30), (0, 0.04, -0.14)))
-    m.key(t, "snap", offset=(0, -0.12, -0.04), root=(-6, 24, 0), neck=(-2, -18, 0), rShoulder=J((84, 0, -34), (-0.1, 0.1, -0.16)),
-          lShoulder=J((20, 0, -20)))
-    m.key(t + 0.3, offset=(0, -0.16, 0), root=(-8, 0, 0), neck=(-4, 0, 0), rShoulder=READY_R, lShoulder=READY_L)
-
-
-serve = Motion("matchPointServe", 6.2, note="A tennis rally: the serve, two forehands, then a smash and a fist.")
-serve.key(0.0, offset=(0, -0.04, 0), root=(-2, 0, 0), neck=(0, 0, 0), rShoulder=J((150, 0, 40), (0, 0.2, 0.1)),
-          lShoulder=J((60, 0, -10), (0, 0.06, -0.12)))
-serve.key(0.18, offset=(0, 0.04, 0.04), root=(6, 0, 0), neck=(18, 0, 0), rShoulder=J((168, 0, 40), (0, 0.24, 0.12)),
-          lShoulder=J((160, 0, -10), (0, 0.24, 0)))
-serve.key(0.35, "snap", offset=(0, -0.06, -0.08), root=(-12, 0, 0), neck=(-4, 0, 0), rShoulder=J((60, 0, -24), (-0.1, 0.06, -0.16)),
-          lShoulder=J((10, 0, -16)))
-serve.key(0.7, offset=(0, -0.16, 0), root=(-8, 0, 0), neck=(-4, 0, 0), rShoulder=READY_R, lShoulder=READY_L)
-forehand(serve, 1.95)
-forehand(serve, 3.55)
-serve.key(4.8, "out", offset=(0, 0.12, 0.04), root=(8, 0, 0), neck=(20, 0, 0), rShoulder=J((176, 0, 30), (0, 0.26, 0.14)),
-          lShoulder=J((130, 0, -20), (0, 0.18, 0)))
-serve.key(5.15, "snap", offset=(0, -0.18, -0.1), root=(-16, 0, 0), neck=(-8, 0, 0), rShoulder=J((54, 0, -30), (-0.12, 0.04, -0.18)),
-          lShoulder=J((16, 0, -20)))
-serve.key(5.6, "out", offset=(0, -0.04, 0), root=(4, 0, 0), neck=(10, 0, 0), rShoulder=J((40, 0, 14)), lShoulder=J((166, 0, -8), (0, 0.3, 0)))
-serve.key(6.2, offset=(0, -0.04, 0), root=(4, 0, 0), neck=(10, 0, 0), rShoulder=J((38, 0, 14)), lShoulder=J((164, 0, -8), (0, 0.28, 0)))
-soft(serve, head=3.0, arms=4.5).plant(stance=0.26, forward=(0.2, -0.2))
-serve.build()
-
-ret = Motion("matchPointReturn", 6.2, note="A tennis rally's other side: three returns, then a lunge too late for the smash.")
-ret.key(0.0, offset=(0, -0.16, 0), root=(-8, 0, 0), neck=(-4, 0, 0), rShoulder=READY_R, lShoulder=READY_L)
-for t in (1.15, 2.75, 4.35):
-    forehand(ret, t)
-ret.key(5.45, "snap", offset=(0.5, -0.4, 0), root=(-10, -20, 18), neck=(-4, 30, 0), rShoulder=J((80, 0, 70), (0, 0.06, 0)),
-        lShoulder=J((20, 0, -40)))
-ret.key(5.85, offset=(0.4, -0.3, 0), root=(-14, -10, 10), neck=(-20, 40, 0), rShoulder=J((30, 0, 30)), lShoulder=J((14, 0, -20)))
-ret.key(6.2, offset=(0.3, -0.2, 0), root=(-12, 0, 4), neck=(-24, 30, 0), rShoulder=J((12, 0, 10)), lShoulder=J((10, 0, -10)))
-soft(ret, head=3.0, arms=4.5).plant(stance=0.26, forward=(0.2, -0.2))
-ret.build()
+# Match Point (matchPointServe, matchPointReturn): rebuilt 2026-10-17 from the anime's match, in emotes/duos.py.
 
 # Cuffed Together: two chained at the wrist (the leader's left, the follower's right). Only the chained arm is
 # keyed, so the body walks as it always does underneath; the arm hangs a little out towards the other.

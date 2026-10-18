@@ -110,6 +110,8 @@ function Migrations.defaults(startingCoins: number)
 		shopTurned = { day = -1, cards = {} },
 		-- The emote wheel's eight clip ids, "" for an empty slot; empty = never changed (Shared/EmoteWheel).
 		emoteWheel = {},
+		-- The player's own control bindings, by platform then action (Shared/Bindings); empty = the defaults.
+		keybinds = {},
 		-- The stance (an owned emote item that can be one), "" for none (Shared/Cosmetics `stance`).
 		stance = "",
 		-- The emote played in "The end" when you win (an owned one, Cosmetics.winSceneOk), "" for a cheer.

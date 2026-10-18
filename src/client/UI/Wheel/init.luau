@@ -1,5 +1,5 @@
 -- The emote wheel, in the quick-chat page (UI/QuickChatPanel): the eight emotes put on it (Shared/EmoteWheel)
--- round a ring that blooms open in ink, each a round plate with the emote's mannequin caught in its move
+-- in the chambers of a revolver's cylinder that rolls into place as it opens, each with the emote's mannequin caught in its move
 -- (Shop/PoseFigure), its key, and its tier's colour on the rim (Shared/Rarity). The one pointed at (the mouse's
 -- angle from the middle, the right stick, a finger dragged from the middle; Shared/WheelMath) lifts, a needle
 -- points to it, you are shown doing it in the middle (a copy of you, live), and the line under the wheel says
@@ -19,7 +19,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Assets = require(Shared:WaitForChild("Assets"))
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
@@ -56,6 +55,12 @@ local CENTRE = 116 -- the middle's round view
 local DEAD = 50 -- the middle's dead zone (nothing pointed at)
 local CAPTION = 50
 local RECENT = 34
+-- The revolver's steel (the cylinder and its chambers).
+local STEEL = Color3.fromRGB(56, 58, 65)
+local STEEL_LIGHT = Color3.fromRGB(104, 107, 117)
+local STEEL_DARK = Color3.fromRGB(22, 23, 27)
+local STEEL_EDGE = Color3.fromRGB(160, 163, 172)
+local BORE = Color3.fromRGB(9, 9, 11)
 Wheel.HEIGHT = Wheel.SIZE + CAPTION + RECENT + 8
 local HOLD_RELEASE = 0.25 -- s: holding Q longer than this, letting go plays what is pointed at
 local FOV = 28
@@ -462,10 +467,23 @@ local function plateFor(index: number, emote: QuickChat.Emote?, owned: boolean):
 	})
 	Kit.Controls.focusable(button)
 	local scale = Kit.Base.make("UIScale", { Parent = button }) :: UIScale
+	-- a chamber: the steel chamfer round its mouth, the dark bore, the emote's mannequin in it
+	local chamfer = Kit.Base.make("Frame", {
+		Name = "Chamfer",
+		BackgroundColor3 = STEEL_DARK,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset(PLATE / 2, PLATE / 2),
+		Size = UDim2.fromOffset(PLATE + 8, PLATE + 8),
+		ZIndex = 2,
+		Parent = button,
+	})
+	Kit.Base.corner(chamfer, (PLATE + 8) / 2)
+	Kit.Base.stroke(chamfer, STEEL_EDGE, 1.5, 0.45)
 	local disc = Kit.Base.make("Frame", {
 		Name = "Disc",
-		BackgroundColor3 = if emote and owned then C.lifted else C.raised,
-		BackgroundTransparency = 0.05,
+		BackgroundColor3 = if emote and owned then Color3.fromRGB(30, 30, 34) else BORE,
+		BackgroundTransparency = 0,
 		BorderSizePixel = 0,
 		Size = UDim2.fromOffset(PLATE, PLATE),
 		ZIndex = 3,
@@ -690,7 +708,7 @@ function Wheel.shown(on: boolean)
 		if not Motion.isReduced() then
 			ringScale.Scale = 0.86
 			Motion.tween(ringScale, { Scale = 1 }, T.motion.slow, table.unpack(T.ease.ink))
-			ink.Rotation = -24
+			ink.Rotation = -360 / WheelMath.SLOTS -- the cylinder rolls one chamber into place
 			Motion.tween(ink, { Rotation = 0 }, T.motion.scene, table.unpack(T.ease.ink))
 			for index, plate in ipairs(plates) do
 				plate.scale.Scale = 0
@@ -748,35 +766,61 @@ function Wheel.mount(parent: Frame, played: (QuickChat.Emote) -> ())
 		Parent = holder,
 	})
 	ringScale = Kit.Base.make("UIScale", { Parent = ringFrame }) :: UIScale
-	-- The bloom: a splash of ink behind the ring (a dark disc until the Core import brings the ink).
-	local splash = Assets.texture("InkSplat1")
-	if splash ~= "" then
-		ink = Kit.Base.make("ImageLabel", {
-			Name = "Ink",
-			BackgroundTransparency = 1,
-			Image = splash,
-			ImageColor3 = C.void,
-			ImageTransparency = 0.08,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(1.08, 1.08),
-			ZIndex = 1,
-			Parent = ringFrame,
-		})
-	else
-		ink = Kit.Base.make("Frame", {
-			Name = "Ink",
-			BackgroundColor3 = C.void,
-			BackgroundTransparency = 0.25,
+	-- The cylinder (the owner's call, 2026-10-18): the wheel is a revolver's cylinder seen from the front, the gun
+	-- Light was shot with at the end: blued steel, a flute cut between each two chambers, the bore down its middle
+	-- round the view of you. It rolls a chamber's turn into place as it opens.
+	local across = RADIUS * 2 + PLATE + 24
+	ink = Kit.Base.make("Frame", {
+		Name = "Cylinder",
+		BackgroundColor3 = STEEL,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(across, across),
+		ZIndex = 1,
+		Parent = ringFrame,
+	})
+	Kit.Base.corner(ink, across / 2)
+	Kit.Base.make("UIGradient", {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, STEEL_LIGHT),
+			ColorSequenceKeypoint.new(0.45, STEEL),
+			ColorSequenceKeypoint.new(1, STEEL_DARK),
+		}),
+		Rotation = 50,
+		Parent = ink,
+	})
+	Kit.Base.stroke(ink, STEEL_EDGE, 2, 0.35)
+	for k = 1, WheelMath.SLOTS do
+		local angle = math.rad((k - 1) * 360 / WheelMath.SLOTS + 180 / WheelMath.SLOTS)
+		local at = Vector2.new(math.sin(angle), -math.cos(angle)) * (across / 2 - 22) + Vector2.new(across, across) / 2
+		local flute = Kit.Base.make("Frame", {
+			Name = "Flute",
+			BackgroundColor3 = STEEL_DARK,
 			BorderSizePixel = 0,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(0.98, 0.98),
+			Position = UDim2.fromOffset(at.X, at.Y),
+			Size = UDim2.fromOffset(13, 36),
+			Rotation = math.deg(angle),
 			ZIndex = 1,
-			Parent = ringFrame,
+			Parent = ink,
 		})
-		Kit.Base.corner(ink, Wheel.SIZE / 2)
+		Kit.Base.corner(flute, 6.5)
+		Kit.Base.stroke(flute, Color3.fromRGB(0, 0, 0), 1, 0.5)
 	end
+	-- the bore down the middle, round the view of you
+	local bore = Kit.Base.make("Frame", {
+		Name = "Bore",
+		BackgroundColor3 = BORE,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(CENTRE + 14, CENTRE + 14),
+		ZIndex = 1,
+		Parent = ink,
+	})
+	Kit.Base.corner(bore, (CENTRE + 14) / 2)
+	Kit.Base.stroke(bore, STEEL_EDGE, 1.5, 0.5)
 	-- The needle from the middle to the plate pointed at.
 	needle = Kit.Base.make("Frame", {
 		Name = "Needle",

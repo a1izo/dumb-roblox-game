@@ -451,6 +451,9 @@ caught.build()
 # The emote pack (2026-10-14): its clips live in their own file, which uses the helpers above.
 import anims_emotes  # noqa: E402,F401
 
+# The rebuilt emotes (2026-10-17), each copied from its reference: they replace clips of the same name above.
+import emotes  # noqa: E402,F401
+
 
 # The cutscenes' actors: their acting clips are built with everything else.
 import cinema.shots  # noqa: E402, F401

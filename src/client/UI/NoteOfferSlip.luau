@@ -10,6 +10,18 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Bindings = require(Shared:WaitForChild("Bindings"))
+
+-- The keys that take an offered note: the player's own (Shared/Bindings "noteOffer"), else X and ButtonL1.
+local function takeKeys(): { Enum.KeyCode }
+	local profile = ClientState.profile
+	local saved = profile and profile.keybinds or nil
+	local keys = Bindings.keyCodes("noteOffer", "keyboard", saved)
+	for _, key in ipairs(Bindings.keyCodes("noteOffer", "gamepad", saved)) do
+		table.insert(keys, key)
+	end
+	return if #keys > 0 then keys else { Enum.KeyCode.X, Enum.KeyCode.ButtonL1 }
+end
 local Kit = require(script.Parent.Kit)
 local Screens = require(script.Parent.Screens)
 
@@ -81,7 +93,7 @@ local function show(payload, role: string)
 				take()
 			end
 			return Enum.ContextActionResult.Sink
-		end, false, Enum.ContextActionPriority.High.Value + 10, Enum.KeyCode.X, Enum.KeyCode.ButtonL1)
+		end, false, Enum.ContextActionPriority.High.Value + 10, table.unpack(takeKeys()))
 	else
 		title.Text = string.format("Offering your note to %s…", tostring(payload.toAlias or "them"))
 		takeButton.Visible = false

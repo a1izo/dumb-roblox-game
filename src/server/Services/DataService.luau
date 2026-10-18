@@ -133,6 +133,7 @@ function DataService.payload(player: Player)
 		weekly = data.weekly,
 		shopTurned = data.shopTurned,
 		emoteWheel = data.emoteWheel,
+		keybinds = data.keybinds,
 		stance = data.stance,
 		winScene = data.winScene,
 		ledger = data.ledger,
