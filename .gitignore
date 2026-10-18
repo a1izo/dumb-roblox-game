@@ -30,3 +30,6 @@ art/export/previews/cinema/
 art/export/previews/emotes/
 art/export/previews/_*.png
 art/export/previews/_manual/
+
+# The downloaded third-party R6 rig (DevForum, kept locally for reference; the rig is built from code now)
+art/rig/*.blend
