@@ -89,6 +89,7 @@ Bindings.ACTIONS = {
 	action("noteOffer", "Take the offered note", "offer", { "X" }, { "ButtonL1" }),
 	action("emoteContext", "An emote's press-to-do", "plate", { "F" }, { "ButtonX" }),
 	action("joinIn", "Join in", "plate", { "J" }, { "ButtonY" }),
+	action("passNote", "Pass your note", "plate", { "X" }, { "ButtonL1" }),
 	action("rallyHit", "Hit the ball (Match Point)", "rally", { "F" }, { "ButtonX" }),
 } :: { Action }
 
@@ -133,6 +134,20 @@ function Bindings.keys(id: string, platform: string, saved: { [string]: { [strin
 	end
 	local a = byId[id]
 	return if a then (a :: any)[platform] or {} else {}
+end
+
+-- The same as Enum.KeyCodes, from a player's profile (its `keybinds`; nil for the defaults).
+function Bindings.keyCodes(id: string, platform: string, saved: any): { Enum.KeyCode }
+	local out = {}
+	for _, name in ipairs(Bindings.keys(id, platform, saved)) do
+		local ok, key = pcall(function()
+			return (Enum.KeyCode :: any)[name]
+		end)
+		if ok and key then
+			table.insert(out, key)
+		end
+	end
+	return out
 end
 
 -- A player's saved bindings as sent or stored, made safe: known platforms and actions only, real keys that are

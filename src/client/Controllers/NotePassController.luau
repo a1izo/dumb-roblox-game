@@ -8,11 +8,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local Characters = require(script.Parent.Parent.Characters)
 local ClientState = require(script.Parent.Parent.ClientState)
+
+local function keybinds(): any
+	local profile = ClientState.profile
+	return profile and profile.keybinds or nil
+end
 local NoteOfferSlip = require(script.Parent.Parent.UI.NoteOfferSlip)
 
 local NoteRequest = Net.event("NoteRequest")
@@ -75,8 +81,9 @@ local function watch(character: Model)
 		Name = "LPassNote",
 		ActionText = "Pass note",
 		ObjectText = "",
-		KeyboardKeyCode = Enum.KeyCode.X,
-		GamepadKeyCode = Enum.KeyCode.ButtonL1,
+		-- (the player's own keys, Shared/Bindings "passNote", else X and ButtonL1)
+		KeyboardKeyCode = Bindings.keyCodes("passNote", "keyboard", keybinds())[1] or Enum.KeyCode.X,
+		GamepadKeyCode = Bindings.keyCodes("passNote", "gamepad", keybinds())[1] or Enum.KeyCode.ButtonL1,
 		HoldDuration = 0,
 		MaxActivationDistance = Config.PASS_RANGE + 0.5,
 		RequiresLineOfSight = false,
