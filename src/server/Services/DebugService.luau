@@ -945,6 +945,23 @@ COMMANDS.allCosmetics = function(player)
 	end
 end
 
+-- Every emote in the catalog (shop, mastery and pass emotes alike), and nothing else.
+COMMANDS.allEmotes = function(player)
+	local data = profileOf(player)
+	if data then
+		local count = 0
+		for _, item in ipairs(Cosmetics.ITEMS) do
+			if item.kind == "emote" and not data.owned[item.id] then
+				data.owned[item.id] = true
+				count += 1
+			end
+		end
+		DataService.push(player)
+		DataService.saveSoon(player)
+		reply(player, string.format("Every emote unlocked (%d new).", count), "good")
+	end
+end
+
 -- Resets one part of the profile to what a new player starts with.
 local RESETTABLE = {
 	tipsSeen = true,
