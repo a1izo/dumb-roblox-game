@@ -13,6 +13,8 @@
 -- Specter's flight, "offer" a note offer's slip (while it shows, the role card's hold steps aside), "plate" a
 -- press-to-do plate's key (taken only while its plate shows, otherwise passed on), "rally" Match Point's hit.
 
+local Terms = require(script.Parent.Terms)
+
 local Bindings = {}
 
 export type Action = {
@@ -73,7 +75,7 @@ Bindings.ACTIONS = {
 	action("eyesRead", "Read the Eyes", "world", { "R" }, { "ButtonR1" }),
 	action("scratchpad", "Scratchpad", "world", { "V" }, { "ButtonR2" }),
 	action("help", "Help", "world", { "H" }, {}),
-	action("zeroDesk", "Zero's desk", "world", { "Z" }, { "ButtonL2" }),
+	action("zeroDesk", Terms.f("{ZeroDesk}"), "world", { "Z" }, { "ButtonL2" }),
 	action("roleCard", "Hold your role card", "world", { "C" }, { "ButtonL1" }),
 	action("interact", "Use", "world", { "E" }, { "ButtonX" }),
 	action("slot1", "Wheel slot 1", "wheel", { "One" }, {}),
