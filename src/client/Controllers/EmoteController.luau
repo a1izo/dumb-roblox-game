@@ -334,9 +334,16 @@ function EmoteController.dress(character: Model, clip: string, alive: Alive, man
 						end
 					end, function()
 						local target, part = placeOn(character, toMount, move.to)
-						if target and part and not gone then
+						if target and not gone then
 							prop:PivotTo(target)
-							weld(prop, part)
+							-- into a hand it goes with the body (a weld only moves it there); onto the floor it
+							-- stays put in the world
+							if part then
+								weld(prop, part)
+								prop.Parent = character
+							else
+								prop.Parent = floorHolder
+							end
 						end
 					end)
 					mount, at = toMount, move.to

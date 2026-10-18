@@ -519,6 +519,9 @@ FX.chipAndPen = function(character, preview)
 	at(10.1, function()
 		TweenService:Create(pool, TweenInfo.new(0.3), { Size = Vector3.new(0.2, 0.04, 0.2) }):Play()
 	end)
+	at(10.4, function()
+		pool:Destroy()
+	end)
 	return function()
 		gone = true
 		for _, instance in ipairs(made) do
