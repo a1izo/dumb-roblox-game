@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local Config = require(Shared:WaitForChild("Config"))
 local Hints = require(Shared:WaitForChild("Hints"))
 local Net = require(Shared:WaitForChild("Net"))
@@ -159,6 +160,21 @@ local ACTIONS: { [string]: { cooldown: number, handler: (Player, any) -> () } } 
 	training = { cooldown = 1, handler = drillDone },
 	trial = { cooldown = 1, handler = trialEvent },
 	trialStep = { cooldown = 0.5, handler = trialStep },
+	-- ProfileRequest "keybinds": { keybinds = { keyboard = { [action] = { key names } }, gamepad = ... } }, the
+	-- player's whole set (Settings sends it once a change is made); cleaned by Shared/Bindings, so only known
+	-- actions, real keys and no reserved ones are kept. An empty set means the defaults.
+	keybinds = {
+		cooldown = 0.5,
+		handler = function(player: Player, payload)
+			local data = DataService.get(player)
+			if not data then
+				return
+			end
+			data.keybinds = Bindings.clean(payload.keybinds)
+			DataService.push(player)
+			DataService.saveSoon(player)
+		end,
+	},
 }
 
 -- Other services add their actions here (for example hints or the custom alias).
