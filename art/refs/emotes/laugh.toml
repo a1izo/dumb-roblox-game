@@ -1,0 +1,46 @@
+# Laugh (clip laugh, free). Reference notes.
+id = "laugh"
+name = "Laugh"
+family = "free"
+status = "checked"
+uses = ["ActingController.endingPose: Diavolo's laugh over a win"]
+
+[origin]
+what = "Roblox's /e laugh for R6 avatars, in every Roblox game's chat."
+recognisable = "Leaning back with a hand over the face, the body bobbing with each laugh."
+
+[source]
+url = "rbxassetid://129423131"
+title = "Roblox classic /e laugh (R6)"
+kind = "Roblox's own animation asset, recorded in a Studio play test (Motor6D.Transform of every R6 joint, 30 a second: art/refs/classic/laugh.json) and keyed as it is (art/scripts/emotes/classic.py)"
+watched = "2026-10-19: recorded in the emote harness (probe Rec), read back joint by joint, rendered beside the old clip"
+mirror = false
+
+[timing]
+length = 1.2
+source_length = 1.125
+fit = "Roblox's laugh is a 1.13 s one-shot; the game's laugh is a 1.2 s loop (frozen: Diavolo laughs over the ending), so one 0.4 s bob of the held laugh repeats three times. Each bob is kept below standing height (Roblox's lifts the body and its R6 legs slide out of the hips, a gap that shows); the soles stay planted."
+
+[[beat]]
+src = 0.27
+pose = "leaning back, the right hand over the face"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's: none needed beyond the usual emote sound"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Recorded on R6, played on R6: no change of rig."
+
+[check]
+by = "2026-10-19: check_anims (floor 0, gaps within limits except the cheer's in-air legs, Roblox's own), renders of every key moment beside the recording"

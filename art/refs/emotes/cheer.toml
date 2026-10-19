@@ -1,0 +1,49 @@
+# Cheer (clip cheer, free). Reference notes.
+id = "cheer"
+name = "Cheer"
+family = "free"
+status = "checked"
+uses = []
+
+[origin]
+what = "Roblox's /e cheer for R6 avatars, in every Roblox game's chat."
+recognisable = "A dip, then a jump with both arms thrown up over the head."
+
+[source]
+url = "rbxassetid://129423030"
+title = "Roblox classic /e cheer (R6)"
+kind = "Roblox's own animation asset, recorded in a Studio play test (Motor6D.Transform of every R6 joint, 30 a second: art/refs/classic/cheer.json) and keyed as it is (art/scripts/emotes/classic.py)"
+watched = "2026-10-19: recorded in the emote harness (probe Rec), read back joint by joint, rendered beside the old clip"
+mirror = false
+
+[timing]
+length = 2.2
+source_length = 1.0417
+fit = "Roblox's clip is 1.04 s; the game's is 2.2 s (frozen). The cheer plays twice at its own speed, then 0.12 s of standing."
+
+[[beat]]
+src = 0.33
+pose = "the dip"
+[[beat]]
+src = 0.73
+pose = "in the air, both arms up"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's: none needed beyond the usual emote sound"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Recorded on R6, played on R6: no change of rig."
+
+[check]
+by = "2026-10-19: check_anims (floor 0, gaps within limits except the cheer's in-air legs, Roblox's own), renders of every key moment beside the recording"

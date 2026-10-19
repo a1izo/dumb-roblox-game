@@ -1,0 +1,49 @@
+# Wave (clip wave, free). Reference notes.
+id = "wave"
+name = "Wave"
+family = "free"
+status = "checked"
+uses = []
+
+[origin]
+what = "Roblox's /e wave for R6 avatars (2009 onward), in every Roblox game's chat."
+recognisable = "The right arm swung up over the head and waved from side to side, the body leaning a little."
+
+[source]
+url = "rbxassetid://128777973"
+title = "Roblox classic /e wave (R6)"
+kind = "Roblox's own animation asset, recorded in a Studio play test (Motor6D.Transform of every R6 joint, 30 a second: art/refs/classic/wave.json) and keyed as it is (art/scripts/emotes/classic.py)"
+watched = "2026-10-19: recorded in the emote harness (probe Rec), read back joint by joint, rendered beside the old clip"
+mirror = false
+
+[timing]
+length = 2.4
+source_length = 1.5
+fit = "Roblox's clip is 1.50 s; the game's wave is 2.4 s (frozen). The waving (from about 0.3 s) is played 0.9 s longer: the stretch where the poses line up repeats, so there is no jump."
+
+[[beat]]
+src = 0.3
+pose = "the right arm overhead, the hand to one side"
+[[beat]]
+src = 1.2
+pose = "the last swing before it comes down"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's: none needed beyond the usual emote sound"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Recorded on R6, played on R6: no change of rig."
+
+[check]
+by = "2026-10-19: check_anims (floor 0, gaps within limits except the cheer's in-air legs, Roblox's own), renders of every key moment beside the recording"

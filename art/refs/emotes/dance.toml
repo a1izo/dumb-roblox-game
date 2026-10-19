@@ -1,0 +1,49 @@
+# Dance (clip dance, free). Reference notes.
+id = "dance"
+name = "Dance"
+family = "free"
+status = "checked"
+uses = []
+
+[origin]
+what = "Roblox's /e dance (the first of its three dances) for R6 avatars, in every Roblox game's chat."
+recognisable = "The right arm up, the left across the chest, a kick out to each side."
+
+[source]
+url = "rbxassetid://182435998"
+title = "Roblox classic /e dance (R6)"
+kind = "Roblox's own animation asset, recorded in a Studio play test (Motor6D.Transform of every R6 joint, 30 a second: art/refs/classic/dance.json) and keyed as it is (art/scripts/emotes/classic.py)"
+watched = "2026-10-19: recorded in the emote harness (probe Rec), read back joint by joint, rendered beside the old clip"
+mirror = false
+
+[timing]
+length = 1.6
+source_length = 1.15
+fit = "Roblox's loop is 1.15 s; the game's is 1.6 s (frozen), so it is played at 0.72 speed. Frames that dipped a foot into the floor are lifted."
+
+[[beat]]
+src = 0.0
+pose = "the right arm up, the right leg out"
+[[beat]]
+src = 0.5
+pose = "the left leg kicked out"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's: none needed beyond the usual emote sound"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Recorded on R6, played on R6: no change of rig."
+
+[check]
+by = "2026-10-19: check_anims (floor 0, gaps within limits except the cheer's in-air legs, Roblox's own), renders of every key moment beside the recording"

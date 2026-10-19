@@ -1,0 +1,46 @@
+# Point (clip point, free). Reference notes.
+id = "point"
+name = "Point"
+family = "free"
+status = "checked"
+uses = ["NotePass: the giver's first 0.7 s", "Tableaux: held at 0.8 s", "Arrest presenter"]
+
+[origin]
+what = "Roblox's /e point for R6 avatars, in every Roblox game's chat."
+recognisable = "The body turns away, the head turns back to look, and the left arm is levelled straight out."
+
+[source]
+url = "rbxassetid://128853357"
+title = "Roblox classic /e point (R6)"
+kind = "Roblox's own animation asset, recorded in a Studio play test (Motor6D.Transform of every R6 joint, 30 a second: art/refs/classic/point.json) and keyed as it is (art/scripts/emotes/classic.py)"
+watched = "2026-10-19: recorded in the emote harness (probe Rec), read back joint by joint, rendered beside the old clip"
+mirror = false
+
+[timing]
+length = 1.6
+source_length = 1.125
+fit = "Roblox's clip is 1.13 s; the game's is 1.6 s (frozen). The held point is played 0.48 s longer. The arm is out from 0.4 s, which the note hand-off (its first 0.7 s) and the lobby tableau (held at 0.8 s) need."
+
+[[beat]]
+src = 0.4
+pose = "the arm levelled, the body turned, the head looking back"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's: none needed beyond the usual emote sound"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Recorded on R6, played on R6: no change of rig."
+
+[check]
+by = "2026-10-19: check_anims (floor 0, gaps within limits except the cheer's in-air legs, Roblox's own), renders of every key moment beside the recording"
