@@ -5,8 +5,12 @@
 
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local Bindings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Bindings"))
+
+local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 
@@ -20,22 +24,9 @@ type Shown = { gui: BillboardGui, adornee: Instance, fill: Frame }
 local shown: { [ProximityPrompt]: Shown } = {}
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-local GAMEPAD_NAMES = {
-	[Enum.KeyCode.ButtonX] = "X",
-	[Enum.KeyCode.ButtonY] = "Y",
-	[Enum.KeyCode.ButtonA] = "A",
-	[Enum.KeyCode.ButtonB] = "B",
-	[Enum.KeyCode.ButtonL1] = "LB",
-	[Enum.KeyCode.ButtonR1] = "RB",
-	[Enum.KeyCode.DPadUp] = "D-Up",
-	[Enum.KeyCode.DPadDown] = "D-Down",
-	[Enum.KeyCode.DPadLeft] = "D-Left",
-	[Enum.KeyCode.DPadRight] = "D-Right",
-}
-
 local function keyText(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInputType): string
 	if inputType == Enum.ProximityPromptInputType.Gamepad then
-		return GAMEPAD_NAMES[prompt.GamepadKeyCode] or prompt.GamepadKeyCode.Name
+		return Bindings.label(prompt.GamepadKeyCode.Name)
 	elseif inputType == Enum.ProximityPromptInputType.Touch then
 		return ""
 	end
@@ -76,12 +67,15 @@ local function show(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInpu
 		return
 	end
 	local touch = inputType == Enum.ProximityPromptInputType.Touch
+	-- On a touch screen the button's size is the player's (Settings > Controls > Touch).
+	local profile = ClientState.profile
+	local scale = if touch then Bindings.touchLayout(profile and profile.keybinds).prompts else 1
 	local gui = Kit.Base.make("BillboardGui", {
 		Name = "Prompt_" .. prompt.Name,
 		Adornee = adornee,
 		AlwaysOnTop = true,
 		LightInfluence = 0,
-		Size = UDim2.fromOffset(300, 64),
+		Size = UDim2.fromOffset(300 * scale, 64 * scale),
 		StudsOffset = Vector3.new(0, 2.2, 0),
 		ResetOnSpawn = false,
 		Active = touch,
@@ -94,8 +88,8 @@ local function show(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInpu
 		Selectable = false,
 		BackgroundColor3 = C.void,
 		BackgroundTransparency = 0.15,
-		Size = UDim2.fromOffset(52, 52),
-		Position = UDim2.fromOffset(0, 6),
+		Size = UDim2.fromOffset(52 * scale, 52 * scale),
+		Position = UDim2.fromOffset(0, 6 * scale),
 		Parent = gui,
 	})
 	Kit.Base.round(cap)

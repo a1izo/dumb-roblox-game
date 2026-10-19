@@ -9,6 +9,7 @@ local Objectives = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 local ClientState = require(script.Parent.Parent.ClientState)
 local Hud = require(script.Parent.Hud)
 local Kit = require(script.Parent.Kit)
+local Keys = require(script.Parent.Parent.Input.Keys)
 local Settings = require(script.Parent.Core.Settings)
 
 local C = Kit.color
@@ -40,7 +41,7 @@ local function line(parent: Instance, entry, index: number)
 		Kit.Base.stroke(mark, C.g5, 1.5, 0)
 	end
 	local label = Kit.label({
-		Text = if entry.done then "<s>" .. entry.text .. "</s>" else entry.text,
+		Text = if entry.done then "<s>" .. Keys.resolve(entry.text) .. "</s>" else Keys.resolve(entry.text),
 		size = "small",
 		color = if entry.done then C.faint else C.bone,
 		Position = UDim2.fromOffset(20, 0),

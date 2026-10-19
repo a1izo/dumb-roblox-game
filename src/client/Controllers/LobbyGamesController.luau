@@ -521,6 +521,7 @@ local function setup(tag: string, object: Instance)
 		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = object,
 	}) :: ProximityPrompt
+	prompt:SetAttribute("Binding", "interact") -- the player's own key (Input/PromptKeys)
 	prompt.Triggered:Connect(function()
 		trigger(tag, object)
 	end)

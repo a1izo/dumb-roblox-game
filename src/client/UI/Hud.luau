@@ -19,6 +19,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Roles = require(Shared:WaitForChild("Roles"))
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local Actions = require(script.Parent.Parent.Input.Actions)
@@ -28,6 +29,7 @@ local Glitch = require(script.Parent.Core.Glitch)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Kit = require(script.Parent.Kit)
+local Keys = require(script.Parent.Parent.Input.Keys)
 local Screens = require(script.Parent.Screens)
 
 local C = Kit.color
@@ -213,7 +215,10 @@ local function abilityLines(private, phase: string): { string }
 		local left = math.ceil((tonumber(private.writeReadyAt) or 0) - workspace:GetServerTimeNow())
 		table.insert(
 			list,
-			if private.writing then "Writing..." elseif left > 0 then "Manual closed" else "Manual ready (P)"
+			if private.writing
+				then "Writing..."
+				elseif left > 0 then "Manual closed"
+				else Keys.resolve("Manual ready ({key.manual})")
 		)
 	end
 	if private.isAce then
@@ -222,7 +227,7 @@ local function abilityLines(private, phase: string): { string }
 			if private.fakeAce
 				then Terms.f("A fake {zero} title")
 				elseif private.arrestUsed then "Arrest used"
-				else "Arrest ready in a meeting (K)"
+				else Keys.resolve("Arrest ready in a meeting ({key.arrest})")
 		)
 	end
 	if not private.bellUsed and phase == "Investigation" then
@@ -306,7 +311,9 @@ local function updateBadge()
 	alliesLabel.Text = alliesText(private)
 	alliesLabel.Visible = alliesLabel.Text ~= ""
 	renderAbilities(abilityLines(private, phase))
-	cardHint.Text = if Kit.Layout.isTouch() then "Press and hold for your role card" else "Hold C for your role card"
+	cardHint.Text = if Kit.Layout.isTouch()
+		then "Press and hold for your role card"
+		else Keys.resolve("{key.card} for your role card")
 end
 
 -- Actions ---------------------------------------------------------------------------------------
@@ -319,12 +326,23 @@ local function renderActions()
 		or view.phase == "Vote"
 		or Actions.CUTSCENE_PHASES[view.phase] == true
 	local available = if view.participant and not hideForMeeting then Actions.available(view) else {}
+	-- On a touch screen the player may have hidden some buttons (Settings > Controls > Touch).
+	local touchLayout = Bindings.touchLayout(Keys.saved())
+	if touch then
+		local shown = {}
+		for _, action in ipairs(available) do
+			if not touchLayout.hide[action.id] then
+				table.insert(shown, action)
+			end
+		end
+		available = shown
+	end
 	-- Rebuild only when the buttons, their labels or the key hints change.
 	local parts = {}
 	for _, action in ipairs(available) do
 		table.insert(parts, action.id .. "=" .. action.label(view) .. "=" .. Actions.hint(action))
 	end
-	local key = table.concat(parts, "|") .. (if touch then "|touch" else "")
+	local key = table.concat(parts, "|") .. (if touch then "|touch" .. touchLayout.size else "")
 	if key == actionKey then
 		return
 	end
@@ -337,6 +355,7 @@ local function renderActions()
 			key = Actions.hint(action),
 			variant = if action.variant == "primary" then "primary" else nil,
 			touch = touch,
+			chipSize = if touch then math.floor(TOUCH_CHIP * touchLayout.size) else nil,
 			LayoutOrder = index,
 			Parent = actionBar,
 		}, action.run)
@@ -355,14 +374,22 @@ local function layout(class: string)
 	if touch then
 		badge.AnchorPoint = Vector2.new(0, 0.5)
 		badge.Position = UDim2.new(0, 12, 0.55, 0)
-		-- A grid of big chips on the right edge, filled from the right, above the jump button.
-		actionBar.AnchorPoint = Vector2.new(1, 0.5)
-		actionBar.Position = UDim2.new(1, -12, 0.42, 0)
-		actionBar.Size = UDim2.fromOffset(TOUCH_CHIP * TOUCH_COLUMNS + T.space.s * (TOUCH_COLUMNS - 1), 0)
+		-- A grid of big chips on the right edge (or the left, as the player set it), filled from that edge,
+		-- above the jump button; their size and height are the player's too (Settings > Controls > Touch).
+		local own = Bindings.touchLayout(Keys.saved())
+		local chip = math.floor(TOUCH_CHIP * own.size)
+		local left = own.side == "left"
+		actionBar.AnchorPoint = Vector2.new(if left then 0 else 1, 0.5)
+		actionBar.Position = UDim2.new(if left then 0 else 1, if left then 12 else -12, own.height, 0)
+		actionBar.Size = UDim2.fromOffset(chip * TOUCH_COLUMNS + T.space.s * (TOUCH_COLUMNS - 1), 0)
 		actionBar.AutomaticSize = Enum.AutomaticSize.Y
-		local grid = Kit.grid(actionBar, UDim2.fromOffset(TOUCH_CHIP, TOUCH_CHIP), T.space.s)
-		grid.StartCorner = Enum.StartCorner.TopRight
-		grid.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		local grid = Kit.grid(actionBar, UDim2.fromOffset(chip, chip), T.space.s)
+		grid.StartCorner = if left then Enum.StartCorner.TopLeft else Enum.StartCorner.TopRight
+		grid.HorizontalAlignment = if left then Enum.HorizontalAlignment.Left else Enum.HorizontalAlignment.Right
+		-- (the identity card sits on the left middle: on the left side the chips go below it)
+		if left then
+			badge.Position = UDim2.new(0, 12, own.height - 0.2, 0)
+		end
 		objectives.Size = UDim2.fromOffset(250, 0)
 	else
 		Kit.Layout.place(badge, "bottomLeft")
@@ -578,6 +605,23 @@ function Hud.init()
 	ClientState.WatchChanged:Connect(refresh)
 	UserInputService.LastInputTypeChanged:Connect(renderActions)
 	Kit.Layout.watch(layout)
+	-- The touch layout is part of the player's key set: a change re-lays the buttons.
+	local lastTouch = ""
+	ClientState.ProfileChanged:Connect(function()
+		local own = Bindings.touchLayout(Keys.saved())
+		local hidden = {}
+		for id in pairs(own.hide) do
+			table.insert(hidden, id)
+		end
+		table.sort(hidden)
+		local now = string.format("%s %.2f %.2f %s", own.side, own.size, own.height, table.concat(hidden, ","))
+		if now ~= lastTouch then
+			lastTouch = now
+			if Kit.Layout.isTouch() then
+				layout(Kit.Layout.class())
+			end
+		end
+	end)
 	refresh()
 	-- Cooldowns (the Manual, sabotage) run out between state pushes: look again every second.
 	task.spawn(function()

@@ -21,8 +21,8 @@ end
 local RoleCopy: { [string]: RoleCopy } = {
 	Kira = card(
 		{
-			"Stare at someone up close (R), standing still, to learn their real name. Your eyes glow while you do.",
-			"Write a learned name in {grimoire} (P) any time. The book burns red for a few seconds: make sure nobody sees.",
+			"Stare at someone up close ({key.stare}), standing still, to learn their real name. Your eyes glow while you do.",
+			"Write a learned name in {grimoire} ({key.manual}) any time. The book burns red for a few seconds: make sure nobody sees.",
 			"The victim dies 20 seconds later. You do not know your {cultists}: write one by mistake and they die too.",
 		},
 		"Match {agency} in number before they vote you out, arrest you or fill their task bar.",
@@ -30,8 +30,8 @@ local RoleCopy: { [string]: RoleCopy } = {
 	),
 	Follower = card(
 		{
-			"You know {hand}; they do not know you. Stare to learn real names (R) and pass them on a paper note.",
-			"Sabotage: black out the map (Z), jam the stations near you (B), barricade the way (T).",
+			"You know {hand}; they do not know you. Stare to learn real names ({key.stare}) and pass them on a paper note.",
+			"Sabotage: black out the map ({key.blackout}), jam the stations near you ({key.jam}), barricade the way ({key.barricade}).",
 			"Accept {eyes} for fast reads from far away, but it kills you three minutes later.",
 		},
 		"{Circle} wins when it matches {agency} in number.",
@@ -39,7 +39,7 @@ local RoleCopy: { [string]: RoleCopy } = {
 	),
 	L = card({
 		"You lead {agency} in secret. Only {butler} knows who you are.",
-		"Once per match, during a meeting, arrest one player (K). A {cultist} or {hand} is removed.",
+		"Once per match, during a meeting, arrest one player ({key.arrest}). A {cultist} or {hand} is removed.",
 		"Arrest an innocent and they walk free while you die. Any arrest reveals that you are {zero}.",
 	}, "Vote out or arrest {hand}, or fill the task bar.", "Work case files and watch for glowing eyes."),
 	Watari = card(
@@ -52,7 +52,7 @@ local RoleCopy: { [string]: RoleCopy } = {
 		"Stay near {zero} and watch who stares at them."
 	),
 	TaskForce = card({
-		"Work case files (E). Every one fills {agency}'s task bar; fill it and you win.",
+		"Work case files ({key.use}). Every one fills {agency}'s task bar; fill it and you win.",
 		"Watch for glowing eyes (someone staring) and a burning red book ({hand} writing).",
 		"Ring the bell to call a meeting. Real names of living players are blocked in every chat.",
 	}, "Vote out {hand}, or fill the task bar, before {circle} takes over.", "Pick a station and keep your eyes open."),

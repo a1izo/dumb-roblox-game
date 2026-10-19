@@ -33,35 +33,44 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 
 	if phase == "Investigation" then
 		if role == "Kira" then
-			table.insert(lines, line("Stare at someone up close (R) to learn their real name", known > 0))
-			table.insert(lines, line("Write a name in {grimoire} (P). Make sure nobody is watching"))
+			table.insert(lines, line("Stare at someone up close ({key.stare}) to learn their real name", known > 0))
+			table.insert(lines, line("Write a name in {grimoire} ({key.manual}). Make sure nobody is watching"))
 		elseif role == "Follower" then
-			table.insert(lines, line("Stare to learn real names (R), and pass them to {hand} on a note", known > 0))
-			table.insert(lines, line("Sabotage: blackout (Z), jam stations (B), barricade (T)"))
+			table.insert(
+				lines,
+				line("Stare to learn real names ({key.stare}), and pass them to {hand} on a note", known > 0)
+			)
+			table.insert(
+				lines,
+				line("Sabotage: blackout ({key.blackout}), jam stations ({key.jam}), barricade ({key.barricade})")
+			)
 			if private.eyes then
 				table.insert(lines, line("{Eyes}: about {n} s of life left", nil, { n = private.eyes.lifeLeft }))
 			elseif private.canDeal then
 				table.insert(lines, line("You may accept {eyes}: fast reads, a short life"))
 			end
 		else
-			table.insert(lines, line("Work case files at the stations (E): fill the task bar", tasks > 0))
+			table.insert(lines, line("Work case files at the stations ({key.use}): fill the task bar", tasks > 0))
 			table.insert(lines, line("Watch for glowing eyes and a burning red book"))
 			if role == "Watari" then
 				table.insert(lines, line("You know {zero}. Keep them alive; if they die, you name the next"))
 			end
 		end
 		if private.carrying == "note" then
-			table.insert(lines, line("You carry a written note: read it (N), drop it (G) or pass it (X)"))
+			table.insert(
+				lines,
+				line("You carry a written note: read it ({key.note}), drop it ({key.drop}) or pass it ({key.pass})")
+			)
 		end
 	elseif phase == "Meeting" then
 		table.insert(lines, line("Talk it over. Full real names of living players are blocked"))
 		if private.isAce and not private.arrestUsed then
-			table.insert(lines, line("You may arrest one player (K). An innocent costs your life"))
+			table.insert(lines, line("You may arrest one player ({key.arrest}). An innocent costs your life"))
 		end
 	elseif phase == "Vote" then
 		table.insert(lines, line("Vote someone out, or skip"))
 		if private.isAce and not private.arrestUsed then
-			table.insert(lines, line("You may still arrest one player (K)"))
+			table.insert(lines, line("You may still arrest one player ({key.arrest})"))
 		end
 	end
 	return lines

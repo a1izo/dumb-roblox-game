@@ -20,6 +20,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
@@ -702,7 +703,15 @@ function Wheel.shown(on: boolean)
 	end
 	if on then
 		shownAt = os.clock()
-		holdKey = if UserInputService:IsKeyDown(Enum.KeyCode.Q) then Enum.KeyCode.Q else nil
+		-- (held open by the wheel's own key, the player's: hold, flick, let go)
+		holdKey = nil
+		local profile = ClientState.profile
+		for _, key in ipairs(Bindings.keyCodes("quickChat", "keyboard", profile and profile.keybinds)) do
+			if UserInputService:IsKeyDown(key) then
+				holdKey = key
+				break
+			end
+		end
 		Wheel.showMore(false)
 		Wheel.refresh()
 		if not Motion.isReduced() then

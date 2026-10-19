@@ -66,6 +66,7 @@ local InteractionController = require(Controllers:WaitForChild("InteractionContr
 local NotePassController = require(Controllers:WaitForChild("NotePassController"))
 
 local InputRouter = require(script:WaitForChild("Input"):WaitForChild("InputRouter"))
+local PromptKeys = require(script:WaitForChild("Input"):WaitForChild("PromptKeys"))
 
 local Anim = script:WaitForChild("Anim")
 local ActingController = require(Anim:WaitForChild("ActingController"))
@@ -235,6 +236,7 @@ DuelPanel.init()
 HintController.init()
 TrialController.init()
 InputRouter.init()
+PromptKeys.init()
 ChatController.init()
 CoreGuiController.init()
 

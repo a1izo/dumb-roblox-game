@@ -32,6 +32,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Trial = require(Shared:WaitForChild("Trial"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Keys = require(script.Parent.Parent.Input.Keys)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local AcademyController = require(script.Parent.Parent.Controllers.AcademyController)
 local CoreGuiController = require(script.Parent.Parent.Controllers.CoreGuiController)
@@ -102,29 +103,22 @@ local function isTouch(): boolean
 	return UserInputService:GetLastInputType() == Enum.UserInputType.Touch
 end
 
--- How to turn the role card, for the input in the player's hands.
+-- How to turn the role card, for the input in the player's hands (their own key: Input/Keys).
 local function cardKey(): string
-	local last = UserInputService:GetLastInputType()
-	if last == Enum.UserInputType.Touch then
+	if Keys.input() == "touch" then
 		return "Press and hold the button below"
-	elseif string.find(last.Name, "Gamepad") then
-		return "Hold LB"
 	end
-	return "Hold C"
+	local key = Keys.text("roleCard")
+	return if key ~= "" then "Hold " .. key else "Hold your role card's key"
 end
 
 -- The stare's control, for the input in the player's hands (their own key where they rebound it).
 local function stareKey(): string
-	local last = UserInputService:GetLastInputType()
-	if last == Enum.UserInputType.Touch then
+	if Keys.input() == "touch" then
 		return "the Stare button"
 	end
-	local saved = if ClientState.profile then ClientState.profile.keybinds else nil
-	if string.find(last.Name, "Gamepad") then
-		local pad = Bindings.keys("eyesRead", "gamepad", saved)[1]
-		return if pad == nil or pad == "ButtonR1" then "RB" else (string.gsub(pad, "^Button", ""))
-	end
-	return Bindings.keys("eyesRead", "keyboard", saved)[1] or "R"
+	local key = Keys.text("eyesRead")
+	return if key ~= "" then key else "the stare's key"
 end
 
 -- What a step's "how" line fills in.
@@ -554,6 +548,7 @@ local function setupPrompt(part: Instance)
 		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = part,
 	}) :: ProximityPrompt
+	prompt:SetAttribute("Binding", "interact") -- the player's own key (Input/PromptKeys)
 	prompt.Triggered:Connect(begin)
 	prompts[part] = prompt
 end

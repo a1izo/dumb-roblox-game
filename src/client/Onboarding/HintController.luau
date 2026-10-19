@@ -14,13 +14,13 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Hints = require(Shared:WaitForChild("Hints"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Keys = require(script.Parent.Parent.Input.Keys)
 local UI = script.Parent.Parent.UI
 local Announcer = require(UI.Announcer)
 local Hud = require(UI.Hud)
@@ -59,17 +59,6 @@ local function seen(id: string): boolean
 	return profile ~= nil and type(profile.tipsSeen) == "table" and profile.tipsSeen[id] == true
 end
 
--- "keyboard", "gamepad" or "touch": what the player last used.
-local function inputKind(): string
-	local last = UserInputService:GetLastInputType()
-	if last == Enum.UserInputType.Touch then
-		return "touch"
-	elseif string.find(last.Name, "Gamepad") then
-		return "gamepad"
-	end
-	return "keyboard"
-end
-
 -- No case finished yet on this profile.
 local function firstCase(): boolean
 	local profile = ClientState.profile
@@ -89,7 +78,7 @@ local function run()
 		if hint and Settings.get("hints") then
 			Net.event("ProfileRequest"):FireServer({ action = "hint", id = id })
 			titleLabel.Text = "TIP  ·  " .. string.upper(hint.title)
-			textLabel.Text = Hints.resolve(hint.text, inputKind())
+			textLabel.Text = Keys.resolve(hint.text)
 			dismissed = false
 			local showTime = if firstCase() then FIRST_CASE_TIME else SHOW_TIME
 			local position, anchor = Hud.tipPlacement()

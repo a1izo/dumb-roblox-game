@@ -67,6 +67,7 @@ Bindings.ACTIONS = {
 	action("look", "Look round", "camera", {}, { "Thumbstick2" }),
 	action("zoomIn", "Zoom in", "camera", { "I" }, {}),
 	action("zoomOut", "Zoom out", "camera", { "O" }, {}),
+	action("shiftLock", "Shift lock (when it is on in Roblox's settings)", "camera", { "LeftShift", "RightShift" }, {}),
 	action("privateScreen", Terms.f("{Grimoire}"), "world", { "P" }, { "ButtonY" }),
 	action("quickChat", "The emote wheel", "world", { "Q" }, { "DPadLeft" }),
 	action("note", "Notes", "world", { "N" }, { "DPadRight" }),
@@ -80,6 +81,7 @@ Bindings.ACTIONS = {
 	action("arrest", Terms.f("{Zero}'s arrest"), "world", { "K" }, {}),
 	action("roleCard", "Hold your role card", "world", { "C" }, { "ButtonL1" }),
 	action("interact", "Use", "world", { "E" }, { "ButtonX" }),
+	action("pickUp", "Pick up a dropped note", "world", { "F" }, { "ButtonB" }),
 	action("slot1", "Wheel slot 1", "wheel", { "One" }, {}),
 	action("slot2", "Wheel slot 2", "wheel", { "Two" }, {}),
 	action("slot3", "Wheel slot 3", "wheel", { "Three" }, {}),
@@ -96,6 +98,39 @@ Bindings.ACTIONS = {
 	action("passNote", "Pass your note", "plate", { "X" }, { "ButtonL1" }),
 	action("rallyHit", "Hit the ball (Match Point)", "rally", { "F" }, { "ButtonX" }),
 } :: { Action }
+
+-- How Settings > Controls groups the actions (every action is in exactly one; the specs check it).
+Bindings.SECTIONS = {
+	{ title = "Moving", ids = { "moveForward", "moveBack", "moveLeft", "moveRight", "move", "jump" } },
+	{ title = "The camera", ids = { "turnLeft", "turnRight", "look", "zoomIn", "zoomOut", "shiftLock" } },
+	{
+		title = "The case",
+		ids = {
+			"interact",
+			"pickUp",
+			"roleCard",
+			"eyesRead",
+			"privateScreen",
+			"note",
+			"drop",
+			"scratchpad",
+			"sabotageBlackout",
+			"sabotageJam",
+			"sabotageBarricade",
+			"arrest",
+			"help",
+		},
+	},
+	{
+		title = "Emotes",
+		ids = { "quickChat", "slot1", "slot2", "slot3", "slot4", "slot5", "slot6", "slot7", "slot8" },
+	},
+	{
+		title = "Emotes with others, and notes",
+		ids = { "emoteContext", "joinIn", "rallyHit", "passNote", "noteOffer" },
+	},
+	{ title = Terms.f("As a {specter}"), ids = { "flyUp", "flyDown" } },
+} :: { { title: string, ids: { string } } }
 
 local byId: { [string]: Action } = {}
 for _, a in ipairs(Bindings.ACTIONS) do
@@ -131,7 +166,7 @@ function Bindings.keyAllowed(name: any): boolean
 end
 
 -- The keys an action has on a platform: the player's own when they set some, else the default.
-function Bindings.keys(id: string, platform: string, saved: { [string]: { [string]: { string } } }?): { string }
+function Bindings.keys(id: string, platform: string, saved: any): { string }
 	local own = saved and saved[platform] and saved[platform][id]
 	if own then
 		return own
@@ -154,10 +189,150 @@ function Bindings.keyCodes(id: string, platform: string, saved: any): { Enum.Key
 	return out
 end
 
+-- How a key reads in a hint: "E", "1", "Shift", "Space", "LB", "D-Up", "Left stick".
+local LABELS: { [string]: string } = {
+	One = "1",
+	Two = "2",
+	Three = "3",
+	Four = "4",
+	Five = "5",
+	Six = "6",
+	Seven = "7",
+	Eight = "8",
+	Nine = "9",
+	Zero = "0",
+	LeftShift = "Shift",
+	RightShift = "Right Shift",
+	LeftControl = "Ctrl",
+	RightControl = "Right Ctrl",
+	LeftAlt = "Alt",
+	RightAlt = "Right Alt",
+	Return = "Enter",
+	Backspace = "Backspace",
+	Space = "Space",
+	Up = "Up",
+	Down = "Down",
+	Left = "Left",
+	Right = "Right",
+	Semicolon = ";",
+	Quote = "'",
+	Comma = ",",
+	Period = ".",
+	Minus = "-",
+	Equals = "=",
+	LeftBracket = "[",
+	RightBracket = "]",
+	BackSlash = "\\",
+	Backquote = "`",
+	ButtonA = "A",
+	ButtonB = "B",
+	ButtonX = "X",
+	ButtonY = "Y",
+	ButtonL1 = "LB",
+	ButtonR1 = "RB",
+	ButtonL2 = "LT",
+	ButtonR2 = "RT",
+	ButtonL3 = "L3",
+	ButtonR3 = "R3",
+	DPadUp = "D-Up",
+	DPadDown = "D-Down",
+	DPadLeft = "D-Left",
+	DPadRight = "D-Right",
+	Thumbstick1 = "Left stick",
+	Thumbstick2 = "Right stick",
+}
+
+function Bindings.label(name: string): string
+	local known = LABELS[name]
+	if known then
+		return known
+	end
+	-- (KeypadOne reads "Num One"; letters and F-keys read as themselves)
+	return (string.gsub(name, "^Keypad", "Num "))
+end
+
+-- An action's keys as hint text ("E", "W / Up"), or "" when it has none on that platform.
+function Bindings.text(id: string, platform: string, saved: any, joiner: string?): string
+	local parts = {}
+	for _, name in ipairs(Bindings.keys(id, platform, saved)) do
+		table.insert(parts, Bindings.label(name))
+	end
+	return table.concat(parts, joiner or " / ")
+end
+
+-- Whether a player's set differs from the defaults for any of these actions on a platform.
+function Bindings.changed(ids: { string }, platform: string, saved: any): boolean
+	for _, id in ipairs(ids) do
+		local a = byId[id]
+		local default = if a then (a :: any)[platform] or {} else {}
+		local now = Bindings.keys(id, platform, saved)
+		if #now ~= #default then
+			return true
+		end
+		for i, name in ipairs(now) do
+			if default[i] ~= name then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Touch screens have no keys to rebind; a player arranges the buttons instead: which side the action buttons
+-- sit on, how big they are, how high, which ones are hidden (by action id; the action still works by its
+-- prompt or panel where it has one), and how big the world prompts' buttons are.
+export type TouchLayout = { side: string, size: number, height: number, prompts: number, hide: { [string]: boolean } }
+
+Bindings.TOUCH_DEFAULT = { side = "right", size = 1, height = 0.42, prompts = 1 }
+Bindings.TOUCH_RANGE = {
+	size = { 0.75, 1.4 },
+	height = { 0.25, 0.7 },
+	prompts = { 0.8, 1.6 },
+}
+
+local function cleanTouch(raw: any): any
+	if type(raw) ~= "table" then
+		return nil
+	end
+	local out: { [string]: any } = {}
+	if raw.side == "left" or raw.side == "right" then
+		out.side = raw.side
+	end
+	for name, range in pairs(Bindings.TOUCH_RANGE) do
+		local value = raw[name]
+		if type(value) == "number" and value == value then
+			out[name] = math.clamp(value, range[1], range[2])
+		end
+	end
+	if type(raw.hide) == "table" then
+		local hide = {}
+		for id, on in pairs(raw.hide) do
+			if type(id) == "string" and byId[id] and on == true then
+				hide[id] = true
+			end
+		end
+		out.hide = hide
+	end
+	return out
+end
+
+-- A player's touch layout with the defaults filled in.
+function Bindings.touchLayout(saved: any): TouchLayout
+	local own = if type(saved) == "table" then cleanTouch(saved.touch) or {} else {}
+	local d = Bindings.TOUCH_DEFAULT
+	return {
+		side = own.side or d.side,
+		size = own.size or d.size,
+		height = own.height or d.height,
+		prompts = own.prompts or d.prompts,
+		hide = own.hide or {},
+	}
+end
+
 -- A player's saved bindings as sent or stored, made safe: known platforms and actions only, real keys that are
 -- not reserved, at most MAX_KEYS each, no key twice in one action. Anything else is dropped.
-function Bindings.clean(raw: any): { [string]: { [string]: { string } } }
-	local out: { [string]: { [string]: { string } } } = {}
+function Bindings.clean(raw: any): { [string]: any }
+	local out: { [string]: any } = {}
 	if type(raw) ~= "table" then
 		return out
 	end
@@ -179,11 +354,12 @@ function Bindings.clean(raw: any): { [string]: { [string]: { string } } }
 			out[platform] = kept
 		end
 	end
+	out.touch = cleanTouch(raw.touch)
 	return out
 end
 
 -- Pairs of actions that would take the same key at the same time on a platform: { a, b, key }.
-function Bindings.clashes(platform: string, saved: { [string]: { [string]: { string } } }?): { { string } }
+function Bindings.clashes(platform: string, saved: any): { { string } }
 	local found: { { string } } = {}
 	local list = Bindings.ACTIONS
 	for i = 1, #list do

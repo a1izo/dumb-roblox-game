@@ -118,6 +118,7 @@ local function build()
 		Enabled = inLobby(),
 		Parent = mark,
 	}) :: ProximityPrompt
+	offer:SetAttribute("Binding", "interact") -- the player's own key (Input/PromptKeys)
 	offer.Triggered:Connect(function()
 		if showing then
 			ShopPanel.focus(showing)

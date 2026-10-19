@@ -20,6 +20,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local ClientState = require(script.Parent.Parent.ClientState)
 local Hud = require(script.Parent.Hud)
 local Kit = require(script.Parent.Kit)
+local Keys = require(script.Parent.Parent.Input.Keys)
 local Motion = require(script.Parent.Core.Motion)
 local Screens = require(script.Parent.Screens)
 
@@ -78,11 +79,11 @@ local function fill()
 	})
 	roleText:set(info.display)
 	roleText:setColor(if hostile then C.red else C.bone)
-	winLabel.Text = "How you win: " .. copy.win
+	winLabel.Text = "How you win: " .. Keys.resolve(copy.win)
 	Kit.clear(bullets)
 	for index, text in ipairs(copy.bullets) do
 		Kit.label({
-			Text = "·  " .. text,
+			Text = "·  " .. Keys.resolve(text),
 			size = "small",
 			color = C.bone,
 			LayoutOrder = index,

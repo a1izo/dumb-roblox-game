@@ -17,7 +17,7 @@ local RAW: { { title: string, body: { string } } } = {
 	{
 		title = "Real names",
 		body = {
-			"Your real name is on your role card. Hold C to see it again.",
+			"Your real name is on your role card. {key.card} to see it again.",
 			"{Hand} and {cultists} learn real names by staring: standing still, close by, for a few seconds. Their eyes glow red while they stare.",
 			"Chat blocks real names everywhere. Only a paper note can carry one.",
 		},
@@ -49,7 +49,7 @@ local RAW: { { title: string, body: { string } } } = {
 	{
 		title = "Notes",
 		body = {
-			"Take a blank sheet, write up to 40 characters, then drop it or hand it to someone close by (X).",
+			"Take a blank sheet, write up to 40 characters, then drop it or hand it to someone close by ({key.pass}).",
 			"A handed note can be taken or left. Anyone watching sees the paper change hands.",
 			"{Hand} can burn a note; the smoke is easy to spot.",
 		},

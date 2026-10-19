@@ -65,5 +65,58 @@ return function(t)
 			expect(Bindings.together("ghost", "jump")).to.equal(false)
 			expect(Bindings.together("rally", "plate")).to.equal(false)
 		end)
+
+		it("lists every action in exactly one Settings section", function()
+			local seen = {}
+			for _, section in ipairs(Bindings.SECTIONS) do
+				for _, id in ipairs(section.ids) do
+					expect(Bindings.get(id) ~= nil).to.equal(true)
+					expect(seen[id]).to.equal(nil)
+					seen[id] = true
+				end
+			end
+			for _, action in ipairs(Bindings.ACTIONS) do
+				expect(seen[action.id]).to.equal(true)
+			end
+		end)
+
+		it("names every default key in words", function()
+			for _, action in ipairs(Bindings.ACTIONS) do
+				for _, platform in ipairs(Bindings.PLATFORMS) do
+					for _, key in ipairs((action :: any)[platform]) do
+						local label = Bindings.label(key)
+						expect(type(label) == "string" and label ~= "").to.equal(true)
+					end
+				end
+			end
+			expect(Bindings.label("ButtonL1")).to.equal("LB")
+			expect(Bindings.label("One")).to.equal("1")
+			expect(Bindings.label("LeftShift")).to.equal("Shift")
+			expect(Bindings.text("moveForward", "keyboard", nil)).to.equal("W / Up")
+			expect(Bindings.text("roleCard", "keyboard", { keyboard = { roleCard = { "L" } } })).to.equal("L")
+		end)
+
+		it("tells a changed set from the defaults", function()
+			expect(Bindings.changed({ "jump" }, "keyboard", nil)).to.equal(false)
+			expect(Bindings.changed({ "jump" }, "keyboard", { keyboard = { jump = { "Space" } } })).to.equal(false)
+			expect(Bindings.changed({ "jump" }, "keyboard", { keyboard = { jump = { "J" } } })).to.equal(true)
+			expect(Bindings.changed({ "look" }, "gamepad", { gamepad = { look = { "Thumbstick1" } } })).to.equal(true)
+		end)
+
+		it("keeps a touch layout inside its limits", function()
+			local clean = Bindings.clean({
+				touch = { side = "up", size = 9, height = 0.5, prompts = "big", hide = { note = true, nope = true } },
+			})
+			expect(clean.touch.side).to.equal(nil)
+			expect(clean.touch.size).to.equal(Bindings.TOUCH_RANGE.size[2])
+			expect(clean.touch.height).to.equal(0.5)
+			expect(clean.touch.prompts).to.equal(nil)
+			expect(clean.touch.hide.note).to.equal(true)
+			expect(clean.touch.hide.nope).to.equal(nil)
+			local layout = Bindings.touchLayout(clean)
+			expect(layout.side).to.equal("right")
+			expect(layout.prompts).to.equal(Bindings.TOUCH_DEFAULT.prompts)
+			expect(Bindings.touchLayout(nil).size).to.equal(1)
+		end)
 	end)
 end

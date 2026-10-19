@@ -46,6 +46,7 @@ local TimeUtil = require(Shared:WaitForChild("Progression"):WaitForChild("TimeUt
 local ClientState = require(script.Parent.Parent.ClientState)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Kit = require(script.Parent.Kit)
+local Keys = require(script.Parent.Parent.Input.Keys)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Card = require(script.Parent.Shop.Card)
@@ -280,7 +281,7 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 	end
 	actionNote.Text = if at
 		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
-		else "Pick a number to put it on your emote wheel (Q)."
+		else Keys.resolve("Pick a number to put it on your emote wheel ({key.wheel}).")
 	-- Its other uses, each a switch: your stance, your win scene.
 	local switches = {}
 	if item.stance then

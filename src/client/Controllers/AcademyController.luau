@@ -91,6 +91,7 @@ local function setup(desk: Instance)
 		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = desk,
 	})
+	prompt:SetAttribute("Binding", "interact") -- the player's own key (Input/PromptKeys)
 	prompt.Triggered:Connect(function()
 		start(desk)
 	end)

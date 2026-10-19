@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local Bindings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Bindings"))
 local Terms = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Terms"))
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
@@ -27,7 +28,6 @@ export type Action = {
 	label: (View) -> string,
 	keys: { Enum.KeyCode },
 	pad: Enum.KeyCode?,
-	padLabel: string?,
 	variant: string?,
 	when: (View) -> boolean,
 	run: () -> (),
@@ -85,7 +85,6 @@ Actions.list = {
 		label = fixed(Terms.f("{Grimoire}")),
 		keys = { Enum.KeyCode.P },
 		pad = Enum.KeyCode.ButtonY,
-		padLabel = "Y",
 		variant = "primary",
 		when = function(view: View)
 			return view.living and view.phase == "Investigation" and view.role == "Kira"
@@ -101,7 +100,6 @@ Actions.list = {
 		end,
 		keys = { Enum.KeyCode.Q },
 		pad = Enum.KeyCode.DPadLeft,
-		padLabel = "D-Left",
 		when = Actions.emotesAllowed,
 		run = function()
 			Router.toggle("quickChat")
@@ -114,7 +112,6 @@ Actions.list = {
 		end,
 		keys = { Enum.KeyCode.N },
 		pad = Enum.KeyCode.DPadRight,
-		padLabel = "D-Right",
 		variant = "team",
 		when = function(view: View)
 			return view.living and view.private.carrying ~= nil and inMatchPhase(view, "Investigation")
@@ -128,7 +125,6 @@ Actions.list = {
 		end,
 		keys = { Enum.KeyCode.G },
 		pad = Enum.KeyCode.DPadDown,
-		padLabel = "D-Down",
 		when = function(view: View)
 			return view.living and view.private.carrying ~= nil and inMatchPhase(view, "Investigation")
 		end,
@@ -154,7 +150,6 @@ Actions.list = {
 		end,
 		keys = { Enum.KeyCode.R },
 		pad = Enum.KeyCode.ButtonR1,
-		padLabel = "RB",
 		variant = "primary",
 		when = function(view: View)
 			return view.living and view.phase == "Investigation" and (view.role == "Kira" or view.role == "Follower")
@@ -166,7 +161,6 @@ Actions.list = {
 		label = sabotageLabel("Blackout"),
 		keys = { Enum.KeyCode.Z },
 		pad = Enum.KeyCode.ButtonL2,
-		padLabel = "LT",
 		variant = "danger",
 		when = canSabotage,
 		run = function()
@@ -178,7 +172,6 @@ Actions.list = {
 		label = sabotageLabel("Jam stations"),
 		keys = { Enum.KeyCode.B },
 		pad = Enum.KeyCode.DPadUp,
-		padLabel = "D-Up",
 		variant = "danger",
 		when = canSabotage,
 		run = function()
@@ -200,7 +193,6 @@ Actions.list = {
 		label = fixed("Scratchpad"),
 		keys = { Enum.KeyCode.V },
 		pad = Enum.KeyCode.ButtonR2,
-		padLabel = "RT",
 		variant = "ghost",
 		when = function(view: View)
 			return view.participant
@@ -265,10 +257,10 @@ function Actions.hint(action: Action): string
 		return ""
 	end
 	if string.find(last.Name, "Gamepad") then
-		return action.padLabel or ""
+		return if action.pad then Bindings.label(action.pad.Name) else ""
 	end
 	local key = action.keys[1]
-	return if key then key.Name else ""
+	return if key then Bindings.label(key.Name) else ""
 end
 
 return Actions

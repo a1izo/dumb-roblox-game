@@ -35,6 +35,24 @@ return function(t)
 			expect(string.find(pad, "Press RT", 1, true)).to.equal(1)
 		end)
 
+		it("names the player's own keys where they rebound them", function()
+			local saved =
+				{ keyboard = { roleCard = { "L" }, interact = { "R" } }, gamepad = { scratchpad = { "ButtonL3" } } }
+			expect(
+				string.find(Hints.resolve(Hints.BY_ID.role_TaskForce.text, "keyboard", saved), "Hold L", 1, true) ~= nil
+			).to.equal(true)
+			expect(
+				string.find(Hints.resolve(Hints.BY_ID.phase_Investigation.text, "keyboard", saved), "Press R", 1, true)
+			).to.equal(1)
+			expect(string.find(Hints.resolve(Hints.BY_ID.scratchpad.text, "gamepad", saved), "Press L3", 1, true)).to.equal(
+				1
+			)
+			-- the defaults read as they always did
+			expect(
+				string.find(Hints.resolve(Hints.BY_ID.role_TaskForce.text, "keyboard", nil), "Hold C", 1, true) ~= nil
+			).to.equal(true)
+		end)
+
 		it("falls back to the keyboard for an input it does not know", function()
 			local text = Hints.resolve(Hints.BY_ID.role_L.text, "mind")
 			expect(string.find(text, "(K)", 1, true) ~= nil).to.equal(true)

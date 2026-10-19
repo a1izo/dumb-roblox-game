@@ -360,7 +360,7 @@ end
 -- for what to do now), touch, plus frame properties.
 function Controls.actionChip(props: Props, onClick: (() -> ())?): TextButton
 	local touch = props.touch == true
-	local size = if touch then 72 else 56
+	local size = props.chipSize or (if touch then 72 else 56)
 	local primary = props.variant == "primary"
 	local rest = if primary then C.white else C.raised
 	local hover = if primary then C.white:Lerp(C.g6, 0.3) else C.lifted

@@ -19,8 +19,11 @@ return function(t)
 					local private = { role = role, tasksThisRound = 0 }
 					local lines = Objectives.lines(role, phase, private, true)
 					expect(#lines > 0).to.equal(true)
+					-- ({key.<name>} words are filled in for the input in the player's hands: Shared/Hints)
 					for _, line in ipairs(lines) do
-						expect(line.text).never.to.contain("{")
+						for _, input in ipairs({ "keyboard", "gamepad", "touch" }) do
+							expect(Hints.resolve(line.text, input)).never.to.contain("{")
+						end
 					end
 				end
 			end

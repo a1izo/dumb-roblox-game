@@ -1,7 +1,7 @@
 -- Proximity prompts for everything the player can use in the world: case-file stations (the Bureau
 -- only, Specters included; the Coven never gets the prompt), paper, and the emergency bell. The
 -- prompts are created on this client only. The server validates every action. Each prompt on the
--- same object uses a different gamepad button (X, Y, B).
+-- same object uses a different gamepad button (X, B). The keys are the player's own (Input/PromptKeys).
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,7 +28,7 @@ local function prompt(
 	hold: number?,
 	pad: Enum.KeyCode?
 ): ProximityPrompt
-	return Create("ProximityPrompt", {
+	local made = Create("ProximityPrompt", {
 		Name = "L" .. string.gsub(action, "%s", ""),
 		ActionText = action,
 		ObjectText = object,
@@ -41,6 +41,9 @@ local function prompt(
 		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = parent,
 	})
+	-- (the player's own keys for it: Input/PromptKeys)
+	made:SetAttribute("Binding", if key == Enum.KeyCode.F then "pickUp" else "interact")
+	return made
 end
 
 local function canAct(): boolean
@@ -137,7 +140,7 @@ local function setupNote(note: Instance)
 	read.Triggered:Connect(function()
 		NoteRequest:FireServer({ action = "read", noteId = note:GetAttribute("NoteId") })
 	end)
-	local take = prompt(note, "Pick up", "Paper note", Enum.KeyCode.F, 0, Enum.KeyCode.ButtonY)
+	local take = prompt(note, "Pick up", "Paper note", Enum.KeyCode.F, 0, Enum.KeyCode.ButtonB)
 	take.Triggered:Connect(function()
 		NoteRequest:FireServer({ action = "take", noteId = note:GetAttribute("NoteId") })
 	end)

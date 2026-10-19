@@ -2,7 +2,7 @@
 -- only runs (and only swallows the input) when it is available; otherwise the input passes on to Roblox as usual.
 -- The keys are the player's own where they set some (their profile's `keybinds`, Shared/Bindings), else the
 -- defaults; they are bound again whenever the profile's set changes, and the action's keys (shown in its hint)
--- follow.
+-- follow. Roblox's own controls (walking, jumping, the camera keys, shift lock) follow through Input/StockControls.
 
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +13,7 @@ local Bindings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("
 local ClientState = require(script.Parent.Parent.ClientState)
 local Router = require(script.Parent.Parent.UI.Core.Router)
 local Actions = require(script.Parent.Actions)
+local StockControls = require(script.Parent.StockControls)
 
 local InputRouter = {}
 
@@ -30,6 +31,12 @@ local function keyCodes(names: { string }): { Enum.KeyCode }
 end
 
 local applied: any = false
+-- Settings > Controls waiting for a new key: no action runs meanwhile (the key is being chosen).
+local paused = false
+
+function InputRouter.setPaused(on: boolean)
+	paused = on
+end
 
 -- Binds every action to the keys it has now (the saved set's, or the defaults).
 function InputRouter.apply(saved: any)
@@ -49,7 +56,7 @@ function InputRouter.apply(saved: any)
 				if state ~= Enum.UserInputState.Begin then
 					return Enum.ContextActionResult.Pass
 				end
-				if UserInputService:GetFocusedTextBox() or not action.when(Router.view()) then
+				if paused or UserInputService:GetFocusedTextBox() or not action.when(Router.view()) then
 					return Enum.ContextActionResult.Pass
 				end
 				action.run()
@@ -76,6 +83,8 @@ function InputRouter.init()
 		return table.concat(parts, ",")
 	end
 	InputRouter.apply(fromProfile())
+	-- Walking, jumping, the camera keys and shift lock (Roblox's own modules) follow the same set.
+	StockControls.init(applied)
 	local last = signature(applied)
 	ClientState.ProfileChanged:Connect(function()
 		local saved = fromProfile()
@@ -83,6 +92,7 @@ function InputRouter.init()
 		if now ~= last then
 			last = now
 			InputRouter.apply(saved)
+			StockControls.apply(saved)
 		end
 	end)
 end

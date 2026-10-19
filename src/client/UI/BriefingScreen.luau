@@ -15,6 +15,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Clock = require(script.Parent.Core.Clock)
+local Keys = require(script.Parent.Parent.Input.Keys)
 local Kit = require(script.Parent.Kit)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
@@ -119,7 +120,7 @@ local function build(payload)
 	})
 	roleName:write(0.6)
 	Kit.label({
-		Text = "How you win: " .. copy.win,
+		Text = "How you win: " .. Keys.resolve(copy.win),
 		font = "bodyBold",
 		size = "small",
 		color = C.white,
@@ -128,7 +129,7 @@ local function build(payload)
 	})
 	for index, text in ipairs(copy.bullets) do
 		Kit.label({
-			Text = "·  " .. text,
+			Text = "·  " .. Keys.resolve(text),
 			size = "small",
 			color = C.bone,
 			LayoutOrder = 2 + index,
@@ -145,7 +146,7 @@ local function build(payload)
 		Parent = cardContent,
 	})
 	Kit.label({
-		Text = copy.firstMove,
+		Text = Keys.resolve(copy.firstMove),
 		font = "document",
 		size = "body",
 		color = C.bone,
@@ -233,9 +234,12 @@ local function caption(key: string, payload): (() -> ())?
 			{ { text = info.display, head = true, color = if hostile then C.red else C.bone } }
 		)
 	elseif key == "win" then
-		return Cinema.caption("HOW YOU WIN", { { text = copy.win, font = "bodyBold", size = "body" } })
+		return Cinema.caption("HOW YOU WIN", { { text = Keys.resolve(copy.win), font = "bodyBold", size = "body" } })
 	elseif key == "move" then
-		return Cinema.caption("FIRST MOVE", { { text = copy.firstMove, font = "document", size = "body" } })
+		return Cinema.caption(
+			"FIRST MOVE",
+			{ { text = Keys.resolve(copy.firstMove), font = "document", size = "body" } }
+		)
 	elseif key == "names" then
 		local lines: { any } = {
 			{ text = tostring(payload.alias), head = true, size = 40 },
