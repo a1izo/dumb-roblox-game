@@ -1,0 +1,52 @@
+# Salute (clip salute, free). Reference notes.
+id = "salute"
+name = "Salute"
+family = "free"
+status = "checked"
+uses = []
+
+[origin]
+what = "The US Army hand salute, as drilled at basic training."
+recognisable = "From attention the right hand swings out and up to the brim, palm flat, held, then cut down straight to the side."
+
+[source]
+url = "https://www.youtube.com/watch?v=SYusq7i46Ts"
+title = "SET 1: Hand Salute (US Army drill sergeant)"
+kind = "a drill sergeant demonstrating the hand salute from attention, filmed head to foot from the front"
+watched = "2026-10-19: frame sheets over the whole video, then 15 frames a second over 54.20-55.53 s (the raise) and 82.60-83.40 s (the drop), motion-captured (mocap/salute_up.json, mocap/salute_down.json)"
+mirror = false
+
+[timing]
+length = 2.0
+fit = "The raise (source 54.20-55.53 s) from 0.0 s, held, the drop (82.80-83.20 s) landing at 2.0 s."
+
+[[beat]]
+src = 54.9
+pose = "the hand at the brim"
+[[beat]]
+src = 83.0
+pose = "the hand cut down past the chest"
+
+[mocap]
+take = "art/refs/mocap/salute*.json"
+notes = "MediaPipe Pose (heavy) on 33 frames; the feet are planted by the retarget (the drill sergeant stands at attention)."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The hand at the brim sits beside the face, not in front of it (an R6 fist would hide the face)."
+
+[check]
+by = "2026-10-19: check_anims (floor, gap and sink within limits), renders from the front and the side at every beat, beside the footage's frames"

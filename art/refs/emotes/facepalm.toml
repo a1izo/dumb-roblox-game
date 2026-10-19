@@ -1,0 +1,52 @@
+# Facepalm (clip facepalm, free). Reference notes.
+id = "facepalm"
+name = "Facepalm"
+family = "free"
+status = "checked"
+uses = []
+
+[origin]
+what = "Captain Picard's facepalm (TNG 'Déjà Q'), the meme's own image."
+recognisable = "His left hand comes up and the face sinks into it, the head bowing further into the hand."
+
+[source]
+url = "https://www.youtube.com/watch?v=CrkFAGhK6-A"
+title = "Picard's Epic Facepalm (Green Screen Footage)"
+kind = "the Star Trek: The Next Generation shot behind the facepalm meme, as a green-screen cut, chest up"
+watched = "2026-10-19: frame sheets over the whole clip, then 7.5 frames a second over 3.4-6.47 s, tracked (mocap/facepalm.json) for the timing and the arm's line; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 2.4
+fit = "Raise source 3.55-4.5 s (clip 0-0.95 s), the head sinking in the hand to 5.5 s (1.95 s), then the hand drops and the body straightens by 2.4 s (he never takes it away in the scene)."
+
+[[beat]]
+src = 4.5
+pose = "the palm on the forehead"
+[[beat]]
+src = 5.4
+pose = "the head sunk into the hand"
+
+[mocap]
+take = "art/refs/mocap/facepalm*.json"
+notes = "Tracked, but keyed: Picard bows so far that his face sinks to his shoulders, which an R6 neck cannot follow, so the fist is put on the R6 forehead (kit.reach) on the capture's beats."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The fist on the forehead covers the face: for a facepalm that is the point."
+
+[check]
+by = "2026-10-19: check_anims (floor, gap and sink within limits), renders from the front and the side at every beat, beside the footage's frames"

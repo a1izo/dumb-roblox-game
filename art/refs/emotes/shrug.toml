@@ -1,0 +1,49 @@
+# Shrug (clip shrug, free). Reference notes.
+id = "shrug"
+name = "Shrug"
+family = "free"
+status = "checked"
+uses = []
+
+[origin]
+what = "The everyday shrug (who knows?)."
+recognisable = "The shoulders up, the forearms turned out with the palms up, the head tilted, then down again."
+
+[source]
+url = "https://www.youtube.com/watch?v=MM-ilyti4TA"
+title = "Male Is Upset and Shrugs Green Screen Video Effect"
+kind = "a stock green-screen clip of a man shrugging, filmed from the front down to the thighs"
+watched = "2026-10-19: frame sheets over the whole clip, then 10 frames a second over 9.2-11.4 s, motion-captured (mocap/shrug.json; 16 of 23 frames kept, the rest lost to stale screenshots)"
+mirror = false
+
+[timing]
+length = 2.0
+fit = "Source 9.25-11.25 s at its own speed."
+
+[[beat]]
+src = 10.3
+pose = "the peak: palms up and out, the head tilted"
+
+[mocap]
+take = "art/refs/mocap/shrug*.json"
+notes = "MediaPipe Pose (heavy); the legs are out of the picture, so the soles are planted and only the hips' sway is kept."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "R6 has no collarbones: the shoulders going up shows as the arms sliding up a little."
+
+[check]
+by = "2026-10-19: check_anims (floor, gap and sink within limits), renders from the front and the side at every beat, beside the footage's frames"
