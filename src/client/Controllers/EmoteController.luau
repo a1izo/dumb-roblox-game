@@ -107,7 +107,7 @@ end
 -- along X, the models along Y: the stand-in is turned to match through its pivot). A prop whose hold is made
 -- for a newer Core mesh (`core`) keeps its stand-in until that import is in.
 local function build(spec: EmoteProps.Prop): Model
-	local current = spec.core == nil or ModelLibrary.version("Core") >= spec.core
+	local current = spec.core == nil or ModelLibrary.version("ModelsCore") >= spec.core
 	local model = if current then ModelLibrary.get(spec.model) else nil
 	if model then
 		local _, size = model:GetBoundingBox()

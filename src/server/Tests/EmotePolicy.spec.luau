@@ -43,8 +43,8 @@ local function at(phase: string, overrides: { [string]: any }?): EmotePolicy.Sit
 end
 
 -- Every phase a case goes through (Services/RoundService), and where plain emotes play in full.
-local FULL = { Briefing = true, Investigation = true, DeathNote = true }
-local PHASES = { "Intro", "Briefing", "Investigation", "DeathNote", "Meeting", "Vote", "Verdict", "Outro", "Reveal" }
+local FULL = { Briefing = true, Investigation = true }
+local PHASES = { "Intro", "Briefing", "Investigation", "Meeting", "Vote", "Verdict", "Outro", "Reveal" }
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -143,7 +143,7 @@ return function(t)
 		end)
 
 		it("stops emotes for the cutscenes everyone sees, never for one player's own", function()
-			for _, kind in ipairs({ "intro", "death", "arrest", "verdict", "outro" }) do
+			for _, kind in ipairs({ "intro", "meetingIntro", "death", "arrest", "verdict", "outro" }) do
 				expect(EmotePolicy.CUTSCENE_CUES[kind]).to.equal(true)
 			end
 			for _, kind in ipairs({ "eyesDeal", "handoff", "shot" }) do

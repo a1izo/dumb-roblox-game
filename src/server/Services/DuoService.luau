@@ -367,4 +367,14 @@ function DuoService.partner(player: any): any
 	return chained[player]
 end
 
+-- Check hooks: the play-test probes (the emote harness) read these, nothing in the game does. Keep them.
+-- The rally a player is in (who the ball goes to, when it gets there, the hits so far).
+function DuoService.rallyOf(player: any): Rally?
+	return rallies[player]
+end
+
+function DuoService.asked(player: any): boolean
+	return asks[player] ~= nil
+end
+
 return DuoService

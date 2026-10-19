@@ -22,10 +22,16 @@ export type Situation = {
 
 EmotePolicy.CUTSCENE_PHASES = { Intro = true, Verdict = true, Outro = true, Reveal = true } :: { [string]: boolean }
 EmotePolicy.SEATED_PHASES = { Meeting = true, Vote = true } :: { [string]: boolean }
--- The cues (Services/Cues) of the cutscenes everyone sees: each stops every emote in the case. A cue only one
+-- The cues (Services/Cues) of the cutscenes everyone sees (the meeting intro included): each stops every emote in the case. A cue only one
 -- player sees (the Eyes deal) never does: everyone's emotes stopping at once would give it away.
-EmotePolicy.CUTSCENE_CUES =
-	{ intro = true, death = true, arrest = true, verdict = true, outro = true } :: { [string]: boolean }
+EmotePolicy.CUTSCENE_CUES = {
+	intro = true,
+	meetingIntro = true,
+	death = true,
+	arrest = true,
+	verdict = true,
+	outro = true,
+} :: { [string]: boolean }
 
 EmotePolicy.REASONS = {
 	cutscene = "Not during a cutscene",
