@@ -7,6 +7,7 @@ number of beats of its own song's tempo, so the owner can put the right music un
 
 import math
 
+import posekit
 from animlib import J
 from emotes import mocap
 from emotes.kit import Clock, beats, reach
@@ -242,3 +243,192 @@ party = Motion("officeParty", 6.4, loop=True, note="The I Want You Back office t
 mocap.capture(party, "officeParty", clock.start, 0.0, at(7.8))
 _close_turn(party)
 party.build()
+
+# Animatronic Welcome (clip animatronicWelcome, item emote_sus_lean) ----------------------------------------
+# "Join Us For a Bite" / "Can't wait to meet you": the FNAF animatronic dance as the viral Burger King worker does it
+# (refs: animatronicWelcome.toml; the gestures and their timing from his clip, source 1.5-12.75 s): the arm out to
+# one side beckoning, swung across to the other, a point, a spread hand waved by the face, both hands by the face,
+# a point at you, the hand to the chest, both hands nibbling at the mouth, a heart at the chest. Keyed as a stage
+# robot does it: each pose snapped into and held dead still, the head jerking a beat after the arms, the knees
+# dipping stiffly on every beat. 16 beats at 100 bpm.
+B = beats(100)
+bot = Motion("animatronicWelcome", 16 * B, loop=True, note="A stage robot's welcome: beckon, point, jazz hands, the "
+             "bite, the heart, each pose snapped and held.")
+REST_BOT_L = J((4, 0, -6))
+BOT_POSES = [  # (beat, root, neck, right arm, left arm)
+    (0, (0, -30, 0), (0, -12, 6), reach(1, (2.5, 0.95, -0.7), direction=(0.6, 0.6, -0.5)), REST_BOT_L),  # beckon right
+    (1, (0, -30, 0), (0, -12, -4), reach(1, (2.4, 1.25, -0.6), direction=(0.4, 0.8, -0.4)), REST_BOT_L),  # the flick
+    (2, (0, -6, 0), (0, 10, 8), reach(1, (-1.0, 0.85, -1.4), direction=(-0.8, 0.2, -0.6)), REST_BOT_L),  # across
+    (3, (0, 26, 0), (2, 16, 0), reach(1, (-1.3, 1.15, -1.2), direction=(-0.9, 0.2, -0.4)), REST_BOT_L),  # the point
+    (4, (0, 26, 0), (2, 20, -6), reach(1, (-1.4, 1.1, -1.25), direction=(-0.9, 0.15, -0.4)), REST_BOT_L),
+    (5, (0, 0, 0), (0, -8, 10), reach(1, (1.5, 1.55, -0.6), direction=(0.1, 0.9, -0.4)), REST_BOT_L),  # jazz hand
+    (6, (0, 0, 0), (0, 8, -10), reach(1, (1.6, 1.6, -0.55), direction=(0.25, 0.9, -0.35)), REST_BOT_L),
+    (7, (0, 0, 0), (2, 0, 8), reach(1, (1.5, 1.55, -0.6), direction=(0.1, 0.9, -0.4)),
+     reach(-1, (-1.5, 1.55, -0.6), direction=(-0.1, 0.9, -0.4))),  # both hands by the face
+    (8, (0, 0, 0), (2, 0, -8), reach(1, (1.6, 1.6, -0.55), direction=(0.25, 0.9, -0.35)),
+     reach(-1, (-1.6, 1.6, -0.55), direction=(-0.25, 0.9, -0.35))),
+    (9, (-2, 0, 0), (-2, 0, 0), reach(1, (0.6, 0.85, -1.9), direction=(-0.1, 0.1, -1.0)), REST_BOT_L),  # at you
+    (10, (0, 0, 0), (0, 0, 6), reach(1, (0.15, 0.3, -0.75), direction=(-0.7, 0.3, -0.6)), REST_BOT_L),  # the chest
+    (11, (2, 0, 0), (-6, 0, 10), reach(1, (0.45, 0.7, -1.05), direction=(-0.45, 0.6, -0.65)),
+     reach(-1, (-0.45, 0.7, -1.05), direction=(0.45, 0.6, -0.65))),  # nibbling at the mouth
+    (12, (2, 0, 0), (-6, 0, -10), reach(1, (0.42, 0.75, -1.02), direction=(-0.45, 0.6, -0.65)),
+     reach(-1, (-0.42, 0.75, -1.02), direction=(0.45, 0.6, -0.65))),
+    (13, (0, 0, 0), (0, 0, 10), reach(1, (0.18, 0.5, -1.05), direction=(-0.6, 0.4, -0.7)),
+     reach(-1, (-0.18, 0.5, -1.05), direction=(0.6, 0.4, -0.7))),  # the heart
+    (14, (0, 0, 0), (0, 0, -10), reach(1, (0.18, 0.5, -1.05), direction=(-0.6, 0.4, -0.7)),
+     reach(-1, (-0.18, 0.5, -1.05), direction=(0.6, 0.4, -0.7))),
+    (15, (0, -16, 0), (0, -6, 0), reach(1, (1.6, 0.4, -1.0), direction=(0.5, 0.3, -0.8)), REST_BOT_L),  # back round
+]
+for beat, root, neck, right, left in BOT_POSES:
+    t = beat * B
+    # snapped in over a quarter of a beat, the head a little after the arms, then held still to the next beat
+    bot.key(round(t + B / 4, 4), "out", root=root, rShoulder=right, lShoulder=left, offset=(0, -0.05, 0))
+    bot.key(round(t + B * 0.4, 4), "snap", neck=neck)
+    bot.key(round(t + B * 0.95, 4), "hold", root=root, rShoulder=right, lShoulder=left, neck=neck, offset=(0, 0, 0))
+_close_turn(bot)
+bot.plant(stance=0.12)
+bot.build()
+
+# Excuse Me, Sir (clip excuseMeSir, item emote_jumpstyle; LOOK UP plays excuseMeSirUp) -----------------------
+# Billy Butcher's "excuse me, sir" (The Boys; the comic panel of him looking up with that grin, edited to Charlie's
+# Inferno's "That Handsome Devil"; refs: excuseMeSir.toml). The loop is the edits' swagger: the weight bouncing
+# on every beat, the shoulders rolling, the hands loose, the head turning slowly from side to side, looking for
+# someone ("bro's looking for Homelander"). LOOK UP (any time) plays the panel: the face tipped back to the sky,
+# the grin, and the whole body wobbling like the jelly edit, then level again.
+B = beats(150)
+sir = Motion("excuseMeSir", 4 * B, loop=True, note="Butcher's swagger: bouncing on the beat, shoulders rolling, "
+             "looking round for someone.")
+for i in range(8):  # every half beat
+    t = i * B / 2
+    down = i % 2 == 0
+    side = 1 if (i // 2) % 2 == 0 else -1
+    look = (-24, -10, 10, 24, 24, 10, -10, -24)[i]
+    sir.key(round(t, 4), "sine", offset=(0.03 * side, -0.09 if down else -0.02, 0), root=(-2, 6 * side, 3 * side),
+            neck=(-3 if down else 0, look, -3 * side),
+            rShoulder=J((-10 + (6 if side > 0 else -4), 0, 7)), lShoulder=J((-10 + (6 if side < 0 else -4), 0, -7)))
+sir.follow(("rShoulder", "lShoulder"), 2.4, 0.6)
+sir.follow("neck", 1.8, 0.75)
+sir.plant(stance=0.14)
+sir.build()
+
+up = Motion("excuseMeSirUp", 2.8, note="Excuse me, sir: the face tipped back to the sky with the grin, the body "
+            "wobbling like jelly.")
+up.key(0.0, "smooth", offset=(0, -0.05, 0), root=(-2, 0, 0), neck=(-2, 0, 0), rShoulder=J((-6, 0, 7)),
+       lShoulder=J((-6, 0, -7)))
+up.key(0.7, "out", offset=(0, -0.02, 0), root=(11, 0, 0), neck=(52, 0, 0), rShoulder=J((-14, 0, 10)),
+       lShoulder=J((-14, 0, -10)))  # the slow look up
+# the jelly wobble: side to side, quick and damped, the knees giving with it
+for k in range(10):
+    t = 0.8 + k * 0.13
+    amp = 1.0 - 0.07 * k
+    side = 1 if k % 2 == 0 else -1
+    up.key(round(t, 4), "sine", offset=(0.04 * side * amp, -0.06 * amp, 0), root=(11, 3 * side * amp, 5 * side * amp),
+           neck=(52, -2 * side * amp, -7 * side * amp), rShoulder=J((-14, 0, 10 + 6 * side * amp)),
+           lShoulder=J((-14, 0, -10 + 6 * side * amp)))
+up.key(2.2, "smooth", offset=(0, -0.02, 0), root=(10, 0, 0), neck=(50, 0, 0), rShoulder=J((-12, 0, 9)),
+       lShoulder=J((-12, 0, -9)))
+up.key(2.8, "smooth", offset=(0, 0, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((0, 0, 4)), lShoulder=J((0, 0, -4)))
+up.follow(("rShoulder", "lShoulder"), 3.0, 0.5)
+up.plant(stance=0.14)
+up.build()
+
+
+def _stand(m, t, ease, hop=0.0, x=0.0, **joints):
+    """A key with the body resting on the floor for its legs (the lower sole down), lifted by `hop` (in the air)."""
+    pose = {k: (v if isinstance(v, dict) else J(v)) for k, v in joints.items() if k in ("root", "rHip", "lHip")}
+    ox, oy, oz = posekit.on_floor(pose, (x, 0.0, 0.0), floor=0.0)
+    m.key(round(t, 4), ease, offset=(ox, oy + hop, oz), **joints)
+
+
+# Two-Legged Bop (clip twoLeggedBop, item emote_two_legged_bop) ---------------------------------------------
+# The dancing dogs (refs: twoLeggedBop.toml): a dog up on its hind legs, front paws tucked up high in front and
+# pumping by turns, tottering from foot to foot on short quick steps, the hips swaying, the head bobbing and
+# tilting with that proud look. 8 beats at 200 bpm.
+B = beats(200)
+dog = Motion("twoLeggedBop", 8 * B, loop=True, note="A dog on its hind legs: paws up pumping, tottering foot to "
+             "foot, hips swaying, the head bobbing.")
+PAW_R = reach(1, (0.85, 0.05, -1.2), direction=(-0.1, -0.5, -0.85))  # the paw hanging from a raised wrist
+PAW_L = reach(-1, (-0.85, 0.05, -1.2), direction=(0.1, -0.5, -0.85))
+PAW_R_UP = reach(1, (0.85, 0.35, -1.3), direction=(-0.1, -0.25, -0.95))
+PAW_L_UP = reach(-1, (-0.85, 0.35, -1.3), direction=(0.1, -0.25, -0.95))
+for i in range(8):
+    side = 1 if i % 2 == 0 else -1  # the right foot steps on even beats
+    t = i * B
+    lift_r = J((24, 0, 4), (0, 0.18, -0.04)) if side > 0 else J((-4, 0, 5))
+    lift_l = J((24, 0, -4), (0, 0.18, -0.04)) if side < 0 else J((-4, 0, -5))
+    # the step: one foot up, the body tipped over the other, the paw on that side pumped up
+    _stand(dog, t + B * 0.25, "out", root=(4, 4 * side, 6 * side), neck=(-6, -6 * side, -10 * side),
+           rShoulder=PAW_R_UP if side > 0 else PAW_R, lShoulder=PAW_L_UP if side < 0 else PAW_L, rHip=lift_r, lHip=lift_l)
+    # down on it, the knees giving
+    _stand(dog, t + B, "in", root=(6, 2 * side, 2 * side), neck=(2, -2 * side, -4 * side), rShoulder=PAW_R,
+           lShoulder=PAW_L, rHip=J((-2, 0, 4), (0, 0.08, 0)), lHip=J((-2, 0, -4), (0, 0.08, 0)))
+_stand(dog, 0.0, "in", root=(6, -2, -2), neck=(2, 2, 4), rShoulder=PAW_R, lShoulder=PAW_L,
+       rHip=J((-2, 0, 4), (0, 0.08, 0)), lHip=J((-2, 0, -4), (0, 0.08, 0)))
+dog.follow(("rShoulder", "lShoulder"), 4.0, 0.55)
+dog.follow("neck", 3.0, 0.6)
+dog.build()
+
+# Glitch Step (clip glitchStep, item emote_glitch_step) -----------------------------------------------------
+# A robot's dance on a damaged tape (refs: glitchStep.toml): hard poses with the legs in them (a step out, a
+# kick, a knee drop, a lean), cut not eased, and the tape skipping: a pose shown, the one before shown again, a
+# jump ahead, a stutter of three quick frames. 12 frames of 0.2 s.
+glitch = Motion("glitchStep", 2.4, loop=True, note="Robot poses that skip and stutter like a damaged tape, the legs "
+                "stepping and kicking with them.")
+G = [  # root, neck, right arm, left arm, right leg, left leg
+    ((0, 0, 0), (0, 0, 0), J((90, 0, 0)), J((0, 0, -6)), J((0, 0, 4)), J((0, 0, -4))),
+    ((0, -20, 0), (0, 20, 0), J((150, 0, 30), (0, 0.1, 0)), J((-20, 0, -10)), J((0, 0, 22)), J((0, 0, -4))),
+    ((-6, 0, 0), (-10, 0, 0), J((90, 0, 80)), J((90, 0, -80)), J((-6, 0, 6), (0, 0.3, 0)), J((-6, 0, -6), (0, 0.3, 0))),
+    ((0, 25, 4), (0, -15, 0), J((0, 0, 4)), J((150, 0, -30), (0, 0.1, 0)), J((0, 0, 4)), J((50, 0, -6), (0, 0.2, -0.05))),
+    ((0, 0, -6), (0, 0, 12), J((90, 0, 90)), J((90, 0, -90)), J((0, 0, 14)), J((0, 0, -14))),
+    ((8, -15, 0), (6, 10, 0), reach(1, (0.2, 0.4, -1.2), direction=(-0.5, 0.2, -0.8)),
+     reach(-1, (-0.2, 0.6, -1.2), direction=(0.5, 0.2, -0.8)), J((40, 0, 4), (0, 0.15, -0.04)), J((0, 0, -4))),
+]
+ORDER = [0, 1, 2, 1, 3, 4, 4, 5, 2, 3, 5, 0]  # the tape: back a frame, a held frame, a jump
+for k, n in enumerate(ORDER):
+    root, neck, ra, la, rl, ll = G[n]
+    t = k * 0.2
+    _stand(glitch, t, "hold", root=root, neck=neck, rShoulder=ra, lShoulder=la, rHip=rl, lHip=ll)
+    if k in (3, 8):  # the stutter: three quick frames of shaking in place
+        for j, jit in enumerate((3, -3, 2)):
+            _stand(glitch, t + 0.05 * (j + 1), "hold", root=(root[0], root[1] + jit, root[2]),
+                   neck=(neck[0], neck[1] - jit, neck[2] + jit), rShoulder=ra, lShoulder=la, rHip=rl, lHip=ll)
+glitch.build()
+
+# Two Weeks' Notice (clip twoWeeksNotice, item emote_two_weeks_notice) --------------------------------------
+# Corporate escape (refs: twoWeeksNotice.toml): the arms flung up in despair with a stomp, a fit of flailing with
+# the head shaking and the feet stamping, an imaginary resignation letter crumpled and thrown back over the
+# shoulder with a step back into it, then the knees buckle into a slump, done. One shot.
+quit_ = Motion("twoWeeksNotice", 3.2, note="Arms flung up with a stomp, flailing and stamping, the letter thrown over "
+               "the shoulder, a slump.")
+STAND_R, STAND_L = J((0, 0, 3)), J((0, 0, -3))
+_stand(quit_, 0.0, "smooth", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((4, 0, 4)), lShoulder=J((4, 0, -4)),
+       rHip=STAND_R, lHip=STAND_L)
+_stand(quit_, 0.18, "in", root=(-4, 0, 0), neck=(-8, 0, 0), rShoulder=J((-20, 0, 12)), lShoulder=J((-20, 0, -12)),
+       rHip=J((30, 0, 4), (0, 0.18, -0.05)), lHip=STAND_L)  # the wind-up, a foot raised
+_stand(quit_, 0.36, "snap", root=(8, 0, 0), neck=(22, 0, 0), rShoulder=J((160, 0, 30), (0, 0.15, 0)),
+       lShoulder=J((160, 0, -30), (0, 0.15, 0)), rHip=J((0, 0, 8), (0, 0.12, 0)), lHip=J((0, 0, -8), (0, 0.12, 0)))  # STOMP
+# the flailing: arms windmilling out of step, head shaking, feet stamping by turns
+for k in range(6):
+    t = 0.6 + k * 0.17
+    side = 1 if k % 2 == 0 else -1
+    _stand(quit_, t, "sine", root=(2, 8 * side, 4 * side), neck=(6, -22 * side, 6 * side),
+           rShoulder=J((150 if side > 0 else 60, 0, 40 if side > 0 else 70), (0, 0.1, 0)),
+           lShoulder=J((60 if side > 0 else 150, 0, -70 if side > 0 else -40), (0, 0.1, 0)),
+           rHip=J((22, 0, 5), (0, 0.14, -0.04)) if side > 0 else STAND_R,
+           lHip=J((22, 0, -5), (0, 0.14, -0.04)) if side < 0 else STAND_L)
+# the letter: crumpled at the chest, wound back, thrown over the right shoulder with a step back
+_stand(quit_, 1.8, "smooth", root=(0, -10, 0), neck=(-6, -8, 0),
+       rShoulder=reach(1, (0.2, 0.5, -0.9), direction=(-0.5, 0.3, -0.8)),
+       lShoulder=reach(-1, (-0.2, 0.5, -0.9), direction=(0.5, 0.3, -0.8)), rHip=STAND_R, lHip=STAND_L)
+_stand(quit_, 2.05, "in", root=(-4, 25, 0), neck=(0, 20, 0), rShoulder=J((60, 0, 30)), lShoulder=J((10, 0, -10)),
+       rHip=J((-16, 0, 4)), lHip=J((6, 0, -4)))
+_stand(quit_, 2.2, "snap", root=(-8, -20, 0), neck=(4, -30, 0), rShoulder=J((150, 0, -40), (0, 0.12, 0)),
+       lShoulder=J((20, 0, -14)), rHip=J((-24, 0, 6)), lHip=J((10, 0, -4)))  # the throw, the right foot back
+# the slump: knees buckling, the head dropping, the arms hanging
+_stand(quit_, 2.65, "out", root=(-14, 0, 0), neck=(-28, 0, 0), rShoulder=J((-6, 0, 6)), lShoulder=J((-6, 0, -6)),
+       rHip=J((4, 0, 8), (0, 0.35, 0)), lHip=J((4, 0, -8), (0, 0.35, 0)))
+_stand(quit_, 3.2, "smooth", root=(-10, 0, 0), neck=(-22, 0, 0), rShoulder=J((-4, 0, 5)), lShoulder=J((-4, 0, -5)),
+       rHip=J((2, 0, 6), (0, 0.28, 0)), lHip=J((2, 0, -6), (0, 0.28, 0)))
+quit_.follow(("rShoulder", "lShoulder"), 3.0, 0.6)
+quit_.follow("neck", 2.6, 0.6)
+quit_.build()

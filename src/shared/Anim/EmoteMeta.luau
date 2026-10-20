@@ -88,6 +88,8 @@ return {
 		contacts = { { at = 0.95, prop = 1, to = "mouth", within = 0.45 } },
 		allow = { { prop = 1, part = "Head", from = 0.83, to = 1.05 } },
 	},
+	-- LOOK UP, any time in the swagger: the face tipped back to the sky with the grin (the meme's panel)
+	excuseMeSir = { context = { label = "LOOK UP", from = 0, to = 1.6, branch = "excuseMeSirUp" } },
 	preDawnBonk = {
 		props = {
 			{
