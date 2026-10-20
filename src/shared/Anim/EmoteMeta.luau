@@ -48,10 +48,30 @@ return {
 				size = 0.5,
 				stand = { shape = "Cylinder", size = { 0.08, 0.5, 0.5 }, color = { 176, 142, 74 } },
 				mount = "Right Arm",
-				at = GRIP,
-				-- Off the thumb at 0.55 s, up and spinning, back in the hand at 1.35 s.
+				at = { { p = { 0.126, -1.058, -0.068 } }, { r = { 7.51, 4.52, 30.84 } } }, -- hold: coinFlip/Coin
+				-- Off the thumb at 0.55 s, up and spinning, back in the fist at 1.35 s; slapped onto the back of the
+				-- left hand at 1.55 s, picked back up at 2.5 s.
 				tosses = { { at = 0.55, back = 1.35, height = 3.2, spin = 4 } },
+				moves = {
+					{
+						at = 1.55,
+						mount = "Left Arm",
+						to = { { p = { -0.018, -0.825, -0.54 } }, { r = { -86.27, 42.37, -2.52 } } }, -- hold: coinFlip/CoinBack
+					},
+					{
+						at = 2.5,
+						mount = "Right Arm",
+						to = { { p = { 0.126, -1.058, -0.068 } }, { r = { 7.51, 4.52, 30.84 } } }, -- hold: coinFlip/CoinUp
+					},
+				},
 			},
+		},
+		context = { label = "FLIP", from = 2.55, to = 3.0, branch = "coinFlip" },
+		-- the coin goes under the slapping hand, and is picked up from under it
+		allow = {
+			{ prop = 1, part = "Left Arm", from = 1.42, to = 1.58 },
+			{ prop = 1, part = "Right Arm", from = 1.45, to = 1.95 },
+			{ prop = 1, part = "Right Arm", from = 2.42, to = 2.6 },
 		},
 	},
 	appleBite = {
@@ -234,6 +254,52 @@ return {
 			{ prop = 1, part = "Right Leg", from = 2.2, to = 8.9 },
 			{ prop = 1, part = "Left Leg", from = 2.2, to = 8.9 },
 		},
+	},
+	-- Light's potato chip, standing: the bag at the left hip, a chip taken from it and held up; EAT bites it.
+	chip = {
+		props = {
+			{
+				model = "ChipBag",
+				size = 1.25,
+				stand = { shape = "Block", size = { 0.7, 1.0, 0.32 }, color = { 170, 28, 32 } },
+				mount = "Left Arm",
+				at = { { p = { 0.091, -1.038, -0.677 } }, { r = { -18.73, 12.88, -2.62 } } }, -- hold: chip/ChipBag
+			},
+			{
+				model = "Chip",
+				size = 0.5,
+				stand = { shape = "Block", size = { 0.5, 0.05, 0.42 }, color = { 222, 178, 86 } },
+				mount = "Right Arm",
+				at = { { p = { 0.023, -1.14, -0.157 } }, { r = { -47.58, -0.5, 0.45 } } }, -- hold: chip/Chip
+				show = 0.88,
+			},
+		},
+		context = { label = "EAT", from = 1.3, to = 2.4, branch = "chipEat" },
+		-- the right hand goes into the bag for the chip
+		allow = { { prop = 1, part = "Right Arm", from = 0.55, to = 1.1 } },
+	},
+	chipEat = {
+		props = {
+			{
+				model = "ChipBag",
+				size = 1.25,
+				stand = { shape = "Block", size = { 0.7, 1.0, 0.32 }, color = { 170, 28, 32 } },
+				mount = "Left Arm",
+				at = { { p = { 0.091, -1.038, -0.677 } }, { r = { -18.73, 12.88, -2.62 } } }, -- hold: chipEat/ChipBag
+			},
+			{
+				model = "Chip",
+				size = 0.5,
+				stand = { shape = "Block", size = { 0.5, 0.05, 0.42 }, color = { 222, 178, 86 } },
+				mount = "Right Arm",
+				at = { { p = { 0.023, -1.14, -0.157 } }, { r = { -47.58, -0.5, 0.45 } } }, -- hold: chipEat/Chip
+				hide = 0.34,
+			},
+		},
+		-- (the arm's follow-through brings the chip in at 0.3 s, where it goes)
+		contacts = { { at = 0.3, prop = 2, to = "mouth", within = 0.35 } },
+		-- the chip goes into the mouth
+		allow = { { prop = 2, part = "Head", from = 0.26, to = 0.34 } },
 	},
 	furiousScribbling = { props = { NOTEBOOK, PEN } },
 	furiousScribblingSlash = { props = { NOTEBOOK, PEN } },

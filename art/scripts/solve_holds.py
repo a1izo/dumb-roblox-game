@@ -23,7 +23,7 @@ def all_holds():
     import emotes  # noqa: F401  (every family module)
 
     holds = {}
-    for name in ("dances", "poses", "props", "strolls", "duos"):
+    for name in ("dances", "older", "poses", "props", "strolls", "duos"):
         module = sys.modules.get("emotes." + name)
         holds.update(getattr(module, "HOLDS", {}) if module else {})
     return holds
