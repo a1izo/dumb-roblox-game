@@ -1,0 +1,56 @@
+# Take the L (clip takeTheL, common). Reference notes.
+id = "takeTheL"
+item = "emote_take_the_l"
+name = "Take the L"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "Fortnite's Take the L emote (2018)."
+recognisable = "The right hand up at the forehead in an L the whole time, hopping from foot to foot, the free leg kicked out to the side on every other hop."
+
+[source]
+url = "https://www.youtube.com/watch?v=IhEB5BG1-kk"
+title = "Take the L fortnite dance green screen"
+kind = "the game's own animation filmed on green screen from the front, head to foot"
+watched = "2026-10-20: frame sheets over the whole clip, then 10 frames a second over 0-2.4 s in tiles of 8, motion-captured (mocap/takeTheL.json)"
+mirror = false
+
+[timing]
+bpm = 150
+beats = 4
+length = 1.6
+segment = [0.0, 1.5]
+fit = "The cycle is 0.8 s (a kick each way); two cycles loop, as the game's emote does, the last frame flowing into the first. It was a 2.8 s one-shot before."
+
+[[beat]]
+src = 0.3
+pose = "the right leg kicked out"
+[[beat]]
+src = 0.7
+pose = "the left leg kicked out"
+
+[mocap]
+take = "art/refs/mocap/takeTheL.json"
+notes = "MediaPipe Pose (heavy) on 24 frames (tiles 200 x 282); the soles are planted through the hops (the source's little jumps are kept as knee bends); frames that dip are lifted at export."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "A side kick on an R6 hip drops the leg's inner top below the torso (the pivot is the leg's outer edge): 0.23 studs at the widest kick, as Roblox's own R6 kicks do."
+
+[check]
+by = "2026-10-20: check_anims (floor 0, seam clean), renders every 0.1 s beside the frame sheets"

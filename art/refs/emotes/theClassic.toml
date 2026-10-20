@@ -1,0 +1,59 @@
+# The Classic (clip theClassic, common). Reference notes.
+id = "theClassic"
+item = "emote_the_classic"
+name = "The Classic"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "Fortnite's Default Dance (2017), every Fortnite player's first emote."
+recognisable = "The arms pumping across the body by turns as the feet step, the elbows rolling, the hands thrown up by the head, the arms swung down and back, a hand on the hip with the thumb out, a point."
+
+[source]
+url = "https://www.youtube.com/watch?v=6dck03SrEmM"
+title = "Fortnite Default Dance Greenscreen"
+kind = "the game's own animation on its default character, filmed on green screen from the front, head to foot"
+watched = "2026-10-20: frame sheets over the whole clip, then 10 frames a second over 0-7.2 s in tiles of 8, motion-captured (mocap/theClassic.json)"
+mirror = false
+
+[timing]
+bpm = 100
+beats = 10
+length = 6.0
+segment = [0.3, 5.6]
+fit = "The whole routine from the first pump (0.3 s) to the point (5.6 s), then 0.7 s easing home into the first pose; after 5.6 s the source folds its arms (the game's outro), which is left out."
+
+[[beat]]
+src = 0.6
+pose = "the first pump across the body"
+[[beat]]
+src = 2.9
+pose = "the hands up by the head"
+[[beat]]
+src = 5.0
+pose = "the hand on the hip, the thumb out"
+
+[mocap]
+take = "art/refs/mocap/theClassic.json"
+notes = "MediaPipe Pose (heavy) on 72 frames (tiles 200 x 278); frames that dip a foot into the floor are lifted at export."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "R6 knees are leg slides: the deepest bends slide 0.64 studs up into the hip."
+
+[check]
+by = "2026-10-20: check_anims (floor 0, seam clean), renders every 0.3 s beside the frame sheets"

@@ -23,3 +23,26 @@ at = clock.at
 bye = Motion("puppetPop", 22 * B, loop=True, note="Bye Bye Bye: the chorus routine (arm flicks, palms out, hips, the fist).", unwrap=True)
 mocap.capture(bye, "puppetPop", clock.start, 0.0, at(4.0 + 20 * B))
 bye.build()
+
+# The Classic (clip theClassic, item emote_the_classic) ---------------------------------------------------------
+# Fortnite's Default Dance, the game's own animation filmed on green screen (refs: theClassic.toml,
+# mocap/theClassic.json, 10 frames a second over 0-7.2 s): the arms pumping across the body by turns as the feet
+# step, the elbows rolling, the hands thrown up by the head, the arms swinging down and back, the hand on the hip
+# with the thumb out, a point. The whole routine (0.3-5.6 s, up to the point; after it the arms fold back across
+# the chest, the game's outro) at 100 bpm, then 0.7 s easing home into its first pose.
+clock = Clock(0.3, 100)
+at = clock.at
+classic = Motion("theClassic", 10 * beats(100), loop=True, note="Fortnite's Default Dance: the pumping arms, the "
+                 "rolls, the hands up, the swing, the thumb.", unwrap=True, floor=True)
+mocap.capture(classic, "theClassic", clock.start, 0.0, at(5.6))
+classic.build()
+
+# Take the L (clip takeTheL, item emote_take_the_l) ---------------------------------------------------------
+# Fortnite's Take the L, the game's own animation filmed on green screen (refs: takeTheL.toml, mocap/takeTheL.json,
+# 10 frames a second over 0-2.4 s): the right hand up at the forehead in an L the whole time, hopping from foot
+# to foot, the free leg kicked out to the side on every other hop. Its cycle is 0.8 s (a kick each way), and it
+# loops as the game's does: two cycles, 4 beats at 150 bpm, the last frame flowing back into the first.
+take_l = Motion("takeTheL", 4 * beats(150), loop=True, note="Fortnite's Take the L: the L at the forehead, hopping "
+                "foot to foot, kicking out.", unwrap=True, floor=True)
+mocap.capture(take_l, "takeTheL", 0.0, 0.0, 1.5)
+take_l.build()
