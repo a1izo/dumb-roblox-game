@@ -5,6 +5,7 @@ Dances keep time with one another in the game (a loop starts on the server's bea
 number of beats of its own song's tempo, so the owner can put the right music under it.
 """
 
+from animlib import J
 from emotes import mocap
 from emotes.kit import Clock, beats
 from motion import Motion
@@ -83,3 +84,60 @@ jackpot = Motion("jackpotShuffle", 7 * beats(150), loop=True, note="Hakari's dan
                  "swung side to side, a double bounce.", unwrap=True, floor=True)
 mocap.capture(jackpot, "jackpotShuffle", clock.start, 0.0, at(3.0))
 jackpot.build()
+
+# Rat Dance (clip ratDance, item emote_rat_dance) -----------------------------------------------------------
+# The Rat Dance trend (to Joyful's "Chess Type Beat"), danced at speed by a real dancer from the front (refs:
+# ratDance.toml, mocap/ratDance.json, 15 frames a second over 11.2-14.4 s, the tutorial's "now speed it up"): the
+# hands pulled up to the chest like a rat's paws and flicked, the cross-step, the wide bouncing step. It repeats
+# every 1.13 s, two beats at 106 bpm; the cleanest repeat (from 13.2 s) loops.
+clock = Clock(13.2, 106)
+at = clock.at
+rat = Motion("ratDance", 2 * beats(106), loop=True, note="The Rat Dance: paws at the chest, the cross-step, the wide "
+             "bounce.", unwrap=True, floor=True)
+mocap.capture(rat, "ratDance", clock.start, 0.0, at(13.2 + 2 * beats(106) - 1 / 15))
+rat.build()
+
+# Goal Celebration (clip goalCelebration, item emote_goal_celebration) --------------------------------------
+# Cristiano Ronaldo's "SIUUU" (refs: goalCelebration.toml): the poses from a close shot of it at Real Madrid
+# (about 4x slow motion), the timing at real speed. Three quick steps turning away, the take-off, a half turn in the
+# air with the arms swung up, and the landing facing front again, the feet planted wide, the knees bent, the arms
+# thrust down and back, the chest out and the head up for the shout, held. Keyed: a body in the air turning has no
+# floor for the motion capture to stand it on.
+goal = Motion("goalCelebration", 3.0, note="Ronaldo's SIUUU: steps turning away, a half turn in the air, the wide "
+              "landing, arms thrust down and back, the shout.")
+REST_R, REST_L = J((4, 0, 4)), J((4, 0, -4))
+STAND_R, STAND_L = J((0, 0, 2)), J((0, 0, -2))
+WIDE_R, WIDE_L = J((-4, 0, 24), (0, 0.28, 0)), J((-4, 0, -24), (0, 0.28, 0))  # knees bent: the legs slide up
+DEEP_R, DEEP_L = J((-4, 0, 26), (0, 0.36, 0)), J((-4, 0, -26), (0, 0.36, 0))
+THRUST_R, THRUST_L = J((-34, 0, 26), (0, 0.06, 0)), J((-34, 0, -26), (0, 0.06, 0))  # down, back and out
+goal.key(0.0, "smooth", floor=True, root=(0, 0, 0), neck=(0, 0, 0), rShoulder=REST_R, lShoulder=REST_L,
+         rHip=STAND_R, lHip=STAND_L)
+# the steps, turning away from the front
+for t, yaw, lead in ((0.2, 55, 1), (0.4, 115, -1), (0.58, 172, 1)):
+    up = J((38, 0, 2 * lead), (0, 0.22, -0.05))
+    goal.key(t, "smooth", floor=True, root=(-6, yaw, 0), neck=(-4, 0, 0),
+             rShoulder=J((-24 * lead, 0, 8)), lShoulder=J((24 * lead, 0, -8)),
+             rHip=up if lead > 0 else STAND_R, lHip=up if lead < 0 else STAND_L)
+# the take-off: low on both feet, the arms swung back
+goal.key(0.74, "in", floor=True, root=(-14, 180, 0), neck=(-6, 0, 0), rShoulder=J((-48, 0, 14)),
+         lShoulder=J((-48, 0, -14)), rHip=J((-6, 0, 6), (0, 0.32, 0)), lHip=J((-6, 0, -6), (0, 0.32, 0)))
+# in the air: up with the arms swung over the head, the half turn, coming down with them opening out
+goal.key(0.96, "out", offset=(0, 1.55, 0), root=(4, 268, 0), neck=(10, 0, 0), rShoulder=J((150, 0, 36), (0, 0.12, 0)),
+         lShoulder=J((150, 0, -36), (0, 0.12, 0)), rHip=J((34, 0, 8), (0, 0.18, 0)), lHip=J((12, 0, -6)))
+goal.key(1.14, "in", offset=(0, 0.7, 0), root=(2, 340, 0), neck=(8, 0, 0), rShoulder=J((70, 0, 70)),
+         lShoulder=J((70, 0, -70)), rHip=J((6, 0, 18)), lHip=J((6, 0, -18)))
+# the landing, wide, and the shout
+goal.key(1.26, "snap", floor=True, root=(-4, 360, 0), neck=(4, 0, 0), rShoulder=THRUST_R, lShoulder=THRUST_L,
+         rHip=WIDE_R, lHip=WIDE_L)
+goal.key(1.42, "smooth", floor=True, root=(7, 360, 0), neck=(18, 0, 0), rShoulder=THRUST_R, lShoulder=THRUST_L,
+         rHip=DEEP_R, lHip=DEEP_L)
+goal.key(2.3, "smooth", floor=True, root=(8, 360, 0), neck=(20, 0, 0), rShoulder=J((-36, 0, 27), (0, 0.06, 0)),
+         lShoulder=J((-36, 0, -27), (0, 0.06, 0)), rHip=DEEP_R, lHip=DEEP_L)
+# straightening up
+goal.key(2.65, "smooth", floor=True, root=(0, 360, 0), neck=(4, 0, 0), rShoulder=J((-6, 0, 10)),
+         lShoulder=J((-6, 0, -10)), rHip=J((0, 0, 8), (0, 0.06, 0)), lHip=J((0, 0, -8), (0, 0.06, 0)))
+goal.key(3.0, "smooth", floor=True, root=(0, 360, 0), neck=(0, 0, 0), rShoulder=REST_R, lShoulder=REST_L,
+         rHip=STAND_R, lHip=STAND_L)
+goal.follow(("rShoulder", "lShoulder"), 3.2, 0.62)
+goal.follow("neck", 2.6, 0.7)
+goal.build()
