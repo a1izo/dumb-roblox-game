@@ -1,0 +1,42 @@
+# Pre-Dawn Bonk (clip preDawnBonk, epic). Reference notes.
+id = "preDawnBonk"
+item = "emote_pre_dawn_bonk"
+name = "Pre-Dawn Bonk"
+family = "prop"
+status = "checked"
+uses = ["Bat"]
+
+[origin]
+what = "Tung Tung Tung Sahur (the 2025 brainrot meme)."
+recognisable = "A stiff wooden figure knocking with its bat before dawn: three knocks with a stamp each, then once from on high."
+
+[source]
+url = "https://www.youtube.com/results?search_query=tung+tung+tung+sahur"
+title = "Tung Tung Tung Sahur (search)"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 3.6
+fit = "Knocks at 0.75, 1.25, 1.75 s; the big one at 2.55 s."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["wood chips and dust with each knock", "a warm dawn flash and a dust ring on the last"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"

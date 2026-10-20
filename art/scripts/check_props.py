@@ -141,8 +141,10 @@ def check_clip(name, clip, meta, cat, rig):
             if stack:
                 step = emotemeta.steps(stack["step"])
                 at = emotemeta.steps(prop["at"])
+                topple = stack.get("topple")
                 for k, when in enumerate(stack["times"]):
-                    if t >= when:
+                    # (a carried copy is in the hand until its time; a toppled tower lies scattered after)
+                    if t >= when and not (topple is not None and t >= topple):
                         frames.append((prop_frame(prop, "floor", at, parts), k == 0))
                     at = at @ step
             else:

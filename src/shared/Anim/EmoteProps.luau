@@ -14,6 +14,10 @@
 --   tosses  thrown up off the hand and caught: { at, back, height, spin (turns) }
 --   stack   copies set one on another: { step = CFrame, times = { seconds, ... } } (one at each time)
 --   core    the Core import whose mesh this hold is made for: an older import shows the stand-in instead
+--   fallback a model shown instead of the stand-in on an older import (the plain apple for the bitten one)
+--   open    Death's Manual only: seconds into the clip it opens (0: open from the start), held open in the hand
+--   stack.carry  each copy rides in a hand first: { mount, at, lead = seconds before its time }, then is set down
+--   stack.topple seconds into the clip the stacked copies tumble down onto the floor
 --   drop    falls into place from above when it shows: { height = studs, time = seconds } (a thud as it lands)
 --   sink    sinks down through the floor and goes: { at = seconds, time = seconds }
 
@@ -23,7 +27,8 @@ local EmoteProps = {}
 
 export type Move = { at: number, mount: string?, to: CFrame }
 export type Toss = { at: number, back: number, height: number, spin: number }
-export type Stack = { step: CFrame, times: { number } }
+export type Carry = { mount: string, at: CFrame, lead: number }
+export type Stack = { step: CFrame, times: { number }, carry: Carry?, topple: number? }
 export type Stand = { shape: string, size: Vector3, color: Color3 }
 export type Drop = { height: number, time: number }
 export type Sink = { at: number, time: number }
@@ -39,6 +44,8 @@ export type Prop = {
 	tosses: { Toss }?,
 	stack: Stack?,
 	core: number?,
+	fallback: string?,
+	open: number?,
 	drop: Drop?,
 	sink: Sink?,
 }
@@ -74,7 +81,20 @@ local function prop(raw: any): Prop
 	end
 	local stack: Stack? = nil
 	if raw.stack then
-		stack = { step = EmoteProps.steps(raw.stack.step), times = raw.stack.times }
+		local carry: Carry? = nil
+		if raw.stack.carry then
+			carry = {
+				mount = raw.stack.carry.mount,
+				at = EmoteProps.steps(raw.stack.carry.at),
+				lead = raw.stack.carry.lead,
+			}
+		end
+		stack = {
+			step = EmoteProps.steps(raw.stack.step),
+			times = raw.stack.times,
+			carry = carry,
+			topple = raw.stack.topple,
+		}
 	end
 	return {
 		model = raw.model,
@@ -92,6 +112,8 @@ local function prop(raw: any): Prop
 		tosses = raw.tosses,
 		stack = stack,
 		core = raw.core,
+		fallback = raw.fallback,
+		open = raw.open,
 		drop = raw.drop,
 		sink = raw.sink,
 	}

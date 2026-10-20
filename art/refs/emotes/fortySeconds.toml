@@ -1,0 +1,42 @@
+# Forty Seconds (clip fortySeconds, rare). Reference notes.
+id = "fortySeconds"
+item = "emote_forty_seconds"
+name = "Forty Seconds"
+family = "prop"
+status = "checked"
+uses = ["Wristwatch"]
+
+[origin]
+what = "Light's forty seconds (Death Note: the heart attack forty seconds after the name)."
+recognisable = "The watch on the raised wrist read, the seconds counted off with nods; at forty, the snap up and the smile."
+
+[source]
+url = "https://www.youtube.com/results?search_query=death+note+40+seconds"
+title = "Death Note forty seconds (search)"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 4.6
+fit = "Counting 0.85-3.1 s, the snap at 3.45 s."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a red pulse ringing out at forty, a heartbeat"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The arm is held forward and a little in, so the watch never crosses the chest."
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"

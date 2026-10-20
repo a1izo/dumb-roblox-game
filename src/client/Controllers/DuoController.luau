@@ -40,9 +40,9 @@ local SERVE_HIT, SWING_HIT = 0.6, 0.55
 local PAST = 0.7 -- seconds a missed ball takes to fly past and land
 
 -- Where the racket's strings are, on a body holding it in the right hand: the racket's hold (Anim/EmoteProps)
--- and the strings' middle on the model (0.52 studs up from its pivot once scaled; art/scripts/emotes/duos.py).
+-- and the strings' middle on the model (0.73 studs up from its pivot once scaled; art/scripts/emotes/duos.py).
 local held = EmoteProps.of("matchPointServe")[1]
-local STRINGS = (if held then held.at else CFrame.new(0, -1.05, 0)) * CFrame.new(0, 0.52, 0)
+local STRINGS = (if held then held.at else CFrame.new(0, -1.05, 0)) * CFrame.new(0, 0.73, 0)
 local function racketHead(character: Model): Vector3?
 	local arm = character:FindFirstChild("Right Arm")
 	return if arm and arm:IsA("BasePart") then (arm.CFrame * STRINGS).Position else nil

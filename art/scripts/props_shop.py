@@ -6,6 +6,7 @@ in the shop's "Your look"."""
 
 import math
 
+import bpy
 from mathutils import Matrix, Vector
 
 import modelkit as mk
@@ -114,6 +115,45 @@ def apple():
     profile = [(0.0, 0.03), (0.12, 0.0), (0.3, 0.06), (0.42, 0.2), (0.46, 0.38), (0.43, 0.56), (0.32, 0.7), (0.14, 0.74),
                (0.0, 0.66)]
     parts = [mk.lathe("Body", profile, mat=skin, segments=20),
+             mk.tube("Stem", (0, 0, 0.64), (0.04, 0.02, 0.9), 0.025, 0.018, mat=stem, verts=6),
+             mk.sphere("Leaf", 0.14, (0.14, 0.04, 0.84), scale=(1.0, 0.45, 0.08), mat=leaf, segments=10, rings=4)]
+    return parts, []
+
+
+def _bitten(obj, bites, flesh):
+    """Bites taken out of a mesh: each (centre, radius) sphere cut away (Blender's exact boolean), the cut faces in
+    the flesh's material."""
+    obj.data.materials.append(flesh)
+    for k, (centre, radius) in enumerate(bites):
+        cutter = mk.sphere("BiteCut%d" % k, radius, centre, mat=flesh, segments=20, rings=12)
+        mod = obj.modifiers.new("Bite", "BOOLEAN")
+        mod.operation = "DIFFERENCE"
+        mod.object = cutter
+        mod.solver = "EXACT"
+        mod.material_mode = "TRANSFER"
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
+        obj.modifiers.remove(mod)
+        old = obj.data
+        obj.data = mesh
+        bpy.data.meshes.remove(old)
+        bpy.data.objects.remove(cutter)
+    return obj
+
+
+@prop("AppleBitten", pivot="bottom", material="SmoothPlastic", collide=False, texture=256)
+def apple_bitten():
+    """Apple Bite's apple once it is bitten: the same apple with a big bite out of one side (two overlapping
+    tooth-arcs), the pale flesh showing. The bite is on Blender -Y: towards the body when held upright."""
+    skin = mk.noisy("Ab_Skin", srgb(110, 14, 18), srgb(176, 30, 34), roughness=0.35, kind="plastic")
+    flesh = mk.noisy("Ab_Flesh", srgb(226, 214, 168), srgb(244, 236, 200), roughness=0.55, kind="plastic")
+    stem = mk.flat("Ab_Stick", srgb(54, 40, 26), 0.8)
+    leaf = mk.flat("Ab_Leaf", srgb(46, 70, 34), 0.6)
+    profile = [(0.0, 0.03), (0.12, 0.0), (0.3, 0.06), (0.42, 0.2), (0.46, 0.38), (0.43, 0.56), (0.32, 0.7), (0.14, 0.74),
+               (0.0, 0.66)]
+    body = mk.lathe("Body", profile, mat=skin, segments=20)
+    _bitten(body, [((0.04, -0.5, 0.33), 0.22), ((-0.08, -0.5, 0.5), 0.2)], flesh)
+    parts = [body,
              mk.tube("Stem", (0, 0, 0.64), (0.04, 0.02, 0.9), 0.025, 0.018, mat=stem, verts=6),
              mk.sphere("Leaf", 0.14, (0.14, 0.04, 0.84), scale=(1.0, 0.45, 0.08), mat=leaf, segments=10, rings=4)]
     return parts, []

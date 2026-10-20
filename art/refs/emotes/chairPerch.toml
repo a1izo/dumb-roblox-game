@@ -1,0 +1,42 @@
+# Chair Perch (clip chairPerch, epic). Reference notes.
+id = "chairPerch"
+item = "emote_chair_perch"
+name = "Chair Perch"
+family = "prop"
+status = "checked"
+uses = ["Chair"]
+
+[origin]
+what = "L on his chair (Death Note)."
+recognisable = "Crouched on the seat, hunched, the thumb at the lip, the arm over the knees, rocking."
+
+[source]
+url = "https://www.youtube.com/watch?v=CmVV4q_fSCk"
+title = "[Death Note] L explains why he can't sit right"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "A 4 s loop."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["the cold lamp and the dust of his interview room"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The owner's drawn R6 crouch on the seat: the legs out along it, the torso upright on them, the back behind."
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"

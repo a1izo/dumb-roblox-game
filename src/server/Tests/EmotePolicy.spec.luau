@@ -178,6 +178,9 @@ return function(t)
 					expect(context.from >= 0 and context.from < context.to).to.equal(true)
 					expect(context.to <= (clip :: any).length).to.equal(true)
 					expect(ClipPlayer.get(context.branch) ~= nil).to.equal(true)
+					if context.alt then
+						expect(ClipPlayer.get(context.alt) ~= nil).to.equal(true)
+					end
 				end
 			end
 		end)

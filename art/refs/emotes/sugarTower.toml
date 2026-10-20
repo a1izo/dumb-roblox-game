@@ -1,0 +1,46 @@
+# Sugar Tower (clip sugarTower, epic). Reference notes.
+id = "sugarTower"
+item = "emote_sugar_tower"
+name = "Sugar Tower"
+family = "prop"
+status = "checked"
+uses = ["SugarCube"]
+
+[origin]
+what = "L's sugar cube tower (Death Note)."
+recognisable = "Crouched, cube after cube off the pile carried onto the tower beside his knee, the last one slowly; ADD ONE pushes his luck."
+
+[source]
+url = "https://www.youtube.com/results?search_query=death+note+L+sugar+cubes+tower"
+title = "L's sugar cube tower (search)"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 6.0
+fit = "Cubes at 1.0-4.6 s; ADD ONE (4.8-6.0 s): sugarTowerAdd or, one time in two, sugarTowerTopple."
+
+[context]
+label = "ADD ONE"
+notes = "a sixth cube: it holds (sugarTowerAdd) or it all comes down (sugarTowerTopple), the server picks"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["a glint off each cube set down", "the topple: dust and a scatter of sugar"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The R6 crouch (legs forward); the tower stands beside the right knee where the arm reaches."
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"

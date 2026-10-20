@@ -1,0 +1,46 @@
+# Apple Toss (clip appleToss, rare). Reference notes.
+id = "appleToss"
+item = "emote_apple_toss"
+name = "Apple Toss"
+family = "prop"
+status = "checked"
+uses = ["Apple"]
+
+[origin]
+what = "Light's apple for Ryuk (Death Note)."
+recognisable = "Tossed up and caught twice, held out to someone unseen; TOSS: thrown over the shoulder, taken by an unseen death god."
+
+[source]
+url = "https://www.youtube.com/watch?v=dytRtEXkLiw"
+title = "Ryuk eats apple"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 3.6
+fit = "Tosses 0.5-1.25 and 1.55-2.3 s; TOSS (2.6-3.6 s) plays appleTossThrow."
+
+[context]
+label = "TOSS"
+notes = "appleTossThrow: thrown up over the shoulder, it never comes back down"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["TOSS: the apple gone at the top in a puff of black feathers"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"

@@ -195,6 +195,14 @@ def make_prop(prop, cat, lib):
         piece.parent = obj
         piece.matrix_parent_inverse = Matrix.Identity(4)
         piece.matrix_basis = Matrix.Identity(4)
+        # Death's Manual held open (EmoteMeta `open`): each piece turned about its hinge as ManualBook does (the
+        # catalog's hinge is in Roblox axes from the pivot; its turn is about Roblox Z, which is Blender Y)
+        entry = cat.get(prop["model"]) or {}
+        hinge, turn = (entry.get("hinge") or {}).get(name), (entry.get("turn") or {}).get(name)
+        if prop.get("open") is not None and hinge and turn:
+            hb = Vector((-hinge[0], hinge[2], hinge[1]))
+            piece.matrix_basis = (Matrix.Translation(hb) @ Matrix.Rotation(math.radians(-turn), 4, "Y")
+                                  @ Matrix.Translation(-hb))
     s = emotemeta.prop_scale(prop, cat) or 1.0
     return obj, MAP.to_4x4() @ Matrix.Scale(s, 4)
 
@@ -259,7 +267,15 @@ def bake_props(arm, parts, meta, cat, lib, frames, length, loop):
                 step = np_to_matrix(emotemeta.steps(prop["stack"]["step"]))
                 for _ in range(k):
                     at = at @ step
-                visible = tc >= prop["stack"]["times"][k]
+                when = prop["stack"]["times"][k]
+                visible = tc >= when
+                carry, topple = prop["stack"].get("carry"), prop["stack"].get("topple")
+                if carry and when > 0 and when - carry["lead"] <= tc < when:  # riding in the hand
+                    hand = socket_world(arm, parts, carry["mount"]) @ np_to_matrix(emotemeta.steps(carry["at"])) @ model
+                    key_matrix(obj, frame, hand, True)
+                    continue
+                if topple is not None and tc >= topple:
+                    visible = False
                 m = socket_world(arm, parts, "floor") @ at @ model
                 key_matrix(obj, frame, m, visible)
                 continue

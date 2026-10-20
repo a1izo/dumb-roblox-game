@@ -327,6 +327,8 @@ HOLDS = {
     # the coin pinched on the thumb at the start; on the back of the left hand after the slap
     # the apple in the right fingers, upright, its middle just past the fist, as it is looked at
     "appleBite/Apple": ("Right Arm", {"rShoulder": APPLE_LOOK}, (0.52, 0.23, -1.79), (0, 0, 0)),
+    # the bitten one in the same place, the bite (Blender -Y, towards the body) turned out to the right and forward
+    "appleBite/AppleBitten": ("Right Arm", {"rShoulder": APPLE_LOOK}, (0.52, 0.23, -1.79), (0, 120, 0)),
     "coinFlip/Coin": ("Right Arm", {"rShoulder": LOAD}, (0.55, -0.02, -1.25), (90, 0, 0)),
     "coinFlip/CoinBack": ("Left Arm", {"lShoulder": FLAT}, (-0.18, 0.54, -1.22), (0, 0, 0)),
     "coinFlip/CoinUp": ("Right Arm", {"rShoulder": LOAD}, (0.55, -0.02, -1.25), (90, 0, 0)),

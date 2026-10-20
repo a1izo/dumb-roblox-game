@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Assets = require(Shared:WaitForChild("Assets"))
+local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
@@ -1265,6 +1266,482 @@ FX.finalBreakdown = function(character, preview)
 	end
 end
 
+-- The prop emotes' accents (S12) -------------------------------------------------------------------------------
+
+-- Pre-Dawn Bonk: chips of wood off the bat and dust at the feet with each knock; the last one from on high
+-- cracks with a warm flash of dawn and a ring of dust.
+local WOOD = ColorSequence.new(Color3.fromRGB(170, 120, 70), Color3.fromRGB(110, 76, 44))
+FX.preDawnBonk = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root then
+		return nothing
+	end
+	local gone = false
+	local function over()
+		return gone
+	end
+	local function knock(big: boolean)
+		local arm = character:FindFirstChild("Right Arm")
+		if arm and arm:IsA("BasePart") then
+			burst((arm.CFrame * CFrame.new(0, -1.0, -1.6)).Position, {
+				color = WOOD,
+				count = if big then 18 else 8,
+				size = 0.22,
+				speed = NumberRange.new(4, 8),
+				life = NumberRange.new(0.3, 0.6),
+				spread = 80,
+				gravity = 24,
+				light = 0,
+			})
+		end
+		local sole = lowerSole(character)
+		if sole then
+			EmoteFx.thud(CFrame.new(sole), if big then 5 else 1.4)
+		end
+	end
+	for _, t in ipairs({ 0.75, 1.25, 1.75 }) do
+		after(root, over, t, function()
+			knock(false)
+		end)
+	end
+	after(root, over, 2.55, function()
+		knock(true)
+		if Motion.isReduced() then
+			return
+		end
+		local glow = Create("PointLight", {
+			Color = Color3.fromRGB(255, 170, 90),
+			Range = 14,
+			Brightness = 5,
+			Shadows = false,
+			Parent = root,
+		}) :: PointLight
+		TweenService:Create(glow, TweenInfo.new(0.9, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
+		task.delay(1.0, function()
+			glow:Destroy()
+		end)
+	end)
+	return function()
+		gone = true
+	end
+end
+
+-- Blindfold Lift: blue motes drifting round him while the blindfold is on (Infinity, idling).
+local INFINITY = ColorSequence.new(Color3.fromRGB(170, 220, 255), Color3.fromRGB(90, 160, 255))
+FX.blindfoldLift = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root or not root:IsA("BasePart") then
+		return nothing
+	end
+	local at = Create("Attachment", { Name = "EmoteInfinity", Parent = root })
+	at:SetAttribute("DGEmote", true)
+	Create("ParticleEmitter", {
+		Texture = SPARKLE,
+		Color = INFINITY,
+		LightEmission = 1,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0) }),
+		Lifetime = NumberRange.new(1.2, 2.0),
+		Speed = NumberRange.new(0.3, 0.8),
+		SpreadAngle = Vector2.new(180, 180),
+		Shape = Enum.ParticleEmitterShape.Sphere,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		Rate = if Motion.isReduced() then 3 else 8,
+		Parent = at,
+	})
+	return function()
+		at:Destroy()
+	end
+end
+
+-- LIFT: as the blindfold goes up (0.9 s) the eyes light blue, a cold blue light comes up on him and the motes
+-- burst out into a sphere round him (Infinity).
+FX.blindfoldLiftUp = function(character, preview)
+	local head = character:FindFirstChild("Head")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not head or not head:IsA("BasePart") or not root then
+		return nothing
+	end
+	local gone = false
+	local parts: { BasePart } = {}
+	after(
+		head,
+		function()
+			return gone
+		end,
+		0.9,
+		function()
+			for _, side in ipairs({ -0.2, 0.2 }) do
+				local part = Create("Part", {
+					Name = "EmoteEyes",
+					Size = Vector3.new(0.2, 0.12, 0.06),
+					Color = Color3.fromRGB(110, 200, 255),
+					Material = Enum.Material.Neon,
+					CanCollide = false,
+					CanQuery = false,
+					CanTouch = false,
+					Massless = true,
+					CastShadow = false,
+					CFrame = head.CFrame * CFrame.new(side, 0.12, -head.Size.Z / 2 - 0.03),
+					Parent = character,
+				}) :: BasePart
+				part:SetAttribute("DGEmote", true)
+				Create("WeldConstraint", { Part0 = head, Part1 = part, Parent = part })
+				table.insert(parts, part)
+			end
+			if preview then
+				return
+			end
+			Create("PointLight", {
+				Color = Color3.fromRGB(120, 190, 255),
+				Range = 10,
+				Brightness = if Motion.isReduced() then 1.5 else 4,
+				Shadows = false,
+				Parent = parts[1],
+			})
+			local torso = character:FindFirstChild("Torso")
+			if torso and torso:IsA("BasePart") then
+				burst(torso.Position, {
+					color = INFINITY,
+					count = if Motion.isReduced() then 10 else 30,
+					size = 0.18,
+					speed = NumberRange.new(5, 7),
+					life = NumberRange.new(0.5, 0.8),
+					spread = 180,
+					light = 1,
+				})
+			end
+		end
+	)
+	return function()
+		gone = true
+		for _, part in ipairs(parts) do
+			part:Destroy()
+		end
+	end
+end
+
+-- Chair Perch: L's interview room, the same cold lamp and drifting dust as his crouch.
+FX.chairPerch = function(character, preview, phase)
+	return FX.aceCrouch(character, preview, phase)
+end
+
+-- The towers: a glint off each cube or die as it is set down; when one comes down, a puff of dust off the floor
+-- and a scatter of sparkles.
+local SUGAR = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(230, 236, 255))
+local function towerFx(at: { number }, base: Vector3, step: number, topple: number?): Fx
+	return function(character, preview)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if preview or not root or not root:IsA("BasePart") then
+			return nothing
+		end
+		local gone = false
+		local function over()
+			return gone
+		end
+		local floor = floorUnder(root.Position, character)
+		local look = root.CFrame.LookVector
+		local yaw = math.atan2(-look.X, -look.Z)
+		local foot = CFrame.new(floor) * CFrame.Angles(0, yaw, 0) * CFrame.new(base)
+		for k, t in ipairs(at) do
+			after(root, over, t + 0.1, function()
+				burst((foot * CFrame.new(0, step * (k - 0.5), 0)).Position, {
+					color = SUGAR,
+					count = 4,
+					size = 0.25,
+					speed = NumberRange.new(0.5, 1.5),
+					life = NumberRange.new(0.25, 0.45),
+					spread = 180,
+					light = 1,
+				})
+			end)
+		end
+		if topple then
+			after(root, over, topple + 0.3, function()
+				EmoteFx.thud(foot, 3)
+				burst((foot * CFrame.new(0, 0.4, 0)).Position, {
+					color = SUGAR,
+					count = 14,
+					size = 0.2,
+					speed = NumberRange.new(2, 4),
+					life = NumberRange.new(0.4, 0.7),
+					spread = 120,
+					gravity = 6,
+					light = 1,
+				})
+			end)
+		end
+		return function()
+			gone = true
+		end
+	end
+end
+FX.sugarTower = towerFx({ 1.0, 1.8, 2.6, 3.4, 4.6 }, Vector3.new(1.45, 0, -0.7), 0.42)
+FX.sugarTowerAdd = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42)
+FX.sugarTowerTopple = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42, 1.6)
+FX.diceTower = towerFx({ 0.9, 1.6, 2.3, 3.0, 3.7, 4.6 }, Vector3.new(-0.05, 0, -1.35), 0.42)
+FX.diceTowerAdd = towerFx({ 1.3 }, Vector3.new(-0.05, 2.52, -1.35), 0.42)
+FX.diceTowerTopple = towerFx({ 1.3 }, Vector3.new(-0.05, 2.52, -1.35), 0.42, 1.6)
+
+-- Strawberry on Top: a soft pink sparkle off the strawberry as it is picked and as it is eaten, a warm light on it.
+local PINK = ColorSequence.new(Color3.fromRGB(255, 190, 210), Color3.fromRGB(255, 120, 150))
+FX.strawberryOnTop = accent(4.0, { 1.0, 2.8 }, function(character)
+	local arm = character:FindFirstChild("Right Arm")
+	if arm and arm:IsA("BasePart") then
+		burst((arm.CFrame * CFrame.new(0, -1.15, -0.12)).Position, {
+			color = PINK,
+			count = 10,
+			size = 0.2,
+			speed = NumberRange.new(1, 2.5),
+			life = NumberRange.new(0.4, 0.8),
+			spread = 180,
+			gravity = -1,
+			light = 1,
+		})
+	end
+end)
+
+-- Two-Finger Grip: the phone's screen lights the face.
+FX.twoFingerGrip = function(character, preview)
+	local arm = character:FindFirstChild("Right Arm")
+	if preview or not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local at = Create("Attachment", { Name = "EmoteScreen", Position = Vector3.new(0, -1.6, -0.3), Parent = arm })
+	at:SetAttribute("DGEmote", true)
+	Create("PointLight", {
+		Color = Color3.fromRGB(200, 225, 255),
+		Range = 5,
+		Brightness = 1.6,
+		Shadows = false,
+		Parent = at,
+	})
+	return function()
+		at:Destroy()
+	end
+end
+
+-- Furious Scribbling: ink flecks off the pen, and on the Manual's open page the name being written, stroke by
+-- stroke, line by line (the page the game writes on: ManualBook.page).
+local INK_FLECK = ColorSequence.new(Color3.fromRGB(12, 10, 14))
+-- The Death's Manual held in the hand (a rigged book among the emote's props).
+local function heldManual(character: Model): Model?
+	for _, item in ipairs(character:GetChildren()) do
+		if item:IsA("Model") and item.Name == "EmoteProp" and item:GetAttribute("ManualScale") ~= nil then
+			return item
+		end
+	end
+	return nil
+end
+
+local function scribbleOn(character: Model, gone: () -> boolean, strokes: number, every: number, red: boolean?)
+	task.spawn(function()
+		local book: Model? = nil
+		for _ = 1, 20 do
+			book = heldManual(character)
+			if book or gone() then
+				break
+			end
+			task.wait(0.05)
+		end
+		if not book or gone() then
+			return
+		end
+		local sheet = ManualBook.page(book)
+		local rule = ManualBook.rule(book)
+		if not sheet or not rule then
+			return
+		end
+		local gui = Create("SurfaceGui", {
+			Name = "EmoteScribble",
+			Face = Enum.NormalId.Front,
+			SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
+			PixelsPerStud = 60,
+			LightInfluence = 0.6,
+			Parent = sheet,
+		}) :: SurfaceGui
+		local random = Random.new(7)
+		for k = 0, strokes - 1 do
+			if gone() or not gui.Parent then
+				return
+			end
+			local row = math.floor(k / 4) % rule.count
+			local col = k % 4
+			local y = (rule.first + rule.pitch * row) / rule.size.Y
+			local x0 = rule.margin / rule.size.X
+			local w = (1 - 2 * x0) / 4
+			Create("Frame", {
+				BackgroundColor3 = if red then Color3.fromRGB(180, 20, 30) else Color3.fromRGB(14, 12, 16),
+				BorderSizePixel = 0,
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.fromScale(x0 + w * col, y),
+				Size = UDim2.new(w * random:NextNumber(0.55, 0.95), 0, 0, if red then 6 else 3),
+				Rotation = random:NextNumber(-3, 3),
+				Parent = gui,
+			})
+			task.wait(every)
+		end
+	end)
+end
+
+FX.furiousScribbling = function(character, preview)
+	local arm = character:FindFirstChild("Right Arm")
+	if not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	local function over()
+		return gone
+	end
+	scribbleOn(character, over, 60, 0.2)
+	if not preview then
+		onBeats(arm, over, 2.4, { 0.4, 1.2, 2.0 }, nil, function()
+			burst((arm.CFrame * CFrame.new(0, -1.6, -0.3)).Position, {
+				color = INK_FLECK,
+				count = 4,
+				size = 0.12,
+				speed = NumberRange.new(1, 2.5),
+				life = NumberRange.new(0.3, 0.5),
+				spread = 80,
+				gravity = 10,
+				light = 0,
+			})
+		end)
+	end
+	return function()
+		gone = true
+	end
+end
+
+-- WRITE IT: the name written huge in red, the slash flaring red across the page with a spray of ink.
+FX.furiousScribblingSlash = function(character, preview)
+	local arm = character:FindFirstChild("Right Arm")
+	if not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	local function over()
+		return gone
+	end
+	scribbleOn(character, over, 4, 0.18, true)
+	after(arm, over, 1.2, function()
+		if preview then
+			return
+		end
+		local tip = (arm.CFrame * CFrame.new(0, -1.6, -0.3)).Position
+		burst(tip, {
+			color = ColorSequence.new(CRIMSON),
+			count = if Motion.isReduced() then 6 else 16,
+			size = 0.18,
+			speed = NumberRange.new(3, 6),
+			life = NumberRange.new(0.3, 0.6),
+			spread = 120,
+			gravity = 12,
+			light = 0.6,
+		})
+		if not Motion.isReduced() then
+			local flare = Create("Part", {
+				Name = "EmoteFlare",
+				Size = Vector3.new(0.2, 0.2, 0.2),
+				CFrame = CFrame.new(tip),
+				Transparency = 1,
+				Anchored = true,
+				CanCollide = false,
+				CanQuery = false,
+				CanTouch = false,
+				Parent = workspace.CurrentCamera,
+			}) :: BasePart
+			local light =
+				Create("PointLight", { Color = CRIMSON, Range = 9, Brightness = 6, Parent = flare }) :: PointLight
+			TweenService:Create(light, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
+			task.delay(0.7, function()
+				flare:Destroy()
+			end)
+		end
+	end)
+	return function()
+		gone = true
+	end
+end
+
+-- TOSS: the apple is taken at the top of its flight by an unseen death god, in a puff of black feathers.
+local FEATHERS = ColorSequence.new(Color3.fromRGB(16, 14, 18), Color3.fromRGB(40, 36, 44))
+FX.appleTossThrow = accent(2.0, { 1.15 }, function(character)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		-- (where the apple's flight peaks: thrown 7 studs up off the raised hand)
+		burst((root.CFrame * CFrame.new(1.4, 8.5, -0.6)).Position, {
+			color = FEATHERS,
+			count = 12,
+			size = 0.45,
+			speed = NumberRange.new(1, 3),
+			life = NumberRange.new(0.8, 1.3),
+			spread = 180,
+			gravity = 2,
+			light = 0,
+		})
+	end
+end)
+
+-- Chocolate Snap: crumbs of chocolate off each bite.
+local CHOC = ColorSequence.new(Color3.fromRGB(70, 40, 26), Color3.fromRGB(110, 70, 44))
+FX.chocolateSnap = accent(3.2, { 0.75, 1.95 }, function(character)
+	local head = character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		burst((head.CFrame * CFrame.new(0.2, -0.3, -0.7)).Position, {
+			color = CHOC,
+			count = 10,
+			size = 0.14,
+			speed = NumberRange.new(3, 6),
+			life = NumberRange.new(0.4, 0.7),
+			spread = 70,
+			gravity = 20,
+			light = 0,
+		})
+	end
+end)
+
+-- Forty Seconds: at forty (3.45 s) a red pulse rings out from him, a heartbeat.
+FX.fortySeconds = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root or not root:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	after(
+		root,
+		function()
+			return gone
+		end,
+		3.45,
+		function()
+			local floor = floorUnder(root.Position, character)
+			local ring = Create("Part", {
+				Name = "EmotePulse",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.05, 1, 1),
+				CFrame = CFrame.new(floor + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = CRIMSON,
+				Material = Enum.Material.Neon,
+				Transparency = 0.3,
+				Anchored = true,
+				CanCollide = false,
+				CanQuery = false,
+				CanTouch = false,
+				CastShadow = false,
+				Parent = workspace.CurrentCamera,
+			}) :: BasePart
+			local info = TweenInfo.new(if Motion.isReduced() then 0.6 else 0.9, Enum.EasingStyle.Quad)
+			TweenService:Create(ring, info, { Size = Vector3.new(0.05, 14, 14), Transparency = 1 }):Play()
+			task.delay(1.0, function()
+				ring:Destroy()
+			end)
+		end
+	)
+	return function()
+		gone = true
+	end
+end
+
 -- Menacing Pose's other two poses (NEXT POSE): the same signs rising round them.
 FX.menacingPose2 = function(character, preview, phase)
 	return FX.menacingPose(character, preview, phase)
@@ -1304,6 +1781,23 @@ local RUNG: { [string]: number } = {
 	menacingPose2 = 1,
 	menacingPose3 = 1,
 	lowBatteryCharge = 1,
+	preDawnBonk = 2,
+	blindfoldLift = 2,
+	blindfoldLiftUp = 2,
+	chairPerch = 2,
+	sugarTower = 2,
+	sugarTowerAdd = 2,
+	sugarTowerTopple = 2,
+	diceTower = 2,
+	diceTowerAdd = 2,
+	diceTowerTopple = 2,
+	strawberryOnTop = 2,
+	twoFingerGrip = 1,
+	furiousScribbling = 1,
+	furiousScribblingSlash = 1,
+	appleTossThrow = 1,
+	chocolateSnap = 1,
+	fortySeconds = 1,
 	impossibleLean = 1,
 	itsYou = 1,
 	deducing = 1,

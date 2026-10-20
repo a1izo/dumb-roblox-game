@@ -253,7 +253,9 @@ def racket():
     for side in (-1, 1):
         parts.append(mk.tube("Throat", (0.16 * side, 0, centre - height + 0.04), (0.03 * side, 0, -0.02), 0.04, 0.035,
                              mat=wood, verts=8))
-    parts.append(pk.rounded("Handle", (0.13, 0.12, 0.95), (0, 0, -0.5), grip, r=0.03))
+    # (the handle long enough for a whole fist and a bit below it: 1.3 studs)
+    parts.append(pk.rounded("Handle", (0.13, 0.12, 1.3), (0, 0, -0.675), grip, r=0.03))
+    parts.append(pk.rounded("Butt", (0.16, 0.15, 0.06), (0, 0, -1.34), wood, r=0.02))
     return parts, []
 
 

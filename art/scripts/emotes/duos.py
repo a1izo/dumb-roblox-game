@@ -118,10 +118,10 @@ lost.build()
 _axis = arm_direction(1, CONTACT_R)
 _axis = _axis / np.linalg.norm(_axis)
 _fist = np.array((2.3, 0.25, -1.1))
-_GRIP_TO_PIVOT = 0.95  # the racket's middle from where the fist holds the handle, studs, once scaled
+_GRIP_TO_PIVOT = 1.1  # the racket's middle from where the fist holds the handle (near its butt), studs, scaled
 HOLDS = {  # (both players' rackets share this one line in EmoteMeta)
     "matchPointServe/Racket": ("Right Arm", {"rShoulder": CONTACT_R}, tuple(_fist + _axis * _GRIP_TO_PIVOT),
                                basis_angles(_axis, (0.0, 0.0, -1.0))),
 }
 # The strings' middle, from the racket's pivot (model frame, scaled): DuoController.racketHead aims the ball there.
-STRINGS = (0.0, 0.52, 0.0)
+STRINGS = (0.0, 0.73, 0.0)

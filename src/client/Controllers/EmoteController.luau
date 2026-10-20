@@ -26,7 +26,9 @@ local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local EmoteProps = require(Shared:WaitForChild("Anim"):WaitForChild("EmoteProps"))
+local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
+local Models = require(Shared:WaitForChild("Models"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
@@ -109,6 +111,13 @@ end
 local function build(spec: EmoteProps.Prop): Model
 	local current = spec.core == nil or ModelLibrary.version("ModelsCore") >= spec.core
 	local model = if current then ModelLibrary.get(spec.model) else nil
+	if not model and not current and spec.fallback then
+		model = ModelLibrary.get(spec.fallback)
+	end
+	-- Death's Manual to be opened comes rigged (its board and leaves turn), imported or part-built
+	if spec.open ~= nil and spec.model == ManualBook.KEY then
+		model = Models.grimoire()
+	end
 	if model then
 		local _, size = model:GetBoundingBox()
 		local biggest = math.max(size.X, size.Y, size.Z)
@@ -177,7 +186,10 @@ local function weld(model: Model, to: BasePart)
 			part.CanCollide = false
 			part.CanQuery = false
 			part.CanTouch = false
-			Create("WeldConstraint", { Name = "Held", Part0 = to, Part1 = part, Parent = part })
+			-- (a rigged Manual's board and leaves hang from its body on their own joints)
+			if not part:FindFirstChild("ManualJoint") then
+				Create("WeldConstraint", { Name = "Held", Part0 = to, Part1 = part, Parent = part })
+			end
 		end
 	end
 end
@@ -246,8 +258,8 @@ function EmoteController.dress(character: Model, clip: string, alive: Alive, man
 		end
 	end
 	for _, spec in ipairs(specs) do
-		local function put(at: CFrame, onFloor: boolean): Model?
-			local cf, part = placeOn(character, spec.mount, at)
+		local function put(at: CFrame, onFloor: boolean, mountAt: string?): Model?
+			local cf, part = placeOn(character, mountAt or spec.mount, at)
 			if not cf then
 				return nil
 			end
@@ -263,17 +275,104 @@ function EmoteController.dress(character: Model, clip: string, alive: Alive, man
 				prop.Parent = character
 			end
 			table.insert(made, prop)
+			-- Death's Manual opens in the hand
+			if spec.open ~= nil and spec.model == ManualBook.KEY then
+				local delay = spec.open - (spec.show or 0)
+				if delay <= 0 then
+					ManualBook.pose(prop, 1, 1)
+				else
+					after(delay, function()
+						ManualBook.open(prop, 0.6)
+					end)
+				end
+			end
 			return prop
 		end
 		local stack = spec.stack
 		if stack then
 			local at = spec.at
+			local copies: { Model } = {}
 			for _, t in ipairs(stack.times) do
 				local here = at
-				after(t, function()
-					put(here, true)
-				end)
+				local carry = stack.carry
+				-- (a copy there from the start is simply there)
+				if carry and t > 0 then
+					-- in the hand first, then set down on its place
+					after(math.max(0, t - carry.lead), function()
+						local prop = put(carry.at, false, carry.mount)
+						if not prop then
+							return
+						end
+						after(math.min(carry.lead, t), function()
+							local fromCf = prop:GetPivot()
+							loose(prop)
+							prop.Parent = floorHolder
+							table.insert(copies, prop)
+							over(0.15, function(u: number)
+								local target = placeOn(character, "floor", here)
+								if target and not gone then
+									prop:PivotTo(fromCf:Lerp(target, u))
+								end
+							end, function()
+								local target = placeOn(character, "floor", here)
+								if target and not gone then
+									prop:PivotTo(target)
+								end
+							end)
+						end)
+					end)
+				else
+					after(t, function()
+						local prop = put(here, true)
+						if prop then
+							table.insert(copies, prop)
+						end
+					end)
+				end
 				at = at * stack.step
+			end
+			-- tumbling down: each copy falls off the one under it, the higher ones further, a quarter turn or
+			-- three in the air, and lands flat on the floor (the same way on every screen for this player)
+			if stack.topple then
+				after(stack.topple, function()
+					local seed = 0
+					for i = 1, #character.Name do
+						seed += string.byte(character.Name, i) * i
+					end
+					local random = Random.new(seed)
+					local heading = random:NextNumber(0, math.pi * 2)
+					for k, prop in ipairs(copies) do
+						local from = prop:GetPivot()
+						local _, size = prop:GetBoundingBox()
+						local h = size.Y
+						local base = copies[1]:GetPivot().Position
+						local spread = heading + random:NextNumber(-0.6, 0.6)
+						local reachOut = 0.3 + 0.42 * (k - 1) * random:NextNumber(0.7, 1.2)
+						local land = base + Vector3.new(math.cos(spread) * reachOut, 0, math.sin(spread) * reachOut)
+						local yaw = CFrame.Angles(0, random:NextNumber(0, math.pi * 2), 0)
+						local turns = random:NextInteger(1, 3)
+						local fromUp = from.Position - base
+						over(0.28 + 0.06 * k, function(u: number)
+							if gone then
+								return
+							end
+							local fall = from.Position:Lerp(land, u)
+							local y = base.Y + fromUp.Y * (1 - u * u)
+							local spin = CFrame.Angles(u * turns * math.pi / 2, 0, 0)
+							local turn = (from - from.Position):Lerp(yaw, u)
+							prop:PivotTo(
+								CFrame.new(Vector3.new(fall.X, y, fall.Z) + Vector3.new(0, h / 2, 0))
+									* turn
+									* spin
+									* CFrame.new(0, -h / 2, 0)
+							)
+						end, function()
+							if not gone then
+								prop:PivotTo(CFrame.new(land) * yaw)
+							end
+						end)
+					end
+				end)
 			end
 			continue
 		end

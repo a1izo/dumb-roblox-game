@@ -1,0 +1,46 @@
+# Furious Scribbling (clip furiousScribbling, rare). Reference notes.
+id = "furiousScribbling"
+item = "emote_furious_scribbling"
+name = "Furious Scribbling"
+family = "prop"
+status = "checked"
+uses = ["Grimoire", "Pen"]
+
+[origin]
+what = "Light writing names in the Death Note (episode 1's montage)."
+recognisable = "The Manual held open, the pen racing line after line; WRITE IT: the last name huge, slashed across."
+
+[source]
+url = "https://www.youtube.com/results?search_query=death+note+light+writing+montage"
+title = "Light's writing montage (search)"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 2.4
+fit = "A 2.4 s loop; WRITE IT plays furiousScribblingSlash (2.4 s), which replaced the server's random one time in three."
+
+[context]
+label = "WRITE IT"
+notes = "furiousScribblingSlash: the last name written huge and slashed out"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["ink flecks off the pen", "the strokes written onto the open page as he writes", "WRITE IT: red letters, the red flare of the slash"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The real Death's Manual, opened by the game in his hand, tilted up to him; the fist rides over the page."
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"

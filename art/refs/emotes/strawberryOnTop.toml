@@ -1,0 +1,42 @@
+# Strawberry on Top (clip strawberryOnTop, epic). Reference notes.
+id = "strawberryOnTop"
+item = "emote_strawberry_on_top"
+name = "Strawberry on Top"
+family = "prop"
+status = "checked"
+uses = ["CakeSlice", "Strawberry"]
+
+[origin]
+what = "L's strawberry shortcake (Death Note)."
+recognisable = "The cake held up, the strawberry picked off with care, admired, popped into the mouth, savoured."
+
+[source]
+url = "https://www.youtube.com/results?search_query=death+note+L+strawberry+cake"
+title = "L's strawberry (search)"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "Picked 1.0 s, admired 1.6-2.35 s, eaten 2.75 s."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["a pink sparkle as it is picked and eaten"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The arm at the lips covers the chin a moment (an R6 arm has no wrist)."
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"

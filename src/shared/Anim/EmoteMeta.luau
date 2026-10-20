@@ -17,27 +17,14 @@
 --   stack   copies set one on another: { step = steps, times = { seconds, ... } } (one at each time)
 --   core    the Core import the hold is made for (a remodelled mesh): an older import shows the stand-in
 
-local GRIP = { { p = { 0, -1.05, -0.25 } } }
 local RACKET = {
 	model = "Racket",
-	size = 2.1,
+	-- (the Core v10 racket, its handle long enough for a whole fist; the head as big as before)
+	size = 2.54,
+	core = 10,
 	stand = { shape = "Block", size = { 0.8, 2.1, 0.08 }, color = { 150, 112, 72 } },
 	mount = "Right Arm",
-	at = { { p = { 0, -1.8, 0 } }, { r = { 180, -62.22, 0 } } }, -- hold: matchPointServe/Racket
-}
-local NOTEBOOK = {
-	model = "Grimoire",
-	size = 1.3,
-	stand = { shape = "Block", size = { 1.3, 0.14, 0.95 }, color = { 22, 22, 26 } },
-	mount = "Torso",
-	at = { { p = { 0, -0.35, -1.05 } }, { r = { 35, 0, 0 } } },
-}
-local PEN = {
-	model = "Pen",
-	size = 1.07,
-	stand = { shape = "Cylinder", size = { 0.9, 0.09, 0.09 }, color = { 14, 14, 16 } },
-	mount = "Right Arm",
-	at = { { p = { 0, -0.35, -0.2 } }, { r = { -55, 0, 0 } } },
+	at = { { p = { 0, -1.95, 0 } }, { r = { 180, -62.22, 0 } } }, -- hold: matchPointServe/Racket
 }
 
 return {
@@ -82,11 +69,27 @@ return {
 				stand = { shape = "Ball", size = { 0.7, 0.7, 0.7 }, color = { 150, 20, 26 } },
 				mount = "Right Arm",
 				at = { { p = { 0.044, -1.203, -0.178 } }, { r = { -90.38, -23.38, -0.15 } } }, -- hold: appleBite/Apple
+				hide = 1.02,
+			},
+			-- bitten at the crunch, shown as it comes away from the mouth (the Core v10 mesh; the plain apple on an older import), the bite turned out
+			-- to the right where it shows
+			{
+				model = "AppleBitten",
+				size = 0.8,
+				core = 10,
+				fallback = "Apple",
+				stand = { shape = "Ball", size = { 0.7, 0.7, 0.7 }, color = { 150, 20, 26 } },
+				mount = "Right Arm",
+				at = { { p = { 0.044, -1.203, -0.178 } }, { r = { 88.5, 83.38, -178.81 } } }, -- hold: appleBite/AppleBitten
+				show = 1.02,
 			},
 		},
 		-- the crunch: the head lunges into the apple (touching the lips, its middle is about its radius from the mouth)
 		contacts = { { at = 0.95, prop = 1, to = "mouth", within = 0.45 } },
-		allow = { { prop = 1, part = "Head", from = 0.83, to = 1.05 } },
+		allow = {
+			{ prop = 1, part = "Head", from = 0.83, to = 1.05 },
+			{ prop = 2, part = "Head", from = 1.0, to = 1.08 },
+		},
 	},
 	-- LOOK UP, any time in the swagger: the face tipped back to the sky with the grin (the meme's panel)
 	excuseMeSir = { context = { label = "LOOK UP", from = 0, to = 1.6, branch = "excuseMeSirUp" } },
@@ -110,6 +113,7 @@ return {
 			},
 		},
 	},
+	-- LIFT, any time: the blindfold pushed up into the hair, the eyes open
 	blindfoldLift = {
 		props = {
 			{
@@ -118,10 +122,30 @@ return {
 				stand = { shape = "Block", size = { 1.3, 0.3, 1.3 }, color = { 14, 14, 16 } },
 				mount = "Head",
 				at = { { p = { 0, 0.04, 0 } } },
-				-- Pushed up onto the brow by two fingers.
-				moves = { { at = 1.15, to = { { p = { 0, 0.44, 0.05 } }, { r = { -12, 0, 0 } } } } },
 			},
 		},
+		context = { label = "LIFT", from = 0, to = 4, branch = "blindfoldLiftUp" },
+	},
+	blindfoldLiftUp = {
+		fx = 2,
+		props = {
+			{
+				model = "Blindfold",
+				size = 1.5,
+				stand = { shape = "Block", size = { 1.3, 0.3, 1.3 }, color = { 14, 14, 16 } },
+				mount = "Head",
+				at = { { p = { 0, 0.04, 0 } } },
+				-- pushed up into the hair by two fingers
+				moves = {
+					{
+						at = 0.7,
+						to = { { p = { 0, 0.5, 0.08 } }, { r = { -14, 0, 0 } } },
+					},
+				},
+			},
+		},
+		-- the fingers at it as they push it up
+		allow = { { prop = 1, part = "Right Arm", from = 0.35, to = 1.55 } },
 	},
 	chairPerch = {
 		props = {
@@ -146,6 +170,69 @@ return {
 			},
 		},
 	},
+	-- L's tower: cube after cube off the pile by the right hip, carried, set on the tower beside the right knee;
+	-- ADD ONE pushes his luck (one time in two it comes down)
+	sugarTowerAdd = {
+		fx = 2,
+		props = {
+			{
+				model = "SugarCube",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 240, 238, 232 } },
+				mount = "floor",
+				at = { { p = { 1.45, 0, -0.7 } } },
+				stack = {
+					step = { { p = { 0, 0.42, 0 } }, { r = { 0, 7, 0 } } },
+					times = { 0, 0, 0, 0, 0, 1.3 },
+					carry = { mount = "Right Arm", at = { { p = { 0, -1.15, -0.05 } } }, lead = 0.5 },
+				},
+			},
+			-- the pile it is taken from, by the right hip
+			{
+				model = "SugarCube",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 240, 238, 232 } },
+				mount = "floor",
+				at = { { p = { 1.75, 0, 0.05 } } },
+				stack = { step = { { p = { 0, 0.42, 0 } }, { r = { 0, 31, 0 } } }, times = { 0, 0 } },
+			},
+		},
+		allow = {
+			{ prop = 1, part = "Right Arm", from = 0, to = 3.4 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 3.4 },
+		},
+	},
+	sugarTowerTopple = {
+		fx = 2,
+		props = {
+			{
+				model = "SugarCube",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 240, 238, 232 } },
+				mount = "floor",
+				at = { { p = { 1.45, 0, -0.7 } } },
+				stack = {
+					step = { { p = { 0, 0.42, 0 } }, { r = { 0, 7, 0 } } },
+					times = { 0, 0, 0, 0, 0, 1.3 },
+					carry = { mount = "Right Arm", at = { { p = { 0, -1.15, -0.05 } } }, lead = 0.5 },
+					topple = 1.6,
+				},
+			},
+			-- the pile it is taken from, by the right hip
+			{
+				model = "SugarCube",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 240, 238, 232 } },
+				mount = "floor",
+				at = { { p = { 1.75, 0, 0.05 } } },
+				stack = { step = { { p = { 0, 0.42, 0 } }, { r = { 0, 31, 0 } } }, times = { 0, 0 } },
+			},
+		},
+		allow = {
+			{ prop = 1, part = "Right Arm", from = 0, to = 3.4 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 3.4 },
+		},
+	},
 	sugarTower = {
 		props = {
 			{
@@ -153,9 +240,36 @@ return {
 				size = 0.42,
 				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 240, 238, 232 } },
 				mount = "floor",
-				at = { { p = { 0, 0, -1.5 } } },
-				stack = { step = { { p = { 0, 0.42, 0 } }, { r = { 0, 7, 0 } } }, times = { 1.0, 1.8, 2.6, 3.4, 4.4 } },
+				at = { { p = { 1.45, 0, -0.7 } } },
+				stack = {
+					step = { { p = { 0, 0.42, 0 } }, { r = { 0, 7, 0 } } },
+					times = { 1.0, 1.8, 2.6, 3.4, 4.6 },
+					carry = { mount = "Right Arm", at = { { p = { 0, -1.15, -0.05 } } }, lead = 0.5 },
+				},
 			},
+			-- the pile it is taken from, by the right hip
+			{
+				model = "SugarCube",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 240, 238, 232 } },
+				mount = "floor",
+				at = { { p = { 1.75, 0, 0.05 } } },
+				stack = { step = { { p = { 0, 0.42, 0 } }, { r = { 0, 31, 0 } } }, times = { 0, 0 } },
+			},
+		},
+		context = {
+			label = "ADD ONE",
+			from = 4.8,
+			to = 6,
+			branch = "sugarTowerAdd",
+			alt = "sugarTowerTopple",
+			altChance = 0.5,
+		},
+		-- (the fist rests on the pile as it takes a cube)
+		-- (the fist at the pile and on the tower's top as it sets each one)
+		allow = {
+			{ prop = 1, part = "Right Arm", from = 0, to = 6 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 6 },
 		},
 	},
 	-- Diavolo's Potato Chip: the desk falls from the sky (the table in front, the chair behind, then the radio on
@@ -314,8 +428,64 @@ return {
 		-- the chip goes into the mouth
 		allow = { { prop = 2, part = "Head", from = 0.26, to = 0.34 } },
 	},
-	furiousScribbling = { props = { NOTEBOOK, PEN } },
-	furiousScribblingSlash = { props = { NOTEBOOK, PEN } },
+	-- WRITE IT: the last name written huge and slashed across
+	furiousScribbling = {
+		props = {
+			-- Death's Manual held open on the left hand (opened by the game), tilted up to his face
+			{
+				model = "Grimoire",
+				size = 1.7,
+				open = 0,
+				stand = { shape = "Block", size = { 1.6, 0.14, 1.2 }, color = { 22, 22, 26 } },
+				mount = "Left Arm",
+				at = { { p = { 0.147, -0.898, -0.538 } }, { r = { -27.52, 13.58, -24.27 } } }, -- hold: furiousScribbling/Grimoire
+			},
+			{
+				model = "Pen",
+				size = 1.07,
+				stand = { shape = "Cylinder", size = { 0.9, 0.09, 0.09 }, color = { 14, 14, 16 } },
+				mount = "Right Arm",
+				at = { { p = { 0.059, -1.196, 0.07 } }, { r = { -28.17, -34.21, 36.39 } } }, -- hold: furiousScribbling/Pen
+			},
+		},
+		context = { label = "WRITE IT", from = 0, to = 2.4, branch = "furiousScribblingSlash" },
+		-- the pen's tip on the page, the left hand under the book
+		allow = {
+			{ prop = 1, part = "Left Arm", from = 0, to = 2.4 },
+			{ prop = 1, part = "Right Arm", from = 0, to = 2.4 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 2.4 },
+		},
+	},
+	furiousScribblingSlash = {
+		props = {
+			-- Death's Manual held open on the left hand (opened by the game), tilted up to his face
+			{
+				model = "Grimoire",
+				size = 1.7,
+				open = 0,
+				hide = 1.7,
+				stand = { shape = "Block", size = { 1.6, 0.14, 1.2 }, color = { 22, 22, 26 } },
+				mount = "Left Arm",
+				at = { { p = { 0.147, -0.898, -0.538 } }, { r = { -27.52, 13.58, -24.27 } } }, -- hold: furiousScribbling/Grimoire2
+			},
+			{
+				model = "Pen",
+				size = 1.07,
+				stand = { shape = "Cylinder", size = { 0.9, 0.09, 0.09 }, color = { 14, 14, 16 } },
+				mount = "Right Arm",
+				at = { { p = { 0.059, -1.196, 0.07 } }, { r = { -28.17, -34.21, 36.39 } } }, -- hold: furiousScribbling/Pen2
+				hide = 1.7,
+			},
+		},
+		-- (the slash crosses the book over the hand that holds it)
+		allow = {
+			{ prop = 1, part = "Left Arm", from = 0, to = 2.4 },
+			{ prop = 1, part = "Right Arm", from = 0, to = 2.4 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 2.4 },
+			{ prop = 2, part = "Left Arm", from = 0, to = 1.4 },
+		},
+	},
+	-- TOSS, once it is held out: thrown up over the shoulder to an unseen death god
 	appleToss = {
 		props = {
 			{
@@ -323,11 +493,27 @@ return {
 				size = 0.8,
 				stand = { shape = "Ball", size = { 0.7, 0.7, 0.7 }, color = { 150, 20, 26 } },
 				mount = "Right Arm",
-				at = GRIP,
+				at = { { p = { 0.05, -1.141, -0.222 } }, { r = { -100.6, -15.39, -2.85 } } }, -- hold: appleToss/Apple
 				tosses = {
 					{ at = 0.5, back = 1.25, height = 3.6, spin = 1 },
 					{ at = 1.55, back = 2.3, height = 3.6, spin = 1 },
 				},
+			},
+		},
+		context = { label = "TOSS", from = 2.6, to = 3.6, branch = "appleTossThrow" },
+	},
+	appleTossThrow = {
+		fx = 1,
+		props = {
+			{
+				model = "Apple",
+				size = 0.8,
+				stand = { shape = "Ball", size = { 0.7, 0.7, 0.7 }, color = { 150, 20, 26 } },
+				mount = "Right Arm",
+				at = { { p = { 0.05, -1.141, -0.222 } }, { r = { -100.6, -15.39, -2.85 } } }, -- hold: appleToss/Apple2
+				-- thrown up off the hand at the throw; taken at the top (it never comes back down)
+				tosses = { { at = 0.55, back = 1.75, height = 7, spin = 2 } },
+				hide = 1.15,
 			},
 		},
 	},
@@ -338,19 +524,94 @@ return {
 				size = 1.1,
 				stand = { shape = "Block", size = { 0.9, 0.45, 0.5 }, color = { 240, 230, 210 } },
 				mount = "Left Arm",
-				-- The plate held level on the hand: turned back against the raised arm.
-				at = { { p = { 0, -1.05, -0.25 } }, { r = { -70, 0, 0 } }, { p = { 0, 0.05, -0.2 } } },
+				-- on its plate on the left hand, held up level
+				at = { { p = { -0.08, -1.322, -0.471 } }, { r = { -89.8, 21.78, -0.08 } } }, -- hold: strawberryOnTop/CakeSlice
 			},
 			{
 				model = "Strawberry",
 				size = 0.32,
 				stand = { shape = "Ball", size = { 0.3, 0.3, 0.3 }, color = { 190, 30, 36 } },
 				mount = "Left Arm",
-				at = { { p = { 0, -1.05, -0.25 } }, { r = { -70, 0, 0 } }, { p = { 0.12, 0.66, -0.2 } } },
-				-- Plucked off the top into the right hand's fingertips, then eaten.
-				moves = { { at = 1.0, mount = "Right Arm", to = { { p = { 0, -1.15, -0.12 } } } } },
-				hide = 2.78,
+				at = { { p = { 0.06, -1.376, -1.001 } }, { r = { -89.8, 21.78, -0.08 } } }, -- hold: strawberryOnTop/Strawberry
+				-- picked off the top into the right hand's fingertips, then eaten
+				moves = {
+					{
+						at = 0.95,
+						mount = "Right Arm",
+						to = { { p = { 0, -1.15, -0.12 } } },
+					},
+				},
+				hide = 2.85,
 			},
+		},
+		contacts = { { at = 2.75, prop = 2, to = "mouth", within = 0.45 } },
+		allow = {
+			{ prop = 1, part = "Right Arm", from = 0.6, to = 1.6 },
+			{ prop = 2, part = "Head", from = 2.6, to = 2.9 },
+			{ prop = 2, part = "Right Arm", from = 0.8, to = 2.9 },
+		},
+	},
+	-- Near's tower: die after die off the pile by the right hip, carried, set on the tower between his legs;
+	-- ADD ONE pushes his luck (one time in two it comes down)
+	diceTowerAdd = {
+		fx = 2,
+		props = {
+			{
+				model = "Die",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 236, 234, 228 } },
+				mount = "floor",
+				at = { { p = { -0.05, 0, -1.35 } } },
+				stack = {
+					step = { { p = { 0, 0.42, 0 } }, { r = { 0, -9, 0 } } },
+					times = { 0, 0, 0, 0, 0, 0, 1.3 },
+					carry = { mount = "Right Arm", at = { { p = { 0, -1.15, -0.05 } } }, lead = 0.5 },
+				},
+			},
+			-- the pile it is taken from, by the right hip
+			{
+				model = "Die",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 236, 234, 228 } },
+				mount = "floor",
+				at = { { p = { 1.75, 0, 0.35 } } },
+				stack = { step = { { p = { 0, 0.42, 0 } }, { r = { 0, 31, 0 } } }, times = { 0, 0 } },
+			},
+		},
+		allow = {
+			{ prop = 1, part = "Right Arm", from = 0, to = 3.4 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 3.4 },
+		},
+	},
+	diceTowerTopple = {
+		fx = 2,
+		props = {
+			{
+				model = "Die",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 236, 234, 228 } },
+				mount = "floor",
+				at = { { p = { -0.05, 0, -1.35 } } },
+				stack = {
+					step = { { p = { 0, 0.42, 0 } }, { r = { 0, -9, 0 } } },
+					times = { 0, 0, 0, 0, 0, 0, 1.3 },
+					carry = { mount = "Right Arm", at = { { p = { 0, -1.15, -0.05 } } }, lead = 0.5 },
+					topple = 1.6,
+				},
+			},
+			-- the pile it is taken from, by the right hip
+			{
+				model = "Die",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 236, 234, 228 } },
+				mount = "floor",
+				at = { { p = { 1.75, 0, 0.35 } } },
+				stack = { step = { { p = { 0, 0.42, 0 } }, { r = { 0, 31, 0 } } }, times = { 0, 0 } },
+			},
+		},
+		allow = {
+			{ prop = 1, part = "Right Arm", from = 0, to = 3.4 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 3.4 },
 		},
 	},
 	diceTower = {
@@ -360,12 +621,35 @@ return {
 				size = 0.42,
 				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 236, 234, 228 } },
 				mount = "floor",
-				at = { { p = { 0, 0, -1.3 } } },
+				at = { { p = { -0.05, 0, -1.35 } } },
 				stack = {
 					step = { { p = { 0, 0.42, 0 } }, { r = { 0, -9, 0 } } },
 					times = { 0.9, 1.6, 2.3, 3.0, 3.7, 4.6 },
+					carry = { mount = "Right Arm", at = { { p = { 0, -1.15, -0.05 } } }, lead = 0.5 },
 				},
 			},
+			-- the pile it is taken from, by the right hip
+			{
+				model = "Die",
+				size = 0.42,
+				stand = { shape = "Block", size = { 0.42, 0.42, 0.42 }, color = { 236, 234, 228 } },
+				mount = "floor",
+				at = { { p = { 1.75, 0, 0.35 } } },
+				stack = { step = { { p = { 0, 0.42, 0 } }, { r = { 0, 31, 0 } } }, times = { 0, 0 } },
+			},
+		},
+		context = {
+			label = "ADD ONE",
+			from = 4.8,
+			to = 6,
+			branch = "diceTowerAdd",
+			alt = "diceTowerTopple",
+			altChance = 0.5,
+		},
+		-- (the fist at the pile and on the tower's top as it sets each one)
+		allow = {
+			{ prop = 1, part = "Right Arm", from = 0, to = 6 },
+			{ prop = 2, part = "Right Arm", from = 0, to = 6 },
 		},
 	},
 	chocolateSnap = {
@@ -375,9 +659,17 @@ return {
 				size = 0.95,
 				stand = { shape = "Block", size = { 0.45, 0.95, 0.12 }, color = { 70, 40, 26 } },
 				mount = "Right Arm",
-				-- Upright in the fist when it is up at the mouth: turned back against the raised arm.
-				at = { { p = { 0, -1.05, -0.1 } }, { r = { -124, 0, 0 } }, { p = { 0, 0.35, 0 } } },
+				-- upright in the fist up by the mouth
+				at = { { p = { 0.122, -1.11, -0.237 } }, { r = { -131.27, -33.4, -25.78 } } }, -- hold: chocolateSnap/ChocolateBar
 			},
+		},
+		contacts = {
+			{ at = 0.75, prop = 1, to = "mouth", within = 0.5 },
+			{ at = 1.95, prop = 1, to = "mouth", within = 0.5 },
+		},
+		allow = {
+			{ prop = 1, part = "Head", from = 0.6, to = 0.95 },
+			{ prop = 1, part = "Head", from = 1.8, to = 2.15 },
 		},
 	},
 	matchPointServe = { props = { RACKET } },

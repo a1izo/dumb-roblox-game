@@ -14,6 +14,9 @@ export type Context = {
 	from: number, -- seconds into the clip the button shows
 	to: number,
 	branch: string, -- the clip pressing it plays (from where the emote is)
+	-- or, `altChance` of the time, this one instead (push your luck: ADD ONE's tower falls), picked by the server
+	alt: string?,
+	altChance: number?,
 }
 
 export type Info = {

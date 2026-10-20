@@ -1,0 +1,46 @@
+# Blindfold Lift (clip blindfoldLift, epic). Reference notes.
+id = "blindfoldLift"
+item = "emote_blindfold_lift"
+name = "Blindfold Lift"
+family = "prop"
+status = "checked"
+uses = ["Blindfold"]
+
+[origin]
+what = "Gojo Satoru (Jujutsu Kaisen)."
+recognisable = "At ease, blindfold on, hands in pockets; LIFT: the blindfold pushed up into his hair, the eyes open blue, his sign."
+
+[source]
+url = "https://www.youtube.com/results?search_query=gojo+blindfold+lift"
+title = "Gojo lifts his blindfold (search)"
+kind = "the scene or the meme it comes from"
+watched = "2026-10-21: frame sheets of the source; the poses keyed on its beats"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "A 4 s loop; LIFT plays blindfoldLiftUp (3.2 s)."
+
+[context]
+label = "LIFT"
+notes = "blindfoldLiftUp: the blindfold up into the hair, blue eyes, the sign"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["blue motes round him", "LIFT: blue eyes, a cold blue light, Infinity bursting out"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The fingers hook the blindfold from below the face, never across it."
+
+[check]
+by = "2026-10-21: check_anims, check_props (holds solved, contacts at the mouth), renders with the props"
