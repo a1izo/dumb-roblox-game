@@ -1,0 +1,52 @@
+# Rat Dance (clip ratDance, rare). Reference notes.
+id = "ratDance"
+item = "emote_rat_dance"
+name = "Rat Dance"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "The Rat Dance trend, to Joyful's 'Chess Type Beat'."
+recognisable = "The hands pulled up to the chest like a rat's paws and flicked, the cross-step, the wide bouncing step."
+
+[source]
+url = "https://www.youtube.com/shorts/FILJpZiAFo0"
+title = "RAT DANCE Tutorial"
+kind = "a real dancer from the front; the tutorial's full-speed run"
+watched = "2026-10-20: frame sheets, then 15 frames a second over 11.2-14.4 s, motion-captured"
+mirror = false
+
+[timing]
+length = 1.1321
+bpm = 106
+beats = 2
+fit = "It repeats every 1.13 s (two beats at 106 bpm); the cleanest repeat (from 13.2 s) loops."
+
+[[beat]]
+src = 13.2
+pose = "paws at the chest, feet crossed"
+
+[mocap]
+take = "art/refs/mocap/ratDance.json"
+notes = "MediaPipe Pose (heavy) on tiles of the source; frames that dip a foot into the floor are lifted at export."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["dust under the cross-steps"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

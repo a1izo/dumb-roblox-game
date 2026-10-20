@@ -1,0 +1,52 @@
+# Excuse Me, Sir (clip excuseMeSir, rare). Reference notes.
+id = "excuseMeSir"
+item = "emote_jumpstyle"
+name = "Excuse Me, Sir"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "Billy Butcher's 'excuse me, sir' (The Boys), the comic panel of him looking up with a grin, edited to Charlie's Inferno's 'That Handsome Devil'."
+recognisable = "The swagger: bouncing on the beat, shoulders rolling, looking round for someone; LOOK UP: the face tipped back to the sky with the grin, the body wobbling like the jelly edit."
+
+[source]
+url = "https://www.youtube.com/shorts/IKTvl232whs"
+title = "Excuse Me Sir Meme EXPLAINED"
+kind = "an explainer showing the comic panel and the edits"
+watched = "2026-10-20: frame sheets over the whole explainer"
+mirror = false
+
+[timing]
+length = 1.6
+bpm = 150
+beats = 4
+fit = "The swagger loops on 4 beats at 150 bpm; LOOK UP (excuseMeSirUp, 2.8 s) plays the panel."
+
+[[beat]]
+src = 0.0
+pose = "the panel: the face tipped up, the grin"
+
+[context]
+label = "LOOK UP"
+notes = "excuseMeSirUp: the face tipped back to the sky, the grin, the jelly wobble; pressable any time"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a glint of sky on the upturned face (LOOK UP)"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The R6 neck tips back 52 degrees with the body leaning back 11."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

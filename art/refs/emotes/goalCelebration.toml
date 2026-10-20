@@ -1,0 +1,49 @@
+# Goal Celebration (clip goalCelebration, rare). Reference notes.
+id = "goalCelebration"
+item = "emote_goal_celebration"
+name = "Goal Celebration"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "Cristiano Ronaldo's 'SIUUU' goal celebration."
+recognisable = "Steps turning away, the leap with a half turn in the air and the arms swung up, the wide landing with the arms thrust down and back, the shout."
+
+[source]
+url = "https://www.youtube.com/watch?v=6rIHOdckoQw"
+title = "Ronaldo Real Madrid Siuuu (Free Clip 4k)"
+kind = "a close shot of the celebration in a stadium, slow motion (about 4x)"
+watched = "2026-10-20: frame sheets at 0.2-0.4 s; also a real-speed tutorial (youtube.com/shorts/xO7SaSwA5s4) for the timing"
+mirror = false
+
+[timing]
+length = 3.0
+fit = "Keyed on the poses at real speed: steps 0-0.6 s, take-off 0.74 s, the air 0.96-1.14 s, landing 1.26 s, held to 2.3 s."
+
+[[beat]]
+src = 4.6
+pose = "the half turn in the air"
+[[beat]]
+src = 6.6
+pose = "the landing, arms down and back"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["dust ring at the landing", "gold off the chest with the shout"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Keyed, not captured: in the air there is no floor for the capture to stand the body on."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

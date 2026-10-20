@@ -1,0 +1,55 @@
+# Bounce Pump (clip bouncePump, common). Reference notes.
+id = "bouncePump"
+item = "emote_bounce_pump"
+name = "Bounce Pump"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "Fortnite's Orange Justice (2018)."
+recognisable = "The arms swung low and across the body as a leg swings out, side to side and bouncing, the hands up, the crossed pump."
+
+[source]
+url = "https://www.youtube.com/watch?v=l-iNuByXsuA"
+title = "Fortnite Orange Justice emote | Green screen"
+kind = "the game's own animation filmed on green screen, head to foot"
+watched = "2026-10-20: frame sheets, then 10 frames a second over 2.0-9.1 s, motion-captured"
+mirror = false
+
+[timing]
+length = 6.4865
+bpm = 148
+beats = 16
+fit = "The routine repeats every 6.5 s (source 2.3 s matches 8.8 s); that stretch loops."
+
+[[beat]]
+src = 2.3
+pose = "a low swing across"
+[[beat]]
+src = 5.0
+pose = "the hands up"
+
+[mocap]
+take = "art/refs/mocap/bouncePump.json"
+notes = "MediaPipe Pose (heavy) on tiles of the source; frames that dip a foot into the floor are lifted at export."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The wide stance drops a leg's top 0.27 below the hip at the widest step (R6 hips pivot at the leg's edge)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

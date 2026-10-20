@@ -1,0 +1,54 @@
+# Boat Aura (clip boatAura, rare). Reference notes.
+id = "boatAura"
+item = "emote_boat_aura"
+name = "Boat Aura"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "'Aura farming': the boy on the bow of a Pacu Jalur racing boat (Riau, Indonesia, 2025)."
+recognisable = "Calm and deadpan, the right hand held out with the left sweeping under it, the rolling fists, the paddle, a point at the sky, a kiss blown, arms out, riding the bow."
+
+[source]
+url = "https://www.youtube.com/shorts/ONuY9M18xcw"
+title = "Aura Farming Boat Kid dance tutorial!"
+kind = "a front-on tutorial of the moves in order, head to foot"
+watched = "2026-10-20: frame sheets every 0.25 s over the whole tutorial; the original (youtube.com/shorts/1GTEMemPZpU) for the feel"
+mirror = false
+
+[timing]
+length = 6.4
+bpm = 150
+beats = 16
+fit = "Keyed on the tutorial's order, 16 beats at 150 bpm; the ride (rocking, knees giving each beat) runs under it."
+
+[[beat]]
+src = 1.0
+pose = "the held hand and the sweep"
+[[beat]]
+src = 9.5
+pose = "flung at the sky"
+[[beat]]
+src = 12.5
+pose = "arms out"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["spray off the bow on every surge"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Keyed: the tutorial's frames are too small to track well."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

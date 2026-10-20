@@ -1,0 +1,54 @@
+# Animatronic Welcome (clip animatronicWelcome, rare). Reference notes.
+id = "animatronicWelcome"
+item = "emote_sus_lean"
+name = "Animatronic Welcome"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "'Join Us For a Bite' / 'Can't wait to meet you': the FNAF animatronic dance, as the viral Burger King worker does it."
+recognisable = "The arm out beckoning, swung across, a point, a spread hand by the face, both hands by the face, a point at you, the hand to the chest, nibbling at the mouth, a heart at the chest."
+
+[source]
+url = "https://www.youtube.com/shorts/fwN2g7COtaM"
+title = "Burger king guy does 'can't wait to meet you' animatronic dance uninterrupted"
+kind = "the worker filmed chest up, the whole routine"
+watched = "2026-10-20: frame sheets every 0.25 s over 0-15 s"
+mirror = false
+
+[timing]
+length = 9.6
+bpm = 100
+beats = 16
+fit = "16 beats at 100 bpm, one gesture a beat in his order (source 1.5-12.75 s); each snapped into and held still like a stage robot."
+
+[[beat]]
+src = 1.5
+pose = "beckoning to his right"
+[[beat]]
+src = 6.0
+pose = "both hands by the face"
+[[beat]]
+src = 11.0
+pose = "the heart"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["the eyes lit, a pale gold shine"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Keyed (the clip is chest up): the hands by the face sit beside it, not over it."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

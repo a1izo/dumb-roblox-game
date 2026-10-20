@@ -1,0 +1,46 @@
+# Glitch Step (clip glitchStep, rare). Reference notes.
+id = "glitchStep"
+item = "emote_glitch_step"
+name = "Glitch Step"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "A robot's dance on a damaged tape (the victory glitch-step edits)."
+recognisable = "Hard poses with the legs in them, cut not eased, the tape skipping back a frame, holding, jumping ahead, stuttering."
+
+[source]
+url = "https://www.youtube.com/results?search_query=glitch+dance+robot"
+title = "glitch / robot dance (search)"
+kind = "glitch-edit dance videos"
+watched = "2026-10-20: keyed from the emote pack's notes with legs added"
+mirror = false
+
+[timing]
+length = 2.4
+fit = "12 frames of 0.2 s, two stutters."
+
+[[beat]]
+src = 0.6
+pose = "the first stutter"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["cyan and magenta squares off the stutters"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The cuts are instant on purpose (check_anims pop shows them)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

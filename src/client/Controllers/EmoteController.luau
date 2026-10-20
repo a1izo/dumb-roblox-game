@@ -590,9 +590,16 @@ function EmoteController.face(character: Model, clip: string, alive: Alive, mana
 	return undo
 end
 
--- An emote's effect round the body (EmoteFx) for as long as it plays. Returns a function that clears it.
-function EmoteController.effect(character: Model, clip: string, preview: boolean?, managed: boolean?): () -> ()
-	local clear = EmoteFx.play(character, clip, preview)
+-- An emote's effect round the body (EmoteFx) for as long as it plays (`phase`: seconds into the clip it started
+-- at here, for a loop on the shared beat). Returns a function that clears it.
+function EmoteController.effect(
+	character: Model,
+	clip: string,
+	preview: boolean?,
+	managed: boolean?,
+	phase: number?
+): () -> ()
+	local clear = EmoteFx.play(character, clip, preview, phase)
 	local done = false
 	local function stop()
 		if not done then
@@ -742,7 +749,10 @@ function EmoteController.start(character: Model, clip: string, options: StartOpt
 		table.insert(session.cleanups, EmoteController.cues(character, clip, own, alive, phase))
 	end
 	table.insert(session.cleanups, EmoteController.face(character, clip, alive, true))
-	table.insert(session.cleanups, EmoteController.effect(character, clip, false, true))
+	table.insert(
+		session.cleanups,
+		EmoteController.effect(character, clip, false, true, if prepared and prepared.loop then phase else nil)
+	)
 	table.insert(
 		session.connections,
 		character.Destroying:Once(function()

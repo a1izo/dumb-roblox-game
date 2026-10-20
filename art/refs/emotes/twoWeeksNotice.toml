@@ -1,0 +1,49 @@
+# Two Weeks' Notice (clip twoWeeksNotice, common). Reference notes.
+id = "twoWeeksNotice"
+item = "emote_two_weeks_notice"
+name = "Two Weeks' Notice"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "Corporate escape: quitting in a fit."
+recognisable = "The arms flung up with a stomp, flailing and stamping, the letter crumpled and thrown over the shoulder, the knees buckling into a slump."
+
+[source]
+url = "https://www.youtube.com/results?search_query=corporate+escape+trend"
+title = "corporate escape trend (search)"
+kind = "office quitting skits"
+watched = "2026-10-20: keyed from the emote pack's notes with legs added"
+mirror = false
+
+[timing]
+length = 3.2
+fit = "One shot."
+
+[[beat]]
+src = 0.36
+pose = "the stomp"
+[[beat]]
+src = 2.2
+pose = "the throw"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

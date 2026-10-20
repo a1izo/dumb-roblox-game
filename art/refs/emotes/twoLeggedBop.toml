@@ -1,0 +1,48 @@
+# Two-Legged Bop (clip twoLeggedBop, rare). Reference notes.
+id = "twoLeggedBop"
+item = "emote_two_legged_bop"
+name = "Two-Legged Bop"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "The dancing dogs: a dog up on its hind legs."
+recognisable = "Front paws tucked up in front and pumping by turns, tottering from foot to foot, hips swaying, the head bobbing."
+
+[source]
+url = "https://www.youtube.com/results?search_query=dog+dancing+on+hind+legs"
+title = "dogs dancing on their hind legs (search)"
+kind = "home videos of dogs dancing on their hind legs"
+watched = "2026-10-20: keyed from the emote pack's notes (2026-10-14) with steps added"
+mirror = false
+
+[timing]
+length = 2.4
+bpm = 200
+beats = 8
+fit = "8 beats at 200 bpm, a step every beat."
+
+[[beat]]
+src = 0.0
+pose = "a paw up, a foot up"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["dust under each little step"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The paws sit in front of the chest, clear of the face."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

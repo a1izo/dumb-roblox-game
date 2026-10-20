@@ -1,0 +1,46 @@
+# The Smiling Lord (clip smilingLord, rare). Reference notes.
+id = "smilingLord"
+item = "emote_floss"
+name = "The Smiling Lord"
+family = "dance"
+status = "authored"
+uses = ["Cane"]
+
+[origin]
+what = "Lord Verity's dance (ThatMob's VERITY / Horror Skunx song): a showman with a cane."
+recognisable = "A touch of the hat brim, hip pops, a lean on the cane, a kick, a turn, the arms flung wide."
+
+[source]
+url = "https://www.youtube.com/shorts/TW5oty7SS_E"
+title = "LORD VERITY (ThatMob animation)"
+kind = "the source is a Minecraft animation edit; the fan dance videos found are crowded or dark"
+watched = "2026-10-20: frame sheets of the animation and two fan dances; no clean full-body take"
+mirror = false
+
+[timing]
+length = 4.8
+fit = "Kept from the emote pack (2026-10-14); its hat, cane and costume are redone in the shop overhaul (Part B)."
+
+[[beat]]
+src = 0.3
+pose = "the hat tip"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a glint off the brim at the hat tip"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

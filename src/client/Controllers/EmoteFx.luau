@@ -21,7 +21,8 @@ local Governor = require(script.Parent.Parent.World.Governor)
 
 local EmoteFx = {}
 
-type Fx = (character: Model, preview: boolean) -> () -> ()
+-- (phase: seconds into the clip the emote started at here, for a loop that joined the shared beat)
+type Fx = (character: Model, preview: boolean, phase: number?) -> () -> ()
 
 local function nothing() end
 
@@ -767,6 +768,337 @@ FX.aceCrouch = function(character, preview)
 	end
 end
 
+-- The dances' accents (S10): small, each timed to its clip's beats, every turn of the loop -------------------------
+
+-- Runs `fn` at each of `times` (seconds into the clip) on every turn of a loop `length` seconds long, the clip
+-- having started `phase` seconds in, until `gone` says the effect was cleared or the body went.
+local function onBeats(
+	root: Instance,
+	gone: () -> boolean,
+	length: number,
+	times: { number },
+	phase: number?,
+	fn: (number) -> ()
+)
+	if length <= 0 then
+		return
+	end
+	task.spawn(function()
+		local began = os.clock() - (phase or 0)
+		local turn = 0
+		while not gone() and root.Parent do
+			for _, at in ipairs(times) do
+				local wait = began + turn * length + at - os.clock()
+				if wait >= -0.05 then
+					if wait > 0 then
+						task.wait(wait)
+					end
+					if gone() or not root.Parent then
+						return
+					end
+					fn(at)
+				end
+			end
+			turn += 1
+		end
+	end)
+end
+
+-- A one-off spray of particles from a point (in the camera, gone after them).
+type Burst = {
+	color: ColorSequence,
+	count: number,
+	size: number,
+	speed: NumberRange,
+	life: NumberRange,
+	spread: number?,
+	gravity: number?,
+	light: number?,
+	direction: Enum.NormalId?,
+}
+local function burst(at: Vector3, spec: Burst)
+	local holder = Create("Part", {
+		Name = "EmoteBurst",
+		Size = Vector3.new(0.2, 0.2, 0.2),
+		CFrame = CFrame.new(at),
+		Transparency = 1,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		Parent = workspace.CurrentCamera,
+	}) :: BasePart
+	local emitter = Create("ParticleEmitter", {
+		Texture = SPARKLE,
+		Color = spec.color,
+		LightEmission = spec.light or 0.5,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, spec.size), NumberSequenceKeypoint.new(1, 0) }),
+		Lifetime = spec.life,
+		Speed = spec.speed,
+		SpreadAngle = Vector2.new(spec.spread or 60, spec.spread or 60),
+		EmissionDirection = spec.direction or Enum.NormalId.Top,
+		Acceleration = Vector3.new(0, -(spec.gravity or 0), 0),
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(-180, 180),
+		Rate = 0,
+		Parent = holder,
+	}) :: ParticleEmitter
+	emitter:Emit(spec.count)
+	task.delay(spec.life.Max + 0.2, function()
+		holder:Destroy()
+	end)
+end
+
+-- Where a leg's sole is (its bottom face's middle).
+local function soleOf(character: Model, leg: string): Vector3?
+	local part = character:FindFirstChild(leg)
+	if not part or not part:IsA("BasePart") then
+		return nil
+	end
+	return (part.CFrame * CFrame.new(0, -part.Size.Y / 2, 0)).Position
+end
+
+-- The lower of the two soles (the foot that just came down).
+local function lowerSole(character: Model): Vector3?
+	local right, left = soleOf(character, "Right Leg"), soleOf(character, "Left Leg")
+	if right and left then
+		return if right.Y <= left.Y then right else left
+	end
+	return right or left
+end
+
+-- A step's little puff of dust under the foot that just landed.
+local function stepDust(character: Model, size: number?)
+	local sole = lowerSole(character)
+	if sole then
+		EmoteFx.thud(CFrame.new(sole), size or 1.2)
+	end
+end
+
+-- A dance's accent at its beats: `make(character, at)` for each beat `at` of each loop turn.
+local function accent(length: number, times: { number }, make: (character: Model, at: number) -> ()): Fx
+	return function(character, preview, phase)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if preview or not root then
+			return nothing
+		end
+		local gone = false
+		onBeats(
+			root,
+			function()
+				return gone
+			end,
+			length,
+			times,
+			phase,
+			function(at)
+				make(character, at)
+			end
+		)
+		return function()
+			gone = true
+		end
+	end
+end
+
+local function chest(character: Model): Vector3?
+	local torso = character:FindFirstChild("Torso")
+	return if torso and torso:IsA("BasePart") then torso.Position else nil
+end
+
+-- Two-Legged Bop: dust under each little step (a step every beat at 200 bpm).
+FX.twoLeggedBop = accent(2.4, { 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1, 2.4 - 0.001 }, function(character)
+	stepDust(character, 0.9)
+end)
+
+-- The Rat Dance: dust under the cross-steps.
+FX.ratDance = accent(2 * 60 / 106, { 0.0, 60 / 106 }, function(character)
+	stepDust(character, 1.0)
+end)
+
+-- Bunny Ears: pastel sparkles flicked off the hands on the head, every other beat.
+local PASTEL = ColorSequence.new(Color3.fromRGB(255, 182, 220), Color3.fromRGB(170, 215, 255))
+FX.bunnyEars = accent(4 * 60 / 165, { 0.0, 2 * 60 / 165 }, function(character)
+	for _, arm in ipairs({ "Right Arm", "Left Arm" }) do
+		local part = character:FindFirstChild(arm)
+		if part and part:IsA("BasePart") then
+			burst((part.CFrame * CFrame.new(0, -1, 0)).Position, {
+				color = PASTEL,
+				count = 5,
+				size = 0.22,
+				speed = NumberRange.new(2, 4),
+				life = NumberRange.new(0.4, 0.7),
+				gravity = 4,
+			})
+		end
+	end
+end)
+
+-- Jackpot Shuffle: a spray of gold coins up from the floor once a turn (Hakari's jackpot).
+local GOLD = ColorSequence.new(Color3.fromRGB(255, 214, 90), Color3.fromRGB(230, 160, 40))
+FX.jackpotShuffle = accent(7 * 60 / 150, { 0.0 }, function(character)
+	local sole = lowerSole(character)
+	if sole then
+		burst(sole + Vector3.new(0, 0.2, 0), {
+			color = GOLD,
+			count = 18,
+			size = 0.3,
+			speed = NumberRange.new(9, 14),
+			life = NumberRange.new(0.8, 1.2),
+			spread = 35,
+			gravity = 30,
+			light = 0.7,
+		})
+	end
+end)
+
+-- Boat Aura: spray off the bow on every surge (each four beats).
+local SPRAY = ColorSequence.new(Color3.fromRGB(220, 240, 255), Color3.fromRGB(150, 200, 235))
+FX.boatAura = accent(6.4, { 0.0, 1.6, 3.2, 4.8 }, function(character)
+	local sole = lowerSole(character)
+	if sole then
+		burst(sole + Vector3.new(0, 0.1, -1.2), {
+			color = SPRAY,
+			count = 16,
+			size = 0.25,
+			speed = NumberRange.new(5, 9),
+			life = NumberRange.new(0.5, 0.9),
+			spread = 70,
+			gravity = 22,
+			light = 0.3,
+		})
+	end
+end)
+
+-- Office Party: a flurry of loose paper as the turn comes round.
+local PAPER = ColorSequence.new(Color3.fromRGB(245, 243, 236))
+FX.officeParty = accent(6.4, { 3.9 }, function(character)
+	local at = chest(character)
+	if at then
+		burst(at + Vector3.new(0, 1.5, 0), {
+			color = PAPER,
+			count = 14,
+			size = 0.35,
+			speed = NumberRange.new(4, 7),
+			life = NumberRange.new(1.2, 1.8),
+			spread = 80,
+			gravity = 3,
+			light = 0,
+		})
+	end
+end)
+
+-- Glitch Step: the tape's stutters throw off cyan and magenta squares.
+local GLITCH = ColorSequence.new(Color3.fromRGB(0, 255, 240), Color3.fromRGB(255, 0, 200))
+FX.glitchStep = accent(2.4, { 0.6, 1.6 }, function(character)
+	local at = chest(character)
+	if at then
+		burst(at, {
+			color = GLITCH,
+			count = 12,
+			size = 0.3,
+			speed = NumberRange.new(2, 5),
+			life = NumberRange.new(0.12, 0.3),
+			spread = 180,
+			light = 1,
+		})
+	end
+end)
+
+-- Goal Celebration: the landing kicks up a ring of dust, and a spray of gold off the chest with the shout.
+FX.goalCelebration = accent(3.0, { 1.26 }, function(character)
+	local sole = lowerSole(character)
+	if sole then
+		EmoteFx.thud(CFrame.new(sole), 4)
+	end
+	local at = chest(character)
+	if at then
+		burst(at, {
+			color = GOLD,
+			count = 16,
+			size = 0.28,
+			speed = NumberRange.new(5, 9),
+			life = NumberRange.new(0.5, 0.9),
+			spread = 70,
+			gravity = 10,
+			light = 0.8,
+		})
+	end
+end)
+
+-- The Smiling Lord: a glint off the brim as the hat is touched.
+FX.smilingLord = accent(4.8, { 0.3 }, function(character)
+	local head = character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		burst((head.CFrame * CFrame.new(0.4, 0.7, -0.3)).Position, {
+			color = GOLD,
+			count = 4,
+			size = 0.5,
+			speed = NumberRange.new(0.5, 1),
+			life = NumberRange.new(0.3, 0.5),
+			spread = 180,
+			light = 1,
+		})
+	end
+end)
+
+-- Excuse Me, Sir, LOOK UP: a glint of sky on the upturned face.
+FX.excuseMeSirUp = accent(2.8, { 0.75 }, function(character)
+	local head = character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		burst((head.CFrame * CFrame.new(0, 0.9, -0.4)).Position, {
+			color = ColorSequence.new(Color3.fromRGB(255, 250, 235)),
+			count = 3,
+			size = 0.9,
+			speed = NumberRange.new(0.2, 0.5),
+			life = NumberRange.new(0.5, 0.8),
+			spread = 180,
+			light = 1,
+		})
+	end
+end)
+
+-- Animatronic Welcome: the stage robot's eyes lit, a pale gold shine.
+FX.animatronicWelcome = function(character, preview)
+	local head = character:FindFirstChild("Head")
+	if not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local parts: { BasePart } = {}
+	for _, side in ipairs({ -0.2, 0.2 }) do
+		local part = Create("Part", {
+			Name = "EmoteEyes",
+			Size = Vector3.new(0.14, 0.14, 0.05),
+			Shape = Enum.PartType.Block,
+			Color = Color3.fromRGB(255, 236, 170),
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			Massless = true,
+			CastShadow = false,
+			CFrame = head.CFrame * CFrame.new(side, 0.12, -head.Size.Z / 2 - 0.03),
+			Parent = character,
+		}) :: BasePart
+		part:SetAttribute("DGEmote", true)
+		Create("WeldConstraint", { Part0 = head, Part1 = part, Parent = part })
+		table.insert(parts, part)
+	end
+	if not preview then
+		Create("PointLight", { Color = Color3.fromRGB(255, 230, 160), Range = 5, Brightness = 1.5, Parent = parts[1] })
+	end
+	return function()
+		for _, part in ipairs(parts) do
+			part:Destroy()
+		end
+	end
+end
+
+-- Bye Bye Bye (Puppet Pop): the band dance it as marionettes; the same strings as Puppet Dance.
+FX.puppetPop = function(character, preview, phase)
+	return FX.puppetDance(character, preview, phase)
+end
+
 -- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
 -- light, 3 layered, 4 the cutscene emotes'. The four above keep their own looks; the rest come with each emote.
 local RUNG: { [string]: number } = {
@@ -780,6 +1112,18 @@ local RUNG: { [string]: number } = {
 	puppetDance = 1,
 	writeAir = 2,
 	aceCrouch = 2,
+	twoLeggedBop = 1,
+	ratDance = 1,
+	bunnyEars = 1,
+	jackpotShuffle = 1,
+	boatAura = 1,
+	officeParty = 1,
+	glitchStep = 1,
+	goalCelebration = 1,
+	smilingLord = 1,
+	excuseMeSirUp = 1,
+	animatronicWelcome = 1,
+	puppetPop = 1,
 }
 
 -- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in
@@ -800,7 +1144,7 @@ end
 
 -- Starts an emote's effect on a character (nothing for emotes without one, or when its rung is out of reach
 -- here; a preview always shows it). Returns a function that clears it away.
-function EmoteFx.play(character: Model, clip: string, preview: boolean?): () -> ()
+function EmoteFx.play(character: Model, clip: string, preview: boolean?, phase: number?): () -> ()
 	local fx = FX[clip]
 	if not fx then
 		return nothing
@@ -808,7 +1152,7 @@ function EmoteFx.play(character: Model, clip: string, preview: boolean?): () -> 
 	if not preview and EmoteFx.rung(clip) < (RUNG[clip] or 1) then
 		return nothing
 	end
-	return fx(character, preview == true)
+	return fx(character, preview == true, phase)
 end
 
 -- Clip ids that have an effect (for checks).
@@ -822,12 +1166,13 @@ function EmoteFx.thud(at: CFrame, size: number)
 	if Governor.low("emoteFx") or Motion.isReduced() then
 		return
 	end
+	-- (Roblox's own smoke before the Core set is imported: the dances' step dust needs it from the start)
 	local texture = Assets.texture("Smoke")
 	if texture == "" then
 		texture = Assets.texture("InkDrop")
 	end
 	if texture == "" then
-		return
+		texture = "rbxasset://textures/particles/smoke_main.dds"
 	end
 	local holder = Create("Part", {
 		Name = "EmoteThud",

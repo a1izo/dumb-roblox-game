@@ -1,0 +1,52 @@
+# Bunny Ears (clip bunnyEars, rare). Reference notes.
+id = "bunnyEars"
+item = "emote_bunny_ears"
+name = "Bunny Ears"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "Caramelldansen (the 2008 anime meme dance)."
+recognisable = "Both hands up on the head flapping like ears on every beat, the hips swaying side to side."
+
+[source]
+url = "https://www.youtube.com/shorts/o9lAP8_V0G8"
+title = "How to dance the Caramelldansen - Dance Meme!"
+kind = "a real dancer from the front, under the anime clip"
+watched = "2026-10-20: frame sheets, then 15 frames a second over 4.0-7.2 s, motion-captured"
+mirror = false
+
+[timing]
+length = 1.4545
+bpm = 165
+beats = 4
+fit = "4 beats at the song's 165 bpm from 4.2 s."
+
+[[beat]]
+src = 4.2
+pose = "hands on the head, hips to one side"
+
+[mocap]
+take = "art/refs/mocap/bunnyEars.json"
+notes = "MediaPipe Pose (heavy) on tiles of the source; frames that dip a foot into the floor are lifted at export."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["pastel sparkles flicked off the hands every other beat"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The flapping hands sit just above the head, clear of it."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

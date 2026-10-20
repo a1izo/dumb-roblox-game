@@ -1,0 +1,56 @@
+# Office Party (clip officeParty, rare). Reference notes.
+id = "officeParty"
+item = "emote_office_party"
+name = "Office Party"
+family = "dance"
+status = "checked"
+uses = []
+
+[origin]
+what = "The 'I Want You Back' workplace trend: offices dancing *NSYNC's 'I Want You Back' to Brotherhood's choreography."
+recognisable = "The arms swung open, the shoulder rolls, the turn with the back to the room, the arm pumped up, the wide stance with the arms out."
+
+[source]
+url = "https://www.youtube.com/shorts/F8olGOg6zGQ"
+title = "*NSYNC - 'I Want You Back' DANCE TUTORIAL MIRRORED (DC: Brotherhood)"
+kind = "a mirrored tutorial at half speed, one dancer, head to foot"
+watched = "2026-10-20: frame sheets, then a frame every 0.2 s of video (0.1 s of the routine) over 1.0-17.2 s, flipped back to the real sides, motion-captured"
+mirror = true
+
+[timing]
+length = 6.4
+fit = "The routine comes back to its own pose after 6.4 s (real 1.5 s matches 7.9 s); that stretch loops, its turn carried round the seam."
+
+[[beat]]
+src = 2.0
+pose = "the swing open"
+[[beat]]
+src = 4.0
+pose = "the turn"
+[[beat]]
+src = 6.5
+pose = "arms out"
+
+[mocap]
+take = "art/refs/mocap/officeParty.json"
+notes = "MediaPipe Pose (heavy) on tiles of the source; frames that dip a foot into the floor are lifted at export. Source at half speed: times halved."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["loose paper flurrying up as the turn comes round"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The turn's yaw is carried round the loop (the end key spelt like the last), so it never spins back."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink and seam), renders at its beats beside the frame sheets"

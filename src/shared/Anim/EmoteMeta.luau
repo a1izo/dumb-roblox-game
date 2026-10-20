@@ -90,6 +90,8 @@ return {
 	},
 	-- LOOK UP, any time in the swagger: the face tipped back to the sky with the grin (the meme's panel)
 	excuseMeSir = { context = { label = "LOOK UP", from = 0, to = 1.6, branch = "excuseMeSirUp" } },
+	-- (the branch is not an item of its own: its effect takes the emote's rarity, Inked)
+	excuseMeSirUp = { fx = 1 },
 	preDawnBonk = {
 		props = {
 			{
