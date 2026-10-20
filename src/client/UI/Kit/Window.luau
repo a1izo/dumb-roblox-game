@@ -213,6 +213,7 @@ export type Spec = {
 	show: ((any?) -> ())?,
 	hide: ((string) -> ())?,
 	firstSelection: (() -> GuiObject?)?,
+	stay: boolean?, -- a click outside it never closes it (Router)
 }
 
 -- Registers the window with the Router. show/hide run after it appears/before it goes.
@@ -221,6 +222,7 @@ function Window.register(win: Window, spec: Spec?)
 	Router.register(win.name, {
 		layer = s.layer or "modal",
 		window = win.root,
+		stay = s.stay,
 		allowed = s.allowed,
 		auto = s.auto,
 		firstSelection = s.firstSelection or function()
@@ -342,7 +344,12 @@ function Window.confirm(options: ConfirmOptions): () -> ()
 			box.Size = UDim2.new(0.92, 0, 0, height + Tokens.space.xl * 2)
 		end
 	end)
-	shade.Activated:Connect(dismiss)
+	-- (a click on the box itself, between its buttons, is not a no)
+	shade.Activated:Connect(function(input: InputObject?)
+		if not Router.inside(box, input) then
+			dismiss()
+		end
+	end)
 	Motion.pop(box)
 	if UserInputService.GamepadEnabled then
 		GuiService.SelectedObject = cancel

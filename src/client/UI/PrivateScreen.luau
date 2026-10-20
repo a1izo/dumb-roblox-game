@@ -193,6 +193,7 @@ function PrivateScreen.init()
 		return view.living and view.phase == "Investigation" and view.role == "Kira"
 	end
 	Kit.register(grimoire, {
+		stay = true,
 		allowed = isWriter,
 		show = refresh,
 		hide = function(reason)

@@ -295,6 +295,7 @@ function StoneFigures.new(
 	assert(figure, "a plain rig has every joint")
 	local ok, dressed = pcall(robe, figure, props.feet)
 	figure.robed = ok and dressed == true
+	model:SetAttribute("Robed", figure.robed) -- (for checks: wearing the sculpted statue)
 	return figure
 end
 
@@ -320,6 +321,52 @@ function StoneFigures.attach(figure: Figure, limb: string, size: Vector3, offset
 	still(part)
 	Create("WeldConstraint", { Part0 = home, Part1 = part, Parent = part })
 	return part
+end
+
+-- A Core model carved in the figure's stone (the Death's Manual in a statue's hand...), fixed to one of its parts:
+-- scaled so its biggest side is `size` (for a life-size figure), its middle at `offset` from that part's middle.
+-- Returns nil where the import has no such model (the caller falls back to a plain block).
+function StoneFigures.attachModel(
+	figure: Figure,
+	limb: string,
+	key: string,
+	size: number,
+	offset: CFrame,
+	color: Color3?
+): Model?
+	local home = figure.model:FindFirstChild(limb)
+	local model = ModelLibrary.get(key)
+	if not model or not home or not home:IsA("BasePart") then
+		if model then
+			model:Destroy()
+		end
+		return nil
+	end
+	local s = figure.scale
+	local _, bounds = model:GetBoundingBox()
+	local biggest = math.max(bounds.X, bounds.Y, bounds.Z)
+	if biggest > 0 then
+		model:ScaleTo(model:GetScale() * size * s / biggest)
+	end
+	model:PivotTo(home.CFrame * CFrame.new(offset.Position * s) * offset.Rotation)
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("BasePart") then
+			item.Color = color or StoneFigures.STONE
+			item.Material = Enum.Material.Slate
+			if item:IsA("MeshPart") then
+				item.TextureID = ""
+			end
+			for _, decal in ipairs(item:GetChildren()) do
+				if decal:IsA("Decal") or decal:IsA("SurfaceAppearance") or decal:IsA("Texture") then
+					decal:Destroy()
+				end
+			end
+			still(item)
+			Create("WeldConstraint", { Part0 = home, Part1 = item, Parent = item })
+		end
+	end
+	model.Parent = figure.model
+	return model
 end
 
 -- How long a cycled one-shot takes, at the end of its rest, to ease from its last moment back to its first

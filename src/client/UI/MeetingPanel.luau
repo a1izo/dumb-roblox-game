@@ -103,6 +103,7 @@ local function buildArrest()
 		Router.close("arrest", "user")
 	end)
 	Kit.register(win, {
+		stay = true,
 		allowed = canArrest,
 		show = refreshArrest,
 		hide = function(reason)
