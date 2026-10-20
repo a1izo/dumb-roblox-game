@@ -1,0 +1,46 @@
+# Impossible Lean (clip impossibleLean, rare). Reference notes.
+id = "impossibleLean"
+item = "emote_impossible_lean"
+name = "Impossible Lean"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "Michael Jackson's anti-gravity lean (Smooth Criminal, 1988)."
+recognisable = "A touch of the hat, then the whole body tipped about 40-45 degrees forward from the feet, rigid, held, and back."
+
+[source]
+url = "https://www.youtube.com/shorts/LfS8rXM2JU8"
+title = "Michael Jackson Anti-Gravity Lean 45°"
+kind = "the lean filmed from the side, on stage"
+watched = "2026-10-20: frame sheets every 0.17 s over the whole clip"
+mirror = false
+
+[timing]
+length = 4.2
+fit = "The tip in 0.5 s (source 1.2-1.7 s), held two seconds, back up in 0.45 s."
+
+[[beat]]
+src = 1.4
+pose = "tipped forward, rigid"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["dust swept off the floor as it tips"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Tipped about the soles' front edge (the heels lift), so no toe goes into the floor."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

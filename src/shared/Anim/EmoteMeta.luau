@@ -90,6 +90,12 @@ return {
 	},
 	-- LOOK UP, any time in the swagger: the face tipped back to the sky with the grin (the meme's panel)
 	excuseMeSir = { context = { label = "LOOK UP", from = 0, to = 1.6, branch = "excuseMeSirUp" } },
+	-- NEXT POSE, any time: the three JoJo poses round and round (the second and third are not items: their effect
+	-- is the first one's, Sealed)
+	menacingPose = { context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose2" } },
+	menacingPose2 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose3" } },
+	menacingPose3 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose" } },
+	lowBatteryCharge = { fx = 1 },
 	-- (the branch is not an item of its own: its effect takes the emote's rarity, Inked)
 	excuseMeSirUp = { fx = 1 },
 	preDawnBonk = {
@@ -449,7 +455,8 @@ return {
 	--              between from and to; one press plays the branch, the same on every screen)
 	--   formation  a group dance's places for those who join in: { { x, z }, ... } studs round the first dancer
 	--              (x to their right, z behind them), at most 5
-	lowBattery = { lowBody = true },
+	-- CHARGE, once slumped on the floor: plugged in, jolted back up
+	lowBattery = { lowBody = true, context = { label = "CHARGE", from = 3, to = 4.6, branch = "lowBatteryCharge" } },
 	footScratch = { lowBody = true },
 	hairTwirl = { lowBody = true },
 	goalCelebration = { lowBody = true },

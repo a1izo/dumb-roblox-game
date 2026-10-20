@@ -1,0 +1,46 @@
+# Reaper's Cackle (clip reapersCackle, rare). Reference notes.
+id = "reapersCackle"
+item = "emote_reapers_cackle"
+name = "Reaper's Cackle"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "A death god's laugh, Ryuk's 'hyuk hyuk' (Death Note)."
+recognisable = "Hunched, the shoulders heaving up with each burst, the head jerking back, the arms dangling."
+
+[source]
+url = "https://www.youtube.com/watch?v=dytRtEXkLiw"
+title = "Ryuk eats apple"
+kind = "Ryuk in the anime"
+watched = "2026-10-20: frame sheets of Ryuk"
+mirror = false
+
+[timing]
+length = 1.6
+fit = "Four bursts in a 1.6 s loop."
+
+[[beat]]
+src = 0.0
+pose = "a burst"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a breath of black ink off the shoulders each burst"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

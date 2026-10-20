@@ -1,0 +1,50 @@
+# Menacing Pose (clip menacingPose, epic). Reference notes.
+id = "menacingPose"
+item = "emote_menacing_pose"
+name = "Menacing Pose"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "JoJo's Bizarre Adventure poses, the ゴゴゴ (menacing) rising round them."
+recognisable = "DIO's hand across the face; NEXT POSE: Giorno's raised forearm and hand on the hip; Jotaro's Star Platinum point up."
+
+[source]
+url = "https://www.youtube.com/shorts/b5EDS02xJuY"
+title = "UNNECESSARY JOJO POSES"
+kind = "a compilation of the anime's poses"
+watched = "2026-10-20: frame sheets"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "Each pose a 4 s breathing loop; NEXT POSE (menacingPose2, menacingPose3) goes round them."
+
+[[beat]]
+src = 0.0
+pose = "DIO's pose"
+
+[context]
+label = "NEXT POSE"
+notes = "menacingPose -> menacingPose2 -> menacingPose3 -> menacingPose, any time"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["the ゴゴゴ signs rising round the body, every pose"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Stances wide and twisted; the planted feet keep them standing."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

@@ -1,0 +1,46 @@
+# Reaper's Eyes (clip reapersEyes, godhood). Reference notes.
+id = "reapersEyes"
+item = "emote_reapers_eyes"
+name = "Reaper's Eyes"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "A death god's eyes (Death Note)."
+recognisable = "Looking away, a hand over the eyes, the head turning round under it, the hand drawn away: red eyes, the stare."
+
+[source]
+url = "https://www.youtube.com/results?search_query=death+note+shinigami+eyes"
+title = "Shinigami eyes (search)"
+kind = "the anime's eye scenes"
+watched = "2026-10-20: keyed"
+mirror = false
+
+[timing]
+length = 3.2
+fit = "The reveal at 1.85 s (the glow from 1.75 s)."
+
+[[beat]]
+src = 1.85
+pose = "the hand drawn away"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["two red slivers of light on the face"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Lobby only (it looks like the Eyes)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

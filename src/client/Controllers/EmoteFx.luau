@@ -124,11 +124,8 @@ FX.menacingPose = function(character, preview)
 end
 
 -- Low Battery: a battery over the head, running down from green to red, then blinking empty.
-FX.lowBattery = function(character, preview)
-	local head = character:FindFirstChild("Head")
-	if preview or not head or not head:IsA("BasePart") then
-		return nothing
-	end
+-- The battery over the head (its case, its tip and its fill, full and green).
+local function battery(head: BasePart): (BillboardGui, Frame)
 	local gui = Create("BillboardGui", {
 		Name = "EmoteBattery",
 		Adornee = head,
@@ -161,6 +158,15 @@ FX.lowBattery = function(character, preview)
 		Size = UDim2.fromScale(0.84, 0.68),
 		Parent = case,
 	}) :: Frame
+	return gui, fill
+end
+
+FX.lowBattery = function(character, preview)
+	local head = character:FindFirstChild("Head")
+	if preview or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local gui, fill = battery(head)
 	local info = TweenInfo.new(2.6, Enum.EasingStyle.Linear)
 	TweenService
 		:Create(fill, info, { Size = UDim2.fromScale(0.06, 0.68), BackgroundColor3 = Color3.fromRGB(205, 40, 40) })
@@ -186,7 +192,8 @@ FX.reapersEyes = function(character, preview)
 	end
 	local parts: { BasePart } = {}
 	local gone = false
-	task.delay(0.9, function()
+	-- (when the hand comes away from the eyes)
+	task.delay(1.75, function()
 		if gone or not head.Parent then
 			return
 		end
@@ -1094,6 +1101,176 @@ FX.animatronicWelcome = function(character, preview)
 	end
 end
 
+-- Low Battery's CHARGE: the battery fills back up in jumps with each jolt, sparks off the body, and green.
+local SPARK = ColorSequence.new(Color3.fromRGB(255, 250, 200), Color3.fromRGB(120, 210, 255))
+FX.lowBatteryCharge = function(character, preview)
+	local head = character:FindFirstChild("Head")
+	if preview or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local gui, fill = battery(head)
+	fill.Size = UDim2.fromScale(0.06, 0.68)
+	fill.BackgroundColor3 = Color3.fromRGB(205, 40, 40)
+	local gone = false
+	local function zap(at: number, to: number, color: Color3)
+		task.delay(at, function()
+			if gone or not head.Parent then
+				return
+			end
+			fill.Visible = true
+			TweenService
+				:Create(fill, TweenInfo.new(0.12), { Size = UDim2.fromScale(to, 0.68), BackgroundColor3 = color })
+				:Play()
+			local torso = character:FindFirstChild("Torso")
+			if torso and torso:IsA("BasePart") then
+				burst(torso.Position, {
+					color = SPARK,
+					count = 10,
+					size = 0.3,
+					speed = NumberRange.new(4, 8),
+					life = NumberRange.new(0.15, 0.35),
+					spread = 180,
+					light = 1,
+				})
+			end
+		end)
+	end
+	zap(0.15, 0.3, Color3.fromRGB(230, 170, 40))
+	zap(0.62, 0.6, Color3.fromRGB(200, 210, 60))
+	zap(1.6, 0.84, Color3.fromRGB(110, 200, 110))
+	return function()
+		gone = true
+		gui:Destroy()
+	end
+end
+
+-- The poses' accents (S11) -------------------------------------------------------------------------------------
+
+-- Impossible Lean: the dust swept back off the floor from under the feet as the body tips (0.95 s).
+FX.impossibleLean = accent(4.2, { 0.95 }, function(character)
+	local sole = lowerSole(character)
+	if sole then
+		EmoteFx.thud(CFrame.new(sole), 2.2)
+	end
+end)
+
+-- It's You: the point lands with a white crack of light off the fingertip (0.24 s).
+local CRACK = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 220, 255))
+FX.itsYou = accent(2.6, { 0.24 }, function(character)
+	local arm = character:FindFirstChild("Right Arm")
+	if arm and arm:IsA("BasePart") then
+		burst((arm.CFrame * CFrame.new(0, -1.2, 0)).Position, {
+			color = CRACK,
+			count = 14,
+			size = 0.35,
+			speed = NumberRange.new(6, 11),
+			life = NumberRange.new(0.12, 0.28),
+			spread = 180,
+			light = 1,
+		})
+	end
+end)
+
+-- Deducing: a faint spark of a thought by the temple on each tap of the thumb (1.1 s and 3.1 s of the loop).
+local THOUGHT = ColorSequence.new(Color3.fromRGB(200, 225, 255))
+FX.deducing = accent(4.0, { 1.1, 3.1 }, function(character)
+	local head = character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		burst((head.CFrame * CFrame.new(0.55, 0.45, -0.2)).Position, {
+			color = THOUGHT,
+			count = 5,
+			size = 0.18,
+			speed = NumberRange.new(0.6, 1.4),
+			life = NumberRange.new(0.6, 1.0),
+			spread = 60,
+			gravity = -1.5,
+			light = 0.8,
+		})
+	end
+end)
+
+-- Reaper's Cackle: a breath of black ink off the shoulders with each burst of the laugh, rising.
+local INK_RISE = ColorSequence.new(Color3.fromRGB(20, 18, 24), Color3.fromRGB(60, 20, 30))
+FX.reapersCackle = accent(1.6, { 0.0, 0.4, 0.8, 1.2 }, function(character)
+	local torso = character:FindFirstChild("Torso")
+	if torso and torso:IsA("BasePart") then
+		burst((torso.CFrame * CFrame.new(0, 1.1, 0)).Position, {
+			color = INK_RISE,
+			count = 6,
+			size = 0.45,
+			speed = NumberRange.new(1, 2.5),
+			life = NumberRange.new(0.6, 1.0),
+			spread = 70,
+			gravity = -3,
+			light = 0,
+		})
+	end
+end)
+
+-- Final Breakdown: a red light from below the face comes up as the laugh is held in; it flares as he is thrown
+-- back (2.25 s) with a ring of dark dust out across the floor and black ink pouring up off him while he laughs;
+-- everything sinks away as he folds over (4.2 s). Under reduced motion there is no flare.
+FX.finalBreakdown = function(character, preview)
+	local head = character:FindFirstChild("Head")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not head or not head:IsA("BasePart") or not root then
+		return nothing
+	end
+	local calm = Motion.isReduced()
+	local gone = false
+	local function over()
+		return gone
+	end
+	local under =
+		Create("Attachment", { Name = "EmoteUnderLight", Position = Vector3.new(0, -1.2, -0.9), Parent = head })
+	under:SetAttribute("DGEmote", true)
+	local light = Create("PointLight", {
+		Color = CRIMSON,
+		Range = 9,
+		Brightness = 0,
+		Shadows = false,
+		Parent = under,
+	}) :: PointLight
+	TweenService:Create(light, TweenInfo.new(1.5, Enum.EasingStyle.Sine), { Brightness = 2.2 }):Play()
+	local pour = Create("ParticleEmitter", {
+		Texture = SPARKLE,
+		Color = INK_RISE,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.1) }),
+		Lifetime = NumberRange.new(0.8, 1.3),
+		Speed = NumberRange.new(1.5, 3),
+		SpreadAngle = Vector2.new(60, 60),
+		Acceleration = Vector3.new(0, 2, 0),
+		LightEmission = 0,
+		Rate = 0,
+		Parent = under,
+	}) :: ParticleEmitter
+	after(head, over, 2.25, function()
+		if not calm then
+			light.Brightness = 7
+			TweenService:Create(light, TweenInfo.new(0.7, Enum.EasingStyle.Quad), { Brightness = 3 }):Play()
+		end
+		local sole = lowerSole(character)
+		if sole then
+			EmoteFx.thud(CFrame.new(sole), 6)
+		end
+		pour.Rate = if calm then 8 else 24
+	end)
+	after(head, over, 4.2, function()
+		pour.Rate = 0
+		TweenService:Create(light, TweenInfo.new(1.0), { Brightness = 0 }):Play()
+	end)
+	return function()
+		gone = true
+		under:Destroy()
+	end
+end
+
+-- Menacing Pose's other two poses (NEXT POSE): the same signs rising round them.
+FX.menacingPose2 = function(character, preview, phase)
+	return FX.menacingPose(character, preview, phase)
+end
+FX.menacingPose3 = FX.menacingPose2
+
 -- Bye Bye Bye (Puppet Pop): the band dance it as marionettes; the same strings as Puppet Dance.
 FX.puppetPop = function(character, preview, phase)
 	return FX.puppetDance(character, preview, phase)
@@ -1124,6 +1301,14 @@ local RUNG: { [string]: number } = {
 	excuseMeSirUp = 1,
 	animatronicWelcome = 1,
 	puppetPop = 1,
+	menacingPose2 = 1,
+	menacingPose3 = 1,
+	lowBatteryCharge = 1,
+	impossibleLean = 1,
+	itsYou = 1,
+	deducing = 1,
+	reapersCackle = 1,
+	finalBreakdown = 3,
 }
 
 -- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in

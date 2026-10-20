@@ -1,0 +1,46 @@
+# Jawline Check (clip jawlineCheck, common). Reference notes.
+id = "jawlineCheck"
+item = "emote_jawline_check"
+name = "Jawline Check"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "Mewing's jawline check (the 2024 meme)."
+recognisable = "The chin up, the head turned to show the jaw, a thumb run along it, the flick off the chin, the smug stare."
+
+[source]
+url = "https://www.youtube.com/shorts/M72jmY8VoMs"
+title = "Shh.. Quiet I'm Mewing"
+kind = "the meme's jawline check, chest up"
+watched = "2026-10-20: frame sheets"
+mirror = false
+
+[timing]
+length = 3.2
+fit = "One shot."
+
+[[beat]]
+src = 1.8
+pose = "the flick off the chin"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The arm comes up beside the face, not across it (an R6 fist would hide the whole face)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

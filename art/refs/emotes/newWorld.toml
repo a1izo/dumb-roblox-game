@@ -1,0 +1,46 @@
+# New World (clip newWorld, godhood). Reference notes.
+id = "newWorld"
+item = "emote_new_world"
+name = "New World"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "'I will become the god of this new world' (Death Note, episode 1)."
+recognisable = "The head bowed, then the right arm raised slowly to the sky, the fist closing at the top, the face up, held in the light."
+
+[source]
+url = "https://www.youtube.com/watch?v=XVd6ngs8Fr4"
+title = "I'll Become The God of This New World | Death Note"
+kind = "the anime scene"
+watched = "2026-10-20: the owner's answer (Q9: arm to the sky, fist closed)"
+mirror = false
+
+[timing]
+length = 4.6
+fit = "Bowed 0.7 s, the arm up by 2.3 s, the fist 2.42 s, held to 3.7 s."
+
+[[beat]]
+src = 2.42
+pose = "the fist closed at the top"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["the beam of light from above"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "S14 adds its private cutscene (a white flash into the pose)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

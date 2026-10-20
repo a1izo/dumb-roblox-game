@@ -1,0 +1,46 @@
+# Foot Scratch (clip footScratch, common). Reference notes.
+id = "footScratch"
+item = "emote_foot_scratch"
+name = "Foot Scratch"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "L's barefoot foot scratch (Death Note)."
+recognisable = "On one leg, hunched, hands in pockets, the bare foot rubbing up and down the other shin, swaying to balance."
+
+[source]
+url = "https://www.youtube.com/watch?v=grwNdXi8z5Q"
+title = "L & Light: Rain + Foot Massage Scene"
+kind = "the anime's barefoot L"
+watched = "2026-10-20: frame sheets"
+mirror = false
+
+[timing]
+length = 2.0
+fit = "A 2 s loop (also a stance)."
+
+[[beat]]
+src = 0.5
+pose = "the foot high on the shin"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

@@ -1,0 +1,46 @@
+# Deducing (clip deducing, rare). Reference notes.
+id = "deducing"
+item = "emote_deducing"
+name = "Deducing"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "Thumb to the lip, thinking (L's habit, Death Note)."
+recognisable = "Hunched a little, the thumb pressed to the lower lip, the other hand in a pocket, the eyes going over the room, a tap."
+
+[source]
+url = "https://www.youtube.com/watch?v=CmVV4q_fSCk"
+title = "[Death Note] L explains why he can't sit right"
+kind = "the anime scene"
+watched = "2026-10-20: frame sheets for the thumb and the head"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "A 4 s loop (also a stance); taps at 1.1 s and 3.1 s."
+
+[[beat]]
+src = 1.1
+pose = "the tap"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a faint spark of a thought by the temple on each tap"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

@@ -394,8 +394,10 @@ local function press(player: Player)
 	local ok, _, mask = EmotePolicy.check(EmoteInfo.of(context.branch), EmoteService.situation(player))
 	if ok then
 		play(player, context.branch, mask, { from = now.clip })
+		-- (a branch with its own press-to-do moment, NEXT POSE's next pose, can be pressed again; any other
+		-- branch is the press's end)
 		local fresh = current[player]
-		if fresh then
+		if fresh and not EmoteInfo.of(context.branch).context then
 			fresh.pressed = true
 		end
 	end

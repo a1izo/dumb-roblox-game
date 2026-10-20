@@ -1,0 +1,50 @@
+# Low Battery (clip lowBattery, rare). Reference notes.
+id = "lowBattery"
+item = "emote_low_battery"
+name = "Low Battery"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "The low-battery collapse (a phone running out of charge, acted)."
+recognisable = "Powering down by stages with a stutter at each, the head, the shoulders, the knees, down to sit slumped on the floor."
+
+[source]
+url = "https://www.youtube.com/results?search_query=low+battery+meme+collapse"
+title = "low battery collapse (search)"
+kind = "skits of the meme"
+watched = "2026-10-20: keyed from the emote pack's notes"
+mirror = false
+
+[timing]
+length = 4.6
+fit = "One shot; CHARGE (3.0-4.6 s) plays lowBatteryCharge."
+
+[[beat]]
+src = 2.95
+pose = "slumped on the floor"
+
+[context]
+label = "CHARGE"
+notes = "lowBatteryCharge: two jolts and back up to standing, arms up, the battery filling"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["the battery over the head draining to red, blinking", "CHARGE: it fills back up with sparks"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Sitting is the owner's drawn R6 way: the legs out in front along the floor."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

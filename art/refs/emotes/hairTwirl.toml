@@ -1,0 +1,46 @@
+# Hair Twirl (clip hairTwirl, common). Reference notes.
+id = "hairTwirl"
+item = "emote_hair_twirl"
+name = "Hair Twirl"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "Near twirling his hair (Death Note)."
+recognisable = "Sitting on the floor, legs out, slouched, a forefinger twisting a lock of hair round and round, the head tilted to it."
+
+[source]
+url = "https://www.youtube.com/shorts/OLXRCfFRSzs"
+title = "near when he twists his hair"
+kind = "the anime's Near"
+watched = "2026-10-20: frame sheets"
+mirror = false
+
+[timing]
+length = 2.4
+fit = "A 2.4 s loop (also a stance)."
+
+[[beat]]
+src = 0.0
+pose = "the finger at the hair"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Sitting is the R6 way: the legs out in front along the floor (the owner's drawing)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

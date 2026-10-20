@@ -1,0 +1,46 @@
+# The Eyebrow (clip theEyebrow, common). Reference notes.
+id = "theEyebrow"
+item = "emote_the_eyebrow"
+name = "The Eyebrow"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "The Rock's raised eyebrow, the People's Eyebrow."
+recognisable = "A lean in, the head turned and tilted, the chin down, a hand on the hip, the brow up and held with a slow nod."
+
+[source]
+url = "https://www.youtube.com/shorts/yH72SfUToZI"
+title = "The Rock showing the People's Eyebrow"
+kind = "the wrestler in the ring, chest up"
+watched = "2026-10-20: frame sheets"
+mirror = false
+
+[timing]
+length = 3.4
+fit = "One shot, held 0.8-2.7 s."
+
+[[beat]]
+src = 0.8
+pose = "the lean in, the brow up"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The brow itself is the owner's face picture (EmoteMedia); the body carries the rest."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

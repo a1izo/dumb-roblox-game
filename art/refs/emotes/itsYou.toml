@@ -1,0 +1,46 @@
+# It's You (clip itsYou, rare). Reference notes.
+id = "itsYou"
+item = "emote_its_you"
+name = "It's You"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "Jotaro's point (JoJo's Bizarre Adventure, Part 3)."
+recognisable = "A sharp turn and a step, the arm thrown out straight at someone, a hand at the cap's brim, the chin down."
+
+[source]
+url = "https://www.youtube.com/watch?v=TfpS0HizurA"
+title = "Jotaro point animation"
+kind = "the pose animated, three-quarter view"
+watched = "2026-10-20: frame sheets"
+mirror = false
+
+[timing]
+length = 2.6
+fit = "The snap at 0.24 s, held to 2.0 s."
+
+[[beat]]
+src = 0.24
+pose = "the point"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["a white crack of light off the fingertip"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The left foot steps forward into the point (the plant moves with it)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

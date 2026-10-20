@@ -1,0 +1,49 @@
+# Final Breakdown (clip finalBreakdown, godhood). Reference notes.
+id = "finalBreakdown"
+item = "emote_final_breakdown"
+name = "Final Breakdown"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "Light's laugh in the warehouse (Death Note, episode 37)."
+recognisable = "Bent over, a hand over the face, shaking; then thrown back, the arms flung open, the full laugh; folded over again."
+
+[source]
+url = "https://www.youtube.com/watch?v=pm-7cT8CRak"
+title = "Death Note - Light Can't Stop Laughing"
+kind = "the anime scene"
+watched = "2026-10-20: frame sheets every 0.8 s over 36-52 s (the bent-over laugh, then the face)"
+mirror = false
+
+[timing]
+length = 5.4
+fit = "Held-in laugh 0.6-2.0 s, thrown back 2.25-3.8 s, folded over 4.2 s, up by 5.4 s."
+
+[[beat]]
+src = 42.4
+pose = "bent over, shaking"
+[[beat]]
+src = 48.0
+pose = "the face, the laugh"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 3
+ideas = ["a red light from below the face", "a ring of dust and black ink pouring up at the throw"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Standing, not on the warehouse floor: the meaning is in the arms and the head. S14 adds its private cutscene."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"

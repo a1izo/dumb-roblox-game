@@ -1,0 +1,46 @@
+# Nah, I'd Win (clip nahIdWin, common). Reference notes.
+id = "nahIdWin"
+item = "emote_nah_id_win"
+name = "Nah, I'd Win"
+family = "pose"
+status = "checked"
+uses = []
+
+[origin]
+what = "Gojo's 'Nah, I'd win.' (Jujutsu Kaisen, the manga panel)."
+recognisable = "Hands in the pockets, the weight sunk on one hip, leaning back, the chin up, utterly sure."
+
+[source]
+url = "https://www.youtube.com/results?search_query=nah+id+win+gojo"
+title = "Nah, I'd win (Gojo) (search)"
+kind = "the manga panel and its edits"
+watched = "2026-10-20: from the emote pack's notes; the weight now rolls hip to hip"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "A 4 s loop (also a stance)."
+
+[[beat]]
+src = 0.0
+pose = "on the right hip, chin up"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-20: check_anims (floor, gap, sink, seam), renders at its beats"
