@@ -216,10 +216,117 @@ coin.follow(("rShoulder", "lShoulder"), 3.4, 0.75)
 coin.plant(stance=0.08)
 coin.build()
 
+# Apple Bite (clip appleBite): Ryuk and his apple (Death Note, episode 1; art/refs/emotes/appleBite.toml): the
+# apple brought up and looked at greedily, the head drawn back, then the big crunch, the head lunging into it,
+# chewing with the whole upper body, a shiver of delight ("in the human world, apples are juicy").
+apple = Motion("appleBite", 2.8, note="Ryuk's apple: looked at, one big crunch, a greedy chew and a shiver.")
+APPLE_HIP = reach(1, (1.35, -0.75, -0.55), direction=(0.1, -1.0, -0.4))
+APPLE_LOOK = reach(1, (0.62, 0.05, -1.45), direction=(-0.25, 0.45, -0.85))  # held out at the chest, eyed
+APPLE_MOUTH = reach(1, (0.3, 0.72, -0.9), direction=(-0.45, 0.6, -0.65))  # the apple at the open mouth
+APPLE_CHEW = reach(1, (0.62, 0.15, -1.3), direction=(-0.2, 0.45, -0.85))  # drawn away again to chew
+apple.key(0.0, "smooth", offset=(0, 0, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=APPLE_HIP, lShoulder=(4, 0, -4))
+apple.key(0.45, "out", offset=(0.05, -0.08, 0), root=(-8, 4, 0), neck=(-14, 6, 4), rShoulder=APPLE_LOOK,
+          lShoulder=J((10, 0, -10)))  # hunched over it, eyeing it
+apple.key(0.78, "in", offset=(0.05, -0.04, 0), root=(-4, 2, 0), neck=(8, 2, 0), rShoulder=APPLE_MOUTH,
+          lShoulder=J((14, 0, -16)))  # the head drawn back: the mouth opens
+apple.key(0.9, "snap", offset=(0.03, -0.14, 0), root=(-12, 0, 0), neck=(-5, 0, 0), rShoulder=APPLE_MOUTH,
+          lShoulder=J((22, 0, -22)))  # CRUNCH
+for i, t in enumerate((1.12, 1.34, 1.56, 1.78)):  # the chew, the shoulders working with the jaw
+    up = i % 2 == 0
+    apple.key(t, "smooth", offset=(0.02, -0.08 if up else -0.12, 0), root=(-9 if up else -11, 2 if up else -2, 0),
+              neck=(-6 if up else -12, 4 if up else -4, 0), rShoulder=APPLE_CHEW, lShoulder=J((16, 0, -16)))
+apple.key(2.05, "out", offset=(0, 0.02, 0), root=(4, 0, 3), neck=(14, 0, 6), rShoulder=APPLE_CHEW,
+          lShoulder=J((8, 0, -26)))  # the shiver of delight, leaning back
+apple.key(2.2, "smooth", offset=(0, 0, 0), root=(2, 0, -3), neck=(8, 0, -5), rShoulder=APPLE_CHEW,
+          lShoulder=J((8, 0, -20)))
+apple.key(2.8, "smooth", offset=(0, 0, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=APPLE_HIP, lShoulder=(4, 0, -4))
+apple.follow("neck", 2.6, 0.7)
+apple.follow(("rShoulder", "lShoulder"), 3.2, 0.72)
+apple.plant(stance=0.08)
+apple.build()
+
+# Puppet Dance (clip puppetDance): danced like a marionette (art/refs/emotes/puppetDance.toml): nothing moves by
+# itself; each beat a string yanks one limb up (a snap) and lets it drop under its own weight (falling, then a
+# small bounce), the head lolling to the other side, the body hanging and bobbing on its strings. 120 bpm, a 2 s
+# loop of four pulls: the right arm, the left knee, the left arm, the right knee.
+puppet = Motion("puppetDance", 2.0, loop=True, note="A marionette: each beat a string yanks a limb up and drops it.")
+ARM_DOWN_R, ARM_DOWN_L = J((6, 0, 8), (0, 0.04, 0)), J((6, 0, -8), (0, 0.04, 0))
+# (a marionette's hand string lifts the wrist forward and out to about shoulder height, not overhead)
+ARM_UP_R, ARM_UP_L = J((88, 0, 42), (0, 0.12, 0)), J((88, 0, -42), (0, 0.12, 0))
+KNEE_UP_R, KNEE_UP_L = J((58, 0, 6), (0, 0.3, -0.1)), J((58, 0, -6), (0, 0.3, -0.1))
+LEG_DOWN_R, LEG_DOWN_L = J((0, 0, 3)), J((0, 0, -3))
+pulls = (("rShoulder", ARM_UP_R, -1), ("lHip", KNEE_UP_L, 1), ("lShoulder", ARM_UP_L, 1), ("rHip", KNEE_UP_R, -1))
+rest = {"rShoulder": ARM_DOWN_R, "lShoulder": ARM_DOWN_L, "rHip": LEG_DOWN_R, "lHip": LEG_DOWN_L}
+# dropped: the arms swing out a little, the legs splay and the body sinks on them
+sag = {"rShoulder": J((2, 0, 14), (0, 0.04, 0)), "lShoulder": J((2, 0, -14), (0, 0.04, 0)), "rHip": J((0, 0, 9)),
+       "lHip": J((0, 0, -9))}
+# (the loop starts in the last pull's hang, the one still moment: a yank's sharp start is never at the seam)
+SHIFT = 0.23
+
+
+def _pt(t):
+    return round((t + SHIFT) % 2.0, 3)
+
+
+for n, (joint, up, loll) in enumerate(pulls):
+    t0 = 0.5 * n
+    lifted = dict(rest, **{joint: up})
+    # the yank: the limb pulled up, the body tipped by the string, the head thrown the other way
+    puppet.key(_pt(t0 + 0.18), "out", floor=True, root=J((0, 0, 3 * loll)), neck=J((-4, 0, 14 * loll)), **lifted)
+    puppet.key(_pt(t0 + 0.27), "smooth", floor=True, root=J((0, 0, 3 * loll)), neck=J((-4, 0, 12 * loll)),
+               **lifted)  # hangs there a moment
+    # dropped: it falls under its own weight (in), the head lolls back, the body sags on its strings
+    puppet.key(_pt(t0 + 0.44), "in", floor=True, root=J((-2, 0, -2 * loll)), neck=J((-10, 0, -10 * loll)), **sag)
+    # the little bounce at the bottom of the drop, where the next string pulls
+    puppet.key(_pt(t0 + 0.5), "out", floor=True, root=J((0, 0, -loll)), neck=J((-6, 0, -6 * loll)), **rest)
+puppet.build()
+
+# Write in the Air (clip writeAir): Kira writing a name, with nothing but a finger (art/refs/emotes/writeAir.toml):
+# the finger raised, a name written left to right in the air at face height (small sharp loops, the body leaning
+# with the hand, the weight moving from one foot to the other), a swooping underline, then the full stop jabbed in
+# and a satisfied tilt of the head. The finger's ink shows as an effect (EmoteFx.writeAir).
+air = Motion("writeAir", 3.0, note="Kira writes a name in the air: letters, a swooping underline, a jabbed full stop.")
+AIR_REST = J((4, 0, 4))
+
+
+def _finger(x, y, z=-1.65, forward=(0.0, 0.2, -1.0)):
+    """The right arm with its fingertip at (x, y, z) (torso frame), pointing `forward`: out in front at the chest,
+    never across the face."""
+    return reach(1, (x, y, z), direction=forward)
+
+
+air.key(0.0, "smooth", offset=(0, 0, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=AIR_REST, lShoulder=(4, 0, -4))
+air.key(0.35, "out", offset=(-0.06, 0, 0), root=(0, -10, -2), neck=(-6, 12, 0), rShoulder=_finger(-0.1, 0.8),
+        lShoulder=(6, 0, -6))  # the finger raised where the name starts, the eyes on it
+# the letters: the fingertip travels right, a small loop up and down for each, the body leaning after it
+for i in range(6):
+    t = 0.45 + i * 0.22
+    x = -0.1 + i * 0.24
+    y = 0.8 + (0.12 if i % 2 == 0 else -0.08)
+    air.key(round(t, 3), "smooth", offset=(-0.06 + 0.024 * i, 0, 0), root=(0, -10 + 4 * i, -2 + 0.8 * i),
+            neck=(-6 + (2 if i % 2 else 0), 12 - 4 * i, 0), rShoulder=_finger(x, y), lShoulder=(6, 0, -6))
+# the underline: a swoop back to the left, low
+air.key(1.95, "out", offset=(-0.04, -0.06, 0), root=(-3, -8, -1), neck=(-10, 10, 0), rShoulder=_finger(-0.15, 0.48),
+        lShoulder=(6, 0, -6))
+# the full stop: drawn back, then jabbed in
+air.key(2.2, "in", offset=(0.02, 0, 0.04), root=(2, 6, 1), neck=(-2, -6, 0), rShoulder=_finger(1.2, 0.7, -1.2),
+        lShoulder=(6, 0, -6))
+air.key(2.3, "snap", offset=(0.04, -0.04, -0.06), root=(-5, 6, 1), neck=(-6, -6, 0), rShoulder=_finger(1.2, 0.7, -1.9),
+        lShoulder=(6, 0, -6))
+air.key(2.55, "smooth", offset=(0.02, 0, 0), root=(-1, 3, 4), neck=(4, -4, 8), rShoulder=_finger(1.15, 0.66, -1.75),
+        lShoulder=(6, 0, -6))  # the satisfied tilt
+air.key(3.0, "smooth", offset=(0, 0, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=AIR_REST, lShoulder=(4, 0, -4))
+air.follow("neck", 2.4, 0.72)
+air.follow(("lShoulder",), 2.2, 0.62)
+air.plant(stance=0.1)
+air.build()
+
 # Where the props sit (solve_holds.py writes them into EmoteMeta): the bag upright in the left fist at the hip,
 # its mouth up; the chip pinched in the right fingers, raised flat towards the face.
 HOLDS = {
     # the coin pinched on the thumb at the start; on the back of the left hand after the slap
+    # the apple in the right fingers, upright, its middle just past the fist, as it is looked at
+    "appleBite/Apple": ("Right Arm", {"rShoulder": APPLE_LOOK}, (0.52, 0.23, -1.79), (0, 0, 0)),
     "coinFlip/Coin": ("Right Arm", {"rShoulder": LOAD}, (0.55, -0.02, -1.25), (90, 0, 0)),
     "coinFlip/CoinBack": ("Left Arm", {"lShoulder": FLAT}, (-0.18, 0.54, -1.22), (0, 0, 0)),
     "coinFlip/CoinUp": ("Right Arm", {"rShoulder": LOAD}, (0.55, -0.02, -1.25), (90, 0, 0)),

@@ -1,0 +1,51 @@
+# Apple Bite (clip appleBite, rare). Reference notes.
+id = "appleBite"
+name = "Apple Bite"
+family = "older"
+status = "checked"
+uses = ["Apple"]
+
+[origin]
+what = "Ryuk and his apple (Death Note, episode 1)."
+recognisable = "The apple held low and eyed with that grin, brought up, one big crunch, pulled down bitten, a long greedy chew, a shiver of delight."
+
+[source]
+url = "https://www.youtube.com/watch?v=dytRtEXkLiw"
+title = "Ryuk eats apple"
+kind = "the anime close-up of Ryuk with the apple, chest up"
+watched = "2026-10-20: frame sheets over the whole clip, then every 0.42 s over 2.6-10.8 s (held 2.6-5.5 s, raised 5.96 s, bitten 6.38-6.8 s, pulled down 7.2 s, chewing 7.6-9.7 s, the grin 10.2 s)"
+mirror = false
+
+[timing]
+length = 2.8
+fit = "The source's long look (3 s) is cut to 0.8 s; the raise and bite keep their pace (crunch at 0.9 s); the chew 1.1-1.8 s; the shiver 2.05 s."
+
+[[beat]]
+src = 4.28
+pose = "held low, eyed"
+[[beat]]
+src = 6.38
+pose = "the bite"
+[[beat]]
+src = 7.64
+pose = "pulled down, chewing"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["juice and flecks of white flesh from the mouth at the crunch"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The apple is held out at the chest while eyed so the bite has somewhere to travel; at the crunch it meets the lips without going into the chest (check_props)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

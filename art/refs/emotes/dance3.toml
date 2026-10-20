@@ -1,0 +1,51 @@
+# Spin (clip dance3, common). Reference notes.
+id = "dance3"
+name = "Spin"
+family = "older"
+status = "checked"
+uses = []
+
+[origin]
+what = "A dancer's turn on one leg (a beginner's pirouette): plie, passe, the turn, the landing."
+recognisable = "Down into the knees with the arms open, the right foot drawn up to the left knee, two quick turns on the left foot with the head spotting, landing open."
+
+[source]
+url = "https://www.youtube.com/shorts/L4RdLM4aeE4"
+title = "Spin on One Leg - Easy Beginner Guide"
+kind = "a dance teacher demonstrating a turn on one leg, head to foot, from the front"
+watched = "2026-10-19: frame sheets over the whole short; the preparation, the passe and the spotting keyed on its beats"
+mirror = false
+
+[timing]
+length = 1.6
+fit = "Preparation 0-0.38 s, two turns of 0.54 s each about the left foot, landing back into the plie the loop starts from."
+
+[[beat]]
+src = 0.25
+pose = "the plie, the arms open"
+[[beat]]
+src = 0.38
+pose = "the passe: the right foot at the left knee"
+[[beat]]
+src = 1.5
+pose = "landed open"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The turn is about the left foot, not the hips' middle: the body is moved round so that foot stays put; R6 has no knees, so the plie is the legs sliding up into the hips."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

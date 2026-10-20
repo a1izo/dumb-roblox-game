@@ -1,0 +1,50 @@
+# Puppet Dance (clip puppetDance, rare). Reference notes.
+id = "puppetDance"
+name = "Puppet Dance"
+family = "older"
+status = "checked"
+uses = []
+
+[origin]
+what = "A dance as a string puppet (marionette)."
+recognisable = "Nothing moves by itself: each beat a string jerks one limb up and lets it drop under its own weight, the head lolling, the body bobbing on its strings."
+
+[source]
+url = "https://www.youtube.com/watch?v=yEMFz-KSeKE"
+title = "These String PUPPETS Dance better than most Humans"
+kind = "street performers' string puppets dancing, head to foot"
+watched = "2026-10-20: frame sheets over the whole video, then every 0.2 s over 19-22.6 s (the arms flicked out to about shoulder height and dropped, the knees lifted in turn, the head bobbing)"
+mirror = false
+
+[timing]
+length = 2.0
+bpm = 120
+beats = 4
+fit = "120 bpm, four pulls a loop (right arm, left knee, left arm, right knee); the loop starts in the last pull's hang so no yank starts at the seam."
+
+[[beat]]
+src = 20.6
+pose = "an arm flicked out"
+[[beat]]
+src = 21.4
+pose = "a knee lifted"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 1
+ideas = ["the strings: pale threads from far overhead to each wrist, knee and the crown of the head"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Each pull stands on the floor (legs solved to it); the drop splays the legs a little so the body sinks."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

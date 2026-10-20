@@ -1,0 +1,45 @@
+# Write in the Air (clip writeAir, epic). Reference notes.
+id = "writeAir"
+name = "Write in the Air"
+family = "older"
+status = "checked"
+uses = []
+
+[origin]
+what = "Kira writing a name with nothing but a finger, the ink hanging in the air."
+recognisable = "The finger raised, a name written left to right at chest height, the body leaning after the hand, a swooping underline, the full stop jabbed in, a satisfied tilt of the head."
+
+[source]
+url = "https://www.youtube.com/watch?v=iUCJwsKdoW8"
+title = "Light Painting - Text & Titles (Shanks FX, PBS Digital Studios)"
+kind = "light painting: a person writing words in the air with a light in a dark studio (long exposures)"
+watched = "2026-10-20: frame sheets over the whole video; the written words hang at chest height, left to right, as the effect does; the body keyed (no scene in the anime shows it)"
+mirror = false
+
+[timing]
+length = 3.0
+fit = "The name 0.45-1.55 s, the underline to 1.95 s, the full stop 2.2-2.3 s, the tilt 2.55 s."
+
+[[beat]]
+src = 48.0
+pose = "the written words hanging in the air"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["red ink hanging where the finger wrote, fading", "a red light on the finger", "the full stop flares and spatters"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Written out in front at chest height, never across the face (an R6 fist pointed at the camera hides it)."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

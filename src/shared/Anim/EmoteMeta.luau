@@ -71,7 +71,7 @@ return {
 		allow = {
 			{ prop = 1, part = "Left Arm", from = 1.42, to = 1.58 },
 			{ prop = 1, part = "Right Arm", from = 1.45, to = 1.95 },
-			{ prop = 1, part = "Right Arm", from = 2.42, to = 2.6 },
+			{ prop = 1, part = "Right Arm", from = 2.38, to = 2.6 },
 		},
 	},
 	appleBite = {
@@ -81,9 +81,12 @@ return {
 				size = 0.8,
 				stand = { shape = "Ball", size = { 0.7, 0.7, 0.7 }, color = { 150, 20, 26 } },
 				mount = "Right Arm",
-				at = GRIP,
+				at = { { p = { 0.044, -1.203, -0.178 } }, { r = { -90.38, -23.38, -0.15 } } }, -- hold: appleBite/Apple
 			},
 		},
+		-- the crunch: the head lunges into the apple (touching the lips, its middle is about its radius from the mouth)
+		contacts = { { at = 0.95, prop = 1, to = "mouth", within = 0.45 } },
+		allow = { { prop = 1, part = "Head", from = 0.83, to = 1.05 } },
 	},
 	preDawnBonk = {
 		props = {

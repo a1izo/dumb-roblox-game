@@ -530,6 +530,243 @@ FX.chipAndPen = function(character, preview)
 	end
 end
 
+-- An imported effect texture, or one of Roblox's own when the import has none.
+local function textureOr(name: string, fallback: string): string
+	local id = Assets.texture(name)
+	return if id ~= "" then id else fallback
+end
+
+-- Runs `fn` `seconds` after the start, unless the effect was cleared by then or the body went.
+local function after(root: Instance, gone: () -> boolean, seconds: number, fn: () -> ())
+	task.delay(seconds, function()
+		if not gone() and root.Parent then
+			fn()
+		end
+	end)
+end
+
+-- Apple Bite, timed to the clip (art/scripts/emotes/older.py): the crunch (0.93 s) sprays juice and flecks of
+-- the apple's white flesh out of the mouth, falling.
+FX.appleBite = function(character, preview)
+	local head = character:FindFirstChild("Head")
+	if preview or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	local mouth = Create("Attachment", { Name = "EmoteJuice", Position = Vector3.new(0, -0.3, -0.75), Parent = head })
+	mouth:SetAttribute("DGEmote", true)
+	local function spray(name: string, colors: ColorSequence, size: number, count: number)
+		local emitter = Create("ParticleEmitter", {
+			Name = name,
+			Texture = SPARKLE,
+			Color = colors,
+			LightEmission = 0.25,
+			Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, size),
+				NumberSequenceKeypoint.new(1, size * 0.3),
+			}),
+			Lifetime = NumberRange.new(0.35, 0.7),
+			Speed = NumberRange.new(4, 8),
+			SpreadAngle = Vector2.new(50, 35),
+			EmissionDirection = Enum.NormalId.Front,
+			Acceleration = Vector3.new(0, -26, 0),
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-260, 260),
+			Rate = 0,
+			Parent = mouth,
+		}) :: ParticleEmitter
+		after(
+			head,
+			function()
+				return gone
+			end,
+			0.93,
+			function()
+				emitter:Emit(count)
+			end
+		)
+	end
+	spray("Juice", ColorSequence.new(Color3.fromRGB(255, 246, 220), Color3.fromRGB(236, 214, 160)), 0.22, 16)
+	spray("Skin", ColorSequence.new(Color3.fromRGB(170, 24, 32)), 0.16, 5)
+	return function()
+		gone = true
+		mouth:Destroy()
+	end
+end
+
+-- Puppet Dance: the marionette's strings, pale threads from far overhead down to each wrist and knee and the
+-- crown of the head, jerked with every pull (they hang from the body's own root, so they go where it goes).
+local STRING = Color3.fromRGB(226, 220, 204)
+FX.puppetDance = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root or not root:IsA("BasePart") then
+		return nothing
+	end
+	local made: { Instance } = {}
+	local ends = {
+		{ "Right Arm", Vector3.new(0, -0.95, 0), Vector3.new(1.6, 10, -0.2) },
+		{ "Left Arm", Vector3.new(0, -0.95, 0), Vector3.new(-1.6, 10, -0.2) },
+		{ "Right Leg", Vector3.new(0, 0.1, -0.5), Vector3.new(0.6, 10, -0.8) },
+		{ "Left Leg", Vector3.new(0, 0.1, -0.5), Vector3.new(-0.6, 10, -0.8) },
+		{ "Head", Vector3.new(0, 0.5, 0), Vector3.new(0, 10, 0) },
+	}
+	for _, spec in ipairs(ends) do
+		local limb = character:FindFirstChild(spec[1])
+		if limb and limb:IsA("BasePart") then
+			local low = Create("Attachment", { Name = "EmoteString", Position = spec[2], Parent = limb })
+			local high = Create("Attachment", { Name = "EmoteString", Position = spec[3], Parent = root })
+			low:SetAttribute("DGEmote", true)
+			high:SetAttribute("DGEmote", true)
+			local beam = Create("Beam", {
+				Attachment0 = low,
+				Attachment1 = high,
+				Color = ColorSequence.new(STRING),
+				Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.25),
+					NumberSequenceKeypoint.new(0.7, 0.45),
+					NumberSequenceKeypoint.new(1, 1),
+				}),
+				Width0 = 0.035,
+				Width1 = 0.035,
+				FaceCamera = true,
+				LightInfluence = 0.6,
+				Segments = 2,
+				Parent = low,
+			})
+			table.insert(made, low)
+			table.insert(made, high)
+			table.insert(made, beam)
+		end
+	end
+	return function()
+		for _, instance in ipairs(made) do
+			instance:Destroy()
+		end
+	end
+end
+
+-- Write in the Air, timed to the clip (art/scripts/emotes/older.py): the fingertip writes in glowing red ink that
+-- hangs where it was written and fades (0.4 to 1.95 s: the name, then its underline), a red light on the finger
+-- as it writes; the full stop (2.3 s) flares the light and spatters the ink.
+FX.writeAir = function(character, preview)
+	local arm = character:FindFirstChild("Right Arm")
+	if preview or not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local calm = Motion.isReduced()
+	local gone = false
+	local function over()
+		return gone
+	end
+	local tip = Create("Attachment", { Name = "EmoteInk", Position = Vector3.new(0, -1.1, 0), Parent = arm })
+	tip:SetAttribute("DGEmote", true)
+	local red = Color3.fromRGB(230, 36, 56)
+	local glow = textureOr("SoulGlow", SPARKLE)
+	local ink = Create("ParticleEmitter", {
+		Name = "Writing",
+		Texture = glow,
+		Color = ColorSequence.new(red),
+		LightEmission = 1,
+		LightInfluence = 0,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.12) }),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(0.65, 0.15),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Lifetime = NumberRange.new(2.4),
+		Speed = NumberRange.new(0),
+		Rate = 110,
+		Enabled = false,
+		Parent = tip,
+	}) :: ParticleEmitter
+	local spatter = Create("ParticleEmitter", {
+		Name = "FullStop",
+		Texture = SPARKLE,
+		Color = ColorSequence.new(red),
+		LightEmission = 0.8,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0) }),
+		Lifetime = NumberRange.new(0.35, 0.6),
+		Speed = NumberRange.new(3, 6),
+		Drag = 6,
+		SpreadAngle = Vector2.new(180, 180),
+		Rate = 0,
+		Parent = tip,
+	}) :: ParticleEmitter
+	local light = Create("PointLight", {
+		Color = Color3.fromRGB(255, 50, 64),
+		Range = 6,
+		Brightness = 0,
+		Shadows = false,
+		Parent = tip,
+	}) :: PointLight
+	after(arm, over, 0.4, function()
+		ink.Enabled = true
+		TweenService:Create(light, TweenInfo.new(0.3), { Brightness = 1.4 }):Play()
+	end)
+	after(arm, over, 1.95, function()
+		ink.Enabled = false
+	end)
+	after(arm, over, 2.3, function()
+		ink:Emit(4)
+		if calm then
+			return
+		end
+		spatter:Emit(14)
+		light.Brightness = 5
+		TweenService:Create(light, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
+	end)
+	return function()
+		gone = true
+		tip:Destroy()
+	end
+end
+
+-- Ace's Crouch: a cold lamp straight overhead, as in his interview room, and dust drifting slowly in its light.
+FX.aceCrouch = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root or not root:IsA("BasePart") then
+		return nothing
+	end
+	local removeLight = Cinema.spotlight(character, Color3.fromRGB(196, 212, 232))
+	-- (the dust fills a still box of air round him, not one that follows the body)
+	local box = Create("Part", {
+		Name = "EmoteDust",
+		Size = Vector3.new(5, 5, 5),
+		Transparency = 1,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CFrame = root.CFrame,
+		Parent = workspace.CurrentCamera,
+	}) :: BasePart
+	Create("ParticleEmitter", {
+		Texture = SPARKLE,
+		Color = ColorSequence.new(Color3.fromRGB(220, 228, 240)),
+		LightEmission = 0.4,
+		LightInfluence = 0.5,
+		Size = NumberSequence.new(0.07),
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.3, 0.35),
+			NumberSequenceKeypoint.new(0.7, 0.35),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		Lifetime = NumberRange.new(3, 5),
+		Speed = NumberRange.new(0.1, 0.35),
+		SpreadAngle = Vector2.new(180, 180),
+		Acceleration = Vector3.new(0, -0.05, 0),
+		Shape = Enum.ParticleEmitterShape.Box,
+		Rate = if Motion.isReduced() then 2 else 5,
+		Parent = box,
+	})
+	return function()
+		removeLight()
+		box:Destroy()
+	end
+end
+
 -- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
 -- light, 3 layered, 4 the cutscene emotes'. The four above keep their own looks; the rest come with each emote.
 local RUNG: { [string]: number } = {
@@ -539,6 +776,10 @@ local RUNG: { [string]: number } = {
 	newWorld = 2,
 	justAsPlanned = 3,
 	chipAndPen = 2,
+	appleBite = 1,
+	puppetDance = 1,
+	writeAir = 2,
+	aceCrouch = 2,
 }
 
 -- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in

@@ -1,0 +1,58 @@
+# Coin Flip (clip coinFlip, common). Reference notes.
+id = "coinFlip"
+name = "Coin Flip"
+family = "older"
+status = "checked"
+uses = ["Coin"]
+
+[origin]
+what = "The gambler's call, heads or tails: the coin flicked up off the thumb, caught, slapped on the back of the other hand."
+recognisable = "The coin on the curled finger with the thumb under it, the flick, the head following it up, caught in the fist, slapped onto the back of the left hand, both leaning in to read it."
+
+[source]
+url = "https://www.youtube.com/watch?v=pAXxkcVvzV4"
+title = "How to Flip a Coin (wikiHow)"
+kind = "a close shot of the hands only, every step of the flip"
+watched = "2026-10-20: frame sheets over the whole video (load 11.9-17.6 s, flick 23.3 s, catch 29 s, slap 32.8 s, reveal 34.7 s); the body around the hands keyed"
+mirror = false
+
+[timing]
+length = 3.0
+fit = "Load and dip to 0.35 s, flick 0.55 s, caught 1.35 s, slapped 1.55 s, read 2.05-2.3 s, picked up and readied by 3.0 s (FLIP throws again)."
+
+[[beat]]
+src = 23.3
+pose = "the flick"
+[[beat]]
+src = 29.0
+pose = "caught in the palm"
+[[beat]]
+src = 32.8
+pose = "slapped on the back of the hand"
+[[beat]]
+src = 34.7
+pose = "the coin shown on the back of the hand"
+
+[context]
+label = "FLIP"
+notes = "replays the clip: the coin flicked up again"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The slap lands on top of the left forearm (R6 has no hand to lay it on); the coin rests there."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

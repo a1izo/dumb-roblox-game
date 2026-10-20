@@ -3,7 +3,9 @@
 --   1. a base layer from the locomotion controller (standing, walking, running, the air), then
 --   2. clip tracks on top (actions, deaths, emotes), each blended in and out by weight, then
 --   3. an after-pass from the locomotion controller that keeps a standing body's soles planted under
---      whatever the layers above did to it.
+--      whatever the layers above did to it, then
+--   4. while a clip that moves the legs fades in or out, the body lifted off the floor wherever the blend of
+--      two poses would put a leg through it.
 -- Clips come from Blender (Anim/Clips). A clip with an uploaded animation id in
 -- Assets.anim plays that animation instead. A track can also be procedural (playProcedural): a function
 -- that gives the joints' rotations each frame, like a clip's sample (the rift dive's tumble, Anim/Tumble).
@@ -74,6 +76,8 @@ export type Rig = {
 	-- How much of this frame's pose comes from clips that move the legs (dances, actions): the after-pass
 	-- leaves the legs to them that much.
 	legsTaken: number,
+	-- A clip that moves the legs is fading in or out this frame (the floor guard looks at the legs then).
+	legsBlending: boolean,
 	baked: boolean,
 	-- Posed once every `every` frames (far-off bodies); nil: every frame. Between, the joints are given the
 	-- pose of the last posed frame again (`held`): an Animator puts them back to rest each frame otherwise.
@@ -179,6 +183,7 @@ function PoseController.bind(character: Model?): Rig?
 		c1 = {},
 		tracks = {},
 		legsTaken = 0,
+		legsBlending = false,
 		baked = false,
 	}
 	refresh(rig)
@@ -464,6 +469,7 @@ local function playTrack(rig: Rig, track: Track, now: number)
 		local rotations, offset = sampler(elapsed)
 		if rotations.rHip or rotations.lHip then
 			rig.legsTaken = math.max(rig.legsTaken, w)
+			rig.legsBlending = rig.legsBlending or w < 1
 		end
 		for joint, rot in pairs(rotations) do
 			local basis = rig.basis[joint]
@@ -483,6 +489,7 @@ local function playTrack(rig: Rig, track: Track, now: number)
 		local upper = track.mask == "upper"
 		if not upper and (clip.joints.rHip or clip.joints.lHip) then
 			rig.legsTaken = math.max(rig.legsTaken, w)
+			rig.legsBlending = rig.legsBlending or w < 1
 		end
 		table.clear(scratch)
 		local rotations, offset = ClipPlayer.sample(clip, elapsed, scratch)
@@ -511,6 +518,50 @@ local function playTrack(rig: Rig, track: Track, now: number)
 			apply(rig, "root", shifted, w)
 		end
 		return
+	end
+end
+
+-- The floor guard. Each joint blends straight from one pose to the other, so halfway into a crouch the legs
+-- are only half swung forward while the body is already half lowered, and the feet go through the floor (and
+-- the same on the way out). While that can happen, the body is raised just enough that no corner of a leg is
+-- below where the soles stand at rest.
+local HIPS = { "rHip", "lHip" }
+local CORNERS = {}
+for _, x in ipairs({ -1, 1 }) do
+	for _, y in ipairs({ -1, 1 }) do
+		for _, z in ipairs({ -1, 1 }) do
+			table.insert(CORNERS, Vector3.new(x, y, z) / 2)
+		end
+	end
+end
+
+local function liftOffFloor(rig: Rig)
+	local root = rig.motors.root
+	local rootC0, rootC1 = rig.c0.root, rig.c1.root
+	local part = rig.character:FindFirstChild("HumanoidRootPart")
+	if not root or not rootC0 or not rootC1 or not part or not part:IsA("BasePart") or rig.humanoid.Sit then
+		return
+	end
+	-- (in the root part's frame, which stands upright: R6 legs stand on the floor, half the root plus a leg
+	-- below its middle)
+	local torso = rootC0 * root.Transform * rootC1:Inverse()
+	local floor = math.huge
+	local lowest = math.huge
+	for _, joint in ipairs(HIPS) do
+		local motor = rig.motors[joint]
+		local c0, c1 = rig.c0[joint], rig.c1[joint]
+		local leg = motor and Joints.child(motor)
+		if leg and c0 and c1 then
+			floor = math.min(floor, -(rig.humanoid.HipHeight + part.Size.Y / 2 + leg.Size.Y))
+			local at = torso * c0 * motor.Transform * c1:Inverse()
+			for _, corner in ipairs(CORNERS) do
+				lowest = math.min(lowest, (at * (corner * leg.Size)).Y)
+			end
+		end
+	end
+	local short = floor - lowest
+	if floor < math.huge and short > 0.001 then
+		root.Transform = rootC0:Inverse() * CFrame.new(0, short, 0) * rootC0 * root.Transform
 	end
 end
 
@@ -583,12 +634,17 @@ local function step(dt: number)
 		end
 		-- 2. clip tracks on top
 		rig.legsTaken = 0
+		rig.legsBlending = false
 		for _, track in ipairs(rig.tracks) do
 			playTrack(rig, track, now)
 		end
 		-- 3. the after-pass (planted feet), once everything above has moved the body
 		if afterPass and not uploaded then
 			afterPass(rig, elapsed)
+		end
+		-- 4. the floor guard, while a leg clip blends
+		if rig.legsBlending and not uploaded then
+			liftOffFloor(rig)
 		end
 		if every and not uploaded then
 			local held = rig.held or {}

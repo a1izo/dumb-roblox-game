@@ -1,0 +1,48 @@
+# Ace's Crouch (clip aceCrouch, epic). Reference notes.
+id = "aceCrouch"
+name = "Ace's Crouch"
+family = "older"
+status = "checked"
+uses = []
+
+[origin]
+what = "L sitting low on his legs, hands hung over his knees (Death Note)."
+recognisable = "Crouched, rocking slowly back and forward, the head tilting one way on the way back and the other forward."
+
+[source]
+url = "https://www.youtube.com/watch?v=CmVV4q_fSCk"
+title = "[Death Note] L explains why he can't sit right"
+kind = "the anime scene (L crouched on the chair, talking), front and three-quarter shots"
+watched = "2026-10-20: frames of the scene in the built-in browser for the crouch and the head's tilts"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "A 4 s loop of two slow rocks."
+
+[[beat]]
+src = 1.0
+pose = "rocked back"
+[[beat]]
+src = 2.0
+pose = "forward, the head tilted the other way"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 2
+ideas = ["a cold lamp straight overhead, as in his interview room", "dust drifting in its light"]
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The R6 crouch per the owner's drawing: the legs forward along the floor, the torso upright on them."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

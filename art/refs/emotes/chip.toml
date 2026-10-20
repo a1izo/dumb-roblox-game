@@ -1,0 +1,55 @@
+# Potato chip (clip chip, common). Reference notes.
+id = "chip"
+name = "Potato chip"
+family = "older"
+status = "checked"
+uses = ["ChipBag", "Chip"]
+
+[origin]
+what = "Light's \"I'll take a potato chip... and eat it!\" (Death Note, episode 8), standing."
+recognisable = "The bag at the hip, the hand into it, the chip raised slowly to face height and held there in the line's pause; EAT bites it with a snap of the head."
+
+[source]
+url = "https://www.youtube.com/watch?v=KC6T3_O2iWc"
+title = "I'll take a potato chip... and eat it!"
+kind = "the anime scene (Light at his desk, the bag in his left hand), also watched as the full scene (https://www.youtube.com/watch?v=XrpdFmb0EMc)"
+watched = "2026-10-20: frames of both clips in the built-in browser; the poses keyed on the scene's beats"
+mirror = false
+
+[timing]
+length = 3.4
+fit = "Into the bag by 0.9 s, the slow arc up by 1.3 s, held to 2.4 s (EAT's window, branch chipEat), lowered."
+
+[[beat]]
+src = 0.72
+pose = "the hand at the bag's mouth"
+[[beat]]
+src = 1.3
+pose = "the chip raised at face height, the head turned to it"
+[[beat]]
+src = 2.9
+pose = "not eaten: lowered, a level look"
+
+[context]
+label = "EAT"
+notes = "chipEat: the chip thrust into the mouth (contact at 0.3 s), the crunch, a smirking chew"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Standing, not seated at the desk (the emote plays anywhere); the chip is held beside the face, never in front of it."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

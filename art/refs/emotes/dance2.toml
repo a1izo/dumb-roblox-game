@@ -1,0 +1,49 @@
+# Groove (clip dance2, common). Reference notes.
+id = "dance2"
+name = "Groove"
+family = "older"
+status = "checked"
+uses = []
+
+[origin]
+what = "Roblox's /e dance2 for R6 avatars (the second of its three classic dances)."
+recognisable = "A shuffle from side to side, the arms swung out and back with each step."
+
+[source]
+url = "rbxassetid://182436842"
+title = "Roblox classic /e dance2 (R6)"
+kind = "Roblox's own animation asset, recorded in a Studio play test (Motor6D.Transform of every R6 joint, 30 a second: art/refs/classic/dance2.json) and keyed as it is (art/scripts/emotes/classic.py)"
+watched = "2026-10-20: recorded in the emote harness (probe Rec), read back joint by joint, rendered beside the old clip"
+mirror = false
+
+[timing]
+length = 2.1667
+source_length = 2.1667
+fit = "Roblox's own loop length, played at its own speed; frames that dipped a foot into the floor are lifted."
+
+[[beat]]
+src = 0.0
+pose = "the weight on the right foot, the arms swung right"
+[[beat]]
+src = 1.08
+pose = "the weight on the left, the arms left"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "Copied joint for joint; nothing to change for the game's rig."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"

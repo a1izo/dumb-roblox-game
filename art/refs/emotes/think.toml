@@ -1,0 +1,45 @@
+# Thinker (clip think, common). Reference notes.
+id = "think"
+name = "Thinker"
+family = "older"
+status = "checked"
+uses = []
+
+[origin]
+what = "L's crouch (Death Note), where he explains he must sit like that to think."
+recognisable = "Sitting low on his legs, hunched, the right thumb at the lower lip; the breathing, the thumb pressing and the slow tilt of the head never stop."
+
+[source]
+url = "https://www.youtube.com/watch?v=CmVV4q_fSCk"
+title = "[Death Note] L explains why he can't sit right"
+kind = "the anime scene (L crouched on the chair, talking), front and three-quarter shots"
+watched = "2026-10-20: frames of the scene in the built-in browser for his tics (thumb, tilt, breathing)"
+mirror = false
+
+[timing]
+length = 4.0
+fit = "A 4 s loop: two breaths, two presses of the thumb, one tilt of the head and back."
+
+[[beat]]
+src = 1.5
+pose = "the head tilted: something does not add up"
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = false
+
+[r6]
+notes = "The R6 crouch per the owner's drawing (2026-10-20): the legs forward along the floor, the torso upright on their back ends."
+
+[check]
+by = "2026-10-20: check_anims (floor, gap and sink within limits), check_props where it holds something, renders from the front at every beat"
