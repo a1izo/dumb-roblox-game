@@ -46,3 +46,40 @@ take_l = Motion("takeTheL", 4 * beats(150), loop=True, note="Fortnite's Take the
                 "foot to foot, kicking out.", unwrap=True, floor=True)
 mocap.capture(take_l, "takeTheL", 0.0, 0.0, 1.5)
 take_l.build()
+
+# Bounce Pump (clip bouncePump, item emote_bounce_pump) -----------------------------------------------------
+# Fortnite's Orange Justice, the game's own animation filmed on green screen (refs: bouncePump.toml,
+# mocap/bouncePump.json, 10 frames a second over 2.0-9.1 s): the arms swung low and across the body as a leg
+# swings out, side to side and bouncing, the hands thrown up and shaken, the arms crossed and pumped at the
+# waist, the wide low step. The routine repeats every 6.5 s (source 2.3 s matches 8.8 s): 16 beats at 148 bpm.
+clock = Clock(2.3, 148)
+at = clock.at
+pump = Motion("bouncePump", 16 * beats(148), loop=True, note="Fortnite's Orange Justice: low swings across the body, "
+              "the leg out, hands up, the crossed pump.", unwrap=True, floor=True)
+mocap.capture(pump, "bouncePump", clock.start, 0.0, at(8.7))
+pump.build()
+
+# Bunny Ears (clip bunnyEars, item emote_bunny_ears) --------------------------------------------------------
+# Caramelldansen (the 2008 anime meme dance), danced by a real dancer from the front (refs: bunnyEars.toml,
+# mocap/bunnyEars.json, 15 frames a second over 4.0-7.2 s): both hands up on the head, flapping like ears on every
+# beat, the hips swaying side to side over two. At the song's 165 bpm, 4 beats loop (from 4.2 s, the first tracked
+# frame being off), the last frame flowing back into the first.
+clock = Clock(4.2, 165)
+at = clock.at
+bunny = Motion("bunnyEars", 4 * beats(165), loop=True, note="Caramelldansen: hands on the head flapping like ears, "
+               "the hips swaying.", unwrap=True, floor=True)
+mocap.capture(bunny, "bunnyEars", clock.start, 0.0, at(4.2 + 4 * beats(165) - 1 / 15))
+bunny.build()
+
+# Jackpot Shuffle (clip jackpotShuffle, item emote_jackpot_shuffle) -----------------------------------------
+# Hakari's dance (Jujutsu Kaisen, to "Tuca Donka"), danced by a real dancer from the front (refs:
+# jackpotShuffle.toml, mocap/jackpotShuffle.json, 10 frames a second over 0.3-5.8 s): feet planted wide, both
+# fists raised over the head, the hips swung side to side under them with a little double bounce. The sway from
+# 0.3 s comes back to the same pose at 3.0 s; that stretch loops (7 beats at 150 bpm). The tutorial's second
+# move, arms held out in front, is nearly still and left out.
+clock = Clock(0.3, 150)
+at = clock.at
+jackpot = Motion("jackpotShuffle", 7 * beats(150), loop=True, note="Hakari's dance: fists up over the head, the hips "
+                 "swung side to side, a double bounce.", unwrap=True, floor=True)
+mocap.capture(jackpot, "jackpotShuffle", clock.start, 0.0, at(3.0))
+jackpot.build()
