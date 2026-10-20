@@ -12,6 +12,31 @@ from emotes import mocap
 from emotes.kit import Clock, beats, reach
 from motion import Motion
 
+
+def _close_turn(m):
+    """A loop whose angles end on another spelling of the start (a turn on the spot carries the X-Y-Z angles over
+    to their other branch, x+180, 180-y, z+180, or whole turns on): the loop would spin back to the first key's
+    spelling at the seam. A key at the very end, the first pose spelt the way the last key is, carries it on round
+    instead (the same rotation, so nothing jumps when the loop starts again). The angles are unwrapped first (as
+    build does), so the last key is where the loop really ends up."""
+    if m.unwrap:
+        m._unwrap()
+    for channel in m.channels.values():
+        first, last = channel.keys[0][1], channel.keys[-1][1]
+        x, y, z = first[:3]
+        best = None
+        for spelt in ((x, y, z), (x + 180.0, 180.0 - y, z + 180.0)):
+            near = [spelt[a] + 360.0 * round((last[a] - spelt[a]) / 360.0) for a in range(3)]
+            gap = sum((near[a] - last[a]) ** 2 for a in range(3))
+            if best is None or gap < best[0]:
+                best = (gap, near)
+        near = best[1]
+        if any(abs(near[a] - first[a]) > 1e-6 for a in range(3)):
+            end = first.copy()
+            end[:3] = near
+            channel.add(m.length, end, "smooth")
+
+
 # Bye Bye Bye (clip puppetPop, item emote_puppet_pop) ------------------------------------------------------
 # The chorus routine of the 2000 music video (choreography by Darrin Henson), as the 2024 trend dances it:
 # "hey" arm flicks, the arms crossed at the face and flung open, the head tilt, the hands pulled to the chest
@@ -203,3 +228,17 @@ boat.follow(("rShoulder", "lShoulder"), 2.8, 0.66)
 boat.follow("neck", 2.0, 0.75)
 boat.plant(stance=0.32)
 boat.build()
+
+# Office Party (clip officeParty, item emote_office_party) --------------------------------------------------
+# The "I Want You Back" workplace trend: offices dancing *NSYNC's "I Want You Back" to Brotherhood's choreography
+# (refs: officeParty.toml, mocap/officeParty.json), copied from a mirrored tutorial at half speed (video 1.0-17.2 s,
+# a frame every 0.2 s, so 0.1 s of the real routine; flipped back to the real sides): the arms swung open, the
+# shoulder rolls, the turn on the spot with the back to the room, the arm pumped up, the wide stance with the arms
+# out. The routine comes back to its own pose after 6.4 s (real 1.5 s matches 7.9 s), which loops.
+clock = Clock(1.5)
+at = clock.at
+party = Motion("officeParty", 6.4, loop=True, note="The I Want You Back office trend: swings, shoulder rolls, the "
+               "turn, the pump, arms out.", unwrap=True, floor=True)
+mocap.capture(party, "officeParty", clock.start, 0.0, at(7.8))
+_close_turn(party)
+party.build()
