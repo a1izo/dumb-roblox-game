@@ -2,7 +2,10 @@
 --   allowed(view) : closes the screen as soon as this turns false
 --   auto(view)    : opens the screen when this turns true and closes it when it turns false
 -- Only one modal is open at a time; opening another replaces it. Back (gamepad B, or a tap
--- on the dimmed backdrop) closes the newest screen. This replaces the per-panel phase rules.
+-- on the dimmed backdrop outside the window) closes the newest screen. A click inside the window never does,
+-- whatever it lands on (a gap, a heading, a greyed-out button), and a screen marked `stay` (a task, the Manual,
+-- the arrest, the Butler's pick: a stray click there costs something) only closes by its own buttons or B.
+-- This replaces the per-panel phase rules.
 
 local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
@@ -41,6 +44,8 @@ export type Spec = {
 	window: GuiObject?,
 	-- The first button a gamepad should select when the screen opens.
 	firstSelection: (() -> GuiObject?)?,
+	-- Never closed by a click on the backdrop (only by its own buttons, B, or its rules).
+	stay: boolean?,
 }
 
 -- Fired as (name, isOpen).
@@ -198,6 +203,32 @@ function Router.toggle(name: string, args: any?)
 	end
 end
 
+-- Whether a click (an InputObject from a button's Activated) landed inside a GUI object's box.
+function Router.inside(gui: GuiObject?, input: any?): boolean
+	if not gui or not input or not gui.Visible then
+		return false
+	end
+	local point = Vector2.new(input.Position.X, input.Position.Y)
+	local screen = gui:FindFirstAncestorWhichIsA("ScreenGui")
+	if screen and screen.IgnoreGuiInset then
+		point += GuiService:GetGuiInset()
+	end
+	local at, size = gui.AbsolutePosition, gui.AbsoluteSize
+	return point.X >= at.X and point.X <= at.X + size.X and point.Y >= at.Y and point.Y <= at.Y + size.Y
+end
+
+-- A click on the dimmed backdrop (its Activated, and the checks: anything with a Position will do). The backdrop
+-- lies under the whole window, so a click that misses a button inside it lands here too: only one outside the
+-- window closes it, and never a `stay` screen. Returns true if something closed.
+function Router.backdropClick(input: any?): boolean
+	local name = newest()
+	local spec = if name then specs[name] else nil
+	if not spec or spec.stay or Router.inside(spec.window, input) then
+		return false
+	end
+	return Router.back()
+end
+
 -- Closes the newest modal or panel. Returns true if something closed.
 function Router.back(): boolean
 	local name = newest()
@@ -250,9 +281,7 @@ function Router.init()
 	scrim.Selectable = false
 	scrim.Visible = false
 	scrim.Parent = Screens.modal
-	scrim.Activated:Connect(function()
-		Router.back()
-	end)
+	scrim.Activated:Connect(Router.backdropClick)
 	ClientState.PublicChanged:Connect(Router.evaluate)
 	ClientState.PrivateChanged:Connect(Router.evaluate)
 	ClientState.PhaseChanged:Connect(Router.evaluate)

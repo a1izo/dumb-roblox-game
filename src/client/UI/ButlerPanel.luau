@@ -81,6 +81,7 @@ function ButlerPanel.init()
 		ButlerPickRemote:FireServer(chosen)
 	end)
 	Kit.register(win, {
+		stay = true,
 		allowed = function(view)
 			return view.living and open
 		end,

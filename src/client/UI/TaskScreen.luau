@@ -230,6 +230,7 @@ function TaskScreen.init()
 		end
 	end)
 	Kit.register(win, {
+		stay = true,
 		allowed = function(view)
 			if current and current.practice then
 				return not view.participant

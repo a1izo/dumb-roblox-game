@@ -61,6 +61,7 @@ local moreShown = false
 local firstPhrase: GuiObject? = nil
 local tab = "emotes"
 local keyConnection: RBXScriptConnection? = nil
+local tabsBand: Frame? = nil
 
 function QuickChatPanel.toggle()
 	Router.toggle("quickChat")
@@ -81,11 +82,25 @@ local function play(emote: QuickChat.Emote)
 	QuickChatPanel.close()
 end
 
+-- The wheel stands on its own over the world: no panel behind it (the old grey box). The phrases and the list of
+-- every emote keep the panel, which they need to be read; with the panel gone the tabs keep a band of their own.
+local function backing()
+	local surface = panel and panel:FindFirstChild("Surface")
+	local bare = tab == "emotes" and not moreShown
+	if surface and surface:IsA("GuiObject") then
+		surface.Visible = not bare
+	end
+	if tabsBand then
+		tabsBand.Visible = bare
+	end
+end
+
 local function showMore(on: boolean)
 	moreShown = on
 	Wheel.showMore(on)
 	caption.Text = if on then "ALL YOUR EMOTES" else "EMOTES  ·  1 TO 8"
 	Kit.setText(moreButton, if on then "Wheel" else "More")
+	backing()
 end
 
 -- Lays the page out for where you are: tabs in a case, the emotes alone in the lobby.
@@ -107,6 +122,7 @@ local function arrange()
 	end
 	phrasesPage.Visible = tab == "phrases"
 	emotesPage.Visible = tab == "emotes"
+	backing()
 	-- A narrow screen shrinks the wheel to fit.
 	task.defer(function()
 		local width = emotesPage.AbsoluteSize.X / Kit.Base.scaleOf(emotesPage)
@@ -145,6 +161,19 @@ function QuickChatPanel.init()
 	sizeLimit = Kit.Base.maxSize(panel, Vector2.new(720, HEIGHT_CASE))
 
 	tabsHolder = Kit.frame({ Name = "Tabs", Size = UDim2.new(1, 0, 0, TABS), Parent = content })
+	local band = Kit.Base.make("Frame", {
+		Name = "Band",
+		BackgroundColor3 = C.raised,
+		BackgroundTransparency = 0.15,
+		BorderSizePixel = 0,
+		Size = UDim2.new(0, 0, 1, 0),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Visible = false,
+		ZIndex = tabsHolder.ZIndex,
+		Parent = tabsHolder,
+	}) :: Frame
+	Kit.Base.corner(band, T.radius.key)
+	tabsBand = band
 	local tabs, choose = Kit.tabs({
 		items = {
 			{ id = "phrases", label = "Phrases", icon = "chat" },
@@ -187,10 +216,13 @@ function QuickChatPanel.init()
 		Text = "",
 		font = "label",
 		size = "micro",
-		color = C.dim,
+		color = C.bone,
 		Size = UDim2.new(1, -120, 0, CAPTION),
 		Parent = emotesPage,
 	})
+	-- (over the world, with no panel behind it: an outline keeps it readable)
+	caption.TextStrokeColor3 = C.void
+	caption.TextStrokeTransparency = 0.35
 	moreButton = Kit.button({
 		text = "More",
 		variant = "ghost",

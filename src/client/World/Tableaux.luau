@@ -38,7 +38,16 @@ local PLAY_RANGE = 26 -- the figures move while someone is this near
 local LINE_RANGE = 13 -- and their line shows this near
 local LOOK = 0.25 -- seconds between looks at where the player is
 
-type Prop = { limb: string, size: Vector3, offset: CFrame, dark: boolean? }
+-- (a `model` is carved from a Core model, `modelSize` its biggest side; `hood` stands only on the plain blocky figure)
+type Prop = {
+	limb: string,
+	size: Vector3,
+	offset: CFrame,
+	dark: boolean?,
+	model: string?,
+	modelSize: number?,
+	hood: boolean?,
+}
 -- at: where on the base (x to the tableau's right, z towards its back, life-size studs times SCALE);
 -- turn: degrees to its left of facing the plaza, or look: the spot it faces; clip and `still` (the moment
 -- of it held while nobody is near); cycle/phase as in StoneFigures.play.
@@ -103,16 +112,23 @@ local SCENES: { Scene } = {
 				clip = "write",
 				still = 0.8,
 				props = {
+					-- the hood of the plain blocky figure: the sculpted statue has its own (a block left on top
+					-- of it pokes out of the hood on every side, a black box)
 					{
 						limb = "Head",
 						size = Vector3.new(1.5, 1.45, 1.5),
 						offset = CFrame.new(0, 0.12, 0.1),
 						dark = true,
+						hood = true,
 					},
+					-- the Death's Manual in the left hand, carved in the dark stone (a thin slab where the import
+					-- has no Manual: narrower than the sleeve's cuff, so it never cuts through it)
 					{
 						limb = "Left Arm",
-						size = Vector3.new(1.3, 0.22, 1.0),
-						offset = CFrame.new(0.15, -1.1, -0.35),
+						model = "Grimoire",
+						modelSize = 1.05,
+						size = Vector3.new(0.95, 0.14, 0.75),
+						offset = CFrame.new(0.15, -1.15, -0.35),
 						dark = true,
 					},
 				},
@@ -263,7 +279,12 @@ local function build(mark: BasePart)
 			name = "Figure" .. number,
 		})
 		for _, prop in ipairs(actor.props or {}) do
-			StoneFigures.attach(figure, prop.limb, prop.size, prop.offset, if prop.dark then StoneFigures.DARK else nil)
+			local color = if prop.dark then StoneFigures.DARK else nil
+			local carved = prop.model
+				and StoneFigures.attachModel(figure, prop.limb, prop.model, prop.modelSize or 1, prop.offset, color)
+			if not carved and not (prop.hood and figure.robed) then
+				StoneFigures.attach(figure, prop.limb, prop.size, prop.offset, color)
+			end
 		end
 		StoneFigures.pose(figure, actor.clip, actor.still)
 		table.insert(item.figures, { figure = figure, actor = actor })
