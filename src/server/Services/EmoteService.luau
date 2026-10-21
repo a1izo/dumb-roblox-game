@@ -146,6 +146,12 @@ local function play(player: Player, clip: string, mask: string?, extra: { [strin
 	broadcast(player, payload)
 end
 
+-- Two players play the same clip from the same moment (a duo met: DuoService).
+function EmoteService.playTogether(a: Player, b: Player, clip: string)
+	play(a, clip)
+	play(b, clip)
+end
+
 -- Stops the player's emote on every screen (a cutscene, the meeting, a stop asked for).
 function EmoteService.stop(player: Player, reason: string?)
 	current[player] = nil
@@ -292,19 +298,23 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 	local look = leaderRoot.CFrame.LookVector
 	local face = to + Vector3.new(look.X, 0, look.Z) * 10
 	formations[leader][index] = { who = player, clip = clip, walking = os.clock() + FORMATION_WALK + 0.5 }
-	-- (there: within 2 studs; when time is up, near enough within 3, as a body brushing past the first
-	-- dancer on its way can stop a little short)
+	-- (there: within 0.4 studs, or stopped within 2; when time is up, near enough within 3, as a body brushing
+	-- past the first dancer on its way can stop a little short; then set right on the place)
 	local function within(studs: number): boolean
 		local flat = Vector3.new(root.Position.X - to.X, 0, root.Position.Z - to.Z)
 		return flat.Magnitude < studs
 	end
-	if not within(2) then
+	if not within(0.4) then
 		humanoid:MoveTo(to)
 		if typeof(player) == "Instance" and player:IsA("Player") then
 			EmoteRemote:FireClient(player, { walk = { to = to, face = face, seconds = FORMATION_WALK } })
 		end
-		local deadline = os.clock() + FORMATION_WALK
-		while os.clock() < deadline and not within(2) do
+		local begun = os.clock()
+		local function settled(): boolean -- there, or stopped a little short of it
+			local still = root.AssemblyLinearVelocity.Magnitude < 1 and os.clock() > begun + 0.4
+			return within(0.4) or (within(2) and still)
+		end
+		while os.clock() < begun + FORMATION_WALK and not settled() do
 			task.wait(0.1)
 			if not root.Parent then
 				return
@@ -316,7 +326,9 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 			return
 		end
 	end
-	root.CFrame = CFrame.lookAt(root.Position, Vector3.new(face.X, root.Position.Y, face.Z))
+	-- right on the place (a walk ends up to a stud or so short), so the rows line up
+	local on = Vector3.new(to.X, root.Position.Y, to.Z)
+	root.CFrame = CFrame.lookAt(on, Vector3.new(face.X, on.Y, face.Z))
 	extra.place = index
 	play(player, clip, nil, extra)
 end

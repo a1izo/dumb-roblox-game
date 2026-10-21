@@ -1,0 +1,42 @@
+# The Long Climb (clip theLongClimb, legendary). Reference notes.
+id = "theLongClimb"
+item = "emote_the_long_climb"
+name = "The Long Climb"
+family = "stroll"
+status = "checked"
+uses = []
+
+[origin]
+what = "Subaru's endless stair climb (Re:Zero)."
+recognisable = "Climbing an endless stair with a blank stare: the knees high and slow, one arm hanging dead, the body rising each step."
+
+[source]
+url = "https://www.youtube.com/results?search_query=subaru+stair+climb"
+title = "Subaru's stair climb (search)"
+kind = "the meme or the scene"
+watched = "2026-10-21: frame sheets of the source"
+mirror = false
+
+[timing]
+length = 1.6
+fit = "A stroll (player-steered, the old plan's Q22): this standing loop, and its walk cycle (theLongClimbWalk) the game plays instead of its own walk while the stroll lasts."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 3
+ideas = []
+
+[camera]
+showpiece = true
+
+[r6]
+notes = "The knees come up as leg slides (R6 has no knees)."
+
+[check]
+by = "2026-10-21: check_anims (the walk cycles: soles planted while down), check_props, renders"

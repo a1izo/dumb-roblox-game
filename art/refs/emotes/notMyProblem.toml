@@ -1,0 +1,42 @@
+# Not My Problem (clip notMyProblem, legendary). Reference notes.
+id = "notMyProblem"
+item = "emote_not_my_problem"
+name = "Not My Problem"
+family = "stroll"
+status = "checked"
+uses = []
+
+[origin]
+what = "Shrugging and walking away (the meme)."
+recognisable = "A shrug, palms out, then the lazy slouch of someone walking away from it all, hands in the pockets."
+
+[source]
+url = "https://www.youtube.com/results?search_query=shrug+walk+away+meme"
+title = "Shrug and walk away (search)"
+kind = "the meme or the scene"
+watched = "2026-10-21: frame sheets of the source"
+mirror = false
+
+[timing]
+length = 3.0
+fit = "A stroll (player-steered, the old plan's Q22): this standing loop, and its walk cycle (notMyProblemWalk) the game plays instead of its own walk while the stroll lasts."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 3
+ideas = []
+
+[camera]
+showpiece = true
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-21: check_anims (the walk cycles: soles planted while down), check_props, renders"

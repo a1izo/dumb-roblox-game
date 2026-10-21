@@ -1,0 +1,42 @@
+# Mushroom Stroll (clip mushroomStroll, legendary). Reference notes.
+id = "mushroomStroll"
+item = "emote_mushroom_stroll"
+name = "Mushroom Stroll"
+family = "stroll"
+status = "checked"
+uses = ["WalkingStick"]
+
+[origin]
+what = "Smurf Cat's walk (the 2023 meme)."
+recognisable = "An easy, unbothered walk with a stick over the shoulder, a mushroom tied to it, swaying, looking about."
+
+[source]
+url = "https://www.youtube.com/results?search_query=smurf+cat+walk"
+title = "Smurf Cat walk (search)"
+kind = "the meme or the scene"
+watched = "2026-10-21: frame sheets of the source"
+mirror = false
+
+[timing]
+length = 3.0
+fit = "A stroll (player-steered, the old plan's Q22): this standing loop, and its walk cycle (mushroomStrollWalk) the game plays instead of its own walk while the stroll lasts."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 3
+ideas = []
+
+[camera]
+showpiece = true
+
+[r6]
+notes = "The stick rides on the middle of the shoulder, outside the R6 head's two studs of width."
+
+[check]
+by = "2026-10-21: check_anims (the walk cycles: soles planted while down), check_props, renders"

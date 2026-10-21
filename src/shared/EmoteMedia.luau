@@ -22,6 +22,8 @@ EmoteMedia.SOUNDS = {
 	bow = "",
 	shrug = "",
 	facepalm = "",
+	highFive = "",
+	handshake = "",
 	-- From the shop
 	dance2 = "",
 	dance3 = "",

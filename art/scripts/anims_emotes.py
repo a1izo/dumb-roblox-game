@@ -817,7 +817,7 @@ def mushroom_pose(phase):
 
 stroll(MUSHROOM, mushroom_pose)
 mushroom = Motion("mushroomStroll", 3.0, loop=True, note="Standing easy with a stick over the shoulder, swaying, looking about.")
-for t, look in ((0.0, 0), (1.0, 14), (2.0, -10)):
+for t, look in ((0.0, 0), (1.0, 14), (2.0, -4)):  # (a glance to the stick side would put the head into it)
     mushroom.key(t, offset=(0.04 * math.sin(t * 2), -0.02, 0), root=(-1, 0, 2 * math.sin(t * 2)), neck=(2, look, 0),
                  rShoulder=STICK_ARM, lShoulder=J((4, 0, -6)))
 soft(mushroom, head=1.4, arms=1.4).plant(stance=0.08)

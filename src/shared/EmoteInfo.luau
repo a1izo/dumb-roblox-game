@@ -64,8 +64,9 @@ function EmoteInfo.of(clip: string): Info
 		item = item,
 		name = if item then item.name else clip,
 		rarity = rarity,
-		lobbyOnly = item ~= nil and item.lobbyOnly == true,
-		duo = item ~= nil and item.duo == true,
+		lobbyOnly = (item ~= nil and item.lobbyOnly == true) or meta.lobbyOnly == true,
+		-- (a free duo has no shop item: its meta says so)
+		duo = (item ~= nil and item.duo == true) or meta.duo == true,
 		stroll = item ~= nil and item.stroll == true,
 		stance = item ~= nil and item.stance == true,
 		floorProps = floorProps,

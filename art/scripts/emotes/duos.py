@@ -112,6 +112,50 @@ lost.follow("neck", 3.4, 0.68).plant(stance=0.36, forward=(0.2, -0.2))
 lost.build()
 
 
+# High Five and Handshake (clips highFive, handshake; free duos): the one asked has walked up to face the one
+# asking (DuoService.MEET: 3.0 and 2.6 studs root to root); both play the same clip, so each one's right hand
+# meets the other's a little right of their own middle, halfway between them.
+HI_UP = reach(1, (0.35, 2.35, -0.95), direction=(-0.05, 0.85, -0.5))  # wound up high
+HI_MEET = reach(1, (0.3, 2.0, -1.55), direction=(-0.05, 0.55, -0.85))  # the slap, halfway between them
+high = Motion("highFive", 2.0, note="A high five: the hand wound up high, the slap halfway, a grin, the shake of the "
+              "hand.", unwrap=True)
+high.key(0.0, "smooth", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+high.key(0.4, "out", offset=(0, -0.05, 0.05), root=(3, -8, 0), neck=(6, 4, 0), rShoulder=HI_UP, lShoulder=J((10, 0, -10)))
+high.key(0.6, "snap", offset=(0, -0.08, -0.12), root=(-6, 6, 0), neck=(2, -4, 0), rShoulder=HI_MEET,
+         lShoulder=J((-10, 0, -14)))  # SLAP
+high.key(0.85, "smooth", offset=(0, -0.04, -0.08), root=(-3, 4, 0), neck=(6, -2, 4), rShoulder=J((60, 0, 30)),
+         lShoulder=J((0, 0, -10)))  # the bounce off it
+high.key(1.3, "smooth", offset=(0, 0, 0), root=(0, 0, 2), neck=(4, 0, 6), rShoulder=J((20, 0, 20)), lShoulder=J((2, 0, -6)))
+for k, t in enumerate((1.4, 1.5, 1.6)):  # shaking the sting out of the hand
+    high.key(t, "smooth", root=(0, 0, 2), neck=(4, 0, 6), rShoulder=J((26 + (6 if k % 2 else -6), 0, 22)), lShoulder=J((2, 0, -6)))
+high.key(2.0, "smooth", offset=(0, 0, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+high.follow(("rShoulder", "lShoulder"), 3.6, 0.6)
+high.follow("neck", 2.6, 0.7)
+high.plant(0.0, 0.45, stance=0.08)
+high.plant(0.45, 1.2, stance=0.1, forward=(0.0, 0.3))  # the left foot steps into it
+high.plant(1.2, 2.0, stance=0.08)
+high.build()
+
+SHAKE = reach(1, (0.28, 0.15, -1.3), direction=(-0.15, -0.15, -1.0))  # the right hand out, halfway between them
+shake = Motion("handshake", 2.4, note="A handshake: the right hands meet halfway, three firm pumps, a nod, let go.",
+               unwrap=True)
+shake.key(0.0, "smooth", root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+shake.key(0.45, "out", offset=(0, -0.02, -0.06), root=(-3, 4, 0), neck=(-2, -2, 0), rShoulder=SHAKE, lShoulder=J((4, 0, -6)))
+for k in range(3):  # three firm pumps
+    t = 0.65 + 0.25 * k
+    shake.key(round(t, 3), "smooth", offset=(0, -0.03, -0.06), root=(-4, 4, 0), neck=(-6 if k == 1 else -2, -2, 0),
+              rShoulder=reach(1, (0.28, 0.0, -1.3), direction=(-0.15, -0.3, -0.95)), lShoulder=J((4, 0, -6)))
+    shake.key(round(t + 0.12, 3), "smooth", offset=(0, -0.02, -0.06), root=(-3, 4, 0), neck=(-2, -2, 0),
+              rShoulder=reach(1, (0.28, 0.3, -1.3), direction=(-0.15, 0.0, -1.0)), lShoulder=J((4, 0, -6)))
+shake.key(1.6, "smooth", offset=(0, -0.02, -0.04), root=(-6, 2, 0), neck=(-12, 0, 0), rShoulder=SHAKE,
+          lShoulder=J((4, 0, -6)))  # the nod
+shake.key(2.4, "smooth", offset=(0, 0, 0), root=(0, 0, 0), neck=(0, 0, 0), rShoulder=J((2, 0, 4)), lShoulder=J((2, 0, -4)))
+shake.follow(("rShoulder", "lShoulder"), 3.4, 0.7)
+shake.follow("neck", 2.6, 0.75)
+shake.plant(stance=0.08)
+shake.build()
+
+
 # The racket in the right fist, in line with the arm (R6 has no wrist: a racket cocked against the arm points at
 # the floor whenever the arm hangs), the handle's end a little out of the fist and the head beyond it; at the
 # forehand's strike its strings face the shot.

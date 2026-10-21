@@ -27,7 +27,8 @@ export type Emote = {
 	lobbyOnly: boolean?,
 }
 
--- Emotes are clips from Blender (Anim/Clips), named by id. The first nine are everyone's; the rest are
+-- Emotes are clips from Blender (Anim/Clips), named by id. The first eleven are everyone's (the last two are
+-- duos, played with the nearest player: Anim/EmoteMeta `duo`); the rest are
 -- every emote in the shop's catalog, in its order (so a new emote is one entry in Shared/Cosmetics).
 QuickChat.EMOTES = {
 	{ id = "wave", name = "Wave" },
@@ -39,6 +40,8 @@ QuickChat.EMOTES = {
 	{ id = "bow", name = "Bow" },
 	{ id = "shrug", name = "Shrug" },
 	{ id = "facepalm", name = "Facepalm" },
+	{ id = "highFive", name = "High Five", lobbyOnly = true },
+	{ id = "handshake", name = "Handshake", lobbyOnly = true },
 } :: { Emote }
 
 for _, item in ipairs(Cosmetics.ofKind("emote")) do

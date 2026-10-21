@@ -1,0 +1,42 @@
+# Parade March (clip paradeMarch, legendary). Reference notes.
+id = "paradeMarch"
+item = "emote_parade_march"
+name = "Parade March"
+family = "stroll"
+status = "checked"
+uses = []
+
+[origin]
+what = "A military parade march."
+recognisable = "Stiff and upright, arms swinging high and straight in time; standing, marking time, then the high kick and attention."
+
+[source]
+url = "https://www.youtube.com/results?search_query=military+parade+march"
+title = "Parade march (search)"
+kind = "the meme or the scene"
+watched = "2026-10-21: frame sheets of the source"
+mirror = false
+
+[timing]
+length = 3.2
+fit = "A stroll (player-steered, the old plan's Q22): this standing loop, and its walk cycle (paradeMarchWalk) the game plays instead of its own walk while the stroll lasts."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 3
+ideas = []
+
+[camera]
+showpiece = true
+
+[r6]
+notes = ""
+
+[check]
+by = "2026-10-21: check_anims (the walk cycles: soles planted while down), check_props, renders"

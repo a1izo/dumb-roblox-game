@@ -1,0 +1,42 @@
+# Cuffed Together (clip cuffedLead, legendary). Reference notes.
+id = "cuffedLead"
+item = "emote_cuffed_together"
+name = "Cuffed Together"
+family = "duo"
+status = "checked"
+uses = ["Cuff", "Chain"]
+
+[origin]
+what = "Two people handcuffed together (the buddy-cop gag)."
+recognisable = "Chained wrist to wrist, the one asked follows the leader, the chain swinging between the cuffs."
+
+[source]
+url = "https://www.youtube.com/results?search_query=handcuffed+together+walk"
+title = "Handcuffed together (search)"
+kind = "the meme or the scene"
+watched = "2026-10-21: frame sheets of the source"
+mirror = false
+
+[timing]
+length = 2.0
+fit = "The leader's clip; the follower walks after them (DuoService), a jump, another emote or 12 studs apart breaks it."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 3
+ideas = []
+
+[camera]
+showpiece = true
+
+[r6]
+notes = "A square cuff round each chained R6 wrist (Core v8), the chain between the rings."
+
+[check]
+by = "2026-10-21: check_anims (the walk cycles: soles planted while down), check_props, renders"

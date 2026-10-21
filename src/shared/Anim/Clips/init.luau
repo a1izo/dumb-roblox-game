@@ -6,7 +6,7 @@
 -- go through Index.
 
 local Index = require(script.Index) :: { [string]: { part: number, length: number, loop: boolean } }
-local parts = { script.Part1, script.Part2, script.Part3, script.Part4, script.Part5, script.Part6, script.Part7, script.Part8, script.Part9 }
+local parts = { script.Part1, script.Part2, script.Part3, script.Part4, script.Part5, script.Part6, script.Part7, script.Part8, script.Part9, script.Part10 }
 local loaded: { [number]: boolean } = {}
 local clips = {}
 

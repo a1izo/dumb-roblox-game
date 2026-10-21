@@ -693,10 +693,12 @@ return {
 				size = 4.0,
 				stand = { shape = "Cylinder", size = { 4.0, 0.2, 0.2 }, color = { 90, 66, 46 } },
 				mount = "Torso",
-				-- Over the right shoulder, pointing back and up, its foot in the raised hand.
-				at = { { p = { 0.72, 1.35, 0.55 } }, { r = { 54, 0, 0 } } },
+				-- Over the right shoulder (outside the head's width), pointing back and up, its foot in the raised hand.
+				at = { { p = { 1.55, 1.35, 0.55 } }, { r = { 54, 0, -6 } } },
 			},
 		},
+		-- (the stick runs out of the fist over the arm to the shoulder)
+		allow = { { prop = 1, part = "Right Arm", from = 0, to = 3 } },
 	},
 	fortySeconds = {
 		props = {
@@ -749,7 +751,12 @@ return {
 	--              (x to their right, z behind them), at most 5
 	-- CHARGE, once slumped on the floor: plugged in, jolted back up
 	lowBattery = { lowBody = true, context = { label = "CHARGE", from = 3, to = 4.6, branch = "lowBatteryCharge" } },
+	-- the free duos (no shop item): the one asked walks up to face the one asking, and both play it
+	highFive = { duo = true, lobbyOnly = true },
+	handshake = { duo = true, lobbyOnly = true },
 	footScratch = { lowBody = true },
+	-- the office trend is danced in rows: up to five join in, two beside the first dancer and three behind
+	officeParty = { formation = { { -5, 1 }, { 5, 1 }, { -7.5, 6 }, { 0, 6 }, { 7.5, 6 } } },
 	hairTwirl = { lowBody = true },
 	goalCelebration = { lowBody = true },
 	aceCrouch = { lowBody = true },

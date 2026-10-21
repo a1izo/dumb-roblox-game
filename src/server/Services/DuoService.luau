@@ -4,6 +4,8 @@
 --   Match Point  a rally: the one asked walks to a spot facing the one asking, RALLY studs off (with no room
 --                there, both just turn to face each other if they are near enough); once there, every client
 --                plays it from the same moment. Not there in WALK_SECONDS: it is called off.
+--   High Five, Handshake  free, lobby only: the one asked walks up to face the one asking (MEET studs apart),
+--                then both play it from the same moment (Services/EmoteService.playTogether)
 --   Cuffed Together  lobby only: the two are chained wrist to wrist (a "DuoChain" ObjectValue in each body
 --                naming the other, the asker leading); the one asked walks after the leader, and a jump,
 --                another emote, going CHAIN_BREAK studs apart or a case ends it
@@ -28,6 +30,8 @@ local ASK_SECONDS = 15
 local RALLY = 12
 local CHAIN_BREAK = 12
 local WALK_SECONDS = 4 -- to walk into place for a rally
+-- The duos that are just a meeting: how far apart the two stand for it (root to root, studs).
+local MEET: { [string]: number } = { highFive = 3.0, handshake = 2.6 }
 
 type Ask = { from: any, emote: string, name: string, expires: number }
 local asks: { [any]: Ask } = {}
@@ -278,6 +282,67 @@ local function startRally(a: any, b: any)
 	end)
 end
 
+-- A meeting duo: the one asked walks up to face the one asking, `apart` studs off (or, with no room, both turn to
+-- face each other where they stand if they are close enough), then both play it from the same moment.
+local function startMeet(a: any, b: any, clip: string, apart: number)
+	local ra, rb = rootOf(a), rootOf(b)
+	if not ra or not rb then
+		return
+	end
+	local function go(spot: Vector3?)
+		local nowA, nowB = rootOf(a), rootOf(b)
+		if not nowA or not nowB then
+			return
+		end
+		if spot then
+			-- set right on the spot (a walk ends up to a stud or so short), so the hands meet
+			nowB.CFrame = CFrame.new(Vector3.new(spot.X, nowB.Position.Y, spot.Z))
+		end
+		face(nowB, nowA.Position)
+		face(nowA, nowB.Position)
+		local EmoteService = require(script.Parent.EmoteService) :: any
+		EmoteService.playTogether(a, b, clip)
+	end
+	local towards = Vector3.new(rb.Position.X - ra.Position.X, 0, rb.Position.Z - ra.Position.Z)
+	local look = if towards.Magnitude > 0.01 then towards.Unit else Vector3.new(0, 0, -1)
+	local target = ra.Position + look * apart
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { a.Character, b.Character }
+	local floor = workspace:Raycast(target + Vector3.new(0, 2, 0), Vector3.new(0, -8, 0), params)
+	if not floor or ra.Anchored or rb.Anchored then
+		if towards.Magnitude <= apart + 3 then
+			go()
+		end
+		return
+	end
+	local spot = floor.Position + Vector3.new(0, 3, 0)
+	local humanoid = b.Character and b.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid:MoveTo(spot)
+	end
+	if typeof(b) == "Instance" and b:IsA("Player") then
+		DuoRemote:FireClient(b, { kind = "walk", to = spot, face = ra.Position, seconds = WALK_SECONDS })
+	end
+	task.spawn(function()
+		local begun = os.clock()
+		while os.clock() < begun + WALK_SECONDS do
+			task.wait(0.1)
+			local nowA, nowB = rootOf(a), rootOf(b)
+			if not nowA or not nowB or (nowA.Position - ra.Position).Magnitude > 3 then
+				return -- the asker moved off or a body went: called off quietly
+			end
+			-- there, or stopped a little short of it
+			local off = Vector3.new(nowB.Position.X - spot.X, 0, nowB.Position.Z - spot.Z).Magnitude
+			local still = nowB.AssemblyLinearVelocity.Magnitude < 1 and os.clock() > begun + 0.4
+			if off < 0.4 or (off < 2 and still) then
+				go(spot)
+				return
+			end
+		end
+	end)
+end
+
 local function startChain(leader: any, follower: any)
 	if Match.active and (Match.get(leader) or Match.get(follower)) then
 		Match.notify(leader, "Cuffed Together is for the lobby only.", "info")
@@ -328,6 +393,8 @@ local function onRequest(player: any, payload)
 	end
 	if ask.emote == "cuffedLead" then
 		startChain(from, player)
+	elseif MEET[ask.emote] then
+		startMeet(from, player, ask.emote, MEET[ask.emote])
 	else
 		startRally(from, player)
 	end
