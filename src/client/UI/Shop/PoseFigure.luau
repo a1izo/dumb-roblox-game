@@ -15,6 +15,7 @@ local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local EmoteProps = require(Anim:WaitForChild("EmoteProps"))
 local Create = require(Shared:WaitForChild("Create"))
+local Seating = require(Shared:WaitForChild("Seating"))
 
 local EmoteController = require(script.Parent.Parent.Parent.Controllers.EmoteController)
 
@@ -143,6 +144,27 @@ function PoseFigure.build(clipId: string, at: number?, propsOf: string?): Model?
 	model.PrimaryPart = parts.Torso
 	model:SetAttribute("Clip", clipId)
 	model:SetAttribute("Moment", moment)
+	return model
+end
+
+-- A seat's figure (Shared/Seating): the mannequin in the seat clip, sitting in `chair` (a chair skin item) or the
+-- war chair, which stays put while it plays (a floor mount). Nil for a clip that does not exist.
+function PoseFigure.seated(clipId: string, chair: any?): Model?
+	local model = PoseFigure.build(clipId)
+	if not model then
+		return nil
+	end
+	local seat = Seating.chairModel(chair)
+	if seat then
+		seat:PivotTo(Seating.chairUnder(CFrame.identity, 3))
+		seat:SetAttribute("Mount", "floor")
+		for _, item in ipairs(seat:GetDescendants()) do
+			if item:IsA("BasePart") then
+				item.Anchored = true
+			end
+		end
+		seat.Parent = model
+	end
 	return model
 end
 

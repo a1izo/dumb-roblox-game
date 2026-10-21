@@ -11,6 +11,7 @@ from maps import kit
 from maps.venues.meeting import plan as P
 
 IN = P.IN
+CHAIR_SCALE = 1.3  # src/shared/Seating.luau's SCALE
 
 
 def table(s):
@@ -18,8 +19,10 @@ def table(s):
     # Round colliders for the table (the prop does not collide): six turned bars make a disc.
     for k in range(6):
         s.collider((0.0, 1.65, 0.0), (2 * P.TABLE_R, 3.3, 7.0), k * 30.0, True, "Wood")
+    # The chairs at 1.3 (shop overhaul, 2026-10-21): everyone sits in them for a meeting now, and an R6 body is four
+    # studs across with its arms, so the arms rest on the chair's arms instead of through them.
     for x, z, rot in P.chairs():
-        s.prop("WarChair", x, z, rot)
+        s.prop("WarChair", x, z, rot, CHAIR_SCALE)
     for k, (x, z, rot) in enumerate(P.seats()):
         s.anchor(f"seat{k + 1}", x, 0.0, z, rot)
         s.spawn(x, z, 0.0, rot=rot)

@@ -536,3 +536,4 @@ import props_lobby  # noqa: E402,F401
 import props_meeting  # noqa: E402,F401
 import props_shop  # noqa: E402,F401
 import props_emotes  # noqa: E402,F401
+import props_seats  # noqa: E402,F401

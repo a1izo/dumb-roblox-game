@@ -14,6 +14,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 local Mastery = require(Shared:WaitForChild("Progression"):WaitForChild("Mastery"))
+local Seating = require(Shared:WaitForChild("Seating"))
 local Sets = require(Shared:WaitForChild("Sets"))
 
 local Analytics = require(script.Parent.Analytics)
@@ -27,9 +28,12 @@ local CosmeticsService = {}
 local HAT = "LCosmeticHat"
 local TITLE_TAG = "LTitleTag"
 
--- True when the player may use the item (bought, earned, free with VIP, or an emote that came with
--- the Emote Pack).
+-- True when the player may use the item (everyone's, bought, earned, free with VIP, or an emote that came
+-- with the Emote Pack).
 function CosmeticsService.owns(player: Player, item: Cosmetics.Item): boolean
+	if item.source == "free" then
+		return true
+	end
 	if item.source == "vip" then
 		return PassService.owns(player, "vip")
 	end
@@ -151,6 +155,19 @@ local function catchUp(player: Player)
 		DataService.push(player)
 		DataService.saveSoon(player)
 	end
+end
+
+-- The seat clip this player sits in at the war table (the seat they wear, or everyone's).
+function CosmeticsService.seatClip(player: Player): string
+	local data = DataService.get(player)
+	local seat = if data then equipped(player, data, "seat") else nil
+	return if seat and type(seat.clip) == "string" then seat.clip else Seating.DEFAULT
+end
+
+-- The chair this player's place at the war table becomes, or nil for the war chair.
+function CosmeticsService.chairOf(player: Player): Cosmetics.Item?
+	local data = DataService.get(player)
+	return if data then equipped(player, data, "chair") else nil
 end
 
 -- The title to show on the results screen, or nil.

@@ -126,6 +126,11 @@ local PROP = {
 }
 
 local function propOf(item: Cosmetics.Item): string?
+	if item.kind == "chair" then
+		-- (a chair skin newer than the imported Core set has no model yet: its glyph instead)
+		local key = item.model
+		return if type(key) == "string" and ModelLibrary.has(key) then key else nil
+	end
 	local table_ = PROP[item.kind]
 	if not table_ then
 		return nil
@@ -138,6 +143,15 @@ end
 -- per emote; each card gets a copy (the shop deals its cards again whenever the profile changes).
 local figures: { [string]: Model | false } = {}
 local function figureOf(item: Cosmetics.Item): Model?
+	if item.kind == "seat" and type(item.clip) == "string" then
+		-- a seat: the mannequin sitting in the war chair
+		local seated = figures[item.id]
+		if seated == nil then
+			seated = PoseFigure.seated(item.clip) or false
+			figures[item.id] = seated
+		end
+		return if seated then seated:Clone() else nil
+	end
 	local clip = item.emote
 	if item.kind ~= "emote" or not clip then
 		return nil

@@ -509,7 +509,14 @@ local function playTrack(rig: Rig, track: Track, now: number)
 			local basis = rig.basis[joint]
 			if basis then
 				local moved = if joint == "root" then offset else nil
-				apply(rig, joint, ClipPlayer.transform(basis, rot, moved, rig.inverse[joint]), w)
+				local target = ClipPlayer.transform(basis, rot, moved, rig.inverse[joint])
+				local motor = rig.motors.root
+				if upper and joint == "root" and motor then
+					-- (the waist up turns the body but leaves where the base layer put it: a body sitting at the
+					-- war table stays in its chair)
+					target = target - target.Position + motor.Transform.Position
+				end
+				apply(rig, joint, target, w)
 			end
 		end
 		if offset and not rotations.root and rig.basis.root then

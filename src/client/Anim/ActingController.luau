@@ -105,7 +105,8 @@ local function dissolve(character: Model, seconds: number)
 	end)
 end
 
--- Every living player except `except` reacts, starting around `serverTime`.
+-- Every living player except `except` reacts, starting around `serverTime` (from the waist up when they sit at
+-- the war table, so nobody stands up out of their chair).
 local function reactAround(cue, except: number?, serverTime: number, duration: number)
 	local seed = tonumber(cue.id) or 1
 	for _, entry in ipairs(ClientState.public.players or {}) do
@@ -119,6 +120,7 @@ local function reactAround(cue, except: number?, serverTime: number, duration: n
 					fadeIn = 0.2,
 					fadeOut = 0.6,
 					duration = duration,
+					mask = if character:GetAttribute("Seat") then "upper" else nil,
 				})
 			end
 		end

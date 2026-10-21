@@ -631,7 +631,8 @@ local function runMatch(players: { Player })
 		interlude("meetingIntro", { cast = meetingCast() }, MEETING_INTRO)
 		runPhase("Meeting", function()
 			Match.meetingCall = nil
-			MeetingService.gather()
+			-- (seated now: the intro's montage ends with everyone at their places, the meeting opens in the chairs)
+			MeetingService.gather(true)
 			MeetingService.setScreen(meetingReason(call))
 			ChatService.setMeetingOpen(true)
 			Match.announce(Terms.f("{Meeting}"), meetingReason(call), "neutral")
@@ -652,6 +653,10 @@ local function runMatch(players: { Player })
 		if result then
 			-- The verdict plays in full, even when voting out the Hand ends the match.
 			runPhase("Verdict", function()
+				-- (the one voted out gets up out of their chair before the verdict lands)
+				if result.removed then
+					MeetingService.standUp(result.removed)
+				end
 				VoteService.present(result)
 				WagerService.settleVote(if result.removed then result.removed.userId else nil)
 			end, function()

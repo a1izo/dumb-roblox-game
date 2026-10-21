@@ -28,7 +28,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
-VERSION = {"ModelsCore": 10, "ModelsTokyo": 4, "ModelsAgency": 3, "ModelsCampus": 2, "ModelsLobby": 6,
+VERSION = {"ModelsCore": 11, "ModelsTokyo": 4, "ModelsAgency": 3, "ModelsCampus": 2, "ModelsLobby": 6,
            "ModelsMeeting": 2}
 
 

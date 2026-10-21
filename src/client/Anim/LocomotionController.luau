@@ -30,6 +30,7 @@ local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Gait = require(Anim:WaitForChild("Gait"))
 local Joints = require(Anim:WaitForChild("Joints"))
+local Seating = require(Shared:WaitForChild("Seating"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
 local PoseController = require(script.Parent.PoseController)
@@ -51,6 +52,8 @@ LocomotionController.Unsettled = Signal.new()
 local STANCE_AFTER = 6
 -- Seconds a stroll's own clips take to fade in, and out when it ends.
 local STROLL_FADE = 0.4
+-- Seconds a body takes to settle into its chair at the war table, or to get up out of it (Shared/Seating).
+local SEAT_FADE = 0.45
 
 -- Speeds (studs/s): below MOVE_FULL a body is still easing out of its idle; the walk is at its own speed at
 -- the bottom of the band and the run takes over towards the top (both clips say their own stride).
@@ -164,6 +167,9 @@ type State = {
 	-- a stroll, faded in and out (the last one kept while it fades)
 	strollWeight: number,
 	strollClip: string?,
+	-- sitting in a chair at the war table, faded in and out (the last seat kept while it fades)
+	seatWeight: number,
+	seatClip: string?,
 }
 
 local states: { [Model]: State } = {}
@@ -184,6 +190,7 @@ local P = {
 	air = Pose.new(),
 	part = Pose.new(),
 	extra = Pose.new(),
+	seat = Pose.new(),
 }
 
 local IDENTITY = CFrame.identity
@@ -241,6 +248,7 @@ local function stateFor(character: Model): State
 			settled = false,
 			farCheck = 0,
 			strollWeight = 0,
+			seatWeight = 0,
 		}
 		states[character] = state
 		character.Destroying:Once(function()
@@ -401,6 +409,24 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 		Feet.reset(state.feet)
 		state.plant, state.airWeight, state.airTime = 0, 0, 0
 		Pose.sample(clips.sit, state.idleTime, P.out)
+		return P.out.joints, P.out.offset
+	end
+	-- Sitting in a chair at the war table (Shared/Seating): the seat clip the server names is the whole body's base
+	-- (an emote plays over it from the waist up), faded in and out over SEAT_FADE so sitting down and getting up are
+	-- never a jump.
+	local seatName = character:GetAttribute(Seating.ATTRIBUTE)
+	local seating = type(seatName) == "string" and ClipPlayer.get(seatName) ~= nil
+	if seating then
+		state.seatClip = seatName :: string
+	end
+	state.seatWeight = math.clamp(state.seatWeight + (if seating then dt else -dt) / SEAT_FADE, 0, 1)
+	local seatClip = if state.seatWeight > 0 and state.seatClip then ClipPlayer.get(state.seatClip) else nil
+	if not seatClip then
+		state.seatClip = nil
+	elseif state.seatWeight >= 1 then
+		Feet.reset(state.feet)
+		state.plant, state.airWeight, state.airTime = 0, 0, 0
+		Pose.sample(seatClip, state.idleTime, P.out)
 		return P.out.joints, P.out.offset
 	end
 
@@ -713,6 +739,13 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 
 	-- How much the after-pass plants the feet: standing, on the ground, not in a stop.
 	state.plant = standing * (1 - stopping)
+	-- Settling into a chair or getting up out of it: the seat over the standing body, by its weight.
+	if seatClip then
+		local w = smoothstep(state.seatWeight)
+		Pose.sample(seatClip, state.idleTime, P.seat)
+		Pose.blend(out, P.seat, w)
+		state.plant *= 1 - w
+	end
 	return out.joints, out.offset
 end
 

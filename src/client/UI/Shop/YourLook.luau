@@ -23,6 +23,7 @@ local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
+local Seating = require(Shared:WaitForChild("Seating"))
 
 local Motion = require(script.Parent.Parent.Core.Motion)
 local Tokens = require(script.Parent.Parent.Kit.Tokens)
@@ -466,10 +467,44 @@ local function emotePreview(self: YourLook, clip: string, held: string?): () -> 
 	return stop
 end
 
+-- A seat or a chair tried on (Shared/Seating): the copy sits a while in the chair picked (or the one you wear, or
+-- the war chair) in the seat picked (or the one you wear, or everyone's).
+local function seatPreview(self: YourLook, item: Cosmetics.Item): () -> ()
+	local copy = self.copy
+	local root = copy and copy:FindFirstChild("HumanoidRootPart")
+	if not copy or not root or not root:IsA("BasePart") then
+		return function() end
+	end
+	local equipped = (self.profile and self.profile.equipped) or {}
+	local seat = if item.kind == "seat" then item else Cosmetics.byId(equipped.seat)
+	local chairItem = if item.kind == "chair" then item else Cosmetics.byId(equipped.chair)
+	local clip = if seat and type(seat.clip) == "string" then seat.clip else Seating.DEFAULT
+	local chair = Seating.chairModel(chairItem)
+	if chair then
+		-- (the copy is an R6 body standing at rest: its root 3 above the floor)
+		chair:PivotTo(Seating.chairUnder(root.CFrame, 3))
+		for _, part in ipairs(chair:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+			end
+		end
+		chair.Parent = copy.Parent
+	end
+	local stop = emotePreview(self, clip)
+	return function()
+		stop()
+		if chair then
+			chair:Destroy()
+		end
+	end
+end
+
 -- Plays a style or an emote once, for the item picked (nothing for other kinds).
 local function preview(self: YourLook, item: Cosmetics.Item)
 	stopPreview(self)
-	if item.kind == "emote" and type(item.emote) == "string" then
+	if item.kind == "seat" or item.kind == "chair" then
+		self.stopPreview = seatPreview(self, item)
+	elseif item.kind == "emote" and type(item.emote) == "string" then
 		local walk = item.emote .. "Walk"
 		self.stopPreview = if item.stroll and PoseController.exists(walk)
 			then emotePreview(self, walk, item.emote)

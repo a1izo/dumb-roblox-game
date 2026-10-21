@@ -21,6 +21,7 @@ local Cues = require(script.Parent.Cues)
 local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local Match = require(script.Parent.Match)
+local MeetingService = require(script.Parent.MeetingService)
 
 local ArrestRemote = Net.event("Arrest")
 local ButlerPickRemote = Net.event("ButlerPick")
@@ -37,6 +38,8 @@ end
 -- The arrest cutscene (its result is announced publicly anyway). Ace's verdict style shows on Ace's
 -- own screen, and on everyone's when the arrest is right.
 local function playArrest(ace, suspect, result: string)
+	-- (arrested at the table, they get up out of their chair first)
+	MeetingService.standUp(suspect)
 	local data = { userId = suspect.userId, alias = suspect.alias, result = result }
 	local verdict = CosmeticsService.style(ace.player, "verdict")
 	if verdict and result == "hand" then

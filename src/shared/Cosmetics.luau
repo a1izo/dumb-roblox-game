@@ -6,10 +6,12 @@
 --           names go into the Manual: `style`), verdict (how Ace's arrest lands: `style`), death
 --           (what becomes of you when you die: `style`), emote (`emote` is its clip, `category` its
 --           section in the shop: dance, pose, prop, stroll or duo; `lobbyOnly` when it looks like a
---           game signal, a death, an arrest or the Eyes, so it is never played in a match)
+--           game signal, a death, an arrest or the Eyes, so it is never played in a match), seat (how you sit
+--           at the war table for a meeting: `clip`, Shared/Seating), chair (what your place at the table
+--           becomes, for everyone: `model`)
 --   rarity  common, rare, epic, legendary, godhood (shown as Scrawl, Penned, Sealed, Condemned, Godhood:
 --           Shared/Rarity)
---   source  shop (always for sale), rotation (for sale on days it is featured), vip
+--   source  shop (always for sale), rotation (for sale on days it is featured), free (everyone's), vip
 --           (free with the VIP pass), rank / achievement / streak / mastery (earned), season (a
 --           reward of the Season ledger), set (a title: every piece of a set, Shared/Sets),
 --           collection (a title: owning so many emotes, Progression/Collection)
@@ -1062,6 +1064,123 @@ Cosmetics.ITEMS = {
 		added = "2026-10-14",
 	},
 
+	-- Seats (shop overhaul, 2026-10-21): how you sit at the war table for a meeting and the vote (`clip`, a loop made
+	-- for the war chair's seat, Shared/Seating), and the chair your place there becomes for everyone (`model`, a Core
+	-- prop built to the same seat; `core` the Core version it came in: an older import keeps the war chair).
+	{
+		id = "seat_plain",
+		kind = "seat",
+		name = "Plain Seat",
+		rarity = "common",
+		source = "free",
+		clip = "seatPlain",
+		blurb = "Sit square, hands on your knees.",
+		added = "2026-10-21",
+	},
+	{
+		id = "seat_composed",
+		kind = "seat",
+		name = "The Calculating Seat",
+		rarity = "rare",
+		source = "shop",
+		price = 300,
+		clip = "seatComposed",
+		blurb = "Upright, hands folded on one knee, eyes moving slowly from face to face.",
+		added = "2026-10-21",
+	},
+	{
+		id = "seat_ease",
+		kind = "seat",
+		name = "At Ease",
+		rarity = "rare",
+		source = "shop",
+		price = 350,
+		clip = "seatEase",
+		blurb = "Leaning back, one arm along the chair's arm, legs crossed.",
+		added = "2026-10-21",
+	},
+	{
+		id = "seat_steepled",
+		kind = "seat",
+		name = "Steepled",
+		rarity = "epic",
+		source = "shop",
+		price = 550,
+		clip = "seatSteepled",
+		blurb = "Leaning in, fingertips steepled under the chin, perfectly still.",
+		added = "2026-10-21",
+	},
+	{
+		id = "seat_perched",
+		kind = "seat",
+		name = "Perched",
+		rarity = "epic",
+		source = "shop",
+		price = 650,
+		clip = "seatPerched",
+		blurb = Terms.f("{Zero}'s crouch on the seat: legs along it, thumb at the lip."),
+		added = "2026-10-21",
+	},
+	{
+		id = "seat_chin",
+		kind = "seat",
+		name = "Chin on Fist",
+		rarity = "legendary",
+		source = "shop",
+		price = 900,
+		clip = "seatChin",
+		blurb = "Legs crossed, chin on a fist, bored of everyone.",
+		added = "2026-10-21",
+	},
+	{
+		id = "chair_office",
+		kind = "chair",
+		name = "Bureau Office Chair",
+		rarity = "rare",
+		source = "shop",
+		price = 400,
+		model = "ChairOffice",
+		core = 11,
+		blurb = "A worn swivel chair from the night shift, cracked leather and a coffee ring on the arm.",
+		added = "2026-10-21",
+	},
+	{
+		id = "chair_crate",
+		kind = "chair",
+		name = "Death God's Crate",
+		rarity = "epic",
+		source = "shop",
+		price = 600,
+		model = "ChairCrate",
+		core = 11,
+		blurb = "An old apple crate turned over, claw marks raked down one side.",
+		added = "2026-10-21",
+	},
+	{
+		id = "chair_bone",
+		kind = "chair",
+		name = "Bone Chair",
+		rarity = "legendary",
+		source = "shop",
+		price = 1000,
+		model = "ChairBone",
+		core = 11,
+		blurb = "A tall chair of fused bone, its back a ribcage.",
+		added = "2026-10-21",
+	},
+	{
+		id = "chair_throne",
+		kind = "chair",
+		name = Terms.f("{Hand}'s Throne"),
+		rarity = "legendary",
+		source = "shop",
+		price = 1200,
+		model = "ChairThrone",
+		core = 11,
+		blurb = "A high throne of black stone with a skull carved at its crest.",
+		added = "2026-10-21",
+	},
+
 	-- Titles (lobby and results only)
 	{ id = "title_trainee", kind = "title", name = "Trainee", rarity = "common", source = "achievement" },
 	{ id = "title_detective", kind = "title", name = "Detective", rarity = "common", source = "shop", price = 150 },
@@ -1164,7 +1283,8 @@ Cosmetics.ITEMS = {
 	{ id = "title_rank_8", kind = "title", name = "Legendary Detective", rarity = "legendary", source = "rank" },
 } :: { Item }
 
-Cosmetics.KINDS = { "hat", "tie", "grimoire", "specter", "title", "writing", "verdict", "death", "emote" }
+Cosmetics.KINDS =
+	{ "hat", "tie", "grimoire", "specter", "title", "writing", "verdict", "death", "emote", "seat", "chair" }
 
 Cosmetics.KIND_NAMES = {
 	hat = "Hats",
@@ -1176,6 +1296,8 @@ Cosmetics.KIND_NAMES = {
 	verdict = "Verdict styles",
 	death = "Death styles",
 	emote = "Emotes",
+	seat = "Seats",
+	chair = "Chairs",
 }
 
 -- The shop's suits ("Death's hand": the shop is a table of cards dealt by Death), in order, each with
@@ -1191,6 +1313,7 @@ Cosmetics.SUITS = {
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },
 	{ id = "emotes", name = "Emotes", icon = "palm", kinds = { "emote" } },
+	{ id = "seats", name = "Seats", icon = "podium", kinds = { "seat", "chair" } },
 	{ id = "titles", name = "Titles", icon = "trophy", kinds = { "title" } },
 	{ id = "sets", name = "Sets", icon = "set" },
 	{ id = "robux", name = "Robux", icon = "coin" },
@@ -1216,6 +1339,8 @@ Cosmetics.KIND_SINGULAR = {
 	verdict = "Verdict style",
 	death = "Death style",
 	emote = "Emote",
+	seat = "Seat",
+	chair = "Chair",
 }
 
 -- (the tiers, their names and colours live in Shared/Rarity)

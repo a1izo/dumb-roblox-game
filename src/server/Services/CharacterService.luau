@@ -143,6 +143,11 @@ function CharacterService.placeForPhase(ps)
 	if seated and ps.seatCFrame then
 		CharacterService.placeAt(ps.player, ps.seatCFrame)
 		CharacterService.setFrozen(ps.player, true)
+		-- (sitting in their chair again, when they were: Shared/Seating)
+		local character = ps.player.Character
+		if character and ps.seatClip then
+			character:SetAttribute("Seat", ps.seatClip)
+		end
 	else
 		local spawnCFrame = map.spawns[Match.rng:NextInteger(1, #map.spawns)]
 		CharacterService.placeAt(ps.player, spawnCFrame)
