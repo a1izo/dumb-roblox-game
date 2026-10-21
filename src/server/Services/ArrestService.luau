@@ -110,7 +110,7 @@ function ArrestService.arrest(ace, suspect, force: boolean?): boolean
 			"arrest"
 		)
 		Match.announce(
-			Terms.f("{alias} was {zero}"),
+			Terms.f("{alias} was {zero}", { alias = ace.alias }),
 			Terms.f("{suspect} was innocent. The false arrest cost {zero} their life.", { suspect = suspect.alias }),
 			"kira"
 		)

@@ -1,0 +1,42 @@
+# Handshake (clip handshake, everyone's). Reference notes.
+id = "handshake"
+item = ""
+name = "Handshake"
+family = "duo"
+status = "checked"
+uses = []
+
+[origin]
+what = "A handshake (everyday greeting)."
+recognisable = "The right hands meet halfway, three firm pumps, a nod, let go."
+
+[source]
+url = "https://www.youtube.com/results?search_query=firm+handshake"
+title = "Firm handshake (search)"
+kind = "the meme or the scene"
+watched = "2026-10-21: frame sheets of the source"
+mirror = false
+
+[timing]
+length = 2.4
+fit = "Free duo: the one asked walks up to face the one asking (2.6 studs apart, DuoService.MEET), then both play it from the same moment."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = true
+
+[r6]
+notes = "The right hands meet halfway between the two at waist height."
+
+[check]
+by = "2026-10-21: check_anims (the walk cycles: soles planted while down), check_props, renders"

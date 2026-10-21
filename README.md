@@ -199,10 +199,15 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   milestones, win scenes, coin packs, and passes (VIP, Double Coins, Custom Alias, Emote Pack,
   Director). Search, filters, "New" ribbons and a wishlist; a mannequin by the lobby spawn shows the
   day's emote. Titles and VIP tags show only in the lobby and on the results screen.
-- **Emotes**: Q (or Emotes in the lobby menu) opens the emote wheel, eight emotes you choose in the
-  shop's Your look, played with a click, a tap or 1 to 8; More lists all of yours. They work in the
-  lobby and in a case; the few that look like a death, an arrest or the Eyes are lobby-only. Sounds and
-  faces for them go in `src/shared/EmoteMedia.luau` (empty until the owner uploads them).
+- **Emotes**: Q (or Emotes in the lobby menu) opens the emote wheel, a revolver's cylinder of eight
+  emotes you choose in the shop's Your look, played with a click, a tap or 1 to 8; More lists all of
+  yours. 70 in all (11 everyone's, 59 from the shop in five tiers, Scrawl to Godhood): dances in step,
+  poses with a press-to-do moment, prop emotes, strolls you steer, duos (a real Match Point rally, a
+  high five) and group dances. The four Godhood ones play a private cutscene for their owner in the
+  lobby. In a case they play from the waist up at the meeting, stop for every scene everyone sees, and
+  the few that look like a death, an arrest or the Eyes are lobby-only. Sounds and faces for them go in
+  `src/shared/EmoteMedia.luau` (empty until the owner uploads them). How they work and how to make one:
+  `docs/emotes.md`.
 - **Retention**: a daily streak, 3 daily and 3 weekly quests, 31 achievements (with optional
   badges), 10 mastery levels per role, rank titles, global and weekly leaderboards.
 
@@ -229,6 +234,7 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
   jumps, falls, three landings, stops, flight) is described in `docs/animation.md`: planted legs roll
   heel to toe, every cycle advances by distance, and standing feet stay on their marks, so feet do not
   slide. The default Animate script is replaced by an empty one, and R15 avatars are rebuilt as R6.
+  The emotes, their props and their checks are described in `docs/emotes.md`.
 - **Props and scenes** are imported in Studio with **Import 3D**: the props every venue and the
   game use, with the effect and UI textures, `art/export/DeathsGambitModels_Core.fbx`; and for each
   venue (the lobby, the meeting room, Bureau HQ, University Campus, Tokyo) its props and its scene,
@@ -298,13 +304,15 @@ src/server/     init.server.luau boots every service
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything
   UI/           every screen and panel, Core/ (router, motion, settings, clock, scaling)
-  Presentation/ cue router, camera director, cinema helpers, ink effects, cutscene presenters
+  Presentation/ cue router, camera director, cinema helpers, ink effects, cutscene presenters, the
+                emotes' showpiece camera and private cutscenes (EmoteCamera, EmoteCinema)
   Anim/         PoseController, LocomotionController and ActingController (Blender clips)
   Audio/        mixer, music and sound effects
   World/        lighting, rain and snow, footprints, flicker, Deathsinger visibility, and what
                 each map's mechanic shows (the Tokyo crowd, its lamps and cars, the blackout)
   Deathsinger/      flight, lost souls and real-name tags for ghosts
-  Controllers/  prompts, chat rules, emotes, the Oculus of the Dead, the Academy
+  Controllers/  prompts, chat rules, emotes (EmoteController, EmoteFx, DuoController), the Oculus of
+                the Dead, the Academy
   Input/        actions and bindings
   Debug/        the debug panel (F2) and its local tools (fly, free camera, colliders, tags)
 assets/         your own models, synced to ReplicatedStorage/ServerStorage.DeathsGambitAssets

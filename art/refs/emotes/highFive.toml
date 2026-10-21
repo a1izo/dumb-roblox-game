@@ -1,0 +1,42 @@
+# High Five (clip highFive, everyone's). Reference notes.
+id = "highFive"
+item = ""
+name = "High Five"
+family = "duo"
+status = "checked"
+uses = []
+
+[origin]
+what = "A high five (everyday greeting)."
+recognisable = "The hand wound up high, the slap halfway between the two, a grin, the sting shaken out of the hand."
+
+[source]
+url = "https://www.youtube.com/results?search_query=high+five+slow+motion"
+title = "High five, slow motion (search)"
+kind = "the meme or the scene"
+watched = "2026-10-21: frame sheets of the source"
+mirror = false
+
+[timing]
+length = 2.0
+fit = "Free duo: the one asked walks up to face the one asking (3.0 studs apart, DuoService.MEET), then both play it from the same moment."
+
+[face]
+key = ""
+
+[sound]
+cues = ["the owner's"]
+match = false
+
+[vfx]
+rung = 0
+ideas = []
+
+[camera]
+showpiece = true
+
+[r6]
+notes = "Each right hand meets the other's a little right of its own middle, halfway between them."
+
+[check]
+by = "2026-10-21: check_anims (the walk cycles: soles planted while down), check_props, renders"

@@ -101,6 +101,24 @@ Transitions:
 | air → ground | the air poses fade in about 0.08 s while the landing plays over what comes next |
 | respawn | a new body starts in the idle at a random point of its loop |
 
+## Emotes and actions over the movement set
+
+Clips from the shop and the game (emotes, actions, deaths, reactions) are played by `PoseController` on top of
+the base layer this controller gives it; the emote system itself is in `docs/emotes.md`.
+
+- **Weights ease in and out** (smoothstep), so a pose leaves and arrives slowly at both ends of a blend.
+- **A clip that moves the legs takes them**: the after-pass leaves those legs to the clip. A clip masked `upper`
+  (an emote at the meeting table) plays the waist up only; the hips stay the base layer's and the soles stay
+  planted.
+- **The floor guard**: while a clip that moves the legs fades in or out, the blend of two poses can put a leg
+  through the floor (a crouch blending with a stand); the body is lifted wherever it would.
+- **Floor poses** are built resting on the floor (`Motion(..., floor=True)` or `posekit.on_floor`): the export
+  lifts any frame that dips. An R6 crouch or a sit on the floor is the legs out in front along the floor (about
+  80 degrees at the hips) with the torso upright on their back ends (`posekit.on_floor`, `on_seat`, and the
+  cutscenes' `acting.seated`); never the soles planted under the body with the legs tilted.
+- **Strolls** replace the idle and the forward cycles while the body's `Stroll` attribute is on, blended in over
+  0.4 s.
+
 ## Building, checking and reviewing
 
 ```
