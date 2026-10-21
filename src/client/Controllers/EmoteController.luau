@@ -38,6 +38,7 @@ local Characters = require(script.Parent.Parent.Characters)
 local ClientState = require(script.Parent.Parent.ClientState)
 local EmoteFx = require(script.Parent.EmoteFx)
 local EmoteCamera = require(script.Parent.Parent.Presentation.EmoteCamera)
+local EmoteCinema = require(script.Parent.Parent.Presentation.EmoteCinema)
 local Mixer = require(script.Parent.Parent.Audio.Mixer)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 
@@ -64,7 +65,7 @@ export type Session = {
 	owned: boolean?, -- false: joined in on a dance this player does not own (the lobby lets anyone)
 	from: string?, -- the emote whose press-to-do moment played it (EmoteInfo `context`)
 	handle: PoseController.Handle?,
-	camera: ((atOnce: boolean?) -> ())?, -- the showpiece camera's way back (Presentation/EmoteCamera)
+	camera: ((atOnce: boolean?) -> ())?, -- the camera's way back (Presentation/EmoteCinema, EmoteCamera)
 	wisp: boolean?, -- ends in the ink wisp it began with
 	cleanups: { () -> () },
 	connections: { RBXScriptConnection },
@@ -863,10 +864,17 @@ function EmoteController.start(character: Model, clip: string, options: StartOpt
 		session.wisp = true
 		EmoteFx.wisp(character)
 	end
-	-- This player's own showpiece: the camera turns round them (Presentation/EmoteCamera).
-	if opts.pose ~= false and opts.own and character == Players.LocalPlayer.Character and EmoteCamera.wants(clip) then
-		local seconds = if prepared and not prepared.loop then prepared.length + HOLD else math.huge
-		session.camera = EmoteCamera.start(character, seconds)
+	-- This player's own showpiece: a Godhood emote's private cutscene, timed to the clip (Presentation/
+	-- EmoteCinema), or else the camera turning round them (Presentation/EmoteCamera).
+	if opts.pose ~= false and opts.own and character == Players.LocalPlayer.Character then
+		if prepared and not prepared.loop and EmoteCinema.wants(clip) then
+			local zero = workspace:GetServerTimeNow() - (phase or 0)
+			session.camera = EmoteCinema.start(character, clip, zero, prepared.length)
+		end
+		if not session.camera and EmoteCamera.wants(clip) then
+			local seconds = if prepared and not prepared.loop then prepared.length + HOLD else math.huge
+			session.camera = EmoteCamera.start(character, seconds)
+		end
 	end
 	EmoteController.Started:Fire(character, session)
 	return session

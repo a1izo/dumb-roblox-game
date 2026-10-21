@@ -8,8 +8,9 @@ along the north wall (x 254..264, its front at z -3.4, top 3.5), the kettle at (
 at (260, 1.5); the door at z 0 in the west wall into Ace's room (the chair at (238, -1.8))."""
 
 from animlib import J
-from cinema.acting import facing, soft, walking
+from cinema.acting import facing, seated, soft, walking
 from cinema.shot import Shot
+from emotes.kit import reach
 from motion import Motion
 
 NAME = "RoleButler"
@@ -51,11 +52,13 @@ soft(b, arms=2.6).plant(None, 7.6, stance=0.04).plant(9.9, None, stance=0.04)
 walking(b, 7.9, 9.6)
 b.build()
 
+# (crouched on the seat as in Ace's own cutscene, cinema/shots/role_l.py: the R6 way, the legs out along it)
 shape = Motion("RoleButler_ace", LENGTH, note="The Butler's role cutscene: the faceless one in the chair.")
 for t, k in ((0.0, 0.0), (5.0, 1.0), (10.0, 0.0), (LENGTH, 1.0)):
-    shape.key(t, offset=(0, -1.15 + 0.02 * k, 0.25), root=(-8 + k, 0, 0), neck=(4 + k, 3 * k, 0),
-              rShoulder=J((128, 0, -26), (-0.28, 0.25, -0.3)), lShoulder=J((78, 0, 18), (0.12, 0.05, -0.4)))
-soft(shape, head=1.5, arms=1.5).plant(stance=0.12, forward=(0.55, 0.55), tilt=(62, 62))
+    seated(shape, t, seat=0.02 * k, legs=80.0, lean=-8 + k, xz=(0.0, 0.1), neck=(4 + k, 3 * k, 0),
+           rShoulder=J((128, 0, -26), (-0.28, 0.25, -0.3)),
+           lShoulder=reach(-1, (-0.35, -0.55, -1.5), direction=(0.3, -0.35, -0.9)))
+soft(shape, head=1.5, arms=1.5)
 shape.build()
 
 # The shot -------------------------------------------------------------------------------------------
@@ -90,6 +93,7 @@ tray.at(7.0, TRAY_AT, (0, 0, 0))
 
 ace = shot.actor("ace", clip="RoleButler_ace", extra=True, silhouette=(0.0, LENGTH))
 ace.mark(0.0, ACE, 0.0)
+shot.allow = {"ace": ["ClubChair"]}  # crouched on its seat
 
 shot.event(0.0, "sfx", slot="clockTick")
 shot.event(5.2, "sfx", slot="clockTick")

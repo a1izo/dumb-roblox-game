@@ -1,6 +1,6 @@
 -- Emotes: every shop emote reaches the wheel and quick chat once, sits in a section of the shop, has a
 -- sound slot and only known faces; the wheel keeps eight slots, moves an emote rather than copying it, and
--- fills its empty slots with what is bought.
+-- fills its empty slots with what is bought; every cinematic emote has a cutscene that fits its clip.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -8,6 +8,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Anim = Shared:WaitForChild("Anim")
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
+local EmoteMeta = require(Anim:WaitForChild("EmoteMeta"))
 local EmoteProps = require(Anim:WaitForChild("EmoteProps"))
 local ModelCatalog = require(Shared:WaitForChild("ModelCatalog"))
 local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
@@ -93,6 +94,38 @@ return function(t)
 				for _, prop in ipairs(EmoteProps.of(clip)) do
 					expect((ModelCatalog :: any)[prop.model] ~= nil).to.equal(true)
 					expect(prop.size > 0).to.equal(true)
+				end
+			end
+		end)
+		it("gives every cinematic emote a cutscene that fits its clip", function()
+			local function vec(v: any): boolean
+				return type(v) == "table" and #v == 3 and type(v[1]) == "number"
+			end
+			local BEATS = { flash = true, impact = true, shake = true, vignette = true }
+			for clip, meta in pairs(EmoteMeta :: any) do
+				if meta.cinematic then
+					local cut = meta.cinema
+					expect(type(cut)).to.equal("table")
+					expect(#cut.shots > 0).to.equal(true)
+					local length = ClipPlayer.length(clip)
+					local last = -1
+					for _, shot in ipairs(cut.shots) do
+						-- in order, inside the clip, an eye, a point to look at and a lens
+						expect(shot.at >= last and shot.at < length).to.equal(true)
+						last = shot.at
+						expect(vec(shot.eye) and vec(shot.look)).to.equal(true)
+						expect(shot.fov >= 10 and shot.fov <= 90).to.equal(true)
+						if shot.to then
+							expect(
+								(shot.to.eye == nil or vec(shot.to.eye)) and (shot.to.look == nil or vec(shot.to.look))
+							).to.equal(true)
+						end
+					end
+					for _, beat in ipairs(cut.beats or {}) do
+						expect(BEATS[beat.kind] == true and beat.at >= 0 and beat.at < length).to.equal(true)
+					end
+				elseif meta.cinema ~= nil then
+					error(clip .. " has a cutscene but is not cinematic")
 				end
 			end
 		end)

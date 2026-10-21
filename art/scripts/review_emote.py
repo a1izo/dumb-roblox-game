@@ -3,11 +3,15 @@
 
     blender -b --factory-startup --python art/scripts/review_emote.py -- clip [clip ...]
         [--seconds=N] [--size=720] [--angle=0] [--angle2=40] [--stills=0.5,1.2] [--video] [--closeup=prop]
+        [--cinema]
 
 For each clip it writes to art/export/previews/emotes/<clip>/:
     <clip>.mp4            the clip (looping ones play two rounds), two views side by side when --angle2 is set
     still_<t>.png         frames at the given times (or at every quarter of the clip without --stills)
     closeup_<t>.png       with --closeup: a tight view on the hand holding that prop, at each still time
+    cinema_<t>.png        with --cinema: a cinematic emote's private cutscene, seen through its own shot list
+                          (EmoteMeta `cinema`, read the way Presentation/EmoteCinema reads it), 16:9, at the
+                          start, middle and end of every shot and at every beat; cinema.png the sheet of them
 Props come from art/blend/Props.blend (the Core models the game imports), scaled to their EmoteMeta size; a
 prop with no model there shows its stand-in part. Tosses, carries, stacks, show and hide follow the game's
 rules frame by frame, so what is seen here is what the game draws.
@@ -56,6 +60,8 @@ def parse(argv):
             opts["sheet"] = True
         elif a == "--mirror":
             opts["mirror"] = True
+        elif a == "--cinema":
+            opts["cinema"] = True
         else:
             opts["names"].append(a)
     return opts
@@ -340,23 +346,24 @@ def render_still(path):
     bpy.ops.render.render(write_still=True)
 
 
-def make_sheet(files, out, cols=8, tile=200, mirror=False):
+def make_sheet(files, out, cols=8, tile=200, mirror=False, tall=None):
     """The stills joined into one sheet, in order, left to right and top to bottom (mirrored like a dance
-    tutorial filmed facing the camera when `mirror`)."""
+    tutorial filmed facing the camera when `mirror`); each `tile` wide and `tall` high (square by default)."""
     rows = math.ceil(len(files) / cols)
-    canvas = np.zeros((rows * tile, cols * tile, 4), dtype=np.float32)
+    tall = tall or tile
+    canvas = np.zeros((rows * tall, cols * tile, 4), dtype=np.float32)
     canvas[..., 3] = 1
     for i, path in enumerate(files):
         img = bpy.data.images.load(path)
-        img.scale(tile, tile)
-        px = np.array(img.pixels[:], dtype=np.float32).reshape(tile, tile, 4)
+        img.scale(tile, tall)
+        px = np.array(img.pixels[:], dtype=np.float32).reshape(tall, tile, 4)
         if mirror:
             px = px[:, ::-1]
         r, c = divmod(i, cols)
-        y0 = (rows - 1 - r) * tile
-        canvas[y0 : y0 + tile, c * tile : (c + 1) * tile] = px
+        y0 = (rows - 1 - r) * tall
+        canvas[y0 : y0 + tall, c * tile : (c + 1) * tile] = px
         bpy.data.images.remove(img)
-    image = bpy.data.images.new("sheet", cols * tile, rows * tile, alpha=True)
+    image = bpy.data.images.new("sheet", cols * tile, rows * tall, alpha=True)
     image.pixels = canvas.ravel()
     image.filepath_raw = out
     image.file_format = "PNG"
@@ -375,6 +382,87 @@ def render_video(path, start, end):
     scene.render.ffmpeg.constant_rate_factor = "HIGH"
     scene.render.filepath = path
     bpy.ops.render.render(animation=True)
+
+
+# The private cutscenes ------------------------------------------------------------------------------------
+
+
+def _sine(x):
+    """Roblox's Sine InOut easing (what CameraDirector.move tweens with)."""
+    x = max(0.0, min(1.0, x))
+    return -(math.cos(math.pi * x) - 1) / 2
+
+
+def _framing(shot, base=None):
+    """(eye, look, fov) of a shot, or of its `to` over `base`."""
+    eye, look, fov = base if base else (None, None, None)
+    eye = np.array(shot.get("eye", eye), dtype=float)
+    look = np.array(shot.get("look", look), dtype=float)
+    return eye, look, float(shot.get("fov", fov))
+
+
+def _mix(a, b, k):
+    return a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k
+
+
+def cinema_camera(cinema, t, length):
+    """The cutscene's camera at t s into the clip: (eye, look, fov) in the body's frame, read the way the game
+    reads the shot list (Presentation/EmoteCinema): each shot cuts in (or glides in from wherever the camera is,
+    over `glide` s), then drifts to its `to` until the next shot."""
+    shots = cinema["shots"]
+    state = _framing(shots[0])
+    for i, shot in enumerate(shots):
+        start = float(shot["at"])
+        end = float(shots[i + 1]["at"]) if i + 1 < len(shots) else length
+        here = _framing(shot)
+        glide = float(shot.get("glide", 0.0))
+
+        def at(u, state=state, here=here, glide=glide, start=start, end=end, shot=shot):
+            if glide > 0 and u < start + glide:
+                return _mix(state, here, _sine((u - start) / glide))
+            if shot.get("to"):
+                there = _framing(shot["to"], here)
+                return _mix(here, there, _sine((u - start - glide) / max(0.05, end - start - glide)))
+            return here
+
+        if t < end or i + 1 == len(shots):
+            return at(t)
+        state = at(end)
+    return state
+
+
+def body_to_blender(p):
+    """A point in the body's own frame (x right, y up from its middle, z behind) to the rig's Blender frame."""
+    return Vector((p[0], -p[2], p[1] + FLOOR))
+
+
+def film_cinema(name, meta, length, folder, cam):
+    cinema = meta.get("cinema")
+    if not cinema:
+        print(f"[review] {name}: no cinema")
+        return
+    scene = bpy.context.scene
+    scene.render.resolution_x, scene.render.resolution_y = 640, 360
+    cam.data.sensor_fit = "VERTICAL"
+    times = []
+    shots = cinema["shots"]
+    for i, shot in enumerate(shots):
+        start = float(shot["at"])
+        end = float(shots[i + 1]["at"]) if i + 1 < len(shots) else length
+        times += [start + 0.04, (start + end) / 2, end - 0.06]
+    times += [float(b["at"]) + 0.05 for b in cinema.get("beats") or []]
+    times = sorted({round(t, 2) for t in times if 0 <= t <= length})
+    files = []
+    for t in times:
+        eye, look, fov = cinema_camera(cinema, t, length)
+        cam.location = body_to_blender(eye)
+        cam.rotation_euler = (body_to_blender(look) - cam.location).to_track_quat("-Z", "Y").to_euler()
+        cam.data.angle_y = math.radians(fov)
+        bpy.context.scene.frame_set(int(round(t * FPS)))
+        files.append(os.path.join(folder, f"cinema_{t:05.2f}.png"))
+        render_still(files[-1])
+    make_sheet(files, os.path.join(folder, "cinema.png"), cols=5, tile=320, tall=180)
+    print(f"[review] {name} cinema at " + ", ".join(f"{t:.2f}" for t in times))
 
 
 def build_fresh(arm, names):
@@ -425,8 +513,11 @@ def main():
         folder = os.path.join(OUT, name)
         os.makedirs(folder, exist_ok=True)
         for old in os.listdir(folder):
-            if old.startswith(("still_", "closeup_")):
+            if old.startswith(("still_", "closeup_", "cinema_")):
                 os.remove(os.path.join(folder, old))
+        if opts.get("cinema"):
+            film_cinema(name, meta_all.get(name) or {}, length, folder, cam)
+            continue
         aim(cam, (0, 0, 2.6), 13.0, opts["angle"], height=0.6)
         stills = opts["stills"] or [round(length * q, 2) for q in (0.0, 0.25, 0.5, 0.75, 1.0)]
         shots = []

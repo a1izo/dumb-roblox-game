@@ -19,8 +19,9 @@ wall at z 0 into the pantry (x 251..265)."""
 
 from animlib import J
 from cinema import framing
-from cinema.acting import beat, facing, hold, soft, walking
+from cinema.acting import beat, facing, hold, seated, soft, walking
 from cinema.shot import Shot
+from emotes.kit import reach
 from motion import Motion
 
 NAME = "RoleAce"
@@ -33,11 +34,12 @@ PANTRY = (AX + 13.0, 0.0)
 OFFER = (AX + 2.6, 1.8)  # where the Butler stops, beside the chair
 WALK_IN = (6.0, 6.0 + ((PANTRY[0] - OFFER[0]) ** 2 + (PANTRY[1] - OFFER[1]) ** 2) ** 0.5 / 4.0)
 
-# Ace: crouched on the seat, knees up, a thumb at the lip ---------------------------------------------------
+# Ace: crouched on the seat the R6 way (the owner's drawing, 2026-10-20: the legs out in front along the seat, the
+# torso upright on their back ends), a thumb at the lip, the other arm over the knees ------------------------------
 
 LIP = J((128, 0, -26), (-0.28, 0.25, -0.3))
-KNEES = J((78, 0, 18), (0.12, 0.05, -0.4))
-CROUCH = (0, -1.15, 0.25)
+KNEES = reach(-1, (-0.35, -0.55, -1.5), direction=(0.3, -0.35, -0.9))  # the left arm laid over the legs
+CROUCH = dict(seat=0.0, legs=80.0, lean=-8.0, xz=(0.0, 0.1))  # (the actor stands on the cushion, 2 high)
 SWEET = J((40, 0, 44), (0.1, 0.08, -0.12))  # down to the table on the right
 CUP = J((84, 0, 30), (0.04, 0.14, -0.22))  # out to the tray
 
@@ -48,8 +50,8 @@ def flick(m, t, yaw, pitch=4.0):
 
 
 ace = Motion("RoleAce_self", LENGTH, note="Ace's role cutscene: the screens, a sweet, the tea.")
-ace.key(0.0, offset=CROUCH, root=(-8, 0, 0), neck=(4, 0, 0), rShoulder=LIP, lShoulder=KNEES)
-ace.key(LENGTH, offset=CROUCH, root=(-8, 0, 0))
+seated(ace, 0.0, **CROUCH, neck=(4, 0, 0), rShoulder=LIP, lShoulder=KNEES)
+seated(ace, LENGTH, **CROUCH)
 for t, yaw in ((1.4, 14), (2.3, -10), (3.0, 22), (3.7, 4), (4.1, -16), (5.6, 10), (6.4, -4), (7.4, 12)):
     flick(ace, t, yaw)
 beat(ace, 4.7, 0.3, antic=0.1, rShoulder=SWEET)  # a sweet, snatched off the table...
@@ -60,7 +62,7 @@ hold(ace, 10.1)
 beat(ace, 10.7, 0.45, neck=(6, 6, 0), rShoulder=J((118, 0, -20), (-0.2, 0.24, -0.3)))  # the cup to the lips
 for t, yaw in ((12.0, -14), (12.9, 8), (13.8, -2)):
     flick(ace, t, yaw)
-soft(ace, head=4.0, arms=2.6).plant(stance=0.12, forward=(0.55, 0.55), tilt=(62, 62))
+soft(ace, head=4.0, arms=2.6)
 ace.build()
 
 # The Butler -----------------------------------------------------------------------------------------------
@@ -83,6 +85,7 @@ b.build()
 
 shot = Shot(NAME, "Sets", LENGTH, note="Ace's role cutscene: the monitors, a sweet, the Butler's tea.")
 shot.room = (228.0, -9.0, 250.0, 9.0, 12.0)
+shot.allow = {"self": ["ClubChair"]}  # crouched on its seat, against its back
 
 me = shot.actor("self", ace, silhouette=(0.0, 3.2))
 me.mark(0.0, (ACE[0], SEAT, ACE[1]), 0.0)

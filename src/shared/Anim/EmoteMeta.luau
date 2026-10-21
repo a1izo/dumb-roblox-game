@@ -749,6 +749,14 @@ return {
 	--              between from and to; one press plays the branch, the same on every screen)
 	--   formation  a group dance's places for those who join in: { { x, z }, ... } studs round the first dancer
 	--              (x to their right, z behind them), at most 5
+	--   cinema     a cinematic one's private cutscene (Presentation/EmoteCinema), timed to the clip:
+	--              grade { saturation, contrast, brightness, tint = { r, g, b } } and vignette { color, strength }
+	--              for the whole of it; shots: from `at` s into the clip the camera at `eye` looking at `look` (in
+	--              the body's own frame as the emote begins, studs: x to its right, y up from its middle, z behind
+	--              it), `fov` degrees; a cut, or with `glide` s it eases there from the shot before; `to` (any of
+	--              eye, look, fov) it then drifts to until the next shot; `focus` studs kept sharp round `look`.
+	--              beats: flash, impact (colour, strength, seconds), shake (strength, seconds) and vignette (on
+	--              from then) at `at` s
 	-- CHARGE, once slumped on the floor: plugged in, jolted back up
 	lowBattery = { lowBody = true, context = { label = "CHARGE", from = 3, to = 4.6, branch = "lowBatteryCharge" } },
 	-- the free duos (no shop item): the one asked walks up to face the one asking, and both play it
@@ -761,8 +769,175 @@ return {
 	goalCelebration = { lowBody = true },
 	aceCrouch = { lowBody = true },
 	takeTheL = { lowBody = true },
-	newWorld = { cinematic = true, fx = 4 },
-	finalBreakdown = { cinematic = true, fx = 4 },
-	reapersEyes = { cinematic = true, fx = 4 },
-	justAsPlanned = { cinematic = true, fx = 4 },
+	-- New World: close on the bowed head; from the front-left as the arm rises, tilting up after it; the white flash as it
+	-- closes and the view from low in front, up at the fist against the sky; back as it comes down.
+	newWorld = {
+		cinematic = true,
+		fx = 4,
+		cinema = {
+			grade = { saturation = -0.25, contrast = 0.22, brightness = 0, tint = { 255, 244, 226 } },
+			vignette = { color = { 0, 0, 0 }, strength = 0.3 },
+			shots = {
+				{
+					at = 0,
+					eye = { 0.5, 0.7, -3.8 },
+					look = { 0, 1.35, 0 },
+					fov = 34,
+					to = { eye = { 0.35, 0.85, -3.1 } },
+					focus = 3,
+				},
+				{
+					at = 1.45,
+					eye = { -2.6, 0.6, -6.4 },
+					look = { 0.2, 0.9, 0 },
+					fov = 46,
+					to = { eye = { -2.2, 0.4, -5.6 }, look = { 0.4, 1.3, 0 } },
+				},
+				{
+					at = 2.42,
+					eye = { 2.6, -1.3, -3.9 },
+					look = { 0.6, 1.2, 0 },
+					fov = 55,
+					to = { eye = { 2, -1.5, -3.3 }, look = { 0.8, 1.6, 0 } },
+				},
+				{ at = 3.75, glide = 0.6, eye = { -1.2, 1.3, -8.2 }, look = { 0, 1.2, 0 }, fov = 42 },
+			},
+			beats = {
+				{ at = 2.42, kind = "flash", color = { 255, 252, 240 }, strength = 0.85, seconds = 0.7 },
+				{ at = 2.42, kind = "shake", strength = 0.08, seconds = 0.3 },
+			},
+		},
+	},
+	-- Final Breakdown, Light in the warehouse: low and close on the held-in laugh; very low and wide as he is
+	-- thrown back, turning round him; from high in front as he folds over; back.
+	finalBreakdown = {
+		cinematic = true,
+		fx = 4,
+		cinema = {
+			grade = { saturation = -0.5, contrast = 0.25, brightness = -0.04, tint = { 236, 238, 214 } },
+			vignette = { color = { 0, 0, 0 }, strength = 0.38 },
+			shots = {
+				{
+					at = 0,
+					eye = { 1.4, -0.9, -5.4 },
+					look = { 0.1, 0.6, -0.5 },
+					fov = 40,
+					to = { eye = { 1.1, -0.8, -4.5 } },
+					focus = 4,
+				},
+				{
+					at = 2.2,
+					eye = { 0, -2, -5.6 },
+					look = { 0, 1.6, 0 },
+					fov = 54,
+					to = { eye = { 2.4, -1.9, -5 } },
+				},
+				{
+					at = 3.95,
+					eye = { 2.5, 6, -4.5 },
+					look = { 0, 0, -0.6 },
+					fov = 44,
+					to = { eye = { 2.2, 6.6, -4 } },
+				},
+				{ at = 4.85, glide = 0.5, eye = { -1.6, 1, -6.4 }, look = { 0, 1, 0 }, fov = 40 },
+			},
+			beats = {
+				{ at = 2.25, kind = "impact", color = { 235, 232, 220 }, strength = 0.45, seconds = 0.25 },
+				{ at = 2.25, kind = "shake", strength = 0.14, seconds = 0.5 },
+				{ at = 4.2, kind = "flash", color = { 0, 0, 0 }, strength = 0.35, seconds = 0.4 },
+			},
+		},
+	},
+	-- Reaper's Eyes: pushing in as the head turns round under the hand; the red reveal right on the eyes; back.
+	reapersEyes = {
+		cinematic = true,
+		fx = 4,
+		cinema = {
+			grade = { saturation = -0.6, contrast = 0.25, brightness = -0.05, tint = { 222, 226, 240 } },
+			vignette = { color = { 0, 0, 0 }, strength = 0.35 },
+			shots = {
+				{
+					at = 0,
+					eye = { -0.7, 1.4, -6.2 },
+					look = { 0, 1.35, 0 },
+					fov = 38,
+					to = { eye = { -0.35, 1.5, -3.4 }, fov = 34 },
+				},
+				{
+					at = 1.75,
+					eye = { 0, 1.45, -3.2 },
+					look = { 0, 1.4, -0.3 },
+					fov = 30,
+					to = { eye = { 0, 1.45, -2.8 } },
+					focus = 2,
+				},
+				{ at = 2.8, glide = 0.5, eye = { 0, 1.2, -6.5 }, look = { 0, 1.2, 0 }, fov = 40 },
+			},
+			beats = {
+				{ at = 1.75, kind = "impact", color = { 163, 25, 47 }, strength = 0.45, seconds = 0.25 },
+				{ at = 1.75, kind = "vignette", color = { 120, 12, 24 }, strength = 0.4 },
+			},
+		},
+	},
+	-- Just As Planned: the stand; close from the side he turns to for the stare and the glint; from his right as
+	-- the hand closes on the plan; under the chin for the grin; wide and low for the laugh, pulling back; the tie; close
+	-- over the left shoulder for the last look; wider as he comes to rest.
+	justAsPlanned = {
+		cinematic = true,
+		fx = 4,
+		cinema = {
+			grade = { saturation = -0.35, contrast = 0.2, brightness = -0.03, tint = { 232, 226, 226 } },
+			vignette = { color = { 0, 0, 0 }, strength = 0.32 },
+			shots = {
+				{
+					at = 0,
+					eye = { -3.2, 1.4, -7.5 },
+					look = { 0, 1, 0 },
+					fov = 40,
+					to = { eye = { -2.4, 1.5, -5.8 }, look = { 0, 1.2, 0 } },
+				},
+				{
+					at = 1.95,
+					eye = { 3.2, 1.7, -3.2 },
+					look = { 0, 1.45, 0 },
+					fov = 34,
+					to = { eye = { 2.8, 1.65, -2.8 } },
+					focus = 3,
+				},
+				{ at = 2.95, eye = { 3.8, 1.3, -1.6 }, look = { 0.4, 1, -0.7 }, fov = 40 },
+				{
+					at = 3.85,
+					eye = { 0.25, 0.1, -3.8 },
+					look = { 0, 1.45, 0 },
+					fov = 34,
+					to = { eye = { 0.2, 0.25, -3.2 } },
+					focus = 3,
+				},
+				{
+					at = 4.92,
+					eye = { 0, -1.5, -7.5 },
+					look = { 0, 1, 0 },
+					fov = 46,
+					to = { eye = { -1.2, -0.9, -9.5 } },
+				},
+				{ at = 6.6, eye = { -1.4, 1.1, -5.6 }, look = { 0, 1, 0 }, fov = 38 },
+				{
+					at = 7.55,
+					eye = { -3.2, 1.75, -3 },
+					look = { 0, 1.45, 0 },
+					fov = 34,
+					to = { eye = { -2.8, 1.7, -2.6 } },
+					focus = 3,
+				},
+				{ at = 8.6, glide = 0.6, eye = { -0.8, 1.2, -7.5 }, look = { 0, 1, 0 }, fov = 42 },
+			},
+			beats = {
+				{ at = 2.05, kind = "flash", color = { 163, 25, 47 }, strength = 0.22, seconds = 0.35 },
+				{ at = 3.55, kind = "impact", color = { 10, 10, 12 }, strength = 0.35, seconds = 0.18 },
+				{ at = 4.95, kind = "impact", color = { 163, 25, 47 }, strength = 0.5, seconds = 0.3 },
+				{ at = 4.95, kind = "shake", strength = 0.12, seconds = 0.45 },
+				{ at = 7.75, kind = "flash", color = { 163, 25, 47 }, strength = 0.22, seconds = 0.35 },
+			},
+		},
+	},
 }
