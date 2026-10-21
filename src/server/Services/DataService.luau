@@ -135,7 +135,6 @@ function DataService.payload(player: Player)
 		emoteWheel = data.emoteWheel,
 		keybinds = data.keybinds,
 		stance = data.stance,
-		winScene = data.winScene,
 		ledger = data.ledger,
 		shopSeen = data.shopSeen,
 		wishlist = data.wishlist,

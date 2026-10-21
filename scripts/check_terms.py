@@ -2,7 +2,9 @@
 
 Player-facing text must come from src/shared/Terms.luau. Two kinds of names are banned:
 names from the source material (Kira, Death Note...) and the game's own retired names
-(Inkbound, the Hand, the Grimoire, Specter, Zero, Cultist, the Agency, Agent).
+(Inkbound, the Hand, the Grimoire, Specter, Zero, Cultist, the Agency, Agent). And ink: the owner took
+it out of the game (2026-10-21), so no player text says ink, inked or inky; the chromatography task keeps
+its ink (it is a real science puzzle) and its lines say "terms:ok".
 
 Internal ids ("Kira", "Watari", "DeathNote", the "Agency" venue...) are allowed as whole string
 literals, because code compares against them. {placeholders} are ignored: their keys stay stable
@@ -27,7 +29,8 @@ OLD_ROLES = (
     r"|\b[Aa]gency\b|\bAGENCY\b"
     r"|\b[Aa]gents?\b|\bAGENTS?\b"
 )
-BANNED = re.compile(SOURCE_NAMES + "|" + GAME_NAME + "|" + OLD_ROLES)
+INK = r"\b[Ii]nk(?:ed|s|y|well)?\b|\bINK(?:ED|S|Y|WELL)?\b"
+BANNED = re.compile(SOURCE_NAMES + "|" + GAME_NAME + "|" + OLD_ROLES + "|" + INK)
 # A string with no spaces and only identifier characters is an id or instance name, never a sentence.
 # Ids may keep old role words ("Specter" attributes, "specter_ember" cosmetics, "grimoire" windows);
 # only the retired game name and the source material stay banned in them.

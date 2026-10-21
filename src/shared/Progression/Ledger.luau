@@ -30,7 +30,7 @@ export type Record = { season: number, points: number, tier: number }
 -- Each season's name and the tiers that give a thing instead of coins.
 Ledger.SEASONS = {
 	[1] = {
-		name = "The Season of Ink",
+		name = "The Season of Names",
 		items = { [10] = "title_s1_bookkeeper", [25] = "title_s1_accountant", [30] = "emote_new_world" },
 	},
 } :: { [number]: Season }

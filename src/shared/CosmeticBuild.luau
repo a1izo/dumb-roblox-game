@@ -58,22 +58,4 @@ function CosmeticBuild.hat(item, anchor: CFrame, head: BasePart): { BasePart }
 	}
 end
 
--- A trail behind the torso. Returns the attachments and the Trail (all parented to root).
-function CosmeticBuild.trail(item, root: BasePart): Trail
-	local top = Create("Attachment", { Name = "LTrailTop", Position = Vector3.new(0, 0.8, 0.45), Parent = root })
-	local bottom = Create("Attachment", { Name = "LTrailBottom", Position = Vector3.new(0, -0.8, 0.45), Parent = root })
-	return Create("Trail", {
-		Name = "LCosmeticTrail",
-		Attachment0 = top,
-		Attachment1 = bottom,
-		Color = ColorSequence.new(item.colors[1], item.colors[2]),
-		Transparency = NumberSequence.new(0.15, 1),
-		Lifetime = 0.6,
-		MinLength = 0.1,
-		LightEmission = 0.4,
-		FaceCamera = true,
-		Parent = root,
-	})
-end
-
 return CosmeticBuild

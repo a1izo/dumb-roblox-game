@@ -60,7 +60,7 @@ Achievements.LIST = {
 	a("souls10", "Ferryman", "Gather 10 lost souls.", { "stats", "duties" }, 10, 50),
 	a("souls100", "Shepherd of souls", "Gather 100 lost souls.", { "stats", "duties" }, 100, 250, "title_shepherd"),
 	a("ink1", "First entry", Terms.f("Write a name in {grimoire} and see it come true."), { "stats", "kills" }, 1, 25),
-	a("ink25", "Ink-stained", "25 names come true.", { "stats", "kills" }, 25, 250, "title_inkstained"),
+	a("ink25", "Writer's callus", "25 names come true.", { "stats", "kills" }, 25, 250, "title_inkstained"),
 	a("arrest1", "Warrant served", Terms.f("Arrest {hand} as {zero}."), { "stats", "arrests" }, 1, 50),
 	a(
 		"arrest10",

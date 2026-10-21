@@ -1,4 +1,4 @@
--- Puts equipped cosmetics on players: hats and trails on the character, the tie, notebook
+-- Puts equipped cosmetics on players: the hat on the character, the tie, notebook
 -- cover and Deathsinger form (its outline colour and what it wears) as player attributes (read
 -- wherever they show), and the title tag over the head in the lobby (never inside a match, where it
 -- would give away who is behind an alias). Styles (writing, verdict, death) are never attributes:
@@ -26,7 +26,6 @@ local CosmeticsService = {}
 
 local HAT = "LCosmeticHat"
 local TITLE_TAG = "LTitleTag"
-local TRAIL_NAMES = { "LCosmeticTrail", "LTrailTop", "LTrailBottom" }
 
 -- True when the player may use the item (bought, earned, free with VIP, or an emote that came with
 -- the Emote Pack).
@@ -154,16 +153,6 @@ local function catchUp(player: Player)
 	end
 end
 
--- The clip a winner plays in "The end" (their win scene: an owned emote that can be one), or nil for the cheer.
-function CosmeticsService.winScene(player: Player): string?
-	local data = DataService.get(player)
-	local item = if data then Cosmetics.byId(data.winScene) else nil
-	if item and Cosmetics.winSceneOk(item) and CosmeticsService.owns(player, item) then
-		return item.emote
-	end
-	return nil
-end
-
 -- The title to show on the results screen, or nil.
 function CosmeticsService.titleOf(player: Player): string?
 	local data = DataService.get(player)
@@ -172,19 +161,6 @@ function CosmeticsService.titleOf(player: Player): string?
 	end
 	local title = equipped(player, data, "title")
 	return if title then title.name else nil
-end
-
-local function clearTrail(character: Model)
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return
-	end
-	for _, name in ipairs(TRAIL_NAMES) do
-		local existing = root:FindFirstChild(name)
-		if existing then
-			existing:Destroy()
-		end
-	end
 end
 
 local function titleTag(player: Player, character: Model, title: string?)
@@ -244,17 +220,11 @@ function CosmeticsService.apply(player: Player)
 		return
 	end
 	CharacterService.detach(player, HAT)
-	clearTrail(character)
 	local hat = equipped(player, data, "hat")
 	if hat then
 		CharacterService.attachBuilt(player, HAT, { "Head" }, function(anchor: CFrame, head: BasePart)
 			return CosmeticBuild.hat(hat, anchor, head)
 		end)
-	end
-	local trail = equipped(player, data, "trail")
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if trail and root and root:IsA("BasePart") then
-		CosmeticBuild.trail(trail, root)
 	end
 	CharacterService.refreshAccessories(player)
 	CharacterService.recolorTie(player)

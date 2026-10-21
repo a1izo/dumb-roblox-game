@@ -22,10 +22,10 @@ Every shop emote has a rarity (`src/shared/Rarity.luau`), the same five tiers as
 | Tier (id) | Colour | Effects |
 | --- | --- | --- |
 | Scrawl (`common`) | ash `#A7A29A` | the motion alone, the ink wisp at the start and end |
-| Inked (`rare`) | ink-blue `#6F93C2` | one accent made for it |
+| Penned (`rare`) | slate blue `#6F93C2` | one accent made for it |
 | Sealed (`epic`) | violet `#9C7BEA` | an effect made for it, with light; the showpiece camera |
 | Condemned (`legendary`) | amber `#D9963F` | layered, supernatural effects |
-| Godhood (`godhood`) | ink-crimson `#A3192F` | a private cutscene: New World, Final Breakdown, Reaper's Eyes, Just As Planned (1500 coins; Fate counts them as Condemned) |
+| Godhood (`godhood`) | crimson `#A3192F` | a private cutscene: New World, Final Breakdown, Reaper's Eyes, Just As Planned (1500 coins; Fate counts them as Condemned) |
 
 ## How an emote plays
 

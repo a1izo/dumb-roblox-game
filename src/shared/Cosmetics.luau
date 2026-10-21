@@ -1,13 +1,13 @@
 -- Cosmetic catalog. Item ids never change (they are saved in profiles).
 --
---   kind    hat, trail, tie (the noir tie in matches), grimoire (the cover of the Manual
+--   kind    hat, tie (the noir tie in matches), grimoire (the cover of the Manual
 --           Diavolo holds while writing), specter (your form as a Deathsinger: `form` names what it wears),
 --           title (shown in the lobby and on the results screen only), writing (how Diavolo's
 --           names go into the Manual: `style`), verdict (how Ace's arrest lands: `style`), death
 --           (what becomes of you when you die: `style`), emote (`emote` is its clip, `category` its
 --           section in the shop: dance, pose, prop, stroll or duo; `lobbyOnly` when it looks like a
 --           game signal, a death, an arrest or the Eyes, so it is never played in a match)
---   rarity  common, rare, epic, legendary, godhood (shown as Scrawl, Inked, Sealed, Condemned, Godhood:
+--   rarity  common, rare, epic, legendary, godhood (shown as Scrawl, Penned, Sealed, Condemned, Godhood:
 --           Shared/Rarity)
 --   source  shop (always for sale), rotation (for sale on days it is featured), vip
 --           (free with the VIP pass), rank / achievement / streak / mastery (earned), season (a
@@ -111,7 +111,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "hat_tophat_ink",
 		kind = "hat",
-		name = "Inkwell Top Hat",
+		name = "Grave Silk",
 		rarity = "legendary",
 		source = "rotation",
 		price = 1200,
@@ -128,62 +128,6 @@ Cosmetics.ITEMS = {
 		style = "cap",
 		color = Color3.fromRGB(60, 12, 20),
 		accent = Color3.fromRGB(230, 200, 120),
-	},
-
-	-- Trails
-	{
-		id = "trail_ink",
-		kind = "trail",
-		name = "Ink Trail",
-		rarity = "common",
-		source = "shop",
-		price = 200,
-		colors = { Color3.fromRGB(15, 15, 18), Color3.fromRGB(90, 90, 100) },
-	},
-	{
-		id = "trail_crimson",
-		kind = "trail",
-		name = "Crimson Trail",
-		rarity = "rare",
-		source = "shop",
-		price = 350,
-		colors = { Color3.fromRGB(200, 20, 35), Color3.fromRGB(60, 0, 10) },
-	},
-	{
-		id = "trail_ice",
-		kind = "trail",
-		name = "Ice Trail",
-		rarity = "rare",
-		source = "shop",
-		price = 450,
-		colors = { Color3.fromRGB(190, 235, 255), Color3.fromRGB(60, 140, 220) },
-	},
-	{
-		id = "trail_gold",
-		kind = "trail",
-		name = "Gold Leaf Trail",
-		rarity = "epic",
-		source = "shop",
-		price = 600,
-		colors = { Color3.fromRGB(255, 215, 90), Color3.fromRGB(170, 110, 20) },
-	},
-	{
-		id = "trail_smoke",
-		kind = "trail",
-		name = "Cigarette Smoke",
-		rarity = "rare",
-		source = "rotation",
-		price = 400,
-		colors = { Color3.fromRGB(200, 200, 205), Color3.fromRGB(60, 60, 66) },
-	},
-	{
-		id = "trail_neon",
-		kind = "trail",
-		name = "Neon Rain",
-		rarity = "legendary",
-		source = "rotation",
-		price = 1100,
-		colors = { Color3.fromRGB(255, 80, 200), Color3.fromRGB(80, 220, 255) },
 	},
 
 	-- Ties (the noir tie everyone wears in matches)
@@ -1160,7 +1104,7 @@ Cosmetics.ITEMS = {
 	{ id = "title_sharpeye", kind = "title", name = "Sharp Eye", rarity = "epic", source = "achievement" },
 	{ id = "title_unwritten", kind = "title", name = "Unwritten", rarity = "epic", source = "achievement" },
 	{ id = "title_shepherd", kind = "title", name = "Shepherd of Souls", rarity = "epic", source = "achievement" },
-	{ id = "title_inkstained", kind = "title", name = "Ink-Stained", rarity = "epic", source = "achievement" },
+	{ id = "title_inkstained", kind = "title", name = "Writer's Callus", rarity = "epic", source = "achievement" },
 	{ id = "title_handcuffs", kind = "title", name = "Handcuffs", rarity = "epic", source = "achievement" },
 	-- Earned: the seven grey apples hidden in the lobby
 	{ id = "title_realmwalker", kind = "title", name = "Realm Walker", rarity = "rare", source = "achievement" },
@@ -1220,11 +1164,10 @@ Cosmetics.ITEMS = {
 	{ id = "title_rank_8", kind = "title", name = "Legendary Detective", rarity = "legendary", source = "rank" },
 } :: { Item }
 
-Cosmetics.KINDS = { "hat", "trail", "tie", "grimoire", "specter", "title", "writing", "verdict", "death", "emote" }
+Cosmetics.KINDS = { "hat", "tie", "grimoire", "specter", "title", "writing", "verdict", "death", "emote" }
 
 Cosmetics.KIND_NAMES = {
 	hat = "Hats",
-	trail = "Trails",
 	tie = "Ties",
 	grimoire = "Manual covers",
 	specter = "Deathsinger forms",
@@ -1243,7 +1186,7 @@ Cosmetics.SUITS = {
 	{ id = "today", name = "Today's hand", icon = "cards" },
 	{ id = "fate", name = "Fate", icon = "dice" },
 	{ id = "ledger", name = "Ledger", icon = "note" },
-	{ id = "wardrobe", name = "Wardrobe", icon = "fedora", kinds = { "hat", "tie", "trail" } },
+	{ id = "wardrobe", name = "Wardrobe", icon = "fedora", kinds = { "hat", "tie" } },
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },
@@ -1265,7 +1208,6 @@ Cosmetics.EMOTE_CATEGORIES = {
 -- One item of a kind ("Epic · Manual cover").
 Cosmetics.KIND_SINGULAR = {
 	hat = "Hat",
-	trail = "Trail",
 	tie = "Tie",
 	grimoire = "Manual cover",
 	specter = "Deathsinger form",
@@ -1330,12 +1272,6 @@ function Cosmetics.emote(clip: string): Item?
 		end
 	end
 	return nil
-end
-
--- An emote that can be a win scene (played by a winner in "The end", for everyone): not a stroll, not a duo,
--- and nothing that looks like one of a case's signals.
-function Cosmetics.winSceneOk(item: Item?): boolean
-	return item ~= nil and item.kind == "emote" and not item.stroll and not item.duo and not item.lobbyOnly
 end
 
 -- A thing sold only later (`later`): its price from its day on, else nil.

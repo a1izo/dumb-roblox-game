@@ -282,13 +282,10 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 	actionNote.Text = if at
 		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
 		else Keys.resolve("Pick a number to put it on your emote wheel ({key.wheel}).")
-	-- Its other uses, each a switch: your stance, your win scene.
+	-- Its other use, as a switch: your stance.
 	local switches = {}
 	if item.stance then
 		table.insert(switches, { label = "Stance", on = profile.stance == item.id, action = "stance" })
-	end
-	if Cosmetics.winSceneOk(item) then
-		table.insert(switches, { label = "Win scene", on = profile.winScene == item.id, action = "winScene" })
 	end
 	stanceHolder.Visible = #switches > 0
 	for index, switch in ipairs(switches) do

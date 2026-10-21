@@ -2,7 +2,8 @@
 -- Matching sets in the shop (the Sets suit): own every piece of one and its title is yours, with a
 -- "Set complete" on screen. Pieces are cosmetic ids (Shared/Cosmetics); a set's title is a title item
 -- whose source is "set". The last five are emote sets (a few of their pieces are only sold on the days
--- they are in Today's hand).
+-- they are in Today's hand). Film Noir, Gilded Age and Seeing Red lost their trail when trails left the game
+-- (2026-10-21).
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
@@ -14,7 +15,7 @@ Sets.LIST = {
 	{
 		id = "noir",
 		name = "Film Noir",
-		pieces = { "hat_fedora", "tie_black", "trail_smoke" },
+		pieces = { "hat_fedora", "tie_black" },
 		title = "title_set_noir",
 	},
 	{
@@ -26,13 +27,13 @@ Sets.LIST = {
 	{
 		id = "gilded",
 		name = "Gilded Age",
-		pieces = { "tie_gold", "trail_gold", "book_gold" },
+		pieces = { "tie_gold", "book_gold" },
 		title = "title_set_gilded",
 	},
 	{
 		id = "red",
 		name = "Seeing Red",
-		pieces = { "hat_fedora_crimson", "trail_crimson", "book_red" },
+		pieces = { "hat_fedora_crimson", "book_red" },
 		title = "title_set_red",
 	},
 	{

@@ -91,7 +91,7 @@ return function(t)
 			local from, to = Ledger.bounds(2)
 			expect(from).to.equal(start + 42 * DAY)
 			expect(to - from).to.equal(42 * DAY)
-			expect(Ledger.name(1)).to.equal("The Season of Ink")
+			expect(Ledger.name(1)).to.equal("The Season of Names")
 		end)
 		it("pays each tier once, coins or the season's things, and starts again in a new season", function()
 			local record = { season = 0, points = 0, tier = 0 }

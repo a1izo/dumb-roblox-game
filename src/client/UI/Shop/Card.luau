@@ -3,13 +3,13 @@
 -- colour, and written at the foot of the picture, so it never rests on colour alone:
 --
 --   Scrawl     a thin ash line
---   Inked      an ink-blue line and a stroke of ink under the picture
+--   Penned     a slate-blue line and a stroke under the picture
 --   Sealed     a violet frame inside the edge, ornate corners
 --   Condemned  that frame in amber, the grain of an old page, a slow shine passing over it
---   Godhood    a crimson edge with ink bleeding in from it, and motes of page drifting up
+--   Godhood    a crimson edge glowing in from it, and motes of page drifting up
 --   (no shine and no drifting under reduced motion)
 --
--- Objects (hats, ties, trails, Manual covers) are a small 3D view, and so are the styles and forms that
+-- Objects (hats, ties, Manual covers) are a small 3D view, and so are the styles and forms that
 -- have a prop of their own once the Core models are imported (a quill, a gavel, a chess king, a crow
 -- cloak...); an emote is a small pale mannequin caught in its move (Shop/PoseFigure), with its props; the
 -- rest is a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand can lie face
@@ -156,7 +156,7 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	local kind = item.kind
 	local key = propOf(item)
 	local figure = figureOf(item)
-	if kind ~= "hat" and kind ~= "tie" and kind ~= "trail" and kind ~= "grimoire" and not key and not figure then
+	if kind ~= "hat" and kind ~= "tie" and kind ~= "grimoire" and not key and not figure then
 		return nil, nil
 	end
 	local view = Create("ViewportFrame", {
@@ -199,24 +199,6 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 			Enum.Material.Fabric
 		)
 		frameView(view, holder, -16)
-	elseif kind == "trail" then
-		-- A ribbon flowing behind, its two colours running along it.
-		local colors = item.colors or { C.bone, C.dim }
-		local count = 10
-		for index = 0, count - 1 do
-			local t = index / (count - 1)
-			local x = (t - 0.5) * 3.2
-			local y = math.sin(t * math.pi * 1.6) * 0.45
-			local slope = math.cos(t * math.pi * 1.6) * 0.45 * math.pi * 1.6 / 3.2
-			part(
-				holder,
-				Vector3.new(0.36, 0.5 - t * 0.3, 0.05),
-				CFrame.new(x, y, 0) * CFrame.Angles(0, 0, math.atan(slope)),
-				colors[1]:Lerp(colors[2], t),
-				Enum.Material.Neon
-			)
-		end
-		frameView(view, holder, -8)
 	else
 		-- A Manual cover: the notebook everyone holds while writing, in its colour.
 		part(holder, Vector3.new(1.3, 0.14, 0.95), CFrame.new(), item.color or C.void, Enum.Material.SmoothPlastic)
@@ -344,10 +326,10 @@ local function shine(parent: GuiObject, color: Color3)
 	):Play()
 end
 
--- Inked: a stroke of ink under the picture, thick in the middle and running out at both ends.
-local function inkUnderline(face: Frame, color: Color3)
+-- Penned: a stroke under the picture, thick in the middle and running out at both ends.
+local function underline(face: Frame, color: Color3)
 	local stroke = Kit.Base.make("Frame", {
-		Name = "InkUnderline",
+		Name = "Underline",
 		BackgroundColor3 = color,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -387,13 +369,13 @@ local function grain(face: Frame, color: Color3)
 	})
 end
 
--- Godhood: ink bleeding in from the card's edges (the screen-edge shade in its colour, or two soft lines
+-- Godhood: a glow coming in from the card's edges (the screen-edge shade in its colour, or two soft lines
 -- inside the edge until the UI textures are in), and motes of page drifting up through it.
-local function bleed(face: Frame, color: Color3)
+local function glow(face: Frame, color: Color3)
 	local id = Textures.id("UiVignette")
 	if id ~= "" then
 		Kit.Base.make("ImageLabel", {
-			Name = "InkBleed",
+			Name = "EdgeGlow",
 			BackgroundTransparency = 1,
 			Image = id,
 			ImageColor3 = color,
@@ -403,8 +385,8 @@ local function bleed(face: Frame, color: Color3)
 			Parent = face,
 		})
 	else
-		line(face, 3, color, 0.45, 3).Name = "InkBleed"
-		line(face, 7, color, 0.75, 2).Name = "InkBleed"
+		line(face, 3, color, 0.45, 3).Name = "EdgeGlow"
+		line(face, 7, color, 0.75, 2).Name = "EdgeGlow"
 	end
 end
 
@@ -479,15 +461,15 @@ local function rarityTag(face: Frame, rarity: string)
 	})
 end
 
--- Dresses a card's face in its tier (Shared/Rarity): Scrawl a plain line; Inked an ink underline; Sealed an
--- ink-edged frame; Condemned that frame with page grain and a slow sheen; Godhood an edge bleeding ink and
+-- Dresses a card's face in its tier (Shared/Rarity): Scrawl a plain line; Penned an underline; Sealed a
+-- framed edge; Condemned that frame with page grain and a slow sheen; Godhood a glowing edge and
 -- motes of page. Returns the outer edge (it brightens when picked).
 local function dress(face: Frame, rarity: string): UIStroke
 	local rank = Rarity.rank(rarity)
 	local color = Rarity.color(rarity)
 	local edge = Kit.Base.stroke(face, color, if rank >= 3 then 1.5 else 1, restingEdge(rarity))
 	if rank == 2 then
-		inkUnderline(face, color)
+		underline(face, color)
 	end
 	if rank >= 3 then
 		line(face, 5, color, if rank >= 4 then 0.35 else 0.5)
@@ -498,7 +480,7 @@ local function dress(face: Frame, rarity: string): UIStroke
 		shine(face, color)
 	end
 	if rank == 5 then
-		bleed(face, color)
+		glow(face, color)
 		motes(face, color)
 	end
 	rarityTag(face, rarity)
@@ -778,7 +760,7 @@ function Card.setLive(self: Card, on: boolean)
 	end
 end
 
--- Bought: an ink seal stamped over the picture in the tier's colour, pressed down from a little above (simply
+-- Bought: a seal stamped over the picture in the tier's colour, pressed down from a little above (simply
 -- there under reduced motion), fading after a moment.
 local SEAL = 78
 function Card.seal(self: Card)

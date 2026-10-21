@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 4
+Migrations.CURRENT = 5
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -114,8 +114,6 @@ function Migrations.defaults(startingCoins: number)
 		keybinds = {},
 		-- The stance (an owned emote item that can be one), "" for none (Shared/Cosmetics `stance`).
 		stance = "",
-		-- The emote played in "The end" when you win (an owned one, Cosmetics.winSceneOk), "" for a cheer.
-		winScene = "",
 		-- The Season ledger (Progression/Ledger): the season it is for, its points and the tier paid up to.
 		ledger = { season = 0, points = 0, tier = 0 },
 		-- Browsing the shop (Shared/ShopBrowse): new cards already looked at, and the wishlist.
@@ -175,6 +173,22 @@ local STEPS: { [number]: (any) -> () } = {
 			games.riftBest = 0
 			games.diceBest = nil
 		end
+	end,
+	-- v4 -> v5 (2026-10-21, the owner's calls in the shop overhaul): trails left the game, with no refund, so the
+	-- trail ids and the trail slot go; and so does the win scene, the emote a winner played at the table in "The
+	-- end" (the table win pose was removed: winners cheer, and the win cutscenes replace it).
+	[4] = function(data)
+		if type(data.owned) == "table" then
+			for id in pairs(data.owned) do
+				if type(id) == "string" and string.sub(id, 1, 6) == "trail_" then
+					data.owned[id] = nil
+				end
+			end
+		end
+		if type(data.equipped) == "table" then
+			data.equipped.trail = nil
+		end
+		data.winScene = nil
 	end,
 }
 

@@ -33,7 +33,7 @@ return function(ctx: Common.Context)
 	})
 	Common.caption(
 		sample,
-		"page ink",
+		"page ink", -- terms:ok (the chromatography task keeps its ink)
 		{ align = Enum.TextXAlignment.Center, color = C.inkDim, Position = UDim2.fromOffset(0, 4) }
 	)
 	strip(sample, puzzle.sample, def.INKS, def.HEIGHTS)

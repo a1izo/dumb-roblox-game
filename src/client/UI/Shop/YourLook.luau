@@ -1,6 +1,6 @@
 -- "Your look" in the shop: a still copy of your own character in a 3D view, facing you at three
 -- quarters, wearing what you have equipped plus the item you are looking at: a hat, a tie or a Manual
--- cover on the copy, a trail as a ribbon flowing behind it, a Deathsinger form as the copy turned to a
+-- cover on the copy, a Deathsinger form as the copy turned to a
 -- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
 -- billboards). Styles and emotes play once when picked (again when picked again): an emote on the
 -- copy, all of it (with its props, sound and face, if it has them), a writing style writing a name on a strip of page, a verdict's little scene, a death style on
@@ -247,29 +247,8 @@ local function ghost(copy: Model, color: Color3?)
 	end
 end
 
--- A trail as a ribbon flowing out from the copy's waist, back and away to its side (straight behind,
--- the copy would hide it), its colours running along it.
-local function ribbon(holder: Model, torso: BasePart, item: Cosmetics.Item)
-	local colors = item.colors or { Color3.new(1, 1, 1), Color3.new(0.5, 0.5, 0.5) }
-	local count = 12
-	for index = 0, count - 1 do
-		local t = index / (count - 1)
-		local back = 0.7 + t * 4.2
-		local rise = math.sin(t * math.pi * 1.4) * 0.5 - t * 0.4
-		Create("Part", {
-			Anchored = true,
-			Size = Vector3.new(0.9 - t * 0.6, 0.06, 0.46),
-			Color = colors[1]:Lerp(colors[2], t),
-			Material = Enum.Material.Neon,
-			Transparency = 0.15 + t * 0.6,
-			CFrame = torso.CFrame * CFrame.new(-0.7 - t * 2.6, -0.6 + rise, 0.3 + back * 0.35),
-			Parent = holder,
-		})
-	end
-end
-
--- Builds what you wear that the copy cannot show by itself (a trail, a title) and the item you are
--- looking at onto it (hats, ties, the Manual's cover, a trail, a Deathsinger form, a title).
+-- Builds what you wear that the copy cannot show by itself (a title) and the item you are
+-- looking at onto it (hats, ties, the Manual's cover, a Deathsinger form, a title).
 local function dress(self: YourLook)
 	clearExtras(self)
 	local copy, world, item = self.copy, self.world, self.item
@@ -278,7 +257,6 @@ local function dress(self: YourLook)
 	end
 	local equipped = (self.profile and self.profile.equipped) or {}
 	local looking = item and item.kind
-	local trail = if looking == "trail" then item else Cosmetics.byId(equipped.trail)
 	local title = if looking == "title" then item else Cosmetics.byId(equipped.title)
 	self.titleLabel.Text = if title then title.name else ""
 	ghost(copy, if looking == "specter" and item then item.color else nil)
@@ -305,9 +283,6 @@ local function dress(self: YourLook)
 	end
 	local holder = Create("Model", { Name = "Trying", Parent = copy })
 	table.insert(self.extras, holder)
-	if trail and torso and torso:IsA("BasePart") then
-		ribbon(holder, torso, trail)
-	end
 	if not item then
 		return
 	end

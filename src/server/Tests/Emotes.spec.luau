@@ -196,18 +196,7 @@ return function(t)
 		end)
 	end)
 
-	describe("Win scenes and the shop window", function()
-		it("lets any emote be a win scene but strolls, duos and the case's signals", function()
-			for _, item in ipairs(Cosmetics.ofKind("emote")) do
-				local ok = not item.stroll and not item.duo and not item.lobbyOnly
-				expect(Cosmetics.winSceneOk(item)).to.equal(ok)
-			end
-			expect(Cosmetics.winSceneOk(Cosmetics.byId("emote_office_party"))).to.equal(true)
-			expect(Cosmetics.winSceneOk(Cosmetics.byId("emote_griddy"))).to.equal(false)
-			expect(Cosmetics.winSceneOk(Cosmetics.byId("emote_low_battery"))).to.equal(false)
-			expect(Cosmetics.winSceneOk(Cosmetics.byId("hat_fedora"))).to.equal(false)
-			expect(Cosmetics.winSceneOk(nil)).to.equal(false)
-		end)
+	describe("The shop window", function()
 		it("shows one emote a day in the window, the same for everyone, one body can play", function()
 			local shown = {}
 			for day = 20000, 20040 do

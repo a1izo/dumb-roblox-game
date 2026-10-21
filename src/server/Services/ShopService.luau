@@ -248,12 +248,6 @@ local function onRequest(player: Player, payload)
 		if data.equipped[item.kind] == item.id then
 			data.equipped[item.kind] = nil
 		end
-	elseif action == "winScene" then
-		-- An emote you own becomes what you play when you win (picked again: the cheer again).
-		if not Cosmetics.winSceneOk(item) or not CosmeticsService.owns(player, item) then
-			return
-		end
-		data.winScene = if data.winScene == item.id then "" else item.id
 	elseif action == "stance" then
 		-- An emote that can be a stance becomes yours (picked again: none).
 		if not item.stance or not CosmeticsService.owns(player, item) then

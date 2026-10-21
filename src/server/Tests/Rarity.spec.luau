@@ -1,4 +1,4 @@
--- The shop's five tiers (Shared/Rarity), pinned to the owner's choices of 2026-10-17: Scrawl, Inked, Sealed,
+-- The shop's five tiers (Shared/Rarity), pinned to the owner's choices of 2026-10-17: Scrawl, Penned (Inked until 2026-10-21), Sealed,
 -- Condemned and Godhood in their colours, crimson for Godhood alone; the four emotes with a private cutscene
 -- and nothing else in Godhood, Final Breakdown and Reaper's Eyes at 1500; Godhood counted with the legendary
 -- cards in Fate's deck; a confirm before buying Condemned or Godhood.
@@ -37,7 +37,7 @@ return function(t)
 				table.insert(names, Rarity.name(id))
 				table.insert(colours, hex(Rarity.color(id)))
 			end
-			expect(table.concat(names, ",")).to.equal("Scrawl,Inked,Sealed,Condemned,Godhood")
+			expect(table.concat(names, ",")).to.equal("Scrawl,Penned,Sealed,Condemned,Godhood")
 			expect(table.concat(colours, ",")).to.equal("A7A29A,6F93C2,9C7BEA,D9963F,A3192F")
 			expect(Cosmetics.RARITIES).to.equal(Rarity.ORDER)
 		end)

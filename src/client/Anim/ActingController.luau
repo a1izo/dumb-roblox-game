@@ -26,7 +26,6 @@ local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
 local DeathFx = require(script.Parent.Parent.Presentation.DeathFx)
 local PoseController = require(script.Parent.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
-local EmoteController = require(script.Parent.Parent.Controllers.EmoteController)
 
 local ActingController = {}
 
@@ -215,32 +214,19 @@ local function onHandoff(cue)
 	paper:Destroy()
 end
 
--- What a body does in "The end" (cue data: winners, winner, handUserId, winScenes): its clip, and whether that
--- is its win scene. The Hand laughs when it won and kneels when it lost; another winner plays their win
--- scene, or else a cheer; the rest hang their heads. Picked from the cue and the user id, so every screen
--- shows the same.
-function ActingController.endingPose(userId: number, data: { [string]: any }, cueId: number): (string, boolean)
+-- What a body does in "The end" (cue data: winners, winner, handUserId): its clip. The Hand laughs when it
+-- won and kneels when it lost; another winner cheers; the rest hang their heads. Picked from the cue and the
+-- user id, so every screen shows the same.
+function ActingController.endingPose(userId: number, data: { [string]: any }, cueId: number): string
 	local handId = tonumber(data.handUserId)
 	if userId == handId then
-		return if data.winner ~= "Team" then "laugh" else "slump", false
+		return if data.winner ~= "Team" then "laugh" else "slump"
 	end
 	local won = type(data.winners) == "table" and table.find(data.winners, userId) ~= nil
 	if not won then
-		return Activities.pick(Activities.DEFEAT, cueId, userId), false
+		return Activities.pick(Activities.DEFEAT, cueId, userId)
 	end
-	if type(data.winScenes) == "table" then
-		for _, scene in ipairs(data.winScenes) do
-			if
-				type(scene) == "table"
-				and tonumber(scene.userId) == userId
-				and type(scene.emote) == "string"
-				and PoseController.exists(scene.emote)
-			then
-				return scene.emote, true
-			end
-		end
-	end
-	return Activities.pick(Activities.VICTORY, cueId, userId), false
+	return Activities.pick(Activities.VICTORY, cueId, userId)
 end
 
 local function onOutro(cue)
@@ -253,18 +239,12 @@ local function onOutro(cue)
 	for _, entry in ipairs(ClientState.public.players) do
 		local character = characterOf(entry.userId)
 		if character and entry.alive then
-			local poseId, scene = ActingController.endingPose(entry.userId, data, tonumber(cue.id) or 1)
+			local poseId = ActingController.endingPose(entry.userId, data, tonumber(cue.id) or 1)
 			PoseController.play(character, poseId, {
-				startAt = os.clock() - (if scene then 0 else math.random() * 0.4),
+				startAt = os.clock() - math.random() * 0.4,
 				fadeIn = 0.5,
 				duration = length,
 			})
-			if scene then
-				-- A win scene comes with its props, face and effect (no music: the ending has its own).
-				EmoteController.dress(character, poseId)
-				EmoteController.face(character, poseId)
-				EmoteController.effect(character, poseId)
-			end
 		end
 	end
 end

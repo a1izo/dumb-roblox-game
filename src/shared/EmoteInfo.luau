@@ -40,7 +40,7 @@ export type Info = {
 }
 
 -- Effects by rarity, when the clip's description does not say (the VFX ladder: Scrawl motion accents only,
--- Inked one small accent, Sealed a tailored effect with light, Condemned layered, Godhood the cutscene).
+-- Penned one small accent, Sealed a tailored effect with light, Condemned layered, Godhood the cutscene).
 local FX_BY_RARITY: { [string]: number } = { common = 0, rare = 1, epic = 2, legendary = 3, godhood = 4 }
 
 local cache: { [string]: Info } = {}

@@ -99,7 +99,7 @@ return {
 	menacingPose2 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose3" } },
 	menacingPose3 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose" } },
 	lowBatteryCharge = { fx = 1 },
-	-- (the branch is not an item of its own: its effect takes the emote's rarity, Inked)
+	-- (the branch is not an item of its own: its effect takes the emote's rarity, Penned)
 	excuseMeSirUp = { fx = 1 },
 	preDawnBonk = {
 		props = {
