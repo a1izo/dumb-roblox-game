@@ -152,8 +152,9 @@ local function figureOf(item: Cosmetics.Item): Model?
 		end
 		return if seated then seated:Clone() else nil
 	end
-	local clip = item.emote
-	if item.kind ~= "emote" or not clip then
+	-- (a win cutscene's card: its star in the key pose)
+	local clip = if item.kind == "win" then item.clip else item.emote
+	if (item.kind ~= "emote" and item.kind ~= "win") or not clip then
 		return nil
 	end
 	local figure = figures[item.id]

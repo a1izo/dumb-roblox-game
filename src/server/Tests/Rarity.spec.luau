@@ -67,9 +67,11 @@ return function(t)
 			expect(luma(crimson) < luma(danger)).to.equal(true)
 		end)
 
-		it("puts exactly the four emotes with a private cutscene in Godhood", function()
+		it("puts exactly the four emotes with a private cutscene, and a win cutscene a side, in Godhood", function()
+			-- (the win cutscenes' Godhood ones: the owner's Q13, 2026-10-20)
+			local WIN_GODHOOD = { win_coven_god = true, win_bureau_mate = true }
 			for _, item in ipairs(Cosmetics.ITEMS) do
-				expect(item.rarity == "godhood").to.equal(GODHOOD[item.id] == true)
+				expect(item.rarity == "godhood").to.equal(GODHOOD[item.id] == true or WIN_GODHOOD[item.id] == true)
 				if GODHOOD[item.id] then
 					expect(EmoteInfo.of(item.emote).cinematic).to.equal(true)
 				end

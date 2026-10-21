@@ -200,6 +200,32 @@ Assets.sfx = {
 	crows = { id = "", ref = "a flock of crows taking off, wings and caws", fallbackId = "", volume = 0.7 },
 	stoneCrack = { id = "", ref = "stone grinding and cracking, grit settling", fallbackId = "", volume = 0.7 },
 	stringsSnap = { id = "", ref = "taut strings twanging and snapping", fallbackId = "", volume = 0.6 },
+	-- The paid win cutscenes (Shared/Cinema/WinCuts `sounds`): silent until the owner picks them.
+	winRain = { id = "", ref = "rain on a tall window at night, steady, a room's quiet", fallbackId = "", volume = 0.5 },
+	winBookShut = { id = "", ref = "a heavy leather book snapped shut", fallbackId = "", volume = 0.8 },
+	winCandleOut = { id = "", ref = "a candle flame snuffed, a soft puff", fallbackId = "", volume = 0.5 },
+	winThunder = { id = "", ref = "close thunder after a lightning flash, a long roll", fallbackId = "", volume = 0.8 },
+	winWind = { id = "", ref = "high wind across a rooftop at night, a city far below", fallbackId = "", volume = 0.5 },
+	winPagesTear = { id = "", ref = "many pages tearing loose at once, a rush of paper", fallbackId = "", volume = 0.7 },
+	winCityDie = {
+		id = "",
+		ref = "a city's hum dying away, power going down block by block",
+		fallbackId = "",
+		volume = 0.6,
+	},
+	winGodhood = { id = "", ref = "one deep choir swell with a low impact", fallbackId = "", volume = 0.7 },
+	winOfficeHum = { id = "", ref = "a quiet office at night: a lamp's buzz, a clock", fallbackId = "", volume = 0.4 },
+	winStringSnap = { id = "", ref = "a taut string snapping, a quick whip", fallbackId = "", volume = 0.6 },
+	winStamp = { id = "", ref = "a rubber stamp slammed on paper on a wooden desk", fallbackId = "", volume = 0.8 },
+	winVoid = { id = "", ref = "a vast empty hall, low air, distant wind", fallbackId = "", volume = 0.4 },
+	winKingFall = {
+		id = "",
+		ref = "a huge stone piece tipping and grinding as it falls",
+		fallbackId = "",
+		volume = 0.7,
+	},
+	winShatter = { id = "", ref = "glass and stone shattering into a rain of shards", fallbackId = "", volume = 0.8 },
+	winPiecesLight = { id = "", ref = "a row of soft bright chimes rising", fallbackId = "", volume = 0.5 },
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

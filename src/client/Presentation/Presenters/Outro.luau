@@ -1,10 +1,13 @@
 -- The ending. Everyone still standing is gathered round the table, each celebrating or
--- despairing in their own way (ActingController). The camera stands in the middle of the table,
+-- despairing in their own way (ActingController). It opens on the winning side's lead's win cutscene when
+-- they wear one (Presentation/WinCinema, for everyone), else the camera stands in the middle of the table,
 -- under the ceiling, and turns slowly across their faces while the winning side is written in;
 -- then Death's Manual lies open on every name written in it this match, those that killed struck
--- through (when any name was written), in the Hand's writing style; then the lights find the Hand, and
--- when the Bureau won, Ace's verdict style lands beside them. Winners and losers each hear their own
--- music; the roster and rewards follow on the results screen.
+-- through (when any name was written), in the Hand's writing style; when the Bureau won without a cutscene
+-- of Ace's, the lights find Ace at the table; then they find the Hand, and when the Bureau won, Ace's verdict
+-- style lands beside them. Winners and losers each hear their own music; the roster and rewards follow on
+-- the results screen (where another winner's own win cutscene plays first, on their screen alone).
+-- The seconds of each part come from the server (RoundService's plan: data.timing).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,6 +27,7 @@ local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local Styles = require(script.Parent.Parent.Styles)
+local WinCinema = require(script.Parent.Parent.WinCinema)
 
 local C = Kit.color
 local LocalPlayer = Players.LocalPlayer
@@ -77,9 +81,25 @@ return function(cue)
 			table.insert(lines, { text = entry.name, struck = entry.struck == true })
 		end
 	end
-	local bookTime = if #lines > 0 then ManualTiming.OUTRO else 0
-	local firstShot = (left - bookTime) * 0.5
-	if center then
+	local timing = if type(data.timing) == "table" then data.timing else {}
+	local bookTime = if #lines > 0 then tonumber(timing.book) or ManualTiming.OUTRO else 0
+	local aceTime = tonumber(timing.ace) or 0
+	local firstShot = tonumber(timing.opening) or (left - bookTime) * 0.5
+	-- (another winner's own win cutscene comes before their results)
+	if participant and won and type(data.private) == "table" then
+		for _, entry in ipairs(data.private) do
+			if type(entry) == "table" and tonumber(entry.userId) == LocalPlayer.UserId then
+				WinCinema.pendingPrivate = entry.cut
+			end
+		end
+	end
+	local centrepiece = if type(data.centrepiece) == "string" then data.centrepiece else nil
+	local stopCut: (() -> ())? = nil
+	if centrepiece and WinCinema.get(centrepiece) then
+		-- the lead's win cutscene, on everyone's screen, from the cue's start (it takes the camera itself)
+		CameraDirector.release(token)
+		stopCut = WinCinema.play(centrepiece, { userId = tonumber(data.lead), at = cue.at, wait = false })
+	elseif center then
 		table.insert(cleanup, sweep(token, center, firstShot))
 	end
 	local winnerName = if handWon then Terms.role("Kira", "Name") else Terms.side("Team", "Name")
@@ -101,6 +121,12 @@ return function(cue)
 	for index = #cleanup, 1, -1 do
 		cleanup[index]()
 	end
+	if stopCut then
+		-- (the cutscene over: the camera back for the names and the lights)
+		stopCut()
+		token = CameraDirector.take(math.max(1, endAt - workspace:GetServerTimeNow()) + 0.5)
+		Cinema.letterbox(true)
+	end
 	cleanup = {}
 	if untint then
 		table.insert(cleanup, untint)
@@ -112,6 +138,31 @@ return function(cue)
 		local stop = BookStage.play(token, lines, bookTime - 0.4, writing)
 		task.wait(bookTime)
 		stop()
+	end
+
+	-- Ace, under the lights, when the Bureau won (and no win cutscene of theirs already showed them).
+	local ace = if aceTime > 0 then Cinema.character(tonumber(data.aceUserId)) else nil
+	if ace then
+		local aceCleanup: { () -> () } = {}
+		Sfx.play("gavel")
+		table.insert(aceCleanup, Cinema.spotlight(ace, Color3.new(1, 1, 1)))
+		table.insert(aceCleanup, Cinema.outline(ace, C.white))
+		CameraDirector.cut(token, ShotSolver.frame(ace, { distance = 8, height = 1.6, angle = -18 }), 50)
+		CameraDirector.move(token, ShotSolver.frame(ace, { distance = 5.5, height = 1, angle = -8 }), aceTime * 0.9, 42)
+		table.insert(
+			aceCleanup,
+			Cinema.card({
+				kicker = Terms.f("{Zero}"),
+				title = if type(data.leadAlias) == "string" then data.leadAlias else "",
+				color = C.void,
+				textColor = C.white,
+				y = 0.74,
+			})
+		)
+		task.wait(aceTime)
+		for index = #aceCleanup, 1, -1 do
+			aceCleanup[index]()
+		end
 	end
 
 	-- The Hand, under the lights.

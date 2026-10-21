@@ -18,6 +18,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
+local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
 local Util = require(Shared:WaitForChild("Util"))
 local WinConditions = require(Shared:WaitForChild("WinConditions"))
 
@@ -356,6 +357,59 @@ local function outroLength(): number
 	return if base > 0 and #Match.written > 0 then base + ManualTiming.OUTRO else base
 end
 
+-- Seconds of Ace's spotlight in the Bureau's ending (when Ace stands at the table and no win cutscene of theirs
+-- already shows them).
+local ACE_SHOT = 2.5
+
+-- The winning side's lead (the owner's Q27, 2026-10-21): Diavolo for the Coven; for the Bureau its Ace, the one the
+-- Butler named last when one was (never a Coven player named as a fake Ace), alive or dead. Nil when there is none.
+local function sideLead(winner: string)
+	if winner ~= "Team" then
+		return Match.findRole("Kira")
+	end
+	local lead = nil
+	for _, ps in ipairs(Match.list) do
+		if ps.role == "L" and (not lead or (ps.appointedAt or 0) > (lead.appointedAt or 0)) then
+			lead = ps
+		end
+	end
+	return lead
+end
+
+-- How the ending goes (Presenters/Outro): the opening is the lead's win cutscene for everyone when they wear one (else
+-- the sweep round the table), then the page of names, then Ace's spotlight (the Bureau's default), then Diavolo
+-- under the lights. Every other winner who wears a win cutscene sees theirs on their own screen as the results come.
+local function outroPlan(winner: string)
+	local base = outroLength()
+	local book = if base > 0 and #Match.written > 0 then ManualTiming.OUTRO else 0
+	local half = math.max(0, base - book) / 2
+	local side = if winner == "Team" then "bureau" else "coven"
+	local lead = sideLead(winner)
+	local cut = if lead and lead.player and lead.player.Parent then CosmeticsService.winCut(lead.player, side) else nil
+	local cutLength = if cut then WinCuts[cut] and WinCuts[cut].length or 0 else 0
+	local opening = if cutLength > 0 then cutLength else half
+	-- (Ace's spotlight: the Bureau won with no win cutscene of Ace's, and Ace stands at the table)
+	local ace = if winner == "Team" and cutLength == 0 and base > 0 and lead and lead.alive then ACE_SHOT else 0
+	local private = {}
+	for _, ps in ipairs(Match.list) do
+		if ps ~= lead and ps.player and (winner == "Team") ~= Match.isKiraSide(ps) then
+			local mine = CosmeticsService.winCut(ps.player, side)
+			if mine then
+				table.insert(private, { userId = ps.userId, cut = mine })
+			end
+		end
+	end
+	return {
+		lead = if lead then lead.userId else nil,
+		leadAlias = if lead then lead.alias else nil,
+		centrepiece = if cutLength > 0 then cut else nil,
+		timing = { opening = opening, book = book, ace = ace, hand = half },
+		aceUserId = if ace > 0 and lead then lead.userId else nil,
+		private = private,
+		length = if base > 0 then opening + book + ace + half else 0,
+	}
+end
+
 -- The ending cutscene: everyone still standing is gathered in the meeting room, the camera
 -- finds the Hand, and each side hears its own music.
 local function outroData(winner: string)
@@ -396,7 +450,14 @@ local function startOutro()
 		return -- ended from the debug panel: straight to the lobby
 	end
 	local data = outroData(Match.winner or "Kira")
-	data.duration = outroLength()
+	local plan = outroPlan(Match.winner or "Kira")
+	data.duration = plan.length
+	data.lead = plan.lead
+	data.leadAlias = plan.leadAlias
+	data.centrepiece = plan.centrepiece
+	data.timing = plan.timing
+	data.aceUserId = plan.aceUserId
+	data.private = plan.private
 	Cues.fire("outro", data, { lead = 0.3 })
 end
 
@@ -536,7 +597,7 @@ end
 -- After a winner: let the last cutscene finish, play the outro, then show the results.
 local function finale()
 	Cues.waitHolds(6)
-	runPhase("Outro", startOutro, nil, { uncuttable = true, length = outroLength() })
+	runPhase("Outro", startOutro, nil, { uncuttable = true, length = outroPlan(Match.winner or "Kira").length })
 	reveal()
 end
 

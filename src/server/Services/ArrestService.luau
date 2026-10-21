@@ -199,6 +199,7 @@ function ArrestService.appoint(butler, chosen)
 	Match.successionUsed = true
 	chosen.isAce = true
 	chosen.arrestUsed = false
+	chosen.appointedAt = os.clock() -- (the Bureau's lead at the end is the Ace named last: RoundService)
 	if Match.isKiraSide(chosen) then
 		chosen.fakeAce = true
 		Match.notify(

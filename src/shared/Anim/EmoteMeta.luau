@@ -940,4 +940,58 @@ return {
 			},
 		},
 	},
+	-- The paid win cutscenes' star (Shared/Cinema/WinCuts: the sets, the camera and the effects; the clips in
+	-- art/scripts/emotes/wins.py): only what the star holds is here.
+	winFinalPage = {
+		props = {
+			{
+				model = "Pen",
+				size = 1.07,
+				stand = { shape = "Cylinder", size = { 0.9, 0.09, 0.09 }, color = { 14, 14, 16 } },
+				mount = "Right Arm",
+				at = { { p = { 0.059, -1.196, 0.07 } }, { r = { -28.17, -34.21, 36.39 } } }, -- (Furious Scribbling's grip)
+				hide = 2.3,
+			},
+		},
+	},
+	winNewWorld = {
+		props = {
+			-- Death's Manual carried shut to the edge, upright against the outside of the left hand
+			{
+				model = "Grimoire",
+				size = 1.7,
+				stand = { shape = "Block", size = { 0.24, 1.7, 1.15 }, color = { 22, 22, 26 } },
+				mount = "Left Arm",
+				at = { { p = { -0.66, -1.3, 0 } }, { r = { 0, 90, 0 } }, { r = { 90, 0, 0 } } },
+				hide = 2.8,
+			},
+			-- then held open before the chest (its pages tear loose: WinCinema), in Furious Scribbling's grip
+			{
+				model = "Grimoire",
+				size = 1.7,
+				open = 2.9,
+				show = 2.8,
+				stand = { shape = "Block", size = { 1.6, 0.14, 1.2 }, color = { 22, 22, 26 } },
+				mount = "Left Arm",
+				at = { { p = { 0.147, -0.898, -0.538 } }, { r = { -27.52, 13.58, -24.27 } } }, -- (Furious Scribbling's)
+			},
+		},
+		-- the open book rests on its hand, and the right hand turns it open
+		allow = {
+			{ prop = 2, part = "Left Arm", from = 2.8, to = 8 },
+			{ prop = 2, part = "Right Arm", from = 2.8, to = 3.3 },
+		},
+	},
+	winCaseClosed = {
+		props = {
+			{
+				model = "SugarCube",
+				size = 0.3,
+				stand = { shape = "Block", size = { 0.3, 0.3, 0.3 }, color = { 240, 238, 232 } },
+				mount = "Right Arm",
+				at = { { p = { 0, -1.15, -0.05 } } }, -- (Sugar Tower's carry)
+				show = 5.75,
+			},
+		},
+	},
 }

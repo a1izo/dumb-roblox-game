@@ -8,7 +8,7 @@
 --           section in the shop: dance, pose, prop, stroll or duo; `lobbyOnly` when it looks like a
 --           game signal, a death, an arrest or the Eyes, so it is never played in a match), seat (how you sit
 --           at the war table for a meeting: `clip`, Shared/Seating), chair (what your place at the table
---           becomes, for everyone: `model`)
+--           becomes, for everyone: `model`), win (a win cutscene: `side`, `cut`; worn in its side's `slot`)
 --   rarity  common, rare, epic, legendary, godhood (shown as Scrawl, Penned, Sealed, Condemned, Godhood:
 --           Shared/Rarity)
 --   source  shop (always for sale), rotation (for sale on days it is featured), free (everyone's), vip
@@ -1064,6 +1064,93 @@ Cosmetics.ITEMS = {
 		added = "2026-10-14",
 	},
 
+	-- Win cutscenes (shop overhaul, 2026-10-21): what the ending shows when your side wins and you lead it (Diavolo
+	-- for the Coven, Ace for the Bureau: for everyone), or on your own screen when another of your side leads. Each
+	-- side has its own (`side`, worn in its own slot, `slot`); the free one is the ending as it always was. `cut` is
+	-- the cutscene (Shared/Cinema/WinCuts), `clip` its star's move (the shop card's mannequin).
+	{
+		id = "win_coven_default",
+		kind = "win",
+		name = "The Coven's Night",
+		rarity = "common",
+		source = "free",
+		side = "coven",
+		slot = "winCoven",
+		blurb = "The ending you know: the table, the names, the spotlight.",
+		added = "2026-10-21",
+	},
+	{
+		id = "win_coven_page",
+		kind = "win",
+		name = "The Final Page",
+		rarity = "epic",
+		source = "shop",
+		price = 750,
+		side = "coven",
+		slot = "winCoven",
+		cut = "finalPage",
+		clip = "winFinalPage",
+		card = 3.5, -- (the shop card's moment)
+		blurb = "The last name, the Manual snapped shut, the candles going out one by one.",
+		added = "2026-10-21",
+	},
+	{
+		id = "win_coven_god",
+		kind = "win",
+		name = "God of the New World",
+		rarity = "godhood",
+		source = "shop",
+		price = 1500,
+		side = "coven",
+		slot = "winCoven",
+		cut = "newWorld",
+		clip = "winNewWorld",
+		card = 7.0, -- (the shop card's moment)
+		blurb = "A rooftop under a red sky: the pages tear loose and the city goes dark below you.",
+		added = "2026-10-21",
+	},
+	{
+		id = "win_bureau_default",
+		kind = "win",
+		name = "The Bureau's Morning",
+		rarity = "common",
+		source = "free",
+		side = "bureau",
+		slot = "winBureau",
+		blurb = Terms.f("The ending you know, with {Zero}'s own spotlight."),
+		added = "2026-10-21",
+	},
+	{
+		id = "win_bureau_closed",
+		kind = "win",
+		name = "Case Closed",
+		rarity = "epic",
+		source = "shop",
+		price = 750,
+		side = "bureau",
+		slot = "winBureau",
+		cut = "caseClosed",
+		clip = "winCaseClosed",
+		card = 6.8, -- (the shop card's moment)
+		blurb = "The strings snap towards one photo, and the stamp comes down on the file.",
+		added = "2026-10-21",
+	},
+	{
+		id = "win_bureau_mate",
+		kind = "win",
+		name = "Checkmate",
+		rarity = "godhood",
+		source = "shop",
+		price = 1500,
+		side = "bureau",
+		slot = "winBureau",
+		cut = "checkmate",
+		clip = "winCheckmate",
+		card = 3.9, -- (the shop card's moment)
+		blurb = "One finger tips the giant black king, and it shatters on the board.",
+		added = "2026-10-21",
+	},
+
 	-- Seats (shop overhaul, 2026-10-21): how you sit at the war table for a meeting and the vote (`clip`, a loop made
 	-- for the war chair's seat, Shared/Seating), and the chair your place there becomes for everyone (`model`, a Core
 	-- prop built to the same seat; `core` the Core version it came in: an older import keeps the war chair).
@@ -1284,7 +1371,7 @@ Cosmetics.ITEMS = {
 } :: { Item }
 
 Cosmetics.KINDS =
-	{ "hat", "tie", "grimoire", "specter", "title", "writing", "verdict", "death", "emote", "seat", "chair" }
+	{ "hat", "tie", "grimoire", "specter", "title", "writing", "verdict", "death", "emote", "win", "seat", "chair" }
 
 Cosmetics.KIND_NAMES = {
 	hat = "Hats",
@@ -1296,6 +1383,7 @@ Cosmetics.KIND_NAMES = {
 	verdict = "Verdict styles",
 	death = "Death styles",
 	emote = "Emotes",
+	win = "Win cutscenes",
 	seat = "Seats",
 	chair = "Chairs",
 }
@@ -1313,6 +1401,7 @@ Cosmetics.SUITS = {
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },
 	{ id = "emotes", name = "Emotes", icon = "palm", kinds = { "emote" } },
+	{ id = "wins", name = "Win cutscenes", icon = "flag", kinds = { "win" } },
 	{ id = "seats", name = "Seats", icon = "podium", kinds = { "seat", "chair" } },
 	{ id = "titles", name = "Titles", icon = "trophy", kinds = { "title" } },
 	{ id = "sets", name = "Sets", icon = "set" },
@@ -1339,6 +1428,7 @@ Cosmetics.KIND_SINGULAR = {
 	verdict = "Verdict style",
 	death = "Death style",
 	emote = "Emote",
+	win = "Win cutscene",
 	seat = "Seat",
 	chair = "Chair",
 }
@@ -1377,6 +1467,11 @@ function Cosmetics.suitOf(item: Item): Suit?
 		end
 	end
 	return nil
+end
+
+-- The profile's `equipped` key an item is worn under: its kind, or its own slot (a win cutscene: one per side).
+function Cosmetics.slotOf(item: Item): string
+	return if type(item.slot) == "string" then item.slot else item.kind
 end
 
 function Cosmetics.ofKind(kind: string): { Item }

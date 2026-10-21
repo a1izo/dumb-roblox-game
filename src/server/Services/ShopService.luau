@@ -234,7 +234,7 @@ local function onRequest(player: Player, payload)
 				"good"
 			)
 		else
-			data.equipped[item.kind] = item.id
+			data.equipped[Cosmetics.slotOf(item)] = item.id
 			Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")
 		end
 		CosmeticsService.grantSets(player)
@@ -243,10 +243,11 @@ local function onRequest(player: Player, payload)
 		if item.kind == "emote" or not CosmeticsService.owns(player, item) then
 			return
 		end
-		data.equipped[item.kind] = item.id
+		data.equipped[Cosmetics.slotOf(item)] = item.id
 	elseif action == "unequip" then
-		if data.equipped[item.kind] == item.id then
-			data.equipped[item.kind] = nil
+		local slot = Cosmetics.slotOf(item)
+		if data.equipped[slot] == item.id then
+			data.equipped[slot] = nil
 		end
 	elseif action == "stance" then
 		-- An emote that can be a stance becomes yours (picked again: none).

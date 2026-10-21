@@ -3,6 +3,7 @@
 -- key events on the right, and your rewards. On a phone the two pages stack. The winner line glitches
 -- every couple of seconds.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -16,6 +17,7 @@ local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local UiSound = require(script.Parent.Core.UiSound)
+local WinCinema = require(script.Parent.Parent.Presentation.WinCinema)
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -316,9 +318,20 @@ function RevealScreen.init()
 	Kit.Layout.watch(layout)
 
 	Net.event("Reveal").OnClientEvent:Connect(function(payload)
-		if type(payload) == "table" then
-			RevealScreen.show(payload)
+		if type(payload) ~= "table" then
+			return
 		end
+		-- (a winner's own win cutscene first, on this screen alone, then the results: the owner's Q29)
+		local private = WinCinema.pendingPrivate
+		WinCinema.pendingPrivate = nil
+		if private and WinCinema.get(private) then
+			task.spawn(function()
+				WinCinema.play(private, { userId = Players.LocalPlayer.UserId, wait = true })
+				RevealScreen.show(payload)
+			end)
+			return
+		end
+		RevealScreen.show(payload)
 	end)
 	ClientState.PhaseChanged:Connect(function(phase)
 		if phase == "Briefing" then

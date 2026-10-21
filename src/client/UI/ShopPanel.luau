@@ -50,6 +50,7 @@ local Keys = require(script.Parent.Parent.Input.Keys)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Card = require(script.Parent.Shop.Card)
+local WinCinema = require(script.Parent.Parent.Presentation.WinCinema)
 local YourLook = require(script.Parent.Shop.YourLook)
 
 local ShopRequest = Net.event("ShopRequest")
@@ -110,6 +111,9 @@ local price: (Cosmetics.Item) -> number?
 local isDeal: (Cosmetics.Item) -> boolean
 
 local function owns(profile, item): boolean
+	if item.source == "free" then
+		return true
+	end
 	if item.source == "vip" then
 		return table.find(profile.passes or {}, "vip") ~= nil
 	end
@@ -228,7 +232,7 @@ local function chipFor(profile, item: Cosmetics.Item): (string, string)
 	if owns(profile, item) and item.kind == "emote" then
 		return if EmoteWheel.slotOf(profile.emoteWheel, item.emote) then "On wheel" else "Owned", "check"
 	elseif owns(profile, item) then
-		return if profile.equipped[item.kind] == item.id then "Worn" else "Owned", "check"
+		return if profile.equipped[Cosmetics.slotOf(item)] == item.id then "Worn" else "Owned", "check"
 	elseif item.source == "vip" then
 		return "VIP", "lock"
 	elseif not price(item) then
@@ -333,14 +337,30 @@ local function showAction(profile, item: Cosmetics.Item?)
 			Kit.button({ text = text, variant = "secondary", size = "m", Size = size, Parent = actionHolder })
 		Kit.setEnabled(button, false)
 	end
+	-- a win cutscene: watch it first, starring you (the shop steps aside while it plays)
+	if item.kind == "win" and type(item.cut) == "string" then
+		Kit.button(
+			{ text = "Preview", variant = "secondary", size = "m", Size = size, Parent = actionHolder },
+			function()
+				Router.close("shop")
+				WinCinema.preview(item.cut, function()
+					if Router.open("shop") ~= false then
+						ShopPanel.showSuit("wins")
+					end
+				end)
+			end
+		)
+	end
 	if owns(profile, item) and item.kind == "emote" then
 		wheelSlots(profile, item)
 	elseif owns(profile, item) then
-		if profile.equipped[item.kind] == item.id then
-			press("Take off", "unequip", "ghost")
-			actionNote.Text = "You are wearing it."
+		-- (seats and win cutscenes are used, not worn)
+		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"
+		if profile.equipped[Cosmetics.slotOf(item)] == item.id then
+			press(if used then "Stop using" else "Take off", "unequip", "ghost")
+			actionNote.Text = if used then "You are using it." else "You are wearing it."
 		else
-			press("Wear", "equip", "primary")
+			press(if used then "Use" else "Wear", "equip", "primary")
 		end
 	elseif item.source == "vip" then
 		closed("VIP pass")

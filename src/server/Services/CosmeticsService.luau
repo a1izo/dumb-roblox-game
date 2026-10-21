@@ -53,9 +53,10 @@ function CosmeticsService.owns(player: Player, item: Cosmetics.Item): boolean
 	return data.owned[item.id] == true
 end
 
+-- What the player wears of a kind (or in a slot: a win cutscene's side, "winCoven" / "winBureau").
 local function equipped(player: Player, data, kind: string): Cosmetics.Item?
 	local item = Cosmetics.byId(data.equipped[kind])
-	if item and item.kind == kind and CosmeticsService.owns(player, item) then
+	if item and Cosmetics.slotOf(item) == kind and CosmeticsService.owns(player, item) then
 		return item
 	end
 	return nil
@@ -162,6 +163,14 @@ function CosmeticsService.seatClip(player: Player): string
 	local data = DataService.get(player)
 	local seat = if data then equipped(player, data, "seat") else nil
 	return if seat and type(seat.clip) == "string" then seat.clip else Seating.DEFAULT
+end
+
+-- The win cutscene this player wears for a side ("coven" or "bureau"): its cutscene (Shared/Cinema/WinCuts), or nil
+-- for the ending as it always was.
+function CosmeticsService.winCut(player: Player, side: string): string?
+	local data = DataService.get(player)
+	local item = if data then equipped(player, data, if side == "coven" then "winCoven" else "winBureau") else nil
+	return if item and type(item.cut) == "string" then item.cut else nil
 end
 
 -- The chair this player's place at the war table becomes, or nil for the war chair.
