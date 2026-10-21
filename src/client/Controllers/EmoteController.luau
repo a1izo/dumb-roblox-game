@@ -66,7 +66,7 @@ export type Session = {
 	from: string?, -- the emote whose press-to-do moment played it (EmoteInfo `context`)
 	handle: PoseController.Handle?,
 	camera: ((atOnce: boolean?) -> ())?, -- the camera's way back (Presentation/EmoteCinema, EmoteCamera)
-	wisp: boolean?, -- ends in the ink wisp it began with
+	wisp: boolean?, -- ends in the wisp of dust it began with
 	cleanups: { () -> () },
 	connections: { RBXScriptConnection },
 }
@@ -859,7 +859,7 @@ function EmoteController.start(character: Model, clip: string, options: StartOpt
 			finish(session, "gone")
 		end)
 	)
-	-- Every emote begins and ends in the ink wisp (a stance does not: it is how you stand).
+	-- Every emote begins and ends in a wisp of dust (a stance does not: it is how you stand).
 	if not opts.silent then
 		session.wisp = true
 		EmoteFx.wisp(character)

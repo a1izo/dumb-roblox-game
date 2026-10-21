@@ -237,14 +237,19 @@ FX.reapersEyes = function(character, preview)
 	end
 end
 
--- Just As Planned, timed to the clip (art/scripts/emotes/poses.py): ink spreads across the floor round him and
--- motes of it drift up; the eye catches red at the stare (2.05 s) and at the last look (7.75 s); a red light
--- comes up under the face with the grin (3.55 s); the laugh (4.95 s) bursts a ring of ink out across the floor
--- with a pulse of the light; everything sinks away as he comes to rest (8.4 s). Under reduced motion there is
--- no burst and no pulse.
+-- Just As Planned, timed to the clip (art/scripts/emotes/poses.py): a pool of crimson light spreads across the
+-- floor round him and embers drift up off it; the eye catches red at the stare (2.05 s) and at the last look
+-- (7.75 s); a red light comes up under the face with the grin (3.55 s); the laugh (4.95 s) bursts a ring of light
+-- out across the floor with a spray of embers and a pulse of the light; it all dies down as he comes to rest
+-- (8.4 s). Under reduced motion there is no burst and no pulse.
 local CRIMSON = Color3.fromRGB(163, 25, 47)
-local INK = Color3.fromRGB(10, 10, 14)
+local EMBERS = ColorSequence.new(Color3.fromRGB(255, 92, 70), Color3.fromRGB(70, 62, 62))
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+
+-- A flat disc `d` studs across (a cylinder lying on the floor).
+local function disc(d: number): Vector3
+	return Vector3.new(0.04, d, d)
+end
 
 FX.justAsPlanned = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -270,16 +275,16 @@ FX.justAsPlanned = function(character, preview)
 		TweenService:Create(instance, TweenInfo.new(seconds, style or Enum.EasingStyle.Sine), goal):Play()
 	end
 
-	-- the ink on the floor: the splat texture on a flat plate, or a dark disc when the texture is not imported
+	-- the pool of crimson light on the floor, tinting it
 	local floor = floorUnder(root.Position, character)
-	local splat = Assets.texture("InkSplat1")
 	local pool = keep(Create("Part", {
-		Name = "EmoteInkPool",
-		Size = Vector3.new(0.2, 0.04, 0.2),
-		CFrame = CFrame.new(floor + Vector3.new(0, 0.03, 0)) * CFrame.Angles(0, math.rad(math.random(0, 359)), 0),
-		Color = INK,
-		Material = Enum.Material.SmoothPlastic,
-		Transparency = if splat ~= "" then 1 else 0.3,
+		Name = "EmotePlanGlow",
+		Shape = Enum.PartType.Cylinder,
+		Size = disc(0.2),
+		CFrame = CFrame.new(floor + Vector3.new(0, 0.03, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = CRIMSON,
+		Material = Enum.Material.Neon,
+		Transparency = 0.84,
 		Anchored = true,
 		CanCollide = false,
 		CanQuery = false,
@@ -287,29 +292,21 @@ FX.justAsPlanned = function(character, preview)
 		CastShadow = false,
 		Parent = workspace.CurrentCamera,
 	}) :: BasePart)
-	local decal: Decal? = nil
-	if splat ~= "" then
-		decal = Create("Decal", {
-			Face = Enum.NormalId.Top,
-			Texture = splat,
-			Color3 = INK,
-			Transparency = 0.12,
-			Parent = pool,
-		}) :: Decal
-	end
-	tween(pool, 1.3, { Size = Vector3.new(8.5, 0.04, 8.5) }, Enum.EasingStyle.Quart)
+	local tint = Create("PointLight", { Color = CRIMSON, Range = 9, Brightness = 0, Shadows = false, Parent = pool })
+	tween(pool, 1.3, { Size = disc(8.5) }, Enum.EasingStyle.Quart)
+	tween(tint, 1.3, { Brightness = 1.2 })
 
-	-- motes of ink drifting up off the pool the whole time
-	local inkDrop = Assets.texture("InkDrop")
+	-- embers drifting up off it the whole time
 	local motes = keep(Create("ParticleEmitter", {
-		Texture = if inkDrop ~= "" then inkDrop else SPARKLE,
-		Color = ColorSequence.new(INK),
+		Texture = SPARKLE,
+		Color = EMBERS,
+		LightEmission = 0.7,
 		Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 1),
 			NumberSequenceKeypoint.new(0.2, 0.35),
 			NumberSequenceKeypoint.new(1, 1),
 		}),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0.45) }),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0.05) }),
 		Lifetime = NumberRange.new(1.6, 2.6),
 		Speed = NumberRange.new(0.6, 1.4),
 		Acceleration = Vector3.new(0, 1.2, 0),
@@ -382,11 +379,11 @@ FX.justAsPlanned = function(character, preview)
 		tween(below, 0.8, { Brightness = 2.2 })
 	end)
 
-	-- the laugh: a ring of ink bursts out across the floor, the pool flares, the light pulses
+	-- the laugh: a ring of light bursts out across the floor, the pool flares, the light pulses
 	at(4.95, function()
-		tween(pool, 0.35, { Size = Vector3.new(11.5, 0.04, 11.5) }, Enum.EasingStyle.Back)
+		tween(pool, 0.35, { Size = disc(11.5) }, Enum.EasingStyle.Back)
 		at(0.45, function()
-			tween(pool, 1.2, { Size = Vector3.new(9, 0.04, 9) })
+			tween(pool, 1.2, { Size = disc(9) })
 		end)
 		if calm then
 			return
@@ -394,7 +391,7 @@ FX.justAsPlanned = function(character, preview)
 		below.Brightness = 6
 		tween(below, 0.9, { Brightness = 2.6 })
 		local ring = keep(Create("Part", {
-			Name = "EmoteInkRing",
+			Name = "EmotePlanRing",
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(0.05, 2, 2),
 			CFrame = CFrame.new(floor + Vector3.new(0, 0.06, 0)) * CFrame.Angles(0, 0, math.rad(90)),
@@ -410,14 +407,15 @@ FX.justAsPlanned = function(character, preview)
 		}) :: BasePart)
 		tween(ring, 0.7, { Size = Vector3.new(0.05, 22, 22), Transparency = 1 }, Enum.EasingStyle.Quart)
 		local splash = Create("ParticleEmitter", {
-			Texture = if inkDrop ~= "" then inkDrop else SPARKLE,
-			Color = ColorSequence.new(INK),
+			Texture = SPARKLE,
+			Color = EMBERS,
+			LightEmission = 0.8,
 			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.15) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0.05) }),
 			Lifetime = NumberRange.new(0.6, 1.0),
 			Speed = NumberRange.new(9, 15),
 			Drag = 3,
-			Acceleration = Vector3.new(0, -14, 0),
+			Acceleration = Vector3.new(0, 2, 0),
 			SpreadAngle = Vector2.new(80, 80),
 			EmissionDirection = Enum.NormalId.Top,
 			Rotation = NumberRange.new(0, 360),
@@ -431,15 +429,12 @@ FX.justAsPlanned = function(character, preview)
 		tween(below, 0.6, { Brightness = 0.8 })
 	end)
 
-	-- the ink sinks away as he comes to rest
+	-- it all dies down as he comes to rest
 	at(8.4, function()
 		motes.Rate = 0
 		tween(below, 0.6, { Brightness = 0 })
-		tween(pool, 0.8, { Size = Vector3.new(0.2, 0.04, 0.2) }, Enum.EasingStyle.Quart)
-		local fadeOut = decal
-		if fadeOut then
-			tween(fadeOut, 0.8, { Transparency = 1 })
-		end
+		tween(tint, 0.8, { Brightness = 0 })
+		tween(pool, 0.8, { Size = disc(0.2), Transparency = 1 }, Enum.EasingStyle.Quart)
 	end)
 
 	return function()
@@ -451,8 +446,9 @@ FX.justAsPlanned = function(character, preview)
 end
 
 -- Diavolo's Potato Chip, timed to the clip (art/scripts/emotes/props.py): at the bite (7.05 s) the crisp bursts
--- into glittering crumbs and a warm light flares on the face (no flare under reduced motion); as he stands, ink
--- spreads under the desk (8.9 s) for it to sink into (EmoteMeta `sink`, 9.1 s), then draws back in (10.1 s).
+-- into glittering crumbs and a warm light flares on the face (no flare under reduced motion); as he stands, a
+-- low cloud of grey dust rises round the desk (8.95 s) as it all sinks into the floor (EmoteMeta `sink`, 9.1 s),
+-- and settles (9.5 s).
 FX.chipAndPen = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	local head = character:FindFirstChild("Head")
@@ -504,36 +500,13 @@ FX.chipAndPen = function(character, preview)
 			TweenService:Create(flare, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
 		end
 	end)
-	-- the ink under the desk
-	local splat = Assets.texture("InkSplat2")
-	local pool = Create("Part", {
-		Name = "EmoteInkPool",
-		Size = Vector3.new(0.2, 0.04, 0.2),
-		CFrame = CFrame.new(floor + Vector3.new(0, 0.03, 0)) * CFrame.Angles(0, yaw, 0) * CFrame.new(0, 0, -0.4),
-		Color = INK,
-		Material = Enum.Material.SmoothPlastic,
-		Transparency = 1,
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		CastShadow = false,
-		Parent = workspace.CurrentCamera,
-	}) :: BasePart
-	table.insert(made, pool)
-	if splat ~= "" then
-		Create("Decal", { Face = Enum.NormalId.Top, Texture = splat, Color3 = INK, Transparency = 0.1, Parent = pool })
-	else
-		pool.Transparency = 0.3
-	end
-	at(8.9, function()
-		TweenService:Create(pool, TweenInfo.new(0.5, Enum.EasingStyle.Quart), { Size = Vector3.new(9, 0.04, 9) }):Play()
+	-- the dust round the desk as it goes down
+	local desk = CFrame.new(floor) * CFrame.Angles(0, yaw, 0) * CFrame.new(0, 0, -0.4)
+	at(8.95, function()
+		EmoteFx.thud(desk, 7)
 	end)
-	at(10.1, function()
-		TweenService:Create(pool, TweenInfo.new(0.3), { Size = Vector3.new(0.2, 0.04, 0.2) }):Play()
-	end)
-	at(10.4, function()
-		pool:Destroy()
+	at(9.5, function()
+		EmoteFx.thud(desk, 5)
 	end)
 	return function()
 		gone = true
@@ -658,9 +631,9 @@ FX.puppetDance = function(character, preview)
 	end
 end
 
--- Write in the Air, timed to the clip (art/scripts/emotes/older.py): the fingertip writes in glowing red ink that
--- hangs where it was written and fades (0.4 to 1.95 s: the name, then its underline), a red light on the finger
--- as it writes; the full stop (2.3 s) flares the light and spatters the ink.
+-- Write in the Air, timed to the clip (art/scripts/emotes/older.py): the fingertip writes a line of pale light
+-- that hangs where it was written and fades (0.4 to 1.95 s: the name, then its underline), as a sparkler would,
+-- a warm light on the finger as it writes; the full stop (2.3 s) flares the light with a burst of sparks.
 FX.writeAir = function(character, preview)
 	local arm = character:FindFirstChild("Right Arm")
 	if preview or not arm or not arm:IsA("BasePart") then
@@ -671,14 +644,14 @@ FX.writeAir = function(character, preview)
 	local function over()
 		return gone
 	end
-	local tip = Create("Attachment", { Name = "EmoteInk", Position = Vector3.new(0, -1.1, 0), Parent = arm })
+	local tip = Create("Attachment", { Name = "EmoteWriting", Position = Vector3.new(0, -1.1, 0), Parent = arm })
 	tip:SetAttribute("DGEmote", true)
-	local red = Color3.fromRGB(230, 36, 56)
+	local pale = Color3.fromRGB(255, 240, 214)
 	local glow = textureOr("SoulGlow", SPARKLE)
-	local ink = Create("ParticleEmitter", {
+	local line = Create("ParticleEmitter", {
 		Name = "Writing",
 		Texture = glow,
-		Color = ColorSequence.new(red),
+		Color = ColorSequence.new(pale),
 		LightEmission = 1,
 		LightInfluence = 0,
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.12) }),
@@ -696,7 +669,7 @@ FX.writeAir = function(character, preview)
 	local spatter = Create("ParticleEmitter", {
 		Name = "FullStop",
 		Texture = SPARKLE,
-		Color = ColorSequence.new(red),
+		Color = ColorSequence.new(pale, Color3.fromRGB(255, 196, 120)),
 		LightEmission = 0.8,
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0) }),
 		Lifetime = NumberRange.new(0.35, 0.6),
@@ -707,21 +680,21 @@ FX.writeAir = function(character, preview)
 		Parent = tip,
 	}) :: ParticleEmitter
 	local light = Create("PointLight", {
-		Color = Color3.fromRGB(255, 50, 64),
+		Color = Color3.fromRGB(255, 226, 180),
 		Range = 6,
 		Brightness = 0,
 		Shadows = false,
 		Parent = tip,
 	}) :: PointLight
 	after(arm, over, 0.4, function()
-		ink.Enabled = true
+		line.Enabled = true
 		TweenService:Create(light, TweenInfo.new(0.3), { Brightness = 1.4 }):Play()
 	end)
 	after(arm, over, 1.95, function()
-		ink.Enabled = false
+		line.Enabled = false
 	end)
 	after(arm, over, 2.3, function()
-		ink:Emit(4)
+		line:Emit(4)
 		if calm then
 			return
 		end
@@ -1194,13 +1167,13 @@ FX.deducing = accent(4.0, { 1.1, 3.1 }, function(character)
 	end
 end)
 
--- Reaper's Cackle: a breath of black ink off the shoulders with each burst of the laugh, rising.
-local INK_RISE = ColorSequence.new(Color3.fromRGB(20, 18, 24), Color3.fromRGB(60, 20, 30))
+-- Reaper's Cackle: a breath of dark smoke off the shoulders with each burst of the laugh, rising.
+local SMOKE_RISE = ColorSequence.new(Color3.fromRGB(46, 44, 48), Color3.fromRGB(96, 92, 96))
 FX.reapersCackle = accent(1.6, { 0.0, 0.4, 0.8, 1.2 }, function(character)
 	local torso = character:FindFirstChild("Torso")
 	if torso and torso:IsA("BasePart") then
 		burst((torso.CFrame * CFrame.new(0, 1.1, 0)).Position, {
-			color = INK_RISE,
+			color = SMOKE_RISE,
 			count = 6,
 			size = 0.45,
 			speed = NumberRange.new(1, 2.5),
@@ -1213,8 +1186,8 @@ FX.reapersCackle = accent(1.6, { 0.0, 0.4, 0.8, 1.2 }, function(character)
 end)
 
 -- Final Breakdown: a red light from below the face comes up as the laugh is held in; it flares as he is thrown
--- back (2.25 s) with a ring of dark dust out across the floor and black ink pouring up off him while he laughs;
--- everything sinks away as he folds over (4.2 s). Under reduced motion there is no flare.
+-- back (2.25 s) with a ring of dark dust out across the floor and dark smoke pouring up off him while he laughs;
+-- everything dies away as he folds over (4.2 s). Under reduced motion there is no flare.
 FX.finalBreakdown = function(character, preview)
 	local head = character:FindFirstChild("Head")
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -1238,8 +1211,8 @@ FX.finalBreakdown = function(character, preview)
 	}) :: PointLight
 	TweenService:Create(light, TweenInfo.new(1.5, Enum.EasingStyle.Sine), { Brightness = 2.2 }):Play()
 	local pour = Create("ParticleEmitter", {
-		Texture = SPARKLE,
-		Color = INK_RISE,
+		Texture = textureOr("Smoke", "rbxasset://textures/particles/smoke_main.dds"),
+		Color = SMOKE_RISE,
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.1) }),
 		Lifetime = NumberRange.new(0.8, 1.3),
 		Speed = NumberRange.new(1.5, 3),
@@ -1524,9 +1497,9 @@ FX.twoFingerGrip = function(character, preview)
 	end
 end
 
--- Furious Scribbling: ink flecks off the pen, and on the Manual's open page the name being written, stroke by
--- stroke, line by line (the page the game writes on: ManualBook.page).
-local INK_FLECK = ColorSequence.new(Color3.fromRGB(12, 10, 14))
+-- Furious Scribbling: shavings of paper scratched up off the page by the pen, and on the Manual's open page the
+-- name being written, stroke by stroke, line by line (the page the game writes on: ManualBook.page).
+local SHAVINGS = ColorSequence.new(Color3.fromRGB(236, 226, 200), Color3.fromRGB(200, 186, 150))
 -- The Death's Manual held in the hand (a rigged book among the emote's props).
 local function heldManual(character: Model): Model?
 	for _, item in ipairs(character:GetChildren()) do
@@ -1600,7 +1573,7 @@ FX.furiousScribbling = function(character, preview)
 	if not preview then
 		onBeats(arm, over, 2.4, { 0.4, 1.2, 2.0 }, nil, function()
 			burst((arm.CFrame * CFrame.new(0, -1.6, -0.3)).Position, {
-				color = INK_FLECK,
+				color = SHAVINGS,
 				count = 4,
 				size = 0.12,
 				speed = NumberRange.new(1, 2.5),
@@ -1616,7 +1589,7 @@ FX.furiousScribbling = function(character, preview)
 	end
 end
 
--- WRITE IT: the name written huge in red, the slash flaring red across the page with a spray of ink.
+-- WRITE IT: the name written huge in red, the slash flaring red across the page with a spray of red sparks.
 FX.furiousScribblingSlash = function(character, preview)
 	local arm = character:FindFirstChild("Right Arm")
 	if not arm or not arm:IsA("BasePart") then
@@ -2201,9 +2174,6 @@ function EmoteFx.thud(at: CFrame, size: number)
 	-- (Roblox's own smoke before the Core set is imported: the dances' step dust needs it from the start)
 	local texture = Assets.texture("Smoke")
 	if texture == "" then
-		texture = Assets.texture("InkDrop")
-	end
-	if texture == "" then
 		texture = "rbxasset://textures/particles/smoke_main.dds"
 	end
 	local holder = Create("Part", {
@@ -2243,29 +2213,18 @@ function EmoteFx.thud(at: CFrame, size: number)
 	end)
 end
 
--- The ink wisp: every emote begins and ends in a little breath of ink round the feet, rising and gone (the Core
--- set's ink texture; nothing before it is imported, on low graphics, or under reduced motion).
-local WISP_TEXTURES = { "InkDrop", "Smoke" }
+-- The wisp: every emote begins and ends in a little breath of pale grey dust round the feet, rising and gone
+-- (the Core set's smoke, else Roblox's own; nothing on low graphics or under reduced motion).
 function EmoteFx.wisp(character: Model)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if not root or not root:IsA("BasePart") or Governor.low("emoteFx") or Motion.isReduced() then
 		return
 	end
-	local texture = ""
-	for _, name in ipairs(WISP_TEXTURES) do
-		texture = Assets.texture(name)
-		if texture ~= "" then
-			break
-		end
-	end
-	if texture == "" then
-		return
-	end
 	local at = Create("Attachment", { Name = "EmoteWisp", Position = Vector3.new(0, -2.6, 0), Parent = root })
 	at:SetAttribute("DGEmote", true)
 	local emitter = Create("ParticleEmitter", {
-		Texture = texture,
-		Color = ColorSequence.new(Color3.fromRGB(12, 12, 16)),
+		Texture = textureOr("Smoke", "rbxasset://textures/particles/smoke_main.dds"),
+		Color = ColorSequence.new(Color3.fromRGB(168, 166, 170)),
 		Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 0.55),
 			NumberSequenceKeypoint.new(0.7, 0.75),

@@ -273,10 +273,6 @@ Assets.outfit = {
 -- (on quads named Tex_<name>), so these ids are only needed if you upload the PNGs yourself.
 -- Empty = use the imported one, or Roblox's default particle when nothing is imported.
 Assets.textures = {
-	InkSplat1 = "",
-	InkSplat2 = "",
-	InkSplat3 = "",
-	InkDrop = "",
 	RainStreak = "",
 	Smoke = "",
 	SoulGlow = "",
