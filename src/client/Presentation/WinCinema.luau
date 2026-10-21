@@ -115,7 +115,7 @@ local EMIT = {
 			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/sparkles_main.dds",
 			Color = ColorSequence.new(Color3.fromRGB(170, 184, 210)),
 			Size = NumberSequence.new(0.06),
-			Squash = NumberSequence.new(-3),
+			Squash = NumberSequence.new(6), -- (long along the fall, as the maps' rain: World/RainController)
 			Orientation = Enum.ParticleOrientation.VelocityParallel,
 			Transparency = NumberSequence.new({
 				NumberSequenceKeypoint.new(0, 0.5),

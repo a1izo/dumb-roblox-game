@@ -718,69 +718,27 @@ watch_.build()
 
 # Strolls -------------------------------------------------------------------------------------------------
 # A stroll is two clips: `<name>`, played standing still (a loop), and `<name>Walk`, a walk cycle the game
-# plays instead of its own walk and run while the stroll lasts (LocomotionController; picked again, another
-# emote, or 30 s end it). The cycles are built like the game's own (gait.py): soles planted while down, so
-# feet never slide, and a stride long enough for the game's full speed (16 studs a second).
+# plays instead of its own walk and run while the stroll lasts (LocomotionController). The standing clips are here;
+# the walks are the game's own cycles (locomotion.Cycle), in emotes/strolls.py.
 
-from gait import Gait, build_cycle, wave  # noqa: E402
-
-
-def stroll(gait, pose, samples=40):
-    """The walk cycle of a stroll: pose(phase) -> (upper body joints, root, offset); the legs follow the soles."""
-
-    def full(phase):
-        joints, root, offset = pose(phase)
-        joints = dict(joints, root=root)
-        joints.update(gait.legs(phase, root, offset))
-        return joints, offset
-
-    return build_cycle(gait, samples, full)
-
-
-# The Long Climb: climbing an endless stair with a blank stare (the face), the knees coming up high and
-# slow, one arm hanging dead still, the body rising with each step.
-CLIMB = Gait("theLongClimbWalk", period=0.62, stride=9.6, stance=0.55, lift=0.95,
-             note="Climbing an endless stair: high slow knees, one arm hanging dead still, a blank stare.")
-
-
-def climb_pose(phase):
-    bob = math.cos(4 * math.pi * (phase - 0.15))
-    root = (-6 + 1.0 * bob, 3 * wave(phase, 0.05), 1.2 * wave(phase, 0.1))
-    offset = (0.03 * wave(phase, 0.1), -0.06 + 0.12 * bob, 0.0)
-    swing = wave(phase, 0.1)
-    joints = dict(neck=(-6, -0.6 * root[1], 0), rShoulder=J((2, 0, 4)),
-                  lShoulder=J((6 + 10 * swing, 0, -4), (0, 0, -0.04 * swing)))
-    return joints, root, offset
-
-
-stroll(CLIMB, climb_pose)
-climb = Motion("theLongClimb", 1.6, loop=True, note="Climbing a stair on the spot: high slow knees, a dead arm, a blank stare.")
+# The Long Climb (Subaru's stair climb: the owner's Q24/Q38, after JJS's "Aura monster"): climbing an endless
+# stair that is not there, on level ground, the walk going by itself (emotes/strolls.py); the knees coming up high,
+# the body leaning into the climb and rising onto each step, both arms pumping against the legs, a blank stare (the
+# face). Its green steps under each footfall and the giant image behind are its effect (Controllers/EmoteFx).
+climb = Motion("theLongClimb", 1.84, loop=True, note="Climbing a stair on the spot: high knees, rising onto each "
+               "step, the arms pumping, a blank stare.")
 for i in range(4):
-    t = i * 0.4
+    t = i * 0.46
     up = i % 2 == 0
-    climb.key(t, offset=(0, 0.06 if up else -0.04, 0), root=(-6, 0, 0), neck=(-6, 0, 0), rShoulder=J((2, 0, 4)),
-              lShoulder=J((6 + (8 if up else -8), 0, -4)))
-raise_leg(climb, "rHip", 0.0, 0.2, 0.3, 0.5, J((44, 0, 4), (0, 0.62, -0.12)))
-raise_leg(climb, "lHip", 0.8, 1.0, 1.1, 1.3, J((44, 0, -4), (0, 0.62, -0.12)))
-soft(climb, head=1.6, arms=1.6).plant(stance=0.06)
+    climb.key(t, offset=(0, 0.12 if up else -0.02, 0), root=(-9, 0, 0), neck=(-4, 0, 0),
+              rShoulder=J((10 + (28 if up else -24), 0, 5)), lShoulder=J((10 - (28 if up else -24), 0, -5)))
+raise_leg(climb, "rHip", 0.0, 0.23, 0.32, 0.55, J((62, 0, 4), (0, 0.66, -0.14)))
+raise_leg(climb, "lHip", 0.92, 1.15, 1.24, 1.47, J((62, 0, -4), (0, 0.66, -0.14)))
+soft(climb, head=1.6, arms=1.4).plant(stance=0.06)
 climb.build()
 
 # Parade March: stiff and upright, arms swinging high and straight in time; standing, marking time, then
 # the high kick straight up and held, then to attention.
-MARCH = Gait("paradeMarchWalk", period=0.6, stride=9.6, stance=0.5, lift=0.62,
-             note="A stiff parade march: upright, arms swinging high and straight in time.")
-
-
-def march_pose(phase):
-    bob = math.cos(4 * math.pi * (phase - 0.1))
-    root = (1, 0, 0)
-    offset = (0, -0.04 + 0.05 * bob, 0.0)
-    swing = wave(phase, 0.0)
-    joints = dict(neck=(2, 0, 0), rShoulder=J((-44 * swing, 0, 4)), lShoulder=J((44 * swing, 0, -4)))
-    return joints, root, offset
-
-
-stroll(MARCH, march_pose)
 parade = Motion("paradeMarch", 3.2, loop=True, note="Marking time stiffly, then a high kick straight up, held, then attention.")
 for i in range(4):
     t = i * 0.4
@@ -801,21 +759,7 @@ parade.build()
 
 # Mushroom Stroll: an easy, unbothered walk with a stick over the shoulder (a mushroom tied to it), the
 # other arm swinging a little; standing, swaying, looking about.
-MUSHROOM = Gait("mushroomStrollWalk", period=0.6, stride=9.6, stance=0.6, lift=0.32,
-                note="An easy, unbothered walk with a stick over the shoulder.")
 STICK_ARM = J((72, 0, -14), (-0.15, 0.1, -0.1))
-
-
-def mushroom_pose(phase):
-    bob = math.cos(4 * math.pi * (phase - 0.15))
-    root = (-2 + 0.6 * bob, 3 * wave(phase, 0.05), 1.0 * wave(phase, 0.1))
-    offset = (0.04 * wave(phase, 0.12), -0.06 - 0.04 * bob, 0.0)
-    swing = wave(phase, 0.1)
-    joints = dict(neck=(3, -0.6 * root[1], 0), rShoulder=STICK_ARM, lShoulder=J((4 + 14 * swing, 0, -4)))
-    return joints, root, offset
-
-
-stroll(MUSHROOM, mushroom_pose)
 mushroom = Motion("mushroomStroll", 3.0, loop=True, note="Standing easy with a stick over the shoulder, swaying, looking about.")
 for t, look in ((0.0, 0), (1.0, 14), (2.0, -4)):  # (a glance to the stick side would put the head into it)
     mushroom.key(t, offset=(0.04 * math.sin(t * 2), -0.02, 0), root=(-1, 0, 2 * math.sin(t * 2)), neck=(2, look, 0),
@@ -825,20 +769,7 @@ mushroom.build()
 
 # Not My Problem: a shrug, then the lazy slouch of somebody walking away from it all, hands in the
 # pockets; standing, the shrug now and then.
-SLOUCH = Gait("notMyProblemWalk", period=0.7, stride=9.0, stance=0.62, lift=0.24,
-              note="A lazy slouch, hands in the pockets, walking away from it all.")
 POCKET_R, POCKET_L = J((8, 0, -4), (-0.08, 0.12, -0.02)), J((8, 0, 4), (0.08, 0.12, -0.02))
-
-
-def slouch_pose(phase):
-    bob = math.cos(4 * math.pi * (phase - 0.2))
-    root = (-12 + 0.8 * bob, 3 * wave(phase, 0.05), 2.0 * wave(phase, 0.1))
-    offset = (0.05 * wave(phase, 0.12), -0.1 - 0.04 * bob, 0.0)
-    joints = dict(neck=(-6, -0.5 * root[1], 7), rShoulder=POCKET_R, lShoulder=POCKET_L)
-    return joints, root, offset
-
-
-stroll(SLOUCH, slouch_pose)
 shrugger = Motion("notMyProblem", 3.0, loop=True, note="A shrug, palms out, then slouched with hands in the pockets.")
 shrugger.key(0.0, offset=(0, -0.06, 0), root=(-10, 0, 0), neck=(-6, 0, 7), rShoulder=POCKET_R, lShoulder=POCKET_L)
 shrugger.key(0.4, "out", offset=(0, -0.02, 0), root=(-4, 0, 3), neck=(0, 0, 9), rShoulder=J((34, -20, 30), (0.05, 0.2, -0.08)),

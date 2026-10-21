@@ -202,7 +202,7 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 - **Emotes**: Q (or Emotes in the lobby menu) opens the emote wheel, a revolver's cylinder of eight
   emotes you choose in the shop's Your look, played with a click, a tap or 1 to 8; More lists all of
   yours. 70 in all (11 everyone's, 59 from the shop in five tiers, Scrawl to Godhood): dances in step,
-  poses with a press-to-do moment, prop emotes, strolls you steer, duos (a real Match Point rally, a
+  poses with a press-to-do moment, prop emotes, strolls that walk by themselves, duos (a real Match Point rally, a
   high five) and group dances. The four Godhood ones play a private cutscene for their owner in the
   lobby. In a case they play from the waist up at the meeting, stop for every scene everyone sees, and
   the few that look like a death, an arrest or the Eyes are lobby-only. Sounds and faces for them go in

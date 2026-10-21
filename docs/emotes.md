@@ -14,7 +14,7 @@ each one, the camera, the effects, and how an emote is made and checked. Rebuilt
 | Dances (19) | The Classic, Office Party, Bunny Ears, Jackpot Shuffle, Rat Dance, Goal Celebration, ... | Several motion-captured from footage (`art/refs/mocap`); loops play on a shared beat, so everyone doing one is in step. |
 | Poses (19) | Just As Planned, New World, Final Breakdown, Reaper's Eyes, Menacing Pose, Low Battery, Chair Perch, ... | Held moments, many with a press-to-do moment. |
 | Prop emotes (14) | Pre-Dawn Bonk, Sugar Tower, Dice Tower, Furious Scribbling, Apple Toss, Strawberry on Top, Potato chip, ... | Props from the Core set held, carried, stacked, tossed, opened or set on the floor. |
-| Strolls (5) | The Long Climb, Parade March, Griddy, Mushroom Stroll, Not My Problem | Walk styles: the player steers. |
+| Strolls (5) | The Long Climb, Parade March, Griddy, Mushroom Stroll, Not My Problem | Walk styles that walk by themselves. |
 | Duos (2 + the 2 free) | Match Point, Cuffed Together | Played by two. |
 
 Every shop emote has a rarity (`src/shared/Rarity.luau`), the same five tiers as every other shop item:
@@ -101,9 +101,15 @@ branch some of the time). A branch with a context of its own can be pressed agai
 
 ## Strolls, duos and group dances
 
-- **Strolls** are a standing loop (`<clip>`) and a walk cycle (`<clip>Walk`) that replaces the walk while the
-  `Stroll` attribute is on (30 s, or until picked again). The player steers; backwards and sideways use the
-  movement set.
+- **Strolls** are a standing loop (`<clip>`) and a walk cycle (`<clip>Walk`, the game's own `locomotion.Cycle`,
+  in `art/scripts/emotes/strolls.py`) that replaces the walk while the `Stroll` attribute is on. The body walks by
+  itself (`Controllers/StrollWalker`) at the stroll's `pace` (Cosmetics: 4 to 9 studs a second) along the way it
+  faced when it began, sliding along walls and turning back at a ledge or a wall met head-on, with no time limit.
+  It ends when the player steers or jumps, uses a game action (`InputRouter.Ran`: a note, the Eyes, a sabotage,
+  an arrest) or a prompt, plays another emote or picks the stroll again; the emote wheel, Help, the scratchpad,
+  the Grimoire, chat, Escape, the camera and shift lock never end it. The Long Climb's effect (green-edged steps
+  under each footfall, the giant grinning image behind, green rain) is in `Controllers/EmoteFx`; its grin is the
+  `manicGrin` face slot in `Shared/EmoteMedia`.
 - **Duos**: the nearest player within 10 studs is asked and has 15 s to answer. Match Point is a real rally (the
   server keeps the ball; a press as it reaches your racket sends it back, a little quicker each time; the first
   miss ends it). Cuffed Together chains the one asked to the leader (a jump, another emote or 12 studs apart

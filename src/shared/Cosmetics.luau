@@ -975,7 +975,8 @@ Cosmetics.ITEMS = {
 		face = "stare",
 		added = "2026-10-14",
 	},
-	-- The emote pack: strolls (`stroll`: your walk while it lasts; the clip `<emote>Walk` is its walk).
+	-- The emote pack: strolls (`stroll`: your walk while it lasts, walking by itself at `pace`; the clip
+	-- `<emote>Walk` is its walk).
 	{
 		id = "emote_the_long_climb",
 		kind = "emote",
@@ -986,6 +987,7 @@ Cosmetics.ITEMS = {
 		price = 1000,
 		emote = "theLongClimb",
 		stroll = true,
+		pace = 5, -- studs a second it walks by itself (Controllers/StrollWalker)
 		face = "deadpan",
 		added = "2026-10-14",
 	},
@@ -999,6 +1001,7 @@ Cosmetics.ITEMS = {
 		price = 900,
 		emote = "paradeMarch",
 		stroll = true,
+		pace = 5.5, -- studs a second it walks by itself (Controllers/StrollWalker)
 		added = "2026-10-14",
 	},
 	{
@@ -1011,6 +1014,7 @@ Cosmetics.ITEMS = {
 		price = 900,
 		emote = "griddy",
 		stroll = true,
+		pace = 9, -- studs a second it walks by itself (Controllers/StrollWalker)
 		added = "2026-10-14",
 	},
 	{
@@ -1023,6 +1027,7 @@ Cosmetics.ITEMS = {
 		price = 1000,
 		emote = "mushroomStroll",
 		stroll = true,
+		pace = 4.5, -- studs a second it walks by itself (Controllers/StrollWalker)
 		added = "2026-10-14",
 	},
 	{
@@ -1035,6 +1040,7 @@ Cosmetics.ITEMS = {
 		price = 900,
 		emote = "notMyProblem",
 		stroll = true,
+		pace = 4, -- studs a second it walks by itself (Controllers/StrollWalker)
 		added = "2026-10-14",
 	},
 	-- The emote pack: duos (`duo`: played with the nearest player, who is asked first; DuoService).

@@ -9,7 +9,7 @@
 --     group dance with a `formation` walks each joiner to a free place round the first dancer, up to six) and
 --     for an emote's press-to-do moment (Shared/EmoteInfo `context`: one press, in its window, plays its branch);
 --   strolls: not sent, an attribute on the body ("Stroll", the clip) that every client walks it in, until it is
---     picked again, another emote is played, or STROLL_SECONDS go by.
+--     picked again, another emote is played, or the player's own client asks to stop (Controllers/StrollWalker).
 -- Everyone's emotes stop when a cutscene everyone sees begins, and when the case moves to the meeting or a
 -- cutscene phase.
 
@@ -39,32 +39,23 @@ local EmoteRemote = Net.event("Emote")
 
 local EmoteService = {}
 
-local STROLL_SECONDS = 30
 local JOIN_REACH = 12 -- studs: how near a dancer you must be to join in
 local FORMATION_WALK = 4 -- seconds to walk to a place in a group dance's formation
 
-local strollTokens: { [Player]: number } = {}
 local cutsceneUntil = 0
 
 export type Current = { clip: string, at: number, loop: boolean, length: number, pressed: boolean? }
 local current: { [Player]: Current } = {}
 
--- Starts a stroll on the player's body (nil ends it).
+-- Starts a stroll on the player's body (nil ends it). It walks by itself until something ends it (the owner's Q25,
+-- 2026-10-21: no time limit): picked again, another emote, or the player's own input (Controllers/StrollWalker asks
+-- to stop).
 function EmoteService.setStroll(player: Player, clip: string?)
 	local character = player.Character
 	if not character then
 		return
 	end
-	local token = (strollTokens[player] or 0) + 1
-	strollTokens[player] = token
 	character:SetAttribute("Stroll", clip)
-	if clip then
-		task.delay(STROLL_SECONDS, function()
-			if strollTokens[player] == token and player.Character == character then
-				character:SetAttribute("Stroll", nil)
-			end
-		end)
-	end
 end
 
 local function isDeathsinger(player: Player): boolean
@@ -437,7 +428,8 @@ local function onEmote(player: Player, payload)
 		elseif payload.press == true then
 			press(player)
 		elseif payload.stop == true then
-			if current[player] then
+			local strolling = player.Character ~= nil and player.Character:GetAttribute("Stroll") ~= nil
+			if current[player] or strolling then
 				EmoteService.stop(player, "stopped")
 			end
 		end
@@ -477,7 +469,6 @@ end
 function EmoteService.init()
 	EmoteRemote.OnServerEvent:Connect(onEmote)
 	Players.PlayerRemoving:Connect(function(player)
-		strollTokens[player] = nil
 		current[player] = nil
 		formations[player] = nil
 	end)

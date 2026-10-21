@@ -6,6 +6,7 @@
 -- gets only what a 3D view can show: no lights, no billboards.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -13,9 +14,12 @@ local Assets = require(Shared:WaitForChild("Assets"))
 local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
+local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
 
+local LocomotionController = require(script.Parent.Parent.Anim.LocomotionController)
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
+local Stage = require(script.Parent.Parent.Presentation.Stage)
 local ClientState = require(script.Parent.Parent.ClientState)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Governor = require(script.Parent.Parent.World.Governor)
@@ -1753,6 +1757,354 @@ FX.puppetPop = function(character, preview, phase)
 	return FX.puppetDance(character, preview, phase)
 end
 
+-- The Long Climb (Subaru's endless stair, after JJS's "Aura monster": the owner's Q24/Q38): a dark step with
+-- glowing green edges forms under each foot as it comes down and fades behind; a giant green-lit image of the
+-- climber's head and shoulders looms over them from behind, grinning (EmoteMedia FACES `manicGrin`; their own
+-- face until that picture is in); green light falls like rain round them. Green is this emote's own colour. Seen
+-- by everyone, in a case too; on low graphics only the steps, under reduced motion no rain and a still image.
+local CLIMB_GREEN = Color3.fromRGB(64, 255, 118)
+local CLIMB_DARK = Color3.fromRGB(9, 13, 10)
+local STEP_SIZE = Vector3.new(3.8, 0.4, 1.7)
+local STEP_EDGE = 0.09
+local STEP_LIT = 0.7 -- seconds a step stays fully lit before it fades
+local STEP_FADE = 1.5
+local STEP_POOL = 8
+local IMAGE_SCALE = 4
+local IMAGE_BEHIND = 7.5 -- studs behind the climber
+local IMAGE_SUNK = 1.5 -- studs of its body below the floor
+local IMAGE_LEAN = math.rad(-12) -- leaning over them
+local IMAGE_ALPHA = 0.62 -- its parts' transparency at full strength
+local IMAGE_IN, IMAGE_OUT = 0.9, 0.6
+local RAIN_UP = 18 -- studs above the climber the rain starts
+
+type ClimbStep = { parts: { BasePart }, offsets: { CFrame }, base: { number }, tweens: { Tween } }
+
+local function climbPart(name: string, size: Vector3, colour: Color3, material: Enum.Material): BasePart
+	return Create("Part", {
+		Name = name,
+		Size = size,
+		Color = colour,
+		Material = material,
+		Transparency = 1,
+		Anchored = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Parent = workspace.CurrentCamera,
+	}) :: BasePart
+end
+
+-- A tread with its four edges.
+local function climbStep(): ClimbStep
+	local x, y, z = STEP_SIZE.X / 2, STEP_SIZE.Y / 2, STEP_SIZE.Z / 2
+	local across = Vector3.new(STEP_SIZE.X + STEP_EDGE, STEP_EDGE, STEP_EDGE)
+	local along = Vector3.new(STEP_EDGE, STEP_EDGE, STEP_SIZE.Z)
+	return {
+		parts = {
+			climbPart("ClimbStep", STEP_SIZE, CLIMB_DARK, Enum.Material.SmoothPlastic),
+			climbPart("ClimbEdge", across, CLIMB_GREEN, Enum.Material.Neon),
+			climbPart("ClimbEdge", across, CLIMB_GREEN, Enum.Material.Neon),
+			climbPart("ClimbEdge", along, CLIMB_GREEN, Enum.Material.Neon),
+			climbPart("ClimbEdge", along, CLIMB_GREEN, Enum.Material.Neon),
+		},
+		offsets = {
+			CFrame.identity,
+			CFrame.new(0, y, -z),
+			CFrame.new(0, y, z),
+			CFrame.new(x, y, 0),
+			CFrame.new(-x, y, 0),
+		},
+		base = { 0.04, 0, 0.2, 0.1, 0.1 }, -- (the front edge brightest, the back one dimmest)
+		tweens = {},
+	}
+end
+
+-- Lays a step (rising the last few tenths to its place) and lets it fade.
+local function layStep(step: ClimbStep, at: CFrame)
+	for _, tween in ipairs(step.tweens) do
+		tween:Cancel()
+	end
+	table.clear(step.tweens)
+	local rise = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local fade = TweenInfo.new(STEP_FADE, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, STEP_LIT)
+	for i, part in ipairs(step.parts) do
+		local goal = at * step.offsets[i]
+		part.CFrame = goal * CFrame.new(0, -0.3, 0)
+		part.Transparency = step.base[i]
+		local up = TweenService:Create(part, rise, { CFrame = goal })
+		local out = TweenService:Create(part, fade, { Transparency = 1 })
+		up:Play()
+		out:Play()
+		table.insert(step.tweens, up)
+		table.insert(step.tweens, out)
+	end
+end
+
+-- The giant image: a copy of the climber's head, torso and arms (no hats, no legs), scaled up. Returns it, its
+-- parts and where each sits from the torso's bottom middle (nil when the body cannot be copied).
+local function climbImage(character: Model): (Model?, { BasePart }, { CFrame })
+	local copy = Stage.copyOf(character)
+	local torso = if copy then copy:FindFirstChild("Torso") else nil
+	if not copy or not torso or not torso:IsA("BasePart") then
+		if copy then
+			copy:Destroy()
+		end
+		return nil, {}, {}
+	end
+	-- (nobody's body: no tags or marks a character's code would find, no neck it would die without)
+	for _, tag in ipairs(copy:GetTags()) do
+		copy:RemoveTag(tag)
+	end
+	for name in pairs(copy:GetAttributes()) do
+		copy:SetAttribute(name, nil)
+	end
+	local humanoid = copy:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.RequiresNeck = false
+		humanoid.BreakJointsOnDeath = false
+	end
+	local keep = { Head = true, Torso = true, ["Right Arm"] = true, ["Left Arm"] = true }
+	for _, child in ipairs(copy:GetChildren()) do
+		if
+			(child:IsA("BasePart") and not keep[child.Name])
+			or child:IsA("Accessory")
+			or child:IsA("CharacterMesh")
+			or child:IsA("Tool")
+		then
+			child:Destroy()
+		end
+	end
+	for _, item in ipairs(copy:GetDescendants()) do
+		if item:IsA("JointInstance") or item:IsA("Constraint") or item:IsA("Attachment") then
+			item:Destroy()
+		end
+	end
+	local k = IMAGE_SCALE
+	local tSize = torso.Size * k
+	local parts: { BasePart } = {}
+	local places: { CFrame } = {}
+	for _, name in ipairs({ "Torso", "Head", "Right Arm", "Left Arm" }) do
+		local part = copy:FindFirstChild(name)
+		if part and part:IsA("BasePart") then
+			local size = part.Size * k
+			part.Size = size
+			part.Anchored = true
+			part.CastShadow = false
+			for _, mesh in ipairs(part:GetChildren()) do
+				if mesh:IsA("SpecialMesh") and mesh.MeshType == Enum.MeshType.FileMesh then
+					mesh.Scale *= k
+					mesh.Offset *= k
+				end
+			end
+			-- (standing straight, the arms at its sides: the pose of the moment would freeze mid-swing)
+			local at = if name == "Head"
+				then Vector3.new(0, tSize.Y + size.Y / 2, 0)
+				elseif name == "Right Arm" then Vector3.new((tSize.X + size.X) / 2, tSize.Y / 2, 0)
+				elseif name == "Left Arm" then Vector3.new(-(tSize.X + size.X) / 2, tSize.Y / 2, 0)
+				else Vector3.new(0, tSize.Y / 2, 0)
+			table.insert(parts, part)
+			table.insert(places, CFrame.new(at))
+		end
+	end
+	local head = copy:FindFirstChild("Head")
+	local face = if head then head:FindFirstChild("face") else nil
+	local grin = EmoteMedia.face("manicGrin")
+	if face and face:IsA("Decal") and grin then
+		face.Texture = grin
+	end
+	copy.Name = "ClimbImage"
+	return copy, parts, places
+end
+
+local function climbRain(at: Vector3): BasePart
+	local holder = climbPart("ClimbRain", Vector3.new(34, 0.5, 34), CLIMB_GREEN, Enum.Material.SmoothPlastic)
+	holder.CFrame = CFrame.new(at + Vector3.new(0, RAIN_UP, 0))
+	local texture = Assets.texture("RainStreak")
+	Create("ParticleEmitter", {
+		Texture = if texture ~= "" then texture else "rbxasset://textures/particles/sparkles_main.dds",
+		Color = ColorSequence.new(CLIMB_GREEN),
+		LightEmission = 0.9,
+		LightInfluence = 0.1,
+		Size = NumberSequence.new(0.14),
+		Squash = NumberSequence.new(7),
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.9),
+			NumberSequenceKeypoint.new(0.15, 0.4),
+			NumberSequenceKeypoint.new(1, 0.65),
+		}),
+		Lifetime = NumberRange.new(0.48, 0.52),
+		Rate = 110,
+		Speed = NumberRange.new(40, 44),
+		EmissionDirection = Enum.NormalId.Bottom,
+		Shape = Enum.ParticleEmitterShape.Box,
+		SpreadAngle = Vector2.new(1, 1),
+		Parent = holder,
+	})
+	return holder
+end
+
+FX.theLongClimb = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root or not root:IsA("BasePart") then
+		return nothing
+	end
+	local low = Governor.low("emoteFx")
+	local calm = Motion.isReduced()
+	local gone = false
+	local steps: { ClimbStep } = {}
+	local nextStep = 1
+
+	local function heading(): Vector3
+		local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		return if look.Magnitude > 1e-3 then look.Unit else Vector3.new(0, 0, -1)
+	end
+
+	-- a green light on the newest step
+	local glow: BasePart? = nil
+	if not low then
+		glow = climbPart("ClimbGlow", Vector3.new(0.2, 0.2, 0.2), CLIMB_GREEN, Enum.Material.SmoothPlastic)
+		Create("PointLight", { Color = CLIMB_GREEN, Range = 8, Brightness = 1.6, Shadows = false, Parent = glow })
+	end
+	local footfall = LocomotionController.Footfall:Connect(function(who: Model)
+		local sole = if who == character and not gone then lowerSole(character) else nil
+		if not sole then
+			return
+		end
+		local way = heading()
+		local floor = floorUnder(sole, character)
+		local middle = Vector3.new(root.Position.X, floor.Y, root.Position.Z) + way * (sole - root.Position):Dot(way)
+		local step = steps[nextStep]
+		if not step then
+			step = climbStep()
+			steps[nextStep] = step
+		end
+		nextStep = nextStep % STEP_POOL + 1
+		layStep(step, CFrame.lookAt(middle, middle + way) * CFrame.new(0, 0.03 - STEP_SIZE.Y / 2, 0))
+		if glow then
+			glow.CFrame = CFrame.new(middle + Vector3.new(0, 0.6, 0))
+		end
+	end)
+
+	-- the image behind, and the rain
+	local image, parts, places = nil, {}, {}
+	if not low then
+		image, parts, places = climbImage(character)
+	end
+	local highlight: Highlight? = nil
+	local face: Decal? = nil
+	local rain = if image and not calm then climbRain(root.Position) else nil
+	if image then
+		image.Parent = workspace
+		highlight = Create("Highlight", {
+			Adornee = image,
+			FillColor = CLIMB_GREEN,
+			OutlineColor = CLIMB_GREEN,
+			FillTransparency = 1,
+			OutlineTransparency = 1,
+			DepthMode = Enum.HighlightDepthMode.Occluded,
+			Parent = image,
+		}) :: Highlight
+		local head = image:FindFirstChild("Head")
+		if head then
+			Create("PointLight", { Color = CLIMB_GREEN, Range = 20, Brightness = 1.4, Shadows = false, Parent = head })
+			local decal = head:FindFirstChild("face")
+			face = if decal and decal:IsA("Decal") then decal else nil
+		end
+	end
+	local strength, fadeTo, fadeTime = 0, 1, IMAGE_IN -- 0 unseen .. 1 at full
+	local base: CFrame? = nil
+	local t0, last = os.clock(), os.clock()
+	local render = RunService.RenderStepped:Connect(function()
+		local now = os.clock()
+		local dt = math.min(now - last, 0.1)
+		last = now
+		if not root.Parent then
+			return
+		end
+		if rain then
+			rain.CFrame = CFrame.new(root.Position + Vector3.new(0, RAIN_UP, 0))
+		end
+		if not image then
+			return
+		end
+		local move = dt / fadeTime
+		strength = if fadeTo > strength then math.min(strength + move, fadeTo) else math.max(strength - move, fadeTo)
+		local way = heading()
+		local spot = floorUnder(root.Position, character) - way * IMAGE_BEHIND
+		local goal = CFrame.lookAt(spot, spot + way) * CFrame.new(0, -IMAGE_SUNK, 0)
+		-- (it follows a beat behind, swinging round after a turn)
+		base = if base then base:Lerp(goal, 1 - math.exp(-dt * 3.5)) else goal
+		local t = now - t0
+		local sway = if calm
+			then CFrame.identity
+			else CFrame.new(0, 0.35 * math.sin(t * 1.1), 0) * CFrame.Angles(
+				0,
+				0,
+				math.rad(3.5) * math.sin(t * 0.8)
+			)
+		local frame = (base :: CFrame) * sway * CFrame.Angles(IMAGE_LEAN, 0, 0)
+		local cframes = table.create(#parts)
+		for i, part in ipairs(parts) do
+			local place = frame * places[i]
+			if part.Name == "Head" and not calm then
+				-- (the head tipped slowly to one side and back: the grin's madness)
+				place *= CFrame.Angles(0, 0, math.rad(9) * math.sin(t * 0.55))
+			end
+			cframes[i] = place
+			part.Transparency = 1 - (1 - IMAGE_ALPHA) * strength
+		end
+		workspace:BulkMoveTo(parts, cframes, Enum.BulkMoveMode.FireCFrameChanged)
+		if face then
+			face.Transparency = 1 - 0.9 * strength
+		end
+		if highlight then
+			highlight.FillTransparency = 1 - 0.4 * strength
+			highlight.OutlineTransparency = 1 - 0.85 * strength
+		end
+	end)
+
+	return function()
+		if gone then
+			return
+		end
+		gone = true
+		footfall:Disconnect()
+		if glow then
+			glow:Destroy()
+		end
+		-- the image fades out on its own clock, the rain stops falling, the steps go dark
+		fadeTo, fadeTime = 0, IMAGE_OUT
+		local emitter = if rain then rain:FindFirstChildOfClass("ParticleEmitter") else nil
+		if emitter then
+			emitter.Enabled = false
+		end
+		task.delay(IMAGE_OUT + 0.1, function()
+			render:Disconnect()
+			if image then
+				image:Destroy()
+			end
+			if rain then
+				rain:Destroy()
+			end
+		end)
+		for _, step in ipairs(steps) do
+			for _, tween in ipairs(step.tweens) do
+				tween:Cancel()
+			end
+			for _, part in ipairs(step.parts) do
+				TweenService:Create(part, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+			end
+			task.delay(0.5, function()
+				for _, part in ipairs(step.parts) do
+					part:Destroy()
+				end
+			end)
+		end
+	end
+end
+
 -- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
 -- light, 3 layered, 4 the cutscene emotes'. The four above keep their own looks; the rest come with each emote.
 local RUNG: { [string]: number } = {
@@ -1803,6 +2155,7 @@ local RUNG: { [string]: number } = {
 	deducing = 1,
 	reapersCackle = 1,
 	finalBreakdown = 3,
+	theLongClimb = 1,
 }
 
 -- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in

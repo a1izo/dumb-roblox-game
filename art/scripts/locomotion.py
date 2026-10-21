@@ -154,6 +154,8 @@ class Cycle:
     lShoulder, offset=(x, y, z)), the body's designed motion (the height is lowered where a planted leg
     could not reach)."""
 
+    max_sink = MAX_SINK  # (a cycle of its own may fold a swinging leg deeper: the Long Climb's high knees)
+
     def __init__(self, name, period, stance, lift, heading=0.0, torso=0.0, lead=1, width=0.0, note="",
                  upper=None, samples=64):
         self.name = name
@@ -235,8 +237,8 @@ class Cycle:
             axial = self.leg(side, own, root, offset, raised)[2]
             if axial > MAX_GAP:
                 raised += (axial - MAX_GAP * 0.5) * 1.1
-            elif axial < -MAX_SINK:
-                raised -= (-axial - MAX_SINK) * 1.1
+            elif axial < -self.max_sink:
+                raised -= (-axial - self.max_sink) * 1.1
             else:
                 break
         return raised

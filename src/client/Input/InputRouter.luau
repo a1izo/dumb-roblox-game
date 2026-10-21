@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Bindings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Bindings"))
+local Signal = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Signal"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Router = require(script.Parent.Parent.UI.Core.Router)
@@ -16,6 +17,9 @@ local Actions = require(script.Parent.Actions)
 local StockControls = require(script.Parent.StockControls)
 
 local InputRouter = {}
+
+-- Fired with an action's id each time one runs (a stroll ends on the game's own actions: Controllers/StrollWalker).
+InputRouter.Ran = Signal.new()
 
 local function keyCodes(names: { string }): { Enum.KeyCode }
 	local out = {}
@@ -60,6 +64,7 @@ function InputRouter.apply(saved: any)
 					return Enum.ContextActionResult.Pass
 				end
 				action.run()
+				InputRouter.Ran:Fire(action.id)
 				return Enum.ContextActionResult.Sink
 			end, false, table.unpack(inputs))
 		end

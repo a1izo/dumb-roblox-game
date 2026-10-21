@@ -344,6 +344,19 @@ function StockControls.apply(set: any)
 end
 
 -- What the wrappers are doing now, for checks.
+-- Where the player is steering now (Roblox's controls: the keys, the stick, the touch pad), in the camera's frame;
+-- zero when they are not (or the controls are not reachable).
+function StockControls.moveVector(): Vector3
+	local controls = modules.controls
+	if not controls then
+		return Vector3.zero
+	end
+	local ok, value = pcall(function()
+		return controls:GetMoveVector()
+	end)
+	return if ok and typeof(value) == "Vector3" then value else Vector3.zero
+end
+
 function StockControls.state(): { installed: boolean, keyboard: boolean, pad: boolean, camera: boolean }
 	return { installed = installed, keyboard = custom.keyboard, pad = custom.pad, camera = custom.camera }
 end

@@ -99,6 +99,8 @@ EmoteMedia.FACES = {
 	raisedBrow = "",
 	wideGrin = "",
 	stare = "",
+	-- not worn by the dancer: the grin on the giant image behind The Long Climb (Controllers/EmoteFx)
+	manicGrin = "",
 } :: { [string]: string }
 
 -- An emote's sound cues, besides its music above: short sounds at moments of the clip (a pen's scratch, the
