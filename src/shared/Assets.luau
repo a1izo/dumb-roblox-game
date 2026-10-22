@@ -277,6 +277,7 @@ Assets.textures = {
 	Smoke = "",
 	SoulGlow = "",
 	Spark = "",
+	SpeechNah = "", -- Nah, I'd Win's speech bubble
 	Snowflake = "",
 	Footprint = "",
 } :: { [string]: string }

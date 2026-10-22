@@ -96,6 +96,8 @@ return {
 	-- NEXT POSE, any time: the three JoJo poses round and round (the second and third are not items: their effect
 	-- is the first one's, Sealed)
 	menacingPose = { context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose2" } },
+	-- (a Scrawl emote with an effect of its own: Gojo's speech bubble, the owner's Q33)
+	nahIdWin = { fx = 1 },
 	menacingPose2 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose3" } },
 	menacingPose3 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose" } },
 	lowBatteryCharge = { fx = 1 },
@@ -674,6 +676,21 @@ return {
 	},
 	matchPointServe = { props = { RACKET } },
 	matchPointReturn = { props = { RACKET } },
+	-- Impossible Lean (the owner's Q33): Smooth Criminal's white fedora with its black band, the brim pulled down
+	-- over the eyes as the fingers touch it, and kept low through the lean.
+	impossibleLean = {
+		props = {
+			{
+				model = "Fedora",
+				size = 2,
+				stand = { shape = "Block", size = { 1.4, 0.7, 1.4 }, color = { 236, 234, 228 } },
+				mount = "Head",
+				at = { { p = { 0, 0.74, 0 } } },
+				moves = { { at = 0.45, to = { { p = { 0, 0.7, -0.06 } }, { r = { -14, 0, 0 } } } } },
+			},
+		},
+		allow = { { prop = 1, part = "Right Arm", from = 0.15, to = 0.8 } },
+	},
 	smilingLord = {
 		props = {
 			{
@@ -684,6 +701,60 @@ return {
 				-- A walking cane, down from the fist to the floor.
 				at = { { p = { 0, -1.05, -0.1 } }, { p = { 0, -1.05, 0 } } },
 			},
+			-- (the owner's Q33, 2026-10-21: Lord Verity's evening dress, worn only while he dances) the top hat, the
+			-- tails of his coat, a white cravat and white gloves
+			{
+				model = "TopHat",
+				size = 1.88,
+				stand = { shape = "Block", size = { 1.35, 1.05, 1.35 }, color = { 17, 17, 19 } },
+				mount = "Head",
+				at = { { p = { 0, 0.99, 0 } } },
+			},
+			{
+				model = "Tailcoat",
+				size = 2.094,
+				stand = { shape = "Block", size = { 1.9, 2.05, 0.1 }, color = { 14, 14, 16 } },
+				mount = "Torso",
+				-- hung from the waist at the back
+				at = { { p = { 0, -1.25, 0.62 } } },
+			},
+			{
+				model = "Cravat",
+				size = 0.539,
+				stand = { shape = "Block", size = { 0.35, 0.5, 0.18 }, color = { 240, 238, 232 } },
+				mount = "Torso",
+				at = { { p = { 0, 0.705, -0.59 } } },
+			},
+			{
+				model = "Glove",
+				size = 1.145,
+				stand = { shape = "Block", size = { 1.06, 0.56, 1.06 }, color = { 240, 238, 232 } },
+				mount = "Right Arm",
+				at = { { p = { 0, -0.67, -0.02 } } },
+			},
+			{
+				model = "Glove",
+				size = 1.145,
+				stand = { shape = "Block", size = { 1.06, 0.56, 1.06 }, color = { 240, 238, 232 } },
+				mount = "Left Arm",
+				at = { { p = { 0, -0.67, -0.02 } } },
+			},
+		},
+		-- the hand at the hat's brim; a kick behind and the arms flung back through the tails; a glove covers the
+		-- end of its own arm, and goes where the bare hand already went (the brim, the hip, the cane's lean)
+		allow = {
+			{ prop = 2, part = "Right Arm", from = 0, to = 4.8 },
+			{ prop = 3, part = "Right Leg", from = 0, to = 4.8 },
+			{ prop = 3, part = "Left Leg", from = 0, to = 4.8 },
+			{ prop = 3, part = "Right Arm", from = 0, to = 4.8 },
+			{ prop = 3, part = "Left Arm", from = 0, to = 4.8 },
+			{ prop = 5, part = "Right Arm", from = 0, to = 4.8 },
+			{ prop = 5, part = "Head", from = 0, to = 4.8 },
+			{ prop = 5, part = "Torso", from = 0, to = 4.8 },
+			{ prop = 6, part = "Left Arm", from = 0, to = 4.8 },
+			{ prop = 6, part = "Torso", from = 0, to = 4.8 },
+			{ prop = 6, part = "Left Leg", from = 0, to = 4.8 },
+			{ prop = 6, part = "Right Leg", from = 0, to = 4.8 },
 		},
 	},
 	mushroomStroll = {

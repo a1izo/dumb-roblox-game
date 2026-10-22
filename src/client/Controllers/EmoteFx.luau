@@ -77,56 +77,121 @@ FX.newWorld = function(character, preview)
 	end
 end
 
--- Menacing Pose: the sign of menace rising and fading round the body, one after another.
-FX.menacingPose = function(character, preview)
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if preview or not root or not root:IsA("BasePart") then
-		return nothing
-	end
-	local going = true
-	local random = Random.new()
-	task.spawn(function()
-		task.wait(0.3)
-		while going and root.Parent do
+-- A manga sign (ゴ, ド...) in a billboard by the body: its colour and its outline, how big, and where it starts
+-- (studs from the root, in the camera's frame).
+type Sign = { text: string, colour: Color3, stroke: Color3, size: number, at: Vector3, tilt: number }
+
+local function signLabel(root: BasePart, sign: Sign): (BillboardGui, TextLabel)
+	local gui = Create("BillboardGui", {
+		Name = "EmoteSign",
+		Adornee = root,
+		AlwaysOnTop = false,
+		LightInfluence = 0,
+		MaxDistance = 80,
+		Size = UDim2.fromScale(sign.size, sign.size),
+		StudsOffset = sign.at,
+		Parent = root,
+	}) :: BillboardGui
+	gui:SetAttribute("DGEmote", true)
+	local label = Create("TextLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Text = sign.text,
+		TextScaled = true,
+		FontFace = Font.fromEnum(Enum.Font.GothamBlack),
+		TextColor3 = sign.colour,
+		TextStrokeColor3 = sign.stroke,
+		TextStrokeTransparency = 0.15,
+		Rotation = sign.tilt,
+		Parent = gui,
+	}) :: TextLabel
+	label:SetAttribute("KeepFont", true)
+	return gui, label
+end
+
+-- Menacing Pose: the sign of menace (ゴ) rising and fading round the body, one after another, a different
+-- arrangement and colour for each of the three poses (NEXT POSE; the owner's Q33): violet by turns on either side;
+-- bone white stacked in a column up the right; near-black outlined in white, in an arc behind the head.
+type Menace = {
+	colour: Color3,
+	stroke: Color3,
+	size: number,
+	every: number,
+	place: (Random, number) -> (Vector3, number),
+}
+
+local MENACES: { [string]: Menace } = {
+	menacingPose = {
+		colour = Color3.fromRGB(150, 92, 205),
+		stroke = Color3.fromRGB(20, 8, 30),
+		size = 1.8,
+		every = 0.45,
+		place = function(random: Random, _: number): (Vector3, number)
 			local side = if random:NextNumber() < 0.5 then -1 else 1
-			local start =
+			local at =
 				Vector3.new(side * random:NextNumber(1.6, 2.8), random:NextNumber(0, 2), random:NextNumber(-0.8, 0.8))
-			local sign = Create("BillboardGui", {
-				Name = "EmoteMenace",
-				Adornee = root,
-				AlwaysOnTop = false,
-				LightInfluence = 0,
-				Size = UDim2.fromScale(1.8, 1.8),
-				StudsOffset = start,
-				Parent = root,
-			}) :: BillboardGui
-			sign:SetAttribute("DGEmote", true)
-			local label = Create("TextLabel", {
-				BackgroundTransparency = 1,
-				Size = UDim2.fromScale(1, 1),
-				Text = "ゴ",
-				TextScaled = true,
-				FontFace = Font.fromEnum(Enum.Font.GothamBlack),
-				TextColor3 = Color3.fromRGB(150, 92, 205),
-				TextStrokeColor3 = Color3.fromRGB(20, 8, 30),
-				TextStrokeTransparency = 0.2,
-				Rotation = side * random:NextNumber(4, 14),
-				Parent = sign,
-			}) :: TextLabel
-			label:SetAttribute("KeepFont", true)
-			local info = TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-			TweenService:Create(sign, info, { StudsOffset = start + Vector3.new(0, 1.4, 0) }):Play()
-			TweenService:Create(label, info, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
-			task.delay(1.7, function()
-				sign:Destroy()
-			end)
-			task.wait(0.45)
+			return at, side * random:NextNumber(4, 14)
+		end,
+	},
+	menacingPose2 = {
+		colour = Color3.fromRGB(236, 230, 214),
+		stroke = Color3.fromRGB(12, 12, 14),
+		size = 1.5,
+		every = 0.3,
+		place = function(random: Random, k: number): (Vector3, number)
+			return Vector3.new(2.3 + random:NextNumber(-0.15, 0.15), -0.6 + (k % 4) * 0.9, 0), random:NextNumber(-6, 6)
+		end,
+	},
+	menacingPose3 = {
+		colour = Color3.fromRGB(26, 22, 30),
+		stroke = Color3.fromRGB(236, 230, 214),
+		size = 2.2,
+		every = 0.5,
+		place = function(random: Random, k: number): (Vector3, number)
+			local a = math.rad(-70 + (k % 5) * 35 + random:NextNumber(-6, 6))
+			return Vector3.new(3.2 * math.sin(a), 2.0 + 1.6 * math.cos(a), -1.5), math.deg(a) * 0.4
+		end,
+	},
+}
+
+local function menace(kind: Menace): Fx
+	return function(character, preview)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if preview or not root or not root:IsA("BasePart") then
+			return nothing
 		end
-	end)
-	return function()
-		going = false
+		local going = true
+		local random = Random.new()
+		task.spawn(function()
+			task.wait(0.3)
+			local k = 0
+			while going and root.Parent do
+				local start, tilt = kind.place(random, k)
+				k += 1
+				local gui, label = signLabel(root, {
+					text = "ゴ",
+					colour = kind.colour,
+					stroke = kind.stroke,
+					size = kind.size,
+					at = start,
+					tilt = tilt,
+				})
+				local info = TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+				TweenService:Create(gui, info, { StudsOffset = start + Vector3.new(0, 1.4, 0) }):Play()
+				TweenService:Create(label, info, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+				task.delay(1.7, function()
+					gui:Destroy()
+				end)
+				task.wait(kind.every)
+			end
+		end)
+		return function()
+			going = false
+		end
 	end
 end
+
+FX.menacingPose = menace(MENACES.menacingPose)
 
 -- Low Battery: a battery over the head, running down from green to red, then blinking empty.
 -- The battery over the head (its case, its tip and its fill, full and green).
@@ -1132,11 +1197,56 @@ FX.impossibleLean = accent(4.2, { 0.95 }, function(character)
 	end
 end)
 
--- It's You: the point lands with a white crack of light off the fingertip (0.24 s).
+-- It's You (the owner's Q33): the point lands (0.24 s) with a white crack of light off the fingertip, manga speed
+-- lines flash out behind the body, and ドドド stands beside it while the point is held (to 2.0 s).
 local CRACK = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 220, 255))
-FX.itsYou = accent(2.6, { 0.24 }, function(character)
+local SPEED_LINES = 22
+
+-- Speed lines: thin white strokes radiating from the body, behind it, the middle left clear.
+local function speedLines(root: BasePart): BillboardGui
+	local gui = Create("BillboardGui", {
+		Name = "EmoteSpeedLines",
+		Adornee = root,
+		AlwaysOnTop = false,
+		LightInfluence = 0,
+		MaxDistance = 80,
+		Size = UDim2.fromScale(16, 16),
+		StudsOffset = Vector3.new(0, 0.6, -3),
+		Parent = root,
+	}) :: BillboardGui
+	gui:SetAttribute("DGEmote", true)
+	local random = Random.new()
+	for k = 1, SPEED_LINES do
+		local a = (k + random:NextNumber(-0.3, 0.3)) / SPEED_LINES * math.pi * 2
+		local inner, length = random:NextNumber(0.2, 0.26), random:NextNumber(0.12, 0.22)
+		local middle = inner + length / 2
+		Create("Frame", {
+			Name = "Line",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5 + middle * math.cos(a), 0.5 + middle * math.sin(a)),
+			Size = UDim2.new(length, 0, 0, random:NextInteger(2, 4)),
+			Rotation = math.deg(a),
+			BackgroundColor3 = Color3.fromRGB(245, 245, 240),
+			BorderSizePixel = 0,
+			Parent = gui,
+		})
+	end
+	return gui
+end
+
+FX.itsYou = function(character, preview)
+	local root = character:FindFirstChild("HumanoidRootPart")
 	local arm = character:FindFirstChild("Right Arm")
-	if arm and arm:IsA("BasePart") then
+	if preview or not root or not root:IsA("BasePart") or not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local calm = Motion.isReduced()
+	local gone = false
+	local function over()
+		return gone
+	end
+	local made: { Instance } = {}
+	after(root, over, 0.24, function()
 		burst((arm.CFrame * CFrame.new(0, -1.2, 0)).Position, {
 			color = CRACK,
 			count = 14,
@@ -1146,8 +1256,124 @@ FX.itsYou = accent(2.6, { 0.24 }, function(character)
 			spread = 180,
 			light = 1,
 		})
+		if not calm then
+			local lines = speedLines(root)
+			table.insert(made, lines)
+			for _, line in ipairs(lines:GetChildren()) do
+				TweenService:Create(line, TweenInfo.new(0.9, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
+					:Play()
+			end
+		end
+		-- ドドド down the left of the body, one after another
+		for k = 0, 2 do
+			after(root, over, 0.08 * k, function()
+				local gui, label = signLabel(root, {
+					text = "ド",
+					colour = Color3.fromRGB(236, 230, 214),
+					stroke = Color3.fromRGB(12, 12, 14),
+					size = 1.7 - 0.2 * k,
+					at = Vector3.new(-2.6 - 0.35 * k, 1.8 - 1.2 * k, 0),
+					tilt = -10 + 6 * k,
+				})
+				table.insert(made, gui)
+				label.TextTransparency = 1
+				TweenService:Create(label, TweenInfo.new(0.12), { TextTransparency = 0 }):Play()
+				after(root, over, 1.76 - 0.08 * k, function()
+					TweenService:Create(label, TweenInfo.new(0.3), { TextTransparency = 1, TextStrokeTransparency = 1 })
+						:Play()
+				end)
+			end)
+		end
+	end)
+	return function()
+		gone = true
+		for _, item in ipairs(made) do
+			item:Destroy()
+		end
 	end
-end)
+end
+
+-- Nah, I'd Win (the owner's Q33, and their reference of 2026-10-22): Gojo's line in a manga speech bubble up to the
+-- right of the head, popping up on the pose (0.3 s) and held while the emote lasts; it faces the camera and is seen
+-- by everyone near, in a case too. The bubble is a picture (the Core set's SpeechNah, art/scripts/textures.py:
+-- a hand-drawn balloon, its tail down towards the head, NAH, I'D WIN. in italic brush capitals); before that is
+-- imported, a plain white card with the words.
+local BUBBLE_SIZE = 2.9 -- studs (the picture is square, the balloon taller than wide inside it)
+FX.nahIdWin = function(character, preview)
+	local head = character:FindFirstChild("Head")
+	if preview or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local gui = Create("BillboardGui", {
+		Name = "EmoteBubble",
+		Adornee = head,
+		AlwaysOnTop = false,
+		LightInfluence = 0,
+		MaxDistance = 60,
+		Size = UDim2.fromScale(BUBBLE_SIZE, BUBBLE_SIZE),
+		StudsOffset = Vector3.new(2.0, 1.6, 0),
+		Parent = head,
+	}) :: BillboardGui
+	gui:SetAttribute("DGEmote", true)
+	local holder = Create("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0, 0),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	}) :: Frame
+	local picture = Assets.texture("SpeechNah")
+	if picture ~= "" then
+		Create("ImageLabel", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Image = picture,
+			ScaleType = Enum.ScaleType.Fit,
+			Parent = holder,
+		})
+	else
+		local card = Create("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.45),
+			Size = UDim2.fromScale(0.62, 0.8),
+			BackgroundColor3 = Color3.fromRGB(250, 250, 248),
+			BorderSizePixel = 0,
+			Parent = holder,
+		})
+		Create("UIStroke", { Color = Color3.fromRGB(10, 10, 12), Thickness = 3, Parent = card })
+		local words = Create("TextLabel", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.8, 0.8),
+			BackgroundTransparency = 1,
+			Text = "NAH, I'D WIN.",
+			TextScaled = true,
+			FontFace = Font.fromEnum(Enum.Font.GothamBlack),
+			TextColor3 = Color3.fromRGB(10, 10, 12),
+			Parent = card,
+		}) :: TextLabel
+		words:SetAttribute("KeepFont", true)
+	end
+	local gone = false
+	task.delay(0.3, function()
+		if gone then
+			return
+		end
+		if Motion.isReduced() then
+			holder.Size = UDim2.fromScale(1, 1)
+		else
+			TweenService:Create(
+				holder,
+				TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+				{ Size = UDim2.fromScale(1, 1) }
+			):Play()
+		end
+	end)
+	return function()
+		gone = true
+		gui:Destroy()
+	end
+end
 
 -- Deducing: a faint spark of a thought by the temple on each tap of the thumb (1.1 s and 3.1 s of the loop).
 local THOUGHT = ColorSequence.new(Color3.fromRGB(200, 225, 255))
@@ -1719,11 +1945,9 @@ FX.fortySeconds = function(character, preview)
 	end
 end
 
--- Menacing Pose's other two poses (NEXT POSE): the same signs rising round them.
-FX.menacingPose2 = function(character, preview, phase)
-	return FX.menacingPose(character, preview, phase)
-end
-FX.menacingPose3 = FX.menacingPose2
+-- Menacing Pose's other two poses (NEXT POSE): their own signs (MENACES above).
+FX.menacingPose2 = menace(MENACES.menacingPose2)
+FX.menacingPose3 = menace(MENACES.menacingPose3)
 
 -- Bye Bye Bye (Puppet Pop): the band dance it as marionettes; the same strings as Puppet Dance.
 FX.puppetPop = function(character, preview, phase)
@@ -2129,6 +2353,7 @@ local RUNG: { [string]: number } = {
 	reapersCackle = 1,
 	finalBreakdown = 3,
 	theLongClimb = 1,
+	nahIdWin = 1,
 }
 
 -- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in

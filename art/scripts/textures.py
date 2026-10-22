@@ -1,14 +1,12 @@
 """Effect textures, rendered in Blender as white shapes on a transparent background so the game
-can tint them (ParticleEmitter.Color, Decal.Color3): ink splats and drops (made from metaballs,
-seen from above), a rain streak, a smoke puff, a soul glow, a spark, a snowflake, a shoe's print
-in snow, and Tokyo's rain streak, splash and cherry petal (carried in the Tokyo map's own FBX).
+can tint them (ParticleEmitter.Color, Decal.Color3): a rain streak, a smoke puff, a soul glow, a
+spark, a snowflake, a shoe's print in snow, and Tokyo's rain streak, splash and cherry petal (carried in the Tokyo map's own FBX).
 
     blender -b --factory-startup --python art/scripts/run_textures.py
 """
 
 import math
 import os
-import random
 
 import bpy
 import numpy as np
@@ -41,65 +39,9 @@ def _scene_for_texture(size):
     return scene
 
 
-def _white():
-    mat = bpy.data.materials.get("TexWhite") or bpy.data.materials.new("TexWhite")
-    mat.use_nodes = True
-    nodes = mat.node_tree.nodes
-    nodes.clear()
-    emit = nodes.new("ShaderNodeEmission")
-    emit.inputs["Color"].default_value = (1, 1, 1, 1)
-    emit.inputs["Strength"].default_value = 1.0
-    out = nodes.new("ShaderNodeOutputMaterial")
-    mat.node_tree.links.new(emit.outputs[0], out.inputs[0])
-    return mat
-
-
 def _clear():
     for obj in list(bpy.data.objects):
         bpy.data.objects.remove(obj, do_unlink=True)
-
-
-def _metaballs(name, balls):
-    data = bpy.data.metaballs.new(name)
-    data.resolution = 0.02
-    data.render_resolution = 0.01
-    data.threshold = 0.6
-    obj = bpy.data.objects.new(name, data)
-    bpy.context.scene.collection.objects.link(obj)
-    for x, y, r in balls:
-        el = data.elements.new()
-        el.co = (x, y, 0)
-        el.radius = r
-    data.materials.append(_white())
-    return obj
-
-
-def splat_balls(seed):
-    """A central blob, lumpy edges, flung droplets and a few streaks."""
-    rng = random.Random(seed)
-    balls = [(0, 0, 0.42)]
-    for _ in range(14):
-        a = rng.uniform(0, math.tau)
-        d = rng.uniform(0.18, 0.4)
-        balls.append((math.cos(a) * d, math.sin(a) * d, rng.uniform(0.14, 0.26)))
-    for _ in range(9):
-        a = rng.uniform(0, math.tau)
-        d = rng.uniform(0.5, 0.85)
-        balls.append((math.cos(a) * d, math.sin(a) * d, rng.uniform(0.03, 0.08)))
-    for _ in range(4):
-        a = rng.uniform(0, math.tau)
-        for step in range(5):
-            d = 0.3 + step * 0.1
-            balls.append((math.cos(a) * d, math.sin(a) * d, 0.09 - step * 0.012))
-    return balls
-
-
-def drop_balls():
-    balls = [(0, -0.35, 0.36)]
-    for i in range(10):
-        y = -0.3 + i * 0.09
-        balls.append((0, y, 0.3 - i * 0.027))
-    return balls
 
 
 def render_to(path):
@@ -313,16 +255,122 @@ def feather(h=256, w=128):
     return save_array("Feather", rgba)
 
 
+# Nah, I'd Win's speech bubble (the owner's reference of 2026-10-22: a manga balloon drawn by hand, a little
+# lopsided, a short tail down to the left, the line lettered in three rows of italic brush capitals). Drawn
+# here, not copied: the outline and every letter are brush strokes laid out as in the reference (420 px wide).
+SPEECH_OUTLINE = [(80, 80), (225, 19), (340, 114), (344, 128), (343, 200), (341, 283), (296, 348), (212, 363),
+                  (162, 404), (172, 352), (76, 300), (73, 200)]
+# Each stroke: points (x, y, width), the brush swelling and thinning along it.
+SPEECH_LETTERS = [
+    # NAH,
+    [(153, 111, 7), (147, 135, 9.5), (142, 158, 8.5)],
+    [(151, 113, 8), (160, 135, 9.5), (169, 157, 8.5)],
+    [(180, 106, 7), (175, 132, 9.5), (169, 157, 8)],
+    [(214, 108, 6), (200, 133, 9.5), (187, 158, 8.5)],
+    [(214, 108, 6), (216, 133, 9.5), (217, 158, 8.5)],
+    [(192, 147, 7), (205, 146, 8.5), (217, 145, 7)],
+    [(241, 112, 8), (236, 135, 9.5), (232, 158, 8.5)],
+    [(265, 108, 8), (260, 133, 9.5), (256, 158, 8.5)],
+    [(236, 137, 7), (249, 137, 8.5), (262, 136, 7)],
+    [(281, 149, 10), (277, 158, 8), (272, 169, 3.5)],
+    # I'D
+    [(208, 167, 8), (203, 179, 6.5), (197, 190, 3.5)],
+    [(155, 187, 4), (164, 179, 10), (180, 174, 10.5), (196, 173, 5)],
+    [(174, 185, 9), (171, 199, 9.5), (167, 213, 9)],
+    [(146, 222, 4), (159, 218, 10.5), (175, 215, 9.5), (188, 214, 4)],
+    [(225, 183, 8.5), (221, 202, 9.5), (217, 222, 8.5)],
+    [(218, 185, 5), (225, 178, 9), (240, 174, 10), (254, 177, 9.5), (256, 187, 9), (250, 199, 9.5),
+     (239, 210, 9.5), (228, 218, 9), (217, 222, 7)],
+    # WIN.
+    [(143, 238, 8.5), (139, 262, 9.5), (134, 286, 9)],
+    [(134, 286, 8), (146, 267, 9), (158, 249, 7)],
+    [(158, 249, 7), (162, 267, 9), (167, 285, 9)],
+    [(167, 285, 8), (172, 260, 9.5), (177, 235, 8.5)],
+    [(189, 247, 4), (199, 240, 10), (215, 237, 10.5), (229, 235, 5)],
+    [(203, 247, 9), (201, 262, 9.5), (199, 277, 9)],
+    [(180, 287, 4), (192, 282, 10.5), (208, 279, 9.5), (222, 278, 4)],
+    [(242, 238, 8.5), (238, 262, 9.5), (233, 286, 9)],
+    [(241, 240, 8.5), (249, 261, 9.5), (257, 282, 9)],
+    [(269, 232, 8), (265, 257, 9.5), (262, 281, 8.5)],
+    [(282, 278, 11), (288, 282, 10)],
+]
+
+
+def _segment_distance(px, py, ax, ay, bx, by):
+    """Distance from each pixel to the segment a-b, and how far along it (0..1) the nearest point is."""
+    dx, dy = bx - ax, by - ay
+    length2 = max(dx * dx + dy * dy, 1e-9)
+    t = np.clip(((px - ax) * dx + (py - ay) * dy) / length2, 0.0, 1.0)
+    return np.hypot(px - (ax + t * dx), py - (ay + t * dy)), t
+
+
+def _stroke(mask, px, py, points, scale, wobble=0.0, seed=0):
+    """Paints a brush stroke through points (x, y, width) into mask (True where it lies)."""
+    rng = np.random.default_rng(seed)
+    for (ax, ay, aw), (bx, by, bw) in zip(points, points[1:]):
+        d, t = _segment_distance(px, py, ax * scale, ay * scale, bx * scale, by * scale)
+        half = (aw + (bw - aw) * t) * scale / 2
+        if wobble:
+            half = half * (1 + wobble * np.sin(t * math.pi * rng.uniform(2, 5) + rng.uniform(0, 6)))
+        mask |= d <= half
+
+
+def _inside(px, py, polygon):
+    """Even-odd: which pixels lie inside the polygon."""
+    inside = np.zeros(px.shape, dtype=bool)
+    n = len(polygon)
+    for k in range(n):
+        (ax, ay), (bx, by) = polygon[k], polygon[(k + 1) % n]
+        crosses = ((ay > py) != (by > py)) & (px < (bx - ax) * (py - ay) / ((by - ay) + 1e-12) + ax)
+        inside ^= crosses
+    return inside
+
+
+def speech_nah(size=512, over=2):
+    """Nah, I'd Win's speech bubble: white inside a black hand-drawn edge, the three rows of lettering, the rest
+    clear (drawn `over` times bigger, then averaged down, for soft edges)."""
+    big = size * over
+    scale = big / 420
+    py, px = np.mgrid[0:big, 0:big].astype(np.float32) + 0.5
+    # the edge's middle line runs 3 px (of the reference's) inside the outer edge it was measured by
+    cx = sum(x for x, _ in SPEECH_OUTLINE) / len(SPEECH_OUTLINE)
+    cy = sum(y for _, y in SPEECH_OUTLINE) / len(SPEECH_OUTLINE)
+    middle = []
+    for x, y in SPEECH_OUTLINE:
+        d = math.hypot(x - cx, y - cy)
+        middle.append(((x - (x - cx) / d * 3) * scale, (y - (y - cy) / d * 3) * scale))
+    fill = _inside(px, py, middle)
+    edge = np.zeros(px.shape, dtype=bool)
+    closed = SPEECH_OUTLINE + SPEECH_OUTLINE[:1]
+    for k, ((ax, ay), (bx, by)) in enumerate(zip(closed, closed[1:])):
+        _stroke(edge, px, py, [(ax, ay, 5.8), (bx, by, 5.8)], scale, wobble=0.07, seed=k)
+    letters = np.zeros(px.shape, dtype=bool)
+    for k, points in enumerate(SPEECH_LETTERS):
+        _stroke(letters, px, py, points, scale, wobble=0.06, seed=100 + k)
+    alpha = (fill | edge).astype(np.float32)
+    white = (fill & ~edge & ~letters).astype(np.float32)
+    # averaged down: coverage for the alpha, the shade where there is any
+    alpha = alpha.reshape(size, over, size, over).mean(axis=(1, 3))
+    shade = white.reshape(size, over, size, over).mean(axis=(1, 3)) / np.maximum(alpha, 1e-6)
+    rgba = np.zeros((size, size, 4), dtype=np.float32)
+    rgba[..., 0] = rgba[..., 1] = rgba[..., 2] = np.clip(shade, 0, 1) * 0.98
+    rgba[..., 3] = alpha
+    return save_array("SpeechNah", rgba)
+
+
+SPEECH = (speech_nah,)
+
+
 TOKYO = (tokyo_rain, tokyo_splash, tokyo_petal)
 CAMPUS = (campus_flake, feather)
 
 
 def build_only(groups):
-    """Writes only some textures ("Tokyo", "Campus"), without rendering the rest again."""
+    """Writes only some textures ("Tokyo", "Campus", "Speech"), without rendering the rest again."""
     common.ensure_dirs()
     paths = []
     for name in groups:
-        paths.extend(make() for make in {"Tokyo": TOKYO, "Campus": CAMPUS}[name])
+        paths.extend(make() for make in {"Tokyo": TOKYO, "Campus": CAMPUS, "Speech": SPEECH}[name])
     return paths
 
 
@@ -331,14 +379,8 @@ def build():
     _clear()
     _scene_for_texture(SIZE)
     paths = []
-    for i, seed in enumerate((3, 17, 29)):
-        obj = _metaballs(f"Splat{i}", splat_balls(seed))
-        paths.append(render_to(os.path.join(common.TEXTURES, f"InkSplat{i + 1}.png")))
-        bpy.data.objects.remove(obj, do_unlink=True)
-    obj = _metaballs("Drop", drop_balls())
-    paths.append(render_to(os.path.join(common.TEXTURES, "InkDrop.png")))
-    bpy.data.objects.remove(obj, do_unlink=True)
     paths.append(rain_streak())
+    paths.append(speech_nah())
     paths.append(smoke())
     paths.append(soul_glow())
     paths.append(spark())

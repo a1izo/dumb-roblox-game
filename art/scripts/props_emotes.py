@@ -309,3 +309,90 @@ def radio():
     for x in (-0.55, 0.55):
         parts.append(mk.box("Foot", (0.2, 0.36, 0.04), (x, 0, -0.0), mat=face, bevel=0.01))
     return parts, [mk.box("Dial", (0.52, 0.012, 0.16), (0.31, -0.264, 0.56), mat=dial)]
+
+
+# The signature props (the shop overhaul's B6, the owner's Q33: 2026-10-21) --------------------------------------
+
+def _bend_brim(obj, inner, outer, front=0.0, sides=0.0):
+    """Bends a lathed brim (the vertices between radius `inner` and `outer`): `front` studs down at the front edge
+    (-Y), `sides` studs up at the sides (X), easing in from the crown."""
+    for v in obj.data.vertices:
+        x, y = v.co.x, v.co.y
+        r = math.hypot(x, y)
+        if r <= inner or r < 1e-6:
+            continue
+        u = min(1.0, (r - inner) / (outer - inner))
+        v.co.z += u * u * (sides * (x / r) ** 2 - front * max(0.0, -y / r) ** 1.5)
+
+
+@prop("Fedora", pivot="centre", material="Fabric", collide=False, texture=256)
+def fedora():
+    """A white felt fedora with a black band, its brim snapped down at the front: Impossible Lean's (Smooth
+    Criminal). Round Z (the head's up), the front facing -Y; it sits on the head, the head inside the crown."""
+    felt = mk.noisy("Fd_Felt", srgb(222, 220, 214), srgb(246, 244, 238), roughness=0.85, kind="cloth")
+    band = mk.noisy("Fd_Band", srgb(10, 10, 12), srgb(30, 30, 34), roughness=0.5, kind="cloth")
+    hat = mk.lathe("Hat", [(0.0, 0.02), (0.96, 0.0), (1.0, 0.035), (0.97, 0.07), (0.69, 0.085), (0.68, 0.3),
+                           (0.65, 0.58), (0.58, 0.76), (0.36, 0.8), (0.18, 0.7), (0.0, 0.69)], mat=felt, segments=40)
+    _bend_brim(hat, 0.7, 1.0, front=0.1, sides=0.06)
+    ribbon = mk.lathe("Band", [(0.688, 0.09), (0.702, 0.09), (0.692, 0.26), (0.678, 0.26), (0.688, 0.09)], mat=band,
+                      segments=40)
+    bow = mk.box("Bow", (0.05, 0.16, 0.13), (0.702, 0.12, 0.175), mat=band, bevel=0.015)
+    return [hat, ribbon, bow], []
+
+
+@prop("TopHat", pivot="centre", material="Fabric", collide=False, texture=256)
+def top_hat():
+    """A tall black silk top hat, flared a little at the top, a dull satin band, the brim curled up at the sides:
+    The Smiling Lord's. Round Z, the front facing -Y; the head inside the crown."""
+    silk = mk.noisy("Th_Silk", srgb(14, 14, 16), srgb(34, 34, 38), roughness=0.35, kind="cloth")
+    satin = mk.noisy("Th_Satin", srgb(30, 30, 34), srgb(50, 50, 56), roughness=0.55, kind="cloth")
+    hat = mk.lathe("Hat", [(0.0, 0.02), (0.9, 0.0), (0.94, 0.04), (0.9, 0.075), (0.66, 0.09), (0.645, 0.2),
+                           (0.655, 0.7), (0.685, 1.05), (0.665, 1.08), (0.0, 1.08)], mat=silk, segments=40)
+    _bend_brim(hat, 0.67, 0.94, sides=0.09)
+    ribbon = mk.lathe("Band", [(0.652, 0.1), (0.664, 0.1), (0.662, 0.3), (0.65, 0.3), (0.652, 0.1)], mat=satin,
+                      segments=40)
+    return [hat, ribbon], []
+
+
+@prop("Tailcoat", pivot="centre", material="Fabric", collide=False, texture=256)
+def tailcoat():
+    """The tails of a black evening coat, hung from the waist at the back to the backs of the knees and split up
+    the middle, cut away at the outer corners, with two buttons at the waist: The Smiling Lord's. Behind a torso:
+    the front faces -Y, so the tails are seen from +Y."""
+    wool = mk.noisy("Tc_Wool", srgb(12, 12, 14), srgb(30, 30, 34), roughness=0.8, kind="cloth")
+    button = mk.flat("Tc_Button", srgb(20, 20, 22), 0.3)
+    parts = [mk.box("Waist", (1.94, 0.08, 0.22), (0, 0, -0.11), mat=wool, bevel=0.02)]
+    for side in (-1, 1):
+        shape = [(side * x, y) for x, y in ((0.05, 0.0), (0.92, 0.0), (0.8, -1.2), (0.5, -2.05), (0.3, -2.1),
+                                           (0.1, -1.6), (0.05, -0.8))]
+        if side < 0:
+            shape.reverse()
+        parts.append(mk.extrude_shape("Tail", shape, 0.07, (0, 0, 0), rot=(94, 0, 3 * side), mat=wool, bevel=0.015))
+        parts.append(mk.sphere("Button", 0.05, (0.24 * side, 0.06, -0.12), mat=button, segments=10, rings=6))
+    return parts, []
+
+
+@prop("Cravat", pivot="centre", material="Fabric", collide=False, texture=256)
+def cravat():
+    """A white silk cravat at the throat, a soft knot with two folds falling over the shirt front and a small gold
+    pin: The Smiling Lord's. The front faces -Y."""
+    silk = mk.noisy("Cr_Silk", srgb(232, 230, 224), srgb(250, 250, 246), roughness=0.4, kind="cloth")
+    gold = mk.noisy("Cr_Gold", srgb(170, 130, 50), srgb(222, 184, 96), roughness=0.3, metallic=1.0)
+    parts = [mk.sphere("Knot", 0.13, (0, 0, 0.12), scale=(1.35, 0.7, 1.0), mat=silk, segments=14, rings=8)]
+    for side in (-1, 1):
+        parts.append(mk.box("Fold", (0.2, 0.06, 0.36), (0.06 * side, 0.02, -0.1), rot=(0, 9 * side, 0), mat=silk,
+                            bevel=0.03))
+    parts.append(mk.sphere("Pin", 0.035, (0, -0.07, 0.0), mat=gold, segments=8, rings=6))
+    return parts, []
+
+
+@prop("Glove", pivot="centre", material="Fabric", collide=False, texture=256)
+def glove():
+    """A white cotton evening glove over the end of an R6 arm (its fist), with a turned-back cuff and two small
+    pearl buttons: The Smiling Lord's, one on each hand. Along Z (the arm's length), the cuff at the top."""
+    cotton = mk.noisy("Gl_Cotton", srgb(232, 230, 224), srgb(248, 248, 244), roughness=0.85, kind="cloth")
+    pearl = mk.flat("Gl_Pearl", srgb(236, 232, 222), 0.3)
+    return [pk.rounded("Hand", (1.04, 1.04, 0.56), (0, 0, 0), cotton, r=0.06),
+            pk.rounded("Cuff", (1.1, 1.1, 0.13), (0, 0, 0.31), cotton, r=0.04),
+            mk.sphere("Button", 0.035, (0.2, -0.56, 0.3), mat=pearl, segments=8, rings=6),
+            mk.sphere("Button", 0.035, (0.32, -0.56, 0.3), mat=pearl, segments=8, rings=6)], []
