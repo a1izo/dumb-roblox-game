@@ -434,7 +434,22 @@ local function motes(face: Frame, color: Color3)
 end
 
 -- The tier's name in small capitals at the foot of the picture, in its colour (never colour alone).
-local function rarityTag(face: Frame, rarity: string)
+-- A kind's name on a card's tier line (the owner's direction A: "SEALED · EMOTE").
+local KIND_WORD: { [string]: string } = {
+	hat = "Hat",
+	grimoire = "Cover",
+	specter = "Form",
+	title = "Title",
+	writing = "Writing",
+	verdict = "Verdict",
+	death = "Death",
+	emote = "Emote",
+	win = "Cutscene",
+	seat = "Seat",
+	chair = "Chair",
+}
+
+local function rarityTag(face: Frame, rarity: string, kind: string?)
 	local color = Rarity.color(rarity)
 	local holder = Kit.Base.make("Frame", {
 		Name = "Rarity",
@@ -451,7 +466,9 @@ local function rarityTag(face: Frame, rarity: string)
 	Kit.Base.corner(holder, 2)
 	Kit.pad(holder, 0, 5)
 	Kit.label({
-		Text = string.upper(Rarity.name(rarity)),
+		Text = "◆ " .. string.upper(Rarity.name(rarity)) .. (if kind and KIND_WORD[kind]
+			then "  ·  " .. string.upper(KIND_WORD[kind])
+			else ""),
 		font = "label",
 		size = "micro",
 		-- (the line work wears the colour itself; the letters a lighter shade of it, to read on the dark)
@@ -467,7 +484,34 @@ end
 -- Dresses a card's face in its tier (Shared/Rarity): Scrawl a plain line; Penned an underline; Sealed a
 -- framed edge; Condemned that frame with page grain and a slow sheen; Godhood a glowing edge and
 -- motes of page. Returns the outer edge (it brightens when picked).
-local function dress(face: Frame, rarity: string): UIStroke
+-- Sealed's wax seal (direction A): a disc of the tier's colour pressed on the picture's corner, an S in it.
+local function waxSeal(face: Frame, color: Color3)
+	local disc = Kit.Base.make("Frame", {
+		Name = "WaxSeal",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -14, 0, 18),
+		Size = UDim2.fromOffset(28, 28),
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		ZIndex = 5,
+		Parent = face,
+	})
+	Kit.Base.corner(disc, 14)
+	Kit.Base.stroke(disc, color:Lerp(C.void, 0.45), 2, 0)
+	Kit.label({
+		Text = "S",
+		font = "head",
+		size = "body",
+		color = color:Lerp(C.void, 0.75),
+		TextWrapped = false,
+		Size = UDim2.fromScale(1, 1),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		ZIndex = 6,
+		Parent = disc,
+	})
+end
+
+local function dress(face: Frame, rarity: string, kind: string?): UIStroke
 	local rank = Rarity.rank(rarity)
 	local color = Rarity.color(rarity)
 	local edge = Kit.Base.stroke(face, color, if rank >= 3 then 1.5 else 1, restingEdge(rarity))
@@ -478,6 +522,9 @@ local function dress(face: Frame, rarity: string): UIStroke
 		line(face, 5, color, if rank >= 4 then 0.35 else 0.5)
 		corners(face, color, 9)
 	end
+	if rank == 3 then
+		waxSeal(face, color)
+	end
 	if rank == 4 then
 		grain(face, color)
 		shine(face, color)
@@ -486,7 +533,7 @@ local function dress(face: Frame, rarity: string): UIStroke
 		glow(face, color)
 		motes(face, color)
 	end
-	rarityTag(face, rarity)
+	rarityTag(face, rarity, kind)
 	return edge
 end
 
@@ -548,7 +595,7 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		Parent = slot,
 	}) :: Frame
 	Kit.Base.corner(face, 8)
-	local edge = dress(face, item.rarity)
+	local edge = dress(face, item.rarity, item.kind)
 	local pictureBox = Kit.Base.make("Frame", {
 		Name = "PictureBox",
 		BackgroundColor3 = C.void,

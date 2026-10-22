@@ -826,13 +826,16 @@ local function buildRobux(profile)
 end
 
 -- The suits along the top (built again only when which suits show changes).
+local NEW_SUITS: { [string]: boolean } = { wins = true, seats = true }
+
 local function buildSuits()
 	local list = suits()
 	local ids = {}
 	local items = {}
 	for _, suit in ipairs(list) do
 		table.insert(ids, suit.id)
-		table.insert(items, { id = suit.id, label = suit.name, icon = suit.icon })
+		-- (the suits new with the shop overhaul carry the "new" dot until they are opened)
+		table.insert(items, { id = suit.id, label = suit.name, icon = suit.icon, dot = NEW_SUITS[suit.id] == true })
 	end
 	local key = table.concat(ids, ",")
 	if key == shownSuits and suitTabs then
@@ -853,6 +856,10 @@ local function buildSuits()
 	}, function(id: string)
 		if id ~= currentSuit then
 			leaveSuit()
+			if NEW_SUITS[id] then
+				NEW_SUITS[id] = nil
+				setTabDot(id, false)
+			end
 			currentSuit = id
 			pick(nil)
 			ShopPanel.rebuild()
@@ -1170,6 +1177,31 @@ function ShopPanel.init()
 	-- The purse on the left, a note on the right.
 	local purse = Kit.frame({ Name = "Purse", Size = UDim2.new(0.4, 0, 0, 32), Parent = body })
 	Kit.list(purse, T.space.s, true)
+	-- (direction A: the hand Death deals from, three card backs fanned, before the coins)
+	local deck = Kit.frame({ Name = "Deck", Size = UDim2.fromOffset(34, 32), LayoutOrder = 0, Parent = purse })
+	for k, turn in ipairs({ -22, 0, 22 }) do
+		local back = Kit.Base.make("Frame", {
+			Name = "Back" .. k,
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 1, -1),
+			Size = UDim2.fromOffset(16, 24),
+			Rotation = turn,
+			BackgroundColor3 = C.void,
+			BorderSizePixel = 0,
+			ZIndex = 2 + k,
+			Parent = deck,
+		})
+		Kit.Base.stroke(back, C.bone, 1, 0.55)
+		local inner = Kit.Base.make("Frame", {
+			Name = "Inner",
+			Position = UDim2.fromOffset(3, 3),
+			Size = UDim2.new(1, -6, 1, -6),
+			BackgroundTransparency = 1,
+			ZIndex = 2 + k,
+			Parent = back,
+		})
+		Kit.Base.stroke(inner, C.bone, 1, 0.8)
+	end
 	Kit.icon({ name = "coin", size = 24, color = C.candle, LayoutOrder = 1, Parent = purse })
 	purseLabel = Kit.label({
 		font = "bodyBold",
