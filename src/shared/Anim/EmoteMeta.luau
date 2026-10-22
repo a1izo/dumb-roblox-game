@@ -95,7 +95,10 @@ return {
 	excuseMeSir = { context = { label = "LOOK UP", from = 0, to = 1.6, branch = "excuseMeSirUp" } },
 	-- NEXT POSE, any time: the three JoJo poses round and round (the second and third are not items: their effect
 	-- is the first one's, Sealed)
-	menacingPose = { context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose2" } },
+	menacingPose = {
+		context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose2" },
+		camera = { move = "hero", at = 1.2 },
+	},
 	-- (a Scrawl emote with an effect of its own: Gojo's speech bubble, the owner's Q33)
 	nahIdWin = { fx = 1 },
 	menacingPose2 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose3" } },
@@ -104,6 +107,7 @@ return {
 	-- (the branch is not an item of its own: its effect takes the emote's rarity, Penned)
 	excuseMeSirUp = { fx = 1 },
 	preDawnBonk = {
+		camera = { move = "push", at = 2.55 },
 		props = {
 			{
 				model = "Bat",
@@ -117,6 +121,7 @@ return {
 	},
 	-- LIFT, any time: the blindfold pushed up into the hair, the eyes open
 	blindfoldLift = {
+		camera = { move = "hero", at = 1.4 },
 		props = {
 			{
 				model = "Blindfold",
@@ -150,6 +155,7 @@ return {
 		allow = { { prop = 1, part = "Right Arm", from = 0.35, to = 1.55 } },
 	},
 	chairPerch = {
+		camera = { move = "orbitLeft" },
 		props = {
 			{
 				model = "Chair",
@@ -236,6 +242,7 @@ return {
 		},
 	},
 	sugarTower = {
+		camera = { move = "hold" },
 		props = {
 			{
 				model = "SugarCube",
@@ -280,6 +287,7 @@ return {
 	-- bites it, sets the bag down, stands, and it all sinks into the floor. Floor places from the floor under the
 	-- body (forward -z); hand holds solved from the clip's key poses (art/scripts/emotes/props.py).
 	chipAndPen = {
+		camera = { move = "push", at = 7.05 },
 		props = {
 			{
 				model = "Table",
@@ -520,6 +528,7 @@ return {
 		},
 	},
 	strawberryOnTop = {
+		camera = { move = "orbitRight", at = 2.8 },
 		props = {
 			{
 				model = "CakeSlice",
@@ -617,6 +626,7 @@ return {
 		},
 	},
 	diceTower = {
+		camera = { move = "high", at = 3.7 },
 		props = {
 			{
 				model = "Die",
@@ -674,8 +684,8 @@ return {
 			{ prop = 1, part = "Head", from = 1.8, to = 2.15 },
 		},
 	},
-	matchPointServe = { props = { RACKET } },
-	matchPointReturn = { props = { RACKET } },
+	matchPointServe = { props = { RACKET }, camera = { move = "track" } },
+	matchPointReturn = { props = { RACKET }, camera = { move = "track" } },
 	-- Impossible Lean (the owner's Q33): Smooth Criminal's white fedora with its black band, the brim pulled down
 	-- over the eyes as the fingers touch it, and kept low through the lean.
 	impossibleLean = {
@@ -787,6 +797,7 @@ return {
 	-- Cuffed Together: a cuff on each chained wrist (the leader's left, the follower's right), its ring on the
 	-- arm's outer side where the chain hangs from (Controllers/DuoController).
 	cuffedLead = {
+		camera = { move = "orbitLeft" },
 		props = {
 			{
 				model = "Cuff",
@@ -828,20 +839,25 @@ return {
 	--              eye, look, fov) it then drifts to until the next shot; `focus` studs kept sharp round `look`.
 	--              beats: flash, impact (colour, strength, seconds), shake (strength, seconds) and vignette (on
 	--              from then) at `at` s
+	--   camera     a Sealed-and-up emote's or a duo's showpiece move in the lobby (Presentation/EmoteCamera; the
+	--              owner's Q22): { move = push | hero | high | shoulder | track | orbitLeft | orbitRight | hold,
+	--              at = seconds into the clip it arrives on its beat } (a slow orbit round to the right without one)
 	-- CHARGE, once slumped on the floor: plugged in, jolted back up
 	lowBattery = { lowBody = true, context = { label = "CHARGE", from = 3, to = 4.6, branch = "lowBatteryCharge" } },
+	writeAir = { camera = { move = "shoulder", at = 2.3 } },
 	-- the free duos (no shop item): the one asked walks up to face the one asking, and both play it
-	highFive = { duo = true, lobbyOnly = true },
-	handshake = { duo = true, lobbyOnly = true },
+	highFive = { duo = true, lobbyOnly = true, camera = { move = "orbitRight", at = 1.6 } },
+	handshake = { duo = true, lobbyOnly = true, camera = { move = "hold" } },
 	footScratch = { lowBody = true },
 	-- the office trend is danced in rows: up to five join in, two beside the first dancer and three behind
 	officeParty = { formation = { { -5, 1 }, { 5, 1 }, { -7.5, 6 }, { 0, 6 }, { 7.5, 6 } } },
 	hairTwirl = { lowBody = true },
 	goalCelebration = { lowBody = true },
-	aceCrouch = { lowBody = true },
+	aceCrouch = { lowBody = true, camera = { move = "high", at = 1.6 } },
 	takeTheL = { lowBody = true },
-	-- New World: close on the bowed head; from the front-left as the arm rises, tilting up after it; the white flash as it
-	-- closes and the view from low in front, up at the fist against the sky; back as it comes down.
+	-- New World (the owner's Q23): out of white, the figure resolving close on the bowed head; from the front-left as
+	-- the arm rises, tilting up after it; the flash as the fist closes and the low hero angle up at the raised arm;
+	-- then wide and low, held still on the silhouette against the sky.
 	newWorld = {
 		cinematic = true,
 		fx = 4,
@@ -858,29 +874,32 @@ return {
 					focus = 3,
 				},
 				{
-					at = 1.45,
+					at = 2.3,
 					eye = { -2.6, 0.6, -6.4 },
 					look = { 0.2, 0.9, 0 },
 					fov = 46,
 					to = { eye = { -2.2, 0.4, -5.6 }, look = { 0.4, 1.3, 0 } },
 				},
 				{
-					at = 2.42,
-					eye = { 2.6, -1.3, -3.9 },
-					look = { 0.6, 1.2, 0 },
-					fov = 55,
-					to = { eye = { 2, -1.5, -3.3 }, look = { 0.8, 1.6, 0 } },
+					at = 3.42,
+					eye = { 4.4, -1, -3.2 },
+					look = { 0.7, 1.9, 0 },
+					fov = 56,
+					to = { eye = { 4, -1.2, -2.8 }, look = { 0.8, 2.2, 0 } },
 				},
-				{ at = 3.75, glide = 0.6, eye = { -1.2, 1.3, -8.2 }, look = { 0, 1.2, 0 }, fov = 42 },
+				{ at = 4.7, glide = 0.8, eye = { -0.6, -1.1, -7.6 }, look = { 0, 1.9, 0 }, fov = 46 },
 			},
 			beats = {
-				{ at = 2.42, kind = "flash", color = { 255, 252, 240 }, strength = 0.85, seconds = 0.7 },
-				{ at = 2.42, kind = "shake", strength = 0.08, seconds = 0.3 },
+				{ at = 0, kind = "flash", color = { 255, 252, 244 }, strength = 1, seconds = 1.4 },
+				{ at = 3.42, kind = "flash", color = { 255, 252, 240 }, strength = 0.85, seconds = 0.7 },
+				{ at = 3.42, kind = "shake", strength = 0.08, seconds = 0.3 },
+				{ at = 4.7, kind = "vignette", color = { 0, 0, 0 }, strength = 0.55 },
 			},
 		},
 	},
-	-- Final Breakdown, Light in the warehouse: low and close on the held-in laugh; very low and wide as he is
-	-- thrown back, turning round him; from high in front as he folds over; back.
+	-- Final Breakdown, Light in the warehouse (the owner's Q23): a handheld push in, low and close on the held-in
+	-- laugh; very low and wide as he is thrown back, turning round him; then from straight above as he collapses,
+	-- held there to the end.
 	finalBreakdown = {
 		cinematic = true,
 		fx = 4,
@@ -890,10 +909,10 @@ return {
 			shots = {
 				{
 					at = 0,
-					eye = { 1.4, -0.9, -5.4 },
+					eye = { 1.6, -0.9, -6.4 },
 					look = { 0.1, 0.6, -0.5 },
 					fov = 40,
-					to = { eye = { 1.1, -0.8, -4.5 } },
+					to = { eye = { 1, -0.8, -4.2 } },
 					focus = 4,
 				},
 				{
@@ -905,21 +924,22 @@ return {
 				},
 				{
 					at = 3.95,
-					eye = { 2.5, 6, -4.5 },
-					look = { 0, 0, -0.6 },
-					fov = 44,
-					to = { eye = { 2.2, 6.6, -4 } },
+					eye = { 0.4, 8.6, -2.2 },
+					look = { 0, -0.2, -0.7 },
+					fov = 46,
+					to = { eye = { 0.3, 9.6, -1.9 } },
 				},
-				{ at = 4.85, glide = 0.5, eye = { -1.6, 1, -6.4 }, look = { 0, 1, 0 }, fov = 40 },
 			},
 			beats = {
+				{ at = 0, kind = "shake", strength = 0.035, seconds = 2.15 },
 				{ at = 2.25, kind = "impact", color = { 235, 232, 220 }, strength = 0.45, seconds = 0.25 },
 				{ at = 2.25, kind = "shake", strength = 0.14, seconds = 0.5 },
 				{ at = 4.2, kind = "flash", color = { 0, 0, 0 }, strength = 0.35, seconds = 0.4 },
 			},
 		},
 	},
-	-- Reaper's Eyes: pushing in as the head turns round under the hand; the red reveal right on the eyes; back.
+	-- Reaper's Eyes (the owner's Q23): one slow push, unbroken, from the turned-away head to the eyes as the hand is
+	-- drawn off them (the red reveal), ending right on the stare.
 	reapersEyes = {
 		cinematic = true,
 		fx = 4,
@@ -929,20 +949,12 @@ return {
 			shots = {
 				{
 					at = 0,
-					eye = { -0.7, 1.4, -6.2 },
-					look = { 0, 1.35, 0 },
-					fov = 38,
-					to = { eye = { -0.35, 1.5, -3.4 }, fov = 34 },
-				},
-				{
-					at = 1.75,
-					eye = { 0, 1.45, -3.2 },
-					look = { 0, 1.4, -0.3 },
-					fov = 30,
-					to = { eye = { 0, 1.45, -2.8 } },
+					eye = { -0.6, 1.42, -7.2 },
+					look = { 0, 1.36, 0 },
+					fov = 40,
+					to = { eye = { 0, 1.45, -2.5 }, look = { 0, 1.42, -0.3 }, fov = 28 },
 					focus = 2,
 				},
-				{ at = 2.8, glide = 0.5, eye = { 0, 1.2, -6.5 }, look = { 0, 1.2, 0 }, fov = 40 },
 			},
 			beats = {
 				{ at = 1.75, kind = "impact", color = { 163, 25, 47 }, strength = 0.45, seconds = 0.25 },
@@ -952,7 +964,7 @@ return {
 	},
 	-- Just As Planned: the stand; close from the side he turns to for the stare and the glint; from his right as
 	-- the hand closes on the plan; under the chin for the grin; wide and low for the laugh, pulling back; the tie; close
-	-- over the left shoulder for the last look; wider as he comes to rest.
+	-- over the left shoulder for the last look; then a slow pull-back to the end as he comes to rest (the owner's Q23).
 	justAsPlanned = {
 		cinematic = true,
 		fx = 4,
@@ -1000,7 +1012,14 @@ return {
 					to = { eye = { -2.8, 1.7, -2.6 } },
 					focus = 3,
 				},
-				{ at = 8.6, glide = 0.6, eye = { -0.8, 1.2, -7.5 }, look = { 0, 1, 0 }, fov = 42 },
+				{
+					at = 8.35,
+					glide = 0.5,
+					eye = { -0.9, 1.25, -4.6 },
+					look = { 0, 1.05, 0 },
+					fov = 40,
+					to = { eye = { -0.7, 1.9, -11.5 }, fov = 44 },
+				},
 			},
 			beats = {
 				{ at = 2.05, kind = "flash", color = { 163, 25, 47 }, strength = 0.22, seconds = 0.35 },

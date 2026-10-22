@@ -18,11 +18,11 @@ watched = "2026-10-20: the owner's answer (Q9: arm to the sky, fist closed)"
 mirror = false
 
 [timing]
-length = 4.6
-fit = "Bowed 0.7 s, the arm up by 2.3 s, the fist 2.42 s, held to 3.7 s."
+length = 6.5
+fit = "Out of the white, bowed by 1.1 s, the arm up by 3.3 s, the fist 3.42 s, held to 5.6 s (2026-10-22: lengthened for the cutscene's white open and held silhouette, the owner's Q23)."
 
 [[beat]]
-src = 2.42
+src = 3.42
 pose = "the fist closed at the top"
 
 [face]

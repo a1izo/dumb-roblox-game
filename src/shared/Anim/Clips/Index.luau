@@ -99,7 +99,7 @@ return {
 	mushroomStroll = { part = 5, length = 3, loop = true },
 	mushroomStrollWalk = { part = 5, length = 0.883, loop = true },
 	nahIdWin = { part = 5, length = 4, loop = true },
-	newWorld = { part = 5, length = 4.6, loop = false },
+	newWorld = { part = 5, length = 6.5, loop = false },
 	notMyProblem = { part = 5, length = 3, loop = true },
 	notMyProblemWalk = { part = 5, length = 0.967, loop = true },
 	officeParty = { part = 6, length = 6.4, loop = true },

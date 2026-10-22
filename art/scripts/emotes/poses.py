@@ -365,21 +365,25 @@ breakdown.build()
 # "I will become the god of this new world" (Death Note, episode 1; the owner's answer, 2026-10-20: the arm raised to
 # the sky, the fist closed; refs: newWorld.toml): the head bowed, then the right arm rising slowly to the sky, the
 # chest opening, the face lifting after it, the fist closing at the top, held in the light (EmoteFx), and down.
-world = Motion("newWorld", 4.6, note="The god of the new world: the arm raised slowly to the sky, the fist closed, the "
-               "face up, held.")
+world = Motion("newWorld", 6.5, note="The god of the new world: out of the white, bowed, the arm raised slowly to the "
+               "sky, the fist closed, the face up, held as a silhouette.")
 SKY_R = J((172, 0, 10), (0, 0.2, 0))
+# (6.5 s, the owner's Q23: the cutscene opens on white and holds the silhouette; the rise and the fist as before,
+# a second later)
 world.key(0.0, "smooth", **REST)
-world.key(0.7, "smooth", offset=(0, -0.03, 0), root=(-6, 0, 0), neck=(-22, 0, 0), rShoulder=J((10, 0, 6)),
+world.key(1.1, "smooth", offset=(0, -0.03, 0), root=(-6, 0, 0), neck=(-22, 0, 0), rShoulder=J((10, 0, 6)),
           lShoulder=J((6, 0, -6)))  # bowed
-world.key(1.6, "sine", offset=(0, 0, 0.02), root=(3, 0, 0), neck=(6, 0, 0), rShoulder=J((110, 0, 16), (0, 0.1, 0)),
+world.key(1.7, "smooth", offset=(0, -0.035, 0), root=(-6.5, 0, 0), neck=(-24, 0, 0), rShoulder=J((10, 0, 6)),
+          lShoulder=J((6, 0, -6)))  # still bowed
+world.key(2.6, "sine", offset=(0, 0, 0.02), root=(3, 0, 0), neck=(6, 0, 0), rShoulder=J((110, 0, 16), (0, 0.1, 0)),
           lShoulder=J((10, 0, -18)))
-world.key(2.3, "out", offset=(0, 0.02, 0.04), root=(7, 0, 0), neck=(28, 0, 0), rShoulder=SKY_R,
+world.key(3.3, "out", offset=(0, 0.02, 0.04), root=(7, 0, 0), neck=(28, 0, 0), rShoulder=SKY_R,
           lShoulder=J((14, 0, -26)))  # at the top
-world.key(2.42, "snap", offset=(0, 0.02, 0.04), root=(8, 0, 0), neck=(30, 0, 0), rShoulder=J((174, 0, 9), (0, 0.22, 0)),
+world.key(3.42, "snap", offset=(0, 0.02, 0.04), root=(8, 0, 0), neck=(30, 0, 0), rShoulder=J((174, 0, 9), (0, 0.22, 0)),
           lShoulder=J((16, 0, -28)))  # the fist closes
-world.key(3.7, "smooth", offset=(0, 0.02, 0.04), root=(8, 0, 0), neck=(30, 0, 0), rShoulder=SKY_R,
-          lShoulder=J((14, 0, -28)))
-world.key(4.6, "sine", offset=(0, 0, 0), **REST)
+world.key(5.6, "smooth", offset=(0, 0.02, 0.04), root=(8, 0, 0), neck=(30, 0, 0), rShoulder=SKY_R,
+          lShoulder=J((14, 0, -28)))  # held
+world.key(6.5, "sine", offset=(0, 0, 0), **REST)
 world.follow(("rShoulder", "lShoulder"), 2.4, 0.8)
 world.follow("neck", 1.8, 0.85)
 world.plant(stance=0.12)

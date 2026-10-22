@@ -1,6 +1,7 @@
 -- Emotes: every shop emote reaches the wheel and quick chat once, sits in a section of the shop, has a
 -- sound slot and only known faces; the wheel keeps eight slots, moves an emote rather than copying it, and
--- fills its empty slots with what is bought; every cinematic emote has a cutscene that fits its clip.
+-- fills its empty slots with what is bought; every cinematic emote has a cutscene that fits its clip, and every
+-- showpiece camera a known move on a beat inside its clip.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -129,6 +130,36 @@ return function(t)
 				end
 			end
 		end)
+
+		it(
+			"gives each showpiece camera a known move, on a beat inside its clip, and none to a cinematic one",
+			function()
+				-- (Presentation/EmoteCamera's moves)
+				local MOVES = {
+					push = true,
+					hero = true,
+					high = true,
+					shoulder = true,
+					track = true,
+					orbitLeft = true,
+					orbitRight = true,
+					hold = true,
+				}
+				local count = 0
+				for clip, meta in pairs(EmoteMeta :: any) do
+					local camera = meta.camera
+					if camera ~= nil then
+						count += 1
+						expect(MOVES[camera.move] == true).to.equal(true)
+						expect(meta.cinematic == true).to.equal(false)
+						if camera.at ~= nil then
+							expect(camera.at > 0 and camera.at <= ClipPlayer.length(clip)).to.equal(true)
+						end
+					end
+				end
+				expect(count >= 13).to.equal(true)
+			end
+		)
 		it("has a sound slot for every emote and only known faces", function()
 			for _, emote in ipairs(QuickChat.EMOTES) do
 				expect(type(EmoteMedia.SOUNDS[emote.id])).to.equal("string")

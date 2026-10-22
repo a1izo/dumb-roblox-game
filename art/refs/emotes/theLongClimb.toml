@@ -18,8 +18,8 @@ watched = "2026-10-21: frame sheets of the source"
 mirror = false
 
 [timing]
-length = 1.6
-fit = "A stroll (player-steered, the old plan's Q22): this standing loop, and its walk cycle (theLongClimbWalk) the game plays instead of its own walk while the stroll lasts."
+length = 1.84
+fit = "A stroll: this standing loop (two climbing steps on the spot, 1.84 s), and its walk cycle (theLongClimbWalk) the game plays as the body walks by itself (2026-10-21: the owner's Q24/Q25, the shop overhaul's B5)."
 
 [face]
 key = ""

@@ -40,7 +40,7 @@ Every shop emote has a rarity (`src/shared/Rarity.luau`), the same five tiers as
    moments and duos).
 3. **Every client** (`src/client/Controllers/EmoteController.luau`) starts a session on that body: the clip
    (`PoseController`, eased in and out; a loop joins the shared beat, a one-shot catches up at most 0.25 s), its
-   props, sound cues, face, effects (`EmoteFx`), the ink wisp, and for the player's own emote the camera. The
+   props, sound cues, face, effects (`EmoteFx`), the wisp of dust, and for the player's own emote the camera. The
    session ends when the clip ends, the body moves, another emote replaces it, the body goes, or the server stops
    it, and it takes everything it made with it.
 
@@ -55,7 +55,7 @@ out, the body is lifted wherever the blend of two poses would put a leg through 
 | Where | What may play |
 | --- | --- |
 | The lobby | everything |
-| A case: the Briefing, free roam | everything but duos and the lobby-only ones; the effects at most one small accent (rung 1); no camera moves |
+| A case: the Briefing, free roam | everything but duos and the lobby-only ones; the effects in full (the owner's Q8 b; low graphics keeps one small accent); no camera moves |
 | A case: the meeting and the vote | the waist up only; nothing that is about the legs (`lowBody`), sets props on the floor, or walks |
 | A case: the Intro, Verdict, Outro, Reveal, and any scene everyone sees (intro, meeting intro, death, arrest, verdict, outro) | nothing: every emote stops and new ones are refused while the scene holds |
 | A scene only one player sees (the Eyes deal) | no effect on emotes (stopping everyone's would give it away) |
@@ -123,8 +123,9 @@ branch some of the time). A branch with a context of its own can be pressed agai
 Only the player's own emote, only in the lobby, never under Reduce motion.
 
 - **The showpiece camera** (`Presentation/EmoteCamera`, Settings "Camera moves round your showpiece emotes"):
-  Sealed and up, and duos: the camera eases round to a three-quarter view in front and turns slowly, then glides
-  back.
+  Sealed and up, and duos: the emote's own single move (`EmoteMeta.camera`: push, hero, high, shoulder, track,
+  orbitLeft, orbitRight or hold), eased round to where it begins and arriving where it ends on the emote's `at`
+  beat; no cuts; a slow orbit to the right without one. Then it glides back.
 - **The private cutscenes** (`Presentation/EmoteCinema`, Settings "Godhood emote cutscenes"): the four Godhood
   emotes take the camera through their `cinema` shot list, with the letterbox, a colour grade and a vignette.
   A shot is `{ at, eye, look, fov, glide?, to?, focus? }` in the body's frame as the emote begins (x to its

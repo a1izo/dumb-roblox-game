@@ -873,7 +873,7 @@ function EmoteController.start(character: Model, clip: string, options: StartOpt
 		end
 		if not session.camera and EmoteCamera.wants(clip) then
 			local seconds = if prepared and not prepared.loop then prepared.length + HOLD else math.huge
-			session.camera = EmoteCamera.start(character, seconds)
+			session.camera = EmoteCamera.start(character, seconds, clip)
 		end
 	end
 	EmoteController.Started:Fire(character, session)
