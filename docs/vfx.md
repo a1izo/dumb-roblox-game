@@ -15,6 +15,26 @@ the research the brief asked for; `docs/emotes.md` says where each emote's effec
 - Jujutsu Shenanigans: the "Aura monster" traversal emote watched frame by frame (youtube WCS02c9lgro), robloxden's
   and bloxodes' emote lists (traversal emotes move the player, slower than a walk, while the animation is active).
 
+## The owner's tutorials (2026-10-22/23)
+
+The owner sent tutorials to learn from (read through their captions; the silent ones from their frames):
+
+- goodgood3d (Blender, "the same 5 nodes for 90% of my 3D work"): stylised effects are plain shapes (a shockwave
+  dome, rings, spikes) scaled over time on a curve (Scene Time -> Map Range -> Float Curve -> Transform Geometry),
+  their look a noise cut into hard steps. Here: `Presentation/FxKit` grows the Core set's `FxDome`, `FxRing`,
+  `FxCrescent` and `FxSpikes` on an eased curve (the Float Curve), tinted and glowing; the stepped noise is baked
+  in Blender into the `FxPuff` flipbook (4 x 4, `art/scripts/textures.py`).
+- MoldySugar (VFX scripting): effect templates cloned at a CFrame; emit every emitter at once, enable a lingering
+  layer under the burst; a crater of rocks (`FxKit.rocks`); a camera shake; an impact light (`FxKit.light`); a
+  ColorCorrection flash tinted to the effect (EmoteCinema's `flash` and `impact` beats).
+- BlenderBuilder (particles): colour from dark to its hue and a size that swells mid-life; LightEmission with the
+  colours darkened to match; velocity-aligned orientation and Squash for streaks; white textures, so they tint;
+  Drag to gather; TimeScale for a frozen beat.
+- Ludius, Disobeyedcrab (cutscenes): a camera animated with the body (our Blender shot lists), the player locked
+  and kept safe while it plays, an easing chosen for each move, a roll, a lower FOV, easing back into the player's
+  camera at the end. Moon Animator (two): never linear keys (quad, quart). Pidgey's showcase: beams in layers (a
+  white core inside coloured shells), a swirling vortex, thick smoke, white streaks.
+
 ## The tools
 
 | Tool | Use it for | Notes from the docs |

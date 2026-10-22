@@ -361,16 +361,56 @@ def speech_nah(size=512, over=2):
 SPEECH = (speech_nah,)
 
 
+def fx_puff(cell=128, grid=4, seed=11):
+    """The FX kit's hard-edged puff (the owner's tutorial: a noise cut into hard steps): a 4 x 4 flipbook of a round
+    puff of smoothed noise whose threshold rises frame by frame, so it breaks up and is eaten away with sharp edges,
+    a darker rim inside each edge. White (the game tints it)."""
+    rng = np.random.default_rng(seed)
+
+    def smooth(n):
+        """A grid of n x n random values blown up to the cell with smoothstep blends."""
+        values = rng.random((n + 1, n + 1))
+        t = np.linspace(0, n, cell)
+        i0 = np.clip(np.floor(t).astype(int), 0, n - 1)
+        f = t - i0
+        f = f * f * (3 - 2 * f)
+        fy, fx = f[:, None], f[None, :]
+        a, b = values[i0][:, i0], values[i0 + 1][:, i0]
+        c, d = values[i0][:, i0 + 1], values[i0 + 1][:, i0 + 1]
+        return a * (1 - fy) * (1 - fx) + b * fy * (1 - fx) + c * (1 - fy) * fx + d * fy * fx
+
+    noise = 0.7 * smooth(8) + 0.3 * smooth(16)
+    y, x = np.mgrid[0:cell, 0:cell] / (cell - 1) * 2 - 1
+    radial = np.clip(1 - np.sqrt(x * x + y * y), 0, 1)
+    field = (radial * 0.75 + noise * 0.45) * np.clip(radial * 3, 0, 1)  # (nothing reaches the cell's edge)
+    sheet = np.zeros((cell * grid, cell * grid, 4), dtype=np.float32)
+    frames = grid * grid
+    for k in range(frames):
+        cut = 0.25 + 0.6 * (k / (frames - 1)) ** 1.2
+        solid = field > cut
+        rim = solid & (field < cut + 0.05)
+        shade = np.where(rim, 0.72, 1.0)
+        cell_rgba = np.zeros((cell, cell, 4), dtype=np.float32)
+        cell_rgba[..., 0] = cell_rgba[..., 1] = cell_rgba[..., 2] = shade
+        cell_rgba[..., 3] = solid.astype(np.float32)
+        r, c = divmod(k, grid)
+        sheet[r * cell:(r + 1) * cell, c * cell:(c + 1) * cell] = cell_rgba
+    return save_array("FxPuff", sheet)
+
+
+FX_KIT = (fx_puff,)
+
+
 TOKYO = (tokyo_rain, tokyo_splash, tokyo_petal)
 CAMPUS = (campus_flake, feather)
 
 
 def build_only(groups):
-    """Writes only some textures ("Tokyo", "Campus", "Speech"), without rendering the rest again."""
+    """Writes only some textures ("Tokyo", "Campus", "Speech", "Fx"), without rendering the rest again."""
     common.ensure_dirs()
     paths = []
     for name in groups:
-        paths.extend(make() for make in {"Tokyo": TOKYO, "Campus": CAMPUS, "Speech": SPEECH}[name])
+        paths.extend(make() for make in {"Tokyo": TOKYO, "Campus": CAMPUS, "Speech": SPEECH, "Fx": FX_KIT}[name])
     return paths
 
 
@@ -381,6 +421,7 @@ def build():
     paths = []
     paths.append(rain_streak())
     paths.append(speech_nah())
+    paths.append(fx_puff())
     paths.append(smoke())
     paths.append(soul_glow())
     paths.append(spark())

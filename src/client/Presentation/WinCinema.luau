@@ -29,6 +29,7 @@ local EmoteController = require(script.Parent.Parent.Controllers.EmoteController
 local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
 local Stage = require(script.Parent.Stage)
+local FxKit = require(script.Parent.FxKit)
 
 local WinCinema = {}
 
@@ -795,6 +796,13 @@ ACTS.stamp = function(refs, event)
 			mark.Enabled = true
 		end
 		smoke(file.Position + Vector3.new(0, 0.1, 0), refs.folder, 12, Color3.fromRGB(196, 190, 176))
+		FxKit.shape("ring", CFrame.new(file.Position + Vector3.new(0, 0.12, 0)), {
+			size = 4.5,
+			seconds = 0.3,
+			color = Color3.fromRGB(196, 190, 176),
+			material = Enum.Material.ForceField,
+			transparency = 0.15,
+		})
 	end
 end
 
@@ -824,6 +832,18 @@ ACTS.shatter = function(refs, event)
 	setShown(model, false)
 	local random = Random.new(7)
 	local color = rgb(event.color, Color3.fromRGB(163, 25, 47))
+	-- (the FX kit) the king bursts: a spike burst and a dome of crimson light where it stood
+	FxKit.shape(
+		"spikes",
+		cf,
+		{ size = size.Magnitude * 1.1, seconds = 0.25, color = color, transparency = 0.15, spin = 30 }
+	)
+	FxKit.shape(
+		"dome",
+		cf - Vector3.new(0, size.Y / 2, 0),
+		{ size = size.Magnitude * 1.4, seconds = 0.45, color = color, transparency = 0.5 }
+	)
+	FxKit.light(cf.Position, color, 24, 6, 0.6)
 	local shards: { BasePart } = {}
 	for _ = 1, event.count or 40 do
 		local local_ = Vector3.new(

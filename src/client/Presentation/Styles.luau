@@ -31,6 +31,7 @@ local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
+local FxKit = require(script.Parent.FxKit)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 
 local Styles = {}
@@ -659,6 +660,16 @@ function Styles.death(style: string?, model: Model): number
 		end
 		task.delay(1.9, function()
 			Sfx.play("stoneCrack")
+			if world then
+				FxKit.puff(centre - Vector3.new(0, 1.5, 0), 2.4, STONE, 8)
+				FxKit.shape("ring", CFrame.new(centre - Vector3.new(0, 2.9, 0)), {
+					size = 9,
+					seconds = 0.5,
+					color = STONE,
+					material = Enum.Material.ForceField,
+					transparency = 0.2,
+				})
+			end
 			for _, piece in ipairs(parts) do
 				if piece.Parent then
 					shatter(piece, here, 3, STONE, Enum.Material.Slate, rng)
@@ -681,6 +692,14 @@ function Styles.death(style: string?, model: Model): number
 		end
 		task.delay(0.9, function()
 			Sfx.play("stoneCrack")
+			if world then
+				FxKit.shape(
+					"spikes",
+					CFrame.new(centre),
+					{ size = 5, seconds = 0.2, color = GLASS, transparency = 0.3 }
+				)
+				FxKit.light(centre, GLASS, 14, 3, 0.4)
+			end
 			for _, piece in ipairs(parts) do
 				if piece.Parent then
 					shatter(piece, here, 4, GLASS, Enum.Material.Glass, rng)

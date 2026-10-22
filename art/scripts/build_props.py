@@ -24,7 +24,7 @@ CORE = "Core"
 # Textures carried into Roblox on flat quads named "Tex_<name>" (see Assets.texture): effect
 # textures, and the UI's lettering, paper and icons (art/scripts/ui). They ride in the Core set's
 # file.
-EFFECT_TEXTURES = ["RainStreak", "Smoke", "SoulGlow", "Spark", "SpeechNah",
+EFFECT_TEXTURES = ["RainStreak", "Smoke", "SoulGlow", "Spark", "SpeechNah", "FxPuff",
                    "Snowflake", "Footprint", "FxShard", "FxStatic", "FxChalk", "FxTear"]
 UI_TEXTURES = [
     "UiTitle1",

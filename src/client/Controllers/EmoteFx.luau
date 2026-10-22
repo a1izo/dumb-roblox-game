@@ -20,6 +20,7 @@ local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
 local LocomotionController = require(script.Parent.Parent.Anim.LocomotionController)
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
 local Stage = require(script.Parent.Parent.Presentation.Stage)
+local FxKit = require(script.Parent.Parent.Presentation.FxKit)
 local ClientState = require(script.Parent.Parent.ClientState)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Governor = require(script.Parent.Parent.World.Governor)
@@ -67,13 +68,36 @@ FX.newWorld = function(character, preview)
 		Parent = workspace.CurrentCamera,
 	}) :: BasePart
 	TweenService:Create(column, TweenInfo.new(1.2, Enum.EasingStyle.Sine), { Transparency = 0.84 }):Play()
+	-- (the FX kit) the fist closes at 3.42 s: a ring of light over the floor, spikes of light off the fist
+	local over = false
+	task.delay(3.42, function()
+		local arm = character:FindFirstChild("Right Arm")
+		if over or not root.Parent then
+			return
+		end
+		FxKit.shape(
+			"ring",
+			CFrame.new(floor + Vector3.new(0, 0.08, 0)),
+			{ size = 18, seconds = 0.6, color = warm, transparency = 0.3 }
+		)
+		if arm and arm:IsA("BasePart") then
+			local fist = (arm.CFrame * CFrame.new(0, -1.1, 0)).Position
+			FxKit.shape(
+				"spikes",
+				CFrame.new(fist),
+				{ size = 3.6, seconds = 0.3, color = warm, transparency = 0.2, spin = 40 }
+			)
+			FxKit.light(fist, warm, 20, 5, 0.7)
+		end
+	end)
 	return function()
+		over = true
 		removeLight()
-		local fade = TweenService:Create(column, TweenInfo.new(0.5), { Transparency = 1 })
-		fade.Completed:Once(function()
+		TweenService:Create(column, TweenInfo.new(0.5), { Transparency = 1 }):Play()
+		-- (on a timer, not the tween's Completed: a throttled client can miss that and leave the column)
+		task.delay(0.55, function()
 			column:Destroy()
 		end)
-		fade:Play()
 	end
 end
 
@@ -455,6 +479,15 @@ FX.justAsPlanned = function(character, preview)
 		end
 		below.Brightness = 6
 		tween(below, 0.9, { Brightness = 2.6 })
+		-- (the FX kit: a crimson shockwave dome and a ring running out over the floor)
+		FxKit.shape("dome", CFrame.new(floor), { size = 13, seconds = 0.55, color = CRIMSON, transparency = 0.55 })
+		FxKit.shape("ring", CFrame.new(floor + Vector3.new(0, 0.08, 0)), {
+			size = 22,
+			seconds = 0.7,
+			color = CRIMSON,
+			transparency = 0.25,
+		})
+		FxKit.light(head.Position, CRIMSON, 18, 4, 0.6)
 		local ring = keep(Create("Part", {
 			Name = "EmotePlanRing",
 			Shape = Enum.PartType.Cylinder,
@@ -1456,6 +1489,14 @@ FX.finalBreakdown = function(character, preview)
 		local sole = lowerSole(character)
 		if sole then
 			EmoteFx.thud(CFrame.new(sole), 6)
+			local ground = floorUnder(sole, character)
+			FxKit.rocks(ground, 3.2, 12)
+			FxKit.shape("ring", CFrame.new(ground + Vector3.new(0, 0.06, 0)), {
+				size = 13,
+				seconds = 0.5,
+				color = Color3.fromRGB(214, 210, 198),
+				transparency = 0.4,
+			})
 		end
 		pour.Rate = if calm then 8 else 24
 	end)
@@ -1512,6 +1553,15 @@ FX.preDawnBonk = function(character, preview)
 		if Motion.isReduced() then
 			return
 		end
+		local ground = floorUnder((root :: BasePart).Position + (root :: BasePart).CFrame.LookVector * 1.6, character)
+		FxKit.rocks(ground, 1.8, 9)
+		FxKit.shape("dome", CFrame.new(ground), {
+			size = 5,
+			seconds = 0.35,
+			color = Color3.fromRGB(168, 150, 120),
+			material = Enum.Material.ForceField,
+			transparency = 0.3,
+		})
 		local glow = Create("PointLight", {
 			Color = Color3.fromRGB(255, 170, 90),
 			Range = 14,
@@ -2179,6 +2229,14 @@ FX.theLongClimb = function(character, preview)
 		end
 		nextStep = nextStep % STEP_POOL + 1
 		layStep(step, CFrame.lookAt(middle, middle + way) * CFrame.new(0, 0.03 - STEP_SIZE.Y / 2, 0))
+		if not low then
+			FxKit.shape("ring", CFrame.new(middle + Vector3.new(0, 0.06, 0)), {
+				size = 4.6,
+				seconds = 0.35,
+				color = CLIMB_GREEN,
+				transparency = 0.35,
+			})
+		end
 		if glow then
 			glow.CFrame = CFrame.new(middle + Vector3.new(0, 0.6, 0))
 		end
@@ -2792,6 +2850,15 @@ function EmoteFx.thud(at: CFrame, size: number)
 		Parent = holder,
 	}) :: ParticleEmitter
 	dust:Emit(math.clamp(math.floor(size * 4), 8, 28))
+	if size >= 2.5 then
+		FxKit.shape("ring", at + Vector3.new(0, 0.05, 0), {
+			size = size * 2.4,
+			seconds = 0.4,
+			color = Color3.fromRGB(150, 146, 140),
+			material = Enum.Material.ForceField,
+			transparency = 0.2,
+		})
+	end
 	task.delay(1.2, function()
 		holder:Destroy()
 	end)
