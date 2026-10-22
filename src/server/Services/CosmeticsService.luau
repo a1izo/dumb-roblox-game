@@ -232,10 +232,8 @@ function CosmeticsService.apply(player: Player)
 	if not data then
 		return
 	end
-	local tie = equipped(player, data, "tie")
 	local book = equipped(player, data, "grimoire")
 	local specter = equipped(player, data, "specter")
-	player:SetAttribute("LTieColor", if tie then tie.color else nil)
 	player:SetAttribute("LGrimoireColor", if book then book.color else nil)
 	player:SetAttribute("LSpecterColor", if specter then specter.color else nil)
 	-- (Only Deathsingers and spectators ever see a form: GhostVisibility.)
@@ -253,7 +251,6 @@ function CosmeticsService.apply(player: Player)
 		end)
 	end
 	CharacterService.refreshAccessories(player)
-	CharacterService.recolorTie(player)
 	local title = equipped(player, data, "title")
 	titleTag(player, character, if title then title.name else nil)
 	-- The stance the body settles into when it stands still (LocomotionController).

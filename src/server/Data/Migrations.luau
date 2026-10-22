@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 5
+Migrations.CURRENT = 6
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -189,6 +189,47 @@ local STEPS: { [number]: (any) -> () } = {
 			data.equipped.trail = nil
 		end
 		data.winScene = nil
+	end,
+	-- v5 -> v6 (2026-10-21, the owner's drops in the shop overhaul, no refund): the ties (and their slot), the
+	-- Deerstalker, the Ivory Fedora, the Velvet Cap and the Bone Vellum cover leave the game. A master who had
+	-- earned a role's level-10 tie has that role's level-10 title instead.
+	[5] = function(data)
+		local dropped = {
+			hat_deerstalker = true,
+			hat_fedora_white = true,
+			hat_cap_vip = true,
+			book_white = true,
+		}
+		local masters = {
+			tie_m_hand = "title_m10_hand",
+			tie_m_cultist = "title_m10_cultist",
+			tie_m_zero = "title_m10_zero",
+			tie_m_butler = "title_m10_butler",
+			tie_m_agent = "title_m10_agent",
+		}
+		if type(data.owned) == "table" then
+			local ids = {}
+			for id in pairs(data.owned) do
+				table.insert(ids, id)
+			end
+			for _, id in ipairs(ids) do
+				if type(id) == "string" and (dropped[id] or string.sub(id, 1, 4) == "tie_") then
+					if masters[id] then
+						data.owned[masters[id]] = true
+					end
+					data.owned[id] = nil
+				end
+			end
+		end
+		if type(data.equipped) == "table" then
+			data.equipped.tie = nil
+			if dropped[data.equipped.hat] then
+				data.equipped.hat = nil
+			end
+			if dropped[data.equipped.grimoire] then
+				data.equipped.grimoire = nil
+			end
+		end
 	end,
 }
 

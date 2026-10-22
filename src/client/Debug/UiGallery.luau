@@ -138,7 +138,7 @@ local function build()
 	Kit.tabs({
 		items = {
 			{ id = "a", label = "Hats", icon = "hood" },
-			{ id = "b", label = "Ties" },
+			{ id = "b", label = "Covers" },
 			{ id = "c", label = "Eyes", icon = "eye" },
 		},
 		selected = "a",

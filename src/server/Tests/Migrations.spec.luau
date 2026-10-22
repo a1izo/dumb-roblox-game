@@ -90,6 +90,30 @@ return function(t)
 			expect(data.equipped.hat).to.equal("hat_cap")
 			expect(data.winScene).to.equal(nil)
 		end)
+		it("takes the owner's drops away with no refund, and gives a level-10 master their title", function()
+			local old = v1Profile()
+			old.v = 5
+			old.coins = 70
+			old.owned.hat_deerstalker = true
+			old.owned.book_white = true
+			old.owned.tie_black = true
+			old.owned.tie_m_zero = true
+			old.owned.hat_cap = true
+			old.equipped.hat = "hat_deerstalker"
+			old.equipped.tie = "tie_black"
+			old.equipped.grimoire = "book_white"
+			local data = Migrations.migrate(old, START)
+			expect(data.coins).to.equal(70)
+			expect(data.owned.hat_deerstalker).to.equal(nil)
+			expect(data.owned.book_white).to.equal(nil)
+			expect(data.owned.tie_black).to.equal(nil)
+			expect(data.owned.tie_m_zero).to.equal(nil)
+			expect(data.owned.title_m10_zero).to.equal(true)
+			expect(data.owned.hat_cap).to.equal(true)
+			expect(data.equipped.hat).to.equal(nil)
+			expect(data.equipped.tie).to.equal(nil)
+			expect(data.equipped.grimoire).to.equal(nil)
+		end)
 		it("changes nothing when run twice", function()
 			local once = Migrations.migrate(v1Profile(), START)
 			once.coins = 777

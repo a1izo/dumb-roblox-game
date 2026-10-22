@@ -20,7 +20,7 @@ return function(t)
 				return owned[id] == true
 			end
 			expect(#Sets.completed(owns)).to.equal(0)
-			owned.tie_black = true
+			owned.writing_typewriter = true
 			local done = Sets.completed(owns)
 			expect(#done).to.equal(1)
 			expect(done[1].id).to.equal("noir")

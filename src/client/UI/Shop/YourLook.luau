@@ -292,16 +292,6 @@ local function dress(self: YourLook)
 			part.Anchored = true
 			part.Parent = holder
 		end
-	elseif item.kind == "tie" and torso and torso:IsA("BasePart") then
-		local top = torso.Size.Y / 2
-		Create("Part", {
-			Anchored = true,
-			Size = Vector3.new(0.2, 0.95, 0.05),
-			Color = item.color,
-			Material = Enum.Material.Fabric,
-			CFrame = torso.CFrame * CFrame.new(0, top - 0.75, -torso.Size.Z / 2 - 0.05),
-			Parent = holder,
-		})
 	elseif item.kind == "grimoire" and torso and torso:IsA("BasePart") then
 		-- A Manual cover colours the open Death's Manual everyone holds while writing
 		-- (CharacterService.setWriting), held as it is there.

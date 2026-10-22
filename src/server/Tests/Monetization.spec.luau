@@ -13,12 +13,11 @@ local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 local ReceiptLedger = require(script.Parent.Parent:WaitForChild("Data"):WaitForChild("ReceiptLedger"))
 
 -- Ids saved in profiles before cosmetics v2; they must keep working. (The trails among them left the game
--- on 2026-10-21; Migrations v5 takes them out of profiles.)
+-- on 2026-10-21, and the Deerstalker, the Ivory Fedora and the ties with the owner's drops; Migrations v5 and v6
+-- take them out of profiles.)
 local LEGACY_IDS = {
 	"hat_cap",
 	"hat_fedora",
-	"hat_deerstalker",
-	"hat_fedora_white",
 	"hat_tophat",
 }
 
@@ -233,7 +232,7 @@ return function(t)
 			end
 		end)
 		it("deals every kind in exactly one suit", function()
-			expect(#Cosmetics.KINDS).to.equal(12) -- (trails left on 2026-10-21; win cutscenes, seats and chairs came)
+			expect(#Cosmetics.KINDS).to.equal(11) -- (trails and ties left on 2026-10-21; win cutscenes, seats and chairs came)
 			for _, kind in ipairs(Cosmetics.KINDS) do
 				local suits = 0
 				for _, suit in ipairs(Cosmetics.SUITS) do

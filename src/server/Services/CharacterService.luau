@@ -433,8 +433,7 @@ function CharacterService.applyOutfit(player: Player)
 	if not character or character:GetAttribute("LNoirOutfit") then
 		return
 	end
-	local tieColor = player:GetAttribute("LTieColor")
-	CharacterService.dressNoir(character, if typeof(tieColor) == "Color3" then tieColor else nil)
+	CharacterService.dressNoir(character, nil)
 end
 
 -- Dresses any R6 model in the match suit (players, and the Tokyo crowd that must look like them).
@@ -547,24 +546,6 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 			}),
 		}
 	end)
-end
-
--- Recolours the noir tie after the player changes their tie cosmetic.
-function CharacterService.recolorTie(player: Player)
-	local character = player.Character
-	local holder = if character then character:FindFirstChild("LNoirTie") else nil
-	if not holder then
-		return
-	end
-	local tieColor = player:GetAttribute("LTieColor")
-	local tie = if typeof(tieColor) == "Color3" then tieColor else Color3.fromRGB(190, 22, 36)
-	for _, part in ipairs(holder:GetChildren()) do
-		if part:IsA("BasePart") and part.Name == "Tie" then
-			part.Color = tie
-		elseif part:IsA("BasePart") and part.Name == "Knot" then
-			part.Color = tie:Lerp(Color3.new(0, 0, 0), 0.15)
-		end
-	end
 end
 
 -- Hats hide under a cosmetic hat, so nothing pokes through.

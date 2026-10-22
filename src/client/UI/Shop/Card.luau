@@ -171,7 +171,7 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	local kind = item.kind
 	local key = propOf(item)
 	local figure = figureOf(item)
-	if kind ~= "hat" and kind ~= "tie" and kind ~= "grimoire" and not key and not figure then
+	if kind ~= "hat" and kind ~= "grimoire" and not key and not figure then
 		return nil, nil
 	end
 	local view = Create("ViewportFrame", {
@@ -202,18 +202,6 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 		end
 		head:Destroy()
 		frameView(view, holder, -30)
-	elseif kind == "tie" then
-		local color = item.color or C.void
-		part(holder, Vector3.new(0.32, 0.26, 0.12), CFrame.new(0, 0.62, 0), color, Enum.Material.Fabric)
-		part(holder, Vector3.new(0.3, 1.0, 0.06), CFrame.new(0, 0.0, 0), color, Enum.Material.Fabric)
-		part(
-			holder,
-			Vector3.new(0.26, 0.26, 0.06),
-			CFrame.new(0, -0.5, 0) * CFrame.Angles(0, 0, math.rad(45)),
-			color,
-			Enum.Material.Fabric
-		)
-		frameView(view, holder, -16)
 	else
 		-- A Manual cover: the notebook everyone holds while writing, in its colour.
 		part(holder, Vector3.new(1.3, 0.14, 0.95), CFrame.new(), item.color or C.void, Enum.Material.SmoothPlastic)
