@@ -41,7 +41,8 @@ export type Info = {
 
 -- Effects by rarity, when the clip's description does not say (the VFX ladder: Scrawl motion accents only,
 -- Penned one small accent, Sealed a tailored effect with light, Condemned layered, Godhood the cutscene).
-local FX_BY_RARITY: { [string]: number } = { common = 0, rare = 1, epic = 2, legendary = 3, godhood = 4 }
+-- (Scrawl and everyone's emotes a small accent each: the owner's Q21, 2026-10-21)
+local FX_BY_RARITY: { [string]: number } = { common = 1, rare = 1, epic = 2, legendary = 3, godhood = 4 }
 
 local cache: { [string]: Info } = {}
 

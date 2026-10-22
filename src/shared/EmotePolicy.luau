@@ -6,7 +6,7 @@
 --   - at the meeting and the vote everyone stands at a seat: only the waist up plays ("upper"), and nothing
 --     that is mostly legs, sets something on the floor, or walks;
 --   - a Deathsinger never strolls;
---   - effects are kept small (no flashes, no shake), loud sounds and camera moves stay off.
+--   - effects play in full (the owner's Q8 b); loud sounds and camera moves stay off.
 -- Pure: it takes what it needs and returns its answer, so the client, the server and the tests agree.
 
 local EmoteInfo = require(script.Parent.EmoteInfo)
@@ -70,11 +70,9 @@ function EmotePolicy.check(info: EmoteInfo.Info, at: Situation): (boolean, strin
 	return true, nil, nil
 end
 
--- How strong the effects may be here (0..4): in a case at most one small accent.
-function EmotePolicy.fxRung(info: EmoteInfo.Info, at: Situation): number
-	if at.inCase then
-		return math.min(info.fx, 1)
-	end
+-- How strong the effects may be here (0..4): an emote's full effect wherever it plays, in a case too (the owner's
+-- Q8 b, 2026-10-20; low graphics still keeps one small accent: Controllers/EmoteFx).
+function EmotePolicy.fxRung(info: EmoteInfo.Info, _at: Situation): number
 	return info.fx
 end
 

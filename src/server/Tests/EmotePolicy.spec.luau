@@ -129,11 +129,11 @@ return function(t)
 			expect(mask).to.equal(nil)
 		end)
 
-		it("keeps effects small, loud sounds quiet and the camera still in a case", function()
+		it("plays effects in full everywhere, keeps loud sounds quiet and the camera still in a case", function()
 			for rung = 0, 4 do
 				local emote = info({ fx = rung, loud = true })
 				expect(EmotePolicy.fxRung(emote, at("Lobby"))).to.equal(rung)
-				expect(EmotePolicy.fxRung(emote, at("Investigation"))).to.equal(math.min(rung, 1))
+				expect(EmotePolicy.fxRung(emote, at("Investigation"))).to.equal(rung)
 			end
 			expect(EmotePolicy.sound(info({ loud = true }), at("Lobby"))).to.equal(true)
 			expect(EmotePolicy.sound(info({ loud = true }), at("Investigation"))).to.equal(false)

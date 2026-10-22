@@ -979,9 +979,28 @@ local function watchStrolls(character: Model)
 	changed()
 end
 
+-- A body sitting down at the war table (the server's "Seat" attribute, Shared/Seating): a breath of dust shaken off
+-- the chair as the weight lands (the shop overhaul's seats, the owner's Q32; nothing on low graphics).
+local function watchSeats(character: Model)
+	local was = character:GetAttribute("Seat")
+	character:GetAttributeChangedSignal("Seat"):Connect(function()
+		local now = character:GetAttribute("Seat")
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if now ~= nil and was == nil and root and root:IsA("BasePart") then
+			task.delay(0.35, function()
+				if character:GetAttribute("Seat") ~= nil and root.Parent then
+					EmoteFx.thud(CFrame.new(floorUnder(character, root)), 2.6)
+				end
+			end)
+		end
+		was = now
+	end)
+end
+
 function EmoteController.init()
 	EmoteRemote.OnClientEvent:Connect(onEmote)
 	Characters.each(watchStrolls)
+	Characters.each(watchSeats)
 	-- A stance settled into holds its props and wears its face (no sound: it is how you stand) until it ends.
 	LocomotionController.Settled:Connect(function(character: Model, clip: string)
 		EmoteController.start(character, clip, { pose = false, silent = true })

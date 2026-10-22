@@ -155,19 +155,17 @@ local function build(at: Vector3)
 		LightInfluence = 0,
 		Parent = ball,
 	})
-	-- A ribbon of light behind it, so the way it went stays on screen for a moment.
-	local top = Create("Attachment", { Name = "RibbonTop", Position = Vector3.new(0, 0.4, 0), Parent = ball })
-	local bottom = Create("Attachment", { Name = "RibbonBottom", Position = Vector3.new(0, -0.4, 0), Parent = ball })
-	Create("Trail", {
-		Name = "Ribbon",
-		Attachment0 = top,
-		Attachment1 = bottom,
-		Lifetime = 0.9,
-		MinLength = 0.05,
-		FaceCamera = true,
-		Color = ColorSequence.new(CORE, AMBER),
+	-- A wake of light behind it (motes left where it passed, shrinking away), so the way it went stays on screen
+	-- for a moment (no Trail: the shop overhaul's rule, docs/vfx.md).
+	Create("ParticleEmitter", {
+		Name = "Wake",
+		Texture = particleTexture("SoulGlow", "rbxasset://textures/particles/sparkles_main.dds"),
+		Rate = 45,
+		Lifetime = NumberRange.new(0.9),
+		Speed = NumberRange.new(0),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0) }),
 		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
-		WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) }),
+		Color = ColorSequence.new(CORE, AMBER),
 		LightEmission = 1,
 		LightInfluence = 0,
 		Parent = ball,

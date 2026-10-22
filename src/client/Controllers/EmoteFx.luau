@@ -2302,6 +2302,365 @@ FX.theLongClimb = function(character, preview)
 	end
 end
 
+-- Every other emote's accent (the shop overhaul's B7, the owner's Q21: every emote an effect of its own, scaled
+-- by its tier): one small touch for everyone's emotes and the Scrawl ones, a contact beat for the duos, footfalls
+-- for the strolls; each timed to its clip's own moments (art/scripts/check_anims.py's numbers: the hand's reach,
+-- a sole coming down, the head at its lowest). Greys, bone and light: colour stays earned (docs/vfx.md).
+local GLINT = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(205, 220, 240))
+local CRUMBS = ColorSequence.new(Color3.fromRGB(255, 214, 120), Color3.fromRGB(222, 170, 80))
+local STEEL = ColorSequence.new(Color3.fromRGB(230, 232, 238), Color3.fromRGB(150, 156, 166))
+local SPORES = ColorSequence.new(Color3.fromRGB(236, 230, 210), Color3.fromRGB(200, 192, 170))
+local BREATH = ColorSequence.new(Color3.fromRGB(226, 226, 230))
+
+-- The end of an arm (its fist), a little further down than the arm's own end.
+local function hand(character: Model, side: string): Vector3?
+	local arm = character:FindFirstChild(side .. " Arm")
+	return if arm and arm:IsA("BasePart") then (arm.CFrame * CFrame.new(0, -1.1, 0)).Position else nil
+end
+
+-- A point on the head (studs from its middle, in its own frame: -z is the face).
+local function onHead(character: Model, offset: Vector3): Vector3?
+	local head = character:FindFirstChild("Head")
+	return if head and head:IsA("BasePart") then (head.CFrame * CFrame.new(offset)).Position else nil
+end
+
+-- A small white glint (a catch of light), `count` sparks.
+local function glint(at: Vector3?, count: number?, size: number?)
+	if at then
+		burst(at, {
+			color = GLINT,
+			count = count or 4,
+			size = size or 0.28,
+			speed = NumberRange.new(0.5, 1.6),
+			life = NumberRange.new(0.18, 0.32),
+			spread = 180,
+			light = 1,
+		})
+	end
+end
+
+-- A sign (?, !) that floats up off the head and fades.
+local function floatSign(character: Model, text: string, side: number)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") then
+		return
+	end
+	local start = Vector3.new(0.9 * side, 3.2, 0)
+	local gui, label = signLabel(root, {
+		text = text,
+		colour = Color3.fromRGB(236, 230, 214),
+		stroke = Color3.fromRGB(12, 12, 14),
+		size = 1.1,
+		at = start,
+		tilt = 10 * side,
+	})
+	local info = TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	TweenService:Create(gui, info, { StudsOffset = start + Vector3.new(0, 0.8, 0) }):Play()
+	TweenService:Create(label, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		TextTransparency = 1,
+		TextStrokeTransparency = 1,
+	}):Play()
+	task.delay(1.2, function()
+		gui:Destroy()
+	end)
+end
+
+-- Everyone's emotes ---------------------------------------------------------------------------------------------
+
+-- Wave: the waving hand catches the light at each turn of the wave.
+FX.wave = accent(2.4, { 0.63, 0.93, 1.2 }, function(character)
+	glint(hand(character, "Right"), 3, 0.22)
+end)
+-- Point: a small crack of light off the fingertip as the arm comes out.
+FX.point = accent(1.6, { 0.55 }, function(character)
+	glint(hand(character, "Left"), 6, 0.26)
+end)
+-- Cheer: scraps of paper thrown up at the top of the jump.
+FX.cheer = accent(2.2, { 0.73 }, function(character)
+	local at = onHead(character, Vector3.new(0, 1.4, 0))
+	if at then
+		burst(at, {
+			color = PAPER,
+			count = 10,
+			size = 0.28,
+			speed = NumberRange.new(3, 6),
+			life = NumberRange.new(1.0, 1.5),
+			spread = 70,
+			gravity = 4,
+			light = 0,
+		})
+	end
+end)
+-- Laugh: a little breath of laughter from the mouth with each burst.
+FX.laugh = accent(1.2, { 0.37 }, function(character)
+	local at = onHead(character, Vector3.new(0, -0.2, -0.7))
+	if at then
+		burst(at, {
+			color = BREATH,
+			count = 3,
+			size = 0.3,
+			speed = NumberRange.new(0.6, 1.2),
+			life = NumberRange.new(0.35, 0.55),
+			spread = 30,
+			gravity = -1,
+			light = 0,
+			direction = Enum.NormalId.Front,
+		})
+	end
+end)
+-- Dance: dust under each step.
+FX.dance = accent(1.6, { 0.13, 0.67, 0.9, 1.23 }, function(character)
+	stepDust(character, 0.8)
+end)
+-- Salute: a glint off the hand as it snaps to the brow.
+FX.salute = accent(2.0, { 0.77 }, function(character)
+	glint(hand(character, "Right"), 4, 0.24)
+end)
+-- Bow: a breath of dust round the feet at the bottom of the bow.
+FX.bow = accent(2.6, { 1.33 }, function(character)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		EmoteFx.thud(CFrame.new(floorUnder(root.Position, character)), 2.4)
+	end
+end)
+-- Shrug: a question mark floats up off the head as the shoulders come up.
+FX.shrug = accent(2.0, { 1.0 }, function(character)
+	floatSign(character, "?", 1)
+end)
+-- Facepalm: a little star of light where the palm meets the face.
+FX.facepalm = accent(2.4, { 0.73 }, function(character)
+	glint(onHead(character, Vector3.new(0, 0.1, -0.7)), 6, 0.3)
+end)
+-- High Five and Handshake: the hands meet with a burst of light (a duo's contact beat).
+FX.highFive = accent(2.0, { 0.73 }, function(character)
+	local at = hand(character, "Right")
+	if at then
+		burst(at, {
+			color = GLINT,
+			count = 12,
+			size = 0.32,
+			speed = NumberRange.new(4, 8),
+			life = NumberRange.new(0.15, 0.3),
+			spread = 180,
+			light = 1,
+		})
+	end
+end)
+FX.handshake = accent(2.4, { 1.0 }, function(character)
+	glint(hand(character, "Right"), 5, 0.24)
+end)
+
+-- Scrawl ---------------------------------------------------------------------------------------------------------
+
+-- Bounce Pump: dust on every other beat of the bounce (16 beats to the loop).
+FX.bouncePump = accent(6.4865, { 0, 0.81, 1.62, 2.43, 3.24, 4.05, 4.86, 5.68 }, function(character)
+	stepDust(character, 1.0)
+end)
+-- Potato Chip: crumbs off the bite.
+FX.chip = accent(3.4, { 1.4 }, function(character)
+	local at = onHead(character, Vector3.new(0, -0.25, -0.65))
+	if at then
+		burst(at, {
+			color = CRUMBS,
+			count = 8,
+			size = 0.22,
+			speed = NumberRange.new(2, 4),
+			life = NumberRange.new(0.4, 0.7),
+			spread = 60,
+			gravity = 18,
+			light = 0.4,
+		})
+	end
+end)
+-- Coin Flip: the coin flashes at the top of its toss, and again as it is slapped down.
+FX.coinFlip = accent(3.0, { 0.95, 1.55 }, function(character, at)
+	local fist = hand(character, if at < 1.5 then "Right" else "Left")
+	if fist then
+		burst(fist + Vector3.new(0, if at < 1.5 then 3.0 else 0.2, 0), {
+			color = GOLD,
+			count = 4,
+			size = 0.3,
+			speed = NumberRange.new(0.5, 1),
+			life = NumberRange.new(0.2, 0.35),
+			spread = 180,
+			light = 1,
+		})
+	end
+end)
+-- Dance 2 and Dance 3: dust under the steps.
+FX.dance2 = accent(2.1667, { 0.7, 1.73 }, function(character)
+	stepDust(character, 0.9)
+end)
+FX.dance3 = accent(1.6, { 0.4, 1.2 }, function(character)
+	stepDust(character, 0.9)
+end)
+-- Foot Scratch: dust kicked up by the scratching foot.
+FX.footScratch = accent(2.0, { 0.5, 1.5 }, function(character)
+	stepDust(character, 0.6)
+end)
+-- Hair Twirl: a few motes of light off the twirling fingers.
+FX.hairTwirl = accent(2.4, { 0.93 }, function(character)
+	glint(hand(character, "Right"), 3, 0.18)
+end)
+-- Jawline Check: the anime "ting" of light down the jaw at the flick.
+FX.jawlineCheck = accent(3.2, { 1.8 }, function(character)
+	glint(onHead(character, Vector3.new(0.35, -0.45, -0.45)), 7, 0.36)
+end)
+-- Take the L: dust under the hops.
+FX.takeTheL = accent(1.6, { 0.33, 1.13 }, function(character)
+	stepDust(character, 0.9)
+end)
+-- The Classic: dust under each step of the routine.
+FX.theClassic = accent(6.0, { 0.5, 1.1, 1.7, 2.33, 3.73, 4.3, 4.8 }, function(character)
+	stepDust(character, 0.9)
+end)
+-- The Eyebrow: a glint off the raised brow.
+FX.theEyebrow = accent(3.4, { 0.8 }, function(character)
+	glint(onHead(character, Vector3.new(0.3, 0.3, -0.62)), 4, 0.26)
+end)
+-- Think: a faint spark of an idea by the temple now and then.
+FX.think = accent(4.0, { 0.63, 2.6 }, function(character)
+	local at = onHead(character, Vector3.new(0.6, 0.5, -0.2))
+	if at then
+		burst(at, {
+			color = THOUGHT,
+			count = 4,
+			size = 0.16,
+			speed = NumberRange.new(0.6, 1.2),
+			life = NumberRange.new(0.3, 0.5),
+			spread = 60,
+			light = 1,
+		})
+	end
+end)
+-- Two Weeks' Notice: the resignation thrown up in a scatter of paper.
+FX.twoWeeksNotice = accent(3.2, { 2.23 }, function(character)
+	local at = onHead(character, Vector3.new(0, 1.6, 0))
+	if at then
+		burst(at, {
+			color = PAPER,
+			count = 12,
+			size = 0.36,
+			speed = NumberRange.new(3, 6),
+			life = NumberRange.new(1.2, 1.8),
+			spread = 75,
+			gravity = 3,
+			light = 0,
+		})
+	end
+end)
+
+-- Penned ---------------------------------------------------------------------------------------------------------
+
+-- Apple Toss: the apple catches the light as it leaves the hand, and as it is caught.
+FX.appleToss = accent(3.6, { 0.5, 2.9 }, function(character)
+	glint(hand(character, "Right"), 4, 0.26)
+end)
+-- Excuse Me, Sir: a polite little cough into the air before the look up.
+FX.excuseMeSir = accent(1.6, { 0.4 }, function(character)
+	local at = onHead(character, Vector3.new(0, -0.25, -0.7))
+	if at then
+		burst(at, {
+			color = BREATH,
+			count = 2,
+			size = 0.25,
+			speed = NumberRange.new(0.5, 1),
+			life = NumberRange.new(0.3, 0.5),
+			spread = 25,
+			gravity = -1,
+			light = 0,
+			direction = Enum.NormalId.Front,
+		})
+	end
+end)
+
+-- The duos and the strolls (Sealed and up) -----------------------------------------------------------------------
+
+-- Cuffed Together: the chain clinks taut with a spark of steel at the cuff.
+FX.cuffedLead = accent(2.0, { 0.3 }, function(character)
+	local at = hand(character, "Left")
+	if at then
+		burst(at, {
+			color = STEEL,
+			count = 5,
+			size = 0.2,
+			speed = NumberRange.new(2, 4),
+			life = NumberRange.new(0.15, 0.3),
+			spread = 120,
+			gravity = 10,
+			light = 1,
+		})
+	end
+end)
+
+-- Match Point: the ball pocks off the racket with a puff of white each time it is hit (DuoController's strokes
+-- call this; the ready loop itself is still).
+function EmoteFx.pock(character: Model)
+	if Governor.low("emoteFx") then
+		return
+	end
+	local at = hand(character, "Right")
+	if at then
+		burst(at + (character:GetPivot().LookVector * 1.4), {
+			color = GLINT,
+			count = 8,
+			size = 0.3,
+			speed = NumberRange.new(5, 9),
+			life = NumberRange.new(0.12, 0.25),
+			spread = 140,
+			light = 1,
+		})
+	end
+end
+FX.matchPointServe = function()
+	return nothing
+end
+
+-- The strolls on the move: each footfall of the walk (LocomotionController.Footfall) leaves its own mark.
+local function strollSteps(make: (character: Model) -> ()): Fx
+	return function(character, preview)
+		if preview then
+			return nothing
+		end
+		local connection = LocomotionController.Footfall:Connect(function(who: Model)
+			if who == character then
+				make(character)
+			end
+		end)
+		return function()
+			connection:Disconnect()
+		end
+	end
+end
+-- Griddy: dust kicked up off each landing heel.
+FX.griddy = strollSteps(function(character)
+	stepDust(character, 1.2)
+end)
+-- Parade March: a crisp little stamp of dust under each step.
+FX.paradeMarch = strollSteps(function(character)
+	stepDust(character, 1.5)
+end)
+-- Mushroom Stroll: pale spores puffing up where each foot comes down.
+FX.mushroomStroll = strollSteps(function(character)
+	local sole = lowerSole(character)
+	if sole then
+		burst(sole + Vector3.new(0, 0.2, 0), {
+			color = SPORES,
+			count = 5,
+			size = 0.16,
+			speed = NumberRange.new(0.6, 1.4),
+			life = NumberRange.new(0.8, 1.3),
+			spread = 50,
+			gravity = -0.6,
+			light = 0.3,
+		})
+	end
+end)
+-- Not My Problem: a lazy scuff of dust behind each dragging step.
+FX.notMyProblem = strollSteps(function(character)
+	stepDust(character, 0.6)
+end)
+
 -- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
 -- light, 3 layered, 4 the cutscene emotes'. The four above keep their own looks; the rest come with each emote.
 local RUNG: { [string]: number } = {
@@ -2356,8 +2715,8 @@ local RUNG: { [string]: number } = {
 	nahIdWin = 1,
 }
 
--- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo), at most one small accent in
--- a case (Shared/EmotePolicy) or on low graphics (World/Governor).
+-- How strong an emote's effects may be here, now: its own rung (Shared/EmoteInfo; in a case too, Shared/
+-- EmotePolicy), at most one small accent on low graphics (World/Governor).
 function EmoteFx.rung(clip: string): number
 	local info = EmoteInfo.of(clip)
 	local rung = EmotePolicy.fxRung(info, {

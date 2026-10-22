@@ -26,6 +26,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
 local EmoteController = require(script.Parent.EmoteController)
+local EmoteFx = require(script.Parent.EmoteFx)
 local DuoPanel = require(script.Parent.Parent.UI.DuoPanel)
 
 local DuoRemote = Net.event("Duo")
@@ -245,6 +246,15 @@ end
 
 local function aimed(rally: Rally)
 	swingFor(rally.flight)
+	-- the pock of the ball off the racket that sent it (not the serve's toss up)
+	local flight = rally.flight
+	if not flight.toss then
+		task.delay(math.max(0, flight.leave - now()), function()
+			if not rally.ended and flight.from.Parent then
+				EmoteFx.pock(flight.from)
+			end
+		end)
+	end
 	if rally.mine and rally.flight.to == LocalPlayer.Character then
 		showPrompt(rally)
 	end
