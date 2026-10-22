@@ -4,7 +4,8 @@
 -- whose source is "set". The last five are emote sets (a few of their pieces are only sold on the days
 -- they are in Today's hand). Film Noir, Gilded Age and Seeing Red lost their trail when trails left the game
 -- (2026-10-21), and the ties and the white pieces went with the owner's drops (2026-10-21): Film Noir and Gilded Age
--- were made up again from what is left, and Ivory Tower is away until its new pale pieces are in the shop.
+-- were made up again from what is left, and Ivory Tower from the new pale pieces (Moth Lantern, Frost Script,
+-- Shattered).
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
@@ -18,6 +19,12 @@ Sets.LIST = {
 		name = "Film Noir",
 		pieces = { "hat_fedora", "writing_typewriter" },
 		title = "title_set_noir",
+	},
+	{
+		id = "ivory",
+		name = "Ivory Tower",
+		pieces = { "specter_moth", "writing_frost", "death_glass" },
+		title = "title_set_ivory",
 	},
 	{
 		id = "gilded",

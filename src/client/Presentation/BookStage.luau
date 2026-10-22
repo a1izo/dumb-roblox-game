@@ -89,14 +89,14 @@ local function strip(gui: SurfaceGui, rule: ManualBook.Rule, row: number, line: 
 		Size = UDim2.fromOffset(0, rule.pitch * PIXELS),
 		Parent = gui,
 	})
-	local ink, font = Styles.ink(style)
+	local colour, font = Styles.pen(style)
 	local label = Create("TextLabel", {
 		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(wide, rule.pitch * PIXELS),
 		Text = line.text,
 		FontFace = font,
 		TextSize = math.floor(rule.pitch * PIXELS * (if line.small then 0.6 else 0.86)),
-		TextColor3 = if line.small then INK else ink,
+		TextColor3 = if line.small then INK else colour,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
 		TextTruncate = Enum.TextTruncate.AtEnd,

@@ -367,7 +367,7 @@ local function writePreview(self: YourLook, style: string): () -> ()
 		ZIndex = 6,
 		Parent = self.viewport,
 	})
-	local ink, font = Styles.ink(style)
+	local colour, font = Styles.pen(style)
 	local clip = Create("Frame", {
 		BackgroundTransparency = 1,
 		ClipsDescendants = true,
@@ -382,7 +382,7 @@ local function writePreview(self: YourLook, style: string): () -> ()
 		Text = SAMPLE_NAME,
 		FontFace = font,
 		TextSize = 30,
-		TextColor3 = ink,
+		TextColor3 = colour,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
 		ZIndex = 7,

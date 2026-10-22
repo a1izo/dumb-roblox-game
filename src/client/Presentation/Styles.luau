@@ -2,14 +2,18 @@
 -- the cutscenes, the world and the shop's Your look alike:
 --
 --   writing  how Diavolo's names go into the Manual (BookStage writes each line through write()):
---            quill (dark red ink that runs), typewriter (struck letter by letter), fire (letters that
---            burn in bright and char), knife (cut into the page). Plain ink without one.
+--            quill (black strokes that smoulder at the edges as they dry), typewriter (struck letter by
+--            letter), fire (letters that burn in bright and char), knife (cut into the page), chalk (the
+--            dust falls off the page), frost (the letters frost over, crystals spreading). Plain without one.
 --   verdict  how Ace's arrest lands (Presenters/Arrest, the ending): a small scene over the shot:
---            gavel, cuffs, checkmate (a king toppled), sugar (a tower of sugar cubes falls).
+--            gavel, cuffs, checkmate (a king toppled), sugar (a tower of sugar cubes falls), stamp (GUILTY
+--            pressed into the file), lamp (an interrogation lamp swings down, the rest goes dark).
 --   death    what becomes of a body after it falls (Presenters/Death, Your look): ash, strings (cut
---            from above), crows (the body bursts into crows), stone (it turns to stone).
---   form     what a Deathsinger wears (World/GhostVisibility): embers, veil, chains, crows,
---            marionette.
+--            from above), crows (a whirl of feathers that flies off as crows), stone (stone creeps up from
+--            the feet, then it crumbles), glass (it cracks like glass and falls in shards).
+--   form     what a Deathsinger wears (World/GhostVisibility): embers, veil, chains, crows (a moulting
+--            feather cloak, a crow on each shoulder), marionette, moths (a cold light in the chest, pale moths
+--            about it).
 --
 -- Everything here is built from parts, so it also plays inside a 3D view (the shop), where particles
 -- and beams do not draw; in the world, particles are added on top. The props come from the Core models
@@ -33,17 +37,24 @@ local Styles = {}
 
 -- Writing -------------------------------------------------------------------------------------------------
 
-local PLAIN_INK = Color3.fromRGB(26, 17, 11)
-local BLOOD = Color3.fromRGB(112, 8, 16)
+local PLAIN = Color3.fromRGB(26, 17, 11)
+local SOOT = Color3.fromRGB(22, 16, 14)
+local SMOULDER = Color3.fromRGB(255, 120, 40)
+local CHALK = Color3.fromRGB(236, 232, 222)
+local FROST = Color3.fromRGB(150, 200, 235)
 local EMBER = Color3.fromRGB(255, 168, 80)
 local CHAR = Color3.fromRGB(34, 20, 12)
 local CUT = Color3.fromRGB(46, 34, 26)
 local CUT_EDGE = Color3.fromRGB(176, 150, 118)
 
--- The ink and the hand a style writes in.
-function Styles.ink(style: string?): (Color3, Font)
+-- The colour and the hand a style writes in.
+function Styles.pen(style: string?): (Color3, Font)
 	if style == "quill" then
-		return BLOOD, WorldFont.hand()
+		return SOOT, WorldFont.hand()
+	elseif style == "chalk" then
+		return CHALK, WorldFont.hand()
+	elseif style == "frost" then
+		return Color3.fromRGB(245, 250, 255), WorldFont.hand()
 	elseif style == "typewriter" then
 		return Color3.fromRGB(20, 18, 18), Font.fromEnum(Enum.Font.SpecialElite)
 	elseif style == "fire" then
@@ -51,7 +62,47 @@ function Styles.ink(style: string?): (Color3, Font)
 	elseif style == "knife" then
 		return CUT, WorldFont.hand()
 	end
-	return PLAIN_INK, WorldFont.hand()
+	return PLAIN, WorldFont.hand()
+end
+
+-- Little squares laid over the page by a line (smoke, chalk dust, frost crystals): each from a spot along the
+-- line, moved by `drift` (px) and faded out over `seconds`, grown from nothing when `grow`.
+local function flecks(
+	clip: Frame,
+	shown: number,
+	count: number,
+	color: Color3,
+	size: number,
+	drift: () -> Vector2,
+	seconds: number,
+	grow: boolean?
+)
+	local height = clip.Size.Y.Offset
+	local rng = Random.new(shown + count)
+	for _ = 1, count do
+		local at = Vector2.new(
+			clip.Position.X.Offset + rng:NextInteger(4, math.max(5, math.floor(shown) - 4)),
+			clip.Position.Y.Offset + math.floor(height * rng:NextNumber(0.35, 0.85))
+		)
+		local fleck = Create("Frame", {
+			Name = "Fleck",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			BackgroundColor3 = color,
+			BackgroundTransparency = 0.15,
+			BorderSizePixel = 0,
+			Rotation = rng:NextNumber(0, 90),
+			Position = UDim2.fromOffset(at.X, at.Y),
+			Size = if grow then UDim2.fromOffset(0, 0) else UDim2.fromOffset(size, size),
+			Parent = clip.Parent,
+		})
+		local move = drift()
+		TweenService:Create(fleck, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Position = UDim2.fromOffset(at.X + move.X, at.Y + move.Y),
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(size, size),
+		}):Play()
+		Debris:AddItem(fleck, seconds + 0.1)
+	end
 end
 
 -- Writes one line: `clip` is the line's clipping frame (empty), `label` its text inside, `shown` how wide
@@ -91,31 +142,30 @@ function Styles.write(clip: Frame, label: TextLabel, shown: number, pace: number
 		{ Size = UDim2.fromOffset(shown, height) }
 	):Play()
 	task.wait(time)
+	local rng = Random.new(#label.Text)
 	if style == "quill" then
-		-- The ink runs: a few drips slide down from the letters.
-		local rng = Random.new(#label.Text)
-		for _ = 1, 4 do
-			local drip = Create("Frame", {
-				Name = "Drip",
-				BackgroundColor3 = BLOOD,
-				BorderSizePixel = 0,
-				Position = UDim2.fromOffset(
-					rng:NextInteger(4, math.max(5, math.floor(shown) - 4)),
-					math.floor(height * 0.78)
-				),
-				Size = UDim2.fromOffset(math.max(2, math.floor(height * 0.05)), 0),
-				Parent = clip.Parent,
-			})
-			drip.Position = UDim2.fromOffset(
-				clip.Position.X.Offset + drip.Position.X.Offset,
-				clip.Position.Y.Offset + drip.Position.Y.Offset
-			)
-			TweenService:Create(
-				drip,
-				TweenInfo.new(1.2 + rng:NextNumber() * 0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-				{ Size = UDim2.fromOffset(drip.Size.X.Offset, math.floor(height * (0.3 + rng:NextNumber() * 0.5))) }
-			):Play()
-		end
+		-- The strokes smoulder at their edges as they dry, and a little smoke comes off them.
+		label.TextStrokeColor3 = SMOULDER
+		label.TextStrokeTransparency = 0.3
+		TweenService:Create(label, TweenInfo.new(2.4, Enum.EasingStyle.Quad), { TextStrokeTransparency = 1 }):Play()
+		flecks(clip, shown, 4, Color3.fromRGB(120, 116, 112), math.max(3, math.floor(height * 0.08)), function()
+			return Vector2.new(rng:NextNumber(-6, 6), -height * rng:NextNumber(0.6, 1.1))
+		end, 1.6)
+	elseif style == "chalk" then
+		-- Chalk dust falls off the page under the letters.
+		label.TextStrokeColor3 = Color3.fromRGB(70, 58, 44)
+		label.TextStrokeTransparency = 0.75
+		flecks(clip, shown, 7, CHALK, math.max(2, math.floor(height * 0.05)), function()
+			return Vector2.new(rng:NextNumber(-3, 3), height * rng:NextNumber(0.5, 1.2))
+		end, 1.3)
+	elseif style == "frost" then
+		-- The letters frost over (white cooling to ice blue) and crystals spread out from them.
+		label.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+		label.TextStrokeTransparency = 0.55
+		TweenService:Create(label, TweenInfo.new(1.4, Enum.EasingStyle.Quad), { TextColor3 = FROST }):Play()
+		flecks(clip, shown, 6, Color3.fromRGB(236, 246, 255), math.max(4, math.floor(height * 0.14)), function()
+			return Vector2.new(rng:NextNumber(-10, 10), rng:NextNumber(-8, 8))
+		end, 1.8, true)
 	elseif style == "fire" then
 		-- Burnt in: the bright letters cool to char.
 		TweenService:Create(label, TweenInfo.new(1.6, Enum.EasingStyle.Quad), { TextColor3 = CHAR }):Play()
@@ -187,7 +237,7 @@ end
 
 -- Builds a verdict's little scene in `world` (around the origin, the camera looking at it from -Z) and
 -- plays it. Returns how long it runs.
-local function verdictScene(world: Instance, style: string): number
+local function verdictScene(world: Instance, style: string, view: ViewportFrame?): number
 	part(world, Vector3.new(5, 0.3, 3.4), CFrame.new(0, -0.15, 0), Color3.fromRGB(34, 22, 16), Enum.Material.Wood)
 	if style == "gavel" then
 		part(
@@ -322,6 +372,135 @@ local function verdictScene(world: Instance, style: string): number
 			end
 		end)
 		return 2.0
+	elseif style == "stamp" then
+		-- The file, and a steel seal that slams down on it: GUILTY pressed into the page (a word over the view:
+		-- a 3D view draws no writing).
+		part(
+			world,
+			Vector3.new(2.6, 0.04, 1.8),
+			CFrame.new(0, 0.02, 0),
+			Color3.fromRGB(214, 200, 168),
+			Enum.Material.Fabric
+		)
+		local up = CFrame.new(0, 1.6, 0)
+		local down = CFrame.new(0, 0.42, 0)
+		local seal = group(world, "Seal")
+		part(
+			seal,
+			Vector3.new(1.3, 0.22, 0.6),
+			up * CFrame.new(0, -0.3, 0),
+			Color3.fromRGB(150, 152, 158),
+			Enum.Material.Metal
+		)
+		part(seal, Vector3.new(0.5, 0.4, 0.4), up, Color3.fromRGB(70, 46, 30), Enum.Material.Wood)
+		local knob = part(seal, Vector3.new(0.5, 0.5, 0.5), up * CFrame.new(0, 0.38, 0), Color3.fromRGB(70, 46, 30))
+		knob.Shape = Enum.PartType.Ball
+		seal.WorldPivot = up
+		task.delay(0.35, function()
+			tweenPivot(seal, down, 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			task.delay(0.12, function()
+				Sfx.play("gavel")
+			end)
+			task.delay(0.45, function()
+				tweenPivot(seal, up * CFrame.new(0, 0.6, 0), 0.35)
+				if view then
+					local word = Create("TextLabel", {
+						Name = "Guilty",
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						BackgroundTransparency = 1,
+						Position = UDim2.fromScale(0.5, 0.6),
+						Size = UDim2.fromScale(0.62, 0.2),
+						Rotation = -8,
+						Text = "GUILTY",
+						TextScaled = true,
+						FontFace = Font.fromEnum(Enum.Font.SpecialElite),
+						TextColor3 = Color3.fromRGB(46, 38, 34),
+						TextStrokeColor3 = Color3.fromRGB(226, 212, 182),
+						TextStrokeTransparency = 0.55,
+						TextTransparency = 1,
+						ZIndex = view.ZIndex + 1,
+						Parent = view,
+					})
+					TweenService:Create(word, TweenInfo.new(0.15), { TextTransparency = 0 }):Play()
+				end
+			end)
+		end)
+		return 1.8
+	elseif style == "lamp" then
+		-- A hanging lamp swings down onto an empty chair and everything else goes dark.
+		local chair = group(world, "Chair")
+		part(
+			chair,
+			Vector3.new(1.2, 0.14, 1.1),
+			CFrame.new(0, 0.7, 0.3),
+			Color3.fromRGB(46, 44, 42),
+			Enum.Material.Metal
+		)
+		part(
+			chair,
+			Vector3.new(1.2, 1.1, 0.12),
+			CFrame.new(0, 1.3, 0.85),
+			Color3.fromRGB(46, 44, 42),
+			Enum.Material.Metal
+		)
+		for _, x in ipairs({ -0.5, 0.5 }) do
+			for _, z in ipairs({ -0.15, 0.75 }) do
+				part(
+					chair,
+					Vector3.new(0.08, 0.7, 0.08),
+					CFrame.new(x, 0.35, z),
+					Color3.fromRGB(40, 38, 36),
+					Enum.Material.Metal
+				)
+			end
+		end
+		local hang = CFrame.new(0, 2.6, 0.2)
+		local lamp = group(world, "Lamp")
+		local shade = part(
+			lamp,
+			Vector3.new(0.7, 0.9, 0.9),
+			hang * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromRGB(30, 30, 32),
+			Enum.Material.Metal
+		)
+		shade.Shape = Enum.PartType.Cylinder
+		part(lamp, Vector3.new(0.04, 3, 0.04), hang * CFrame.new(0, 1.8, 0), Color3.fromRGB(20, 20, 22))
+		local bulb = part(
+			lamp,
+			Vector3.new(0.34, 0.34, 0.34),
+			hang * CFrame.new(0, -0.38, 0),
+			Color3.fromRGB(255, 236, 190),
+			Enum.Material.Neon
+		)
+		bulb.Shape = Enum.PartType.Ball
+		local cone = part(
+			lamp,
+			Vector3.new(2.3, 0.6, 0.6),
+			hang * CFrame.new(0, -1.3, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromRGB(255, 236, 190),
+			Enum.Material.Neon
+		)
+		cone.Shape = Enum.PartType.Cylinder
+		cone.Transparency = 1
+		lamp.WorldPivot = hang * CFrame.new(0, 3.3, 0)
+		local top = lamp.WorldPivot
+		local from = top * CFrame.new(0, 2.6, 0) * CFrame.Angles(0, 0, math.rad(34))
+		lamp:PivotTo(from)
+		tweenPivot(lamp, top * CFrame.Angles(0, 0, math.rad(-12)), 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		task.delay(0.5, function()
+			tweenPivot(lamp, top * CFrame.Angles(0, 0, math.rad(5)), 0.6, Enum.EasingStyle.Sine)
+			TweenService:Create(cone, TweenInfo.new(0.4), { Transparency = 0.86 }):Play()
+			if view then
+				TweenService:Create(view, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {
+					Ambient = Color3.fromRGB(16, 16, 20),
+					LightColor = Color3.fromRGB(255, 226, 170),
+				}):Play()
+			end
+			task.delay(0.6, function()
+				tweenPivot(lamp, top, 0.7, Enum.EasingStyle.Sine)
+			end)
+		end)
+		return 2.0
 	end
 	return 0
 end
@@ -351,7 +530,7 @@ function Styles.verdict(style: string?, parent: Instance, position: UDim2?, size
 	camera.CFrame = CFrame.lookAt(Vector3.new(0, 2.4, -5.2), Vector3.new(0, 0.6, 0))
 	camera.Parent = view
 	view.CurrentCamera = camera
-	verdictScene(world, style)
+	verdictScene(world, style, view)
 	if not Motion.isReduced() then
 		local scale = Instance.new("UIScale")
 		scale.Scale = 0.85
@@ -367,6 +546,50 @@ end
 
 local ASH = Color3.fromRGB(96, 92, 88)
 local STONE = Color3.fromRGB(128, 126, 120)
+local GLASS = Color3.fromRGB(196, 214, 222)
+local FEATHER = Color3.fromRGB(18, 18, 22)
+
+-- Breaks a body part into `count` pieces of its material that tumble down and fade (stone crumbling, glass
+-- falling in shards). Returns them.
+local function shatter(
+	piece: BasePart,
+	here: Instance,
+	count: number,
+	color: Color3,
+	material: Enum.Material,
+	rng: Random
+)
+	local size = piece.Size
+	for k = 1, count do
+		local bit = part(
+			here,
+			Vector3.new(size.X * rng:NextNumber(0.35, 0.6), size.Y / count, size.Z * rng:NextNumber(0.35, 0.7)),
+			piece.CFrame
+				* CFrame.new(rng:NextNumber(-0.2, 0.2), size.Y * ((k - 0.5) / count - 0.5), rng:NextNumber(-0.2, 0.2)),
+			color,
+			material
+		)
+		if material == Enum.Material.Glass then
+			bit.Transparency = 0.35
+		end
+		local fall = bit.CFrame
+			* CFrame.new(
+				rng:NextNumber(-0.8, 0.8),
+				-(bit.Position.Y - piece.Position.Y + size.Y / 2) - 0.2,
+				rng:NextNumber(-0.8, 0.8)
+			)
+			* CFrame.Angles(rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5))
+		TweenService
+			:Create(bit, TweenInfo.new(rng:NextNumber(0.45, 0.8), Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				CFrame = fall,
+			})
+			:Play()
+		task.delay(1.2, function()
+			TweenService:Create(bit, TweenInfo.new(1.0), { Transparency = 1 }):Play()
+		end)
+		Debris:AddItem(bit, 2.4)
+	end
+end
 
 local function bodyParts(model: Model): { BasePart }
 	local list = {}
@@ -417,18 +640,55 @@ function Styles.death(style: string?, model: Model): number
 	local centre = box.Position
 	local here = model.Parent or workspace
 	local world = not inView(model)
+	local rng = Random.new(math.floor(centre.X * 7 + centre.Z))
+	local low = centre.Y - 3
 	if style == "stone" then
+		-- Stone creeps up from the feet, part by part; a held moment; then the figure crumbles.
 		Sfx.play("stoneCrack")
 		for _, piece in ipairs(parts) do
-			piece.Material = Enum.Material.Slate
-			TweenService:Create(piece, TweenInfo.new(1.2, Enum.EasingStyle.Quad), { Color = STONE }):Play()
+			local delay = math.clamp((piece.Position.Y - low) / 5, 0, 1) * 0.9
+			task.delay(delay, function()
+				piece.Material = Enum.Material.Slate
+				TweenService:Create(piece, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Color = STONE }):Play()
+				for _, decal in ipairs(piece:GetChildren()) do
+					if decal:IsA("Decal") then
+						TweenService:Create(decal, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+					end
+				end
+			end)
+		end
+		task.delay(1.9, function()
+			Sfx.play("stoneCrack")
+			for _, piece in ipairs(parts) do
+				if piece.Parent then
+					shatter(piece, here, 3, STONE, Enum.Material.Slate, rng)
+					piece.Transparency = 1
+				end
+			end
+		end)
+		return 3.2
+	elseif style == "glass" then
+		-- It turns to glass, a beat, then cracks and falls in shards.
+		for _, piece in ipairs(parts) do
+			piece.Material = Enum.Material.Glass
+			TweenService:Create(piece, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Color = GLASS, Transparency = 0.3 })
+				:Play()
 			for _, decal in ipairs(piece:GetChildren()) do
 				if decal:IsA("Decal") then
-					TweenService:Create(decal, TweenInfo.new(1.2), { Transparency = 1 }):Play()
+					TweenService:Create(decal, TweenInfo.new(0.5), { Transparency = 1 }):Play()
 				end
 			end
 		end
-		return 1.4
+		task.delay(0.9, function()
+			Sfx.play("stoneCrack")
+			for _, piece in ipairs(parts) do
+				if piece.Parent then
+					shatter(piece, here, 4, GLASS, Enum.Material.Glass, rng)
+					piece.Transparency = 1
+				end
+			end
+		end)
+		return 2.4
 	elseif style == "ash" then
 		for _, piece in ipairs(parts) do
 			TweenService:Create(piece, TweenInfo.new(0.8, Enum.EasingStyle.Quad), { Color = ASH }):Play()
@@ -483,15 +743,42 @@ function Styles.death(style: string?, model: Model): number
 		end
 		return 2.6
 	elseif style == "crows" then
+		-- The body comes apart from the feet up into a whirl of black feathers, and the whirl flies off as crows.
 		Sfx.play("crows")
-		local rng = Random.new(math.floor(centre.X * 7 + centre.Z))
-		for _ = 1, 9 do
-			crow(here, centre + Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(-0.5, 1), rng:NextNumber(-1, 1)), rng)
-		end
 		for _, piece in ipairs(parts) do
-			TweenService:Create(piece, TweenInfo.new(0.5), { Transparency = 1 }):Play()
+			local delay = math.clamp((piece.Position.Y - low) / 5, 0, 1) * 0.6
+			task.delay(delay, function()
+				TweenService:Create(piece, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+			end)
 		end
-		return 2.4
+		for k = 1, 22 do
+			local a = rng:NextNumber(0, math.pi * 2)
+			local r = rng:NextNumber(0.4, 1.3)
+			local start = CFrame.new(centre + Vector3.new(math.cos(a) * r, rng:NextNumber(-2.2, 1.2), math.sin(a) * r))
+				* CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
+			local feather = part(here, Vector3.new(0.12, 0.05, 0.42), start, FEATHER)
+			local turn = a + rng:NextNumber(2, 4)
+			local up = CFrame.new(
+				centre + Vector3.new(math.cos(turn) * (r + 0.6), rng:NextNumber(1.5, 3.5), math.sin(turn) * (r + 0.6))
+			) * CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
+			task.delay(k * 0.025, function()
+				TweenService:Create(feather, TweenInfo.new(1.0, Enum.EasingStyle.Sine), { CFrame = up }):Play()
+				task.delay(0.8, function()
+					TweenService:Create(feather, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+				end)
+			end)
+			Debris:AddItem(feather, 1.6)
+		end
+		task.delay(1.0, function()
+			for _ = 1, 9 do
+				crow(
+					here,
+					centre + Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(1.2, 3), rng:NextNumber(-1, 1)),
+					rng
+				)
+			end
+		end)
+		return 3.0
 	elseif style == "strings" then
 		-- Strings from far above to its head and limbs, taut a moment, then cut: they fall away.
 		local holder = group(here, "Strings")
@@ -643,6 +930,69 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 			)
 			weldTo(mantle, torso)
 		end
+		-- (2026-10-22, the owner's "change it": a crow on each shoulder, and the cloak moulting as it goes)
+		for side = -1, 1, 2 do
+			local spot = CFrame.new(side * 1.05, 1.25, 0.1) * CFrame.Angles(0, math.rad(side * 70), 0)
+			local bird = prop("Crow", torso.CFrame * spot, folder, 0.75)
+			if bird then
+				attachModel(bird, torso, spot, folder)
+			else
+				local body = part(folder, Vector3.new(0.35, 0.4, 0.7), torso.CFrame * spot, Color3.fromRGB(16, 16, 20))
+				weldTo(body, torso)
+			end
+		end
+		local carrier = part(folder, Vector3.new(1.6, 0.4, 1), torso.CFrame * CFrame.new(0, -0.6, 0.4), FEATHER)
+		carrier.Transparency = 1
+		weldTo(carrier, torso)
+		Create("ParticleEmitter", {
+			Rate = 3,
+			Lifetime = NumberRange.new(1.6, 2.4),
+			Speed = NumberRange.new(0.2, 0.6),
+			SpreadAngle = Vector2.new(60, 60),
+			Acceleration = Vector3.new(0, -1.6, 0),
+			Drag = 1.5,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-90, 90),
+			Size = NumberSequence.new(0.22),
+			Squash = NumberSequence.new(1.5),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
+			Color = ColorSequence.new(FEATHER),
+			LightInfluence = 1,
+			Shape = Enum.ParticleEmitterShape.Box,
+			Parent = carrier,
+		})
+	elseif form == "moths" then
+		-- A cold light in the chest, and pale moths drifting about it.
+		local light = part(
+			folder,
+			Vector3.new(0.55, 0.55, 0.55),
+			torso.CFrame * CFrame.new(0, 0.2, -0.3),
+			tint,
+			Enum.Material.Neon
+		)
+		light.Shape = Enum.PartType.Ball
+		light.Transparency = 0.25
+		weldTo(light, torso)
+		Create("PointLight", { Color = tint, Range = 8, Brightness = 1.2, Shadows = false, Parent = light })
+		Create("ParticleEmitter", {
+			Rate = 5,
+			Lifetime = NumberRange.new(1.8, 3),
+			Speed = NumberRange.new(0.6, 1.4),
+			SpreadAngle = Vector2.new(180, 180),
+			Acceleration = Vector3.new(0, 0.4, 0),
+			Drag = 0.8,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-180, 180),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.28), NumberSequenceKeypoint.new(1, 0.18) }),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.15, 0.2),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Color = ColorSequence.new(Color3.fromRGB(240, 234, 214)),
+			LightEmission = 0.4,
+			Parent = light,
+		})
 	elseif form == "marionette" then
 		-- A control bar over the head, its strings down to the head and the hands.
 		local high = head.CFrame * CFrame.new(0, 5, 0)
