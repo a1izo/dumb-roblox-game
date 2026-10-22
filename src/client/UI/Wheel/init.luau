@@ -78,6 +78,7 @@ type Plate = {
 
 local holder: Frame
 local ringFrame: Frame
+local gunParts: (ring: Frame) -> ()
 local ringScale: UIScale
 local ink: GuiObject
 local needle: Frame
@@ -762,6 +763,97 @@ function Wheel.point(index: number?)
 	setHover(index)
 end
 
+local WOOD_LIGHT = Color3.fromRGB(122, 76, 44)
+local WOOD = Color3.fromRGB(78, 46, 26)
+local WOOD_DARK = Color3.fromRGB(46, 27, 15)
+
+-- The revolver round the cylinder (the owner's pick 2 on the review page, 2026-10-21: a snub barrel and a bird's-head
+-- grip): a short blued barrel out to the right with its front sight, the hammer's spur over the top left, a small
+-- rounded walnut grip tucked under the cylinder at the bottom left with its trigger guard and a steel butt cap. On the
+-- ring, not the cylinder, so they stay still while it turns; behind it, so no chamber is covered; inside the ring's
+-- square at the bottom, so the caption under it stays clear.
+gunParts = function(ring: Frame)
+	local radius = (RADIUS * 2 + PLATE + 24) / 2
+	local k = radius / 150
+	local middle = Wheel.SIZE / 2
+	local function piece(
+		name: string,
+		size: Vector2,
+		at: Vector2,
+		turn: number,
+		color: Color3,
+		parent: GuiObject?
+	): Frame
+		return Kit.Base.make("Frame", {
+			Name = name,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = if parent then UDim2.fromScale(at.X, at.Y) else UDim2.fromOffset(middle + at.X, middle + at.Y),
+			Size = UDim2.fromOffset(size.X, size.Y),
+			Rotation = turn,
+			BackgroundColor3 = color,
+			BorderSizePixel = 0,
+			ZIndex = 0,
+			Parent = parent or ring,
+		}) :: Frame
+	end
+	local function steel(frame: Frame, rotation: number)
+		Kit.Base.make("UIGradient", {
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, STEEL_LIGHT),
+				ColorSequenceKeypoint.new(0.5, STEEL),
+				ColorSequenceKeypoint.new(1, STEEL_DARK),
+			}),
+			Rotation = rotation,
+			Parent = frame,
+		})
+		Kit.Base.stroke(frame, STEEL_DARK, 1.5, 0)
+	end
+	-- the snub barrel, at the chambers' height a little above the middle
+	local barrel = piece("Barrel", Vector2.new(42 * k, 28 * k), Vector2.new(radius - 6 + 21 * k, -10 * k), 0, STEEL)
+	Kit.Base.corner(barrel, 4)
+	steel(barrel, 90)
+	local sight = piece("Sight", Vector2.new(5 * k, 7 * k), Vector2.new(0.86, -0.1), 0, STEEL_EDGE, barrel)
+	sight.AnchorPoint = Vector2.new(0.5, 1)
+	local bore = piece("Muzzle", Vector2.new(5 * k, 12 * k), Vector2.new(1, 0.5), 0, STEEL_DARK, barrel)
+	Kit.Base.corner(bore, 2)
+	-- the hammer's spur over the top left
+	local a = math.rad(-125)
+	local hammer = piece(
+		"Hammer",
+		Vector2.new(30 * k, 13 * k),
+		Vector2.new(math.cos(a) * (radius - 2), math.sin(a) * (radius - 2)),
+		-38,
+		STEEL_DARK
+	)
+	Kit.Base.corner(hammer, 3)
+	steel(hammer, 0)
+	-- the trigger guard, half behind the cylinder
+	local guard =
+		piece("TriggerGuard", Vector2.new(40 * k, 30 * k), Vector2.new(-0.36 * radius, 0.83 * radius), -10, STEEL)
+	guard.BackgroundTransparency = 1
+	Kit.Base.corner(guard, 15 * k)
+	Kit.Base.stroke(guard, STEEL, 4 * k, 0)
+	-- the bird's-head grip, walnut with a checkered panel and a steel butt cap
+	local grip = piece("Grip", Vector2.new(54 * k, 100 * k), Vector2.new(-0.72 * radius, 0.68 * radius), 32, WOOD)
+	Kit.Base.corner(grip, 24 * k)
+	Kit.Base.make("UIGradient", {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, WOOD_LIGHT),
+			ColorSequenceKeypoint.new(0.55, WOOD),
+			ColorSequenceKeypoint.new(1, WOOD_DARK),
+		}),
+		Rotation = 70,
+		Parent = grip,
+	})
+	Kit.Base.stroke(grip, WOOD_DARK, 2, 0)
+	local panel = piece("Checkering", Vector2.new(34 * k, 56 * k), Vector2.new(0.5, 0.56), 0, WOOD_DARK, grip)
+	panel.BackgroundTransparency = 0.35
+	Kit.Base.corner(panel, 12 * k)
+	local cap = piece("ButtCap", Vector2.new(46 * k, 9 * k), Vector2.new(0.5, 0.97), 0, STEEL, grip)
+	Kit.Base.corner(cap, 4)
+	steel(cap, 90)
+end
+
 -- Builds the wheel in `parent` (it fills it). `played` is called with the emote to play (the panel plays it and
 -- closes).
 function Wheel.mount(parent: Frame, played: (QuickChat.Emote) -> ())
@@ -775,6 +867,7 @@ function Wheel.mount(parent: Frame, played: (QuickChat.Emote) -> ())
 		Parent = holder,
 	})
 	ringScale = Kit.Base.make("UIScale", { Parent = ringFrame }) :: UIScale
+	gunParts(ringFrame)
 	-- The cylinder (the owner's call, 2026-10-18): the wheel is a revolver's cylinder seen from the front, the gun
 	-- Light was shot with at the end: blued steel, a flute cut between each two chambers, the bore down its middle
 	-- round the view of you. It rolls a chamber's turn into place as it opens.
