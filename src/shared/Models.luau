@@ -359,7 +359,195 @@ end
 -- board (facing down and out, what the others see) wears that colour. Anchored; the caller places it.
 local HELD_SCALE = 0.43
 
-function Models.heldManual(at: CFrame, coverColor: Color3?): Model
+-- A cover cosmetic's look on the board (Shared/Cosmetics `style` of a grimoire item): its plate's material, and
+-- small pieces laid on it, in the plate's own frame (x across, z along the board, y up off it; w, d its size).
+type Lay = (
+	plate: CFrame,
+	w: number,
+	d: number,
+	add: (size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?) -> BasePart
+) -> ()
+local BRASS = Color3.fromRGB(150, 118, 58)
+local GOLD = Color3.fromRGB(206, 166, 70)
+local IRON = Color3.fromRGB(58, 60, 64)
+local COVERS: { [string]: { material: Enum.Material, lay: Lay? } } = {
+	-- Oxblood Hide (redesigned 2026-10-22): cracked oxblood leather, brass corners, a black stitched spine strip
+	oxblood = {
+		material = Enum.Material.Leather,
+		lay = function(plate, w, d, add)
+			for _, sx in ipairs({ -1, 1 }) do
+				for _, sz in ipairs({ -1, 1 }) do
+					add(
+						Vector3.new(w * 0.14, 0.03, d * 0.1),
+						plate * CFrame.new(sx * w * 0.43, 0.012, sz * d * 0.45),
+						BRASS,
+						Enum.Material.Metal
+					)
+				end
+			end
+			add(
+				Vector3.new(w * 0.06, 0.025, d * 0.98),
+				plate * CFrame.new(w * 0.47, 0.01, 0),
+				Color3.fromRGB(14, 12, 12)
+			)
+		end,
+	},
+	-- Gilded Requiem: black lacquer under a gilt frame and lozenge
+	gilded = {
+		material = Enum.Material.SmoothPlastic,
+		lay = function(plate, w, d, add)
+			for _, sz in ipairs({ -1, 1 }) do
+				add(
+					Vector3.new(w * 0.86, 0.02, d * 0.025),
+					plate * CFrame.new(0, 0.01, sz * d * 0.42),
+					GOLD,
+					Enum.Material.Metal
+				)
+			end
+			for _, sx in ipairs({ -1, 1 }) do
+				add(
+					Vector3.new(w * 0.025, 0.02, d * 0.86),
+					plate * CFrame.new(sx * w * 0.42, 0.01, 0),
+					GOLD,
+					Enum.Material.Metal
+				)
+			end
+			add(
+				Vector3.new(w * 0.22, 0.025, w * 0.22),
+				plate * CFrame.new(0, 0.012, 0) * CFrame.Angles(0, math.rad(45), 0),
+				GOLD,
+				Enum.Material.Metal
+			)
+		end,
+	},
+	-- Burnt Edition: scorched covers with charred edges
+	burnt = {
+		material = Enum.Material.Slate,
+		lay = function(plate, w, d, add)
+			for _, sz in ipairs({ -1, 1 }) do
+				add(
+					Vector3.new(w * 0.96, 0.02, d * 0.06),
+					plate * CFrame.new(0, 0.008, sz * d * 0.46),
+					Color3.fromRGB(14, 10, 8),
+					Enum.Material.Slate
+				)
+			end
+			add(
+				Vector3.new(w * 0.06, 0.02, d * 0.9),
+				plate * CFrame.new(-w * 0.46, 0.008, 0),
+				Color3.fromRGB(14, 10, 8),
+				Enum.Material.Slate
+			)
+		end,
+	},
+	-- Case File: a Bureau folder bound as a book, a strip of red tape, a paperclip, a typed label
+	casefile = {
+		material = Enum.Material.Fabric,
+		lay = function(plate, w, d, add)
+			add(
+				Vector3.new(w * 0.98, 0.02, d * 0.08),
+				plate * CFrame.new(0, 0.01, -d * 0.18) * CFrame.Angles(0, math.rad(-8), 0),
+				Color3.fromRGB(150, 30, 32)
+			)
+			add(
+				Vector3.new(w * 0.36, 0.02, d * 0.14),
+				plate * CFrame.new(-w * 0.12, 0.012, d * 0.2),
+				Color3.fromRGB(236, 232, 218)
+			)
+			add(
+				Vector3.new(w * 0.04, 0.02, d * 0.22),
+				plate * CFrame.new(w * 0.3, 0.014, -d * 0.36),
+				Color3.fromRGB(176, 180, 186),
+				Enum.Material.Metal
+			)
+		end,
+	},
+	-- Iron Ledger (redesigned 2026-10-22): riveted iron plates, a hasp across the edge with its padlock, a short chain
+	iron = {
+		material = Enum.Material.Metal,
+		lay = function(plate, w, d, add)
+			for _, sx in ipairs({ -1, 1 }) do
+				for k = -2, 2 do
+					local rivet = add(
+						Vector3.new(w * 0.05, 0.04, w * 0.05),
+						plate * CFrame.new(sx * w * 0.4, 0.015, k * d * 0.2),
+						Color3.fromRGB(90, 92, 96),
+						Enum.Material.Metal
+					)
+					rivet.Shape = Enum.PartType.Ball
+				end
+			end
+			add(
+				Vector3.new(w * 0.5, 0.03, d * 0.09),
+				plate * CFrame.new(-w * 0.28, 0.016, 0),
+				IRON,
+				Enum.Material.Metal
+			)
+			add(
+				Vector3.new(w * 0.14, 0.08, d * 0.12),
+				plate * CFrame.new(-w * 0.52, 0.03, 0),
+				Color3.fromRGB(40, 42, 46),
+				Enum.Material.Metal
+			)
+			for k = 1, 3 do
+				add(
+					Vector3.new(w * 0.06, 0.03, d * 0.05),
+					plate * CFrame.new(-w * 0.52, 0.02, d * (0.08 + 0.07 * k)) * CFrame.Angles(0, math.rad(k * 50), 0),
+					IRON,
+					Enum.Material.Metal
+				)
+			end
+		end,
+	},
+	-- Death God's Hide: grey scaled hide, one closed eye on the cover
+	scale = {
+		material = Enum.Material.Slate,
+		lay = function(plate, w, d, add)
+			for row = -3, 3 do
+				for col = -2, 2 do
+					local scale = add(
+						Vector3.new(w * 0.12, 0.02, d * 0.09),
+						plate
+							* CFrame.new(col * w * 0.17 + (row % 2) * w * 0.085, 0.01, row * d * 0.13)
+							* CFrame.Angles(0, math.rad(45), 0),
+						Color3.fromRGB(84, 86, 80),
+						Enum.Material.Slate
+					)
+					scale.Transparency = 0.15
+				end
+			end
+			add(
+				Vector3.new(w * 0.3, 0.04, d * 0.035),
+				plate * CFrame.new(0, 0.02, -d * 0.01),
+				Color3.fromRGB(20, 18, 18)
+			)
+			add(
+				Vector3.new(w * 0.22, 0.035, d * 0.03),
+				plate * CFrame.new(0, 0.022, d * 0.025),
+				Color3.fromRGB(30, 26, 26)
+			)
+		end,
+	},
+	-- Black Mirror: obsidian glass covers, the cracks catching a cold light
+	mirror = {
+		material = Enum.Material.Glass,
+		lay = function(plate, w, d, add)
+			for k, turn in ipairs({ 28, -40, 75 }) do
+				local crack = add(
+					Vector3.new(w * (0.5 - k * 0.08), 0.015, 0.025),
+					plate
+						* CFrame.new(w * (0.1 - k * 0.07), 0.01, d * (k * 0.12 - 0.2))
+						* CFrame.Angles(0, math.rad(turn), 0),
+					Color3.fromRGB(196, 210, 226),
+					Enum.Material.Neon
+				)
+				crack.Transparency = 0.45
+			end
+		end,
+	},
+}
+
+function Models.heldManual(at: CFrame, coverColor: Color3?, coverStyle: string?): Model
 	local book = Models.grimoire()
 	for _, piece in ipairs(book:GetDescendants()) do
 		if piece:IsA("BasePart") then
@@ -392,13 +580,30 @@ function Models.heldManual(at: CFrame, coverColor: Color3?): Model
 			end
 		end
 		if lo.X < hi.X then
+			local look = if coverStyle then COVERS[coverStyle] else nil
+			local w, d = (hi.X - lo.X) * 0.96, (hi.Z - lo.Z) * 0.96
+			local plate = turned * CFrame.new((lo.X + hi.X) / 2, lo.Y - 0.012, (lo.Z + hi.Z) / 2)
 			part(book, {
 				Name = "ManualCoverColor",
-				Size = Vector3.new((hi.X - lo.X) * 0.96, 0.02, (hi.Z - lo.Z) * 0.96),
+				Size = Vector3.new(w, 0.02, d),
 				Color = coverColor,
-				Material = Enum.Material.Leather,
-				CFrame = turned * CFrame.new((lo.X + hi.X) / 2, lo.Y - 0.012, (lo.Z + hi.Z) / 2),
+				Material = if look then look.material else Enum.Material.Leather,
+				Reflectance = if coverStyle == "mirror" or coverStyle == "gilded" then 0.25 else 0,
+				CFrame = plate,
 			})
+			if look and look.lay then
+				-- (laid on the board's outside, which faces down the plate's -y)
+				local outside = plate * CFrame.Angles(math.pi, 0, 0)
+				look.lay(outside, w, d, function(size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?)
+					return part(book, {
+						Name = "ManualCoverPiece",
+						Size = size,
+						Color = color,
+						Material = material or Enum.Material.Fabric,
+						CFrame = cf,
+					})
+				end)
+			end
 		end
 	end
 	return book

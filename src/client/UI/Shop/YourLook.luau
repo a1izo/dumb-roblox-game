@@ -296,7 +296,7 @@ local function dress(self: YourLook)
 		-- A Manual cover colours the open Death's Manual everyone holds while writing
 		-- (CharacterService.setWriting), held as it is there.
 		local held = torso.CFrame * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)
-		Models.heldManual(held, item.color).Parent = holder
+		Models.heldManual(held, item.color, item.style).Parent = holder
 	end
 end
 

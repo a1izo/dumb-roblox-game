@@ -277,8 +277,13 @@ function CharacterService.setWriting(player: Player, on: boolean)
 	CharacterService.attachBuilt(player, "LWriting", TORSO, function(anchor: CFrame)
 		-- Death's Manual, held open (Models.heldManual); a cover cosmetic colours its board.
 		local coverColor = player:GetAttribute("LGrimoireColor")
+		local coverStyle = player:GetAttribute("LGrimoireStyle")
 		local held = anchor * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)
-		local book = Models.heldManual(held, if typeof(coverColor) == "Color3" then coverColor else nil)
+		local book = Models.heldManual(
+			held,
+			if typeof(coverColor) == "Color3" then coverColor else nil,
+			if type(coverStyle) == "string" then coverStyle else nil
+		)
 		return modelParts(book, book:GetPivot())
 	end)
 end
