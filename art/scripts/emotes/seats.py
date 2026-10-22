@@ -100,11 +100,22 @@ perched.follow("neck", 1.5, 0.72)
 perched.follow(("rShoulder", "lShoulder"), 2.2, 0.7)
 perched.build()
 
-# Chin on Fist (seatChin): legs crossed the other way, the chin on the right fist, bored of everyone; a slow sigh.
-chin = Motion("seatChin", 6.0, loop=True, note="Legs crossed, chin on a fist, bored; a slow sigh.")
-for t, b, neck in ((0.0, 0, (6, -8, 10)), (2.2, 1, (8, -8, 12)), (3.0, 0, (2, -10, 8)), (4.4, 0, (5, -6, 11))):
-    _sit(chin, t, "smooth", (-6, -6, 3), legs=(UNDER_R, CROSSED_L_OVER), breath=b, neck=neck, rShoulder=CHIN_R,
-         lShoulder=ACROSS_L)
+# Chin on Fist (seatChin), redesigned 2026-10-22 (the owner's "change it"): sunk low and bored of everyone, slouched
+# back in the chair with the legs stretched out long and crossed at the ankles, the chin propped on the right fist,
+# the left hand's fingers drumming on the chair's arm now and then, the head lolling over; a long slow sigh.
+ANKLES_R, ANKLES_L = (84, -7, -1), (80, 8, 2)  # stretched out, the left ankle over the right
+DRUM_L = reach(-1, (-1.45, -0.32, -1.25), direction=(0.0, -0.3, -1.0))  # the hand on the chair's arm
+DRUM_UP_L = reach(-1, (-1.45, -0.2, -1.25), direction=(0.0, -0.05, -1.0))  # the fingers lifted for a tap
+chin = Motion("seatChin", 6.0, loop=True, note="Sunk low, legs out crossed at the ankles, chin on a fist, drumming "
+              "the chair's arm; a slow sigh.")
+for t, b, neck, lean in ((0.0, 0, (8, -10, 12), 9), (2.2, 1, (10, -8, 15), 10), (3.2, 0, (4, -12, 9), 8),
+                         (4.6, 0, (7, -9, 13), 9)):
+    _sit(chin, t, "smooth", (lean, -6, 3), legs=(ANKLES_R, ANKLES_L), breath=b, neck=neck, rShoulder=CHIN_R,
+         lShoulder=DRUM_L)
+for start in (0.9, 3.7):
+    for k in range(4):
+        chin.key(round(start + 0.14 * k, 4), "snap", lShoulder=DRUM_UP_L if k % 2 == 0 else DRUM_L)
+    chin.key(round(start + 0.6, 4), "smooth", lShoulder=DRUM_L)
 chin.follow("neck", 1.3, 0.8)
 chin.build()
 
