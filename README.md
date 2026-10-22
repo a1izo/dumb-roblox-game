@@ -63,9 +63,9 @@ ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 | Case opening (15 s) | Cutscene: the camera sweeps the map, the case card, Death's Manual falls. Hold to skip. |
 | Briefing (15 s) | Your role card, your secret real name and your first move. |
 | Investigation (free roam) | Work case files to fill the Bureau's task bar, pass notes, talk in proximity chat. Diavolo and Muertos stare to learn names; Diavolo writes in the Manual (4 s, glowing, visible) and the victim dies 20 s later; Muertos sabotage. |
-| Bureau meeting (60 s) | Called by any death (its cutscene plays first), the emergency bell (one ring each per match) or 3 quiet minutes. Free chat at the table; Ace may arrest one player. |
+| Bureau meeting (60 s) | Called by any death (its cutscene plays first), the emergency bell (one ring each per match) or 3 quiet minutes. Everyone sits in their war chair; free chat at the table; Ace may arrest one player. |
 | Vote, then Verdict | Pick a suspect or skip; a tie or a skip majority removes nobody. Then back to free roam. |
-| The end (10 s) | Everyone gathers; the lights find Diavolo; each side hears its own music. |
+| The end (10 s, a few more for a bought cutscene) | The winning side's lead plays their win cutscene for everyone (the default: everyone gathers and the lights find Diavolo, or Ace's spotlight); each side hears its own music. |
 | Case closed | Every role and real name, the timeline, rewards, quests, unlocks. |
 
 There is no round limit. **The Bureau wins** when Diavolo is voted out, arrested or leaves, or when
@@ -193,10 +193,11 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   read the meeting without typing, watch the cutscenes, and go back to the lobby when they
   leave or the case closes. You cannot be queued and watching at once; a party member readying
   up brings you back.
-- **Shop and Robux** ("Death's hand"): hats, trails, ties, notebook covers, writing, verdict and death
-  styles, Deathsinger forms, emotes and titles, matching sets, a daily hand of six plus a deal at a
-  quarter off, Fate's weekly draw (odds shown, coins only), the Season ledger (free line), collection
-  milestones, win scenes, coin packs, and passes (VIP, Double Coins, Custom Alias, Emote Pack,
+- **Shop and Robux** ("Death's hand"): hats, notebook covers, writing, verdict and death styles,
+  Deathsinger forms, emotes, titles, win cutscenes (one for each side, played by the winning side's
+  lead for everyone at the ending), seats and chairs for the war table, matching sets, a daily hand of
+  six plus a deal at a quarter off, Fate's weekly draw (odds shown, coins only), the Season ledger
+  (free line), collection milestones, coin packs, and passes (VIP, Double Coins, Custom Alias, Emote Pack,
   Director). Search, filters, "New" ribbons and a wishlist; a mannequin by the lobby spawn shows the
   day's emote. Titles and VIP tags show only in the lobby and on the results screen.
 - **Emotes**: Q (or Emotes in the lobby menu) opens the emote wheel, a revolver's cylinder of eight
@@ -304,8 +305,9 @@ src/server/     init.server.luau boots every service
   Tests/        specs and the runner
 src/client/     init.client.luau boots everything
   UI/           every screen and panel, Core/ (router, motion, settings, clock, scaling)
-  Presentation/ cue router, camera director, cinema helpers, ink effects, cutscene presenters, the
-                emotes' showpiece camera and private cutscenes (EmoteCamera, EmoteCinema)
+  Presentation/ cue router, camera director, cinema helpers, the effect styles (Styles) and the
+                effects kit (FxKit), cutscene presenters, the win cutscenes (WinCinema), the
+                emotes' showpiece cameras and private cutscenes (EmoteCamera, EmoteCinema)
   Anim/         PoseController, LocomotionController and ActingController (Blender clips)
   Audio/        mixer, music and sound effects
   World/        lighting, rain and snow, footprints, flicker, Deathsinger visibility, and what
