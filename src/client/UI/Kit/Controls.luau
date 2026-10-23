@@ -517,9 +517,10 @@ function Controls.keycap(props: Props): Frame
 	return frame
 end
 
--- Bookmark tabs. Props: items ({ { id, label, icon?, dot? } }), selected (id), vertical, plus frame
--- properties. Returns the frame, select(id) (which also calls onSelect) and setDot(id, on) (the small
--- dot after a tab's label: something new in it).
+-- Bookmark tabs. Props: items ({ { id, label, icon?, dot? } }), selected (id), vertical, marker (the shop's: a
+-- small white diamond over the selected tab, the owner's direction A), plus frame properties. Returns the frame,
+-- select(id) (which also calls onSelect) and setDot(id, on) (the small dot after a tab's label: something new in
+-- it).
 function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string) -> (), (string, boolean) -> ())
 	local frame = Base.frame({
 		Name = props.Name or "Tabs",
@@ -538,6 +539,10 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			local on = id == current
 			Motion.tween(parts.ribbon, { BackgroundTransparency = if on then 0.9 else 1 }, Tokens.motion.base)
 			parts.ribbon.Edge.Visible = on
+			local marker = parts.ribbon:FindFirstChild("Marker")
+			if marker then
+				marker.Visible = on
+			end
 			parts.label.TextColor3 = if on then C.bone else C.dim
 		end
 	end
@@ -576,6 +581,20 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			ZIndex = button.ZIndex + 1,
 			Parent = ribbon,
 		})
+		if props.marker and not props.vertical then
+			Base.make("Frame", {
+				Name = "Marker",
+				BackgroundColor3 = C.white,
+				BorderSizePixel = 0,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0, 4),
+				Size = UDim2.fromOffset(5, 5),
+				Rotation = 45,
+				Visible = false,
+				ZIndex = button.ZIndex + 1,
+				Parent = ribbon,
+			})
+		end
 		local row = Base.frame({
 			ZIndex = button.ZIndex + 2,
 			Size = if props.vertical then UDim2.fromScale(1, 1) else UDim2.fromScale(0, 1),

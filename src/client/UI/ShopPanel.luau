@@ -868,6 +868,7 @@ local function buildSuits()
 	local tabs, choose, dot = Kit.tabs({
 		items = items,
 		selected = currentSuit,
+		marker = true,
 		Size = UDim2.fromOffset(0, SUITS_HEIGHT),
 		Parent = suitScroll,
 	}, function(id: string)
