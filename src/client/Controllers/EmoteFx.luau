@@ -2311,7 +2311,9 @@ FX.theLongClimb = function(character, preview)
 	local face: Decal? = nil
 	local rain = if image and not calm then climbRain(root.Position) else nil
 	if image then
-		image.Parent = workspace
+		-- (under the camera, with the climb's other parts: as a body with a Humanoid, Roblox keeps its torso solid,
+		-- and in the world the climber's own walk met it as a wall and turned back at once; 2026-10-23)
+		image.Parent = workspace.CurrentCamera
 		highlight = Create("Highlight", {
 			Adornee = image,
 			FillColor = CLIMB_GREEN,
