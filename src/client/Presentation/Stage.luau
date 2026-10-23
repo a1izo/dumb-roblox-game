@@ -9,6 +9,7 @@
 --   stage:clear()
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
@@ -23,7 +24,16 @@ Stage.__index = Stage
 
 type Saved = { [Instance]: any }
 
-export type Stage = typeof(setmetatable({} :: { folder: Folder, hidden: { [Model]: Saved }, actors: { Model } }, Stage))
+export type Stage = typeof(setmetatable(
+	{} :: {
+		folder: Folder,
+		hidden: { [Model]: Saved },
+		actors: { Model },
+		worn: { BasePart },
+		sight: RBXScriptConnection?,
+	},
+	Stage
+))
 
 local function folder(): Folder
 	local existing = workspace:FindFirstChild("DeathsGambitStage")
@@ -35,7 +45,39 @@ end
 
 function Stage.new(): Stage
 	local set = Create("Folder", { Name = "Set", Parent = folder() })
-	return setmetatable({ folder = set, hidden = {}, actors = {} }, Stage)
+	return setmetatable({ folder = set, hidden = {}, actors = {}, worn = {}, sight = nil }, Stage)
+end
+
+-- What an actor wears (hair, a mask, a coat) goes see-through on this screen while the camera is inside it, and
+-- comes back once it leaves: a close shot of someone in big hair would otherwise show the inside of the hair
+-- (the owner's avatar in God of the New World, 2026-10-23).
+local NEAR = 0.35 -- studs round a part that count as inside it
+
+local function inside(part: BasePart, point: Vector3): boolean
+	local at = part.CFrame:PointToObjectSpace(point)
+	local half = part.Size / 2 + Vector3.one * NEAR
+	return math.abs(at.X) <= half.X and math.abs(at.Y) <= half.Y and math.abs(at.Z) <= half.Z
+end
+
+local function keepSight(self: Stage)
+	if self.sight then
+		return
+	end
+	local cleared: { [BasePart]: boolean } = {}
+	self.sight = RunService.RenderStepped:Connect(function()
+		local camera = workspace.CurrentCamera
+		if not camera then
+			return
+		end
+		local eye = camera.CFrame.Position
+		for _, part in ipairs(self.worn) do
+			local hide = part.Parent ~= nil and inside(part, eye)
+			if hide ~= (cleared[part] == true) then
+				cleared[part] = if hide then true else nil
+				part.LocalTransparencyModifier = if hide then 1 else 0
+			end
+		end
+	end)
 end
 
 -- Hides a model on this screen and returns what it changed, to put back later.
@@ -222,6 +264,16 @@ function Stage.cast(self: Stage, who: number | Model, mark: CFrame, clip: string
 	actor:PivotTo(mark * CFrame.new(0, lift, 0))
 	actor.Parent = self.folder
 	table.insert(self.actors, actor)
+	for _, item in ipairs(actor:GetChildren()) do
+		if item:IsA("Accessory") then
+			for _, part in ipairs(item:GetDescendants()) do
+				if part:IsA("BasePart") then
+					table.insert(self.worn, part)
+				end
+			end
+		end
+	end
+	keepSight(self)
 	if typeof(who) ~= "Instance" then
 		self:hide(source)
 	end
@@ -464,6 +516,11 @@ function Stage.clear(self: Stage)
 	end
 	self.hidden = {}
 	self.actors = {}
+	self.worn = {}
+	if self.sight then
+		self.sight:Disconnect()
+		self.sight = nil
+	end
 	self.folder:ClearAllChildren()
 end
 
