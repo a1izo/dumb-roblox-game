@@ -675,10 +675,11 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	if not view then
 		still(item, pictureBox)
 	end
-	Kit.text({
+	local nameSize = 22
+	local nameText = Kit.text({
 		face = "Head",
 		text = item.name,
-		size = 22,
+		size = nameSize,
 		color = C.bone,
 		align = "center",
 		maxWidth = Card.WIDTH - 20,
@@ -686,6 +687,11 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		Position = UDim2.new(0.5, 0, 0, PICTURE + 22),
 		Parent = face,
 	})
+	-- (a long name shrinks rather than run into the price below it: two lines at most, "The Calculating Seat")
+	while nameText.height > nameSize * 2.7 and nameSize > 15 do
+		nameSize -= 3
+		nameText:setSize(nameSize)
+	end
 	-- The chip: a coin and the price, or a word (Worn, Owned, Earned...).
 	local chipFrame = Kit.Base.make("Frame", {
 		Name = "Chip",

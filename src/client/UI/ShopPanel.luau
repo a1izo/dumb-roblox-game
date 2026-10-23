@@ -237,10 +237,14 @@ local function chipFor(profile, item: Cosmetics.Item): (string, string, { text: 
 			"check",
 			if slot then { text = "In wheel · " .. slot, filled = true } else { text = "Owned", filled = false }
 	elseif owns(profile, item) then
+		-- (seats and win cutscenes are used, not worn; the free one is in use while nothing else of its kind is)
+		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"
+		local slot = profile.equipped[Cosmetics.slotOf(item)]
+		local on = slot == item.id or (used and slot == nil and item.source == "free")
 		return "Yours",
 			"check",
-			if profile.equipped[Cosmetics.slotOf(item)] == item.id
-				then { text = "Worn", filled = true }
+			if on
+				then { text = if used then "In use" else "Worn", filled = true }
 				else { text = "Owned", filled = false }
 	elseif item.source == "vip" then
 		return "VIP", "lock"
