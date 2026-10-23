@@ -32,6 +32,7 @@ export type Options = {
 	size: string?, -- "S", "sheet", "M" (default) or "L"
 	tone: string?, -- "black" (default), "white" (Ace's windows only); "parchment" is the same as "black"
 	jp: string?, -- a small grey Japanese accent beside the title (Roblox draws it with its CJK fallback font)
+	glow: boolean?, -- lit softly from the top, with scanlines and grain (the shop: the owner's direction A)
 	loud: boolean?, -- an Aktura title with a red stroke (Death's Manual, the case report)
 	closable: boolean?, -- default true
 	onClose: (() -> ())?, -- default: Router.close(name)
@@ -83,6 +84,7 @@ function Window.new(options: Options): Window
 		tone = options.tone or "black",
 		padding = 0,
 		window = true,
+		glow = options.glow,
 		ZIndex = 2,
 		Parent = root,
 	})

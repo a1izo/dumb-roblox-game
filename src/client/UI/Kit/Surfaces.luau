@@ -138,7 +138,9 @@ end
 
 -- A panel. Props: window (two clipped corners and an outline, used by Window), tone ("black", "raised", "parchment" (the same as raised), "white" (Ace's)), glass
 -- (the panel is see-through, for the HUD), edge (the 2 px grey line down the left, default true except on
--- white), texture (scanlines and grain, default true), padding (px, default 24), autoHeight (the panel
+-- white), texture (scanlines and grain, default true), glow (a window lit softly from the top and darkening
+-- below, with the scanlines and grain a window otherwise goes without: the shop's, the owner's direction A),
+-- padding (px, default 24), autoHeight (the panel
 -- grows and shrinks with its content; give it a width), plus frame properties. `torn`, `ruled` and
 -- `margin` from the old notebook pages are accepted and ignored.
 -- Returns the panel frame and its content frame (put layouts in the content frame).
@@ -161,12 +163,25 @@ function Surfaces.page(props: Props?): (Frame, Frame)
 	local function draw()
 		Base.clear(surface)
 		frame.BackgroundTransparency = 1
-		Surfaces.notch(surface, {
+		local fill = Surfaces.notch(surface, {
 			shape = if p.window then "window" else "panel",
-			color = tone.color,
+			color = if p.glow then tone.color:Lerp(C.white, 0.07) else tone.color,
 			transparency = if p.glass then Tokens.alpha.glass else 0,
 			ZIndex = z,
 		})
+		if p.glow then
+			-- (a gradient only darkens what it lies on: the fill a shade lighter, the gradient taking it down below)
+			Base.make("UIGradient", {
+				Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+					ColorSequenceKeypoint.new(0.55, Color3.fromRGB(150, 150, 156)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(104, 104, 110)),
+				}),
+				Rotation = 90,
+				Parent = fill,
+			})
+			Surfaces.texture(surface, z)
+		end
 		if p.window then
 			-- A window has two clipped corners and a 1 px outline instead of the edge line and texture.
 			Surfaces.notch(surface, {

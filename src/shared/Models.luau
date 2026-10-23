@@ -365,7 +365,8 @@ type Lay = (
 	plate: CFrame,
 	w: number,
 	d: number,
-	add: (size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?) -> BasePart
+	add: (size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?) -> BasePart,
+	open: boolean? -- the book held open as it is written in (a cover may change then: Death God's Hide opens its eye)
 ) -> ()
 local BRASS = Color3.fromRGB(150, 118, 58)
 local GOLD = Color3.fromRGB(206, 166, 70)
@@ -499,10 +500,11 @@ local COVERS: { [string]: { material: Enum.Material, lay: Lay? } } = {
 			end
 		end,
 	},
-	-- Death God's Hide: grey scaled hide, one closed eye on the cover
+	-- Death God's Hide: grey scaled hide, one closed eye on the cover that opens while you write (the review page's
+	-- concept): shut on the closed notebook, its lids apart over a dim red eye on the book held open
 	scale = {
 		material = Enum.Material.Slate,
-		lay = function(plate, w, d, add)
+		lay = function(plate, w, d, add, open)
 			for row = -3, 3 do
 				for col = -2, 2 do
 					local scale = add(
@@ -516,16 +518,31 @@ local COVERS: { [string]: { material: Enum.Material, lay: Lay? } } = {
 					scale.Transparency = 0.15
 				end
 			end
+			local apart = if open then d * 0.05 else 0
 			add(
 				Vector3.new(w * 0.3, 0.04, d * 0.035),
-				plate * CFrame.new(0, 0.02, -d * 0.01),
+				plate * CFrame.new(0, 0.02, -d * 0.01 - apart),
 				Color3.fromRGB(20, 18, 18)
 			)
 			add(
 				Vector3.new(w * 0.22, 0.035, d * 0.03),
-				plate * CFrame.new(0, 0.022, d * 0.025),
+				plate * CFrame.new(0, 0.022, d * 0.025 + apart),
 				Color3.fromRGB(30, 26, 26)
 			)
+			if open then
+				local eye = add(
+					Vector3.new(w * 0.24, 0.03, d * 0.1),
+					plate * CFrame.new(0, 0.016, d * 0.008),
+					Color3.fromRGB(150, 22, 26),
+					Enum.Material.Neon
+				)
+				eye.Transparency = 0.2
+				add(
+					Vector3.new(w * 0.05, 0.035, d * 0.09),
+					plate * CFrame.new(0, 0.022, d * 0.008),
+					Color3.fromRGB(8, 6, 6)
+				)
+			end
 		end,
 	},
 	-- Black Mirror: obsidian glass covers, the cracks catching a cold light
@@ -611,7 +628,7 @@ function Models.heldManual(at: CFrame, coverColor: Color3?, coverStyle: string?)
 				CFrame = plate,
 			})
 			if look and look.lay then
-				-- (laid on the board's outside, which faces down the plate's -y)
+				-- (laid on the board's outside, which faces down the plate's -y; the book is held open, written in)
 				local outside = plate * CFrame.Angles(math.pi, 0, 0)
 				look.lay(outside, w, d, function(size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?)
 					return part(book, {
@@ -621,7 +638,7 @@ function Models.heldManual(at: CFrame, coverColor: Color3?, coverStyle: string?)
 						Material = material or Enum.Material.Fabric,
 						CFrame = cf,
 					})
-				end)
+				end, true)
 			end
 		end
 	end

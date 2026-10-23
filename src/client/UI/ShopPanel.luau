@@ -1194,7 +1194,7 @@ function ShopPanel.focus(itemId: string)
 end
 
 function ShopPanel.init()
-	local win = Kit.window({ name = "shop", title = "Death's hand", jp = "ショップ", size = "L" })
+	local win = Kit.window({ name = "shop", title = "Death's hand", jp = "ショップ", size = "L", glow = true })
 	local body = win.body
 	-- Direction A's bar: the hand Death deals from (three card backs fanned) and the suit's note on the left, the
 	-- purse on the right (the coins large, the word small).
