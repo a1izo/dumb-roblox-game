@@ -924,7 +924,11 @@ function ShopPanel.rebuild()
 		browseRow.Visible = browsing
 		arrange()
 	end
-	purseLabel.Text = string.format("%d coins", profile.coins)
+	-- (in thousands, as direction A writes it: 4,820)
+	purseLabel.Text = (string.reverse((string.gsub(string.reverse(tostring(profile.coins)), "(%d%d%d)", "%1,")))):gsub(
+		"^,",
+		""
+	)
 	noteLabel.Text = ""
 	local now = os.time()
 	if currentSuit == "today" then
@@ -1191,11 +1195,9 @@ end
 function ShopPanel.init()
 	local win = Kit.window({ name = "shop", title = "Death's hand", jp = "ショップ", size = "L" })
 	local body = win.body
-	-- The purse on the left, a note on the right.
-	local purse = Kit.frame({ Name = "Purse", Size = UDim2.new(0.4, 0, 0, 32), Parent = body })
-	Kit.list(purse, T.space.s, true)
-	-- (direction A: the hand Death deals from, three card backs fanned, before the coins)
-	local deck = Kit.frame({ Name = "Deck", Size = UDim2.fromOffset(34, 32), LayoutOrder = 0, Parent = purse })
+	-- Direction A's bar: the hand Death deals from (three card backs fanned) and the suit's note on the left, the
+	-- purse on the right (the coins large, the word small).
+	local deck = Kit.frame({ Name = "Deck", Size = UDim2.fromOffset(34, 32), Parent = body })
 	for k, turn in ipairs({ -22, 0, 22 }) do
 		local back = Kit.Base.make("Frame", {
 			Name = "Back" .. k,
@@ -1219,6 +1221,15 @@ function ShopPanel.init()
 		})
 		Kit.Base.stroke(inner, C.bone, 1, 0.8)
 	end
+	local purse = Kit.frame({
+		Name = "Purse",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.fromOffset(0, 32),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Parent = body,
+	})
+	Kit.list(purse, T.space.s, true, Enum.HorizontalAlignment.Right)
 	Kit.icon({ name = "coin", size = 24, color = C.candle, LayoutOrder = 1, Parent = purse })
 	purseLabel = Kit.label({
 		font = "bodyBold",
@@ -1230,16 +1241,26 @@ function ShopPanel.init()
 		LayoutOrder = 2,
 		Parent = purse,
 	})
+	Kit.label({
+		Text = "COINS",
+		font = "label",
+		size = "micro",
+		color = C.dim,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromScale(0, 1),
+		LayoutOrder = 3,
+		Parent = purse,
+	})
 	noteLabel = Kit.label({
 		font = "bodyItalic",
 		color = C.dim,
-		TextXAlignment = Enum.TextXAlignment.Right,
+		TextXAlignment = Enum.TextXAlignment.Left,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.new(0.6, 0, 0, 32),
+		Position = UDim2.fromOffset(34 + T.space.m, 0),
+		Size = UDim2.new(1, -(34 + T.space.m + 200), 0, 32),
 		Parent = body,
 	})
 	-- The suits: one scrolling row on every screen.
