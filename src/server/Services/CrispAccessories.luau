@@ -166,7 +166,8 @@ local function tryToSharpen(accessory: Accessory)
 end
 
 -- Rebuilds every old-kind accessory handle the body wears, all at once, and returns when they are done (the meshes
--- fetched the first time only). The body must be in the world already (see watch).
+-- fetched the first time only). A body that is not in the world yet works too (a rebuilt avatar before it is
+-- shown, the Tokyo crowd's templates).
 function CrispAccessories.sharpen(body: Model)
 	local pending = 0
 	local me = coroutine.running()
@@ -189,9 +190,8 @@ function CrispAccessories.sharpen(body: Model)
 	end
 end
 
--- For a body in the world (only there: a body sharpened before it is added gets its new handles scaled and placed
--- again by Roblox as it goes in): what it wears now, and what it puts on later (an avatar's accessories may arrive
--- after the body, each welded on once it lands).
+-- For a body already in the world (an R6 avatar Roblox spawned itself, a test bot): what it wears now, and what it
+-- puts on later (an avatar's accessories may arrive after the body, each welded on once it lands).
 function CrispAccessories.watch(body: Model)
 	task.spawn(CrispAccessories.sharpen, body)
 	body.ChildAdded:Connect(function(child)

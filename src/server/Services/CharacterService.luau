@@ -604,6 +604,12 @@ local function replaceWithR6(player: Player, character: Model, humanoid: Humanoi
 		return false
 	end
 	model.Name = player.Name
+	-- (its accessories rebuilt as MeshParts before anyone sees it: the old kind leave the whole body blocky)
+	CrispAccessories.sharpen(model)
+	if player.Character ~= character or player.Parent ~= Players then
+		model:Destroy()
+		return false
+	end
 	-- Roblox's R6 models pivot on the Head; everything that places a body (spawns, cutscenes) means its root.
 	local newRoot = model:FindFirstChild("HumanoidRootPart")
 	if newRoot and newRoot:IsA("BasePart") then
@@ -632,8 +638,8 @@ local function onCharacterAdded(player: Player, character: Model)
 	if replaceWithR6(player, character, humanoid) then
 		return
 	end
-	-- Its accessories rebuilt as MeshParts (the old kind leave the whole body blocky), once it is in the world: done
-	-- before, Roblox scales and places the new ones a second time as the body is added, and they float up.
+	-- (an R6 body Roblox spawned itself, or a test bot: its accessories rebuilt as MeshParts as they come; a body the
+	-- game rebuilt from R15 has had them rebuilt already)
 	CrispAccessories.watch(character)
 	character:WaitForChild("HumanoidRootPart", 10)
 	-- Bodies have a group of their own, so a hidden (away) body can pass through them.

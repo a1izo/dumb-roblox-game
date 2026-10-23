@@ -12,6 +12,7 @@ local CrowdLooks = require(Shared:WaitForChild("CrowdLooks"))
 
 local Services = script.Parent.Parent.Parent.Parent:WaitForChild("Services")
 local CharacterService = require(Services:WaitForChild("CharacterService"))
+local CrispAccessories = require(Services:WaitForChild("CrispAccessories"))
 
 local Looks = {}
 
@@ -194,6 +195,9 @@ local function body(index: number, look: CrowdLooks.Look): Model
 		coat(model, look)
 	end
 	hair(model, look)
+	-- (its catalog hair rebuilt as a MeshPart, as every player's accessories are: the old kind leave the whole body
+	-- blocky, and the crowd must look like the players)
+	CrispAccessories.sharpen(model)
 	if look.umbrella then
 		umbrella(model, look.umbrella)
 	end
