@@ -42,8 +42,10 @@ ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 
 ### Place settings to check in Studio
 
-- **Game Settings > Avatar > Avatar type: R6.** Every animation and the noir outfit are built for
-  R6 (an avatar that loads as R15 is rebuilt as R6 by the server, so this only saves that step).
+- **Game Settings > Avatar > Avatar type: leave R15 (or player choice) on.** Every animation and the noir
+  outfit are built for R6, and the server rebuilds each R15 avatar as R6 itself; that rebuild is also where an
+  avatar keeps its own painted head (`Services/DynamicHeads`). With the place set to R6, Roblox builds the bodies
+  and those players get R6's plain head and default smile instead.
 - **Game Settings > Security > Enable Studio Access to API Services**: needed to save profiles in
   Studio. Without it the game uses temporary data and says so in the lobby. Studio saves go to a
   separate store (`Config.STUDIO_DATASTORE_SUFFIX`), never to live data.
