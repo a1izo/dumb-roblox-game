@@ -2088,16 +2088,18 @@ local function layStep(step: ClimbStep, at: CFrame)
 	end
 end
 
--- The giant image: a copy of the climber's head, torso and arms (no hats, no legs), scaled up. Returns it, its
--- parts and where each sits from the torso's bottom middle (nil when the body cannot be copied).
-local function climbImage(character: Model): (Model?, { BasePart }, { CFrame })
+-- The giant image: a copy of the climber's head, torso and arms with what they wear there (hair, a mask, a coat's
+-- collar: so it is them; no hats, no legs), scaled up. Returns it, its parts, where each sits from the torso's
+-- bottom middle, and for what the head wears its place on the head (it tips with the head). Nil when the body
+-- cannot be copied.
+local function climbImage(character: Model): (Model?, { BasePart }, { CFrame }, { [number]: CFrame })
 	local copy = Stage.copyOf(character)
 	local torso = if copy then copy:FindFirstChild("Torso") else nil
 	if not copy or not torso or not torso:IsA("BasePart") then
 		if copy then
 			copy:Destroy()
 		end
-		return nil, {}, {}
+		return nil, {}, {}, {}
 	end
 	-- (nobody's body: no tags or marks a character's code would find, no neck it would die without)
 	for _, tag in ipairs(copy:GetTags()) do
@@ -2112,12 +2114,44 @@ local function climbImage(character: Model): (Model?, { BasePart }, { CFrame })
 		humanoid.BreakJointsOnDeath = false
 	end
 	local keep = { Head = true, Torso = true, ["Right Arm"] = true, ["Left Arm"] = true }
+	-- What it wears on the kept parts, and where on them (read before the joints go): a hat would sit on the giant
+	-- head like a lid, so hats stay off, and the game's own hat cosmetic is not an accessory. Once the owner's grin
+	-- is set (EmoteMedia), a mask or other face accessory comes off too, or it would hide the grin.
+	local grin = EmoteMedia.face("manicGrin")
+	local worn: { { handle: BasePart, on: string, offset: CFrame } } = {}
+	for _, child in ipairs(copy:GetChildren()) do
+		local handle = if child:IsA("Accessory") then child:FindFirstChild("Handle") else nil
+		local off = child:IsA("Accessory")
+			and (
+				child.AccessoryType == Enum.AccessoryType.Hat
+				or (grin and child.AccessoryType == Enum.AccessoryType.Face)
+			)
+		if handle and handle:IsA("BasePart") and not off then
+			for _, joint in ipairs(handle:GetDescendants()) do
+				if joint:IsA("JointInstance") then
+					local other = if joint.Part0 == handle then joint.Part1 else joint.Part0
+					if other and keep[other.Name] and other.Parent == copy then
+						table.insert(
+							worn,
+							{ handle = handle, on = other.Name, offset = other.CFrame:ToObjectSpace(handle.CFrame) }
+						)
+						break
+					end
+				end
+			end
+		end
+	end
+	local kept: { [Instance]: boolean } = {}
+	for _, entry in ipairs(worn) do
+		kept[entry.handle.Parent :: Instance] = true
+	end
 	for _, child in ipairs(copy:GetChildren()) do
 		if
 			(child:IsA("BasePart") and not keep[child.Name])
-			or child:IsA("Accessory")
+			or (child:IsA("Accessory") and not kept[child])
 			or child:IsA("CharacterMesh")
 			or child:IsA("Tool")
+			or (child:IsA("Model") and child ~= copy)
 		then
 			child:Destroy()
 		end
@@ -2131,6 +2165,8 @@ local function climbImage(character: Model): (Model?, { BasePart }, { CFrame })
 	local tSize = torso.Size * k
 	local parts: { BasePart } = {}
 	local places: { CFrame } = {}
+	local onHead: { [number]: CFrame } = {}
+	local placeOf: { [string]: CFrame } = {}
 	for _, name in ipairs({ "Torso", "Head", "Right Arm", "Left Arm" }) do
 		local part = copy:FindFirstChild(name)
 		if part and part:IsA("BasePart") then
@@ -2152,16 +2188,40 @@ local function climbImage(character: Model): (Model?, { BasePart }, { CFrame })
 				else Vector3.new(0, tSize.Y / 2, 0)
 			table.insert(parts, part)
 			table.insert(places, CFrame.new(at))
+			placeOf[name] = CFrame.new(at)
+		end
+	end
+	for _, entry in ipairs(worn) do
+		local handle, on = entry.handle, placeOf[entry.on]
+		if on then
+			handle.Size *= k
+			handle.Anchored = true
+			handle.CastShadow = false
+			for _, mesh in ipairs(handle:GetChildren()) do
+				if mesh:IsA("SpecialMesh") then
+					mesh.Scale *= k
+					mesh.Offset *= k
+				end
+			end
+			local offset = CFrame.new(entry.offset.Position * k) * entry.offset.Rotation
+			table.insert(parts, handle)
+			table.insert(places, on * offset)
+			if entry.on == "Head" then
+				onHead[#parts] = offset
+			end
 		end
 	end
 	local head = copy:FindFirstChild("Head")
 	local face = if head then head:FindFirstChild("face") else nil
-	local grin = EmoteMedia.face("manicGrin")
 	if face and face:IsA("Decal") and grin then
 		face.Texture = grin
+	elseif face and face:IsA("Decal") and next(onHead) and face.Texture == "rbxasset://textures/face.png" then
+		-- (Roblox's plain smile under a mask or hair the head wears: hidden on the body, it would show through the
+		-- see-through image)
+		face:Destroy()
 	end
 	copy.Name = "ClimbImage"
-	return copy, parts, places
+	return copy, parts, places, onHead
 end
 
 local function climbRain(at: Vector3): BasePart
@@ -2243,9 +2303,9 @@ FX.theLongClimb = function(character, preview)
 	end)
 
 	-- the image behind, and the rain
-	local image, parts, places = nil, {}, {}
+	local image, parts, places, onHead = nil, {}, {}, {}
 	if not low then
-		image, parts, places = climbImage(character)
+		image, parts, places, onHead = climbImage(character)
 	end
 	local highlight: Highlight? = nil
 	local face: Decal? = nil
@@ -2301,11 +2361,18 @@ FX.theLongClimb = function(character, preview)
 			)
 		local frame = (base :: CFrame) * sway * CFrame.Angles(IMAGE_LEAN, 0, 0)
 		local cframes = table.create(#parts)
+		local headAt: CFrame? = nil
 		for i, part in ipairs(parts) do
 			local place = frame * places[i]
-			if part.Name == "Head" and not calm then
-				-- (the head tipped slowly to one side and back: the grin's madness)
-				place *= CFrame.Angles(0, 0, math.rad(9) * math.sin(t * 0.55))
+			if part.Name == "Head" and part.Parent == image then
+				if not calm then
+					-- (the head tipped slowly to one side and back: the grin's madness)
+					place *= CFrame.Angles(0, 0, math.rad(9) * math.sin(t * 0.55))
+				end
+				headAt = place
+			elseif onHead[i] and headAt then
+				-- (what the head wears tips with it)
+				place = headAt * onHead[i]
 			end
 			cframes[i] = place
 			part.Transparency = 1 - (1 - IMAGE_ALPHA) * strength

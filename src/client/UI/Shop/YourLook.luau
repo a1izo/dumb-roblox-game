@@ -23,6 +23,7 @@ local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
+local Rarity = require(Shared:WaitForChild("Rarity"))
 local Seating = require(Shared:WaitForChild("Seating"))
 
 local Motion = require(script.Parent.Parent.Core.Motion)
@@ -153,13 +154,16 @@ function YourLook.new(holder: GuiObject, props: { [string]: any }?): YourLook
 		Size = UDim2.new(1, -20, 0, 28),
 		FontFace = Tokens.font.bodyBold,
 		Text = "",
-		TextColor3 = Color3.fromRGB(244, 245, 247),
-		TextSize = 22,
+		RichText = true,
+		TextColor3 = Tokens.color.dim,
+		TextScaled = true,
 		TextStrokeTransparency = 0.4,
-		TextWrapped = true,
+		TextWrapped = false,
 		ZIndex = 5,
 		Parent = viewport,
 	}) :: TextLabel
+	-- (the tag as it hangs over the head: one line, in its tier's look; Shared/Rarity.titleText)
+	Create("UITextSizeConstraint", { MaxTextSize = 20, MinTextSize = 8, Parent = titleLabel })
 	local self = setmetatable({
 		viewport = viewport,
 		world = nil,
@@ -259,7 +263,11 @@ local function dress(self: YourLook)
 	local equipped = (self.profile and self.profile.equipped) or {}
 	local looking = item and item.kind
 	local title = if looking == "title" then item else Cosmetics.byId(equipped.title)
-	self.titleLabel.Text = if title then title.name else ""
+	if title then
+		self.titleLabel.Text, self.titleLabel.TextColor3 = Rarity.titleText(title.name, title.rarity, Tokens.color.dim)
+	else
+		self.titleLabel.Text = ""
+	end
 	ghost(copy, if looking == "specter" and item then item.color else nil)
 	Styles.form(copy, if looking == "specter" and item then item.form else nil, if item then item.color else nil)
 	local head = copy:FindFirstChild("Head")

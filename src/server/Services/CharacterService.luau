@@ -14,6 +14,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
 
 local CollisionGroups = require(script.Parent.CollisionGroups)
+local CrispAccessories = require(script.Parent.CrispAccessories)
 local Match = require(script.Parent.Match)
 local RagdollService = require(script.Parent.RagdollService)
 
@@ -631,6 +632,9 @@ local function onCharacterAdded(player: Player, character: Model)
 	if replaceWithR6(player, character, humanoid) then
 		return
 	end
+	-- Its accessories rebuilt as MeshParts (the old kind leave the whole body blocky), once it is in the world: done
+	-- before, Roblox scales and places the new ones a second time as the body is added, and they float up.
+	CrispAccessories.watch(character)
 	character:WaitForChild("HumanoidRootPart", 10)
 	-- Bodies have a group of their own, so a hidden (away) body can pass through them.
 	CollisionGroups.body(character, CollisionGroups.CHARACTERS)

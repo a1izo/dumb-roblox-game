@@ -106,6 +106,7 @@ local newHere: { string } = {} -- the new cards dealt in this suit, seen once yo
 local fateDealt: string? = nil -- the card Fate just dealt, turned over once the profile says it is yours
 local confirming: string? = nil -- the Condemned or Godhood card whose buy is waiting to be confirmed
 local sealing: string? = nil -- the card just bought: sealed once the profile says it is yours
+local flaring: string? = nil -- the card just worn or put on the wheel: it flares once the profile says so
 local arrange: () -> ()
 local price: (Cosmetics.Item) -> number?
 local isDeal: (Cosmetics.Item) -> boolean
@@ -226,13 +227,21 @@ local function leaveSuit()
 	end
 end
 
--- What a card's chip says: its price, or where you stand with it.
--- A card's chip: its price with a coin; a check when it is yours; a lock when it cannot be bought now.
-local function chipFor(profile, item: Cosmetics.Item): (string, string)
+-- A card's chip: its price with a coin; "Yours" and a check when it is yours; a lock when it cannot be bought now.
+-- And for what is yours, the state chip on its picture (direction A): white "In wheel · 1" or "Worn" when it is
+-- on, outlined "Owned" when it is not.
+local function chipFor(profile, item: Cosmetics.Item): (string, string, { text: string, filled: boolean }?)
 	if owns(profile, item) and item.kind == "emote" then
-		return if EmoteWheel.slotOf(profile.emoteWheel, item.emote) then "On wheel" else "Owned", "check"
+		local slot = EmoteWheel.slotOf(profile.emoteWheel, item.emote)
+		return "Yours",
+			"check",
+			if slot then { text = "In wheel · " .. slot, filled = true } else { text = "Owned", filled = false }
 	elseif owns(profile, item) then
-		return if profile.equipped[Cosmetics.slotOf(item)] == item.id then "Worn" else "Owned", "check"
+		return "Yours",
+			"check",
+			if profile.equipped[Cosmetics.slotOf(item)] == item.id
+				then { text = "Worn", filled = true }
+				else { text = "Owned", filled = false }
 	elseif item.source == "vip" then
 		return "VIP", "lock"
 	elseif not price(item) then
@@ -280,6 +289,7 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 			LayoutOrder = index,
 			Parent = row,
 		}, function()
+			flaring = if here then nil else item.id
 			ProfileRequest:FireServer({ action = "emoteWheel", slot = index, emote = if here then "" else item.emote })
 		end)
 	end
@@ -320,8 +330,9 @@ local function showAction(profile, item: Cosmetics.Item?)
 		return
 	end
 	lookName:set(item.name)
+	-- (the tier's diamond first, as on the card's band: direction A)
 	lookLine.Text = string.format(
-		"%s  ·  %s",
+		"◆ %s  ·  %s",
 		Rarity.name(item.rarity),
 		Cosmetics.KIND_SINGULAR[item.kind] or item.kind
 	) .. (if item.stance then "  ·  Stance" elseif item.stroll then "  ·  Stroll" else "")
@@ -329,6 +340,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 	local size = UDim2.new(1, 0, 0, T.touch)
 	local function press(text: string, action: string, variant: string)
 		Kit.button({ text = text, variant = variant, size = "m", Size = size, Parent = actionHolder }, function()
+			flaring = if action == "equip" then item.id else nil
 			ShopRequest:FireServer({ action = action, itemId = item.id })
 		end)
 	end
@@ -499,7 +511,7 @@ function isDeal(item: Cosmetics.Item): boolean
 end
 
 local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, faceDown: boolean)
-	local text, icon = chipFor(profile, item)
+	local text, icon, state = chipFor(profile, item)
 	local fresh = isNew(profile, item)
 	-- (a card lying face down has not been seen yet)
 	if fresh and not faceDown and not table.find(newHere, item.id) then
@@ -510,6 +522,7 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 		LayoutOrder = order,
 		chip = text,
 		chipIcon = icon,
+		state = state,
 		faceDown = faceDown,
 		isNew = fresh,
 		offer = if isDeal(item) then "25% OFF" else nil,
@@ -1371,6 +1384,20 @@ function ShopPanel.init()
 					card:seal()
 				end
 				Sfx.play("stamp")
+			end
+			local worn = flaring and Cosmetics.byId(flaring)
+			if worn then
+				local profile = ClientState.profile
+				local on = if worn.kind == "emote"
+					then EmoteWheel.slotOf(profile.emoteWheel, worn.emote :: string) ~= nil
+					else profile.equipped[Cosmetics.slotOf(worn)] == worn.id
+				if on then
+					flaring = nil
+					local card = cards[worn.id]
+					if card then
+						card:flare()
+					end
+				end
 			end
 		end
 	end)

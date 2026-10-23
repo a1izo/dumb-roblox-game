@@ -119,5 +119,32 @@ return function(t)
 			end
 			expect(table.concat(asks, ",")).to.equal("false,false,false,true,true")
 		end)
+
+		it(
+			"gives each title tier its own look: no mark, a dot, then a diamond; the top two lean to their colour",
+			function()
+				local marks, leans = {}, {}
+				for _, id in ipairs(Rarity.ORDER) do
+					local mark, lean = Rarity.titleLook(id)
+					table.insert(marks, mark or "-")
+					table.insert(leans, tostring(lean > 0))
+				end
+				expect(table.concat(marks, ",")).to.equal("-,·,◆,◆,◆")
+				expect(table.concat(leans, ",")).to.equal("false,false,false,true,true")
+			end
+		)
+
+		it("writes a title in capitals between its marks, safe in rich text", function()
+			local grey = Color3.fromRGB(163, 170, 181)
+			local plain, letters = Rarity.titleText("Trainee", "common", grey)
+			expect(plain).to.equal("TRAINEE")
+			expect(letters == grey).to.equal(true)
+			local marked = Rarity.titleText("Salt & <Ash>", "epic", grey)
+			expect(string.find(marked, "SALT &amp; &lt;ASH&gt;", 1, true) ~= nil).to.equal(true)
+			local _, marks = string.gsub(marked, "◆", "")
+			expect(marks).to.equal(2)
+			local _, amber = Rarity.titleText("Gilded Age", "legendary", grey)
+			expect(amber == grey).to.equal(false)
+		end)
 	end)
 end

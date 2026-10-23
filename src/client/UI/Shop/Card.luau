@@ -27,6 +27,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
+local Models = require(Shared:WaitForChild("Models"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
 
 local Kit = require(script.Parent.Parent.Kit)
@@ -70,6 +71,7 @@ export type Card = typeof(setmetatable(
 		hit: TextButton,
 		faceDown: boolean,
 		ribbon: Frame?,
+		state: Frame?,
 		heart: ImageButton?,
 		wished: boolean,
 		figure: Model?,
@@ -203,11 +205,23 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 		head:Destroy()
 		frameView(view, holder, -30)
 	else
-		-- A Manual cover: the notebook everyone holds while writing, in its colour.
-		part(holder, Vector3.new(1.3, 0.14, 0.95), CFrame.new(), item.color or C.void, Enum.Material.SmoothPlastic)
+		-- A Manual cover: the notebook everyone holds while writing, in its colour, its design on the board (the
+		-- held book's, Shared/Models; turned so a spine strip lies over the spine, -x).
+		local color = item.color or C.void
+		local board = part(holder, Vector3.new(1.3, 0.03, 0.95), CFrame.new(0, 0.085, 0), color)
+		local material = Models.layCover(
+			item.style,
+			CFrame.new(0, 0.1, 0) * CFrame.Angles(0, math.pi, 0),
+			1.25,
+			0.91,
+			function(size: Vector3, cf: CFrame, tint: Color3, made: Enum.Material?)
+				return part(holder, size, cf, tint, made or Enum.Material.Fabric)
+			end
+		) or Enum.Material.SmoothPlastic
+		board.Material = material
+		part(holder, Vector3.new(1.3, 0.14, 0.95), CFrame.new(), color, material)
 		part(holder, Vector3.new(1.2, 0.1, 0.88), CFrame.new(0.03, 0.005, 0), Color3.fromRGB(226, 220, 204))
-		part(holder, Vector3.new(1.3, 0.03, 0.95), CFrame.new(0, 0.085, 0), item.color or C.void)
-		part(holder, Vector3.new(0.06, 0.18, 0.95), CFrame.new(-0.63, 0, 0), item.color or C.void)
+		part(holder, Vector3.new(0.06, 0.18, 0.95), CFrame.new(-0.63, 0, 0), color, material)
 		frameView(view, holder, -20)
 	end
 	return view, figure
@@ -216,17 +230,62 @@ end
 -- The still for what has no 3D view: a title's words, or the kind's glyph in the item's colour.
 local function still(item: Cosmetics.Item, parent: GuiObject)
 	if item.kind == "title" then
-		Kit.text({
-			face = "Head",
-			text = item.name,
-			size = 24,
-			color = C.bone,
-			align = "center",
-			maxWidth = Card.WIDTH - 28,
+		-- The tag as it hangs over the head in the lobby (Shared/Rarity.titleText; CosmeticsService's titleTag):
+		-- tracked capitals between the tier's marks, and under it the tier's ornament, a short rule each side of
+		-- its mark (one plain rule for Scrawl). The card's own name says the words again, larger, below.
+		local mark = Rarity.titleLook(item.rarity)
+		local tint = Rarity.color(item.rarity)
+		-- (one line, as the tag is: a long title's letters shrink to fit; the head tag's own grey)
+		local words, letters = Rarity.titleText(item.name, item.rarity, C.dim)
+		local tag = Kit.label({
+			Text = words,
+			RichText = true,
+			font = "bodyBold",
+			size = "small",
+			color = letters,
+			TextWrapped = false,
+			TextScaled = true,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AutomaticSize = Enum.AutomaticSize.None,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.42),
+			Size = UDim2.new(1, -14, 0, 18),
 			Parent = parent,
 		})
+		Kit.Base.make("UITextSizeConstraint", { MaxTextSize = T.size.small, MinTextSize = 7, Parent = tag })
+		local ornament = Kit.Base.make("Frame", {
+			Name = "Ornament",
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 1, -30),
+			Size = UDim2.fromOffset(84, 12),
+			Parent = parent,
+		})
+		for _, side in ipairs(if mark then { -1, 1 } else { 0 }) do
+			Kit.Base.make("Frame", {
+				Name = "Rule",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, side * 25, 0.5, 0),
+				Size = UDim2.fromOffset(if mark then 30 else 40, 1),
+				BackgroundColor3 = tint,
+				BackgroundTransparency = 0.25,
+				BorderSizePixel = 0,
+				Parent = ornament,
+			})
+		end
+		if mark then
+			Kit.label({
+				Text = mark,
+				font = "label",
+				size = "micro",
+				color = tint:Lerp(C.bone, 0.2),
+				TextWrapped = false,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				AutomaticSize = Enum.AutomaticSize.None,
+				Size = UDim2.fromScale(1, 1),
+				Parent = ornament,
+			})
+		end
 		return
 	end
 	Kit.icon({
@@ -451,52 +510,53 @@ local KIND_WORD: { [string]: string } = {
 
 local function rarityTag(face: Frame, rarity: string, kind: string?)
 	local color = Rarity.color(rarity)
+	-- (a band across the picture's foot; the longest lines, "◆ CONDEMNED · CUTSCENE", shrink to fit it)
 	local holder = Kit.Base.make("Frame", {
 		Name = "Rarity",
 		BackgroundColor3 = C.void,
-		BackgroundTransparency = 0.25,
+		BackgroundTransparency = 0.3,
 		BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -16, 0, 14 + PICTURE - 4),
-		Size = UDim2.fromOffset(0, 16),
-		AutomaticSize = Enum.AutomaticSize.X,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0, 14 + PICTURE - 4),
+		Size = UDim2.new(1, -32, 0, 16),
 		ZIndex = 4,
 		Parent = face,
 	})
 	Kit.Base.corner(holder, 2)
-	Kit.pad(holder, 0, 5)
-	Kit.label({
+	Kit.pad(holder, 0, 4)
+	local text = Kit.label({
 		Text = "◆ " .. string.upper(Rarity.name(rarity)) .. (if kind and KIND_WORD[kind]
-			then "  ·  " .. string.upper(KIND_WORD[kind])
+			then " · " .. string.upper(KIND_WORD[kind])
 			else ""),
 		font = "label",
 		size = "micro",
 		-- (the line work wears the colour itself; the letters a lighter shade of it, to read on the dark)
 		color = color:Lerp(C.bone, if Rarity.rank(rarity) == 5 then 0.38 else 0.18),
 		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromScale(0, 1),
+		TextScaled = true,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Size = UDim2.fromScale(1, 1),
 		ZIndex = 5,
 		Parent = holder,
 	})
+	Kit.Base.make("UITextSizeConstraint", { MaxTextSize = T.size.micro, MinTextSize = 8, Parent = text })
 end
 
--- Dresses a card's face in its tier (Shared/Rarity): Scrawl a plain line; Penned an underline; Sealed a
--- framed edge; Condemned that frame with page grain and a slow sheen; Godhood a glowing edge and
--- motes of page. Returns the outer edge (it brightens when picked).
--- Sealed's wax seal (direction A): a disc of the tier's colour pressed on the picture's corner, an S in it.
+-- Sealed's wax seal (direction A): a disc of the tier's colour pressed on the middle of the picture's top edge, as
+-- on an envelope (clear of the New ribbon on the left and the heart on the right), an S in it.
 local function waxSeal(face: Frame, color: Color3)
 	local disc = Kit.Base.make("Frame", {
 		Name = "WaxSeal",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -14, 0, 18),
-		Size = UDim2.fromOffset(28, 28),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0, 14),
+		Size = UDim2.fromOffset(24, 24),
 		BackgroundColor3 = color,
 		BorderSizePixel = 0,
 		ZIndex = 5,
 		Parent = face,
 	})
-	Kit.Base.corner(disc, 14)
+	Kit.Base.corner(disc, 12)
 	Kit.Base.stroke(disc, color:Lerp(C.void, 0.45), 2, 0)
 	Kit.label({
 		Text = "S",
@@ -511,6 +571,9 @@ local function waxSeal(face: Frame, color: Color3)
 	})
 end
 
+-- Dresses a card's face in its tier (Shared/Rarity): Scrawl a plain line; Penned an underline; Sealed a
+-- framed edge and a wax seal; Condemned that frame with page grain and a slow sheen; Godhood a glowing edge and
+-- motes of page. Returns the outer edge (it brightens when picked).
 local function dress(face: Frame, rarity: string, kind: string?): UIStroke
 	local rank = Rarity.rank(rarity)
 	local color = Rarity.color(rarity)
@@ -574,7 +637,9 @@ end
 -- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipIcon (before it: "coin", "check"
 -- or "lock"),
 -- onPick (clicked), faceDown (lies on its back: onPick still fires, the caller turns it), isNew (the "New"
--- ribbon), offer (a second ribbon's words, under the picture: the day's deal), onWish (a heart: called with
+-- ribbon), state (where you stand with it, a chip on the picture's top left as in the owner's direction A:
+-- { text = "In wheel · 1" | "Worn", filled = true } or { text = "Owned", filled = false }), offer (a second
+-- ribbon's words, at the picture's foot: the day's deal), onWish (a heart: called with
 -- true to wish for it, false to take the wish back) and wished.
 function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	local slot = Kit.Base.make("Frame", {
@@ -674,6 +739,7 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		hit = hit,
 		faceDown = false,
 		ribbon = nil,
+		state = nil,
 		heart = nil,
 		wished = props.wished == true,
 		figure = figure,
@@ -681,9 +747,13 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		hovered = false,
 	}, Card)
 	self:setChip(props.chip or "", props.chipIcon)
+	if props.state then
+		self.state = tag(face, "State", string.upper(props.state.text), UDim2.fromOffset(12, 14), props.state.filled)
+	end
 	self:setNew(props.isNew == true)
 	if props.offer then
-		tag(face, "Offer", props.offer, UDim2.fromOffset(12, 14 + PICTURE - 20), false)
+		-- (stacked over the tier band at the picture's foot)
+		tag(face, "Offer", props.offer, UDim2.fromOffset(12, 14 + PICTURE - 44), false)
 	end
 	if props.onWish then
 		-- Over the picture's top right corner, above the card's own button (so it lifts with the face).
@@ -763,7 +833,8 @@ function Card.setNew(self: Card, on: boolean)
 		return
 	end
 	if on then
-		self.ribbon = tag(self.face, "New", "NEW", UDim2.fromOffset(12, 14), true)
+		-- (under the state chip when there is one)
+		self.ribbon = tag(self.face, "New", "NEW", UDim2.fromOffset(12, if self.state then 38 else 14), true)
 	end
 end
 
@@ -808,6 +879,32 @@ function Card.setLive(self: Card, on: boolean)
 			live = nil
 		end
 	end
+end
+
+-- A ring of the tier's colour running out from a point of the face and fading (the effects kit's ring,
+-- Presentation/FxKit, drawn in the UI); nothing under reduced motion.
+local function burst(face: Frame, at: UDim2, from: number, to: number, color: Color3, delay: number?)
+	if Motion.isReduced() then
+		return
+	end
+	local ring = Kit.Base.make("Frame", {
+		Name = "Burst",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = at,
+		Size = UDim2.fromOffset(from, from),
+		ZIndex = 7,
+		Parent = face,
+	})
+	Create("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = ring })
+	local stroke = Kit.Base.stroke(ring, color, 3, 0)
+	local info = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out, 0, false, delay or 0)
+	TweenService:Create(ring, info, { Size = UDim2.fromOffset(to, to) }):Play()
+	TweenService:Create(stroke, info, { Transparency = 1, Thickness = 1 }):Play()
+	-- (on a timer, not the tween's end: a throttled client may never see it)
+	task.delay((delay or 0) + 0.6, function()
+		ring:Destroy()
+	end)
 end
 
 -- Bought: a seal stamped over the picture in the tier's colour, pressed down from a little above (simply
@@ -870,6 +967,12 @@ function Card.seal(self: Card)
 			:Play()
 		TweenService:Create(seal, TweenInfo.new(0.14), { GroupTransparency = 0 }):Play()
 	end
+	-- (as it lands, a ring runs out from it; a second, wider one for the two rarest tiers)
+	local centre = UDim2.new(0.5, 0, 0, 14 + PICTURE / 2)
+	burst(self.face, centre, SEAL * 0.8, SEAL * 2.1, color, 0.12)
+	if Rarity.rank(self.item.rarity) >= 4 then
+		burst(self.face, centre, SEAL * 0.8, SEAL * 2.8, color, 0.24)
+	end
 	task.delay(2.6, function()
 		if seal.Parent then
 			local fade = TweenService:Create(seal, TweenInfo.new(0.6), { GroupTransparency = 1 })
@@ -879,6 +982,18 @@ function Card.seal(self: Card)
 			fade:Play()
 		end
 	end)
+end
+
+-- Just worn, or just put on the wheel: a ring runs out over the picture and the state chip pops.
+function Card.flare(self: Card)
+	burst(self.face, UDim2.new(0.5, 0, 0, 14 + PICTURE / 2), 30, 170, Rarity.color(self.item.rarity))
+	if self.state and not Motion.isReduced() then
+		local scale = Instance.new("UIScale")
+		scale.Scale = 1.35
+		scale.Parent = self.state
+		TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+			:Play()
+	end
 end
 
 -- Face down: the back of Death's deck covers it.

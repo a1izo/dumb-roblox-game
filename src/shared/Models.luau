@@ -547,6 +547,25 @@ local COVERS: { [string]: { material: Enum.Material, lay: Lay? } } = {
 	},
 }
 
+-- A cover style's look on any board (the shop card's small notebook too): its pieces laid on `plate` (y up off the
+-- board) through `add`, and its material (nil for a style without a look).
+function Models.layCover(
+	style: string?,
+	plate: CFrame,
+	w: number,
+	d: number,
+	add: (size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?) -> BasePart
+): Enum.Material?
+	local look = if style then COVERS[style] else nil
+	if not look then
+		return nil
+	end
+	if look.lay then
+		look.lay(plate, w, d, add)
+	end
+	return look.material
+end
+
 function Models.heldManual(at: CFrame, coverColor: Color3?, coverStyle: string?): Model
 	local book = Models.grimoire()
 	for _, piece in ipairs(book:GetDescendants()) do

@@ -1,4 +1,4 @@
--- Puts equipped cosmetics on players: the hat on the character, the tie, notebook
+-- Puts equipped cosmetics on players: the hat on the character, the notebook
 -- cover and Deathsinger form (its outline colour and what it wears) as player attributes (read
 -- wherever they show), and the title tag over the head in the lobby (never inside a match, where it
 -- would give away who is behind an alias). Styles (writing, verdict, death) are never attributes:
@@ -14,6 +14,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 local Mastery = require(Shared:WaitForChild("Progression"):WaitForChild("Mastery"))
+local Rarity = require(Shared:WaitForChild("Rarity"))
 local Seating = require(Shared:WaitForChild("Seating"))
 local Sets = require(Shared:WaitForChild("Sets"))
 
@@ -179,17 +180,21 @@ function CosmeticsService.chairOf(player: Player): Cosmetics.Item?
 	return if data then equipped(player, data, "chair") else nil
 end
 
--- The title to show on the results screen, or nil.
-function CosmeticsService.titleOf(player: Player): string?
+-- The title to show on the results screen (its name and tier), or nil.
+function CosmeticsService.titleOf(player: Player): Cosmetics.Item?
 	local data = DataService.get(player)
 	if not data then
 		return nil
 	end
-	local title = equipped(player, data, "title")
-	return if title then title.name else nil
+	return equipped(player, data, "title")
 end
 
-local function titleTag(player: Player, character: Model, title: string?)
+local TAG_GREY = Color3.fromRGB(163, 170, 181)
+local TAG_WHITE = Color3.fromRGB(244, 245, 247)
+
+-- The title over the head, in its tier's look (Shared/Rarity.titleText): its marks in the tier's colour, Condemned
+-- letters leaning amber; a VIP's "VIP" before it in white.
+local function titleTag(player: Player, character: Model, title: Cosmetics.Item?)
 	local head = character:FindFirstChild("Head")
 	if not head then
 		return
@@ -204,22 +209,28 @@ local function titleTag(player: Player, character: Model, title: string?)
 	end
 	local gui = Create("BillboardGui", {
 		Name = TITLE_TAG,
-		Size = UDim2.fromOffset(220, 22),
+		Size = UDim2.fromOffset(250, 22), -- (wide enough that the marks leave a long title its letters)
 		StudsOffset = Vector3.new(0, 3.4, 0),
 		MaxDistance = 60,
 		LightInfluence = 0,
 		Parent = head,
 	})
-	local text = title or ""
+	local text, letters = "", if vip then TAG_WHITE else TAG_GREY
+	if title then
+		text, letters = Rarity.titleText(title.name, title.rarity, TAG_GREY)
+	end
 	if vip then
-		text = if text ~= "" then "VIP  ·  " .. text else "VIP"
+		text = if text ~= ""
+			then string.format('<font color="#%s">VIP</font>  ·  ', TAG_WHITE:ToHex()) .. text
+			else "VIP"
 	end
 	Create("TextLabel", {
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
-		Text = string.upper(text),
+		Text = text,
+		RichText = true,
 		TextScaled = true,
-		TextColor3 = if vip then Color3.fromRGB(244, 245, 247) else Color3.fromRGB(163, 170, 181),
+		TextColor3 = letters,
 		TextStrokeColor3 = Color3.fromRGB(8, 9, 11),
 		TextStrokeTransparency = 0.4,
 		FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold),
@@ -253,7 +264,7 @@ function CosmeticsService.apply(player: Player)
 	end
 	CharacterService.refreshAccessories(player)
 	local title = equipped(player, data, "title")
-	titleTag(player, character, if title then title.name else nil)
+	titleTag(player, character, title)
 	-- The stance the body settles into when it stands still (LocomotionController).
 	local stance = Cosmetics.byId(data.stance)
 	character:SetAttribute(

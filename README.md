@@ -235,7 +235,9 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
   jumps, falls, three landings, stops, flight) is described in `docs/animation.md`: planted legs roll
   heel to toe, every cycle advances by distance, and standing feet stay on their marks, so feet do not
   slide. The default Animate script is replaced by an empty one, and R15 avatars are rebuilt as R6.
-  The emotes, their props and their checks are described in `docs/emotes.md`.
+  Every R6 body's accessories are rebuilt as MeshParts as it spawns (`Services/CrispAccessories`): with
+  the old kind (a part and a SpecialMesh) Roblox draws the whole body from one small packed texture, and
+  avatars came out blocky. The emotes, their props and their checks are described in `docs/emotes.md`.
 - **Props and scenes** are imported in Studio with **Import 3D**: the props every venue and the
   game use, with the effect and UI textures, `art/export/DeathsGambitModels_Core.fbx`; and for each
   venue (the lobby, the meeting room, Bureau HQ, University Campus, Tokyo) its props and its scene,

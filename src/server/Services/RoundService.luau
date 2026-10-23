@@ -563,6 +563,7 @@ local function reveal()
 	end
 	local roster = {}
 	for _, ps in ipairs(Match.list) do
+		local title = CosmeticsService.titleOf(ps.player)
 		table.insert(roster, {
 			userId = ps.userId,
 			alias = ps.alias,
@@ -571,7 +572,8 @@ local function reveal()
 			role = ps.role,
 			status = ps.status,
 			cause = ps.cause,
-			title = CosmeticsService.titleOf(ps.player),
+			title = if title then title.name else nil,
+			titleRarity = if title then title.rarity else nil,
 		})
 	end
 	local events = EventLog.all()

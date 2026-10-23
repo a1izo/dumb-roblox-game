@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 local Ranks = require(Shared:WaitForChild("Ranks"))
+local Rarity = require(Shared:WaitForChild("Rarity"))
 local Roles = require(Shared:WaitForChild("Roles"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
@@ -39,17 +40,24 @@ local ransom: any
 local rewardsLabel: TextLabel
 local token = 0
 
+-- Words safe inside rich text.
+local function plain(text: string): string
+	return (string.gsub(string.gsub(string.gsub(text, "&", "&amp;"), "<", "&lt;"), ">", "&gt;"))
+end
+
 local function fillRoster(players)
 	Kit.clear(roster)
 	for index, entry in ipairs(players) do
 		local info = Roles.get(entry.role)
 		local row = Kit.frame({ Name = "Line", Size = UDim2.new(1, 0, 0, 52), LayoutOrder = index, Parent = roster })
-		local name = string.format("%s  (%s)", tostring(entry.alias), tostring(entry.displayName))
+		local name = string.format("%s  (%s)", plain(tostring(entry.alias)), plain(tostring(entry.displayName)))
 		if type(entry.title) == "string" and entry.title ~= "" then
-			name ..= "  ·  " .. string.upper(entry.title)
+			-- (in its tier's look, as over the head in the lobby: Shared/Rarity.titleText)
+			name ..= "  ·  " .. (Rarity.titleText(entry.title, entry.titleRarity, C.dim))
 		end
 		Kit.label({
 			Text = name,
+			RichText = true,
 			font = "bodyBold",
 			size = "small",
 			TextWrapped = false,
