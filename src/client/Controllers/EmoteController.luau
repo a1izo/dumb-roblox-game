@@ -672,6 +672,13 @@ function EmoteController.face(character: Model, clip: string, alive: Alive, mana
 	local token = ((decal:GetAttribute("EmoteFace") :: number?) or 0) + 1
 	decal:SetAttribute("EmoteFace", token)
 	decal.Texture = id
+	-- (an avatar's own painted head, Services/DynamicHeads: its picture put away on this screen while the drawn face
+	-- shows on its see-through decal, so the two faces never show at once)
+	local painted = head:GetAttribute("LHeadTexture")
+	if type(painted) == "string" and head:IsA("MeshPart") then
+		head.TextureID = ""
+		decal.Transparency = 0
+	end
 	local done = false
 	local function undo()
 		if done then
@@ -682,6 +689,10 @@ function EmoteController.face(character: Model, clip: string, alive: Alive, mana
 		if decal.Parent and decal:GetAttribute("EmoteFace") == token then
 			decal.Texture = (decal:GetAttribute("OwnFace") :: string?) or decal.Texture
 			decal:SetAttribute("OwnFace", nil)
+			if type(painted) == "string" and head and head:IsA("MeshPart") then
+				head.TextureID = painted
+				decal.Transparency = 1
+			end
 		end
 	end
 	if not managed then

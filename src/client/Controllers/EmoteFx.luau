@@ -2213,7 +2213,17 @@ local function climbImage(character: Model): (Model?, { BasePart }, { CFrame }, 
 	end
 	local head = copy:FindFirstChild("Head")
 	local face = if head then head:FindFirstChild("face") else nil
-	if face and face:IsA("Decal") and grin then
+	local painted = if head then head:GetAttribute("LHeadTexture") else nil
+	if head and head:IsA("MeshPart") and type(painted) == "string" and face and face:IsA("Decal") then
+		-- (an avatar's own painted head, Services/DynamicHeads: the grin alone on a plain head once it is set, else
+		-- the painted face alone; never the two faces at once)
+		if grin then
+			head.TextureID = ""
+			face.Texture = grin
+		else
+			face:Destroy()
+		end
+	elseif face and face:IsA("Decal") and grin then
 		face.Texture = grin
 	elseif face and face:IsA("Decal") and next(onHead) and face.Texture == "rbxasset://textures/face.png" then
 		-- (Roblox's plain smile under a mask or hair the head wears: hidden on the body, it would show through the

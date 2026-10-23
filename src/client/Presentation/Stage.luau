@@ -151,6 +151,14 @@ local function copyOf(source: Model): Model?
 		face:SetAttribute("OwnFace", nil)
 		face:SetAttribute("EmoteFace", nil)
 	end
+	-- (an avatar's own painted head, its picture put away for an emote's face: back, the decal see-through again)
+	local painted = if head then head:GetAttribute("LHeadTexture") else nil
+	if head and head:IsA("MeshPart") and type(painted) == "string" and head.TextureID ~= painted then
+		head.TextureID = painted
+		if face and face:IsA("Decal") then
+			face.Transparency = 1
+		end
+	end
 	for _, item in ipairs(clone:GetDescendants()) do
 		if item:IsA("LuaSourceContainer") or item:IsA("Sound") or item:IsA("ProximityPrompt") then
 			item:Destroy()

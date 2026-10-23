@@ -250,6 +250,13 @@ local function setFace(model: Model, name: string)
 	end
 	local texture = if name ~= "" then ModelLibrary.carrierTexture("Face" .. name) else nil
 	decal.Texture = texture or own
+	-- (an avatar's own painted head, Services/DynamicHeads: its picture put away while the cutscene's face shows
+	-- on its see-through decal, back after)
+	local painted = head:GetAttribute("LHeadTexture")
+	if head:IsA("MeshPart") and type(painted) == "string" then
+		head.TextureID = if texture then "" else painted
+		decal.Transparency = if texture then 0 else 1
+	end
 end
 
 local function runEvent(event: any, base: Vector3, token: number, options: Options, closers: { () -> () })

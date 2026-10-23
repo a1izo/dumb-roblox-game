@@ -15,6 +15,7 @@ local Signal = require(Shared:WaitForChild("Signal"))
 
 local CollisionGroups = require(script.Parent.CollisionGroups)
 local CrispAccessories = require(script.Parent.CrispAccessories)
+local DynamicHeads = require(script.Parent.DynamicHeads)
 local Match = require(script.Parent.Match)
 local RagdollService = require(script.Parent.RagdollService)
 
@@ -604,7 +605,9 @@ local function replaceWithR6(player: Player, character: Model, humanoid: Humanoi
 		return false
 	end
 	model.Name = player.Name
-	-- (its accessories rebuilt as MeshParts before anyone sees it: the old kind leave the whole body blocky)
+	-- (the avatar's own painted head in place of R6's plain one and its default smile, and its accessories
+	-- rebuilt as MeshParts, before anyone sees it: the old kind leave the whole body blocky)
+	DynamicHeads.fit(model, description)
 	CrispAccessories.sharpen(model)
 	if player.Character ~= character or player.Parent ~= Players then
 		model:Destroy()
