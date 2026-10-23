@@ -769,9 +769,11 @@ local WOOD_DARK = Color3.fromRGB(46, 27, 15)
 
 -- The revolver round the cylinder (the owner's pick 2 on the review page, 2026-10-21: a snub barrel and a bird's-head
 -- grip): a short blued barrel out to the right with its front sight, the hammer's spur over the top left, a small
--- rounded walnut grip tucked under the cylinder at the bottom left with its trigger guard and a steel butt cap. On the
--- ring, not the cylinder, so they stay still while it turns; behind it, so no chamber is covered; inside the ring's
--- square at the bottom, so the caption under it stays clear.
+-- rounded walnut grip out from under the cylinder at the bottom left with its trigger guard and a steel butt cap. On
+-- the ring, not the cylinder, so they stay still while it turns; behind it, so no chamber is covered; clear of the
+-- caption under the middle. The cylinder fills the ring's square, so each piece stands far enough out to be seen,
+-- and the steel wears a light edge (seen first in full-size pictures, 2026-10-23: dark on the dark lobby, the grip
+-- hidden behind the cylinder, the revolver did not read).
 gunParts = function(ring: Frame)
 	local radius = (RADIUS * 2 + PLATE + 24) / 2
 	local k = radius / 150
@@ -806,7 +808,7 @@ gunParts = function(ring: Frame)
 			Rotation = rotation,
 			Parent = frame,
 		})
-		Kit.Base.stroke(frame, STEEL_DARK, 1.5, 0)
+		Kit.Base.stroke(frame, STEEL_EDGE, 1.5, 0.3)
 	end
 	-- the snub barrel, at the chambers' height a little above the middle
 	local barrel = piece("Barrel", Vector2.new(42 * k, 28 * k), Vector2.new(radius - 6 + 21 * k, -10 * k), 0, STEEL)
@@ -821,7 +823,7 @@ gunParts = function(ring: Frame)
 	local hammer = piece(
 		"Hammer",
 		Vector2.new(30 * k, 13 * k),
-		Vector2.new(math.cos(a) * (radius - 2), math.sin(a) * (radius - 2)),
+		Vector2.new(math.cos(a) * (radius + 6), math.sin(a) * (radius + 6)),
 		-38,
 		STEEL_DARK
 	)
@@ -829,12 +831,12 @@ gunParts = function(ring: Frame)
 	steel(hammer, 0)
 	-- the trigger guard, half behind the cylinder
 	local guard =
-		piece("TriggerGuard", Vector2.new(40 * k, 30 * k), Vector2.new(-0.36 * radius, 0.83 * radius), -10, STEEL)
+		piece("TriggerGuard", Vector2.new(40 * k, 30 * k), Vector2.new(-0.44 * radius, 0.96 * radius), -10, STEEL)
 	guard.BackgroundTransparency = 1
 	Kit.Base.corner(guard, 15 * k)
-	Kit.Base.stroke(guard, STEEL, 4 * k, 0)
+	Kit.Base.stroke(guard, STEEL_LIGHT, 4 * k, 0)
 	-- the bird's-head grip, walnut with a checkered panel and a steel butt cap
-	local grip = piece("Grip", Vector2.new(54 * k, 100 * k), Vector2.new(-0.72 * radius, 0.68 * radius), 32, WOOD)
+	local grip = piece("Grip", Vector2.new(54 * k, 100 * k), Vector2.new(-0.84 * radius, 0.82 * radius), 36, WOOD)
 	Kit.Base.corner(grip, 24 * k)
 	Kit.Base.make("UIGradient", {
 		Color = ColorSequence.new({
@@ -845,7 +847,7 @@ gunParts = function(ring: Frame)
 		Rotation = 70,
 		Parent = grip,
 	})
-	Kit.Base.stroke(grip, WOOD_DARK, 2, 0)
+	Kit.Base.stroke(grip, WOOD_LIGHT, 1.5, 0.35)
 	local panel = piece("Checkering", Vector2.new(34 * k, 56 * k), Vector2.new(0.5, 0.56), 0, WOOD_DARK, grip)
 	panel.BackgroundTransparency = 0.35
 	Kit.Base.corner(panel, 12 * k)
