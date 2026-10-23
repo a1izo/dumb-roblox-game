@@ -819,7 +819,6 @@ FINGERS = {
 }
 CURL = (30.0, 75.0, 105.0)  # each phalanx's angle below the palm's plane, knuckle to tip
 BLOB = 0.575  # an element's surface radius, as a share of its field radius (stiffness 2, threshold 0.6)
-ARM_FADE = 12  # steps in which the arm darkens into the haze
 
 
 def _blob(name, elements, resolution, keep, mat):
@@ -923,8 +922,11 @@ def _finger(name, knuckle, lean, lengths, radius, skin, nail, string):
 @prop("PuppeteerHand", pivot="centre", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
 def puppeteer_hand():
     """The hand above the Academy that holds the puppets' strings (the game's tagline: the fate Diavolo
-    chose for you): one huge, pale, smooth human hand, palm down, its fingers hanging in front with a
-    string tied round the tip of each, the wrist rising behind into the dark, where the arm fades out.
+    chose for you): one huge, pale human hand, palm down, its fingers hanging in front with a string tied
+    round the tip of each, the wrist going into a dark robe's sleeve that rises behind into the dark.
+    (2026-10-23: Roblox's moderation removed the first version's mesh, the palm and a long bare arm of
+    smooth skin with no fingers on it (they are pieces of their own); that piece alone read wrongly. The
+    skin now ends at the wrist, the arm is cloth: a sleeve with a flared cuff and its folds.)
     The thumb and each finger are pieces (they move); `hinge` also names each one's tip and middle joint,
     where the game ties the strings, Anchor (the middle of the fingertips), ArmEnd and Above."""
     skin = mk.noisy("Hand_Skin", srgb(168, 160, 152), srgb(214, 207, 199), roughness=0.5)
@@ -936,27 +938,31 @@ def puppeteer_hand():
     for finger, (x, _, _, r) in FINGERS.items():
         palm.append(("ball", (x, -4.25, 0.15), r * 1.12))
     palm += [("ball", (3.2, 1.3, -0.55), 1.75), ("ball", (-3.2, 1.5, -0.35), 1.45),
-             ("ball", (0.0, 3.6, 0.0), 2.2)]
-    # The wrist and the arm, rising behind: a run of balls growing a little wider.
-    arm_from, arm_to = Vector((0.0, 3.6, 0.0)), Vector((0.0, 21.0, 1.9))
-    for k in range(9):
-        t = k / 8
-        palm.append(("ball", tuple(arm_from.lerp(arm_to, t)), 2.35 + 0.75 * t))
+             ("ball", (0.0, 3.4, 0.0), 2.05)]
     main = [_blob("MbPalm", palm, 0.42, 0.3, skin)]
-    # The arm darkens step by step into the haze (the lobby's atmosphere colour), from the wrist back.
-    steps = [skin]
-    for k in range(1, ARM_FADE + 1):
-        f = 1.0 - 0.9 * (k / ARM_FADE) ** 0.8
-        steps.append(mk.noisy(f"Hand_Skin{k}", srgb(*(int(34 + (c - 34) * f) for c in (168, 160, 152))),
-                              srgb(*(int(36 + (c - 36) * f) for c in (214, 207, 199))), roughness=0.6))
-    blob = main[0]
-    for mat in steps[1:]:
-        blob.data.materials.append(mat)
+    # The sleeve: dark cloth from just behind the wrist, rising behind into the dark, a little wider as it goes;
+    # a flared cuff round the wrist, a hem at its edge, and soft folds round it.
+    arm_from, arm_to = Vector((0.0, 3.0, 0.05)), Vector((0.0, 21.0, 1.9))
+    cloth = mk.noisy("Hand_Sleeve", srgb(24, 24, 28), srgb(48, 47, 54), scale=5.0, roughness=0.92)
+    hem = mk.flat("Hand_Hem", srgb(62, 58, 60), 0.85)
     axis = (arm_to - arm_from).normalized()
-    start, span = 6.0, (arm_to - arm_from).length - 6.0
-    for poly in blob.data.polygons:
-        t = (Vector(poly.center) - arm_from).dot(axis)
-        poly.material_index = 0 if t <= start else min(ARM_FADE, 1 + int((t - start) / span * ARM_FADE))
+    sleeve = [mk.tube("Sleeve", tuple(arm_from + axis * 1.2), tuple(arm_to), 3.0, 3.7, mat=cloth, verts=12),
+              mk.tube("Cuff", tuple(arm_from - axis * 0.3), tuple(arm_from + axis * 2.2), 3.9, 3.15, mat=cloth,
+                      verts=12)]
+    edge = mk.torus("CuffHem", 3.85, 0.22, mat=hem, major_segments=24, minor_segments=6)
+    edge.rotation_mode = "QUATERNION"
+    edge.rotation_quaternion = axis.to_track_quat("Z", "Y")
+    edge.location = arm_from - axis * 0.25
+    sleeve.append(edge)
+    for k, t in enumerate((0.3, 0.52, 0.74)):
+        at = arm_from.lerp(arm_to, t)
+        fold = mk.torus(f"Fold{k}", 3.05 + 0.7 * t, 0.3, mat=cloth, major_segments=20, minor_segments=5)
+        fold.rotation_mode = "QUATERNION"
+        fold.rotation_quaternion = axis.to_track_quat("Z", "Y")
+        fold.location = at
+        fold.scale = (1.0, 0.86, 1.0)
+        sleeve.append(fold)
+    main += sleeve
     pieces = {}
     points = {}
     tips = []
