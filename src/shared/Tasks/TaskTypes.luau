@@ -63,7 +63,7 @@ TaskTypes.INFO = {
 		puzzles = { "Chromatography", "Microscope", "Handwriting", "Autopsy" },
 		drill = "forensics",
 		drillTitle = "FORENSICS",
-		blurb = Terms.f("whose ink wrote the last name in {grimoire}"), -- terms:ok (the chromatography task keeps its ink)
+		blurb = Terms.f("whose pen wrote the last name in {grimoire}"),
 	},
 } :: { [string]: Info }
 

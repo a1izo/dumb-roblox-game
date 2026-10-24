@@ -1,5 +1,5 @@
--- Forensics · Ink chromatography: the ink from the page has split into bands on paper. Pick the
--- pen whose ink splits the same way.
+-- Forensics · Pen chromatography: the pigment from the page has split into bands on paper. Pick the
+-- pen whose pigment splits the same way.
 
 local Kit = require(script.Parent.Parent.Kit)
 local Common = require(script.Parent.Common)
@@ -33,7 +33,7 @@ return function(ctx: Common.Context)
 	})
 	Common.caption(
 		sample,
-		"page ink", -- terms:ok (the chromatography task keeps its ink)
+		"from the page",
 		{ align = Enum.TextXAlignment.Center, color = C.inkDim, Position = UDim2.fromOffset(0, 4) }
 	)
 	strip(sample, puzzle.sample, def.INKS, def.HEIGHTS)

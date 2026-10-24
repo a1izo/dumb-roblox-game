@@ -14,7 +14,9 @@ and a band with the tier and the kind ("◆ SEALED · EMOTE"); what is yours car
 (white "IN WHEEL · 1" or "WORN", outlined "OWNED"); a bought card is stamped YOURS with a ring of its
 colour running out, and a card just worn or put on the wheel flares. Titles hang over the head in their
 tier's look (`Rarity.titleLook`: no mark, a dot, a diamond; Condemned letters lean amber), the same on the
-shop card and the results screen. Trails left the game on 2026-10-21.
+shop card and the results screen; on its shop card each title also wears its own emblem (Card.TITLE_ART: an icon of
+the UI's atlas, large and faint behind the words and small in the tier's colour over them). The shop's window is lit
+from the top by a soft round glow. Trails left the game on 2026-10-21.
 
 These were agreed as the next things to sell, in no fixed order. Each keeps the game's rules: nothing
 shows a role before the case gives it away, coins only unless the owner sets up a product, odds always

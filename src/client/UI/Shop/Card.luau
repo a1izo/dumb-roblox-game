@@ -227,6 +227,60 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	return view, figure
 end
 
+-- Each title's emblem (the UI's icon atlas, UiIcons): drawn large and faint behind its words on the card, and small
+-- in its tier's colour over them (the shop overhaul's last leftover: titles had only their tier's look).
+local TITLE_ART: { [string]: string } = {
+	title_trainee = "quests",
+	title_detective = "fingerprint",
+	title_insomniac = "clock",
+	title_vip = "podium",
+	title_set_noir = "fedora",
+	title_set_ivory = "candle",
+	title_set_gilded = "coin",
+	title_set_red = "heart",
+	title_set_ninelives = "ghost",
+	title_set_desk = "party",
+	title_set_successors = "key",
+	title_set_main = "trophy",
+	title_set_online = "phone",
+	title_set_floor = "sound",
+	title_s1_bookkeeper = "note",
+	title_s1_accountant = "grimoire",
+	title_c_mover = "flag",
+	title_c_showstopper = "play",
+	title_c_living_legend = "streak",
+	title_nightowl = "eye",
+	title_veteran = "seal",
+	title_lifer = "skull",
+	title_unbeaten = "trophy",
+	title_archivist = "evidence",
+	title_papertrail = "mail",
+	title_sharpeye = "microscope",
+	title_unwritten = "quill",
+	title_shepherd = "hood",
+	title_inkstained = "hand",
+	title_handcuffs = "cuffs",
+	title_realmwalker = "ghost",
+	title_m_hand = "grimoire",
+	title_m_cultist = "cultist",
+	title_m_zero = "zero",
+	title_m_butler = "butler",
+	title_m_agent = "agency",
+	title_m10_hand = "skull",
+	title_m10_cultist = "candle",
+	title_m10_zero = "cards",
+	title_m10_butler = "bell",
+	title_m10_agent = "seal",
+	title_rank_2 = "agency",
+	title_rank_3 = "cuffs",
+	title_rank_4 = "microscope",
+	title_rank_5 = "fingerprint",
+	title_rank_6 = "evidence",
+	title_rank_7 = "profile",
+	title_rank_8 = "trophy",
+}
+Card.TITLE_ART = TITLE_ART
+
 -- The still for what has no 3D view: a title's words, or the kind's glyph in the item's colour.
 local function still(item: Cosmetics.Item, parent: GuiObject)
 	if item.kind == "title" then
@@ -235,6 +289,26 @@ local function still(item: Cosmetics.Item, parent: GuiObject)
 		-- its mark (one plain rule for Scrawl). The card's own name says the words again, larger, below.
 		local mark = Rarity.titleLook(item.rarity)
 		local tint = Rarity.color(item.rarity)
+		local emblem = TITLE_ART[item.id] or "quill"
+		Kit.icon({
+			Name = "Emblem",
+			name = emblem,
+			size = 92,
+			color = tint,
+			transparency = 0.86,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.45),
+			Parent = parent,
+		})
+		Kit.icon({
+			Name = "Crest",
+			name = emblem,
+			size = 20,
+			color = tint,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.2),
+			Parent = parent,
+		})
 		-- (one line, as the tag is: a long title's letters shrink to fit; the head tag's own grey)
 		local words, letters = Rarity.titleText(item.name, item.rarity, C.dim)
 		local tag = Kit.label({

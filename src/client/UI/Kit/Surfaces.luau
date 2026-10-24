@@ -180,6 +180,23 @@ function Surfaces.page(props: Props?): (Frame, Frame)
 				Rotation = 90,
 				Parent = fill,
 			})
+			-- and a round light at the top's middle, falling off softly every way (the soft glow texture; the
+			-- gradient alone until it is in)
+			local light = Textures.id("AuraGlow")
+			if light ~= "" then
+				Base.make("ImageLabel", {
+					Name = "Glow",
+					BackgroundTransparency = 1,
+					Image = light,
+					ImageColor3 = Color3.new(1, 1, 1),
+					ImageTransparency = 0.9,
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = UDim2.new(0.5, 0, 0, -40),
+					Size = UDim2.fromScale(0.9, 0.85),
+					ZIndex = z,
+					Parent = surface,
+				})
+			end
 			Surfaces.texture(surface, z)
 		end
 		if p.window then

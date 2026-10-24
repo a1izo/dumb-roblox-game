@@ -1,13 +1,13 @@
 --!strict
--- Forensics: the ink from the Grimoire's page, separated into coloured bands. Pick the pen
--- whose ink shows the same bands. Answer: the chosen pen.
+-- Forensics: the pigment from the Grimoire's page, separated into coloured bands. Pick the pen
+-- whose pigment shows the same bands. Answer: the chosen pen. (No "ink" in its words: the owner, 2026-10-24.)
 
 local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 
 local Def = {
 	id = "Chromatography",
-	title = "Ink chromatography", -- terms:ok (the chromatography task keeps its ink)
-	hint = "Pick the pen whose ink separates into the same bands as the sample.", -- terms:ok (the chromatography task keeps its ink)
+	title = "Pen chromatography",
+	hint = "Pick the pen whose pigment separates into the same bands as the sample.",
 }
 
 -- Band colours (the view draws them).

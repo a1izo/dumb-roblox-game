@@ -33,6 +33,8 @@ Textures.NAMES = {
 	"UiVignette",
 	"UiIcons",
 	"UiWordmark",
+	-- (a soft round glow, the aura kit's: the shop window's light from the top)
+	"AuraGlow",
 }
 
 Textures.Ready = Signal.new()
