@@ -98,7 +98,9 @@ class _Climb(locomotion.Cycle):
     max_sink = 0.58
 
     def lift_at(self, u):
-        return self.lift * math.sin(math.pi * u**1.25)
+        # (soft at both ends, so the foot neither snaps off the floor nor slaps down: the old sin(pi u^1.25) came
+        # down at full speed and the loop hitched at its seam, 2026-10-24)
+        return self.lift * math.sin(math.pi * u**0.85) ** 1.3
 
 
 _cycle("theLongClimbWalk", 5.0, 0.52, 1.15, climb_upper,

@@ -35,6 +35,30 @@ The owner sent tutorials to learn from (read through their captions; the silent 
   camera at the end. Moon Animator (two): never linear keys (quad, quart). Pidgey's showcase: beams in layers (a
   white core inside coloured shells), a swirling vortex, thick smoke, white streaks.
 
+## The aura tutorials (2026-10-24)
+
+The owner: "make the vfx very high quality and not just those simple particles". Three tutorials, read:
+
+- Twist VFX, "How to Learn Roblox Aura VFX in 1 Hour" (captions): every emitter fades in and out by size or
+  transparency, never pops; LightEmission 1 takes a texture's black away; LightInfluence 0; a glow held steady by
+  two particles half a life apart on a V of transparency; spec textures, sparingly; off-centre textures turned as
+  they go for wisps; faint ambient smoke behind; ground effects laid flat (VelocityPerpendicular, Speed 0.001, never
+  0), rings growing out, a ground glow, a spiked ring; two beams spiralling up, mirrored by their curve; a lens
+  flare small behind; few particles alive per emitter (the rate against the lifetime); enable everything together
+  so the layers stay in step; make it in daylight, not only in the dark.
+- TerKungTH, the ground aura guide (frames; it has no speech): crescent slashes spinning on the floor, stars and
+  flares small with a high rate, smoke very transparent with a long life, a halo ring behind the head, light
+  streaks; Top + VelocityPerpendicular for anything on the ground.
+- TerKungTH, the body aura guide (frames): smoke, specs, glitter flares and lightning on the limbs (emitters in
+  the body's parts, not one big box: his own "mistake" was one cloud swallowing the body).
+
+Here: `Presentation/Aura` builds these layers by level (1: the steady glow, specks, limb flares, a light; 2: and
+wisps, smoke and the ground's ripple, glow, spiked ring and spinning slashes; 3: and two spiral beams, a halo,
+lightning sparks and an edge of light), from white textures baked in `art/scripts/textures.py` (`AuraGlow`,
+`AuraSpecks`, `AuraTwinkle`, `AuraHalo`, `AuraCrescent`, `AuraSpikeRing`, `AuraWisp`, `AuraBolt`; carried in the
+Core set). Every emote from Sealed up wears one under its own effect (`Controllers/EmoteFx`: Sealed level 1,
+Condemned 2, Godhood 3, a few showpieces a level up), in its tier's colour or its own.
+
 ## The tools
 
 | Tool | Use it for | Notes from the docs |

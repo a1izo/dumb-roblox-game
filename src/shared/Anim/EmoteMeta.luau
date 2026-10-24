@@ -93,8 +93,8 @@ return {
 	},
 	-- LOOK UP, any time in the swagger: the face tipped back to the sky with the grin (the meme's panel)
 	excuseMeSir = { context = { label = "LOOK UP", from = 0, to = 1.6, branch = "excuseMeSirUp" } },
-	-- NEXT POSE, any time: the three JoJo poses round and round (the second and third are not items: their effect
-	-- is the first one's, Sealed)
+	-- NEXT POSE, any time: the six JoJo poses round and round (the second to the sixth are not items: their effect
+	-- is the first one's, Sealed; four to six the owner's "more poses", 2026-10-24)
 	menacingPose = {
 		context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose2" },
 		camera = { move = "hero", at = 1.2 },
@@ -102,7 +102,10 @@ return {
 	-- (a Scrawl emote with an effect of its own: Gojo's speech bubble, the owner's Q33)
 	nahIdWin = { fx = 1 },
 	menacingPose2 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose3" } },
-	menacingPose3 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose" } },
+	menacingPose3 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose4" } },
+	menacingPose4 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose5" } },
+	menacingPose5 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose6" } },
+	menacingPose6 = { fx = 2, context = { label = "NEXT POSE", from = 0, to = 4, branch = "menacingPose" } },
 	lowBatteryCharge = { fx = 1 },
 	-- (the branch is not an item of its own: its effect takes the emote's rarity, Penned)
 	excuseMeSirUp = { fx = 1 },
@@ -828,7 +831,8 @@ return {
 	--   fx         how strong its effects are, 0..4, when its rarity's default is not right
 	--   loud       its sound would carry over a case: kept quiet there
 	--   context    a press-to-do moment: { label = "LOOK UP", from = s, to = s, branch = clip } (the button shows
-	--              between from and to; one press plays the branch, the same on every screen)
+	--              from `from` until it is pressed or the emote ends, all along in a loop: no quick-time window;
+	--              `to` is the end of the beat it was made for; one press plays the branch, the same on every screen)
 	--   formation  a group dance's places for those who join in: { { x, z }, ... } studs round the first dancer
 	--              (x to their right, z behind them), at most 5
 	--   cinema     a cinematic one's private cutscene (Presentation/EmoteCinema), timed to the clip:

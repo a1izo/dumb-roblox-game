@@ -7,7 +7,7 @@
 --   the emote wheel (Shared/EmoteWheel): the eight emotes a player put on it;
 --   each player's emote now (`current`): for Join in (anyone near a looping dance can join it, on its beat; a
 --     group dance with a `formation` walks each joiner to a free place round the first dancer, up to six) and
---     for an emote's press-to-do moment (Shared/EmoteInfo `context`: one press, in its window, plays its branch);
+--     for an emote's press-to-do moment (Shared/EmoteInfo `context`: one press, from its moment on, plays its branch);
 --   strolls: not sent, an attribute on the body ("Stroll", the clip) that every client walks it in, until it is
 --     picked again, another emote is played, or the player's own client asks to stop (Controllers/StrollWalker).
 -- Everyone's emotes stop when a cutscene everyone sees begins, and when the case moves to the meeting or a
@@ -374,7 +374,8 @@ local function joinIn(player: Player, userId)
 	play(player, theirs.clip, mask, extra)
 end
 
--- The emote's press-to-do moment: once, inside its window, it plays its branch from where the emote is.
+-- The emote's press-to-do moment: once, any time from its moment until the emote ends, it plays its branch from
+-- where the emote is.
 local function press(player: Player)
 	local now = EmoteService.current(player)
 	if not now or now.pressed then
@@ -390,7 +391,9 @@ local function press(player: Player)
 	if now.loop and now.length > 0 then
 		into = workspace:GetServerTimeNow() % now.length
 	end
-	if into < context.from - 0.15 or into > context.to + 0.15 then
+	-- (from its moment on, until the emote ends: no closing window, the owner's call of 2026-10-24; a loop's
+	-- moment comes round every bar)
+	if not now.loop and into < context.from - 0.15 then
 		return
 	end
 	now.pressed = true

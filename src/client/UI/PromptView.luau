@@ -1,11 +1,12 @@
 -- Our look for proximity prompts ("Work case file", "Pick up", "Practice"...): a keycap with
 -- the key for the current input, the action in handwriting, the object in small capitals, and
--- an ink line that fills while a hold prompt is held. On touch screens the keycap is the button.
+-- a line that fills while a hold prompt is held. On touch screens the keycap is the button.
 -- Prompts opt in with Style = Custom; several prompts on one object stack upwards.
 
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Bindings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Bindings"))
@@ -81,38 +82,82 @@ local function show(prompt: ProximityPrompt, inputType: Enum.ProximityPromptInpu
 		Active = touch,
 		Parent = playerGui,
 	})
+	-- An emote's press-to-do (Controllers/EmotePrompts) looks like no other prompt: a white diamond with the key
+	-- dark on it, and a ring breathing out of it for as long as it waits (it never runs out). Every other prompt
+	-- is a dark round keycap.
+	local pressToDo = prompt:GetAttribute("DGPressToDo") == true
 	-- The key (or, on touch screens, the button to press).
 	local cap = Kit.Base.hit({
 		Name = "Key",
 		Active = touch,
 		Selectable = false,
-		BackgroundColor3 = C.void,
-		BackgroundTransparency = 0.15,
-		Size = UDim2.fromOffset(52 * scale, 52 * scale),
-		Position = UDim2.fromOffset(0, 6 * scale),
+		BackgroundColor3 = if pressToDo then C.white else C.void,
+		BackgroundTransparency = if pressToDo then 0 else 0.15,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Rotation = if pressToDo then 45 else 0,
+		Size = if pressToDo then UDim2.fromOffset(38 * scale, 38 * scale) else UDim2.fromOffset(52 * scale, 52 * scale),
+		Position = UDim2.fromOffset(26 * scale, 32 * scale),
+		ZIndex = 2,
 		Parent = gui,
 	})
-	Kit.Base.round(cap)
-	Kit.Base.stroke(cap, C.bone, 2, 0.3)
+	if pressToDo then
+		Kit.Base.make("UICorner", { CornerRadius = UDim.new(0, 5 * scale), Parent = cap })
+		Kit.Base.stroke(cap, C.void, 2, 0.2)
+		local halo = Kit.Base.make("Frame", {
+			Name = "Halo",
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = cap.Position,
+			Size = UDim2.fromOffset(46 * scale, 46 * scale),
+			Rotation = 45,
+			ZIndex = 1,
+			Parent = gui,
+		})
+		Kit.Base.make("UICorner", { CornerRadius = UDim.new(0, 7 * scale), Parent = halo })
+		local ring = Kit.Base.stroke(halo, C.white, 2, 0.2)
+		local grow = Kit.Base.make("UIScale", { Scale = 0.9, Parent = halo }) :: UIScale
+		local breath = TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, -1)
+		TweenService:Create(grow, breath, { Scale = 1.45 }):Play()
+		TweenService:Create(ring, breath, { Transparency = 1 }):Play()
+	else
+		Kit.Base.round(cap)
+		Kit.Base.stroke(cap, C.bone, 2, 0.3)
+	end
+	-- (On the diamond the key sits on its own face, upright, over the turned cap.)
+	local face = if pressToDo
+		then Kit.Base.make("Frame", {
+			Name = "KeyFace",
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = cap.Position,
+			Size = UDim2.fromOffset(52 * scale, 52 * scale),
+			ZIndex = 3,
+			Parent = gui,
+		})
+		else cap
 	local key = keyText(prompt, inputType)
 	if key ~= "" then
 		Kit.label({
 			Text = key,
 			font = "mono",
 			size = if #key > 2 then "micro" else "lead",
+			color = if pressToDo then C.ink else nil,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextWrapped = false,
 			AutomaticSize = Enum.AutomaticSize.None,
 			Size = UDim2.fromScale(1, 1),
-			Parent = cap,
+			ZIndex = 3,
+			Parent = face,
 		})
 	else
 		Kit.icon({
 			name = "play",
 			size = 22,
+			color = if pressToDo then C.ink else nil,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
-			Parent = cap,
+			ZIndex = 3,
+			Parent = face,
 		})
 	end
 	local column = Kit.frame({

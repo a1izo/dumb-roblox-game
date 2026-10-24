@@ -1,10 +1,12 @@
 -- Strolls walk by themselves (the owner's Q7/Q25, 2026-10-20/21): while this player's body has a stroll (the
 -- server's "Stroll" attribute), it walks on its own along the way it faced when the stroll began, at the stroll's
--- pace (Cosmetics `pace`), its stroll's walk playing (LocomotionController). It slides along walls, turns back at a
--- ledge or a wall met head-on, and keeps going until the player steers (the keys, the stick, the touch pad), jumps,
--- uses a game action (Input/InputRouter: a note, a sabotage, the Eyes, an arrest) or a prompt, or another emote
--- takes over. Chat, Escape, shift lock, the camera, clicks and menus never end it. Only this player's own body:
--- Roblox replicates its walk to everyone.
+-- pace (Cosmetics `pace`), its stroll's walk playing (LocomotionController). The player steers it (the keys, the
+-- stick, the touch pad, from the camera as Roblox's controls do): it turns that way and, let go, keeps on that way
+-- (the owner, 2026-10-24: change direction during a stroll; steering used to end it). By itself it slides along
+-- walls and turns back at a ledge or a wall met head-on, and keeps going until the player jumps, uses a game action
+-- (Input/InputRouter: a note, a sabotage, the Eyes, an arrest) or a prompt, or another emote takes over. Chat,
+-- Escape, shift lock, the camera, clicks and menus never end it. Only this player's own body: Roblox replicates its
+-- walk to everyone.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -24,7 +26,8 @@ local StrollWalker = {}
 local EmoteRemote = Net.event("Emote")
 local BIND = "DeathsGambit_StrollWalker"
 local DEFAULT_PACE = 7
-local STEER = 0.15 -- the player's own steering past this ends the stroll
+local STEER = 0.15 -- the player's own steering past this turns the walk
+local STEER_RATE = math.rad(420) -- how fast it turns to the way steered (radians a second): a turn, not a snap
 local AHEAD = 2.6 -- studs ahead of the root the ground is looked for (a ledge: none within DROP)
 local DROP = 6
 local WALL = 2.0 -- studs ahead of the root a wall is looked for
@@ -93,17 +96,39 @@ local function ground(w: Walk, from: Vector3): boolean
 	return workspace:Raycast(from, Vector3.new(0, -(DROP + 3.5), 0), params) ~= nil
 end
 
-local function step(w: Walk)
+-- `from` turned toward `to` (both flat and unit) by at most `most` radians, the short way round.
+local function turnToward(from: Vector3, to: Vector3, most: number): Vector3
+	local angle = math.acos(math.clamp(from:Dot(to), -1, 1))
+	if angle <= most then
+		return to
+	end
+	-- (to the right of `from` the cross is down; straight back it is nought, and goes right)
+	local side = if from:Cross(to).Y <= 0 then 1 else -1
+	local right = Vector3.new(-from.Z, 0, from.X) * side
+	return flat(from * math.cos(most) + right * math.sin(most))
+end
+
+local function step(w: Walk, dt: number)
 	if not w.root.Parent or not w.humanoid.Parent or w.humanoid.Health <= 0 then
 		stop()
 		return
 	end
-	-- the player's own steering, or a jump: the stroll ends (StockControls reads Roblox's own controls)
-	if StockControls.moveVector().Magnitude > STEER or w.humanoid.Jump then
+	-- a jump: the stroll ends
+	if w.humanoid.Jump then
 		cancel()
 		return
 	end
 	local now = os.clock()
+	-- the player's own steering (StockControls reads Roblox's own controls, in the camera's frame) turns it
+	local move = StockControls.moveVector()
+	if move.Magnitude > STEER then
+		local camera = workspace.CurrentCamera
+		local want = flat(if camera then camera.CFrame:VectorToWorldSpace(move) else move)
+		w.turning = nil
+		w.heading = turnToward(w.heading, want, STEER_RATE * dt)
+		w.humanoid:Move(w.heading, false)
+		return
+	end
 	if w.turning then
 		local u = math.clamp((now - w.turning.began) / TURN, 0, 1)
 		-- (half round to the right, so it never passes through the way it came)
@@ -164,9 +189,9 @@ local function begin(character: Model, clip: string)
 	)
 	table.insert(w.connections, ProximityPromptService.PromptTriggered:Connect(cancel))
 	-- (after Roblox's controls have moved the body for this frame: this move wins)
-	RunService:BindToRenderStep(BIND, Enum.RenderPriority.Character.Value + 5, function()
+	RunService:BindToRenderStep(BIND, Enum.RenderPriority.Character.Value + 5, function(dt: number)
 		if walk == w then
-			step(w)
+			step(w, dt)
 		end
 	end)
 end

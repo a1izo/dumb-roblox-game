@@ -93,7 +93,8 @@ Bindings.ACTIONS = {
 	action("flyUp", "Fly up", "ghost", { "Space" }, { "ButtonA" }),
 	action("flyDown", "Fly down", "ghost", { "LeftControl" }, { "ButtonL2" }),
 	action("noteOffer", "Take the offered note", "offer", { "X" }, { "ButtonL1" }),
-	action("emoteContext", "An emote's press-to-do", "plate", { "F" }, { "ButtonX" }),
+	-- (its own key on both, the owner's call of 2026-10-24: no other action shares Y or R3)
+	action("emoteContext", "An emote's press-to-do", "plate", { "Y" }, { "ButtonR3" }),
 	action("joinIn", "Join in", "plate", { "J" }, { "ButtonY" }),
 	action("passNote", "Pass your note", "plate", { "X" }, { "ButtonL1" }),
 	action("rallyHit", "Hit the ball (Match Point)", "rally", { "F" }, { "ButtonX" }),

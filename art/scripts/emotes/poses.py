@@ -210,8 +210,12 @@ you.build()
 #   1  DIO's: a hand spread across the face, the other arm flung down and back, the head over the shoulder;
 #   2  Giorno's: the right forearm raised across the chest, the palm open out, the left hand on the hip, the head
 #      tilted, the weight on one leg;
-#   3  Jotaro's Star Platinum stance: leaning back, the right arm pointing up and out, the left fist at the hip.
-# NEXT POSE (any time) snaps into the next one, round and round.
+#   3  Jotaro's Star Platinum stance: leaning back, the right arm pointing up and out, the left fist at the hip;
+#   4  DIO's WRYYY: thrown back, the hips pushed forward, both arms flung wide and down, the head back;
+#   5  Jotaro's point: the right arm straight out at whoever is watching, the left hand down at the coat's pocket,
+#      the chin down;
+#   6  Kira's: side-on, the left hand raised flat beside the face, the right arm hanging, the head tipped to it.
+# NEXT POSE (any time) snaps into the next one, round and round (4 to 6: the owner, 2026-10-24, "more poses").
 JOJO = {
     "menacingPose": dict(off=(0.1, -0.12, 0), root=(-4, 30, -10), neck=(6, -40, 12), r=J((-30, 0, 40)),
                          l=J((132, 0, 42), (0.3, 0.2, -0.2)), stance=0.3, forward=(0.3, -0.2)),
@@ -221,6 +225,15 @@ JOJO = {
     "menacingPose3": dict(off=(0.04, -0.1, 0.08), root=(10, 16, -4), neck=(16, -14, -6),
                           r=J((150, 0, 40), (0, 0.15, 0)), l=J((20, 0, -24), (0.1, 0.05, 0.05)), stance=0.32,
                           forward=(0.2, -0.3)),
+    "menacingPose4": dict(off=(0.0, -0.08, 0.16), root=(17, 6, 0), neck=(26, -6, 0),
+                          r=J((-24, 0, 62), (0, 0.05, 0)), l=J((-24, 0, -62), (0, 0.05, 0)), stance=0.36,
+                          forward=(0.35, -0.15)),
+    "menacingPose5": dict(off=(0.02, -0.06, -0.05), root=(-6, -14, 0), neck=(-8, 16, 0),
+                          r=reach(1, (0.7, 1.25, -2.35), direction=(0.08, 0.06, -1.0)),
+                          l=J((8, 0, -14), (0.05, 0.05, -0.08)), stance=0.26, forward=(0.3, 0.05)),
+    "menacingPose6": dict(off=(0.06, -0.1, 0), root=(4, 46, -8), neck=(-6, -50, 18),
+                          r=J((-6, 0, 10)), l=J((128, 0, -8), (0.05, 0.15, -0.15)), stance=0.28,
+                          forward=(0.15, -0.3)),
 }
 for clip, p in JOJO.items():
     m = Motion(clip, 4.0, loop=True, note="A JoJo pose, held, menacing.")

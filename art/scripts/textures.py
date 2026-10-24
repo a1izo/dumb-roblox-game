@@ -401,16 +401,175 @@ def fx_puff(cell=128, grid=4, seed=11):
 FX_KIT = (fx_puff,)
 
 
+# The aura kit's textures (Presentation/Aura; the owner's three tutorials of 2026-10-24: Twist VFX's "How to Learn
+# Roblox Aura VFX in 1 Hour" and TerKungTH's ground and body aura guides): soft-edged white shapes the game tints,
+# each fading out before the edge of its square so nothing shows a hard rim; the beam texture tiles along its length.
+
+
+def _grid(size):
+    return np.mgrid[-1 : 1 : size * 1j, -1 : 1 : size * 1j]
+
+
+def _white(alpha):
+    rgba = np.ones(alpha.shape + (4,), dtype=np.float32)
+    rgba[..., 3] = np.clip(alpha, 0, 1)
+    return rgba
+
+
+def aura_glow(size=256):
+    """A soft round glow that falls off smoothly to nothing well inside its square (the body's and the ground's
+    glow: Twist's 'a texture where it fades out')."""
+    y, x = _grid(size)
+    r = np.sqrt(x * x + y * y)
+    alpha = np.exp(-(r**2) / 0.09) * 0.85 + np.exp(-(r**2) / 0.32) * 0.3
+    alpha *= np.clip((1 - r) / 0.25, 0, 1)
+    return save_array("AuraGlow", _white(alpha))
+
+
+def aura_specks(size=256, seed=5):
+    """A cluster of little soft dots of every size (the 'spec' texture the RNG-aura games spam, used sparingly)."""
+    rng = np.random.default_rng(seed)
+    y, x = _grid(size)
+    alpha = np.zeros_like(x)
+    for _ in range(26):
+        a, d = rng.uniform(0, 2 * math.pi), math.sqrt(rng.uniform(0, 1)) * 0.78
+        cx, cy = math.cos(a) * d, math.sin(a) * d
+        radius = rng.choice([0.018, 0.026, 0.035, 0.05]) * rng.uniform(0.8, 1.2)
+        dot = np.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (radius**2))
+        alpha = np.maximum(alpha, dot * rng.uniform(0.6, 1.0))
+    return save_array("AuraSpecks", _white(alpha))
+
+
+def aura_twinkle(size=256):
+    """A star flare: a bright soft core, four long thin rays and four short faint ones between them."""
+    y, x = _grid(size)
+    r = np.sqrt(x * x + y * y)
+    core = np.exp(-(r**2) / 0.006) + 0.35 * np.exp(-(r**2) / 0.05)
+    rays = np.exp(-np.abs(x) * 60) * np.exp(-np.abs(y) * 2.6) + np.exp(-np.abs(y) * 60) * np.exp(-np.abs(x) * 2.6)
+    u, v = (x + y) / math.sqrt(2), (x - y) / math.sqrt(2)
+    short = (np.exp(-np.abs(u) * 70) * np.exp(-np.abs(v) * 7) + np.exp(-np.abs(v) * 70) * np.exp(-np.abs(u) * 7)) * 0.45
+    alpha = (core + rays + short) * np.clip((1 - r) / 0.2, 0, 1)
+    return save_array("AuraTwinkle", _white(alpha))
+
+
+def aura_halo(size=256):
+    """A thin bright ring with a soft glow round it and a fainter ring inside (a halo, a lens flare's ring, the
+    ground's ripple)."""
+    y, x = _grid(size)
+    r = np.sqrt(x * x + y * y)
+    ring = np.exp(-((r - 0.78) ** 2) / 0.0009) + 0.45 * np.exp(-((r - 0.78) ** 2) / 0.012)
+    inner = 0.35 * np.exp(-((r - 0.62) ** 2) / 0.0006)
+    alpha = (ring + inner) * np.clip((0.98 - r) / 0.1, 0, 1)
+    return save_array("AuraHalo", _white(alpha))
+
+
+def aura_crescent(size=256):
+    """An off-centre crescent, thick in the middle and tapering to points (turned, it swirls: the spirits round a
+    body; laid flat and spun, the ground's slashes)."""
+    y, x = _grid(size)
+    r = np.sqrt(x * x + y * y)
+    a = np.arctan2(y, x)  # -pi..pi
+    span = math.radians(210)
+    t = np.clip((a + span / 2) / span, 0, 1)  # 0..1 along the arc, centred on +x
+    inside = (np.abs(a) <= span / 2).astype(np.float32)
+    width = 0.11 * np.sin(np.pi * t) ** 1.4 + 0.004
+    band = np.exp(-((r - 0.66) ** 2) / (width**2)) * inside
+    head = np.clip(1 - np.abs(t - 0.62) * 1.6, 0.2, 1)  # (brightest a little past its middle)
+    alpha = band * head * np.clip((0.97 - r) / 0.08, 0, 1)
+    return save_array("AuraCrescent", _white(alpha))
+
+
+def aura_spike_ring(size=256, spikes=28, seed=8):
+    """A ring with spiky soft points round its outside (a burst of light round the feet)."""
+    rng = np.random.default_rng(seed)
+    y, x = _grid(size)
+    r = np.sqrt(x * x + y * y)
+    a = np.arctan2(y, x)
+    lengths = rng.uniform(0.12, 0.3, spikes)
+    k = (a + math.pi) / (2 * math.pi) * spikes
+    i = np.floor(k).astype(int) % spikes
+    f = k - np.floor(k)
+    tooth = np.clip(1 - np.abs(f - 0.5) * 2, 0, 1) ** 2.2  # 0 between spikes, 1 at a spike's middle
+    reach = 0.5 + lengths[i] * tooth
+    body = np.exp(-((r - 0.5) ** 2) / 0.0015)
+    spike = np.clip((reach - r) / 0.05, 0, 1) * (r > 0.48) * tooth * np.clip((r - 0.45) / 0.05, 0, 1)
+    alpha = np.clip(body + spike * 0.85, 0, 1) * np.clip((0.97 - r) / 0.08, 0, 1)
+    return save_array("AuraSpikeRing", _white(alpha))
+
+
+def aura_wisp(w=256, h=64, seed=3):
+    """The spiral beams' texture: a soft band along its length with wisps drifting in and out of it; it repeats
+    along its length without a seam and fades to nothing at its sides."""
+    rng = np.random.default_rng(seed)
+    u = np.linspace(0, 1, w, endpoint=False)[None, :]
+    v = np.linspace(-1, 1, h)[:, None]
+    wave = np.zeros((1, w))
+    for k, amp in ((1, 0.18), (2, 0.1), (3, 0.06), (5, 0.04)):
+        wave = wave + amp * np.sin(2 * math.pi * (k * u + rng.uniform()))
+    centre = 0.12 * np.sin(2 * math.pi * (2 * u + rng.uniform()))
+    band = np.exp(-((v - centre) ** 2) / 0.09) * (0.55 + wave)
+    streak = 0.5 * np.exp(-((v - centre * 0.5) ** 2) / 0.006) * (0.6 + 0.4 * np.sin(2 * math.pi * (4 * u + 0.3)))
+    alpha = np.clip(band + streak, 0, 1) * np.clip((1 - np.abs(v)) / 0.25, 0, 1)
+    return save_array("AuraWisp", _white(alpha))
+
+
+def aura_bolt(cell=128, grid=2, seed=17):
+    """Four little lightning forks in a 2 x 2 sheet (shown one at random, held: the 'static' flipbook trick), each
+    a jagged bright line with a branch and a glow round it."""
+    rng = np.random.default_rng(seed)
+    sheet = np.zeros((cell * grid, cell * grid, 4), dtype=np.float32)
+    yy, xx = np.mgrid[0:cell, 0:cell] / (cell - 1) * 2 - 1
+
+    def path(start, end, steps, jitter):
+        points = [np.array(start, float)]
+        for s in range(1, steps):
+            t = s / steps
+            p = np.array(start) * (1 - t) + np.array(end) * t
+            d = np.array(end) - np.array(start)
+            n = np.array([-d[1], d[0]]) / (np.linalg.norm(d) + 1e-6)
+            points.append(p + n * rng.uniform(-jitter, jitter))
+        points.append(np.array(end, float))
+        return points
+
+    def draw(alpha, points, width):
+        for p, q in zip(points, points[1:]):
+            d = q - p
+            length = np.linalg.norm(d) + 1e-6
+            t = np.clip(((xx - p[0]) * d[0] + (yy - p[1]) * d[1]) / (length**2), 0, 1)
+            dist = np.sqrt((xx - (p[0] + t * d[0])) ** 2 + (yy - (p[1] + t * d[1])) ** 2)
+            alpha[:] = np.maximum(alpha, np.exp(-(dist**2) / (width**2)) + 0.3 * np.exp(-(dist**2) / ((width * 5) ** 2)))
+
+    for k in range(grid * grid):
+        alpha = np.zeros((cell, cell))
+        a = rng.uniform(0, math.pi)
+        start = (math.cos(a) * -0.8, math.sin(a) * -0.8)
+        end = (math.cos(a) * 0.8, math.sin(a) * 0.8)
+        main = path(start, end, 9, 0.22)
+        draw(alpha, main, 0.03)
+        fork = main[rng.integers(3, 6)]
+        draw(alpha, path(tuple(fork), (fork[0] + rng.uniform(-0.5, 0.5), fork[1] + rng.uniform(-0.5, 0.5)), 4, 0.12),
+             0.02)
+        r = np.sqrt(xx * xx + yy * yy)
+        alpha *= np.clip((1 - r) / 0.15, 0, 1)
+        cell_rgba = _white(alpha)
+        row, col = divmod(k, grid)
+        sheet[row * cell:(row + 1) * cell, col * cell:(col + 1) * cell] = cell_rgba
+    return save_array("AuraBolt", sheet)
+
+
+AURA = (aura_glow, aura_specks, aura_twinkle, aura_halo, aura_crescent, aura_spike_ring, aura_wisp, aura_bolt)
+
+
 TOKYO = (tokyo_rain, tokyo_splash, tokyo_petal)
 CAMPUS = (campus_flake, feather)
 
 
 def build_only(groups):
-    """Writes only some textures ("Tokyo", "Campus", "Speech", "Fx"), without rendering the rest again."""
+    """Writes only some textures ("Tokyo", "Campus", "Speech", "Fx", "Aura"), without rendering the rest again."""
     common.ensure_dirs()
     paths = []
     for name in groups:
-        paths.extend(make() for make in {"Tokyo": TOKYO, "Campus": CAMPUS, "Speech": SPEECH, "Fx": FX_KIT}[name])
+        paths.extend(make() for make in {"Tokyo": TOKYO, "Campus": CAMPUS, "Speech": SPEECH, "Fx": FX_KIT, "Aura": AURA}[name])
     return paths
 
 
@@ -427,6 +586,7 @@ def build():
     paths.append(spark())
     paths.append(snowflake())
     paths.append(footprint())
+    paths.extend(make() for make in AURA)
     paths.extend(make() for make in TOKYO)
     paths.extend(make() for make in CAMPUS)
     return paths

@@ -28,8 +28,8 @@ local LocalPlayer = Players.LocalPlayer
 
 local EmotePrompts = {}
 
-EmotePrompts.CONTEXT_KEY = Enum.KeyCode.F
-EmotePrompts.CONTEXT_PAD = Enum.KeyCode.ButtonX
+EmotePrompts.CONTEXT_KEY = Enum.KeyCode.Y
+EmotePrompts.CONTEXT_PAD = Enum.KeyCode.ButtonR3
 EmotePrompts.JOIN_KEY = Enum.KeyCode.J
 EmotePrompts.JOIN_PAD = Enum.KeyCode.ButtonY
 
@@ -118,10 +118,13 @@ local function updateContext()
 			and not pressed[session]
 		then EmoteInfo.of(session.clip).context
 		else nil
+	-- Not a quick-time event (the owner, 2026-10-24): once its moment has come the prompt stays until it is
+	-- pressed or the emote ends. A loop's comes round every bar, so it shows all along.
 	local open = false
 	if session and window then
+		local prepared = ClipPlayer.get(session.clip)
 		local t = into(session)
-		open = t ~= nil and t >= window.from and t <= window.to
+		open = (prepared ~= nil and prepared.loop) or (t ~= nil and t >= window.from)
 	end
 	local root = rootOf(character)
 	if not open or not root or not session or not window then
@@ -142,6 +145,8 @@ local function updateContext()
 			keyOf("emoteContext", "gamepad", EmotePrompts.CONTEXT_PAD),
 			8
 		)
+		-- (drawn unlike every other prompt: UI/PromptView's press-to-do look)
+		made:SetAttribute("DGPressToDo", true)
 		made.Triggered:Connect(function()
 			local now = EmoteController.session(LocalPlayer.Character)
 			if now then

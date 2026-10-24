@@ -13,6 +13,7 @@ from mathutils import Matrix
 import modelkit as mk
 import propkit as pk
 from common import srgb
+import props
 from props import prop
 
 
@@ -396,3 +397,169 @@ def glove():
             pk.rounded("Cuff", (1.1, 1.1, 0.13), (0, 0, 0.31), cotton, r=0.04),
             mk.sphere("Button", 0.035, (0.2, -0.56, 0.3), mat=pearl, segments=8, rings=6),
             mk.sphere("Button", 0.035, (0.32, -0.56, 0.3), mat=pearl, segments=8, rings=6)], []
+
+
+# The emote wheel's revolver ------------------------------------------------------------------------------------------
+
+# The wheel (UI/Wheel, the owner's pick 2 of 2026-10-21: a snub barrel and a bird's-head grip) shows this in a
+# ViewportFrame round its eight chambers: the cylinder seen from the front, the gun's frame laid round it as on the
+# review page (the barrel out to the right, the hammer's spur over the top left, the grip down to the bottom left).
+# Studs here are the wheel's pixels / 100: the cylinder 1.69 across its radius, the chambers' middles 1.24 out, each
+# chamber 0.36 round, so the wheel's plates (66 px) sit in their mouths. The front faces -Y; the cylinder is a piece
+# of its own ("Cylinder") that the wheel turns about its hinge, the middle of its front face. (The owner, 2026-10-24:
+# the flat drawing "looks really low quality"; the cylinder spins a little as the wheel opens.)
+WHEEL_R = 1.69
+WHEEL_CHAMBERS = 8
+WHEEL_RING = 1.24
+WHEEL_BORE = 0.36
+WHEEL_FRONT = -0.55  # the cylinder's front face (y); its back is at +0.55
+
+
+def _carve(obj, cutters):
+    """obj less every cutter (exact booleans, applied); the cutters go."""
+    import bpy
+
+    for cutter in cutters:
+        mod = obj.modifiers.new("Carve", "BOOLEAN")
+        mod.operation = "DIFFERENCE"
+        mod.solver = "EXACT"
+        mod.object = cutter
+        cutter.hide_render = True
+        cutter.hide_viewport = True
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
+    obj.modifiers.clear()
+    obj.data = mesh
+    # (the cut faces come with the cutters' empty material slots: they take the body's)
+    first = next((m for m in mesh.materials if m is not None), None)
+    for i, material in enumerate(mesh.materials):
+        if material is None:
+            mesh.materials[i] = first
+    for cutter in cutters:
+        bpy.data.objects.remove(cutter, do_unlink=True)
+    for poly in obj.data.polygons:
+        poly.use_smooth = False
+    return obj
+
+
+def _curve(points, steps=6):
+    """A closed smooth outline through `points` [(x, z)] (Catmull-Rom), for an extruded shape."""
+    out = []
+    n = len(points)
+    for i in range(n):
+        p0, p1, p2, p3 = points[i - 1], points[i], points[(i + 1) % n], points[(i + 2) % n]
+        for s in range(steps):
+            t = s / steps
+            t2, t3 = t * t, t * t * t
+            out.append(tuple(0.5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * t
+                                    + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2
+                                    + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3) for k in range(2)))
+    return out
+
+
+def _upright(name, outline, depth, y, mat, bevel=0.0):
+    """An outline [(x, z)] in the picture's plane, `depth` thick along Y, its middle at y."""
+    # (extrude_shape lays the outline in XY and extrudes along Z; turned +90 about X, its Y goes to Z)
+    return mk.extrude_shape(name, list(outline), depth, (0, y, 0), rot=(90, 0, 0), mat=mat, bevel=bevel)
+
+
+@prop("WheelRevolver", pivot="centre", material="Metal", collide=False, texture=1024)
+def wheel_revolver():
+    """The emote wheel's revolver: a blued snub-nosed frame round a bright steel cylinder of eight chambers, a
+    walnut bird's-head grip with a checkered panel and a steel butt cap. Front view: the cylinder's face to -Y."""
+    blued = pk.metal("WR_Blued", (30, 34, 44), (64, 70, 86), rough=0.3, metallic=0.9, scale=26)
+    steel = pk.metal("WR_Steel", (128, 132, 142), (180, 184, 194), rough=0.2, metallic=0.95, scale=30)
+    bore = mk.flat("WR_Bore", srgb(9, 9, 11), 0.9)
+    walnut = mk.wood("WR_Walnut", srgb(138, 86, 46), srgb(72, 40, 20), scale=4.0, rings=14.0, roughness=0.45)
+    checker = mk.noisy("WR_Checker", srgb(54, 32, 16), srgb(96, 60, 32), scale=90.0, detail=2.0, roughness=0.75)
+    knurl = mk.noisy("WR_Knurl", srgb(16, 18, 24), srgb(52, 56, 68), scale=120.0, detail=2.0, roughness=0.5,
+                     metallic=0.8)
+    length = -2 * WHEEL_FRONT
+
+    # The cylinder: chambers bored from the front with a chamfer at each mouth, the bore down the middle, a flute
+    # between each two chambers right through to the front, the front edge bevelled.
+    body = mk.cylinder("Cylinder", WHEEL_R, length, (0, 0, 0), rot=(90, 0, 0), mat=steel, verts=96)
+    cutters = []
+    for k in range(WHEEL_CHAMBERS):
+        a = math.radians(k * 360 / WHEEL_CHAMBERS)
+        x, z = math.sin(a) * WHEEL_RING, math.cos(a) * WHEEL_RING
+        cutters.append(mk.cylinder("ChamberCut", WHEEL_BORE, 1.4, (x, WHEEL_FRONT, z), rot=(90, 0, 0), verts=40))
+        cutters.append(mk.cylinder("MouthCut", WHEEL_BORE, 0.16, (x, WHEEL_FRONT - 0.01, z), rot=(90, 0, 0), verts=40,
+                                   radius2=WHEEL_BORE + 0.09))
+        f = math.radians((k + 0.5) * 360 / WHEEL_CHAMBERS)
+        cutters.append(mk.cylinder("FluteCut", 0.3, 2.0, (math.sin(f) * (WHEEL_R + 0.17), 0.1,
+                                                          math.cos(f) * (WHEEL_R + 0.17)), rot=(90, 0, 0), verts=32))
+    cutters.append(mk.cylinder("BoreCut", 0.66, 0.6, (0, WHEEL_FRONT, 0), rot=(90, 0, 0), verts=48))
+    cutters.append(mk.cylinder("BoreMouth", 0.66, 0.12, (0, WHEEL_FRONT - 0.01, 0), rot=(90, 0, 0), verts=48,
+                               radius2=0.74))
+    _carve(body, cutters)
+    mk.add_bevel(body, 0.022, 2)
+    cylinder = [body]
+    for k in range(WHEEL_CHAMBERS):
+        a = math.radians(k * 360 / WHEEL_CHAMBERS)
+        x, z = math.sin(a) * WHEEL_RING, math.cos(a) * WHEEL_RING
+        # the chamber's dark floor
+        cylinder.append(mk.cylinder("ChamberFloor", WHEEL_BORE - 0.005, 0.02, (x, WHEEL_FRONT + 0.68, z),
+                                    rot=(90, 0, 0), mat=bore, verts=32))
+    # the bore's floor, and the ejector rod's end in it
+    cylinder.append(mk.cylinder("BoreFloor", 0.655, 0.02, (0, WHEEL_FRONT + 0.29, 0), rot=(90, 0, 0), mat=bore,
+                                verts=48))
+    cylinder.append(mk.cylinder("Rod", 0.2, 0.3, (0, WHEEL_FRONT + 0.14, 0), rot=(90, 0, 0), mat=blued, verts=24,
+                                bevel=0.02))
+
+    # The frame behind it: the recoil shield (a ring of blued steel round the cylinder), the lug to the barrel.
+    parts = [mk.cylinder("Shield", WHEEL_R + 0.17, 0.24, (0, -WHEEL_FRONT + 0.14, 0), rot=(90, 0, 0), mat=blued,
+                         verts=96, bevel=0.03),
+             pk.rounded("Lug", (0.62, 0.5, 0.92), (WHEEL_R + 0.1, 0.62, 0.32), blued, r=0.08)]
+    # The snub barrel out to the right a little over the middle, its rib, the front sight and the ejector shroud
+    # under it; the crown a ring of brighter steel at the muzzle.
+    bz = 0.42
+    # (short enough to stay in the wheel's panel, 470 px across: its crown 2.25 studs, 225 px, out from the middle)
+    parts.append(mk.cylinder("Barrel", 0.27, 0.64, (1.91, 0.55, bz), rot=(0, 90, 0), mat=blued, verts=40, bevel=0.03))
+    parts.append(pk.rounded("Rib", (0.64, 0.18, 0.12), (1.91, 0.55, bz + 0.28), blued, r=0.04))
+    parts.append(mk.extrude_shape("Sight", [(0.0, 0.0), (0.14, 0.0), (0.12, 0.14), (0.05, 0.16)], 0.08,
+                                  (2.02, 0.55, bz + 0.33), rot=(90, 0, 0), mat=blued, bevel=0.01))
+    parts.append(pk.rounded("Shroud", (0.58, 0.42, 0.34), (1.9, 0.55, bz - 0.36), blued, r=0.12))
+    parts.append(mk.cylinder("Crown", 0.275, 0.06, (2.22, 0.55, bz), rot=(0, 90, 0), mat=steel, verts=40, bevel=0.015))
+    parts.append(mk.cylinder("Muzzle", 0.13, 0.07, (2.24, 0.55, bz), rot=(0, 90, 0), mat=bore, verts=24))
+    # The hammer over the top left: its body down behind the shield, the spur curling back, checkered on top.
+    spur = _curve([(-0.22, -0.55), (0.22, -0.55), (0.26, 0.0), (0.18, 0.4), (-0.1, 0.68), (-0.55, 0.78),
+                   (-0.82, 0.62), (-0.74, 0.42), (-0.42, 0.38), (-0.22, 0.14)], steps=5)
+    # (low enough round the cylinder that its spur stays under the wheel's top edge)
+    spur = [(x * 0.8, z * 0.8) for x, z in spur]
+    ha = math.radians(140)
+    at = (math.cos(ha) * (WHEEL_R - 0.05), 0.6, math.sin(ha) * (WHEEL_R - 0.05))
+    hammer = _upright("Hammer", spur, 0.3, 0.6, blued, bevel=0.03)
+    grooves = _upright("SpurKnurl", [(x * 0.8 - 0.06, z * 0.8 + 0.1) for x, z in spur[len(spur) // 2:]], 0.31, 0.6,
+                       knurl)
+    for obj in (hammer, grooves):
+        obj.location = at
+        obj.rotation_euler = (math.radians(90), math.radians(-34), 0)
+        parts.append(obj)
+    # The trigger guard under the cylinder, a little left of the middle, and the trigger's blade in it.
+    gx, gz = -0.62, -WHEEL_R - 0.12
+    parts.append(mk.torus("Guard", 0.36, 0.065, (gx, 0.62, gz), rot=(90, 0, 0), mat=blued, major_segments=40,
+                          minor_segments=10))
+    parts.append(mk.tube("Trigger", (gx + 0.1, 0.62, gz + 0.26), (gx - 0.04, 0.62, gz - 0.12), 0.055,
+                         radius_end=0.04, mat=steel, verts=10))
+    # The bird's-head grip down to the bottom left: the frame's grip strap in blued steel, walnut panels standing
+    # proud of it with a checkered field, a steel screw, the steel butt cap at the pommel's hook.
+    outline = _curve([(-0.55, -1.1), (-1.25, -0.85), (-1.7, -1.15), (-2.02, -1.58), (-2.24, -2.0), (-2.26, -2.3),
+                      (-2.06, -2.46), (-1.78, -2.44), (-1.5, -2.22), (-1.2, -1.86), (-0.9, -1.58), (-0.62, -1.4)],
+                     steps=6)
+    parts.append(_upright("GripFrame", outline, 0.5, 0.7, blued, bevel=0.03))
+    inset = _curve([(-1.0, -1.12), (-1.6, -1.3), (-1.92, -1.7), (-2.08, -2.08), (-1.92, -2.26), (-1.64, -2.16),
+                    (-1.34, -1.84), (-1.06, -1.56), (-0.86, -1.36)], steps=6)
+    parts.append(_upright("Panel", inset, 0.66, 0.7, walnut, bevel=0.04))
+    field = [(x * 0.8 - 1.5 * 0.2, z * 0.8 - 1.78 * 0.2) for x, z in inset]
+    parts.append(_upright("Checkering", field, 0.68, 0.7, checker, bevel=0.01))
+    parts.append(mk.cylinder("Screw", 0.07, 0.7, (-1.5, 0.7, -1.78), rot=(90, 0, 0), mat=steel, verts=16, bevel=0.01))
+    cap = _curve([(-2.27, -2.24), (-2.12, -2.46), (-1.86, -2.5), (-1.66, -2.4), (-1.98, -2.32)], steps=4)
+    parts.append(_upright("ButtCap", cap, 0.54, 0.7, steel, bevel=0.02))
+
+    more = {
+        "into": (0.6, 0.0, 1.0, 1.0),
+        "pieces": {"Cylinder": props.piece(cylinder, into=(0.0, 0.0, 0.59, 1.0))},
+        "hinge": {"Cylinder": (0.0, WHEEL_FRONT, 0.0)},
+    }
+    return parts, [], more

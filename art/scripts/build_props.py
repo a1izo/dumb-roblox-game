@@ -25,7 +25,10 @@ CORE = "Core"
 # textures, and the UI's lettering, paper and icons (art/scripts/ui). They ride in the Core set's
 # file.
 EFFECT_TEXTURES = ["RainStreak", "Smoke", "SoulGlow", "Spark", "SpeechNah", "FxPuff",
-                   "Snowflake", "Footprint", "FxShard", "FxStatic", "FxChalk", "FxTear"]
+                   "Snowflake", "Footprint", "FxShard", "FxStatic", "FxChalk", "FxTear",
+                   # (the aura kit's: Presentation/Aura)
+                   "AuraGlow", "AuraSpecks", "AuraTwinkle", "AuraHalo", "AuraCrescent", "AuraSpikeRing",
+                   "AuraWisp", "AuraBolt"]
 UI_TEXTURES = [
     "UiTitle1",
     "UiHead1",

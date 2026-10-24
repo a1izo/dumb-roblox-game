@@ -280,6 +280,15 @@ Assets.textures = {
 	SpeechNah = "", -- Nah, I'd Win's speech bubble
 	Snowflake = "",
 	Footprint = "",
+	-- (the aura kit's, Presentation/Aura)
+	AuraGlow = "",
+	AuraSpecks = "",
+	AuraTwinkle = "",
+	AuraHalo = "",
+	AuraCrescent = "",
+	AuraSpikeRing = "",
+	AuraWisp = "",
+	AuraBolt = "",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.

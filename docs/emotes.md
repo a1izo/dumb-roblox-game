@@ -84,15 +84,18 @@ the review renders use it, so what they test is what the game does).
 
 ## Press-to-do moments
 
-A button shows between `from` and `to`; one press plays the branch on every screen (the server picks an `alt`
-branch some of the time). A branch with a context of its own can be pressed again.
+A button shows from `from` and stays until it is pressed or the emote ends (all along in a loop): not a quick-time
+event (the owner, 2026-10-24); `to` is only the end of the beat it was made for. One press plays the branch on
+every screen (the server picks an `alt` branch some of the time). A branch with a context of its own can be pressed
+again. It has its own keys, Y and R3, which no other action uses, and its own look (`UI/PromptView`): a white diamond
+with the key dark on it and a ring breathing out of it, where every other prompt is a dark round keycap.
 
 | Label | Emote | What it does |
 | --- | --- | --- |
 | EAT | Potato chip | Diavolo's "...and EAT IT." |
 | LOOK UP | Excuse Me, Sir | the face tipped back to the sky |
 | FLIP | Coin Flip | the flip |
-| NEXT POSE | Menacing Pose | round DIO's, Giorno's and Jotaro's poses |
+| NEXT POSE | Menacing Pose | round six JoJo poses: DIO's, Giorno's, Jotaro's Star Platinum, DIO's WRYYY, Jotaro's point, Kira's |
 | CHARGE | Low Battery | plugged in, jolted back up |
 | LIFT | Blindfold Lift | the blindfold up, blue eyes |
 | ADD ONE | Sugar Tower, Dice Tower | one more on the tower: it holds, or one time in two it all comes down |
@@ -105,11 +108,13 @@ branch some of the time). A branch with a context of its own can be pressed agai
   in `art/scripts/emotes/strolls.py`) that replaces the walk while the `Stroll` attribute is on. The body walks by
   itself (`Controllers/StrollWalker`) at the stroll's `pace` (Cosmetics: 4 to 9 studs a second) along the way it
   faced when it began, sliding along walls and turning back at a ledge or a wall met head-on, with no time limit.
-  It ends when the player steers or jumps, uses a game action (`InputRouter.Ran`: a note, the Eyes, a sabotage,
-  an arrest) or a prompt, plays another emote or picks the stroll again; the emote wheel, Help, the scratchpad,
-  the Grimoire, chat, Escape, the camera and shift lock never end it. The Long Climb's effect (green-edged steps
-  under each footfall, the giant grinning image behind, green rain) is in `Controllers/EmoteFx`; its grin is the
-  `manicGrin` face slot in `Shared/EmoteMedia`.
+  The player steers it (keys, stick, touch pad, from the camera): it turns that way and keeps on it when let go
+  (2026-10-24; steering used to end it). It ends when the player jumps, uses a game action (`InputRouter.Ran`: a
+  note, the Eyes, a sabotage, an arrest) or a prompt, plays another emote or picks the stroll again; the emote
+  wheel, Help, the scratchpad, the Grimoire, chat, Escape, the camera and shift lock never end it. The Long Climb's
+  effect (an escalator of green-edged steps going down as fast as the climber climbs, so they never rise; a
+  grinning green image of them over their shoulders, body-sized; green rain; its aura) is in
+  `Controllers/EmoteFx`; its grin is the `manicGrin` face slot in `Shared/EmoteMedia`.
 - **Duos**: the nearest player within 10 studs is asked and has 15 s to answer. Match Point is a real rally (the
   server keeps the ball; a press as it reaches your racket sends it back, a little quicker each time; the first
   miss ends it). Cuffed Together chains the one asked to the leader (a jump, another emote or 12 studs apart

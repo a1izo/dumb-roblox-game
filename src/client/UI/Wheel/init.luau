@@ -16,6 +16,7 @@
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -25,6 +26,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
 local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
@@ -79,6 +81,11 @@ type Plate = {
 local holder: Frame
 local ringFrame: Frame
 local gunParts: (ring: Frame) -> ()
+local flatGun: Frame
+type Revolver = { view: ViewportFrame, cylinder: PVInstance, rest: CFrame }
+local revolver: Revolver? = nil
+local spinToken = 0
+local spinOpen: () -> ()
 local ringScale: UIScale
 local ink: GuiObject
 local needle: Frame
@@ -696,6 +703,91 @@ function Wheel.showMore(on: boolean)
 	end
 end
 
+-- The Blender revolver (Core "WheelRevolver", art/scripts/props_emotes.py), in place of the flat drawing once its
+-- model is in: a ViewportFrame round the ring's middle at 100 px a stud, so its chambers' mouths sit round the plates
+-- (the wheel's UIScale scales it with them). Its cylinder is a piece of its own, turned about its hinge (the middle
+-- of its front face, put at the world's origin) as the wheel opens.
+local REVOLVER_VIEW = 600 -- px square (the barrel reaches 225 px right of the middle, the grip's butt 250 down)
+local REVOLVER_FOV = 8
+local SPIN_CHAMBERS = 3
+local SPIN_SECONDS = 0.62
+
+local function buildRevolver()
+	if revolver or not ringFrame then
+		return
+	end
+	local info = ModelLibrary.info("WheelRevolver")
+	local hinge = info and info.hinge and info.hinge.Cylinder
+	if not hinge then
+		return
+	end
+	local model = ModelLibrary.get("WheelRevolver")
+	local cylinder = model and model:FindFirstChild("WheelRevolver_Cylinder")
+	if not model or not cylinder or not cylinder:IsA("PVInstance") then
+		if model then
+			model:Destroy()
+		end
+		return
+	end
+	local view = Create("ViewportFrame", {
+		Name = "Revolver",
+		BackgroundTransparency = 1,
+		Ambient = Color3.fromRGB(112, 116, 128),
+		LightColor = Color3.fromRGB(255, 248, 236),
+		LightDirection = Vector3.new(-0.7, -1, 1.1),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(REVOLVER_VIEW, REVOLVER_VIEW),
+		ZIndex = 1,
+		Parent = ringFrame,
+	}) :: ViewportFrame
+	model:PivotTo(CFrame.new(-Vector3.new(hinge[1], hinge[2], hinge[3])))
+	model.Parent = view
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = REVOLVER_FOV
+	local distance = REVOLVER_VIEW / 100 / 2 / math.tan(math.rad(REVOLVER_FOV / 2))
+	-- (from the front, which faces -Z: the barrel, Blender's +X, comes out on the right)
+	camera.CFrame = CFrame.lookAt(Vector3.new(0, 0, -distance), Vector3.zero)
+	camera.Parent = view
+	view.CurrentCamera = camera
+	revolver = { view = view, cylinder = cylinder :: PVInstance, rest = (cylinder :: PVInstance):GetPivot() }
+	ink.Visible = false
+	flatGun.Visible = false
+end
+
+-- The cylinder turned `degrees` clockwise on screen from where its chambers meet the plates.
+local function turnCylinder(degrees: number)
+	if revolver then
+		revolver.cylinder:PivotTo(CFrame.Angles(0, 0, math.rad(degrees)) * revolver.rest)
+	end
+end
+
+-- As the wheel opens: a flick of the cylinder, a few chambers round, that clicks into place a hair past the plates
+-- and settles back (an out-back ease); none under reduced motion.
+spinOpen = function()
+	spinToken += 1
+	if not revolver or Motion.isReduced() then
+		turnCylinder(0)
+		return
+	end
+	local token = spinToken
+	local from = -SPIN_CHAMBERS * 360 / WheelMath.SLOTS
+	local began = os.clock()
+	turnCylinder(from)
+	task.spawn(function()
+		while token == spinToken do
+			local t = math.min(1, (os.clock() - began) / SPIN_SECONDS)
+			local u = t - 1
+			local eased = 1 + 2.2 * u * u * u + 1.2 * u * u
+			turnCylinder(from * (1 - eased))
+			if t >= 1 then
+				break
+			end
+			RunService.RenderStepped:Wait()
+		end
+	end)
+end
+
 -- Opening (it blooms) and closing.
 function Wheel.shown(on: boolean)
 	visible = on
@@ -703,6 +795,7 @@ function Wheel.shown(on: boolean)
 		return
 	end
 	if on then
+		buildRevolver()
 		shownAt = os.clock()
 		-- (held open by the wheel's own key, the player's: hold, flick, let go)
 		holdKey = nil
@@ -720,9 +813,13 @@ function Wheel.shown(on: boolean)
 			Motion.tween(ringScale, { Scale = 1 }, T.motion.slow, table.unpack(T.ease.ink))
 			ink.Rotation = -360 / WheelMath.SLOTS -- the cylinder rolls one chamber into place
 			Motion.tween(ink, { Rotation = 0 }, T.motion.scene, table.unpack(T.ease.ink))
+			-- (the Blender revolver's spins three chambers round and clicks into place; the plates come in as it
+			-- slows)
+			local lag = if revolver then 0.2 else 0
+			spinOpen()
 			for index, plate in ipairs(plates) do
 				plate.scale.Scale = 0
-				task.delay(0.02 * index, function()
+				task.delay(lag + 0.02 * index, function()
 					Motion.tween(plate.scale, { Scale = 1 }, T.motion.base, table.unpack(T.ease.page))
 				end)
 			end
@@ -740,6 +837,7 @@ function Wheel.state(): {
 	hovered: number?,
 	slots: { { clip: string?, usable: boolean, reason: string? } },
 	recent: { string },
+	revolver: boolean,
 }
 	local slots = {}
 	for index, plate in ipairs(plates) do
@@ -749,7 +847,7 @@ function Wheel.state(): {
 			reason = plate.reason,
 		}
 	end
-	return { hovered = hovered, slots = slots, recent = table.clone(recent) }
+	return { hovered = hovered, slots = slots, recent = table.clone(recent), revolver = revolver ~= nil }
 end
 
 -- The first slot's plate (for gamepad selection when the page opens).
@@ -869,7 +967,9 @@ function Wheel.mount(parent: Frame, played: (QuickChat.Emote) -> ())
 		Parent = holder,
 	})
 	ringScale = Kit.Base.make("UIScale", { Parent = ringFrame }) :: UIScale
-	gunParts(ringFrame)
+	-- (the flat drawing: until the Blender revolver is in, buildRevolver)
+	flatGun = Kit.frame({ Name = "FlatGun", Size = UDim2.fromScale(1, 1), Parent = ringFrame })
+	gunParts(flatGun)
 	-- The cylinder (the owner's call, 2026-10-18): the wheel is a revolver's cylinder seen from the front, the gun
 	-- Light was shot with at the end: blued steel, a flute cut between each two chambers, the bore down its middle
 	-- round the view of you. It rolls a chamber's turn into place as it opens.
