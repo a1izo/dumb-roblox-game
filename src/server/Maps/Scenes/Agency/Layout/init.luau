@@ -65,9 +65,9 @@ return {
 			prop = "StationPrintKit",
 		},
 		{
-			id = "Ink Analysis Bench", -- terms:ok (the chromatography task keeps its ink)
+			id = "Trace Analysis Bench",
 			type = "Forensics",
-			name = "Ink Analysis Bench", -- terms:ok (the chromatography task keeps its ink)
+			name = "Trace Analysis Bench",
 			x = -66,
 			y = 14,
 			z = -70.8,

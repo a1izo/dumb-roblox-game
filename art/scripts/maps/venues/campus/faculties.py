@@ -102,8 +102,10 @@ def law_exterior(s):
                   seed=6)
     masonry.hip_roof(s, LAW, P.EAVES["law"], 10.0)
     masonry.arcade(s, P.ARCADE, h=12.0, brick="BrickDark")
-    fit.plaque(s, LAW[2] + 0.05, 10.8, -80.0, -90, 7.0, 1.2, "法文館  LAW & LETTERS", (236, 214, 150), (26, 20, 18),
-               font="Garamond")
+    # On the covered walk's open face over its arches, where the forecourt sees it. (It hung on the building's
+    # own wall inside the walk, behind the brick over the arches: from outside nobody saw it.)
+    fit.plaque(s, P.ARCADE[2] + 0.05, 11.15, -80.0, -90, 7.0, 1.0, "法文館  LAW & LETTERS", (236, 214, 150),
+               (26, 20, 18), font="Garamond")
     fit.wall_lamp(s, -95.0, 9.8, LAW[3] + 0.3, 180, color=fit.WARM, range_=20, brightness=1.0)
 
 

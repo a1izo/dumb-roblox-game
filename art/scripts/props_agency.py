@@ -505,11 +505,53 @@ def coat_stand():
         a = k * math.pi / 2 + math.pi / 4
         parts.append(mk.tube("Leg", (0, 0, 0.9), (math.cos(a) * 0.9, math.sin(a) * 0.9, 0.02), 0.07, mat=wood, verts=6))
         parts.append(mk.tube("Hook", (0, 0, 5.8), (math.cos(a) * 0.45, math.sin(a) * 0.45, 6.0), 0.04, mat=wood, verts=5))
-    parts += [mk.lathe("Coat", [(0.0, 0.0), (0.55, 0.0), (0.5, 2.4), (0.35, 3.0), (0.12, 3.25), (0.0, 3.3)], (0.0, -0.35, 2.55),
-                       mat=coat, segments=14),
-              mk.cylinder("HatBrim", 0.5, 0.05, (0.35, 0.25, 6.05), mat=hat, verts=18),
-              mk.cylinder("HatCrown", 0.3, 0.35, (0.35, 0.25, 6.25), mat=hat, verts=14),
-              mk.tube("Umbrella", (0.7, 0.4, 0.05), (0.4, 0.2, 3.1), 0.12, radius_end=0.05, mat=brolly, verts=8)]
+    # The coat hangs by its collar from the front-right hook, its back to the pole: a flat garment with
+    # shoulders, sleeves, lapels, a belt and buttons; the hat (a grey felt fedora) hangs tipped on the
+    # back-left hook. (They were a round tan lathe with the hat sat on its top: a capsule in a top hat.)
+    dark = mk.noisy("Coat_Trim", srgb(92, 76, 52), srgb(112, 94, 66), scale=12, roughness=0.8)
+    band = pk.plastic("Coat_HatBand", (18, 18, 20))
+
+    def hung(objs, hook_angle, face_turn):
+        """Moves pieces built round a hook tip at the origin (front to -Y) onto that hook."""
+        hx, hy = math.cos(hook_angle) * 0.318, math.sin(hook_angle) * 0.318
+        c, s_ = math.cos(face_turn), math.sin(face_turn)
+        for o in objs:
+            x, y, z = o.location
+            o.location = (hx + x * c - y * s_, hy + x * s_ + y * c, z)
+            o.rotation_euler[2] += face_turn
+        return objs
+
+    body = mk.lathe("Coat", [(0.0, 0.0), (0.66, 0.0), (0.6, 1.2), (0.55, 2.4), (0.6, 3.2), (0.5, 3.35), (0.0, 3.4)],
+                    (0.0, -0.2, 2.25), mat=coat, segments=16)
+    body.scale = (1.0, 0.36, 1.0)
+    coat_parts = [body,
+                  mk.box("Collar", (0.56, 0.36, 0.26), (0.0, -0.2, 5.72), mat=dark, bevel=0.08),
+                  mk.box("Loop", (0.07, 0.03, 0.24), (0.0, -0.03, 5.92), mat=dark)]
+    for sx in (-1, 1):
+        coat_parts += [
+            mk.box("Shoulder", (0.62, 0.34, 0.2), (sx * 0.3, -0.2, 5.52), rot=(0, sx * 14, 0), mat=coat, bevel=0.07),
+            mk.tube("Sleeve", (sx * 0.6, -0.2, 5.45), (sx * 0.66, -0.24, 3.55), 0.17, radius_end=0.14, mat=coat, verts=10),
+            mk.tube("Cuff", (sx * 0.66, -0.24, 3.6), (sx * 0.665, -0.245, 3.4), 0.15, mat=dark, verts=10),
+            mk.box("Lapel", (0.2, 0.04, 1.05), (sx * 0.15, -0.43, 5.0), rot=(0, sx * 18, 0), mat=dark),
+        ]
+        for k in range(3):
+            coat_parts.append(mk.sphere("Button", 0.045, (sx * 0.17, -0.43, 4.35 - k * 0.42), mat=band, segments=8, rings=6))
+    coat_parts += [mk.box("Belt", (1.2, 0.5, 0.13), (0.0, -0.2, 3.95), mat=dark, bevel=0.03),
+                   mk.box("BeltEnd", (0.12, 0.035, 0.62), (0.26, -0.46, 3.62), rot=(0, -8, 0), mat=dark)]
+    parts += hung(coat_parts, -math.pi / 4, math.pi / 4)
+    hat_parts = [mk.cylinder("HatBrim", 0.46, 0.04, (0.0, -0.3, 5.92), mat=hat, verts=20),
+                 mk.lathe("HatCrown", [(0.0, 0.0), (0.29, 0.0), (0.28, 0.22), (0.23, 0.33), (0.1, 0.35), (0.0, 0.31)],
+                          (0.0, -0.3, 5.94), mat=hat, segments=16),
+                 mk.cylinder("HatBand", 0.292, 0.08, (0.0, -0.3, 5.99), mat=band, verts=16)]
+    # tipped forward off its hook: the brim's back edge on the hook, the crown leaning out
+    for o in hat_parts:
+        x, y, z = o.location
+        a = math.radians(24)
+        dy, dz = y, z - 5.92
+        o.location = (x, dy * math.cos(a) - dz * math.sin(a), 5.92 + dy * math.sin(a) + dz * math.cos(a))
+        o.rotation_euler[0] += a
+    parts += hung(hat_parts, 3 * math.pi / 4, -3 * math.pi / 4)
+    parts.append(mk.tube("Umbrella", (0.7, 0.4, 0.05), (0.4, 0.2, 3.1), 0.12, radius_end=0.05, mat=brolly, verts=8))
     return parts, []
 
 

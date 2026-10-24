@@ -67,9 +67,15 @@ def build(s):
     river.build(s, g)
     station.build(s, g)
     tops = [(b["poly"], buildings.height(b["floors"])) for b in plan.BUILDINGS]
+    # The shopping arcade's glazed roof and trusses (dressing.arcade): no vertical sign stands through them.
+    buildings.KEEP_OUT.clear()
+    reach = plan.STREETS["arcade"]["road"] / 2 + 3.6
+    for q in g2.strip_quads(plan.STREETS["arcade"]["points"], reach, -reach):
+        buildings.KEEP_OUT.append((q, plan.ARCADE_ROOF - 0.6, plan.ARCADE_ROOF + 1.8))
     for b in plan.BUILDINGS:
         others = [t for t, o in zip(tops, plan.BUILDINGS) if o is not b]
         buildings.build(s, b, styles.style(b), others, styles.fronts(b, plan.BUILDINGS))
+    buildings.KEEP_OUT.clear()
     interiors.build(s, g)
     clutter.build(s)
     dressing.build(s)

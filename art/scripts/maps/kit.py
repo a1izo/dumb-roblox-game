@@ -291,16 +291,36 @@ def opening(s, a, t, n, rot, thick, base, op, collide):
             y = bottom + (top_y - bottom) * j / rows
             s.box(mull, point_on(a, t, op["at"], y), (u1 - u0, 0.12, 0.16), rot)
         if op.get("blinds"):
+            # A Venetian blind inside the opening, just in front of the glass: its head rail under the
+            # frame, the slats, a heavier bottom rail and two ladder cords. (The slats used to hang 0.35 out
+            # from the wall with nothing holding them; in a dark room they floated.)
             side = op.get("blinds_side", 1)
             slat_mat = op.get("slat", "CreamTrim")
-            count = int((top_y - bottom) / 0.42)
+            lining = 0.12 if frame else 0.0
+            width = u1 - u0 - 2 * lining - 0.06
+            depth = 0.2
+            rail_top = top_y - lining
+            first = bottom + lining + 0.18
+            count = max(1, int((rail_top - 0.3 - first) / 0.42) + 1)
             tilt = math.radians(28)
+
+            def at(u, y, out):
+                return add(point_on(a, t, u, y), scale(n, side * out))
+
+            s.box(slat_mat, at(op["at"], rail_top - 0.12, depth), (width, 0.24, 0.3), rot)
+            s.box(slat_mat, at(op["at"], first - 0.1, depth), (width, 0.07, 0.3), rot)
             for k in range(count):
-                y = bottom + 0.25 + k * 0.42
-                centre = add(point_on(a, t, op["at"], y), scale(n, side * (thick / 2 + 0.35)))
+                y = first + 0.2 + k * 0.42
+                if y > rail_top - 0.34:
+                    break
                 uy = norm(add(scale((0, 1, 0), math.cos(tilt)), scale(n, math.sin(tilt) * side)))
                 uz = norm(cross(t, uy))
-                s.obox(slat_mat, centre, (u1 - u0 - 0.1, 0.03, 0.34), t, uy, uz)
+                s.obox(slat_mat, at(op["at"], y, depth), (width, 0.03, 0.26), t, uy, uz)
+            for f in (0.22, 0.78):
+                u = u0 + (u1 - u0) * f
+                for out in (depth - 0.13, depth + 0.13):
+                    s.box("BlackTrim", at(u, (first + rail_top - 0.24) / 2, out),
+                          (0.025, rail_top - 0.24 - first + 0.1, 0.025), rot)
         if collide and op.get("block", True):
             # Windows block movement and, like the solid walls they replace, sight lines too
             # (so who can see a letter flash does not change).

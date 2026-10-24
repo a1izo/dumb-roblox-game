@@ -58,7 +58,7 @@ def forensics(s):
                   doors=[(12.0, 5.0), (40.0, 5.0)], glass="clear")
     fit.partition(s, (-50.0, -75.0), (-50.0, -48.0), Y, C, "ConcreteDark", "PlasterLight")
     station(s, "Fingerprint", "Print Analyzer", -86.0, -70.8, 180, prop="StationPrintKit")
-    station(s, "Forensics", "Ink Analysis Bench", -66.0, -70.8, 180, prop="StationLabBench")
+    station(s, "Forensics", "Trace Analysis Bench", -66.0, -70.8, 180, prop="StationLabBench")
     for z in (-70.0, -62.0):
         prop(s, "FumeHood", -97.4, z, -90)
     # An island bench in the middle with its microscopes and sample racks.

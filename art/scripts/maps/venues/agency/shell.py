@@ -213,11 +213,18 @@ def lifts(s):
     for x in P.LIFTS_X:
         s.prop("ElevatorDoors", x, z + 0.43, 180)
         fit.downlight(s, x, z + 4.0, P.CEIL1, range_=14, brightness=0.7)
-    # The crest wall west of the lifts (the grand stair's head faces it).
+    # The floor's name over the three lifts, where the front desk and the gates see it. (It hung on the
+    # crest wall, behind the grand stair's head: from anywhere in the lobby the stair's side cut it in half.)
+    lx = (P.LIFTS_X[0] + P.LIFTS_X[-1]) / 2
+    fit.plaque(s, lx, 11.7, z, 180, 12.0, 1.2, P.TOWER + " 38F", (230, 214, 170), (20, 20, 24))
+    fit.plaque(s, lx, 10.35, z, 180, 12.0, 0.8, "THE BUREAU  ·  RECEPTION", (200, 200, 205), (20, 20, 24))
+    # The crest wall west of the lifts (the grand stair's head faces it): wood with a brass inlay, no
+    # words to be cut by the stair.
     s.box("WoodPanel", (-1.0, 6.5, z + 0.1), (13.0, 12.6, 0.2), 180)
-    fit.plaque(s, -1.0, 9.6, z + 0.2, 180, 10.0, 1.4, P.TOWER + " 38F", (230, 214, 170), (20, 20, 24))
-    fit.plaque(s, -1.0, 7.6, z + 0.2, 180, 10.0, 1.0, "THE BUREAU  ·  RECEPTION", (200, 200, 205), (20, 20, 24))
-    s.box("Brass", (-1.0, 5.9, z + 0.3), (9.0, 0.12, 0.06), 180)
+    for y in (5.9, 10.4):
+        s.box("Brass", (-1.0, y, z + 0.23), (9.0, 0.12, 0.06), 180)
+    for dx in (-4.5, -1.5, 1.5, 4.5):
+        s.box("Brass", (-1.0 + dx, 8.15, z + 0.23), (0.08, 4.38, 0.06), 180)
     s.cylinder("DarkMetal", (-1.0, P.CEIL1 - 0.12, z + 1.5), 0.5, 0.12, 12)
     s.cylinder("NeonWarm", (-1.0, P.CEIL1 - 0.16, z + 1.5), 0.36, 0.04, 12)
     s.light("spot", (-1.0, P.CEIL1 - 0.4, z + 1.5), fit.WARM, 16, 1.0, False, "Bottom", 70)

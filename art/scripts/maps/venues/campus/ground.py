@@ -389,11 +389,13 @@ def fountain(s):
     s.lathe("Stone", (x, 1.2, z), [(1.6, 0), (1.4, 1.0), (0.7, 1.4), (0.55, 3.2), (1.0, 3.5), (2.6, 3.9), (2.8, 4.3),
                                    (2.2, 4.4), (0.5, 4.5), (0.4, 5.8), (0.7, 6.2), (0.15, 7.0)], 24)
     s.lathe("Snow", (x, 5.62, z), [(2.7, 0.0), (1.8, 0.35), (0.5, 0.45), (0.0, 0.45)], 24)
-    # Icicles hanging off the upper bowl.
+    # Icicles hanging off the upper bowl's rim, their roots in its underside (y 5.1 at radius 2.6). (They
+    # hung 0.9 under it in the dark basin ice, black spikes floating round the stem.)
     for k in range(14):
-        a = 2 * math.pi * k / 14
-        px, pz = x + math.cos(a) * 2.6, z + math.sin(a) * 2.6
-        s.lathe("Ice", (px, 4.2 - 0.9 - (k % 3) * 0.3, pz), [(0.0, 0.0), (0.12, 0.9 + (k % 3) * 0.3)], 5)
+        a = 2 * math.pi * (k + 0.5 * (k % 2)) / 14
+        px, pz = x + math.cos(a) * 2.5, z + math.sin(a) * 2.5
+        length = 0.45 + (k % 3) * 0.25 + (k % 5) * 0.04
+        s.lathe("GlassFrosted", (px, 5.12 - length, pz), [(0.0, 0.0), (0.03, length * 0.5), (0.09, length)], 6)
     s.collider((x, 1.05, z), (2 * r + 2.4, 2.1, 2 * r + 2.4), 0, True, "Stone")
     s.collider((x, 1.05, z), (2 * r + 2.4, 2.1, 2 * r + 2.4), 45, True, "Stone")
     s.collider((x, 3.5, z), (1.6, 7.0, 1.6), 0, True, "Stone")

@@ -154,7 +154,7 @@ def stacks(s):
 
 
 def rare_books(s):
-    s.station("Forensics", "Rare Books Ink Lab", 110.0, -106.4, 180, y=GY, prop="StationLabBench")
+    s.station("Forensics", "Rare Books Lab", 110.0, -106.4, 180, y=GY, prop="StationLabBench")
     s.station("Camera", "Library CCTV", 146.4, -96.0, 90, y=GY, prop="StationCCTV", spare=True)
     for x in (92.0, 128.0):
         s.prop("DisplayCase", x, -96.0, 0, 1.0, GY)

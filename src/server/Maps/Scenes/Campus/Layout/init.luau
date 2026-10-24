@@ -35,9 +35,9 @@ return {
 			prop = "StationBookReturn",
 		},
 		{
-			id = "Rare Books Ink Lab", -- terms:ok (the chromatography task keeps its ink)
+			id = "Rare Books Lab",
 			type = "Forensics",
-			name = "Rare Books Ink Lab", -- terms:ok (the chromatography task keeps its ink)
+			name = "Rare Books Lab",
 			x = 110,
 			y = 12,
 			z = -106.4,

@@ -686,7 +686,7 @@ return {
 		{ at = { 110, 13, -39.83 }, rot = 180, w = 7, h = 1.1, text = "閲覧室  READING ROOM", font = "Garamond", color = { 236, 214, 150 }, bg = { 26, 20, 18 }, glow = nil, align = "Center" },
 		{ at = { 52, 9.8, -63.58 }, rot = 180, w = 5, h = 0.9, text = "返却  RETURNS", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
 		{ at = { 110, 22.4, -83.58 }, rot = 180, w = 6, h = 0.9, text = "貴重書庫  RARE BOOKS", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
-		{ at = { -81.83, 10.8, -80 }, rot = -90, w = 7, h = 1.2, text = "法文館  LAW & LETTERS", font = "Garamond", color = { 236, 214, 150 }, bg = { 26, 20, 18 }, glow = nil, align = "Center" },
+		{ at = { -75.83, 11.15, -80 }, rot = -90, w = 7, h = 1, text = "法文館  LAW & LETTERS", font = "Garamond", color = { 236, 214, 150 }, bg = { 26, 20, 18 }, glow = nil, align = "Center" },
 		{ at = { -90.9, 2, -84.55 }, rot = 180, w = 2.4, h = 0.7, text = "関係者以外立入禁止  STAFF ONLY", font = "GothamBold", color = { 40, 30, 26 }, bg = nil, glow = nil, align = "Center" },
 		{ at = { -97.58, 10.2, -60 }, rot = -90, w = 5.4, h = 0.9, text = "学務課  STUDENT AFFAIRS", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
 		{ at = { -148, 8.2, -94 }, rot = -90, w = 13, h = 1.6, text = "刑法 第三十八条  罪を犯す意思", font = "GothamBold", color = { 224, 224, 214 }, bg = nil, glow = nil, align = "Center" },

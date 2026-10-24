@@ -268,30 +268,59 @@ function Builder:station(def, id: string)
 		)
 	end
 
+	-- The screen reads like a terminal: the station's name small at the top over a hairline in its
+	-- type's colour, its state (CaseFileService writes it) on one line under it, the task type at
+	-- the foot. (It used to be the name and the state scaled to fill the glass: huge letters.)
 	local gui = Create("SurfaceGui", {
 		Face = Enum.NormalId.Front,
 		SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
-		PixelsPerStud = 40,
+		PixelsPerStud = 60,
 		LightInfluence = 0,
 		Parent = screen,
 	})
-	local label = Create("TextLabel", {
-		BackgroundColor3 = Color3.fromRGB(10, 14, 22),
+	local glass = Create("Frame", {
+		BackgroundColor3 = Color3.fromRGB(8, 10, 14),
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
-		Text = string.upper(def.name) .. "\nREADY",
-		TextColor3 = typeColor,
-		TextScaled = true,
-		FontFace = WorldFont.face(Enum.Font.Code),
 		Parent = gui,
 	})
-	Create("UIPadding", {
-		PaddingLeft = UDim.new(0.06, 0),
-		PaddingRight = UDim.new(0.06, 0),
-		PaddingTop = UDim.new(0.1, 0),
-		PaddingBottom = UDim.new(0.1, 0),
-		Parent = label,
+	Create("UIGradient", {
+		Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(150, 150, 160)),
+		Rotation = 90,
+		Parent = glass,
 	})
+	local dim = Color3.fromRGB(150, 154, 162)
+	local function line(y: number, h: number, text: string, color: Color3, weight: Enum.FontWeight): TextLabel
+		local item = Create("TextLabel", {
+			BackgroundTransparency = 1,
+			Position = UDim2.fromScale(0.07, y),
+			Size = UDim2.fromScale(0.86, h),
+			Text = text,
+			TextColor3 = color,
+			TextScaled = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight),
+			Parent = glass,
+		})
+		return item
+	end
+	line(0.1, 0.15, string.upper(def.name), dim, Enum.FontWeight.SemiBold)
+	Create("Frame", {
+		BackgroundColor3 = typeColor,
+		BackgroundTransparency = 0.35,
+		BorderSizePixel = 0,
+		Position = UDim2.fromScale(0.07, 0.31),
+		Size = UDim2.new(0.86, 0, 0, 2),
+		Parent = glass,
+	})
+	local label = line(0.4, 0.22, "READY", typeColor, Enum.FontWeight.Bold)
+	line(
+		0.76,
+		0.1,
+		string.upper(TaskTypes.get(def.type).label) .. "  ·  CASE FILE",
+		Color3.fromRGB(96, 100, 108),
+		Enum.FontWeight.Medium
+	)
 
 	desk:SetAttribute("StationId", id)
 	desk:SetAttribute("StationType", def.type)

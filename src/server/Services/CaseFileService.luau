@@ -42,8 +42,13 @@ local function setScreen(runtime, busy: boolean)
 	local isJammed = jammed(runtime)
 	info.desk:SetAttribute("Busy", busy)
 	info.desk:SetAttribute("JammedUntil", if isJammed then runtime.jammedUntil else nil)
-	local status = if isJammed then "\nJAMMED" elseif busy then "\nANALYSING..." else "\nREADY"
-	info.label.Text = string.upper(info.name) .. status
+	-- (The name is the screen's own header; this is its state line, red while jammed.)
+	local label = info.label
+	if label:GetAttribute("Calm") == nil then
+		label:SetAttribute("Calm", label.TextColor3)
+	end
+	label.Text = if isJammed then "JAMMED" elseif busy then "ANALYSING…" else "READY"
+	label.TextColor3 = if isJammed then Color3.fromRGB(235, 72, 72) else label:GetAttribute("Calm")
 end
 
 -- Everyone sees who is working a station (their character plays that station type's working

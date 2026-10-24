@@ -26,6 +26,9 @@ from maps import geo2d as g2
 
 FLOOR_GF = 14.0
 FLOOR_UP = 12.0
+# Spaces the stacked vertical signs keep out of, (footprint, y0, y1): a venue's roofs over a street (Tokyo's
+# arcade). A sign whose box would cross one is left out of its stack. Venues fill it before their buildings.
+KEEP_OUT = []
 SILL = 3.0  # window sill above the floor
 HEAD = 9.6  # window head above the floor
 ROOM_DEPTH = 3.0  # the rooms behind the low windows
@@ -567,6 +570,27 @@ def fascia(s, e, text, colour, y=11.4, h=3.0, u0=None, u1=None):
     """A lit shop sign board across a ground floor, the words drawn by the game."""
     u0 = 0.6 if u0 is None else u0
     u1 = e.length - 0.6 if u1 is None else u1
+    # Only along the stretch no neighbour stands in front of: the longest clear run. A neighbour within 1.8
+    # studs counts (as for windows: covered), and right at the wall a stud wider than its walls (its corner
+    # piers and its own fascia stand out that far). (Across a neighbour's corner, or into the slot between
+    # two buildings, the board went on behind them, its words cut off.)
+    tall = [poly for poly, top in e.near if top > y - h / 2]
+    around = [grow(poly, 1.0) for poly in tall]
+    runs, start, u = [], None, u0
+    while u <= u1 + 1e-6:
+        blocked = (any(g2.contains(poly, e.at(u, 0.3)) for poly in around)
+                   or any(g2.contains(poly, e.at(u, out)) for poly in tall for out in COVER_REACH))
+        if not blocked and start is None:
+            start = u
+        if (blocked or u + 0.25 > u1 + 1e-6) and start is not None:
+            runs.append((start, u - 0.25 if blocked else u))
+            start = None
+        u += 0.25
+    if not runs:
+        return
+    r0, r1 = max(runs, key=lambda r: r[1] - r[0])
+    if (r0, r1) != (u0, u1) and r1 - r0 < u1 - u0 - 0.1:
+        u0, u1 = (r0 + 0.2 if r0 > u0 else r0), (r1 - 0.2 if r1 < u1 else r1)
     if u1 - u0 < 2.0:
         return
     bg, fg = SIGN_COLOURS.get(colour, SIGN_COLOURS["white"])
@@ -643,8 +667,10 @@ def display(s, e, style, rng):
         if depth is None:
             e.quad(s, "Shutter", a, b, 0, 8.6)
         elif i == len(spans) // 2 and len(spans) > 1:
+            # The glass door: the shop behind it lit like its windows (dark, it was a black hole in the
+            # street front under the fascia).
             e.quad(s, "WindowGlass", a, b, 0, 8.6, -0.3)
-            shop_set(s, e, a, b, 0.0, 8.6, rng, lit=False, depth=depth)
+            shop_set(s, e, a, b, 0.0, 8.6, rng, depth=depth)
         else:
             e.quad(s, "WindowGlass", a, b, 1.0, 8.6, -0.3)
             e.quad(s, style["trim"], a, b, 0, 1.0)
@@ -817,6 +843,10 @@ def vertical_signs(s, e, top, signs, u=1.4):
         bg, fg = SIGN_COLOURS.get(colour, SIGN_COLOURS["white"])
         # The box stands 2.8 out from the wall, 1.3 thick; a panel on each of its broad sides.
         x, z = e.at(u, 1.45)
+        if any(y - 0.3 < y1 and y + 10.3 > y0 and g2.contains(poly, (x, z)) for poly, y0, y1 in KEEP_OUT):
+            # (Through the arcade's roof and its trusses, it was.)
+            y += FLOOR_UP
+            continue
         s.box("BlackTrim", (x, y + 5.0, z), (1.3, 10.6, 2.8), e.rot)
         for side in (1, -1):
             px, pz = x + e.t[0] * side * 0.81, z + e.t[1] * side * 0.81
@@ -892,29 +922,43 @@ def party_heights(poly, others, top):
 
 
 def core_pieces(poly, inset):
-    """The body's dark core: the footprint set in by `inset` from every outside wall, as convex
-    pieces (each piece of the footprint is cut back from the outside walls along its sides)."""
+    """The body's dark core: the footprint less a band `inset` deep behind every outside wall, as convex
+    pieces. (It was each convex piece cut back along its own sides that lay on a wall; a footprint that is
+    not convex is cut into triangles fanned from a corner, whose sides there are diagonals, so the core
+    reached the corner, and on a bending street front a side spans two walls: it stood in two Tokyo
+    lobbies and over a shop's shutter.)"""
     p = g2.ccw(poly)
-    walls = [(p[i], p[(i + 1) % len(p)]) for i in range(len(p))]
-    out = []
-    for piece in g2.convex_pieces(p):
-        q = g2.ccw(piece)
-        for i in range(len(piece)):
-            a, b = piece[i], piece[(i + 1) % len(piece)]
-            for wa, wb in walls:
-                # This side of the piece lies along an outside wall: cut it back.
-                if g2.dist_point_segment(a, wa, wb) < 1e-3 and g2.dist_point_segment(b, wa, wb) < 1e-3:
-                    length = math.dist(wa, wb)
-                    t = ((wb[0] - wa[0]) / length, (wb[1] - wa[1]) / length)
-                    n = (t[1], -t[0])  # out of the building
-                    q = g2.clip_halfplane(q, (wa[0] - n[0] * inset, wa[1] - n[1] * inset),
-                                          (wb[0] - n[0] * inset, wb[1] - n[1] * inset), keep_left=True)
+    pieces = [g2.ccw(piece) for piece in g2.convex_pieces(p)]
+    for i in range(len(p)):
+        wa, wb = p[i], p[(i + 1) % len(p)]
+        length = math.dist(wa, wb)
+        if length < 1e-6:
+            continue
+        t = ((wb[0] - wa[0]) / length, (wb[1] - wa[1]) / length)
+        n = (t[1], -t[0])  # out of the building
+        ia, ib = (wa[0] - n[0] * inset, wa[1] - n[1] * inset), (wb[0] - n[0] * inset, wb[1] - n[1] * inset)
+        band = [(wa, wb), (wb, ib), (ib, ia), (ia, wa)]  # counter-clockwise: the band on each side's left
+        kept = []
+        for q in pieces:
+            inside = q
+            for a, b in band:
+                inside = g2.clip_halfplane(inside, a, b, keep_left=True)
+                if not inside:
                     break
-            if not q:
-                break
-        if q and abs(g2.area(q)) > 1.0:
-            out.append(q)
-    return out
+            if not inside or abs(g2.area(inside)) < 1e-4:
+                kept.append(q)
+                continue
+            # q less the band: its parts outside the band's sides, one after another
+            rest = q
+            for a, b in band:
+                outside = g2.clip_halfplane(rest, a, b, keep_left=False)
+                if outside and abs(g2.area(outside)) > 1e-4:
+                    kept.append(g2.ccw(outside))
+                rest = g2.clip_halfplane(rest, a, b, keep_left=True)
+                if not rest:
+                    break
+        pieces = kept
+    return [q for q in pieces if abs(g2.area(q)) > 1.0]
 
 
 def build(s, b, style, others=(), fronts=None, y=0.0):
@@ -998,7 +1042,9 @@ def build(s, b, style, others=(), fronts=None, y=0.0):
                 # The corner pier stands a little proud of the walls: solid where people walk.
                 s.collider((x, y + PIER_SOLID / 2, z), (0.8, PIER_SOLID, 0.8), e.rot, False, None)
         if e.front and style.get("fascia") and not interior and hidden < 1:
-            fascia(s, e, *style["fascia"])
+            # (Over a lobby the board goes up clear of its canopy, 10.35 to 10.85: across it, the canopy hid the
+            # name from the street.)
+            fascia(s, e, *style["fascia"], y=12.6 if style.get("ground") == "lobby" else 11.4)
     if signs_at:
         vertical_signs(s, signs_at[0], top, style["vsign"], signs_at[1])
     if screen_edge:

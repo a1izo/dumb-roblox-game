@@ -149,10 +149,15 @@ def pole_flyers(s, x, z, y=4.2):
 
 
 def hanging_sign(s, e, u, y, text, bg, fg):
-    """A small sign hanging out from a wall on an iron arm, words on both faces."""
-    ax, az = e.at(u, 0.8)
+    """A small sign hanging out from a wall on an iron arm, words on both faces. On a shop's wall it goes
+    on a corner pier (u 0.3, or the wall's length less 0.3), clear of the fascia, which runs from 0.6
+    to the length less 0.6 and stands 0.7 out: in the middle of a wall the sign went through it."""
+    ax, az = e.at(u, 1.3)
     s.box("BlackMetal", (ax, y + 1.05, az), (0.1, 0.1, 1.6), e.rot)
-    bx, bz = e.at(u, 1.1)
+    for out in (0.85, 1.85):
+        rx, rz = e.at(u, out)
+        s.box("BlackMetal", (rx, y + 0.97, rz), (0.06, 0.12, 0.06), e.rot)
+    bx, bz = e.at(u, 1.35)
     s.box("BlackTrim", (bx, y, bz), (0.2, 1.8, 1.3), e.rot)
     for side in (1, -1):
         sx, sz = bx + e.t[0] * side * 0.26, bz + e.t[1] * side * 0.26
@@ -294,10 +299,14 @@ def build(s):
         (x, z), d, into = kerb("east", -1, u, 0.9)
         pole_flyers(s, x, z)
     # Hanging signs out over the sidewalks.
-    hanging_sign(s, wall("east_n2", 3), 2.0, 10.2, "喫茶\nKISSA", (60, 30, 20), (250, 220, 170))
-    hanging_sign(s, wall("kita_w", 0), 10.0, 10.2, "質\n金", (30, 30, 34), (250, 214, 70))
-    hanging_sign(s, wall("east_s2", 0), 20.0, 10.2, "麻雀", (20, 60, 40), (240, 240, 230))
-    hanging_sign(s, wall("yc_n1", 0), 2.0, 10.4, "BAR\n霧", (24, 24, 28), (200, 220, 255))
+    # (On the corner piers: in the middle of their walls three went through a shop's fascia, the fourth
+    # through a canopy.)
+    hanging_sign(s, wall("east_n2", 3), 0.3, 10.2, "喫茶\nKISSA", (60, 30, 20), (250, 220, 170))
+    e = wall("kita_w", 0)
+    hanging_sign(s, e, e.length - 0.3, 10.2, "質\n金", (30, 30, 34), (250, 214, 70))
+    e = wall("east_s2", 0)
+    hanging_sign(s, e, e.length - 0.3, 10.2, "麻雀", (20, 60, 40), (240, 240, 230))
+    hanging_sign(s, wall("yc_n1", 0), 0.3, 10.4, "BAR\n霧", (24, 24, 28), (200, 220, 255))
     hanging_sign(s, wall("hotel_yw2", 2), 10.0, 10.2, "HOTEL\nゆき", (240, 236, 226), (30, 30, 36))
     # Cables clipped along walls on the viaduct lane and the promenade.
     cables(s, wall("yb_s1", 2), 1.0, 9.0, 7.4)
