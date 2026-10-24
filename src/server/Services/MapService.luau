@@ -258,6 +258,18 @@ function MapService.init()
 	if baseplate and baseplate:IsA("BasePart") then
 		baseplate:Destroy()
 	end
+	-- And its spawn pad, at the world's middle: the middle of the lobby's plaza. Roblox picks among every spawn pad,
+	-- so players kept appearing in the plaza rather than on the terrace's ring (the owner, 2026-10-24: "move the spawn
+	-- to the actual spawn"). Any other pad left in the place is switched off: the lobby's own is the only one.
+	for _, item in ipairs(workspace:GetDescendants()) do
+		if item:IsA("SpawnLocation") then
+			if item.Parent == workspace and item.Name == "SpawnLocation" then
+				item:Destroy()
+			elseif item.Name ~= "LobbySpawn" then
+				item.Enabled = false
+			end
+		end
+	end
 
 	local model = newModel("LGameLobby")
 	lobbyInfo = Lobby.build(Builder.new(model, LOBBY_ORIGIN))

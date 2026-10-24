@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Catalog = require(script.Parent.ModelCatalog)
+local Expected = require(script.Parent.ImportVersions)
 
 local ModelLibrary = {}
 
@@ -409,6 +410,7 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	index = buildIndex()
 	templates = {}
 	calibrations = {}
+	versions = {}
 
 	local found, missing = 0, {}
 	for key in pairs(Catalog :: any) do
@@ -463,6 +465,29 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 			"[DeathsGambit] Several imports of the same file: using the newest, ignoring "
 				.. table.concat(setAside, ", ")
 				.. ". Delete the old copies in Studio to keep the place small."
+		)
+	end
+	-- Imports older than the scripts were written for (a checkout that was never pulled imports old files: the owner's,
+	-- 2026-10-24, showed none of the new props and nothing said why). Said loudly in Studio, and kept on the store for
+	-- the client's notice (World/ImportNotice).
+	local stale = {}
+	for kind, wanted in pairs(Expected :: any) do
+		local have = ModelLibrary.version(kind)
+		-- (never imported at all is said above: the stand-ins are used, nothing is out of date)
+		if have > 0 and have < wanted then
+			-- ("ModelsCore" -> DeathsGambitModels_Core.fbx, "MapsLobby" -> DeathsGambitMaps_Lobby.fbx)
+			local file = "DeathsGambit" .. (string.gsub(kind, "^(%a-s)(%u)", "%1_%2")) .. ".fbx"
+			table.insert(stale, string.format("%s (v%d here, v%d wanted)", file, have, wanted))
+		end
+	end
+	table.sort(stale)
+	rootInstance:SetAttribute("StaleImports", if #stale > 0 then table.concat(stale, "; ") else nil)
+	if #stale > 0 and RunService:IsStudio() then
+		warn(
+			"[DeathsGambit] OUT OF DATE IMPORTS: "
+				.. table.concat(stale, "; ")
+				.. ". Pull the latest code first (git pull in your Lgame folder), then import these files again from"
+				.. " art/export with Studio's 3D importer. Until then those props show as stand-ins."
 		)
 	end
 	if found > 0 or scenes > 0 then

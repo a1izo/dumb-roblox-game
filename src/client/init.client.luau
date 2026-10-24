@@ -97,6 +97,7 @@ local NameTags = require(World:WaitForChild("NameTags"))
 local Champion = require(World:WaitForChild("Champion"))
 local ShopWindow = require(World:WaitForChild("ShopWindow"))
 local ReadyCircle = require(World:WaitForChild("ReadyCircle"))
+local ImportNotice = require(World:WaitForChild("ImportNotice"))
 local Tableaux = require(World:WaitForChild("Tableaux"))
 local Puppets = require(World:WaitForChild("Puppets"))
 
@@ -212,6 +213,8 @@ RealmAmbience.init()
 -- the most wins seated on the throne, the Academy's puppets under the hand that holds their strings, and
 -- the shop window's mannequin showing the day's emote.
 ReadyCircle.init()
+-- (Studio only: a notice while an import is older than these scripts)
+ImportNotice.init()
 Tableaux.init()
 Champion.init()
 Puppets.init()

@@ -489,4 +489,5 @@ def export(set_name):
         add_leaf_bones=False,
     )
     catalog = write_catalog()
+    maps_export.write_versions()
     return {"fbx": fbx_path(set_name), "objects": names, "catalog": catalog}

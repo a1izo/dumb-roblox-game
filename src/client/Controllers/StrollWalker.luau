@@ -1,40 +1,54 @@
 -- Strolls walk by themselves (the owner's Q7/Q25, 2026-10-20/21): while this player's body has a stroll (the
 -- server's "Stroll" attribute), it walks on its own along the way it faced when the stroll began, at the stroll's
--- pace (Cosmetics `pace`), its stroll's walk playing (LocomotionController). The player steers it (the keys, the
--- stick, the touch pad, from the camera as Roblox's controls do): it turns that way and, let go, keeps on that way
--- (the owner, 2026-10-24: change direction during a stroll; steering used to end it). By itself it slides along
--- walls and turns back at a ledge or a wall met head-on, and keeps going until the player jumps, uses a game action
--- (Input/InputRouter: a note, a sabotage, the Eyes, an arrest) or a prompt, or another emote takes over. Chat,
--- Escape, shift lock, the camera, clicks and menus never end it. Only this player's own body: Roblox replicates its
--- walk to everyone.
+-- pace (Cosmetics `pace`), its stroll's walk playing (LocomotionController). The player guides it with whatever they
+-- play on (the owner, 2026-10-24: "guided with the camera or wasd or any other thing for different systems and only
+-- interrupt when you jump"):
+--   walking: the walk keys, the left stick, the touch pad, from the camera as Roblox's controls do. Read from
+--     Roblox's controls when they can be reached (Input/StockControls), else straight from the bound keys and the
+--     stick, and else from the controls' own move this frame (Humanoid.MoveDirection, taken before this walker's
+--     own move): a place without the stock PlayerModule (the owner's, 2026-10-24) steers too;
+--   the camera: while the player turns it (the mouse dragged with its right button or locked by shift lock or first
+--     person, the right stick, a finger dragging the view, the camera's turn keys), the walk turns to the way the
+--     camera looks.
+-- It turns that way (a turn, not a snap) and, let go, keeps on that way. By itself it slides along walls and turns
+-- back at a ledge or a wall met head-on. Only a jump ends it (or another emote picked, or the server: a meeting, a
+-- cutscene); chat, menus, prompts, game actions and the camera never do. Only this player's own body: Roblox
+-- replicates its walk to everyone.
 
 local Players = game:GetService("Players")
-local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local Net = require(Shared:WaitForChild("Net"))
 
-local InputRouter = require(script.Parent.Parent.Input.InputRouter)
+local ClientState = require(script.Parent.Parent.ClientState)
 local StockControls = require(script.Parent.Parent.Input.StockControls)
 
 local StrollWalker = {}
 
 local EmoteRemote = Net.event("Emote")
 local BIND = "DeathsGambit_StrollWalker"
+local SAMPLE = "DeathsGambit_StrollWalkerSample"
 local DEFAULT_PACE = 7
 local STEER = 0.15 -- the player's own steering past this turns the walk
 local STEER_RATE = math.rad(420) -- how fast it turns to the way steered (radians a second): a turn, not a snap
+local STICK_DEADZONE = 0.2
+local CAMERA_HOLD = 0.12 -- seconds after the last camera turn it still counts as turning (mouse moves come in bursts)
 local AHEAD = 2.6 -- studs ahead of the root the ground is looked for (a ledge: none within DROP)
 local DROP = 6
 local WALL = 2.0 -- studs ahead of the root a wall is looked for
 local HEAD_ON = -0.8 -- a wall this square to the way (its normal against it) turns the walk back
 local TURN = 0.4 -- seconds to turn back
--- Actions that are menus, not the game: they never end a stroll.
-local MENUS = { quickChat = true, help = true, scratchpad = true, privateScreen = true }
+local PADS = {
+	Enum.UserInputType.Gamepad1,
+	Enum.UserInputType.Gamepad2,
+	Enum.UserInputType.Gamepad3,
+	Enum.UserInputType.Gamepad4,
+}
 
 type Walk = {
 	character: Model,
@@ -46,6 +60,10 @@ type Walk = {
 	oldSpeed: number,
 	connections: { RBXScriptConnection },
 	asked: boolean,
+	sampled: Vector3, -- the controls' own move this frame, taken before this walker's
+	moved: Vector3, -- this walker's last move
+	cameraAt: number, -- when the player last turned the camera
+	why: string?, -- what last steered it (for the harness)
 }
 
 local walk: Walk? = nil
@@ -59,6 +77,11 @@ local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Exclude
 params.IgnoreWater = false
 
+local function keybinds(): any
+	local profile = ClientState.profile
+	return if profile then profile.keybinds else nil
+end
+
 -- The body stops walking by itself (its speed as it was).
 local function stop()
 	local w = walk
@@ -67,6 +90,7 @@ local function stop()
 	end
 	walk = nil
 	RunService:UnbindFromRenderStep(BIND)
+	RunService:UnbindFromRenderStep(SAMPLE)
 	for _, connection in ipairs(w.connections) do
 		connection:Disconnect()
 	end
@@ -108,6 +132,86 @@ local function turnToward(from: Vector3, to: Vector3, most: number): Vector3
 	return flat(from * math.cos(most) + right * math.sin(most))
 end
 
+local function typing(): boolean
+	return UserInputService:GetFocusedTextBox() ~= nil
+end
+
+local function anyKeyDown(id: string): boolean
+	for _, key in ipairs(Bindings.keyCodes(id, "keyboard", keybinds())) do
+		if UserInputService:IsKeyDown(key) then
+			return true
+		end
+	end
+	return false
+end
+
+-- A stick's position on any connected pad (zero inside the dead zone).
+local function stick(id: string, default: Enum.KeyCode): Vector2
+	local code = Bindings.keyCodes(id, "gamepad", keybinds())[1] or default
+	for _, pad in ipairs(PADS) do
+		if UserInputService:GetGamepadConnected(pad) then
+			for _, state in ipairs(UserInputService:GetGamepadState(pad)) do
+				if state.KeyCode == code then
+					local p = Vector2.new(state.Position.X, state.Position.Y)
+					if p.Magnitude > STICK_DEADZONE then
+						return p
+					end
+				end
+			end
+		end
+	end
+	return Vector2.zero
+end
+
+-- Where the player is steering now, flat in the world, and by what; nil when they are not.
+local function steering(w: Walk): (Vector3?, string?)
+	local camera = workspace.CurrentCamera
+	local function fromCamera(v: Vector3): Vector3
+		return flat(if camera then camera.CFrame:VectorToWorldSpace(v) else v)
+	end
+	-- Roblox's controls, when they can be reached (every platform, the player's own keys)
+	local move = StockControls.moveVector()
+	if move.Magnitude > STEER then
+		return fromCamera(move), "controls"
+	end
+	-- the bound walk keys and the walking stick, read straight
+	if not typing() then
+		local keys = Vector3.new(
+			(if anyKeyDown("moveRight") then 1 else 0) - (if anyKeyDown("moveLeft") then 1 else 0),
+			0,
+			(if anyKeyDown("moveBack") then 1 else 0) - (if anyKeyDown("moveForward") then 1 else 0)
+		)
+		if keys.Magnitude > 0 then
+			return fromCamera(keys), "keys"
+		end
+	end
+	local left = stick("move", Enum.KeyCode.Thumbstick1)
+	if left.Magnitude > 0 then
+		return fromCamera(Vector3.new(left.X, 0, -left.Y)), "stick"
+	end
+	-- whatever the place's controls asked of the body this frame (a touch pad or a controller not reached above):
+	-- unlike this walker's own last move, it is the player's
+	local sampled = w.sampled
+	if sampled.Magnitude > STEER and (sampled.Unit - w.moved).Magnitude > 0.05 then
+		return flat(sampled), "move"
+	end
+	return nil, nil
+end
+
+-- What the player is turning the camera with now (or did a moment ago), or nil.
+local function cameraTurning(w: Walk): string?
+	if os.clock() - w.cameraAt < CAMERA_HOLD then
+		return "camera"
+	end
+	if stick("look", Enum.KeyCode.Thumbstick2).Magnitude > 0 then
+		return "camera stick"
+	end
+	if not typing() and (anyKeyDown("turnLeft") or anyKeyDown("turnRight")) then
+		return "camera keys"
+	end
+	return nil
+end
+
 local function step(w: Walk, dt: number)
 	if not w.root.Parent or not w.humanoid.Parent or w.humanoid.Health <= 0 then
 		stop()
@@ -119,17 +223,19 @@ local function step(w: Walk, dt: number)
 		return
 	end
 	local now = os.clock()
-	-- the player's own steering (StockControls reads Roblox's own controls, in the camera's frame) turns it
-	local move = StockControls.moveVector()
-	if move.Magnitude > STEER then
+	local want, by = steering(w)
+	if not want then
+		local turning = cameraTurning(w)
 		local camera = workspace.CurrentCamera
-		local want = flat(if camera then camera.CFrame:VectorToWorldSpace(move) else move)
+		if turning and camera then
+			want, by = flat(camera.CFrame.LookVector), turning
+		end
+	end
+	if want then
+		w.why = by
 		w.turning = nil
 		w.heading = turnToward(w.heading, want, STEER_RATE * dt)
-		w.humanoid:Move(w.heading, false)
-		return
-	end
-	if w.turning then
+	elseif w.turning then
 		local u = math.clamp((now - w.turning.began) / TURN, 0, 1)
 		-- (half round to the right, so it never passes through the way it came)
 		local right = Vector3.new(-w.turning.from.Z, 0, w.turning.from.X)
@@ -149,7 +255,28 @@ local function step(w: Walk, dt: number)
 			w.turning = { from = w.heading, to = -w.heading, began = now }
 		end
 	end
+	w.moved = w.heading
 	w.humanoid:Move(w.heading, false)
+end
+
+-- Input that turns the camera: the mouse moved with its right button held or locked to the middle (shift lock, first
+-- person), or a finger dragging the view (a touch the interface did not take, such as the touch pad's).
+local function watchCamera(w: Walk, input: InputObject, processed: boolean)
+	if processed then
+		return
+	end
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		local turned = math.abs(input.Delta.X) > 0
+		local held = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+		local locked = UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter
+		if turned and (held or locked) then
+			w.cameraAt = os.clock()
+		end
+	elseif input.UserInputType == Enum.UserInputType.Touch then
+		if math.abs(input.Delta.X) > 0 then
+			w.cameraAt = os.clock()
+		end
+	end
 end
 
 local function begin(character: Model, clip: string)
@@ -161,16 +288,20 @@ local function begin(character: Model, clip: string)
 	end
 	local item = EmoteInfo.of(clip).item
 	local pace = if item and type(item.pace) == "number" then item.pace else DEFAULT_PACE
+	local heading = flat(root.CFrame.LookVector)
 	local w: Walk = {
 		character = character,
 		humanoid = humanoid,
 		root = root,
-		heading = flat(root.CFrame.LookVector),
+		heading = heading,
 		turning = nil,
 		speed = pace,
 		oldSpeed = humanoid.WalkSpeed,
 		connections = {},
 		asked = false,
+		sampled = Vector3.zero,
+		moved = heading,
+		cameraAt = -math.huge,
 	}
 	-- (frozen, as at a meeting: it does not walk)
 	if humanoid.WalkSpeed <= 0 or root.Anchored then
@@ -178,16 +309,36 @@ local function begin(character: Model, clip: string)
 	end
 	humanoid.WalkSpeed = pace
 	walk = w
+	-- Only a jump ends it: the jump request (every platform's jump), and the bound jump keys and button read straight
+	-- for a place whose controls do not ask for jumps.
 	table.insert(w.connections, UserInputService.JumpRequest:Connect(cancel))
 	table.insert(
 		w.connections,
-		InputRouter.Ran:Connect(function(id: string)
-			if not MENUS[id] then
-				cancel()
+		UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+			if processed or typing() then
+				return
+			end
+			local platform = if input.UserInputType == Enum.UserInputType.Keyboard then "keyboard" else "gamepad"
+			for _, key in ipairs(Bindings.keyCodes("jump", platform, keybinds())) do
+				if input.KeyCode == key then
+					cancel()
+					return
+				end
 			end
 		end)
 	)
-	table.insert(w.connections, ProximityPromptService.PromptTriggered:Connect(cancel))
+	table.insert(
+		w.connections,
+		UserInputService.InputChanged:Connect(function(input: InputObject, processed: boolean)
+			watchCamera(w, input, processed)
+		end)
+	)
+	-- (just after Roblox's controls have moved the body: what they asked of it this frame)
+	RunService:BindToRenderStep(SAMPLE, Enum.RenderPriority.Input.Value + 1, function()
+		if walk == w then
+			w.sampled = humanoid.MoveDirection
+		end
+	end)
 	-- (after Roblox's controls have moved the body for this frame: this move wins)
 	RunService:BindToRenderStep(BIND, Enum.RenderPriority.Character.Value + 5, function(dt: number)
 		if walk == w then
@@ -212,6 +363,18 @@ end
 -- (for the harness: the way the stroll walks now, or nil when it is not walking)
 function StrollWalker.heading(): Vector3?
 	return if walk then walk.heading else nil
+end
+
+-- (for the harness: what last steered the walk, or nil)
+function StrollWalker.why(): string?
+	return if walk then walk.why else nil
+end
+
+-- (for the harness: the camera counts as turned by the player now, as a mouse drag or the right stick would)
+function StrollWalker.cameraTurned()
+	if walk then
+		walk.cameraAt = os.clock()
+	end
 end
 
 function StrollWalker.init()

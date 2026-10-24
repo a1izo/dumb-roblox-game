@@ -419,12 +419,16 @@ def giant_skull():
             at = (end[0] + math.cos(a) * 0.6, end[1] + math.sin(a) * 0.5, end[2] + 0.3)
             parts.append(mk.cylinder("Splinter", 0.32, 0.9, at, rot=(18 * math.cos(a), 18 * math.sin(a), 0), mat=horn, verts=5,
                                      radius2=0.04))
-    # A crest of small spines down the crown.
+    # A crest of small spines down the crown, each rooted 0.45 deep in the bone right under it. (They stood on the
+    # vault's ellipsoid, which the blended head's surface sinks away from: pale spikes hovering over the crown, read as
+    # more loose teeth, the owner's word of 2026-10-24.)
     for k in range(6):
         y = -0.4 + k * 2.3
         h = 1.6 - abs(k - 2) * 0.22
-        top = 8.2 + 6.2 * 0.9 * math.sqrt(max(0.0, 1.0 - ((y - 5.2) / (6.2 * 1.18)) ** 2))  # the vault's crown there
-        parts.append(mk.cylinder("Crest", 0.32, h, (0.0, y, top - 0.35 + h / 2), rot=(-14, 0, 0), mat=pale, verts=6,
+        top = skull.down(0.0, y, 40.0)
+        if top is None:
+            continue
+        parts.append(mk.cylinder("Crest", 0.32, h, (0.0, y, top - 0.45 + h / 2), rot=(-14, 0, 0), mat=pale, verts=6,
                                  radius2=0.03))
     # The fangs of the upper jaw, long and uneven, each rooted 0.3 deep in the muzzle's underside right over it.
     # (They hung from one fixed height that the muzzle's curve rose away from, and near its tip there was no bone
