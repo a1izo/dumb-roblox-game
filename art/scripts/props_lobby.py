@@ -404,6 +404,7 @@ def giant_skull():
         ("hollow", (0.0, -8.4, 6.9), 1.1, (0.6, 1.4, 1.2)),  # the nose
     ]
     parts = [_blob("GskHead", head, 0.55, 0.45, bone)]
+    skull = _surfaces(parts[0])
     # Deep in the sockets and the nose, black.
     for x in (-2.7, 2.7):
         parts.append(mk.sphere("Socket", 1.6, (x, -0.6, 7.8), scale=(1.0, 0.8, 1.15), mat=dark, segments=12, rings=8))
@@ -425,26 +426,65 @@ def giant_skull():
         top = 8.2 + 6.2 * 0.9 * math.sqrt(max(0.0, 1.0 - ((y - 5.2) / (6.2 * 1.18)) ** 2))  # the vault's crown there
         parts.append(mk.cylinder("Crest", 0.32, h, (0.0, y, top - 0.35 + h / 2), rot=(-14, 0, 0), mat=pale, verts=6,
                                  radius2=0.03))
-    # The fangs of the upper jaw, long and uneven.
+    # The fangs of the upper jaw, long and uneven, each rooted 0.3 deep in the muzzle's underside right over it.
+    # (They hung from one fixed height that the muzzle's curve rose away from, and near its tip there was no bone
+    # over them at all: a row of spikes floating in the open mouth, the owner's screenshot of 2026-10-24.)
     rng = random.Random(29)
     for sx in (-1, 1):
         for k in range(7):
             y = -10.4 + k * 1.55
             length = rng.uniform(1.0, 2.2) * (1.25 if k == 1 else 1.0)
-            parts.append(mk.cylinder("Fang", 0.26, length, (sx * (1.7 - k * 0.05), y, 4.25 - length / 2), rot=(180, 0, 0),
-                                     mat=pale, verts=6, radius2=0.03))
-    # The jaw, dropped open and lying in the ash: two long rami meeting at the chin, fangs up.
+            root = None
+            for step in range(7):  # (a little nearer the middle where the muzzle is too narrow there)
+                x = sx * (1.7 - k * 0.05 - step * 0.25)
+                under = skull.up(x, y, 1.0)
+                if under is not None:
+                    root = (x, under + 0.3)
+                    break
+            if root:
+                parts.append(mk.cylinder("Fang", 0.26, length, (root[0], y, root[1] - length / 2), rot=(180, 0, 0),
+                                         mat=pale, verts=6, radius2=0.03))
+    # The jaw, dropped open and lying in the ash: two long rami meeting at the chin, fangs up, each rooted 0.3 deep in
+    # the bone's top right under it.
     jaw = [("capsule", (-4.2, 6.4, 3.4), (-2.0, -6.0, 1.0), 1.15), ("capsule", (4.2, 6.4, 3.4), (2.0, -6.0, 1.0), 1.15),
            ("capsule", (-2.0, -6.0, 1.0), (0.0, -11.6, 0.9), 1.05), ("capsule", (2.0, -6.0, 1.0), (0.0, -11.6, 0.9), 1.05)]
     parts.append(_blob("GskJaw", jaw, 0.45, 0.45, bone))
+    lower = _surfaces(parts[-1])
     for sx in (-1, 1):
         for k in range(6):
             u = (k + 0.5) / 6
-            x = sx * (2.0 - 1.9 * u) if u > 0.5 else sx * (3.6 - 3.2 * u)
+            x0 = sx * (2.0 - 1.9 * u) if u > 0.5 else sx * (3.6 - 3.2 * u)
             y = -1.0 - 9.6 * u
             length = rng.uniform(0.8, 1.7)
-            parts.append(mk.cylinder("JawFang", 0.22, length, (x, y, 1.6 + length / 2), mat=pale, verts=6, radius2=0.03))
+            for dx in (0.0, -0.3, 0.3, -0.6, 0.6):
+                top = lower.down(x0 + sx * dx, y, 8.0)
+                if top is not None:
+                    parts.append(mk.cylinder("JawFang", 0.22, length, (x0 + sx * dx, y, top - 0.3 + length / 2),
+                                             mat=pale, verts=6, radius2=0.03))
+                    break
     return parts, []
+
+
+class _surfaces:
+    """Where vertical rays meet a mesh (in the builder's own coordinates): up(x, y, from_z) the first surface above
+    a point, down(x, y, from_z) the first below; None where the ray misses it."""
+
+    def __init__(self, obj):
+        from mathutils.bvhtree import BVHTree
+
+        mesh = obj.data
+        self.tree = BVHTree.FromPolygons([obj.matrix_world @ v.co for v in mesh.vertices],
+                                         [list(p.vertices) for p in mesh.polygons])
+
+    def _cast(self, x, y, z, dz):
+        at, _, _, _ = self.tree.ray_cast(Vector((x, y, z)), Vector((0.0, 0.0, dz)), 40.0)
+        return at.z if at is not None else None
+
+    def up(self, x, y, from_z):
+        return self._cast(x, y, from_z, 1.0)
+
+    def down(self, x, y, from_z):
+        return self._cast(x, y, from_z, -1.0)
 
 
 @prop("Cairn", pivot="bottom", material="Slate", collide=True, texture=512, set="Lobby")

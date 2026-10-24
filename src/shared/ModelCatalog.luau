@@ -101,7 +101,7 @@ return {
 	FxRing = { size = { 2, 0.049, 2 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 40, 40, 40 }, set = "Core", tris = 768 },
 	FxSpikes = { size = { 2, 1.061, 1.736 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 177, 177, 177 }, set = "Core", tris = 420 },
 	Gavel = { size = { 0.95, 1.93, 0.5 }, pivot = "centre", material = "Wood", collide = false, color = { 72, 49, 29 }, set = "Core", tris = 444 },
-	GiantSkull = { size = { 12.625, 15.629, 26.474 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 70, 67, 59 }, set = "Lobby", tris = 6288 },
+	GiantSkull = { size = { 12.625, 15.629, 26.474 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 69, 66, 59 }, set = "Lobby", tris = 6288 },
 	GinkgoBare = { size = { 16.78, 29.244, 17.492 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 17, 16, 15 }, anchor = { 1.656, 0.684 }, set = "Campus", tris = 4628 },
 	Glove = { size = { 1.1, 0.655, 1.145 }, pivot = "centre", material = "Fabric", collide = false, color = { 165, 165, 161 }, set = "Core", tris = 536 },
 	Grimoire = { size = { 2.053, 0.43, 3.022 }, pivot = "centre", material = "Leather", collide = false, color = { 86, 52, 24 }, set = "Core", tris = 2412, parts = { "Cover", "Leaf1", "Leaf2", "Leaf3" }, hinge = { Cover = { 0.974, 0.135, 0.161 }, Leaf1 = { 0.929, 0.141, 0.161 }, Leaf2 = { 0.929, 0.149, 0.161 }, Leaf3 = { 0.929, 0.157, 0.161 } }, turn = { Cover = 187.78, Leaf1 = 188.36, Leaf2 = 188.72, Leaf3 = 189.08 }, page = { at = { -0.019, 0.135, 0.161 }, size = { 1.895, 2.58 }, first = 0.31, pitch = 0.118, count = 18, margin = 0.26 } },
