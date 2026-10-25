@@ -129,6 +129,50 @@ def _piece_objects(key):
     return sorted((o for o in bpy.data.objects if o.get("dg_part") == key), key=lambda o: o.name)
 
 
+# Displacement textures a part's detail may ask for, by kind: Blender's own procedural textures.
+DETAIL_KINDS = {"cells": "VORONOI", "clouds": "CLOUDS", "wrinkles": "MUSGRAVE", "grain": "STUCCI", "rings": "WOOD"}
+
+
+def _high_of(parts, name):
+    """A prop's high-detail copy, for its maps to be baked from (modelkit.bake's `high`): its parts again, each with
+    the detail its builder asked for in "dg_detail" ({"sub": extra subdivision levels, "disp": [(kind, strength in
+    studs, scale), ...]}, kinds as DETAIL_KINDS: cells for cracked hide, wrinkles for creased skin, clouds for cloth
+    folds, grain for fine pitting, rings for banded feather barbs), merged into one mesh. Parts without one are
+    copied as they are."""
+    copies = []
+    for part in parts:
+        copy = part.copy()
+        copy.data = part.data.copy()
+        common.collection("Build").objects.link(copy)
+        detail = part.get("dg_detail")
+        detail = json.loads(detail) if isinstance(detail, str) else detail
+        if detail:
+            levels = int(detail.get("sub", 2))
+            if levels:
+                sub = copy.modifiers.new("DetailSub", "SUBSURF")
+                sub.levels = levels
+                sub.render_levels = levels
+            for k, (kind, strength, scale) in enumerate(detail.get("disp", [])):
+                tex = bpy.data.textures.new(f"Detail_{name}_{part.name}_{k}", DETAIL_KINDS[kind])
+                tex.noise_scale = scale
+                if kind == "cells":
+                    tex.distance_metric = "DISTANCE"
+                    tex.color_mode = "INTENSITY"
+                    tex.weight_1, tex.weight_2 = -1.0, 1.0  # (F2 - F1: the lines between the cells)
+                elif kind == "wrinkles":
+                    tex.musgrave_type = "RIDGED_MULTIFRACTAL"
+                    tex.noise_intensity = 1.0
+                elif kind == "rings":
+                    tex.wood_type = "BANDS"
+                mod = copy.modifiers.new(f"Detail{k}", "DISPLACE")
+                mod.texture = tex
+                mod.strength = strength
+                mod.mid_level = 0.5
+                mod.texture_coords = "GLOBAL"
+        copies.append(copy)
+    return mk.merge(copies, name)
+
+
 def _settle(pivot, objs):
     """Moves a prop's meshes together, so that their bottom centre (or their middle) is the origin.
     Returns the shift applied and the size of them all."""
@@ -190,6 +234,13 @@ def build_one(key):
     parts, glow = built[0], built[1]
     more = built[2] if len(built) > 2 else {}  # a prop in pieces that move by themselves: props.piece
     where = "held" if key in HELD else ("venue" if spec.get("set") in VENUE_SETS else "prop")
+    # (a hero prop's high-detail copies, made before the parts are merged away: the main mesh's and each own piece's)
+    highs = {}
+    if spec.get("detail"):
+        highs[None] = _high_of(parts, key + "_High")
+        for name, piece in more.get("pieces", {}).items():
+            if piece["own"]:
+                highs[name] = _high_of(piece["parts"], f"{key}_{name}_High")
     main = mk.merge(parts, key)
     pieces = {name: mk.merge(piece["parts"], f"{key}_{name}") for name, piece in more.get("pieces", {}).items()}
     if pieces:
@@ -198,8 +249,13 @@ def build_one(key):
         for name, piece in more["pieces"].items():
             mk.unwrap(pieces[name], laid=piece["laid"], into=piece["into"])
         shift, whole_size = _settle(spec["pivot"], [main, *pieces.values()])
+        for high in highs.values():
+            high.data.transform(Matrix.Translation(shift))
         sharing = [pieces[name] for name, piece in more["pieces"].items() if not piece["own"] and piece["bake"]]
         how = {"size": spec["texture"], "where": where, "finish": more.get("finish")}
+        if spec.get("detail"):
+            how.update(exact=spec.get("exact", False), ao_strength=spec.get("ao", 0.6), high=highs.get(None),
+                       normal_full=True)
         if sharing:
             baked = _bake_as_one(key, main, sharing, **how)
         else:
@@ -208,13 +264,20 @@ def build_one(key):
         for name, piece in more["pieces"].items():
             if piece["own"]:
                 mk.bake(pieces[name], size=piece["exact"] or spec["texture"], where=where, exact=bool(piece["exact"]),
-                        finish=piece["finish"])
+                        finish=piece["finish"], high=highs.get(name), ao_strength=spec.get("ao", 0.6),
+                        normal_full=bool(spec.get("detail")))
         for obj in [main] + [pieces[name] for name, piece in more["pieces"].items() if not piece["own"]]:
             _wear(obj, baked)
     else:
         shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
+        for high in highs.values():
+            high.data.transform(Matrix.Translation(shift))
         mk.unwrap(main)
-        mk.bake(main, size=spec["texture"], where=where, ao_strength=spec.get("ao", 0.6), exact=spec.get("exact", False))
+        mk.bake(main, size=spec["texture"], where=where, ao_strength=spec.get("ao", 0.6), exact=spec.get("exact", False),
+                high=highs.get(None), normal_full=bool(spec.get("detail")))
+    # (the high-detail copies only lent their surface to the bake)
+    for high in highs.values():
+        bpy.data.objects.remove(high, do_unlink=True)
     # Glowing parts, one mesh per colour (each becomes a Neon MeshPart of that colour).
     by_colour = {}
     for part in glow:

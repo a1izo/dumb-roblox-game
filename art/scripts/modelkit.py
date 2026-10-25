@@ -724,7 +724,8 @@ def _save_map(name, pixels, size, non_color, quality):
     return img
 
 
-def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False, finish=None):
+def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False, finish=None, high=None,
+         normal_full=False):
     """Bakes the object's materials into one set of textures, then gives the object a single material
     using them: <name>_color.jpg (colour with the shade of its own hollows), <name>_normal.jpg (the
     scans' relief, at half the colour's size), <name>_rough.jpg and, when part of
@@ -733,6 +734,10 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
     The split is what lets a prop carry four maps in the memory its one colour map took before.
     finish: a function (colour, normal, roughness), each a pixel array [v, u, 4], called before they
     are saved, to change them in place (pictures drawn straight onto faces laid by hand).
+    high: a high-detail copy of the object in the same place (its creases, folds and wear raised in real geometry,
+    build_props._high_of): every map is baked from it onto this one's surface (selected to active), the way a
+    sculpted model is baked down to a game mesh. normal_full: the normal map at the colour's full size (a hero prop
+    whose relief is its detail).
     Returns the colour map's path."""
     scene = bpy.context.scene
     previous_engine = scene.render.engine
@@ -741,7 +746,7 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
     scene.cycles.samples = samples
     common.ensure_dirs()
     size = size if exact else texture_size(obj, size, where)
-    half = max(lookbook.SMALLEST // 2, size // 2)
+    half = size if normal_full else max(lookbook.SMALLEST // 2, size // 2)
     small = max(lookbook.SMALLEST // 2, size // 4)
 
     def target(name, side, data=False):
@@ -777,22 +782,29 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
 
     # Alone in the scene while it bakes: every prop in Props.blend stands on the same spot, and its
     # neighbours would shade it (and round its edges against theirs).
-    others = [o for o in scene.objects if o is not obj and o.type == "MESH" and not o.hide_render]
+    others = [o for o in scene.objects if o is not obj and o is not high and o.type == "MESH" and not o.hide_render]
     for other in others:
         other.hide_render = True
     _select_only(obj)
+    # (from the high-detail copy, when there is one: rays cast from this surface out and back in find it)
+    onto = {}
+    if high is not None:
+        high.hide_render = False
+        high.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        onto = {"use_selected_to_active": True, "cage_extrusion": 0.06, "max_ray_distance": 0.14}
     scene.render.bake.margin = 8
     scene.render.bake.use_pass_direct = False
     scene.render.bake.use_pass_indirect = False
     scene.render.bake.use_pass_color = True
     aim(color_img)
-    bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=8)
+    bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=8, **onto)
     aim(ao_img)
-    bpy.ops.object.bake(type="AO", margin=8)
+    bpy.ops.object.bake(type="AO", margin=8, **onto)
     aim(normal_img)
-    bpy.ops.object.bake(type="NORMAL", normal_space="TANGENT", margin=8)
+    bpy.ops.object.bake(type="NORMAL", normal_space="TANGENT", margin=8, **onto)
     aim(rough_img)
-    bpy.ops.object.bake(type="ROUGHNESS", margin=8)
+    bpy.ops.object.bake(type="ROUGHNESS", margin=8, **onto)
     # Metalness has no bake pass of its own: each material glows by how metal it is, and the glow is
     # baked.
     glows = []
@@ -809,7 +821,7 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
         socket.default_value = (value, value, value, 1)
         bsdf.inputs["Emission Strength"].default_value = 1.0
     aim(metal_img)
-    bpy.ops.object.bake(type="EMIT", margin=8)
+    bpy.ops.object.bake(type="EMIT", margin=8, **onto)
     for mat, bsdf, colour, strength, sources in glows:
         bsdf.inputs["Emission Color"].default_value = colour
         bsdf.inputs["Emission Strength"].default_value = strength

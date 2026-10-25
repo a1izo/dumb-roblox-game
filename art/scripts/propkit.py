@@ -290,8 +290,8 @@ def skull(name, loc, r, mat, dark, yaw=0.0, segments=48, teeth=7):
     # The sockets and the nose cut clean out of the shell (their walls in `dark`), and the cutters thrown away.
     cutters = []
     for e in eyes:  # (rounded and tilted down at the outer corner, like the orbits)
-        socket = mk.sphere(name + "Socket", 1.0, (e.x, e.y + 0.1, e.z), scale=(0.24, 0.3, 0.19), mat=dark, segments=20,
-                           rings=12)
+        socket = mk.sphere(name + "Socket", 1.0, (e.x, e.y + 0.1, e.z), scale=(0.24, 0.3, 0.19), mat=dark,
+                           segments=max(8, min(20, segments // 2)), rings=max(6, min(12, segments // 4)))
         socket.rotation_euler = (0, math.copysign(math.radians(14), e.x), 0)
         cutters.append(socket)
     # (a three-sided cone along -Y, its apex up and widest at the face: the nose's hollow)
