@@ -115,7 +115,22 @@ def skin_body(name, mat, joints, bones, levels=2):
     layer = mesh.skin_vertices[0].data
     for k, (_, _, _, rx, ry) in enumerate(joints):
         layer[k].radius = (rx, ry)
-    layer[0].use_root = True
+    # (a root in every separate island of the skeleton: a body may be grown as limbs apart)
+    parent = list(range(len(joints)))
+
+    def find(k):
+        while parent[k] != k:
+            parent[k] = parent[parent[k]]
+            k = parent[k]
+        return k
+
+    for i, j in bones:
+        parent[find(i)] = find(j)
+    rooted = set()
+    for k in range(len(joints)):
+        if find(k) not in rooted:
+            rooted.add(find(k))
+            layer[k].use_root = True
     sub = obj.modifiers.new("Subdivision", "SUBSURF")
     sub.levels = levels
     sub.render_levels = levels
@@ -148,257 +163,6 @@ def feather_blade(name, root, tip, width, mat):
     solid = obj.modifiers.new("Solidify", "SOLIDIFY")
     solid.thickness = 0.02
     return obj
-
-
-@prop("Specter", pivot="bottom", material="Fabric", collide=False, texture=1024, ao=0.25, exact=True)
-def specter():
-    hide = mk.noisy("Spec_Skin", srgb(20, 24, 34), srgb(42, 48, 66), scale=9, detail=8, roughness=0.75)
-    face = mk.noisy("Spec_Face", srgb(214, 214, 216), srgb(244, 242, 240), scale=12, detail=6, roughness=0.55)
-    void = mk.flat("Spec_Void", (0.005, 0.004, 0.006), 0.9)
-    lips = mk.flat("Spec_Lips", (0.012, 0.010, 0.014), 0.5)
-    tooth = mk.noisy("Spec_Tooth", srgb(220, 210, 180), srgb(250, 244, 226), scale=20, roughness=0.4)
-    hair = mk.noisy("Spec_Hair", srgb(34, 46, 110), srgb(70, 92, 170), scale=8, detail=10, roughness=0.45)
-    plume = mk.noisy("Spec_Feather", srgb(6, 6, 8), srgb(26, 24, 32), scale=16, detail=10, roughness=0.6,
-                     stretch=(1, 1, 6))
-    fur = mk.noisy("Spec_Fur", srgb(206, 204, 200), srgb(246, 244, 240), scale=30, detail=12, roughness=0.9)
-    cloth = mk.noisy("Spec_Cloth", srgb(8, 8, 10), srgb(26, 24, 30), scale=7, detail=10, roughness=0.9)
-    leather = mk.noisy("Spec_Belt", srgb(44, 18, 18), srgb(82, 34, 30), scale=14, roughness=0.6)
-    steel = mk.noisy("Spec_Steel", srgb(120, 124, 132), srgb(186, 190, 198), scale=24, roughness=0.3, metallic=0.9)
-    bone = mk.noisy("Spec_Bone", BONE_B, BONE_A, scale=14, detail=8, roughness=0.6)
-    book = mk.noisy("Spec_Book", srgb(10, 10, 12), srgb(26, 24, 26), scale=12, roughness=0.7)
-    parts = []
-
-    # The body: a skeleton's joints with their radii (x across, y front to back), hunched forward at the shoulders.
-    J = [
-        (0, 0.12, 3.95, 0.5, 0.36),  # 0 pelvis
-        (0, 0.16, 4.55, 0.36, 0.28),  # 1 waist (gaunt)
-        (0, 0.08, 5.35, 0.56, 0.38),  # 2 chest
-        (0, -0.06, 6.05, 0.6, 0.38),  # 3 shoulders' middle
-        (0, -0.32, 6.62, 0.2, 0.2),  # 4 neck
-        (0.82, 0.02, 6.12, 0.24, 0.22),  # 5 right shoulder
-        (1.18, -0.08, 4.72, 0.14, 0.14),  # 6 right elbow
-        (1.3, -0.42, 3.3, 0.11, 0.1),  # 7 right wrist
-        (1.33, -0.55, 3.02, 0.17, 0.08),  # 8 right palm
-        (-0.82, 0.02, 6.12, 0.24, 0.22),  # 9 left shoulder
-        (-1.18, -0.08, 4.72, 0.14, 0.14),  # 10 left elbow
-        (-1.3, -0.42, 3.3, 0.11, 0.1),  # 11 left wrist
-        (-1.33, -0.55, 3.02, 0.17, 0.08),  # 12 left palm
-        (0.36, 0.12, 3.8, 0.27, 0.27),  # 13 right hip
-        (0.48, -0.1, 2.1, 0.17, 0.17),  # 14 right knee
-        (0.52, 0.16, 0.42, 0.11, 0.11),  # 15 right ankle
-        (0.55, -0.3, 0.08, 0.08, 0.1),  # 16 right toe
-        (-0.36, 0.12, 3.8, 0.27, 0.27),  # 17 left hip
-        (-0.48, -0.1, 2.1, 0.17, 0.17),  # 18 left knee
-        (-0.52, 0.16, 0.42, 0.11, 0.11),  # 19 left ankle
-        (-0.55, -0.3, 0.08, 0.08, 0.1),  # 20 left toe
-    ]
-    B = [(0, 1), (1, 2), (2, 3), (3, 4), (3, 5), (5, 6), (6, 7), (7, 8), (3, 9), (9, 10), (10, 11), (11, 12),
-         (0, 13), (13, 14), (14, 15), (15, 16), (0, 17), (17, 18), (18, 19), (19, 20)]
-    parts.append(skin_body("Body", hide, J, B))
-    # long clawed fingers out of each palm, curling, and a ring on one of each hand's (its stone glows)
-    glow_red = mk.emissive("Spec_Glow", srgb(255, 30, 40), 8)
-    glow_pale = mk.emissive("Spec_RingGlow", srgb(190, 255, 230), 6)
-    glows = []
-    for side in (1, -1):
-        palm = Vector((side * 1.33, -0.55, 3.02))
-        # (the hand itself, wrist to knuckles, so the fingers grow out of something)
-        parts.append(mk.tube("Hand", Vector((side * 1.3, -0.42, 3.32)), palm + Vector((0, -0.08, -0.12)), 0.12, 0.15,
-                             mat=hide, verts=12))
-        parts.append(mk.sphere("Palm", 0.17, tuple(palm + Vector((0, -0.05, -0.06))), scale=(1.05, 0.6, 1.0), mat=hide,
-                               segments=16, rings=10))
-        for f in range(4):
-            spread = (f - 1.5) * 0.09
-            knuckle = palm + Vector((side * spread, -0.08, -0.12))
-            mid = knuckle + Vector((side * spread * 0.6, -0.16, -0.32))
-            tip = mid + Vector((side * spread * 0.3, 0.02, -0.3))
-            parts.append(mk.tube("Finger", knuckle, mid, 0.05, 0.04, mat=hide, verts=8))
-            parts.append(mk.tube("Claw", mid, tip, 0.04, 0.008, mat=hide, verts=8))
-            if f == 2:
-                parts.append(mk.torus("Ring", 0.055, 0.016, tuple(knuckle + (mid - knuckle) * 0.35), rot=(20, 0, 0),
-                                      mat=steel, major_segments=12, minor_segments=6))
-                glows.append(mk.sphere("Stone", 0.035, tuple(knuckle + (mid - knuckle) * 0.35 + Vector((0, -0.05, 0))),
-                                       mat=glow_pale, segments=8, rings=6))
-        thumb_base = palm + Vector((side * -0.14, -0.06, 0.02))
-        parts.append(mk.tube("Thumb", thumb_base, thumb_base + Vector((side * -0.08, -0.22, -0.18)), 0.05, 0.01,
-                             mat=hide, verts=8))
-
-    # The head: round, jutting forward, white; everything on the face is set against its real front (`front`: the
-    # head's surface straight ahead of its middle), so nothing sinks behind it or floats off it.
-    head_c = Vector((0, -0.62, 7.25))
-    head_r, head_sy = 0.6, 0.9
-    front = head_c.y - head_r * head_sy
-
-    def on_face(x, z, out=0.0):
-        """The point of the head's surface at (x, z) from its middle, `out` studs forward of it."""
-        nx, nz = x / head_r, z / head_r
-        depth = math.sqrt(max(1.0 - nx * nx - nz * nz, 0.02)) * head_r * head_sy
-        return Vector((x, head_c.y - depth - out, head_c.z + z))
-
-    parts.append(mk.sphere("Head", head_r, tuple(head_c), scale=(0.94, head_sy, 1.0), mat=face, segments=32, rings=24))
-    parts.append(mk.sphere("Jaw", 0.46, tuple(head_c + Vector((0, -0.14, -0.4))), scale=(1.02, 0.82, 0.62), mat=face,
-                           segments=28, rings=18))
-    # a heavy brow over the eyes, and the eyes in deep sockets under it, burning
-    parts.append(mk.sphere("Brow", 0.44, tuple(on_face(0, 0.2, -0.16)), scale=(1.0, 0.32, 0.18), mat=face, segments=24,
-                           rings=12))
-    for side in (1, -1):
-        parts.append(mk.sphere("Socket", 0.15, tuple(on_face(side * 0.21, 0.05, -0.05)), scale=(1.2, 0.45, 0.82),
-                               mat=void, segments=16, rings=10))
-        glows.append(mk.sphere("Eye", 0.095, tuple(on_face(side * 0.21, 0.05, 0.005)), scale=(1.25, 0.5, 0.95),
-                               mat=glow_red, segments=12, rings=8))
-        # pointed ears, swept back
-        ear = mk.tube("Ear", head_c + Vector((side * 0.5, -0.05, 0.02)), head_c + Vector((side * 0.82, 0.25, 0.32)),
-                      0.12, 0.01, mat=face, verts=8)
-        ear.scale = (1, 0.45, 1)
-        parts.append(ear)
-    # the earring, a small heart on a loop at the left ear
-    parts.append(mk.torus("EarLoop", 0.06, 0.012, tuple(head_c + Vector((-0.58, -0.02, -0.12))), rot=(0, 90, 0),
-                          mat=steel, major_segments=12, minor_segments=6))
-    parts.append(mk.sphere("Heart", 0.06, tuple(head_c + Vector((-0.6, -0.04, -0.24))), scale=(1, 0.5, 1.1),
-                           mat=steel, segments=10, rings=8))
-    # the nose: two slits
-    for side in (1, -1):
-        parts.append(mk.sphere("Nostril", 0.035, tuple(on_face(side * 0.05, -0.1, -0.01)), scale=(0.7, 0.5, 1.4),
-                               mat=void, segments=8, rings=6))
-    # the grin: a wide crescent from cheek to cheek on the jaw's front (its corners drawn up), thin black lips, a row of
-    # big pointed teeth along each edge in front of the dark
-    jaw_c = head_c + Vector((0, -0.14, -0.4))
-    jaw_r, jaw_sy = 0.46, 0.82
-
-    def on_jaw(x, z, out=0.0):
-        nx = x / (jaw_r * 1.02)
-        depth = math.sqrt(max(1.0 - nx * nx, 0.04)) * jaw_r * jaw_sy
-        return Vector((x, jaw_c.y - depth - out, head_c.z + z))
-
-    # (one smooth crescent laid on the jaw's curve, a hair forward of it; the lips a line along each edge)
-    def top_of(x):
-        u = x / 0.4
-        return -0.31 + 0.12 * u * u
-
-    def bottom_of(x):
-        u = x / 0.4
-        return -0.44 + 0.05 * u * u
-
-    bm = bmesh.new()
-    columns = []
-    xs = [-0.4 + k * 0.8 / 24 for k in range(25)]
-    for x in xs:
-        columns.append((bm.verts.new(on_jaw(x, top_of(x), 0.012)), bm.verts.new(on_jaw(x, bottom_of(x), 0.012))))
-    for k in range(24):
-        (t0, b0), (t1, b1) = columns[k], columns[k + 1]
-        bm.faces.new((t0, t1, b1, b0))
-    mouth = mk._obj_from_bm("Grin", bm, void)
-    solid = mouth.modifiers.new("Solidify", "SOLIDIFY")
-    solid.thickness = 0.03
-    parts.append(mouth)
-    for k in range(24):
-        for edge in (top_of, bottom_of):
-            a0 = on_jaw(xs[k], edge(xs[k]), 0.05)
-            a1 = on_jaw(xs[k + 1], edge(xs[k + 1]), 0.05)
-            parts.append(mk.tube("Lip", a0, a1, 0.02, 0.02, mat=lips, verts=6))
-    # (in front of the mouth's own thickness: it is solid 0.03 out from its face)
-    # (the teeth: each row one zigzag ribbon of fangs laid on the jaw's curve in front of the dark, a single island each:
-    # two dozen little fangs, or a few strips, bled dark in the bake)
-    for edge, down in ((top_of, -1), (bottom_of, 1)):
-        bm = bmesh.new()
-        fangs = 12
-        x0, x1 = -0.33, 0.33
-        step = (x1 - x0) / fangs
-        root = []
-        tips = []
-        for k in range(fangs + 1):
-            x = x0 + k * step
-            root.append(bm.verts.new(on_jaw(x, edge(x) - down * 0.008, 0.066)))
-        for k in range(fangs):
-            x = x0 + (k + 0.5) * step
-            h = 0.075 if abs(x) < 0.16 else 0.058
-            tips.append(bm.verts.new(on_jaw(x, edge(x) + down * h, 0.066)))
-        for k in range(fangs):
-            bm.faces.new((root[k], root[k + 1], tips[k]) if down > 0 else (root[k + 1], root[k], tips[k]))
-        teeth = mk._obj_from_bm("Teeth", bm, tooth)
-        solid = teeth.modifiers.new("Solidify", "SOLIDIFY")
-        solid.thickness = 0.02
-        parts.append(teeth)
-
-    # The hair: spikes of dark blue thrown up and back off the crown.
-    rng = random.Random(7)
-    for k in range(16):
-        a = (k / 16) * 2 * math.pi
-        root = head_c + Vector((math.cos(a) * 0.32, 0.12 + math.sin(a) * 0.28, 0.42))
-        lean = Vector((math.cos(a) * 0.35, 0.35 + math.sin(a) * 0.2, 1.0)).normalized()
-        length = rng.uniform(0.7, 1.2) * (1.15 if math.sin(a) > 0 else 0.9)
-        parts.append(mk.tube("Hair", root, root + lean * length, rng.uniform(0.11, 0.15), 0.01, mat=hair, verts=8))
-    for k in range(5):
-        x = (k - 2) * 0.16
-        root = head_c + Vector((x, -0.25, 0.48))
-        parts.append(mk.tube("Fringe", root, root + Vector((x * 0.4, -0.15, 0.55)), 0.1, 0.01, mat=hair, verts=8))
-
-    # The collar: a ruff of white fur round the neck, and a great fan of long black feathers off the shoulders,
-    # spread wide to the sides and up behind the head.
-    ruff = mk.torus("Ruff", 0.5, 0.2, (0, -0.22, 6.55), rot=(12, 0, 0), mat=fur, major_segments=40, minor_segments=12)
-    mk.displace_noise(ruff, strength=0.08, scale=0.12, name="RuffTufts")
-    parts.append(ruff)
-    for layer, (count, reach, width, lift) in enumerate(((34, (1.8, 2.9), (0.4, 0.58), 0.0), (26, (0.9, 1.6), (0.32, 0.44), 0.1))):
-        for k in range(count):
-            a = math.radians(-165 + k * (330 / (count - 1)))  # round the back, open at the front
-            sideways = math.sin(a)
-            back = math.cos(a)
-            root = Vector((sideways * 0.6, 0.15 + back * 0.38, 6.42 + lift))
-            up = 0.45 + 0.7 * max(0.0, back) + rng.uniform(-0.15, 0.15)
-            out = Vector((sideways * 1.6, back * 0.9 + 0.3, up)).normalized()
-            length = rng.uniform(*reach) * (0.75 + 0.45 * abs(sideways))
-            tip = root + out * length + Vector((0, 0, -0.3 * abs(sideways)))
-            parts.append(feather_blade("Feather", root, tip, rng.uniform(*width), plume))
-    for k in range(12):
-        a = math.radians(-130 + k * (260 / 11))
-        root = Vector((math.sin(a) * 0.55, 0.05 + math.cos(a) * 0.35, 6.25))
-        tip = root + Vector((math.sin(a) * 1.0, math.cos(a) * 0.6 + 0.25, -0.65))
-        parts.append(feather_blade("Feather", root, tip, 0.22, plume))
-
-    # The belt: studded leather slung round the hips, a skull for its buckle, chains hanging off it.
-    parts.append(mk.torus("Belt", 0.5, 0.07, (0, 0.1, 4.12), rot=(-6, 0, 0), mat=leather, major_segments=40,
-                          minor_segments=8))
-    for k in range(14):
-        a = 2 * math.pi * k / 14
-        parts.append(mk.sphere("Stud", 0.03, (math.sin(a) * 0.56, 0.1 + math.cos(a) * 0.44, 4.12 - 0.05 * math.cos(a)),
-                               mat=steel, segments=8, rings=6))
-    buckle = Vector((0, -0.42, 4.08))
-    parts.append(mk.sphere("Buckle", 0.14, tuple(buckle), scale=(1, 0.6, 1.05), mat=bone, segments=16, rings=12))
-    for side in (1, -1):
-        parts.append(mk.sphere("BuckleEye", 0.035, tuple(buckle + Vector((side * 0.05, -0.08, 0.02))), mat=void,
-                               segments=8, rings=6))
-
-    def chain(a, b, sag, count):
-        for k in range(count):
-            t = (k + 0.5) / count
-            p = a + (b - a) * t - Vector((0, 0, sag * 4 * t * (1 - t)))
-            parts.append(mk.torus("Link", 0.05, 0.014, tuple(p), rot=(90 if k % 2 else 0, 0, 0), mat=steel,
-                                  major_segments=10, minor_segments=5))
-
-    chain(Vector((-0.45, -0.2, 4.0)), Vector((0.52, -0.05, 3.95)), 0.35, 16)
-    chain(Vector((0.52, -0.05, 3.95)), Vector((0.66, -0.12, 3.1)), 0.05, 9)
-    parts.append(mk.sphere("ChainSkull", 0.09, (0.66, -0.14, 3.0), scale=(1, 0.85, 1.05), mat=bone, segments=12,
-                           rings=8))
-    # The Manual at the hip, chained there.
-    parts.append(mk.box("HipBook", (0.36, 0.1, 0.48), (0.66, 0.06, 3.62), rot=(0, 0, -12), mat=book, bevel=0.02))
-    parts.append(mk.box("HipBookPages", (0.32, 0.08, 0.44), (0.67, 0.07, 3.62), rot=(0, 0, -12),
-                        mat=mk.noisy("Spec_Pages", srgb(150, 110, 60), srgb(200, 160, 100), scale=30), bevel=0.0))
-    # The skirt: short, black and torn to tatters at its hem.
-    skirt = robe_mesh("Skirt", cloth, [(0.82, 2.95, 0.82), (0.72, 3.45, 0.8), (0.6, 3.95, 0.78), (0.55, 4.15, 0.8)],
-                      segments=36, seed=11)
-    skirt.location = (0, 0.12, 0)
-    mk.displace_noise(skirt, strength=0.06, scale=0.3, name="SkirtFolds")
-    parts.append(skirt)
-    # A skull at the right wrist, on a cord; a plain band at the left.
-    wrist = Vector((1.3, -0.42, 3.3))
-    parts.append(mk.torus("Cord", 0.13, 0.02, tuple(wrist), rot=(60, 0, 20), mat=leather, major_segments=16,
-                          minor_segments=6))
-    parts.append(mk.sphere("WristSkull", 0.1, tuple(wrist + Vector((0.12, -0.06, 0.0))), scale=(0.9, 0.8, 1.05),
-                           mat=bone, segments=12, rings=8))
-    parts.append(mk.torus("Band", 0.13, 0.025, (-1.3, -0.42, 3.3), rot=(60, 0, -20), mat=steel, major_segments=16,
-                          minor_segments=6))
-    # (the eyes' red first: it is the prop's main glow, Specter_Glow; the rings' pale stones the second)
-    glows.sort(key=lambda o: 0 if o.name.startswith("Eye") else 1)
-    return parts, glows
 
 
 # Street and park ----------------------------------------------------------------------------------------------

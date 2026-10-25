@@ -271,12 +271,17 @@ def weighted_normals(obj):
 
 
 def auto_smooth(obj, angle_deg=40):
-    """Marks edges sharper than the angle as sharp so smooth shading keeps hard corners."""
+    """Marks edges sharper than the angle as sharp so smooth shading keeps hard corners. Faces marked "dg_soft" (a
+    face attribute: thin round things of few sides, a lock of hair, a clump of fur, a quill) stay smooth between
+    themselves whatever the angle, or they would shade as facets."""
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     limit = math.radians(angle_deg)
+    soft = bm.faces.layers.int.get("dg_soft")
     for edge in bm.edges:
         if len(edge.link_faces) == 2:
+            if soft is not None and edge.link_faces[0][soft] and edge.link_faces[1][soft]:
+                continue
             if edge.calc_face_angle(0) > limit:
                 edge.smooth = False
         else:

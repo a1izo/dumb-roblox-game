@@ -155,9 +155,14 @@ def _high_of(parts, name):
     the detail its builder asked for in "dg_detail" ({"sub": extra subdivision levels, "disp": [(kind, strength in
     studs, scale), ...]}, kinds as DETAIL_KINDS: cells for cracked hide, wrinkles for creased skin, clouds for cloth
     folds, grain for fine pitting, rings for banded feather barbs), merged into one mesh. Parts without one are
-    copied as they are."""
+    copied as they are. A part with "dg_high" (an object's name) lends that object instead: a high-detail mesh its
+    builder made itself (strands grooved into hair and fur, the barbs of a feather), used up here."""
     copies = []
     for part in parts:
+        own_high = bpy.data.objects.get(part.get("dg_high") or "")
+        if own_high is not None:
+            copies.append(own_high)
+            continue
         copy = part.copy()
         copy.data = part.data.copy()
         common.collection("Build").objects.link(copy)

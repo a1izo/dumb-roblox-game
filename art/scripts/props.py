@@ -548,3 +548,4 @@ import props_emotes  # noqa: E402,F401
 import props_seats  # noqa: E402,F401
 import props_hats  # noqa: E402,F401
 import props_fx  # noqa: E402,F401
+import props_specter  # noqa: E402,F401
