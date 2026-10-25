@@ -345,9 +345,8 @@ function Aura.start(character: Model, spec: Spec): () -> ()
 								)
 								* k
 						Beams.bolt(from, to, 0.14, {
-							tex = "VfxStreak",
 							color = accent,
-							width = 0.22 * k,
+							width = 0.4 * k,
 							bright = 1.6,
 							jag = 0.5 * k,
 							pieces = 6,

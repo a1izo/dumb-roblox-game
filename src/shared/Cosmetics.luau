@@ -8,7 +8,9 @@
 --           section in the shop: dance, pose, prop, stroll or duo; `lobbyOnly` when it looks like a
 --           game signal, a death, an arrest or the Eyes, so it is never played in a match), seat (how you sit
 --           at the war table for a meeting: `clip`, Shared/Seating), chair (what your place at the table
---           becomes, for everyone: `model`), win (a win cutscene: `side`, `cut`; worn in its side's `slot`)
+--           becomes, for everyone: `model`), win (a win cutscene: `side`, `cut`; worn in its side's `slot`),
+--           reason (a custom death: `cause` is what Diavolo can write as the cause of death once it is worn, and
+--           `style` the effect that plays on the body as it falls, Presentation/CustomDeaths)
 --   rarity  common, rare, epic, legendary, godhood (shown as Scrawl, Penned, Sealed, Condemned, Godhood:
 --           Shared/Rarity)
 --   source  shop (always for sale), rotation (for sale on days it is featured), free (everyone's), vip
@@ -470,6 +472,141 @@ Cosmetics.ITEMS = {
 		price = 350,
 		style = "glass",
 		color = Color3.fromRGB(196, 214, 222),
+	},
+
+	-- Custom deaths (2026-10-25): a cause of death of your own to write in the Manual. Worn, it joins the three plain
+	-- causes when you write; the death plays its own effect on the body as it falls, and the cause is read out.
+	{
+		id = "reason_fall",
+		kind = "reason",
+		name = "A Long Fall",
+		blurb = "They trip on nothing at all, and the floor comes up hard.",
+		cause = "A long fall",
+		rarity = "common",
+		source = "shop",
+		price = 200,
+		style = "fall",
+		color = Color3.fromRGB(150, 146, 140),
+	},
+	{
+		id = "reason_heart",
+		kind = "reason",
+		name = "A Broken Heart",
+		blurb = "A red light in the chest beats twice, cracks, and goes out.",
+		cause = "A broken heart",
+		rarity = "rare",
+		source = "shop",
+		price = 400,
+		style = "heart",
+		color = Color3.fromRGB(205, 40, 60),
+	},
+	{
+		id = "reason_frost",
+		kind = "reason",
+		name = "Frozen Where They Stood",
+		blurb = "Frost climbs them in a breath and shatters into falling ice.",
+		cause = "Frozen where they stood",
+		rarity = "rare",
+		source = "shop",
+		price = 450,
+		style = "frost",
+		color = Color3.fromRGB(170, 215, 245),
+	},
+	{
+		id = "reason_chandelier",
+		kind = "reason",
+		name = "The Chandelier",
+		blurb = "Something gives way overhead: crystal and dust come down on them.",
+		cause = "A chandelier, from above",
+		rarity = "rare",
+		source = "shop",
+		price = 450,
+		style = "chandelier",
+		color = Color3.fromRGB(235, 220, 170),
+	},
+	{
+		id = "reason_drown",
+		kind = "reason",
+		name = "Drowned on Dry Land",
+		blurb = "Water that is not there closes over them: rings spread, bubbles rise.",
+		cause = "Drowned on dry land",
+		rarity = "epic",
+		source = "shop",
+		price = 650,
+		style = "drown",
+		color = Color3.fromRGB(80, 150, 200),
+	},
+	{
+		id = "reason_lightning",
+		kind = "reason",
+		name = "Struck by Lightning",
+		blurb = "A bolt out of a clear sky, a white flash, a scorch on the floor.",
+		cause = "Struck by lightning",
+		rarity = "epic",
+		source = "shop",
+		price = 700,
+		style = "lightning",
+		color = Color3.fromRGB(200, 225, 255),
+	},
+	{
+		id = "reason_pages",
+		kind = "reason",
+		name = "A Thousand Paper Cuts",
+		blurb = "Torn pages whirl up round them, faster and faster, and are gone.",
+		cause = "A thousand paper cuts",
+		rarity = "epic",
+		source = "shop",
+		price = 700,
+		style = "pages",
+		color = Color3.fromRGB(240, 234, 214),
+	},
+	{
+		id = "reason_burn",
+		kind = "reason",
+		name = "Burned From Within",
+		blurb = "A glow under the skin, embers pouring off them, smoke where they were.",
+		cause = "Burned from within",
+		rarity = "legendary",
+		source = "shop",
+		price = 1000,
+		style = "burn",
+		color = Color3.fromRGB(255, 120, 50),
+	},
+	{
+		id = "reason_chip",
+		kind = "reason",
+		name = "Choked on a Potato Chip",
+		blurb = "One crunch too many: crumbs, a gold glint, a long silence.",
+		cause = "Choked on a potato chip",
+		rarity = "legendary",
+		source = "shop",
+		price = 1100,
+		style = "chip",
+		color = Color3.fromRGB(240, 196, 90),
+	},
+	{
+		id = "reason_clock",
+		kind = "reason",
+		name = "Their Time Ran Out",
+		blurb = "A stopwatch's face under them; the hand reaches forty, and stops.",
+		cause = "Their time ran out",
+		rarity = "legendary",
+		source = "shop",
+		price = 1200,
+		style = "clock",
+		color = Color3.fromRGB(210, 200, 170),
+	},
+	{
+		id = "reason_dark",
+		kind = "reason",
+		name = "Taken by the Dark",
+		blurb = "The shadows rise off the floor and close over them; two red eyes, then nothing.",
+		cause = "Taken by the dark",
+		rarity = "legendary",
+		source = "shop",
+		price = 1500,
+		style = "dark",
+		color = Color3.fromRGB(150, 20, 34),
 	},
 
 	-- Emotes (`emote` is the clip). The Emote Pack pass still unlocks its four (`pass`).
@@ -1433,8 +1570,20 @@ Cosmetics.ITEMS = {
 	{ id = "title_rank_8", kind = "title", name = "Legendary Detective", rarity = "legendary", source = "rank" },
 } :: { Item }
 
-Cosmetics.KINDS =
-	{ "hat", "grimoire", "specter", "title", "writing", "verdict", "death", "emote", "win", "seat", "chair" }
+Cosmetics.KINDS = {
+	"hat",
+	"grimoire",
+	"specter",
+	"title",
+	"writing",
+	"verdict",
+	"death",
+	"reason",
+	"emote",
+	"win",
+	"seat",
+	"chair",
+}
 
 Cosmetics.KIND_NAMES = {
 	hat = "Hats",
@@ -1444,6 +1593,7 @@ Cosmetics.KIND_NAMES = {
 	writing = "Writing styles",
 	verdict = "Verdict styles",
 	death = "Death styles",
+	reason = "Custom deaths",
 	emote = "Emotes",
 	win = "Win cutscenes",
 	seat = "Seats",
@@ -1462,6 +1612,7 @@ Cosmetics.SUITS = {
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },
+	{ id = "reasons", name = "Custom deaths", icon = "grimoire", kinds = { "reason" } },
 	{ id = "emotes", name = "Emotes", icon = "palm", kinds = { "emote" } },
 	{ id = "wins", name = "Win cutscenes", icon = "flag", kinds = { "win" } },
 	{ id = "seats", name = "Seats", icon = "podium", kinds = { "seat", "chair" } },
@@ -1489,6 +1640,7 @@ Cosmetics.KIND_SINGULAR = {
 	writing = "Writing style",
 	verdict = "Verdict style",
 	death = "Death style",
+	reason = "Custom death",
 	emote = "Emote",
 	win = "Win cutscene",
 	seat = "Seat",
@@ -1544,6 +1696,29 @@ function Cosmetics.ofKind(kind: string): { Item }
 		end
 	end
 	return list
+end
+
+-- The custom death worn with this style (its `cause` is what can be written), or nil.
+function Cosmetics.reason(style: string?): Item?
+	if not style then
+		return nil
+	end
+	for _, item in ipairs(Cosmetics.ITEMS) do
+		if item.kind == "reason" and item.style == style then
+			return item
+		end
+	end
+	return nil
+end
+
+-- The custom death whose cause is this text, or nil (a plain cause: heart attack, disease, accident).
+function Cosmetics.reasonByCause(cause: string?): Item?
+	for _, item in ipairs(Cosmetics.ITEMS) do
+		if item.kind == "reason" and item.cause == cause then
+			return item
+		end
+	end
+	return nil
 end
 
 -- The emote item for a clip id (its own clip or its other ending, `alt`), or nil (the free emotes have none).

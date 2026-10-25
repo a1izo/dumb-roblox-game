@@ -1,5 +1,6 @@
--- Settings, in four tabs: Sound, Display, Controls (every key, the gamepad and the touch buttons:
--- UI/ControlsPage) and Help (How to Play and the guide). Changes apply at once and are saved to the profile.
+-- Settings, in five tabs: Sound, Display, Game (what of other players you see), Controls (every key, the gamepad
+-- and the touch buttons: UI/ControlsPage) and Help (How to Play and the guide). Changes apply at once and are saved
+-- to the profile.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -17,7 +18,7 @@ local SettingsPanel = {}
 local setters: { [string]: (any) -> () } = {}
 local chooseTab: ((string) -> ())? = nil
 
--- Opens Settings on a tab ("sound", "display", "controls", "help").
+-- Opens Settings on a tab ("sound", "display", "game", "controls", "help").
 function SettingsPanel.open(tab: string?)
 	Router.open("settings")
 	if tab and chooseTab then
@@ -61,6 +62,7 @@ function SettingsPanel.init()
 		items = {
 			{ id = "sound", label = "Sound" },
 			{ id = "display", label = "Display" },
+			{ id = "game", label = "Game" },
 			{ id = "controls", label = "Controls" },
 			{ id = "help", label = "Help" },
 		},
@@ -88,6 +90,28 @@ function SettingsPanel.init()
 			)
 			setters[key] = set
 		end
+		local function slider(
+			key: string,
+			label: string,
+			min: number,
+			max: number,
+			step: number,
+			format: ((number) -> string)?
+		)
+			local _, set = Kit.slider(
+				{ LayoutOrder = nextOrder(), Parent = list },
+				label,
+				Settings.get(key),
+				min,
+				max,
+				step,
+				function(value)
+					Settings.set(key, value)
+				end,
+				format
+			)
+			setters[key] = set
+		end
 		local function toggle(key: string, label: string)
 			local _, set = Kit.toggle(
 				{ LayoutOrder = nextOrder(), Parent = list },
@@ -108,22 +132,22 @@ function SettingsPanel.init()
 			Kit.list(row, T.space.m, true)
 			return row
 		end
-		return header, volume, toggle, buttonRow, nextOrder
+		return header, volume, toggle, buttonRow, nextOrder, slider
 	end
 
 	do
-		local header, volume, toggle = rows(page("sound"))
+		local header, volume = rows(page("sound"))
 		header("Sound")
+		volume("master", "Master volume")
 		volume("music", "Music")
 		volume("sfx", "Sound effects")
 		volume("ambience", "Ambience")
 		volume("ui", "Interface sounds")
-		toggle("emoteMusic", "Other players' emote music")
 	end
 
 	do
 		local list = page("display")
-		local header, _, toggle, _, nextOrder = rows(list)
+		local header, _, toggle, _, nextOrder, slider = rows(list)
 		header("Display")
 		local _, setScale = Kit.slider(
 			{ LayoutOrder = nextOrder(), Parent = list },
@@ -137,13 +161,36 @@ function SettingsPanel.init()
 			end
 		)
 		setters.uiScale = setScale
+		slider("fov", "Field of view", 60, 100, 1, function(v: number): string
+			return string.format("%d°", math.floor(v + 0.5))
+		end)
+		slider("brightness", "Brightness", -0.3, 0.3, 0.05, function(v: number): string
+			local n = math.floor(v * 100 + 0.5)
+			return if n > 0 then "+" .. n else tostring(n)
+		end)
+		-- Low quality: no bloom or haze, fewer shadows, shorter lamp light, effects and weather cut back, the menus'
+		-- moving touches still (slower devices, more frames a second).
+		toggle("lowGraphics", "Low quality mode (more FPS on slower devices)")
+		toggle("showFps", "Show frames a second")
+		toggle("weather", "Rain and snow")
+		header("Comfort")
 		toggle("reduceMotion", "Reduce motion")
 		toggle("cameraShake", "Camera shake")
-		-- Low graphics: no bloom or haze, fewer shadows and shorter lamp light (slower devices).
-		toggle("lowGraphics", "Low graphics")
+		toggle("screenFlashes", "Screen flashes")
+		toggle("showHud", "Show the HUD")
 		-- Your own emotes, in the lobby (both stay still under Reduce motion).
 		toggle("emoteCamera", "Camera moves round your showpiece emotes")
 		toggle("emoteCutscenes", "Godhood emote cutscenes")
+	end
+
+	do
+		local header, _, toggle = rows(page("game"))
+		header("Other players")
+		toggle("nameTags", "Names over other players")
+		toggle("chatBubbles", "Chat bubbles")
+		toggle("otherAuras", "Other players' auras")
+		toggle("otherEmoteFx", "Other players' emote effects")
+		toggle("emoteMusic", "Other players' emote music")
 	end
 
 	do

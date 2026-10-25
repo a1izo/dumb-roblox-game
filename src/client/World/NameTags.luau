@@ -10,6 +10,7 @@
 local Players = game:GetService("Players")
 
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Settings = require(script.Parent.Parent.UI.Core.Settings)
 
 local NameTags = {}
 
@@ -75,8 +76,14 @@ local function build(character: Model)
 			or character:GetAttribute("Specter") ~= nil and character:GetAttribute("Specter") ~= false
 			or character:GetAttribute("Spectator") ~= nil and character:GetAttribute("Spectator") ~= false
 			or humanoid.Health <= 0
+			or Settings.get("nameTags") == false
 		gui.Enabled = not hidden
 	end
+	Settings.Changed:Connect(function(key)
+		if key == "nameTags" and gui.Parent then
+			refresh()
+		end
+	end)
 	humanoid:GetPropertyChangedSignal("DisplayName"):Connect(function()
 		label.Text = string.upper(humanoid.DisplayName)
 	end)

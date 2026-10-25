@@ -30,6 +30,18 @@ Settings.DEFAULTS = {
 	emoteMusic = true,
 	emoteCamera = true,
 	emoteCutscenes = true,
+	-- (2026-10-25)
+	master = 1, -- every sound, over the four groups
+	fov = 70, -- the camera's field of view, outside cutscenes
+	brightness = 0, -- -0.3 .. 0.3, over the scene's own grade
+	screenFlashes = true, -- white flashes and impact frames (off for players sensitive to them)
+	showFps = false,
+	showHud = true,
+	weather = true, -- rain and snow falling round you
+	nameTags = true, -- the names over other players
+	chatBubbles = true,
+	otherAuras = true, -- other players' auras
+	otherEmoteFx = true, -- other players' emote effects
 }
 
 local values = table.clone(Settings.DEFAULTS)
@@ -40,6 +52,10 @@ local SEND_DELAY = 1
 local function apply(key: string, value: any)
 	if key == "reduceMotion" then
 		Motion.setReduced(value == true)
+	elseif key == "lowGraphics" then
+		Motion.setLow(value == true)
+	elseif key == "screenFlashes" then
+		Motion.setFlashes(value ~= false)
 	elseif key == "uiScale" then
 		Responsive.setUserScale(tonumber(value) or 1)
 	end

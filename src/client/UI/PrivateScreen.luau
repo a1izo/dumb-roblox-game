@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
@@ -33,6 +34,15 @@ local heldNoteButton: TextButton
 
 local cause = Config.DEATH_CAUSES[1]
 local picked: number? = nil
+local wornReason: () -> Cosmetics.Item?
+
+-- The custom death this player wears (Cosmetics kind "reason"), or nil.
+function wornReason(): Cosmetics.Item?
+	local profile = ClientState.profile
+	local id = if profile and profile.equipped then profile.equipped.reason else nil
+	local item = Cosmetics.byId(id)
+	return if item and item.kind == "reason" then item else nil
+end
 
 -- Seconds until the Manual opens again (0: it is open).
 local function cooldownLeft(): number
@@ -55,9 +65,17 @@ local function refresh()
 		end
 	end
 	renderLearned(learned, picked, ready)
+	-- (the custom death you wear first, then the three plain causes: Inventory > Custom deaths)
 	local options = {}
+	local worn = wornReason()
+	if worn then
+		table.insert(options, { id = worn.cause, text = worn.cause, sub = "Your custom death" })
+	end
 	for _, name in ipairs(Config.DEATH_CAUSES) do
 		table.insert(options, { id = name, text = name })
+	end
+	if not table.find(Config.DEATH_CAUSES, cause) and not (worn and worn.cause == cause) then
+		cause = Config.DEATH_CAUSES[1]
 	end
 	renderCauses(options, cause, ready)
 end
@@ -139,7 +157,14 @@ local function build()
 		end
 	end)
 	Kit.heading({ text = "Cause of death", LayoutOrder = 5, Parent = list })
-	local causes = Kit.frame({ Name = "Causes", Size = UDim2.new(1, 0, 0, 104), LayoutOrder = 6, Parent = list })
+	-- (two rows, a third when a custom death is worn)
+	local causes = Kit.frame({
+		Name = "Causes",
+		Size = UDim2.new(1, 0, 0, 104),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 6,
+		Parent = list,
+	})
 	renderCauses = Kit.pickGrid(causes, UDim2.new(0.5, -T.space.s, 0, 48), function(id)
 		cause = id
 		refresh()

@@ -77,7 +77,7 @@ end
 
 -- A colour flash over the scene: tinted toward `color`, `brightness` brighter at once, back over `seconds`.
 function Screen.flash(color: Color3, brightness: number, seconds: number)
-	if Motion.isReduced() then
+	if Motion.isReduced() or Motion.flashesOff() then
 		return
 	end
 	local cc = Instance.new("ColorCorrectionEffect")
@@ -112,7 +112,7 @@ end
 
 -- An impact frame (`seconds`, about three frames): the world blown out pale and colourless, `bodies` black against it.
 function Screen.impact(bodies: { Model }, seconds: number?)
-	if Motion.isReduced() then
+	if Motion.isReduced() or Motion.flashesOff() then
 		return
 	end
 	local cc = Instance.new("ColorCorrectionEffect")

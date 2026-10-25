@@ -180,6 +180,10 @@ local function budget(): number
 	if Settings.get("lowGraphics") then
 		scale *= 0.6
 	end
+	-- (the Weather setting off: nothing falls round you)
+	if Settings.get("weather") == false then
+		scale = 0
+	end
 	return scale
 end
 
@@ -884,7 +888,7 @@ function RainController.init()
 	Responsive.Changed:Connect(applyRates)
 	Governor.Changed:Connect(applyRates)
 	Settings.Changed:Connect(function(key)
-		if key == "reduceMotion" or key == "lowGraphics" then
+		if key == "reduceMotion" or key == "lowGraphics" or key == "weather" then
 			applyRates()
 		end
 	end)

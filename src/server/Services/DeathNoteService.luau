@@ -14,6 +14,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -62,6 +63,11 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 		written = true,
 		death = CosmeticsService.style(target.player, "death"),
 	}
+	-- (a custom death written as the cause: its effect plays on the body as it falls, Presentation/CustomDeaths)
+	local custom = Cosmetics.reasonByCause(cause)
+	if custom then
+		data.reason = custom.style
+	end
 	local writing = CosmeticsService.style(kira.player, "writing")
 	if writing and typeof(kira.player) == "Instance" then
 		local others = {}
@@ -217,8 +223,14 @@ local function onWrite(player: Player, payload)
 		return
 	end
 	local cause = "Heart attack"
-	if type(payload.cause) == "string" and table.find(Config.DEATH_CAUSES, payload.cause) then
-		cause = payload.cause
+	-- (one of the three plain causes, or the custom death the writer wears)
+	local worn = Cosmetics.reason(CosmeticsService.style(player, "reason"))
+	if type(payload.cause) == "string" then
+		if table.find(Config.DEATH_CAUSES, payload.cause) then
+			cause = payload.cause
+		elseif worn and payload.cause == worn.cause then
+			cause = worn.cause
+		end
 	end
 	startWriting(ps, typed, cause)
 end

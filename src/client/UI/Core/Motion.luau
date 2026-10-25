@@ -22,6 +22,24 @@ function Motion.setReduced(value: boolean)
 	reduced = value
 end
 
+-- Low quality mode (Settings lowGraphics): the menus' looping touches (glitches, drifting motes) stay still.
+local low = false
+function Motion.setLow(value: boolean)
+	low = value
+end
+function Motion.isLow(): boolean
+	return low
+end
+
+-- Screen flashes (white washes, impact frames): a setting of their own, off for players sensitive to them.
+local flashes = true
+function Motion.setFlashes(value: boolean)
+	flashes = value
+end
+function Motion.flashesOff(): boolean
+	return not flashes
+end
+
 function Motion.isReduced(): boolean
 	return reduced
 end

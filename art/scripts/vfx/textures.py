@@ -520,12 +520,13 @@ def VfxDust(cell=128, grid=4, seed=15):
         tone = np.where(light > 0.62, 1.0, np.where(light > 0.38, 0.78, 0.58))
         rim = inside & (h < 0.02 * grow)
         tone = np.where(rim, 0.5, tone)
+        # (eaten away from its thin edges in as it thins, soft-edged and never outlined: hollowed from the middle with an
+        # outline round each hole it read as rings of bubbles in the game, 2026-10-25)
         cut = -0.6 + 1.5 * life ** 1.5
-        eaten = erosion + (0.35 - h * 2.5) * life * 2 < cut
-        alive = inside & ~eaten
-        edge_rim = alive & ~np.roll(alive, 1, 0) | alive & ~np.roll(alive, -1, 0)
-        tone = np.where(edge_rim & (life > 0.15), 0.52, tone)
-        a = D.smoothstep(0.0, 0.004, h) * alive
+        margin = erosion + (h * 2.5 - 0.1) * life * 2 - cut  # (thin edges go first, the thick heart last)
+        alive = inside & (margin > 0)
+        a = D.smoothstep(0.0, 0.004, h) * np.clip(margin / 0.12, 0, 1) * inside
+        tone = np.where(rim, 0.62, tone)
         frames.append(D.rgba(tone, a))
     return D.bleed(D.sheet(frames, grid))
 

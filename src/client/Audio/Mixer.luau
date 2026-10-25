@@ -38,7 +38,7 @@ local function apply(name: string, fade: number?)
 	if not group then
 		return
 	end
-	local volume = BASE[name] * (tonumber(Settings.get(GROUPS[name])) or 1)
+	local volume = BASE[name] * (tonumber(Settings.get(GROUPS[name])) or 1) * (tonumber(Settings.get("master")) or 1)
 	if name == "Music" then
 		volume *= duckFactor()
 	end
@@ -73,7 +73,7 @@ function Mixer.init()
 	groups.Outdoor = outdoor
 	Settings.Changed:Connect(function(key)
 		for name, settingKey in pairs(GROUPS) do
-			if settingKey == key then
+			if settingKey == key or key == "master" then
 				apply(name, 0.2)
 			end
 		end

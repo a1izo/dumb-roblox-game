@@ -19,6 +19,7 @@ local Mixer = require(script.Parent.Parent.Parent.Audio.Mixer)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local BookStage = require(script.Parent.Parent.BookStage)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
+local CustomDeaths = require(script.Parent.Parent.CustomDeaths)
 local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
@@ -80,6 +81,12 @@ return function(cue)
 	task.delay(0.8, Sfx.play, "heartbeat")
 	task.delay(1.9, Sfx.play, "flatline")
 	local removeVignette = Cinema.vignette(C.red, 0.3)
+	-- A custom death written as the cause (Presentation/CustomDeaths): its effect starts as the body goes down.
+	if type(data.reason) == "string" then
+		task.delay(0.9, function()
+			CustomDeaths.play(data.reason, Cinema.character(data.userId))
+		end)
+	end
 	-- The body hits the floor in a burst of shards and leaves a chalk outline.
 	task.delay(1.15, function()
 		local body = Cinema.character(data.userId)

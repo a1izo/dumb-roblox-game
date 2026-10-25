@@ -471,14 +471,20 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	-- Imports older than the scripts were written for (a checkout that was never pulled imports old files: the owner's,
 	-- 2026-10-24, showed none of the new props and nothing said why). Said loudly in Studio, and kept on the store for
 	-- the client's notice (World/ImportNotice).
+	-- (2026-10-25: a file never imported is listed too: the owner's place had never had the Fx set and the notice
+	-- said nothing of it)
 	local stale = {}
 	for kind, wanted in pairs(Expected :: any) do
 		local have = ModelLibrary.version(kind)
-		-- (never imported at all is said above: the stand-ins are used, nothing is out of date)
-		if have > 0 and have < wanted then
+		if have < wanted then
 			-- ("ModelsCore" -> DeathsGambitModels_Core.fbx, "MapsLobby" -> DeathsGambitMaps_Lobby.fbx)
 			local file = "DeathsGambit" .. (string.gsub(kind, "^(%a-s)(%u)", "%1_%2")) .. ".fbx"
-			table.insert(stale, string.format("%s (v%d here, v%d wanted)", file, have, wanted))
+			table.insert(
+				stale,
+				if have > 0
+					then string.format("%s (v%d here, v%d wanted)", file, have, wanted)
+					else string.format("%s (not imported yet)", file)
+			)
 		end
 	end
 	table.sort(stale)

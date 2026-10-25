@@ -396,6 +396,9 @@ end
 
 -- A full-screen colour flash that fades out.
 function Cinema.flash(color: Color3, strength: number?, seconds: number?)
+	if Motion.flashesOff() then
+		return
+	end
 	local frame = Kit.Base.make("Frame", {
 		BackgroundTransparency = 1 - (strength or 0.6),
 		BackgroundColor3 = color,
@@ -417,6 +420,9 @@ end
 -- An anime impact frame: for a blink the screen washes over in `color` and thin streaks of light shoot out
 -- from the middle, then everything fades. Lands on a hit (a pen driven into the page, a slam).
 function Cinema.impact(color: Color3, strength: number?, seconds: number?)
+	if Motion.flashesOff() then
+		return
+	end
 	local life = seconds or 0.22
 	local holder = Kit.Base.make("Frame", {
 		BackgroundTransparency = 1 - (strength or 0.55),

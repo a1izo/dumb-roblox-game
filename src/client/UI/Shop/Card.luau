@@ -29,6 +29,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
+local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local Kit = require(script.Parent.Parent.Kit)
 local Motion = require(script.Parent.Parent.Core.Motion)
@@ -362,6 +363,72 @@ local function still(item: Cosmetics.Item, parent: GuiObject)
 		end
 		return
 	end
+	if item.kind == "reason" then
+		-- A custom death: a torn notebook page, ruled, the cause handwritten across it in the Manual's hand, a red
+		-- stroke under it in the item's own colour.
+		local page = Kit.Base.make("Frame", {
+			Name = "Page",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.52),
+			Size = UDim2.new(0.86, 0, 0.82, 0),
+			Rotation = -3,
+			BackgroundColor3 = Color3.fromRGB(232, 226, 210),
+			BorderSizePixel = 0,
+			Parent = parent,
+		})
+		Kit.Base.make("UIGradient", {
+			Rotation = 90,
+			Color = ColorSequence.new(Color3.fromRGB(255, 252, 244), Color3.fromRGB(205, 196, 176)),
+			Parent = page,
+		})
+		for k = 1, 5 do
+			Kit.Base.make("Frame", {
+				Name = "Rule",
+				Position = UDim2.new(0.06, 0, 0.16 * k, 0),
+				Size = UDim2.new(0.88, 0, 0, 1),
+				BackgroundColor3 = Color3.fromRGB(150, 165, 190),
+				BackgroundTransparency = 0.45,
+				BorderSizePixel = 0,
+				Parent = page,
+			})
+		end
+		Kit.Base.make("Frame", {
+			Name = "Margin",
+			Position = UDim2.new(0.14, 0, 0, 0),
+			Size = UDim2.new(0, 1, 1, 0),
+			BackgroundColor3 = Color3.fromRGB(190, 90, 90),
+			BackgroundTransparency = 0.4,
+			BorderSizePixel = 0,
+			Parent = page,
+		})
+		local words = Kit.Base.make("TextLabel", {
+			Name = "Cause",
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.55, 0.47),
+			Size = UDim2.new(0.8, 0, 0.62, 0),
+			Text = tostring(item.cause or item.name),
+			TextWrapped = true,
+			TextScaled = true,
+			FontFace = WorldFont.hand(),
+			TextColor3 = Color3.fromRGB(28, 20, 16),
+			Rotation = -2,
+			Parent = page,
+		})
+		Kit.Base.make("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = 9, Parent = words })
+		words:SetAttribute("KeepFont", true)
+		Kit.Base.make("Frame", {
+			Name = "Stroke",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.55, 0.84),
+			Size = UDim2.new(0.62, 0, 0, 3),
+			Rotation = -4,
+			BackgroundColor3 = item.color or C.red,
+			BorderSizePixel = 0,
+			Parent = page,
+		})
+		return
+	end
 	Kit.icon({
 		name = STILL_ICON[item.kind] or "seal",
 		size = 64,
@@ -544,7 +611,7 @@ local function motes(face: Frame, color: Color3)
 			ZIndex = 7,
 			Parent = face,
 		}) :: Frame
-		if not Motion.isReduced() then
+		if not Motion.isReduced() and not Motion.isLow() then
 			-- Up the card and fading, over and over, each at its own pace.
 			local seconds = random:NextNumber(5, 9)
 			TweenService:Create(

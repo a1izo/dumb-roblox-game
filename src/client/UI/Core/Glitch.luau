@@ -207,7 +207,7 @@ local function rest(entry: Entry)
 end
 
 local function start(entry: Entry, mode: string, now: number)
-	if Motion.isReduced() or not enabled then
+	if Motion.isReduced() or Motion.isLow() or not enabled then
 		return
 	end
 	if entry.mode == nil then
@@ -284,7 +284,7 @@ local function step()
 	for entry in pairs(entries) do
 		if not entry.target.Parent then
 			entries[entry] = nil
-		elseif Motion.isReduced() or not enabled then
+		elseif Motion.isReduced() or Motion.isLow() or not enabled then
 			if entry.mode then
 				entry.mode = nil
 				rest(entry)

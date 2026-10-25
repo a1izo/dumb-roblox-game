@@ -35,9 +35,10 @@ local function show(text: string?)
 	label.FontFace = Font.fromEnum(Enum.Font.GothamMedium)
 	label.TextSize = 15
 	label.TextWrapped = true
-	label.Text = "Studio only - out of date imports: "
+	label.Text = "STUDIO ONLY: these imports are missing or old, so their props show as plain stand-ins: "
 		.. text
-		.. ". Pull the latest code, then import these again from art/export (see the Output)."
+		.. ". In your Lgame folder run git pull, then in Studio use Import 3D on each of these files from"
+		.. " Lgame/art/export (delete the old copy of each first). This notice goes away when they are all in."
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(0, 8)
 	pad.PaddingBottom = UDim.new(0, 8)
@@ -50,7 +51,8 @@ local function show(text: string?)
 end
 
 function ImportNotice.init()
-	if not RunService:IsStudio() then
+	-- (not in the play-test harness either, whose place has no imports at all and whose pictures it would cover)
+	if not RunService:IsStudio() or workspace:GetAttribute("DGEmoteHarness") then
 		return
 	end
 	task.spawn(function()

@@ -27,6 +27,7 @@ local FxKit = require(script.Parent.Parent.Presentation.FxKit)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 local ClientState = require(script.Parent.Parent.ClientState)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
+local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Governor = require(script.Parent.Parent.World.Governor)
 local LightingController = require(script.Parent.Parent.World.LightingController)
 
@@ -1836,7 +1837,7 @@ FX.lowBatteryCharge = function(character, preview)
 					}) do
 						Vfx.Beams.bolt((cf * CFrame.new(ends[1])).Position, (cf * CFrame.new(ends[2])).Position, 0.22, {
 							color = Color3.fromRGB(200, 230, 255),
-							width = 0.16,
+							width = 0.45,
 							bright = 1.6,
 							light = 1,
 							pieces = 6,
@@ -3798,10 +3799,13 @@ function EmoteFx.play(character: Model, clip: string, preview: boolean?, phase: 
 	local fx = FX[clip]
 	local rung = if preview then 0 else EmoteFx.rung(clip)
 	local stops: { () -> () } = {}
-	if fx and (preview or rung >= (RUNG[clip] or 1)) then
+	-- (another player's emote: its effects and its aura only if the settings allow them, 2026-10-25)
+	local owner = Players:GetPlayerFromCharacter(character)
+	local other = not preview and owner ~= nil and owner ~= Players.LocalPlayer
+	if fx and (preview or rung >= (RUNG[clip] or 1)) and not (other and Settings.get("otherEmoteFx") == false) then
 		table.insert(stops, fx(character, preview == true, phase))
 	end
-	local spec = if preview then nil else auraFor(clip, rung)
+	local spec = if preview or (other and Settings.get("otherAuras") == false) then nil else auraFor(clip, rung)
 	if spec then
 		table.insert(stops, Aura.start(character, spec))
 	end

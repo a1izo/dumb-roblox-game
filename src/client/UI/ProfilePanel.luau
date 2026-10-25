@@ -1,4 +1,6 @@
--- Your profile: rank, lifetime numbers, every role's record and mastery, and achievements.
+-- Your profile, in two tabs: Overview (rank, lifetime numbers, every role's record and mastery) and Achievements
+-- (each a card: done or how far along, its reward; the owner, 2026-10-25: "a separate achievements tab inside the
+-- profile").
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -6,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Progression = Shared:WaitForChild("Progression")
 local Achievements = require(Progression:WaitForChild("Achievements"))
+local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Mastery = require(Progression:WaitForChild("Mastery"))
 local Roles = require(Shared:WaitForChild("Roles"))
 
@@ -22,6 +25,10 @@ local ROLE_ORDER = { "Kira", "Follower", "L", "Watari", "TaskForce" } -- terms:o
 local CELL = 80 -- height of a number's cell
 
 local list: ScrollingFrame
+local awards: ScrollingFrame
+local awardsGrid: Frame
+local current = "overview"
+local chooseTab: ((string) -> ())? = nil
 
 local function percent(won: number, played: number): string
 	if played <= 0 then
@@ -151,58 +158,128 @@ local function roleCard(profile, roleId: string, order: number)
 	end
 end
 
-local function achievementLine(profile, achievement, order: number)
+-- An achievement's card: its mark (a tick, or a lock), its name and what it asks, a bar of how far along you are (full
+-- and lit when done), and what it pays.
+local function achievementCard(profile, achievement, order: number)
 	local done = (profile.achievements or {})[achievement.id] ~= nil
-	local row = Kit.frame({ Name = "Achievement", Size = UDim2.new(1, 0, 0, 52), LayoutOrder = order, Parent = list })
+	local value = math.min(Achievements.value(profile, achievement), achievement.goal)
+	local card = Kit.card({
+		Name = "Achievement",
+		Size = UDim2.fromScale(1, 1),
+		padding = T.space.m,
+		LayoutOrder = order,
+		Parent = awardsGrid,
+	})
+	if done then
+		Kit.Base.make("UIStroke", { Color = C.candle, Transparency = 0.45, Thickness = 1, Parent = card })
+	end
 	Kit.icon({
 		name = if done then "check" else "lock",
 		size = 22,
-		color = if done then C.good else C.faint,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 2, 0.5, 0),
-		Parent = row,
+		color = if done then C.candle else C.faint,
+		Position = UDim2.fromOffset(0, 2),
+		Parent = card,
 	})
 	Kit.label({
 		Text = achievement.name,
 		font = "bodyBold",
 		color = if done then C.bone else C.dim,
 		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(34, 6),
-		Size = UDim2.new(1, -130, 0, 20),
-		Parent = row,
+		Position = UDim2.fromOffset(30, 0),
+		Size = UDim2.new(1, -30, 0, 22),
+		Parent = card,
 	})
 	Kit.label({
 		Text = achievement.text,
 		size = "small",
 		color = C.dim,
+		TextWrapped = true,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(30, 22),
+		Size = UDim2.new(1, -30, 0, 34),
+		Parent = card,
+	})
+	local _, setBar = Kit.meter({
+		color = if done then C.candle else C.steel,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, -20),
+		Size = UDim2.new(1, 0, 0, 4),
+		Parent = card,
+	})
+	setBar(if done then 1 else value / math.max(1, achievement.goal))
+	local reward = string.format("%d coins", achievement.coins)
+	local title = achievement.title and Cosmetics.byId(achievement.title)
+	if title then
+		reward ..= "  ·  title " .. title.name
+	end
+	Kit.label({
+		Text = if done
+			then "Done  ·  " .. reward
+			else string.format("%d / %d  ·  %s", value, achievement.goal, reward),
+		font = "mono",
+		size = "micro",
+		color = if done then C.candle else C.dim,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(34, 26),
-		Size = UDim2.new(1, -130, 0, 18),
-		Parent = row,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 16),
+		Parent = card,
 	})
-	if not done then
-		Kit.label({
-			Text = string.format(
-				"%d / %d",
-				math.min(Achievements.value(profile, achievement), achievement.goal),
-				achievement.goal
-			),
-			font = "mono",
-			size = "small",
-			color = C.dim,
-			TextXAlignment = Enum.TextXAlignment.Right,
-			TextWrapped = false,
-			AutomaticSize = Enum.AutomaticSize.None,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.fromScale(1, 0.5),
-			Size = UDim2.fromOffset(90, 20),
-			Parent = row,
-		})
+end
+
+local function rebuildAwards(profile)
+	Kit.clear(awards)
+	-- (the count and its bar over the grid of cards)
+	awardsGrid = Kit.frame({
+		Name = "Grid",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 1,
+		Parent = awards,
+	})
+	Kit.grid(awardsGrid, UDim2.new(0.5, -T.space.s / 2, 0, 124), T.space.s)
+	local unlocked = 0
+	for _, achievement in ipairs(Achievements.LIST) do
+		if (profile.achievements or {})[achievement.id] ~= nil then
+			unlocked += 1
+		end
 	end
-	Kit.rule({ Position = UDim2.new(0, 0, 1, -1), Parent = row })
+	-- (a header across the grid: how many, and a bar of them all)
+	local head = Kit.frame({ Name = "Head", Size = UDim2.new(1, 0, 0, 58), LayoutOrder = 0, Parent = awards })
+	Kit.text({
+		face = "Head",
+		text = string.format("%d of %d", unlocked, #Achievements.LIST),
+		size = T.size.heading,
+		color = C.white,
+		Parent = head,
+	})
+	local _, setAll = Kit.meter({
+		color = C.candle,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, -4),
+		Size = UDim2.new(1, 0, 0, 5),
+		Parent = head,
+	})
+	setAll(unlocked / math.max(1, #Achievements.LIST))
+	-- done ones first, then the nearest to done
+	local order = table.clone(Achievements.LIST)
+	table.sort(order, function(x, y)
+		local dx = (profile.achievements or {})[x.id] ~= nil
+		local dy = (profile.achievements or {})[y.id] ~= nil
+		if dx ~= dy then
+			return dx
+		end
+		local px = Achievements.value(profile, x) / math.max(1, x.goal)
+		local py = Achievements.value(profile, y) / math.max(1, y.goal)
+		return px > py
+	end)
+	for index, achievement in ipairs(order) do
+		achievementCard(profile, achievement, index)
+	end
 end
 
 local function rebuild()
@@ -229,29 +306,41 @@ local function rebuild()
 	for _, roleId in ipairs(ROLE_ORDER) do
 		roleCard(profile, roleId, nextOrder())
 	end
+	rebuildAwards(profile)
+end
 
-	local unlocked = 0
-	for _, achievement in ipairs(Achievements.LIST) do
-		if (profile.achievements or {})[achievement.id] ~= nil then
-			unlocked += 1
-		end
-	end
-	Kit.heading({
-		text = "Achievements",
-		detail = string.format("%d of %d", unlocked, #Achievements.LIST),
-		LayoutOrder = nextOrder(),
-		Parent = list,
-	})
-	for _, achievement in ipairs(Achievements.LIST) do
-		achievementLine(profile, achievement, nextOrder())
+-- Opens the profile on a tab ("overview" or "achievements").
+function ProfilePanel.open(tab: string?)
+	if Router.open("profile") ~= false and tab and chooseTab then
+		chooseTab(tab)
 	end
 end
 
 function ProfilePanel.init()
 	local win = Kit.window({ name = "profile", title = "Profile", size = "M" })
-	list = Kit.scroll({ Parent = win.body })
+	local below = T.touch + T.space.s
+	list = Kit.scroll({ Position = UDim2.fromOffset(0, below), Size = UDim2.new(1, 0, 1, -below), Parent = win.body })
 	Kit.list(list, T.space.s)
 	Kit.pad(list, 0, T.space.xs)
+	awards = Kit.scroll({
+		Position = UDim2.fromOffset(0, below),
+		Size = UDim2.new(1, 0, 1, -below),
+		Visible = false,
+		Parent = win.body,
+	})
+	Kit.list(awards, T.space.m)
+	Kit.pad(awards, 0, T.space.xs)
+	local _, choose = Kit.tabs({
+		items = { { id = "overview", label = "Overview" }, { id = "achievements", label = "Achievements" } },
+		selected = current,
+		Size = UDim2.new(1, 0, 0, T.touch),
+		Parent = win.body,
+	}, function(id)
+		current = id
+		list.Visible = id == "overview"
+		awards.Visible = id == "achievements"
+	end)
+	chooseTab = choose
 	Kit.register(win, {
 		allowed = function(view)
 			return not view.participant

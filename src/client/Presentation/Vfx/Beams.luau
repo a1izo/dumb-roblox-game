@@ -170,7 +170,9 @@ function Beams.bolt(
 	local made: { Beam } = {}
 	for k = 1, pieces do
 		local o = table.clone(options)
-		o.tex = options.tex or "VfxStreak"
+		-- (the ring's band: a white core in a soft glow, even along it; the spark's streak tapered away to nothing
+		-- on a short piece and the bolts did not show, 2026-10-25)
+		o.tex = options.tex or "VfxRingBand"
 		made[k] = Beams.make(nodes[k - 1], nodes[k], o, h)
 	end
 	local dir = (to - from).Unit

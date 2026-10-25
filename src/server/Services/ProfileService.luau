@@ -34,6 +34,17 @@ local SETTINGS = {
 	emoteMusic = "boolean",
 	emoteCamera = "boolean",
 	emoteCutscenes = "boolean",
+	master = { min = 0, max = 1 },
+	fov = { min = 60, max = 100 },
+	brightness = { min = -0.3, max = 0.3 },
+	screenFlashes = "boolean",
+	showFps = "boolean",
+	showHud = "boolean",
+	weather = "boolean",
+	nameTags = "boolean",
+	chatBubbles = "boolean",
+	otherAuras = "boolean",
+	otherEmoteFx = "boolean",
 }
 
 local function setSettings(player: Player, payload)
