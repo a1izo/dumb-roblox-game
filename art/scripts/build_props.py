@@ -281,7 +281,7 @@ def build_one(key):
         how = {"size": spec["texture"], "where": where, "finish": more.get("finish")}
         if spec.get("detail"):
             how.update(exact=spec.get("exact", False), ao_strength=spec.get("ao", 0.6), high=highs.get(None),
-                       normal_full=True)
+                       normal_full=True, normal_size=spec.get("normal"))
         if sharing:
             baked = _bake_as_one(key, main, sharing, **how)
         else:
@@ -291,7 +291,7 @@ def build_one(key):
             if piece["own"]:
                 mk.bake(pieces[name], size=piece["exact"] or spec["texture"], where=where, exact=bool(piece["exact"]),
                         finish=piece["finish"], high=highs.get(name), ao_strength=spec.get("ao", 0.6),
-                        normal_full=bool(spec.get("detail")))
+                        normal_full=bool(spec.get("detail")), normal_size=piece.get("normal"))
         for obj in [main] + [pieces[name] for name, piece in more["pieces"].items() if not piece["own"]]:
             _wear(obj, baked)
     else:
@@ -309,7 +309,7 @@ def build_one(key):
             high.data.transform(Matrix.Translation(shift))
         mk.unwrap(main)
         mk.bake(main, size=spec["texture"], where=where, ao_strength=spec.get("ao", 0.6), exact=spec.get("exact", False),
-                high=highs.get(None), normal_full=bool(spec.get("detail")))
+                high=highs.get(None), normal_full=bool(spec.get("detail")), normal_size=spec.get("normal"))
     # (the high-detail copies only lent their surface to the bake)
     for high in highs.values():
         bpy.data.objects.remove(high, do_unlink=True)

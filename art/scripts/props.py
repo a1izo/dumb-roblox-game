@@ -38,7 +38,7 @@ BUILDERS = {}
 
 
 def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Core", lights=None,
-         anchor=None, screen=None, ao=0.6, exact=False, detail=False):
+         anchor=None, screen=None, ao=0.6, exact=False, detail=False, normal=None):
     """Registers a prop builder. set: which FBX it goes in, DeathsGambitModels_<set>.fbx ("Core": the
     props every map and the game itself use, with the effect and UI textures; "Tokyo", "Agency",
     "Campus", "Lobby", "Meeting": one venue's own). lights: the lights the prop carries, so a lamp never exists
@@ -55,7 +55,8 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
     exact: the texture is `texture` px whatever the look rulebook would give a prop of its surface (a creature whose
     hundreds of small parts would bleed together at the rulebook's size).
     detail: a hero prop baked from a high-detail copy of itself (build_props._high_of: each part's "dg_detail", more
-    subdivision and the displacements that raise creases, folds and wear), its normal map at full size."""
+    subdivision and the displacements that raise creases, folds and wear), its normal map at full size.
+    normal: its normal map's size in px, when not the one the colour's size gives it (the budget's say)."""
 
     def register(fn):
         BUILDERS[key] = {
@@ -68,6 +69,7 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
             "lights": lights or [],
             "anchor": anchor,
             "screen": screen,
+            "normal": normal,
             "ao": ao,
             "exact": exact,
             "detail": detail,
@@ -114,7 +116,8 @@ MANUAL_REST = _px(576, 4, 1016, 276)
 MANUAL_UNSEEN = _px(4, 4, 60, 58)
 
 
-def piece(parts, laid=None, into=(0.0, 0.0, 1.0, 1.0), own=False, bake=True, finish=None, exact=None, plain=False):
+def piece(parts, laid=None, into=(0.0, 0.0, 1.0, 1.0), own=False, bake=True, finish=None, exact=None, plain=False,
+          normal=None):
     """A piece of a prop that moves by itself (a book's board), for a builder's third value:
     {"pieces": {name: piece(...)}, "laid", "into", "finish", "hinge", "turn", "page"}. Each piece becomes
     a mesh "<Prop>_<name>". laid, into: its faces laid by hand and where the others go (modelkit.unwrap),
@@ -123,9 +126,11 @@ def piece(parts, laid=None, into=(0.0, 0.0, 1.0, 1.0), own=False, bake=True, fin
     not); finish: pictures drawn onto the baked maps (modelkit.bake). hinge: {piece: (x, y, z)}, a point
     of the line each piece turns about, which runs along Y; turn: {piece: degrees} it turns, about -Y,
     to lie open; page: where the game writes. plain: an own piece of a hero prop (detail=True) baked from
-    itself instead of a high-detail copy (parts crowded so close that the copy's rays catch their neighbours: hair)."""
+    itself instead of a high-detail copy (parts crowded so close that the copy's rays catch their neighbours: hair).
+    normal: an own piece's normal map's size in px (None: as its colour's size gives it), smaller for a piece with
+    little relief to show, where the pixels are better spent elsewhere."""
     return {"parts": parts, "laid": laid, "into": into, "own": own, "bake": bake, "finish": finish, "exact": exact,
-            "plain": plain}
+            "plain": plain, "normal": normal}
 
 
 def _faced(obj, normal, mat):

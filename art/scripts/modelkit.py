@@ -708,6 +708,25 @@ def texture_size(obj, limit=1024, where="prop"):
     return int(min(limit, lookbook.LARGEST, max(lookbook.SMALLEST, size)))
 
 
+def bleed(pixels, passes=16):
+    """Grows the baked islands of a colour map (a pixel array [v, u, 4], changed in place) out over the empty black
+    texels round them, a texel a pass, each taking the mean of its filled neighbours: in a small map of many small
+    islands the bake's margin leaves gaps, and the islands' edges sampled the black in them. For bake's `finish`."""
+    filled = pixels[..., :3].max(axis=2) > 1e-5
+    for _ in range(passes):
+        if filled.all():
+            break
+        acc = np.zeros(pixels.shape[:2] + (3,), dtype=np.float32)
+        count = np.zeros(pixels.shape[:2], dtype=np.float32)
+        for dv, du in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            acc += np.roll(pixels[..., :3], (dv, du), axis=(0, 1)) * np.roll(filled, (dv, du), axis=(0, 1))[..., None]
+            count += np.roll(filled, (dv, du), axis=(0, 1))
+        grow = ~filled & (count > 0)
+        pixels[grow, :3] = acc[grow] / count[grow][:, None]
+        filled |= grow
+    return pixels
+
+
 def _save_map(name, pixels, size, non_color, quality):
     img = bpy.data.images.new(name, size, size, alpha=False)
     if non_color:
@@ -730,7 +749,7 @@ def _save_map(name, pixels, size, non_color, quality):
 
 
 def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False, finish=None, high=None,
-         normal_full=False):
+         normal_full=False, normal_size=None):
     """Bakes the object's materials into one set of textures, then gives the object a single material
     using them: <name>_color.jpg (colour with the shade of its own hollows), <name>_normal.jpg (the
     scans' relief, at half the colour's size), <name>_rough.jpg and, when part of
@@ -742,7 +761,7 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
     high: a high-detail copy of the object in the same place (its creases, folds and wear raised in real geometry,
     build_props._high_of): every map is baked from it onto this one's surface (selected to active), the way a
     sculpted model is baked down to a game mesh. normal_full: the normal map at the colour's full size (a hero prop
-    whose relief is its detail).
+    whose relief is its detail). normal_size: the normal map's size in px instead, whatever the colour's.
     Returns the colour map's path."""
     scene = bpy.context.scene
     previous_engine = scene.render.engine
@@ -751,7 +770,7 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
     scene.cycles.samples = samples
     common.ensure_dirs()
     size = size if exact else texture_size(obj, size, where)
-    half = size if normal_full else max(lookbook.SMALLEST // 2, size // 2)
+    half = normal_size or (size if normal_full else max(lookbook.SMALLEST // 2, size // 2))
     small = max(lookbook.SMALLEST // 2, size // 4)
 
     def target(name, side, data=False):
@@ -799,17 +818,23 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
         bpy.context.view_layer.objects.active = obj
         onto = {"use_selected_to_active": True, "cage_extrusion": 0.06, "max_ray_distance": 0.14}
     scene.render.bake.margin = 8
+
+    def pad(img):
+        """(the margin grown round each island: 8 texels in a 1024 map, as many in proportion in a smaller one, where
+        8 texels reach over the gap into the next island and mark it)"""
+        return max(2, img.size[0] // 128)
+
     scene.render.bake.use_pass_direct = False
     scene.render.bake.use_pass_indirect = False
     scene.render.bake.use_pass_color = True
     aim(color_img)
-    bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=8, **onto)
+    bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=pad(color_img), **onto)
     aim(ao_img)
-    bpy.ops.object.bake(type="AO", margin=8, **onto)
+    bpy.ops.object.bake(type="AO", margin=pad(ao_img), **onto)
     aim(normal_img)
-    bpy.ops.object.bake(type="NORMAL", normal_space="TANGENT", margin=8, **onto)
+    bpy.ops.object.bake(type="NORMAL", normal_space="TANGENT", margin=pad(normal_img), **onto)
     aim(rough_img)
-    bpy.ops.object.bake(type="ROUGHNESS", margin=8, **onto)
+    bpy.ops.object.bake(type="ROUGHNESS", margin=pad(rough_img), **onto)
     # Metalness has no bake pass of its own: each material glows by how metal it is, and the glow is
     # baked.
     glows = []
@@ -826,7 +851,7 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
         socket.default_value = (value, value, value, 1)
         bsdf.inputs["Emission Strength"].default_value = 1.0
     aim(metal_img)
-    bpy.ops.object.bake(type="EMIT", margin=8, **onto)
+    bpy.ops.object.bake(type="EMIT", margin=pad(metal_img), **onto)
     for mat, bsdf, colour, strength, sources in glows:
         bsdf.inputs["Emission Color"].default_value = colour
         bsdf.inputs["Emission Strength"].default_value = strength

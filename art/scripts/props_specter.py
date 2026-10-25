@@ -146,7 +146,13 @@ class Skeleton:
         return last
 
 
-@prop("Specter", pivot="bottom", material="Fabric", collide=False, texture=1024, ao=0.35, exact=True, detail=True)
+# Its textures fit the scenes' budget (asked 2026-10-25, "shrink the Deathsinger's textures so the Lobby and war room
+# fit their budget again"; Core loads in every scene and the Lobby has the least room): about 1.6 megapixels in all,
+# spent where they show. The face and the body at 512 with their normal maps as large (their sculpts live in them;
+# at 256 the body's many small parts, staples and claws, bled specks into the skin); the hair at 512 (at 256 its
+# hundred small islands smeared dark squares onto the locks) with a token normal map, since it is flat; the gear, dark
+# and seen least, at 256; the black mane at 128. scripts/budget.py measures it.
+@prop("Specter", pivot="bottom", material="Fabric", collide=False, texture=512, ao=0.35, exact=True, detail=True)
 def specter():
     rng = random.Random(25)
     # (black, asked 2026-10-25: "make his skin black instead of dark blue"; a little sheen on it, so its muscles and
@@ -161,7 +167,7 @@ def specter():
     lips = mk.noisy("Spec_Lips", srgb(26, 22, 40), srgb(52, 44, 74), scale=18, roughness=0.35, kind="plastic")
     tooth = mk.noisy("Spec_Tooth", srgb(196, 178, 120), srgb(240, 230, 196), scale=22, roughness=0.32, kind="plastic")
     claw = mk.noisy("Spec_Claw", srgb(12, 12, 16), srgb(52, 52, 60), scale=20, roughness=0.25, kind="plastic")
-    hair = mk.noisy("Spec_Hair", srgb(8, 10, 30), srgb(22, 30, 78), scale=6, detail=10, roughness=0.42,
+    hair = mk.noisy("Spec_Hair", srgb(14, 18, 46), srgb(26, 34, 84), scale=6, detail=10, roughness=0.42,
                     stretch=(1, 1, 5))
     fur = mk.noisy("Spec_Fur_Wool", srgb(186, 186, 192), srgb(236, 236, 238), scale=26, detail=12, roughness=0.95)
     plume = mk.noisy("Spec_Plume", srgb(6, 7, 10), srgb(26, 28, 38), scale=14, detail=10, roughness=0.68,
@@ -579,13 +585,27 @@ def specter():
         gear.append(mk.torus("Band", 0.14, 0.022, tuple(lwrist + Vector((0, 0, dz))), rot=(62, 0, -18), mat=steel,
                               major_segments=20, minor_segments=8))
 
+    def gaps(colour, normal, rough):
+        """(maps this small: their islands grown over the black between them, in all three maps, since a black texel
+        of a normal map shades a dark speck)"""
+        for pixels in (colour, normal, rough):
+            mk.bleed(pixels)
+
+    def flat_gaps(colour, normal, rough):
+        """(the hair, baked from itself, has no relief to keep: its normal map flat and its roughness even, since at
+        these sizes a texel of them caught a neighbouring island's and shaded a dark square on a lock)"""
+        mk.bleed(colour)
+        normal[...] = (0.5, 0.5, 1.0, 1.0)
+        rough[..., :3] = 0.42
+
     # (the eyes' red first: it is the prop's main glow, Specter_Glow; the stones' pale light the second)
     glows.sort(key=lambda o: 0 if o.name.startswith("Eye") else (1 if o.name.startswith("Iris") else 2))
     return parts, glows, {
+        "finish": gaps,
         "pieces": {
-            "Face": piece(face_parts, own=True, exact=1024),
-            "Hair": piece(hair_parts, own=True, exact=1024, plain=True),
-            "Collar": piece(collar_parts, own=True, exact=1024),
-            "Gear": piece(gear, own=True, exact=1024),
+            "Face": piece(face_parts, own=True, exact=512, finish=gaps),
+            "Hair": piece(hair_parts, own=True, exact=512, plain=True, normal=64, finish=flat_gaps),
+            "Collar": piece(collar_parts, own=True, exact=128, normal=64, finish=gaps),
+            "Gear": piece(gear, own=True, exact=256, finish=gaps),
         },
     }
