@@ -15,6 +15,7 @@ and re-exported at any time. Blender 5.2 (any recent 4.x+ should work). 1 Blende
 | `blend/Props.blend` | Every prop, baked |
 | `blend/Maps_<Venue>.blend` | Each venue's scene (Lobby, Meeting, Agency, Campus, Tokyo) |
 | `export/DeathsGambitModels_Core.fbx` | The props every venue and the game itself use (Grimoire, hood, stations, tip box, board, paper, desks...) with the effect and UI textures |
+| `export/DeathsGambitModels_Fx.fbx` | The effects kit, loaded everywhere like Core: its drawn textures (flames, smoke, sparks, rings, slashes: `scripts/vfx/textures.py`, `volumes.py`) on carrier quads, and the shapes effects grow (`scripts/vfx/meshes.py`) |
 | `export/DeathsGambitModels_<Set>.fbx` | The props made for one venue (Tokyo, Agency, Campus, Lobby, Meeting) |
 | `export/DeathsGambitMaps_<Venue>.fbx` | One venue's scene each, with its tiling textures |
 | `export/textures/` | Baked prop textures (`<Prop>_color`, `_normal`, `_rough`, `_metal`), effect textures, and `maps/` (tiling colour, normal, roughness and metalness maps) |

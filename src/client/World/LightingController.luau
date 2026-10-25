@@ -277,6 +277,21 @@ local function applySky(look: LightingPresets.Look)
 	skyShown = if look.sky and not faces then "" else want
 end
 
+-- A lean of the grade toward an effect's colour (lean below): saturation added, the tint pulled toward a colour.
+local lean = { saturation = 0, tint = nil :: Color3?, amount = 0 }
+
+local function graded(look: LightingPresets.Look): { [string]: any }
+	local tint = look.tint
+	if lean.tint and lean.amount > 0 then
+		tint = tint:Lerp(lean.tint, lean.amount)
+	end
+	return {
+		Saturation = math.clamp(look.saturation + lean.saturation, -1, 1),
+		Contrast = look.contrast,
+		TintColor = tint,
+	}
+end
+
 local function apply(look: LightingPresets.Look, time: number)
 	local previous = currentLook
 	currentLook = look
@@ -303,11 +318,7 @@ local function apply(look: LightingPresets.Look, time: number)
 		Color = look.atmosphereColor,
 		Decay = look.decay,
 	}):Play()
-	TweenService:Create(grade, info, {
-		Saturation = look.saturation,
-		Contrast = look.contrast,
-		TintColor = look.tint,
-	}):Play()
+	TweenService:Create(grade, info, graded(look)):Play()
 	TweenService:Create(bloom, info, {
 		Intensity = look.bloom,
 		Size = look.bloomSize,
@@ -410,6 +421,22 @@ local function update(force: boolean?)
 	if venueChanged or presetChanged or instant then
 		LightingController.Changed:Fire(venue, currentPreset)
 	end
+end
+
+-- A showpiece emote's moment on this player's own screen (Controllers/EmoteFx): the grade gives back `saturation`
+-- (the Grey Realm takes nearly all colour away) and its tint leans `amount` toward `tint`, over `seconds`; unlean
+-- puts it back. The venue's look stays underneath (a change of venue meanwhile keeps the lean).
+function LightingController.lean(saturation: number, tint: Color3?, amount: number?, seconds: number?)
+	lean.saturation = saturation
+	lean.tint = tint
+	lean.amount = amount or 0
+	if currentLook then
+		TweenService:Create(grade, TweenInfo.new(seconds or 0.6, Enum.EasingStyle.Sine), graded(currentLook)):Play()
+	end
+end
+
+function LightingController.unlean(seconds: number?)
+	LightingController.lean(0, nil, 0, seconds or 1.2)
 end
 
 -- Debug panel: forces a lighting preset (nil to follow the camera again).

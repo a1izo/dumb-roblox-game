@@ -23,6 +23,7 @@ export type Info = {
 	collide: boolean,
 	glow: { { number } }?,
 	lights: { any }?, -- the lights it carries (placed by the map builder, see SceneBuilder)
+	flames: { { number } }?, -- where its flames burn: { x, y, z, height } from its pivot (World/Flames lights them)
 	anchor: { number }?, -- where maps put its foot (x, z from its pivot), when not the middle
 	set: string?, -- which import it comes in ("Core": DeathsGambitModels_Core.fbx, "Tokyo": DeathsGambitModels_Tokyo.fbx)
 	-- A station look's slot for the game's screen: the middle of its face from the station's

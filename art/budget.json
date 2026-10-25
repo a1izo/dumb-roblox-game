@@ -67,6 +67,12 @@
       "approved": "2026-10-20",
       "megapixels": 1.4,
       "megabytes": 0.61
+    },
+    {
+      "what": "The VFX kit's own set (Fx v1: 19 effect textures, the flipbooks at 1024 px, and its shape meshes), loaded in every scene beside Core, for the owner's 'make ALL of them extremely high quality, i dont care how long it takes' (2026-10-24); flagged in the report for a veto",
+      "approved": "2026-10-24",
+      "megapixels": 8.2,
+      "megabytes": 2.0
     }
   ]
 }

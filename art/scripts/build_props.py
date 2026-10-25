@@ -259,6 +259,10 @@ def build_one(key):
         entry["at"] = [round(-(x + shift.x), 3), round(z + shift.z, 3), round(y + shift.y, 3)]
         lights.append(entry)
     main["lights"] = json.dumps(lights)
+    # Where its flames burn (a candle's wick tip, x y z in Roblox axes from the pivot, and the flame's height): the
+    # game stands a living flame on each (Presentation/Vfx Recipes.flame; World/Flames).
+    # (a fifth number 1 marks a fire rather than a candle's flame)
+    main["flames"] = json.dumps([spot(f[:3]) + [round(f[3], 3)] + list(f[4:5]) for f in more.get("flames", [])])
     anchor = spec.get("anchor")
     main["anchor"] = json.dumps([round(-(anchor[0] + shift.x), 3), round(anchor[1] + shift.y, 3)] if anchor else None)
     # A station's screen slot stays in design coordinates (the station is placed by its origin).
@@ -389,6 +393,9 @@ def write_catalog():
         if lights:
             items = ["{ " + ", ".join(f"{k} = {_lua_value(v)}" for k, v in sorted(li.items())) + " }" for li in lights]
             text += ", lights = { " + ", ".join(items) + " }"
+        flames = json.loads(obj.get("flames") or "[]")
+        if flames:
+            text += ", flames = { " + ", ".join(_lua_value(f) for f in flames) + " }"
         anchor = json.loads(obj.get("anchor") or "null")
         if anchor:
             text += ", anchor = " + _lua_value(anchor)

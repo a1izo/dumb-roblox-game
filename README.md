@@ -242,7 +242,8 @@ All animations, props, map scenes and textures are built by scripts in `art/` (s
   avatars came out blocky. An avatar with a painted head of its own keeps it on the R6 body
   (`Services/DynamicHeads`) instead of R6's plain head and default smile. The emotes, their props and their checks are described in `docs/emotes.md`.
 - **Props and scenes** are imported in Studio with **Import 3D**: the props every venue and the
-  game use, with the effect and UI textures, `art/export/DeathsGambitModels_Core.fbx`; and for each
+  game use, with the effect and UI textures, `art/export/DeathsGambitModels_Core.fbx`; the effects kit
+  (its textures and shapes, until then Roblox's own particles stand in), `art/export/DeathsGambitModels_Fx.fbx`; and for each
   venue (the lobby, the meeting room, Bureau HQ, University Campus, Tokyo) its props and its scene,
   `art/export/DeathsGambitModels_<Set>.fbx` and `art/export/DeathsGambitMaps_<Venue>.fbx`. Leave them where
   the importer puts them; the server moves them into `ReplicatedStorage > DeathsGambitAssets` when it

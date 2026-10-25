@@ -11,7 +11,8 @@ return {
 	ModelsAgency = 4,
 	ModelsCampus = 2,
 	ModelsCore = 15,
-	ModelsLobby = 9,
+	ModelsFx = 1,
+	ModelsLobby = 10,
 	ModelsMeeting = 2,
 	ModelsTokyo = 4,
 }

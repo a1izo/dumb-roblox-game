@@ -21,6 +21,9 @@ CollisionGroups.AWAY = "Away"
 CollisionGroups.CROWD = "Crowd"
 CollisionGroups.CROWD_PASS = "CrowdPass"
 CollisionGroups.VEHICLES = "Vehicles"
+-- Bits of floor an effect throws up on a client (Presentation/Vfx/Ground.debris): they land on the world, never on
+-- a body or each other.
+CollisionGroups.DEBRIS = "VfxDebris"
 
 local function register(name: string)
 	if not PhysicsService:IsCollisionGroupRegistered(name) then
@@ -38,6 +41,7 @@ function CollisionGroups.init()
 		CollisionGroups.CROWD,
 		CollisionGroups.CROWD_PASS,
 		CollisionGroups.VEHICLES,
+		CollisionGroups.DEBRIS,
 	}) do
 		register(name)
 	end
@@ -78,6 +82,20 @@ function CollisionGroups.init()
 			set(a, b, false)
 		end
 	end
+	for _, group in ipairs({
+		CHARS,
+		AWAY,
+		CollisionGroups.RAGDOLL,
+		CollisionGroups.SPECTERS,
+		CollisionGroups.BOUNDS,
+		CollisionGroups.CROWD,
+		CollisionGroups.CROWD_PASS,
+		CollisionGroups.VEHICLES,
+		CollisionGroups.DEBRIS,
+	}) do
+		set(CollisionGroups.DEBRIS, group, false)
+	end
+	set(CollisionGroups.DEBRIS, "Default", true)
 end
 
 -- Keeps a body's parts (and parts added later) in `group`, leaving alone any part another service has

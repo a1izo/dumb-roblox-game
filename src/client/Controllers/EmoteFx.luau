@@ -5,6 +5,7 @@
 -- (a copy of the body leaves it out). A preview (the shop's copy in its 3D view)
 -- gets only what a 3D view can show: no lights, no billboards.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -23,9 +24,11 @@ local Cinema = require(script.Parent.Parent.Presentation.Cinema)
 local Stage = require(script.Parent.Parent.Presentation.Stage)
 local Aura = require(script.Parent.Parent.Presentation.Aura)
 local FxKit = require(script.Parent.Parent.Presentation.FxKit)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 local ClientState = require(script.Parent.Parent.ClientState)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Governor = require(script.Parent.Parent.World.Governor)
+local LightingController = require(script.Parent.Parent.World.LightingController)
 
 local EmoteFx = {}
 
@@ -45,61 +48,216 @@ end
 
 local FX: { [string]: Fx } = {}
 
+-- This player's own body: the screen's moments (a shake, a flash, an impact frame, the grade leaning toward the
+-- effect's colour) are for their own screen only.
+local function mine(character: Model): boolean
+	local me = Players.LocalPlayer
+	return me ~= nil and me.Character == character
+end
+
+-- A steady layer laid flat on the floor (a sigil, a pool of light) on `point`: one long particle at a time
+-- crossfading into the next, `solid` its strongest transparency. Returns set(size) (every particle at once) and stop.
+local function floorLayer(
+	point: BasePart,
+	spec: { [string]: any },
+	size: number,
+	solid: number
+): ((number) -> (), () -> ())
+	spec.life = 4
+	spec.rate = 1 / 3.8
+	spec.alpha = { { 0, 1 }, { 0.05, solid }, { 0.95, solid }, { 1, 1 } }
+	spec.speed = 0.001
+	spec.face = "flat"
+	spec.size = size
+	local e, stop = Vfx.Emit.hold(point, spec)
+	e:Emit(1)
+	return function(s: number)
+		e.Size = NumberSequence.new(math.max(s, 0.01))
+	end, stop
+end
+
+local GOLD = Color3.fromRGB(255, 222, 140)
+local BLOOD = Color3.fromRGB(150, 12, 24)
+local BLOOD_HOT = Color3.fromRGB(255, 70, 70)
+
 -- New World: a hard light from above and a pale column of it standing round the body.
 FX.newWorld = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if preview or not root or not root:IsA("BasePart") then
 		return nothing
 	end
+	local own = mine(character)
+	local calm = Motion.isReduced()
 	local warm = Color3.fromRGB(255, 244, 214)
 	local removeLight = Cinema.spotlight(character, warm)
 	local floor = floorUnder(root.Position, character)
-	local column = Create("Part", {
-		Name = "EmoteBeam",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(26, 3.4, 3.4),
-		CFrame = CFrame.new(floor + Vector3.new(0, 13, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = warm,
-		Material = Enum.Material.Neon,
-		Transparency = 1,
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		CastShadow = false,
-		Parent = workspace.CurrentCamera,
-	}) :: BasePart
-	TweenService:Create(column, TweenInfo.new(1.2, Enum.EasingStyle.Sine), { Transparency = 0.84 }):Play()
-	-- (the FX kit) the fist closes at 3.42 s: a ring of light over the floor, spikes of light off the fist
+	local base = Vfx.Emit.point(CFrame.new(floor + Vector3.new(0, 0.06, 0)))
 	local over = false
-	task.delay(3.42, function()
-		local arm = character:FindFirstChild("Right Arm")
-		if over or not root.Parent then
-			return
-		end
-		FxKit.shape(
-			"ring",
-			CFrame.new(floor + Vector3.new(0, 0.08, 0)),
-			{ size = 18, seconds = 0.6, color = warm, transparency = 0.3 }
-		)
-		if arm and arm:IsA("BasePart") then
-			local fist = (arm.CFrame * CFrame.new(0, -1.1, 0)).Position
-			FxKit.shape(
-				"spikes",
-				CFrame.new(fist),
-				{ size = 3.6, seconds = 0.3, color = warm, transparency = 0.2, spin = 40 }
-			)
-			FxKit.light(fist, warm, 20, 5, 0.7)
-		end
+	local stops: { () -> () } = {}
+	-- the column of light pouring down on him: a white core in a gold glow, its streaks falling
+	local top = floor + Vector3.new(0, 70, 0)
+	local columns = {}
+	for k, layer in ipairs({
+		{ width = 2.2, color = Color3.new(1, 1, 1), bright = 1.4, speed = -30, repeats = 26 },
+		{ width = 6, color = GOLD, bright = 0.75, speed = -18, repeats = 40 },
+		{ width = 12, color = GOLD, bright = 0.3, speed = -10, repeats = 55 },
+	}) do
+		local beam, stop = Vfx.Beams.line(top, floor, {
+			tex = "VfxColumn",
+			color = layer.color,
+			width = 0.01,
+			bright = layer.bright,
+			speed = layer.speed,
+			repeats = layer.repeats,
+			z = k,
+		})
+		table.insert(columns, { beam = beam, width = layer.width })
+		table.insert(stops, function()
+			stop(0.6)
+		end)
+		Vfx.Clock.tween(1.1 + 0.1 * k, Vfx.Ease.outCubic, function(u)
+			beam.Width0, beam.Width1 = layer.width * u, layer.width * u
+		end)
+	end
+	-- light falling through it
+	local motesAt = Vfx.Emit.point(CFrame.new(floor + Vector3.new(0, 14, 0)), Vector3.new(4, 0.1, 4))
+	local _, stopMotes = Vfx.Emit.hold(motesAt, {
+		tex = "VfxEmber",
+		color = { { 0, Color3.new(1, 1, 1) }, { 1, GOLD } },
+		size = { { 0, 0.16 }, { 1, 0 } },
+		life = { 2.2, 3.2 },
+		rate = 18,
+		speed = { 2, 4 },
+		dir = Enum.NormalId.Bottom,
+		spread = 8,
+		shape = Enum.ParticleEmitterShape.Box,
+		bright = 1.4,
+	})
+	-- the sigil on the floor opening and turning, a glow under it
+	local setSigil, stopSigil = floorLayer(
+		base,
+		{ tex = "VfxCircle", color = GOLD, light = 0.6, bright = 1.15, spin = if calm then 0 else 9 },
+		0.5,
+		0.15
+	)
+	local _, stopGlow = floorLayer(base, { tex = "VfxGlow", color = warm, light = 0.6, bright = 0.7 }, 16, 0.55)
+	Vfx.Clock.tween(1.3, Vfx.Ease.outQuart, function(u)
+		setSigil(0.5 + 13.5 * u)
 	end)
+	-- pages of the notebook spiralling up round him
+	local pages = {}
+	for k = 1, 7 do
+		local page = Vfx.Shape.part("page", "VfxPage")
+		page.Anchored = true
+		page.CanCollide = false
+		page.CanQuery = false
+		page.CanTouch = false
+		page.CastShadow = false
+		page.Material = Enum.Material.SmoothPlastic
+		page.Size = page.Size * 1.15
+		page.Transparency = 1
+		page.Parent = Vfx.Emit.folder()
+		table.insert(
+			pages,
+			{ part = page, phase = k / 7 * math.pi * 2, radius = 3.1 + (k % 3) * 0.55, lift = (k - 1) / 7 }
+		)
+	end
+	local began = Vfx.Clock.now()
+	table.insert(
+		stops,
+		Vfx.Clock.every(function(_, now)
+			if over or not root.Parent then
+				return false
+			end
+			local t = now - began
+			local middle = Vector3.new(root.Position.X, floor.Y, root.Position.Z)
+			for _, p in ipairs(pages) do
+				if not p.flying then
+					local a = p.phase + t * 1.1
+					local y = 0.6 + ((p.lift + t / 3.4) % 1) * 6.2
+					local pos = middle + Vector3.new(math.cos(a) * p.radius, y, math.sin(a) * p.radius)
+					local face = CFrame.lookAt(pos, Vector3.new(middle.X, pos.Y, middle.Z))
+					p.part.CFrame = face
+						* CFrame.Angles(math.sin(t * 3 + p.phase) * 0.35, 0, math.sin(t * 2.3 + p.phase) * 0.25)
+					p.part.Transparency = math.max(0, 1 - t / 0.8)
+				end
+			end
+			return true
+		end)
+	)
+	-- the fist closes (3.42 s): a burst of light at it, the column flares, the pages scatter and burn into light
+	table.insert(
+		stops,
+		Vfx.Clock.after(3.42, function()
+			if over or not root.Parent then
+				return
+			end
+			local arm = character:FindFirstChild("Right Arm")
+			local fist = if arm and arm:IsA("BasePart")
+				then (arm.CFrame * CFrame.new(0, -1.1, 0)).Position
+				else root.Position + Vector3.new(0, 3, 0)
+			Vfx.Recipes.impact(CFrame.new(fist), { color = GOLD, scale = 1.15, shake = own, flash = own })
+			Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 1, 24, 0.7, {
+				tex = "VfxRingBand",
+				color = warm,
+				width = 2.2,
+				light = 0.6,
+				bright = 1.1,
+			})
+			Vfx.Rim.glow(character, warm, 2.2, { fill = 0.25 })
+			if own and not calm then
+				Vfx.Screen.impact({ character }, 0.08)
+			end
+			for _, c in ipairs(columns) do
+				Vfx.Clock.tween(0.6, Vfx.Ease.outQuad, function(u)
+					local w = c.width * (1.8 - 0.8 * u)
+					c.beam.Width0, c.beam.Width1 = w, w
+				end)
+			end
+			Vfx.Clock.tween(0.7, Vfx.Ease.outQuad, function(u)
+				setSigil(14 + 4 * math.sin(u * math.pi))
+			end)
+			for _, p in ipairs(pages) do
+				p.flying = true
+				local from = p.part.CFrame
+				local out = Vector3.new(from.X - root.Position.X, 0, from.Z - root.Position.Z)
+				out = if out.Magnitude > 0.01 then out.Unit else Vector3.xAxis
+				Vfx.Clock.tween(0.7, Vfx.Ease.outCubic, function(u)
+					p.part.CFrame = (from + out * 14 * u + Vector3.new(0, 3 * u, 0)) * CFrame.Angles(u * 4, u * 6, 0)
+					p.part.Transparency = u
+				end, function()
+					if p.part.Parent then
+						Vfx.Recipes.twinkle(p.part.Position, { color = GOLD, scale = 1.2 })
+						p.part:Destroy()
+					end
+				end)
+			end
+		end)
+	)
+	if own then
+		LightingController.lean(0.55, GOLD, 0.2, 1.2)
+	end
 	return function()
 		over = true
 		removeLight()
-		TweenService:Create(column, TweenInfo.new(0.5), { Transparency = 1 }):Play()
-		-- (on a timer, not the tween's Completed: a throttled client can miss that and leave the column)
-		task.delay(0.55, function()
-			column:Destroy()
+		for _, stop in ipairs(stops) do
+			stop()
+		end
+		stopMotes()
+		stopSigil()
+		stopGlow()
+		for _, p in ipairs(pages) do
+			if p.part.Parent then
+				p.part:Destroy()
+			end
+		end
+		Vfx.Clock.after(4.5, function()
+			base:Destroy()
+			motesAt:Destroy()
 		end)
+		if own then
+			LightingController.unlean(1.2)
+		end
 	end
 end
 
@@ -319,7 +477,10 @@ FX.reapersEyes = function(character, preview)
 	if not head or not head:IsA("BasePart") then
 		return nothing
 	end
+	local own = mine(character)
+	local calm = Motion.isReduced()
 	local parts: { BasePart } = {}
+	local stops: { () -> () } = {}
 	local gone = false
 	-- (when the hand comes away from the eyes)
 	task.delay(1.75, function()
@@ -343,20 +504,98 @@ FX.reapersEyes = function(character, preview)
 			part:SetAttribute("DGEmote", true)
 			Create("WeldConstraint", { Part0 = head, Part1 = part, Parent = part })
 			table.insert(parts, part)
-		end
-		if not preview then
-			Create("PointLight", {
-				Color = Color3.fromRGB(255, 40, 40),
-				Range = 8,
-				Brightness = 4,
-				Parent = parts[1],
+			-- each eye: a red star flaring open as it lights, a red glow held on it
+			local at = Create("Attachment", { Name = "EmoteEyeGlow", Parent = part })
+			at:SetAttribute("DGEmote", true)
+			local flare = Vfx.Emit.make(at, {
+				tex = "VfxFlare",
+				color = BLOOD_HOT,
+				size = { { 0, 0 }, { 0.25, 2.4 }, { 1, 0 } },
+				life = 0.55,
+				rot = { 0, 45 },
+				spin = { 60, 120 },
+				locked = true,
+				bright = 1.5,
+				z = 1,
 			})
+			flare:Emit(1)
+			local _, stopGlow = Vfx.Emit.hold(at, {
+				tex = "VfxGlow",
+				color = BLOOD_HOT,
+				size = 0.9,
+				life = 4,
+				rate = 1 / 3.8,
+				alpha = { { 0, 1 }, { 0.05, 0.25 }, { 0.95, 0.25 }, { 1, 1 } },
+				locked = true,
+				bright = 1.2,
+				z = 0.8,
+			})
+			table.insert(stops, stopGlow)
+		end
+		if preview then
+			return
+		end
+		Create("PointLight", {
+			Color = Color3.fromRGB(255, 40, 40),
+			Range = 8,
+			Brightness = 4,
+			Parent = parts[1],
+		})
+		-- a red pulse rolling out from the eyes, red smoke rising round the feet, the world going red round him
+		Vfx.Emit.burst(head.Position, {
+			tex = "VfxRing",
+			color = BLOOD_HOT,
+			size = { { 0, 1 }, { 1, 16 } },
+			alpha = { { 0, 0.1 }, { 0.6, 0.5 }, { 1, 1 } },
+			life = 0.55,
+			light = 0.5,
+			bright = 1.1,
+		}, 1)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if root and root:IsA("BasePart") then
+			local ground = Vfx.Emit.point(
+				CFrame.new(floorUnder(root.Position, character) + Vector3.new(0, 0.2, 0)),
+				Vector3.new(5, 0.1, 5)
+			)
+			local _, stopSmoke = Vfx.Emit.hold(ground, {
+				tex = "VfxSmoke",
+				grid = 8,
+				mode = "OneShot",
+				color = BLOOD,
+				light = 0,
+				lit = 0.3,
+				size = { { 0, 1.2 }, { 1, 3.2 } },
+				alpha = { { 0, 0.6 }, { 0.5, 0.55 }, { 1, 1 } },
+				life = { 1.6, 2.4 },
+				rate = 4,
+				speed = { 0.6, 1.4 },
+				shape = Enum.ParticleEmitterShape.Box,
+				rot = { 0, 360 },
+				spin = { -20, 20 },
+			})
+			table.insert(stops, function()
+				stopSmoke()
+				Vfx.Clock.after(2.6, function()
+					ground:Destroy()
+				end)
+			end)
+		end
+		if own and not calm then
+			Vfx.Screen.punch(-4, 0.6)
+			Vfx.Screen.shake(0.6, 0.4)
+			LightingController.lean(0.4, BLOOD, 0.15, 0.4)
 		end
 	end)
 	return function()
 		gone = true
+		for _, stop in ipairs(stops) do
+			stop()
+		end
 		for _, part in ipairs(parts) do
 			part:Destroy()
+		end
+		if own then
+			LightingController.unlean(1)
 		end
 	end
 end
@@ -368,12 +607,6 @@ end
 -- (8.4 s). Under reduced motion there is no burst and no pulse.
 local CRIMSON = Color3.fromRGB(163, 25, 47)
 local EMBERS = ColorSequence.new(Color3.fromRGB(255, 92, 70), Color3.fromRGB(70, 62, 62))
-local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
-
--- A flat disc `d` studs across (a cylinder lying on the floor).
-local function disc(d: number): Vector3
-	return Vector3.new(0.04, d, d)
-end
 
 FX.justAsPlanned = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -381,9 +614,11 @@ FX.justAsPlanned = function(character, preview)
 	if preview or not root or not root:IsA("BasePart") or not head or not head:IsA("BasePart") then
 		return nothing
 	end
+	local own = mine(character)
 	local calm = Motion.isReduced()
 	local gone = false
 	local made: { Instance } = {}
+	local stops: { () -> () } = {}
 	local function keep<T>(instance: T): T
 		table.insert(made, instance :: any)
 		return instance
@@ -399,77 +634,74 @@ FX.justAsPlanned = function(character, preview)
 		TweenService:Create(instance, TweenInfo.new(seconds, style or Enum.EasingStyle.Sine), goal):Play()
 	end
 
-	-- the pool of crimson light on the floor, tinting it
+	-- the sigil and a pool of crimson light spreading over the floor, a red light in it
 	local floor = floorUnder(root.Position, character)
-	local pool = keep(Create("Part", {
-		Name = "EmotePlanGlow",
-		Shape = Enum.PartType.Cylinder,
-		Size = disc(0.2),
-		CFrame = CFrame.new(floor + Vector3.new(0, 0.03, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = CRIMSON,
-		Material = Enum.Material.Neon,
-		Transparency = 0.84,
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		CastShadow = false,
-		Parent = workspace.CurrentCamera,
-	}) :: BasePart)
-	local tint = Create("PointLight", { Color = CRIMSON, Range = 9, Brightness = 0, Shadows = false, Parent = pool })
-	tween(pool, 1.3, { Size = disc(8.5) }, Enum.EasingStyle.Quart)
+	local base = keep(Vfx.Emit.point(CFrame.new(floor + Vector3.new(0, 0.05, 0)), Vector3.new(8, 0.1, 8)))
+	local setSigil, stopSigil = floorLayer(
+		base,
+		{ tex = "VfxCircle", color = BLOOD_HOT, light = 0.5, bright = 1.2, spin = if calm then 0 else -7 },
+		0.4,
+		0.2
+	)
+	local setPool, stopPool =
+		floorLayer(base, { tex = "VfxGlow", color = CRIMSON, light = 0.6, bright = 0.9 }, 0.4, 0.45)
+	table.insert(stops, stopSigil)
+	table.insert(stops, stopPool)
+	Vfx.Clock.tween(1.3, Vfx.Ease.outQuart, function(u)
+		setSigil(0.4 + 8.6 * u)
+		setPool(0.4 + 10.6 * u)
+	end)
+	local tint = Create("PointLight", { Color = CRIMSON, Range = 12, Brightness = 0, Shadows = false, Parent = base })
 	tween(tint, 1.3, { Brightness = 1.2 })
 
-	-- embers drifting up off it the whole time
-	local motes = keep(Create("ParticleEmitter", {
-		Texture = SPARKLE,
-		Color = EMBERS,
-		LightEmission = 0.7,
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.2, 0.35),
-			NumberSequenceKeypoint.new(1, 1),
-		}),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0.05) }),
-		Lifetime = NumberRange.new(1.6, 2.6),
-		Speed = NumberRange.new(0.6, 1.4),
-		Acceleration = Vector3.new(0, 1.2, 0),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-60, 60),
-		EmissionDirection = Enum.NormalId.Top,
-		Shape = Enum.ParticleEmitterShape.Disc,
-		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
-		LightInfluence = 0.4,
-		Rate = 0,
-		Parent = pool,
-	}) :: ParticleEmitter)
+	-- embers rising off it the whole time, dark smoke curling off its edge
+	local motes = Vfx.Emit.make(base, {
+		tex = "VfxEmber",
+		color = EMBERS,
+		size = { { 0, 0.2 }, { 1, 0.04 } },
+		life = { 1.6, 2.6 },
+		speed = { 0.6, 1.4 },
+		accel = Vector3.new(0, 1.2, 0),
+		rot = { 0, 360 },
+		shape = Enum.ParticleEmitterShape.Box,
+		light = 0.8,
+		bright = 1.3,
+	})
+	local smoke = Vfx.Emit.make(base, {
+		tex = "VfxSmoke",
+		grid = 8,
+		mode = "OneShot",
+		color = Color3.fromRGB(46, 8, 14),
+		light = 0,
+		lit = 0.3,
+		size = { { 0, 1.4 }, { 1, 3.6 } },
+		alpha = { { 0, 0.55 }, { 0.5, 0.55 }, { 1, 1 } },
+		life = { 2, 3 },
+		speed = { 0.4, 1 },
+		shape = Enum.ParticleEmitterShape.Box,
+		rot = { 0, 360 },
+		spin = { -15, 15 },
+	})
 	at(0.5, function()
 		motes.Rate = 16
+		smoke.Rate = 2.5
 	end)
 
 	-- the red glint in the eye, and a flash of red light with it
 	local eye =
 		keep(Create("Attachment", { Name = "EmoteGlint", Position = Vector3.new(0.22, 0.12, -0.62), Parent = head }))
 	eye:SetAttribute("DGEmote", true)
-	local glint = Create("ParticleEmitter", {
-		Texture = SPARKLE,
-		Color = ColorSequence.new(Color3.fromRGB(255, 40, 50)),
-		LightEmission = 1,
-		LightInfluence = 0,
-		Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.2),
-			NumberSequenceKeypoint.new(0.35, 1.1),
-			NumberSequenceKeypoint.new(1, 0),
-		}),
-		Lifetime = NumberRange.new(0.45),
-		Speed = NumberRange.new(0),
-		Rotation = NumberRange.new(0, 45),
-		RotSpeed = NumberRange.new(90),
-		LockedToPart = true,
-		ZOffset = 1,
-		Rate = 0,
-		Parent = eye,
-	}) :: ParticleEmitter
+	local glint = Vfx.Emit.make(eye, {
+		tex = "VfxFlare",
+		color = BLOOD_HOT,
+		size = { { 0, 0.2 }, { 0.35, 1.6 }, { 1, 0 } },
+		life = 0.5,
+		rot = { 0, 45 },
+		spin = 120,
+		locked = true,
+		bright = 1.5,
+		z = 1,
+	})
 	local glow =
 		Create("PointLight", { Color = CRIMSON, Range = 7, Brightness = 0, Shadows = false, Parent = eye }) :: PointLight
 	local function catchRed()
@@ -482,7 +714,7 @@ FX.justAsPlanned = function(character, preview)
 	at(2.05, catchRed)
 	at(7.75, catchRed)
 
-	-- the red light under the face from the grin on
+	-- the red light under the face from the grin on, and his edges lit red
 	local torso = character:FindFirstChild("Torso")
 	local under = keep(Create("Attachment", {
 		Name = "EmoteUnderlight",
@@ -501,62 +733,61 @@ FX.justAsPlanned = function(character, preview)
 	}) :: SpotLight
 	at(3.55, function()
 		tween(below, 0.8, { Brightness = 2.2 })
+		table.insert(stops, Vfx.Rim.glow(character, BLOOD_HOT, math.huge, { fill = 0.12, fadeIn = 0.8 }))
 	end)
 
-	-- the laugh: a ring of light bursts out across the floor, the pool flares, the light pulses
+	-- the laugh: the sigil flares, a crimson blast out across the floor, a ring of fire bursting up round him
 	at(4.95, function()
-		tween(pool, 0.35, { Size = disc(11.5) }, Enum.EasingStyle.Back)
-		at(0.45, function()
-			tween(pool, 1.2, { Size = disc(9) })
+		Vfx.Clock.tween(0.45, Vfx.Ease.outBack, function(u)
+			setSigil(9 + 3 * u)
+			setPool(11 + 3 * u)
+		end, function()
+			Vfx.Clock.tween(1.2, Vfx.Ease.inOutSine, function(u)
+				setSigil(12 - 2 * u)
+				setPool(14 - 3 * u)
+			end)
 		end)
 		if calm then
 			return
 		end
 		below.Brightness = 6
 		tween(below, 0.9, { Brightness = 2.6 })
-		-- (the FX kit: a crimson shockwave dome and a ring running out over the floor)
-		FxKit.shape("dome", CFrame.new(floor), { size = 13, seconds = 0.55, color = CRIMSON, transparency = 0.55 })
-		FxKit.shape("ring", CFrame.new(floor + Vector3.new(0, 0.08, 0)), {
-			size = 22,
-			seconds = 0.7,
-			color = CRIMSON,
-			transparency = 0.25,
+		Vfx.Recipes.impact(CFrame.new(floor), { color = CRIMSON, scale = 1.3, ground = true, shake = own, flash = own })
+		FxKit.shape("dome", CFrame.new(floor), { size = 13, seconds = 0.5, color = BLOOD_HOT, transparency = 0.6 })
+		Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 1, 22, 0.75, {
+			tex = "VfxRingBand",
+			color = BLOOD_HOT,
+			width = 2,
+			light = 0.5,
+			bright = 1.1,
 		})
-		FxKit.light(head.Position, CRIMSON, 18, 4, 0.6)
-		local ring = keep(Create("Part", {
-			Name = "EmotePlanRing",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.05, 2, 2),
-			CFrame = CFrame.new(floor + Vector3.new(0, 0.06, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = CRIMSON,
-			Material = Enum.Material.Neon,
-			Transparency = 0.35,
-			Anchored = true,
-			CanCollide = false,
-			CanQuery = false,
-			CanTouch = false,
-			CastShadow = false,
-			Parent = workspace.CurrentCamera,
-		}) :: BasePart)
-		tween(ring, 0.7, { Size = Vector3.new(0.05, 22, 22), Transparency = 1 }, Enum.EasingStyle.Quart)
-		local splash = Create("ParticleEmitter", {
-			Texture = SPARKLE,
-			Color = EMBERS,
-			LightEmission = 0.8,
-			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0.05) }),
-			Lifetime = NumberRange.new(0.6, 1.0),
-			Speed = NumberRange.new(9, 15),
-			Drag = 3,
-			Acceleration = Vector3.new(0, 2, 0),
-			SpreadAngle = Vector2.new(80, 80),
-			EmissionDirection = Enum.NormalId.Top,
-			Rotation = NumberRange.new(0, 360),
-			LightInfluence = 0.4,
-			Rate = 0,
-			Parent = pool,
-		}) :: ParticleEmitter
-		splash:Emit(28)
+		local ring = Vfx.Emit.point(CFrame.new(floor + Vector3.new(0, 0.3, 0)), Vector3.new(7, 0.1, 7))
+		local fire = Vfx.Emit.make(ring, {
+			tex = "VfxFlame",
+			grid = 8,
+			fps = 40,
+			startRandom = true,
+			color = { { 0, BLOOD_HOT }, { 0.4, CRIMSON }, { 1, Color3.fromRGB(30, 4, 8) } },
+			size = { { 0, 2.2 }, { 0.4, 3.4 }, { 1, 1 } },
+			alpha = { { 0, 0.7 }, { 0.15, 0.2 }, { 0.65, 0.45 }, { 1, 1 } },
+			life = { 0.5, 0.85 },
+			speed = { 6, 11 },
+			spread = 10,
+			face = "up",
+			shape = Enum.ParticleEmitterShape.Cylinder,
+			shapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+			light = 0.35,
+			bright = 1.2,
+		})
+		fire:Emit(28)
+		Vfx.Clock.after(1.5, function()
+			ring:Destroy()
+		end)
+		Vfx.Light.flash(head.Position, CRIMSON, 18, 4, 0.6)
+		if own then
+			Vfx.Screen.impact({ character }, 0.09)
+			LightingController.lean(0.6, BLOOD, 0.25, 0.3)
+		end
 	end)
 	at(6.9, function()
 		tween(below, 0.6, { Brightness = 0.8 })
@@ -565,16 +796,34 @@ FX.justAsPlanned = function(character, preview)
 	-- it all dies down as he comes to rest
 	at(8.4, function()
 		motes.Rate = 0
+		smoke.Rate = 0
 		tween(below, 0.6, { Brightness = 0 })
 		tween(tint, 0.8, { Brightness = 0 })
-		tween(pool, 0.8, { Size = disc(0.2), Transparency = 1 }, Enum.EasingStyle.Quart)
+		Vfx.Clock.tween(0.8, Vfx.Ease.inQuad, function(u)
+			setSigil(10 * (1 - u))
+			setPool(11 * (1 - u))
+		end)
+		if own then
+			LightingController.unlean(1.2)
+		end
 	end)
 
 	return function()
 		gone = true
-		for _, instance in ipairs(made) do
-			instance:Destroy()
+		for _, stop in ipairs(stops) do
+			stop()
 		end
+		if own then
+			LightingController.unlean(1)
+		end
+		local list = made
+		Vfx.Clock.after(4.2, function()
+			for _, instance in ipairs(list) do
+				instance:Destroy()
+			end
+		end)
+		under:Destroy()
+		eye:Destroy()
 	end
 end
 
@@ -606,7 +855,7 @@ FX.chipAndPen = function(character, preview)
 	mouth:SetAttribute("DGEmote", true)
 	table.insert(made, mouth)
 	local crumbs = Create("ParticleEmitter", {
-		Texture = SPARKLE,
+		Texture = Vfx.Tex.id("VfxEmber"),
 		Color = ColorSequence.new(Color3.fromRGB(255, 214, 120), Color3.fromRGB(222, 170, 80)),
 		LightEmission = 0.6,
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) }),
@@ -649,12 +898,6 @@ FX.chipAndPen = function(character, preview)
 	end
 end
 
--- An imported effect texture, or one of Roblox's own when the import has none.
-local function textureOr(name: string, fallback: string): string
-	local id = Assets.texture(name)
-	return if id ~= "" then id else fallback
-end
-
 -- Runs `fn` `seconds` after the start, unless the effect was cleared by then or the body went.
 local function after(root: Instance, gone: () -> boolean, seconds: number, fn: () -> ())
 	task.delay(seconds, function()
@@ -677,7 +920,7 @@ FX.appleBite = function(character, preview)
 	local function spray(name: string, colors: ColorSequence, size: number, count: number)
 		local emitter = Create("ParticleEmitter", {
 			Name = name,
-			Texture = SPARKLE,
+			Texture = Vfx.Tex.id("VfxEmber"),
 			Color = colors,
 			LightEmission = 0.25,
 			Size = NumberSequence.new({
@@ -780,19 +1023,20 @@ FX.writeAir = function(character, preview)
 	local tip = Create("Attachment", { Name = "EmoteWriting", Position = Vector3.new(0, -1.1, 0), Parent = arm })
 	tip:SetAttribute("DGEmote", true)
 	local pale = Color3.fromRGB(255, 240, 214)
-	local glow = textureOr("SoulGlow", SPARKLE)
+	local glow = Vfx.Tex.id("VfxGlow")
 	local line = Create("ParticleEmitter", {
 		Name = "Writing",
 		Texture = glow,
 		Color = ColorSequence.new(pale),
 		LightEmission = 1,
 		LightInfluence = 0,
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.12) }),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.34), NumberSequenceKeypoint.new(1, 0.14) }),
 		Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 0),
-			NumberSequenceKeypoint.new(0.65, 0.15),
+			NumberSequenceKeypoint.new(0.65, 0.2),
 			NumberSequenceKeypoint.new(1, 1),
 		}),
+		Brightness = 1.6,
 		Lifetime = NumberRange.new(2.4),
 		Speed = NumberRange.new(0),
 		Rate = 110,
@@ -801,7 +1045,7 @@ FX.writeAir = function(character, preview)
 	}) :: ParticleEmitter
 	local spatter = Create("ParticleEmitter", {
 		Name = "FullStop",
-		Texture = SPARKLE,
+		Texture = Vfx.Tex.id("VfxEmber"),
 		Color = ColorSequence.new(pale, Color3.fromRGB(255, 196, 120)),
 		LightEmission = 0.8,
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0) }),
@@ -819,12 +1063,33 @@ FX.writeAir = function(character, preview)
 		Shadows = false,
 		Parent = tip,
 	}) :: PointLight
+	-- the sparkler's sparks spitting off the tip while it writes
+	local sparks = Vfx.Emit.make(tip, {
+		name = "WritingSparks",
+		tex = "VfxStreak",
+		color = { { 0, Color3.new(1, 1, 1) }, { 0.5, pale }, { 1, Color3.fromRGB(255, 180, 110) } },
+		size = { { 0, 0.16 }, { 1, 0.04 } },
+		squash = -1.6,
+		life = { 0.18, 0.4 },
+		speed = { 3, 7 },
+		spread = 180,
+		accel = Vector3.new(0, -14, 0),
+		drag = 2,
+		face = "along",
+		bright = 1.5,
+	})
+	sparks.Enabled = false
 	after(arm, over, 0.4, function()
 		line.Enabled = true
+		if not calm then
+			sparks.Rate = 40
+			sparks.Enabled = true
+		end
 		TweenService:Create(light, TweenInfo.new(0.3), { Brightness = 1.4 }):Play()
 	end)
 	after(arm, over, 1.95, function()
 		line.Enabled = false
+		sparks.Enabled = false
 	end)
 	after(arm, over, 2.3, function()
 		line:Emit(4)
@@ -832,6 +1097,7 @@ FX.writeAir = function(character, preview)
 			return
 		end
 		spatter:Emit(14)
+		Vfx.Recipes.twinkle(tip.WorldPosition, { color = pale, scale = 1.3 })
 		light.Brightness = 5
 		TweenService:Create(light, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
 	end)
@@ -848,6 +1114,17 @@ FX.aceCrouch = function(character, preview)
 		return nothing
 	end
 	local removeLight = Cinema.spotlight(character, Color3.fromRGB(196, 212, 232))
+	-- the lamp's shaft of light down through the dusty air
+	local _, endShaft = Vfx.Beams.line(root.Position + Vector3.new(0, 14, 0), root.Position - Vector3.new(0, 3, 0), {
+		tex = "VfxColumn",
+		color = Color3.fromRGB(196, 212, 232),
+		width = 6.5,
+		width1 = 9,
+		bright = 0.22,
+		light = 1,
+		speed = -0.6,
+		repeats = 9,
+	})
 	-- (the dust fills a still box of air round him, not one that follows the body)
 	local box = Create("Part", {
 		Name = "EmoteDust",
@@ -861,7 +1138,7 @@ FX.aceCrouch = function(character, preview)
 		Parent = workspace.CurrentCamera,
 	}) :: BasePart
 	Create("ParticleEmitter", {
-		Texture = SPARKLE,
+		Texture = Vfx.Tex.id("VfxEmber"),
 		Color = ColorSequence.new(Color3.fromRGB(220, 228, 240)),
 		LightEmission = 0.4,
 		LightInfluence = 0.5,
@@ -882,6 +1159,7 @@ FX.aceCrouch = function(character, preview)
 	})
 	return function()
 		removeLight()
+		endShaft(0.5)
 		box:Destroy()
 	end
 end
@@ -935,36 +1213,64 @@ type Burst = {
 	direction: Enum.NormalId?,
 }
 local function burst(at: Vector3, spec: Burst)
-	local holder = Create("Part", {
-		Name = "EmoteBurst",
-		Size = Vector3.new(0.2, 0.2, 0.2),
-		CFrame = CFrame.new(at),
-		Transparency = 1,
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		Parent = workspace.CurrentCamera,
-	}) :: BasePart
-	local emitter = Create("ParticleEmitter", {
-		Texture = SPARKLE,
-		Color = spec.color,
-		LightEmission = spec.light or 0.5,
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, spec.size), NumberSequenceKeypoint.new(1, 0) }),
-		Lifetime = spec.life,
-		Speed = spec.speed,
-		SpreadAngle = Vector2.new(spec.spread or 60, spec.spread or 60),
-		EmissionDirection = spec.direction or Enum.NormalId.Top,
-		Acceleration = Vector3.new(0, -(spec.gravity or 0), 0),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-180, 180),
-		Rate = 0,
-		Parent = holder,
-	}) :: ParticleEmitter
-	emitter:Emit(spec.count)
-	task.delay(spec.life.Max + 0.2, function()
-		holder:Destroy()
-	end)
+	-- (the VFX kit's: specks that glow hot as they are born and shrink as they fly; streaks among them when they fly
+	-- fast; a star at the heart of a bright one)
+	local accel = Vector3.new(0, -(spec.gravity or 0), 0)
+	local spread = spec.spread or 60
+	local list: { any } = {
+		{
+			{
+				tex = "VfxEmber",
+				color = spec.color,
+				size = { { 0, spec.size * 1.15 }, { 0.6, spec.size * 0.8 }, { 1, 0 } },
+				life = { spec.life.Min, spec.life.Max },
+				speed = { spec.speed.Min, spec.speed.Max },
+				spread = spread,
+				dir = spec.direction,
+				accel = accel,
+				drag = 1.5,
+				rot = { 0, 360 },
+				light = math.max(spec.light or 0.5, 0.6),
+				bright = 1.3,
+			},
+			spec.count,
+		},
+	}
+	if spec.speed.Max >= 6 then
+		table.insert(list, {
+			{
+				tex = "VfxStreak",
+				color = spec.color,
+				size = { { 0, spec.size * 0.9 }, { 1, spec.size * 0.25 } },
+				squash = -1.8,
+				life = { spec.life.Min * 0.8, spec.life.Max * 0.8 },
+				speed = { spec.speed.Min * 1.2, spec.speed.Max * 1.2 },
+				spread = spread,
+				dir = spec.direction,
+				accel = accel,
+				drag = 2,
+				face = "along",
+				light = 1,
+				bright = 1.3,
+			},
+			math.max(2, math.floor(spec.count / 2)),
+		})
+	end
+	if (spec.light or 0.5) >= 0.8 then
+		table.insert(list, {
+			{
+				tex = "VfxFlare",
+				color = spec.color,
+				size = { { 0, 0 }, { 0.25, spec.size * 7 }, { 1, 0 } },
+				life = 0.3,
+				rot = { 0, 360 },
+				spin = { -60, 60 },
+				bright = 1.2,
+			},
+			1,
+		})
+	end
+	Vfx.Emit.burst(at, list)
 end
 
 -- Where a leg's sole is (its bottom face's middle).
@@ -1488,8 +1794,10 @@ FX.finalBreakdown = function(character, preview)
 	if preview or not head or not head:IsA("BasePart") or not root then
 		return nothing
 	end
+	local own = mine(character)
 	local calm = Motion.isReduced()
 	local gone = false
+	local stops: { () -> () } = {}
 	local function over()
 		return gone
 	end
@@ -1504,18 +1812,27 @@ FX.finalBreakdown = function(character, preview)
 		Parent = under,
 	}) :: PointLight
 	TweenService:Create(light, TweenInfo.new(1.5, Enum.EasingStyle.Sine), { Brightness = 2.2 }):Play()
-	local pour = Create("ParticleEmitter", {
-		Texture = textureOr("Smoke", "rbxasset://textures/particles/smoke_main.dds"),
-		Color = SMOKE_RISE,
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.1) }),
-		Lifetime = NumberRange.new(0.8, 1.3),
-		Speed = NumberRange.new(1.5, 3),
-		SpreadAngle = Vector2.new(60, 60),
-		Acceleration = Vector3.new(0, 2, 0),
-		LightEmission = 0,
-		Rate = 0,
-		Parent = under,
-	}) :: ParticleEmitter
+	-- dark smoke pouring up off him while he laughs
+	local torso = character:FindFirstChild("Torso")
+	local pour = Vfx.Emit.make(if torso and torso:IsA("BasePart") then torso else under, {
+		tex = "VfxSmoke",
+		grid = 8,
+		mode = "OneShot",
+		color = Color3.fromRGB(26, 22, 24),
+		light = 0,
+		lit = 0.3,
+		size = { { 0, 1.6 }, { 1, 4.4 } },
+		alpha = { { 0, 0.5 }, { 0.5, 0.5 }, { 1, 1 } },
+		life = { 1.4, 2.2 },
+		speed = { 1.5, 3 },
+		spread = 40,
+		accel = Vector3.new(0, 2, 0),
+		rot = { 0, 360 },
+		spin = { -25, 25 },
+		shape = Enum.ParticleEmitterShape.Box,
+		z = -1,
+	})
+	pour:SetAttribute("DGEmote", true)
 	after(head, over, 2.25, function()
 		if not calm then
 			light.Brightness = 7
@@ -1523,25 +1840,38 @@ FX.finalBreakdown = function(character, preview)
 		end
 		local sole = lowerSole(character)
 		if sole then
-			EmoteFx.thud(CFrame.new(sole), 6)
+			-- thrown back: the floor takes the blow (a crimson slam: dust, smoke, cracks, bits of it thrown up)
 			local ground = floorUnder(sole, character)
+			Vfx.Recipes.slam(CFrame.new(ground), { color = CRIMSON, scale = 1.4, shake = own, flash = own })
 			FxKit.rocks(ground, 3.2, 12)
-			FxKit.shape("ring", CFrame.new(ground + Vector3.new(0, 0.06, 0)), {
-				size = 13,
-				seconds = 0.5,
-				color = Color3.fromRGB(214, 210, 198),
-				transparency = 0.4,
-			})
 		end
-		pour.Rate = if calm then 8 else 24
+		table.insert(stops, Vfx.Rim.glow(character, BLOOD_HOT, math.huge, { fill = 0.1, fadeIn = 0.3 }))
+		if own and not calm then
+			Vfx.Screen.impact({ character }, 0.08)
+			LightingController.lean(0.5, BLOOD, 0.3, 0.3)
+		end
+		pour.Rate = if calm then 8 else 22
 	end)
 	after(head, over, 4.2, function()
 		pour.Rate = 0
 		TweenService:Create(light, TweenInfo.new(1.0), { Brightness = 0 }):Play()
+		if own then
+			LightingController.unlean(1.2)
+		end
 	end)
 	return function()
 		gone = true
-		under:Destroy()
+		for _, stop in ipairs(stops) do
+			stop()
+		end
+		if own then
+			LightingController.unlean(1)
+		end
+		pour.Enabled = false
+		task.delay(2.3, function()
+			under:Destroy()
+			pour:Destroy()
+		end)
 	end
 end
 
@@ -1624,7 +1954,7 @@ FX.blindfoldLift = function(character, preview)
 	local at = Create("Attachment", { Name = "EmoteInfinity", Parent = root })
 	at:SetAttribute("DGEmote", true)
 	Create("ParticleEmitter", {
-		Texture = SPARKLE,
+		Texture = Vfx.Tex.id("VfxEmber"),
 		Color = INFINITY,
 		LightEmission = 1,
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0) }),
@@ -3017,55 +3347,69 @@ function EmoteFx.thud(at: CFrame, size: number)
 	if Governor.low("emoteFx") or Motion.isReduced() then
 		return
 	end
-	-- (Roblox's own smoke before the Core set is imported: the dances' step dust needs it from the start)
-	local texture = Assets.texture("Smoke")
-	if texture == "" then
-		texture = "rbxasset://textures/particles/smoke_main.dds"
-	end
-	local holder = Create("Part", {
-		Name = "EmoteThud",
-		Size = Vector3.new(size * 0.8, 0.05, size * 0.8),
-		CFrame = CFrame.new(at.Position + Vector3.new(0, 0.1, 0)),
-		Transparency = 1,
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		Parent = workspace.CurrentCamera,
-	}) :: BasePart
-	local dust = Create("ParticleEmitter", {
-		Texture = texture,
-		Color = ColorSequence.new(Color3.fromRGB(40, 38, 40)),
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) }),
-		Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.5),
-			NumberSequenceKeypoint.new(1, 1.4 + size * 0.15),
-		}),
-		Lifetime = NumberRange.new(0.5, 0.9),
-		Speed = NumberRange.new(4, 7),
-		Drag = 4,
-		SpreadAngle = Vector2.new(85, 5),
-		EmissionDirection = Enum.NormalId.Front,
-		Shape = Enum.ParticleEmitterShape.Box,
-		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
-		Rotation = NumberRange.new(0, 360),
-		LightInfluence = 0.6,
-		Rate = 0,
-		Parent = holder,
-	}) :: ParticleEmitter
-	dust:Emit(math.clamp(math.floor(size * 4), 8, 28))
-	if size >= 2.5 then
-		FxKit.shape("ring", at + Vector3.new(0, 0.05, 0), {
-			size = size * 2.4,
-			seconds = 0.4,
-			color = Color3.fromRGB(150, 146, 140),
-			material = Enum.Material.ForceField,
-			transparency = 0.2,
+	-- dust thrown out low along the floor: anime puffs, and real smoke under them for a heavier landing; a ring rolling
+	-- out over the floor from a big one, and for the biggest the floor cracks and bits of it jump
+	local pos = at.Position + Vector3.new(0, 0.12, 0)
+	local list: { any } = {
+		{
+			{
+				tex = "VfxDust",
+				grid = 4,
+				mode = "OneShot",
+				color = Color3.fromRGB(122, 120, 118),
+				light = 0,
+				lit = 0.6,
+				size = { { 0, 0.45 + size * 0.14 }, { 1, 1.1 + size * 0.34 } },
+				alpha = { { 0, 0.05 }, { 0.7, 0.3 }, { 1, 1 } },
+				life = { 0.55, 0.95 },
+				speed = { 3 + size, 5 + size * 1.8 },
+				drag = 4,
+				spread = { 86, 86 },
+				rot = { 0, 360 },
+				spin = { -40, 40 },
+			},
+			math.clamp(math.floor(size * 3), 6, 20),
+		},
+	}
+	if size >= 1.5 then
+		table.insert(list, {
+			{
+				tex = "VfxSmoke",
+				grid = 8,
+				mode = "OneShot",
+				color = Color3.fromRGB(60, 58, 60),
+				light = 0,
+				lit = 0.5,
+				size = { { 0, 0.8 + size * 0.2 }, { 1, 2 + size * 0.5 } },
+				alpha = { { 0, 0.4 }, { 0.6, 0.55 }, { 1, 1 } },
+				life = { 0.9, 1.4 },
+				speed = { 2 + size * 0.8, 4 + size * 1.2 },
+				drag = 3,
+				spread = { 80, 80 },
+				rot = { 0, 360 },
+				spin = { -25, 25 },
+			},
+			math.clamp(math.floor(size * 1.5), 3, 10),
 		})
 	end
-	task.delay(1.2, function()
-		holder:Destroy()
-	end)
+	Vfx.Emit.burst(CFrame.new(pos), list)
+	if size >= 2.5 then
+		Vfx.Beams.wave(CFrame.new(pos), size * 0.3, size * 1.4, 0.45, {
+			tex = "VfxRingBand",
+			color = Color3.fromRGB(190, 186, 180),
+			width = size * 0.18,
+			light = 0.4,
+			bright = 1,
+		})
+	end
+	if size >= 4 then
+		Vfx.Ground.mark(at.Position, Vector3.yAxis, "VfxCrack", size * 1.6, Color3.fromRGB(140, 140, 145), 2.2)
+		Vfx.Ground.debris(
+			at.Position,
+			math.floor(size),
+			{ size = 0.35 + size * 0.06, speed = 14 + size * 2, life = 1.6 }
+		)
+	end
 end
 
 -- The wisp: every emote begins and ends in a little breath of pale grey dust round the feet, rising and gone
@@ -3077,27 +3421,26 @@ function EmoteFx.wisp(character: Model)
 	end
 	local at = Create("Attachment", { Name = "EmoteWisp", Position = Vector3.new(0, -2.6, 0), Parent = root })
 	at:SetAttribute("DGEmote", true)
-	local emitter = Create("ParticleEmitter", {
-		Texture = textureOr("Smoke", "rbxasset://textures/particles/smoke_main.dds"),
-		Color = ColorSequence.new(Color3.fromRGB(168, 166, 170)),
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.55),
-			NumberSequenceKeypoint.new(0.7, 0.75),
-			NumberSequenceKeypoint.new(1, 1),
-		}),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 1.6) }),
-		Lifetime = NumberRange.new(0.7, 1.1),
-		Speed = NumberRange.new(1.2, 2.4),
-		SpreadAngle = Vector2.new(70, 70),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-40, 40),
-		Acceleration = Vector3.new(0, 1.5, 0),
-		LightInfluence = 0.6,
-		Rate = 0,
-		Parent = at,
-	}) :: ParticleEmitter
-	emitter:Emit(9)
-	task.delay(1.6, function()
+	local emitter = Vfx.Emit.make(at, {
+		name = "EmoteWisp",
+		tex = "VfxSmoke",
+		grid = 8,
+		mode = "OneShot",
+		color = Color3.fromRGB(176, 174, 178),
+		light = 0,
+		lit = 0.55,
+		size = { { 0, 0.6 }, { 1, 1.9 } },
+		alpha = { { 0, 0.45 }, { 0.6, 0.6 }, { 1, 1 } },
+		life = { 0.8, 1.2 },
+		speed = { 1.4, 2.6 },
+		spread = { 75, 75 },
+		accel = Vector3.new(0, 1.5, 0),
+		drag = 1.5,
+		rot = { 0, 360 },
+		spin = { -40, 40 },
+	})
+	emitter:Emit(8)
+	task.delay(1.7, function()
 		at:Destroy()
 	end)
 end

@@ -821,6 +821,37 @@ local function propLights(b, folder: Instance, p, model: Instance?)
 	end
 end
 
+-- Where a prop's flames burn (its catalog flames: a candle's wick tip, the flame's height, and 1 for a fire), unless the
+-- map placed it dark: an unseen anchor tagged LMapFlame at each, for every client to stand a living flame on (World/Flames). The
+-- prop's own light is its catalog light (propLights).
+SceneBuilder.FLAME_TAG = "LMapFlame"
+
+local function propFlames(b, folder: Instance, p)
+	local info = Catalog[p[1]]
+	if not info or not info.flames or p[7] == "dark" then
+		return
+	end
+	local scale = p[6] or 1
+	local base = b:world(b:cf(p[2], p[3], p[4], p[5]))
+	for _, f in ipairs(info.flames) do
+		local anchor = Create("Part", {
+			Name = "Flame",
+			Anchored = true,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			CastShadow = false,
+			Transparency = 1,
+			Size = Vector3.new(0.1, 0.1, 0.1),
+			CFrame = CFrame.new((base * CFrame.new(f[1] * scale, f[2] * scale, f[3] * scale)).Position),
+			Parent = folder,
+		}) :: BasePart
+		anchor:SetAttribute("Height", f[4] * scale)
+		anchor:SetAttribute("Kind", if f[5] == 1 then "fire" else "candle")
+		CollectionService:AddTag(anchor, SceneBuilder.FLAME_TAG)
+	end
+end
+
 -- Tagged markers the clients bring to life (client World/MapAmbient): giant screens, ambient
 -- sound sources, the metro train's run, snowy branches and a clock tower's hands; and boxes
 -- where the client's LightingController switches to a look of their own (the metro under
@@ -1156,6 +1187,7 @@ local function buildFormat2(b, venue: string, data): string
 			standIn(b, folder, p)
 		end
 		propLights(b, folder, p, model)
+		propFlames(b, folder, p)
 	end
 	for _, spec in ipairs(dressing.lights) do
 		addLight(b, folder, spec, greybox)

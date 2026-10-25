@@ -1,7 +1,7 @@
 """Fails when a scene has become heavier than the recorded baseline.
 
 A scene is what a player's device holds while they stand in it: the venue's map import, the
-venue's own prop set and the Core prop set. Three things are measured, all from the files that
+venue's own prop set, the Core prop set and the VFX kit's (Fx). Three things are measured, all from the files that
 get imported (art/export):
 
     pixels     every texture the scene's FBX files embed, counted once, in megapixels
@@ -80,6 +80,9 @@ def measure():
     for venue in VENUES:
         files = [EXPORT / f"DeathsGambitMaps_{venue}.fbx", EXPORT / f"DeathsGambitModels_{venue}.fbx",
                  EXPORT / "DeathsGambitModels_Core.fbx"]
+        # (the VFX kit's file, loaded everywhere like Core, from 2026-10-24)
+        if (EXPORT / "DeathsGambitModels_Fx.fbx").exists():
+            files.append(EXPORT / "DeathsGambitModels_Fx.fbx")
         textures = set()
         for fbx in files:
             textures |= embedded(fbx)

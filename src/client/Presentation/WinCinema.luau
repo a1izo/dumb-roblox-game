@@ -16,7 +16,6 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
@@ -30,6 +29,7 @@ local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
 local Stage = require(script.Parent.Stage)
 local FxKit = require(script.Parent.FxKit)
+local Vfx = require(script.Parent.Vfx)
 
 local WinCinema = {}
 
@@ -47,7 +47,7 @@ type Refs = {
 	parts: { [string]: BasePart },
 	props: { [string]: Model },
 	lights: { [string]: { light: PointLight, brightness: number } },
-	emitters: { [string]: ParticleEmitter },
+	emitters: { [string]: any },
 	strings: { { beam: Beam, far: Attachment } },
 	buildings: { { gui: SurfaceGui, order: number } },
 	rows: { [number]: { Instance } },
@@ -94,86 +94,90 @@ end
 
 -- Building --------------------------------------------------------------------------------------------------
 
+-- What a set's part gives off (the VFX kit: Presentation/Vfx): a candle's living flame (its own part is hidden; `out`
+-- snuffs it with a curl of smoke), rain, low fog.
 local EMIT = {
-	flame = function(parent: Instance)
-		return Create("ParticleEmitter", {
-			Texture = "rbxasset://textures/particles/fire_main.dds",
-			Color = ColorSequence.new(Color3.fromRGB(255, 214, 150), Color3.fromRGB(255, 120, 60)),
-			LightEmission = 1,
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.22), NumberSequenceKeypoint.new(1, 0.02) }),
-			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
-			Lifetime = NumberRange.new(0.25, 0.4),
-			Rate = 22,
-			Speed = NumberRange.new(0.4, 0.8),
-			EmissionDirection = Enum.NormalId.Top,
-			SpreadAngle = Vector2.new(6, 6),
-			Parent = parent,
-		})
+	flame = function(part: BasePart)
+		part.Transparency = 1
+		local flame =
+			Vfx.Recipes.flame(part, { kind = "candle", scale = math.max(part.Size.Y, 0.3) * 0.9, light = false })
+		return {
+			out = function()
+				flame.out()
+			end,
+		}
 	end,
 	rain = function(parent: Instance)
-		local texture = Assets.texture("RainStreak")
-		return Create("ParticleEmitter", {
-			Texture = if texture ~= "" then texture else "rbxasset://textures/particles/sparkles_main.dds",
-			Color = ColorSequence.new(Color3.fromRGB(170, 184, 210)),
-			Size = NumberSequence.new(0.06),
-			Squash = NumberSequence.new(6), -- (long along the fall, as the maps' rain: World/RainController)
-			Orientation = Enum.ParticleOrientation.VelocityParallel,
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 0.5),
-				NumberSequenceKeypoint.new(1, 0.85),
-			}),
-			LightInfluence = 0.4,
-			Lifetime = NumberRange.new(0.6, 0.8),
-			Rate = 70,
-			Speed = NumberRange.new(10, 13),
-			EmissionDirection = Enum.NormalId.Bottom,
-			Parent = parent,
+		return Vfx.Emit.make(parent, {
+			tex = "VfxStreak",
+			color = Color3.fromRGB(170, 184, 210),
+			size = 0.07,
+			squash = -3,
+			face = "along",
+			alpha = { { 0, 0.45 }, { 1, 0.85 } },
+			light = 0,
+			lit = 0.4,
+			life = { 0.6, 0.8 },
+			rate = 70,
+			speed = { 10, 13 },
+			dir = Enum.NormalId.Bottom,
+			shape = Enum.ParticleEmitterShape.Box,
 		})
 	end,
 	fog = function(parent: Instance)
-		return Create("ParticleEmitter", {
-			Texture = "rbxasset://textures/particles/smoke_main.dds",
-			Color = ColorSequence.new(Color3.fromRGB(214, 218, 226)),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 8), NumberSequenceKeypoint.new(1, 14) }),
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.4, 0.86),
-				NumberSequenceKeypoint.new(1, 1),
-			}),
-			LightInfluence = 0.6,
-			Lifetime = NumberRange.new(6, 9),
-			Rate = 3,
-			Speed = NumberRange.new(0.3, 0.8),
-			SpreadAngle = Vector2.new(180, 10),
-			Parent = parent,
+		return Vfx.Emit.make(parent, {
+			tex = "VfxSmoke",
+			grid = 8,
+			mode = "OneShot",
+			color = Color3.fromRGB(214, 218, 226),
+			size = { { 0, 8 }, { 1, 14 } },
+			alpha = { { 0, 1 }, { 0.4, 0.84 }, { 1, 1 } },
+			light = 0,
+			lit = 0.6,
+			life = { 6, 9 },
+			rate = 3,
+			speed = { 0.3, 0.8 },
+			spread = { 180, 10 },
+			rot = { 0, 360 },
+			spin = { -6, 6 },
+			shape = Enum.ParticleEmitterShape.Box,
 		})
 	end,
 }
 
+-- Smoke rising from a point (a candle put out: its curl of smoke; anything else, a puff that billows and thins).
 local function smoke(at: Vector3, folder: Instance, count: number, color: Color3?)
-	local holder = Create("Part", {
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		Transparency = 1,
-		Size = Vector3.new(0.2, 0.2, 0.2),
-		Position = at,
-		Parent = folder,
-	})
-	local emitter = Create("ParticleEmitter", {
-		Texture = "rbxasset://textures/particles/smoke_main.dds",
-		Color = ColorSequence.new(color or Color3.fromRGB(150, 150, 156)),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1.4) }),
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1) }),
-		Lifetime = NumberRange.new(0.8, 1.3),
-		Speed = NumberRange.new(0.6, 1.4),
-		SpreadAngle = Vector2.new(25, 25),
-		EmissionDirection = Enum.NormalId.Top,
-		Rate = 0,
-		Parent = holder,
-	}) :: ParticleEmitter
-	emitter:Emit(count)
+	if count <= 8 and not color then
+		Vfx.Emit.burst(at + Vector3.new(0, 0.6, 0), {
+			tex = "VfxWisp",
+			grid = 4,
+			mode = "OneShot",
+			color = Color3.fromRGB(200, 200, 204),
+			light = 0,
+			lit = 0.35,
+			size = 1.6,
+			alpha = { { 0, 0.15 }, { 0.7, 0.45 }, { 1, 1 } },
+			life = 2.4,
+			face = "up",
+		}, 1)
+		return
+	end
+	Vfx.Emit.burst(at, {
+		tex = "VfxSmoke",
+		grid = 8,
+		mode = "OneShot",
+		color = color or Color3.fromRGB(150, 150, 156),
+		light = 0,
+		lit = 0.6,
+		size = { { 0, 0.4 }, { 1, 1.8 } },
+		alpha = { { 0, 0.35 }, { 0.6, 0.5 }, { 1, 1 } },
+		life = { 0.9, 1.4 },
+		speed = { 0.6, 1.4 },
+		spread = 25,
+		rot = { 0, 360 },
+		spin = { -30, 30 },
+	}, count)
+	local _ = folder
 end
 
 local function makePart(spec: any, origin: CFrame, folder: Instance, refs: Refs): BasePart
@@ -636,10 +640,13 @@ ACTS.out = function(refs, event)
 		if entry then
 			tween(entry.light, 0.25, { Brightness = 0 })
 		end
-		if emitter then
+		if type(emitter) == "table" then
+			-- (a living flame: it goes out with its own curl of smoke)
+			emitter.out()
+		elseif emitter then
 			emitter.Enabled = false
 		end
-		if flame then
+		if flame and type(emitter) ~= "table" then
 			tween(flame, 0.15, { Transparency = 1 })
 			smoke(flame.Position + Vector3.new(0, 0.2, 0), refs.folder, 8)
 		end

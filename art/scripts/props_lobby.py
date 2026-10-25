@@ -516,17 +516,6 @@ def cairn():
 # Fire and light -----------------------------------------------------------------------------------------
 
 
-def pale_flame(name, x, y, z, r, h, key):
-    """Tongues of pale fire rising from (x, y, z)."""
-    glow = pk.glow(key, PALE_FIRE, 5)
-    parts = [mk.cylinder(name, r, h, (x, y, z + h / 2), mat=glow, verts=8, radius2=0.02)]
-    for k in range(3):
-        a = k * 2.1
-        parts.append(mk.cylinder(name, r * 0.55, h * 0.7, (x + math.cos(a) * r * 0.55, y + math.sin(a) * r * 0.55,
-                                                           z + h * 0.35), mat=glow, verts=6, radius2=0.02))
-    return parts
-
-
 @prop("BoneBrazier", pivot="bottom", material="Metal", collide=True, texture=1024, set="Lobby",
       lights=[dict(at=(0, 0, 5.4), kind="point", color=PALE_FIRE, range=26, brightness=1.15)])
 def bone_brazier():
@@ -551,9 +540,9 @@ def bone_brazier():
         a = 2 * math.pi * k / 6
         parts.append(mk.cylinder("Spike", 0.06, 0.5, (math.cos(a) * 1.38, math.sin(a) * 1.38, 5.05), mat=iron, verts=6,
                                  radius2=0.0))
+    # the bed of embers glows; the fire over it is the game's (a living fire, Presentation/Vfx Recipes.flame)
     glows = [mk.cylinder("Embers", 1.0, 0.2, (0, 0, 4.5), mat=pk.glow("Brz_Ember", (120, 150, 210), 3), verts=14)]
-    glows += pale_flame("Flame", 0, 0, 4.55, 0.7, 1.9, "Brz_Flame")
-    return parts, glows
+    return parts, glows, {"flames": [(0, 0, 4.55, 2.6, 1)]}
 
 
 @prop("LanternPost", pivot="bottom", material="Wood", collide=True, texture=512, set="Lobby", anchor=(0, 0),
@@ -580,35 +569,114 @@ def lantern_post():
         a = 2 * math.pi * k / 6
         parts.append(mk.tube("Bar", (cx + math.cos(a) * 0.42, cy + math.sin(a) * 0.42, cz - 0.66),
                              (cx + math.cos(a) * 0.46, cy + math.sin(a) * 0.46, cz + 0.76), 0.03, mat=iron, verts=4))
-    glows = pale_flame("Flame", cx, cy, cz - 0.6, 0.22, 0.9, "Lnp_Flame")
-    glows.append(mk.sphere("Glow", 0.28, (cx, cy, cz - 0.2), scale=(1, 1, 1.4), mat=pk.glow("Lnp_Core", (225, 238, 255), 3),
-                           segments=8, rings=6))
-    return parts, glows
+    # a stub of candle in the cage; its flame is the game's
+    wax = candle_wax("Lnp")
+    wick = mk.flat("Lnp_Wick", srgb(16, 14, 13), 0.9)
+    body, tip = candle("LnpCandle", cx, cy, cz - 0.58, 0.16, 0.42, wax, wick, random.Random(5), drips=3)
+    parts += body
+    return parts, [], {"flames": [(tip[0], tip[1], tip[2], 0.6)]}
+
+
+def candle_wax(key):
+    """The realm's candle wax: bone white, a little grey, never warm."""
+    return mk.noisy(f"{key}_Wax", srgb(176, 170, 158), srgb(214, 208, 194), scale=14, roughness=0.55)
+
+
+def candle(name, x, y, z0, r, h, wax, wick, rng, drips=5):
+    """One candle standing at (x, y, z0), `r` across its middle and `h` tall: a turned pillar with a soft foot, its top
+    melted down into a crater inside a rounded lip that leans a little lower on one side, wax run down its sides in
+    drips that end in round beads, and a bent black wick in the crater. Returns (parts, the wick's tip), the tip where
+    the game's flame stands (Presentation/Vfx Recipes.flame; nothing on the candle glows itself)."""
+    profile = [(r * 1.06, 0.0), (r * 1.03, 0.03), (r * 1.0, 0.08), (r * 0.995, h * 0.5), (r * 1.0, h - 0.07),
+               (r * 0.985, h - 0.025), (r * 0.93, h), (r * 0.82, h - 0.012), (r * 0.62, h - 0.05),
+               (r * 0.3, h - 0.068), (0.001, h - 0.072)]
+    parts = [mk.lathe(f"{name}Body", profile, loc=(x, y, z0), mat=wax, segments=28)]
+    # the lip leans down toward one side, where the drips spill over
+    low = rng.uniform(0, 2 * math.pi)
+    parts.append(mk.torus(f"{name}Lip", r * 0.9, r * 0.09, loc=(x, y, z0 + h - 0.012), mat=wax, major_segments=18,
+                          minor_segments=6))
+    for k in range(drips):
+        # spread round, most on the low side of the lip
+        a = low + (k - (drips - 1) / 2) * rng.uniform(0.45, 0.75) if k < drips - 1 else low + math.pi * rng.uniform(0.6, 1.4)
+        length = rng.uniform(0.18, 0.58) * h
+        rd = rng.uniform(0.022, 0.032) * (r / 0.22) ** 0.5
+        ox, oy = math.cos(a), math.sin(a)
+        # a ridge hugging the side (its middle sunk 0.45 of its width into the wax), swelling to a teardrop bead
+        sink = r + rd * 0.55
+        top = (x + ox * sink, y + oy * sink, z0 + h - 0.015)
+        bottom = (x + ox * sink, y + oy * sink, z0 + h - length)
+        ridge = mk.tube(f"{name}Drip{k}", top, bottom, rd * 0.85, rd * 1.05, mat=wax, verts=8)
+        ridge.scale = (1, 1, 1)
+        parts.append(ridge)
+        bead = mk.sphere(f"{name}Bead{k}", rd * 1.35, (x + ox * (r + rd * 0.5), y + oy * (r + rd * 0.5),
+                                                       z0 + h - length - rd * 0.6), scale=(1, 1, 1.6), mat=wax,
+                         segments=10, rings=7)
+        # (flattened against the side: thin along the side's normal)
+        bead.rotation_euler = (0, 0, a)
+        bead.scale = (0.62, 1.0, 1.6)
+        parts.append(bead)
+        # where it spilled over the lip: a soft lump, half in the lip
+        spill = mk.sphere(f"{name}Spill{k}", rd * 1.4, (x + ox * r * 0.97, y + oy * r * 0.97, z0 + h - 0.006),
+                          mat=wax, segments=10, rings=6)
+        spill.rotation_euler = (0, 0, a)
+        spill.scale = (0.9, 1.25, 0.55)
+        parts.append(spill)
+    # the wick: up out of the crater, then bent over a little, its tip charred
+    lean = rng.uniform(0, 2 * math.pi)
+    base = (x, y, z0 + h - 0.07)
+    mid = (x + math.cos(lean) * 0.01, y + math.sin(lean) * 0.01, z0 + h + 0.05)
+    tip = (x + math.cos(lean) * 0.035, y + math.sin(lean) * 0.035, z0 + h + 0.1)
+    parts.append(mk.tube(f"{name}Wick", base, mid, 0.014, 0.013, mat=wick, verts=5))
+    parts.append(mk.tube(f"{name}WickTip", mid, tip, 0.013, 0.009, mat=wick, verts=5))
+    return parts, tip
+
+
+def wax_pool(name, x, y, z0, radius, wax, rng):
+    """A pool of old wax round a candle's foot, its edge lumpy where it ran and set."""
+    parts = [mk.cylinder(f"{name}Pool", radius, 0.03, (x, y, z0 + 0.015), mat=wax, verts=28, radius2=radius * 0.92)]
+    for k in range(4):
+        a = rng.uniform(0, 2 * math.pi)
+        rr = radius * rng.uniform(0.8, 1.0)
+        parts.append(mk.sphere(f"{name}Puddle{k}", radius * rng.uniform(0.2, 0.3),
+                               (x + math.cos(a) * rr, y + math.sin(a) * rr, z0 + 0.008), scale=(1, 1, 0.1), mat=wax,
+                               segments=20, rings=6))
+    return parts
+
+
+@prop("ReadyCandle", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Lobby")
+def ready_candle():
+    """A candle for the ready circle at the plaza's middle (one burns for each player who is ready, lit by the
+    game): a pillar of bone-white wax a stud tall in a pool of its own, drips run down its leaning side."""
+    rng = random.Random(41)
+    wax = candle_wax("Rdc")
+    wick = mk.flat("Rdc_Wick", srgb(16, 14, 13), 0.9)
+    parts = wax_pool("Rdc", 0, 0, 0, 0.42, wax, rng)
+    body, tip = candle("Rdc", 0, 0, 0.03, 0.22, 1.0, wax, wick, rng, drips=5)
+    parts += body
+    return parts, [], {"flames": [(tip[0], tip[1], tip[2], 0.55)]}
 
 
 @prop("CandleCluster", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Lobby",
       lights=[dict(at=(0, 0, 1.6), kind="point", color=CANDLE, range=10, brightness=0.55)])
 def candle_cluster():
-    """Stub candles of every height melted together on a pool of old wax, most still burning."""
+    """Stub candles of every height melted together on a pool of old wax, all but one still burning (the game's
+    flames stand on their wicks)."""
     rng = random.Random(21)
-    wax = mk.noisy("Cnd_Wax", srgb(186, 178, 160), srgb(222, 216, 198), scale=14, roughness=0.6)
-    wick = mk.flat("Cnd_Wick", srgb(20, 18, 16), 0.9)
-    parts = [mk.cylinder("Pool", 0.9, 0.08, (0, 0, 0.04), mat=wax, verts=14, radius2=0.75)]
-    glows = []
-    flame = pk.glow("Cnd_Flame", CANDLE, 6)
+    wax = candle_wax("Cnd")
+    wick = mk.flat("Cnd_Wick", srgb(16, 14, 13), 0.9)
+    parts = wax_pool("Cnd", 0, 0, 0, 0.95, wax, rng)
+    flames = []
     for k in range(7):
         a = k * 2.4
         rr = 0.15 + 0.5 * (k / 6)
         x, y = math.cos(a) * rr, math.sin(a) * rr
         h = rng.uniform(0.4, 1.5)
         r = rng.uniform(0.1, 0.16)
-        parts.append(mk.cylinder(f"Candle{k}", r, h, (x, y, 0.06 + h / 2), mat=wax, verts=8))
-        parts.append(mk.sphere(f"Drip{k}", r * 1.1, (x, y, 0.06 + h - 0.05), scale=(1, 1, 0.5), mat=wax, segments=8, rings=4))
-        parts.append(mk.tube(f"Wick{k}", (x, y, 0.06 + h), (x, y, 0.06 + h + 0.08), 0.015, mat=wick, verts=3))
+        body, tip = candle(f"Candle{k}", x, y, 0.03, r, h, wax, wick, rng, drips=3 + k % 3)
+        parts += body
         if k != 3:
-            glows.append(mk.sphere(f"Flame{k}", 0.06, (x, y, 0.06 + h + 0.17), scale=(1, 1, 2.2), mat=flame, segments=6,
-                                   rings=4))
-    return parts, glows
+            flames.append((tip[0], tip[1], tip[2], 0.38 + r * 1.2))
+    return parts, [], {"flames": flames}
 
 
 # The Academy ---------------------------------------------------------------------------------------------
@@ -627,7 +695,7 @@ def practice_altar():
     leather = mk.noisy("Alt_Leather", srgb(26, 20, 20), srgb(52, 38, 34), scale=14, roughness=0.7)
     pages = mk.banded("Alt_Pages", srgb(176, 166, 140), srgb(214, 206, 182), frequency=150, axis="Z")
     ink = mk.flat("Alt_Ink", srgb(14, 12, 12), 0.4)
-    wax = mk.noisy("Alt_Wax", srgb(186, 178, 160), srgb(222, 216, 198), scale=14, roughness=0.6)
+    wax = candle_wax("Alt")
     parts = [mk.box("Plinth", (5.6, 2.9, 0.3), (0, 0, 0.15), mat=dark, bevel=0.06),
              mk.box("Slab", (5.2, 2.6, 0.42), (0, 0, 2.8), mat=stone, bevel=0.08),
              mk.box("Apron", (4.2, 2.1, 0.5), (0, 0, 2.35), mat=dark, bevel=0.05)]
@@ -645,15 +713,16 @@ def practice_altar():
     parts += [mk.cylinder("Inkwell", 0.18, 0.3, (1.7, 0.4, 3.16), mat=ink, verts=10, radius2=0.12),
               mk.tube("Quill", (1.7, 0.4, 3.2), (2.0, 0.9, 4.2), 0.03, 0.01, mat=bone, verts=4),
               mk.box("Vane", (0.06, 0.2, 0.7), (1.9, 0.75, 3.95), rot=(-25, 0, 18), mat=bone)]
-    glows = []
-    flame = pk.glow("Alt_Flame", CANDLE, 6)
+    wick = mk.flat("Alt_Wick", srgb(16, 14, 13), 0.9)
+    rng = random.Random(17)
+    flames = []
     for sx in (-1, 1):
         for k, (dx, h) in enumerate(((0.0, 0.9), (0.28, 0.55), (-0.25, 0.4))):
             x = sx * 2.05 + dx
-            parts.append(mk.cylinder("Candle", 0.12, h, (x, 0.85, 3.01 + h / 2), mat=wax, verts=8))
-            glows.append(mk.sphere("Flame", 0.06, (x, 0.85, 3.01 + h + 0.15), scale=(1, 1, 2.2), mat=flame, segments=6,
-                                   rings=4))
-    return parts, glows
+            body, tip = candle(f"Candle{sx}{k}", x, 0.85, 3.01, 0.12, h, wax, wick, rng, drips=3)
+            parts += body
+            flames.append((tip[0], tip[1], tip[2], 0.45))
+    return parts, [], {"flames": flames}
 
 
 # The Academy's puppets (the owner's reference of 2026-10-13: a wooden artist's mannequin on strings, held

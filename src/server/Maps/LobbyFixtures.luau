@@ -2,8 +2,9 @@
 -- The lobby's fixtures, built at the scene's anchors (art/scripts/maps/venues/lobby):
 --
 --   * the candles on the twelve stones at the plaza's middle (ready<n>): each a Model tagged LReadyCandle
---     with its number (attribute Index), holding the wax ("Wax") and an unlit flame ("Flame", with a
---     PointLight). Every client lights as many as there are players ready (client World/ReadyCircle);
+--     with its number (attribute Index): the Lobby props' ReadyCandle (a rounded wax pillar standing in until it is
+--     imported) and an unseen "Flame" part at its wick's tip (attribute Height: the flame's). Every client lights
+--     as many as there are players ready (client World/ReadyCircle: a living flame, Presentation/Vfx);
 --   * marks for what each client builds for itself, in stone: the five tableaux (tableau<n>: a part tagged
 --     LTableau, attributes Index and Radius, at the base's top, facing the plaza) and the throne's seat
 --     (throne: a part tagged LThroneSeat at the seat's top, facing the way the throne does), and the plaque at
@@ -21,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local LobbyFixtures = {}
 
@@ -37,7 +39,6 @@ local PLINTH = Color3.fromRGB(88, 88, 94)
 -- braziers by the steps, the pillars and the balustrade), and the height of its plinth.
 local WINDOW_OFFSET = Vector2.new(15, -2)
 local WINDOW_HEIGHT = 1.4
-local FLAME = Color3.fromRGB(205, 222, 245)
 
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number?, rx: number?, rz: number? }
 
@@ -54,38 +55,47 @@ local function candle(b, folder: Instance, a: Anchor, index: number)
 	-- Each a little different in height, and turned its own way.
 	local height = 0.9 + ((index * 7) % 5) * 0.12
 	local base = b:world(b:cf(a.x, a.y, a.z, (index * 47) % 360))
-	local wax = Create("Part", {
-		Name = "Wax",
-		Size = Vector3.new(0.46, height, 0.46),
-		CFrame = base * CFrame.new(0, height / 2, 0),
-		Color = WAX,
-		Material = Enum.Material.SmoothPlastic,
-		TopSurface = Enum.SurfaceType.Smooth,
-		BottomSurface = Enum.SurfaceType.Smooth,
-		Parent = model,
-	}) :: BasePart
-	inert(wax)
+	local info = ModelLibrary.info("ReadyCandle")
+	local made = info and info.size[2] or 1.14
+	local scale = height / made
+	local wick = Vector3.new(0, height + 0.08, 0)
+	local flameHeight = 0.55
+	local prop = ModelLibrary.get("ReadyCandle")
+	if prop and info then
+		prop:ScaleTo(prop:GetScale() * scale)
+		prop:PivotTo(base)
+		prop.Name = "Wax"
+		prop.Parent = model
+		local f = info.flames and info.flames[1]
+		if f then
+			wick = Vector3.new(f[1] * scale, f[2] * scale, f[3] * scale)
+			flameHeight = f[4] * scale
+		end
+	else
+		-- (a rounded pillar of wax until the Lobby props are imported)
+		local wax = Create("Part", {
+			Name = "Wax",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(height, 0.46, 0.46),
+			CFrame = base * CFrame.new(0, height / 2, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = WAX,
+			Material = Enum.Material.SmoothPlastic,
+			TopSurface = Enum.SurfaceType.Smooth,
+			BottomSurface = Enum.SurfaceType.Smooth,
+			Parent = model,
+		}) :: BasePart
+		inert(wax)
+	end
 	local flame = Create("Part", {
 		Name = "Flame",
-		Size = Vector3.new(0.22, 0.46, 0.22),
-		CFrame = base * CFrame.new(0, height + 0.3, 0),
-		Color = FLAME,
-		Material = Enum.Material.Neon,
+		Size = Vector3.new(0.1, 0.1, 0.1),
+		CFrame = base * CFrame.new(wick),
 		Transparency = 1,
-		TopSurface = Enum.SurfaceType.Smooth,
-		BottomSurface = Enum.SurfaceType.Smooth,
 		Parent = model,
 	}) :: BasePart
 	inert(flame)
-	Create("PointLight", {
-		Color = FLAME,
-		Range = 9,
-		Brightness = 0.9,
-		Shadows = false,
-		Enabled = false,
-		Parent = flame,
-	})
-	model.PrimaryPart = wax
+	flame:SetAttribute("Height", flameHeight)
+	model.PrimaryPart = flame
 	model:SetAttribute("Index", index)
 	model:AddTag(LobbyFixtures.CANDLE_TAG)
 end
