@@ -114,7 +114,7 @@ MANUAL_REST = _px(576, 4, 1016, 276)
 MANUAL_UNSEEN = _px(4, 4, 60, 58)
 
 
-def piece(parts, laid=None, into=(0.0, 0.0, 1.0, 1.0), own=False, bake=True, finish=None, exact=None):
+def piece(parts, laid=None, into=(0.0, 0.0, 1.0, 1.0), own=False, bake=True, finish=None, exact=None, plain=False):
     """A piece of a prop that moves by itself (a book's board), for a builder's third value:
     {"pieces": {name: piece(...)}, "laid", "into", "finish", "hinge", "turn", "page"}. Each piece becomes
     a mesh "<Prop>_<name>". laid, into: its faces laid by hand and where the others go (modelkit.unwrap),
@@ -122,8 +122,10 @@ def piece(parts, laid=None, into=(0.0, 0.0, 1.0, 1.0), own=False, bake=True, fin
     (exact: that set's size); bake: it is baked (a piece that only repeats faces of the main mesh is
     not); finish: pictures drawn onto the baked maps (modelkit.bake). hinge: {piece: (x, y, z)}, a point
     of the line each piece turns about, which runs along Y; turn: {piece: degrees} it turns, about -Y,
-    to lie open; page: where the game writes."""
-    return {"parts": parts, "laid": laid, "into": into, "own": own, "bake": bake, "finish": finish, "exact": exact}
+    to lie open; page: where the game writes. plain: an own piece of a hero prop (detail=True) baked from
+    itself instead of a high-detail copy (parts crowded so close that the copy's rays catch their neighbours: hair)."""
+    return {"parts": parts, "laid": laid, "into": into, "own": own, "bake": bake, "finish": finish, "exact": exact,
+            "plain": plain}
 
 
 def _faced(obj, normal, mat):

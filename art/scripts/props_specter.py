@@ -149,7 +149,9 @@ class Skeleton:
 @prop("Specter", pivot="bottom", material="Fabric", collide=False, texture=1024, ao=0.35, exact=True, detail=True)
 def specter():
     rng = random.Random(25)
-    skin = mk.noisy("Spec_Skin_Leather", srgb(58, 66, 98), srgb(104, 114, 150), scale=9, detail=8, roughness=0.62)
+    # (black, asked 2026-10-25: "make his skin black instead of dark blue"; a little sheen on it, so its muscles and
+    # bones still catch the light as the picture's blue highlights do)
+    skin = mk.noisy("Spec_Skin_Leather", srgb(12, 13, 17), srgb(38, 41, 54), scale=9, detail=8, roughness=0.48)
     hide = mk.noisy("Spec_Hide_Leather", srgb(8, 9, 12), srgb(26, 28, 36), scale=8, detail=8, roughness=0.55)
     face = mk.noisy("Spec_Face", srgb(168, 176, 204), srgb(214, 218, 234), scale=12, detail=6, roughness=0.5,
                     kind="matte")
@@ -181,14 +183,14 @@ def specter():
     parts, collar_parts, gear, glows = [], [], [], []
     sh.paint(face, "dg_shade", srgb(34, 36, 60), 1.0)
     sh.paint(face, "dg_lip", srgb(44, 38, 66), 1.0)
-    sh.paint(hair, "dg_tip", srgb(70, 98, 196), 0.85)
+    sh.paint(hair, "dg_tip", srgb(40, 58, 130), 0.6)
     sh.paint(fur, "dg_tip", srgb(250, 249, 246), 0.9)
     sh.paint(plume, "dg_tip", srgb(40, 46, 70), 0.6)
 
     # ---------------------------------------------------------------------------------------------------------
     # The body. The torso a hide of black over a gaunt frame (a waist like a wasp's, the ribs' cage swelling over
-    # it), the limbs grown out of it in slate: long arms bulging at the elbow and the wrist's knuckle, hands of four
-    # long knuckled fingers and a thumb, legs bent a little at bony knees, feet drawn out to points.
+    # it), the limbs grown out of it in the same black: long arms bulging at the elbow and the wrist's knuckle, hands
+    # of four long knuckled fingers and a thumb, legs bent a little at bony knees, feet drawn out to points.
     # (posed as in the full-length picture of 2026-10-25: hunched forward over its chest, the neck thrust out, the
     # shoulders hiked up)
     torso = Skeleton()
@@ -292,17 +294,26 @@ def specter():
                                        (tuple(e), 0.17, 0.16), (tuple(e.lerp(w, 0.12)), 0.12, 0.12),
                                        (tuple(e.lerp(w, 0.55)), 0.12, 0.11), (tuple(e.lerp(w, 0.93)), 0.08, 0.08),
                                        (tuple(w), 0.1, 0.09)])
-        palm_c = w + Vector((x * 0.03, -0.12, -0.22))
-        palm = limbs.chain(wrist, [(tuple(palm_c), 0.13, 0.07)])
+        # the hand (asked 2026-10-25, "make the fingers connect properly"): a broad flat palm, a bar of knuckles across
+        # its lower edge, and each finger grown out of its own knuckle, so the four run on out of the hand instead of
+        # branching as sticks from one point under a knob (the knuckles joined one to the next, no loop for the skin)
+        palm_c = w + Vector((x * 0.03, -0.1, -0.2))
+        palm = limbs.chain(wrist, [(tuple(palm_c), 0.16, 0.08)])
+        knuckles = [palm_c + Vector((x * (f - 1.5) * 0.095, -0.05, -0.16 - 0.015 * abs(f - 1.5))) for f in range(4)]
+        joints = [None] * 4
+        joints[1] = limbs.chain(palm, [(tuple(knuckles[1]), 0.068, 0.062)])
+        joints[0] = limbs.chain(joints[1], [(tuple(knuckles[0]), 0.064, 0.058)])
+        joints[2] = limbs.chain(joints[1], [(tuple(knuckles[2]), 0.068, 0.062)])
+        joints[3] = limbs.chain(joints[2], [(tuple(knuckles[3]), 0.06, 0.055)])
         tips = []
         for f in range(4):
             spread = (f - 1.5) * 0.085
-            k0 = palm_c + Vector((x * spread, -0.06, -0.12))
+            k0 = knuckles[f]
             k1 = k0 + Vector((x * spread * 0.5, -0.12, -0.24))
             k2 = k1 + Vector((x * spread * 0.3, -0.06, -0.24))
             k3 = k2 + Vector((x * spread * 0.2, 0.04, -0.16))
-            tip = limbs.chain(palm, [(tuple(k0), 0.05), (tuple(k0 + (k1 - k0) * 0.5), 0.038), (tuple(k1), 0.045),
-                                     (tuple(k1 + (k2 - k1) * 0.5), 0.034), (tuple(k2), 0.038), (tuple(k3), 0.03)])
+            limbs.chain(joints[f], [(tuple(k0 + (k1 - k0) * 0.5), 0.046), (tuple(k1), 0.047),
+                                    (tuple(k1 + (k2 - k1) * 0.5), 0.036), (tuple(k2), 0.039), (tuple(k3), 0.03)])
             tips.append((k2, k3, f))
         thumb0 = palm_c + Vector((x * -0.13, -0.04, 0.02))
         thumb1 = thumb0 + Vector((x * -0.08, -0.14, -0.12))
@@ -518,6 +529,39 @@ def specter():
     gear.append(skirt("SkirtOver", hips_c.z, 3.38, 0.58, 0.82, 12, points=9))
 
     # ---------------------------------------------------------------------------------------------------------
+    # The shoes (asked 2026-10-25, "where are his shoes"; the full-length picture's pointed black ones): glossy black
+    # leather over each hanging foot from a rolled collar at the ankle, drawn out past the toes to a long point that
+    # turns up a little; a seam down the vamp, a strap over the instep with a small steel buckle.
+    shoe = mk.noisy("Spec_Shoe_Leather", srgb(8, 8, 10), srgb(30, 30, 36), scale=10, roughness=0.36)
+    sole = mk.noisy("Spec_Sole_Leather", srgb(26, 22, 20), srgb(46, 40, 36), scale=14, roughness=0.6)
+    welt = mk.flat("Spec_Welt", srgb(44, 44, 50), 0.6, kind="cloth")
+    for side in (-1, 1):
+        x = side
+        line = [Vector((x * 0.44, 0.15, 0.46)), Vector((x * 0.435, 0.11, 0.3)), Vector((x * 0.42, 0.03, 0.15)),
+                Vector((x * 0.405, -0.1, 0.06)), Vector((x * 0.39, -0.27, 0.01)), Vector((x * 0.38, -0.42, 0.02)),
+                Vector((x * 0.37, -0.56, 0.05)), Vector((x * 0.36, -0.67, 0.11))]
+        widths = [0.15, 0.15, 0.135, 0.12, 0.09, 0.062, 0.032, 0.0]
+        depths = [0.15, 0.15, 0.13, 0.1, 0.07, 0.048, 0.026, 0.0]
+        across = [Vector((1, 0, 0))] * len(line)
+        ups = []
+        for k, c in enumerate(line):
+            d = (line[min(k + 1, len(line) - 1)] - line[max(k - 1, 0)]).normalized()
+            ups.append(d.cross(Vector((1, 0, 0))).normalized())  # (the side over the instep: up)
+        gear.append(detailed(sh.loft("Shoe", line, across, ups, widths, depths, shoe, sides=16), LEATHER))
+        # the sole, a darker strip under the foot from the heel to the point
+        under = [c - u * (dep * 0.9) for c, u, dep in zip(line[2:6], ups[2:6], depths[2:6])]
+        gear.append(pk.sweep("Sole", under, [0.05, 0.045, 0.032, 0.012], sole, sides=6))
+        gear.append(mk.torus("Collar", 0.15, 0.028, tuple(line[0]), rot=(-14, 0, 0), mat=shoe, major_segments=20,
+                             minor_segments=6))
+        top = [c + u * (dep * 0.98) for c, u, dep in zip(line[1:7], ups[1:7], depths[1:7])]
+        gear.append(sh.soften(mk.smooth(pk.sweep("Seam", top, 0.008, welt, sides=4))))
+        strap_c = line[2].lerp(line[3], 0.4)
+        gear.append(mk.torus("Strap", 0.135, 0.02, tuple(strap_c), rot=(70, 0, 0), mat=strap, major_segments=20,
+                             minor_segments=5))
+        gear.append(pk.rounded("Buckle", (0.06, 0.03, 0.05), tuple(strap_c + Vector((x * 0.13, -0.02, 0.02))), steel,
+                               r=0.01))
+
+    # ---------------------------------------------------------------------------------------------------------
     # The wrists: a bracelet of small carved skulls on a cord round the right one (-x), a pair of steel bands on the
     # left.
     _, _, rwrist = hands[-1]
@@ -540,7 +584,7 @@ def specter():
     return parts, glows, {
         "pieces": {
             "Face": piece(face_parts, own=True, exact=1024),
-            "Hair": piece(hair_parts, own=True, exact=1024),
+            "Hair": piece(hair_parts, own=True, exact=1024, plain=True),
             "Collar": piece(collar_parts, own=True, exact=1024),
             "Gear": piece(gear, own=True, exact=1024),
         },

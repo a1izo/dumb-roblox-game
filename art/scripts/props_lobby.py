@@ -483,10 +483,13 @@ def giant_skull():
             y = -10.4 + k * 1.55
             length = rng.uniform(1.0, 2.2) * (1.25 if k == 1 else 1.0)
             root = None
-            for step in range(7):  # (a little nearer the middle where the muzzle is too narrow there)
-                x = sx * (1.7 - k * 0.05 - step * 0.25)
+            mid = skull.up(0.0, y, 1.0)
+            for step in range(9):  # (a little nearer the middle where the muzzle is too narrow there)
+                x = sx * max(0.0, 1.7 - k * 0.05 - step * 0.2)
                 under = skull.up(x, y, 1.0)
-                if under is not None:
+                # (only where the underside is still nearly level with its middle: rooted further out, on the muzzle's
+                # curved side, a fang hung down the outside of it, a lone tooth sticking out; asked 2026-10-25)
+                if under is not None and mid is not None and under <= mid + 0.35:
                     root = (x, under + 0.3)
                     break
             if root:

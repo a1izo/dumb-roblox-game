@@ -265,7 +265,7 @@ def build_one(key):
     if spec.get("detail"):
         highs[None] = _high_of(parts, key + "_High")
         for name, piece in more.get("pieces", {}).items():
-            if piece["own"]:
+            if piece["own"] and not piece.get("plain"):
                 highs[name] = _high_of(piece["parts"], f"{key}_{name}_High")
     main = mk.merge(parts, key)
     pieces = {name: mk.merge(piece["parts"], f"{key}_{name}") for name, piece in more.get("pieces", {}).items()}

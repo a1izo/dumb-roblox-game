@@ -2,7 +2,7 @@
 long, with high cheekbones, hollow cheeks and a hard jaw down to a long chin; round staring eyes, yellow with red
 irises, in dark rims under a furrowed brow; a wide open grin (a straight upper lip over a deep U, its corners drawn up
 toward the ears) with sharp teeth rooted in its gums; pinched slit nostrils; rounded ears (a hoop and a heart on the
-left one); and a tall flame of stiff blue spikes standing up off the crown.
+left one); and a full spiky cut of stiff blue-black locks, its hairline a V on the forehead.
 
 Built twice from the same functions: the game mesh, and a high-detail copy (finer, with wrinkles and pores) for its
 maps to be baked from (build_props._high_of, "dg_high"). Everything here is in the unit head's space: x across (its
@@ -348,11 +348,14 @@ def loft(name, centres, across, up, widths, depths, mat, sides=12, dish=0.0):
     return mk.smooth(obj)
 
 
-def strands(name, path, width, flat, mat, sides, grooves=0, groove=0.0, tip_attr=None, up=None):
+def strands(name, path, width, flat, mat, sides, grooves=0, groove=0.0, tip_attr=None, up=None, taper=None,
+            pointed=0.0):
     """A stiff lock along `path` (points), `width` at its root narrowing to a point, flattened to `flat` of its width
     across `up` (a lock, not a cone); grooves: that many strands' furrows round it, `groove` deep (a share of the
     width; the high-detail copy's). tip_attr: a per-point attribute running 0 at the root to 1 at the tip (its
-    colour lightening toward the tip)."""
+    colour lightening toward the tip). taper: keeps it full for longer before it narrows to its point (a clump of
+    hair, not a needle); the higher, the later it narrows. pointed: its root is a point too, swelling to its full
+    width over that share of its length (a lock whose end comes down onto the forehead)."""
     bm = bmesh.new()
     tip_layer = bm.verts.layers.float.new(tip_attr) if tip_attr else None
     rings = []
@@ -366,7 +369,9 @@ def strands(name, path, width, flat, mat, sides, grooves=0, groove=0.0, tip_attr
             a = d.cross(Vector((1, 0, 0)))
         a.normalize()
         b = a.cross(d).normalized()
-        r = width * (1 - t) ** 0.85 + 0.002
+        r = (width * (1 - t ** taper) ** 0.9 if taper else width * (1 - t) ** 0.85) + 0.002
+        if pointed:
+            r *= min(1.0, t / pointed) ** 0.6 * 0.97 + 0.03
         ring = []
         for i in range(sides):
             th = math.tau * i / sides
@@ -436,36 +441,42 @@ def soften(obj):
     return obj
 
 
-def scalp(z_front=0.48):
-    """Is the head's point (x, y, z) under the hair? Above a hairline high over the brow and low behind."""
-    def under(p):
-        if p.y < 0:
-            line = z_front - 0.22 * min(1.0, abs(p.x) / 0.8)
-        else:
-            k = min(1.0, p.y / 0.6)
-            line = (z_front - 0.22) * (1 - k) - 0.3 * k
-        return p.z > line
-    return under
+# The hairline, as an angle of elevation on the unit head at each azimuth (0 in front): down to a point in the middle
+# of the forehead, its two sides rising steeply to the temples over the eyes' outer corners (asked 2026-10-25: "hes
+# not supposed to have a lineup but a V on his forehead"), then down over the ears and round to the nape.
+V_TIP, V_TEMPLE, V_SIDE = 0.36, 0.86, 0.85  # the point's elevation, the temples', and the temples' azimuth
+OVER_EAR, NAPE = 0.24, -0.62
 
 
-def hair(mats, high_mats=None, rng=None):
-    """The hair: a cap hugging the skull above the hairline, and a crest of stiff spiked locks thrown up off it and
-    swept back, the tallest along the middle, the side ones leaning out, short ones over the brow. Each lock gets a
-    high-detail twin with its strands grooved in ("dg_high"). Returns the parts."""
+def hairline(th):
+    a = abs(math.atan2(math.sin(th), math.cos(th)))
+    if a <= V_SIDE:
+        return V_TIP + (V_TEMPLE - V_TIP) * a / V_SIDE
+    if a <= math.pi / 2:
+        k = (a - V_SIDE) / (math.pi / 2 - V_SIDE)
+        return V_TEMPLE + (OVER_EAR - V_TEMPLE) * (0.5 - 0.5 * math.cos(math.pi * k))
+    k = (a - math.pi / 2) / (math.pi / 2)
+    return OVER_EAR + (NAPE - OVER_EAR) * (0.5 - 0.5 * math.cos(math.pi * k))
+
+
+def on_skull(th, e, out=1.0):
+    """The point of the head's own shape at azimuth th and elevation e, `out` times as far from its middle."""
+    return shape(Vector((math.cos(e) * math.sin(th), -math.cos(e) * math.cos(th), math.sin(e)))) * out
+
+
+def hair(mats, rng=None):
+    """Ryuk's spiky cut (the full-length picture of 2026-10-25; asked the same day for more hair, "exactly like the
+    spiky cut he has"): a dark cap over the skull from the V on the forehead to the nape, and over all of it, row on
+    row, thick stiff locks, each lying up the head a little from its root and then lifting off it into a spike. Those
+    in front stand nearly straight up (the tallest over the brow and the crown), those at the sides fan out and up,
+    those behind sweep up and back, so the whole cut flares wider than the head; the locks of the first row meet in
+    the V. Returns the parts."""
     rng = rng or random.Random(57)
     parts = []
+    up, back = Vector((0, 0, 1)), Vector((0, 1, 0))
 
-    def hairline(th):
-        """How high the hairline runs (an angle of elevation) at the azimuth th (0 in front): high over the brow,
-        over the ears at the sides, down to the nape behind."""
-        c = math.cos(th)
-        return 0.44 * (1 + c) / 2 - 0.62 * (1 - c) / 2 + 0.3 * math.sin(th) ** 2
-
-    def on_skull(th, e, out=1.0):
-        return shape(Vector((math.cos(e) * math.sin(th), -math.cos(e) * math.cos(th), math.sin(e)))) * out
-
-    # the cap: rows from the hairline up to the crown, a little out from the skull and fuller over the top; its twin
-    # furrowed from the hairline up, the strands combed back into the crest
+    # the cap: rows from the hairline up to the crown, a little out from the skull and fuller over the top (the hair
+    # is baked from itself: props.piece plain)
     def cap(name, cols, rows, furrows, mat):
         bm = bmesh.new()
         tip = bm.verts.layers.float.new("dg_tip")
@@ -478,11 +489,11 @@ def hair(mats, high_mats=None, rng=None):
                 e = e0 + (math.pi / 2 - e0) * (r / rows)
                 fur = 1.0 - (0.012 * (0.5 + 0.5 * math.cos(th * furrows)) if furrows else 0.0)
                 v = bm.verts.new(on_skull(th, e, (1.03 + 0.05 * math.sin(math.pi * r / rows)) * fur))
-                v[tip] = 0.15 * r / rows
+                v[tip] = 0.0
                 row.append(v)
             grid.append(row)
         crown = bm.verts.new(shape(Vector((0, 0, 1))) * 1.06)
-        crown[tip] = 0.15
+        crown[tip] = 0.0
         for r in range(rows - 1):
             for c in range(cols):
                 d = (c + 1) % cols
@@ -495,54 +506,46 @@ def hair(mats, high_mats=None, rng=None):
             f.smooth = True
         return mk._obj_from_bm(name, bm, mat)
 
-    low_cap = cap("HairCap", 56, 14, 0, mats["hair"])
-    low_cap["dg_high"] = cap("HairCapHigh", 448, 40, 150, (high_mats or mats)["hair"]).name
-    parts.append(low_cap)
-    # flat locks lying over the cap, combed up from the hairline toward the crest
-    for k in range(30):
-        th = math.tau * k / 30 + rng.uniform(-0.08, 0.08)
-        e0 = hairline(th) + 0.05
-        root = on_skull(th, e0, 1.06)
-        mid = on_skull(th + rng.uniform(-0.1, 0.1), e0 + (math.pi / 2 - e0) * 0.45, 1.1)
-        end = on_skull(th + rng.uniform(-0.15, 0.15), e0 + (math.pi / 2 - e0) * rng.uniform(0.6, 0.85), 1.16)
-        path = [root, root.lerp(mid, 0.5) * 1.01, mid, mid.lerp(end, 0.5) * 1.01, end]
-        nrm = root.normalized()
-        width = rng.uniform(0.16, 0.22)
-        low = strands("HairLie", path, width, 0.3, mats["hair"], 6, tip_attr="dg_tip", up=nrm)
-        hi = strands("HairLieHigh", path, width, 0.3, (high_mats or mats)["hair"], 24, grooves=5, groove=0.12,
-                     tip_attr="dg_tip", up=nrm)
-        low["dg_high"] = hi.name
-        parts.append(low)
-    # the locks (the full-length picture of 2026-10-25): a tall narrow flame of thin stiff spikes standing up off the
-    # crown, the middle ones the tallest and straightest, the outer ones leaning out and back a little; (azimuth,
-    # elevation, lean, length, root width)
-    locks = []
-    for k in range(34):
-        th = math.tau * rng.random()
-        e = rng.uniform(0.95, 1.5)
-        inner = (e - 0.95) / 0.55  # (1 at the crown's top: tall and straight up)
-        out = Vector((math.sin(th), -math.cos(th), 0.0)) * (0.8 * (1 - inner) ** 1.2 + 0.05)
-        lean = out + Vector((rng.uniform(-0.15, 0.15), 0.1 + rng.uniform(-0.05, 0.12), 1.0))
-        length = (0.55 + 1.45 * inner ** 1.3) * rng.uniform(0.82, 1.15)  # (a flame: tallest in the middle)
-        locks.append((th, e, lean, length, rng.uniform(0.13, 0.21) * (1.1 - 0.2 * inner)))
-    for k in range(7):  # short spikes over the brow, standing up out of the hairline
-        th = (k - 3) * 0.2 + rng.uniform(-0.04, 0.04)
-        locks.append((th, 0.62, Vector((math.sin(th) * 0.3, -0.25, 1.0)), rng.uniform(0.45, 0.7), rng.uniform(0.12, 0.15)))
-    for th, e, lean, length, width in locks:
-        root = on_skull(th, e, 1.0)
-        lean = lean.normalized()
-        bend = Vector((rng.uniform(-0.12, 0.12), 0.18, 0.0))  # (only a little curl back near the tips)
-        path = [root]
-        for seg in range(1, 7):
-            s = seg / 6
-            way = (lean + bend * (s * s)).normalized()
-            path.append(path[-1] + way * length / 6)
-        up = Vector((rng.uniform(-0.4, 0.4), rng.uniform(-0.4, 0.4), 1.0)).normalized()  # (each turned its own way)
-        low = strands("HairLock", path, width, 0.45, mats["hair"], 7, tip_attr="dg_tip", up=up)
-        hi = strands("HairLockHigh", path, width, 0.45, (high_mats or mats)["hair"], 28, grooves=5, groove=0.12,
-                     tip_attr="dg_tip", up=up)
-        low["dg_high"] = hi.name
-        parts.append(low)
+    parts.append(cap("HairCap", 64, 14, 0, mats["hair"]))
+
+    def lock(th, f, lie, length, width, fan, pointed=0.0):
+        """One lock rooted at azimuth th, a share f of the way from the hairline to the crown: lying up the head for
+        `lie` of the rest of the way, then a spike `length` long leaning out from the head by `fan`."""
+        e0 = hairline(th) + (math.pi / 2 - hairline(th)) * f
+        e1 = e0 + (math.pi / 2 - e0) * lie
+        root, lift = on_skull(th, e0, 1.03), on_skull(th, e1, 1.12)
+        out = Vector((math.sin(th), -math.cos(th), 0.0))
+        way = (up + out * fan + back * 0.18).normalized()
+        tip = lift + way * length + (out * rng.uniform(0.04, 0.12) + back * rng.uniform(0.06, 0.16)) * length
+        # (one smooth sweep: lying along the head from the root, curving up through `lift` into the spike)
+        bow = lift + way * (length * 0.25)
+        path = [root.lerp(bow, t) * (1 - t) + bow.lerp(tip, t) * t for t in (k / 10 for k in range(11))]
+        turn = (out + Vector((0, 0, rng.uniform(-0.3, 0.3)))).normalized()  # (flat across the way it fans)
+        # (no grooved high-detail twin: the locks crowd so close that its bake caught its neighbours, bright shards
+        # along their edges)
+        parts.append(strands("HairLock", path, width, 0.42, mats["hair"], 7, tip_attr="dg_tip", up=turn, taper=1.7,
+                             pointed=pointed))
+
+    # Row on row from the hairline to the crown (count round the head, share of the way up), each row turned half a
+    # step from the one under it so the locks of one stand between those of the next.
+    rows = ((20, 0.0), (18, 0.24), (14, 0.48), (10, 0.68), (6, 0.86))
+    for r, (count, f) in enumerate(rows):
+        for k in range(count):
+            th = math.tau * (k + 0.5 * (r % 2)) / count + rng.uniform(-0.05, 0.05)
+            front = max(0.0, math.cos(th))
+            sides = min(1.0, abs(math.sin(th)) + max(0.0, -math.cos(th)))
+            fan = (0.12 + 0.85 * sides) * (1.0 - 0.45 * f) + rng.uniform(-0.08, 0.08)
+            length = (0.95 + 0.6 * front) * (0.8 + 0.55 * f) * rng.uniform(0.85, 1.15)
+            width = rng.uniform(0.34, 0.46) * (1.0 - 0.2 * f)
+            lie = 0.3 if r == 0 else rng.uniform(0.06, 0.14)
+            # (the first row's ends come down to points along the hairline, so it reads as the V and not a line)
+            lock(th, f + rng.uniform(-0.03, 0.03) if r else f, lie, length, width, fan, pointed=0.3 if r == 0 else 0.12)
+    # The V's own point: a lock from the very tip of it, up the middle of the forehead.
+    lock(0.0, 0.0, 0.34, 1.7, 0.4, 0.05, pointed=0.32)
+    # The crown's tallest spikes, standing straight up.
+    for k in range(6):
+        th = math.tau * k / 6 + rng.uniform(-0.2, 0.2)
+        lock(th, 0.95, 0.02, rng.uniform(1.9, 2.3), rng.uniform(0.3, 0.38), rng.uniform(0.02, 0.12))
     return parts
 
 
