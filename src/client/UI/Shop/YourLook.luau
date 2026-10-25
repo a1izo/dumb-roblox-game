@@ -486,7 +486,8 @@ local function vanishCopy(copy: Model, gone: boolean, keep: Instance?)
 	end
 end
 
--- Frames the camera on all of the copy and what it holds (a chair stands taller and deeper than the body).
+-- Frames the camera on all of the copy and what it holds (a chair stands taller and deeper than the body), with
+-- room over the head for the title tag, and whole across a view narrower than it is tall.
 local function frameAll(self: YourLook)
 	local copy = self.copy
 	if not copy then
@@ -494,8 +495,15 @@ local function frameAll(self: YourLook)
 	end
 	local box, size = copy:GetBoundingBox()
 	local reach = math.max(size.Y, size.X, size.Z * 0.8, 4)
-	local distance = (reach * 0.5 + 0.8) / math.tan(math.rad(FOV / 2))
-	self.camera.CFrame = CFrame.lookAt(box.Position + Vector3.new(0, reach * 0.12, -distance), box.Position)
+	local half = math.tan(math.rad(FOV / 2))
+	local view = self.viewport.AbsoluteSize
+	local aspect = if view.Y > 0 then math.min(view.X / view.Y, 1) else 1
+	local distance = math.max(
+		(math.max(size.Y, 4) * 0.5 + 1.0) / half,
+		(math.max(size.X, size.Z * 0.8) * 0.5 + 0.6) / (half * aspect)
+	)
+	local focus = box.Position + Vector3.new(0, 0.4, 0)
+	self.camera.CFrame = CFrame.lookAt(focus + Vector3.new(0, reach * 0.12, -distance), focus)
 end
 
 -- A seat or a chair tried on (Shared/Seating): the copy sits a while in the chair picked (or the one you wear, or
@@ -528,16 +536,25 @@ local function seatPreview(self: YourLook, item: Cosmetics.Item): () -> ()
 	frameAll(self)
 	local alive = true
 	local stop: () -> () = function() end
+	-- (framed again once the copy has sat down: a seat moves the body off where it stood)
+	local function sit()
+		stop = emotePreview(self, clip)
+		task.delay(0.2, function()
+			if alive and self.copy == copy then
+				frameAll(self)
+			end
+		end)
+	end
 	if item.kind == "chair" and chair then
 		vanishCopy(copy, true, chair)
 		task.delay(CHAIR_ALONE, function()
 			if alive and self.copy == copy then
 				vanishCopy(copy, false, chair)
-				stop = emotePreview(self, clip)
+				sit()
 			end
 		end)
 	else
-		stop = emotePreview(self, clip)
+		sit()
 	end
 	return function()
 		alive = false
