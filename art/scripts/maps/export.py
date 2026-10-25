@@ -28,8 +28,8 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
-VERSION = {"ModelsCore": 17, "ModelsTokyo": 4, "ModelsAgency": 4, "ModelsCampus": 2, "ModelsLobby": 10,
-           "ModelsMeeting": 2, "ModelsFx": 2}
+VERSION = {"ModelsCore": 18, "ModelsTokyo": 5, "ModelsAgency": 5, "ModelsCampus": 3, "ModelsLobby": 11,
+           "ModelsMeeting": 3, "ModelsFx": 2}
 
 VERSIONS_LUAU = os.path.join(common.ROOT, "src", "shared", "ImportVersions.luau")
 

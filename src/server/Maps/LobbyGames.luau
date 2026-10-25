@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local LobbyGames = {}
@@ -282,17 +283,35 @@ local function apples(b, folder: Instance, anchors: { [string]: Anchor })
 		inert(fruit)
 		fruit.CanCollide = false
 		fruit.CanQuery = true
-		local stem = part(
-			folder,
-			"Stem",
-			Vector3.new(0.12, 0.45, 0.12),
-			at * CFrame.new(0.05, 0.72, 0) * CFrame.Angles(0, 0, math.rad(-14)),
-			INK,
-			Enum.Material.SmoothPlastic
-		)
-		inert(stem)
-		stem.CanCollide = false
-		stem.Parent = fruit
+		-- (the Lobby props' grey apple when it is imported, the ball an unseen hit box round it; a ball and a stalk
+		-- until then. The client hides a found apple and everything in it.)
+		local model = ModelLibrary.get("GreyApple")
+		if model then
+			fruit.Transparency = 1
+			model:ScaleTo(model:GetScale() * 1.35)
+			model:PivotTo(at * CFrame.new(0, -0.62, 0) * CFrame.Angles(0, math.rad(index * 67), 0))
+			for _, piece in ipairs(model:GetDescendants()) do
+				if piece:IsA("BasePart") then
+					piece.Anchored = true
+					piece.CanCollide = false
+					piece.CanQuery = false
+					piece.CanTouch = false
+				end
+			end
+			model.Parent = fruit
+		else
+			local stem = part(
+				folder,
+				"Stem",
+				Vector3.new(0.12, 0.45, 0.12),
+				at * CFrame.new(0.05, 0.72, 0) * CFrame.Angles(0, 0, math.rad(-14)),
+				INK,
+				Enum.Material.SmoothPlastic
+			)
+			inert(stem)
+			stem.CanCollide = false
+			stem.Parent = fruit
+		end
 		Create("PointLight", { Color = GLOW, Range = 7, Brightness = 0.5, Shadows = false, Parent = fruit })
 		fruit:SetAttribute("Index", index)
 		fruit:AddTag("LApple")

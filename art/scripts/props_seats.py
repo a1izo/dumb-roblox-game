@@ -102,53 +102,155 @@ def chair_crate():
     return parts, []
 
 
-@prop("ChairBone", pivot="bottom", material="SmoothPlastic", collide=True, texture=512)
+@prop("ChairBone", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, ao=0.55, exact=True)
 def chair_bone():
-    """The Bone Chair: a tall chair of fused bone, the seat a slab of pale bone on four long-bone legs, the arms
-    two long bones, and the back a ribcage curving round a spine that rises to a crown of short horns."""
-    bone = mk.noisy("Cbn_Bone", srgb(196, 186, 162), srgb(232, 224, 204), scale=14, roughness=0.55)
-    old = mk.noisy("Cbn_Old", srgb(150, 140, 118), srgb(188, 178, 154), scale=18, roughness=0.6)
-    parts = [pk.rounded("Seat", (3.0, 2.7, 0.42), (0, SEAT_Y, SEAT_TOP - 0.21), bone, r=0.16)]
+    """The Bone Chair: a tall chair grown out of one skeleton, every bone fused into the next. A frame of bone round
+    a pale pelvic slab for the seat, four long-bone legs bulging at the knee and splaying into clawed feet, arms that
+    run back into the lowest ribs, and a spine of knuckled vertebrae up the back, its ribs sweeping out and round (low
+    and wide behind the body, curling forward round the head higher up), ending in a horned skull."""
+    from props_world import skin_body
 
-    def long_bone(name, a, b, r):
-        return [mk.tube(name, a, b, r, mat=bone, verts=8), mk.sphere(name + "Knob", r * 1.6, a, mat=old, segments=10,
-                                                                     rings=8),
-                mk.sphere(name + "Knob", r * 1.6, b, mat=old, segments=10, rings=8)]
+    bone = mk.noisy("Cbn_Bone", srgb(178, 168, 142), srgb(226, 218, 196), scale=16, roughness=0.55,
+                    stretch=(1, 1, 0.45))
+    void = mk.flat("Cbn_Void", srgb(14, 12, 12), 0.9)
+    joints, bones = [], []
 
+    def joint(p, r):
+        joints.append((p[0], p[1], p[2], r, r))
+        return len(joints) - 1
+
+    def chain(start, points, end=None):
+        """Joints through `points` [((x, y, z), r)], each linked to the one before, from joint `start` (or None)
+        and on into joint `end` when given: the last new joint's index."""
+        last = start
+        for p, r in points:
+            k = joint(p, r)
+            if last is not None:
+                bones.append((last, k))
+            last = k
+        if end is not None:
+            bones.append((last, end))
+        return last
+
+    def shaft(a, b, r, start, end=None, knob=1.55):
+        """A long bone's length from a to b (`start` the joint at a): the neck narrowing into a thin shaft and
+        widening again into a knob at b, or on into joint `end`."""
+        pts = []
+        for t, f in ((0.12, 1.12), (0.26, 0.86), (0.5, 0.76), (0.74, 0.86), (0.88, 1.12), (1.0, knob)):
+            if t == 1.0 and end is not None:
+                break
+            pts.append(((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t), r * f))
+        return chain(start, pts, end)
+
+    # The seat's frame: a bone round the slab's edge, a knuckle at each corner where a leg comes up into it.
+    zr = SEAT_TOP - 0.24
+    fy, by = SEAT_Y - 1.24, SEAT_Y + 1.2
+    corners = {(sx, sy): joint((sx * 1.36, fy if sy < 0 else by, zr), 0.27) for sx in (-1, 1) for sy in (-1, 1)}
+    sacrum = joint((0, by + 0.02, zr), 0.3)  # where the spine comes down into the frame
+    front_mid = joint((0, fy - 0.06, zr - 0.02), 0.16)
     for sx in (-1, 1):
-        for sy in (-1, 1):
-            parts += long_bone("Leg", (sx * 1.25, SEAT_Y + sy * 1.05, 0.15), (sx * 1.2, SEAT_Y + sy * 1.0,
-                                                                              SEAT_TOP - 0.42), 0.13)
-        parts += long_bone("Arm", (sx * 1.5, 0.75, SEAT_TOP + 0.95), (sx * 1.5, -1.15, SEAT_TOP + 0.85), 0.12)
-        parts += long_bone("ArmPost", (sx * 1.45, -1.1, SEAT_TOP - 0.1), (sx * 1.5, -1.12, SEAT_TOP + 0.75), 0.09)
-    # the spine up the middle of the back, a vertebra at a time
-    top = SEAT_TOP + 4.4
-    for k in range(10):
-        z = SEAT_TOP + 0.3 + k * (top - SEAT_TOP - 0.3) / 9
-        y = BACK_Y + 0.35 + 0.06 * k
-        parts.append(mk.cylinder("Vertebra", 0.24 - 0.008 * k, 0.26, (0, y, z), mat=bone if k % 2 else old, verts=10))
-    parts.append(mk.tube("Cord", (0, BACK_Y + 0.35, SEAT_TOP + 0.2), (0, BACK_Y + 0.89, top + 0.1), 0.11, mat=old,
-                         verts=8))
-    # ribs: four broad pairs, each sweeping out from the spine, round the back's edge and forward beside the body,
-    # so the back reads as a cage (thick near the spine, thinning to the tips)
-    for k in range(4):
-        z = SEAT_TOP + 1.0 + k * 0.85
-        y0 = BACK_Y + 0.45 + 0.06 * (k + 1)
-        span = 1.55 - 0.1 * k
+        shaft((sx * 1.36, fy, zr), (sx * 1.36, by, zr), 0.15, corners[(sx, -1)], end=corners[(sx, 1)])
+        chain(corners[(sx, -1)], [((sx * 0.7, fy - 0.03, zr - 0.01), 0.13)], end=front_mid)
+        chain(corners[(sx, 1)], [((sx * 0.7, by + 0.01, zr), 0.14)], end=sacrum)
+
+    # The legs: down from each corner, bulging at the knee, a clawed foot spread on the floor.
+    for (sx, sy), top in corners.items():
+        x0, y0 = sx * 1.36, (fy if sy < 0 else by)
+        knee = chain(top, [((x0 + sx * 0.03, y0 + sy * 0.03, zr - 0.5), 0.17),
+                           ((x0 + sx * 0.06, y0 + sy * 0.05, 1.28), 0.13),
+                           ((x0 + sx * 0.08, y0 + sy * 0.07, 1.02), 0.21)])
+        fx, fyy = x0 + sx * 0.1, y0 + sy * 0.1
+        foot = chain(knee, [((x0 + sx * 0.09, y0 + sy * 0.08, 0.78), 0.13),
+                            ((x0 + sx * 0.1, y0 + sy * 0.09, 0.42), 0.12),
+                            ((fx, fyy, 0.2), 0.23)])
+        for spread in (-0.6, 0.0, 0.6):  # three claws, outward from the chair
+            a = math.atan2(sy, sx) + spread
+            c, s = math.cos(a), math.sin(a)
+            chain(foot, [((fx + c * 0.2, fyy + s * 0.2, 0.12), 0.09),
+                         ((fx + c * 0.34, fyy + s * 0.34, 0.07), 0.06),
+                         ((fx + c * 0.44, fyy + s * 0.44, 0.035), 0.022)])
+
+    # The spine: vertebrae up the back (knuckles, narrow discs between), leaning back a little as it rises, each
+    # with its spike out behind.
+    count = 10
+    vert = []
+    last = sacrum
+    for k in range(count):
+        t = k / (count - 1)
+        z = SEAT_TOP + 0.25 + t * 4.05
+        y = BACK_Y + 0.3 + 0.25 * t ** 1.5
+        r = 0.27 - 0.06 * t
+        if k:
+            last = chain(last, [((0, y - 0.01, z - 0.225), r * 0.62)])
+        last = chain(last, [((0, y, z), r)])
+        vert.append((last, y, z, r))
+        chain(last, [((0, y + r + 0.12, z - 0.1), r * 0.45), ((0, y + r + 0.32, z - 0.22), 0.03)])
+
+    # Ribs: out of the vertebrae either side and round. The three low pairs stay behind the body (their tips at the
+    # back's face, clear of a sitter's arms), the lowest pair's tips where the arms begin; the upper three curl
+    # forward round where the head comes. (vertebra: half-span, the tip's y, how far it drops)
+    ribs = {2: (1.5, 0.95, 0.3), 3: (1.52, 0.97, 0.32), 4: (1.5, 0.99, 0.34), 5: (1.36, 0.52, 0.34),
+            6: (1.18, 0.34, 0.3), 7: (0.98, 0.36, 0.26)}
+    arm_back = {}
+    theta_max = math.radians(100)
+    for k, (rx, tip_y, drop) in ribs.items():
+        root, y_v, z_v, r_v = vert[k]
+        reach = (y_v - tip_y) / (1 - math.cos(theta_max))
         for sx in (-1, 1):
             pts = []
-            for i in range(7):
-                a = math.pi / 2 * i / 6  # from straight out of the spine to straight forward
-                pts.append((sx * span * math.sin(a), y0 - (y0 - BACK_Y + 0.25) * (1 - math.cos(a)) * 0.95,
-                            z - 0.18 * i / 6))
-            for t in range(6):
-                r0 = 0.17 - 0.016 * t
-                parts.append(mk.tube("Rib", pts[t], pts[t + 1], r0, r0 - 0.016, mat=bone, verts=8))
-    for sx in (-1, 1):  # the crown: two short curved horns either side of the spine's top
-        parts += [mk.tube("Horn", (sx * 0.2, BACK_Y + 0.95, top), (sx * 0.65, BACK_Y + 0.85, top + 0.55), 0.22, 0.14,
-                          mat=old, verts=10),
-                  mk.tube("Horn", (sx * 0.65, BACK_Y + 0.85, top + 0.55), (sx * 0.8, BACK_Y + 0.6, top + 1.05), 0.14,
-                          0.03, mat=old, verts=10)]
+            for i in range(1, 8):
+                u = i / 7
+                th = theta_max * u
+                x = sx * (r_v * 0.8 + (rx - r_v * 0.8) * math.sin(th))
+                y = y_v + 0.06 * math.sin(th * 1.8) - reach * (1 - math.cos(th))
+                pts.append(((x, y, z_v - drop * u ** 1.3), (0.17 if k < 5 else 0.15) - 0.1 * u))
+            if k == 2:
+                pts[-1] = (pts[-1][0], 0.17)  # the lowest ribs end in a knuckle: the arms' back ends
+            tip = chain(root, pts)
+            if k == 2:
+                arm_back[sx] = tip
+
+    # The arms: from the lowest ribs' knuckles forward to a knuckle over the front corner, a post down from it into
+    # the frame.
+    for sx in (-1, 1):
+        back = joints[arm_back[sx]][:3]
+        front = (sx * 1.46, SEAT_Y - 1.1, SEAT_TOP + 0.86)
+        knuckle = shaft(back, front, 0.14, arm_back[sx], knob=1.6)
+        shaft(front, (sx * 1.36, fy, zr), 0.11, knuckle, end=corners[(sx, -1)])
+
+    # The top of the spine: the atlas up into the skull, and two horns curving out of its temples.
+    top, y_t, z_t, _ = vert[-1]
+    sk_y, sk_z, sk_r = y_t - 0.12, z_t + 0.62, 0.44
+    atlas = chain(top, [((0, y_t - 0.04, z_t + 0.24), 0.17), ((0, sk_y + 0.05, sk_z - 0.2), 0.2)])
+    for sx in (-1, 1):
+        chain(atlas, [((sx * 0.22, sk_y + 0.05, sk_z + 0.15), 0.16),
+                      ((sx * 0.5, sk_y + 0.12, sk_z + 0.3), 0.17),
+                      ((sx * 0.82, sk_y + 0.2, sk_z + 0.55), 0.14),
+                      ((sx * 1.0, sk_y + 0.24, sk_z + 0.92), 0.1),
+                      ((sx * 0.96, sk_y + 0.2, sk_z + 1.28), 0.065),
+                      ((sx * 0.8, sk_y + 0.1, sk_z + 1.54), 0.02)])
+
+    # (grown smooth at two levels, then thinned: rounder than one level at the same count)
+    skeleton = skin_body("Skeleton", bone, joints, bones, levels=2)
+    skeleton.modifiers.new("Decimate", "DECIMATE").ratio = 0.16
+    parts = [skeleton]
+    parts += pk.skull("Skull", (0, sk_y, sk_z), sk_r, bone, void)
+
+    # The seat: a slab of pale bone set in the frame, its outline a broad pelvic plate (a notch at the back where
+    # the spine comes down), softened and pitted.
+    outline = []
+    for i in range(40):
+        a = 2 * math.pi * i / 40
+        c, s = math.cos(a), math.sin(a)
+        x = 1.3 * math.copysign(abs(c) ** 0.55, c)
+        y = 1.2 * math.copysign(abs(s) ** 0.55, s)
+        if s > 0.85:
+            y -= 0.18 * (s - 0.85) / 0.15
+        outline.append((x, SEAT_Y + y))
+    slab = mk.extrude_shape("Seat", outline, 0.3, loc=(0, 0, SEAT_TOP - 0.15), mat=bone, bevel=0.1)
+    mk.subdivide(slab, 1)
+    mk.displace_noise(slab, strength=0.035, scale=0.35, name="CbnPits")
+    parts.append(slab)
     return parts, []
 
 

@@ -616,6 +616,8 @@ return {
 		{ at = { 37, 10.6, -47.58 }, rot = 180, w = 5.4, h = 0.9, text = "更衣室 LOCKERS", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
 		{ at = { 64, 10.6, -40.52 }, rot = 0, w = 5, h = 0.9, text = "休憩室 BREAK ROOM", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
 		{ at = { 49.58, 10.6, -26 }, rot = 90, w = 5, h = 0.9, text = "夜勤 NIGHT DESK", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
+		{ at = { -15.48, 10.7, 24 }, rot = -90, w = 8, h = 1, text = "捜査課 BULLPEN", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
+		{ at = { -16.52, 10.7, 24 }, rot = 90, w = 8, h = 1, text = "ロビー LOBBY", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },
 		{ at = { 17, 8.6, 43.62 }, rot = 0, w = 20, h = 2.2, text = "THE BUREAU", font = "GothamBlack", color = { 236, 226, 196 }, bg = nil, glow = { 255, 220, 170 }, align = "Center" },
 		{ at = { 17, 6.6, 43.62 }, rot = 0, w = 20, h = 1, text = "影ヶ丘セントラルタワー  38F", font = "GothamBold", color = { 190, 190, 196 }, bg = nil, glow = nil, align = "Center" },
 		{ at = { -75.58, 10.6, 60.5 }, rot = -90, w = 4, h = 0.8, text = "班長室 SERGEANT", font = "GothamBold", color = { 236, 232, 220 }, bg = { 24, 24, 28 }, glow = nil, align = "Center" },

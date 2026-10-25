@@ -175,6 +175,11 @@ def _wear(obj, mat):
     obj.data.update()
 
 
+# The sets whose props bake at the maps' density (lookbook.DENSITY "venue"): the lobby's scene has no memory to spare
+# and Core is loaded in every scene.
+VENUE_SETS = ("Agency", "Campus", "Tokyo", "Meeting")
+
+
 def build_one(key):
     spec = props.BUILDERS[key]
     mk.new_build()
@@ -184,7 +189,7 @@ def build_one(key):
     built = spec["build"]()
     parts, glow = built[0], built[1]
     more = built[2] if len(built) > 2 else {}  # a prop in pieces that move by themselves: props.piece
-    where = "held" if key in HELD else "prop"
+    where = "held" if key in HELD else ("venue" if spec.get("set") in VENUE_SETS else "prop")
     main = mk.merge(parts, key)
     pieces = {name: mk.merge(piece["parts"], f"{key}_{name}") for name, piece in more.get("pieces", {}).items()}
     if pieces:
@@ -302,7 +307,8 @@ def reskin_one(key):
     if "custom_normal" not in mesh.attributes:
         mk.weighted_normals(main)
     mk.unwrap(main)
-    mk.bake(main, size=props.BUILDERS[key]["texture"], where="prop")
+    spec = props.BUILDERS[key]
+    mk.bake(main, size=spec["texture"], where="venue" if spec.get("set") in VENUE_SETS else "prop")
     glow_objs = _glow_objects(key)
     main["tris"] = mk.triangles(main) + sum(mk.triangles(o) for o in glow_objs)
     info = {"size": [round(v, 3) for v in mk.dimensions(main)], "tris": main["tris"]}

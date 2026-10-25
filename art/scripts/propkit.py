@@ -219,3 +219,114 @@ def frame(name, w, h, t, depth, loc, mat, rot=(0, 0, 0)):
         mk.box(name + "L", (t, depth, h - 2 * t), (x - w / 2 + t / 2, y, z), rot=rot, mat=mat, bevel=0.02),
         mk.box(name + "R", (t, depth, h - 2 * t), (x + w / 2 - t / 2, y, z), rot=rot, mat=mat, bevel=0.02),
     ]
+
+
+def skull(name, loc, r, mat, dark, yaw=0.0, segments=48):
+    """A carved human skull of cranium radius `r` at `loc`, facing -Y turned `yaw` degrees about Z: one sculpted
+    shell (the domed cranium swelling behind, temples pinched in, a brow ridge, cheekbones, the face drawn down and
+    forward into the jaw and chin) with the eye sockets, the nose's hollow and the line of the mouth pressed into it
+    in `dark`, and a row of teeth along each side of the mouth. Parts: [shell, teeth]."""
+    import bmesh
+    from mathutils import Vector
+
+    def shape(v):
+        x, y, z = v
+        x *= 0.8
+        z *= 0.86
+        if y > 0:
+            y *= 1.1  # the back of the head swells
+        if abs(x) > 0.55 and -0.4 < z < 0.3 and y < 0.2:
+            x *= 0.94  # the temples
+        if z < 0.12 and y < 0:  # the face, drawn forward and narrowing
+            f = min(1.0, (0.12 - z) / 0.8) * min(1.0, -y / 0.55)
+            y -= 0.16 * f
+            x *= 1 - 0.22 * f
+            z -= 0.08 * f
+        if y < -0.2 and z < -0.35:  # the jaw, drawn down into a chin
+            g = min(1.0, (-0.35 - z) / 0.4) * min(1.0, (-0.2 - y) / 0.5)
+            z -= 0.3 * g
+            x *= 1 - 0.28 * g
+            y -= 0.04 * g
+        if z < -0.62 and y > -0.3:
+            z = -0.62 + (z + 0.62) * 0.3  # the flat underside behind it
+        return Vector((x, y, z))
+
+    def front(x, z_orig):
+        """The shaped surface point in front at width x (shaped) and the height a unit-sphere z of `z_orig` takes."""
+        y = -math.sqrt(max(0.0, 1 - (x / 0.8) ** 2 - z_orig ** 2))
+        return shape(Vector((x / 0.8, y, z_orig)))
+
+    eyes = [front(sx * 0.32, -0.04) for sx in (-1, 1)]
+    nose = front(0.0, -0.36)
+    zm = front(0.0, -0.56).z  # the mouth's line
+
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=segments, v_segments=segments * 3 // 5, radius=1.0)
+    for v in bm.verts:
+        v.co = shape(v.co)
+    bm.normal_update()
+    for v in bm.verts:
+        p, n = v.co.copy(), v.normal.copy()
+        for sx in (-1, 1):  # the cheekbones
+            c = front(sx * 0.5, -0.3)
+            dc = (p - c).length
+            if dc < 0.24:
+                p += n * 0.06 * (1 - dc / 0.24)
+        if p.y < -0.5 and abs(p.z - (eyes[0].z + 0.2)) < 0.06 and abs(p.x) < 0.62:  # the brow ridge
+            p += n * 0.035
+        if p.y < -0.4 and abs(p.x) < 0.36 and abs(p.z - zm) < 0.03:  # the mouth's line
+            p -= n * 0.04
+        v.co = p
+    for f in bm.faces:
+        c = f.calc_center_median()
+        if c.y < -0.4 and abs(c.x) < 0.34 and abs(c.z - zm) < 0.012:
+            f.material_index = 1
+        f.smooth = True
+    surface = [(v.co.copy(), v.normal.copy()) for v in bm.verts if v.co.y < -0.3 and abs(v.co.z - zm) < 0.1]
+    shell = mk._obj_from_bm(name, bm, mat)
+    shell.data.materials.append(dark)
+
+    # The sockets and the nose cut clean out of the shell (their walls in `dark`), and the cutters thrown away.
+    cutters = []
+    for e in eyes:  # (rounded and tilted down at the outer corner, like the orbits)
+        socket = mk.sphere(name + "Socket", 1.0, (e.x, e.y + 0.1, e.z), scale=(0.24, 0.3, 0.19), mat=dark, segments=20,
+                           rings=12)
+        socket.rotation_euler = (0, math.copysign(math.radians(14), e.x), 0)
+        cutters.append(socket)
+    # (a three-sided cone along -Y, its apex up and widest at the face: the nose's hollow)
+    cutters.append(mk.cylinder(name + "NoseCut", 0.08, 0.5, (0.0, nose.y + 0.16, nose.z + 0.03), rot=(90, 0, 0),
+                               mat=dark, verts=3, radius2=0.15))
+    cutters[-1].scale = (0.9, 1.25, 1.0)
+    for cutter in cutters:
+        cut = shell.modifiers.new(cutter.name, "BOOLEAN")
+        cut.operation = "DIFFERENCE"
+        cut.solver = "EXACT"
+        cut.material_mode = "TRANSFER"
+        cut.object = cutter
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    carved = bpy.data.meshes.new_from_object(shell.evaluated_get(depsgraph))
+    shell.modifiers.clear()
+    shell.data = carved
+    for poly in carved.polygons:
+        poly.use_smooth = True
+    for cutter in cutters:
+        bpy.data.objects.remove(cutter, do_unlink=True)
+
+    # The teeth: a row above and below the mouth's line, set on the surface there.
+    teeth = []
+    for row, dz in (("Upper", 0.05), ("Lower", -0.05)):
+        for k in range(7):
+            x = -0.28 + 0.56 * k / 6
+            p, n = min(surface, key=lambda s: (s[0].x - x) ** 2 + 4 * (s[0].z - zm - dz) ** 2 + 0.01 * s[0].y)
+            yaw_t = math.degrees(math.atan2(n.x, -n.y))
+            teeth.append(mk.box(name + row + "Tooth", (0.082, 0.07, 0.088), (p.x + n.x * 0.004, p.y + n.y * 0.004, zm + dz),
+                                rot=(0, 0, yaw_t), mat=mat, bevel=0.022))
+    teeth = mk.merge(teeth, name + "Teeth")
+
+    parts = [shell, teeth]
+    for obj in parts:
+        obj.scale = (r, r, r)
+        obj.rotation_mode = "XYZ"
+        obj.rotation_euler = (0, 0, math.radians(yaw))
+        obj.location = loc
+    return parts

@@ -24,6 +24,9 @@ DENSITY = {
     "ceiling": 32,
     "far": 16,  # roofs, scenery nobody walks up to
     "prop": 48,  # a little under the walls: a prop carries four maps of its own, and a scene's memory is fixed
+    # the maps' own props, as sharp as the walls round them (the owner, 2026-10-25: "make every texture in the game
+    # more high quality"; the Agency, Campus, Tokyo and war room scenes had the memory for it, the lobby had not)
+    "venue": 64,
     "held": 128,  # in the hand, in front of the camera
 }
 LARGEST = 1024

@@ -214,11 +214,15 @@ def night_desk(s):
 
 
 def lobby(s):
-    # The speed gates into the bullpen, glass screens either side.
+    # The speed gates into the bullpen, in a framed portal through the lobby's west wall, glass either side; the
+    # wall runs up to the ceiling and on into the lounge's (the owner, 2026-10-25: the lobby lay open to the bullpen
+    # over low glass screens, and the lounge's wall stopped short in a bare end beside the gates).
     for z in (12.0, 18.0, 24.0, 30.0, 36.0):
         s.prop("TicketGate", -16.0, z, 90)
-    for z0, z1 in ((2.4, 9.8), (38.2, 43.8)):
-        fit.balcony(s, [(-16.0, z0), (-16.0, z1)], Y, h=7.0, guard=False)
+    fit.partition(s, (-16.0, 2.0), (-16.0, 44.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(22.0, 28.0)],
+                  glass="clear", spans=[(1.2, 6.8), (37.2, 40.8)])
+    fit.plaque(s, -15.6, 10.7, 24.0, -90, 8.0, 1.0, "捜査課 BULLPEN")
+    fit.plaque(s, -16.4, 10.7, 24.0, 90, 8.0, 1.0, "ロビー LOBBY")
     # The screening line by the lifts: the walk-through detector and the baggage belt.
     s.prop("MetalDetector", 12.0, 7.4, 0)
     for x in (10.15, 13.85):

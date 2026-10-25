@@ -311,6 +311,39 @@ def dead_tree_gnarled():
     return black_pine(23, "Png", 10.0, (5.0, -1.8), 5, 5.0, 0.3), []
 
 
+# An apple's shape (2026-10-25, the owner: "not just basic shapes (for example apples in the lobby)"): a lathed body,
+# wider at the shoulders, a dimple at the top and a small one under it, a curled stem and a withered leaf.
+APPLE_PROFILE = [(0.0, 0.05), (0.08, 0.0), (0.24, 0.03), (0.38, 0.13), (0.45, 0.3), (0.46, 0.46), (0.42, 0.6),
+                 (0.32, 0.7), (0.18, 0.72), (0.08, 0.66), (0.0, 0.62)]
+
+
+def apple_parts(prefix, at, size, skin, stem, leaf, tilt=0.0, leafy=True):
+    """An apple standing at `at` (its foot), `size` times the made size, its stem tilted `tilt` degrees."""
+    x, y, z = at
+    body = mk.lathe(prefix + "Body", [(r * size, h * size) for r, h in APPLE_PROFILE], mat=skin, segments=18)
+    body.location = (x, y, z)
+    lean = math.radians(tilt)
+    base = (x, y, z + 0.62 * size)
+    tip = (x + math.sin(lean) * 0.28 * size, y, z + (0.62 + math.cos(lean) * 0.28) * size)
+    parts = [body, mk.tube(prefix + "Stem", base, tip, 0.03 * size, 0.02 * size, mat=stem, verts=6)]
+    if leafy:
+        blade = mk.sphere(prefix + "Leaf", 0.16 * size, (tip[0] + 0.12 * size, y + 0.02 * size, tip[2] - 0.02 * size),
+                          scale=(1.0, 0.42, 0.07), mat=leaf, segments=10, rings=4)
+        blade.rotation_euler = (math.radians(55), math.radians(-30), math.radians(10))  # (curling off the stem)
+        parts.append(blade)
+    return parts
+
+
+@prop("GreyApple", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Lobby")
+def grey_apple():
+    """One of the seven grey apples hidden round the realm (the lobby's apple hunt): the realm's own fruit, ash-grey
+    with a faint silver sheen and darker streaks, a black stem, a withered grey leaf."""
+    skin = mk.noisy("Ga_Skin", srgb(92, 92, 98), srgb(156, 156, 164), scale=9, roughness=0.3, stretch=(1, 1, 4))
+    stem = mk.flat("Ga_Stem", srgb(24, 22, 22), 0.8)
+    leaf = mk.noisy("Ga_Leaf", srgb(70, 72, 70), srgb(112, 112, 106), scale=14, roughness=0.7)
+    return apple_parts("Ga", (0, 0, 0), 1.0, skin, stem, leaf, tilt=14), []
+
+
 @prop("WitheredAppleTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
 def withered_apple_tree():
     """The one fruit tree in the realm: grey and twisted like the rest, yet hung with a few dull,
@@ -320,15 +353,19 @@ def withered_apple_tree():
     red = mk.noisy("Apl_Apple", srgb(58, 52, 48), srgb(104, 96, 88), scale=6, roughness=0.55)
     stem = mk.flat("Apl_Stem", srgb(40, 30, 22), 0.8)
     flesh = mk.flat("Apl_Flesh", srgb(176, 172, 164), 0.7)
+    leaf = mk.noisy("Apl_Leaf", srgb(60, 62, 58), srgb(98, 98, 92), scale=14, roughness=0.7)
     for k, ((tx, ty, tz), _) in enumerate(tips[::2][:9]):
         hang = rng.uniform(0.3, 0.7)
+        # (hung by its stalk off the twig, the apple's stem meeting the stalk's end: an apple upside-down on it)
         parts.append(mk.tube("Stalk", (tx, ty, tz), (tx, ty, tz - hang), 0.03, mat=stem, verts=4))
-        parts.append(mk.sphere("Apple", 0.42, (tx, ty, tz - hang - 0.38), scale=(1, 1, 0.9), mat=red, segments=12, rings=8))
+        body = mk.lathe("Apple", [(r * 0.95, h * 0.95) for r, h in APPLE_PROFILE], mat=red, segments=18)
+        body.location = (tx, ty, tz - hang - 0.6 * 0.95)  # (hanging upright: its top's dimple on the stalk's end)
+        parts.append(body)
     for k, (x, y) in enumerate(((2.2, -1.4), (-1.8, 1.9))):
-        parts.append(mk.sphere("Fallen", 0.42, (x, y, 0.38), scale=(1, 1, 0.9), mat=red, segments=12, rings=8))
-        parts.append(mk.tube("FallenStem", (x, y, 0.72), (x + 0.1, y, 0.9), 0.03, mat=stem, verts=4))
+        fallen = apple_parts("Fallen", (x, y, -0.02), 0.95, red, stem, leaf, tilt=40, leafy=False)
+        parts += fallen
         if k == 0:
-            parts.append(mk.sphere("Bite", 0.24, (x - 0.3, y - 0.2, 0.5), scale=(0.5, 1, 1), mat=flesh, segments=8, rings=6))
+            parts.append(mk.sphere("Bite", 0.24, (x - 0.3, y - 0.2, 0.36), scale=(0.5, 1, 1), mat=flesh, segments=8, rings=6))
     return parts, []
 
 

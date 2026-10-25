@@ -97,9 +97,9 @@ def wing(name, mat, side):
 # hanging chains, a short ragged skirt, a skull at one wrist, rings on its fingers, the Manual at its hip. It faces -Y.
 
 
-def skin_body(name, mat, joints, bones):
+def skin_body(name, mat, joints, bones, levels=2):
     """A smooth body grown from a skeleton: `joints` [(x, y, z, rx, ry)] and `bones` [(i, j)], the Skin modifier
-    giving each joint its radii and the Subdivision modifier rounding it all into one surface."""
+    giving each joint its radii and the Subdivision modifier (`levels`) rounding it all into one surface."""
     bm = bmesh.new()
     verts = [bm.verts.new((x, y, z)) for (x, y, z, _, _) in joints]
     for i, j in bones:
@@ -117,8 +117,8 @@ def skin_body(name, mat, joints, bones):
         layer[k].radius = (rx, ry)
     layer[0].use_root = True
     sub = obj.modifiers.new("Subdivision", "SUBSURF")
-    sub.levels = 2
-    sub.render_levels = 2
+    sub.levels = levels
+    sub.render_levels = levels
     return obj
 
 

@@ -367,6 +367,96 @@ def ground(s, g):
             continue
         for piece in g2.subtract_all([hull], [P.RIFT_GUARD]):
             city.up_face(s, "AshCracked", piece, 0.03)
+    relief(s)
+
+
+def relief(s):
+    """The ground made less flat (2026-10-25, the owner: "improve the lobby terrain (make it more interesting not just
+    flat)"), all clear of everything standing on it and of the rift, and none of it in the way: fissures sunk in the
+    ash (nothing to trip on), low slabs of stone breaking through it (a step up at most), pebbles and stones strewn
+    about, and drifts of ash banked up near the basin's edge."""
+    rng = random.Random(9090)
+    solid = list(P.footprints().values())
+    xs = [p[0] for p in P.BASIN]
+    zs = [p[1] for p in P.BASIN]
+
+    def clear(x, z, pad, edge=3.0):
+        if not g2.contains(P.BASIN, (x, z)) or g2.dist_to_poly_edge(P.BASIN, (x, z)) < edge:
+            return False
+        if g2.contains(P.RIFT_GUARD, (x, z)) or g2.dist_to_poly_edge(P.RIFT_GUARD, (x, z)) < pad:
+            return False
+        for poly in solid:
+            if g2.contains(poly, (x, z)) or g2.dist_to_poly_edge(poly, (x, z)) < pad:
+                return False
+        return True
+
+    def spot(pad, edge=3.0, tries=60):
+        for _ in range(tries):
+            x, z = rng.uniform(min(xs), max(xs)), rng.uniform(min(zs), max(zs))
+            if clear(x, z, pad, edge):
+                return x, z
+        return None
+
+    # Fissures: jagged cracks running through the ash, a dark groove sunk under it, narrowing to nothing.
+    placed = 0
+    while placed < 16:
+        start = spot(3.0)
+        if not start:
+            break
+        heading = rng.uniform(0, math.tau)
+        pts = [start]
+        for _ in range(6):
+            heading += rng.uniform(-0.6, 0.6)
+            step = rng.uniform(2.0, 3.2)
+            pts.append((pts[-1][0] + math.cos(heading) * step, pts[-1][1] + math.sin(heading) * step))
+        if not all(clear(x, z, 2.0) for x, z in pts):
+            continue
+        placed += 1
+        width = rng.uniform(0.7, 1.2)
+        for k in range(len(pts) - 1):
+            (ax, az), (bx, bz) = pts[k], pts[k + 1]
+            length = math.dist((ax, az), (bx, bz)) or 1.0
+            nx, nz = -(bz - az) / length, (bx - ax) / length
+            w0 = width * (1 - k / (len(pts) - 1)) ** 0.8 + 0.05
+            w1 = width * (1 - (k + 1) / (len(pts) - 1)) ** 0.8 + 0.05
+            top = 0.02
+            l0 = (ax + nx * w0 / 2, top, az + nz * w0 / 2)
+            r0 = (ax - nx * w0 / 2, top, az - nz * w0 / 2)
+            l1 = (bx + nx * w1 / 2, top, bz + nz * w1 / 2)
+            r1 = (bx - nx * w1 / 2, top, bz - nz * w1 / 2)
+            d0, d1 = -0.4 - w0 * 0.5, -0.4 - w1 * 0.5
+            bl0 = (ax + nx * w0 / 6, d0, az + nz * w0 / 6)
+            br0 = (ax - nx * w0 / 6, d0, az - nz * w0 / 6)
+            bl1 = (bx + nx * w1 / 6, d1, bz + nz * w1 / 6)
+            br1 = (bx - nx * w1 / 6, d1, bz - nz * w1 / 6)
+            above = ((ax + bx) / 2, 3.0, (az + bz) / 2)
+            toward(s, "RockGrey", [l0, l1, bl1, bl0], (above[0] - nx, 0.0, above[2] - nz))
+            toward(s, "RockGrey", [r0, br0, br1, r1], (above[0] + nx, 0.0, above[2] + nz))
+            toward(s, "AshCracked", [bl0, bl1, br1, br0], above)
+    # Slabs: flat stones breaking through the ash, low enough to walk over.
+    for k in range(30):
+        r = rng.uniform(1.1, 2.4)
+        at = spot(r + 1.0)
+        if not at:
+            continue
+        h = rng.uniform(0.18, 0.4)
+        rock(s, at[0], at[1], r, h + 0.5, 6100 + k, mat=rng.choice(("RockGrey", "RuinStone")), y=-0.5, tiers=1,
+             sides=rng.choice((5, 6, 7)), taper=0.12, flat_top=True, collide=True, collide_h=h + 0.5,
+             squash=rng.uniform(0.55, 1.0), turn=rng.uniform(0, 1))
+    # Stones and pebbles strewn about (too small to stand on).
+    for k in range(40):
+        r = rng.uniform(0.25, 0.6)
+        at = spot(r + 0.6)
+        if at:
+            boulder(s, at[0], at[1], r, 6300 + k, collide=False)
+    # Drifts of ash banked up near the basin's edge, where nobody walks a path.
+    for k in range(12):
+        at = spot(9.0, edge=4.0)
+        if not at or g2.dist_to_poly_edge(P.BASIN, at) > 14.0:
+            continue
+        r = rng.uniform(4.0, 7.0)
+        rock(s, at[0], at[1], r, rng.uniform(0.9, 1.6), 6500 + k, mat="Ash", tiers=2, sides=9, taper=0.75,
+             collide=False, squash=rng.uniform(0.5, 0.8), turn=rng.uniform(0, 1))
 
 
 # Plateau sides, the wall round an edge, the ridge, the plain and the chasms ----------------------------------

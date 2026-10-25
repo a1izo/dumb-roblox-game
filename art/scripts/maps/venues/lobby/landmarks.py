@@ -501,40 +501,52 @@ def carcass(s):
     for lx, lz, w, d, hh in ((0.0, 5.0, 9.5, 13.0, 13.0), (0.0, -7.0, 8.0, 11.0, 7.5)):
         cx, cz = f.w(lx, lz)
         s.collider((cx, hh / 2, cz), (w, hh, d), srot, True, "BoneOld")
+    # The spine (2026-10-25, the owner: "make sure everything connects", the ribs' tops floating under the old upright
+    # drums): vertebrae lying along it, a disc between each and the next so the column is one, a spine up off each
+    # and a process out to each side; a vertebra at every rib, and each rib growing out of its vertebra's process.
     spine = P.SPINE
+    points = []
     for k in range(len(spine) - 1):
         a, b = spine[k], spine[k + 1]
-        ya = P.SPINE_Y - 1.5 * k
-        yb = P.SPINE_Y - 1.5 * (k + 1)
-        steps = 3
-        for q in range(steps):
-            u = (q + 0.5) / steps
-            px, pz = a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u
-            py = ya + (yb - ya) * u
-            s.lathe("BoneOld", (px, py - 2.2, pz), [(0.0, 0.0), (2.4, 0.4), (2.7, 2.2), (2.4, 4.0), (0.0, 4.4)], 10,
-                    caps=(False, False))
-            s.tube("BoneOld", (px, py + 2.0, pz), (px, py + 4.0, pz), 0.7, 6, radius_b=0.3)
-    # The ribs: from each vertebra out and down to a foot in the ash either side.
-    for k in range(len(spine)):
-        cx, cz = spine[k]
-        if k + 1 < len(spine):
-            dx, dz = spine[k + 1][0] - cx, spine[k + 1][1] - cz
-        else:
-            dx, dz = cx - spine[k - 1][0], cz - spine[k - 1][1]
-        length = math.hypot(dx, dz)
-        side = (-dz / length, dx / length)
-        top = P.SPINE_Y - 1.5 * k
+        for q in range(4):
+            u = q / 4
+            points.append((a[0] + (b[0] - a[0]) * u, P.SPINE_Y - 1.5 * (k + u), a[1] + (b[1] - a[1]) * u, q == 0))
+    last = spine[-1]
+    points.append((last[0], P.SPINE_Y - 1.5 * (len(spine) - 1), last[1], True))
+    for k, (px, py, pz, ribbed) in enumerate(points):
+        nxt = points[min(k + 1, len(points) - 1)]
+        prv = points[max(k - 1, 0)]
+        dx, dy, dz = nxt[0] - prv[0], nxt[1] - prv[1], nxt[2] - prv[2]
+        n = math.sqrt(dx * dx + dy * dy + dz * dz) or 1.0
+        ax, ay, az = dx / n, dy / n, dz / n
+        # the vertebra's body, a drum lying along the spine, and the disc on to the next
+        s.tube("BoneOld", (px - ax * 1.5, py - ay * 1.5, pz - az * 1.5), (px + ax * 1.5, py + ay * 1.5, pz + az * 1.5),
+               2.0, 10, radius_b=1.9)
+        if k + 1 < len(points):
+            s.tube("BoneWhite", (px + ax * 1.4, py + ay * 1.4, pz + az * 1.4),
+                   (nxt[0] - ax * 1.4, nxt[1] - ay * 1.4, nxt[2] - az * 1.4), 1.55, 10)
+        # its spine up and back, and a process out to each side
+        s.tube("BoneOld", (px, py + 1.4, pz), (px - ax * 1.0, py + 4.2, pz - az * 1.0), 0.75, 7, radius_b=0.25)
+        side = (-az, ax)
+        sn = math.hypot(*side) or 1.0
+        side = (side[0] / sn, side[1] / sn)
         for sgn in (-1, 1):
-            prev = (cx, top, cz)
+            s.tube("BoneOld", (px, py - 0.2, pz), (px + side[0] * sgn * 2.8, py - 0.5, pz + side[1] * sgn * 2.8), 0.85, 7,
+                   radius_b=0.65)
+        if not ribbed:
+            continue
+        # the ribs: from the process's end out and down to a foot in the ash either side
+        for sgn in (-1, 1):
+            prev = (px + side[0] * sgn * 2.6, py - 0.5, pz + side[1] * sgn * 2.6)
             for q in range(1, 9):
                 u = q / 8
                 ang = u * math.pi / 2
-                reach = P.RIB_SPAN * (math.sin(ang) * 1.05)
-                py = top * math.cos(ang) + 1.8 * math.sin(ang * 2) - 0.6
-                p = (cx + side[0] * sgn * reach, py, cz + side[1] * sgn * reach)
+                reach = 2.6 + (P.RIB_SPAN - 2.6) * math.sin(ang) * 1.03
+                height = (py - 0.5) * math.cos(ang) + 1.8 * math.sin(ang * 2) - 0.6 * math.sin(ang)
+                p = (px + side[0] * sgn * reach, height, pz + side[1] * sgn * reach)
                 s.tube("BoneWhite", prev, p, 0.9 - 0.3 * u, 7, caps=False, radius_b=0.9 - 0.3 * (u + 0.125))
                 prev = p
-            fx, fz = cx + side[0] * sgn * P.RIB_SPAN, cz + side[1] * sgn * P.RIB_SPAN
+            fx, fz = px + side[0] * sgn * P.RIB_SPAN, pz + side[1] * sgn * P.RIB_SPAN
             s.collider((fx, 3.5, fz), (2.6, 7.0, 2.6), 0.0, True, "BoneWhite")
     # Bones strewn inside the cage, between the ribs' feet (clear of them).
     rng = random.Random(131)
