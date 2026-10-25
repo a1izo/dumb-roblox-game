@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+local Models = require(Shared:WaitForChild("Models"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -17,6 +18,7 @@ local Clock = require(script.Parent.Core.Clock)
 local Kit = require(script.Parent.Kit)
 local NotePanel = require(script.Parent.NotePanel)
 local Router = require(script.Parent.Core.Router)
+local Motion = require(script.Parent.Core.Motion)
 
 local DeathNoteRemote = Net.event("DeathNote")
 local ManualHoldRemote = Net.event("ManualHold")
@@ -36,6 +38,96 @@ local heldNoteButton: TextButton
 local cause = Config.DEATH_CAUSES[1]
 local picked: number? = nil
 local wornReason: () -> Cosmetics.Item?
+local coverBand: (Instance) -> ()
+
+-- Your Manual's cover at the top of its window (the owner, 2026-10-25: covers had no meaning): the book in your
+-- hands as everyone sees it, turning slowly in a small view, its name, and what it gives away while it is out
+-- (World/CoverTells); or, with none, what a cover would do.
+local coverFrame: Frame? = nil
+
+-- (filled again each time the window opens: the cover worn may have changed)
+local function fillCover()
+	local band = coverFrame
+	if not band then
+		return
+	end
+	band:ClearAllChildren()
+	local profile = ClientState.profile
+	local id = if profile and profile.equipped then profile.equipped.grimoire else nil
+	local cover = Cosmetics.byId(id)
+	cover = if cover and cover.kind == "grimoire" then cover else nil
+	Kit.Base.corner(band, 6)
+	Kit.Base.stroke(band, if cover then cover.color or C.bone else C.bone, 1, 0.6)
+	local view = Instance.new("ViewportFrame")
+	view.Name = "Book"
+	view.BackgroundTransparency = 1
+	view.Ambient = Color3.fromRGB(120, 116, 112)
+	view.LightColor = Color3.fromRGB(255, 240, 220)
+	view.LightDirection = Vector3.new(-0.5, -1, -0.4)
+	view.Position = UDim2.fromOffset(6, 6)
+	view.Size = UDim2.fromOffset(110, 80)
+	view.Parent = band
+	local book = Models.heldManual(CFrame.new(), if cover then cover.color else nil, if cover then cover.style else nil)
+	book.Parent = view
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 30
+	camera.Parent = view
+	view.CurrentCamera = camera
+	local box, size = book:GetBoundingBox()
+	local distance = size.Magnitude / 2 / math.tan(math.rad(15)) * 1.1
+	local function turn(angle: number)
+		local direction = (CFrame.Angles(0, angle, 0) * CFrame.Angles(math.rad(-38), 0, 0)).LookVector
+		camera.CFrame = CFrame.lookAt(box.Position - direction * distance, box.Position)
+	end
+	turn(math.rad(200))
+	if not Motion.isReduced() then
+		task.spawn(function()
+			local angle = math.rad(200)
+			while view.Parent do
+				angle += 0.01
+				turn(angle)
+				task.wait(1 / 30)
+			end
+		end)
+	end
+	Kit.label({
+		Text = if cover then cover.name else "A plain Manual",
+		font = "bodyBold",
+		size = "body",
+		color = C.bone,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(126, 12),
+		Size = UDim2.new(1, -136, 0, 24),
+		Parent = band,
+	})
+	Kit.label({
+		Text = if cover and type(cover.tell) == "string"
+			then cover.tell
+			else "A cover from the shop changes how it looks in your hands, and what everyone near you sees while it is out.",
+		size = "small",
+		color = C.dim,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(126, 38),
+		Size = UDim2.new(1, -136, 0, 48),
+		Parent = band,
+	})
+end
+
+function coverBand(parent: Instance)
+	coverFrame = Kit.frame({
+		Name = "Cover",
+		Size = UDim2.new(1, 0, 0, 92),
+		BackgroundTransparency = 0.4,
+		BackgroundColor3 = C.void,
+		LayoutOrder = 1,
+		Parent = parent,
+	}) :: Frame
+	fillCover()
+end
 
 -- The custom death this player wears (Cosmetics kind "reason"), or nil.
 function wornReason(): Cosmetics.Item?
@@ -113,9 +205,10 @@ local function build()
 		size = "small",
 		color = C.dim,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		LayoutOrder = 1,
+		LayoutOrder = 0,
 		Parent = list,
 	})
+	coverBand(list)
 	Kit.heading({ text = "Names you know", LayoutOrder = 2, Parent = list })
 	local learned = Kit.frame({
 		Name = "Learned",
@@ -223,6 +316,7 @@ function PrivateScreen.init()
 		allowed = isWriter,
 		show = function()
 			refresh()
+			fillCover()
 			-- (the book out in your hands, for everyone to see, while the window is open)
 			ManualHoldRemote:FireServer({ open = true })
 		end,

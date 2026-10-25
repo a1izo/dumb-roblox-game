@@ -59,63 +59,101 @@ for t, b, neck in ((0.0, 0, (-3, 0, 0)), (1.25, 1, (-2, 8, 0)), (2.5, 0, (-3, 2,
 plain.follow("neck", 1.6, 0.75)
 plain.build()
 
-# The Calculating Seat (seatComposed): upright, hands folded on the right knee, the eyes moving slowly from face to
-# face round the table.
-composed = Motion("seatComposed", 8.0, loop=True, note="Upright, hands folded on a knee, the head turning slowly "
-                  "from face to face.")
-for t, b, look in ((0.0, 0, -20), (1.2, 1, -22), (2.4, 0, 0), (3.4, 1, 2), (4.6, 0, 22), (5.8, 1, 22), (7.0, 0, 2)):
-    _sit(composed, t, "smooth", (0, look * 0.12, 0), breath=b, neck=(-4, look, 0), rShoulder=FOLDED_R,
+# The paid seats, redone 2026-10-25 (the owner: "make the sitting styles more unique and exaggerated because right
+# now they look boring"): each a character with a bigger pose and something it does, not a pose that breathes.
+
+# The Calculating Seat (seatComposed): bolt upright, hands folded on the right knee, chin up; the head sweeps the
+# table and locks onto one face, then another (a snap and a small lean in each time), drops to the hands to think,
+# the right forefinger tapping on the knuckles, and lifts again.
+TAP_R = reach(1, (0.42, -0.24, -1.42), direction=(-0.35, -0.2, -0.9))  # the right hand lifted off the left for a tap
+composed = Motion("seatComposed", 8.0, loop=True, note="Upright, chin up, hands folded on a knee: the head sweeps "
+                  "the table and locks onto a face, then another; looks down to think, a finger tapping.")
+for t, ease, b, look, lean, neck_pitch in ((0.0, "smooth", 0, -10, 0, 4), (0.6, "snap", 1, -40, -7, 2),
+                                           (1.8, "smooth", 0, -38, -5, 3), (2.6, "sine", 1, 0, 0, 5),
+                                           (3.2, "snap", 0, 42, -7, 2), (4.4, "smooth", 1, 40, -5, 3),
+                                           (5.2, "sine", 0, 4, -3, -16), (6.6, "smooth", 1, 2, -2, -14),
+                                           (7.4, "sine", 0, -8, 0, 4)):
+    _sit(composed, t, ease, (lean, look * 0.25, 0), breath=b, neck=(neck_pitch, look, 0), rShoulder=FOLDED_R,
          lShoulder=FOLDED_L)
-composed.follow("neck", 1.2, 0.8)
+for k, t in enumerate((5.5, 5.75, 6.0, 6.25)):
+    composed.key(t, "snap", rShoulder=TAP_R if k % 2 == 0 else FOLDED_R)
+composed.key(6.5, "smooth", rShoulder=FOLDED_R)
+composed.follow("neck", 2.2, 0.62)
 composed.build()
 
-# At Ease (seatEase): leaning back, the right arm laid along the chair's arm, the right leg crossed over the left,
-# the head back a little.
-ease = Motion("seatEase", 6.0, loop=True, note="Leaning back at ease: an arm along the chair's arm, legs "
-              "crossed.")
-for t, b, neck in ((0.0, 0, (8, -6, 2)), (1.5, 1, (9, -2, 3)), (3.0, 0, (7, 6, 1)), (4.5, 1, (9, 0, 2))):
-    _sit(ease, t, "sine", (7, 4, 0), legs=(CROSSED_R, CROSSED_L), breath=b, neck=neck, rShoulder=ALONG_ARM_R,
-         lShoulder=LAP_L)
+# At Ease (seatEase): lounging far back as if the chair were a throne, the right arm laid along the chair's arm, the
+# left hand behind the head, the right leg crossed over and its foot swinging lazily; halfway, a long yawn and a
+# stretch, the right arm up over the head.
+BEHIND_HEAD_L = reach(-1, (-0.55, 1.5, 0.35), direction=(0.35, 0.65, 0.65))
+STRETCH_R = reach(1, (0.9, 2.7, -0.2), direction=(-0.1, 1.0, -0.05))
+ease = Motion("seatEase", 6.0, loop=True, note="Lounging far back: an arm along the chair's arm, a hand behind the "
+              "head, legs crossed and a foot swinging; a long yawn and stretch.")
+for t, swing, b, neck in ((0.0, 72, 0, (12, -10, 4)), (0.7, 82, 1, (13, -8, 5)), (1.4, 72, 0, (12, -6, 4)),
+                          (2.1, 82, 1, (11, -4, 3)), (3.6, 76, 1, (26, 0, 0)), (4.6, 80, 0, (14, 6, -2)),
+                          (5.3, 72, 1, (12, -4, 3))):
+    _sit(ease, t, "sine", (16, 6, -2), legs=((swing, -12, -2), CROSSED_L), breath=b, neck=neck,
+         rShoulder=ALONG_ARM_R, lShoulder=BEHIND_HEAD_L)
+ease.key(2.8, "smooth", rShoulder=ALONG_ARM_R)
+ease.key(3.6, "out", rShoulder=STRETCH_R)
+ease.key(4.4, "sine", rShoulder=STRETCH_R)
+ease.key(5.0, "smooth", rShoulder=ALONG_ARM_R)
 ease.follow("neck", 1.4, 0.75)
+ease.follow("rShoulder", 2.0, 0.7)
 ease.build()
 
-# Steepled (seatSteepled): leaning in, the fingertips steepled under the chin, very still; now and then the eyes
-# lift over the hands.
-steeple = Motion("seatSteepled", 7.0, loop=True, note="Leaning in, fingertips steepled under the chin, still; "
-                 "the eyes lift over the hands now and then.")
-for t, b, neck in ((0.0, 0, (-14, 0, 0)), (2.0, 1, (-14, 0, 0)), (3.4, 0, (-4, 6, 0)), (4.6, 1, (-5, 6, 0)),
-                   (5.8, 0, (-13, 0, 0))):
-    _sit(steeple, t, "smooth", (-9, 0, 0), breath=b * 0.6, neck=neck, rShoulder=STEEPLE_R, lShoulder=STEEPLE_L)
+# Steepled (seatSteepled): hunched far in over steepled fingers, the head low so the eyes look up over the hands at
+# whoever is talking; the fingertips tapping together; now and then the head tips slowly to one side, a long stare,
+# and a lean back that brings it down level again.
+STEEPLE_APART_R = reach(1, (0.22, 0.7, -1.3), direction=(-0.35, 0.45, -0.8))
+STEEPLE_APART_L = reach(-1, (-0.22, 0.7, -1.3), direction=(0.35, 0.45, -0.8))
+steeple = Motion("seatSteepled", 7.0, loop=True, note="Hunched far in over steepled fingers, eyes up over the hands; "
+                 "the fingertips tapping; a slow tilt of the head and a long stare.")
+for t, ease_, b, lean, neck in ((0.0, "smooth", 0, -18, (-4, 0, 0)), (1.6, "smooth", 1, -19, (-3, 4, 0)),
+                                (2.8, "sine", 0, -17, (-2, 8, 14)), (4.4, "smooth", 1, -16, (-2, 6, 15)),
+                                (5.4, "sine", 0, -10, (-8, 0, 2)), (6.3, "smooth", 1, -18, (-4, -2, 0))):
+    _sit(steeple, t, ease_, (lean, 0, 0), breath=b * 0.6, neck=neck, rShoulder=STEEPLE_R, lShoulder=STEEPLE_L)
+for start in (0.5, 5.8):
+    for k in range(4):
+        apart = k % 2 == 0
+        steeple.key(round(start + 0.16 * k, 4), "snap", rShoulder=STEEPLE_APART_R if apart else STEEPLE_R,
+                    lShoulder=STEEPLE_APART_L if apart else STEEPLE_L)
+    steeple.key(round(start + 0.7, 4), "smooth", rShoulder=STEEPLE_R, lShoulder=STEEPLE_L)
 steeple.follow("neck", 1.0, 0.85)
 steeple.build()
 
 # Perched (seatPerched): Ace's crouch on the seat (the owner's drawing: the legs out in front along it, the torso
-# upright on their back ends), hunched, the thumb at the lip, the left arm over the knees, rocking a little.
-perched = Motion("seatPerched", 4.0, loop=True, note="Ace crouched on the seat: thumb at the lip, rocking, thinking.")
-for t, b, neck, rock in ((0.0, 0, (-2, 0, 0), 0), (1.0, 1, (-1, 4, -4), 1), (2.0, 0, (-1, 7, -9), 0),
-                         (3.0, 1, (-1, 3, -3), 1)):
-    _sit(perched, t, "sine", (-12 + 3 * rock, 0, 0), legs=(PERCH_R, PERCH_L), breath=b, neck=neck,
+# upright on their back ends), hunched deep and rocking, the thumb at the lip, the head cocked far to one side and
+# then the other; a sudden snap of the head toward whoever spoke, a stare, and back to rocking.
+perched = Motion("seatPerched", 4.0, loop=True, note="Ace crouched on the seat: hunched deep and rocking, thumb at "
+                 "the lip, the head cocking side to side; a snap glance at a speaker.")
+for t, ease_, b, neck, rock in ((0.0, "sine", 0, (-4, 0, -14), 0), (0.9, "sine", 1, (-3, 4, 10), 1),
+                                (1.8, "sine", 0, (-4, 2, -12), 0), (2.5, "snap", 1, (2, 36, 4), 1),
+                                (3.3, "smooth", 0, (0, 30, 2), 0)):
+    _sit(perched, t, ease_, (-22 + 6 * rock, 0, rock * 3 - 1.5), legs=(PERCH_R, PERCH_L), breath=b, neck=neck,
          rShoulder=THUMB_LIP, lShoulder=OVER_KNEES)
-perched.follow("neck", 1.5, 0.72)
+perched.follow("neck", 2.4, 0.6)
 perched.follow(("rShoulder", "lShoulder"), 2.2, 0.7)
 perched.build()
 
-# Chin on Fist (seatChin), redesigned 2026-10-22 (the owner's "change it"): sunk low and bored of everyone, slouched
-# back in the chair with the legs stretched out long and crossed at the ankles, the chin propped on the right fist,
-# the left hand's fingers drumming on the chair's arm now and then, the head lolling over; a long slow sigh.
+# Chin on Fist (seatChin), redesigned 2026-10-22 and pushed further 2026-10-25: sunk low and bored of everyone,
+# slouched back with the legs stretched out long and crossed at the ankles, the chin on the right fist, the head
+# lolling over; a heavy sigh that lifts and drops the whole body, the left fingers drumming fast on the chair's arm,
+# and an eye-roll, the head thrown back and round.
 ANKLES_R, ANKLES_L = (84, -7, -1), (80, 8, 2)  # stretched out, the left ankle over the right
 DRUM_L = reach(-1, (-1.45, -0.32, -1.25), direction=(0.0, -0.3, -1.0))  # the hand on the chair's arm
-DRUM_UP_L = reach(-1, (-1.45, -0.2, -1.25), direction=(0.0, -0.05, -1.0))  # the fingers lifted for a tap
+DRUM_UP_L = reach(-1, (-1.45, -0.18, -1.25), direction=(0.0, 0.0, -1.0))  # the fingers lifted for a tap
 chin = Motion("seatChin", 6.0, loop=True, note="Sunk low, legs out crossed at the ankles, chin on a fist, drumming "
-              "the chair's arm; a slow sigh.")
-for t, b, neck, lean in ((0.0, 0, (8, -10, 12), 9), (2.2, 1, (10, -8, 15), 10), (3.2, 0, (4, -12, 9), 8),
-                         (4.6, 0, (7, -9, 13), 9)):
-    _sit(chin, t, "smooth", (lean, -6, 3), legs=(ANKLES_R, ANKLES_L), breath=b, neck=neck, rShoulder=CHIN_R,
+              "the chair's arm; a heavy sigh and an eye-roll.")
+for t, ease_, b, neck, lean in ((0.0, "smooth", 0, (8, -10, 16), 13), (1.4, "smooth", 0, (9, -12, 20), 14),
+                                (2.2, "out", 1, (14, -6, 10), 6), (3.0, "in", 0, (6, -12, 18), 16),
+                                (4.0, "sine", 0, (24, -18, 6), 12), (4.6, "sine", 0, (22, 16, -4), 12),
+                                (5.3, "smooth", 0, (8, -10, 17), 14)):
+    _sit(chin, t, ease_, (lean, -6, 4), legs=(ANKLES_R, ANKLES_L), breath=b, neck=neck, rShoulder=CHIN_R,
          lShoulder=DRUM_L)
-for start in (0.9, 3.7):
-    for k in range(4):
-        chin.key(round(start + 0.14 * k, 4), "snap", lShoulder=DRUM_UP_L if k % 2 == 0 else DRUM_L)
-    chin.key(round(start + 0.6, 4), "smooth", lShoulder=DRUM_L)
+for start in (0.5, 3.2):
+    for k in range(6):
+        chin.key(round(start + 0.1 * k, 4), "snap", lShoulder=DRUM_UP_L if k % 2 == 0 else DRUM_L)
+    chin.key(round(start + 0.7, 4), "smooth", lShoulder=DRUM_L)
 chin.follow("neck", 1.3, 0.8)
 chin.build()
 

@@ -574,6 +574,7 @@ local function reveal()
 			cause = ps.cause,
 			title = if title then title.name else nil,
 			titleRarity = if title then title.rarity else nil,
+			titleId = if title then title.id else nil,
 		})
 	end
 	local events = EventLog.all()

@@ -9,6 +9,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local Fate = require(Shared:WaitForChild("Fate"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
+local TitleFonts = require(Shared:WaitForChild("TitleFonts"))
 
 local GODHOOD = {
 	emote_new_world = true,
@@ -145,6 +146,28 @@ return function(t)
 			expect(marks).to.equal(2)
 			local _, amber = Rarity.titleText("Gilded Age", "legendary", grey)
 			expect(amber == grey).to.equal(false)
+		end)
+
+		it("sets every title in a face of its own (Shared/TitleFonts), no two alike", function()
+			local seen = {}
+			for _, item in ipairs(Cosmetics.ofKind("title")) do
+				local look = TitleFonts.look(item.id)
+				expect(look ~= nil).to.equal(true)
+				if look then
+					local key = string.format(
+						"%s/%s/%s/%s",
+						look.font.Name,
+						if look.weight then look.weight.Name else "-",
+						tostring(look.italic == true),
+						look.case or "upper"
+					)
+					expect(seen[key]).to.equal(nil)
+					seen[key] = item.id
+				end
+			end
+			local styled = Rarity.titleText("Terminally Online", "legendary", Color3.new(1, 1, 1), "title_set_online")
+			expect(string.find(styled, "terminally online", 1, true) ~= nil).to.equal(true)
+			expect(string.find(styled, "family=", 1, true) ~= nil).to.equal(true)
 		end)
 	end)
 end

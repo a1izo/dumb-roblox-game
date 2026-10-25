@@ -25,6 +25,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
 local Seating = require(Shared:WaitForChild("Seating"))
+local TitleFonts = require(Shared:WaitForChild("TitleFonts"))
 
 local Motion = require(script.Parent.Parent.Core.Motion)
 local Tokens = require(script.Parent.Parent.Kit.Tokens)
@@ -264,7 +265,10 @@ local function dress(self: YourLook)
 	local looking = item and item.kind
 	local title = if looking == "title" then item else Cosmetics.byId(equipped.title)
 	if title then
-		self.titleLabel.Text, self.titleLabel.TextColor3 = Rarity.titleText(title.name, title.rarity, Tokens.color.dim)
+		self.titleLabel.Text, self.titleLabel.TextColor3 =
+			Rarity.titleText(title.name, title.rarity, Tokens.color.dim, title.id)
+		-- (in the title's own face: Shared/TitleFonts)
+		self.titleLabel.FontFace = TitleFonts.face(title.id)
 	else
 		self.titleLabel.Text = ""
 	end
@@ -365,21 +369,20 @@ end
 
 -- A name written on a strip of page at the foot of the view, in a writing style.
 local function writePreview(self: YourLook, style: string): () -> ()
-	local page = Create("Frame", {
-		Name = "Page",
-		BackgroundColor3 = Color3.fromRGB(172, 98, 36),
-		BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -12),
-		Size = UDim2.new(0.86, 0, 0, 58),
-		ZIndex = 6,
-		Parent = self.viewport,
-	})
+	-- (a page in its shadow, turned a little, across the foot of the view: Presentation/Styles.page)
+	local holder = Styles.page(self.viewport, style)
+	holder.AnchorPoint = Vector2.new(0.5, 1)
+	holder.Position = UDim2.new(0.5, 0, 1, -14)
+	holder.Size = UDim2.new(0.86, 0, 0, 62)
+	holder.Rotation = -2
+	holder.ZIndex = 6
+	local page = holder:FindFirstChild("Page") :: Frame
+	page.ZIndex = 6
 	local colour, font = Styles.pen(style)
 	local clip = Create("Frame", {
 		BackgroundTransparency = 1,
 		ClipsDescendants = true,
-		Position = UDim2.fromOffset(12, 6),
+		Position = UDim2.fromOffset(18, 8),
 		Size = UDim2.fromOffset(0, 46),
 		ZIndex = 7,
 		Parent = page,
@@ -403,7 +406,7 @@ local function writePreview(self: YourLook, style: string): () -> ()
 		Styles.write(clip, label, shown, 0.08, style)
 	end)
 	return function()
-		page:Destroy()
+		holder:Destroy()
 	end
 end
 
@@ -465,8 +468,40 @@ local function emotePreview(self: YourLook, clip: string, held: string?): () -> 
 	return stop
 end
 
+-- Every part and decal of the copy (but what is inside `keep`) unseen, or seen again as it was copied.
+local function vanishCopy(copy: Model, gone: boolean, keep: Instance?)
+	for _, piece in ipairs(copy:GetDescendants()) do
+		if keep and piece:IsDescendantOf(keep) then
+			continue
+		end
+		if piece:IsA("BasePart") and piece.Name ~= "HumanoidRootPart" then
+			hide(piece, gone)
+		elseif piece:IsA("Decal") then
+			if piece:GetAttribute("LookBase") == nil then
+				piece:SetAttribute("LookBase", piece.Transparency)
+			end
+			piece.Transparency = if gone then 1 else piece:GetAttribute("LookBase") :: number
+		end
+	end
+end
+
+-- Frames the camera on all of the copy and what it holds (a chair stands taller and deeper than the body).
+local function frameAll(self: YourLook)
+	local copy = self.copy
+	if not copy then
+		return
+	end
+	local box, size = copy:GetBoundingBox()
+	local reach = math.max(size.Y, size.X, size.Z * 0.8, 4)
+	local distance = (reach * 0.5 + 0.8) / math.tan(math.rad(FOV / 2))
+	self.camera.CFrame = CFrame.lookAt(box.Position + Vector3.new(0, reach * 0.12, -distance), box.Position)
+end
+
 -- A seat or a chair tried on (Shared/Seating): the copy sits a while in the chair picked (or the one you wear, or
--- the war chair) in the seat picked (or the one you wear, or everyone's).
+-- the war chair) in the seat picked (or the one you wear, or everyone's). A chair is shown on its own first (the
+-- owner, 2026-10-25: "make the chairs actually visible": it stood hidden behind the body sitting in it), empty and
+-- whole in the view, turning with the stage; then the copy is there sitting in it.
+local CHAIR_ALONE = 2.4 -- seconds a chair stands empty before the copy sits in it
 local function seatPreview(self: YourLook, item: Cosmetics.Item): () -> ()
 	local copy = self.copy
 	local root = copy and copy:FindFirstChild("HumanoidRootPart")
@@ -479,20 +514,39 @@ local function seatPreview(self: YourLook, item: Cosmetics.Item): () -> ()
 	local clip = if seat and type(seat.clip) == "string" then seat.clip else Seating.DEFAULT
 	local chair = Seating.chairModel(chairItem)
 	if chair then
-		-- (the copy is an R6 body standing at rest: its root 3 above the floor)
+		-- (the copy is an R6 body standing at rest: its root 3 above the floor; inside the copy, so it turns with it)
+		chair.Name = "TryingChair"
 		chair:PivotTo(Seating.chairUnder(root.CFrame, 3))
 		for _, part in ipairs(chair:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.Anchored = true
 			end
 		end
-		chair.Parent = copy.Parent
+		chair.Parent = copy
 	end
-	local stop = emotePreview(self, clip)
+	frameAll(self)
+	local alive = true
+	local stop: () -> () = function() end
+	if item.kind == "chair" and chair then
+		vanishCopy(copy, true, chair)
+		task.delay(CHAIR_ALONE, function()
+			if alive and self.copy == copy then
+				vanishCopy(copy, false, chair)
+				stop = emotePreview(self, clip)
+			end
+		end)
+	else
+		stop = emotePreview(self, clip)
+	end
 	return function()
+		alive = false
 		stop()
 		if chair then
 			chair:Destroy()
+		end
+		if self.copy == copy then
+			vanishCopy(copy, false)
+			frame(self)
 		end
 	end
 end

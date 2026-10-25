@@ -9,10 +9,10 @@
 --   Godhood    a crimson edge glowing in from it, and motes of page drifting up
 --   (no shine and no drifting under reduced motion)
 --
--- Objects (hats, ties, Manual covers) are a small 3D view, and so are the styles and forms that
--- have a prop of their own once the Core models are imported (a quill, a gavel, a chess king, a crow
--- cloak...); an emote is a small pale mannequin caught in its move (Shop/PoseFigure), with its props; the
--- rest is a still: their glyph, or their words. Picked, the card lifts. A card of Today's hand can lie face
+-- Objects (hats, ties, Manual covers, chairs) are a small 3D view; a verdict is its scene at its moment, a form a
+-- floating wraith wearing it, a death a body caught half way through it, a writing style a name written in it on its
+-- page (never a glyph standing for them: the owner, 2026-10-25); an emote is a small pale mannequin caught in its
+-- move (Shop/PoseFigure), with its props; a title its nameplate. Picked, the card lifts. A card of Today's hand can lie face
 -- down (the back of the deck) and be turned over. A card new to the shop wears a "New" ribbon until it is
 -- seen, the day's deal a "25% off" one, and a card not yet owned has a heart to put it on the wishlist.
 --
@@ -29,12 +29,16 @@ local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
+local TitleFonts = require(Shared:WaitForChild("TitleFonts"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local Kit = require(script.Parent.Parent.Kit)
 local Motion = require(script.Parent.Parent.Core.Motion)
 local Textures = require(script.Parent.Parent.Kit.Textures)
 local PoseFigure = require(script.Parent.PoseFigure)
+local Styles = require(script.Parent.Parent.Parent.Presentation.Styles)
+local Vfx = require(script.Parent.Parent.Parent.Presentation.Vfx)
+local ViewFx = require(script.Parent.Parent.Parent.Presentation.ViewFx)
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -121,25 +125,309 @@ local function part(
 	})
 end
 
--- The prop a style or form shows on its card (a Core model; nil when it has none).
-local PROP = {
-	writing = { quill = "Quill", typewriter = "Typewriter", fire = "Quill", knife = "Knife" },
-	verdict = { gavel = "Gavel", cuffs = "Handcuffs", checkmate = "ChessKing", sugar = "SugarCube" },
-	specter = { chains = "Chain", crows = "CrowCloak", marionette = "MarionetteBar", veil = "Hood" },
-}
-
+-- The model a chair skin shows on its card (nil until the Core set with it is imported: its glyph instead).
 local function propOf(item: Cosmetics.Item): string?
 	if item.kind == "chair" then
-		-- (a chair skin newer than the imported Core set has no model yet: its glyph instead)
 		local key = item.model
 		return if type(key) == "string" and ModelLibrary.has(key) then key else nil
 	end
-	local table_ = PROP[item.kind]
-	if not table_ then
+	return nil
+end
+
+-- Styles' and forms' own pictures (the owner, 2026-10-25: "dont use emojis to portray anything in the shop"): a
+-- verdict at its moment, a form on a floating wraith, a death caught half way, a name written in the style. Effects a
+-- 3D view cannot draw are laid over it as stills (Presentation/ViewFx).
+local SAMPLE_NAME = "Kenji Mori" -- (as in Your look: a name from the pools, nobody's in a case)
+
+local function styleView(parent: GuiObject, ambient: Color3, light: Color3): (ViewportFrame, Model)
+	local view = Create("ViewportFrame", {
+		Name = "Picture",
+		BackgroundTransparency = 1,
+		Ambient = ambient,
+		LightColor = light,
+		LightDirection = Vector3.new(-0.8, -1.2, -0.5),
+		Size = UDim2.fromScale(1, 1),
+		Parent = parent,
+	}) :: ViewportFrame
+	local holder = Create("Model", { Name = "Thing", Parent = view }) :: Model
+	return view, holder
+end
+
+local function anchorAll(model: Model)
+	for _, piece in ipairs(model:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.Anchored = true
+		end
+	end
+end
+
+local function bodyOf(figure: Model, name: string): BasePart?
+	local found = figure:FindFirstChild(name)
+	return if found and found:IsA("BasePart") then found else nil
+end
+
+-- A thread from one point to another (a marionette's string), as a thin part.
+local function thread(holder: Model, a: Vector3, b: Vector3, color: Color3)
+	local length = math.max((b - a).Magnitude, 0.05)
+	part(
+		holder,
+		Vector3.new(0.035, length, 0.035),
+		CFrame.lookAt((a + b) / 2, b) * CFrame.Angles(math.rad(90), 0, 0),
+		color
+	)
+end
+
+-- A still mark over a view (Presentation/ViewFx), at one point of its life.
+local function mark(view: ViewportFrame, at: Vector3, spec: { [string]: any }): ImageLabel
+	spec.still = 0
+	return ViewFx.burst(view, at, spec :: any)
+end
+
+-- A Deathsinger form, worn by a translucent wraith floating in its colour.
+local function formPicture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
+	local figure = PoseFigure.build("specterFloat") or PoseFigure.build("idle")
+	if not figure then
 		return nil
 	end
-	local key = table_[item.style or item.form or ""]
-	return if key and ModelLibrary.has(key) then key else nil
+	local tint = item.color or C.bone
+	local view, holder = styleView(parent, Color3.fromRGB(70, 72, 84), tint:Lerp(Color3.new(1, 1, 1), 0.55))
+	for _, piece in ipairs(figure:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.Color = tint:Lerp(Color3.fromRGB(14, 14, 20), 0.6)
+			piece.Material = Enum.Material.Neon
+			piece.Transparency = 0.5
+		end
+	end
+	figure.Parent = holder
+	local form = item.form :: string
+	Styles.form(figure, form, tint)
+	anchorAll(figure)
+	local torso, head = bodyOf(figure, "Torso"), bodyOf(figure, "Head")
+	if form == "marionette" and head then
+		-- (its strings: a view draws no beams)
+		local barY = head.Position.Y + 5
+		for _, name in ipairs({ "Head", "Left Arm", "Right Arm" }) do
+			local limb = bodyOf(figure, name)
+			if limb then
+				local low = if name == "Head"
+					then limb.Position + Vector3.new(0, 0.5, 0)
+					else (limb.CFrame * CFrame.new(0, -1, 0)).Position
+				thread(holder, Vector3.new(low.X, barY, low.Z), low, tint)
+			end
+		end
+	end
+	frameView(view, holder, 160)
+	if not torso or not head then
+		return view
+	end
+	local chest = torso.Position + torso.CFrame.LookVector * 0.6
+	local rng = Random.new(#form)
+	if form == "embers" then
+		mark(view, chest, { tex = "VfxGlow", color = tint, size = { 0.5, 0.5 }, alpha = { 0.2, 0.2 }, z = 2 })
+		for _ = 1, 12 do
+			local at = torso.Position + Vector3.new(rng:NextNumber(-1.3, 1.3), rng:NextNumber(-0.5, 3.5), -0.8)
+			mark(view, at, {
+				tex = "VfxEmber",
+				color = Color3.fromRGB(255, 196, 120),
+				size = { rng:NextNumber(0.025, 0.05), 0 },
+				alpha = { 0, 1 },
+				z = 3,
+			})
+		end
+	elseif form == "moths" then
+		mark(view, chest, { tex = "VfxGlow", color = tint, size = { 0.55, 0.55 }, alpha = { 0.15, 0.15 }, z = 2 })
+		for k = 1, 6 do
+			local angle = k / 6 * math.pi * 2
+			local at = chest + Vector3.new(math.cos(angle) * 1.6, math.sin(angle * 1.7) * 1.2 + 0.4, -0.5)
+			local moth = mark(view, at, {
+				tex = "VfxMoth",
+				color = Color3.fromRGB(240, 234, 214),
+				size = { 0.09, 0.09 },
+				alpha = { 0, 0 },
+				rot = { rng:NextNumber(-40, 40), 0 },
+				z = 3,
+			})
+			if Vfx.Tex.real("VfxMoth") then
+				moth.ImageRectSize = Vector2.new(128, 128)
+				moth.ImageRectOffset = Vector2.new(128 * (k % 2), 0)
+			end
+		end
+	elseif form == "chains" then
+		mark(view, chest, { tex = "VfxGlow", color = tint, size = { 0.45, 0.45 }, alpha = { 0.25, 0.25 }, z = 2 })
+	elseif form == "veil" then
+		for k = 1, 3 do
+			mark(view, torso.Position + Vector3.new(0, 1.5 - k, 0.8), {
+				tex = "VfxWisp",
+				color = tint:Lerp(C.bone, 0.3),
+				size = { 0.55, 0.55 },
+				alpha = { 0.55, 0.55 },
+				rot = { k * 40, 0 },
+				z = 0,
+			})
+		end
+	elseif form == "crows" then
+		for _ = 1, 6 do
+			local at = torso.Position + Vector3.new(rng:NextNumber(-1.6, 1.6), rng:NextNumber(-2.5, 1), -0.9)
+			mark(view, at, {
+				tex = "VfxFeather",
+				color = Color3.fromRGB(26, 26, 32),
+				size = { 0.07, 0.07 },
+				squash = 0.5,
+				alpha = { 0, 0 },
+				rot = { rng:NextNumber(0, 360), 0 },
+				z = 3,
+			})
+		end
+	end
+	return view
+end
+
+-- The clip a body is caught in for each death style's card.
+local DEATH_POSE: { [string]: string } = {
+	ash = "collapseDisease",
+	strings = "slump",
+	crows = "reactHandsHead",
+	stone = "reactStartle",
+	glass = "collapseHeart",
+}
+
+-- How a body looks half way through each death style: its colour, material and transparency.
+local DEATH_LOOK: { [string]: { color: Color3, material: Enum.Material, transparency: number } } = {
+	ash = { color = Color3.fromRGB(78, 74, 70), material = Enum.Material.Slate, transparency = 0 },
+	crows = { color = Color3.fromRGB(20, 20, 24), material = Enum.Material.SmoothPlastic, transparency = 0.15 },
+	stone = { color = Color3.fromRGB(128, 126, 120), material = Enum.Material.Slate, transparency = 0 },
+	glass = { color = Color3.fromRGB(196, 220, 232), material = Enum.Material.Glass, transparency = 0.35 },
+}
+
+local function deathPicture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
+	local style = item.style :: string
+	local figure = PoseFigure.build(DEATH_POSE[style] or "slump")
+	if not figure then
+		return nil
+	end
+	local view, holder = styleView(parent, Color3.fromRGB(110, 110, 118), Color3.fromRGB(255, 248, 236))
+	local look = DEATH_LOOK[style]
+	if look then
+		for _, piece in ipairs(figure:GetDescendants()) do
+			if piece:IsA("BasePart") then
+				piece.Color = look.color
+				piece.Material = look.material
+				piece.Transparency = look.transparency
+			end
+		end
+	end
+	figure.Parent = holder
+	local torso, head = bodyOf(figure, "Torso"), bodyOf(figure, "Head")
+	local string_ = Color3.fromRGB(236, 230, 214)
+	if style == "ash" and head then
+		-- (already going: the head and an arm crumbled away)
+		head.Transparency = 1
+		local arm = bodyOf(figure, "Left Arm")
+		if arm then
+			arm.Transparency = 1
+		end
+	elseif style == "strings" and head then
+		-- A puppet dropped as its strings went: two still holding, the rest snapped and hanging.
+		local top = head.Position.Y + 5
+		for k, name in ipairs({ "Head", "Left Arm", "Right Arm", "Left Leg", "Right Leg" }) do
+			local limb = bodyOf(figure, name)
+			if limb then
+				local low = limb.Position
+				if k > 2 then
+					thread(holder, Vector3.new(low.X, top - 1.6, low.Z), Vector3.new(low.X, top - 3, low.Z), string_)
+					thread(holder, low, low + Vector3.new(0.2, 0.9, 0), string_)
+				else
+					thread(holder, Vector3.new(low.X, top, low.Z), low, string_)
+				end
+			end
+		end
+	end
+	frameView(view, holder, 152)
+	if not torso then
+		return view
+	end
+	local chest = torso.Position + torso.CFrame.LookVector * 0.6
+	local rng = Random.new(#style)
+	if style == "ash" then
+		for k = 1, 4 do
+			mark(view, chest + Vector3.new(rng:NextNumber(-1, 1), 0.8 + k * 0.6, 0), {
+				tex = "VfxDust",
+				color = Color3.fromRGB(120, 116, 112),
+				size = { 0.3, 0.3 },
+				alpha = { 0.45, 0.45 },
+				rot = { k * 50, 0 },
+				z = 2,
+			})
+		end
+		for _ = 1, 6 do
+			mark(view, chest + Vector3.new(rng:NextNumber(-1.2, 1.2), rng:NextNumber(0.5, 3), -0.4), {
+				tex = "VfxEmber",
+				color = Color3.fromRGB(255, 150, 70),
+				size = { 0.03, 0 },
+				alpha = { 0.1, 1 },
+				z = 3,
+			})
+		end
+	elseif style == "crows" then
+		for _ = 1, 10 do
+			mark(view, chest + Vector3.new(rng:NextNumber(-2, 2), rng:NextNumber(-1.5, 2.5), -0.8), {
+				tex = "VfxFeather",
+				color = Color3.fromRGB(26, 26, 32),
+				size = { rng:NextNumber(0.06, 0.1), 0 },
+				squash = 0.5,
+				alpha = { 0, 1 },
+				rot = { rng:NextNumber(0, 360), 0 },
+				z = 3,
+			})
+		end
+	elseif style == "stone" then
+		mark(view, chest, {
+			tex = "VfxCrack",
+			color = Color3.fromRGB(30, 30, 32),
+			size = { 0.45, 0.45 },
+			alpha = { 0.1, 0.1 },
+			rot = { 15, 0 },
+			z = 2,
+		})
+		for _ = 1, 5 do
+			mark(view, torso.Position + Vector3.new(rng:NextNumber(-1, 1), -2.6, -0.4), {
+				tex = "VfxChunk",
+				color = Color3.fromRGB(110, 108, 102),
+				size = { 0.05, 0 },
+				alpha = { 0, 1 },
+				rot = { rng:NextNumber(0, 360), 0 },
+				z = 3,
+			})
+		end
+	elseif style == "glass" then
+		mark(view, chest, {
+			tex = "VfxCrack",
+			color = Color3.fromRGB(255, 255, 255),
+			size = { 0.5, 0.5 },
+			alpha = { 0.05, 0.05 },
+			rot = { -10, 0 },
+			z = 2,
+		})
+		mark(view, chest, {
+			tex = "VfxFlare",
+			color = Color3.fromRGB(230, 244, 255),
+			size = { 0.3, 0.3 },
+			alpha = { 0.2, 0.2 },
+			z = 3,
+		})
+		for k = 1, 7 do
+			local angle = k / 7 * math.pi * 2
+			mark(view, chest + Vector3.new(math.cos(angle) * 1.8, math.sin(angle) * 1.6, -0.6), {
+				tex = "VfxChunk",
+				color = Color3.fromRGB(214, 232, 242),
+				size = { 0.06, 0 },
+				alpha = { 0.1, 1 },
+				rot = { rng:NextNumber(0, 360), 0 },
+				z = 3,
+			})
+		end
+	end
+	return view
 end
 
 -- An emote's mannequin, caught in the move (a stroll in its walk, holding the stroll's props). Posed once
@@ -172,6 +460,32 @@ end
 -- The thing itself, small, in a 3D view (nil for kinds that have none), and an emote's mannequin in it.
 local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Model?)
 	local kind = item.kind
+	local style = item.style
+	if kind == "verdict" and type(style) == "string" then
+		local view = Styles.verdictStill(style, parent)
+		if view then
+			return view, nil
+		end
+	elseif kind == "specter" and type(item.form) == "string" then
+		local view = formPicture(item, parent)
+		if view then
+			return view, nil
+		end
+	elseif kind == "death" and type(style) == "string" then
+		local view = deathPicture(item, parent)
+		if view then
+			return view, nil
+		end
+	elseif kind == "writing" and type(style) == "string" then
+		local page = Kit.Base.make("Frame", {
+			Name = "Picture",
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+			Parent = parent,
+		})
+		Styles.writeStill(page, style, SAMPLE_NAME)
+		return page, nil
+	end
 	local key = propOf(item)
 	local figure = figureOf(item)
 	if kind ~= "hat" and kind ~= "grimoire" and not key and not figure then
@@ -228,106 +542,90 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	return view, figure
 end
 
--- Each title's emblem (the UI's icon atlas, UiIcons): drawn large and faint behind its words on the card, and small
--- in its tier's colour over them (the shop overhaul's last leftover: titles had only their tier's look).
-local TITLE_ART: { [string]: string } = {
-	title_trainee = "quests",
-	title_detective = "fingerprint",
-	title_insomniac = "clock",
-	title_vip = "podium",
-	title_set_noir = "fedora",
-	title_set_ivory = "candle",
-	title_set_gilded = "coin",
-	title_set_red = "heart",
-	title_set_ninelives = "ghost",
-	title_set_desk = "party",
-	title_set_successors = "key",
-	title_set_main = "trophy",
-	title_set_online = "phone",
-	title_set_floor = "sound",
-	title_s1_bookkeeper = "note",
-	title_s1_accountant = "grimoire",
-	title_c_mover = "flag",
-	title_c_showstopper = "play",
-	title_c_living_legend = "streak",
-	title_nightowl = "eye",
-	title_veteran = "seal",
-	title_lifer = "skull",
-	title_unbeaten = "trophy",
-	title_archivist = "evidence",
-	title_papertrail = "mail",
-	title_sharpeye = "microscope",
-	title_unwritten = "quill",
-	title_shepherd = "hood",
-	title_inkstained = "hand",
-	title_handcuffs = "cuffs",
-	title_realmwalker = "ghost",
-	title_m_hand = "grimoire",
-	title_m_cultist = "cultist",
-	title_m_zero = "zero",
-	title_m_butler = "butler",
-	title_m_agent = "agency",
-	title_m10_hand = "skull",
-	title_m10_cultist = "candle",
-	title_m10_zero = "cards",
-	title_m10_butler = "bell",
-	title_m10_agent = "seal",
-	title_rank_2 = "agency",
-	title_rank_3 = "cuffs",
-	title_rank_4 = "microscope",
-	title_rank_5 = "fingerprint",
-	title_rank_6 = "evidence",
-	title_rank_7 = "profile",
-	title_rank_8 = "trophy",
-}
-Card.TITLE_ART = TITLE_ART
-
 -- The still for what has no 3D view: a title's words, or the kind's glyph in the item's colour.
 local function still(item: Cosmetics.Item, parent: GuiObject)
 	if item.kind == "title" then
-		-- The tag as it hangs over the head in the lobby (Shared/Rarity.titleText; CosmeticsService's titleTag):
-		-- tracked capitals between the tier's marks, and under it the tier's ornament, a short rule each side of
-		-- its mark (one plain rule for Scrawl). The card's own name says the words again, larger, below.
+		-- An engraved nameplate (the owner, 2026-10-25: no emblems behind the words, and every title in a face of its
+		-- own, Shared/TitleFonts): a dark plate edged in the tier's colour with a fine rule inside it, the words large
+		-- in the title's own face and case across it (two lines at most), and under it the tier's ornament, a short
+		-- rule each side of its mark (one plain rule for Scrawl). The card's own name says the words again below.
 		local mark = Rarity.titleLook(item.rarity)
 		local tint = Rarity.color(item.rarity)
-		local emblem = TITLE_ART[item.id] or "quill"
-		Kit.icon({
-			Name = "Emblem",
-			name = emblem,
-			size = 92,
-			color = tint,
-			transparency = 0.86,
+		local rank = Rarity.rank(item.rarity)
+		local plate = Kit.Base.make("Frame", {
+			Name = "Plate",
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.45),
+			Position = UDim2.fromScale(0.5, 0.44),
+			Size = UDim2.new(1, -16, 0.58, 0),
+			BackgroundColor3 = C.void,
+			BackgroundTransparency = 0.05,
+			BorderSizePixel = 0,
 			Parent = parent,
 		})
-		Kit.icon({
-			Name = "Crest",
-			name = emblem,
-			size = 20,
-			color = tint,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.2),
-			Parent = parent,
+		Kit.Base.corner(plate, 3)
+		Kit.Base.stroke(plate, tint, if rank >= 4 then 1.5 else 1, if rank == 1 then 0.5 else 0.15)
+		Kit.Base.make("UIGradient", {
+			Rotation = 90,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, tint:Lerp(C.void, 0.82)),
+				ColorSequenceKeypoint.new(0.5, C.void),
+				ColorSequenceKeypoint.new(1, tint:Lerp(C.void, 0.88)),
+			}),
+			Parent = plate,
 		})
-		-- (one line, as the tag is: a long title's letters shrink to fit; the head tag's own grey)
-		local words, letters = Rarity.titleText(item.name, item.rarity, C.dim)
-		local tag = Kit.label({
-			Text = words,
-			RichText = true,
-			font = "bodyBold",
-			size = "small",
-			color = letters,
-			TextWrapped = false,
+		local inner = Kit.Base.make("Frame", {
+			Name = "Rule",
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(4, 4),
+			Size = UDim2.new(1, -8, 1, -8),
+			Parent = plate,
+		})
+		Kit.Base.corner(inner, 2)
+		Kit.Base.stroke(inner, tint, 1, if rank >= 3 then 0.55 else 0.75)
+		-- (pins in its corners, as on a door's nameplate)
+		for _, at in ipairs({ Vector2.new(0, 0), Vector2.new(1, 0), Vector2.new(0, 1), Vector2.new(1, 1) }) do
+			local pin = Kit.Base.make("Frame", {
+				Name = "Pin",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(at.X, if at.X == 0 then 9 else -9, at.Y, if at.Y == 0 then 9 else -9),
+				Size = UDim2.fromOffset(3, 3),
+				BackgroundColor3 = tint:Lerp(C.bone, 0.3),
+				BackgroundTransparency = 0.2,
+				BorderSizePixel = 0,
+				Parent = plate,
+			})
+			Kit.Base.corner(pin, 2)
+		end
+		local _, letters = Rarity.titleText(item.name, item.rarity, C.bone)
+		local words = Kit.Base.make("TextLabel", {
+			Name = "Words",
+			BackgroundTransparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(1, -24, 1, -18),
+			Text = TitleFonts.cased(item.id, item.name),
+			FontFace = TitleFonts.face(item.id),
+			TextColor3 = letters,
 			TextScaled = true,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			AutomaticSize = Enum.AutomaticSize.None,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.42),
-			Size = UDim2.new(1, -14, 0, 18),
-			Parent = parent,
+			TextWrapped = true,
+			TextStrokeColor3 = C.void,
+			TextStrokeTransparency = 0.5,
+			Parent = plate,
 		})
-		Kit.Base.make("UITextSizeConstraint", { MaxTextSize = T.size.small, MinTextSize = 7, Parent = tag })
+		words:SetAttribute("KeepFont", true)
+		Kit.Base.make("UITextSizeConstraint", { MaxTextSize = 26, MinTextSize = 9, Parent = words })
+		if rank >= 4 then
+			-- (the two rarest tiers' letters lit along their length in the tier's colour)
+			Kit.Base.make("UIGradient", {
+				Rotation = 90,
+				Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, tint:Lerp(C.bone, 0.65)),
+					ColorSequenceKeypoint.new(0.55, C.bone),
+					ColorSequenceKeypoint.new(1, tint),
+				}),
+				Parent = words,
+			})
+		end
 		local ornament = Kit.Base.make("Frame", {
 			Name = "Ornament",
 			BackgroundTransparency = 1,

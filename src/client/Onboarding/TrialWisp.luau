@@ -1,7 +1,7 @@
 -- The Trial's wisp, on this client only: a warm amber soul-flame you follow to where the next step is done.
 -- It is built to be seen and never mistaken for the pale blue lost souls a Deathsinger gathers:
---   * a bright core in a flickering flame, sparks, a ribbon of light trailing behind it, a lamp, and a glow
---     that shows through walls once you are far from it;
+--   * a white-hot heart in a flickering flame, two motes circling it, a thread of smoke off its tip, sparks, a
+--     wake of light behind it, a lamp, and a glow that shows through walls once you are far from it;
 --   * it walks the real way there (PathfindingService, round walls and across bridges), a little ahead of
 --     you; if you fall behind it stops and pulses until you catch up;
 --   * when it is off the screen an amber arrow at the edge of the screen points to it;
@@ -51,6 +51,8 @@ local core: BasePart? = nil
 local shell: BasePart? = nil
 local light: PointLight? = nil
 local halo: BillboardGui? = nil
+local haloFx: ParticleEmitter? = nil
+local orbits: { Attachment } = {}
 local pillar: Model? = nil
 local arrow: Frame? = nil
 local connection: RBXScriptConnection? = nil
@@ -81,7 +83,7 @@ local function build(at: Vector3)
 	local ball = Create("Part", {
 		Name = "Core",
 		Shape = Enum.PartType.Ball,
-		Size = Vector3.new(0.9, 0.9, 0.9),
+		Size = Vector3.new(0.5, 0.5, 0.5),
 		Color = CORE,
 		Material = Enum.Material.Neon,
 		Anchored = true,
@@ -98,7 +100,8 @@ local function build(at: Vector3)
 		Size = Vector3.new(1.9, 1.9, 1.9),
 		Color = AMBER,
 		Material = Enum.Material.Neon,
-		Transparency = 0.78,
+		-- (unseen: a see-through neon ball read as glass; its breath is the halo's now)
+		Transparency = 1,
 		Anchored = true,
 		CanCollide = false,
 		CanQuery = false,
@@ -127,21 +130,75 @@ local function build(at: Vector3)
 		bright = 1.3,
 		rate = 45,
 	})
-	Vfx.Emit
-		.make(ball, {
-			name = "Halo",
+	-- (and at its heart a smaller white-hot flame, quicker than the body round it)
+	Vfx.Emit.make(ball, {
+		name = "Inner",
+		tex = "VfxFlame",
+		grid = 8,
+		fps = 50,
+		startRandom = true,
+		color = { { 0, Color3.new(1, 1, 1) }, { 0.5, CORE }, { 1, AMBER } },
+		size = { { 0, 0.8 }, { 0.7, 0.55 }, { 1, 0.1 } },
+		alpha = { { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } },
+		life = { 0.22, 0.36 },
+		speed = { 0.5, 1.2 },
+		accel = Vector3.new(0, 5, 0),
+		spread = 10,
+		face = "up",
+		light = 1,
+		bright = 1.8,
+		rate = 34,
+		z = 0.3,
+	})
+	-- (a thread of dark smoke torn off the flame's tip: the soul burning)
+	Vfx.Emit.make(ball, {
+		name = "Smoke",
+		tex = "VfxSmoke",
+		grid = 8,
+		color = Color3.fromRGB(60, 30, 16),
+		light = 0,
+		lit = 0.2,
+		size = { { 0, 0.5 }, { 1, 2.2 } },
+		alpha = { { 0, 1 }, { 0.2, 0.82 }, { 1, 1 } },
+		life = { 1, 1.6 },
+		speed = { 0.6, 1.2 },
+		accel = Vector3.new(0, 1.8, 0),
+		spread = 20,
+		rot = { 0, 360 },
+		spin = { -40, 40 },
+		rate = 7,
+		z = -1,
+	})
+	local haloEmitter = Vfx.Emit.make(ball, {
+		name = "Halo",
+		tex = "VfxGlow",
+		color = AMBER,
+		size = 4.2,
+		alpha = { { 0, 1 }, { 0.05, 0.55 }, { 0.95, 0.55 }, { 1, 1 } },
+		life = 4,
+		rate = 1 / 3.8,
+		locked = true,
+		light = 0.8,
+		bright = 0.8,
+		z = -0.5,
+	})
+	haloEmitter:Emit(1)
+	-- Two motes circling it on tilted rings, each drawing a short comet tail (moved round in step()).
+	local rings = {}
+	for k = 1, 2 do
+		local spot = Create("Attachment", { Name = "Orbit" .. k, Parent = ball }) :: Attachment
+		Vfx.Emit.make(spot, {
 			tex = "VfxGlow",
-			color = AMBER,
-			size = 4.2,
-			alpha = { { 0, 1 }, { 0.05, 0.55 }, { 0.95, 0.55 }, { 1, 1 } },
-			life = 4,
-			rate = 1 / 3.8,
-			locked = true,
-			light = 0.8,
-			bright = 0.8,
-			z = -0.5,
+			color = { { 0, CORE }, { 1, AMBER } },
+			size = { { 0, 0.32 }, { 1, 0 } },
+			alpha = { { 0, 0.1 }, { 1, 1 } },
+			life = 0.32,
+			light = 1,
+			bright = 1.6,
+			rate = 60,
 		})
-		:Emit(1)
+		table.insert(rings, spot)
+	end
 	Vfx.Emit.make(ball, {
 		name = "Heart",
 		tex = "VfxFlare",
@@ -229,7 +286,7 @@ local function build(at: Vector3)
 	end
 	holder.PrimaryPart = ball
 	holder.Parent = workspace.CurrentCamera
-	model, core, shell, light, halo = holder, ball, glow, lamp, gui
+	model, core, shell, light, halo, haloFx, orbits = holder, ball, glow, lamp, gui, haloEmitter, rings
 end
 
 -- The pillar of light standing on the place itself.
@@ -250,11 +307,11 @@ local function buildPillar(at: Vector3): Model
 	local beam = Create("Part", {
 		Name = "Beam",
 		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(18, 1.6, 1.6),
+		Size = Vector3.new(18, 0.5, 0.5),
 		CFrame = CFrame.new(floor + Vector3.new(0, 9, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = AMBER,
+		Color = CORE,
 		Material = Enum.Material.Neon,
-		Transparency = 0.82,
+		Transparency = 0.7,
 		Anchored = true,
 		CanCollide = false,
 		CanQuery = false,
@@ -269,7 +326,8 @@ local function buildPillar(at: Vector3): Model
 		CFrame = CFrame.new(floor + Vector3.new(0, 0.08, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = AMBER,
 		Material = Enum.Material.Neon,
-		Transparency = 0.7,
+		-- (unseen: a flat neon disc looked cheap; the ring of light on the floor is its emitter's)
+		Transparency = 1,
 		Anchored = true,
 		CanCollide = false,
 		CanQuery = false,
@@ -499,10 +557,18 @@ local function step(dt: number)
 	position = here
 	ball.Position = here
 	glow.Position = here
-	-- Calling: a quick, bright pulse. Otherwise a slow breath.
+	-- Calling: a quick, bright pulse. Otherwise a slow breath (the halo round it swelling and settling).
 	local beat = if calling then (math.sin(now * 9) + 1) / 2 else (math.sin(now * 2) + 1) / 2
-	glow.Size = Vector3.one * (if calling then 2.1 + beat * 1.2 else 1.8 + beat * 0.3)
-	glow.Transparency = if calling then 0.6 + (1 - beat) * 0.25 else 0.78
+	if haloFx then
+		haloFx.Size = NumberSequence.new(if calling then 4.4 + beat * 2.4 else 4 + beat * 0.6)
+	end
+	-- The two motes round it, on rings tilted against each other.
+	for k, spot in ipairs(orbits) do
+		local angle = now * (if k == 1 then 3.1 else -2.6) + k * 2
+		local ring = Vector3.new(math.cos(angle) * 0.95, 0, math.sin(angle) * 0.95)
+		local tilt = CFrame.Angles(math.rad(if k == 1 then 28 else -34), 0, math.rad(if k == 1 then 12 else -18))
+		spot.Position = tilt * ring
+	end
 	if light then
 		light.Brightness = if calling then 2 + beat * 2 else 2
 	end
@@ -522,7 +588,7 @@ local function step(dt: number)
 	if pillar and not Motion.isReduced() then
 		local beam = pillar:FindFirstChild("Beam")
 		if beam and beam:IsA("BasePart") then
-			beam.Transparency = 0.78 + math.sin(now * 2.4) * 0.06
+			beam.Transparency = 0.66 + math.sin(now * 2.4) * 0.08
 		end
 	end
 	placeArrow(here)
@@ -597,7 +663,8 @@ function TrialWisp.clear()
 	if arrow then
 		arrow.Visible = false
 	end
-	model, core, shell, light, halo, pillar = nil, nil, nil, nil, nil, nil
+	model, core, shell, light, halo, haloFx, pillar = nil, nil, nil, nil, nil, nil, nil
+	orbits = {}
 	goalKey, goal, position = nil, nil, nil
 	waypoints = {}
 	pathFor = nil

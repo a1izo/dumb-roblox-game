@@ -12,6 +12,8 @@
 --   Condemned  amber        the frame, page grain and a slow sheen
 --   Godhood    crimson      a glowing edge, and motes drifting up (still under reduced motion)
 
+local TitleFonts = require(script.Parent:WaitForChild("TitleFonts"))
+
 local Rarity = {}
 
 Rarity.ORDER = { "common", "rare", "epic", "legendary", "godhood" }
@@ -62,14 +64,23 @@ end
 local MARK_WHITE = Color3.fromRGB(244, 245, 247)
 
 -- A title in that look as rich text (one line wherever it shows: over the head, on the results screen, on its card,
--- in Your look): its words in capitals between the marks, the marks in the tier's colour; and the colour its letters
--- take, `grey` (the tag's own) leaning to the tier's.
-function Rarity.titleText(name: string, id: string?, grey: Color3): (string, Color3)
+-- in Your look): its words between the marks, the marks in the tier's colour; and the colour its letters take,
+-- `grey` (the tag's own) leaning to the tier's. Given the title's own id (`titleId`), its words are in that title's
+-- face and case (Shared/TitleFonts; the marks stay in the UI's sans), else in capitals.
+function Rarity.titleText(name: string, id: string?, grey: Color3, titleId: string?): (string, Color3)
 	local mark, lean = Rarity.titleLook(id)
 	local tint = Rarity.color(id)
-	local words = string.gsub(string.gsub(string.gsub(string.upper(name), "&", "&amp;"), "<", "&lt;"), ">", "&gt;")
+	local cased = if titleId then TitleFonts.cased(titleId, name) else string.upper(name)
+	local words = string.gsub(string.gsub(string.gsub(cased, "&", "&amp;"), "<", "&lt;"), ">", "&gt;")
+	if titleId then
+		words = TitleFonts.wrap(titleId, words)
+	end
 	if mark then
-		local marked = string.format('<font color="#%s">%s</font>', tint:Lerp(MARK_WHITE, 0.2):ToHex(), mark)
+		local marked = string.format(
+			'<font color="#%s" family="rbxasset://fonts/families/Montserrat.json">%s</font>',
+			tint:Lerp(MARK_WHITE, 0.2):ToHex(),
+			mark
+		)
 		words = marked .. "  " .. words .. "  " .. marked
 	end
 	return words, grey:Lerp(tint, lean)

@@ -53,7 +53,7 @@ local function fillRoster(players)
 		local name = string.format("%s  (%s)", plain(tostring(entry.alias)), plain(tostring(entry.displayName)))
 		if type(entry.title) == "string" and entry.title ~= "" then
 			-- (in its tier's look, as over the head in the lobby: Shared/Rarity.titleText)
-			name ..= "  ·  " .. (Rarity.titleText(entry.title, entry.titleRarity, C.dim))
+			name ..= "  ·  " .. (Rarity.titleText(entry.title, entry.titleRarity, C.dim, entry.titleId))
 		end
 		Kit.label({
 			Text = name,

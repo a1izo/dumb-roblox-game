@@ -17,6 +17,7 @@ local Mastery = require(Shared:WaitForChild("Progression"):WaitForChild("Mastery
 local Rarity = require(Shared:WaitForChild("Rarity"))
 local Seating = require(Shared:WaitForChild("Seating"))
 local Sets = require(Shared:WaitForChild("Sets"))
+local TitleFonts = require(Shared:WaitForChild("TitleFonts"))
 
 local Analytics = require(script.Parent.Analytics)
 local CharacterService = require(script.Parent.CharacterService)
@@ -217,7 +218,7 @@ local function titleTag(player: Player, character: Model, title: Cosmetics.Item?
 	})
 	local text, letters = "", if vip then TAG_WHITE else TAG_GREY
 	if title then
-		text, letters = Rarity.titleText(title.name, title.rarity, TAG_GREY)
+		text, letters = Rarity.titleText(title.name, title.rarity, TAG_GREY, title.id)
 	end
 	if vip then
 		text = if text ~= ""
@@ -233,7 +234,8 @@ local function titleTag(player: Player, character: Model, title: Cosmetics.Item?
 		TextColor3 = letters,
 		TextStrokeColor3 = Color3.fromRGB(8, 9, 11),
 		TextStrokeTransparency = 0.4,
-		FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold),
+		-- (in the title's own face, Shared/TitleFonts; the tag's bold sans for a VIP with none)
+		FontFace = TitleFonts.face(if title then title.id else nil),
 		Parent = gui,
 	})
 end
