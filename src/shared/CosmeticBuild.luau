@@ -1,6 +1,7 @@
 -- Builders for cosmetics, shared by the server (characters) and the shop's 3D preview.
 
 local Create = require(script.Parent.Create)
+local Assets = require(script.Parent.Assets)
 local ModelLibrary = require(script.Parent.ModelLibrary)
 
 local CosmeticBuild = {}
@@ -38,26 +39,54 @@ local HAT_FITS: { [string]: { size: number, at: Vector3 } } = {
 	HatCirclet = { size = 1.5, at = Vector3.new(0, 0.6, 0) },
 }
 
+-- One of the VFX kit's textures (Assets.texture: the Fx import's), or Roblox's own until it is imported.
+local function vfxTexture(name: string, fallback: string): string
+	local id = Assets.texture(name)
+	return if id ~= "" then id else fallback
+end
+
 -- What a hat does besides sit there (in the world: a 3D view draws no particles or lights): Grave Silk's crown
 -- smoulders into smoke and ash; the Thorned Circlet holds a cold white light.
 local function hatLife(item, holder: BasePart, top: CFrame)
 	if item.id == "hat_tophat_ink" then
 		local vent = Create("Attachment", { Name = "Smoulder", Parent = holder }) :: Attachment
 		vent.WorldCFrame = top
+		-- (a thin smoke curling up off the crown, each puff coming apart as it rises; a few embers glowing in it and
+		-- flakes of ash lifting away)
 		Create("ParticleEmitter", {
 			Rate = 6,
 			Lifetime = NumberRange.new(1.4, 2.2),
 			Speed = NumberRange.new(0.4, 0.9),
 			SpreadAngle = Vector2.new(25, 25),
 			Acceleration = Vector3.new(0, 0.8, 0),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0.9) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1.1) }),
 			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 0.55),
+				NumberSequenceKeypoint.new(0, 0.6),
+				NumberSequenceKeypoint.new(0.5, 0.7),
 				NumberSequenceKeypoint.new(1, 1),
 			}),
 			Color = ColorSequence.new(Color3.fromRGB(90, 86, 84), Color3.fromRGB(150, 146, 140)),
 			LightInfluence = 0.8,
-			Texture = "rbxasset://textures/particles/smoke_main.dds",
+			LightEmission = 0,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-20, 20),
+			Texture = vfxTexture("VfxSmoke", "rbxasset://textures/particles/smoke_main.dds"),
+			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid8x8,
+			FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
+			Parent = vent,
+		})
+		Create("ParticleEmitter", {
+			Rate = 4,
+			Lifetime = NumberRange.new(0.8, 1.4),
+			Speed = NumberRange.new(0.4, 1),
+			SpreadAngle = Vector2.new(30, 30),
+			Acceleration = Vector3.new(0, 1.2, 0),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0) }),
+			Color = ColorSequence.new(Color3.fromRGB(255, 150, 80), Color3.fromRGB(150, 60, 30)),
+			LightEmission = 1,
+			LightInfluence = 0,
+			Brightness = 1.4,
+			Texture = vfxTexture("VfxEmber", "rbxasset://textures/particles/sparkles_main.dds"),
 			Parent = vent,
 		})
 	elseif item.id == "hat_circlet" then

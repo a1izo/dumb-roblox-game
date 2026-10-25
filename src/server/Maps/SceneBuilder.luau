@@ -228,12 +228,19 @@ local function addEmitter(b, folder: Instance, spec)
 			}),
 			Color = ColorSequence.new(Color3.fromRGB(200, 200, 210)),
 			LightInfluence = 1,
+			Rotation = NumberRange.new(0, 360),
 			RotSpeed = NumberRange.new(-20, 20),
 			Parent = anchor,
 		})
-		local texture = Assets.texture("Smoke")
+		-- (the VFX kit's smoke, each puff coming apart as it rises; the Core set's plain smoke until it is imported)
+		local kit = Assets.texture("VfxSmoke")
+		local texture = if kit ~= "" then kit else Assets.texture("Smoke")
 		if texture ~= "" then
 			steam.Texture = texture
+		end
+		if kit ~= "" then
+			steam.FlipbookLayout = Enum.ParticleFlipbookLayout.Grid8x8
+			steam.FlipbookMode = Enum.ParticleFlipbookMode.OneShot
 		end
 	elseif spec.kind == "rivermist" then
 		-- A low, slow mist lying on the water (or pooling in an alley), drifting along. A map may give
@@ -617,6 +624,12 @@ local function addEmitter(b, folder: Instance, spec)
 			),
 			LightEmission = 1,
 			LightInfluence = 0,
+			-- (a soft round glow, a little drawn out along the road: the VFX kit's, or Roblox's spark before it)
+			Texture = (function()
+				local glow = Assets.texture("VfxGlow")
+				return if glow ~= "" then glow else "rbxasset://textures/particles/sparkles_main.dds"
+			end)(),
+			Squash = NumberSequence.new(-0.6),
 			Parent = anchor,
 		})
 	end

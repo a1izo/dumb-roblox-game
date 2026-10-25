@@ -14,6 +14,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 local Kit = require(script.Parent.Kit)
 local Glitch = require(script.Parent.Core.Glitch)
 local Motion = require(script.Parent.Core.Motion)
@@ -36,8 +37,41 @@ local titleGlitch: any
 local overlaySubtitle: any
 local overlayToken = 0
 
--- Death's Manual open in someone's hands: a whisper from the book, heard near it.
+-- Death's Manual open in someone's hands: a whisper from the book, heard near it, and red fire licking up off its
+-- pages (the VFX kit's; the server's red light is on the book).
 local manualOpen: { [Model]: boolean } = {}
+local manualFire: { [Model]: { flame: any, at: Attachment } } = {}
+
+local function lightManual(character: Model)
+	local torso = character:FindFirstChild("Torso")
+	if manualFire[character] or not torso or not torso:IsA("BasePart") then
+		return
+	end
+	local at = Create("Attachment", { Name = "ManualFire", Position = Vector3.new(0, -0.1, -1.2), Parent = torso })
+	at:SetAttribute("DGEmote", true) -- (a copy of the body leaves it out)
+	local flame = Vfx.Recipes.flame(at, {
+		kind = "fire",
+		scale = 1.1,
+		color = Color3.fromRGB(255, 60, 50),
+		light = false,
+		lit = false,
+	})
+	flame.set(1, 0.3)
+	manualFire[character] = { flame = flame, at = at }
+end
+
+local function snuffManual(character: Model)
+	local fire = manualFire[character]
+	if not fire then
+		return
+	end
+	manualFire[character] = nil
+	fire.flame.out()
+	task.delay(1.5, function()
+		fire.flame.destroy()
+		fire.at:Destroy()
+	end)
+end
 
 local function watchManuals()
 	while true do
@@ -60,12 +94,16 @@ local function watchManuals()
 			if open and not manualOpen[character] then
 				local root = character:FindFirstChild("HumanoidRootPart")
 				Sfx.play("eyesOpen", { volume = 1, parent = root })
+				lightManual(character)
+			elseif not open and manualOpen[character] then
+				snuffManual(character)
 			end
 			manualOpen[character] = if open then true else nil
 		end
 		for character in pairs(manualOpen) do
 			if not seen[character] then
 				manualOpen[character] = nil
+				snuffManual(character)
 			end
 		end
 	end

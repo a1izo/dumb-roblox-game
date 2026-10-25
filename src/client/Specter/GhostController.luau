@@ -18,6 +18,7 @@ local Signal = require(Shared:WaitForChild("Signal"))
 local ClientState = require(script.Parent.Parent.ClientState)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Characters = require(script.Parent.Parent.Characters)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 
 local GhostRemote = Net.event("Ghost")
 local LocalPlayer = Players.LocalPlayer
@@ -193,25 +194,110 @@ local function makeWisp(position: Vector3): BasePart
 			Parent = gui,
 		})
 	end
-	local sparkles = Create("ParticleEmitter", {
-		Rate = 8,
-		Lifetime = NumberRange.new(1, 1.6),
-		Speed = NumberRange.new(0.5, 1.5),
-		SpreadAngle = Vector2.new(180, 180),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0) }),
-		Transparency = NumberSequence.new(0.3, 1),
-		Color = ColorSequence.new(orb.Color),
-		LightEmission = 1,
-		Parent = orb,
+	-- (a soul-fire: pale blue tongues licking up off it and tearing away dark, a hard white star at its heart, specks
+	-- drifting off it)
+	Vfx.Emit.make(orb, {
+		tex = "VfxFlame",
+		grid = 8,
+		fps = 36,
+		startRandom = true,
+		color = {
+			{ 0, Color3.fromRGB(235, 245, 255) },
+			{ 0.35, Color3.fromRGB(140, 190, 255) },
+			{ 1, Color3.fromRGB(30, 50, 110) },
+		},
+		size = { { 0, 1.6 }, { 0.5, 1.2 }, { 1, 0.3 } },
+		alpha = { { 0, 0.3 }, { 0.6, 0.5 }, { 1, 1 } },
+		life = { 0.5, 0.8 },
+		speed = { 0.8, 1.6 },
+		accel = Vector3.new(0, 2.5, 0),
+		spread = 12,
+		face = "up",
+		light = 0.8,
+		bright = 1.2,
+		rate = 26,
 	})
-	local spark = Assets.texture("Spark")
-	if spark ~= "" then
-		sparkles.Texture = spark
-	end
+	Vfx.Emit.make(orb, {
+		tex = "VfxFlare",
+		color = Color3.fromRGB(225, 240, 255),
+		size = { { 0, 1.4 }, { 0.5, 1.8 }, { 1, 1.4 } },
+		alpha = { { 0, 1 }, { 0.15, 0.3 }, { 0.85, 0.3 }, { 1, 1 } },
+		life = 1.4,
+		rate = 1.4,
+		rot = { 0, 90 },
+		spin = { -25, 25 },
+		locked = true,
+		bright = 1.2,
+		z = 0.5,
+	})
+	Vfx.Emit.make(orb, {
+		tex = "VfxEmber",
+		color = orb.Color,
+		size = { { 0, 0.22 }, { 1, 0 } },
+		life = { 1, 1.6 },
+		speed = { 0.5, 1.5 },
+		spread = 180,
+		accel = Vector3.new(0, 0.8, 0),
+		bright = 1.4,
+		rate = 8,
+	})
 	return orb
 end
 
+-- A soul gathered: its light goes up in a white star, a ring of it opens and specks stream up.
+local function gathered(at: Vector3)
+	Vfx.Recipes.twinkle(at, { color = Color3.fromRGB(170, 205, 255), scale = 1.6 })
+	Vfx.Emit.burst(at, {
+		{
+			{
+				tex = "VfxRing",
+				color = Color3.fromRGB(190, 220, 255),
+				size = { { 0, 0.5 }, { 1, 6 } },
+				alpha = { { 0, 0.1 }, { 0.5, 0.5 }, { 1, 1 } },
+				life = 0.35,
+				light = 0.8,
+				bright = 1.1,
+			},
+			1,
+		},
+		{
+			{
+				tex = "VfxStreak",
+				color = { { 0, Color3.new(1, 1, 1) }, { 1, Color3.fromRGB(140, 190, 255) } },
+				size = { { 0, 0.3 }, { 1, 0.06 } },
+				squash = -2,
+				life = { 0.4, 0.8 },
+				speed = { 8, 16 },
+				spread = 25,
+				drag = 2,
+				face = "along",
+				bright = 1.5,
+			},
+			12,
+		},
+	})
+end
+
 local function setWisps(list: { any })
+	-- (the souls gone from the list near you were gathered by you)
+	local character = LocalPlayer.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	local still: { [number]: boolean } = {}
+	for _, entry in ipairs(list) do
+		if type(entry) == "table" and type(entry.id) == "number" then
+			still[entry.id] = true
+		end
+	end
+	for id, orb in pairs(wisps) do
+		if
+			not still[id]
+			and root
+			and root:IsA("BasePart")
+			and (orb.Position - root.Position).Magnitude <= COLLECT_RANGE + 3
+		then
+			gathered(orb.Position)
+		end
+	end
 	clearWisps()
 	for _, entry in ipairs(list) do
 		if type(entry) == "table" and typeof(entry.position) == "Vector3" and type(entry.id) == "number" then

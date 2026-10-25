@@ -18,7 +18,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 
 local UI = script.Parent.Parent.UI
@@ -26,6 +25,7 @@ local Kit = require(UI.Kit)
 local Motion = require(UI.Core.Motion)
 local Screens = require(UI.Screens)
 local UiSound = require(UI.Core.UiSound)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -76,11 +76,6 @@ end
 
 -- Building ------------------------------------------------------------------------------------------------
 
-local function particleTexture(name: string, fallback: string): string
-	local id = Assets.texture(name)
-	return if id ~= "" then id else fallback
-end
-
 local function build(at: Vector3)
 	local holder = Create("Model", { Name = "TrialWisp" }) :: Model
 	local ball = Create("Part", {
@@ -112,63 +107,80 @@ local function build(at: Vector3)
 		Position = at,
 		Parent = holder,
 	}) :: BasePart
-	-- The flame licks up off the core and is left behind as it moves.
-	Create("ParticleEmitter", {
-		Name = "Flame",
-		Texture = "rbxasset://textures/particles/fire_main.dds",
-		Rate = 45,
-		Lifetime = NumberRange.new(0.35, 0.6),
-		Speed = NumberRange.new(0.8, 1.8),
-		Acceleration = Vector3.new(0, 4, 0),
-		SpreadAngle = Vector2.new(14, 14),
-		EmissionDirection = Enum.NormalId.Top,
-		Size = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1.5),
-			NumberSequenceKeypoint.new(0.6, 0.9),
-			NumberSequenceKeypoint.new(1, 0.1),
-		}),
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.15),
-			NumberSequenceKeypoint.new(0.7, 0.55),
-			NumberSequenceKeypoint.new(1, 1),
-		}),
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, CORE),
-			ColorSequenceKeypoint.new(0.45, AMBER),
-			ColorSequenceKeypoint.new(1, EMBER),
-		}),
-		LightEmission = 1,
-		LightInfluence = 0,
-		Parent = ball,
+	-- The flame licks up off the core and is left behind as it moves: the kit's fire, white-gold at its heart,
+	-- amber through its body, darkening as it tears away; a soft halo round it and a hard star at its heart.
+	Vfx.Emit.make(ball, {
+		name = "Flame",
+		tex = "VfxFlame",
+		grid = 8,
+		fps = 40,
+		startRandom = true,
+		color = { { 0, CORE }, { 0.45, AMBER }, { 1, EMBER } },
+		size = { { 0, 1.5 }, { 0.6, 1.0 }, { 1, 0.3 } },
+		alpha = { { 0, 0.2 }, { 0.6, 0.45 }, { 1, 1 } },
+		life = { 0.35, 0.6 },
+		speed = { 0.8, 1.8 },
+		accel = Vector3.new(0, 4, 0),
+		spread = 14,
+		face = "up",
+		light = 0.7,
+		bright = 1.3,
+		rate = 45,
 	})
-	Create("ParticleEmitter", {
-		Name = "Sparks",
-		Texture = particleTexture("Spark", "rbxasset://textures/particles/sparkles_main.dds"),
-		Rate = 10,
-		Lifetime = NumberRange.new(0.8, 1.4),
-		Speed = NumberRange.new(0.6, 1.6),
-		SpreadAngle = Vector2.new(180, 180),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 0) }),
-		Transparency = NumberSequence.new(0.2, 1),
-		Color = ColorSequence.new(AMBER),
-		LightEmission = 1,
-		LightInfluence = 0,
-		Parent = ball,
+	Vfx.Emit
+		.make(ball, {
+			name = "Halo",
+			tex = "VfxGlow",
+			color = AMBER,
+			size = 4.2,
+			alpha = { { 0, 1 }, { 0.05, 0.55 }, { 0.95, 0.55 }, { 1, 1 } },
+			life = 4,
+			rate = 1 / 3.8,
+			locked = true,
+			light = 0.8,
+			bright = 0.8,
+			z = -0.5,
+		})
+		:Emit(1)
+	Vfx.Emit.make(ball, {
+		name = "Heart",
+		tex = "VfxFlare",
+		color = CORE,
+		size = { { 0, 1.3 }, { 0.5, 1.6 }, { 1, 1.3 } },
+		alpha = { { 0, 1 }, { 0.15, 0.25 }, { 0.85, 0.25 }, { 1, 1 } },
+		life = 1.2,
+		rate = 1.6,
+		rot = { 0, 90 },
+		spin = { -30, 30 },
+		locked = true,
+		light = 1,
+		bright = 1.2,
+		z = 0.5,
+	})
+	Vfx.Emit.make(ball, {
+		name = "Sparks",
+		tex = "VfxEmber",
+		color = { { 0, CORE }, { 1, AMBER } },
+		size = { { 0, 0.22 }, { 1, 0 } },
+		life = { 0.8, 1.4 },
+		speed = { 0.6, 1.6 },
+		spread = 180,
+		accel = Vector3.new(0, 1.2, 0),
+		bright = 1.4,
+		rate = 12,
 	})
 	-- A wake of light behind it (motes left where it passed, shrinking away), so the way it went stays on screen
 	-- for a moment (no Trail: the shop overhaul's rule, docs/vfx.md).
-	Create("ParticleEmitter", {
-		Name = "Wake",
-		Texture = particleTexture("SoulGlow", "rbxasset://textures/particles/sparkles_main.dds"),
-		Rate = 45,
-		Lifetime = NumberRange.new(0.9),
-		Speed = NumberRange.new(0),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0) }),
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
-		Color = ColorSequence.new(CORE, AMBER),
-		LightEmission = 1,
-		LightInfluence = 0,
-		Parent = ball,
+	Vfx.Emit.make(ball, {
+		name = "Wake",
+		tex = "VfxGlow",
+		color = { { 0, CORE }, { 1, AMBER } },
+		size = { { 0, 0.7 }, { 1, 0 } },
+		alpha = { { 0, 0.3 }, { 1, 1 } },
+		life = 0.9,
+		light = 1,
+		bright = 1,
+		rate = 45,
 	})
 	local lamp = Create("PointLight", {
 		Color = AMBER,
@@ -185,26 +197,35 @@ local function build(at: Vector3)
 		AlwaysOnTop = false,
 		Parent = ball,
 	}) :: BillboardGui
-	local glowImage = Assets.texture("SoulGlow")
-	if glowImage ~= "" then
-		Create("ImageLabel", {
-			BackgroundTransparency = 1,
-			Image = glowImage,
-			ImageColor3 = AMBER,
-			ImageTransparency = 0.15,
-			Size = UDim2.fromScale(1, 1),
-			Parent = gui,
-		})
+	-- (round, never a square: the owner saw one through a wall, 2026-10-25. The kit's soft glow and its star, each
+	-- clipped to a circle; plain rings of light before the Fx import)
+	local function disc(size: number, image: string?, transparency: number): GuiObject
+		local item = if image
+			then Create("ImageLabel", {
+				BackgroundTransparency = 1,
+				Image = image,
+				ImageColor3 = AMBER,
+				ImageTransparency = transparency,
+			})
+			else Create("Frame", { BackgroundColor3 = AMBER, BackgroundTransparency = transparency })
+		item.AnchorPoint = Vector2.new(0.5, 0.5)
+		item.Position = UDim2.fromScale(0.5, 0.5)
+		item.Size = UDim2.fromScale(size, size)
+		item.BorderSizePixel = 0
+		Create("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = item })
+		item.Parent = gui
+		return item
+	end
+	if Vfx.Tex.real("VfxGlow") then
+		disc(1, Vfx.Tex.id("VfxGlow"), 0.1)
+		local star = disc(0.62, Vfx.Tex.id("VfxFlare"), 0.05) :: ImageLabel
+		star.ImageColor3 = CORE
 	else
-		local dot = Create("Frame", {
-			BackgroundColor3 = AMBER,
-			BackgroundTransparency = 0.55,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(0.45, 0.45),
-			Parent = gui,
-		})
-		Create("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = dot })
+		disc(0.8, nil, 0.88)
+		disc(0.55, nil, 0.78)
+		disc(0.3, nil, 0.55)
+		local heart = disc(0.12, nil, 0.05)
+		heart.BackgroundColor3 = CORE
 	end
 	holder.PrimaryPart = ball
 	holder.Parent = workspace.CurrentCamera
@@ -256,21 +277,52 @@ local function buildPillar(at: Vector3): Model
 		CastShadow = false,
 		Parent = holder,
 	})
-	Create("ParticleEmitter", {
-		Name = "Rising",
-		Texture = particleTexture("Spark", "rbxasset://textures/particles/sparkles_main.dds"),
-		Rate = 14,
-		Lifetime = NumberRange.new(1.6, 2.6),
-		Speed = NumberRange.new(2.5, 4.5),
-		SpreadAngle = Vector2.new(8, 8),
-		EmissionDirection = Enum.NormalId.Right, -- the cylinder's long axis points up
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) }),
-		Transparency = NumberSequence.new(0.2, 1),
-		Color = ColorSequence.new(CORE, AMBER),
-		LightEmission = 1,
-		LightInfluence = 0,
-		Parent = beam,
+	Vfx.Emit.make(beam, {
+		name = "Rising",
+		tex = "VfxEmber",
+		color = { { 0, CORE }, { 1, AMBER } },
+		size = { { 0, 0.35 }, { 1, 0 } },
+		life = { 1.6, 2.6 },
+		speed = { 2.5, 4.5 },
+		spread = 8,
+		dir = Enum.NormalId.Right, -- the cylinder's long axis points up
+		bright = 1.4,
+		rate = 14,
 	})
+	-- (streaks of light racing up a textured column inside it)
+	local bottom = Create("Attachment", { Parent = beam }) :: Attachment
+	bottom.WorldPosition = floor
+	local top = Create("Attachment", { Parent = beam }) :: Attachment
+	top.WorldPosition = floor + Vector3.new(0, 18, 0)
+	Vfx.Beams.make(bottom, top, {
+		tex = "VfxColumn",
+		color = AMBER,
+		width = 3.2,
+		bright = 0.5,
+		light = 1,
+		speed = -6, -- (toward its top: rising)
+		repeats = 9,
+	}, beam)
+	-- (and a ring of light on the floor round its foot)
+	local ring = holder:FindFirstChild("Ring")
+	if ring then
+		Vfx.Emit
+			.make(ring, {
+				tex = "VfxRing",
+				color = AMBER,
+				size = 7,
+				alpha = { { 0, 1 }, { 0.05, 0.4 }, { 0.95, 0.4 }, { 1, 1 } },
+				life = 4,
+				rate = 1 / 3.8,
+				speed = 0.001,
+				dir = Enum.NormalId.Right,
+				face = "flat",
+				locked = true,
+				light = 0.8,
+				bright = 1,
+			})
+			:Emit(1)
+	end
 	holder.Parent = workspace.CurrentCamera
 	return holder
 end

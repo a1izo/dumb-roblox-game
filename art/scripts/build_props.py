@@ -24,11 +24,11 @@ CORE = "Core"
 # Textures carried into Roblox on flat quads named "Tex_<name>" (see Assets.texture): effect
 # textures, and the UI's lettering, paper and icons (art/scripts/ui). They ride in the Core set's
 # file.
-EFFECT_TEXTURES = ["RainStreak", "Smoke", "SoulGlow", "Spark", "SpeechNah", "FxPuff",
-                   "Snowflake", "Footprint", "FxShard", "FxStatic", "FxChalk", "FxTear",
-                   # (the aura kit's: Presentation/Aura)
-                   "AuraGlow", "AuraSpecks", "AuraTwinkle", "AuraHalo", "AuraCrescent", "AuraSpikeRing",
-                   "AuraWisp", "AuraBolt"]
+# (2026-10-25: the old aura sprites, FxPuff and FxTear left the set: the aura and the effects are the VFX kit's now,
+# art/scripts/vfx, in their own Fx set; AuraGlow stays for the UI's soft light)
+EFFECT_TEXTURES = ["RainStreak", "Smoke", "SoulGlow", "Spark", "SpeechNah",
+                   "Snowflake", "Footprint", "FxShard", "FxStatic", "FxChalk",
+                   "AuraGlow"]
 UI_TEXTURES = [
     "UiTitle1",
     "UiHead1",

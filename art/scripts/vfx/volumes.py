@@ -87,6 +87,7 @@ def _puff_material(name):
     lumps.inputs["Scale"].default_value = 1.6
     lumps.inputs["Detail"].default_value = 4.0
     lumps.inputs["Roughness"].default_value = 0.55
+    lumps.inputs["Distortion"].default_value = 0.7
     lumps.name = "Lumps"
     eat = nodes.new("ShaderNodeTexNoise")
     eat.noise_dimensions = "4D"
@@ -143,12 +144,14 @@ def smoke_puff(name="VfxSmoke", grid=8, px=128, seed=3.7):
     def setup(k):
         life = k / (n - 1)
         grow = 1 - (1 - life) ** 2.4
-        nodes["Radius"].outputs[0].default_value = 0.22 + 0.5 * grow
-        nodes["Amp"].outputs[0].default_value = 0.45 + 0.25 * grow
-        # (thinning away softly: in game the old hard-edged holes read as dark cauliflower, 2026-10-25)
-        nodes["Erode"].outputs[0].default_value = 1.9 * life ** 1.8
-        nodes["Soft"].outputs[0].default_value = 0.12 + 0.3 * life
-        nodes["Strength"].outputs[0].default_value = 22.0 * (1 - life) ** 2.6 + 0.2
+        nodes["Radius"].outputs[0].default_value = 0.2 + 0.46 * grow
+        nodes["Amp"].outputs[0].default_value = 0.6 + 0.3 * grow
+        # (thinning away softly: in game the old hard-edged holes read as dark cauliflower, 2026-10-25; and a dense
+        # ball with a crisp rim read as a soap bubble once it was see-through: a wide soft edge and a thinner body, so
+        # a puff is wisps at its rim and denser only in its heart)
+        nodes["Erode"].outputs[0].default_value = 1.6 * life ** 1.6
+        nodes["Soft"].outputs[0].default_value = 0.26 + 0.3 * life
+        nodes["Strength"].outputs[0].default_value = 10.0 * (1 - life) ** 2.2 + 0.25
         nodes["Lumps"].inputs["W"].default_value = seed + life * 0.9
         nodes["Eat"].inputs["W"].default_value = seed * 2 + life * 1.4
         obj.location = (0, 0, 0.1 * life)
@@ -159,7 +162,26 @@ def smoke_puff(name="VfxSmoke", grid=8, px=128, seed=3.7):
     a = img[..., 3:4]
     img[..., :3] = np.clip(img[..., :3] / np.maximum(a, 1e-4), 0, 1)
     del scene
-    return D.bleed(img)
+    return D.bleed(calm_rims(img))
+
+
+def calm_rims(img, grid=8):
+    """The thin rim of a puff is backlit brighter than its self-shadowed middle, and once the game makes the smoke
+    see-through that bright ring is all that shows: it read as soap bubbles (2026-10-25). Each frame's thin parts take
+    the colour of its own thick middle, and the light and shade inside it are softened."""
+    out = img.copy()
+    h, w = img.shape[0] // grid, img.shape[1] // grid
+    for r in range(grid):
+        for c in range(grid):
+            cell = out[r * h:(r + 1) * h, c * w:(c + 1) * w]
+            a = cell[..., 3]
+            thick = a > 0.45
+            middle = cell[..., :3][thick].mean(axis=0) if thick.any() else np.full(3, 0.7)
+            k = np.clip((a - 0.4) / 0.5, 0, 1)
+            k = (k * k * (3 - 2 * k))[..., None]
+            rgb = cell[..., :3] * k + middle * (1 - k)
+            cell[..., :3] = middle + (rgb - middle) * 0.3
+    return out
 
 
 def build(names=None):

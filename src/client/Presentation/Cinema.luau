@@ -570,13 +570,15 @@ function Cinema.skipButton(onSkip: () -> ()): () -> ()
 end
 
 function Cinema.init()
+	-- (the bars lie under the HUD, over the world: a cutscene's frame never cuts off your name card or the phase's
+	-- timer, as it did over them, 2026-10-25; the cutscene's own captions are on the cinematic layer above both)
 	topBar = Kit.Base.make("Frame", {
 		Name = "LetterboxTop",
 		BackgroundColor3 = Color3.new(0, 0, 0),
 		BorderSizePixel = 0,
 		Size = UDim2.new(1, 0, 0, 0),
-		ZIndex = 0,
-		Parent = Screens.cinematic,
+		ZIndex = 50,
+		Parent = Screens.world,
 	})
 	bottomBar = Kit.Base.make("Frame", {
 		Name = "LetterboxBottom",
@@ -585,8 +587,8 @@ function Cinema.init()
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 0),
-		ZIndex = 0,
-		Parent = Screens.cinematic,
+		ZIndex = 50,
+		Parent = Screens.world,
 	})
 end
 

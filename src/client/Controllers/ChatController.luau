@@ -148,8 +148,9 @@ local function styleChat()
 		BackgroundTransparency = 0.25,
 		HeightScale = if phone then 0.4 else 0.3,
 		WidthScale = if phone then 0.5 else 0.32,
-		-- Bottom left on a desktop, where the thumbs are not; top left on a phone, Roblox's default.
-		VerticalAlignment = if phone then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Bottom,
+		-- In the middle of the left edge on a desktop: the objectives sit top left and your role card bottom left (it
+		-- covered the card, 2026-10-25); top left on a phone, Roblox's default.
+		VerticalAlignment = if phone then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Center,
 	})
 	setProps(TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration"), {
 		FontFace = font,

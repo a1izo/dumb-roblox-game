@@ -23,11 +23,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 
 local Puppets = {}
 
@@ -232,7 +232,6 @@ local function buildHand(mark: BasePart)
 		})
 		lamp.WorldCFrame = CFrame.new(lamp.WorldPosition)
 	end
-	local smoke = Assets.texture("Smoke")
 	if main and points.ArmEnd then
 		for _, share in ipairs({ 1, 0.62 }) do
 			local haze = Create("Attachment", {
@@ -240,27 +239,23 @@ local function buildHand(mark: BasePart)
 				CFrame = main.CFrame:ToObjectSpace(pivot * CFrame.new(points.ArmEnd * share)),
 				Parent = main,
 			})
-			local emitter = Create("ParticleEmitter", {
-				Rate = if share == 1 then 2.4 else 1.2,
-				Lifetime = NumberRange.new(6, 9),
-				Speed = NumberRange.new(0.3, 0.9),
-				SpreadAngle = Vector2.new(180, 180),
-				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 9), NumberSequenceKeypoint.new(1, 16) }),
-				Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 1),
-					NumberSequenceKeypoint.new(0.25, 0.45),
-					NumberSequenceKeypoint.new(0.75, 0.55),
-					NumberSequenceKeypoint.new(1, 1),
-				}),
-				Color = ColorSequence.new(Color3.fromRGB(36, 38, 44)),
-				LightInfluence = 0.3,
-				Rotation = NumberRange.new(0, 360),
-				RotSpeed = NumberRange.new(-8, 8),
-				Parent = haze,
-			}) :: ParticleEmitter
-			if smoke ~= "" then
-				emitter.Texture = smoke
-			end
+			-- (the kit's smoke, each cloud slowly coming apart over its long life)
+			Vfx.Emit.make(haze, {
+				tex = "VfxSmoke",
+				grid = 8,
+				mode = "OneShot",
+				color = Color3.fromRGB(36, 38, 44),
+				light = 0,
+				lit = 0.3,
+				size = { { 0, 9 }, { 1, 16 } },
+				alpha = { { 0, 1 }, { 0.25, 0.45 }, { 0.75, 0.55 }, { 1, 1 } },
+				life = { 6, 9 },
+				speed = { 0.3, 0.9 },
+				spread = 180,
+				rot = { 0, 360 },
+				spin = { -8, 8 },
+				rate = if share == 1 then 2.4 else 1.2,
+			})
 		end
 	end
 	hand = made

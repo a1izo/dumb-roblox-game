@@ -851,6 +851,8 @@ ACTS.shatter = function(refs, event)
 		{ size = size.Magnitude * 1.4, seconds = 0.45, color = color, transparency = 0.5 }
 	)
 	FxKit.light(cf.Position, color, 24, 6, 0.6)
+	-- (and the blow itself: a star, a burst, sparks and spikes flung off it)
+	Vfx.Recipes.impact(cf, { color = color, scale = math.clamp(size.Magnitude / 4, 0.6, 1.4), shake = false })
 	local shards: { BasePart } = {}
 	for _ = 1, event.count or 40 do
 		local local_ = Vector3.new(

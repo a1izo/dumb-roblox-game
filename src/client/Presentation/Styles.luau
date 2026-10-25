@@ -25,13 +25,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local FxKit = require(script.Parent.FxKit)
+local Vfx = require(script.Parent.Vfx)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 
 local Styles = {}
@@ -629,6 +629,303 @@ local function crow(parent: Instance, from: Vector3, rng: Random)
 	Debris:AddItem(bird, 2.6)
 end
 
+-- (the world's own effects on top of the parts, from the VFX kit: none in a 3D view, none on Low graphics)
+
+-- Grey dust and a few chips off a piece as it turns to stone.
+local function stoneDust(piece: BasePart)
+	Vfx.Emit.burst(piece.Position, {
+		{
+			{
+				tex = "VfxDust",
+				grid = 4,
+				mode = "OneShot",
+				color = STONE,
+				light = 0,
+				lit = 0.7,
+				size = { { 0, 0.5 }, { 1, 1.5 } },
+				alpha = { { 0, 0.2 }, { 0.7, 0.5 }, { 1, 1 } },
+				life = { 0.5, 0.8 },
+				speed = { 1.5, 3 },
+				drag = 3,
+				spread = 180,
+				rot = { 0, 360 },
+			},
+			3,
+		},
+		{
+			{
+				tex = "VfxChunk",
+				grid = 2,
+				fps = 0, -- (each a piece of its own: a random frame that stays)
+				startRandom = true,
+				color = STONE,
+				light = 0,
+				lit = 1,
+				size = { { 0, 0.18 }, { 1, 0.12 } },
+				life = { 0.5, 0.8 },
+				speed = { 3, 6 },
+				accel = Vector3.new(0, -40, 0),
+				spread = 70,
+				rot = { 0, 360 },
+				spin = { -300, 300 },
+			},
+			3,
+		},
+	})
+end
+
+-- The stone figure crumbling: chunks of it tumbling down, a low cloud of grit rolling out over the floor, a ring
+-- of it along the floor and the dust hanging after.
+local function stoneCrumble(centre: Vector3)
+	local floor = centre - Vector3.new(0, 2.9, 0)
+	Vfx.Emit.burst(centre, {
+		{
+			{
+				tex = "VfxChunk",
+				grid = 2,
+				fps = 0, -- (each a piece of its own: a random frame that stays)
+				startRandom = true,
+				color = { { 0, STONE }, { 1, Color3.fromRGB(96, 94, 90) } },
+				light = 0,
+				lit = 1,
+				size = { { 0, 0.5 }, { 1, 0.35 } },
+				life = { 0.7, 1.1 },
+				speed = { 4, 11 },
+				accel = Vector3.new(0, -55, 0),
+				drag = 0.5,
+				spread = 120,
+				rot = { 0, 360 },
+				spin = { -260, 260 },
+			},
+			26,
+		},
+		{
+			{
+				tex = "VfxSmoke",
+				grid = 8,
+				mode = "OneShot",
+				color = Color3.fromRGB(150, 146, 140),
+				light = 0,
+				lit = 0.7,
+				size = { { 0, 1.4 }, { 1, 4.2 } },
+				alpha = { { 0, 0.35 }, { 0.6, 0.55 }, { 1, 1 } },
+				life = { 1.4, 2.2 },
+				speed = { 1, 3 },
+				drag = 1.5,
+				spread = 180,
+				rot = { 0, 360 },
+				spin = { -20, 20 },
+				shape = Enum.ParticleEmitterShape.Box,
+			},
+			7,
+		},
+	}, nil, Vector3.new(2, 4, 2))
+	Vfx.Emit.burst(CFrame.new(floor + Vector3.new(0, 0.15, 0)), {
+		tex = "VfxDust",
+		grid = 4,
+		mode = "OneShot",
+		color = STONE,
+		light = 0,
+		lit = 0.7,
+		size = { { 0, 1.4 }, { 1, 3.6 } },
+		alpha = { { 0, 0.1 }, { 0.7, 0.4 }, { 1, 1 } },
+		life = { 0.8, 1.3 },
+		speed = { 9, 15 },
+		drag = 5,
+		spread = { 88, 88 },
+		rot = { 0, 360 },
+		spin = { -40, 40 },
+	}, 12)
+	Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.12, 0)), 0.8, 8, 0.5, {
+		tex = "VfxRingBand",
+		color = STONE,
+		width = 1.2,
+		light = 0.2,
+		bright = 0.9,
+	})
+end
+
+-- The glass body bursting: a white glint, shards flung tumbling and glinting as they fall, glitter hanging after,
+-- a cold flash.
+local function glassBurst(centre: Vector3)
+	Vfx.Emit.burst(centre, {
+		{
+			{
+				tex = "VfxFlare",
+				color = Color3.new(1, 1, 1),
+				size = { { 0, 1 }, { 0.25, 6 }, { 1, 0 } },
+				life = 0.25,
+				rot = { 0, 360 },
+				bright = 1.6,
+				z = 2,
+			},
+			1,
+		},
+		{
+			{
+				tex = "VfxRing",
+				color = GLASS,
+				size = { { 0, 1 }, { 1, 10 } },
+				alpha = { { 0, 0.2 }, { 0.5, 0.55 }, { 1, 1 } },
+				life = 0.3,
+				light = 0.5,
+				bright = 1,
+				z = 1,
+			},
+			1,
+		},
+		{
+			{
+				tex = "VfxChunk",
+				grid = 2,
+				fps = 0,
+				startRandom = true,
+				color = { { 0, Color3.new(1, 1, 1) }, { 1, GLASS } },
+				size = { { 0, 0.42 }, { 1, 0.3 } },
+				alpha = { { 0, 0.25 }, { 0.7, 0.4 }, { 1, 1 } },
+				life = { 0.6, 1.1 },
+				speed = { 6, 16 },
+				accel = Vector3.new(0, -50, 0),
+				drag = 1,
+				spread = 180,
+				rot = { 0, 360 },
+				spin = { -500, 500 },
+				light = 0.5,
+				bright = 1.3,
+			},
+			30,
+		},
+		{
+			{
+				tex = "VfxFlare",
+				color = Color3.new(1, 1, 1),
+				size = { { 0, 0 }, { 0.15, 0.5 }, { 0.3, 0 }, { 0.55, 0.4 }, { 0.7, 0 }, { 1, 0 } },
+				life = { 0.9, 1.5 },
+				speed = { 2, 7 },
+				accel = Vector3.new(0, -8, 0),
+				drag = 2,
+				spread = 180,
+				rot = { 0, 90 },
+				bright = 1.5,
+			},
+			16,
+		},
+	})
+	Vfx.Light.flash(centre, GLASS, 16, 3, 0.4)
+end
+
+-- Ash lifting off a body: grey flakes drifting up and away, embers glowing and going grey, a thin smoke.
+local function ashRise(centre: Vector3, seconds: number)
+	local box = Vfx.Emit.point(CFrame.new(centre), Vector3.new(2.6, 4, 2.6))
+	local flakes = Vfx.Emit.make(box, {
+		tex = "VfxChunk",
+		grid = 2,
+		fps = 0,
+		startRandom = true,
+		color = { { 0, Color3.fromRGB(70, 66, 62) }, { 1, ASH } },
+		light = 0,
+		lit = 0.9,
+		size = { { 0, 0.16 }, { 1, 0.1 } },
+		alpha = { { 0, 0 }, { 0.75, 0.2 }, { 1, 1 } },
+		life = { 1.8, 2.8 },
+		speed = { 0.6, 1.6 },
+		accel = Vector3.new(0.8, 2.2, 0.3),
+		drag = 0.8,
+		spread = 60,
+		rot = { 0, 360 },
+		spin = { -120, 120 },
+		rate = 34,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	local embers = Vfx.Emit.make(box, {
+		tex = "VfxEmber",
+		color = { { 0, Color3.fromRGB(255, 150, 70) }, { 0.6, Color3.fromRGB(200, 70, 30) }, { 1, ASH } },
+		size = { { 0, 0.14 }, { 1, 0 } },
+		life = { 1, 1.8 },
+		speed = { 1, 2.5 },
+		accel = Vector3.new(0.5, 2.5, 0),
+		drag = 1,
+		spread = 50,
+		bright = 1.4,
+		rate = 16,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	local smoke = Vfx.Emit.make(box, {
+		tex = "VfxSmoke",
+		grid = 8,
+		mode = "OneShot",
+		color = Color3.fromRGB(110, 106, 102),
+		light = 0,
+		lit = 0.6,
+		size = { { 0, 1 }, { 1, 3.4 } },
+		alpha = { { 0, 0.6 }, { 0.5, 0.7 }, { 1, 1 } },
+		life = { 1.8, 2.6 },
+		speed = { 1.5, 3 },
+		accel = Vector3.new(0.6, 0.8, 0),
+		spread = 25,
+		rot = { 0, 360 },
+		spin = { -20, 20 },
+		rate = 6,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	Vfx.Clock.after(seconds, function()
+		flakes.Enabled = false
+		embers.Enabled = false
+		smoke.Enabled = false
+	end)
+	Vfx.Clock.after(seconds + 3, function()
+		box:Destroy()
+	end)
+end
+
+-- Black feathers: a dark burst as the body comes apart, feathers whirling up off it, and more drifting down as the
+-- crows fly.
+local function featherBurst(centre: Vector3, count: number, up: boolean)
+	local list: { any } = {
+		{
+			{
+				tex = "VfxFeather",
+				color = FEATHER,
+				light = 0,
+				lit = 0.6,
+				size = { { 0, 0.5 }, { 1, 0.4 } },
+				alpha = { { 0, 0 }, { 0.8, 0.1 }, { 1, 1 } },
+				life = { 1.4, 2.4 },
+				speed = if up then { 5, 11 } else { 1, 4 },
+				accel = Vector3.new(0, if up then 2 else -3, 0),
+				drag = 2.5,
+				spread = 180,
+				rot = { 0, 360 },
+				spin = { -220, 220 },
+			},
+			count,
+		},
+	}
+	if up then
+		table.insert(list, {
+			{
+				tex = "VfxSmoke",
+				grid = 8,
+				mode = "OneShot",
+				color = Color3.fromRGB(34, 30, 38),
+				light = 0,
+				lit = 0.4,
+				size = { { 0, 1.8 }, { 1, 5 } },
+				alpha = { { 0, 0.55 }, { 0.6, 0.72 }, { 1, 1 } },
+				life = { 1.0, 1.6 },
+				speed = { 3, 7 },
+				accel = Vector3.new(0, 3, 0),
+				drag = 3,
+				spread = 180,
+				rot = { 0, 360 },
+				spin = { -40, 40 },
+			},
+			8,
+		})
+	end
+	Vfx.Emit.burst(centre, list, nil, Vector3.new(1.6, 3, 1.6))
+end
+
 -- Plays a death style on a fallen body (a character in the world, or the copy in Your look). Returns
 -- how long it runs. The body is left as the style leaves it (stone stays stone; ash and crows leave
 -- nothing).
@@ -651,6 +948,9 @@ function Styles.death(style: string?, model: Model): number
 			task.delay(delay, function()
 				piece.Material = Enum.Material.Slate
 				TweenService:Create(piece, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Color = STONE }):Play()
+				if world and not Vfx.quiet() then
+					stoneDust(piece)
+				end
 				for _, decal in ipairs(piece:GetChildren()) do
 					if decal:IsA("Decal") then
 						TweenService:Create(decal, TweenInfo.new(0.4), { Transparency = 1 }):Play()
@@ -661,14 +961,7 @@ function Styles.death(style: string?, model: Model): number
 		task.delay(1.9, function()
 			Sfx.play("stoneCrack")
 			if world then
-				FxKit.puff(centre - Vector3.new(0, 1.5, 0), 2.4, STONE, 8)
-				FxKit.shape("ring", CFrame.new(centre - Vector3.new(0, 2.9, 0)), {
-					size = 9,
-					seconds = 0.5,
-					color = STONE,
-					material = Enum.Material.ForceField,
-					transparency = 0.2,
-				})
+				stoneCrumble(centre)
 			end
 			for _, piece in ipairs(parts) do
 				if piece.Parent then
@@ -679,7 +972,12 @@ function Styles.death(style: string?, model: Model): number
 		end)
 		return 3.2
 	elseif style == "glass" then
-		-- It turns to glass, a beat, then cracks and falls in shards.
+		-- It turns to glass (a glint runs over it), a beat, then cracks and falls in shards.
+		if world then
+			task.delay(0.45, function()
+				Vfx.Recipes.twinkle(centre + Vector3.new(0.4, 1.4, 0), { color = GLASS, scale = 1.2 })
+			end)
+		end
 		for _, piece in ipairs(parts) do
 			piece.Material = Enum.Material.Glass
 			TweenService:Create(piece, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Color = GLASS, Transparency = 0.3 })
@@ -698,7 +996,7 @@ function Styles.death(style: string?, model: Model): number
 					CFrame.new(centre),
 					{ size = 5, seconds = 0.2, color = GLASS, transparency = 0.3 }
 				)
-				FxKit.light(centre, GLASS, 14, 3, 0.4)
+				glassBurst(centre)
 			end
 			for _, piece in ipairs(parts) do
 				if piece.Parent then
@@ -735,35 +1033,18 @@ function Styles.death(style: string?, model: Model): number
 		TweenService:Create(heap, TweenInfo.new(1.6), { Transparency = 0 }):Play()
 		Debris:AddItem(heap, if world then 8 else 4)
 		if world then
-			local anchor = part(here, Vector3.new(3, 1, 3), CFrame.new(centre), ASH)
-			anchor.Transparency = 1
-			local smoke = Assets.texture("Smoke")
-			local emitter = Create("ParticleEmitter", {
-				Rate = 40,
-				Lifetime = NumberRange.new(1.5, 2.5),
-				Speed = NumberRange.new(1, 3),
-				SpreadAngle = Vector2.new(40, 40),
-				Acceleration = Vector3.new(0, 1.5, 0),
-				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 2.4) }),
-				Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 0.4),
-					NumberSequenceKeypoint.new(1, 1),
-				}),
-				Color = ColorSequence.new(ASH),
-				Parent = anchor,
-			}) :: ParticleEmitter
-			if smoke ~= "" then
-				emitter.Texture = smoke
-			end
-			task.delay(1.8, function()
-				emitter.Enabled = false
-			end)
-			Debris:AddItem(anchor, 5)
+			ashRise(centre, 1.8)
 		end
 		return 2.6
 	elseif style == "crows" then
 		-- The body comes apart from the feet up into a whirl of black feathers, and the whirl flies off as crows.
 		Sfx.play("crows")
+		if world then
+			featherBurst(centre, 18, true)
+			task.delay(1.0, function()
+				featherBurst(centre + Vector3.new(0, 2.5, 0), 12, false)
+			end)
+		end
 		for _, piece in ipairs(parts) do
 			local delay = math.clamp((piece.Position.Y - low) / 5, 0, 1) * 0.6
 			task.delay(delay, function()
@@ -818,6 +1099,40 @@ function Styles.death(style: string?, model: Model): number
 		end
 		task.delay(0.7, function()
 			Sfx.play("stringsSnap")
+			if world then
+				for _, thread in ipairs(tops) do
+					local cut = thread.Position + Vector3.new(0, 4, 0)
+					Vfx.Emit.burst(cut, {
+						{
+							{
+								tex = "VfxFlare",
+								color = Color3.new(1, 1, 1),
+								size = { { 0, 0.3 }, { 0.25, 2.2 }, { 1, 0 } },
+								life = 0.2,
+								rot = { 0, 360 },
+								bright = 1.5,
+							},
+							1,
+						},
+						{
+							{
+								tex = "VfxStreak",
+								color = Color3.fromRGB(255, 244, 220),
+								size = { { 0, 0.18 }, { 1, 0.04 } },
+								squash = -2,
+								life = { 0.2, 0.4 },
+								speed = { 8, 16 },
+								drag = 3,
+								accel = Vector3.new(0, -30, 0),
+								spread = 180,
+								face = "along",
+								bright = 1.4,
+							},
+							6,
+						},
+					})
+				end
+			end
 			for index, thread in ipairs(tops) do
 				local fallen = thread.CFrame
 					* CFrame.new(0, -3, 0)
@@ -879,16 +1194,50 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		local carrier = part(folder, Vector3.new(0.2, 0.2, 0.2), torso.CFrame, tint)
 		carrier.Transparency = 1
 		weldTo(carrier, torso)
-		Create("ParticleEmitter", {
-			Rate = 18,
-			Lifetime = NumberRange.new(0.8, 1.6),
-			Speed = NumberRange.new(1, 3),
-			SpreadAngle = Vector2.new(30, 30),
-			Acceleration = Vector3.new(0, 4, 0),
-			LightEmission = 1,
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0) }),
-			Color = ColorSequence.new(tint, Color3.fromRGB(255, 220, 140)),
-			Parent = carrier,
+		-- (a warm heart glowing in the chest, embers rising off it, now and then a breath of smoke)
+		local at = Create("Attachment", { Parent = carrier }) :: Attachment
+		Vfx.Emit
+			.make(at, {
+				tex = "VfxGlow",
+				color = tint,
+				size = 2.4,
+				alpha = { { 0, 1 }, { 0.05, 0.3 }, { 0.95, 0.3 }, { 1, 1 } },
+				life = 4,
+				rate = 1 / 3.8,
+				locked = true,
+				light = 0.7,
+				bright = 1.1,
+				z = 1.6, -- (drawn forward of the body, which would hide it inside it)
+			})
+			:Emit(1)
+		Vfx.Emit.make(at, {
+			tex = "VfxEmber",
+			color = { { 0, Color3.fromRGB(255, 236, 190) }, { 0.3, tint }, { 1, tint:Lerp(Color3.new(0, 0, 0), 0.6) } },
+			size = { { 0, 0.22 }, { 0.5, 0.16 }, { 1, 0 } },
+			life = { 0.9, 1.7 },
+			speed = { 1, 3 },
+			spread = 35,
+			accel = Vector3.new(0, 4, 0),
+			drag = 0.8,
+			bright = 1.4,
+			rate = 22,
+			shape = Enum.ParticleEmitterShape.Sphere,
+			z = 1.2,
+		})
+		Vfx.Emit.make(at, {
+			tex = "VfxWisp",
+			grid = 4,
+			mode = "OneShot",
+			color = tint:Lerp(Color3.fromRGB(60, 56, 58), 0.6),
+			light = 0,
+			lit = 0.4,
+			size = { { 0, 1 }, { 1, 2.4 } },
+			alpha = { { 0, 0.5 }, { 0.6, 0.65 }, { 1, 1 } },
+			life = { 1.2, 1.8 },
+			speed = { 1.5, 3 },
+			spread = 15,
+			face = "up",
+			rate = 2,
 		})
 	elseif form == "veil" then
 		local hood = prop("Hood", head.CFrame, folder, 1.6)
@@ -963,22 +1312,22 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		local carrier = part(folder, Vector3.new(1.6, 0.4, 1), torso.CFrame * CFrame.new(0, -0.6, 0.4), FEATHER)
 		carrier.Transparency = 1
 		weldTo(carrier, torso)
-		Create("ParticleEmitter", {
-			Rate = 3,
-			Lifetime = NumberRange.new(1.6, 2.4),
-			Speed = NumberRange.new(0.2, 0.6),
-			SpreadAngle = Vector2.new(60, 60),
-			Acceleration = Vector3.new(0, -1.6, 0),
-			Drag = 1.5,
-			Rotation = NumberRange.new(0, 360),
-			RotSpeed = NumberRange.new(-90, 90),
-			Size = NumberSequence.new(0.22),
-			Squash = NumberSequence.new(1.5),
-			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) }),
-			Color = ColorSequence.new(FEATHER),
-			LightInfluence = 1,
-			Shape = Enum.ParticleEmitterShape.Box,
-			Parent = carrier,
+		Vfx.Emit.make(carrier, {
+			tex = "VfxFeather",
+			color = FEATHER,
+			light = 0,
+			lit = 0.8,
+			size = { { 0, 0.32 }, { 1, 0.26 } },
+			alpha = { { 0, 0.05 }, { 0.8, 0.2 }, { 1, 1 } },
+			life = { 1.8, 2.8 },
+			speed = { 0.2, 0.6 },
+			spread = 60,
+			accel = Vector3.new(0, -1.4, 0),
+			drag = 1.5,
+			rot = { 0, 360 },
+			spin = { -90, 90 },
+			rate = 3,
+			shape = Enum.ParticleEmitterShape.Box,
 		})
 	elseif form == "moths" then
 		-- A cold light in the chest, and pale moths drifting about it.
@@ -993,24 +1342,42 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		light.Transparency = 0.25
 		weldTo(light, torso)
 		Create("PointLight", { Color = tint, Range = 8, Brightness = 1.2, Shadows = false, Parent = light })
-		Create("ParticleEmitter", {
-			Rate = 5,
-			Lifetime = NumberRange.new(1.8, 3),
-			Speed = NumberRange.new(0.6, 1.4),
-			SpreadAngle = Vector2.new(180, 180),
-			Acceleration = Vector3.new(0, 0.4, 0),
-			Drag = 0.8,
-			Rotation = NumberRange.new(0, 360),
-			RotSpeed = NumberRange.new(-180, 180),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.28), NumberSequenceKeypoint.new(1, 0.18) }),
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.15, 0.2),
-				NumberSequenceKeypoint.new(1, 1),
-			}),
-			Color = ColorSequence.new(Color3.fromRGB(240, 234, 214)),
-			LightEmission = 0.4,
-			Parent = light,
+		-- (the light's glow, and moths that flutter round it: a wingbeat flipbook, drifting and turning)
+		Vfx.Emit
+			.make(light, {
+				tex = "VfxGlow",
+				color = tint,
+				size = 3.2,
+				alpha = { { 0, 1 }, { 0.05, 0.3 }, { 0.95, 0.3 }, { 1, 1 } },
+				life = 4,
+				rate = 1 / 3.8,
+				locked = true,
+				light = 0.8,
+				bright = 1.1,
+				z = 1.2, -- (drawn forward of the chest it sits in)
+			})
+			:Emit(1)
+		Vfx.Emit.make(light, {
+			tex = "VfxMoth",
+			grid = 2,
+			fps = { 12, 18 },
+			startRandom = true,
+			blend = false,
+			color = Color3.fromRGB(240, 234, 214),
+			light = 0.5,
+			lit = 0.3,
+			bright = 1.2,
+			size = { { 0, 0 }, { 0.12, 0.6 }, { 0.88, 0.6 }, { 1, 0 } },
+			life = { 2.4, 3.6 },
+			speed = { 1, 2 },
+			spread = 180,
+			accel = Vector3.new(0, 0.3, 0),
+			drag = 0.6,
+			rot = { -40, 40 },
+			spin = { -60, 60 },
+			rate = 4,
+			shape = Enum.ParticleEmitterShape.Sphere,
+			z = 0.6,
 		})
 	elseif form == "marionette" then
 		-- A control bar over the head, its strings down to the head and the hands.

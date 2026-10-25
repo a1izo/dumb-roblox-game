@@ -1,9 +1,9 @@
 --!strict
 -- The VFX kit's solid shapes: a ring, a dome, a tube, a cone, a swirl, a crescent, a sphere, spikes, a shard, a rock
--- and a page (the Fx props import's VfxRing ... VfxPage, art/scripts/vfx/meshes.py; plain parts stand in before it is
--- imported), grown from small to full on a curve, held, and faded, glowing (Neon) or shimmering (ForceField) in a
--- colour, or wearing a VFX texture. Each mesh is made 2 studs across (radius 1) round its up, from its foot up where it
--- has a height; Shape.grow sizes it in studs.
+-- and a page (the Fx props import's VfxRing ... VfxPage, art/scripts/vfx/meshes.py; before it is imported a ball stands
+-- in for a sphere or a dome and the rest wait for it), grown from small to full on a curve, held, and faded, glowing
+-- (Neon) or shimmering (ForceField) in a colour, or wearing a VFX texture. Each mesh is made 2 studs across (radius 1)
+-- round its up, from its foot up where it has a height; Shape.grow sizes it in studs.
 --
 --   Shape.grow("ring", cf, { size = 12, seconds = 0.4, ease = Ease.outQuint, fade = 0.3, color = c })
 
@@ -181,6 +181,9 @@ function Shape.grow(kind: Kind, at: CFrame, options: Options): BasePart
 			turn = CFrame.Angles(0, 0, math.rad(90))
 		end
 	end
+	-- (before the Fx import only a ball stands in, for a sphere or a dome: a block or a disc in place of spikes, a ring
+	-- or a crescent reads worse than nothing, so those stay unseen and the effect's other layers carry it)
+	local hidden = not source and kind ~= "sphere" and kind ~= "dome"
 	part.Name = "DGVfx_" .. kind
 	part.Color = options.color or Color3.new(1, 1, 1)
 	part.Material = options.material or Enum.Material.Neon
@@ -225,14 +228,16 @@ function Shape.grow(kind: Kind, at: CFrame, options: Options): BasePart
 		if t < seconds then
 			local u = ease(t / seconds)
 			place(from + (1 - from) * u, t)
-			part.Transparency = solid + (1 - solid) * (1 - math.min(1, t / math.max(seconds * 0.25, 1e-3)))
+			part.Transparency = if hidden
+				then 1
+				else solid + (1 - solid) * (1 - math.min(1, t / math.max(seconds * 0.25, 1e-3)))
 		elseif t < seconds + hold then
 			place(1, t)
-			part.Transparency = solid
+			part.Transparency = if hidden then 1 else solid
 		elseif t < total then
 			local u = (t - seconds - hold) / math.max(fade, 1e-3)
 			place(1 + (after - 1) * Ease.outQuad(u), t)
-			part.Transparency = solid + (1 - solid) * Ease.inQuad(u)
+			part.Transparency = if hidden then 1 else solid + (1 - solid) * Ease.inQuad(u)
 		else
 			part:Destroy()
 			return false

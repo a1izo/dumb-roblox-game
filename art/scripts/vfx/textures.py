@@ -530,6 +530,122 @@ def VfxDust(cell=128, grid=4, seed=15):
     return D.bleed(D.sheet(frames, grid))
 
 
+# Things that fall and fly ----------------------------------------------------------------------------------------
+
+
+@texture
+def VfxFeather(w=128, h=256, seed=31):
+    """A crow's feather, its tip up (white, so Color makes it black): a quill down a gentle curve, the vane rounded at
+    the tip, wider on one side and narrowing to the foot, soft barbs slanting up and out, two splits in its edge, the
+    bare quill at its foot."""
+    rng = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:h, 0:w]
+    u = (xx + 0.5) / w * 2 - 1  # -1..1 across
+    t = (yy + 0.5) / h  # 0 at the tip, 1 at the foot
+    bend = 0.22 * (t - 0.55) ** 2 - 0.05
+    across = u - bend
+    # the vane: a rounded tip, widest a third of the way down, narrowing to the foot
+    rise = np.clip((t - 0.025) / 0.3, 0, 1)
+    width = 0.8 * np.sqrt(np.clip(1 - (1 - rise) ** 2, 0, 1)) * (1 - 0.72 * D.smoothstep(0.35, 0.86, t))
+    width *= np.clip((0.88 - t) / 0.05, 0, 1)
+    edge = width * np.where(across > 0, 1.0, 0.78)
+    rel = np.abs(across) / np.maximum(edge, 1e-3)
+    pixel = 2.0 / w
+    a = D.aa(np.abs(across) - edge, pixel * 1.5) * (t > 0.025)
+    # splits: where the barbs part, slanting with them
+    for _ in range(2):
+        at = rng.uniform(0.3, 0.6)
+        sgn = rng.choice([-1, 1])
+        line = np.abs(t - at - np.abs(across) * 0.42)
+        cut = (np.sign(across) == sgn) * (line < 0.006) * D.smoothstep(0.45, 0.7, rel)
+        a = a * (1 - cut)
+    # barbs: soft lines slanting up and out from the quill, a few pixels apart, broken by noise
+    phase = (t * h + np.abs(across) * w * 0.5 * 0.85) / 5.5
+    noise = N.fbm2(u * 6, t * 14, octaves=3, seed=seed) * 0.5 + 0.5
+    barbs = 0.9 + 0.1 * np.cos(phase * 2 * math.pi) * (0.5 + noise)
+    shade = 0.68 + 0.32 * (1 - rel ** 1.5)
+    v = np.clip(shade * barbs, 0, 1)
+    # the edge of the vane breaks up into barb tips
+    a *= 1 - 0.5 * D.smoothstep(0.8, 1.0, rel) * (0.5 + 0.5 * np.cos(phase * 2 * math.pi))
+    # the quill: bright, thin, on past the vane at the foot
+    quill = np.clip(1 - np.abs(across) / (0.03 + 0.025 * t), 0, 1) * (t > 0.03) * (t < 0.98)
+    a = np.maximum(a, quill)
+    v = np.where(quill > 0.4, 0.96, v)
+    return D.bleed(D.rgba(v, np.clip(a, 0, 1)))
+
+
+@texture
+def VfxMoth(cell=128, grid=2, seed=37):
+    """A pale moth seen from above, four frames of one wingbeat (2 x 2, looped): a furred body, swept-back forewings
+    and smaller rounded hindwings, mottled, darker toward their edges, a faint spot on each forewing; the wings close
+    toward the body and open again."""
+    frames = []
+    y, x = D.grid(cell)
+    pixel = D.px(cell) * 1.2
+    fore = [(-0.12, 0.06), (-0.42, 0.5), (-0.4, 0.86), (-0.12, 0.8), (0.06, 0.42), (0.08, 0.08)]
+    hind = [(0.04, 0.06), (0.06, 0.4), (0.24, 0.58), (0.46, 0.42), (0.42, 0.14), (0.24, 0.04)]
+    mottle = N.fbm2(x * 5 + 3, y * 5, octaves=4, seed=seed) * 0.5 + 0.5
+    for k in range(grid * grid):
+        open_ = 0.3 + 0.7 * (0.5 + 0.5 * math.cos(2 * math.pi * k / (grid * grid)))
+        a = np.zeros_like(x)
+        v = np.zeros_like(x)
+        for sgn in (-1, 1):
+            wx = (x * sgn) / open_
+            for pts, tone in ((hind, 0.78), (fore, 0.9)):
+                d = D.polygon_sdf(y, wx, pts) - 0.05  # (rounded: the outline pushed out)
+                cover = D.aa(d, pixel / open_)
+                depth = np.clip(-d / 0.2, 0, 1)
+                tv = tone * (0.82 + 0.18 * mottle) * (0.72 + 0.28 * D.smoothstep(0.0, 0.5, depth))
+                if pts is fore:
+                    spot = np.exp(-(((y + 0.18) / 0.06) ** 2 + ((wx - 0.42) / 0.07) ** 2))
+                    tv = tv * (1 - 0.35 * spot)
+                v = np.where(cover > 0.01, np.where(cover >= a, tv, v), v)
+                a = np.maximum(a, cover * 0.96)
+        body = D.aa(np.sqrt((x / 0.075) ** 2 + ((y - 0.08) / 0.36) ** 2) - 1, pixel / 0.075)
+        thorax = D.aa(np.sqrt((x / 0.1) ** 2 + ((y + 0.12) / 0.14) ** 2) - 1, pixel / 0.1)
+        head = D.aa(np.sqrt(x ** 2 + (y + 0.3) ** 2) - 0.07, pixel)
+        furred = np.maximum(np.maximum(body, thorax), head)
+        fur = 0.74 + 0.12 * (N.fbm2(x * 30, y * 30, octaves=2, seed=seed + 5) * 0.5 + 0.5)
+        v = np.where(furred > 0.3, fur, v)
+        a = np.maximum(a, furred)
+        for sgn in (-1, 1):
+            d, _ = D.segment(y, x, -0.34, sgn * 0.03, -0.56, sgn * 0.22)
+            f = np.clip(1 - d / (pixel * 1.3), 0, 1)
+            a = np.maximum(a, f * 0.85)
+            v = np.where(f > 0.3, 0.72, v)
+        frames.append(D.rgba(v, a))
+    return D.bleed(D.sheet(frames, grid))
+
+
+@texture
+def VfxChunk(cell=128, grid=2, seed=41):
+    """Four broken chunks (2 x 2, one per particle: no flipbook play): angular pieces lit from above in three hard
+    tones with a dark rim (crumbling stone, crumbs, bits thrown off a slam; Color tints them)."""
+    rng = np.random.default_rng(seed)
+    frames = []
+    y, x = D.grid(cell)
+    pixel = D.px(cell) * 1.2
+    for k in range(grid * grid):
+        n = rng.integers(5, 8)
+        angles = np.sort(rng.uniform(0, 2 * math.pi, n))
+        radii = rng.uniform(0.45, 0.85, n)
+        pts = [(math.sin(t) * r, math.cos(t) * r) for t, r in zip(angles, radii)]
+        d = D.polygon_sdf(y, x, pts)
+        a = D.aa(d, pixel)
+        # facets: the piece split into a lit top, a side and a shadowed side by two lines through a point inside it
+        cy, cx = rng.uniform(-0.15, 0.15), rng.uniform(-0.15, 0.15)
+        t1 = rng.uniform(0, 2 * math.pi)
+        t2 = t1 + rng.uniform(1.8, 2.6)
+        s1 = (x - cx) * math.cos(t1) + (y - cy) * math.sin(t1)
+        s2 = (x - cx) * math.cos(t2) + (y - cy) * math.sin(t2)
+        tone = np.where(s1 > 0, np.where(s2 > 0, 1.0, 0.78), np.where(s2 > 0, 0.78, 0.56))
+        grain = N.fbm2(x * 6 + k * 10, y * 6, octaves=3, seed=seed + k) * 0.06
+        rim = D.smoothstep(-0.07, -0.02, d)
+        v = np.clip(tone + grain, 0, 1) * (1 - 0.4 * rim)
+        frames.append(D.rgba(v, a))
+    return D.bleed(D.sheet(frames, grid))
+
+
 def build(names=None):
     out = []
     for name, fn in BUILDERS.items():

@@ -424,8 +424,10 @@ local function take(ps, noteId)
 	end
 end
 
+-- Where a note burns: an unseen part tagged LNoteBurn (attributes Burn, the seconds it burns, and Smoke, the seconds
+-- it smokes after), gone when the smoke is; every client burns it (World/Flames: a living fire, curling ash, smoke).
 local function smokeAt(position: Vector3, duration: number)
-	local emitter = Create("Part", {
+	local mark = Create("Part", {
 		Name = "BurnSmoke",
 		Anchored = true,
 		CanCollide = false,
@@ -433,28 +435,14 @@ local function smokeAt(position: Vector3, duration: number)
 		CanTouch = false,
 		Transparency = 1,
 		Size = Vector3.new(1, 1, 1),
-		CFrame = CFrame.new(position + Vector3.new(0, 0.5, 0)),
+		CFrame = CFrame.new(position + Vector3.new(0, 0.2, 0)),
 		Parent = folder or workspace,
 	})
-	Create("Smoke", {
-		Color = Color3.fromRGB(90, 90, 95),
-		Opacity = 0.45,
-		RiseVelocity = 6,
-		Size = 4,
-		Parent = emitter,
-	})
-	local fire = Create("Fire", {
-		Color = Color3.fromRGB(255, 140, 40),
-		SecondaryColor = Color3.fromRGB(255, 60, 20),
-		Heat = 6,
-		Size = 2,
-		Parent = emitter,
-	})
-	task.delay(Config.BURN_TIME, function()
-		fire.Enabled = false
-	end)
+	mark:SetAttribute("Burn", Config.BURN_TIME)
+	mark:SetAttribute("Smoke", duration)
+	mark:AddTag("LNoteBurn")
 	task.delay(duration, function()
-		emitter:Destroy()
+		mark:Destroy()
 	end)
 end
 

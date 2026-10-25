@@ -379,6 +379,55 @@ local function menace(kind: Menace): Fx
 		end
 		local going = true
 		local random = Random.new()
+		local calm = Motion.isReduced()
+		-- the menace in the air: a haze of the signs' colour rising off the body and specks of it drifting up
+		local haze = Create("Attachment", { Name = "EmoteMenace", Position = Vector3.new(0, -0.5, 0.6), Parent = root })
+		haze:SetAttribute("DGEmote", true)
+		if not calm then
+			Vfx.Emit.make(haze, {
+				tex = "VfxSmoke",
+				grid = 8,
+				mode = "OneShot",
+				color = kind.colour:Lerp(Color3.new(0, 0, 0), 0.45),
+				light = 0.15,
+				lit = 0.3,
+				size = { { 0, 2.2 }, { 1, 4.4 } },
+				alpha = { { 0, 1 }, { 0.25, 0.72 }, { 0.6, 0.78 }, { 1, 1 } },
+				life = { 1.6, 2.4 },
+				speed = { 1.2, 2.4 },
+				spread = 25,
+				accel = Vector3.new(0, 0.6, 0),
+				rot = { 0, 360 },
+				spin = { -20, 20 },
+				rate = 5,
+				shape = Enum.ParticleEmitterShape.Box,
+				z = -2,
+			})
+			Vfx.Emit.make(haze, {
+				tex = "VfxEmber",
+				color = kind.colour:Lerp(Color3.new(1, 1, 1), 0.3),
+				size = { { 0, 0.14 }, { 1, 0 } },
+				life = { 1.2, 2 },
+				speed = { 1.5, 3 },
+				spread = 30,
+				accel = Vector3.new(0, 1.5, 0),
+				bright = 1.3,
+				rate = 8,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
+		end
+		-- (each sign pops in a size too big and snaps down, shudders while it hangs, and rises away fading)
+		local shaking: { TextLabel } = {}
+		local stopShake = if calm
+			then function() end
+			else Vfx.Clock.every(function()
+				for _, label in ipairs(shaking) do
+					if label.Parent then
+						label.Position = UDim2.fromOffset(random:NextInteger(-2, 2), random:NextInteger(-2, 2))
+					end
+				end
+				return going or #shaking > 0
+			end)
 		task.spawn(function()
 			task.wait(0.3)
 			local k = 0
@@ -393,10 +442,23 @@ local function menace(kind: Menace): Fx
 					at = start,
 					tilt = tilt,
 				})
+				table.insert(shaking, label)
+				if not calm then
+					gui.Size = UDim2.fromScale(kind.size * 1.5, kind.size * 1.5)
+					TweenService:Create(
+						gui,
+						TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+						{ Size = UDim2.fromScale(kind.size, kind.size) }
+					):Play()
+				end
 				local info = TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 				TweenService:Create(gui, info, { StudsOffset = start + Vector3.new(0, 1.4, 0) }):Play()
 				TweenService:Create(label, info, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
 				task.delay(1.7, function()
+					local i = table.find(shaking, label)
+					if i then
+						table.remove(shaking, i)
+					end
 					gui:Destroy()
 				end)
 				task.wait(kind.every)
@@ -404,6 +466,8 @@ local function menace(kind: Menace): Fx
 		end)
 		return function()
 			going = false
+			haze:Destroy()
+			task.delay(1.8, stopShake)
 		end
 	end
 end
@@ -459,9 +523,48 @@ FX.lowBattery = function(character, preview)
 		:Create(fill, info, { Size = UDim2.fromScale(0.06, 0.68), BackgroundColor3 = Color3.fromRGB(205, 40, 40) })
 		:Play()
 	local going = true
+	local calm = Motion.isReduced()
 	task.delay(2.7, function()
+		local k = 0
 		while going and gui.Parent do
 			fill.Visible = not fill.Visible
+			k += 1
+			-- (empty: a fizzle of sparks off the battery now and then, and a thread of smoke)
+			if not calm and fill.Visible and k % 3 == 1 then
+				local at = (head.CFrame * CFrame.new(0, 1.8, 0)).Position
+				Vfx.Emit.burst(at, {
+					{
+						{
+							tex = "VfxStreak",
+							color = { { 0, Color3.new(1, 1, 1) }, { 1, Color3.fromRGB(255, 120, 90) } },
+							size = { { 0, 0.14 }, { 1, 0.03 } },
+							squash = -1.8,
+							life = { 0.12, 0.25 },
+							speed = { 5, 9 },
+							spread = 180,
+							accel = Vector3.new(0, -20, 0),
+							face = "along",
+							bright = 1.5,
+						},
+						5,
+					},
+					{
+						{
+							tex = "VfxWisp",
+							grid = 4,
+							mode = "OneShot",
+							color = Color3.fromRGB(150, 148, 152),
+							light = 0,
+							lit = 0.5,
+							size = 1.2,
+							alpha = { { 0, 0.3 }, { 0.7, 0.5 }, { 1, 1 } },
+							life = 1.2,
+							face = "up",
+						},
+						1,
+					},
+				})
+			end
 			task.wait(0.35)
 		end
 	end)
@@ -854,20 +957,75 @@ FX.chipAndPen = function(character, preview)
 	local mouth = Create("Attachment", { Name = "EmoteCrumbs", Position = Vector3.new(0, -0.25, -0.6), Parent = head })
 	mouth:SetAttribute("DGEmote", true)
 	table.insert(made, mouth)
-	local crumbs = Create("ParticleEmitter", {
-		Texture = Vfx.Tex.id("VfxEmber"),
-		Color = ColorSequence.new(Color3.fromRGB(255, 214, 120), Color3.fromRGB(222, 170, 80)),
-		LightEmission = 0.6,
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) }),
-		Lifetime = NumberRange.new(0.5, 0.9),
-		Speed = NumberRange.new(5, 9),
-		SpreadAngle = Vector2.new(60, 60),
-		Acceleration = Vector3.new(0, -18, 0),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-200, 200),
-		Rate = 0,
-		Parent = mouth,
-	}) :: ParticleEmitter
+	-- the crunch: a gold star at the lips, the crisp burst into tumbling crumbs, a glitter of salt hanging in the
+	-- flare's light (the crumbs thrown forward and up out of the mouth)
+	local function crunch()
+		local out = head.CFrame * CFrame.new(0, -0.25, -0.6) * CFrame.Angles(math.rad(-65), 0, 0)
+		local list: { any } = {
+			{
+				{
+					tex = "VfxChunk",
+					grid = 2,
+					fps = 0,
+					startRandom = true,
+					color = { { 0, Color3.fromRGB(255, 220, 130) }, { 1, Color3.fromRGB(214, 158, 64) } },
+					light = 0.1,
+					lit = 0.7,
+					size = { { 0, 0.26 }, { 1, 0.18 } },
+					life = { 0.6, 1.0 },
+					speed = { 5, 10 },
+					spread = 55,
+					accel = Vector3.new(0, -30, 0),
+					rot = { 0, 360 },
+					spin = { -400, 400 },
+				},
+				24,
+			},
+		}
+		if not calm then
+			table.insert(list, {
+				{
+					tex = "VfxFlare",
+					color = Color3.fromRGB(255, 236, 190),
+					size = { { 0, 0.4 }, { 0.2, 3.4 }, { 1, 0 } },
+					life = 0.3,
+					rot = { 0, 360 },
+					bright = 1.5,
+					z = 1,
+				},
+				1,
+			})
+			table.insert(list, {
+				{
+					tex = "VfxBurst",
+					color = Color3.fromRGB(255, 214, 140),
+					size = { { 0, 0.5 }, { 0.15, 3.2 }, { 1, 3.6 } },
+					alpha = { { 0, 0 }, { 0.5, 0.25 }, { 1, 1 } },
+					life = 0.25,
+					light = 0.6,
+					rot = { 0, 360 },
+					bright = 1.1,
+				},
+				1,
+			})
+			table.insert(list, {
+				{
+					tex = "VfxFlare",
+					color = Color3.new(1, 1, 1),
+					size = { { 0, 0 }, { 0.2, 0.3 }, { 0.4, 0 }, { 0.6, 0.25 }, { 1, 0 } },
+					life = { 0.7, 1.2 },
+					speed = { 2, 5 },
+					spread = 70,
+					accel = Vector3.new(0, -4, 0),
+					drag = 2,
+					rot = { 0, 90 },
+					bright = 1.5,
+				},
+				12,
+			})
+		end
+		Vfx.Emit.burst(out, list)
+	end
 	local flare = Create("PointLight", {
 		Color = Color3.fromRGB(255, 220, 160),
 		Range = 10,
@@ -876,7 +1034,7 @@ FX.chipAndPen = function(character, preview)
 		Parent = mouth,
 	}) :: PointLight
 	at(7.05, function()
-		crumbs:Emit(26)
+		crunch()
 		if not calm then
 			flare.Brightness = 6
 			TweenService:Create(flare, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
@@ -917,39 +1075,90 @@ FX.appleBite = function(character, preview)
 	local gone = false
 	local mouth = Create("Attachment", { Name = "EmoteJuice", Position = Vector3.new(0, -0.3, -0.75), Parent = head })
 	mouth:SetAttribute("DGEmote", true)
-	local function spray(name: string, colors: ColorSequence, size: number, count: number)
-		local emitter = Create("ParticleEmitter", {
-			Name = name,
-			Texture = Vfx.Tex.id("VfxEmber"),
-			Color = colors,
-			LightEmission = 0.25,
-			Size = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, size),
-				NumberSequenceKeypoint.new(1, size * 0.3),
-			}),
-			Lifetime = NumberRange.new(0.35, 0.7),
-			Speed = NumberRange.new(4, 8),
-			SpreadAngle = Vector2.new(50, 35),
-			EmissionDirection = Enum.NormalId.Front,
-			Acceleration = Vector3.new(0, -26, 0),
-			Rotation = NumberRange.new(0, 360),
-			RotSpeed = NumberRange.new(-260, 260),
-			Rate = 0,
-			Parent = mouth,
-		}) :: ParticleEmitter
-		after(
-			head,
-			function()
-				return gone
-			end,
-			0.93,
-			function()
-				emitter:Emit(count)
-			end
-		)
-	end
-	spray("Juice", ColorSequence.new(Color3.fromRGB(255, 246, 220), Color3.fromRGB(236, 214, 160)), 0.22, 16)
-	spray("Skin", ColorSequence.new(Color3.fromRGB(170, 24, 32)), 0.16, 5)
+	-- (thrown forward and a little up out of the mouth: drops of juice drawn out as they fly, flecks of the white
+	-- flesh and a few of the red skin tumbling, a fine mist of juice catching the light)
+	after(
+		head,
+		function()
+			return gone
+		end,
+		0.93,
+		function()
+			local out = head.CFrame * CFrame.new(0, -0.3, -0.75) * CFrame.Angles(math.rad(-75), 0, 0)
+			Vfx.Emit.burst(out, {
+				{
+					{
+						tex = "VfxStreak",
+						color = Color3.fromRGB(255, 246, 214),
+						size = { { 0, 0.12 }, { 1, 0.05 } },
+						squash = -1.4,
+						alpha = { { 0, 0.1 }, { 1, 0.6 } },
+						life = { 0.35, 0.6 },
+						speed = { 5, 9 },
+						spread = { 45, 30 },
+						accel = Vector3.new(0, -30, 0),
+						face = "along",
+						light = 0.3,
+						lit = 0.5,
+						bright = 1.2,
+					},
+					16,
+				},
+				{
+					{
+						tex = "VfxChunk",
+						grid = 2,
+						fps = 0,
+						startRandom = true,
+						color = Color3.fromRGB(250, 240, 214),
+						light = 0,
+						lit = 0.8,
+						size = { { 0, 0.16 }, { 1, 0.12 } },
+						life = { 0.5, 0.8 },
+						speed = { 4, 7 },
+						spread = { 45, 30 },
+						accel = Vector3.new(0, -30, 0),
+						rot = { 0, 360 },
+						spin = { -400, 400 },
+					},
+					8,
+				},
+				{
+					{
+						tex = "VfxChunk",
+						grid = 2,
+						fps = 0,
+						startRandom = true,
+						color = Color3.fromRGB(170, 24, 32),
+						light = 0,
+						lit = 0.8,
+						size = { { 0, 0.12 }, { 1, 0.09 } },
+						life = { 0.5, 0.8 },
+						speed = { 4, 7 },
+						spread = { 45, 30 },
+						accel = Vector3.new(0, -30, 0),
+						rot = { 0, 360 },
+						spin = { -400, 400 },
+					},
+					4,
+				},
+				{
+					{
+						tex = "VfxGlow",
+						color = Color3.fromRGB(255, 248, 230),
+						size = { { 0, 0.3 }, { 1, 1.2 } },
+						alpha = { { 0, 0.55 }, { 1, 1 } },
+						life = 0.35,
+						speed = { 1, 2 },
+						spread = 30,
+						light = 0.5,
+						bright = 0.8,
+					},
+					3,
+				},
+			})
+		end
+	)
 	return function()
 		gone = true
 		mouth:Destroy()
@@ -1273,6 +1482,47 @@ local function burst(at: Vector3, spec: Burst)
 	Vfx.Emit.burst(at, list)
 end
 
+-- Bits of something solid thrown from a point (crumbs, shavings): broken chunks of its colour, lit by the scene,
+-- tumbling and falling, a dusting of finer specks with them.
+local function pieces(at: Vector3, color: Color3, count: number, size: number, speed: number, up: Vector3?)
+	local cf = if up then CFrame.lookAt(at, at + up) * CFrame.Angles(math.rad(-90), 0, 0) else CFrame.new(at)
+	Vfx.Emit.burst(cf, {
+		{
+			{
+				tex = "VfxChunk",
+				grid = 2,
+				fps = 0,
+				startRandom = true,
+				color = { { 0, color }, { 1, color:Lerp(Color3.new(0, 0, 0), 0.25) } },
+				light = 0,
+				lit = 0.85,
+				size = { { 0, size }, { 1, size * 0.7 } },
+				life = { 0.5, 0.9 },
+				speed = { speed * 0.5, speed },
+				spread = 60,
+				accel = Vector3.new(0, -32, 0),
+				rot = { 0, 360 },
+				spin = { -400, 400 },
+			},
+			count,
+		},
+		{
+			{
+				tex = "VfxEmber",
+				color = color,
+				light = 0,
+				lit = 0.8,
+				size = { { 0, size * 0.35 }, { 1, 0 } },
+				life = { 0.4, 0.7 },
+				speed = { speed * 0.4, speed * 0.9 },
+				spread = 70,
+				accel = Vector3.new(0, -26, 0),
+			},
+			math.ceil(count / 2),
+		},
+	})
+end
+
 -- Where a leg's sole is (its bottom face's middle).
 local function soleOf(character: Model, leg: string): Vector3?
 	local part = character:FindFirstChild(leg)
@@ -1510,6 +1760,33 @@ FX.animatronicWelcome = function(character, preview)
 	end
 	if not preview then
 		Create("PointLight", { Color = Color3.fromRGB(255, 230, 160), Range = 5, Brightness = 1.5, Parent = parts[1] })
+		-- (each eye a lamp: a glow round it and a hard star that flickers like an old bulb)
+		for _, eye in ipairs(parts) do
+			Vfx.Emit.make(eye, {
+				tex = "VfxGlow",
+				color = Color3.fromRGB(255, 226, 150),
+				size = { { 0, 0.9 }, { 0.5, 1.1 }, { 1, 0.9 } },
+				alpha = { { 0, 1 }, { 0.1, 0.35 }, { 0.9, 0.35 }, { 1, 1 } },
+				life = 0.9,
+				rate = 2.4,
+				locked = true,
+				light = 1,
+				bright = 1.1,
+				z = 0.5,
+			})
+			Vfx.Emit.make(eye, {
+				tex = "VfxFlare",
+				color = Color3.fromRGB(255, 240, 200),
+				size = { { 0, 0.5 }, { 0.5, 0.65 }, { 1, 0.5 } },
+				alpha = { { 0, 1 }, { 0.1, 0.2 }, { 0.5, 0.45 }, { 0.6, 0.15 }, { 0.9, 0.3 }, { 1, 1 } },
+				life = 0.5,
+				rate = 4,
+				locked = true,
+				light = 1,
+				bright = 1.2,
+				z = 0.6,
+			})
+		end
 	end
 	return function()
 		for _, part in ipairs(parts) do
@@ -1549,6 +1826,32 @@ FX.lowBatteryCharge = function(character, preview)
 					spread = 180,
 					light = 1,
 				})
+				if not Motion.isReduced() then
+					-- (crackling arcs over the body, its edges lit blue-white, a snap of light)
+					local cf = torso.CFrame
+					for _, ends in ipairs({
+						{ Vector3.new(-1.2, 1.6, -0.3), Vector3.new(0.9, -1.4, -0.4) },
+						{ Vector3.new(1.1, 1.2, 0.2), Vector3.new(-0.8, -2.2, 0.3) },
+						{ Vector3.new(0, 2.4, -0.2), Vector3.new(1.4, -0.4, -0.5) },
+					}) do
+						Vfx.Beams.bolt((cf * CFrame.new(ends[1])).Position, (cf * CFrame.new(ends[2])).Position, 0.22, {
+							color = Color3.fromRGB(200, 230, 255),
+							width = 0.16,
+							bright = 1.6,
+							light = 1,
+							pieces = 6,
+							jag = 0.45,
+							rate = 30,
+						})
+					end
+					Vfx.Rim.glow(
+						character,
+						Color3.fromRGB(170, 215, 255),
+						0.05,
+						{ fill = 0.25, fadeIn = 0.03, fadeOut = 0.3 }
+					)
+					Vfx.Light.flash(torso.Position, Color3.fromRGB(170, 215, 255), 12, 3, 0.25)
+				end
 			end
 		end)
 	end
@@ -1620,8 +1923,10 @@ FX.itsYou = function(character, preview)
 		return gone
 	end
 	local made: { Instance } = {}
+	local own = mine(character)
 	after(root, over, 0.24, function()
-		burst((arm.CFrame * CFrame.new(0, -1.2, 0)).Position, {
+		local tip = (arm.CFrame * CFrame.new(0, -1.2, 0)).Position
+		burst(tip, {
 			color = CRACK,
 			count = 14,
 			size = 0.35,
@@ -1630,6 +1935,12 @@ FX.itsYou = function(character, preview)
 			spread = 180,
 			light = 1,
 		})
+		if not calm then
+			Vfx.Recipes.impact(CFrame.new(tip), { color = Color3.fromRGB(235, 240, 255), scale = 0.4, shake = own })
+			if own then
+				Vfx.Screen.punch(4, 0.25)
+			end
+		end
 		if not calm then
 			local lines = speedLines(root)
 			table.insert(made, lines)
@@ -1673,6 +1984,7 @@ end
 -- a hand-drawn balloon, its tail down towards the head, NAH, I'D WIN. in italic brush capitals); before that is
 -- imported, a plain white card with the words.
 local BUBBLE_SIZE = 2.9 -- studs (the picture is square, the balloon taller than wide inside it)
+local INFINITY_BLUE = ColorSequence.new(Color3.fromRGB(170, 220, 255), Color3.fromRGB(90, 160, 255))
 FX.nahIdWin = function(character, preview)
 	local head = character:FindFirstChild("Head")
 	if preview or not head or not head:IsA("BasePart") then
@@ -1729,6 +2041,7 @@ FX.nahIdWin = function(character, preview)
 		words:SetAttribute("KeepFont", true)
 	end
 	local gone = false
+	local shimmer: Attachment? = nil
 	task.delay(0.3, function()
 		if gone then
 			return
@@ -1736,6 +2049,36 @@ FX.nahIdWin = function(character, preview)
 		if Motion.isReduced() then
 			holder.Size = UDim2.fromScale(1, 1)
 		else
+			-- (a white burst behind the bubble as it pops; Infinity's blue specks round him while he holds it)
+			Vfx.Emit.burst((head.CFrame * CFrame.new(2.0, 1.6, 0)).Position, {
+				tex = "VfxBurst",
+				color = Color3.fromRGB(240, 246, 255),
+				size = { { 0, 0.5 }, { 0.15, 4.4 }, { 1, 5 } },
+				alpha = { { 0, 0.1 }, { 0.5, 0.35 }, { 1, 1 } },
+				life = 0.3,
+				light = 0.5,
+				rot = { 0, 360 },
+				bright = 1.1,
+				z = -1,
+			}, 1)
+			local root = character:FindFirstChild("HumanoidRootPart")
+			if root then
+				local at = Create("Attachment", { Name = "EmoteInfinity", Parent = root }) :: Attachment
+				at:SetAttribute("DGEmote", true)
+				Vfx.Emit.make(at, {
+					tex = "VfxEmber",
+					color = INFINITY_BLUE,
+					size = { { 0, 0 }, { 0.2, 0.13 }, { 1, 0 } },
+					life = { 1.2, 2 },
+					speed = { 0.3, 0.8 },
+					spread = 180,
+					bright = 1.4,
+					rate = 9,
+					shape = Enum.ParticleEmitterShape.Sphere,
+					shapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+				})
+				shimmer = at
+			end
 			TweenService:Create(
 				holder,
 				TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
@@ -1746,6 +2089,9 @@ FX.nahIdWin = function(character, preview)
 	return function()
 		gone = true
 		gui:Destroy()
+		if shimmer then
+			shimmer:Destroy()
+		end
 	end
 end
 
@@ -1953,19 +2299,46 @@ FX.blindfoldLift = function(character, preview)
 	end
 	local at = Create("Attachment", { Name = "EmoteInfinity", Parent = root })
 	at:SetAttribute("DGEmote", true)
-	Create("ParticleEmitter", {
-		Texture = Vfx.Tex.id("VfxEmber"),
-		Color = INFINITY,
-		LightEmission = 1,
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0) }),
-		Lifetime = NumberRange.new(1.2, 2.0),
-		Speed = NumberRange.new(0.3, 0.8),
-		SpreadAngle = Vector2.new(180, 180),
-		Shape = Enum.ParticleEmitterShape.Sphere,
-		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
-		Rate = if Motion.isReduced() then 3 else 8,
-		Parent = at,
+	-- (motes on the skin of a sphere round him, a faint blue field breathing, now and then a thin ring of it
+	-- passing out through the air)
+	local calm = Motion.isReduced()
+	Vfx.Emit.make(at, {
+		tex = "VfxEmber",
+		color = INFINITY,
+		size = { { 0, 0 }, { 0.2, 0.14 }, { 1, 0 } },
+		life = { 1.2, 2.0 },
+		speed = { 0.3, 0.8 },
+		spread = 180,
+		bright = 1.4,
+		rate = if calm then 3 else 10,
+		shape = Enum.ParticleEmitterShape.Sphere,
+		shapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
 	})
+	Vfx.Emit.make(at, {
+		tex = "VfxGlow",
+		color = Color3.fromRGB(120, 180, 255),
+		size = { { 0, 6 }, { 0.5, 7 }, { 1, 6 } },
+		alpha = { { 0, 1 }, { 0.3, 0.86 }, { 0.7, 0.86 }, { 1, 1 } },
+		life = 3,
+		rate = 0.7,
+		locked = true,
+		light = 0.6,
+		bright = 0.7,
+		z = -1,
+	})
+	if not calm then
+		Vfx.Emit.make(at, {
+			tex = "VfxRing",
+			color = Color3.fromRGB(170, 215, 255),
+			size = { { 0, 2 }, { 1, 8 } },
+			alpha = { { 0, 0.8 }, { 0.4, 0.7 }, { 1, 1 } },
+			life = 1.2,
+			rate = 0.6,
+			locked = true,
+			light = 0.8,
+			bright = 0.9,
+		})
+	end
 	return function()
 		at:Destroy()
 	end
@@ -2027,6 +2400,41 @@ FX.blindfoldLiftUp = function(character, preview)
 					spread = 180,
 					light = 1,
 				})
+				if not Motion.isReduced() then
+					-- (Infinity unveiled: a star in each eye, a sphere of pale blue opening round him and fading, a ring
+					-- of it out along the floor, his edges lit blue a moment)
+					local cold = Color3.fromRGB(140, 200, 255)
+					for _, eye in ipairs(parts) do
+						Vfx.Emit.burst(eye.Position, {
+							tex = "VfxFlare",
+							color = Color3.fromRGB(200, 235, 255),
+							size = { { 0, 0.2 }, { 0.25, 2.4 }, { 1, 0 } },
+							life = 0.45,
+							rot = { 0, 45 },
+							spin = 90,
+							bright = 1.6,
+						}, 1)
+					end
+					Vfx.Shape.grow("sphere", CFrame.new(torso.Position), {
+						size = 11,
+						from = 0.2,
+						seconds = 0.45,
+						fade = 0.5,
+						color = cold,
+						material = Enum.Material.ForceField,
+						transparency = 0.1,
+					})
+					local floor = floorUnder(torso.Position, character)
+					Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 1, 14, 0.6, {
+						tex = "VfxRingBand",
+						color = cold,
+						width = 1.4,
+						light = 0.7,
+						bright = 1.1,
+					})
+					Vfx.Rim.glow(character, cold, 0.8, { fill = 0.1, fadeIn = 0.15, fadeOut = 0.8 })
+					Vfx.Light.flash(torso.Position, cold, 18, 3, 0.5)
+				end
 			end
 		end
 	)
@@ -2133,6 +2541,20 @@ FX.twoFingerGrip = function(character, preview)
 		Shadows = false,
 		Parent = at,
 	})
+	-- (the screen's own cold glow in the dark)
+	Vfx.Emit
+		.make(at, {
+			tex = "VfxGlow",
+			color = Color3.fromRGB(190, 215, 255),
+			size = 1.6,
+			alpha = { { 0, 1 }, { 0.05, 0.55 }, { 0.95, 0.55 }, { 1, 1 } },
+			life = 4,
+			rate = 1 / 3.8,
+			locked = true,
+			light = 1,
+			bright = 0.7,
+		})
+		:Emit(1)
 	return function()
 		at:Destroy()
 	end
@@ -2140,7 +2562,6 @@ end
 
 -- Furious Scribbling: shavings of paper scratched up off the page by the pen, and on the Manual's open page the
 -- name being written, stroke by stroke, line by line (the page the game writes on: ManualBook.page).
-local SHAVINGS = ColorSequence.new(Color3.fromRGB(236, 226, 200), Color3.fromRGB(200, 186, 150))
 -- The Death's Manual held in the hand (a rigged book among the emote's props).
 local function heldManual(character: Model): Model?
 	for _, item in ipairs(character:GetChildren()) do
@@ -2213,16 +2634,7 @@ FX.furiousScribbling = function(character, preview)
 	scribbleOn(character, over, 60, 0.2)
 	if not preview then
 		onBeats(arm, over, 2.4, { 0.4, 1.2, 2.0 }, nil, function()
-			burst((arm.CFrame * CFrame.new(0, -1.6, -0.3)).Position, {
-				color = SHAVINGS,
-				count = 4,
-				size = 0.12,
-				speed = NumberRange.new(1, 2.5),
-				life = NumberRange.new(0.3, 0.5),
-				spread = 80,
-				gravity = 10,
-				light = 0,
-			})
+			pieces((arm.CFrame * CFrame.new(0, -1.6, -0.3)).Position, Color3.fromRGB(236, 226, 200), 4, 0.1, 2.5)
 		end)
 	end
 	return function()
@@ -2257,6 +2669,35 @@ FX.furiousScribblingSlash = function(character, preview)
 			light = 0.6,
 		})
 		if not Motion.isReduced() then
+			-- (the stroke itself: a red slash flaring across the page, a star at the pen)
+			Vfx.Emit.burst(CFrame.lookAt(tip, tip + arm.CFrame.LookVector), {
+				{
+					{
+						tex = "VfxSlash",
+						color = { { 0, Color3.fromRGB(255, 120, 120) }, { 1, CRIMSON } },
+						size = { { 0, 1.2 }, { 0.2, 3.2 }, { 1, 3.6 } },
+						alpha = { { 0, 0 }, { 0.5, 0.25 }, { 1, 1 } },
+						life = 0.28,
+						rot = { -30, -10 },
+						light = 0.5,
+						bright = 1.3,
+						z = 1,
+					},
+					1,
+				},
+				{
+					{
+						tex = "VfxFlare",
+						color = Color3.fromRGB(255, 200, 200),
+						size = { { 0, 0.3 }, { 0.25, 2.2 }, { 1, 0 } },
+						life = 0.22,
+						rot = { 0, 360 },
+						bright = 1.5,
+						z = 1.2,
+					},
+					1,
+				},
+			})
 			local flare = Create("Part", {
 				Name = "EmoteFlare",
 				Size = Vector3.new(0.2, 0.2, 0.2),
@@ -2287,34 +2728,61 @@ FX.appleTossThrow = accent(2.0, { 1.15 }, function(character)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if root and root:IsA("BasePart") then
 		-- (where the apple's flight peaks: thrown 7 studs up off the raised hand)
-		burst((root.CFrame * CFrame.new(1.4, 8.5, -0.6)).Position, {
-			color = FEATHERS,
-			count = 12,
-			size = 0.45,
-			speed = NumberRange.new(1, 3),
-			life = NumberRange.new(0.8, 1.3),
-			spread = 180,
-			gravity = 2,
-			light = 0,
+		local peak = (root.CFrame * CFrame.new(1.4, 8.5, -0.6)).Position
+		Vfx.Emit.burst(peak, {
+			{
+				{
+					tex = "VfxFeather",
+					color = FEATHERS,
+					light = 0,
+					lit = 0.6,
+					size = { { 0, 0.45 }, { 1, 0.38 } },
+					alpha = { { 0, 0 }, { 0.8, 0.1 }, { 1, 1 } },
+					life = { 1.2, 2 },
+					speed = { 2, 5 },
+					spread = 180,
+					accel = Vector3.new(0, -3, 0),
+					drag = 2.5,
+					rot = { 0, 360 },
+					spin = { -200, 200 },
+				},
+				14,
+			},
+			{
+				{
+					tex = "VfxSmoke",
+					grid = 8,
+					mode = "OneShot",
+					color = Color3.fromRGB(16, 14, 18),
+					light = 0,
+					lit = 0.3,
+					size = { { 0, 1 }, { 1, 2.8 } },
+					alpha = { { 0, 0.35 }, { 0.6, 0.55 }, { 1, 1 } },
+					life = { 0.7, 1.1 },
+					speed = { 1.5, 3.5 },
+					drag = 3,
+					spread = 180,
+					rot = { 0, 360 },
+					spin = { -40, 40 },
+				},
+				5,
+			},
 		})
 	end
 end)
 
 -- Chocolate Snap: crumbs of chocolate off each bite.
-local CHOC = ColorSequence.new(Color3.fromRGB(70, 40, 26), Color3.fromRGB(110, 70, 44))
 FX.chocolateSnap = accent(3.2, { 0.75, 1.95 }, function(character)
 	local head = character:FindFirstChild("Head")
 	if head and head:IsA("BasePart") then
-		burst((head.CFrame * CFrame.new(0.2, -0.3, -0.7)).Position, {
-			color = CHOC,
-			count = 10,
-			size = 0.14,
-			speed = NumberRange.new(3, 6),
-			life = NumberRange.new(0.4, 0.7),
-			spread = 70,
-			gravity = 20,
-			light = 0,
-		})
+		pieces(
+			(head.CFrame * CFrame.new(0.2, -0.3, -0.7)).Position,
+			Color3.fromRGB(96, 58, 36),
+			10,
+			0.16,
+			6,
+			head.CFrame.LookVector
+		)
 	end
 end)
 
@@ -2332,27 +2800,38 @@ FX.fortySeconds = function(character, preview)
 		end,
 		3.45,
 		function()
+			-- (a heartbeat: two red pulses out across the floor, lub and dub, a red glow under him beating with them,
+			-- the light throbbing; his own screen kicks with each beat)
 			local floor = floorUnder(root.Position, character)
-			local ring = Create("Part", {
-				Name = "EmotePulse",
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(0.05, 1, 1),
-				CFrame = CFrame.new(floor + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = CRIMSON,
-				Material = Enum.Material.Neon,
-				Transparency = 0.3,
-				Anchored = true,
-				CanCollide = false,
-				CanQuery = false,
-				CanTouch = false,
-				CastShadow = false,
-				Parent = workspace.CurrentCamera,
-			}) :: BasePart
-			local info = TweenInfo.new(if Motion.isReduced() then 0.6 else 0.9, Enum.EasingStyle.Quad)
-			TweenService:Create(ring, info, { Size = Vector3.new(0.05, 14, 14), Transparency = 1 }):Play()
-			task.delay(1.0, function()
-				ring:Destroy()
-			end)
+			local calm = Motion.isReduced()
+			local own = mine(character)
+			for k, beat in ipairs({ 0, 0.28 }) do
+				Vfx.Clock.after(beat, function()
+					local strength = if k == 1 then 1 else 0.7
+					Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.08, 0)), 0.8, 14 * strength, 0.9, {
+						tex = "VfxRingBand",
+						color = Color3.fromRGB(230, 50, 64),
+						width = 1.6 * strength,
+						light = 0.6,
+						bright = 1.2,
+					})
+					Vfx.Emit.burst(CFrame.new(floor + Vector3.new(0, 0.06, 0)), {
+						tex = "VfxGlow",
+						color = CRIMSON,
+						size = { { 0, 3 }, { 0.2, 8 * strength }, { 1, 9 * strength } },
+						alpha = { { 0, 0.2 }, { 1, 1 } },
+						life = 0.6,
+						speed = 0.001,
+						face = "flat",
+						light = 0.7,
+						bright = 0.9,
+					}, 1)
+					Vfx.Light.flash(floor + Vector3.new(0, 2, 0), CRIMSON, 16, 3 * strength, 0.4)
+					if own and not calm then
+						Vfx.Screen.punch(2.5 * strength, 0.2)
+					end
+				end)
+			end
 		end
 	)
 	return function()

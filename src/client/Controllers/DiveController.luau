@@ -38,6 +38,7 @@ local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local ClientState = require(script.Parent.Parent.ClientState)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 
 local DiveController = {}
 
@@ -180,6 +181,8 @@ local function hangString(character: Model, cloudY: number)
 		Parent = top,
 	}) :: Beam
 	strings[character] = { beam = beam, top = top }
+	-- (a glint where the string takes the body's weight)
+	Vfx.Recipes.twinkle(back.WorldPosition, { color = STRING_COLOR, scale = 1.2 })
 	Sfx.play("gameDiveString")
 end
 
@@ -209,27 +212,41 @@ local function makeAsh(): BasePart
 		Size = Vector3.new(46, 1, 46),
 		Parent = workspace.CurrentCamera,
 	}) :: BasePart
-	Create("ParticleEmitter", {
-		Name = "Ash",
-		Texture = "rbxasset://textures/particles/sparkles_main.dds",
-		Color = ColorSequence.new(Color3.fromRGB(170, 172, 180), Color3.fromRGB(120, 122, 130)),
-		LightEmission = 0,
-		LightInfluence = 1,
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0.1) }),
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.15, 0.35),
-			NumberSequenceKeypoint.new(1, 1),
-		}),
-		Lifetime = NumberRange.new(1.6, 2.2),
-		Speed = NumberRange.new(0.5, 2),
-		SpreadAngle = Vector2.new(180, 180),
-		RotSpeed = NumberRange.new(-90, 90),
-		Rotation = NumberRange.new(0, 360),
-		Shape = Enum.ParticleEmitterShape.Box,
-		ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-		Rate = 0,
-		Parent = holder,
+	-- (flakes of ash, each a broken flake of its own turning as it goes; and at speed, streaks of wind rushing
+	-- past)
+	Vfx.Emit.make(holder, {
+		name = "Ash",
+		tex = "VfxChunk",
+		grid = 2,
+		fps = 0,
+		startRandom = true,
+		color = { { 0, Color3.fromRGB(170, 172, 180) }, { 1, Color3.fromRGB(120, 122, 130) } },
+		light = 0,
+		lit = 1,
+		size = { { 0, 0.2 }, { 1, 0.12 } },
+		alpha = { { 0, 1 }, { 0.15, 0.3 }, { 1, 1 } },
+		life = { 1.6, 2.2 },
+		speed = { 0.5, 2 },
+		spread = 180,
+		rot = { 0, 360 },
+		spin = { -120, 120 },
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	Vfx.Emit.make(holder, {
+		name = "Wind",
+		tex = "VfxStreak",
+		color = Color3.fromRGB(210, 214, 222),
+		light = 0.3,
+		lit = 0.6,
+		size = { { 0, 0.12 }, { 1, 0.06 } },
+		squash = -6,
+		alpha = { { 0, 1 }, { 0.3, 0.7 }, { 0.7, 0.75 }, { 1, 1 } },
+		life = { 0.5, 0.8 },
+		speed = { 60, 90 },
+		spread = 2,
+		face = "along",
+		bright = 1,
+		shape = Enum.ParticleEmitterShape.Box,
 	})
 	return holder
 end
@@ -346,6 +363,14 @@ local function crash(character: Model, root: BasePart, humanoid: Humanoid, speed
 	if not calm() then
 		jolt(0.8, 0.5)
 	end
+	-- (the roof takes it: a slam laid on it, cracked, bits of it thrown up, dust rolling out; the camera's own jolt
+	-- above is the shake)
+	local floor, normal = Vfx.Ground.at(root.Position, { character }, 12)
+	Vfx.Recipes.slam(CFrame.lookAt(floor, floor + normal) * CFrame.Angles(math.rad(-90), 0, 0), {
+		color = Color3.fromRGB(200, 198, 194),
+		scale = 0.7 + 0.6 * math.clamp((speed - 25) / 30, 0, 1),
+		shake = false,
+	})
 	if not Sfx.play("gameDiveImpact") then
 		Sfx.play("gameDiveCrash")
 	end
@@ -457,10 +482,15 @@ local function step(dt: number)
 	local cloud = ash
 	if cloud then
 		cloud.CFrame = CFrame.new(spot.X, root.Position.Y - 40, spot.Y)
-		local emitter = cloud:FindFirstChildOfClass("ParticleEmitter")
-		if emitter then
-			local fast = math.clamp(speed / Tumble.TOP_SPEED, 0, 1)
-			emitter.Rate = (if Settings.get("lowGraphics") then 0.5 else 1) * (30 + 150 * fast)
+		local fast = math.clamp(speed / Tumble.TOP_SPEED, 0, 1)
+		local low = Settings.get("lowGraphics")
+		local flakes = cloud:FindFirstChild("Ash")
+		if flakes and flakes:IsA("ParticleEmitter") then
+			flakes.Rate = (if low then 0.5 else 1) * (30 + 150 * fast)
+		end
+		local wind = cloud:FindFirstChild("Wind")
+		if wind and wind:IsA("ParticleEmitter") then
+			wind.Rate = if low then 0 else 60 * math.max(0, fast - 0.35)
 		end
 	end
 	camera(humanoid, speed, dt)

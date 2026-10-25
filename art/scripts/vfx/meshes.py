@@ -32,7 +32,7 @@ FBX = os.path.join(common.EXPORT, "DeathsGambitModels_Fx.fbx")
 TEXTURES = [
     "VfxFlame", "VfxCandleFlame", "VfxGlow", "VfxFlare", "VfxEmber", "VfxStreak", "VfxSpike", "VfxBurst", "VfxRing",
     "VfxRingBand", "VfxColumn", "VfxSlash", "VfxSlashBand", "VfxWisp", "VfxDust", "VfxSmoke", "VfxCrack", "VfxCircle",
-    "VfxPage",
+    "VfxPage", "VfxFeather", "VfxMoth", "VfxChunk",
 ]
 
 

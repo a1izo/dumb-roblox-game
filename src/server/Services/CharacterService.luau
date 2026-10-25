@@ -291,7 +291,7 @@ function CharacterService.setWriting(player: Player, on: boolean)
 end
 
 -- Death's Manual written in free roam: the open book burns with a red light anyone nearby can see.
--- LManualOpen on the character lets every client add the sound and the embers (WorldFx).
+-- LManualOpen on the character lets every client add the sound and the red fire off its pages (WorldFx).
 function CharacterService.setManualGlow(player: Player, on: boolean)
 	local character = player.Character
 	if character then
@@ -314,16 +314,6 @@ function CharacterService.setManualGlow(player: Player, on: boolean)
 			Range = 16,
 			Brightness = 6,
 			Shadows = false,
-			Parent = core,
-		})
-		Create("ParticleEmitter", {
-			Color = ColorSequence.new(Color3.fromRGB(255, 80, 50), Color3.fromRGB(120, 10, 10)),
-			LightEmission = 1,
-			Size = NumberSequence.new(0.25, 0),
-			Lifetime = NumberRange.new(0.6, 1.2),
-			Rate = 40,
-			Speed = NumberRange.new(1.5, 3),
-			SpreadAngle = Vector2.new(25, 25),
 			Parent = core,
 		})
 		return { core }

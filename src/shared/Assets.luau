@@ -280,15 +280,7 @@ Assets.textures = {
 	SpeechNah = "", -- Nah, I'd Win's speech bubble
 	Snowflake = "",
 	Footprint = "",
-	-- (the aura kit's, Presentation/Aura)
-	AuraGlow = "",
-	AuraSpecks = "",
-	AuraTwinkle = "",
-	AuraHalo = "",
-	AuraCrescent = "",
-	AuraSpikeRing = "",
-	AuraWisp = "",
-	AuraBolt = "",
+	AuraGlow = "", -- (the UI's soft light, UI/Kit/Surfaces)
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
@@ -326,11 +318,15 @@ function Assets.audioId(entry: Audio?): string?
 	return Assets.contentId(id)
 end
 
--- An effect texture's content id: your upload, else the imported one, else "".
+-- An effect texture's content id: your upload, else the imported one, else "". The VFX kit's ("Vfx...", the Fx
+-- import's) too; in the harness place (workspace attribute DGVfxLocal) those are read from Studio's content folder.
 function Assets.texture(name: string): string
 	local id = Assets.textures[name]
 	if id and id ~= "" then
 		return Assets.contentId(id)
+	end
+	if string.sub(name, 1, 3) == "Vfx" and workspace:GetAttribute("DGVfxLocal") then
+		return "rbxasset://textures/dg_vfx_harness/" .. name .. ".png"
 	end
 	local ModelLibrary = require(script.Parent.ModelLibrary) :: any
 	return ModelLibrary.carrierTexture(name) or ""

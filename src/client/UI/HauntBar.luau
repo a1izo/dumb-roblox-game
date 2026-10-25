@@ -7,13 +7,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local LobbyGamesController = require(script.Parent.Parent.Controllers.LobbyGamesController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 local Kit = require(script.Parent.Kit)
 local LobbyChrome = require(script.Parent.Core.LobbyChrome)
 local Screens = require(script.Parent.Screens)
@@ -114,24 +114,41 @@ end
 
 local function mist(position: Vector3)
 	local part = anchorAt(position, 4)
-	local emitter = Create("ParticleEmitter", {
-		Color = ColorSequence.new(Color3.fromRGB(205, 215, 230)),
-		LightInfluence = 0.6,
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.5), NumberSequenceKeypoint.new(1, 5) }),
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1) }),
-		Lifetime = NumberRange.new(1.4, 2.4),
-		Speed = NumberRange.new(1, 3),
-		SpreadAngle = Vector2.new(180, 40),
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(-20, 20),
-		Rate = 0,
-		Parent = part,
-	})
-	local smoke = Assets.texture("Smoke")
-	if smoke ~= "" then
-		emitter.Texture = smoke
-	end
-	emitter:Emit(36)
+	-- (a cold mist welling up and rolling out low, pale specks of frost glinting in it)
+	Vfx.Emit.burst(position, {
+		{
+			{
+				tex = "VfxSmoke",
+				grid = 8,
+				mode = "OneShot",
+				color = Color3.fromRGB(205, 215, 230),
+				light = 0.05,
+				lit = 0.6,
+				size = { { 0, 1.8 }, { 1, 6 } },
+				alpha = { { 0, 0.5 }, { 0.5, 0.6 }, { 1, 1 } },
+				life = { 1.8, 2.8 },
+				speed = { 1.5, 4 },
+				spread = { 85, 30 },
+				drag = 1.2,
+				rot = { 0, 360 },
+				spin = { -20, 20 },
+				shape = Enum.ParticleEmitterShape.Box,
+			},
+			22,
+		},
+		{
+			{
+				tex = "VfxEmber",
+				color = Color3.fromRGB(220, 235, 255),
+				size = { { 0, 0 }, { 0.3, 0.12 }, { 1, 0 } },
+				life = { 1.2, 2 },
+				speed = { 0.5, 1.5 },
+				spread = 180,
+				bright = 1.3,
+			},
+			14,
+		},
+	}, nil, Vector3.new(4, 0.5, 4))
 	Sfx.play("hauntMist", { parent = part, volume = 0.6 })
 end
 

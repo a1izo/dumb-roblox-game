@@ -341,20 +341,37 @@ local function showAction(profile, item: Cosmetics.Item?)
 		Cosmetics.KIND_SINGULAR[item.kind] or item.kind
 	) .. (if item.stance then "  ·  Stance" elseif item.stroll then "  ·  Stroll" else "")
 	lookLine.TextColor3 = Rarity.color(item.rarity):Lerp(C.bone, 0.3)
-	local size = UDim2.new(1, 0, 0, T.touch)
+	-- (a win cutscene's Preview shares the row: it on the left, the buy or use button on the right; they overlapped)
+	local hasPreview = item.kind == "win" and type(item.cut) == "string"
+	local gap = T.space.s
+	local size = if hasPreview then UDim2.new(0.5, -gap / 2, 0, T.touch) else UDim2.new(1, 0, 0, T.touch)
+	local at = if hasPreview then UDim2.new(0.5, gap / 2, 0, 0) else UDim2.new()
 	local function press(text: string, action: string, variant: string)
-		Kit.button({ text = text, variant = variant, size = "m", Size = size, Parent = actionHolder }, function()
+		Kit.button({
+			text = text,
+			variant = variant,
+			size = "m",
+			Size = size,
+			Position = at,
+			Parent = actionHolder,
+		}, function()
 			flaring = if action == "equip" then item.id else nil
 			ShopRequest:FireServer({ action = action, itemId = item.id })
 		end)
 	end
 	local function closed(text: string)
-		local button =
-			Kit.button({ text = text, variant = "secondary", size = "m", Size = size, Parent = actionHolder })
+		local button = Kit.button({
+			text = text,
+			variant = "secondary",
+			size = "m",
+			Size = size,
+			Position = at,
+			Parent = actionHolder,
+		})
 		Kit.setEnabled(button, false)
 	end
 	-- a win cutscene: watch it first, starring you (the shop steps aside while it plays)
-	if item.kind == "win" and type(item.cut) == "string" then
+	if hasPreview then
 		Kit.button(
 			{ text = "Preview", variant = "secondary", size = "m", Size = size, Parent = actionHolder },
 			function()
@@ -436,6 +453,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 			variant = "primary",
 			size = "m",
 			Size = size,
+			Position = at,
 			Parent = actionHolder,
 		}, held)
 		actionNote.Text = if confirming == item.id
