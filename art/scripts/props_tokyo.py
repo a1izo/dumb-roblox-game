@@ -13,6 +13,7 @@ x = y = 0 with their anchor there, so a map places the pole's foot where it asks
 carries its own light (props.prop)."""
 
 import math
+import random
 
 import modelkit as mk
 import propkit as pk
@@ -425,25 +426,40 @@ def scooter():
 
 @prop("Planter", pivot="bottom", material="Concrete", collide=True, texture=1024, set="Tokyo")
 def planter():
-    """A long precast planter with a chamfered rim, full of clipped shrubs and a few flowers."""
+    """A long precast planter with a chamfered rim, full of a clipped hedge (dozens of small leaf clumps crowded over
+    a dark core, so it reads leaf by leaf) with pink flowers among it, each a little cluster of petals round its
+    eye."""
+    from props_lobby import _blob
+
+    rng = random.Random(41)
     concrete = mk.noisy("PL_Concrete", srgb(132, 128, 120), srgb(168, 164, 156), scale=9, roughness=0.85)
     soil = mk.noisy("PL_Soil", srgb(40, 30, 22), srgb(66, 50, 36), scale=20, roughness=0.95)
-    leaf = mk.noisy("PL_Leaf", srgb(34, 64, 30), srgb(70, 110, 52), scale=24, roughness=0.8)
+    leaves = [mk.noisy("PL_Leaf", srgb(34, 64, 30), srgb(70, 110, 52), scale=60, roughness=0.8),
+              mk.noisy("PL_Leaf2", srgb(42, 76, 36), srgb(82, 122, 60), scale=60, roughness=0.8)]
+    core_mat = mk.noisy("PL_Core", srgb(18, 34, 18), srgb(36, 58, 30), scale=40, roughness=0.9)
     petal = mk.flat("PL_Flower", srgb(230, 150, 190), 0.6)
+    eye = mk.flat("PL_FlowerEye", srgb(240, 210, 90), 0.6)
     parts = [pk.rounded("Box", (6.4, 1.9, 1.7), (0, 0, 0.85), concrete, r=0.08),
              mk.box("Rim", (6.6, 2.1, 0.18), (0, 0, 1.75), mat=concrete, bevel=0.05),
-             mk.box("Soil", (6.1, 1.6, 0.1), (0, 0, 1.7), mat=soil)]
-    k = 0
-    for i in range(7):
-        x = -2.7 + i * 0.9
-        for j, y in enumerate((-0.35, 0.35)):
-            s = 0.62 + 0.12 * math.sin(k * 1.7)
-            parts.append(mk.sphere("Shrub", s, (x + 0.2 * j, y, 1.9 + s * 0.5), scale=(1, 1, 0.8), mat=leaf,
-                                   segments=10, rings=6))
-            k += 1
-    for i in range(9):
-        parts.append(mk.sphere("Flower", 0.1, (-2.8 + i * 0.7, -0.75 + 0.2 * (i % 2), 2.35 + 0.1 * (i % 3)),
-                               mat=petal, segments=6, rings=4))
+             mk.box("Soil", (6.1, 1.6, 0.1), (0, 0, 1.7), mat=soil),
+             _blob("Core", [("ellipsoid", (x, 0, 1.75), 0.72, (1.2, 0.95, 0.75)) for x in (-2.1, -1.05, 0.0, 1.05, 2.1)],
+                   0.12, 0.5, core_mat)]
+    tops = []
+    for k in range(64):
+        x = rng.uniform(-2.85, 2.85)
+        y = rng.uniform(-0.62, 0.62)
+        z = 1.78 + 0.62 * (1 - (y / 0.8) ** 2) * (1 - (abs(x) / 3.3) ** 6) + rng.uniform(-0.05, 0.1)
+        r = rng.uniform(0.26, 0.36)
+        clump = mk.sphere("Clump", r, (x, y, z), scale=(1, 1, 0.82), mat=rng.choice(leaves), segments=8, rings=6)
+        mk.displace_noise(clump, strength=r * 0.4, scale=r * 0.6, name="PlanterClump")
+        parts.append(clump)
+        tops.append((x, y, z + r * 0.72))
+    for x, y, z in rng.sample(tops, 12):
+        parts.append(mk.sphere("FlowerEye", 0.035, (x, y, z + 0.02), mat=eye, segments=6, rings=4))
+        for p in range(5):
+            a = 2 * math.pi * p / 5
+            parts.append(mk.sphere("Petal", 0.05, (x + math.cos(a) * 0.06, y + math.sin(a) * 0.06, z), scale=(1, 1, 0.45),
+                                   mat=petal, segments=6, rings=4))
     return parts, []
 
 
@@ -626,27 +642,51 @@ def police_car():
 
 @prop("Crow", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Tokyo")
 def crow():
-    """A crow perched with its wings folded, beak to -Y: a glossy blue-black body and head, a heavy
-    beak, a wedge tail, thin legs and feet. A little bigger than life, so it reads from the street."""
+    """A crow perched with its wings folded, beak to -Y: one smooth glossy blue-black form of body, breast, neck and
+    head; each wing laid along its side as rows of long flight feathers under its coverts; the tail fanned in long
+    feathers; the heavy two-part beak; dark eyes; thin scaled legs with three toes forward and one back. A little
+    bigger than life, so it reads from the street."""
+    from props_lobby import _blob
+
     feather = mk.noisy("CR_Feather", srgb(8, 8, 12), srgb(34, 38, 52), scale=34, roughness=0.32)
     wing = mk.noisy("CR_Wing", srgb(6, 6, 10), srgb(26, 28, 40), scale=26, roughness=0.3)
     beak = pk.plastic("CR_Beak", (46, 44, 46), rough=0.3)
-    eye = pk.plastic("CR_Eye", (170, 172, 180), rough=0.2)
-    parts = [
-        mk.sphere("Body", 1.0, (0, 0.12, 1.0), scale=(0.4, 0.82, 0.46), mat=feather, segments=18, rings=12),
-        mk.sphere("Chest", 1.0, (0, -0.4, 1.12), scale=(0.34, 0.4, 0.4), mat=feather, segments=14, rings=10),
-        mk.sphere("Head", 0.3, (0, -0.72, 1.5), mat=feather, segments=14, rings=10),
-        mk.cylinder("Beak", 0.14, 0.58, (0, -1.08, 1.46), rot=(90, 0, 0), radius2=0.02, mat=beak, verts=10),
-        mk.box("Tail", (0.36, 1.0, 0.09), (0, 0.98, 0.92), rot=(-18, 0, 0), mat=wing, bevel=0.03),
-        mk.sphere("WingL", 1.0, (-0.38, 0.22, 1.04), scale=(0.1, 0.78, 0.36), mat=wing, segments=12, rings=8),
-        mk.sphere("WingR", 1.0, (0.38, 0.22, 1.04), scale=(0.1, 0.78, 0.36), mat=wing, segments=12, rings=8),
-    ]
+    eye = pk.plastic("CR_Eye", (24, 22, 24), rough=0.08)
+    leg = pk.plastic("CR_Leg", (34, 32, 34), rough=0.6)
+    body = _blob("Body", [("ellipsoid", (0, 0.12, 1.0), 0.42, (0.95, 1.85, 1.05)),
+                          ("ellipsoid", (0, -0.38, 1.12), 0.36, (0.95, 1.1, 1.1)),
+                          ("capsule", (0, -0.5, 1.22), (0, -0.7, 1.46), 0.2),
+                          ("ellipsoid", (0, -0.74, 1.52), 0.27, (0.95, 1.1, 0.95))], 0.05, 0.5, feather)
+    parts = [body,
+             # the beak: the upper mandible curving down over the lower
+             mk.cylinder("Beak", 0.12, 0.52, (0, -1.1, 1.5), rot=(96, 0, 0), radius2=0.02, mat=beak, verts=12),
+             mk.cylinder("BeakLow", 0.08, 0.36, (0, -1.03, 1.42), rot=(84, 0, 0), radius2=0.015, mat=beak, verts=10)]
     for sx in (-1, 1):
-        parts += [
-            mk.cylinder("Leg", 0.045, 0.62, (sx * 0.15, -0.02, 0.31), mat=beak, verts=6),
-            mk.box("Foot", (0.1, 0.34, 0.05), (sx * 0.15, -0.14, 0.03), mat=beak),
-            mk.sphere("Eye", 0.055, (sx * 0.2, -0.88, 1.56), mat=eye, segments=8, rings=6),
-        ]
+        parts.append(mk.sphere("Eye", 0.05, (sx * 0.2, -0.88, 1.6), mat=eye, segments=10, rings=6))
+        # The wing: coverts over the shoulder, then the long flight feathers laid back along the side, each a
+        # little lower and longer than the one before.
+        parts.append(mk.sphere("Covert", 1.0, (sx * 0.4, 0.0, 1.12), scale=(0.1, 0.5, 0.3), mat=wing, segments=12, rings=8))
+        for f in range(5):
+            shape = [(0.0, 0.0), (0.1, 0.1), (0.11, 0.9), (0.03, 1.15), (-0.03, 1.1), (-0.06, 0.1)]
+            plume = mk.extrude_shape("Flight", shape, 0.025, mat=wing, bevel=0.008)
+            plume.scale = (1.0, 0.85 + 0.06 * f, 1.0)
+            plume.rotation_euler = (math.radians(-10 - 3 * f), math.radians(90 * sx), math.radians(0))
+            plume.location = (sx * (0.44 + 0.012 * f), -0.1 + 0.08 * f, 1.2 - 0.05 * f)
+            parts.append(plume)
+        # A leg: its scaled shin, three toes forward and one back.
+        parts.append(mk.tube("Leg", (sx * 0.15, -0.02, 0.62), (sx * 0.15, -0.06, 0.05), 0.04, 0.03, mat=leg, verts=6))
+        for t in (-25, 0, 25):
+            a = math.radians(t)
+            parts.append(mk.tube("Toe", (sx * 0.15, -0.06, 0.04), (sx * 0.15 + math.sin(a) * 0.2, -0.06 - math.cos(a) * 0.2,
+                                 0.02), 0.022, 0.01, mat=leg, verts=5))
+        parts.append(mk.tube("Toe", (sx * 0.15, -0.06, 0.04), (sx * 0.15, 0.1, 0.02), 0.02, 0.01, mat=leg, verts=5))
+    # The tail, fanned a little, tilted down behind.
+    for f in range(5):
+        shape = [(-0.08, 0.0), (0.08, 0.0), (0.09, 0.9), (0.0, 1.0), (-0.09, 0.9)]
+        tail = mk.extrude_shape("Tail", shape, 0.03, mat=wing, bevel=0.008)
+        tail.rotation_euler = (math.radians(-18), 0, math.radians((f - 2) * 7))
+        tail.location = ((f - 2) * 0.03, 0.62, 0.95 - abs(f - 2) * 0.01)
+        parts.append(tail)
     return parts, []
 
 

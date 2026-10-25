@@ -114,11 +114,11 @@ HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLi
 # the cherry tree, larger in their newer shapes, are built and then scaled to fit inside the kept one's box
 # (FIT_TO_KEPT), so the lanes and racks laid out for them still hold them. Still KEPT: the ticket gates (the newer
 # ones half as wide, which opens gaps in the gate lines), the station clock (larger), the security-camera station
-# (the newer one hides two stations' screens), the vending machines (the newer ones plainer) and the beer crates (no
-# better). To take one of these: remove the name here, build it, and run
+# (the newer one hides two stations' screens) and the vending machines (the newer ones plainer); the beer crates were
+# rebuilt as open crates of bottles, fitted to the kept box. To take one of these: remove the name here, build it, and run
 # maps/check_v2.py on every map that places it.
 KEPT = frozenset("""
-    BeerCrates StationCCTV StationClock TicketGate VendingBlue VendingWhite
+    StationCCTV StationClock TicketGate VendingBlue VendingWhite
 """.split())
 # (each one's kept box, x across, y deep, z high: what the district was laid out around)
 FIT_TO_KEPT = {
@@ -130,6 +130,7 @@ FIT_TO_KEPT = {
     "Taxi": (5.74, 14.0, 5.28),
     "TreeSakura": (11.26, 10.14, 13.72),
     "SiteFence": (8.0, 2.57, 10.0),
+    "BeerCrates": (3.1, 1.9, 3.475),
     # (and two Core props remade the same way, for the beds and the parking laid out round their old shapes)
     "Tree": (7.642, 8.402, 13.717),
     "Car": (5.4, 10.9, 3.444),

@@ -90,19 +90,42 @@ def noren():
 
 @prop("BeerCrates", pivot="bottom", material="Plastic", collide=True, texture=512, set="Tokyo")
 def beer_crates():
-    """Two plastic crates of empty bottles stacked by a door, handles cut in their ends."""
-    crate = pk.plastic("BC_Crate", (180, 50, 30))
+    """Two plastic beer crates of empty bottles stacked by a door: each an open lattice of rails and ribs round a
+    floor (the bottles show through it), corner posts, a handle cut in each end, twenty brown bottles standing in
+    it in rows of five."""
+    crate = pk.plastic("BC_Crate", (184, 40, 32))
+    yellow = pk.plastic("BC_Yellow", (222, 176, 40))
     glass = mk.noisy("BC_Bottle", srgb(70, 40, 12), srgb(110, 66, 24), scale=6, roughness=0.15)
-    dark = pk.plastic("BC_Dark", (60, 20, 12))
+    cap = pk.metal("BC_Cap", (150, 140, 110), (196, 186, 150), rough=0.3, metallic=0.8)
+    dark = pk.plastic("BC_Dark", (40, 14, 10))
+    w, d, h = 3.0, 1.9, 1.5
     parts = []
-    for z in (0.0, 1.55):
-        parts.append(pk.rounded("Crate", (3.0, 1.9, 1.5), (0, 0, z + 0.75), crate, r=0.06))
+    for k, z in enumerate((0.0, h - 0.02)):  # (the upper crate's foot sits a little into the lower one's rim)
+        mat = crate if k == 0 else yellow
+        parts.append(mk.box("Floor", (w - 0.1, d - 0.1, 0.1), (0, 0, z + 0.05), mat=mat))
         for sx in (-1, 1):
-            parts.append(mk.box("Grip", (0.05, 0.8, 0.25), (sx * 1.51, 0, z + 1.15), mat=dark))
-        for i in range(4):
-            for j in range(2):
-                x, y = -1.05 + i * 0.7, -0.45 + j * 0.9
-                parts.append(mk.cylinder("Neck", 0.12, 0.35, (x, y, z + 1.6), mat=glass, verts=8))
+            for sy in (-1, 1):
+                parts.append(pk.rounded("Post", (0.16, 0.16, h), (sx * (w / 2 - 0.08), sy * (d / 2 - 0.08), z + h / 2), mat,
+                                        r=0.04))
+        # The long sides: three rails and six ribs; the ends: two rails round the handle's slot and three ribs.
+        for sy in (-1, 1):
+            y = sy * (d / 2 - 0.04)
+            for rz in (0.08, 0.72, h - 0.1):
+                parts.append(mk.box("Rail", (w - 0.2, 0.08, 0.14), (0, y, z + rz), mat=mat, bevel=0.02))
+            for i in range(6):
+                parts.append(mk.box("Rib", (0.09, 0.08, h - 0.2), (-1.2 + i * 0.48, y, z + h / 2), mat=mat))
+        for sx in (-1, 1):
+            x = sx * (w / 2 - 0.04)
+            for rz in (0.08, h - 0.38, h - 0.08):
+                parts.append(mk.box("EndRail", (0.08, d - 0.2, 0.14), (x, 0, z + rz), mat=mat, bevel=0.02))
+            parts.append(mk.box("Handle", (0.06, 0.6, 0.18), (x + sx * 0.005, 0, z + h - 0.23), mat=dark))
+            for i in range(3):
+                parts.append(mk.box("EndRib", (0.08, 0.09, h - 0.6), (x, -0.5 + i * 0.5, z + (h - 0.45) / 2), mat=mat))
+        # Twenty bottles in four rows of five.
+        for i in range(5):
+            for j in range(4):
+                bx, by = -1.12 + i * 0.56, -0.63 + j * 0.42
+                parts += pk.bottle("Bottle", bx, by, z + 0.1, glass, cap, r=0.17, h=1.3)
     return parts, []
 
 

@@ -10,7 +10,7 @@ station's worker stands on the side it faces."""
 
 import math
 
-from maps import city, kit
+from maps import catalog, city, kit
 from maps import geo2d as g2
 from maps.buildings import edges_of, grow
 from maps.venues.tokyo import plan as P
@@ -593,7 +593,8 @@ def izakaya(s, g):
         s.prop("BarStool", x, 85.2, 0)
     partition(s, (-89.4, 80.2), (-77.6, 80.2), 0.0, CEIL, "WoodPanel", door=(9.0, 3.6))
     s.prop("BeerCrates", -87.4, 77.2, 90)
-    s.prop("BeerCrates", -87.4, 77.2, 90, 1.0, 3.48)
+    # (a second stack on the first, standing on its top crate's rim)
+    s.prop("BeerCrates", -87.4, 77.2, 90, 1.0, catalog.load()["BeerCrates"]["size"][1] - 0.02)
     s.prop("Crate", -84.4, 76.6, 15, 0.6)
     lights(s, [(-83.5, 84.0)], brightness=1.2, range_=14, color=(255, 200, 150))
     lights(s, [(-84.0, 76.0)], brightness=0.8, range_=10, color=(255, 200, 150))

@@ -88,13 +88,32 @@ def karaoke_speaker():
 
 @prop("MirrorBall", pivot="centre", material="Metal", collide=False, texture=512, set="Tokyo")
 def mirror_ball():
-    """A mirror ball 1.6 across on its chain and motor, hung from the ceiling."""
-    mirror = pk.metal("MB_Mirror", (190, 196, 206), (230, 234, 240), rough=0.05, metallic=1.0, scale=40)
+    """A mirror ball 1.6 across on its chain and motor, hung from the ceiling: hundreds of little square mirrors,
+    each set at its own glint, with dark grout between them."""
+    import bmesh
+
+    rng = random.Random(9)
+    mirrors = [pk.metal(f"MB_Mirror{k}", (150 + 30 * k, 156 + 30 * k, 166 + 30 * k), (200 + 18 * k, 204 + 18 * k,
+               212 + 16 * k), rough=0.05, metallic=1.0, scale=40) for k in range(3)]
+    grout = pk.metal("MB_Grout", (40, 40, 44), (60, 60, 66), rough=0.6, metallic=0.4)
     chrome = pk.chrome("MB_Chrome")
-    parts = [mk.sphere("Ball", 0.8, (0, 0, 0), mat=mirror, segments=14, rings=10),
-             mk.cylinder("Motor", 0.18, 0.3, (0, 0, 1.0), mat=chrome, verts=10),
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=28, v_segments=18, radius=0.8)
+    tiles = list(bm.faces)
+    bmesh.ops.inset_individual(bm, faces=tiles, thickness=0.012, depth=0.004)
+    bm.faces.index_update()
+    tile_ids = set(f.index for f in tiles)  # (each tile one of the three glints; the inset's rims keep the grout)
+    ball = mk._obj_from_bm("Ball", bm, grout)
+    for m in mirrors:
+        ball.data.materials.append(m)
+    for poly in ball.data.polygons:
+        poly.use_smooth = False
+        if poly.index in tile_ids:
+            poly.material_index = 1 + rng.randrange(3)
+    parts = [ball,
+             mk.cylinder("Motor", 0.18, 0.3, (0, 0, 1.0), mat=chrome, verts=12),
              mk.cylinder("Chain", 0.03, 1.4, (0, 0, 1.85), mat=chrome, verts=4),
-             mk.cylinder("Mount", 0.25, 0.08, (0, 0, 2.55), mat=chrome, verts=10)]
+             mk.cylinder("Mount", 0.25, 0.08, (0, 0, 2.55), mat=chrome, verts=12)]
     return parts, []
 
 
