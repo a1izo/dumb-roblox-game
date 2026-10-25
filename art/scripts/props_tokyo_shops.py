@@ -348,11 +348,40 @@ def clothes_rack():
     return parts, []
 
 
+def mannequin_head(name, at, size, mat):
+    """A shop mannequin's head and neck (2026-10-25, the owner: "i dont like the mannequin head it looks weird redo
+    it"): faceless as a display head is, but shaped like a head and not an egg on a stick: one smooth form blended from
+    the skull's round, the face's flatter mass, a narrow jaw to a small chin, the ridge of a nose, a soft brow,
+    cheekbones (soft sockets for eyes between them and the brow), the ears' faint shells, and a full neck down into the collar.
+    `at` is the middle of the head, `size` its height; it faces -Y, turned a touch to one side."""
+    from mathutils import Matrix
+
+    from props_lobby import _blob
+
+    elements = [
+        ("ellipsoid", (0, 0.06, 0.12), 0.5, (0.8, 1.0, 1.0)),  # the skull
+        ("ellipsoid", (0, -0.16, -0.1), 0.37, (0.8, 0.9, 1.15)),  # the face
+        ("ellipsoid", (0, -0.25, -0.42), 0.19, (1.05, 0.95, 0.8)),  # the jaw and chin
+        ("ellipsoid", (0, -0.4, -0.3), 0.06, (1.6, 0.8, 0.7)),  # the lips' soft swell
+        ("capsule", (0, -0.42, 0.1), (0, -0.5, -0.1), 0.055),  # the nose
+        ("capsule", (-0.19, -0.37, 0.17), (0.19, -0.37, 0.17), 0.065),  # the brow
+        ("ball", (-0.21, -0.31, -0.05), 0.1),  # cheekbones
+        ("ball", (0.21, -0.31, -0.05), 0.1),
+        ("ellipsoid", (-0.41, 0.03, 0.0), 0.09, (0.5, 0.8, 1.3)),  # the ears
+        ("ellipsoid", (0.41, 0.03, 0.0), 0.09, (0.5, 0.8, 1.3)),
+        ("capsule", (0, 0.06, -0.3), (0, 0.1, -0.95), 0.19),  # the neck, down into the collar
+    ]
+    head = _blob(name, elements, 0.045, 0.8, mat)
+    turn = Matrix.Rotation(math.radians(-12), 4, "Z") @ Matrix.Rotation(math.radians(4), 4, "X")
+    head.data.transform(Matrix.Translation(at) @ turn @ Matrix.Diagonal((size, size, size, 1.0)))
+    return head
+
+
 @prop("Mannequin", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Tokyo")
 def mannequin():
     """A dressed display mannequin: a smooth grey figure in a long coat and scarf on a round glass
     base, arms at its sides, its face blank."""
-    skin = pk.plastic("MN_Skin", (200, 200, 196))
+    skin = pk.plastic("MN_Skin", (214, 212, 206), rough=0.22)
     coat = mk.noisy("MN_Coat", srgb(90, 70, 50), srgb(120, 96, 70), scale=24, roughness=0.9)
     scarf = mk.noisy("MN_Scarf", srgb(150, 30, 40), srgb(190, 50, 60), scale=24, roughness=0.9)
     base = pk.dark_glass("MN_Base", (60, 70, 80))
@@ -360,12 +389,12 @@ def mannequin():
              mk.cylinder("Rod", 0.05, 0.9, (0, 0.2, 0.55), mat=pk.chrome("MN_Rod"), verts=6),
              mk.lathe("Coat", [(0.0, 0.9), (0.72, 0.95), (0.62, 2.6), (0.56, 3.6), (0.7, 4.3), (0.36, 4.7), (0.0, 4.75)],
                       mat=coat, segments=18),
-             mk.cylinder("Neck", 0.16, 0.4, (0, 0, 4.9), mat=skin, verts=10),
-             mk.sphere("Head", 0.42, (0, 0, 5.55), scale=(0.85, 0.9, 1.1), mat=skin, segments=14, rings=10),
+             # (the neck flaring out of the collar into the head's underside, the head sculpted: mannequin_head)
+             mannequin_head("Head", (0, -0.03, 5.45), 0.95, skin),
              mk.torus("Scarf", 0.3, 0.12, (0, 0, 4.75), mat=scarf, major_segments=16, minor_segments=6)]
     for sx in (-1, 1):
-        parts += [mk.tube("Arm", (sx * 0.72, 0, 4.3), (sx * 0.78, 0.05, 2.5), 0.16, 0.13, mat=coat, verts=8),
-                  mk.sphere("Hand", 0.13, (sx * 0.78, 0.05, 2.35), mat=skin, segments=8, rings=6)]
+        parts += [mk.tube("Arm", (sx * 0.72, 0, 4.3), (sx * 0.78, 0.05, 2.5), 0.16, 0.13, mat=coat, verts=10),
+                  mk.sphere("Hand", 0.13, (sx * 0.78, 0.05, 2.36), scale=(0.7, 0.9, 1.4), mat=skin, segments=12, rings=8)]
     return parts, []
 
 
@@ -413,6 +442,6 @@ def fitting_room():
              mk.tube("Rod", (-1.9, -1.8, 7.5), (1.9, -1.8, 7.5), 0.04, mat=chrome, verts=6),
              mk.box("Curtain", (2.2, 0.1, 7.0), (-0.9, -1.8, 4.0), mat=curtain),
              mk.cylinder("Stool", 0.5, 1.6, (1.2, 1.0, 0.8), mat=panel, verts=16),
-             mk.tube("Hook", (-1.85, 1.0, 5.8), (-1.6, 1.0, 5.9), 0.03, mat=chrome, verts=4)]
+             mk.tube("Hook", (-1.94, 1.0, 5.8), (-1.6, 1.0, 5.9), 0.03, mat=chrome, verts=4)]
     glows = [mk.box("Light", (1.5, 1.5, 0.05), (0, 0, 7.95), mat=pk.glow("FR_Light", (255, 236, 210), 2.5))]
     return parts, glows

@@ -106,16 +106,16 @@ def ribs(s, taken, rng):
         side = (-along[1], along[0])
         for rib in range(6):
             base = (cx + along[0] * rib * span * 0.18, cz + along[1] * rib * span * 0.18)
-            prev = None
+            points, radii = [], []
             for q in range(9):
                 u = q / 8
                 ang = math.pi * u
                 px = base[0] + side[0] * math.cos(ang) * span / 2
                 pz = base[1] + side[1] * math.cos(ang) * span / 2
                 py = math.sin(ang) * height * (1 - 0.12 * rib) - 2.0
-                if prev:
-                    s.tube("BoneOld", prev, (px, py, pz), 3.2 - 1.2 * abs(u - 0.5), 7, caps=False)
-                prev = (px, py, pz)
+                points.append((px, py, pz))
+                radii.append(3.2 - 1.2 * abs(u - 0.5))
+            s.bent_tube("BoneOld", points, radii, 7)
         for q in range(7):
             a0 = (cx + along[0] * (q - 0.5) * span * 0.18, height - 4 - q * 2.2, cz + along[1] * (q - 0.5) * span * 0.18)
             s.lathe("BoneOld", a0, [(0.0, -3.0), (4.2, -2.2), (4.6, 0.0), (4.2, 2.2), (0.0, 3.0)], 9, caps=(False, False))

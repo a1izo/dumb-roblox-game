@@ -189,7 +189,7 @@ def floor_globe():
         for t in range(3):
             parts.append(mk.tube("Leg", pts[t], pts[t + 1], 0.13, 0.11, mat=wood, verts=7))
     parts += [mk.cylinder("Stretcher", 0.9, 0.12, (0, 0, 0.9), mat=wood, verts=16),
-              mk.cylinder("Finial", 0.18, 0.5, (0, 0, 0.55), mat=metal, verts=8, radius2=0.05),
+              mk.cylinder("Finial", 0.18, 0.5, (0, 0, 0.62), mat=metal, verts=8, radius2=0.05),
               mk.tube("Axis", (-0.47, 0, 2.3), (0.47, 0, 4.5), 0.03, mat=metal, verts=5)]
     return parts, []
 
@@ -256,7 +256,7 @@ def bookcase_tall():
             parts.append(mk.box("Book", (bw, d - 0.5, bh), (x + bw / 2, 0.05, z0 + 0.05 + bh / 2), rot=(0, lean, 0),
                                 mat=rng.choice(spines)))
             if rng.random() < 0.4:
-                parts.append(mk.box("Gilt", (bw * 0.8, 0.02, 0.06), (x + bw / 2, -d / 2 + 0.24, z0 + 0.05 + bh * 0.75),
+                parts.append(mk.box("Gilt", (bw * 0.8, 0.02, 0.06), (x + bw / 2, -d / 2 + 0.295, z0 + 0.05 + bh * 0.75),
                                     mat=gold))
             x += bw + rng.uniform(0.0, 0.03)
     # The glazing bars over the upper shelves (no glass: it would bake opaque over the books).
@@ -282,10 +282,9 @@ def club_chair():
     for sx in (-1, 1):
         parts += [pk.rounded("Arm", (0.6, 3.0, 1.4), (sx * 1.35, 0, 1.95), hide, r=0.28),
                   mk.cylinder("Roll", 0.42, 0.6, (sx * 1.35, -1.35, 2.25), rot=(0, 90, 0), mat=hide, verts=12)]
-        for k in range(9):
-            a = math.pi * k / 8
-            parts.append(mk.sphere("Nail", 0.04, (sx * 1.35 + math.cos(a) * 0.45 * 0.9, -1.58, 2.25 + math.sin(a) * 0.45),
-                                   mat=metal, segments=5, rings=3))
+        for k in range(7):  # (a row of nail heads across the arm's front, under the roll)
+            parts.append(mk.sphere("Nail", 0.045, (sx * 1.35 + (k - 3) * 0.08, -1.52, 1.45), mat=metal, segments=6,
+                                   rings=4))
         for y in (-1.2, 1.2):
             parts.append(mk.cylinder("Foot", 0.14, 0.3, (sx * 1.3, y, 0.15), mat=wood, verts=8, radius2=0.1))
     return parts, []

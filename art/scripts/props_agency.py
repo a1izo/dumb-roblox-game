@@ -209,7 +209,7 @@ def elevator_doors():
     parts += [mk.box("Seam", (0.03, 0.14, 8.0), (0, -0.05, 4.0), mat=dark),
               mk.box("Sill", (4.6, 0.6, 0.06), (0, -0.2, 0.03), mat=steel),
               mk.box("IndicatorBox", (2.2, 0.2, 0.7), (0, -0.15, 8.75), mat=dark, bevel=0.03),
-              mk.box("ButtonPlate", (0.5, 0.12, 1.2), (2.85, -0.05, 4.2), mat=steel, bevel=0.02)]
+              mk.box("ButtonPlate", (0.5, 0.12, 1.2), (2.85, -0.005, 4.2), mat=steel, bevel=0.02)]
     glows = [mk.box("Floor", (1.4, 0.04, 0.4), (0, -0.27, 8.75), mat=pk.glow("Lift_Floor", (255, 150, 60), 3)),
              mk.cylinder("Call", 0.1, 0.05, (2.85, -0.13, 4.45), rot=(90, 0, 0), mat=pk.glow("Lift_Call", (255, 244, 220), 3),
                          verts=12),
@@ -486,7 +486,7 @@ def coffee_machine():
              mk.box("Plate", (1.0, 1.1, 0.12), (0, -0.1, 0.06), mat=black, bevel=0.03),
              mk.cylinder("Jug", 0.36, 0.7, (0, -0.35, 0.47), mat=steel, verts=16),
              mk.cylinder("Coffee", 0.33, 0.35, (0, -0.35, 0.32), mat=coffee, verts=16),
-             mk.box("Handle", (0.08, 0.3, 0.45), (0.45, -0.35, 0.5), mat=black)]
+             mk.box("Handle", (0.08, 0.3, 0.45), (0.395, -0.35, 0.5), mat=black)]
     glows = [mk.box("Power", (0.1, 0.04, 0.08), (0.35, -0.12, 1.45), mat=pk.glow("Cof_Power", (255, 60, 40), 4))]
     return parts, glows
 

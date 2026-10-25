@@ -322,14 +322,14 @@ def bell(s):
     base(s, x, z, P.BELL_R, 0.5, 531)
     top = 11.6
     for side in (-1, 1):
-        prev = f.w3(side * 2.9, 0.3, 0.0)
-        for q in range(1, 9):
+        points, radii = [], []
+        for q in range(9):
             u = q / 8
             # Out a little, then in and over: the two cross just past the middle.
             lx = side * (2.9 + 1.5 * math.sin(u * math.pi) - 3.6 * u * u)
-            p = f.w3(lx, 0.3 + (top - 0.3) * u, side * 0.35 * u)
-            s.tube("BoneWhite", prev, p, 0.62 * (1 - u * 0.72), 8, caps=False, radius_b=0.62 * (1 - (u + 0.125) * 0.72))
-            prev = p
+            points.append(f.w3(lx, 0.3 + (top - 0.3) * u, side * 0.35 * u))
+            radii.append(0.62 * (1 - u * 0.72))
+        s.bent_tube("BoneWhite", points, radii, 8)
         fx, fz = f.w(side * 2.9, 0.0)
         s.collider((fx, 3.6, fz), (1.5, 7.2, 1.5), rot, True, "BoneWhite")
     # The yoke it hangs from, lashed where the tusks cross; the bell; its clapper.
@@ -536,16 +536,18 @@ def carcass(s):
         if not ribbed:
             continue
         # the ribs: from the process's end out and down to a foot in the ash either side
+        # (each one bar, bent, so no seam opens at its bends; its head thin enough to start inside the process)
         for sgn in (-1, 1):
-            prev = (px + side[0] * sgn * 2.6, py - 0.5, pz + side[1] * sgn * 2.6)
+            rib = [(px + side[0] * sgn * 2.6, py - 0.5, pz + side[1] * sgn * 2.6)]
+            radii = [0.6]
             for q in range(1, 9):
                 u = q / 8
                 ang = u * math.pi / 2
                 reach = 2.6 + (P.RIB_SPAN - 2.6) * math.sin(ang) * 1.03
                 height = (py - 0.5) * math.cos(ang) + 1.8 * math.sin(ang * 2) - 0.6 * math.sin(ang)
-                p = (px + side[0] * sgn * reach, height, pz + side[1] * sgn * reach)
-                s.tube("BoneWhite", prev, p, 0.9 - 0.3 * u, 7, caps=False, radius_b=0.9 - 0.3 * (u + 0.125))
-                prev = p
+                rib.append((px + side[0] * sgn * reach, height, pz + side[1] * sgn * reach))
+                radii.append(0.9 - 0.3 * u)
+            s.bent_tube("BoneWhite", rib, radii, 7)
             fx, fz = px + side[0] * sgn * P.RIB_SPAN, pz + side[1] * sgn * P.RIB_SPAN
             s.collider((fx, 3.5, fz), (2.6, 7.0, 2.6), 0.0, True, "BoneWhite")
     # Bones strewn inside the cage, between the ribs' feet (clear of them).

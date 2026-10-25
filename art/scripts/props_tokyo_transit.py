@@ -320,9 +320,14 @@ def train_car_open():
         parts.append(mk.cylinder("Pole", 0.08, roof_z - floor_z, (W / 2 - 0.8, py, (floor_z + roof_z) / 2), mat=pole, verts=10))
     parts.append(mk.cylinder("Pole", 0.08, roof_z - floor_z, (0.0, DOOR_Y, (floor_z + roof_z) / 2), mat=pole, verts=10))
     parts.append(mk.cylinder("Rail", 0.06, y1 - y0 - 0.6, (0.6, DOOR_Y, roof_z - 0.9), rot=(90, 0, 0), mat=pole, verts=8))
+    for k in range(5):  # (the rail's brackets up to the ceiling)
+        by = y0 + 0.8 + k * (y1 - y0 - 1.6) / 4
+        parts.append(mk.cylinder("RailBracket", 0.04, 0.85, (0.6, by, roof_z - 0.5), mat=pole, verts=6))
     for k in range(6):
         sy = y0 + 1.5 + k * 2.3
-        parts.append(mk.box("Strap", (0.06, 0.4, 0.9), (0.6, sy, roof_z - 1.5), mat=trim))
+        parts.append(mk.box("Strap", (0.06, 0.3, 0.9), (0.6, sy, roof_z - 1.36), mat=trim))
+        parts.append(mk.torus("StrapRing", 0.16, 0.035, (0.6, sy, roof_z - 1.95), rot=(0, 90, 0), mat=trim,
+                              major_segments=12, minor_segments=5))
     # outside, as the other cars
     for sx in (-1, 1):
         x = sx * (W / 2 + 0.01)

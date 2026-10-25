@@ -147,7 +147,7 @@ def locker_room(s):
     for z in (82.0, 88.2, 94.4):
         s.prop("CoinLockers", KX1 - 1.4, z, 90)
     for z in (88.0, 94.2):
-        s.prop("CoinLockers", -107.6, z, -90)
+        s.prop("CoinLockers", -107.5, z, -90)
     s.prop("Bench", -99.0, 91.0, 90)
     s.station("Fingerprint", "Club Locker Prints", -99.0, 106.3, 0, prop="StationPrintKit", spare=True)
     for z in (84.0, 98.0):

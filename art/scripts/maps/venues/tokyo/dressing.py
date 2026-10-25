@@ -10,7 +10,7 @@ a sign (props carry their own lights; map fittings are built next to theirs)."""
 import math
 import random
 
-from maps import city, kit, lightbook
+from maps import catalog, city, kit, lightbook
 from maps import geo2d as g2
 from maps.buildings import edges_of
 from maps.venues.tokyo import plan as P
@@ -175,7 +175,7 @@ def streets(s):
         s.prop("Scooter", x, z, rot + 90)
     (x, z), d, into = kerb("minami", -1, 50.0, -2.8)
     s.prop("KeiTruck", x, z, g2.rot_of(d) + 90)
-    s.collider((x, 2.7, z), (5.2, 5.4, 11.0), g2.rot_of(d) + 90, True, None)
+    s.collider((x, 2.7, z), (5.2, 5.4, 9.6), g2.rot_of(d) + 90, True, None)
 
 
 # The station plaza ----------------------------------------------------------------------------------------
@@ -273,7 +273,13 @@ def riverside(s):
                 (cx, cz), d = P.river_frame(x)
                 n = g2.normal_left(d)
                 p = (cx + n[0] * offset, cz + n[1] * offset)
-                s.prop("TreeSakura", p[0], p[1], RNG.uniform(0, 360), RNG.uniform(0.85, 1.05))
+                # (placed so its trunk, off the middle of the tree's spread by its catalog anchor, stands at p)
+                turn, size = RNG.uniform(0, 360), RNG.uniform(0.85, 1.05)
+                ax, az = (catalog.load().get("TreeSakura") or {}).get("anchor", [0.0, 0.0])
+                a = math.radians(turn)
+                ox = (ax * math.cos(a) + az * math.sin(a)) * size
+                oz = (-ax * math.sin(a) + az * math.cos(a)) * size
+                s.prop("TreeSakura", p[0] - ox, p[1] - oz, turn, size)
                 # The trunk only (the promenade is 6 studs wide, the trees down its middle).
                 s.collider((p[0], 3.5, p[1]), (0.8, 7.0, 0.8), 0, True, None)
                 trees.append((x, p, d))

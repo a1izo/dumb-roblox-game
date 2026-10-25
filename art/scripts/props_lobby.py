@@ -860,7 +860,9 @@ def puppet():
         pieces["Shin" + side] = [mk.sphere("Knee", 0.2, kn, mat=ball, segments=12, rings=8),
                                  spindle("Shin", kn, an, [0.18, 0.21, 0.17, 0.12], wood)]
         pieces["Foot" + side] = [mk.sphere("Ankle", 0.13, an, mat=ball, segments=10, rings=6),
-                                 pk.rounded("Foot", (0.32, 0.8, 0.24), (s * 0.32, -0.16, 0.13), wood, r=0.1)]
+                                 pk.rounded("Foot", (0.32, 0.8, 0.24), (s * 0.32, -0.16, 0.13), wood, r=0.1),
+                                 # (the ankle's peg, down from the ball into the foot)
+                                 mk.tube("AnklePeg", an, (an[0], an[1], 0.2), 0.07, 0.07, mat=wood, verts=8)]
         for name, joint in (("UpperArm", sh), ("Forearm", el), ("Hand", wr), ("Thigh", hp), ("Shin", kn),
                             ("Foot", an)):
             hinge[name + side] = joint
@@ -1343,7 +1345,7 @@ def chess_king_fallen():
     parts += [mk.box("CrossV", (1.0, 0.32, 0.32), (cx, cy, 0.16), rot=(0, 0, 24), mat=body, bevel=0.06),
               mk.box("CrossH", (0.3, 0.86, 0.3), (cx + d[0] * 0.16, cy + d[1] * 0.16, 0.15), rot=(0, 0, 24), mat=body,
                      bevel=0.06),
-              mk.box("Chip", (0.4, 0.3, 0.2), (2.6, -1.1, 0.1), rot=(10, 4, 50), mat=dark, bevel=0.05)]
+              mk.box("Chip", (0.4, 0.3, 0.2), (2.6, -1.1, 0.07), rot=(10, 4, 50), mat=dark, bevel=0.05)]
     return parts, []
 
 

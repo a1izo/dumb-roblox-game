@@ -270,6 +270,44 @@ class Scene(LayoutMixin):
             self.polygon(mat, list(reversed(rings[0])), tile=tile)
             self.polygon(mat, rings[1], tile=tile)
 
+    def bent_tube(self, mat, points, radii, segments=8, caps=(True, True)):
+        """One round bar along the bent line through points, radii[k] at points[k] (ribs, tusks, horns): its rings
+        turn with the line (carried along, so it does not twist) and each joint shares one ring, so no seam opens
+        at a bend as it does between tube() pieces laid end to end."""
+        if len(points) < 2:
+            return
+        tile = matlib.tile_size(mat)
+        dirs = []
+        for k in range(len(points)):
+            a = points[max(k - 1, 0)]
+            b = points[min(k + 1, len(points) - 1)]
+            dirs.append(norm(sub(b, a)))
+        w = dirs[0]
+        helper = (0, 1, 0) if abs(w[1]) < 0.9 else (1, 0, 0)
+        u = norm(cross(helper, w))
+        rings, along, acc = [], [], 0.0
+        for k, p in enumerate(points):
+            w = dirs[k]
+            u = norm(sub(u, scale(w, dot(u, w))))  # (the last ring's frame carried onto this one's plane)
+            v = cross(w, u)
+            r = radii[k]
+            rings.append([add(p, add(scale(u, math.cos(2 * math.pi * j / segments) * r),
+                                     scale(v, math.sin(2 * math.pi * j / segments) * r))) for j in range(segments)])
+            if k:
+                acc += math.dist(points[k - 1], p)
+            along.append(acc)
+        circ = 2 * math.pi * max(radii)
+        for k in range(len(points) - 1):
+            for j in range(segments):
+                j1 = (j + 1) % segments
+                u0, u1 = circ * j / segments, circ * (j + 1) / segments
+                self.polygon(mat, [rings[k][j], rings[k][j1], rings[k + 1][j1], rings[k + 1][j]],
+                             [(u0, along[k]), (u1, along[k]), (u1, along[k + 1]), (u0, along[k + 1])], tile)
+        if caps[0] and radii[0] > 1e-6:
+            self.polygon(mat, list(reversed(rings[0])), tile=tile)
+        if caps[1] and radii[-1] > 1e-6:
+            self.polygon(mat, rings[-1], tile=tile)
+
     def sweep(self, mat, a, b, profile, outward, caps=True, tile=None):
         """A moulding along the straight line a -> b. profile is [(out, up)] in the plane across
         the line (out along `outward`, up along +Y), running bottom to top around the outside."""

@@ -108,18 +108,31 @@ HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLi
 
 # Tokyo's first props were shipped from builders older than the ones in the scripts now, and the
 # district was laid out around those shapes (a bicycle rack's spacing, a ticket gate's width, a
-# cherry tree's reach). Their meshes are KEPT: a build gives the kept mesh the scanned materials
-# (reskin_one) and never runs the builder, whose newer shape waits for the owner's yes. To take a
-# newer shape: remove the name here, build it, and run maps/check_v2.py on every map that places it.
+# cherry tree's reach). Their meshes were KEPT, re-skinned (reskin_one), until the owner's yes to the newer
+# shapes (2026-10-25: "make all assets much more high quality and not just basic shapes ... for every asset"). The
+# newer shapes are built now for every one whose size is within a little of the kept one's; vehicles, bicycles and
+# the cherry tree, larger in their newer shapes, are built and then scaled to fit inside the kept one's box
+# (FIT_TO_KEPT), so the lanes and racks laid out for them still hold them. Still KEPT: the ticket gates (the newer
+# ones half as wide, which opens gaps in the gate lines), the station clock (larger), the security-camera station
+# (the newer one hides two stations' screens), the vending machines (the newer ones plainer) and the beer crates (no
+# better). To take one of these: remove the name here, build it, and run
+# maps/check_v2.py on every map that places it.
 KEPT = frozenset("""
-    ArcadeCabinet BarStool Barricade BeerCrates Bicycle BikeRack Boat Bollard Bus BusShelter BusStopSign
-    Chochin ClawMachine ClothesRack CoinLockers DisplayCase DrinkFridge DryerStack GuardRail KeiTruck
-    LanternString Mannequin MealTicketMachine Noren Planter PlatformBench PoliceCar PoliceTape PostBox
-    RamenCounter RecycleBins RoadSign Scooter ShopCounter SiteFence StationCCTV StationClock
-    StationLabBench StationPhoneBooth StationPrintKit StationReception StationSignHanging StoreShelf
-    StreetLightTokyo Taxi TaxiRankSign TicketGate TicketMachine TrafficCone TrainHead TrainMiddle
-    TreeSakura UtilityPole VendingBlue VendingWhite Washer YakitoriGrill
+    BeerCrates StationCCTV StationClock TicketGate VendingBlue VendingWhite
 """.split())
+# (each one's kept box, x across, y deep, z high: what the district was laid out around)
+FIT_TO_KEPT = {
+    "Bicycle": (1.6, 5.54, 3.05),
+    "BikeRack": (8.4, 5.54, 3.05),
+    "Bus": (8.97, 34.09, 10.48),
+    "KeiTruck": (5.14, 10.87, 5.49),
+    "PoliceCar": (5.94, 14.07, 5.73),
+    "Taxi": (5.74, 14.0, 5.28),
+    "TreeSakura": (11.26, 10.14, 13.72),
+    "SiteFence": (8.0, 2.57, 10.0),
+}
+# (a tree takes being drawn up taller and narrower: fitted to the kept one's box along each axis on its own)
+FIT_STRETCH = frozenset({"TreeSakura", "SiteFence"})
 # Designs no map places: not built, so no file carries them.
 SHELVED = frozenset({"TreeZelkova", "PetalScatter"})
 
@@ -227,6 +240,9 @@ VENUE_SETS = ("Agency", "Campus", "Tokyo", "Meeting")
 def build_one(key):
     spec = props.BUILDERS[key]
     mk.new_build()
+    # (a newer shape fitted to its kept one's box)
+    fit_to = Vector(FIT_TO_KEPT[key]) if key in FIT_TO_KEPT else None
+    fit_scale = 1.0
     _remove(key)
     for obj in _glow_objects(key) + _piece_objects(key):
         bpy.data.objects.remove(obj, do_unlink=True)
@@ -270,6 +286,13 @@ def build_one(key):
             _wear(obj, baked)
     else:
         shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
+        if fit_to is not None:
+            have = Vector(mk.dimensions(main))
+            if key in FIT_STRETCH:
+                main.data.transform(Matrix.Diagonal((*(fit_to[i] / max(have[i], 1e-6) for i in range(3)), 1.0)))
+            else:
+                fit_scale = min(fit_to[i] / have[i] for i in range(3) if have[i] > 1e-6)
+                main.data.transform(Matrix.Scale(fit_scale, 4))
         for high in highs.values():
             high.data.transform(Matrix.Translation(shift))
         mk.unwrap(main)
@@ -289,6 +312,7 @@ def build_one(key):
         obj = mk.merge(group, key + "_Glow" + ("" if i == 0 else str(i + 1)))
         # The glow moves with the main mesh, so it stays in place relative to it.
         obj.data.transform(Matrix.Translation(shift))
+        obj.data.transform(Matrix.Scale(fit_scale, 4))
         obj["glow_colour"] = list(colour)
         glow_objs.append(obj)
     glow_obj = glow_objs[0] if glow_objs else None
@@ -305,7 +329,8 @@ def build_one(key):
     def spot(point):
         """A point of the builder's, moved like the mesh and turned into Roblox axes (as the lights below)."""
         x, y, z = point
-        return [round(-(x + shift.x), 3), round(z + shift.z, 3), round(y + shift.y, 3)]
+        k = fit_scale
+        return [round(-(x + shift.x) * k, 3), round((z + shift.z) * k, 3), round((y + shift.y) * k, 3)]
 
     if pieces:
         for obj in pieces.values():
@@ -324,7 +349,9 @@ def build_one(key):
     for light in spec.get("lights", []):
         x, y, z = light["at"]
         entry = dict(light)
-        entry["at"] = [round(-(x + shift.x), 3), round(z + shift.z, 3), round(y + shift.y, 3)]
+        entry["at"] = spot((x, y, z))
+        if fit_scale != 1.0 and "range" in entry:
+            entry["range"] = round(entry["range"] * fit_scale, 3)
         lights.append(entry)
     main["lights"] = json.dumps(lights)
     # Where its flames burn (a candle's wick tip, x y z in Roblox axes from the pivot, and the flame's height): the
@@ -332,7 +359,8 @@ def build_one(key):
     # (a fifth number 1 marks a fire rather than a candle's flame)
     main["flames"] = json.dumps([spot(f[:3]) + [round(f[3], 3)] + list(f[4:5]) for f in more.get("flames", [])])
     anchor = spec.get("anchor")
-    main["anchor"] = json.dumps([round(-(anchor[0] + shift.x), 3), round(anchor[1] + shift.y, 3)] if anchor else None)
+    main["anchor"] = json.dumps([round(-(anchor[0] + shift.x) * fit_scale, 3), round((anchor[1] + shift.y) * fit_scale, 3)]
+                                if anchor else None)
     # A station's screen slot stays in design coordinates (the station is placed by its origin).
     screen = spec.get("screen")
     if screen:

@@ -685,6 +685,10 @@ def office_chair():
     parts.append(mk.cylinder("Gas", 0.09, 1.1, (0, 0, 0.85), mat=metal, verts=12))
     parts.append(mk.box("Seat", (1.8, 1.7, 0.35), (0, -0.05, 1.55), mat=leather, bevel=0.14, segments=3))
     parts.append(mk.box("Back", (1.7, 0.3, 2.0), (0, 0.8, 2.75), rot=(-8, 0, 0), mat=leather, bevel=0.14, segments=3))
+    # (the back held up: a steel spine from under the seat into the back's lower half)
+    parts.append(mk.tube("Spine", (0, 0.35, 1.4), (0, 0.82, 1.62), 0.07, mat=metal, verts=8))
+    parts.append(mk.tube("Spine", (0, 0.82, 1.62), (0, 0.9, 2.3), 0.07, mat=metal, verts=8))
+    parts.append(mk.box("SpinePlate", (0.5, 0.06, 0.7), (0, 0.98, 2.1), rot=(-8, 0, 0), mat=metal, bevel=0.02))
     for x in (-0.95, 0.95):
         parts.append(mk.box("ArmPost", (0.1, 0.1, 0.55), (x, 0.1, 1.9), mat=metal))
         parts.append(mk.box("ArmPad", (0.2, 0.9, 0.1), (x, 0.0, 2.2), mat=leather, bevel=0.04))

@@ -344,7 +344,12 @@ def station_autopsy():
               mk.tube("ScaleArm", (2.9, 1.8, 7.6), (2.9, 0.9, 7.6), 0.06, mat=white, verts=6),
               mk.cylinder("ScaleDial", 0.45, 0.2, (2.9, 0.9, 6.9), rot=(90, 0, 0), mat=white, verts=16),
               mk.lathe("ScaleDish", [(0.0, 0.0), (0.7, 0.15), (0.75, 0.3)], (2.9, 0.9, 5.9), mat=steel, segments=16),
+              mk.tube("ScaleRod", (2.9, 0.9, 7.62), (2.9, 0.9, 7.3), 0.035, mat=white, verts=6),
               mk.tube("MonArm", (2.9, 1.8, 5.8), (x + 0.3, y + 0.3, z), 0.07, mat=dark, verts=6)]
+    for k in range(3):  # (the dish's chains, from under the dial to its rim)
+        a = 2 * math.pi * k / 3
+        parts.append(mk.tube("ScaleChain", (2.9, 0.9, 6.47), (2.9 + math.cos(a) * 0.7, 0.9 + math.sin(a) * 0.7, 6.18), 0.015,
+                             mat=steel, verts=4))
     parts += monitor("Findings_", x, y, z, w, h, tilt, dark, stand=False)
     glows = [mk.cylinder("LampGlow", 0.85, 0.04, (0, -0.1, 8.33), mat=pk.glow("Aut_Lamp", (230, 240, 255), 4), verts=24)]
     return parts, glows
@@ -642,7 +647,7 @@ def tatekan():
     for zz in (0.55, 8.6):
         parts.append(mk.box("BorderH", (5.9, 0.22, 0.2), (0, 0.28 + (zz - 4.6) * math.sin(math.radians(lean)), zz),
                             rot=(lean, 0, 0), mat=black))
-    parts.append(cap("TopSnow", (6.1, 0.6, 0.25), (0, 0.95, 8.95), sn))
+    parts.append(cap("TopSnow", (6.1, 0.6, 0.25), (0, 0.92, 8.84), sn))
     return parts, []
 
 
@@ -736,6 +741,8 @@ def exam_desk():
              mk.box("Rack", (3.2, 1.3, 0.06), (0, -0.1, 2.2), mat=steel),
              mk.box("Seat", (1.6, 1.3, 0.12), (0, 1.35, 1.55), mat=wood),
              mk.box("Backrest", (1.6, 0.1, 1.0), (0, 2.0, 2.3), rot=(-8, 0, 0), mat=wood)]
+    for sx in (-1, 1):  # (the backrest's posts, up from the seat's back edge)
+        parts.append(mk.tube("BackPost", (sx * 0.7, 1.95, 1.5), (sx * 0.7, 2.06, 2.75), 0.05, mat=steel, verts=6))
     for sx in (-1, 1):
         parts += [mk.box("Leg", (0.12, 0.12, 2.55), (sx * 1.55, -0.8, 1.28), mat=steel),
                   mk.box("Leg", (0.12, 0.12, 2.55), (sx * 1.55, 0.4, 1.28), mat=steel),
@@ -925,7 +932,7 @@ def skeleton_model():
     for sx in (-1, 1):
         parts += [mk.tube("Humerus", (sx * 0.55, 0, 4.4), (sx * 0.65, -0.05, 3.3), 0.06, mat=bone, verts=6),
                   mk.tube("Forearm", (sx * 0.65, -0.05, 3.3), (sx * 0.7, -0.2, 2.3), 0.05, mat=bone, verts=6),
-                  mk.box("Hand", (0.18, 0.1, 0.4), (sx * 0.7, -0.22, 2.05), mat=bone),
+                  mk.box("Hand", (0.18, 0.1, 0.4), (sx * 0.7, -0.21, 2.12), mat=bone, bevel=0.03),
                   mk.tube("Femur", (sx * 0.3, 0, 2.15), (sx * 0.28, -0.02, 1.15), 0.07, mat=bone, verts=6),
                   mk.tube("Shin", (sx * 0.28, -0.02, 1.15), (sx * 0.27, 0.0, 0.62), 0.06, mat=bone, verts=6),
                   mk.box("Foot", (0.18, 0.45, 0.1), (sx * 0.27, -0.15, 0.56), mat=bone)]
@@ -1219,11 +1226,11 @@ def umpire_chair():
               mk.box("Seat", (1.4, 1.2, 0.14), (0, 0.3, 6.3), mat=wood),
               mk.box("SeatPost", (0.14, 0.14, 0.8), (0, 0.3, 5.9), mat=green),
               mk.box("Backrest", (1.4, 0.12, 1.2), (0, 0.9, 7.0), mat=wood),
-              mk.box("Shelf", (1.4, 0.5, 0.08), (0, -0.7, 6.8), rot=(-10, 0, 0), mat=wood),
+              mk.box("Shelf", (1.5, 0.5, 0.08), (0, -0.62, 6.82), rot=(-10, 0, 0), mat=wood),
               cap("SeatSnow", (1.3, 1.1, 0.2), (0, 0.3, 6.46), sn),
               cap("PlatformSnow", (1.8, 0.7, 0.14), (0, -0.55, 5.69), sn)]
     for sx in (-1, 1):
-        parts.append(mk.tube("Arm", (sx * 0.7, 0.9, 6.3), (sx * 0.7, -0.3, 6.8), 0.05, mat=green, verts=6))
+        parts.append(mk.tube("Arm", (sx * 0.7, 0.9, 6.3), (sx * 0.7, -0.62, 6.78), 0.05, mat=green, verts=6))
     return parts, []
 
 

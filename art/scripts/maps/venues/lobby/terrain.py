@@ -176,8 +176,7 @@ def needle(s, x, z, h, r, seed, y=0.0, lean=0.14, mat="RockGrey"):
     bend = rng.uniform(-0.1, 0.1)
     mid = (x + math.cos(a) * lean * h * 0.5 + bend * h, y + h * 0.5, z + math.sin(a) * lean * h * 0.5 - bend * h)
     top = (x + math.cos(a) * lean * h, y + h, z + math.sin(a) * lean * h)
-    s.tube(mat, (x, y - 1.0, z), mid, r, 5, caps=False, radius_b=r * 0.45)
-    s.tube(mat, mid, top, r * 0.45, 5, caps=False, radius_b=0.03)
+    s.bent_tube(mat, [(x, y - 1.0, z), mid, top], [r, r * 0.45, 0.03], 5)
 
 
 def needle_field(s, cx, cz, r, count, hmin, hmax, seed, y=0.0, avoid=(), arc=None):
@@ -291,14 +290,13 @@ def horn(s, x, y, z, height, curl, rot, r0, mat="BoneWhite", segments=10):
     """A great curved tusk rising from (x, y, z), curling over in the direction rot (degrees)."""
     a = math.radians(rot)
     dx, dz = math.cos(a), math.sin(a)
-    prev = (x, y - 1.0, z)
+    points, radii = [(x, y - 1.0, z)], [r0]
     for q in range(1, segments + 1):
         u = q / segments
         out = curl * (u * u * 0.8 + 0.2 * u)
-        p = (x + dx * out, y + height * (u - 0.35 * u * u * u), z + dz * out)
-        r = r0 * (1 - u * 0.92)
-        s.tube(mat, prev, p, r, 8, caps=False, radius_b=r0 * (1 - (u + 1.0 / segments) * 0.92))
-        prev = p
+        points.append((x + dx * out, y + height * (u - 0.35 * u * u * u), z + dz * out))
+        radii.append(r0 * (1 - u * 0.92))
+    s.bent_tube(mat, points, radii, 8)
 
 
 def blade(s, x, y, z, w, length, thick, rot=0.0, mat="RuinStone", glow="RelicGlow", guard=True):

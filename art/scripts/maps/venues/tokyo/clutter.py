@@ -44,7 +44,7 @@ def karaoke(s):
 
 
 def konbini(s):
-    s.prop("StoreShelf", 38.0, -29.8, 90)
+    s.prop("StoreShelf", 38.0, -30.1, 90)  # (clear of the back office's door, the newer shelf a touch longer)
     s.prop("MagazineRack", 27.0, -44.7, 180)
     s.prop("ATM", 21.0, -38.0, -95)  # square to the slanted west wall
 

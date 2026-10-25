@@ -217,7 +217,8 @@ def lobby(s):
     # The speed gates into the bullpen, in a framed portal through the lobby's west wall, glass either side; the
     # wall runs up to the ceiling and on into the lounge's (the owner, 2026-10-25: the lobby lay open to the bullpen
     # over low glass screens, and the lounge's wall stopped short in a bare end beside the gates).
-    for z in (12.0, 18.0, 24.0, 30.0, 36.0):
+    # (four gates across the 28-stud portal, flush to its jambs, so each lane between them is 5.5 studs wide)
+    for z in (11.5, 19.83, 28.17, 36.5):
         s.prop("TicketGate", -16.0, z, 90)
     fit.partition(s, (-16.0, 2.0), (-16.0, 44.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(22.0, 28.0)],
                   glass="clear", spans=[(1.2, 6.8), (37.2, 40.8)])
