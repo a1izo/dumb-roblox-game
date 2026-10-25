@@ -38,7 +38,7 @@ BUILDERS = {}
 
 
 def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Core", lights=None,
-         anchor=None, screen=None):
+         anchor=None, screen=None, ao=0.6, exact=False):
     """Registers a prop builder. set: which FBX it goes in, DeathsGambitModels_<set>.fbx ("Core": the
     props every map and the game itself use, with the effect and UI textures; "Tokyo", "Agency",
     "Campus", "Lobby", "Meeting": one venue's own). lights: the lights the prop carries, so a lamp never exists
@@ -49,7 +49,11 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
     screen: for a case-file station's look, where the game's own screen part goes, as
     (x, y, z, width, height[, tilt]) in the builder's coordinates: the middle of the screen's
     face, which faces the worker (-Y); tilt leans its top back, in degrees. Stations are
-    placed by their design origin (give them anchor=(0, 0))."""
+    placed by their design origin (give them anchor=(0, 0)).
+    ao: how strongly the bake shades the prop's hollows into its colour (0.6; less for a face whose small parts sit in
+    deep hollows, a grin's teeth).
+    exact: the texture is `texture` px whatever the look rulebook would give a prop of its surface (a creature whose
+    hundreds of small parts would bleed together at the rulebook's size)."""
 
     def register(fn):
         BUILDERS[key] = {
@@ -62,6 +66,8 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
             "lights": lights or [],
             "anchor": anchor,
             "screen": screen,
+            "ao": ao,
+            "exact": exact,
         }
         return fn
 

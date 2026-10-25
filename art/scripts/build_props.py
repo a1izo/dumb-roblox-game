@@ -209,7 +209,7 @@ def build_one(key):
     else:
         shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
         mk.unwrap(main)
-        mk.bake(main, size=spec["texture"], where=where)
+        mk.bake(main, size=spec["texture"], where=where, ao_strength=spec.get("ao", 0.6), exact=spec.get("exact", False))
     # Glowing parts, one mesh per colour (each becomes a Neon MeshPart of that colour).
     by_colour = {}
     for part in glow:

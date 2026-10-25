@@ -24,6 +24,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Anim = Shared:WaitForChild("Anim")
@@ -82,6 +83,7 @@ local FIDGET_EVERY = { 8, 20 }
 
 local LEAN_MAX = 8 -- degrees a running body banks into a curve at most
 local TURN_AFTER = 25 -- degrees the root may turn away from a standing body before it comes round
+local CAMERA_TURN = 160 -- degrees a second: a standing turn this fast is the camera's (shift lock), not a step
 
 local DIRECTIONS = Gait.DIRECTIONS
 local CYCLE = {
@@ -706,9 +708,21 @@ local function provide(character: Model, dt: number): ({ [string]: CFrame }?, Ve
 	state.tip = approach(state.tip, math.clamp(-accel * 0.03, -5, 3) * moving * (1 - airW), 6, dt)
 
 	-- Turning on the spot: the body lags the root, the head leads, then the body comes round and the feet
-	-- step after it. Moving, the lag goes at once.
+	-- step after it. Moving, the lag goes at once. A turn the camera drives (shift lock or first person on this
+	-- player's own body, or any snap turn faster than a walk ever makes) takes the body and legs round with the root at
+	-- once: the owner, 2026-10-25, "when you turn around with your camera in shiftlock your legs move with you and not
+	-- delayed".
 	local standing = (1 - moving) * (1 - airW)
-	if standing > 0.5 and state.grounded then
+	local locked = character == Players.LocalPlayer.Character
+		and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter
+	local snap = math.abs(yawRate) > CAMERA_TURN
+	if standing > 0.5 and state.grounded and (locked or snap) then
+		state.body = 0
+		state.turning = false
+		if math.abs(turned) > 0.01 then
+			Feet.reset(state.feet)
+		end
+	elseif standing > 0.5 and state.grounded then
 		state.body = math.clamp(state.body - turned, -100, 100)
 		if math.abs(state.body) > TURN_AFTER then
 			state.turning = true

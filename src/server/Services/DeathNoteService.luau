@@ -28,6 +28,7 @@ local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local Match = require(script.Parent.Match)
 local TextFilter = require(script.Parent.TextFilter)
+local RateLimit = require(script.Parent.RateLimit)
 
 local DeathNoteRemote = Net.event("DeathNote")
 
@@ -118,11 +119,29 @@ function DeathNoteService.writeProblem(ps): string?
 	return nil
 end
 
+-- Death's Manual held open while Diavolo picks a name (the owner, 2026-10-25: "make the death manual visible when
+-- you pull it out ... so players can spot you"): the book and its pen in his hands for everyone to see, the character
+-- marked LManualHeld (his body reads it: Anim/ActingController), until he closes it, writes, or free roam ends.
+local function setHolding(ps, on: boolean)
+	if (ps.holdingManual == true) == on then
+		return
+	end
+	ps.holdingManual = if on then true else nil
+	local character = typeof(ps.player) == "Instance" and ps.player.Character or nil
+	if character then
+		character:SetAttribute("LManualHeld", if on then true else nil)
+	end
+	if not ps.writing then
+		CharacterService.setWriting(ps.player, on)
+	end
+end
+
 local function stopWriting(ps)
 	ps.writing = nil
 	CharacterService.setWriting(ps.player, false)
 	CharacterService.setManualGlow(ps.player, false)
 	CharacterService.setFrozen(ps.player, false)
+	setHolding(ps, false)
 end
 
 -- The name is in the book: it dooms its owner (if it matches anyone) and the Manual closes.
@@ -282,21 +301,40 @@ function DeathNoteService.onMatchEnd()
 		if ps.writing then
 			stopWriting(ps)
 		end
+		setHolding(ps, false)
 	end
 end
 
--- Free roam is over (a meeting or the end): anyone in the middle of writing stops.
+-- Free roam is over (a meeting or the end): anyone in the middle of writing stops, and the book goes away.
 function DeathNoteService.interrupt()
 	for _, ps in ipairs(Match.list) do
 		if ps.writing then
 			stopWriting(ps)
 			Match.pushPrivate(ps)
 		end
+		setHolding(ps, false)
 	end
+end
+
+-- The Manual's window opened or closed on the writer's screen.
+local function onHold(player: Player, payload)
+	if type(payload) ~= "table" or not RateLimit.allow(player, "manualHold", 0.2) then
+		return
+	end
+	local ps = Match.getLiving(player)
+	if not ps then
+		return
+	end
+	local open = payload.open == true
+	if open and (ps.role ~= "Kira" or Match.phase ~= "Investigation" or Match.meetingCall ~= nil) then
+		return
+	end
+	setHolding(ps, open)
 end
 
 function DeathNoteService.init()
 	DeathNoteRemote.OnServerEvent:Connect(onWrite)
+	Net.event("ManualHold").OnServerEvent:Connect(onHold)
 	if ticker then
 		ticker:Disconnect()
 	end

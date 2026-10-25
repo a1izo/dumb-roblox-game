@@ -110,10 +110,13 @@ bag = shot.prop("ChipBag")
 bag.at(0.0, (BAG[0], TOP, BAG[1]), (0, 200, 0))
 bag.at(LENGTH, (BAG[0], TOP, BAG[1]), (0, 200, 0))
 
+# (2026-10-25, the owner: "he just appears out of the ground ... make them make sense (like materializing slowly)":
+# drawn together out of smoke where it stands behind the chair, its eyes first, leaning in over the shoulder as it
+# comes whole)
 singer = shot.prop("Specter", show=(10.6, None))
-singer.at(10.6, (SINGER[0], -11.0, SINGER[1]), (0, 180, 0))
-singer.at(10.9, (SINGER[0], -9.6, SINGER[1]), (0, 180, 0), "in")
-singer.at(12.2, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")  # up behind the chair, leaning over the shoulder
+singer.at(10.6, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
+singer.at(12.2, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")  # leaning over the shoulder
+shot.event(10.6, "materialize", model="Specter", dur=1.5, r=200, g=30, b=45)
 for k in range(6):  # it laughs with them
     t = 12.5 + 0.4 * k
     singer.at(t, (SINGER[0], 0.3 + (0.25 if k % 2 else 0.0), SINGER[1] + 0.3), (12 - (5 if k % 2 else 0), 170, 4))

@@ -1,5 +1,6 @@
 -- Decides who acts what, from public events only:
---   the Manual     : whoever has it open writes (the server marks them LManualOpen; it is seen on purpose)
+--   the Manual     : whoever has it open writes (the server marks them LManualOpen, or LManualHeld while they pick a
+--                    name with it out in their hands; it is seen on purpose)
 --   vote cast      : that player raises a hand (who voted is public, not for whom)
 --   death          : the collapse for the public cause of death; everyone else reacts
 --   arrest         : hands cuffed behind the back; everyone else reacts
@@ -53,7 +54,10 @@ local function refreshWriting()
 	if ClientState.public.active then
 		for _, entry in ipairs(ClientState.living()) do
 			local character = characterOf(entry.userId)
-			if character and character:GetAttribute("LManualOpen") == true then
+			if
+				character
+				and (character:GetAttribute("LManualOpen") == true or character:GetAttribute("LManualHeld") == true)
+			then
 				want[character] = true
 			end
 		end
@@ -295,6 +299,7 @@ function ActingController.init()
 	CueRouter.register("handoff", onHandoff)
 	Characters.each(function(character: Model)
 		character:GetAttributeChangedSignal("LManualOpen"):Connect(refreshWriting)
+		character:GetAttributeChangedSignal("LManualHeld"):Connect(refreshWriting)
 		task.defer(refreshWriting)
 	end)
 end

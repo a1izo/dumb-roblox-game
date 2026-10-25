@@ -27,6 +27,7 @@ local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
 local DeathFx = require(script.Parent.DeathFx)
+local Materialize = require(script.Parent.Materialize)
 local Stage = require(script.Parent.Stage)
 
 local ShotPlayer = {}
@@ -562,6 +563,16 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				local live = bySlot[event.slot or ""]
 				if live then
 					setFace(live.model, event.face or "")
+				end
+			elseif event.kind == "materialize" then
+				-- a prop drawn into being out of smoke (Presentation/Materialize), not popped in or raised from the floor
+				for _, prop in ipairs(props) do
+					if prop.data.model == event.model and prop.model:IsA("Model") then
+						Materialize.appear(prop.model, {
+							seconds = event.dur or 1.5,
+							color = Color3.fromRGB(event.r or 200, event.g or 30, event.b or 45),
+						})
+					end
 				end
 			else
 				task.spawn(runEvent, event, base, token, opts, closers)

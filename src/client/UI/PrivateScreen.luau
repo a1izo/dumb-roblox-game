@@ -19,6 +19,7 @@ local NotePanel = require(script.Parent.NotePanel)
 local Router = require(script.Parent.Core.Router)
 
 local DeathNoteRemote = Net.event("DeathNote")
+local ManualHoldRemote = Net.event("ManualHold")
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -220,8 +221,13 @@ function PrivateScreen.init()
 	Kit.register(grimoire, {
 		stay = true,
 		allowed = isWriter,
-		show = refresh,
+		show = function()
+			refresh()
+			-- (the book out in your hands, for everyone to see, while the window is open)
+			ManualHoldRemote:FireServer({ open = true })
+		end,
 		hide = function(reason)
+			ManualHoldRemote:FireServer({ open = false })
 			if reason == "rule" then
 				nameBox.Text = ""
 				picked = nil

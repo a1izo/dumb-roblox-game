@@ -29,6 +29,7 @@ local EVENTS = {
 	"QuickChatMsg",
 	-- Death's Manual (id "DeathNote"), the bell, meetings, the vote and Ace's arrest
 	"DeathNote",
+	"ManualHold", -- client -> server: the Manual's window opened or closed (the book shows in the hands)
 	"Bell",
 	"Vote",
 	"VoteUpdate",

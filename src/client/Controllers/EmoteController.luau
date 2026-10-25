@@ -39,6 +39,8 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local EmoteFx = require(script.Parent.EmoteFx)
 local EmoteCamera = require(script.Parent.Parent.Presentation.EmoteCamera)
 local EmoteCinema = require(script.Parent.Parent.Presentation.EmoteCinema)
+local Materialize = require(script.Parent.Parent.Presentation.Materialize)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 local Mixer = require(script.Parent.Parent.Audio.Mixer)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 
@@ -276,6 +278,19 @@ function EmoteController.dress(character: Model, clip: string, alive: Alive, man
 				prop.Parent = character
 			end
 			table.insert(made, prop)
+			-- (in the world, drawn in over a moment with a glint, never popped out of thin air: the owner, 2026-10-25)
+			if character:IsDescendantOf(workspace) and not Vfx.still() then
+				Materialize.appear(prop, { seconds = 0.3, quiet = true })
+				local at = prop:GetPivot().Position
+				Vfx.Emit.burst(at, {
+					tex = "VfxFlare",
+					color = Color3.fromRGB(240, 236, 226),
+					size = { { 0, 0 }, { 0.3, 0.9 }, { 1, 0 } },
+					life = 0.3,
+					rot = { 0, 90 },
+					bright = 1.2,
+				}, 1)
+			end
 			-- Death's Manual opens in the hand
 			if spec.open ~= nil and spec.model == ManualBook.KEY then
 				local delay = spec.open - (spec.show or 0)
