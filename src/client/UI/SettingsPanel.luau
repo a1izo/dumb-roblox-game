@@ -37,11 +37,13 @@ function SettingsPanel.init()
 			Name = "Page_" .. id,
 			Position = UDim2.new(0, 0, 0, T.touch + T.space.s),
 			Size = UDim2.new(1, 0, 1, -(T.touch + T.space.s)),
+			-- (the rows end clear of the scroll bar, so a slider's value is never cut under it)
+			VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 			Visible = false,
 			Parent = win.body,
 		})
 		Kit.list(list, T.space.xs)
-		Kit.pad(list, 0, T.space.xs)
+		Kit.pad(list, 0, T.space.xs).PaddingRight = UDim.new(0, T.space.s)
 		pages[id] = list
 		return list
 	end

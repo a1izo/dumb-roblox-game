@@ -66,6 +66,24 @@ local function firstCase(): boolean
 	return type(stats) == "table" and (tonumber(stats.matches) or 0) == 0
 end
 
+-- A phase's tip is only worth showing in that phase (one still queued, or still up, when the phase is over goes).
+local function stale(id: string): boolean
+	local phase = string.match(id, "^phase_(.+)$")
+	return phase ~= nil and phase ~= ClientState.phase()
+end
+
+-- The panel open on the left that a tip must sit beside rather than cover (the vote), or nil.
+local function leftPanel(): GuiObject?
+	local window = Router.windowOf("vote")
+	return if window and window.Visible then window else nil
+end
+
+local function place(beside: GuiObject?)
+	local position, anchor = Hud.tipPlacement(beside)
+	card.AnchorPoint = anchor
+	card.Position = position
+end
+
 local function run()
 	running = true
 	while #queue > 0 do
@@ -75,20 +93,25 @@ local function run()
 		end
 		local id = table.remove(queue, 1)
 		local hint = Hints.BY_ID[id]
-		if hint and Settings.get("hints") then
+		if hint and Settings.get("hints") and not stale(id) then
 			Net.event("ProfileRequest"):FireServer({ action = "hint", id = id })
 			titleLabel.Text = "TIP  ·  " .. string.upper(hint.title)
 			textLabel.Text = Keys.resolve(hint.text)
 			dismissed = false
 			local showTime = if firstCase() then FIRST_CASE_TIME else SHOW_TIME
-			local position, anchor = Hud.tipPlacement()
-			card.AnchorPoint = anchor
-			card.Position = position
+			local beside = leftPanel()
+			place(beside)
 			Motion.fade(card, true, 0.25)
 			Motion.slideIn(card, Vector2.new(0, -10), 0.3)
 			local started = os.clock()
-			while not dismissed and Settings.get("hints") and os.clock() - started < showTime do
+			while not dismissed and Settings.get("hints") and not stale(id) and os.clock() - started < showTime do
 				task.wait(0.1)
+				-- (moved aside when the vote opens under it, and back when it closes)
+				local now = leftPanel()
+				if now ~= beside then
+					beside = now
+					place(beside)
+				end
 			end
 			local tween = Motion.fade(card, false, 0.3)
 			if tween then

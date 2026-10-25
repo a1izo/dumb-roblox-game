@@ -138,6 +138,12 @@ function Router.isOpen(name: string): boolean
 	return openOrder[name] ~= nil
 end
 
+-- An open screen's window (nil while it is closed or has none), for what must keep clear of it.
+function Router.windowOf(name: string): GuiObject?
+	local spec = specs[name]
+	return if spec and openOrder[name] ~= nil then spec.window else nil
+end
+
 -- A screen closed itself (for example after its form was sent).
 function Router.close(name: string, reason: string?)
 	local spec = specs[name]

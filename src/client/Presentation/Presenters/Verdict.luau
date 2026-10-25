@@ -44,7 +44,7 @@ local function buildPage(rows: { Row }): (CanvasGroup, { [number]: any }, () -> 
 	group.BackgroundTransparency = 1
 	group.AnchorPoint = Vector2.new(0.5, 0.5)
 	group.Position = UDim2.fromScale(0.5, 0.47)
-	group.Size = UDim2.fromOffset(560, 110 + math.min(#rows, MAX_ROWS) * ROW_HEIGHT)
+	group.Size = UDim2.fromOffset(560, 110 + math.max(math.min(#rows, MAX_ROWS), 1) * ROW_HEIGHT)
 	group.Parent = Screens.cinematic
 	local _, content = Kit.page({ tone = "black", margin = true, Parent = group })
 	Kit.list(content, 0)
@@ -55,6 +55,18 @@ local function buildPage(rows: { Row }): (CanvasGroup, { [number]: any }, () -> 
 		LayoutOrder = 0,
 		Parent = content,
 	})
+	if #rows == 0 then
+		-- (no ballots at all: the page says so, rather than standing empty until its stamp)
+		Kit.label({
+			Text = "Nobody voted.",
+			font = "bodyItalic",
+			color = C.dim,
+			Size = UDim2.new(1, 0, 0, ROW_HEIGHT),
+			AutomaticSize = Enum.AutomaticSize.None,
+			LayoutOrder = 1,
+			Parent = content,
+		})
+	end
 	local lines: { [number]: any } = {}
 	local all = {}
 	for index, row in ipairs(rows) do

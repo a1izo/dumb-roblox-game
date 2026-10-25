@@ -1318,6 +1318,7 @@ Cosmetics.ITEMS = {
 		source = "free",
 		side = "coven",
 		slot = "winCoven",
+		pose = "laugh", -- (its card's picture: Diavolo's pose in the ending, ActingController.endingPose)
 		blurb = "The ending you know: the table, the names, the spotlight.",
 		added = "2026-10-21",
 	},
@@ -1359,6 +1360,7 @@ Cosmetics.ITEMS = {
 		source = "free",
 		side = "bureau",
 		slot = "winBureau",
+		pose = "cheer", -- (its card's picture: a winner's pose in the ending, Activities.VICTORY)
 		blurb = Terms.f("The ending you know, with {Zero}'s own spotlight."),
 		added = "2026-10-21",
 	},

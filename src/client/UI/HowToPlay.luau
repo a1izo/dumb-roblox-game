@@ -21,7 +21,7 @@ local HowToPlay = {}
 local NUMERALS = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" }
 
 -- The left page's share of the spread.
-local CONTENTS_WIDTH = 0.34
+local CONTENTS_WIDTH = 0.38 -- (wide enough for the longest chapter, "Muertos and the Oculus of the Dead")
 
 local contents: ScrollingFrame
 local chapterTitle: any

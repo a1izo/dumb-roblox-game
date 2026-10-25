@@ -69,7 +69,6 @@ local SUITS_HEIGHT = 48
 local BROWSE_HEIGHT = 40 -- the search, show and order row over a suit of kinds
 local CHOICE_WIDTH = 176 -- its two buttons
 local LOOK_WIDTH = 300
-local INFO_HEIGHT = 226 -- under Your look: the name, its line, the button, the stance button, a note
 local GAP = T.space.l
 local CONFIRM_SECONDS = 6 -- a Condemned or Godhood card's confirm stays this long
 
@@ -1360,14 +1359,25 @@ function ShopPanel.init()
 	Kit.list(tableScroll, T.space.l)
 	-- Your look, with the picked card's name, its line, what you can do and a note.
 	lookPanel = Kit.card({ Name = "YourLookPanel", tone = "page", padding = 0, ZIndex = 30, Parent = body })
-	look = YourLook.new(lookPanel, { background = C.void, Size = UDim2.new(1, 0, 1, -INFO_HEIGHT) })
+	look = YourLook.new(lookPanel, { background = C.void, Size = UDim2.fromScale(1, 0.6) })
 	local info = Kit.frame({
 		Name = "Info",
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, INFO_HEIGHT),
+		Size = UDim2.fromScale(1, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = lookPanel,
 	})
+	-- Your look takes all the height the lines under it leave (a name on two lines, the stance button shown or
+	-- not), as a share of the panel so it holds under every UI scale.
+	local function fitLook()
+		local whole = lookPanel.AbsoluteSize.Y
+		if whole > 0 then
+			look.viewport.Size = UDim2.fromScale(1, math.clamp(1 - info.AbsoluteSize.Y / whole, 0.3, 1))
+		end
+	end
+	info:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitLook)
+	lookPanel:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitLook)
 	Kit.pad(info, T.space.m, T.space.m)
 	Kit.list(info, T.space.xs)
 	lookName = Kit.text({

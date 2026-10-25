@@ -668,10 +668,18 @@ local function bottomOf(gui: GuiObject): number
 end
 
 -- Where the guide's tips go: under the objectives on the left, or under the phase banner on
--- phones (where the identity card takes the left side). Returns a position and an anchor.
-function Hud.tipPlacement(): (UDim2, Vector2)
+-- phones (where the identity card takes the left side); beside `clear` instead when it is given and shown (a panel
+-- open on the left, the vote, which a tip under the objectives would cover). Returns a position and an anchor.
+function Hud.tipPlacement(clear: GuiObject?): (UDim2, Vector2)
 	if Kit.Layout.isPhone() then
 		return UDim2.new(0.5, 0, 0, bottomOf(banner) + T.space.s), Vector2.new(0.5, 0)
+	end
+	if clear and clear.Visible then
+		local scale = Kit.Base.scaleOf(clear)
+		local origin = Screens.hud.AbsolutePosition
+		local right = (clear.AbsolutePosition.X + clear.AbsoluteSize.X - origin.X) / scale
+		local top = (clear.AbsolutePosition.Y - origin.Y) / scale
+		return UDim2.new(0, right + T.space.m, 0, top), Vector2.new(0, 0)
 	end
 	return UDim2.new(0, T.space.l, 0, math.max(bottomOf(objectives), T.space.l) + T.space.m), Vector2.new(0, 0)
 end

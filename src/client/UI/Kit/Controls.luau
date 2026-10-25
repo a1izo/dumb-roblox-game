@@ -517,7 +517,8 @@ function Controls.keycap(props: Props): Frame
 	return frame
 end
 
--- Bookmark tabs. Props: items ({ { id, label, icon?, dot? } }), selected (id), vertical, marker (the shop's: a
+-- Bookmark tabs. Props: items ({ { id, label, icon?, dot? } }), selected (id), vertical, rowHeight (a vertical tab's
+-- height, the touch size when nil), marker (the shop's: a
 -- small white diamond over the selected tab, the owner's direction A), plus frame properties. Returns the frame,
 -- select(id) (which also calls onSelect) and setDot(id, on) (the small dot after a tab's label: something new in
 -- it).
@@ -555,7 +556,9 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 	for index, item in ipairs(props.items or {}) do
 		local button = Base.hit({
 			Name = "Tab_" .. item.id,
-			Size = if props.vertical then UDim2.new(1, 0, 0, Tokens.touch) else UDim2.new(0, 0, 1, 0),
+			Size = if props.vertical
+				then UDim2.new(1, 0, 0, props.rowHeight or Tokens.touch)
+				else UDim2.new(0, 0, 1, 0),
 			LayoutOrder = index,
 			ZIndex = frame.ZIndex,
 			Parent = frame,

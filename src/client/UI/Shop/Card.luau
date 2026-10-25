@@ -443,8 +443,8 @@ local function figureOf(item: Cosmetics.Item): Model?
 		end
 		return if seated then seated:Clone() else nil
 	end
-	-- (a win cutscene's card: its star in the key pose)
-	local clip = if item.kind == "win" then item.clip else item.emote
+	-- (a win cutscene's card: its star in the key pose; the plain endings', a pose from them)
+	local clip = if item.kind == "win" then item.clip or item.pose else item.emote
 	if (item.kind ~= "emote" and item.kind ~= "win") or not clip then
 		return nil
 	end
@@ -1071,6 +1071,12 @@ local function tag(face: Frame, name: string, text: string, position: UDim2, fil
 	return ribbon
 end
 
+-- Where the picture's top left chips start: on its corner, or under a Sealed card's wax seal (which sits on the
+-- middle of that edge, where a long chip such as "IN WHEEL · 1" would run into it).
+local function tagTop(item: Cosmetics.Item): number
+	return if Rarity.rank(item.rarity) == 3 then 30 else 14
+end
+
 -- The card ---------------------------------------------------------------------------------------------
 
 -- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipIcon (before it: "coin", "check"
@@ -1193,7 +1199,8 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	}, Card)
 	self:setChip(props.chip or "", props.chipIcon)
 	if props.state then
-		self.state = tag(face, "State", string.upper(props.state.text), UDim2.fromOffset(12, 14), props.state.filled)
+		self.state =
+			tag(face, "State", string.upper(props.state.text), UDim2.fromOffset(12, tagTop(item)), props.state.filled)
 	end
 	self:setNew(props.isNew == true)
 	if props.offer then
@@ -1279,7 +1286,8 @@ function Card.setNew(self: Card, on: boolean)
 	end
 	if on then
 		-- (under the state chip when there is one)
-		self.ribbon = tag(self.face, "New", "NEW", UDim2.fromOffset(12, if self.state then 38 else 14), true)
+		local top = tagTop(self.item)
+		self.ribbon = tag(self.face, "New", "NEW", UDim2.fromOffset(12, if self.state then top + 24 else top), true)
 	end
 end
 

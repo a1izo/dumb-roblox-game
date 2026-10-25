@@ -199,7 +199,8 @@ local function clearExtras(self: YourLook)
 	table.clear(self.extras)
 end
 
--- Frames the camera on the copy: the whole figure, hat included, with a little room.
+-- Frames the camera on the copy: the whole figure, hat included, with a little room under its feet and more over
+-- its head, where the title tag hangs.
 local function frame(self: YourLook)
 	local copy = self.copy
 	if not copy then
@@ -207,8 +208,8 @@ local function frame(self: YourLook)
 	end
 	local box, size = copy:GetBoundingBox()
 	local height = math.max(size.Y, 4)
-	local distance = (height * 0.5 + 0.6) / math.tan(math.rad(FOV / 2))
-	local focus = box.Position + Vector3.new(0, 0.1, 0)
+	local distance = (height * 0.5 + 1.0) / math.tan(math.rad(FOV / 2))
+	local focus = box.Position + Vector3.new(0, 0.5, 0)
 	-- The copy faces -Z (its look vector); the camera stands on that side, looking back at it.
 	self.camera.CFrame = CFrame.lookAt(focus + Vector3.new(0, 0.6, -distance), focus)
 end

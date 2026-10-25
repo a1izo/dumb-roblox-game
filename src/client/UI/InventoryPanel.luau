@@ -276,12 +276,15 @@ function InventoryPanel.init()
 		Size = UDim2.new(0, TABS_WIDTH, 1, 0),
 		Parent = win.body,
 	})
+	-- (all twelve in sight on a desktop screen; a touch screen keeps fingertip rows and scrolls)
+	local row = if Kit.Layout.isTouch() then T.touch else 40
 	local tabs, choose = Kit.tabs({
 		items = tabItems,
 		selected = current,
 		vertical = true,
 		marker = true,
-		Size = UDim2.new(1, 0, 0, #TABS * (T.touch + T.space.xs)),
+		rowHeight = row,
+		Size = UDim2.new(1, 0, 0, #TABS * (row + T.space.xs)),
 		Parent = tabsScroll,
 	}, function(id)
 		current = id
