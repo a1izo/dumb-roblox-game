@@ -17,7 +17,7 @@ import math
 import random
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
 
 import common
 
@@ -1360,38 +1360,76 @@ def chess_king_fallen():
     return parts, []
 
 
+def _stone_leaf(name, w, h, bow, mat, rng, torn=False, curl=0.0):
+    """A page of the stone notebook: a thin sheet `w` out from the spine and `h` tall, bowed `bow` studs at its middle
+    (no page lies flat), its outer corner curling by `curl`; torn: its spine edge ripped ragged."""
+    import bmesh
+
+    bm = bmesh.new()
+    nu, nv = 10, 6
+    grid = []
+    for i in range(nu + 1):
+        u = i / nu
+        row = []
+        for j in range(nv + 1):
+            v = j / nv
+            x = u * w
+            if torn and i == 0:
+                x += rng.uniform(0.0, 0.3)
+            y = bow * math.sin(math.pi * u) + curl * (u ** 3) * (v ** 2)
+            row.append(bm.verts.new((x, y, (v - 0.5) * h)))
+        grid.append(row)
+    for i in range(nu):
+        for j in range(nv):
+            bm.faces.new((grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]))
+    leaf = mk._obj_from_bm(name, bm, mat)
+    thick = leaf.modifiers.new("Sheet", "SOLIDIFY")
+    thick.thickness = 0.05
+    thick.offset = 0
+    mk.smooth(leaf)
+    return leaf
+
+
 @prop("StoneNotebook", pivot="centre", material="Slate", collide=False, texture=256, set="Lobby")
 def stone_notebook():
     """A black notebook turned to stone, stopped in its fall over the rift: tumbling, its covers spread a third
-    open, the pages fanned between them, two leaves torn loose and stopped beside it. Lines run across the
-    one page that shows, too worn to read."""
+    open (rounded boards, a sunken panel on each), the pages fanned between them, each bowed as a page bows, two
+    leaves torn loose (ragged at the spine, curling) and stopped beside it. Lines run across the one page that
+    shows, too worn to read."""
     cover = mk.noisy("Snb_Cover", srgb(16, 16, 18), srgb(38, 37, 40), scale=10, roughness=0.85)
+    panel = mk.noisy("Snb_Panel", srgb(10, 10, 12), srgb(26, 25, 28), scale=14, roughness=0.9)
     page = mk.noisy("Snb_Page", srgb(150, 146, 136), srgb(190, 186, 174), scale=16, roughness=0.9)
     ink = mk.flat("Snb_Ink", srgb(40, 38, 40), 0.9)
     w, h, t = 4.2, 6.0, 0.22  # a cover: across (from the spine), up, thick
     parts = []
+    rng = random.Random(41)
     opening = 128.0  # degrees between the covers
     for k, ang in enumerate((-opening / 2, opening / 2)):
-        board = mk.box(f"Cover{k}", (w, t, h), (w / 2, 0, 0), mat=cover, bevel=0.05)
-        board.matrix_basis = Matrix.Rotation(math.radians(ang), 4, "Z") @ board.matrix_basis
-        parts.append(board)
+        side = -1 if k == 0 else 1
+        for obj in (pk.rounded(f"Cover{k}", (w, t, h), (w / 2, 0, 0), cover, r=0.09),
+                    mk.box(f"Panel{k}", (w - 0.9, 0.04, h - 1.2), (w / 2 + 0.1, side * (t / 2 + 0.005), 0), mat=panel)):
+            obj.matrix_basis = Matrix.Rotation(math.radians(ang), 4, "Z") @ obj.matrix_basis
+            parts.append(obj)
     for k in range(7):
         ang = -opening / 2 + 4.0 + k * (opening - 8.0) / 6
-        leaf = mk.box(f"Leaf{k}", (w - 0.25, 0.05, h - 0.3), ((w - 0.25) / 2 + 0.08, 0, 0), mat=page)
-        leaf.matrix_basis = Matrix.Rotation(math.radians(ang), 4, "Z") @ leaf.matrix_basis
+        leaf = _stone_leaf(f"Leaf{k}", w - 0.25, h - 0.3, rng.uniform(0.12, 0.3) * (1 if k % 2 else -1), page, rng,
+                           curl=rng.uniform(-0.25, 0.25))
+        leaf.matrix_basis = Matrix.Rotation(math.radians(ang), 4, "Z") @ Matrix.Translation((0.08, 0, 0))
         parts.append(leaf)
     # The lines on the last leaf before the open cover (the one that shows), worn and broken.
-    rng = random.Random(41)
     last = -opening / 2 + 4.0 + 6 * (opening - 8.0) / 6
     for k in range(9):
         length = rng.uniform(1.4, 3.2)
         line = mk.box(f"Line{k}", (length, 0.02, 0.07), (0.4 + length / 2, -0.04, h / 2 - 0.9 - k * 0.5), mat=ink)
         line.matrix_basis = Matrix.Rotation(math.radians(last), 4, "Z") @ line.matrix_basis
         parts.append(line)
-    parts.append(mk.cylinder("Spine", t * 1.2, h, (0, 0, 0), mat=cover, verts=10))
+    parts.append(mk.cylinder("Spine", t * 1.2, h, (0, 0, 0), mat=cover, verts=14))
     # Two leaves torn loose, stopped where they flew.
     for k, (pos, rot) in enumerate((((5.4, 1.8, 3.4), (20, 35, 70)), ((-3.6, 2.4, -3.8), (-30, 15, 140)))):
-        parts.append(mk.box(f"Loose{k}", (w * 0.8, 0.05, h * 0.8), pos, rot=rot, mat=page))
+        loose = _stone_leaf(f"Loose{k}", w * 0.8, h * 0.8, 0.35, page, rng, torn=True, curl=0.6)
+        loose.matrix_basis = (Matrix.Translation(pos) @ Euler([math.radians(a) for a in rot]).to_matrix().to_4x4()
+                              @ Matrix.Translation((-w * 0.4, 0, 0)))
+        parts.append(loose)
     # The whole book tumbling: tipped forward and over.
     tumble = Matrix.Rotation(math.radians(-28), 4, "X") @ Matrix.Rotation(math.radians(18), 4, "Y")
     for obj in parts:
