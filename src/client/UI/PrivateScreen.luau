@@ -84,9 +84,13 @@ local function fillCover()
 		task.spawn(function()
 			local angle = math.rad(200)
 			while view.Parent do
-				angle += 0.01
-				turn(angle)
-				task.wait(1 / 30)
+				if Router.isOpen("grimoire") then
+					angle += 0.01
+					turn(angle)
+					task.wait(1 / 30)
+				else
+					task.wait(0.5)
+				end
 			end
 		end)
 	end

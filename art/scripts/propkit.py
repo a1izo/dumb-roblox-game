@@ -221,11 +221,12 @@ def frame(name, w, h, t, depth, loc, mat, rot=(0, 0, 0)):
     ]
 
 
-def skull(name, loc, r, mat, dark, yaw=0.0, segments=48):
+def skull(name, loc, r, mat, dark, yaw=0.0, segments=48, teeth=7):
     """A carved human skull of cranium radius `r` at `loc`, facing -Y turned `yaw` degrees about Z: one sculpted
     shell (the domed cranium swelling behind, temples pinched in, a brow ridge, cheekbones, the face drawn down and
     forward into the jaw and chin) with the eye sockets, the nose's hollow and the line of the mouth pressed into it
-    in `dark`, and a row of teeth along each side of the mouth. Parts: [shell, teeth]."""
+    in `dark`, and a row of `teeth` along each side of the mouth (none for 0; a small skull far off needs fewer, and
+    fewer `segments`). Parts: [shell, teeth]."""
     import bmesh
     from mathutils import Vector
 
@@ -313,17 +314,16 @@ def skull(name, loc, r, mat, dark, yaw=0.0, segments=48):
         bpy.data.objects.remove(cutter, do_unlink=True)
 
     # The teeth: a row above and below the mouth's line, set on the surface there.
+    count = teeth
     teeth = []
-    for row, dz in (("Upper", 0.05), ("Lower", -0.05)):
-        for k in range(7):
-            x = -0.28 + 0.56 * k / 6
+    for row, dz in (("Upper", 0.05), ("Lower", -0.05)) if count > 0 else ():
+        for k in range(count):
+            x = -0.28 + 0.56 * k / max(1, count - 1)
             p, n = min(surface, key=lambda s: (s[0].x - x) ** 2 + 4 * (s[0].z - zm - dz) ** 2 + 0.01 * s[0].y)
             yaw_t = math.degrees(math.atan2(n.x, -n.y))
             teeth.append(mk.box(name + row + "Tooth", (0.082, 0.07, 0.088), (p.x + n.x * 0.004, p.y + n.y * 0.004, zm + dz),
-                                rot=(0, 0, yaw_t), mat=mat, bevel=0.022))
-    teeth = mk.merge(teeth, name + "Teeth")
-
-    parts = [shell, teeth]
+                                rot=(0, 0, yaw_t), mat=mat, bevel=0.022 if count > 5 else 0.0))
+    parts = [shell] + ([mk.merge(teeth, name + "Teeth")] if teeth else [])
     for obj in parts:
         obj.scale = (r, r, r)
         obj.rotation_mode = "XYZ"

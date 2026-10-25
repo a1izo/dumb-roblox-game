@@ -102,7 +102,11 @@ def strawberry():
         a = math.pi * k / 5
         r = 0.16 if k % 2 == 0 else 0.07
         star.append((r * math.cos(a), r * math.sin(a)))
-    return [mk.lathe("Berry", profile, mat=flesh, segments=16),
+    # (rounded, with a faint seeded grain: held up to the camera)
+    berry = mk.lathe("Berry", profile, mat=flesh, segments=24)
+    mk.subdivide(berry, 1)
+    mk.displace_noise(berry, strength=0.006, scale=0.03, name="SbSeeds")
+    return [berry,
             mk.extrude_shape("Cap", star, 0.02, loc=(0, 0, 0.175), mat=leaf),
             mk.tube("Stalk", (0, 0, 0.18), (0.02, 0, 0.26), 0.015, 0.012, mat=leaf, verts=6)], []
 

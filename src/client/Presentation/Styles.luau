@@ -2087,7 +2087,7 @@ end
 
 -- A light that flickers like a fire's (or breathes, `slow`) for as long as `folder` is worn.
 local function flicker(folder: Instance, light: PointLight, base: number, slow: boolean?)
-	if Motion.isLow() then
+	if Motion.isLow() or folder:FindFirstAncestorWhichIsA("ViewportFrame") then
 		return
 	end
 	task.spawn(function()
@@ -2105,6 +2105,9 @@ end
 -- Veils trailing from points on a body (`starts`: attachments on it): each a soft beam out to a free end that
 -- follows behind and below the body with a lag, so they stream back as it moves and settle as it stops.
 local function trailingVeils(folder: Instance, character: Model, starts: { Attachment }, color: Color3)
+	if character:FindFirstAncestorWhichIsA("ViewportFrame") then
+		return
+	end
 	local root = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 	if not root or not root:IsA("BasePart") then
 		return

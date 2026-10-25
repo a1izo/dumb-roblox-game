@@ -114,7 +114,10 @@ def apple():
     leaf = mk.flat("Ap_Leaf", srgb(46, 70, 34), 0.6)
     profile = [(0.0, 0.03), (0.12, 0.0), (0.3, 0.06), (0.42, 0.2), (0.46, 0.38), (0.43, 0.56), (0.32, 0.7), (0.14, 0.74),
                (0.0, 0.66)]
-    parts = [mk.lathe("Body", profile, mat=skin, segments=20),
+    # (rounded: an apple is held up to the camera in Apple Bite)
+    body = mk.lathe("Body", profile, mat=skin, segments=24)
+    mk.subdivide(body, 1)
+    parts = [body,
              mk.tube("Stem", (0, 0, 0.64), (0.04, 0.02, 0.9), 0.025, 0.018, mat=stem, verts=6),
              mk.sphere("Leaf", 0.14, (0.14, 0.04, 0.84), scale=(1.0, 0.45, 0.08), mat=leaf, segments=10, rings=4)]
     return parts, []
@@ -151,8 +154,9 @@ def apple_bitten():
     leaf = mk.flat("Ab_Leaf", srgb(46, 70, 34), 0.6)
     profile = [(0.0, 0.03), (0.12, 0.0), (0.3, 0.06), (0.42, 0.2), (0.46, 0.38), (0.43, 0.56), (0.32, 0.7), (0.14, 0.74),
                (0.0, 0.66)]
-    body = mk.lathe("Body", profile, mat=skin, segments=20)
+    body = mk.lathe("Body", profile, mat=skin, segments=32)
     _bitten(body, [((0.04, -0.5, 0.33), 0.22), ((-0.08, -0.5, 0.5), 0.2)], flesh)
+    mk.smooth(body)
     parts = [body,
              mk.tube("Stem", (0, 0, 0.64), (0.04, 0.02, 0.9), 0.025, 0.018, mat=stem, verts=6),
              mk.sphere("Leaf", 0.14, (0.14, 0.04, 0.84), scale=(1.0, 0.45, 0.08), mat=leaf, segments=10, rings=4)]

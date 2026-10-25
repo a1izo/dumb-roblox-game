@@ -62,7 +62,10 @@ def void_mat(prefix):
 
 
 def long_bone(name, a, b, r, mat):
-    """A long bone from a to b: the shaft and a double knob at each end."""
+    """A long bone from a to b, grown as one surface (a skin over its line, rounded): each end swelling into two
+    rounded knobs side by side, the neck narrowing into a long thin shaft between them."""
+    from props_world import skin_body
+
     ax, ay, az = a
     bx, by, bz = b
     length = math.dist(a, b)
@@ -70,40 +73,41 @@ def long_bone(name, a, b, r, mat):
     # A side step across the bone for the paired knobs.
     sx, sy = -uy, ux
     s = math.hypot(sx, sy) or 1.0
-    sx, sy = sx / s * r * 0.9, sy / s * r * 0.9
-    parts = [mk.tube(name, a, b, r, r * 0.9, mat=mat, verts=8)]
-    for (px, py, pz) in (a, b):
-        for k in (-1, 1):
-            parts.append(mk.sphere(name + "Knob", r * 1.55, (px + sx * k, py + sy * k, pz), mat=mat, segments=8,
-                                   rings=6))
-    return parts
+    sx, sy = sx / s, sy / s
+    joints, bones = [], []
+
+    def joint(p, radius):
+        joints.append((p[0], p[1], p[2], radius, radius))
+        return len(joints) - 1
+
+    last = None
+    for t, f in ((0.0, 1.25), (0.1, 1.05), (0.25, 0.82), (0.5, 0.74), (0.75, 0.82), (0.9, 1.05), (1.0, 1.25)):
+        k = joint((ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t), r * f)
+        if last is not None:
+            bones.append((last, k))
+        last = k
+        if t in (0.0, 1.0):
+            for side in (-1, 1):
+                # (the knob a little past the end, to the side)
+                out = -1 if t == 0.0 else 1
+                knob = joint((ax + (bx - ax) * t + (sx * side * 0.7 + ux * out * 0.35) * r,
+                              ay + (by - ay) * t + (sy * side * 0.7 + uy * out * 0.35) * r,
+                              az + (bz - az) * t + uz * out * 0.35 * r), r * 1.15)
+                bones.append((k, knob))
+    grown = skin_body(name, mat, joints, bones, levels=1)
+    # (thinned to about what the old tube and knobs cost: a throne carries fourteen of them)
+    grown.modifiers.new("Decimate", "DECIMATE").ratio = 0.55
+    return [grown]
 
 
-def skull(prefix, x, y, z, r, mat, dark, yaw=0.0, jaw=True):
-    """A human skull of cranium radius r, its face towards -Y turned by yaw degrees about Z: the
-    domed cranium, cheekbones, the dark eye sockets and nose, the jaw with its teeth."""
-    a = math.radians(yaw)
-
-    def at(lx, ly, lz):
-        return (x + lx * math.cos(a) - ly * math.sin(a), y + lx * math.sin(a) + ly * math.cos(a), z + lz)
-
-    parts = [mk.sphere(prefix + "Cranium", r, at(0, 0.1 * r, 0.15 * r), scale=(0.9, 1.08, 0.95), mat=mat, segments=14,
-                       rings=10),
-             mk.sphere(prefix + "Face", r * 0.62, at(0, -0.62 * r, -0.28 * r), scale=(1.05, 0.7, 0.9), mat=mat, segments=10,
-                       rings=8)]
-    for k in (-1, 1):
-        parts.append(mk.sphere(prefix + "Eye", r * 0.22, at(k * 0.32 * r, -0.95 * r, -0.12 * r), scale=(1.1, 0.6, 1.0),
-                               mat=dark, segments=8, rings=6))
-        parts.append(mk.sphere(prefix + "Cheek", r * 0.2, at(k * 0.55 * r, -0.72 * r, -0.36 * r), mat=mat, segments=6,
-                               rings=4))
-    parts.append(mk.sphere(prefix + "Nose", r * 0.1, at(0, -1.0 * r, -0.4 * r), scale=(0.9, 0.6, 1.4), mat=dark, segments=6,
-                           rings=4))
-    if jaw:
-        parts.append(mk.box(prefix + "Jaw", (0.78 * r, 0.62 * r, 0.26 * r), at(0, -0.7 * r, -0.74 * r), rot=(0, 0, yaw),
-                            mat=mat, bevel=0.1 * r))
-        parts.append(mk.box(prefix + "Teeth", (0.62 * r, 0.06 * r, 0.12 * r), at(0, -1.0 * r, -0.6 * r), rot=(0, 0, yaw),
-                            mat=mat))
-    return parts
+def skull(prefix, x, y, z, r, mat, dark, yaw=0.0, jaw=True, far=False):
+    """A human skull of cranium radius r, its face towards -Y turned by yaw degrees about Z: the carved skull
+    (propkit.skull: one sculpted shell, the sockets and the nose cut deep into it, teeth along the mouth), lighter
+    for a small one and lightest for one seen only from far below (`far`: no teeth, a coarser shell; a prop's mesh
+    stays under Roblox's 20,000 triangles). (`jaw` is kept for the callers: the carved skull always has its jaw.)"""
+    if far:
+        return pk.skull(prefix, (x, y, z), r, mat, dark, yaw=yaw, segments=14, teeth=0)
+    return pk.skull(prefix, (x, y, z), r, mat, dark, yaw=yaw, segments=20 if r < 0.45 else 24, teeth=5)
 
 
 def beast_skull(prefix, x, y, z, s, mat, dark, horn, jaw=True):
@@ -380,7 +384,10 @@ def skull_pile():
     old = old_bone_mat("Skp")
     dark = void_mat("Skp")
     ash = mk.noisy("Skp_Ash", srgb(80, 80, 82), srgb(112, 112, 114), scale=20, roughness=0.95)
-    parts = [mk.sphere("Mound", 1.7, (0, 0, 0.1), scale=(1.1, 0.9, 0.42), mat=ash, segments=14, rings=8)]
+    # (a lumpy heap of ash, not a smooth dome)
+    mound = mk.sphere("Mound", 1.7, (0, 0, 0.1), scale=(1.1, 0.9, 0.42), mat=ash, segments=28, rings=14)
+    mk.displace_noise(mound, strength=0.22, scale=0.55, name="SkpMound")
+    parts = [mound]
     placed = [(-0.9, -0.5, 0.75, 0.45, 20), (0.8, -0.6, 0.7, 0.42, -25), (0.0, 0.5, 0.85, 0.46, 170),
               (-0.2, -0.3, 1.45, 0.44, 5), (1.3, 0.5, 0.55, 0.38, 70), (-1.4, 0.4, 0.5, 0.4, -80)]
     for k, (x, y, z, r, yaw) in enumerate(placed):
@@ -1193,7 +1200,7 @@ def bone_throne():
              mk.box("BackPanel", (4.2, 0.12, 4.6), (0, BACK_Y - 0.04, SEAT_TOP + 3.4), mat=grey, bevel=0.04),
              mk.box("BackInset", (3.6, 0.12, 4.0), (0, BACK_Y - 0.08, SEAT_TOP + 3.4), mat=stone, bevel=0.03)]
     # Carved in the inset, over where the champion's head comes: a skull, flattened into the stone.
-    relief = skull("Relief", 0, BACK_Y - 0.05, SEAT_TOP + 4.85, 0.5, grey, void, jaw=True)
+    relief = skull("Relief", 0, BACK_Y - 0.05, SEAT_TOP + 4.85, 0.5, grey, void, jaw=True, far=True)
     for obj in relief:
         obj.scale = (obj.scale[0], obj.scale[1] * 0.4, obj.scale[2])
     parts += relief
@@ -1208,11 +1215,12 @@ def bone_throne():
             x = sx * (3.42 + dx)
             parts += long_bone(f"Pilaster{sx}{k}", (x, BACK_Y + 0.5 + dy, 1.0), (x, BACK_Y + 0.5 + dy, SEAT_TOP + 6.3),
                                0.16, bone if k else pale)
-        parts += skull(f"PilasterSkull{sx}", sx * 3.42, BACK_Y + 0.3, SEAT_TOP + 6.95, 0.48, pale, void)
+        parts += skull(f"PilasterSkull{sx}", sx * 3.42, BACK_Y + 0.3, SEAT_TOP + 6.95, 0.48, pale, void, far=True)
     # A row of skulls along the back's top, as in the ossuary's garlands, long bones laid between them.
     for k in range(5):
         x = (k - 2) * 1.1
-        parts += skull(f"Row{k}", x, BACK_Y + 0.25, SEAT_TOP + 6.95, 0.38, pale if k % 2 == 0 else bone, void, jaw=k == 2)
+        parts += skull(f"Row{k}", x, BACK_Y + 0.25, SEAT_TOP + 6.95, 0.38, pale if k % 2 == 0 else bone, void, jaw=k == 2,
+                       far=True)
     for k in range(4):
         x = (k - 1.5) * 1.1
         parts += long_bone(f"RowBone{k}", (x - 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62), (x + 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62),
