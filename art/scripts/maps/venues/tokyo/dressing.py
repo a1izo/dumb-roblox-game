@@ -22,6 +22,15 @@ from maps.venues.tokyo.edges import facing, place
 RNG = random.Random(33)
 
 
+def trunk_at(s, key, x, z, turn, size=1.0, y=None):
+    """Places a tree so its trunk, off the middle of the tree's spread by its catalog anchor, stands at (x, z)."""
+    ax, az = (catalog.load().get(key) or {}).get("anchor") or [0.0, 0.0]
+    a = math.radians(turn)
+    ox = (ax * math.cos(a) + az * math.sin(a)) * size
+    oz = (-ax * math.sin(a) + az * math.cos(a)) * size
+    s.prop(key, x - ox, z - oz, turn, size, 0.0 if y is None else y)
+
+
 def kerb(name, side, u, inset=1.0):
     """A spot on a street's sidewalk u studs along it, `inset` in from the kerb; with the street's
     direction and the direction from the road into the sidewalk."""
@@ -195,7 +204,7 @@ def plaza(s):
     for x, z in ((-96.0, -46.0), (-86.0, -31.5), (-100.0, -96.0)):
         s.box("Stone", (x, 0.6, z), (7.0, 1.2, 7.0), 0)
         s.collider((x, 0.6, z), (7.0, 1.2, 7.0), 0, True, "Stone")
-        s.prop("Tree", x, z, RNG.uniform(0, 360), 1.0, 1.2)
+        trunk_at(s, "Tree", x, z, RNG.uniform(0, 360), 1.0, 1.2)
         s.prop("Bench", x, z + 5.2, 180)
     for x, z in ((-105.2, -50.0), (-103.0, -35.8)):
         s.prop("Planter", x, z, 90)
@@ -273,13 +282,8 @@ def riverside(s):
                 (cx, cz), d = P.river_frame(x)
                 n = g2.normal_left(d)
                 p = (cx + n[0] * offset, cz + n[1] * offset)
-                # (placed so its trunk, off the middle of the tree's spread by its catalog anchor, stands at p)
                 turn, size = RNG.uniform(0, 360), RNG.uniform(0.85, 1.05)
-                ax, az = (catalog.load().get("TreeSakura") or {}).get("anchor", [0.0, 0.0])
-                a = math.radians(turn)
-                ox = (ax * math.cos(a) + az * math.sin(a)) * size
-                oz = (-ax * math.sin(a) + az * math.cos(a)) * size
-                s.prop("TreeSakura", p[0] - ox, p[1] - oz, turn, size)
+                trunk_at(s, "TreeSakura", p[0], p[1], turn, size)
                 # The trunk only (the promenade is 6 studs wide, the trees down its middle).
                 s.collider((p[0], 3.5, p[1]), (0.8, 7.0, 0.8), 0, True, None)
                 trees.append((x, p, d))

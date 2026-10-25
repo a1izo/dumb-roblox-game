@@ -31,15 +31,37 @@ def bat():
 
 @prop("Blindfold", pivot="centre", material="Fabric", collide=False, texture=256)
 def blindfold():
-    """A band of black cloth tied round the head, the knot and its two loose ends at the back: Blindfold
-    Lift's. Round Z (the head's up), the front facing -Y."""
+    """A band of black cloth tied round the head, creased where it is pulled tight, the knot and its two loose ends
+    falling at the back: Blindfold Lift's. Round Z (the head's up), the front facing -Y."""
+    import bmesh
+
+    from props_lobby import _blob
+
     cloth = mk.noisy("Bf_Cloth", srgb(12, 12, 14), srgb(34, 34, 38), roughness=0.85, kind="cloth")
-    band = [(0.64, -0.16), (0.69, -0.16), (0.69, 0.16), (0.64, 0.16), (0.64, -0.16)]
-    parts = [mk.lathe("Band", band, mat=cloth, segments=28),
-             mk.sphere("Knot", 0.1, (0, 0.72, 0.02), scale=(1.2, 0.8, 1.0), mat=cloth, segments=10, rings=6)]
+    band = mk.lathe("Band", [(0.64, -0.16), (0.69, -0.17), (0.7, 0.0), (0.69, 0.17), (0.64, 0.16), (0.64, -0.16)],
+                    mat=cloth, segments=40)
+    bm = bmesh.new()
+    bm.from_mesh(band.data)
+    for v in bm.verts:
+        a = math.atan2(v.co.y, v.co.x)
+        # (creases across the band, and the band narrowing as it is drawn into the knot at the back)
+        r = math.hypot(v.co.x, v.co.y)
+        r += 0.012 * math.sin(a * 14) * (abs(v.co.z) / 0.17)
+        back = max(0.0, math.sin(a)) ** 6
+        v.co.z *= 1.0 - 0.45 * back
+        v.co.x, v.co.y = math.cos(a) * r, math.sin(a) * r
+    bm.to_mesh(band.data)
+    bm.free()
+    knot = _blob("Knot", [("ellipsoid", (0, 0.71, 0.02), 0.09, (1.3, 0.8, 1.0)),
+                          ("ellipsoid", (-0.09, 0.73, 0.04), 0.07, (1.2, 0.6, 0.8)),
+                          ("ellipsoid", (0.09, 0.73, 0.0), 0.07, (1.2, 0.6, 0.8))], 0.02, 0.7, cloth)
+    parts = [band, knot]
     for side in (-1, 1):
-        parts.append(mk.box("Tail", (0.12, 0.03, 0.42), (0.07 * side, 0.74, -0.2), rot=(-14, 0, 12 * side), mat=cloth,
-                            bevel=0.01))
+        # each loose end a ribbon of cloth, falling and turning a little
+        tail = [(0.05 * side, 0.75, -0.02), (0.09 * side, 0.78, -0.16), (0.1 * side, 0.77, -0.3), (0.14 * side, 0.76, -0.42)]
+        ribbon = pk.sweep("Tail", tail, [0.05, 0.055, 0.06, 0.05], cloth, sides=6)
+        ribbon.scale = (1.0, 0.35, 1.0)
+        parts.append(ribbon)
     return parts, []
 
 
@@ -174,30 +196,68 @@ def _square_band(tag, inner, outer, half_height, mat):
 def wristwatch():
     """A plain steel watch on a black leather strap, round the left wrist: Forty Seconds'. The strap goes
     round Z (along the arm) and lies flat on the arm's four sides (2026-10-17: it was round, and the square arm's
-    corners came through it); the face looks out at -Y."""
+    corners came through it), stitched along its edges, its buckle and holes under the wrist; the case on its four
+    lugs, a bezel, the crown at its side, twelve markers, the hands; the face looks out at -Y."""
     steel = mk.noisy("Ww_Steel", srgb(120, 122, 128), srgb(186, 188, 194), roughness=0.25, metallic=1.0)
     strap = mk.noisy("Ww_Leather", srgb(14, 14, 16), srgb(36, 34, 34), roughness=0.6, kind="leather")
+    stitch = mk.flat("Ww_Stitch", srgb(70, 66, 60), 0.8)
     dial = mk.flat("Ww_Face", srgb(232, 228, 218), 0.3, kind="plastic")
     hands = mk.flat("Ww_Iron", srgb(20, 20, 22), 0.4, metallic=0.8)
     parts = [*_square_band("Strap", 0.53, 0.58, 0.1, strap),
-             mk.cylinder("Case", 0.22, 0.09, (0, -0.625, 0), rot=(90, 0, 0), mat=steel, verts=20, bevel=0.015),
-             mk.cylinder("Dial", 0.185, 0.01, (0, -0.675, 0), rot=(90, 0, 0), mat=dial, verts=20),
-             mk.box("Hour", (0.02, 0.006, 0.1), (0.0, -0.682, 0.04), mat=hands),
-             mk.box("Minute", (0.015, 0.006, 0.15), (0.05, -0.682, -0.03), rot=(0, 40, 0), mat=hands)]
+             mk.cylinder("Case", 0.22, 0.09, (0, -0.625, 0), rot=(90, 0, 0), mat=steel, verts=28, bevel=0.015),
+             mk.torus("Bezel", 0.2, 0.022, (0, -0.672, 0), rot=(90, 0, 0), mat=steel, major_segments=28,
+                      minor_segments=6),
+             mk.cylinder("Dial", 0.185, 0.01, (0, -0.675, 0), rot=(90, 0, 0), mat=dial, verts=28),
+             mk.cylinder("Crown", 0.035, 0.06, (0.245, -0.625, 0), rot=(0, 90, 0), mat=steel, verts=10),
+             mk.box("Hour", (0.02, 0.006, 0.1), (0.0, -0.684, 0.04), mat=hands),
+             mk.box("Minute", (0.015, 0.006, 0.15), (0.05, -0.684, -0.03), rot=(0, 40, 0), mat=hands),
+             mk.cylinder("Pin", 0.014, 0.01, (0, -0.686, 0), rot=(90, 0, 0), mat=hands, verts=8)]
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        long = 0.05 if k % 3 == 0 else 0.03
+        parts.append(mk.box("Marker", (0.012, 0.004, long), (math.sin(a) * 0.155, -0.682, math.cos(a) * 0.155),
+                            rot=(0, -math.degrees(a), 0), mat=hands))
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            # (the case's four lugs, out to each side where the strap runs on from it)
+            parts.append(mk.box("Lug", (0.08, 0.05, 0.045), (sx * 0.23, -0.6, sz * 0.06), mat=steel, bevel=0.01))
+        # (the stitching along both edges of the strap's front)
+        parts.append(mk.box("Stitch", (1.0, 0.004, 0.008), (0, -0.581, sx * 0.08), mat=stitch))
+    # Under the wrist: the buckle's frame and its prong, three holes past it.
+    parts += pk.frame("Buckle", 0.26, 0.24, 0.03, 0.03, (0, 0.6, 0), steel, rot=(0, 0, 0))
+    parts.append(mk.box("Prong", (0.02, 0.03, 0.2), (0, 0.6, 0), rot=(0, 90, 0), mat=steel))
+    for k in range(3):
+        parts.append(mk.cylinder("Hole", 0.012, 0.01, (0.2 + k * 0.08, 0.581, 0), rot=(90, 0, 0), mat=hands, verts=6))
     return parts, []
 
 
 @prop("Cuff", pivot="centre", material="Metal", collide=False, texture=256)
 def cuff():
     """One steel handcuff closed round an R6 wrist: Cuffed Together's, one on each of the two chained wrists,
-    the chain hung from the ring on its outer side. A square band round Z (the arm), the lock at -Y, the ring at
-    +X (in the game, the arm's outside for a left wrist: turned round for a right one)."""
+    the chain hung from the ring on its outer side. A square band round Z (the arm): its double strand drawn as two
+    rails along the band's edges, the single strand's ratchet teeth where it runs into the lock, the lock's case at
+    -Y with its rivets and keyhole, the hinge at +Y, the swivel and ring at +X (in the game, the arm's outside for a
+    left wrist: turned round for a right one)."""
     steel = mk.noisy("Cf_Steel", srgb(88, 90, 96), srgb(170, 172, 178), scale=25, roughness=0.25, metallic=1.0)
-    parts = [*_square_band("Band", 0.53, 0.6, 0.11, steel),
-             mk.box("Lock", (0.36, 0.08, 0.2), (0, -0.64, 0), mat=steel, bevel=0.02),
-             mk.box("Hinge", (0.12, 0.1, 0.22), (0, 0.64, 0), mat=steel, bevel=0.02),
-             mk.torus("Ring", 0.07, 0.022, (0.68, 0, 0), rot=(90, 0, 0), mat=steel, major_segments=14,
-                      minor_segments=6)]
+    dark = mk.flat("Cf_Dark", srgb(20, 20, 22), 0.5, metallic=0.6)
+    parts = [*_square_band("Band", 0.53, 0.6, 0.11, steel)]
+    for sz in (-1, 1):
+        parts += _square_band("Rail", 0.6, 0.625, 0.018, steel)
+        for p in parts[-4:]:
+            p.location.z += sz * 0.09
+    for k in range(7):
+        parts.append(mk.box("Tooth", (0.03, 0.02, 0.12), (-0.62, -0.5 + k * 0.05, 0), rot=(0, 0, 30), mat=steel))
+    parts += [pk.rounded("Lock", (0.42, 0.13, 0.27), (0, -0.665, 0), steel, r=0.03),
+              mk.cylinder("Keyhole", 0.026, 0.02, (0.08, -0.735, 0.03), rot=(90, 0, 0), mat=dark, verts=10),
+              mk.box("KeySlot", (0.018, 0.02, 0.05), (0.08, -0.735, -0.005), mat=dark),
+              pk.rounded("Hinge", (0.14, 0.12, 0.25), (0, 0.65, 0), steel, r=0.02),
+              mk.cylinder("HingePin", 0.03, 0.27, (0, 0.71, 0), mat=steel, verts=10),
+              mk.cylinder("Swivel", 0.045, 0.08, (0.645, 0, 0), rot=(0, 90, 0), mat=steel, verts=10),
+              mk.torus("Ring", 0.07, 0.022, (0.73, 0, 0), rot=(90, 0, 0), mat=steel, major_segments=18,
+                       minor_segments=8)]
+    for x in (-0.15, 0.15):
+        for z in (-0.08, 0.08):
+            parts.append(mk.sphere("Rivet", 0.02, (x, -0.732, z), scale=(1, 0.5, 1), mat=steel, segments=8, rings=5))
     return parts, []
 
 
@@ -379,28 +439,49 @@ def tailcoat():
 
 @prop("Cravat", pivot="centre", material="Fabric", collide=False, texture=256)
 def cravat():
-    """A white silk cravat at the throat, a soft knot with two folds falling over the shirt front and a small gold
-    pin: The Smiling Lord's. The front faces -Y."""
+    """A white silk cravat at the throat: a soft knot, two broad folds falling from it over the shirt front, widening
+    as they fall and crossing a little (one smooth surface of silk), a small gold pin: The Smiling Lord's. The front
+    faces -Y."""
+    from props_lobby import _blob
+
     silk = mk.noisy("Cr_Silk", srgb(232, 230, 224), srgb(250, 250, 246), roughness=0.4, kind="cloth")
     gold = mk.noisy("Cr_Gold", srgb(170, 130, 50), srgb(222, 184, 96), roughness=0.3, metallic=1.0)
-    parts = [mk.sphere("Knot", 0.13, (0, 0, 0.12), scale=(1.35, 0.7, 1.0), mat=silk, segments=14, rings=8)]
-    for side in (-1, 1):
-        parts.append(mk.box("Fold", (0.2, 0.06, 0.36), (0.06 * side, 0.02, -0.1), rot=(0, 9 * side, 0), mat=silk,
-                            bevel=0.03))
-    parts.append(mk.sphere("Pin", 0.035, (0, -0.07, 0.0), mat=gold, segments=8, rings=6))
-    return parts, []
+    knot = _blob("Knot", [("ellipsoid", (0, 0, 0.14), 0.09, (1.55, 0.8, 0.95)),
+                          ("ellipsoid", (0, -0.01, 0.07), 0.06, (1.2, 0.8, 1.0))], 0.016, 0.6, silk)
+    # (the two folds apart: each its own fall of silk, wider at its end, the right one over the left)
+    left = _blob("FoldL", [("capsule", (-0.03, 0.0, 0.06), (-0.09, 0.01, -0.12), 0.05),
+                           ("ellipsoid", (-0.095, 0.01, -0.17), 0.07, (1.2, 0.45, 0.9))], 0.016, 0.6, silk)
+    right = _blob("FoldR", [("capsule", (0.03, -0.02, 0.06), (0.07, -0.03, -0.15), 0.05),
+                            ("ellipsoid", (0.075, -0.03, -0.2), 0.07, (1.2, 0.45, 0.9))], 0.016, 0.6, silk)
+    left.rotation_euler = (0, 0, 0.12)
+    right.rotation_euler = (0, 0, -0.12)
+    return [knot, left, right, mk.sphere("Pin", 0.028, (0, -0.075, 0.1), mat=gold, segments=10, rings=6),
+            mk.cylinder("PinStem", 0.008, 0.05, (0, -0.06, 0.1), rot=(90, 0, 0), mat=gold, verts=6)], []
 
 
 @prop("Glove", pivot="centre", material="Fabric", collide=False, texture=256)
 def glove():
-    """A white cotton evening glove over the end of an R6 arm (its fist), with a turned-back cuff and two small
-    pearl buttons: The Smiling Lord's, one on each hand. Along Z (the arm's length), the cuff at the top."""
+    """A white cotton evening glove over the end of an R6 arm (its fist): soft and padded, the four knuckles of the
+    curled fingers swelling along its front edge, three stitched lines down the back of the hand on either side (so
+    one glove serves both hands), a flared, rolled cuff and two small pearl buttons: The Smiling Lord's, one on each
+    hand. Along Z (the arm's length), the cuff at the top."""
     cotton = mk.noisy("Gl_Cotton", srgb(232, 230, 224), srgb(248, 248, 244), roughness=0.85, kind="cloth")
+    stitch = mk.flat("Gl_Stitch", srgb(196, 192, 184), 0.9)
     pearl = mk.flat("Gl_Pearl", srgb(236, 232, 222), 0.3)
-    return [pk.rounded("Hand", (1.04, 1.04, 0.56), (0, 0, 0), cotton, r=0.06),
-            pk.rounded("Cuff", (1.1, 1.1, 0.13), (0, 0, 0.31), cotton, r=0.04),
-            mk.sphere("Button", 0.035, (0.2, -0.56, 0.3), mat=pearl, segments=8, rings=6),
-            mk.sphere("Button", 0.035, (0.32, -0.56, 0.3), mat=pearl, segments=8, rings=6)], []
+    parts = [pk.rounded("Hand", (1.04, 1.04, 0.56), (0, 0, 0), cotton, r=0.14)]
+    for k in range(4):
+        x = -0.36 + k * 0.24
+        parts.append(mk.sphere("Knuckle", 0.13, (x, -0.47, -0.2), scale=(0.95, 0.55, 0.8), mat=cotton, segments=12,
+                               rings=8))
+    for sx in (-1, 1):
+        for k in range(3):
+            y = -0.22 + k * 0.22
+            parts.append(mk.box("Stitch", (0.03, 0.025, 0.34), (sx * 0.525, y, -0.02), mat=stitch))
+    parts += [pk.rounded("Cuff", (1.12, 1.12, 0.12), (0, 0, 0.3), cotton, r=0.05),
+              pk.rounded("Roll", (1.16, 1.16, 0.06), (0, 0, 0.37), cotton, r=0.03),
+              mk.sphere("Button", 0.035, (0.2, -0.57, 0.3), mat=pearl, segments=8, rings=6),
+              mk.sphere("Button", 0.035, (0.32, -0.57, 0.3), mat=pearl, segments=8, rings=6)]
+    return parts, []
 
 
 # The emote wheel's revolver ------------------------------------------------------------------------------------------

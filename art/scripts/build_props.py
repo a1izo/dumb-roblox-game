@@ -130,9 +130,12 @@ FIT_TO_KEPT = {
     "Taxi": (5.74, 14.0, 5.28),
     "TreeSakura": (11.26, 10.14, 13.72),
     "SiteFence": (8.0, 2.57, 10.0),
+    # (and two Core props remade the same way, for the beds and the parking laid out round their old shapes)
+    "Tree": (7.642, 8.402, 13.717),
+    "Car": (5.4, 10.9, 3.444),
 }
 # (a tree takes being drawn up taller and narrower: fitted to the kept one's box along each axis on its own)
-FIT_STRETCH = frozenset({"TreeSakura", "SiteFence"})
+FIT_STRETCH = frozenset({"TreeSakura", "SiteFence", "Tree"})
 # Designs no map places: not built, so no file carries them.
 SHELVED = frozenset({"TreeZelkova", "PetalScatter"})
 
@@ -243,6 +246,7 @@ def build_one(key):
     # (a newer shape fitted to its kept one's box)
     fit_to = Vector(FIT_TO_KEPT[key]) if key in FIT_TO_KEPT else None
     fit_scale = 1.0
+    fit_k = Vector((1.0, 1.0, 1.0))  # (the fit along each axis: what glows, lights and the anchor move by)
     _remove(key)
     for obj in _glow_objects(key) + _piece_objects(key):
         bpy.data.objects.remove(obj, do_unlink=True)
@@ -289,10 +293,12 @@ def build_one(key):
         if fit_to is not None:
             have = Vector(mk.dimensions(main))
             if key in FIT_STRETCH:
-                main.data.transform(Matrix.Diagonal((*(fit_to[i] / max(have[i], 1e-6) for i in range(3)), 1.0)))
+                fit_k = Vector([fit_to[i] / max(have[i], 1e-6) for i in range(3)])
+                fit_scale = min(fit_k)
             else:
                 fit_scale = min(fit_to[i] / have[i] for i in range(3) if have[i] > 1e-6)
-                main.data.transform(Matrix.Scale(fit_scale, 4))
+                fit_k = Vector((fit_scale, fit_scale, fit_scale))
+            main.data.transform(Matrix.Diagonal((*fit_k, 1.0)))
         for high in highs.values():
             high.data.transform(Matrix.Translation(shift))
         mk.unwrap(main)
@@ -312,7 +318,7 @@ def build_one(key):
         obj = mk.merge(group, key + "_Glow" + ("" if i == 0 else str(i + 1)))
         # The glow moves with the main mesh, so it stays in place relative to it.
         obj.data.transform(Matrix.Translation(shift))
-        obj.data.transform(Matrix.Scale(fit_scale, 4))
+        obj.data.transform(Matrix.Diagonal((*fit_k, 1.0)))
         obj["glow_colour"] = list(colour)
         glow_objs.append(obj)
     glow_obj = glow_objs[0] if glow_objs else None
@@ -329,8 +335,8 @@ def build_one(key):
     def spot(point):
         """A point of the builder's, moved like the mesh and turned into Roblox axes (as the lights below)."""
         x, y, z = point
-        k = fit_scale
-        return [round(-(x + shift.x) * k, 3), round((z + shift.z) * k, 3), round((y + shift.y) * k, 3)]
+        k = fit_k
+        return [round(-(x + shift.x) * k.x, 3), round((z + shift.z) * k.z, 3), round((y + shift.y) * k.y, 3)]
 
     if pieces:
         for obj in pieces.values():
@@ -359,7 +365,7 @@ def build_one(key):
     # (a fifth number 1 marks a fire rather than a candle's flame)
     main["flames"] = json.dumps([spot(f[:3]) + [round(f[3], 3)] + list(f[4:5]) for f in more.get("flames", [])])
     anchor = spec.get("anchor")
-    main["anchor"] = json.dumps([round(-(anchor[0] + shift.x) * fit_scale, 3), round((anchor[1] + shift.y) * fit_scale, 3)]
+    main["anchor"] = json.dumps([round(-(anchor[0] + shift.x) * fit_k.x, 3), round((anchor[1] + shift.y) * fit_k.y, 3)]
                                 if anchor else None)
     # A station's screen slot stays in design coordinates (the station is placed by its origin).
     screen = spec.get("screen")

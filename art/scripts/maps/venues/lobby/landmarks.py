@@ -329,7 +329,7 @@ def bell(s):
             lx = side * (2.9 + 1.5 * math.sin(u * math.pi) - 3.6 * u * u)
             points.append(f.w3(lx, 0.3 + (top - 0.3) * u, side * 0.35 * u))
             radii.append(0.62 * (1 - u * 0.72))
-        s.bent_tube("BoneWhite", points, radii, 8)
+        s.bent_tube("BoneWhite", points, radii, 8, caps=(False, True))  # (its foot in the base)
         fx, fz = f.w(side * 2.9, 0.0)
         s.collider((fx, 3.6, fz), (1.5, 7.2, 1.5), rot, True, "BoneWhite")
     # The yoke it hangs from, lashed where the tusks cross; the bell; its clapper.
@@ -547,7 +547,7 @@ def carcass(s):
                 height = (py - 0.5) * math.cos(ang) + 1.8 * math.sin(ang * 2) - 0.6 * math.sin(ang)
                 rib.append((px + side[0] * sgn * reach, height, pz + side[1] * sgn * reach))
                 radii.append(0.9 - 0.3 * u)
-            s.bent_tube("BoneWhite", rib, radii, 7)
+            s.bent_tube("BoneWhite", rib, radii, 7, caps=(False, False))  # (from inside the process into the ash)
             fx, fz = px + side[0] * sgn * P.RIB_SPAN, pz + side[1] * sgn * P.RIB_SPAN
             s.collider((fx, 3.5, fz), (2.6, 7.0, 2.6), 0.0, True, "BoneWhite")
     # Bones strewn inside the cage, between the ribs' feet (clear of them).

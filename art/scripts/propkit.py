@@ -205,6 +205,84 @@ def pipe(name, a, b, r, mat, flanges=True):
     return parts
 
 
+def sweep(name, points, radius, mat, sides=6, caps=True):
+    """A round bar along the bent line through points (a cord, a coil, a chain's run, a curled stem): one mesh, its
+    rings carried along the line so it does not twist, each joint sharing its ring. radius: one number, or one per
+    point."""
+    import bmesh
+    from mathutils import Vector
+
+    pts = [Vector(p) for p in points]
+    radii = list(radius) if isinstance(radius, (list, tuple)) else [radius] * len(pts)
+    bm = bmesh.new()
+    dirs = [(pts[min(k + 1, len(pts) - 1)] - pts[max(k - 1, 0)]).normalized() for k in range(len(pts))]
+    w = dirs[0]
+    u = w.cross(Vector((0, 0, 1)) if abs(w.z) < 0.9 else Vector((1, 0, 0))).normalized()
+    rings = []
+    for k, p in enumerate(pts):
+        w = dirs[k]
+        u = (u - w * u.dot(w)).normalized()
+        v = w.cross(u)
+        rings.append([bm.verts.new(p + (u * math.cos(2 * math.pi * j / sides) + v * math.sin(2 * math.pi * j / sides))
+                                   * radii[k]) for j in range(sides)])
+    for k in range(len(pts) - 1):
+        for j in range(sides):
+            j1 = (j + 1) % sides
+            bm.faces.new((rings[k][j], rings[k + 1][j], rings[k + 1][j1], rings[k][j1]))
+    if caps:
+        bm.faces.new(rings[0])
+        bm.faces.new(list(reversed(rings[-1])))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj = mk._obj_from_bm(name, bm, mat)
+    mk.smooth(obj)
+    return obj
+
+
+def boundary_loop(bm, keep):
+    """The open edge of a bmesh (a hood's face opening, a sleeve's cuff) as a list of points in order along it,
+    taking only the boundary edges whose two ends pass keep(co); [] when there are none. A whole loop comes back
+    closed (its first point again at its end); a part of one, open."""
+    edges = [e for e in bm.edges if e.is_boundary and all(keep(v.co) for v in e.verts)]
+    if not edges:
+        return []
+    picked = set(edges)
+    ends = [v for v in {v for e in edges for v in e.verts} if sum(1 for e in v.link_edges if e in picked) == 1]
+    start = min(ends or {v for e in edges for v in e.verts}, key=lambda v: v.co.z)
+    loop, seen, cur = [start], {start}, start
+    while True:
+        nxt = [e.other_vert(cur) for e in cur.link_edges if e in picked and e.other_vert(cur) not in seen]
+        if not nxt:
+            break
+        cur = nxt[0]
+        seen.add(cur)
+        loop.append(cur)
+    if not ends:
+        loop.append(start)
+    return [tuple(v.co) for v in loop]
+
+
+def coil(name, a, b, turns, coil_r, wire_r, mat, sag=0.0):
+    """A coiled cord from a to b (a telephone's): a helix of `turns` round the line between them, `coil_r` out from
+    it, the wire `wire_r` thick; sag drops its middle."""
+    from mathutils import Vector
+
+    a, b = Vector(a), Vector(b)
+    axis = (b - a)
+    w = axis.normalized()
+    u = w.cross(Vector((0, 0, 1)) if abs(w.z) < 0.9 else Vector((1, 0, 0))).normalized()
+    v = w.cross(u)
+    n = max(8, int(turns * 10))
+    pts = []
+    for k in range(n + 1):
+        t = k / n
+        ang = 2 * math.pi * turns * t
+        ease = min(1.0, t * 12, (1 - t) * 12)  # (the ends straighten into their sockets)
+        p = a + axis * t + (u * math.cos(ang) + v * math.sin(ang)) * coil_r * ease
+        p.z -= sag * 4 * t * (1 - t)
+        pts.append(p)
+    return sweep(name, pts, wire_r, mat, sides=5)
+
+
 def rounded(name, size, loc, mat, r=0.08, rot=(0, 0, 0)):
     """A box with rounded edges (bevel of 3 segments)."""
     return mk.box(name, size, loc, rot=rot, mat=mat, bevel=r, segments=3)

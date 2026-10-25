@@ -115,7 +115,7 @@ def ribs(s, taken, rng):
                 py = math.sin(ang) * height * (1 - 0.12 * rib) - 2.0
                 points.append((px, py, pz))
                 radii.append(3.2 - 1.2 * abs(u - 0.5))
-            s.bent_tube("BoneOld", points, radii, 7)
+            s.bent_tube("BoneOld", points, radii, 7, caps=(False, False))  # (both feet in the ash)
         for q in range(7):
             a0 = (cx + along[0] * (q - 0.5) * span * 0.18, height - 4 - q * 2.2, cz + along[1] * (q - 0.5) * span * 0.18)
             s.lathe("BoneOld", a0, [(0.0, -3.0), (4.2, -2.2), (4.6, 0.0), (4.2, 2.2), (0.0, 3.0)], 9, caps=(False, False))

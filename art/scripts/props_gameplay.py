@@ -9,6 +9,7 @@ import bpy
 from mathutils import Vector
 
 import modelkit as mk
+import propkit as pk
 from common import srgb
 from props import PAPER_A, PAPER_B, RED, prop
 from props_world import dark_wood
@@ -125,6 +126,7 @@ def _hood_shell(name, mat):
     bmesh.ops.create_uvsphere(bm, u_segments=28, v_segments=16, radius=1.0)
     faces = [f for f in bm.faces if f.calc_center_median().y < -0.15 and -0.75 < f.calc_center_median().z < 0.7]
     bmesh.ops.delete(bm, geom=faces, context="FACES")
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1, use_grid_fill=True)
     for v in bm.verts:
         if v.co.z < -0.2:
             spread = -0.2 - v.co.z
@@ -134,6 +136,15 @@ def _hood_shell(name, mat):
         if v.co.z > 0.8:
             v.co.y += (v.co.z - 0.8) * 0.8
             v.co.z += (v.co.z - 0.8) * 0.5
+        # (folds of cloth falling from the crown, deeper as they fall; the hem in waves)
+        a = math.atan2(v.co.y, v.co.x)
+        if v.co.z < 0.4:
+            k = min(1.0, (0.4 - v.co.z) / 1.4)
+            v.co.x *= 1.0 + 0.05 * k * math.sin(a * 9)
+            v.co.y *= 1.0 + 0.05 * k * math.sin(a * 9)
+        if v.co.z < -1.0:
+            v.co.z += 0.06 * math.sin(a * 5)
+    loop = pk.boundary_loop(bm, lambda co: co.z > -1.3)  # (the opening's sides and brow, not across the chin)
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
@@ -143,6 +154,10 @@ def _hood_shell(name, mat):
     mk.smooth(obj)
     solid = obj.modifiers.new("Solidify", "SOLIDIFY")
     solid.thickness = 0.08
+    if len(loop) > 4:
+        # The face's opening edged with a thick rolled band, as one with the shell.
+        band = pk.sweep(name + "Band", loop, 0.07, mat, sides=8)
+        return mk.merge([obj, band], name)
     return obj
 
 

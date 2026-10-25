@@ -634,7 +634,9 @@ def stair_ends(data, world, problems):
 MAY_TOUCH = {frozenset(p) for p in (("Bicycle", "BikeRack"), ("PoliceTape", "SiteFence"),
                                     ("PoliceTape", "Barricade"), ("PoliceTape", "PoliceCar"),
                                     ("PoliceTape", "TrafficCone"), ("BarStool", "ShopCounter"),
-                                    ("BankerLamp", "Sideboard"))}
+                                    ("BankerLamp", "Sideboard"),
+                                    # (the umpire's chair stands at the net post, the winder's crank beside it)
+                                    ("TennisNet", "UmpireChair"))}
 TOUCH = 0.2  # how far two things may press into each other (a bin against a wall)
 # Props that meet the ground only at a pole or a trunk (their arms and canopies may reach over
 # other things): the size of that foot, at the prop's anchor.

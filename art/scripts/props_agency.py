@@ -464,14 +464,48 @@ def fax_machine():
 
 @prop("DeskPhone", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Agency")
 def desk_phone():
-    """A heavy office desk phone: the body, its handset on the cradle, the keypad and line keys."""
+    """A heavy office desk phone: its body sloping up to the back, a grid of twelve keys and a row of line keys on
+    the slope, a paper label strip, the handset lying in its cradle along the left with the coiled cord curling off
+    to the side, the message lamp lit."""
     dark = pk.plastic("Dphone_Dark", (30, 30, 34))
-    grey = pk.plastic("Dphone_Grey", (90, 92, 96))
-    parts = [pk.rounded("Body", (0.9, 0.8, 0.28), (0, 0, 0.14), dark, r=0.06),
-             pk.rounded("Handset", (0.85, 0.24, 0.2), (0, 0.18, 0.36), dark, r=0.09),
-             mk.box("Keypad", (0.35, 0.3, 0.03), (0.18, -0.22, 0.29), mat=grey),
-             mk.tube("Cord", (-0.45, 0.15, 0.15), (-0.55, 0.3, 0.02), 0.02, mat=dark, verts=4)]
-    glows = [mk.box("Line", (0.08, 0.04, 0.03), (-0.3, -0.3, 0.29), mat=pk.glow("Dphone_Line", (255, 90, 60), 3))]
+    key = pk.plastic("Dphone_Key", (196, 194, 188))
+    grey = pk.plastic("Dphone_Grey", (70, 72, 76))
+    paper = pk.plastic("Dphone_Paper", (236, 232, 218))
+    ink = pk.plastic("Dphone_Ink", (40, 40, 44))
+    slope = math.degrees(math.atan2(0.17, 0.61))
+
+    def on_slope(y):
+        return 0.13 + (y + 0.36) * 0.17 / 0.61
+
+    parts = [mk.extrude_shape("Body", [(-0.4, 0.0), (0.4, 0.0), (0.4, 0.27), (0.25, 0.31), (-0.36, 0.13), (-0.4, 0.08)],
+                              0.95, rot=(90, 0, 90), mat=dark, bevel=0.03),
+             pk.rounded("Foot", (0.9, 0.74, 0.03), (0, 0.0, 0.015), grey, r=0.01)]
+    # Twelve keys in four rows on the right of the slope, five line keys beside them, the label strip.
+    for row in range(4):
+        y = -0.26 + row * 0.11
+        for col in range(3):
+            parts.append(pk.rounded("Key", (0.075, 0.07, 0.035), (0.08 + col * 0.1, y, on_slope(y) + 0.02), key, r=0.01,
+                                    rot=(slope, 0, 0)))
+    for k in range(5):
+        y = -0.27 + k * 0.09
+        parts.append(pk.rounded("LineKey", (0.05, 0.05, 0.03), (0.4, y, on_slope(y) + 0.02), grey, r=0.008,
+                                rot=(slope, 0, 0)))
+    parts.append(mk.box("Label", (0.3, 0.1, 0.01), (0.18, 0.18, on_slope(0.18) + 0.006), rot=(slope, 0, 0), mat=paper))
+    parts += pk.label("LabelText", "INT 214", 0.035, (0.18, 0.18, on_slope(0.18) + 0.013), ink, rot=(90 + slope, 0, 0))
+    # The handset in its cradle: two rests, the grip between its two cups, lying along the slope.
+    hy, hx = -0.02, -0.25
+    lift = 0.13
+    for y in (-0.26, 0.22):
+        parts.append(pk.rounded("Rest", (0.22, 0.07, 0.1), (hx, y, on_slope(y) + 0.04), grey, r=0.02, rot=(slope, 0, 0)))
+    parts += [pk.rounded("Grip", (0.13, 0.5, 0.08), (hx, hy, on_slope(hy) + lift), dark, r=0.035, rot=(slope, 0, 0)),
+              pk.rounded("Ear", (0.2, 0.18, 0.12), (hx, 0.27, on_slope(0.27) + lift - 0.02), dark, r=0.05,
+                         rot=(slope, 0, 0)),
+              pk.rounded("Mouth", (0.2, 0.18, 0.12), (hx, -0.31, on_slope(-0.31) + lift - 0.02), dark, r=0.05,
+                         rot=(slope, 0, 0)),
+              pk.coil("Cord", (hx - 0.08, -0.36, on_slope(-0.36) + 0.05), (-0.5, 0.2, 0.06), 9, 0.025, 0.008, dark,
+                      sag=0.03)]
+    glows = [mk.box("Message", (0.06, 0.04, 0.03), (0.4, 0.2, on_slope(0.2) + 0.03), rot=(slope, 0, 0),
+                    mat=pk.glow("Dphone_Line", (255, 90, 60), 3))]
     return parts, glows
 
 
@@ -615,18 +649,45 @@ def whiteboard():
 
 @prop("MicrofilmReader", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Agency")
 def microfilm_reader():
-    """A microfilm reader on its steel cabinet: the hooded screen showing a page of an old
-    newspaper, the film carriers and the reels in a tray."""
+    """A microfilm reader on its steel cabinet: two drawers of film boxes below (handles, card holders), the deck
+    with its glass film carrier between two reels of film, the column at the back, the big hooded screen showing a
+    page of an old newspaper, its focus and wind knobs at the side."""
     steel = pk.metal("Film_Steel", (90, 94, 100), (120, 124, 130), rough=0.45, metallic=0.5)
     beige = pk.plastic("Film_Beige", (180, 172, 150))
     dark = pk.metal("Film_Dark", (24, 24, 28), (40, 40, 46), rough=0.5, metallic=0.2)
-    parts = [mk.box("Cabinet", (2.4, 2.4, 2.7), (0, 0, 1.35), mat=steel, bevel=0.04),
-             mk.box("Base", (2.2, 2.0, 0.5), (0, 0.1, 2.95), mat=beige, bevel=0.06),
-             mk.box("Hood", (2.2, 1.4, 1.9), (0, 0.4, 4.1), mat=beige, bevel=0.1),
-             mk.box("Carrier", (1.4, 0.8, 0.15), (0, -0.6, 3.25), mat=dark, bevel=0.03)]
-    for k in range(3):
-        parts.append(mk.cylinder("Reel", 0.28, 0.12, (-0.7 + k * 0.7, -0.9, 2.78), mat=dark, verts=14))
-    glows = [mk.box("Page", (1.6, 0.04, 1.3), (0, -0.32, 4.15), rot=(-8, 0, 0), mat=pk.glow("Film_Page", (220, 214, 190), 1.6))]
+    chrome = pk.chrome("Film_Chrome")
+    film = pk.plastic("Film_Film", (54, 36, 24))
+    card = pk.plastic("Film_Card", (232, 226, 206))
+    glass = pk.dark_glass("Film_Glass", (40, 50, 56))
+    parts = [pk.rounded("Cabinet", (2.4, 2.3, 2.62), (0, 0.05, 1.37), steel, r=0.05)]
+    parts += pk.feet("Feet", [(sx * 1.05, sy * 1.0) for sx in (-1, 1) for sy in (-1, 1)], dark, r=0.1, h=0.08)
+    for k, z in enumerate((0.78, 2.02)):
+        parts += [pk.rounded("Drawer", (2.12, 0.06, 1.1), (0, -1.12, z), steel, r=0.02),
+                  mk.box("Pull", (0.7, 0.08, 0.08), (0, -1.2, z + 0.2), mat=chrome),
+                  mk.box("Holder", (0.5, 0.03, 0.3), (0, -1.16, z - 0.15), mat=chrome),
+                  mk.box("Card", (0.44, 0.02, 0.24), (0, -1.175, z - 0.15), mat=card)]
+    parts += [pk.rounded("Deck", (2.2, 2.0, 0.42), (0, 0.1, 2.89), beige, r=0.06),
+              mk.box("Carrier", (1.1, 0.7, 0.04), (0, -0.45, 3.12), mat=glass),
+              mk.box("RailF", (1.2, 0.05, 0.05), (0, -0.82, 3.13), mat=chrome),
+              mk.box("RailB", (1.2, 0.05, 0.05), (0, -0.08, 3.13), mat=chrome),
+              pk.rounded("Column", (1.0, 0.6, 0.5), (0, 0.78, 3.34), beige, r=0.06)]
+    for sx in (-1, 1):
+        x = sx * 0.78
+        parts += [mk.cylinder("Spindle", 0.03, 0.2, (x, -0.45, 3.2), mat=chrome, verts=8),
+                  mk.cylinder("Flange", 0.3, 0.02, (x, -0.45, 3.13), mat=dark, verts=20),
+                  mk.cylinder("Flange", 0.3, 0.02, (x, -0.45, 3.27), mat=dark, verts=20),
+                  mk.cylinder("Wound", 0.22, 0.12, (x, -0.45, 3.2), mat=film, verts=18),
+                  mk.box("Strip", (0.3, 0.16, 0.01), (sx * 0.5, -0.45, 3.15), mat=film)]
+    # The hood: the screen's housing, a visor round the screen, the knobs at its right.
+    parts += [pk.rounded("Hood", (2.2, 1.5, 1.85), (0, 0.45, 4.15), beige, r=0.12),
+              mk.box("VisorTop", (2.1, 0.42, 0.08), (0, -0.48, 4.98), mat=beige),
+              mk.box("VisorL", (0.08, 0.42, 1.6), (-1.01, -0.48, 4.2), mat=beige),
+              mk.box("VisorR", (0.08, 0.42, 1.6), (1.01, -0.48, 4.2), mat=beige)]
+    parts += pk.frame("Bezel", 1.8, 1.5, 0.1, 0.06, (0, -0.31, 4.2), dark)
+    for z in (3.55, 3.9):
+        parts += [mk.cylinder("Knob", 0.11, 0.08, (1.14, 0.3, z), rot=(0, 90, 0), mat=dark, verts=14),
+                  mk.cylinder("KnobCap", 0.05, 0.04, (1.2, 0.3, z), rot=(0, 90, 0), mat=chrome, verts=10)]
+    glows = [mk.box("Page", (1.6, 0.04, 1.3), (0, -0.32, 4.2), mat=pk.glow("Film_Page", (220, 214, 190), 1.6))]
     return parts, glows
 
 

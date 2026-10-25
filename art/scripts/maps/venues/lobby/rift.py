@@ -126,7 +126,7 @@ def throat(s, rings, levels, cx, cz, _rng):
             mid = (top[0] - ox * bend * 0.5, top[1] - length * 0.55, top[2] - oz * bend * 0.5)
             tip = (top[0] - ox * bend, top[1] - length, top[2] - oz * bend)
             radius = rng.uniform(0.28, 0.55)
-            s.bent_tube("RockGrey", [top, mid, tip], [radius, radius * 0.65, radius * 0.15], 6)
+            s.bent_tube("RockGrey", [top, mid, tip], [radius, radius * 0.65, radius * 0.15], 6, caps=(False, True))
         # Now and then a ledge of broken stone standing out of the wall, sloping a little.
         k = rng.randrange(n)
         x, y, z = ring[k]

@@ -4,8 +4,8 @@
 return {
 	MapsAgency = 22,
 	MapsCampus = 26,
-	MapsLobby = 17,
-	MapsMeeting = 5,
+	MapsLobby = 18,
+	MapsMeeting = 6,
 	MapsSets = 10,
 	MapsTokyo = 36,
 	ModelsAgency = 5,

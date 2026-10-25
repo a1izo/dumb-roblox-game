@@ -480,15 +480,45 @@ def pine_yukizuri():
 
 @prop("ShrubSnow", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Campus")
 def shrub_snow():
-    """A clipped azalea mound under snow: lumpy dark leaves, a thick white cap on top."""
-    leaf = mk.noisy("Shrub_Leaf", srgb(22, 40, 26), srgb(44, 66, 40), scale=30, roughness=0.8)
+    """A clipped azalea mound under snow: dozens of small clumps of dark leaves crowded over a dark core (so it reads
+    as a bush, leaf by leaf, and never as a ball), the snow lying in soft cushions on the clumps along its top, a few
+    bare twigs poking through."""
+    from props_lobby import _blob
+
+    rng = random.Random(17)
+    leaves = [mk.noisy("Shrub_Leaf", srgb(18, 36, 22), srgb(50, 76, 46), scale=70, roughness=0.8),
+              mk.noisy("Shrub_Leaf2", srgb(24, 44, 26), srgb(58, 84, 50), scale=70, roughness=0.8)]
+    core_mat = mk.noisy("Shrub_Core", srgb(12, 24, 16), srgb(28, 44, 28), scale=40, roughness=0.9)
     sn = snow("Shrub")
-    parts = []
-    for k, (x, y, r) in enumerate(((-0.9, 0.1, 1.5), (0.8, -0.1, 1.35), (0.0, 0.3, 1.2))):
-        body = mk.sphere(f"Mound{k}", r, (x, y, r * 0.7), scale=(1.1, 0.9, 0.75), mat=leaf, segments=10, rings=6)
-        mk.displace_noise(body, strength=0.12, scale=0.8, name="ShrubNoise")
-        parts.append(body)
-        parts.append(mk.sphere(f"Cap{k}", r * 0.9, (x, y, r * 0.95), scale=(1.1, 0.9, 0.52), mat=sn, segments=10, rings=5))
+    twig = mk.noisy("Shrub_Twig", srgb(40, 32, 28), srgb(72, 60, 50), scale=20, roughness=0.9)
+    mounds = ((-0.8, 0.1, 1.0), (0.75, -0.08, 0.95), (0.0, 0.2, 1.05), (-1.35, -0.05, 0.62), (1.4, 0.05, 0.62))
+    core = _blob("Core", [("ellipsoid", (x, y, r * 0.62), r * 0.92, (1.15, 0.95, 0.8)) for x, y, r in mounds], 0.12, 0.5,
+                 core_mat)
+    parts = [core]
+    # Clumps over each mound's surface (its upper half and shoulders), a cushion of snow on the ones on top.
+    for x, y, r in mounds:
+        for k in range(int(15 * r * r) + 5):
+            a = rng.uniform(0, 2 * math.pi)
+            up = rng.uniform(0.0, 1.0)  # (even over the dome: as many on top as round the sides)
+            e = math.acos(1 - up)  # (from straight up to round the side)
+            px = x + math.sin(e) * math.cos(a) * r * 1.0
+            py = y + math.sin(e) * math.sin(a) * r * 0.92
+            pz = r * 0.62 + math.cos(e) * r * 0.78
+            cr = rng.uniform(0.34, 0.46) * (0.85 + 0.3 * r)
+            clump = mk.sphere("Clump", cr, (px, py, pz), scale=(1, 1, 0.8), mat=rng.choice(leaves), segments=8, rings=6)
+            mk.displace_noise(clump, strength=cr * 0.4, scale=cr * 0.6, name="ShrubClump")
+            parts.append(clump)
+            if math.cos(e) > 0.5:
+                cushion = mk.sphere("Snow", cr * 1.1, (px, py, pz + cr * 0.45), scale=(1.1, 1.05, 0.45), mat=sn,
+                                    segments=12, rings=6)
+                mk.displace_noise(cushion, strength=cr * 0.25, scale=cr * 0.8, name="ShrubSnowLump")
+                parts.append(cushion)
+    for k in range(6):
+        x, y, r = mounds[k % len(mounds)]
+        a = rng.uniform(0, 2 * math.pi)
+        base = (x + math.cos(a) * r * 0.3, y + math.sin(a) * r * 0.25, r * 1.1)
+        tip = (base[0] + math.cos(a) * 0.35, base[1] + math.sin(a) * 0.3, base[2] + rng.uniform(0.35, 0.55))
+        parts.append(mk.tube("Twig", base, tip, 0.035, 0.008, mat=twig, verts=5))
     return parts, []
 
 
@@ -1236,30 +1266,58 @@ def umpire_chair():
 
 @prop("TennisNet", pivot="bottom", material="Fabric", collide=True, texture=512, set="Campus")
 def tennis_net():
-    """A tennis net left up for the winter, sagging under a line of snow along its white tape,
-    between its two green posts (40 studs apart)."""
+    """A tennis net left up for the winter between its two green posts (40 studs apart): a real mesh of cord you can
+    see through, sagging to the middle under its white tape and a line of snow, the cable along its foot, the centre
+    strap holding it down, the winder's handle on one post."""
     green = pk.paint("Net_Green", (40, 80, 60), rough=0.4)
-    net = mk.banded("Net_Mesh", srgb(14, 16, 16), srgb(46, 50, 48), frequency=180.0, axis="X", roughness=0.9)
+    cord = mk.noisy("Net_Cord", srgb(20, 22, 22), srgb(44, 48, 46), scale=40, roughness=0.9)
     tape = pk.plastic("Net_Tape", (236, 236, 230))
+    steel = pk.metal("Net_Steel", (120, 122, 128), (170, 172, 178), rough=0.3, metallic=0.9)
     sn = snow("Net")
     half = 20.0
+
+    def top(x):
+        return 3.4 - 0.5 * math.sin(math.pi * (x + half) / (2 * half))
+
     parts = []
     for sx in (-1, 1):
         parts += [mk.cylinder("Post", 0.18, 3.8, (sx * half, 0, 1.9), mat=green, verts=10),
                   mk.cylinder("PostCap", 0.22, 0.1, (sx * half, 0, 3.85), mat=green, verts=10),
+                  mk.cylinder("PostFoot", 0.21, 0.12, (sx * half, 0, 0.06), mat=green, verts=10),
                   cap("PostSnow", (0.4, 0.4, 0.16), (sx * half, 0, 3.98), sn)]
-    segments = 8
-    for k in range(segments):
-        u0, u1 = k / segments, (k + 1) / segments
-        x0, x1 = -half + 2 * half * u0, -half + 2 * half * u1
-        z0 = 3.4 - 0.5 * math.sin(math.pi * u0)
-        z1 = 3.4 - 0.5 * math.sin(math.pi * u1)
+    # (the winder on the right post's side, off the court's line so the net is no longer than its posts: its
+    # drum, the crank hanging from it and the crank's grip)
+    parts += [mk.cylinder("Winder", 0.12, 0.3, (half, -0.3, 2.6), rot=(90, 0, 0), mat=steel, verts=10),
+              mk.tube("Crank", (half, -0.45, 2.6), (half, -0.45, 2.25), 0.03, mat=steel, verts=6),
+              mk.cylinder("Grip", 0.05, 0.22, (half, -0.56, 2.25), rot=(90, 0, 0), mat=green, verts=8)]
+    # The mesh: cords up and down every half stud, and cords across that follow the sag.
+    segs = 16
+    x = -half + 0.5
+    while x < half - 0.25:
+        parts.append(mk.box("CordUp", (0.035, 0.035, top(x) - 0.3), (x, 0, (top(x) + 0.3) / 2), mat=cord))
+        x += 0.5
+    for row in range(1, 7):
+        f = row / 7
+        for k in range(segs):
+            x0, x1 = -half + 2 * half * k / segs, -half + 2 * half * (k + 1) / segs
+            z0, z1 = 0.3 + f * (top(x0) - 0.45), 0.3 + f * (top(x1) - 0.45)
+            mid_x, mid_z = (x0 + x1) / 2, (z0 + z1) / 2
+            length = math.hypot(x1 - x0, z1 - z0)
+            angle = math.degrees(math.atan2(z1 - z0, x1 - x0))
+            parts.append(mk.box("CordAcross", (length + 0.04, 0.035, 0.035), (mid_x, 0, mid_z), rot=(0, -angle, 0),
+                                mat=cord))
+    for k in range(segs):
+        x0, x1 = -half + 2 * half * k / segs, -half + 2 * half * (k + 1) / segs
+        z0, z1 = top(x0), top(x1)
         mid_x, mid_z = (x0 + x1) / 2, (z0 + z1) / 2
         length = math.hypot(x1 - x0, z1 - z0)
         angle = math.degrees(math.atan2(z1 - z0, x1 - x0))
-        parts += [mk.box("Tape", (length + 0.02, 0.08, 0.28), (mid_x, 0, mid_z), rot=(0, -angle, 0), mat=tape),
-                  mk.box("Mesh", (length + 0.02, 0.02, mid_z - 0.35), (mid_x, 0, (mid_z - 0.1) / 2 + 0.1), mat=net),
-                  cap(f"TapeSnow{k}", (length, 0.22, 0.14), (mid_x, 0, mid_z + 0.2), sn, r=0.05)]
+        parts += [mk.box("Tape", (length + 0.03, 0.09, 0.3), (mid_x, 0, mid_z - 0.08), rot=(0, -angle, 0), mat=tape),
+                  mk.box("Foot", (length + 0.03, 0.06, 0.06), (mid_x, 0, 0.3), mat=cord),
+                  cap(f"TapeSnow{k}", (length, 0.22, 0.13), (mid_x, 0, mid_z + 0.12), sn, r=0.05)]
+    # The centre strap down to its anchor in the ground.
+    parts += [mk.box("Strap", (0.16, 0.1, top(0.0) - 0.1), (0, 0, (top(0.0) + 0.1) / 2), mat=tape),
+              mk.box("Anchor", (0.4, 0.3, 0.1), (0, 0, 0.05), mat=steel)]
     return parts, []
 
 

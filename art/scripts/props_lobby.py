@@ -537,23 +537,34 @@ class _surfaces:
 
 @prop("Cairn", pivot="bottom", material="Slate", collide=True, texture=512, set="Lobby")
 def cairn():
-    """A cairn of flat grey stones, a long bone laid across its top: a waymark at the realm's edge."""
+    """A cairn of flat field stones, each a rough slab (lumpy edges, a tilt of its own) lying on the one under it,
+    smaller as they rise, a few fallen stones at its foot and a long bone laid across its top: a waymark at the
+    realm's edge."""
     rng = random.Random(3)
     stone = stone_mat("Crn")
     dark = dark_stone_mat("Crn")
     bone = bone_mat("Crn")
     parts = []
-    z = 0.0
-    r = 1.4
-    for k in range(6):
-        h = rng.uniform(0.45, 0.7)
-        body = mk.cylinder(f"Stone{k}", r, h, (rng.uniform(-0.1, 0.1), rng.uniform(-0.1, 0.1), z + h / 2),
-                           rot=(rng.uniform(-5, 5), rng.uniform(-5, 5), rng.uniform(0, 90)), mat=stone if k % 2 else dark,
-                           verts=9, bevel=0.1)
-        parts.append(body)
-        z += h * 0.92
+    z, r = 0.0, 1.32
+    for k in range(7):
+        h = r * rng.uniform(0.34, 0.44)
+        x, y = rng.uniform(-0.08, 0.08), rng.uniform(-0.08, 0.08)
+        slab = mk.sphere(f"Stone{k}", 1.0, (x, y, z + h * 0.42), scale=(r * rng.uniform(0.98, 1.1),
+                         r * rng.uniform(0.82, 0.96), h / 2), mat=stone if k % 2 else dark, segments=16, rings=10)
+        slab.rotation_euler = (math.radians(rng.uniform(-4, 4)), math.radians(rng.uniform(-4, 4)),
+                               math.radians(rng.uniform(0, 180)))
+        mk.displace_noise(slab, strength=0.34, scale=0.55, name="CairnStone")
+        parts.append(slab)
+        z += h * 0.8  # (each lies a little into the one below: no gap under it)
         r *= 0.8
-    parts += long_bone("TopBone", (-0.9, 0.1, z + 0.12), (0.9, -0.1, z + 0.12), 0.1, bone)
+    for k in range(4):
+        a = k * 1.7 + 0.4
+        sr = rng.uniform(0.22, 0.32)
+        pebble = mk.sphere(f"Fallen{k}", 1.0, (math.cos(a) * 1.3, math.sin(a) * 1.15, sr * 0.38),
+                           scale=(sr * 1.3, sr, sr * 0.55), mat=dark if k % 2 else stone, segments=10, rings=7)
+        mk.displace_noise(pebble, strength=0.3, scale=0.5, name="CairnPebble")
+        parts.append(pebble)
+    parts += long_bone("TopBone", (-0.85, 0.1, z + 0.08), (0.85, -0.12, z + 0.1), 0.1, bone)
     return parts, []
 
 

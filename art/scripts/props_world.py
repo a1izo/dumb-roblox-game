@@ -544,31 +544,28 @@ def hydrant():
     return parts, []
 
 
-@prop("Tree", pivot="bottom", material="Grass", collide=True, texture=1024)
+@prop("Tree", pivot="bottom", material="Grass", collide=True, texture=1024, anchor=(0, 0))
 def tree():
-    bark = mk.noisy("Tree_Bark", srgb(34, 26, 22), srgb(60, 46, 36), scale=4, detail=12, roughness=0.9,
-                    stretch=(3, 3, 0.4))
-    leaves = mk.noisy("Tree_Leaves", *FOLIAGE, scale=3, detail=12, roughness=0.9)
-    trunk = mk.lathe("Trunk", [(0.0, 0.0), (1.0, 0.0), (0.75, 0.4), (0.62, 2.0), (0.55, 5.0), (0.45, 8.0),
-                               (0.3, 9.5), (0.0, 9.6)], mat=bark, segments=16)
-    mk.displace_noise(trunk, strength=0.12, scale=0.8, name="Bark")
-    parts = [trunk]
-    rng = random.Random(7)
-    for i in range(5):
-        a = i * 1.3
-        length = 3.2 - i * 0.2
-        parts.append(mk.cylinder("Branch", 0.22, length,
-                                 (math.cos(a) * length * 0.35, math.sin(a) * length * 0.35, 6.5 + i * 0.6),
-                                 rot=(math.degrees(math.sin(a)) * -0.8 - 40 * math.sin(a), 40 * math.cos(a), 0),
-                                 mat=bark, verts=8, radius2=0.08))
-    for i in range(9):
-        a = rng.uniform(0, math.tau)
-        r = rng.uniform(0.5, 2.6)
-        blob = mk.sphere("Leaves", rng.uniform(2.0, 3.1),
-                         (math.cos(a) * r, math.sin(a) * r, rng.uniform(9.0, 12.5)),
-                         scale=(1, 1, rng.uniform(0.7, 0.9)), mat=leaves, segments=16, rings=10)
-        mk.displace_noise(blob, strength=0.6, scale=0.9, name="Foliage")
-        parts.append(blob)
+    """A city tree in leaf, for the beds on Tokyo's station plaza: a grey-brown trunk dividing into upswept limbs that
+    divide again, clumps of dark leaves at the twigs (grown like Tokyo's cherries: props_tokyo_trees.tree), fitted
+    into the box the beds were laid out round (build_props.FIT_TO_KEPT). The anchor is the trunk's foot."""
+    import props_tokyo_trees as trees
+
+    bark = mk.noisy("Tree_Bark", srgb(52, 44, 38), srgb(92, 80, 68), scale=10, roughness=0.9, stretch=(1, 1, 0.25))
+    greens = [mk.noisy("Tree_Leaf1", srgb(30, 56, 32), srgb(60, 92, 50), scale=36, roughness=0.85),
+              mk.noisy("Tree_Leaf2", srgb(38, 66, 36), srgb(74, 108, 58), scale=36, roughness=0.85),
+              mk.noisy("Tree_Leaf3", srgb(26, 46, 28), srgb(50, 78, 42), scale=36, roughness=0.85)]
+    parts = trees.tree("Tree_", 31, trunk_h=4.4, trunk_r=0.55, limbs=6, limb_len=4.2, depth=2, spread=0.6, rise=0.62,
+                       droop=0.25, bark=bark, foliage=greens, clump_r=1.55, clumps_per_tip=4, lift=0.3)
+    # (the crown filled in over the fork, so it reads as one canopy and not a ring of balls)
+    rng = random.Random(32)
+    for k in range(16):
+        a = 2 * math.pi * k / 16 + rng.uniform(-0.2, 0.2)
+        r = rng.uniform(0.8, 3.4) if k % 2 else rng.uniform(2.4, 3.8)
+        c = mk.sphere("Tree_Inner", rng.uniform(1.7, 2.3), (math.cos(a) * r, math.sin(a) * r, rng.uniform(6.6, 9.8)),
+                      scale=(1, 1, rng.uniform(0.62, 0.78)), mat=greens[k % 3], segments=9, rings=6)
+        mk.displace_noise(c, strength=0.6, scale=0.9, name="Tree_InnerNoise")
+        parts.append(c)
     return parts, []
 
 
@@ -598,37 +595,26 @@ def plant():
 
 @prop("Car", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024)
 def car():
-    """A 1950s-style noir sedan: the body is one extruded side profile."""
-    paint = mk.noisy("Car_Paint", srgb(16, 16, 20), srgb(40, 40, 48), scale=4, roughness=0.25, metallic=0.5)
-    chrome = mk.noisy("Car_Chrome", STEEL_B, STEEL_A, scale=10, roughness=0.15, metallic=1.0)
-    glass = mk.noisy("Car_Glass", srgb(26, 30, 40), srgb(60, 70, 88), scale=6, roughness=0.05)
-    tyre = mk.flat("Car_Tyre", srgb(14, 14, 14), 0.9)
-    profile = [(-5.0, 0.55), (-5.15, 1.15), (-5.0, 1.75), (-2.6, 2.05), (-1.4, 2.2), (-0.8, 3.35), (1.3, 3.45),
-               (2.5, 2.45), (4.8, 2.2), (5.15, 1.7), (5.15, 0.9), (4.8, 0.55)]
-    body = mk.extrude_shape("Body", profile, 4.8, rot=(90, 0, 90), mat=paint, bevel=0.12)
-    parts = [body]
-    window = [(-0.7, 2.35), (-0.25, 3.2), (1.2, 3.28), (2.2, 2.45)]
-    for x in (-2.42, 2.42):
-        parts.append(mk.extrude_shape("Window", window, 0.06, (x, 0, 0), rot=(90, 0, 90), mat=glass))
-        parts.append(mk.box("Trim", (0.06, 9.6, 0.08), (x * 1.005, 0, 1.45), mat=chrome))
-    parts.append(mk.box("Windshield", (4.2, 0.06, 1.25), (0, -1.1, 2.8), rot=(-58, 0, 0), mat=glass))
-    parts.append(mk.box("RearWindow", (4.2, 0.06, 1.2), (0, 1.9, 2.95), rot=(50, 0, 0), mat=glass))
-    parts.append(mk.box("BumperF", (5.2, 0.4, 0.4), (0, -5.25, 0.85), mat=chrome, bevel=0.12))
-    parts.append(mk.box("BumperR", (5.2, 0.4, 0.4), (0, 5.25, 0.85), mat=chrome, bevel=0.12))
-    parts.append(mk.box("Grille", (2.4, 0.12, 0.55), (0, -5.12, 1.35), mat=chrome, bevel=0.04))
-    for i in range(6):
-        parts.append(mk.box("GrilleBar", (0.05, 0.14, 0.5), (-1.0 + i * 0.4, -5.16, 1.35), mat=paint))
-    for x in (-2.3, 2.3):
-        for y in (-3.3, 3.3):
-            parts.append(mk.cylinder("Tyre", 0.95, 0.75, (x, y, 0.95), rot=(0, 90, 0), mat=tyre, verts=24, bevel=0.12))
-            parts.append(mk.cylinder("Hub", 0.5, 0.8, (x, y, 0.95), rot=(0, 90, 0), mat=chrome, verts=16))
-    glow = [
-        mk.sphere("Headlight", 0.3, (x, -5.1, 1.65), scale=(1, 0.5, 1), mat=mk.emissive("Car_Head", srgb(255, 236, 200), 6),
-                  segments=14, rings=8)
-        for x in (-1.75, 1.75)
-    ]
-    glow += [mk.box("Tail", (0.7, 0.1, 0.35), (x, 5.17, 1.5), mat=mk.emissive("Car_Tail", RED, 5)) for x in (-1.9, 1.9)]
-    return parts, glow
+    """A black saloon, chrome-trimmed: its body from a side profile, a dark glass cabin on its pillars, door seams and
+    handles, mirrors, bumpers, plates and spoked wheels in their arches (Tokyo's cars' own body,
+    props_tokyo_transit.car_body), drawn at a car's size and fitted into the box the Campus's parking was laid out round
+    (build_props.FIT_TO_KEPT); its head and tail lamps lit."""
+    import propkit as pk
+    import props_tokyo_transit as transit
+
+    length, width, split = 14.6, 6.4, 2.8
+    parts, glows = transit.car_body("CR_", length=length, width=width, height=4.7, lower=(16, 16, 20),
+                                    upper=(16, 16, 20), split=split, hood=4.0, boot=2.9, glass_tint=(18, 22, 30))
+    half = length / 2
+    chrome = pk.chrome("CR_Strip")
+    for sx in (-1, 1):
+        # (a chrome strip down each flank, under the windows' line)
+        parts.append(mk.box("Strip", (0.04, length - 2.2, 0.07), (sx * (width / 2 + 0.01), 0.2, split - 0.35), mat=chrome))
+        glows += [pk.rounded("Headlight", (1.1, 0.1, 0.32), (sx * (width / 2 - 0.9), -half - 0.07, 2.05),
+                             pk.glow("Car_Head", (255, 236, 200), 5), r=0.05),
+                  pk.rounded("Tail", (1.0, 0.1, 0.36), (sx * (width / 2 - 0.8), half + 0.05, split - 0.7),
+                             pk.glow("Car_Tail", (220, 30, 36), 4), r=0.05)]
+    return parts, glows
 
 
 # Offices ------------------------------------------------------------------------------------------------
@@ -744,31 +730,70 @@ def bookshelf():
 
 @prop("VendingMachine", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024)
 def vending_machine():
-    body = mk.noisy("Vend_Body", srgb(150, 20, 30), srgb(190, 40, 46), scale=12, roughness=0.4, metallic=0.2)
-    dark = mk.noisy("Vend_Dark", srgb(18, 18, 20), srgb(36, 36, 40), scale=12, roughness=0.4)
-    glass = mk.noisy("Vend_Glass", srgb(24, 30, 40), srgb(40, 50, 66), scale=6, roughness=0.05)
-    cans = [mk.flat(f"Vend_Can{i}", c, 0.3) for i, c in enumerate((srgb(220, 40, 40), srgb(40, 110, 220),
-                                                                  srgb(240, 200, 60), srgb(60, 180, 90)))]
-    parts = [
-        mk.box("Body", (4.0, 2.6, 7.0), (0, 0, 3.5), mat=body, bevel=0.1),
-        mk.box("Recess", (2.7, 0.1, 4.2), (-0.45, -0.7, 4.4), mat=dark),
-        mk.box("FrameTop", (2.9, 0.2, 0.15), (-0.45, -1.28, 6.55), mat=dark),
-        mk.box("FrameBottom", (2.9, 0.2, 0.15), (-0.45, -1.28, 2.25), mat=dark),
-        mk.box("FrameLeft", (0.15, 0.2, 4.4), (-1.85, -1.28, 4.4), mat=dark),
-        mk.box("Panel", (0.9, 0.1, 4.2), (1.45, -1.28, 4.4), mat=dark, bevel=0.03),
-        mk.box("Tray", (2.6, 0.3, 0.8), (-0.45, -1.25, 1.2), mat=dark, bevel=0.05),
-        mk.box("Kick", (4.0, 2.4, 0.4), (0, 0.05, 0.2), mat=dark),
-    ]
-    for row in range(5):
+    """A Japanese drinks machine in red: a rounded cabinet on a black plinth; behind its framed window three shelves
+    of sample cans and bottles, each with its price tag and a lit button under it; the coin slot, note reader, little
+    display and coin return to the right; the pick-up bay with its push flap below; a lit header and the side panels'
+    vents."""
+    import propkit as pk
+
+    red = pk.paint("Vend_Body", (176, 26, 34), rough=0.35, wear=14)
+    white = pk.plastic("Vend_White", (232, 230, 226))
+    dark = pk.metal("Vend_Dark", (16, 16, 18), (32, 32, 36), rough=0.5, metallic=0.2)
+    back = pk.plastic("Vend_Back", (200, 206, 214))
+    steel = pk.metal("Vend_Steel", (120, 122, 128), (170, 172, 178), rough=0.3, metallic=0.9)
+    tag = pk.plastic("Vend_Tag", (246, 244, 236))
+    ink = pk.plastic("Vend_Ink", (24, 24, 28))
+    tins = [pk.paint(f"Vend_Can{i}", c, rough=0.25, wear=6) for i, c in enumerate(
+        ((200, 30, 36), (30, 80, 170), (236, 190, 50), (40, 140, 80), (236, 236, 232), (120, 60, 30)))]
+    caps = pk.plastic("Vend_Cap", (236, 236, 232))
+    fy = -1.2  # the front
+    # The cabinet in five blocks round the window's opening (its back, the base under the window, the head over it,
+    # a jamb on the left and the coin column on the right), so the samples stand inside it, not behind its front.
+    parts = [pk.rounded("Back", (4.0, 1.85, 6.75), (0, 0.375, 3.525), red, r=0.12),
+             pk.rounded("Base", (4.0, 0.7, 2.6), (0, -0.85, 1.45), red, r=0.08),
+             pk.rounded("Head", (4.0, 0.7, 0.55), (0, -0.85, 6.625), red, r=0.08),
+             pk.rounded("Jamb", (0.2, 0.7, 3.6), (-1.9, -0.85, 4.55), red, r=0.05),
+             pk.rounded("CoinColumn", (1.0, 0.7, 3.6), (1.5, -0.85, 4.55), red, r=0.05),
+             pk.rounded("Plinth", (3.9, 2.4, 0.3), (0, 0.05, 0.15), dark, r=0.04),
+             mk.box("WinBack", (2.8, 0.04, 3.6), (-0.4, -0.57, 4.55), mat=back)]
+    parts += pk.frame("WinFrame", 2.95, 3.7, 0.1, 0.12, (-0.4, fy - 0.02, 4.55), steel)
+    # Three shelves of samples, cans and bottles by turns, a price tag and a button under each.
+    for row in range(3):
+        z = 3.0 + row * 1.12
+        parts.append(mk.box("Shelf", (2.8, 0.6, 0.05), (-0.4, -0.85, z), mat=white))
         for col in range(5):
-            parts.append(mk.cylinder("Can", 0.18, 0.5, (-1.5 + col * 0.52, -0.95, 2.85 + row * 0.78),
-                                     mat=cans[(row + col) % 4], verts=10))
-        parts.append(mk.box("Shelf", (2.7, 0.6, 0.06), (-0.45, -0.95, 2.57 + row * 0.78), mat=glass))
-    for i in range(6):
-        parts.append(mk.box("Button", (0.18, 0.06, 0.18), (1.3 + (i % 2) * 0.3, -1.35, 5.4 - (i // 2) * 0.35),
-                            mat=dark, bevel=0.02))
-    glow = [mk.box("Sign", (3.6, 0.08, 0.8), (0, -1.3, 6.7), mat=mk.emissive("Vend_Glow", srgb(220, 240, 255), 3))]
-    return parts, glow
+            x = -1.55 + col * 0.58
+            mat = tins[(row * 5 + col) % len(tins)]
+            if (row + col) % 2:
+                parts += pk.bottle("Bottle", x, -0.85, z + 0.025, mat, caps, r=0.16, h=0.78)
+            else:
+                parts += pk.can("Can", x, -0.85, z + 0.025, mat, steel, r=0.16, h=0.56)
+            parts.append(mk.box("Tag", (0.4, 0.04, 0.13), (x, fy + 0.03, z - 0.03), mat=tag))
+            parts += pk.label("Price", "130", 0.08, (x, fy + 0.005, z - 0.03), ink)
+    # The coin side: the slot, the note reader, the display, the return lever and its cup.
+    parts += [pk.rounded("CoinPlate", (0.62, 0.08, 0.9), (1.55, fy - 0.03, 4.4), steel, r=0.03),
+              mk.box("CoinSlot", (0.06, 0.06, 0.3), (1.55, fy - 0.08, 4.55), mat=dark),
+              pk.rounded("NoteReader", (0.62, 0.12, 0.5), (1.55, fy - 0.04, 3.7), dark, r=0.04),
+              mk.box("NoteSlot", (0.46, 0.06, 0.03), (1.55, fy - 0.11, 3.8), mat=steel),
+              mk.box("Lever", (0.12, 0.12, 0.34), (1.55, fy - 0.1, 3.15), rot=(0, 20, 0), mat=steel),
+              pk.rounded("ReturnCup", (0.5, 0.2, 0.32), (1.55, fy - 0.06, 2.6), dark, r=0.05),
+              # the bay: a dark mouth across the bottom, its flap pushed in a little, PUSH on it
+              mk.box("BayMouth", (2.9, 0.12, 0.95), (-0.25, fy + 0.02, 1.15), mat=dark),
+              pk.rounded("Flap", (2.7, 0.06, 0.8), (-0.25, fy - 0.02, 1.15), white, r=0.02, rot=(-8, 0, 0)),
+              pk.rounded("Kick", (3.9, 0.12, 0.35), (0, fy - 0.01, 0.48), dark, r=0.03)]
+    parts += pk.label("Push", "PUSH", 0.13, (-0.25, fy - 0.08, 1.25), ink)
+    parts += pk.label("Cold", "つめた〜い", 0.16, (-0.4, fy - 0.03, 2.62), pk.plastic("Vend_Blue", (30, 90, 200)))
+    for sx in (-1, 1):
+        for k in range(6):
+            parts.append(mk.box("Vent", (0.04, 1.4, 0.06), (sx * 2.0, 0.2, 0.9 + k * 0.16), mat=dark))
+    glows = [pk.rounded("Header", (3.7, 0.08, 0.4), (0, fy - 0.03, 6.63), pk.glow("Vend_Glow", (226, 240, 255), 3), r=0.04),
+             mk.box("Display", (0.42, 0.04, 0.16), (1.55, fy - 0.08, 4.12), mat=pk.glow("Vend_Digits", (90, 255, 140), 4))]
+    for row in range(3):
+        for col in range(5):
+            glows.append(mk.box("Button", (0.2, 0.06, 0.07), (-1.55 + col * 0.58, fy + 0.03, 3.0 + row * 1.12 - 0.12),
+                                mat=pk.glow("Vend_Button", (120, 200, 255), 3)))
+    parts += pk.label("Brand", "DRINK", 0.26, (0, fy - 0.08, 6.63), ink)
+    return parts, glows
 
 
 @prop("ServerRack", pivot="bottom", material="Metal", collide=True, texture=512)

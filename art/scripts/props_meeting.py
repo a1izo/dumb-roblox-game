@@ -432,15 +432,45 @@ def floor_lamp():
 @prop("BankerLamp", pivot="bottom", material="Metal", collide=False, texture=256, set="Meeting",
       lights=[dict(at=(0, -0.2, 1.1), kind="point", color=LAMP_WARM, range=9, brightness=0.6)])
 def banker_lamp():
-    """A green banker's lamp: a brass base and stem, the long green glass shade, its pull chain."""
+    """A green banker's lamp: a stepped brass base, the stem rising to a yoke that holds the shade by both ends, the
+    long half-round shade of green glass (pale opal inside, the lit bulb under it), its beaded pull chain."""
+    import bmesh
+
     metal = brass("Bnk")
-    green = mk.noisy("Bnk_Green", srgb(20, 70, 44), srgb(40, 110, 70), scale=12, roughness=0.15)
-    parts = [pk.rounded("Base", (1.3, 0.8, 0.14), (0, 0, 0.07), metal, r=0.05),
-             mk.tube("Stem", (0, 0.1, 0.14), (0, 0.1, 1.05), 0.04, mat=metal, verts=6),
-             mk.tube("Yoke", (-0.4, 0.05, 1.05), (0.4, 0.05, 1.05), 0.03, mat=metal, verts=6)]
-    shade = mk.cylinder("Shade", 0.34, 1.3, (0, -0.05, 1.12), rot=(0, 90, 0), mat=green, verts=16)
-    parts.append(shade)
-    parts += [mk.tube("Chain", (0.3, -0.25, 1.05), (0.3, -0.25, 0.65), 0.012, mat=metal, verts=3),
-              mk.sphere("Pull", 0.04, (0.3, -0.25, 0.63), mat=metal, segments=6, rings=4)]
-    glows = [mk.box("Bulb", (1.0, 0.16, 0.06), (0, -0.05, 0.84), mat=pk.glow("Bnk_Bulb", LAMP_WARM, 3))]
+    green = mk.noisy("Bnk_Green", srgb(14, 64, 40), srgb(36, 108, 70), scale=12, roughness=0.12)
+    opal = mk.noisy("Bnk_Opal", srgb(226, 222, 200), srgb(246, 242, 224), scale=12, roughness=0.3)
+    cy, cz, rad, half = -0.05, 1.12, 0.34, 0.62
+    # The shade: an arc of 200 degrees over the top, closed at both ends, thick enough to see as glass.
+    bm = bmesh.new()
+    rings = []
+    for x in (-half, half):
+        ring = []
+        for k in range(21):
+            a = math.radians(-10 + 200 * k / 20)
+            ring.append(bm.verts.new((x, cy + math.cos(a) * rad, cz + math.sin(a) * rad)))
+        rings.append(ring)
+    for k in range(20):
+        bm.faces.new((rings[0][k], rings[0][k + 1], rings[1][k + 1], rings[1][k]))
+    bm.faces.new(rings[1])
+    bm.faces.new(list(reversed(rings[0])))
+    shade = mk._obj_from_bm("Shade", bm, green)
+    shade.data.materials.append(opal)
+    thick = shade.modifiers.new("Glass", "SOLIDIFY")
+    thick.thickness = 0.03
+    thick.offset = -1
+    thick.material_offset = 1
+    mk.smooth(shade)
+    parts = [pk.rounded("Base", (1.24, 0.76, 0.1), (0, 0.02, 0.05), metal, r=0.04),
+             pk.rounded("Step", (0.96, 0.52, 0.06), (0, 0.02, 0.13), metal, r=0.03),
+             mk.cylinder("Collar", 0.09, 0.08, (0, 0.12, 0.2), mat=metal, verts=12),
+             mk.tube("Stem", (0, 0.12, 0.2), (0, 0.12, 0.98), 0.035, mat=metal, verts=10),
+             mk.tube("Yoke", (-0.5, 0.12, 0.98), (0.5, 0.12, 0.98), 0.03, mat=metal, verts=8),
+             shade]
+    for sx in (-1, 1):
+        parts += [mk.tube("Arm", (sx * 0.5, 0.12, 0.98), (sx * 0.5, 0.2, 1.2), 0.025, mat=metal, verts=6),
+                  mk.box("Clip", (0.06, 0.08, 0.1), (sx * 0.5, 0.23, 1.22), mat=metal)]
+    for k in range(9):
+        parts.append(mk.sphere("Bead", 0.016, (0.3, -0.27, 0.92 - k * 0.035), mat=metal, segments=6, rings=4))
+    parts.append(mk.cylinder("Pull", 0.03, 0.08, (0.3, -0.27, 0.58), mat=metal, verts=8, radius2=0.015))
+    glows = [mk.tube("Bulb", (-0.42, -0.05, 1.04), (0.42, -0.05, 1.04), 0.07, mat=pk.glow("Bnk_Bulb", LAMP_WARM, 3), verts=10)]
     return parts, glows

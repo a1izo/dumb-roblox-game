@@ -25,15 +25,32 @@ def _fedora_shape(name, felt, band, front=0.1, crown=0.8):
 
 @prop("HatCap", pivot="centre", material="Fabric", collide=False, texture=256)
 def hat_cap():
-    """Night Shift Cap: a soft wool patrol cap with a short stiff brim and a grey-thread Bureau badge on the front."""
+    """Night Shift Cap: a soft wool patrol cap, its crown sewn from six panels to a cloth button on top, a curved
+    stiff brim, the band round its foot and a grey-thread Bureau badge on the front."""
     wool = mk.noisy("Hc_Wool", srgb(28, 34, 48), srgb(44, 52, 70), roughness=0.9, kind="cloth")
     brim = mk.noisy("Hc_Brim", srgb(16, 18, 24), srgb(30, 32, 40), roughness=0.5, kind="plastic")
     badge = mk.noisy("Hc_Badge", srgb(120, 122, 128), srgb(170, 172, 178), roughness=0.4, metallic=0.6)
-    crown = mk.lathe("Crown", [(0.0, 0.0), (0.7, 0.0), (0.71, 0.18), (0.64, 0.42), (0.42, 0.56), (0.0, 0.6)],
-                     mat=wool, segments=32)
-    peak = mk.box("Brim", (1.1, 0.62, 0.05), (0, -0.82, 0.04), rot=(-8, 0, 0), mat=brim, bevel=0.02)
-    plate = mk.box("Badge", (0.26, 0.04, 0.22), (0, -0.7, 0.26), rot=(70, 0, 0), mat=badge, bevel=0.01)
-    return [crown, peak, plate], []
+    seam = mk.flat("Hc_Seam", srgb(18, 22, 32), 0.9)
+    profile = [(0.0, 0.0), (0.7, 0.0), (0.71, 0.18), (0.64, 0.42), (0.42, 0.56), (0.0, 0.6)]
+    crown = mk.lathe("Crown", profile, mat=wool, segments=36)
+    parts = [crown, mk.lathe("Band", [(0.705, 0.0), (0.725, 0.01), (0.725, 0.13), (0.712, 0.14)], mat=brim, segments=36),
+             mk.sphere("Button", 0.06, (0, 0, 0.6), scale=(1, 1, 0.5), mat=wool, segments=12, rings=6)]
+    # (the six panels' seams, up each meridian from the band to the button)
+    for k in range(6):
+        a = math.radians(30 + 60 * k)
+        line = [((r + 0.008) * math.cos(a), (r + 0.008) * math.sin(a), z) for r, z in profile[1:] if r > 0.0]
+        line.append((0.03 * math.cos(a), 0.03 * math.sin(a), 0.6))
+        parts.append(pk.sweep("Seam", line, 0.012, seam, sides=4))
+    # The brim: a crescent, its inner edge following the crown's foot round the front and its outer edge an oval out
+    # past it, stiff, curved down at its sides and dipping a little at its tip.
+    outer = [(0.74 * math.cos(math.radians(t)), -0.35 - 0.55 * math.sin(math.radians(t))) for t in range(0, 181, 10)]
+    inner = [(0.66 * math.cos(math.radians(t)), 0.66 * math.sin(math.radians(t))) for t in range(200, 341, 10)]
+    peak = mk.extrude_shape("Brim", outer + inner, 0.045, mat=brim, bevel=0.015)
+    for v in peak.data.vertices:
+        v.co.z -= 0.18 * (v.co.x / 0.74) ** 2 + 0.08 * max(0.0, (-v.co.y - 0.6) / 0.3)
+    peak.location = (0, 0, 0.02)
+    parts += [peak, mk.box("Badge", (0.26, 0.04, 0.22), (0, -0.7, 0.26), rot=(70, 0, 0), mat=badge, bevel=0.01)]
+    return parts, []
 
 
 @prop("HatTrench", pivot="centre", material="Fabric", collide=False, texture=256)
@@ -100,22 +117,46 @@ def hat_grave_silk():
 
 @prop("HatCowl", pivot="centre", material="Fabric", collide=False, texture=256)
 def hat_cowl():
-    """Reaper's Cowl: a deep wool hood with stitched seams that shades the face, open at the front."""
+    """Reaper's Cowl: a deep wool hood that shades the face: its crown drawn back into a soft point, folds running
+    down it, the hem lying in waves over the shoulders, the face's opening edged with a thick rolled band, a stitched
+    seam up the back."""
     import bmesh
+
     wool = mk.noisy("Hw_Wool", srgb(20, 20, 22), srgb(38, 36, 38), roughness=0.95, kind="cloth")
     seam = mk.flat("Hw_Seam", srgb(56, 54, 52), 0.9)
     hood = mk.lathe("Hood", [(1.0, -1.05), (0.88, -0.78), (0.84, -0.2), (0.8, 0.25), (0.62, 0.62), (0.34, 0.86),
-                             (0.0, 0.94)], mat=wool, segments=36)
+                             (0.0, 0.94)], mat=wool, segments=48)
     bm = bmesh.new()
     bm.from_mesh(hood.data)
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1, use_grid_fill=True)
+    for v in bm.verts:
+        x, y, z = v.co
+        ang = math.atan2(y, x)
+        r = math.hypot(x, y)
+        if z < 0.3:  # folds down the hood, deeper towards the hem
+            k = (0.3 - z) / 1.35
+            r *= 1.0 + 0.045 * k * math.sin(ang * 9)
+        if z < -0.9:  # the hem in waves
+            z += 0.05 * math.sin(ang * 5)
+        x, y = math.cos(ang) * r, math.sin(ang) * r
+        if y > 0 and z > 0.2:  # the crown drawn back into a soft point
+            pull = ((z - 0.2) / 0.74) ** 2
+            y += 0.3 * pull
+            z += 0.04 * pull
+        v.co = (x, y, z)
     gone = [f for f in bm.faces if f.calc_center_median().y < -0.3 and -0.82 < f.calc_center_median().z < 0.42]
     bmesh.ops.delete(bm, geom=gone, context="FACES")
+    # (the face's opening down its sides and over the brow, for the rolled band along it; not across the chin)
+    loop = pk.boundary_loop(bm, lambda co: -0.78 < co.z)
     bm.to_mesh(hood.data)
     bm.free()
     solid = hood.modifiers.new("Thick", "SOLIDIFY")
     solid.thickness = 0.07
-    stitch = mk.tube("Seam", (0, 0.86, 0.1), (0, 0.2, 0.86), 0.02, 0.02, mat=seam, verts=6)
-    return [hood, stitch], []
+    parts = [hood]
+    if len(loop) > 4:
+        parts.append(pk.sweep("Band", loop, 0.06, wool, sides=8))
+    parts.append(mk.tube("Seam", (0, 0.86, 0.1), (0, 0.42, 0.9), 0.02, 0.02, mat=seam, verts=6))
+    return parts, []
 
 
 @prop("HatCirclet", pivot="centre", material="Metal", collide=False, texture=256)
