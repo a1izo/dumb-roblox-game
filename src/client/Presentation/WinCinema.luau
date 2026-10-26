@@ -524,7 +524,9 @@ local function build(cut: any, origin: CFrame, folder: Instance, inRoom: boolean
 		end
 	end
 	for _, spec in ipairs(cut.props or {}) do
-		makeProp(spec, origin, folder, refs)
+		if not (inRoom and spec.stand) then
+			makeProp(spec, origin, folder, refs)
+		end
 	end
 	if cut.city then
 		makeCity(cut.city, origin, folder, refs)

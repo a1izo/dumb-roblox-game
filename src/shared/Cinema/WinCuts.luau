@@ -11,7 +11,8 @@
 --   grade     the screen's colour while it plays (saturation, contrast, brightness, tint)
 --   vignette  its strength and colour
 --   props     Core models: key, at (their pivot), turn (degrees about y), size (the biggest side; the model is scaled
---             to it), name (for the events), color (a stand-in's, until the import has the model)
+--             to it), name (for the events), color (a stand-in's, until the import has the model), stand (dressing
+--             for the stand-in room only)
 --   room      the cut's room in the cutscene sets (art/scripts/maps/venues/sets: name, at = its mark's x and z there):
 --             where it is built (a case's map is loaded) the cut plays in it; elsewhere (the lobby's shop) on its parts
 --   parts     plain parts: name, shape (Block, Cylinder: along x, Ball), size, at (the middle), rot (degrees, x y z),
@@ -36,6 +37,20 @@ return {
 		grade = { saturation = -0.35, contrast = 0.12, brightness = -0.02, tint = { 208, 214, 236 } },
 		vignette = { strength = 0.55 },
 		props = {
+			-- (stand-ins: the room has its own books, a sofa and a plant where it is not built)
+			{
+				key = "Bookshelf",
+				stand = true,
+				at = { -7.35, 0, -3.2 },
+				turn = -90,
+				size = 8.1,
+				color = { 60, 42, 30 },
+			},
+			{ key = "Bookshelf", stand = true, at = { -7.35, 0, 1.4 }, turn = -90, size = 8.1, color = { 60, 42, 30 } },
+			{ key = "Bookshelf", stand = true, at = { 7.35, 0, -3.2 }, turn = 90, size = 8.1, color = { 60, 42, 30 } },
+			{ key = "Bookshelf", stand = true, at = { 7.35, 0, 1.4 }, turn = 90, size = 8.1, color = { 60, 42, 30 } },
+			{ key = "Sofa", stand = true, at = { 0, 0, 6.4 }, size = 7.4, color = { 70, 30, 30 } },
+			{ key = "Plant", stand = true, at = { -6.4, 0, 6.2 }, size = 4, color = { 40, 70, 40 } },
 			{ key = "Table", at = { 0, 0, -2.05 }, size = 5, color = { 72, 50, 32 } },
 			{ key = "Chair", at = { 0, 0, 1.4 }, size = 3.9, color = { 82, 45, 32 } },
 			-- Death's Manual lies open on the table (closed by the "close" event)
@@ -301,7 +316,11 @@ return {
 		room = { name = "rooftop", at = { 900, 0 } },
 		grade = { saturation = -0.15, contrast = 0.18, brightness = -0.03, tint = { 255, 206, 206 } },
 		vignette = { strength = 0.5, color = { 60, 6, 14 } },
-		props = {},
+		props = {
+			-- (stand-ins: crates by the stair hut where the roof is not built)
+			{ key = "Crate", stand = true, at = { 14.5, 0, 12.5 }, size = 4, color = { 90, 70, 44 } },
+			{ key = "Crate", stand = true, at = { 15.6, 0, 8.2 }, turn = 20, size = 3.2, color = { 90, 70, 44 } },
+		},
 		parts = {
 			{
 				name = "Roof",
@@ -468,6 +487,10 @@ return {
 		grade = { saturation = -0.3, contrast = 0.1, brightness = -0.02, tint = { 214, 226, 220 } },
 		vignette = { strength = 0.5 },
 		props = {
+			-- (stand-ins: a bookshelf, the second cabinet and a plant where the room is not built)
+			{ key = "Bookshelf", stand = true, at = { 7.35, 0, 1.8 }, turn = 90, size = 8.1, color = { 60, 42, 30 } },
+			{ key = "FilingCabinet", stand = true, at = { 6.6, 0, -6.9 }, size = 5, color = { 75, 79, 76 } },
+			{ key = "Plant", stand = true, at = { -6.6, 0, -3.9 }, size = 3.2, color = { 40, 70, 40 } },
 			{ key = "Chair", at = { 0, 0, 0.15 }, size = 3.9, color = { 82, 45, 32 } },
 			{ key = "Table", at = { 0, 0, -3.3 }, size = 5, color = { 72, 50, 32 } },
 			{ key = "EvidenceBoard", at = { 0, 5.6, -7.9 }, turn = 180, size = 12.6, color = { 72, 54, 43 } },
