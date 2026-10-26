@@ -2,11 +2,12 @@
 city, board and pieces), its star on the R6 mannequin in the cutscene's clip holding what EmoteMeta gives it, seen
 through the cutscene's own shots (background Blender):
 
-    blender -b --factory-startup --python art/scripts/review_win.py -- cut [cut ...] [--build] [--size=480]
+    blender -b --factory-startup --python art/scripts/review_win.py -- cut [cut ...] [--build] [--size=480] [--room]
 
 For each cut it writes art/export/previews/wins/<cut>/shot<i>_<a|b|c>.png (each shot's start, middle and end) and
 sheet.png (a row a shot). The set is what the game builds before anything happens to it (the events, the candles going
-out and the city dying, are not drawn): it shows the framing, not the effects.
+out and the city dying, are not drawn): it shows the framing, not the effects. --room: in the cut's room from the
+built cutscene sets (art/blend/Maps_Sets.blend and its dressing) instead of its stand-in parts (writes <cut>_room).
 """
 
 import math
@@ -84,6 +85,59 @@ def part(spec, coll):
                                        + ("a" if spec.get("alpha") else ""), color, spec.get("glow", False),
                                        spec.get("alpha", 0.0)))
     return obj
+
+
+SETS_BLEND = os.path.join(common.BLEND, "Maps_Sets.blend")
+DRESSING = os.path.join(emotemeta.ROOT, "src", "server", "Maps", "Scenes", "Sets", "Dressing", "init.luau")
+# The maps' export frame (Blender) to scene space, and a prop's own frame to the game's: x mirrored, y and z swapped.
+TO_SCENE = Matrix(((-1, 0, 0, 0), (0, 0, 1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
+REACH = 70.0  # studs round a room's mark its props and lights are taken from
+FACES = {"Bottom": (0, -1, 0), "Top": (0, 1, 0), "Back": (0, 0, 1), "Front": (0, 0, -1), "Right": (1, 0, 0),
+         "Left": (-1, 0, 0)}
+
+
+def room_set(cut, coll, lib):
+    """The cut's room as the game builds it (--room): the Sets' meshes (art/blend/Maps_Sets.blend, after
+    run_maps.py Sets --export), its props and lights (the scene's dressing), moved so the room's mark is the star's.
+    The stand-in parts are left out by the caller."""
+    ax, az = cut["room"]["at"]
+    mark = Matrix.Translation((-ax, 0.0, -az))
+    with bpy.data.libraries.load(SETS_BLEND, link=False) as (src, dst):
+        dst.objects = [n for n in src.objects if n.startswith("Map_Sets_")]
+    for obj in dst.objects:
+        if obj is not None:
+            coll.objects.link(obj)
+            obj.matrix_world = FLOOR[0] @ mark @ TO_SCENE @ obj.matrix_basis  # (a loaded object's world is not evaluated yet)
+    dressing = emotemeta.read(DRESSING)
+    for row in dressing.get("props") or []:
+        key, x, y, z, rot, scale = row[:6]
+        if abs(x - ax) > REACH or abs(z - az) > REACH:
+            continue
+        for name in [key] + [n for n in lib if n.startswith(key + "_Glow")]:
+            source = lib.get(name)
+            if source is None:
+                continue
+            obj = source.copy()
+            coll.objects.link(obj)
+            obj.hide_render = False
+            place = Matrix.Translation((x - ax, y, z - az)) @ Matrix.Rotation(math.radians(rot), 4, "Y")
+            obj.matrix_world = FLOOR[0] @ place @ Matrix.Scale(scale, 4) @ TO_SCENE @ source.matrix_basis
+    for spec in dressing.get("lights") or []:
+        x, y, z = spec["at"]
+        if abs(x - ax) > REACH or abs(z - az) > REACH:
+            continue
+        spot = spec["kind"] == "spot"
+        data = bpy.data.lights.new("RL", "SPOT" if spot else "POINT")
+        data.color = rgb(spec["color"])[:3]
+        data.energy = 60 * spec["brightness"] * spec["range"] / 9
+        if spot:
+            data.spot_size = math.radians(min(179.0, spec.get("angle", 90)))
+            data.spot_blend = 0.4
+        obj = bpy.data.objects.new("RL", data)
+        coll.objects.link(obj)
+        aim = Matrix.Rotation(math.radians(spec.get("rot", 0)), 3, "Y") @ Vector(FACES.get(spec.get("face"), (0, -1, 0)))
+        turn = aim.to_track_quat("-Z", "Y").to_matrix().to_4x4() if spot else Matrix.Identity(4)
+        obj.matrix_world = FLOOR[0] @ Matrix.Translation((x - ax, y, z - az)) @ turn
 
 
 def frac(x):
@@ -188,11 +242,14 @@ def main():
     size = 480
     names = []
     build = False
+    in_room = False
     for a in argv:
         if a.startswith("--size="):
             size = int(a.split("=", 1)[1])
         elif a == "--build":
             build = True
+        elif a == "--room":
+            in_room = True
         else:
             names.append(a)
     cuts = emotemeta.read(WINCUTS)
@@ -240,7 +297,10 @@ def main():
         end = int(round(length * rv.FPS))
         rv.bake_props(arm, parts, as_meta(cut, (meta_all.get(cut["clip"]) or {}).get("props")), cat, lib,
                       list(range(0, end + 1, 2)), length, False)
-        specs = list(cut.get("parts") or [])
+        room = in_room and cut.get("room") and os.path.exists(SETS_BLEND)
+        if room:
+            room_set(cut, coll, lib)
+        specs = [spec for spec in cut.get("parts") or [] if not (room and spec.get("stand"))]
         if cut.get("city"):
             specs += city(cut["city"])
         if cut.get("board"):
@@ -261,7 +321,7 @@ def main():
                 obj = bpy.data.objects.new("WL", data)
                 coll.objects.link(obj)
                 obj.location = FLOOR[0] @ Vector(spec["at"])
-        folder = os.path.join(OUT, name)
+        folder = os.path.join(OUT, name + ("_room" if room else ""))
         os.makedirs(folder, exist_ok=True)
         stills = []
         shots = cut["shots"]

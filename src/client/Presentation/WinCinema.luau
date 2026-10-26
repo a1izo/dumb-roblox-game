@@ -20,6 +20,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
+local Venues = require(Shared:WaitForChild("Venues"))
 local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
@@ -33,7 +34,7 @@ local Vfx = require(script.Parent.Vfx)
 
 local WinCinema = {}
 
--- Far off and high: no map, lobby or set reaches here.
+-- Far off and high: no map, lobby or set reaches here (where a cut plays when its room is not built).
 WinCinema.ORIGIN = CFrame.new(6000, 600, -6000)
 -- A win cutscene this player sees before their results (another winner's own: Presenters/Outro sets it, the results
 -- screen plays it).
@@ -487,7 +488,23 @@ local function makeStrings(list: any, origin: CFrame, folder: Instance, refs: Re
 	end
 end
 
-local function build(cut: any, origin: CFrame, folder: Instance): Refs
+-- Where the cut's room stands in the cutscene sets (WinCuts `room`), when it is built there: the sets come with a case's
+-- map, and an import older than the rooms has none (the floor under the mark is how the room is known). Nil
+-- elsewhere (the lobby's shop): the cut then plays far off on its own stand-in parts.
+local function roomMark(cut: any): CFrame?
+	local room = cut.room
+	if not room then
+		return nil
+	end
+	local mark = CFrame.new(Venues.SETS + Vector3.new(room.at[1], 0, room.at[2]))
+	local hit = workspace:Raycast(mark.Position + Vector3.new(0, 6, 0), Vector3.new(0, -8, 0))
+	if hit and math.abs(hit.Position.Y - mark.Position.Y) < 1.2 then
+		return mark
+	end
+	return nil
+end
+
+local function build(cut: any, origin: CFrame, folder: Instance, inRoom: boolean): Refs
 	local refs: Refs = {
 		parts = {},
 		props = {},
@@ -502,7 +519,9 @@ local function build(cut: any, origin: CFrame, folder: Instance): Refs
 		cleanups = {},
 	}
 	for _, spec in ipairs(cut.parts or {}) do
-		makePart(spec, origin, folder, refs)
+		if not (inRoom and spec.stand) then
+			makePart(spec, origin, folder, refs)
+		end
 	end
 	for _, spec in ipairs(cut.props or {}) do
 		makeProp(spec, origin, folder, refs)
@@ -922,7 +941,8 @@ function WinCinema.play(name: string, options: Options?): () -> ()
 	local camera = workspace.CurrentCamera
 	local home, homeFov = if camera then camera.CFrame else CFrame.identity, if camera then camera.FieldOfView else 70
 	local stage = Stage.new()
-	local origin = WinCinema.ORIGIN
+	local room = roomMark(cut)
+	local origin = room or WinCinema.ORIGIN
 	local refs: Refs? = nil
 	local token = CameraDirector.take(length + TAIL + 2)
 	local done = false
@@ -983,7 +1003,7 @@ function WinCinema.play(name: string, options: Options?): () -> ()
 
 	WinCinema.current = name
 	step(function()
-		refs = build(cut, origin, stage.folder)
+		refs = build(cut, origin, stage.folder, room ~= nil)
 		WinCinema.lastRefs = refs
 		-- the star: a copy of the winner (their match look), or the faceless figure
 		local source = if opts.userId then opts.userId else Stage.figure()

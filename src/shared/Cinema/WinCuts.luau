@@ -12,9 +12,12 @@
 --   vignette  its strength and colour
 --   props     Core models: key, at (their pivot), turn (degrees about y), size (the biggest side; the model is scaled
 --             to it), name (for the events), color (a stand-in's, until the import has the model)
+--   room      the cut's room in the cutscene sets (art/scripts/maps/venues/sets: name, at = its mark's x and z there):
+--             where it is built (a case's map is loaded) the cut plays in it; elsewhere (the lobby's shop) on its parts
 --   parts     plain parts: name, shape (Block, Cylinder: along x, Ball), size, at (the middle), rot (degrees, x y z),
 --             color, material, alpha (transparency), glow (Neon), light ({ color, range, brightness }), emit (an
---             effect: "flame", "rain", "fog", "dust"), text ({ text, face, color, size }) on a face of it, hidden
+--             effect: "flame", "rain", "fog", "dust"), text ({ text, face, color, size }) on a face of it, hidden,
+--             stand (a stand-in for the room: walls, a floor, built only where the room is not)
 --   city      the skyline below a roof: rows of buildings with lit windows (WinCinema.city, review_win.py city)
 --   board     a chessboard: middle, squares across, square size, the two colours
 --   shots     the camera, as EmoteCinema's: at, eye, look, fov, glide (seconds of easing from the shot before), to
@@ -29,6 +32,7 @@ return {
 		side = "coven",
 		clip = "winFinalPage",
 		length = 8,
+		room = { name = "writer", at = { 0, 70 } },
 		grade = { saturation = -0.35, contrast = 0.12, brightness = -0.02, tint = { 208, 214, 236 } },
 		vignette = { strength = 0.55 },
 		props = {
@@ -56,6 +60,7 @@ return {
 		parts = {
 			{
 				name = "Floor",
+				stand = true,
 				size = { 18, 0.5, 18 },
 				at = { 0, -0.25, -1 },
 				color = { 38, 29, 23 },
@@ -63,6 +68,7 @@ return {
 			},
 			{
 				name = "BackWall",
+				stand = true,
 				size = { 18, 13, 0.5 },
 				at = { 0, 6.5, 8.2 },
 				color = { 30, 29, 33 },
@@ -70,6 +76,7 @@ return {
 			},
 			{
 				name = "LeftWall",
+				stand = true,
 				size = { 0.5, 13, 18 },
 				at = { -8.5, 6.5, -1 },
 				color = { 32, 31, 35 },
@@ -77,28 +84,66 @@ return {
 			},
 			{
 				name = "RightWall",
+				stand = true,
 				size = { 0.5, 13, 18 },
 				at = { 8.5, 6.5, -1 },
 				color = { 32, 31, 35 },
 				material = "Plaster",
 			},
 			-- the window wall: a tall window in the middle, its glass running with rain
-			{ size = { 6.3, 13, 0.5 }, at = { -5.35, 6.5, -6.5 }, color = { 34, 32, 36 }, material = "Plaster" },
-			{ size = { 6.3, 13, 0.5 }, at = { 5.35, 6.5, -6.5 }, color = { 34, 32, 36 }, material = "Plaster" },
-			{ size = { 4.4, 2.4, 0.5 }, at = { 0, 1.2, -6.5 }, color = { 34, 32, 36 }, material = "Plaster" },
-			{ size = { 4.4, 3.6, 0.5 }, at = { 0, 11.2, -6.5 }, color = { 34, 32, 36 }, material = "Plaster" },
-			{ size = { 4.6, 0.3, 0.7 }, at = { 0, 2.35, -6.4 }, color = { 22, 20, 20 }, material = "Wood" },
-			{ size = { 0.22, 7, 0.3 }, at = { 0, 5.9, -6.5 }, color = { 22, 20, 20 }, material = "Wood" },
-			{ size = { 4.4, 0.22, 0.3 }, at = { 0, 6.4, -6.5 }, color = { 22, 20, 20 }, material = "Wood" },
+			{
+				stand = true,
+				size = { 6.3, 13, 0.5 },
+				at = { -5.35, 6.5, -6.5 },
+				color = { 34, 32, 36 },
+				material = "Plaster",
+			},
+			{
+				stand = true,
+				size = { 6.3, 13, 0.5 },
+				at = { 5.35, 6.5, -6.5 },
+				color = { 34, 32, 36 },
+				material = "Plaster",
+			},
+			{
+				stand = true,
+				size = { 4.4, 2.4, 0.5 },
+				at = { 0, 1.2, -6.5 },
+				color = { 34, 32, 36 },
+				material = "Plaster",
+			},
+			{
+				stand = true,
+				size = { 4.4, 3.6, 0.5 },
+				at = { 0, 11.2, -6.5 },
+				color = { 34, 32, 36 },
+				material = "Plaster",
+			},
+			{
+				stand = true,
+				size = { 4.6, 0.3, 0.7 },
+				at = { 0, 2.35, -6.4 },
+				color = { 22, 20, 20 },
+				material = "Wood",
+			},
+			{ stand = true, size = { 0.22, 7, 0.3 }, at = { 0, 5.9, -6.5 }, color = { 22, 20, 20 }, material = "Wood" },
+			{
+				stand = true,
+				size = { 4.4, 0.22, 0.3 },
+				at = { 0, 6.4, -6.5 },
+				color = { 22, 20, 20 },
+				material = "Wood",
+			},
 			{
 				name = "Glass",
+				stand = true,
 				size = { 4.4, 7, 0.08 },
 				at = { 0, 5.9, -6.45 },
 				color = { 70, 84, 104 },
 				material = "Glass",
 				alpha = 0.55,
 			},
-			{ name = "Rain", size = { 4.4, 0.2, 0.2 }, at = { 0, 9.5, -6.75 }, alpha = 1, emit = "rain" },
+			{ name = "Rain", stand = true, size = { 4.4, 0.2, 0.2 }, at = { 0, 9.5, -6.75 }, alpha = 1, emit = "rain" },
 			-- the night outside, lit by the lightning ("flash" events)
 			{ name = "Sky", size = { 40, 30, 1 }, at = { 0, 8, -16 }, color = { 16, 20, 34 }, glow = true },
 			{
@@ -253,22 +298,43 @@ return {
 		side = "coven",
 		clip = "winNewWorld",
 		length = 8,
+		room = { name = "rooftop", at = { 900, 0 } },
 		grade = { saturation = -0.15, contrast = 0.18, brightness = -0.03, tint = { 255, 206, 206 } },
 		vignette = { strength = 0.5, color = { 60, 6, 14 } },
 		props = {},
 		parts = {
 			{
 				name = "Roof",
+				stand = true,
 				size = { 40, 1, 36 },
 				at = { 0, -0.5, -1 },
 				color = { 66, 66, 70 },
 				material = "Concrete",
 			},
-			{ size = { 40, 1.4, 0.7 }, at = { 0, 0.7, -6.9 }, color = { 74, 73, 76 }, material = "Concrete" },
-			{ size = { 0.7, 1.4, 36 }, at = { -19.65, 0.7, -1 }, color = { 74, 73, 76 }, material = "Concrete" },
-			{ size = { 0.7, 1.4, 36 }, at = { 19.65, 0.7, -1 }, color = { 74, 73, 76 }, material = "Concrete" },
+			{
+				stand = true,
+				size = { 40, 1.4, 0.7 },
+				at = { 0, 0.7, -6.9 },
+				color = { 74, 73, 76 },
+				material = "Concrete",
+			},
+			{
+				stand = true,
+				size = { 0.7, 1.4, 36 },
+				at = { -19.65, 0.7, -1 },
+				color = { 74, 73, 76 },
+				material = "Concrete",
+			},
+			{
+				stand = true,
+				size = { 0.7, 1.4, 36 },
+				at = { 19.65, 0.7, -1 },
+				color = { 74, 73, 76 },
+				material = "Concrete",
+			},
 			-- a water tank on legs, the radio mast with its red light, the stair hut
 			{
+				stand = true,
 				shape = "Cylinder",
 				size = { 5, 4, 4 },
 				rot = { 0, 0, 90 },
@@ -276,11 +342,36 @@ return {
 				color = { 40, 42, 46 },
 				material = "Metal",
 			},
-			{ size = { 0.3, 1.5, 0.3 }, at = { -10.4, 0.75, 5.6 }, color = { 30, 30, 34 }, material = "Metal" },
-			{ size = { 0.3, 1.5, 0.3 }, at = { -7.6, 0.75, 5.6 }, color = { 30, 30, 34 }, material = "Metal" },
-			{ size = { 0.3, 1.5, 0.3 }, at = { -10.4, 0.75, 8.4 }, color = { 30, 30, 34 }, material = "Metal" },
-			{ size = { 0.3, 1.5, 0.3 }, at = { -7.6, 0.75, 8.4 }, color = { 30, 30, 34 }, material = "Metal" },
 			{
+				stand = true,
+				size = { 0.3, 1.5, 0.3 },
+				at = { -10.4, 0.75, 5.6 },
+				color = { 30, 30, 34 },
+				material = "Metal",
+			},
+			{
+				stand = true,
+				size = { 0.3, 1.5, 0.3 },
+				at = { -7.6, 0.75, 5.6 },
+				color = { 30, 30, 34 },
+				material = "Metal",
+			},
+			{
+				stand = true,
+				size = { 0.3, 1.5, 0.3 },
+				at = { -10.4, 0.75, 8.4 },
+				color = { 30, 30, 34 },
+				material = "Metal",
+			},
+			{
+				stand = true,
+				size = { 0.3, 1.5, 0.3 },
+				at = { -7.6, 0.75, 8.4 },
+				color = { 30, 30, 34 },
+				material = "Metal",
+			},
+			{
+				stand = true,
 				shape = "Cylinder",
 				size = { 14, 0.25, 0.25 },
 				rot = { 0, 0, 90 },
@@ -297,7 +388,7 @@ return {
 				glow = true,
 				light = { color = { 255, 40, 50 }, range = 10, brightness = 1.2 },
 			},
-			{ size = { 5, 7, 4 }, at = { 11, 3.5, 10 }, color = { 54, 54, 58 }, material = "Concrete" },
+			{ stand = true, size = { 5, 7, 4 }, at = { 11, 3.5, 10 }, color = { 54, 54, 58 }, material = "Concrete" },
 			-- the red sky behind the city, a glow along its horizon
 			{ name = "Sky", size = { 2200, 700, 2 }, at = { 0, 120, -620 }, color = { 54, 6, 12 }, glow = true },
 			{ name = "Horizon", size = { 2200, 60, 2 }, at = { 0, -40, -610 }, color = { 120, 18, 30 }, glow = true },
@@ -373,6 +464,7 @@ return {
 		side = "bureau",
 		clip = "winCaseClosed",
 		length = 8,
+		room = { name = "office", at = { 120, 70 } },
 		grade = { saturation = -0.3, contrast = 0.1, brightness = -0.02, tint = { 214, 226, 220 } },
 		vignette = { strength = 0.5 },
 		props = {
@@ -387,6 +479,7 @@ return {
 		parts = {
 			{
 				name = "Floor",
+				stand = true,
 				size = { 18, 0.5, 18 },
 				at = { 0, -0.25, -1 },
 				color = { 42, 44, 50 },
@@ -394,14 +487,21 @@ return {
 			},
 			{
 				name = "Wall",
+				stand = true,
 				size = { 18, 12, 0.5 },
 				at = { 0, 6, -8.4 },
 				color = { 56, 58, 62 },
 				material = "Plaster",
 			},
-			{ size = { 0.5, 12, 18 }, at = { -8.5, 6, -1 }, color = { 52, 54, 58 }, material = "Plaster" },
-			{ size = { 0.5, 12, 18 }, at = { 8.5, 6, -1 }, color = { 52, 54, 58 }, material = "Plaster" },
-			{ size = { 18, 12, 0.5 }, at = { 0, 6, 8 }, color = { 52, 54, 58 }, material = "Plaster" },
+			{
+				stand = true,
+				size = { 0.5, 12, 18 },
+				at = { -8.5, 6, -1 },
+				color = { 52, 54, 58 },
+				material = "Plaster",
+			},
+			{ stand = true, size = { 0.5, 12, 18 }, at = { 8.5, 6, -1 }, color = { 52, 54, 58 }, material = "Plaster" },
+			{ stand = true, size = { 18, 12, 0.5 }, at = { 0, 6, 8 }, color = { 52, 54, 58 }, material = "Plaster" },
 			-- the lamp hanging over the desk
 			{
 				shape = "Cylinder",
@@ -550,6 +650,7 @@ return {
 		side = "bureau",
 		clip = "winCheckmate",
 		length = 8,
+		room = { name = "hall", at = { 720, 0 } },
 		grade = { saturation = -0.4, contrast = 0.22, brightness = -0.02, tint = { 226, 230, 240 } },
 		vignette = { strength = 0.45 },
 		props = {
@@ -558,15 +659,22 @@ return {
 		parts = {
 			{
 				name = "Ground",
+				stand = true,
 				size = { 400, 1, 400 },
 				at = { 0, -1.5, -9 },
 				color = { 12, 12, 14 },
 				material = "SmoothPlastic",
 			},
-			{ size = { 50, 0.6, 1 }, at = { 0, -0.3, 15.5 }, color = { 36, 26, 20 }, material = "Wood" },
-			{ size = { 50, 0.6, 1 }, at = { 0, -0.3, -33.5 }, color = { 36, 26, 20 }, material = "Wood" },
-			{ size = { 1, 0.6, 50 }, at = { -24.5, -0.3, -9 }, color = { 36, 26, 20 }, material = "Wood" },
-			{ size = { 1, 0.6, 50 }, at = { 24.5, -0.3, -9 }, color = { 36, 26, 20 }, material = "Wood" },
+			{ stand = true, size = { 50, 0.6, 1 }, at = { 0, -0.3, 15.5 }, color = { 36, 26, 20 }, material = "Wood" },
+			{ stand = true, size = { 50, 0.6, 1 }, at = { 0, -0.3, -33.5 }, color = { 36, 26, 20 }, material = "Wood" },
+			{
+				stand = true,
+				size = { 1, 0.6, 50 },
+				at = { -24.5, -0.3, -9 },
+				color = { 36, 26, 20 },
+				material = "Wood",
+			},
+			{ stand = true, size = { 1, 0.6, 50 }, at = { 24.5, -0.3, -9 }, color = { 36, 26, 20 }, material = "Wood" },
 			{
 				name = "Key",
 				size = { 1, 1, 1 },

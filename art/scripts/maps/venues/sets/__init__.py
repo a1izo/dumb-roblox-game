@@ -10,9 +10,16 @@ the camera does not look.
     locker      the Bureau's locker room: steel lockers, a bench, fluorescent light
     flat        the Muerto's bare flat over the city: a lone desk, red neon through the glass behind it
     warehouse   the abandoned warehouse of the finale: steel, crates, moonlight through the roof
+
+and the win cutscenes' rooms (src/shared/Cinema/WinCuts.luau, each cut's room):
+
+    writer      the Coven's Sealed one: a study at night, the tall window running with rain, books, a globe
+    office      the Bureau's Sealed one: a detective's office, the city's light through venetian blinds
+    hall        the Bureau's Godhood one: a vast stone hall, the chessboard sunk in its marble floor, the moon
+    rooftop     the Coven's Godhood one: a tar roof over the city, a water tank, a radio mast, the stair hut
 """
 
-from maps.venues.sets import ace, flat, locker, shrine, study, warehouse
+from maps.venues.sets import ace, flat, hall, locker, office, rooftop, shrine, study, warehouse, writer
 from maps.venues.sets import plan as P
 
 FORMAT = 2
@@ -27,6 +34,10 @@ VIEWS = [
     ((360.0, 5.5, 6.0), (360.0, 4.0, -6.0), 20),  # the locker room
     ((360.0, 5.0, 66.0), (360.0, 3.5, 56.0), 20),  # the Muerto's flat, the desk against the window
     ((520.0, 12.0, 24.0), (520.0, 3.0, 0.0), 22),  # the warehouse floor
+    ((2.4, 5.8, 70.4), (0.25, 2.9, 67.9), 20),  # the writer's room, over the star's shoulder to the window
+    ((118.0, 6.2, 72.6), (120.0, 4.0, 62.0), 20),  # the office, to the evidence board
+    ((720.0, 2.2, 17.0), (720.0, 3.4, -1.0), 20),  # the hall from behind the star, down the board
+    ((903.2, 2.4, 8.5), (900.0, 3.2, -6.0), 20),  # the rooftop to its edge
 ]
 
 CHECKS = {"symmetry": None}
@@ -39,5 +50,9 @@ def build(s):
     locker.build(s)
     flat.build(s)
     warehouse.build(s)
+    writer.build(s)
+    office.build(s)
+    hall.build(s)
+    rooftop.build(s)
     s.set_bounds(*P.BOUNDS)
     s.checks = CHECKS

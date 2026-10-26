@@ -14,10 +14,11 @@ local Venues = {}
 Venues.LOBBY = Vector3.new(0, 0.2, 0)
 Venues.MAP = Vector3.new(0, 0, 3000)
 Venues.MEETING = Vector3.new(0, 0, -3000)
--- The cutscene sets (Diavolo's study, the shrine, Ace's room, the locker room, the warehouse), side by
--- side along X from here. Only cutscene cameras see them.
+-- The cutscene sets (Diavolo's study, the shrine, Ace's room, the locker room, the warehouse, and the win cutscenes'
+-- rooms: the writer's, the office, the hall, the rooftop), side by side along X from here. Only cutscene cameras see
+-- them.
 Venues.SETS = Vector3.new(6000, 0, 0)
-local SETS_MIN, SETS_MAX = Vector3.new(-100, -20, -120), Vector3.new(650, 120, 120)
+local SETS_MIN, SETS_MAX = Vector3.new(-100, -80, -120), Vector3.new(1000, 120, 120)
 
 -- Half-size of the meeting room around its origin (the room is 60 x 60).
 local MEETING_HALF = 45
