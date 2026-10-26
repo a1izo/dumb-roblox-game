@@ -26,6 +26,7 @@ local Screens = require(script.Parent.Parent.Parent.UI.Screens)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local StageLight = require(script.Parent.Parent.StageLight)
 local Styles = require(script.Parent.Parent.Styles)
 local WinCinema = require(script.Parent.Parent.WinCinema)
 
@@ -147,7 +148,14 @@ return function(cue)
 		Sfx.play("gavel")
 		table.insert(aceCleanup, Cinema.spotlight(ace, Color3.new(1, 1, 1)))
 		table.insert(aceCleanup, Cinema.outline(ace, C.white))
-		CameraDirector.cut(token, ShotSolver.frame(ace, { distance = 8, height = 1.6, angle = -18 }), 50)
+		-- (the room's lamps sink round the table as the lights find them, a cold light lining them from behind)
+		local aceWide = ShotSolver.frame(ace, { distance = 8, height = 1.6, angle = -18 })
+		local aceRoot = ace:FindFirstChild("HumanoidRootPart")
+		if aceRoot and aceRoot:IsA("BasePart") then
+			table.insert(aceCleanup, StageLight.dip(aceRoot.Position, 45, 0.35, aceTime))
+		end
+		table.insert(aceCleanup, StageLight.rim(ace, aceWide.Position, Color3.fromRGB(205, 220, 255), 2.6))
+		CameraDirector.cut(token, aceWide, 50)
 		CameraDirector.move(token, ShotSolver.frame(ace, { distance = 5.5, height = 1, angle = -8 }), aceTime * 0.9, 42)
 		table.insert(
 			aceCleanup,
@@ -171,7 +179,18 @@ return function(cue)
 		Sfx.play("gavel")
 		table.insert(cleanup, Cinema.spotlight(hand, if handWon then C.red else Color3.new(1, 1, 1)))
 		table.insert(cleanup, Cinema.outline(hand, C.red))
-		CameraDirector.cut(token, ShotSolver.frame(hand, { distance = 9, height = 2, angle = 20 }), 55)
+		-- (the lamps falter and sink round the Hand; a red light from behind when the Hand won, a cold one when not)
+		local handWide = ShotSolver.frame(hand, { distance = 9, height = 2, angle = 20 })
+		local handRoot = hand:FindFirstChild("HumanoidRootPart")
+		if handRoot and handRoot:IsA("BasePart") then
+			table.insert(
+				cleanup,
+				StageLight.dip(handRoot.Position, 45, 0.3, math.max(1, endAt - workspace:GetServerTimeNow()))
+			)
+		end
+		local rimColour = if handWon then Color3.fromRGB(255, 52, 60) else Color3.fromRGB(205, 220, 255)
+		table.insert(cleanup, StageLight.rim(hand, handWide.Position, rimColour, 3))
+		CameraDirector.cut(token, handWide, 55)
 		if not handWon and type(data.verdict) == "string" then
 			table.insert(cleanup, Styles.verdict(data.verdict, Screens.cinematic))
 		end
