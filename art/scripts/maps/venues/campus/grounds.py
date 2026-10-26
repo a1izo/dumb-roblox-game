@@ -172,8 +172,9 @@ def forecourt(s):
 
 
 def hollow(s):
-    for x, z, snow in ((-141.0, -30.0, True), (-126.0, 36.0, False), (-72.0, -28.0, True), (-62.0, 36.0, False),
-                       (-143.0, 24.0, False), (-90.0, -31.0, False)):
+    # (the pines by the rim stand clear of its stone wall: their lowest boughs reached into it)
+    for x, z, snow in ((-140.1, -30.0, True), (-126.0, 34.7, False), (-72.0, -28.0, True), (-62.0, 33.6, False),
+                       (-141.5, 24.0, False), (-90.0, -31.0, False)):
         pine(s, x, z, (x * 7 + z * 3) % 360, HY, snow)
     for x, z in ((-132.0, -16.0), (-112.0, -15.0), (-80.0, -15.0), (-128.0, 20.0), (-86.0, 19.0)):
         s.prop("StoneLantern", x, z, 0, 1.0, HY)
