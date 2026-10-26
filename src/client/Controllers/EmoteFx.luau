@@ -17,7 +17,6 @@ local Create = require(Shared:WaitForChild("Create"))
 local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
-local Rarity = require(Shared:WaitForChild("Rarity"))
 
 local LocomotionController = require(script.Parent.Parent.Anim.LocomotionController)
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
@@ -3732,35 +3731,21 @@ function EmoteFx.rung(clip: string): number
 	return rung
 end
 
--- Every emote from Sealed up wears an aura under its own effect (Presentation/Aura, the owner's three tutorials of
--- 2026-10-24): Sealed a glow, specks and flares; Condemned the ground, wisps and smoke too; Godhood the spiral
--- beams, a halo and lightning too. In its tier's colour, or its own here (colour, accent); LEVEL lifts a showpiece
--- a rung (Menacing Pose and its poses, Gojo's blindfold, Write in the Air); GROUNDLESS has none on the floor (the
--- Long Climb's own steps are there).
-local AURA_TINTS: { [string]: { Color3 } } = {
+-- The aura (Presentation/Aura, the owner's three tutorials of 2026-10-24) burns round a body, so only the emotes
+-- about power wear it, under their own effect (2026-10-26: on nearly every emote, a Griddy or a sugar tower on fire
+-- made no sense): Menacing Pose and its poses, Gojo's blindfold, Write in the Air and the four Godhood emotes, each
+-- in its own colours (colour, accent). Its level follows the emote's rung (glow, flames, specks and flares; the
+-- ground, wisps and smoke too; the spiral beams, a halo and lightning too); LEVEL lifts a showpiece a rung.
+local AURAS: { [string]: { Color3 } } = {
 	writeAir = { Color3.fromRGB(240, 226, 190), Color3.fromRGB(255, 250, 236) },
-	aceCrouch = { Color3.fromRGB(150, 190, 255), Color3.fromRGB(226, 238, 255) },
 	menacingPose = { Color3.fromRGB(150, 92, 205), Color3.fromRGB(232, 206, 255) },
 	menacingPose2 = { Color3.fromRGB(214, 190, 120), Color3.fromRGB(255, 244, 210) },
 	menacingPose3 = { Color3.fromRGB(110, 120, 220), Color3.fromRGB(210, 216, 255) },
 	menacingPose4 = { Color3.fromRGB(196, 24, 44), Color3.fromRGB(255, 170, 170) },
 	menacingPose5 = { Color3.fromRGB(120, 170, 232), Color3.fromRGB(220, 236, 255) },
 	menacingPose6 = { Color3.fromRGB(214, 180, 96), Color3.fromRGB(255, 236, 190) },
-	preDawnBonk = { Color3.fromRGB(255, 160, 90), Color3.fromRGB(255, 220, 180) },
 	blindfoldLift = { Color3.fromRGB(90, 170, 255), Color3.fromRGB(220, 240, 255) },
 	blindfoldLiftUp = { Color3.fromRGB(90, 170, 255), Color3.fromRGB(220, 240, 255) },
-	chairPerch = { Color3.fromRGB(150, 160, 190), Color3.fromRGB(220, 226, 240) },
-	sugarTower = { Color3.fromRGB(255, 180, 210), Color3.fromRGB(255, 236, 244) },
-	chipAndPen = { Color3.fromRGB(220, 80, 60), Color3.fromRGB(255, 200, 180) },
-	strawberryOnTop = { Color3.fromRGB(240, 70, 90), Color3.fromRGB(255, 200, 210) },
-	diceTower = { Color3.fromRGB(80, 220, 150), Color3.fromRGB(210, 255, 230) },
-	theLongClimb = { Color3.fromRGB(64, 255, 118), Color3.fromRGB(200, 255, 214) },
-	paradeMarch = { Color3.fromRGB(232, 190, 90), Color3.fromRGB(255, 240, 200) },
-	griddy = { Color3.fromRGB(80, 230, 255), Color3.fromRGB(220, 250, 255) },
-	mushroomStroll = { Color3.fromRGB(180, 230, 120), Color3.fromRGB(236, 255, 210) },
-	notMyProblem = { Color3.fromRGB(150, 140, 170), Color3.fromRGB(222, 218, 232) },
-	matchPointServe = { Color3.fromRGB(220, 255, 80), Color3.fromRGB(246, 255, 210) },
-	cuffedLead = { Color3.fromRGB(190, 200, 215), Color3.fromRGB(240, 244, 250) },
 	justAsPlanned = { Color3.fromRGB(210, 30, 40), Color3.fromRGB(255, 200, 200) },
 	finalBreakdown = { Color3.fromRGB(230, 60, 40), Color3.fromRGB(255, 210, 170) },
 	newWorld = { Color3.fromRGB(255, 236, 180), Color3.fromRGB(255, 255, 255) },
@@ -3777,19 +3762,17 @@ local LEVEL: { [string]: number } = {
 	blindfoldLiftUp = 2,
 	writeAir = 2,
 }
-local GROUNDLESS: { [string]: boolean } = { theLongClimb = true }
 
 local function auraFor(clip: string, rung: number): Aura.Spec?
+	local tint = AURAS[clip]
 	local level = math.max(LEVEL[clip] or 0, rung - 1)
-	if rung < 2 or level < 1 then
+	if not tint or rung < 2 or level < 1 then
 		return nil
 	end
-	local tint = AURA_TINTS[clip]
 	return {
-		colour = if tint then tint[1] else Rarity.color(EmoteInfo.of(clip).rarity),
-		accent = if tint then tint[2] else nil,
+		colour = tint[1],
+		accent = tint[2],
 		level = level,
-		ground = not GROUNDLESS[clip],
 	}
 end
 
