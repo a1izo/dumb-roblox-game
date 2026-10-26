@@ -9,10 +9,10 @@ return {
 	MapsSets = 14,
 	MapsTokyo = 37,
 	ModelsAgency = 11,
-	ModelsCampus = 10,
+	ModelsCampus = 11,
 	ModelsCore = 25,
 	ModelsFx = 2,
 	ModelsLobby = 15,
 	ModelsMeeting = 6,
-	ModelsTokyo = 15,
+	ModelsTokyo = 16,
 }

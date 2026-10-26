@@ -478,7 +478,14 @@ def cosmetics_counter():
     black = pk.plastic("CO_Black", (20, 20, 22))
     mirror = pk.metal("CO_Mirror", (170, 176, 184), (210, 214, 220), rough=0.05, metallic=1.0)
     rng = random.Random(12)
-    parts = [pk.rounded("Base", (6.0, 2.4, 3.2), (0, 0, 1.6), white, r=0.08),
+    # (the base a recess under the top on the customers' side, the lit shelf and the palettes in it: they were inside
+    # the solid base, unseen)
+    deep, low, high = 1.0, 1.7, 3.0
+    parts = [pk.rounded("Base", (6.0, 2.4 - deep, 3.2), (0, deep / 2, 1.6), white, r=0.08),
+             mk.box("FrontLow", (6.0, deep, low), (0, -1.2 + deep / 2, low / 2), mat=white, bevel=0.04),
+             mk.box("FrontHigh", (6.0, deep, 3.2 - high), (0, -1.2 + deep / 2, (high + 3.2) / 2), mat=white, bevel=0.04),
+             mk.box("StileL", (0.12, deep, high - low), (-2.94, -1.2 + deep / 2, (low + high) / 2), mat=white),
+             mk.box("StileR", (0.12, deep, high - low), (2.94, -1.2 + deep / 2, (low + high) / 2), mat=white),
              mk.box("Top", (6.1, 2.5, 0.1), (0, 0, 3.25), mat=black),
              mk.box("Kick", (5.8, 2.2, 0.25), (0, 0, 0.12), mat=gold),
              mk.box("Plinth", (1.8, 1.4, 2.4), (0, 0.4, 4.5), mat=white, bevel=0.04),
@@ -489,9 +496,17 @@ def cosmetics_counter():
         x = -2.6 + k * 0.3
         colour = [(200, 60, 80), (240, 200, 180), (160, 40, 60), (230, 230, 226)][k % 4]
         parts += pk.bottle("Tester", x, -0.5, 3.36, pk.plastic(f"CO_T{k % 4}", colour), gold, r=0.1, h=0.5)
+    shades = [pk.plastic(f"CO_Shade{k}", c) for k, c in enumerate(((190, 90, 110), (220, 170, 150), (120, 70, 90),
+                                                                     (230, 200, 170), (160, 40, 60)))]
     for k in range(6):
-        parts.append(mk.box("Palette", (0.5, 0.35, 0.06), (-2.2 + k * 0.8, 0.5, 2.3), mat=black, bevel=0.02))
-    glows = [mk.box("Shelf", (5.6, 1.4, 0.05), (0, 0.2, 2.2), mat=pk.glow("CO_Shelf", (255, 244, 236), 2)),
+        x = -2.3 + k * 0.92
+        parts.append(mk.box("Palette", (0.6, 0.4, 0.05), (x, -0.62, low + 0.1), rot=(-12, 0, 0), mat=black, bevel=0.02))
+        for c in range(4):  # (its pans of colour)
+            parts.append(mk.box("Pan", (0.11, 0.14, 0.02), (x - 0.2 + c * 0.13, -0.63, low + 0.13), rot=(-12, 0, 0),
+                                mat=shades[(k + c) % len(shades)]))
+        parts += pk.bottle("Bottle", x + 0.3, -0.42, low + 0.05, pk.plastic(f"CO_T{k % 4}", [(200, 60, 80), (240, 200, 180),
+                           (160, 40, 60), (230, 230, 226)][k % 4]), gold, r=0.08, h=0.42)
+    glows = [mk.box("Shelf", (5.76, deep - 0.06, 0.05), (0, -1.2 + deep / 2, low + 0.025), mat=pk.glow("CO_Shelf", (255, 244, 236), 2)),
              mk.box("Logo", (1.4, 0.05, 0.5), (0, -0.31, 5.2), mat=pk.glow("CO_Logo", (255, 220, 200), 3))]
     return parts, glows
 
