@@ -90,7 +90,7 @@ return {
 	FaxMachine = { size = { 1.52, 1.216, 1.99 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 135, 130, 120 }, set = "Agency", tris = 452, glow = { { 120, 220, 140 } } },
 	Fedora = { size = { 2, 0.875, 2 }, pivot = "centre", material = "Fabric", collide = false, color = { 99, 98, 96 }, set = "Core", tris = 1224 },
 	FilingCabinet = { size = { 2.4, 5, 2.16 }, pivot = "bottom", material = "Metal", collide = true, color = { 75, 79, 76 }, set = "Core", tris = 720 },
-	FilmProjector = { size = { 2, 5.1, 3.1 }, pivot = "bottom", material = "Metal", collide = true, color = { 48, 48, 50 }, set = "Campus", tris = 656, glow = { { 255, 244, 220 } } },
+	FilmProjector = { size = { 2.234, 5.151, 2.96 }, pivot = "bottom", material = "Metal", collide = true, color = { 26, 27, 28 }, set = "Campus", tris = 2926, glow = { { 255, 244, 220 } } },
 	FittingRoom = { size = { 4.4, 8.3, 4.3 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 49, 37, 30 }, set = "Tokyo", tris = 4826, glow = { { 255, 236, 210 } } },
 	FloorGlobe = { size = { 3.3, 4.593, 3.3 }, pivot = "bottom", material = "Wood", collide = true, color = { 50, 38, 26 }, set = "Meeting", tris = 1580 },
 	FloorLamp = { size = { 2.1, 6.1, 2.1 }, pivot = "bottom", material = "Metal", collide = false, color = { 72, 62, 44 }, lights = { { at = { -0, 5.4, 0 }, brightness = 0.9, color = { 255, 210, 150 }, kind = "point", range = 15 } }, set = "Meeting", tris = 596, glow = { { 255, 210, 150 } } },

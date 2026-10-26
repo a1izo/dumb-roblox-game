@@ -1227,26 +1227,56 @@ def upright_piano():
 
 @prop("FilmProjector", pivot="bottom", material="Metal", collide=True, texture=512, set="Campus")
 def film_projector():
-    """The film club's 16 mm projector on its trolley: grey body, two reels on their arms, the
-    lens throwing its beam (lit), the cable, a can of film on the shelf."""
+    """The film club's 16 mm projector on its trolley: a grey body with the lamp house behind, its vents louvred,
+    the lens barrel out of the front with its focus ring, the beam lit at its glass; two spoked reels high on their
+    arms, film wound on the front one, the strip running down to the gate and back up to the take-up reel; the
+    switches on its side, the cable; a can of film and a spare reel on the shelf."""
     grey = pk.paint("Proj_Grey", (80, 86, 90), rough=0.4)
     dark = pk.metal("Proj_Dark", (22, 22, 24), (38, 38, 42), rough=0.5, metallic=0.3)
     alu = pk.metal("Proj_Alu", (160, 164, 170), (196, 200, 206), rough=0.3, metallic=0.8)
     film = pk.plastic("Proj_Film", (40, 30, 24))
+    white = pk.plastic("Proj_White", (226, 222, 212))
     parts = [mk.box("Trolley", (2.0, 2.4, 0.1), (0, 0, 2.4), mat=dark),
              mk.box("Shelf", (1.8, 2.2, 0.1), (0, 0, 0.9), mat=dark),
-             mk.cylinder("Can", 0.6, 0.2, (0, 0.2, 1.05), mat=alu, verts=20),
-             mk.box("Body", (1.2, 1.8, 1.2), (0, 0, 3.05), mat=grey, bevel=0.1),
-             mk.cylinder("Lens", 0.22, 0.8, (0.2, -1.2, 3.1), rot=(90, 0, 0), mat=dark, verts=14)]
+             mk.cylinder("Can", 0.6, 0.2, (-0.2, 0.3, 1.05), mat=alu, verts=24),
+             mk.box("CanLabel", (0.5, 0.02, 0.12), (-0.2, -0.31, 1.05), mat=white),
+             pk.rounded("Body", (1.1, 1.6, 1.1), (0, -0.1, 3.0), grey, r=0.12),
+             pk.rounded("LampHouse", (0.9, 0.8, 1.0), (0, 0.95, 3.05), grey, r=0.1),
+             mk.box("Gate", (0.08, 0.5, 0.6), (0.58, -0.3, 3.1), mat=dark, bevel=0.02),
+             mk.cylinder("Barrel", 0.2, 0.7, (0.1, -1.15, 3.1), rot=(90, 0, 0), mat=dark, verts=16),
+             mk.cylinder("FocusRing", 0.24, 0.14, (0.1, -1.05, 3.1), rot=(90, 0, 0), mat=alu, verts=16),
+             mk.cylinder("LensHood", 0.24, 0.12, (0.1, -1.46, 3.1), rot=(90, 0, 0), mat=dark, verts=16)]
+    for k in range(5):  # the lamp house's louvres
+        parts.append(mk.box("Louvre", (0.92, 0.05, 0.08), (0, 1.36, 2.75 + k * 0.15), rot=(30, 0, 0), mat=dark))
+    for k, x in enumerate((-0.25, 0.0)):  # switches on the side
+        parts.append(mk.box("Switch", (0.12, 0.06, 0.16), (x, -0.92, 2.7), mat=dark, bevel=0.02))
     for sx in (-1, 1):
         for sy in (-1, 1):
             parts.append(mk.box("Leg", (0.1, 0.1, 2.4), (sx * 0.9, sy * 1.1, 1.2), mat=dark))
-    for sy, zz in ((-0.6, 4.4), (0.8, 4.3)):
-        parts += [mk.tube("ReelArm", (0, sy * 0.4, 3.6), (0, sy, zz), 0.05, mat=dark, verts=5),
-                  mk.cylinder("Reel", 0.7, 0.1, (0.1, sy, zz), rot=(0, 90, 0), mat=alu, verts=20),
-                  mk.cylinder("ReelFilm", 0.5, 0.12, (0.1, sy, zz), rot=(0, 90, 0), mat=film, verts=16)]
-    glows = [mk.cylinder("Beam", 0.18, 0.04, (0.2, -1.62, 3.1), rot=(90, 0, 0), mat=pk.glow("Proj_Lamp", (255, 244, 220), 5),
-                         verts=12)]
+            parts.append(mk.cylinder("Caster", 0.1, 0.08, (sx * 0.9, sy * 1.1, 0.1), rot=(0, 90, 0), mat=dark, verts=10))
+    # The reels: a rim, a hub and five spokes each (the gaps between them open), on arms up from the body.
+    reels = [(-0.55, 4.45, 0.5), (0.75, 4.35, 0.18)]  # (y, z, the film wound on it, its radius)
+    for sy, zz, wound in reels:
+        parts.append(mk.tube("ReelArm", (0.1, sy * 0.5, 3.5), (0.1, sy, zz), 0.05, mat=dark, verts=6))
+        for side in (-1, 1):
+            parts.append(mk.torus("Rim", 0.66, 0.03, (0.1 + side * 0.06, sy, zz), rot=(0, 90, 0), mat=alu,
+                                  major_segments=28, minor_segments=4))
+            for k in range(5):
+                a = k * math.tau / 5
+                end = (0.1 + side * 0.06, sy + math.cos(a) * 0.64, zz + math.sin(a) * 0.64)
+                parts.append(mk.tube("Spoke", (0.1 + side * 0.06, sy, zz), end, 0.04, mat=alu, verts=4))
+        parts += [mk.cylinder("Hub", 0.14, 0.2, (0.1, sy, zz), rot=(0, 90, 0), mat=alu, verts=12),
+                  mk.cylinder("Wound", wound, 0.1, (0.1, sy, zz), rot=(0, 90, 0), mat=film, verts=24)]
+    # the film's path: off the front reel down to the gate, and from the gate back up to the take-up reel
+    f_reel, t_reel = reels[0], reels[1]
+    parts += [mk.tube("Strip", (0.1, f_reel[0] + 0.3, f_reel[1] - 0.42), (0.58, -0.4, 3.4), 0.02, mat=film, verts=4),
+              mk.tube("Strip", (0.58, -0.2, 2.8), (0.62, 0.3, 2.62), 0.02, mat=film, verts=4),
+              mk.tube("Strip", (0.62, 0.3, 2.62), (0.1, t_reel[0] - 0.1, t_reel[1] - 0.17), 0.02, mat=film, verts=4)]
+    parts.append(pk.sweep("Cable", [(-0.5, 1.2, 2.8), (-0.85, 1.25, 2.2), (-0.95, 1.0, 1.2), (-0.9, 0.6, 0.3),
+                                    (-1.2, 0.2, 0.02)], 0.04, dark, sides=5))
+    parts.append(mk.cylinder("SpareReel", 0.45, 0.1, (0.45, -0.55, 1.0), mat=alu, verts=20))
+    glows = [mk.cylinder("Beam", 0.17, 0.04, (0.1, -1.53, 3.1), rot=(90, 0, 0), mat=pk.glow("Proj_Lamp", (255, 244, 220), 5),
+                         verts=16)]
     return parts, glows
 
 
