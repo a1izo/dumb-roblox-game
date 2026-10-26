@@ -55,6 +55,8 @@ return function(t)
 			expect(ghostly.CollisionGroup).to.equal(CollisionGroups.SPECTERS)
 			local added = Instance.new("Part")
 			added.Parent = model
+			-- (a place with deferred signals, like the live one, runs the DescendantAdded handler a moment later)
+			task.wait()
 			expect(added.CollisionGroup).to.equal(CHARS)
 			connection:Disconnect()
 			model:Destroy()
