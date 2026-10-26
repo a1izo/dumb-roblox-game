@@ -6,7 +6,7 @@
 -- (hinge) and, for the Manual, the page the game writes on (page), all from the prop's pivot.
 
 return {
-	ATM = { size = { 2.42, 5.65, 2.91 }, pivot = "bottom", material = "Metal", collide = true, color = { 95, 104, 119 }, set = "Tokyo", tris = 442, glow = { { 150, 200, 255 } } },
+	ATM = { size = { 2.5, 5.69, 2.95 }, pivot = "bottom", material = "Metal", collide = true, color = { 49, 53, 59 }, set = "Tokyo", tris = 3048, glow = { { 150, 200, 255 }, { 60, 240, 120 }, { 120, 170, 255 } } },
 	Apple = { size = { 0.886, 0.888, 0.886 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 103, 18, 19 }, set = "Core", tris = 1520 },
 	AppleBitten = { size = { 0.92, 0.903, 0.883 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 126, 38, 36 }, set = "Core", tris = 774 },
 	ArcadeCabinet = { size = { 3.1, 6.2, 3.25 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 102, 94, 107 }, set = "Tokyo", tris = 1752, glow = { { 120, 200, 255 }, { 255, 220, 120 }, { 255, 60, 60 } } },
@@ -151,7 +151,7 @@ return {
 	Photocopier = { size = { 4.751, 3.625, 2.53 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 97, 98, 96 }, set = "Agency", tris = 756, glow = { { 120, 220, 170 }, { 80, 255, 120 } } },
 	PinBoard = { size = { 5.7, 3.7, 0.28 }, pivot = "centre", material = "Wood", collide = false, color = { 102, 72, 53 }, set = "Agency", tris = 900 },
 	PineYukizuri = { size = { 15.108, 19.95, 13.179 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 32, 32, 26 }, anchor = { 1.521, -0.023 }, set = "Campus", tris = 2970 },
-	Plant = { size = { 3.189, 4.024, 3.008 }, pivot = "bottom", material = "Grass", collide = true, color = { 29, 37, 25 }, set = "Core", tris = 564 },
+	Plant = { size = { 2.469, 3.923, 2.56 }, pivot = "bottom", material = "Grass", collide = true, color = { 18, 19, 14 }, set = "Core", tris = 2240 },
 	Planter = { size = { 6.6, 2.802, 2.1 }, pivot = "bottom", material = "Concrete", collide = true, color = { 17, 19, 14 }, set = "Tokyo", tris = 10134 },
 	PlatformBench = { size = { 6.2, 3.2, 1.45 }, pivot = "bottom", material = "Metal", collide = true, color = { 60, 89, 125 }, set = "Tokyo", tris = 1308 },
 	PoliceCar = { size = { 5.94, 4.586, 13.369 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 32, 32, 33 }, lights = { { at = { -0, 5.041, 0 }, brightness = 1.2, color = { 255, 40, 40 }, kind = "point", range = 11.062 } }, set = "Tokyo", tris = 7500, glow = { { 255, 30, 30 } } },
@@ -250,7 +250,7 @@ return {
 	WarChair = { size = { 2.46, 5.282, 2.462 }, pivot = "bottom", material = "Leather", collide = true, color = { 53, 34, 36 }, set = "Meeting", tris = 2120 },
 	WarTable = { size = { 26.16, 3.318, 26.16 }, pivot = "bottom", material = "Wood", collide = false, color = { 22, 15, 9 }, set = "Meeting", tris = 5552, glow = { { 255, 36, 52 } } },
 	Washer = { size = { 3.2, 4.35, 3.4 }, pivot = "bottom", material = "Metal", collide = true, color = { 135, 136, 139 }, set = "Tokyo", tris = 909, glow = { { 255, 90, 70 } } },
-	WaterCooler = { size = { 1.394, 5.2, 1.41 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 153, 165, 174 }, set = "Agency", tris = 424, glow = { { 80, 160, 255 } } },
+	WaterCooler = { size = { 1.48, 5.2, 1.52 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 84, 90, 96 }, set = "Agency", tris = 2228, glow = { { 80, 200, 120 } } },
 	WheelRevolver = { size = { 4.552, 4.364, 1.61 }, pivot = "centre", material = "Metal", collide = false, color = { 50, 50, 55 }, set = "Core", tris = 15924, parts = { "Cylinder" }, hinge = { Cylinder = { -0.001, 0.322, -0.795 } }, turn = {  }, page = {  } },
 	Whiteboard = { size = { 6.34, 6.1, 2.1 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 108, 107, 110 }, set = "Agency", tris = 972 },
 	WitheredAppleTree = { size = { 14.368, 14.009, 10.603 }, pivot = "bottom", material = "Wood", collide = false, color = { 10, 9, 9 }, anchor = { -0.413, -0.627 }, set = "Lobby", tris = 6268 },

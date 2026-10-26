@@ -334,25 +334,54 @@ def tree():
 
 @prop("Plant", pivot="bottom", material="Grass", collide=True, texture=512)
 def plant():
-    pot = mk.noisy("Plant_Pot", srgb(40, 30, 28), srgb(70, 52, 44), scale=10, roughness=0.8)
-    soil = mk.flat("Plant_Soil", srgb(22, 16, 12), 1.0)
-    leaf = mk.noisy("Plant_Leaf", *FOLIAGE, scale=6, roughness=0.7)
-    parts = [
-        mk.lathe("Pot", [(0.0, 0.0), (0.6, 0.0), (0.8, 1.6), (0.9, 1.7), (0.9, 1.85), (0.0, 1.85)], mat=pot,
-                 segments=24),
-        mk.cylinder("Soil", 0.82, 0.05, (0, 0, 1.78), mat=soil, verts=24),
-    ]
+    """An office plant, a snake plant in a glazed pot: the pot on its foot ring with a rolled lip, standing in its
+    saucer; dark soil with a scatter of bark; a clump of stiff blades, the inner ones tall and upright, the outer ones
+    shorter and arching out, each folded along its middle, banded pale across its green, a yellow edge along it."""
+    pot = mk.noisy("Plant_Pot", srgb(32, 36, 40), srgb(58, 64, 70), scale=10, roughness=0.25)
+    saucer = mk.noisy("Plant_Saucer", srgb(26, 28, 32), srgb(44, 48, 52), scale=10, roughness=0.3)
+    soil = mk.noisy("Plant_Soil", srgb(20, 14, 10), srgb(40, 30, 22), scale=30, roughness=1.0)
+    bark = mk.noisy("Plant_Bark", srgb(74, 50, 32), srgb(110, 78, 52), scale=20, roughness=0.9)
+    leaf = mk.banded("Plant_Leaf", srgb(30, 58, 34), srgb(84, 120, 70), frequency=9, axis="Z", roughness=0.55)
+    edge = mk.noisy("Plant_LeafEdge", srgb(170, 160, 70), srgb(200, 190, 100), scale=12, roughness=0.6)
+    parts = [mk.lathe("Pot", [(0.0, 0.06), (0.5, 0.06), (0.52, 0.0), (0.62, 0.0), (0.62, 0.1), (0.66, 0.3), (0.8, 1.5),
+                              (0.9, 1.62), (0.92, 1.72), (0.86, 1.78), (0.0, 1.78)], mat=pot, segments=28),
+             mk.lathe("Saucer", [(0.0, 0.0), (0.8, 0.0), (0.86, 0.1), (0.84, 0.13), (0.0, 0.13)], mat=saucer, segments=28)]
+    soil_top = mk.cylinder("Soil", 0.8, 0.06, (0, 0, 1.72), mat=soil, verts=28)
+    parts.append(soil_top)
     rng = random.Random(3)
-    for i in range(14):
-        a = i * (math.tau / 14) + rng.uniform(-0.2, 0.2)
-        tilt = rng.uniform(25, 55)
-        length = rng.uniform(1.6, 2.6)
-        blade = mk.extrude_shape("Leaf", [(0, 0), (0.25, 0.6), (0.18, 1.4), (0, 2.0), (-0.18, 1.4), (-0.25, 0.6)], 0.03,
-                                 mat=leaf)
-        blade.scale = (1, length / 2.0, 1)
-        blade.location = (0, 0, 1.8)
-        blade.rotation_euler = (math.radians(90 - tilt), 0, a)
-        parts.append(blade)
+    for k in range(9):
+        a, r = rng.uniform(0, math.tau), rng.uniform(0.25, 0.7)
+        parts.append(mk.box("Bark", (0.16, 0.1, 0.04), (math.cos(a) * r, math.sin(a) * r, 1.77),
+                            rot=(rng.uniform(-10, 10), rng.uniform(-10, 10), rng.uniform(0, 180)), mat=bark))
+    # The blades: each a strip up from the soil, its width swelling then tapering to the tip, folded along its
+    # middle (the middle column raised), its lean growing towards the tip (the outer ones arch).
+    blades = [(0.0, 0.15, 2.2, 6, 10), (1.0, 0.25, 2.0, 10, 18), (2.2, 0.3, 1.9, 14, 22), (3.4, 0.2, 2.1, 8, 14),
+              (4.5, 0.32, 1.7, 18, 30), (5.5, 0.28, 1.8, 16, 26)]
+    for k in range(7):  # the outer ring, shorter and arching
+        blades.append((k * math.tau / 7 + 0.3, 0.45, rng.uniform(1.2, 1.5), rng.uniform(26, 34), rng.uniform(50, 70)))
+    rows = 7
+    for a, foot, length, lean0, lean1 in blades:
+        out = Vector((math.cos(a), math.sin(a), 0.0))
+        side = Vector((-math.sin(a), math.cos(a), 0.0))
+        base = Vector((math.cos(a) * foot, math.sin(a) * foot, 1.74))
+        width = rng.uniform(0.17, 0.24)
+        twist = rng.uniform(-0.3, 0.3)
+        p = base.copy()
+        grid = []
+        for j in range(rows + 1):
+            t = j / rows
+            lean = math.radians(lean0 + (lean1 - lean0) * t * t)
+            along = out * math.sin(lean) + Vector((0, 0, math.cos(lean)))
+            w = width * (math.sin(math.pi * min(1.0, 0.15 + t * 0.95)) ** 0.7) * (1.0 - 0.85 * t ** 3)
+            across = (side * math.cos(twist * t) + out.cross(side) * 0.0 * t).normalized()
+            fold = along.cross(across).normalized() * w * 0.22  # (the middle raised: the blade folded)
+            grid.append([tuple(p - across * w), tuple(p + fold), tuple(p + across * w)])
+            p = p + along * (length / rows)
+        parts.append(mk.sheet("Leaf", grid, leaf, apart=0.012))
+        # its yellow edges: thin strips along each margin
+        for e in (0, 2):
+            rim = [[grid[j][e], tuple(Vector(grid[j][e]).lerp(Vector(grid[j][1]), 0.12))] for j in range(rows + 1)]
+            parts.append(mk.sheet("LeafEdge", rim, edge, apart=0.014))
     return parts, []
 
 

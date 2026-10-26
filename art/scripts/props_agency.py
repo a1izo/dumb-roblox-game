@@ -421,20 +421,45 @@ def executive_desk():
 
 @prop("WaterCooler", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Agency")
 def water_cooler():
-    """A water cooler: a white cabinet with its two taps and drip tray, the blue bottle upside
-    down on top, a stack of paper cones at the side."""
+    """A water cooler: a white cabinet with rounded corners on four feet, a vent grille down its side; the dispensing
+    bay set into its front, two lever taps in it (the cold one's cap blue, the hot one's red behind its child lock),
+    a grated drip tray under them, a lamp over each tap; the blue bottle upside down in its collar on top, ribbed;
+    a tube of paper cones on the side."""
     white = pk.plastic("Cool_White", (224, 226, 226))
     blue = mk.noisy("Cool_Blue", srgb(90, 150, 200), srgb(140, 190, 230), scale=4, roughness=0.1)
     dark = pk.metal("Cool_Dark", (40, 40, 44), (60, 60, 66), rough=0.5, metallic=0.2)
-    parts = [mk.box("Cabinet", (1.2, 1.2, 3.4), (0, 0, 1.7), mat=white, bevel=0.08),
-             mk.box("Recess", (0.8, 0.1, 0.9), (0, -0.58, 2.4), mat=dark),
-             mk.box("Tray", (0.8, 0.3, 0.06), (0, -0.66, 1.98), mat=dark),
-             mk.lathe("Bottle", [(0.0, 0.0), (0.18, 0.0), (0.2, 0.25), (0.52, 0.5), (0.55, 1.5), (0.45, 1.75), (0.0, 1.8)],
-                      (0, 0, 3.4), mat=blue, segments=20),
-             mk.cylinder("Cones", 0.12, 0.8, (0.68, 0, 2.6), mat=pk.plastic("Cool_Cones", (236, 234, 228)), verts=10)]
-    glows = [mk.cylinder("Tap", 0.06, 0.14, (sx * 0.2, -0.62, 2.7), rot=(90, 0, 0),
-                         mat=pk.glow("Cool_Tap", (80, 160, 255) if sx < 0 else (255, 80, 80), 3), verts=8)
-             for sx in (-1, 1)]
+    grey = pk.plastic("Cool_Grey", (150, 152, 156))
+    cones = pk.plastic("Cool_Cones", (236, 234, 228))
+    parts = [pk.rounded("Cabinet", (1.2, 1.2, 3.3), (0, 0, 1.75), white, r=0.12),
+             mk.box("Bay", (0.86, 0.06, 1.0), (0, -0.62, 2.4), mat=dark, bevel=0.04),
+             mk.box("BayRoof", (0.86, 0.18, 0.06), (0, -0.68, 2.88), mat=white),
+             mk.box("Tray", (0.8, 0.32, 0.06), (0, -0.76, 1.96), mat=dark, bevel=0.02),
+             mk.lathe("Collar", [(0.0, 0.0), (0.42, 0.0), (0.4, 0.12), (0.22, 0.16), (0.0, 0.16)], (0, 0, 3.4), mat=grey,
+                      segments=20),
+             mk.lathe("Bottle", [(0.0, 0.08), (0.17, 0.08), (0.2, 0.3), (0.52, 0.55), (0.55, 1.5), (0.45, 1.75),
+                                 (0.0, 1.8)], (0, 0, 3.4), mat=blue, segments=24)]
+    for z in (3.95, 4.3, 4.65):  # the bottle's ribs
+        parts.append(mk.torus("Rib", 0.55, 0.025, (0, 0, z), mat=blue, major_segments=24, minor_segments=4))
+    for k in range(5):  # the drip tray's grate
+        parts.append(mk.box("Grate", (0.03, 0.3, 0.02), (-0.3 + k * 0.15, -0.76, 2.0), mat=grey))
+    for sx, cap in ((-1, (60, 130, 230)), (1, (220, 50, 50))):
+        x = sx * 0.2
+        parts += [mk.box("TapBody", (0.12, 0.16, 0.14), (x, -0.7, 2.62), mat=grey, bevel=0.03),
+                  mk.cylinder("Spout", 0.035, 0.12, (x, -0.74, 2.5), mat=grey, verts=8),
+                  mk.box("Lever", (0.1, 0.05, 0.22), (x, -0.8, 2.7), rot=(-20, 0, 0), mat=pk.plastic(f"Cool_Cap{sx}", cap),
+                         bevel=0.02)]
+    parts.append(mk.box("Lock", (0.06, 0.06, 0.06), (0.32, -0.79, 2.72), mat=pk.plastic("Cool_Lock", (220, 50, 50))))
+    for sy in range(6):  # the vent grille down the side
+        parts.append(mk.box("Vent", (0.02, 0.6, 0.04), (0.61, 0.0, 0.8 + sy * 0.12), mat=dark))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            parts.append(mk.cylinder("Foot", 0.08, 0.1, (sx * 0.45, sy * 0.45, 0.05), mat=dark, verts=10))
+    parts += [mk.cylinder("ConeTube", 0.13, 0.9, (-0.73, 0.1, 2.55), mat=pk.plastic("Cool_Tube", (200, 210, 220)),
+                          verts=12),
+              mk.cylinder("Cones", 0.11, 0.3, (-0.73, 0.1, 1.95), mat=cones, verts=12, radius2=0.03),
+              mk.box("TubeBracket", (0.14, 0.12, 0.6), (-0.64, 0.1, 2.55), mat=grey)]
+    glows = [mk.box("Lamp", (0.08, 0.02, 0.05), (sx * 0.2, -0.66, 2.98),
+                    mat=pk.glow("Cool_Lamp", (80, 200, 120) if sx < 0 else (255, 120, 60), 3)) for sx in (-1, 1)]
     return parts, glows
 
 

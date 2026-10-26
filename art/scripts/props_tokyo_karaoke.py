@@ -202,20 +202,51 @@ def magazine_rack():
 
 @prop("ATM", pivot="bottom", material="Metal", collide=True, texture=1024, set="Tokyo")
 def atm():
-    """A bank ATM in a konbini corner: a grey cabinet with its lit touch screen under a privacy hood,
-    the card and cash slots, a keypad, the bank's band on top."""
+    """A bank ATM in a konbini corner: a grey cabinet in panels on a dark plinth, the bank's band lit along its top;
+    under a privacy hood with its side shields the touch screen, lit, in a black fascia; below it the card reader in
+    its green-lit bezel, the passbook slot, the receipt slot, a keypad of twelve keys and four coloured ones on a
+    sloping shelf, the cash shutter in its frame; a camera's dark eye over the screen; a sticker on the side."""
     body = pk.metal("ATM_Body", (150, 154, 160), (180, 184, 190), rough=0.35, metallic=0.5)
-    dark = pk.plastic("ATM_Dark", (30, 30, 34))
+    dark = pk.plastic("ATM_Dark", (26, 26, 30))
+    steel = pk.metal("ATM_Steel", (120, 124, 130), (160, 164, 170), rough=0.25, metallic=0.8)
+    key = pk.plastic("ATM_Key", (200, 202, 206))
     band = pk.plastic("ATM_Band", (40, 90, 170))
-    parts = [pk.rounded("Body", (2.4, 2.2, 5.6), (0, 0, 2.8), body, r=0.08),
-             mk.box("Band", (2.42, 2.22, 0.7), (0, 0, 5.3), mat=band),
-             mk.box("Shelf", (2.2, 0.8, 0.12), (0, -1.4, 3.0), mat=body, bevel=0.03),
-             mk.box("Hood", (1.9, 0.6, 0.12), (0, -1.35, 4.65), rot=(12, 0, 0), mat=dark),
-             mk.box("HoodSideL", (0.08, 0.6, 1.4), (-0.95, -1.35, 4.0), mat=dark),
-             mk.box("HoodSideR", (0.08, 0.6, 1.4), (0.95, -1.35, 4.0), mat=dark),
-             mk.box("CardSlot", (0.5, 0.06, 0.06), (-0.6, -1.11, 3.25), mat=dark),
-             mk.box("CashSlot", (1.2, 0.06, 0.1), (0.3, -1.11, 2.6), mat=dark),
-             mk.box("Keypad", (0.7, 0.5, 0.06), (0.65, -1.5, 3.08), rot=(-10, 0, 0), mat=dark)]
-    parts += pk.label("Bank", "ATM", 0.3, (0, -1.12, 5.3), pk.plastic("ATM_Ink", (240, 240, 240)))
-    glows = [mk.box("Screen", (1.3, 0.04, 0.9), (0, -1.12, 4.0), rot=(-8, 0, 0), mat=pk.glow("ATM_Screen", (150, 200, 255), 3))]
+    ink = pk.plastic("ATM_Ink", (18, 40, 100))  # (navy: on the lit band and the grey cabinet)
+    f = -1.1  # the front face
+    parts = [pk.rounded("Body", (2.4, 2.2, 5.3), (0, 0, 2.85), body, r=0.08),
+             mk.box("Plinth", (2.3, 2.1, 0.2), (0, 0, 0.1), mat=dark),
+             mk.box("Band", (2.46, 2.26, 0.62), (0, 0, 5.3), mat=band, bevel=0.03),
+             mk.box("Cap", (2.5, 2.3, 0.08), (0, 0, 5.65), mat=dark),
+             mk.box("Fascia", (2.0, 0.06, 1.5), (0, f - 0.03, 4.05), mat=dark),
+             mk.box("Hood", (2.0, 0.7, 0.1), (0, f - 0.35, 4.85), rot=(10, 0, 0), mat=dark, bevel=0.02),
+             mk.box("Shelf", (2.2, 0.8, 0.12), (0, f - 0.3, 3.0), rot=(-8, 0, 0), mat=steel, bevel=0.03),
+             mk.box("ShutterFrame", (1.4, 0.06, 0.34), (0.2, f - 0.03, 2.4), mat=dark, bevel=0.02),
+             mk.box("Shutter", (1.2, 0.04, 0.16), (0.2, f - 0.07, 2.4), mat=steel),
+             mk.box("Kick", (2.2, 0.06, 0.6), (0, f - 0.03, 0.5), mat=dark),
+             mk.sphere("Camera", 0.07, (0, f - 0.06, 4.72), scale=(1, 0.5, 1), mat=dark, segments=10, rings=6)]
+    for sx in (-1, 1):  # the privacy shields either side of the screen
+        parts.append(mk.box("Shield", (0.06, 0.7, 1.6), (sx * 0.98, f - 0.35, 4.1), mat=dark, bevel=0.02))
+    for z in (1.6, 3.6):  # the cabinet's panel seams
+        parts.append(mk.box("Seam", (2.42, 0.02, 0.03), (0, f - 0.005, z), mat=dark))
+    # the card reader and the slots over the shelf, on the left
+    parts += [mk.box("Reader", (0.55, 0.12, 0.3), (-0.6, f - 0.06, 3.35), mat=dark, bevel=0.03),
+              mk.box("CardSlot", (0.42, 0.04, 0.04), (-0.6, f - 0.13, 3.38), mat=steel),
+              mk.box("Passbook", (0.6, 0.06, 0.06), (0.45, f - 0.03, 3.42), mat=steel),
+              mk.box("Receipt", (0.4, 0.06, 0.05), (0.45, f - 0.03, 3.22), mat=steel)]
+    # the keypad on the shelf: twelve keys in a grid, the four coloured ones down its right
+    kx, ky, kz = 0.45, f - 0.45, 3.1
+    for r in range(4):
+        for c in range(3):
+            parts.append(mk.box("Key", (0.13, 0.11, 0.05), (kx - 0.32 + c * 0.17, ky - 0.15 + r * 0.14, kz),
+                                rot=(-8, 0, 0), mat=key, bevel=0.015))
+    for r, rgb in enumerate(((40, 160, 70), (230, 200, 40), (210, 40, 40), (60, 110, 200))):
+        parts.append(mk.box("Fn", (0.18, 0.11, 0.05), (kx + 0.24, ky - 0.15 + r * 0.14, kz), rot=(-8, 0, 0),
+                            mat=pk.plastic(f"ATM_Fn{r}", rgb), bevel=0.015))
+    parts += pk.label("Bank", "ATM", 0.3, (0, -1.17, 5.3), ink)  # (in front of the lit panel)
+    parts += pk.label("Hours", "24H", 0.12, (-0.8, f - 0.07, 2.9), ink)
+    parts.append(mk.box("Sticker", (0.04, 0.5, 0.35), (1.21, -0.3, 3.9), mat=pk.plastic("ATM_Sticker", (240, 200, 40))))
+    glows = [mk.box("Screen", (1.4, 0.03, 0.95), (0, f - 0.07, 4.05), rot=(-6, 0, 0),
+                    mat=pk.glow("ATM_Screen", (150, 200, 255), 3)),
+             mk.box("ReaderLed", (0.3, 0.02, 0.05), (-0.6, f - 0.13, 3.46), mat=pk.glow("ATM_Led", (60, 240, 120), 4)),
+             mk.box("BandLit", (2.0, 0.02, 0.36), (0, -1.145, 5.3), mat=pk.glow("ATM_BandLit", (120, 170, 255), 1.5))]
     return parts, glows
