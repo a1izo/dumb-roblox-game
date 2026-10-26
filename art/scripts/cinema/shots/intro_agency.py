@@ -13,7 +13,7 @@ import math
 import random
 
 from animlib import J
-from cinema.acting import soft
+from cinema.acting import alive, beat, soft
 from cinema.shot import Shot
 from motion import Motion
 
@@ -65,13 +65,13 @@ def table_clip(k, x, z, yaw):
     turn = turn_to(yaw, (x, z), (WALL[0], WALL[2]))
     t0 = 8.7 + rng.uniform(0, 0.4)
     m.key(t0, root=(lean, 0, 0), neck=(-24, 0, 0), **arms)
-    m.key(t0 + 0.5, root=(-2, turn * 0.3, 0), neck=(16, turn * 0.6, 0),
-          rShoulder=J((10, 0, 0), (0, 0.04, -0.05)), lShoulder=J((10, 0, 0), (0, 0.04, -0.05)))
+    beat(m, t0 + 0.5, 0.5, antic=0.06, over=0.12, root=(-2, turn * 0.3, 0), neck=(16, turn * 0.6, 0),
+         rShoulder=J((10, 0, 0), (0, 0.04, -0.05)), lShoulder=J((10, 0, 0), (0, 0.04, -0.05)))
     m.key(11.2 + rng.uniform(0, 0.4), root=(-2, turn * 0.3, 0), neck=(18, turn * 0.6, 0),
           rShoulder=J((8, 0, 0)), lShoulder=J((8, 0, 0)))
     m.key(12.0 + rng.uniform(0, 0.5), root=(lean * 0.6, 0, 0), neck=(-22, 0, 0), **arms)
     m.key(LENGTH, root=(lean * 0.6, 0, 0), neck=(-24, 0, 0), **arms)
-    return soft(m).plant(stance=0.06)
+    return alive(soft(m).plant(stance=0.06), 0.55, seed=k)
 
 
 for k, (x, z) in enumerate(SPOTS):
@@ -81,20 +81,22 @@ for k, (x, z) in enumerate(SPOTS):
 reader = Motion("IntroAgency_reader", LENGTH, note="Agency intro: the one who opens the notebook.")
 reader.key(0.0, root=(-12, 0, 0), neck=(-26, 0, 0), **NOTES)
 reader.key(5.8, root=(-13, 0, 0), neck=(-28, 4, 0), **NOTES)
-reader.key(6.5, root=(-22, 0, 0), neck=(-34, 0, 0), rShoulder=J((78, 0, -8), (-0.05, 0.12, -0.36)),
-           lShoulder=J((40, 0, 18), (0.15, 0.05, -0.2)))
+beat(reader, 6.5, 0.6, antic=0.08, over=0.06, root=(-22, 0, 0), neck=(-34, 0, 0),
+     rShoulder=J((78, 0, -8), (-0.05, 0.12, -0.36)), lShoulder=J((40, 0, 18), (0.15, 0.05, -0.2)))
 reader.key(7.4, root=(-22, 0, 0), neck=(-36, 0, 0), rShoulder=J((84, -20, -4), (-0.05, 0.16, -0.36)),
            lShoulder=J((40, 0, 18), (0.15, 0.05, -0.2)))  # the cover comes up
 reader.key(8.4, root=(-18, 0, 0), neck=(-30, 0, 0), rShoulder=J((74, -10, -6), (-0.05, 0.12, -0.34)),
            lShoulder=J((40, 0, 18), (0.15, 0.05, -0.2)))
-reader.key(9.2, root=(-6, 8, 0), neck=(14, 30, 0), rShoulder=J((40, 0, -6), (0, 0.06, -0.2)),
-           lShoulder=J((16, 0, 6)))  # to the wall with the others
+beat(reader, 9.2, 0.7, antic=0.1, over=0.1, root=(-6, 8, 0), neck=(14, 30, 0),
+     rShoulder=J((40, 0, -6), (0, 0.06, -0.2)), lShoulder=J((16, 0, 6)))  # to the wall with the others
 reader.key(12.2, root=(-6, 8, 0), neck=(12, 30, 0), rShoulder=J((40, 0, -6), (0, 0.06, -0.2)), lShoulder=J((16, 0, 6)))
 reader.key(13.0, root=(-16, 0, 0), neck=(-32, 0, 0), rShoulder=J((70, 0, -8), (-0.05, 0.1, -0.32)),
            lShoulder=J((40, 0, 18), (0.15, 0.05, -0.2)))
 reader.key(LENGTH, root=(-17, 0, 0), neck=(-34, 0, 0), rShoulder=J((70, 0, -8), (-0.05, 0.1, -0.32)),
            lShoulder=J((40, 0, 18), (0.15, 0.05, -0.2)))
 soft(reader).plant(stance=0.05, forward=(0.2, 0.0))
+alive(reader, 0.45, seed=21, t1=5.8)
+alive(reader, 0.45, seed=22, t0=10.0)
 reader.build()
 
 # The presenter: arms folded, then at 8.6 turns and points up at the video wall.
@@ -102,13 +104,15 @@ pres = Motion("IntroAgency_presenter", LENGTH, note="Agency intro: the one who p
 pturn = turn_to(PRESENTER[2], (PRESENTER[0], PRESENTER[1]), (WALL[0], WALL[2]))
 pres.key(0.0, root=(-3, 0, 0), neck=(-18, -8, 0), **FOLDED)
 pres.key(8.2, root=(-3, 0, 0), neck=(-20, -6, 0), **FOLDED)
-pres.key(8.8, "out", root=(4, pturn * 0.6, 0), neck=(10, pturn * 0.4, 0),
-         rShoulder=J((122, 10, -14), (0, 0.22, -0.2)), lShoulder=J((10, 0, -4)))
+beat(pres, 8.8, 0.6, antic=0.16, over=0.12, root=(4, pturn * 0.6, 0), neck=(10, pturn * 0.4, 0),
+     rShoulder=J((122, 10, -14), (0, 0.22, -0.2)), lShoulder=J((10, 0, -4)))  # (a breath drawn, then the point)
 pres.key(11.6, root=(5, pturn * 0.6, 0), neck=(12, pturn * 0.4, 0),
          rShoulder=J((124, 10, -14), (0, 0.22, -0.2)), lShoulder=J((10, 0, -4)))
 pres.key(12.6, root=(-2, pturn * 0.2, 0), neck=(-16, 0, 0), **FOLDED)
 pres.key(LENGTH, root=(-3, 0, 0), neck=(-18, 0, 0), **FOLDED)
 soft(pres).plant(stance=0.06)
+alive(pres, 0.5, seed=23, t1=8.2)
+alive(pres, 0.4, seed=24, t0=12.4)
 pres.build()
 
 # The shot -------------------------------------------------------------------------------------------

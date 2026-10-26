@@ -10,7 +10,7 @@ places at 17 studs, the records door in the east wall at z -23."""
 
 import math
 
-from cinema.acting import facing, soft, walking
+from cinema.acting import alive, facing, soft, walking
 from cinema.shot import Shot
 from motion import Motion
 from animlib import J
@@ -68,12 +68,13 @@ def clip(k):
         m.key(LENGTH, root=(-1, 0, 0), neck=(-8, 0, 0), **STAND)
         soft(m).plant(None, t0 - 0.05, stance=0.05).plant(t1 + 0.2, None, stance=0.05)
         walking(m, t0, t1)
+        alive(m, 0.4, seed=70 + k, t0=min(LENGTH, t1 + 0.4))
         return m, way
     look = (k * 37) % 20 - 10
     m.key(0.0, root=(-1, look * 0.3, 0), neck=(-6, look, 0), **STAND)
     m.key(LENGTH * 0.5, root=(-1, 0, 0), neck=(-4, -look * 0.5, 0), **STAND)
     m.key(LENGTH, root=(-1, 0, 0), neck=(-8, 0, 0), **STAND)
-    soft(m).plant(stance=0.05)
+    alive(soft(m).plant(stance=0.05), 0.5, seed=70 + k)
     return m, None
 
 

@@ -10,7 +10,7 @@ import math
 import random
 
 from animlib import J
-from cinema.acting import desk_arms, seated, soft
+from cinema.acting import alive, desk_arms, seated, soft
 from cinema.shot import Shot
 from motion import Motion
 
@@ -63,7 +63,10 @@ seated(noticer, 10.3, "snap", seat=1.6, lean=2, turn=-18, neck=(-6, -54, 0), rSh
        lShoulder=J((58, 0, 20), (0.2, 0.06, -0.28)))  # a start at the impact
 seated(noticer, 15.0, seat=1.6, lean=0, turn=-18, neck=(-8, -56, 0), rShoulder=J((42, 0, -4), (-0.08, 0.06, -0.2)),
        lShoulder=J((58, 0, 20), (0.2, 0.06, -0.28)))
-soft(noticer, head=3.2, arms=3.0).build()
+soft(noticer, head=3.2, arms=3.0)
+alive(noticer, 0.4, seed=31, t1=7.0)
+alive(noticer, 0.5, seed=32, t0=10.6)
+noticer.build()
 
 # The shot -------------------------------------------------------------------------------------------
 

@@ -13,7 +13,7 @@ import math
 import random
 
 from animlib import J
-from cinema.acting import soft
+from cinema.acting import alive, beat, soft
 from cinema.shot import Shot
 from motion import Motion
 
@@ -69,10 +69,10 @@ def crowd_clip(k, x, z, yaw):
     turn = max(-80.0, min(80.0, turn))
     t0 = 7.3 + rng.uniform(0.0, 0.5)
     m.key(t0, root=(0, 0, 0), neck=head, **arms)
-    m.key(t0 + 0.35, "out", root=(2, turn * 0.25, 0), neck=(-8, turn * 0.6, 0),
-          rShoulder=J((20, 0, 0), (0, 0.04, -0.05)), lShoulder=J((16, 0, 0), (0, 0.04, -0.05)))
+    beat(m, t0 + 0.35, 0.35, antic=0.08, over=0.15, root=(2, turn * 0.25, 0), neck=(-8, turn * 0.6, 0),
+         rShoulder=J((20, 0, 0), (0, 0.04, -0.05)), lShoulder=J((16, 0, 0), (0, 0.04, -0.05)))
     m.key(LENGTH, root=(1, turn * 0.3, 0), neck=(-12, turn * 0.6, 0), rShoulder=J((10, 0, 2)), lShoulder=J((10, 0, -2)))
-    return soft(m).plant(stance=0.05)
+    return alive(soft(m).plant(stance=0.05), 0.5, seed=40 + k)
 
 
 crowd_clips = [crowd_clip(k, x, z, yaw).build() for k, (x, z, yaw) in enumerate(CROWD)]
@@ -120,6 +120,7 @@ watch.key(11.2, root=(1, 4, 0), neck=(-16, 8, 4), rShoulder=J((-8, 0, 4), (0.02,
           lShoulder=J((2, 0, -3)))  # the chin comes up: done
 watch.key(LENGTH, root=(1, 4, 0), neck=(-14, 6, 3), rShoulder=J((-8, 0, 4), (0.02, 0.02, 0.12)), lShoulder=J((2, 0, -3)))
 soft(watch, head=1.8, head_damp=0.85, arms=2.0).plant(stance=0.08)
+alive(watch, 0.35, seed=60, t0=7.8)
 watch.build()
 
 # The shot ---------------------------------------------------------------------------------------------
