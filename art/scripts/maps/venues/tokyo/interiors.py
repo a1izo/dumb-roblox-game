@@ -574,7 +574,7 @@ def laundromat(s, g):
     shell(s, g, b, {front: [(0.0, 6.0)]}, inside="TileMetroGrey", floor="TileChecker", outside="PlasterLight",
           storefront=(front,), name="the laundromat")
     prop_row(s, "Washer", (135.3, 69.0), (135.3, 89.0), 6, 90)
-    prop_row(s, "DryerStack", (120.0, 91.3), (132.0, 91.3), 4, 0)
+    prop_row(s, "DryerStack", (119.4, 91.3), (132.6, 91.3), 4, 0)  # (3.3 apart: they are 3.2 wide)
     top = table(s, 126.0, 80.0, 6.0, 3.0, 90)
     s.sheet(126.0, top, 79.0)
     s.prop("Bench", 120.0, 70.5, 180)
