@@ -8,7 +8,7 @@ south wall either side of the door (x 359.5..363.5); benches at (357.5, 0) and (
 between them at x 360.4..362.6."""
 
 from animlib import J
-from cinema.acting import soft, walking
+from cinema.acting import alive, beat, soft, walking
 from cinema.shot import Shot
 from motion import Motion
 
@@ -32,18 +32,23 @@ o.key(0.0, root=(-6, 0, 0), neck=(-12, 0, 0), **INSIDE)
 o.key(1.6, root=(-7, 0, 0), neck=(-14, 4, 0), **INSIDE)
 o.key(3.0, root=(-6, 0, 0), neck=(-12, -2, 0), **INSIDE)
 o.key(3.8, root=(-6, 0, 0), neck=(-14, 0, 0), **INSIDE)  # takes the badge out
-o.key(4.6, root=(-4, 0, 0), neck=(-30, 0, 0), **LOOK)  # and looks at it
 o.key(6.4, root=(-4, 0, 0), neck=(-32, 2, 0), **LOOK)
 o.key(7.0, root=(0, -18, 0), neck=(-6, -10, 0), **LOOK)  # turns
-o.key(7.8, "out", root=(2, 0, 0), neck=(4, 0, 0), **SHOW)  # and holds it up, open
 o.key(10.0, root=(2, 0, 0), neck=(6, 0, 0), **SHOW)
-o.key(10.8, root=(-2, 0, 0), neck=(-12, 0, 0), **POCKET)  # puts it away inside the jacket
-o.key(11.4, root=(0, 0, 0), neck=(-8, 0, 0), **TIE)  # the tie
 o.key(12.0, root=(0, 0, 0), neck=(-6, 0, 0), **TIE)
 o.key(12.5, root=(-2, 0, 0), neck=(4, 0, 0), **WALK)
 o.key(LENGTH, root=(-2, 0, 0), neck=(4, 0, 0), **WALK)
+# The big moves acted: the badge looked down at with a small settle, then snapped up open to the camera (a
+# breath drawn back first, a touch past and settling), put away, the tie tugged.
+beat(o, 4.6, 0.5, antic=0.08, over=0.1, root=(-4, 0, 0), neck=(-30, 0, 0), **LOOK)  # and looks at it
+beat(o, 7.8, 0.55, antic=0.16, over=0.14, root=(2, 0, 0), neck=(4, 0, 0), **SHOW)  # and holds it up, open
+beat(o, 10.8, 0.5, antic=0.1, over=0.08, root=(-2, 0, 0), neck=(-12, 0, 0), **POCKET)  # away inside the jacket
+beat(o, 11.5, 0.4, antic=0.08, over=0.1, root=(0, 0, 0), neck=(-8, 0, 0), **TIE)  # the tie
+o.key(11.82, rShoulder=J((66, 0, -50), (-0.36, 0.14, -0.2)))
 soft(o, arms=2.4).plant(None, 12.3, stance=0.06)
 walking(o, 12.5, LENGTH + 1.0)
+alive(o, 0.5, seed=5, t1=6.6)
+alive(o, 0.35, seed=6, t0=8.4, t1=10.4)
 o.build()
 
 # The shot -------------------------------------------------------------------------------------------

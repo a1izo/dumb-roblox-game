@@ -171,7 +171,6 @@ def feather_blade(name, root, tip, width, mat):
 @prop("LampPost", pivot="bottom", material="Metal", collide=True, texture=1024)
 def lamp_post():
     iron = cast_iron("Lamp_Iron")
-    glass = mk.noisy("Lamp_Glass", srgb(40, 44, 52), srgb(70, 76, 90), scale=8, roughness=0.1)
     parts = [
         mk.cylinder("Plinth", 0.62, 0.35, (0, 0, 0.175), mat=iron, verts=8, bevel=0.03),
         mk.cylinder("Plinth2", 0.48, 0.5, (0, 0, 0.6), mat=iron, verts=8, bevel=0.03, radius2=0.36),
@@ -189,16 +188,16 @@ def lamp_post():
     # Lantern: hexagonal glass box with an iron frame and a pointed roof.
     lx, lz = -1.15, 11.0
     parts.append(mk.cylinder("LanternBase", 0.42, 0.12, (0, lx, lz - 0.7), mat=iron, verts=6))
-    parts.append(mk.cylinder("LanternGlass", 0.36, 1.1, (0, lx, lz - 0.1), mat=glass, verts=6, radius2=0.44))
     parts.append(mk.cylinder("LanternRoof", 0.56, 0.5, (0, lx, lz + 0.7), mat=iron, verts=6, radius2=0.05))
     parts.append(mk.sphere("Finial", 0.09, (0, lx, lz + 1.0), mat=iron, segments=10, rings=6))
     for i in range(6):
         a = math.radians(i * 60)
         parts.append(mk.box("Frame", (0.04, 0.04, 1.15), (math.cos(a) * 0.41, lx + math.sin(a) * 0.41, lz - 0.1),
                             mat=iron))
-    bulb = [mk.sphere("Bulb", 0.22, (0, lx, lz - 0.1), scale=(1, 1, 1.3), mat=mk.emissive("Lamp_Glow", LAMP, 8),
-                      segments=16, rings=10)]
-    return parts, bulb
+    # (the glass lit from the bulb inside it)
+    lit = [mk.cylinder("LanternGlass", 0.36, 1.1, (0, lx, lz - 0.1), mat=mk.emissive("Lamp_Glow", LAMP, 8), verts=6,
+                       radius2=0.44)]
+    return parts, lit
 
 
 @prop("Bench", pivot="bottom", material="Wood", collide=True, texture=1024)
@@ -376,7 +375,7 @@ def car():
         parts.append(mk.box("Strip", (0.04, length - 2.2, 0.07), (sx * (width / 2 + 0.01), 0.2, split - 0.35), mat=chrome))
         glows += [pk.rounded("Headlight", (1.1, 0.1, 0.32), (sx * (width / 2 - 0.9), -half - 0.07, 2.05),
                              pk.glow("Car_Head", (255, 236, 200), 5), r=0.05),
-                  pk.rounded("Tail", (1.0, 0.1, 0.36), (sx * (width / 2 - 0.8), half + 0.05, split - 0.7),
+                  pk.rounded("Tail", (1.0, 0.1, 0.36), (sx * (width / 2 - 0.8), half + 0.1, split - 0.7),
                              pk.glow("Car_Tail", (220, 30, 36), 4), r=0.05)]
     return parts, glows
 

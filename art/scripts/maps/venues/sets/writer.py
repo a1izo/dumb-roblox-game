@@ -41,12 +41,12 @@ def build(s):
     # Books down both side walls (their backs to them), the radiator under the sill; behind the star a reading chair
     # turned to the room and a globe on its stand, a floor lamp left dark.
     for x, rot in ((X0 + 1.5, -90), (X1 - 1.5, 90)):
-        for z in (-3.0, 1.8):
+        for z in (-3.6, 1.0):
             s.prop("BookcaseTall", OX + x, OZ + z, rot)
     s.prop("Radiator", OX, OZ + Z0 + 0.95, 180, 0.8)
-    s.prop("ClubChair", OX - 5.4, OZ + 5.5, -40)
-    s.prop("FloorGlobe", OX + 5.6, OZ + 5.7, 20)
-    s.prop("FloorLamp", OX - 7.3, OZ + 6.9, 0, 0.9)
+    s.prop("ClubChair", OX - 4.0, OZ + 5.0, -40)
+    s.prop("FloorGlobe", OX + 5.4, OZ + 5.5, 20)
+    s.prop("FloorLamp", OX - 7.0, OZ + 6.7, 0, 0.9)
     # Two sconces either side of the door, low; the clock on the east wall past the books.
     for x in (1.6, 7.4):
         kit.sconce(s, OX + x, 6.2, OZ + Z1 - 0.1, 0, range_=8, brightness=0.22)

@@ -57,6 +57,6 @@ def build(s):
     s.prop("Bookshelf", px, pz, -90)
     px, pz = at(X1 - 2.2, 2.0)
     s.prop("Sofa", px, pz, 90)
-    px, pz = at(-7.0, -5.0)
+    px, pz = at(-6.8, -4.8)
     s.prop("Plant", px, pz, 0)
     s.light("spot", (OX, H - 0.6, OZ + 3.0), (120, 130, 170), 22, 0.25, shadows=False, angle=80)  # a breath of fill

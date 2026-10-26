@@ -98,7 +98,7 @@ def torus(name, major, minor, loc=(0, 0, 0), rot=(0, 0, 0), mat=None, major_segm
             b = i * minor_segments + (j + 1) % minor_segments
             c = ((i + 1) % major_segments) * minor_segments + (j + 1) % minor_segments
             d = ((i + 1) % major_segments) * minor_segments + j
-            bm.faces.new((bm.verts[a], bm.verts[b], bm.verts[c], bm.verts[d]))
+            bm.faces.new((bm.verts[a], bm.verts[d], bm.verts[c], bm.verts[b]))  # (wound to face out of the tube)
     obj = _obj_from_bm(name, bm, mat)
     obj.location = loc
     obj.rotation_euler = Euler([math.radians(v) for v in rot])
@@ -125,6 +125,11 @@ def lathe(name, profile, loc=(0, 0, 0), mat=None, segments=32):
         bm.faces.new(list(reversed(rings[0])))
     if profile[-1][0] > 0:
         bm.faces.new(rings[-1])
+    # (the faces wound out of the solid whichever way the profile runs: one drawn top down, a lamp's shade, came out
+    # inside out; the profile closed along the axis turns anticlockwise in (radius, z) when they face out)
+    closed = list(profile) + [(0.0, profile[-1][1]), (0.0, profile[0][1])]
+    if sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(closed, closed[1:] + closed[:1])) < 0:
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
     obj = _obj_from_bm(name, bm, mat)
     obj.location = loc
     smooth(obj)

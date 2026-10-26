@@ -72,8 +72,26 @@ def street_light():
 SIGNAL_LAMPS = (-6.3, -7.5, -8.7)  # the three lamps along the arm: green, amber, red from the pole outward
 
 
+def _hood(name, r, depth, at, mat, wall=0.04):
+    """A lamp's visor: an open tube `depth` long reaching out along -X from `at` (the lamp's face), its wall `wall`
+    thick, flaring a little at the mouth."""
+    import bmesh
+
+    obj = mk.lathe(name, [(r - wall, 0.0), (r, 0.0), (r + 0.03, depth), (r + 0.03 - wall, depth), (r - wall, 0.0)],
+                   mat=mat, segments=24)
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if len(f.verts) > 4], context="FACES")  # (the lathe's end caps)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.location = at
+    obj.rotation_euler = (0, math.radians(-90), 0)
+    return obj
+
+
 @prop("TrafficSignal", pivot="bottom", material="Metal", collide=False, texture=1024, set="Tokyo", anchor=(0, 0),
-      lights=[dict(at=(-1.0, SIGNAL_LAMPS[0], 12.6), kind="point", color=GREEN, range=10, brightness=0.8)])
+      lights=[dict(at=(-1.3, SIGNAL_LAMPS[0], 12.6), kind="point", color=GREEN, range=10, brightness=0.8)])
 def traffic_signal():
     """A Japanese signal: a kerbside pole, an arm over the lane with a street-name plate, and a
     flat horizontal three-lamp LED head facing oncoming traffic (along -X) under its visors;
@@ -89,9 +107,8 @@ def traffic_signal():
         mk.tube("Arm", (0, 0, 12.9), (0, -10.0, 12.9), 0.19, mat=steel, verts=12),
         mk.tube("Brace", (0, 0, 11.1), (0, -3.8, 12.9), 0.09, mat=steel, verts=8),
         mk.cylinder("ArmEnd", 0.22, 0.2, (0, -10.05, 12.9), rot=(90, 0, 0), mat=steel, verts=12),
-        mk.box("Mount", (0.3, 0.3, 0.5), (0, -7.5, 13.25), mat=steel),
-        mk.box("Head", (0.5, 4.2, 1.4), (-0.3, -7.5, 12.6), mat=dark, bevel=0.12, segments=3),
-        mk.box("BackPlate", (0.08, 4.6, 1.8), (0.0, -7.5, 12.6), mat=white, bevel=0.05),
+        mk.box("Head", (0.5, 4.2, 1.4), (-0.6, -7.5, 12.6), mat=dark, bevel=0.12, segments=3),
+        mk.box("BackPlate", (0.08, 4.6, 1.8), (-0.3, -7.5, 12.6), mat=white, bevel=0.05),
         # The street-name plate on the arm (blue with white letters, both sides).
         mk.box("NamePlate", (0.08, 3.4, 0.9), (0, -3.2, 13.55), mat=blue, bevel=0.03),
         mk.box("PedButton", (0.5, 0.35, 0.8), (0, -0.4, 3.8), mat=pk.plastic("TS_Yellow", (232, 196, 50)),
@@ -100,18 +117,19 @@ def traffic_signal():
     for side in (-1, 1):  # both faces of the plate
         parts += pk.label("Name", "影ヶ丘駅前", 0.34, (side * 0.05, -3.2, 13.68), white, rot=(90, 0, 90 * side))
         parts += pk.label("NameEn", "Kagegaoka Sta.", 0.2, (side * 0.05, -3.2, 13.32), white, rot=(90, 0, 90 * side))
+    for y in (-6.0, -9.0):  # (the brackets holding the head's plate ahead of the arm)
+        parts.append(mk.box("Bracket", (0.3, 0.24, 0.3), (-0.14, y, 12.9), mat=steel, bevel=0.03))
     for y in SIGNAL_LAMPS:
-        parts.append(mk.cylinder("Visor", 0.58, 0.5, (-0.83, y, 12.75), rot=(0, 90, 0), mat=dark, verts=20,
-                                 radius2=0.6))
-        parts.append(mk.torus("Ring", 0.55, 0.04, (-0.58, y, 12.6), rot=(0, 90, 0), mat=dark, major_segments=20,
+        parts.append(_hood("Visor", 0.58, 0.5, (-0.84, y, 12.66), dark))
+        parts.append(mk.torus("Ring", 0.55, 0.04, (-0.88, y, 12.6), rot=(0, 90, 0), mat=dark, major_segments=20,
                               minor_segments=4))
     # One glowing lamp per colour, in this order (green, amber, red: the catalog's glow list): the
     # Tokyo client lights the one the scramble's cycle shows and dims the others.
-    glow = [mk.cylinder("Green", 0.5, 0.06, (-0.58, SIGNAL_LAMPS[0], 12.6), rot=(0, 90, 0),
+    glow = [mk.cylinder("Green", 0.5, 0.06, (-0.88, SIGNAL_LAMPS[0], 12.6), rot=(0, 90, 0),
                         mat=pk.glow("TS_Green", GREEN, 5), verts=24),
-            mk.cylinder("Amber", 0.5, 0.06, (-0.58, SIGNAL_LAMPS[1], 12.6), rot=(0, 90, 0),
+            mk.cylinder("Amber", 0.5, 0.06, (-0.88, SIGNAL_LAMPS[1], 12.6), rot=(0, 90, 0),
                         mat=pk.glow("TS_Amber", AMBER, 5), verts=24),
-            mk.cylinder("Red", 0.5, 0.06, (-0.58, SIGNAL_LAMPS[2], 12.6), rot=(0, 90, 0),
+            mk.cylinder("Red", 0.5, 0.06, (-0.88, SIGNAL_LAMPS[2], 12.6), rot=(0, 90, 0),
                         mat=pk.glow("TS_Red", RED, 5), verts=24)]
     return parts, glow
 
@@ -480,8 +498,14 @@ def vending(prefix, body_rgb, trim_rgb, brand):
     ink = pk.plastic(prefix + "Ink", (24, 24, 28))
     w, d, h = 3.6, 2.6, 6.4
     front = -d / 2
+    deep, low, high = 0.7, 2.82, 5.78  # the window's recess: its depth into the body, its sill and its head
     parts = [
-        pk.rounded("Body", (w, d, h), (0, 0, h / 2 + 0.15), body, r=0.08),
+        pk.rounded("Body", (w, d - deep, h), (0, deep / 2, h / 2 + 0.15), body, r=0.08),
+        mk.box("FrontLow", (w, deep, low - 0.15), (0, front + deep / 2, (low + 0.15) / 2), mat=body, bevel=0.06),
+        mk.box("FrontHigh", (w, deep, h + 0.15 - high), (0, front + deep / 2, (high + h + 0.15) / 2), mat=body,
+               bevel=0.06),
+        mk.box("StileL", (0.15, deep, high - low), (-w / 2 + 0.075, front + deep / 2, (low + high) / 2), mat=body),
+        mk.box("StileR", (0.15, deep, high - low), (w / 2 - 0.075, front + deep / 2, (low + high) / 2), mat=body),
         mk.box("Plinth", (w - 0.2, d - 0.2, 0.15), (0, 0, 0.075), mat=dark),
         mk.box("Header", (w + 0.04, 0.1, 0.55), (0, front - 0.03, h - 0.2), mat=trim, bevel=0.03),
         # The window's frame; the glowing back panel is the glow part, the samples stand before it.
@@ -503,7 +527,7 @@ def vending(prefix, body_rgb, trim_rgb, brand):
     parts += pk.label("Hot", "あったか〜い", 0.14, (0.6, front - 0.03, 2.72), pk.plastic(prefix + "Red", (210, 40, 40)))
     k = 0
     for row, z in enumerate((5.0, 4.1, 3.2)):
-        parts.append(mk.box("Shelf", (w - 0.4, 0.5, 0.06), (0, front + 0.3, z - 0.05), mat=white))
+        parts.append(mk.box("Shelf", (w - 0.3, 0.6, 0.06), (0, front + 0.35, z - 0.05), mat=white))
         for col in range(8):
             x = -1.47 + col * 0.42
             colour, cap = DRINKS[(k * 3 + row) % len(DRINKS)]
@@ -515,7 +539,8 @@ def vending(prefix, body_rgb, trim_rgb, brand):
                 parts += pk.can("Can", x, front + 0.28, z, mat, capmat, r=0.15, h=0.5)
             parts.append(mk.box("Price", (0.34, 0.04, 0.1), (x, front + 0.05, z - 0.13), mat=white))
             k += 1
-    glows = [mk.box("Backlight", (w - 0.4, 0.05, 2.7), (0, front + 0.62, 4.3), mat=pk.glow(prefix + "Back", (236, 244, 255), 3))]
+    glows = [mk.box("Backlight", (w - 0.3, 0.05, high - low), (0, front + deep - 0.04, (low + high) / 2),
+                    mat=pk.glow(prefix + "Back", (236, 244, 255), 3))]
     for row, z in enumerate((5.0, 4.1, 3.2)):
         for col in range(8):
             x = -1.47 + col * 0.42

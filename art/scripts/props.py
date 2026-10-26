@@ -478,7 +478,7 @@ def crt_television():
         parts.append(mk.tube("Leg", (sx * 1.2, 0.0, 0.66), (sx * 1.35, 0.0, 0.0), 0.06, mat=dark))
         parts.append(mk.tube("Ear", (0, 0.3, 2.84), (sx * 0.9, 0.5, 4.2), 0.025, mat=chrome))
     parts.append(mk.sphere("EarBase", 0.18, (0, 0.3, 2.86), mat=dark, segments=12, rings=8))
-    glows = [mk.box("Screen", (1.9, 0.06, 1.5), (-0.3, -1.12, 1.75), mat=mk.emissive("TV_Glow", srgb(170, 196, 255), 3),
+    glows = [mk.box("Screen", (1.9, 0.06, 1.5), (-0.3, -1.16, 1.75), mat=mk.emissive("TV_Glow", srgb(170, 196, 255), 3),
                     bevel=0.12)]
     return parts, glows
 

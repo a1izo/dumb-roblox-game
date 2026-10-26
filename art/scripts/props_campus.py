@@ -604,9 +604,9 @@ def snow_tools():
                    brightness=1.35)])  # a post's head: shaded above (maps/lightbook.py)
 def campus_lamp():
     """A Meiji-style cast-iron lamp standard: a fluted base, the slender post with its ladder bar,
-    a four-sided glass lantern with its gas mantle glowing, a pointed cap with snow on it."""
+    a four-sided lantern, its frosted panes lit by the mantle, a pointed cap with snow on it."""
     iron = pk.metal("CLamp_Iron", (24, 26, 28), (44, 46, 50), rough=0.55, metallic=0.5)
-    glass = pk.dark_glass("CLamp_Glass", (70, 64, 50))
+    lit = pk.glow("CLamp_Glow", (255, 214, 150), 4)
     sn = snow("CLamp")
     parts = [mk.lathe("Base", [(0.62, 0.0), (0.62, 0.3), (0.5, 0.45), (0.42, 1.4), (0.3, 1.7), (0.24, 2.0), (0.0, 2.0)],
                       (0, 0, 0), mat=iron, segments=12),
@@ -616,10 +616,11 @@ def campus_lamp():
              mk.box("LampFloor", (1.0, 1.0, 0.12), (0, 0, 9.55), mat=iron)]
     for sx in (-1, 1):
         parts.append(mk.sphere("BarEnd", 0.12, (sx * 0.8, 0, 8.4), mat=iron, segments=8, rings=6))
-    for rot in (0, 90, 180, 270):
+    glows = []
+    for rot in (0, 90, 180, 270):  # (the panes of frosted glass, lit from the mantle inside)
         a = math.radians(rot)
-        parts.append(mk.box("Pane", (0.78, 0.04, 1.3), (math.sin(a) * 0.44, -math.cos(a) * 0.44, 10.25), rot=(0, 0, rot),
-                            mat=glass))
+        glows.append(mk.box("Pane", (0.88, 0.04, 1.3), (math.sin(a) * 0.44, -math.cos(a) * 0.44, 10.25), rot=(0, 0, rot),
+                            mat=lit))
     for sx in (-1, 1):
         for sy in (-1, 1):
             parts.append(mk.box("Post", (0.08, 0.08, 1.4), (sx * 0.47, sy * 0.47, 10.25), mat=iron))
@@ -629,7 +630,6 @@ def campus_lamp():
     for obj in (roof, roof_snow):
         obj.rotation_euler = (0, 0, math.radians(45))
     parts += [roof, roof_snow, mk.sphere("Finial", 0.1, (0, 0, 12.05), mat=iron, segments=8, rings=6)]
-    glows = [mk.box("Mantle", (0.6, 0.6, 0.9), (0, 0, 10.2), mat=pk.glow("CLamp_Glow", (255, 214, 150), 4))]
     return parts, glows
 
 

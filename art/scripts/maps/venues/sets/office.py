@@ -44,14 +44,14 @@ def build(s):
     s.light("spot", (x0 - 7.0, 7.4, OZ - 1.0), NIGHT, 30, 1.6, shadows=True, face="Right", angle=34)
     # Filing cabinets either side of the evidence board (the cutscene brings the board and the one on the west), the
     # banker's lamp on the east one, lit; the bookshelf on the east wall, the radiator under the window.
-    s.prop("FilingCabinet", OX + 6.6, OZ - 6.9, 180)  # (its drawers to the room)
-    s.prop("BankerLamp", OX + 6.6, OZ - 6.9, 180, 1.0, CABINET)
-    s.light("point", (OX + 6.6, CABINET + 1.0, OZ - 7.0), LAMP, 10, 0.9, shadows=True)
+    s.prop("FilingCabinet", OX + 6.6, OZ - 6.8, 180)  # (its drawers to the room)
+    s.prop("BankerLamp", OX + 6.6, OZ - 6.8, 180, 1.0, CABINET)
+    s.light("point", (OX + 6.6, CABINET + 1.0, OZ - 6.9), LAMP, 10, 0.9, shadows=True)
     s.prop("Bookshelf", OX + X1 - 1.4, OZ + 1.8, 90)
     s.prop("Radiator", OX + X0 + 0.9, OZ - 1.0, -90, 0.8)
     s.prop("CoatStand", OX + 7.0, OZ + 6.4, 0)
     s.prop("WaterCooler", OX - 6.9, OZ + 6.5, 0)
-    s.prop("Plant", OX - 6.6, OZ - 3.9, 0, 0.8)
+    s.prop("Plant", OX - 6.4, OZ - 5.2, 0, 0.8)
     # The ceiling fan, stopped: its hub on a rod from the ceiling, four blades.
     fx, fz, fy = OX - 0.2, OZ + 2.6, H - 1.6
     s.tube("BlackMetal", (fx, H, fz), (fx, fy, fz), 0.06, 6)

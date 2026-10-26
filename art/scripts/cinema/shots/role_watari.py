@@ -8,7 +8,7 @@ along the north wall (x 254..264, its front at z -3.4, top 3.5), the kettle at (
 at (260, 1.5); the door at z 0 in the west wall into Ace's room (the chair at (238, -1.8))."""
 
 from animlib import J
-from cinema.acting import facing, seated, soft, walking
+from cinema.acting import alive, beat, facing, seated, soft, walking
 from cinema.shot import Shot
 from emotes.kit import reach
 from motion import Motion
@@ -36,20 +36,26 @@ b.key(0.0, root=(-14, 0, 0), neck=(-26, 0, 0), **ARRANGE_A)
 b.key(1.2, root=(-14, 2, 0), neck=(-28, 4, 0), **ARRANGE_B)
 b.key(2.3, root=(-13, -2, 0), neck=(-26, -3, 0), **ARRANGE_A)
 b.key(3.2, root=(-14, 0, 0), neck=(-27, 0, 0), **ARRANGE_B)
-b.key(3.9, root=(0, 0, 0), neck=(-8, 0, 0), **TIE)  # straightens; the tie
-b.key(4.5, root=(0, 0, 0), neck=(-10, 0, 0), **TIE)
-b.key(5.2, root=(-2, 0, 0), neck=(-26, -8, 0), **WATCH)  # the time
+b.key(4.6, root=(0, 0, 0), neck=(-10, 0, 0), **TIE)
 b.key(6.2, root=(-2, 0, 0), neck=(-27, -8, 0), **WATCH)
-b.key(6.9, root=(-12, 0, 0), neck=(-18, 0, 0), **TRAY)  # lifts the tray
-b.key(7.5, root=(0, 0, 0), neck=(-4, 0, 0), **TRAY)
 b.key(9.6, root=(-1, 0, 0), neck=(-3, 0, 0), **TRAY)
 b.key(10.4, root=(-1, 0, 0), neck=(2, 0, 0), **TRAY)  # stops at the door, looks in
 b.key(11.6, root=(-1, 0, 0), neck=(0, 0, 0), **TRAY)
-b.key(12.6, root=(-16, 0, 0), neck=(-14, 0, 0), **TRAY)  # a bow to the one in the chair
 b.key(13.8, root=(-15, 0, 0), neck=(-14, 0, 0), **TRAY)
 b.key(LENGTH, root=(-2, 0, 0), neck=(-4, 0, 0), **TRAY)
+# The big moves acted: a breath drawn before straightening, the tie tugged, the cuff shot back for the
+# watch, the tray's weight taken low before it rises, the bow dipping past and settling.
+beat(b, 3.9, 0.5, antic=0.14, over=0.12, root=(0, 0, 0), neck=(-8, 0, 0), **TIE)  # straightens; the tie
+b.key(4.32, rShoulder=J((66, 0, -50), (-0.36, 0.14, -0.2)))
+b.key(4.46, rShoulder=J((62, 0, -52), (-0.36, 0.18, -0.2)))
+beat(b, 5.2, 0.45, antic=0.12, over=0.1, root=(-2, 0, 0), neck=(-26, -8, 0), **WATCH)  # the time
+b.key(6.9, root=(-14, 0, 0), neck=(-20, 0, 0), **TRAY)  # lifts the tray
+beat(b, 7.5, 0.6, antic=0.0, over=0.06, root=(0, 0, 0), neck=(-4, 0, 0))
+beat(b, 12.6, 0.7, antic=0.1, over=0.12, root=(-16, 0, 0), neck=(-14, 0, 0))  # a bow to the one in the chair
 soft(b, arms=2.6).plant(None, 7.6, stance=0.04).plant(9.9, None, stance=0.04)
 walking(b, 7.9, 9.6)
+alive(b, 0.5, seed=3, t1=6.7)
+alive(b, 0.4, seed=4, t0=10.0)
 b.build()
 
 # (crouched on the seat as in Ace's own cutscene, cinema/shots/role_l.py: the R6 way, the legs out along it)

@@ -358,7 +358,7 @@ def train_car_open():
             y = front + 12.8 + k * 12.6
             if sx > 0 and y0 < y < y1:
                 continue
-            glows.append(mk.box("Lit", (0.05, 7.0, 3.0), (sx * (W / 2 - 0.06), y, 6.6),
+            glows.append(mk.box("Lit", (0.03, 7.0, 3.0), (sx * (W / 2 + 0.075), y, 6.6),
                                 mat=pk.glow("TO_Lit", (220, 228, 236), 1.4)))
     return parts, glows
 
