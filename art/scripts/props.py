@@ -530,14 +530,47 @@ def pen():
 
 @prop("Memorial", pivot="bottom", material="Metal", collide=False, texture=512)
 def memorial():
+    """The card that stands in a dead player's empty place at the war table (Models.memorial writes their alias over
+    the card's top, so the card keeps its place and size): a weighted iron foot in two steps, a turned post with its
+    collars, a ledge with rolled ends holding the card, the card edged in a thin mourning border, a black ribbon folded
+    across its lower corner, and a white lily laid on the foot."""
     iron = mk.noisy("Mem_Iron", IRON_A, IRON_B, scale=20, roughness=0.5, metallic=0.8)
     card = mk.noisy("Mem_Card", PAPER_B, PAPER_A, scale=40, roughness=0.9)
+    black = mk.noisy("Mem_Ribbon", srgb(8, 8, 10), srgb(26, 24, 28), scale=30, roughness=0.45)
+    lily = mk.noisy("Mem_Lily", srgb(214, 214, 206), srgb(246, 246, 240), scale=30, roughness=0.6)
+    stem = mk.noisy("Mem_Stem", srgb(40, 70, 36), srgb(70, 100, 54), scale=20, roughness=0.6)
+    gold = mk.noisy("Mem_Pollen", srgb(180, 120, 30), srgb(230, 170, 60), scale=20, roughness=0.6)
     parts = [
-        mk.cylinder("Base", 0.45, 0.1, (0, 0, 0.05), mat=iron, verts=24, bevel=0.02),
-        mk.cylinder("Post", 0.05, 2.1, (0, 0, 1.1), mat=iron, verts=12),
-        mk.box("Holder", (1.7, 0.12, 0.1), (0, 0, 2.05), mat=iron, bevel=0.02),
+        mk.lathe("Foot", [(0.0, 0.0), (0.46, 0.0), (0.47, 0.03), (0.44, 0.07), (0.3, 0.09), (0.28, 0.14), (0.18, 0.17),
+                          (0.07, 0.2), (0.0, 0.2)], mat=iron, segments=28),
+        mk.lathe("Post", [(0.0, 0.18), (0.08, 0.18), (0.08, 0.26), (0.05, 0.3), (0.045, 1.9), (0.075, 1.93),
+                          (0.075, 1.99), (0.05, 2.02), (0.0, 2.02)], mat=iron, segments=14),
+        mk.box("Holder", (1.66, 0.14, 0.08), (0, -0.01, 2.04), mat=iron, bevel=0.02),
         mk.box("Card", (1.6, 0.06, 1.1), (0, -0.02, 2.62), mat=card, bevel=0.01),
     ]
+    for sx in (-1, 1):  # (the ledge's rolled ends)
+        parts.append(mk.cylinder("Roll", 0.05, 0.16, (sx * 0.84, -0.01, 2.06), rot=(90, 0, 0), mat=iron, verts=12))
+    # the mourning border, inside the card's own margin (the alias is written within 1.5 by 1.0)
+    for size, at in (((1.56, 0.012, 0.025), (0, -0.056, 3.15)), ((1.56, 0.012, 0.025), (0, -0.056, 2.09)),
+                     ((0.025, 0.012, 1.06), (-0.78, -0.056, 2.62)), ((0.025, 0.012, 1.06), (0.78, -0.056, 2.62))):
+        parts.append(mk.box("Border", size, at, mat=black))
+    # the ribbon folded over the lower left corner (clear of the alias, written across the card's top)
+    parts.append(mk.box("Ribbon", (0.5, 0.014, 0.1), (-0.6, -0.06, 2.24), rot=(0, 45, 0), mat=black))
+    parts.append(mk.box("RibbonBack", (0.5, 0.014, 0.1), (-0.6, 0.022, 2.24), rot=(0, 45, 0), mat=black))
+    # a white lily laid on the foot: its stem along the step, a leaf, the flower's six petals curled open round gold
+    lily_at = Vector((0.12, -0.3, 0.12))
+    parts.append(mk.tube("Stem", (-0.36, -0.1, 0.1), tuple(lily_at), 0.018, 0.015, mat=stem, verts=6))
+    leaf = mk.sphere("Leaf", 1.0, (-0.14, -0.24, 0.11), scale=(0.2, 0.05, 0.014), mat=stem, segments=10, rings=6)
+    leaf.rotation_euler = (0, 0, math.radians(-25))
+    parts.append(leaf)
+    for k in range(6):
+        a = math.tau * k / 6
+        out = Vector((math.cos(a), math.sin(a), 0.0))
+        petal = mk.sphere("Petal", 1.0, tuple(lily_at + out * 0.11 + Vector((0, 0, 0.045))), scale=(0.13, 0.05, 0.016),
+                          mat=lily, segments=10, rings=6)
+        petal.rotation_euler = (math.radians(-35) * math.sin(a), math.radians(35) * math.cos(a), a)
+        parts.append(petal)
+    parts.append(mk.sphere("Heart", 0.035, tuple(lily_at + Vector((0, 0, 0.06))), mat=gold, segments=8, rings=6))
     return parts, [mk.box("Stripe", (1.2, 0.02, 0.07), (0, -0.06, 2.3), mat=mk.emissive("Mem_Glow", RED, 3))]
 
 

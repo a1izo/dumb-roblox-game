@@ -132,7 +132,7 @@ return {
 	MarionetteBar = { size = { 2.424, 0.342, 1.5 }, pivot = "centre", material = "Wood", collide = false, color = { 74, 61, 47 }, set = "Core", tris = 616 },
 	MealTicketMachine = { size = { 3, 5.8, 1.805 }, pivot = "bottom", material = "Metal", collide = true, color = { 152, 148, 148 }, set = "Tokyo", tris = 1411, glow = { { 255, 200, 120 }, { 255, 160, 100 }, { 255, 236, 180 } } },
 	MeetingTable = { size = { 26.1, 3.29, 26.1 }, pivot = "bottom", material = "Wood", collide = true, color = { 18, 16, 15 }, set = "Core", tris = 3500, glow = { { 200, 22, 38 } } },
-	Memorial = { size = { 1.7, 3.17, 0.9 }, pivot = "bottom", material = "Metal", collide = false, color = { 105, 101, 94 }, set = "Core", tris = 556, glow = { { 200, 22, 38 } } },
+	Memorial = { size = { 1.78, 3.17, 0.972 }, pivot = "bottom", material = "Metal", collide = false, color = { 85, 82, 77 }, set = "Core", tris = 1776, glow = { { 200, 22, 38 } } },
 	MetalDetector = { size = { 4.1, 8.29, 3.2 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 87, 87, 90 }, set = "Agency", tris = 1100, glow = { { 90, 255, 140 }, { 255, 170, 60 } } },
 	MicStand = { size = { 1.4, 5.65, 3.106 }, pivot = "bottom", material = "Metal", collide = false, color = { 36, 37, 39 }, set = "Tokyo", tris = 716 },
 	MicrofilmReader = { size = { 2.42, 5.075, 2.44 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 83, 82, 79 }, set = "Agency", tris = 2556, glow = { { 220, 214, 190 } } },
