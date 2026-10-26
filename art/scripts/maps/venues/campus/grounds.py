@@ -89,7 +89,7 @@ def tents(s):
                 s.collider((x + dx, 4.0, z + dz), (0.3, 8.0, 0.3), 0, True, None)
         s.collider((x + 1.4, 1.35, z), (2.4, 2.7, 6.0), 0, True, "WhiteTrim")
         s.prop("KeroseneHeater", x - 2.0, z + 3.2, 0)
-        s.prop("Chair", x + 3.6, z - 1.5, -90)
+        s.prop("Chair", x + 3.6, z - 1.5, 90)  # (behind the table, facing it and the avenue)
     s.prop("QueuePosts", -1.8, 71.0, 90)
     s.prop("ExamSignStand", 13.0, 62.4, 0)
     s.sign((13.0, 4.8, 62.1), 0, 2.0, 4.2, "受\n付", "GothamBlack", (20, 20, 22), None)
