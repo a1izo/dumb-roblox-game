@@ -37,8 +37,6 @@ def lower(s):
     p(s, "Sideboard", 97.3, 30.0, 90)  # (facing the lounge: at -90 its doors faced the glass)
     # (the cooler inside the chamfered glass, facing the lounge: at x 98.6 it stood in the air outside the tower)
     p(s, "WaterCooler", 75.9, 56.9, 45)
-    # The corridor round the core: a plant at its south-west corner.
-    p(s, "Plant", -14.4, -46.4)
 
 
 def upper(s):

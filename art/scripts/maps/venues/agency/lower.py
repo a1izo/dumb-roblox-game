@@ -112,10 +112,13 @@ def interviews(s):
     interview(s, -44.0, -26.0, (-35.0, -66.5))
     interview(s, -26.0, -8.0, (-19.5, -64.5))
     s.station("Phone", "Interview Recorder", -12.4, -71.4, 180, prop="StationPhoneDesk", spare=True)
-    # The hall outside them: a bench, the water cooler, the room plates.
+    # The hall outside them, walled off from the bullpen with a doorway across from the bench (the bullpen lay open
+    # to it and to the corridor round the core, no wall at the corner between them, 2026-10-26); a bench, the water
+    # cooler, a plant in its corner by the copy room, the room plates.
+    fit.partition(s, (-44.0, -48.0), (-16.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(14.0, 5.0)])
     s.prop("Bench", -30.0, -56.6, 180)
     s.prop("WaterCooler", -41.8, -56.9, 180)
-    s.prop("Plant", -11.6, -55.2, 0)
+    s.prop("Plant", -9.7, -56.2, 0)
     for x, text in ((-38.0, "取調室 1  INTERVIEW 1"), (-14.0, "取調室 2  INTERVIEW 2")):
         fit.plaque(s, x, 10.4, -57.7, 180, 6.0, 0.8, text)
     fit.panel(s, -26.0, -53.0, C, w=5.0, brightness=0.7, range_=18)
@@ -345,7 +348,11 @@ def sergeant(s):
 
 
 def corridor(s):
-    """The corridor round the core: fittings, the exit sign, extinguishers, the floor guide."""
+    """The corridor round the core: the bullpen's wall along its west side, fittings, the exit sign, extinguishers,
+    the floor guide."""
+    # (the lobby's wall carried on south to the interview hall, two doorways into the bullpen: it lay open to the
+    # corridor all along here, 2026-10-26)
+    fit.partition(s, (-16.0, -48.0), (-16.0, 2.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(12.0, 5.0), (38.0, 5.0)])
     for x in (-12.0, 22.0, 46.0):
         fit.panel(s, x, -44.0, C, w=3.0, brightness=0.7, range_=18, rot=90)
     for z in (-30.0, -14.0):
