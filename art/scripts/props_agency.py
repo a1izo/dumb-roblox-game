@@ -220,17 +220,30 @@ def elevator_doors():
 
 @prop("MetalDetector", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Agency")
 def metal_detector():
-    """A walk-through metal detector: two grey panels joined by a head with its lit status bar.
-    People walk through it (the map puts colliders on its sides)."""
+    """A walk-through metal detector: two grey panels joined by a head with its lit status bar, a column of zone
+    lights down each panel's inner edge, the control box with its readout and keys on the head, a rubber mat
+    through it. People walk through it (the map puts colliders on its sides)."""
     grey = pk.plastic("Det_Grey", (170, 172, 176))
     dark = pk.metal("Det_Dark", (30, 30, 34), (46, 46, 52), rough=0.5, metallic=0.2)
-    parts = []
+    rubber = pk.rubber("Det_Mat")
+    parts = [mk.box("Mat", (3.2, 3.2, 0.06), (0, 0, 0.03), mat=rubber, bevel=0.02)]  # (the floor mat through it)
     for sx in (-1, 1):
         parts += [mk.box("Panel", (0.35, 2.0, 7.2), (sx * 1.75, 0, 3.6), mat=grey, bevel=0.08),
-                  mk.box("Foot", (0.6, 2.2, 0.2), (sx * 1.75, 0, 0.1), mat=dark, bevel=0.04)]
+                  mk.box("Foot", (0.6, 2.2, 0.2), (sx * 1.75, 0, 0.1), mat=dark, bevel=0.04),
+                  # the strip down each panel's inner edge where its zone lights sit
+                  mk.box("ZoneStrip", (0.06, 0.22, 6.2), (sx * 1.56, -0.86, 3.7), mat=dark)]
     parts.append(mk.box("Head", (3.9, 2.0, 0.6), (0, 0, 7.5), mat=grey, bevel=0.1))
     parts.append(mk.box("HeadFace", (2.6, 0.06, 0.35), (0, -1.02, 7.5), mat=dark))
-    glows = [mk.box("Status", (2.2, 0.04, 0.12), (0, -1.06, 7.5), mat=pk.glow("Det_Status", (90, 255, 140), 3))]
+    # the control box on the head: its small readout, its keypad
+    parts += [pk.rounded("Control", (1.2, 0.8, 0.5), (1.1, -0.3, 8.04), dark, r=0.06),
+              mk.box("Keys", (0.5, 0.05, 0.24), (1.3, -0.72, 8.04), mat=grey)]
+    glows = [mk.box("Status", (2.2, 0.04, 0.12), (0, -1.06, 7.5), mat=pk.glow("Det_Status", (90, 255, 140), 3)),
+             mk.box("Readout", (0.4, 0.04, 0.18), (0.8, -0.72, 8.06), mat=pk.glow("Det_Readout", (255, 170, 60), 2.5))]
+    # the zone lights, a column down each inner edge (green: clear)
+    for sx in (-1, 1):
+        for k in range(8):
+            glows.append(mk.box("Zone", (0.04, 0.12, 0.42), (sx * 1.52, -0.86, 1.2 + k * 0.72),
+                                mat=pk.glow("Det_Zone", (90, 255, 140), 2.2)))
     return parts, glows
 
 
