@@ -25,8 +25,8 @@ def _grow(parts, tips, rng, start, direction, length, radius, depth, mat, spread
            start[1] + dy * length * 0.5 + rng.uniform(-0.3, 0.3) * length * 0.12,
            start[2] + dz * length * 0.5 + length * 0.05)
     tip_r = radius * 0.62
-    parts.append(mk.tube("Limb", start, mid, radius, (radius + tip_r) / 2, mat=mat, verts=7 if radius > 0.25 else 5))
-    parts.append(mk.tube("Limb", mid, end, (radius + tip_r) / 2, tip_r, mat=mat, verts=7 if radius > 0.25 else 5))
+    for a, b, ra, rb in ((start, mid, radius, (radius + tip_r) / 2), (mid, end, (radius + tip_r) / 2, tip_r)):
+        parts.append(mk.soften(mk.tube("Limb", a, b, ra, rb, mat=mat, verts=7 if radius > 0.25 else 5)))
     if depth == 0:
         tips.append((end, length))
         return
@@ -63,6 +63,7 @@ def tree(prefix, seed, trunk_h, trunk_r, limbs, limb_len, depth, spread, rise, d
                           scale=(1, 1, rng.uniform(*flat)), mat=rng.choice(foliage), segments=clump_seg[0],
                           rings=clump_seg[1])
             mk.displace_noise(c, strength=r * lumpy, scale=r * 0.55, name=prefix + "ClumpNoise")
+            mk.soften(c)  # (shaded soft, not as facets)
             parts.append(c)
     return parts
 

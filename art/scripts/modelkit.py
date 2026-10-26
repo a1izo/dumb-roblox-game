@@ -276,6 +276,14 @@ def weighted_normals(obj):
     return obj
 
 
+def soften(obj):
+    """Marks every face of obj "dg_soft": it shades smooth however few its sides (auto_smooth below), for thin round
+    things and lumpy clumps that would otherwise show as facets."""
+    attr = obj.data.attributes.get("dg_soft") or obj.data.attributes.new("dg_soft", "INT", "FACE")
+    attr.data.foreach_set("value", [1] * len(obj.data.polygons))
+    return obj
+
+
 def auto_smooth(obj, angle_deg=40):
     """Marks edges sharper than the angle as sharp so smooth shading keeps hard corners. Faces marked "dg_soft" (a
     face attribute: thin round things of few sides, a lock of hair, a clump of fur, a quill) stay smooth between

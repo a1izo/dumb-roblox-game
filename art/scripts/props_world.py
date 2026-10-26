@@ -310,24 +310,27 @@ def hydrant():
 @prop("Tree", pivot="bottom", material="Grass", collide=True, texture=1024, anchor=(0, 0))
 def tree():
     """A city tree in leaf, for the beds on Tokyo's station plaza: a grey-brown trunk dividing into upswept limbs that
-    divide again, clumps of dark leaves at the twigs (grown like Tokyo's cherries: props_tokyo_trees.tree), fitted
-    into the box the beds were laid out round (build_props.FIT_TO_KEPT). The anchor is the trunk's foot."""
+    divide twice more, a crown of many soft clumps of dark leaves at the twigs, the limbs showing through its gaps
+    (grown like Tokyo's cherries: props_tokyo_trees.tree), shaded soft rather than as facets, fitted into the box the
+    beds were laid out round (build_props.FIT_TO_KEPT). The anchor is the trunk's foot."""
     import props_tokyo_trees as trees
 
     bark = mk.noisy("Tree_Bark", srgb(52, 44, 38), srgb(92, 80, 68), scale=10, roughness=0.9, stretch=(1, 1, 0.25))
     greens = [mk.noisy("Tree_Leaf1", srgb(30, 56, 32), srgb(60, 92, 50), scale=36, roughness=0.85),
               mk.noisy("Tree_Leaf2", srgb(38, 66, 36), srgb(74, 108, 58), scale=36, roughness=0.85),
               mk.noisy("Tree_Leaf3", srgb(26, 46, 28), srgb(50, 78, 42), scale=36, roughness=0.85)]
-    parts = trees.tree("Tree_", 31, trunk_h=4.4, trunk_r=0.55, limbs=6, limb_len=4.2, depth=2, spread=0.6, rise=0.62,
-                       droop=0.25, bark=bark, foliage=greens, clump_r=1.55, clumps_per_tip=4, lift=0.3)
-    # (the crown filled in over the fork, so it reads as one canopy and not a ring of balls)
+    parts = trees.tree("Tree_", 31, trunk_h=4.6, trunk_r=0.55, limbs=5, limb_len=3.4, depth=3, spread=0.5, rise=0.75,
+                       droop=0.3, bark=bark, foliage=greens, clump_r=1.2, clumps_per_tip=2, lift=0.25,
+                       clump_seg=(12, 7), flat=(0.72, 0.92), lumpy=0.2)
+    # (a few clumps over the fork fill the crown's heart, so it reads as one canopy and not a ring of puffs)
     rng = random.Random(32)
-    for k in range(16):
-        a = 2 * math.pi * k / 16 + rng.uniform(-0.2, 0.2)
-        r = rng.uniform(0.8, 3.4) if k % 2 else rng.uniform(2.4, 3.8)
-        c = mk.sphere("Tree_Inner", rng.uniform(1.7, 2.3), (math.cos(a) * r, math.sin(a) * r, rng.uniform(6.6, 9.8)),
-                      scale=(1, 1, rng.uniform(0.62, 0.78)), mat=greens[k % 3], segments=9, rings=6)
-        mk.displace_noise(c, strength=0.6, scale=0.9, name="Tree_InnerNoise")
+    for k in range(8):
+        a = 2 * math.pi * k / 8 + rng.uniform(-0.2, 0.2)
+        r = rng.uniform(0.8, 2.4)
+        c = mk.sphere("Tree_Inner", rng.uniform(1.4, 1.8), (math.cos(a) * r, math.sin(a) * r, rng.uniform(7.2, 9.4)),
+                      scale=(1, 1, rng.uniform(0.7, 0.85)), mat=greens[k % 3], segments=12, rings=7)
+        mk.displace_noise(c, strength=0.4, scale=0.8, name="Tree_InnerNoise")
+        mk.soften(c)
         parts.append(c)
     return parts, []
 

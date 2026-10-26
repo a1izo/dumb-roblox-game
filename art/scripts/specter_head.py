@@ -434,11 +434,7 @@ def ruff(name, centre, major, minor, tilt_deg, mat, cols, rows, fine=False, seed
     return mk._obj_from_bm(name, bm, mat)
 
 
-def soften(obj):
-    """Marks every face of obj "dg_soft" (smooth however few its sides: modelkit.auto_smooth)."""
-    attr = obj.data.attributes.get("dg_soft") or obj.data.attributes.new("dg_soft", "INT", "FACE")
-    attr.data.foreach_set("value", [1] * len(obj.data.polygons))
-    return obj
+soften = mk.soften  # (smooth however few its sides: modelkit.auto_smooth)
 
 
 # The hairline, as an angle of elevation on the unit head at each azimuth (0 in front): down to a point in the middle
