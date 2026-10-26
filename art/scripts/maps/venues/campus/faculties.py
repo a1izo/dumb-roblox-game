@@ -68,6 +68,8 @@ def closed_stair(s, g, x, z_foot, z_top, width=5.0, landing_z=None, mat="Stone",
     top = C + SHAFT
     for p, q, out in (((wx0, wz0), (wx1, wz0), (0, 1)), ((wx1, wz0), (wx1, wz1), (-1, 0)),
                       ((wx1, wz1), (wx0, wz1), (0, -1)), ((wx0, wz1), (wx0, wz0), (1, 0))):
+        # (a hair into the shaft: where a wall of the building runs along the well, the two shared a plane)
+        p, q = (p[0] + out[0] * 0.02, p[1] + out[1] * 0.02), (q[0] + out[0] * 0.02, q[1] + out[1] * 0.02)
         city.vquad(s, "CoreDark", p, q, C, top, out)
     city.down_face(s, "CoreDark", P.box(wx0, wz0, wx1, wz1), top)
     # The gate across the landing, at the second flight's foot: bars, rails, a chain and its padlock.

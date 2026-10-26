@@ -91,8 +91,10 @@ def expressway(s):
     y = P.EXPRESSWAY_Y
     x0, x1 = -FAR, FAR
     mid_z = (z0 + z1) / 2
-    s.box("ConcreteDark", (0.0, y + 1.5, mid_z), (x1 - x0, 3.0, z1 - z0), 0, collide=True)
-    for z in (z0 + 0.4, z1 - 0.4):
+    # (a hair wider than its lane: the bands of the buildings behind it reach its south face's plane, and flickered
+    # through it)
+    s.box("ConcreteDark", (0.0, y + 1.5, mid_z), (x1 - x0, 3.0, z1 - z0 + 0.08), 0, collide=True)
+    for z in (z0 + 0.36, z1 - 0.36):  # (the sound walls flush with the deck's widened sides)
         s.box("Concrete", (0.0, y + 5.0, z), (x1 - x0, 4.0, 0.8), 0)
         s.box("GlassDark", (0.0, y + 9.0, z), (x1 - x0, 4.0, 0.3), 0)
     # The wall on the frontage road's north side, with openings where the avenue and Kita-dori go on.

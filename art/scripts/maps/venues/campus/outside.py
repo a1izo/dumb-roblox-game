@@ -188,7 +188,7 @@ def konbini(s, x, z):
     """The convenience store across the street from the gate: its lit front and sign."""
     w, d, h = 22.0, 18.0, 12.0
     s.box("ConcreteDark", (x, h / 2, z + d / 2), (w, h, d), skip=("-y",))
-    s.box("WindowLit", (x, 4.2, z + 0.05), (w - 2.0, 6.4, 0.1))
+    s.box("WindowLit", (x, 4.2, z - 0.02), (w - 2.0, 6.4, 0.1))  # (proud of the front: flush, the two flickered)
     s.box("NeonCool", (x, 9.3, z + 0.03), (w - 1.0, 1.6, 0.1))
     s.sign((x, 9.3, z - 0.05), 180, w - 2.0, 1.2, "24H  カゲマート  KAGE MART", "GothamBlack", (40, 110, 70), None)
     s.light("point", (x, 4.0, z - 3.0), (230, 240, 255), 26, 1.2)

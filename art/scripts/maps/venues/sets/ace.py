@@ -53,7 +53,8 @@ def ace_room(s):
 
 
 def pantry(s):
-    x0, z0, x1, z1, h = PX - 7.0, PZ - 6.0, PX + 7.0, PZ + 6.0, 11.0
+    # (its west wall a hair clear of Ace's: the door's casing on Ace's side lay in its face's plane and flickered)
+    x0, z0, x1, z1, h = PX - 6.98, PZ - 6.0, PX + 7.0, PZ + 6.0, 11.0
     kit.floor(s, x0, z0, x1, z1, "TileChecker")
     kit.ceiling(s, x0, z0, x1, z1, h, "Ceiling")
     door = {"at": 6.0, "w": 4.0, "bottom": 0.0, "top": 8.0, "kind": "gap"}  # facing Ace's door
