@@ -299,83 +299,134 @@ def frame(name, w, h, t, depth, loc, mat, rot=(0, 0, 0)):
     ]
 
 
-def skull(name, loc, r, mat, dark, yaw=0.0, segments=48, teeth=7):
-    """A carved human skull of cranium radius `r` at `loc`, facing -Y turned `yaw` degrees about Z: one sculpted
-    shell (the domed cranium swelling behind, temples pinched in, a brow ridge, cheekbones, the face drawn down and
-    forward into the jaw and chin) with the eye sockets, the nose's hollow and the line of the mouth pressed into it
-    in `dark`, and a row of `teeth` along each side of the mouth (none for 0; a small skull far off needs fewer, and
-    fewer `segments`). Parts: [shell, teeth]."""
+def _metaball_mesh(name, elements, resolution, keep):
+    """A mesh grown from metaball elements, as props_lobby._blob makes them: ("ellipsoid", centre, radius,
+    (sx, sy, sz)), ("capsule", a, b, radius) or ("hollow", centre, radius, (sx, sy, sz)) carving the others, radii
+    being the surface's own; keep: the share of its triangles kept. Returns a bmesh."""
     import bmesh
     from mathutils import Vector
 
-    def shape(v):
-        x, y, z = v
-        x *= 0.8
-        z *= 0.86
-        if y > 0:
-            y *= 1.1  # the back of the head swells
-        if abs(x) > 0.55 and -0.4 < z < 0.3 and y < 0.2:
-            x *= 0.94  # the temples
-        if z < 0.12 and y < 0:  # the face, drawn forward and narrowing
-            f = min(1.0, (0.12 - z) / 0.8) * min(1.0, -y / 0.55)
-            y -= 0.16 * f
-            x *= 1 - 0.22 * f
-            z -= 0.08 * f
-        if y < -0.2 and z < -0.35:  # the jaw, drawn down into a chin
-            g = min(1.0, (-0.35 - z) / 0.4) * min(1.0, (-0.2 - y) / 0.5)
-            z -= 0.3 * g
-            x *= 1 - 0.28 * g
-            y -= 0.04 * g
-        if z < -0.62 and y > -0.3:
-            z = -0.62 + (z + 0.62) * 0.3  # the flat underside behind it
-        return Vector((x, y, z))
+    import common
 
-    def front(x, z_orig):
-        """The shaped surface point in front at width x (shaped) and the height a unit-sphere z of `z_orig` takes."""
-        y = -math.sqrt(max(0.0, 1 - (x / 0.8) ** 2 - z_orig ** 2))
-        return shape(Vector((x / 0.8, y, z_orig)))
-
-    eyes = [front(sx * 0.32, -0.04) for sx in (-1, 1)]
-    nose = front(0.0, -0.36)
-    zm = front(0.0, -0.56).z  # the mouth's line
-
+    meta = bpy.data.metaballs.new(name)
+    meta.resolution = meta.render_resolution = resolution
+    meta.threshold = 0.6
+    holder = bpy.data.objects.new(name, meta)
+    common.collection("Build").objects.link(holder)
+    for element in elements:
+        if element[0] in ("ellipsoid", "hollow"):
+            _, centre, radius, (sx, sy, sz) = element
+            el = meta.elements.new(type="ELLIPSOID")
+            el.co = centre
+            el.size_x, el.size_y, el.size_z = sx, sy, sz
+            el.use_negative = element[0] == "hollow"
+        else:
+            _, a, b, radius = element
+            a, b = Vector(a), Vector(b)
+            el = meta.elements.new(type="CAPSULE")
+            el.co = (a + b) / 2
+            el.size_x = (b - a).length / 2
+            el.rotation = Vector((1.0, 0.0, 0.0)).rotation_difference((b - a).normalized())
+        el.radius = radius / 0.575  # (a surface radius, at stiffness 2 and threshold 0.6)
+        el.stiffness = 2.0
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    mesh = bpy.data.meshes.new_from_object(holder.evaluated_get(depsgraph))
+    bpy.data.objects.remove(holder, do_unlink=True)
+    bpy.data.metaballs.remove(meta)
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=segments, v_segments=segments * 3 // 5, radius=1.0)
-    for v in bm.verts:
-        v.co = shape(v.co)
+    bm.from_mesh(mesh)
+    bpy.data.meshes.remove(mesh)
+    if keep < 1.0:
+        bmesh.ops.triangulate(bm, faces=bm.faces[:])
+        target = int(len(bm.faces) * keep)
+        tmp = bpy.data.meshes.new(name + "Thin")
+        bm.to_mesh(tmp)
+        obj = bpy.data.objects.new(name + "Thin", tmp)
+        common.collection("Build").objects.link(obj)
+        thin = obj.modifiers.new("Thin", "DECIMATE")
+        thin.ratio = target / max(1, len(tmp.polygons))
+        done = bpy.data.meshes.new_from_object(obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+        bpy.data.objects.remove(obj, do_unlink=True)
+        bpy.data.meshes.remove(tmp)
+        bm.free()
+        bm = bmesh.new()
+        bm.from_mesh(done)
+        bpy.data.meshes.remove(done)
+    return bm
+
+
+def skull(name, loc, r, mat, dark, yaw=0.0, segments=48, teeth=7):
+    """A carved human skull of cranium radius `r` at `loc`, facing -Y turned `yaw` degrees about Z, cut to look
+    menacing (asked 2026-10-25: "their shapes look goofy right now, make them scarier"): one surface grown as a
+    real skull is built (the cranium, a heavy brow ridge dipping toward the middle into a scowl, the cheekbones
+    flaring out wide under the eyes and running back as arches, the hollow temples, the face drawn down over sunken
+    cheeks, the jaw squared at its angles round to the chin), with big sockets cut deep into it slanting down toward
+    the nose, a tall pear-shaped nasal hollow, and a grin of long, uneven teeth set into the bone above and below the
+    mouth's dark line, `teeth` in each row (none for 0; a small skull far off needs fewer, and fewer `segments`, which
+    sets how finely it is grown). Parts: [shell, teeth]."""
+    import random
+
+    from mathutils import Vector
+
+    # (no ridges standing over the eyes: two of them read as eyebrows made of bone, asked 2026-10-25 "the eyebrows on
+    # the skull look weird"; the forehead itself comes down flat into one shelf of bone over both sockets)
+    els = [("ellipsoid", (0.0, 0.12, 0.22), 1.0, (0.8, 0.95, 0.84)),  # the cranium
+           ("ellipsoid", (0.0, -0.35, 0.24), 0.6, (1.12, 0.8, 0.95)),  # the forehead
+           ("ellipsoid", (0.0, -0.6, -0.02), 0.44, (1.42, 0.52, 0.5)),  # its shelf over the sockets
+           ("ellipsoid", (0.0, -0.58, -0.46), 0.36, (1.15, 0.85, 1.0)),  # the face, over the upper teeth
+           ("ellipsoid", (0.0, -0.64, -0.97), 0.16, (1.5, 0.8, 1.0))]  # the chin
+    for sx in (-1, 1):
+        els += [("capsule", (sx * 0.36, -0.72, -0.32), (sx * 0.68, -0.32, -0.3), 0.11),  # a cheekbone
+                ("capsule", (sx * 0.68, -0.32, -0.3), (sx * 0.64, 0.1, -0.28), 0.06),  # its arch, back to the ear
+                ("capsule", (sx * 0.5, -0.12, -0.78), (sx * 0.28, -0.6, -0.94), 0.14),  # the jaw, from its angle
+                ("capsule", (sx * 0.28, -0.6, -0.94), (0.0, -0.64, -0.96), 0.14),  # to the chin
+                ("capsule", (sx * 0.5, -0.12, -0.78), (sx * 0.56, 0.06, -0.32), 0.1),  # the jaw's branch up
+                ("hollow", (sx * 0.86, -0.2, -0.04), 0.16, (0.4, 1.0, 1.0)),  # the temple
+                ("hollow", (sx * 0.42, -0.84, -0.6), 0.12, (1.0, 0.7, 1.0)),  # the cheek, sunken
+                ("hollow", (sx * 0.3, -0.86, -0.13), 0.19, (1.1, 1.0, 0.95))]  # the socket's start
+    # (a bead of a skull, segments under 12, grown coarser still and thinned harder: a few hundred triangles)
+    res = max(0.045, 2.4 / max(8, segments))
+    bm = _metaball_mesh(name, els, res, 0.7 if segments >= 12 else 0.4)
+    for f in bm.faces:
+        f.smooth = True
     bm.normal_update()
-    for v in bm.verts:
-        p, n = v.co.copy(), v.normal.copy()
-        for sx in (-1, 1):  # the cheekbones
-            c = front(sx * 0.5, -0.3)
-            dc = (p - c).length
-            if dc < 0.24:
-                p += n * 0.06 * (1 - dc / 0.24)
-        if p.y < -0.5 and abs(p.z - (eyes[0].z + 0.2)) < 0.06 and abs(p.x) < 0.62:  # the brow ridge
-            p += n * 0.035
-        if p.y < -0.4 and abs(p.x) < 0.36 and abs(p.z - zm) < 0.03:  # the mouth's line
-            p -= n * 0.04
-        v.co = p
+
+    def front_at(x, z, verts):
+        """The face's front surface nearest (x, z) as seen from -Y: (point, normal)."""
+        best = min((v for v in verts if v.co.y < 0), key=lambda v: (v.co.x - x) ** 2 + (v.co.z - z) ** 2 + 0.02 * v.co.y)
+        return best.co.copy(), best.normal.copy()
+
+    zm = -0.79  # the mouth's line
+    eyes = [front_at(sx * 0.3, -0.13, bm.verts)[0] for sx in (-1, 1)]
+    nose = front_at(0.0, -0.42, bm.verts)[0]
+    crack = []  # (a crack running down the forehead from the crown: the line of a thin groove cut into the bone)
+    for x, z in ((0.07, 0.96), (0.12, 0.84), (0.1, 0.72), (0.17, 0.6), (0.15, 0.48), (0.2, 0.4)) if segments >= 20 else ():
+        p, n = front_at(x, z, bm.verts)
+        crack.append(p - n * 0.01)
     for f in bm.faces:
         c = f.calc_center_median()
-        if c.y < -0.4 and abs(c.x) < 0.34 and abs(c.z - zm) < 0.012:
+        if c.y < -0.45 and abs(c.x) < 0.33 and abs(c.z - zm) < 0.026:
             f.material_index = 1
-        f.smooth = True
-    surface = [(v.co.copy(), v.normal.copy()) for v in bm.verts if v.co.y < -0.3 and abs(v.co.z - zm) < 0.1]
     shell = mk._obj_from_bm(name, bm, mat)
     shell.data.materials.append(dark)
 
     # The sockets and the nose cut clean out of the shell (their walls in `dark`), and the cutters thrown away.
     cutters = []
-    for e in eyes:  # (rounded and tilted down at the outer corner, like the orbits)
-        socket = mk.sphere(name + "Socket", 1.0, (e.x, e.y + 0.1, e.z), scale=(0.24, 0.3, 0.19), mat=dark,
+    for e in eyes:  # (big and deep, slanting down toward the nose, cut low enough that the brow's bone overhangs them)
+        socket = mk.sphere(name + "Socket", 1.0, (e.x * 1.05, e.y + 0.13, e.z - 0.05), scale=(0.27, 0.38, 0.2), mat=dark,
                            segments=max(8, min(20, segments // 2)), rings=max(6, min(12, segments // 4)))
-        socket.rotation_euler = (0, math.copysign(math.radians(14), e.x), 0)
+        # (its top edge cut straight, sloping down toward the nose under the brow: the scowl is in the bone)
+        inner = -1.0 if e.x > 0 else 1.0
+        for v in socket.data.vertices:
+            v.co.z = min(v.co.z, 0.42 - 0.38 * v.co.x * inner)
+        socket.rotation_euler = (0, -math.copysign(math.radians(10), e.x), 0)
         cutters.append(socket)
-    # (a three-sided cone along -Y, its apex up and widest at the face: the nose's hollow)
-    cutters.append(mk.cylinder(name + "NoseCut", 0.08, 0.5, (0.0, nose.y + 0.16, nose.z + 0.03), rot=(90, 0, 0),
-                               mat=dark, verts=3, radius2=0.15))
-    cutters[-1].scale = (0.9, 1.25, 1.0)
+    # (the nasal hollow: a tall three-sided cone along -Y, its apex up and its base wide and low: a pear)
+    cutters.append(mk.cylinder(name + "NoseCut", 0.06, 0.55, (0.0, nose.y + 0.18, nose.z + 0.03), rot=(90, 0, 0),
+                               mat=dark, verts=3, radius2=0.16))
+    cutters[-1].scale = (0.85, 1.45, 1.0)
+    if crack:
+        cutters.append(sweep(name + "Crack", crack, [0.012, 0.02, 0.022, 0.02, 0.016, 0.008], dark, sides=4))
     for cutter in cutters:
         cut = shell.modifiers.new(cutter.name, "BOOLEAN")
         cut.operation = "DIFFERENCE"
@@ -391,16 +442,23 @@ def skull(name, loc, r, mat, dark, yaw=0.0, segments=48, teeth=7):
     for cutter in cutters:
         bpy.data.objects.remove(cutter, do_unlink=True)
 
-    # The teeth: a row above and below the mouth's line, set on the surface there.
+    # The teeth: long and uneven, a row above and below the mouth's line, each set into the bone (sunk a little
+    # into the face there, so none stands off it).
     count = teeth
     teeth = []
-    for row, dz in (("Upper", 0.05), ("Lower", -0.05)) if count > 0 else ():
+    rng = random.Random(sum(map(ord, name)))
+    for row, sign in (("Upper", 1), ("Lower", -1)) if count > 0 else ():
         for k in range(count):
-            x = -0.28 + 0.56 * k / max(1, count - 1)
-            p, n = min(surface, key=lambda s: (s[0].x - x) ** 2 + 4 * (s[0].z - zm - dz) ** 2 + 0.01 * s[0].y)
+            x = -0.26 + 0.52 * k / max(1, count - 1)
+            tall = 0.15 * rng.uniform(0.85, 1.15) * (1.3 if k in (1, count - 2) else 1.0)
+            p, n = front_at(x, zm + sign * 0.06, carved.vertices)
+            n.z = 0.0
+            n.normalize()
             yaw_t = math.degrees(math.atan2(n.x, -n.y))
-            teeth.append(mk.box(name + row + "Tooth", (0.082, 0.07, 0.088), (p.x + n.x * 0.004, p.y + n.y * 0.004, zm + dz),
-                                rot=(0, 0, yaw_t), mat=mat, bevel=0.022 if count > 5 else 0.0))
+            teeth.append(mk.box(name + row + "Tooth", (0.07, 0.08, tall),
+                                (p.x - n.x * 0.02, p.y - n.y * 0.02, zm + sign * (0.012 + tall / 2)),
+                                rot=(rng.uniform(-4, 4), rng.uniform(-5, 5), yaw_t), mat=mat,
+                                bevel=0.02 if count > 5 else 0.0))
     parts = [shell] + ([mk.merge(teeth, name + "Teeth")] if teeth else [])
     for obj in parts:
         obj.scale = (r, r, r)

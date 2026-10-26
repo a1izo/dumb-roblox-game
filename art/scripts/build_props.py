@@ -233,6 +233,83 @@ def _bake_as_one(key, main, sharing, **how):
     return baked
 
 
+def _sliver(spec):
+    """(the smallest UV island an unwrap keeps as it is: four texels of the prop's texture at its largest; smaller
+    ones are laid in a neighbour's, modelkit._snap_slivers)"""
+    return 4.0 / spec["texture"] ** 2
+
+
+# A gap this small (studs) between a prop's parts is closed as it is built (_close_hairlines); a part closer than TOUCH
+# to another touches it.
+HAIRLINE = 0.1
+TOUCH = 0.03
+
+
+def _close_hairlines(parts, glows):
+    """Moves each group of a standing prop's parts that hangs a hairline (HAIRLINE studs or less) off everything that
+    holds it up (what stands on its lowest level, and what touches that, part by part) the hairline toward it, so it
+    touches: the builders' numbers had left a handle a few hundredths of a stud off its door, a screen off its arm, the
+    toys over the claw machine's floor (asked 2026-10-25: "make sure nothing floats"). A wider gap is drawn, not
+    rounding, and stays for its builder to close. Moving pieces are left out (they stand clear to turn). Returns how
+    many groups moved."""
+    objs = list(parts) + list(glows)
+    if len(objs) < 2:
+        return 0
+    bpy.context.view_layer.update()
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    boxes = {}
+    for obj in objs:
+        ev = obj.evaluated_get(depsgraph)
+        corners = [ev.matrix_world @ Vector(c) for c in ev.bound_box]
+        boxes[obj] = (Vector([min(c[i] for c in corners) for i in range(3)]),
+                      Vector([max(c[i] for c in corners) for i in range(3)]))
+    floor = min(lo.z for lo, _ in boxes.values())
+
+    def apart(a, b):
+        """(how far apart two parts' boxes are, and the separation along +x, +y, +z, -x, -y, -z from a to b)"""
+        (lo, hi), (lo2, hi2) = boxes[a], boxes[b]
+        seps = [lo2[i] - hi[i] for i in range(3)] + [lo[i] - hi2[i] for i in range(3)]
+        return max(seps + [0.0]), seps
+
+    def spread(start, among):
+        reached, todo = set(start), list(start)
+        while todo:
+            a = todo.pop()
+            for b in among:
+                if b not in reached and apart(a, b)[0] <= TOUCH:
+                    reached.add(b)
+                    todo.append(b)
+        return reached
+
+    moved = 0
+    for _ in range(6):  # (a group moved may be what holds the next)
+        held = spread({obj for obj in objs if boxes[obj][0].z <= floor + TOUCH}, objs)
+        loose = [obj for obj in objs if obj not in held]
+        groups, seen = [], set()
+        for obj in loose:
+            if obj not in seen:
+                group = spread({obj}, loose)
+                seen |= group
+                groups.append(group)
+        progress = False
+        for group in groups:
+            (gap, seps), _, _ = min(((apart(a, h), a, h) for a in group for h in held), key=lambda t: t[0][0])
+            if gap > HAIRLINE:
+                continue
+            axis = seps.index(gap)
+            step = Vector((0.0, 0.0, 0.0))
+            step[axis % 3] = (gap - 0.005) * (1 if axis < 3 else -1)
+            for obj in group:
+                obj.location += step
+                lo, hi = boxes[obj]
+                boxes[obj] = (lo + step, hi + step)
+            moved += 1
+            progress = True
+        if not progress:
+            break
+    return moved
+
+
 def _wear(obj, mat):
     """One material on every face of a mesh."""
     obj.data.materials.clear()
@@ -259,6 +336,10 @@ def build_one(key):
     built = spec["build"]()
     parts, glow = built[0], built[1]
     more = built[2] if len(built) > 2 else {}  # a prop in pieces that move by themselves: props.piece
+    if spec["pivot"] == "bottom":  # (one that stands: a hung one's parts hang from what it is hung on)
+        closed = _close_hairlines(parts, glow)
+        if closed:
+            print(f"[props] {key}: {closed} hairline gap(s) closed")
     where = "held" if key in HELD else ("venue" if spec.get("set") in VENUE_SETS else "prop")
     # (a hero prop's high-detail copies, made before the parts are merged away: the main mesh's and each own piece's)
     highs = {}
@@ -271,9 +352,9 @@ def build_one(key):
     pieces = {name: mk.merge(piece["parts"], f"{key}_{name}") for name, piece in more.get("pieces", {}).items()}
     if pieces:
         # Faces that carry pictures are laid by hand, where the builder's own coordinates still hold.
-        mk.unwrap(main, laid=more.get("laid"), into=more.get("into", (0.0, 0.0, 1.0, 1.0)))
+        mk.unwrap(main, laid=more.get("laid"), into=more.get("into", (0.0, 0.0, 1.0, 1.0)), least=_sliver(spec))
         for name, piece in more["pieces"].items():
-            mk.unwrap(pieces[name], laid=piece["laid"], into=piece["into"])
+            mk.unwrap(pieces[name], laid=piece["laid"], into=piece["into"], least=_sliver(spec))
         shift, whole_size = _settle(spec["pivot"], [main, *pieces.values()])
         for high in highs.values():
             high.data.transform(Matrix.Translation(shift))
@@ -307,7 +388,7 @@ def build_one(key):
             main.data.transform(Matrix.Diagonal((*fit_k, 1.0)))
         for high in highs.values():
             high.data.transform(Matrix.Translation(shift))
-        mk.unwrap(main)
+        mk.unwrap(main, least=_sliver(spec))
         mk.bake(main, size=spec["texture"], where=where, ao_strength=spec.get("ao", 0.6), exact=spec.get("exact", False),
                 high=highs.get(None), normal_full=bool(spec.get("detail")), normal_size=spec.get("normal"))
     # (the high-detail copies only lent their surface to the bake)
@@ -409,8 +490,8 @@ def reskin_one(key):
     mesh.update()
     if "custom_normal" not in mesh.attributes:
         mk.weighted_normals(main)
-    mk.unwrap(main)
     spec = props.BUILDERS[key]
+    mk.unwrap(main, least=_sliver(spec))
     mk.bake(main, size=spec["texture"], where="venue" if spec.get("set") in VENUE_SETS else "prop")
     glow_objs = _glow_objects(key)
     main["tris"] = mk.triangles(main) + sum(mk.triangles(o) for o in glow_objs)

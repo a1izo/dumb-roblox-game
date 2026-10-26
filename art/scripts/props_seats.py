@@ -234,7 +234,7 @@ def chair_bone():
     skeleton = skin_body("Skeleton", bone, joints, bones, levels=2)
     skeleton.modifiers.new("Decimate", "DECIMATE").ratio = 0.16
     parts = [skeleton]
-    parts += pk.skull("Skull", (0, sk_y, sk_z), sk_r, bone, void)
+    parts += pk.skull("Skull", (0, sk_y, sk_z), sk_r, bone, void, segments=40)  # (the chair under 20,000 triangles)
 
     # The seat: a slab of pale bone set in the frame, its outline a broad pelvic plate (a notch at the back where
     # the spine comes down), softened and pitted.

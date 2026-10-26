@@ -235,13 +235,22 @@ function EmoteController.dress(character: Model, clip: string, alive: Alive, man
 	end
 	local made: { Instance } = {}
 	local gone = false
+	-- A prop leaves the way it came: in the world it comes apart into nothing over a moment (never blinks out of
+	-- being, the owner, 2026-10-25); in a view, or with motion turned down, it simply goes.
+	local function letGo(item: Instance)
+		if item:IsA("Model") and item:IsDescendantOf(workspace) and not Vfx.still() then
+			Materialize.vanish(item, { seconds = 0.35, quiet = true, destroy = true })
+		else
+			item:Destroy()
+		end
+	end
 	local function remove()
 		if gone then
 			return
 		end
 		gone = true
 		for _, item in ipairs(made) do
-			item:Destroy()
+			letGo(item)
 		end
 		table.clear(made)
 	end
@@ -494,7 +503,7 @@ function EmoteController.dress(character: Model, clip: string, alive: Alive, man
 					if index then
 						table.remove(made, index)
 					end
-					prop:Destroy()
+					letGo(prop)
 				end)
 			end
 		end)

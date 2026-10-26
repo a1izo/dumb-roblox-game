@@ -317,7 +317,7 @@ def station_autopsy():
     sheet = pk.plastic("Aut_Sheet", (214, 226, 224))
     x, y, z, w, h, tilt = AUTOPSY_SCREEN
     parts = [mk.box("Base", (2.4, 1.6, 0.2), (0, 0, 0.1), mat=steel, bevel=0.04),
-             mk.cylinder("Pedestal", 0.55, 2.4, (0, 0, 1.4), mat=steel, verts=16),
+             mk.cylinder("Pedestal", 0.55, 2.52, (0, 0, 1.46), mat=steel, verts=16),
              mk.box("Top", (5.4, 2.5, 0.2), (0, 0, 2.8), mat=steel, bevel=0.05)]
     for sy in (-1, 1):
         parts.append(mk.box("LipL", (5.4, 0.12, 0.2), (0, sy * 1.2, 3.0), mat=steel))
@@ -721,9 +721,9 @@ def event_tent():
               mk.box("SideR", (0.05, 2 * hw, eave - 3.0), (hw, 0, (eave - 3.0) / 2 + 2.7), mat=canvas)]
     # The check-in table.
     parts += [mk.box("Table", (6.0, 2.4, 0.12), (0, 1.4, 2.6), mat=cloth),
-              mk.box("ClothFront", (6.0, 0.05, 2.3), (0, 0.2, 1.45), mat=cloth),
-              mk.box("ClothSideL", (0.05, 2.4, 2.3), (-3.0, 1.4, 1.45), mat=cloth),
-              mk.box("ClothSideR", (0.05, 2.4, 2.3), (3.0, 1.4, 1.45), mat=cloth)]
+              mk.box("ClothFront", (6.0, 0.05, 2.6), (0, 0.2, 1.3), mat=cloth),
+              mk.box("ClothSideL", (0.05, 2.4, 2.6), (-3.0, 1.4, 1.3), mat=cloth),
+              mk.box("ClothSideR", (0.05, 2.4, 2.6), (3.0, 1.4, 1.3), mat=cloth)]
     return parts, []
 
 
@@ -1087,8 +1087,10 @@ def drum_kit():
     chrome = pk.chrome("Drum_Chrome")
     brass = pk.metal("Drum_Cymbal", (180, 146, 70), (220, 184, 100), rough=0.25, metallic=0.95)
     dark = pk.metal("Drum_Dark", (20, 20, 22), (34, 34, 38), rough=0.5, metallic=0.3)
-    parts = [mk.cylinder("Bass", 1.0, 1.2, (0, -0.2, 1.05), rot=(90, 0, 0), mat=wrap, verts=24),
-             mk.cylinder("BassHead", 0.96, 0.04, (0, -0.82, 1.05), rot=(90, 0, 0), mat=head, verts=24)]
+    parts = [mk.cylinder("Bass", 1.0, 1.2, (0, -0.2, 1.0), rot=(90, 0, 0), mat=wrap, verts=24),
+             mk.cylinder("BassHead", 0.96, 0.04, (0, -0.82, 1.0), rot=(90, 0, 0), mat=head, verts=24)]
+    for x in (-0.6, 0.6):
+        parts.append(mk.tube("TomMount", (x * 0.4, -0.2, 1.9), (x, -0.05, 2.2), 0.04, mat=chrome, verts=6))
     for k, (x, y, z, r, d) in enumerate(((-0.6, -0.1, 2.35, 0.55, 0.6), (0.6, -0.1, 2.35, 0.6, 0.65))):
         parts += [mk.cylinder(f"Tom{k}", r, d, (x, y, z), rot=(-20, 0, 0), mat=wrap, verts=20),
                   mk.cylinder(f"TomHead{k}", r - 0.02, 0.04, (x, y - 0.1, z + d / 2 * 0.94), rot=(-20, 0, 0), mat=head,
@@ -1096,7 +1098,14 @@ def drum_kit():
     parts += [mk.cylinder("Floor", 0.75, 1.0, (1.6, 0.6, 1.3), mat=wrap, verts=20),
               mk.cylinder("FloorHead", 0.73, 0.04, (1.6, 0.6, 1.82), mat=head, verts=20),
               mk.cylinder("Snare", 0.6, 0.45, (-1.1, 0.8, 1.9), mat=chrome, verts=20),
-              mk.cylinder("SnareHead", 0.58, 0.04, (-1.1, 0.8, 2.14), mat=head, verts=20)]
+              mk.cylinder("SnareHead", 0.58, 0.04, (-1.1, 0.8, 2.14), mat=head, verts=20),
+              mk.cylinder("SnarePost", 0.04, 1.1, (-1.1, 0.8, 1.15), mat=chrome, verts=6)]
+    for k in range(3):
+        a = 2 * math.pi * (k + 0.5) / 3
+        parts += [mk.tube("FloorLeg", (1.6 + math.cos(a) * 0.76, 0.6 + math.sin(a) * 0.76, 1.55),
+                          (1.6 + math.cos(a) * 0.95, 0.6 + math.sin(a) * 0.95, 0.02), 0.03, mat=chrome, verts=4),
+                  mk.tube("SnareFoot", (-1.1, 0.8, 0.62), (-1.1 + math.cos(a) * 0.55, 0.8 + math.sin(a) * 0.55, 0.02),
+                          0.03, mat=chrome, verts=4)]
     for x, y, z, r in ((-2.0, 0.6, 3.2, 0.7), (1.9, -0.6, 4.2, 0.9)):
         parts += [mk.cylinder("Stand", 0.05, z, (x, y, z / 2), mat=chrome, verts=6),
                   mk.cylinder("Cymbal", r, 0.04, (x, y, z), mat=brass, verts=24, radius2=0.1)]

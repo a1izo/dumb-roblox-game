@@ -29,6 +29,7 @@ local Cinema = require(script.Parent.Cinema)
 local DeathFx = require(script.Parent.DeathFx)
 local Materialize = require(script.Parent.Materialize)
 local Stage = require(script.Parent.Stage)
+local Vfx = require(script.Parent.Vfx)
 
 local ShotPlayer = {}
 
@@ -550,6 +551,23 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				placeModel(prop.model, CFrame.new(base) * samplePath(prop.times, prop.frames, tt))
 				if not prop.model.Parent then
 					stage:add(prop.model)
+					-- (one joining the shot partway through is drawn in over a moment, never popped out of thin air:
+					-- the owner, 2026-10-25; one the shot draws in out of smoke itself is left to that)
+					if tt > 0.1 and prop.model:IsA("Model") and not Vfx.still() then
+						local drawn = false
+						for _, event in ipairs(events) do
+							if
+								event.kind == "materialize"
+								and event.model == prop.data.model
+								and math.abs(event.t - tt) < 0.25
+							then
+								drawn = true
+							end
+						end
+						if not drawn then
+							Materialize.appear(prop.model, { seconds = 0.3, quiet = true })
+						end
+					end
 				end
 			elseif prop.model.Parent then
 				prop.model.Parent = nil

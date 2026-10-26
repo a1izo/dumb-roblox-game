@@ -145,11 +145,11 @@ def yakitori_grill():
             parts.append(mk.box("Leg", (0.12, 0.12, 3.0), (sx * 1.7, sy * 0.75, 1.5), mat=steel))
     for k in range(8):
         x = -1.6 + k * 0.45
-        parts.append(mk.tube("Skewer", (x, -1.1, 3.88), (x, 0.9, 3.88), 0.02, mat=wood, verts=4))
+        parts.append(mk.tube("Skewer", (x, -1.1, 3.82), (x, 0.9, 3.82), 0.02, mat=wood, verts=4))
         for j in range(3):
-            parts.append(mk.box("Meat", (0.2, 0.22, 0.16), (x, -0.5 + j * 0.3, 3.95), mat=meat, bevel=0.05))
+            parts.append(mk.box("Meat", (0.2, 0.22, 0.16), (x, -0.5 + j * 0.3, 3.89), mat=meat, bevel=0.05))
     parts += [mk.cylinder("Tin", 0.25, 0.5, (1.4, 0.3, 1.5), mat=steel, verts=12),
-              mk.box("Fan", (0.7, 0.03, 0.6), (-1.2, 0.2, 1.6), rot=(70, 0, 0), mat=pk.plastic("YG_Fan", (230, 210, 170)))]
+              mk.box("Fan", (0.7, 0.03, 0.6), (-1.2, 0.2, 1.3), rot=(80, 0, 0), mat=pk.plastic("YG_Fan", (230, 210, 170)))]
     glows = [mk.box("Coals", (3.4, 1.4, 0.15), (0, 0, 3.75), mat=pk.glow("YG_Coals", (255, 110, 40), 4))]
     return parts, glows
 
@@ -170,7 +170,7 @@ def boat():
              mk.box("Deck", (W - 0.4, L - 2.0, 0.2), (0, 0.4, 2.5), mat=wood),
              mk.box("Gunwale", (W + 0.1, L - 1.5, 0.25), (0, 0.4, 2.65), mat=trim),
              mk.box("Cabin", (W - 1.0, L - 9.0, 3.2), (0, 1.5, 4.2), mat=wood, bevel=0.05),
-             pk.rounded("Roof", (W + 0.4, L - 7.5, 0.5), (0, 1.5, 6.1), roof, r=0.25)]
+             pk.rounded("Roof", (W + 0.4, L - 7.5, 0.5), (0, 1.5, 6.03), roof, r=0.25)]
     glows = []
     for sx in (-1, 1):
         glows.append(mk.box("Shoji", (0.05, L - 11.0, 2.0), (sx * (W / 2 - 0.48), 1.5, 4.3),
@@ -181,5 +181,7 @@ def boat():
             made = _lantern(f"BT{sx}{k}_", sx * (W / 2 + 0.1), -8.0 + k * 4.0, 5.2, 0.22, 0.6,
                             pk.glow("BT_Lantern", (240, 60, 40), 2.4), band, ribs=4)
             parts += [p for p in made if "Rib" in p.name or "Cap" in p.name]
+            parts.append(mk.tube("Cord", (sx * (W / 2 + 0.1), -8.0 + k * 4.0, 5.5), (sx * (W / 2 + 0.1), -8.0 + k * 4.0, 5.82),
+                                 0.02, mat=band, verts=4))
             glows += [p for p in made if "Paper" in p.name]
     return parts, glows

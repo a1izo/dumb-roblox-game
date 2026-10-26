@@ -65,7 +65,7 @@ def station_crt_bank():
     parts.append(mk.box("MainStand", (1.6, 1.4, 0.3), (x, y + 1.0, 3.05), mat=beige, bevel=0.05))
     # The rack behind: two rows of feeds above the desk and a pair either side of the main one.
     parts += [mk.box("RackPost", (0.18, 0.4, 8.6), (sx * 2.5, 1.25, 4.3), mat=steel) for sx in (-1, 1)]
-    parts += [mk.box("RackShelf", (5.2, 1.6, 0.14), (0, 1.25, zz), mat=steel) for zz in (5.6, 7.3)]
+    parts += [mk.box("RackShelf", (5.2, 1.6, 0.14), (0, 1.25, zz), mat=steel) for zz in (5.68, 7.33)]
     glows = []
     colours = feed_colours()
     k = 0
@@ -252,7 +252,7 @@ def xray_scanner():
     for sx in (-1, 1):
         for sy in (-1, 1):
             parts.append(mk.box("Leg", (0.2, 0.2, 2.1), (sx * 1.0, sy * 4.3, 1.05), mat=dark))
-    parts += [mk.tube("Arm", (1.6, -3.0, 2.6), (2.0, -3.0, 4.6), 0.06, mat=dark, verts=6),
+    parts += [mk.tube("Arm", (1.1, -3.0, 2.4), (2.0, -3.0, 4.6), 0.06, mat=dark, verts=6),
               mk.box("Monitor", (1.4, 0.3, 1.0), (2.0, -3.1, 5.0), rot=(0, 0, -30), mat=dark, bevel=0.05)]
     for k in range(3):
         parts.append(mk.box("Tray", (1.8, 1.4, 0.3), (0, -4.2, 2.8 + k * 0.3), mat=tray, bevel=0.06))
@@ -706,8 +706,8 @@ def fume_hood():
              mk.box("Top", (w + 0.1, d + 0.1, 0.14), (0, 0, 2.87), mat=resin),
              mk.box("Back", (w, 0.12, 4.4), (0, d / 2 - 0.06, 5.1), mat=steel),
              mk.box("Roof", (w, d, 0.6), (0, 0, 7.3), mat=steel, bevel=0.03),
-             mk.box("Sash", (w - 0.4, 0.06, 1.6), (0, -d / 2 + 0.1, 6.0), mat=glass),
-             mk.box("SashBar", (w - 0.4, 0.14, 0.14), (0, -d / 2 + 0.05, 5.2), mat=steel),
+             mk.box("Sash", (w - 0.2, 0.06, 1.6), (0, -d / 2 + 0.1, 6.0), mat=glass),
+             mk.box("SashBar", (w - 0.2, 0.14, 0.14), (0, -d / 2 + 0.05, 5.2), mat=steel),
              mk.cylinder("Duct", 0.5, 1.4, (0, 0.2, 8.3), mat=steel, verts=16)]
     for sx in (-1, 1):
         parts.append(mk.box("Side", (0.12, d, 4.4), (sx * (w / 2 - 0.06), 0, 5.1), mat=steel))

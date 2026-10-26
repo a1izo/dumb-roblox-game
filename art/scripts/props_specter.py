@@ -484,7 +484,7 @@ def specter():
     chain(hang)
     for at, r in ((hang[-1] + Vector((0, -0.02, -0.09)), 0.075), (sag[4] + Vector((0, -0.03, -0.1)), 0.06),
                   (sag[8] + Vector((0, -0.03, -0.1)), 0.06)):
-        for obj in pk.skull("Charm", tuple(at), r, bone, void, segments=14, teeth=0):
+        for obj in pk.skull("Charm", tuple(at), r, bone, void, segments=10, teeth=0):
             gear.append(obj)
     # the holster on the right hip (-x) with the Manual in it, strapped to the belt
     hol = round_hips(-math.pi / 2 + 0.25, hips_c.z - 0.34, 0.09)

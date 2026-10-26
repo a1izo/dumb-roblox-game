@@ -366,8 +366,8 @@ def _prepared_normal(scan, kind, size):
 
 
 def build(scan, colour, studs, where, n, organic, keep, contrast, relief, rough, quiet, wet, joint, turn, seed,
-          even, accent, metal, reach, clean, normal=None):
-    size = lookbook.pixels(studs, where)
+          even, accent, metal, reach, clean, normal=None, scale=1):
+    size = min(lookbook.LARGEST, lookbook.pixels(studs, where) * scale)
     if isinstance(n, tuple):
         # A scan that is longer one way (a bolt of cloth): across x up, so the figure keeps its shape.
         across, up = n
@@ -453,8 +453,8 @@ def surface(scan, colour, studs, where="wall", n=1, organic=False, keep=0.5, con
     normal   a normal map art/scripts/heightmap.py made, in place of the scan's own: "height" (from the
              height it rebuilt) or "relief" (for the facets of the relief tile, maps/relief.py)
     """
-    return (lambda: build(scan, colour, studs, where, n, organic, keep, contrast, relief, rough, quiet, wet, joint,
-                          turn, seed, even, accent, metal, reach, clean, normal)), studs
+    return (lambda scale=1: build(scan, colour, studs, where, n, organic, keep, contrast, relief, rough, quiet, wet,
+                                  joint, turn, seed, even, accent, metal, reach, clean, normal, scale)), studs
 
 
 # name -> (generator, studs covered by one repeat of the image)
@@ -568,3 +568,13 @@ LIBRARY = {
     "Bamboo": surface("bamboo_wall", (156, 138, 88), 7, "wall", 1, keep=0.5, rough=0.5, seed=106),
     "Bark": surface("sakura_bark", (60, 44, 34), 6, "wall", 1, keep=0.5, seed=107),
 }
+
+# Surfaces drawn at twice the size the rulebook gives them (the owner, 2026-10-25: "make every texture in the game
+# more high quality"): the floors under the players' feet first, then the small trims, as many as fit in 80% of the
+# texture memory each scene had free (scripts/budget.py), Tokyo's wet streets among them. None that the Lobby shows:
+# its scene has no room left.
+SHARPER = frozenset("""
+    WoodFloorDark WoodFloor WoodHerringbone Terrazzo VinylClinic CarpetTile CarpetTileBlue Linoleum TerrazzoDark
+    TileChecker MarbleWhite CarpetPurple Tatami TileMetroFloor CarpetGreen PaversWarmWet PaversWet PaversWarm
+    Paper CreamTrim Vermilion TileWhite Gold Photo TarpBlue Rubber ChainLink
+""".split())

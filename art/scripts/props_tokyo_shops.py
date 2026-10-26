@@ -79,6 +79,7 @@ def drink_fridge():
     for z in (0.45, 6.4):
         parts.append(mk.box("Rail", (8.0, 0.3, 0.16), (0, -1.25, z), mat=steel))
     for x in (-2.66, 0.0, 2.66):
+        parts.append(mk.box("Stile", (0.14, 0.06, 5.84), (x + 1.05, -1.37, 3.42), mat=steel))
         parts += pk.handle("Handle", x + 1.05, -1.4, 3.5, 2.4, steel, stand=0.14)
     for z in (0.7, 1.85, 3.0, 4.15, 5.3):
         parts.append(mk.box("Shelf", (7.8, 2.0, 0.06), (0, 0.1, z), mat=white))
@@ -114,7 +115,7 @@ def shop_counter():
         parts += [pk.rounded("Register", (1.4, 1.2, 0.6), (x, 0.4, 3.72), dark, r=0.06),
                   mk.box("Drawer", (1.2, 1.0, 0.25), (x, 0.4, 3.55), mat=dark),
                   mk.box("CustScreen", (0.8, 0.06, 0.55), (x, -0.4, 4.3), rot=(-10, 0, 0), mat=dark),
-                  mk.cylinder("ScreenArm", 0.05, 0.6, (x, -0.35, 3.8), mat=dark, verts=6),
+                  mk.cylinder("ScreenArm", 0.05, 0.75, (x, -0.35, 3.77), mat=dark, verts=6),
                   mk.box("Reader", (0.35, 0.5, 0.15), (x + 0.9, -0.7, 3.5), mat=dark, bevel=0.03)]
     parts += [mk.box("SnackCase", (2.0, 1.4, 1.6), (3.0, 0.2, 4.2), mat=pk.metal("SC_Steel", (150, 154, 160), (190, 194, 200))),
               mk.box("Donation", (0.5, 0.4, 0.6), (-0.6, -0.9, 3.72), mat=pk.plastic("SC_Box", (200, 40, 40)))]
@@ -209,8 +210,10 @@ def claw_machine():
              mk.sphere("Knob", 0.14, (-0.8, -2.0, 3.35), mat=pk.plastic("CM_Knob", (230, 40, 40)), segments=10, rings=6),
              mk.cylinder("Push", 0.18, 0.1, (0.2, -2.0, 3.0), mat=pk.plastic("CM_Push", (60, 160, 255)), verts=12),
              pk.rounded("Top", (3.9, 4.1, 0.9), (0, 0, 7.2), body, r=0.12),
-             mk.box("GantryX", (3.4, 0.1, 0.1), (0, -0.4, 6.6), mat=chrome),
-             mk.box("GantryY", (0.1, 3.4, 0.1), (0.3, 0, 6.6), mat=chrome),
+             mk.box("GantryX", (3.7, 0.1, 0.1), (0, -0.4, 6.6), mat=chrome),
+             mk.box("GantryY", (0.1, 3.9, 0.1), (0.3, 0, 6.6), mat=chrome),
+             mk.box("RailF", (3.82, 0.12, 0.12), (0, -1.95, 6.6), mat=chrome),
+             mk.box("RailB", (3.82, 0.12, 0.12), (0, 1.95, 6.6), mat=chrome),
              mk.cylinder("Cable", 0.02, 1.4, (0.3, -0.4, 5.9), mat=chrome, verts=4),
              mk.cylinder("ClawHub", 0.15, 0.3, (0.3, -0.4, 5.1), mat=chrome, verts=10)]
     for k in range(3):
@@ -219,13 +222,15 @@ def claw_machine():
                              mat=chrome, verts=4))
     for x in (-1.85, 1.85):
         for y in (-1.95, 1.95):
-            parts.append(mk.box("Post", (0.12, 0.12, 3.8), (x, y, 4.75), mat=chrome))
+            parts.append(mk.box("Post", (0.12, 0.12, 4.0), (x, y, 4.775), mat=chrome))
     for k in range(14):
         colour = [(250, 200, 220), (200, 230, 255), (255, 240, 170), (220, 200, 255)][k % 4]
         mat = pk.plastic(f"CM_Toy{k % 4}", colour)
         x, y = rng.uniform(-1.4, 1.4), rng.uniform(-1.3, 1.5)
-        parts.append(mk.sphere("Toy", 0.45, (x, y, 3.2 + rng.uniform(0, 0.3)), scale=(1, 1, 0.8), mat=mat, segments=10, rings=6))
-        parts.append(mk.sphere("Ear", 0.14, (x - 0.25, y, 3.65), mat=mat, segments=6, rings=4))
+        rng.uniform(0, 0.3)  # (the height a toy once hung at, still drawn so the others keep their places)
+        tz = 3.15  # (every toy down on the case's floor, none hanging over it)
+        parts.append(mk.sphere("Toy", 0.45, (x, y, tz), scale=(1, 1, 0.8), mat=mat, segments=10, rings=6))
+        parts.append(mk.sphere("Ear", 0.14, (x - 0.25, y, tz + 0.42), mat=mat, segments=6, rings=4))
     glows = [mk.box("Marquee", (3.4, 0.05, 0.6), (0, -2.07, 7.2), mat=pk.glow("CM_Marquee", (255, 150, 210), 3)),
              mk.box("CaseLight", (3.3, 3.5, 0.05), (0, 0, 6.72), mat=pk.glow("CM_Case", (255, 230, 245), 2))]
     return parts, glows
@@ -305,18 +310,18 @@ def display_case():
     gold = pk.metal("DC_Gold", (200, 160, 70), (240, 200, 110), rough=0.2, metallic=1.0)
     glass = pk.dark_glass("DC_Glass", (90, 110, 120))
     parts = [pk.rounded("Cabinet", (6.0, 2.4, 2.4), (0, 0, 1.2), body, r=0.06),
-             mk.box("Velvet", (5.6, 2.0, 0.1), (0, 0, 2.5), mat=velvet),
+             mk.box("Velvet", (5.6, 2.0, 0.1), (0, 0, 2.45), mat=velvet),
              mk.box("GlassTop", (6.0, 2.4, 0.06), (0, 0, 3.47), mat=glass)]
     for x in (-3.0, 3.0):
         for y in (-1.2, 1.2):
-            parts.append(mk.box("Edge", (0.1, 0.1, 1.0), (x, y, 3.0), mat=brass))
+            parts.append(mk.box("Edge", (0.1, 0.1, 1.1), (x, y, 2.95), mat=brass))
     for y in (-1.2, 1.2):
         parts.append(mk.box("Rail", (6.0, 0.1, 0.1), (0, y, 3.47), mat=brass))
     for k in range(10):
         x = -2.5 + k * 0.55
         parts.append(mk.torus("Ring", 0.12, 0.03, (x, -0.4, 2.62), rot=(90, 0, 0), mat=gold, major_segments=12,
                               minor_segments=4))
-        parts.append(mk.cylinder("Watch", 0.14, 0.05, (x, 0.4, 2.58), mat=gold, verts=12))
+        parts.append(mk.cylinder("Watch", 0.14, 0.05, (x, 0.4, 2.52), mat=gold, verts=12))
     glows = [mk.box("CaseLight", (5.6, 0.2, 0.05), (0, 1.0, 3.4), mat=pk.glow("DC_Light", (255, 244, 230), 3))]
     return parts, glows
 

@@ -111,8 +111,8 @@ def mirror_ball():
         if poly.index in tile_ids:
             poly.material_index = 1 + rng.randrange(3)
     parts = [ball,
-             mk.cylinder("Motor", 0.18, 0.3, (0, 0, 1.0), mat=chrome, verts=12),
-             mk.cylinder("Chain", 0.03, 1.4, (0, 0, 1.85), mat=chrome, verts=4),
+             mk.cylinder("Motor", 0.18, 0.3, (0, 0, 0.94), mat=chrome, verts=12),  # (down on the ball's top)
+             mk.cylinder("Chain", 0.03, 1.45, (0, 0, 1.8), mat=chrome, verts=4),
              mk.cylinder("Mount", 0.25, 0.08, (0, 0, 2.55), mat=chrome, verts=12)]
     return parts, []
 

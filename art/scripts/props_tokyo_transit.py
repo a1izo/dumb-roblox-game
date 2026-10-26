@@ -9,6 +9,8 @@ front) and stands on z = 0."""
 
 import math
 
+from mathutils import Matrix
+
 import modelkit as mk
 import propkit as pk
 from common import srgb
@@ -137,6 +139,7 @@ def kei_truck():
                   mk.box("SideWindow", (0.1, 1.8, 1.5), (sx * 2.5, -3.5, 4.9), mat=glass),
                   mk.box("DoorSeam", (0.03, 0.05, 3.2), (sx * 2.56, -2.4, 2.6), mat=trim),
                   mk.box("Handle", (0.08, 0.5, 0.12), (sx * 2.58, -3.0, 3.5), mat=chrome),
+                  mk.box("MirrorArm", (0.36, 0.12, 0.12), (sx * 2.7, -4.8, 4.5), mat=trim),
                   pk.rounded("Mirror", (0.4, 0.3, 0.5), (sx * 2.85, -4.8, 4.6), trim, r=0.08)]
         for y in (-3.9, 3.7):
             parts += pk.wheel("W", sx * 2.1, y, 1.0, 0.7, tyre, rim, spokes=5)
@@ -390,8 +393,10 @@ def bus_shelter():
         mk.box("BackGlass", (11.6, 0.1, 6.4), (0, 1.9, 4.2), mat=frosted),
         mk.box("MapPanel", (3.0, 0.08, 2.4), (-2.5, 1.82, 5.0), mat=white),
         mk.box("BenchSeat", (6.0, 1.1, 0.18), (1.5, 1.2, 1.7), mat=wood, bevel=0.03),
-        mk.box("BenchBack", (6.0, 0.14, 0.9), (1.5, 1.72, 2.4), mat=wood, bevel=0.03),
+        mk.box("BenchBack", (6.0, 0.14, 0.9), (1.5, 1.72, 2.25), mat=wood, bevel=0.03),
     ]
+    for x in (-1.0, 4.0):
+        parts.append(mk.box("BackBracket", (0.12, 0.08, 1.2), (x, 1.8, 2.2), mat=steel))
     for x in (-6.0, -2.0, 2.0, 6.0):
         parts.append(mk.box("Post", (0.25, 0.25, 8.4), (x, 1.95, 4.2), mat=steel, bevel=0.03))
     for x in (-6.0, 6.0):
@@ -475,30 +480,103 @@ def ticket_gate():
 
 @prop("TicketMachine", pivot="bottom", material="Metal", collide=True, texture=1024, set="Tokyo")
 def ticket_machine():
-    """A ticket and IC-card machine: a hood with its lamp, the fare map above, a slanted touch
-    screen, slots for coins, notes and cards, the ticket outlet and the change tray."""
+    """A ticket and IC-card machine as a Tokyo station has them in a row: a cabinet in pale enamel on a dark kick
+    plate, its front sunk in a frame; a canopy curving out over it from its top, a lamp along its underside; the fare
+    map under it, the lines in their colours with the stations dotted along them, a red dot for here, the fares
+    beside; a touch screen tilted back in its bezel on a console standing out of the face, a row of buttons under it;
+    a chrome coin plate with its slot, a note slot lit green round its mouth, a card reader glowing blue in a chrome
+    ring; a speaker grille; the ticket outlet sunk behind a chrome lip and a smoked flap, a change cup beside it;
+    seams and a vent down the sides."""
     body = pk.paint("TM_Body", (214, 216, 218), rough=0.3, wear=8)
     dark = pk.metal("TM_Dark", (30, 32, 36), (46, 48, 52), rough=0.4, metallic=0.3)
     chrome = pk.chrome("TM_Chrome")
     white = pk.plastic("TM_White", (244, 244, 240))
     ink = pk.plastic("TM_Ink", (24, 24, 30))
-    parts = [
-        pk.rounded("Body", (3.2, 2.1, 5.6), (0, 0, 2.8), body, r=0.1),
-        mk.box("Hood", (3.3, 1.0, 0.4), (0, -0.6, 6.2), mat=dark, bevel=0.06),
-        mk.box("Map", (3.0, 0.06, 1.0), (0, -1.07, 5.35), mat=white),
-        mk.box("Desk", (3.0, 0.9, 0.12), (0, -1.1, 3.4), rot=(-25, 0, 0), mat=dark),
-        mk.box("CoinSlot", (0.1, 0.06, 0.4), (-1.0, -1.08, 2.8), mat=chrome),
-        mk.box("NoteSlot", (0.8, 0.06, 0.1), (0.2, -1.08, 2.8), mat=chrome),
-        mk.box("CardSlot", (0.6, 0.06, 0.08), (1.1, -1.08, 2.8), mat=chrome),
-        mk.box("Outlet", (1.4, 0.3, 0.4), (-0.5, -1.0, 1.6), mat=dark, bevel=0.03),
-        mk.box("Tray", (0.9, 0.4, 0.3), (1.0, -1.0, 1.6), mat=chrome, bevel=0.03),
-        mk.box("Plinth", (3.0, 1.9, 0.2), (0, 0, 0.1), mat=dark),
-    ]
-    parts += pk.label("Title", "きっぷ・ICカード", 0.22, (0, -1.1, 5.72), ink)
-    for k, line in enumerate(("影ヶ丘 ─ 140", "中央 ─ 180", "港 ─ 210")):
-        parts += pk.label("Fare", line, 0.13, (-0.6 + k * 0.0, -1.1, 5.45 - k * 0.2), ink)
-    glows = [mk.box("Screen", (2.0, 0.05, 0.95), (0, -1.18, 3.65), rot=(-25, 0, 0), mat=pk.glow("TM_Screen", (120, 200, 255), 3)),
-             mk.box("HoodLamp", (3.0, 0.4, 0.05), (0, -0.7, 5.98), mat=pk.glow("TM_Lamp", (240, 244, 255), 3))]
+    smoke = pk.dark_glass("TM_Smoke")
+    lines = [pk.plastic("TM_Green", (60, 170, 70)), pk.plastic("TM_Orange", (236, 120, 40)),
+             pk.plastic("TM_Blue", (40, 110, 200))]
+    front = -1.05
+    parts = [mk.box("Kick", (3.0, 1.9, 0.32), (0, 0.06, 0.16), mat=dark, bevel=0.03),
+             pk.rounded("Body", (3.2, 2.1, 5.4), (0, 0, 0.3 + 2.7), body, r=0.12)]
+    parts += pk.frame("Face", 3.0, 5.0, 0.07, 0.04, (0, front - 0.01, 3.05), dark)
+    # The canopy, curving out from the cabinet's top (its back sits down on it) to a lip over the face.
+    canopy = [(1.05, 6.0), (0.4, 6.2), (-0.3, 6.22), (-0.9, 6.14), (-1.3, 5.98), (-1.46, 5.86), (-1.46, 5.76),
+              (-1.32, 5.8), (-0.9, 5.94), (-0.3, 6.0), (0.4, 5.9), (1.05, 5.6)]
+    parts.append(mk.extrude_shape("Canopy", canopy, 3.3, rot=(90, 0, 90), mat=dark, bevel=0.03))
+    # The fare map in its frame, under the canopy.
+    board_z = 5.0
+    parts += [mk.box("Board", (2.8, 0.04, 0.95), (0, front - 0.03, board_z), mat=white)]
+    parts += pk.frame("BoardFrame", 2.92, 1.06, 0.06, 0.07, (0, front - 0.04, board_z), dark)
+    y_line = front - 0.06
+
+    def run(name, a, b, mat, w=0.05):
+        (x0, z0), (x1, z1) = a, b
+        length = math.hypot(x1 - x0, z1 - z0)
+        angle = -math.degrees(math.atan2(z1 - z0, x1 - x0))
+        return mk.box(name, (length + w, 0.02, w), ((x0 + x1) / 2, y_line, (z0 + z1) / 2), rot=(0, angle, 0), mat=mat)
+
+    routes = [[(-1.25, 4.98), (0.2, 4.98), (0.55, 5.18)],  # the green, round the middle
+              [(-1.2, 4.66), (-0.2, 4.84), (0.9, 5.2)],  # the orange, across
+              [(0.35, 4.6), (0.35, 5.3)]]  # the blue, up
+    stations = []
+    for route, mat in zip(routes, lines):
+        for a, b in zip(route, route[1:]):
+            parts.append(run("Line", a, b, mat))
+            stations += [a, b]
+    for x, z in sorted(set(stations)):
+        parts.append(mk.cylinder("Station", 0.045, 0.03, (x, y_line - 0.01, z), rot=(90, 0, 0), mat=white, verts=10))
+        parts.append(mk.cylinder("StationRing", 0.065, 0.02, (x, y_line, z), rot=(90, 0, 0), mat=ink, verts=10))
+    parts += pk.label("Title", "きっぷ・ICカード", 0.17, (0, front - 0.06, board_z + 0.36), ink)
+    for k, line in enumerate(("影ヶ丘 140", "中央 180", "港 210")):
+        parts += pk.label("Fare", line, 0.1, (1.05, front - 0.06, board_z + 0.08 - k * 0.16), ink)
+    # The console standing out of the face, its top sloped back, the screen in its bezel on it.
+    p1, p2 = (front - 0.5, 3.24), (front + 0.05, 4.02)
+    parts.append(mk.extrude_shape("Console", [(front + 0.05, 2.95), (front - 0.5, 3.12), p1, p2], 2.5,
+                                  rot=(90, 0, 90), mat=dark, bevel=0.03))
+    tilt = math.degrees(math.atan2(p2[0] - p1[0], p2[1] - p1[1]))
+    mid = ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+    out = (-math.cos(math.radians(tilt)), math.sin(math.radians(tilt)))  # (the slope's outward normal, y and z)
+    parts.append(mk.box("Bezel", (2.24, 0.03, 0.82), (0, mid[0] + out[0] * 0.012, mid[1] + out[1] * 0.012),
+                        rot=(-tilt, 0, 0), mat=ink, bevel=0.01))
+    # Buttons under the console: cancel in red, call in yellow, the rest white.
+    red, yellow = pk.plastic("TM_Red", (210, 50, 44)), pk.plastic("TM_Yellow", (236, 196, 40))
+    for k, x in enumerate((-0.9, -0.45, 0.0, 0.45, 0.9)):
+        parts.append(mk.cylinder("Button", 0.09, 0.07, (x, front - 0.03, 2.72), rot=(90, 0, 0),
+                                 mat={0: red, 4: yellow}.get(k, white), verts=12, bevel=0.015))
+        parts.append(mk.cylinder("ButtonRim", 0.115, 0.03, (x, front - 0.01, 2.72), rot=(90, 0, 0), mat=chrome, verts=12))
+    # The money and the cards.
+    parts += [pk.rounded("CoinPlate", (0.5, 0.06, 0.62), (-1.0, front - 0.03, 2.25), chrome, r=0.04),
+              mk.box("CoinSlot", (0.06, 0.04, 0.3), (-1.0, front - 0.07, 2.3), mat=ink),
+              pk.rounded("NoteMouth", (0.86, 0.08, 0.13), (0.15, front - 0.04, 2.3), ink, r=0.03),
+              mk.torus("CardRing", 0.27, 0.03, (1.05, front - 0.03, 2.28), rot=(90, 0, 0), mat=chrome, major_segments=24,
+                       minor_segments=6)]
+    for k, (body_text, x) in enumerate((("硬貨", -1.0), ("紙幣", 0.15), ("IC", 1.05))):
+        parts += pk.label("Hint", body_text, 0.09, (x, front - 0.012, 1.94 - (0.02 if k == 0 else 0.0)), ink)
+    # The speaker grille.
+    parts.append(mk.box("Grille", (0.56, 0.03, 0.3), (-1.0, front - 0.02, 1.68), mat=ink, bevel=0.01))
+    for k in range(4):
+        parts.append(mk.box("GrilleBar", (0.5, 0.03, 0.025), (-1.0, front - 0.04, 1.58 + k * 0.066), mat=chrome))
+    # The ticket outlet sunk behind its lip, the flap over it; the change cup.
+    parts += pk.frame("Outlet", 1.4, 0.52, 0.07, 0.1, (-0.3, front - 0.05, 1.08), chrome)
+    parts += [mk.box("OutletMouth", (1.28, 0.06, 0.38), (-0.3, front - 0.02, 1.08), mat=ink),
+              mk.box("Flap", (1.24, 0.02, 0.2), (-0.3, front - 0.07, 1.2), rot=(18, 0, 0), mat=smoke),
+              pk.rounded("Cup", (0.8, 0.36, 0.38), (1.0, front - 0.13, 1.06), chrome, r=0.08),
+              mk.box("CupHollow", (0.64, 0.24, 0.18), (1.0, front - 0.18, 1.14), mat=ink, bevel=0.03)]
+    # The sides: a seam where the front's panel meets them, a vent low at the back.
+    for sx in (-1, 1):
+        parts.append(pk.seam("Seam", (sx * 1.605, -0.7, 0.35), (sx * 1.605, -0.7, 5.62), dark))
+        for obj in pk.louvres("Vent", 0, 0, 0, 0.9, 0.7, dark, count=5):
+            obj.data.transform(obj.matrix_basis)
+            obj.matrix_basis = Matrix.Translation((sx * 1.62, 0.45, 1.0)) @ Matrix.Rotation(math.radians(-90 * sx), 4, "Z")
+            parts.append(obj)
+    glows = [mk.box("Screen", (2.0, 0.03, 0.66), (0, mid[0] + out[0] * 0.03, mid[1] + out[1] * 0.03), rot=(-tilt, 0, 0),
+                    mat=pk.glow("TM_Screen", (120, 200, 255), 3)),
+             mk.box("HoodLamp", (3.0, 0.3, 0.04), (0, -1.0, 5.885), rot=(18, 0, 0), mat=pk.glow("TM_Lamp", (240, 244, 255), 3)),
+             mk.box("NoteRim", (0.96, 0.03, 0.22), (0.15, front - 0.015, 2.3), mat=pk.glow("TM_NoteLit", (90, 230, 120), 3)),
+             mk.cylinder("CardPad", 0.24, 0.02, (1.05, front - 0.025, 2.28), rot=(90, 0, 0), verts=20,
+                         mat=pk.glow("TM_Card", (80, 170, 255), 3)),
+             mk.cylinder("Here", 0.05, 0.03, (-0.2, y_line - 0.02, 4.84), rot=(90, 0, 0), verts=10,
+                         mat=pk.glow("TM_Here", (255, 60, 50), 3))]
     return parts, glows
 
 

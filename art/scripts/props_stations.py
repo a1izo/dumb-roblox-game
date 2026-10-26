@@ -141,7 +141,7 @@ def station_reception():
              mk.box("Counter", (5.3, 1.0, 0.14), (0, -0.95, 3.67), mat=stone, bevel=0.03),
              mk.box("Work", (5.0, 1.6, 0.1), (0, 0.4, 2.8), mat=wood),
              mk.box("Body", (5.0, 1.6, 2.75), (0, 0.4, 1.38), mat=wood),
-             mk.box("KeyPanel", (5.0, 0.2, 3.4), (0, 1.5, 5.6), mat=wood, bevel=0.03),
+             mk.box("KeyPanel", (5.0, 0.2, 7.3), (0, 1.5, 3.65), mat=wood, bevel=0.03),
              mk.cylinder("Bell", 0.22, 0.2, (-1.8, -1.0, 3.84), mat=brass, verts=16),
              mk.box("Book", (1.0, 0.7, 0.08), (-0.8, -0.95, 3.78), rot=(0, 0, 6), mat=paper),
              pk.rounded("Phone", (0.7, 0.6, 0.25), (-1.9, 0.5, 2.98), dark, r=0.06),
@@ -151,9 +151,9 @@ def station_reception():
     parts += monitor("Term_", x, y, z, w, h, tilt, dark, stand_to=3.74)
     for row in range(2):
         for col in range(6):
-            kx, kz = -2.0 + col * 0.8, 6.6 + row * 0.8
+            kx, kz = -2.0 + col * 0.8, 6.0 + row * 0.8
             parts += [mk.box("Hook", (0.12, 0.2, 0.12), (kx, 1.35, kz), mat=brass),
-                      mk.box("Tag", (0.2, 0.05, 0.4), (kx, 1.28, kz - 0.3), mat=brass)]
+                      mk.box("Tag", (0.2, 0.05, 0.4), (kx, 1.28, kz - 0.25), mat=brass)]
     glows = [mk.sphere("Bulb", 0.14, (2.1, 0.8, 4.0), mat=pk.glow("Recep_Bulb", (255, 214, 160), 3), segments=8, rings=6)]
     return parts, glows
 

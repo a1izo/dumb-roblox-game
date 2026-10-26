@@ -335,7 +335,7 @@ def bicycle_parts(prefix, x=0.0, y=0.0, colour=(40, 90, 150)):
         mk.tube(prefix + "SStay", (x, ry - 0.7, 2.7), (x, ry, r), 0.05, mat=frame, verts=6),
         mk.tube(prefix + "Head", head_lo, head_hi, 0.1, mat=frame, verts=8),
         mk.tube(prefix + "Fork", head_lo, (x, fy, r), 0.06, mat=chrome, verts=6),
-        mk.tube(prefix + "Stem", head_hi, (x, fy + 0.55, 3.6), 0.05, mat=chrome, verts=6),
+        mk.tube(prefix + "Stem", head_hi, (x, fy + 0.8, 3.7), 0.05, mat=chrome, verts=6),
         mk.tube(prefix + "Bars", (x - 1.0, fy + 0.8, 3.7), (x + 1.0, fy + 0.8, 3.7), 0.05, mat=chrome, verts=6),
         mk.tube(prefix + "BarsL", (x - 1.0, fy + 0.8, 3.7), (x - 1.05, fy + 1.3, 3.65), 0.07, mat=black, verts=6),
         mk.tube(prefix + "BarsR", (x + 1.0, fy + 0.8, 3.7), (x + 1.05, fy + 1.3, 3.65), 0.07, mat=black, verts=6),
@@ -413,13 +413,13 @@ def scooter():
         mk.cylinder("Lens", 0.15, 0.05, (0, -1.51, 2.85), rot=(90, 0, 0), mat=chrome, verts=10),
         mk.box("Basket", (1.0, 0.7, 0.6), (0, -1.95, 2.45), mat=chrome, bevel=0.04),
         pk.rounded("Box", (1.0, 0.9, 0.8), (0, 2.3, 2.6), trim, r=0.1),
-        mk.box("Plate", (0.6, 0.04, 0.35), (0, 2.37, 1.5), mat=pk.plastic("SC_Plate", (236, 236, 232))),
+        mk.box("Plate", (0.6, 0.04, 0.35), (0, 2.21, 1.5), mat=pk.plastic("SC_Plate", (236, 236, 232))),
         mk.tube("Stand", (0, 0.8, 0.5), (0.2, 1.0, 0.02), 0.05, mat=chrome, verts=5),
     ]
     for sx in (-1, 1):
         parts.append(mk.tube("MirrorArm", (sx * 0.6, -1.15, 2.95), (sx * 0.75, -1.1, 3.5), 0.025, mat=chrome, verts=4))
         parts.append(mk.cylinder("Mirror", 0.16, 0.04, (sx * 0.78, -1.1, 3.55), rot=(90, 0, 0), mat=chrome, verts=10))
-    parts += pk.label("PlateT", "影ヶ丘 あ 12", 0.08, (0, 2.41, 1.5), pk.plastic("SC_PlateInk", (30, 90, 60)),
+    parts += pk.label("PlateT", "影ヶ丘 あ 12", 0.08, (0, 2.25, 1.5), pk.plastic("SC_PlateInk", (30, 90, 60)),
                       rot=(90, 0, 180))
     return parts, []
 
@@ -632,9 +632,9 @@ def police_car():
     ink = pk.plastic("PC_Ink", (20, 20, 24))
     parts += [mk.box("BarBase", (4.2, 1.2, 0.2), (0, -0.2, 5.55), mat=pk.metal("PC_Bar", (40, 40, 44), (60, 60, 64)))]
     for sx in (-1, 1):
-        parts += pk.label("Door", "警視庁", 0.5, (sx * 3.14, -0.6, 2.4), ink, rot=(90, 0, 90 * sx))
-        parts += pk.label("Door2", "POLICE", 0.3, (sx * 3.14, -0.6, 1.8), ink, rot=(90, 0, 90 * sx))
-    parts += pk.label("Hood", "POLICE", 0.4, (0, -6.6, 3.2), white, rot=(60, 0, 0))
+        parts += pk.label("Door", "警視庁", 0.5, (sx * 3.115, -0.6, 2.4), ink, rot=(90, 0, 90 * sx))
+        parts += pk.label("Door2", "POLICE", 0.3, (sx * 3.115, -0.6, 1.8), ink, rot=(90, 0, 90 * sx))
+    parts += pk.label("Hood", "POLICE", 0.4, (0, -6.6, 3.0), white, rot=(60, 0, 0))
     glows += [mk.box("BarRed", (1.8, 1.0, 0.45), (-1.0, -0.2, 5.85), mat=pk.glow("PC_Red", (255, 30, 30), 5)),
               mk.box("BarRed", (1.8, 1.0, 0.45), (1.0, -0.2, 5.85), mat=pk.glow("PC_Red", (255, 30, 30), 5))]
     return parts, glows

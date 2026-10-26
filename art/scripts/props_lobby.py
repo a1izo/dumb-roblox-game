@@ -110,63 +110,151 @@ def skull(prefix, x, y, z, r, mat, dark, yaw=0.0, jaw=True, far=False):
     return pk.skull(prefix, (x, y, z), r, mat, dark, yaw=yaw, segments=20 if r < 0.45 else 24, teeth=5)
 
 
-def beast_skull(prefix, x, y, z, s, mat, dark, horn, jaw=True):
-    """A colossal horned beast's skull, s times the size of a 1-stud model, facing -Y: a low, long
-    head like a great ram's or a dragon's. The braincase at the back, the long tapering muzzle, deep
-    sockets under heavy brows, cheekbone arches, the lower jaw hanging a little open with its teeth,
-    and the horns curling out, back and up."""
-    parts = [mk.sphere(prefix + "Vault", 0.95 * s, (x, y + 0.75 * s, z + 0.45 * s), scale=(0.9, 1.0, 0.72), mat=mat,
-                       segments=18, rings=12)]
-    # The muzzle: one long turned shape tapering to the tip, flattened.
-    muzzle = mk.lathe(prefix + "Muzzle", [(0.0, -0.4 * s), (0.6 * s, -0.2 * s), (0.72 * s, 0.3 * s), (0.64 * s, 1.0 * s),
-                                          (0.52 * s, 1.7 * s), (0.42 * s, 2.3 * s), (0.3 * s, 2.75 * s), (0.0, 2.95 * s)],
-                      (x, y + 0.3 * s, z + 0.25 * s), mat=mat, segments=16)
-    muzzle.rotation_euler = (math.radians(90), 0, 0)
-    muzzle.scale = (0.9, 0.62, 1.0)
-    parts.append(muzzle)
-    parts.append(mk.box(prefix + "Crest", (0.2 * s, 2.2 * s, 0.14 * s), (x, y - 0.9 * s, z + 0.6 * s), rot=(-9, 0, 0),
-                        mat=mat, bevel=0.06 * s))
+def beast_skull(prefix, x, y, z, s, mat, dark, horn):
+    """A horned beast's skull, s times the size of a 1-stud model, facing -Y: a low, long head like a dragon's,
+    grown as one surface (the braincase; one heavy shelf of brow over both sockets, no bumps for eyebrows; the long
+    snout tapering to a tip hooked down, a ridge down its nose; the cheek arches running back), wide sockets slanting
+    down toward the snout, black deep inside, slit nostrils; a row of fangs down each side of the upper jaw, each
+    rooted in the snout's underside right over it, the canine long; the lower jaw hanging open from hinges inside
+    the braincase, its own teeth standing up from it; and the two horns sweeping out, back and up, each one bar
+    growing out of the braincase. (Asked 2026-10-25: "make them scarier".)"""
+    def at(dx, dy, dz):
+        return (x + dx * s, y + dy * s, z + dz * s)
+
+    els = [("ellipsoid", at(0.0, 0.7, 0.45), 0.9 * s, (0.95, 1.0, 0.75)),  # the braincase
+           ("ellipsoid", at(0.0, -0.12, 0.66), 0.56 * s, (1.5, 0.72, 0.4)),  # the brow, one shelf over both sockets
+           ("capsule", at(0.0, 0.25, 0.28), at(0.0, -1.4, 0.15), 0.4 * s),  # the snout, broad behind
+           ("capsule", at(0.0, -1.4, 0.15), at(0.0, -2.42, 0.05), 0.25 * s),  # tapering
+           ("capsule", at(0.0, -2.42, 0.05), at(0.0, -2.7, -0.14), 0.16 * s),  # to a tip hooked down
+           ("capsule", at(0.0, -0.45, 0.6), at(0.0, -2.3, 0.34), 0.1 * s)]  # the ridge down the nose
     for k in (-1, 1):
-        # Brow, socket, cheekbone arch.
-        parts.append(mk.tube(prefix + "Brow", (x + k * 0.3 * s, y - 0.3 * s, z + 0.7 * s),
-                             (x + k * 0.72 * s, y + 0.0 * s, z + 0.76 * s), 0.16 * s, 0.13 * s, mat=mat, verts=8))
-        parts.append(mk.sphere(prefix + "Socket", 0.3 * s, (x + k * 0.55 * s, y - 0.12 * s, z + 0.5 * s),
-                               scale=(0.9, 1.0, 0.72), mat=dark, segments=10, rings=8))
-        parts.append(mk.tube(prefix + "Arch", (x + k * 0.45 * s, y - 0.7 * s, z + 0.12 * s),
-                             (x + k * 0.8 * s, y + 0.5 * s, z + 0.2 * s), 0.12 * s, 0.15 * s, mat=mat, verts=8))
-        parts.append(mk.sphere(prefix + "Nostril", 0.1 * s, (x + k * 0.12 * s, y - 2.45 * s, z + 0.38 * s),
-                               scale=(0.8, 1.3, 0.6), mat=dark, segments=6, rings=4))
-        # The horns: curving out, back and up in tapering segments.
-        pts = [(x + k * 0.7 * s, y + 0.55 * s, z + 0.95 * s)]
-        for t in range(1, 8):
-            u = t / 7
-            pts.append((x + k * (0.7 + 1.9 * u) * s, y + (0.55 + 1.3 * u + 0.3 * u * u) * s,
-                        z + (0.95 + 1.35 * u - 1.1 * u * u * u) * s))
-        for t in range(7):
-            r0 = 0.3 * s * (1 - t / 7.5)
-            r1 = 0.3 * s * (1 - (t + 1) / 7.5)
-            parts.append(mk.tube(prefix + "Horn", pts[t], pts[t + 1], r0, max(0.02, r1), mat=horn, verts=8))
-        # Teeth down each side of the upper jaw.
+        els += [("capsule", at(k * 0.45, -0.7, 0.04), at(k * 0.85, 0.45, 0.14), 0.13 * s),  # the cheek arch
+                ("hollow", at(k * 0.6, -0.32, 0.4), 0.3 * s, (1.15, 0.9, 0.68)),  # the socket, wide
+                ("hollow", at(k * 0.11, -2.6, 0.16), 0.08 * s, (0.55, 1.4, 0.8))]  # a nostril, a slit
+    head = _blob(prefix + "Head", els, 0.065 * s, 0.42, mat)  # (grown fine and thinned: smooth, but kept light)
+    parts = [head]
+    for k in (-1, 1):  # (black deep in the sockets, tilted down toward the snout, and in the nostrils)
+        socket = mk.sphere(prefix + "Socket", 0.24 * s, at(k * 0.6, -0.2, 0.4), scale=(1.15, 0.9, 0.6), mat=dark,
+                           segments=14, rings=8)
+        socket.rotation_euler = (0, math.radians(k * 18), 0)
+        parts.append(socket)
+        parts.append(mk.sphere(prefix + "Nostril", 0.065 * s, at(k * 0.11, -2.55, 0.16), scale=(0.55, 1.4, 0.8),
+                               mat=dark, segments=8, rings=6))
+    # The lower jaw, dropped open: two rami from hinges inside the braincase, meeting at the chin.
+    jaw_els = [("ellipsoid", at(0.0, -2.2, -0.86), 0.16 * s, (1.5, 1.1, 0.8))]  # the chin
+    for k in (-1, 1):
+        jaw_els += [("capsule", at(k * 0.55, 0.45, 0.0), at(k * 0.38, -0.9, -0.5), 0.15 * s),
+                    ("capsule", at(k * 0.38, -0.9, -0.5), at(k * 0.12, -2.15, -0.84), 0.12 * s)]
+    jaw = _blob(prefix + "Jaw", jaw_els, 0.065 * s, 0.42, mat)
+    parts.append(jaw)
+    # The fangs: each rooted a little up into the snout's underside right over it (they hung from one height before,
+    # and toward the tip, where the snout rises, they floated; asked 2026-10-25), the lower ones down into the jaw.
+    surfaces = []
+    for blob in (head, jaw):
+        holder = _applied(blob)
+        surfaces.append(_surfaces(holder))
+        mesh = holder.data
+        bpy.data.objects.remove(holder)
+        bpy.data.meshes.remove(mesh)
+    under, lower = surfaces
+    for k in (-1, 1):
         for t in range(6):
-            ty = y - (0.3 + t * 0.4) * s
-            parts.append(mk.cylinder(prefix + "Tooth", 0.07 * s, 0.34 * s, (x + k * (0.44 - t * 0.04) * s, ty, z - 0.2 * s),
-                                     rot=(180, 0, 0), mat=mat, verts=6, radius2=0.01 * s))
-    if jaw:
-        # The lower jaw, dropped open a little: two long rami meeting at the chin, their teeth up.
-        chin = (x, y - 2.45 * s, z - 0.62 * s)
-        for k in (-1, 1):
-            back = (x + k * 0.72 * s, y + 0.55 * s, z - 0.25 * s)
-            mid = (x + k * 0.5 * s, y - 1.0 * s, z - 0.55 * s)
-            parts.append(mk.tube(prefix + "Jaw", back, mid, 0.2 * s, 0.17 * s, mat=mat, verts=8))
-            parts.append(mk.tube(prefix + "Jaw", mid, chin, 0.17 * s, 0.14 * s, mat=mat, verts=8))
-            for t in range(5):
-                u = (t + 0.5) / 5
-                tx = x + k * (0.5 - 0.42 * u) * s
-                ty = y + (-1.0 - 1.4 * u) * s
-                parts.append(mk.cylinder(prefix + "JawTooth", 0.06 * s, 0.3 * s, (tx, ty, z - 0.36 * s), mat=mat, verts=6,
-                                         radius2=0.01 * s))
-        parts.append(mk.sphere(prefix + "Chin", 0.2 * s, chin, scale=(1.2, 1, 0.8), mat=mat, segments=8, rings=6))
+            ty = y - (0.35 + t * 0.4) * s
+            tx = x + k * (0.36 - t * 0.04) * s
+            hit = under.up(tx, ty, z - 2.0 * s)
+            if hit is None:
+                continue
+            length = (0.62 if t == 4 else 0.34 - 0.02 * t) * s  # (the canine, long)
+            parts.append(mk.cylinder(prefix + "Tooth", (0.09 if t == 4 else 0.07) * s, length,
+                                     (tx, ty, hit + 0.05 * s - length / 2), rot=(180, 0, 0), mat=mat, verts=8,
+                                     radius2=0.01 * s))
+        for t in range(5):
+            u = (t + 0.5) / 5
+            ty = y + (-0.75 - 1.3 * u) * s
+            tx = x + k * (0.36 - 0.22 * u) * s
+            hit = lower.down(tx, ty, z + 2.0 * s)
+            if hit is None:
+                continue
+            length = 0.26 * s
+            parts.append(mk.cylinder(prefix + "JawTooth", 0.06 * s, length, (tx, ty, hit - 0.04 * s + length / 2),
+                                     mat=mat, verts=8, radius2=0.01 * s))
+    # The horns, each one bar sweeping out, back and up from inside the braincase.
+    for k in (-1, 1):
+        pts, radii = [], []
+        for t in range(9):
+            u = t / 8
+            pts.append(at(k * (0.55 + 2.0 * u), 0.55 + 1.3 * u + 0.3 * u * u, 0.85 + 1.35 * u - 1.1 * u * u * u))
+            radii.append(max(0.02 * s, 0.3 * s * (1 - u * 0.93)))
+        parts.append(pk.sweep(prefix + "Horn", pts, radii, horn, sides=10))
     return parts
+
+
+def _applied(obj):
+    """obj with its modifiers applied (a copy's mesh), for rays to meet the surface as it will be."""
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
+    holder = bpy.data.objects.new(obj.name + "Applied", mesh)
+    holder.matrix_world = obj.matrix_basis.copy()
+    return holder
+
+
+def dark_apart(objs, dark):
+    """Takes the faces in `dark` (sockets, nostrils, a mouth's line) out of objs into objects of their own, removing
+    from objs any object that is all dark, and returns them: given to the prop as a glow, they become flat black parts
+    that need no texture, so the holes stay crisp however few pixels a prop's map gives a small skull (in a shared map
+    the black smeared over the bone round them). Modifiers are applied first."""
+    import bmesh
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    out = []
+    for obj in list(objs):
+        mats = list(obj.data.materials)
+        if dark not in mats:
+            continue
+        idx = mats.index(dark)
+        if obj.modifiers:
+            mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
+            obj.modifiers.clear()
+            obj.data = mesh
+        if all(poly.material_index == idx for poly in obj.data.polygons):
+            objs.remove(obj)
+            out.append(obj)
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        black = bm.copy()
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index == idx], context="FACES")
+        bmesh.ops.delete(black, geom=[f for f in black.faces if f.material_index != idx], context="FACES")
+        for f in black.faces:
+            f.material_index = 0
+        bm.to_mesh(obj.data)
+        bm.free()
+        piece = mk._obj_from_bm(obj.name + "Dark", black, dark)
+        piece.matrix_basis = obj.matrix_basis.copy()
+        out.append(piece)
+    return out
+
+
+def rest_on(parts, z, sink=0.03):
+    """Moves a group of parts straight up or down so that its lowest point sits `sink` into a surface at height z
+    (a skull set on a ledge, not hovering over it)."""
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    low = min((obj.evaluated_get(depsgraph).matrix_world @ v.co).z for obj in parts
+              for v in obj.evaluated_get(depsgraph).to_mesh().vertices)
+    for obj in parts:
+        obj.evaluated_get(depsgraph).to_mesh_clear()
+        obj.location.z += z - sink - low
+    return parts
+
+
+def top_of(parts):
+    """The highest point of a group of parts."""
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    high = max((obj.evaluated_get(depsgraph).matrix_world @ v.co).z for obj in parts
+               for v in obj.evaluated_get(depsgraph).to_mesh().vertices)
+    for obj in parts:
+        obj.evaluated_get(depsgraph).to_mesh_clear()
+    return high
 
 
 # Trees -------------------------------------------------------------------------------------------------
@@ -923,45 +1011,108 @@ def _halved(obj, keep_sign, at=0.0):
     return obj
 
 
+def _fine(profile, step=0.12):
+    """A turned shape's profile [(radius, z)] with points added between its own, every `step` studs at most, so
+    folds cut into it bend smoothly up its height instead of only at the profile's few rings."""
+    out = [profile[0]]
+    for (r0, z0), (r1, z1) in zip(profile, profile[1:]):
+        n = max(1, int(math.hypot(r1 - r0, z1 - z0) / step))
+        out += [(r0 + (r1 - r0) * k / n, z0 + (z1 - z0) * k / n) for k in range(1, n + 1)]
+    return out
+
+
+def _hem(obj, z_below, wave, count, phase=0.0):
+    """Lets a turned shape's lowest edge fall in waves (a hem hanging in folds): every vertex below z_below drops
+    or rises by up to `wave`, in `count` waves round it."""
+    for v in obj.data.vertices:
+        if v.co.z < z_below:
+            a = math.atan2(v.co.y, v.co.x)
+            v.co.z += wave * math.sin(count * a + phase) * min(1.0, (z_below - v.co.z) / 0.3)
+
+
+def _stone_hand(name, at, mat, side):
+    """A stone hand hanging relaxed out of a sleeve: the palm, four fingers curled a little in, the thumb along
+    them (one smooth surface)."""
+    x, y, z = at
+    elements = [("ellipsoid", (x, y, z), 0.13, (0.75, 1.0, 1.25))]
+    for k in range(4):
+        fy = y - 0.1 + k * 0.065
+        top = (x + side * 0.015, fy, z - 0.12)
+        mid = (x + side * 0.02, fy - 0.02, z - 0.27)
+        tip = (x - side * 0.02, fy - 0.07, z - 0.37 + 0.02 * abs(k - 1.5))
+        elements += [("capsule", top, mid, 0.034), ("capsule", mid, tip, 0.029)]
+    elements.append(("capsule", (x - side * 0.05, y - 0.12, z - 0.02), (x - side * 0.04, y - 0.2, z - 0.2), 0.035))
+    return _blob(name, elements, 0.022, 0.6, mat)
+
+
 @prop("RobedStatue", pivot="bottom", material="Slate", collide=False, texture=256, set="Lobby")
 def robed_statue():
     """A tableau's statue: a hooded, faceless figure in a long robe, cut in pale stone, in six pieces the game
-    moves as it moves a body (the torso is the prop itself)."""
+    moves as it moves a body (the torso is the prop itself). The stone falls in drapery: deep uneven folds down the
+    robe crossed by the fold of its wrap from shoulder to hip, a mantle hanging over the shoulders in scallops, a
+    knotted cord at the waist with its two ends hanging, a deep hood drawn forward over a face that is only
+    shadow, its rim rolled; bell sleeves flaring at the cuffs over sculpted hands; the skirt falling in folds to a
+    hem that waves over the feet."""
     stone = mk.noisy("Rst_Stone", srgb(118, 116, 112), srgb(166, 163, 156), scale=12, roughness=0.9, kind="stone")
     worn = mk.noisy("Rst_Worn", srgb(92, 90, 88), srgb(128, 125, 120), scale=14, roughness=0.92, kind="stone")
     void = void_mat("Rst")
     # The torso: the robe over the chest and shoulders, a cowl round the neck, a cord at the waist.
-    body = mk.lathe("Robe", [(0.0, 1.92), (0.98, 1.92), (1.0, 2.3), (1.02, 2.9), (1.04, 3.4), (1.0, 3.8), (0.9, 3.98),
-                             (0.62, 4.08), (0.0, 4.1)], mat=stone, segments=24)
-    _folds(body, 7, 0.06, 1.92, 4.0)
-    # A short mantle over the shoulders, the sleeves' tops under it.
+    body = mk.lathe("Robe", _fine([(0.0, 1.92), (0.98, 1.92), (1.0, 2.3), (1.02, 2.9), (1.04, 3.4), (1.0, 3.8),
+                                   (0.9, 3.98), (0.62, 4.08), (0.0, 4.1)]), mat=stone, segments=48)
+    _folds(body, 6, 0.13, 1.92, 4.0)
+    _folds(body, 13, 0.045, 1.92, 4.0, phase=1.3)
+    # A short mantle over the shoulders, the sleeves' tops under it, its edge hanging in scallops.
     # (Every profile here runs from the bottom up: run downwards, a turned shape's faces look inwards.)
-    mantle = mk.lathe("Mantle", [(0.0, 3.6), (1.36, 3.34), (1.56, 3.38), (1.46, 3.58), (1.02, 3.92), (0.66, 4.12),
-                                 (0.0, 4.14)], mat=stone, segments=24)
-    _folds(mantle, 9, 0.05, 3.34, 4.12)
+    mantle = mk.lathe("Mantle", _fine([(0.0, 3.6), (1.36, 3.34), (1.56, 3.38), (1.46, 3.58), (1.02, 3.92),
+                                       (0.66, 4.12), (0.0, 4.14)], 0.08), mat=stone, segments=48)
+    _folds(mantle, 9, 0.06, 3.34, 4.12)
+    _hem(mantle, 3.45, 0.07, 9, phase=0.5)
     torso = [squashed(body, sx=0.98, sy=0.6), squashed(mantle, sy=0.66),
-             squashed(mk.torus("Cowl", 0.6, 0.2, (0, 0, 4.02), mat=stone, major_segments=20, minor_segments=8), sy=0.72),
-             squashed(mk.torus("Cord", 1.03, 0.06, (0, 0, 2.28), mat=worn, major_segments=24, minor_segments=6), sy=0.6)]
-    # The head: the hood drawn forward over a face that is only shadow.
-    hood = mk.lathe("Hood", [(0.6, 4.02), (0.78, 4.3), (0.84, 4.72), (0.8, 5.12), (0.62, 5.42), (0.32, 5.58), (0.0, 5.62)],
-                    mat=stone, segments=20)
-    _folds(hood, 5, 0.03, 4.02, 5.6, fade_top=False)
+             squashed(mk.torus("Cowl", 0.6, 0.2, (0, 0, 4.02), mat=stone, major_segments=28, minor_segments=10), sy=0.72),
+             squashed(mk.torus("Cord", 1.03, 0.06, (0, 0, 2.28), mat=worn, major_segments=32, minor_segments=8), sy=0.6)]
+    # The fold of the wrap, from the left shoulder down across the chest to the right hip, standing on the robe.
+    wrap = [(0.62 - 0.9 * t, -0.68 - 0.04 * math.sin(math.pi * t), 3.95 - 1.55 * t) for t in (k / 8 for k in range(9))]
+    fold = pk.sweep("Wrap", wrap, [0.09, 0.1, 0.1, 0.1, 0.095, 0.09, 0.085, 0.08, 0.07], stone, sides=8)
+    fold.scale = (1.0, 0.55, 1.0)
+    torso.append(fold)
+    # The cord's knot at the left of the waist and its two ends hanging, each finished in a tassel.
+    torso.append(mk.sphere("Knot", 0.11, (0.42, -0.62, 2.27), scale=(1.2, 0.8, 1.0), mat=worn, segments=12, rings=8))
+    for k, dx in enumerate((-0.04, 0.07)):
+        end = [(0.42 + dx, -0.66, 2.2), (0.44 + dx * 1.5, -0.68, 1.85), (0.45 + dx * 2, -0.67, 1.5)]
+        torso.append(pk.sweep("CordEnd", end, 0.04, worn, sides=6))
+        torso.append(mk.cylinder("Tassel", 0.06, 0.24, (0.45 + dx * 2, -0.67, 1.38), mat=worn, verts=10, radius2=0.09))
+    # The head: the hood drawn forward over a face that is only shadow, its rim rolled round the opening.
+    hood = mk.lathe("Hood", _fine([(0.6, 4.02), (0.78, 4.3), (0.84, 4.72), (0.8, 5.12), (0.62, 5.42), (0.32, 5.58),
+                                   (0.0, 5.62)], 0.08), mat=stone, segments=40)
+    _folds(hood, 7, 0.035, 4.02, 5.6, fade_top=False)
+    rim = [(0.46 * math.cos(a), -0.78 + 0.05 * math.sin(a) ** 2, 4.72 + 0.6 * math.sin(a))
+           for a in (math.tau * k / 24 for k in range(25))]
+    # (a sheet of shadow just inside the rim, so nothing of the hood's inside shows in the opening: a flat disc, as
+    # a sphere squashed flat its pole's slivers took the stone's colour, a light speck at the top of the opening)
+    shade = mk.cylinder("Shade", 1.0, 0.06, (0, -0.74, 4.72), rot=(90, 0, 0), mat=void, verts=24)
+    shade.scale = (0.45, 0.59, 1.0)
     head = [squashed(hood, sy=0.92),
-            mk.sphere("Face", 0.5, (0, -0.5, 4.72), scale=(0.88, 0.62, 1.12), mat=void, segments=14, rings=10),
-            mk.cylinder("Peak", 0.18, 0.5, (0, -0.42, 5.36), rot=(-62, 0, 0), mat=stone, verts=8, radius2=0.02)]
+            mk.sphere("Face", 0.5, (0, -0.52, 4.72), scale=(0.98, 0.62, 1.24), mat=void, segments=18, rings=12),
+            pk.sweep("HoodRim", rim, 0.06, stone, sides=8, caps=False), shade]
     pieces = {"Head": head}
     hinge = {"Head": (0.0, 0.0, 4.0)}
     for name, x in (("RightArm", -1.5), ("LeftArm", 1.5)):
-        sleeve = mk.lathe("Sleeve", [(0.0, 2.04), (0.38, 2.04), (0.55, 2.08), (0.58, 2.2), (0.5, 2.9), (0.47, 3.5),
-                                      (0.44, 3.8), (0.3, 3.93), (0.0, 3.97)], loc=(x, 0, 0), mat=stone, segments=16)
-        _folds(sleeve, 5, 0.04, 2.0, 4.1)
-        hand = mk.sphere("Hand", 0.3, (x, -0.04, 1.84), scale=(0.72, 0.9, 1.35), mat=worn, segments=12, rings=8)
+        # bell sleeves, flaring at the cuff, folded
+        sleeve = mk.lathe("Sleeve", _fine([(0.0, 2.0), (0.6, 1.98), (0.64, 2.08), (0.55, 2.4), (0.49, 2.9),
+                                           (0.47, 3.5), (0.44, 3.8), (0.3, 3.93), (0.0, 3.97)], 0.1),
+                          loc=(x, 0, 0), mat=stone, segments=32)
+        _folds(sleeve, 6, 0.05, 1.98, 4.1)
+        _folds(sleeve, 11, 0.018, 1.98, 4.1, phase=0.8)
+        _hem(sleeve, 2.1, 0.05, 5, phase=1.0 if x > 0 else 0.0)
+        hand = _stone_hand("Hand", (x, -0.04, 1.86), worn, 1 if x > 0 else -1)
         pieces[name] = [squashed(sleeve, sy=0.86, about=(x, 0, 0)), hand]  # (just clear of the robe's side)
         hinge[name] = (x * 2 / 3, 0.0, 3.5)
     for name, x in (("RightLeg", -0.5), ("LeftLeg", 0.5)):
-        skirt = mk.lathe("Skirt", [(0.0, 0.02), (0.9, 0.02), (0.93, 0.12), (0.78, 0.72), (0.7, 1.4), (0.66, 2.02),
-                                    (0.0, 2.06)], loc=(x, 0, 0), mat=stone, segments=18)
-        _folds(skirt, 6, 0.07, 0.0, 2.05, phase=0.6 if x > 0 else 0.0)
+        skirt = mk.lathe("Skirt", _fine([(0.0, 0.02), (0.9, 0.02), (0.93, 0.12), (0.78, 0.72), (0.7, 1.4), (0.66, 2.02),
+                                         (0.0, 2.06)]), loc=(x, 0, 0), mat=stone, segments=36)
+        _folds(skirt, 6, 0.12, 0.0, 2.05, phase=0.6 if x > 0 else 0.0)
+        _folds(skirt, 13, 0.04, 0.0, 2.05, phase=1.9 if x > 0 else 0.4)
+        _hem(skirt, 0.2, 0.06, 7, phase=0.3 if x > 0 else 2.0)
         squashed(skirt, sy=0.82, about=(x, 0, 0))
         pieces[name] = [_halved(skirt, 1 if x > 0 else -1)]
         hinge[name] = (x * 2, 0.0, 2.0)
@@ -1199,60 +1350,145 @@ BACK_Y = 1.45
 
 @prop("BoneThrone", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
 def bone_throne():
-    """The throne of whatever rules this place: a cathedra hewn from dark stone, its arms ending in skulls, its
-    tall back framed by pilasters of stacked long bones and crowned with a row of skulls and a horned skull over
-    crossed bones; crossed bones and a skull cut in the seat's front."""
+    """The throne of whatever rules this place: a cathedra hewn from dark stone on a stepped plinth. Its seat is a
+    block girdled with mouldings and framed panels, a worn cushion of black velvet buttoned into it; its arms are
+    carved rests that roll over at their ends, a skull on each; its tall back rises to a cornice, a pointed arch
+    sunk in it with a ribcage carved under a flattened skull. Framing it, pilasters of stacked long bones (a skull at
+    the head of each), a row of skulls along the top, a horned skull crowning it over crossed bones: that bone work
+    is a piece of its own ("Ossuary", sharing the texture), so the carving and the bones each keep under Roblox's
+    20,000 triangles. Crossed bones and a skull cut in the seat's front."""
     stone = dark_stone_mat("Thr")
     grey = stone_mat("Thr")
     bone = old_bone_mat("Thr")
     pale = bone_mat("Thr")
     horn = mk.noisy("Thr_Horn", srgb(34, 30, 30), srgb(70, 64, 58), scale=8, roughness=0.8)
+    velvet = mk.noisy("Thr_Velvet", srgb(20, 16, 22), srgb(44, 36, 46), scale=30, roughness=0.95)
     void = void_mat("Thr")
     depth = 6.8  # the plinth runs -3.4..3.4 (the prop's middle): nothing reaches past it, so it stays centred
-    parts = [mk.box("Plinth", (7.8, depth, 0.6), (0, 0, 0.3), mat=grey, bevel=0.12),
-             mk.box("Seat", (6.2, 3.6, 2.76), (0, SEAT_Y + 0.05, 0.6 + 1.38), mat=stone, bevel=0.14),
-             mk.box("SeatSlab", (5.6, 3.4, 0.12), (0, SEAT_Y, SEAT_TOP - 0.06), mat=grey, bevel=0.04),
-             mk.box("Back", (6.2, 1.0, 6.6), (0, BACK_Y + 0.5, SEAT_TOP + 3.3 - 0.06), mat=stone, bevel=0.14),
-             mk.box("BackPanel", (4.2, 0.12, 4.6), (0, BACK_Y - 0.04, SEAT_TOP + 3.4), mat=grey, bevel=0.04),
-             mk.box("BackInset", (3.6, 0.12, 4.0), (0, BACK_Y - 0.08, SEAT_TOP + 3.4), mat=stone, bevel=0.03)]
-    # Carved in the inset, over where the champion's head comes: a skull, flattened into the stone.
+    seat_bottom = 0.6
+    parts = [mk.box("Plinth", (7.8, depth, 0.36), (0, 0, 0.18), mat=grey, bevel=0.1),
+             mk.box("PlinthStep", (7.2, depth - 0.6, 0.26), (0, 0, 0.47), mat=grey, bevel=0.06),
+             # the seat: its block, a base moulding and a lipped top round it, framed panels on its faces
+             mk.box("Seat", (6.2, 3.6, 2.76), (0, SEAT_Y + 0.05, seat_bottom + 1.38), mat=stone, bevel=0.1),
+             mk.box("SeatBase", (6.44, 3.84, 0.24), (0, SEAT_Y + 0.05, seat_bottom + 0.12), mat=stone, bevel=0.06),
+             mk.box("SeatLip", (6.4, 3.8, 0.18), (0, SEAT_Y + 0.05, SEAT_TOP - 0.15), mat=stone, bevel=0.06),
+             mk.box("SeatSlab", (5.6, 3.4, 0.12), (0, SEAT_Y, SEAT_TOP - 0.06), mat=grey, bevel=0.04)]
+    front = SEAT_Y - 1.75
+    parts += pk.frame("FrontPanel", 5.5, 2.2, 0.14, 0.08, (0, front - 0.03, 1.86), grey)
+    for sx in (-1, 1):
+        for obj in pk.frame(f"SidePanel{sx}", 2.9, 2.0, 0.12, 0.08, (0, 0, 0), grey):
+            obj.data.transform(obj.matrix_basis)
+            obj.matrix_basis = Matrix.Translation((sx * 3.13, SEAT_Y + 0.05, 1.9)) @ Matrix.Rotation(math.radians(90), 4, "Z")
+            parts.append(obj)
+    # The cushion: black velvet, worn soft, buttoned in a grid of deep tufts.
+    cushion = pk.rounded("Cushion", (5.3, 3.1, 0.32), (0, SEAT_Y - 0.05, SEAT_TOP + 0.12), velvet, r=0.14)
+    mk.displace_noise(cushion, strength=0.03, scale=0.4, name="ThrCushion")
+    parts.append(cushion)
+    for gx in range(4):
+        for gy in range(3):
+            parts.append(mk.sphere("Tuft", 0.06, (-1.8 + gx * 1.2, SEAT_Y - 1.0 + gy * 0.95, SEAT_TOP + 0.27),
+                                   scale=(1, 1, 0.5), mat=velvet, segments=8, rings=5))
+    # The back: a slab rising to a stepped cornice; a pointed arch sunk in its face, its rim moulded; under the
+    # flattened skull at the arch's head, a ribcage carved in low relief.
+    back_mid = SEAT_TOP + 3.3 - 0.06
+    parts += [mk.box("Back", (6.2, 1.0, 6.6), (0, BACK_Y + 0.5, back_mid), mat=stone, bevel=0.1),
+              mk.box("Cornice", (6.5, 1.2, 0.22), (0, BACK_Y + 0.5, back_mid + 3.2), mat=stone, bevel=0.06),
+              mk.box("CorniceLip", (6.3, 1.1, 0.14), (0, BACK_Y + 0.5, back_mid + 3.02), mat=grey, bevel=0.04)]
+    arch_base, arch_spring, arch_top, half = SEAT_TOP + 0.9, SEAT_TOP + 4.3, SEAT_TOP + 5.9, 1.8
+
+    def arch(h_w, inset=0.0):
+        """The arch's outline in (x, z), anticlockwise from its foot on the left: its sides up from the base to the
+        springing, then two arcs (each centred on the other side's springing, an equilateral arch drawn up to the
+        point's height) meeting at the point."""
+        w = h_w - inset
+        base, top = arch_base + inset, arch_top - inset
+        rise = (top - arch_spring) / (2 * w * math.sin(math.radians(60)))
+        right = [(-w + 2 * w * math.cos(math.radians(a)), arch_spring + 2 * w * math.sin(math.radians(a)) * rise)
+                 for a in range(0, 61, 6)]
+        left = [(-x, z) for x, z in reversed(right[:-1])]
+        return [(-w, base), (w, base)] + right + left
+
+    outline = arch(half)
+    panel = mk.extrude_shape("ArchPanel", outline, 0.12, rot=(90, 0, 0), mat=grey)
+    panel.location = (0, BACK_Y - 0.02, 0)
+    recess = mk.extrude_shape("ArchRecess", arch(half, 0.2), 0.12, rot=(90, 0, 0), mat=stone)
+    recess.location = (0, BACK_Y - 0.05, 0)
+    parts += [panel, recess, pk.sweep("ArchRim", [(x, BACK_Y - 0.09, z) for x, z in outline] + [(outline[0][0], BACK_Y - 0.09,
+                                                                                                    outline[0][1])],
+                                      0.07, grey, sides=10, caps=False)]
     relief = skull("Relief", 0, BACK_Y - 0.05, SEAT_TOP + 4.85, 0.5, grey, void, jaw=True, far=True)
     for obj in relief:
         obj.scale = (obj.scale[0], obj.scale[1] * 0.4, obj.scale[2])
     parts += relief
-    # Arms: solid blocks over the seat's sides, a skull on each front end.
+    spine_top, spine_bottom = SEAT_TOP + 4.25, SEAT_TOP + 1.25
+    parts.append(pk.sweep("Spine", [(0, BACK_Y - 0.14, spine_top), (0, BACK_Y - 0.16, spine_bottom)], 0.08, bone, sides=12))
+    for k in range(5):
+        z = spine_top - 0.25 - k * 0.52
+        span = 1.25 - k * 0.12
+        for sx in (-1, 1):
+            rib = [(sx * (0.08 + span * u), BACK_Y - 0.13 - 0.06 * math.sin(math.pi * u), z - 0.55 * u * u - 0.1 * u)
+                   for u in (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)]
+            parts.append(pk.sweep("Rib", rib, [0.06, 0.06, 0.055, 0.05, 0.045, 0.035], pale if k % 2 else bone, sides=10))
+    # Arms: carved rests rolling over at their front ends (their tops level, where the champion's arm lies), a skull
+    # on each front end.
+    roll = [(1.65, SEAT_TOP), (1.65, SEAT_TOP + 1.0), (-1.45, SEAT_TOP + 1.0), (-1.68, SEAT_TOP + 0.96),
+            (-1.86, SEAT_TOP + 0.8), (-1.86, SEAT_TOP + 0.56), (-1.72, SEAT_TOP + 0.42), (-1.55, SEAT_TOP + 0.4),
+            (-1.5, SEAT_TOP + 0.2), (-1.42, SEAT_TOP)]
     for sx in (-1, 1):
-        parts.append(mk.box("Arm", (1.3, 3.5, 1.0), (sx * 2.45, SEAT_Y + 0.2, SEAT_TOP + 0.5), mat=stone, bevel=0.14))
-        parts.append(mk.box("ArmFoot", (1.3, 0.9, 0.9), (sx * 2.45, SEAT_Y - 1.2, SEAT_TOP - 0.1), mat=stone, bevel=0.1))
-        parts += skull(f"ArmSkull{sx}", sx * 2.45, SEAT_Y - 1.6, SEAT_TOP + 1.25, 0.42, pale, void)
-    # The pilasters: three long bones stacked upright beside the back, a skull at the head of each.
+        arm = mk.extrude_shape(f"Arm{sx}", roll, 1.3, rot=(90, 0, 90), mat=stone, bevel=0.06)
+        arm.location = (sx * 2.45, 0, 0)
+        parts.append(arm)
+        # the roll's spiral cut in each side of its end
+        for side in (-1, 1):
+            parts.append(mk.torus(f"Volute{sx}{side}", 0.2, 0.035, (sx * 2.45 + side * 0.66, -1.62, SEAT_TOP + 0.66),
+                                  rot=(0, 90, 0), mat=grey, major_segments=14, minor_segments=5))
+        parts += rest_on(skull(f"ArmSkull{sx}", sx * 2.45, SEAT_Y - 1.35, SEAT_TOP + 1.25, 0.42, pale, void), SEAT_TOP + 0.98)
+    # The seat's front: two long bones crossed and a skull where they cross, cut in low relief.
     for sx in (-1, 1):
+        parts += long_bone(f"FrontBone{sx}", (sx * -1.7, front - 0.05, 0.95), (sx * 1.7, front - 0.05, 2.75), 0.13, bone)
+    parts += skull("FrontSkull", 0, front - 0.1, 1.85, 0.42, pale, void)
+
+    # The ossuary round it (a piece of its own). Every skull sits on what is under it, the stack of bones or the
+    # cornice (asked 2026-10-25: "the skulls dont connect ... make sure nothing floats").
+    cornice_top = back_mid + 3.31
+    bones = []
+    for sx in (-1, 1):
+        stack = []
         for k, (dx, dy) in enumerate(((0.0, 0.0), (0.32, 0.12), (-0.3, 0.14))):
             x = sx * (3.42 + dx)
-            parts += long_bone(f"Pilaster{sx}{k}", (x, BACK_Y + 0.5 + dy, 1.0), (x, BACK_Y + 0.5 + dy, SEAT_TOP + 6.3),
+            stack += long_bone(f"Pilaster{sx}{k}", (x, BACK_Y + 0.5 + dy, 1.0), (x, BACK_Y + 0.5 + dy, SEAT_TOP + 6.3),
                                0.16, bone if k else pale)
-        parts += skull(f"PilasterSkull{sx}", sx * 3.42, BACK_Y + 0.3, SEAT_TOP + 6.95, 0.48, pale, void, far=True)
+        bones += stack
+        bones += rest_on(skull(f"PilasterSkull{sx}", sx * 3.42, BACK_Y + 0.4, SEAT_TOP + 6.95, 0.48, pale, void, far=True),
+                         top_of(stack), sink=0.06)
     # A row of skulls along the back's top, as in the ossuary's garlands, long bones laid between them.
     for k in range(5):
         x = (k - 2) * 1.1
-        parts += skull(f"Row{k}", x, BACK_Y + 0.25, SEAT_TOP + 6.95, 0.38, pale if k % 2 == 0 else bone, void, jaw=k == 2,
-                       far=True)
+        bones += rest_on(skull(f"Row{k}", x, BACK_Y + 0.25, SEAT_TOP + 6.95, 0.38, pale if k % 2 == 0 else bone, void,
+                               jaw=k == 2, far=True), cornice_top)
     for k in range(4):
         x = (k - 1.5) * 1.1
-        parts += long_bone(f"RowBone{k}", (x - 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62), (x + 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62),
+        bones += long_bone(f"RowBone{k}", (x - 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62), (x + 0.35, BACK_Y + 0.55, SEAT_TOP + 6.62),
                            0.09, bone)
     # The crest: two long bones crossed behind a horned skull.
     crest_z = SEAT_TOP + 7.7
     for sx in (-1, 1):
-        parts += long_bone(f"Cross{sx}", (sx * -1.5, BACK_Y + 0.75, crest_z - 1.0), (sx * 1.5, BACK_Y + 0.75, crest_z + 0.6),
-                           0.17, bone)
-    parts += beast_skull("Crown", 0, BACK_Y + 0.1, crest_z, 0.62, pale, void, horn, jaw=False)
-    # The seat's front: two long bones crossed and a skull where they cross, cut in low relief.
-    front = SEAT_Y - 1.75
-    for sx in (-1, 1):
-        parts += long_bone(f"FrontBone{sx}", (sx * -1.7, front - 0.05, 0.95), (sx * 1.7, front - 0.05, 2.75), 0.13, bone)
-    parts += skull("FrontSkull", 0, front - 0.1, 1.85, 0.42, pale, void)
-    return parts, []
+        # (each rising from the cornice, its foot set into it)
+        bones += long_bone(f"Cross{sx}", (sx * -1.5, BACK_Y + 0.75, cornice_top + 0.08),
+                           (sx * 1.5, BACK_Y + 0.75, crest_z + 0.6), 0.17, bone)
+    bones += beast_skull("Crown", 0, BACK_Y + 0.1, crest_z, 0.62, pale, void, horn)
+    # (the skulls' sockets, noses and mouths flat black parts of their own: dark_apart)
+    glows = dark_apart(parts, void) + dark_apart(bones, void)
+    rects = grid_rects(2, 2)
+    return parts, glows, {"into": rects[0], "pieces": {"Ossuary": piece(bones, into=rects[1])}, "finish": fill_gaps}
+
+
+def fill_gaps(colour, normal, rough):
+    """(a bake's finish: every map's islands grown over the black between them until none is left, so a thin
+    part's sliver of an island, a rib or a spine, does not take the black round it, nor a sliver too small for the
+    bake to reach any texel of, of which a skull grown smooth has many, stay black: black specks on the bone)"""
+    for pixels in (colour, normal, rough):
+        mk.bleed(pixels, passes=1024)
 
 
 # The chess game sunk in the ash (maps/venues/lobby/plan.py CHESS_GAME): Staunton silhouettes, so a piece reads at a

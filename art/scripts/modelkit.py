@@ -664,9 +664,10 @@ def lay(obj, picked, rect, u, v, span=None):
     return set(picked)
 
 
-def unwrap(obj, margin=0.02, angle=60, laid=None, into=(0.0, 0.0, 1.0, 1.0)):
+def unwrap(obj, margin=0.02, angle=60, laid=None, into=(0.0, 0.0, 1.0, 1.0), least=0.0):
     """laid: a function (obj) -> the faces it gave UVs by hand (lay); the others are unwrapped into the
-    part `into` of the texture."""
+    part `into` of the texture. least: the smallest island kept as unwrapped, a share of the UV square (see
+    _snap_slivers)."""
     # Faces with a zero-length edge go first (where a lathe's profile touches its axis, a whole ring of
     # points is one point): they have no direction for a normal map to be measured against, and baked
     # as random tilts, which showed as smears on a polished table top.
@@ -697,6 +698,75 @@ def unwrap(obj, margin=0.02, angle=60, laid=None, into=(0.0, 0.0, 1.0, 1.0)):
                 for loop in poly.loop_indices:
                     uv = layer.data[loop].uv
                     layer.data[loop].uv = (into[0] + uv.x * (into[2] - into[0]), into[1] + uv.y * (into[3] - into[1]))
+    if least > 0.0:
+        _snap_slivers(obj, kept, least)
+
+
+def _snap_slivers(obj, kept, least):
+    """Lays every UV island smaller than `least` of the UV square inside the face next to it (in the mesh) that
+    belongs to the biggest island round it, shrunk to its middle, so it takes that face's colour. A smooth surface
+    thinned by decimation (a skull grown from metaballs) leaves slivers that an unwrap makes islands of their own,
+    smaller than a texel: the bake reaches no texel of them, and they took the colour of whatever lay round them in
+    the map, black specks on the bone."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    uv = bm.loops.layers.uv.active
+    faces = [f for f in bm.faces if f.index not in kept]
+    parent = {f.index: f.index for f in faces}
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for edge in bm.edges:
+        if len(edge.link_faces) != 2:
+            continue
+        f1, f2 = edge.link_faces
+        if f1.index not in parent or f2.index not in parent:
+            continue
+        joined = True
+        for vert in edge.verts:
+            l1 = next(loop for loop in f1.loops if loop.vert is vert)
+            l2 = next(loop for loop in f2.loops if loop.vert is vert)
+            if (l1[uv].uv - l2[uv].uv).length_squared > 1e-12:
+                joined = False
+                break
+        if joined:
+            parent[find(f1.index)] = find(f2.index)
+
+    def uv_area(face):
+        pts = [loop[uv].uv for loop in face.loops]
+        return abs(sum(a.x * b.y - b.x * a.y for a, b in zip(pts, pts[1:] + pts[:1]))) / 2
+
+    area, members = {}, {}
+    for face in faces:
+        root = find(face.index)
+        area[root] = area.get(root, 0.0) + uv_area(face)
+        members.setdefault(root, []).append(face)
+    snapped = 0
+    for root, group in members.items():
+        if area[root] >= least:
+            continue
+        best, best_area = None, least
+        for face in group:
+            for edge in face.edges:
+                for other in edge.link_faces:
+                    if other.index in parent and area[find(other.index)] > best_area:
+                        best, best_area = other, area[find(other.index)]
+        if best is None:
+            continue  # (a small part on its own: nothing next to it to borrow from)
+        corners = [loop[uv].uv.copy() for loop in best.loops]
+        middle = sum(corners, corners[0] * 0) / len(corners)
+        for face in group:
+            for k, loop in enumerate(face.loops):
+                loop[uv].uv = middle + (corners[k % len(corners)] - middle) * 0.3
+        snapped += 1
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    return snapped
 
 
 def texture_size(obj, limit=1024, where="prop"):
@@ -711,16 +781,24 @@ def texture_size(obj, limit=1024, where="prop"):
 def bleed(pixels, passes=16):
     """Grows the baked islands of a colour map (a pixel array [v, u, 4], changed in place) out over the empty black
     texels round them, a texel a pass, each taking the mean of its filled neighbours: in a small map of many small
-    islands the bake's margin leaves gaps, and the islands' edges sampled the black in them. For bake's `finish`."""
+    islands the bake's margin leaves gaps, and the islands' edges sampled the black in them. For bake's `finish`.
+    (Nothing grows across the map's edge: what lies at one side of a shared map is another part's.)"""
     filled = pixels[..., :3].max(axis=2) > 1e-5
+    h, w = filled.shape
+
+    def shifted(a, dv, du):
+        out = np.zeros_like(a)
+        out[max(dv, 0):h + min(dv, 0), max(du, 0):w + min(du, 0)] = a[max(-dv, 0):h + min(-dv, 0), max(-du, 0):w + min(-du, 0)]
+        return out
+
     for _ in range(passes):
         if filled.all():
             break
         acc = np.zeros(pixels.shape[:2] + (3,), dtype=np.float32)
         count = np.zeros(pixels.shape[:2], dtype=np.float32)
         for dv, du in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            acc += np.roll(pixels[..., :3], (dv, du), axis=(0, 1)) * np.roll(filled, (dv, du), axis=(0, 1))[..., None]
-            count += np.roll(filled, (dv, du), axis=(0, 1))
+            acc += shifted(pixels[..., :3], dv, du) * shifted(filled, dv, du)[..., None]
+            count += shifted(filled, dv, du)
         grow = ~filled & (count > 0)
         pixels[grow, :3] = acc[grow] / count[grow][:, None]
         filled |= grow

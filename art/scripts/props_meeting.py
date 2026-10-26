@@ -469,8 +469,9 @@ def banker_lamp():
     for sx in (-1, 1):
         parts += [mk.tube("Arm", (sx * 0.5, 0.12, 0.98), (sx * 0.5, 0.2, 1.2), 0.025, mat=metal, verts=6),
                   mk.box("Clip", (0.06, 0.08, 0.1), (sx * 0.5, 0.23, 1.22), mat=metal)]
+    parts.append(mk.cylinder("Socket", 0.055, 0.22, (0.5, -0.05, 1.04), rot=(0, 90, 0), mat=metal, verts=10))
     for k in range(9):
-        parts.append(mk.sphere("Bead", 0.016, (0.3, -0.27, 0.92 - k * 0.035), mat=metal, segments=6, rings=4))
-    parts.append(mk.cylinder("Pull", 0.03, 0.08, (0.3, -0.27, 0.58), mat=metal, verts=8, radius2=0.015))
+        parts.append(mk.sphere("Bead", 0.016, (0.5, -0.05, 0.975 - k * 0.032), mat=metal, segments=6, rings=4))
+    parts.append(mk.cylinder("Pull", 0.03, 0.08, (0.5, -0.05, 0.66), mat=metal, verts=8, radius2=0.015))
     glows = [mk.tube("Bulb", (-0.42, -0.05, 1.04), (0.42, -0.05, 1.04), 0.07, mat=pk.glow("Bnk_Bulb", LAMP_WARM, 3), verts=10)]
     return parts, glows

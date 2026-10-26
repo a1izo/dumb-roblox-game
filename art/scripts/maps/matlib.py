@@ -227,7 +227,7 @@ def make_textures(names=None, force=False):
                 images[kind] = img
             out[name] = images
             continue
-        maps = generator()
+        maps = generator(scale=2 if name in scanlib.SHARPER else 1)
         if base:
             # (The base surface was made first in this loop, or is on disk.)
             out[name] = {"normal": _save(f"{name}_normal", maps["normal"], True, quality=90)}
