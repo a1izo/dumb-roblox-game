@@ -9,7 +9,7 @@ return {
 	ATM = { size = { 2.42, 5.65, 2.91 }, pivot = "bottom", material = "Metal", collide = true, color = { 95, 104, 119 }, set = "Tokyo", tris = 442, glow = { { 150, 200, 255 } } },
 	Apple = { size = { 0.886, 0.888, 0.886 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 103, 18, 19 }, set = "Core", tris = 1520 },
 	AppleBitten = { size = { 0.92, 0.903, 0.883 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 126, 38, 36 }, set = "Core", tris = 774 },
-	ArcadeCabinet = { size = { 3.08, 6, 4.415 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 26, 21, 51 }, set = "Tokyo", tris = 644, glow = { { 120, 200, 255 }, { 255, 220, 120 }, { 255, 60, 60 } } },
+	ArcadeCabinet = { size = { 3.1, 6.2, 3.25 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 102, 94, 107 }, set = "Tokyo", tris = 1752, glow = { { 120, 200, 255 }, { 255, 220, 120 }, { 255, 60, 60 } } },
 	ArchiveShelving = { size = { 8.498, 7.395, 3 }, pivot = "bottom", material = "Metal", collide = true, color = { 17, 16, 15 }, set = "Agency", tris = 12116 },
 	BankerLamp = { size = { 1.24, 1.46, 0.79 }, pivot = "bottom", material = "Metal", collide = false, color = { 97, 94, 63 }, lights = { { at = { -0, 1.1, -0.205 }, brightness = 0.6, color = { 255, 210, 150 }, kind = "point", range = 9 } }, set = "Meeting", tris = 1104, glow = { { 255, 210, 150 } } },
 	BarStool = { size = { 1.24, 3.18, 1.24 }, pivot = "bottom", material = "Metal", collide = false, color = { 98, 79, 82 }, set = "Tokyo", tris = 668 },

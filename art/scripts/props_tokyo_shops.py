@@ -240,26 +240,49 @@ def claw_machine():
 
 @prop("ArcadeCabinet", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Tokyo")
 def arcade_cabinet():
-    """A sit-down video cabinet: the screen under a lit marquee, a control panel with a stick and
-    six buttons, the coin door, side art."""
-    body = pk.plastic("AC_Body", (22, 26, 40))
-    side = pk.plastic("AC_Side", (60, 40, 140))
+    """A Japanese candy cabinet, the kind a game centre lines up: its white shell drawn from one curved side (a
+    rounded hood over the screen, the screen tilted back, the control panel jutting out, the base stepping in under
+    it), pastel side art set into each flank, the big screen in its black bezel, a lit marquee under the hood, a
+    stick and six buttons on the panel, the coin door with its lit slots, a kick plate."""
+    shell = pk.plastic("AC_Shell", (236, 236, 240), rough=0.3)
+    art = [pk.plastic("AC_ArtPink", (236, 120, 176)), pk.plastic("AC_ArtBlue", (110, 140, 236))]
     dark = pk.metal("AC_Dark", (20, 20, 24), (34, 34, 38))
     chrome = pk.chrome("AC_Chrome")
-    parts = [mk.box("Cabinet", (3.0, 3.6, 6.0), (0, 0.4, 3.0), mat=body, bevel=0.06),
-             mk.box("Panel", (3.0, 1.2, 0.35), (0, -1.6, 3.3), rot=(-12, 0, 0), mat=dark, bevel=0.04),
-             mk.box("CoinDoor", (1.0, 0.05, 0.9), (0, -1.43, 1.6), mat=dark),
-             mk.box("Bezel", (2.8, 0.2, 2.4), (0, -1.2, 4.7), rot=(-12, 0, 0), mat=dark)]
-    for sx in (-1, 1):
-        parts.append(mk.box("SideArt", (0.04, 3.4, 5.4), (sx * 1.52, 0.4, 3.1), mat=side))
-    parts += [mk.cylinder("Stick", 0.05, 0.45, (-0.8, -1.7, 3.65), mat=chrome, verts=8),
-              mk.sphere("Ball", 0.16, (-0.8, -1.7, 3.9), mat=pk.plastic("AC_Ball", (230, 40, 40)), segments=10, rings=6)]
+    # the side profile (y, z), front at -y
+    profile = [(1.4, 0.0), (1.4, 5.8), (1.0, 6.2), (0.15, 6.2), (-0.35, 5.95), (-0.45, 5.7), (-0.2, 5.62),
+               (-0.78, 3.6), (-1.25, 3.48), (-1.85, 3.28), (-1.85, 3.02), (-1.05, 2.66), (-1.05, 0.0)]
+    body = mk.extrude_shape("Shell", profile, 3.0, rot=(90, 0, 90), mat=shell, bevel=0.08)
+    parts = [body, mk.box("Kick", (2.9, 0.1, 0.3), (0, -1.08, 0.15), mat=dark)]
+    # the side art: the profile drawn in, set into each flank
+    inner = [(y * 0.82 + 0.04, z * 0.82 + 0.45) for y, z in profile]
+    for sx, mat in ((-1, art[0]), (1, art[1])):
+        side = mk.extrude_shape("SideArt", inner, 0.06, rot=(90, 0, 90), mat=mat, bevel=0.02)
+        side.location = (sx * 1.52, 0, 0)
+        parts.append(side)
+    # the screen's bezel on the tilted face, the panel's top with its stick and buttons
+    a, b = (-0.78, 3.6), (-0.2, 5.62)
+    tilt = math.degrees(math.atan2(b[0] - a[0], b[1] - a[1]))
+    mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+    out = (-math.cos(math.radians(tilt)), math.sin(math.radians(tilt)))
+    parts.append(mk.box("Bezel", (2.7, 0.04, 2.0), (0, mid[0] + out[0] * 0.02, mid[1] + out[1] * 0.02),
+                        rot=(-tilt, 0, 0), mat=dark, bevel=0.03))
+    panel_z = 3.4
+    parts += [mk.cylinder("Stick", 0.045, 0.42, (-0.75, -1.5, panel_z + 0.2), mat=chrome, verts=8),
+              mk.sphere("Ball", 0.15, (-0.75, -1.5, panel_z + 0.44), mat=pk.plastic("AC_Ball", (230, 40, 40)),
+                        segments=12, rings=8),
+              mk.cylinder("StickBase", 0.18, 0.04, (-0.75, -1.5, panel_z + 0.0), mat=dark, verts=12)]
+    colours = [(230, 40, 40), (40, 160, 255), (250, 200, 40)]
     for k in range(6):
-        parts.append(mk.cylinder("Btn", 0.12, 0.1, (0.1 + (k % 3) * 0.38, -1.65 + (k // 3) * 0.3, 3.55),
-                                 mat=pk.plastic(f"AC_Btn{k % 3}", [(230, 40, 40), (40, 160, 255), (250, 200, 40)][k % 3]), verts=10))
-    glows = [mk.box("Screen", (2.5, 0.05, 2.0), (0, -1.32, 4.7), rot=(-12, 0, 0), mat=pk.glow("AC_Screen", (120, 200, 255), 3)),
-             mk.box("Marquee", (2.8, 0.05, 0.6), (0, -1.0, 6.1), mat=pk.glow("AC_Marquee", (255, 220, 120), 3)),
-             mk.box("Coin", (0.3, 0.05, 0.2), (0, -1.47, 1.8), mat=pk.glow("AC_Coin", (255, 60, 60), 3))]
+        parts.append(mk.cylinder("Btn", 0.11, 0.08, (0.05 + (k % 3) * 0.36, -1.62 + (k // 3) * 0.3, panel_z + 0.0),
+                                 mat=pk.plastic(f"AC_Btn{k % 3}", colours[k % 3]), verts=12))
+    parts += [mk.box("CoinDoor", (1.0, 0.05, 0.9), (0, -1.08, 1.6), mat=dark, bevel=0.02),
+              mk.box("Lock", (0.08, 0.04, 0.12), (0.38, -1.11, 1.6), mat=chrome)]
+    glows = [mk.box("Screen", (2.4, 0.03, 1.75), (0, mid[0] + out[0] * 0.05, mid[1] + out[1] * 0.05), rot=(-tilt, 0, 0),
+                    mat=pk.glow("AC_Screen", (120, 200, 255), 3)),
+             mk.box("Marquee", (2.5, 0.04, 0.24), (0, -0.36, 5.82), rot=(-20, 0, 0),
+                    mat=pk.glow("AC_Marquee", (255, 220, 120), 3)),
+             mk.box("Coin", (0.12, 0.04, 0.22), (-0.2, -1.12, 1.75), mat=pk.glow("AC_Coin", (255, 60, 60), 3)),
+             mk.box("Coin", (0.12, 0.04, 0.22), (0.15, -1.12, 1.75), mat=pk.glow("AC_Coin", (255, 60, 60), 3))]
     return parts, glows
 
 
