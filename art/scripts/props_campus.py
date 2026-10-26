@@ -686,45 +686,105 @@ def tatekan():
 
 @prop("EventTent", pivot="bottom", material="Fabric", collide=False, texture=1024, set="Campus")
 def event_tent():
-    """A white check-in tent: an aluminium frame, a peaked canopy with a navy valance, canvas walls
-    at the back and sides, the check-in table under it in a white cloth; snow on the canopy."""
+    """A white check-in tent pitched in the snow: an aluminium frame on telescoping legs, each foot weighed down with
+    a sandbag; a peaked canopy sagging a little between its rafters, seamed along them, a cap at its peak; a navy
+    valance in scallops with a white band; canvas walls at the back and sides, the front's flaps rolled up and tied;
+    guy ropes from the corners to stakes in the snow; the check-in table under it in a pleated white cloth, a
+    clipboard, a laptop, a stack of pamphlets and a cup on it; snow on the canopy and drifted round the feet."""
     canvas = mk.noisy("Tent_Canvas", srgb(222, 224, 226), srgb(240, 242, 244), scale=14, roughness=0.8)
     navy = pk.plastic("Tent_Navy", (36, 50, 96))
+    white = pk.plastic("Tent_White", (236, 238, 240))
     alu = pk.metal("Tent_Alu", (150, 154, 160), (190, 194, 200), rough=0.35, metallic=0.8)
     cloth = mk.noisy("Tent_Cloth", srgb(232, 232, 228), srgb(248, 248, 244), scale=20, roughness=0.9)
+    sand = mk.noisy("Tent_Sandbag", srgb(30, 30, 32), srgb(52, 52, 56), scale=18, roughness=0.9)
+    rope = pk.plastic("Tent_Rope", (200, 196, 180))
+    dark = pk.plastic("Tent_Dark", (30, 32, 36))
+    paper = pk.plastic("Tent_Paper", (240, 236, 224))
     sn = snow("Tent")
     hw, eave, peak = 5.0, 8.0, 10.6
     parts = []
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            parts.append(mk.box("Leg", (0.22, 0.22, eave), (sx * hw, sy * hw, eave / 2), mat=alu))
-            parts.append(mk.box("Foot", (0.6, 0.6, 0.06), (sx * hw, sy * hw, 0.03), mat=alu))
     corners = [(-hw, -hw), (hw, -hw), (hw, hw), (-hw, hw)]
-    for i in range(4):
-        (ax, ay), (bx, by) = corners[i], corners[(i + 1) % 4]
+    for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+        x, y = sx * hw, sy * hw
+        # a telescoping leg: the thick lower tube, the thinner upper one, the clamp between, a corner fitting
+        parts += [mk.box("Leg", (0.24, 0.24, 4.4), (x, y, 2.2), mat=alu, bevel=0.03),
+                  mk.box("LegUpper", (0.18, 0.18, eave - 4.2), (x, y, 4.2 + (eave - 4.2) / 2), mat=alu, bevel=0.02),
+                  mk.box("Clamp", (0.32, 0.32, 0.22), (x, y, 4.3), mat=dark, bevel=0.04),
+                  mk.box("Corner", (0.4, 0.4, 0.3), (x, y, eave), mat=dark, bevel=0.05),
+                  mk.box("Foot", (0.6, 0.6, 0.06), (x, y, 0.03), mat=alu)]
+        # a sandbag over the foot, slumped; snow drifted against it
+        bag = pk.rounded("Sandbag", (1.0, 0.6, 0.38), (x - sx * 0.05, y + sy * 0.42, 0.22), sand, r=0.16)
+        mk.displace_noise(bag, strength=0.04, scale=0.5, name="TentBag")
+        parts.append(bag)
+        parts.append(mk.sphere("Drift", 0.6, (x + sx * 0.3, y + sy * 0.3, 0.02), scale=(1.4, 1.1, 0.35), mat=sn,
+                               segments=12, rings=6))
+        # the guy rope from the corner fitting out to its stake
+        sx2, sy2 = x + sx * 3.2, y + sy * 3.2
+        parts.append(pk.sweep("GuyRope", [(x, y, eave - 0.1), ((x + sx2) / 2, (y + sy2) / 2, eave * 0.45),
+                                           (sx2, sy2, 0.25)], 0.025, rope, sides=4))
+        parts.append(mk.cylinder("Stake", 0.06, 0.5, (sx2, sy2, 0.15), mat=alu, verts=6))
+    # the frame round the eaves, between the corners
+    for k in range(4):
+        (ax, ay), (bx, by) = corners[k], corners[(k + 1) % 4]
+        parts.append(mk.tube("Eave", (ax, ay, eave - 0.05), (bx, by, eave - 0.05), 0.07, mat=alu, verts=6))
         parts.append(mk.tube("Rafter", (ax, ay, eave), (0, 0, peak), 0.06, mat=alu, verts=5))
-        # The canopy, one triangle per side (a flattened pyramid), and the valance along its edge.
-        mx, my = (ax + bx) / 2, (ay + by) / 2
-        length = math.dist((ax, ay), (bx, by))
-        parts.append(mk.box("Valance", (length + 0.2, 0.06, 0.6) if ay == by else (0.06, length + 0.2, 0.6),
-                            (mx * 1.01, my * 1.01, eave - 0.3), mat=navy))
-    roof = mk.lathe("Canopy", [(hw * 1.414, 0.0), (hw * 1.414 + 0.1, 0.06), (0.0, peak - eave + 0.06)], (0, 0, eave),
-                    mat=canvas, segments=4)
+    # The canopy, a flattened pyramid sagging a little between the rafters, seamed along them, capped at the peak.
+    roof = mk.lathe("Canopy", [(hw * 1.414 + 0.1, 0.06), (hw * 1.05, 0.62), (hw * 0.55, 1.5), (0.0, peak - eave + 0.06)],
+                    (0, 0, eave), mat=canvas, segments=4)
     roof.rotation_euler = (0, 0, math.radians(45))
     parts.append(roof)
-    snow_roof = mk.lathe("CanopySnow", [(hw * 1.2, 0.0), (0.0, (peak - eave) * 0.86)], (0, 0, eave + 0.45), mat=sn,
-                         segments=4)
+    for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+        parts.append(mk.tube("Seam", (sx * (hw + 0.02), sy * (hw + 0.02), eave + 0.1), (0, 0, peak + 0.08), 0.045,
+                             mat=white, verts=4))
+    parts.append(mk.cylinder("PeakCap", 0.35, 0.3, (0, 0, peak + 0.1), mat=navy, verts=12, radius2=0.12))
+    snow_roof = mk.lathe("CanopySnow", [(hw * 1.2, 0.0), (hw * 0.8, 0.62), (0.0, (peak - eave) * 0.86)],
+                         (0, 0, eave + 0.45), mat=sn, segments=4)
     snow_roof.rotation_euler = (0, 0, math.radians(45))
     parts.append(snow_roof)
+    # The valance: a navy band in scallops round the eaves, a white stripe along its top.
+    for k in range(4):
+        (ax, ay), (bx, by) = corners[k], corners[(k + 1) % 4]
+        along_x = ay == by
+        mx, my = (ax + bx) / 2 * 1.012, (ay + by) / 2 * 1.012
+        length = 2 * hw + 0.2
+        parts.append(mk.box("Valance", (length, 0.06, 0.42) if along_x else (0.06, length, 0.42), (mx, my, eave - 0.21),
+                            mat=navy))
+        parts.append(mk.box("Stripe", (length, 0.07, 0.08) if along_x else (0.07, length, 0.08), (mx, my, eave - 0.04),
+                            mat=white))
+        for t in range(8):  # the scallops hanging from it
+            u = -hw + (t + 0.5) * (2 * hw / 8)
+            at = (u, my, eave - 0.48) if along_x else (mx, u, eave - 0.48)
+            parts.append(mk.cylinder("Scallop", 0.62, 0.06, at, rot=(90, 0, 0) if along_x else (0, 90, 0), mat=navy,
+                                     verts=16))
+    # The walls: canvas at the back and the sides (to above the table), the front's flaps rolled up and tied.
     parts += [mk.box("Back", (2 * hw, 0.05, eave - 0.6), (0, hw, (eave - 0.6) / 2 + 0.3), mat=canvas),
               mk.box("SideL", (0.05, 2 * hw, eave - 3.0), (-hw, 0, (eave - 3.0) / 2 + 2.7), mat=canvas),
               mk.box("SideR", (0.05, 2 * hw, eave - 3.0), (hw, 0, (eave - 3.0) / 2 + 2.7), mat=canvas)]
-    # The check-in table.
-    parts += [mk.box("Table", (6.0, 2.4, 0.12), (0, 1.4, 2.6), mat=cloth),
-              mk.box("ClothFront", (6.0, 0.05, 2.6), (0, 0.2, 1.3), mat=cloth),
+    for sx in (-1, 1):
+        parts.append(mk.cylinder("Roll", 0.28, hw - 0.4, (sx * hw / 2, -hw + 0.05, eave - 0.85), rot=(0, 90, 0),
+                                 mat=canvas, verts=12))
+        for dx in (-1.2, 1.2):
+            parts.append(mk.torus("Tie", 0.31, 0.03, (sx * hw / 2 + dx, -hw + 0.05, eave - 0.85), rot=(0, 90, 0),
+                                  mat=navy, major_segments=12, minor_segments=4))
+    # The check-in table in its pleated cloth, the things on it.
+    top = 2.66
+    parts += [mk.box("Table", (6.0, 2.4, 0.12), (0, 1.4, top - 0.06), mat=cloth),
               mk.box("ClothSideL", (0.05, 2.4, 2.6), (-3.0, 1.4, 1.3), mat=cloth),
               mk.box("ClothSideR", (0.05, 2.4, 2.6), (3.0, 1.4, 1.3), mat=cloth)]
-    return parts, []
+    front = mk.box("ClothFront", (6.0, 0.05, 2.6), (0, 0.2, 1.3), mat=cloth)
+    for v in front.data.vertices:  # (pleats down the cloth's front, fading towards its top)
+        if v.co.y < 0:
+            v.co.y -= 0.06 * math.sin(v.co.x * math.tau / 0.75) * (1 - (v.co.z + 1.3) / 2.6)
+    parts.append(front)
+    parts += [mk.box("Clipboard", (0.7, 0.95, 0.04), (-1.6, 1.0, top + 0.02), rot=(0, 0, 8), mat=dark),
+              mk.box("ClipSheet", (0.62, 0.8, 0.02), (-1.6, 0.98, top + 0.05), rot=(0, 0, 8), mat=paper),
+              mk.box("LaptopBase", (1.3, 0.9, 0.06), (0.7, 1.5, top + 0.03), rot=(0, 0, -6), mat=dark),
+              mk.box("LaptopLid", (1.3, 0.05, 0.85), (0.74, 1.95, top + 0.44), rot=(-14, 0, -6), mat=dark),
+              mk.box("Pamphlets", (0.8, 0.6, 0.2), (2.3, 1.1, top + 0.1), rot=(0, 0, 14), mat=white),
+              mk.cylinder("Cup", 0.14, 0.32, (-0.4, 1.7, top + 0.16), mat=white, verts=12, radius2=0.12)]
+    glows = [mk.box("Screen", (1.18, 0.02, 0.72), (0.74, 1.92, top + 0.45), rot=(-14, 0, -6),
+                    mat=pk.glow("Tent_Screen", (150, 190, 240), 1.6))]
+    return parts, glows
 
 
 @prop("KeroseneHeater", pivot="bottom", material="Metal", collide=True, texture=512, set="Campus",

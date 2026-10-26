@@ -8,6 +8,8 @@ Built to the semi-real standard (propkit). They face -Y (a customer's side) and 
 import math
 import random
 
+from mathutils import Matrix
+
 import modelkit as mk
 import propkit as pk
 from common import srgb
@@ -359,8 +361,6 @@ def mannequin_head(name, at, size, mat):
     the skull's round, the face's flatter mass, a narrow jaw to a small chin, the ridge of a nose, a soft brow,
     cheekbones (soft sockets for eyes between them and the brow), the ears' faint shells, and a full neck down into the collar.
     `at` is the middle of the head, `size` its height; it faces -Y, turned a touch to one side."""
-    from mathutils import Matrix
-
     from props_lobby import _blob
 
     elements = [
@@ -433,20 +433,66 @@ def cosmetics_counter():
 
 @prop("FittingRoom", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Tokyo")
 def fitting_room():
-    """A fitting cubicle 4 wide, its opening at -Y behind a heavy curtain half drawn: panelled
-    sides, a mirror and a hook inside, a light over it, a stool."""
+    """A fitting cubicle 4 wide, its opening at -Y behind a heavy curtain half drawn: walls of framed panels on a
+    skirting under a cornice, the head over the opening with its number; the curtain hanging in deep folds from
+    rings on its rod; inside a mirror in a slim frame, a hook with a shirt on its hanger, a padded stool on four
+    legs, the light over it all."""
     panel = mk.wood("FR_Panel", srgb(186, 160, 124), srgb(140, 116, 86))
-    curtain = mk.banded("FR_Curtain", srgb(90, 24, 30), srgb(120, 34, 40), frequency=18, axis="X", roughness=0.9)
+    trim = mk.wood("FR_Trim", srgb(120, 94, 64), srgb(92, 70, 46))
+    curtain = mk.noisy("FR_Curtain", srgb(84, 20, 26), srgb(118, 32, 38), scale=26, roughness=0.92)  # (velvet)
     mirror = pk.metal("FR_Mirror", (170, 176, 184), (210, 214, 220), rough=0.05, metallic=1.0)
     chrome = pk.chrome("FR_Chrome")
+    pad = mk.noisy("FR_Pad", srgb(40, 34, 38), srgb(62, 54, 58), scale=24, roughness=0.8)
+    shirt = mk.noisy("FR_Shirt", srgb(200, 206, 214), srgb(226, 230, 236), scale=20, roughness=0.85)
+    ink = pk.plastic("FR_Ink", (236, 228, 210))
     parts = [mk.box("Back", (4.0, 0.15, 8.0), (0, 1.9, 4.0), mat=panel),
              mk.box("SideL", (0.15, 4.0, 8.0), (-2.0, 0, 4.0), mat=panel),
              mk.box("SideR", (0.15, 4.0, 8.0), (2.0, 0, 4.0), mat=panel),
-             mk.box("Head", (4.0, 0.3, 0.6), (0, -1.9, 7.9), mat=panel),
-             mk.box("Mirror", (1.6, 0.05, 5.0), (0, 1.8, 3.8), mat=mirror),
-             mk.tube("Rod", (-1.9, -1.8, 7.5), (1.9, -1.8, 7.5), 0.04, mat=chrome, verts=6),
-             mk.box("Curtain", (2.2, 0.1, 7.0), (-0.9, -1.8, 4.0), mat=curtain),
-             mk.cylinder("Stool", 0.5, 1.6, (1.2, 1.0, 0.8), mat=panel, verts=16),
-             mk.tube("Hook", (-1.94, 1.0, 5.8), (-1.6, 1.0, 5.9), 0.03, mat=chrome, verts=4)]
+             mk.box("Head", (4.3, 0.34, 0.7), (0, -1.9, 7.95), mat=trim, bevel=0.04),
+             mk.box("Cornice", (4.4, 4.3, 0.18), (0, 0, 8.09), mat=trim, bevel=0.05)]
+    # the walls' outer faces in framed panels on a skirting (the sides, and the back's)
+    for sx in (-1, 1):
+        parts.append(mk.box("Skirt", (0.08, 4.1, 0.5), (sx * 2.1, 0, 0.25), mat=trim))
+        for zc in (2.4, 5.6):
+            for obj in pk.frame("Panel", 3.2, 2.6, 0.12, 0.05, (0, 0, 0), trim):
+                obj.data.transform(obj.matrix_basis)
+                obj.matrix_basis = Matrix.Translation((sx * 2.1, 0, zc)) @ Matrix.Rotation(math.radians(90), 4, "Z")
+                parts.append(obj)
+    parts.append(mk.box("SkirtBack", (4.1, 0.08, 0.5), (0, 2.0, 0.25), mat=trim))
+    parts += pk.label("Number", "3", 0.32, (0, -2.08, 7.95), ink)
+    # The curtain: drawn across the left of the opening, hanging in deep folds from rings on the rod.
+    rows, cols = 9, 44
+    x0, x1, top, bottom = -1.9, 0.35, 7.42, 0.18
+    grid = []
+    for r in range(rows):
+        z = top - (top - bottom) * r / (rows - 1)
+        row = []
+        for c in range(cols):
+            u = c / (cols - 1)
+            x = x0 + (x1 - x0) * u
+            fold = 0.13 * math.sin(u * math.tau * 5.0) * (0.75 + 0.25 * r / (rows - 1))
+            row.append((x, -1.8 + fold, z))
+        grid.append(row)
+    drape = mk.sheet("Curtain", grid, curtain)
+    mk.smooth(drape)  # (round folds, not flat slats catching the light)
+    parts.append(drape)
+    parts.append(mk.tube("Rod", (-1.94, -1.8, 7.5), (1.94, -1.8, 7.5), 0.04, mat=chrome, verts=8))
+    for k in range(6):
+        parts.append(mk.torus("Ring", 0.07, 0.015, (x0 + (x1 - x0) * k / 5, -1.8, 7.5), rot=(0, 90, 0), mat=chrome,
+                              major_segments=10, minor_segments=4))
+    # Inside: the mirror in its frame, the hook with a shirt on a hanger, the padded stool.
+    parts.append(mk.box("Mirror", (1.6, 0.05, 5.0), (0, 1.8, 3.8), mat=mirror))
+    parts += pk.frame("MirrorFrame", 1.75, 5.15, 0.08, 0.07, (0, 1.79, 3.8), trim)
+    parts.append(mk.tube("Hook", (-1.94, 1.0, 5.8), (-1.6, 1.0, 5.9), 0.03, mat=chrome, verts=4))
+    parts.append(pk.sweep("Hanger", [(-1.62, 1.0, 5.9), (-1.6, 1.0, 5.72), (-1.6, 0.55, 5.45), (-1.6, 1.45, 5.45),
+                                     (-1.6, 1.0, 5.72)], 0.018, chrome, sides=4))
+    tee = mk.box("Shirt", (0.08, 0.95, 1.4), (-1.6, 1.0, 4.72), mat=shirt, bevel=0.03)
+    for v in tee.data.vertices:  # (narrowing to the collar, a little slack at the hem)
+        f = max(0.0, (v.co.z - 0.2) / 0.5)
+        v.co.y *= 1.0 - 0.25 * min(1.0, f)
+    parts.append(tee)
+    parts.append(pk.rounded("StoolPad", (1.1, 1.1, 0.3), (1.2, 1.0, 1.55), pad, r=0.12))
+    for dx, dy in ((-0.4, -0.4), (0.4, -0.4), (-0.4, 0.4), (0.4, 0.4)):
+        parts.append(mk.cylinder("StoolLeg", 0.05, 1.42, (1.2 + dx, 1.0 + dy, 0.71), mat=chrome, verts=6))
     glows = [mk.box("Light", (1.5, 1.5, 0.05), (0, 0, 7.95), mat=pk.glow("FR_Light", (255, 236, 210), 2.5))]
     return parts, glows
