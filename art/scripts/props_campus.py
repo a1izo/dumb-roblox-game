@@ -639,24 +639,40 @@ def notice_board():
     of notices and club posters behind the glass; snow on the roof."""
     wood = mk.wood("NBoard_Wood", srgb(96, 66, 42), srgb(56, 38, 24), scale=4)
     cork = mk.noisy("NBoard_Cork", srgb(150, 110, 70), srgb(176, 136, 92), scale=40, roughness=0.9)
-    glass = pk.dark_glass("NBoard_Glass", (60, 70, 76))
     slate = mk.noisy("NBoard_Roof", srgb(40, 44, 48), srgb(60, 64, 68), scale=16, roughness=0.6)
     sn = snow("NBoard")
     parts = [mk.box("LegL", (0.35, 0.35, 6.2), (-2.6, 0.1, 3.1), mat=wood),
              mk.box("LegR", (0.35, 0.35, 6.2), (2.6, 0.1, 3.1), mat=wood),
              mk.box("Case", (5.4, 0.5, 3.4), (0, 0.1, 4.2), mat=wood, bevel=0.04),
              mk.box("Cork", (5.0, 0.05, 3.0), (0, -0.16, 4.2), mat=cork),
-             mk.box("Glass", (5.0, 0.03, 3.0), (0, -0.2, 4.2), mat=glass),
              mk.box("Roof", (6.2, 1.4, 0.16), (0, 0.0, 6.35), rot=(-10, 0, 0), mat=slate, bevel=0.03),
              cap("RoofSnow", (6.0, 1.2, 0.22), (0, 0.05, 6.52), sn)]
+    # The glass front as its frame alone (glass bakes solid: a pane hid every notice).
+    parts += pk.frame("GlassFrame", 5.2, 3.2, 0.1, 0.08, (0, -0.24, 4.2), wood)
+    # The notices: four across, three down inside the cork, each turned a little and pinned at its top, printed
+    # with a heading and lines of text.
     rng = random.Random(12)
     colours = [(236, 232, 220), (250, 220, 90), (230, 120, 110), (140, 190, 230), (236, 236, 236), (170, 220, 150)]
-    for k in range(9):
-        w, h = rng.uniform(0.8, 1.3), rng.uniform(0.9, 1.4)
-        x = -2.0 + (k % 4) * 1.3 + rng.uniform(-0.1, 0.1)
-        z = 4.9 - (k // 4) * 1.3 + rng.uniform(-0.1, 0.1)
-        parts.append(mk.box(f"Poster{k}", (w, 0.02, h), (x, -0.17, z), rot=(0, rng.uniform(-4, 4), 0),
-                            mat=pk.plastic(f"NBoard_Poster{k}", colours[k % len(colours)])))
+    ink = pk.plastic("NBoard_Ink", (40, 40, 46))
+    pins = [pk.plastic("NBoard_PinRed", (210, 40, 40)), pk.plastic("NBoard_PinBlue", (40, 90, 210))]
+    for k in range(12):
+        col, row = k % 4, k // 4
+        w, h = rng.uniform(0.85, 1.1), rng.uniform(0.75, 0.88)
+        x = -1.85 + col * 1.23 + rng.uniform(-0.06, 0.06)
+        z = 5.15 - row * 0.95 + rng.uniform(-0.05, 0.05)
+        turn = rng.uniform(-4, 4)
+        y = -0.196 - 0.004 * (k % 3)  # (in front of the cork's face, -0.185)
+        parts.append(mk.box(f"Poster{k}", (w, 0.02, h), (x, y, z), rot=(0, turn, 0),
+                            mat=pk.plastic(f"NBoard_Poster{k % len(colours)}", colours[k % len(colours)])))
+        lines = [(0.0, h * 0.3, w * 0.7, 0.07)] + [(0.0, h * 0.1 - n * 0.13, w * rng.uniform(0.5, 0.75), 0.03)
+                                                   for n in range(3)]
+        for dx, dz, lw, lh in lines:
+            a_ = math.radians(turn)
+            parts.append(mk.box("Print", (lw, 0.01, lh), (x + dx * math.cos(a_) + dz * math.sin(a_), y - 0.013,
+                                                          z - dx * math.sin(a_) + dz * math.cos(a_)),
+                                rot=(0, turn, 0), mat=ink))
+        parts.append(mk.cylinder("Pin", 0.045, 0.06, (x, y - 0.035, z + h / 2 - 0.08), rot=(90, 0, 0),
+                                 mat=pins[k % 2], verts=8))
     return parts, []
 
 

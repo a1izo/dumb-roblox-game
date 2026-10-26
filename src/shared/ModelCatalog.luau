@@ -143,7 +143,7 @@ return {
 	Noren = { size = { 5.8, 2.526, 0.16 }, pivot = "centre", material = "Fabric", collide = false, color = { 32, 36, 58 }, set = "Tokyo", tris = 786 },
 	Notebook = { size = { 1.3, 0.21, 0.97 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 45, 40, 39 }, set = "Core", tris = 336 },
 	NotebookOpen = { size = { 2.64, 0.107, 1.047 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 65, 61, 59 }, set = "Core", tris = 1212 },
-	NoticeBoard = { size = { 6.2, 6.63, 1.396 }, pivot = "bottom", material = "Wood", collide = true, color = { 58, 51, 46 }, set = "Campus", tris = 560 },
+	NoticeBoard = { size = { 6.2, 6.63, 1.396 }, pivot = "bottom", material = "Wood", collide = true, color = { 40, 35, 30 }, set = "Campus", tris = 1928 },
 	OfficeChair = { size = { 2.1, 3.742, 1.968 }, pivot = "bottom", material = "Leather", collide = true, color = { 51, 50, 53 }, set = "Core", tris = 1864 },
 	PaperNote = { size = { 1.107, 0.14, 1.507 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 138, 132, 120 }, set = "Core", tris = 308 },
 	PaperSheet = { size = { 1.105, 0.1, 1.505 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 149, 144, 132 }, set = "Core", tris = 248 },
