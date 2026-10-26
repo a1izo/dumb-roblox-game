@@ -693,37 +693,48 @@ def build_fidgets():
 
 
 def build_air():
-    jump = Motion("jump", 0.5, note="Take-off: pushed off, one knee driving up, the arms swinging up, then tucking into the rise.")
-    jump.key(0.0, "snap", root=(-7, 0, 0), neck=(4, 0, 0), rShoulder=J((-16, 0, 8)), lShoulder=J((46, 0, -10), (0.03, 0.05, -0.12)),
-             rHip=J((-16, 0, 2), (0, 0.04, 0)), lHip=J((42, 0, -3), (0, 0.42, -0.05)))
-    jump.key(0.12, "out", root=(-3, 0, 0), neck=(2, 0, 0), rShoulder=J((34, 0, 14), (0, 0.06, -0.08)),
-             lShoulder=J((52, 0, -14), (0, 0.06, -0.1)), rHip=J((22, 0, 3), (0, 0.34, -0.04)), lHip=J((34, 0, -3), (0, 0.48, -0.05)))
-    jump.key(0.5, root=(-2, 0, 0), neck=(0, 0, 0), rShoulder=J((26, 0, 20), (0, 0.05, -0.06)),
-             lShoulder=J((30, 0, -20), (0, 0.05, -0.06)), rHip=J((20, 0, 4), (0, 0.28, -0.03)), lHip=J((12, 0, -4), (0, 0.18, 0)))
+    # (revamped 2026-10-26, the movement style's anime flair: a real push-off with the arms thrown up, a tight tuck
+    # through the top, the legs reaching for the ground on the way down)
+    jump = Motion("jump", 0.5, note="Take-off: driven off the back foot, the knee punching up, the arms thrown up "
+                                    "overhead; then pulling into a tuck as it rises.")
+    jump.key(0.0, "snap", root=(-12, 0, 0), neck=(6, 0, 0), rShoulder=J((-24, 0, 12)), lShoulder=J((-20, 0, -12)),
+             rHip=J((-22, 0, 2), (0, 0.02, 0)), lHip=J((58, 0, -3), (0, 0.46, -0.06)))
+    jump.key(0.22, root=(-2, 0, 0), neck=(10, 0, 0), rShoulder=J((104, 0, 24), (0, 0.12, -0.04)),
+             lShoulder=J((96, 0, -24), (0, 0.12, -0.04)), rHip=J((14, 0, 3), (0, 0.26, -0.03)),
+             lHip=J((60, 0, -3), (0, 0.5, -0.06)))
+    jump.key(0.36, root=(-6, 0, 0), neck=(2, 0, 0), rShoulder=J((66, 0, 34), (0, 0.08, -0.06)),
+             lShoulder=J((62, 0, -34), (0, 0.08, -0.06)), rHip=J((34, 0, 4), (0, 0.36, -0.04)),
+             lHip=J((46, 0, -4), (0, 0.44, -0.05)))
+    jump.key(0.5, root=(-8, 0, 0), neck=(0, 0, 0), rShoulder=J((40, 0, 30), (0, 0.05, -0.05)),
+             lShoulder=J((40, 0, -30), (0, 0.05, -0.05)), rHip=J((34, 0, 4), (0, 0.36, -0.04)),
+             lHip=J((40, 0, -4), (0, 0.4, -0.05)))
     soft(jump, head=3.4, arms_hz=3.2)
     jump.build()
 
-    apex = Motion("jumpApex", 1.2, loop=True, note="The top of a jump: a moment of hang, knees up a little, arms easing out.")
+    apex = Motion("jumpApex", 1.2, loop=True, note="The top of a jump: held in a tuck, the knees up, the arms out, a "
+                                                    "slow sway as it hangs.")
     for t, s in ((0.0, 1.0), (0.6, -1.0)):
-        apex.key(t, root=(-2 + 0.6 * s, 0, 0.8 * s), neck=(0, 0, -0.5 * s), rShoulder=J((22, 0, 24 + 2 * s), (0, 0.04, -0.05)),
-                 lShoulder=J((24, 0, -24 + 2 * s), (0, 0.04, -0.05)), rHip=J((18 + 2 * s, 0, 4), (0, 0.24, -0.03)),
-                 lHip=J((10 - 2 * s, 0, -4), (0, 0.16, 0)))
+        apex.key(t, root=(-8 + 1.2 * s, 0, 1.0 * s), neck=(0, 0, -0.6 * s),
+                 rShoulder=J((38, 0, 32 + 3 * s), (0, 0.05, -0.05)), lShoulder=J((38, 0, -32 + 3 * s), (0, 0.05, -0.05)),
+                 rHip=J((32 + 3 * s, 0, 4), (0, 0.34, -0.04)), lHip=J((40 - 3 * s, 0, -4), (0, 0.4, -0.05)))
     soft(apex, arms_hz=1.6)
     apex.build()
 
-    fall = Motion("fall", 1.6, loop=True, note="Falling: arms out for balance, legs apart and drifting, the head watching the ground.")
+    fall = Motion("fall", 1.6, loop=True, note="Falling: the legs coming out of the tuck to reach for the ground, the "
+                                                "arms rising out for balance, the head watching where it will land.")
     for t, s in ((0.0, 1.0), (0.8, -1.0)):
-        fall.key(t, root=(3, 0, 1.2 * s), neck=(-12, 0, -0.6 * s), rShoulder=J((26 + 3 * s, 0, 42 + 4 * s), (0, 0.06, 0)),
-                 lShoulder=J((26 - 3 * s, 0, -42 + 4 * s), (0, 0.06, 0)), rHip=J((14 + 6 * s, 0, 5), (0, 0.16, -0.03)),
-                 lHip=J((-6 + 6 * s, 0, -5), (0, 0.06, 0)))
+        fall.key(t, root=(4, 0, 1.2 * s), neck=(-16, 0, -0.6 * s),
+                 rShoulder=J((34 + 4 * s, 0, 58 + 5 * s), (0, 0.08, 0)), lShoulder=J((34 - 4 * s, 0, -58 + 5 * s), (0, 0.08, 0)),
+                 rHip=J((10 + 7 * s, 0, 6), (0, 0.1, -0.02)), lHip=J((-4 + 7 * s, 0, -6), (0, 0.04, 0)))
     soft(fall, head=2.0, arms_hz=1.4)
     fall.build()
 
-    long = Motion("fallLong", 1.0, loop=True, note="A long drop: arms up and wide, legs flung apart, the body leaning back.")
+    long = Motion("fallLong", 1.0, loop=True, note="A long drop: the arms flung up and wide and wheeling, the legs "
+                                                    "kicking apart, the body tipping back.")
     for t, s in ((0.0, 1.0), (0.5, -1.0)):
-        long.key(t, root=(7, 0, 2 * s), neck=(-16, 0, -1 * s), rShoulder=J((36 + 6 * s, 0, 70 + 6 * s), (0, 0.1, 0)),
-                 lShoulder=J((36 - 6 * s, 0, -70 + 6 * s), (0, 0.1, 0)), rHip=J((18 + 10 * s, 0, 8), (0, 0.18, -0.03)),
-                 lHip=J((-12 + 10 * s, 0, -8), (0, 0.08, 0)))
+        long.key(t, root=(8, 0, 3 * s), neck=(-18, 0, -1.5 * s),
+                 rShoulder=J((40 + 12 * s, 0, 80 + 8 * s), (0, 0.12, 0)), lShoulder=J((40 - 12 * s, 0, -80 + 8 * s), (0, 0.12, 0)),
+                 rHip=J((20 + 14 * s, 0, 9), (0, 0.2, -0.03)), lHip=J((-14 + 14 * s, 0, -9), (0, 0.08, 0)))
     soft(long, head=2.4, arms_hz=2.6)
     long.build()
 
@@ -755,11 +766,13 @@ def landing(name, length, note, low, lean, head, arms_out, arms_fwd, hold, extra
 def build_landings():
     landing("landLight", 0.3, "A light landing (a hop, a step off a ledge): the knees give a little, the arms dip.",
             low=-0.12, lean=-4, head=2, arms_out=4, arms_fwd=5, hold=0.02)
-    landing("landNormal", 0.45, "A landing from a jump: the body sinks, leans in, the arms come forward, and rises again.",
-            low=-0.3, lean=-10, head=5, arms_out=10, arms_fwd=16, hold=0.06)
-    landing("landHeavy", 0.8, "A hard landing from a long drop: a deep crouch, one hand reaching for the ground, then up.",
-            low=-0.52, lean=-20, head=13, arms_out=12, arms_fwd=20, hold=0.18,
-            extra=dict(rShoulder=J((62, 0, 10), (0, -0.1, -0.18)), lShoulder=J((-16, 0, -32), (0, -0.02, 0.06))))
+    landing("landNormal", 0.5, "A landing from a jump: the body drops into the knees and leans in, the arms flare "
+            "forward and out to catch it, and it springs up again.",
+            low=-0.36, lean=-14, head=6, arms_out=18, arms_fwd=22, hold=0.07)
+    landing("landHeavy", 0.9, "A hard landing from a long drop, a hero's: a deep crouch, one fist driven down to the "
+            "ground, the other arm flung back, the head up, held a beat, then up.",
+            low=-0.54, lean=-24, head=16, arms_out=14, arms_fwd=24, hold=0.24,
+            extra=dict(rShoulder=J((72, 0, 8), (0, -0.14, -0.22)), lShoulder=J((-34, 0, -40), (0, -0.02, 0.08))))
 
 
 # Starting and stopping -------------------------------------------------------------------------------
