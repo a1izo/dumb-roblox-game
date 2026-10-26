@@ -116,7 +116,7 @@ return {
 	HatTrench = { size = { 2, 0.875, 2 }, pivot = "centre", material = "Fabric", collide = false, color = { 23, 23, 26 }, set = "Core", tris = 1116 },
 	Hood = { size = { 1.755, 2.174, 1.605 }, pivot = "centre", material = "Fabric", collide = false, color = { 23, 21, 26 }, set = "Core", tris = 5452 },
 	Hydrant = { size = { 1.06, 1.975, 0.875 }, pivot = "bottom", material = "Metal", collide = true, color = { 124, 36, 39 }, set = "Core", tris = 432 },
-	InterrogationTable = { size = { 4.4, 3.01, 2.8 }, pivot = "bottom", material = "Metal", collide = true, color = { 80, 80, 82 }, set = "Agency", tris = 368 },
+	InterrogationTable = { size = { 4.56, 3.01, 2.8 }, pivot = "bottom", material = "Metal", collide = true, color = { 54, 54, 55 }, set = "Agency", tris = 1012 },
 	KaraokeConsole = { size = { 5, 3.84, 1.95 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 21, 21, 24 }, set = "Tokyo", tris = 1584, glow = { { 80, 220, 140 }, { 120, 170, 255 } } },
 	KaraokeSpeaker = { size = { 1.9, 3.8, 1.68 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 28, 28, 31 }, set = "Tokyo", tris = 1484, glow = { { 90, 160, 255 } } },
 	KeiTruck = { size = { 5.14, 5.213, 9.513 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 40, 42, 41 }, set = "Tokyo", tris = 4016 },

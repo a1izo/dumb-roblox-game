@@ -280,21 +280,46 @@ def xray_scanner():
 
 @prop("InterrogationTable", pivot="bottom", material="Metal", collide=True, texture=512, set="Agency")
 def interrogation_table():
-    """A bolted-down steel table with the cuff ring welded to its middle, a scuffed top, a paper
-    cup and a closed case file on it."""
+    """A bolted-down steel table: a scuffed top with a rolled edge on its apron, square legs braced low between
+    them, each foot's plate bolted to the floor; the cuff bar welded to the middle of the top on its plate; a paper
+    cup, a closed case file with a pen on it, an ashtray with two stubbed-out ends."""
     steel = pk.metal("Int_Steel", (90, 92, 98), (124, 126, 132), rough=0.5, metallic=0.6)
     dark = pk.metal("Int_Dark", (26, 26, 30), (40, 40, 46), rough=0.5, metallic=0.3)
     folder = pk.plastic("Int_Folder", (170, 140, 90))
     cup = pk.plastic("Int_Cup", (226, 222, 212))
+    glass = pk.metal("Int_Ashtray", (120, 126, 130), (160, 166, 170), rough=0.1, metallic=0.2)
+    ash = pk.plastic("Int_Ash", (70, 68, 66))
+    butt = pk.plastic("Int_Butt", (220, 200, 160))
     parts = [mk.box("Top", (4.4, 2.8, 0.14), (0, 0, 2.6), mat=steel, bevel=0.03),
              mk.box("Apron", (4.2, 2.6, 0.3), (0, 0, 2.38), mat=steel)]
     for sx in (-1, 1):
+        parts.append(mk.tube("Edge", (sx * 2.2, -1.4, 2.6), (sx * 2.2, 1.4, 2.6), 0.08, mat=steel, verts=8))
         for sy in (-1, 1):
             parts += [mk.box("Leg", (0.16, 0.16, 2.3), (sx * 1.95, sy * 1.15, 1.15), mat=steel),
                       mk.box("Plate", (0.5, 0.5, 0.04), (sx * 1.95, sy * 1.15, 0.02), mat=dark)]
-    parts += [mk.torus("Ring", 0.2, 0.04, (0, 0, 2.72), rot=(90, 0, 0), mat=dark, major_segments=12, minor_segments=4),
+            for bx in (-1, 1):
+                for by in (-1, 1):
+                    parts.append(mk.cylinder("Bolt", 0.035, 0.04, (sx * 1.95 + bx * 0.17, sy * 1.15 + by * 0.17, 0.06),
+                                             mat=dark, verts=6))
+        # the braces low between the legs, along the ends and down the length
+        parts.append(mk.box("BraceEnd", (0.08, 2.3, 0.1), (sx * 1.95, 0, 0.5), mat=steel))
+    parts.append(mk.box("BraceLong", (3.9, 0.08, 0.1), (0, 0, 0.5), mat=steel))
+    for sx in (-1, 1):
+        parts.append(mk.box("BraceFoot", (0.1, 0.1, 0.1), (sx * 1.95, 0, 0.5), mat=steel))
+    # the cuff bar on its welded plate
+    parts += [mk.box("BarPlate", (0.7, 0.3, 0.03), (0, 0, 2.685), mat=dark),
+              mk.tube("BarLeg", (-0.22, 0, 2.69), (-0.22, 0, 2.86), 0.035, mat=dark, verts=6),
+              mk.tube("BarLeg", (0.22, 0, 2.69), (0.22, 0, 2.86), 0.035, mat=dark, verts=6),
+              mk.tube("Bar", (-0.25, 0, 2.86), (0.25, 0, 2.86), 0.035, mat=dark, verts=6),
               mk.box("Folder", (1.1, 1.4, 0.06), (1.2, -0.3, 2.7), rot=(0, 0, 12), mat=folder),
-              mk.cylinder("Cup", 0.14, 0.34, (-1.4, 0.5, 2.84), mat=cup, verts=12, radius2=0.11)]
+              mk.tube("Pen", (0.95, -0.55, 2.745), (1.45, -0.2, 2.745), 0.02, mat=dark, verts=6),
+              mk.cylinder("Cup", 0.14, 0.34, (-1.4, 0.5, 2.84), mat=cup, verts=12, radius2=0.11),
+              mk.lathe("Ashtray", [(0.0, 0.0), (0.28, 0.0), (0.3, 0.08), (0.24, 0.1), (0.2, 0.03), (0.0, 0.03)],
+                       (-1.3, -0.6, 2.67), mat=glass, segments=16),
+              mk.cylinder("Ash", 0.19, 0.02, (-1.3, -0.6, 2.71), mat=ash, verts=12)]
+    for k, (dx, dy, rz) in enumerate(((-0.05, 0.04, 20), (0.08, -0.06, -35))):
+        parts.append(mk.tube("Butt", (-1.3 + dx - 0.08, -0.6 + dy, 2.72), (-1.3 + dx + 0.12, -0.6 + dy + 0.03 * k, 2.75),
+                             0.025, mat=butt, verts=6))
     return parts, []
 
 
