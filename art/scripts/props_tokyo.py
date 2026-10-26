@@ -471,8 +471,9 @@ def planter():
         clump = mk.sphere("Clump", r, (x, y, z), scale=(1, 1, 0.82), mat=rng.choice(leaves), segments=8, rings=6)
         mk.displace_noise(clump, strength=r * 0.4, scale=r * 0.6, name="PlanterClump")
         parts.append(clump)
-        tops.append((x, y, z + r * 0.72))
-    for x, y, z in rng.sample(tops, 12):
+        tops.append((x, y, z, z + r * 0.82 + 0.1))
+    for x, y, zc, z in rng.sample(tops, 12):
+        parts.append(mk.tube("Stem", (x, y, zc), (x, y, z), 0.012, mat=rng.choice(leaves), verts=4))
         parts.append(mk.sphere("FlowerEye", 0.035, (x, y, z + 0.02), mat=eye, segments=6, rings=4))
         for p in range(5):
             a = 2 * math.pi * p / 5

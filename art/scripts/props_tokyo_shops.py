@@ -123,7 +123,7 @@ def shop_counter():
         parts.append(mk.box("Seam", (0.04, 0.03, 2.0), (x, -1.215, 1.3), mat=dark))
     for x in (-2.4, 1.2):
         parts += [pk.rounded("Register", (1.4, 1.2, 0.6), (x, 0.4, 3.72), dark, r=0.06),
-                  mk.box("Drawer", (1.2, 1.0, 0.25), (x, 0.4, 3.55), mat=dark),
+                  mk.box("Drawer", (1.2, 1.24, 0.22), (x, 0.42, 3.55), mat=dark, bevel=0.02),
                   mk.box("Keys", (0.8, 0.5, 0.08), (x - 0.15, 0.15, 4.04), rot=(14, 0, 0), mat=steel),
                   pk.rounded("Printer", (0.45, 0.5, 0.35), (x + 0.5, 0.55, 4.2), white, r=0.05),
                   mk.box("Receipt", (0.3, 0.02, 0.35), (x + 0.5, 0.31, 4.45), rot=(-20, 0, 0), mat=white),

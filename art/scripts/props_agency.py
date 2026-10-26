@@ -180,13 +180,13 @@ def station_reel_to_reel():
                     mat=pk.glow("Reel_Meter", (255, 196, 110), 2.4)) for k in range(2)]
     glows.append(mk.box("RecLamp", (0.14, 0.04, 0.14), (rx + 0.8, -0.63, 5.55), mat=pk.glow("Reel_Rec", (255, 50, 50), 5)))
     # Headphones, the microphone and the log.
-    parts += [mk.torus("Band", 0.35, 0.04, (0.2, -0.6, 3.05), rot=(0, 0, 0), mat=dark, major_segments=16,
+    parts += [mk.torus("Band", 0.35, 0.04, (-0.2, -0.6, 3.05), rot=(0, 0, 0), mat=dark, major_segments=16,
                        minor_segments=4),
-              mk.cylinder("Cup", 0.2, 0.14, (-0.15, -0.6, 3.02), mat=dark, verts=12),
-              mk.cylinder("Cup", 0.2, 0.14, (0.55, -0.6, 3.02), mat=dark, verts=12),
-              mk.cylinder("MicBase", 0.2, 0.06, (0.6, 0.4, 2.98), mat=dark, verts=12),
-              mk.tube("MicStem", (0.6, 0.4, 3.0), (0.5, 0.1, 3.8), 0.03, mat=alu, verts=5),
-              mk.cylinder("Mic", 0.1, 0.35, (0.48, 0.02, 3.95), rot=(-60, 0, 0), mat=dark, verts=10),
+              mk.cylinder("Cup", 0.2, 0.14, (-0.55, -0.6, 3.02), mat=dark, verts=12),
+              mk.cylinder("Cup", 0.2, 0.14, (0.15, -0.6, 3.02), mat=dark, verts=12),
+              mk.cylinder("MicBase", 0.2, 0.06, (-2.1, -0.85, 2.98), mat=dark, verts=12),
+              mk.tube("MicStem", (-2.1, -0.85, 3.0), (-2.0, -1.0, 3.62), 0.03, mat=alu, verts=5),
+              mk.cylinder("Mic", 0.1, 0.35, (-1.98, -1.06, 3.74), rot=(-60, 0, 0), mat=dark, verts=10),
               mk.box("Log", (1.0, 1.2, 0.06), (-0.2, -0.3, 2.95), rot=(0, 0, 6), mat=paper)]
     return parts, glows
 
@@ -271,7 +271,7 @@ def xray_scanner():
         parts.append(mk.box("Tray", (1.8, 1.4, 0.3), (0, -4.2, 2.8 + k * 0.3), mat=tray, bevel=0.06))
     glows = [mk.box("Picture", (1.2, 0.04, 0.8), (1.94, -3.25, 5.0), rot=(0, 0, -30),
                     mat=pk.glow("Xray_Picture", (120, 170, 230), 2)),
-             mk.box("Warning", (1.4, 0.04, 0.25), (0, -1.73, 4.3), mat=pk.glow("Xray_Warn", (255, 190, 60), 3))]
+             mk.box("Warning", (1.4, 0.04, 0.25), (0, -1.83, 4.3), mat=pk.glow("Xray_Warn", (255, 190, 60), 3))]
     return parts, glows
 
 

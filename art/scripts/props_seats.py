@@ -55,7 +55,8 @@ def chair_office():
     for x in (-0.7, 0.0, 0.7):
         parts.append(mk.box("SeatCrack", (0.03, 2.2, 0.02), (x, SEAT_Y, SEAT_TOP + 0.005), mat=crack))
     for z in (SEAT_TOP + 0.9, SEAT_TOP + 1.6, SEAT_TOP + 2.3):
-        parts.append(mk.box("BackCrack", (2.4, 0.02, 0.03), (0, BACK_Y + 0.02, z), rot=(-8, 0, 0), mat=crack))
+        face = BACK_Y + 0.3 - 0.275 * math.cos(math.radians(8)) + (z - SEAT_TOP - 1.55) * math.sin(math.radians(8))
+        parts.append(mk.box("BackCrack", (2.4, 0.02, 0.03), (0, face - 0.006, z), rot=(-8, 0, 0), mat=crack))
     for sx in (-1, 1):
         x = sx * 1.48
         parts += [mk.tube("ArmPost", (x, 0.35, SEAT_TOP - 0.3), (x, 0.2, SEAT_TOP + 0.8), 0.07, mat=metal, verts=6),

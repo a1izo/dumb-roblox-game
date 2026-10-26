@@ -135,7 +135,8 @@ def station_public_phone():
              mk.box("Back", (5.0, 0.22, 4.8), (0, 1.26, 5.3), mat=tile),
              mk.box("SignBox", (3.2, 0.5, 0.8), (0, 1.0, 7.4), mat=green, bevel=0.05)]
     for k, m in enumerate((book, book2, book)):
-        parts.append(mk.box("Directory", (0.5, 1.6, 1.1), (0.5 + k * 0.6, -0.2, 1.1), mat=m, bevel=0.03))
+        parts.append(mk.box("Directory", (1.1, 1.5, 0.14), (1.5, -0.2, 2.99 + k * 0.145), rot=(0, 0, (-6, 4, -2)[k]), mat=m,
+                            bevel=0.03))
     # The phone.
     px = -1.3
     parts += [pk.rounded("Phone", (1.3, 0.9, 1.8), (px, 0.55, 3.8), green, r=0.12),

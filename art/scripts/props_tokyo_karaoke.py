@@ -8,6 +8,8 @@ its pivot is its centre)."""
 import math
 import random
 
+from mathutils import Euler, Vector
+
 import modelkit as mk
 import propkit as pk
 from common import srgb
@@ -155,10 +157,11 @@ def drinks_tray():
     parts = [mk.box("Tray", (2.0, 1.3, 0.06), (0, 0, 0.03), mat=tray, bevel=0.02)]
     for k, (x, y) in enumerate(((-0.6, -0.3), (-0.1, 0.3), (0.45, -0.25), (0.7, 0.35))):
         h = rng.uniform(0.5, 0.75)
-        parts += [mk.cylinder("Glass", 0.17, h, (x, y, 0.06 + h / 2), mat=glass, verts=12),
-                  mk.cylinder("Drink", 0.15, h * 0.75, (x, y, 0.06 + h * 0.38), mat=drinks[k], verts=12)]
-        if k == 2:
-            parts.append(mk.cylinder("Foam", 0.16, 0.08, (x, y, 0.06 + h * 0.78), mat=foam, verts=12))
+        parts += [mk.lathe("Glass", [(0.0, 0.0), (0.16, 0.0), (0.18, h), (0.165, h), (0.15, 0.04), (0.0, 0.04)],
+                           (x, y, 0.06), mat=glass, segments=14),
+                  mk.cylinder("Drink", 0.155, h * 0.8, (x, y, 0.1 + h * 0.4), mat=drinks[k], verts=14)]
+        if k == 2:  # (a head of foam up to the rim)
+            parts.append(mk.cylinder("Foam", 0.158, 0.07, (x, y, 0.1 + h * 0.8 + 0.035), mat=foam, verts=14))
     parts.append(mk.box("Menu", (0.5, 0.05, 0.7), (-0.75, 0.45, 0.4), rot=(-12, 0, 0), mat=pk.plastic("DT_Menu", (240, 70, 120))))
     return parts, []
 
@@ -189,13 +192,16 @@ def magazine_rack():
             at = (x + w / 2, y - 0.12, z + 0.42)
             parts.append(mk.box("Mag", (w - 0.05, 0.06, 0.95), at, rot=lean, mat=white))  # (its pages' edges)
             # the cover: its colour, a masthead band across its top, a picture and a line of title
-            face = (at[0], at[1] - 0.035, at[2])
-            parts.append(mk.box("Cover", (w - 0.07, 0.01, 0.93), face, rot=lean, mat=cover))
+            turn = Euler([math.radians(a) for a in lean]).to_matrix()
+
+            def on(dx, dy, dz, at=at, turn=turn):
+                return tuple(Vector(at) + turn @ Vector((dx, dy, dz)))
+
+            parts.append(mk.box("Cover", (w - 0.07, 0.01, 0.93), on(0, -0.035, 0), rot=lean, mat=cover))
             top = covers[(covers.index(cover) + 3) % len(covers)]
-            parts.append(mk.box("Masthead", (w - 0.12, 0.012, 0.16), (face[0], face[1] - 0.004, face[2] + 0.33),
-                                rot=lean, mat=top))
-            parts.append(mk.box("Picture", (w * 0.6, 0.012, 0.42), (face[0] - w * 0.08, face[1] - 0.004, face[2] - 0.05),
-                                rot=lean, mat=covers[(covers.index(cover) + 5) % len(covers)]))
+            parts.append(mk.box("Masthead", (w - 0.12, 0.012, 0.16), on(0, -0.041, 0.33), rot=lean, mat=top))
+            parts.append(mk.box("Picture", (w * 0.6, 0.012, 0.42), on(-w * 0.08, -0.041, -0.05), rot=lean,
+                                mat=covers[(covers.index(cover) + 5) % len(covers)]))
             x += w
     return parts, []
 

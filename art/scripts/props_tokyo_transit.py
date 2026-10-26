@@ -193,7 +193,10 @@ def bus():
         parts.append(mk.box("DoorSplit", (0.1, 0.1, 7.6), (W / 2 + 0.05, (y0 + y1) / 2, 4.6), mat=trim))
     glows = [mk.box("Dest", (W - 1.5, 0.05, 0.8), (0, -L / 2 - 0.12, 8.9), mat=pk.glow("BU_Dest", (255, 150, 40), 4)),
              mk.box("RearDest", (3.0, 0.05, 0.6), (0, L / 2 + 0.06, 8.7), mat=pk.glow("BU_Dest", (255, 150, 40), 4)),
-             mk.box("CabinGlow", (W - 0.6, L - 10.0, 2.6), (0, 1.6, 6.4), mat=pk.glow("BU_Cabin", (190, 200, 210), 1.2))]
+             ]
+    for sx in (-1, 1):  # (the lit cabin seen through the side windows, the pillars standing in front)
+        glows.append(mk.box("CabinLit", (0.03, L - 9.4, 3.4), (sx * (W / 2 + 0.075), 1.6, 6.3),
+                            mat=pk.glow("BU_Cabin", (190, 200, 210), 1.2)))
     ink = pk.plastic("BU_PlateInk", (30, 90, 60))
     parts += pk.label("PlateT", "品川 200 か 88-01", 0.12, (0, -L / 2 - 0.46, 1.6), ink)
     return parts, glows
@@ -243,7 +246,7 @@ def train_car(prefix, head):
     glows = []
     for sx in (-1, 1):
         for k in range(3):
-            glows.append(mk.box("Lit", (0.05, 7.0, 3.0), (sx * (W / 2 - 0.06), front + 12.8 + k * 12.6, 6.6),
+            glows.append(mk.box("Lit", (0.03, 7.0, 3.0), (sx * (W / 2 + 0.075), front + 12.8 + k * 12.6, 6.6),
                                 mat=pk.glow(prefix + "Lit", (220, 228, 236), 1.4)))
     if head:
         parts += [
