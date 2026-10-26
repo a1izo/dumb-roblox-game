@@ -18,6 +18,7 @@ local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local StageLight = require(script.Parent.Parent.StageLight)
 local Stage = require(script.Parent.Parent.Stage)
 local Styles = require(script.Parent.Parent.Styles)
 
@@ -117,15 +118,35 @@ return function(cue)
 		Parent = Screens.cinematic,
 	})
 	stamp.Visible = false
+	-- (the room's lamps sink as the operatives close in; red and blue strike the suspect from either side, turn
+	-- about, as the cuffs click)
+	local lights: { () -> () } = { StageLight.dip(floor, 40, 0.4, SHOT) }
+	local eye = (base * CFrame.new(0, 2, -9)).Position
 	task.delay(0.9, function()
 		stamp.Visible = true
 		Motion.pop(stamp)
 		Sfx.play("gavel")
+		local red, blue = Color3.fromRGB(255, 50, 60), Color3.fromRGB(70, 110, 255)
+		for k = 0, 3 do
+			task.delay(k * 0.42, function()
+				local out = StageLight.rim(
+					suspect,
+					eye + base.RightVector * (if k % 2 == 0 then 6 else -6),
+					if k % 2 == 0 then red else blue,
+					3
+				)
+				table.insert(lights, out)
+				task.delay(0.36, out)
+			end)
+		end
 	end)
 	-- Ace's verdict style, beside the suspect.
 	local removeVerdict =
 		Styles.verdict(if type(data.verdict) == "string" then data.verdict else nil, Screens.cinematic)
 	task.wait(SHOT)
+	for _, put in ipairs(lights) do
+		put()
+	end
 	stamp:Destroy()
 	removeVerdict()
 	removeOutline()

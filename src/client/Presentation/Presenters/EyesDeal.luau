@@ -20,6 +20,7 @@ local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local Materialize = require(script.Parent.Parent.Materialize)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local StageLight = require(script.Parent.Parent.StageLight)
 local Vfx = require(script.Parent.Parent.Vfx)
 
 local C = Kit.color
@@ -145,6 +146,8 @@ return function(cue)
 	Cinema.letterbox(true)
 	local untint = Cinema.tint({ TintColor = Color3.fromRGB(255, 165, 165), Saturation = -0.55, Contrast = 0.25 }, 0.6)
 	local removeVignette = Cinema.vignette(C.red, 0.45)
+	-- (the lamps round you falter and sink while the deal is made)
+	local undip = StageLight.dip(body:GetPivot().Position, 45, 0.25, LENGTH)
 	local ignore = { body }
 
 	-- 1. Your face, the world draining red; behind you it is drawn together out of smoke, its eyes first.
@@ -225,6 +228,7 @@ return function(cue)
 	hide()
 	untint()
 	removeVignette()
+	undip()
 	Cinema.letterbox(false)
 	CameraDirector.release(token)
 	Mixer.duck("eyes", false)
