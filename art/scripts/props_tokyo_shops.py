@@ -102,29 +102,72 @@ def drink_fridge():
 
 @prop("ShopCounter", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Tokyo")
 def shop_counter():
-    """A konbini till counter 8 long, the customer's side at -Y: a laminate front with the shop's
-    stripe, two registers with their customer screens, a card reader, the hot-snack case lit at
-    one end, a donation box and a rack of sweets."""
+    """A konbini till counter 8 long, the customer's side at -Y: a laminate front in panels with the shop's two
+    stripes, a stone-look top; two registers, each with its keys, its receipt printer and a scanner, the customer's
+    screen on its arm, a card reader; the hot-snack warmer lit at one end, its two trays of fried chicken and skewers
+    behind the open front; a donation box with its slot; a small rack of sweets on the customer's side."""
     body = pk.plastic("SC_Body", (230, 230, 226))
     top = mk.noisy("SC_Top", srgb(170, 166, 160), srgb(200, 196, 190), scale=12, roughness=0.3)
     stripe = pk.plastic("SC_Stripe", (40, 120, 70))
+    stripe2 = pk.plastic("SC_Stripe2", (236, 140, 40))
     dark = pk.metal("SC_Dark", (30, 30, 34), (46, 46, 50))
+    steel = pk.metal("SC_Steel", (150, 154, 160), (190, 194, 200))
+    white = pk.plastic("SC_White", (240, 240, 236))
+    fried = mk.noisy("SC_Fried", srgb(160, 96, 40), srgb(206, 146, 70), scale=30, roughness=0.6)
     parts = [pk.rounded("Body", (8.0, 2.4, 3.3), (0, 0, 1.65), body, r=0.05),
              mk.box("Top", (8.2, 2.6, 0.12), (0, 0, 3.36), mat=top, bevel=0.03),
              mk.box("Stripe", (8.0, 0.04, 0.3), (0, -1.22, 2.7), mat=stripe),
+             mk.box("Stripe2", (8.0, 0.04, 0.1), (0, -1.22, 2.45), mat=stripe2),
              mk.box("Kick", (8.0, 0.3, 0.3), (0, -1.0, 0.15), mat=dark)]
+    for x in (-2.7, 0.0, 2.7):  # (the front's panel seams)
+        parts.append(mk.box("Seam", (0.04, 0.03, 2.0), (x, -1.215, 1.3), mat=dark))
     for x in (-2.4, 1.2):
         parts += [pk.rounded("Register", (1.4, 1.2, 0.6), (x, 0.4, 3.72), dark, r=0.06),
                   mk.box("Drawer", (1.2, 1.0, 0.25), (x, 0.4, 3.55), mat=dark),
+                  mk.box("Keys", (0.8, 0.5, 0.08), (x - 0.15, 0.15, 4.04), rot=(14, 0, 0), mat=steel),
+                  pk.rounded("Printer", (0.45, 0.5, 0.35), (x + 0.5, 0.55, 4.2), white, r=0.05),
+                  mk.box("Receipt", (0.3, 0.02, 0.35), (x + 0.5, 0.31, 4.45), rot=(-20, 0, 0), mat=white),
+                  pk.rounded("Scanner", (0.5, 0.4, 0.22), (x - 0.75, -0.55, 3.53), dark, r=0.05),
                   mk.box("CustScreen", (0.8, 0.06, 0.55), (x, -0.4, 4.3), rot=(-10, 0, 0), mat=dark),
                   mk.cylinder("ScreenArm", 0.05, 0.75, (x, -0.35, 3.77), mat=dark, verts=6),
                   mk.box("Reader", (0.35, 0.5, 0.15), (x + 0.9, -0.7, 3.5), mat=dark, bevel=0.03)]
-    parts += [mk.box("SnackCase", (2.0, 1.4, 1.6), (3.0, 0.2, 4.2), mat=pk.metal("SC_Steel", (150, 154, 160), (190, 194, 200))),
-              mk.box("Donation", (0.5, 0.4, 0.6), (-0.6, -0.9, 3.72), mat=pk.plastic("SC_Box", (200, 40, 40)))]
-    glows = [mk.box("SnackGlow", (1.8, 0.05, 1.2), (3.0, -0.52, 4.2), mat=pk.glow("SC_Snack", (255, 200, 120), 2.5))]
+    # The hot-snack warmer: a steel cabinet open at the front, two lit trays of fried chicken and skewers.
+    wx = 3.0
+    parts += [mk.box("WarmerBack", (2.0, 0.08, 1.6), (wx, 0.86, 4.2), mat=steel),
+              mk.box("WarmerTop", (2.04, 1.44, 0.1), (wx, 0.2, 5.02), mat=steel, bevel=0.02),
+              mk.box("WarmerBase", (2.04, 1.44, 0.1), (wx, 0.2, 3.47), mat=steel)]
+    for sx in (-1, 1):
+        parts.append(mk.box("WarmerSide", (0.06, 1.44, 1.6), (wx + sx * 0.99, 0.2, 4.2), mat=steel))
+    rng = random.Random(21)
+    for tz in (3.62, 4.32):
+        parts.append(mk.box("Tray", (1.8, 1.0, 0.06), (wx, 0.25, tz), mat=steel))
+        for k in range(6):
+            fx = wx - 0.7 + k * 0.28 + rng.uniform(-0.04, 0.04)
+            if tz < 4:
+                piece = mk.sphere("Chicken", 0.14, (fx, 0.1 + rng.uniform(-0.1, 0.1), tz + 0.1),
+                                  scale=(1.0, 0.8, 0.65), mat=fried, segments=8, rings=6)
+                mk.displace_noise(piece, strength=0.025, scale=0.2, name="SCChicken")
+                parts.append(piece)
+            else:
+                parts.append(mk.tube("Skewer", (fx, -0.2, tz + 0.06), (fx, 0.6, tz + 0.06), 0.012, mat=white, verts=4))
+                for m in range(3):
+                    parts.append(mk.box("Bite", (0.12, 0.14, 0.1), (fx, -0.05 + m * 0.18, tz + 0.1), mat=fried,
+                                        bevel=0.03))
+    # The donation box with its slot; the sweets on the customer's side.
+    parts += [mk.box("Donation", (0.5, 0.4, 0.6), (-0.6, -0.9, 3.72), mat=pk.plastic("SC_Box", (200, 40, 40))),
+              mk.box("Slot", (0.3, 0.06, 0.03), (-0.6, -0.9, 4.03), mat=dark),
+              mk.box("SweetRack", (1.6, 0.5, 0.08), (-1.0, -1.42, 2.95), mat=steel),
+              mk.box("SweetLip", (1.6, 0.04, 0.12), (-1.0, -1.66, 3.02), mat=steel)]
+    sweets = [pk.plastic(f"SC_Sweet{k}", c) for k, c in enumerate(((236, 60, 80), (250, 210, 60), (90, 160, 230),
+                                                                       (120, 200, 110), (240, 140, 200)))]
+    for k in range(8):
+        parts.append(mk.box("Sweet", (0.16, 0.3, 0.24), (-1.7 + k * 0.2, -1.42, 3.11), rot=(-8, 0, 0),
+                            mat=sweets[k % len(sweets)]))
+    glows = [mk.box("WarmerLamp", (1.8, 0.3, 0.04), (wx, 0.2, 4.95), mat=pk.glow("SC_Snack", (255, 200, 120), 2.5))]
     for x in (-2.4, 1.2):
         glows.append(mk.box("CustLit", (0.7, 0.03, 0.45), (x, -0.44, 4.3), rot=(-10, 0, 0),
                             mat=pk.glow("SC_Screen", (120, 200, 255), 2.5)))
+        glows.append(mk.box("ScanLine", (0.32, 0.03, 0.04), (x - 0.75, -0.77, 3.56), mat=pk.glow("SC_Scan", (255, 40, 40), 3)))
     return parts, glows
 
 

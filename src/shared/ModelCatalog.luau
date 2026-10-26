@@ -176,7 +176,7 @@ return {
 	Scooter = { size = { 1.864, 3.711, 5.05 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 60, 61, 62 }, set = "Tokyo", tris = 2920 },
 	ServerRack = { size = { 3, 8, 3.07 }, pivot = "bottom", material = "Metal", collide = true, color = { 23, 24, 27 }, set = "Core", tris = 2508, glow = { { 255, 170, 60 }, { 80, 170, 255 }, { 60, 255, 120 } } },
 	ShoeLockers = { size = { 6.2, 5.13, 2.85 }, pivot = "bottom", material = "Wood", collide = true, color = { 34, 26, 18 }, set = "Campus", tris = 780 },
-	ShopCounter = { size = { 8.2, 5, 2.6 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 107, 108, 105 }, set = "Tokyo", tris = 1060, glow = { { 255, 200, 120 }, { 120, 200, 255 } } },
+	ShopCounter = { size = { 8.2, 5.07, 2.98 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 59, 58, 55 }, set = "Tokyo", tris = 4728, glow = { { 255, 200, 120 }, { 120, 200, 255 }, { 255, 40, 40 } } },
 	ShrineDoor = { size = { 3.24, 8, 0.6 }, pivot = "bottom", material = "WoodPlanks", collide = true, color = { 29, 24, 23 }, set = "Core", tris = 2160 },
 	ShrubSnow = { size = { 4.807, 2.151, 2.936 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 29, 34, 30 }, set = "Campus", tris = 13230 },
 	Sideboard = { size = { 10.3, 4.88, 2.595 }, pivot = "bottom", material = "Wood", collide = true, color = { 33, 24, 17 }, set = "Meeting", tris = 2004 },
