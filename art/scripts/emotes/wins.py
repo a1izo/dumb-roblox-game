@@ -86,6 +86,8 @@ for t, neck in ((4.2, (-4, 2, 0)), (5.0, (2, 0, 0))):  # the head up: the candle
              lShoulder=reach(-1, (-0.35, 0.5, -1.85), direction=(0.2, -0.6, -0.8)), **SIT)
 page.key(6.2, "sine", offset=(SEAT[0], SEAT[1], SEAT[2] + 0.12), root=(6, 0, 0), neck=(10, 0, 0), rShoulder=FLAT_R,
          lShoulder=FLAT_L, **SIT)  # leaning back, the chin up: the silhouette
+page.key(7.1, "sine", offset=(SEAT[0], SEAT[1] + 0.02, SEAT[2] + 0.15), root=(8, 1, 0), neck=(11, 2, 0),
+         rShoulder=FLAT_R, lShoulder=FLAT_L, **SIT)  # a breath in the stillness (the body never freezes)
 page.key(8.0, "smooth", offset=(SEAT[0], SEAT[1], SEAT[2] + 0.14), root=(7, 2, 0), neck=(12, 4, 0), rShoulder=FLAT_R,
          lShoulder=FLAT_L, **SIT)
 page.follow("neck", 3.0, 0.75).follow(("lShoulder",), 2.5, 0.8)
@@ -124,6 +126,8 @@ god.key(6.05, "in", offset=(0, -0.04, EDGE), root=(-6, 0, 0), neck=(-10, 0, 0), 
         lShoulder=reach(-1, (-0.6, 0.1, -1.2)), **STAND)  # gathering
 god.key(6.7, "out", offset=(0, 0.04, EDGE), root=(8, 0, 0), neck=(16, 0, 0), rShoulder=SPREAD_R, lShoulder=SPREAD_L,
         **STAND)  # the arms spread
+god.key(6.95, "sine", offset=(0, 0.06, EDGE), root=(10, 0, 0), neck=(19, 0, 0), rShoulder=J((20, 0, 125)),
+        lShoulder=J((20, 0, -125)), **STAND)  # past wide, then settling: the Godhood beat lands with weight
 god.key(8.0, "smooth", offset=(0, 0.05, EDGE), root=(9, 0, 0), neck=(18, 0, 2), rShoulder=J((22, 0, 118)),
         lShoulder=J((22, 0, -118)), **STAND)
 god.follow("neck", 2.4, 0.75).follow(("rShoulder", "lShoulder"), 2.6, 0.72)
@@ -197,8 +201,9 @@ mate.key(4.15, "out", offset=(0, 0, UP_TO - 0.05), root=(-5, 0, 0), neck=(2, 0, 
 mate.key(4.6, "smooth", offset=(0, 0, UP_TO), root=(0, 0, 0), neck=(6, 0, 0), rShoulder=BEHIND_R,
          lShoulder=BEHIND_L, **STAND)
 walk(mate, 4.9, 5.4, UP_TO, UP_TO + 1.0, 1, board_upper)  # a step back
-for t, neck in ((6.0, (10, 0, 0)), (6.8, (8, -8, 0)), (8.0, (12, -14, 2))):  # watching it fall; then towards us
-    mate.key(t, "sine", offset=(0, 0, UP_TO + 1.0), root=(2, 0, 0), neck=neck, rShoulder=BEHIND_R,
+for t, neck, shift in ((6.0, (10, 0, 0), 0.0), (6.8, (8, -8, 0), 0.05), (8.0, (12, -14, 2), -0.03)):
+    # watching it fall, then towards us; the weight easing from foot to foot (a held body never freezes)
+    mate.key(t, "sine", offset=(shift, 0, UP_TO + 1.0), root=(2, 0, -30 * shift), neck=neck, rShoulder=BEHIND_R,
              lShoulder=BEHIND_L, **STAND)
 mate.follow("neck", 2.0, 0.8).follow(("rShoulder", "lShoulder"), 3.0, 0.75)
 mate.build()
