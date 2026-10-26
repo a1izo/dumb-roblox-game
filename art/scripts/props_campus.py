@@ -132,7 +132,7 @@ def station_public_phone():
     parts = [mk.box("Body", (5.0, 2.4, 2.8), (0, 0.05, 1.4), mat=wood, bevel=0.04),
              mk.box("Top", (5.2, 2.6, 0.12), (0, 0.05, 2.86), mat=wood, bevel=0.03),
              mk.box("Cubby", (2.2, 0.1, 1.3), (1.2, -1.16, 1.1), mat=dark),
-             mk.box("Back", (5.0, 0.2, 4.8), (0, 1.25, 5.3), mat=tile),
+             mk.box("Back", (5.0, 0.22, 4.8), (0, 1.26, 5.3), mat=tile),
              mk.box("SignBox", (3.2, 0.5, 0.8), (0, 1.0, 7.4), mat=green, bevel=0.05)]
     for k, m in enumerate((book, book2, book)):
         parts.append(mk.box("Directory", (0.5, 1.6, 1.1), (0.5 + k * 0.6, -0.2, 1.1), mat=m, bevel=0.03))
@@ -765,12 +765,13 @@ def event_tent():
         length = 2 * hw + 0.2
         parts.append(mk.box("Valance", (length, 0.06, 0.42) if along_x else (0.06, length, 0.42), (mx, my, eave - 0.21),
                             mat=navy))
-        parts.append(mk.box("Stripe", (length, 0.07, 0.08) if along_x else (0.07, length, 0.08), (mx, my, eave - 0.04),
+        parts.append(mk.box("Stripe", (length - 0.02, 0.07, 0.08) if along_x else (0.07, length - 0.02, 0.08),
+                            (mx, my, eave - 0.045),
                             mat=white))
         for t in range(8):  # the scallops hanging from it
             u = -hw + (t + 0.5) * (2 * hw / 8)
             at = (u, my, eave - 0.48) if along_x else (mx, u, eave - 0.48)
-            parts.append(mk.cylinder("Scallop", 0.62, 0.06, at, rot=(90, 0, 0) if along_x else (0, 90, 0), mat=navy,
+            parts.append(mk.cylinder("Scallop", 0.62, 0.05, at, rot=(90, 0, 0) if along_x else (0, 90, 0), mat=navy,
                                      verts=16))
     # The walls: canvas at the back and the sides (to above the table), the front's flaps rolled up and tied.
     parts += [mk.box("Back", (2 * hw, 0.05, eave - 0.6), (0, hw, (eave - 0.6) / 2 + 0.3), mat=canvas),

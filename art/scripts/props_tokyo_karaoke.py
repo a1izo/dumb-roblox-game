@@ -173,7 +173,7 @@ def magazine_rack():
     covers = [pk.plastic(f"MR_Cover{k}", c) for k, c in enumerate(
         [(220, 40, 60), (240, 200, 40), (40, 120, 200), (250, 250, 246), (30, 30, 34), (240, 120, 160), (60, 170, 90)])]
     parts = [mk.box("Base", (8.0, 1.6, 0.8), (0, 0, 0.4), mat=white, bevel=0.03),
-             mk.box("Back", (8.0, 0.1, 3.0), (0, 0.75, 1.5), mat=white)]
+             mk.box("Back", (7.96, 0.1, 3.0), (0, 0.74, 1.5), mat=white)]
     for tier in range(3):
         z = 0.85 + tier * 0.75
         y = 0.4 - tier * 0.25

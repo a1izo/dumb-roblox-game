@@ -1369,7 +1369,7 @@ def bone_throne():
     parts = [mk.box("Plinth", (7.8, depth, 0.36), (0, 0, 0.18), mat=grey, bevel=0.1),
              mk.box("PlinthStep", (7.2, depth - 0.6, 0.26), (0, 0, 0.47), mat=grey, bevel=0.06),
              # the seat: its block, a base moulding and a lipped top round it, framed panels on its faces
-             mk.box("Seat", (6.2, 3.6, 2.76), (0, SEAT_Y + 0.05, seat_bottom + 1.38), mat=stone, bevel=0.1),
+             mk.box("Seat", (6.2, 3.6, 2.7), (0, SEAT_Y + 0.05, seat_bottom + 1.35), mat=stone, bevel=0.1),
              mk.box("SeatBase", (6.44, 3.84, 0.24), (0, SEAT_Y + 0.05, seat_bottom + 0.12), mat=stone, bevel=0.06),
              mk.box("SeatLip", (6.4, 3.8, 0.18), (0, SEAT_Y + 0.05, SEAT_TOP - 0.15), mat=stone, bevel=0.06),
              mk.box("SeatSlab", (5.6, 3.4, 0.12), (0, SEAT_Y, SEAT_TOP - 0.06), mat=grey, bevel=0.04)]

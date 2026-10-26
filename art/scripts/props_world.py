@@ -247,9 +247,9 @@ def crate():
         for y in (-1, 1):
             parts.append(mk.box("Post", (0.32, 0.32, s), (x * (s / 2 - 0.12), y * (s / 2 - 0.12), s / 2), mat=frame,
                                 bevel=0.03))
-            parts.append(mk.box("RailX", (s, 0.3, 0.3), (0, y * (s / 2 - 0.12), (s - 0.15) if x > 0 else 0.15),
+            parts.append(mk.box("RailX", (s, 0.3, 0.28), (0, y * (s / 2 - 0.12), (s - 0.16) if x > 0 else 0.14),
                                 mat=frame, bevel=0.03))
-            parts.append(mk.box("RailY", (0.3, s, 0.3), (x * (s / 2 - 0.12), 0, (s - 0.15) if y > 0 else 0.15),
+            parts.append(mk.box("RailY", (0.3, s, 0.28), (x * (s / 2 - 0.12), 0, (s - 0.16) if y > 0 else 0.14),
                                 mat=frame, bevel=0.03))
     # A stencilled "0" on the front.
     parts.append(mk.torus("Stencil", 0.55, 0.08, (0, -s / 2 - 0.04, s / 2), rot=(90, 0, 0), mat=stencil,
@@ -467,7 +467,7 @@ def bookshelf():
     books = [mk.noisy(f"Shelf_Book{i}", c, tuple(min(1.0, v * 1.4) for v in c), scale=30, roughness=0.7)
              for i, c in enumerate(colours)]
     parts = [
-        mk.box("Back", (3.0, 0.1, 8.0), (0, 0.75, 4.0), mat=wood),
+        mk.box("Back", (3.0, 0.1, 7.96), (0, 0.74, 3.98), mat=wood),
         mk.box("SideL", (0.15, 1.6, 8.0), (-1.45, 0, 4.0), mat=wood, bevel=0.03),
         mk.box("SideR", (0.15, 1.6, 8.0), (1.45, 0, 4.0), mat=wood, bevel=0.03),
         mk.box("Crown", (3.2, 1.75, 0.2), (0, 0, 8.0), mat=wood, bevel=0.05),

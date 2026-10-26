@@ -106,8 +106,9 @@ def torus(name, major, minor, loc=(0, 0, 0), rot=(0, 0, 0), mat=None, major_segm
     return obj
 
 
-def lathe(name, profile, loc=(0, 0, 0), mat=None, segments=32):
-    """Spins a profile [(radius, z), ...] around Z (for vases, bulbs, posts, bottles)."""
+def lathe(name, profile, loc=(0, 0, 0), mat=None, segments=32, caps=True):
+    """Spins a profile [(radius, z), ...] around Z (for vases, bulbs, posts, bottles). caps=False leaves the ends
+    open (a ring lying on a surface: a cap would lie across the surface, in its plane)."""
     bm = bmesh.new()
     rings = []
     for r, z in profile:
@@ -121,9 +122,9 @@ def lathe(name, profile, loc=(0, 0, 0), mat=None, segments=32):
             j = (i + 1) % segments
             bm.faces.new((rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i]))
     # caps
-    if profile[0][0] > 0:
+    if caps and profile[0][0] > 0:
         bm.faces.new(list(reversed(rings[0])))
-    if profile[-1][0] > 0:
+    if caps and profile[-1][0] > 0:
         bm.faces.new(rings[-1])
     # (the faces wound out of the solid whichever way the profile runs: one drawn top down, a lamp's shade, came out
     # inside out; the profile closed along the axis turns anticlockwise in (radius, z) when they face out)

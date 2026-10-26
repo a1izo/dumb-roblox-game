@@ -79,7 +79,7 @@ def drink_fridge():
     for x in (-4.0, -1.33, 1.33, 4.0):
         parts.append(mk.box("Mullion", (0.18, 0.3, 6.2), (x, -1.25, 3.4), mat=steel))
     for z in (0.45, 6.4):
-        parts.append(mk.box("Rail", (8.0, 0.3, 0.16), (0, -1.25, z), mat=steel))
+        parts.append(mk.box("Rail", (8.0, 0.28, 0.16), (0, -1.25, z), mat=steel))
     for x in (-2.66, 0.0, 2.66):
         parts.append(mk.box("Stile", (0.14, 0.06, 5.84), (x + 1.05, -1.37, 3.42), mat=steel))
         parts += pk.handle("Handle", x + 1.05, -1.4, 3.5, 2.4, steel, stand=0.14)
@@ -118,7 +118,7 @@ def shop_counter():
              mk.box("Top", (8.2, 2.6, 0.12), (0, 0, 3.36), mat=top, bevel=0.03),
              mk.box("Stripe", (8.0, 0.04, 0.3), (0, -1.22, 2.7), mat=stripe),
              mk.box("Stripe2", (8.0, 0.04, 0.1), (0, -1.22, 2.45), mat=stripe2),
-             mk.box("Kick", (8.0, 0.3, 0.3), (0, -1.0, 0.15), mat=dark)]
+             mk.box("Kick", (7.96, 0.3, 0.3), (0, -1.0, 0.15), mat=dark)]
     for x in (-2.7, 0.0, 2.7):  # (the front's panel seams)
         parts.append(mk.box("Seam", (0.04, 0.03, 2.0), (x, -1.215, 1.3), mat=dark))
     for x in (-2.4, 1.2):
@@ -134,8 +134,8 @@ def shop_counter():
     # The hot-snack warmer: a steel cabinet open at the front, two lit trays of fried chicken and skewers.
     wx = 3.0
     parts += [mk.box("WarmerBack", (2.0, 0.08, 1.6), (wx, 0.86, 4.2), mat=steel),
-              mk.box("WarmerTop", (2.04, 1.44, 0.1), (wx, 0.2, 5.02), mat=steel, bevel=0.02),
-              mk.box("WarmerBase", (2.04, 1.44, 0.1), (wx, 0.2, 3.47), mat=steel)]
+              mk.box("WarmerTop", (2.08, 1.48, 0.1), (wx, 0.2, 5.02), mat=steel, bevel=0.02),
+              mk.box("WarmerBase", (2.08, 1.48, 0.1), (wx, 0.2, 3.47), mat=steel)]
     for sx in (-1, 1):
         parts.append(mk.box("WarmerSide", (0.06, 1.44, 1.6), (wx + sx * 0.99, 0.2, 4.2), mat=steel))
     rng = random.Random(21)
@@ -250,7 +250,7 @@ def claw_machine():
     rng = random.Random(4)
     parts = [pk.rounded("Base", (3.8, 4.0, 2.8), (0, 0, 1.4), body, r=0.1),
              mk.box("Chute", (1.2, 0.4, 1.0), (1.0, -2.05, 1.3), mat=dark, bevel=0.04),
-             mk.box("Panel", (3.8, 0.9, 0.3), (0, -1.9, 2.75), rot=(-15, 0, 0), mat=white),
+             mk.box("Panel", (3.76, 0.9, 0.3), (0, -1.9, 2.75), rot=(-15, 0, 0), mat=white),
              mk.cylinder("Stick", 0.05, 0.5, (-0.8, -2.0, 3.1), mat=chrome, verts=8),
              mk.sphere("Knob", 0.14, (-0.8, -2.0, 3.35), mat=pk.plastic("CM_Knob", (230, 40, 40)), segments=10, rings=6),
              mk.cylinder("Push", 0.18, 0.1, (0.2, -2.0, 3.0), mat=pk.plastic("CM_Push", (60, 160, 255)), verts=12),
@@ -338,13 +338,13 @@ def washer():
     dark = pk.dark_glass("WA_Window", (30, 40, 50))
     panel = pk.metal("WA_Panel", (40, 42, 46), (60, 62, 66))
     parts = [pk.rounded("Body", (3.2, 3.1, 4.3), (0, 0, 2.15), body, r=0.08),
-             mk.box("TopPanel", (3.2, 0.3, 0.9), (0, -1.45, 3.9), mat=panel),
+             mk.box("TopPanel", (3.16, 0.3, 0.9), (0, -1.45, 3.9), mat=panel),
              mk.torus("Ring", 1.0, 0.12, (0, -1.6, 2.0), rot=(90, 0, 0), mat=chrome, major_segments=24, minor_segments=6),
              mk.cylinder("Window", 0.92, 0.1, (0, -1.56, 2.0), rot=(90, 0, 0), mat=dark, verts=24),
              mk.box("Handle", (0.2, 0.2, 0.7), (0.95, -1.75, 2.0), mat=chrome, bevel=0.05),
              mk.box("CoinBox", (0.8, 0.1, 0.5), (0.8, -1.62, 3.9), mat=chrome),
              mk.cylinder("Dial", 0.2, 0.1, (-0.8, -1.62, 3.9), rot=(90, 0, 0), mat=chrome, verts=12),
-             mk.box("Kick", (3.0, 0.2, 0.3), (0, -1.45, 0.15), mat=panel)]
+             mk.box("Kick", (3.0, 0.2, 0.3), (0, -1.47, 0.15), mat=panel)]
     parts += pk.label("Price", "400円", 0.18, (0, -1.62, 3.92), pk.plastic("WA_Ink", (240, 240, 236)))
     glows = [mk.box("Led", (0.4, 0.05, 0.2), (-0.1, -1.62, 3.9), mat=pk.glow("WA_Led", (255, 90, 70), 3))]
     return parts, glows

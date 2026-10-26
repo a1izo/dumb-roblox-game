@@ -63,7 +63,8 @@ def war_table():
     parts = [mk.lathe("Top", [(0.0, 2.9), (r - 0.35, 2.9), (r, 3.02), (r, 3.14), (r - 0.15, 3.25), (0.0, 3.25)],
                       mat=wood, segments=72),
              mk.torus("Band", r - 0.02, 0.05, (0, 0, 3.08), mat=metal, major_segments=72, minor_segments=5),
-             mk.lathe("Inlay", [(12.2, 3.25), (12.2, 3.268), (9.6, 3.268), (9.6, 3.25)], mat=hide, segments=72)]
+             mk.lathe("Inlay", [(12.2, 3.25), (12.2, 3.268), (9.6, 3.268), (9.6, 3.25)], mat=hide, segments=72,
+                      caps=False)]
     for rr in (12.25, 9.55):
         parts.append(mk.torus("Line", rr, 0.045, (0, 0, 3.262), mat=metal, major_segments=64, minor_segments=4))
     # Zero's mark in the middle: a brass disc with a dark 0 set in it.
@@ -230,7 +231,7 @@ def bookcase_tall():
         ((70, 50, 30), (110, 82, 52)), ((30, 28, 26), (52, 48, 44))))]
     gold = mk.flat("Bkc_Gilt", srgb(170, 136, 70), 0.4, 0.8)
     w, d, h = 4.2, 1.6, 9.0
-    parts = [mk.box("Back", (w, 0.12, h - 0.4), (0, d / 2 - 0.06, (h - 0.4) / 2 + 0.2), mat=dark),
+    parts = [mk.box("Back", (w - 0.3, 0.12, h - 0.4), (0, d / 2 - 0.07, (h - 0.4) / 2 + 0.2), mat=dark),
              mk.box("Plinth", (w + 0.1, d + 0.05, 0.4), (0, 0, 0.2), mat=wood, bevel=0.03),
              mk.box("Cornice", (w + 0.4, d + 0.3, 0.35), (0, -0.1, h - 0.17), mat=wood, bevel=0.06),
              mk.box("Frieze", (w + 0.1, d + 0.1, 0.25), (0, 0, h - 0.47), mat=dark, bevel=0.02)]

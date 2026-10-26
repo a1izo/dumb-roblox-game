@@ -136,7 +136,7 @@ def kei_truck():
     ]
     for sx in (-1, 1):
         parts += [mk.box("SideGate", (0.12, 7.6, 1.3), (sx * 2.5, 1.6, 2.6), mat=bed, bevel=0.03),
-                  mk.box("SideWindow", (0.1, 1.8, 1.5), (sx * 2.5, -3.5, 4.9), mat=glass),
+                  mk.box("SideWindow", (0.1, 1.8, 1.5), (sx * 2.53, -3.5, 4.9), mat=glass),
                   mk.box("DoorSeam", (0.03, 0.05, 3.2), (sx * 2.56, -2.4, 2.6), mat=trim),
                   mk.box("Handle", (0.08, 0.5, 0.12), (sx * 2.58, -3.0, 3.5), mat=chrome),
                   mk.box("MirrorArm", (0.36, 0.12, 0.12), (sx * 2.7, -4.8, 4.5), mat=trim),
@@ -232,8 +232,9 @@ def train_car(prefix, head):
         for k in range(3):  # window bays between doors
             y = front + 12.8 + k * 12.6
             parts.append(mk.box("Window", (0.1, 7.2, 3.2), (x, y, 6.6), mat=glass))
-        for y in (front + 3.0, -front - 3.0):  # bogies
-            parts.append(mk.box("Bogie", (W - 1.8, 6.0, 1.2), (0, y, 0.8), mat=trim))
+        for y in (front + 3.0, -front - 3.0):  # bogies (the box once, on the -X pass; the wheels each side)
+            if sx < 0:
+                parts.append(mk.box("Bogie", (W - 1.8, 6.0, 1.2), (0, y, 0.8), mat=trim))
             for yy in (y - 1.8, y + 1.8):
                 parts.append(mk.cylinder("Wheel", 0.9, 0.4, (sx * (W / 2 - 1.3), yy, 0.9), rot=(0, 90, 0), mat=trim, verts=16))
     for k in range(3):
@@ -349,8 +350,8 @@ def train_car_open():
             if sx > 0 and y0 < y < y1:
                 continue
             parts.append(mk.box("Window", (0.1, 7.2, 3.2), (x, y, 6.6), mat=glass))
-        for y in (front + 3.0, -front - 3.0):
-            parts.append(mk.box("Bogie", (W - 1.8, 6.0, 1.2), (0, y, 0.8), mat=trim))
+    for y in (front + 3.0, -front - 3.0):
+        parts.append(mk.box("Bogie", (W - 1.8, 6.0, 1.2), (0, y, 0.8), mat=trim))
     glows = [mk.box("StripA", (0.4, y1 - y0 - 1.0, 0.08), (1.6, DOOR_Y, roof_z - 0.12), mat=pk.glow("TO_Strip", (236, 242, 250), 3)),
              mk.box("StripB", (0.4, y1 - y0 - 1.0, 0.08), (-1.6, DOOR_Y, roof_z - 0.12), mat=pk.glow("TO_Strip", (236, 242, 250), 3))]
     for sx in (-1, 1):

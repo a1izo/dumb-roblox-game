@@ -202,7 +202,7 @@ def elevator_doors():
     stone = mk.noisy("Lift_Stone", srgb(34, 32, 34), srgb(58, 54, 56), scale=14, roughness=0.3)
     dark = pk.metal("Lift_Dark", (18, 18, 20), (30, 30, 34), rough=0.4, metallic=0.4)
     parts = [mk.box("Surround", (5.8, 0.3, 9.6), (0, 0.2, 4.8), mat=stone, bevel=0.04),
-             mk.box("Head", (6.2, 0.5, 0.6), (0, 0.0, 9.3), mat=stone, bevel=0.05)]
+             mk.box("Head", (6.2, 0.5, 0.62), (0, 0.0, 9.31), mat=stone, bevel=0.05)]
     for sx in (-1, 1):
         parts += [mk.box("Leaf", (2.05, 0.12, 8.0), (sx * 1.05, -0.02, 4.0), mat=steel, bevel=0.01),
                   mk.box("Jamb", (0.2, 0.4, 8.2), (sx * 2.25, -0.05, 4.1), mat=steel, bevel=0.02)]
@@ -309,9 +309,9 @@ def archive_shelving():
                 pk.plastic("Arch_Box3", (80, 90, 110)), pk.plastic("Arch_Box4", (170, 150, 110))]
     label = pk.plastic("Arch_Label", (236, 232, 220))
     w, d, h = 8.2, 3.0, 7.4
-    parts = [mk.box("Base", (w, d, 0.35), (0, 0, 0.18), mat=paint, bevel=0.03),
+    parts = [mk.box("Base", (w - 0.04, d - 0.04, 0.35), (0, 0, 0.18), mat=paint, bevel=0.03),
              mk.box("Top", (w, d, 0.12), (0, 0, h - 0.06), mat=paint, bevel=0.02),
-             mk.box("Spine", (w, 0.08, h - 0.4), (0, 0, h / 2), mat=paint)]
+             mk.box("Spine", (w - 0.2, 0.08, h - 0.4), (0, 0, h / 2), mat=paint)]
     for sx in (-1, 1):
         parts.append(mk.box("End", (0.12, d, h - 0.2), (sx * (w / 2 - 0.06), 0, h / 2), mat=paint, bevel=0.02))
     parts += [mk.cylinder("WheelHub", 0.12, 0.2, (w / 2 + 0.12, 0, 4.2), rot=(0, 90, 0), mat=dark, verts=10),
@@ -717,13 +717,13 @@ def fume_hood():
     w, d = 5.2, 2.6
     parts = [mk.box("Base", (w, d, 2.8), (0, 0, 1.4), mat=white, bevel=0.03),
              mk.box("Top", (w + 0.1, d + 0.1, 0.14), (0, 0, 2.87), mat=resin),
-             mk.box("Back", (w, 0.12, 4.4), (0, d / 2 - 0.06, 5.1), mat=steel),
-             mk.box("Roof", (w, d, 0.6), (0, 0, 7.3), mat=steel, bevel=0.03),
+             mk.box("Back", (w - 0.24, 0.12, 4.36), (0, d / 2 - 0.07, 5.08), mat=steel),
+             mk.box("Roof", (w + 0.04, d + 0.04, 0.6), (0, 0, 7.3), mat=steel, bevel=0.03),
              mk.box("Sash", (w - 0.2, 0.06, 1.6), (0, -d / 2 + 0.1, 6.0), mat=glass),
              mk.box("SashBar", (w - 0.2, 0.14, 0.14), (0, -d / 2 + 0.05, 5.2), mat=steel),
              mk.cylinder("Duct", 0.5, 1.4, (0, 0.2, 8.3), mat=steel, verts=16)]
     for sx in (-1, 1):
-        parts.append(mk.box("Side", (0.12, d, 4.4), (sx * (w / 2 - 0.06), 0, 5.1), mat=steel))
+        parts.append(mk.box("Side", (0.12, d, 4.36), (sx * (w / 2 - 0.06), 0, 5.08), mat=steel))
     for k in range(3):
         parts.append(mk.box("Door", (1.55, 0.04, 2.3), (-1.65 + k * 1.65, -d / 2 - 0.01, 1.35), mat=white))
         parts += pk.handle("Pull", -1.65 + k * 1.65 + 0.5, -d / 2 - 0.02, 2.0, 0.5, dark, stand=0.07, r=0.03)

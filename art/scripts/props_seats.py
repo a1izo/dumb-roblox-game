@@ -84,10 +84,10 @@ def chair_crate():
     for k in range(3):
         z = 0.2 + k * (slat_h + gap) + slat_h / 2
         for sy in (-1, 1):
-            parts.append(mk.box("Slat", (w - 0.1, 0.12, slat_h), (0, SEAT_Y + sy * (d / 2 - 0.06), z), mat=wood,
+            parts.append(mk.box("Slat", (w - 0.1, 0.12, slat_h), (0, SEAT_Y + sy * (d / 2 - 0.075), z), mat=wood,
                                 bevel=0.02))
         for sx in (-1, 1):
-            parts.append(mk.box("Slat", (0.12, d - 0.1, slat_h), (sx * (w / 2 - 0.06), SEAT_Y, z), mat=wood,
+            parts.append(mk.box("Slat", (0.12, d - 0.1, slat_h), (sx * (w / 2 - 0.075), SEAT_Y, z), mat=wood,
                                 bevel=0.02))
     for k in range(5):  # the bottom of the crate, upside down: the seat
         y = SEAT_Y - d / 2 + 0.3 + k * (d - 0.6) / 4
