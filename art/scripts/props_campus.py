@@ -1024,10 +1024,10 @@ def skeleton_model():
         a = 2 * math.pi * k / 5
         parts += [mk.tube("StandLeg", (0, 0, 0.35), (math.cos(a) * 0.9, math.sin(a) * 0.9, 0.12), 0.05, mat=steel, verts=5),
                   mk.sphere("Wheel", 0.1, (math.cos(a) * 0.9, math.sin(a) * 0.9, 0.1), mat=dark, segments=8, rings=6)]
-    parts += [mk.sphere("Skull", 0.42, (0, 0.05, 5.2), scale=(0.85, 1.0, 1.0), mat=bone, segments=14, rings=10),
-              mk.box("Jaw", (0.5, 0.4, 0.2), (0, -0.12, 4.78), mat=bone, bevel=0.08),
-              mk.sphere("SocketL", 0.1, (-0.15, -0.3, 5.22), mat=dark, segments=8, rings=6),
-              mk.sphere("SocketR", 0.1, (0.15, -0.3, 5.22), mat=dark, segments=8, rings=6)]
+    # (a real skull, sockets and teeth carved: a ball with two dark dots for eyes read as a cartoon)
+    parts += pk.skull("Skull", (0, 0.02, 5.12), 0.34, bone, dark, segments=24, teeth=6)
+    for z in (4.76, 4.88):  # (the neck's vertebrae up into the skull's base)
+        parts.append(mk.cylinder("Neck", 0.08, 0.12, (0, 0.1, z), mat=bone, verts=8))
     for k in range(16):
         parts.append(mk.cylinder("Vertebra", 0.1, 0.12, (0, 0.1, 4.62 - k * 0.14), mat=bone, verts=8))
     for k in range(6):

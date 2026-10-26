@@ -42,7 +42,7 @@ def _grow(parts, tips, rng, start, direction, length, radius, depth, mat, spread
 
 
 def tree(prefix, seed, trunk_h, trunk_r, limbs, limb_len, depth, spread, rise, droop, bark, foliage, clump_r,
-         clumps_per_tip, lift=0.0):
+         clumps_per_tip, lift=0.0, clump_seg=(9, 6), flat=(0.62, 0.8), lumpy=0.35):
     rng = random.Random(seed)
     parts = [mk.cylinder(prefix + "Flare", trunk_r * 1.5, 0.6, (0, 0, 0.3), mat=bark, verts=10, radius2=trunk_r)]
     top = (0.0, 0.0, trunk_h)
@@ -60,8 +60,9 @@ def tree(prefix, seed, trunk_h, trunk_r, limbs, limb_len, depth, spread, rise, d
             r = clump_r * rng.uniform(0.7, 1.15)
             c = mk.sphere(prefix + "Clump", r, (x + rng.uniform(-1, 1) * r * 0.8, y + rng.uniform(-1, 1) * r * 0.8,
                                                 z + lift + rng.uniform(-0.4, 0.6) * r),
-                          scale=(1, 1, rng.uniform(0.62, 0.8)), mat=rng.choice(foliage), segments=9, rings=6)
-            mk.displace_noise(c, strength=r * 0.35, scale=r * 0.55, name=prefix + "ClumpNoise")
+                          scale=(1, 1, rng.uniform(*flat)), mat=rng.choice(foliage), segments=clump_seg[0],
+                          rings=clump_seg[1])
+            mk.displace_noise(c, strength=r * lumpy, scale=r * 0.55, name=prefix + "ClumpNoise")
             parts.append(c)
     return parts
 
@@ -74,8 +75,12 @@ def tree_sakura():
     pinks = [mk.noisy("TS_Bloom1", srgb(236, 176, 196), srgb(252, 214, 226), scale=40, roughness=0.8),
              mk.noisy("TS_Bloom2", srgb(246, 204, 216), srgb(255, 234, 240), scale=40, roughness=0.8),
              mk.noisy("TS_Bloom3", srgb(222, 150, 176), srgb(240, 190, 208), scale=40, roughness=0.8)]
-    return tree("TS_", 11, trunk_h=4.6, trunk_r=0.62, limbs=5, limb_len=6.0, depth=2, spread=0.55, rise=0.55,
-                droop=0.5, bark=bark, foliage=pinks, clump_r=1.55, clumps_per_tip=3, lift=0.3), []
+    # (the crown one cloud of many soft clumps, one at every twig of a third branching, the limbs showing through its
+    # gaps, two to a twig; grown near the kept tree's proportions so the fit to its box stretches it evenly; about as
+    # many triangles as the thinner one before it: 38 of them stand in the district)
+    return tree("TS_", 11, trunk_h=4.8, trunk_r=0.62, limbs=5, limb_len=3.6, depth=3, spread=0.55, rise=0.9,
+                droop=0.65, bark=bark, foliage=pinks, clump_r=1.45, clumps_per_tip=2, lift=0.3, clump_seg=(8, 5),
+                flat=(0.75, 0.95), lumpy=0.22), []
 
 
 @prop("TreeZelkova", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Tokyo", anchor=(0, 0))

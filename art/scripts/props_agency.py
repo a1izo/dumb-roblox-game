@@ -549,17 +549,32 @@ def desk_phone():
 
 @prop("CoffeeMachine", pivot="bottom", material="Metal", collide=False, texture=256, set="Agency")
 def coffee_machine():
-    """A filter coffee machine with its glass jug half full on the lit warming plate."""
+    """An office filter coffee machine: a black tower with its water tank behind (its gauge a window of blue), the
+    brewing head over the lower plate with the filter basket's handle out of its side, the glass jug under it half
+    full, its black lid and handle; a second jug, full, keeping warm on the plate on top; the switch and its lamp."""
     black = pk.plastic("Cof_Black", (24, 24, 26))
     steel = pk.metal("Cof_Steel", (150, 152, 158), (190, 192, 198), rough=0.3, metallic=0.8)
     coffee = pk.plastic("Cof_Coffee", (40, 22, 12))
-    parts = [mk.box("Tower", (1.0, 0.8, 1.7), (0, 0.3, 0.85), mat=black, bevel=0.06),
-             mk.box("Head", (1.0, 1.3, 0.35), (0, -0.05, 1.55), mat=black, bevel=0.06),
-             mk.box("Plate", (1.0, 1.1, 0.12), (0, -0.1, 0.06), mat=black, bevel=0.03),
-             mk.cylinder("Jug", 0.36, 0.7, (0, -0.35, 0.47), mat=steel, verts=16),
-             mk.cylinder("Coffee", 0.33, 0.35, (0, -0.35, 0.32), mat=coffee, verts=16),
-             mk.box("Handle", (0.08, 0.3, 0.45), (0.395, -0.35, 0.5), mat=black)]
-    glows = [mk.box("Power", (0.1, 0.04, 0.08), (0.35, -0.12, 1.45), mat=pk.glow("Cof_Power", (255, 60, 40), 4))]
+    glass = mk.noisy("Cof_Glass", srgb(60, 52, 46), srgb(96, 86, 78), scale=6, roughness=0.08)
+    water = pk.plastic("Cof_Water", (80, 130, 190))
+    parts = [pk.rounded("Tower", (1.0, 0.75, 1.8), (0, 0.32, 0.9), black, r=0.06),
+             mk.box("Gauge", (0.08, 0.3, 0.9), (0.51, 0.35, 0.95), mat=water),
+             pk.rounded("Head", (1.0, 1.25, 0.38), (0, -0.05, 1.62), black, r=0.06),
+             mk.box("Basket", (0.08, 0.12, 0.16), (0.53, -0.3, 1.55), mat=black, bevel=0.02),
+             pk.rounded("Base", (1.0, 1.25, 0.14), (0, -0.05, 0.07), black, r=0.04),
+             mk.cylinder("Plate", 0.36, 0.03, (0, -0.32, 0.155), mat=steel, verts=20),
+             mk.cylinder("TopPlate", 0.32, 0.03, (0, 0.32, 1.815), mat=steel, verts=20)]
+    for at, z0, fill in (((0, -0.32), 0.17, 0.45), ((0, 0.32), 1.83, 0.8)):
+        x, y = at
+        parts += [mk.lathe("Jug", [(0.0, 0.0), (0.3, 0.0), (0.34, 0.12), (0.34, 0.42), (0.26, 0.58), (0.2, 0.66),
+                                   (0.0, 0.66)], (x, y, z0), mat=glass, segments=18),
+                  mk.lathe("Brew", [(0.0, 0.0), (0.33, 0.0), (0.345, 0.12), (0.345, 0.66 * fill - 0.06), (0.0, 0.66 * fill - 0.06)],
+                           (x, y, z0 + 0.03), mat=coffee, segments=18),
+                  mk.cylinder("Lid", 0.21, 0.07, (x, y, z0 + 0.69), mat=black, verts=14),
+                  mk.box("JugHandle", (0.06, 0.12, 0.42), (x + 0.42, y, z0 + 0.36), mat=black, bevel=0.02),
+                  mk.box("HandleArm", (0.12, 0.08, 0.06), (x + 0.37, y, z0 + 0.55), mat=black)]
+    parts.append(mk.box("Switch", (0.14, 0.04, 0.1), (0.25, -0.69, 0.07), mat=black, bevel=0.01))
+    glows = [mk.box("Power", (0.08, 0.02, 0.05), (0.25, -0.715, 0.07), mat=pk.glow("Cof_Power", (255, 60, 40), 4))]
     return parts, glows
 
 
