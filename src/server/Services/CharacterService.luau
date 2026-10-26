@@ -415,12 +415,39 @@ local CLOTHING_ACCESSORIES = {
 	[Enum.AccessoryType.DressSkirt] = true,
 }
 
+-- The attachments of the head: an accessory held by one of these (a hat, hair, glasses, a mask) stays on in a
+-- match; anything worn on the body (a coat, a cape, wings, a belt, a scarf, a shoulder pet) comes off, whatever
+-- its type says (old ones say Unknown). A rigid coat left on lay over the suit's cloth and the two cut through
+-- each other at every move (2026-10-26).
+local HEAD_ATTACHMENTS = {
+	HatAttachment = true,
+	HairAttachment = true,
+	FaceFrontAttachment = true,
+	FaceCenterAttachment = true,
+}
+
+local function onHead(accessory: Accessory): boolean
+	local handle = accessory:FindFirstChild("Handle")
+	if not handle then
+		return false
+	end
+	for _, child in ipairs(handle:GetChildren()) do
+		if child:IsA("Attachment") and HEAD_ATTACHMENTS[child.Name] then
+			return true
+		end
+	end
+	return false
+end
+
 local SUIT = Color3.fromRGB(30, 30, 34)
 local TROUSERS = Color3.fromRGB(24, 24, 28)
 local SUIT_PARTS = { "Torso", "Left Arm", "Right Arm" }
 local TROUSER_PARTS = { "Left Leg", "Right Leg" }
 -- The cloth shells are this much larger than the part they cover, and the trousers' this much darker.
 local CLOTH_PAD = 0.03
+-- Each shell's base box, the body part it is cut for (its lapels, pockets and seams stand off this box): the game
+-- sizes the box to the part, so the details keep their depth instead of shrinking the cloth into the body.
+local SHELL_BASE = { SuitTorso = Vector3.new(2, 2, 1), SuitLimb = Vector3.new(1, 2, 1) }
 local TROUSER_TINT = Color3.new(0.8, 0.8, 0.82)
 
 -- The match look: a dark suit, white collar and red tie over the player's own face, hair and
@@ -443,7 +470,7 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 	local skin = if head and head:IsA("BasePart") then head.Color else Color3.fromRGB(200, 170, 140)
 	for _, item in ipairs(character:GetChildren()) do
 		local clothing = item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors")
-		if clothing or (item:IsA("Accessory") and CLOTHING_ACCESSORIES[item.AccessoryType]) then
+		if clothing or (item:IsA("Accessory") and (CLOTHING_ACCESSORIES[item.AccessoryType] or not onHead(item))) then
 			item:Destroy()
 		end
 	end
@@ -464,14 +491,20 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 		for _, name in ipairs(names) do
 			local holder = "LSuit" .. (string.gsub(name, " ", ""))
 			CharacterService.attachBuiltTo(character, holder, { name }, function(anchor: CFrame, part: BasePart)
-				local shell = Models.suit(if name == "Torso" then "SuitTorso" else "SuitLimb")
+				local key = if name == "Torso" then "SuitTorso" else "SuitLimb"
+				local shell = Models.suit(key)
 				if not shell then
 					return {}
 				end
+				local fit = part.Size / SHELL_BASE[key]
+				local pad = Vector3.new(CLOTH_PAD, CLOTH_PAD, CLOTH_PAD)
 				local parts = {}
 				for _, item in ipairs(shell:GetDescendants()) do
 					if item:IsA("MeshPart") then
-						item.Size = part.Size + Vector3.new(CLOTH_PAD, CLOTH_PAD, CLOTH_PAD)
+						local ok, native = pcall(function()
+							return item.MeshSize
+						end)
+						item.Size = if ok and native.Magnitude > 0 then native * fit + pad else part.Size + pad
 						item.CFrame = anchor
 						local look = item:FindFirstChildWhichIsA("SurfaceAppearance")
 						if look and tint then

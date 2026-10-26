@@ -165,17 +165,65 @@ def _suit_wool():
     return mk.flat("Suit_Wool", srgb(30, 30, 34), 0.85, kind="wool")
 
 
+def _proud(name, outline, out, mat, back=False):
+    """A flat piece laid on a shell's front face (or its back), standing `out` proud of it: `outline` [(x, z)]."""
+    y = (0.5 + out / 2 - 0.005) * (1 if back else -1)
+    return mk.extrude_shape(name, outline, out + 0.01, loc=(0, y, 0), rot=(90, 0, 0), mat=mat)
+
+
+# How far the shells' details stand off their base boxes, at most (CharacterService sizes each base box to its body
+# part; what stands off it keeps its depth). Each shell carries as much at its back as at its front, so the box stays
+# in the middle of the mesh.
+JACKET_OUT = 0.045
+LIMB_OUT = 0.012
+
+
 @prop("SuitTorso", pivot="centre", material="Fabric", collide=False, texture=256)
 def suit_torso():
-    """The match suit's cloth over an R6 torso: a shell the game sizes to each body
-    (CharacterService.dressNoir), since a running game cannot give a plain part a cloth of its own."""
-    return [mk.box("Cloth", (2.0, 1.0, 2.0), (0, 0, 0), mat=_suit_wool())], []
+    """The match suit's jacket over an R6 torso, a shell the game sizes to each body (CharacterService.dressNoir): the
+    notched lapels in satin, framing the white shirt front and the tie (the game's own parts, in the V between them),
+    the front closing below them on two horn buttons, a welt pocket on the left breast and flapped pockets at the hips,
+    the seam down the back."""
+    wool = _suit_wool()
+    satin = mk.flat("Suit_Satin", srgb(18, 18, 22), 0.4)
+    horn = mk.flat("Suit_Horn", srgb(14, 13, 12), 0.3)
+    seam = mk.flat("Suit_Seam", srgb(17, 17, 20), 0.9)
+    parts = [mk.box("Cloth", (2.0, 1.0, 2.0), (0, 0, 0), mat=wool, bevel=0.05)]
+    for sx in (-1, 1):
+        lapel = [(0.27, 0.99), (0.62, 0.93), (0.5, 0.7), (0.59, 0.62), (0.07, -0.24), (0.02, -0.18)]
+        parts.append(_proud("Lapel", [(sx * x, z) for x, z in lapel], 0.03, satin))
+        # the pockets: flaps at the hips, over a seam
+        parts.append(_proud("HipFlap", [(sx * 0.32, -0.5), (sx * 0.8, -0.5), (sx * 0.8, -0.62), (sx * 0.32, -0.63)], 0.022,
+                            wool))
+    parts += [_proud("Welt", [(-0.82, 0.42), (-0.46, 0.45), (-0.46, 0.38), (-0.82, 0.35)], 0.018, wool),
+              _proud("Closing", [(-0.005, -0.24), (0.025, -0.24), (0.045, -1.0), (0.015, -1.0)], 0.008, seam),
+              _proud("BackSeam", [(-0.018, 1.0), (0.018, 1.0), (0.018, -1.0), (-0.018, -1.0)], JACKET_OUT, seam, back=True)]
+    for z in (-0.4, -0.68):
+        parts.append(mk.cylinder("Button", 0.05, JACKET_OUT + 0.01, (0.03, -0.5 - JACKET_OUT / 2 + 0.005, z),
+                                 rot=(90, 0, 0), mat=horn, verts=12))
+    return parts, []
 
 
 @prop("SuitLimb", pivot="centre", material="Fabric", collide=False, texture=256)
 def suit_limb():
-    """The same cloth over an arm or a leg (the trousers' are tinted a shade darker by the game)."""
-    return [mk.box("Cloth", (1.0, 1.0, 2.0), (0, 0, 0), mat=_suit_wool())], []
+    """The same cloth over an arm or a leg (the trousers' tinted a shade darker by the game): a pressed crease down its
+    front and its back, a seam down each side, the hem turned at its foot (under the hand's cuff on an arm), a few
+    soft folds at the elbow or the knee."""
+    wool = _suit_wool()
+    seam = mk.flat("Suit_Seam", srgb(17, 17, 20), 0.9)
+    parts = [mk.box("Cloth", (1.0, 1.0, 2.0), (0, 0, 0), mat=wool, bevel=0.05)]
+    strip = [(-0.012, 1.0), (0.012, 1.0), (0.012, -1.0), (-0.012, -1.0)]
+    parts += [_proud("Crease", strip, LIMB_OUT, wool), _proud("CreaseBack", strip, LIMB_OUT, wool, back=True)]
+    for sx in (-1, 1):  # the side seams
+        parts.append(mk.box("SideSeam", (LIMB_OUT + 0.01, 0.02, 2.0), (sx * (0.5 + LIMB_OUT / 2 - 0.005), 0, 0), mat=seam))
+    parts.append(mk.box("Hem", (1.0 + 2 * LIMB_OUT, 1.0 + 2 * LIMB_OUT, 0.07), (0, 0, -0.965), mat=wool, bevel=0.01))
+    for k, (z, tilt) in enumerate(((-0.02, 7), (-0.12, -5), (-0.2, 4))):  # the folds at the joint
+        w = (0.5, 0.36, 0.44)[k]
+        fold = _proud("Fold", [(-w / 2, 0.012), (w / 2, 0.012), (w / 2, -0.012), (-w / 2, -0.012)], LIMB_OUT * 0.6, wool)
+        fold.location.z = z
+        fold.rotation_euler.y = math.radians(tilt)
+        parts.append(fold)
+    return parts, []
 
 
 @prop("Hood", pivot="centre", material="Fabric", collide=False, texture=512)
