@@ -21,12 +21,18 @@ def ace_room(s):
     runs = [((x0, z0), (x1, z0), []), ((x1, z0), (x1, z1), [door]), ((x1, z1), (x0, z1), []), ((x0, z1), (x0, z0), [])]
     for a, b, ops in runs:
         kit.wall(s, a, b, h, core="ConcreteDark", side_s="PlasterDark", openings=ops)
-    # The monitor wall: CRT banks with screens above them, cameras' feeds and the case.
+    # The monitor wall: CRT banks with screens above them, cameras' feeds and the case. (Each bank turned to face the
+    # room, its rack against the wall: a bank's screens face its desk's side, which at 0 was the wall, so the room saw
+    # the backs of every set; the owner, 2026-10-26: "why are the tvs inverted here".)
     for x in (-7.5, -2.0, 3.5):
-        s.prop("StationCRTBank", AX + x, AZ - 6.7, 0)
+        s.prop("StationCRTBank", AX + x, AZ - 6.7, 180)
     for x, loop in ((-7.5, "cctv"), (-2.0, "news"), (3.5, "cctv")):
         s.box("Screen", (AX + x, 9.4, AZ - 8.38), (4.6, 2.6, 0.2))
         s.screen((AX + x, 9.4, AZ - 8.26), 0, 4.4, 2.4, loop)
+        # each bank's own monitor on its desk lit too: its face, 4.25 up and 0.53 to the bank's front (measured on
+        # the built prop), turned to the room with it
+        s.box("Screen", (AX + x, 4.25, AZ - 6.15), (2.2, 1.6, 0.03))
+        s.screen((AX + x, 4.25, AZ - 6.12), 180, 2.1, 1.5, "cctv")
     for x in (-7.5, -2.0, 3.5):
         s.light("point", (AX + x, 5.0, AZ - 5.0), SCREEN, 14, 0.9)
     s.light("spot", (AX - 2.0, 9.0, AZ - 7.8), SCREEN, 20, 0.8, face="Back", angle=70)
