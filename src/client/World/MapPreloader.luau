@@ -26,23 +26,28 @@ local ASSETS = "DeathsGambitAssets"
 
 local loaded: { [string]: boolean } = {}
 
-local function add(list: { string }, seen: { [string]: boolean }, id: any)
+-- A content id to download, and what to hand PreloadAsync for it. A bare id is fetched as a picture, so a mesh's
+-- or a sound's id given that way fails ("Asset type does not match requested type", every import in the live place,
+-- 2026-10-26): those go as the instance that uses them.
+type Entry = { id: string, content: string | Instance }
+
+local function add(list: { Entry }, seen: { [string]: boolean }, id: any, holder: Instance?)
 	if type(id) == "string" and id ~= "" and not seen[id] and not loaded[id] then
 		seen[id] = true
-		table.insert(list, id)
+		table.insert(list, { id = id, content = holder or id })
 	end
 end
 
 local SURFACE_MAPS = { "ColorMap", "NormalMap", "RoughnessMap", "MetalnessMap" }
 
 -- Every content id under `root`.
-local function contentOf(root: Instance, list: { string }, seen: { [string]: boolean })
+local function contentOf(root: Instance, list: { Entry }, seen: { [string]: boolean })
 	for _, item in ipairs(root:GetDescendants()) do
 		if item:IsA("MeshPart") then
-			add(list, seen, item.MeshId)
+			add(list, seen, item.MeshId, item)
 			add(list, seen, item.TextureID)
 		elseif item:IsA("SpecialMesh") then
-			add(list, seen, item.MeshId)
+			add(list, seen, item.MeshId, item)
 			add(list, seen, item.TextureId)
 		elseif item:IsA("Decal") then -- Textures too
 			add(list, seen, item.Texture)
@@ -62,21 +67,25 @@ local function contentOf(root: Instance, list: { string }, seen: { [string]: boo
 		elseif item:IsA("ParticleEmitter") or item:IsA("Beam") or item:IsA("Trail") then
 			add(list, seen, (item :: any).Texture)
 		elseif item:IsA("Sound") then
-			add(list, seen, item.SoundId)
+			add(list, seen, item.SoundId, item)
 		end
 	end
 end
 
 -- Downloads `list`, calling onProgress(0..1) as it goes.
-local function preload(list: { string }, onProgress: ((number) -> ())?)
+local function preload(list: { Entry }, onProgress: ((number) -> ())?)
 	local total = #list
 	for first = 1, total, BATCH do
 		local batch = table.move(list, first, math.min(total, first + BATCH - 1), 1, {})
+		local contents = {}
+		for _, entry in ipairs(batch) do
+			table.insert(contents, entry.content)
+		end
 		pcall(function()
-			ContentProvider:PreloadAsync(batch)
+			ContentProvider:PreloadAsync(contents)
 		end)
-		for _, id in ipairs(batch) do
-			loaded[id] = true
+		for _, entry in ipairs(batch) do
+			loaded[entry.id] = true
 		end
 		if onProgress then
 			onProgress(math.min(total, first + BATCH - 1) / total)
