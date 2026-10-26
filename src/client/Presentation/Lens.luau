@@ -27,6 +27,7 @@ local focus = FAR
 local lastBase: CFrame? = nil
 local lastApplied: CFrame? = nil
 local started = 0
+local grained = 0
 
 local cached: { Model } = {}
 local cachedAt = -math.huge
@@ -106,8 +107,9 @@ local function step(dt: number)
 		lastApplied = cf * CFrame.Angles(pitch, yaw, roll)
 		camera.CFrame = lastApplied :: CFrame
 	end
-	-- the grain: its tiles jump about a few times a second
-	if grain then
+	-- the grain: its tiles jump 24 times a second, as film's do
+	if grain and os.clock() - grained >= 1 / 24 then
+		grained = os.clock()
 		grain.Position = UDim2.fromOffset(math.random(-64, 0), math.random(-64, 0))
 	end
 end
