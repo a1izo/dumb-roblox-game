@@ -489,8 +489,15 @@ return {
 		props = {
 			-- (stand-ins: a bookshelf, the second cabinet and a plant where the room is not built)
 			{ key = "Bookshelf", stand = true, at = { 7.35, 0, 1.8 }, turn = 90, size = 8.1, color = { 60, 42, 30 } },
-			{ key = "FilingCabinet", stand = true, at = { 6.6, 0, -6.9 }, turn = 180, size = 5, color = { 75, 79, 76 } },
-			{ key = "Plant", stand = true, at = { -6.6, 0, -3.9 }, size = 3.2, color = { 40, 70, 40 } },
+			{
+				key = "FilingCabinet",
+				stand = true,
+				at = { 6.6, 0, -6.8 },
+				turn = 180,
+				size = 5,
+				color = { 75, 79, 76 },
+			},
+			{ key = "Plant", stand = true, at = { -6.4, 0, -5.2 }, size = 3.2, color = { 40, 70, 40 } },
 			{ key = "Chair", at = { 0, 0, 0.15 }, size = 3.9, color = { 82, 45, 32 } },
 			{ key = "Table", at = { 0, 0, -3.3 }, size = 5, color = { 72, 50, 32 } },
 			{ key = "EvidenceBoard", at = { 0, 5.6, -7.9 }, turn = 180, size = 12.6, color = { 72, 54, 43 } },
