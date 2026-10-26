@@ -129,7 +129,7 @@ return {
 	LanternPost = { size = { 1.1, 8.615, 2.769 }, pivot = "bottom", material = "Wood", collide = true, color = { 36, 35, 34 }, lights = { { at = { 0.05, 6.809, -0.834 }, brightness = 0.8, color = { 196, 222, 255 }, kind = "point", range = 18 } }, flames = { { -0.028, 6.749, -0.855, 0.6 } }, anchor = { 0.05, 1.066 }, set = "Lobby", tris = 2162 },
 	LanternString = { size = { 12.014, 1.85, 0.497 }, pivot = "centre", material = "Fabric", collide = false, color = { 18, 16, 16 }, lights = { { at = { -0, -0.099, 0 }, brightness = 0.8, color = { 255, 190, 140 }, kind = "point", range = 14 } }, set = "Tokyo", tris = 6352, glow = { { 250, 240, 220 }, { 240, 70, 50 } } },
 	Lectern = { size = { 2.6, 5.294, 2 }, pivot = "bottom", material = "Wood", collide = true, color = { 86, 63, 41 }, set = "Campus", tris = 672, glow = { { 255, 210, 150 } } },
-	MagazineRack = { size = { 8, 3.234, 1.6 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 74, 73, 72 }, set = "Tokyo", tris = 540 },
+	MagazineRack = { size = { 8, 3.239, 1.6 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 30, 30, 29 }, set = "Tokyo", tris = 1836 },
 	Mannequin = { size = { 1.819, 6.042, 1.8 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 82, 72, 64 }, set = "Tokyo", tris = 5618 },
 	MarionetteBar = { size = { 2.424, 0.342, 1.5 }, pivot = "centre", material = "Wood", collide = false, color = { 77, 64, 48 }, set = "Core", tris = 616 },
 	MealTicketMachine = { size = { 3, 5.8, 1.805 }, pivot = "bottom", material = "Metal", collide = true, color = { 152, 148, 148 }, set = "Tokyo", tris = 1411, glow = { { 255, 200, 120 }, { 255, 160, 100 }, { 255, 236, 180 } } },

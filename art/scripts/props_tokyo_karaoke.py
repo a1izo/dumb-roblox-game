@@ -178,11 +178,24 @@ def magazine_rack():
         z = 0.85 + tier * 0.75
         y = 0.4 - tier * 0.25
         parts.append(mk.box("Tier", (8.0, 0.6, 0.06), (0, y, z), rot=(-15, 0, 0), mat=steel))
+        # the rail along the tier's lip that holds them up, the price strip under it
+        parts.append(mk.tube("Rail", (-4.0, y - 0.36, z + 0.12), (4.0, y - 0.36, z + 0.12), 0.025, mat=steel, verts=6))
+        parts.append(mk.box("Price", (8.0, 0.02, 0.1), (0, y - 0.33, z - 0.02), rot=(-15, 0, 0), mat=white))
         x = -3.8
         while x < 3.5:
             w = rng.uniform(0.6, 0.85)
-            parts.append(mk.box("Mag", (w - 0.05, 0.04, 0.95), (x + w / 2, y - 0.12, z + 0.42), rot=(-15, 0, 0),
-                                mat=covers[rng.randrange(len(covers))]))
+            lean = (-15 + rng.uniform(-3, 2), 0, rng.uniform(-2.5, 2.5))
+            cover = covers[rng.randrange(len(covers))]
+            at = (x + w / 2, y - 0.12, z + 0.42)
+            parts.append(mk.box("Mag", (w - 0.05, 0.06, 0.95), at, rot=lean, mat=white))  # (its pages' edges)
+            # the cover: its colour, a masthead band across its top, a picture and a line of title
+            face = (at[0], at[1] - 0.035, at[2])
+            parts.append(mk.box("Cover", (w - 0.07, 0.01, 0.93), face, rot=lean, mat=cover))
+            top = covers[(covers.index(cover) + 3) % len(covers)]
+            parts.append(mk.box("Masthead", (w - 0.12, 0.012, 0.16), (face[0], face[1] - 0.004, face[2] + 0.33),
+                                rot=lean, mat=top))
+            parts.append(mk.box("Picture", (w * 0.6, 0.012, 0.42), (face[0] - w * 0.08, face[1] - 0.004, face[2] - 0.05),
+                                rot=lean, mat=covers[(covers.index(cover) + 5) % len(covers)]))
             x += w
     return parts, []
 
