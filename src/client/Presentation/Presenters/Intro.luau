@@ -21,6 +21,7 @@ local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotPlayer = require(script.Parent.Parent.ShotPlayer)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local StageLight = require(script.Parent.Parent.StageLight)
 local Stage = require(script.Parent.Parent.Stage)
 
 local C = Kit.color
@@ -197,6 +198,8 @@ return function(cue)
 			end
 			Sfx.play("thunder")
 			Cinema.flash(C.bone, 0.5, 0.35)
+			-- (the lamps round it falter as it strikes the ground, then come back as the case opens)
+			StageLight.dip(landing.Position, 50, 0.4, 0.9)
 			DeathFx.burst(landing.Position + Vector3.new(0, 0.5, 0), DeathFx.DARK, 40)
 			DeathFx.chalk(landing.Position, 9, DeathFx.CHALK, 8)
 			DeathFx.sparks(landing.Position + Vector3.new(0, 0.6, 0), C.white)
