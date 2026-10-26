@@ -35,7 +35,8 @@ def lower(s):
         fit.table(s, cx, 55.0, 2.6, 2.6, 0, L1, h=1.6)
     p(s, "FloorLamp", 15.0, 58.0)
     p(s, "Sideboard", 97.3, 30.0, 90)  # (facing the lounge: at -90 its doors faced the glass)
-    p(s, "WaterCooler", 98.6, 60.0, 90)
+    # (the cooler inside the chamfered glass, facing the lounge: at x 98.6 it stood in the air outside the tower)
+    p(s, "WaterCooler", 75.9, 56.9, 45)
     # The corridor round the core: a plant at its south-west corner.
     p(s, "Plant", -14.4, -46.4)
 

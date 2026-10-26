@@ -405,7 +405,7 @@ return {
 		{ "ClubChair", 28.6, 0, 55, 90, 1 },
 		{ "FloorLamp", 15, 0, 58, 0, 1 },
 		{ "Sideboard", 97.3, 0, 30, 90, 1 },
-		{ "WaterCooler", 98.6, 0, 60, 90, 1 },
+		{ "WaterCooler", 75.9, 0, 56.9, 45, 1 },
 		{ "Plant", -14.4, 0, -46.4, 0, 1 },
 		{ "SpecimenShelf", -96, 14, -49.2, 0, 1 },
 		{ "SpecimenShelf", -78, 14, -49.2, 0, 1 },
