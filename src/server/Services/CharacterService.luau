@@ -12,6 +12,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
+local Suit = require(Shared:WaitForChild("Suit"))
 
 local CollisionGroups = require(script.Parent.CollisionGroups)
 local CrispAccessories = require(script.Parent.CrispAccessories)
@@ -403,58 +404,16 @@ function CharacterService.removeDefaultAnimate(character: Model)
 	end)
 end
 
-local CLOTHING_ACCESSORIES = {
-	[Enum.AccessoryType.Shirt] = true,
-	[Enum.AccessoryType.TShirt] = true,
-	[Enum.AccessoryType.Pants] = true,
-	[Enum.AccessoryType.Jacket] = true,
-	[Enum.AccessoryType.Sweater] = true,
-	[Enum.AccessoryType.Shorts] = true,
-	[Enum.AccessoryType.LeftShoe] = true,
-	[Enum.AccessoryType.RightShoe] = true,
-	[Enum.AccessoryType.DressSkirt] = true,
-}
-
--- The attachments of the head: an accessory held by one of these (a hat, hair, glasses, a mask) stays on in a
--- match; anything worn on the body (a coat, a cape, wings, a belt, a scarf, a shoulder pet) comes off, whatever
--- its type says (old ones say Unknown). A rigid coat left on lay over the suit's cloth and the two cut through
--- each other at every move (2026-10-26).
-local HEAD_ATTACHMENTS = {
-	HatAttachment = true,
-	HairAttachment = true,
-	FaceFrontAttachment = true,
-	FaceCenterAttachment = true,
-}
-
-local function onHead(accessory: Accessory): boolean
-	local handle = accessory:FindFirstChild("Handle")
-	if not handle then
-		return false
-	end
-	for _, child in ipairs(handle:GetChildren()) do
-		if child:IsA("Attachment") and HEAD_ATTACHMENTS[child.Name] then
-			return true
-		end
-	end
-	return false
-end
-
 local SUIT = Color3.fromRGB(30, 30, 34)
 local TROUSERS = Color3.fromRGB(24, 24, 28)
 local SUIT_PARTS = { "Torso", "Left Arm", "Right Arm" }
 local TROUSER_PARTS = { "Left Leg", "Right Leg" }
--- The cloth shells are this much larger than the part they cover, and the trousers' this much darker.
-local CLOTH_PAD = 0.03
--- Each shell's base box, the body part it is cut for (its lapels, pockets and seams stand off this box): the game
--- sizes the box to the part, so the details keep their depth instead of shrinking the cloth into the body.
-local SHELL_BASE = { SuitTorso = Vector3.new(2, 2, 1), SuitLimb = Vector3.new(1, 2, 1) }
-local TROUSER_TINT = Color3.new(0.8, 0.8, 0.82)
 
 -- The match look: a dark suit, white collar and red tie over the player's own face, hair and
 -- body shape. Clothing (classic and layered) is removed so outfits cannot give anyone away.
 function CharacterService.applyOutfit(player: Player)
 	local character = player.Character
-	if not character or character:GetAttribute("LNoirOutfit") then
+	if not character or character:GetAttribute(Suit.DRESSED) then
 		return
 	end
 	CharacterService.dressNoir(character, nil)
@@ -462,18 +421,12 @@ end
 
 -- Dresses any R6 model in the match suit (players, and the Tokyo crowd that must look like them).
 function CharacterService.dressNoir(character: Model, tie: Color3?)
-	if character:GetAttribute("LNoirOutfit") then
+	if character:GetAttribute(Suit.DRESSED) then
 		return
 	end
-	character:SetAttribute("LNoirOutfit", true)
+	character:SetAttribute(Suit.DRESSED, true)
 	local head = character:FindFirstChild("Head")
 	local skin = if head and head:IsA("BasePart") then head.Color else Color3.fromRGB(200, 170, 140)
-	for _, item in ipairs(character:GetChildren()) do
-		local clothing = item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors")
-		if clothing or (item:IsA("Accessory") and (CLOTHING_ACCESSORIES[item.AccessoryType] or not onHead(item))) then
-			item:Destroy()
-		end
-	end
 	local function paint(names: { string }, color: Color3)
 		for _, name in ipairs(names) do
 			local part = character:FindFirstChild(name)
@@ -483,46 +436,49 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 			end
 		end
 	end
-	paint(SUIT_PARTS, SUIT)
-	paint(TROUSER_PARTS, TROUSERS)
-	-- Real cloth over the painted parts when the Core import carries it (Models.suit): a shell sized
-	-- to each part, a hair larger. Before the import the painted parts stand as they are.
-	local function clothe(names: { string }, tint: Color3?)
-		for _, name in ipairs(names) do
-			local holder = "LSuit" .. (string.gsub(name, " ", ""))
-			CharacterService.attachBuiltTo(character, holder, { name }, function(anchor: CFrame, part: BasePart)
-				local key = if name == "Torso" then "SuitTorso" else "SuitLimb"
-				local shell = Models.suit(key)
-				if not shell then
-					return {}
-				end
-				local fit = part.Size / SHELL_BASE[key]
-				local pad = Vector3.new(CLOTH_PAD, CLOTH_PAD, CLOTH_PAD)
-				local parts = {}
-				for _, item in ipairs(shell:GetDescendants()) do
-					if item:IsA("MeshPart") then
-						local ok, native = pcall(function()
-							return item.MeshSize
-						end)
-						item.Size = if ok and native.Magnitude > 0 then native * fit + pad else part.Size + pad
-						item.CFrame = anchor
-						local look = item:FindFirstChildWhichIsA("SurfaceAppearance")
-						if look and tint then
-							look.Color = tint
-						end
-						table.insert(parts, item)
+	-- What of the avatar comes off under the suit (Shared/Suit). Body colours that land late have repainted the body
+	-- already: the suit's colours go back on, and the hands take the skin they bring.
+	local function strip(item: Instance)
+		if not Suit.offBody(item) then
+			return
+		end
+		if item:IsA("BodyColors") then
+			skin = item.HeadColor3
+			paint(SUIT_PARTS, SUIT)
+			paint(TROUSER_PARTS, TROUSERS)
+			for _, side in ipairs({ "LHandLeft", "LHandRight" }) do
+				local hand = character:FindFirstChild(side)
+				for _, part in ipairs(if hand then hand:GetChildren() else {}) do
+					if part:IsA("BasePart") then
+						part.Color = skin
 					end
 				end
-				for _, item in ipairs(parts) do
-					item.Parent = nil
-				end
-				shell:Destroy()
-				return parts
-			end)
+			end
 		end
+		item:Destroy()
 	end
-	clothe(SUIT_PARTS, nil)
-	clothe(TROUSER_PARTS, TROUSER_TINT)
+	for _, item in ipairs(character:GetChildren()) do
+		strip(item)
+	end
+	-- An avatar's things may land after its body (each accessory once it loads): they come off as they arrive, or
+	-- a coat that loaded late stood over the suit all case long, and in every cutscene copy of the body (2026-10-26).
+	character.ChildAdded:Connect(function(item)
+		task.defer(function()
+			if item.Parent == character then
+				strip(item)
+			end
+		end)
+	end)
+	paint(SUIT_PARTS, SUIT)
+	paint(TROUSER_PARTS, TROUSERS)
+	-- Real cloth over the painted parts when the Core import carries it (Shared/Suit): a shell fitted to each
+	-- part, a hair larger. Before the import the painted parts stand as they are.
+	for _, name in ipairs({ "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg" }) do
+		local holder = "LSuit" .. (string.gsub(name, " ", ""))
+		CharacterService.attachBuiltTo(character, holder, { name }, function(_anchor: CFrame, part: BasePart)
+			return Suit.cloth(part)
+		end)
+	end
 	-- R6 arms are one part, so the hands are skin-coloured cuffs welded over the arm ends.
 	for _, side in ipairs({ "Left", "Right" }) do
 		CharacterService.attachBuiltTo(character, "LHand" .. side, { side .. " Arm" }, function(anchor: CFrame)
@@ -536,11 +492,16 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 			}
 		end)
 	end
+	-- (the suit's own shirt and pants, when they have ids, stay on)
 	if Assets.outfit.shirt ~= "" then
-		Create("Shirt", { ShirtTemplate = Assets.contentId(Assets.outfit.shirt), Parent = character })
+		local shirt = Create("Shirt", { ShirtTemplate = Assets.contentId(Assets.outfit.shirt) })
+		shirt:SetAttribute(Suit.OWN, true)
+		shirt.Parent = character
 	end
 	if Assets.outfit.pants ~= "" then
-		Create("Pants", { PantsTemplate = Assets.contentId(Assets.outfit.pants), Parent = character })
+		local pants = Create("Pants", { PantsTemplate = Assets.contentId(Assets.outfit.pants) })
+		pants:SetAttribute(Suit.OWN, true)
+		pants.Parent = character
 	end
 	local tieColour = tie or Color3.fromRGB(190, 22, 36)
 	CharacterService.attachBuiltTo(character, "LNoirTie", TORSO, function(anchor: CFrame, torso: BasePart)

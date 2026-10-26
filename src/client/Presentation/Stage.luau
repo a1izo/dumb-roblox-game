@@ -15,6 +15,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
+local Suit = require(Shared:WaitForChild("Suit"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
@@ -143,6 +144,15 @@ local function copyOf(source: Model): Model?
 	for _, item in ipairs(leftovers) do
 		item:Destroy()
 	end
+	-- A suited body's copy sheds what of the avatar reached this screen before the server took it off (a coat that
+	-- loaded late), so no cutscene shows it over the suit.
+	if clone:GetAttribute(Suit.DRESSED) then
+		for _, item in ipairs(clone:GetChildren()) do
+			if Suit.offBody(item) then
+				item:Destroy()
+			end
+		end
+	end
 	-- and the head wears its own face, not the emote's
 	local head = clone:FindFirstChild("Head")
 	local face = head and head:FindFirstChild("face")
@@ -243,6 +253,21 @@ function Stage.figure(): Model
 			C1 = joint[5],
 			Parent = parts[joint[2]],
 		})
+	end
+	-- and the match suit's tailored cloth over the body, as the players wear it (Shared/Suit; none before the import)
+	for name, body in pairs(parts) do
+		if name ~= "Head" and name ~= "HumanoidRootPart" then
+			for _, cloth in ipairs(Suit.cloth(body)) do
+				cloth.Anchored = false
+				cloth.CanCollide = false
+				cloth.CanQuery = false
+				cloth.CanTouch = false
+				cloth.Massless = true
+				cloth.CastShadow = false
+				Create("Weld", { Part0 = body, Part1 = cloth, Parent = cloth })
+				cloth.Parent = model
+			end
+		end
 	end
 	Create("Humanoid", { RigType = Enum.HumanoidRigType.R6, Parent = model })
 	model.PrimaryPart = parts.HumanoidRootPart
