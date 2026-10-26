@@ -527,8 +527,8 @@ def konbini(s, g):
     s.prop("ShopCounter", 40.0, -38.5, 180)
     for x in (24.0, 31.0):
         s.prop("StoreShelf", x, -32.0, 90)
-    s.prop("DrinkFridge", 24.0, -20.2, 180)
-    s.prop("DrinkFridge", 32.5, -20.2, 180)
+    s.prop("DrinkFridge", 24.0, -20.2, 0)  # (their doors to the shop: at 180 they faced the back wall)
+    s.prop("DrinkFridge", 32.5, -20.2, 0)
     partition(s, (41.0, -27.0), (41.0, -17.6), 0.0, CEIL, "PlasterGrey", glass="band")
     partition(s, (41.0, -27.0), (50.6, -27.0), 0.0, CEIL, "PlasterGrey", door=(3.0, 4.0), glass="band")
     s.station("Camera", "Konbini Back Office", 45.6, -20.2, 0, prop="StationCCTV", spare=True)

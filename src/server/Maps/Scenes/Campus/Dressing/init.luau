@@ -471,7 +471,7 @@ return {
 		{ "Microscope", 75, 2.8, 56.2, 180, 1 },
 		{ "Typewriter", 77.4, 2.8, 56, 180, 1 },
 		{ "OfficeChair", 75, 0, 58.6, 180, 1 },
-		{ "Whiteboard", 106.4, 0, 61.2, -90, 1 },
+		{ "Whiteboard", 106.4, 0, 61.2, 90, 1 },
 		{ "SpecimenShelf", 116, 0, 71, 0, 1 },
 		{ "SpecimenShelf", 122, 0, 71, 0, 1 },
 		{ "SpecimenShelf", 128, 0, 71, 0, 1 },

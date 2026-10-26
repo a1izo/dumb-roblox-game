@@ -29,7 +29,7 @@ def science(s):
     s.prop("Microscope", 75.0, 56.2, 180, 1.0, top)
     s.prop("Typewriter", 77.4, 56.0, 180, 1.0, top)
     s.prop("OfficeChair", 75.0, 58.6, 180)
-    s.prop("Whiteboard", 106.4, 61.2, -90)
+    s.prop("Whiteboard", 106.4, 61.2, 90)  # (facing the bench: at -90 it faced the wall)
     # The chemistry lab: specimen shelves on the north wall, a whiteboard by the door.
     for x in (116.0, 122.0, 128.0):
         s.prop("SpecimenShelf", x, 71.0, 0)

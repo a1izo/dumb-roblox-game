@@ -43,7 +43,7 @@ def screen_wall(s):
         s.box("NeonRed", (nx, y, face + 0.15), (0.16, h + 1.0, 0.16))
         s.light("point", (nx, y, face + 1.4), (255, 40, 60), 12, 0.7)
     for sx in (-1, 1):
-        s.prop("SpeakerColumn", sx * P.SPEAKERS[0], P.SPEAKERS[1], 0.0)
+        s.prop("SpeakerColumn", sx * P.SPEAKERS[0], P.SPEAKERS[1], 180.0)  # (to the room, not the wall)
     s.box("Brass", (0.0, 2.2, face + 0.08), (7.0, 0.9, 0.12))
     s.sign((0.0, 2.2, face + 0.16), 180, 6.6, 0.75, "THE BUREAU  ·  WAR ROOM", "SpecialElite", (30, 22, 14), None)
 

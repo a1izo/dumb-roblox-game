@@ -61,7 +61,7 @@ def dept_store(s):
     for x in (2.0, 6.2):
         s.prop("FittingRoom", x, -71.3 + (x - 2.0) * 0.115, -7, 1.0, UP)
     s.prop("ClothesRack", 30.0, -67.0, 180, 1.0, UP)
-    s.prop("Mannequin", 31.0, -90.5, 0, 1.0, UP)
+    s.prop("Mannequin", 31.0, -90.5, 180, 1.0, UP)  # (facing the floor, its back to the south wall)
 
 
 def clinic(s):

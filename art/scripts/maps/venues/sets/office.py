@@ -44,7 +44,7 @@ def build(s):
     s.light("spot", (x0 - 7.0, 7.4, OZ - 1.0), NIGHT, 30, 1.6, shadows=True, face="Right", angle=34)
     # Filing cabinets either side of the evidence board (the cutscene brings the board and the one on the west), the
     # banker's lamp on the east one, lit; the bookshelf on the east wall, the radiator under the window.
-    s.prop("FilingCabinet", OX + 6.6, OZ - 6.9, 0)
+    s.prop("FilingCabinet", OX + 6.6, OZ - 6.9, 180)  # (its drawers to the room)
     s.prop("BankerLamp", OX + 6.6, OZ - 6.9, 180, 1.0, CABINET)
     s.light("point", (OX + 6.6, CABINET + 1.0, OZ - 7.0), LAMP, 10, 0.9, shadows=True)
     s.prop("Bookshelf", OX + X1 - 1.4, OZ + 1.8, 90)
