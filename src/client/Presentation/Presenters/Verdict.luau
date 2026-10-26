@@ -17,6 +17,7 @@ local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local StageLight = require(script.Parent.Parent.StageLight)
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -155,7 +156,12 @@ return function(cue)
 			Cinema.letterbox(true)
 			local removeLight = Cinema.spotlight(character)
 			local removeOutline = Cinema.outline(character, C.bone)
-			CameraDirector.cut(token, ShotSolver.frame(character, { distance = 8, height = 2, angle = -22 }), 55)
+			-- (the room's lamps falter and sink round them, a cold light from behind lines them against the dark)
+			local wide = ShotSolver.frame(character, { distance = 8, height = 2, angle = -22 })
+			local root = character:FindFirstChild("HumanoidRootPart")
+			local undip = if root and root:IsA("BasePart") then StageLight.dip(root.Position, 45, 0.3, 2.6) else nil
+			local unrim = StageLight.rim(character, wide.Position, Color3.fromRGB(200, 214, 255), 2.6)
+			CameraDirector.cut(token, wide, 55)
 			CameraDirector.move(token, ShotSolver.frame(character, { distance = 5, height = 1, angle = -8 }), 1.8, 42)
 			local stamp = Kit.stamp({
 				text = "Their role stays secret",
@@ -171,6 +177,10 @@ return function(cue)
 			stamp:Destroy()
 			removeOutline()
 			removeLight()
+			unrim()
+			if undip then
+				undip()
+			end
 			Cinema.letterbox(false)
 			CameraDirector.release(token)
 		end

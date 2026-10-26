@@ -14,6 +14,7 @@ local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local UiSound = require(script.Parent.Parent.UI.Core.UiSound)
 local Characters = require(script.Parent.Parent.Characters)
+local Lens = require(script.Parent.Lens)
 local ShotSolver = require(script.Parent.ShotSolver)
 
 local C = Kit.color
@@ -57,6 +58,8 @@ function Cinema.letterbox(on: boolean)
 	local height = if show then 0.11 else 0
 	Motion.tween(topBar, { Size = UDim2.new(1, 0, height, 0) }, 0.4)
 	Motion.tween(bottomBar, { Size = UDim2.new(1, 0, height, 0) }, 0.4)
+	-- (and the film camera's lens while the frame is up: Presentation/Lens)
+	Lens.set(show)
 end
 
 -- Title cards -----------------------------------------------------------------------------------

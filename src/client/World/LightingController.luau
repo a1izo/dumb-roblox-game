@@ -163,6 +163,18 @@ local function gatherLamps(venue: string, keyCount: number)
 	pickKeys(keyCount)
 end
 
+-- The venue's lamps within `radius` of a point (a cutscene's light cue: Presentation/StageLight).
+function LightingController.lampsNear(at: Vector3, radius: number): { Light }
+	local near = {}
+	for _, light in ipairs(venueLamps) do
+		local where = lampPosition(light)
+		if light.Parent and where and (where - at).Magnitude <= radius then
+			table.insert(near, light)
+		end
+	end
+	return near
+end
+
 -- The brightness a lamp should have right now (the flicker returns lamps to this).
 function LightingController.lampBrightness(light: Light): number?
 	local lamp = lamps[light]

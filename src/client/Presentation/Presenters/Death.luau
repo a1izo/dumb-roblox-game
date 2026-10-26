@@ -23,6 +23,7 @@ local CustomDeaths = require(script.Parent.Parent.CustomDeaths)
 local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local StageLight = require(script.Parent.Parent.StageLight)
 local Styles = require(script.Parent.Parent.Styles)
 
 local C = Kit.color
@@ -121,12 +122,22 @@ return function(cue)
 				)
 				task.wait(0.55)
 			end
-			-- The victim goes down.
+			-- The victim goes down: a hard red light finds them from behind as the room's lamps stutter and sink, and the
+			-- camera pushes in, tilting as it comes (a Dutch angle: the world is wrong now).
 			local wide = ShotSolver.frame(victim, { distance = 9, height = 2.5, angle = 20 })
 			local close = ShotSolver.frame(victim, { distance = 5.5, height = 1.2, lookHeight = 0.5, angle = 10 })
+				* CFrame.Angles(0, 0, math.rad(-7))
 			CameraDirector.cut(token, wide, 58)
 			CameraDirector.move(token, close, SHOT - 1.1, 44)
 			table.insert(cleanup, Cinema.outline(victim, C.red))
+			table.insert(cleanup, StageLight.rim(victim, wide.Position, Color3.fromRGB(255, 52, 60), 3.2))
+			local root = victim:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") then
+				local at = root.Position
+				task.delay(0.6, function()
+					table.insert(cleanup, StageLight.dip(at, 40, 0.35, SHOT))
+				end)
+			end
 			table.insert(
 				cleanup,
 				Cinema.card({

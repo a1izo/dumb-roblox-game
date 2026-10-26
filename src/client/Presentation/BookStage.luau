@@ -22,6 +22,7 @@ local Models = require(Shared:WaitForChild("Models"))
 local CameraDirector = require(script.Parent.CameraDirector)
 local Stage = require(script.Parent.Stage)
 local Styles = require(script.Parent.Styles)
+local Vfx = require(script.Parent.Vfx)
 
 local BookStage = {}
 
@@ -73,6 +74,29 @@ local function buildSet(stage: any, page: Vector3)
 		Shadows = false,
 		Parent = lamp,
 	})
+	-- Dust turning slowly in the lamp's light over the page: the dark has air in it, the place stays nowhere (the
+	-- owner's staging holds; 2026-10-26: "polish the cutscenes even more"). None under Low quality.
+	if not Vfx.quiet() then
+		local motes = block(set, Vector3.new(4.5, 3, 4.5), CFrame.new(page + Vector3.new(0, 1.7, 0)), dark)
+		motes.Transparency = 1
+		motes.CastShadow = false
+		Vfx.Emit.make(motes, {
+			tex = "VfxEmber",
+			color = Color3.fromRGB(214, 206, 192),
+			size = { { 0, 0.05 }, { 1, 0.03 } },
+			alpha = { { 0, 1 }, { 0.3, 0.5 }, { 0.7, 0.55 }, { 1, 1 } },
+			life = { 4, 6 },
+			speed = { 0.04, 0.14 },
+			spread = 180,
+			rot = { 0, 360 },
+			spin = { -20, 20 },
+			rate = 8,
+			light = 0,
+			lit = 1,
+			shape = Enum.ParticleEmitterShape.Box,
+			shapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+		})
+	end
 	stage:add(set)
 end
 
