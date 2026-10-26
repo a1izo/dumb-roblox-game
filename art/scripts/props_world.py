@@ -644,28 +644,6 @@ def table():
     return parts, []
 
 
-@prop("MeetingTable", pivot="bottom", material="Wood", collide=True, texture=1024)
-def meeting_table():
-    wood = mk.wood("Meet_Wood", srgb(70, 40, 28), srgb(34, 18, 12), scale=2, rings=30)
-    iron = cast_iron("Meet_Iron")
-    felt = mk.noisy("Meet_Felt", srgb(18, 24, 20), srgb(30, 40, 34), scale=30, roughness=1.0)
-    parts = [
-        mk.cylinder("Top", 13.0, 0.5, (0, 0, 3.0), mat=wood, verts=64, bevel=0.1),
-        mk.cylinder("Inset", 10.5, 0.06, (0, 0, 3.26), mat=felt, verts=64),
-        mk.cylinder("Rim", 13.05, 0.2, (0, 0, 2.7), mat=iron, verts=64),
-        mk.cylinder("Pedestal", 2.4, 2.6, (0, 0, 1.4), mat=iron, verts=32, radius2=1.6),
-        mk.cylinder("Foot", 4.0, 0.3, (0, 0, 0.15), mat=iron, verts=32, bevel=0.05),
-    ]
-    glow = [
-        mk.torus("Ring", 11.0, 0.08, (0, 0, 3.27), mat=mk.emissive("Meet_Glow", RED, 4), major_segments=96,
-                 minor_segments=6),
-        mk.torus("Zero", 1.6, 0.14, (0, 0, 3.3), mat=mk.emissive("Meet_Glow", RED, 4), major_segments=48,
-                 minor_segments=6),
-    ]
-    glow[1].scale = (0.75, 1.0, 1.0)
-    return parts, glow
-
-
 @prop("Chair", pivot="bottom", material="Wood", collide=True, texture=512)
 def chair():
     wood = dark_wood("WChair_Wood")
