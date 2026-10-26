@@ -19,7 +19,7 @@ wall at z 0 into the pantry (x 251..265)."""
 
 from animlib import J
 from cinema import framing
-from cinema.acting import beat, facing, hold, seated, soft, walking
+from cinema.acting import alive, beat, facing, hold, seated, soft, walking
 from cinema.shot import Shot
 from emotes.kit import reach
 from motion import Motion
@@ -63,6 +63,7 @@ beat(ace, 10.7, 0.45, neck=(6, 6, 0), rShoulder=J((118, 0, -20), (-0.2, 0.24, -0
 for t, yaw in ((12.0, -14), (12.9, 8), (13.8, -2)):
     flick(ace, t, yaw)
 soft(ace, head=4.0, arms=2.6)
+alive(ace, 0.3, seed=81)  # (still as a cat at the screens, but breathing)
 ace.build()
 
 # The Butler -----------------------------------------------------------------------------------------------
@@ -79,6 +80,9 @@ beat(b, 11.3, 0.5, root=(0, 0, 0), neck=(-6, 0, 0), **TRAY)  # straightens
 b.key(LENGTH, root=(0, 0, 0), neck=(-6, 0, 0))
 soft(b, arms=2.6).plant(None, WALK_IN[0] - 0.1, stance=0.04).plant(WALK_IN[1] + 0.1, None, stance=0.04)
 walking(b, *WALK_IN)
+alive(b, 0.4, seed=82, t1=WALK_IN[0] - 0.2)
+alive(b, 0.4, seed=83, t0=WALK_IN[1] + 0.3, t1=8.5)
+alive(b, 0.4, seed=84, t0=11.9)
 b.build()
 
 # The shot --------------------------------------------------------------------------------------------------
