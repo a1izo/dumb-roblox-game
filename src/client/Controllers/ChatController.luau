@@ -135,6 +135,34 @@ local function setProps(config: Instance?, props: { [string]: any })
 	end
 end
 
+local function inLobby(): boolean
+	return not ClientState.isParticipant() and not ClientState.isWatching()
+end
+
+-- Where the chat window sits, by where you are. In a case: the middle of the left edge on a desktop (the objectives
+-- sit top left and your role card bottom left; it covered the card, 2026-10-25), top left on a phone (Roblox's
+-- default). In the lobby the left of the screen is the READY button and the menu, from a quarter of the way down
+-- (chat lay over the menu, 2026-10-26), and your card hangs bottom right: there the window goes to the right edge,
+-- in its middle on a desktop and at its top on a phone, a little shorter.
+local placed: string? = nil
+
+local function placeChat()
+	local phone = Kit.Layout.isPhone()
+	local lobby = inLobby()
+	local key = (if phone then "phone" else "desk") .. (if lobby then "Lobby" else "Case")
+	local window = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+	if not window or key == placed then
+		return
+	end
+	placed = key
+	setProps(window, {
+		HeightScale = if phone then (if lobby then 0.32 else 0.4) else (if lobby then 0.26 else 0.3),
+		WidthScale = if phone then 0.5 else (if lobby then 0.28 else 0.32),
+		HorizontalAlignment = if lobby then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Left,
+		VerticalAlignment = if phone then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Center,
+	})
+end
+
 local function styleChat()
 	local font = Kit.Tokens.font.body
 	local C = Kit.color
@@ -146,12 +174,9 @@ local function styleChat()
 		TextStrokeTransparency = 1,
 		BackgroundColor3 = C.g0,
 		BackgroundTransparency = 0.25,
-		HeightScale = if phone then 0.4 else 0.3,
-		WidthScale = if phone then 0.5 else 0.32,
-		-- In the middle of the left edge on a desktop: the objectives sit top left and your role card bottom left (it
-		-- covered the card, 2026-10-25); top left on a phone, Roblox's default.
-		VerticalAlignment = if phone then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Center,
 	})
+	placed = nil
+	placeChat()
 	setProps(TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration"), {
 		FontFace = font,
 		TextSize = 15,
@@ -180,6 +205,10 @@ function ChatController.init()
 	end
 	ClientState.PublicChanged:Connect(update)
 	ClientState.PrivateChanged:Connect(update)
+	-- (into the case and back out to the lobby, watching and not: the window moves with you)
+	ClientState.PublicChanged:Connect(placeChat)
+	ClientState.PrivateChanged:Connect(placeChat)
+	ClientState.WatchChanged:Connect(placeChat)
 	LobbyChrome.Changed:Connect(update)
 	Net.event("QuickChatMsg").OnClientEvent:Connect(onQuickChat)
 	task.spawn(function()
