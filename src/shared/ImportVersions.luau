@@ -14,5 +14,5 @@ return {
 	ModelsFx = 2,
 	ModelsLobby = 13,
 	ModelsMeeting = 4,
-	ModelsTokyo = 9,
+	ModelsTokyo = 10,
 }

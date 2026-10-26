@@ -333,10 +333,9 @@ def display_case():
     brass = pk.metal("DC_Brass", (176, 140, 72), (214, 176, 96), rough=0.3, metallic=0.9)
     velvet = mk.noisy("DC_Velvet", srgb(40, 20, 50), srgb(60, 30, 70), scale=40, roughness=0.9)
     gold = pk.metal("DC_Gold", (200, 160, 70), (240, 200, 110), rough=0.2, metallic=1.0)
-    glass = pk.dark_glass("DC_Glass", (90, 110, 120))
     parts = [pk.rounded("Cabinet", (6.0, 2.4, 2.4), (0, 0, 1.2), body, r=0.06),
-             mk.box("Velvet", (5.6, 2.0, 0.1), (0, 0, 2.45), mat=velvet),
-             mk.box("GlassTop", (6.0, 2.4, 0.06), (0, 0, 3.47), mat=glass)]
+             mk.box("Velvet", (5.6, 2.0, 0.1), (0, 0, 2.45), mat=velvet)]
+    # (the glass top is its brass frame alone: glass bakes solid, and a pane hid the rings and watches under it)
     for x in (-3.0, 3.0):
         for y in (-1.2, 1.2):
             parts.append(mk.box("Edge", (0.1, 0.1, 1.1), (x, y, 2.95), mat=brass))

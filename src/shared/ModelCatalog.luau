@@ -74,7 +74,7 @@ return {
 	Desk = { size = { 6, 4.583, 3.25 }, pivot = "bottom", material = "Wood", collide = true, color = { 62, 50, 38 }, set = "Core", tris = 1752, glow = { { 80, 220, 150 }, { 255, 214, 160 } } },
 	DeskPhone = { size = { 0.988, 0.484, 0.8 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 47, 47, 48 }, set = "Agency", tris = 5503, glow = { { 255, 90, 60 } } },
 	Die = { size = { 0.425, 0.425, 0.425 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 152, 150, 145 }, set = "Core", tris = 1196 },
-	DisplayCase = { size = { 6.1, 3.52, 2.5 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 105, 100, 93 }, set = "Tokyo", tris = 1696, glow = { { 255, 244, 230 } } },
+	DisplayCase = { size = { 6.1, 3.52, 2.5 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 132, 123, 113 }, set = "Tokyo", tris = 1684, glow = { { 255, 244, 230 } } },
 	DrinkFridge = { size = { 8.18, 7, 2.99 }, pivot = "bottom", material = "Metal", collide = true, color = { 32, 31, 29 }, lights = { { angle = 160, at = { -0, 4, -2.105 }, brightness = 0.7, color = { 214, 232, 255 }, face = "Front", kind = "spot", range = 10 } }, set = "Tokyo", tris = 12568, glow = { { 230, 240, 255 }, { 200, 214, 230 } } },
 	DrinksTray = { size = { 2, 0.777, 1.3 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 86, 79, 77 }, set = "Tokyo", tris = 516 },
 	DrinksTrolley = { size = { 3.75, 3.656, 1.7 }, pivot = "bottom", material = "Metal", collide = true, color = { 80, 70, 52 }, set = "Meeting", tris = 1248 },
