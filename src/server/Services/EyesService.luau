@@ -58,6 +58,27 @@ local function inSight(ps, target): boolean
 	return head ~= nil and Match.canSee(ps, head, stareRange(ps), nil)
 end
 
+-- Is the starer's body turned toward the target (within FACING of straight at them)? A stare at someone behind your
+-- back was an exploit's (2026-10-27); the client turns the body to face whoever it stares at.
+local FACING = math.cos(math.rad(75))
+local TURN_GRACE = 0.6 -- seconds for the client's turn to reach the server
+
+local function facing(ps, target): boolean
+	local root = Match.rootPart(ps)
+	local head = Match.eyePosition(target)
+	if not root or not head then
+		return false
+	end
+	local to = head - root.Position
+	to = Vector3.new(to.X, 0, to.Z)
+	local look = root.CFrame.LookVector
+	look = Vector3.new(look.X, 0, look.Z)
+	if to.Magnitude < 1 or look.Magnitude < 1e-3 then
+		return true
+	end
+	return look.Unit:Dot(to.Unit) >= FACING
+end
+
 local function stopStare(ps, reason: string?)
 	if not stares[ps] then
 		return
@@ -204,7 +225,8 @@ local function tick(dt: number)
 	local step = accumulated
 	accumulated = 0
 	for ps, stare in pairs(table.clone(stares)) do
-		if not canStare(ps) or not stare.target.alive or not inSight(ps, stare.target) then
+		local turned = os.clock() - stare.startedAt > TURN_GRACE and not facing(ps, stare.target)
+		if not canStare(ps) or not stare.target.alive or not inSight(ps, stare.target) or turned then
 			stopStare(ps, "lost")
 		elseif moving(ps) then
 			stopStare(ps, "moved")

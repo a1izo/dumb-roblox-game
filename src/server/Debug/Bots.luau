@@ -446,6 +446,11 @@ local function startStare(bot, ps, target, now: number)
 	local humanoid, root = parts(bot)
 	if humanoid and root then
 		humanoid:MoveTo(root.Position)
+		-- (turned to face them: the server only counts a stare at someone in front of you)
+		local there = Match.position(target)
+		if there then
+			root.CFrame = CFrame.lookAt(root.Position, Vector3.new(there.X, root.Position.Y, there.Z))
+		end
 	end
 	bot.brain.goal = nil
 	bot.brain.state = "staring"

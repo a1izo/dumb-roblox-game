@@ -25,19 +25,30 @@ function LoadGate.init()
 end
 
 -- Waits until every real player in `players` (bots have nothing to load) has reported `token`, they left,
--- or `timeout` seconds pass. Returns whether everyone made it.
-function LoadGate.wait(token: number, players: { any }, timeout: number): boolean
+-- or `timeout` seconds pass. Once most of them are ready (all but a quarter), the rest get `grace` seconds more at
+-- most: a client that never answers cannot hold everyone for the whole timeout (2026-10-27). Returns whether everyone
+-- made it.
+function LoadGate.wait(token: number, players: { any }, timeout: number, grace: number?): boolean
 	local started = os.clock()
+	local mostAt: number? = nil
 	while os.clock() - started < timeout do
-		local all = true
+		local total, done = 0, 0
 		for _, player in ipairs(players) do
-			if typeof(player) == "Instance" and player.Parent and ready[player.UserId] ~= token then
-				all = false
-				break
+			if typeof(player) == "Instance" and player.Parent then
+				total += 1
+				if ready[player.UserId] == token then
+					done += 1
+				end
 			end
 		end
-		if all then
+		if done >= total then
 			return true
+		end
+		if grace and done >= math.max(1, math.ceil(total * 0.75)) then
+			mostAt = mostAt or os.clock()
+			if os.clock() - (mostAt :: number) >= grace then
+				return false
+			end
 		end
 		task.wait(0.2)
 	end

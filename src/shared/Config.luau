@@ -135,7 +135,7 @@ Config.RUN_TESTS_IN_STUDIO = true
 -- Appended to the DataStore name in Studio, so test runs never touch live player data.
 -- Set it to "" only to test against the live store on purpose.
 Config.STUDIO_DATASTORE_SUFFIX = "_studio"
--- A debug panel (press F2) for forcing phases, wins and eliminations. Studio only.
+-- The debug panel for forcing phases, wins and eliminations in Studio play tests (still only for DEBUG_USER_IDS).
 Config.STUDIO_DEBUG = true
 -- Cuts the Intro, Verdict and Outro presentation phases short in Studio.
 Config.STUDIO_SKIP_PRESENTATION = false
@@ -143,8 +143,8 @@ Config.STUDIO_SKIP_PRESENTATION = false
 -- write names when they are the Hand). Both can be switched in the panel while testing.
 Config.STUDIO_BOTS_AUTOPLAY = true
 Config.STUDIO_BOTS_HAND_KILLS = true
--- Roblox user ids that get the debug panel in live servers too (for testing a published
--- place with friends). Empty = Studio only. Everyone in the server can see what it does.
-Config.DEBUG_USER_IDS = {} :: { number }
+-- The only Roblox users who get the debug panel, in Studio play tests and live servers alike (2026-10-27): the game's
+-- owner, realALEXTEM, and Kenshi_89. Everyone in the server can see what it does.
+Config.DEBUG_USER_IDS = { 409214934, 1503130900 } :: { number }
 
 return Config

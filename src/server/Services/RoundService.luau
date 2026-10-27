@@ -14,13 +14,13 @@ local CutLength = require(Shared:WaitForChild("Cinema"):WaitForChild("CutLength"
 local LoadGate = require(script.Parent.LoadGate)
 
 -- The longest a match start waits for slow clients to load the map (LoadGate).
-local LOAD_TIMEOUT = 30
+local LOAD_TIMEOUT = 30 -- the longest the start waits for the clients to load the map
+local LOAD_GRACE = 6 -- once most are ready, how much longer the last ones get
 local Config = require(Shared:WaitForChild("Config"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
-local Util = require(Shared:WaitForChild("Util"))
 local WinConditions = require(Shared:WaitForChild("WinConditions"))
 
 local ArrestService = require(script.Parent.ArrestService)
@@ -303,12 +303,14 @@ local function meetingCast(): { [string]: number }
 	return cast
 end
 
+-- Every investigation starts everyone somewhere new: a fresh set from the map's whole pool of spots, spread out and
+-- out of each other's sight (MapService.dealSpawns, Shared/SpawnPicker).
 local function placeAtSpawns()
-	local spawns = table.clone(Match.map.spawns)
-	Util.shuffle(spawns, Match.rng)
-	for i, ps in ipairs(Match.living()) do
+	local living = Match.living()
+	local spots = MapService.dealSpawns(Match.map, #living, Match.rng)
+	for i, ps in ipairs(living) do
 		ps.seatCFrame = nil
-		CharacterService.placeAt(ps.player, spawns[((i - 1) % #spawns) + 1])
+		CharacterService.placeAt(ps.player, spots[i])
 	end
 end
 
@@ -656,7 +658,11 @@ local function runMatch(players: { Player })
 	local mapId = MapService.nextMapId()
 	MapService.advance()
 	Match.begin(present)
-	local map = MapService.build(mapId)
+	local userIds = {}
+	for _, ps in ipairs(Match.list) do
+		table.insert(userIds, ps.userId)
+	end
+	local map = MapService.build(mapId, userIds)
 	Match.map = map
 	Match.mapId = mapId
 	Match.mapName = map.name
@@ -690,11 +696,12 @@ local function runMatch(players: { Player })
 	WagerService.onMatchStart()
 	Mechanics.start(map)
 
+	local starts = MapService.dealSpawns(map, #Match.list, Match.rng)
 	for i, ps in ipairs(Match.list) do
 		ps.player.CameraMaxZoomDistance = MATCH_ZOOM
 		if ps.player.Character then
 			CharacterService.applyOutfit(ps.player)
-			CharacterService.placeAt(ps.player, map.spawns[((i - 1) % #map.spawns) + 1])
+			CharacterService.placeAt(ps.player, starts[i])
 			CharacterService.setFrozen(ps.player, true)
 		else
 			CharacterService.load(ps.player)
@@ -706,7 +713,7 @@ local function runMatch(players: { Player })
 	for _, ps in ipairs(Match.list) do
 		table.insert(players, ps.player)
 	end
-	LoadGate.wait(map.loadToken, players, LOAD_TIMEOUT)
+	LoadGate.wait(map.loadToken, players, LOAD_TIMEOUT, LOAD_GRACE)
 
 	Cues.reset()
 	runPhase("Intro", startIntro)

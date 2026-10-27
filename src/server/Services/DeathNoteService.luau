@@ -209,11 +209,28 @@ local function startWriting(ps, typed: string, cause: string)
 		{ to = { player }, lead = 0.25 }
 	)
 	local matchId = Match.id
+	-- Dying or resetting while writing (a new body, or this one's health gone) stops it: nothing is written.
+	local body = player.Character
+	local humanoid = if body then body:FindFirstChildOfClass("Humanoid") else nil
+	local function gone(): boolean
+		return player.Character ~= body or humanoid == nil or humanoid.Health <= 0 or humanoid.Parent == nil
+	end
+	local died = if humanoid
+		then humanoid.Died:Connect(function()
+			if ps.writing == token then
+				stopWriting(ps)
+				Match.pushPrivate(ps)
+			end
+		end)
+		else nil
 	task.delay(Config.MANUAL_WRITE_TIME, function()
+		if died then
+			died:Disconnect()
+		end
 		if ps.writing ~= token or Match.id ~= matchId then
 			return
 		end
-		if not ps.alive or Match.phase ~= "Investigation" then
+		if not ps.alive or Match.phase ~= "Investigation" or gone() then
 			stopWriting(ps)
 			Match.pushPrivate(ps)
 			return

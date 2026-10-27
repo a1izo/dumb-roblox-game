@@ -14,6 +14,8 @@ local Elimination = require(script.Parent.Elimination)
 local EventLog = require(script.Parent.EventLog)
 local Match = require(script.Parent.Match)
 
+local RateLimit = require(script.Parent.RateLimit)
+
 local VoteRemote = Net.event("Vote")
 local VoteUpdateRemote = Net.event("VoteUpdate")
 local VoteResultRemote = Net.event("VoteResult")
@@ -32,7 +34,8 @@ local function broadcast()
 end
 
 local function onVote(player: Player, target)
-	if not isOpen then
+	-- (a vote may change, but not many times a second: each change is sent to every screen)
+	if not isOpen or not RateLimit.allow(player, "vote", 0.25) then
 		return
 	end
 	local ps = Match.getLiving(player)

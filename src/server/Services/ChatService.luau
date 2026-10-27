@@ -75,13 +75,55 @@ local function isSpecter(userId: number): boolean
 	return ps ~= nil and not ps.alive and ps.status ~= "left"
 end
 
-local function containsLivingRealName(text: string): boolean
+local function containsLivingRealName(texts: { string }): boolean
 	for _, ps in ipairs(Match.living()) do
-		if NameUtil.containsFullName(text, ps.first, ps.last) then
+		if NameUtil.containsAcross(texts, ps.first, ps.last) then
 			return true
 		end
 	end
 	return false
+end
+
+-- What each of the living said lately: a real name typed a word at a time across messages is still the name
+-- (2026-10-27). A message that was blocked is left out of what follows it.
+local RECENT_SECONDS = 45
+local RECENT_COUNT = 4
+type Said = { id: string, text: string, at: number, blocked: boolean }
+local recent: { [number]: { Said } } = {}
+
+-- The sender's last few messages up to this one (it is remembered the first time a recipient asks about it).
+local function saidUpTo(senderId: number, message: TextChatMessage): ({ string }, Said)
+	local list = recent[senderId] or {}
+	recent[senderId] = list
+	local now = os.clock()
+	for i = #list, 1, -1 do
+		if now - list[i].at > RECENT_SECONDS then
+			table.remove(list, i)
+		end
+	end
+	local this: Said? = nil
+	for _, entry in ipairs(list) do
+		if entry.id == message.MessageId then
+			this = entry
+		end
+	end
+	if not this then
+		this = { id = message.MessageId, text = message.Text, at = now, blocked = false }
+		table.insert(list, this :: Said)
+		while #list > RECENT_COUNT do
+			table.remove(list, 1)
+		end
+	end
+	local texts = {}
+	for _, entry in ipairs(list) do
+		if entry == this then
+			table.insert(texts, entry.text)
+			break
+		elseif not entry.blocked then
+			table.insert(texts, entry.text)
+		end
+	end
+	return texts, this :: Said
 end
 
 local function applySource(channel: TextChannel, child: Instance)
@@ -173,7 +215,9 @@ local function onMeetingMessage(message: TextChatMessage, recipient: TextSource)
 		return false
 	end
 
-	if containsLivingRealName(message.Text) then
+	local texts, said = saidUpTo(sender.UserId, message)
+	if said.blocked or containsLivingRealName(texts) then
+		said.blocked = true
 		if not blockedNotices[message.MessageId] then
 			blockedNotices[message.MessageId] = true
 			local player = Players:GetPlayerByUserId(sender.UserId)
@@ -277,6 +321,7 @@ end
 function ChatService.onMatchEnd()
 	meetingOpen = false
 	blockedNotices = {}
+	recent = {}
 	watchers = {}
 	clearChannel(meetingChannel)
 	clearChannel(specterChannel)
@@ -312,6 +357,18 @@ local function onQuickChat(player: Player, index)
 		-- Spectators and lobby players never reach the living.
 		for _, other in ipairs(Players:GetPlayers()) do
 			if not isLiving(other.UserId) then
+				QuickChatMsgRemote:FireClient(other, payload)
+			end
+		end
+	elseif Match.active then
+		-- One of the living: like typed chat, the living hear it only within earshot in free roam (the whole table
+		-- in a meeting); Specters and watchers read it all; the lobby never does (2026-10-27: a phrase reached the
+		-- whole map, which gave away where its sender was).
+		for _, other in ipairs(Players:GetPlayers()) do
+			local hears = if isLiving(other.UserId)
+				then inEarshot(player.UserId, other.UserId)
+				else isSpecter(other.UserId) or watchers[other.UserId] == true
+			if hears then
 				QuickChatMsgRemote:FireClient(other, payload)
 			end
 		end

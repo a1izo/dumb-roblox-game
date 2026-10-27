@@ -275,6 +275,11 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 	if not root or not root:IsA("BasePart") or not humanoid then
 		return
 	end
+	-- (never out of a frozen or held body: a player held still by the game stays where they are, 2026-10-27)
+	if root.Anchored or humanoid.WalkSpeed <= 0 then
+		refuse(player, clip, "You cannot move right now")
+		return
+	end
 	local place = places[index]
 	local spot = leaderRoot.CFrame * CFrame.new(place[1] or 0, 0, place[2] or 0)
 	local params = RaycastParams.new()
@@ -284,6 +289,26 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 	if not floor then
 		refuse(player, clip, "No room for the formation here")
 		return
+	end
+	-- (and never through a wall: the walk to the place must be open, from you and from the first dancer)
+	local chest = Vector3.new(0, 1.5, 0)
+	local place3 = floor.Position + Vector3.new(0, 3, 0)
+	local bodies = {}
+	for _, model in ipairs(workspace:GetChildren()) do
+		if model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") then
+			table.insert(bodies, model)
+		end
+	end
+	local walls = RaycastParams.new()
+	walls.FilterType = Enum.RaycastFilterType.Exclude
+	walls.FilterDescendantsInstances = bodies
+	walls.RespectCanCollide = true
+	for _, from in ipairs({ root.Position, leaderRoot.Position }) do
+		local gap = (place3 + chest) - (from + chest)
+		if gap.Magnitude > 0.5 and workspace:Raycast(from + chest, gap, walls) then
+			refuse(player, clip, "A wall is in the way")
+			return
+		end
 	end
 	local to = floor.Position + Vector3.new(0, 3, 0)
 	local look = leaderRoot.CFrame.LookVector

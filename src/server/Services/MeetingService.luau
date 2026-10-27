@@ -196,6 +196,11 @@ function MeetingService.bellProblem(ps): string?
 	if not at or (at - bell.Position).Magnitude > Config.BELL_RANGE + 2 then
 		return "far"
 	end
+	-- (and in sight of it: no ringing it through a wall)
+	local eye = Match.eyePosition(ps)
+	if not eye or not Match.hasLineOfSight(eye, bell.Position, bell.Parent) then
+		return "far"
+	end
 	return nil
 end
 

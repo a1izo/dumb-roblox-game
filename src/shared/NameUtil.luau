@@ -36,4 +36,9 @@ function NameUtil.containsFullName(text: string, first: string, last: string): b
 	return string.find(haystack, forward, 1, true) ~= nil or string.find(haystack, backward, 1, true) ~= nil
 end
 
+-- True when the full real name runs across these messages, one after another (a name typed a word at a time).
+function NameUtil.containsAcross(messages: { string }, first: string, last: string): boolean
+	return NameUtil.containsFullName(table.concat(messages, " "), first, last)
+end
+
 return NameUtil

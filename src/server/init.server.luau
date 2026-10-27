@@ -31,6 +31,7 @@ local WagerService = require(Services:WaitForChild("WagerService"))
 local LeaderboardService = require(Services:WaitForChild("LeaderboardService"))
 local LobbyGameService = require(Services:WaitForChild("LobbyGameService"))
 local LoadGate = require(Services:WaitForChild("LoadGate"))
+local MovementGuard = require(Services:WaitForChild("MovementGuard"))
 local MapService = require(Services:WaitForChild("MapService"))
 local Match = require(Services:WaitForChild("Match"))
 local MatchmakingService = require(Services:WaitForChild("MatchmakingService"))
@@ -53,6 +54,7 @@ CollisionGroups.init()
 Analytics.init()
 MapService.init()
 LoadGate.init()
+MovementGuard.init()
 CharacterService.init()
 PassService.init()
 DataService.init()
@@ -85,8 +87,15 @@ DuoService.init()
 RoundService.init()
 DebugService.init()
 
--- Everything a client needs when it starts (or restarts its UI).
+-- Everything a client needs when it starts (or restarts its UI): no more than one ask a second (each one builds every
+-- state the player can see).
+local lastSnapshot: { [Player]: number } = setmetatable({}, { __mode = "k" }) :: any
 Net.func("GetSnapshot").OnServerInvoke = function(player: Player)
+	local now = os.clock()
+	if lastSnapshot[player] and now - lastSnapshot[player] < 1 then
+		return nil
+	end
+	lastSnapshot[player] = now
 	return {
 		state = Match.publicState(),
 		private = Match.privateState(Match.get(player)),

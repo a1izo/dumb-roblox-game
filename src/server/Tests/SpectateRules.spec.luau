@@ -1,11 +1,11 @@
--- Who may watch a running case from the lobby, and how readying up pulls a watching party
--- member back.
+-- Who may watch a running case from the lobby (a friend or party member of someone in it), and how readying up pulls a
+-- watching party member back.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SpectateRules = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("SpectateRules"))
 
 local function situation(overrides)
-	local base = { active = true, phase = "Investigation", participant = false, queued = false }
+	local base = { active = true, phase = "Investigation", participant = false, queued = false, knowsSomeone = true }
 	for key, value in pairs(overrides or {}) do
 		base[key] = value
 	end
@@ -29,6 +29,9 @@ return function(t)
 		end)
 		it("refuses players queued for the next case", function()
 			expect(SpectateRules.blocker(situation({ queued = true }))).to.equal("Leave the queue to watch.")
+		end)
+		it("lets only a friend or a party member of someone in the case watch it", function()
+			expect(SpectateRules.blocker(situation({ knowsSomeone = false }))).never.to.equal(nil)
 		end)
 	end)
 

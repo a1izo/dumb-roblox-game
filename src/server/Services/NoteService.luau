@@ -48,9 +48,15 @@ local function setCarry(ps, carrying)
 	Match.pushPrivate(ps)
 end
 
-local function near(ps, position: Vector3, range: number): boolean
+-- Close enough to reach, with nothing solid in between (`target`: the paper itself; notes and sheets were taken, read
+-- and burnt through walls, 2026-10-27).
+local function near(ps, position: Vector3, range: number, target: Instance?): boolean
 	local own = Match.position(ps)
-	return own ~= nil and (own - position).Magnitude <= range
+	if own == nil or (own - position).Magnitude > range then
+		return false
+	end
+	local eye = Match.eyePosition(ps)
+	return eye ~= nil and Match.hasLineOfSight(eye, position + Vector3.new(0, 0.2, 0), target)
 end
 
 local function notePosition(note): Vector3?
@@ -307,7 +313,7 @@ end
 
 local function takeSheet(ps, sheetId)
 	local sheet = sheets[sheetId]
-	if not sheet or not sheet.part or not near(ps, sheet.position, Config.INTERACT_RANGE + 2) then
+	if not sheet or not sheet.part or not near(ps, sheet.position, Config.INTERACT_RANGE + 2, sheet.part) then
 		return
 	end
 	if ps.carrying then
@@ -380,7 +386,11 @@ local function read(ps, noteId)
 		end
 	else
 		local position = notePosition(note)
-		if Match.phase ~= "Investigation" or not position or not near(ps, position, Config.INTERACT_RANGE + 2) then
+		if
+			Match.phase ~= "Investigation"
+			or not position
+			or not near(ps, position, Config.INTERACT_RANGE + 2, note.part)
+		then
 			return
 		end
 	end
@@ -404,7 +414,7 @@ local function take(ps, noteId)
 		return
 	end
 	local position = notePosition(note)
-	if not position or not near(ps, position, Config.INTERACT_RANGE + 2) then
+	if not position or not near(ps, position, Config.INTERACT_RANGE + 2, note.part) then
 		return
 	end
 	if ps.carrying then
@@ -456,7 +466,8 @@ local function burn(ps, noteId)
 		return
 	end
 	if note.state ~= "held" or note.holder ~= ps then
-		if not near(ps, position, Config.INTERACT_RANGE + 2) then
+		local holder = if note.state == "held" and note.holder then note.holder.player.Character else note.part
+		if not near(ps, position, Config.INTERACT_RANGE + 2, holder) then
 			return
 		end
 	end

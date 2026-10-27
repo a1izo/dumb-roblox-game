@@ -168,6 +168,11 @@ local function onStart(ps, stationId: string)
 	if not position or (position - runtime.info.position).Magnitude > Config.TASK_RANGE + 2 then
 		return
 	end
+	-- (and the station in sight: no case file worked through a wall)
+	local eye = Match.eyePosition(ps)
+	if not eye or not Match.hasLineOfSight(eye, runtime.info.position, runtime.info.model) then
+		return
+	end
 	runtime.worker = ps
 	runtime.puzzle = TaskTypes.pickPuzzle(runtime.info.type, Match.rng)
 	runtime.seed = Match.rng:NextInteger(1, 2 ^ 30)
@@ -200,7 +205,9 @@ local function onComplete(ps, stationId: string, answer: any)
 		stopWork(ps, "You moved away from the station.")
 		return
 	end
-	if not PuzzleSet.verify(runtime.puzzle, runtime.seed, answer) then
+	-- (an answer quicker than anyone could really solve the puzzle is an exploit's: refused as a wrong one)
+	local quick = os.clock() - (runtime.startedAt or 0) < PuzzleSet.minSeconds(runtime.puzzle)
+	if quick or not PuzzleSet.verify(runtime.puzzle, runtime.seed, answer) then
 		TaskStateRemote:FireClient(ps.player, { state = "wrong", stationId = stationId })
 		return
 	end

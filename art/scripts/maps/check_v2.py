@@ -11,6 +11,8 @@ opening Studio:
   symmetry   how alike the ground floor is to its own mirror image (0 = not at all, 1 = mirrored)
   doorways   every door and gap at floor level keeps DOOR_CLEAR studs free in front of it, on both
              sides (a flag for the hand-check: it names what stands there, it never moves anything)
+  spawns     the spawn pool (the active spawns and the spare ones: Shared/SpawnPicker deals from all of them) spreads a
+             full case's players out of stare range of each other (SPAWN_GAP)
   finds      what maps/finders.py found at export (flicker, lamps, light through walls, stretched pictures): a
              report for the eye; a sign inside a wall or a floating or sunk prop is a problem unless the
              venue's CHECKS["finds_ok"] names it ("<kind> <detail>")
@@ -43,6 +45,8 @@ LIGHT_IN = 0.4
 SYMMETRY_MAX = 0.5
 DOOR_CLEAR = 4.0  # the clear width every doorway keeps (or its own width, when narrower)
 DOOR_DEPTH = 3.0  # how far in front of a doorway, on both sides, that width must stay clear
+MAX_PLAYERS = 12  # Shared/Config.MAX_PLAYERS
+SPAWN_GAP = 12.0  # Shared/Config.STARE_RANGE: nobody starts within staring range of anyone
 
 
 class Solid:
@@ -917,6 +921,31 @@ def finds(data, problems):
             problems.append(f"{f['kind']}: {f['detail']} at {f['at']} (maps/finders.py)")
 
 
+def spawn_spread(data, problems):
+    """The spawn pool deals a full case's players far apart: from every starting spot, the farthest-point pick of
+    MAX_PLAYERS spots (as Shared/SpawnPicker deals them); the best of those keeps everyone beyond SPAWN_GAP."""
+    layout = data["layout"]
+    spare = data.get("spare") or layout.get("spare") or {}
+    pool = [(sp["x"], sp.get("y", 0), sp["z"]) for sp in layout["spawns"] + spare.get("spawns", [])]
+
+    def gap(a, b):
+        return math.dist(a, b)
+
+    best = 0.0
+    for first in range(len(pool)):
+        chosen = [pool[first]]
+        while len(chosen) < min(MAX_PLAYERS, len(pool)):
+            rest = [p for p in pool if p not in chosen]
+            chosen.append(max(rest, key=lambda p: min(gap(p, c) for c in chosen)))
+        spread = min(gap(a, b) for i, a in enumerate(chosen) for b in chosen[i + 1:])
+        best = max(best, spread)
+    print(f"  spawns: a pool of {len(pool)}; {MAX_PLAYERS} players start at least {best:.1f} studs apart")
+    if len(pool) < MAX_PLAYERS * 2:
+        problems.append(f"spawns: a pool of {len(pool)}, fewer than {MAX_PLAYERS * 2} (active and spare)")
+    if best <= SPAWN_GAP:
+        problems.append(f"spawns: {MAX_PLAYERS} players cannot all start beyond {SPAWN_GAP:g} studs of each other")
+
+
 def check(venue, full=True):
     path = os.path.join(SIDECARS, venue + ".json")
     if not os.path.exists(path):
@@ -932,6 +961,7 @@ def check(venue, full=True):
     overlaps(data, problems)
     doorways(data, problems)
     crowd_and_traffic(data, world, zones, problems)
+    spawn_spread(data, problems)
     finds(data, problems)
     if full:
         dist = walk(data, world, problems)

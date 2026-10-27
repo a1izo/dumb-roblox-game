@@ -12,6 +12,9 @@ export type Def = {
 	generate: (seed: number) -> any,
 	check: (puzzle: any, answer: any) -> boolean,
 	solve: (puzzle: any) -> any, -- a correct answer (bots and specs)
+	-- the least time anyone could really solve it in, seconds (PuzzleSet.MIN_SECONDS when not given): the server refuses
+	-- a quicker answer (an exploit's instant solve)
+	minSeconds: number?,
 }
 
 function PuzzleKit.rng(seed: number): Random

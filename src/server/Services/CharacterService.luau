@@ -78,12 +78,18 @@ local function groundOffset(character: Model): number
 end
 
 -- floorCFrame sits on the floor surface and faces the wanted direction.
+-- Told whenever the server places a body itself (Services/MovementGuard leaves it alone for a moment).
+CharacterService.Placed = nil :: ((Player) -> ())?
+
 function CharacterService.placeAt(player: Player, floorCFrame: CFrame)
 	local character = player.Character
 	if not character then
 		return
 	end
 	character:PivotTo(floorCFrame + Vector3.new(0, groundOffset(character), 0))
+	if CharacterService.Placed then
+		CharacterService.Placed(player)
+	end
 end
 
 -- Nobody jumps during the investigation: no hopping onto props, walls or roofs and out of the
@@ -152,7 +158,18 @@ function CharacterService.placeForPhase(ps)
 			character:SetAttribute("Seat", ps.seatClip)
 		end
 	else
-		local spawnCFrame = map.spawns[Match.rng:NextInteger(1, #map.spawns)]
+		-- (a respawn: the spot of the map's pool farthest from, and out of sight of, everyone standing about)
+		local occupied = {}
+		for _, other in ipairs(Match.living()) do
+			local root = if other ~= ps and other.player.Character
+				then other.player.Character:FindFirstChild("HumanoidRootPart")
+				else nil
+			if root and root:IsA("BasePart") then
+				table.insert(occupied, root.Position)
+			end
+		end
+		local MapService = require(script.Parent.MapService) :: any
+		local spawnCFrame = MapService.dealSpawns(map, 1, Match.rng, occupied)[1]
 		CharacterService.placeAt(ps.player, spawnCFrame)
 		CharacterService.setFrozen(ps.player, phase ~= "Investigation")
 	end

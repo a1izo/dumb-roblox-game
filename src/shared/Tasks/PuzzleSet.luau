@@ -5,6 +5,9 @@ local PuzzleKit = require(script.Parent.PuzzleKit)
 
 local PuzzleSet = {}
 
+-- The least time a case file takes to solve, unless its puzzle says otherwise (Def.minSeconds).
+PuzzleSet.MIN_SECONDS = 2.5
+
 local defs: { [string]: PuzzleKit.Def } = {}
 for _, module in ipairs(script.Parent:WaitForChild("Puzzles"):GetChildren()) do
 	if module:IsA("ModuleScript") then
@@ -15,6 +18,12 @@ end
 
 function PuzzleSet.get(id: string): PuzzleKit.Def?
 	return defs[id]
+end
+
+-- The least time anyone could really solve this puzzle in (seconds from the case file opening).
+function PuzzleSet.minSeconds(id: string): number
+	local def = defs[id]
+	return if def and type(def.minSeconds) == "number" then def.minSeconds else PuzzleSet.MIN_SECONDS
 end
 
 function PuzzleSet.ids(): { string }

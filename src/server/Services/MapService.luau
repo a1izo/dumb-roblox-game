@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Create = require(Shared:WaitForChild("Create"))
+local SpawnPicker = require(Shared:WaitForChild("SpawnPicker"))
 local Venues = require(Shared:WaitForChild("Venues"))
 
 local Maps = script.Parent.Parent:WaitForChild("Maps")
@@ -135,7 +136,8 @@ end
 
 -- Builds a match map and the meeting room. Returns everything gameplay needs,
 -- converted to world space.
-function MapService.build(mapId: string)
+-- players: the user ids of the case's players (stamped on the map, so only their screens show the loading screen for it).
+function MapService.build(mapId: string, players: { number }?)
 	local started = os.clock()
 	MapService.destroy()
 	local def = MAPS[mapId] or MAPS.TaskForceHQ
@@ -152,6 +154,8 @@ function MapService.build(mapId: string)
 		model = model,
 		stations = {},
 		spawns = {},
+		-- every spot a player may start on: the spawns and the spare spots (Shared/SpawnPicker deals from them)
+		pool = {},
 		sheets = {},
 		areas = {},
 	}
@@ -167,6 +171,11 @@ function MapService.build(mapId: string)
 		-- Face the middle of the map unless a rotation is given.
 		local rot = spot.rot or math.deg(math.atan2(spot.x, spot.z))
 		table.insert(info.spawns, b:world(b:cf(spot.x, spot.y or 0, spot.z, rot)))
+	end
+	table.move(info.spawns, 1, #info.spawns, 1, info.pool)
+	for _, spot in ipairs(layout.spare and layout.spare.spawns or {}) do
+		local rot = spot.rot or math.deg(math.atan2(spot.x, spot.z))
+		table.insert(info.pool, b:world(b:cf(spot.x, spot.y or 0, spot.z, rot)))
 	end
 	for i, sheet in ipairs(layout.sheets) do
 		table.insert(info.sheets, { id = "P" .. i, position = b:worldPos(sheet.x, sheet.y, sheet.z) })
@@ -201,6 +210,7 @@ function MapService.build(mapId: string)
 	loadToken += 1
 	model:SetAttribute("Pieces", #model:GetDescendants())
 	model:SetAttribute("LoadToken", loadToken)
+	model:SetAttribute("Players", if players then "," .. table.concat(players, ",") .. "," else "")
 	info.loadToken = loadToken
 	model.Parent = workspace
 	currentModel = model
@@ -229,6 +239,50 @@ function MapService.build(mapId: string)
 		end
 	end
 	return info
+end
+
+local EYE = Vector3.new(0, 4.5, 0) -- a standing player's eyes over the spot
+
+-- Can someone standing at `from` see someone standing at `to` (both floor points)? Only the map's own walls hide them.
+local function sightBetween(model: Instance, from: Vector3, to: Vector3): boolean
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { model }
+	local a, b = from + EYE, to + EYE
+	return workspace:Raycast(a, b - a, params) == nil
+end
+
+-- Deals `count` start spots on the map, spread out and out of each other's sight (Shared/SpawnPicker); `occupied`:
+-- where the living stand already (a respawn keeps away from them).
+function MapService.dealSpawns(info: any, count: number, rng: Random, occupied: { Vector3 }?): { CFrame }
+	local pool: { CFrame } = if info.pool and #info.pool > 0 then info.pool else info.spawns
+	local points = {}
+	for index, cframe in ipairs(pool) do
+		points[index] = cframe.Position
+	end
+	info.sight = info.sight or {}
+	local sight: { [number]: boolean } = info.sight
+	local function visible(a: number, b: number): boolean
+		local key = math.min(a, b) * 4096 + math.max(a, b)
+		if sight[key] == nil then
+			sight[key] = sightBetween(info.model, points[a], points[b])
+		end
+		return sight[key]
+	end
+	local dealt = SpawnPicker.pick(points, count, rng, {
+		gap = Config.STARE_RANGE,
+		visible = visible,
+		sees = function(spot: number, at: Vector3): boolean
+			-- (t is a root, about 3 studs over the floor)
+			return sightBetween(info.model, at - Vector3.new(0, 3, 0), points[spot])
+		end,
+		occupied = occupied,
+	})
+	local out = {}
+	for _, index in ipairs(dealt) do
+		table.insert(out, pool[index])
+	end
+	return out
 end
 
 function MapService.destroy()

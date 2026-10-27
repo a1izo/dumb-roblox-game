@@ -1066,7 +1066,7 @@ local function build()
 		TextSize = 13,
 		TextColor3 = COLORS.header,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		Text = Terms.f("   {GAME} DEBUG   (F2 to hide, drag to move)"),
+		Text = Terms.f("   {GAME} DEBUG   (drag to move)"),
 		Parent = window,
 	})
 	corner(bar, 6)

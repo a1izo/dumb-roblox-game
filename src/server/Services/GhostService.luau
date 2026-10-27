@@ -571,14 +571,48 @@ local function setupWatcher(player: Player, character: Model)
 	character:PivotTo(spotIn(watcher.venue))
 end
 
+-- Is someone in the running case this player's Roblox friend or in their party? (Friendships are asked of Roblox once
+-- per pair and remembered for the case.)
+local watcherFriends: { [number]: { [number]: boolean } } = {}
+
+local function knowsSomeone(player: Player): boolean
+	local party = {}
+	for _, member in ipairs(PartyService.membersOf(player)) do
+		party[member.UserId] = true
+	end
+	local known = watcherFriends[player.UserId] or {}
+	watcherFriends[player.UserId] = known
+	for _, ps in ipairs(Match.list) do
+		if party[ps.userId] then
+			return true
+		end
+		if known[ps.userId] == nil and typeof(ps.player) == "Instance" then
+			local ok, friends = pcall(function()
+				return player:IsFriendsWith(ps.userId)
+			end)
+			known[ps.userId] = ok and friends == true
+		end
+		if known[ps.userId] then
+			return true
+		end
+	end
+	return false
+end
+
 -- Why a player cannot watch right now (nil when they can).
 function GhostService.watchBlocker(player: Player): string?
-	return SpectateRules.blocker({
+	local situation = {
 		active = Match.active,
 		phase = Match.phase,
 		participant = Match.get(player) ~= nil,
 		queued = queued(player),
-	})
+		knowsSomeone = true,
+	}
+	-- (asked last: it may wait on Roblox)
+	if SpectateRules.blocker(situation) == nil then
+		situation.knowsSomeone = knowsSomeone(player)
+	end
+	return SpectateRules.blocker(situation)
 end
 
 -- Sends a lobby player into the running match as a spectator.
@@ -705,6 +739,7 @@ end
 function GhostService.onMatchStart()
 	ghosts = {}
 	partyOf = {}
+	watcherFriends = {}
 	friendsOf = {}
 	local players = {}
 	for _, ps in ipairs(Match.list) do
@@ -758,6 +793,7 @@ function GhostService.onMatchEnd()
 	end
 	awayPlayers = {}
 	partyOf = {}
+	watcherFriends = {}
 	friendsOf = {}
 	-- The case is closed: every spectator goes back to the lobby.
 	local watching = {}

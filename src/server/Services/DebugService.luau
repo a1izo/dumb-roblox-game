@@ -4,8 +4,8 @@
 -- sabotage, fill the task bar, add test bots that play, preview maps and cutscenes, and change
 -- the profile.
 --
--- Who may use it: everyone in a Studio play test (Config.STUDIO_DEBUG), and in live servers
--- only the user ids in Config.DEBUG_USER_IDS. Test bots exist in Studio only. Allowed players
+-- Who may use it: only the user ids in Config.DEBUG_USER_IDS (realALEXTEM and Kenshi_89), in a Studio play test
+-- (Config.STUDIO_DEBUG) as in a live server. Test bots exist in Studio only. Allowed players
 -- get the attribute LDebug, which shows the panel on their screen.
 
 local Players = game:GetService("Players")
@@ -65,10 +65,8 @@ DebugService.ENABLED = (IS_STUDIO and Config.STUDIO_DEBUG == true) or #(Config.D
 local watching: { [Player]: boolean } = {}
 local previewInfo = nil
 
+-- Only the users in Config.DEBUG_USER_IDS, in a Studio play test as in a live server.
 function DebugService.allowed(player: Player): boolean
-	if IS_STUDIO and Config.STUDIO_DEBUG == true then
-		return true
-	end
 	return table.find(Config.DEBUG_USER_IDS or {}, player.UserId) ~= nil
 end
 
@@ -1128,7 +1126,7 @@ function DebugService.init()
 			pushSnapshots()
 		end
 	end)
-	print("[DeathsGambit] Debug panel enabled (press F2 in a play test).")
+	print("[DeathsGambit] Debug panel enabled for its testers.")
 end
 
 return DebugService

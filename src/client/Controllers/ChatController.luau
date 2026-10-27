@@ -141,9 +141,10 @@ end
 
 -- Where the chat window sits, by where you are. In a case: the middle of the left edge on a desktop (the objectives
 -- sit top left and your role card bottom left; it covered the card, 2026-10-25), top left on a phone (Roblox's
--- default). In the lobby the left of the screen is the READY button and the menu, from a quarter of the way down
--- (chat lay over the menu, 2026-10-26), and your card hangs bottom right: there the window goes to the right edge,
--- in its middle on a desktop and at its top on a phone, a little shorter.
+-- default). In the lobby the left of the screen is the READY button and the menu, from a quarter of the way down to
+-- about seven tenths (chat lay over the menu, 2026-10-26), and your card and the daily streak hang bottom right (the
+-- streak covered the chat there, 2026-10-27): on a desktop the window goes to the bottom left corner, under the menu,
+-- a little shorter, so the chat is on the left in the lobby and in a case alike; on a phone, top right.
 local placed: string? = nil
 
 local function placeChat()
@@ -156,10 +157,13 @@ local function placeChat()
 	end
 	placed = key
 	setProps(window, {
-		HeightScale = if phone then (if lobby then 0.32 else 0.4) else (if lobby then 0.26 else 0.3),
-		WidthScale = if phone then 0.5 else (if lobby then 0.28 else 0.32),
-		HorizontalAlignment = if lobby then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Left,
-		VerticalAlignment = if phone then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Center,
+		HeightScale = if phone then (if lobby then 0.32 else 0.4) else (if lobby then 0.2 else 0.3),
+		WidthScale = if phone then 0.5 else (if lobby then 0.26 else 0.32),
+		HorizontalAlignment = if lobby and phone then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Left,
+		VerticalAlignment = if phone
+			then Enum.VerticalAlignment.Top
+			elseif lobby then Enum.VerticalAlignment.Bottom
+			else Enum.VerticalAlignment.Center,
 	})
 end
 

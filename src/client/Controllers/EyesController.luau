@@ -79,6 +79,15 @@ function EyesController.stare()
 		Toasts.show("Look at a player within " .. range() .. " studs.", "bad")
 		return
 	end
+	-- Turned to face them where you stand (the server counts only a stare at someone in front of you).
+	local character = LocalPlayer.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	local other = Characters.byUserId(target)
+	local head = if other then other:FindFirstChild("Head") else nil
+	if root and root:IsA("BasePart") and head and head:IsA("BasePart") then
+		local at = root.Position
+		root.CFrame = CFrame.lookAt(at, Vector3.new(head.Position.X, at.Y, head.Position.Z))
+	end
 	EyesRequest:FireServer({ action = "stare", userId = target })
 	Toasts.show(
 		if ClientState.private.eyes then "Reading..." else "Staring... stand still and keep them in sight.",

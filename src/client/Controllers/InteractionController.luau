@@ -36,7 +36,8 @@ local function prompt(
 		GamepadKeyCode = pad or Enum.KeyCode.ButtonX,
 		HoldDuration = hold or 0,
 		MaxActivationDistance = 8,
-		RequiresLineOfSight = false,
+		-- (never through a wall: the server checks the same, Services/NoteService, CaseFileService, MeetingService)
+		RequiresLineOfSight = true,
 		Enabled = false,
 		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = parent,
