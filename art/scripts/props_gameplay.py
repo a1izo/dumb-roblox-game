@@ -11,6 +11,7 @@ from mathutils import Vector
 import modelkit as mk
 import propkit as pk
 from common import srgb
+import props
 from props import PAPER_A, PAPER_B, RED, prop
 from props_world import dark_wood
 
@@ -162,7 +163,17 @@ def _hood_shell(name, mat):
 
 
 def _suit_wool():
-    return mk.flat("Suit_Wool", srgb(30, 30, 34), 0.85, kind="wool")
+    # (a deep charcoal, not black: in a dark room the old near-black wool read as a black box, 2026-10-27)
+    return mk.noisy("Suit_Wool", srgb(42, 42, 47), srgb(58, 58, 64), roughness=0.85, kind="wool")
+
+
+def _suit_satin():
+    """The lapels' satin facing: a shade lighter than the wool and smooth, so it catches the light."""
+    return mk.flat("Suit_Satin", srgb(64, 64, 72), 0.22, kind="plastic")
+
+
+def _shirt():
+    return mk.flat("Suit_Shirt", srgb(234, 232, 226), 0.7, kind="plastic")
 
 
 def _proud(name, outline, out, mat, back=False):
@@ -176,22 +187,38 @@ def _proud(name, outline, out, mat, back=False):
 # in the middle of the mesh.
 JACKET_OUT = 0.045
 LIMB_OUT = 0.012
+# How far the shirt front stands off the jacket (Shared/Suit.SHIRT_OUT: the tie lies on it), the collar's points a
+# little more, the lapels over both.
+SHIRT_OUT = 0.012
+COLLAR_OUT = 0.02
+LAPEL_OUT = 0.03
+# The base box's edges rounded this much, no more: the shell stands only a few hundredths off the body (Shared/Suit
+# PAD), and a rounder edge cut the margin away, so the body's own edges showed through the cloth's.
+CLOTH_BEVEL = 0.02
 
 
 @prop("SuitTorso", pivot="centre", material="Fabric", collide=False, texture=256)
 def suit_torso():
     """The match suit's jacket over an R6 torso, a shell the game sizes to each body (CharacterService.dressNoir): the
-    notched lapels in satin, framing the white shirt front and the tie (the game's own parts, in the V between them),
-    the front closing below them on two horn buttons, a welt pocket on the left breast and flapped pockets at the hips,
-    the seam down the back."""
+    notched lapels in satin, framing the white shirt front and its collar (the tie lies on the shirt: SuitTie), the
+    front closing below them on two horn buttons, a welt pocket on the left breast and flapped pockets at the hips,
+    the seam down the back, the collar's band rising round the neck and the jacket's hem as far below."""
     wool = _suit_wool()
-    satin = mk.flat("Suit_Satin", srgb(18, 18, 22), 0.4)
+    satin = _suit_satin()
+    shirt = _shirt()
     horn = mk.flat("Suit_Horn", srgb(14, 13, 12), 0.3)
-    seam = mk.flat("Suit_Seam", srgb(17, 17, 20), 0.9)
-    parts = [mk.box("Cloth", (2.0, 1.0, 2.0), (0, 0, 0), mat=wool, bevel=0.05)]
+    seam = mk.flat("Suit_Seam", srgb(30, 30, 34), 0.9)
+    parts = [mk.box("Cloth", (2.0, 1.0, 2.0), (0, 0, 0), mat=wool, bevel=CLOTH_BEVEL)]
+    # the shirt front in the V between the lapels, the collar's points over it, the band round the neck
+    parts.append(_proud("ShirtFront", [(-0.3, 0.995), (0.3, 0.995), (0.0, -0.22)], SHIRT_OUT, shirt))
+    for sx in (-1, 1):
+        point = [(sx * 0.03, 0.995), (sx * 0.29, 0.995), (sx * 0.13, 0.76)]
+        parts.append(_proud("CollarPoint", point, COLLAR_OUT, shirt))
+    parts.append(mk.box("CollarBand", (0.66, 0.12, 0.05), (0, -0.44, 1.02), mat=shirt, bevel=0.01))
+    parts.append(mk.box("Hem", (2.0, 1.0, 0.05), (0, 0, -1.02), mat=wool, bevel=0.01))
     for sx in (-1, 1):
         lapel = [(0.27, 0.99), (0.62, 0.93), (0.5, 0.7), (0.59, 0.62), (0.07, -0.24), (0.02, -0.18)]
-        parts.append(_proud("Lapel", [(sx * x, z) for x, z in lapel], 0.03, satin))
+        parts.append(_proud("Lapel", [(sx * x, z) for x, z in lapel], LAPEL_OUT, satin))
         # the pockets: flaps at the hips, over a seam
         parts.append(_proud("HipFlap", [(sx * 0.32, -0.5), (sx * 0.8, -0.5), (sx * 0.8, -0.62), (sx * 0.32, -0.63)], 0.022,
                             wool))
@@ -207,11 +234,11 @@ def suit_torso():
 @prop("SuitLimb", pivot="centre", material="Fabric", collide=False, texture=256)
 def suit_limb():
     """The same cloth over an arm or a leg (the trousers' tinted a shade darker by the game): a pressed crease down its
-    front and its back, a seam down each side, the hem turned at its foot (under the hand's cuff on an arm), a few
+    front and its back, a seam down each side, the hem turned at its foot (over the shirt's cuff on an arm), a few
     soft folds at the elbow or the knee."""
     wool = _suit_wool()
-    seam = mk.flat("Suit_Seam", srgb(17, 17, 20), 0.9)
-    parts = [mk.box("Cloth", (1.0, 1.0, 2.0), (0, 0, 0), mat=wool, bevel=0.05)]
+    seam = mk.flat("Suit_Seam", srgb(30, 30, 34), 0.9)
+    parts = [mk.box("Cloth", (1.0, 1.0, 2.0), (0, 0, 0), mat=wool, bevel=CLOTH_BEVEL)]
     strip = [(-0.012, 1.0), (0.012, 1.0), (0.012, -1.0), (-0.012, -1.0)]
     parts += [_proud("Crease", strip, LIMB_OUT, wool), _proud("CreaseBack", strip, LIMB_OUT, wool, back=True)]
     for sx in (-1, 1):  # the side seams
@@ -225,6 +252,92 @@ def suit_limb():
         parts.append(fold)
     return parts, []
 
+
+def _clip_to(polygon, a, b, lo, hi):
+    """The part of a convex polygon [(x, y)] where lo <= a * x + b * y <= hi (Sutherland-Hodgman, two half-planes)."""
+
+    def cut(points, keep, edge):
+        out = []
+        for i, p in enumerate(points):
+            q = points[(i + 1) % len(points)]
+            p_in, q_in = keep(p), keep(q)
+            if p_in:
+                out.append(p)
+            if p_in != q_in:
+                vp, vq = a * p[0] + b * p[1], a * q[0] + b * q[1]
+                k = (edge - vp) / (vq - vp)
+                out.append((p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k))
+        return out
+
+    points = cut(polygon, lambda p: a * p[0] + b * p[1] >= lo, lo)
+    return cut(points, lambda p: a * p[0] + b * p[1] <= hi, hi) if points else []
+
+
+# The tie, made pale: the game dyes it in each look's colour (its surface's tint, Shared/Suit.tie), the stripes and the
+# dimple's shadow staying darker than the silk round them; the clip is a piece of its own, which is never dyed.
+TIE_BLADE = [(-0.075, -0.17), (0.075, -0.17), (0.14, -0.92), (0.0, -1.04), (-0.14, -0.92)]
+TIE_TILT = 87  # (the blade stands off the shirt toward its tip, the knot holding its top close)
+TIE_BLADE_DEPTH = 0.03
+TIE_CLIP_Z = -0.62
+
+
+@prop("SuitTie", pivot="centre", material="Fabric", collide=False, texture=256)
+def suit_tie():
+    """The match suit's tie, dressed on the shirt front (Shared/Suit.tie): a full Windsor knot, broad and triangular,
+    the dimple pinched under it, the blade a little raised off the shirt and tapering to its point, fine diagonal
+    stripes woven darker in the satin; a thin silver clip across the blade."""
+    silk = mk.flat("Tie_Satin", srgb(238, 236, 236), 0.28, kind="plastic")
+    stripe = mk.flat("Tie_Stripe", srgb(150, 148, 150), 0.32, kind="plastic")
+    shade = mk.flat("Tie_Dimple", srgb(112, 110, 112), 0.5, kind="plastic")
+    steel = mk.flat("Clip_Steel", srgb(204, 206, 212), 0.22, metallic=0.9)
+    knot = mk.extrude_shape("Knot", [(-0.13, 0.0), (0.13, 0.0), (0.075, -0.19), (-0.075, -0.19)], 0.1,
+                            loc=(0, -0.05, 0), rot=(90, 0, 0), mat=silk, bevel=0.025)
+    parts = [knot, mk.extrude_shape("Blade", TIE_BLADE, TIE_BLADE_DEPTH, loc=(0, -0.035, 0), rot=(TIE_TILT, 0, 0),
+                                    mat=silk, bevel=0.008)]
+    # the dimple: a soft crease pinched into the blade just under the knot
+    parts.append(mk.extrude_shape("Dimple", [(-0.02, -0.18), (0.02, -0.18), (0.0, -0.34)], TIE_BLADE_DEPTH + 0.006,
+                                  loc=(0, -0.035, 0), rot=(TIE_TILT, 0, 0), mat=shade))
+    # the stripes, rising to the right, cut to the blade's outline
+    for k in range(-6, 7):
+        lo = -0.9 + k * 0.15
+        band = _clip_to(TIE_BLADE, 1.0, 1.0, lo, lo + 0.035)
+        # (none through the dimple, none so small it is a speck)
+        if len(band) >= 3 and max(y for _, y in band) < -0.36:
+            parts.append(mk.extrude_shape("Stripe", band, TIE_BLADE_DEPTH + 0.004, loc=(0, -0.035, 0),
+                                          rot=(TIE_TILT, 0, 0), mat=stripe))
+    # the clip across the blade's front, two thirds of the way down
+    lean = math.cos(math.radians(TIE_TILT)) * TIE_CLIP_Z  # (how far forward the tilted blade has come there)
+    front = -0.035 + lean - TIE_BLADE_DEPTH / 2
+    clip = mk.box("Clip", (0.3, 0.02, 0.035), (0, front - 0.012, TIE_CLIP_Z), mat=steel, bevel=0.008)
+    more = {"into": (0.0, 0.0, 0.82, 1.0), "pieces": {"Clip": props.piece([clip], into=(0.84, 0.0, 1.0, 0.4))}}
+    return parts, [], more
+
+
+def _suit_hand(palm):
+    """A hand coming out of the suit's sleeve, hanging down (Shared/Suit.hand): a blocky palm, four fingers a little
+    apart and curled toward the palm, the thumb on the front. palm: the side (+x or -x, in Blender) the palm faces, the
+    body's side for that hand. Made pale: the game dyes it in the player's skin."""
+    skin = mk.flat("Hand_Skin", srgb(238, 236, 234), 0.55, kind="plastic")
+    parts = [pk.rounded("Palm", (0.3, 0.6, 0.28), (0, 0, -0.14), skin, r=0.06)]
+    # the fingers, from the index at the front (-y) to the little finger at the back
+    for y, length in ((-0.215, 0.22), (-0.072, 0.25), (0.072, 0.23), (0.215, 0.18)):
+        parts.append(pk.rounded("Finger", (0.24, 0.13, length), (palm * 0.02, y, -0.26 - length / 2), skin, r=0.045,
+                                rot=(0, -palm * 8, 0)))
+    parts.append(pk.rounded("Thumb", (0.15, 0.14, 0.24), (palm * 0.07, -0.33, -0.16), skin, r=0.05,
+                            rot=(-24, 0, -palm * 10)))
+    return parts, []
+
+
+@prop("SuitHandR", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def suit_hand_right():
+    """The right hand: its palm toward the body (Roblox -x)."""
+    return _suit_hand(1)
+
+
+@prop("SuitHandL", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
+def suit_hand_left():
+    """The left hand, the right one's mirror."""
+    return _suit_hand(-1)
 
 @prop("Hood", pivot="centre", material="Fabric", collide=False, texture=512)
 def hood():

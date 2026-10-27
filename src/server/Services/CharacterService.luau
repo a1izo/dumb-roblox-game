@@ -404,8 +404,8 @@ function CharacterService.removeDefaultAnimate(character: Model)
 	end)
 end
 
-local SUIT = Color3.fromRGB(30, 30, 34)
-local TROUSERS = Color3.fromRGB(24, 24, 28)
+local SUIT = Suit.JACKET
+local TROUSERS = Suit.TROUSERS
 local SUIT_PARTS = { "Torso", "Left Arm", "Right Arm" }
 local TROUSER_PARTS = { "Left Leg", "Right Leg" }
 
@@ -448,10 +448,8 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 			paint(TROUSER_PARTS, TROUSERS)
 			for _, side in ipairs({ "LHandLeft", "LHandRight" }) do
 				local hand = character:FindFirstChild(side)
-				for _, part in ipairs(if hand then hand:GetChildren() else {}) do
-					if part:IsA("BasePart") then
-						part.Color = skin
-					end
+				if hand then
+					Suit.reskin(hand, skin)
 				end
 			end
 		end
@@ -479,20 +477,17 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 			return Suit.cloth(part)
 		end)
 	end
-	-- R6 arms are one part, so the hands are skin-coloured cuffs welded over the arm ends.
+	-- R6 arms are one part: each sleeve ends in the shirt's white cuff and a slim hand in the player's skin (Shared/Suit).
 	for _, side in ipairs({ "Left", "Right" }) do
-		CharacterService.attachBuiltTo(character, "LHand" .. side, { side .. " Arm" }, function(anchor: CFrame)
-			return {
-				Create("Part", {
-					Size = Vector3.new(1.08, 0.55, 1.08),
-					Color = skin,
-					Material = Enum.Material.SmoothPlastic,
-					CFrame = anchor * CFrame.new(0, -0.74, 0),
-				}),
-			}
-		end)
-	end
-	-- (the suit's own shirt and pants, when they have ids, stay on)
+		CharacterService.attachBuiltTo(
+			character,
+			"LHand" .. side,
+			{ side .. " Arm" },
+			function(_anchor: CFrame, arm: BasePart)
+				return Suit.hand(arm, skin)
+			end
+		)
+	end -- (the suit's own shirt and pants, when they have ids, stay on)
 	if Assets.outfit.shirt ~= "" then
 		local shirt = Create("Shirt", { ShirtTemplate = Assets.contentId(Assets.outfit.shirt) })
 		shirt:SetAttribute(Suit.OWN, true)
@@ -503,39 +498,9 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 		pants:SetAttribute(Suit.OWN, true)
 		pants.Parent = character
 	end
-	local tieColour = tie or Color3.fromRGB(190, 22, 36)
-	CharacterService.attachBuiltTo(character, "LNoirTie", TORSO, function(anchor: CFrame, torso: BasePart)
-		local front = -torso.Size.Z / 2
-		local top = torso.Size.Y / 2
-		local white = Color3.fromRGB(236, 233, 226)
-		return {
-			Create("Part", {
-				Size = Vector3.new(0.55, 0.75, 0.05),
-				Color = white,
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = anchor * CFrame.new(0, top - 0.4, front - 0.01),
-			}),
-			Create("Part", {
-				Size = Vector3.new(0.9, 0.16, 0.08),
-				Color = white,
-				Material = Enum.Material.SmoothPlastic,
-				CFrame = anchor * CFrame.new(0, top - 0.06, front - 0.02),
-			}),
-			Create("Part", {
-				Name = "Knot",
-				Size = Vector3.new(0.2, 0.16, 0.08),
-				Color = tieColour:Lerp(Color3.new(0, 0, 0), 0.15),
-				Material = Enum.Material.Fabric,
-				CFrame = anchor * CFrame.new(0, top - 0.2, front - 0.05),
-			}),
-			Create("Part", {
-				Name = "Tie",
-				Size = Vector3.new(0.18, 0.95, 0.05),
-				Color = tieColour,
-				Material = Enum.Material.Fabric,
-				CFrame = anchor * CFrame.new(0, top - 0.75, front - 0.05),
-			}),
-		}
+	-- the shirt front and the tie, in the look's own colour (Shared/Suit)
+	CharacterService.attachBuiltTo(character, "LNoirTie", TORSO, function(_anchor: CFrame, torso: BasePart)
+		return Suit.tie(torso, tie)
 	end)
 end
 

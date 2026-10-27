@@ -88,5 +88,76 @@ return function(t)
 			expect(model:FindFirstChild("LNoirTie") ~= nil).to.equal(true)
 			model:Destroy()
 		end)
+
+		it("keeps every shell clear of the body's edges and of the shells it touches", function()
+			-- (props_gameplay.CLOTH_BEVEL: the base box's rounded edges cut into the margin; a body edge must stay 0.02 off)
+			local bevel = 0.02
+			for name, pad in pairs(Suit.PAD) do
+				local side = pad / 2
+				expect(side >= 0.02).to.equal(true)
+				expect((2 * side - bevel) / math.sqrt(2) >= 0.02 - 1e-6).to.equal(true)
+				expect(name ~= "" and pad > 0).to.equal(true)
+			end
+			-- shells that touch never share a face's plane
+			expect(Suit.PAD.Torso ~= Suit.PAD["Left Arm"]).to.equal(true)
+			expect(Suit.PAD.Torso ~= Suit.PAD["Right Arm"]).to.equal(true)
+			expect(Suit.PAD.Torso ~= Suit.PAD["Left Leg"]).to.equal(true)
+			expect(Suit.PAD.Torso ~= Suit.PAD["Right Leg"]).to.equal(true)
+			expect(Suit.PAD["Left Leg"] ~= Suit.PAD["Right Leg"]).to.equal(true)
+		end)
+
+		it("ends each sleeve in a white cuff and a slim hand in the player's skin, below the arm's end", function()
+			local arm = Instance.new("Part")
+			arm.Name = "Right Arm"
+			arm.Size = Vector3.new(1, 2, 1)
+			arm.CFrame = CFrame.new(10, 5, 0)
+			local skin = Color3.fromRGB(120, 80, 50)
+			local cuff, hand
+			for _, item in ipairs(Suit.hand(arm, skin)) do
+				if item.Name == "Cuff" then
+					cuff = item
+				elseif item.Name == "Hand" then
+					hand = item
+				end
+			end
+			expect(cuff ~= nil and hand ~= nil).to.equal(true)
+			expect(cuff.Color == Suit.SHIRT).to.equal(true)
+			expect(hand.Color == skin).to.equal(true)
+			-- slimmer than the arm, and hanging out below it, its top inside the cuff
+			expect(hand.Size.X < arm.Size.X and hand.Size.Z < arm.Size.Z).to.equal(true)
+			local armEnd = arm.Position.Y - 1
+			local cuffBottom = cuff.Position.Y - cuff.Size.Y / 2
+			local handTop = hand.Position.Y + hand.Size.Y / 2
+			expect(cuffBottom < armEnd - 0.04).to.equal(true)
+			expect(handTop < armEnd and handTop > cuffBottom).to.equal(true)
+			-- a late skin repaints the hand, never the cuff
+			local holder = Instance.new("Model")
+			cuff.Parent = holder
+			hand.Parent = holder
+			Suit.reskin(holder, Color3.fromRGB(240, 200, 170))
+			expect(hand.Color == Color3.fromRGB(240, 200, 170)).to.equal(true)
+			expect(cuff.Color == Suit.SHIRT).to.equal(true)
+			holder:Destroy()
+			arm:Destroy()
+		end)
+
+		it("dyes the tie in the look's colour and lays it on the front of the torso", function()
+			local torso = Instance.new("Part")
+			torso.Name = "Torso"
+			torso.Size = Vector3.new(2, 2, 1)
+			torso.CFrame = CFrame.new(0, 3, 0)
+			local blue = Color3.fromRGB(30, 60, 160)
+			local dyed = false
+			for _, item in ipairs(Suit.tie(torso, blue)) do
+				local at = torso.CFrame:PointToObjectSpace(item.Position)
+				expect(at.Z < -0.5).to.equal(true) -- in front of the body
+				if item.Color == blue then
+					dyed = true
+				end
+				item:Destroy()
+			end
+			expect(dyed).to.equal(true)
+			torso:Destroy()
+		end)
 	end)
 end

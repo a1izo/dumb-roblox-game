@@ -219,7 +219,7 @@ local R6_JOINTS = {
 function Stage.figure(): Model
 	local model = Instance.new("Model")
 	model.Name = "Figure"
-	local suit, skin = Color3.fromRGB(16, 16, 19), Color3.fromRGB(28, 26, 26)
+	local suit, skin = Suit.JACKET, Color3.fromRGB(28, 26, 26)
 	local sizes = {
 		HumanoidRootPart = Vector3.new(2, 2, 1),
 		Torso = Vector3.new(2, 2, 1),
@@ -254,17 +254,31 @@ function Stage.figure(): Model
 			Parent = parts[joint[2]],
 		})
 	end
-	-- and the match suit's tailored cloth over the body, as the players wear it (Shared/Suit; none before the import)
+	-- and the match suit over the body, as the players wear it (Shared/Suit): the tailored cloth (none before the
+	-- import), the cuffs and hands, the shirt and tie
 	for name, body in pairs(parts) do
 		if name ~= "Head" and name ~= "HumanoidRootPart" then
-			for _, cloth in ipairs(Suit.cloth(body)) do
+			local worn = Suit.cloth(body)
+			if name == "Left Arm" or name == "Right Arm" then
+				for _, item in ipairs(Suit.hand(body, skin)) do
+					table.insert(worn, item)
+				end
+			elseif name == "Torso" then
+				for _, item in ipairs(Suit.tie(body, nil)) do
+					table.insert(worn, item)
+				end
+			end
+			for _, cloth in ipairs(worn) do
 				cloth.Anchored = false
 				cloth.CanCollide = false
 				cloth.CanQuery = false
 				cloth.CanTouch = false
 				cloth.Massless = true
 				cloth.CastShadow = false
-				Create("Weld", { Part0 = body, Part1 = cloth, Parent = cloth })
+				Create(
+					"Weld",
+					{ Part0 = body, Part1 = cloth, C0 = body.CFrame:ToObjectSpace(cloth.CFrame), Parent = cloth }
+				)
 				cloth.Parent = model
 			end
 		end

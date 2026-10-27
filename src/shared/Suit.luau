@@ -1,8 +1,10 @@
 --!strict
 -- The match suit, shared by the server (CharacterService dresses every body in a case) and this client's cutscenes
 -- (Presentation/Stage: its copies of those bodies, and its faceless stand-in): what of an avatar comes off under the
--- suit, and the cloth itself, fitted to a body part.
+-- suit, and the suit itself, fitted to a body part: the cloth, the shirt's cuffs and the hands, the tie.
 
+local Create = require(script.Parent.Create)
+local ModelLibrary = require(script.Parent.ModelLibrary)
 local Models = require(script.Parent.Models)
 
 local Suit = {}
@@ -11,6 +13,14 @@ local Suit = {}
 Suit.DRESSED = "LNoirOutfit"
 -- Set on the suit's own Shirt and Pants, which stay on.
 Suit.OWN = "LSuitOwn"
+
+-- The colours painted on the body under the cloth (and all a body shows before the Core import): a deep charcoal,
+-- the trousers a shade darker, so the suit reads as a suit and not as a black box in a dark room (2026-10-27).
+Suit.JACKET = Color3.fromRGB(46, 46, 52)
+Suit.TROUSERS = Color3.fromRGB(38, 38, 43)
+Suit.SHIRT = Color3.fromRGB(234, 232, 226)
+Suit.TIE = Color3.fromRGB(190, 22, 36)
+local CLIP = Color3.fromRGB(196, 198, 204)
 
 local CLOTHING_ACCESSORIES = {
 	[Enum.AccessoryType.Shirt] = true,
@@ -60,12 +70,49 @@ function Suit.offBody(item: Instance): boolean
 	return item:IsA("Accessory") and (CLOTHING_ACCESSORIES[item.AccessoryType] == true or not onHead(item))
 end
 
--- The cloth shells are this much larger than the part they cover, and the trousers' this much darker.
-local CLOTH_PAD = 0.03
+-- How much larger each shell is than the part it covers (both sides together). Far enough off the body that no edge
+-- of it comes within 0.02 studs of the cloth's rounded edges (whose bevel cuts into the margin); never the same for two
+-- shells that touch, or their faces would lie in one plane and flicker where they meet (the jacket over a sleeve or a
+-- trouser leg, one trouser leg against the other).
+Suit.PAD = {
+	Torso = 0.084,
+	["Left Arm"] = 0.06,
+	["Right Arm"] = 0.066,
+	["Left Leg"] = 0.06,
+	["Right Leg"] = 0.066,
+}
+local PAD_OTHER = 0.06
 -- Each shell's base box, the body part it is cut for (its lapels, pockets and seams stand off this box): the game
 -- sizes the box to the part, so the details keep their depth instead of shrinking the cloth into the body.
 local SHELL_BASE = { SuitTorso = Vector3.new(2, 2, 1), SuitLimb = Vector3.new(1, 2, 1) }
-local TROUSER_TINT = Color3.new(0.8, 0.8, 0.82)
+local TROUSER_TINT = Color3.new(0.82, 0.82, 0.84)
+-- How far the shirt front stands off the jacket's base box (props_gameplay.SHIRT_OUT): the tie lies on it.
+local SHIRT_OUT = 0.012
+
+local function absolute(v: Vector3): Vector3
+	return Vector3.new(math.abs(v.X), math.abs(v.Y), math.abs(v.Z))
+end
+
+-- The imported prop's meshes laid on `cframe` as the prop was made (upright, facing -Z: ModelLibrary has undone the
+-- importer's turn), stretched along the body's own axes by `stretch` (each mesh's own axes may lie otherwise).
+local function fitted(model: Model, cframe: CFrame, stretch: Vector3): { MeshPart }
+	local pivot = model:GetPivot()
+	local parts = {}
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("MeshPart") then
+			local rel = pivot:ToObjectSpace(item.CFrame)
+			local turn = rel.Rotation
+			item.Size = item.Size * absolute(turn:VectorToObjectSpace(stretch))
+			item.CFrame = cframe * CFrame.new(rel.Position * stretch) * turn
+			table.insert(parts, item)
+		end
+	end
+	for _, item in ipairs(parts) do
+		item.Parent = nil
+	end
+	model:Destroy()
+	return parts
+end
 
 -- The suit's cloth for one R6 part (the jacket for the Torso, a sleeve for an arm, a trouser leg for a leg), sized
 -- and placed on it, not parented and not welded; none before the Core import carries it (Models.suit).
@@ -76,28 +123,131 @@ function Suit.cloth(part: BasePart): { BasePart }
 	if not shell then
 		return {}
 	end
-	local fit = part.Size / SHELL_BASE[key]
-	local pad = Vector3.new(CLOTH_PAD, CLOTH_PAD, CLOTH_PAD)
-	local parts = {}
-	for _, item in ipairs(shell:GetDescendants()) do
-		if item:IsA("MeshPart") then
-			local ok, native = pcall(function()
-				return item.MeshSize
-			end)
-			item.Size = if ok and native.Magnitude > 0 then native * fit + pad else part.Size + pad
-			item.CFrame = part.CFrame
-			local look = item:FindFirstChildWhichIsA("SurfaceAppearance")
-			if look and tint then
-				look.Color = tint
-			end
-			table.insert(parts, item)
+	-- (the base box grows by the pad; what stands off it keeps its depth)
+	local base = SHELL_BASE[key]
+	local stretch = part.Size / base + Vector3.one * (Suit.PAD[part.Name] or PAD_OTHER) / base
+	local parts = fitted(shell, part.CFrame, stretch)
+	for _, item in ipairs(parts) do
+		local look = item:FindFirstChildWhichIsA("SurfaceAppearance")
+		if look and tint then
+			look.Color = tint
 		end
 	end
-	for _, item in ipairs(parts) do
-		item.Parent = nil
+	return parts :: any
+end
+
+-- Does the body wear the imported jacket (with the shirt front and collar on it), or only the painted torso?
+function Suit.tailored(): boolean
+	return ModelLibrary.has("SuitTorso") and ModelLibrary.has("SuitTie")
+end
+
+-- Colours a part, through its surface's tint when it has one (an imported mesh's texture is made pale to take it).
+function Suit.paint(part: BasePart, colour: Color3)
+	part.Color = colour
+	local look = part:FindFirstChildWhichIsA("SurfaceAppearance")
+	if look then
+		look.Color = colour
 	end
-	shell:Destroy()
+end
+
+local function piece(size: Vector3, colour: Color3, cframe: CFrame, material: Enum.Material?): Part
+	return Create("Part", {
+		Size = size,
+		Color = colour,
+		Material = material or Enum.Material.SmoothPlastic,
+		CFrame = cframe,
+		TopSurface = Enum.SurfaceType.Smooth,
+		BottomSurface = Enum.SurfaceType.Smooth,
+	})
+end
+
+-- The shirt's cuff and the hand coming out of one sleeve (`arm` is "Left Arm" or "Right Arm"), in the player's skin:
+-- a slim hand with its fingers (the Core import's SuitHandL / SuitHandR), or a slim block before the import. The cuff
+-- is a white band showing under the sleeve's end; the hand starts inside it, so no face of the two lies on the sleeve's.
+function Suit.hand(arm: BasePart, skin: Color3): { BasePart }
+	local width, depth = arm.Size.X, arm.Size.Z
+	local finish = arm.CFrame * CFrame.new(0, -arm.Size.Y / 2, 0) -- the arm's end
+	local cuff = piece(Vector3.new(width * 0.86, 0.12, depth * 0.86), Suit.SHIRT, finish * CFrame.new(0, -0.04, 0))
+	cuff.Name = "Cuff"
+	local parts: { BasePart } = { cuff }
+	local key = if string.find(arm.Name, "Left") then "SuitHandL" else "SuitHandR"
+	local model = ModelLibrary.get(key)
+	if model then
+		local size = ModelLibrary.size(key) or Vector3.new(0.3, 0.5, 0.7)
+		local scale = width -- (made for an arm 1 stud wide)
+		local at = finish * CFrame.new(0, -0.07 - size.Y * scale / 2, 0)
+		for _, item in ipairs(fitted(model, at, Vector3.one * scale)) do
+			item.Name = "Hand"
+			table.insert(parts, item)
+		end
+	else
+		local size = Vector3.new(width * 0.62, 0.46, depth * 0.56)
+		local hand = piece(size, skin, finish * CFrame.new(0, -0.07 - size.Y / 2, 0))
+		hand.Name = "Hand"
+		table.insert(parts, hand)
+	end
+	for _, item in ipairs(parts) do
+		if item.Name == "Hand" then
+			Suit.paint(item, skin)
+		end
+	end
 	return parts
+end
+
+-- Repaints the hands under "holder" (a body's LHandLeft / LHandRight) in a skin that arrived late; the cuffs stay white.
+function Suit.reskin(holder: Instance, skin: Color3)
+	for _, item in ipairs(holder:GetChildren()) do
+		if item:IsA("BasePart") and item.Name == "Hand" then
+			Suit.paint(item, skin)
+		end
+	end
+end
+
+-- The shirt and tie on the front of a torso, in `colour` (the Tokyo crowd's looks bring their own): the tailored
+-- Windsor tie with its dimple and silver clip, lying on the jacket's shirt front (the Core import's SuitTie); before
+-- the import, a shirt front, a collar and a tie built of parts on the painted torso.
+function Suit.tie(torso: BasePart, colour: Color3?): { BasePart }
+	local tint = colour or Suit.TIE
+	local top = torso.Size.Y / 2
+	local model = if Suit.tailored() then ModelLibrary.get("SuitTie") else nil
+	if model then
+		local pad = Suit.PAD.Torso / 2
+		local shirt = -torso.Size.Z / 2 - pad - SHIRT_OUT * (1 + Suit.PAD.Torso)
+		local size = ModelLibrary.size("SuitTie") or Vector3.new(0.3, 1.1, 0.12)
+		-- the knot just under the collar, the tie's back on the shirt
+		local at = torso.CFrame * CFrame.new(0, top + pad - 0.06 - size.Y / 2, shirt - 0.004 - size.Z / 2)
+		local parts = fitted(model, at, Vector3.one)
+		for _, item in ipairs(parts) do
+			-- (the silver clip is a piece of its own, never dyed)
+			if not string.find(item.Name, "Clip") then
+				Suit.paint(item, tint)
+			end
+		end
+		return parts :: any
+	end
+	local front = -torso.Size.Z / 2
+	return {
+		piece(Vector3.new(0.55, 0.75, 0.05), Suit.SHIRT, torso.CFrame * CFrame.new(0, top - 0.4, front - 0.01)),
+		piece(Vector3.new(0.6, 0.12, 0.08), Suit.SHIRT, torso.CFrame * CFrame.new(0, top - 0.05, front - 0.02)),
+		piece(
+			Vector3.new(0.22, 0.16, 0.08),
+			tint:Lerp(Color3.new(0, 0, 0), 0.15),
+			torso.CFrame * CFrame.new(0, top - 0.2, front - 0.06),
+			Enum.Material.Fabric
+		),
+		piece(
+			Vector3.new(0.2, 0.95, 0.05),
+			tint,
+			torso.CFrame * CFrame.new(0, top - 0.75, front - 0.06),
+			Enum.Material.Fabric
+		),
+		piece(
+			Vector3.new(0.3, 0.035, 0.03),
+			CLIP,
+			torso.CFrame * CFrame.new(0, top - 0.78, front - 0.1),
+			Enum.Material.Metal
+		),
+	}
 end
 
 return Suit

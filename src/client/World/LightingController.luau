@@ -9,6 +9,7 @@
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -70,6 +71,11 @@ local function focus(): Vector3
 	local camera = workspace.CurrentCamera
 	if not camera then
 		return Venues.LOBBY
+	end
+	-- A scripted camera (a cutscene's shot, a map's fly-over) is lit by where it is, not by the body it left behind:
+	-- a role cutscene on the sets was lit with the map's exposure, bloom and lightning, and blew out (2026-10-27).
+	if camera.CameraType == Enum.CameraType.Scriptable then
+		return camera.CFrame.Position
 	end
 	local subject = camera.CameraSubject
 	if subject and subject:IsA("Humanoid") and subject.RootPart then
@@ -214,6 +220,10 @@ end
 local function moodName(): string
 	if debugMood then
 		return debugMood
+	end
+	-- (the cutscene sets keep their own look: no phase lays its mood over them)
+	if currentVenue == "sets" then
+		return "Sets"
 	end
 	local public = ClientState.public
 	if not public.active or currentVenue == "lobby" then
@@ -410,11 +420,13 @@ local function update(force: boolean?)
 		elseif venue == "lobby" then depthZone(position)
 		else nil
 	currentZone = zone
-	local key = venue .. ":" .. (if venue == "map" then (zone or mapId or "") else (zone or "")) .. ":" .. moodName()
+	local mood = if venue == "sets" and not debugMood then "Sets" else moodName()
+	local key = venue .. ":" .. (if venue == "map" then (zone or mapId or "") else (zone or "")) .. ":" .. mood
 	if key == currentKey and not force then
 		return
 	end
-	local instant = currentKey == ""
+	-- (a cut to the sets or back is a cut: the look changes with it, never blended across it)
+	local instant = currentKey == "" or venue == "sets" or currentVenue == "sets"
 	local preset = if zone
 		then (LightingPresets.maps[zone] or (LightingPresets :: any)[zone] or LightingPresets.pick(venue, mapId))
 		else LightingPresets.pick(venue, mapId)
@@ -493,7 +505,8 @@ end
 
 -- A lightning flash: the scene blows out for a moment, twice.
 function LightingController.lightning()
-	if flashing then
+	-- (no storm reaches the cutscene sets' rooms)
+	if flashing or currentVenue == "sets" then
 		return
 	end
 	flashing = true
@@ -584,6 +597,13 @@ function LightingController.init()
 	end)
 	Governor.Changed:Connect(function()
 		update(true)
+	end)
+	-- A cut to another venue (a cutscene's first shot on the sets, the cut back) is lit on its own frame, not up to
+	-- half a second later.
+	RunService.RenderStepped:Connect(function()
+		if not debugKey and Venues.at(focus()) ~= currentVenue then
+			update()
+		end
 	end)
 	task.spawn(function()
 		while true do

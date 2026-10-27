@@ -104,7 +104,7 @@ def _glow_objects(key):
 
 # Props held in a hand, in front of the camera: their textures get the denser rule (lookbook.DENSITY).
 # (The suit cloth too: it is what the camera follows.)
-HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLimb"}
+HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLimb", "SuitTie", "SuitHandL", "SuitHandR"}
 
 # Tokyo's first props were shipped from builders older than the ones in the scripts now, and the
 # district was laid out around those shapes (a bicycle rack's spacing, a ticket gate's width, a
