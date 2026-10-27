@@ -20,6 +20,7 @@ local FADE = 2
 local current: { slot: string, sound: Sound, id: string }? = nil
 local outcomeSlot: string? = nil
 local debugSlot: string? = nil
+local sceneSlot: string? = nil -- a cutscene's own music (setScene)
 
 local function stop(entry: { slot: string, sound: Sound, id: string }, fade: number)
 	local sound = entry.sound
@@ -61,6 +62,9 @@ local function pick(): string?
 	if debugSlot then
 		return if debugSlot == "none" then nil else debugSlot
 	end
+	if sceneSlot then
+		return sceneSlot
+	end
 	local phase = ClientState.phase()
 	if not ClientState.isParticipant() then
 		if Router.isOpen("shop") then
@@ -100,6 +104,13 @@ end
 -- Set by the ending cutscene: your side's win theme, or the defeat theme.
 function MusicController.setOutcome(slot: string?)
 	outcomeSlot = slot
+	MusicController.refresh()
+end
+
+-- A cutscene's own music (Presentation/ShotPlayer: a role cutscene's bed under its line, the Operative's scene) while
+-- it plays, nil to go back. Only a slot with an id takes over; an empty one leaves the music as it is.
+function MusicController.setScene(slot: string?)
+	sceneSlot = if slot and AudioCheck.idFor(Assets.music[slot]) then slot else nil
 	MusicController.refresh()
 end
 

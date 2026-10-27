@@ -198,6 +198,7 @@ class Shot:
         self.actors = []
         self.props = []
         self.events = []
+        self.sound = None  # (audio(): the voiced line, its bed, the scene's music)
         SHOTS[name] = self
 
     # --- authoring ---------------------------------------------------------------------------------
@@ -263,10 +264,66 @@ class Shot:
         v = ch.value(t)
         return v[0:3], look_rotation(v[0:3], v[3:6], v[7]), v[6]
 
+    def cut_times(self):
+        """When the camera cuts (a Retime replaces this with its own)."""
+        return [g[0][0] for g in self.cam_groups[1:] if g]
+
+    def line(self, t, text, times=None, hold=0.9):
+        """A spoken line typed at the bottom of the screen word by word as it is said (ShotPlayer "line" events): white
+        serif words, a SHOUTED one (all capitals) in red, bigger, with a small shake. Each word's time comes from its
+        length and the pauses its punctuation asks for, or from `times` (one per word, from t). A long line is shown a
+        sentence at a time. Returns when the last word has been said (shot time)."""
+        words = text.split()
+        if times is None:
+            times, at = [], 0.0
+            for word in words:
+                times.append(round(at, 3))
+                letters = sum(1 for ch in word if ch.isalnum())
+                shout = letters > 1 and word.upper() == word and any(ch.isalpha() for ch in word)
+                at += (0.08 + 0.055 * letters) * (1.3 if shout else 1.0)
+                if word.endswith("..."):
+                    at += 0.45
+                elif word[-1] in ".?!":
+                    at += 0.3
+                elif word[-1] == ",":
+                    at += 0.15
+        assert len(times) == len(words), f"{self.name}: {len(words)} words, {len(times)} times"
+        end = t + times[-1] + 0.5
+        # (a sentence at a time when the line is long: a page of words ends at a full stop or a question)
+        pages, page = [], []
+        for k, word in enumerate(words):
+            page.append(k)
+            closes = word[-1] in ".?!" and not word.endswith("...")
+            if closes and sum(len(words[i]) + 1 for i in page) > 40 and k < len(words) - 1:
+                pages.append(page)
+                page = []
+        if page:
+            pages.append(page)
+        for n, page in enumerate(pages):
+            t0 = t + times[page[0]]
+            last = pages[n + 1] if n + 1 < len(pages) else None
+            t1 = (t + times[last[0]] - 0.05) if last else end + hold
+            entries = []
+            for i in page:
+                word = words[i]
+                letters = sum(1 for ch in word if ch.isalnum())
+                shout = letters > 1 and word.upper() == word and any(ch.isalpha() for ch in word)
+                entries.append([word, round(times[i] - times[page[0]], 3)] + ([1] if shout else []))
+            self.event(t0, "line", words=entries, dur=round(t1 - t0, 3))
+        return end
+
+    def audio(self, voice=None, voice_at=0.0, bed=None, music=None):
+        """The shot's own sound (Assets slots, silent while empty): a voiced line `voice` starting at `voice_at` (the
+        game stretches the whole shot when the clip is longer than the line's time here), a music `bed` quietly under it,
+        or the scene's own `music`."""
+        self.sound = {k: v for k, v in (("voice", voice), ("voiceAt", voice_at if voice else None), ("bed", bed),
+                                         ("music", music)) if v is not None}
+        return self
+
     def camera_samples(self):
         """Samples (t, pos, quaternion, fov); at a cut, the old view right before it, then the new one."""
         times = self.times()
-        cut_times = [g[0][0] for g in self.cam_groups[1:] if g]
+        cut_times = self.cut_times()
         for c in cut_times:
             times.append(max(0.0, c - 1e-3))
         times = sorted(set(round(t, 6) for t in times))
@@ -278,6 +335,133 @@ class Shot:
             if np.dot(out[i][2], out[i - 1][2]) < 0:
                 out[i] = (out[i][0], out[i][1], -out[i][2], out[i][3])
         return out, cut_times
+
+class _Warped:
+    """A path played on a cut-down timeline: its value at new time t is the old path's at old(t)."""
+
+    def __init__(self, track, old):
+        self.track = track
+        self.old = old
+        self.full = track.full
+
+    def value(self, t):
+        return self.track.value(self.old(t))
+
+    def rotation(self, t):
+        return self.track.rotation(self.old(t))
+
+
+class _WarpedMotion:
+    """An actor's acting seen on a cut-down timeline (for the framing helpers and the lints)."""
+
+    def __init__(self, motion, old, length):
+        self.motion = motion
+        self.old = old
+        self.length = length
+        self.name = motion.name
+
+    def __getattr__(self, name):
+        return getattr(self.motion, name)
+
+    def sample(self, t, *args):
+        return self.motion.sample(self.old(t))
+
+
+class Retime:
+    """Plays pieces of a shot's own timeline back to back: a cutscene cut down to the length of the line spoken in it,
+    keeping the acting, the camera and the events of the pieces kept. pieces [(old_t0, old_t1)], in order; each new
+    piece is a cut.
+
+        cut = Retime([(4.4, 5.8), (8.0, 10.6)])
+        cut.apply(shot, [motion])     # the shot and its actors' clips now run on the new timeline (cut.length)
+    """
+
+    def __init__(self, pieces):
+        self.pieces = []
+        t = 0.0
+        for o0, o1 in pieces:
+            assert o1 > o0 and (not self.pieces or o0 >= self.pieces[-1][1]), "pieces run forward, apart"
+            self.pieces.append((float(o0), float(o1), t))
+            t += o1 - o0
+        self.length = round(t, 3)
+
+    def old(self, t):
+        """New time -> old time."""
+        for o0, o1, n0 in self.pieces:
+            if t < n0 + (o1 - o0) - 1e-9:
+                return o0 + max(0.0, t - n0)
+        return self.pieces[-1][1]
+
+    def new(self, t):
+        """Old time -> new time, or None when that moment was cut away."""
+        for o0, o1, n0 in self.pieces:
+            if o0 - 1e-9 <= t <= o1 + 1e-9:
+                return round(n0 + (t - o0), 3)
+        return None
+
+    def after(self, t):
+        """The new time of the first piece kept after old time t (where a state set in a cut-away moment lands)."""
+        for o0, _, n0 in self.pieces:
+            if o0 >= t:
+                return n0
+        return None
+
+    def span(self, t0, t1):
+        """A window of old time on the new timeline: the first and last new times it covers, or None."""
+        lo = hi = None
+        for o0, o1, n0 in self.pieces:
+            a, b = max(t0, o0), min(t1, o1)
+            if a <= b:
+                lo = n0 + a - o0 if lo is None else min(lo, n0 + a - o0)
+                hi = n0 + b - o0 if hi is None else max(hi, n0 + b - o0)
+        return None if lo is None else (round(lo, 3), round(hi, 3))
+
+    def apply(self, shot, motions, carry_sfx=()):
+        """Moves the shot onto the new timeline and builds its actors' clips there. Faces (and the looping sounds named
+        in carry_sfx) set in a cut-away moment land at the start of the next piece kept; every other event cut away
+        is dropped."""
+        old_camera = shot.camera_at
+        cuts = {round(n0, 3) for _, _, n0 in self.pieces[1:]}
+        for c in shot.cut_times():
+            n = self.new(c)
+            if n is not None and n > 1e-6:
+                cuts.add(n)
+        cuts = sorted(cuts)
+        shot.camera_at = lambda t: old_camera(self.old(t))
+        shot.cut_times = lambda: cuts
+        from motion import MOTIONS
+
+        for a in shot.actors:
+            own = a.motion or MOTIONS.get(a.clip)
+            if own is not None and own in motions:
+                a.motion = _WarpedMotion(own, self.old, self.length)
+            a.path = _Warped(a.path, self.old)
+            a.show = self.span(*a.show) or (0.0, 0.0)
+            a.silhouette = self.span(*a.silhouette) if a.silhouette else None
+            a.eyes = self.span(*a.eyes) if a.eyes else None
+            a.held = [(prop, arm, off, rot, *w) for prop, arm, off, rot, t0, t1 in a.held
+                      for w in [self.span(t0, t1)] if w]
+        kept = []
+        for p in shot.props:
+            window = self.span(*p.show)
+            if window:
+                p.path = _Warped(p.path, self.old)
+                p.show = window
+                kept.append(p)
+        shot.props = kept
+        events = []
+        for t, kind, data in sorted(shot.events, key=lambda e: e[0]):
+            n = self.new(t)
+            if n is None and (kind == "face" or (kind == "sfx" and data.get("slot") in carry_sfx)):
+                n = self.after(t)
+            if n is not None:
+                events.append((n, kind, data))
+        shot.events = events
+        shot.subjects = [(*w, slot, back) for t0, t1, slot, back in shot.subjects for w in [self.span(t0, t1)] if w]
+        shot.length = self.length
+        for motion in motions:
+            motion.build_retimed(self.old, self.length)
+        return self
 
 
 def lint(shot, step=0.25, radius=1.3, height=5.0):
@@ -519,6 +703,8 @@ def export(shot):
     ]
     if shot.mood:
         lines.append(f"\tmood = {lua_string(shot.mood)},")
+    if shot.sound:
+        lines.append(f"\tsound = {lua_value(shot.sound)},")
     lines += [
         "\tcamera = {",
         f"\t\tt = {_flat([[times[i]] for i in keep], 3)},",

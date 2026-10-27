@@ -1,8 +1,9 @@
--- The briefing: your role's own cutscene (made in Blender, art/scripts/cinema/shots/role_*.py, every
--- one the same length), with you in it and the allies you know, and your role card running over it as
--- captions: who you are, how you win, your first move, then your alias, your real name in red, your
--- allies. Without the cutscene two panels show the same. Everything here
--- can be seen again on the role card (hold C).
+-- The briefing: your role's own cutscene (made in Blender, art/scripts/cinema/shots/role_*.py), with you in it and the
+-- allies you know: a voiced role's line typed as it is said (the Operative's scene runs your role card as captions).
+-- Then your role card stays up to read until the investigation begins: who you are, how you win, your first move,
+-- your alias, your real name in red, your allies. The briefing lasts the match's longest cutscene and a hold, the same
+-- for everyone. Without the cutscene the card shows from the start. Everything here can be seen again on the role card
+-- (hold C).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -278,6 +279,7 @@ function BriefingScreen.show(payload)
 		local ok, err = pcall(ShotPlayer.play, payload.shot, {
 			at = tonumber(payload.at),
 			cast = if type(payload.cast) == "table" then payload.cast else {},
+			length = tonumber(payload.length),
 			onCard = function(key: string)
 				return caption(key, payload)
 			end,
@@ -287,9 +289,10 @@ function BriefingScreen.show(payload)
 		})
 		if not ok then
 			warn("[DeathsGambit] Role cutscene failed: " .. tostring(err))
-			if showing == mine and ClientState.phase() == "Briefing" then
-				showPanels(payload)
-			end
+		end
+		-- (after the cutscene, the role card until the investigation begins)
+		if showing == mine and ClientState.phase() == "Briefing" then
+			showPanels(payload)
 		end
 	end)
 end

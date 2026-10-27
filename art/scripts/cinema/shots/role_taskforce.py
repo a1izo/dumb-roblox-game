@@ -84,3 +84,5 @@ shot.event(1.0, "card", key="role", dur=4.2)
 shot.event(5.4, "card", key="win", dur=3.6)
 shot.event(9.2, "card", key="move", dur=2.8)
 shot.event(12.0, "card", key="names", dur=3.0)
+# No line: the Operative's scene keeps its 15 s, under its own music (silent until the slot has an id).
+shot.audio(music="musicOperative")

@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Casting = require(Shared:WaitForChild("Cinema"):WaitForChild("Casting"))
+local CutLength = require(Shared:WaitForChild("Cinema"):WaitForChild("CutLength"))
 local LoadGate = require(script.Parent.LoadGate)
 
 -- The longest a match start waits for slow clients to load the map (LoadGate).
@@ -47,6 +48,7 @@ local RoleService = require(script.Parent.RoleService)
 local SabotageService = require(script.Parent.SabotageService)
 local Staging = require(script.Parent.Staging)
 local CosmeticsService = require(script.Parent.CosmeticsService)
+local ClipLengths = require(script.Parent.ClipLengths)
 local TaskBarService = require(script.Parent.TaskBarService)
 local VoteService = require(script.Parent.VoteService)
 local WagerService = require(script.Parent.WagerService)
@@ -219,8 +221,43 @@ local function roleCast(ps): { [string]: number }
 	return cast
 end
 
+-- How long a role's cutscene plays this match (nil without one): its shot's length, stretched to its voiced line's clip
+-- once the slot has one (Shared/Cinema/CutLength).
+local function roleShotLength(role: string): number?
+	local shot = shotData(ROLE_SHOTS[role])
+	if not shot then
+		return nil
+	end
+	local voice = if type(shot.sound) == "table" then shot.sound.voice else nil
+	return CutLength.of(shot, if type(voice) == "string" then ClipLengths.get(voice) else nil)
+end
+
+-- (the voiced lines' clips are measured while the server starts, so a briefing never waits for them)
+task.defer(function()
+	local slots = {}
+	for _, name in pairs(ROLE_SHOTS) do
+		local shot = shotData(name)
+		if shot and type(shot.sound) == "table" and type(shot.sound.voice) == "string" then
+			table.insert(slots, shot.sound.voice)
+		end
+	end
+	ClipLengths.warm(slots)
+end)
+
+-- The briefing lasts as long as this match's longest role cutscene and a hold for the role card after it, the same
+-- for everyone: each player watches only their own cutscene, so nobody learns anything from how long it runs.
+local function briefingLength(): number?
+	local longest = 0
+	for _, ps in ipairs(Match.list) do
+		longest = math.max(longest, roleShotLength(ps.role) or 0)
+	end
+	if longest <= 0 or Match.phaseLength("Briefing") <= 0 then
+		return nil
+	end
+	return longest + Config.BRIEFING_HOLD
+end
+
 local function sendBriefings()
-	-- Every role's cutscene is the same length, so it says nothing to anyone watching the clock.
 	local at = workspace:GetServerTimeNow() + 0.4
 	for _, ps in ipairs(Match.list) do
 		local shotName = ROLE_SHOTS[ps.role]
@@ -228,6 +265,7 @@ local function sendBriefings()
 		BriefingRemote:FireClient(ps.player, {
 			shot = if hasShot then shotName else nil,
 			cast = if hasShot then roleCast(ps) else nil,
+			length = if hasShot then roleShotLength(ps.role) else nil,
 			at = at,
 			role = ps.role,
 			alias = ps.alias,
@@ -236,7 +274,7 @@ local function sendBriefings()
 			playerCount = #Match.list,
 			followers = RoleService.count("Follower"),
 			mapName = Match.mapName,
-			duration = Match.phaseLength("Briefing"),
+			duration = Match.phaseEndsAt - Match.phaseStartedAt,
 		})
 	end
 end
@@ -672,7 +710,7 @@ local function runMatch(players: { Player })
 
 	Cues.reset()
 	runPhase("Intro", startIntro)
-	runPhase("Briefing", sendBriefings)
+	runPhase("Briefing", sendBriefings, nil, { length = briefingLength() })
 
 	-- Match.round counts the meetings (free roam N ends in meeting N).
 	local cycle = 0

@@ -15,12 +15,16 @@ Config.PHASE_TIME = {
 	Intro = 15,
 	Verdict = 7,
 	Outro = 10,
-	Briefing = 15,
+	Briefing = 15, -- (only without role cutscenes: with them, the longest one plus BRIEFING_HOLD)
 	Investigation = 180,
 	Meeting = 60,
 	Vote = 20,
 	Reveal = 30,
 }
+
+-- Seconds the role card stays up to read after the longest role cutscene of the match (the briefing's length is that
+-- cutscene's and this: Services/RoundService).
+Config.BRIEFING_HOLD = 5
 
 -- Lobby, parties and matchmaking
 Config.LOBBY_COUNTDOWN = 15

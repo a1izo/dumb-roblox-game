@@ -171,7 +171,11 @@ return function(cue)
 			if where ~= "" then
 				line = line .. "  ·  " .. where
 			end
-			local hideCaption = Cinema.caption(aliasOf(role.userId), line)
+			-- (the alias in the heading face, what they are doing under it)
+			local hideCaption = Cinema.caption("", {
+				{ text = aliasOf(role.userId), head = true, size = 48 },
+				{ text = line, font = "label", size = "lead" },
+			})
 			table.insert(cleanup, hideCaption)
 			task.wait(vignetteTime)
 			hideCaption()

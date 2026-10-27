@@ -262,5 +262,24 @@ class Motion:
             c.pose(t, "linear", offset=tuple(off) if (self.offset.keys or self.plants) else None, **joints)
         return c
 
+    def build_retimed(self, old_of, length):
+        """The clip on a cut-down timeline (cinema.shot.Retime): its pose at new time t is this motion's at old_of(t),
+        which runs forward; the springs still run through the whole old timeline, so each piece starts as it was."""
+        if self.unwrap:
+            self._unwrap()
+        c = clip(self.name, length, loop=False, note=self.note, floor=self.floor)
+        c.stride = self.stride
+        c.stance = self.stance
+        c.additive = self.additive
+        count = max(2, int(round(length * self.rate)))
+        times = [length * i / count for i in range(count + 1)]
+        olds = [old_of(t) for t in times]
+        sprung = self._sprung(olds) if self.springs else None
+        for i, t in enumerate(times):
+            pose, off = self.sample(olds[i], sprung, i)
+            joints = {j: J(v[:3], v[3:]) if np.any(np.abs(v[3:]) > 1e-4) else tuple(v[:3]) for j, v in pose.items()}
+            c.pose(t, "linear", offset=tuple(off) if (self.offset.keys or self.plants) else None, **joints)
+        return c
+
 
 __all__ = ["Motion", "J", "MOTIONS"]

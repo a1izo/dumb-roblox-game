@@ -35,6 +35,38 @@ Assets.music = {
 	meeting = { id = "82941366813687", ref = "Deltarune Ch.3+4: Query?", fallbackId = "" },
 	vote = { id = "90401963211160", ref = "Deltarune Ch.3+4: Black Knife", fallbackId = "" },
 	specter = { id = "124751068997305", ref = "OMORI: WHITE SPACE", fallbackId = "" },
+	-- The role cutscenes' music (Shared/Cinema/Shots, `sound`): a bed played quietly under each voiced line, and the
+	-- Operative's scene, which has no line, its own music. Silent until filled.
+	bedDiavolo = {
+		id = "",
+		ref = "a low, slow, ominous bed under Diavolo's chip line: a held organ or choir note, quiet, 5-10 s",
+		fallbackId = "",
+		volume = 0.35,
+	},
+	bedMuerto = {
+		id = "",
+		ref = "a frantic pulse under the Muerto's DELETE: a racing heartbeat or stabbing strings, quiet, 6-10 s",
+		fallbackId = "",
+		volume = 0.35,
+	},
+	bedButler = {
+		id = "",
+		ref = "a gentle, uneasy bed under the Butler's question: a soft piano or a music box, quiet, 5-10 s",
+		fallbackId = "",
+		volume = 0.35,
+	},
+	bedAce = {
+		id = "",
+		ref = "a cool, thinking bed under Ace's line: low strings or a soft synth pad, quiet, 12-16 s",
+		fallbackId = "",
+		volume = 0.35,
+	},
+	musicOperative = {
+		id = "",
+		ref = "the Operative's locker-room scene, 15 s: steady, resolute, a little tense (drums and low strings)",
+		fallbackId = "",
+		volume = 0.6,
+	},
 	winAgency = { id = "140524483892887", ref = "Deltarune Ch.2: Powers Combined", fallbackId = "" },
 	winHand = { id = "102060777088999", ref = "Deltarune Ch.1: THE WORLD REVOLVING", fallbackId = "" },
 	defeat = { id = "140524483892887", ref = "Deltarune Ch.2: Faint Courage (Game Over)", fallbackId = "" },
@@ -270,6 +302,51 @@ Assets.sfx = {
 	},
 	winShatter = { id = "", ref = "glass and stone shattering into a rain of shards", fallbackId = "", volume = 0.8 },
 	winPiecesLight = { id = "", ref = "a row of soft bright chimes rising", fallbackId = "", volume = 0.5 },
+	-- The role cutscenes' voiced lines (Shared/Cinema/Shots, `sound.voice`): each starts on its shot's typed line, and a
+	-- clip longer than the line's time there stretches the whole cutscene to fit it (Shared/Cinema/CutLength). Silent until
+	-- filled.
+	voiceDiavolo = {
+		id = "",
+		ref = 'Diavolo, calm then manic: "I\'ll take a potato chip... and EAT IT!" (the last two words shouted), about 3 s',
+		fallbackId = "",
+	},
+	voiceMuerto = {
+		id = "",
+		ref = 'the Muerto, faster and louder with each stab: "Delete, delete, delete, delete, DELETE, DELETE...", about 4 s',
+		fallbackId = "",
+	},
+	voiceButler = {
+		id = "",
+		ref = 'the Butler, quiet and kind: "Is something the matter? Hmm? ... What\'s wrong?", about 3.5 s',
+		fallbackId = "",
+	},
+	voiceAce = {
+		id = "",
+		ref = 'Ace, flat and slow: "I had to test this just in case, but I, I never thought it would actually happen. '
+			.. 'Diavolo... it seems you can kill people without having to be there in person.", about 11 s',
+		fallbackId = "",
+	},
+	-- The map intros' moments (Shared/Cinema/Shots): silent until filled.
+	bodyFall = { id = "", ref = "a body collapsing onto a hard floor, a dull thud", fallbackId = "" },
+	trainDoors = { id = "", ref = "metro train doors chiming and sliding shut", fallbackId = "" },
+	penStop = { id = "", ref = "a pen lifted sharply off paper, a short tap", fallbackId = "" },
+	bookImpact = { id = "", ref = "a heavy book slamming down onto the ground from a height", fallbackId = "" },
+	screenStatic = { id = "", ref = "a monitor's screen bursting into static, a short hiss", fallbackId = "" },
+	-- The first join's eye intro (UI/EyeIntro) and the apple loading screen (UI/AppleLoading): silent until filled.
+	introEyeOpen = { id = "", ref = "an eye snapping open: a low swell and a sharp, wet shimmer", fallbackId = "" },
+	introAmbience = {
+		id = "",
+		ref = "a dark, close room tone under the closed eye: low hum, faint breath, loop",
+		fallbackId = "",
+		volume = 0.5,
+	},
+	loadAppleFall = {
+		id = "",
+		ref = "a soft rising whoosh as the apple falls, about 2 s",
+		fallbackId = "",
+		volume = 0.5,
+	},
+	loadAppleCatch = { id = "", ref = "an apple caught in a palm: a soft, firm slap", fallbackId = "", volume = 0.7 },
 } :: { [string]: Audio }
 
 -- Animations by pose id (see src/shared/Anim/Poses.luau). "" = the procedural pose. Every

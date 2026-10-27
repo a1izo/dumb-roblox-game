@@ -1,4 +1,5 @@
-"""Ace's role cutscene (the briefing, seen only by Ace), 15 s.
+"""Ace's role cutscene (the briefing, seen only by Ace): "I had to test this just in case, but I, I never thought it would
+actually happen. Kira... it seems you can kill people without having to be there in person."
 
 1  0.0-3.2   Behind the armchair: the wall of glowing screens and Ace's crouched shape against it.
 2  3.2-5.6   Close on Ace in the screens' light: the eyes jump from screen to screen; a sweet from the
@@ -8,6 +9,9 @@
              lifts a cup by its rim between finger and thumb.
 5  10.8-12.8 Close: a sip.
 6  12.8-15.0 Over Ace's shoulder, pushing in to the screens.
+
+Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
+it): the scene from 1.5 s on, the line said over it. Authored on its first 15 s timeline below; RETIME picks the piece.
 
 When there is no Butler this match the butler part is empty: cut 3 watches an empty doorway and Ace reaches
 out to no one (the cup still appears in the hand).
@@ -20,7 +24,7 @@ wall at z 0 into the pantry (x 251..265)."""
 from animlib import J
 from cinema import framing
 from cinema.acting import alive, beat, facing, hold, seated, soft, walking
-from cinema.shot import Shot
+from cinema.shot import Retime, Shot
 from emotes.kit import reach
 from motion import Motion
 
@@ -125,7 +129,10 @@ shot.cam(LENGTH, framing.spot(shot, LENGTH, "self", "close", angle=168, height=0
 shot.event(0.0, "sfx", slot="mapServerHum")
 shot.event(4.7, "sfx", slot="pageTurn")
 shot.event(6.0, "sfx", slot="clockTick")
-shot.event(1.0, "card", key="role", dur=4.2)
-shot.event(5.6, "card", key="win", dur=3.4)
-shot.event(9.2, "card", key="move", dur=2.8)
-shot.event(12.2, "card", key="names", dur=2.8)
+# Cut down to the line: the scene from its second beat, the line said over it. ({Hand}: the game's own name for the
+# one the line is about, filled in by Shared/Terms: no source name is ever shown to a player.)
+RETIME = Retime([(1.5, LENGTH)])
+RETIME.apply(shot, [ace, b], carry_sfx=("mapServerHum",))
+shot.audio(voice="voiceAce", voice_at=1.0, bed="bedAce")
+shot.line(1.0, "I had to test this just in case, but I, I never thought it would actually happen. {Hand}... it seems you "
+               "can kill people without having to be there in person.")

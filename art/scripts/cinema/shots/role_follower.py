@@ -1,4 +1,4 @@
-"""The Muerto's role cutscene (the briefing, seen only by that Muerto), 15 s: delete. After the anime's Mikami,
+"""The Muerto's role cutscene (the briefing, seen only by that Muerto): "Delete, delete, delete, delete, DELETE, DELETE ..." After the anime's Mikami,
 the follower who writes for his god: alone at a desk at night, the red of the city behind him, writing, then
 stabbing the pen into the page with each name, faster and faster, until he rises to his god in ecstasy.
 
@@ -12,13 +12,17 @@ J  9.6-12.6  In front: he throws himself back in the chair, head flung back, arm
              window: "Diavolo... I am your hand."
 K  12.6-15.0 High, pulling away: the black shape with its arms wide against the red city.
 
+Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
+it): the last of A's steady writing, the whole frenzy with a "delete" on each of the first strokes, the stop, and J's
+throw back into the chair. The scene is still authored on its first 15 s timeline below; RETIME picks the pieces.
+
 The flat (maps/venues/sets/flat.py, Sets scene space, origin (360, 60)): the room x -9..9, z -7..7, 10 high;
 the window across the north wall; the desk at (0, -2.6) (top 3.05, screen on its west half, lamp at the east
 end), the chair behind it at (0, -5.0); the writer sits facing south, the window at his back."""
 
 from animlib import J
 from cinema.acting import alive, seated, soft
-from cinema.shot import Shot
+from cinema.shot import Retime, Shot
 from motion import Motion
 
 NAME = "RoleMuerto"
@@ -158,16 +162,17 @@ for k, (t, _) in enumerate(STABS):
     shot.event(t, "sfx", slot="slam")
     if k < 7:  # the strokes we cut to; the last flurry is one blur
         shot.event(t, "fx", name="impact", r=255, g=40 + 20 * (k % 2), b=60, strength=0.45, dur=0.2)
-        shot.event(t, "subtitle", text="DELETE." if k < 4 else "DELETE!", dur=min(0.9, (STABS[k + 1][0] - t) - 0.05))
+
     else:
         shot.event(t, "fx", name="flash", r=255, g=30, b=50, strength=0.3, dur=0.15)
     shot.event(t, "fx", name="shake", strength=0.12 + 0.03 * k, dur=0.15)
 shot.event(9.5, "sfx", slot="hauntWhisper")
 shot.event(10.0, "fx", name="impact", r=255, g=20, b=40, strength=0.6, dur=0.4)
 shot.event(10.0, "sfx", slot="heartbeat")
-shot.event(10.2, "subtitle", text="Diavolo... I am your hand.", dur=2.2)
-# The role card, as captions over the calmer moments (the game fills them in).
-shot.event(0.4, "card", key="role", dur=2.1)
-shot.event(7.0, "card", key="win", dur=2.4)
-shot.event(10.6, "card", key="names", dur=1.9)
-shot.event(12.7, "card", key="move", dur=2.2)
+
+# Cut down to the line: a "delete" on each of the first six strokes, the rest a blur, then the throw back.
+RETIME = Retime([(2.0, 8.2), (9.75, 10.95)])
+RETIME.apply(shot, [me], carry_sfx=("penScratch",))
+shot.audio(voice="voiceMuerto", voice_at=1.0, bed="bedMuerto")
+shot.line(1.0, "Delete, delete, delete, delete, DELETE, DELETE ...",
+          times=[round(STABS[k][0] - STABS[0][0], 3) for k in range(7)])

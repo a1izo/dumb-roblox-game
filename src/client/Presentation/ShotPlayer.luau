@@ -14,8 +14,10 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
@@ -23,6 +25,8 @@ local Models = require(Shared:WaitForChild("Models"))
 local Venues = require(Shared:WaitForChild("Venues"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
+local Mixer = require(script.Parent.Parent.Audio.Mixer)
+local MusicController = require(script.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
@@ -40,7 +44,13 @@ export type Options = {
 	onEvent: ((event: any) -> ())?,
 	reducedViolence: boolean?,
 	stop: (() -> boolean)?, -- ends the shot early once this returns true (the phase moved on...)
+	-- How long this showing lasts, from the server (Shared/Cinema/CutLength): a voiced shot whose clip is longer than
+	-- its line's time plays slower, everything in it by the same share (its line's words too), the voice at its own pace.
+	length: number?,
 }
+
+-- What a showing has going: what closes when it ends, the sounds it started, and its stretch.
+type Showing = { closers: { () -> () }, sounds: { Sound }, stretch: number }
 
 -- The data of a shot by name, or nil.
 function ShotPlayer.get(name: string): any
@@ -261,13 +271,16 @@ local function setFace(model: Model, name: string)
 	end
 end
 
-local function runEvent(event: any, base: Vector3, token: number, options: Options, closers: { () -> () })
+local function runEvent(event: any, base: Vector3, token: number, options: Options, showing: Showing)
+	local closers = showing.closers
 	local kind = event.kind
 	if options.onEvent then
 		options.onEvent(event)
 	end
 	if kind == "subtitle" then
-		table.insert(closers, Cinema.subtitle(event.text or "", event.dur or 2.5))
+		table.insert(closers, Cinema.subtitle(event.text or "", (event.dur or 2.5) * showing.stretch))
+	elseif kind == "line" then
+		table.insert(closers, Cinema.line(event.words or {}, event.dur or 3, showing.stretch))
 	elseif kind == "title" then
 		local lines = event.lines or {}
 		local close = Cinema.card({ title = lines[1] or "", subtitle = lines[2], typewriter = true, y = 0.5 })
@@ -280,7 +293,14 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 			task.delay(event.dur or 2.5, close)
 		end
 	elseif kind == "sfx" then
-		pcall(Sfx.play, event.slot)
+		-- (a loop runs until the shot ends; every sound the shot started is stopped with it)
+		local entry = Assets.sfx[event.slot or ""]
+		local looped = event.loop == true
+			or (entry ~= nil and string.find(string.lower(entry.ref), "loop", 1, true) ~= nil)
+		local ok, sound = pcall(Sfx.play, event.slot, { looped = looped })
+		if ok and sound then
+			table.insert(showing.sounds, sound)
+		end
 	elseif kind == "fx" then
 		local name = event.name
 		local at = if event.pos then base + Vector3.new(event.pos[1], event.pos[2], event.pos[3]) else nil
@@ -325,6 +345,8 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	-- Debug: Players.LocalPlayer:SetAttribute("ShotRate", 0.25) plays shots in slow motion (from the command bar).
 	local rateAttr = Players.LocalPlayer:GetAttribute("ShotRate")
 	local rate = if type(rateAttr) == "number" and rateAttr > 0 then rateAttr else 1
+	local stretch = if type(opts.length) == "number" and opts.length > length + 0.05 then opts.length / length else 1
+	rate /= stretch
 
 	-- The camera's keys as CFrames.
 	local cam = shot.camera
@@ -423,6 +445,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 
 	local closers: { () -> () } = {}
+	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch }
 	-- With the debug rate set, the shot's own clock in a corner, so a screenshot says which moment it is.
 	local clockLabel: TextLabel? = nil
 	local probed = false
@@ -461,6 +484,29 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	if shot.skippable then
 		skip = Cinema.skipButton(function()
 			finished = true
+		end)
+	end
+
+	-- The shot's own sound: its music (a bed under the line, or the scene's own) for as long as it plays, and the voiced
+	-- line on its mark. Without a bed, the game's music ducks under the voice.
+	local sound = if type(shot.sound) == "table" then shot.sound else nil
+	local ducked = false
+	if sound and (sound.bed or sound.music) then
+		MusicController.setScene(sound.bed or sound.music)
+	end
+	if sound and type(sound.voice) == "string" then
+		task.delay(math.max(0, (tonumber(sound.voiceAt) or 0) * stretch - (os.clock() - startClock)), function()
+			if finished then
+				return
+			end
+			local voice = Sfx.play(sound.voice)
+			if voice then
+				table.insert(showing.sounds, voice)
+				if not (sound.bed and Assets.audioId(Assets.music[sound.bed])) then
+					ducked = true
+					Mixer.duck("shotVoice", true)
+				end
+			end
 		end)
 	end
 
@@ -593,7 +639,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 					end
 				end
 			else
-				task.spawn(runEvent, event, base, token, opts, closers)
+				task.spawn(runEvent, event, base, token, opts, showing)
 			end
 		end
 	end)
@@ -607,6 +653,22 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 	for _, close in ipairs(closers) do
 		pcall(close)
+	end
+	-- (its sounds end with it, faded out rather than cut)
+	for _, playing in ipairs(showing.sounds) do
+		if playing.Parent then
+			local fade = TweenService:Create(playing, TweenInfo.new(0.4), { Volume = 0 })
+			fade.Completed:Once(function()
+				playing:Destroy()
+			end)
+			fade:Play()
+		end
+	end
+	if sound and (sound.bed or sound.music) then
+		MusicController.setScene(nil)
+	end
+	if ducked then
+		Mixer.duck("shotVoice", false)
 	end
 	for _, live in ipairs(actors) do
 		PoseController.stop(live.model, nil, 0)

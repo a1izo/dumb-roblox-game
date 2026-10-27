@@ -5,11 +5,15 @@ the one the Butler serves, a black shape with no face (the Butler does not know 
 
 The pantry (maps/venues/sets/ace.py, Sets scene space, origin x 258): x 251..265, z -6..6; the counter
 along the north wall (x 254..264, its front at z -3.4, top 3.5), the kettle at (256.6, -4.4); the trolley
-at (260, 1.5); the door at z 0 in the west wall into Ace's room (the chair at (238, -1.8))."""
+at (260, 1.5); the door at z 0 in the west wall into Ace's room (the chair at (238, -1.8)).
+
+Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
+it): the tray carried to the door, then from the dark room the Butler in the lit doorway asking "Is something the
+matter? Hmm? ... What's wrong?" and bowing. Authored on its first 15 s timeline below; RETIME picks the pieces."""
 
 from animlib import J
 from cinema.acting import alive, beat, facing, seated, soft, walking
-from cinema.shot import Shot
+from cinema.shot import Retime, Shot
 from emotes.kit import reach
 from motion import Motion
 
@@ -104,7 +108,8 @@ shot.allow = {"ace": ["ClubChair"]}  # crouched on its seat
 shot.event(0.0, "sfx", slot="clockTick")
 shot.event(5.2, "sfx", slot="clockTick")
 shot.event(9.6, "sfx", slot="mapServerHum")
-shot.event(1.0, "card", key="role", dur=4.2)
-shot.event(5.4, "card", key="win", dur=3.6)
-shot.event(9.2, "card", key="move", dur=2.8)
-shot.event(12.0, "card", key="names", dur=3.0)
+# Cut down to the line: carried to the door, then asked from the doorway with a bow.
+RETIME = Retime([(7.6, 9.6), (11.0, 15.0)])
+RETIME.apply(shot, [b, shape])
+shot.audio(voice="voiceButler", voice_at=1.9, bed="bedButler")
+shot.line(1.9, "Is something the matter? Hmm? ... What's wrong?")

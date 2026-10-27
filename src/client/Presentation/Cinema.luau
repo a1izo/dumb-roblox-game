@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
+local Terms = require(Shared:WaitForChild("Terms"))
 
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Glitch = require(script.Parent.Parent.UI.Core.Glitch)
@@ -158,55 +159,6 @@ function Cinema.card(options: CardOptions): () -> ()
 	end
 end
 
--- A caption at the bottom left: a name in Melodrama with a white rule and a line under it.
-function Cinema.caption(name: string, line: string?): () -> ()
-	local group = Instance.new("CanvasGroup")
-	group.Name = "Caption"
-	group.BackgroundTransparency = 1
-	group.AnchorPoint = Vector2.new(0, 1)
-	group.Position = UDim2.new(0, 48, 0.86, 0)
-	group.Size = UDim2.fromOffset(700, 110)
-	group.Parent = Screens.cinematic
-	local nameText = Kit.text({
-		face = "Head",
-		text = name,
-		size = 48,
-		color = C.bone,
-		Position = UDim2.fromOffset(0, 0),
-		Parent = group,
-	})
-	if line and line ~= "" then
-		Kit.label({
-			Text = line,
-			font = "label",
-			size = "lead",
-			color = C.dim,
-			TextWrapped = false,
-			AutomaticSize = Enum.AutomaticSize.XY,
-			Size = UDim2.fromOffset(0, 0),
-			Position = UDim2.fromOffset(4, 70),
-			Parent = group,
-		})
-	end
-	Kit.Base.make("Frame", {
-		BackgroundColor3 = C.white,
-		BorderSizePixel = 0,
-		Position = UDim2.fromOffset(2, 64),
-		Size = UDim2.fromOffset(90, 3),
-		Parent = group,
-	})
-	local glitch = Glitch.attach(group, { loop = false })
-	nameText:write(0.5)
-	local closed = false
-	return function()
-		if not closed then
-			closed = true
-			glitch:destroy()
-			fadeAway(group)
-		end
-	end
-end
-
 -- A line of dialogue at the bottom of the screen, for `seconds`. Returns a function that removes it early.
 function Cinema.subtitle(text: string, seconds: number?): () -> ()
 	local group = Instance.new("CanvasGroup")
@@ -241,6 +193,74 @@ function Cinema.subtitle(text: string, seconds: number?): () -> ()
 	return close
 end
 
+-- A spoken line (a shot's "line" event), typed in the bottom letterbox bar word by word as it is said: white serif
+-- (Melodrama) words, a shouted one red, bigger and shaking for a moment. words: { text, seconds from the line's start,
+-- 1 when shouted }; `stretch` scales those times (a voiced cutscene slowed to its clip); the line fades after `seconds`.
+-- {placeholders} in a word are the game's names (Shared/Terms). Returns a function that removes it early.
+function Cinema.line(words: { { any } }, seconds: number, stretch: number?): () -> ()
+	local k = stretch or 1
+	local phone = Kit.Layout.isPhone()
+	local group = Instance.new("CanvasGroup")
+	group.Name = "Line"
+	group.BackgroundTransparency = 1
+	group.AnchorPoint = Vector2.new(0.5, 0.5)
+	group.Position = UDim2.fromScale(0.5, 0.945)
+	group.Size = UDim2.fromScale(0.86, 0)
+	group.AutomaticSize = Enum.AutomaticSize.Y
+	group.Parent = Screens.cinematic
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.Wraps = true
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, if phone then 7 else 11)
+	layout.Parent = group
+	local size, shoutSize = if phone then 24 else 34, if phone then 30 else 44
+	local closed = false
+	for index, word in ipairs(words) do
+		local text = Terms.f(tostring(word[1] or ""))
+		local at = (tonumber(word[2]) or 0) * k
+		local shout = word[3] == 1
+		task.delay(at, function()
+			if closed then
+				return
+			end
+			local glyphs = Kit.text({
+				face = "Semi",
+				text = text,
+				size = if shout then shoutSize else size,
+				color = if shout then C.danger else C.white,
+				LayoutOrder = index,
+				Parent = group,
+			})
+			glyphs:write(math.clamp(0.04 * #text, 0.08, 0.3))
+			if shout and not Motion.isReduced() then
+				-- a small shake as it lands, settling in a third of a second
+				local frame = glyphs.frame
+				task.spawn(function()
+					for step = 1, 8 do
+						if closed or not frame.Parent then
+							return
+						end
+						local fade = 1 - step / 8
+						frame.Position = UDim2.fromOffset(math.random(-3, 3) * fade, math.random(-2, 2) * fade)
+						task.wait(0.04)
+					end
+					frame.Position = UDim2.new()
+				end)
+			end
+		end)
+	end
+	local function close()
+		if not closed then
+			closed = true
+			fadeAway(group)
+		end
+	end
+	task.delay(seconds * k, close)
+	return close
+end
 export type CaptionLine = { text: string, color: Color3?, size: any?, font: string?, head: boolean? }
 
 -- A caption over a cutscene, low on the left, above the letterbox: a small kicker ("YOU ARE") and its

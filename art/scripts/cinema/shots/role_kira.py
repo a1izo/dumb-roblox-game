@@ -1,4 +1,4 @@
-"""Diavolo's role cutscene (the briefing, seen only by Diavolo), 15 s: "...and EAT IT." After the anime's potato
+"""Diavolo's role cutscene (the briefing, seen only by Diavolo): "I'll take a potato chip... and EAT IT!" After the anime's potato
 chip scene: Diavolo at the desk at night, studying, the news on, eating chips; under the bag's edge a torn page
 and between the chips a name goes into it. The television flatlines. Then the chip, held up, and
 eaten like a verdict.
@@ -13,13 +13,18 @@ F  9.0-10.6  Close, tilted: the chip held up before the face... and bitten: "...
 G  10.6-12.8 He leans back into the chair, the grin; behind him the Deathsinger rises and laughs.
 H  12.8-15.0 Pushing in on the face: the laugh, the red.
 
+Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
+it): C's last strokes of the pen (1.4 s), E and F, the chip lifted and held up while he says it and bitten on "EAT IT!"
+(2.6 s), the start of G, the Deathsinger drawn out of the smoke behind him (1.2 s). The whole scene is still authored
+on its first 15 s timeline below; RETIME picks the pieces.
+
 The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, 14 high; the window in
 the north wall; the desk before it at (0, -5.4) (x -3.3..3.3, z -7.0..-3.8, top 2.7), its lamp at the west end;
 the chair behind it at (0, -8.0); the television across the room at (0, 6.6) facing the desk."""
 
 from animlib import J
 from cinema.acting import alive, perched, soft, strike
-from cinema.shot import Shot
+from cinema.shot import Retime, Shot
 from motion import Motion
 
 NAME = "RoleDiavolo"
@@ -157,16 +162,15 @@ shot.event(1.2, "fx", name="flash", r=200, g=210, b=255, strength=0.35, dur=0.3)
 shot.event(1.25, "sfx", slot="thunder")
 shot.event(4.4, "sfx", slot="penScratch")
 shot.event(7.0, "sfx", slot="flatline")
-shot.event(9.05, "subtitle", text="I'll take a potato chip...", dur=0.9)
-shot.event(10.0, "subtitle", text="...and EAT IT.", dur=1.3)
+
 shot.event(10.0, "sfx", slot="slam")
 shot.event(10.0, "fx", name="impact", r=255, g=40, b=50, strength=0.55, dur=0.28)
 shot.event(10.0, "fx", name="shake", strength=0.35, dur=0.25)
 shot.event(11.0, "sfx", slot="wisp")
 shot.event(12.3, "sfx", slot="hauntWhisper")
 shot.event(14.0, "fx", name="flash", r=200, g=20, b=30, strength=0.3, dur=0.5)
-# The role card, as captions over the calmer moments (the game fills them in).
-shot.event(0.5, "card", key="role", dur=2.0)
-shot.event(4.3, "card", key="win", dur=1.8)
-shot.event(10.9, "card", key="move", dur=1.8)
-shot.event(13.0, "card", key="names", dur=1.9)
+# Cut down to the line: the pen's last strokes, the chip held up and bitten on "EAT IT!", the Deathsinger rising.
+RETIME = Retime([(4.4, 5.8), (8.0, 10.6), (10.6, 11.8)])
+RETIME.apply(shot, [d], carry_sfx=("mapRainGlass", "mapNewsRadio"))
+shot.audio(voice="voiceDiavolo", voice_at=1.3, bed="bedDiavolo")
+shot.line(1.3, "I'll take a potato chip... and EAT IT!")
