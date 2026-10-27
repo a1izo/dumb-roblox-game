@@ -5,7 +5,8 @@
 -- they are in Today's hand). Film Noir, Gilded Age and Seeing Red lost their trail when trails left the game
 -- (2026-10-21), and the ties and the white pieces went with the owner's drops (2026-10-21): Film Noir and Gilded Age
 -- were made up again from what is left, and Ivory Tower from the new pale pieces (Moth Lantern, Frost Script,
--- Shattered).
+-- Shattered). The hats left the game (2026-10-27): Film Noir, Gilded Age and Seeing Red were made up again a
+-- second time.
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
@@ -17,7 +18,7 @@ Sets.LIST = {
 	{
 		id = "noir",
 		name = "Film Noir",
-		pieces = { "hat_fedora", "writing_typewriter" },
+		pieces = { "writing_typewriter", "verdict_lamp" },
 		title = "title_set_noir",
 	},
 	{
@@ -29,13 +30,13 @@ Sets.LIST = {
 	{
 		id = "gilded",
 		name = "Gilded Age",
-		pieces = { "book_gold", "hat_tophat" },
+		pieces = { "book_gold", "chair_throne" },
 		title = "title_set_gilded",
 	},
 	{
 		id = "red",
 		name = "Seeing Red",
-		pieces = { "hat_fedora_crimson", "book_red" },
+		pieces = { "book_red", "writing_fire" },
 		title = "title_set_red",
 	},
 	{

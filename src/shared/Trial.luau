@@ -91,7 +91,7 @@ end
 
 -- The offer (a small card where the steps will show).
 Trial.OFFER_TITLE = "The Trial"
-Trial.OFFER_LINE = string.format("Learn the game in two minutes  ·  +%d coins", Config.TRAINING_REWARD)
+Trial.OFFER_LINE = string.format("Learn the game in two minutes  ·  +%d Reál", Config.TRAINING_REWARD)
 
 -- The practice identity on the Trial's role card (an alias and a real name from nobody's case).
 Trial.ALIAS = "Raven"

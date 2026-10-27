@@ -4,9 +4,9 @@
 -- can only be bought while featured (plus a short grace period after midnight, so a
 -- purchase started just before the change still goes through).
 --
--- With them, the day's deal: one card of the shop's own stock (never a rotation card), a quarter
--- off that day (DEAL_OFF, rounded down to 5 coins; the same grace after midnight). The six and the
--- deal are Today's hand (hand()).
+-- With them, the day's deal: one card of the shop's own stock (never a rotation card). The six and the deal are
+-- Today's hand (hand()), and every card of it is cheaper that day (the user's call, 2026-10-27): the six a fifth off
+-- (HAND_OFF), the deal two fifths (DEAL_OFF), rounded down to 5 Reál, with the same grace after midnight.
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
@@ -14,7 +14,8 @@ local ShopRotation = {}
 
 ShopRotation.SIZE = 6
 ShopRotation.GRACE = 5 * 60
-ShopRotation.DEAL_OFF = 0.25
+ShopRotation.HAND_OFF = 0.2
+ShopRotation.DEAL_OFF = 0.4
 local DAY = 86400
 
 local WEIGHTS = { common = 60, rare = 28, epic = 10, legendary = 3, godhood = 1 }
@@ -107,9 +108,14 @@ function ShopRotation.dealFor(day: number): string?
 	return pool[#pool].id
 end
 
--- A deal's price: a quarter off, rounded down to 5 coins.
+-- A price `off` cheaper (a share: 0.2 is a fifth), rounded down to 5 Reál.
+function ShopRotation.discounted(price: number, off: number): number
+	return math.floor(price * (1 - off) / 5) * 5
+end
+
+-- The deal's price: two fifths off, rounded down to 5 Reál.
 function ShopRotation.dealPrice(price: number): number
-	return math.floor(price * (1 - ShopRotation.DEAL_OFF) / 5) * 5
+	return ShopRotation.discounted(price, ShopRotation.DEAL_OFF)
 end
 
 -- True when the item is the deal at this time (its day, or the grace after its midnight).
@@ -121,24 +127,55 @@ function ShopRotation.isDeal(itemId: string, unixTime: number): boolean
 	return unixTime % DAY < ShopRotation.GRACE and ShopRotation.dealFor(day - 1) == itemId
 end
 
--- What an item costs at this time (the deal's price on its day; a thing sold later, its price once its day
--- has come), or nil when it is not sold.
-function ShopRotation.priceOf(item: Cosmetics.Item, unixTime: number): number?
-	local price = item.price or Cosmetics.laterPrice(item, unixTime)
-	if price and item.source == "shop" and ShopRotation.isDeal(item.id, unixTime) then
-		return ShopRotation.dealPrice(price)
-	end
-	return price
-end
-
--- Today's hand: the day's six, then its deal.
+-- Today's hand: the day's six, then its deal. (Kept per day: it is asked for every price shown.)
+local hands: { [number]: { string } } = {}
 function ShopRotation.hand(day: number): { string }
+	local kept = hands[day]
+	if kept then
+		return table.clone(kept)
+	end
 	local cards = table.clone(ShopRotation.forDay(day))
 	local deal = ShopRotation.dealFor(day)
 	if deal then
 		table.insert(cards, deal)
 	end
-	return cards
+	if hands[day - 3] then
+		hands[day - 3] = nil
+	end
+	hands[day] = cards
+	return table.clone(cards)
+end
+
+-- How much cheaper an item is at this time: the deal's DEAL_OFF on its day, HAND_OFF for the other cards of
+-- Today's hand (both through the grace after midnight), else 0.
+function ShopRotation.offOf(itemId: string, unixTime: number): number
+	if ShopRotation.isDeal(itemId, unixTime) then
+		return ShopRotation.DEAL_OFF
+	end
+	local day = ShopRotation.dayOf(unixTime)
+	if table.find(ShopRotation.hand(day), itemId) then
+		return ShopRotation.HAND_OFF
+	end
+	if unixTime % DAY < ShopRotation.GRACE and table.find(ShopRotation.hand(day - 1), itemId) then
+		return ShopRotation.HAND_OFF
+	end
+	return 0
+end
+
+-- What an item costs at this time, its card in Today's hand cheaper (offOf; a thing sold later, its price once
+-- its day has come), or nil when it is not sold.
+function ShopRotation.priceOf(item: Cosmetics.Item, unixTime: number): number?
+	local price = item.price or Cosmetics.laterPrice(item, unixTime)
+	if not price then
+		return nil
+	end
+	local off = ShopRotation.offOf(item.id, unixTime)
+	return if off > 0 then ShopRotation.discounted(price, off) else price
+end
+
+-- What an item costs without the day's discount (its price, or its later price once its day has come).
+function ShopRotation.fullPrice(item: Cosmetics.Item, unixTime: number): number?
+	return item.price or Cosmetics.laterPrice(item, unixTime)
 end
 
 -- The emote the lobby's shop window shows on a day (client World/ShopWindow): the first emote of that day's

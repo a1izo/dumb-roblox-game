@@ -12,14 +12,9 @@ local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 local ReceiptLedger = require(script.Parent.Parent:WaitForChild("Data"):WaitForChild("ReceiptLedger"))
 
--- Ids saved in profiles before cosmetics v2; they must keep working. (The trails among them left the game
--- on 2026-10-21, and the Deerstalker, the Ivory Fedora and the ties with the owner's drops; Migrations v5 and v6
--- take them out of profiles.)
-local LEGACY_IDS = {
-	"hat_cap",
-	"hat_fedora",
-	"hat_tophat",
-}
+-- Kinds that left the game; Migrations take their ids out of profiles (the trails on 2026-10-21, v5; the ties
+-- with the owner's drops, v6; the hats with the Wardrobe on 2026-10-27, v7).
+local GONE_KINDS = { "hat", "tie", "trail" }
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -116,7 +111,7 @@ return function(t)
 			expect(record.day).to.equal(20003)
 			expect(#record.cards).to.equal(1)
 		end)
-		it("deals a card of the shop's own stock each day, a quarter off, beside the six", function()
+		it("deals a card of the shop's own stock each day beside the six", function()
 			local deals = {}
 			for day = 20000, 20060 do
 				local id = ShopRotation.dealFor(day) :: string
@@ -135,16 +130,16 @@ return function(t)
 			end
 			expect(kinds > 10).to.equal(true)
 		end)
-		it("prices the deal a quarter off, rounded down to 5, on its day and in the grace", function()
-			expect(ShopRotation.dealPrice(450)).to.equal(335)
-			expect(ShopRotation.dealPrice(200)).to.equal(150)
-			expect(ShopRotation.dealPrice(1000)).to.equal(750)
+		it("prices the deal two fifths off, rounded down to 5, on its day and in the grace", function()
+			expect(ShopRotation.dealPrice(450)).to.equal(270)
+			expect(ShopRotation.dealPrice(200)).to.equal(120)
+			expect(ShopRotation.dealPrice(1000)).to.equal(600)
 			local day = 20010
 			local item = Cosmetics.byId(ShopRotation.dealFor(day) :: string) :: Cosmetics.Item
 			local price = item.price :: number
 			local noon = day * 86400 + 43200
 			expect(ShopRotation.priceOf(item, noon)).to.equal(ShopRotation.dealPrice(price))
-			expect(ShopRotation.dealPrice(price) <= price * 0.75).to.equal(true)
+			expect(ShopRotation.dealPrice(price) <= price * 0.6).to.equal(true)
 			local nextMidnight = (day + 1) * 86400
 			local still = ShopRotation.dealFor(day + 1) == item.id
 			expect(ShopRotation.priceOf(item, nextMidnight + 60)).to.equal(ShopRotation.dealPrice(price))
@@ -152,7 +147,30 @@ return function(t)
 				if still then ShopRotation.dealPrice(price) else price
 			)
 			local rotation = Cosmetics.byId(ShopRotation.forDay(day)[1]) :: Cosmetics.Item
-			expect(ShopRotation.priceOf(rotation, noon)).to.equal(rotation.price)
+			expect(ShopRotation.priceOf(rotation, noon)).to.equal(
+				ShopRotation.discounted(ShopRotation.fullPrice(rotation, noon) :: number, ShopRotation.HAND_OFF)
+			)
+		end)
+		it("sells every other card of Today's hand a fifth off, and nothing outside it", function()
+			local day = 20020
+			local noon = day * 86400 + 43200
+			for _, id in ipairs(ShopRotation.forDay(day)) do
+				local item = Cosmetics.byId(id) :: Cosmetics.Item
+				local full = ShopRotation.fullPrice(item, noon)
+				if full then
+					expect(ShopRotation.offOf(id, noon)).to.equal(ShopRotation.HAND_OFF)
+					expect(ShopRotation.priceOf(item, noon)).to.equal(
+						ShopRotation.discounted(full, ShopRotation.HAND_OFF)
+					)
+				end
+			end
+			local hand = ShopRotation.hand(day)
+			for _, item in ipairs(Cosmetics.ITEMS) do
+				if item.source == "shop" and item.price and not table.find(hand, item.id) then
+					expect(ShopRotation.priceOf(item, noon)).to.equal(item.price)
+					break
+				end
+			end
 		end)
 		it("only features rotation items, without repeats", function()
 			local seen = {}
@@ -214,9 +232,10 @@ return function(t)
 	end)
 
 	describe("Cosmetics", function()
-		it("keeps every id saved before cosmetics v2", function()
-			for _, id in ipairs(LEGACY_IDS) do
-				expect(Cosmetics.byId(id) ~= nil).to.equal(true)
+		it("deals nothing of a kind that left the game", function()
+			for _, kind in ipairs(GONE_KINDS) do
+				expect(table.find(Cosmetics.KINDS, kind)).to.equal(nil)
+				expect(#Cosmetics.ofKind(kind)).to.equal(0)
 			end
 		end)
 		it("gives every item a known kind and rarity, and ids once", function()
@@ -232,8 +251,9 @@ return function(t)
 			end
 		end)
 		it("deals every kind in exactly one suit", function()
-			-- (trails and ties left on 2026-10-21; win cutscenes, seats and chairs came; custom deaths on 2026-10-25)
-			expect(#Cosmetics.KINDS).to.equal(12)
+			-- (trails and ties left on 2026-10-21; win cutscenes, seats and chairs came; custom deaths on 2026-10-25;
+			-- hats left with the Wardrobe on 2026-10-27)
+			expect(#Cosmetics.KINDS).to.equal(11)
 			for _, kind in ipairs(Cosmetics.KINDS) do
 				local suits = 0
 				for _, suit in ipairs(Cosmetics.SUITS) do

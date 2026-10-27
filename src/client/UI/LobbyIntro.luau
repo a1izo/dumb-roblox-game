@@ -12,7 +12,12 @@ local EyeIntro = require(script.Parent.EyeIntro)
 
 local LobbyIntro = {}
 
+local HOLD_MOST = 45 -- the longest a held loading screen waits for the way back before it lifts by itself
+
 local playing = false
+-- A loading screen put up ahead of the way back (the results closed while the case still ends: `hold`), which
+-- comeBack carries on with.
+local held: AppleLoading.Loader? = nil
 
 -- The black screen, found (DGCover's, on joining) or made.
 local function cover(): ScreenGui
@@ -94,7 +99,8 @@ function LobbyIntro.comeBack(load: (progress: (number) -> ()) -> (), onRevealed:
 	end
 	playing = true
 	task.spawn(function()
-		local loader = AppleLoading.open()
+		local loader = held or AppleLoading.open()
+		held = nil
 		local gui = Players.LocalPlayer.PlayerGui:FindFirstChild("DGIntro") :: ScreenGui?
 		if gui then
 			gui.Enabled = false
@@ -102,6 +108,29 @@ function LobbyIntro.comeBack(load: (progress: (number) -> ()) -> (), onRevealed:
 		pcall(load, loader.progress)
 		loader.finish(onRevealed)
 		playing = false
+	end)
+end
+
+-- The results closed while the case still winds down: the loading screen comes up now (not the meeting room), its
+-- apple creeping down, and the way back (comeBack) carries on with it once the server sends you home. If that never
+-- comes it lifts by itself.
+function LobbyIntro.hold()
+	if held or playing then
+		return
+	end
+	local loader = AppleLoading.open()
+	held = loader
+	task.spawn(function()
+		local started = os.clock()
+		while held == loader and os.clock() - started < HOLD_MOST do
+			-- (a third of the fall over the first ten seconds, then slower)
+			loader.progress(math.min(0.6, (os.clock() - started) / 30))
+			task.wait(0.2)
+		end
+		if held == loader then
+			held = nil
+			loader.finish(nil)
+		end
 	end)
 end
 

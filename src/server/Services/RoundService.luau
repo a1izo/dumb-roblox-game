@@ -588,7 +588,26 @@ function RoundService.debugCue(kind: string, player: Player, target, extra: stri
 	return nil
 end
 
+-- Who has closed the results (their Close button) during this Reveal: once every player still in the case has, it
+-- ends there and then and everyone goes home, instead of sitting at the table for the rest of it.
+local closedResults: { [Player]: boolean } = {}
+
+local function everyoneClosed(): boolean
+	local anyone = false
+	for _, ps in ipairs(Match.list) do
+		local player = ps.player
+		if not Match.isBot(ps) and player.Parent == Players then
+			anyone = true
+			if not closedResults[player] then
+				return false
+			end
+		end
+	end
+	return anyone
+end
+
 local function reveal()
+	closedResults = {}
 	Match.phase = "Reveal"
 	Mechanics.onPhase("Reveal")
 	EmoteService.onPhase("Reveal")
@@ -646,7 +665,7 @@ local function reveal()
 	end
 	Match.pushState()
 	Match.pushAllPrivate()
-	while workspace:GetServerTimeNow() < Match.phaseEndsAt do
+	while workspace:GetServerTimeNow() < Match.phaseEndsAt and not everyoneClosed() do
 		task.wait(0.25)
 	end
 end
@@ -689,6 +708,13 @@ local function runMatch(players: { Player })
 		if data and Trial.skip(data) then
 			DataService.push(ps.player)
 			DataService.saveSoon(ps.player)
+		end
+		-- No title in a case: the lobby's tag on a body kept for the case goes (it showed over bodies blending into
+		-- the Tokyo crowd); the next spawn in the lobby puts it back.
+		if typeof(ps.player) == "Instance" then
+			CosmeticsService.refreshTitle(ps.player)
+			-- No shift lock of Roblox's own in a case: the client holds the camera over the shoulder (World/ShoulderCam)
+			ps.player.DevEnableMouseLock = false
 		end
 	end
 
@@ -828,6 +854,7 @@ local function cleanup()
 		if player.Parent == Players then
 			player:SetAttribute("Alias", nil)
 			player.CameraMaxZoomDistance = LOBBY_ZOOM
+			player.DevEnableMouseLock = true
 			Match.clearPrivate(player)
 			CharacterService.load(player)
 		end
@@ -839,6 +866,16 @@ end
 
 function RoundService.init()
 	Match.Eliminated:Connect(onEliminated)
+	RevealRemote.OnServerEvent:Connect(function(player: Player, payload)
+		if
+			type(payload) == "table"
+			and payload.action == "closed"
+			and Match.phase == "Reveal"
+			and Match.get(player)
+		then
+			closedResults[player] = true
+		end
+	end)
 	Players.PlayerRemoving:Connect(function(player)
 		local ps = Match.getLiving(player)
 		if ps then

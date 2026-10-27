@@ -195,6 +195,15 @@ end
 
 local copy: Model? = nil
 local copyOf: Model? = nil -- the body it was copied from
+-- What the server hangs on a body for a moment (Services/CharacterService), left off the copy.
+local HELD = {
+	LWriting = true,
+	LWritingPen = true,
+	LManualGlow = true,
+	LCarry = true,
+	LCuffs = true,
+	LEyesGlow = true,
+}
 local stopPreview: (() -> ())? = nil
 
 local function clearPreview()
@@ -227,6 +236,13 @@ local function ensureCopy(): Model?
 	end
 	for _, item in ipairs(made:GetDescendants()) do
 		if item:IsA("BillboardGui") or item:IsA("Trail") or item:IsA("ParticleEmitter") then
+			item:Destroy()
+		end
+	end
+	-- Nothing the body happens to hold (the Manual and its pen while it is out, a carried note, cuffs, a glow): the
+	-- copy shows you, not the moment (the Manual floated in its hands after the Manual had been opened).
+	for _, item in ipairs(made:GetChildren()) do
+		if HELD[item.Name] or item:IsA("Tool") then
 			item:Destroy()
 		end
 	end

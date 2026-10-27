@@ -47,7 +47,7 @@ function MonetizationService.processReceipt(receipt): Enum.ProductPurchaseDecisi
 		ReceiptLedger.prune(data.receipts, os.time())
 		DataService.push(player)
 		Analytics.coins(player, coins, data.coins, "IAP", pack.key)
-		Match.notify(player, string.format("Thank you! +%d coins.", coins), "good")
+		Match.notify(player, string.format("Thank you! +%d Reál.", coins), "good")
 		return PurchaseGranted
 	end
 	if undo then

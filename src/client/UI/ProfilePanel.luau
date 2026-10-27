@@ -209,7 +209,7 @@ local function achievementCard(profile, achievement, order: number)
 		Parent = card,
 	})
 	setBar(if done then 1 else value / math.max(1, achievement.goal))
-	local reward = string.format("%d coins", achievement.coins)
+	local reward = string.format("%d Reál", achievement.coins)
 	local title = achievement.title and Cosmetics.byId(achievement.title)
 	if title then
 		reward ..= "  ·  title " .. title.name

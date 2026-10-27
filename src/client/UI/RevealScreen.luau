@@ -15,6 +15,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
+local LobbyIntro = require(script.Parent.LobbyIntro)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local UiSound = require(script.Parent.Core.UiSound)
@@ -138,14 +139,14 @@ local function rewardsText(rewards): string
 	end
 	local lines = {
 		string.format(
-			"%s   +%d coins   +%d XP",
+			"%s   +%d Reál   +%d XP",
 			if rewards.won then "Victory" else "Defeat",
 			rewards.coins,
 			rewards.xp
 		),
 	}
 	for _, line in ipairs(rewards.lines or {}) do
-		table.insert(lines, string.format("%s: +%d coins, +%d XP", tostring(line.label), line.coins, line.xp))
+		table.insert(lines, string.format("%s: +%d Reál, +%d XP", tostring(line.label), line.coins, line.xp))
 	end
 	local progress = rewards.progress
 	if type(progress) == "table" then
@@ -174,6 +175,21 @@ local function close()
 	token += 1
 	root.Visible = false
 	Router.setBlocking("reveal", false)
+end
+
+-- The Close button: in the case's own results the loading screen comes up at once and takes you back (the server
+-- ends the case as soon as everyone in it has closed theirs, or when its time is up); a watcher just closes them.
+local function closeByButton()
+	local inCase = ClientState.isParticipant()
+	-- (an away Specter is in the case's list too, though already in the lobby: they count as closed as well)
+	local listed = ClientState.public.active and ClientState.me() ~= nil
+	close()
+	if inCase then
+		LobbyIntro.hold()
+	end
+	if listed then
+		Net.event("Reveal"):FireServer({ action = "closed" })
+	end
 end
 
 local handWon = false
@@ -320,7 +336,7 @@ function RevealScreen.init()
 		Position = UDim2.fromScale(1, 1),
 		Size = UDim2.fromOffset(140, T.touch),
 		Parent = window,
-	}, close)
+	}, closeByButton)
 
 	buildTitle()
 	Kit.Layout.watch(layout)

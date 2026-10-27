@@ -19,7 +19,6 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
-local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
@@ -275,37 +274,13 @@ local function dress(self: YourLook)
 	end
 	ghost(copy, if looking == "specter" and item then item.color else nil)
 	Styles.form(copy, if looking == "specter" and item then item.form else nil, if item then item.color else nil)
-	local head = copy:FindFirstChild("Head")
 	local torso = copy:FindFirstChild("Torso")
-	local equippedHat = copy:FindFirstChild("LCosmeticHat")
-	local previewingHat = item ~= nil and item.kind == "hat"
-	-- A hat you are trying on replaces the one you wear (and hides your own hat accessories).
-	if equippedHat then
-		for _, part in ipairs(equippedHat:GetDescendants()) do
-			if part:IsA("BasePart") then
-				hide(part, previewingHat)
-			end
-		end
-	end
-	for _, accessory in ipairs(copy:GetChildren()) do
-		if accessory:IsA("Accessory") and accessory.AccessoryType == Enum.AccessoryType.Hat then
-			local handle = accessory:FindFirstChild("Handle")
-			if handle and handle:IsA("BasePart") then
-				hide(handle, previewingHat)
-			end
-		end
-	end
 	local holder = Create("Model", { Name = "Trying", Parent = copy })
 	table.insert(self.extras, holder)
 	if not item then
 		return
 	end
-	if item.kind == "hat" and head and head:IsA("BasePart") then
-		for _, part in ipairs(CosmeticBuild.hat(item, head.CFrame, head)) do
-			part.Anchored = true
-			part.Parent = holder
-		end
-	elseif item.kind == "grimoire" and torso and torso:IsA("BasePart") then
+	if item.kind == "grimoire" and torso and torso:IsA("BasePart") then
 		-- A Manual cover colours the open Death's Manual everyone holds while writing
 		-- (CharacterService.setWriting), held as it is there.
 		local held = torso.CFrame * CFrame.new(0, -0.35, -1.05) * CFrame.Angles(math.rad(35), 0, 0)

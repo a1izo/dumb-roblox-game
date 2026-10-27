@@ -15,7 +15,7 @@ return function(t)
 			expect(Sets.valid()).to.equal(true)
 		end)
 		it("completes a set only when every piece is owned, once", function()
-			local owned = { hat_fedora = true }
+			local owned = { verdict_lamp = true }
 			local function owns(id: string): boolean
 				return owned[id] == true
 			end

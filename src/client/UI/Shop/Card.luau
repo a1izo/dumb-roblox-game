@@ -14,7 +14,8 @@
 -- page (never a glyph standing for them: the owner, 2026-10-25); an emote is a small pale mannequin caught in its
 -- move (Shop/PoseFigure), with its props; a title its nameplate. Picked, the card lifts. A card of Today's hand can lie face
 -- down (the back of the deck) and be turned over. A card new to the shop wears a "New" ribbon until it is
--- seen, the day's deal a "25% off" one, and a card not yet owned has a heart to put it on the wishlist.
+-- seen, a card of Today's hand a "20% OFF" one ("40% OFF": the deal), and a card not yet owned has a heart to put it on
+-- the wishlist.
 --
 --   local card = Card.new(item, { Parent = slot, chip = "300", onPick = fn, isNew = true, onWish = fn })
 --   card:setPicked(true)  card:setChip("Worn")  card:turn(fn)  card:setNew(false)  card:setWished(true)
@@ -24,7 +25,6 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
-local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
@@ -488,7 +488,7 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	end
 	local key = propOf(item)
 	local figure = figureOf(item)
-	if kind ~= "hat" and kind ~= "grimoire" and not key and not figure then
+	if kind ~= "grimoire" and not key and not figure then
 		return nil, nil
 	end
 	local view = Create("ViewportFrame", {
@@ -509,16 +509,6 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	elseif model then
 		model.Parent = holder
 		frameView(view, holder, -28)
-	elseif kind == "hat" then
-		-- On a head nobody sees.
-		local head = part(holder, Vector3.new(2, 1, 1), CFrame.new(), C.void)
-		head.Transparency = 1
-		for _, piece in ipairs(CosmeticBuild.hat(item, head.CFrame, head)) do
-			piece.Anchored = true
-			piece.Parent = holder
-		end
-		head:Destroy()
-		frameView(view, holder, -30)
 	else
 		-- A Manual cover: the notebook everyone holds while writing, in its colour, its design on the board (the
 		-- held book's, Shared/Models; turned so a spine strip lies over the spine, -x).
@@ -1262,6 +1252,8 @@ end
 
 -- The chip's words, and the icon before them ("coin", "check", "lock"; none when nil or false).
 function Card.setChip(self: Card, text: string, icon: (string | boolean)?)
+	-- (rich text: a price cheaper today shows the old one struck through)
+	self.chip.RichText = true
 	self.chip.Text = text
 	for name, image in pairs(self.chipIcons) do
 		image.Visible = icon == name

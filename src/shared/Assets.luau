@@ -421,6 +421,9 @@ Assets.images = {
 	AppleSpin = "116054757714434",
 	AppleHand1 = "119620415469239",
 	AppleHand2 = "109922448543976",
+	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
+	CursorLock = "",
+	CursorFree = "",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.

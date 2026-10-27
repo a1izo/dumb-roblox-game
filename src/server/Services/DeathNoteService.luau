@@ -133,6 +133,10 @@ local function setHolding(ps, on: boolean)
 	end
 	if not ps.writing then
 		CharacterService.setWriting(ps.player, on)
+		-- No walking with the Manual out (the user's call, 2026-10-27): held in place from the moment it opens.
+		if typeof(ps.player) == "Instance" then
+			CharacterService.setFrozen(ps.player, on)
+		end
 	end
 end
 

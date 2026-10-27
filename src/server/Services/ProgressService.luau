@@ -97,7 +97,7 @@ local function claimStreak(player: Player)
 	data.streak = state
 	data.coins += reward.coins
 	Analytics.coins(player, reward.coins, data.coins, "TimedReward", "DailyStreak")
-	local text = string.format("Day %d streak: +%d coins.", state.count, reward.coins)
+	local text = string.format("Day %d streak: +%d Reál.", state.count, reward.coins)
 	if reward.itemId and not data.owned[reward.itemId] then
 		data.owned[reward.itemId] = true
 		local item = Cosmetics.byId(reward.itemId)

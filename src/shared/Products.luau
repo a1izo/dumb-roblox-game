@@ -9,7 +9,7 @@ export type Pass = { key: string, id: number, name: string, perks: { string } }
 
 -- Developer products: coin packs (bought any number of times).
 Products.COIN_PACKS = {
-	{ key = "coins_500", id = 0, coins = 500, label = "Pocket of coins" },
+	{ key = "coins_500", id = 0, coins = 500, label = "Pocket of Reál" },
 	{ key = "coins_1200", id = 0, coins = 1200, label = "Case budget" },
 	{ key = "coins_3000", id = 0, coins = 3000, label = "Bureau grant" },
 	{ key = "coins_8000", id = 0, coins = 8000, label = "Black budget" },
@@ -23,7 +23,7 @@ Products.PASSES = {
 		name = "VIP",
 		perks = { "VIP cosmetics", "A VIP tag in the lobby and on the results screen" },
 	},
-	{ key = "coins2x", id = 0, name = "Double Coins", perks = { "Twice the coins from every match" } },
+	{ key = "coins2x", id = 0, name = "Double Reál", perks = { "Twice the Reál from every match" } },
 	{
 		key = "alias",
 		id = 0,

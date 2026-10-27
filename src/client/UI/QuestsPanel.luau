@@ -77,7 +77,7 @@ local function questCard(item, canSwap: boolean, order: number)
 		Parent = card,
 	})
 	Kit.label({
-		Text = string.format("+%d coins  ·  +%d XP", quest.coins, quest.xp),
+		Text = string.format("+%d Reál  ·  +%d XP", quest.coins, quest.xp),
 		font = "label",
 		size = "small",
 		color = C.candle,
@@ -128,7 +128,7 @@ local function rebuild()
 	local streakCard = Kit.card({ Size = UDim2.new(1, 0, 0, 76), LayoutOrder = nextOrder(), Parent = list })
 	Kit.label({
 		Text = if claimable
-			then string.format("Day %d is waiting: +%d coins", nextCount, Streak.COINS[cycleDay])
+			then string.format("Day %d is waiting: +%d Reál", nextCount, Streak.COINS[cycleDay])
 			else string.format(
 				"Day %d claimed. Come back in %s.",
 				streak.count,
@@ -202,7 +202,7 @@ local function maybePopup()
 	popupShown = true
 	local nextCount = Streak.nextCount(profile.streak, profile.today)
 	local cycleDay = ((nextCount - 1) % Streak.CYCLE) + 1
-	popupText.Text = string.format("Day %d of your streak: +%d coins are waiting.", nextCount, Streak.COINS[cycleDay])
+	popupText.Text = string.format("Day %d of your streak: +%d Reál are waiting.", nextCount, Streak.COINS[cycleDay])
 	popup.Visible = true
 end
 

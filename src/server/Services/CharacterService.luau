@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
+local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local Models = require(Shared:WaitForChild("Models"))
 local Net = require(Shared:WaitForChild("Net"))
 local Signal = require(Shared:WaitForChild("Signal"))
@@ -99,9 +100,7 @@ local function canJump(): boolean
 end
 
 function CharacterService.setFrozen(player: Player, frozen: boolean)
-	-- (and no shift lock while held in place, at a meeting's table above all: it swung the camera round the
-	-- seated body; Roblox's own mouse-lock switches itself off when this goes false)
-	player.DevEnableMouseLock = not frozen
+	-- (no shift lock in a case at all, a meeting's table included: World/ShoulderCam on the client)
 	local character = player.Character
 	if not character then
 		return
@@ -307,6 +306,9 @@ function CharacterService.setWriting(player: Player, on: boolean)
 			if typeof(coverColor) == "Color3" then coverColor else nil,
 			if type(coverStyle) == "string" then coverStyle else nil
 		)
+		-- (its open page, found while the book is still whole: every screen writes a scrawl on it while the name
+		-- goes in, World/ManualScrawl)
+		ManualBook.page(book)
 		return modelParts(book, book:GetPivot())
 	end)
 end

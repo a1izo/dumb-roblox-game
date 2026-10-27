@@ -9,7 +9,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
@@ -27,7 +26,6 @@ local PassService = require(script.Parent.PassService)
 
 local CosmeticsService = {}
 
-local HAT = "LCosmeticHat"
 local TITLE_TAG = "LTitleTag"
 
 -- True when the player may use the item (everyone's, bought, earned, free with VIP, or an emote that came
@@ -116,7 +114,7 @@ function CosmeticsService.grantMilestones(player: Player): { Collection.Mileston
 		Match.notify(
 			player,
 			string.format(
-				"%d emotes: +%d coins and the title %s.",
+				"%d emotes: +%d Reál and the title %s.",
 				milestone.count,
 				milestone.coins,
 				if title then title.name else milestone.title
@@ -210,7 +208,9 @@ local function titleTag(player: Player, character: Model, title: Cosmetics.Item?
 	end
 	local gui = Create("BillboardGui", {
 		Name = TITLE_TAG,
-		Size = UDim2.fromOffset(250, 22), -- (wide enough that the marks leave a long title its letters)
+		-- (wide enough that the marks leave a long title its letters; tall enough to read: World/NameTags hangs it
+		-- just over the name)
+		Size = UDim2.fromOffset(270, 27),
 		StudsOffset = Vector3.new(0, 3.4, 0),
 		MaxDistance = 60,
 		LightInfluence = 0,
@@ -233,11 +233,21 @@ local function titleTag(player: Player, character: Model, title: Cosmetics.Item?
 		TextScaled = true,
 		TextColor3 = letters,
 		TextStrokeColor3 = Color3.fromRGB(8, 9, 11),
-		TextStrokeTransparency = 0.4,
+		TextStrokeTransparency = 0.05,
 		-- (in the title's own face, Shared/TitleFonts; the tag's bold sans for a VIP with none)
 		FontFace = TitleFonts.face(if title then title.id else nil),
 		Parent = gui,
 	})
+end
+
+-- The title over the head put right for where the player is now: none in a case (a body called into one keeps
+-- its lobby head, so the tag made there must go), back in the lobby.
+function CosmeticsService.refreshTitle(player: Player)
+	local data = DataService.get(player)
+	local character = player.Character
+	if data and character then
+		titleTag(player, character, equipped(player, data, "title"))
+	end
 end
 
 function CosmeticsService.apply(player: Player)
@@ -256,13 +266,6 @@ function CosmeticsService.apply(player: Player)
 	local character = player.Character
 	if not character then
 		return
-	end
-	CharacterService.detach(player, HAT)
-	local hat = equipped(player, data, "hat")
-	if hat then
-		CharacterService.attachBuilt(player, HAT, { "Head" }, function(anchor: CFrame, head: BasePart)
-			return CosmeticBuild.hat(hat, anchor, head)
-		end)
 	end
 	CharacterService.refreshAccessories(player)
 	local title = equipped(player, data, "title")
