@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 6
+Migrations.CURRENT = 7
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -240,6 +240,24 @@ local STEPS: { [number]: (any) -> () } = {
 			if dropped[data.equipped.grimoire] then
 				data.equipped.grimoire = nil
 			end
+		end
+	end,
+	-- v6 -> v7 (2026-10-27, the user's call, no refund): the Wardrobe leaves the shop and the hats leave the game
+	-- (every hat_ id owned, and the hat slot).
+	[6] = function(data)
+		if type(data.owned) == "table" then
+			local ids = {}
+			for id in pairs(data.owned) do
+				table.insert(ids, id)
+			end
+			for _, id in ipairs(ids) do
+				if type(id) == "string" and string.sub(id, 1, 4) == "hat_" then
+					data.owned[id] = nil
+				end
+			end
+		end
+		if type(data.equipped) == "table" then
+			data.equipped.hat = nil
 		end
 	end,
 }

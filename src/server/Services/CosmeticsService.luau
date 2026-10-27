@@ -9,7 +9,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
@@ -27,7 +26,6 @@ local PassService = require(script.Parent.PassService)
 
 local CosmeticsService = {}
 
-local HAT = "LCosmeticHat"
 local TITLE_TAG = "LTitleTag"
 
 -- True when the player may use the item (everyone's, bought, earned, free with VIP, or an emote that came
@@ -256,13 +254,6 @@ function CosmeticsService.apply(player: Player)
 	local character = player.Character
 	if not character then
 		return
-	end
-	CharacterService.detach(player, HAT)
-	local hat = equipped(player, data, "hat")
-	if hat then
-		CharacterService.attachBuilt(player, HAT, { "Head" }, function(anchor: CFrame, head: BasePart)
-			return CosmeticBuild.hat(hat, anchor, head)
-		end)
 	end
 	CharacterService.refreshAccessories(player)
 	local title = equipped(player, data, "title")

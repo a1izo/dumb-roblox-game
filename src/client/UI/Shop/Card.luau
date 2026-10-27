@@ -24,7 +24,6 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
-local CosmeticBuild = require(Shared:WaitForChild("CosmeticBuild"))
 local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
@@ -488,7 +487,7 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	end
 	local key = propOf(item)
 	local figure = figureOf(item)
-	if kind ~= "hat" and kind ~= "grimoire" and not key and not figure then
+	if kind ~= "grimoire" and not key and not figure then
 		return nil, nil
 	end
 	local view = Create("ViewportFrame", {
@@ -509,16 +508,6 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 	elseif model then
 		model.Parent = holder
 		frameView(view, holder, -28)
-	elseif kind == "hat" then
-		-- On a head nobody sees.
-		local head = part(holder, Vector3.new(2, 1, 1), CFrame.new(), C.void)
-		head.Transparency = 1
-		for _, piece in ipairs(CosmeticBuild.hat(item, head.CFrame, head)) do
-			piece.Anchored = true
-			piece.Parent = holder
-		end
-		head:Destroy()
-		frameView(view, holder, -30)
 	else
 		-- A Manual cover: the notebook everyone holds while writing, in its colour, its design on the board (the
 		-- held book's, Shared/Models; turned so a spine strip lies over the spine, -x).

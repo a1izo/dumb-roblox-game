@@ -19,7 +19,7 @@ return function(t)
 		end)
 		it("counts only emote items", function()
 			local count = Collection.count(function(item: Cosmetics.Item): boolean
-				return item.kind == "emote" or item.kind == "hat"
+				return item.kind == "emote" or item.kind == "title"
 			end)
 			expect(count).to.equal(#Cosmetics.ofKind("emote"))
 		end)

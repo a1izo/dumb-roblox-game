@@ -1,5 +1,5 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
--- top (Cosmetics.SUITS: Today's hand, Wardrobe, Diavolo, Ace, The dead, Emotes, Titles, Sets, and Robux
+-- top (Cosmetics.SUITS: Today's hand, Diavolo, Ace, The dead, Emotes, Titles, Sets, and Robux
 -- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six
 -- and the day's deal (a card of the shop's own stock, a quarter off: Shared/ShopRotation), dealt face
 -- down (the same for everyone): each is turned over with a click, and stays turned that day (ShopService

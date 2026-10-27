@@ -588,7 +588,26 @@ function RoundService.debugCue(kind: string, player: Player, target, extra: stri
 	return nil
 end
 
+-- Who has closed the results (their Close button) during this Reveal: once every player still in the case has, it
+-- ends there and then and everyone goes home, instead of sitting at the table for the rest of it.
+local closedResults: { [Player]: boolean } = {}
+
+local function everyoneClosed(): boolean
+	local anyone = false
+	for _, ps in ipairs(Match.list) do
+		local player = ps.player
+		if not Match.isBot(ps) and player.Parent == Players then
+			anyone = true
+			if not closedResults[player] then
+				return false
+			end
+		end
+	end
+	return anyone
+end
+
 local function reveal()
+	closedResults = {}
 	Match.phase = "Reveal"
 	Mechanics.onPhase("Reveal")
 	EmoteService.onPhase("Reveal")
@@ -646,7 +665,7 @@ local function reveal()
 	end
 	Match.pushState()
 	Match.pushAllPrivate()
-	while workspace:GetServerTimeNow() < Match.phaseEndsAt do
+	while workspace:GetServerTimeNow() < Match.phaseEndsAt and not everyoneClosed() do
 		task.wait(0.25)
 	end
 end
@@ -839,6 +858,16 @@ end
 
 function RoundService.init()
 	Match.Eliminated:Connect(onEliminated)
+	RevealRemote.OnServerEvent:Connect(function(player: Player, payload)
+		if
+			type(payload) == "table"
+			and payload.action == "closed"
+			and Match.phase == "Reveal"
+			and Match.get(player)
+		then
+			closedResults[player] = true
+		end
+	end)
 	Players.PlayerRemoving:Connect(function(player)
 		local ps = Match.getLiving(player)
 		if ps then

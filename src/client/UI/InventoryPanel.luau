@@ -36,7 +36,6 @@ local GAP = T.space.l
 -- The tabs, in order: each a kind (Shared/Cosmetics), its label.
 local TABS = {
 	{ id = "emote", label = "Emotes" },
-	{ id = "hat", label = "Hats" },
 	{ id = "title", label = "Titles" },
 	{ id = "grimoire", label = "Manual covers" },
 	{ id = "writing", label = "Writing styles" },

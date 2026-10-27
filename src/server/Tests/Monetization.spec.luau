@@ -12,14 +12,9 @@ local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 
 local ReceiptLedger = require(script.Parent.Parent:WaitForChild("Data"):WaitForChild("ReceiptLedger"))
 
--- Ids saved in profiles before cosmetics v2; they must keep working. (The trails among them left the game
--- on 2026-10-21, and the Deerstalker, the Ivory Fedora and the ties with the owner's drops; Migrations v5 and v6
--- take them out of profiles.)
-local LEGACY_IDS = {
-	"hat_cap",
-	"hat_fedora",
-	"hat_tophat",
-}
+-- Kinds that left the game; Migrations take their ids out of profiles (the trails on 2026-10-21, v5; the ties
+-- with the owner's drops, v6; the hats with the Wardrobe on 2026-10-27, v7).
+local GONE_KINDS = { "hat", "tie", "trail" }
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -214,9 +209,10 @@ return function(t)
 	end)
 
 	describe("Cosmetics", function()
-		it("keeps every id saved before cosmetics v2", function()
-			for _, id in ipairs(LEGACY_IDS) do
-				expect(Cosmetics.byId(id) ~= nil).to.equal(true)
+		it("deals nothing of a kind that left the game", function()
+			for _, kind in ipairs(GONE_KINDS) do
+				expect(table.find(Cosmetics.KINDS, kind)).to.equal(nil)
+				expect(#Cosmetics.ofKind(kind)).to.equal(0)
 			end
 		end)
 		it("gives every item a known kind and rarity, and ids once", function()
@@ -232,8 +228,9 @@ return function(t)
 			end
 		end)
 		it("deals every kind in exactly one suit", function()
-			-- (trails and ties left on 2026-10-21; win cutscenes, seats and chairs came; custom deaths on 2026-10-25)
-			expect(#Cosmetics.KINDS).to.equal(12)
+			-- (trails and ties left on 2026-10-21; win cutscenes, seats and chairs came; custom deaths on 2026-10-25;
+			-- hats left with the Wardrobe on 2026-10-27)
+			expect(#Cosmetics.KINDS).to.equal(11)
 			for _, kind in ipairs(Cosmetics.KINDS) do
 				local suits = 0
 				for _, suit in ipairs(Cosmetics.SUITS) do

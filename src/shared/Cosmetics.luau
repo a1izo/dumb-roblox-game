@@ -1,6 +1,6 @@
 -- Cosmetic catalog. Item ids never change (they are saved in profiles).
 --
---   kind    hat, tie (the noir tie in matches), grimoire (the cover of the Manual
+--   kind    grimoire (the cover of the Manual
 --           Diavolo holds while writing), specter (your form as a Deathsinger: `form` names what it wears),
 --           title (shown in the lobby and on the results screen only), writing (how Diavolo's
 --           names go into the Manual: `style`), verdict (how Ace's arrest lands: `style`), death
@@ -45,99 +45,6 @@ export type Item = {
 local RED = Color3.fromRGB(209, 26, 42)
 
 Cosmetics.ITEMS = {
-	-- Hats
-	{
-		id = "hat_cap",
-		kind = "hat",
-		name = "Night Shift Cap",
-		blurb = "Soft wool patrol cap with a short stiff brim and a grey-thread Bureau badge on the front.",
-		rarity = "common",
-		source = "shop",
-		price = 100,
-		style = "cap",
-		model = "HatCap",
-		color = Color3.fromRGB(30, 45, 80),
-		accent = Color3.fromRGB(220, 190, 90),
-	},
-	{
-		id = "hat_fedora",
-		kind = "hat",
-		name = "Trench Fedora",
-		blurb = "Charcoal felt fedora, pinched crown, rain-darkened band, brim snapped down at the front.",
-		rarity = "common",
-		source = "shop",
-		price = 150,
-		style = "fedora",
-		model = "HatTrench",
-		color = Color3.fromRGB(35, 35, 40),
-		accent = Color3.fromRGB(120, 20, 25),
-	},
-	{
-		id = "hat_tophat",
-		kind = "hat",
-		name = "Undertaker's Topper",
-		blurb = "A tall matte black silk topper, a mourning crape band with two long tails down the back.",
-		rarity = "epic",
-		source = "shop",
-		price = 450,
-		style = "tophat",
-		model = "HatTopper",
-		color = Color3.fromRGB(20, 20, 24),
-		accent = Color3.fromRGB(150, 25, 35),
-	},
-	{
-		id = "hat_fedora_crimson",
-		kind = "hat",
-		name = "Diavolo's Fedora",
-		blurb = "Oxblood felt fedora with a black band and one long black feather swept back.",
-		rarity = "epic",
-		source = "rotation",
-		price = 600,
-		style = "fedora",
-		model = "HatDiavolo",
-		color = Color3.fromRGB(120, 16, 26),
-		accent = Color3.fromRGB(20, 20, 22),
-	},
-	{
-		id = "hat_tophat_ink",
-		kind = "hat",
-		name = "Grave Silk",
-		blurb = "A black top hat whose crown frays at the top into slow grey smoke and drifting ash.",
-		rarity = "legendary",
-		source = "rotation",
-		price = 1200,
-		style = "tophat",
-		model = "HatGraveSilk",
-		color = Color3.fromRGB(8, 8, 10),
-		accent = Color3.fromRGB(244, 241, 234),
-	},
-	{
-		id = "hat_cowl",
-		kind = "hat",
-		name = "Reaper's Cowl",
-		blurb = "A deep wool hood with stitched seams that shades the face.",
-		rarity = "rare",
-		source = "shop",
-		price = 350,
-		style = "cowl",
-		model = "HatCowl",
-		color = Color3.fromRGB(24, 24, 26),
-		accent = Color3.fromRGB(56, 54, 52),
-	},
-	{
-		id = "hat_circlet",
-		kind = "hat",
-		name = "Thorned Circlet",
-		blurb = "A thin crown of black iron thorns with a cold white light between them.",
-		rarity = "legendary",
-		source = "shop",
-		price = 1000,
-		style = "circlet",
-		model = "HatCirclet",
-		color = Color3.fromRGB(26, 26, 30),
-		accent = Color3.fromRGB(220, 236, 255),
-	},
-
 	-- Manual covers (Diavolo's book, seen whenever he writes)
 	{
 		id = "book_red",
@@ -1581,7 +1488,6 @@ Cosmetics.ITEMS = {
 } :: { Item }
 
 Cosmetics.KINDS = {
-	"hat",
 	"grimoire",
 	"specter",
 	"title",
@@ -1596,7 +1502,6 @@ Cosmetics.KINDS = {
 }
 
 Cosmetics.KIND_NAMES = {
-	hat = "Hats",
 	grimoire = "Manual covers",
 	specter = "Deathsinger forms",
 	title = "Titles",
@@ -1618,7 +1523,6 @@ Cosmetics.SUITS = {
 	{ id = "today", name = "Today's hand", icon = "cards" },
 	{ id = "fate", name = "Fate", icon = "dice" },
 	{ id = "ledger", name = "Ledger", icon = "note" },
-	{ id = "wardrobe", name = "Wardrobe", icon = "fedora", kinds = { "hat" } },
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },

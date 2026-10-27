@@ -15,6 +15,7 @@ local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
+local LobbyIntro = require(script.Parent.LobbyIntro)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local UiSound = require(script.Parent.Core.UiSound)
@@ -176,6 +177,21 @@ local function close()
 	Router.setBlocking("reveal", false)
 end
 
+-- The Close button: in the case's own results the loading screen comes up at once and takes you back (the server
+-- ends the case as soon as everyone in it has closed theirs, or when its time is up); a watcher just closes them.
+local function closeByButton()
+	local inCase = ClientState.isParticipant()
+	-- (an away Specter is in the case's list too, though already in the lobby: they count as closed as well)
+	local listed = ClientState.public.active and ClientState.me() ~= nil
+	close()
+	if inCase then
+		LobbyIntro.hold()
+	end
+	if listed then
+		Net.event("Reveal"):FireServer({ action = "closed" })
+	end
+end
+
 local handWon = false
 
 -- CASE CLOSED, cut out of ransom-note letters at a size for the device.
@@ -320,7 +336,7 @@ function RevealScreen.init()
 		Position = UDim2.fromScale(1, 1),
 		Size = UDim2.fromOffset(140, T.touch),
 		Parent = window,
-	}, close)
+	}, closeByButton)
 
 	buildTitle()
 	Kit.Layout.watch(layout)
