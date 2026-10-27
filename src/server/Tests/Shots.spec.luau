@@ -1,6 +1,7 @@
 -- The cutscenes made in Blender (Shared/Cinema/Shots): every sound one asks for has its slot in Shared/Assets (five
--- map intro sounds were asked for and missing, 2026-10-27), the voiced role cutscenes say their lines and last about as
--- long as them, and a voiced clip longer than its line stretches its cutscene to fit (Shared/Cinema/CutLength).
+-- map intro sounds were asked for and missing, 2026-10-27), the voiced role cutscenes say their lines with a few seconds
+-- of their scene round them (about 4 s more than the line and a beat, 2026-10-27), and a voiced clip longer than its line
+-- stretches its cutscene to fit (Shared/Cinema/CutLength).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -42,7 +43,7 @@ return function(t)
 			end
 		end)
 
-		it("gives each voiced role cutscene its line, and the length of it and a beat", function()
+		it("gives each voiced role cutscene its line, with some of its scene before and after", function()
 			local all = shots()
 			for name in pairs(VOICED) do
 				local shot = all[name]
@@ -50,15 +51,16 @@ return function(t)
 				expect(type(shot.sound) == "table" and type(shot.sound.voice) == "string").to.equal(true)
 				local finish = CutLength.lineEnd(shot)
 				expect(finish ~= nil).to.equal(true)
-				-- the line starts after a lead-in of about a second, and the shot ends soon after the line
-				expect(shot.sound.voiceAt >= 0.8 and shot.sound.voiceAt <= 2).to.equal(true)
-				expect(shot.length >= (finish :: number) and shot.length - (finish :: number) <= 2.5).to.equal(true)
+				-- the line starts after a lead-in of the scene's own acting (up to about 6 s), and the shot plays on a few
+				-- seconds after it
+				expect(shot.sound.voiceAt >= 0.8 and shot.sound.voiceAt <= 6.5).to.equal(true)
+				expect(shot.length >= (finish :: number) and shot.length - (finish :: number) <= 5).to.equal(true)
 				for _, event in ipairs(shot.events) do
 					expect(event.kind ~= "subtitle" and event.kind ~= "card").to.equal(true)
 				end
 			end
-			-- the Operative's scene keeps its length and its role card captions, under its own music
-			expect(all.RoleOperative.length).to.equal(15)
+			-- the Operative's scene (19 s since 2026-10-27) keeps its role card captions, under its own music
+			expect(all.RoleOperative.length).to.equal(19)
 			expect(all.RoleOperative.sound.music).to.equal("musicOperative")
 		end)
 

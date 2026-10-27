@@ -54,7 +54,7 @@ local RoleCopy: { [string]: RoleCopy } = {
 	TaskForce = card({
 		"Work case files ({key.use}). Every one fills {agency}'s task bar; fill it and you win.",
 		"Watch for glowing eyes (someone staring) and a burning red book ({hand} writing).",
-		"Ring the bell to call a meeting. Real names of living players are blocked in every chat.",
+		"Ring the bell to call a meeting. Only a paper note can carry a real name.",
 	}, "Vote out {hand}, or fill the task bar, before {circle} takes over.", "Pick a station and keep your eyes open."),
 }
 

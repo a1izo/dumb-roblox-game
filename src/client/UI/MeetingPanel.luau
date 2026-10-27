@@ -147,7 +147,7 @@ function MeetingPanel.init()
 		Parent = content,
 	})
 	Kit.label({
-		Text = "Talk in chat. Messages with a living player's full real name are blocked.",
+		Text = "Talk in quick-chat phrases: the whole table hears them.",
 		size = "micro",
 		color = C.dim,
 		LayoutOrder = 2,

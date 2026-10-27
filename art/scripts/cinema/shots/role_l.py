@@ -8,10 +8,11 @@ actually happen. Kira... it seems you can kill people without having to be there
 4  8.4-10.8  From the side, both: the Butler bows and holds out the tray; Ace, eyes still on the screens,
              lifts a cup by its rim between finger and thumb.
 5  10.8-12.8 Close: a sip.
-6  12.8-15.0 Over Ace's shoulder, pushing in to the screens.
+6  12.8-17.5 Over Ace's shoulder, pushing in to the screens, the eyes still jumping from one to the next.
 
-Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
-it): the scene from 1.5 s on, the line said over it. Authored on its first 15 s timeline below; RETIME picks the piece.
+The line said over the whole scene (2026-10-27 it was cut to the line, from 1.5 s on; then about 4 s longer, at your
+word, the same day: all of it from the first beat, and the last push into the screens 2.5 s longer). The role card
+holds after it.
 
 When there is no Butler this match the butler part is empty: cut 3 watches an empty doorway and Ace reaches
 out to no one (the cup still appears in the hand).
@@ -24,12 +25,12 @@ wall at z 0 into the pantry (x 251..265)."""
 from animlib import J
 from cinema import framing
 from cinema.acting import alive, beat, facing, hold, seated, soft, walking
-from cinema.shot import Retime, Shot
+from cinema.shot import Shot
 from emotes.kit import reach
 from motion import Motion
 
 NAME = "RoleAce"
-LENGTH = 15.0
+LENGTH = 17.5
 AX = 240.0
 SEAT = 2.0
 ACE = (AX - 2.0, -1.6)
@@ -64,7 +65,7 @@ hold(ace, 9.0)
 beat(ace, 9.5, 0.35, neck=(0, -10, 0), rShoulder=CUP)  # out to the tray, eyes not leaving the screens
 hold(ace, 10.1)
 beat(ace, 10.7, 0.45, neck=(6, 6, 0), rShoulder=J((118, 0, -20), (-0.2, 0.24, -0.3)))  # the cup to the lips
-for t, yaw in ((12.0, -14), (12.9, 8), (13.8, -2)):
+for t, yaw in ((12.0, -14), (12.9, 8), (13.8, -2), (14.9, 12), (15.8, -10), (16.7, 3)):
     flick(ace, t, yaw)
 soft(ace, head=4.0, arms=2.6)
 alive(ace, 0.3, seed=81)  # (still as a cat at the screens, but breathing)
@@ -129,10 +130,8 @@ shot.cam(LENGTH, framing.spot(shot, LENGTH, "self", "close", angle=168, height=0
 shot.event(0.0, "sfx", slot="mapServerHum")
 shot.event(4.7, "sfx", slot="pageTurn")
 shot.event(6.0, "sfx", slot="clockTick")
-# Cut down to the line: the scene from its second beat, the line said over it. ({Hand}: the game's own name for the
-# one the line is about, filled in by Shared/Terms: no source name is ever shown to a player.)
-RETIME = Retime([(1.5, LENGTH)])
-RETIME.apply(shot, [ace, b], carry_sfx=("mapServerHum",))
-shot.audio(voice="voiceAce", voice_at=1.0, bed="bedAce")
-shot.line(1.0, "I had to test this just in case, but I, I never thought it would actually happen. {Hand}... it seems you "
+# The line said over the scene from its second beat on. ({Hand}: the game's own name for the one the line is about,
+# filled in by Shared/Terms: no source name is ever shown to a player.)
+shot.audio(voice="voiceAce", voice_at=2.5, bed="bedAce")
+shot.line(2.5, "I had to test this just in case, but I, I never thought it would actually happen. {Hand}... it seems you "
                "can kill people without having to be there in person.")

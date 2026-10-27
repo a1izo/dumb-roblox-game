@@ -1,4 +1,7 @@
 -- Communication rules, enforced on the server with TextChatService:
+--   * Typed chat is off inside a case (Config.CASE_CHAT, 2026-10-27): no one in it, living, Specter or a Specter
+--     waiting in the lobby, can send a message in any channel; they speak in quick-chat phrases. The rules below
+--     are typed chat's when CASE_CHAT is on (quick chat keeps them either way).
 --   * The living share one channel of their own. In free roam it is proximity chat: a message only
 --     reaches players within PROXIMITY_CHAT_RANGE studs (bubbles over their heads). During the
 --     meeting and the vote it reaches the whole table. It is closed in the cutscene phases.
@@ -39,6 +42,19 @@ local meetingOpen = false
 local blockedNotices: { [string]: boolean } = {}
 -- Lobby players watching the match (userId -> true): they read the meeting like Specters.
 local watchers: { [number]: boolean } = {}
+
+-- In the case (living, a Specter, or away in the lobby as one): with Config.CASE_CHAT off they type nowhere.
+local function inCase(userId: number): boolean
+	if not Match.active then
+		return false
+	end
+	local ps = Match.getByUserId(userId)
+	return ps ~= nil and ps.status ~= "left"
+end
+
+local function typingOff(userId: number): boolean
+	return not Config.CASE_CHAT and inCase(userId)
+end
 
 -- Living players are cut off from normal chat until the reveal.
 local function isLiving(userId: number): boolean
@@ -131,7 +147,9 @@ local function applySource(channel: TextChannel, child: Instance)
 		return
 	end
 	local source = child :: TextSource
-	if channel == meetingChannel then
+	if typingOff(source.UserId) then
+		source.CanSend = false
+	elseif channel == meetingChannel then
 		source.CanSend = livingChannelOpen() and isLiving(source.UserId)
 	elseif channel == specterChannel then
 		source.CanSend = isSpecter(source.UserId)
@@ -193,6 +211,9 @@ local function hookChannel(child: Instance)
 		if not sender then
 			return true
 		end
+		if typingOff(sender.UserId) then
+			return false
+		end
 		return not isLiving(sender.UserId) and not isLiving(recipient.UserId)
 	end
 	channel.ChildAdded:Connect(function(child)
@@ -208,7 +229,7 @@ local function onMeetingMessage(message: TextChatMessage, recipient: TextSource)
 	if not sender then
 		return true
 	end
-	if not livingChannelOpen() or not isLiving(sender.UserId) then
+	if typingOff(sender.UserId) or not livingChannelOpen() or not isLiving(sender.UserId) then
 		return false
 	end
 	if not inEarshot(sender.UserId, recipient.UserId) then
@@ -401,7 +422,10 @@ local function setupChannels()
 	specters.Name = SPECTER_CHANNEL
 	specters.ShouldDeliverCallback = function(message: TextChatMessage, recipient: TextSource): boolean
 		local sender = message.TextSource
-		return sender ~= nil and isSpecter(sender.UserId) and isSpecter(recipient.UserId)
+		return sender ~= nil
+			and not typingOff(sender.UserId)
+			and isSpecter(sender.UserId)
+			and isSpecter(recipient.UserId)
 	end
 	specters.ChildAdded:Connect(function(child)
 		applySource(specters, child)

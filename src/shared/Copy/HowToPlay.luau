@@ -19,7 +19,7 @@ local RAW: { { title: string, body: { string } } } = {
 		body = {
 			"Your real name is on your role card. {key.card} to see it again.",
 			"{Hand} and {cultists} learn real names by staring: standing still, close by, for a few seconds. Their eyes glow red while they stare.",
-			"Chat blocks real names everywhere. Only a paper note can carry one.",
+			"There is no typing in a case, only quick-chat phrases. Only a paper note can carry a real name.",
 		},
 	},
 	{
@@ -28,7 +28,7 @@ local RAW: { { title: string, body: { string } } } = {
 			"Work case files, watch each other, pass notes. Anything can happen at any time.",
 			"{Hand} can write in {grimoire} whenever he likes, but the book burns red for a few seconds: whoever sees it knows.",
 			"A written victim dies 20 seconds later. Every death calls a meeting.",
-			"Text chat only reaches players close to you.",
+			"Quick-chat phrases only reach players close to you.",
 		},
 	},
 	{

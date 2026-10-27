@@ -1,5 +1,7 @@
 -- Client side of the communication rules. The server enforces them; this controller
 -- keeps the chat bar in the right state:
+--   in a case (living, a Specter, or away in the lobby as one) -> no chat bar at all while typed chat is off
+--                               in cases (Config.CASE_CHAT, 2026-10-27): quick-chat only. With it on:
 --   living, free roam        -> chat bar sends to the living's channel; the server only delivers it
 --                               to players close by (proximity chat, bubbles over heads)
 --   living, meeting or vote  -> chat bar sends to the same channel, heard by the whole table
@@ -11,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
@@ -52,7 +55,10 @@ local function update()
 		return
 	end
 	local phase = ClientState.phase()
-	if ClientState.isSpecter() or ClientState.isAway() then
+	local me = ClientState.me()
+	if not Config.CASE_CHAT and ClientState.public.active and me ~= nil and me.status ~= "left" then
+		inputBar.Enabled = false
+	elseif ClientState.isSpecter() or ClientState.isAway() then
 		-- Specters talk among themselves only (in the lobby too, while they wait there hidden).
 		local specters = channel(SPECTER_CHANNEL)
 		inputBar.Enabled = specters ~= nil

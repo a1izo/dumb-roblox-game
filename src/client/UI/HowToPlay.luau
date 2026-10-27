@@ -38,7 +38,8 @@ local function controls(): { string }
 			"Tap the prompts that appear near stations, notes and the bell.",
 			"The buttons on the right side are the actions you can take right now.",
 			"Press and hold your role badge to see your role card and real name.",
-			"The chat button opens chat: players close by in free roam, the whole table in meetings.",
+			"In a case there is no typing: you speak in quick-chat phrases, heard close by in free roam and by the whole "
+				.. "table in meetings.",
 			"Settings > Controls moves, resizes or hides the buttons.",
 		}
 	end

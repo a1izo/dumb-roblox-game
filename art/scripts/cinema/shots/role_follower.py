@@ -12,9 +12,10 @@ J  9.6-12.6  In front: he throws himself back in the chair, head flung back, arm
              window: "Diavolo... I am your hand."
 K  12.6-15.0 High, pulling away: the black shape with its arms wide against the red city.
 
-Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
-it): the last of A's steady writing, the whole frenzy with a "delete" on each of the first strokes, the stop, and J's
-throw back into the chair. The scene is still authored on its first 15 s timeline below; RETIME picks the pieces.
+Cut down round the line (2026-10-27; then about 4 s longer, at your word, the same day): all of A's steady writing,
+the whole frenzy with a "delete" on each of the first strokes, the stop, J's throw back into the chair and the first
+of K pulling away (11.4 s). The role card holds after it. The scene is still authored on its first 15 s timeline
+below; RETIME picks the pieces.
 
 The flat (maps/venues/sets/flat.py, Sets scene space, origin (360, 60)): the room x -9..9, z -7..7, 10 high;
 the window across the north wall; the desk at (0, -2.6) (top 3.05, screen on its west half, lamp at the east
@@ -170,9 +171,11 @@ shot.event(9.5, "sfx", slot="hauntWhisper")
 shot.event(10.0, "fx", name="impact", r=255, g=20, b=40, strength=0.6, dur=0.4)
 shot.event(10.0, "sfx", slot="heartbeat")
 
-# Cut down to the line: a "delete" on each of the first six strokes, the rest a blur, then the throw back.
-RETIME = Retime([(2.0, 8.2), (9.75, 10.95)])
+# Cut down round the line: a "delete" on each of the first six strokes, the rest a blur, then the throw back and the
+# pull away.
+RETIME = Retime([(0.0, 8.2), (9.75, 12.95)])
 RETIME.apply(shot, [me], carry_sfx=("penScratch",))
-shot.audio(voice="voiceMuerto", voice_at=1.0, bed="bedMuerto")
-shot.line(1.0, "Delete, delete, delete, delete, DELETE, DELETE ...",
+SAID = RETIME.new(STABS[0][0])
+shot.audio(voice="voiceMuerto", voice_at=SAID, bed="bedMuerto")
+shot.line(SAID, "Delete, delete, delete, delete, DELETE, DELETE ...",
           times=[round(STABS[k][0] - STABS[0][0], 3) for k in range(7)])

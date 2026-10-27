@@ -13,10 +13,11 @@ F  9.0-10.6  Close, tilted: the chip held up before the face... and bitten: "...
 G  10.6-12.8 He leans back into the chair, the grin; behind him the Deathsinger rises and laughs.
 H  12.8-15.0 Pushing in on the face: the laugh, the red.
 
-Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
-it): C's last strokes of the pen (1.4 s), E and F, the chip lifted and held up while he says it and bitten on "EAT IT!"
-(2.6 s), the start of G, the Deathsinger drawn out of the smoke behind him (1.2 s). The whole scene is still authored
-on its first 15 s timeline below; RETIME picks the pieces.
+Cut down round the line (2026-10-27; then about 4 s longer, at your word, the same day): from B to the start of G in
+one run, 9.2 s: the chip eaten over the book, the name written, the eyes to the flatline on the news, then the chip
+lifted and held up while he says it and bitten on "EAT IT!", and the Deathsinger drawn out of the smoke behind him.
+The role card holds after it. The whole scene is still authored on its first 15 s timeline below; RETIME picks the
+pieces.
 
 The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, 14 high; the window in
 the north wall; the desk before it at (0, -5.4) (x -3.3..3.3, z -7.0..-3.8, top 2.7), its lamp at the west end;
@@ -169,8 +170,10 @@ shot.event(10.0, "fx", name="shake", strength=0.35, dur=0.25)
 shot.event(11.0, "sfx", slot="wisp")
 shot.event(12.3, "sfx", slot="hauntWhisper")
 shot.event(14.0, "fx", name="flash", r=200, g=20, b=30, strength=0.3, dur=0.5)
-# Cut down to the line: the pen's last strokes, the chip held up and bitten on "EAT IT!", the Deathsinger rising.
-RETIME = Retime([(4.4, 5.8), (8.0, 10.6), (10.6, 11.8)])
+# Cut down round the line: the chip, the name, the flatline, then the chip held up and bitten on "EAT IT!", the
+# Deathsinger rising. The line starts as the hand takes the chip, 2.1 s before the bite.
+RETIME = Retime([(2.6, 11.8)])
 RETIME.apply(shot, [d], carry_sfx=("mapRainGlass", "mapNewsRadio"))
-shot.audio(voice="voiceDiavolo", voice_at=1.3, bed="bedDiavolo")
-shot.line(1.3, "I'll take a potato chip... and EAT IT!")
+SAID = RETIME.new(7.9)
+shot.audio(voice="voiceDiavolo", voice_at=SAID, bed="bedDiavolo")
+shot.line(SAID, "I'll take a potato chip... and EAT IT!")

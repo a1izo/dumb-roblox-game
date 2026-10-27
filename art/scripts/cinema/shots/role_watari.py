@@ -7,9 +7,10 @@ The pantry (maps/venues/sets/ace.py, Sets scene space, origin x 258): x 251..265
 along the north wall (x 254..264, its front at z -3.4, top 3.5), the kettle at (256.6, -4.4); the trolley
 at (260, 1.5); the door at z 0 in the west wall into Ace's room (the chair at (238, -1.8)).
 
-Cut down to the line (2026-10-27: each voiced cutscene lasts its line plus a beat before it; the role card holds after
-it): the tray carried to the door, then from the dark room the Butler in the lit doorway asking "Is something the
-matter? Hmm? ... What's wrong?" and bowing. Authored on its first 15 s timeline below; RETIME picks the pieces."""
+Cut down round the line (2026-10-27; then about 4 s longer, at your word, the same day): the tie smoothed and the watch
+checked, the tray lifted and carried to the door, then from the dark room the Butler in the lit doorway asking "Is
+something the matter? Hmm? ... What's wrong?" and bowing (10 s). The role card holds after it. Authored on its first
+15 s timeline below; RETIME picks the pieces."""
 
 from animlib import J
 from cinema.acting import alive, beat, facing, seated, soft, walking
@@ -108,8 +109,10 @@ shot.allow = {"ace": ["ClubChair"]}  # crouched on its seat
 shot.event(0.0, "sfx", slot="clockTick")
 shot.event(5.2, "sfx", slot="clockTick")
 shot.event(9.6, "sfx", slot="mapServerHum")
-# Cut down to the line: carried to the door, then asked from the doorway with a bow.
-RETIME = Retime([(7.6, 9.6), (11.0, 15.0)])
+# Cut down round the line: the tie and the watch, the tray carried to the door, then asked from the doorway with a bow
+# (the line starts as they reach it).
+RETIME = Retime([(3.6, 9.6), (11.0, 15.0)])
 RETIME.apply(shot, [b, shape])
-shot.audio(voice="voiceButler", voice_at=1.9, bed="bedButler")
-shot.line(1.9, "Is something the matter? Hmm? ... What's wrong?")
+SAID = RETIME.new(9.5)
+shot.audio(voice="voiceButler", voice_at=SAID, bed="bedButler")
+shot.line(SAID, "Is something the matter? Hmm? ... What's wrong?")
