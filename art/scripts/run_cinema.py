@@ -353,7 +353,9 @@ def arm_socket(arm, part_name, parts):
 
 
 def add_held(actor, arm, parts, library):
-    for prop, part, off, rot, t0, t1 in actor.held:
+    import json
+
+    for prop, part, off, rot, t0, t1, scale in actor.held:
         src = library.get(prop)
         if src is None:
             continue
@@ -361,7 +363,15 @@ def add_held(actor, arm, parts, library):
         obj = src.copy()
         common.collection("Actors").objects.link(obj)
         obj.parent = socket
-        local = Matrix.Translation(Vector(off)) @ Matrix([list(r) for r in shotlib.euler_rotation(*rot)]).to_4x4() @ MAP.to_4x4()
+        for name in json.loads(src["parts"]) if src.get("parts") else []:  # its pieces (the Manual's board, leaves)
+            if library.get(prop + "_" + name) is not None:
+                piece = library[prop + "_" + name].copy()
+                common.collection("Actors").objects.link(piece)
+                piece.parent = obj
+                piece.matrix_parent_inverse = Matrix.Identity(4)
+                piece.matrix_basis = Matrix.Identity(4)
+        local = (Matrix.Translation(Vector(off)) @ Matrix([list(r) for r in shotlib.euler_rotation(*rot)]).to_4x4()
+                 @ MAP.to_4x4() @ Matrix.Scale(scale, 4))
         for t, show in ((0.0, t0 <= 0.0), (t0, True), (t1, False)):
             obj.matrix_basis = local if show else local @ Matrix.Scale(0.0001, 4)
             obj.keyframe_insert("scale", frame=t * FPS)

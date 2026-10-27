@@ -178,9 +178,19 @@ local function introData(map)
 	}
 end
 
+-- The intro lasts as long as the map's intro cutscene when it has one (they are paced to their scene, not to a
+-- fixed phase), else the phase's own length.
+local function introLength(): number?
+	local _, shot = introShot()
+	if not shot or Match.phaseLength("Intro") <= 0 then
+		return nil
+	end
+	return shot.length
+end
+
 local function startIntro()
 	local data = introData(Match.map)
-	data.duration = Match.phaseLength("Intro")
+	data.duration = introLength() or Match.phaseLength("Intro")
 	Mechanics.stageMarks(data.cast)
 	Cues.fire("intro", data, { lead = 0.2 })
 end
@@ -727,7 +737,7 @@ local function runMatch(players: { Player })
 	LoadGate.wait(map.loadToken, players, LOAD_TIMEOUT, LOAD_GRACE)
 
 	Cues.reset()
-	runPhase("Intro", startIntro)
+	runPhase("Intro", startIntro, nil, { length = introLength() })
 	runPhase("Briefing", sendBriefings, nil, { length = briefingLength() })
 
 	-- Match.round counts the meetings (free roam N ends in meeting N).

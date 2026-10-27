@@ -156,16 +156,17 @@ class Actor:
         self.eyes = eyes  # (t0, t1): red glowing eyes between these times
         self.outfit = outfit  # "suit" (default), "hood"
         self.path = Track(shot.length)
-        self.held = []  # (prop, arm, offset (x, y, z), rotation (x, y, z degrees), t0, t1)
+        self.held = []  # (prop, arm, offset (x, y, z), rotation (x, y, z degrees), t0, t1, scale)
 
     def mark(self, t, pos, yaw=0.0, ease="smooth"):
         self.path.key(t, pos, yaw, ease)
         return self
 
-    def hold(self, prop, arm="Right Arm", offset=(0, -1.0, 0), rot=(0, 0, 0), t0=0.0, t1=None):
+    def hold(self, prop, arm="Right Arm", offset=(0, -1.0, 0), rot=(0, 0, 0), t0=0.0, t1=None, scale=1.0):
         """A prop welded to the end of an arm (offset from the arm's middle, in the arm's frame:
-        x right, y up the arm, z back) between t0 and t1."""
-        self.held.append((prop, arm, tuple(offset), tuple(rot), t0, t1 if t1 is not None else self.shot.length))
+        x right, y up the arm, z back) between t0 and t1, at `scale` times its catalog size."""
+        self.held.append((prop, arm, tuple(offset), tuple(rot), t0, t1 if t1 is not None else self.shot.length,
+                          float(scale)))
         return self
 
 
@@ -439,7 +440,7 @@ class Retime:
             a.show = self.span(*a.show) or (0.0, 0.0)
             a.silhouette = self.span(*a.silhouette) if a.silhouette else None
             a.eyes = self.span(*a.eyes) if a.eyes else None
-            a.held = [(prop, arm, off, rot, *w) for prop, arm, off, rot, t0, t1 in a.held
+            a.held = [(prop, arm, off, rot, *w, scale) for prop, arm, off, rot, t0, t1, scale in a.held
                       for w in [self.span(t0, t1)] if w]
         kept = []
         for p in shot.props:
@@ -732,10 +733,11 @@ def export(shot):
         lines += _path_lines(a.path, shot.length, "\t\t\t")
         if a.held:
             lines.append("\t\t\tprops = {")
-            for prop, arm, off, rot, t0, t1 in a.held:
+            for prop, arm, off, rot, t0, t1, scale in a.held:
+                extra = f", scale = {num(scale)}" if abs(scale - 1.0) > 1e-6 else ""
                 lines.append(
                     f"\t\t\t\t{{ model = {lua_string(prop)}, arm = {lua_string(arm)}, offset = {lua_value(list(off))}, "
-                    f"rot = {lua_value(list(rot))}, show = {lua_value([t0, t1])} }},"
+                    f"rot = {lua_value(list(rot))}, show = {lua_value([t0, t1])}{extra} }},"
                 )
             lines.append("\t\t\t},")
         lines.append("\t\t},")

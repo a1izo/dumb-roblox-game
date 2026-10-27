@@ -38,8 +38,8 @@ src = 38.0
 pose = "Light, close, face in shadow, the faintest smirk"
 
 [timing]
-length = 15.0
-fit = "Our station has full-height glass screen doors, so nobody steps off the train: the victim waits at a bay as the car pulls in behind the glass and seizes there, palm on the pane. The source's 15 s of collapse (23-38 s) keeps its order and its pace: the clutch, the agony from above, the knees, the fall, the look from the floor, the smirk; the train's arrival and departure frame it."
+length = 23.0
+fit = "Our station has full-height glass screen doors: the car pulls in, both sets of doors open, and the man in the doorway stays aboard. The source's collapse (23-38 s) keeps its order at a slower, readable pace, with 7 long cuts instead of quick ones: the arrival (0-5), the look up into the doors (5-8), the clutch with the Manual slipping from his hand (8-12), the knees and the fall in place (12-15), the man looking down along the body (15-18), the smirk (18-20), the train leaving with nobody having looked up (20-23). The platform lives: people on phones, a pair talking, someone walking straight past him."
 
 [r6]
 notes = "Hands placed with emotes.kit.reach (the clutch at the chest, the palm on the glass); the knees with acting.kneel; lying down is the root pitched over with the body on the floor."

@@ -182,6 +182,9 @@ local function hold(actor: Model, spec: any): Instance?
 	if not arm or not arm:IsA("BasePart") or not model then
 		return nil
 	end
+	if type(spec.scale) == "number" and math.abs(spec.scale - 1) > 1e-3 and model:IsA("Model") then
+		model:ScaleTo(model:GetScale() * spec.scale)
+	end
 	local o, r = spec.offset, spec.rot
 	local target = arm.CFrame
 		* CFrame.new(o[1], o[2], o[3])
