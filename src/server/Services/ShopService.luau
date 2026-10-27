@@ -86,7 +86,7 @@ local function drawFate(player: Player)
 		return
 	end
 	if data.coins < Fate.PRICE then
-		Match.notify(player, string.format("A draw costs %d coins.", Fate.PRICE), "bad")
+		Match.notify(player, string.format("A draw costs %d Reál.", Fate.PRICE), "bad")
 		return
 	end
 	data.coins -= Fate.PRICE
@@ -217,7 +217,7 @@ local function onRequest(player: Player, payload)
 		end
 		local price = ShopRotation.priceOf(item, os.time()) :: number
 		if data.coins < price then
-			Match.notify(player, "Not enough coins for " .. item.name .. ".", "bad")
+			Match.notify(player, "Not enough Reál for " .. item.name .. ".", "bad")
 			return
 		end
 		data.coins -= price

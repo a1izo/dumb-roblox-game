@@ -210,7 +210,7 @@ local function updateProfile()
 		})
 	end
 	local function coinsText(value: number): string
-		return string.format("%d coins", math.floor(value + 0.5))
+		return string.format("%d Reál", math.floor(value + 0.5))
 	end
 	if lastCoins and lastCoins ~= profile.coins then
 		Motion.countUp(coinsLabel, lastCoins, profile.coins, 0.6, coinsText)

@@ -116,6 +116,11 @@ local PLAIN_CAPS = { A = true, H = true, I = true, J = true, K = true, N = true 
 local PLAIN_CAP_SCALE = 1.3
 -- Marks a character of an all-capitals word inside an Aktura line (drawn in Melodrama instead).
 local ALT = "\1"
+-- Accented letters an atlas does not hold (the currency, Reál): the plain letter, with the face's own apostrophe
+-- laid over it, tilted and smaller, for the acute accent.
+local ACCENTED = { ["á"] = "a", ["é"] = "e", ["ó"] = "o", ["ú"] = "u", ["Á"] = "A", ["É"] = "E" }
+local ACCENT_SCALE = 0.72
+local ACCENT_TILT = 38
 
 local function faceOf(name: string?): (Face, string)
 	local key = LEGACY[name or ""] or name or "Head"
@@ -149,7 +154,18 @@ local function characters(text: string): { string }
 end
 
 local function glyphOf(face: Face, char: string): { number }
-	return face.glyphs[char] or face.glyphs[string.upper(char)] or face.glyphs["?"] or face.glyphs[" "]
+	local plain = ACCENTED[char]
+	return face.glyphs[char]
+		or (plain and face.glyphs[plain])
+		or face.glyphs[string.upper(char)]
+		or face.glyphs["?"]
+		or face.glyphs[" "]
+end
+
+-- Does this character get an accent drawn over its plain letter (the face has no glyph of its own for it)?
+local function accented(face: Face, char: string): boolean
+	local plain = ACCENTED[char]
+	return plain ~= nil and face.glyphs[char] == nil and face.glyphs[plain] ~= nil
 end
 
 local function isDigit(char: string): boolean
@@ -167,7 +183,7 @@ local function place(
 	alt: Face?,
 	altScale: number?
 )
-	local out: { { char: string, glyph: { number }, x: number, slot: boolean, alt: boolean? } } = {}
+	local out: { { char: string, glyph: { number }, x: number, slot: boolean, alt: boolean?, accent: boolean? } } = {}
 	local x = 0
 	local previous: string? = nil
 	for _, char in ipairs(chars) do
@@ -194,7 +210,7 @@ local function place(
 			end
 			local slot = tabular and isDigit(char)
 			local advance = if slot then face.digit else (glyph[8] or glyph[1])
-			table.insert(out, { char = char, glyph = glyph, x = x, slot = slot })
+			table.insert(out, { char = char, glyph = glyph, x = x, slot = slot, accent = accented(face, char) })
 			x += advance * scale + tracking
 			previous = char
 		end
@@ -558,6 +574,34 @@ function GlyphText._render(self: GlyphText)
 					Parent = self.ink,
 				})
 				table.insert(self.glyphs, image)
+				local mark = if item.accent then face.glyphs["'"] else nil
+				if mark and #mark >= 8 then
+					-- The acute accent: the apostrophe, smaller and tilted, centred a little right of the letter's
+					-- middle and just above its top.
+					local size = Vector2.new(mark[4], mark[5]) * glyphScale * ACCENT_SCALE
+					local top = baseline - glyph[7] * glyphScale
+					table.insert(
+						self.glyphs,
+						Create("ImageLabel", {
+							Name = "Accent",
+							BackgroundTransparency = 1,
+							Image = atlas[mark[1]],
+							ImageRectOffset = Vector2.new(mark[2], mark[3]),
+							ImageRectSize = Vector2.new(mark[4], mark[5]),
+							ImageColor3 = color,
+							ImageTransparency = transparency,
+							AnchorPoint = Vector2.new(0.5, 1),
+							Rotation = ACCENT_TILT,
+							Size = UDim2.fromOffset(size.X, size.Y),
+							Position = UDim2.fromOffset(
+								shift + left + drawWidth * glyphScale * 0.56,
+								top - face.em * 0.04 * glyphScale
+							),
+							ZIndex = zIndex,
+							Parent = self.ink,
+						})
+					)
+				end
 			end
 		end
 	end

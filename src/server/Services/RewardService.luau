@@ -86,7 +86,7 @@ function RewardService.payout(winner: string?)
 			add("Party bonus", 0, bonus)
 		end
 		if PassService.owns(ps.player, "coins2x") and coins > 0 then
-			table.insert(lines, { label = "Double Coins", coins = coins, xp = 0 })
+			table.insert(lines, { label = "Double Reál", coins = coins, xp = 0 })
 			coins *= 2
 		end
 		results[ps] = { coins = coins, xp = xp, won = won, lines = lines }

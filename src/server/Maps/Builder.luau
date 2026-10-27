@@ -130,6 +130,13 @@ function Builder:sign(
 		PaddingBottom = UDim.new(0.08, 0),
 		Parent = label,
 	})
+	-- Never bigger than a wide typewriter letter's share of the board's width allows: some faces (Special Elite)
+	-- draw wider than Roblox measures them, so TextScaled alone let the last letters run off ("MEETIN").
+	local length = math.max(utf8.len(text) or #text, 1)
+	Create("UITextSizeConstraint", {
+		MaxTextSize = math.max(8, math.floor(w * 30 * 0.92 / (length * 0.64))),
+		Parent = label,
+	})
 	return board, label
 end
 
@@ -381,7 +388,7 @@ function Builder:bell(def)
 		signAt.Y,
 		signAt.Z,
 		def.rot,
-		1.8,
+		2.3,
 		0.8,
 		"MEETING",
 		Color3.fromRGB(255, 240, 220),

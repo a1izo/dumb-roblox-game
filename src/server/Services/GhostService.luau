@@ -529,6 +529,7 @@ function GhostService.goAway(player: Player): boolean
 	ps.away = true
 	LeaderboardService.hold(player.UserId, true)
 	player.CameraMaxZoomDistance = LOBBY_ZOOM
+	player.DevEnableMouseLock = true
 	GhostRemote:FireClient(player, { action = "names", names = {}, eligible = false })
 	Match.pushPrivate(ps)
 	CharacterService.load(player)
@@ -544,6 +545,7 @@ function GhostService.rejoin(player: Player): boolean
 	awayPlayers[player] = nil
 	away.ps.away = false
 	player.CameraMaxZoomDistance = WATCH_ZOOM
+	player.DevEnableMouseLock = false
 	Match.pushPrivate(away.ps)
 	-- The new body is made a Specter's on spawn (CharacterSpawned below).
 	CharacterService.load(player)

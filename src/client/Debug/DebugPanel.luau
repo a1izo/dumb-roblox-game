@@ -876,10 +876,10 @@ end
 
 builders.Profile = function()
 	local profile = snap.profile
-	heading(if profile then string.format("Coins %d · XP %d", profile.coins, profile.xp) else "Profile not loaded")
+	heading(if profile then string.format("Reál %d · XP %d", profile.coins, profile.xp) else "Profile not loaded")
 	local r = row()
 	for _, amount in ipairs({ 100, 1000, -500 }) do
-		button(r, string.format("%+d coins", amount), function()
+		button(r, string.format("%+d Reál", amount), function()
 			send("coins", { amount = amount })
 		end)
 	end
@@ -927,7 +927,7 @@ builders.Profile = function()
 			send("reset", { key = spec[1] })
 		end, if spec[1] == "all" then COLORS.danger else nil)
 	end
-	heading("Test purchase (coin packs)")
+	heading("Test purchase (Reál packs)")
 	r = row()
 	for _, pack in ipairs(Products.COIN_PACKS) do
 		button(r, pack.label, function()

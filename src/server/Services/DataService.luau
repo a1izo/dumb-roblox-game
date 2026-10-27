@@ -77,7 +77,7 @@ local function updateLeaderstats(player: Player, data)
 		rank.Name = "Rank"
 		rank.Parent = folder
 		local coins = Instance.new("IntValue")
-		coins.Name = "Coins"
+		coins.Name = "Reál"
 		coins.Parent = folder
 		folder.Parent = player
 	end
@@ -86,7 +86,7 @@ local function updateLeaderstats(player: Player, data)
 	if rankValue and rankValue:IsA("StringValue") then
 		rankValue.Value = rank.name
 	end
-	local coinValue = folder:FindFirstChild("Coins")
+	local coinValue = folder:FindFirstChild("Reál")
 	if coinValue and coinValue:IsA("IntValue") then
 		coinValue.Value = data.coins
 	end

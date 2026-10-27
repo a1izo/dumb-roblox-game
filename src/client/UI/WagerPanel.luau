@@ -43,7 +43,7 @@ end
 local function refresh()
 	local me = ClientState.me()
 	local myId = if me then me.userId else 0
-	wonLabel.Text = string.format("Won this case: %d coins", state.won or 0)
+	wonLabel.Text = string.format("Won this case: %d Reál", state.won or 0)
 
 	-- Who Diavolo is.
 	local everyone = {}
@@ -62,9 +62,9 @@ local function refresh()
 			.. aliasOf(state.diavolo)
 			.. "  ·  locked  ·  pays "
 			.. Wager.DIAVOLO_COINS
-			.. " coins if right"
+			.. " Reál if right"
 	else
-		diavoloLabel.Text = "Who is Diavolo? Pays " .. Wager.DIAVOLO_COINS .. " coins when the case closes."
+		diavoloLabel.Text = "Who is Diavolo? Pays " .. Wager.DIAVOLO_COINS .. " Reál when the case closes."
 	end
 	if diavoloOpen then
 		renderDiavolo(everyone, picked.diavolo, true)
@@ -84,11 +84,11 @@ local function refresh()
 			.. aliasOf(state.vote)
 			.. "  ·  locked  ·  pays "
 			.. Wager.VOTE_COINS
-			.. " coins if right"
+			.. " Reál if right"
 	elseif not open then
 		voteLabel.Text = "Vote guesses open again after this vote."
 	else
-		voteLabel.Text = "Who will the next vote remove? Pays " .. Wager.VOTE_COINS .. " coins."
+		voteLabel.Text = "Who will the next vote remove? Pays " .. Wager.VOTE_COINS .. " Reál."
 	end
 	if open then
 		renderVote(living, picked.vote, true)

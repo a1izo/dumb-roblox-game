@@ -105,7 +105,7 @@ function WagerService.settleVote(removedUserId: number?)
 					ps,
 					Wager.VOTE_COINS,
 					string.format(
-						"Death's wager: you called the vote. +%d coins when the case closes.",
+						"Death's wager: you called the vote. +%d Reál when the case closes.",
 						Wager.VOTE_COINS
 					)
 				)
@@ -124,7 +124,7 @@ function WagerService.settleCase()
 			win(
 				ps,
 				Wager.DIAVOLO_COINS,
-				string.format("Death's wager: you named Diavolo. +%d coins.", Wager.DIAVOLO_COINS)
+				string.format("Death's wager: you named Diavolo. +%d Reál.", Wager.DIAVOLO_COINS)
 			)
 		end
 	end

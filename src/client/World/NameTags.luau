@@ -46,7 +46,7 @@ local function build(character: Model, player: Player)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "DGNameTag"
 	gui.Adornee = head
-	gui.Size = UDim2.fromOffset(220, 30)
+	gui.Size = UDim2.fromOffset(240, 34)
 	gui.StudsOffset = OFFSET
 	gui.AlwaysOnTop = false
 	gui.LightInfluence = 0
@@ -58,9 +58,9 @@ local function build(character: Model, player: Player)
 	plate.AnchorPoint = Vector2.new(0.5, 0.5)
 	plate.Position = UDim2.fromScale(0.5, 0.5)
 	plate.AutomaticSize = Enum.AutomaticSize.X
-	plate.Size = UDim2.fromOffset(0, 26)
+	plate.Size = UDim2.fromOffset(0, 30)
 	plate.BackgroundColor3 = C.g0
-	plate.BackgroundTransparency = 0.22
+	plate.BackgroundTransparency = 0.12
 	plate.BorderSizePixel = 0
 	plate.Parent = gui
 	local pad = Instance.new("UIPadding")
@@ -80,11 +80,13 @@ local function build(character: Model, player: Player)
 	label.Name = "Alias"
 	label.BackgroundTransparency = 1
 	label.AutomaticSize = Enum.AutomaticSize.X
-	label.Size = UDim2.fromOffset(0, 24)
+	label.Size = UDim2.fromOffset(0, 28)
 	label.FontFace = Kit.Tokens.font.label
-	label.TextSize = 15
+	-- (bigger and outlined: easier to read across a street, the user's ask 2026-10-27)
+	label.TextSize = 18
 	label.TextColor3 = C.white
-	label.TextStrokeTransparency = 1
+	label.TextStrokeColor3 = Color3.new(0, 0, 0)
+	label.TextStrokeTransparency = 0.45
 	label.Text = string.upper(humanoid.DisplayName)
 	label.Parent = plate
 
@@ -98,9 +100,17 @@ local function build(character: Model, player: Player)
 			title.SizeOffset = Vector2.new(0, (gui.Size.Y.Offset / 2 + TITLE_GAP + tall / 2) / tall)
 		end
 	end
+	local shown = true
+	local function showTitle()
+		local title = head:FindFirstChild(TITLE_TAG)
+		if title and title:IsA("BillboardGui") then
+			title.Enabled = shown
+		end
+	end
 	head.ChildAdded:Connect(function(child: Instance)
 		if child.Name == TITLE_TAG then
 			placeTitle()
+			showTitle()
 		end
 	end)
 
@@ -109,13 +119,13 @@ local function build(character: Model, player: Player)
 	local function restyle()
 		local friend = player == LOCAL or Lifespan.isFriend(player.UserId)
 		if friend and not lifespan then
-			lifespan = Lifespan.draw(gui, humanoid.DisplayName, 20)
+			lifespan = Lifespan.draw(gui, humanoid.DisplayName, 22)
 		elseif not friend and lifespan then
 			lifespan.destroy()
 			lifespan = nil
 		end
 		plate.Visible = not friend
-		gui.Size = if friend then UDim2.fromOffset(220, 50) else UDim2.fromOffset(220, 30)
+		gui.Size = if friend then UDim2.fromOffset(240, 54) else UDim2.fromOffset(240, 34)
 		placeTitle()
 	end
 	restyle()
@@ -132,6 +142,9 @@ local function build(character: Model, player: Player)
 			or Settings.get("nameTags") == false
 			or (player == LOCAL and not inLobby())
 		gui.Enabled = not hidden
+		-- (a title goes and comes with the name: never over a body blending into a crowd, a ghost or the dead)
+		shown = not hidden
+		showTitle()
 	end
 	if player == LOCAL then
 		ClientState.PublicChanged:Connect(refresh)

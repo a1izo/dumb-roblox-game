@@ -709,6 +709,13 @@ local function runMatch(players: { Player })
 			DataService.push(ps.player)
 			DataService.saveSoon(ps.player)
 		end
+		-- No title in a case: the lobby's tag on a body kept for the case goes (it showed over bodies blending into
+		-- the Tokyo crowd); the next spawn in the lobby puts it back.
+		if typeof(ps.player) == "Instance" then
+			CosmeticsService.refreshTitle(ps.player)
+			-- No shift lock of Roblox's own in a case: the client holds the camera over the shoulder (World/ShoulderCam)
+			ps.player.DevEnableMouseLock = false
+		end
 	end
 
 	EventLog.reset()
@@ -847,6 +854,7 @@ local function cleanup()
 		if player.Parent == Players then
 			player:SetAttribute("Alias", nil)
 			player.CameraMaxZoomDistance = LOBBY_ZOOM
+			player.DevEnableMouseLock = true
 			Match.clearPrivate(player)
 			CharacterService.load(player)
 		end

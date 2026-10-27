@@ -140,7 +140,7 @@ local function trialEvent(player: Player, payload)
 		local paid = Trial.finish(data, Config.TRAINING_REWARD)
 		if paid > 0 then
 			Analytics.coins(player, paid, data.coins, "Onboarding", "Trial")
-			Match.notify(player, string.format("The Trial is done. +%d coins.", paid), "good")
+			Match.notify(player, string.format("The Trial is done. +%d Reál.", paid), "good")
 		elseif first then
 			Match.notify(player, "The Trial is done.", "good")
 		end

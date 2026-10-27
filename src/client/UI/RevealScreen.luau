@@ -139,14 +139,14 @@ local function rewardsText(rewards): string
 	end
 	local lines = {
 		string.format(
-			"%s   +%d coins   +%d XP",
+			"%s   +%d Reál   +%d XP",
 			if rewards.won then "Victory" else "Defeat",
 			rewards.coins,
 			rewards.xp
 		),
 	}
 	for _, line in ipairs(rewards.lines or {}) do
-		table.insert(lines, string.format("%s: +%d coins, +%d XP", tostring(line.label), line.coins, line.xp))
+		table.insert(lines, string.format("%s: +%d Reál, +%d XP", tostring(line.label), line.coins, line.xp))
 	end
 	local progress = rewards.progress
 	if type(progress) == "table" then
