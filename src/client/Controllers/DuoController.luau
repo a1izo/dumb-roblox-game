@@ -7,7 +7,8 @@
 --             racket, a forehand meets it on every screen, and the first miss sends it past and ends the rally
 --   a chain   Cuffed Together: while a body holds a "DuoChain" link, its chained arm hangs towards the other
 --             (a clip on that arm only, so the walk goes on beneath) and a chain hangs between the wrists; the
---             player who follows walks after the leader by themselves, and a jump of either breaks it
+--             player who follows walks after the leader by themselves. Each of the two has a "Let go" prompt
+--             (the use key: E, ButtonX), the only way to end it by choice (the user's call of 2026-10-27)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +22,7 @@ local EmoteProps = require(Shared:WaitForChild("Anim"):WaitForChild("EmoteProps"
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Net = require(Shared:WaitForChild("Net"))
 local Bindings = require(Shared:WaitForChild("Bindings"))
+local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local ClientState = require(script.Parent.Parent.ClientState)
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
@@ -106,17 +108,28 @@ local function now(): number
 	return workspace:GetServerTimeNow()
 end
 
+-- A stroke laid over the ready loop: an emote's track (so it stops with the rally, and when the body moves) that
+-- ends when its clip does. (2026-10-27: they had no end, so the last one, the win or the loss, stayed on the body
+-- after the rally was over.)
 local function stroke(character: Model, clip: string)
-	if character.Parent then
-		PoseController.play(character, clip, { fadeIn = 0.08, fadeOut = 0.2 })
+	local prepared = ClipPlayer.get(clip)
+	if character.Parent and prepared then
+		PoseController.play(
+			character,
+			clip,
+			{ emote = true, fadeIn = 0.08, fadeOut = 0.2, duration = prepared.length + 0.15 }
+		)
 	end
 end
 
 -- The forehand of the one the ball goes to, started so its strike meets the ball (a swing at nothing when it is
--- a miss: the server says so a moment later).
-local function swingFor(flight: Flight)
+-- a miss: the server says so a moment later). Never once the rally is over.
+local function swingFor(rally: Rally)
+	local flight = rally.flight
 	task.delay(math.max(0, flight.arrive - SWING_HIT - now()), function()
-		stroke(flight.to, "matchPointSwing")
+		if not rally.ended and rally.flight == flight then
+			stroke(flight.to, "matchPointSwing")
+		end
 	end)
 end
 
@@ -147,6 +160,16 @@ local function ballAt(flight: Flight, t: number): Vector3?
 	local k = math.clamp((t - flight.arrive) / PAST, 0, 1)
 	local ground = to + way * (6 * k + 1.5 * math.max(0, (t - flight.arrive - PAST)) ^ 0.5)
 	return Vector3.new(ground.X, to.Y + (floorY - to.Y) * k * k, ground.Z)
+end
+
+-- The use key on a platform as the player has it (Shared/Bindings "interact"), for "Let go".
+local function useKey(platform: string, fallback: Enum.KeyCode): Enum.KeyCode
+	local profile = ClientState.profile
+	local name = Bindings.keys("interact", platform, profile and profile.keybinds or nil)[1]
+	local ok, key = pcall(function()
+		return (Enum.KeyCode :: any)[name]
+	end)
+	return if name and ok and key then key else fallback
 end
 
 -- The rally's hit keys: F and ButtonX unless the player set their own (Shared/Bindings "rallyHit").
@@ -245,7 +268,7 @@ local function bindPress(rally: Rally)
 end
 
 local function aimed(rally: Rally)
-	swingFor(rally.flight)
+	swingFor(rally)
 	-- the pock of the ball off the racket that sent it (not the serve's toss up)
 	local flight = rally.flight
 	if not flight.toss then
@@ -286,7 +309,10 @@ local function rally(payload)
 		})
 	end
 	task.delay(math.max(0, payload.at - now()), function()
-		stroke(a, "matchPointServing")
+		local state = rallies[a]
+		if state and not state.ended then
+			stroke(a, "matchPointServing")
+		end
 	end)
 	local ball = ballModel()
 	ball.Parent = workspace.CurrentCamera
@@ -375,9 +401,16 @@ local function rallyMiss(payload)
 	task.delay(math.max(0, state.flight.arrive - now()), function()
 		stroke(loser, "matchPointLost")
 		stroke(winner, "matchPointWin")
-		task.delay(1.6, function()
+		-- (then everything of the rally comes off both: the ready loops with their rackets, and any stroke)
+		local lost, won = ClipPlayer.get("matchPointLost"), ClipPlayer.get("matchPointWin")
+		local last = math.max(lost and lost.length or 1.6, won and won.length or 1.6, 1.6)
+		task.delay(last, function()
 			for _, character in ipairs({ state.a, state.b }) do
 				PoseController.stopEmotes(character, "finished")
+				local session = EmoteController.session(character)
+				if session and string.sub(session.clip, 1, 10) == "matchPoint" then
+					EmoteController.stopOn(character, "finished")
+				end
 			end
 		end)
 		task.delay(2.4, function()
@@ -446,22 +479,32 @@ local function watchChain(character: Model)
 			end
 		end
 		local follow: RBXScriptConnection? = nil
-		local jump: RBXScriptConnection? = nil
-		local jumpAsked: RBXScriptConnection? = nil
+		local letGo: ProximityPrompt? = nil
 		if character == LocalPlayer.Character then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local root = character:FindFirstChild("HumanoidRootPart")
+			-- "Let go": the only way out by choice (drawn like every prompt, UI/PromptView; on this screen only)
+			if root then
+				local prompt = Create("ProximityPrompt", {
+					Name = "LChainLetGo",
+					ActionText = "Let go",
+					ObjectText = "Cuffed Together",
+					KeyboardKeyCode = useKey("keyboard", Enum.KeyCode.E),
+					GamepadKeyCode = useKey("gamepad", Enum.KeyCode.ButtonX),
+					HoldDuration = 0,
+					MaxActivationDistance = 8,
+					RequiresLineOfSight = false,
+					Style = Enum.ProximityPromptStyle.Custom,
+					Parent = root,
+				}) :: ProximityPrompt
+				prompt:SetAttribute("DGEmote", true) -- (a copy of the body leaves it out)
+				prompt.Triggered:Connect(function()
+					prompt.Enabled = false
+					DuoRemote:FireServer({ action = "break" })
+				end)
+				letGo = prompt
+			end
 			if humanoid then
-				-- A jump (asked for, or happening) lets go.
-				jump = humanoid.StateChanged:Connect(function(_, state)
-					if state == Enum.HumanoidStateType.Jumping then
-						DuoRemote:FireServer({ action = "break" })
-					end
-				end)
-				jumpAsked = humanoid:GetPropertyChangedSignal("Jump"):Connect(function()
-					if humanoid.Jump then
-						DuoRemote:FireServer({ action = "break" })
-					end
-				end)
 				if not lead then
 					-- Walk after the leader, a step to their left (where the chain reaches).
 					local nextMove = 0
@@ -490,11 +533,8 @@ local function watchChain(character: Model)
 			if follow then
 				follow:Disconnect()
 			end
-			if jump then
-				jump:Disconnect()
-			end
-			if jumpAsked then
-				jumpAsked:Disconnect()
+			if letGo then
+				letGo:Destroy()
 			end
 		end
 	end

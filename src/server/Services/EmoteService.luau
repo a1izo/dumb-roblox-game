@@ -1,13 +1,17 @@
--- Emotes are animated on every client, so the server passes them on: it checks the emote (owned from the
+-- Emotes are the server's (the user's call of 2026-10-27: server-sided): it checks the emote (owned from the
 -- shop, or the Emote Pack pass) and where it may play (Shared/EmotePolicy: never in a cutscene, lobby-only ones
--- and duos never in a case, the waist up only at the meeting and the vote), then sends it to everyone who can
--- see the player (Deathsingers' emotes only reach other Deathsingers) with the time it started, so every screen
--- plays it from the same moment. A refused emote is answered with the reason, for the wheel.
+-- and duos never in a case, the waist up only at the meeting and the vote), then keeps it as each player's emote now
+-- (`current`) and puts it on their body for every screen: the "Emote" attribute, what it is and the server time it
+-- started (below). Every client draws it from that (Controllers/EmoteController: the pose, its props, its sound),
+-- from the same moment, so a player who joins or streams the body in later sees it mid-way, and nobody but the
+-- server can set it. A Deathsinger's is drawn only for other Deathsingers. A refused emote is answered with the
+-- reason, for the wheel.
 -- It also keeps:
---   the emote wheel (Shared/EmoteWheel): the eight emotes a player put on it;
---   each player's emote now (`current`): for Join in (anyone near a looping dance can join it, on its beat; a
---     group dance with a `formation` walks each joiner to a free place round the first dancer, up to six) and
---     for an emote's press-to-do moment (Shared/EmoteInfo `context`: one press, from its moment on, plays its branch);
+--   the emote wheel (Shared/EmoteWheel): the four emotes a player put on it;
+--   Join in, on the dances and group celebrations only (Shared/EmoteInfo `joinable`, the user's call of
+--     2026-10-27): anyone near joins on the dance's beat, beside the dancer, never inside their body (a group
+--     dance with a `formation` walks each joiner to a free place round the first dancer, up to six);
+--   an emote's press-to-do moment (Shared/EmoteInfo `context`: one press, from its moment on, plays its branch);
 --   strolls: not sent, an attribute on the body ("Stroll", the clip) that every client walks it in, until it is
 --     picked again, another emote is played, or the player's own client asks to stop (Controllers/StrollWalker).
 -- Everyone's emotes stop when a cutscene everyone sees begins, and when the case moves to the meeting or a
@@ -41,6 +45,10 @@ local EmoteService = {}
 
 local JOIN_REACH = 12 -- studs: how near a dancer you must be to join in
 local FORMATION_WALK = 4 -- seconds to walk to a place in a group dance's formation
+-- A dance joined closer than APART studs: the joiner walks to a place beside the dancer first, the nearest free one
+-- of these ({ x, z } in the dancer's frame: x to their right, z behind them), so two bodies never dance in each other.
+local APART = 2.6
+local BESIDE = { { 3, 0 }, { -3, 0 }, { 0, 3 }, { 5.5, 0 }, { -5.5, 0 } }
 
 local cutsceneUntil = 0
 
@@ -94,16 +102,13 @@ local function refuse(player: Player, emoteId: string, reason: string)
 	EmoteRemote:FireClient(player, { refused = reason, emote = emoteId })
 end
 
--- Sends an emote to everyone who can see the player.
-local function broadcast(player: Player, payload)
-	if isDeathsinger(player) then
-		for _, other in ipairs(Players:GetPlayers()) do
-			if isDeathsinger(other) then
-				EmoteRemote:FireClient(other, payload)
-			end
-		end
-	else
-		EmoteRemote:FireAllClients(payload)
+-- The emote on a body for every screen: "clip;at;mask;joined;owned;from" in one attribute, so a screen never reads
+-- half of a change (Controllers/EmoteController reads it). nil: no emote (a one-shot that has run its course stays
+-- until the next; every screen knows from its start and length that it is over).
+local function publish(player: any, value: string?)
+	local character = player.Character
+	if character then
+		character:SetAttribute("Emote", value)
 	end
 end
 
@@ -130,11 +135,18 @@ local function play(player: Player, clip: string, mask: string?, extra: { [strin
 		loop = entry ~= nil and entry.loop == true,
 		length = if entry then entry.length else 0,
 	}
-	local payload = { userId = player.UserId, emote = clip, at = at, mask = mask }
-	for key, value in pairs(extra or {}) do
-		payload[key] = value
-	end
-	broadcast(player, payload)
+	local more = extra or {}
+	publish(
+		player,
+		table.concat({
+			clip,
+			string.format("%.3f", at),
+			mask or "",
+			if type(more.joined) == "number" then tostring(more.joined) else "",
+			if more.owned == false then "0" else "",
+			if type(more.from) == "string" then more.from else "",
+		}, ";")
+	)
 end
 
 -- Two players play the same clip from the same moment (a duo met: DuoService).
@@ -149,8 +161,11 @@ function EmoteService.stop(player: Player, reason: string?)
 	if player.Character and player.Character:GetAttribute("Stroll") then
 		EmoteService.setStroll(player, nil)
 	end
-	DuoService.stop(player)
-	broadcast(player, { userId = player.UserId, stop = true, reason = reason or "stopped" })
+	-- (a cutscene or the meeting ends a chain too; a stop asked for by the player does not: only "Let go" does)
+	if reason ~= "stopped" then
+		DuoService.stop(player)
+	end
+	publish(player, nil)
 end
 
 -- Stops the emotes of everyone in the case (the lobby dances on whatever a case is showing).
@@ -202,12 +217,12 @@ local function startEmote(player: Player, emoteId: string)
 		DuoService.request(player, emote)
 		return
 	end
-	-- Any other emote lets go of a chain.
-	DuoService.stop(player)
+	-- (a chain is not let go by another emote: only by "Let go", the user's call of 2026-10-27, Services/DuoService)
 	local walking = player.Character and player.Character:GetAttribute("Stroll")
 	if info.stroll then
 		-- Picked again: it ends; otherwise it starts (or takes over from another stroll).
 		current[player] = nil
+		publish(player, nil)
 		EmoteService.setStroll(player, if walking == emote.id then nil else emote.id)
 		return
 	elseif walking then
@@ -349,12 +364,12 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 	play(player, clip, nil, extra)
 end
 
--- Join in: the player joins a dancer near them, on the same beat (a looping dance only). In the lobby anyone
--- may join; in a case only someone who owns the dance.
+-- Join in: the player joins a dancer near them, on the same beat (a looping dance or group celebration only:
+-- EmoteInfo `joinable`). In the lobby anyone may join; in a case only someone who owns the dance.
 local function joinIn(player: Player, userId)
 	local target = if type(userId) == "number" then byUserId(userId) else nil
 	local theirs = if target and target ~= player then EmoteService.current(target) else nil
-	if not theirs or not theirs.loop then
+	if not theirs or not theirs.loop or not EmoteInfo.of(theirs.clip).joinable then
 		return
 	end
 	-- The living and the Deathsingers never see each other dance (and are not told whether the other does).
@@ -384,7 +399,6 @@ local function joinIn(player: Player, userId)
 		refuse(player, emote.id, reason or "Not here")
 		return
 	end
-	DuoService.stop(player)
 	if player.Character and player.Character:GetAttribute("Stroll") then
 		EmoteService.setStroll(player, nil)
 	end
@@ -393,6 +407,11 @@ local function joinIn(player: Player, userId)
 	if places and #places > 0 and mask == nil then
 		-- A group dance: to a free place round the one joined first (walked there), then the dance.
 		task.spawn(intoPlace, player, target, b, theirs.clip, places, extra)
+		return
+	end
+	if mask == nil and (a.Position - b.Position).Magnitude < APART then
+		-- Too close to dance without passing through them: beside them first.
+		task.spawn(intoPlace, player, target, b, theirs.clip, BESIDE, extra)
 		return
 	end
 	-- (a loop plays on the shared beat on every screen, so the same clip is already in step with theirs)
@@ -445,6 +464,7 @@ local function onEmote(player: Player, payload)
 			-- The player walked out of their emote (every screen saw it): it is not theirs any more.
 			if RateLimit.allow(player, "emoteEnded", 0.2) then
 				current[player] = nil
+				publish(player, nil)
 			end
 			return
 		end
@@ -477,7 +497,7 @@ function EmoteService.placeBought(data, clip: string): number?
 	return slot
 end
 
--- ProfileRequest "emoteWheel": { slot = 1..8, emote = clip id or "" to empty the slot }.
+-- ProfileRequest "emoteWheel": { slot = 1..4, emote = clip id or "" to empty the slot }.
 local function setWheel(player: Player, payload)
 	local data = DataService.get(player)
 	if not data or type(payload.slot) ~= "number" or type(payload.emote) ~= "string" then

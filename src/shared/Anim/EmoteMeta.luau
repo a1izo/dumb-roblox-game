@@ -704,6 +704,8 @@ return {
 		},
 		allow = { { prop = 1, part = "Right Arm", from = 0.15, to = 0.8 } },
 	},
+	-- everyone's dance: others may join in (Shared/EmoteInfo `joinable`; a bought dance is one by its category)
+	dance = { joinable = true },
 	smilingLord = {
 		props = {
 			{
@@ -714,22 +716,15 @@ return {
 				-- A walking cane, down from the fist to the floor.
 				at = { { p = { 0, -1.05, -0.1 } }, { p = { 0, -1.05, 0 } } },
 			},
-			-- (the owner's Q33, 2026-10-21: Lord Verity's evening dress, worn only while he dances) the top hat, the
-			-- tails of his coat, a white cravat and white gloves
+			-- (the owner's Q33, 2026-10-21: Lord Verity's evening dress, worn only while he dances) the top hat, a white
+			-- cravat and white gloves; the tails of his coat came off (the user's call of 2026-10-27)
 			{
 				model = "TopHat",
-				size = 1.88,
-				stand = { shape = "Block", size = { 1.35, 1.05, 1.35 }, color = { 17, 17, 19 } },
+				-- (2026-10-27: a tenth smaller and lower, the brim snug round the brow rather than perched on top)
+				size = 1.69,
+				stand = { shape = "Block", size = { 1.22, 0.95, 1.22 }, color = { 17, 17, 19 } },
 				mount = "Head",
-				at = { { p = { 0, 0.99, 0 } } },
-			},
-			{
-				model = "Tailcoat",
-				size = 2.094,
-				stand = { shape = "Block", size = { 1.9, 2.05, 0.1 }, color = { 14, 14, 16 } },
-				mount = "Torso",
-				-- hung from the waist at the back
-				at = { { p = { 0, -1.25, 0.62 } } },
+				at = { { p = { 0, 0.77, 0 } } },
 			},
 			{
 				model = "Cravat",
@@ -753,21 +748,17 @@ return {
 				at = { { p = { 0, -0.67, -0.02 } } },
 			},
 		},
-		-- the hand at the hat's brim; a kick behind and the arms flung back through the tails; a glove covers the
-		-- end of its own arm, and goes where the bare hand already went (the brim, the hip, the cane's lean)
+		-- the hand at the hat's brim; a glove covers the end of its own arm, and goes where the bare hand already went
+		-- (the brim, the hip, the cane's lean)
 		allow = {
 			{ prop = 2, part = "Right Arm", from = 0, to = 4.8 },
-			{ prop = 3, part = "Right Leg", from = 0, to = 4.8 },
-			{ prop = 3, part = "Left Leg", from = 0, to = 4.8 },
-			{ prop = 3, part = "Right Arm", from = 0, to = 4.8 },
-			{ prop = 3, part = "Left Arm", from = 0, to = 4.8 },
-			{ prop = 5, part = "Right Arm", from = 0, to = 4.8 },
-			{ prop = 5, part = "Head", from = 0, to = 4.8 },
+			{ prop = 4, part = "Right Arm", from = 0, to = 4.8 },
+			{ prop = 4, part = "Head", from = 0, to = 4.8 },
+			{ prop = 4, part = "Torso", from = 0, to = 4.8 },
+			{ prop = 5, part = "Left Arm", from = 0, to = 4.8 },
 			{ prop = 5, part = "Torso", from = 0, to = 4.8 },
-			{ prop = 6, part = "Left Arm", from = 0, to = 4.8 },
-			{ prop = 6, part = "Torso", from = 0, to = 4.8 },
-			{ prop = 6, part = "Left Leg", from = 0, to = 4.8 },
-			{ prop = 6, part = "Right Leg", from = 0, to = 4.8 },
+			{ prop = 5, part = "Left Leg", from = 0, to = 4.8 },
+			{ prop = 5, part = "Right Leg", from = 0, to = 4.8 },
 		},
 	},
 	mushroomStroll = {

@@ -37,6 +37,9 @@ export type Info = {
 	-- a group dance's places for those who join in, round the one they join: { x, z } studs in that dancer's
 	-- frame (x to their right, z behind them), at most 5 (6 dancing with the first)
 	formation: { { number } }?,
+	-- others near may Join in: the dances and the group celebrations only (the user's call of 2026-10-27), never a
+	-- pose, an emote with props, a stroll, a stance or a duo (the server and the prompt both read it)
+	joinable: boolean,
 }
 
 -- Effects by rarity, when the clip's description does not say (the VFX ladder: Scrawl motion accents only,
@@ -77,7 +80,10 @@ function EmoteInfo.of(clip: string): Info
 		loud = meta.loud == true,
 		context = meta.context,
 		formation = meta.formation,
+		joinable = false,
 	}
+	local dance = meta.joinable == true or (item ~= nil and item.category == "dance")
+	info.joinable = (dance or meta.formation ~= nil) and not info.stroll and not info.stance and not info.duo
 	cache[clip] = info
 	return info
 end

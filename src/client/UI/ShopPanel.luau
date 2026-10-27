@@ -19,7 +19,7 @@
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
 -- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
 -- the emote wheel's first empty slot), "N more Reál" when you are short, or wear / take off what you
--- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel);
+-- own. An emote you own shows the wheel's four slots instead: pick one to put it there (Shared/EmoteWheel);
 -- under them, whether it is your stance (stand still a while and you settle into it; only some can be) and
 -- your win scene (what you play in "The end" when you win, instead of a cheer).
 -- On a phone the cards fill the window and Your look rises as a sheet from the bottom when a card is
@@ -291,7 +291,7 @@ local function clearAction()
 	stanceHolder.Visible = false
 end
 
--- An emote you own: the wheel's eight slots, numbered, its own lit; a click puts it there (or takes it off
+-- An emote you own: the wheel's four slots, numbered, its own lit; a click puts it there (or takes it off
 -- the slot it is in).
 local function wheelSlots(profile, item: Cosmetics.Item)
 	local slots = EmoteWheel.slots(profile.emoteWheel)

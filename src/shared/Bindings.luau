@@ -88,10 +88,6 @@ Bindings.ACTIONS = {
 	action("slot2", "Wheel slot 2", "wheel", { "Two" }, {}),
 	action("slot3", "Wheel slot 3", "wheel", { "Three" }, {}),
 	action("slot4", "Wheel slot 4", "wheel", { "Four" }, {}),
-	action("slot5", "Wheel slot 5", "wheel", { "Five" }, {}),
-	action("slot6", "Wheel slot 6", "wheel", { "Six" }, {}),
-	action("slot7", "Wheel slot 7", "wheel", { "Seven" }, {}),
-	action("slot8", "Wheel slot 8", "wheel", { "Eight" }, {}),
 	action("flyUp", "Fly up", "ghost", { "Space" }, { "ButtonA" }),
 	action("flyDown", "Fly down", "ghost", { "LeftControl" }, { "ButtonL2" }),
 	action("noteOffer", "Take the offered note", "offer", { "X" }, { "ButtonL1" }),
@@ -126,7 +122,7 @@ Bindings.SECTIONS = {
 	},
 	{
 		title = "Emotes and quick chat",
-		ids = { "quickChat", "phrases", "slot1", "slot2", "slot3", "slot4", "slot5", "slot6", "slot7", "slot8" },
+		ids = { "quickChat", "phrases", "slot1", "slot2", "slot3", "slot4" },
 	},
 	{
 		title = "Emotes with others, and notes",

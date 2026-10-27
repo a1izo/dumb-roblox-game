@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 7
+Migrations.CURRENT = 8
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -119,7 +119,7 @@ function Migrations.defaults(startingCoins: number)
 		weekly = { week = -1, wins = 0, xp = 0 },
 		-- The shop's Today's hand: the cards turned so far, on which day (Shared/ShopRotation.turn).
 		shopTurned = { day = -1, cards = {} },
-		-- The emote wheel's eight clip ids, "" for an empty slot; empty = never changed (Shared/EmoteWheel).
+		-- The emote wheel's four clip ids, "" for an empty slot; empty = never changed (Shared/EmoteWheel).
 		emoteWheel = {},
 		-- The player's own control bindings, by platform then action (Shared/Bindings); empty = the defaults.
 		keybinds = {},
@@ -259,6 +259,26 @@ local STEPS: { [number]: (any) -> () } = {
 		if type(data.equipped) == "table" then
 			data.equipped.hat = nil
 		end
+	end,
+	-- v7 -> v8 (2026-10-28, the user's call): the emote wheel has four slots, not eight. A wheel someone set keeps
+	-- its first four emotes in their order, gaps closed, so nothing they chose is lost to an empty slot; one never
+	-- changed stays empty (the default).
+	[7] = function(data)
+		local wheel = data.emoteWheel
+		if type(wheel) ~= "table" or #wheel == 0 then
+			return
+		end
+		local kept = {}
+		for index = 1, #wheel do
+			local id = wheel[index]
+			if type(id) == "string" and id ~= "" and #kept < 4 then
+				table.insert(kept, id)
+			end
+		end
+		for index = #kept + 1, 4 do
+			kept[index] = ""
+		end
+		data.emoteWheel = kept
 	end,
 }
 

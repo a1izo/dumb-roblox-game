@@ -1,15 +1,16 @@
 -- Quick chat and the emote wheel: in a case, the only way to talk outside meetings. A page rises above the
 -- bottom of the screen, each on its own key and with no tabs between them (2026-10-27: Q had opened both): the
--- phrases (a grid of them, M, in a case) and the emotes (Q, anywhere). The emotes are the wheel (UI/Wheel: the eight slots of Shared/EmoteWheel round a ring,
--- pointed at with the mouse, a stick or a finger, played with a click, a tap, A, letting go of Q, or the keys
--- 1 to 8); "More" over it lists every emote you have. An emote that cannot be played where you are (one made
--- for the lobby only, in a case) is locked, with the reason.
+-- phrases (a grid of them, M, in a case) and the emotes (Q, anywhere). The emotes are the wheel (UI/Wheel: the four
+-- slots of Shared/EmoteWheel round a ring, pointed at with the mouse, a stick or a finger, played with a click, a
+-- tap, A, letting go of Q, or the keys 1 to 4); the rest wait on the inventory's Emotes page until put on it. An
+-- emote that cannot be played where you are (one made for the lobby only, in a case) is locked, with the reason.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Bindings = require(Shared:WaitForChild("Bindings"))
+local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local Net = require(Shared:WaitForChild("Net"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
@@ -35,11 +36,11 @@ local PAD = T.space.l
 local GRID = 144 -- the phrases' grid
 local HEIGHT_EMOTES = PAD * 2 + CAPTION + Wheel.HEIGHT
 local HEIGHT_PHRASES = PAD * 2 + GRID
--- The slot a key plays: the wheel's slot keys (1 to 8 unless the player set their own, Shared/Bindings).
+-- The slot a key plays: the wheel's slot keys (1 to 4 unless the player set their own, Shared/Bindings).
 local function slotFor(key: Enum.KeyCode): number?
 	local profile = ClientState.profile
 	local saved = profile and profile.keybinds or nil
-	for index = 1, 8 do
+	for index = 1, EmoteWheel.SLOTS do
 		if table.find(Bindings.keys("slot" .. index, "keyboard", saved), key.Name) then
 			return index
 		end
@@ -54,8 +55,6 @@ local emotesPage: Frame
 local caption: TextLabel
 local wheelHolder: Frame
 local wheelScale: UIScale
-local moreButton: TextButton
-local moreShown = false
 local firstPhrase: GuiObject? = nil
 local tab = "emotes"
 local keyConnection: RBXScriptConnection? = nil
@@ -74,22 +73,13 @@ local function play(emote: QuickChat.Emote)
 	QuickChatPanel.close()
 end
 
--- The wheel stands on its own over the world: no panel behind it (the old grey box). The phrases and the list of
--- every emote keep the panel, which they need to be read.
+-- The wheel stands on its own over the world: no panel behind it (the old grey box). The phrases keep the panel,
+-- which they need to be read.
 local function backing()
 	local surface = panel and panel:FindFirstChild("Surface")
-	local bare = tab == "emotes" and not moreShown
 	if surface and surface:IsA("GuiObject") then
-		surface.Visible = not bare
+		surface.Visible = tab ~= "emotes"
 	end
-end
-
-local function showMore(on: boolean)
-	moreShown = on
-	Wheel.showMore(on)
-	caption.Text = if on then "ALL YOUR EMOTES" else "EMOTES  ·  1 TO 8"
-	Kit.setText(moreButton, if on then "Wheel" else "More")
-	backing()
 end
 
 -- Lays the page out for the one it shows: the phrases' grid, or the wheel.
@@ -156,29 +146,19 @@ function QuickChatPanel.init()
 		firstPhrase = firstPhrase or button
 	end
 
-	-- Emotes: a caption and More (or the way back to the wheel), then the wheel.
+	-- Emotes: a caption, then the wheel.
 	emotesPage = Kit.frame({ Name = "Emotes", Parent = content })
 	caption = Kit.label({
-		Text = "",
+		Text = string.format("EMOTES  ·  1 TO %d", EmoteWheel.SLOTS),
 		font = "label",
 		size = "micro",
 		color = C.bone,
-		Size = UDim2.new(1, -120, 0, CAPTION),
+		Size = UDim2.new(1, 0, 0, CAPTION),
 		Parent = emotesPage,
 	})
 	-- (over the world, with no panel behind it: an outline keeps it readable)
 	caption.TextStrokeColor3 = C.void
 	caption.TextStrokeTransparency = 0.35
-	moreButton = Kit.button({
-		text = "More",
-		variant = "ghost",
-		size = "s",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Parent = emotesPage,
-	}, function()
-		showMore(not moreShown)
-	end)
 	wheelHolder = Kit.frame({
 		Name = "WheelHolder",
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -188,7 +168,6 @@ function QuickChatPanel.init()
 	})
 	wheelScale = Kit.Base.make("UIScale", { Parent = wheelHolder })
 	Wheel.mount(wheelHolder, play)
-	showMore(false)
 
 	ClientState.ProfileChanged:Connect(function()
 		Wheel.refresh()
@@ -204,7 +183,6 @@ function QuickChatPanel.init()
 				arrange()
 				panel.Visible = true
 				Wheel.shown(page == "emotes")
-				showMore(false)
 				if keyConnection then
 					keyConnection:Disconnect()
 					keyConnection = nil

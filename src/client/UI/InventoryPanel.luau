@@ -138,7 +138,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 		string.format("◆ %s  ·  %s", Rarity.name(item.rarity), Cosmetics.KIND_SINGULAR[item.kind] or item.kind)
 	lookLine.TextColor3 = Rarity.color(item.rarity):Lerp(C.bone, 0.2)
 	if item.kind == "emote" then
-		-- the wheel's eight slots, its own lit: a click puts it there or takes it off
+		-- the wheel's four slots, its own lit: a click puts it there or takes it off
 		local slots = EmoteWheel.slots(profile.emoteWheel)
 		local at = table.find(slots, item.emote)
 		local row = Kit.frame({ Name = "Wheel", Size = UDim2.new(1, 0, 0, T.touch), Parent = actionHolder })

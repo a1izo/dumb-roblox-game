@@ -129,6 +129,17 @@ return function(t)
 			expect(data.owned.book_red).to.equal(true)
 			expect(data.equipped.hat).to.equal(nil)
 		end)
+		it("keeps a wheel's first four emotes at v8, gaps closed", function()
+			local old = v1Profile()
+			old.v = 7
+			old.emoteWheel = { "wave", "", "dance", "", "", "laugh", "bow", "cheer" }
+			local data = Migrations.migrate(old, START)
+			expect(table.concat(data.emoteWheel, ",")).to.equal("wave,dance,laugh,bow")
+			local fresh = v1Profile()
+			fresh.v = 7
+			fresh.emoteWheel = {}
+			expect(#Migrations.migrate(fresh, START).emoteWheel).to.equal(0)
+		end)
 		it("changes nothing when run twice", function()
 			local once = Migrations.migrate(v1Profile(), START)
 			once.coins = 777

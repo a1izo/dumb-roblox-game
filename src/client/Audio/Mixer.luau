@@ -20,7 +20,7 @@ local GROUPS = {
 
 -- Base loudness of each group before the player's own volume.
 local BASE = {
-	Music = 0.5,
+	Music = 1.0, -- (2026-10-27: was 0.5, about 6 dB quieter; the user could barely hear it)
 	Sfx = 0.8,
 	Ambience = 0.6,
 	Ui = 0.6,

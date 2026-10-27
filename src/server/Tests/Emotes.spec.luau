@@ -1,5 +1,5 @@
 -- Emotes: every shop emote reaches the wheel and quick chat once, sits in a section of the shop, has a
--- sound slot and only known faces; the wheel keeps eight slots, moves an emote rather than copying it, and
+-- sound slot and only known faces; the wheel keeps four slots, moves an emote rather than copying it, and
 -- fills its empty slots with what is bought; every cinematic emote has a cutscene that fits its clip, and every
 -- showpiece camera a known move on a beat inside its clip.
 
@@ -200,7 +200,7 @@ return function(t)
 	end)
 
 	describe("Emote wheel", function()
-		it("starts with everyone's emotes and two empty slots", function()
+		it("starts with everyone's emotes and an empty slot", function()
 			local slots = EmoteWheel.slots({})
 			expect(#slots).to.equal(EmoteWheel.SLOTS)
 			for _, id in ipairs(slots) do
@@ -209,8 +209,8 @@ return function(t)
 					expect(emote ~= nil and emote.item == nil and emote.pass == nil).to.equal(true)
 				end
 			end
-			expect(slots[7]).to.equal("")
-			expect(slots[8]).to.equal("")
+			expect(slots[3] ~= "").to.equal(true)
+			expect(slots[4]).to.equal("")
 		end)
 		it("turns anything unknown into an empty slot", function()
 			local slots = EmoteWheel.slots({ "wave", "nonsense", 42, "bow" })
@@ -218,25 +218,23 @@ return function(t)
 			expect(slots[2]).to.equal("")
 			expect(slots[3]).to.equal("")
 			expect(slots[4]).to.equal("bow")
-			expect(slots[8]).to.equal("")
+			expect(#EmoteWheel.slots({ "wave", "point", "shrug", "laugh", "bow" })).to.equal(4)
 		end)
 		it("moves an emote to a slot rather than copying it", function()
-			local slots = EmoteWheel.set({}, 8, "wave")
-			expect(slots[8]).to.equal("wave")
+			local slots = EmoteWheel.set({}, 4, "wave")
+			expect(slots[4]).to.equal("wave")
 			expect(slots[1]).to.equal("")
 			slots = EmoteWheel.set(slots, 3, "")
 			expect(slots[3]).to.equal("")
-			expect(EmoteWheel.set(slots, 9, "bow")[8]).to.equal("wave")
+			expect(EmoteWheel.set(slots, 5, "bow")[4]).to.equal("wave")
 		end)
 		it("puts what is bought in the first empty slot, until it is full", function()
 			local slots, at = EmoteWheel.place({}, "facepalm")
-			expect(at).to.equal(7)
+			expect(at).to.equal(4)
 			slots, at = EmoteWheel.place(slots, "salute")
-			expect(at).to.equal(8)
-			slots, at = EmoteWheel.place(slots, "bow")
 			expect(at).to.equal(nil)
-			local _, again = EmoteWheel.place(slots, "salute")
-			expect(again).to.equal(8)
+			local _, again = EmoteWheel.place(slots, "facepalm")
+			expect(again).to.equal(4)
 		end)
 		it("knows which emotes a profile may use", function()
 			local wave = QuickChat.emote("wave") :: any

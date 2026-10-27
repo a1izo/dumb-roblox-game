@@ -7,8 +7,9 @@
 --   High Five, Handshake  free, lobby only: the one asked walks up to face the one asking (MEET studs apart),
 --                then both play it from the same moment (Services/EmoteService.playTogether)
 --   Cuffed Together  lobby only: the two are chained wrist to wrist (a "DuoChain" ObjectValue in each body
---                naming the other, the asker leading); the one asked walks after the leader, and a jump,
---                another emote, going CHAIN_BREAK studs apart or a case ends it
+--                naming the other, the asker leading); the one asked walks after the leader. Only "Let go" ends
+--                it, pressed by either (the user's call of 2026-10-27: not a jump, not another emote); a death,
+--                leaving, a case, or being torn CHAIN_BREAK studs apart (a teleport) still does
 -- Test bots can be asked too (in Studio), and answer through Net.simulate.
 
 local Players = game:GetService("Players")
@@ -73,7 +74,7 @@ local function busy(who: any): boolean
 	return asks[who] ~= nil or chained[who] ~= nil
 end
 
--- Ends a chain the player is in (another emote, a jump, too far apart, a case).
+-- Ends a chain the player is in ("Let go", a death, too far apart, a case).
 function DuoService.stop(player: any)
 	local partner = chained[player]
 	if not partner then
@@ -92,8 +93,11 @@ end
 
 -- The player played a duo emote: ask the nearest player within reach.
 function DuoService.request(player: any, emote: { id: string, name: string, lobbyOnly: boolean? })
+	if chained[player] then
+		Match.notify(player, "Let go of the chain first.", "info")
+		return
+	end
 	if busy(player) then
-		DuoService.stop(player)
 		return
 	end
 	local root = rootOf(player)
@@ -400,12 +404,18 @@ local function onRequest(player: any, payload)
 	end
 end
 
--- Chains break when the two get too far apart, a body goes, or a case takes one of them.
+-- Chains break when the two get too far apart, a body goes or dies, or a case takes one of them.
+local function alive(who: any): boolean
+	local humanoid = who.Character and who.Character:FindFirstChildOfClass("Humanoid")
+	return humanoid ~= nil and humanoid.Health > 0
+end
+
 local function checkChains()
 	for who, partner in pairs(chained) do
 		local a, b = rootOf(who), rootOf(partner)
 		local inCase = Match.active and (Match.get(who) ~= nil or Match.get(partner) ~= nil)
-		if not a or not b or inCase or (a.Position - b.Position).Magnitude > CHAIN_BREAK then
+		local apart = a ~= nil and b ~= nil and (a.Position - b.Position).Magnitude > CHAIN_BREAK
+		if not a or not b or inCase or apart or not alive(who) or not alive(partner) then
 			DuoService.stop(who)
 		end
 	end

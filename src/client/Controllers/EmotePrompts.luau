@@ -2,9 +2,10 @@
 -- action, the object; on touch screens the keycap is the button):
 --   a press-to-do moment  over this player's head while their emote's window is open (Shared/EmoteInfo
 --                         `context`: "LOOK UP", "EAT"...): one press plays its branch, the same on every screen
---   Join in               over anyone near who is doing a looping dance (not a stroll, a stance or a duo): this
---                         player joins it, on its beat. In the lobby anyone may; in a case only a dancer who owns
---                         it (the server checks both, and the reach)
+--   Join in               over anyone near who is doing a dance or a group celebration (Shared/EmoteInfo
+--                         `joinable`; not a pose, a prop emote, a stroll, a stance or a duo): this player joins it,
+--                         on its beat, beside them. In the lobby anyone may; in a case only a dancer who owns it
+--                         (the server checks both, and the reach)
 --   Get it                over this player's head after joining a dance they do not own: opens the shop on it
 -- Every prompt is made on this client only, and marked "DGEmote" (a copy of the body leaves it out).
 
@@ -93,15 +94,13 @@ local function canEmote(): boolean
 	return not ClientState.isWatching() and not ClientState.isAway()
 end
 
--- A dance others may join: an emote of the wheel that loops, not walked (a stroll), stood in (a stance) or
--- played by two.
+-- A dance others may join: a looping emote of the wheel that is a dance or a group celebration (Shared/EmoteInfo).
 local function joinable(clip: string): boolean
 	local prepared = ClipPlayer.get(clip)
 	if not prepared or not prepared.loop or not QuickChat.emote(clip) then
 		return false
 	end
-	local info = EmoteInfo.of(clip)
-	return not info.stroll and not info.stance and not info.duo
+	return EmoteInfo.of(clip).joinable
 end
 
 -- The press-to-do moment ----------------------------------------------------------------------------------------

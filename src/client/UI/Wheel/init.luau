@@ -1,12 +1,13 @@
--- The emote wheel, in the quick-chat page (UI/QuickChatPanel): the eight emotes put on it (Shared/EmoteWheel)
+-- The emote wheel, in the quick-chat page (UI/QuickChatPanel): the four emotes put on it (Shared/EmoteWheel)
 -- in the chambers of a revolver's cylinder that rolls into place as it opens, each with the emote's mannequin caught in its move
 -- (Shop/PoseFigure), its key, and its tier's colour on the rim (Shared/Rarity). The one pointed at (the mouse's
 -- angle from the middle, the right stick, a finger dragged from the middle; Shared/WheelMath) lifts, a needle
 -- points to it, you are shown doing it in the middle (a copy of you, live), and the line under the wheel says
 -- what it is: its name, its tier, and whether it walks, has a press-to-do moment, is for two, a group, a
 -- cutscene or the lobby only, or why it cannot be played here (Shared/EmotePolicy). A click, a tap, A, or letting
--- go of Q after holding it plays it; the keys 1 to 8 play a slot at once. Under the wheel, the last four played.
--- "More" lists every emote you have, to play one or put it on a key.
+-- go of Q after holding it plays it; the keys 1 to 4 play a slot at once. Four slots (up, right, down, left; the
+-- user's call of 2026-10-27): the revolver's other chambers stay empty, and every other emote waits on the
+-- inventory's Emotes page until it is put on the wheel.
 --
 -- Under low graphics the plates show names instead of mannequins and nothing plays in the middle; under reduced
 -- motion nothing blooms or lifts.
@@ -27,7 +28,6 @@ local EmoteInfo = require(Shared:WaitForChild("EmoteInfo"))
 local EmotePolicy = require(Shared:WaitForChild("EmotePolicy"))
 local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
-local Net = require(Shared:WaitForChild("Net"))
 local QuickChat = require(Shared:WaitForChild("QuickChat"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
 local WheelMath = require(Shared:WaitForChild("WheelMath"))
@@ -43,8 +43,6 @@ local PoseFigure = require(script.Parent.Shop.PoseFigure)
 local Stage = require(script.Parent.Parent.Presentation.Stage)
 local YourLook = require(script.Parent.Shop.YourLook)
 
-local ProfileRequest = Net.event("ProfileRequest")
-
 local C = Kit.color
 local T = Kit.Tokens
 
@@ -57,14 +55,13 @@ local PLATE = 66
 local CENTRE = 116 -- the middle's round view
 local DEAD = 50 -- the middle's dead zone (nothing pointed at)
 local CAPTION = 50
-local RECENT = 34
 -- The revolver's steel (the cylinder and its chambers).
 local STEEL = Color3.fromRGB(56, 58, 65)
 local STEEL_LIGHT = Color3.fromRGB(104, 107, 117)
 local STEEL_DARK = Color3.fromRGB(22, 23, 27)
 local STEEL_EDGE = Color3.fromRGB(160, 163, 172)
 local BORE = Color3.fromRGB(9, 9, 11)
-Wheel.HEIGHT = Wheel.SIZE + CAPTION + RECENT + 8
+Wheel.HEIGHT = Wheel.SIZE + CAPTION + 8
 local HOLD_RELEASE = 0.25 -- s: holding Q longer than this, letting go plays what is pointed at
 local FOV = 28
 
@@ -91,21 +88,14 @@ local ink: GuiObject
 local needle: Frame
 local nameLabel: TextLabel
 local lineLabel: TextLabel
-local recentRow: Frame
-local morePage: Frame
-local moreGrid: ScrollingFrame
-local assignRow: Frame
-local assignLabel: TextLabel
 local centreView: ViewportFrame
 local plates: { Plate } = {}
 local hovered: number? = nil
-local recent: { string } = {}
 local onPlay: (QuickChat.Emote) -> () = function(_: QuickChat.Emote) end
 local visible = false
 local shownAt = 0
 local holdKey: Enum.KeyCode? = nil
 local dragging = false
-local assigning: QuickChat.Emote? = nil
 local connections: { RBXScriptConnection } = {}
 local figures: { [string]: Model | false } = {}
 
@@ -322,7 +312,9 @@ end
 local function caption(emote: QuickChat.Emote?, reason: string?)
 	if not emote then
 		nameLabel.Text = if hovered then "Empty" else "Point at an emote"
-		lineLabel.Text = if hovered then "Put an emote here from More, or in the shop's Your look." else ""
+		lineLabel.Text = if hovered
+			then "Put an emote here from the inventory's Emotes page, or the shop's Your look."
+			else ""
 		lineLabel.TextColor3 = C.dim
 		return
 	end
@@ -355,7 +347,7 @@ local function setHover(index: number?)
 		plate.rim.Transparency = 0
 		UiSound.play("uiHover")
 		needle.Visible = true
-		needle.Rotation = (index :: number - 1) * 45
+		needle.Rotation = (index :: number - 1) * 360 / WheelMath.SLOTS
 	else
 		needle.Visible = false
 	end
@@ -427,7 +419,7 @@ local function slotAt(point: Vector2): number?
 end
 
 local function onInputChanged(input: InputObject)
-	if not visible or morePage.Visible then
+	if not visible then
 		return
 	end
 	local pointing = input.UserInputType == Enum.UserInputType.MouseMovement
@@ -441,7 +433,7 @@ local function onInputChanged(input: InputObject)
 end
 
 local function onInputBegan(input: InputObject, processed: boolean)
-	if not visible or morePage.Visible then
+	if not visible then
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.Touch then
@@ -572,22 +564,27 @@ local function plateFor(index: number, emote: QuickChat.Emote?, owned: boolean):
 		ZIndex = 7,
 		Parent = button,
 	})
-	Kit.label({
+	-- (the whole name, on two lines if it needs them and smaller if even that is too long: never cut short)
+	local name = Kit.label({
 		Name = "Name",
 		Text = if emote and owned then emote.name else "Empty",
 		font = "label",
 		size = "micro",
 		color = if emote and owned and usable then C.bone else C.faint,
-		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextWrapped = true,
+		TextScaled = true,
 		TextXAlignment = Enum.TextXAlignment.Center,
+		TextYAlignment = Enum.TextYAlignment.Top,
 		AutomaticSize = Enum.AutomaticSize.None,
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, PLATE + 1),
-		Size = UDim2.fromOffset(PLATE + 30, 14),
+		Size = UDim2.fromOffset(PLATE + 64, 28),
 		ZIndex = 4,
 		Parent = button,
 	})
+	Kit.Base.make("UITextSizeConstraint", { MinTextSize = 8, MaxTextSize = name.TextSize, Parent = name })
+	name.TextStrokeColor3 = C.void
+	name.TextStrokeTransparency = 0.4
 	local plate: Plate = {
 		button = button,
 		disc = disc,
@@ -628,95 +625,11 @@ local function buildRing()
 	caption(nil, nil)
 end
 
-local function buildRecent()
-	Kit.clear(recentRow)
-	local profile = ClientState.profile
-	local any = false
-	for order, clip in ipairs(recent) do
-		local emote = QuickChat.emote(clip)
-		if emote and EmoteWheel.owns(profile, emote) then
-			any = true
-			local ok = allowed(emote)
-			local button = Kit.button({
-				text = emote.name,
-				variant = "ghost",
-				size = "s",
-				upper = false,
-				LayoutOrder = order,
-				Parent = recentRow,
-			}, function()
-				if ok then
-					onPlay(emote)
-				end
-			end)
-			Kit.setEnabled(button, ok)
-		end
-	end
-	recentRow.Visible = any
-end
-
-local function buildMore()
-	Kit.clear(moreGrid)
-	local profile = ClientState.profile
-	local order = 0
-	for _, emote in ipairs(QuickChat.EMOTES) do
-		if EmoteWheel.owns(profile, emote) then
-			order += 1
-			local ok, reason = allowed(emote)
-			local tile = Kit.frame({ Name = "Tile_" .. emote.id, LayoutOrder = order, Parent = moreGrid })
-			local button = Kit.button({
-				text = emote.name,
-				variant = "secondary",
-				size = "s",
-				upper = false,
-				Size = UDim2.new(1, -40, 1, 0),
-				Parent = tile,
-			}, function()
-				if ok then
-					onPlay(emote)
-				else
-					assignLabel.Text = emote.name .. ": " .. (reason or "not here")
-				end
-			end)
-			Kit.setEnabled(button, ok)
-			Kit.button({
-				text = "",
-				icon = "key",
-				variant = "ghost",
-				size = "s",
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.fromScale(1, 0),
-				Size = UDim2.new(0, 36, 1, 0),
-				Parent = tile,
-			}, function()
-				assigning = emote
-				assignRow.Visible = true
-				assignLabel.Text = string.format("Put %s on key:", emote.name)
-			end)
-		end
-	end
-end
-
 function Wheel.refresh()
 	if not holder then
 		return
 	end
 	buildRing()
-	buildRecent()
-	buildMore()
-end
-
--- The More page, on or off.
-function Wheel.showMore(on: boolean)
-	ringFrame.Visible = not on
-	recentRow.Visible = not on and #recent > 0
-	nameLabel.Parent.Visible = not on
-	morePage.Visible = on
-	assignRow.Visible = false
-	assigning = nil
-	if on then
-		setHover(nil)
-	end
 end
 
 -- The Blender revolver (Core "WheelRevolver", art/scripts/props_emotes.py), in place of the flat drawing once its
@@ -822,7 +735,6 @@ function Wheel.shown(on: boolean)
 				break
 			end
 		end
-		Wheel.showMore(false)
 		Wheel.refresh()
 		if not Motion.isReduced() then
 			ringScale.Scale = 0.86
@@ -852,7 +764,6 @@ end
 function Wheel.state(): {
 	hovered: number?,
 	slots: { { clip: string?, usable: boolean, reason: string? } },
-	recent: { string },
 	revolver: boolean,
 }
 	local slots = {}
@@ -863,7 +774,7 @@ function Wheel.state(): {
 			reason = plate.reason,
 		}
 	end
-	return { hovered = hovered, slots = slots, recent = table.clone(recent), revolver = revolver ~= nil }
+	return { hovered = hovered, slots = slots, revolver = revolver ~= nil }
 end
 
 -- The first slot's plate (for gamepad selection when the page opens).
@@ -1109,61 +1020,6 @@ function Wheel.mount(parent: Frame, played: (QuickChat.Emote) -> ())
 		Size = UDim2.new(1, 0, 0, 18),
 		Parent = captionFrame,
 	})
-	-- The last four played.
-	recentRow = Kit.frame({
-		Name = "Recent",
-		Position = UDim2.fromOffset(0, Wheel.SIZE + CAPTION + 4),
-		Size = UDim2.new(1, 0, 0, RECENT),
-		Visible = false,
-		Parent = holder,
-	})
-	Kit.list(recentRow, T.space.s, true, Enum.HorizontalAlignment.Center)
-	-- More: every emote you have; the key icon beside each puts it on a key.
-	morePage = Kit.frame({ Name = "More", Size = UDim2.fromScale(1, 1), Visible = false, Parent = holder })
-	moreGrid = Kit.scroll({ Name = "All", Size = UDim2.new(1, 0, 1, -48), Parent = morePage })
-	Kit.grid(moreGrid, UDim2.fromOffset(176, 40), T.space.s)
-	assignRow = Kit.frame({
-		Name = "Assign",
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 40),
-		Visible = false,
-		Parent = morePage,
-	})
-	Kit.list(assignRow, 4, true)
-	assignLabel = Kit.label({
-		Text = "",
-		size = "small",
-		color = C.bone,
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromScale(0, 1),
-		LayoutOrder = 0,
-		Parent = assignRow,
-	})
-	for index = 1, WheelMath.SLOTS do
-		Kit.button({
-			text = tostring(index),
-			variant = "secondary",
-			size = "s",
-			Size = UDim2.fromOffset(34, 34),
-			LayoutOrder = index,
-			Parent = assignRow,
-		}, function()
-			local emote = assigning
-			if emote then
-				ProfileRequest:FireServer({ action = "emoteWheel", slot = index, emote = emote.id })
-				assignLabel.Text = string.format("%s is on key %d.", emote.name, index)
-				assigning = nil
-			end
-		end)
-	end
-	-- The emotes this player played last (their own, wherever they came from).
-	EmoteController.Started:Connect(function(character: Model, session)
-		if character == Players.LocalPlayer.Character and session.handle and QuickChat.emote(session.clip) then
-			recent = WheelMath.remember(recent, session.clip)
-		end
-	end)
 	for _, connection in ipairs(connections) do
 		connection:Disconnect()
 	end

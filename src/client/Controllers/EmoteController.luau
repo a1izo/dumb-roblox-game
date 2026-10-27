@@ -1,6 +1,8 @@
 -- Emotes. The player asks the server, which checks the emote (owned, and allowed where the player is:
--- Shared/EmotePolicy) and tells every client that may see it, with the time it started; each client then plays
--- it on that character as one session (below), ending the one before. Moving stops an emote
+-- Shared/EmotePolicy) and keeps it on the body as the "Emote" attribute, with the server time it started
+-- (Services/EmoteService); each client draws it on that character as one session (below), ending the one before,
+-- and ends it when the server takes it off. A body seen later (a player who joins, one streamed in) picks its emote
+-- up mid-way; a Specter's is drawn only for the other Specters. Moving stops an emote
 -- (LocomotionController). A looping emote plays on a beat shared by every client (the server's clock), so
 -- players doing the same dance move together, and Join in is just the same dance. Emotes with props hold them,
 -- wear them or set them down while they play (Anim/EmoteProps: the Core models, plain parts until they are
@@ -953,11 +955,6 @@ function EmoteController.walkTo(to: Vector3, face: Vector3?, seconds: number?)
 	end)
 end
 
--- (a player's body, or in Studio a test bot's)
-local function characterOf(userId: any): Model?
-	return Characters.byUserId(if type(userId) == "number" then userId else nil)
-end
-
 local function onEmote(payload)
 	if type(payload) ~= "table" then
 		return
@@ -966,7 +963,7 @@ local function onEmote(payload)
 		EmoteController.Refused:Fire(payload.refused, payload.emote)
 		return
 	end
-	-- Joining a group's dance: this player walks to their place in its formation first.
+	-- Joining a dance: this player walks to their place beside the dancer, or in a group's formation, first.
 	local walk = payload.walk
 	if type(walk) == "table" and typeof(walk.to) == "Vector3" then
 		EmoteController.walkTo(
@@ -974,29 +971,74 @@ local function onEmote(payload)
 			if typeof(walk.face) == "Vector3" then walk.face else nil,
 			tonumber(walk.seconds)
 		)
-		return
 	end
-	local character = characterOf(payload.userId)
-	if not character then
-		return
+end
+
+-- The emote the server keeps on a body (the "Emote" attribute: "clip;at;mask;joined;owned;from"), or nil.
+type Kept = { clip: string, at: number, mask: string?, joined: number?, owned: boolean?, from: string? }
+local function decode(value: any): Kept?
+	if type(value) ~= "string" then
+		return nil
 	end
-	if payload.stop then
-		EmoteController.stopOn(character, "server")
-		PoseController.stopEmotes(character, "server")
-		return
+	local fields = string.split(value, ";")
+	local clip, at = fields[1], tonumber(fields[2])
+	if not clip or clip == "" or not at then
+		return nil
 	end
-	if type(payload.emote) ~= "string" or not ClipPlayer.get(payload.emote) then
-		return
+	return {
+		clip = clip,
+		at = at,
+		mask = if fields[3] == "upper" then "upper" else nil,
+		joined = tonumber(fields[4] or ""),
+		owned = if fields[5] == "0" then false else nil,
+		from = if fields[6] ~= nil and fields[6] ~= "" then fields[6] else nil,
+	}
+end
+
+-- Draws the server's emote on a body: when it changes, and when the body comes into view with one going (a loop on
+-- its shared beat, a one-shot from where it has got to; one already over is left). The server taking it off ends
+-- the session it drew (a cutscene, the meeting, a stop, the player walking out of it).
+local function watchEmote(character: Model)
+	local drawn: Session? = nil
+	local function changed(late: boolean)
+		local kept = decode(character:GetAttribute("Emote"))
+		if not kept then
+			local session = drawn
+			drawn = nil
+			if session and session.alive and sessions[character] == session then
+				EmoteController.stopOn(character, "server")
+				PoseController.stopEmotes(character, "server")
+			end
+			return
+		end
+		local prepared = ClipPlayer.get(kept.clip)
+		if not prepared then
+			return
+		end
+		if not prepared.loop and workspace:GetServerTimeNow() > kept.at + prepared.length + HOLD then
+			return -- (a one-shot that has run its course: nothing to draw)
+		end
+		-- (a Specter is unseen by the living: its emote would give it away)
+		local mine = Players.LocalPlayer.Character
+		if character:GetAttribute("Specter") ~= nil and not (mine and mine:GetAttribute("Specter") ~= nil) then
+			return
+		end
+		PoseController.stopEmotes(character, "replaced")
+		drawn = EmoteController.start(character, kept.clip, {
+			at = kept.at,
+			-- (a body seen mid-way catches all the way up with its one-shot; a fresh one only a beat)
+			catchUp = if late then math.huge else nil,
+			mask = kept.mask,
+			own = Players:GetPlayerFromCharacter(character) == Players.LocalPlayer,
+			joined = kept.joined,
+			owned = kept.owned,
+			from = kept.from,
+		})
 	end
-	PoseController.stopEmotes(character, "replaced")
-	EmoteController.start(character, payload.emote, {
-		at = if type(payload.at) == "number" then payload.at else nil,
-		mask = if payload.mask == "upper" then "upper" else nil,
-		own = payload.userId == Players.LocalPlayer.UserId,
-		joined = if type(payload.joined) == "number" then payload.joined else nil,
-		owned = if payload.owned == false then false else nil,
-		from = if type(payload.from) == "string" then payload.from else nil,
-	})
+	character:GetAttributeChangedSignal("Emote"):Connect(function()
+		changed(false)
+	end)
+	changed(true)
 end
 
 -- A stroll (the server's "Stroll" attribute; LocomotionController walks the body in it) is a session that
@@ -1044,6 +1086,7 @@ end
 
 function EmoteController.init()
 	EmoteRemote.OnClientEvent:Connect(onEmote)
+	Characters.each(watchEmote)
 	Characters.each(watchStrolls)
 	Characters.each(watchSeats)
 	-- A stance settled into holds its props and wears its face (no sound: it is how you stand) until it ends.

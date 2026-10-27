@@ -1,19 +1,20 @@
 --!strict
--- The emote wheel: eight slots a player fills with emotes they own (in the shop's Your look), played
--- from the quick-chat page with a click, a tap or the keys 1 to 8. Saved in the profile as `emoteWheel`,
--- eight clip ids with "" for an empty slot; a profile that never changed it has an empty table and gets
--- DEFAULT. Bought emotes land in the first empty slot.
+-- The emote wheel: four slots (up, right, down, left; the user's call of 2026-10-27, it had eight) a player fills
+-- with emotes they own (in the shop's Your look and the inventory's Emotes page), played from the quick-chat page
+-- with a click, a tap, the stick or the keys 1 to 4. Every other emote waits on the Emotes page until it is put on
+-- the wheel. Saved in the profile as `emoteWheel`, four clip ids with "" for an empty slot; a profile that never
+-- changed it has an empty table and gets DEFAULT. Bought emotes land in the first empty slot.
 
 local QuickChat = require(script.Parent.QuickChat)
 
 local EmoteWheel = {}
 
-EmoteWheel.SLOTS = 8
+EmoteWheel.SLOTS = 4
 
--- Everyone's emotes, leaving two slots for the first ones bought.
-EmoteWheel.DEFAULT = { "wave", "point", "cheer", "laugh", "dance", "shrug", "", "" }
+-- Everyone's emotes, leaving a slot for the first one bought.
+EmoteWheel.DEFAULT = { "wave", "point", "shrug", "" }
 
--- The wheel's eight slots from a saved one (a copy; unknown clips become empty).
+-- The wheel's four slots from a saved one (a copy; unknown clips become empty).
 function EmoteWheel.slots(saved: any): { string }
 	local source = if type(saved) == "table" and #saved > 0 then saved else EmoteWheel.DEFAULT
 	local slots = {}
