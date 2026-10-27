@@ -14,7 +14,8 @@
 -- page (never a glyph standing for them: the owner, 2026-10-25); an emote is a small pale mannequin caught in its
 -- move (Shop/PoseFigure), with its props; a title its nameplate. Picked, the card lifts. A card of Today's hand can lie face
 -- down (the back of the deck) and be turned over. A card new to the shop wears a "New" ribbon until it is
--- seen, the day's deal a "25% off" one, and a card not yet owned has a heart to put it on the wishlist.
+-- seen, a card of Today's hand a "20% OFF" one ("40% OFF": the deal), and a card not yet owned has a heart to put it on
+-- the wishlist.
 --
 --   local card = Card.new(item, { Parent = slot, chip = "300", onPick = fn, isNew = true, onWish = fn })
 --   card:setPicked(true)  card:setChip("Worn")  card:turn(fn)  card:setNew(false)  card:setWished(true)
@@ -1251,6 +1252,8 @@ end
 
 -- The chip's words, and the icon before them ("coin", "check", "lock"; none when nil or false).
 function Card.setChip(self: Card, text: string, icon: (string | boolean)?)
+	-- (rich text: a price cheaper today shows the old one struck through)
+	self.chip.RichText = true
 	self.chip.Text = text
 	for name, image in pairs(self.chipIcons) do
 		image.Visible = icon == name

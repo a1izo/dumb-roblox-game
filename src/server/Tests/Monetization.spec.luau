@@ -111,7 +111,7 @@ return function(t)
 			expect(record.day).to.equal(20003)
 			expect(#record.cards).to.equal(1)
 		end)
-		it("deals a card of the shop's own stock each day, a quarter off, beside the six", function()
+		it("deals a card of the shop's own stock each day beside the six", function()
 			local deals = {}
 			for day = 20000, 20060 do
 				local id = ShopRotation.dealFor(day) :: string
@@ -130,16 +130,16 @@ return function(t)
 			end
 			expect(kinds > 10).to.equal(true)
 		end)
-		it("prices the deal a quarter off, rounded down to 5, on its day and in the grace", function()
-			expect(ShopRotation.dealPrice(450)).to.equal(335)
-			expect(ShopRotation.dealPrice(200)).to.equal(150)
-			expect(ShopRotation.dealPrice(1000)).to.equal(750)
+		it("prices the deal two fifths off, rounded down to 5, on its day and in the grace", function()
+			expect(ShopRotation.dealPrice(450)).to.equal(270)
+			expect(ShopRotation.dealPrice(200)).to.equal(120)
+			expect(ShopRotation.dealPrice(1000)).to.equal(600)
 			local day = 20010
 			local item = Cosmetics.byId(ShopRotation.dealFor(day) :: string) :: Cosmetics.Item
 			local price = item.price :: number
 			local noon = day * 86400 + 43200
 			expect(ShopRotation.priceOf(item, noon)).to.equal(ShopRotation.dealPrice(price))
-			expect(ShopRotation.dealPrice(price) <= price * 0.75).to.equal(true)
+			expect(ShopRotation.dealPrice(price) <= price * 0.6).to.equal(true)
 			local nextMidnight = (day + 1) * 86400
 			local still = ShopRotation.dealFor(day + 1) == item.id
 			expect(ShopRotation.priceOf(item, nextMidnight + 60)).to.equal(ShopRotation.dealPrice(price))
@@ -147,7 +147,30 @@ return function(t)
 				if still then ShopRotation.dealPrice(price) else price
 			)
 			local rotation = Cosmetics.byId(ShopRotation.forDay(day)[1]) :: Cosmetics.Item
-			expect(ShopRotation.priceOf(rotation, noon)).to.equal(rotation.price)
+			expect(ShopRotation.priceOf(rotation, noon)).to.equal(
+				ShopRotation.discounted(ShopRotation.fullPrice(rotation, noon) :: number, ShopRotation.HAND_OFF)
+			)
+		end)
+		it("sells every other card of Today's hand a fifth off, and nothing outside it", function()
+			local day = 20020
+			local noon = day * 86400 + 43200
+			for _, id in ipairs(ShopRotation.forDay(day)) do
+				local item = Cosmetics.byId(id) :: Cosmetics.Item
+				local full = ShopRotation.fullPrice(item, noon)
+				if full then
+					expect(ShopRotation.offOf(id, noon)).to.equal(ShopRotation.HAND_OFF)
+					expect(ShopRotation.priceOf(item, noon)).to.equal(
+						ShopRotation.discounted(full, ShopRotation.HAND_OFF)
+					)
+				end
+			end
+			local hand = ShopRotation.hand(day)
+			for _, item in ipairs(Cosmetics.ITEMS) do
+				if item.source == "shop" and item.price and not table.find(hand, item.id) then
+					expect(ShopRotation.priceOf(item, noon)).to.equal(item.price)
+					break
+				end
+			end
 		end)
 		it("only features rotation items, without repeats", function()
 			local seen = {}

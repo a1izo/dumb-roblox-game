@@ -18,7 +18,7 @@
 --
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
 -- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
--- the emote wheel's first empty slot), "N more coins" when you are short, or wear / take off what you
+-- the emote wheel's first empty slot), "N more Reál" when you are short, or wear / take off what you
 -- own. An emote you own shows the wheel's eight slots instead: pick one to put it there (Shared/EmoteWheel);
 -- under them, whether it is your stance (stand still a while and you settle into it; only some can be) and
 -- your win scene (what you play in "The end" when you win, instead of a cheer).
@@ -67,13 +67,15 @@ local ShopPanel = {}
 local TOP = 40 -- the purse line
 local SUITS_HEIGHT = 48
 local BROWSE_HEIGHT = 40 -- the search, show and order row over a suit of kinds
-local CHOICE_WIDTH = 176 -- its two buttons
 local LOOK_WIDTH = 300
 local GAP = T.space.l
 local CONFIRM_SECONDS = 6 -- a Condemned or Godhood card's confirm stays this long
 
 local purseLabel: TextLabel
 local noteLabel: TextLabel
+local suitStrip: CanvasGroup -- holds suitScroll; fades the row out at an end it runs on past
+local suitFade: UIGradient
+local suitArrows: { [number]: GuiObject } = {} -- -1 the left end's, 1 the right end's
 local suitScroll: ScrollingFrame
 local suitTabs: Frame?
 local chooseSuit: ((string) -> ())? = nil
@@ -168,7 +170,7 @@ local function suits(): { Cosmetics.Suit }
 	local list = {}
 	for _, suit in ipairs(Cosmetics.SUITS) do
 		local show
-		if suit.id == "today" or suit.id == "fate" or suit.id == "ledger" then
+		if suit.id == "today" or suit.id == "fate" or suit.id == "ledger" or suit.id == "wishlist" then
 			show = true
 		elseif suit.id == "robux" then
 			show = onSale()
@@ -203,6 +205,14 @@ local function suitHasNews(profile, suit: Cosmetics.Suit): boolean
 		local turned = ShopRotation.turned(profile.shopTurned, day)
 		for _, id in ipairs(ShopRotation.hand(day)) do
 			if not table.find(turned, id) and not turnedHere[id] then
+				return true
+			end
+		end
+		return false
+	elseif suit.id == "wishlist" then
+		-- (a dot while something wished for is in Today's hand, cheaper)
+		for _, id in ipairs(ShopRotation.hand(ShopRotation.dayOf(os.time()))) do
+			if profile.wishlist ~= nil and profile.wishlist[id] == true then
 				return true
 			end
 		end
@@ -252,7 +262,13 @@ local function chipFor(profile, item: Cosmetics.Item): (string, string, { text: 
 	elseif ShopRotation.rotates(item, os.time()) and not ShopRotation.isFeatured(item.id, os.time()) then
 		return "Not today", "lock"
 	end
-	return tostring(ShopRotation.priceOf(item, os.time())), "coin"
+	local now = ShopRotation.priceOf(item, os.time())
+	local full = ShopRotation.fullPrice(item, os.time())
+	if now and full and now < full then
+		-- (cheaper today: the old price struck through beside the new)
+		return string.format('<font transparency="0.5"><s>%d</s></font>  %d', full, now), "coin"
+	end
+	return tostring(now), "coin"
 end
 
 -- How many emotes the profile owns.
@@ -405,7 +421,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 		closed("Collection title")
 		actionNote.Text = if milestone
 			then string.format(
-				"Yours, with %d coins, once you own %d emotes (you have %d).",
+				"Yours, with %d Reál, once you own %d emotes (you have %d).",
 				milestone.coins,
 				milestone.count,
 				emotesOwned(profile)
@@ -422,8 +438,8 @@ local function showAction(profile, item: Cosmetics.Item?)
 		actionNote.Text = "Only sold on a day it is in Today's hand."
 	elseif profile.coins < (price(item) :: number) then
 		local cost = price(item) :: number
-		closed(string.format("%d more coins", cost - profile.coins))
-		actionNote.Text = string.format("It costs %d coins.", cost)
+		closed(string.format("%d more Reál", cost - profile.coins))
+		actionNote.Text = string.format("It costs %d Reál.", cost)
 	else
 		local cost = price(item) :: number
 		local asking = Rarity.confirms(item.rarity) and confirming ~= item.id
@@ -456,14 +472,35 @@ local function showAction(profile, item: Cosmetics.Item?)
 			Parent = actionHolder,
 		}, held)
 		actionNote.Text = if confirming == item.id
-			then string.format("Press again to spend %d coins on %s.", cost, item.name)
+			then string.format("Press again to spend %d Reál on %s.", cost, item.name)
 			elseif asking then string.format("%s: press to buy, then confirm.", Rarity.name(item.rarity))
 			elseif item.kind == "emote" then "Press to buy. It goes on your emote wheel."
 			else "Press to buy. You wear it at once."
 	end
+	-- The wishlist, as a button of its own under the buy button (the heart on the card does the same).
+	if ShopBrowse.wishable(item) and not owns(profile, item) and not stanceHolder.Visible then
+		local wished = profile.wishlist ~= nil and profile.wishlist[item.id] == true
+		stanceHolder.Visible = true
+		Kit.button({
+			Name = "Wish",
+			text = if wished then "On your wishlist" else "Add to wishlist",
+			icon = "heart",
+			variant = if wished then "primary" else "secondary",
+			size = "s",
+			upper = false,
+			Size = UDim2.fromScale(1, 1),
+			Parent = stanceHolder,
+		}, function()
+			ShopRequest:FireServer({ action = "wish", itemId = item.id, on = not wished })
+		end)
+	end
 	if isDeal(item) and not owns(profile, item) then
-		actionNote.Text = string.format("The day's deal: a quarter off its %d coins. ", item.price :: number)
-			.. actionNote.Text
+		local deal = ShopRotation.isDeal(item.id, os.time())
+		actionNote.Text = string.format(
+			if deal then "The day's deal: %d%% off its %d Reál. " else "In Today's hand: %d%% off its %d Reál. ",
+			math.floor(ShopRotation.offOf(item.id, os.time()) * 100 + 0.5),
+			ShopRotation.fullPrice(item, os.time()) :: number
+		) .. actionNote.Text
 	end
 end
 
@@ -520,15 +557,22 @@ local function section(title: string?, order: number): Frame
 	return grid
 end
 
--- What an item costs now (the day's deal at its price).
+-- What an item costs now (Today's hand's cards cheaper).
 function price(item: Cosmetics.Item): number?
 	return ShopRotation.priceOf(item, os.time())
 end
 
--- The day's deal (sold for less than its price today).
+-- Sold for less than its price today (a card of Today's hand; the deal more so).
 function isDeal(item: Cosmetics.Item): boolean
 	local now = price(item)
-	return item.price ~= nil and now ~= nil and now < item.price
+	local full = ShopRotation.fullPrice(item, os.time())
+	return full ~= nil and now ~= nil and now < full
+end
+
+-- The ribbon on a card sold cheaper today: "40% OFF" (the deal), "20% OFF" (the rest of Today's hand).
+local function offerText(item: Cosmetics.Item): string?
+	local off = ShopRotation.offOf(item.id, os.time())
+	return if off > 0 and isDeal(item) then string.format("%d%% OFF", math.floor(off * 100 + 0.5)) else nil
 end
 
 local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, faceDown: boolean)
@@ -546,7 +590,7 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 		state = state,
 		faceDown = faceDown,
 		isNew = fresh,
-		offer = if isDeal(item) then "25% OFF" else nil,
+		offer = offerText(item),
 		wished = profile.wishlist ~= nil and profile.wishlist[item.id] == true,
 		onWish = if ShopBrowse.wishable(item) and not owns(profile, item)
 			then function(on: boolean)
@@ -594,7 +638,7 @@ local function buildFate(profile)
 		Kit.setEnabled(button, false)
 	elseif profile.coins < Fate.PRICE then
 		local button = Kit.button({
-			text = string.format("%d more coins", Fate.PRICE - profile.coins),
+			text = string.format("%d more Reál", Fate.PRICE - profile.coins),
 			variant = "secondary",
 			size = "m",
 			Size = size,
@@ -720,7 +764,7 @@ local function buildLedger(profile)
 			Parent = tile,
 		})
 		Kit.label({
-			Text = if item then item.name else string.format("%d coins", reward.coins or 0),
+			Text = if item then item.name else string.format("%d Reál", reward.coins or 0),
 			size = "small",
 			color = if reached then C.bone else C.dim,
 			TextTruncate = Enum.TextTruncate.AtEnd,
@@ -805,7 +849,7 @@ local function buildRobux(profile)
 				holder,
 				order,
 				pack.label,
-				{ string.format("%d coins", pack.coins), "Premium: +10%" },
+				{ string.format("%d Reál", pack.coins), "Premium: +10%" },
 				"Buy",
 				function()
 					MarketplaceService:PromptProductPurchase(LocalPlayer, pack.id)
@@ -862,6 +906,52 @@ end
 -- The suits along the top (built again only when which suits show changes).
 local NEW_SUITS: { [string]: boolean } = { wins = true, seats = true }
 
+-- Where the suit row runs on past an end, it fades out over the last FADE px there and an arrow pages it along, so
+-- no tab just sits cut off at the edge.
+local FADE = 56
+
+local function paintStrip()
+	local width = suitStrip.AbsoluteSize.X
+	if width <= 0 or not suitTabs then
+		return
+	end
+	local left = suitTabs.AbsolutePosition.X < suitStrip.AbsolutePosition.X - 1
+	local right = suitTabs.AbsolutePosition.X + suitTabs.AbsoluteSize.X > suitStrip.AbsolutePosition.X + width + 1
+	local edge = math.clamp(FADE * Kit.Base.scaleOf(suitStrip) / width, 0.02, 0.4)
+	suitFade.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, if left then 1 else 0),
+		NumberSequenceKeypoint.new(edge, 0),
+		NumberSequenceKeypoint.new(1 - edge, 0),
+		NumberSequenceKeypoint.new(1, if right then 1 else 0),
+	})
+	suitArrows[-1].Visible = left
+	suitArrows[1].Visible = right
+end
+
+-- Slides the suit row along by `by` screen px (CanvasPosition is in the row's own, unscaled px).
+local function slideStrip(by: number)
+	local scale = Kit.Base.scaleOf(suitStrip)
+	local most = math.max(0, (suitScroll.AbsoluteCanvasSize.X - suitScroll.AbsoluteWindowSize.X) / scale)
+	local x = math.clamp(suitScroll.CanvasPosition.X + by / scale, 0, most)
+	Motion.tween(suitScroll, { CanvasPosition = Vector2.new(x, 0) }, T.motion.slow)
+end
+
+-- Brings a suit's tab out of the faded ends.
+local function showTab(id: string)
+	local tab = if suitTabs then suitTabs:FindFirstChild("Tab_" .. id) :: GuiObject? else nil
+	if not tab then
+		return
+	end
+	local fade = FADE * Kit.Base.scaleOf(suitStrip)
+	local left = suitStrip.AbsolutePosition.X + fade
+	local right = suitStrip.AbsolutePosition.X + suitStrip.AbsoluteSize.X - fade
+	if tab.AbsolutePosition.X < left then
+		slideStrip(tab.AbsolutePosition.X - left)
+	elseif tab.AbsolutePosition.X + tab.AbsoluteSize.X > right then
+		slideStrip(tab.AbsolutePosition.X + tab.AbsoluteSize.X - right)
+	end
+end
+
 local function buildSuits()
 	local list = suits()
 	local ids = {}
@@ -889,6 +979,7 @@ local function buildSuits()
 		Size = UDim2.fromOffset(0, SUITS_HEIGHT),
 		Parent = suitScroll,
 	}, function(id: string)
+		showTab(id)
 		if id ~= currentSuit then
 			leaveSuit()
 			if NEW_SUITS[id] then
@@ -901,9 +992,21 @@ local function buildSuits()
 		end
 	end)
 	tabs.AutomaticSize = Enum.AutomaticSize.X
+	tabs:GetPropertyChangedSignal("AbsoluteSize"):Connect(paintStrip)
 	suitTabs = tabs
 	chooseSuit = choose
 	setTabDot = dot
+	task.defer(paintStrip)
+end
+
+-- A browse button's width: its longest wording ("Show  ·  Can afford") in a window's lettering (18 px, Kit/Controls)
+-- plus its padding, so it keeps one width as it is pressed and never runs into the next.
+local function choiceWidth(word: string, list: { ShopBrowse.Choice }): number
+	local widest = 0
+	for _, choice in ipairs(list) do
+		widest = math.max(widest, Kit.GlyphText.measure("Head", word .. "  ·  " .. choice.name, 18, 1.2))
+	end
+	return math.ceil(widest) + 2 * T.space.l + 4
 end
 
 -- The browse row's words, for what is chosen now.
@@ -964,7 +1067,11 @@ function ShopPanel.rebuild()
 				deal(profile, item, grid, index, down)
 			end
 		end
-		noteLabel.Text = (if faceDown > 0 then "Six cards and a deal, dealt today: turn them over.  ·  " else "")
+		noteLabel.Text = (
+			if faceDown > 0
+				then "Six cards and a deal, dealt today, each one cheaper: turn them over.  ·  "
+				else "Every card here is cheaper today.  ·  "
+		)
 			.. "A new hand in "
 			.. formatTime(ShopRotation.secondsLeft(now))
 	elseif currentSuit == "robux" then
@@ -973,6 +1080,33 @@ function ShopPanel.rebuild()
 		buildFate(profile)
 	elseif currentSuit == "ledger" then
 		buildLedger(profile)
+	elseif currentSuit == "wishlist" then
+		-- Everything wished for, from every suit, by kind; a wished card in Today's hand is cheaper today.
+		local order = 0
+		for _, kind in ipairs(Cosmetics.KINDS) do
+			local wished = {}
+			for _, item in ipairs(Cosmetics.ofKind(kind)) do
+				if profile.wishlist ~= nil and profile.wishlist[item.id] == true and not owns(profile, item) then
+					table.insert(wished, item)
+				end
+			end
+			if #wished > 0 then
+				order += 1
+				local grid = section(Cosmetics.KIND_NAMES[kind] or kind, order)
+				for index, item in ipairs(wished) do
+					deal(profile, item, grid, index, false)
+				end
+			end
+		end
+		if order == 0 then
+			Kit.label({
+				Text = "Nothing on your wishlist yet. The heart on a card, or Add to wishlist, puts it here.",
+				font = "bodyItalic",
+				color = C.dim,
+				Parent = tableScroll,
+			})
+		end
+		noteLabel.Text = "You are told when something you wish for is dealt in Today's hand, cheaper that day."
 	elseif currentSuit == "sets" then
 		for index, set in ipairs(Sets.LIST) do
 			local have = Sets.progress(set, function(id: string): boolean
@@ -1050,7 +1184,7 @@ function ShopPanel.rebuild()
 				.. (
 					if milestone and title
 						then string.format(
-							"  ·  %d more for %s and %d coins",
+							"  ·  %d more for %s and %d Reál",
 							milestone.count - count,
 							title.name,
 							milestone.coins
@@ -1281,19 +1415,49 @@ function ShopPanel.init()
 		Size = UDim2.new(1, -(34 + T.space.m + 200), 0, 32),
 		Parent = body,
 	})
-	-- The suits: one scrolling row on every screen.
-	suitScroll = Kit.Base.make("ScrollingFrame", {
-		Name = "Suits",
+	-- The suits: one scrolling row on every screen, faded out at an end it runs on past, with an arrow there.
+	suitStrip = Kit.Base.make("CanvasGroup", {
+		Name = "SuitStrip",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Position = UDim2.fromOffset(0, TOP),
 		Size = UDim2.new(1, 0, 0, SUITS_HEIGHT),
+		Parent = body,
+	}) :: any
+	suitFade = Instance.new("UIGradient")
+	suitFade.Parent = suitStrip
+	suitScroll = Kit.Base.make("ScrollingFrame", {
+		Name = "Suits",
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.X,
 		ScrollingDirection = Enum.ScrollingDirection.X,
 		ScrollBarThickness = 0,
-		Parent = body,
+		Parent = suitStrip,
 	}) :: any
+	for _, side in ipairs({ -1, 1 }) do
+		local arrow = Kit.iconButton({
+			Name = if side < 0 then "SuitsBack" else "SuitsMore",
+			icon = "back",
+			size = 32,
+			AnchorPoint = Vector2.new(if side < 0 then 0 else 1, 0.5),
+			Position = UDim2.new(if side < 0 then 0 else 1, 0, 0, TOP + SUITS_HEIGHT / 2),
+			ZIndex = 5,
+			Parent = body,
+		}, function()
+			slideStrip(side * suitStrip.AbsoluteSize.X * 0.7)
+		end)
+		local icon = arrow:FindFirstChildWhichIsA("ImageLabel")
+		if icon and side > 0 then
+			icon.Rotation = 180
+		end
+		arrow.Visible = false
+		suitArrows[side] = arrow
+	end
+	suitScroll:GetPropertyChangedSignal("CanvasPosition"):Connect(paintStrip)
+	suitStrip:GetPropertyChangedSignal("AbsoluteSize"):Connect(paintStrip)
 	-- Browsing a suit of kinds: a search, what to show, the order.
 	browseRow = Kit.frame({
 		Name = "Browse",
@@ -1303,11 +1467,13 @@ function ShopPanel.init()
 		Parent = body,
 	})
 	Kit.list(browseRow, T.space.s, true)
+	local showWidth = choiceWidth("Show", ShopBrowse.SHOW)
+	local sortWidth = choiceWidth("Order", ShopBrowse.SORTS)
 	local _, box = Kit.field({
 		placeholder = "Search by name",
 		maxLength = 30,
 		size = "body",
-		Size = UDim2.new(1, -2 * (CHOICE_WIDTH + T.space.s), 1, 0),
+		Size = UDim2.new(1, -(showWidth + sortWidth + 2 * T.space.s), 1, 0),
 		LayoutOrder = 1,
 		Parent = browseRow,
 	})
@@ -1332,7 +1498,7 @@ function ShopPanel.init()
 		variant = "secondary",
 		size = "s",
 		upper = false,
-		Size = UDim2.new(0, CHOICE_WIDTH, 1, 0),
+		Size = UDim2.new(0, showWidth, 1, 0),
 		LayoutOrder = 2,
 		Parent = browseRow,
 	}, function()
@@ -1345,7 +1511,7 @@ function ShopPanel.init()
 		variant = "secondary",
 		size = "s",
 		upper = false,
-		Size = UDim2.new(0, CHOICE_WIDTH, 1, 0),
+		Size = UDim2.new(0, sortWidth, 1, 0),
 		LayoutOrder = 3,
 		Parent = browseRow,
 	}, function()

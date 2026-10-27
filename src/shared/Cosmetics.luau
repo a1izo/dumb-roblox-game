@@ -1523,6 +1523,7 @@ Cosmetics.SUITS = {
 	{ id = "today", name = "Today's hand", icon = "cards" },
 	{ id = "fate", name = "Fate", icon = "dice" },
 	{ id = "ledger", name = "Ledger", icon = "note" },
+	{ id = "wishlist", name = "Wishlist", icon = "heart" },
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "dead", name = "The dead", icon = "skull", kinds = { "death", "specter" } },

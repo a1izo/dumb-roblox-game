@@ -617,15 +617,18 @@ local function part(parent: Instance, size: Vector3, cf: CFrame, color: Color3, 
 end
 
 -- A prop from the imports placed at `cf`, or nil.
-local function prop(key: string, cf: CFrame, parent: Instance, height: number?): Model?
+local function prop(key: string, cf: CFrame, parent: Instance, height: number?, longest: boolean?): Model?
 	local model = ModelLibrary.get(key)
 	if not model then
 		return nil
 	end
 	if height then
+		-- (scaled to `height` tall, or with `longest` to that length along its longest side: a prop that lies flat,
+		-- like the cuffs, is only a sliver tall and would come out huge)
 		local _, size = model:GetBoundingBox()
-		if size.Y > 0 then
-			model:ScaleTo(model:GetScale() * height / size.Y)
+		local along = if longest then math.max(size.X, size.Y, size.Z) else size.Y
+		if along > 0 then
+			model:ScaleTo(model:GetScale() * height / along)
 		end
 	end
 	model:PivotTo(cf)
@@ -856,7 +859,7 @@ local function cuffsScene(world: Instance, view: ViewportFrame?, still: boolean?
 	caseFile(world, CFrame.new(-0.1, 0.04, 0.1) * CFrame.Angles(0, math.rad(-8), 0))
 	local open = CFrame.new(0, 1.5, -0.2) * CFrame.Angles(math.rad(70), math.rad(30), 0)
 	local shut = CFrame.new(0, 0.34, 0.05) * CFrame.Angles(math.rad(86), math.rad(-12), 0)
-	local cuffs = prop("Handcuffs", if still then shut else open, world, 0.9)
+	local cuffs = prop("Handcuffs", if still then shut else open, world, 1.9, true)
 		or (function()
 			local m = group(world, "Cuffs")
 			local at = if still then shut else open
