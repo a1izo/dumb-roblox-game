@@ -1,5 +1,6 @@
 -- Proximity prompts for everything the player can use in the world: case-file stations (the Bureau
--- only, Specters included; the Coven never gets the prompt), paper, and the emergency bell. The
+-- works them, Specters included; Diavolo and the Muertos get "Hack the log" instead), paper, and the
+-- emergency bell. The
 -- prompts are created on this client only. The server validates every action. Each prompt on the
 -- same object uses a different gamepad button (X, B). The keys are the player's own (Input/PromptKeys).
 
@@ -11,6 +12,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local HackScreen = require(script.Parent.Parent.UI.HackScreen)
 local TaskScreen = require(script.Parent.Parent.UI.TaskScreen)
 
 local NoteRequest = Net.event("NoteRequest")
@@ -70,10 +72,10 @@ local function refreshEntry(instance: Instance, entry)
 	local active = canAct()
 	local prompts = entry.prompts
 	if entry.kind == "station" then
-		prompts.work.Enabled = canWork()
-			and instance:GetAttribute("Busy") ~= true
-			and not jammed(instance)
-			and not TaskScreen.isBusy()
+		local free = instance:GetAttribute("Busy") ~= true and not jammed(instance)
+		prompts.work.Enabled = canWork() and free and not TaskScreen.isBusy()
+		local role = ClientState.role()
+		prompts.hack.Enabled = active and (role == "Kira" or role == "Follower") and free and not HackScreen.isBusy()
 	elseif entry.kind == "bell" then
 		prompts.ring.Enabled = active and private.bellUsed ~= true
 	elseif entry.kind == "sheet" then
@@ -107,7 +109,15 @@ local function setupStation(desk: Instance)
 			TaskScreen.request(stationId)
 		end
 	end)
-	register(desk, "station", { work = work })
+	-- Diavolo and the Muertos: break into the station's log (UI/HackScreen, Services/HackService).
+	local hack = prompt(desk, "Hack the log", stationName, Enum.KeyCode.E)
+	hack.Triggered:Connect(function()
+		local stationId = desk:GetAttribute("StationId")
+		if type(stationId) == "string" then
+			HackScreen.request(stationId)
+		end
+	end)
+	register(desk, "station", { work = work, hack = hack })
 	local function changed()
 		local entry = entries[desk]
 		if entry then
@@ -174,7 +184,7 @@ function InteractionController.init()
 	task.spawn(function()
 		local wasBusy = false
 		while true do
-			local busy = TaskScreen.isBusy()
+			local busy = TaskScreen.isBusy() or HackScreen.isBusy()
 			if busy ~= wasBusy then
 				wasBusy = busy
 				refreshAll()

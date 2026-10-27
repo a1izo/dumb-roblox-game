@@ -64,7 +64,7 @@ local function controls(): { string }
 				k("note", "drop")
 			),
 			string.format(
-				"Hold %s: role card.  %s: scratchpad.  %s: stare (learn a real name).",
+				"Hold %s: role card.  %s: scratchpad.  %s: stare with the Oculus (a Muerto who took it).",
 				k("roleCard"),
 				k("scratchpad"),
 				k("eyesRead")
@@ -93,7 +93,7 @@ local function controls(): { string }
 			k("help")
 		),
 		string.format(
-			Terms.f("%s: stare to learn a real name ({hand} and {cultists}).  %s: {grimoire} (only for {hand})."),
+			Terms.f("%s: stare with {eyes} (a {cultist} who took it).  %s: {grimoire} (only for {hand})."),
 			k("eyesRead"),
 			k("privateScreen")
 		),

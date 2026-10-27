@@ -89,7 +89,7 @@ function Mechanics.stop()
 	currentId = nil
 	-- Whatever the mechanic changed about sight goes back to normal.
 	Match.occluder = nil
-	Match.sightScale = { stare = 1, eyes = 1 }
+	Match.sightScale = { eyes = 1 }
 end
 
 function Mechanics.onPhase(phase: string)

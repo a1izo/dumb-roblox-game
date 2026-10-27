@@ -1,12 +1,9 @@
--- Learning real names. Diavolo and the Muertos stare: stand still, look at someone within
--- STARE_RANGE and hold it for STARE_TIME seconds; their eyes glow red the whole time, so anyone
--- watching can catch it. A finished stare shows the target's real name on the starer's screen and
--- adds it to what they know (the Manual lists it).
---
--- A Muerto (never Diavolo) may also take the Oculus of the Dead (internally "eyes") at any time in
--- free roam: a OCULUS_RITUAL-second ritual in plain sight, eyes blazing. After it a read takes
--- OCULUS_READ_TIME seconds from up to OCULUS_RANGE away, and the Muerto dies publicly after
--- OCULUS_LIFESPAN seconds of free roam (the clock stops during meetings).
+-- The Oculus of the Dead (internally "eyes"), a Muerto's only (never Diavolo's). The usual way to
+-- learn a real name is hacking a station (HackService); a Muerto may instead take the deal at any
+-- time in free roam: a OCULUS_RITUAL-second ritual in plain sight, eyes blazing. After it they can
+-- stare: stand still, face someone within OCULUS_RANGE and hold it OCULUS_READ_TIME seconds, eyes
+-- glowing, to learn their real name (the Manual lists it, and a note carries it to Diavolo). The
+-- Muerto dies publicly after OCULUS_LIFESPAN seconds of free roam (the clock stops in meetings).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -36,11 +33,11 @@ local ticker: RBXScriptConnection? = nil
 local accumulated = 0
 
 local function canStare(ps): boolean
-	return ps.alive and Match.isKiraSide(ps) and Match.phase == "Investigation" and Match.meetingCall == nil
+	return ps.alive and ps.eyes ~= nil and Match.phase == "Investigation" and Match.meetingCall == nil
 end
 
-local function stareRange(ps): number
-	return if ps.eyes then Match.sightRange("eyes") else Match.sightRange("stare")
+local function stareRange(_ps): number
+	return Match.sightRange("eyes")
 end
 
 local function moving(ps): boolean
@@ -112,7 +109,7 @@ local function learn(ps, target)
 end
 
 local function startStare(ps, targetUserId)
-	if not canStare(ps) or type(targetUserId) ~= "number" or ps.writing or ps.ritual then
+	if not canStare(ps) or type(targetUserId) ~= "number" or ps.writing or ps.ritual or ps.hacking then
 		return
 	end
 	local target = Match.getByUserId(targetUserId)
@@ -127,7 +124,7 @@ local function startStare(ps, targetUserId)
 		Match.notify(ps.player, "Too far away, or something is in the way.", "bad")
 		return
 	end
-	local needed = if ps.eyes then Config.OCULUS_READ_TIME else Config.STARE_TIME
+	local needed = Config.OCULUS_READ_TIME
 	stares[ps] = { target = target, startedAt = os.clock(), needed = needed }
 	-- The tell: red eyes for as long as the stare lasts (a read with the Oculus flares brighter and
 	-- shorter, but just as visible).

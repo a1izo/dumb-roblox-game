@@ -40,6 +40,9 @@ local EVENTS = {
 	"ButlerPick",
 	-- a Muerto's sabotage (client -> server)
 	"Sabotage",
+	-- hacking a station: requests (client -> server) and how it goes (server -> the hacker)
+	"Hack",
+	"HackState",
 	-- notes and eyes (staring and the Oculus)
 	"NoteRequest",
 	"NoteView",

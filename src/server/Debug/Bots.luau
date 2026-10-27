@@ -25,6 +25,7 @@ local VoteCounter = require(Shared:WaitForChild("VoteCounter"))
 local Services = script.Parent.Parent:WaitForChild("Services")
 local ArrestService = require(Services:WaitForChild("ArrestService"))
 local CharacterService = require(Services:WaitForChild("CharacterService"))
+local HackService = require(Services:WaitForChild("HackService"))
 local Elimination = require(Services:WaitForChild("Elimination"))
 local MapService = require(Services:WaitForChild("MapService"))
 local Match = require(Services:WaitForChild("Match"))
@@ -431,7 +432,7 @@ local function stareTarget(ps)
 	if not here then
 		return nil
 	end
-	local range = if ps.eyes then Config.OCULUS_RANGE else Config.STARE_RANGE
+	local range = Config.OCULUS_RANGE
 	for _, other in ipairs(Match.living()) do
 		local there = Match.position(other)
 		if other ~= ps and not ps.learned[other.userId] and there and (there - here).Magnitude < range - 1 then
@@ -442,7 +443,7 @@ local function stareTarget(ps)
 end
 
 -- Stops where it stands and stares at `target` until the stare is done.
-local function startStare(bot, ps, target, now: number)
+local function startStare(bot, _ps, target, now: number)
 	local humanoid, root = parts(bot)
 	if humanoid and root then
 		humanoid:MoveTo(root.Position)
@@ -454,12 +455,12 @@ local function startStare(bot, ps, target, now: number)
 	end
 	bot.brain.goal = nil
 	bot.brain.state = "staring"
-	bot.brain.doneAt = now + (if ps.eyes then Config.OCULUS_READ_TIME else Config.STARE_TIME) + 0.6
+	bot.brain.doneAt = now + Config.OCULUS_READ_TIME + 0.6
 	Net.simulate("EyesRequest", bot, { action = "stare", userId = target.userId })
 end
 
 -- What a Coven bot does in free roam: write a learned name (Diavolo), sabotage now and then
--- (Muertos), stare at whoever is close, or wander on.
+-- (Muertos), read names with the Oculus (a Muerto who took it), hack a station, or wander on.
 local function thinkCoven(bot, ps, now: number)
 	local brain = bot.brain
 	if ps.role == "Kira" and Bots.handKills and not ps.writing and workspace:GetServerTimeNow() >= ps.writeReadyAt then
@@ -487,10 +488,20 @@ local function thinkCoven(bot, ps, now: number)
 			Net.simulate("Sabotage", bot, { kind = ({ "blackout", "jam", "barricade" })[math.random(1, 3)] })
 		end
 	end
-	local target = stareTarget(ps)
+	local target = if ps.eyes then stareTarget(ps) else nil
 	if target and math.random() < 0.6 then
 		startStare(bot, ps, target, now)
 		return
+	end
+	if math.random() < 0.5 then
+		local _, root = parts(bot)
+		local station = freeStation(if root then root.Position else nil)
+		if station then
+			brain.station = station
+			brain.state = "walkToHack"
+			walkTo(bot, workSpot(station))
+			return
+		end
 	end
 	wander(bot)
 end
@@ -530,6 +541,28 @@ local function thinkInvestigation(bot, ps, now: number)
 				)
 			end
 			wander(bot)
+		end
+	elseif brain.state == "walkToHack" then
+		if followPath(bot) then
+			local _, root = parts(bot)
+			local station = brain.station
+			if root and station and flat(root.Position, station.position) < Config.TASK_RANGE then
+				HackService.botStart(ps, station.id)
+				brain.state = "hacking"
+				brain.hackStage = 0
+				brain.doneAt = now + 3
+			else
+				brain.state = nil
+			end
+		end
+	elseif brain.state == "hacking" then
+		if not HackService.isHacking(ps) then
+			wander(bot)
+		elseif now >= brain.doneAt then
+			-- Most checks land; now and then a bot trips the alarm.
+			HackService.botStage(ps, math.random() < 0.85)
+			brain.hackStage += 1
+			brain.doneAt = now + 3
 		end
 	elseif brain.state == "staring" or brain.state == "writing" then
 		if now >= brain.doneAt then

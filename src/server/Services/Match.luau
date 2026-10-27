@@ -57,12 +57,12 @@ Match.debugPaused = false
 Match.debugFastEnd = false
 
 -- A map's own mechanic can change what blocks sight and how far it reaches (the Tokyo crowd
--- stands in the way; a blackout shortens a stare). Both are reset by finish().
+-- stands in the way). Both are reset by finish().
 -- occluder(from, to) -> true when something of the map's (not a player) blocks that line.
 Match.occluder = nil :: ((Vector3, Vector3) -> boolean)?
-Match.sightScale = { stare = 1, eyes = 1 } :: { [string]: number }
+Match.sightScale = { eyes = 1 } :: { [string]: number }
 
-local SIGHT_RANGES = { stare = "STARE_RANGE", eyes = "OCULUS_RANGE" }
+local SIGHT_RANGES = { eyes = "OCULUS_RANGE" }
 
 -- Fired as (playerState, kind) after a player leaves the living: kind is
 -- "dead", "voted", "arrested" or "left".
@@ -158,7 +158,7 @@ function Match.finish()
 	Match.debugPaused = false
 	Match.debugFastEnd = false
 	Match.occluder = nil
-	Match.sightScale = { stare = 1, eyes = 1 }
+	Match.sightScale = { eyes = 1 }
 	Match.meetingCall = nil
 end
 
@@ -171,8 +171,7 @@ function Match.requestMeeting(reason: string, by: any?)
 	Match.meetingCall = { reason = reason, by = by }
 end
 
--- How far a kind of sight reaches right now: "stare" (learning a name by staring), "eyes" (the
--- Oculus reading a name).
+-- How far a kind of sight reaches right now: "eyes" (the Oculus reading a name).
 function Match.sightRange(kind: string): number
 	return (Config :: any)[SIGHT_RANGES[kind]] * (Match.sightScale[kind] or 1)
 end

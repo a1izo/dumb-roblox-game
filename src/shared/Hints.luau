@@ -16,12 +16,12 @@ local RAW: { { string } } = {
 	{
 		"role_Kira", -- terms:ok (internal role id)
 		"You are {hand}",
-		"Stare at someone up close ({key.stare}, standing still) to learn their real name, then write it in {grimoire} ({key.manual}). Anyone who sees the book burning knows.",
+		"Hack a station ({key.use}) right after someone finishes a case file there to read their real name, then write it in {grimoire} ({key.manual}). Miss a check and the alarm goes off.",
 	},
 	{
 		"role_Follower",
 		"You are a {cultist}",
-		"You know {hand}; they do not know you. Stare to learn names ({key.stare}), pass them on paper notes, and sabotage ({key.sabotage}).",
+		"You know {hand}; they do not know you. Hack stations for names ({key.use}), pass them on paper notes, and sabotage ({key.sabotage}).",
 	},
 	{
 		"role_L",
@@ -63,7 +63,7 @@ local RAW: { { string } } = {
 	{
 		"death",
 		"Someone died",
-		"{Grimoire} took them. Who was seen staring at them, or writing, in the last minute?",
+		"{Grimoire} took them. Who was at the stations they used, or seen writing, in the last minute?",
 	},
 	{
 		"eliminated",

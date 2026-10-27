@@ -1,4 +1,4 @@
--- World-space effects: names this client learned by staring or with the Oculus, the hiss of Death's
+-- World-space effects: names this client learned (a hack, the Oculus), a station's alarm, the hiss of Death's
 -- Manual being written (anyone close by hears it: the server marks the writer with LManualOpen), and
 -- the overlay when this player is eliminated (a brush stroke of blood with the verdict in Gothic
 -- lettering, the rest written beneath in handwriting).
@@ -108,6 +108,69 @@ local function watchManuals()
 			end
 		end
 	end
+end
+
+-- A station's alarm (someone missed a check hacking its log): for everyone, the station is outlined
+-- in red through walls, an ALARM sign stands over it and it buzzes until the alarm runs out. It
+-- never says who was there: that is for whoever gets there first to see.
+local alarms: { [Instance]: number } = {}
+
+local function showAlarm(desk: Instance)
+	local untilTime = desk:GetAttribute("AlarmUntil")
+	if type(untilTime) ~= "number" or not desk:IsA("BasePart") then
+		return
+	end
+	local token = (alarms[desk] or 0) + 1
+	alarms[desk] = token
+	local station = desk.Parent or desk
+	local highlight = Create("Highlight", {
+		Name = "LAlarm",
+		Adornee = station,
+		FillColor = C.danger,
+		FillTransparency = 0.6,
+		OutlineColor = C.danger,
+		DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
+		Parent = playerGui,
+	})
+	local sign = Create("BillboardGui", {
+		Name = "LAlarmSign",
+		Adornee = desk,
+		AlwaysOnTop = true,
+		LightInfluence = 0,
+		Size = UDim2.fromOffset(160, 40),
+		StudsOffset = Vector3.new(0, 5, 0),
+		ResetOnSpawn = false,
+		Parent = playerGui,
+	})
+	Kit.label({
+		Text = "ALARM",
+		font = "label",
+		TextScaled = true,
+		AutomaticSize = Enum.AutomaticSize.None,
+		TextColor3 = C.white,
+		BackgroundTransparency = 0,
+		BackgroundColor3 = C.danger,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.fromScale(1, 1),
+		Parent = sign,
+	})
+	task.spawn(function()
+		while alarms[desk] == token and workspace:GetServerTimeNow() < untilTime and desk.Parent do
+			Sfx.play("error", { volume = 1, parent = desk })
+			task.wait(1)
+		end
+		highlight:Destroy()
+		sign:Destroy()
+		if alarms[desk] == token then
+			alarms[desk] = nil
+		end
+	end)
+end
+
+local function watchStation(desk: Instance)
+	desk:GetAttributeChangedSignal("AlarmUntil"):Connect(function()
+		showAlarm(desk)
+	end)
 end
 
 -- A real name seen with Specter's Eyes. Nothing is stored anywhere.
@@ -234,6 +297,10 @@ function WorldFx.init()
 		Parent = overlay,
 	})
 	task.spawn(watchManuals)
+	CollectionService:GetInstanceAddedSignal("LStation"):Connect(watchStation)
+	for _, desk in ipairs(CollectionService:GetTagged("LStation")) do
+		watchStation(desk)
+	end
 	Net.event("EyesName").OnClientEvent:Connect(onEyesName)
 	Net.event("Elimination").OnClientEvent:Connect(onElimination)
 end

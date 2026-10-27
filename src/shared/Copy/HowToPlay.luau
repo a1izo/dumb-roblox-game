@@ -18,7 +18,7 @@ local RAW: { { title: string, body: { string } } } = {
 		title = "Real names",
 		body = {
 			"Your real name is on your role card. {key.card} to see it again.",
-			"{Hand} and {cultists} learn real names by staring: standing still, close by, for a few seconds. Their eyes glow red while they stare.",
+			"{Hand} and {cultists} learn real names by hacking a station: it shows who finished a case file there in the last 25 seconds. A hack looks like work, but a missed check sets off the station's alarm for everyone.",
 			"There is no typing in a case, only quick-chat phrases. Only a paper note can carry a real name.",
 		},
 	},
@@ -59,7 +59,7 @@ local RAW: { { title: string, body: { string } } } = {
 		body = {
 			"A {cultist} knows {hand}, but {hand} does not know them.",
 			"{Cultists} sabotage: a blackout, jammed stations, or a barricade across the way.",
-			"A {cultist} may accept {eyes}: fast reads from far off, eyes blazing, and death three minutes later.",
+			"A {cultist} may accept {eyes}: stare at anyone to read their name at a glance, eyes blazing, and die 90 seconds later.",
 		},
 	},
 	{

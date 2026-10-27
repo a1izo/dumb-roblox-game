@@ -11,7 +11,7 @@ Roles.INFO = {
 		color = Color3.fromRGB(215, 35, 50),
 		side = "Kira",
 		blurb = Terms.f(
-			"You hold {grimoire}. Stare at people up close to learn their real names, then write one in the "
+			"You hold {grimoire}. Hack stations to read who used them last, then write a real name in the "
 				.. "book. Writing takes a few seconds and the book burns red: never let anyone see it. You do not "
 				.. "know your {cultists}."
 		),
@@ -21,7 +21,7 @@ Roles.INFO = {
 		color = Color3.fromRGB(235, 90, 70),
 		side = "Kira",
 		blurb = Terms.f(
-			"You know {hand}; nobody knows you. Stare to learn real names and pass them to {hand} on paper "
+			"You know {hand}; nobody knows you. Hack stations for real names and pass them to {hand} on paper "
 				.. "notes. Black out the lights, jam stations and barricade the way. You may accept {eyes}."
 		),
 	},

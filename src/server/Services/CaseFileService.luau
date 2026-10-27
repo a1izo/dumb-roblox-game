@@ -2,7 +2,8 @@
 -- sends its id and seed, and the case file counts the moment a right answer comes back. Every
 -- case file a Bureau player finishes fills the Bureau's shared task bar (TaskBarService), which never
 -- says who did it. Bureau Specters can keep working them. Diavolo and the Muertos cannot use stations
--- at all; a Muerto can jam the stations in an area for a while instead (SabotageService).
+-- at all; they can hack one instead (HackService), to read who finished a case file there last,
+-- and a Muerto can jam the stations in an area for a while (SabotageService).
 
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -126,11 +127,82 @@ function CaseFileService.jamNear(position: Vector3, seconds: number): { string }
 		end
 		for _, runtime in ipairs(chosen) do
 			if not jammed(runtime) then
-				setScreen(runtime, runtime.worker ~= nil)
+				setScreen(runtime, runtime.worker ~= nil or runtime.hacker ~= nil)
 			end
 		end
 	end)
 	return names
+end
+
+-- Close enough to the station, with it in sight (no case file worked, or hacked, through a wall).
+local function reaches(ps, runtime): boolean
+	local position = Match.position(ps)
+	if not position or (position - runtime.info.position).Magnitude > Config.TASK_RANGE + 2 then
+		return false
+	end
+	local eye = Match.eyePosition(ps)
+	return eye ~= nil and Match.hasLineOfSight(eye, runtime.info.position, runtime.info.model)
+end
+
+-- Hacking (HackService) ----------------------------------------------------------------------
+
+-- Why this player cannot start hacking this station (nil: they can). A hacked station looks busy,
+-- exactly as if a case file were being worked there.
+function CaseFileService.hackProblem(ps, stationId: string): string?
+	local runtime = stations[stationId]
+	if not runtime then
+		return "missing"
+	elseif jammed(runtime) then
+		return "jammed"
+	elseif runtime.worker or runtime.hacker then
+		return "busy"
+	elseif now() < runtime.hackLockedUntil then
+		return "locked"
+	elseif not reaches(ps, runtime) then
+		return "far"
+	end
+	return nil
+end
+
+function CaseFileService.beginHack(ps, stationId: string)
+	local runtime = stations[stationId]
+	runtime.hacker = ps
+	setScreen(runtime, true)
+	markWorking(ps, true, runtime.info.type)
+end
+
+-- The hack is over (done, failed or broken off). lockFor: seconds before anyone may hack it again.
+function CaseFileService.endHack(ps, stationId: string, lockFor: number?)
+	local runtime = stations[stationId]
+	if not runtime or runtime.hacker ~= ps then
+		return
+	end
+	runtime.hacker = nil
+	markWorking(ps, false)
+	if lockFor then
+		runtime.hackLockedUntil = now() + lockFor
+	end
+	setScreen(runtime, false)
+end
+
+function CaseFileService.isJammed(stationId: string): boolean
+	local runtime = stations[stationId]
+	return runtime ~= nil and jammed(runtime)
+end
+
+-- Who finished a case file at this station at or after `since` (server time), if anyone.
+function CaseFileService.lastUser(stationId: string, since: number)
+	local runtime = stations[stationId]
+	if runtime and runtime.lastUser and runtime.lastAt >= since then
+		return runtime.lastUser
+	end
+	return nil
+end
+
+-- The station's name and where it stands.
+function CaseFileService.stationInfo(stationId: string)
+	local runtime = stations[stationId]
+	return if runtime then runtime.info else nil
 end
 
 -- Task flow ----------------------------------------------------------------------------
@@ -141,6 +213,9 @@ local function finish(ps, runtime)
 	ps.taskStation = nil
 	runtime.worker = nil
 	setScreen(runtime, false)
+	-- What a hack reads: who finished here last, and when.
+	runtime.lastUser = ps
+	runtime.lastAt = now()
 	ps.tasksThisRound += 1
 	ps.stats.tasks += 1
 	TaskStateRemote:FireClient(ps.player, { state = "done", stationId = runtime.info.id })
@@ -160,20 +235,15 @@ local function onStart(ps, stationId: string)
 		Match.notify(ps.player, "This station is jammed. Try another one.", "bad")
 		return
 	end
-	if runtime.worker then
+	if runtime.worker or runtime.hacker then
 		Match.notify(ps.player, "Someone is already working at this station.", "bad")
 		return
 	end
-	local position = Match.position(ps)
-	if not position or (position - runtime.info.position).Magnitude > Config.TASK_RANGE + 2 then
-		return
-	end
-	-- (and the station in sight: no case file worked through a wall)
-	local eye = Match.eyePosition(ps)
-	if not eye or not Match.hasLineOfSight(eye, runtime.info.position, runtime.info.model) then
+	if not reaches(ps, runtime) then
 		return
 	end
 	runtime.worker = ps
+	runtime.startedAt = os.clock()
 	runtime.puzzle = TaskTypes.pickPuzzle(runtime.info.type, Match.rng)
 	runtime.seed = Match.rng:NextInteger(1, 2 ^ 30)
 	working[ps] = runtime
@@ -252,6 +322,10 @@ function CaseFileService.onMatchStart(map)
 			puzzle = nil,
 			seed = 0,
 			jammedUntil = 0,
+			hacker = nil,
+			hackLockedUntil = 0,
+			lastUser = nil,
+			lastAt = 0,
 		}
 		stations[info.id] = runtime
 		table.insert(order, runtime)

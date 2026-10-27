@@ -14,7 +14,7 @@ local RAW: { { id: string, line: string } } = {
 	},
 	{
 		id = "leak",
-		line = "Stare at someone long enough and you learn their real name. Eyes that glow red give a starer away.",
+		line = "Every case file leaves your name in its station's log. Break in fast, or the alarm brings everyone running.",
 	},
 	{
 		id = "writing",

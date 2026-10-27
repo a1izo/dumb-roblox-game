@@ -156,14 +156,12 @@ Actions.list = {
 	},
 	{
 		id = "eyesRead",
-		label = function(view: View)
-			return if view.private.eyes then "Read name" else "Stare"
-		end,
+		label = fixed("Read name"),
 		keys = { Enum.KeyCode.R },
 		pad = Enum.KeyCode.ButtonR1,
 		variant = "primary",
 		when = function(view: View)
-			return view.living and view.phase == "Investigation" and (view.role == "Kira" or view.role == "Follower")
+			return view.living and view.phase == "Investigation" and view.private.eyes ~= nil
 		end,
 		run = EyesController.stare,
 	},

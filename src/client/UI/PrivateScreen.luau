@@ -1,5 +1,5 @@
 -- Death's Manual, Diavolo's window (internal name "grimoire"). He can open it any time during free
--- roam: the names he has learned (by staring) are listed to pick from, and any other name can be
+-- roam: the names he has learned (by hacking stations) are listed to pick from, and any other name can be
 -- typed (from a note a Muerto passed him). The button starts the writing: he stands still
 -- with the book open and burning red for a few seconds, in plain sight. Then the Manual is closed
 -- for a while; the window shows how long.

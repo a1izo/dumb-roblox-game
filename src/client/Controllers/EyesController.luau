@@ -65,9 +65,9 @@ local function findTarget(): number?
 end
 
 -- Whether staring makes sense for you right now (Diavolo or a Muerto, alive, in free roam).
+-- Staring is the Oculus deal's: only a Muerto who took it can.
 function EyesController.canStare(): boolean
-	local role = ClientState.role()
-	return ClientState.isLiving() and ClientState.phase() == "Investigation" and (role == "Kira" or role == "Follower")
+	return ClientState.isLiving() and ClientState.phase() == "Investigation" and ClientState.private.eyes ~= nil
 end
 
 function EyesController.stare()

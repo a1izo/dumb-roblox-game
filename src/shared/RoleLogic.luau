@@ -14,11 +14,11 @@ RoleLogic.TASK_FORCE = "TaskForce"
 
 RoleLogic.ALL = { "Kira", "Follower", "L", "Watari", "TaskForce" }
 
--- One follower on 6-9 players, two on 10-12. Smaller counts only happen in Studio tests.
+-- No Muerto (follower) on 6-7 players, one on 8-11, two on a full 12.
 function RoleLogic.followerCount(playerCount: number): number
-	if playerCount >= 10 then
+	if playerCount >= 12 then
 		return 2
-	elseif playerCount >= 4 then
+	elseif playerCount >= 8 then
 		return 1
 	end
 	return 0

@@ -111,7 +111,7 @@ function DeathNoteService.writeProblem(ps): string?
 		return "role"
 	elseif Match.phase ~= "Investigation" or Match.meetingCall ~= nil then
 		return "phase"
-	elseif ps.writing then
+	elseif ps.writing or ps.hacking then
 		return "writing"
 	elseif now() < ps.writeReadyAt then
 		return "cooldown"

@@ -273,7 +273,7 @@ local function eyesDrill()
 	win.setTitle(Terms.f("{Eyes}"))
 	Kit.label({
 		Text = Terms.f(
-			"Anyone on {circle} can stare at someone up close for a few seconds to learn their real name; their eyes glow red while they do. A {cultist} may accept {eyes}: names in a second, from far away, and death three minutes later."
+			"{Circle} learns real names by hacking stations. A {cultist} may also accept {eyes}: stare at anyone to read their name in a second, eyes glowing red, and die 90 seconds later."
 		),
 		LayoutOrder = 1,
 		Parent = body,

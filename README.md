@@ -3,7 +3,8 @@
 A Roblox social-deduction game for 6 to 12 players, in a dark anime-noir style. One player is
 secretly **Diavolo**, who kills by writing a player's **real name** in **Death's Manual**, at any
 moment of free roam, but never unseen: the book burns red while he writes. He and his **Muertos**
-learn real names by **staring** at people up close (their eyes glow). Everyone else works for
+learn real names by **hacking** stations: a hack reads who finished a case file there in the last
+25 seconds, and a missed check sets off the station's alarm for everyone. Everyone else works for
 **the Bureau**, led by a secret **Ace**, and wins by voting out or arresting Diavolo or by filling a
 shared task bar. Players who are killed, voted out or arrested stay in the match as invisible
 **Deathsingers**.
@@ -30,7 +31,7 @@ In a Studio play test, press **F2**. Everything below works with just you in the
 | --- | --- |
 | Match | Start a match now, pick the next map, skip to any phase, call a meeting, fill the task bar, make the Butler pick, pause or extend the timer, speed phases up (x0.1 to x2), skip cutscene phases, force a win, end the match at once |
 | People | Everyone with their role and real name. Change anyone's role mid-match (unique roles swap), force roles for the next match, kill (any cause), vote out, arrest, revive, give the Oculus of the Dead, paper or every real name, reset the Manual and sabotage cooldowns, run any sabotage, finish a case file, teleport, freeze |
-| Bots | Add test bots (Studio only). They join the next match, walk on pathfinding and vote; Bureau bots work case files, Coven bots stare, Diavolo writes learned names, Muertos sabotage, a Butler bot names the next Ace. Toggle autoplay and kills, choose how bots vote, or order one bot to come, work, stare, vote, write a name, arrest, ring the bell or take the Oculus deal |
+| Bots | Add test bots (Studio only). They join the next match, walk on pathfinding and vote; Bureau bots work case files, Coven bots hack stations (and stare with the Oculus), Diavolo writes learned names, Muertos sabotage, a Butler bot names the next Ace. Toggle autoplay and kills, choose how bots vote, or order one bot to come, work, stare, vote, write a name, arrest, ring the bell or take the Oculus deal |
 | World | Teleport to the lobby, map, meeting room, any station or area; preview any map between matches; switch Blender scenes and greyboxes; check the map contract; fly, noclip, free camera; show colliders, roles over heads and performance stats; force lighting presets, phase moods, rain and snow |
 | Show | Play any cutscene for yourself during a match (intro, the four deaths, verdict, arrest, Eyes deal, both outros), announcements, every role's briefing card, the results screen, any music slot, every sound |
 | Anim | Play any animation clip on yourself or on the person picked, from x0.1 to x2, looped |
@@ -64,7 +65,7 @@ ids to `Config.DEBUG_USER_IDS` (bots stay Studio-only).
 | --- | --- |
 | Case opening (15 s) | Cutscene: the camera sweeps the map, the case card, Death's Manual falls. Hold to skip. |
 | Briefing (15 s) | Your role card, your secret real name and your first move. |
-| Investigation (free roam) | Work case files to fill the Bureau's task bar, pass notes, talk in proximity chat. Diavolo and Muertos stare to learn names; Diavolo writes in the Manual (4 s, glowing, visible) and the victim dies 20 s later; Muertos sabotage. |
+| Investigation (free roam) | Work case files to fill the Bureau's task bar, pass notes, talk in proximity chat. Diavolo and Muertos hack stations to learn names; Diavolo writes in the Manual (4 s, glowing, visible) and the victim dies 20 s later; Muertos sabotage. |
 | Bureau meeting (60 s) | Called by any death (its cutscene plays first), the emergency bell (one ring each per match) or 3 quiet minutes. Everyone sits in their war chair; free chat at the table; Ace may arrest one player. |
 | Vote, then Verdict | Pick a suspect or skip; a tie or a skip majority removes nobody. Then back to free roam. |
 | The end (10 s, a few more for a bought cutscene) | The winning side's lead plays their win cutscene for everyone (the default: everyone gathers and the lights find Diavolo, or Ace's spotlight); each side hears its own music. |
@@ -76,13 +77,13 @@ Muertos equal or outnumber the living Bureau.
 
 ### The roles
 
-- **Diavolo**: stares to learn names and writes them in the Manual (60 s cooldown). He does not know
+- **Diavolo**: hacks stations for names and writes them in the Manual (60 s cooldown). He does not know
   the Muertos, so writing a Muerto's name kills the Muerto. Cannot use stations or sabotage.
-- **Muerto** (1 at 6 to 9 players, 2 at 10 to 12): knows Diavolo; nobody knows them (not even the
-  other Muerto). Stares, passes names on paper notes, sabotages (blackout, jam the stations near
+- **Muerto** (none at 6 to 7 players, 1 at 8 to 11, 2 at 12): knows Diavolo; nobody knows them (not
+  even the other Muerto). Hacks stations, passes names on paper notes, sabotages (blackout, jam the stations near
   them, a barricade across the way; one shared 45 s cooldown). May take the **Oculus of the Dead**
-  at any time: a 3 s visible ritual, then 1 s reads from 30 studs, and death after 3 minutes of
-  free roam.
+  at any time: a 3 s visible ritual, then they can stare (R) to read a name in 1 s from 30 studs,
+  eyes glowing, and die after 90 s of free roam.
 - **Ace**: secret; only the Butler knows. One arrest per match during a meeting: a Coven player is
   removed, an innocent walks free and Ace dies. The arrest reveals Ace.
 - **The Butler**: knows Ace. When Ace dies he has 30 s to name the next Ace (anyone but himself, once
@@ -102,7 +103,8 @@ working case files.
 | H | How to Play |
 | Q | Quick chat and the emote wheel; 1 to 8 play its emotes. In the lobby, the emote wheel alone |
 | N / G | Write or read your note / drop it |
-| R | Stare (Diavolo and Muertos): learn the real name of the player you look at |
+| E at a station | Hack its log (Diavolo and Muertos): three timing checks; miss one and its alarm goes off |
+| R | Stare (a Muerto who took the Oculus): read the real name of the player you look at |
 | P | Death's Manual (Diavolo) |
 | Z / B / T | Sabotage (Muertos): blackout, jam stations, barricade |
 | K | Ace's arrest, during a meeting |
@@ -122,7 +124,7 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   player is offered it once (a wisp at the foot of the terrace's steps, never forced), anyone can begin
   it under the Academy's gate, and it walks five steps through the Academy's own drills (role card, a
   case file, a name in the Manual, an arrest, READY) for a one-time reward. (The Trial's case-file
-  and Manual steps still show the old letter leak; they are due a rework to staring.)
+  and Manual steps teach the Oculus stare; they are due a rework to hacking.)
   Round the plaza five **tableaux** of stone figures act out how a case goes, with one line on the
   screen of whoever stands near. In a case: the role card, objectives for your role and phase, and
   one-time tips that name what to press for the player's own input (longer on a first case; the X
@@ -162,7 +164,7 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   - *Tokyo, the Scramble.* The lamps really cycle (50 s: walk 11, blink 4, cars 32, amber 3; worked
     out on every machine from one number, `shared/ScrambleCycle`). A crowd of about 35 walkers and a
     few clerks crosses with the walk lamp, four in five of them in the players' own suit: a player's
-    name tag hides inside the crowd, and a walker's body blocks a stare and the Oculus. A few cars drive on their lamp, brake and honk for anyone in their lane and never touch
+    name tag hides inside the crowd, and a walker's body blocks the Oculus. A few cars drive on their lamp, brake and honk for anyone in their lane and never touch
     them. Crossing on the cars' lamp is jaywalking: a camera may report it, and it accuses nobody.
     Nothing of the crowd or the cars exists on the server: they are numbers, sent five times a
     second in one small unreliable snapshot (`shared/MapSync`) and drawn by each client
@@ -218,8 +220,8 @@ Every action also has an on-screen button for touch devices, and gamepads are su
 
 - The server is the only source of truth. Roles, real names, the target in Death's Manual and who
   voted for whom never leave the server except to the one client allowed to see them.
-- Cutscene cues and poses carry only public information. Writing in the Manual and staring are seen
-  on purpose (the glowing book, the glowing eyes); no pop-up tells anyone what they saw, and the name
+- Cutscene cues and poses carry only public information. Writing in the Manual, staring and a failed hack are
+  seen on purpose (the glowing book, the glowing eyes, the station's alarm); no pop-up tells anyone what they saw, and the name
   written is never shown to anyone but the writer until it kills.
 - No cosmetic may reveal or hide a role, and no in-match display may reveal who is behind an
   alias (titles and VIP tags are lobby-only).
@@ -297,8 +299,8 @@ src/shared/     Config, Terms, Assets, Venues, LightingPresets, Models, ModelLib
 src/server/     init.server.luau boots every service
   Data/         Migrations (profile schema), ReceiptLedger (purchases granted exactly once)
   Services/     Match, RoundService (the match loop: free roam and meetings), Cues (cutscene
-                timing), the gameplay services (DeathNoteService the Manual, EyesService staring
-                and the Oculus, SabotageService, ArrestService and the Butler's succession,
+                timing), the gameplay services (DeathNoteService the Manual, HackService hacking stations,
+                EyesService the Oculus, SabotageService, ArrestService and the Butler's succession,
                 MeetingService and the bell, TaskBarService, CaseFileService), CharacterService, RagdollService, GhostService, CollisionGroups,
                 DataService, ProfileService, Cosmetics/Shop, Pass/Monetization/Alias/Director,
                 Progress/Achievement/Leaderboard, Analytics, DebugService (Studio only)

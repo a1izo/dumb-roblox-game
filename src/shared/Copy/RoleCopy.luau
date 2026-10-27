@@ -21,18 +21,18 @@ end
 local RoleCopy: { [string]: RoleCopy } = {
 	Kira = card(
 		{
-			"Stare at someone up close ({key.stare}), standing still, to learn their real name. Your eyes glow while you do.",
+			"Hack a station ({key.use}) right after someone finishes a case file there: you read their real name. Miss a check and its alarm goes off.",
 			"Write a learned name in {grimoire} ({key.manual}) any time. The book burns red for a few seconds: make sure nobody sees.",
 			"The victim dies 20 seconds later. You do not know your {cultists}: write one by mistake and they die too.",
 		},
 		"Match {agency} in number before they vote you out, arrest you or fill their task bar.",
-		"Wander, find someone alone, and stare."
+		"Follow someone to a station, and hack it when they leave."
 	),
 	Follower = card(
 		{
-			"You know {hand}; they do not know you. Stare to learn real names ({key.stare}) and pass them on a paper note.",
+			"You know {hand}; they do not know you. Hack stations for real names ({key.use}) and pass them on a paper note.",
 			"Sabotage: black out the map ({key.blackout}), jam the stations near you ({key.jam}), barricade the way ({key.barricade}).",
-			"Accept {eyes} for fast reads from far away, but it kills you three minutes later.",
+			"Accept {eyes} to read names at a glance by staring ({key.stare}), but it kills you 90 seconds later.",
 		},
 		"{Circle} wins when it matches {agency} in number.",
 		"Find {hand}, then pick up a blank sheet for your first name."
@@ -49,11 +49,11 @@ local RoleCopy: { [string]: RoleCopy } = {
 			"Name someone from {circle} and their title is worthless, so choose carefully.",
 		},
 		"{Agency} wins when {hand} is voted out or arrested, or the task bar fills.",
-		"Stay near {zero} and watch who stares at them."
+		"Stay near {zero} and watch who hangs round the stations they use."
 	),
 	TaskForce = card({
 		"Work case files ({key.use}). Every one fills {agency}'s task bar; fill it and you win.",
-		"Watch for glowing eyes (someone staring) and a burning red book ({hand} writing).",
+		"Every case file leaves your name on its station for a while. Run to an alarm: whoever is there was hacking.",
 		"Ring the bell to call a meeting. Only a paper note can carry a real name.",
 	}, "Vote out {hand}, or fill the task bar, before {circle} takes over.", "Pick a station and keep your eyes open."),
 }

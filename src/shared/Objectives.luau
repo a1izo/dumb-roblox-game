@@ -33,21 +33,31 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 
 	if phase == "Investigation" then
 		if role == "Kira" then
-			table.insert(lines, line("Stare at someone up close ({key.stare}) to learn their real name", known > 0))
+			table.insert(
+				lines,
+				line("Hack a station ({key.use}) just after someone uses it: learn their name", known > 0)
+			)
 			table.insert(lines, line("Write a name in {grimoire} ({key.manual}). Make sure nobody is watching"))
 		elseif role == "Follower" then
 			table.insert(
 				lines,
-				line("Stare to learn real names ({key.stare}), and pass them to {hand} on a note", known > 0)
+				line("Hack stations ({key.use}) for real names, and pass them to {hand} on a note", known > 0)
 			)
 			table.insert(
 				lines,
 				line("Sabotage: blackout ({key.blackout}), jam stations ({key.jam}), barricade ({key.barricade})")
 			)
 			if private.eyes then
-				table.insert(lines, line("{Eyes}: about {n} s of life left", nil, { n = private.eyes.lifeLeft }))
+				table.insert(
+					lines,
+					line(
+						"{Eyes}: stare to read names ({key.stare}), {n} s of life left",
+						nil,
+						{ n = private.eyes.lifeLeft }
+					)
+				)
 			elseif private.canDeal then
-				table.insert(lines, line("You may accept {eyes}: fast reads, a short life"))
+				table.insert(lines, line("You may accept {eyes}: read names at a glance, die in 90 s"))
 			end
 		else
 			table.insert(lines, line("Work case files at the stations ({key.use}): fill the task bar", tasks > 0))

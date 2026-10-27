@@ -91,15 +91,14 @@ return function(t)
 					Match.occluder = function()
 						return true
 					end
-					Match.sightScale.stare = 0.5
+					Match.sightScale.eyes = 0.5
 				end,
 				stop = function() end,
 			})
-			expect(Match.sightRange("stare")).to.be.near(Config.STARE_RANGE * 0.5)
-			expect(Match.sightRange("eyes")).to.be.near(Config.OCULUS_RANGE)
+			expect(Match.sightRange("eyes")).to.be.near(Config.OCULUS_RANGE * 0.5)
 			Mechanics.stop()
 			expect(Match.occluder).to.equal(nil)
-			expect(Match.sightRange("stare")).to.be.near(Config.STARE_RANGE)
+			expect(Match.sightRange("eyes")).to.be.near(Config.OCULUS_RANGE)
 		end)
 	end)
 

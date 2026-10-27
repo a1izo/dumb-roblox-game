@@ -48,15 +48,26 @@ Config.MANUAL_WRITE_TIME = 4 -- seconds standing with the glowing book open
 Config.MANUAL_COOLDOWN = 60
 Config.MANUAL_DELAY = 20 -- free-roam seconds between the writing and the death
 
--- Staring (Diavolo and Muertos): stand still, look at someone close, learn their real name.
-Config.STARE_TIME = 4
+-- Hacking a station (Diavolo and Muertos): HACK_STAGES timing checks over about HACK_TIME seconds
+-- read who finished a case file there in the HACK_WINDOW seconds before the hack began. A missed
+-- check sets off the station's alarm for everyone (ALARM_TIME seconds) and locks it to hacks for
+-- HACK_LOCK seconds. A hack can never finish in under HACK_MIN_TIME.
+Config.HACK_TIME = 12
+Config.HACK_STAGES = 3
+Config.HACK_WINDOW = 25
+Config.HACK_MIN_TIME = 7
+Config.ALARM_TIME = 8
+Config.HACK_LOCK = 30
+
+-- Staring is the Oculus deal's (internally "eyes"), a Muerto's only: a visible ritual, then a read
+-- takes OCULUS_READ_TIME seconds from up to OCULUS_RANGE away, eyes glowing; death after
+-- OCULUS_LIFESPAN seconds of free roam. STARE_RANGE is what a blackout shrinks it from.
 Config.STARE_RANGE = 12
--- The Oculus deal (internally "eyes"): a Muerto only. A visible ritual, then fast reads from far
--- off, and death after OCULUS_LIFESPAN seconds of free roam.
+Config.STARE_TIME = 4 -- the Trial's stare drill only (Shared/Trial)
 Config.OCULUS_RITUAL = 3
 Config.OCULUS_READ_TIME = 1
 Config.OCULUS_RANGE = 30
-Config.OCULUS_LIFESPAN = 180
+Config.OCULUS_LIFESPAN = 90
 Config.EYES_DURATION = 3 -- how long a learned name shows above its owner
 
 -- Muerto sabotage: one shared cooldown per Muerto, never during a meeting.

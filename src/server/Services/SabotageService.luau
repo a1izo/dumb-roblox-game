@@ -1,7 +1,7 @@
 -- The Muerto's sabotage, in free roam only. Three kinds share one cooldown per Muerto
 -- (SABOTAGE_COOLDOWN seconds):
---   blackout  : the whole map goes dark for BLACKOUT_TIME seconds; name tags hide and a stare only
---               reaches half as far (the Oculus sees in the dark).
+--   blackout  : the whole map goes dark for BLACKOUT_TIME seconds and name tags hide (cover for a
+--               hack or a writing).
 --   jam       : the case-file stations in the Muerto's area lock for JAM_TIME seconds.
 --   barricade : a barrier drops right in front of the Muerto for BARRICADE_TIME seconds, across the
 --               way they face. Anyone watching sees who put it there.
@@ -27,8 +27,6 @@ local SabotageService = {}
 
 SabotageService.KINDS = { "blackout", "jam", "barricade" }
 
-local BLACKOUT_STARE_SCALE = 0.5
-
 local blackoutToken = 0
 local blackoutOn = false
 local barricades: { BasePart } = {}
@@ -52,7 +50,6 @@ local function endBlackout()
 		return
 	end
 	blackoutOn = false
-	Match.sightScale.stare = 1
 	hideNames(false)
 	local map = Match.map
 	if map and map.model and map.model.Parent then
@@ -70,7 +67,6 @@ local function blackout(ps): boolean
 	local matchId = Match.id
 	blackoutOn = true
 	map.model:SetAttribute("BlackoutUntil", now() + Config.BLACKOUT_TIME)
-	Match.sightScale.stare = BLACKOUT_STARE_SCALE
 	hideNames(true)
 	EventLog.add(Terms.f("{alias} ({cultist}) blacked out the map.", { alias = ps.alias }), "sabotage")
 	task.delay(Config.BLACKOUT_TIME, function()
