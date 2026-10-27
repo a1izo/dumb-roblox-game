@@ -18,6 +18,7 @@ local EVENTS = {
 	"PartyState",
 	"Briefing",
 	"MapReady", -- client -> server: the match map and its content are loaded (LoadGate)
+	"Teleporting", -- server -> client: a match was found in another server; the loading screen goes with the player
 	"Notify",
 	"Announce",
 	"Elimination",

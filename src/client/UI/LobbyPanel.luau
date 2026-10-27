@@ -32,6 +32,7 @@ local Glitch = require(script.Parent.Core.Glitch)
 local LobbyChrome = require(script.Parent.Core.LobbyChrome)
 local Kit = require(script.Parent.Kit)
 local LobbyIntro = require(script.Parent.LobbyIntro)
+local MapPreloader = require(script.Parent.Parent.World.MapPreloader)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local TouchControls = require(script.Parent.Core.TouchControls)
@@ -287,8 +288,8 @@ function LobbyPanel.playEntrance()
 	end
 end
 
--- Coming back from a case (or from watching one): the lobby waits behind black until the results are
--- closed, then comes in through the intro.
+-- Coming back from a case (or from watching one): the lobby waits until the results are closed, then comes in through
+-- the loading screen (UI/LobbyIntro).
 local function returnToLobby()
 	if returning then
 		return
@@ -303,7 +304,7 @@ local function returnToLobby()
 		end
 		returning = false
 		if lobbyView() then
-			LobbyIntro.play(LobbyPanel.playEntrance)
+			LobbyIntro.comeBack(MapPreloader.lobby, LobbyPanel.playEntrance)
 		else
 			introHidden = false
 			applyVisibility()

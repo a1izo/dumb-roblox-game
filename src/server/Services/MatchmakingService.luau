@@ -25,6 +25,7 @@ local PartyService = require(script.Parent.PartyService)
 local RateLimit = require(script.Parent.RateLimit)
 
 local ReadyRemote = Net.event("Ready")
+local TeleportingRemote = Net.event("Teleporting")
 
 local Analytics = require(script.Parent.Analytics)
 local LobbyStateRemote = Net.event("LobbyState")
@@ -240,7 +241,10 @@ local function teleportGroup(members: { Player }, code: string)
 	for _, player in ipairs(present) do
 		ready[player] = nil
 		Match.notify(player, "Match found in another server. Teleporting...", "good")
+		-- (the loading screen goes up, and its still goes with the teleport: UI/AppleLoading)
+		TeleportingRemote:FireClient(player)
 	end
+	task.wait(0.4)
 	local options = Instance.new("TeleportOptions")
 	options.ReservedServerAccessCode = code
 	options:SetTeleportData({

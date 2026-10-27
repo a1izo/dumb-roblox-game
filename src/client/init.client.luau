@@ -125,15 +125,25 @@ local Cutscenes = require(Presentation:WaitForChild("Cutscenes"))
 local HintController = require(script:WaitForChild("Onboarding"):WaitForChild("HintController"))
 local TrialController = require(script:WaitForChild("Onboarding"):WaitForChild("TrialController"))
 
--- The join intro: the black ReplicatedFirst put up stays until the lobby is ready (the first lobby state has
--- arrived and your character is in the world, or 12 s at most), then the lobby glitches in from it.
+-- The join intro (UI/LobbyIntro): the eye over the black ReplicatedFirst put up, held shut until the game has loaded
+-- (the game itself, the first lobby state, your final R6 body, the props and the lobby downloaded), then into the
+-- lobby. Into a case already running, or arriving by teleport, the loading screen instead.
 LobbyIntro.cover()
+local function joinLoaded(): boolean
+	local character = Players.LocalPlayer.Character
+	local humanoid = if character then character:FindFirstChildOfClass("Humanoid") else nil
+	return game:IsLoaded()
+		and ClientState.lobby ~= nil
+		and humanoid ~= nil
+		and humanoid.RigType == Enum.HumanoidRigType.R6
+		and (character :: Model):FindFirstChild("HumanoidRootPart") ~= nil
+		and MapPreloader.joinReady()
+end
 task.spawn(function()
-	local deadline = os.clock() + 12
-	while os.clock() < deadline and (ClientState.lobby == nil or Players.LocalPlayer.Character == nil) do
-		task.wait(0.1)
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
 	end
-	LobbyIntro.play(LobbyPanel.playEntrance)
+	LobbyIntro.join(joinLoaded, LobbyPanel.playEntrance, MapPreloader.joiningCase())
 end)
 
 -- UI core: device scale, the shared clock, the screen router and the player's settings.

@@ -404,6 +404,25 @@ Assets.textures = {
 	AuraGlow = "", -- (the UI's soft light, UI/Kit/Surfaces)
 } :: { [string]: string }
 
+-- Pictures uploaded on their own through Studio's importer (art/export/textures). The first join's eye, painted in
+-- layers by art/scripts/ui/eye_intro.py (UI/EyeIntro): the face with the eye shut in two halves, the eye's corner as it
+-- opens (four frames), the foreground hair in two halves. The loading screen's apple, a 4 x 4 sheet of it turning, and
+-- the hand that catches it, open and holding it (art/scripts/ui/intro_frames.py, UI/AppleLoading). "" until uploaded:
+-- those screens then draw a stand-in.
+Assets.images = {
+	IntroBaseL = "",
+	IntroBaseR = "",
+	IntroEye1 = "",
+	IntroEye2 = "",
+	IntroEye3 = "",
+	IntroEye4 = "",
+	IntroHairL = "",
+	IntroHairR = "",
+	AppleSpin = "",
+	AppleHand1 = "",
+	AppleHand2 = "",
+} :: { [string]: string }
+
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
 Assets.icons = {
 	evidence = { glyph = "▤", image = "" },
