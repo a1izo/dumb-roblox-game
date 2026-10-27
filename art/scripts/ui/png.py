@@ -51,6 +51,12 @@ def read(path):
     for y in range(h):
         f = raw[y * (stride + 1)]
         line = np.frombuffer(raw, np.uint8, stride, y * (stride + 1) + 1).astype(np.int32)
+        # (the filters that need no left neighbour, a row at once: every row write() makes is one of these)
+        if f in (0, 2):
+            cur = line if f == 0 else (line + prev) & 255
+            out[y] = cur
+            prev = cur
+            continue
         cur = np.zeros(stride, np.int32)
         for x in range(stride):
             a = cur[x - channels] if x >= channels else 0

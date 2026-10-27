@@ -418,9 +418,9 @@ Assets.images = {
 	IntroEye4 = "",
 	IntroHairL = "",
 	IntroHairR = "",
-	AppleSpin = "",
-	AppleHand1 = "",
-	AppleHand2 = "",
+	AppleSpin = "115645305191275",
+	AppleHand1 = "108468715792008",
+	AppleHand2 = "139566256596403",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
