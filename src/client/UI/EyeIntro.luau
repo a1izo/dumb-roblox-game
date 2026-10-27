@@ -164,13 +164,21 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 			ContentProvider:PreloadAsync(ids)
 		end)
 	end
-	-- (the layers come up out of the black, unless Cover already brought them up)
-	for _, layer in ipairs({ stage.face, stage.near }) do
-		for _, label in ipairs(layer:GetChildren()) do
-			if label:IsA("ImageLabel") and label.ImageTransparency > 0 and label ~= stage.eye then
-				TweenService:Create(label, TweenInfo.new(1.2), { ImageTransparency = 0 }):Play()
-			end
-		end
+	-- (the head comes up out of the black in one piece, the hair with it: the Dawn, a black veil over every layer, lifts,
+	-- unless Cover already lifted it)
+	local dawn = black:FindFirstChild("Dawn") :: Frame?
+	if not dawn then
+		local made = Instance.new("Frame")
+		made.Name = "Dawn"
+		made.BackgroundColor3 = Color3.new(0, 0, 0)
+		made.BorderSizePixel = 0
+		made.Size = UDim2.fromScale(1, 1)
+		made.ZIndex = 7
+		made.Parent = black
+		dawn = made
+	end
+	if (dawn :: Frame).BackgroundTransparency < 1 then
+		TweenService:Create(dawn :: Frame, TweenInfo.new(1.2), { BackgroundTransparency = 1 }):Play()
 	end
 
 	local started = os.clock()

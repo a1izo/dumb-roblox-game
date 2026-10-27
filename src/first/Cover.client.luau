@@ -29,8 +29,16 @@ black.Size = UDim2.fromScale(1, 1)
 black.Parent = gui
 
 -- The painted face's layers (UI/EyeIntro lays and moves them): the face in two halves, the near hair in two halves,
--- covering the screen in the picture's own shape.
+-- covering the screen in the picture's own shape. They are drawn whole from the start under the Dawn, a black veil over
+-- them all, which lifts off the head in one piece (the hair never fades in by itself, showing the face through it).
 local ASPECT = 16 / 9
+local dawn = Instance.new("Frame")
+dawn.Name = "Dawn"
+dawn.BackgroundColor3 = Color3.new(0, 0, 0)
+dawn.BorderSizePixel = 0
+dawn.Size = UDim2.fromScale(1, 1)
+dawn.ZIndex = 7
+dawn.Parent = black
 local layers: { [string]: Frame } = {}
 local pictures: { ImageLabel } = {}
 for _, spec in ipairs({ { "Face", 1, "IntroBaseL", "IntroBaseR" }, { "Near", 3, "IntroHairL", "IntroHairR" } }) do
@@ -44,7 +52,6 @@ for _, spec in ipairs({ { "Face", 1, "IntroBaseL", "IntroBaseR" }, { "Near", 3, 
 		local half = Instance.new("ImageLabel")
 		half.Name = spec[3 + side]
 		half.BackgroundTransparency = 1
-		half.ImageTransparency = 1
 		half.Position = UDim2.fromScale(side * 0.5, 0)
 		half.Size = UDim2.fromScale(0.5, 1)
 		half.ZIndex = spec[2]
@@ -70,6 +77,7 @@ if arriving then
 	arriving.Parent = playerGui
 	gui:SetAttribute("Teleported", true)
 	black.BackgroundTransparency = 1
+	dawn.BackgroundTransparency = 1
 end
 
 gui.Parent = playerGui
@@ -100,10 +108,8 @@ if not arriving then
 		pcall(function()
 			ContentProvider:PreloadAsync(ids)
 		end)
-		for _, half in ipairs(pictures) do
-			if half.Parent and half.ImageTransparency > 0 then
-				TweenService:Create(half, TweenInfo.new(1.2), { ImageTransparency = 0 }):Play()
-			end
+		if dawn.Parent and dawn.BackgroundTransparency < 1 then
+			TweenService:Create(dawn, TweenInfo.new(1.2), { BackgroundTransparency = 1 }):Play()
 		end
 	end)
 end

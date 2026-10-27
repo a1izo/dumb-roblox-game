@@ -410,17 +410,17 @@ Assets.textures = {
 -- the hand that catches it, waiting and holding it (art/scripts/ui/intro_frames.py, UI/AppleLoading). "" until uploaded:
 -- those screens then draw a stand-in.
 Assets.images = {
-	IntroBaseL = "",
-	IntroBaseR = "",
-	IntroEye1 = "",
-	IntroEye2 = "",
-	IntroEye3 = "",
-	IntroEye4 = "",
-	IntroHairL = "",
-	IntroHairR = "",
-	AppleSpin = "",
-	AppleHand1 = "",
-	AppleHand2 = "",
+	IntroBaseL = "112649732036299",
+	IntroBaseR = "117826587593763",
+	IntroEye1 = "73671134573669",
+	IntroEye2 = "72561965034296",
+	IntroEye3 = "86909090559573",
+	IntroEye4 = "126999503834786",
+	IntroHairL = "77350048823213",
+	IntroHairR = "73218582422326",
+	AppleSpin = "116054757714434",
+	AppleHand1 = "119620415469239",
+	AppleHand2 = "109922448543976",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
