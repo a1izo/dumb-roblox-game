@@ -49,8 +49,14 @@ export type Options = {
 	length: number?,
 }
 
--- What a showing has going: what closes when it ends, the sounds it started, and its stretch.
-type Showing = { closers: { () -> () }, sounds: { Sound }, stretch: number }
+-- What a showing has going: what closes when it ends, the sounds it started, its stretch, and the
+-- motion blur's pulses ({ started (os.clock), size, seconds }).
+type Showing = { closers: { () -> () }, sounds: { Sound }, stretch: number, pulses: { { number } } }
+
+-- The motion blur: how much the camera's own speed blurs (size per degree a second turned, per stud a
+-- second moved), its most, and a move in one frame that is a cut, not a move.
+local BLUR_TURN, BLUR_MOVE, BLUR_MOST = 1 / 30, 1 / 14, 6
+local CUT_TURN, CUT_MOVE = 20, 5
 
 -- The data of a shot by name, or nil.
 function ShotPlayer.get(name: string): any
@@ -135,6 +141,21 @@ local function shown(range: { number }?, t: number): boolean
 	return range == nil or (t >= range[1] and t <= range[2])
 end
 
+-- How open a held Manual is at t, from its keys ({ t, 0 closed .. 1 open }), smooth between them.
+local function openAt(keys: { { number } }, t: number): number
+	if t <= keys[1][1] then
+		return keys[1][2]
+	end
+	for k = 2, #keys do
+		local a, b = keys[k - 1], keys[k]
+		if t <= b[1] then
+			local u = (t - a[1]) / math.max(1e-6, b[1] - a[1])
+			return a[2] + (b[2] - a[2]) * u * u * (3 - 2 * u)
+		end
+	end
+	return keys[#keys][2]
+end
+
 -- How high a body's root stands over the floor (R6: half the root and a leg).
 local function lift(model: Model): number
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -178,9 +199,26 @@ end
 -- Welds a prop to the end of an arm (offset and rotation from the arm's middle).
 local function hold(actor: Model, spec: any): Instance?
 	local arm = actor:FindFirstChild(spec.arm)
-	local model = propModel(spec.model)
+	-- (Death's Manual held open comes rigged: its board and leaves turn on their joints)
+	local rigged = spec.model == ManualBook.KEY and type(spec.open) == "table"
+	local model: Instance? = if rigged then Models.grimoire() else propModel(spec.model)
 	if not arm or not arm:IsA("BasePart") or not model then
+		if model then
+			model:Destroy()
+		end
 		return nil
+	end
+	if rigged and model:IsA("Model") then
+		for _, item in ipairs(model:GetDescendants()) do
+			if item:IsA("BasePart") then
+				item.Anchored = true
+				item.CanCollide = false
+				item.CanQuery = false
+				item.CanTouch = false
+				item.Massless = true
+			end
+		end
+		ManualBook.pose(model, spec.open[1][2], spec.open[1][2])
 	end
 	if type(spec.scale) == "number" and math.abs(spec.scale - 1) > 1e-3 and model:IsA("Model") then
 		model:ScaleTo(model:GetScale() * spec.scale)
@@ -196,12 +234,20 @@ local function hold(actor: Model, spec: any): Instance?
 	if anchor and anchor:IsA("BasePart") then
 		if model:IsA("Model") then
 			for _, item in ipairs(model:GetDescendants()) do
-				if item:IsA("BasePart") and item ~= anchor then
+				-- (a rigged piece keeps its own joint, which ManualBook.pose turns)
+				if item:IsA("BasePart") and item ~= anchor and not item:FindFirstChild("ManualJoint") then
 					Create("WeldConstraint", { Part0 = anchor, Part1 = item, Parent = item })
 				end
 			end
 		end
 		Create("WeldConstraint", { Part0 = arm, Part1 = anchor, Parent = anchor })
+	end
+	if rigged then
+		for _, item in ipairs(model:GetDescendants()) do
+			if item:IsA("BasePart") then
+				item.Anchored = false
+			end
+		end
 	end
 	return model
 end
@@ -243,7 +289,7 @@ type Live = {
 	times: { number },
 	frames: { CFrame },
 	lift: number,
-	held: { { spec: any, model: Instance? } },
+	held: { { spec: any, model: Instance?, open: number? } },
 	shadow: Highlight?,
 	eyes: { BasePart },
 }
@@ -321,6 +367,8 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 			)
 		elseif name == "shake" then
 			CameraDirector.shake(token, event.strength or 0.4, event.dur or 0.4)
+		elseif name == "blur" then
+			table.insert(showing.pulses, { os.clock(), event.strength or 12, event.dur or 0.35 })
 		elseif name == "snowburst" and at then
 			DeathFx.burst(at, Color3.fromRGB(235, 240, 248), 24)
 		elseif name == "burst" and at then
@@ -448,7 +496,19 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 
 	local closers: { () -> () } = {}
-	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch }
+	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, pulses = {} }
+	-- Motion blur: the camera's own turning and moving blurs the frame a little, and a hit pulses it.
+	local blur: BlurEffect? = nil
+	if not Vfx.still() then
+		local made = Create("BlurEffect", { Name = "ShotMotionBlur", Size = 0, Parent = workspace.CurrentCamera })
+		blur = made
+		table.insert(closers, function()
+			made:Destroy()
+		end)
+	end
+	local lastCamera: CFrame? = nil
+	local lastClock = os.clock()
+	local blurSize = 0
 	-- With the debug rate set, the shot's own clock in a corner, so a screenshot says which moment it is.
 	local clockLabel: TextLabel? = nil
 	local probed = false
@@ -562,7 +622,33 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		local i = find(camTimes, tt)
 		local j, alpha = alphaAt(camTimes, i, tt)
 		local fov = cam.fov[i] + (cam.fov[j] - cam.fov[i]) * alpha
-		CameraDirector.cut(token, camFrames[i]:Lerp(camFrames[j], alpha), fov)
+		local frameCamera = camFrames[i]:Lerp(camFrames[j], alpha)
+		CameraDirector.cut(token, frameCamera, fov)
+		if blur then
+			local now = os.clock()
+			local dt = math.max(1e-3, now - lastClock)
+			local want = 0
+			if lastCamera then
+				local turn = math.deg(math.acos(math.clamp(lastCamera.LookVector:Dot(frameCamera.LookVector), -1, 1)))
+				local move = (frameCamera.Position - lastCamera.Position).Magnitude
+				if turn < CUT_TURN and move < CUT_MOVE then -- (a cut is not a move)
+					want = math.min(BLUR_MOST, (turn / dt) * BLUR_TURN + (move / dt) * BLUR_MOVE)
+				end
+			end
+			for k = #showing.pulses, 1, -1 do
+				local pulse = showing.pulses[k]
+				local u = (now - pulse[1]) / pulse[3]
+				if u >= 1 then
+					table.remove(showing.pulses, k)
+				else
+					want = math.max(want, pulse[2] * (1 - u) * (1 - u))
+				end
+			end
+			-- (eased, so the blur breathes rather than flickers frame to frame)
+			blurSize = if want > blurSize then want else blurSize + (want - blurSize) * math.min(1, dt * 10)
+			blur.Size = blurSize
+			lastCamera, lastClock = frameCamera, now
+		end
 		-- actors
 		for _, live in ipairs(actors) do
 			local visible = shown(live.data.show, tt)
@@ -591,6 +677,14 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				elseif not want and item.model then
 					item.model:Destroy()
 					item.model = nil
+				end
+				local book = item.model
+				if book and book:IsA("Model") and type(item.spec.open) == "table" then
+					local open = openAt(item.spec.open, tt)
+					if open ~= item.open then
+						item.open = open
+						ManualBook.pose(book, open, open)
+					end
 				end
 			end
 		end

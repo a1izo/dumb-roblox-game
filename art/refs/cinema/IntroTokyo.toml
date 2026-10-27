@@ -39,7 +39,7 @@ pose = "Light, close, face in shadow, the faintest smirk"
 
 [timing]
 length = 23.0
-fit = "Our station has full-height glass screen doors: the car pulls in, both sets of doors open, and the man in the doorway stays aboard. The source's collapse (23-38 s) keeps its order at a slower, readable pace, with 7 long cuts instead of quick ones: the arrival (0-5), the look up into the doors (5-8), the clutch with the Manual slipping from his hand (8-12), the knees and the fall in place (12-15), the man looking down along the body (15-18), the smirk (18-20), the train leaving with nobody having looked up (20-23). The platform lives: people on phones, a pair talking, someone walking straight past him."
+fit = "Our station has full-height glass screen doors: the car pulls in, both sets of doors open, and the man in the car stays aboard, two studs back from the doors. As in the source, the Manual is his, not the victim's: he is reading it as the doors open and shuts it while he watches. 8 cuts: the arrival (0-5), the look up from the book into the doors (5-8), the clutch (8-12), the knees and the fall in place (12-15), low along the body to him looking down, dutch (15-17), the insert of the book shut by his other hand (17-18.4), the smirk, dutch the other way (18.4-20.4), the train leaving with nobody having looked up (20.4-23). Motion blur follows the camera and pulses on the jolt, the fall and the departure. The platform lives: people on phones, a pair talking, someone walking straight past him."
 
 [r6]
 notes = "Hands placed with emotes.kit.reach (the clutch at the chest, the palm on the glass); the knees with acting.kneel; lying down is the root pitched over with the body on the floor."

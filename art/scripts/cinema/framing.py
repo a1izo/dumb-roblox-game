@@ -148,9 +148,10 @@ def follow(shot, t0, t1, slot, kind="medium", step=0.25, cut=False, fov=None, ba
 
 
 def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=False, drift=(0.0, 0.0, 0.0),
-        back=False):
+        back=False, roll=0.0):
     """A camera standing at `pos` (drifting by `drift` over the cut) that turns to keep `slot`'s `aim` part
-    in the middle of the frame while they move. `back`: seeing the back of their head is meant."""
+    in the middle of the frame while they move. `back`: seeing the back of their head is meant. `roll`: a dutch
+    angle, in degrees."""
     shot.subjects.append((t0, t1, slot, back))
     n = max(1, int(round((t1 - t0) / step)))
     for i in range(n + 1):
@@ -158,7 +159,7 @@ def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=Fa
         t = t0 + (t1 - t0) * u
         target = part(shot, slot, t, aim) + np.array([0.0, dy, 0.0])
         p = np.array(pos, float) + np.array(drift, float) * u
-        shot.cam(t, tuple(p), tuple(target), fov=fov, ease="linear", cut=cut and i == 0)
+        shot.cam(t, tuple(p), tuple(target), fov=fov, roll=roll, ease="linear", cut=cut and i == 0)
 
 
 def spot(shot, t, slot, kind="medium", **kw):

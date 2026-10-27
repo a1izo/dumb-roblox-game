@@ -355,7 +355,7 @@ def arm_socket(arm, part_name, parts):
 def add_held(actor, arm, parts, library):
     import json
 
-    for prop, part, off, rot, t0, t1, scale in actor.held:
+    for prop, part, off, rot, t0, t1, scale, keys in actor.held:
         src = library.get(prop)
         if src is None:
             continue
@@ -363,6 +363,8 @@ def add_held(actor, arm, parts, library):
         obj = src.copy()
         common.collection("Actors").objects.link(obj)
         obj.parent = socket
+        hinges = json.loads(src["hinge"]) if src.get("hinge") else {}
+        turns = json.loads(src["turn"]) if src.get("turn") else {}
         for name in json.loads(src["parts"]) if src.get("parts") else []:  # its pieces (the Manual's board, leaves)
             if library.get(prop + "_" + name) is not None:
                 piece = library[prop + "_" + name].copy()
@@ -370,6 +372,15 @@ def add_held(actor, arm, parts, library):
                 piece.parent = obj
                 piece.matrix_parent_inverse = Matrix.Identity(4)
                 piece.matrix_basis = Matrix.Identity(4)
+                if keys and name in hinges and name in turns:  # opened and shut as the game does
+                    hx, hy, hz = hinges[name]
+                    at = Vector((-hx, hz, hy))
+                    for k in range(int(actor.shot.length * FPS) + 1):
+                        share = open_at(keys, k / FPS)
+                        swing = Matrix.Rotation(math.radians(-turns[name] * share), 4, "Y")
+                        piece.matrix_basis = Matrix.Translation(at) @ swing @ Matrix.Translation(-at)
+                        piece.keyframe_insert("location", frame=k)
+                        piece.keyframe_insert("rotation_euler", frame=k)
         local = (Matrix.Translation(Vector(off)) @ Matrix([list(r) for r in shotlib.euler_rotation(*rot)]).to_4x4()
                  @ MAP.to_4x4() @ Matrix.Scale(scale, 4))
         for t, show in ((0.0, t0 <= 0.0), (t0, True), (t1, False)):
@@ -378,6 +389,17 @@ def add_held(actor, arm, parts, library):
             obj.keyframe_insert("location", frame=t * FPS)
             obj.keyframe_insert("rotation_euler", frame=t * FPS)
         constant_keys(obj)
+
+
+def open_at(keys, t):
+    """How open a held Manual is at t (ShotPlayer's openAt): smooth between its keys."""
+    if t <= keys[0][0]:
+        return keys[0][1]
+    for (a, va), (b, vb) in zip(keys, keys[1:]):
+        if t <= b:
+            u = (t - a) / max(1e-6, b - a)
+            return va + (vb - va) * u * u * (3 - 2 * u)
+    return keys[-1][1]
 
 
 def add_props(shot, library):
