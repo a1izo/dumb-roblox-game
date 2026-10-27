@@ -1,6 +1,6 @@
 -- Quick chat and the emote wheel: in a case, the only way to talk outside meetings. A page rises above the
--- bottom of the screen. In a case it has two tabs, Phrases (a grid of them) and Emotes; in the lobby it is
--- the emotes alone. The emotes are the wheel (UI/Wheel: the eight slots of Shared/EmoteWheel round a ring,
+-- bottom of the screen, each on its own key and with no tabs between them (2026-10-27: Q had opened both): the
+-- phrases (a grid of them, M, in a case) and the emotes (Q, anywhere). The emotes are the wheel (UI/Wheel: the eight slots of Shared/EmoteWheel round a ring,
 -- pointed at with the mouse, a stick or a finger, played with a click, a tap, A, letting go of Q, or the keys
 -- 1 to 8); "More" over it lists every emote you have. An emote that cannot be played where you are (one made
 -- for the lobby only, in a case) is locked, with the reason.
@@ -29,12 +29,12 @@ local T = Kit.Tokens
 local QuickChatPanel = {}
 
 -- Layout (design px).
-local TABS = 48 -- the tab row, in a case
 local CAPTION = 22
 local WIDTH = 470
 local PAD = T.space.l
-local HEIGHT_CASE = PAD * 2 + TABS + T.space.s + CAPTION + Wheel.HEIGHT
-local HEIGHT_LOBBY = PAD * 2 + CAPTION + Wheel.HEIGHT
+local GRID = 144 -- the phrases' grid
+local HEIGHT_EMOTES = PAD * 2 + CAPTION + Wheel.HEIGHT
+local HEIGHT_PHRASES = PAD * 2 + GRID
 -- The slot a key plays: the wheel's slot keys (1 to 8 unless the player set their own, Shared/Bindings).
 local function slotFor(key: Enum.KeyCode): number?
 	local profile = ClientState.profile
@@ -49,8 +49,6 @@ end
 
 local panel: Frame
 local sizeLimit: UISizeConstraint?
-local tabsHolder: Frame
-local chooseTab: ((string) -> ())? = nil
 local phrasesPage: Frame
 local emotesPage: Frame
 local caption: TextLabel
@@ -61,19 +59,13 @@ local moreShown = false
 local firstPhrase: GuiObject? = nil
 local tab = "emotes"
 local keyConnection: RBXScriptConnection? = nil
-local tabsBand: Frame? = nil
 
 function QuickChatPanel.toggle()
 	Router.toggle("quickChat")
 end
 
 function QuickChatPanel.close()
-	Router.close("quickChat", "user")
-end
-
--- In a case (not the lobby, where a Specter waiting is too).
-local function inCase(): boolean
-	return ClientState.isParticipant()
+	Router.close(if tab == "phrases" then "phrases" else "quickChat", "user")
 end
 
 -- The wheel asks to play an emote: it goes to the server, and the page closes.
@@ -83,15 +75,12 @@ local function play(emote: QuickChat.Emote)
 end
 
 -- The wheel stands on its own over the world: no panel behind it (the old grey box). The phrases and the list of
--- every emote keep the panel, which they need to be read; with the panel gone the tabs keep a band of their own.
+-- every emote keep the panel, which they need to be read.
 local function backing()
 	local surface = panel and panel:FindFirstChild("Surface")
 	local bare = tab == "emotes" and not moreShown
 	if surface and surface:IsA("GuiObject") then
 		surface.Visible = not bare
-	end
-	if tabsBand then
-		tabsBand.Visible = bare
 	end
 end
 
@@ -103,23 +92,16 @@ local function showMore(on: boolean)
 	backing()
 end
 
--- Lays the page out for where you are: tabs in a case, the emotes alone in the lobby.
+-- Lays the page out for the one it shows: the phrases' grid, or the wheel.
 local function arrange()
-	local case = inCase()
-	local height = if case then HEIGHT_CASE else HEIGHT_LOBBY
+	local phrases = tab == "phrases"
+	local height = if phrases then HEIGHT_PHRASES else HEIGHT_EMOTES
 	panel.Size = UDim2.new(0.9, 0, 0, height)
 	if sizeLimit then
-		sizeLimit.MaxSize = Vector2.new(if case then 720 else WIDTH + PAD * 2, height)
+		sizeLimit.MaxSize = Vector2.new(if phrases then 720 else WIDTH + PAD * 2, height)
 	end
-	tabsHolder.Visible = case
-	local top = if case then TABS + T.space.s else 0
-	phrasesPage.Position = UDim2.fromOffset(0, top)
-	phrasesPage.Size = UDim2.new(1, 0, 1, -top)
-	emotesPage.Position = UDim2.fromOffset(0, top)
-	emotesPage.Size = UDim2.new(1, 0, 1, -top)
-	if not case then
-		tab = "emotes"
-	end
+	phrasesPage.Size = UDim2.fromScale(1, 1)
+	emotesPage.Size = UDim2.fromScale(1, 1)
 	phrasesPage.Visible = tab == "phrases"
 	emotesPage.Visible = tab == "emotes"
 	backing()
@@ -128,12 +110,6 @@ local function arrange()
 		local width = emotesPage.AbsoluteSize.X / Kit.Base.scaleOf(emotesPage)
 		wheelScale.Scale = if width > 0 then math.min(1, width / WIDTH) else 1
 	end)
-end
-
-local function setTab(id: string)
-	tab = id
-	showMore(false)
-	arrange()
 end
 
 local function onKey(input: InputObject, processed: boolean)
@@ -153,46 +129,16 @@ function QuickChatPanel.init()
 		padding = PAD,
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -96),
-		Size = UDim2.new(0.9, 0, 0, HEIGHT_CASE),
+		Size = UDim2.new(0.9, 0, 0, HEIGHT_EMOTES),
 		Visible = false,
 		Parent = Screens.panels,
 	})
 	panel = page
-	sizeLimit = Kit.Base.maxSize(panel, Vector2.new(720, HEIGHT_CASE))
-
-	tabsHolder = Kit.frame({ Name = "Tabs", Size = UDim2.new(1, 0, 0, TABS), Parent = content })
-	local band = Kit.Base.make("Frame", {
-		Name = "Band",
-		BackgroundColor3 = C.raised,
-		BackgroundTransparency = 0.15,
-		BorderSizePixel = 0,
-		Size = UDim2.new(0, 0, 1, 0),
-		AutomaticSize = Enum.AutomaticSize.X,
-		Visible = false,
-		ZIndex = tabsHolder.ZIndex,
-		Parent = tabsHolder,
-	}) :: Frame
-	Kit.Base.corner(band, T.radius.key)
-	tabsBand = band
-	local tabs, choose = Kit.tabs({
-		items = {
-			{ id = "phrases", label = "Phrases", icon = "chat" },
-			{ id = "emotes", label = "Emotes", icon = "palm" },
-		},
-		selected = tab,
-		Size = UDim2.fromOffset(0, TABS),
-		Parent = tabsHolder,
-	}, function(id: string)
-		if id ~= tab then
-			setTab(id)
-		end
-	end)
-	tabs.AutomaticSize = Enum.AutomaticSize.X
-	chooseTab = choose
+	sizeLimit = Kit.Base.maxSize(panel, Vector2.new(720, HEIGHT_EMOTES))
 
 	-- Phrases: a grid, four to a row.
 	phrasesPage = Kit.frame({ Name = "Phrases", Parent = content })
-	local phrases = Kit.frame({ Name = "Grid", Size = UDim2.new(1, 0, 0, 144), Parent = phrasesPage })
+	local phrases = Kit.frame({ Name = "Grid", Size = UDim2.new(1, 0, 0, GRID), Parent = phrasesPage })
 	Kit.grid(phrases, UDim2.new(0.25, -T.space.s, 0, 40), T.space.s)
 	for index, phrase in ipairs(QuickChat.PHRASES) do
 		local button = Kit.button({
@@ -247,40 +193,46 @@ function QuickChatPanel.init()
 	ClientState.ProfileChanged:Connect(function()
 		Wheel.refresh()
 	end)
-	Router.register("quickChat", {
-		layer = "panel",
-		window = panel,
-		allowed = function(view)
-			return Actions.emotesAllowed(view)
-		end,
-		show = function()
-			if not inCase() then
-				tab = "emotes"
-			end
-			if chooseTab then
-				chooseTab(tab)
-			end
-			arrange()
-			panel.Visible = true
-			Wheel.shown(true)
-			showMore(false)
-			if keyConnection then
-				keyConnection:Disconnect()
-			end
-			keyConnection = UserInputService.InputBegan:Connect(onKey)
-		end,
-		hide = function()
-			panel.Visible = false
-			Wheel.shown(false)
-			if keyConnection then
-				keyConnection:Disconnect()
-				keyConnection = nil
-			end
-		end,
-		firstSelection = function()
-			return if tab == "phrases" then firstPhrase else Wheel.first()
-		end,
-	})
+	-- Two views on the one page: the emotes (Q) and the phrases (M), each opened on its own, never switched between.
+	local function view(id: string, page: string, allowed: (any) -> boolean)
+		Router.register(id, {
+			layer = "panel",
+			window = panel,
+			allowed = allowed,
+			show = function()
+				tab = page
+				arrange()
+				panel.Visible = true
+				Wheel.shown(page == "emotes")
+				showMore(false)
+				if keyConnection then
+					keyConnection:Disconnect()
+					keyConnection = nil
+				end
+				if page == "emotes" then
+					keyConnection = UserInputService.InputBegan:Connect(onKey)
+				end
+			end,
+			hide = function()
+				if tab ~= page then
+					return
+				end
+				panel.Visible = false
+				Wheel.shown(false)
+				if keyConnection then
+					keyConnection:Disconnect()
+					keyConnection = nil
+				end
+			end,
+			firstSelection = function()
+				return if page == "phrases" then firstPhrase else Wheel.first()
+			end,
+		})
+	end
+	view("quickChat", "emotes", Actions.emotesAllowed)
+	view("phrases", "phrases", function(state)
+		return state.participant and Actions.emotesAllowed(state)
+	end)
 end
 
 return QuickChatPanel

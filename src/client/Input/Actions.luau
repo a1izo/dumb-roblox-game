@@ -95,14 +95,25 @@ Actions.list = {
 	},
 	{
 		id = "quickChat",
-		label = function(view: View)
-			return if view.participant then "Quick chat" else "Emotes"
-		end,
+		label = fixed("Emotes"),
 		keys = { Enum.KeyCode.Q },
 		pad = Enum.KeyCode.DPadLeft,
 		when = Actions.emotesAllowed,
 		run = function()
 			Router.toggle("quickChat")
+		end,
+	},
+	{
+		-- quick chat's phrases, in a case (their own page, their own key: UI/QuickChatPanel)
+		id = "phrases",
+		label = fixed("Quick chat"),
+		keys = { Enum.KeyCode.M },
+		pad = Enum.KeyCode.ButtonL3,
+		when = function(view: View)
+			return view.participant and Actions.emotesAllowed(view)
+		end,
+		run = function()
+			Router.toggle("phrases")
 		end,
 	},
 	{
@@ -194,8 +205,9 @@ Actions.list = {
 		keys = { Enum.KeyCode.V },
 		pad = Enum.KeyCode.ButtonR2,
 		variant = "ghost",
+		-- (not while the emote wheel is open: there RT plays the slot pointed at)
 		when = function(view: View)
-			return view.participant
+			return view.participant and not Router.isOpen("quickChat")
 		end,
 		run = function()
 			Router.toggle("scratchpad")

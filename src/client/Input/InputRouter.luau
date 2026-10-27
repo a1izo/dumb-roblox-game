@@ -5,6 +5,7 @@
 -- follow. Roblox's own controls (walking, jumping, the camera keys, shift lock) follow through Input/StockControls.
 
 local ContextActionService = game:GetService("ContextActionService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
@@ -38,6 +39,24 @@ local applied: any = false
 -- Settings > Controls waiting for a new key: no action runs meanwhile (the key is being chosen).
 local paused = false
 
+-- The prompts showing now (a plate's key belongs to its plate while it shows: Shared/Bindings' "plate" context).
+local shownPrompts: { [ProximityPrompt]: boolean } = {}
+ProximityPromptService.PromptShown:Connect(function(prompt: ProximityPrompt)
+	shownPrompts[prompt] = true
+end)
+ProximityPromptService.PromptHidden:Connect(function(prompt: ProximityPrompt)
+	shownPrompts[prompt] = nil
+end)
+
+local function promptTakes(key: Enum.KeyCode): boolean
+	for prompt in pairs(shownPrompts) do
+		if prompt.Parent and prompt.Enabled and (prompt.GamepadKeyCode == key or prompt.KeyboardKeyCode == key) then
+			return true
+		end
+	end
+	return false
+end
+
 function InputRouter.setPaused(on: boolean)
 	paused = on
 end
@@ -56,11 +75,15 @@ function InputRouter.apply(saved: any)
 			table.insert(inputs, action.pad)
 		end
 		if #inputs > 0 then
-			ContextActionService:BindAction(name, function(_, state: Enum.UserInputState)
+			ContextActionService:BindAction(name, function(_, state: Enum.UserInputState, input: InputObject?)
 				if state ~= Enum.UserInputState.Begin then
 					return Enum.ContextActionResult.Pass
 				end
 				if paused or UserInputService:GetFocusedTextBox() or not action.when(Router.view()) then
+					return Enum.ContextActionResult.Pass
+				end
+				-- (a prompt showing on that key takes it: pad Y joined a dance and opened the Manual at once)
+				if input and promptTakes(input.KeyCode) then
 					return Enum.ContextActionResult.Pass
 				end
 				action.run()

@@ -49,7 +49,8 @@ local ROLE_ICON = {
 -- Icon per action id.
 local ACTION_ICON = {
 	privateScreen = "grimoire",
-	quickChat = "chat",
+	quickChat = "palm",
+	phrases = "chat",
 	note = "note",
 	drop = "mail",
 	eyesDeal = "eye",

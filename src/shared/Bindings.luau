@@ -70,6 +70,8 @@ Bindings.ACTIONS = {
 	action("shiftLock", "Shift lock (when it is on in Roblox's settings)", "camera", { "LeftShift", "RightShift" }, {}),
 	action("privateScreen", Terms.f("{Grimoire}"), "world", { "P" }, { "ButtonY" }),
 	action("quickChat", "The emote wheel", "world", { "Q" }, { "DPadLeft" }),
+	-- (quick chat's phrases on their own key, 2026-10-27: Q had opened both, on two tabs)
+	action("phrases", "Quick chat", "world", { "M" }, { "ButtonL3" }),
 	action("note", "Notes", "world", { "N" }, { "DPadRight" }),
 	action("drop", "Drop", "world", { "G" }, { "DPadDown" }),
 	action("eyesRead", "Stare (learn a real name)", "world", { "R" }, { "ButtonR1" }),
@@ -123,8 +125,8 @@ Bindings.SECTIONS = {
 		},
 	},
 	{
-		title = "Emotes",
-		ids = { "quickChat", "slot1", "slot2", "slot3", "slot4", "slot5", "slot6", "slot7", "slot8" },
+		title = "Emotes and quick chat",
+		ids = { "quickChat", "phrases", "slot1", "slot2", "slot3", "slot4", "slot5", "slot6", "slot7", "slot8" },
 	},
 	{
 		title = "Emotes with others, and notes",

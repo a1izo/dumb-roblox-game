@@ -56,7 +56,12 @@ local function controls(): { string }
 	if input == "gamepad" then
 		return {
 			string.format("%s: use the prompts near stations, notes and the bell.", k("interact", "pickUp")),
-			string.format("%s: quick chat.  %s: read or drop the note you carry.", k("quickChat"), k("note", "drop")),
+			string.format(
+				"%s: emotes.  %s: quick chat.  %s: read or drop your note.",
+				k("quickChat"),
+				k("phrases"),
+				k("note", "drop")
+			),
 			string.format(
 				"Hold %s: role card.  %s: scratchpad.  %s: stare (learn a real name).",
 				k("roleCard"),
@@ -75,8 +80,9 @@ local function controls(): { string }
 	return {
 		string.format("%s: use the prompts near stations, notes and the bell.", k("interact", "pickUp")),
 		string.format(
-			"%s: quick chat and emotes.  %s: read or write your note / drop it.",
+			"%s: emotes.  %s: quick chat.  %s: read or write your note / drop it.",
 			k("quickChat"),
+			k("phrases"),
 			k("note", "drop")
 		),
 		string.format(
