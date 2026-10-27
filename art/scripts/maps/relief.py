@@ -174,7 +174,12 @@ def _on(piece, segments, near, street):
 def apply(scene, mat, scan, segments, street, top, cap, near=1.2, fade=0.15):
     """Lays the relief over the faces of `mat` on the wall lines `segments` ([((x, z), (x, z))]) that face
     the street (its centre line, [(x, z)]), from the ground up to the bed joint nearest `top` studs.
-    Raises if that would add more than `cap` triangles. Returns (triangles added, band top)."""
+    Raises if that would add more than `cap` triangles. Returns (triangles added, band top).
+    A cutscene preview (run_cinema sets DG_PREVIEW) goes on without it when the tile is not made here: the
+    relief is a few studs of a wall's surface, and making it needs scipy and Pillow outside Blender."""
+    if os.environ.get("DG_PREVIEW") and not os.path.exists(os.path.join(common.source("prepared"), f"{scan}_relief.npz")):
+        print(f"[relief] preview without {scan}'s relief (its tile is not made on this machine)")
+        return 0, top
     tile = load(scan)
     tile_studs = float(tile["tile_studs"])
     # The band ends on the upper arris of a bed joint (v up: above the joint's middle), so the whole joint

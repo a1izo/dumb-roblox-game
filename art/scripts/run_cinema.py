@@ -4,6 +4,7 @@
     blender -b --factory-startup --python art/scripts/run_cinema.py -- --lint [Shot ...]   (camera checks)
     blender -b --factory-startup --python art/scripts/run_cinema.py -- --preview Shot [--size=960x540] [--from=0 --to=8]
     blender -b --factory-startup --python art/scripts/run_cinema.py -- --preview Shot --stills=1,4.5,9   (frames as PNGs)
+    ... --preview Shot --stills=4.5 --eye=px,py,pz,tx,ty,tz[,fov]   (the staging seen from anywhere)
 
 The actors' acting clips must already be built (run_anims.py builds them with the other clips, and
 saves them in art/blend/Animations.blend). The preview builds the shot's venue the way run_maps.py
@@ -81,6 +82,8 @@ def look_and_atmosphere(bscene):
 
 def build_set(venue):
     import run_maps
+
+    os.environ["DG_PREVIEW"] = "1"  # (a preview may go without what only an export needs, maps/relief.py)
     from maps import matlib, mesher
 
     common.clear_scene()
@@ -576,7 +579,7 @@ def sheet(shot, size=(640, 360)):
     return out
 
 
-def preview(shot, size=(960, 540), t_from=0.0, t_to=None, stills=None):
+def preview(shot, size=(960, 540), t_from=0.0, t_to=None, stills=None, eye=None):
     library = build_set(shot.venue)
     clips = {a.clip for a in shot.actors if a.clip}
     rig, actions = load_rig(clips)
@@ -588,6 +591,18 @@ def preview(shot, size=(960, 540), t_from=0.0, t_to=None, stills=None):
     add_captions(shot, cam)
     scene = bpy.context.scene
     letterbox(scene, shot.letterbox)
+    if eye:
+        # A look at the staging from anywhere (px, py, pz, tx, ty, tz[, fov]): the stills are taken from there.
+        data = bpy.data.cameras.new("EyeCam")
+        data.sensor_fit = "VERTICAL"
+        data.clip_start = 0.1
+        data.clip_end = 3000
+        data.angle_y = math.radians(eye[6] if len(eye) > 6 else 60.0)
+        look = bpy.data.objects.new("EyeCam", data)
+        scene.collection.objects.link(look)
+        look.matrix_world = Matrix.Translation(b_pos(eye[:3])) @ b_rot(shotlib.look_rotation(eye[:3], eye[3:6]), True).to_4x4()
+        scene.camera = look
+        letterbox(scene, False)
     scene.render.resolution_x, scene.render.resolution_y = size
     scene.render.fps = 30
     scene.frame_start = int(t_from * FPS)
@@ -633,6 +648,7 @@ def main():
         from maps import matlib, mesher
 
         built = {}
+        os.environ["DG_PREVIEW"] = "1"  # (a check, like a preview, may go without what only an export needs)
         for name in names:
             venue = shots[name].venue
             if venue not in built:
@@ -651,7 +667,7 @@ def main():
             print("[cinema] sheet", sheet(shots[name]))
     if "--preview" in argv:
         size = (960, 540)
-        t_from, t_to, stills = 0.0, None, None
+        t_from, t_to, stills, eye = 0.0, None, None, None
         for a in argv:
             if a.startswith("--size="):
                 w, h = a.split("=")[1].split("x")
@@ -662,8 +678,10 @@ def main():
                 t_to = float(a.split("=")[1])
             elif a.startswith("--stills="):
                 stills = [float(v) for v in a.split("=")[1].split(",")]
+            elif a.startswith("--eye="):
+                eye = [float(v) for v in a.split("=")[1].split(",")]
         for name in names:
-            print("[cinema] preview", preview(shots[name], size, t_from, t_to, stills))
+            print("[cinema] preview", preview(shots[name], size, t_from, t_to, stills, eye))
 
 
 if __name__ == "__main__":

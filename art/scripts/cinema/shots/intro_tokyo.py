@@ -1,200 +1,228 @@
-"""The Tokyo intro: the metro platform, the last train. While everyone waits, the train pulls in; one
-player (the struggler, picked at random) suddenly crumples to the floor and writhes there, a black
-notebook beside them. In the open doorway of the stopped train another random player (the watcher)
-stands looking down at them, unmoved. The doors close and the train pulls away. Nobody dies here, and
-neither part says anything about anyone's role.
+"""The Tokyo intro (everyone, 15 s): the platform. After Raye Penber's death in the subway (Death Note, episode 9;
+art/refs/cinema/IntroTokyo.toml): a man seizes up at the train's door while the one inside the car watches. Ours:
+both are random players and nobody dies; the victim falls and struggles, the Manual on the floor beside him.
 
-The platform (maps/venues/tokyo/station.py): an island x -140..-30, z -73..-51, its floor at y -20,
-glass screen doors along both edges; the north track's middle is z -77.5, its bed at y -24. The train
-stops with its head car's middle at x -111 and the next car's at x -59 (rot 90: they run along x,
-heading west). TrainCarOpen's doorway (one car on) faces the platform at x -65.4."""
+A  0.0-3.4   Low along the glass screen doors: the car pulls in behind them, braking; the victim waits at a bay, his
+             head following it in. Further down the platform the others wait over their phones.
+B  3.4-7.2   From deep inside the car, past the watcher's shoulder, out through the glass: the doors open; the
+             victim's jolt, the hand to his chest, doubled over, his palm slapping onto the pane, the head thrown
+             back in agony.
+D  7.2-9.2   Behind him on the platform: he slides down the glass to his knees and onto his side, the watcher
+             standing over him beyond the glass; the Manual on the floor beside him.
+E  9.2-11.6  Low by the glass at the floor, up through it: the watcher in the lit doorway looks down at him.
+F  11.6-13.0 Close on the watcher through the glass: he lifts his head and looks at us, the faintest smile; the
+             car's doors slide shut across him.
+G  13.0-15.0 High from the platform's east end: the car pulls out; he lies struggling by the Manual; nobody looked up.
 
-import math
-import random
+The metro (maps/venues/tokyo/plan.py, Tokyo scene space): the island platform at y -20 (x -140..-30, z -73..-51), its
+north edge's glass screen doors at z -51.4 in 6-stud bays centred at x -136 + 6k, the yellow tactile strip at z
+-52.1..-53.1; the north track's middle at z -46.5. The car (TrainCarOpen) is turned to run along x with its open
+doorway facing the platform; its floor is level with the platform."""
 
 from animlib import J
-from cinema.acting import alive, beat, soft
+from cinema.acting import alive, kneel, seated, soft, strike
 from cinema.shot import Shot
+from emotes.kit import CHEST, reach
 from motion import Motion
 
 NAME = "IntroTokyo"
 LENGTH = 15.0
 FLOOR = -20.0
-TRACK = -77.5
-CAR_Y = -24.0 + 0.7
-CAR_FLOOR = CAR_Y + 1.5
-HEAD_STOP, OPEN_STOP = -111.0, -59.0
-DOOR_X = OPEN_STOP - 6.4  # the open doorway's middle
-EDGE_Z = -73.1  # the car's side, at the platform edge
-ARRIVE, STOPPED, LEAVE = 2.6, 5.8, 12.4
-STRUGGLER = (-62.0, FLOOR, -68.4)
-BOOK = (-60.0, FLOOR + 0.25, -69.9)
+GLASS_Z = -51.4
+DOOR_X = -88.0  # the car's open doorway, in line with a screen-door bay
+TRACK_Z = -46.5
+CAR_DOOR = 6.4  # the doorway's middle from the car's pivot, along x (the prop's DOOR_Y, turned)
+CAR_Y = FLOOR - 1.5  # the car's floor is 1.5 over its pivot: level with the platform
+STOP = DOOR_X - CAR_DOOR
+ARRIVE, STOPPED, LEAVE = (0.0, STOP + 36.0), (3.4, STOP), (12.8, STOP)
+GONE = (LENGTH, STOP - 34.0)
 
-CROWD = [  # (x, z, yaw): people waiting along the platform, most facing the track
-    (-50.0, -59.0, 5), (-72.5, -67.0, -10), (-52.0, -60.0, 20), (-76.0, -62.5, 0), (-48.0, -67.5, -5),
-    (-83.0, -66.0, 10), (-66.0, -58.5, 160), (-90.0, -61.0, -20), (-44.0, -62.0, 30), (-96.0, -67.0, 0),
-    (-38.0, -66.0, -15),
-]
+VICTIM = (DOOR_X, -52.8)  # on the strip, facing the glass
+WATCHER = (DOOR_X - 1.6, -49.6)  # inside the doorway by its west post, facing out (the other half is clear)
+MANUAL_AT = (DOOR_X - 1.9, -53.1)  # by his head and his hand, where he falls
 
-
-def bearing(frm, to):
-    """The yaw that faces from `frm` towards `to` (x, z)."""
-    dx, dz = to[0] - frm[0], to[1] - frm[1]
-    return math.degrees(math.atan2(-dx, -dz))
+# Everyone in the car rides it: their marks keep their place in it while it moves.
+def ride(actor, x_in_car, z, yaw, y=FLOOR + 0.1):
+    for t, x, ease in ((ARRIVE[0], ARRIVE[1], "smooth"), (STOPPED[0], STOPPED[1], "out"), (LEAVE[0], LEAVE[1], "smooth"),
+                       (GONE[0], GONE[1], "in")):
+        actor.mark(t, (x + x_in_car, y, z), yaw, ease)
 
 
-# Acting ---------------------------------------------------------------------------------------------
+# The victim -----------------------------------------------------------------------------------------------
+# Facing the glass (+z). His left is +x, where the car comes from: the head follows it in.
 
-STAND_ARMS = dict(rShoulder=J((2, 0, 3)), lShoulder=J((2, 0, -3)))
+HANG_R, HANG_L = J((4, 0, 4), (0, 0.02, 0)), J((4, 0, -4), (0, 0.02, 0))
+CLUTCH = reach(1, CHEST, direction=(-0.55, 0.15, -0.8))  # the right hand clawed into the chest
+PALM_HI = reach(-1, (-0.75, 1.25, -1.25), direction=(0.1, 0.35, -0.95))  # the left palm flat on the glass
+PALM_LO = reach(-1, (-0.7, 0.4, -1.2), direction=(0.05, -0.2, -0.95))  # dragged down it
 
+v = Motion("IntroTokyo_victim", LENGTH, note="The Tokyo intro: the seizure at the screen doors.")
+v.key(0.0, root=(0, 6, 0), neck=(-4, 44, 0), rShoulder=HANG_R, lShoulder=HANG_L)  # looking up the platform at it
+v.key(1.6, "sine", root=(0, 4, 0), neck=(-4, 26, 0), rShoulder=HANG_R, lShoulder=HANG_L)
+v.key(3.3, "out", root=(0, 0, 0), neck=(-6, 2, 0), rShoulder=HANG_R, lShoulder=HANG_L)  # it stops in front of him
+v.key(3.9, root=(0, 0, 0), neck=(-8, 0, 0), rShoulder=HANG_R, lShoulder=HANG_L)
+# The jolt: held still, a tiny draw-in, then snapped double with the hand clawed into the chest.
+strike(v, 4.15, {"root": J((3, 0, 0)), "neck": J((4, 0, 0)), "rShoulder": J((20, 0, 8))},
+       {"root": J((-30, 0, 4)), "neck": J((-26, 0, 0)), "rShoulder": CLUTCH, "offset": (0.0, -0.25, 0.1)},
+       antic=0.14, travel=0.06, over=0.25, settle=0.3)
+v.key(4.6, root=(-28, -4, 6), neck=(-20, -6, 4), lShoulder=J((30, 0, -16)), rShoulder=CLUTCH)  # staggers
+# The palm slapped onto the pane to hold himself up.
+strike(v, 5.05, {"lShoulder": J((70, 0, -30))}, {"lShoulder": PALM_HI, "root": J((-18, 0, -4)), "neck": J((-10, 4, 0))},
+       antic=0.1, travel=0.06, over=0.15, settle=0.25)
+for k in range(4):  # shaking against it
+    t = 5.4 + 0.18 * k
+    v.key(t, "sine", root=(-18 + (3 if k % 2 else -2), 2 if k % 2 else -2, -4), neck=(-8 + (4 if k % 2 else 0), 0, 0),
+          rShoulder=CLUTCH, lShoulder=PALM_HI)
+# The agony: the head thrown back, the mouth open (the camera above).
+v.key(6.2, "out", root=(-6, 0, -2), neck=(30, -8, 6), rShoulder=CLUTCH, lShoulder=PALM_HI)
+for k in range(4):
+    t = 6.45 + 0.17 * k
+    v.key(t, "sine", root=(-6, 0, -2 + (2 if k % 2 else 0)), neck=(30 + (5 if k % 2 else 0), -8 + (6 if k % 2 else 0), 6),
+          rShoulder=CLUTCH, lShoulder=PALM_HI)
+# He reels back off the glass two steps (his mark moves), drops to his knees, and falls forward on his face,
+# as Raye does: the arm out in front of him, the other at his side.
+v.key(6.95, "in", root=(-12, 0, 0), neck=(6, 0, 0), rShoulder=CLUTCH, lShoulder=J((40, 0, -26)))
+v.key(7.45, "out", root=(4, 0, 0), neck=(16, 0, 0), rShoulder=CLUTCH, lShoulder=J((24, 0, -36)))
+kneel(v, 7.75, "in", lean=-10, head=-6, rShoulder=CLUTCH, lShoulder=J((30, 0, -20)))
+kneel(v, 7.95, lean=-24, head=-16, rShoulder=CLUTCH, lShoulder=J((40, 0, -14)))
+v.key(8.45, "in", floor=True, root=(-88, 0, 0), neck=(18, 0, 6), rShoulder=J((-12, 0, 8)),
+      lShoulder=J((168, 0, -8)), rHip=J((-6, 0, 4)), lHip=J((-10, 0, -4)))
+v.key(8.6, "out", floor=True, root=(-86, 0, 2), neck=(14, 0, 6), rShoulder=J((-12, 0, 8)),
+      lShoulder=J((172, 0, -8)), rHip=J((-6, 0, 4)), lHip=J((-10, 0, -4)))
+# Struggling on the floor: hard breaths heaving the back, the head lifted to the car, the hand clawing up the glass.
+for k in range(14):
+    t = 9.0 + 0.4 * k
+    up = 1 if k % 2 else 0
+    lift_head = 40 if t > 9.6 else 18
+    claw = 178 + (10 if 3 <= k <= 7 else 0)
+    v.key(t, "sine", floor=True, root=(-86 + 3 * up, 0, 2), neck=(lift_head + 4 * up, 0, 6),
+          rShoulder=J((-12 + 4 * up, 0, 8)), lShoulder=J((claw + 4 * up, 0, -8)), rHip=J((-6 + 4 * up, 0, 4)),
+          lHip=J((-10, 0, -4)))
+soft(v, head=3.2, arms=3.2, arm_damp=0.55)
+v.plant(0.0, 3.9, stance=0.06)
+alive(v, 0.6, seed=3, t1=3.9)
+v.build()
 
-def crowd_clip(k, x, z, yaw):
-    """Waiting (a phone, or arms folded); when the struggler falls, the head turns to look."""
-    rng = random.Random(100 + k)
-    m = Motion(f"IntroTokyo_crowd{k}", LENGTH, note="Tokyo intro: someone waiting for the train.")
-    phone = k % 3 != 1
-    if phone:
-        arms = dict(rShoulder=J((62, 0, -26), (-0.2, 0.1, -0.2)), lShoulder=J((8, 0, -4)))
-        head = (-22, 0, 0)
-    else:
-        arms = dict(rShoulder=J((40, 0, -38), (-0.3, 0.1, -0.22)), lShoulder=J((38, 0, 36), (0.3, 0.1, -0.22)))
-        head = (-4, 0, 0)
-    m.key(0.0, root=(0, 0, 0), neck=head, **arms)
-    m.key(2.8, root=(0, 0, 0), neck=(head[0] + 2, rng.uniform(-6, 6), 0), **arms)
-    # the train: a glance up the track as it comes in
-    m.key(3.6 + rng.uniform(0, 0.6), root=(0, 4, 0), neck=(-2, -24, 0), **arms)
-    m.key(6.6 + rng.uniform(0, 0.4), root=(0, 0, 0), neck=head, **arms)
-    # the fall: the head turns to the noise, the body a little after it
-    turn = (bearing((x, z), (STRUGGLER[0], STRUGGLER[2])) - yaw + 180) % 360 - 180
-    turn = max(-80.0, min(80.0, turn))
-    t0 = 7.3 + rng.uniform(0.0, 0.5)
-    m.key(t0, root=(0, 0, 0), neck=head, **arms)
-    beat(m, t0 + 0.35, 0.35, antic=0.08, over=0.15, root=(2, turn * 0.25, 0), neck=(-8, turn * 0.6, 0),
-         rShoulder=J((20, 0, 0), (0, 0.04, -0.05)), lShoulder=J((16, 0, 0), (0, 0.04, -0.05)))
-    m.key(LENGTH, root=(1, turn * 0.3, 0), neck=(-12, turn * 0.6, 0), rShoulder=J((10, 0, 2)), lShoulder=J((10, 0, -2)))
-    return alive(soft(m).plant(stance=0.05), 0.5, seed=40 + k)
+# The watcher ----------------------------------------------------------------------------------------------
+# Facing out of the car (-z) at the victim, still the whole time; only the head and the face move.
 
+w = Motion("IntroTokyo_watcher", LENGTH, note="The Tokyo intro: the one in the car, watching.")
+STAND_R, STAND_L = J((2, 0, 3)), J((2, 0, -3))
+w.key(0.0, root=(0, 0, 0), neck=(-12, 0, 0), rShoulder=STAND_R, lShoulder=STAND_L)
+w.key(4.3, root=(0, 0, 0), neck=(-12, 0, 0), rShoulder=STAND_R, lShoulder=STAND_L)
+w.key(5.2, "sine", root=(-3, 0, 0), neck=(-24, 0, 0), rShoulder=STAND_R, lShoulder=STAND_L)  # looks down at him
+w.key(8.4, root=(-3, 0, 0), neck=(-26, 0, 0), rShoulder=STAND_R, lShoulder=STAND_L)
+w.key(9.4, "sine", root=(-6, 0, 0), neck=(-40, 0, 0), rShoulder=STAND_R, lShoulder=STAND_L)  # down at the floor
+w.key(10.6, "sine", root=(-6, 0, 2), neck=(-38, 0, 12), rShoulder=STAND_R, lShoulder=STAND_L)  # the head tilts
+w.key(11.3, root=(-5, 0, 2), neck=(-36, 0, 12), rShoulder=STAND_R, lShoulder=STAND_L)
+w.key(11.9, "sine", root=(-1, 0, 0), neck=(-8, 0, 8), rShoulder=STAND_R, lShoulder=STAND_L)  # up, at us
+w.key(LENGTH, root=(-1, 0, 0), neck=(-6, 0, 6), rShoulder=STAND_R, lShoulder=STAND_L)
+soft(w, head=2.4, arms=2.0)
+w.plant(stance=0.06)
+alive(w, 0.35, seed=5)
+w.build()
 
-crowd_clips = [crowd_clip(k, x, z, yaw).build() for k, (x, z, yaw) in enumerate(CROWD)]
+# The others -----------------------------------------------------------------------------------------------
+# Two asleep or on their phones on the car's seat; four waiting along the platform over their phones.
 
-# The struggler: waiting, then a jolt, the knees go, down to the floor, writhing, then still.
-strug = Motion("IntroTokyo_struggler", LENGTH, note="Tokyo intro: the one who collapses on the platform.", floor=True)
-strug.key(0.0, root=(0, 0, 0), neck=(-6, 0, 0), **STAND_ARMS)
-strug.key(5.9, root=(0, 0, 0), neck=(-4, 0, 0), **STAND_ARMS)
-strug.key(6.15, "snap", offset=(0, -0.05, 0.04), root=(-16, 0, 0), neck=(-22, 0, 0),
-          rShoulder=J((66, 0, -42), (-0.3, 0.14, -0.22)), lShoulder=J((20, 0, -10)))
-strug.key(6.75, offset=(0.05, -0.85, 0.0), root=(-24, 8, 6), neck=(-18, 0, 6),
-          rShoulder=J((66, 0, -42), (-0.3, 0.14, -0.22)), lShoulder=J((54, 0, -16), (0, 0.05, -0.15)))
-strug.plant(0.0, 6.75, stance=0.05, tilt=(16, 12))
-# down onto the back, the knees drawn up; writhing, a hand reaching towards the doorway
-strug.key(7.35, "in", offset=(0, 0, 0.9), floor=True, root=(80, -6, -8), neck=(22, 24, -10),
-          rShoulder=J((30, 0, 40), (0, 0.05, 0)), lShoulder=J((96, 0, -20), (0, 0.15, -0.1)),
-          rHip=J((40, 0, 6), (0, 0.5, 0)), lHip=J((18, 0, -6), (0, 0.25, 0)))
-for k, t in enumerate((7.9, 8.6, 9.3, 10.0, 10.7, 11.4)):
-    s = 1 if k % 2 == 0 else -1
-    strug.key(t, offset=(0, 0, 0.95), floor=True, root=(84 + 3 * s, -6 + 6 * s, -8 + 8 * s),
-              neck=(22 + 4 * s, 26, -10 + 6 * s), rShoulder=J((26 + 10 * s, 0, 44), (0, 0.05, 0)),
-              lShoulder=J((104 - 12 * s, 0, -24 + 10 * s), (0, 0.18, -0.12)),
-              rHip=J((44 + 16 * s, 0, 6), (0, 0.55, 0)), lHip=J((24 - 14 * s, 0, -6), (0, 0.3, 0)))
-strug.key(12.4, "in", offset=(0, 0, 0.95), floor=True, root=(88, -4, -6), neck=(20, 30, -10),
-          rShoulder=J((14, 0, 44)), lShoulder=J((80, 0, -30), (0, 0.12, -0.1)),
-          rHip=J((30, 0, 6), (0, 0.4, 0)), lHip=J((10, 0, -6), (0, 0.15, 0)))
-strug.key(LENGTH, offset=(0, 0, 0.95), floor=True, root=(89, -4, -6), neck=(20, 32, -10),
-          rShoulder=J((12, 0, 44)), lShoulder=J((60, 0, -34), (0, 0.1, -0.08)),
-          rHip=J((26, 0, 6), (0, 0.35, 0)), lHip=J((8, 0, -6), (0, 0.1, 0)))
-soft(strug, arms=2.4).build()
+PHONE = J((96, 0, -16), (-0.1, 0.18, -0.25))
+for k in range(2):
+    m = Motion(f"IntroTokyo_seat{k}", LENGTH, note="The Tokyo intro: a passenger.")
+    head = -36 if k == 0 else -22
+    seated(m, 0.0, seat=1.85, lean=-6, legs=84, neck=(head, 0, 6 * (1 - 2 * k)),
+           rShoulder=PHONE if k == 1 else J((30, 0, -6)), lShoulder=J((30, 0, 6)))
+    seated(m, LENGTH, seat=1.85, lean=-6, legs=84, neck=(head - 2, 0, 6 * (1 - 2 * k)),
+           rShoulder=PHONE if k == 1 else J((30, 0, -6)), lShoulder=J((30, 0, 6)))
+    alive(m, 0.4, seed=10 + k)
+    m.build()
 
-# The watcher: riding in with a hand on the pole, then standing in the doorway, looking down at them.
-watch = Motion("IntroTokyo_watcher", LENGTH, note="Tokyo intro: the one in the train's doorway.")
-pole = J((150, 0, -6), (0.05, 0.2, -0.1))
-watch.key(0.0, root=(0, 0, 0), neck=(-4, 20, 0), rShoulder=J((4, 0, 2), (0, 0, 0.06)), lShoulder=pole)
-watch.key(5.4, root=(0, 0, 0), neck=(-4, 10, 0), rShoulder=J((4, 0, 2), (0, 0, 0.06)), lShoulder=pole)
-watch.key(5.9, "out", offset=(0, 0, -0.08), root=(3, 0, 0), neck=(0, 0, 0), rShoulder=J((4, 0, 2)), lShoulder=pole)
-watch.key(7.6, root=(0, 0, 0), neck=(-6, 0, 0), rShoulder=J((-8, 0, 4), (0.02, 0.02, 0.12)),
-          lShoulder=J((2, 0, -3)))  # the hand leaves the pole; the other goes into a pocket
-watch.key(8.8, root=(-2, 6, 0), neck=(-26, 10, 6), rShoulder=J((-8, 0, 4), (0.02, 0.02, 0.12)),
-          lShoulder=J((2, 0, -3)))  # looking down at them
-watch.key(10.4, root=(-2, 6, 0), neck=(-28, 12, 9), rShoulder=J((-8, 0, 4), (0.02, 0.02, 0.12)),
-          lShoulder=J((2, 0, -3)))
-watch.key(11.2, root=(1, 4, 0), neck=(-16, 8, 4), rShoulder=J((-8, 0, 4), (0.02, 0.02, 0.12)),
-          lShoulder=J((2, 0, -3)))  # the chin comes up: done
-watch.key(LENGTH, root=(1, 4, 0), neck=(-14, 6, 3), rShoulder=J((-8, 0, 4), (0.02, 0.02, 0.12)), lShoulder=J((2, 0, -3)))
-soft(watch, head=1.8, head_damp=0.85, arms=2.0).plant(stance=0.08)
-alive(watch, 0.35, seed=60, t0=7.8)
-watch.build()
+WAITING = [(-112.0, -52.9), (-106.0, -53.2), (-64.0, -52.9), (-57.6, -53.4)]
+for k in range(len(WAITING)):
+    m = Motion(f"IntroTokyo_wait{k}", LENGTH, note="The Tokyo intro: someone waiting, on their phone.")
+    m.key(0.0, root=(0, 0, 0), neck=(-30, 0, 0), rShoulder=PHONE, lShoulder=J((4, 0, -4)))
+    m.key(LENGTH, root=(0, 0, 0), neck=(-30, 0, 0), rShoulder=PHONE, lShoulder=J((4, 0, -4)))
+    soft(m, head=2.4)
+    m.plant(stance=0.06)
+    alive(m, 0.6, seed=20 + k)
+    m.build()
 
-# The shot ---------------------------------------------------------------------------------------------
+# The shot -------------------------------------------------------------------------------------------------
 
-shot = Shot(NAME, "Tokyo", LENGTH, note="Tokyo intro: the last train; one falls on the platform, one watches from the train.",
-            skippable=True, mood="TokyoDistrict_Under")
+shot = Shot(NAME, "Tokyo", LENGTH, note="The Tokyo intro: the platform.")
 
-# A: the platform, everyone waiting; far down the tunnel, the train's lamps.
-shot.cam(0.0, (-120.0, -14.5, -61.0), (-60.0, -17.5, -66.0), fov=44)
-shot.cam(3.2, (-116.0, -15.0, -62.0), (-60.0, -17.5, -67.0), fov=40, ease="linear")
-# B: down by the screen doors as the train comes in.
-shot.cam(3.2, (-96.0, -18.4, -70.8), (-40.0, -17.0, -76.5), fov=46, cut=True)
-shot.cam(6.0, (-95.0, -18.2, -70.6), (-60.0, -17.0, -76.0), fov=40)
-# C: the struggler falls.
-shot.cam(6.0, (-56.0, -16.6, -62.0), (-62.0, -18.6, -68.4), fov=36, cut=True)
-shot.cam(8.6, (-57.0, -17.2, -63.0), (-62.0, -19.4, -68.6), fov=32, ease="linear")
-# D: through the screen door glass: the watcher in the doorway, looking down.
-shot.cam(8.6, (-68.6, -15.4, -65.8), (DOOR_X, -16.4, -74.6), fov=30, cut=True)
-shot.cam(11.0, (-68.3, -15.6, -66.4), (DOOR_X, -16.4, -74.6), fov=27, ease="linear")
-# E: over the watcher's shoulder, down at them; the doors slide shut.
-shot.cam(11.0, (DOOR_X - 2.6, -15.0, -78.4), (-62.0, -19.6, -68.4), fov=36, cut=True)
-shot.cam(12.6, (DOOR_X - 2.4, -15.1, -78.2), (-62.0, -19.6, -68.4), fov=34, ease="linear")
-# F: on the floor by them, the notebook close; the train leaves behind the glass.
-shot.cam(12.6, (-57.8, -19.3, -66.4), (-61.6, -19.4, -69.6), fov=40, cut=True)
-shot.cam(LENGTH, (-58.2, -19.3, -66.7), (-61.6, -19.5, -69.6), fov=36, ease="linear")
+victim = shot.actor("victim", v)
+victim.mark(0.0, (VICTIM[0], FLOOR, VICTIM[1]), 180.0)
+victim.mark(6.95, (VICTIM[0], FLOOR, VICTIM[1]), 180.0)
+victim.mark(7.5, (VICTIM[0], FLOOR, VICTIM[1] - 2.0), 180.0, "out")  # reels back off the glass
+watcher = shot.actor("watcher", w)
+ride(watcher, CAR_DOOR + WATCHER[0] - DOOR_X, WATCHER[1], 0.0)
+for k, dx in enumerate((-4.6, 4.6)):  # the long seat's two halves either side of the doorway, along the far wall
+    p = shot.actor(f"everyone:{k + 1}", clip=f"IntroTokyo_seat{k}")
+    ride(p, CAR_DOOR + dx, -43.6, 0.0)
+for k, (x, z) in enumerate(WAITING):
+    p = shot.actor(f"everyone:{k + 3}", clip=f"IntroTokyo_wait{k}")
+    p.mark(0.0, (x, FLOOR, z), 180.0)
+    p.hold("Smartphone", "Right Arm", (0.0, -1.05, -0.2), (-14, 0, 0))
 
+# The car, turned to run along x with its doorway facing the platform, and its two door leaves.
+car = shot.prop("TrainCarOpen")
+for t, x, ease in ((ARRIVE[0], ARRIVE[1], "smooth"), (STOPPED[0], STOPPED[1], "out"), (LEAVE[0], LEAVE[1], "smooth"),
+                   (GONE[0], GONE[1], "in")):
+    car.at(t, (x, CAR_Y, TRACK_Z), (0, -90, 0), ease)
 
-def car_path(prop, stop):
-    """In from the east, slowing to a stop; out to the west, speeding up."""
-    prop.at(0.0, (stop + 160.0, CAR_Y, TRACK), (0, 90, 0))
-    prop.at(ARRIVE, (stop + 125.0, CAR_Y, TRACK), (0, 90, 0), "linear")
-    prop.at(STOPPED, (stop, CAR_Y, TRACK), (0, 90, 0), "out")
-    prop.at(LEAVE, (stop, CAR_Y, TRACK), (0, 90, 0))
-    prop.at(LENGTH, (stop - 150.0, CAR_Y, TRACK), (0, 90, 0), "in")
-    return prop
-
-
-car_path(shot.prop("TrainHead"), HEAD_STOP)
-car_path(shot.prop("TrainCarOpen"), OPEN_STOP)
-# the door leaves: open (slid back into the car) until they close at 11.6
+LEAF_Z = TRACK_Z - 4.1  # just inside the car's side
 for side in (-1, 1):
     leaf = shot.prop("TrainDoorLeaf")
-    y = CAR_Y + 5.2
-    leaf.at(0.0, (DOOR_X + side * 3.3 + 160.0, y, EDGE_Z), (0, 90, 0))
-    leaf.at(ARRIVE, (DOOR_X + side * 3.3 + 125.0, y, EDGE_Z), (0, 90, 0), "linear")
-    leaf.at(STOPPED, (DOOR_X + side * 3.3, y, EDGE_Z), (0, 90, 0), "out")
-    leaf.at(11.6, (DOOR_X + side * 3.3, y, EDGE_Z), (0, 90, 0))
-    leaf.at(12.2, (DOOR_X + side * 1.1, y, EDGE_Z), (0, 90, 0), "out")
-    leaf.at(LEAVE, (DOOR_X + side * 1.1, y, EDGE_Z), (0, 90, 0))
-    leaf.at(LENGTH, (DOOR_X + side * 1.1 - 150.0, y, EDGE_Z), (0, 90, 0), "in")
+    closed, opened = side * 1.1, side * 3.3
+    keys = [(ARRIVE, closed, "smooth"), ((3.5, STOP), closed, "smooth"), ((4.1, STOP), opened, "out"),
+            ((12.0, STOP), opened, "smooth"), ((12.5, STOP), closed, "in"), (LEAVE, closed, "smooth"), (GONE, closed, "in")]
+    for (t, x), dx, ease in keys:
+        leaf.at(t, (x + CAR_DOOR + dx, FLOOR + 3.7, LEAF_Z), (0, -90, 0), ease if t != GONE[0] else "in")
 
-w = shot.actor("watcher", watch)
-w.mark(0.0, (DOOR_X + 160.0, CAR_FLOOR, EDGE_Z - 1.6), 180)
-w.mark(ARRIVE, (DOOR_X + 125.0, CAR_FLOOR, EDGE_Z - 1.6), 180, "linear")
-w.mark(STOPPED, (DOOR_X, CAR_FLOOR, EDGE_Z - 1.6), 180, "out")
-w.mark(LEAVE, (DOOR_X, CAR_FLOOR, EDGE_Z - 1.6), 180)
-w.mark(LENGTH, (DOOR_X - 150.0, CAR_FLOOR, EDGE_Z - 1.6), 180, "in")
+manual = shot.prop("Grimoire", scale=0.5)  # dropped on the floor beside him, as Raye's briefcase lay
+manual.at(0.0, (MANUAL_AT[0], FLOOR + 0.11, MANUAL_AT[1]), (0, 28, 0))
+manual.at(LENGTH, (MANUAL_AT[0], FLOOR + 0.11, MANUAL_AT[1]), (0, 28, 0))
 
-s = shot.actor("struggler", strug)
-s.mark(0.0, STRUGGLER, bearing((STRUGGLER[0], STRUGGLER[2]), (DOOR_X, EDGE_Z)) + 10)
+# A: low on the platform from the west: the car brakes in behind the glass; he turns his head to follow it.
+shot.subjects.append((0.0, 3.4, None, True))
+shot.cam(0.0, (DOOR_X - 13.0, FLOOR + 2.6, -57.6), (DOOR_X + 2.0, FLOOR + 3.8, -51.0), fov=56)
+shot.cam(3.4, (DOOR_X - 11.6, FLOOR + 2.8, -57.2), (DOOR_X + 0.6, FLOOR + 3.9, -51.4), fov=50, ease="linear")
+# B: from deep inside the car, past the watcher's shoulder, out through the glass: the doors open, the jolt, the
+# palm slapped on the pane, the head thrown back in agony; a slow push in all the while.
+shot.pan(3.4, 7.2, "victim", (DOOR_X + 3.6, FLOOR + 4.6, -46.6), aim="Head", dy=-0.4, fov=44, cut=True,
+         drift=(-0.5, -0.1, -0.9))
+# D: behind him on the platform: he slides down the glass to his knees and over onto his side, the one in the
+# doorway standing over him beyond it.
+shot.pan(7.2, 9.2, "victim", (DOOR_X + 3.6, FLOOR + 5.0, -62.0), aim="Torso", dy=0.8, fov=46, cut=True,
+         drift=(-0.6, -0.4, 0.4), back=True)
+# E: low by the glass at the floor, up through it at the watcher looking down.
+shot.pan(9.2, 11.6, "watcher", (DOOR_X - 2.4, FLOOR + 0.9, -52.5), aim="Head", dy=0.0, fov=50, cut=True,
+         drift=(0.3, 0.2, 0.0))
+# F: close on the watcher through the glass; the doors slide shut across him.
+shot.pan(11.6, 13.0, "watcher", (DOOR_X + 1.4, FLOOR + 4.9, -56.6), aim="Head", dy=-0.4, fov=40, cut=True,
+         drift=(-0.2, 0.0, 0.3))
+# G: high from the east end: the car pulls out; he lies by the Manual.
+shot.subjects.append((13.0, LENGTH, None, True))
+shot.cam(13.0, (DOOR_X + 14.0, FLOOR + 7.0, -58.5), (DOOR_X - 0.5, FLOOR + 0.6, -52.8), fov=44, cut=True)
+shot.cam(LENGTH, (DOOR_X + 15.5, FLOOR + 7.6, -59.5), (DOOR_X - 0.5, FLOOR + 0.6, -52.8), fov=46, ease="linear")
 
-for k, (x, z, yaw) in enumerate(CROWD):
-    a = shot.actor(f"everyone:{k + 1}", clip=f"IntroTokyo_crowd{k}")
-    a.mark(0.0, (x, FLOOR, z), yaw)
+# Faces
+shot.face(0.0, "victim", "Stern")
+shot.face(4.15, "victim", "Shock")
+shot.face(4.9, "victim", "Fear")
+shot.face(0.0, "watcher", "Stern")
+shot.face(10.2, "watcher", "Grin")
+for k in range(6):
+    shot.face(0.0, f"everyone:{k + 1}", "Stern")
 
-book = shot.prop("Grimoire", show=(7.35, LENGTH))
-book.at(7.35, (BOOK[0], BOOK[1] + 1.2, BOOK[2]), (50, 40, 0))
-book.at(7.6, BOOK, (0, 40, 0), "in")
-book.at(LENGTH, BOOK, (0, 40, 0))
-
-shot.event(0.4, "title", lines=["KAGEGAOKA STATION", "The last train, 23:59"], dur=2.6)
-shot.event(2.4, "sfx", slot="mapTrainArrive")
-shot.event(5.9, "sfx", slot="mapStationChime")
-shot.event(6.15, "sfx", slot="heartbeat")
-shot.event(7.35, "sfx", slot="bodyFall")
-shot.event(11.6, "sfx", slot="trainDoors")
-shot.event(13.2, "card", key="case", dur=1.6)
+shot.event(0.0, "sfx", slot="mapTrainArrive")
+shot.event(3.5, "sfx", slot="trainDoors")
+shot.event(3.9, "sfx", slot="mapStationChime")
+shot.event(4.15, "sfx", slot="heartbeat")
+shot.event(4.15, "fx", name="impact", r=255, g=40, b=50, strength=0.4, dur=0.22)
+shot.event(5.05, "fx", name="shake", strength=0.2, dur=0.2)
+shot.event(5.6, "sfx", slot="heartbeat")
+shot.event(8.45, "sfx", slot="bodyFall")
+shot.event(8.45, "fx", name="shake", strength=0.25, dur=0.25)
+shot.event(12.0, "sfx", slot="trainDoors")
+shot.event(12.9, "card", key="case", dur=2.1)

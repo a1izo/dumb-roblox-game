@@ -1,0 +1,48 @@
+# The Tokyo intro (shot IntroTokyo). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
+id = "IntroTokyo"
+name = "Tokyo: the platform"
+status = "built"
+
+[origin]
+what = "Raye Penber's death in the subway (Death Note, episode 9): the heart attack at the train's doors while Light watches from inside the car."
+recognisable = "A man seizes up at the train's door, clutches his chest, sinks to his knees on the yellow strip with his bag on the floor beside him, falls; from the floor, the one in the car looks down at him, face in shadow, the faintest smile; the doors close."
+ours = "Both are random players and nobody dies (the owner's intro idea): the victim falls and struggles; the Manual lies on the floor beside him where Raye's briefcase lay."
+
+[source]
+url = "https://www.youtube.com/watch?v=zwarit0gXE8"
+title = "Light Kills Raye Penber by a Heart Attack | DEATH NOTE 4K"
+kind = "the anime scene, the whole subway sequence"
+watched = "2026-10-27: frames every 2 s over 16-72 s in the built-in browser"
+mirror = false
+
+[[beat]]
+src = 18.0
+pose = "Raye in the lit doorway of the car, his back to us"
+[[beat]]
+src = 24.0
+pose = "at the door's frame, one hand clutching the chest, doubled over"
+[[beat]]
+src = 28.0
+pose = "his face from above, agony, mouth open"
+[[beat]]
+src = 32.0
+pose = "on his knees on the yellow tactile strip, the briefcase on the floor beside him"
+[[beat]]
+src = 34.0
+pose = "fallen forward, face down"
+[[beat]]
+src = 36.0
+pose = "from the floor: the car's window, the figure inside"
+[[beat]]
+src = 38.0
+pose = "Light, close, face in shadow, the faintest smirk"
+
+[timing]
+length = 15.0
+fit = "Our station has full-height glass screen doors, so nobody steps off the train: the victim waits at a bay as the car pulls in behind the glass and seizes there, palm on the pane. The source's 15 s of collapse (23-38 s) keeps its order and its pace: the clutch, the agony from above, the knees, the fall, the look from the floor, the smirk; the train's arrival and departure frame it."
+
+[r6]
+notes = "Hands placed with emotes.kit.reach (the clutch at the chest, the palm on the glass); the knees with acting.kneel; lying down is the root pitched over with the body on the floor."
+
+[check]
+by = "run_cinema --lint and --clear (no actor into the glass, the train or another), contact sheet at every cut"
