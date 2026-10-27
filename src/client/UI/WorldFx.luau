@@ -22,6 +22,7 @@ local Router = require(script.Parent.Core.Router)
 local UiSound = require(script.Parent.Core.UiSound)
 local Screens = require(script.Parent.Screens)
 local Characters = require(script.Parent.Parent.Characters)
+local Lifespan = require(script.Parent.Parent.World.Lifespan)
 
 local C = Kit.color
 local T = Kit.Tokens
@@ -125,51 +126,38 @@ local function onEyesName(payload)
 		AlwaysOnTop = true,
 		LightInfluence = 0,
 		MaxDistance = 80,
-		Size = UDim2.fromScale(8, 1.4),
+		Size = UDim2.fromOffset(300, 64),
 		StudsOffset = Vector3.new(0, 3.2, 0),
 		ResetOnSpawn = false,
 		Parent = playerGui,
 	})
-	local finalText = string.upper(payload.name)
-	local label = Kit.label({
-		font = "document",
-		TextScaled = true,
-		AutomaticSize = Enum.AutomaticSize.None,
-		TextColor3 = C.danger,
-		TextStrokeTransparency = 0.2,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Text = finalText,
-		Size = UDim2.fromScale(1, 1),
-		Parent = gui,
-	})
+	local finalText = payload.name
+	-- The read in the lifespan look (World/Lifespan): the real name scrawled in glowing red, the letters under it
+	-- never settling; it scrawls itself in, a letter at a time.
+	local look = Lifespan.draw(gui, "", 28)
 	local duration = tonumber(payload.duration) or 3
-	-- The read: a red pulse, the target outlined for you alone, the name glitching into place.
+	-- The read: a red pulse, the target outlined for you alone.
 	Sfx.play("eyesOpen", { volume = 0.6 })
 	Cinema.flash(C.danger, 0.35, 0.4)
 	Cinema.outline(character :: Model, C.danger, duration)
-	if not Motion.isReduced() then
+	if Motion.isReduced() then
+		look.setName(finalText)
+	else
 		task.spawn(function()
-			local glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#%&"
-			for step = 1, 8 do
-				if not label.Parent then
+			local count = utf8.len(finalText) or #finalText
+			for n = 1, count do
+				if not gui.Parent then
 					return
 				end
-				local chars = {}
-				for i = 1, #finalText do
-					local c = string.sub(finalText, i, i)
-					if c ~= " " and math.random() > step / 8 then
-						local r = math.random(1, #glyphs)
-						c = string.sub(glyphs, r, r)
-					end
-					table.insert(chars, c)
-				end
-				label.Text = table.concat(chars)
-				task.wait(0.05)
+				local stop = utf8.offset(finalText, n + 1)
+				look.setName(string.sub(finalText, 1, (stop or (#finalText + 1)) - 1))
+				task.wait(math.min(0.05, 0.5 / count))
 			end
-			label.Text = finalText
+			look.setName(finalText)
 		end)
 	end
 	task.delay(duration, function()
+		look.destroy()
 		gui:Destroy()
 	end)
 end

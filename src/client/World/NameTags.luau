@@ -6,18 +6,23 @@
 --
 -- A tag is hidden while the character carries the `NameHidden` attribute (ghosts, spectators and bodies, set by
 -- the server) and during cutscenes (the Stage hides every BillboardGui inside the characters it uses).
+--
+-- Over a friend (a Roblox friend or a lobby party member, on this screen only) the tag wears the lifespan look
+-- (World/Lifespan): the same name, scrawled in glowing red, a row of letters reshuffling under it. Still small, still
+-- hidden behind walls and as far off as anyone's.
 
 local Players = game:GetService("Players")
 
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
+local Lifespan = require(script.Parent.Lifespan)
 
 local NameTags = {}
 
 local C = Kit.color
 local LOCAL = Players.LocalPlayer
 
-local function build(character: Model)
+local function build(character: Model, player: Player)
 	local head = character:WaitForChild("Head", 10)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not head or not humanoid or not head:IsA("BasePart") then
@@ -71,6 +76,25 @@ local function build(character: Model)
 	label.Text = string.upper(humanoid.DisplayName)
 	label.Parent = plate
 
+	-- A friend's tag: the lifespan look in place of the plate (made when first needed).
+	local lifespan: Lifespan.Handle? = nil
+	local function restyle()
+		local friend = Lifespan.isFriend(player.UserId)
+		if friend and not lifespan then
+			lifespan = Lifespan.draw(gui, humanoid.DisplayName, 20)
+		elseif not friend and lifespan then
+			lifespan.destroy()
+			lifespan = nil
+		end
+		plate.Visible = not friend
+		gui.Size = if friend then UDim2.fromOffset(220, 50) else UDim2.fromOffset(220, 30)
+	end
+	restyle()
+	local restyled = Lifespan.Changed:Connect(restyle)
+	gui.Destroying:Once(function()
+		restyled:Disconnect()
+	end)
+
 	local function refresh()
 		local hidden = character:GetAttribute("NameHidden") == true
 			or character:GetAttribute("Specter") ~= nil and character:GetAttribute("Specter") ~= false
@@ -86,6 +110,9 @@ local function build(character: Model)
 	end)
 	humanoid:GetPropertyChangedSignal("DisplayName"):Connect(function()
 		label.Text = string.upper(humanoid.DisplayName)
+		if lifespan then
+			lifespan.setName(humanoid.DisplayName)
+		end
 	end)
 	humanoid:GetPropertyChangedSignal("Health"):Connect(refresh)
 	character:GetAttributeChangedSignal("NameHidden"):Connect(refresh)
@@ -100,7 +127,7 @@ local function track(player: Player)
 		return
 	end
 	local function onCharacter(character: Model)
-		task.spawn(build, character)
+		task.spawn(build, character, player)
 	end
 	if player.Character then
 		onCharacter(player.Character)
@@ -109,6 +136,7 @@ local function track(player: Player)
 end
 
 function NameTags.init()
+	Lifespan.init()
 	for _, player in ipairs(Players:GetPlayers()) do
 		track(player)
 	end
