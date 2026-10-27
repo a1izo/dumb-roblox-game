@@ -1,6 +1,6 @@
 --!strict
--- The tag over every other player's head: their alias (outside a match, their display name), in the
--- Notch style, hidden behind walls like Roblox's own. The server turns Roblox's default tag off for every
+-- The tag over every player's head (your own only in the lobby): their alias (outside a match, their display
+-- name), in the Notch style, hidden behind walls like Roblox's own. The server turns Roblox's default tag off for every
 -- character; this draws the replacement. It is exactly the information the default tag carried: whatever
 -- the server put in Humanoid.DisplayName (the alias in a match, never the account name).
 --
@@ -9,10 +9,14 @@
 --
 -- Over a friend (a Roblox friend or a lobby party member, on this screen only) the tag wears the lifespan look
 -- (World/Lifespan): the same name, scrawled in glowing red, a row of letters reshuffling under it. Still small, still
--- hidden behind walls and as far off as anyone's.
+-- hidden behind walls and as far off as anyone's. Your own head wears it too, in the lobby only (never in a case).
+--
+-- A title (Services/CosmeticsService's LTitleTag) sits on top of the tag, a few pixels above it at any distance:
+-- both hang from the same point and the title is lifted by its own height (they overlapped from afar before).
 
 local Players = game:GetService("Players")
 
+local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Lifespan = require(script.Parent.Lifespan)
@@ -21,6 +25,14 @@ local NameTags = {}
 
 local C = Kit.color
 local LOCAL = Players.LocalPlayer
+local TITLE_TAG = "LTitleTag"
+local OFFSET = Vector3.new(0, 2.3, 0) -- where the tag (and the title over it) hang above the head
+local TITLE_GAP = 4 -- pixels between the tag's top and the title
+
+-- In the lobby (not playing a case, not watching one): where your own tag shows.
+local function inLobby(): boolean
+	return not ClientState.isParticipant() and not ClientState.isWatching()
+end
 
 local function build(character: Model, player: Player)
 	local head = character:WaitForChild("Head", 10)
@@ -35,7 +47,7 @@ local function build(character: Model, player: Player)
 	gui.Name = "DGNameTag"
 	gui.Adornee = head
 	gui.Size = UDim2.fromOffset(220, 30)
-	gui.StudsOffset = Vector3.new(0, 2.3, 0)
+	gui.StudsOffset = OFFSET
 	gui.AlwaysOnTop = false
 	gui.LightInfluence = 0
 	gui.MaxDistance = 60
@@ -76,10 +88,26 @@ local function build(character: Model, player: Player)
 	label.Text = string.upper(humanoid.DisplayName)
 	label.Parent = plate
 
-	-- A friend's tag: the lifespan look in place of the plate (made when first needed).
+	-- The title over the tag: hung from the same point and lifted by half the tag, the gap and half itself,
+	-- all in pixels.
+	local function placeTitle()
+		local title = head:FindFirstChild(TITLE_TAG)
+		if title and title:IsA("BillboardGui") then
+			local tall = math.max(title.Size.Y.Offset, 1)
+			title.StudsOffset = OFFSET
+			title.SizeOffset = Vector2.new(0, (gui.Size.Y.Offset / 2 + TITLE_GAP + tall / 2) / tall)
+		end
+	end
+	head.ChildAdded:Connect(function(child: Instance)
+		if child.Name == TITLE_TAG then
+			placeTitle()
+		end
+	end)
+
+	-- A friend's tag (and your own): the lifespan look in place of the plate (made when first needed).
 	local lifespan: Lifespan.Handle? = nil
 	local function restyle()
-		local friend = Lifespan.isFriend(player.UserId)
+		local friend = player == LOCAL or Lifespan.isFriend(player.UserId)
 		if friend and not lifespan then
 			lifespan = Lifespan.draw(gui, humanoid.DisplayName, 20)
 		elseif not friend and lifespan then
@@ -88,6 +116,7 @@ local function build(character: Model, player: Player)
 		end
 		plate.Visible = not friend
 		gui.Size = if friend then UDim2.fromOffset(220, 50) else UDim2.fromOffset(220, 30)
+		placeTitle()
 	end
 	restyle()
 	local restyled = Lifespan.Changed:Connect(restyle)
@@ -101,7 +130,13 @@ local function build(character: Model, player: Player)
 			or character:GetAttribute("Spectator") ~= nil and character:GetAttribute("Spectator") ~= false
 			or humanoid.Health <= 0
 			or Settings.get("nameTags") == false
+			or (player == LOCAL and not inLobby())
 		gui.Enabled = not hidden
+	end
+	if player == LOCAL then
+		ClientState.PublicChanged:Connect(refresh)
+		ClientState.PrivateChanged:Connect(refresh)
+		ClientState.WatchChanged:Connect(refresh)
 	end
 	Settings.Changed:Connect(function(key)
 		if key == "nameTags" and gui.Parent then
@@ -123,9 +158,6 @@ local function build(character: Model, player: Player)
 end
 
 local function track(player: Player)
-	if player == LOCAL then
-		return
-	end
 	local function onCharacter(character: Model)
 		task.spawn(build, character, player)
 	end

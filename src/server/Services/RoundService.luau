@@ -20,6 +20,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
+local Trial = require(Shared:WaitForChild("Trial"))
 local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
 local WinConditions = require(Shared:WaitForChild("WinConditions"))
 
@@ -49,6 +50,7 @@ local RoleService = require(script.Parent.RoleService)
 local SabotageService = require(script.Parent.SabotageService)
 local Staging = require(script.Parent.Staging)
 local CosmeticsService = require(script.Parent.CosmeticsService)
+local DataService = require(script.Parent.DataService)
 local ClipLengths = require(script.Parent.ClipLengths)
 local TaskBarService = require(script.Parent.TaskBarService)
 local VoteService = require(script.Parent.VoteService)
@@ -671,6 +673,13 @@ local function runMatch(players: { Player })
 
 	for _, ps in ipairs(Match.list) do
 		Analytics.step(ps.player, "matchStarted")
+		-- Starting a case ends the Trial for good (the user's call, 2026-10-27): a half-done Trial is not
+		-- offered again (the Academy's gate can still begin it), and its client puts the wisp and panel away.
+		local data = DataService.get(ps.player)
+		if data and Trial.skip(data) then
+			DataService.push(ps.player)
+			DataService.saveSoon(ps.player)
+		end
 	end
 
 	EventLog.reset()

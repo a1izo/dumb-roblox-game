@@ -590,9 +590,10 @@ function Hud.init()
 	end
 	objectives.ChildAdded:Connect(syncObjectives)
 	objectives.ChildRemoved:Connect(syncObjectives)
-	objectives:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-		objectivesPanel.Size = UDim2.fromOffset(objectives.AbsoluteSize.X, objectives.AbsoluteSize.Y)
-	end)
+	-- (in design pixels: AbsoluteSize is already scaled by the screen's size, so copying it raw made the glass
+	-- smaller than its text on a small screen and the lines ran out past it)
+	Kit.Base.fit(objectivesPanel, objectives, "X")
+	Kit.Base.fit(objectivesPanel, objectives, "Y")
 	-- Its layout (a row, or a grid on touch screens) is set by layout().
 	actionBar = Kit.frame({ Name = "ActionBar", Parent = Screens.hud })
 

@@ -5,6 +5,7 @@
 -- same object uses a different gamepad button (X, B). The keys are the player's own (Input/PromptKeys).
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -38,8 +39,10 @@ local function prompt(
 		GamepadKeyCode = pad or Enum.KeyCode.ButtonX,
 		HoldDuration = hold or 0,
 		MaxActivationDistance = 8,
-		-- (never through a wall: the server checks the same, Services/NoteService, CaseFileService, MeetingService)
-		RequiresLineOfSight = true,
+		-- (never through a wall, but checked here, steadily (see `sight`): Roblox's own check is a bare ray
+		-- the table under a sheet blocks at grazing angles, so the prompt flickered as you moved; the server
+		-- checks the same way, Services/NoteService, CaseFileService, MeetingService)
+		RequiresLineOfSight = false,
 		Enabled = false,
 		Style = Enum.ProximityPromptStyle.Custom,
 		Parent = parent,
@@ -67,12 +70,46 @@ local function jammed(instance: Instance): boolean
 	return type(untilTime) == "number" and workspace:GetServerTimeNow() < untilTime
 end
 
+-- Line of sight, as the server judges it (Match.hasLineOfSight): from the eyes to just over the object, through
+-- every body, and a hit on the object or within SLACK of it counts as seen. A change only holds once it has
+-- lasted HOLD seconds, so a ray grazing the table edge as you move never flickers the prompt.
+local SIGHT_RANGE = 12
+local SLACK = 0.75
+local HOLD = 0.25
+
+local function bodies(): { Instance }
+	local list = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			table.insert(list, player.Character)
+		end
+	end
+	return list
+end
+
+local function seesFrom(eye: Vector3, instance: BasePart): boolean
+	local target = instance.Position + Vector3.new(0, 0.2, 0)
+	local direction = target - eye
+	if direction.Magnitude < 0.05 then
+		return true
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = bodies()
+	params.IgnoreWater = true
+	local hit = workspace:Raycast(eye, direction, params)
+	return hit == nil
+		or hit.Instance == instance
+		or hit.Instance:IsDescendantOf(instance)
+		or (hit.Position - target).Magnitude < SLACK
+end
+
 local function refreshEntry(instance: Instance, entry)
 	local private = ClientState.private
-	local active = canAct()
+	local active = canAct() and entry.seen ~= false
 	local prompts = entry.prompts
 	if entry.kind == "station" then
-		local free = instance:GetAttribute("Busy") ~= true and not jammed(instance)
+		local free = instance:GetAttribute("Busy") ~= true and not jammed(instance) and entry.seen ~= false
 		prompts.work.Enabled = canWork() and free and not TaskScreen.isBusy()
 		local role = ClientState.role()
 		prompts.hack.Enabled = active and (role == "Kira" or role == "Follower") and free and not HackScreen.isBusy()
@@ -180,6 +217,35 @@ function InteractionController.init()
 	watchTag("LNote", setupNote)
 	ClientState.PublicChanged:Connect(refreshAll)
 	ClientState.PrivateChanged:Connect(refreshAll)
+	-- What can be seen from the eyes, ten times a second, for everything close enough to matter.
+	task.spawn(function()
+		while true do
+			task.wait(0.1)
+			local character = Players.LocalPlayer.Character
+			local head = if character then character:FindFirstChild("Head") else nil
+			if head and head:IsA("BasePart") then
+				local eye = head.Position + Vector3.new(0, 0.3, 0)
+				local now = os.clock()
+				for instance, entry in pairs(entries) do
+					if instance.Parent and instance:IsA("BasePart") then
+						local near = (instance.Position - eye).Magnitude <= SIGHT_RANGE
+						local seen = not near or seesFrom(eye, instance)
+						if entry.seen == nil then
+							entry.seen = seen
+						elseif seen == entry.seen then
+							entry.changingSince = nil
+						elseif entry.changingSince == nil then
+							entry.changingSince = now
+						elseif now - entry.changingSince >= HOLD then
+							entry.seen = seen
+							entry.changingSince = nil
+							refreshEntry(instance, entry)
+						end
+					end
+				end
+			end
+		end
+	end)
 	-- The task screen opening or closing changes whether stations can be used.
 	task.spawn(function()
 		local wasBusy = false

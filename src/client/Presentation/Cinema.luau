@@ -61,6 +61,9 @@ function Cinema.letterbox(on: boolean)
 	Motion.tween(bottomBar, { Size = UDim2.new(1, 0, height, 0) }, 0.4)
 	-- (and the film camera's lens while the frame is up: Presentation/Lens)
 	Lens.set(show)
+	-- The HUD (the identity card, the action chips, the list) goes while the frame is up: it sat over the line
+	-- typed in the bottom bar (World/PlayerDisplay keeps the player's own HUD setting under this).
+	Screens.hud:SetAttribute("Cinematic", show)
 end
 
 -- Title cards -----------------------------------------------------------------------------------

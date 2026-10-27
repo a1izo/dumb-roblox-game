@@ -89,7 +89,8 @@ local function applyFps()
 end
 
 local function applyHud()
-	Screens.hud.Enabled = Settings.get("showHud") ~= false
+	-- (hidden while a cutscene's letterbox is up too: Presentation/Cinema.letterbox)
+	Screens.hud.Enabled = Settings.get("showHud") ~= false and Screens.hud:GetAttribute("Cinematic") ~= true
 end
 
 local function applyBubbles()
@@ -107,6 +108,7 @@ function PlayerDisplay.init()
 	applyFps()
 	applyHud()
 	applyBubbles()
+	Screens.hud:GetAttributeChangedSignal("Cinematic"):Connect(applyHud)
 	Settings.Changed:Connect(function(key)
 		if key == "fov" then
 			applyFov()

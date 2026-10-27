@@ -3,7 +3,8 @@
 -- A player who has never played a case is offered it once, after the lobby has come in: the wisp waits at
 -- the foot of the terrace's steps and a small panel in the top right corner says so, with Begin and Skip.
 -- Nothing is locked: READY works all along, and walking away is fine. Anyone can begin it at the Academy's
--- gate ("Begin the Trial"), and a player who left it half done carries on from the same step next time.
+-- gate ("Begin the Trial"), and a player who left it half done carries on from the same step next time. Being
+-- called into a case ends it for good: it is not offered again (only the gate begins it).
 --
 -- While it runs, the panel (Onboarding/TrialObjective) shows ONE step: what to do and how; the wisp
 -- (Onboarding/TrialWisp) walks you to where it is done. The steps go in order: a drill finished early counts
@@ -639,7 +640,12 @@ function TrialController.init()
 		end
 	end)
 	local function sync()
-		-- Called into a case (or back from one): the panel and the wisp go and come with the lobby.
+		-- Called into a case: the Trial ends for good (the server marks it so); never a wisp pointing at the
+		-- lobby's desks from the map.
+		if state ~= "idle" and ClientState.public.active and ClientState.me() ~= nil then
+			leave()
+			offeredThisSession = true
+		end
 		TrialObjective.setAllowed(inLobby())
 		steerWisp()
 		refreshPrompts()

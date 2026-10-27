@@ -99,6 +99,9 @@ local function canJump(): boolean
 end
 
 function CharacterService.setFrozen(player: Player, frozen: boolean)
+	-- (and no shift lock while held in place, at a meeting's table above all: it swung the camera round the
+	-- seated body; Roblox's own mouse-lock switches itself off when this goes false)
+	player.DevEnableMouseLock = not frozen
 	local character = player.Character
 	if not character then
 		return
