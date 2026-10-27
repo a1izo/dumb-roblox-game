@@ -407,7 +407,7 @@ Assets.textures = {
 -- Pictures uploaded on their own through Studio's importer (art/export/textures). The first join's eye, painted in
 -- layers by art/scripts/ui/eye_intro.py (UI/EyeIntro): the face with the eye shut in two halves, the eye's corner as it
 -- opens (four frames), the foreground hair in two halves. The loading screen's apple, a 4 x 4 sheet of it turning, and
--- the hand that catches it, open and holding it (art/scripts/ui/intro_frames.py, UI/AppleLoading). "" until uploaded:
+-- the hand that catches it, waiting and holding it (art/scripts/ui/intro_frames.py, UI/AppleLoading). "" until uploaded:
 -- those screens then draw a stand-in.
 Assets.images = {
 	IntroBaseL = "",
@@ -418,9 +418,9 @@ Assets.images = {
 	IntroEye4 = "",
 	IntroHairL = "",
 	IntroHairR = "",
-	AppleSpin = "115645305191275",
-	AppleHand1 = "108468715792008",
-	AppleHand2 = "139566256596403",
+	AppleSpin = "",
+	AppleHand1 = "",
+	AppleHand2 = "",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
