@@ -160,6 +160,29 @@ return function(t)
 				expect(count >= 13).to.equal(true)
 			end
 		)
+		it("gives the part a press of Y plays its own sound slot", function()
+			local count = 0
+			for clip, meta in pairs(EmoteMeta :: any) do
+				local context = meta.context
+				if context ~= nil then
+					for _, branch in ipairs({ context.branch, context.alt }) do
+						local key = if branch == clip then clip .. "Again" else branch
+						expect(type(EmoteMedia.SOUNDS[key])).to.equal("string")
+						expect(EmoteMedia.slot(branch, branch, clip)).to.equal(key)
+						count += 1
+					end
+				end
+			end
+			expect(count >= 17).to.equal(true)
+			-- (without a press, a clip plays its emote's sound)
+			expect(EmoteMedia.slot("excuseMeSirUp", "excuseMeSir", nil)).to.equal("excuseMeSir")
+			expect(EmoteMedia.slot("furiousScribblingSlash", "furiousScribbling", nil)).to.equal("furiousScribbling")
+			expect(EmoteMedia.slot("excuseMeSirUp", "excuseMeSirUp", "excuseMeSir")).to.equal("excuseMeSirUp")
+			expect(EmoteMedia.slot("coinFlip", "coinFlip", "coinFlip")).to.equal("coinFlipAgain")
+			-- (Menacing Pose's 6th pose goes back to the 1st: the 1st's own sound again)
+			expect(EmoteMedia.slot("menacingPose", "menacingPose", "menacingPose6")).to.equal("menacingPose")
+		end)
+
 		it("has a sound slot for every emote and only known faces", function()
 			for _, emote in ipairs(QuickChat.EMOTES) do
 				expect(type(EmoteMedia.SOUNDS[emote.id])).to.equal("string")

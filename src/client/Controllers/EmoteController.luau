@@ -532,17 +532,19 @@ local QUIET_PHASES = {
 }
 
 -- An emote's sound around the dancer, for as long as the emote plays: a loop starts where the dance is on the
--- shared beat (`phase` seconds in), so the music and the moves line up. Returns a function that stops it.
+-- shared beat (`phase` seconds in), so the music and the moves line up. The part a press of Y plays (`from`: the
+-- clip the press was in) has its own (Shared/EmoteMedia.slot). Returns a function that stops it.
 function EmoteController.sound(
 	character: Model,
 	clip: string,
 	own: boolean,
 	alive: Alive,
 	managed: boolean?,
-	phase: number?
+	phase: number?,
+	from: string?
 ): () -> ()
 	local item = Cosmetics.emote(clip)
-	local id = EmoteMedia.sound(if item then item.emote else clip)
+	local id = EmoteMedia.sound(EmoteMedia.slot(clip, if item then item.emote else clip, from))
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if not id or not root then
 		return function() end
@@ -879,7 +881,15 @@ function EmoteController.start(character: Model, clip: string, options: StartOpt
 		local own = opts.own == true
 		table.insert(
 			session.cleanups,
-			EmoteController.sound(character, clip, own, alive, true, if prepared and prepared.loop then phase else nil)
+			EmoteController.sound(
+				character,
+				clip,
+				own,
+				alive,
+				true,
+				if prepared and prepared.loop then phase else nil,
+				opts.from
+			)
 		)
 		table.insert(session.cleanups, EmoteController.cues(character, clip, own, alive, phase))
 	end

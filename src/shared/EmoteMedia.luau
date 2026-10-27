@@ -67,7 +67,7 @@ EmoteMedia.SOUNDS = {
 	reapersEyes = "",
 	footScratch = "",
 	hairTwirl = "",
-	-- The emote pack: with props (Furious Scribbling's slashed ending plays its sound too)
+	-- The emote pack: with props
 	preDawnBonk = "",
 	blindfoldLift = "",
 	chairPerch = "",
@@ -89,6 +89,24 @@ EmoteMedia.SOUNDS = {
 	-- The emote pack: duos
 	matchPointServe = "",
 	cuffedLead = "",
+	-- After a press of Y (the part a press plays: its own sound takes over from the emote's; empty plays nothing)
+	excuseMeSirUp = "", -- Excuse Me, Sir: LOOK UP
+	coinFlipAgain = "", -- Coin Flip: FLIP again
+	chipEat = "", -- Potato Chip: EAT
+	blindfoldLiftUp = "", -- Blindfold Lift: LIFT
+	furiousScribblingSlash = "", -- Furious Scribbling: WRITE IT
+	appleTossThrow = "", -- Apple Toss: TOSS
+	lowBatteryCharge = "", -- Low Battery: CHARGE
+	sugarTowerAdd = "", -- Sugar Tower: ADD ONE, and it holds
+	sugarTowerTopple = "", -- Sugar Tower: ADD ONE, and it falls
+	diceTowerAdd = "", -- Dice Tower: ADD ONE, and it holds
+	diceTowerTopple = "", -- Dice Tower: ADD ONE, and it falls
+	-- (Menacing Pose: each NEXT POSE plays the next pose's; the 6th's press goes back to the 1st and its sound)
+	menacingPose2 = "", -- Menacing Pose: NEXT POSE, the 2nd pose
+	menacingPose3 = "", -- Menacing Pose: NEXT POSE, the 3rd pose
+	menacingPose4 = "", -- Menacing Pose: NEXT POSE, the 4th pose
+	menacingPose5 = "", -- Menacing Pose: NEXT POSE, the 5th pose
+	menacingPose6 = "", -- Menacing Pose: NEXT POSE, the 6th pose
 } :: { [string]: string }
 
 -- [expression] = decal asset id (a face drawn in art/textures/faces, uploaded as a Decal)
@@ -132,6 +150,19 @@ end
 -- The sound for an emote, as a content id, or nil.
 function EmoteMedia.sound(clip: string): string?
 	return content(EmoteMedia.SOUNDS[clip])
+end
+
+-- The slot a clip's sound comes from. The part a press of Y plays (`from`: the clip the press was in) has a slot
+-- of its own, and a press that plays the same clip again (Coin Flip's FLIP) has "<clip>Again"; anything else
+-- plays its emote's (`emote`: the clip of the shop item it belongs to).
+function EmoteMedia.slot(clip: string, emote: string, from: string?): string
+	if from ~= nil then
+		local key = if from == clip then clip .. "Again" else clip
+		if EmoteMedia.SOUNDS[key] ~= nil then
+			return key
+		end
+	end
+	return emote
 end
 
 -- An emote's cues that have a sound, in order of their moment, each with its content id.
