@@ -298,17 +298,17 @@ for t0, *_ in CAMS:
 # across the room, the moon through the window a cold rim on his back; the red of the Deathsinger from below behind
 # him as it comes. The grade: dark, a little cool. His own face throughout.
 HEAD = (SIT[0], 4.7, SIT[1])
-shot.grade = (0.24, -0.06, -0.04, (238, 236, 255))
-shot.light("spot", (-2.6, TOP + 1.7, -6.0), HEAD, color=(255, 186, 120), brightness=2.0, range=10, angle=75)
-shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(190, 210, 255), brightness=1.5, range=20, angle=26, flicker=0.45)
-shot.light("spot", (1.6, 9.5, -9.6), HEAD, color=(160, 180, 255), brightness=1.3, range=12, angle=45)
-shot.light("spot", (PAGE[0] - 1.0, PAGE[1] + 2.8, PAGE[2] - 1.4), PAGE, color=(255, 214, 170), brightness=1.0, range=5,
+shot.grade = (0.22, -0.06, -0.07, (238, 236, 255))  # (darker: the owner, 2026-10-28, the light was too strong)
+shot.light("spot", (-2.6, TOP + 1.7, -6.0), HEAD, color=(255, 186, 120), brightness=1.3, range=10, angle=75)
+shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(190, 210, 255), brightness=1.0, range=20, angle=26, flicker=0.45)
+shot.light("spot", (1.6, 9.5, -9.6), HEAD, color=(160, 180, 255), brightness=0.85, range=12, angle=45)
+shot.light("spot", (PAGE[0] - 1.0, PAGE[1] + 2.8, PAGE[2] - 1.4), PAGE, color=(255, 214, 170), brightness=0.7, range=5,
            angle=40, shadows=False, show=(CUTS[0], CUTS[1]))  # (the page lit for the insert)
-shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(235, 245, 255), brightness=3.0, range=20, angle=26,
+shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(235, 245, 255), brightness=1.8, range=20, angle=26,
            show=(LOOK[1] - 0.05, LOOK[1] + 0.35), flicker=0.9)  # (the television flaring as the news breaks)
 shot.light("spot", (SINGER[0] + 0.5, 0.6, SINGER[1] + 2.0), (SINGER[0], 7.0, SINGER[1]), color=(220, 25, 35),
-           brightness=2.2, range=12, angle=50, show=(COMES, STUDY + 0.25))
-shot.light("point", (SINGER[0], 5.0, SINGER[1] + 1.0), color=(200, 20, 30), brightness=1.2, range=8, shadows=False,
+           brightness=1.4, range=12, angle=50, show=(COMES, STUDY + 0.25))
+shot.light("point", (SINGER[0], 5.0, SINGER[1] + 1.0), color=(200, 20, 30), brightness=0.8, range=8, shadows=False,
            show=(BACK + 0.2, STUDY + 0.25))
 
 # Sound and effects.
