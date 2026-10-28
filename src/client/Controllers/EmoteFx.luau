@@ -1608,9 +1608,15 @@ FX.bunnyEars = accent(4 * 60 / 165, { 0.0, 2 * 60 / 165 }, function(character)
 	end
 end)
 
--- Jackpot Shuffle: a spray of gold coins up from the floor once a turn (Hakari's jackpot).
+-- Jackpot Shuffle: luck rising off the dancer (Hakari's jackpot; the user's call of 2026-10-27: a green aura, never
+-- flames): a soft green haze round the body and its light, green sparks drifting up it, card suits floating off the
+-- shoulders three times a turn, and a spray of gold coins up from the floor once a turn.
 local GOLD = ColorSequence.new(Color3.fromRGB(255, 214, 90), Color3.fromRGB(230, 160, 40))
-FX.jackpotShuffle = accent(7 * 60 / 150, { 0.0 }, function(character)
+local LUCK = Color3.fromRGB(70, 230, 120)
+local LUCK_LIGHT = Color3.fromRGB(196, 255, 210)
+local JACKPOT_TURN = 7 * 60 / 150
+local SUITS = { "♠", "♥", "♣", "♦" }
+local jackpotCoins = accent(JACKPOT_TURN, { 0.0 }, function(character)
 	local sole = lowerSole(character)
 	if sole then
 		burst(sole + Vector3.new(0, 0.2, 0), {
@@ -1625,6 +1631,108 @@ FX.jackpotShuffle = accent(7 * 60 / 150, { 0.0 }, function(character)
 		})
 	end
 end)
+
+-- A card suit floating up off a shoulder and fading, green with a dark edge.
+local function luckSign(root: BasePart, text: string, side: number)
+	local start = Vector3.new(1.3 * side, 1.4 + math.random() * 0.8, 0)
+	local gui, label = signLabel(root, {
+		text = text,
+		colour = LUCK_LIGHT,
+		stroke = Color3.fromRGB(8, 40, 20),
+		size = 0.8,
+		at = start,
+		tilt = (6 + math.random() * 10) * side,
+	})
+	label.TextTransparency = 0.15
+	local info = TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	TweenService:Create(gui, info, { StudsOffset = start + Vector3.new(0.3 * side, 1.4, 0) }):Play()
+	TweenService:Create(label, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		TextTransparency = 1,
+		TextStrokeTransparency = 1,
+	}):Play()
+	task.delay(1.4, function()
+		gui:Destroy()
+	end)
+end
+
+FX.jackpotShuffle = function(character, preview, phase)
+	local stopCoins = jackpotCoins(character, preview, phase)
+	local torso = character:FindFirstChild("Torso")
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not torso or not torso:IsA("BasePart") or not root or not root:IsA("BasePart") then
+		return stopCoins
+	end
+	local reduced = Motion.isReduced()
+	local holder = Create("Attachment", { Name = "DGJackpot", Parent = torso }) :: Attachment
+	holder:SetAttribute("DGEmote", true)
+	local light = Create("PointLight", {
+		Color = LUCK,
+		Brightness = 0.9,
+		Range = 9,
+		Shadows = false,
+		Parent = holder,
+	})
+	light:SetAttribute("DGEmote", true)
+	-- the haze: big soft rounds of green that swell and fade where the body is, barely moving (no tongues of flame)
+	local haze, stopHaze = Vfx.Emit.hold(holder, {
+		tex = "VfxGlow",
+		color = LUCK,
+		size = { { 0, 3.4 }, { 0.5, 4.4 }, { 1, 3.8 } },
+		alpha = { { 0, 1 }, { 0.35, 0.8 }, { 0.7, 0.86 }, { 1, 1 } },
+		life = { 1.4, 2.0 },
+		speed = { 0, 0.15 },
+		spread = 180,
+		light = 1,
+		bright = 1,
+		rate = 3,
+		z = -1,
+		locked = true,
+	})
+	haze:SetAttribute("DGEmote", true)
+	-- sparks drifting up through the body
+	local sparks, stopSparks = Vfx.Emit.hold(torso, {
+		tex = "VfxEmber",
+		color = { { 0, LUCK_LIGHT }, { 1, LUCK } },
+		size = { { 0, 0.16 }, { 0.6, 0.1 }, { 1, 0 } },
+		alpha = { { 0, 0.15 }, { 1, 1 } },
+		life = { 1.1, 1.8 },
+		speed = { 0.5, 1.2 },
+		spread = 25,
+		accel = Vector3.new(0, 2.4, 0),
+		light = 1,
+		bright = 1.4,
+		rate = if reduced then 6 else 16,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	sparks:SetAttribute("DGEmote", true)
+	local gone = false
+	local suit = 0
+	if not reduced then
+		onBeats(
+			root,
+			function()
+				return gone
+			end,
+			JACKPOT_TURN,
+			{ 0.7, 1.5, 2.3 },
+			phase,
+			function()
+				suit = suit % #SUITS + 1
+				luckSign(root, SUITS[suit], if suit % 2 == 0 then 1 else -1)
+			end
+		)
+	end
+	return function()
+		gone = true
+		stopCoins()
+		stopHaze()
+		stopSparks()
+		light:Destroy()
+		task.delay(2.2, function()
+			holder:Destroy()
+		end)
+	end
+end
 
 -- Boat Aura: spray off the bow on every surge (each four beats).
 local SPRAY = ColorSequence.new(Color3.fromRGB(220, 240, 255), Color3.fromRGB(150, 200, 235))
