@@ -638,8 +638,10 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				model.Anchored = true
 			end
 			if model:IsA("Model") then
-				if type(data.open) == "number" and data.model == ManualBook.KEY then
-					ManualBook.pose(model, data.open, data.open)
+				if data.model == ManualBook.KEY and (type(data.open) == "number" or type(data.open) == "table") then
+					-- (a number: lying that far open; keys: opened or shut over the shot, posed each frame below)
+					local open = if type(data.open) == "table" then data.open[1][2] else data.open
+					ManualBook.pose(model, open, open)
 				end
 				if type(data.scale) == "number" and math.abs(data.scale - 1) > 1e-3 then
 					model:ScaleTo(model:GetScale() * data.scale)
@@ -671,6 +673,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				data = data,
 				times = data.t,
 				frames = pathFrames(data),
+				open = nil :: number?, -- (a Manual opened over the shot: how open it was posed last)
 			})
 		end
 	end
@@ -1098,6 +1101,13 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		for _, prop in ipairs(props) do
 			if shown(prop.data.show, tt) then
 				placeModel(prop.model, CFrame.new(base) * samplePath(prop.times, prop.frames, tt))
+				if type(prop.data.open) == "table" and prop.model:IsA("Model") then
+					local open = openAt(prop.data.open, tt)
+					if open ~= prop.open then
+						prop.open = open
+						ManualBook.pose(prop.model, open, open)
+					end
+				end
 				if not prop.model.Parent then
 					stage:add(prop.model)
 					-- (one joining the shot partway through is drawn in over a moment, never popped out of thin air:

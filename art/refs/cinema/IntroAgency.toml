@@ -1,0 +1,39 @@
+# The Agency intro (shot IntroAgency). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
+id = "IntroAgency"
+name = "Agency: the operations deck"
+status = "built"
+
+[origin]
+what = "The task force's first night with L (Death Note): a dark room, the case's evidence spread out, the investigators lined up watching, and L crouched on a chair, thumb at his lip, staring at it."
+recognisable = "L crouched, thumb at the lip, extreme close-ups of his eyes; inserts of the evidence (crime-scene photographs, notes with arrows, a badge); low, cold light; the team in a row watching him."
+ours = "Rebuilt from scratch 2026-10-28: the match's players (twelve at most) round the map table in one pool of light; one crouched on a chair at the table's far end, thumb at his lip, staring down its length at the Manual at the other end; the reader lifts its cover, the lights stutter, the wall of the dead across the atrium flares and every head snaps up; the crouched one unfolds and stands; the camera comes straight down into the open page."
+
+[source]
+url = "https://www.youtube.com/watch?v=eCLKnpTYHN0"
+title = "L and task force start their investigation."
+kind = "the anime scene"
+watched = "2026-10-28: a frame sheet every 8 s over its 160 s, in the built-in browser"
+mirror = false
+
+[[beat]]
+src = 17.6
+pose = "L close, wide eyes, thumb at the lip"
+[[beat]]
+src = 42.4
+pose = "insert: crime-scene photographs and notes"
+[[beat]]
+src = 59.0
+pose = "the task force lined up watching him"
+[[beat]]
+src = 92.1
+pose = "a dark room lit only by a monitor"
+
+[timing]
+length = 22.6
+fit = "9 cuts and the card: crane in over the desks (0-3.6); tracking along the table over their heads (3.6-6.2); the evidence and the book (6.2-8.2); the crouched one close (8.2-10.2); the cover lifted (10.2-11.6); the stutter, every head up to the wall (11.6-13); the wall of the dead (13-15.2); he unfolds and stands (15.2-17.4); straight down into the open page (17.4-19.6); black and the case's card."
+
+[r6]
+notes = "The map table is solid to the floor and its four chairs leave no room along its long sides: the reader at one end, the crouched one on his own chair at the other, the rest at the corners and behind the chairs (a body with its arms is 4 studs across). The crouch is the R6 one (legs out along the seat, the torso upright on their back ends, as the chairPerch emote). The Manual on the table opens by its own keys (Shot.prop open=[(t, v)], new 2026-10-28)."
+
+[check]
+by = "run_cinema --clear 0 problems; --lint; contact sheets of every cut"

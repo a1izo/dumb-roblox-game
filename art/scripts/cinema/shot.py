@@ -178,7 +178,9 @@ class Prop:
         self.shot = shot
         self.model = model  # a ModelLibrary / Props.blend name
         self.scale = float(scale)  # the prop's size, times the catalog's
-        self.open = open  # Death's Manual (Grimoire): 0 closed .. 1 lying open; None for every other prop
+        # Death's Manual (Grimoire): 0 closed .. 1 lying open, or [(t, open)] keys to open or shut it over the shot;
+        # None for every other prop
+        self.open = tuple((float(t), float(v)) for t, v in open) if isinstance(open, (list, tuple)) else open
         self.show = (show[0], show[1] if show[1] is not None else shot.length)
         self.path = Track(shot.length, full_rotation=True)
 
@@ -792,7 +794,9 @@ def export(shot):
         lines.append(f"\t\t\tshow = {lua_value(list(p.show))},")
         if abs(p.scale - 1.0) > 1e-6:
             lines.append(f"\t\t\tscale = {num(p.scale)},")
-        if p.open is not None:
+        if isinstance(p.open, tuple):
+            lines.append(f"\t\t\topen = {lua_value([list(k) for k in p.open])},")
+        elif p.open is not None:
             lines.append(f"\t\t\topen = {num(p.open)},")
         lines += _path_lines(p.path, shot.length, "\t\t\t")
         lines.append("\t\t},")

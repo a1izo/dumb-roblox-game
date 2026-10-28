@@ -449,14 +449,24 @@ def add_props(shot, library):
             common.collection("Actors").objects.link(piece)
             piece.parent = obj
             piece.matrix_parent_inverse = Matrix.Identity(4)
-            share = p.open or 0.0
-            if share and name in hinges and name in turns:
-                hx, hy, hz = hinges[name]
-                at = Vector((-hx, hz, hy))
-                swing = Matrix.Rotation(math.radians(-turns[name] * share), 4, "Y")
-                piece.matrix_basis = Matrix.Translation(at) @ swing @ Matrix.Translation(-at)
+            def swung(share):
+                if share and name in hinges and name in turns:
+                    hx, hy, hz = hinges[name]
+                    at = Vector((-hx, hz, hy))
+                    swing = Matrix.Rotation(math.radians(-turns[name] * share), 4, "Y")
+                    return Matrix.Translation(at) @ swing @ Matrix.Translation(-at)
+                return Matrix.Identity(4)
+
+            if isinstance(p.open, tuple):  # (opened or shut over the shot: keyed as the game poses it)
+                fps = bpy.context.scene.render.fps
+                t0, t1 = p.open[0][0] - 0.1, p.open[-1][0] + 0.1
+                for f in range(int(t0 * fps), int(t1 * fps) + 2):
+                    piece.matrix_basis = swung(open_at(p.open, f / fps))
+                    piece.keyframe_insert("location", frame=f + 1)
+                    piece.keyframe_insert("rotation_quaternion" if piece.rotation_mode == "QUATERNION" else "rotation_euler",
+                                          frame=f + 1)
             else:
-                piece.matrix_basis = Matrix.Identity(4)
+                piece.matrix_basis = swung(p.open or 0.0)
         for name in [k for k in library if k.startswith(p.model + "_Glow")]:
             glow = library[name].copy()
             common.collection("Actors").objects.link(glow)
