@@ -896,18 +896,20 @@ def build_sit():
 
 
 def build_enthroned():
-    """The throne's stone champion (World/Champion holds a moment of it): sat back against the backrest, chin
-    up, the legs out level as a seated avatar's are (an R6 leg has no knee: sloped down, it would go through the
-    seat), the right arm laid along the throne's arm, the left reaching past the end of it, its hand loose."""
-    seat = Motion("enthroned", 8.0, loop=True, note="Enthroned: back to the backrest, chin up, the right arm along the "
-                                                    "throne's arm, the left hand hanging loose over its end; a slow breath.")
+    """The throne's stone champion (World/Champion holds a moment of it), at ease like a king (the user's call of
+    2026-10-27: the figure sat stiff, both arms held out straight before it): leaning back against the backrest,
+    the right leg crossed over the left with the right hand resting on its knee, the left arm laid along the
+    throne's arm. (An R6 leg has no knee: the left one goes out level as a seated avatar's does; the crossed one
+    rides up over it. A rigid arm raised to the chin hid the face, so the hand stays low.)"""
+    seat = Motion("enthroned", 8.0, loop=True, note="Enthroned at ease: leaning back, legs crossed, the right hand on "
+                                                    "the knee, the left arm along the throne's arm; a slow breath.")
     for i in range(32):
         t = i * 0.25
         b = breathing(t, 4.0, (1.0, 0.85))
-        root = (-6 + 0.5 * b, 0, 0)
-        neck = euler(R(*root).T @ R(-14 - 0.4 * b, 0, 0))
-        seat.key(t, root=root, neck=neck, rHip=J((88, 0, 4)), lHip=J((87, 0, -4)),
-                 rShoulder=J((74 + 0.5 * b, 0, -4)), lShoulder=J((86 + 0.5 * b, 0, 4)))
+        root = (-10 + 0.5 * b, 0, 0)
+        neck = euler(R(*root).T @ R(-6 - 0.4 * b, 0, 0))
+        seat.key(t, root=root, neck=neck, rHip=J((80, 0, -16), (0.0, 0.35, -0.1)), lHip=J((88, 0, -3)),
+                 rShoulder=J((54 + 0.5 * b, 0, -14), (-0.05, 0.04, -0.1)), lShoulder=J((40 + 0.5 * b, 0, -14)))
     soft(seat).build()
 
 
