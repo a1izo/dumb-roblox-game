@@ -16,6 +16,9 @@ local Tracks = require(Shared:WaitForChild("Tracks"))
 local Services = script.Parent.Parent.Parent:WaitForChild("Services")
 local Match = require(Services:WaitForChild("Match"))
 local RateLimit = require(Services:WaitForChild("RateLimit"))
+-- (the civilians' bodies the Tokyo crowd wears also sit the exam in the campus intro's hall, as the candidates who are
+-- not players: ShotPlayer dresses the shot's extras in them)
+local CrowdBodies = require(script.Parent.TokyoDistrict.Looks)
 
 local TracksRemote = Net.event("Tracks")
 
@@ -111,6 +114,7 @@ function UniversityCampus.start(ctx)
 	map = ctx.map
 	origin = ctx.map.origin or Vector3.zero
 	clear()
+	CrowdBodies.ensure()
 	local sampled, sent = 0, 0
 	connection = RunService.Heartbeat:Connect(function(dt)
 		sampled += dt

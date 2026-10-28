@@ -567,8 +567,11 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		elseif userId then
 			model = castUser(userId)
 		elseif data.extra then
-			-- (in Tokyo the commuters are the crowd's own civilians, never a suit; elsewhere a faceless stand-in)
-			local crowd = if shot.venue == "Tokyo" then ReplicatedStorage:FindFirstChild("LCrowd") else nil
+			-- (in Tokyo the commuters and on the campus the other candidates are the crowd's own civilians, never a
+			-- suit; elsewhere, or before those bodies are built, a faceless stand-in)
+			local crowd = if shot.venue == "Tokyo" or shot.venue == "Campus"
+				then ReplicatedStorage:FindFirstChild("LCrowd")
+				else nil
 			local bodies = if crowd then crowd:GetChildren() else {}
 			local number = tonumber(string.match(data.slot, "%d+")) or 1
 			local civilian = bodies[(number * 5) % math.max(1, #bodies) + 1]

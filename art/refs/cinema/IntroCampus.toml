@@ -1,0 +1,45 @@
+# The Campus intro (shot IntroCampus). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
+id = "IntroCampus"
+name = "Campus: the exam hall"
+status = "built"
+
+[origin]
+what = "The Death Note falling in Death Note, episode 1: Light, bored in class by the window while the others work, sees a black notebook drop past outside and land in the schoolyard."
+recognisable = "The class bent over its work, Light chin in hand looking out; a view along the building's windows as a dark shape falls past; his eyes catching it; the notebook tumbling close; a wide of it landing; an extreme close on his eyes."
+ours = "Rebuilt from scratch 2026-10-28: the entrance exam at midnight, thirty candidates a desk apart, each their own rhythm and habit (16 looping clips of different lengths, every desk offset; the owner: never the same animation in step); one player by the side door, finished, chin in hand; the book drops out of the night past the lamp over the door, he snaps round, it lands in the snow; a close stare; nobody else looked up."
+
+[source]
+url = "https://www.youtube.com/watch?v=2GA3fCQu1dA"
+title = "Light finds Death Note Scene"
+kind = "the anime scene"
+watched = "2026-10-28: frame sheets every 5 s over 0-100 s and every 1 s over 0-20 s, in the built-in browser"
+mirror = false
+
+[[beat]]
+src = 1.3
+pose = "Light at his desk by the window, chin in hand, classmates writing"
+[[beat]]
+src = 7.3
+pose = "outside, along the building's windows: a dark shape falling past"
+[[beat]]
+src = 9.3
+pose = "his eyes catching it"
+[[beat]]
+src = 11.3
+pose = "the notebook tumbling close"
+[[beat]]
+src = 14.3
+pose = "wide: it lands in the yard"
+[[beat]]
+src = 18.3
+pose = "extreme close on his eyes, sharp interest"
+
+[timing]
+length = 22.6
+fit = "9 cuts and the card: the hall (0-4); the aisle (4-6.8); him, finished, bored (6.8-9.6); outside, it drops out of the dark (9.6-11); falling past the lamp (11-12.6); his head snaps round (12.6-13.6); it lands in the snow, the lit arch beyond (13.6-15.8); his stare (15.8-17.8); the hall, only he turned (17.8-19.6); black and the case's card."
+
+[r6]
+notes = "Bodies at exam desks sit perched (thighs sloping under the rack); hands placed with body_reach on the paper; the candidates use every other desk (an R6 body with arms is 4 studs across, the desks 3.6 apart). Extras wear the crowd's civilian bodies (LCrowd, now built on the campus too)."
+
+[check]
+by = "run_cinema --clear 0 problems; --lint; contact sheets of every cut"
