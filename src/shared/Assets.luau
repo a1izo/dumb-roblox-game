@@ -439,6 +439,7 @@ Assets.textures = {
 	Snowflake = "",
 	Footprint = "",
 	AuraGlow = "", -- (the UI's soft light, UI/Kit/Surfaces)
+	UiWordmark = "113872686278317", -- (the title's pinned paper letters, uploaded 2026-10-28; was Core's carrier)
 } :: { [string]: string }
 
 -- Pictures uploaded on their own through Studio's importer (art/export/textures). The first join's eye, painted in
@@ -448,31 +449,31 @@ Assets.textures = {
 -- UI/AppleLoading). "" until uploaded: those screens then draw a stand-in (a frame of the eye or the thumb not
 -- uploaded is left out).
 Assets.images = {
-	IntroBaseL = "112649732036299",
-	IntroBaseR = "117826587593763",
-	IntroEye1 = "73671134573669",
-	IntroEye2 = "72561965034296",
-	IntroEye3 = "86909090559573",
-	IntroEye4 = "126999503834786",
-	IntroEye5 = "",
-	IntroEye6 = "",
-	IntroEye7 = "",
-	IntroEye8 = "",
-	IntroHairL = "77350048823213",
-	IntroHairR = "73218582422326",
-	AppleSpin = "116054757714434",
+	IntroBaseL = "99402871928245",
+	IntroBaseR = "137085813757400",
+	IntroEye1 = "90368623390656",
+	IntroEye2 = "133772217098143",
+	IntroEye3 = "120822303690075",
+	IntroEye4 = "125034282161541",
+	IntroEye5 = "95713400533522",
+	IntroEye6 = "134467055733729",
+	IntroEye7 = "101128340381069",
+	IntroEye8 = "73647841420587",
+	IntroHairL = "81440657034501",
+	IntroHairR = "125061429762895",
+	AppleSpin = "80647396058252",
 	AppleHand1 = "119620415469239",
-	AppleHand2 = "109922448543976",
-	AppleClose1 = "",
-	AppleClose2 = "",
-	AppleClose3 = "",
-	AppleClose4 = "",
+	AppleHand2 = "113469614959846",
+	AppleClose1 = "74850327668366",
+	AppleClose2 = "92884140912727",
+	AppleClose3 = "96947847026038",
+	AppleClose4 = "80639489563850",
 	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
-	CursorLock = "",
-	CursorFree = "",
+	CursorLock = "71963626863169",
+	CursorFree = "122660541972849",
 	-- The Reál's mark (the user's, 2026-10-28): the currency's icon everywhere (UI/Kit/Icon "real"); the coin until
 	-- it is uploaded.
-	RealIcon = "",
+	RealIcon = "111490167287256",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.
