@@ -36,6 +36,35 @@ def seated(m, t, ease="smooth", seat=1.6, lean=-8.0, legs=82.0, turn=0.0, xz=(0.
     return off
 
 
+def body_reach(side, joints, offset, target, direction=None, twist=0.0, max_slide=0.55):
+    """emotes.kit.reach for a body that is not standing straight: the arm value that puts this side's fist on
+    `target` (the character's own frame: the floor under its root, facing -z) when the body is posed by `joints`
+    (its root and legs: the arms are left out) and moved by `offset`. `direction` (the forearm's way, shoulder side
+    to fist) is in the same frame."""
+    from emotes.kit import reach
+
+    torso = posekit.fk({k: v for k, v in joints.items() if k not in ARMS}, offset)["Torso"]
+    tgt = (np.linalg.inv(torso) @ np.array([*target, 1.0]))[:3]
+    d = None if direction is None else tuple(torso[:3, :3].T @ np.array(direction, float))
+    return reach(side, tuple(tgt), d, twist, max_slide)
+
+
+def to_torso(joints, offset, point=None, direction=None):
+    """A point (or a direction) in the character's frame, in the torso's frame of the body posed by `joints`."""
+    torso = posekit.fk({k: v for k, v in joints.items() if k not in ARMS}, offset)["Torso"]
+    if direction is not None:
+        return tuple(torso[:3, :3].T @ np.array(direction, float))
+    return tuple((np.linalg.inv(torso) @ np.array([*point, 1.0]))[:3])
+
+
+def local_of(place, yaw, point):
+    """A point in the set's space in the frame of a character standing at `place` (x, z) turned `yaw` (the inverse of
+    framing.body's turn)."""
+    a = math.radians(yaw)
+    dx, dz = point[0] - place[0], point[2] - place[1]
+    return (math.cos(a) * dx - math.sin(a) * dz, point[1], math.sin(a) * dx + math.cos(a) * dz)
+
+
 def perched(m, t, ease="smooth", hip=2.15, legs=52.0, lean=-8.0, turn=0.0, **upper):
     """A key sitting at a desk with the thighs sloping down (R6 legs do not bend: level thighs at chair
     height go through a desk top). `hip` is how high the hips sit, on the chair's cushion; seated() would

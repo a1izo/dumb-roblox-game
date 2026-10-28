@@ -670,6 +670,76 @@ function Cinema.vignette(color: Color3?, strength: number?): () -> ()
 	end
 end
 
+-- What a hidden security camera sees (the last shot of Diavolo's study): the picture black and white and flat,
+-- dark at the corners, scan lines over it, a red REC light blinking and the time ticking in the corner. Returns a
+-- remover (safe to call twice).
+function Cinema.cctv(label: string?): () -> ()
+	local grade = Create("ColorCorrectionEffect", {
+		Name = "CinemaCctv",
+		Saturation = -1,
+		Contrast = 0.3,
+		Brightness = 0.03,
+		TintColor = Color3.fromRGB(222, 240, 228),
+		Parent = workspace.CurrentCamera,
+	})
+	local closeVignette = Cinema.vignette(Color3.new(0, 0, 0), 0.24)
+	local holder = Kit.frame({ Name = "Cctv", Parent = Screens.cinematic })
+	for i = 0, 89 do
+		Kit.Base.make("Frame", {
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 0.86,
+			BorderSizePixel = 0,
+			Size = UDim2.new(1, 0, 0, 1),
+			Position = UDim2.fromScale(0, i / 90),
+			Parent = holder,
+		})
+	end
+	local function text(name: string, position: UDim2, anchor: Vector2, align: Enum.TextXAlignment): TextLabel
+		return Create("TextLabel", {
+			Name = name,
+			AnchorPoint = anchor,
+			Position = position,
+			Size = UDim2.fromScale(0.3, 0.05),
+			BackgroundTransparency = 1,
+			Font = Enum.Font.Code,
+			TextScaled = true,
+			TextColor3 = Color3.fromRGB(235, 235, 235),
+			TextStrokeTransparency = 0.5,
+			TextXAlignment = align,
+			Parent = holder,
+		}) :: TextLabel
+	end
+	local rec = text("Rec", UDim2.fromScale(0.04, 0.14), Vector2.zero, Enum.TextXAlignment.Left)
+	rec.Text = "● REC   " .. (label or "CAM 01")
+	rec.TextColor3 = Color3.fromRGB(235, 40, 40)
+	local clock = text("Clock", UDim2.fromScale(0.96, 0.86), Vector2.new(1, 1), Enum.TextXAlignment.Right)
+	local start = os.clock()
+	local open = true
+	task.spawn(function()
+		while open do
+			local seconds = 23 * 3600 + 41 * 60 + 7 + (os.clock() - start)
+			clock.Text = string.format(
+				"%02d:%02d:%02d:%02d",
+				math.floor(seconds / 3600) % 24,
+				math.floor(seconds / 60) % 60,
+				math.floor(seconds) % 60,
+				math.floor((seconds % 1) * 30)
+			)
+			rec.TextTransparency = if math.floor((os.clock() - start) * 2) % 2 == 0 then 0 else 0.7
+			task.wait(1 / 30)
+		end
+	end)
+	return function()
+		if not open then
+			return
+		end
+		open = false
+		grade:Destroy()
+		holder:Destroy()
+		closeVignette()
+	end
+end
+
 -- World effects ---------------------------------------------------------------------------------
 
 -- A hard spotlight shining down on a character, hung just under the ceiling (never above the

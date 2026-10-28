@@ -1,101 +1,207 @@
-"""Diavolo's role cutscene (the briefing, seen only by Diavolo): "I'll take a potato chip... and EAT IT!" After the anime's potato
-chip scene: Diavolo at the desk at night, studying, the news on, eating chips; under the bag's edge a torn page
-and between the chips a name goes into it. The television flatlines. Then the chip, held up, and
-eaten like a verdict.
+"""Diavolo's role cutscene (the briefing, seen only by Diavolo): "I'll take a potato chip... and EAT IT!" Rebuilt from
+scratch (2026-10-28, the owner: "completely redo these two"). After the anime's potato chip scene (Death Note, episode
+8; art/refs/cinema/RoleDiavolo.toml): a student at his desk at night, studying, eating crisps; between the crisps a
+name goes into the Manual; the news on the television flatlines; then a crisp, raised slowly, held... and eaten like a
+verdict, the Deathsinger drawn out of the dark behind him laughing with him; and last, what the hidden camera in the
+corner sees: a good student at his books, and nothing behind him.
 
-A  0.0-2.6   Wide from the television's corner: night, the lamp, rain on the window. Diavolo reads, calm; a hand
-             goes into the bag of chips.
-B  2.6-4.0   Across the desk: a chip eaten without looking up, eyes on the book.
-C  4.0-6.2   On the desk: the open Manual, the pen writing a name in hard quick strokes.
-D  6.2-7.4   His face, the eyes sliding to the television: the news, a man collapses live; a flatline.
-E  7.4-9.0   Low: the hand takes a chip and lifts it, slowly.
-F  9.0-10.6  Close, tilted: the chip held up before the face... and bitten: "...and EAT IT."
-G  10.6-12.8 He leans back into the chair, the grin; behind him the Deathsinger rises and laughs.
-H  12.8-15.0 Pushing in on the face: the laugh, the red.
+A  0.0-2.8   Over the television across the room, creeping in: night, rain on the window behind him, the lamp. He
+             writes; a hand goes into the bag on the dossier and a crisp is eaten without looking up.
+B  2.8-4.6   High over his right shoulder onto the page: the pen writes a name in hard quick strokes and underlines
+             it with a flick.
+C  4.6-6.6   Close, low, from in front on his left: the eyes come up off the page to the television; it flickers;
+             the flatline; a smile, just.
+D  6.6-9.3   Across the desk, pushing in: "I'll take a potato chip..." the hand into the bag, a crisp lifted slowly
+             up beside his face, the head turning to it; held.
+E  9.3-10.8  Low and close on the crisp's side, tilted, half his face in the dark: "...and EAT IT!" the snap to the
+             mouth, the crunch, the frame stopping red, the crumbs flying; he chews, grinning.
+F  10.8-12.8 Low and wide from the room, rising: he leans back into the chair laughing, and behind him the
+             Deathsinger is drawn out of the dark, eyes first, leaning in over his shoulder, laughing with him.
+G  12.8-14.8 The hidden camera in the corner, black and white: a student at his desk, writing. Nothing behind him.
 
-Cut down round the line (2026-10-27; then about 4 s longer, at your word, the same day): from B to the start of G in
-one run, 9.2 s: the chip eaten over the book, the name written, the eyes to the flatline on the news, then the chip
-lifted and held up while he says it and bitten on "EAT IT!", and the Deathsinger drawn out of the smoke behind him.
-The role card holds after it. The whole scene is still authored on its first 15 s timeline below; RETIME picks the
-pieces.
-
-The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, 14 high; the window in
-the north wall; the desk before it at (0, -5.4) (x -3.3..3.3, z -7.0..-3.8, top 2.7), its lamp at the west end;
-the chair behind it at (0, -8.0); the television across the room at (0, 6.6) facing the desk."""
+The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, 14 high; the window in the
+north wall; the desk before it at (0, -5.4) (x -3.3..3.3, z -7.0..-3.8, top 2.7): its banker's lamp at x -2.3 (on his
+right), the pen stand at (1.3, -6.2) and the dossier at (1.4, -5.2) (on his left), the knee hole between the
+pedestals; the chair behind it at (0, -8.0); the television across the room at (1, 6.6) facing the desk. He sits
+facing south (180), so his right is -x."""
 
 from animlib import J
-from cinema.acting import alive, perched, soft, strike
-from cinema.shot import Retime, Shot
+from cinema import framing
+from cinema.acting import body_reach, soft, to_torso
+from cinema.shot import Shot
+from emotes.kit import basis_angles, hold, reach
 from motion import Motion
 
 NAME = "RoleDiavolo"
-LENGTH = 15.0
+LENGTH = 14.8
 TOP = 2.7  # the desk top
 HIP = 2.15  # on the chair's cushion
-SIT = (0.0, -7.8)  # under the hips, facing south (180): thighs sloping under the desk's edge (z -7.0)
-MANUAL = 0.55  # Death's Manual at this size: open, about 2.2 by 1.7 studs
-BOOK = (-0.85, -6.3)  # its open page, under his right hand; the board lies over to his left (+x)
-BOOK_Y = TOP + 0.215 * MANUAL  # (its pivot is its middle)
-BAG = (2.4, -6.2)  # the bag of chips, east of the book (by his left hand)
+LEGS = 52  # the thighs sloping under the desk's edge (R6 legs do not bend)
+SIT = (0.0, -7.8)  # on the floor under the hips, facing south (180)
+MANUAL = 0.55  # Death's Manual at this size
+BOOK = (-0.4, -6.05)  # its middle (the written page is centred on it): in front of him, a little to his right
+BOOK_Y = TOP + 0.01 + 0.215 * MANUAL  # on the leather inlay (its pivot is its middle)
+PAGE_Y = BOOK_Y + 0.139 * MANUAL  # the page's face (ModelCatalog Grimoire.page.at)
+BAG = (1.6, -5.72)  # the bag of crisps stood on the dossier, by his left hand (clear of his face from the front)
+BAG_SCALE = 1.15
+BAG_Y = TOP + 0.12
 SINGER = (-2.6, -10.0)
+ABOVE = 0.78  # the fist this far over the page puts the nib on it (PEN_GRIP)
 
-# Diavolo --------------------------------------------------------------------------------------------------
+CASUAL = (1.2, 2.2)  # the first crisp: into the bag .. eaten
+WRITE = (2.85, 4.35)  # the name
+LOOK = (4.85, 5.7)  # the eyes up to the television .. the flatline
+SAID = 6.3  # "I'll take a potato chip..."
+TAKE = (6.35, 6.95)  # into the bag .. a crisp out
+RAISED = 8.0  # up beside the face, held
+BITE = 9.47  # "...and EAT IT!"
+BACK = 10.9  # leaning back, laughing
+STUDY = 12.55  # back over his books, the good student
 
-READ_R = J((84, -8, -14), (-0.1, 0.2, -0.3))  # the right hand on the book (the pen in it), clear of the desk
-READ_L = J((86, 8, 16), (0.1, 0.04, -0.3))
-WRITE_R = J((86, -14, -20), (-0.14, 0.2, -0.3))  # the pen over the page, out to the right (clear of the desk)
-BAG_L = J((86, 12, 30), (0.0, 0.06, -0.3))  # the left hand in the bag (across the body)
-MOUTH_L = J((128, -34, 18), (0.0, 0.22, -0.2))  # the chip at the mouth
-HELD_L = J((112, -24, 30), (0.0, 0.2, -0.24))  # the chip held up before the face
-DOWN = (-14, 0, 0)  # the head over the book
+
+def front(f, right, y):
+    """The set's space for a place `f` studs in front of him and `right` studs to his right, `y` high."""
+    return (SIT[0] - right, y, SIT[1] + f)
+
+
+def page(x, d, above=ABOVE):
+    """(the character's frame) a place over the page: `x` across it (+ to his right), `d` down it (+ towards him)."""
+    return (SIT[0] - BOOK[0] + x, PAGE_Y + above, -(BOOK[1] - SIT[1]) + d)
+
+
+IN_BAG = (SIT[0] - BAG[0], BAG_Y + 1.06 * BAG_SCALE - 0.1, -(BAG[1] - SIT[1]))  # (the character's frame) its mouth
+
+# Diavolo ---------------------------------------------------------------------------------------------------
+
+PEN_DIR = (-0.3, -0.6, -0.75)
+# the crisp, raised up beside the face (the elbow out) and bitten (torso frame: emotes/props.py chipAndPen, mirrored to
+# the left hand)
+RAISE_AT, RAISE_DIR = (-0.95, 1.75, -0.9), (-0.15, 0.75, -0.55)
+BITE_AT, BITE_DIR = (-0.05, 1.0, -0.58), (0.55, 0.55, -0.6)
+MOUTH_L = reach(-1, BITE_AT, direction=BITE_DIR)
+RAISE_L = reach(-1, RAISE_AT, direction=RAISE_DIR)
+
+
+def body(lean, turn=0.0, roll=0.0):
+    joints = dict(root=(lean, turn, roll), rHip=J((LEGS - lean * 0.5, -turn, 4)), lHip=J((LEGS - lean * 0.5, -turn, -4)))
+    return joints, (0.0, HIP - 2.0, 0.0)
+
+
+def pen_on(joints, off, x, d, above=ABOVE):
+    return body_reach(1, joints, off, page(x, d, above), direction=PEN_DIR)
+
+
+def left_rest(joints, off):
+    """The left hand at rest on the desk by the page."""
+    return body_reach(-1, joints, off, page(-1.3, 0.35, 0.55), direction=(0.25, -0.5, -0.85))
+
+
+def bag_hand(joints, off, deep=0.0):
+    return body_reach(-1, joints, off, (IN_BAG[0], IN_BAG[1] - deep, IN_BAG[2]), direction=(0.3, -0.45, -0.85))
+
+
+def key(m, t, ease="smooth", lean=-8.0, turn=0.0, roll=0.0, neck=(0, 0, 0), right=None, left=None):
+    joints, off = body(lean, turn, roll)
+    r = right(joints, off) if callable(right) else right
+    lv = left(joints, off) if callable(left) else (left if left is not None else left_rest(joints, off))
+    m.key(round(t, 4), ease, offset=off, neck=neck, rShoulder=r, lShoulder=lv, **joints)
+
 
 d = Motion("RoleDiavolo_self", LENGTH, note="Diavolo's role cutscene: and eat it.")
+WRITING = dict(lean=-8, turn=-2, neck=(-14, 4, 0))
+STROKES = [(-0.3, -0.3), (-0.12, -0.32), (0.06, -0.29), (0.22, -0.31), (-0.28, -0.1), (-0.1, -0.12), (0.08, -0.1)]
 
 
-def sit(t, ease="smooth", lean=-10, neck=DOWN, r=READ_R, l=READ_L, turn=0):
-    perched(d, t, ease, hip=HIP, lean=lean, turn=turn, neck=neck, rShoulder=r, lShoulder=l)
+def write(t0, t1, line=0.0, speed=1.0):
+    """Writing: short quick strokes along a line, the head over the page (lifted enough to show the face)."""
+    t, k = t0, 0
+    while t < t1 - 0.05:
+        x, dd = STROKES[k % len(STROKES)]
+        key(d, t, "sine", right=lambda j, o, x=x, dd=dd: pen_on(j, o, x, dd + line), **WRITING)
+        key(d, t + 0.11 / speed, "sine", right=lambda j, o, x=x, dd=dd: pen_on(j, o, x + 0.07, dd + line + 0.02, ABOVE + 0.07),
+            **WRITING)
+        t += 0.25 / speed
+        k += 1
 
 
-sit(0.0)
-sit(1.3, neck=(-12, 0, 0))
-sit(1.8, "out", l=BAG_L)  # into the bag
-sit(2.2, l=BAG_L)
-sit(2.9, "out", neck=(-10, 0, 0), l=MOUTH_L)  # a chip, eaten without looking up
-for k in range(3):  # chewing
-    sit(3.1 + 0.18 * k, "sine", neck=(-10 + (2 if k % 2 == 0 else 0), 0, 0), l=MOUTH_L)
-sit(3.7, l=READ_L)
-# The name: the pen goes to the page, then hard quick strokes (hold, a tiny wind-up, snap down, settle).
-sit(4.15, "out", r=WRITE_R, neck=(-18, -10, 0))
-for k, t in enumerate((4.5, 4.75, 5.0, 5.3, 5.55, 5.8)):
-    up = J((94, -14 + 4 * (k % 3), -20), (-0.14, 0.12, -0.3))
-    strike(d, t, {"rShoulder": up}, {"rShoulder": WRITE_R}, antic=0.07, travel=0.05, over=0.15, settle=0.1)
-sit(6.1, neck=(-18, -10, 0), r=WRITE_R)
-# The eyes go to the television (towards the camera), the head following a beat later.
-sit(6.5, "out", neck=(-6, 0, 0), r=READ_R)
-sit(7.2, neck=(-2, 4, 0), r=READ_R)
-# Another chip, lifted slowly, then held up before the face...
-sit(7.6, "out", neck=(-4, 0, 0), l=BAG_L)
-sit(8.1, l=BAG_L)
-sit(9.0, "sine", lean=-4, neck=(4, -6, 0), l=HELD_L)
-sit(9.6, lean=-4, neck=(6, -6, 4), l=HELD_L)  # ...held: the look past it, the slow smile
-# ...and eaten: a snap forward into it.
-strike(d, 10.0, {"lShoulder": J((104, -20, 30), (0.0, 0.2, -0.24)), "neck": J((10, -6, 4)), "root": J((-2, 0, 0)),
-                 "rShoulder": J((96, -8, -14), (-0.1, 0.04, -0.3))},
-       {"lShoulder": MOUTH_L, "neck": J((-14, 0, 0)), "root": J((-16, 0, 0)), "rShoulder": J((104, -8, -14), (-0.1, 0.04, -0.3))}, antic=0.12, travel=0.05, over=0.3,
-       settle=0.25)
-# He leans back into the chair (the arms swing out over the desk's edge first), the grin; the shoulders
-# shake with a silent laugh.
-perched(d, 10.5, hip=HIP, lean=2, neck=(4, 0, 0), rShoulder=J((60, 0, 56)), lShoulder=J((64, 0, -56)))
-perched(d, 10.9, "out", hip=HIP, lean=10, neck=(14, 0, 0), rShoulder=J((-6, 0, 22)), lShoulder=J((-6, 0, -22)))
-for k in range(8):
-    t = 11.3 + 0.22 * k
-    perched(d, t, "sine", hip=HIP, lean=10 + (3 if k % 2 else 0), neck=(14 + (4 if k % 2 else 0), 0, 0),
-            rShoulder=J((-6, 0, 22)), lShoulder=J((-6, 0, -22)))
-perched(d, 13.2, hip=HIP, lean=6, neck=(4, 0, 0), rShoulder=J((-6, 0, 22)), lShoulder=J((-6, 0, -22)))
-perched(d, LENGTH, hip=HIP, lean=4, neck=(2, 0, 2), rShoulder=J((-4, 0, 22)), lShoulder=J((-4, 0, -22)))
-soft(d, head=3.2, arms=3.0, arm_damp=0.55)
-alive(d, 0.7, seed=1)
+# A: writing; a crisp from the bag, eaten without looking up.
+write(0.0, CASUAL[0])
+key(d, CASUAL[0], "sine", right=lambda j, o: pen_on(j, o, 0.1, -0.2, ABOVE + 0.15), **WRITING)
+key(d, CASUAL[0] + 0.3, "sine", lean=-8, turn=4, neck=(-14, 6, 0), right=lambda j, o: pen_on(j, o, 0.1, -0.2, ABOVE + 0.15),
+    left=lambda j, o: bag_hand(j, o, 0.25))
+key(d, CASUAL[0] + 0.45, "out", lean=-8, turn=4, neck=(-14, 6, 0), right=lambda j, o: pen_on(j, o, 0.1, -0.2, ABOVE + 0.15),
+    left=lambda j, o: bag_hand(j, o))
+key(d, CASUAL[1] - 0.2, "sine", lean=-6, neck=(-10, 2, 0), right=lambda j, o: pen_on(j, o, 0.1, -0.2, ABOVE + 0.15),
+    left=MOUTH_L)
+for k in range(3):  # chewing, the eyes still on the page
+    key(d, CASUAL[1] + 0.15 * k, "sine", lean=-7, neck=(-12 + 2 * (k % 2), 2, 0),
+        right=lambda j, o: pen_on(j, o, 0.1, -0.2, ABOVE + 0.15), left=MOUTH_L if k < 1 else None)
+# B: the name: hard quick strokes along a fresh line, then the underline: one long stroke, flicked off at its end.
+write(WRITE[0], WRITE[1] - 0.45, line=0.25, speed=1.35)
+key(d, WRITE[1] - 0.35, "sine", lean=-9, turn=-2, neck=(-16, 4, 0), right=lambda j, o: pen_on(j, o, -0.35, 0.4))
+key(d, WRITE[1], "in", lean=-10, turn=-4, neck=(-16, 2, 0), right=lambda j, o: pen_on(j, o, 0.35, 0.42))
+key(d, WRITE[1] + 0.1, "out", lean=-8, turn=-4, neck=(-14, 2, 0), right=lambda j, o: pen_on(j, o, 0.6, 0.3, ABOVE + 0.45))
+key(d, LOOK[0] - 0.2, "sine", lean=-8, turn=-2, neck=(-14, 2, 0), right=lambda j, o: pen_on(j, o, 0.5, 0.3, ABOVE + 0.4))
+# C: the eyes come up off the page to the television ahead, the head following; still. The flatline. The corner of
+# the mouth.
+key(d, LOOK[0] + 0.35, "sine", lean=-6, turn=-1, neck=(-2, 0, 0), right=lambda j, o: pen_on(j, o, 0.5, 0.3, ABOVE + 0.4))
+key(d, LOOK[1], lean=-5, neck=(0, -2, 0), right=lambda j, o: pen_on(j, o, 0.5, 0.3, ABOVE + 0.4))
+key(d, SAID - 0.1, "sine", lean=-5, neck=(-1, -2, 5), right=lambda j, o: pen_on(j, o, 0.5, 0.3, ABOVE + 0.4))
+REST_R = lambda j, o: body_reach(1, j, o, page(0.95, 0.55, 0.5), direction=(-0.2, -0.5, -0.85))  # noqa: E731
+# (the pen hand laid down on the desk to his right, out of the way of the face)
+# D: "I'll take a potato chip...": the hand into the bag, a crisp out, raised slowly up beside the face in an arc,
+# the elbow out, the head turning to it; held there through the pause.
+key(d, TAKE[0] + 0.25, "sine", lean=-6, turn=5, neck=(-6, 8, 4), right=lambda j, o: pen_on(j, o, 0.5, 0.3, ABOVE + 0.4),
+    left=lambda j, o: bag_hand(j, o, 0.3))
+key(d, TAKE[1], "out", lean=-5, turn=4, neck=(-4, 8, 3), right=lambda j, o: pen_on(j, o, 0.5, 0.3, ABOVE + 0.4),
+    left=lambda j, o: bag_hand(j, o, -0.15))
+key(d, 7.45, "sine", lean=-2, turn=1, neck=(4, 12, 2), right=REST_R,
+    left=reach(-1, (-1.1, 1.2, -1.1), direction=(-0.2, 0.6, -0.7)))
+key(d, RAISED, "sine", lean=0, turn=-3, neck=(10, 16, -3), right=REST_R,
+    left=RAISE_L)
+key(d, BITE - 0.18, "sine", lean=1, turn=-4, neck=(12, 18, -5), right=REST_R,
+    left=reach(-1, (RAISE_AT[0] - 0.02, RAISE_AT[1] + 0.05, RAISE_AT[2]), direction=RAISE_DIR))
+# E: "...and EAT IT!": snapped to the mouth, the head meeting it, the body snapping forward into it; the crunch.
+key(d, BITE, "snap", lean=-8, turn=2, neck=(-6, 6, 0), right=REST_R, left=MOUTH_L)
+key(d, BITE + 0.15, "out", lean=-10, turn=2, neck=(-9, 4, 0), right=REST_R,
+    left=reach(-1, (-0.75, 0.9, -1.0)))
+for k in range(4):  # chewing, the eyes front, the grin spreading
+    key(d, BITE + 0.4 + 0.2 * k, "sine", lean=-6, neck=(-3 - 3 * (k % 2), -2, 3), right=REST_R)
+# F: back into the chair, laughing (the shoulders shaking, the head thrown back), the arms out on the chair's arms.
+ARM_R, ARM_L = J((-4, 0, 24)), J((-4, 0, -24))
+key(d, BACK - 0.25, "sine", lean=-2, neck=(4, 0, 0), right=J((30, 0, 30)), left=J((30, 0, -30)))
+key(d, BACK, "out", lean=10, neck=(16, 0, 0), right=ARM_R, left=ARM_L)
+for k in range(5):
+    key(d, BACK + 0.22 * (k + 1), "sine", lean=10 + (3 if k % 2 else 0), neck=(16 + (5 if k % 2 else 0), 0, 0),
+        right=ARM_R, left=ARM_L)
+# G: snapped back over his books, writing again, the good student (what the hidden camera sees).
+key(d, STUDY - 0.4, "sine", lean=2, neck=(2, 0, 0), right=J((76, 0, 12)), left=J((70, 0, -12)))  # (up over the desk's edge)
+key(d, STUDY - 0.2, "sine", lean=-4, neck=(-6, 0, 0), right=lambda j, o: pen_on(j, o, 0.3, 0.0, ABOVE + 0.6))
+write(STUDY, LENGTH, line=0.5, speed=0.9)
+key(d, LENGTH, "sine", right=lambda j, o: pen_on(j, o, 0.0, 0.45), **WRITING)
+soft(d, head=3.4, arms=3.4, arm_damp=0.6)
 d.build()
+
+
+def pen_grip():
+    """The pen in his right fist as he writes (solved on the page's middle): its nib (0.54 below its middle, along its
+    -y) on the page under the fist, its top leaning back towards him as a writing pen does."""
+    import numpy as np
+
+    joints, off = body(WRITING["lean"], WRITING["turn"])
+    arm = pen_on(joints, off, 0.0, 0.0)
+    nib = np.array([0.15, -1.0, -0.5])
+    nib = nib / np.linalg.norm(nib)
+    middle = np.array(page(0.0, 0.0, 0.0)) - nib * 0.54
+    pos = to_torso(joints, off, tuple(middle))
+    axis = to_torso(joints, off, direction=tuple(-nib))
+    return hold("Right Arm", {"rShoulder": arm}, pos, basis_angles(axis, (0.0, 0.0, 1.0)))
+
+
+PEN_GRIP = pen_grip()
+# the crisp between the fingers, above the fist (solved raised beside the face: emotes/props.py, mirrored)
+CHIP_GRIP = hold("Left Arm", {"lShoulder": RAISE_L}, (RAISE_AT[0] - 0.02, RAISE_AT[1] + 0.32, RAISE_AT[2] - 0.08),
+                 (90, 0, 0))
 
 # The shot -------------------------------------------------------------------------------------------------
 
@@ -105,87 +211,101 @@ shot.allow = {"self": ["OfficeChair"]}  # in the chair, never into the desk
 
 me = shot.actor("self", d)
 me.mark(0.0, (SIT[0], 0.0, SIT[1]), 180.0)
-me.hold("Pen", "Right Arm", (0, -1.0, -0.15), (60, 0, 0))
-me.hold("Chip", "Left Arm", (0.0, -1.05, -0.2), (70, 0, 0), t0=2.3, t1=3.2)
-me.hold("Chip", "Left Arm", (0.0, -1.05, -0.2), (70, 0, 0), t0=8.2, t1=10.05)
+me.hold("Pen", "Right Arm", PEN_GRIP[0]["p"], PEN_GRIP[1]["r"])
+me.hold("Chip", "Left Arm", CHIP_GRIP[0]["p"], CHIP_GRIP[1]["r"], t0=CASUAL[0] + 0.45, t1=CASUAL[1] + 0.05)
+me.hold("Chip", "Left Arm", CHIP_GRIP[0]["p"], CHIP_GRIP[1]["r"], t0=TAKE[1] - 0.05, t1=BITE + 0.02)
 
-book = shot.prop("Grimoire", scale=MANUAL, open=1.0)  # the page's head away from him
+book = shot.prop("Grimoire", scale=MANUAL, open=1.0)
 book.at(0.0, (BOOK[0], BOOK_Y, BOOK[1]), (0, 0, 0))
 book.at(LENGTH, (BOOK[0], BOOK_Y, BOOK[1]), (0, 0, 0))
-bag = shot.prop("ChipBag")
-bag.at(0.0, (BAG[0], TOP, BAG[1]), (0, 200, 0))
-bag.at(LENGTH, (BAG[0], TOP, BAG[1]), (0, 200, 0))
+bag = shot.prop("ChipBag", scale=BAG_SCALE)
+bag.at(0.0, (BAG[0], BAG_Y, BAG[1]), (0, 196, 0))
+bag.at(LENGTH, (BAG[0], BAG_Y, BAG[1]), (0, 196, 0))
+PAGE = (BOOK[0], PAGE_Y, BOOK[1])
 
-# (2026-10-25, the owner: "he just appears out of the ground ... make them make sense (like materializing slowly)":
-# drawn together out of smoke where it stands behind the chair, its eyes first, leaning in over the shoulder as it
-# comes whole)
-# (2026-10-27, the user: sooner, behind him at "EAT IT!": it starts to form, eyes first, in the dark over his
-# shoulder as he bites, comes whole leaning in over the shoulder, and laughs with him before the cut)
-singer = shot.prop("Specter", show=(9.8, None))
-singer.at(9.8, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
-singer.at(10.9, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")  # leaning over the shoulder
-shot.event(9.8, "materialize", model="Specter", dur=1.1, r=200, g=30, b=45)
-for k in range(6):  # it laughs with them
-    t = 11.0 + 0.28 * k
+# The Deathsinger: drawn together out of the dark behind him as he leans back laughing, eyes first, leaning in over his
+# shoulder, laughing with him; gone before the hidden camera's view (it never shows on a camera).
+singer = shot.prop("Specter", show=(BACK - 0.3, STUDY + 0.25))
+singer.at(BACK - 0.3, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
+singer.at(BACK + 0.9, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")
+shot.event(BACK - 0.3, "materialize", model="Specter", dur=1.1, r=200, g=30, b=45)
+for k in range(5):
+    t = BACK + 1.0 + 0.24 * k
     singer.at(t, (SINGER[0], 0.3 + (0.25 if k % 2 else 0.0), SINGER[1] + 0.3), (12 - (5 if k % 2 else 0), 170, 4))
 
-# A: wide from the television's corner, drifting in.
-shot.pan(0.0, 2.6, "self", (2.6, 8.0, 7.2), aim="Torso", dy=0.6, fov=44, drift=(-0.8, -0.6, -2.2), back=True)
-# B: across the desk, a chip eaten without looking up.
-shot.pan(2.6, 4.0, "self", (2.4, 4.6, -0.6), aim="Head", dy=-0.5, fov=40, cut=True, drift=(-0.2, 0.0, -0.4))
-# C: the page by the bag, the pen writing.
-shot.subjects.append((4.0, 6.2, None, True))
-shot.cam(4.0, (-1.6, 6.3, -4.5), (BOOK[0] - 0.1, BOOK_Y, BOOK[1]), fov=32, cut=True)
-shot.cam(6.2, (-1.5, 5.9, -4.8), (BOOK[0] - 0.1, BOOK_Y, BOOK[1]), fov=29, ease="linear")
-# D: his face, the eyes sliding to the television (towards us).
-shot.pan(6.2, 7.4, "self", (0.6, 4.9, -1.6), aim="Head", dy=-0.2, fov=40, cut=True, drift=(0.0, 0.0, -0.3))
-# E: low, the chip lifted.
-shot.pan(7.4, 9.0, "self", (1.9, 3.9, -2.0), aim="Head", dy=-0.2, fov=48, cut=True, drift=(-0.2, 0.1, -0.3))
-# F: close and tilted on the chip and the face, a snap push-in on the bite.
-shot.subjects.append((9.0, 10.6, "self", False))
-shot.cam(9.0, (1.0, 4.7, -2.7), (0.2, 4.5, -7.3), fov=44, roll=-8.0, cut=True)
-shot.cam(9.95, (0.9, 4.7, -2.9), (0.2, 4.5, -7.3), fov=43, roll=-9.0, ease="linear")
-shot.cam(10.05, (0.8, 4.7, -3.2), (0.1, 4.5, -7.3), fov=40, roll=-11.0, ease="snap")
-shot.cam(10.6, (0.8, 4.7, -3.3), (0.1, 4.5, -7.3), fov=40, roll=-11.0, ease="linear")
-# G: back into the chair, the Deathsinger rising behind: from the desk's east end, pulling back.
-shot.pan(10.6, 12.8, "self", (3.6, 4.2, -2.4), aim="Torso", dy=1.0, fov=50, cut=True, drift=(0.4, 0.3, 0.8))
-# H: pushing in on the face.
-shot.pan(12.8, LENGTH, "self", (1.2, 4.8, -1.6), aim="Head", dy=-0.4, fov=44, cut=True, drift=(-0.3, -0.1, -1.1))
+# A: over the television across the room, creeping in on him.
+shot.pan(0.0, 2.8, "self", (2.0, 4.8, 7.6), aim="Torso", dy=0.5, fov=32, drift=(-0.5, -0.2, -3.2))
+# B: low over the desk from in front, the page in the foreground and him bent over it beyond: the pen writes.
+shot.subjects.append((2.8, 4.6, None, True))
+look_b = (PAGE[0] + 0.05, PAGE[1] + 0.45, PAGE[2] - 0.5)
+shot.cam(2.8, (PAGE[0] + 0.35, PAGE[1] + 0.8, PAGE[2] + 1.9), look_b, fov=48, roll=-5.0, cut=True)
+shot.cam(4.6, (PAGE[0] + 0.3, PAGE[1] + 0.75, PAGE[2] + 1.55), look_b, fov=46, roll=-6.0, ease="linear")
+# C: close and low, from in front on his left: the eyes come up off the page.
+shot.pan(4.6, 6.6, "self", front(3.9, -1.0, 4.6), aim="Head", dy=-0.2, fov=44, cut=True, drift=(0.0, 0.0, -0.2))
+# D: across the desk, pushing in: the crisp taken and raised.
+shot.pan(6.6, 9.3, "self", front(6.4, 0.5, 4.4), aim="Head", dy=0.1, fov=44, cut=True, drift=(0.0, 0.0, -1.4),
+         roll=-3.0)
+# E: low and close from his right (the crisp comes in from the far side), tilted, half the face in the dark; a snap
+# in on the bite.
+shot.subjects.append((9.3, 10.8, "self", False))
+eye_e = front(3.5, 1.5, 4.75)
+head_e = framing.part(shot, "self", BITE, "Head")
+look_e = (float(head_e[0]), float(head_e[1]) - 0.15, float(head_e[2]))
+shot.cam(9.3, eye_e, look_e, fov=42, roll=-10.0, cut=True)
+shot.cam(BITE - 0.02, (eye_e[0] - 0.05, eye_e[1], eye_e[2] - 0.08), look_e, fov=41, roll=-10.0, ease="linear")
+shot.cam(BITE + 0.08, (eye_e[0] + 0.15, eye_e[1] + 0.05, eye_e[2] - 0.22), look_e, fov=37, roll=-13.0, ease="snap")
+shot.cam(10.8, (eye_e[0] + 0.18, eye_e[1] + 0.05, eye_e[2] - 0.28), look_e, fov=37, roll=-13.0, ease="linear")
+# F: low and wide from the room, rising as he leans back and the Deathsinger comes.
+shot.pan(10.8, STUDY + 0.25, "self", front(7.6, 0.6, 3.2), aim="Torso", dy=1.6, fov=54, cut=True,
+         drift=(0.2, 1.6, 1.4))
+# G: the hidden camera, high in the corner behind him: wide and still.
+shot.subjects.append((STUDY + 0.25, LENGTH, None, True))
+shot.cam(STUDY + 0.25, (-8.4, 12.2, -9.2), (0.0, 3.4, -6.8), fov=46, cut=True)
+shot.cam(LENGTH, (-8.4, 12.2, -9.2), (0.0, 3.4, -6.8), fov=46, ease="linear")
 
-# The player's own face throughout (no drawn faces: the owner, 2026-10-28).
+# The lens: barely soft, only to put the eye where the cut is about.
+for t, part, radius in ((0.0, "Torso", 10.0), (2.8, "Right Arm", 2.5), (4.6, "Head", 2.5), (6.6, "Head", 3.0),
+                        (9.3, "Head", 2.0), (10.8, "Torso", 6.0)):
+    shot.event(t, "fx", name="focus", slot="self", part=part, radius=radius, far=0.12, near=0.06)
+shot.event(STUDY + 0.25, "fx", name="focus")  # (a security camera sees it all flat)
 
-# The light (the owner, 2026-10-28: the Tokyo intro's treatment): night, a warm desk lamp his key from the west end,
-# the television's cold light flickering over his face from across the room, the window's moonlight a rim on his
-# back, and the Deathsinger lit red from below as it comes, its glow on his shoulders. The grade: dark, a little cool.
-HEAD = (SIT[0], 4.6, SIT[1])
-shot.grade = (0.22, -0.05, -0.04, (240, 236, 255))
-shot.light("spot", (-2.8, TOP + 1.5, -5.6), HEAD, color=(255, 186, 120), brightness=2.0, range=10, angle=75)
-shot.light("spot", (0.0, 3.6, 6.2), HEAD, color=(190, 210, 255), brightness=1.6, range=20, angle=30, flicker=0.5)
-shot.light("spot", (2.0, 9.5, -9.6), HEAD, color=(160, 180, 255), brightness=1.3, range=12, angle=45)
+# The light: night; the desk lamp a warm key from his right, the television's cold light flickering on his face from
+# across the room, the moon through the window a cold rim on his back; the red of the Deathsinger from below behind
+# him as it comes. The grade: dark, a little cool. His own face throughout.
+HEAD = (SIT[0], 4.7, SIT[1])
+shot.grade = (0.24, -0.06, -0.04, (238, 236, 255))
+shot.light("spot", (-2.6, TOP + 1.7, -6.0), HEAD, color=(255, 186, 120), brightness=2.0, range=10, angle=75)
+shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(190, 210, 255), brightness=1.5, range=20, angle=26, flicker=0.45)
+shot.light("spot", (1.6, 9.5, -9.6), HEAD, color=(160, 180, 255), brightness=1.3, range=12, angle=45)
+shot.light("spot", (PAGE[0] - 1.0, PAGE[1] + 2.8, PAGE[2] - 1.4), PAGE, color=(255, 214, 170), brightness=1.0, range=5,
+           angle=40, shadows=False, show=(2.8, 4.6))  # (the page lit for the insert)
+shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(235, 245, 255), brightness=3.0, range=20, angle=26,
+           show=(LOOK[1] - 0.05, LOOK[1] + 0.35), flicker=0.9)  # (the television flaring as the news breaks)
 shot.light("spot", (SINGER[0] + 0.5, 0.6, SINGER[1] + 2.0), (SINGER[0], 7.0, SINGER[1]), color=(220, 25, 35),
-           brightness=2.2, range=12, angle=50, show=(9.8, LENGTH))
-shot.light("point", (SINGER[0], 5.0, SINGER[1]), color=(200, 20, 30), brightness=1.0, range=8, shadows=False,
-           show=(10.4, LENGTH))
+           brightness=2.2, range=12, angle=50, show=(BACK - 0.3, STUDY + 0.25))
+shot.light("point", (SINGER[0], 5.0, SINGER[1] + 1.0), color=(200, 20, 30), brightness=1.2, range=8, shadows=False,
+           show=(BACK + 0.2, STUDY + 0.25))
 
-shot.event(0.0, "sfx", slot="mapRainGlass")
-shot.event(0.4, "sfx", slot="mapNewsRadio")
-shot.event(1.2, "fx", name="flash", r=200, g=210, b=255, strength=0.35, dur=0.3)
-shot.event(1.25, "sfx", slot="thunder")
-shot.event(4.4, "sfx", slot="penScratch")
-shot.event(7.0, "sfx", slot="flatline")
+# Sound and effects.
+shot.event(0.0, "sfx", slot="mapRainGlass", loop=True)
+shot.event(0.2, "sfx", slot="mapNewsRadio")
+shot.event(0.0, "sfx", slot="penScratch")
+shot.event(WRITE[0], "sfx", slot="penScratch")
+shot.event(WRITE[1], "sfx", slot="penStop")
+shot.event(LOOK[1], "sfx", slot="screenStatic")
+shot.event(LOOK[1] + 0.1, "sfx", slot="flatline")
+shot.event(TAKE[0], "sfx", slot="pageTurn")  # (the bag's rustle)
+shot.event(BITE, "sfx", slot="winShatter")  # the crunch
+shot.event(BITE, "fx", name="still", r=255, g=40, b=50, dur=0.32)
+shot.event(BITE, "fx", name="shake", strength=0.35, dur=0.25)
+shot.event(BITE + 0.02, "fx", name="burst", pos=[round(float(v), 3) for v in framing.part(shot, "self", BITE, "Head")], r=236, g=196, b=104,
+           amount=26)  # (the crumbs)
+shot.event(BACK - 0.3, "sfx", slot="wisp")
+shot.event(BACK + 0.4, "sfx", slot="hauntWhisper")
+# the hidden camera: black and white, the grain, REC and the time; the room's quiet
+shot.event(STUDY + 0.25, "fx", name="cctv", dur=LENGTH - STUDY - 0.25, label="CAM 02")
+shot.event(STUDY + 0.25, "sfx", slot="screenStatic")
 
-shot.event(10.0, "sfx", slot="slam")
-shot.event(10.0, "fx", name="still", r=255, g=40, b=50, dur=0.32)
-shot.event(10.0, "fx", name="shake", strength=0.35, dur=0.25)
-shot.event(10.0, "sfx", slot="wisp")
-shot.event(11.1, "sfx", slot="hauntWhisper")
-shot.event(12.3, "sfx", slot="hauntWhisper")
-shot.event(14.0, "fx", name="flash", r=200, g=20, b=30, strength=0.3, dur=0.5)
-# Cut down round the line: the chip, the name, the flatline, then the chip held up and bitten on "EAT IT!", the
-# Deathsinger rising, and on to the end (the owner, 2026-10-28: it stopped mid-laugh): back in the chair laughing
-# with it, the push in on his face. The line starts as the hand takes the chip, 2.1 s before the bite.
-RETIME = Retime([(2.6, LENGTH)])
-RETIME.apply(shot, [d], carry_sfx=("mapRainGlass", "mapNewsRadio"))
-SAID = RETIME.new(7.9)
 shot.audio(voice="voiceDiavolo", voice_at=SAID, bed="bedDiavolo")
-shot.line(SAID, "I'll take a potato chip... and EAT IT!")
+shot.line(SAID, "I'll take a potato chip... and EAT IT!", times=[0.0, 0.3, 0.62, 0.8, 1.2, BITE - SAID - 0.5,
+                                                                  BITE - SAID - 0.22, BITE - SAID])

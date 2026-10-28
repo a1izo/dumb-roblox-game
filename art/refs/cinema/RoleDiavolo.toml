@@ -1,0 +1,45 @@
+# Diavolo's role scene (shot RoleDiavolo). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
+id = "RoleDiavolo"
+name = "Diavolo: and eat it"
+status = "built"
+
+[origin]
+what = "Light's potato chip scene (Death Note, episode 8): under L's hidden cameras he studies at his desk, eats crisps, and writes names on a page hidden in the bag; 'I'll take a potato chip... and eat it!'"
+recognisable = "The hand writing on the hidden page; the tiny TV with a criminal's face; the crisp raised slowly in a frontal medium shot, elbow out; a low three-quarter close with half the face in shadow for the bite, glittering crumbs; Ryuk laughing in the dark behind; then the surveillance monitor's view from behind: an ordinary student."
+ours = "Rebuilt from scratch 2026-10-28: writing and a crisp; the name; the eyes up to the television, the flatline; the crisp raised beside the face and held; EAT IT with a red still and the crumbs; leaning back laughing as the Deathsinger forms behind him; then the hidden camera's black-and-white view of a good student writing, nothing behind him."
+
+[source]
+url = "https://www.youtube.com/watch?v=eehdWTyQrjg"
+title = "[Death note] Original 'potato chip' scene in Japanese"
+kind = "the anime scene"
+watched = "2026-10-28: frame sheets every 3.8 s over 2-74 s and every 0.8 s over 62-77 s, in the built-in browser (also art/refs/emotes/chipAndPen.toml)"
+mirror = false
+
+[[beat]]
+src = 62.0
+pose = "high angle onto the hand writing on the hidden page"
+[[beat]]
+src = 65.2
+pose = "frontal medium: the crisp raised slowly, elbow out"
+[[beat]]
+src = 67.6
+pose = "low three-quarter close, half the face dark, the crisp at the mouth"
+[[beat]]
+src = 68.4
+pose = "the bite, glittering crumbs"
+[[beat]]
+src = 70.8
+pose = "Ryuk in the dark behind him"
+[[beat]]
+src = 74.0
+pose = "the surveillance monitor: him from behind at his desk, ordinary"
+
+[timing]
+length = 14.8
+fit = "7 cuts: over the television, writing and a crisp (0-2.8); low over the desk, the page and the name (2.8-4.6); close, the eyes up, the flatline (4.6-6.6); across the desk, the crisp raised and held (6.6-9.3); close from his right, the bite (9.3-10.8); wide, laughing, the Deathsinger (10.8-12.8); the hidden camera (12.8-14.8)."
+
+[r6]
+notes = "The crisp in the left hand (the pen stays in the right), raised beside the face and bitten with the emote's checked positions (emotes/props.py chipAndPen, mirrored). The pen hand is laid on the desk before the raise so it never hides the face from the right."
+
+[check]
+by = "run_cinema --clear 0 problems; --lint; contact sheets of every cut"

@@ -437,6 +437,13 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 					event.dur or 4
 				)
 			)
+		elseif name == "cctv" then
+			-- what a hidden camera sees, for `dur` seconds (or to the shot's end)
+			local close = Cinema.cctv(event.label)
+			table.insert(closers, close)
+			if event.dur then
+				task.delay(event.dur, close)
+			end
 		elseif name == "still" then
 			Cinema.still(Color3.fromRGB(event.r or 255, event.g or 40, event.b or 50), event.dur or 0.3)
 		elseif name == "black" then

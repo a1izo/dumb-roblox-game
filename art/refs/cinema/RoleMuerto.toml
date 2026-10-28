@@ -1,0 +1,46 @@
+# The Muerto's role scene (shot RoleMuerto). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
+id = "RoleMuerto"
+name = "Muerto: delete"
+status = "built"
+
+[origin]
+what = "Mikami's 'delete' (Death Note, episode 36): writing the names, he slashes each one out, chanting 'sakujo' (delete)."
+recognisable = "The pen raised high and brought down in a sweeping slash right across the page and on up into the air, the whole body thrown into it, hair whipping; extreme close-ups of the red-glowing eyes; the pen tearing a long line across the paper; then, done, thrown back with the arms wide against a white-hot glare."
+ours = "Rebuilt from scratch 2026-10-28 (the owner: 'the stabs are slashes, not pressure points'): neat writing, then eight slashes, forehand and backhand, faster and faster, each tearing a red slash into the page; the pen ground in at the last; panting; the head up into the camera; thrown back, arms wide, against the red city."
+
+[source]
+url = "https://www.youtube.com/watch?v=W-EbcQsIIIA"
+title = "Teru Mikami DELETE! Death Note, Episode 36"
+kind = "the anime scene"
+watched = "2026-10-28: frame sheets every 5 s over 0-100 s, every 1 s over 24-43 s, every 1.5 s over 58-87 s, in the built-in browser"
+mirror = false
+alt = ["https://www.youtube.com/watch?v=dD-pfGR2S9I"]
+
+[[beat]]
+src = 26.0
+pose = "the arm swinging the pen up in a big arc, a silhouette against white"
+[[beat]]
+src = 29.0
+pose = "the face close, a red eye, the hair whipping across it"
+[[beat]]
+src = 34.0
+pose = "the page from above, long pen slashes across it"
+[[beat]]
+src = 73.0
+pose = "the nib tearing a long diagonal line across the page, the arm out of frame"
+[[beat]]
+src = 76.0
+pose = "low angle: the whole body in the swing, the arm flung out with the pen, the head thrown back"
+[[beat]]
+src = 86.5
+pose = "a silhouette against pink glare, arms spread wide, ecstatic"
+
+[timing]
+length = 14.4
+fit = "7 cuts: the wide, writing (0-2.6); low over the desk, the page in front and him beyond, the first slash (2.6-4.3); low in front, hand-held, three slashes (4.3-6.5); close, three faster (6.5-8.0); low over the desk from the other side, the last slash and the pen ground in (8.0-9.6); in front, panting, the head up (9.6-11.6); wide, thrown back, arms wide (11.6-14.4). DELETE on each slash."
+
+[r6]
+notes = "Hands placed with cinema.acting.body_reach (kit.reach in a leaning, turning body); the pen's nib checked on the page through each slash. The head stays up through the slashes (a bowed R6 head is only hair); the follow-throughs fling out low past the page's edge, never across the face; the last slash is a backhand so the pen arm ends on his right. The desk's screen (2.5 to his right) and lamp (1.4 to his left) stand at head height: the cameras keep to the front or go low over the desk."
+
+[check]
+by = "run_cinema --clear 0 problems; --lint (only momentary close-ups); contact sheets of every cut"
