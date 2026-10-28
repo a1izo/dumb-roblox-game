@@ -642,7 +642,8 @@ def far_plain(s):
     so the greybox has a horizon too (nothing reaches it: the wall is in between)."""
     step = 250.0
     n = int(P.FAR // step)
-    holes = [piece for piece in g2.convex_pieces(P.BASIN)] + [P.chasm_poly(c) for c in P.CHASMS]
+    holes = [piece for piece in g2.convex_pieces(P.BASIN)]
+    holes += [piece for c in P.CHASMS for piece in g2.convex_pieces(P.chasm_outline(c))]
     for i in range(-n, n):
         for j in range(-n, n):
             x0, z0 = i * step, j * step
@@ -685,25 +686,21 @@ def rect_minus(r, h):
 
 
 def chasm(s, c, seed):
-    """A deep crack in the plain (cut out of far_plain): jagged rock walls dropping to a dark floor, a faint
-    cold glow and mist down in it, boulders and needles along its lips. The causeway crosses it."""
+    """A deep rift in the plain (cut out of far_plain; its rim P.chasm_outline, jagged, narrowing to cracks at its
+    ends: 2026-10-27, it was a rectangle): rock walls dropping in broken ledges to a dark floor, a faint cold glow
+    and mist down in it, boulders and needles along its lips. The causeway crosses it, walled both sides."""
     rng = random.Random(seed)
     cx, cz, along, across, rot = c
-    corners = P.chasm_poly(c)
-    outline = []
-    for k in range(4):
-        a, b = corners[k], corners[(k + 1) % 4]
-        count = max(2, int(math.dist(a, b) / 9.0))
-        for q in range(count):
-            t = q / count
-            outline.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
-    levels = [(0.0, 1.0), (-8.0, 1.0), (-20.0, 0.96), (-36.0, 0.9), (-54.0, 0.82), (-P.CHASM_DEPTH, 0.74)]
+    outline = P.chasm_outline(c)
+    # (each level: its depth and how far in its wall stands; a short steep drop set well in is a ledge the rock
+    # breaks back on, never quite flat, so its faces always look up out of the rift)
+    levels = [(0.0, 1.0), (-6.0, 0.96), (-8.5, 0.87), (-24.0, 0.82), (-27.0, 0.73), (-48.0, 0.67), (-P.CHASM_DEPTH, 0.6)]
     rings = []
     for li, (y, f) in enumerate(levels):
         ring = []
         for x, z in outline:
             dx, dz = x - cx, z - cz
-            push = 0.0 if li == 0 else rng.uniform(-2.0, 1.6)
+            push = 0.0 if li == 0 else rng.uniform(-1.6, 1.2)
             ring.append((cx + dx * f + (dx / (math.hypot(dx, dz) or 1.0)) * push, y, cz + dz * f + (dz / (math.hypot(dx, dz) or 1.0)) * push))
         rings.append(ring)
     n = len(outline)
@@ -723,7 +720,7 @@ def chasm(s, c, seed):
     t = math.radians(rot)
     ax, az = math.cos(t), -math.sin(t)  # along the causeway
     sx, sz = -az, ax  # across it
-    for q in range(10):
+    for q in range(7):
         side = 1 if q % 2 else -1
         across_off = rng.uniform(9.0, across / 2)
         if q % 4 < 2:
