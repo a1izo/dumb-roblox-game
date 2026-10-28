@@ -29,7 +29,8 @@ local EyeIntro = {}
 
 local HOLD = 2 -- the shut eye, at least
 local MOST = 45 -- the longest the intro waits for the game to load
-local OPEN_STEPS = { 0.06, 0.06, 0.07 } -- each frame of the eye opening (the last stays)
+-- each frame of the eye opening (the last stays): the lid slides up, quick at first, easing as it comes open
+local OPEN_STEPS = { 0.045, 0.045, 0.05, 0.05, 0.055, 0.06, 0.07 }
 local OPEN_HOLD = 1.3 -- the open eye, looking
 local TO_BLACK = 1
 local INTO_LOBBY = 3
@@ -119,9 +120,13 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 	local still = Motion.isReduced()
 
 	local stage = stageOf(black)
+	-- (a frame not uploaded yet is left out: the opening plays the ones there are)
 	local frames = {}
 	for k = 1, EyeArt.frames do
-		frames[k] = image("IntroEye" .. k)
+		local frame = image("IntroEye" .. k)
+		if frame ~= "" then
+			table.insert(frames, frame)
+		end
 	end
 	-- dust in the light, and the film's grain
 	local motes: { { frame: Frame, at: Vector2, speed: number } } = {}
@@ -265,7 +270,7 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 	end
 	skipButton:Destroy()
 	-- It opens: the frames, a red flare, the view pushing in a little with it.
-	if not skipped and drawn then
+	if not skipped and drawn and #frames > 0 then
 		Sfx.play("introEyeOpen")
 		stage.eye.Visible = true
 		for k = 1, #frames do

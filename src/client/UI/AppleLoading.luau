@@ -41,6 +41,7 @@ local LAND = 0.7 -- seconds for that last stretch, the hand rising to meet it
 local RISE = Vector2.new(0.42, 1) -- the hand rises along its forearm, from below the screen's lower left
 local SWAY = 7 -- degrees the apple sways while a load holds it
 local GIVE = 0.014 -- how far the hand gives under the apple's weight, a share of the screen's height
+local CLOSE_STEP = 0.035 -- each picture of the thumb closing over the apple (AppleClose1..4), seconds
 local TO_BLACK = 0.5
 local FADE_IN = 1
 
@@ -130,6 +131,14 @@ function AppleLoading.open(): Loader
 	local black = gui:FindFirstChild("Black") :: Frame
 	local apple = makeApple(black)
 	local handWaiting, handHolding = image("AppleHand1"), image("AppleHand2")
+	-- (the thumb on its way down between the two; one not uploaded yet is left out)
+	local handClosing = {}
+	for k = 1, 4 do
+		local id = image("AppleClose" .. k)
+		if id ~= "" then
+			table.insert(handClosing, id)
+		end
+	end
 	local hand: ImageLabel? = nil
 	if handWaiting ~= "" then
 		local made = Instance.new("ImageLabel")
@@ -156,6 +165,9 @@ function AppleLoading.open(): Loader
 			if id ~= "" then
 				table.insert(ids, id)
 			end
+		end
+		for _, id in ipairs(handClosing) do
+			table.insert(ids, id)
 		end
 		if #ids > 0 then
 			pcall(function()
@@ -238,7 +250,16 @@ function AppleLoading.open(): Loader
 			caught = true
 			shown = 1
 			if hand and handHolding ~= "" then
-				hand.Image = handHolding
+				local closing = hand
+				task.spawn(function()
+					if not Motion.isReduced() then
+						for _, id in ipairs(handClosing) do
+							closing.Image = id
+							task.wait(CLOSE_STEP)
+						end
+					end
+					closing.Image = handHolding
+				end)
 			end
 			Sfx.play("loadAppleCatch")
 			if sound then

@@ -14,6 +14,8 @@ drawn on your sketch's lines (its opening, the lit top, soft folds) with the whi
     AppleHand1, 2  1024 x 736   the hand, waiting with its thumb up, then with the thumb closed over the apple
                                 (transparent; the apple is not in them: the falling one stops in the hand, which is
                                 laid over it, palm and fingers in front, with the shade they cast on it)
+    AppleClose1..4 1024 x 736   the thumb on its way down over the caught apple, between the two (2026-10-28: the
+                                hand swapped straight from waiting to holding, a pop), the game stepping through them
 
 Also writes src/client/UI/LoadingArt.luau (how the hand's picture and the apple's cells sit on the screen, so the
 falling apple lands exactly in the hand) and a preview, art/export/previews/apple_loading.png (the fall and the catch,
@@ -77,6 +79,7 @@ CUP = [(742, 705), (760, 694), (800, 687), (850, 685), (900, 679), (930, 669), (
        (910, 738), (882, 752), (850, 758), (818, 753), (780, 741), (748, 730)]  # (its foot under the lip's edge)
 # (waiting, the web between the stood-up thumb and the hand, and everything above the palm where the apple will lie)
 WEB = [(705, 695), (735, 672), (750, 690), (755, 712), (720, 715)]
+WEB_CAUGHT = [(700, 660), (800, 660), (800, 770), (700, 770)]  # (the apple's lower left, where the web meets it)
 # (below the wrist's underside, where your sketch's hatching runs on into the dark)
 BELOW_WRIST = [(575, 940), (620, 893), (700, 863), (760, 855), (800, 1000), (560, 1000)]
 ABOVE_PALM = [(740, 560), (970, 560), (945, 690), (922, 714), (905, 730), (880, 744), (850, 750), (820, 745),
@@ -90,6 +93,7 @@ SLEEVE = [(541, 848), (557, 877), (570, 903), (584, 932), (560, 962), (534, 995)
 CUFF_WIDTH = 15
 THUMB_LINE = [(850, 650), (835, 657), (810, 672), (785, 690), (765, 705), (750, 725), (742, 737)]  # its underside
 OPEN_THUMB = -38.0  # degrees the thumb stands up, waiting
+CLOSING = (0.8, 0.58, 0.36, 0.16)  # the thumb's way down over the caught apple (AppleClose1..4), shares of OPEN_THUMB
 
 LIGHT = np.array([-0.72, -0.58, -0.38])  # toward the light: up, left and toward us (x right, y down, z away)
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
@@ -137,7 +141,7 @@ def apple_shape(q):
     r = np.sqrt((q * q).sum(-1)) + 1e-9
     theta = np.arccos(np.clip(q[..., 2] / r, -1, 1))
     rho = 1.0 + 0.06 * np.sin(theta) ** 2 + 0.07 * np.cos(theta)
-    rho -= 0.3 * np.exp(-((theta / 0.4) ** 2)) + 0.14 * np.exp(-(((math.pi - theta) / 0.45) ** 2))
+    rho -= 0.3 * np.exp(-((theta / 0.4) ** 2)) + 0.08 * np.exp(-(((math.pi - theta) / 0.5) ** 2))
     return (r - rho * 0.94) * 0.8
 
 
@@ -211,10 +215,17 @@ def render_apple(turn, half_px, size, body_only=False):
     streak = 0.5 + 0.5 * np.sin(phi * 31 + 1.6 * np.sin(phi * 7 + theta * 4))
     col *= (1 - 0.05 * streak * pt.smoothstep(0.3, 1.0, theta) * (1 - pt.smoothstep(2.2, 2.8, theta)))[:, None]
     col *= (1 - 0.55 * np.exp(-((theta / 0.36) ** 2)))[:, None]
-    col *= (1 - 0.45 * np.exp(-(((math.pi - theta) / 0.32) ** 2)))[:, None]
+    col *= (1 - 0.3 * np.exp(-(((math.pi - theta) / 0.3) ** 2)))[:, None]
     col += (np.exp(-((theta / 0.5) ** 2)) * 0.12)[:, None] * np.array([0.5, 0.35, 0.0])
+    # (the hollow the stem grows from and the dimple underneath: no rim light or glint in them, or they ring)
+    hollows = np.maximum(np.exp(-((theta / 0.5) ** 2)), np.exp(-(((math.pi - theta) / 0.55) ** 2)))
+    # The calyx in the dimple: the dried star of the flower it grew from, small and dark.
+    bottom = math.pi - theta
+    star = 0.1 * (0.62 + 0.38 * np.abs(np.cos(2.5 * phi)))
+    calyx = 1 - pt.smoothstep(star * 0.85, star * 1.1, bottom)
+    col = col * (1 - 0.85 * calyx[:, None]) + np.array([0.2, 0.09, 0.05]) * 0.85 * calyx[:, None]
     # A lighter rim where it turns away (the dark beyond lights it red), and along the lit edge a pale band.
-    edge = (1 - ndv) ** 3
+    edge = (1 - ndv) ** 3 * (1 - hollows)
     col += (edge * pt.smoothstep(0.1, 0.7, nrm[:, 0]) * 0.5)[:, None] * np.array([0.6, 0.06, 0.08])
     col += (edge * lit * 0.5)[:, None] * np.array([0.5, 0.25, 0.27])
     # The glints, small and sharp as your frames have them: one up on the left, a thin crescent of light along the
@@ -229,17 +240,15 @@ def render_apple(turn, half_px, size, body_only=False):
     streak_d = (off @ along / 0.3) ** 2 + (off @ across_ / 0.1) ** 2
     sharp = 1 - pt.smoothstep(0.75, 1.0, streak_d)
     rim_band = pt.smoothstep(0.5, 0.58, 1 - ndv) * (1 - pt.smoothstep(0.76, 0.84, 1 - ndv))
-    crescent = rim_band * pt.smoothstep(0.62, 0.8, ndl)
+    crescent = rim_band * pt.smoothstep(0.62, 0.8, ndl) * (1 - hollows)
     second = np.array([0.6, 0.5, -0.62])
     second /= np.linalg.norm(second)
     half2 = second + np.array([0.0, 0.0, -1.0])
     half2 /= np.linalg.norm(half2)
     small = pt.smoothstep(0.991, 0.995, np.clip(nrm @ half2, 0, 1))
-    # (none in the hollows: there they ring)
-    hollows = np.maximum(np.exp(-((theta / 0.5) ** 2)), np.exp(-(((math.pi - theta) / 0.5) ** 2)))
-    small *= 1 - hollows
-    sharp_cut = 1 - 0.85 * hollows
-    col += (ndh ** 30 * 0.25)[:, None] * np.array([1.0, 0.8, 0.8])
+    small *= 1 - pt.smoothstep(0.05, 0.3, hollows)
+    sharp_cut = 1 - pt.smoothstep(0.05, 0.3, hollows)
+    col += (ndh ** 30 * 0.25 * (1 - hollows))[:, None] * np.array([1.0, 0.8, 0.8])
     col = col * (1 - 0.75 * crescent[:, None]) + np.array([1.0, 0.82, 0.82]) * 0.75 * crescent[:, None]
     sharp = sharp * sharp_cut
     col = col * (1 - sharp[:, None]) + np.array([1.0, 0.97, 0.96]) * sharp[:, None]
@@ -377,11 +386,16 @@ def hand_shape(lum, degrees, apple=None):
     shape *= 1 - hfill(BELOW_WRIST)
     front = [hfill(turned(THUMB, degrees)), hfill(THUMB_ROOT), hfill(FINGER), hfill(UNDERSIDE), hfill(PALM_LIP),
              hfill(SLEEVE)]
+    over_apple = 1 - pt.smoothstep(0.3, 0.7, apple) if apple is not None else 1.0
     if degrees:
-        front.append(hfill(WEB))
-    else:
+        # (the web between the thumb and the hand, turning down with it; never over a caught apple)
+        front.append(hfill(turned(WEB, degrees - OPEN_THUMB)) * over_apple)
+    if apple is not None:
         # (holding: the palm reaches right round the apple's foot, so no gap shows between them)
-        front.append(hfill(CUP) * (1 - pt.smoothstep(0.3, 0.7, apple)))
+        front.append(hfill(CUP) * over_apple)
+        if degrees:
+            # (and while the thumb is still coming down, the skin between it and the palm meets the apple's side)
+            front.append(held_apple(grow=12) * hfill(WEB_CAUGHT) * over_apple)
     shape = np.maximum.reduce([shape] + front)
     # (slits closed; thin bits the pencil left go, and anything not joined to the wrist; the edge smoothed)
     shape = flow.shrink(flow.grow(shape, 3), 3)
@@ -473,27 +487,31 @@ def shifted(mask, dx, dy):
 
 
 def hands():
-    """The two hand pictures (RGBA): waiting, the thumb up; and holding, the thumb over the apple, with the shade the
-    hand casts on the apple's foot."""
+    """The hand pictures (RGBA): waiting, the thumb up; the thumb on its way down over the caught apple (CLOSING);
+    and holding, the thumb over the apple. Once the apple is in it, with the shade the hand casts on the apple's
+    foot and, as it comes down, the thumb's on its front."""
     lum = sketch_in_hand()
     x, y = hgrid()
     pictures = []
     apple = apple_in_hand()
-    for degrees in (OPEN_THUMB, 0.0):
-        shape = hand_shape(lum, degrees, None if degrees else apple)
+    for k, degrees in enumerate([OPEN_THUMB] + [OPEN_THUMB * c for c in CLOSING] + [0.0]):
+        caught = k > 0
+        shape = hand_shape(lum, degrees, apple if caught else None)
         rgb = paint_hand(lum, shape, degrees)
         alpha = shape
-        if degrees == 0.0:
-            # Holding: over the apple (the falling one, under the picture) a little shade where the thumb lies on it
-            # and where it sits down in the palm.
+        if caught:
+            # Over the apple (the falling one, under the picture) a little shade where it sits down in the palm and
+            # where the thumb lies on it (nearer it, darker).
             cx, cy, rx, ry = HELD
             foot = pt.smoothstep(cy + 0.55 * ry, cy + 0.95 * ry, y)
-            drop = pt.blur(shifted(hfill(THUMB), int(6 * HAND_SCALE), int(8 * HAND_SCALE)), 3 * HAND_SCALE)
-            cast = np.clip(0.25 * foot + 0.25 * drop, 0, 0.35) * apple * (1 - shape)
+            near = 1 - degrees / OPEN_THUMB
+            drop = pt.blur(shifted(hfill(turned(THUMB, degrees)), int(6 * HAND_SCALE), int(8 * HAND_SCALE)),
+                           (3 + 4 * (1 - near)) * HAND_SCALE)
+            cast = np.clip(0.25 * foot + 0.25 * near * drop, 0, 0.35) * apple * (1 - shape)
             alpha = shape + cast * (1 - shape)
             rgb = rgb * (shape / np.maximum(alpha, 1e-6))[..., None]
         pictures.append(np.concatenate([rgb, alpha[..., None]], -1).astype(np.float32))
-    return pictures[0], pictures[1]
+    return pictures[0], pictures[1:-1], pictures[-1]
 
 
 # The screen -----------------------------------------------------------------------------------------------------------
@@ -525,7 +543,7 @@ def resized(img, scale):
     return flow.resample(img, max(1, int(round(h * scale))), max(1, int(round(w * scale))))
 
 
-def preview(sheet, waiting, holding):
+def preview(sheet, waiting, closing, holding):
     """Your sketch's moments at 16:9, as the game lays them: the apple falling, the hand coming up for it, the catch;
     and the sheet of its turns."""
     sh, sw = 540, 960
@@ -562,10 +580,12 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     sheet = apple_sheet()
     png.write(os.path.join(OUT, "AppleSpin.png"), sheet)
-    waiting, holding = hands()
+    waiting, closing, holding = hands()
     png.write(os.path.join(OUT, "AppleHand1.png"), waiting)
     png.write(os.path.join(OUT, "AppleHand2.png"), holding)
-    png.write(PREVIEW, preview(sheet, waiting, holding))
+    for k, picture in enumerate(closing):
+        png.write(os.path.join(OUT, f"AppleClose{k + 1}.png"), picture)
+    png.write(PREVIEW, preview(sheet, waiting, closing, holding))
     print("[apple] wrote", PREVIEW)
     hand_h, catch, cell = layout()
     lines = [

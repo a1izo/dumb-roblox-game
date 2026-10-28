@@ -7,7 +7,7 @@ the pencil itself (where it is dense, and its strokes for the hair's way). The c
 frame's. Painted in layers with art/scripts/ui/paint.py, so the game can move them apart a little for depth:
 
     IntroBaseL, IntroBaseR   the face with the eye shut, the mouth, the light (two halves, 896 x 1008 each)
-    IntroEye1..4             the eye's corner of the picture as it opens (a third, over half, most of the way, open),
+    IntroEye1..8             the eye's corner of the picture as it opens (eight steps, from a crack to open),
                              laid exactly over the face (its edges feathered into the shut face's own pixels)
     IntroHairL, IntroHairR   the hair in front, a touch out of focus (transparent, two halves)
 
@@ -41,18 +41,20 @@ SW, SH = 1670, 942  # the sketch
 W, H = 1792, 1008  # the picture (each half fits Roblox's 1024 px limit)
 K = W / SW  # sketch px -> picture px
 OY = (H - SH * K) / 2
-OPENINGS = (0.3, 0.58, 0.84, 1.0)
+# (eight frames, the user's call of 2026-10-27: the lid sliding up, the lashes with it, the iris coming out from under)
+OPENINGS = (0.06, 0.15, 0.27, 0.41, 0.56, 0.71, 0.86, 1.0)
 
 # The colours are read off your colour frame (sampled): grey skin, a dark plane where the face turns away, black beyond,
-# near-black hair with a warm dull sheen, a greyed white and a crimson iris.
+# near-black cel hair with cool grey lit strips, a greyed white and a crimson iris.
 BG = (0.006, 0.006, 0.007)
 SKIN = (0.78, 0.77, 0.775)
 PLANE = (0.335, 0.322, 0.318)  # the nose and mouth's plane, turned from the light
 STRIP = (0.6, 0.592, 0.593)  # the light caught along its foot and up its far edge
 INK = (0.04, 0.038, 0.045)
 HAIR_BASE = (0.03, 0.025, 0.022)
-HAIR_BODY = (0.135, 0.12, 0.11)
-HAIR_SHEEN = (0.52, 0.48, 0.45)
+HAIR_BODY = (0.17, 0.165, 0.18)
+HAIR_LOW = (0.1, 0.095, 0.105)  # the cel hair's soft gradient, toward the light
+HAIR_SHINE = (0.6, 0.6, 0.66)  # the cel hair's shine: a cool pale grey band
 SCLERA = (0.86, 0.84, 0.85)
 LIGHT = (-0.55, 0.835)  # which way shadows fall across the picture (the light is above and to the right)
 SHADE = (0.6, 0.595, 0.61)  # what a shadow leaves of the light on skin: a flat grey, as the frame's are
@@ -511,9 +513,10 @@ def lips(canvas, mask, sx, sy):
 
 def hair(dark, eye_zone, sx, sy):
     """The hair where the pencil is dense (and the mouth's shapes, which the pencil drew as densely): the hair in front
-    on its own layer. Painted as your colour
-    frame's hair is: near-black locks, a little lighter through their bodies than at their edges, with long thin
-    streaks of dull warm sheen running the way your pencil runs, tapering out at both ends."""
+    on its own layer. Painted as anime cel hair (the user's call of 2026-10-27: the pencil-streaked hair read as drawn
+    cardboard): clean locks with crisp edges, a flat near-black base, one soft gradient toward the light, the locks'
+    lit sides as long flat strips, a crisp shine where they cross one band, and a few fine strand lines only near the
+    tips. No pencil texture in it."""
     d = resample(dark)
     dense = pt.smoothstep(0.12, 0.2, pt.blur(d, 4.3 * K))
     dense = pt.smoothstep(0.38, 0.62, pt.blur(dense, 1.6))
@@ -525,33 +528,36 @@ def hair(dark, eye_zone, sx, sy):
     keep = flow.joined(solid, flow.shrink(solid.astype(np.float32), 7) > 0.5)
     front = front * flow.grow(keep.astype(np.float32), 2)
     front = np.maximum(front, flow.close(front, 5))
+    # Clean cel silhouettes: the outline smoothed and cut crisp (a pixel of antialiasing, no ragged pencil edge).
+    front = pt.smoothstep(0.44, 0.56, pt.blur(front, 2.2 * K))
     mouth = dense * fill(MOUTH_ZONE)
-    # The locks: their bodies (where the pencil was lighter) a little up from black, their edges down to it.
-    body = 1 - pt.smoothstep(0.25, 0.85, pt.blur(d, 6 * K))
+    # How deep inside a lock a pixel is (0 at its edge, 1 well inside), and the light across the picture.
+    inside = pt.smoothstep(0.5, 0.95, pt.blur(front, 9 * K))
+    light = pt.smoothstep(-0.1, 0.8, (sx / SW) * 0.5 + (1 - sy / SH) * 0.6)
+    # The locks' lit sides from your pencil: where it is lighter than round about (the paper between its strokes),
+    # smeared a long way along the locks' way so they come out as long smooth strips, tapering, never speckle; then
+    # cut crisp into flat tones.
+    fx, fy, _ = flow.orientation(d, 3.0, 22.0)
+    gap = pt.blur(d, 16 * K) - pt.blur(d, 2.0 * K)
+    strips = pt.blur(flow.lic(gap, fx, fy, 40.0, 1.5), 1.6 * K)
+    lit = pt.smoothstep(0.037, 0.047, strips) * inside
+    shine = pt.smoothstep(0.075, 0.085, strips) * inside
+    # The flat base and its one soft gradient, up from near-black toward the light.
     rgb = np.empty((H, W, 3), np.float32)
     rgb[:] = HAIR_BASE
-    pt.over(rgb, HAIR_BODY, body * 0.9)
-    # (and the dark parting between one lock and the next, where your pencil drew their edges)
-    parting = pt.smoothstep(0.5, 0.9, pt.blur(d, 1.4))
-    rgb *= (1 - 0.45 * parting)[..., None]
-    # The sheen: sparse seeds smeared along the strokes' way into long streaks, a fine set and a broad soft one.
-    fx, fy, _ = flow.orientation(d, 2.0, 12.0)
-    rng = np.random.default_rng(5)
-    on = dense > 0.5
-
-    def streaks(density, soften, length):
-        seeds = (rng.random((H, W)) < density) * rng.uniform(0.35, 1.0, (H, W))
-        smeared = flow.lic(pt.blur(seeds.astype(np.float32), soften), fx, fy, length, 1.0)
-        return np.clip(smeared / max(float(np.percentile(smeared[on], 99.3)), 1e-6), 0, 1)
-
-    fine = streaks(0.0022, 0.7, 42.0) ** 1.2
-    broad = pt.blur(streaks(0.0005, 2.4, 80.0), 1.5)
-    sheen = np.clip(0.75 * fine + 0.55 * broad, 0, 1)
-    # (brighter through the lock bodies and toward the light, dimmer deep in the lower left)
-    light = pt.smoothstep(-0.1, 0.8, (sx / SW) * 0.5 + (1 - sy / SH) * 0.6)
-    sheen *= (0.35 + 0.65 * body) * (0.35 + 0.65 * light)
-    pt.over(rgb, HAIR_SHEEN, sheen)
-    rgb *= (0.6 + 0.4 * light)[..., None]
+    pt.over(rgb, HAIR_LOW, pt.blur(np.clip(0.5 * inside * light + 0.2 * light, 0, 1), 10 * K))
+    pt.over(rgb, HAIR_BODY, lit * (0.55 + 0.45 * light))
+    # The shine: only in one diagonal band across the hair, toward the light.
+    band_u = (sx / SW) * 0.55 + (1 - sy / SH) * 0.45
+    band = pt.smoothstep(0.3, 0.36, band_u) * (1 - pt.smoothstep(0.5, 0.56, band_u))
+    pt.over(rgb, HAIR_SHINE, shine * band * 0.95)
+    # Fine strand lines near the tips: a few thin pale hairs running with the locks where they thin out to the face.
+    seeds = (np.random.default_rng(5).random((H, W)) < 0.0012).astype(np.float32)
+    lines = flow.lic(pt.blur(seeds, 0.5), fx, fy, 26.0, 1.0)
+    lines /= max(float(np.percentile(lines[front > 0.5], 99.0)), 1e-6)
+    tips = front * (1 - pt.smoothstep(0.2, 0.7, inside))
+    pt.over(rgb, HAIR_BODY, pt.smoothstep(0.45, 0.55, lines) * tips * (0.4 + 0.6 * light))
+    rgb *= (0.72 + 0.28 * light)[..., None]
     return np.clip(rgb, 0, 1), front, mouth
 
 
@@ -626,9 +632,10 @@ class Picture:
         alpha = np.zeros((H, W), np.float32)
         pt.layer_over(rgb, alpha, SHADOW, self.front_shadow)
         pt.layer_over(rgb, alpha, hair_rgb, self.front)
+        # (barely: the cel edges stay crisp)
         for c in range(3):
-            rgb[..., c] = pt.blur(rgb[..., c], 1.4)
-        return rgb, pt.blur(alpha, 1.5)
+            rgb[..., c] = pt.blur(rgb[..., c], 0.7)
+        return rgb, pt.blur(alpha, 0.8)
 
 
 def main():
@@ -668,7 +675,7 @@ def main():
     lines = [
         "--!strict",
         "-- GENERATED by art/scripts/ui/eye_intro.py. Do not edit by hand.",
-        "-- The first join's painted eye (UI/EyeIntro): the picture's size in px, where the eye's crop (IntroEye1..4) lies",
+        "-- The first join's painted eye (UI/EyeIntro): the picture's size in px, where the eye's crop (IntroEye1..n) lies",
         "-- in it and where the eye itself is (the slow push-in closes on it), as shares of the picture.",
         "",
         "return {",

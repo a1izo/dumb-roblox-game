@@ -415,9 +415,10 @@ Assets.textures = {
 
 -- Pictures uploaded on their own through Studio's importer (art/export/textures). The first join's eye, painted in
 -- layers by art/scripts/ui/eye_intro.py (UI/EyeIntro): the face with the eye shut in two halves, the eye's corner as it
--- opens (four frames), the foreground hair in two halves. The loading screen's apple, a 4 x 4 sheet of it turning, and
--- the hand that catches it, waiting and holding it (art/scripts/ui/intro_frames.py, UI/AppleLoading). "" until uploaded:
--- those screens then draw a stand-in.
+-- opens (eight frames), the foreground hair in two halves. The loading screen's apple, a 4 x 4 sheet of it turning, and
+-- the hand that catches it, waiting, its thumb closing (four frames) and holding it (art/scripts/ui/intro_frames.py,
+-- UI/AppleLoading). "" until uploaded: those screens then draw a stand-in (a frame of the eye or the thumb not
+-- uploaded is left out).
 Assets.images = {
 	IntroBaseL = "112649732036299",
 	IntroBaseR = "117826587593763",
@@ -425,11 +426,19 @@ Assets.images = {
 	IntroEye2 = "72561965034296",
 	IntroEye3 = "86909090559573",
 	IntroEye4 = "126999503834786",
+	IntroEye5 = "",
+	IntroEye6 = "",
+	IntroEye7 = "",
+	IntroEye8 = "",
 	IntroHairL = "77350048823213",
 	IntroHairR = "73218582422326",
 	AppleSpin = "116054757714434",
 	AppleHand1 = "119620415469239",
 	AppleHand2 = "109922448543976",
+	AppleClose1 = "",
+	AppleClose2 = "",
+	AppleClose3 = "",
+	AppleClose4 = "",
 	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
 	CursorLock = "",
 	CursorFree = "",
