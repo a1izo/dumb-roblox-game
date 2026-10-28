@@ -1,7 +1,9 @@
 -- The Tokyo crowd as plain maths: no Humanoids, no parts, nothing in the world. Walkers follow the
 -- map's walk graph (layout.crowd: nodes, links, posts), keep to the left of each walk (Japan), wait
 -- on the kerb for the walk signal and cross together when it comes, slow and step round a player in
--- their way and, held up for PIN_TIME, walk through them. A few stand at posts all match (clerks).
+-- their way and, held up for PIN_TIME, walk through them (and each client lets its own player through sooner
+-- when a body would trap them: World/Crowd). Now and then one stops at the end of a walk for a moment (a shop
+-- window, a phone) before going on, as people do. A few stand at posts all match (clerks).
 -- Positions are in the map's own coordinates (the server adds nothing: clients add the map's origin).
 -- Everything here is deterministic for a given Random, so the specs can step it by hand.
 
@@ -16,6 +18,8 @@ CrowdSim.SIDESTEP = 3.5 -- studs a second a walker drifts across its walk (at a 
 CrowdSim.SHOULDER = 2.6 -- how far to one side a player is still minded...
 CrowdSim.SQUARELY = 2.0 -- ...and how far to one side they still bar the way (two bodies' half widths)
 CrowdSim.PIN_TIME = 1.0 -- seconds held up before a walker steps through whoever blocks it
+CrowdSim.PAUSE = 0.12 -- the share of walks a walker stops at the end of for a moment (never by a crossing)...
+CrowdSim.PAUSE_TIME = { 1.5, 4 } -- ...for this many seconds
 CrowdSim.STOP_TIME = 1.5 -- seconds the whole crowd takes to come to a stop (or start again)
 CrowdSim.HURRY = 1.4 -- caught on the crossing when the cars get their light
 -- A player's name tag hides inside the crowd: COVER_COUNT walkers within COVER_IN studs; it shows
@@ -128,6 +132,12 @@ function CrowdSim:_enter(walker, link: number, from: number)
 	walker.side = math.min(entry.half, 0.4 + self.rng:NextNumber() * math.max(0, entry.half - 0.4))
 	-- A dead end ahead: stand there a while (looking round, checking a watch) before turning back.
 	walker.linger = if onward == nil or other(onward, walker.to) == from then 2.5 + self.rng:NextNumber() * 4.5 else 0
+	-- Or a moment's pause where the walk ends (a look in a window, at a phone), never on or before a crossing.
+	local plain = entry.kind ~= "crossing" and not (onward and onward.kind == "crossing")
+	if walker.linger == 0 and plain and self.rng:NextNumber() < CrowdSim.PAUSE then
+		local least, most = CrowdSim.PAUSE_TIME[1], CrowdSim.PAUSE_TIME[2]
+		walker.linger = least + self.rng:NextNumber() * (most - least)
+	end
 end
 
 local function place(self, walker)

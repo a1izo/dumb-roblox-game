@@ -3,9 +3,11 @@ drive. Data only: the game moves them (Maps/Mechanics/TokyoDistrict) and every c
 
 - The crowd's walks: a node at each end of the four zebras, on the pavement (a "kerb" node: walkers
   wait there for the walk signal), a node on each of the scramble's four corners (the diagonals start
-  there), chains of nodes out along the streets' sidewalks (the station plaza for the drive), and
-  through the station's two side doors into its hall. Crossing links are only walked on the walk
-  signal.
+  there), chains of nodes out along the streets' sidewalks to the map's edge (the station plaza for the
+  drive), and through the station's two side doors into its hall. Crossing links are only walked on the
+  walk signal. The rest of the district too (the user's call of 2026-10-27: the crowd walks the whole map):
+  a walk down every other street's pavements, the shopping arcade, the lanes and the yokocho's alleys, and
+  along both river promenades, each joined to the walks it meets.
 - Posts: clerks behind the konbini's till, the ramen bar's counter and the station kiosk, an
   attendant in the game centre.
 - The cars' lanes: the avenue straight through both ways and a taxi from the station's rank out along
@@ -219,9 +221,10 @@ def walks(s):
             u0 = _u_from_junction(name, REACH[name] + 6.0)
             sgn = 1 if math.dist(_along(name, u0, hw + inset), end) <= math.dist(_along(name, u0, -(hw + inset)), end) else -1
             chain = []
-            for step in range(1, 6):
-                u = _u_from_junction(name, REACH[name] - 4.0 + 10.0 * step)
-                if u <= 1.0 or u >= _length(name) - 1.0:
+            for step in range(1, 60):
+                out_by = REACH[name] - 4.0 + 10.0 * step
+                u = _u_from_junction(name, out_by)
+                if u <= 1.0 or u >= _length(name) - 1.0 or out_by > FAR[name] - 6.0:
                     break
                 last = chain[-1] if chain else w.at(start)
                 placed = None
@@ -261,8 +264,134 @@ def walks(s):
                 break
         else:
             w.missing.append(f"the station door at z {door_z}")
+    district(w)
     if w.missing:
         print("[crowd] no walk found for: " + "; ".join(w.missing))
+
+
+# The rest of the district ------------------------------------------------------------------------------
+
+STEP = 10.0  # studs between a district walk's nodes
+TIE = 18.0  # studs: how far a district walk's end looks for a walk to join
+
+
+def _chain(w, total, at, offsets):
+    """Walk nodes every STEP studs along a line `total` long (at(u, across): the point u along it, `across` studs to
+    its left), each at the first of `offsets` (or a little along) where a walker can stand with an open walk from
+    the one before; where none will do, the chain ends and another starts. Returns the chains laid (two nodes or
+    more each), as lists of node numbers."""
+    street = w.street
+    runs, run = [], []
+    u = 1.0
+    while u <= total - 1.0:
+        last = run[-1] if run else None
+        placed = None
+        for shift in (0.0, 2.0, -2.0, 4.0, -4.0):
+            for across in offsets:
+                spot = at(min(max(u + shift, 0.5), total - 0.5), across)
+                if street.stand(*spot) and (last is None or street.walk(last, spot)):
+                    placed = spot
+                    break
+            if placed:
+                break
+        if placed is None:
+            if len(run) >= 2:
+                runs.append(run)
+            run = []
+        else:
+            run.append(placed)
+        u += STEP
+    if len(run) >= 2:
+        runs.append(run)
+    chains = []
+    for run in runs:
+        nodes = [w.s.crowd_node(*spot) for spot in run]
+        for a, b in zip(nodes, nodes[1:]):
+            w.link(a, b)
+        chains.append(nodes)
+    return chains
+
+
+def _tie(w, chains):
+    """Each chain's two ends joined to the nearest node of the other walks within TIE (round a corner when the
+    straight way is blocked), so no walk is cut off from the rest."""
+    nodes = w.s.crowd["nodes"]
+    for chain in chains:
+        mine = set(chain)
+        for end in (chain[0], chain[-1]):
+            p = w.at(end)
+            near = sorted((k + 1 for k in range(len(nodes)) if k + 1 not in mine
+                           and math.dist(p, (nodes[k]["x"], nodes[k]["z"])) <= TIE),
+                          key=lambda m: math.dist(p, w.at(m)))
+            for other in near[:6]:
+                if w.join(end, other):
+                    break
+
+
+def district(w):
+    chains = []
+    for name, st in P.STREETS.items():
+        if name in TOWARD:
+            continue  # (the scramble's own four, laid above)
+        pts = st["points"]
+        total = g2.polyline_length(pts)
+
+        def at(u, across, pts=pts):
+            p, d = g2.point_along(pts, u)
+            n = g2.normal_left(d)
+            return (p[0] + n[0] * across, p[1] + n[1] * across)
+
+        left, right = st["walk"]
+        if left <= 0 and right <= 0:
+            # (a pedestrian street, a lane, an alley: down its middle, keeping to either side of it)
+            chains += _chain(w, total, at, (0.0, 0.8, -0.8, 1.4, -1.4))
+            continue
+        for side, width in ((1, left), (-1, right)):
+            if width > 0:
+                mid = st["road"] / 2 + width / 2
+                chains += _chain(w, total, at, tuple(side * (mid + k) for k in (0.0, -0.6, 0.6, -1.1, 1.1)))
+    # The river promenades, along the water behind their railings.
+    from maps.venues.tokyo import river as R  # (here: river imports the plan and the kit, which this file may not)
+
+    line = R.inner_river()
+    total = g2.polyline_length(line)
+    for prom in (P.PROM_N, P.PROM_S):
+        mid = (prom[0] + prom[1]) / 2
+
+        def along_river(u, across, mid=mid):
+            p, d = g2.point_along(line, u)
+            n = g2.normal_left(d)
+            return (p[0] + n[0] * (mid + across), p[1] + n[1] * (mid + across))
+
+        chains += _chain(w, total, along_river, (0.0, -1.0, 1.0, -1.8, 1.8))
+    _tie(w, chains)
+    dropped = _one_network(w.s)
+    print(f"[crowd] district: {len(chains)} walks laid, {sum(len(c) for c in chains)} nodes; {dropped} nodes cut off "
+          "by roads taken out again")
+
+
+def _one_network(s):
+    """Takes out every node no walk joins to the scramble's (a stretch of pavement or promenade cut off by roads:
+    MapContract wants every walk reachable from the others, and a walker put there would pace it for ever).
+    Returns how many went."""
+    nodes, links = s.crowd["nodes"], s.crowd["links"]
+    parent = list(range(len(nodes) + 1))
+
+    def root(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for link in links:
+        parent[root(link["a"])] = root(link["b"])
+    main = root(1)
+    keep = [i for i in range(1, len(nodes) + 1) if root(i) == main]
+    number = {old: new for new, old in enumerate(keep, start=1)}
+    s.crowd["nodes"] = [nodes[i - 1] for i in keep]
+    s.crowd["links"] = [dict(link, a=number[link["a"]], b=number[link["b"]]) for link in links
+                        if link["a"] in number and link["b"] in number]
+    return len(nodes) - len(keep)
 
 
 def posts(s):
