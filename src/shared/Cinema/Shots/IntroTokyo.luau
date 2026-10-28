@@ -35,7 +35,7 @@ return {
 			yaw = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 			props = {
 				{ model = "Grimoire", arm = "Left Arm", offset = { -0.12, -0.202, -0.272 }, rot = { -15.41, 9.59, -31.16 }, show = { 0, 24.6 }, scale = 0.6, open = { { 0, 1 }, { 16.25, 1 }, { 16.85, 0 } } },
-				{ model = "Pen", arm = "Right Arm", offset = { 0, -1, -0.15 }, rot = { 60, 0, 0 }, show = { 0, 24.6 } },
+				{ model = "Pen", arm = "Right Arm", offset = { -0.059, -0.896, 0.368 }, rot = { -25.25, -14.36, 53.06 }, show = { 0, 24.6 } },
 			},
 		},
 		{
@@ -213,6 +213,7 @@ return {
 		{ t = 8.44, kind = "fx", name = "freeze", dur = 1.3, blink = "victim" },
 		{ t = 8.44, kind = "sfx", slot = "heartbeat" },
 		{ t = 8.44, kind = "fx", name = "pulse", punch = 0.06, dur = 0.8 },
+		{ t = 8.441, kind = "sfx", slot = "heartbeat", delay = 0.33 },
 		{ t = 9.1, kind = "face", slot = "victim", face = "Fear" },
 		{ t = 10.9, kind = "fx", name = "focus", slot = "victim", part = "Head", radius = 5, far = 0.15, near = 0.05 },
 		{ t = 12.183, kind = "sfx", slot = "bodyFall" },

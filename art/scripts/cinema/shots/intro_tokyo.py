@@ -33,7 +33,7 @@ from animlib import J
 from cinema import framing
 from cinema.acting import alive, facing, kneel, seated, soft, strike, walking
 from cinema.shot import Shot
-from emotes.kit import CHEST, hold, reach
+from emotes.kit import CHEST, basis_angles, hold, reach
 from motion import Motion
 
 NAME = "IntroTokyo"
@@ -202,12 +202,13 @@ BOOK_AT = (HAND[0] - MANUAL_W / 2, HAND[1] + 0.6 * UP[1], HAND[2] + 0.6 * UP[2])
 
 
 def on_page(x, d, above=0.5):
-    """(torso frame) the right fist over the right-hand page at x (across) and d (down it), the pen's tip on it."""
+    """(torso frame) the right fist over the right-hand page at x (across) and d (down it), `above` it: at 0.8 the
+    pen's nib is on the page (PEN_GRIP)."""
     return (BOOK_AT[0] + MANUAL_W / 2 + x, BOOK_AT[1] + UP[1] * above + DEPTH[1] * d,
             BOOK_AT[2] + UP[2] * above + DEPTH[2] * d)
 
 
-def pen_at(x, d, above=0.5):
+def pen_at(x, d, above=0.8):
     return reach(1, on_page(x, d, above), direction=(-0.35, -0.6, -0.7))
 
 
@@ -219,25 +220,25 @@ WRITING = dict(root=(-5, 0, 0), neck=(-34, 6, 0))
 w = Motion("IntroTokyo_watcher", LENGTH, note="The Tokyo intro: the one in the car, writing in the Manual.")
 w.key(0.0, rShoulder=STAND_R, lShoulder=READ_L, **READING)
 w.key(WRITE[0] - 0.5, rShoulder=STAND_R, lShoulder=READ_L, **READING)
-w.key(WRITE[0], "sine", rShoulder=pen_at(0.15, -0.35, 0.8), lShoulder=READ_L, **WRITING)  # the pen to the page
+w.key(WRITE[0], "sine", rShoulder=pen_at(0.15, -0.35, 1.1), lShoulder=READ_L, **WRITING)  # the pen to the page
 # A name, unhurried: short strokes along two lines...
 strokes = [(0.12, -0.3), (0.3, -0.31), (0.46, -0.29), (0.62, -0.3), (0.14, -0.05), (0.32, -0.06), (0.5, -0.04)]
 t = WRITE[0] + 0.35
 for x, d in strokes:
     w.key(t, "sine", rShoulder=pen_at(x, d), lShoulder=READ_L, **WRITING)
-    w.key(t + 0.14, "sine", rShoulder=pen_at(x + 0.08, d + 0.03, 0.56), lShoulder=READ_L, **WRITING)
+    w.key(t + 0.14, "sine", rShoulder=pen_at(x + 0.08, d + 0.03, 0.88), lShoulder=READ_L, **WRITING)
     t += 0.3
 # ...and the last: one long, deliberate stroke, then the pen lifted clean off the page.
 w.key(WRITE[1] - 0.32, "sine", rShoulder=pen_at(0.12, 0.2), lShoulder=READ_L, **WRITING)
 w.key(WRITE[1], "in", rShoulder=pen_at(0.78, 0.2), lShoulder=READ_L, **WRITING)
-w.key(WRITE[1] + 0.12, "out", rShoulder=pen_at(0.8, 0.12, 1.05), lShoulder=READ_L, **WRITING)
+w.key(WRITE[1] + 0.12, "out", rShoulder=pen_at(0.8, 0.12, 1.3), lShoulder=READ_L, **WRITING)
 # The eyes come up, slowly, to him.
-w.key(WRITE[1] + 0.35, rShoulder=pen_at(0.8, 0.12, 1.05), lShoulder=READ_L, **WRITING)
-w.key(WRITE[1] + 1.2, "sine", root=(-1, 0, 0), neck=(-14, -10, 0), rShoulder=pen_at(0.75, 0.1, 1.1), lShoulder=READ_L)
-w.key(TIP - 0.3, root=(-2, 0, 0), neck=(-18, -10, 0), rShoulder=pen_at(0.75, 0.1, 1.1), lShoulder=READ_L)
-w.key(HIT + 0.5, "sine", root=(-5, 0, 0), neck=(-34, -8, 0), rShoulder=pen_at(0.75, 0.1, 1.1), lShoulder=READ_L)
+w.key(WRITE[1] + 0.35, rShoulder=pen_at(0.8, 0.12, 1.3), lShoulder=READ_L, **WRITING)
+w.key(WRITE[1] + 1.2, "sine", root=(-1, 0, 0), neck=(-14, -10, 0), rShoulder=pen_at(0.75, 0.1, 1.35), lShoulder=READ_L)
+w.key(TIP - 0.3, root=(-2, 0, 0), neck=(-18, -10, 0), rShoulder=pen_at(0.75, 0.1, 1.35), lShoulder=READ_L)
+w.key(HIT + 0.5, "sine", root=(-5, 0, 0), neck=(-34, -8, 0), rShoulder=pen_at(0.75, 0.1, 1.35), lShoulder=READ_L)
 # The book shut: the right hand comes over the open board and folds it down onto the pages.
-w.key(SHUT[0] - 0.55, root=(-5, 0, 0), neck=(-34, -8, 2), rShoulder=pen_at(0.75, 0.1, 1.1), lShoulder=READ_L)
+w.key(SHUT[0] - 0.55, root=(-5, 0, 0), neck=(-34, -8, 2), rShoulder=pen_at(0.75, 0.1, 1.35), lShoulder=READ_L)
 w.key(SHUT[0], "sine", root=(-5, 0, 0), neck=(-34, -8, 4), rShoulder=OVER_R, lShoulder=READ_L)
 w.key(SHUT[1], "sine", root=(-6, 0, 2), neck=(-36, -8, 12), rShoulder=SHUT_R, lShoulder=READ_L)  # shut; the head tilts
 w.key(SHUT[1] + 0.4, "sine", root=(-6, 0, 2), neck=(-36, -8, 12), rShoulder=SHUT_R, lShoulder=READ_L)
@@ -250,6 +251,22 @@ w.plant(stance=0.06)
 alive(w, 0.25, seed=5)
 w.build()
 MANUAL_GRIP = hold("Left Arm", {"lShoulder": READ_L}, BOOK_AT, (TILT, 0.0, 0.0))
+
+
+def pen_grip():
+    """The pen in his right fist as he writes (solved at a mid-page stroke): its nib (0.54 below its middle, along
+    its -y) on the page under the fist, its top leaning back towards his hand as a writing pen does."""
+    import numpy as np
+
+    x, d = 0.4, -0.15
+    page = np.array(on_page(x, d, 0.0))
+    nib = -np.array(UP) - 0.5 * np.array(DEPTH) + 0.15 * np.array((1.0, 0.0, 0.0))
+    nib = nib / np.linalg.norm(nib)
+    middle = page - nib * 0.54
+    return hold("Right Arm", {"rShoulder": pen_at(x, d)}, tuple(middle), basis_angles(tuple(-nib), (0.0, 0.0, 1.0)))
+
+
+PEN_GRIP = pen_grip()
 
 
 # The others -----------------------------------------------------------------------------------------------
@@ -343,7 +360,7 @@ for t, lean in FALL_KEYS:
 watcher = shot.actor("watcher", w)
 watcher.hold("Grimoire", "Left Arm", MANUAL_GRIP[0]["p"], MANUAL_GRIP[1]["r"], scale=MANUAL_SCALE,
              open=[(0.0, 1.0), (SHUT[0], 1.0), (SHUT[1], 0.0)])
-watcher.hold("Pen", "Right Arm", (0, -1.0, -0.15), (60, 0, 0))
+watcher.hold("Pen", "Right Arm", PEN_GRIP[0]["p"], PEN_GRIP[1]["r"])
 ride(watcher, CAR_DOOR + WATCHER[0] - DOOR_X, WATCHER[1], 0.0)
 for k, dx in enumerate((-4.6, 4.6)):  # the long seat's two halves either side of the doorway, along the far wall
     p = shot.actor(f"everyone:{k + 1}", clip=f"IntroTokyo_seat{k}")
@@ -458,6 +475,7 @@ shot.event(JOLT, "sfx", slot="introTokyoDrone")
 FREEZE = JOLT + 0.24
 shot.event(FREEZE, "fx", name="freeze", dur=1.3, blink="victim")
 shot.event(FREEZE, "sfx", slot="heartbeat")
+shot.event(FREEZE + 0.001, "sfx", slot="heartbeat", delay=0.33)  # (lub... dub: the second beat inside the freeze)
 shot.event(FREEZE, "fx", name="pulse", punch=0.06, dur=0.8)
 shot.event(HIT, "sfx", slot="bodyFall")
 shot.event(HIT, "fx", name="shake", strength=0.22, dur=0.25)

@@ -474,12 +474,15 @@ function Cinema.still(color: Color3, seconds: number?)
 	end)
 end
 
--- The anime's heart-attack beat: over a frozen black-and-white frame, `model` blinks once in `color`. A copy of it is
+-- The anime's heart-attack beat: over a frozen black-and-white frame, `model` flashes in `color`. A copy of it is
 -- drawn over the picture from this camera (on a full-screen layer of its own, under the letterbox's bars), so it
--- keeps its colour while the world below has lost its own; it flashes in fast and fades over `seconds`.
-function Cinema.blink(model: Model, color: Color3, seconds: number?)
+-- keeps its colour while the world below has lost its own. With `strength` 1 it flashes solid and fades over
+-- `seconds`, and a second copy swells out from him as it fades (the beat's shockwave); a weaker beat is fainter.
+function Cinema.blink(model: Model, color: Color3, seconds: number?, strength: number?)
 	local camera = workspace.CurrentCamera
 	local Players = game:GetService("Players")
+	local power = strength or 1
+	local life = seconds or 0.7
 	local gui = Create("ScreenGui", {
 		Name = "ShotBlink",
 		IgnoreGuiInset = true,
@@ -488,35 +491,65 @@ function Cinema.blink(model: Model, color: Color3, seconds: number?)
 		DisplayOrder = 59,
 		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
 	})
-	local frame = Create("ViewportFrame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		Ambient = Color3.new(1, 1, 1),
-		LightColor = Color3.new(1, 1, 1),
-		ImageColor3 = color,
-		ImageTransparency = 1,
-		Parent = gui,
-	}) :: ViewportFrame
-	local view = Create("Camera", { CFrame = camera.CFrame, FieldOfView = camera.FieldOfView, Parent = frame })
-	frame.CurrentCamera = view :: Camera
 	local archivable = model.Archivable
 	model.Archivable = true
-	local ok, copy = pcall(function()
-		return model:Clone()
-	end)
-	model.Archivable = archivable
-	if ok and copy then
-		for _, item in ipairs(copy:GetDescendants()) do
-			if item:IsA("LuaSourceContainer") or item:IsA("Sound") or item:IsA("BillboardGui") then
-				item:Destroy()
+	-- (where he is on the screen: the swell grows out from there)
+	local root = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+	local point = if root then camera:WorldToViewportPoint(root.Position) else camera.ViewportSize / 2
+	local view = camera.ViewportSize
+	local anchor = Vector2.new(math.clamp(point.X / view.X, 0, 1), math.clamp(point.Y / view.Y, 0, 1))
+	local function layer(transparency: number): ViewportFrame
+		local frame = Create("ViewportFrame", {
+			AnchorPoint = anchor,
+			Position = UDim2.fromScale(anchor.X, anchor.Y),
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Ambient = Color3.new(0.75, 0.75, 0.75),
+			LightColor = Color3.new(1, 1, 1),
+			ImageColor3 = color,
+			ImageTransparency = transparency,
+			Parent = gui,
+		}) :: ViewportFrame
+		local eye = Create("Camera", { CFrame = camera.CFrame, FieldOfView = camera.FieldOfView, Parent = frame })
+		frame.CurrentCamera = eye :: Camera
+		local ok, copy = pcall(function()
+			return model:Clone()
+		end)
+		if ok and copy then
+			-- (a flat silhouette: every part white and bare, so the frame's red tint makes it one solid red, not his
+			-- clothes' colours showing pink through it)
+			for _, item in ipairs(copy:GetDescendants()) do
+				if
+					item:IsA("LuaSourceContainer")
+					or item:IsA("Sound")
+					or item:IsA("BillboardGui")
+					or item:IsA("Decal")
+					or item:IsA("SurfaceAppearance")
+					or item:IsA("Shirt")
+					or item:IsA("Pants")
+					or item:IsA("ShirtGraphic")
+				then
+					item:Destroy()
+				elseif item:IsA("MeshPart") then
+					item.TextureID = ""
+				elseif item:IsA("SpecialMesh") then
+					item.TextureId = ""
+				end
+				if item:IsA("BasePart") then
+					item.Color = Color3.new(1, 1, 1)
+					item.Material = Enum.Material.SmoothPlastic
+				end
 			end
+			copy.Parent = frame
 		end
-		copy.Parent = frame
+		return frame
 	end
-	local life = seconds or 0.7
-	frame.ImageTransparency = 0.05
-	task.delay(life * 0.25, function()
-		local fade = Motion.tween(frame, { ImageTransparency = 1 }, life * 0.75)
+	local solid = layer(1 - power)
+	local swell = layer(1 - 0.6 * power)
+	model.Archivable = archivable
+	Motion.tween(swell, { Size = UDim2.fromScale(1.16, 1.16), ImageTransparency = 1 }, life * 0.8)
+	task.delay(life * 0.2, function()
+		local fade = Motion.tween(solid, { ImageTransparency = 1 }, life * 0.8)
 		if fade then
 			fade.Completed:Once(function()
 				gui:Destroy()

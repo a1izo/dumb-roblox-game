@@ -369,10 +369,13 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 		local entry = Assets.sfx[event.slot or ""]
 		local looped = event.loop == true
 			or (entry ~= nil and string.find(string.lower(entry.ref), "loop", 1, true) ~= nil)
-		local ok, sound = pcall(Sfx.play, event.slot, { looped = looped })
-		if ok and sound then
-			table.insert(showing.sounds, sound)
-		end
+		-- (`delay`: real seconds after its moment, so it can land inside a freeze, which stops the shot's clock)
+		task.delay(event.delay or 0, function()
+			local ok, sound = pcall(Sfx.play, event.slot, { looped = looped })
+			if ok and sound then
+				table.insert(showing.sounds, sound)
+			end
+		end)
 	elseif kind == "fx" then
 		local name = event.name
 		local at = if event.pos then base + Vector3.new(event.pos[1], event.pos[2], event.pos[3]) else nil
@@ -720,7 +723,17 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 
 	local events = shot.events or {}
 	local nextEvent = 1
-	local frozen: { t: number, ends: number, dur: number, grey: ColorCorrectionEffect }? = nil
+	local released: number? = nil -- when the last freeze let go (its lens eases back)
+	local frozen: {
+		t: number,
+		started: number,
+		ends: number,
+		dur: number,
+		grey: ColorCorrectionEffect,
+		edges: () -> (),
+		volumes: { [Sound]: number },
+	}? =
+		nil
 	local bindName = "ShotPlayer_" .. name .. "_" .. tostring(token)
 	RunService:BindToRenderStep(bindName, Enum.RenderPriority.Camera.Value + 1, function()
 		-- a freeze: the shot's clock and every actor's acting held where they are, the picture black and white,
@@ -729,16 +742,35 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		if asked and not frozen then
 			showing.freeze = nil
 			local at = math.clamp((os.clock() - startClock) * rate, 0, length)
+			-- hard black and white, the edges going dark, and every sound but the heart dropping away
 			local grey = Create("ColorCorrectionEffect", {
 				Name = "ShotFreeze",
 				Saturation = -1,
-				Contrast = 0.3,
+				Contrast = 0.55,
+				Brightness = -0.04,
 				Parent = workspace.CurrentCamera,
 			}) :: ColorCorrectionEffect
+			local edges = Cinema.vignette(Color3.new(0, 0, 0), 0.3)
 			table.insert(closers, function()
 				grey:Destroy()
+				edges()
 			end)
-			frozen = { t = at, ends = os.clock() + asked.dur, dur = asked.dur, grey = grey }
+			local volumes: { [Sound]: number } = {}
+			for _, playing in ipairs(showing.sounds) do
+				if playing.Parent and playing.IsPlaying then
+					volumes[playing] = playing.Volume
+					Motion.tween(playing, { Volume = playing.Volume * 0.1 }, 0.08)
+				end
+			end
+			frozen = {
+				t = at,
+				started = os.clock(),
+				ends = os.clock() + asked.dur,
+				dur = asked.dur,
+				grey = grey,
+				edges = edges,
+				volumes = volumes,
+			}
 			for _, live in ipairs(actors) do
 				if live.clip then
 					PoseController.play(
@@ -748,9 +780,11 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 					)
 				end
 			end
+			-- he flashes red on the heart's two beats (lub, dub), each throwing a swell of red out from him
 			local who = if asked.blink then bySlot[asked.blink] else nil
 			if who then
-				task.delay(0.12, Cinema.blink, who.model, Color3.fromRGB(255, 34, 40), math.min(0.9, asked.dur * 0.7))
+				task.delay(0.05, Cinema.blink, who.model, Color3.fromRGB(255, 30, 36), 0.75, 1)
+				task.delay(0.38, Cinema.blink, who.model, Color3.fromRGB(255, 30, 36), 0.6, 0.55)
 			end
 		end
 		local paused = frozen
@@ -766,8 +800,15 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 					)
 				end
 			end
-			Motion.tween(paused.grey, { Saturation = 0, Contrast = 0 }, 0.35)
+			Motion.tween(paused.grey, { Saturation = 0, Contrast = 0, Brightness = 0 }, 0.35)
+			paused.edges()
+			for playing, volume in pairs(paused.volumes) do
+				if playing.Parent then
+					Motion.tween(playing, { Volume = volume }, 0.3)
+				end
+			end
 			frozen = nil
+			released = os.clock()
 		end
 		local t = if frozen then frozen.t else (os.clock() - startClock) * rate
 		if t >= length then
@@ -829,6 +870,19 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 			end
 		end
 		local frameCamera = camFrames[i]:Lerp(camFrames[j], alpha)
+		if frozen then
+			-- the freeze's lens: it snaps in on him, tilts, and keeps creeping in while time stands still
+			local u = os.clock() - frozen.started
+			local snap = math.min(1, u / 0.07)
+			fov *= 1 - 0.16 * snap - 0.05 * math.min(1, u / frozen.dur)
+			frameCamera *= CFrame.Angles(0, 0, math.rad(5 * snap))
+		elseif released then
+			-- (and eases back out as the scene plays on)
+			local u = math.clamp((os.clock() - released) / 0.3, 0, 1)
+			local back = 1 - u * u * (3 - 2 * u)
+			fov *= 1 - 0.21 * back
+			frameCamera *= CFrame.Angles(0, 0, math.rad(5 * back))
+		end
 		CameraDirector.cut(token, frameCamera, fov)
 		-- the lens: sharp on the focus's head, the rest soft (and softer, the sharp part thinner, on a heartbeat)
 		local focus = showing.focus
