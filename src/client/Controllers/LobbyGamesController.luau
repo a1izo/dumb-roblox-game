@@ -24,6 +24,7 @@ local Parkour = require(Shared:WaitForChild("LobbyGames"):WaitForChild("Parkour"
 
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local ClientState = require(script.Parent.Parent.ClientState)
+local Curtain = require(script.Parent.Parent.UI.Curtain)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
@@ -441,6 +442,46 @@ local function onMark(p: any)
 	end
 end
 
+-- The fall into a chasm (or off the world's edge): the screen goes to black as the body drops away under the ash,
+-- the server sets it back on the terrace, and the screen comes back up there (the user's call of 2026-10-27: it had
+-- cut from the dark straight to the terrace). Never for a diver (the rift's own fall) or anywhere but the lobby.
+local PIT_DEPTH = 30 -- studs under the lobby's floor a falling body must be before the screen goes
+local PIT_OUT = 0.35 -- seconds to black
+local PIT_IN = 0.6 -- seconds back from it
+local PIT_GIVE_UP = 4 -- seconds black with no catch before the screen comes back anyway
+
+local pitDarkAt: number? = nil
+
+local function pitLift()
+	if pitDarkAt then
+		pitDarkAt = nil
+		Curtain.open(PIT_IN)
+	end
+end
+
+local function watchPit()
+	local character = Players.LocalPlayer.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	local lobby = workspace:FindFirstChild("LGameLobby")
+	local spawn = if lobby then lobby:FindFirstChild("LobbySpawn", true) else nil
+	if not character or not root or not root:IsA("BasePart") or not spawn or not spawn:IsA("BasePart") then
+		return
+	end
+	if pitDarkAt then
+		if os.clock() - pitDarkAt > PIT_GIVE_UP then
+			pitLift()
+		end
+		return
+	end
+	local falling = root.AssemblyLinearVelocity.Y < -12
+	local deep = root.Position.Y < spawn.Position.Y - PIT_DEPTH
+	local diving = character:GetAttribute("Dive") ~= nil
+	if deep and falling and not diving and not ClientState.isParticipant() then
+		pitDarkAt = os.clock()
+		Curtain.close(PIT_OUT)
+	end
+end
+
 local function onState(payload: any)
 	if type(payload) ~= "table" then
 		return
@@ -473,6 +514,8 @@ local function onState(payload: any)
 			part.AssemblyLinearVelocity = Vector3.zero
 			part.AssemblyAngularVelocity = Vector3.zero
 		end
+		-- (back on the terrace: the screen comes up from black, a moment later so the new place is drawn first)
+		task.delay(0.1, pitLift)
 	end
 end
 
@@ -611,6 +654,7 @@ function LobbyGamesController.init()
 		collectGlyph(object)
 	end
 	Net.event("LobbyGameState").OnClientEvent:Connect(onState)
+	RunService.Heartbeat:Connect(watchPit)
 	ClientState.PublicChanged:Connect(refresh)
 	ClientState.PrivateChanged:Connect(refresh)
 	ClientState.WatchChanged:Connect(refresh)

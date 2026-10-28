@@ -391,14 +391,27 @@ ALLEY_WALL = {26.0: -17.35, 32.0: -17.2, 40.0: -17.0, 53.0: -16.93, 60.0: -16.5,
               84.0: -15.05, 85.0: -14.99}
 
 
+def alley_ac(s, x, y=5.4):
+    """An outdoor unit on brackets high on the back alley's south wall, clear of heads, its grille and its pipe up the
+    wall (as decor.air_conditioner makes them on the other alleys)."""
+    z = ALLEY_WALL[x]
+    s.box("WhiteTrim", (x, y, z + 0.5), (2.2, 1.6, 0.9), 3)
+    s.box("DarkMetal", (x - 0.2, y, z + 0.96), (1.1, 1.1, 0.04), 3)
+    for side in (-0.8, 0.8):
+        s.box("BlackMetal", (x + side, y - 0.86, z + 0.5), (0.08, 0.12, 1.0), 3)
+    s.tube("CreamTrim", (x + 1.1, y + 0.2, z + 0.35), (x + 1.6, y + 0.2, z + 0.18), 0.09, 6)
+    s.tube("CreamTrim", (x + 1.6, y + 0.2, z + 0.18), (x + 1.6, y + 3.2, z + 0.18), 0.09, 6)
+
+
 def alleys(s):
     # The back alley behind the east street: AC units on the walls, bins, a lamp at each end. Everything
     # stands against the south wall's face (they were once placed for a wider alley and ended up inside
     # the buildings); the last lamp is on the corner before the gap at x 88, where there is no wall.
     for x in (26.0, 60.0, 85.0):
         wall_lamp(s, x, ALLEY_WALL[x] + 0.3, 180, 8.0)
+    # (2026-10-27: they were bare white boxes at head height, glowing in the lamps' light: the user's "white things")
     for x in (32.0, 40.0, 70.0, 78.0):
-        s.box("WhiteTrim", (x, 3.0, ALLEY_WALL[x] + 0.65), (2.4, 2.0, 1.2), 3)
+        alley_ac(s, x)
     s.prop("TrashCan", 53.0, ALLEY_WALL[53.0] + 0.76, 0)
     # (Smaller than the others: the alley is 6.3 wide here and keeps 4 clear.)
     s.prop("Crate", 84.0, ALLEY_WALL[84.0] + 1.15, 12, 0.5)

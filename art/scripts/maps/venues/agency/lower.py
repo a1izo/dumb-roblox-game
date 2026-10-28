@@ -113,9 +113,11 @@ def interviews(s):
     interview(s, -26.0, -8.0, (-19.5, -64.5))
     s.station("Phone", "Interview Recorder", -12.4, -71.4, 180, prop="StationPhoneDesk", spare=True)
     # The hall outside them, walled off from the bullpen with a doorway across from the bench (the bullpen lay open
-    # to it and to the corridor round the core, no wall at the corner between them, 2026-10-26); a bench, the water
-    # cooler, a plant in its corner by the copy room, the room plates.
+    # to it and to the corridor round the core, no wall at the corner between them, 2026-10-26), and from the
+    # corridor's end too, where a plant stood in the gap (the user's call of 2026-10-27: a solid wall); a bench, the
+    # water cooler, a plant in its corner by the copy room, the room plates.
     fit.partition(s, (-44.0, -48.0), (-16.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(14.0, 5.0)])
+    fit.partition(s, (-16.0, -48.0), (-8.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey")
     s.prop("Bench", -30.0, -56.6, 180)
     s.prop("WaterCooler", -41.8, -56.9, 180)
     s.prop("Plant", -9.7, -56.2, 0)

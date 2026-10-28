@@ -266,9 +266,9 @@ local function chipFor(profile, item: Cosmetics.Item): (string, string, { text: 
 	local full = ShopRotation.fullPrice(item, os.time())
 	if now and full and now < full then
 		-- (cheaper today: the old price struck through beside the new)
-		return string.format('<font transparency="0.5"><s>%d</s></font>  %d', full, now), "coin"
+		return string.format('<font transparency="0.5"><s>%d</s></font>  %d', full, now), "real"
 	end
-	return tostring(now), "coin"
+	return tostring(now), "real"
 end
 
 -- How many emotes the profile owns.
@@ -464,7 +464,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 		end
 		Kit.button({
 			text = string.format(if confirming == item.id then "Confirm  ·  %d" else "Buy  ·  %d", cost),
-			icon = "coin",
+			icon = "real",
 			variant = "primary",
 			size = "m",
 			Size = size,
@@ -649,7 +649,7 @@ local function buildFate(profile)
 		local button = Kit.button({
 			Name = "Draw",
 			text = string.format("Draw  ·  %d", Fate.PRICE),
-			icon = "coin",
+			icon = "real",
 			variant = "primary",
 			size = "m",
 			Size = size,
@@ -1382,7 +1382,7 @@ function ShopPanel.init()
 		Parent = body,
 	})
 	Kit.list(purse, T.space.s, true, Enum.HorizontalAlignment.Right)
-	Kit.icon({ name = "coin", size = 24, color = C.candle, LayoutOrder = 1, Parent = purse })
+	Kit.icon({ name = "real", size = 24, color = C.candle, LayoutOrder = 1, Parent = purse })
 	purseLabel = Kit.label({
 		font = "bodyBold",
 		size = "lead",
@@ -1394,7 +1394,7 @@ function ShopPanel.init()
 		Parent = purse,
 	})
 	Kit.label({
-		Text = "COINS",
+		Text = "RÉAL",
 		font = "label",
 		size = "micro",
 		color = C.dim,

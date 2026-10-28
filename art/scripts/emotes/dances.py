@@ -171,62 +171,53 @@ goal.follow("neck", 2.6, 0.7)
 goal.build()
 
 # Boat Aura (clip boatAura, item emote_boat_aura) -----------------------------------------------------------
-# "Aura farming": the boy on the bow of a Pacu Jalur racing boat (Riau, 2025), dancing calm and deadpan while the
-# boat surges (refs: boatAura.toml). The moves and their order from a front-on tutorial of it, keyed (its frames
-# are too small to track well): the right hand held out, the left sweeping round under it; the fists rolling over
-# each other, carried side to side; the right arm swung down and back like a paddle; flung up and out at the sky;
-# a kiss blown off the fingers; both arms out, the left bent across. All the while the feet stay set wide on the
-# bow and the body rides it: rocking side to side, the knees giving on every beat. 16 beats at 150 bpm.
-B = beats(150)
-boat = Motion("boatAura", 16 * B, loop=True, note="Aura farming on a racing boat's bow: the sweep, the rolling fists, "
-              "the paddle, the sky, the kiss, arms out, riding the swell.")
+# The first version, back (the user's call of 2026-10-27, over the tutorial-keyed one of 2026-10-20; as made in
+# be1ee4b, art/scripts/anims_emotes.py): aura farming, the feet set wide as if on a racing boat's bow, rocking with
+# it, the face deadpan; a hand held out with the other sweeping under it, both fists rolling like a wheel, one arm
+# forward and one back, a kiss blown each way, a point at the sky. 16 beats of 0.4 s (150 bpm).
+boat = Motion("boatAura", 6.4, loop=True, note="Calm and deadpan on a boat's bow: the sweep, the rolling fists, the "
+              "kisses, the point to the sky.")
 
 
-def _ride(t):
-    """The bow under him: a slow rock side to side over 8 beats, the knees giving on each beat."""
-    phase = 2 * math.pi * t / (8 * B)
-    beat = 0.5 + 0.5 * math.cos(2 * math.pi * t / B)
-    return (0.05 * math.sin(phase), -0.08 - 0.05 * (1 - beat), 0.0), 3.5 * math.sin(phase)
+def _rock(t):
+    """The bow under him: a slow roll side to side, once every 8 beats."""
+    return 3.0 * math.sin(2 * math.pi * t / 3.2)
 
 
-HELD = reach(1, (0.55, 0.2, -1.6), direction=(-0.1, 0.3, -1.0))  # the right hand held out, palm up
-for i in range(4):  # the sweep: the left hand round under the held one, out and back
-    t = i * B
-    under = i % 2 == 0
-    left = reach(-1, (0.45, -0.1, -1.4) if under else (-0.25, 0.05, -1.3),
-                 direction=(0.7, 0.05, -0.7) if under else (0.2, 0.3, -0.9))
-    boat.key(round(t, 4), "smooth", neck=(-3, 6, 0), rShoulder=HELD, lShoulder=left)
-for i in range(4):  # the fists rolling over each other, carried left, right, right, left
-    t = (4 + i) * B
-    side = (-1, 1, 1, -1)[i] * 0.3
-    over = 1 if i % 2 == 0 else -1
-    boat.key(round(t, 4), "smooth", neck=(-2, -10 * side, 0),
-             rShoulder=reach(1, (0.25 + side, 0.15 + 0.18 * over, -1.25), direction=(-0.6, 0.3, -0.75)),
-             lShoulder=reach(-1, (-0.25 + side, 0.15 - 0.18 * over, -1.25), direction=(0.6, 0.3, -0.75)))
-# the paddle: the right arm swung down and back, the body turning with it
-boat.key(round(8 * B, 4), "out", neck=(-2, 8, 0), rShoulder=J((-42, 0, 10), (0, 0.05, 0)), lShoulder=J((26, 0, -10)))
-boat.key(round(9 * B, 4), "smooth", neck=(-2, 4, 0), rShoulder=J((30, 0, 6)), lShoulder=J((-20, 0, -8)))
-boat.key(round(9.5 * B, 4), "out", neck=(0, 6, 0), rShoulder=J((-38, 0, 10), (0, 0.05, 0)), lShoulder=J((22, 0, -10)))
-# flung up and out at the sky, the eyes following it
-boat.key(round(10.5 * B, 4), "out", neck=(16, -10, 0), rShoulder=J((168, 0, 24), (0, 0.18, 0)), lShoulder=J((8, 0, -10)))
-boat.key(round(11.5 * B, 4), "smooth", neck=(18, -12, 0), rShoulder=J((170, 0, 26), (0, 0.18, 0)),
-         lShoulder=J((8, 0, -10)))
-# the kiss: the fingers to the lips, thrown out
-boat.key(round(12.25 * B, 4), "in", neck=(2, 0, 0), rShoulder=reach(1, (0.15, 0.95, -0.85), direction=(-0.5, 0.6, -0.6)),
-         lShoulder=J((8, 0, -10)))
-boat.key(round(12.9 * B, 4), "out", neck=(4, -18, 0), rShoulder=J((96, 0, 58), (0, 0.08, -0.04)), lShoulder=J((8, 0, -10)))
-# both arms out, the left bent across the chest, riding it
-ARMS_OUT = {"rShoulder": J((14, 0, 84), (0, 0.06, 0)),
-            "lShoulder": reach(-1, (0.25, 0.45, -0.75), direction=(1.0, 0.0, -0.25))}
-boat.key(round(13.75 * B, 4), "smooth", neck=(0, -8, 0), **ARMS_OUT)
-boat.key(round(15 * B, 4), "smooth", neck=(-2, -6, 0), **ARMS_OUT)
-# (beat 16 = beat 0: back to the held hand)
-for k in range(64):  # the ride: every quarter beat
-    t = k * B / 4
-    offset, roll = _ride(t)
-    boat.key(round(t, 4), "smooth", offset=offset, root=(-2, 0, roll))
-boat.follow(("rShoulder", "lShoulder"), 2.8, 0.66)
-boat.follow("neck", 2.0, 0.75)
+_BOAT_LOW = (0, -0.06, 0)
+_FORWARD = J((80, 0, -6), (-0.08, 0.06, -0.12))
+for t, under in ((0.0, 0), (0.4, 1), (0.8, 0), (1.2, 1)):  # the sweep under the held hand
+    boat.key(t, offset=_BOAT_LOW, root=(0, 0, _rock(t)), neck=(-2, 0, 0), rShoulder=_FORWARD,
+             lShoulder=J((46 + 18 * under, 0, -24 + 54 * under), (0.12 * under, 0.04, -0.14)))
+for i in range(4):  # the fists rolling over each other, carried left to right and back
+    t = 1.6 + 0.4 * i
+    side = (-1, 1, 1, -1)[i]
+    roll = 1 if i % 2 == 0 else -1
+    boat.key(t, offset=_BOAT_LOW, root=(0, 6 * side, _rock(t)), neck=(-2, 4 * side, 0),
+             rShoulder=J((74 + 10 * roll, 0, -16 + 22 * side), (-0.12, 0.05, -0.16)),
+             lShoulder=J((74 - 10 * roll, 0, 16 + 22 * side), (0.12, 0.05, -0.16)))
+# one arm forward and one back
+boat.key(3.2, "out", offset=_BOAT_LOW, root=(0, -8, _rock(3.2)), neck=(0, -6, 0),
+         rShoulder=J((92, 0, 2), (0, 0.06, -0.1)), lShoulder=J((-34, 0, -12)))
+boat.key(3.8, offset=_BOAT_LOW, root=(0, -8, _rock(3.8)), neck=(0, -6, 0),
+         rShoulder=J((92, 0, 2), (0, 0.06, -0.1)), lShoulder=J((-34, 0, -12)))
+# a kiss blown each way: the fingers to the lips, then thrown out
+boat.key(4.1, offset=_BOAT_LOW, root=(0, 0, _rock(4.1)), neck=(2, 0, 0),
+         rShoulder=J((118, 0, -30), (-0.28, 0.18, -0.22)), lShoulder=J((10, 0, -8)))
+boat.key(4.35, "out", offset=_BOAT_LOW, root=(0, -10, _rock(4.35)), neck=(0, -14, 0),
+         rShoulder=J((96, 0, 52), (0, 0.08, -0.06)), lShoulder=J((10, 0, -8)))
+boat.key(4.6, offset=_BOAT_LOW, root=(0, 0, _rock(4.6)), neck=(2, 0, 0),
+         rShoulder=J((20, 0, 8)), lShoulder=J((118, 0, 30), (0.28, 0.18, -0.22)))
+boat.key(4.85, "out", offset=_BOAT_LOW, root=(0, 10, _rock(4.85)), neck=(0, 14, 0),
+         rShoulder=J((20, 0, 8)), lShoulder=J((96, 0, -52), (0, 0.08, -0.06)))
+# the point at the sky, the eyes up with it
+boat.key(5.3, "out", offset=(0, -0.04, 0), root=(3, 0, _rock(5.3)), neck=(14, 0, 0),
+         rShoulder=J((166, 0, 8), (0, 0.24, 0)), lShoulder=J((12, 0, -8)))
+boat.key(5.9, offset=(0, -0.04, 0), root=(3, 0, _rock(5.9)), neck=(14, 0, 0),
+         rShoulder=J((165, 0, 8), (0, 0.23, 0)), lShoulder=J((12, 0, -8)))
+# (the head and the arms trail the body a little, as every emote of then did)
+boat.follow("neck", 2.0, 0.72)
+boat.follow(("rShoulder", "lShoulder"), 2.6, 0.62)
 boat.plant(stance=0.32)
 boat.build()
 

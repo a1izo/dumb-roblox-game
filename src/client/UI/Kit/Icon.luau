@@ -1,12 +1,14 @@
 --!strict
 -- A hand-inked icon from the UiIcons atlas (art/scripts/ui/textures.py draws them; names are
--- in Shared/UI/Icons). Until the atlas loads, a small letter in a ring stands in.
+-- in Shared/UI/Icons), or one of the few with a picture of their own (PICTURES). Until the atlas loads, a small
+-- letter in a ring stands in.
 --
 --   Icon.new({ name = "vote", size = 28, color = Tokens.color.bone, Parent = row })
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Assets = require(Shared:WaitForChild("Assets"))
 local Icons = require(Shared:WaitForChild("UI"):WaitForChild("Icons"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 
@@ -23,6 +25,12 @@ type Props = { [string]: any }
 local SINCE_CORE_6 = { cards = "dice", fedora = "hood", palm = "hand", set = "seal" }
 local CORE_KIND = "ModelsCore"
 
+-- Icons drawn from a picture of their own (Shared/Assets images), with the atlas icon shown until it is uploaded:
+-- "real", the Reál's mark (the user's, 2026-10-28: four loops; art/export/textures/RealIcon.png).
+local PICTURES: { [string]: { image: string, before: string } } = {
+	real = { image = "RealIcon", before = "coin" },
+}
+
 local function drawn(name: any): any
 	local older = if type(name) == "string" then SINCE_CORE_6[name] else nil
 	if older and ModelLibrary.version(CORE_KIND) < 6 then
@@ -33,7 +41,7 @@ end
 
 -- True when the atlas has an icon with this name.
 function Icon.exists(name: string): boolean
-	return (Icons :: any).cells[name] ~= nil
+	return (Icons :: any).cells[name] ~= nil or PICTURES[name] ~= nil
 end
 
 -- Props: name, size (px, default 24), color, transparency, plus frame properties.
@@ -73,6 +81,21 @@ end
 -- Redraws an icon made by Icon.new (after its name changed or the atlas arrived).
 function Icon.refresh(image: ImageLabel)
 	local name = drawn(image:GetAttribute("IconName"))
+	local picture = if type(name) == "string" then PICTURES[name] else nil
+	if picture then
+		local own = (Assets.images :: any)[picture.image]
+		if type(own) == "string" and own ~= "" then
+			image.Image = Assets.contentId(own)
+			image.ImageRectOffset = Vector2.zero
+			image.ImageRectSize = Vector2.zero
+			local stale = image:FindFirstChild("Fallback")
+			if stale then
+				stale:Destroy()
+			end
+			return
+		end
+		name = picture.before
+	end
 	local cell = if type(name) == "string" then (Icons :: any).cells[name] else nil
 	local id = Textures.id((Icons :: any).atlas)
 	local fallback = image:FindFirstChild("Fallback")

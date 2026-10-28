@@ -20,7 +20,7 @@ local Looks = require(script.Parent.Looks)
 
 local Crowd = {}
 
-Crowd.WALKERS = 35 -- walking; the map's posts add those who stand
+Crowd.WALKERS = 50 -- walking (over the whole district since 2026-10-27, so more of them); the map's posts add those who stand
 Crowd.DRAWN_BEHIND = 0.3 -- seconds late the clients draw the crowd (they glide between snapshots)
 Crowd.LEVEL = 4 -- studs above or below a walker's feet a player's still count as beside it
 

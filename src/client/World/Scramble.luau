@@ -5,7 +5,8 @@
 --   takes its colour. The walk lamps blink before the cars go, and the crossing only chirps on WALK.
 --   The cars come from the server's snapshots (MapSync, with the crowd's walkers): each glides
 --   between snapshots BEHIND seconds late, honks when the server says so, and touches nobody (the
---   server stops it short of anyone in its lane).
+--   server stops it short of anyone in its lane). It is solid to this player all the same: an invisible body box
+--   inside it stops you walking into a car that waits at the lights (2026-10-27: you could stand inside one).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -222,6 +223,20 @@ local function carModel(kind: number): (Model, { BasePart })
 			table.insert(parts, item)
 		end
 	end
+	-- (its body, solid: made on this client, so it only stops this player's own body, which this client moves)
+	local frame, size = built:GetBoundingBox()
+	Create("Part", {
+		Name = "CarBody",
+		Size = Vector3.new(math.max(1, size.X - 0.3), math.max(1, size.Y * 0.8), math.max(1, size.Z - 0.3)),
+		CFrame = frame * CFrame.new(0, -size.Y * 0.1, 0),
+		Transparency = 1,
+		Anchored = true,
+		CanCollide = true,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Parent = built,
+	})
 	return built, parts
 end
 

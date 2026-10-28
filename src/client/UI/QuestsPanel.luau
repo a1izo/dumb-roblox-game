@@ -148,7 +148,7 @@ local function rebuild()
 	})
 	local claim = Kit.button({
 		text = if claimable then "Claim" else "Claimed",
-		icon = if claimable then "coin" else "check",
+		icon = if claimable then "real" else "check",
 		variant = if claimable then "primary" else "secondary",
 		size = "s",
 		AnchorPoint = Vector2.new(1, 0.5),
@@ -258,7 +258,7 @@ local function buildPopup()
 	local row = Kit.frame({ Name = "Actions", Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 3, Parent = content })
 	Kit.list(row, T.space.s, true)
 	Kit.button(
-		{ text = "Claim", icon = "coin", variant = "primary", size = "s", LayoutOrder = 1, Parent = row },
+		{ text = "Claim", icon = "real", variant = "primary", size = "s", LayoutOrder = 1, Parent = row },
 		function()
 			ProfileRequest:FireServer({ action = "streak" })
 			popup.Visible = false

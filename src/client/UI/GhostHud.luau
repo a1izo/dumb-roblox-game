@@ -178,7 +178,7 @@ function GhostHud.init()
 	-- Death's wager (UI/WagerPanel).
 	wagerButton = Kit.button({
 		text = "Wager",
-		icon = "coin",
+		icon = "real",
 		variant = "secondary",
 		size = "s",
 		Visible = false,

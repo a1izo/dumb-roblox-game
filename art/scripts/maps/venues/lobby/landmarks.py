@@ -13,7 +13,7 @@ import random
 from maps import city, scratches
 from maps import geo2d as g2
 from maps.city import Frame
-from maps.mesher import cross, dot, sub
+from maps.mesher import add, cross, dot, norm, scale, sub
 from maps.venues.lobby import plan as P
 from maps.venues.lobby.terrain import blade, boulder, column, needle_field, rock
 
@@ -87,26 +87,132 @@ def plaza(s, g):
 # The monolith and the throne -------------------------------------------------------------------------
 
 
+# (the black stone the lobby already loads, the title panel's: a new texture would put the lobby over its budget)
+STONE = "BlackTrim"
+
+
+def _tri(s, mat, a, b, c, inside):
+    """One triangle of a solid, wound to face away from `inside`."""
+    n = cross(sub(b, a), sub(c, a))
+    mid = scale(add(add(a, b), c), 1 / 3)
+    if dot(n, sub(mid, inside)) < 0:
+        b, c = c, b
+    s.polygon(mat, [a, b, c])
+
+
+def _crack(s, rng, start, steps, step, face_z, stop=None):
+    """A crack down the face from `start` (x, y), jagged, a faint red light in it (each piece a thin strip just
+    proud of the face); it ends after `steps` pieces, at the face's foot, or where `stop(x, y)` says."""
+    x, y = start
+    heading = -math.pi / 2 + rng.uniform(-0.5, 0.5)
+    for _ in range(steps):
+        heading = max(-math.pi + 0.35, min(-0.35, heading + rng.uniform(-0.7, 0.7)))
+        length = rng.uniform(0.8, 2.2)
+        nx, ny = x + math.cos(heading) * length, y + math.sin(heading) * length
+        if ny < 1.4 or (stop and stop(nx, ny)):
+            break
+        ux = ((nx - x) / length, (ny - y) / length, 0.0)
+        s.obox("NeonRed", ((x + nx) / 2, (y + ny) / 2, face_z + 0.012), (length + 0.05, 0.045, 0.03), ux,
+               (-ux[1], ux[0], 0.0), (0.0, 0.0, 1.0), skip=("-z", "+x", "-x", "+y", "-y"))
+        # (now and then it forks: a short branch off to one side)
+        if rng.random() < 0.18:
+            _crack(s, rng, (nx, ny), rng.randint(2, 4), step, face_z, stop)
+        x, y = nx, ny
+
+
+def _chain(s, a, b, sag, link=0.9):
+    """A heavy iron chain hung from a to b (points on the face), sagging `sag` studs at its middle: links laid
+    along the curve, each turned a quarter round from the one before; an iron bolt and ring at each end."""
+    span = math.dist(a, b)
+    count = max(4, int(span / (link * 0.78)))
+    pts = []
+    for k in range(count + 1):
+        u = k / count
+        pts.append((a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u - sag * 4 * u * (1 - u), a[2] + (b[2] - a[2]) * u))
+    for k in range(count):
+        p, q = pts[k], pts[k + 1]
+        along = norm(sub(q, p))
+        out = (0.0, 0.0, 1.0)
+        side = norm(cross(out, along))
+        up, flat = (side, out) if k % 2 == 0 else (out, side)
+        mid = scale(add(p, q), 0.5)
+        s.obox("BlackMetal", add(mid, (0.0, 0.0, 0.25)), (link, 0.42, 0.14), along, up, flat, skip=("-z",))
+    for end in (a, b):
+        s.box("BlackMetal", (end[0], end[1], end[2] + 0.15), (0.7, 0.7, 0.3))
+        s.box("DarkMetal", (end[0], end[1] - 0.2, end[2] + 0.35), (0.5, 0.2, 0.2))
+
+
 def monolith(s):
+    """The title monolith (the user's call of 2026-10-27: tall, cracked and black; no eyes, no tusks). A black stone
+    face with the title's dark panel in its carved frame, its shoulders broken, rising into a tapering spire snapped
+    off near the top; faint red light in the cracks that run down it, heavy chains hung across its face from iron
+    bolts, candles along its foot. (The title's letters are pinned paper, on the panel: World/TitleCards.)"""
     x, z, w, t, h = P.MONO
     rng = random.Random(61)
+    face = z + t / 2
+    # The plinth, two steps.
     s.box("RuinStone", (x, 0.4, z), (w + 6.0, 0.8, t + 5.0), collide=True)
-    body = h - 9.0
-    s.box("RuinStone", (x, 0.8 + body / 2, z), (w, body, t), skip=("-y",))
-    # The broken top: blocks of different heights, the corners snapped off (their faces only ever
-    # set back, never in front of the carved frame).
+    s.box("RuinStone", (x, 1.0, z), (w + 2.0, 0.4, t + 2.0), skip=("-y",))
+    body = h - 6.0
+    s.box(STONE, (x, 1.2 + (body - 1.2) / 2, z), (w, body - 1.2, t), skip=("-y",))
+    # The shoulders: the face's top in blocks of different heights, its corners snapped off.
     cols = 9
     for k in range(cols):
         cw = w / cols
         cx = x - w / 2 + cw * (k + 0.5)
-        edge_drop = 5.0 if k in (0, cols - 1) else 2.5 if k in (1, cols - 2) else 0.0
-        top = h - edge_drop - rng.uniform(0, 2.2)
+        drop = 5.0 if k in (0, cols - 1) else 2.5 if k in (1, cols - 2) else 0.0
+        top = h - drop - rng.uniform(0, 1.6)
         back = rng.uniform(0, 0.3)
-        s.box("RuinStone", (cx, (body + 0.8 + top) / 2, z - back),
-              (cw + 0.02, top - body - 0.8 + 0.02, t - 2 * back - rng.uniform(0, 0.8)), skip=("-y",))
+        s.box(STONE, (cx, (body + top) / 2, z - back), (cw + 0.02, top - body + 0.02, t - 2 * back - rng.uniform(0, 0.6)),
+              skip=("-y",))
     s.collider((x, h / 2, z), (w, h, t), 0.0, True, None)
-    # A carved frame round the title and the tagline (the game writes them on a dark panel), raised over the
-    # throne that stands in front.
+    # The spire: a smooth taper in three sections, each knocked a little askew where it cracked through, rising out
+    # of the shoulders (sunk into them, so no sky shows between) to a point snapped off across.
+    sections = [  # bottom (width, thickness), top (width, thickness), height, sideways shift, turn (degrees)
+        ((32.0, 5.6), (25.0, 4.8), 18.0, 0.0, 0.0),
+        ((24.6, 4.7), (18.0, 4.0), 11.0, 0.45, 1.6),
+        ((17.6, 3.9), (12.0, 3.2), 9.0, -0.3, -2.2),
+    ]
+    y = body
+    top_rim = None
+    for (bw, bt), (tw, tt), sh, shift, turn in sections:
+        a = math.radians(turn)
+        ca, sa = math.cos(a), math.sin(a)
+
+        def corner(hw, ht, yy, cx=x + shift, ca=ca, sa=sa):
+            return [(cx + px * ca - pz * sa, yy, z + px * sa + pz * ca) for px, pz in
+                    ((-hw, -ht), (hw, -ht), (hw, ht), (-hw, ht))]
+
+        low, high = corner(bw / 2, bt / 2, y), corner(tw / 2, tt / 2, y + sh)
+        inside = (x + shift, y + sh / 2, z)
+        for k in range(4):
+            q0, q1 = low[k], low[(k + 1) % 4]
+            r0, r1 = high[k], high[(k + 1) % 4]
+            _tri(s, STONE, q0, q1, r1, inside)
+            _tri(s, STONE, q0, r1, r0, inside)
+        top_rim = high
+        y += sh + 0.25
+    rim = top_rim
+    y = rim[0][1]
+    stump = [(x - 2.0, y + 5.4, z - 0.9), (x + 1.4, y + 4.3, z - 0.9), (x + 1.4, y + 4.3, z + 0.9), (x - 2.0, y + 5.4, z + 0.9)]
+    inside = (x, y + 2.0, z)
+    for k in range(4):
+        a, b, c, d = rim[k], rim[(k + 1) % 4], stump[(k + 1) % 4], stump[k]
+        _tri(s, STONE, a, b, c, inside)
+        _tri(s, STONE, a, c, d, inside)
+    _tri(s, STONE, stump[0], stump[1], stump[2], inside)
+    _tri(s, STONE, stump[0], stump[2], stump[3], inside)
+    # (the two cracks between the sections glow faintly along the front)
+    for seam_y, seam_w in ((body + 18.0 + 0.12, 24.8), (body + 18.0 + 0.25 + 11.0 + 0.12, 17.8)):
+        sx = x - seam_w / 2
+        while sx < x + seam_w / 2 - 0.5:
+            length = rng.uniform(0.9, 2.0)
+            dy = rng.uniform(-0.12, 0.12)
+            front = z + 2.45 if seam_w > 20 else z + 2.05
+            s.obox("NeonRed", (sx + length / 2, seam_y + dy, front), (length, 0.045, 0.04), (1.0, 0.0, 0.0),
+                   (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), skip=("-z", "+x", "-x", "+y", "-y"))
+            sx += length + rng.uniform(0.0, 0.8)
+    # The carved frame round the title and the tagline (the game writes them on the dark panel), bone at its corners.
     fz = P.MONO_FACE + 0.3
     py, ph = P.PANEL
     for fx in (-23.4, 23.4):
@@ -115,24 +221,24 @@ def monolith(s):
     for fy in (py - ph / 2 - 0.45, py + ph / 2 + 0.45):
         s.box("RuinStone", (x, fy, fz), (48.0, 0.9, 0.6))
     s.box("BlackTrim", (x, py, P.MONO_FACE + 0.05), (46.0, ph, 0.1))
-    # Great tusks either side, curving up and in.
-    for side in (-1, 1):
-        base = (x + side * 33.0, -0.5, z + 3.0)
-        prev = base
-        for q in range(1, 9):
-            u = q / 8
-            p = (x + side * (33.0 + 4.0 * math.sin(u * math.pi) - 9.0 * u * u), 30.0 * u, z + 3.0 + 6.0 * u)
-            r0 = 2.4 * (1 - (q - 1) / 8 * 0.8)
-            r1 = 2.4 * (1 - u * 0.8) if q < 8 else 0.08
-            s.tube("BoneWhite", prev, p, r0, 9, caps=True, radius_b=r1)
-            prev = p
-        s.collider((base[0] + side * 0.6, 4.0, base[2] + 0.5), (5.0, 8.0, 5.0), 0.0, True, "BoneWhite")
+    # The cracks: down from the broken shoulders past the frame, up the spire, and out from under the panel.
+    panel_lo, panel_hi = py - ph / 2 - 1.2, py + ph / 2 + 1.2
+
+    def off_panel(cx, cy):
+        return abs(cx - x) < 24.6 and panel_lo < cy < panel_hi
+
+    for sx, sy, steps in ((x - 22.0, h - 5.5, 14), (x + 17.0, h - 2.0, 16), (x - 6.0, h - 0.5, 6), (x + 25.0, h - 6.0, 18),
+                          (x - 25.2, 12.0, 8), (x + 9.0, panel_lo - 0.2, 7), (x - 12.0, panel_lo - 0.2, 6)):
+        _crack(s, rng, (sx, sy), steps, 1.6, face, off_panel)
+    # Chains hung across the face below the panel, from iron bolts.
+    cy = panel_lo - 1.0
+    _chain(s, (x - 25.0, cy, face), (x - 7.0, cy - 0.6, face), 3.2)
+    _chain(s, (x + 7.0, cy - 0.6, face), (x + 25.0, cy, face), 3.2)
     for side in (-1, 1):
         s.prop("BoneBrazier", x + side * 21.0, P.MONO_FACE + 5.5, side * 30.0)
-    # Under the panel, either side of where the throne stands: two carved eyes, and names scratched over the face.
-    f = Frame(x, z, 180.0)
-    for ex, ey in P.MONO_EYES:
-        carved_eye(s, f, -ex, ey, -t / 2, 5.0, 2.1)
+    # Candles burning along its foot, on the plinth's step.
+    for k, cx in enumerate((-26.5, -17.5, -10.0, 10.0, 17.5, 26.5)):
+        s.prop("CandleCluster", x + cx, face + 1.6, rng.uniform(0, 360), 0.9 if k % 2 else 1.0, 0.8)
     scratches.overlay(s, (x - w / 2 + 0.6, P.MONO_FACE), (x + w / 2 - 0.6, P.MONO_FACE), 1.2, 13.8, (0.0, 1.0))
     s.anchor("title", *P.TITLE[:3], P.TITLE[3], w=P.TITLE[4], h=P.TITLE[5])
     s.anchor("tagline", *P.TAGLINE[:3], P.TAGLINE[3], w=P.TAGLINE[4], h=P.TAGLINE[5])

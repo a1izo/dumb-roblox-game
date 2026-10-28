@@ -154,6 +154,7 @@ return {
 	twoFingerGrip = { part = 9, length = 3, loop = true },
 	twoLeggedBop = { part = 9, length = 2.4, loop = true },
 	twoWeeksNotice = { part = 9, length = 3.2, loop = false },
+	umbrellaHold = { part = 9, length = 2, loop = true },
 	walk = { part = 9, length = 1.05, loop = true },
 	walkBack = { part = 9, length = 1.05, loop = true },
 	walkLeft = { part = 10, length = 1.05, loop = true },

@@ -280,7 +280,7 @@ function CaseFeed.init()
 	Kit.list(tickerList, T.space.xxs)
 	Kit.button({
 		text = "Death's wager",
-		icon = "coin",
+		icon = "real",
 		variant = "secondary",
 		size = "s",
 		Size = UDim2.new(1, 0, 0, 48),

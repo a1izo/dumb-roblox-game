@@ -430,7 +430,6 @@ return {
 		{ "Sideboard", 58.4, 14, 46, -90, 1 },
 		{ "Bench", 48.85, 14, -18, 90, 0.9 },
 		{ "WaterCooler", -15, 14, -24, -90, 1 },
-		{ "Plant", -14.4, 14, -46.4, 0, 1 },
 	},
 	lights = {
 		{ kind = "point", at = { 42.8, 9.6, -10 }, color = { 120, 255, 160 }, range = 8, brightness = 0.4, shadows = false, face = "Front", angle = 90, flicker = false, rot = -90 },
@@ -575,7 +574,7 @@ return {
 		{ kind = "point", at = { 46, 12.2, -14 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },
 		{ kind = "point", at = { -58, 12.2, -20 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },
 		{ kind = "point", at = { -58, 12.2, 30 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },
-		{ kind = "point", at = { 17, 12.2, 20 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },
+		{ kind = "point", at = { 17, 12.2, 0 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },
 		{ kind = "point", at = { 60, 12.2, 40 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },
 		{ kind = "point", at = { 25, 12.2, 60 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },
 		{ kind = "point", at = { -12, 26.2, -44 }, color = { 255, 40, 40 }, range = 26, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false, role = "emergency" },

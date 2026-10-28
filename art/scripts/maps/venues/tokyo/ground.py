@@ -52,17 +52,25 @@ def base(s, g):
         city.floor(s, piece, 0.0, 2.0, look="Concrete")
 
 
-def zebra_band(s, a, b, width, y=0.0, stripe=1.0, gap=1.0, mat="WhiteTrim"):
+def zebra_band(s, a, b, width, y=0.0, stripe=1.0, gap=1.0, mat="WhiteTrim", clear=None):
     """Zebra stripes on the walking line a -> b: each stripe runs across the band (width wide) and
-    they follow one another along the line."""
+    they follow one another along the line. clear: another band (its line's ends and its width) this one
+    leaves bare where they cross, so no stripe lies over its stripes."""
     length = math.dist(a, b)
     d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
-    rot = g2.rot_of(g2.normal_left(d))
+    n = g2.normal_left(d)
+    rot = g2.rot_of(n)
     count = int((length + gap) / (stripe + gap))
     start = (length - (count * (stripe + gap) - gap)) / 2
     for k in range(count):
         u = start + k * (stripe + gap) + stripe / 2
         c = (a[0] + d[0] * u, a[1] + d[1] * u)
+        if clear is not None:
+            (ca, cb), cw = clear
+            corners = [(c[0] + n[0] * w + d[0] * t, c[1] + n[1] * w + d[1] * t)
+                       for w in (-width / 2, 0.0, width / 2) for t in (-stripe / 2, stripe / 2)]
+            if any(g2.dist_point_segment(q, ca, cb) < cw / 2 + 0.25 for q in corners):
+                continue
         s.box(mat, (c[0], y + 0.06, c[1]), (width, 0.12, stripe), rot, skip=("-y",))
 
 
@@ -81,8 +89,11 @@ def scramble(s, g):
         b = (stop[0] - n[0] * (ap["width"] / 2 - 0.4), stop[1] - n[1] * (ap["width"] / 2 - 0.4))
         mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
         s.box("WhiteTrim", (mid[0], 0.06, mid[1]), (math.dist(a, b), 0.12, 0.8), g2.rot_of(n), skip=("-y",))
-    for a, b in P.DIAGONALS:
-        zebra_band(s, a, b, 6.0)
+    # The two diagonals cross in the middle: the first runs through, the second is left bare where it crosses it
+    # (2026-10-27: both laid their stripes there, a grid of them fighting on one plane).
+    (a1, b1), (a2, b2) = P.DIAGONALS
+    zebra_band(s, a1, b1, 6.0)
+    zebra_band(s, a2, b2, 6.0, clear=((a1, b1), 6.0))
 
 
 def outside_scramble(name, reach=33.0):

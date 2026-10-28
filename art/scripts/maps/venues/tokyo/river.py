@@ -13,6 +13,10 @@ NORTH_WALL = P.CHANNEL[1]  # offsets from the centre line, north positive
 SOUTH_WALL = P.CHANNEL[0]
 DECK = 1.4  # bridge deck thickness
 BLOCK_TOP = 14.0  # how high the invisible wall over a railing reaches
+# The road bridge's parapets, their centre lines (road_bridge fills it): a bank's railing runs on into the nearest one.
+# (2026-10-27: each stopped 0.65 to 1.8 studs short of the parapet, a slot at the corner a body slipped through into
+# the water; the user fell in there.)
+_PARAPETS = []
 
 
 def band(a, b, points=None):
@@ -197,6 +201,7 @@ def road_bridge(s):
             out = _outward(st["points"], ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), side)
             city.vquad(s, "Concrete", a, b, -DECK, 0.0, out)
             parapet(s, a, b, out)
+            _PARAPETS.append(((a[0] - out[0] * 0.4, a[1] - out[1] * 0.4), (b[0] - out[0] * 0.4, b[1] - out[1] * 0.4)))
     gaps = {NORTH_WALL: [], SOUTH_WALL: []}
     for off in (NORTH_WALL, SOUTH_WALL):
         for h in g2.polyline_hits(st["points"], P.river_line(off)):
@@ -292,6 +297,20 @@ def footbridge(s, g):
     return [(p_n, width + 0.6)], [(p_s, width + 0.6)]
 
 
+def _onto_parapet(p, reach=3.0):
+    """The nearest point of a bridge parapet's centre line within `reach` of p, or None."""
+    best = None
+    for a, b in _PARAPETS:
+        ab = (b[0] - a[0], b[1] - a[1])
+        span = ab[0] * ab[0] + ab[1] * ab[1]
+        t = 0.0 if span < 1e-9 else max(0.0, min(1.0, ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1]) / span))
+        q = (a[0] + ab[0] * t, a[1] + ab[1] * t)
+        d = math.dist(p, q)
+        if d < reach and (best is None or d < best[0]):
+            best = (d, q)
+    return best[1] if best else None
+
+
 def railings(s, gaps_n, gaps_s):
     river = inner_river()
     for offset, gaps in ((NORTH_WALL + 0.3, gaps_n), (SOUTH_WALL - 0.3, gaps_s)):
@@ -307,6 +326,12 @@ def railings(s, gaps_n, gaps_s):
             for i in range(len(piece) - 1):
                 if inside_map(piece[i], 10) or inside_map(piece[i + 1], 10):
                     blocker(s, piece[i], piece[i + 1])
+            # (on into the bridge's parapet at a corner, closed, the invisible wall over it too)
+            for end in (piece[0], piece[-1]):
+                join = _onto_parapet(end)
+                if join and math.dist(end, join) > 0.05:
+                    kit.railing(s, [end, join], h=3.4, mat="BlackMetal")
+                    blocker(s, end, join)
 
 
 def build(s, g):

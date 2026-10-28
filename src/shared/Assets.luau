@@ -111,6 +111,15 @@ Assets.sfx = {
 	},
 	mapTrainArrive = { id = "134959404397926", ref = "metro train pulling into a station", fallbackId = "" },
 	mapStationChime = { id = "74308843149652", ref = "Japanese station platform chime", fallbackId = "" },
+	-- (the Tokyo intro's own sounds, IntroTokyo d87dcfd: slots for them, each silent until a sound is uploaded)
+	tokyoStationBed = {
+		id = "",
+		ref = "busy Tokyo station platform: crowd murmur, footsteps, a far announcement, loop",
+		fallbackId = "",
+	},
+	introTokyoDrone = { id = "", ref = "low ominous drone swelling under a reveal", fallbackId = "" },
+	bookShut = { id = "", ref = "a heavy leather book snapped shut", fallbackId = "" },
+	doorRiser = { id = "", ref = "tension riser as train doors close", fallbackId = "" },
 	mapRiver = { id = "96847503564877", ref = "gentle canal water flowing, loop", fallbackId = "" },
 	mapLanternCreak = { id = "91834117633575", ref = "paper lanterns creaking in a light wind, loop", fallbackId = "" },
 	mapIzakaya = { id = "113237103762830", ref = "muffled bar chatter and clinking glasses, loop", fallbackId = "" },
@@ -424,6 +433,9 @@ Assets.images = {
 	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
 	CursorLock = "",
 	CursorFree = "",
+	-- The Reál's mark (the user's, 2026-10-28): the currency's icon everywhere (UI/Kit/Icon "real"); the coin until
+	-- it is uploaded.
+	RealIcon = "",
 } :: { [string]: string }
 
 -- Placeholder glyphs until an icon sheet is uploaded; an image id replaces the glyph.

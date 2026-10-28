@@ -16,7 +16,7 @@ Slip.KINDS = {
 	bad = { Tokens.color.red, "cross" },
 	warn = { Tokens.color.warn, "bell" },
 	secret = { Tokens.color.secret, "eye" },
-	coin = { Tokens.color.candle, "coin" },
+	coin = { Tokens.color.candle, "real" },
 } :: { [string]: { any } }
 
 export type Props = {

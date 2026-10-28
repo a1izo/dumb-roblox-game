@@ -36,6 +36,7 @@ basin, clear of the rift.
 
 import math
 import os
+import random
 import sys
 
 if __name__ == "__main__":
@@ -158,6 +159,33 @@ def chasm_poly(c):
     return g2.rect(c[0], c[1], c[2], c[3], c[4])
 
 
+def chasm_outline(c, step=4.5):
+    """The chasm's rim on the plain (2026-10-27: it was the rectangle chasm_poly): a jagged rift running across the
+    causeway, widest where the causeway crosses it (the full span the causeway was built over, so its piers still
+    stand in the dark) and narrowing to cracks at its two ends, its edge broken every few studs; always inside
+    chasm_poly. Counter-clockwise."""
+    cx, cz, along, across, rot = c
+    rng = random.Random(int(abs(cx) * 7 + abs(cz) * 13))
+    t = math.radians(rot)
+    ax, az = math.cos(t), -math.sin(t)  # along the causeway
+    sx, sz = -az, ax  # across it: the rift's length
+    half_len = across / 2 - 0.6
+    count = max(18, int(2 * half_len / step))
+    crossing = 7.0 / half_len  # (|u| under this: where the causeway and its parapets cross, the full span)
+    left, right = [], []
+    for k in range(count + 1):
+        u = -1 + 2 * k / count
+        shape = 0.28 + 0.72 * (1 - u * u) ** 0.7
+        wobble = 0.12 * math.sin(3.1 * u + 1.3) + 0.07 * math.sin(7.7 * u + 0.4)
+        for side, out in ((1, left), (-1, right)):
+            if abs(u) < crossing:
+                w = along / 2 - 0.3
+            else:
+                w = (along / 2 - 0.3) * max(0.12, min(1.0, shape + wobble * side + rng.uniform(-0.1, 0.1)))
+            out.append((cx + sx * u * half_len + ax * side * w, cz + sz * u * half_len + az * side * w))
+    return g2.ccw(left + list(reversed(right)))
+
+
 STELE_T = 2.4  # a stele's thickness
 
 # The Academy: a ring of broken pillars, its gate facing the plaza.
@@ -267,7 +295,6 @@ LEDGE_R = 10.0
 # Standing stones at the ridge's foot, each with a carved eye watching the plaza (degrees round the rim, and how
 # far inside it), and the eyes on the monolith's face either side of the throne (x, y).
 EYE_STONES = [(75.0, 15.0), (140.0, 15.0), (205.0, 15.0), (262.0, 15.0)]
-MONO_EYES = [(-14.0, 8.0), (14.0, 8.0)]
 
 
 def eye_stones():

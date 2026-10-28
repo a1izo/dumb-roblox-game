@@ -3,7 +3,9 @@
 -- from the ones the server built (ReplicatedStorage.LCrowd), glides between snapshots BEHIND seconds
 -- late, and walks with the same clips as the players (LocomotionController.adopt). A body is in the
 -- way like anyone would be (the Crowd collision group: only characters bump into it) until its walker
--- has been held up long enough to step through whoever blocks it. Nobody in the crowd has a name tag,
+-- has been held up long enough to step through whoever blocks it; and on this screen it lets this player through
+-- as soon as it would trap them: pressed against it for a moment, or walking into it and getting nowhere (the
+-- user's call of 2026-10-27: their collision kept, nobody stuck in them). Nobody in the crowd has a name tag,
 -- and nothing here can be clicked, touched or seen by a ray.
 -- Fewer are drawn on slower devices: everyone within NEAR studs, then the nearest up to the device's
 -- cap; bodies far off are posed less often, and cast no shadow on phones.
@@ -34,6 +36,10 @@ local CAP = { phone = 18, tablet = 26, console = 32, desktop = 40 } -- bodies dr
 local FAR = 70 -- studs from the camera beyond which a body is posed every third frame
 local GROUND_EVERY = 0.4 -- seconds between looks at the ground under a body
 local INSIDE = 0.8 -- studs: a body this deep in this player lets them through (nobody gets stuck)
+local PRESSED = 2.4 -- studs between the two: pressed against it...
+local PRESSED_TIME = 0.35 -- ...this long, it lets this player through
+local BLOCKED = 2.9 -- studs: walking into it and getting nowhere this close lets them through at once
+local APART = 3.6 -- studs apart again before it is in the way once more
 local LEAP = 10 -- studs between two snapshots that no walk covers: the walker was put somewhere new
 local FOLDER = "LCrowd"
 
@@ -42,6 +48,8 @@ type Rig = {
 	root: BasePart,
 	torso: BasePart?,
 	standing: boolean,
+	pressedAt: number?, -- since when this player has been pressed against it
+	yielding: boolean, -- it lets this player through (until they are APART)
 	drawn: boolean,
 	passing: boolean,
 	ground: number,
@@ -98,6 +106,11 @@ local function build(number: number, standing: boolean): Rig?
 	local seed = (current:GetAttribute("CrowdSeed") :: number?) or 0
 	local model = store[CrowdLooks.bodyFor(number, seed, standing, #store)]:Clone()
 	model.Name = "Walker" .. number
+	-- (a clerk at a counter has put their umbrella away)
+	local carried = model:FindFirstChild("LUmbrella")
+	if standing and carried then
+		carried:Destroy()
+	end
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if not root or not root:IsA("BasePart") then
 		model:Destroy()
@@ -128,6 +141,8 @@ local function build(number: number, standing: boolean): Rig?
 		root = root,
 		torso = if torso and torso:IsA("BasePart") then torso else nil,
 		standing = standing,
+		pressedAt = nil,
+		yielding = false,
 		drawn = false,
 		passing = false,
 		ground = Venues.MAP.Y,
@@ -145,6 +160,10 @@ local function setDrawn(rig: Rig, drawn: boolean)
 	if drawn then
 		LocomotionController.adopt(rig.model)
 		rig.far = false
+		-- (one with an umbrella holds it up in its right fist, the walk going on beneath: Looks seats the grip there)
+		if rig.model:FindFirstChild("LUmbrella") then
+			PoseController.play(rig.model, "umbrellaHold", { fadeIn = 0 })
+		end
 	end
 end
 
@@ -268,6 +287,13 @@ local function draw()
 	end
 	local character = Players.LocalPlayer.Character
 	local own = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	-- (this player pushing to move and getting nowhere)
+	local body = if character then character:FindFirstChildOfClass("Humanoid") else nil
+	local stuck = body ~= nil
+		and own ~= nil
+		and own:IsA("BasePart")
+		and body.MoveDirection.Magnitude > 0.5
+		and Vector3.new(own.AssemblyLinearVelocity.X, 0, own.AssemblyLinearVelocity.Z).Magnitude < 2
 	table.clear(moved)
 	table.clear(places)
 	for number, walker in ipairs(a.walkers) do
@@ -305,11 +331,26 @@ local function draw()
 		local ground = groundUnder(known, at.X, at.Z, clock)
 		setDrawn(known, true)
 		LocomotionController.setSpeed(known.model, if walker.standing then 0 else speed)
-		-- Stepping through someone, or already inside this player: no bump.
-		local inside = own ~= nil
-			and own:IsA("BasePart")
-			and (Vector3.new(own.Position.X, 0, own.Position.Z) - at).Magnitude < INSIDE
-		setPassing(known, walker.passing or inside)
+		-- Stepping through someone, already inside this player, or about to trap them: no bump.
+		local gap = if own ~= nil and own:IsA("BasePart")
+			then (Vector3.new(own.Position.X, 0, own.Position.Z) - at).Magnitude
+			else math.huge
+		if gap >= APART then
+			known.pressedAt = nil
+			known.yielding = false
+		elseif not known.yielding then
+			if gap < PRESSED then
+				known.pressedAt = known.pressedAt or clock
+				known.yielding = clock - known.pressedAt >= PRESSED_TIME
+			else
+				known.pressedAt = nil
+			end
+			-- (walking into it and getting nowhere: through at once)
+			if gap < BLOCKED and stuck then
+				known.yielding = true
+			end
+		end
+		setPassing(known, walker.passing or gap < INSIDE or known.yielding)
 		local far = (at - eye).Magnitude > FAR
 		if far ~= known.far then
 			known.far = far

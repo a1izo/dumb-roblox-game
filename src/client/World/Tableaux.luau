@@ -121,14 +121,22 @@ local SCENES: { Scene } = {
 						dark = true,
 						hood = true,
 					},
-					-- the Death's Manual in the left hand, carved in the dark stone (a thin slab where the import
-					-- has no Manual: narrower than the sleeve's cuff, so it never cuts through it)
+					-- the Death's Manual lying on the left palm, carved in the dark stone (a thin slab where the
+					-- import has no Manual): flat across between the two fists, tipped a little towards the writer,
+					-- so the pen in the right fist is on its page. (2026-10-27: it stood on end off the wrist, tilted
+					-- with the raised forearm.) Measured in a play test of "write": the left fist is still at the arm's
+					-- end, the right one 1.1 to 1.2 studs along the arm's x and 1.7 down it; the arm's frame turned
+					-- back to level by the vectors below (the torso's right and its up, tipped 20 degrees back).
 					{
 						limb = "Left Arm",
 						model = "Grimoire",
 						modelSize = 1.05,
 						size = Vector3.new(0.95, 0.14, 0.75),
-						offset = CFrame.new(0.15, -1.15, -0.35),
+						offset = CFrame.fromMatrix(
+							Vector3.new(0.66, -1.24, 0.02),
+							Vector3.new(0.866, -0.5, 0),
+							Vector3.new(0.414, 0.718, -0.559)
+						),
 						dark = true,
 					},
 				},
