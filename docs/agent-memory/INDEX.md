@@ -1,0 +1,11 @@
+- [Protect the user's Assets.luau edits](protect-user-assets-edits.md) — never format/checkout/stage src/shared/Assets.luau; it holds the user's music ids
+- [Map remake project](map-remake-project.md) — Tokyo revision 4 in progress: rebuild props to a semi-real standard, fix facing/void/metro; decisions + lessons inside
+- [Maps not symmetrical](maps-not-symmetrical.md) — layouts must vary: narrow paths, turns, elevation, never mirrored
+- [Windows LF endings](windows-lf-endings.md) — Python writes CRLF by default here; use newline="\n"; stylua only changed files
+- [R6 + cutscene redo](r6-cutscene-redo.md) — started 2026-10-06: R6 lock, all clips redone, new cutscenes; plan path + key decisions
+- [Cutscene quality bar](cutscene-quality-bar.md) — v1 cutscenes rejected 2026-10-08: aim cameras at actors, real blocking, expressive acting
+- [Silent audio: Roblox volume](silent-audio-check-roblox-volume.md) — "no sound" was Roblox's Esc-menu volume at 1/10, not code
+- [Gameplay rework 2026-10](gameplay-rework-2026-10.md) — free roam + meetings, Manual anytime, stare names, saboteur Muerto; spec in plan file
+- [Parallel agent merges](parallel-agent-merges.md) — another agent pushes to main; check MERGE_HEAD/markers before committing, rebuild binaries after merges
+- [Cutscene pipeline](cutscene-pipeline.md) — READ FIRST for cutscenes: ref → body_reach acting → moving cameras → clear/lint/stills → export/push
+- [Studio cutscene testing](studio-cutscene-testing.md) — command-bar debug cues, slow-mo, debug camera; prop lamps, merged map glass; front-camera left/right trap
