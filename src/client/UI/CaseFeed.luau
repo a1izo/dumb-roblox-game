@@ -26,7 +26,7 @@ local T = Kit.Tokens
 
 local CaseFeed = {}
 
-local WIDTH = 300
+local WIDTH = Kit.Tokens.notice.width
 local TICKER = 5 -- lines kept
 local VIEW_HEIGHT = 170
 local MAX_PARTS = 2500 -- the largest parts of the map, at most
@@ -245,8 +245,11 @@ function CaseFeed.init()
 	local page, content = Kit.page({
 		Name = "CaseFeed",
 		tone = "raised",
-		glass = true,
-		padding = T.space.m,
+		-- (a notice's surface and accent, like every card over the world: Kit/Notice)
+		alpha = T.notice.alpha,
+		edgeColor = C.white,
+		edgeWidth = T.notice.edge,
+		padding = T.notice.padding,
 		autoHeight = true,
 		Size = UDim2.fromOffset(WIDTH, 0),
 		Visible = false,

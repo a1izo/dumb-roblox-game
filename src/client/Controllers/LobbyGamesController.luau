@@ -31,8 +31,6 @@ local Toasts = require(script.Parent.Parent.UI.Toasts)
 
 local LobbyGamesController = {}
 
-local T = Kit.Tokens
-
 local request = Net.event("LobbyGame")
 
 local GLOW_ON = Color3.fromRGB(206, 224, 255)
@@ -53,8 +51,8 @@ local prompts: { [BasePart]: { prompt: ProximityPrompt, tag: string } } = {}
 local glyphs: { [number]: { BasePart } } = {}
 
 -- The card.
-local card: Frame
-local titleLabel: TextLabel
+local card: CanvasGroup
+local notice: any -- the card (Kit/Notice)
 local statusLabel: TextLabel
 
 -- What the player is doing now.
@@ -72,7 +70,7 @@ local function usable(): boolean
 end
 
 local function setStatus(title: string, status: string)
-	titleLabel.Text = title
+	notice:setEyebrow(title)
 	statusLabel.Text = status
 	card.Visible = true
 end
@@ -583,52 +581,30 @@ end
 -- The card ---------------------------------------------------------------------------------------------------------
 
 local function build()
-	card = Kit.card({
+	-- A notice (Kit/Notice): the game's name as its eyebrow, the running status as its text, then Leave.
+	notice = Kit.notice({
 		Name = "LobbyGameCard",
-		tone = "raised",
-		padding = T.space.s,
-		Size = UDim2.fromOffset(0, 0),
-		AutomaticSize = Enum.AutomaticSize.XY,
+		kind = "info",
+		icon = "flag",
+		body = " ",
 		Visible = false,
+		actions = {
+			{
+				text = "Leave",
+				variant = "ghost",
+				onClick = function()
+					if current then
+						request:FireServer({ game = current, action = "leave" })
+					end
+					hideCard()
+				end,
+			},
+		},
 		Parent = Screens.hud,
 	})
-	card.BackgroundTransparency = T.alpha.glass
+	card = notice.group
 	Kit.Layout.place(card, "topCenter", Vector2.new(0, 96))
-	Kit.list(card, T.space.xs)
-	titleLabel = Kit.label({
-		font = "label",
-		size = "small",
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.XY,
-		Size = UDim2.fromOffset(0, 0),
-		LayoutOrder = 1,
-		Parent = card,
-	})
-	statusLabel = Kit.label({
-		font = "bodyBold",
-		size = "small",
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.XY,
-		Size = UDim2.fromOffset(0, 0),
-		LayoutOrder = 2,
-		Parent = card,
-	})
-	local row = Kit.frame({
-		Name = "Row",
-		Size = UDim2.fromOffset(0, T.touch),
-		AutomaticSize = Enum.AutomaticSize.X,
-		LayoutOrder = 3,
-		Parent = card,
-	})
-	Kit.list(row, T.space.s, true)
-	Kit.button({ text = "Leave", variant = "ghost", size = "s", LayoutOrder = 2, Parent = row }, function()
-		if current then
-			request:FireServer({ game = current, action = "leave" })
-			hideCard()
-		else
-			hideCard()
-		end
-	end)
+	statusLabel = notice.bodyLabel
 end
 
 function LobbyGamesController.init()

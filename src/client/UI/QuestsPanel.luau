@@ -29,8 +29,8 @@ local QuestsPanel = {}
 local SIDE = 170
 
 local list: ScrollingFrame
-local popup: Frame
-local popupText: TextLabel
+local popup: CanvasGroup
+local popupNotice: any -- the streak's notice (Kit/Notice)
 local popupShown = false
 
 local function formatTime(seconds: number): string
@@ -198,22 +198,38 @@ local function maybePopup()
 	popupShown = true
 	local nextCount = Streak.nextCount(profile.streak, profile.today)
 	local cycleDay = ((nextCount - 1) % Streak.CYCLE) + 1
-	popupText.Text = string.format("Day %d streak: +%d Reál to claim.", nextCount, Streak.COINS[cycleDay])
+	popupNotice:setTitle(string.format("Day %d streak", nextCount))
+	popupNotice:setBody(string.format("+%d Reál to claim", Streak.COINS[cycleDay]))
 	popup.Visible = true
 end
 
 local function buildPopup()
-	local page, content = Kit.page({
+	popupNotice = Kit.notice({
 		Name = "StreakPopup",
-		tone = "raised",
-		padding = T.space.l,
-		autoHeight = true,
+		kind = "coin",
+		icon = "streak",
+		eyebrow = "Daily reward",
 		AnchorPoint = Vector2.new(1, 1),
-		Size = UDim2.fromOffset(340, 0),
 		Visible = false,
+		actions = {
+			{
+				text = "Claim",
+				icon = "real",
+				onClick = function()
+					ProfileRequest:FireServer({ action = "streak" })
+					popup.Visible = false
+				end,
+			},
+			{
+				text = "Later",
+				onClick = function()
+					popup.Visible = false
+				end,
+			},
+		},
 		Parent = Screens.panels,
 	})
-	popup = page
+	popup = popupNotice.group
 	-- It sits just above your card at the bottom right, so it never covers the card (or the title above).
 	-- The card lives in another layer, so its top is read on screen and turned into this layer's units
 	-- (a probe marks where this layer starts).
@@ -223,7 +239,7 @@ local function buildPopup()
 	local function place()
 		local scale = Kit.Base.scaleOf(popup)
 		local bottom = (card.AbsolutePosition.Y - probe.AbsolutePosition.Y) / scale - GAP
-		popup.Size = UDim2.fromOffset(if Kit.Layout.isPhone() then 260 else 340, popup.Size.Y.Offset)
+		popupNotice:setWidth(Kit.Notice.width())
 		popup.Position = UDim2.new(1, -T.space.l, 0, math.floor(bottom))
 	end
 	-- Hide UI hides the pop-up too; it comes back with the rest if it was still waiting.
@@ -241,28 +257,6 @@ local function buildPopup()
 	card:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
 	popup:GetPropertyChangedSignal("Visible"):Connect(place)
 	place()
-	Kit.list(content, T.space.s)
-	Kit.text({
-		face = "Head",
-		text = "Daily streak",
-		size = T.size.title,
-		color = C.white,
-		LayoutOrder = 1,
-		Parent = content,
-	})
-	popupText = Kit.label({ LayoutOrder = 2, Parent = content })
-	local row = Kit.frame({ Name = "Actions", Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 3, Parent = content })
-	Kit.list(row, T.space.s, true)
-	Kit.button(
-		{ text = "Claim", icon = "real", variant = "primary", size = "s", LayoutOrder = 1, Parent = row },
-		function()
-			ProfileRequest:FireServer({ action = "streak" })
-			popup.Visible = false
-		end
-	)
-	Kit.button({ text = "Later", variant = "ghost", size = "s", LayoutOrder = 2, Parent = row }, function()
-		popup.Visible = false
-	end)
 end
 
 function QuestsPanel.init()

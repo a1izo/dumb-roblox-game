@@ -1,23 +1,12 @@
 --!strict
--- A toast: a small Notch panel with a mark in the kind's colour (white, grey, or red for bad news and
--- warnings), an icon and the message.
+-- A toast: a notice with only its icon and the message (Kit/Notice), the accent in the kind's colour (red only
+-- for bad news and warnings).
 
-local Base = require(script.Parent.Base)
-local Icon = require(script.Parent.Icon)
-local Surfaces = require(script.Parent.Surfaces)
-local Tokens = require(script.Parent.Tokens)
+local Notice = require(script.Parent.Notice)
 
 local Slip = {}
 
--- kind -> { mark colour, icon }
-Slip.KINDS = {
-	info = { Tokens.color.dim, "note" },
-	good = { Tokens.color.good, "check" },
-	bad = { Tokens.color.red, "cross" },
-	warn = { Tokens.color.warn, "bell" },
-	secret = { Tokens.color.secret, "eye" },
-	coin = { Tokens.color.candle, "real" },
-} :: { [string]: { any } }
+Slip.KINDS = Notice.KINDS
 
 export type Props = {
 	text: string,
@@ -29,56 +18,18 @@ export type Props = {
 	ZIndex: number?,
 }
 
--- Returns the slip's frame (its height fits the text).
-function Slip.new(props: Props): Frame
-	local kind = Slip.KINDS[props.kind or "info"] or Slip.KINDS.info
-	local width = props.width or 340
-	local frame, content = Surfaces.page({
+-- Returns the toast (a CanvasGroup, so it fades as one piece; its height fits the text).
+function Slip.new(props: Props): CanvasGroup
+	local notice = Notice.new({
 		Name = "Slip",
-		tone = "raised",
-		glass = true,
-		edge = false,
-		padding = Tokens.space.m,
-		Size = UDim2.fromOffset(width, 60),
+		kind = props.kind or "info",
+		icon = props.icon,
+		body = props.text,
+		width = props.width,
 		LayoutOrder = props.LayoutOrder,
-		ZIndex = props.ZIndex or 1,
 		Parent = props.Parent,
 	})
-	local z = frame.ZIndex
-	Base.make("Frame", {
-		Name = "Mark",
-		BackgroundColor3 = kind[1],
-		BorderSizePixel = 0,
-		Position = UDim2.fromOffset(8, 10),
-		Size = UDim2.new(0, 3, 1, -20),
-		ZIndex = z + 2,
-		Parent = frame,
-	})
-	Icon.new({
-		name = props.icon or kind[2],
-		size = 22,
-		color = kind[1],
-		Position = UDim2.fromOffset(Tokens.space.xs, 0),
-		ZIndex = z + 2,
-		Parent = content,
-	})
-	local label = Base.label({
-		Text = props.text,
-		size = "small",
-		color = Tokens.color.bone,
-		Position = UDim2.fromOffset(34, 0),
-		Size = UDim2.new(1, -34, 0, 0),
-		ZIndex = z + 2,
-		Parent = content,
-	})
-	-- Fit the slip to the text once it has been laid out.
-	local function fit()
-		local height = label.AbsoluteSize.Y / Base.scaleOf(label)
-		frame.Size = UDim2.fromOffset(width, math.max(48, height + Tokens.space.m * 2 + 4))
-	end
-	label:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
-	task.defer(fit)
-	return frame
+	return notice.group
 end
 
 return Slip

@@ -13,6 +13,7 @@ local Controls = require(script.Controls)
 local GlyphText = require(script.GlyphText)
 local Icon = require(script.Icon)
 local Layout = require(script.Layout)
+local Notice = require(script.Notice)
 local Ransom = require(script.Ransom)
 local Slip = require(script.Slip)
 local Surfaces = require(script.Surfaces)
@@ -27,6 +28,7 @@ local Kit = {
 	GlyphText = GlyphText,
 	Icon = Icon,
 	Layout = Layout,
+	Notice = Notice,
 	Ransom = Ransom,
 	Glitch = Glitch,
 	Slip = Slip,
@@ -104,6 +106,8 @@ local Kit = {
 	register = Window.register,
 	confirm = Window.confirm,
 	slip = Slip.new,
+	-- the one card for toasts, tips, the Trial's step and the daily streak
+	notice = Notice.new,
 }
 
 return Kit

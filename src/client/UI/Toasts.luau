@@ -1,4 +1,4 @@
--- Short notifications stacked on the right: Notch panels with a mark in the kind's colour. Each one
+-- Short notifications stacked on the right: notices (Kit/Notice) with an accent in the kind's colour. Each one
 -- slides in, and fades away after a few seconds.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -53,17 +53,8 @@ function Toasts.show(text: string, kind: string?)
 		return
 	end
 	order += 1
-	-- A CanvasGroup so the slip fades as one piece.
-	local group = Instance.new("CanvasGroup")
+	local group = Kit.slip({ text = text, kind = kind, LayoutOrder = -order, Parent = holder })
 	group.Name = "Toast"
-	group.BackgroundTransparency = 1
-	group.BorderSizePixel = 0
-	group.Size = UDim2.fromOffset(340, 0)
-	group.AutomaticSize = Enum.AutomaticSize.Y
-	group.LayoutOrder = -order
-	local slip = Kit.slip({ text = text, kind = kind, width = 340, Parent = group })
-	local _ = slip
-	group.Parent = holder
 	trim(holder)
 	Motion.slideIn(group, Vector2.new(40, 0), Kit.Tokens.motion.slow)
 
@@ -89,7 +80,7 @@ end
 function Toasts.init()
 	local holder = Kit.frame({
 		Name = "Toasts",
-		Size = UDim2.new(0, 340, 0.6, 0),
+		Size = UDim2.new(0, Kit.Tokens.notice.width, 0.6, 0),
 		Parent = Screens.toast,
 	})
 	Kit.Layout.place(holder, "right")

@@ -25,7 +25,6 @@ end
 local Kit = require(script.Parent.Kit)
 local Screens = require(script.Parent.Screens)
 
-local C = Kit.color
 local T = Kit.Tokens
 
 local NoteRequest = Net.event("NoteRequest")
@@ -34,8 +33,8 @@ local NoteOfferSlip = {}
 
 local TAKE_ACTION = "DGTakeNote"
 
-local root: Frame
-local title: TextLabel
+local root: CanvasGroup
+local notice: any -- (Kit/Notice)
 local takeButton: TextButton
 local leaveButton: TextButton
 local setBar: (number, boolean?) -> ()
@@ -84,7 +83,7 @@ local function show(payload, role: string)
 	}
 	NoteOfferSlip.pending = role == "giver"
 	if role == "receiver" then
-		title.Text = string.format("%s offers you a note", tostring(payload.fromAlias or "Someone"))
+		notice:setBody(string.format("%s offers you a note", tostring(payload.fromAlias or "Someone")))
 		takeButton.Visible = true
 		Kit.setText(leaveButton, "Leave it")
 		refreshTake()
@@ -95,7 +94,7 @@ local function show(payload, role: string)
 			return Enum.ContextActionResult.Sink
 		end, false, Enum.ContextActionPriority.High.Value + 10, table.unpack(takeKeys()))
 	else
-		title.Text = string.format("Offering to %s", tostring(payload.toAlias or "them"))
+		notice:setBody(string.format("Offering to %s", tostring(payload.toAlias or "them")))
 		takeButton.Visible = false
 		Kit.setText(leaveButton, "Cancel")
 		ContextActionService:UnbindAction(TAKE_ACTION)
@@ -120,42 +119,26 @@ local function onOffer(payload)
 end
 
 function NoteOfferSlip.init()
-	local frame, content = Kit.page({
+	-- A notice (Kit/Notice): who offers, the time left as a bar, then Take and Leave it.
+	notice = Kit.notice({
 		Name = "NoteOffer",
-		tone = "raised",
-		glass = true,
-		padding = T.space.m,
-		Size = UDim2.fromOffset(380, 0),
-		autoHeight = true,
+		kind = "info",
+		eyebrow = "Paper note",
+		icon = "note",
+		body = "",
 		Visible = false,
+		actions = {
+			{ text = "Take", icon = "note", onClick = take },
+			{ text = "Leave it", onClick = leave },
+		},
 		Parent = Screens.hud,
 	})
-	root = frame
+	root = notice.group
 	Kit.Layout.place(root, "bottomCenter", Vector2.new(0, -T.space.xl * 2))
-	Kit.list(content, T.space.s)
-	title = Kit.label({
-		Text = "",
-		size = "small",
-		color = C.bone,
-		Size = UDim2.new(1, 0, 0, 0),
-		LayoutOrder = 1,
-		Parent = content,
-	})
-	local _, set = Kit.meter({ height = 4, LayoutOrder = 2, Parent = content })
+	local _, set = Kit.meter({ height = 4, LayoutOrder = 1, Parent = notice.slot })
 	setBar = set
-	local row = Kit.frame({
-		Name = "Buttons",
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 3,
-		Parent = content,
-	})
-	Kit.list(row, T.space.s, true, Enum.HorizontalAlignment.Right)
-	leaveButton = Kit.button({ text = "Leave it", variant = "ghost", size = "s", LayoutOrder = 2, Parent = row }, leave)
-	takeButton = Kit.button(
-		{ text = "Take", icon = "note", variant = "primary", size = "s", LayoutOrder = 1, Parent = row },
-		take
-	)
+	takeButton = notice.buttons[1]
+	leaveButton = notice.buttons[2]
 
 	Net.event("NoteOffer").OnClientEvent:Connect(onOffer)
 	ClientState.PrivateChanged:Connect(refreshTake)

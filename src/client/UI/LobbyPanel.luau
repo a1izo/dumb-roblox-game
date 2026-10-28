@@ -563,7 +563,7 @@ local function buildProfile()
 		Name = "ProfileGroup",
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 1),
-		Size = UDim2.fromOffset(340, 0),
+		Size = UDim2.fromOffset(T.notice.width, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Visible = false,
 		Parent = profileAnchor,
@@ -572,7 +572,11 @@ local function buildProfile()
 	local page, content = Kit.page({
 		Name = "ProfileCard",
 		tone = "raised",
-		padding = T.space.l,
+		-- (a notice's surface and accent, so the right column reads as one set: Kit/Notice)
+		alpha = T.notice.alpha,
+		edgeColor = C.white,
+		edgeWidth = T.notice.edge,
+		padding = T.notice.padding,
 		autoHeight = true,
 		Size = UDim2.new(1, 0, 0, 0),
 		Parent = profileGroup,
@@ -689,13 +693,14 @@ local function placeProfile()
 	end
 	local jump = TouchControls.jump()
 	if not jump then
-		Kit.Layout.place(profileAnchor, "bottomRight", Vector2.new(-T.space.l, -T.space.l))
+		-- (the same right edge as every notice above it: the zone's own margin, no more)
+		Kit.Layout.place(profileAnchor, "bottomRight", Vector2.new(0, -T.space.l))
 		return
 	end
 	-- From screen pixels to the HUD layer's own: it starts at the probe and is scaled for the device.
 	local floor = (TouchSafe.floorAbove(jump) - hudProbe.AbsolutePosition.Y) / Kit.Base.scaleOf(profileAnchor)
 	profileAnchor.AnchorPoint = Vector2.new(1, 1)
-	profileAnchor.Position = UDim2.new(1, -2 * T.space.l, 0, math.floor(floor))
+	profileAnchor.Position = UDim2.new(1, -T.space.l, 0, math.floor(floor))
 end
 
 local function layout(class: string)
@@ -730,7 +735,7 @@ local function layout(class: string)
 	placeColumn()
 	menu.Size = UDim2.fromOffset(if phone then 300 else 460, 0)
 	readyHolder.Size = UDim2.new(1, 0, 0, if phone then 48 else 60)
-	profileGroup.Size = UDim2.fromOffset(if phone then 260 else 340, 0)
+	profileGroup.Size = UDim2.fromOffset(if phone then T.notice.phoneWidth else T.notice.width, 0)
 	buildCard(phone)
 	placeProfile()
 	buildContents(phone)

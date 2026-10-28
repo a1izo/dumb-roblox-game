@@ -138,7 +138,8 @@ end
 
 -- A panel. Props: window (two clipped corners and an outline, used by Window), tone ("black", "raised", "parchment" (the same as raised), "white" (Ace's)), glass
 -- (the panel is see-through, for the HUD), edge (the 2 px grey line down the left, default true except on
--- white), texture (scanlines and grain, default true), glow (a window lit softly from the top and darkening
+-- white; edgeColor and edgeWidth change it), alpha (the fill's transparency, over glass's), texture (scanlines and
+-- grain, default true), glow (a window lit softly from the top and darkening
 -- below, with the scanlines and grain a window otherwise goes without: the shop's, the owner's direction A),
 -- padding (px, default 24), autoHeight (the panel
 -- grows and shrinks with its content; give it a width), plus frame properties. `torn`, `ruled` and
@@ -166,7 +167,7 @@ function Surfaces.page(props: Props?): (Frame, Frame)
 		local fill = Surfaces.notch(surface, {
 			shape = if p.window then "window" else "panel",
 			color = if p.glow then tone.color:Lerp(C.white, 0.07) else tone.color,
-			transparency = if p.glass then Tokens.alpha.glass else 0,
+			transparency = p.alpha or (if p.glass then Tokens.alpha.glass else 0),
 			ZIndex = z,
 		})
 		if p.glow then
@@ -215,9 +216,9 @@ function Surfaces.page(props: Props?): (Frame, Frame)
 		if p.edge ~= false and not isWhite and not p.window then
 			Base.make("Frame", {
 				Name = "Edge",
-				BackgroundColor3 = C.g5,
+				BackgroundColor3 = p.edgeColor or C.g5,
 				BorderSizePixel = 0,
-				Size = UDim2.new(0, 2, 1, 0),
+				Size = UDim2.new(0, p.edgeWidth or 2, 1, 0),
 				ZIndex = z,
 				Parent = surface,
 			})

@@ -79,6 +79,7 @@ local cardHint: TextLabel
 
 -- Objectives and actions
 local objectives: Frame
+local objectivesNotice: any -- the notice around them (Kit/Notice)
 local actionBar: Frame
 local actionKey = ""
 
@@ -382,7 +383,7 @@ local function layout(class: string)
 		if left then
 			badge.Position = UDim2.new(0, 12, own.height - 0.2, 0)
 		end
-		objectives.Size = UDim2.fromOffset(250, 0)
+		objectivesNotice:setWidth(250)
 	else
 		Kit.Layout.place(badge, "bottomLeft")
 		-- One row of chips, as wide as they need, growing to the left.
@@ -390,7 +391,7 @@ local function layout(class: string)
 		actionBar.Size = UDim2.fromOffset(0, 56)
 		actionBar.AutomaticSize = Enum.AutomaticSize.X
 		Kit.list(actionBar, T.space.s, true, Enum.HorizontalAlignment.Right)
-		objectives.Size = UDim2.fromOffset(340, 0)
+		objectivesNotice:setWidth(T.notice.width)
 	end
 	bannerText:setSize(if class == "phone" then T.size.title else T.size.heading)
 	actionKey = ""
@@ -494,10 +495,13 @@ local function buildBadge()
 	local page, content = Kit.page({
 		Name = "Identity",
 		tone = "raised",
-		glass = true,
-		padding = T.space.m,
+		-- (a notice's surface and accent, like every card over the world: Kit/Notice)
+		alpha = T.notice.alpha,
+		edgeColor = C.white,
+		edgeWidth = T.notice.edge,
+		padding = T.notice.padding,
 		autoHeight = true,
-		Size = UDim2.fromOffset(340, 0),
+		Size = UDim2.fromOffset(T.notice.width, 0),
 		Visible = false,
 		Parent = Screens.hud,
 	})
@@ -538,38 +542,17 @@ end
 function Hud.init()
 	buildBanner()
 	buildBadge()
-	-- The list sits on a glass panel that shows only while it has lines.
-	-- The panel takes its size from the list inside it (an auto-sized frame must never hold a child that
-	-- fills it, or the two grow each other without end).
-	local objectivesPanel = Kit.frame({
+	-- The list is a notice (Kit/Notice) that shows only while it has lines.
+	objectivesNotice = Kit.notice({
 		Name = "ObjectivesPanel",
-		Size = UDim2.fromOffset(0, 0),
+		kind = "guide",
+		eyebrow = "Objectives",
+		icon = "check",
 		Visible = false,
 		Parent = Screens.hud,
 	})
-	Kit.Layout.place(objectivesPanel, "topLeft", Vector2.new(0, 4))
-	local objectivesShell = Kit.frame({ Name = "Shell", ZIndex = 0, Parent = objectivesPanel })
-	Kit.Surfaces.redrawWhenReady(objectivesShell, function()
-		Kit.clear(objectivesShell)
-		Kit.notch(objectivesShell, { shape = "panel", color = C.page, transparency = T.alpha.glass, ZIndex = 0 })
-		Kit.Base.make("Frame", {
-			Name = "Edge",
-			BackgroundColor3 = C.g5,
-			BorderSizePixel = 0,
-			Size = UDim2.new(0, 2, 1, 0),
-			ZIndex = 0,
-			Parent = objectivesShell,
-		})
-	end)
-	objectives = Kit.frame({
-		Name = "Objectives",
-		Size = UDim2.fromOffset(340, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		ZIndex = 1,
-		Parent = objectivesPanel,
-	})
-	Kit.pad(objectives, T.space.m, T.space.m + 4)
-	Kit.list(objectives, T.space.s)
+	Kit.Layout.place(objectivesNotice.group, "topLeft", Vector2.new(0, 4))
+	objectives = objectivesNotice.slot
 	local function syncObjectives()
 		local any = false
 		for _, child in ipairs(objectives:GetChildren()) do
@@ -577,14 +560,10 @@ function Hud.init()
 				any = true
 			end
 		end
-		objectivesPanel.Visible = any
+		objectivesNotice.group.Visible = any
 	end
 	objectives.ChildAdded:Connect(syncObjectives)
 	objectives.ChildRemoved:Connect(syncObjectives)
-	-- (in design pixels: AbsoluteSize is already scaled by the screen's size, so copying it raw made the glass
-	-- smaller than its text on a small screen and the lines ran out past it)
-	Kit.Base.fit(objectivesPanel, objectives, "X")
-	Kit.Base.fit(objectivesPanel, objectives, "Y")
 	-- Its layout (a row, or a grid on touch screens) is set by layout().
 	actionBar = Kit.frame({ Name = "ActionBar", Parent = Screens.hud })
 
@@ -636,7 +615,7 @@ function Hud.bannerBottom(): number?
 	return banner.AbsolutePosition.Y + banner.AbsoluteSize.Y
 end
 
--- The container the objective tracker fills with lines (inside a glass panel that hides when it is empty).
+-- The container the objective tracker fills with lines (inside a notice that hides when it is empty).
 function Hud.objectives(): Frame
 	return objectives
 end
@@ -674,7 +653,8 @@ function Hud.tipPlacement(clear: GuiObject?): (UDim2, Vector2)
 		local top = (clear.AbsolutePosition.Y - origin.Y) / scale
 		return UDim2.new(0, right + T.space.m, 0, top), Vector2.new(0, 0)
 	end
-	return UDim2.new(0, T.space.l, 0, math.max(bottomOf(objectives), T.space.l) + T.space.m), Vector2.new(0, 0)
+	return UDim2.new(0, T.space.l, 0, math.max(bottomOf(objectivesNotice.group), T.space.l) + T.space.m),
+		Vector2.new(0, 0)
 end
 
 return Hud

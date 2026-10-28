@@ -176,6 +176,20 @@ Tokens.z = {
 	top = 50,
 }
 
+-- Notices: every small card over the world (toasts, the guide's tips, the Trial's step, the daily streak,
+-- the lobby's profile card) has one width, one padding, one solid surface and one accent edge, so the right
+-- column lines up and nothing reads as a different kit (Kit/Notice).
+Tokens.notice = {
+	width = 340,
+	phoneWidth = 280,
+	padding = Tokens.space.l,
+	gap = Tokens.space.s,
+	edge = 3, -- px of the accent line down the left
+	alpha = 0.04, -- near solid: text must read over bright snow
+	titleSize = 24,
+	actionHeight = 40,
+}
+
 -- Modal window sizes at desktop scale.
 Tokens.modal = {
 	S = Vector2.new(420, 300), -- dialogs

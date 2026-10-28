@@ -31,16 +31,13 @@ local Screens = require(UI.Screens)
 local Settings = require(UI.Core.Settings)
 local Toasts = require(UI.Toasts)
 
-local C = Kit.color
-local T = Kit.Tokens
-
 local LocalPlayer = Players.LocalPlayer
 
 local HintController = {}
 
 local SHOW_TIME = 14
 local FIRST_CASE_TIME = 28
-local WIDTH = 400
+local WIDTH = Kit.Tokens.notice.width
 
 local queue: { string } = {}
 local shownThisSession: { [string]: boolean } = {}
@@ -48,8 +45,7 @@ local running = false
 local dismissed = false
 
 local card: CanvasGroup
-local titleLabel: TextLabel
-local textLabel: TextLabel
+local tip: any -- the guide's notice (Kit/Notice)
 
 local function seen(id: string): boolean
 	if shownThisSession[id] then
@@ -95,8 +91,8 @@ local function run()
 		local hint = Hints.BY_ID[id]
 		if hint and Settings.get("hints") and not stale(id) then
 			Net.event("ProfileRequest"):FireServer({ action = "hint", id = id })
-			titleLabel.Text = "TIP: " .. string.upper(hint.title)
-			textLabel.Text = Keys.resolve(hint.text)
+			tip:setTitle(hint.title)
+			tip:setBody(Keys.resolve(hint.text))
 			dismissed = false
 			local showTime = if firstCase() then FIRST_CASE_TIME else SHOW_TIME
 			local beside = leftPanel()
@@ -137,90 +133,43 @@ function HintController.trigger(id: string)
 end
 
 local function buildCard()
-	-- A slip from the guide with a mark down its side: TIP and its title with an X that closes it, the
-	-- hint, then "Stop tips" (the whole guide off) and GOT IT. A CanvasGroup so it fades as one piece.
-	card = Instance.new("CanvasGroup")
-	card.Name = "Hint"
-	card.Size = UDim2.fromOffset(WIDTH, 0)
-	card.AutomaticSize = Enum.AutomaticSize.Y
-	card.BackgroundTransparency = 1
-	card.BorderSizePixel = 0
-	card.Visible = false
-	local page, content = Kit.page({
-		Name = "Slip",
-		tone = "raised",
-		padding = T.space.l,
-		autoHeight = true,
-		Size = UDim2.new(1, 0, 0, 0),
-		Parent = card,
+	-- A guide notice (Kit/Notice): TIP and the X, the tip's title and text, then "Got it" and "Stop tips" (the
+	-- whole guide off).
+	local notice = Kit.notice({
+		Name = "Hint",
+		kind = "guide",
+		eyebrow = "Tip",
+		width = WIDTH,
+		Visible = false,
+		close = function()
+			dismissed = true
+		end,
+		actions = {
+			{
+				text = "Got it",
+				onClick = function()
+					dismissed = true
+				end,
+			},
+			{
+				-- No more tips and no objective list, until the guide is turned on again in Settings.
+				text = "Stop tips",
+				variant = "ghost",
+				onClick = function()
+					dismissed = true
+					table.clear(queue)
+					Settings.set("hints", false)
+					Toasts.show("Guide off. Turn it back on in Settings.", "info")
+				end,
+			},
+		},
+		Parent = Screens.toast,
 	})
-	Kit.Base.make("Frame", {
-		Name = "Mark",
-		BackgroundColor3 = C.white,
-		BorderSizePixel = 0,
-		Position = UDim2.fromOffset(10, 14),
-		Size = UDim2.new(0, 3, 1, -28),
-		ZIndex = page.ZIndex + 2,
-		Parent = page,
-	})
-	Kit.list(content, T.space.xs)
-	-- Title row: TIP · title, and the X that closes this tip.
-	local titleRow = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 1, Parent = content })
-	Kit.icon({
-		name = "help",
-		size = 22,
-		color = C.white,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.fromScale(0, 0.5),
-		Parent = titleRow,
-	})
-	titleLabel = Kit.label({
-		font = "label",
-		size = "small",
-		color = C.white,
-		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(30, 0),
-		Size = UDim2.new(1, -78, 1, 0),
-		Parent = titleRow,
-	})
-	local close = Kit.iconButton({
-		icon = "cross",
-		size = 32,
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, 8, 0.5, 0),
-		Parent = titleRow,
-	}, function()
-		dismissed = true
-	end)
-	close.Name = "CloseTip"
-	textLabel = Kit.label({ size = "body", color = C.bone, LayoutOrder = 2, Parent = content })
-	local row = Kit.frame({ Name = "Actions", Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 3, Parent = content })
-	-- No more tips and no objective list, until the guide is turned on again in Settings.
-	local stop = Kit.button({
-		text = "Stop tips",
-		variant = "ghost",
-		size = "s",
-		Parent = row,
-	}, function()
-		dismissed = true
-		table.clear(queue)
-		Settings.set("hints", false)
-		Toasts.show("Guide off. Turn it back on in Settings.", "info")
-	end)
-	stop.Name = "HideGuide"
-	Kit.button({
-		text = "Got it",
-		variant = "secondary",
-		size = "s",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Parent = row,
-	}, function()
-		dismissed = true
-	end)
-	card.Parent = Screens.toast
+	if notice.closeButton then
+		notice.closeButton.Name = "CloseTip"
+	end
+	tip = notice
+	card = notice.group
 end
 
 function HintController.init()

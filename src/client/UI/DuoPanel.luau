@@ -5,11 +5,10 @@ local Kit = require(script.Parent.Kit)
 local Screens = require(script.Parent.Screens)
 
 local C = Kit.color
-local T = Kit.Tokens
 
 local DuoPanel = {}
 
-local card: Frame? = nil
+local card: GuiObject? = nil
 local token = 0
 
 function DuoPanel.close()
@@ -24,42 +23,6 @@ end
 function DuoPanel.ask(from: string, emote: string, seconds: number, answer: (boolean) -> ())
 	DuoPanel.close()
 	local mine = token
-	local box = Kit.card({
-		Name = "DuoAsk",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 96),
-		Size = UDim2.fromOffset(360, 132),
-		Parent = Screens.panels,
-	})
-	card = box
-	Kit.label({
-		Text = string.format("%s asks you to %s.", from, emote),
-		font = "bodyBold",
-		size = "body",
-		color = C.white,
-		TextWrapped = true,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, 0, 0, 40),
-		Parent = box,
-	})
-	local line = Kit.label({
-		Text = "",
-		font = "bodyItalic",
-		size = "body",
-		color = C.dim,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(0, 40),
-		Size = UDim2.new(1, 0, 0, 22),
-		Parent = box,
-	})
-	local row = Kit.frame({
-		Name = "Answers",
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, T.touch),
-		Parent = box,
-	})
-	Kit.list(row, T.space.s, true)
 	local function reply(yes: boolean)
 		if token ~= mine then
 			return
@@ -67,18 +30,34 @@ function DuoPanel.ask(from: string, emote: string, seconds: number, answer: (boo
 		DuoPanel.close()
 		answer(yes)
 	end
-	Kit.button(
-		{ text = "Join", variant = "primary", size = "s", Size = UDim2.new(0.5, -T.space.s / 2, 1, 0), Parent = row },
-		function()
-			reply(true)
-		end
-	)
-	Kit.button(
-		{ text = "No", variant = "ghost", size = "s", Size = UDim2.new(0.5, -T.space.s / 2, 1, 0), Parent = row },
-		function()
-			reply(false)
-		end
-	)
+	-- A notice (Kit/Notice): who asks and what, the seconds left, then Join and No.
+	local notice = Kit.notice({
+		Name = "DuoAsk",
+		kind = "info",
+		eyebrow = "Duo emote",
+		icon = "palm",
+		title = from,
+		body = string.format("Asks you to %s.", emote),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 96),
+		actions = {
+			{
+				text = "Join",
+				onClick = function()
+					reply(true)
+				end,
+			},
+			{
+				text = "No",
+				onClick = function()
+					reply(false)
+				end,
+			},
+		},
+		Parent = Screens.panels,
+	})
+	card = notice.group
+	local line = Kit.label({ size = "small", color = C.dim, LayoutOrder = 1, Parent = notice.slot })
 	task.spawn(function()
 		for left = math.floor(seconds), 1, -1 do
 			if token ~= mine then

@@ -19,7 +19,6 @@ local ObjectiveTracker = {}
 local lastKey = ""
 
 local function line(parent: Instance, entry, index: number)
-	local width = parent:IsA("GuiObject") and parent.Size.X.Offset or 320
 	local row = Kit.frame({
 		Name = "Objective" .. index,
 		Size = UDim2.new(1, 0, 0, 0),
@@ -33,7 +32,7 @@ local function line(parent: Instance, entry, index: number)
 		BackgroundColor3 = if entry.done then C.g6 else C.g5,
 		BackgroundTransparency = if entry.done then 0 else 1,
 		BorderSizePixel = 0,
-		Position = UDim2.fromOffset(0, 6),
+		Position = UDim2.fromOffset(0, 5),
 		Size = UDim2.fromOffset(10, 10),
 		Parent = row,
 	})
@@ -42,10 +41,10 @@ local function line(parent: Instance, entry, index: number)
 	end
 	local label = Kit.label({
 		Text = if entry.done then "<s>" .. Keys.resolve(entry.text) .. "</s>" else Keys.resolve(entry.text),
-		size = "small",
+		size = "body",
 		color = if entry.done then C.faint else C.bone,
 		Position = UDim2.fromOffset(20, 0),
-		Size = UDim2.new(0, math.max(width - 64, 120), 0, 0),
+		Size = UDim2.new(1, -20, 0, 0),
 		Parent = row,
 	})
 	label.RichText = true
