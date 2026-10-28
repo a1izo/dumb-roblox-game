@@ -879,3 +879,11 @@ for name, joint, value in (("cuffedLead", "lShoulder", -1), ("cuffedFollow", "rS
         cuff.key(t, **{joint: J((12 + 3 * b, 0, value * (20 + 2 * b)), (0, -0.02 * b, 0))})
     cuff.follow(joint, 2.0, 0.7)
     cuff.build()
+
+# The Tokyo crowd's umbrella (World/Crowd plays it on a body that carries one, 2026-10-27): only the right arm is
+# keyed, raised before the chest with the fist up, where the umbrella's handle is (Maps/Mechanics/TokyoDistrict/
+# Looks seats the grip there), so the walk goes on beneath and the umbrella stays upright over the head.
+umbrella_hold = Motion("umbrellaHold", 2.0, loop=True, note="Holding an umbrella up: the right fist before the chest.")
+for t, b in ((0.0, 0.0), (1.0, 1.0)):
+    umbrella_hold.key(t, rShoulder=J((62 + 2 * b, 0, -14), (-0.12, 0.06, -0.14)))
+umbrella_hold.build()

@@ -223,19 +223,102 @@ local function civilian(character: Model, look: CrowdLooks.Look)
 	end
 end
 
--- An open umbrella held upright in front of the right shoulder.
+-- An open umbrella held up in the right fist (2026-10-27: it stood beside the body, nobody holding it). World/Crowd
+-- raises the arm with the umbrellaHold clip, and the grip is where that fist then is in the torso's frame (measured
+-- in a play test: it moves under a twentieth of a stud as the body walks): a hooked handle, a steel shaft, eight ribs
+-- under a canopy of eight panels, a ferrule on the crown (about 30 parts: every client clones it for its walkers).
+local FIST = Vector3.new(1.0, -0.15, -1.55)
+local CANOPY = 2.3 -- the canopy's reach from the shaft
+local CROWN = 3.35 -- its crown, over the torso's middle (a head's top is at 2.1)
+local DROP = 0.8 -- how far its rim hangs below the crown
+
+-- Two wedges filling the triangle a, b, c (as Maps/SceneBuilder lays its floors), `thickness` thick.
+local function triangle(a: Vector3, b: Vector3, c: Vector3, thickness: number): { WedgePart }
+	local ab, ac, bc = b - a, c - a, c - b
+	local abd, acd, bcd = ab:Dot(ab), ac:Dot(ac), bc:Dot(bc)
+	if abd > acd and abd > bcd then
+		c, a = a, c
+	elseif acd > bcd and acd > abd then
+		a, b = b, a
+	end
+	ab, ac, bc = b - a, c - a, c - b
+	local right = ac:Cross(ab)
+	if right.Magnitude < 1e-6 or bc.Magnitude < 1e-6 then
+		return {}
+	end
+	right = right.Unit
+	local up = bc:Cross(right).Unit
+	local back = bc.Unit
+	local height = math.abs(ab:Dot(up))
+	local made = {}
+	for index = 1, 2 do
+		local depth = if index == 1 then math.abs(ab:Dot(back)) else math.abs(ac:Dot(back))
+		if height < 0.02 or depth < 0.02 then
+			continue
+		end
+		local wedge = Instance.new("WedgePart")
+		wedge.Size = Vector3.new(thickness, height, depth)
+		wedge.CFrame = if index == 1
+			then CFrame.fromMatrix((a + b) / 2, right, up, back)
+			else CFrame.fromMatrix((a + c) / 2, -right, up, -back)
+		table.insert(made, wedge)
+	end
+	return made
+end
+
 local function umbrella(character: Model, colour: Color3)
 	CharacterService.attachBuiltTo(character, "LUmbrella", { "Torso" }, function(anchor: CFrame)
-		local shaft =
-			block(Vector3.new(0.1, 3.3, 0.1), Color3.fromRGB(40, 40, 44), anchor * CFrame.new(0.95, 1.35, -0.55))
-		shaft.Material = Enum.Material.Metal
-		local canopy = block(Vector3.new(4.6, 0.9, 4.6), colour, anchor * CFrame.new(0.95, 2.9, -0.55))
-		canopy.Material = Enum.Material.Fabric
-		Create("SpecialMesh", { MeshType = Enum.MeshType.Sphere, Parent = canopy })
-		if colour.R > 0.7 then
-			canopy.Transparency = 0.55 -- the clear plastic kind
+		local parts: { BasePart } = {}
+		local steel = Color3.fromRGB(46, 46, 52)
+		local grip = Color3.fromRGB(26, 22, 20)
+		local clear = colour.R > 0.7 -- (the clear plastic kind)
+		local function at(v: Vector3): Vector3
+			return anchor:PointToWorldSpace(v)
 		end
-		return { shaft, canopy }
+		local function rod(a: Vector3, b: Vector3, thick: number, col: Color3, material: Enum.Material?): Part
+			local from, to = at(a), at(b)
+			local along = to - from
+			local up = if math.abs(along.Unit.Y) > 0.99 then anchor.RightVector else anchor.UpVector
+			local item = block(
+				Vector3.new(along.Magnitude, thick, thick),
+				col,
+				CFrame.lookAt((from + to) / 2, to, up) * CFrame.Angles(0, math.rad(90), 0)
+			)
+			item.Shape = Enum.PartType.Cylinder
+			item.Material = material or Enum.Material.SmoothPlastic
+			table.insert(parts, item)
+			return item
+		end
+		local x, z = FIST.X, FIST.Z
+		local function on(y: number, dx: number?, dz: number?): Vector3
+			return Vector3.new(x + (dx or 0), y, z + (dz or 0))
+		end
+		-- the handle: a straight grip in the fist, then its hook curling round to the back
+		rod(on(FIST.Y - 0.3), on(FIST.Y + 0.35), 0.2, grip)
+		rod(on(FIST.Y - 0.3), on(FIST.Y - 0.55, 0, 0.12), 0.18, grip)
+		rod(on(FIST.Y - 0.55, 0, 0.12), on(FIST.Y - 0.6, 0, 0.36), 0.18, grip)
+		rod(on(FIST.Y - 0.6, 0, 0.36), on(FIST.Y - 0.42, 0, 0.52), 0.18, grip)
+		-- the shaft up to the crown, and the ferrule over it
+		rod(on(FIST.Y + 0.3), on(CROWN), 0.09, steel, Enum.Material.Metal)
+		rod(on(CROWN), on(CROWN + 0.38), 0.07, steel, Enum.Material.Metal)
+		-- the canopy: eight panels from the crown to the rim, a rib under each panel's edge
+		local crown = on(CROWN)
+		local rim: { Vector3 } = {}
+		for k = 0, 7 do
+			local angle = math.rad(k * 45 + 22.5)
+			rim[k + 1] = on(CROWN - DROP, math.cos(angle) * CANOPY, math.sin(angle) * CANOPY)
+		end
+		for k = 1, 8 do
+			local a, b = rim[k], rim[k % 8 + 1]
+			for _, wedge in ipairs(triangle(at(crown), at(a), at(b), 0.05)) do
+				wedge.Color = colour
+				wedge.Material = Enum.Material.Fabric
+				wedge.Transparency = if clear then 0.55 else 0
+				table.insert(parts, wedge)
+			end
+			rod(crown - Vector3.new(0, 0.06, 0), a - Vector3.new(0, 0.06, 0), 0.05, steel, Enum.Material.Metal)
+		end
+		return parts
 	end)
 end
 

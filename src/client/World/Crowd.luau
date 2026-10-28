@@ -106,6 +106,11 @@ local function build(number: number, standing: boolean): Rig?
 	local seed = (current:GetAttribute("CrowdSeed") :: number?) or 0
 	local model = store[CrowdLooks.bodyFor(number, seed, standing, #store)]:Clone()
 	model.Name = "Walker" .. number
+	-- (a clerk at a counter has put their umbrella away)
+	local carried = model:FindFirstChild("LUmbrella")
+	if standing and carried then
+		carried:Destroy()
+	end
 	local root = model:FindFirstChild("HumanoidRootPart")
 	if not root or not root:IsA("BasePart") then
 		model:Destroy()
@@ -155,6 +160,10 @@ local function setDrawn(rig: Rig, drawn: boolean)
 	if drawn then
 		LocomotionController.adopt(rig.model)
 		rig.far = false
+		-- (one with an umbrella holds it up in its right fist, the walk going on beneath: Looks seats the grip there)
+		if rig.model:FindFirstChild("LUmbrella") then
+			PoseController.play(rig.model, "umbrellaHold", { fadeIn = 0 })
+		end
 	end
 end
 
