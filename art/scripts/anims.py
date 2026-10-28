@@ -454,6 +454,9 @@ import anims_emotes  # noqa: E402,F401
 # The rebuilt emotes (2026-10-17), each copied from its reference: they replace clips of the same name above.
 import emotes  # noqa: E402,F401
 
+# The custom deaths' actings (2026-10-27), one for each cause in the shop.
+import deaths  # noqa: E402,F401
+
 
 # The cutscenes' actors: their acting clips are built with everything else.
 import cinema.shots  # noqa: E402, F401
