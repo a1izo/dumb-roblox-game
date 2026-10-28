@@ -1,6 +1,7 @@
 -- The paid win cutscenes (Shared/Cinema/WinCuts, shop overhaul 2026-10-21): each one's clip exists and is as long as the
 -- cutscene, its shots and beats run in order inside it, every event is one WinCinema knows and names something on
--- the set, every sound is a slot; and the shop sells three per side, the free one first, each pointing at its own.
+-- the set, every sound is a slot; and the shop sells three per side, the free one first, each pointing at its own,
+-- each paid one told for the other side too (its `cross`).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -26,8 +27,13 @@ local ACTS = {
 	tip = true,
 	shatter = true,
 	glow = true,
+	ignite = true,
+	char = true,
+	fling = true,
+	text = true,
+	scorch = true,
 }
-local NAMELESS = { pages = true, cityOut = true, snap = true, glow = true }
+local NAMELESS = { pages = true, cityOut = true, snap = true, glow = true, scorch = true }
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -88,8 +94,11 @@ return function(t)
 							end
 						end
 					end
-					if event.act == "snap" then
-						expect(cut.strings[event.index] ~= nil and named[event.toward] == true).to.equal(true)
+					if event.act == "snap" or event.act == "scorch" then
+						expect(cut.strings[event.index] ~= nil).to.equal(true)
+						if event.act == "snap" then
+							expect(named[event.toward] == true).to.equal(true)
+						end
 					end
 				end
 				for _, cue in ipairs(cut.sounds or {}) do
@@ -112,6 +121,10 @@ return function(t)
 					expect(cut ~= nil).to.equal(true)
 					expect(cut and cut.side).to.equal(item.side)
 					expect(cut and cut.clip).to.equal(item.clip)
+					-- (and the same scene told for the other side: its own cutscene, of that side)
+					local cross = WinCuts[item.cross]
+					expect(cross ~= nil).to.equal(true)
+					expect(cross and cross.side ~= item.side).to.equal(true)
 				end
 			end
 			expect(sides.coven.free == 1 and sides.coven.paid == 2).to.equal(true)

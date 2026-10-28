@@ -96,7 +96,8 @@ end
 -- Building --------------------------------------------------------------------------------------------------
 
 -- What a set's part gives off (the VFX kit: Presentation/Vfx): a candle's living flame (its own part is hidden; `out`
--- snuffs it with a curl of smoke), rain, low fog.
+-- snuffs it with a curl of smoke), a fire (out until an "ignite" event lights it, the part's height its flames'),
+-- rain, low fog.
 local EMIT = {
 	flame = function(part: BasePart)
 		part.Transparency = 1
@@ -105,6 +106,29 @@ local EMIT = {
 		return {
 			out = function()
 				flame.out()
+			end,
+		}
+	end,
+	fire = function(part: BasePart)
+		part.Transparency = 1
+		local height = math.max(part.Size.Y, 0.3)
+		local flame = Vfx.Recipes.flame(part, {
+			kind = "fire",
+			scale = height,
+			color = Color3.fromRGB(255, 128, 52),
+			lit = false,
+			lightRange = math.max(height * 7, 8),
+			lightBrightness = 1.5,
+		})
+		return {
+			out = function()
+				flame.out()
+			end,
+			ignite = function(scale: number?)
+				flame.set(scale or 1, 0.35)
+			end,
+			flare = function(on: boolean)
+				flame.flare(on)
 			end,
 		}
 	end,
@@ -243,11 +267,11 @@ local function makePart(spec: any, origin: CFrame, folder: Instance, refs: Refs)
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
 			Size = UDim2.fromScale(0.95, 0.5),
-			Rotation = -8,
+			Rotation = spec.text.tilt or -8,
 			Text = spec.text.text,
 			TextScaled = true,
 			TextColor3 = rgb(spec.text.color),
-			FontFace = Font.new("rbxasset://fonts/families/Bangers.json"),
+			FontFace = Font.new("rbxasset://fonts/families/" .. (spec.text.font or "Bangers") .. ".json"),
 			Parent = gui,
 		})
 	end
@@ -903,6 +927,133 @@ ACTS.shatter = function(refs, event)
 		for _, shard in ipairs(shards) do
 			shard.Transparency = math.clamp((u - 0.4) / 0.6, 0, 1)
 		end
+	end)
+end
+
+-- Fires lit (a part made with emit = "fire"): they catch and grow to `scale` of their size; `flare` burns them
+-- taller (a file thrown on them).
+ACTS.ignite = function(refs, event)
+	for _, name in ipairs(each(event)) do
+		local fire = refs.emitters[name]
+		if type(fire) == "table" and fire.ignite then
+			fire.ignite(event.scale)
+			if event.flare then
+				fire.flare(true)
+				task.delay(event.seconds or 1.2, function()
+					fire.flare(false)
+				end)
+			end
+		end
+		local part = refs.parts[name]
+		if part then
+			smoke(part.Position, refs.folder, 10, Color3.fromRGB(255, 150, 70))
+		end
+	end
+end
+
+-- Parts burned away (a page, a photo): blackened from their own colour, then gone in a breath of smoke and sparks.
+ACTS.char = function(refs, event)
+	local seconds = event.seconds or 1.5
+	for _, name in ipairs(each(event)) do
+		local part = refs.parts[name]
+		if part then
+			local base = part.Color
+			local alpha = part.Transparency
+			over(refs, seconds, function(u)
+				part.Color = base:Lerp(Color3.fromRGB(26, 20, 16), math.clamp(u / 0.6, 0, 1))
+				part.Transparency = alpha + (1 - alpha) * math.clamp((u - 0.55) / 0.45, 0, 1)
+			end, function()
+				smoke(part.Position, refs.folder, 12, Color3.fromRGB(60, 56, 54))
+			end)
+		end
+	end
+end
+
+-- Parts (or a prop) thrown: off whatever held them, along an arc to `to` over `seconds` (`fall`: dropping faster
+-- as they go, as a thing falls), turning `spin` turns about x, y and z; hidden where they land with `hide`.
+ACTS.fling = function(refs, event)
+	local names = each(event)
+	local items: { { part: BasePart?, model: Model?, relative: CFrame } } = {}
+	local base: CFrame? = nil
+	for _, name in ipairs(names) do
+		local part = refs.parts[name]
+		local model = if part then nil else refs.props[name]
+		local cf = if part then part.CFrame elseif model then model:GetPivot() else nil
+		if cf then
+			base = base or cf
+			if part then
+				for _, weld in ipairs(part:GetChildren()) do
+					if weld.Name == "Held" then
+						weld:Destroy()
+					end
+				end
+				part.Anchored = true
+			end
+			table.insert(items, { part = part, model = model, relative = (base :: CFrame):ToObjectSpace(cf) })
+		end
+	end
+	if not base then
+		return
+	end
+	local from = (base :: CFrame).Position
+	local goal = (refs.origin * CFrame.new(vec(event.to))).Position
+	local turn = (base :: CFrame).Rotation
+	local spin = if type(event.spin) == "table" then vec(event.spin) else Vector3.new(event.spin or 1, 0, 0)
+	local arc = event.arc or 1
+	over(refs, event.seconds or 1, function(u)
+		local down = if event.fall then u * u else u
+		local at = Vector3.new(
+			from.X + (goal.X - from.X) * u,
+			from.Y + (goal.Y - from.Y) * down,
+			from.Z + (goal.Z - from.Z) * u
+		) + Vector3.new(0, arc * 4 * u * (1 - u), 0)
+		local cf = CFrame.new(at)
+			* CFrame.Angles(spin.X * u * math.pi * 2, spin.Y * u * math.pi * 2, spin.Z * u * math.pi * 2)
+			* turn
+		for _, item in ipairs(items) do
+			if item.part then
+				item.part.CFrame = cf * item.relative
+			elseif item.model then
+				item.model:PivotTo(cf * item.relative)
+			end
+		end
+	end, function()
+		if event.hide then
+			for _, item in ipairs(items) do
+				setShown((item.part or item.model) :: Instance, false)
+			end
+		end
+	end)
+end
+
+-- Words on a part (its `text`, made hidden) shown: a screen's headline, a label.
+ACTS.text = function(refs, event)
+	for _, name in ipairs(each(event)) do
+		local part = refs.parts[name]
+		local mark = part and part:FindFirstChild("Mark")
+		if mark and mark:IsA("SurfaceGui") then
+			mark.Enabled = true
+		end
+	end
+end
+
+-- A string of the board burning: it glows ember-orange along its length, then blackens and thins away.
+ACTS.scorch = function(refs, event)
+	local s = refs.strings[event.index]
+	if not s then
+		return
+	end
+	s.beam.LightEmission = 1
+	s.beam.Color = ColorSequence.new(Color3.fromRGB(255, 150, 60))
+	local a0 = s.beam.Attachment0
+	if a0 then
+		smoke(a0.WorldPosition:Lerp(s.far.WorldPosition, 0.5), refs.folder, 6, Color3.fromRGB(255, 120, 50))
+	end
+	over(refs, event.seconds or 0.9, function(u)
+		s.beam.Color = ColorSequence.new(Color3.fromRGB(255, 150, 60):Lerp(Color3.fromRGB(20, 14, 12), u))
+		s.beam.LightEmission = 1 - u
+		s.beam.Width0 = 0.07 * (1 - u)
+		s.beam.Width1 = 0.07 * (1 - u)
 	end)
 end
 

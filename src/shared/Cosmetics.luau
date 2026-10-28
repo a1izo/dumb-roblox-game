@@ -1216,7 +1216,9 @@ Cosmetics.ITEMS = {
 	-- Win cutscenes (shop overhaul, 2026-10-21): what the ending shows when your side wins and you lead it (Diavolo
 	-- for the Coven, Ace for the Bureau: for everyone), or on your own screen when another of your side leads. Each
 	-- side has its own (`side`, worn in its own slot, `slot`); the free one is the ending as it always was. `cut` is
-	-- the cutscene (Shared/Cinema/WinCuts), `clip` its star's move (the shop card's mannequin).
+	-- the cutscene (Shared/Cinema/WinCuts), `clip` its star's move (the shop card's mannequin). Each paid one is told
+	-- for the other side too (`cross`, the user's ask of 2026-10-27: a scene for both Ace and the Coven): it plays when
+	-- the other side wins and its slot holds no paid scene of its own (CosmeticsService.winCut).
 	{
 		id = "win_coven_default",
 		kind = "win",
@@ -1239,6 +1241,7 @@ Cosmetics.ITEMS = {
 		side = "coven",
 		slot = "winCoven",
 		cut = "finalPage",
+		cross = "finalPageBureau",
 		clip = "winFinalPage",
 		card = 3.5, -- (the shop card's moment)
 		blurb = "The Manual snaps shut and the candles go out.",
@@ -1254,6 +1257,7 @@ Cosmetics.ITEMS = {
 		side = "coven",
 		slot = "winCoven",
 		cut = "newWorld",
+		cross = "newWorldBureau",
 		clip = "winNewWorld",
 		card = 7.0, -- (the shop card's moment)
 		blurb = "A rooftop, a red sky, a city going dark.",
@@ -1281,6 +1285,7 @@ Cosmetics.ITEMS = {
 		side = "bureau",
 		slot = "winBureau",
 		cut = "caseClosed",
+		cross = "caseClosedCoven",
 		clip = "winCaseClosed",
 		card = 6.8, -- (the shop card's moment)
 		blurb = "The red string leads to one photo. Stamped.",
@@ -1296,6 +1301,7 @@ Cosmetics.ITEMS = {
 		side = "bureau",
 		slot = "winBureau",
 		cut = "checkmate",
+		cross = "checkmateCoven",
 		clip = "winCheckmate",
 		card = 3.9, -- (the shop card's moment)
 		blurb = "One finger tips the king over.",

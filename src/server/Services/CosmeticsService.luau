@@ -165,12 +165,21 @@ function CosmeticsService.seatClip(player: Player): string
 	return if seat and type(seat.clip) == "string" then seat.clip else Seating.DEFAULT
 end
 
--- The win cutscene this player wears for a side ("coven" or "bureau"): its cutscene (Shared/Cinema/WinCuts), or nil
--- for the ending as it always was.
+-- The win cutscene this player wears for a side ("coven" or "bureau"): its cutscene (Shared/Cinema/WinCuts); with
+-- none of that side's worn, the other side's told for this one (the item's `cross`); or nil for the ending as it
+-- always was.
 function CosmeticsService.winCut(player: Player, side: string): string?
 	local data = DataService.get(player)
-	local item = if data then equipped(player, data, if side == "coven" then "winCoven" else "winBureau") else nil
-	return if item and type(item.cut) == "string" then item.cut else nil
+	if not data then
+		return nil
+	end
+	local item = equipped(player, data, if side == "coven" then "winCoven" else "winBureau")
+	if item and type(item.cut) == "string" then
+		return item.cut
+	end
+	-- (no paid scene of this side's worn: the other side's, told for this one)
+	local other = equipped(player, data, if side == "coven" then "winBureau" else "winCoven")
+	return if other and type(other.cross) == "string" then other.cross else nil
 end
 
 -- The chair this player's place at the war table becomes, or nil for the war chair.

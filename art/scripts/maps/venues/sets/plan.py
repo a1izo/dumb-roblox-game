@@ -12,5 +12,10 @@ WRITER = (0.0, 70.0)  # the Coven's Sealed one (finalPage): x -8.5..8.5, z -6.5.
 OFFICE = (120.0, 70.0)  # the Bureau's Sealed one (caseClosed): x -8.5..8.5, z -8.4..8, 12 high; the board north
 HALL = (720.0, 0.0)  # the Bureau's Godhood one (checkmate): x -40..40, z -58..36, 48 high; the board in its middle
 ROOFTOP = (900.0, 0.0)  # the Coven's Godhood one (newWorld): the roof x -20..20, z -7.25..17; the street 70 below
+# Each paid one told for the other side (2026-10-28, the user's ask: every shop win cutscene for both sides):
+ARCHIVE = (240.0, 70.0)  # The Final Page for the Bureau (finalPageBureau): x -11..11, z -9..9, 12 high; windows north
+DEN = (480.0, 70.0)  # Case Closed for the Coven (caseClosedCoven): x -9..9, z -8.5..8, 11 high; the fireplace north
+STEPS = (1100.0, 0.0)  # New World for the Bureau (newWorldBureau): the landing x -19..19, z 0..10; the square 6 below
+ROOFRAIN = (1300.0, 0.0)  # Checkmate for the Coven (checkmateCoven): the roof x -14..14, z -4.2..14; the street 80 below
 
-BOUNDS = ((-70.0, -75.0, -90.0), (930.0, 80.0, 90.0))
+BOUNDS = ((-70.0, -90.0, -100.0), (1380.0, 80.0, 90.0))

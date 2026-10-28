@@ -1079,4 +1079,26 @@ return {
 			},
 		},
 	},
+	-- (God of the New World told for the Bureau: Death's Manual shut at the left side down the steps, then taken into
+	-- the right hand and raised high, upright in the fist, its cover to the press)
+	winNewWorldBureau = {
+		props = {
+			{
+				model = "Grimoire",
+				size = 1.7,
+				stand = { shape = "Block", size = { 0.24, 1.7, 1.15 }, color = { 22, 22, 26 } },
+				mount = "Left Arm",
+				at = { { p = { -0.66, -1.3, 0 } }, { r = { 0, 90, 0 } }, { r = { 90, 0, 0 } } },
+				hide = 2.25,
+			},
+			{
+				model = "Grimoire",
+				size = 1.7,
+				show = 2.25,
+				stand = { shape = "Block", size = { 1.15, 1.7, 0.24 }, color = { 22, 22, 26 } },
+				mount = "Right Arm",
+				at = { { p = { 0, -1.6, 0 } }, { r = { 90, 0, 0 } } },
+			},
+		},
+	},
 }

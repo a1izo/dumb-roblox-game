@@ -311,6 +311,34 @@ Assets.sfx = {
 	},
 	winShatter = { id = "", ref = "glass and stone shattering into a rain of shards", fallbackId = "", volume = 0.8 },
 	winPiecesLight = { id = "", ref = "a row of soft bright chimes rising", fallbackId = "", volume = 0.5 },
+	-- (each told for the other side, 2026-10-28)
+	winArchive = {
+		id = "",
+		ref = "a tall quiet room at dawn: distant birds, a ventilation hum",
+		fallbackId = "",
+		volume = 0.4,
+	},
+	winPageRip = { id = "", ref = "a single book page torn out, sharp and slow", fallbackId = "", volume = 0.7 },
+	winMatchStrike = { id = "", ref = "a match struck and flaring", fallbackId = "", volume = 0.7 },
+	winPageBurn = { id = "", ref = "paper catching fire and burning, a soft crackle", fallbackId = "", volume = 0.6 },
+	winBagSeal = { id = "", ref = "a plastic evidence bag pressed shut, tape smoothed", fallbackId = "", volume = 0.6 },
+	winPress = {
+		id = "",
+		ref = "a crowd of reporters outdoors at morning, murmuring, calling out",
+		fallbackId = "",
+		volume = 0.5,
+	},
+	winShutters = { id = "", ref = "a volley of camera shutters and flashes", fallbackId = "", volume = 0.8 },
+	winCourtBell = { id = "", ref = "a courthouse bell tolling once, far", fallbackId = "", volume = 0.6 },
+	winFire = { id = "", ref = "a fire in a fireplace, low crackle", fallbackId = "", volume = 0.5 },
+	winFireRoar = { id = "", ref = "a fire flaring up with a whoosh", fallbackId = "", volume = 0.8 },
+	winPieceFlick = { id = "", ref = "a chess piece flicked off a wooden board", fallbackId = "", volume = 0.7 },
+	winFarClatter = {
+		id = "",
+		ref = "a small thing landing far below on wet street, faint",
+		fallbackId = "",
+		volume = 0.4,
+	},
 	-- The role cutscenes' voiced lines (Shared/Cinema/Shots, `sound.voice`): each starts on its shot's typed line, and a
 	-- clip longer than the line's time there stretches the whole cutscene to fit it (Shared/Cinema/CutLength). Silent until
 	-- filled.
