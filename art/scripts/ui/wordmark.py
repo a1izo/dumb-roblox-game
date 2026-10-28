@@ -193,7 +193,41 @@ def load_fonts():
     return out
 
 
-def render(text=TEXT, hand=False, seed="", width=WIDTH, height=HEIGHT):
+PIN = (128, 18, 28)  # an oxblood pin head (the monolith's cracks glow the same red)
+
+
+def pin(canvas, px, py, r):
+    """A round-headed pin seen from the front, holding a paper letter to the stone: its soft shadow down and to
+    the right, the head shaded from the top left, a catch of light on it."""
+    h, w = canvas.shape[:2]
+    x0, x1 = max(0, int(px - 2 * r)), min(w, int(px + 3 * r))
+    y0, y1 = max(0, int(py - 2 * r)), min(h, int(py + 3 * r))
+    if x1 <= x0 or y1 <= y0:
+        return
+    yy, xx = np.mgrid[y0:y1, x0:x1].astype(float) + 0.5
+
+    def disc(cx, cy, rad, soft=1.0):
+        d = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
+        return np.clip((rad - d) / soft + 0.5, 0.0, 1.0)
+
+    layer = np.zeros((y1 - y0, x1 - x0, 4))
+    shadow = disc(px + 0.4 * r, py + 0.55 * r, r * 1.05, soft=0.35 * r) * 0.5
+    layer[..., 3] = shadow
+    head = disc(px, py, r)
+    d = np.sqrt((xx - (px - 0.4 * r)) ** 2 + (yy - (py - 0.4 * r)) ** 2) / (1.8 * r)
+    shade = np.clip(1.25 - d, 0.45, 1.15)[..., None]
+    colour = np.clip(np.array(PIN) / 255.0 * shade, 0.0, 1.0)
+    a = head[..., None]
+    layer[..., :3] = colour * a
+    layer[..., 3] = np.maximum(layer[..., 3] * (1 - head), head)
+    glint = disc(px - 0.38 * r, py - 0.4 * r, 0.28 * r, soft=0.6)[..., None] * 0.75
+    layer[..., :3] = layer[..., :3] * (1 - glint) + glint
+    # (the layer's colour is pre-multiplied where the head is; the shadow is black)
+    rgb = np.where(layer[..., 3:4] > 1e-6, layer[..., :3] / np.maximum(layer[..., 3:4], 1e-6), 0.0)
+    over(canvas, np.dstack([np.clip(rgb, 0, 1), layer[..., 3]]), x0, y0)
+
+
+def render(text=TEXT, hand=False, seed="", width=WIDTH, height=HEIGHT, pins=False):
     fnt = load_fonts()
     specs = layout(text, hand, seed)
 
@@ -232,13 +266,19 @@ def render(text=TEXT, hand=False, seed="", width=WIDTH, height=HEIGHT):
         cx = x + cell / 2
         cy = mid + spec["dy"] * size / 62
         over(canvas, box, int(round(cx - bw / 2)), int(round(cy - bh / 2)))
+        if pins:
+            # (pinned through the card near its top, turned with it: the monolith's letters are paper)
+            a = math.radians(spec["rot"])
+            reach = 0.45 * 1.10 * size * spec["scale"]
+            pin(canvas, cx + math.sin(a) * reach, cy - math.cos(a) * reach, 0.07 * size)
         x += cell
     return canvas
 
 
 def main():
     os.makedirs(TEXTURES, exist_ok=True)
-    img = render()
+    # (the monolith's copy: each paper letter pinned to the stone, 2026-10-27)
+    img = render(pins=True)
     path = os.path.join(TEXTURES, "UiWordmark.png")
     png.write(path, img)
     hand = render(hand=True)

@@ -267,7 +267,6 @@ LEDGE_R = 10.0
 # Standing stones at the ridge's foot, each with a carved eye watching the plaza (degrees round the rim, and how
 # far inside it), and the eyes on the monolith's face either side of the throne (x, y).
 EYE_STONES = [(75.0, 15.0), (140.0, 15.0), (205.0, 15.0), (262.0, 15.0)]
-MONO_EYES = [(-14.0, 8.0), (14.0, 8.0)]
 
 
 def eye_stones():
