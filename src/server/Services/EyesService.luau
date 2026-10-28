@@ -154,7 +154,9 @@ end
 
 local function deal(ps, force: boolean?)
 	if not force then
-		if ps.role ~= "Follower" or not canStare(ps) or ps.ritual then
+		-- (its own checks: canStare needs the Oculus, which this is how you get)
+		local roaming = Match.phase == "Investigation" and Match.meetingCall == nil
+		if ps.role ~= "Follower" or not ps.alive or not roaming or ps.ritual or ps.writing or ps.hacking then
 			return
 		end
 		if ps.eyes then

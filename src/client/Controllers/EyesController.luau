@@ -5,15 +5,14 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
-local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
-local Kit = require(script.Parent.Parent.UI.Kit)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
 local Characters = require(script.Parent.Parent.Characters)
 
@@ -95,30 +94,71 @@ function EyesController.stare()
 	)
 end
 
--- The deal costs the Muerto's life, so it asks first.
+-- The deal costs the Muerto's life, so it takes two presses: the first lays a white sheen over your
+-- own character (on your screen only) that fades in CONFIRM_TIME seconds; pressing again before it
+-- is gone makes the deal. No window, so the locked mouse never gets in the way. Everyone else only
+-- ever sees the ritual itself.
+local CONFIRM_TIME = 1.5
+local armedUntil = 0
+local sent = false
+local sheen: Highlight? = nil
+
+local function clearSheen()
+	if sheen then
+		sheen:Destroy()
+		sheen = nil
+	end
+end
+
+local function showSheen()
+	clearSheen()
+	local character = LocalPlayer.Character
+	if not character then
+		return
+	end
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "LDealSheen"
+	highlight.FillColor = Color3.new(1, 1, 1)
+	highlight.OutlineColor = Color3.new(1, 1, 1)
+	highlight.FillTransparency = 0.45
+	highlight.OutlineTransparency = 0.2
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.Adornee = character
+	highlight.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	sheen = highlight
+	TweenService:Create(
+		highlight,
+		TweenInfo.new(CONFIRM_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ FillTransparency = 1, OutlineTransparency = 1 }
+	):Play()
+	task.delay(CONFIRM_TIME, function()
+		if sheen == highlight then
+			clearSheen()
+		end
+	end)
+end
+
 function EyesController.deal()
 	local private = ClientState.private
 	if ClientState.role() ~= "Follower" or not private.canDeal or ClientState.phase() ~= "Investigation" then
 		return
 	end
-	Kit.confirm({
-		title = Terms.f("Accept {eyes}?"),
-		body = Terms.f(
-			"A {ritual}-second ritual, eyes blazing, in plain sight. Then you read a name in {read} s from up to "
-				.. "{range} studs. You die after {minutes} minutes of investigation.",
-			{
-				ritual = Config.OCULUS_RITUAL,
-				read = Config.OCULUS_READ_TIME,
-				range = Config.OCULUS_RANGE,
-				minutes = math.floor(Config.OCULUS_LIFESPAN / 60 + 0.5),
-			}
-		),
-		confirm = "Accept the deal",
-		variant = "danger",
-		onConfirm = function()
-			EyesRequest:FireServer({ action = "deal" })
-		end,
-	})
+	if sent then
+		return -- already asked; waiting for the server
+	end
+	if os.clock() < armedUntil then
+		armedUntil = 0
+		sent = true
+		clearSheen()
+		EyesRequest:FireServer({ action = "deal" })
+		-- Let it be asked again if the server turned it down (a meeting began, say).
+		task.delay(Config.OCULUS_RITUAL + 2, function()
+			sent = false
+		end)
+		return
+	end
+	armedUntil = os.clock() + CONFIRM_TIME
+	showSheen()
 end
 
 function EyesController.init()
