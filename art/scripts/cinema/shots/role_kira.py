@@ -15,7 +15,8 @@ S  7.0-8.2   The hidden camera on the side wall: the television flares, the flat
 D  8.2-11.2   Across the desk, pushing in: "I'll take a potato chip..." the hand into the bag, a crisp lifted slowly
              up beside his face, the head turning to it; held.
 E  11.2-12.8  Low and close on the crisp's side, tilted, half his face in the dark: "...and EAT IT!" the snap to the
-             mouth, the crunch, the frame stopping red, the crumbs flying; he chews, grinning.
+             mouth, the crunch, the frame stopping red, the crumbs flying; he chews, grinning; behind him the
+             Deathsinger starts to come out of the dark, eyes first, as he bites.
 F  12.8-15.6 Low and wide from the room, rising: he leans back into the chair laughing, and behind him the
              Deathsinger is drawn out of the dark, eyes first, leaning in over his shoulder, laughing with him.
 G  15.6-19.6 The hidden camera in the corner behind him: a student at his desk, writing. Nothing behind him.
@@ -58,6 +59,8 @@ TAKE = (7.75, 8.35)  # into the bag .. a crisp out
 RAISED = 9.6  # up beside the face, held through the pause
 BITE = 11.4  # "...and EAT IT!"
 BACK = 12.9  # leaning back, laughing
+COMES = BITE - 0.2  # the Deathsinger starts to come out of the dark behind him as he bites (the user, 2026-10-28: on
+# "EAT IT!", not after it)
 STUDY = 15.35  # back over his books, the good student
 CUTS = (3.2, 5.4, 7.0, 8.2, 11.2, 12.8)  # B, C, the side camera, D, E, F
 
@@ -230,12 +233,12 @@ bag.at(0.0, (BAG[0], BAG_Y, BAG[1]), (0, 196, 0))
 bag.at(LENGTH, (BAG[0], BAG_Y, BAG[1]), (0, 196, 0))
 PAGE = (BOOK[0], PAGE_Y, BOOK[1])
 
-# The Deathsinger: drawn together out of the dark behind him as he leans back laughing, eyes first, leaning in over his
-# shoulder, laughing with him; gone before the hidden camera's view (it never shows on a camera).
-singer = shot.prop("Specter", show=(BACK - 0.3, STUDY + 0.25))
-singer.at(BACK - 0.3, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
+# The Deathsinger: drawn together out of the dark behind him as he bites, eyes first, whole as he leans back laughing,
+# leaning in over his shoulder, laughing with him; gone before the hidden camera's view (it never shows on a camera).
+singer = shot.prop("Specter", show=(COMES, STUDY + 0.25))
+singer.at(COMES, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
 singer.at(BACK + 0.9, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")
-shot.event(BACK - 0.3, "materialize", model="Specter", dur=1.1, r=200, g=30, b=45)
+shot.event(COMES, "materialize", model="Specter", dur=1.4, r=200, g=30, b=45)
 for k in range(6):
     t = BACK + 1.0 + 0.24 * k
     singer.at(t, (SINGER[0], 0.3 + (0.25 if k % 2 else 0.0), SINGER[1] + 0.3), (12 - (5 if k % 2 else 0), 170, 4))
@@ -304,7 +307,7 @@ shot.light("spot", (PAGE[0] - 1.0, PAGE[1] + 2.8, PAGE[2] - 1.4), PAGE, color=(2
 shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(235, 245, 255), brightness=3.0, range=20, angle=26,
            show=(LOOK[1] - 0.05, LOOK[1] + 0.35), flicker=0.9)  # (the television flaring as the news breaks)
 shot.light("spot", (SINGER[0] + 0.5, 0.6, SINGER[1] + 2.0), (SINGER[0], 7.0, SINGER[1]), color=(220, 25, 35),
-           brightness=2.2, range=12, angle=50, show=(BACK - 0.3, STUDY + 0.25))
+           brightness=2.2, range=12, angle=50, show=(COMES, STUDY + 0.25))
 shot.light("point", (SINGER[0], 5.0, SINGER[1] + 1.0), color=(200, 20, 30), brightness=1.2, range=8, shadows=False,
            show=(BACK + 0.2, STUDY + 0.25))
 
@@ -322,7 +325,7 @@ shot.event(BITE, "fx", name="still", r=255, g=40, b=50, dur=0.32)
 shot.event(BITE, "fx", name="shake", strength=0.35, dur=0.25)
 shot.event(BITE + 0.02, "fx", name="burst", pos=[round(float(v), 3) for v in framing.part(shot, "self", BITE, "Head")], r=236, g=196, b=104,
            amount=26)  # (the crumbs)
-shot.event(BACK - 0.3, "sfx", slot="wisp")
+shot.event(COMES + 0.3, "sfx", slot="wisp")
 shot.event(BACK + 0.4, "sfx", slot="hauntWhisper")
 # the hidden cameras: black and white, REC and the time
 for t0, t1, _, _, _, label in CAMS:
