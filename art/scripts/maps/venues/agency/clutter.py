@@ -60,19 +60,20 @@ def upper(s):
     fit.table(s, 46.0, 62.0, 10.0, 5.0, 0, y)
     fit.chairs_round(s, 46.0, 62.0, 10.0, 5.0, 0, y)
     p(s, "Sideboard", 58.4, 46.0, -90, 1.0, y)
-    # The corridor round the core: a bench and a cooler against the outer walls, a plant at the corner.
+    # The corridor round the core: a bench and a cooler against the outer walls. (The plant at its south-west corner
+    # stood in the gap to the interview hall; a wall stands there now, 2026-10-27: lower.interviews.)
     p(s, "Bench", 48.85, -18.0, 90, 0.9, y)
     p(s, "WaterCooler", -15.0, -24.0, -90, 1.0, y)
-    p(s, "Plant", -14.4, -46.4, 0, 1.0, y)
 
 
 # The blackout (Bureau HQ's mechanic) ---------------------------------------------------------------------
 
 # Red emergency lamps, off until someone pulls the breaker: along the corridor round the core and over
-# the open floors, on both storeys.
+# the open floors, on both storeys. (The lobby's middle one hung in the atrium's open air, a red bar under nothing
+# with the balcony far above, 2026-10-27: it is under the balcony's edge now, at z 0, the slab over it.)
 EMERGENCY = {
     L1: [(-12.0, -44.0), (22.0, -44.0), (46.0, -44.0), (-12.0, -14.0), (46.0, -14.0), (-58.0, -20.0), (-58.0, 30.0),
-         (17.0, 20.0), (60.0, 40.0), (25.0, 60.0)],
+         (17.0, 0.0), (60.0, 40.0), (25.0, 60.0)],
     L2: [(-12.0, -44.0), (22.0, -44.0), (46.0, -44.0), (-12.0, -14.0), (46.0, -14.0), (-58.0, -20.0), (-58.0, 20.0),
          (-60.0, 58.0), (20.0, 50.0), (40.0, 10.0)],
 }
