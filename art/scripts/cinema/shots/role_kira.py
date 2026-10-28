@@ -119,12 +119,14 @@ bag.at(LENGTH, (BAG[0], TOP, BAG[1]), (0, 200, 0))
 # (2026-10-25, the owner: "he just appears out of the ground ... make them make sense (like materializing slowly)":
 # drawn together out of smoke where it stands behind the chair, its eyes first, leaning in over the shoulder as it
 # comes whole)
-singer = shot.prop("Specter", show=(10.6, None))
-singer.at(10.6, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
-singer.at(12.2, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")  # leaning over the shoulder
-shot.event(10.6, "materialize", model="Specter", dur=1.5, r=200, g=30, b=45)
+# (2026-10-27, the user: sooner, behind him at "EAT IT!": it starts to form, eyes first, in the dark over his
+# shoulder as he bites, comes whole leaning in over the shoulder, and laughs with him before the cut)
+singer = shot.prop("Specter", show=(9.8, None))
+singer.at(9.8, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
+singer.at(10.9, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")  # leaning over the shoulder
+shot.event(9.8, "materialize", model="Specter", dur=1.1, r=200, g=30, b=45)
 for k in range(6):  # it laughs with them
-    t = 12.5 + 0.4 * k
+    t = 11.0 + 0.28 * k
     singer.at(t, (SINGER[0], 0.3 + (0.25 if k % 2 else 0.0), SINGER[1] + 0.3), (12 - (5 if k % 2 else 0), 170, 4))
 
 # A: wide from the television's corner, drifting in.
@@ -167,7 +169,8 @@ shot.event(7.0, "sfx", slot="flatline")
 shot.event(10.0, "sfx", slot="slam")
 shot.event(10.0, "fx", name="still", r=255, g=40, b=50, dur=0.32)
 shot.event(10.0, "fx", name="shake", strength=0.35, dur=0.25)
-shot.event(11.0, "sfx", slot="wisp")
+shot.event(10.0, "sfx", slot="wisp")
+shot.event(11.1, "sfx", slot="hauntWhisper")
 shot.event(12.3, "sfx", slot="hauntWhisper")
 shot.event(14.0, "fx", name="flash", r=200, g=20, b=30, strength=0.3, dur=0.5)
 # Cut down round the line: the chip, the name, the flatline, then the chip held up and bitten on "EAT IT!", the
