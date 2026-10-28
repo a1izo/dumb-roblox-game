@@ -71,6 +71,10 @@ type Showing = {
 	punches: { { number } },
 	focus: Focus?,
 	freeze: { dur: number, blink: string? }?, -- a freeze asked for, not yet begun (the render step begins it)
+	-- where an actor's pen nib is on the screen (0..1) and which way the arm comes down it (degrees), for an impact
+	-- that bursts from the nib; and a red slash cut into the open page of a Manual on the set
+	nib: ((slot: string) -> (Vector2?, number?))?,
+	ink: ((seed: number) -> ())?,
 }
 
 -- The data of a shot by name, or nil.
@@ -380,11 +384,23 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 				event.dur or 0.4
 			)
 		elseif name == "impact" then
+			-- (`from`: an actor whose pen nib the streaks burst from, along the stroke)
+			local origin, along = nil, nil
+			if event.from and showing.nib then
+				origin, along = showing.nib(event.from)
+			end
 			Cinema.impact(
 				Color3.fromRGB(event.r or 255, event.g or 255, event.b or 255),
 				event.strength or 0.55,
-				event.dur or 0.22
+				event.dur or 0.22,
+				origin,
+				along
 			)
+		elseif name == "inkslash" then
+			-- a red slash cut into the open page of the Manual on the set (they pile up)
+			if showing.ink then
+				showing.ink(event.seed or 1)
+			end
 		elseif name == "shake" then
 			CameraDirector.shake(token, event.strength or 0.4, event.dur or 0.4)
 		elseif name == "focus" then
@@ -641,7 +657,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 
 	-- The shot's own lamps (its cinematography: a key on a face, a rim behind a head, a spill through a door),
 	-- each lit in its window, and its colour grade.
-	local lamps: { { light: Light, show: { number }? } } = {}
+	local lamps: { { light: Light, show: { number }?, base: number, flicker: number } } = {}
 	for _, spec in ipairs(shot.lights or {}) do
 		local at = base + Vector3.new(spec.p[1], spec.p[2], spec.p[3])
 		local aim = spec.aim
@@ -677,7 +693,10 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				Parent = holder,
 			})
 		stage:add(holder)
-		table.insert(lamps, { light = light, show = spec.show })
+		table.insert(
+			lamps,
+			{ light = light, show = spec.show, base = spec.brightness or 1, flicker = spec.flicker or 0 }
+		)
 	end
 
 	local closers: { () -> () } = {}
@@ -698,6 +717,70 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 	local showing: Showing =
 		{ closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil, freeze = nil }
+	showing.nib = function(slot: string): (Vector2?, number?)
+		local live = bySlot[slot]
+		local arm = if live then live.model:FindFirstChild("Right Arm") else nil
+		local camera = workspace.CurrentCamera
+		if not arm or not arm:IsA("BasePart") or not camera then
+			return nil, nil
+		end
+		local tip = arm.CFrame * Vector3.new(0, -arm.Size.Y / 2 - 0.45, 0)
+		local top = arm.CFrame * Vector3.new(0, arm.Size.Y / 2, 0)
+		local a, onScreen = camera:WorldToViewportPoint(tip)
+		local b = camera:WorldToViewportPoint(top)
+		if not onScreen then
+			return nil, nil
+		end
+		local view = camera.ViewportSize
+		local d = Vector2.new(a.X - b.X, a.Y - b.Y)
+		return Vector2.new(a.X / view.X, a.Y / view.Y), math.deg(math.atan2(d.Y, d.X))
+	end
+	local slashed: SurfaceGui? = nil
+	showing.ink = function(seed: number)
+		local book: Model? = nil
+		for _, prop in ipairs(props) do
+			if prop.data.model == ManualBook.KEY and prop.model:IsA("Model") then
+				book = prop.model :: Model
+			end
+		end
+		local sheet = if book then ManualBook.page(book) else nil
+		if not sheet then
+			return
+		end
+		if not slashed or not slashed.Parent then
+			slashed = Create("SurfaceGui", {
+				Name = "InkSlashes",
+				Face = Enum.NormalId.Front,
+				SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud,
+				PixelsPerStud = 60,
+				LightInfluence = 0.6,
+				Adornee = sheet,
+				Parent = sheet,
+			}) :: SurfaceGui
+		end
+		local rng = Random.new(seed * 7919)
+		local cut = Create("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(rng:NextNumber(0.25, 0.75), rng:NextNumber(0.2, 0.8)),
+			Size = UDim2.new(0, 0, 0.035, 0),
+			Rotation = rng:NextNumber(-40, 40),
+			BackgroundColor3 = Color3.fromRGB(150, 8, 16),
+			BorderSizePixel = 0,
+			Parent = slashed,
+		})
+		-- (a slash's ends taper)
+		Create("UIGradient", {
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.15, 0),
+				NumberSequenceKeypoint.new(0.85, 0),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			Parent = cut,
+		})
+		-- (drawn across in a blink, as the pen rips through)
+		Motion.tween(cut, { Size = UDim2.new(rng:NextNumber(0.45, 0.8), 0, 0.035, 0) }, 0.06)
+	end
 	-- The lens a shot's focus events aim (made at the first one; named as Cinema.focus names its own, so the
 	-- cutscenes' standing lens, Presentation/Lens, steps aside instead of blurring on top of it).
 	local lens: DepthOfFieldEffect? = nil
@@ -1001,8 +1084,13 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				end
 			end
 		end
-		for _, lamp in ipairs(lamps) do
+		for k, lamp in ipairs(lamps) do
 			lamp.light.Enabled = shown(lamp.show, tt)
+			if lamp.flicker > 0 then
+				-- (a screen's light: it never holds still)
+				local n = math.noise(os.clock() * 9, k * 3.7)
+				lamp.light.Brightness = lamp.base * (1 - lamp.flicker * (0.5 + 0.5 * n))
+			end
 		end
 		-- props
 		for _, prop in ipairs(props) do

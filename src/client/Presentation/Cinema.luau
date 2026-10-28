@@ -583,13 +583,13 @@ end
 -- An anime impact frame: for a blink the screen washes over in `color` and thin streaks of light shoot out
 -- from the middle, then everything fades. Lands on a hit (a pen driven into the page, a slam). Only the
 -- Muerto's DELETE uses it (the owner, 2026-10-28).
-function Cinema.impact(color: Color3, strength: number?, seconds: number?)
+function Cinema.impact(color: Color3, strength: number?, seconds: number?, origin: Vector2?, along: number?)
 	if Motion.flashesOff() then
 		return
 	end
 	local life = seconds or 0.22
 	local holder = Kit.Base.make("Frame", {
-		BackgroundTransparency = 1 - (strength or 0.55),
+		BackgroundTransparency = 1 - (strength or 0.55) * (if origin then 0.55 else 1),
 		BackgroundColor3 = color,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
@@ -597,28 +597,35 @@ function Cinema.impact(color: Color3, strength: number?, seconds: number?)
 		ClipsDescendants = true,
 		Parent = Screens.cinematic,
 	})
+	-- `origin` (0..1 of the screen): the streaks burst from there (the pen's nib on the page), the longest and
+	-- thickest along `along` degrees (the stroke), both ways; without it, from the middle, all round
+	local size = holder.AbsoluteSize
+	local centre = if origin then Vector2.new(origin.X * size.X, origin.Y * size.Y) else size / 2
 	local streaks = {}
-	for k = 1, 14 do
-		local angle = (k / 14) * 360 + math.random(-10, 10)
-		local length = 0.5 + math.random() * 0.6
+	for k = 1, 16 do
+		local main = origin ~= nil and along ~= nil and k <= 2
+		local angle = if main
+			then (along :: number) + (if k == 2 then 180 else 0) + math.random(-4, 4)
+			else (k / 16) * 360 + math.random(-10, 10)
+		local length = (if main then 0.75 else 0.35 + math.random() * 0.45) * size.Magnitude * 0.5
+		local start = length * 0.18 -- (out from the hit a little, so its centre stays clear)
+		local dir = Vector2.new(math.cos(math.rad(angle)), math.sin(math.rad(angle)))
+		local middle = centre + dir * (start + length / 2)
 		local streak = Kit.Base.make("Frame", {
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(length, 0, 0, math.random(2, 6)),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(middle.X, middle.Y),
+			Size = UDim2.fromOffset(length, if main then math.random(6, 9) else math.random(2, 5)),
 			Rotation = angle,
-			BackgroundColor3 = Color3.new(1, 1, 1),
+			BackgroundColor3 = if main then color:Lerp(Color3.new(1, 1, 1), 0.5) else Color3.new(1, 1, 1),
 			BackgroundTransparency = 0.15,
 			BorderSizePixel = 0,
 			ZIndex = 5,
 			Parent = holder,
 		})
-		-- the streak starts a little out from the middle, so the centre of the hit stays clear
 		Kit.Base.make("UIGradient", {
 			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.25, 1),
-				NumberSequenceKeypoint.new(0.3, 0),
-				NumberSequenceKeypoint.new(1, 0.6),
+				NumberSequenceKeypoint.new(0, 0),
+				NumberSequenceKeypoint.new(1, 1),
 			}),
 			Parent = streak,
 		})

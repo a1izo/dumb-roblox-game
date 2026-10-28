@@ -73,13 +73,13 @@ for k, (t, whip) in enumerate(STABS):
     seated(me, t - 0.06, "out", seat=SEAT, lean=-2 + 4 * rage, legs=LEGS, neck=(10 * rage, -whip * 8, 0),
            rShoulder=J((150 + 15 * rage, -10, -24), (0.0, 0.3, -0.1)), lShoulder=STILL_L)
     # The stab: snapped down through the page, past it, the head thrown down or aside with it.
-    seated(me, t, "snap", seat=SEAT, lean=-30 * rage, legs=LEGS, neck=(-26 * rage, whip * 38 * rage, whip * 10),
-           rShoulder=J((94, -6, -10), (-0.12, 0.04, -0.34)), lShoulder=STILL_L)
+    seated(me, t, "snap", seat=SEAT, lean=-25 * rage, legs=LEGS, neck=(-26 * rage, whip * 38 * rage, whip * 10),
+           rShoulder=J((98, -6, -10), (-0.12, 0.12, -0.34)), lShoulder=STILL_L)  # (down to the page, not into the desk)
     # Settling into the next breath (if there is time before the next wind-up).
     settle = t + min(0.22, gap - antic - 0.1)
     if settle > t + 0.05:
-        seated(me, settle, seat=SEAT, lean=-24 * rage, legs=LEGS, neck=(-18 * rage, whip * 26 * rage, whip * 6),
-               rShoulder=J((94, -6, -10), (-0.12, 0.04, -0.32)), lShoulder=STILL_L)
+        seated(me, settle, seat=SEAT, lean=-21 * rage, legs=LEGS, neck=(-18 * rage, whip * 26 * rage, whip * 6),
+               rShoulder=J((97, -6, -10), (-0.12, 0.1, -0.32)), lShoulder=STILL_L)
 # The stop: frozen over the page, panting; then the head comes up, slowly, into the camera.
 seated(me, 8.25, seat=SEAT, lean=-28, legs=LEGS, neck=(-20, 0, 0), rShoulder=J((100, -6, -10), (-0.12, 0.04, -0.34)),
        lShoulder=STILL_L)
@@ -151,18 +151,29 @@ shot.subjects.append((12.6, LENGTH, None, True))
 shot.cam(12.6, at(5.5, 6.4, 4.2), at(1.3, 4.6, -4.6), fov=46, cut=True)
 shot.cam(LENGTH, at(6.7, 7.2, 5.8), at(1.3, 4.6, -4.6), fov=48, ease="linear")
 
-# Faces
-shot.face(0.0, "self", "Stern")
-shot.face(2.9, "self", "Crazed")
-shot.face(9.8, "self", "Laugh")
-shot.face(12.6, "self", "Devoted")
+# The player's own face throughout (no drawn faces: the owner, 2026-10-28); the red eyes stay.
+
+# The light (the owner, 2026-10-28: the Tokyo intro's treatment): the red city through the window behind him a hard
+# rim, the screen's cold light flickering up into his face, the desk lamp a low warm fill; when he throws himself
+# back the red floods in. The grade: dark, pushed red.
+HEAD = at(SIT[0], 4.4, SIT[1])
+shot.grade = (0.24, 0.05, -0.04, (255, 228, 228))
+shot.light("spot", at(1.3, 7.5, -6.9), HEAD, color=(255, 45, 55), brightness=2.6, range=10, angle=70)
+shot.light("spot", at(-0.6, TOP + 0.9, -2.7), HEAD, color=(150, 200, 255), brightness=1.6, range=7, angle=60,
+           flicker=0.35)
+shot.light("spot", at(3.4, TOP + 1.0, -2.6), at(1.3, 4.0, -4.8), color=(255, 180, 110), brightness=0.9, range=6,
+           angle=70)
+shot.light("point", at(1.3, 5.0, -6.5), color=(255, 40, 50), brightness=1.5, range=12, shadows=False,
+           show=(9.75, LENGTH))
 
 # Sound, light and the words, on the strokes.
 shot.event(0.0, "sfx", slot="penScratch")
 for k, (t, _) in enumerate(STABS):
     shot.event(t, "sfx", slot="slam")
-    if k < 7:  # the strokes we cut to; the last flurry is one blur
-        shot.event(t, "fx", name="impact", r=255, g=40 + 20 * (k % 2), b=60, strength=0.45, dur=0.2)
+    # every stab rips a red slash into the page (they pile up)
+    shot.event(t + 0.02, "fx", name="inkslash", seed=k + 1)
+    if k < 7:  # the strokes we cut to, the streaks bursting from the nib along the stroke; the last flurry a blur
+        shot.event(t, "fx", name="impact", r=255, g=40 + 20 * (k % 2), b=60, strength=0.45, dur=0.2, **{"from": "self"})
 
     else:
         shot.event(t, "fx", name="flash", r=255, g=30, b=50, strength=0.3, dur=0.15)
@@ -173,7 +184,7 @@ shot.event(10.0, "sfx", slot="heartbeat")
 
 # Cut down round the line: a "delete" on each of the first six strokes, the rest a blur, then the throw back and the
 # pull away.
-RETIME = Retime([(0.0, 8.2), (9.75, 12.95)])
+RETIME = Retime([(0.0, 8.2), (9.75, LENGTH)])  # (to the end of the pull away: the owner, 2026-10-28)
 RETIME.apply(shot, [me], carry_sfx=("penScratch",))
 SAID = RETIME.new(STABS[0][0])
 shot.audio(voice="voiceMuerto", voice_at=SAID, bed="bedMuerto")

@@ -241,12 +241,13 @@ class Shot:
         return a
 
     def light(self, kind, pos, aim=None, color=(255, 255, 255), brightness=1.0, range=16.0, angle=45.0,
-              shadows=True, show=(0.0, None)):
+              shadows=True, show=(0.0, None), flicker=0.0):
         """A lamp of the shot's own, lit between show's times: "spot" (at pos, pointed at aim, a cone of
-        `angle` degrees) or "point" (at pos). The film's lighting: a key on a face, a rim behind a head, a spill."""
+        `angle` degrees) or "point" (at pos). The film's lighting: a key on a face, a rim behind a head, a spill.
+        `flicker` (0..1): how much it wavers, as a screen's light does."""
         self.lights.append(dict(kind=kind, pos=tuple(pos), aim=tuple(aim) if aim else None, color=tuple(color),
                                 brightness=float(brightness), range=float(range), angle=float(angle),
-                                shadows=bool(shadows),
+                                shadows=bool(shadows), flicker=float(flicker),
                                 show=(float(show[0]), float(show[1] if show[1] is not None else self.length))))
         return self
 
@@ -741,7 +742,8 @@ def export(shot):
                 f"\t\t{{ kind = {lua_string(light['kind'])}, p = {lua_value(list(light['pos']))}{aim}, "
                 f"color = {lua_value(list(light['color']))}, brightness = {num(light['brightness'])}, "
                 f"range = {num(light['range'])}, angle = {num(light['angle'])}, "
-                f"shadows = {lua_value(light['shadows'])}, show = {lua_value(list(light['show']))} }},")
+                f"shadows = {lua_value(light['shadows'])}, show = {lua_value(list(light['show']))}"
+                + (f", flicker = {num(light['flicker'])}" if light.get("flicker") else "") + " },")
         lines.append("\t},")
     if shot.sound:
         lines.append(f"\tsound = {lua_value(shot.sound)},")

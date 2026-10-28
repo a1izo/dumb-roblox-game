@@ -41,9 +41,9 @@ SINGER = (-2.6, -10.0)
 
 # Diavolo --------------------------------------------------------------------------------------------------
 
-READ_R = J((84, -8, -14), (-0.1, 0.04, -0.3))  # the right hand on the book (the pen in it)
+READ_R = J((84, -8, -14), (-0.1, 0.2, -0.3))  # the right hand on the book (the pen in it), clear of the desk
 READ_L = J((86, 8, 16), (0.1, 0.04, -0.3))
-WRITE_R = J((86, -14, -20), (-0.14, 0.04, -0.3))  # the pen over the page, out to the right
+WRITE_R = J((86, -14, -20), (-0.14, 0.2, -0.3))  # the pen over the page, out to the right (clear of the desk)
 BAG_L = J((86, 12, 30), (0.0, 0.06, -0.3))  # the left hand in the bag (across the body)
 MOUTH_L = J((128, -34, 18), (0.0, 0.22, -0.2))  # the chip at the mouth
 HELD_L = J((112, -24, 30), (0.0, 0.2, -0.24))  # the chip held up before the face
@@ -152,12 +152,20 @@ shot.pan(10.6, 12.8, "self", (3.6, 4.2, -2.4), aim="Torso", dy=1.0, fov=50, cut=
 # H: pushing in on the face.
 shot.pan(12.8, LENGTH, "self", (1.2, 4.8, -1.6), aim="Head", dy=-0.4, fov=44, cut=True, drift=(-0.3, -0.1, -1.1))
 
-# Faces
-shot.face(0.0, "self", "Stern")
-shot.face(9.4, "self", "Grin")
-shot.face(10.0, "self", "Crazed")
-shot.face(10.9, "self", "Laugh")
-shot.face(12.8, "self", "Grin")
+# The player's own face throughout (no drawn faces: the owner, 2026-10-28).
+
+# The light (the owner, 2026-10-28: the Tokyo intro's treatment): night, a warm desk lamp his key from the west end,
+# the television's cold light flickering over his face from across the room, the window's moonlight a rim on his
+# back, and the Deathsinger lit red from below as it comes, its glow on his shoulders. The grade: dark, a little cool.
+HEAD = (SIT[0], 4.6, SIT[1])
+shot.grade = (0.22, -0.05, -0.04, (240, 236, 255))
+shot.light("spot", (-2.8, TOP + 1.5, -5.6), HEAD, color=(255, 186, 120), brightness=2.0, range=10, angle=75)
+shot.light("spot", (0.0, 3.6, 6.2), HEAD, color=(190, 210, 255), brightness=1.6, range=20, angle=30, flicker=0.5)
+shot.light("spot", (2.0, 9.5, -9.6), HEAD, color=(160, 180, 255), brightness=1.3, range=12, angle=45)
+shot.light("spot", (SINGER[0] + 0.5, 0.6, SINGER[1] + 2.0), (SINGER[0], 7.0, SINGER[1]), color=(220, 25, 35),
+           brightness=2.2, range=12, angle=50, show=(9.8, LENGTH))
+shot.light("point", (SINGER[0], 5.0, SINGER[1]), color=(200, 20, 30), brightness=1.0, range=8, shadows=False,
+           show=(10.4, LENGTH))
 
 shot.event(0.0, "sfx", slot="mapRainGlass")
 shot.event(0.4, "sfx", slot="mapNewsRadio")
@@ -174,8 +182,9 @@ shot.event(11.1, "sfx", slot="hauntWhisper")
 shot.event(12.3, "sfx", slot="hauntWhisper")
 shot.event(14.0, "fx", name="flash", r=200, g=20, b=30, strength=0.3, dur=0.5)
 # Cut down round the line: the chip, the name, the flatline, then the chip held up and bitten on "EAT IT!", the
-# Deathsinger rising. The line starts as the hand takes the chip, 2.1 s before the bite.
-RETIME = Retime([(2.6, 11.8)])
+# Deathsinger rising, and on to the end (the owner, 2026-10-28: it stopped mid-laugh): back in the chair laughing
+# with it, the push in on his face. The line starts as the hand takes the chip, 2.1 s before the bite.
+RETIME = Retime([(2.6, LENGTH)])
 RETIME.apply(shot, [d], carry_sfx=("mapRainGlass", "mapNewsRadio"))
 SAID = RETIME.new(7.9)
 shot.audio(voice="voiceDiavolo", voice_at=SAID, bed="bedDiavolo")
