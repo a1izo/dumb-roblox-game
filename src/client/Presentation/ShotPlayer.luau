@@ -73,11 +73,6 @@ type Showing = {
 	freeze: { dur: number, blink: string? }?, -- a freeze asked for, not yet begun (the render step begins it)
 }
 
--- Death's Manual as the game builds it (the Core import, Models.grimoire) lies half turned from the book in the Blender
--- shots (its board opens the other way): seen in Studio, 2026-10-28, the open pages faced away from the one holding it.
--- Models.heldManual turns it the same way.
-local MANUAL_TURN = CFrame.Angles(0, math.pi, 0)
-
 -- The data of a shot by name, or nil.
 function ShotPlayer.get(name: string): any
 	local folder = Shared:FindFirstChild("Cinema")
@@ -247,7 +242,6 @@ local function hold(actor: Model, spec: any): Instance?
 	local target = arm.CFrame
 		* CFrame.new(o[1], o[2], o[3])
 		* CFrame.Angles(math.rad(r[1]), math.rad(r[2]), math.rad(r[3]))
-		* (if spec.model == ManualBook.KEY then MANUAL_TURN else CFrame.identity)
 	placeModel(model, target)
 	local anchor = if model:IsA("Model")
 		then (model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true))
@@ -641,7 +635,6 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				data = data,
 				times = data.t,
 				frames = pathFrames(data),
-				turn = if data.model == ManualBook.KEY then MANUAL_TURN else CFrame.identity,
 			})
 		end
 	end
@@ -840,7 +833,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 			local who = if asked.blink then bySlot[asked.blink] else nil
 			if who then
 				task.delay(0.05, Cinema.blink, who.model, Color3.fromRGB(255, 30, 36), 0.75, 1)
-				task.delay(0.38, Cinema.blink, who.model, Color3.fromRGB(255, 30, 36), 0.6, 0.55)
+				task.delay(0.38, Cinema.blink, who.model, Color3.fromRGB(255, 30, 36), 0.75, 0.85)
 			end
 		end
 		local paused = frozen
@@ -1014,7 +1007,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		-- props
 		for _, prop in ipairs(props) do
 			if shown(prop.data.show, tt) then
-				placeModel(prop.model, CFrame.new(base) * samplePath(prop.times, prop.frames, tt) * prop.turn)
+				placeModel(prop.model, CFrame.new(base) * samplePath(prop.times, prop.frames, tt))
 				if not prop.model.Parent then
 					stage:add(prop.model)
 					-- (one joining the shot partway through is drawn in over a moment, never popped out of thin air:

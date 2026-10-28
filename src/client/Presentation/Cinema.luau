@@ -545,18 +545,23 @@ function Cinema.blink(model: Model, color: Color3, seconds: number?, strength: n
 		return frame
 	end
 	local solid = layer(1 - power)
-	local swell = layer(1 - 0.6 * power)
+	local swell = layer(1 - 0.75 * power)
 	model.Archivable = archivable
-	Motion.tween(swell, { Size = UDim2.fromScale(1.16, 1.16), ImageTransparency = 1 }, life * 0.8)
-	task.delay(life * 0.2, function()
-		local fade = Motion.tween(solid, { ImageTransparency = 1 }, life * 0.8)
-		if fade then
-			fade.Completed:Once(function()
-				gui:Destroy()
-			end)
-		else
-			gui:Destroy()
-		end
+	-- the flash: on at once, gone fast; the echo: his red shape pushing out from him, growing and thinning
+	local TweenService = game:GetService("TweenService")
+	TweenService:Create(swell, TweenInfo.new(life, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+		Size = UDim2.fromScale(1.5, 1.5),
+	}):Play()
+	TweenService:Create(swell, TweenInfo.new(life, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		ImageTransparency = 1,
+	}):Play()
+	task.delay(0.08, function()
+		TweenService:Create(solid, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			ImageTransparency = 1,
+		}):Play()
+	end)
+	task.delay(life + 0.05, function()
+		gui:Destroy()
 	end)
 end
 

@@ -196,7 +196,7 @@ TILT = 25.0  # the pages tilted up towards his face
 UP = (0.0, math.cos(math.radians(TILT)), math.sin(math.radians(TILT)))  # the book's up (torso frame)
 DEPTH = (0.0, -UP[2], UP[1])  # along the page, towards him
 STAND_R = J((2, 0, 3))
-HAND = (-0.15, -0.55, -1.45)  # (torso frame) the left fist under the open book, low in front of the middle of him
+HAND = (-0.05, -0.55, -1.45)  # (torso frame) the left fist under the open book, low in front of the middle of him
 READ_L = reach(-1, HAND, direction=(0.3, -0.55, -0.75))
 LOW_L = reach(-1, (-0.75, -0.95, -1.0), direction=(0.2, -0.8, -0.55))  # the shut book lowered to his side
 BOOK_AT = (HAND[0] - MANUAL_W / 2, HAND[1] + 0.6 * UP[1], HAND[2] + 0.6 * UP[2])  # the spread centred over the fist
