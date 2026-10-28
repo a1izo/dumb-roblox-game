@@ -119,6 +119,7 @@ pres.build()
 
 shot = Shot(NAME, "Agency", LENGTH, note="Agency intro: the Bureau round the notebook on the operations deck.",
             skippable=True, mood="TaskForceHQ")
+shot.own = True  # players in their own avatars (the owner, 2026-10-28)
 
 # A: from over the atrium's railing, high, across the desks to the gathering at the table.
 shot.cam(0.0, (17.0, 26.0, 36.0), (17.0, 16.0, 62.0), fov=40)

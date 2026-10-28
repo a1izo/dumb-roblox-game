@@ -1,5 +1,5 @@
--- The Tokyo crowd's bodies: CrowdLooks.COUNT R6 rigs built once per server, dressed (the players' suit
--- or a commuter's coat, hair, sometimes an umbrella) and kept in ReplicatedStorage.LCrowd, never in the
+-- The Tokyo crowd's bodies: CrowdLooks.COUNT R6 rigs built once per server, dressed as civilians (a coat, a hoodie,
+-- an office shirt, a school uniform, a T-shirt; hair, sometimes a bag or an umbrella; never the players' suit) and kept in ReplicatedStorage.LCrowd, never in the
 -- world: every client clones them for the walkers it draws. Roblox builds each rig from a description;
 -- when it cannot (no web access in a test), a plain rig is put together by hand instead.
 
@@ -125,35 +125,102 @@ local function hair(character: Model, look: CrowdLooks.Look)
 	end)
 end
 
--- A commuter: a coat over the arms and body, plain trousers, hands like the suits' cuffs.
-local function coat(character: Model, look: CrowdLooks.Look)
+-- A civilian's clothes: the top over the body and the arms down to the hand (a T-shirt's sleeves stop at the
+-- elbow), the trousers or a skirt, and what the kind adds. The arms are skin under the sleeves, so each ends in a
+-- classic R6 hand, as the players' do (Shared/Suit).
+local SLEEVE = { coat = 1.65, hoodie = 1.65, office = 1.65, gakuran = 1.65, sailor = 1.65, tee = 0.75 }
+
+local function civilian(character: Model, look: CrowdLooks.Look)
 	for _, item in ipairs(character:GetChildren()) do
 		if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") then
 			item:Destroy()
 		end
 	end
-	local function paint(names: { string }, colour: Color3)
+	local function paint(names: { string }, colour: Color3, material: Enum.Material?)
 		for _, name in ipairs(names) do
 			local part = character:FindFirstChild(name)
 			if part and part:IsA("BasePart") then
 				part.Color = colour
-				part.Material = Enum.Material.Fabric
+				part.Material = material or Enum.Material.Fabric
 			end
 		end
 	end
-	paint({ "Torso", "Left Arm", "Right Arm" }, look.coat :: Color3)
-	paint({ "Left Leg", "Right Leg" }, look.trousers :: Color3)
+	local kind = look.kind
+	paint({ "Torso" }, look.top)
+	paint({ "Left Arm", "Right Arm" }, look.skin, Enum.Material.SmoothPlastic)
+	paint({ "Left Leg", "Right Leg" }, if kind == "sailor" then look.skin else look.trousers, nil)
+	local sleeve = SLEEVE[kind] or 1.65
 	for _, side in ipairs({ "Left", "Right" }) do
-		CharacterService.attachBuiltTo(character, "LHand" .. side, { side .. " Arm" }, function(anchor: CFrame)
-			return { block(Vector3.new(1.04, 0.55, 1.04), look.skin, anchor * CFrame.new(0, -0.74, 0)) }
+		CharacterService.attachBuiltTo(character, "LSleeve" .. side, { side .. " Arm" }, function(anchor: CFrame)
+			local cloth = block(Vector3.new(1.04, sleeve, 1.04), look.top, anchor * CFrame.new(0, 1 - sleeve / 2, 0))
+			cloth.Material = Enum.Material.Fabric
+			return { cloth }
 		end)
 	end
-	-- The coat's skirt, a little below the waist.
-	CharacterService.attachBuiltTo(character, "LCoat", { "Torso" }, function(anchor: CFrame)
-		local skirt = block(Vector3.new(2.06, 0.7, 1.06), look.coat :: Color3, anchor * CFrame.new(0, -1.3, 0))
-		skirt.Material = Enum.Material.Fabric
-		return { skirt }
+	CharacterService.attachBuiltTo(character, "LCivilian", { "Torso" }, function(anchor: CFrame)
+		local parts = {}
+		local function add(size: Vector3, colour: Color3, at: CFrame, material: Enum.Material?): Part
+			local item = block(size, colour, anchor * at)
+			item.Material = material or Enum.Material.Fabric
+			table.insert(parts, item)
+			return item
+		end
+		if kind == "coat" then
+			add(Vector3.new(2.06, 0.7, 1.06), look.top, CFrame.new(0, -1.3, 0)) -- the skirt, below the waist
+			add(Vector3.new(1.3, 0.2, 1.08), look.top, CFrame.new(0, 0.92, 0)) -- the turned-up collar
+		elseif kind == "hoodie" then
+			add(Vector3.new(1.5, 0.5, 0.5), look.top, CFrame.new(0, 1.08, 0.42)) -- the hood, down at the back
+			add(Vector3.new(1.2, 0.5, 0.06), look.top:Lerp(Color3.new(), 0.18), CFrame.new(0, -0.55, -0.52))
+		elseif kind == "office" then
+			add(Vector3.new(1.2, 0.12, 1.04), look.top, CFrame.new(0, 0.95, 0)) -- the open collar
+			add(
+				Vector3.new(2.03, 0.12, 1.03),
+				Color3.fromRGB(24, 22, 22),
+				CFrame.new(0, -0.94, 0),
+				Enum.Material.Leather
+			)
+			add(Vector3.new(0.06, 0.8, 0.02), Color3.fromRGB(30, 60, 140), CFrame.new(0.25, 0.45, -0.52)) -- a lanyard
+			add(
+				Vector3.new(0.3, 0.4, 0.03),
+				Color3.fromRGB(230, 230, 232),
+				CFrame.new(0.25, 0.0, -0.53),
+				Enum.Material.SmoothPlastic
+			)
+		elseif kind == "gakuran" then
+			add(Vector3.new(1.3, 0.22, 1.08), look.top, CFrame.new(0, 0.98, 0)) -- the standing collar
+			for k = 0, 4 do
+				local button = add(
+					Vector3.new(0.12, 0.12, 0.12),
+					Color3.fromRGB(196, 160, 72),
+					CFrame.new(0, 0.7 - k * 0.38, -0.52),
+					Enum.Material.Metal
+				)
+				button.Shape = Enum.PartType.Ball
+			end
+		elseif kind == "sailor" then
+			local navy = look.trousers
+			add(Vector3.new(1.7, 0.8, 0.06), navy, CFrame.new(0, 0.55, 0.53)) -- the sailor collar, on the back
+			add(Vector3.new(0.5, 0.35, 0.06), Color3.fromRGB(170, 24, 36), CFrame.new(0, 0.6, -0.53)) -- the scarf
+			add(Vector3.new(2.1, 0.75, 1.1), navy, CFrame.new(0, -1.3, 0)) -- the pleated skirt
+		end
+		if look.bag then
+			if kind == "tee" then
+				add(Vector3.new(0.22, 1.0, 0.9), Color3.fromRGB(196, 186, 160), CFrame.new(1.13, -0.55, 0)) -- a tote
+			else
+				add(Vector3.new(1.5, 1.4, 0.55), Color3.fromRGB(28, 28, 32), CFrame.new(0, 0.05, 0.78)) -- a backpack
+			end
+		end
+		return parts
 	end)
+	if kind == "sailor" then -- (dark socks under the skirt)
+		for _, side in ipairs({ "Left", "Right" }) do
+			CharacterService.attachBuiltTo(character, "LSock" .. side, { side .. " Leg" }, function(anchor: CFrame)
+				return {
+					block(Vector3.new(1.03, 0.9, 1.03), Color3.fromRGB(26, 28, 40), anchor * CFrame.new(0, -0.55, 0)),
+				}
+			end)
+		end
+	end
 end
 
 -- An open umbrella held upright in front of the right shoulder.
@@ -189,11 +256,7 @@ local function body(index: number, look: CrowdLooks.Look): Model
 		humanoid.BreakJointsOnDeath = false
 		humanoid.RequiresNeck = false
 	end
-	if look.suit then
-		CharacterService.dressNoir(model, look.tie)
-	else
-		coat(model, look)
-	end
+	civilian(model, look)
 	hair(model, look)
 	-- (its catalog hair rebuilt as a MeshPart, as every player's accessories are: the old kind leave the whole body
 	-- blocky, and the crowd must look like the players)
@@ -210,7 +273,6 @@ local function body(index: number, look: CrowdLooks.Look): Model
 			item.Massless = true
 		end
 	end
-	model:SetAttribute("Suit", look.suit)
 	return model
 end
 

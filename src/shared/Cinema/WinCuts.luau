@@ -22,7 +22,7 @@
 --   city      the skyline below a roof: rows of buildings with lit windows (WinCinema.city, review_win.py city)
 --   board     a chessboard: middle, squares across, square size, the two colours
 --   shots     the camera, as EmoteCinema's: at, eye, look, fov, glide (seconds of easing from the shot before), to
---   beats     screen beats: flash, impact (color, strength, seconds), shake (strength, seconds)
+--   beats     screen beats: flash (color, strength, seconds), still (color, seconds: the red-and-black freeze), shake (strength, seconds)
 --   events    what happens on the set and when: at, act, and the act's own fields (WinCinema.ACTS)
 --   sounds    cue slots at times (Shared/EmoteMedia.CUES style: the ids are the owner's)
 
@@ -266,7 +266,7 @@ return {
 			},
 		},
 		beats = {
-			{ at = 3.0, kind = "impact", color = { 20, 16, 24 }, strength = 0.35, seconds = 0.12 },
+			{ at = 3.0, kind = "flash", color = { 20, 16, 24 }, strength = 0.35, seconds = 0.18 },
 			{ at = 3.0, kind = "shake", strength = 0.08, seconds = 0.25 },
 			{ at = 5.95, kind = "flash", color = { 225, 232, 255 }, strength = 0.55, seconds = 0.3 },
 			{ at = 7.25, kind = "flash", color = { 225, 232, 255 }, strength = 0.35, seconds = 0.25 },
@@ -461,7 +461,7 @@ return {
 		},
 		beats = {
 			{ at = 3.1, kind = "flash", color = { 255, 70, 80 }, strength = 0.3, seconds = 0.25 },
-			{ at = 6.05, kind = "impact", color = { 163, 25, 47 }, strength = 0.4, seconds = 0.14 },
+			{ at = 6.05, kind = "still", color = { 163, 25, 47 }, seconds = 0.26 },
 			{ at = 6.05, kind = "shake", strength = 0.06, seconds = 0.3 },
 		},
 		events = {
@@ -642,7 +642,7 @@ return {
 			},
 		},
 		beats = {
-			{ at = 4.8, kind = "impact", color = { 255, 255, 255 }, strength = 0.35, seconds = 0.1 },
+			{ at = 4.8, kind = "flash", color = { 255, 255, 255 }, strength = 0.35, seconds = 0.16 },
 			{ at = 4.8, kind = "shake", strength = 0.1, seconds = 0.25 },
 		},
 		events = {
@@ -746,7 +746,7 @@ return {
 		},
 		beats = {
 			{ at = 6.0, kind = "flash", color = { 163, 25, 47 }, strength = 0.5, seconds = 0.3 },
-			{ at = 6.0, kind = "impact", color = { 163, 25, 47 }, strength = 0.35, seconds = 0.12 },
+			{ at = 6.0, kind = "still", color = { 163, 25, 47 }, seconds = 0.26 },
 			{ at = 6.0, kind = "shake", strength = 0.12, seconds = 0.35 },
 		},
 		events = {

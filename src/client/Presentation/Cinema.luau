@@ -443,8 +443,98 @@ function Cinema.flash(color: Color3, strength: number?, seconds: number?)
 	end
 end
 
+-- A dramatic still: for a beat the picture goes to a hard, high-contrast monochrome in `color` (the
+-- anime's red-and-black freeze), then eases back. Lands on a triumph (a bite, a checkmate).
+function Cinema.still(color: Color3, seconds: number?)
+	if Motion.flashesOff() then
+		return
+	end
+	local life = seconds or 0.3
+	local effect = Create("ColorCorrectionEffect", {
+		Name = "CinemaStill",
+		Saturation = -1,
+		Contrast = 0.9,
+		Brightness = -0.04,
+		TintColor = color,
+		Parent = workspace.CurrentCamera,
+	})
+	task.delay(life * 0.55, function()
+		local tween = Motion.tween(
+			effect,
+			{ Saturation = 0, Contrast = 0, Brightness = 0, TintColor = Color3.new(1, 1, 1) },
+			life * 0.45
+		)
+		if tween then
+			tween.Completed:Once(function()
+				effect:Destroy()
+			end)
+		else
+			effect:Destroy()
+		end
+	end)
+end
+
+-- One heartbeat at the edges of the screen: a `color` vignette thumps in and fades over `seconds`.
+function Cinema.pulse(color: Color3, strength: number?, seconds: number?)
+	local group = Kit.Base.make("CanvasGroup", {
+		Name = "Pulse",
+		BackgroundTransparency = 1,
+		GroupTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 3,
+		Parent = Screens.cinematic,
+	})
+	local edge = 0.22 + 0.2 * (strength or 0.6)
+	for _, side in ipairs({
+		{ UDim2.fromScale(1, edge), UDim2.fromScale(0, 0), 90 },
+		{ UDim2.fromScale(1, edge), UDim2.fromScale(0, 1 - edge), -90 },
+		{ UDim2.fromScale(edge, 1), UDim2.fromScale(0, 0), 0 },
+		{ UDim2.fromScale(edge, 1), UDim2.fromScale(1 - edge, 0), 180 },
+	}) do
+		local frame = Kit.Base.make("Frame", {
+			BackgroundColor3 = color,
+			BorderSizePixel = 0,
+			Size = side[1],
+			Position = side[2],
+			Parent = group,
+		})
+		Create("UIGradient", { Rotation = side[3], Transparency = NumberSequence.new(0.1, 1), Parent = frame })
+	end
+	local life = seconds or 0.6
+	local beat = Motion.tween(group, { GroupTransparency = 1 - (strength or 0.6) }, life * 0.12)
+	task.delay(life * 0.12, function()
+		local fade = Motion.tween(group, { GroupTransparency = 1 }, life * 0.88)
+		if fade then
+			fade.Completed:Once(function()
+				group:Destroy()
+			end)
+		else
+			group:Destroy()
+		end
+	end)
+	if not beat then
+		group.GroupTransparency = 1 - (strength or 0.6)
+	end
+end
+
+-- A hard cut to black (under the cards, so a title can come up on it). Returns a remover.
+function Cinema.black(): () -> ()
+	local frame = Kit.Base.make("Frame", {
+		Name = "CutToBlack",
+		BackgroundColor3 = C.void,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 0,
+		Parent = Screens.cinematic,
+	})
+	return function()
+		frame:Destroy()
+	end
+end
+
 -- An anime impact frame: for a blink the screen washes over in `color` and thin streaks of light shoot out
--- from the middle, then everything fades. Lands on a hit (a pen driven into the page, a slam).
+-- from the middle, then everything fades. Lands on a hit (a pen driven into the page, a slam). Only the
+-- Muerto's DELETE uses it (the owner, 2026-10-28).
 function Cinema.impact(color: Color3, strength: number?, seconds: number?)
 	if Motion.flashesOff() then
 		return

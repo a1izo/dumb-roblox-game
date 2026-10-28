@@ -148,17 +148,39 @@ def follow(shot, t0, t1, slot, kind="medium", step=0.25, cut=False, fov=None, ba
 
 
 def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=False, drift=(0.0, 0.0, 0.0),
-        back=False, roll=0.0):
+        back=False, roll=0.0, operator=False, seed=0):
     """A camera standing at `pos` (drifting by `drift` over the cut) that turns to keep `slot`'s `aim` part
     in the middle of the frame while they move. `back`: seeing the back of their head is meant. `roll`: a dutch
-    angle, in degrees."""
+    angle, in degrees. `operator`: a person holds it: the aim follows the subject a beat late and settles with
+    a little overshoot (a spring), and the frame breathes with a faint hand-held drift (seeded)."""
     shot.subjects.append((t0, t1, slot, back))
+    if operator:
+        step = min(step, 1 / 15)
     n = max(1, int(round((t1 - t0) / step)))
+    rng = np.random.default_rng(seed)
+    phases = rng.uniform(0, 2 * math.pi, 6)
+    # the spring the operator's aim follows (about 0.3 s behind, damping under 1: a small overshoot)
+    omega, zeta = 2 * math.pi / 0.9, 0.72
+    look = vel = None
     for i in range(n + 1):
         u = i / n
         t = t0 + (t1 - t0) * u
         target = part(shot, slot, t, aim) + np.array([0.0, dy, 0.0])
         p = np.array(pos, float) + np.array(drift, float) * u
+        if operator:
+            if look is None:
+                look, vel = target.copy(), np.zeros(3)
+            else:
+                dt = (t1 - t0) / n
+                for _ in range(4):  # (a few small steps keep the spring steady)
+                    h = dt / 4
+                    vel = vel + (omega * omega * (target - look) - 2 * zeta * omega * vel) * h
+                    look = look + vel * h
+            target = look.copy()
+            # hand-held: slow, small, never in step (studs at the lens and at the aim)
+            p = p + 0.035 * np.array([math.sin(1.3 * t + phases[0]) + 0.5 * math.sin(3.1 * t + phases[1]),
+                                      math.sin(1.1 * t + phases[2]) + 0.4 * math.sin(2.7 * t + phases[3]), 0.0])
+            target = target + 0.05 * np.array([math.sin(0.9 * t + phases[4]), math.sin(1.7 * t + phases[5]), 0.0])
         shot.cam(t, tuple(p), tuple(target), fov=fov, roll=roll, ease="linear", cut=cut and i == 0)
 
 

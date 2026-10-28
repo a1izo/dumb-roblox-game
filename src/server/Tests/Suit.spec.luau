@@ -106,7 +106,7 @@ return function(t)
 			expect(Suit.PAD["Left Leg"] ~= Suit.PAD["Right Leg"]).to.equal(true)
 		end)
 
-		it("ends each sleeve in a white cuff and a slim hand in the player's skin, below the arm's end", function()
+		it("ends each sleeve in a white cuff and a classic hand in the player's skin, the arm's own end", function()
 			local arm = Instance.new("Part")
 			arm.Name = "Right Arm"
 			arm.Size = Vector3.new(1, 2, 1)
@@ -123,13 +123,15 @@ return function(t)
 			expect(cuff ~= nil and hand ~= nil).to.equal(true)
 			expect(cuff.Color == Suit.SHIRT).to.equal(true)
 			expect(hand.Color == skin).to.equal(true)
-			-- slimmer than the arm, and hanging out below it, its top inside the cuff
-			expect(hand.Size.X < arm.Size.X and hand.Size.Z < arm.Size.Z).to.equal(true)
+			-- the arm's last Suit.HAND, a hair over its faces, never hanging below it; the cuff round its top
+			expect(hand.Size.X > arm.Size.X and hand.Size.Z > arm.Size.Z).to.equal(true)
 			local armEnd = arm.Position.Y - 1
-			local cuffBottom = cuff.Position.Y - cuff.Size.Y / 2
+			local handBottom = hand.Position.Y - hand.Size.Y / 2
 			local handTop = hand.Position.Y + hand.Size.Y / 2
-			expect(cuffBottom < armEnd - 0.04).to.equal(true)
-			expect(handTop < armEnd and handTop > cuffBottom).to.equal(true)
+			expect(handBottom >= armEnd - 0.02).to.equal(true)
+			expect(math.abs(handTop - (armEnd + Suit.HAND)) < 0.03).to.equal(true)
+			expect(cuff.Size.X > hand.Size.X).to.equal(true)
+			expect(math.abs(cuff.Position.Y - (armEnd + Suit.HAND)) < 0.06).to.equal(true)
 			-- a late skin repaints the hand, never the cuff
 			local holder = Instance.new("Model")
 			cuff.Parent = holder

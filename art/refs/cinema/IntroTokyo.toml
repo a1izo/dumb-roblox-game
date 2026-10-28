@@ -6,7 +6,7 @@ status = "built"
 [origin]
 what = "Raye Penber's death in the subway (Death Note, episode 9): the heart attack at the train's doors while Light watches from inside the car."
 recognisable = "A man seizes up at the train's door, clutches his chest, sinks to his knees on the yellow strip with his bag on the floor beside him, falls; from the floor, the one in the car looks down at him, face in shadow, the faintest smile; the doors close."
-ours = "Both are random players and nobody dies (the owner's intro idea): the victim falls and struggles; the Manual lies on the floor beside him where Raye's briefcase lay."
+ours = "Both are random players and nobody dies (the owner's intro idea): the one in the car writes the last stroke of a name, the man on the platform's heart seizes on the cut, and the writer watches him go down and shuts the Manual; the doors close on him reaching out, and black."
 
 [source]
 url = "https://www.youtube.com/watch?v=zwarit0gXE8"
@@ -38,8 +38,13 @@ src = 38.0
 pose = "Light, close, face in shadow, the faintest smirk"
 
 [timing]
-length = 23.0
-fit = "Our station has full-height glass screen doors: the car pulls in, both sets of doors open, and the man in the car stays aboard, two studs back from the doors. As in the source, the Manual is his, not the victim's: he is reading it as the doors open and shuts it while he watches. 8 cuts: the arrival (0-5), the look up from the book into the doors (5-8), the clutch (8-12), the knees and the fall in place (12-15), low along the body to him looking down, dutch (15-17), the insert of the book shut by his other hand (17-18.4), the smirk, dutch the other way (18.4-20.4), the train leaving with nobody having looked up (20.4-23). Motion blur follows the camera and pulses on the jolt, the fall and the departure. The platform lives: people on phones, a pair talking, someone walking straight past him."
+length = 24.6
+fit = "Cause and effect first (the owner, 2026-10-28): B shows the writer writing as the doors open, W the pen finishing the name, and C cuts hard on the jolt. 9 cuts: the arrival (0-5), the writer writing (5-7.4), the pen's last stroke (7.4-8.2), the jolt, frozen, the look up, the knees (8.2-12), the fall under gravity (12-14.6), low along the body to him looking down, dutch (14.6-16), the book shut (16-17.2), his head coming up to us smiling, dutch the other way (17.2-18.6), low on the car floor at the victim reaching out as the doors close over a riser (18.6-21.6), black: half a second of silence and the case's card (21.6-24.6). Heartbeat pulses at the edges and a slow drain of colour from the jolt to the black; motion blur on the jolt and the hit."
+
+[acting]
+url = "https://www.youtube.com/watch?v=LBxUsAzjL84"
+what = "How to Faint Safely on Stage: the side-view knee drop at 212.1-214.0 s."
+taken = "The knees buckle and the body drops straight down, upright, in 0.7 s (212.1 standing, 212.8 knees down), then settles back onto the heels with the head drooping (213.4-214.0). Nothing thrashes: the owner found the old seizure shaking 'from the wrong places' (the head thrown back, the arm flung). The forward fall from the knees is a simulated topple (theta'' = 3g/2L sin theta, g 35 studs/s², L 3.6 studs: 0.57 s down, the chest bouncing back 12% of its speed)."
 
 [r6]
 notes = "Hands placed with emotes.kit.reach (the clutch at the chest, the palm on the glass); the knees with acting.kneel; lying down is the root pitched over with the body on the floor."

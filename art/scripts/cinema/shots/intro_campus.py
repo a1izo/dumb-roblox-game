@@ -72,6 +72,7 @@ noticer.build()
 
 shot = Shot(NAME, "Campus", LENGTH, note="Campus intro: the exam hall; one candidate sees the notebook fall.",
             skippable=True, mood="UniversityCampus_Inside")
+shot.own = True  # players in their own avatars (the owner, 2026-10-28)
 
 # A: wide and high from the back of the hall, a slow push in.
 shot.cam(0.0, (22.0, 15.0, -79.0), (-14.0, 3.0, -99.0), fov=44)

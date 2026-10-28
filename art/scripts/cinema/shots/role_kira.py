@@ -165,7 +165,7 @@ shot.event(4.4, "sfx", slot="penScratch")
 shot.event(7.0, "sfx", slot="flatline")
 
 shot.event(10.0, "sfx", slot="slam")
-shot.event(10.0, "fx", name="impact", r=255, g=40, b=50, strength=0.55, dur=0.28)
+shot.event(10.0, "fx", name="still", r=255, g=40, b=50, dur=0.32)
 shot.event(10.0, "fx", name="shake", strength=0.35, dur=0.25)
 shot.event(11.0, "sfx", slot="wisp")
 shot.event(12.3, "sfx", slot="hauntWhisper")

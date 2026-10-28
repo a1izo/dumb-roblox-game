@@ -102,7 +102,7 @@ return function(t)
 			local function vec(v: any): boolean
 				return type(v) == "table" and #v == 3 and type(v[1]) == "number"
 			end
-			local BEATS = { flash = true, impact = true, shake = true, vignette = true }
+			local BEATS = { flash = true, still = true, shake = true, vignette = true }
 			for clip, meta in pairs(EmoteMeta :: any) do
 				if meta.cinematic then
 					local cut = meta.cinema

@@ -431,6 +431,52 @@ local TROUSERS = Suit.TROUSERS
 local SUIT_PARTS = { "Torso", "Left Arm", "Right Arm" }
 local TROUSER_PARTS = { "Left Leg", "Right Leg" }
 
+-- Each player's own look (their R6 avatar as the lobby shows it, before any suit), kept where every screen sees
+-- it: the map intros cast players in it (ShotPlayer, a shot with own = true). Refreshed whenever they stand in the
+-- lobby, gone when they leave.
+CharacterService.OWN_LOOKS = "LOwnLooks"
+
+local function keepOwnLook(player: Player, character: Model)
+	if character:GetAttribute(Suit.DRESSED) or player.Character ~= character then
+		return
+	end
+	local folder = ReplicatedStorage:FindFirstChild(CharacterService.OWN_LOOKS)
+	if not folder then
+		folder = Create("Folder", { Name = CharacterService.OWN_LOOKS, Parent = ReplicatedStorage })
+	end
+	local archivable = character.Archivable
+	character.Archivable = true
+	local ok, copy = pcall(function()
+		return character:Clone()
+	end)
+	character.Archivable = archivable
+	if not ok or not copy then
+		return
+	end
+	for _, item in ipairs(copy:GetDescendants()) do
+		if
+			item:IsA("LuaSourceContainer")
+			or item:IsA("BillboardGui")
+			or item:IsA("Sound")
+			or item:IsA("ProximityPrompt")
+			or item:GetAttribute("DGEmote")
+		then
+			item:Destroy()
+		elseif item:IsA("BasePart") then
+			item.Anchored = true
+			item.CanCollide = false
+			item.CanQuery = false
+			item.CanTouch = false
+		end
+	end
+	copy.Name = tostring(player.UserId)
+	local old = folder:FindFirstChild(copy.Name)
+	if old then
+		old:Destroy()
+	end
+	copy.Parent = folder
+end
+
 -- The match look: a dark suit, white collar and red tie over the player's own face, hair and
 -- body shape. Clothing (classic and layered) is removed so outfits cannot give anyone away.
 function CharacterService.applyOutfit(player: Player)
@@ -656,6 +702,9 @@ local function onCharacterAdded(player: Player, character: Model)
 			CharacterService.applyOutfit(player)
 			CharacterService.placeForPhase(ps)
 		end
+	elseif not away then
+		-- (in the lobby, in their own clothes: kept for the map intros once the accessories have come in)
+		task.delay(4, keepOwnLook, player, character)
 	end
 
 	if player.Character == character then
@@ -687,6 +736,13 @@ function CharacterService.init()
 	Players.CharacterAutoLoads = false
 	SpectateRemote.OnServerEvent:Connect(onSpectate)
 	Players.PlayerAdded:Connect(CharacterService.track)
+	Players.PlayerRemoving:Connect(function(player)
+		local folder = ReplicatedStorage:FindFirstChild(CharacterService.OWN_LOOKS)
+		local look = if folder then folder:FindFirstChild(tostring(player.UserId)) else nil
+		if look then
+			look:Destroy()
+		end
+	end)
 	for _, player in ipairs(Players:GetPlayers()) do
 		CharacterService.track(player)
 	end

@@ -832,7 +832,7 @@ return {
 	--              the body's own frame as the emote begins, studs: x to its right, y up from its middle, z behind
 	--              it), `fov` degrees; a cut, or with `glide` s it eases there from the shot before; `to` (any of
 	--              eye, look, fov) it then drifts to until the next shot; `focus` studs kept sharp round `look`.
-	--              beats: flash, impact (colour, strength, seconds), shake (strength, seconds) and vignette (on
+	--              beats: flash (colour, strength, seconds), still (colour, seconds: the red-and-black freeze), shake (strength, seconds) and vignette (on
 	--              from then) at `at` s
 	--   camera     a Sealed-and-up emote's or a duo's showpiece move in the lobby (Presentation/EmoteCamera; the
 	--              owner's Q22): { move = push | hero | high | shoulder | track | orbitLeft | orbitRight | hold,
@@ -927,7 +927,7 @@ return {
 			},
 			beats = {
 				{ at = 0, kind = "shake", strength = 0.035, seconds = 2.15 },
-				{ at = 2.25, kind = "impact", color = { 235, 232, 220 }, strength = 0.45, seconds = 0.25 },
+				{ at = 2.25, kind = "flash", color = { 235, 232, 220 }, strength = 0.45, seconds = 0.3 },
 				{ at = 2.25, kind = "shake", strength = 0.14, seconds = 0.5 },
 				{ at = 4.2, kind = "flash", color = { 0, 0, 0 }, strength = 0.35, seconds = 0.4 },
 			},
@@ -952,7 +952,7 @@ return {
 				},
 			},
 			beats = {
-				{ at = 1.75, kind = "impact", color = { 163, 25, 47 }, strength = 0.45, seconds = 0.25 },
+				{ at = 1.75, kind = "still", color = { 163, 25, 47 }, seconds = 0.3 },
 				{ at = 1.75, kind = "vignette", color = { 120, 12, 24 }, strength = 0.4 },
 			},
 		},
@@ -1018,8 +1018,8 @@ return {
 			},
 			beats = {
 				{ at = 2.05, kind = "flash", color = { 163, 25, 47 }, strength = 0.22, seconds = 0.35 },
-				{ at = 3.55, kind = "impact", color = { 10, 10, 12 }, strength = 0.35, seconds = 0.18 },
-				{ at = 4.95, kind = "impact", color = { 163, 25, 47 }, strength = 0.5, seconds = 0.3 },
+				{ at = 3.55, kind = "flash", color = { 10, 10, 12 }, strength = 0.35, seconds = 0.22 },
+				{ at = 4.95, kind = "still", color = { 163, 25, 47 }, seconds = 0.32 },
 				{ at = 4.95, kind = "shake", strength = 0.12, seconds = 0.45 },
 				{ at = 7.75, kind = "flash", color = { 163, 25, 47 }, strength = 0.22, seconds = 0.35 },
 			},

@@ -1,9 +1,9 @@
 --!strict
 -- How the Tokyo crowd looks. The server builds a few bodies once (Maps/Mechanics/TokyoDistrict/Looks)
 -- and every client clones them for its walkers; which body a walker wears is worked out from its
--- number and the match's seed, the same on every client. Four in five wear the players' own dark suit
--- (so a player among them is one more suit), the rest are other commuters: coats, a few with umbrellas
--- (suits never carry one, as no player does). Faces, hair and skin vary.
+-- number and the match's seed, the same on every client. They are civilians, never in the players'
+-- suit (the owner, 2026-10-28): coats, hoodies, office shirts, school uniforms, T-shirts; some carry a
+-- bag or an umbrella. Faces, hair and skin vary.
 --
 -- Hair and faces are Roblox's own free catalog items (CrowdLooks.hairIds and faceIds: change the lists
 -- to change the crowd). A body Roblox could not dress (no web access in a test) gets hair built from
@@ -11,9 +11,7 @@
 
 local CrowdLooks = {}
 
-CrowdLooks.SUITS = 16
-CrowdLooks.COMMUTERS = 4
-CrowdLooks.COUNT = CrowdLooks.SUITS + CrowdLooks.COMMUTERS
+CrowdLooks.COUNT = 20
 
 CrowdLooks.hairIds = {
 	63690008, -- Pal Hair
@@ -56,26 +54,35 @@ CrowdLooks.HAIR = {
 	rgb(150, 146, 140),
 }
 CrowdLooks.STYLES = { "crop", "part", "bob", "bun", "crop", "part", "bald" }
--- Mostly the red tie every player starts with.
-CrowdLooks.TIES =
-	{ rgb(190, 22, 36), rgb(190, 22, 36), rgb(190, 22, 36), rgb(24, 40, 96), rgb(70, 72, 78), rgb(96, 18, 40) }
--- A commuter's coat and trousers.
-CrowdLooks.COATS = {
-	{ rgb(168, 148, 112), rgb(44, 42, 44) },
-	{ rgb(62, 78, 66), rgb(34, 34, 38) },
-	{ rgb(40, 52, 84), rgb(70, 66, 62) },
-	{ rgb(112, 112, 116), rgb(28, 28, 32) },
+-- What a civilian wears: the kind (Maps/Mechanics/TokyoDistrict/Looks dresses each), the top's colour and the
+-- trousers' (or skirt's). Muted, as a city's commuters are.
+CrowdLooks.OUTFITS = {
+	{ "coat", rgb(168, 148, 112), rgb(44, 42, 44) },
+	{ "coat", rgb(62, 78, 66), rgb(34, 34, 38) },
+	{ "coat", rgb(40, 52, 84), rgb(70, 66, 62) },
+	{ "coat", rgb(112, 112, 116), rgb(28, 28, 32) },
+	{ "hoodie", rgb(118, 120, 124), rgb(46, 60, 88) },
+	{ "hoodie", rgb(30, 32, 36), rgb(52, 50, 48) },
+	{ "hoodie", rgb(74, 82, 60), rgb(40, 44, 56) },
+	{ "office", rgb(232, 234, 236), rgb(46, 48, 54) },
+	{ "office", rgb(186, 206, 226), rgb(34, 40, 60) },
+	{ "office", rgb(226, 222, 212), rgb(70, 66, 60) },
+	{ "gakuran", rgb(22, 22, 28), rgb(22, 22, 28) },
+	{ "sailor", rgb(236, 236, 238), rgb(30, 36, 70) },
+	{ "tee", rgb(200, 196, 188), rgb(56, 72, 104) },
+	{ "tee", rgb(120, 40, 44), rgb(44, 56, 84) },
+	{ "tee", rgb(40, 40, 44), rgb(150, 140, 120) },
 }
 CrowdLooks.UMBRELLAS = { rgb(16, 16, 20), rgb(22, 30, 60), rgb(200, 204, 208) }
 
 export type Look = {
-	suit: boolean,
 	skin: Color3,
 	hair: Color3,
 	style: string,
-	tie: Color3?,
-	coat: Color3?,
-	trousers: Color3?,
+	kind: string, -- "coat", "hoodie", "office", "gakuran", "sailor", "tee"
+	top: Color3,
+	trousers: Color3,
+	bag: boolean,
 	umbrella: Color3?,
 	hairId: number?,
 	faceId: number?,
@@ -85,39 +92,36 @@ local function pick<T>(list: { T }, rng: Random): T
 	return list[rng:NextInteger(1, #list)]
 end
 
--- The look of body `index` (1 to COUNT: the suits first, then the commuters).
+-- The look of body `index` (1 to COUNT): every outfit in turn, so each kind is in the crowd.
 function CrowdLooks.make(index: number, rng: Random): Look
-	local suit = index <= CrowdLooks.SUITS
+	local outfit = CrowdLooks.OUTFITS[(index - 1) % #CrowdLooks.OUTFITS + 1]
+	local kind = outfit[1] :: string
 	local look: Look = {
-		suit = suit,
 		skin = pick(CrowdLooks.SKIN, rng),
 		hair = pick(CrowdLooks.HAIR, rng),
 		style = pick(CrowdLooks.STYLES, rng),
+		kind = kind,
+		top = outfit[2] :: Color3,
+		trousers = outfit[3] :: Color3,
+		-- students and hoodies mostly carry a backpack, some T-shirts a tote
+		bag = kind == "gakuran"
+			or kind == "sailor"
+			or (kind == "hoodie" and index % 2 == 1)
+			or (kind == "tee" and index % 3 == 0),
 		hairId = if #CrowdLooks.hairIds > 0 then pick(CrowdLooks.hairIds, rng) else nil,
 		faceId = if #CrowdLooks.faceIds > 0 then pick(CrowdLooks.faceIds, rng) else nil,
 	}
-	if suit then
-		look.tie = pick(CrowdLooks.TIES, rng)
-	else
-		local coat = CrowdLooks.COATS[(index - CrowdLooks.SUITS - 1) % #CrowdLooks.COATS + 1]
-		look.coat, look.trousers = coat[1], coat[2]
-		-- Every other commuter carries an umbrella.
-		if (index - CrowdLooks.SUITS) % 2 == 1 then
-			look.umbrella = pick(CrowdLooks.UMBRELLAS, rng)
-		end
+	-- Every other coat and office shirt carries an umbrella.
+	if (kind == "coat" or kind == "office") and index % 2 == 1 then
+		look.umbrella = pick(CrowdLooks.UMBRELLAS, rng)
 	end
 	return look
 end
 
--- Which body walker `number` wears, of `count` built: someone standing at a post (a clerk) is never in
--- a suit; everyone else is spread over all of them.
-function CrowdLooks.bodyFor(number: number, seed: number, standing: boolean, count: number): number
+-- Which body walker `number` wears, of `count` built: spread over all of them.
+function CrowdLooks.bodyFor(number: number, seed: number, _standing: boolean, count: number): number
 	if count <= 0 then
 		return 0
-	end
-	local commuters = math.min(CrowdLooks.COMMUTERS, count)
-	if standing then
-		return count - commuters + (number + seed) % commuters + 1
 	end
 	return (number * 7 + seed) % count + 1
 end

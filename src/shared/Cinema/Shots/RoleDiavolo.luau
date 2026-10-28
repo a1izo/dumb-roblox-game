@@ -66,7 +66,7 @@ return {
 		{ t = 6.8, kind = "face", slot = "self", face = "Grin" },
 		{ t = 7.4, kind = "face", slot = "self", face = "Crazed" },
 		{ t = 7.4, kind = "sfx", slot = "slam" },
-		{ t = 7.4, kind = "fx", name = "impact", r = 255, g = 40, b = 50, strength = 0.55, dur = 0.28 },
+		{ t = 7.4, kind = "fx", name = "still", r = 255, g = 40, b = 50, dur = 0.32 },
 		{ t = 7.4, kind = "fx", name = "shake", strength = 0.35, dur = 0.25 },
 		{ t = 8, kind = "materialize", model = "Specter", dur = 1.5, r = 200, g = 30, b = 45 },
 		{ t = 8.3, kind = "face", slot = "self", face = "Laugh" },

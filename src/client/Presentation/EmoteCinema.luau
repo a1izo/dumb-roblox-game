@@ -285,8 +285,8 @@ function EmoteCinema.start(character: Model, clip: string, zero: number, length:
 			fn = function()
 				if beat.kind == "flash" then
 					Cinema.flash(color(beat.color, Color3.new(1, 1, 1)), beat.strength, beat.seconds)
-				elseif beat.kind == "impact" then
-					Cinema.impact(color(beat.color, Color3.new(1, 1, 1)), beat.strength, beat.seconds)
+				elseif beat.kind == "still" then
+					Cinema.still(color(beat.color, Color3.new(1, 0.16, 0.2)), beat.seconds)
 				elseif beat.kind == "shake" then
 					CameraDirector.shake(token, beat.strength or 0.1, beat.seconds or 0.3)
 				elseif beat.kind == "vignette" then

@@ -196,6 +196,7 @@ class Shot:
         self.letterbox = letterbox
         self.skippable = skippable
         self.mood = mood  # a LightingPresets name the game switches to for the shot
+        self.own = False  # players appear in their own avatars, not the match suit (the map intros)
         self.room = None  # (x0, z0, x1, z1, height): lint warns when the camera leaves it
         self.cam_groups = [[]]  # camera keys, split at the cuts
         self.subjects = []  # (t0, t1, slot, back_ok): who the framing helpers aim at (framing_lint)
@@ -708,6 +709,8 @@ def export(shot):
     ]
     if shot.mood:
         lines.append(f"\tmood = {lua_string(shot.mood)},")
+    if shot.own:
+        lines.append("\town = true,")
     if shot.sound:
         lines.append(f"\tsound = {lua_value(shot.sound)},")
     lines += [

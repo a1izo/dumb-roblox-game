@@ -114,8 +114,13 @@ local function fitted(model: Model, cframe: CFrame, stretch: Vector3): { MeshPar
 	return parts
 end
 
+-- How much of an R6 arm's end is the hand: the sleeve stops this far short of it, a classic Roblox hand in the
+-- player's skin (the owner, 2026-10-28: the fingered hands that hung below the arm went).
+Suit.HAND = 0.35
+
 -- The suit's cloth for one R6 part (the jacket for the Torso, a sleeve for an arm, a trouser leg for a leg), sized
--- and placed on it, not parented and not welded; none before the Core import carries it (Models.suit).
+-- and placed on it, not parented and not welded; none before the Core import carries it (Models.suit). A sleeve
+-- stops Suit.HAND short of the arm's end, where the hand shows.
 function Suit.cloth(part: BasePart): { BasePart }
 	local key = if part.Name == "Torso" then "SuitTorso" else "SuitLimb"
 	local tint = if string.find(part.Name, "Leg") then TROUSER_TINT else nil
@@ -123,10 +128,15 @@ function Suit.cloth(part: BasePart): { BasePart }
 	if not shell then
 		return {}
 	end
+	local size, at = part.Size, part.CFrame
+	if string.find(part.Name, "Arm") then
+		size = Vector3.new(size.X, size.Y - Suit.HAND, size.Z)
+		at = at * CFrame.new(0, Suit.HAND / 2, 0)
+	end
 	-- (the base box grows by the pad; what stands off it keeps its depth)
 	local base = SHELL_BASE[key]
-	local stretch = part.Size / base + Vector3.one * (Suit.PAD[part.Name] or PAD_OTHER) / base
-	local parts = fitted(shell, part.CFrame, stretch)
+	local stretch = size / base + Vector3.one * (Suit.PAD[part.Name] or PAD_OTHER) / base
+	local parts = fitted(shell, at, stretch)
 	for _, item in ipairs(parts) do
 		local look = item:FindFirstChildWhichIsA("SurfaceAppearance")
 		if look and tint then
@@ -161,37 +171,27 @@ local function piece(size: Vector3, colour: Color3, cframe: CFrame, material: En
 	})
 end
 
--- The shirt's cuff and the hand coming out of one sleeve (`arm` is "Left Arm" or "Right Arm"), in the player's skin:
--- a slim hand with its fingers (the Core import's SuitHandL / SuitHandR), or a slim block before the import. The cuff
--- is a white band showing under the sleeve's end; the hand starts inside it, so no face of the two lies on the sleeve's.
+-- The shirt's cuff and the hand at the end of one sleeve (`arm` is "Left Arm" or "Right Arm"): the arm's last
+-- Suit.HAND in the player's skin, a classic R6 hand (a skin shell a hair over the arm, so the suit-painted part
+-- under it never shows), and the cuff, a white band just below the sleeve's end. Nothing hangs below the arm, so
+-- what a hand holds sits at the arm's end.
 function Suit.hand(arm: BasePart, skin: Color3): { BasePart }
 	local width, depth = arm.Size.X, arm.Size.Z
 	local finish = arm.CFrame * CFrame.new(0, -arm.Size.Y / 2, 0) -- the arm's end
-	local cuff = piece(Vector3.new(width * 0.86, 0.12, depth * 0.86), Suit.SHIRT, finish * CFrame.new(0, -0.04, 0))
+	local pad = 0.03 -- (under the sleeve's own pad, over the arm's faces)
+	local hand = piece(
+		Vector3.new(width + pad, Suit.HAND, depth + pad),
+		skin,
+		finish * CFrame.new(0, Suit.HAND / 2 - pad / 4, 0)
+	)
+	hand.Name = "Hand"
+	local cuff = piece(
+		Vector3.new(width + pad * 2.4, 0.09, depth + pad * 2.4),
+		Suit.SHIRT,
+		finish * CFrame.new(0, Suit.HAND - 0.045, 0)
+	)
 	cuff.Name = "Cuff"
-	local parts: { BasePart } = { cuff }
-	local key = if string.find(arm.Name, "Left") then "SuitHandL" else "SuitHandR"
-	local model = ModelLibrary.get(key)
-	if model then
-		local size = ModelLibrary.size(key) or Vector3.new(0.3, 0.5, 0.7)
-		local scale = width -- (made for an arm 1 stud wide)
-		local at = finish * CFrame.new(0, -0.07 - size.Y * scale / 2, 0)
-		for _, item in ipairs(fitted(model, at, Vector3.one * scale)) do
-			item.Name = "Hand"
-			table.insert(parts, item)
-		end
-	else
-		local size = Vector3.new(width * 0.62, 0.46, depth * 0.56)
-		local hand = piece(size, skin, finish * CFrame.new(0, -0.07 - size.Y / 2, 0))
-		hand.Name = "Hand"
-		table.insert(parts, hand)
-	end
-	for _, item in ipairs(parts) do
-		if item.Name == "Hand" then
-			Suit.paint(item, skin)
-		end
-	end
-	return parts
+	return { cuff, hand }
 end
 
 -- Repaints the hands under "holder" (a body's LHandLeft / LHandRight) in a skin that arrived late; the cuffs stay white.

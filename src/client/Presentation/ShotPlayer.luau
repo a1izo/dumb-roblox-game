@@ -25,6 +25,7 @@ local Models = require(Shared:WaitForChild("Models"))
 local Venues = require(Shared:WaitForChild("Venues"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
+local Characters = require(script.Parent.Parent.Characters)
 local Mixer = require(script.Parent.Parent.Audio.Mixer)
 local MusicController = require(script.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
@@ -49,9 +50,16 @@ export type Options = {
 	length: number?,
 }
 
--- What a showing has going: what closes when it ends, the sounds it started, its stretch, and the
--- motion blur's pulses ({ started (os.clock), size, seconds }).
-type Showing = { closers: { () -> () }, sounds: { Sound }, stretch: number, pulses: { { number } } }
+-- What a showing has going: what closes when it ends, the sounds it started, its stretch, the motion
+-- blur's pulses ({ started (os.clock), size, seconds }) and the heartbeats' push-ins ({ started, share of
+-- the field of view, seconds }).
+type Showing = {
+	closers: { () -> () },
+	sounds: { Sound },
+	stretch: number,
+	pulses: { { number } },
+	punches: { { number } },
+}
 
 -- The motion blur: how much the camera's own speed blurs (size per degree a second turned, per stud a
 -- second moved), its most, and a move in one frame that is a cut, not a move.
@@ -369,6 +377,34 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 			CameraDirector.shake(token, event.strength or 0.4, event.dur or 0.4)
 		elseif name == "blur" then
 			table.insert(showing.pulses, { os.clock(), event.strength or 12, event.dur or 0.35 })
+		elseif name == "pulse" then
+			-- a heartbeat: the edges thump in and the lens pushes in a touch
+			Cinema.pulse(
+				Color3.fromRGB(event.r or 110, event.g or 0, event.b or 10),
+				event.strength or 0.6,
+				event.dur or 0.6
+			)
+			if not Vfx.still() then
+				table.insert(showing.punches, { os.clock(), event.punch or 0.05, event.dur or 0.6 })
+			end
+		elseif name == "drain" then
+			-- the colour drains out of the picture over `dur` (back when the shot ends)
+			table.insert(
+				closers,
+				Cinema.tint(
+					{ Saturation = -(event.strength or 0.8), Contrast = event.contrast or 0.12 },
+					event.dur or 4
+				)
+			)
+		elseif name == "still" then
+			Cinema.still(Color3.fromRGB(event.r or 255, event.g or 40, event.b or 50), event.dur or 0.3)
+		elseif name == "black" then
+			table.insert(closers, Cinema.black())
+			if event.hush then -- (and silence: every sound the shot started stops on the cut)
+				for _, playing in ipairs(showing.sounds) do
+					playing:Stop()
+				end
+			end
 		elseif name == "snowburst" and at then
 			DeathFx.burst(at, Color3.fromRGB(235, 240, 248), 24)
 		elseif name == "burst" and at then
@@ -425,12 +461,34 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	local stage = Stage.new()
 	local actors: { Live } = {}
 	local bySlot: { [string]: Live } = {}
+	-- (the map intros show players in their own avatars, kept by the server from the lobby; the match suit
+	-- when there is none, a test bot's)
+	local ownLooks = if shot.own then ReplicatedStorage:FindFirstChild("LOwnLooks") else nil
 	for _, data in ipairs(shot.actors) do
 		local userId = cast[data.slot]
-		local model = if userId
-			then stage:cast(userId, CFrame.new(0, -500, 0), nil, nil)
-			elseif data.extra then stage:cast(Stage.figure(), CFrame.new(0, -500, 0), nil, nil)
-			else nil
+		local own = if userId and ownLooks then ownLooks:FindFirstChild(tostring(userId)) else nil
+		local model
+		if own and own:IsA("Model") then
+			model = stage:cast(own, CFrame.new(0, -500, 0), nil, nil)
+			local body = Characters.byUserId(userId :: number)
+			if body then
+				stage:hide(body)
+			end
+		elseif userId then
+			model = stage:cast(userId, CFrame.new(0, -500, 0), nil, nil)
+		elseif data.extra then
+			-- (in Tokyo the commuters are the crowd's own civilians, never a suit; elsewhere a faceless stand-in)
+			local crowd = if shot.venue == "Tokyo" then ReplicatedStorage:FindFirstChild("LCrowd") else nil
+			local bodies = if crowd then crowd:GetChildren() else {}
+			local number = tonumber(string.match(data.slot, "%d+")) or 1
+			local civilian = bodies[(number * 5) % math.max(1, #bodies) + 1]
+			model = stage:cast(
+				if civilian and civilian:IsA("Model") then civilian else Stage.figure(),
+				CFrame.new(0, -500, 0),
+				nil,
+				nil
+			)
+		end
 		if model then
 			local live: Live = {
 				model = model,
@@ -496,7 +554,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 
 	local closers: { () -> () } = {}
-	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, pulses = {} }
+	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, pulses = {}, punches = {} }
 	-- Motion blur: the camera's own turning and moving blurs the frame a little, and a hit pulses it.
 	local blur: BlurEffect? = nil
 	if not Vfx.still() then
@@ -622,6 +680,18 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		local i = find(camTimes, tt)
 		local j, alpha = alphaAt(camTimes, i, tt)
 		local fov = cam.fov[i] + (cam.fov[j] - cam.fov[i]) * alpha
+		local clock = os.clock()
+		for k = #showing.punches, 1, -1 do
+			local punch = showing.punches[k]
+			local u = (clock - punch[1]) / punch[3]
+			if u >= 1 then
+				table.remove(showing.punches, k)
+			else
+				-- (in fast, out slow, like the vignette's thump)
+				local shape = if u < 0.12 then u / 0.12 else 1 - (u - 0.12) / 0.88
+				fov *= 1 - punch[2] * shape * shape
+			end
+		end
 		local frameCamera = camFrames[i]:Lerp(camFrames[j], alpha)
 		CameraDirector.cut(token, frameCamera, fov)
 		if blur then

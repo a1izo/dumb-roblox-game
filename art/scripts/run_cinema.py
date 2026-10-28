@@ -60,7 +60,7 @@ def look_and_atmosphere(bscene):
     vs = bscene.view_settings
     vs.view_transform = "AgX"
     vs.look = "AgX - Punchy"
-    vs.exposure = 2.0
+    vs.exposure = float(os.environ.get("DG_EXPOSURE", "2.0"))
     ee = bscene.eevee
     ee.volumetric_end = 90.0
     ee.volumetric_tile_size = "4"
