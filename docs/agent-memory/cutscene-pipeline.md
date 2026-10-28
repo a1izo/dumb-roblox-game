@@ -18,6 +18,6 @@ metadata:
 
 **R6 lessons:** bowed heads show only hair (keep heads up in close shots; total head pitch ≥ about -20); arms crossing in front of the face kill frontal shots (follow-throughs low/out, last pose on the near side); big root turns (>11°) swing knees into desks; seated thighs level with hip = legs - lean; clearance treats desks as their top slab only.
 
-**Game-side fx (ShotPlayer events):** focus, pulse, still, black, freeze, flash, shake, burst(pos), inkslash, slash(p0,p1,bend: curved crescent along a stroke, layered CanvasGroups), cctv(dur,label), drain, materialize. Shots.spec: voiced role scenes voiceAt 0.8–8.5, ≤8 s after the line ends.
+**Game-side fx (ShotPlayer events):** focus, pulse, still, black, freeze, flash, shake, burst(pos), inkslash, slash(p0,p1,bend: curved crescent along a stroke, layered CanvasGroups), cctv(dur,label), drain, materialize. A Manual lying on a set opens over the shot with Shot.prop("Grimoire", open=[(t, 0..1)]) (game-side correct; the Blender preview still shows it open: a known preview gap). Shots.spec: voiced role scenes voiceAt 0.8–8.5, ≤8 s after the line ends.
 
 **Owner's taste:** no drawn faces (own avatars), light focus only, no glowing eye blocks, effects replaced not removed when "uninspired", long readable cuts (~1.5–3 s), cause→effect, anime-faithful staging, motion with anticipation/overshoot/settle, never jittery loops. Related: [[cutscene-quality-bar]], [[studio-cutscene-testing]], [[r6-cutscene-redo]].
