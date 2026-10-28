@@ -643,7 +643,7 @@ local function buildCard(phone: boolean)
 			Kit.frame({ Name = "Coins", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 4, Parent = profileContent })
 	end
 	Kit.list(coinsRow, T.space.s, true)
-	Kit.icon({ name = "coin", size = if phone then 18 else 22, color = C.candle, LayoutOrder = 1, Parent = coinsRow })
+	Kit.icon({ name = "real", size = if phone then 18 else 22, color = C.candle, LayoutOrder = 1, Parent = coinsRow })
 	coinsLabel = Kit.label({
 		font = "bodyBold",
 		size = "body",

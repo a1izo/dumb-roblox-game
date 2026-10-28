@@ -52,7 +52,7 @@ local LIFT = 10 -- px a picked card rises
 local PICTURE = 118 -- the picture's height
 local FOV = 28
 local HEART_HIT = 40 -- px, the heart's button
-local CHIP_ICONS = { "coin", "check", "lock" }
+local CHIP_ICONS = { "real", "check", "lock" }
 
 -- The still for kinds with no 3D view: an icon (styles and emotes come in suits of their own).
 local STILL_ICON = {
@@ -1069,7 +1069,7 @@ end
 
 -- The card ---------------------------------------------------------------------------------------------
 
--- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipIcon (before it: "coin", "check"
+-- props: Parent (the slot, sized by its grid), chip (text; "" for none), chipIcon (before it: "real", "check"
 -- or "lock"),
 -- onPick (clicked), faceDown (lies on its back: onPick still fires, the caller turns it), isNew (the "New"
 -- ribbon), state (where you stand with it, a chip on the picture's top left as in the owner's direction A:
@@ -1143,12 +1143,12 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	Kit.Base.stroke(chipFrame, C.bone, 1, 0.78)
 	Kit.list(chipFrame, T.space.xs, true, Enum.HorizontalAlignment.Center)
 	Kit.pad(chipFrame, 0, T.space.m)
-	-- (a coin before a price, a check when it is yours, a lock when it cannot be bought now)
+	-- (the Reál's mark before a price, a check when it is yours, a lock when it cannot be bought now)
 	local chipIcons: { [string]: GuiObject } = {}
 	for _, name in ipairs(CHIP_ICONS) do
 		chipIcons[name] = Kit.icon({
 			name = name,
-			size = if name == "coin" then 18 else 14,
+			size = if name == "real" then 18 else 14,
 			color = if name == "lock" then C.dim else C.bone,
 			LayoutOrder = 1,
 			Visible = false,
@@ -1250,7 +1250,7 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 	return self
 end
 
--- The chip's words, and the icon before them ("coin", "check", "lock"; none when nil or false).
+-- The chip's words, and the icon before them ("real", "check", "lock"; none when nil or false).
 function Card.setChip(self: Card, text: string, icon: (string | boolean)?)
 	-- (rich text: a price cheaper today shows the old one struck through)
 	self.chip.RichText = true
