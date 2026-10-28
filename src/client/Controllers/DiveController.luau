@@ -36,6 +36,7 @@ local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Tumble = require(script.Parent.Parent.Anim.Tumble)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local ClientState = require(script.Parent.Parent.ClientState)
+local Curtain = require(script.Parent.Parent.UI.Curtain)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
@@ -508,6 +509,10 @@ local function step(dt: number)
 	end
 end
 
+-- The curtain over the diver's way back to the rim (UI/Curtain): to black, and up again.
+local GIVE_BACK_OUT = 0.35
+local GIVE_BACK_IN = 0.6
+
 local function onState(payload: any)
 	if type(payload) ~= "table" or payload.game ~= "rift" then
 		return
@@ -516,13 +521,25 @@ local function onState(payload: any)
 	if payload.kind == "start" then
 		confirmed = true
 	elseif payload.kind == "refused" or payload.kind == "end" then
-		-- Not a dive after all, or the rift is giving the diver back: the body is let go.
+		-- Not a dive after all, or the rift is giving the diver back: the body is let go (moved to the rim straight
+		-- after, under the curtain: it comes up again once the rim is drawn).
 		release()
+		if Curtain.isClosed() then
+			task.delay(0.15, function()
+				Curtain.open(GIVE_BACK_IN)
+			end)
+		end
 	elseif payload.kind == "brake" and diving and info and type(payload.at) == "number" then
 		-- The server's moment is the one that counts: the rest of the dive is drawn from it.
 		brakeAt = payload.at
 		outcome = LastBreath.outcome(info.height, payload.at)
 	elseif payload.kind == "rest" then
+		-- (the rift gives the diver back LastBreath.HOLD after this: the screen is black by then)
+		task.delay(math.max(0, LastBreath.HOLD - GIVE_BACK_OUT), function()
+			if diving then
+				Curtain.close(GIVE_BACK_OUT)
+			end
+		end)
 		if payload.crashed then
 			Toasts.show("Too late.", "bad")
 		else

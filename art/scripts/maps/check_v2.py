@@ -961,7 +961,9 @@ def check(venue, full=True):
     overlaps(data, problems)
     doorways(data, problems)
     crowd_and_traffic(data, world, zones, problems)
-    spawn_spread(data, problems)
+    # (a venue whose players are not dealt a case's spawns, the lobby, says "spawns": None in its CHECKS)
+    if (data.get("checks") or {}).get("spawns", True) is not None:
+        spawn_spread(data, problems)
     finds(data, problems)
     if full:
         dist = walk(data, world, problems)

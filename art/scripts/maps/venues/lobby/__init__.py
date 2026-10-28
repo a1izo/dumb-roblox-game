@@ -61,6 +61,8 @@ CHECKS = {
     "walk": (15.0, 35.0),
     "corners": P.CORNERS,
     "symmetry": None,
+    # Nobody is dealt a case's spawn here: everyone arrives at the spawn ring (check_v2's spawn spread is for the maps).
+    "spawns": None,
     # The carcass's skull rests on its jaw, settled into the ash (landmarks.carcass): sunk on purpose.
     "finds_ok": ["sunk GiantSkull in the floor or the map"],
 }

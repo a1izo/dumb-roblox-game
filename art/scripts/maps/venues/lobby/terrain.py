@@ -134,6 +134,9 @@ def boulder(s, x, z, r, seed, y=0.0, collide=True, mat="RockGrey"):
 # The realm's own shapes -----------------------------------------------------------------------------------
 
 
+FOOT_SLABS = 12  # radial slabs round a column's foot (their outer corners stand out 3% past the rock's surface)
+
+
 def column(s, x, z, r, h, seed, y=0.0, twist=1.3, sides=14, tiers=11, collide=True, mat="RockGrey", flat=False):
     """A fluted rock column, twisting as it rises: a flared foot, lumpy pinches, every other face
     cut back into a flute, the top broken off."""
@@ -167,6 +170,18 @@ def column(s, x, z, r, h, seed, y=0.0, twist=1.3, sides=14, tiers=11, collide=Tr
     if collide:
         ch = min(h, 70.0)
         s.collider((x, y + ch / 2 - 0.5, z), (r * 1.7, ch + 1.0, r * 1.7), math.degrees(phase) % 90, True, mat)
+        # The flared foot reaches far past that box (to half again its radius): up to a body's height and over, a
+        # ring of radial slabs following the foot's own outline, tier by tier (2026-10-27: people walked into it).
+        for t in range(tiers):
+            if y + h * t / tiers > 12.0:
+                break
+            reach = min(math.hypot(px - x, pz - z) for ring in (rings[t], rings[t + 1]) for px, _, pz in ring)
+            low, high = y + h * t / tiers - (0.5 if t == 0 else 0.0), y + h * (t + 1) / tiers
+            for k in range(FOOT_SLABS):
+                a = phase + math.tau * k / FOOT_SLABS
+                mid = (x + math.cos(a) * reach / 2, (low + high) / 2, z + math.sin(a) * reach / 2)
+                s.collider(mid, (reach, high - low, 2 * reach * math.sin(math.pi / FOOT_SLABS)), -math.degrees(a) % 360,
+                           True, mat)
 
 
 def needle(s, x, z, h, r, seed, y=0.0, lean=0.14, mat="RockGrey"):
