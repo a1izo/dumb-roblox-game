@@ -807,9 +807,10 @@ end
 
 -- Props the catalog leaves without collision (their thin parts would snag a walker) that a body should still not walk
 -- through (2026-10-27: the user walked through Tokyo's street things): `box`, a block over the whole prop that many
--- studs inside its outline, up to its height or `top`; or `pole`, a post that wide at the prop's anchor (its pole or
--- trunk, the catalog's), up to `top`. Invisible, like the map's other colliders.
-local SOLID: { [string]: { box: number?, pole: number?, top: number? } } = {
+-- studs inside its outline, up to its height or `top`; `pole`, a post that wide at the prop's anchor (its pole or
+-- trunk, the catalog's), up to `top`; or `walls`, blocks in the prop's own studs ({ x, z, width, depth }), for a prop
+-- that is entered (a shelter: its back and ends, not its open front). Invisible, like the map's other colliders.
+local SOLID: { [string]: { box: number?, pole: number?, top: number?, walls: { { number } }? } } = {
 	Bicycle = { box = 0.25 },
 	Scooter = { box = 0.25 },
 	TrafficCone = { box = 0.2 },
@@ -824,6 +825,10 @@ local SOLID: { [string]: { box: number?, pole: number?, top: number? } } = {
 	UtilityPole = { pole = 1.2, top = 8 },
 	TreeSakura = { pole = 1.3, top = 6 },
 	TreeZelkova = { pole = 1.3, top = 6 },
+	-- (2026-10-28, the sweep of Campus and the Agency: the rest already had the map's own colliders)
+	QueuePosts = { box = 0.2, top = 3 },
+	FloorLamp = { pole = 0.6, top = 6 },
+	BusShelter = { walls = { { 0, 1.9, 11.6, 0.4 }, { -6, 0.35, 0.4, 3.2 }, { 6, 0.35, 0.4, 3.2 } }, top = 7 },
 }
 
 local function solidFor(b, folder: Instance, p)
@@ -835,6 +840,18 @@ local function solidFor(b, folder: Instance, p)
 	local scale = p[6] or 1
 	local size = Vector3.new(info.size[1], info.size[2], info.size[3]) * scale
 	local base = b:cf(p[2], p[3], p[4], p[5])
+	if want.walls then
+		local top = math.min(want.top or size.Y, size.Y)
+		for _, wall in ipairs(want.walls) do
+			local part = Instance.new("Part")
+			part.Name = "PropSolid_" .. p[1]
+			part.Size = Vector3.new(wall[3] * scale, top, wall[4] * scale)
+			part.CFrame = b:world(base * CFrame.new(wall[1] * scale, top / 2, wall[2] * scale))
+			solid(part, nil, false, false)
+			part.Parent = folder
+		end
+		return
+	end
 	local box: Vector3, at: CFrame
 	if want.pole then
 		local anchor = info.anchor or { 0, 0 }
