@@ -101,14 +101,7 @@ function WagerService.settleVote(removedUserId: number?)
 		local ps = Match.getByUserId(userId)
 		if ps and guess ~= nil then
 			if Wager.voteRight(guess, removedUserId) then
-				win(
-					ps,
-					Wager.VOTE_COINS,
-					string.format(
-						"Death's wager: you called the vote. +%d Reál when the case closes.",
-						Wager.VOTE_COINS
-					)
-				)
+				win(ps, Wager.VOTE_COINS, string.format("Called the vote. +%d Reál at the end.", Wager.VOTE_COINS))
 			end
 			push(ps)
 		end
@@ -121,11 +114,7 @@ function WagerService.settleCase()
 	for userId, book in pairs(books) do
 		local ps = Match.getByUserId(userId)
 		if ps and Wager.diavoloRight(book.diavolo, if diavolo then diavolo.userId else nil) then
-			win(
-				ps,
-				Wager.DIAVOLO_COINS,
-				string.format("Death's wager: you named Diavolo. +%d Reál.", Wager.DIAVOLO_COINS)
-			)
+			win(ps, Wager.DIAVOLO_COINS, string.format("You guessed Diavolo. +%d Reál.", Wager.DIAVOLO_COINS))
 		end
 	end
 end

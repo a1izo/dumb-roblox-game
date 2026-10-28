@@ -240,7 +240,7 @@ local function teleportGroup(members: { Player }, code: string)
 	end
 	for _, player in ipairs(present) do
 		ready[player] = nil
-		Match.notify(player, "Match found in another server. Teleporting...", "good")
+		Match.notify(player, "Match found. Teleporting.", "good")
 		-- (the loading screen goes up, and its still goes with the teleport: UI/AppleLoading)
 		TeleportingRemote:FireClient(player)
 	end
@@ -259,7 +259,7 @@ local function teleportGroup(members: { Player }, code: string)
 		for _, player in ipairs(present) do
 			if player.Parent == Players then
 				ready[player] = os.clock()
-				Match.notify(player, "Teleport failed. You are back in the queue.", "bad")
+				Match.notify(player, "Teleport failed. Back in queue.", "bad")
 			end
 		end
 	end
@@ -423,7 +423,7 @@ local function onReady(player: Player, wantReady)
 			-- A party queues together: a member who is watching comes back to the lobby.
 			if wantReady and SpectateRules.pullOnReady(member, player, GhostService.isWatching(member)) then
 				GhostService.unwatch(member)
-				Match.notify(member, "Your party readied up, so you left spectating.", "info")
+				Match.notify(member, "Your party readied up.", "info")
 			end
 			if wantReady then
 				ready[member] = ready[member] or os.clock()

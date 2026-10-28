@@ -22,13 +22,13 @@ ShopBrowse.SHOW = {
 	{ id = "all", name = "All" },
 	{ id = "notOwned", name = "Not owned" },
 	{ id = "afford", name = "Can afford" },
-	{ id = "wished", name = "Wished" },
+	{ id = "wished", name = "Wishlist" },
 } :: { Choice }
 
 ShopBrowse.SORTS = {
-	{ id = "order", name = "In order" },
+	{ id = "order", name = "Default" },
 	{ id = "cheapest", name = "Cheapest" },
-	{ id = "dearest", name = "Dearest" },
+	{ id = "dearest", name = "Priciest" },
 	{ id = "rarest", name = "Rarest" },
 	{ id = "newest", name = "Newest" },
 } :: { Choice }

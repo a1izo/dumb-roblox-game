@@ -48,7 +48,7 @@ local function questCard(item, canSwap: boolean, order: number)
 	end
 	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 96), LayoutOrder = order, Parent = list })
 	Kit.label({
-		Text = (if item.done then "Done  ·  " else "") .. quest.text,
+		Text = (if item.done then "Done: " else "") .. quest.text,
 		font = "bodyBold",
 		color = if item.done then C.good else C.bone,
 		TextWrapped = false,
@@ -77,7 +77,7 @@ local function questCard(item, canSwap: boolean, order: number)
 		Parent = card,
 	})
 	Kit.label({
-		Text = string.format("+%d Reál  ·  +%d XP", quest.coins, quest.xp),
+		Text = string.format("+%d Reál  +%d XP", quest.coins, quest.xp),
 		font = "label",
 		size = "small",
 		color = C.candle,
@@ -128,18 +128,14 @@ local function rebuild()
 	local streakCard = Kit.card({ Size = UDim2.new(1, 0, 0, 76), LayoutOrder = nextOrder(), Parent = list })
 	Kit.label({
 		Text = if claimable
-			then string.format("Day %d is waiting: +%d Reál", nextCount, Streak.COINS[cycleDay])
-			else string.format(
-				"Day %d claimed. Come back in %s.",
-				streak.count,
-				formatTime(profile.nextDayIn or 0)
-			),
+			then string.format("Claim day %d: +%d Reál", nextCount, Streak.COINS[cycleDay])
+			else string.format("Day %d claimed. Next in %s.", streak.count, formatTime(profile.nextDayIn or 0)),
 		font = "bodyBold",
 		Size = UDim2.new(1, -140, 0, 0),
 		Parent = streakCard,
 	})
 	Kit.label({
-		Text = "Day 7 of a streak also unlocks the Night Owl title.",
+		Text = "Day 7 unlocks the Night Owl title.",
 		size = "small",
 		color = C.dim,
 		Position = UDim2.fromOffset(0, 28),
@@ -182,7 +178,7 @@ local function rebuild()
 	if type(ghost) == "table" and type(ghost.items) == "table" and #ghost.items > 0 then
 		Kit.heading({
 			text = "Deathsinger",
-			detail = "Only while you are a Deathsinger  ·  new in " .. formatTime(profile.nextDayIn or 0),
+			detail = "Deathsinger only. New in " .. formatTime(profile.nextDayIn or 0),
 			LayoutOrder = nextOrder(),
 			Parent = list,
 		})
@@ -202,7 +198,7 @@ local function maybePopup()
 	popupShown = true
 	local nextCount = Streak.nextCount(profile.streak, profile.today)
 	local cycleDay = ((nextCount - 1) % Streak.CYCLE) + 1
-	popupText.Text = string.format("Day %d of your streak: +%d Reál are waiting.", nextCount, Streak.COINS[cycleDay])
+	popupText.Text = string.format("Day %d streak: +%d Reál to claim.", nextCount, Streak.COINS[cycleDay])
 	popup.Visible = true
 end
 

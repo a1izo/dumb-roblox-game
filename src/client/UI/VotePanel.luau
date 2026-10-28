@@ -59,8 +59,8 @@ local function rebuild()
 		count += 1
 	end
 	statusLabel.Text = if living
-		then string.format("%d voted  ·  you can change your vote until time runs out", count)
-		else string.format("%d voted  ·  only living players vote", count)
+		then string.format("%d voted. You can change your vote.", count)
+		else string.format("%d voted", count)
 	local private = ClientState.private
 	arrestButton.Visible = private.isAce == true and living and private.arrestUsed ~= true
 end

@@ -281,8 +281,8 @@ local function startRally(a: any, b: any)
 				return
 			end
 		end
-		Match.notify(a, "Couldn't get into place for the rally.", "info")
-		Match.notify(b, "Couldn't get into place for the rally.", "info")
+		Match.notify(a, "No room here.", "info")
+		Match.notify(b, "No room here.", "info")
 	end)
 end
 
@@ -349,7 +349,7 @@ end
 
 local function startChain(leader: any, follower: any)
 	if Match.active and (Match.get(leader) or Match.get(follower)) then
-		Match.notify(leader, "Cuffed Together is for the lobby only.", "info")
+		Match.notify(leader, "Lobby only.", "info")
 		return
 	end
 	DuoService.stop(leader)
@@ -392,7 +392,7 @@ local function onRequest(player: any, payload)
 	end
 	local ra, rb = rootOf(from), rootOf(player)
 	if not ra or not rb or (ra.Position - rb.Position).Magnitude > REACH + 4 or not together(from, player) then
-		Match.notify(player, "Too late: you are no longer together.", "info")
+		Match.notify(player, "Too late.", "info")
 		return
 	end
 	if ask.emote == "cuffedLead" then

@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Overlay",
 	title = "Overlay",
-	hint = "Turn and slide the film until its points sit on the reference print.",
+	hint = "Line the film up with the print.",
 }
 
 Def.GRID = 7 -- points live on a GRID x GRID board, centred at (3, 3)

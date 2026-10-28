@@ -10,23 +10,23 @@ export type Tableau = { id: string, line: string }
 local RAW: { { id: string, line: string } } = {
 	{
 		id = "name",
-		line = "Everyone here goes by an alias. Your real name is on your role card: keep it to yourself.",
+		line = "Everyone uses an alias. Keep your real name to yourself.",
 	},
 	{
 		id = "leak",
-		line = "Every case file leaves your name in its station's log. Break in fast, or the alarm brings everyone running.",
+		line = "Every station logs who used it. Hack it fast or the alarm goes off.",
 	},
 	{
 		id = "writing",
-		line = "{Hand} kills by writing a full real name in {grimoire}. The book burns red: someone may be watching.",
+		line = "{Hand} kills by writing real names in {grimoire}.",
 	},
 	{
 		id = "meeting",
-		line = "A death calls the meeting. Talk it over, then vote: the most votes is out.",
+		line = "A death calls a meeting. Talk, then vote.",
 	},
 	{
 		id = "warrant",
-		line = "{Zero} may arrest one player in a meeting. Arrest the wrong one and {zero} pays with their life.",
+		line = "{Zero} can arrest one player. A wrong arrest is fatal.",
 	},
 }
 

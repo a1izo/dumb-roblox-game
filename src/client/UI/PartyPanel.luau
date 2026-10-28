@@ -69,7 +69,7 @@ local function rebuild()
 
 	heading(string.format("Your party (%d/%d)", math.max(#party.members, 1), party.maxSize or 4))
 	if #party.members == 0 then
-		row("Just you. Invite friends so you always play on the same side.", {}, true)
+		row("Invite friends to play on the same side.", {}, true)
 	else
 		for _, member in ipairs(party.members) do
 			inParty[member.userId] = true
@@ -87,7 +87,7 @@ local function rebuild()
 		})
 	end
 
-	row("Bring Roblox friends into this server", {
+	row("Invite friends", {
 		{
 			text = "Invite",
 			icon = "mail",
@@ -128,7 +128,7 @@ local function rebuild()
 		end
 	end
 
-	heading("Players in this server")
+	heading("Players here")
 	local any = false
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and not inParty[player.UserId] then
@@ -145,14 +145,14 @@ local function rebuild()
 		end
 	end
 	if not any then
-		row("Nobody else is here yet.", {}, true)
+		row("Nobody else is here.", {}, true)
 	end
 end
 
 function PartyPanel.init()
 	local win = Kit.window({ name = "party", title = "Party", size = "M" })
 	Kit.label({
-		Text = "Friends in a party are always placed on the same side.",
+		Text = "Party members are always on the same side.",
 		font = "bodyItalic",
 		size = "small",
 		color = C.dim,

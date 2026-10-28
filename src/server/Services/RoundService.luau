@@ -349,11 +349,7 @@ local function startInvestigation()
 	placeAtSpawns()
 	freezeLiving(false)
 	ChatService.refresh()
-	Match.announce(
-		Terms.phase("Investigation"),
-		"Work the case files and watch each other. Anything can happen now.",
-		"neutral"
-	)
+	Match.announce(Terms.phase("Investigation"), "Work case files and watch each other.", "neutral")
 end
 
 -- Free roam is over: everything that was going on in it stops, and everyone stands still.
@@ -370,11 +366,11 @@ end
 -- What the meeting's announcement says about why it was called.
 local function meetingReason(call): string
 	if call.reason == "death" and call.by then
-		return call.by.alias .. " is dead. The Bureau gathers."
+		return call.by.alias .. " is dead."
 	elseif call.reason == "bell" and call.by then
 		return call.by.alias .. " rang the emergency bell."
 	end
-	return "Time to compare notes."
+	return "Time to talk."
 end
 
 -- Win checks --------------------------------------------------------------------------------
@@ -404,7 +400,7 @@ local function onEliminated(_ps, kind: string, context)
 			reason = Terms.f("{Hand} is gone.")
 		end
 	else
-		reason = Terms.f("{Circle} now matches {agency} in number.")
+		reason = Terms.f("{Circle} outnumbers {agency}.")
 	end
 	Match.declareWinner(side, reason)
 end

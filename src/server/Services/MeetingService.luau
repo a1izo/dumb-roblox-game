@@ -224,7 +224,7 @@ local function onBell(player: Player)
 	end
 	local problem = MeetingService.bellProblem(ps)
 	if problem == "used" then
-		Match.notify(player, "You have already rung the bell this match.", "bad")
+		Match.notify(player, "You already rang the bell.", "bad")
 	elseif problem == "far" then
 		Match.notify(player, "Get closer to the bell.", "bad")
 	elseif problem == nil then

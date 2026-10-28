@@ -95,7 +95,7 @@ local function run()
 		local hint = Hints.BY_ID[id]
 		if hint and Settings.get("hints") and not stale(id) then
 			Net.event("ProfileRequest"):FireServer({ action = "hint", id = id })
-			titleLabel.Text = "TIP  ·  " .. string.upper(hint.title)
+			titleLabel.Text = "TIP: " .. string.upper(hint.title)
 			textLabel.Text = Keys.resolve(hint.text)
 			dismissed = false
 			local showTime = if firstCase() then FIRST_CASE_TIME else SHOW_TIME
@@ -207,7 +207,7 @@ local function buildCard()
 		dismissed = true
 		table.clear(queue)
 		Settings.set("hints", false)
-		Toasts.show("Guide turned off. You can turn it back on in Settings.", "info")
+		Toasts.show("Guide off. Turn it back on in Settings.", "info")
 	end)
 	stop.Name = "HideGuide"
 	Kit.button({

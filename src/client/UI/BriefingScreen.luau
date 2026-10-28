@@ -56,15 +56,15 @@ local function alliesText(role: string, allies): string
 		end
 	end
 	if role == "Kira" then
-		return Terms.f("You do not know your {cultists}, and they know you. A name you write could be theirs.")
+		return Terms.f("Your {cultists} know you. You don't know them.")
 	elseif role == "Follower" then
-		return Terms.f("{Hand} is {alias}. They do not know you.", { alias = kira or "unknown" })
+		return Terms.f("{Hand} is {alias}. They don't know you.", { alias = kira or "unknown" })
 	elseif role == "L" then
-		return Terms.f("Only {butler} knows who you are. You do not know {butler}.")
+		return Terms.f("Only {butler} knows who you are.")
 	elseif role == "Watari" then
-		return Terms.f("{Zero} is {alias}. {Zero} does not know you.", { alias = ace or "unknown" })
+		return Terms.f("{Zero} is {alias}. They don't know you.", { alias = ace or "unknown" })
 	end
-	return "Nobody knows anyone's role. Trust carefully."
+	return "Trust no one."
 end
 
 local function build(payload)
@@ -130,7 +130,7 @@ local function build(payload)
 	})
 	for index, text in ipairs(copy.bullets) do
 		Kit.label({
-			Text = "·  " .. Keys.resolve(text),
+			Text = "-  " .. Keys.resolve(text),
 			size = "small",
 			color = C.bone,
 			LayoutOrder = 2 + index,
@@ -195,7 +195,7 @@ local function build(payload)
 		name:write(0.9)
 	end)
 	Kit.label({
-		Text = "Never say it. Anyone who writes it down can kill you.",
+		Text = "Never share it.",
 		font = "bodyItalic",
 		size = "small",
 		color = C.dim,
@@ -206,7 +206,7 @@ local function build(payload)
 	Kit.label({ Text = alliesText(role, payload.allies), size = "small", LayoutOrder = 7, Parent = pageContent })
 	Kit.label({
 		Text = string.format(
-			"%d players  ·  %d %s  ·  %s",
+			"%d players, %d %s, %s",
 			payload.playerCount or 0,
 			payload.followers or 0,
 			if payload.followers == 1 then Terms.role("Follower") else Terms.role("Follower", "plural"),
@@ -260,7 +260,7 @@ local function showPanels(payload)
 		unbindTimer()
 	end
 	unbindTimer = Clock.bind(timerLabel, function(seconds: number)
-		return string.format("The investigation begins in %d", math.ceil(seconds))
+		return string.format("Starting in %d", math.ceil(seconds))
 	end)
 end
 

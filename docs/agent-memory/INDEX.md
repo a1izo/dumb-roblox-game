@@ -9,3 +9,4 @@
 - [Parallel agent merges](parallel-agent-merges.md) — another agent pushes to main; check MERGE_HEAD/markers before committing, rebuild binaries after merges
 - [Cutscene pipeline](cutscene-pipeline.md) — READ FIRST for cutscenes: ref → body_reach acting → moving cameras → clear/lint/stills → export/push
 - [Studio cutscene testing](studio-cutscene-testing.md) — command-bar debug cues, slow-mo, debug camera; prop lamps, merged map glass; front-camera left/right trap
+- [UI text style](ui-text-style.md) — short plain text; no em dashes, ellipses, · separators or colon run-ons; check_terms after edits

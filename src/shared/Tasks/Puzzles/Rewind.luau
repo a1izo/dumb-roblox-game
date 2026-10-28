@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Rewind",
 	title = "Rewind the tape",
-	hint = "Scrub the tape to the frame where the figure stands in the lit doorway.",
+	hint = "Find the frame with the figure in the doorway.",
 }
 
 Def.FRAMES = 24

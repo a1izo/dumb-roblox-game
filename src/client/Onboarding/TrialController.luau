@@ -107,10 +107,10 @@ end
 -- How to turn the role card, for the input in the player's hands (their own key: Input/Keys).
 local function cardKey(): string
 	if Keys.input() == "touch" then
-		return "Press and hold the button below"
+		return "Hold the button below"
 	end
 	local key = Keys.text("roleCard")
-	return if key ~= "" then "Hold " .. key else "Hold your role card's key"
+	return if key ~= "" then "Hold " .. key else "Hold the role card key"
 end
 
 -- The stare's control, for the input in the player's hands (their own key where they rebound it).
@@ -271,11 +271,11 @@ local function startStare()
 	local at = lookAt(target).Position
 	local _, onScreen = camera:WorldToViewportPoint(at)
 	if (at - head.Position).Magnitude > Config.STARE_RANGE or not onScreen then
-		Toasts.show(string.format("Look at %s from within %d studs.", DUMMY, Config.STARE_RANGE), "bad")
+		Toasts.show(string.format("Look at %s within %d studs.", DUMMY, Config.STARE_RANGE), "bad")
 		return
 	end
 	staring = { since = os.clock(), stop = glowEyes() }
-	Toasts.show("Staring... stand still and keep them in sight.", "secret")
+	Toasts.show("Staring. Stand still.", "secret")
 end
 
 -- Binds the stare's keys (and a Stare button on a touch screen) while the stare is the thing to do.
@@ -321,9 +321,9 @@ local function watchStare()
 	end
 	local v = root.AssemblyLinearVelocity
 	if Vector3.new(v.X, 0, v.Z).Magnitude > STILL_SPEED then
-		stopStare("You moved: the stare broke.")
+		stopStare("You moved. Try again.")
 	elseif (lookAt(target).Position - head.Position).Magnitude > Config.STARE_RANGE then
-		stopStare("You lost sight of them: the stare broke.")
+		stopStare("Lost sight. Try again.")
 	elseif os.clock() - now.since >= Config.STARE_TIME then
 		stopStare(nil)
 		stared = true

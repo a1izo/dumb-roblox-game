@@ -235,13 +235,13 @@ local function onElimination(payload)
 	local title, subtitle
 	if kind == "dead" then
 		title = "You died"
-		subtitle = Terms.f("Cause of death: {cause}. You rise as a {Specter}.", { cause = tostring(payload.cause) })
+		subtitle = Terms.f("Cause of death: {cause}.", { cause = tostring(payload.cause) })
 	elseif kind == "voted" then
 		title = "Voted out"
-		subtitle = Terms.f("{Agency} removed you. You rise as a {Specter}.")
+		subtitle = Terms.f("You were voted out.")
 	elseif kind == "arrested" then
 		title = "Arrested"
-		subtitle = Terms.f("{Zero} arrested you. You rise as a {Specter}.")
+		subtitle = Terms.f("{Zero} arrested you.")
 	else
 		return
 	end

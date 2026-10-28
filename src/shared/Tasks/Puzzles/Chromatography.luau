@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Chromatography",
 	title = "Pen chromatography",
-	hint = "Pick the pen whose pigment separates into the same bands as the sample.",
+	hint = "Pick the pen that matches the sample.",
 }
 
 -- Band colours (the view draws them).

@@ -89,7 +89,7 @@ return function(ctx: Common.Context)
 			})
 			if #chosen == def.MARKS then
 				if not ctx.submit(table.clone(chosen)) then
-					ctx.hint("Those are not the three places in the report. The chart faces you.")
+					ctx.hint("Wrong spots. The chart faces you.")
 					Common.flash(chart, false)
 					reset()
 				end

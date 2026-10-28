@@ -17,13 +17,13 @@ export type Situation = {
 -- Why a player cannot start watching (nil when they can).
 function SpectateRules.blocker(situation: Situation): string?
 	if not situation.active or situation.phase == "Reveal" then
-		return "No case is running right now."
+		return "No match running."
 	elseif situation.participant then
 		return "You are in this case."
 	elseif situation.queued then
 		return "Leave the queue to watch."
 	elseif not situation.knowsSomeone then
-		return "You can only watch a case a friend or someone in your party is in."
+		return "You can only watch friends or party members."
 	end
 	return nil
 end

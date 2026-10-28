@@ -38,9 +38,7 @@ function ButlerPanel.init()
 	local win = Kit.window({ name = "butlerPick", title = Terms.f("Name the next {zero}"), size = "M" })
 	local body = win.body
 	Kit.label({
-		Text = Terms.f(
-			"{Zero} is dead. Pick who carries on: they get a fresh arrest. Pick someone from {circle} and their title is worthless."
-		),
+		Text = Terms.f("{Zero} is dead. Pick the next one."),
 		size = "small",
 		color = C.dim,
 		Parent = body,
@@ -75,7 +73,7 @@ function ButlerPanel.init()
 		Parent = body,
 	}, function()
 		if not chosen then
-			Toasts.show("Choose someone first.", "bad")
+			Toasts.show("Pick someone.", "bad")
 			return
 		end
 		ButlerPickRemote:FireServer(chosen)

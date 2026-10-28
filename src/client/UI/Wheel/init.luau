@@ -312,9 +312,7 @@ end
 local function caption(emote: QuickChat.Emote?, reason: string?)
 	if not emote then
 		nameLabel.Text = if hovered then "Empty" else "Point at an emote"
-		lineLabel.Text = if hovered
-			then "Put an emote here from the inventory's Emotes page, or the shop's Your look."
-			else ""
+		lineLabel.Text = if hovered then "Add emotes from your inventory." else ""
 		lineLabel.TextColor3 = C.dim
 		return
 	end
@@ -327,7 +325,7 @@ local function caption(emote: QuickChat.Emote?, reason: string?)
 			table.insert(words, word)
 		end
 	end
-	lineLabel.Text = table.concat(words, "  ·  ") .. (if reason then "  —  " .. reason else "")
+	lineLabel.Text = table.concat(words, ", ") .. (if reason then ". " .. reason else "")
 	lineLabel.TextColor3 = if reason then C.dim else Rarity.color(info.rarity):Lerp(C.bone, 0.3)
 end
 

@@ -479,7 +479,7 @@ local function onHaunt(player: Player, away: Away, payload: any)
 	if kind == "flicker" then
 		light = nearestLight(origin)
 		if not light then
-			Match.notify(player, "No light close enough to flicker.", "bad")
+			Match.notify(player, "No light nearby.", "bad")
 			return
 		end
 	end

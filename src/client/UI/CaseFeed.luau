@@ -77,13 +77,13 @@ local function refreshInfo()
 	phaseLabel.Text = Terms.phase(ClientState.phase())
 	local bar = state.taskBar
 	roundLabel.Text = if bar and (bar.total or 0) > 0
-		then string.format("Meeting %d  ·  case files %d of %d", state.round or 0, bar.done or 0, bar.total)
+		then string.format("Meeting %d   Case files %d/%d", state.round or 0, bar.done or 0, bar.total)
 		else ""
 	local alive = {}
 	for _, entry in ipairs(ClientState.living()) do
 		table.insert(alive, tostring(entry.alias))
 	end
-	aliveLabel.Text = if #alive > 0 then "Alive: " .. table.concat(alive, ", ") else "Nobody is left alive."
+	aliveLabel.Text = if #alive > 0 then "Alive: " .. table.concat(alive, ", ") else "Nobody is left."
 end
 
 -- 3D view ----------------------------------------------------------------------------------------------

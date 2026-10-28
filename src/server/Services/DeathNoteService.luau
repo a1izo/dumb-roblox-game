@@ -191,7 +191,7 @@ local function finishWriting(ps, typed: string, cause: string)
 			"miss"
 		)
 	end
-	Match.notify(ps.player, "The name is written. The Manual closes for a while.", "secret")
+	Match.notify(ps.player, "Name written.", "secret")
 	Match.pushPrivate(ps)
 end
 
@@ -253,7 +253,7 @@ local function onWrite(player: Player, payload)
 	end
 	local problem = DeathNoteService.writeProblem(ps)
 	if problem == "cooldown" then
-		Match.notify(player, "The Manual is still closed.", "bad")
+		Match.notify(player, "Not ready yet.", "bad")
 		return
 	elseif problem then
 		return

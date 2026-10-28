@@ -159,7 +159,7 @@ local function updateBanner()
 		renderMarks(bar.done or 0, bar.total or 0)
 	end
 	if not ClientState.isLiving() then
-		infoLabel.Text = if ClientState.isParticipant() then "You are out  ·  watching" else "Watching"
+		infoLabel.Text = if ClientState.isParticipant() then "Spectating" else "Watching"
 		infoLabel.TextColor3 = C.white
 	else
 		infoLabel.Text = tostring(state.mapName or "")
@@ -200,17 +200,17 @@ local function abilityLines(private, phase: string): { string }
 		table.insert(list, "Written note")
 	end
 	if private.eyes then
-		table.insert(list, Terms.f("{Eyes}: about {s} s of life left", { s = private.eyes.lifeLeft }))
+		table.insert(list, Terms.f("{Eyes}: {s}s left", { s = private.eyes.lifeLeft }))
 	end
 	if private.learned and #private.learned > 0 then
-		table.insert(list, string.format("Real names known: %d", #private.learned))
+		table.insert(list, string.format("Names known: %d", #private.learned))
 	end
 	if private.role == "Kira" and phase == "Investigation" then
 		local left = math.ceil((tonumber(private.writeReadyAt) or 0) - workspace:GetServerTimeNow())
 		table.insert(
 			list,
 			if private.writing
-				then "Writing..."
+				then "Writing"
 				elseif left > 0 then "Manual closed"
 				else Keys.resolve("Manual ready ({key.manual})")
 		)
@@ -219,13 +219,13 @@ local function abilityLines(private, phase: string): { string }
 		table.insert(
 			list,
 			if private.fakeAce
-				then Terms.f("A fake {zero} title")
+				then Terms.f("Fake {zero}")
 				elseif private.arrestUsed then "Arrest used"
-				else Keys.resolve("Arrest ready in a meeting ({key.arrest})")
+				else Keys.resolve("Arrest ready ({key.arrest})")
 		)
 	end
 	if not private.bellUsed and phase == "Investigation" then
-		table.insert(list, "Emergency bell: one ring")
+		table.insert(list, "Bell: 1 ring")
 	end
 	return list
 end
@@ -301,13 +301,11 @@ local function updateBadge()
 		roleText:setColor(if hostile then C.danger else C.bone)
 	end
 	local status = if me then Terms.status(me.status) else ""
-	aliasLabel.Text = string.format("%s  ·  %s", tostring(private.alias or (me and me.alias) or ""), status)
+	aliasLabel.Text = string.format("%s   %s", tostring(private.alias or (me and me.alias) or ""), status)
 	alliesLabel.Text = alliesText(private)
 	alliesLabel.Visible = alliesLabel.Text ~= ""
 	renderAbilities(abilityLines(private, phase))
-	cardHint.Text = if Kit.Layout.isTouch()
-		then "Press and hold for your role card"
-		else Keys.resolve("{key.card} for your role card")
+	cardHint.Text = if Kit.Layout.isTouch() then "Hold for role card" else Keys.resolve("{key.card}: role card")
 end
 
 -- Actions ---------------------------------------------------------------------------------------

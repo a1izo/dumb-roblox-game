@@ -57,7 +57,7 @@ end
 -- that colour (Condemned's and Godhood's).
 function Rarity.titleLook(id: string?): (string?, number)
 	local rank = Rarity.rank(id)
-	local mark = if rank >= 3 then "◆" elseif rank == 2 then "·" else nil
+	local mark = if rank >= 3 then "◆" else nil
 	return mark, if rank >= 4 then 0.35 else 0
 end
 

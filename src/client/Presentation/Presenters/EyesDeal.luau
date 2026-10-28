@@ -214,10 +214,10 @@ return function(cue)
 		spin = { -200, 200 },
 	}, 24, Vector3.new(2, 5, 2))
 	local hide = Cinema.card({
-		kicker = "The deal is struck",
+		kicker = "Deal made",
 		title = Terms.f("{EYES}"),
 		subtitle = Terms.f(
-			"Names come fast now, from far away. You have {minutes} minutes of investigation left to live.",
+			"You can read names from afar. {minutes} minutes left to live.",
 			{ minutes = math.floor((tonumber(data.lifespan) or 180) / 60 + 0.5) }
 		),
 		color = C.void,

@@ -12,7 +12,7 @@ export type Settings = {
 }
 
 SettingsSchema.RANGES = {
-	investigation = { min = 60, max = 300, step = 10, default = 180, label = "Free roam before a meeting (s)" },
+	investigation = { min = 60, max = 300, step = 10, default = 180, label = "Free roam time (s)" },
 	meeting = { min = 30, max = 120, step = 10, default = 60, label = "Meeting (s)" },
 	vote = { min = 15, max = 40, step = 5, default = 20, label = "Vote (s)" },
 }

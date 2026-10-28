@@ -43,7 +43,7 @@ end
 local function refresh()
 	local me = ClientState.me()
 	local myId = if me then me.userId else 0
-	wonLabel.Text = string.format("Won this case: %d Reál", state.won or 0)
+	wonLabel.Text = string.format("Won: %d Reál", state.won or 0)
 
 	-- Who Diavolo is.
 	local everyone = {}
@@ -56,15 +56,15 @@ local function refresh()
 	diavoloGrid.Visible = diavoloOpen
 	diavoloButton.Visible = diavoloOpen
 	if not state.canDiavolo then
-		diavoloLabel.Text = "You already know who Diavolo is."
+		diavoloLabel.Text = "You already know Diavolo."
 	elseif state.diavolo ~= nil then
 		diavoloLabel.Text = "Your guess: "
 			.. aliasOf(state.diavolo)
-			.. "  ·  locked  ·  pays "
+			.. " (locked, pays "
 			.. Wager.DIAVOLO_COINS
-			.. " Reál if right"
+			.. " Reál)"
 	else
-		diavoloLabel.Text = "Who is Diavolo? Pays " .. Wager.DIAVOLO_COINS .. " Reál when the case closes."
+		diavoloLabel.Text = "Who is Diavolo? Pays " .. Wager.DIAVOLO_COINS .. " Reál."
 	end
 	if diavoloOpen then
 		renderDiavolo(everyone, picked.diavolo, true)
@@ -80,15 +80,11 @@ local function refresh()
 	voteGrid.Visible = open
 	voteButton.Visible = open
 	if state.vote ~= nil then
-		voteLabel.Text = "Next vote: "
-			.. aliasOf(state.vote)
-			.. "  ·  locked  ·  pays "
-			.. Wager.VOTE_COINS
-			.. " Reál if right"
+		voteLabel.Text = "Next vote: " .. aliasOf(state.vote) .. " (locked, pays " .. Wager.VOTE_COINS .. " Reál)"
 	elseif not open then
-		voteLabel.Text = "Vote guesses open again after this vote."
+		voteLabel.Text = "Guesses reopen after this vote."
 	else
-		voteLabel.Text = "Who will the next vote remove? Pays " .. Wager.VOTE_COINS .. " Reál."
+		voteLabel.Text = "Who gets voted out next? Pays " .. Wager.VOTE_COINS .. " Reál."
 	end
 	if open then
 		renderVote(living, picked.vote, true)
@@ -125,7 +121,7 @@ function WagerPanel.init()
 		refresh()
 	end)
 	diavoloButton = Kit.button({
-		text = "Lock in the Diavolo guess",
+		text = "Lock in",
 		variant = "primary",
 		size = "s",
 		Size = UDim2.new(1, 0, 0, 48),
@@ -151,7 +147,7 @@ function WagerPanel.init()
 		refresh()
 	end)
 	voteButton = Kit.button({
-		text = "Lock in the vote guess",
+		text = "Lock in",
 		variant = "primary",
 		size = "s",
 		Size = UDim2.new(1, 0, 0, 48),

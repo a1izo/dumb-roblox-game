@@ -321,13 +321,7 @@ function Builder:station(def, id: string)
 		Parent = glass,
 	})
 	local label = line(0.4, 0.22, "READY", typeColor, Enum.FontWeight.Bold)
-	line(
-		0.76,
-		0.1,
-		string.upper(TaskTypes.get(def.type).label) .. "  ·  CASE FILE",
-		Color3.fromRGB(96, 100, 108),
-		Enum.FontWeight.Medium
-	)
+	line(0.76, 0.1, string.upper(TaskTypes.get(def.type).label), Color3.fromRGB(96, 100, 108), Enum.FontWeight.Medium)
 
 	desk:SetAttribute("StationId", id)
 	desk:SetAttribute("StationType", def.type)

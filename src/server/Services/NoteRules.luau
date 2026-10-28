@@ -81,18 +81,18 @@ end
 
 -- What each problem tells the player who asked.
 NoteRules.MESSAGE = {
-	phase = "Notes change hands only during the investigation.",
+	phase = "You can't pass notes right now.",
 	self = "You already hold it.",
-	notCarrying = "You are not holding a written note.",
+	notCarrying = "You have no note.",
 	burning = "The note is burning.",
 	gone = "They can't take it now.",
 	tooFar = "Get closer to pass the note.",
 	handsFull = "Their hands are full.",
-	giverBusy = "You are already offering your note.",
-	receiverBusy = "Someone is already offering them a note.",
-	cooldown = "Wait a moment before offering again.",
+	giverBusy = "Already offering.",
+	receiverBusy = "They already have an offer.",
+	cooldown = "Wait a moment.",
 	expired = "The offer ran out.",
-	noteMoved = "The note is no longer offered.",
+	noteMoved = "Offer cancelled.",
 } :: { [string]: string }
 
 return NoteRules

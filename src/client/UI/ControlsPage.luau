@@ -173,7 +173,7 @@ local function listen(id: string, slot: number, button: TextButton)
 			return
 		end
 		if not Bindings.keyAllowed(name) then
-			Toasts.show("That key is Roblox's own: pick another.", "error")
+			Toasts.show("Roblox uses that key. Pick another.", "error")
 			return
 		end
 		stopListening()
@@ -255,7 +255,7 @@ local function keyRow(id: string, order: number)
 	for slot = 1, Bindings.MAX_KEYS do
 		local name = keys[slot]
 		local button = Kit.button({
-			text = if name then Bindings.label(name) else "—",
+			text = if name then Bindings.label(name) else "None",
 			size = "s",
 			variant = if name then "secondary" else "ghost",
 			upper = false,
@@ -280,16 +280,11 @@ end
 -- The pad's sticks: one switch swaps walking and looking round.
 local function stickRow(order: number)
 	local swapped = Bindings.keys("move", "gamepad", draft)[1] == "Thumbstick2"
-	Kit.toggle(
-		{ LayoutOrder = order, Parent = body },
-		"Walk with the right stick, look with the left",
-		swapped,
-		function(on)
-			setKeys("move", "gamepad", { if on then "Thumbstick2" else "Thumbstick1" })
-			setKeys("look", "gamepad", { if on then "Thumbstick1" else "Thumbstick2" })
-			send()
-		end
-	)
+	Kit.toggle({ LayoutOrder = order, Parent = body }, "Swap sticks", swapped, function(on)
+		setKeys("move", "gamepad", { if on then "Thumbstick2" else "Thumbstick1" })
+		setKeys("look", "gamepad", { if on then "Thumbstick1" else "Thumbstick2" })
+		send()
+	end)
 end
 
 local function resetRow(order: number, label: string, apply: () -> ())
@@ -323,8 +318,8 @@ local function renderKeys(order: () -> number)
 	end)
 	Kit.label({
 		Text = if platform == "keyboard"
-			then "Pick a slot, then press the new key. Escape cancels; Delete leaves the slot empty."
-			else "Pick a slot, then press the new button. B cancels.",
+			then "Pick a slot, then press a key. Esc cancels, Delete clears."
+			else "Pick a slot, then press a button. B cancels.",
 		size = "small",
 		color = C.dim,
 		LayoutOrder = order(),
@@ -407,7 +402,7 @@ local function renderTouch(order: () -> number)
 	)
 	Kit.slider(
 		{ LayoutOrder = order(), Parent = body },
-		"Prompt buttons (stations, notes, emotes)",
+		"Prompt buttons",
 		layout.prompts,
 		range.prompts[1],
 		range.prompts[2],
@@ -418,7 +413,7 @@ local function renderTouch(order: () -> number)
 	)
 	header("Buttons shown", order())
 	Kit.label({
-		Text = "A hidden button's action still works where it has its own prompt or panel.",
+		Text = "Hidden buttons still work through prompts.",
 		size = "small",
 		color = C.dim,
 		LayoutOrder = order(),

@@ -547,7 +547,7 @@ local function onState(payload: any)
 				string.format(
 					"%s studs above the roof.%s",
 					LastBreath.format(payload.gap or 0),
-					if payload.newBest then "  Your closest yet." else ""
+					if payload.newBest then "  New best." else ""
 				),
 				if payload.newBest then "good" else nil
 			)

@@ -131,10 +131,7 @@ local function grimoireDrill()
 	if trial and not preferredKnown then
 		-- The Trial's turn to stare comes first: no name to write yet.
 		Kit.label({
-			Text = string.format(
-				"You do not know %s's real name yet. Stand near it and stare first, as the Trial shows.",
-				target.alias
-			),
+			Text = string.format("You don't know %s's real name yet. Stare at it first.", target.alias),
 			LayoutOrder = 1,
 			Parent = body,
 		})
@@ -153,16 +150,14 @@ local function grimoireDrill()
 	end
 	Kit.label({
 		Text = Terms.f(
-			if trial
-				then "You learned {alias}'s real name by staring: {name}. {Grimoire} lists every name you learn. Write it in full."
-				else "In a match, {hand} learns real names by staring. Here you know it already: write {alias}'s real name, {name}.",
+			if trial then "{alias}'s real name is {name}. Write it in full." else "Write {alias}'s real name: {name}.",
 			{ alias = target.alias, name = string.upper(target.name) }
 		),
 		LayoutOrder = 1,
 		Parent = body,
 	})
 	Kit.label({
-		Text = "Upper or lower case and extra spaces do not matter. Any other mistake and the writing fails.",
+		Text = "Spelling must be exact. Case doesn't matter.",
 		size = "small",
 		color = C.dim,
 		LayoutOrder = 2,
@@ -185,7 +180,7 @@ local function grimoireDrill()
 			collapse(target)
 			finish()
 		else
-			result = feedback("That is not the exact name. Check the spelling and try again.")
+			result = feedback("Wrong name. Check the spelling.")
 		end
 	end)
 end
@@ -209,21 +204,18 @@ local function warrantDrill()
 		table.insert(notes, string.format("%s:  %s", entry.alias, where[entry.alias]))
 	end
 	Kit.label({
-		Text = Terms.f("A meeting is on, and you are {zero}. Point at the one you suspect."),
+		Text = Terms.f("You are {zero}. Point at your suspect."),
 		LayoutOrder = 1,
 		Parent = body,
 	})
 	Kit.label({
-		Text = "Where everyone was:  " .. table.concat(notes, "   ·   "),
+		Text = "Where everyone was: " .. table.concat(notes, ", "),
 		font = "document",
 		LayoutOrder = 2,
 		Parent = body,
 	})
 	Kit.label({
-		Text = string.format(
-			"New clue: someone stood still in %s, eyes glowing red, staring at the victim.",
-			where[target.alias]
-		),
+		Text = string.format("Clue: someone in %s was staring at the victim with red eyes.", where[target.alias]),
 		font = "bodyBold",
 		color = C.candle,
 		LayoutOrder = 3,
@@ -259,8 +251,7 @@ local function warrantDrill()
 			result:Destroy()
 		end
 		if picked ~= target.alias then
-			result =
-				feedback(Terms.f("Wrong suspect. In a match, arresting an innocent player costs {zero} their life."))
+			result = feedback(Terms.f("Wrong suspect. In a real match, {zero} would die."))
 		else
 			-- Arrested: the puppet is yanked upright on its strings.
 			Puppets.jerk(target.part)
@@ -272,14 +263,12 @@ end
 local function eyesDrill()
 	win.setTitle(Terms.f("{Eyes}"))
 	Kit.label({
-		Text = Terms.f(
-			"{Circle} learns real names by hacking stations. A {cultist} may also accept {eyes}: stare at anyone to read their name in a second, eyes glowing red, and die 90 seconds later."
-		),
+		Text = Terms.f("{Circle} learns names by hacking stations. A {cultist} with {eyes} can read names by staring."),
 		LayoutOrder = 1,
 		Parent = body,
 	})
 	Kit.label({
-		Text = "Seen someone standing still with glowing eyes? Remember who they were looking at.",
+		Text = "Saw glowing eyes? Remember who they were looking at.",
 		size = "small",
 		color = C.dim,
 		LayoutOrder = 2,

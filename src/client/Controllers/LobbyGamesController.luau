@@ -41,9 +41,9 @@ local GLOW_DIM = Color3.fromRGB(74, 82, 100)
 -- What each tagged object offers: prompt text, and what asking does.
 type Offer = { action: string, object: string, distance: number }
 local OFFERS: { [string]: Offer } = {
-	LParkourStart = { action = "Begin the climb", object = "Spire Ascent", distance = 9 },
-	LRuneStart = { action = "Begin the runes", object = "Rune courtyard", distance = 8 },
-	LTossCairn = { action = "Throw a stone", object = "Look at the rift; aim higher to throw farther", distance = 10 },
+	LParkourStart = { action = "Start climb", object = "Spire Ascent", distance = 9 },
+	LRuneStart = { action = "Start runes", object = "Rune courtyard", distance = 8 },
+	LTossCairn = { action = "Throw a stone", object = "Aim higher to throw farther", distance = 10 },
 	LMarkBell = { action = "Take the mark", object = "Death's mark", distance = 10 },
 	LApple = { action = "Take", object = "A grey apple", distance = 7 },
 	LDuelStone = { action = "Step up", object = "Name duel", distance = 8 },
@@ -239,7 +239,7 @@ local function onParkour(p: any)
 		Toasts.show(
 			if (tonumber(p.index) or 0) > 0
 				then "You fell. Back to stone " .. p.index .. "."
-				else "You fell. Back to the pad."
+				else "You fell. Back to the start."
 		)
 	elseif kind == "finish" then
 		current = nil
@@ -318,7 +318,7 @@ local function onSpirit(p: any)
 	elseif kind == "end" then
 		clearSpirit()
 		if p.why == "wandered" then
-			Toasts.show("Too far from the rings: the trial is off.")
+			Toasts.show("Too far from the rings. Trial over.")
 		end
 		hideCard()
 	end
@@ -353,7 +353,7 @@ local function onRunes(p: any)
 		showToken += 1
 		dimAll()
 		current = nil
-		local text = if p.why == "perfect" then "A perfect run." else "Run over."
+		local text = if p.why == "perfect" then "Perfect run." else "Run over."
 		Toasts.show(
 			string.format(
 				"%s %d round%s cleared.%s",
@@ -383,16 +383,11 @@ local function onToss(p: any)
 	task.delay((tonumber(p.flight) or 1) + (if p.hit then (tonumber(p.echo) or 0) * 0.8 else 0.3), function()
 		if p.hit then
 			Toasts.show(
-				string.format(
-					"The stone falls for %.1f s.%s  Best %.1f s.",
-					p.echo,
-					if p.newBest then "  New best!" else "",
-					p.best
-				),
+				string.format("%.1fs.%s  Best %.1fs.", p.echo, if p.newBest then "  New best!" else "", p.best),
 				if p.newBest then "good" else nil
 			)
 		else
-			Toasts.show("It skips across the ash. Look at the rift, and aim higher to throw farther.")
+			Toasts.show("Aim higher to throw farther.")
 		end
 	end)
 end
@@ -403,16 +398,16 @@ local function onMark(p: any)
 	if p.kind == "joined" then
 		current = "mark"
 		mark.tollAt = nil
-		mark.line = "Waiting for one more to take it."
+		mark.line = "Waiting for a second player."
 		setStatus("DEATH'S MARK", mark.line)
 		refresh()
 	elseif p.kind == "state" then
 		current = "mark"
 		mark.tollAt = if type(p.tollAt) == "number" then p.tollAt else nil
 		if p.carrier == nil then
-			mark.line = "Waiting for one more to take it."
+			mark.line = "Waiting for a second player."
 		elseif p.carrier == me then
-			mark.line = "You carry it. Touch someone before the bell."
+			mark.line = "You have it. Tag someone before the bell."
 		else
 			mark.line = string.format("%s carries it.   Streak %d", tostring(p.carrierName), p.streak or 0)
 		end
@@ -424,14 +419,14 @@ local function onMark(p: any)
 			Toasts.show("The bell tolls for you.", "bad")
 		else
 			Toasts.show(
-				string.format("The bell tolls for %s.  You have survived %d.", tostring(p.downName), p.streak or 0),
+				string.format("The bell tolls for %s. Survived: %d.", tostring(p.downName), p.streak or 0),
 				if p.newBest then "good" else nil
 			)
 		end
 	elseif p.kind == "pass" then
 		Sfx.play("gameWrong", { volume = 0.7 })
 		if p.to == me then
-			Toasts.show("The mark is yours.", "bad")
+			Toasts.show("You have the mark.", "bad")
 		end
 	elseif p.kind == "left" then
 		mark.tollAt = nil

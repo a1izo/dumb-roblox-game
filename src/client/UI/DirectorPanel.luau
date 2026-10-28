@@ -49,11 +49,11 @@ local function rebuild()
 	local nextOrder = Kit.counter()
 	Kit.label({
 		Text = if state.canEdit
-			then "You own this server. Changes apply from the next match. Custom rules pay participation rewards only."
-			elseif state.vip then "The server owner sets these rules." .. (if state.custom
-				then " Custom rules are on: participation rewards only."
+			then "Changes apply next match. Custom rules give reduced rewards."
+			elseif state.vip then "Set by the server owner." .. (if state.custom
+				then " Custom rules give reduced rewards."
 				else "")
-			else "Rules can be changed in private servers by an owner with the Director pass.",
+			else "Needs a private server and the Director pass.",
 		font = "bodyItalic",
 		size = "small",
 		color = C.dim,

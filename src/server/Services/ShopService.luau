@@ -34,7 +34,7 @@ function ShopService.canBuy(item: Cosmetics.Item, now: number): (boolean, string
 	end
 	if ShopRotation.rotates(item, now) then
 		if not ShopRotation.isFeatured(item.id, now) then
-			return false, "That item is not in today's rotation."
+			return false, "Not for sale today."
 		end
 	elseif item.source ~= "shop" then
 		return false, "That item cannot be bought."
@@ -73,7 +73,7 @@ local function drawFate(player: Player)
 		return
 	end
 	if Match.get(player) then
-		Match.notify(player, "Fate deals in the lobby.", "bad")
+		Match.notify(player, "Only in the lobby.", "bad")
 		return
 	end
 	local owns = function(item: Cosmetics.Item): boolean
@@ -82,11 +82,11 @@ local function drawFate(player: Player)
 	local id = Fate.pick(Fate.deck(Fate.week(os.time())), owns, Random.new():NextNumber())
 	local item = Cosmetics.byId(id)
 	if not item then
-		Match.notify(player, "Every card of this week's deck is yours. A new deck comes on Monday.", "info")
+		Match.notify(player, "You own the whole deck. New deck on Monday.", "info")
 		return
 	end
 	if data.coins < Fate.PRICE then
-		Match.notify(player, string.format("A draw costs %d Reál.", Fate.PRICE), "bad")
+		Match.notify(player, string.format("You need %d Reál.", Fate.PRICE), "bad")
 		return
 	end
 	data.coins -= Fate.PRICE
@@ -159,7 +159,7 @@ function ShopService.announceWishes(player: Player)
 	Match.notify(
 		player,
 		string.format(
-			"From your wishlist, in Today's hand: %s.",
+			"On sale from your wishlist: %s.",
 			if #names == 1 then names[1] else table.concat(names, ", ", 1, #names - 1) .. " and " .. names[#names]
 		),
 		"good"
@@ -189,7 +189,7 @@ local function onRequest(player: Player, payload)
 		return
 	end
 	if Match.get(player) then
-		Match.notify(player, "Cosmetics can be changed in the lobby.", "bad")
+		Match.notify(player, "Change cosmetics in the lobby.", "bad")
 		return
 	end
 	local action = payload.action
@@ -229,8 +229,8 @@ local function onRequest(player: Player, payload)
 			Match.notify(
 				player,
 				if slot
-					then string.format("Bought %s. It is on your emote wheel (%d).", item.name, slot)
-					else "Bought " .. item.name .. ". Put it on your emote wheel in Your look.",
+					then string.format("Bought %s. Added to wheel slot %d.", item.name, slot)
+					else "Bought " .. item.name .. ".",
 				"good"
 			)
 		else

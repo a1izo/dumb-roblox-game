@@ -299,7 +299,7 @@ local function accept(ps, offerId)
 	EventLog.add(string.format("%s passed a note to %s.", giver.alias, ps.alias), "note")
 	Cues.fire("handoff", { from = giver.userId, to = ps.userId }, { lead = 0.05 })
 	Match.notify(giver.player, "Note passed.", "info")
-	Match.notify(ps.player, "You took the note. Read it with N.", "info")
+	Match.notify(ps.player, "Took the note. Read it with N.", "info")
 end
 
 local function decline(ps, offerId)
@@ -317,7 +317,7 @@ local function takeSheet(ps, sheetId)
 		return
 	end
 	if ps.carrying then
-		Match.notify(ps.player, "You can only carry one sheet of paper at a time.", "bad")
+		Match.notify(ps.player, "You can only carry one sheet.", "bad")
 		return
 	end
 	sheet.part:Destroy()
@@ -351,7 +351,7 @@ local function write(ps, text)
 	}
 	notes[note.id] = note
 	setCarry(ps, { kind = "note", noteId = note.id })
-	Match.notify(ps.player, "Note written. Drop it where someone will find it.", "info")
+	Match.notify(ps.player, "Note written.", "info")
 end
 
 local function drop(ps)
@@ -362,7 +362,7 @@ local function drop(ps)
 	cancelOffersOf(ps, "cancelled")
 	if carrying.kind == "blank" then
 		setCarry(ps, nil)
-		Match.notify(ps.player, "You threw the blank sheet away.", "info")
+		Match.notify(ps.player, "Sheet thrown away.", "info")
 		return
 	end
 	local note = notes[carrying.noteId]
@@ -418,7 +418,7 @@ local function take(ps, noteId)
 		return
 	end
 	if ps.carrying then
-		Match.notify(ps.player, "Your hands are full. Drop what you carry first.", "bad")
+		Match.notify(ps.player, "Your hands are full.", "bad")
 		return
 	end
 	if note.part then
@@ -476,7 +476,7 @@ local function burn(ps, noteId)
 		cancelOffersOf(note.holder, "cancelled")
 	end
 	smokeAt(position, 12)
-	Match.notify(ps.player, "Burning...", "secret")
+	Match.notify(ps.player, "Burning", "secret")
 	local matchId = Match.id
 	task.delay(Config.BURN_TIME, function()
 		if Match.id ~= matchId or not Match.active then

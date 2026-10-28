@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Timeline",
 	title = "Timeline",
-	hint = "Tap the camera feeds in time order, earliest first.",
+	hint = "Tap the feeds in order, earliest first.",
 }
 
 function Def.generate(seed: number)

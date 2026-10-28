@@ -107,7 +107,7 @@ end
 local function stateOf(profile, item): { text: string, filled: boolean }?
 	if item.kind == "emote" then
 		local at = table.find(EmoteWheel.slots(profile.emoteWheel), item.emote)
-		return if at then { text = "Wheel · " .. at, filled = true } else nil
+		return if at then { text = "Slot " .. at, filled = true } else nil
 	end
 	if worn(profile, item) then
 		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win" or item.kind == "reason"
@@ -129,13 +129,13 @@ local function showAction(profile, item: Cosmetics.Item?)
 	clearAction()
 	if not item then
 		lookName:set("Your look")
-		lookLine.Text = "Pick a card to see it on you."
+		lookLine.Text = "Pick a card to try it on."
 		lookLine.TextColor3 = C.dim
 		return
 	end
 	lookName:set(item.name)
 	lookLine.Text =
-		string.format("◆ %s  ·  %s", Rarity.name(item.rarity), Cosmetics.KIND_SINGULAR[item.kind] or item.kind)
+		string.format("%s %s", Rarity.name(item.rarity), string.lower(Cosmetics.KIND_SINGULAR[item.kind] or item.kind))
 	lookLine.TextColor3 = Rarity.color(item.rarity):Lerp(C.bone, 0.2)
 	if item.kind == "emote" then
 		-- the wheel's four slots, its own lit: a click puts it there or takes it off
@@ -161,8 +161,8 @@ local function showAction(profile, item: Cosmetics.Item?)
 			end)
 		end
 		actionNote.Text = if at
-			then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
-			else "Pick a number to put it on your emote wheel."
+			then string.format("In slot %d. Click it again to remove.", at)
+			else "Pick a wheel slot."
 		return
 	end
 	local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win" or item.kind == "reason"
@@ -194,7 +194,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 	if item.kind == "reason" then
 		actionNote.Text = if on
 			then string.format('You can write "%s" as a cause of death.', tostring(item.cause))
-			else "Use it to write it in the Manual as a cause of death."
+			else "Pick it as a cause of death in the Manual."
 	elseif on then
 		actionNote.Text = if used then "You are using it." else "You are wearing it."
 	else
@@ -319,14 +319,14 @@ function InventoryPanel.init()
 	})
 	Kit.list(emptyNote, T.space.s)
 	Kit.label({
-		Text = "Nothing of this kind is yours yet.",
+		Text = "Nothing here yet.",
 		font = "bodyItalic",
 		color = C.dim,
 		LayoutOrder = 1,
 		Parent = emptyNote,
 	})
 	Kit.button(
-		{ text = "To the shop", icon = "cards", variant = "secondary", size = "s", LayoutOrder = 2, Parent = emptyNote },
+		{ text = "Shop", icon = "cards", variant = "secondary", size = "s", LayoutOrder = 2, Parent = emptyNote },
 		function()
 			Router.close("inventory")
 			Router.open("shop")

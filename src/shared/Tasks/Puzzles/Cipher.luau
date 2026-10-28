@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Cipher",
 	title = "Cipher wheel",
-	hint = "Turn the wheel until the intercepted text reads, then pick the word.",
+	hint = "Turn the wheel to decode, then pick the word.",
 }
 
 Def.WORDS = {

@@ -86,7 +86,7 @@ local function setupStage(hack, index: number)
 	hack.state = "run"
 	stageLabel.Text = string.format("COLUMN %d / %d", index, hack.stages)
 	targetText:set(hack.target)
-	statusLabel.Text = "Lock it when the target sits in the window."
+	statusLabel.Text = "Lock it inside the window."
 	statusLabel.TextColor3 = C.dim
 	Kit.setEnabled(lockButton, true)
 end
@@ -125,7 +125,7 @@ local function miss()
 	end
 	hack.state = "wait"
 	Kit.setEnabled(lockButton, false)
-	statusLabel.Text = "MISSED. The alarm is going off."
+	statusLabel.Text = "MISSED. Alarm!"
 	statusLabel.TextColor3 = C.danger
 	report(hack.stage, false)
 end
@@ -143,7 +143,7 @@ local function lock()
 	-- A pass: the column is cracked; the next one starts after a short decrypt. The last one is
 	-- reported once its decrypt is done, so the whole hack takes as long as a person plays it.
 	Kit.setEnabled(lockButton, false)
-	statusLabel.Text = "Cracked. Decrypting…"
+	statusLabel.Text = "Cracked"
 	statusLabel.TextColor3 = C.good
 	if hack.stage < hack.stages then
 		report(hack.stage, true)
@@ -168,7 +168,7 @@ local function update()
 			setupStage(hack, hack.stage + 1)
 		else
 			hack.state = "wait"
-			statusLabel.Text = "Reading the log…"
+			statusLabel.Text = "Reading log"
 			report(hack.stage, true)
 		end
 	end
@@ -192,9 +192,9 @@ local function start(payload)
 		stateUntil = os.clock() + BOOT,
 	}
 	stationLabel.Text = string.upper(tostring(payload.stationName or ""))
-	stageLabel.Text = "CONNECTING…"
-	targetText:set("··")
-	statusLabel.Text = "Getting into the log…"
+	stageLabel.Text = "CONNECTING"
+	targetText:set("--")
+	statusLabel.Text = "Hacking"
 	statusLabel.TextColor3 = C.dim
 	Kit.setEnabled(lockButton, false)
 	Router.open("hack")
@@ -213,7 +213,7 @@ function HackScreen.isBusy(): boolean
 end
 
 function HackScreen.init()
-	win = Kit.window({ name = "hack", title = "Breaking into the log", jp = "ハッキング", size = "M" })
+	win = Kit.window({ name = "hack", title = "Hacking", jp = "ハッキング", size = "M" })
 	local body = win.body
 	stationLabel = Kit.label({ font = "label", size = "micro", color = C.dim, Parent = body })
 	stageLabel = Kit.label({
@@ -235,7 +235,7 @@ function HackScreen.init()
 		Parent = body,
 	})
 	targetText = Kit.num({
-		text = "··",
+		text = "--",
 		size = 34,
 		color = C.danger,
 		AnchorPoint = Vector2.new(1, 0),
@@ -313,7 +313,7 @@ function HackScreen.init()
 			if current then
 				current.state = "done"
 			end
-			statusLabel.Text = "Nobody used this station lately."
+			statusLabel.Text = "Nobody used this lately."
 			task.delay(1.6, close)
 		elseif payload.state == "stopped" then
 			close()

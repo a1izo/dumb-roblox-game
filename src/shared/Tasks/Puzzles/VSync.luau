@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "VSync",
 	title = "Vertical hold",
-	hint = "Turn the two dials until the rolling picture locks still.",
+	hint = "Turn the dials until the picture stops rolling.",
 }
 
 Def.MAX = 10

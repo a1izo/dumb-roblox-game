@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Minutiae",
 	title = "Minutiae",
-	hint = "Tap the five marked points on the lifted print. It is a mirror image of the file.",
+	hint = "Tap the five points. The print is mirrored.",
 }
 
 Def.GRID = 8

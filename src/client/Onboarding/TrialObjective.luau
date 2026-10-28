@@ -278,7 +278,7 @@ function TrialObjective.init()
 		Parent = content,
 	})
 	cardButton = Kit.button({
-		text = "Hold to see your card",
+		text = "Hold for your card",
 		variant = "primary",
 		size = "s",
 		Size = UDim2.new(1, 0, 0, T.touch),

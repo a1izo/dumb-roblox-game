@@ -441,7 +441,7 @@ function Controls.actionChip(props: Props, onClick: (() -> ())?): TextButton
 	Base.corner(tag, Tokens.radius.key)
 	Base.pad(tag, 0, Tokens.space.s)
 	Base.label({
-		Text = if key ~= "" and not shortKey then name .. "  ·  " .. key else name,
+		Text = if key ~= "" and not shortKey then name .. "  (" .. key .. ")" else name,
 		font = "label",
 		size = "small",
 		color = C.bone,

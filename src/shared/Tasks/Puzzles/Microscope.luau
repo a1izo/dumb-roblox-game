@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Microscope",
 	title = "Microscope",
-	hint = "Turn focus and light until the fibre is sharp, then pick the matching fibre.",
+	hint = "Focus the fibre, then pick its match.",
 }
 
 Def.MAX = 10

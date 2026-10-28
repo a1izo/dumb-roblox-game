@@ -149,7 +149,7 @@ function QuickChatPanel.init()
 	-- Emotes: a caption, then the wheel.
 	emotesPage = Kit.frame({ Name = "Emotes", Parent = content })
 	caption = Kit.label({
-		Text = string.format("EMOTES  ·  1 TO %d", EmoteWheel.SLOTS),
+		Text = string.format("EMOTES 1-%d", EmoteWheel.SLOTS),
 		font = "label",
 		size = "micro",
 		color = C.bone,

@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "PrintMatch",
 	title = "Match the print",
-	hint = "Pick the print that matches the sample. Three samples.",
+	hint = "Match the print to the sample.",
 }
 
 Def.ROUNDS = 3

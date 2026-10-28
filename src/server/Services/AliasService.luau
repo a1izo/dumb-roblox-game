@@ -23,7 +23,7 @@ local function setAlias(player: Player, payload)
 		return
 	end
 	if not PassService.owns(player, "alias") then
-		Match.notify(player, "A custom alias needs the Custom Alias pass.", "bad")
+		Match.notify(player, "Needs the Custom Alias pass.", "bad")
 		return
 	end
 	if Match.get(player) then
@@ -45,12 +45,12 @@ local function setAlias(player: Player, payload)
 	end
 	local alias = AliasRules.normalize(text)
 	if not AliasRules.clearOf(alias, { player.Name, player.DisplayName }) then
-		Match.notify(player, "Your alias cannot contain your username or display name.", "bad")
+		Match.notify(player, "Can't use your username.", "bad")
 		return
 	end
 	local filtered = TextFilter.broadcast(alias, player.UserId)
 	if filtered ~= alias then
-		Match.notify(player, "That alias did not pass the text filter.", "bad")
+		Match.notify(player, "That alias isn't allowed.", "bad")
 		return
 	end
 	data.alias = alias

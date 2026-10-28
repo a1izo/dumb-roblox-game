@@ -54,7 +54,7 @@ local function fillRoster(players)
 		local name = string.format("%s  (%s)", plain(tostring(entry.alias)), plain(tostring(entry.displayName)))
 		if type(entry.title) == "string" and entry.title ~= "" then
 			-- (in its tier's look, as over the head in the lobby: Shared/Rarity.titleText)
-			name ..= "  ·  " .. (Rarity.titleText(entry.title, entry.titleRarity, C.dim, entry.titleId))
+			name ..= "   " .. (Rarity.titleText(entry.title, entry.titleRarity, C.dim, entry.titleId))
 		end
 		Kit.label({
 			Text = name,
@@ -92,7 +92,7 @@ local function fillRoster(players)
 		})
 		local status = Terms.status(tostring(entry.status))
 		if entry.cause then
-			status ..= " · " .. tostring(entry.cause)
+			status ..= ", " .. tostring(entry.cause)
 		end
 		Kit.label({
 			Text = status,
@@ -135,7 +135,7 @@ end
 
 local function rewardsText(rewards): string
 	if type(rewards) ~= "table" then
-		return "You watched this case from the lobby."
+		return "You spectated this case."
 	end
 	local lines = {
 		string.format(
@@ -158,7 +158,7 @@ local function rewardsText(rewards): string
 			table.insert(
 				lines,
 				string.format(
-					"%s mastery: level %d",
+					"%s mastery %d",
 					Roles.get(progress.role).display,
 					tonumber(progress.masteryLevel.to) or 1
 				)

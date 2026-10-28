@@ -56,7 +56,7 @@ local function alarm(ps, hack: Hack)
 		return
 	end
 	info.desk:SetAttribute("AlarmUntil", now() + Config.ALARM_TIME)
-	Match.announce("Alarm at " .. info.name, "Someone tried to break into its log.", "danger")
+	Match.announce("Alarm at " .. info.name, "Someone tried to hack this.", "danger")
 	EventLog.add(
 		string.format("%s (%s) set off the alarm hacking %s.", ps.alias, Terms.role(ps.role), info.name),
 		"hack"
@@ -73,7 +73,7 @@ local function finish(ps, hack: Hack)
 		HackStateRemote:FireClient(ps.player, { state = "empty" })
 		Match.notify(
 			ps.player,
-			string.format("Nobody finished a case file at %s in the last %d s.", stationName, Config.HACK_WINDOW),
+			string.format("Nobody used %s in the last %ds.", stationName, Config.HACK_WINDOW),
 			"secret"
 		)
 		return
@@ -112,8 +112,8 @@ local function playerProblem(ps): string?
 end
 
 local PROBLEM_TEXT = {
-	busy = "Someone is at this station.",
-	locked = "The alarm went off here: its log is locked for now.",
+	busy = "Station in use.",
+	locked = "Locked after an alarm.",
 }
 
 local function start(ps, stationId)
@@ -193,7 +193,7 @@ local function watch(dt: number)
 		if not ps.alive or Match.phase ~= "Investigation" or Match.meetingCall ~= nil then
 			stop(ps, "The hack was cut off.", nil)
 		elseif not info or not position or (position - info.position).Magnitude > Config.TASK_RANGE + 4 then
-			stop(ps, "You moved away from the station.", nil)
+			stop(ps, "You moved away.", nil)
 		elseif os.clock() - hack.clock > Config.HACK_TIME + 20 then
 			stop(ps, "The hack timed out.", nil)
 		end

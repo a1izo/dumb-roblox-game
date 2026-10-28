@@ -19,3 +19,5 @@ never on src/shared/Assets.luau ([[protect-user-assets-edits]]).
 
 Also: writing a repo file from Python sometimes fails once with OSError Errno 22 (a transient
 lock on Windows); retry the write after a second or two rather than treating it as a real error.
+
+Also (2026-10-28): passing file paths to stylua ignores `.styluaignore`, so it reformats the GENERATED one-line scene files (src/server/Maps/Scenes/, Cinema/Shots, Anim/Clips) into thousands of lines. Filter those paths out of the list before running stylua.

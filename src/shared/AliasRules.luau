@@ -71,7 +71,7 @@ function AliasRules.check(alias: string): (boolean, string)
 		return false, "Type an alias."
 	end
 	if not string.match(alias, "^%a+$") then
-		return false, "Use letters only, with no spaces."
+		return false, "Letters only."
 	end
 	if #alias < AliasRules.MIN or #alias > AliasRules.MAX then
 		return false, string.format("Use %d to %d letters.", AliasRules.MIN, AliasRules.MAX)
@@ -86,10 +86,10 @@ function AliasRules.check(alias: string): (boolean, string)
 		end
 	end
 	if lowerFirst[lower] or lowerLast[lower] then
-		return false, "That is one of the secret real names."
+		return false, "That's a real name."
 	end
 	if isPoolPair(lower) then
-		return false, "That reads as a full real name."
+		return false, "That looks like a real name."
 	end
 	return true, ""
 end

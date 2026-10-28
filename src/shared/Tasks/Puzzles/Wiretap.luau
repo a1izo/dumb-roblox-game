@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Wiretap",
 	title = "Wiretap",
-	hint = "Tune frequency and gain until your waveform matches the recording.",
+	hint = "Match the waveform to the recording.",
 }
 
 Def.MAX_FREQUENCY = 6

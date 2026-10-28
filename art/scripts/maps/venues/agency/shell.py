@@ -217,7 +217,7 @@ def lifts(s):
     # crest wall, behind the grand stair's head: from anywhere in the lobby the stair's side cut it in half.)
     lx = (P.LIFTS_X[0] + P.LIFTS_X[-1]) / 2
     fit.plaque(s, lx, 11.7, z, 180, 12.0, 1.2, P.TOWER + " 38F", (230, 214, 170), (20, 20, 24))
-    fit.plaque(s, lx, 10.35, z, 180, 12.0, 0.8, "THE BUREAU  ·  RECEPTION", (200, 200, 205), (20, 20, 24))
+    fit.plaque(s, lx, 10.35, z, 180, 12.0, 0.8, "RECEPTION", (200, 200, 205), (20, 20, 24))
     # The crest wall west of the lifts (the grand stair's head faces it): wood with a brass inlay, no
     # words to be cut by the stair.
     s.box("WoodPanel", (-1.0, 6.5, z + 0.1), (13.0, 12.6, 0.2), 180)

@@ -315,7 +315,7 @@ local function load(player: Player)
 					if profiles[player] == profile then
 						profiles[player] = nil
 					end
-					player:Kick("Your case file is still saving in another server. Please rejoin in a minute.")
+					player:Kick("Your data is still saving. Rejoin in a minute.")
 					return
 				end
 				task.wait(3)

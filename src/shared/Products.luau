@@ -21,21 +21,21 @@ Products.PASSES = {
 		key = "vip",
 		id = 0,
 		name = "VIP",
-		perks = { "VIP cosmetics", "A VIP tag in the lobby and on the results screen" },
+		perks = { "VIP cosmetics", "VIP tag" },
 	},
-	{ key = "coins2x", id = 0, name = "Double Reál", perks = { "Twice the Reál from every match" } },
+	{ key = "coins2x", id = 0, name = "Double Reál", perks = { "2x Reál" } },
 	{
 		key = "alias",
 		id = 0,
 		name = "Custom Alias",
-		perks = { "Choose your own public alias (your real name in matches stays secret)" },
+		perks = { "Pick your own alias" },
 	},
-	{ key = "emotes", id = 0, name = "Emote Pack", perks = { "Extra emotes in quick chat" } },
+	{ key = "emotes", id = 0, name = "Emote Pack", perks = { "Extra quick chat emotes" } },
 	{
 		key = "director",
 		id = 0,
 		name = "Director",
-		perks = { "Set rounds, phase times and maps in your private server" },
+		perks = { "Custom rules in private servers" },
 	},
 } :: { Pass }
 

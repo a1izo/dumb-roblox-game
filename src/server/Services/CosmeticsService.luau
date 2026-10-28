@@ -88,7 +88,7 @@ function CosmeticsService.grantSets(player: Player): { Sets.Set }
 	end)
 	for _, set in ipairs(done) do
 		data.owned[set.title] = true
-		Match.notify(player, "Set complete: " .. set.name .. ". Its title is yours.", "good")
+		Match.notify(player, "Set complete: " .. set.name .. ". Title unlocked.", "good")
 	end
 	return done
 end
@@ -221,9 +221,7 @@ local function titleTag(player: Player, character: Model, title: Cosmetics.Item?
 		text, letters = Rarity.titleText(title.name, title.rarity, TAG_GREY, title.id)
 	end
 	if vip then
-		text = if text ~= ""
-			then string.format('<font color="#%s">VIP</font>  ·  ', TAG_WHITE:ToHex()) .. text
-			else "VIP"
+		text = if text ~= "" then string.format('<font color="#%s">VIP</font>  ', TAG_WHITE:ToHex()) .. text else "VIP"
 	end
 	Create("TextLabel", {
 		BackgroundTransparency = 1,

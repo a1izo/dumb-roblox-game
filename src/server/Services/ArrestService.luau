@@ -86,7 +86,7 @@ function ArrestService.arrest(ace, suspect, force: boolean?): boolean
 	if ace.fakeAce then
 		-- A Coven player wearing the title: nothing happens, and now everyone knows.
 		EventLog.add(
-			Terms.f("{alias} tried to arrest {suspect}, but held a fake {zero} title.", {
+			Terms.f("{alias} tried to arrest {suspect} with a fake title.", {
 				alias = ace.alias,
 				suspect = suspect.alias,
 			}),
@@ -94,7 +94,7 @@ function ArrestService.arrest(ace, suspect, force: boolean?): boolean
 		)
 		Match.announce(
 			Terms.f("A fake {zero}!"),
-			Terms.f("{alias} tried to arrest {suspect}, but the warrant was worthless.", {
+			Terms.f("{alias}'s arrest on {suspect} failed.", {
 				alias = ace.alias,
 				suspect = suspect.alias,
 			}),
@@ -106,7 +106,7 @@ function ArrestService.arrest(ace, suspect, force: boolean?): boolean
 	playArrest(ace, suspect, result)
 	if result == "innocent" then
 		EventLog.add(
-			Terms.f("{Zero} ({alias}) arrested {suspect}, who was innocent. {Zero} paid with their life.", {
+			Terms.f("{Zero} ({alias}) arrested innocent {suspect} and died.", {
 				alias = ace.alias,
 				suspect = suspect.alias,
 			}),
@@ -114,7 +114,7 @@ function ArrestService.arrest(ace, suspect, force: boolean?): boolean
 		)
 		Match.announce(
 			Terms.f("{alias} was {zero}", { alias = ace.alias }),
-			Terms.f("{suspect} was innocent. The false arrest cost {zero} their life.", { suspect = suspect.alias }),
+			Terms.f("{suspect} was innocent. {Zero} paid with their life.", { suspect = suspect.alias }),
 			"kira"
 		)
 		Elimination.eliminate(
@@ -141,7 +141,7 @@ function ArrestService.arrest(ace, suspect, force: boolean?): boolean
 		Terms.f("{alias} was {zero}: {suspect} arrested", { alias = ace.alias, suspect = suspect.alias }),
 		if result == "hand"
 			then Terms.f("{suspect} was {HAND}!", { suspect = suspect.alias })
-			else Terms.f("{suspect} was a {cultist}. {Hand} is still free.", { suspect = suspect.alias }),
+			else Terms.f("{suspect} was a {cultist}.", { suspect = suspect.alias }),
 		"team"
 	)
 	Elimination.eliminate(
@@ -164,10 +164,10 @@ local function onArrest(player: Player, suspectUserId)
 	end
 	local problem = ArrestService.problem(ace)
 	if problem == "phase" then
-		Match.notify(player, "You can only arrest during a meeting.", "bad")
+		Match.notify(player, "Only during a meeting.", "bad")
 		return
 	elseif problem == "used" then
-		Match.notify(player, "You have already used your arrest.", "bad")
+		Match.notify(player, "Arrest already used.", "bad")
 		return
 	elseif problem then
 		return
@@ -204,27 +204,23 @@ function ArrestService.appoint(butler, chosen)
 		chosen.fakeAce = true
 		Match.notify(
 			chosen.player,
-			Terms.f("{Butler} named you the new {zero}. You are not: your arrest will not work. Bluff, or keep quiet."),
+			Terms.f("You were named {zero}, but your arrest won't work. Bluff or stay quiet."),
 			"secret"
 		)
 	else
 		-- The title makes them Ace for good (their old role shows at the reveal as Ace).
 		chosen.role = "L"
-		Match.notify(
-			chosen.player,
-			Terms.f("{Butler} named you the new {zero}. You have one arrest: use it during a meeting."),
-			"good"
-		)
+		Match.notify(chosen.player, Terms.f("You are the new {zero}. You have one arrest."), "good")
 	end
 	EventLog.add(
 		Terms.f("{Butler} ({butler}) named {alias} the next {zero}{fake}.", {
 			butler = butler.alias,
 			alias = chosen.alias,
-			fake = if chosen.fakeAce then Terms.f(" (a {cultist} or {hand}: a fake title)") else "",
+			fake = if chosen.fakeAce then Terms.f(" (fake)") else "",
 		}),
 		"succession"
 	)
-	Match.announce(Terms.f("A new {zero}"), Terms.f("{Butler} has named someone to carry on."), "team")
+	Match.announce(Terms.f("A new {zero}"), Terms.f("{Butler} picked a successor."), "team")
 	Match.pushAllPrivate()
 end
 
@@ -251,7 +247,7 @@ local function startSuccession()
 	end
 	local butler = Match.findRole("Watari")
 	if not butler or not butler.alive then
-		EventLog.add(Terms.f("{Zero} died and nobody was left to name the next one."), "succession")
+		EventLog.add(Terms.f("{Zero} died with no successor."), "succession")
 		return
 	end
 	local endsAt = now() + Config.BUTLER_PICK_TIME
@@ -264,14 +260,14 @@ local function startSuccession()
 	})
 	Match.notify(
 		butler.player,
-		Terms.f("{Zero} is dead. Name the next {zero} within {n} seconds.", { n = Config.BUTLER_PICK_TIME }),
+		Terms.f("{Zero} is dead. Pick the next one in {n}s.", { n = Config.BUTLER_PICK_TIME }),
 		"secret"
 	)
 	task.delay(Config.BUTLER_PICK_TIME, function()
 		if pick and pick.matchId == matchId and pick.endsAt == endsAt then
 			closePick()
 			Match.successionUsed = true
-			EventLog.add(Terms.f("{Butler} named nobody. {Agency} has no {zero} now."), "succession")
+			EventLog.add(Terms.f("No successor picked."), "succession")
 		end
 	end)
 end

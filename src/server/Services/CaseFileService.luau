@@ -36,7 +36,7 @@ local function setScreen(runtime, busy: boolean)
 	local info = runtime.info
 	info.desk:SetAttribute("Busy", busy)
 	-- (The name is the screen's own header; this is its state line.)
-	info.label.Text = if busy then "ANALYSING…" else "READY"
+	info.label.Text = if busy then "ANALYSING" else "READY"
 end
 
 -- Everyone sees who is working a station (their character plays that station type's working
@@ -169,7 +169,7 @@ local function onStart(ps, stationId: string)
 		return
 	end
 	if runtime.worker or runtime.hacker then
-		Match.notify(ps.player, "Someone is already working at this station.", "bad")
+		Match.notify(ps.player, "Station in use.", "bad")
 		return
 	end
 	if not reaches(ps, runtime) then
@@ -200,7 +200,7 @@ local function onComplete(ps, stationId: string, answer: any)
 		return
 	end
 	if Match.phase ~= "Investigation" then
-		stopWork(ps, "The investigation phase is over.")
+		stopWork(ps, "Too late.")
 		return
 	end
 	local position = Match.position(ps)

@@ -243,7 +243,7 @@ local function onMeetingMessage(message: TextChatMessage, recipient: TextSource)
 			blockedNotices[message.MessageId] = true
 			local player = Players:GetPlayerByUserId(sender.UserId)
 			if player then
-				Match.notify(player, "Message blocked: it contained a living player's full real name.", "bad")
+				Match.notify(player, "Blocked. Real names aren't allowed in chat.", "bad")
 			end
 		end
 		return false

@@ -191,7 +191,7 @@ local function updateProfile()
 	local profile = ClientState.profile
 	if not profile then
 		if rankText then
-			rankText:set("…")
+			rankText:set("")
 		end
 		return
 	end
@@ -222,11 +222,10 @@ local function updateProfile()
 		if profile.nextRankXp then
 			local span = math.max(1, profile.nextRankXp - profile.rankXp)
 			setXp((profile.xp - profile.rankXp) / span, true)
-			xpLabel.Text =
-				string.format("%d / %d XP  ·  next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
+			xpLabel.Text = string.format("%d / %d XP   Next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
 		else
 			setXp(1, true)
-			xpLabel.Text = string.format("%d XP  ·  the highest rank", profile.xp)
+			xpLabel.Text = string.format("%d XP   Max rank", profile.xp)
 		end
 	end
 	saveWarning.Visible = profile.persistent == false
@@ -333,23 +332,18 @@ local function updateLobby()
 	end
 	applyVisibility()
 	if not lobby then
-		statusLabel.Text = "Connecting…"
+		statusLabel.Text = "Connecting"
 		return
 	end
 	local status
 	if lobby.searching then
-		status = "Searching other servers for players…"
+		status = "Finding players"
 	elseif lobby.countdown then
-		status = string.format("The case opens in %d…", lobby.countdown)
+		status = string.format("Starting in %d", lobby.countdown)
 	elseif lobby.matchRunning then
-		status = "A case is running. Watch it, or ready up for the next one."
+		status = "Match in progress. Ready up for the next one."
 	else
-		status = string.format(
-			"%d of %d ready  ·  next case: %s",
-			lobby.readyCount,
-			lobby.needed,
-			tostring(lobby.nextMap or "?")
-		)
+		status = string.format("%d/%d ready   Next: %s", lobby.readyCount, lobby.needed, tostring(lobby.nextMap or "?"))
 	end
 	statusLabel.Text = status
 	statusLabel.TextColor3 = if lobby.countdown then C.white else C.dim
@@ -655,7 +649,7 @@ local function buildCard(phone: boolean)
 		Parent = coinsRow,
 	})
 	saveWarning = Kit.label({
-		Text = "Progress is not being saved in this session.",
+		Text = "Progress isn't saving.",
 		size = "micro",
 		color = C.red,
 		Visible = false,

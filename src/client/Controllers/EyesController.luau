@@ -88,10 +88,7 @@ function EyesController.stare()
 		root.CFrame = CFrame.lookAt(at, Vector3.new(head.Position.X, at.Y, head.Position.Z))
 	end
 	EyesRequest:FireServer({ action = "stare", userId = target })
-	Toasts.show(
-		if ClientState.private.eyes then "Reading..." else "Staring... stand still and keep them in sight.",
-		"secret"
-	)
+	Toasts.show(if ClientState.private.eyes then "Reading" else "Staring. Stand still.", "secret")
 end
 
 -- The deal costs the Muerto's life, so it takes two presses: the first lays a white sheen over your
@@ -167,9 +164,9 @@ function EyesController.init()
 			return
 		end
 		if payload.failed == "moved" then
-			Toasts.show("You moved: the stare broke.", "bad")
+			Toasts.show("You moved. Try again.", "bad")
 		elseif payload.failed == "lost" then
-			Toasts.show("You lost sight of them: the stare broke.", "bad")
+			Toasts.show("Lost sight. Try again.", "bad")
 		end
 	end)
 end

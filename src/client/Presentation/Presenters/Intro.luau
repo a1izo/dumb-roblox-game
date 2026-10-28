@@ -169,7 +169,7 @@ return function(cue)
 			local where = if type(role.area) == "string" and role.area ~= "" then role.area else ""
 			local line = tostring(role.caption or "")
 			if where ~= "" then
-				line = line .. "  ·  " .. where
+				line = line .. ", " .. where
 			end
 			-- (the alias in the heading face, what they are doing under it)
 			local hideCaption = Cinema.caption("", {

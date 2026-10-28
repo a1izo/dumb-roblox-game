@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "CallLog",
 	title = "Call logs",
-	hint = "One number appears in both call logs. Tap it.",
+	hint = "Tap the number in both logs.",
 }
 
 Def.PER_LOG = 6

@@ -52,7 +52,7 @@ return function(ctx: Common.Context)
 			choice.BackgroundTransparency = if sharp then 0 else 0.6
 		end
 		if sharp then
-			ctx.hint("Sharp. Now pick the fibre that matches.")
+			ctx.hint("Now pick the matching fibre.")
 		end
 	end
 	local controls =

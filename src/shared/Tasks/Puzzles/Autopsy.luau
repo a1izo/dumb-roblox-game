@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Autopsy",
 	title = "Autopsy chart",
-	hint = "Mark the three places the coroner's report lists on the body chart.",
+	hint = "Mark the three spots from the report.",
 }
 
 -- Body regions and where they are on the chart (x, y, w, h as fractions of the chart). "Left"

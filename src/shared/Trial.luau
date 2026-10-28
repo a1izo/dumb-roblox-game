@@ -40,37 +40,37 @@ local RAW: { Step } = {
 	{
 		id = "card",
 		line = "Read your role card",
-		how = "{cardKey} to turn it over.",
-		why = "Your real name is your life. Others only see your alias.",
+		how = "{cardKey} to flip it.",
+		why = "Keep your real name secret. Others only see your alias.",
 	},
 	{
 		id = "file",
 		line = "Work a case file",
-		how = "Follow the wisp to the fingerprint altar.",
-		why = "In a case, every finished file fills {agency}'s task bar. Fill it and {agency} wins.",
+		how = "Follow the wisp.",
+		why = "Every case file fills the task bar. Fill it and {agency} wins.",
 		drill = "fingerprint",
 	},
 	{
 		id = "write",
 		line = "Learn a name, then write it",
-		how = "Stand near Dummy B, press {stareKey} and keep still for {seconds} s.",
-		howNext = "You have its real name. Now follow the wisp to {grimoire} and write it in full.",
-		why = "That is how {hand} kills. Watch for anyone standing still with red eyes.",
+		how = "Stand near Dummy B and hold {stareKey} for {seconds}s.",
+		howNext = "Got it. Follow the wisp to {grimoire} and write the name.",
+		why = "That's how {hand} kills. Watch for red eyes.",
 		drill = "grimoire",
 	},
 	{
 		-- The Academy's drill keeps its old id: the profile saves finished drills by id.
 		id = "arrest",
 		line = "Make an arrest",
-		how = "Follow the wisp and point at the one you suspect.",
-		why = "In a meeting, {zero} can arrest once. A wrong pick costs {zero}'s life.",
+		how = "Follow the wisp and point at your suspect.",
+		why = "{Zero} gets one arrest. A wrong pick is fatal.",
 		drill = "warrant",
 	},
 	{
 		id = "ready",
 		line = "Press READY",
-		how = "The wisp waits in the candle circle.",
-		why = "That is the game: learn real names, guard your own. {players} players open a case.",
+		how = "The wisp is in the candle circle.",
+		why = "That's the game. Learn names, guard your own.",
 	},
 }
 
@@ -91,7 +91,7 @@ end
 
 -- The offer (a small card where the steps will show).
 Trial.OFFER_TITLE = "The Trial"
-Trial.OFFER_LINE = string.format("Learn the game in two minutes  ·  +%d Reál", Config.TRAINING_REWARD)
+Trial.OFFER_LINE = string.format("Learn to play  +%d Reál", Config.TRAINING_REWARD)
 
 -- The practice identity on the Trial's role card (an alias and a real name from nobody's case).
 Trial.ALIAS = "Raven"

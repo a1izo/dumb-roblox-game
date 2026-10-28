@@ -19,13 +19,13 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 	end
 	if not living then
 		return {
-			line(Terms.f("You are a {Specter}: fly about the case, unseen by the living")),
-			line(Terms.f("Bureau? You can still work case files for {agency}")),
-			line(Terms.f("Gather lost souls, and chat with other {specters} only")),
+			line(Terms.f("You are a {Specter}. The living can't see you")),
+			line(Terms.f("You can still work case files")),
+			line(Terms.f("Gather lost souls")),
 		}
 	end
 	if phase == "Briefing" then
-		return { line("Learn your role and your real name") }
+		return { line("Check your role and real name") }
 	end
 	local tasks = tonumber(private.tasksThisRound) or 0
 	local known = if type(private.learned) == "table" then #private.learned else 0
@@ -33,48 +33,38 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 
 	if phase == "Investigation" then
 		if role == "Kira" then
-			table.insert(
-				lines,
-				line("Hack a station ({key.use}) just after someone uses it: learn their name", known > 0)
-			)
-			table.insert(lines, line("Write a name in {grimoire} ({key.manual}). Make sure nobody is watching"))
+			table.insert(lines, line("Hack a station after someone uses it ({key.use})", known > 0))
+			table.insert(lines, line("Write a name in {grimoire} ({key.manual}) unseen"))
 		elseif role == "Follower" then
-			table.insert(
-				lines,
-				line("Hack stations ({key.use}) for real names, and pass them to {hand} on a note", known > 0)
-			)
-			table.insert(lines, line("Black out the lights ({key.blackout}) when {hand} needs cover"))
+			table.insert(lines, line("Hack stations for names ({key.use}) and pass them to {hand}", known > 0))
+			table.insert(lines, line("Cut the lights ({key.blackout}) for cover"))
 			if private.eyes then
 				table.insert(
 					lines,
-					line(
-						"{Eyes}: stare to read names ({key.stare}), {n} s of life left",
-						nil,
-						{ n = private.eyes.lifeLeft }
-					)
+					line("Stare to read names ({key.stare}). {n}s left", nil, { n = private.eyes.lifeLeft })
 				)
 			elseif private.canDeal then
-				table.insert(lines, line("You may accept {eyes}: read names at a glance, die in 90 s"))
+				table.insert(lines, line("You can take {eyes} ({key.stare})"))
 			end
 		else
-			table.insert(lines, line("Work case files at the stations ({key.use}): fill the task bar", tasks > 0))
-			table.insert(lines, line("Watch for glowing eyes and a burning red book"))
+			table.insert(lines, line("Work case files ({key.use})", tasks > 0))
+			table.insert(lines, line("Watch for glowing eyes and a red book"))
 			if role == "Watari" then
-				table.insert(lines, line("You know {zero}. Keep them alive; if they die, you name the next"))
+				table.insert(lines, line("Keep {zero} alive"))
 			end
 		end
 		if private.carrying == "note" then
-			table.insert(lines, line("You carry a written note: read or drop it ({key.note}), or pass it ({key.pass})"))
+			table.insert(lines, line("Read ({key.note}) or pass ({key.pass}) your note"))
 		end
 	elseif phase == "Meeting" then
-		table.insert(lines, line("Talk it over. Full real names of living players are blocked"))
+		table.insert(lines, line("Talk it over"))
 		if private.isAce and not private.arrestUsed then
-			table.insert(lines, line("You may arrest one player ({key.arrest}). An innocent costs your life"))
+			table.insert(lines, line("Arrest a suspect ({key.arrest})"))
 		end
 	elseif phase == "Vote" then
-		table.insert(lines, line("Vote someone out, or skip"))
+		table.insert(lines, line("Vote or skip"))
 		if private.isAce and not private.arrestUsed then
-			table.insert(lines, line("You may still arrest one player ({key.arrest})"))
+			table.insert(lines, line("You can still arrest ({key.arrest})"))
 		end
 	end
 	return lines

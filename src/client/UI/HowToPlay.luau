@@ -35,12 +35,11 @@ local function controls(): { string }
 	local input = Keys.input()
 	if input == "touch" then
 		return {
-			"Tap the prompts that appear near stations, notes and the bell.",
-			"The buttons on the right side are the actions you can take right now.",
-			"Press and hold your role badge to see your role card and real name.",
-			"In a case there is no typing: you speak in quick-chat phrases, heard close by in free roam and by the whole "
-				.. "table in meetings.",
-			"Settings > Controls moves, resizes or hides the buttons.",
+			"Tap prompts near stations, notes and the bell.",
+			"Buttons on the right are your actions.",
+			"Hold your role badge to see your role card.",
+			"No typing during a case. Use quick chat.",
+			"Move or resize buttons in Settings > Controls.",
 		}
 	end
 	-- The player's own keys (Settings > Controls), joined with " / " where an action has two.
@@ -56,47 +55,33 @@ local function controls(): { string }
 	end
 	if input == "gamepad" then
 		return {
-			string.format("%s: use the prompts near stations, notes and the bell.", k("interact", "pickUp")),
+			string.format("%s: interact", k("interact", "pickUp")),
 			string.format(
-				"%s: emotes.  %s: quick chat.  %s: your note (read, write or drop it).  Hold %s: role card.",
+				"%s: emotes   %s: quick chat   %s: note   Hold %s: role card",
 				k("quickChat"),
 				k("phrases"),
 				k("note"),
 				k("roleCard")
 			),
-			string.format(
-				Terms.f("%s: your role's power ({grimoire}, the blackout, the arrest).  %s: {eyes} (a {cultist})."),
-				k("ability"),
-				k("ability2")
-			),
-			string.format("%s: walk.  %s: look round.  %s: jump.", k("move"), k("look"), k("jump")),
-			"B: close the open window.",
+			string.format(Terms.f("%s: role power   %s: {eyes}"), k("ability"), k("ability2")),
+			string.format("%s: walk   %s: look   %s: jump", k("move"), k("look"), k("jump")),
+			"B: close window",
 		}
 	end
 	return {
-		string.format("%s: use the prompts near stations, notes and the bell.", k("interact", "pickUp")),
+		string.format("%s: interact", k("interact", "pickUp")),
+		string.format("%s: emotes   %s: quick chat   %s: note", k("quickChat"), k("phrases"), k("note")),
+		string.format("Hold %s: role card   %s: how to play", k("roleCard"), k("help")),
+		string.format(Terms.f("%s: role power"), k("ability")),
+		string.format(Terms.f("%s: {eyes}"), k("ability2")),
 		string.format(
-			"%s: emotes.  %s: quick chat.  %s: your note (read, write or drop it).",
-			k("quickChat"),
-			k("phrases"),
-			k("note")
-		),
-		string.format("Hold %s: role card.  %s: this book.", k("roleCard"), k("help")),
-		string.format(
-			Terms.f(
-				"%s: your role's power: {grimoire} for {hand}, the blackout for a {cultist}, the arrest for {zero} in a meeting."
-			),
-			k("ability")
-		),
-		string.format(Terms.f("%s: {eyes}, a {cultist}'s deal and then its stare."), k("ability2")),
-		string.format(
-			"%s: walk.  %s: jump.  %s: turn the camera.  %s: shift lock.",
+			"%s: walk   %s: jump   %s: camera   %s: shift lock",
 			k("moveForward", "moveLeft", "moveBack", "moveRight"),
 			k("jump"),
 			k("turnLeft", "turnRight"),
 			k("shiftLock")
 		),
-		"Every key can be changed in Settings > Controls.",
+		"Change keys in Settings > Controls.",
 	}
 end
 

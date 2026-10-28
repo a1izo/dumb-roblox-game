@@ -174,7 +174,7 @@ function VoteService.present(result: Result)
 			)
 			Match.announce(
 				removed.alias .. " was voted out",
-				string.format("%d of %d votes. Their role stays secret.", result.votesAgainst, result.total),
+				string.format("%d of %d votes.", result.votesAgainst, result.total),
 				"neutral"
 			)
 			Elimination.eliminate(removed, "voted", nil, removed.alias .. " was voted out.", {})
@@ -183,7 +183,7 @@ function VoteService.present(result: Result)
 				then "Nobody voted."
 				elseif result.tie then "The vote was tied."
 				else "Skip won the vote."
-			EventLog.add("The vote removed nobody. " .. subtitle, "vote")
+			EventLog.add("Nobody was removed. " .. subtitle, "vote")
 			Match.announce("Nobody was voted out", subtitle, "neutral")
 		end
 	end)

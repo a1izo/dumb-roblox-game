@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Enhance",
 	title = "Enhance",
-	hint = "Sweep the magnifier over the still and tap the figure in the red scarf.",
+	hint = "Find the figure in the red scarf.",
 }
 
 Def.COLS, Def.ROWS = 6, 4

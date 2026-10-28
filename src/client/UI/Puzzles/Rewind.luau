@@ -66,7 +66,7 @@ return function(ctx: Common.Context)
 		Parent = controls,
 	}, function()
 		if not ctx.submit(frame) then
-			ctx.hint("Not quite: the figure must stand right in the doorway.")
+			ctx.hint("Not quite. Find the figure in the doorway.")
 			Common.flash(screen, false)
 		end
 	end)

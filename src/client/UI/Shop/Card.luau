@@ -922,7 +922,7 @@ local function motes(face: Frame, color: Color3)
 end
 
 -- The tier's name in small capitals at the foot of the picture, in its colour (never colour alone).
--- A kind's name on a card's tier line (the owner's direction A: "SEALED · EMOTE").
+-- A kind's name on a card's tier line (the owner's direction A: "SEALED EMOTE").
 local KIND_WORD: { [string]: string } = {
 	hat = "Hat",
 	grimoire = "Cover",
@@ -939,7 +939,7 @@ local KIND_WORD: { [string]: string } = {
 
 local function rarityTag(face: Frame, rarity: string, kind: string?)
 	local color = Rarity.color(rarity)
-	-- (a band across the picture's foot; the longest lines, "◆ CONDEMNED · CUTSCENE", shrink to fit it)
+	-- (a band across the picture's foot; the longest lines, "CONDEMNED CUTSCENE", shrink to fit it)
 	local holder = Kit.Base.make("Frame", {
 		Name = "Rarity",
 		BackgroundColor3 = C.void,
@@ -954,9 +954,8 @@ local function rarityTag(face: Frame, rarity: string, kind: string?)
 	Kit.Base.corner(holder, 2)
 	Kit.pad(holder, 0, 4)
 	local text = Kit.label({
-		Text = "◆ " .. string.upper(Rarity.name(rarity)) .. (if kind and KIND_WORD[kind]
-			then " · " .. string.upper(KIND_WORD[kind])
-			else ""),
+		Text = string.upper(Rarity.name(rarity))
+			.. (if kind and KIND_WORD[kind] then " " .. string.upper(KIND_WORD[kind]) else ""),
 		font = "label",
 		size = "micro",
 		-- (the line work wears the colour itself; the letters a lighter shade of it, to read on the dark)

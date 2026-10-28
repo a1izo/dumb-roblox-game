@@ -84,7 +84,7 @@ local function show(payload, role: string)
 	}
 	NoteOfferSlip.pending = role == "giver"
 	if role == "receiver" then
-		title.Text = string.format("%s offers you a paper note", tostring(payload.fromAlias or "Someone"))
+		title.Text = string.format("%s offers you a note", tostring(payload.fromAlias or "Someone"))
 		takeButton.Visible = true
 		Kit.setText(leaveButton, "Leave it")
 		refreshTake()
@@ -95,7 +95,7 @@ local function show(payload, role: string)
 			return Enum.ContextActionResult.Sink
 		end, false, Enum.ContextActionPriority.High.Value + 10, table.unpack(takeKeys()))
 	else
-		title.Text = string.format("Offering your note to %s…", tostring(payload.toAlias or "them"))
+		title.Text = string.format("Offering to %s", tostring(payload.toAlias or "them"))
 		takeButton.Visible = false
 		Kit.setText(leaveButton, "Cancel")
 		ContextActionService:UnbindAction(TAKE_ACTION)

@@ -96,7 +96,7 @@ local function rebuild()
 	local entries = boards[current] or {}
 	if #entries == 0 then
 		Kit.label({
-			Text = "No scores yet. Boards refresh every few minutes.",
+			Text = "No scores yet.",
 			font = "bodyItalic",
 			color = C.dim,
 			Parent = list,

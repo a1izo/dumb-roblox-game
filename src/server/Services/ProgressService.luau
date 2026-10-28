@@ -91,7 +91,7 @@ local function claimStreak(player: Player)
 	local today = TimeUtil.day(TimeUtil.now())
 	local state, reward = Streak.advance(data.streak, today)
 	if not reward then
-		Match.notify(player, "You already claimed today's streak.", "info")
+		Match.notify(player, "Already claimed today.", "info")
 		return
 	end
 	data.streak = state
@@ -121,7 +121,7 @@ local function reroll(player: Player, payload)
 		DataService.push(player)
 		DataService.saveSoon(player)
 	else
-		Match.notify(player, "You can swap one daily quest per day.", "bad")
+		Match.notify(player, "One swap per day.", "bad")
 	end
 end
 

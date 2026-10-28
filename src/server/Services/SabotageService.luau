@@ -96,7 +96,7 @@ function SabotageService.run(ps, kind: string, force: boolean?): boolean
 	if not force then
 		local problem = SabotageService.problem(ps)
 		if problem == "cooldown" then
-			Match.notify(ps.player, "Your sabotage is not ready yet.", "bad")
+			Match.notify(ps.player, "Sabotage not ready.", "bad")
 			return false
 		elseif problem then
 			return false

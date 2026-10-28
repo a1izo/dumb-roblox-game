@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Dust",
 	title = "Dust and lift",
-	hint = "Brush the dust away to reveal the print, then pick the card that matches.",
+	hint = "Brush off the dust, then pick the matching print.",
 }
 
 Def.SIZE = 5 -- the print is SIZE x SIZE cells

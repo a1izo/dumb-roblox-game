@@ -7,7 +7,7 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Handwriting",
 	title = "Handwriting",
-	hint = "Pick the sample written by the same hand: the same slant, letter by letter.",
+	hint = "Pick the matching handwriting.",
 }
 
 Def.WORDS = { "NAMES", "WRITE", "SEALED", "PAGES", "RULES", "QUILL", "OMEN", "TOMB", "RAVEN", "CANDLE" }

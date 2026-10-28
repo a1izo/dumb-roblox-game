@@ -209,7 +209,7 @@ function HauntBar.init()
 			task.wait(0.25)
 			if bar.Visible then
 				local left = math.ceil(readyAt - workspace:GetServerTimeNow())
-				cooldownLabel.Text = if left > 0 then string.format("Haunt  ·  %d s", left) else "Haunt"
+				cooldownLabel.Text = if left > 0 then string.format("Haunt %ds", left) else "Haunt"
 			end
 		end
 	end)

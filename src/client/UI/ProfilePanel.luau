@@ -63,10 +63,10 @@ local function rankBlock(profile, order: number)
 	local xpText
 	if profile.nextRankXp then
 		setProgress((profile.xp - profile.rankXp) / math.max(1, profile.nextRankXp - profile.rankXp))
-		xpText = string.format("%d / %d XP  ·  next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
+		xpText = string.format("%d / %d XP   Next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
 	else
 		setProgress(1)
-		xpText = string.format("%d XP  ·  the highest rank", profile.xp)
+		xpText = string.format("%d XP   Max rank", profile.xp)
 	end
 	Kit.label({
 		Text = xpText,
@@ -119,12 +119,7 @@ local function roleCard(profile, roleId: string, order: number)
 		Parent = card,
 	})
 	Kit.label({
-		Text = string.format(
-			"%d played  ·  %d won  ·  %s",
-			record.played,
-			record.won,
-			percent(record.won, record.played)
-		),
+		Text = string.format("%d played   %d won   %s", record.played, record.won, percent(record.won, record.played)),
 		size = "small",
 		color = C.dim,
 		AnchorPoint = Vector2.new(0, 1),
@@ -212,12 +207,10 @@ local function achievementCard(profile, achievement, order: number)
 	local reward = string.format("%d Reál", achievement.coins)
 	local title = achievement.title and Cosmetics.byId(achievement.title)
 	if title then
-		reward ..= "  ·  title " .. title.name
+		reward ..= ", " .. title.name .. " title"
 	end
 	Kit.label({
-		Text = if done
-			then "Done  ·  " .. reward
-			else string.format("%d / %d  ·  %s", value, achievement.goal, reward),
+		Text = if done then "Done   " .. reward else string.format("%d / %d   %s", value, achievement.goal, reward),
 		font = "mono",
 		size = "micro",
 		color = if done then C.candle else C.dim,

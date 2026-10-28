@@ -172,8 +172,8 @@ function SettingsPanel.init()
 		end)
 		-- Low quality: no bloom or haze, fewer shadows, shorter lamp light, effects and weather cut back, the menus'
 		-- moving touches still (slower devices, more frames a second).
-		toggle("lowGraphics", "Low quality mode (more FPS on slower devices)")
-		toggle("showFps", "Show frames a second")
+		toggle("lowGraphics", "Low quality mode")
+		toggle("showFps", "Show FPS")
 		toggle("weather", "Rain and snow")
 		header("Comfort")
 		toggle("reduceMotion", "Reduce motion")
@@ -181,18 +181,18 @@ function SettingsPanel.init()
 		toggle("screenFlashes", "Screen flashes")
 		toggle("showHud", "Show the HUD")
 		-- Your own emotes, in the lobby (both stay still under Reduce motion).
-		toggle("emoteCamera", "Camera moves round your showpiece emotes")
-		toggle("emoteCutscenes", "Godhood emote cutscenes")
+		toggle("emoteCamera", "Emote camera")
+		toggle("emoteCutscenes", "Emote cutscenes")
 	end
 
 	do
 		local header, _, toggle = rows(page("game"))
 		header("Other players")
-		toggle("nameTags", "Names over other players")
+		toggle("nameTags", "Player names")
 		toggle("chatBubbles", "Chat bubbles")
-		toggle("otherAuras", "Other players' auras")
-		toggle("otherEmoteFx", "Other players' emote effects")
-		toggle("emoteMusic", "Other players' emote music")
+		toggle("otherAuras", "Player auras")
+		toggle("otherEmoteFx", "Player emote effects")
+		toggle("emoteMusic", "Player emote music")
 	end
 
 	do
@@ -214,8 +214,8 @@ function SettingsPanel.init()
 		Kit.button({ text = "How to play", icon = "help", variant = "primary", Parent = buttonRow() }, function()
 			Router.open("howToPlay", { returnTo = "settings" })
 		end)
-		toggle("hints", "Show the guide (tips and objectives)")
-		Kit.button({ text = "Show all tips again", variant = "ghost", size = "s", Parent = buttonRow() }, function()
+		toggle("hints", "Show tips and objectives")
+		Kit.button({ text = "Reset tips", variant = "ghost", size = "s", Parent = buttonRow() }, function()
 			Net.event("ProfileRequest"):FireServer({ action = "resetHints" })
 		end)
 	end

@@ -188,7 +188,7 @@ function NotePanel.init()
 		Parent = body,
 	})
 	local _, box = Kit.field({
-		placeholder = string.format("Write up to %d characters…", Config.NOTE_MAX_LENGTH),
+		placeholder = string.format("Up to %d characters", Config.NOTE_MAX_LENGTH),
 		font = "document",
 		size = 22,
 		multiline = true,

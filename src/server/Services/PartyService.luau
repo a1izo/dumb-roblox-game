@@ -176,7 +176,7 @@ local function onRequest(player: Player, payload)
 		return
 	end
 	if not canChange(player) then
-		Match.notify(player, "Parties are locked while you are playing.", "bad")
+		Match.notify(player, "Can't change parties mid-match.", "bad")
 		return
 	end
 	local action = payload.action
@@ -207,7 +207,7 @@ local function onRequest(player: Player, payload)
 		end
 		pending[inviter] = nil
 		if not canChange(inviter) then
-			Match.notify(player, "That player is in a match right now.", "bad")
+			Match.notify(player, "They're in a match.", "bad")
 			return
 		end
 		local party = PartyService.partyOf(inviter) or newParty(inviter)

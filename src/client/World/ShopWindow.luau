@@ -108,7 +108,7 @@ local function build()
 	perform(made, item.emote)
 	local offer = Create("ProximityPrompt", {
 		Name = "LShopWindow",
-		ActionText = "See it in Death's hand",
+		ActionText = "View in shop",
 		ObjectText = item.name,
 		KeyboardKeyCode = Enum.KeyCode.E,
 		GamepadKeyCode = Enum.KeyCode.ButtonX,

@@ -51,14 +51,14 @@ local function onRequest(player: Player, request)
 			return
 		end
 		if Match.active then
-			Match.notify(player, "Change the rules between matches.", "bad")
+			Match.notify(player, "Change rules between matches.", "bad")
 			return
 		end
 		ServerSettings.set(request.settings)
 		broadcast()
 		if ServerSettings.isCustom() then
 			for _, other in ipairs(Players:GetPlayers()) do
-				Match.notify(other, "Custom rules are on: matches pay participation rewards only.", "info")
+				Match.notify(other, "Custom rules on. Rewards are reduced.", "info")
 			end
 		end
 	elseif request.action == "reset" and canDirect(player) and not Match.active then

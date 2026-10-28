@@ -284,7 +284,7 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not index then
-		refuse(player, clip, "No place left in the formation")
+		refuse(player, clip, "Formation full")
 		return
 	end
 	if not root or not root:IsA("BasePart") or not humanoid then
@@ -302,7 +302,7 @@ local function intoPlace(player: any, leader: any, leaderRoot: BasePart, clip: s
 	params.FilterDescendantsInstances = { character, leader.Character }
 	local floor = workspace:Raycast(spot.Position + Vector3.new(0, 2, 0), Vector3.new(0, -8, 0), params)
 	if not floor then
-		refuse(player, clip, "No room for the formation here")
+		refuse(player, clip, "No room here")
 		return
 	end
 	-- (and never through a wall: the walk to the place must be open, from you and from the first dancer)
@@ -391,7 +391,7 @@ local function joinIn(player: Player, userId)
 	end
 	local situation = EmoteService.situation(player)
 	if situation.inCase and not EmoteService.canUse(player, emote) then
-		refuse(player, emote.id, "Join in with your own dances in a case")
+		refuse(player, emote.id, "Not during a case")
 		return
 	end
 	local ok, reason, mask = EmotePolicy.check(EmoteInfo.of(emote.id), situation)

@@ -106,9 +106,7 @@ local function fillCover()
 		Parent = band,
 	})
 	Kit.label({
-		Text = if cover and type(cover.tell) == "string"
-			then cover.tell
-			else "A cover from the shop changes how it looks in your hands, and what everyone near you sees while it is out.",
+		Text = if cover and type(cover.tell) == "string" then cover.tell else "Get covers in the shop.",
 		size = "small",
 		color = C.dim,
 		TextWrapped = true,
@@ -179,11 +177,11 @@ end
 
 local function statusLine(): string
 	if ClientState.private.writing == true then
-		return "Writing... stand still."
+		return "Writing. Stand still."
 	end
 	local left = cooldownLeft()
 	if left > 0 then
-		return string.format("The Manual opens again in %d s.", math.ceil(left))
+		return string.format("Ready in %ds.", math.ceil(left))
 	end
 	return ""
 end
@@ -201,8 +199,7 @@ local function build()
 	Kit.pad(list, T.space.xs, T.space.xs)
 	Kit.label({
 		Text = string.format(
-			"Pick a name you learned, or type a full real name. Writing takes %d s, standing still with the book "
-				.. "glowing: anyone who sees it can tell. The victim dies %d s of investigation later.",
+			"Pick or type a real name. Writing takes %ds and the book glows. They die %ds later.",
 			Config.MANUAL_WRITE_TIME,
 			Config.MANUAL_DELAY
 		),
@@ -299,7 +296,7 @@ local function build()
 		return statusLine()
 	end)
 	heldNoteButton = Kit.button({
-		text = "Read the note in your hand",
+		text = "Read your note",
 		icon = "note",
 		variant = "ghost",
 		size = "s",

@@ -84,7 +84,7 @@ local function refreshLines()
 	end
 	local t = now()
 	local left = if endsAt then endsAt - t else 0
-	titleLabel.Text = string.format("NAME DUEL   ·   %s   ·   %s", string.upper(rival), clock(left))
+	titleLabel.Text = string.format("NAME DUEL   %s   %s", string.upper(rival), clock(left))
 	local locked = lockedUntil - t
 	if locked > 0 then
 		lineLabel.Text = string.format("Not their name. Wait %d.", math.ceil(locked))
@@ -93,15 +93,15 @@ local function refreshLines()
 		lineLabel.Text = word
 		lineLabel.TextColor3 = C.bone
 	else
-		lineLabel.Text = "Write their whole name the moment you know it."
+		lineLabel.Text = "Write their full name first."
 		lineLabel.TextColor3 = C.dim
 	end
 	if canWrite ~= (locked <= 0) then
 		canWrite = locked <= 0
 		Kit.setEnabled(writeButton, canWrite)
 	end
-	box.PlaceholderText = if locked > 0 then string.format("Wait %d", math.ceil(locked)) else "Their whole name"
-	noteLabel.Text = string.format("You are %s.  They see  %s", string.upper(own.name), own.mask)
+	box.PlaceholderText = if locked > 0 then string.format("Wait %d", math.ceil(locked)) else "Their full name"
+	noteLabel.Text = string.format("You are %s. They see %s", string.upper(own.name), own.mask)
 end
 
 local function show(newPhase: string)
@@ -133,15 +133,15 @@ end
 local OVER: { [string]: { [string]: string } } = {
 	won = {
 		named = "You named them first.",
-		forfeit = "They walked away. The duel is yours.",
+		forfeit = "They left. You win.",
 	},
 	lost = {
 		named = "They named you first.",
 		forfeit = "You walked away.",
 	},
 	draw = {
-		time = "Time. Nobody named anybody.",
-		called = "A case calls. Nobody wins this one.",
+		time = "Time's up. No winner.",
+		called = "A case is starting. No winner.",
 	},
 }
 
@@ -152,7 +152,7 @@ local function onState(p: any)
 	if p.kind == "stand" then
 		show("waiting")
 		titleLabel.Text = "NAME DUEL"
-		lineLabel.Text = "Waiting for someone to take the other stone."
+		lineLabel.Text = "Waiting for an opponent."
 		lineLabel.TextColor3 = C.dim
 	elseif p.kind == "start" then
 		rival = tostring(p.rival)
@@ -187,11 +187,11 @@ local function onState(p: any)
 		local result = tostring(p.result)
 		local lines = OVER[result] or OVER.draw
 		show("over")
-		titleLabel.Text = "NAME DUEL   ·   " .. string.upper(rival)
+		titleLabel.Text = "NAME DUEL   " .. string.upper(rival)
 		maskLabel.Text = string.upper(tostring(p.rival))
 		canWrite = true
 		Kit.setEnabled(writeButton, true)
-		lineLabel.Text = (lines[tostring(p.why)] or "It is over.")
+		lineLabel.Text = (lines[tostring(p.why)] or "Duel over.")
 			.. (if type(p.wins) == "number" then string.format("   Duels won: %d", p.wins) else "")
 		lineLabel.TextColor3 = C.bone
 		noteLabel.Text = string.format("You were %s.", string.upper(tostring(p.you)))
@@ -240,7 +240,7 @@ local function build()
 		Parent = card,
 	})
 	local _, field = Kit.field({
-		placeholder = "Their whole name",
+		placeholder = "Their full name",
 		maxLength = Duel.MAX_GUESS,
 		Size = UDim2.new(1, -(WRITE_WIDTH + T.space.s), 1, 0),
 		Parent = writeRow,

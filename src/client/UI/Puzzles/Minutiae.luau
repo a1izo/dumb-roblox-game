@@ -78,7 +78,7 @@ return function(ctx: Common.Context)
 			button.BackgroundColor3 = C.white
 			if #chosen == def.MARKED then
 				if not ctx.submit(table.clone(chosen)) then
-					ctx.hint("Not those five. Remember: the lifted print is mirrored left to right.")
+					ctx.hint("Wrong points. The print is mirrored.")
 					Common.flash(lifted, false)
 					reset()
 				end

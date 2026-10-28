@@ -16,59 +16,59 @@ local RAW: { { string } } = {
 	{
 		"role_Kira", -- terms:ok (internal role id)
 		"You are {hand}",
-		"Hack a station ({key.use}) right after someone finishes a case file there to read their real name, then write it in {grimoire} ({key.manual}). Miss a check and the alarm goes off.",
+		"Hack a station ({key.use}) after someone uses it to learn their real name. Write it in {grimoire} ({key.manual}).",
 	},
 	{
 		"role_Follower",
 		"You are a {cultist}",
-		"You know {hand}; they do not know you. Hack stations for names ({key.use}), pass them on paper notes, and sabotage ({key.sabotage}).",
+		"You know {hand}. They don't know you. Hack stations for names ({key.use}) and sabotage ({key.sabotage}).",
 	},
 	{
 		"role_L",
 		"You are {zero}",
-		"Nobody knows it is you. In a meeting you can arrest one player ({key.arrest}). Arrest an innocent and it costs your life.",
+		"Nobody knows it's you. Arrest one player in a meeting ({key.arrest}). Get it wrong and you die.",
 	},
 	{
 		"role_Watari", -- terms:ok (internal role id)
 		"You are {butler}",
-		"You know who {zero} is. If {zero} dies, you name the next one. Keep them alive.",
+		"You know who {zero} is. Keep them alive.",
 	},
 	{
 		"role_TaskForce",
 		"You are an {agent}",
-		"Work case files to fill the task bar, watch for glowing eyes and a burning red book, and vote {hand} out. {key.card} to see your role card again.",
+		"Work case files, watch for glowing eyes and vote {hand} out.",
 	},
 	{
 		"phase_Investigation",
 		"Investigation",
-		"{key.work} at a station to work a case file. Every file fills the Bureau's task bar; fill it and the Bureau wins. Ring the bell to call a meeting.",
+		"{key.work} at a station to work a case file. Fill the task bar to win.",
 	},
-	{ "phase_Meeting", "Meeting", "Talk it over. Full real names of living players are blocked in every chat." },
+	{ "phase_Meeting", "Meeting", "Talk it over. Real names are blocked in chat." },
 	{
 		"phase_Vote",
 		"Vote",
-		"Pick a suspect or skip. Nobody sees who you voted for, and removed players' roles stay secret.",
+		"Pick a suspect or skip. Votes are secret.",
 	},
 	{
 		"sheet",
 		"Blank sheets",
-		"Take a sheet to write a secret note. Notes are the only way to pass on a real name. Drop it, or hand it over ({key.pass}).",
+		"Write a secret note. It's the only way to share a real name. Hand it over with {key.pass}.",
 	},
 	{
 		"pass",
 		"Passing notes",
-		"Stand close to someone and {key.passDo} to offer your note. Anyone watching sees it change hands.",
+		"Stand close and {key.passDo} to offer your note.",
 	},
-	{ "offer", "A note for you", "Take it ({key.pass}) or leave it." },
+	{ "offer", "A note for you", "Take it with {key.pass}." },
 	{
 		"death",
 		"Someone died",
-		"{Grimoire} took them. Who was at the stations they used, or seen writing, in the last minute?",
+		"Who was near them in the last minute?",
 	},
 	{
 		"eliminated",
 		"You are a {Specter}",
-		"Fly with {key.fly}. The living cannot see or hear you. You can still work case files for {agency}, gather lost souls and chat with other {specters}.",
+		"Fly with {key.fly}. The living can't see or hear you, but you can still work case files.",
 	},
 }
 

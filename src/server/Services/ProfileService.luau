@@ -117,7 +117,7 @@ local function drillDone(player: Player, payload)
 			Trial.drillsFinished(data)
 			Analytics.step(player, "academy")
 			data.titles.trainee = true
-			Match.notify(player, "Every drill done: the title Trainee is yours.", "good")
+			Match.notify(player, "All drills done. Unlocked Trainee.", "good")
 		end
 	end
 	DataService.push(player)

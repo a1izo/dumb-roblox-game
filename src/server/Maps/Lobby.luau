@@ -205,7 +205,7 @@ end
 
 -- The Academy's name over its gate, its drill altars, the practice figures and the hand over them.
 local function academy(b, anchors: { [string]: Anchor })
-	sign(b, anchors.academyGate, "ACADEMY  ·  PRACTICE", GOLD, INK, Enum.Font.GothamBlack)
+	sign(b, anchors.academyGate, "ACADEMY", GOLD, INK, Enum.Font.GothamBlack)
 	for index, drill in ipairs(DRILLS) do
 		local a = anchors["drill" .. index]
 		if a then

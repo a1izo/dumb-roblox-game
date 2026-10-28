@@ -244,7 +244,7 @@ local function chipFor(profile, item: Cosmetics.Item): (string, string, { text: 
 		local slot = EmoteWheel.slotOf(profile.emoteWheel, item.emote)
 		return "Yours",
 			"check",
-			if slot then { text = "In wheel · " .. slot, filled = true } else { text = "Owned", filled = false }
+			if slot then { text = "Slot " .. slot, filled = true } else { text = "Owned", filled = false }
 	elseif owns(profile, item) then
 		-- (seats and win cutscenes are used, not worn; the free one is in use while nothing else of its kind is)
 		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"
@@ -313,8 +313,8 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 		end)
 	end
 	actionNote.Text = if at
-		then string.format("On your emote wheel, key %d. Pick its number again to take it off.", at)
-		else Keys.resolve("Pick a number to put it on your emote wheel ({key.wheel}).")
+		then string.format("In slot %d. Click it again to remove.", at)
+		else Keys.resolve("Pick a wheel slot ({key.wheel}).")
 	-- Its other use, as a switch: your stance.
 	local switches = {}
 	if item.stance then
@@ -325,7 +325,7 @@ local function wheelSlots(profile, item: Cosmetics.Item)
 		local gap = if #switches > 1 then T.space.s / 2 else 0
 		Kit.button({
 			Name = "Switch_" .. switch.action,
-			text = switch.label .. (if switch.on then "  ·  on" else "  ·  off"),
+			text = switch.label .. (if switch.on then ": on" else ": off"),
 			variant = if switch.on then "primary" else "secondary",
 			size = "s",
 			upper = false,
@@ -344,17 +344,14 @@ local function showAction(profile, item: Cosmetics.Item?)
 	actionNote.Text = ""
 	if not item then
 		lookName:set("Your look")
-		lookLine.Text = "Pick a card to see it on you."
+		lookLine.Text = "Pick a card to try it on."
 		lookLine.TextColor3 = C.dim
 		return
 	end
 	lookName:set(item.name)
 	-- (the tier's diamond first, as on the card's band: direction A)
-	lookLine.Text = string.format(
-		"◆ %s  ·  %s",
-		Rarity.name(item.rarity),
-		Cosmetics.KIND_SINGULAR[item.kind] or item.kind
-	) .. (if item.stance then "  ·  Stance" elseif item.stroll then "  ·  Stroll" else "")
+	lookLine.Text =
+		string.format("%s %s", Rarity.name(item.rarity), string.lower(Cosmetics.KIND_SINGULAR[item.kind] or item.kind))
 	lookLine.TextColor3 = Rarity.color(item.rarity):Lerp(C.bone, 0.3)
 	-- (a win cutscene's Preview shares the row: it on the left, the buy or use button on the right; they overlapped)
 	local hasPreview = item.kind == "win" and type(item.cut) == "string"
@@ -406,40 +403,29 @@ local function showAction(profile, item: Cosmetics.Item?)
 		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"
 		if profile.equipped[Cosmetics.slotOf(item)] == item.id then
 			press(if used then "Stop using" else "Take off", "unequip", "ghost")
-			actionNote.Text = if used then "You are using it." else "You are wearing it."
 		else
 			press(if used then "Use" else "Wear", "equip", "primary")
 		end
 	elseif item.source == "vip" then
-		closed("VIP pass")
-		actionNote.Text = "Comes with the VIP pass."
+		closed("VIP only")
 	elseif item.source == "set" then
 		closed("Set title")
-		actionNote.Text = "Yours with every piece of its set."
+		actionNote.Text = "Own the full set to unlock."
 	elseif item.source == "collection" then
 		local milestone = Collection.ofTitle(item.id)
 		closed("Collection title")
 		actionNote.Text = if milestone
-			then string.format(
-				"Yours, with %d Reál, once you own %d emotes (you have %d).",
-				milestone.coins,
-				milestone.count,
-				emotesOwned(profile)
-			)
-			else "Earned by collecting emotes."
+			then string.format("Unlocks at %d emotes. You have %d.", milestone.count, emotesOwned(profile))
+			else "Unlocks by collecting emotes."
 	elseif item.source == "season" and not price(item) then
-		closed("Season ledger")
-		actionNote.Text = "Earned on the Season ledger."
+		closed("Season reward")
 	elseif not price(item) then
-		closed("Earned")
-		actionNote.Text = "Earned in play, never sold."
+		closed("Earned in play")
 	elseif ShopRotation.rotates(item, os.time()) and not ShopRotation.isFeatured(item.id, os.time()) then
 		closed("Not today")
-		actionNote.Text = "Only sold on a day it is in Today's hand."
 	elseif profile.coins < (price(item) :: number) then
 		local cost = price(item) :: number
 		closed(string.format("%d more Reál", cost - profile.coins))
-		actionNote.Text = string.format("It costs %d Reál.", cost)
 	else
 		local cost = price(item) :: number
 		local asking = Rarity.confirms(item.rarity) and confirming ~= item.id
@@ -463,7 +449,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 			ShopRequest:FireServer({ action = "buy", itemId = item.id })
 		end
 		Kit.button({
-			text = string.format(if confirming == item.id then "Confirm  ·  %d" else "Buy  ·  %d", cost),
+			text = string.format(if confirming == item.id then "Confirm %d" else "Buy %d", cost),
 			icon = "real",
 			variant = "primary",
 			size = "m",
@@ -471,11 +457,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 			Position = at,
 			Parent = actionHolder,
 		}, held)
-		actionNote.Text = if confirming == item.id
-			then string.format("Press again to spend %d Reál on %s.", cost, item.name)
-			elseif asking then string.format("%s: press to buy, then confirm.", Rarity.name(item.rarity))
-			elseif item.kind == "emote" then "Press to buy. It goes on your emote wheel."
-			else "Press to buy. You wear it at once."
+		actionNote.Text = if confirming == item.id then "Press again to confirm." else ""
 	end
 	-- The wishlist, as a button of its own under the buy button (the heart on the card does the same).
 	if ShopBrowse.wishable(item) and not owns(profile, item) and not stanceHolder.Visible then
@@ -483,7 +465,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 		stanceHolder.Visible = true
 		Kit.button({
 			Name = "Wish",
-			text = if wished then "On your wishlist" else "Add to wishlist",
+			text = if wished then "Wishlisted" else "Wishlist",
 			icon = "heart",
 			variant = if wished then "primary" else "secondary",
 			size = "s",
@@ -497,9 +479,8 @@ local function showAction(profile, item: Cosmetics.Item?)
 	if isDeal(item) and not owns(profile, item) then
 		local deal = ShopRotation.isDeal(item.id, os.time())
 		actionNote.Text = string.format(
-			if deal then "The day's deal: %d%% off its %d Reál. " else "In Today's hand: %d%% off its %d Reál. ",
-			math.floor(ShopRotation.offOf(item.id, os.time()) * 100 + 0.5),
-			ShopRotation.fullPrice(item, os.time()) :: number
+			if deal then "Deal of the day: %d%% off. " else "%d%% off today. ",
+			math.floor(ShopRotation.offOf(item.id, os.time()) * 100 + 0.5)
 		) .. actionNote.Text
 	end
 end
@@ -634,7 +615,7 @@ local function buildFate(profile)
 	local size = UDim2.new(0, 280, 1, 0)
 	if left == 0 then
 		local button =
-			Kit.button({ text = "Every card is yours", variant = "secondary", size = "m", Size = size, Parent = row })
+			Kit.button({ text = "All collected", variant = "secondary", size = "m", Size = size, Parent = row })
 		Kit.setEnabled(button, false)
 	elseif profile.coins < Fate.PRICE then
 		local button = Kit.button({
@@ -648,7 +629,7 @@ local function buildFate(profile)
 	else
 		local button = Kit.button({
 			Name = "Draw",
-			text = string.format("Draw  ·  %d", Fate.PRICE),
+			text = string.format("Draw %d", Fate.PRICE),
 			icon = "real",
 			variant = "primary",
 			size = "m",
@@ -660,7 +641,7 @@ local function buildFate(profile)
 		firstButton = button
 	end
 	Kit.label({
-		Text = string.format("%d of %d cards still to be dealt to you", left, #deck),
+		Text = string.format("%d of %d left", left, #deck),
 		font = "bodyItalic",
 		color = C.dim,
 		AutomaticSize = Enum.AutomaticSize.None,
@@ -688,10 +669,7 @@ local function buildFate(profile)
 			pick(dealtCard.item)
 		end)
 	end
-	noteLabel.Text = string.format(
-		"Each draw deals a card you do not own.  ·  A new deck in %s",
-		formatSpan(TimeUtil.secondsToNextWeek(now))
-	)
+	noteLabel.Text = string.format("New deck in %s", formatSpan(TimeUtil.secondsToNextWeek(now)))
 end
 
 -- The Ledger: the season, how far you are, what each tier pays; its things as cards.
@@ -699,7 +677,7 @@ local function buildLedger(profile)
 	local now = os.time()
 	local season = Ledger.season(now)
 	if season <= 0 then
-		noteLabel.Text = "The ledger opens with its first season."
+		noteLabel.Text = "No season running."
 		return
 	end
 	local record = Ledger.view(profile.ledger, season)
@@ -710,14 +688,8 @@ local function buildLedger(profile)
 	Kit.label({
 		Name = "Standing",
 		Text = if record.tier >= Ledger.TIERS
-			then string.format("Every tier written  ·  %d points", record.points)
-			else string.format(
-				"Tier %d of %d  ·  %d of %d points to the next",
-				record.tier,
-				Ledger.TIERS,
-				into,
-				Ledger.PER_TIER
-			),
+			then string.format("All tiers done. %d points", record.points)
+			else string.format("Tier %d/%d (%d/%d points)", record.tier, Ledger.TIERS, into, Ledger.PER_TIER),
 		color = C.dim,
 		AutomaticSize = Enum.AutomaticSize.None,
 		Position = UDim2.fromOffset(0, 34),
@@ -785,7 +757,7 @@ local function buildLedger(profile)
 		end
 	end
 	if #things > 0 then
-		local grid = section("Earned on the ledger", 3)
+		local grid = section("Rewards", 3)
 		for index, thing in ipairs(things) do
 			deal(profile, thing.item, grid, index, false)
 			if not owns(profile, thing.item) then
@@ -793,13 +765,7 @@ local function buildLedger(profile)
 			end
 		end
 	end
-	noteLabel.Text = string.format(
-		"%d points a case, +%d for a win, +%d a quest.  ·  Ends in %s",
-		Ledger.PLAY,
-		Ledger.WIN,
-		Ledger.QUEST,
-		formatSpan(math.max(0, ends - now))
-	)
+	noteLabel.Text = string.format("Ends in %s", formatSpan(math.max(0, ends - now)))
 end
 
 -- Robux (only once something is on sale): coin packs, passes, the custom alias.
@@ -878,7 +844,7 @@ local function buildRobux(profile)
 	if hasPass(profile, "alias") then
 		order += 1
 		local card = Kit.card({ Size = UDim2.fromScale(1, 1), LayoutOrder = order, Parent = holder })
-		Kit.text({ face = "Head", text = "Your custom alias", size = 22, color = C.bone, Parent = card })
+		Kit.text({ face = "Head", text = "Custom alias", size = 22, color = C.bone, Parent = card })
 		local _, box = Kit.field({
 			placeholder = "3 to 12 letters",
 			text = profile.alias or "",
@@ -999,20 +965,20 @@ local function buildSuits()
 	task.defer(paintStrip)
 end
 
--- A browse button's width: its longest wording ("Show  ·  Can afford") in a window's lettering (18 px, Kit/Controls)
+-- A browse button's width: its longest wording ("Show: Can afford") in a window's lettering (18 px, Kit/Controls)
 -- plus its padding, so it keeps one width as it is pressed and never runs into the next.
 local function choiceWidth(word: string, list: { ShopBrowse.Choice }): number
 	local widest = 0
 	for _, choice in ipairs(list) do
-		widest = math.max(widest, Kit.GlyphText.measure("Head", word .. "  ·  " .. choice.name, 18, 1.2))
+		widest = math.max(widest, Kit.GlyphText.measure("Head", word .. ": " .. choice.name, 18, 1.2))
 	end
 	return math.ceil(widest) + 2 * T.space.l + 4
 end
 
 -- The browse row's words, for what is chosen now.
 local function paintBrowse()
-	Kit.setText(showButton, "Show  ·  " .. ShopBrowse.nameOf(ShopBrowse.SHOW, showing), false)
-	Kit.setText(sortButton, "Order  ·  " .. ShopBrowse.nameOf(ShopBrowse.SORTS, sorting), false)
+	Kit.setText(showButton, "Show: " .. ShopBrowse.nameOf(ShopBrowse.SHOW, showing), false)
+	Kit.setText(sortButton, "Sort: " .. ShopBrowse.nameOf(ShopBrowse.SORTS, sorting), false)
 end
 
 -- The table's top: under the suits, and under the browse row when it shows.
@@ -1030,7 +996,7 @@ function ShopPanel.rebuild()
 	firstButton = nil
 	local profile = ClientState.profile
 	if not profile then
-		purseLabel.Text = "Loading your profile…"
+		purseLabel.Text = "Loading"
 		return
 	end
 	buildSuits()
@@ -1067,13 +1033,7 @@ function ShopPanel.rebuild()
 				deal(profile, item, grid, index, down)
 			end
 		end
-		noteLabel.Text = (
-			if faceDown > 0
-				then "Six cards and a deal, dealt today, each one cheaper: turn them over.  ·  "
-				else "Every card here is cheaper today.  ·  "
-		)
-			.. "A new hand in "
-			.. formatTime(ShopRotation.secondsLeft(now))
+		noteLabel.Text = "New cards in " .. formatTime(ShopRotation.secondsLeft(now))
 	elseif currentSuit == "robux" then
 		buildRobux(profile)
 	elseif currentSuit == "fate" then
@@ -1100,13 +1060,13 @@ function ShopPanel.rebuild()
 		end
 		if order == 0 then
 			Kit.label({
-				Text = "Nothing on your wishlist yet. The heart on a card, or Add to wishlist, puts it here.",
+				Text = "Your wishlist is empty.",
 				font = "bodyItalic",
 				color = C.dim,
 				Parent = tableScroll,
 			})
 		end
-		noteLabel.Text = "You are told when something you wish for is dealt in Today's hand, cheaper that day."
+		noteLabel.Text = "You get a ping when a wishlisted item is on sale."
 	elseif currentSuit == "sets" then
 		for index, set in ipairs(Sets.LIST) do
 			local have = Sets.progress(set, function(id: string): boolean
@@ -1117,9 +1077,9 @@ function ShopPanel.rebuild()
 			local done = title ~= nil and owns(profile, title)
 			local grid = section(
 				string.format(
-					"%s  ·  %s",
+					"%s (%s)",
 					set.name,
-					if done then "complete" else string.format("%d of %d", have, #set.pieces)
+					if done then "Complete" else string.format("%d/%d", have, #set.pieces)
 				),
 				index
 			)
@@ -1133,7 +1093,7 @@ function ShopPanel.rebuild()
 				deal(profile, title, grid, #set.pieces + 1, false)
 			end
 		end
-		noteLabel.Text = "Own every piece of a set and its title is yours."
+		noteLabel.Text = "Collect a full set to earn its title."
 	else
 		local suit = Cosmetics.suit(currentSuit)
 		local order = 0
@@ -1180,23 +1140,16 @@ function ShopPanel.rebuild()
 			local count = emotesOwned(profile)
 			local milestone = Collection.nextAfter(count)
 			local title = milestone and Cosmetics.byId(milestone.title)
-			noteLabel.Text = string.format("You own %d emotes", count)
+			noteLabel.Text = string.format("%d emotes owned", count)
 				.. (
 					if milestone and title
-						then string.format(
-							"  ·  %d more for %s and %d Reál",
-							milestone.count - count,
-							title.name,
-							milestone.coins
-						)
+						then string.format(". %d more for %s", milestone.count - count, title.name)
 						else ""
 				)
 		end
 		if order == 0 then
 			Kit.label({
-				Text = if showing == "wished"
-					then "Nothing on your wishlist here. The heart on a card puts it there."
-					else "Nothing here matches.",
+				Text = if showing == "wished" then "Nothing wishlisted here." else "Nothing here matches.",
 				font = "bodyItalic",
 				color = C.dim,
 				Parent = tableScroll,
@@ -1468,7 +1421,7 @@ function ShopPanel.init()
 	})
 	Kit.list(browseRow, T.space.s, true)
 	local showWidth = choiceWidth("Show", ShopBrowse.SHOW)
-	local sortWidth = choiceWidth("Order", ShopBrowse.SORTS)
+	local sortWidth = choiceWidth("Sort", ShopBrowse.SORTS)
 	local _, box = Kit.field({
 		placeholder = "Search by name",
 		maxLength = 30,
@@ -1507,7 +1460,7 @@ function ShopPanel.init()
 		ShopPanel.rebuild()
 	end)
 	sortButton = Kit.button({
-		text = "Order",
+		text = "Sort",
 		variant = "secondary",
 		size = "s",
 		upper = false,

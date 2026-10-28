@@ -45,7 +45,7 @@ local function mountPuzzle(task_)
 	local def = PuzzleSet.get(task_.puzzle)
 	local view = Views:FindFirstChild(task_.puzzle or "")
 	if not def or not view then
-		hintLabel.Text = "This case file is damaged. It is filed as it is."
+		hintLabel.Text = "This file is damaged. Filed anyway."
 		task_.solved = true
 		return
 	end
@@ -66,7 +66,7 @@ local function mountPuzzle(task_)
 			end
 			task_.solved = true
 			task_.answer = answer
-			hintLabel.Text = "Done. Filing the report…"
+			hintLabel.Text = "Done."
 			hintLabel.TextColor3 = C.good
 			return true
 		end,
@@ -124,7 +124,7 @@ local function update()
 	if not task_ then
 		return
 	end
-	progressLabel.Text = if task_.solved then "Filing the report…" else "Solve the puzzle to file the report."
+	progressLabel.Text = if task_.solved then "Filing" else "Solve the puzzle."
 	-- Solved is done: the report goes in at once (practice finishes on this client).
 	if task_.solved and task_.practice then
 		local done = task_.practice
@@ -212,7 +212,7 @@ function TaskScreen.init()
 			start(payload)
 		elseif payload.state == "done" then
 			close()
-			Toasts.show("Case file complete. The Bureau's task bar moved up.", "good")
+			Toasts.show("Case file complete.", "good")
 		elseif payload.state == "cancelled" then
 			close()
 			if type(payload.reason) == "string" then
@@ -225,7 +225,7 @@ function TaskScreen.init()
 			task_.answer = nil
 			task_.submittedAt = nil
 			mountPuzzle(task_)
-			hintLabel.Text = "The report was rejected. Check your work."
+			hintLabel.Text = "Rejected. Try again."
 			hintLabel.TextColor3 = C.red
 		end
 	end)

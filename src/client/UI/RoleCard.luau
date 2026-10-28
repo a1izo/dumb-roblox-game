@@ -53,7 +53,7 @@ local function alliesText(private): string
 		local info = Roles.get(ally.role)
 		table.insert(parts, string.format("%s: %s%s", info.display, ally.alias, if ally.alive then "" else " (dead)"))
 	end
-	return if #parts > 0 then table.concat(parts, "   ") else "You know nobody else's role."
+	return if #parts > 0 then table.concat(parts, "   ") else "You don't know anyone's role."
 end
 
 -- Whether the card can be opened now: in a case, or while the Trial teaches it.
@@ -83,7 +83,7 @@ local function fill()
 	Kit.clear(bullets)
 	for index, text in ipairs(copy.bullets) do
 		Kit.label({
-			Text = "·  " .. Keys.resolve(text),
+			Text = "-  " .. Keys.resolve(text),
 			size = "small",
 			color = C.bone,
 			LayoutOrder = index,
@@ -95,7 +95,7 @@ local function fill()
 	alliesLabel.Text = alliesText(private)
 	hintLabel.Visible = private.isAce == true
 	hintLabel.Text = if private.fakeAce
-		then Terms.f("You were named {zero} by mistake: your arrest will not work.")
+		then Terms.f("Your {zero} title is fake. Your arrest won't work.")
 		elseif private.isAce then Terms.f(
 			"You hold {zero}'s arrest{used}.",
 			{ used = if private.arrestUsed then " (spent)" else "" }

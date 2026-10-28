@@ -10,47 +10,31 @@ Roles.INFO = {
 		display = Terms.role("Kira", "title"),
 		color = Color3.fromRGB(215, 35, 50),
 		side = "Kira",
-		blurb = Terms.f(
-			"You hold {grimoire}. Hack stations to read who used them last, then write a real name in the "
-				.. "book. Writing takes a few seconds and the book burns red: never let anyone see it. You do not "
-				.. "know your {cultists}."
-		),
+		blurb = Terms.f("Hack stations to learn names, then write them in {grimoire}. Don't get seen."),
 	},
 	Follower = {
 		display = Terms.role("Follower", "title"),
 		color = Color3.fromRGB(235, 90, 70),
 		side = "Kira",
-		blurb = Terms.f(
-			"You know {hand}; nobody knows you. Hack stations for real names and pass them to {hand} on paper "
-				.. "notes, and black out the lights for cover. You may accept {eyes}."
-		),
+		blurb = Terms.f("You know {hand}. Hack stations for names, pass them on notes, and cut the lights."),
 	},
 	L = {
 		display = Terms.role("L", "title"),
 		color = Color3.fromRGB(240, 240, 240),
 		side = "Team",
-		blurb = Terms.f(
-			"You lead {agency} in secret: only {butler} knows it is you. In a meeting you may arrest one "
-				.. "player. {Circle} goes; an innocent walks free and you die. The arrest reveals you."
-		),
+		blurb = Terms.f("You lead {agency} in secret. Arrest one player in a meeting. Get it wrong and you die."),
 	},
 	Watari = {
 		display = Terms.role("Watari", "title"),
 		color = Color3.fromRGB(120, 180, 255),
 		side = "Team",
-		blurb = Terms.f(
-			"You know who {zero} is; {zero} does not know you. If {zero} dies, you name the next {zero} (anyone "
-				.. "but yourself). Choose well: a {cultist} would get a worthless title."
-		),
+		blurb = Terms.f("You know who {zero} is. If they die, you pick the next {zero}."),
 	},
 	TaskForce = {
 		display = Terms.role("TaskForce", "title"),
 		color = Color3.fromRGB(90, 160, 255),
 		side = "Team",
-		blurb = Terms.f(
-			"Work the case files to fill {agency}'s task bar, watch for glowing eyes and a burning red book, "
-				.. "and vote {hand} out. Ring the bell if you saw something."
-		),
+		blurb = Terms.f("Work case files, watch for glowing eyes, and vote {hand} out."),
 	},
 }
 

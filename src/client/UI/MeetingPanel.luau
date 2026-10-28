@@ -45,18 +45,16 @@ local function refresh()
 	local private = ClientState.private
 	local bar = ClientState.public.taskBar
 	barLabel.Text = if bar and (bar.total or 0) > 0
-		then string.format("Case files: %d of %d done", bar.done or 0, bar.total)
+		then string.format("Case files: %d/%d", bar.done or 0, bar.total)
 		else ""
 	local ace = private.isAce == true and ClientState.isLiving()
 	aceNote.Visible = ace
 	arrestButton.Visible = ace and private.arrestUsed ~= true
 	if ace then
 		aceNote.Text = if private.fakeAce
-			then Terms.f("You hold a fake {zero} title. An arrest will fail and expose you.")
-			elseif private.arrestUsed then "Your arrest is spent."
-			else Terms.f(
-				"You are {zero}. One arrest per match: a {cultist} or {hand} is removed; an innocent costs you your life."
-			)
+			then Terms.f("Your title is fake. An arrest will fail.")
+			elseif private.arrestUsed then "Arrest used."
+			else Terms.f("One arrest per match. Arrest an innocent and you die.")
 	end
 end
 
@@ -70,7 +68,7 @@ local function refreshArrest()
 		end
 	end
 	renderSuspects(options, suspect)
-	arrestNote.Text = "Arresting reveals that you are Ace. Pick carefully."
+	arrestNote.Text = "Arresting reveals you. Pick carefully."
 end
 
 local function buildArrest()
@@ -96,7 +94,7 @@ local function buildArrest()
 		Parent = body,
 	}, function()
 		if not suspect then
-			Toasts.show("Choose who to arrest first.", "bad")
+			Toasts.show("Pick a suspect.", "bad")
 			return
 		end
 		ArrestRemote:FireServer(suspect)
@@ -147,7 +145,7 @@ function MeetingPanel.init()
 		Parent = content,
 	})
 	Kit.label({
-		Text = "Talk in quick-chat phrases: the whole table hears them.",
+		Text = "Use quick chat. Everyone hears it.",
 		size = "micro",
 		color = C.dim,
 		LayoutOrder = 2,

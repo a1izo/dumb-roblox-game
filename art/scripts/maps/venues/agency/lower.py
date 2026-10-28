@@ -364,7 +364,7 @@ def corridor(s):
     kit.extinguisher(s, P.CORE[2] + 0.5, -24.0, -90)
     fit.exit_sign(s, P.CORE[0] - 0.5, 10.0, -20.0, 90)
     fit.plaque(s, P.CORE[0] - 0.5, 7.2, -28.0, 90, 7.0, 4.2,
-               "38F  案内\nSECURITY · INTERVIEW  ↑\nCOPY · LOCKERS  ↑\nBREAK ROOM · NIGHT DESK  →", (220, 220, 225),
+               "38F  案内\nSECURITY / INTERVIEW  ↑\nCOPY / LOCKERS  ↑\nBREAK ROOM / NIGHT DESK  →", (220, 220, 225),
                (20, 22, 28))
     s.prop("Bench", 48.85, -33.0, 90, 0.9)  # against the outer wall: the corridor stays 6 wide
 

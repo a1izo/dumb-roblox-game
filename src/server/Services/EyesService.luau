@@ -121,7 +121,7 @@ local function startStare(ps, targetUserId)
 		return
 	end
 	if not inSight(ps, target) then
-		Match.notify(ps.player, "Too far away, or something is in the way.", "bad")
+		Match.notify(ps.player, "Too far, or blocked.", "bad")
 		return
 	end
 	local needed = Config.OCULUS_READ_TIME
@@ -140,16 +140,12 @@ local function dieOfDeal(ps)
 		ps,
 		"dead",
 		Terms.f("{Eyes} deal"),
-		Terms.f("{alias} collapsed. The deal with {eyes} claimed them: they were working with {hand}.", {
+		Terms.f("{alias} collapsed. {Eyes} claimed them. They worked with {hand}.", {
 			alias = ps.alias,
 		}),
 		{}
 	)
-	Match.announce(
-		ps.alias .. " is dead",
-		Terms.f("Cause of death: the deal with {eyes}. They worked with {hand}."),
-		"danger"
-	)
+	Match.announce(ps.alias .. " is dead", Terms.f("Killed by {eyes}. They worked with {hand}."), "danger")
 end
 
 local function deal(ps, force: boolean?)
@@ -160,7 +156,7 @@ local function deal(ps, force: boolean?)
 			return
 		end
 		if ps.eyes then
-			Match.notify(ps.player, "You have already made the deal.", "bad")
+			Match.notify(ps.player, "Deal already made.", "bad")
 			return
 		end
 	end
@@ -183,7 +179,7 @@ local function deal(ps, force: boolean?)
 		Match.notify(
 			ps.player,
 			string.format(
-				"The deal is made. Reading a name now takes %d s from up to %d studs. You die in %d minute(s) of investigation.",
+				"Deal made. Stare %ds within %d studs to read a name. You die in %d min.",
 				Config.OCULUS_READ_TIME,
 				Config.OCULUS_RANGE,
 				minutes
