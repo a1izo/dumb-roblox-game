@@ -111,6 +111,15 @@ Assets.sfx = {
 	},
 	mapTrainArrive = { id = "134959404397926", ref = "metro train pulling into a station", fallbackId = "" },
 	mapStationChime = { id = "74308843149652", ref = "Japanese station platform chime", fallbackId = "" },
+	-- (the Tokyo intro's own sounds, IntroTokyo d87dcfd: slots for them, each silent until a sound is uploaded)
+	tokyoStationBed = {
+		id = "",
+		ref = "busy Tokyo station platform: crowd murmur, footsteps, a far announcement, loop",
+		fallbackId = "",
+	},
+	introTokyoDrone = { id = "", ref = "low ominous drone swelling under a reveal", fallbackId = "" },
+	bookShut = { id = "", ref = "a heavy leather book snapped shut", fallbackId = "" },
+	doorRiser = { id = "", ref = "tension riser as train doors close", fallbackId = "" },
 	mapRiver = { id = "96847503564877", ref = "gentle canal water flowing, loop", fallbackId = "" },
 	mapLanternCreak = { id = "91834117633575", ref = "paper lanterns creaking in a light wind, loop", fallbackId = "" },
 	mapIzakaya = { id = "113237103762830", ref = "muffled bar chatter and clinking glasses, loop", fallbackId = "" },
