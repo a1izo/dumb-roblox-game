@@ -7,9 +7,9 @@ A  0.0-5.0   Wide on the platform: people waiting here and there, a pair talking
              brakes in behind the glass screen doors. The victim waits a little back from the glass.
 B  5.0-7.4   On the platform over his shoulder, up into the doorway: the doors open on a man writing in a black book.
 W  7.4-8.2   Insert over his shoulder: the pen finishes the name and lifts off the page.
-C  8.2-12.0  Hard cut on the jolt, three-quarter front from the east: both hands to his chest, folded over, frozen;
+C  8.2-10.9  Hard cut on the jolt, three-quarter front from the east: both hands to his chest, folded over, gasping;
              the head lifts once to the car; the knees give (the reference's straight drop, 0.7 s).
-D  12.0-14.6 Low from the side: swaying on his knees, then over onto his face, under gravity (a body tipping about
+D  10.9-14.6 Low from the side: he tips forward over his feet, the legs give under him, and over onto his face (a body tipping about
              its knees), the chest bouncing once, the limp arm landing a beat late.
 E  14.6-16.0 Low behind him, along his body, dutch: the writer looks down at him.
 I  16.0-17.2 Insert: the other hand comes over and shuts the book.
@@ -53,8 +53,9 @@ VICTIM = (DOOR_X, -55.2)  # waiting a little back from the glass, behind the yel
 WATCHER = (DOOR_X - 1.0, -47.6)  # in the car, in the doorway's west half, 2 back (clear of the closing leaves)
 WRITE = (5.4, 8.05)  # the writer's pen on the page; the last stroke ends it
 JOLT = 8.2  # on the cut
-KNEES = (10.9, 11.6)  # the knees buckle .. on the floor (the reference's 0.7 s)
-TIP = 12.55  # over he goes
+INCLINE = 10.9  # he tips forward over his feet
+KNEES = (11.45, 11.95)  # the legs give .. the knees on the floor
+TIP, TIP_LEAN = 11.97, 52.0  # and straight on over, from that lean
 SHUT = (16.25, 16.85)  # the book shut
 
 
@@ -134,29 +135,32 @@ v.key(10.4, "sine", offset=(0.0, -0.16, 0.0), root=(-16, 0, 2), neck=(16, -6, 2)
 # A knee gives a little, he catches it...
 v.key(10.62, "in", offset=(0.0, -0.3, 0.0), root=(-18, 3, -6), neck=(8, -6, -2), rShoulder=CLUTCH,
       lShoulder=mix(PLEA_L, HANG_L, 0.4))
-v.key(KNEES[0], "out", floor=True, root=(-16, 0, 2), neck=(10, -6, 2), rShoulder=CLUTCH,
-      lShoulder=mix(PLEA_L, HANG_L, 0.6), rHip=J((0, 0, 0)), lHip=J((0, 0, 0)))
-# ...and the knees go (the reference: the body straight down, upright, 0.7 s; an R6 leg cannot bend, so it swings
-# back under him as he drops, the body's height kept on the floor the whole way: never in the air), and he settles
-# back onto his heels, the head down.
-v.key(KNEES[0] + 0.3, "in", floor=True, root=(-12, 0, 2), neck=(2, -4, 2), rShoulder=CLUTCH, lShoulder=HANG_L,
-      rHip=J((-40, 0, 2), (0, 0.06, 0.12)), lHip=J((-40, 0, -2), (0, 0.06, 0.12)))
-kneel(v, KNEES[1], "in", lean=-8, head=-6, rShoulder=CLUTCH, lShoulder=HANG_L)
-kneel(v, KNEES[1] + 0.18, "out", lean=-4, head=-22, rShoulder=CLUTCH, lShoulder=HANG_L)
-kneel(v, KNEES[1] + 0.6, "sine", lean=-10, head=-26, rShoulder=CLUTCH, lShoulder=HANG_L)
-kneel(v, TIP, "sine", lean=-16, head=-24, turn=2, rShoulder=CLUTCH, lShoulder=HANG_L)
-# Over onto his face, by gravity: the clutching arm slips out to his side as he goes (R6 lies flat only face
-# down, and not on an arm); the other swings out ahead of him and slaps down on the floor; the head snaps at the hit.
+# ...then he goes, in one movement (the owner, 2026-10-28: "incline first, fall with the torso a bit, then bend the
+# legs and fall"): the body tips forward over his feet, the head dropping, the weight going over the toes...
+v.key(INCLINE, "sine", offset=(0.0, -0.2, 0.0), root=(-28, 0, 2), neck=(-20, -4, 2), rShoulder=CLUTCH,
+      lShoulder=J((16, 0, -8)))
+v.key(INCLINE + 0.35, "in", offset=(0.0, -0.14, 0.0), root=(-40, 0, 2), neck=(-28, 0, 2), rShoulder=CLUTCH,
+      lShoulder=J((24, 0, -8)))
+# ...the torso falls further and the legs give under it, swinging back as he drops (an R6 leg cannot bend at the
+# knee: it swings back under the hip; every key rests on the floor, so he is never in the air)...
+v.key(KNEES[0], "in", floor=True, root=(-46, 0, 2), neck=(-30, 0, 2), rShoulder=CLUTCH, lShoulder=J((32, 0, -8)),
+      rHip=J((46, 0, 0)), lHip=J((46, 0, 0)))
+v.key(KNEES[0] + 0.25, "in", floor=True, root=(-50, 0, 2), neck=(-28, 0, 2), rShoulder=CLUTCH,
+      lShoulder=J((55, 0, -8)), rHip=J((8, 0, 2), (0, 0.06, 0.12)), lHip=J((8, 0, -2), (0, 0.06, 0.12)))
+kneel(v, KNEES[1], "in", lean=-TIP_LEAN, head=-24, rShoulder=CLUTCH, lShoulder=J((90, 0, -8)))
+# ...the knees hit and he keeps going, over onto his face under gravity, with the speed he came down with: the
+# clutching arm slips out to his side as he goes (R6 lies flat only face down, and not on an arm); the other
+# swings out ahead of him and slaps down on the floor; the head snaps at the hit.
 REACH_L = J((172, 0, -8))  # lying: the arm out ahead along the floor, to the car
-FALL_KEYS, HIT = topple(TIP, 16.0)
+FALL_KEYS, HIT = topple(TIP, TIP_LEAN, spin0=1.6)
 for t, lean in FALL_KEYS[1:]:
-    u = min(1.0, (lean - 16.0) / 72.0)
-    # (the arm has to lead the body down or the hand meets the floor first: from 38 degrees it swings ahead,
-    # at least 104 degrees out by 60, 143 by 75, 176 when he is down)
+    u = min(1.0, (lean - TIP_LEAN) / (88.0 - TIP_LEAN))
+    # (the arm has to lead the body down or the hand meets the floor first: at least 104 degrees out by 60, 143 by
+    # 75, 176 when he is down)
     ahead = 176.0 * math.sqrt(max(0.0, (lean - 38.0) / 50.0))
     head = -24 + 36 * u if t < HIT else 18
-    kneel(v, t, "linear", lean=-lean, head=head, turn=2 * (1 - u), rShoulder=mix(CLUTCH, SIDE_R, min(1.0, u * 1.8)),
-          lShoulder=J((max(4.0, ahead), 0, -4 - 4 * min(1.0, ahead / 176.0))))
+    kneel(v, t, "linear", lean=-lean, head=head, rShoulder=mix(CLUTCH, SIDE_R, min(1.0, u * 1.8)),
+          lShoulder=J((max(90.0, ahead), 0, -4 - 4 * min(1.0, ahead / 176.0))))
 kneel(v, HIT + 0.12, "in", lean=-88, head=26, rShoulder=SIDE_R, lShoulder=J((176, 0, -8)))  # the arm lands; the head whips up...
 kneel(v, HIT + 0.35, "sine", lean=-88, head=12, rShoulder=SIDE_R, lShoulder=REACH_L)  # ...and drops
 # On the floor: hard breaths heaving his back; the fingers of the outstretched hand clawing at the floor towards
@@ -326,9 +330,9 @@ shot.own = True  # players in their own avatars (the owner, 2026-10-28)
 victim = shot.actor("victim", v)
 victim.mark(0.0, (VICTIM[0], FLOOR, VICTIM[1]), 180.0)
 # (going over, the root moves forward with the fall so the legs stay where the knees were: nothing slides)
-SLIDE = 0.4
+SLIDE = 0.0  # (from his lean the hips hardly move over the knees: nothing to make up)
 for t, lean in FALL_KEYS:
-    u = min(1.0, (lean - 16.0) / 72.0)
+    u = min(1.0, (lean - TIP_LEAN) / (88.0 - TIP_LEAN))
     victim.mark(t, (VICTIM[0], FLOOR, VICTIM[1] + SLIDE * u), 180.0, "linear")
 watcher = shot.actor("watcher", w)
 watcher.hold("Grimoire", "Left Arm", MANUAL_GRIP[0]["p"], MANUAL_GRIP[1]["r"], scale=MANUAL_SCALE,
@@ -386,10 +390,10 @@ shot.subjects.append((7.4, JOLT, None, True))
 shot.cam(7.4, (look_w[0] - 0.85, look_w[1] + 2.5, look_w[2] - 1.3), look_w, fov=34, cut=True)
 shot.cam(JOLT, (look_w[0] - 0.8, look_w[1] + 2.3, look_w[2] - 1.15), look_w, fov=32, ease="linear")
 # C: hard cut on the jolt, three-quarter front from the east by the glass: frozen, the look up, the knees.
-shot.pan(JOLT, 12.0, "victim", (DOOR_X + 9.4, FLOOR + 4.0, -53.8), aim="Torso", dy=-0.4, fov=52, cut=True,
+shot.pan(JOLT, INCLINE, "victim", (DOOR_X + 9.4, FLOOR + 4.0, -53.8), aim="Torso", dy=-0.4, fov=52, cut=True,
          drift=(0.3, 0.0, -0.3), operator=True, seed=2)
 # D: low from the side: rocking on his knees, then over onto his face.
-shot.pan(12.0, 14.6, "victim", (DOOR_X + 7.6, FLOOR + 2.6, -55.6), aim="Torso", dy=0.1, fov=54, cut=True,
+shot.pan(INCLINE, 14.6, "victim", (DOOR_X + 7.6, FLOOR + 2.6, -55.6), aim="Torso", dy=0.1, fov=54, cut=True,
          drift=(-0.3, -0.2, 0.0), operator=True, seed=3)
 # E: low behind him on the platform, along his body to the writer looking down at him; tilted.
 shot.pan(14.6, 16.0, "watcher", (DOOR_X + 1.8, FLOOR + 3.8, -60.6), aim="Head", dy=-1.4, fov=40, cut=True,
@@ -412,17 +416,17 @@ shot.cam(LENGTH, (DOOR_X + 1.3, FLOOR + 0.55, -48.4), (DOOR_X, FLOOR + 1.6, -53.
 
 # The lens: sharp on whoever the cut is about, the rest soft; low along the body it racks from him to the writer.
 for t, slot, part, radius, far, near in (
-        (0.0, "victim", "Head", 9.0, 0.25, 0.0),  # A: the platform, gently soft at the far end
-        (5.0, "watcher", "Head", 2.5, 0.45, 0.6),  # B: the writer sharp, the victim's shoulder soft before him
-        (7.4, "watcher", "Left Arm", 1.4, 0.6, 0.4),  # W: the page
-        (JOLT, "victim", "Head", 3.0, 0.55, 0.3),  # C: him; the walker and the platform soft
-        (12.0, "victim", "Head", 3.0, 0.5, 0.3),  # D
-        (14.6, "victim", "Head", 1.4, 0.6, 0.2),  # E: on him lying there...
-        (16.0, "watcher", "Left Arm", 1.2, 0.6, 0.4),  # I: the book
-        (17.2, "watcher", "Head", 1.5, 0.7, 0.3),  # F: the smile
-        (18.6, "victim", "Head", 1.6, 0.5, 0.8)):  # H: him, the closing doors soft in front
+        (0.0, "victim", "Head", 12.0, 0.1, 0.0),  # A: the platform, the far end barely soft
+        (5.0, "watcher", "Head", 4.0, 0.15, 0.18),  # B: the writer sharp, the victim's shoulder a little soft
+        (7.4, "watcher", "Left Arm", 2.5, 0.2, 0.1),  # W: the page
+        (JOLT, "victim", "Head", 5.0, 0.15, 0.05),  # C: him; the walker and the platform a little soft
+        (10.9, "victim", "Head", 5.0, 0.15, 0.05),  # D
+        (14.6, "victim", "Head", 3.0, 0.2, 0.05),  # E: on him lying there...
+        (16.0, "watcher", "Left Arm", 2.5, 0.2, 0.1),  # I: the book
+        (17.2, "watcher", "Head", 3.5, 0.2, 0.05),  # F: the smile
+        (18.6, "victim", "Head", 3.5, 0.15, 0.2)):  # H: him, the closing doors a little soft in front
     shot.event(t, "fx", name="focus", slot=slot, part=part, radius=radius, far=far, near=near)
-shot.event(15.15, "fx", name="focus", slot="watcher", part="Head", radius=2.0, far=0.4, near=0.75, rack=0.6)  # ...to him
+shot.event(15.15, "fx", name="focus", slot="watcher", part="Head", radius=3.5, far=0.15, near=0.2, rack=0.6)  # ...to him
 
 # Faces
 shot.face(0.0, "victim", "Stern")
@@ -443,6 +447,11 @@ shot.event(WRITE[1] - 0.32, "sfx", slot="penScratch")
 shot.event(WRITE[1] + 0.1, "sfx", slot="penStop")
 shot.event(JOLT, "sfx", slot="introTokyoDrone")
 shot.event(JOLT, "fx", name="drain", strength=0.85, contrast=0.15, dur=BLACK - JOLT)
+# On the jolt the picture freezes for a beat in red and black (the anime's still), and a heart monitor's trace starts
+# along the bottom of the frame: every heartbeat spikes it, weaker each time; when the doors meet it goes flat, on
+# the black.
+shot.event(JOLT, "fx", name="still", r=255, g=36, b=44, dur=0.32)
+shot.event(JOLT, "fx", name="ecg")
 # the heart: a hard beat on the jolt, then slower and fainter
 for k, t in enumerate((JOLT, 9.35, 10.6, 12.0, 13.6, 15.4, 17.4, 19.7)):
     shot.event(t, "sfx", slot="heartbeat")
@@ -454,4 +463,5 @@ shot.event(18.8, "sfx", slot="doorRiser")
 shot.event(DOORS_SHUT[0], "sfx", slot="trainDoors")
 # the doors meet: black, and silence; then the case's card
 shot.event(BLACK, "fx", name="black", hush=True)
+shot.event(BLACK, "fx", name="flatline")
 shot.event(BLACK + 0.5, "card", key="case", dur=LENGTH - BLACK - 0.5)

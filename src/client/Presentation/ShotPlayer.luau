@@ -69,6 +69,7 @@ type Showing = {
 	stretch: number,
 	punches: { { number } },
 	focus: Focus?,
+	ecg: Cinema.Ecg?, -- the heart monitor's trace, while one runs
 }
 
 -- Death's Manual as the game builds it (the Core import, Models.grimoire) lies half turned from the book in the Blender
@@ -403,9 +404,23 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 				}
 				else nil
 		elseif name == "pulse" then
-			-- a heartbeat: the lens pushes in a touch and its focus throbs
+			-- a heartbeat: the lens pushes in a touch, its focus throbs, and the monitor's trace spikes
 			if not Vfx.still() then
 				table.insert(showing.punches, { os.clock(), event.punch or 0.05, event.dur or 0.6 })
+			end
+			if showing.ecg then
+				showing.ecg.beat(event.strength or 1)
+			end
+		elseif name == "ecg" then
+			-- a heart monitor's trace along the bottom of the frame, until the shot ends
+			if not showing.ecg then
+				local ecg = Cinema.ecg()
+				showing.ecg = ecg
+				table.insert(closers, ecg.close)
+			end
+		elseif name == "flatline" then
+			if showing.ecg then
+				showing.ecg.flat()
 			end
 		elseif name == "drain" then
 			-- the colour drains out of the picture over `dur` (back when the shot ends)
@@ -484,18 +499,50 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	-- (the map intros show players in their own avatars, kept by the server from the lobby; the match suit
 	-- when there is none, a test bot's)
 	local ownLooks = if shot.own then ReplicatedStorage:FindFirstChild("LOwnLooks") else nil
-	for _, data in ipairs(shot.actors) do
-		local userId = cast[data.slot]
-		local own = if userId and ownLooks then ownLooks:FindFirstChild(tostring(userId)) else nil
-		local model
+	local cast = table.clone(cast)
+	local function castUser(userId: number): Model?
+		local own = if ownLooks then ownLooks:FindFirstChild(tostring(userId)) else nil
 		if own and own:IsA("Model") then
-			model = stage:cast(own, CFrame.new(0, -500, 0), nil, nil)
-			local body = Characters.byUserId(userId :: number)
+			local body = Characters.byUserId(userId)
 			if body then
 				stage:hide(body)
 			end
+			return stage:cast(own, CFrame.new(0, -500, 0), nil, nil)
+		end
+		return stage:cast(userId, CFrame.new(0, -500, 0), nil, nil)
+	end
+	-- The named parts (the victim, the one watching...) are filled first and never left empty: one whose player
+	-- has no body on this screen yet takes a crowd member's player (the least seen first), else a stand-in.
+	local spare: { string } = {}
+	for slot in pairs(cast) do
+		if string.match(slot, "^everyone:%d+$") then
+			table.insert(spare, slot)
+		end
+	end
+	table.sort(spare, function(a, b)
+		return (tonumber(string.match(a, "%d+")) or 0) > (tonumber(string.match(b, "%d+")) or 0)
+	end)
+	local named: { [string]: Model } = {}
+	for _, data in ipairs(shot.actors) do
+		if not data.extra and not string.match(data.slot, "^everyone:") and not named[data.slot] then
+			local userId = cast[data.slot]
+			local model = if userId then castUser(userId) else nil
+			while not model and #spare > 0 do
+				local slot = table.remove(spare, 1) :: string
+				local other = cast[slot]
+				cast[slot] = nil
+				model = if other then castUser(other) else nil
+			end
+			named[data.slot] = model or stage:cast(Stage.figure(), CFrame.new(0, -500, 0), nil, nil) :: Model
+		end
+	end
+	for _, data in ipairs(shot.actors) do
+		local userId = cast[data.slot]
+		local model
+		if named[data.slot] then
+			model = named[data.slot]
 		elseif userId then
-			model = stage:cast(userId, CFrame.new(0, -500, 0), nil, nil)
+			model = castUser(userId)
 		elseif data.extra then
 			-- (in Tokyo the commuters are the crowd's own civilians, never a suit; elsewhere a faceless stand-in)
 			local crowd = if shot.venue == "Tokyo" then ReplicatedStorage:FindFirstChild("LCrowd") else nil
@@ -601,18 +648,14 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 
 	local closers: { () -> () } = {}
-	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil }
-	-- The lens: a depth of field that the focus events aim (nothing soft until one does).
-	local lens = Create("DepthOfFieldEffect", {
-		Name = "ShotLens",
-		FarIntensity = 0,
-		NearIntensity = 0,
-		FocusDistance = 20,
-		InFocusRadius = 50,
-		Parent = workspace.CurrentCamera,
-	}) :: DepthOfFieldEffect
+	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil, ecg = nil }
+	-- The lens a shot's focus events aim (made at the first one; named as Cinema.focus names its own, so the
+	-- cutscenes' standing lens, Presentation/Lens, steps aside instead of blurring on top of it).
+	local lens: DepthOfFieldEffect? = nil
 	table.insert(closers, function()
-		lens:Destroy()
+		if lens then
+			lens:Destroy()
+		end
 	end)
 	-- With the debug rate set, the shot's own clock in a corner, so a screenshot says which moment it is.
 	local clockLabel: TextLabel? = nil
@@ -747,7 +790,17 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		local focus = showing.focus
 		local subject = if focus then bySlot[focus.slot] else nil
 		local aimed = if focus and subject then subject.model:FindFirstChild(focus.part) else nil
-		if focus and aimed and aimed:IsA("BasePart") then
+		if focus and aimed and aimed:IsA("BasePart") and not lens then
+			lens = Create("DepthOfFieldEffect", {
+				Name = "CinemaFocus",
+				FarIntensity = 0,
+				NearIntensity = 0,
+				FocusDistance = 20,
+				InFocusRadius = 50,
+				Parent = workspace.CurrentCamera,
+			}) :: DepthOfFieldEffect
+		end
+		if focus and aimed and aimed:IsA("BasePart") and lens then
 			local distance = (aimed.Position - frameCamera.Position).Magnitude
 			if focus.rack > 0 then
 				-- a rack: from where the focus was, eased over to them
@@ -756,10 +809,10 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				distance = (focus.from :: number) + (distance - (focus.from :: number)) * (u * u * (3 - 2 * u))
 			end
 			lens.FocusDistance = distance
-			lens.InFocusRadius = focus.radius * (1 - 0.5 * throb)
-			lens.FarIntensity = math.min(1, focus.far + 0.35 * throb)
-			lens.NearIntensity = math.min(1, focus.near + 0.35 * throb)
-		else
+			lens.InFocusRadius = focus.radius * (1 - 0.25 * throb)
+			lens.FarIntensity = math.min(1, focus.far + 0.12 * throb)
+			lens.NearIntensity = math.min(1, focus.near + 0.12 * throb)
+		elseif lens then
 			lens.FarIntensity, lens.NearIntensity = 0, 0
 		end
 		-- actors

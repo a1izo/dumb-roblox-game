@@ -414,7 +414,7 @@ function Cinema.focus(distance: number, radius: number?): () -> ()
 		InFocusRadius = radius or 6,
 		Parent = workspace.CurrentCamera,
 	})
-	Motion.tween(effect, { FarIntensity = 0.45, NearIntensity = 0.3 }, 0.4)
+	Motion.tween(effect, { FarIntensity = 0.18, NearIntensity = 0.08 }, 0.4)
 	return function()
 		effect:Destroy()
 	end
@@ -472,6 +472,94 @@ function Cinema.still(color: Color3, seconds: number?)
 			effect:Destroy()
 		end
 	end)
+end
+
+-- A heart monitor's trace running along the bottom of the frame (in the letterbox's black bar): a thin red line
+-- scrolling left, each beat() drawing a heartbeat into it (P, the spike, T) as tall as `strength`, flat()
+-- letting it run flat for good. Over a black screen it stays, under the cards. Returns its controls.
+export type Ecg = { beat: (strength: number?) -> (), flat: () -> (), close: () -> () }
+local ECG_POINTS = 110
+local ECG_SPEED = 46 -- samples a second
+local ECG_BEAT = { 0.04, 0.08, 0.04, 0, -0.08, 1, -0.38, 0, 0.06, 0.12, 0.15, 0.1, 0.03 }
+
+function Cinema.ecg(): Ecg
+	local RunService = game:GetService("RunService")
+	local holder = Kit.Base.make("Frame", {
+		Name = "Ecg",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.fromScale(0.5, 0.985),
+		Size = UDim2.fromScale(0.42, 0.075),
+		ZIndex = 7,
+		Parent = Screens.cinematic,
+	})
+	local segments: { Frame } = {}
+	for i = 1, ECG_POINTS - 1 do
+		segments[i] = Kit.Base.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			BackgroundColor3 = Color3.fromRGB(226, 46, 58),
+			BackgroundTransparency = 0.05 + 0.85 * (1 - i / ECG_POINTS) ^ 2, -- (the old trace fades to the left)
+			BorderSizePixel = 0,
+			ZIndex = 7,
+			Parent = holder,
+		})
+	end
+	local head = Kit.Base.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.fromOffset(5, 5),
+		BackgroundColor3 = Color3.fromRGB(255, 190, 190),
+		BorderSizePixel = 0,
+		ZIndex = 8,
+		Parent = holder,
+	})
+	Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = head })
+	local samples = table.create(ECG_POINTS, 0)
+	local queue: { number } = {}
+	local flat = false
+	local carry = 0
+	local connection = RunService.RenderStepped:Connect(function(dt)
+		carry += dt * ECG_SPEED
+		while carry >= 1 do
+			carry -= 1
+			table.remove(samples, 1)
+			local value = if #queue > 0 then table.remove(queue, 1) :: number else 0
+			if not flat then
+				value += (math.random() - 0.5) * 0.03 -- (a live line is never quite still)
+			end
+			table.insert(samples, value)
+		end
+		local size = holder.AbsoluteSize
+		local function at(i: number): Vector2
+			return Vector2.new((i - 1) / (ECG_POINTS - 1) * size.X, size.Y * (0.62 - samples[i] * 0.55))
+		end
+		for i, segment in ipairs(segments) do
+			local a, b = at(i), at(i + 1)
+			local d = b - a
+			segment.Position = UDim2.fromOffset((a.X + b.X) / 2, (a.Y + b.Y) / 2)
+			segment.Size = UDim2.fromOffset(d.Magnitude + 1, 2)
+			segment.Rotation = math.deg(math.atan2(d.Y, d.X))
+		end
+		local tip = at(ECG_POINTS)
+		head.Position = UDim2.fromOffset(tip.X, tip.Y)
+	end)
+	return {
+		beat = function(strength: number?)
+			if flat then
+				return
+			end
+			for _, v in ipairs(ECG_BEAT) do
+				table.insert(queue, v * (strength or 1))
+			end
+		end,
+		flat = function()
+			flat = true
+			table.clear(queue)
+		end,
+		close = function()
+			connection:Disconnect()
+			holder:Destroy()
+		end,
+	}
 end
 
 -- A hard cut to black (under the cards, so a title can come up on it). Returns a remover.
