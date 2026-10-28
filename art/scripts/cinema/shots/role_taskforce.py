@@ -4,8 +4,9 @@ open (the camera close on it), put it away, straighten their tie and walk out be
 
 The locker room (maps/venues/sets/locker.py, Sets scene space, origin x 360): x 349..371, z -7..7; a row
 of 13 lockers along the north wall (fronts at z -4.9; the eighth's middle at x 361.5), more along the
-south wall either side of the door (x 359.5..363.5); benches at (357.5, 0) and (365.5, 0), the gap
-between them at x 360.4..362.6.
+south wall either side of the door (x 359.5..363.5); benches at (356.4, 0) and (366.6, 0), the gap
+between them at x 359.3..363.7 (2026-10-27: they were 2.2 apart, and the walk out brushed both); the eighth
+locker stands open.
 
 First timed to 15 s; 2026-10-27 about 4 s longer, at your word (19 s): the badge looked at and held up open longer,
 the jacket and the tie unhurried, the walk out at its own pace. T maps the first timings onto the longer scene."""
@@ -29,12 +30,16 @@ def T(t):
     return LENGTH + (t - 15.0)
 
 LX = 360.0
+STEP = 1.2  # how far from the lockers they stand to turn (the actor's BACK below)
 LOCKER = (LX + 1.5, -3.6)
 OUT = (LX + 1.5, 6.2)
 
 # Acting ---------------------------------------------------------------------------------------------
 
-INSIDE = dict(rShoulder=J((66, 0, -4), (0, 0.08, -0.3)), lShoulder=J((60, 0, 4), (0, 0.06, -0.26)))
+# (the right hand alone in the open locker, the left at the side: the locker is 1.5 studs wide, two blocky arms are
+# two, and held out together they went into the lockers either side, 2026-10-27; they stand with the right shoulder
+# before the open locker for it)
+INSIDE = dict(rShoulder=J((64, 0, -6), (0, 0.08, -0.3)), lShoulder=J((10, 0, 6)))
 LOOK = dict(rShoulder=J((56, 0, -26), (-0.2, 0.1, -0.26)), lShoulder=J((50, 0, 22), (0.2, 0.1, -0.24)))
 SHOW = dict(rShoulder=J((84, 0, -14), (-0.08, 0.18, -0.3)), lShoulder=J((6, 0, -4)))
 POCKET = dict(rShoulder=J((40, 0, -54), (-0.34, 0.14, -0.16)), lShoulder=J((6, 0, -4)))
@@ -73,22 +78,35 @@ shot = Shot(NAME, "Sets", LENGTH, note="The Operative's role cutscene: the locke
 shot.cam(0.0, (LX + 9.4, 6.8, 3.8), (LOCKER[0], 4.0, -4.6), fov=50)
 shot.cam(T(3.6), (LX + 8.6, 6.4, 3.2), (LOCKER[0], 4.0, -4.6), fov=46, ease="linear")
 # B: from the side along the lockers: the badge taken out, looked at.
-shot.cam(T(3.6), (LX + 6.4, 4.8, -2.4), (LOCKER[0], 4.2, LOCKER[1]), fov=42, cut=True)
-shot.cam(T(7.0), (LX + 6.0, 4.6, -2.0), (LOCKER[0], 4.2, LOCKER[1]), fov=38, ease="linear")
-# C: in front: they turn and hold it up, open, to the camera.
-shot.cam(T(7.0), (LOCKER[0] - 0.4, 4.4, 1.2), (LOCKER[0], 4.0, LOCKER[1]), fov=40, cut=True)
-shot.cam(T(10.4), (LOCKER[0] - 0.3, 4.4, 0.4), (LOCKER[0], 4.0, LOCKER[1]), fov=32, ease="in")
+shot.cam(T(3.6), (LX + 6.4, 4.8, -2.4), (LOCKER[0] - 0.6, 4.2, LOCKER[1] + 0.4), fov=42, cut=True)
+shot.cam(T(7.0), (LX + 6.0, 4.6, -2.0), (LOCKER[0], 4.2, LOCKER[1] + 1.0), fov=38, ease="linear")
+# C: in front: they turn and hold it up, open, to the camera (as far from them as before they stepped back).
+shot.cam(T(7.0), (LOCKER[0] - 0.4, 4.4, 1.2 + STEP), (LOCKER[0], 4.0, LOCKER[1] + STEP), fov=40, cut=True)
+shot.cam(T(10.4), (LOCKER[0] - 0.3, 4.4, 0.4 + STEP), (LOCKER[0], 4.0, LOCKER[1] + STEP), fov=32, ease="in")
 # D: by the door: the badge put away, the tie, and they walk out past the camera.
-shot.cam(T(10.4), (LX - 2.0, 5.2, 5.6), (LOCKER[0], 4.4, -3.0), fov=46, cut=True)
+shot.cam(T(10.4), (LX - 2.0, 5.2, 5.6), (LOCKER[0], 4.4, -3.0 + STEP), fov=46, cut=True)
 shot.cam(LENGTH, (LX - 2.2, 5.0, 5.8), (OUT[0], 4.4, 4.0), fov=46)
 
 me = shot.actor("self", o)
-me.mark(0.0, (LOCKER[0], 0.0, LOCKER[1]), 0.0)
-me.mark(T(6.6), (LOCKER[0], 0.0, LOCKER[1]), 0.0)
-me.mark(T(7.8), (LOCKER[0], 0.0, LOCKER[1]), 180.0)
-me.mark(T(12.5), (LOCKER[0], 0.0, LOCKER[1]), 180.0, "linear")
-me.mark(LENGTH, (LOCKER[0], 0.0, LOCKER[1] + 4.0 * (LENGTH - T(12.5))), 180.0, "linear")
-me.hold("BureauBadge", "Right Arm", (0.0, -1.1, -0.2), (-84, 0, 0), t0=T(3.8), t1=T(10.8))
+# (2026-10-27: looking at the badge and turning on the spot, the arms went into the lockers: a step back from
+# them with the badge, and another before they turn)
+BACK = STEP
+me.mark(0.0, (LOCKER[0] - 1.5, 0.0, LOCKER[1]), 0.0)
+me.mark(T(3.8), (LOCKER[0] - 1.5, 0.0, LOCKER[1]), 0.0)
+me.mark(T(4.2), (LOCKER[0] - 1.5, 0.0, LOCKER[1] + 1.0), 0.0)  # (a step back with the badge...)
+me.mark(T(4.6), (LOCKER[0], 0.0, LOCKER[1] + 1.0), 0.0)  # (...and over, to look at it)
+me.mark(T(6.6), (LOCKER[0], 0.0, LOCKER[1] + 1.0), 0.0)
+me.mark(T(7.0), (LOCKER[0], 0.0, LOCKER[1] + BACK), 0.0)
+me.mark(T(7.8), (LOCKER[0], 0.0, LOCKER[1] + BACK), 180.0)
+me.mark(T(12.5), (LOCKER[0], 0.0, LOCKER[1] + BACK), 180.0, "linear")
+me.mark(LENGTH, (LOCKER[0], 0.0, LOCKER[1] + BACK + 4.0 * (LENGTH - T(12.5))), 180.0, "linear")
+# The badge (0.84 wide, 0.6 tall, its face the model's -z once exported) held by its bottom edge in the fist, rising
+# above it, upright across the arm: its face to them while they look at it, to the camera once they turn and hold it
+# up. (2026-10-27: it sat over the end of the fist, its face to them throughout, and the hand ran through it as the
+# arm moved.)
+GRIP = (0.0, -1.05, -0.65)
+me.hold("BureauBadge", "Right Arm", GRIP, (-90, 180, 0), t0=T(3.8), t1=T(7.2))
+me.hold("BureauBadge", "Right Arm", GRIP, (-90, 0, 0), t0=T(7.2), t1=T(10.8))
 
 shot.event(0.0, "sfx", slot="mapOfficeHum")
 shot.event(T(3.8), "sfx", slot="pageTurn")

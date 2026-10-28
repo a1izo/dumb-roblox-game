@@ -3,7 +3,9 @@
 -- black, a face in close profile in the dark, hair falling across it, the eye shut; it holds (two seconds at least,
 -- longer until the game has loaded) while the view creeps in on the eye and the near hair drifts across it; then the
 -- eye opens, red, a glint in it, with a flare; a second's fade to black and three seconds' fade into the lobby. Once
--- everything has loaded, a click, a tap or a key skips what is left.
+-- everything has loaded, a click, a tap or a key skips what is left. From four seconds in, "Skip ›" shows at the bottom
+-- right whether or not the game has loaded (the user's call of 2026-10-27): it opens the eye at once and goes in,
+-- the loading carrying on behind.
 --
 -- The picture is painted in layers (art/scripts/ui/eye_intro.py, laid out by UI/EyeArt): the face in two halves, the
 -- eye's corner in four frames laid over it as it opens, and the foreground hair in two halves, which moves more than the
@@ -35,6 +37,8 @@ local CREEP = 0.045 -- how much nearer the view creeps over the hold
 local CREEP_TIME = 10
 local NEAR = 2.2 -- how much more the near hair moves than the face
 local MOTES = 18
+local SKIP_AFTER = 4 -- seconds before "Skip ›" shows
+local HURRIED_LOOK = 0.5 -- the open eye's look when "Skip ›" was pressed
 
 local function image(name: string): string
 	return Assets.contentId(Assets.images[name] or "")
@@ -209,7 +213,11 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 	end)
 
 	local skipped = false
-	local skip = UserInputService.InputBegan:Connect(function(input: InputObject)
+	local skip = UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		-- (a press "Skip ›" took is its own: the opening still plays)
+		if processed then
+			return
+		end
 		local kind = input.UserInputType
 		local press = kind == Enum.UserInputType.Keyboard
 			or kind == Enum.UserInputType.MouseButton1
@@ -219,10 +227,43 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 			skipped = true
 		end
 	end)
-	-- Held shut until the game has loaded (and two seconds at least).
-	while not skipped and os.clock() - started < MOST and (os.clock() - started < HOLD or not isLoaded()) do
+	-- "Skip ›", bottom right, from SKIP_AFTER on: the eye opens at once and in we go (loading or not).
+	local hurried = false
+	local skipButton = Instance.new("TextButton")
+	skipButton.Name = "Skip"
+	skipButton.AnchorPoint = Vector2.new(1, 1)
+	skipButton.Position = UDim2.new(1, -28, 1, -24)
+	skipButton.Size = UDim2.fromOffset(132, 44)
+	skipButton.BackgroundTransparency = 1
+	skipButton.AutoButtonColor = false
+	skipButton.Text = "Skip  ›"
+	skipButton.TextColor3 = Color3.fromRGB(226, 220, 208)
+	skipButton.TextTransparency = 1
+	skipButton.TextSize = 22
+	skipButton.TextXAlignment = Enum.TextXAlignment.Right
+	skipButton.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Medium)
+	skipButton.ZIndex = 11
+	skipButton.Visible = false
+	skipButton.Parent = black
+	skipButton.Activated:Connect(function()
+		hurried = true
+	end)
+	task.delay(SKIP_AFTER, function()
+		if skipButton.Parent and not skipped then
+			skipButton.Visible = true
+			TweenService:Create(skipButton, TweenInfo.new(0.6), { TextTransparency = 0.2 }):Play()
+		end
+	end)
+	-- Held shut until the game has loaded (and two seconds at least), or until "Skip ›".
+	while
+		not skipped
+		and not hurried
+		and os.clock() - started < MOST
+		and (os.clock() - started < HOLD or not isLoaded())
+	do
 		task.wait(0.1)
 	end
+	skipButton:Destroy()
 	-- It opens: the frames, a red flare, the view pushing in a little with it.
 	if not skipped and drawn then
 		Sfx.play("introEyeOpen")
@@ -253,7 +294,8 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 			end)
 		end
 		local looked = os.clock()
-		while not skipped and os.clock() - looked < OPEN_HOLD do
+		local look = if hurried then HURRIED_LOOK else OPEN_HOLD
+		while not skipped and os.clock() - looked < look do
 			task.wait(0.05)
 		end
 	end
