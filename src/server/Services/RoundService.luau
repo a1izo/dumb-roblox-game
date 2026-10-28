@@ -185,7 +185,14 @@ local function introLength(): number?
 	if not shot or Match.phaseLength("Intro") <= 0 then
 		return nil
 	end
-	return shot.length
+	-- (a freeze holds the shot that much longer: ShotPlayer's "freeze" events)
+	local held = 0
+	for _, event in ipairs(shot.events or {}) do
+		if event.kind == "fx" and event.name == "freeze" then
+			held += event.dur or 1.2
+		end
+	end
+	return shot.length + held
 end
 
 local function startIntro()

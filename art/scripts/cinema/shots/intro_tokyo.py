@@ -65,6 +65,12 @@ def ride(actor, x_in_car, z, yaw, y=FLOOR + 0.1):
         actor.mark(t, (x + x_in_car, y, z), yaw, ease)
 
 
+def prone(m, t, ease="smooth", lean=-90.0, head=12.0, **upper):
+    """A key lying face down: the legs straight out along the floor (not the kneel's folded ones, which held the
+    body up off it), the body resting on the floor."""
+    m.key(t, ease, floor=True, root=(lean, 0, 0), neck=(head, 0, 6), rHip=J((-2, 0, 3)), lHip=J((-2, 0, -3)), **upper)
+
+
 def mix(a, b, u):
     """A joint value u of the way from a to b."""
     return J(tuple(x + (y - x) * u for x, y in zip(a["r"], b["r"])), tuple(x + (y - x) * u for x, y in zip(a["p"], b["p"])))
@@ -105,7 +111,7 @@ HANG_L = J((4, 0, -4), (0, 0.02, 0))
 CLUTCH = reach(1, CHEST, direction=(-0.55, 0.15, -0.8))  # the right hand clawed into the chest
 OVER_L = reach(-1, (0.1, 0.25, -0.85), direction=(0.6, 0.2, -0.75))  # the left hand over the right, both at the heart
 PLEA_L = reach(-1, (-0.7, 0.6, -1.7), direction=(0.15, 0.1, -0.95))  # one weak reach towards the car
-SIDE_R, SIDE_L = J((-12, 0, 8)), J((-10, 0, -10))  # lying: the arms along his sides
+SIDE_R, SIDE_L = J((0, 0, 8)), J((0, 0, -10))  # lying: the arms straight along his sides (tilted either way, an end of the arm props him up)
 
 v = Motion("IntroTokyo_victim", LENGTH, note="The Tokyo intro: the heart attack on the platform.")
 # The car comes in from his left: his head follows it, slowly, as it brakes.
@@ -151,7 +157,7 @@ kneel(v, KNEES[1], "in", lean=-TIP_LEAN, head=-24, rShoulder=CLUTCH, lShoulder=J
 # ...the knees hit and he keeps going, over onto his face under gravity, with the speed he came down with: the
 # clutching arm slips out to his side as he goes (R6 lies flat only face down, and not on an arm); the other
 # swings out ahead of him and slaps down on the floor; the head snaps at the hit.
-REACH_L = J((172, 0, -8))  # lying: the arm out ahead along the floor, to the car
+REACH_L = J((180, 0, -8))  # lying: the arm out ahead along the floor, to the car (at 180 it lies flat; less and the hand props him up)
 FALL_KEYS, HIT = topple(TIP, TIP_LEAN, spin0=1.6)
 for t, lean in FALL_KEYS[1:]:
     u = min(1.0, (lean - TIP_LEAN) / (88.0 - TIP_LEAN))
@@ -161,8 +167,8 @@ for t, lean in FALL_KEYS[1:]:
     head = -24 + 36 * u if t < HIT else 18
     kneel(v, t, "linear", lean=-lean, head=head, rShoulder=mix(CLUTCH, SIDE_R, min(1.0, u * 1.8)),
           lShoulder=J((max(90.0, ahead), 0, -4 - 4 * min(1.0, ahead / 176.0))))
-kneel(v, HIT + 0.12, "in", lean=-88, head=26, rShoulder=SIDE_R, lShoulder=J((176, 0, -8)))  # the arm lands; the head whips up...
-kneel(v, HIT + 0.35, "sine", lean=-88, head=12, rShoulder=SIDE_R, lShoulder=REACH_L)  # ...and drops
+prone(v, HIT + 0.12, "in", head=26, rShoulder=SIDE_R, lShoulder=J((184, 0, -8)))  # the arm lands; the head whips up...
+prone(v, HIT + 0.35, "sine", head=12, rShoulder=SIDE_R, lShoulder=REACH_L)  # ...and drops
 # On the floor: hard breaths heaving his back; the fingers of the outstretched hand clawing at the floor towards
 # the car, the head lifting to it; at the end the hand comes up off the floor, stretched at the closing doors.
 LIFT_L = J((196, 0, -6))  # the hand up off the floor, stretched at the doors
@@ -170,9 +176,9 @@ breaths = [HIT + 0.9 + 0.55 * k for k in range(int((BLACK - HIT - 0.9) / 0.55) +
 for k, t in enumerate(breaths):
     up = k % 2
     lift = min(1.0, max(0.0, (t - 19.4) / 1.4))
-    left = mix(J((168 + 6 * up, 0, -8)), LIFT_L, lift)
+    left = mix(J((180 + 4 * up, 0, -8)), LIFT_L, lift)
     head = 14 + 26 * min(1.0, max(0.0, (t - (HIT + 1.5)) / 2.0)) + 10 * lift
-    kneel(v, min(t, LENGTH), "sine", lean=-88 + 2.5 * up, head=head + 3 * up, rShoulder=SIDE_R, lShoulder=left)
+    prone(v, min(t, LENGTH), "sine", lean=-90 + 1.5 * up, head=head + 3 * up, rShoulder=SIDE_R, lShoulder=left)
 soft(v, head=3.0, arms=3.0, arm_damp=0.55)
 v.plant(0.0, KNEES[0], stance=0.06)
 alive(v, 0.6, seed=3, t1=JOLT - 0.3)
@@ -189,7 +195,7 @@ TILT = 25.0  # the pages tilted up towards his face
 UP = (0.0, math.cos(math.radians(TILT)), math.sin(math.radians(TILT)))  # the book's up (torso frame)
 DEPTH = (0.0, -UP[2], UP[1])  # along the page, towards him
 STAND_R = J((2, 0, 3))
-HAND = (-0.4, -0.55, -1.45)  # (torso frame) the left fist under the open book, low in front of him
+HAND = (-0.15, -0.55, -1.45)  # (torso frame) the left fist under the open book, low in front of the middle of him
 READ_L = reach(-1, HAND, direction=(0.3, -0.55, -0.75))
 LOW_L = reach(-1, (-0.75, -0.95, -1.0), direction=(0.2, -0.8, -0.55))  # the shut book lowered to his side
 BOOK_AT = (HAND[0] - MANUAL_W / 2, HAND[1] + 0.6 * UP[1], HAND[2] + 0.6 * UP[2])  # the spread centred over the fist
@@ -446,16 +452,13 @@ shot.event(WRITE[0] + 0.3, "sfx", slot="penScratch")
 shot.event(WRITE[1] - 0.32, "sfx", slot="penScratch")
 shot.event(WRITE[1] + 0.1, "sfx", slot="penStop")
 shot.event(JOLT, "sfx", slot="introTokyoDrone")
-shot.event(JOLT, "fx", name="drain", strength=0.85, contrast=0.15, dur=BLACK - JOLT)
-# On the jolt the picture freezes for a beat in red and black (the anime's still), and a heart monitor's trace starts
-# along the bottom of the frame: every heartbeat spikes it, weaker each time; when the doors meet it goes flat, on
-# the black.
-shot.event(JOLT, "fx", name="still", r=255, g=36, b=44, dur=0.32)
-shot.event(JOLT, "fx", name="ecg")
-# the heart: a hard beat on the jolt, then slower and fainter
-for k, t in enumerate((JOLT, 9.35, 10.6, 12.0, 13.6, 15.4, 17.4, 19.7)):
-    shot.event(t, "sfx", slot="heartbeat")
-    shot.event(t, "fx", name="pulse", strength=max(0.25, 0.75 - 0.07 * k), punch=0.05 if k == 0 else 0.025, dur=0.7)
+# The anime's beat when the heart stops (the owner, 2026-10-28): on the cut to him, a breath into the jolt, the frame
+# freezes black and white, he blinks red once, and his heart beats once, loud; then the colour comes back and the
+# scene plays on (the freeze holds the shot 1.3 s longer: RoundService.introLength counts it).
+FREEZE = JOLT + 0.24
+shot.event(FREEZE, "fx", name="freeze", dur=1.3, blink="victim")
+shot.event(FREEZE, "sfx", slot="heartbeat")
+shot.event(FREEZE, "fx", name="pulse", punch=0.06, dur=0.8)
 shot.event(HIT, "sfx", slot="bodyFall")
 shot.event(HIT, "fx", name="shake", strength=0.22, dur=0.25)
 shot.event(SHUT[1], "sfx", slot="bookShut")
@@ -463,5 +466,4 @@ shot.event(18.8, "sfx", slot="doorRiser")
 shot.event(DOORS_SHUT[0], "sfx", slot="trainDoors")
 # the doors meet: black, and silence; then the case's card
 shot.event(BLACK, "fx", name="black", hush=True)
-shot.event(BLACK, "fx", name="flatline")
 shot.event(BLACK + 0.5, "card", key="case", dur=LENGTH - BLACK - 0.5)

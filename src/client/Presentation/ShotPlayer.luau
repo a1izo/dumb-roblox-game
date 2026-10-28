@@ -35,6 +35,7 @@ local DeathFx = require(script.Parent.DeathFx)
 local Materialize = require(script.Parent.Materialize)
 local Stage = require(script.Parent.Stage)
 local Vfx = require(script.Parent.Vfx)
+local Motion = require(script.Parent.Parent.UI.Core.Motion)
 
 local ShotPlayer = {}
 
@@ -69,7 +70,7 @@ type Showing = {
 	stretch: number,
 	punches: { { number } },
 	focus: Focus?,
-	ecg: Cinema.Ecg?, -- the heart monitor's trace, while one runs
+	freeze: { dur: number, blink: string? }?, -- a freeze asked for, not yet begun (the render step begins it)
 }
 
 -- Death's Manual as the game builds it (the Core import, Models.grimoire) lies half turned from the book in the Blender
@@ -312,6 +313,8 @@ type Live = {
 	held: { { spec: any, model: Instance?, open: number? } },
 	shadow: Highlight?,
 	eyes: { BasePart },
+	clip: string?, -- its acting, and when in the shot it starts (to hold it still through a freeze)
+	at: number,
 }
 
 -- Puts the cutscene face decal Face<name> (art/scripts/ui/faces.py) on an actor's head, or ("") its own back.
@@ -404,24 +407,14 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 				}
 				else nil
 		elseif name == "pulse" then
-			-- a heartbeat: the lens pushes in a touch, its focus throbs, and the monitor's trace spikes
+			-- a heartbeat: the lens pushes in a touch and its focus throbs
 			if not Vfx.still() then
 				table.insert(showing.punches, { os.clock(), event.punch or 0.05, event.dur or 0.6 })
 			end
-			if showing.ecg then
-				showing.ecg.beat(event.strength or 1)
-			end
-		elseif name == "ecg" then
-			-- a heart monitor's trace along the bottom of the frame, until the shot ends
-			if not showing.ecg then
-				local ecg = Cinema.ecg()
-				showing.ecg = ecg
-				table.insert(closers, ecg.close)
-			end
-		elseif name == "flatline" then
-			if showing.ecg then
-				showing.ecg.flat()
-			end
+		elseif name == "freeze" then
+			-- the frame stops for `dur` seconds (the shot's clock and every actor), black and white, `blink`'s
+			-- actor flashing red once: the anime's beat when the heart stops (the render step does it)
+			showing.freeze = { dur = event.dur or 1.2, blink = event.blink }
 		elseif name == "drain" then
 			-- the colour drains out of the picture over `dur` (back when the shot ends)
 			table.insert(
@@ -566,6 +559,8 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				held = {},
 				shadow = nil,
 				eyes = {},
+				clip = nil,
+				at = 0,
 			}
 			if data.silhouette then
 				live.shadow = Create("Highlight", {
@@ -583,6 +578,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 			for _, spec in ipairs(data.props or {}) do
 				table.insert(live.held, { spec = spec, model = nil })
 			end
+			live.clip, live.at = data.clip, data.at or 0
 			if data.clip then
 				local clip, at = data.clip, data.at or 0
 				task.spawn(function()
@@ -648,7 +644,8 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 
 	local closers: { () -> () } = {}
-	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil, ecg = nil }
+	local showing: Showing =
+		{ closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil, freeze = nil }
 	-- The lens a shot's focus events aim (made at the first one; named as Cinema.focus names its own, so the
 	-- cutscenes' standing lens, Presentation/Lens, steps aside instead of blurring on top of it).
 	local lens: DepthOfFieldEffect? = nil
@@ -723,9 +720,56 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 
 	local events = shot.events or {}
 	local nextEvent = 1
+	local frozen: { t: number, ends: number, dur: number, grey: ColorCorrectionEffect }? = nil
 	local bindName = "ShotPlayer_" .. name .. "_" .. tostring(token)
 	RunService:BindToRenderStep(bindName, Enum.RenderPriority.Camera.Value + 1, function()
-		local t = (os.clock() - startClock) * rate
+		-- a freeze: the shot's clock and every actor's acting held where they are, the picture black and white,
+		-- one actor blinking red; when it ends the clock picks up from there (the shot plays that much later)
+		local asked = showing.freeze
+		if asked and not frozen then
+			showing.freeze = nil
+			local at = math.clamp((os.clock() - startClock) * rate, 0, length)
+			local grey = Create("ColorCorrectionEffect", {
+				Name = "ShotFreeze",
+				Saturation = -1,
+				Contrast = 0.3,
+				Parent = workspace.CurrentCamera,
+			}) :: ColorCorrectionEffect
+			table.insert(closers, function()
+				grey:Destroy()
+			end)
+			frozen = { t = at, ends = os.clock() + asked.dur, dur = asked.dur, grey = grey }
+			for _, live in ipairs(actors) do
+				if live.clip then
+					PoseController.play(
+						live.model,
+						live.clip,
+						{ fadeIn = 0, phase = math.max(0, at - live.at), speed = 0 }
+					)
+				end
+			end
+			local who = if asked.blink then bySlot[asked.blink] else nil
+			if who then
+				task.delay(0.12, Cinema.blink, who.model, Color3.fromRGB(255, 34, 40), math.min(0.9, asked.dur * 0.7))
+			end
+		end
+		local paused = frozen
+		if paused and os.clock() >= paused.ends then
+			-- (real seconds: the clock counts them at `rate`, so it resumes where it stopped)
+			startClock += paused.dur
+			for _, live in ipairs(actors) do
+				if live.clip then
+					PoseController.play(
+						live.model,
+						live.clip,
+						{ startAt = startClock + live.at / rate, fadeIn = 0, speed = rate }
+					)
+				end
+			end
+			Motion.tween(paused.grey, { Saturation = 0, Contrast = 0 }, 0.35)
+			frozen = nil
+		end
+		local t = if frozen then frozen.t else (os.clock() - startClock) * rate
 		if t >= length then
 			finished = true
 		end
