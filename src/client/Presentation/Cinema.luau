@@ -4,6 +4,7 @@
 -- cleans up) what it made. Camera positions come from ShotSolver.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
@@ -580,67 +581,146 @@ function Cinema.black(): () -> ()
 	end
 end
 
--- A slash across the screen (the Muerto's DELETE, the owner, 2026-10-28: "one line travelling the screen"): a single
--- bright line drawn in a blink from edge to edge along the pen's stroke, through `origin` (0..1 of the screen) at
--- `along` degrees (the way the stroke goes), its head racing ahead of a trail, then thinning away.
-function Cinema.slash(color: Color3, strength: number?, seconds: number?, origin: Vector2?, along: number?)
+-- A slash across the screen (the Muerto's DELETE; the owner, 2026-10-28: one line travelling the screen, then "give
+-- them some curve, more impact"): a crescent drawn in a blink from edge to edge along the pen's stroke, through
+-- `origin` (0..1 of the screen) at `along` degrees (the way the stroke goes), bowed to the side `bend` says (+1 or -1,
+-- the way the arm swings), fat in the middle and tapering to nothing at the ends. Its first two frames are an impact
+-- frame (a black blade edged in white, the screen washed in `color`); then it burns white-hot in `color`, sparks fly
+-- off it, and it thins away.
+function Cinema.slash(
+	color: Color3,
+	strength: number?,
+	seconds: number?,
+	origin: Vector2?,
+	along: number?,
+	bend: number?
+)
 	if Motion.flashesOff() then
 		return
 	end
-	local life = seconds or 0.3
+	local life = seconds or 0.35
 	local s = math.clamp(strength or 0.6, 0, 1)
 	local at = origin or Vector2.new(0.5, 0.5)
 	local holder = Kit.Base.make("Frame", {
 		Name = "Slash",
-		BackgroundTransparency = 1,
+		BackgroundColor3 = color,
+		BackgroundTransparency = 1 - 0.3 * s,
+		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
 		ZIndex = 4,
 		ClipsDescendants = true,
 		Parent = Screens.cinematic,
 	})
 	local view = holder.AbsoluteSize
-	local span = view.Magnitude * 2.2 -- (long enough to cross the screen from anywhere on it)
-	local lines = {}
-	-- a wide soft glow in `color`, and the white-hot core on it
-	for _, spec in ipairs({
-		{ math.max(8, view.Y * 0.03 * s), color, 0.45 },
-		{ math.max(2, view.Y * 0.006), color:Lerp(Color3.new(1, 1, 1), 0.75), 0 },
-	}) do
-		local line = Kit.Base.make("Frame", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(at.X, at.Y),
-			Size = UDim2.fromOffset(span, spec[1]),
-			Rotation = along or -32,
-			BackgroundColor3 = spec[2],
-			BackgroundTransparency = spec[3],
-			BorderSizePixel = 0,
-			ZIndex = 5,
-			Parent = holder,
-		})
-		-- the head at the gradient's middle, the trail fading out behind it, nothing ahead of it; sliding the
-		-- gradient carries the head from one end of the line to the other
-		local gradient = Kit.Base.make("UIGradient", {
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.2, 1),
-				NumberSequenceKeypoint.new(0.47, 0.2),
-				NumberSequenceKeypoint.new(0.5, 0),
-				NumberSequenceKeypoint.new(0.505, 1),
-				NumberSequenceKeypoint.new(1, 1),
-			}),
-			Offset = Vector2.new(-0.5, 0),
-			Parent = line,
-		}) :: UIGradient
-		Motion.tween(gradient, { Offset = Vector2.new(0.5, 0) }, life * 0.35)
-		table.insert(lines, line)
+	local centre = Vector2.new(at.X * view.X, at.Y * view.Y)
+	local angle = math.rad(along or -32)
+	local dir = Vector2.new(math.cos(angle), math.sin(angle))
+	local normal = Vector2.new(-dir.Y, dir.X) * (if (bend or 1) >= 0 then 1 else -1)
+	local span = view.Magnitude * 1.15 -- (from edge to edge wherever it crosses)
+	local bow = span * 0.16
+	local thick = view.Y * (0.022 + 0.03 * s)
+	-- the arc: through the centre at its middle, its ends bowed back (a quadratic curve)
+	local function point(u: number): Vector2
+		return centre + dir * ((u - 0.5) * span) + normal * (bow * (4 * u * (1 - u) - 1))
 	end
-	task.delay(life * 0.35, function()
-		for _, line in ipairs(lines) do
-			Motion.tween(line, { BackgroundTransparency = 1, Size = UDim2.fromOffset(span, 1) }, life * 0.65)
+	local count = 34
+	local pieces = {}
+	for k = 0, count - 1 do
+		local u0, u1 = k / count, (k + 1) / count
+		local a, b = point(u0), point(u1)
+		local mid = (a + b) / 2
+		local d = b - a
+		local width = thick * math.sin(math.pi * (u0 + u1) / 2) ^ 0.8 -- (the crescent: fat in the middle)
+		local layers = {}
+		for _, spec in ipairs({ { 2.6, 0.55 }, { 1, 0 } }) do -- the glow, and the blade on it
+			table.insert(
+				layers,
+				Kit.Base.make("Frame", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromOffset(mid.X, mid.Y),
+					Size = UDim2.fromOffset(d.Magnitude * 1.25, math.max(1, width * spec[1])),
+					Rotation = math.deg(math.atan2(d.Y, d.X)),
+					BackgroundColor3 = Color3.new(1, 1, 1),
+					BackgroundTransparency = 1,
+					BorderSizePixel = 0,
+					ZIndex = 5 + #layers,
+					Parent = holder,
+				})
+			)
 		end
-	end)
-	task.delay(life + 0.05, function()
-		holder:Destroy()
+		table.insert(pieces, {
+			u = u0,
+			glow = layers[1],
+			blade = layers[2],
+			length = d.Magnitude * 1.25,
+			width = math.max(1, width),
+		})
+	end
+	-- sparks off the blade, flung out on its outer side
+	local sparks = {}
+	for _ = 1, 14 do
+		local u = 0.15 + math.random() * 0.7
+		local from = point(u)
+		local fly = (normal * (0.4 + math.random()) + dir * (math.random() - 0.5))
+			* view.Y
+			* (0.08 + math.random() * 0.12)
+		local size = math.random(3, 7)
+		table.insert(sparks, {
+			u = u,
+			from = from,
+			fly = fly,
+			frame = Kit.Base.make("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromOffset(from.X, from.Y),
+				Size = UDim2.fromOffset(size * 2.5, size),
+				Rotation = math.deg(math.atan2(fly.Y, fly.X)),
+				BackgroundColor3 = color:Lerp(Color3.new(1, 1, 1), math.random() * 0.6),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				ZIndex = 8,
+				Parent = holder,
+			}),
+		})
+	end
+	local travel = math.min(0.09, life * 0.3) -- (the head crosses the screen in this long)
+	local impact = 2 / 60 -- (the impact frame)
+	local glowColor = color:Lerp(Color3.new(1, 1, 1), 0.15)
+	local bladeColor = color:Lerp(Color3.new(1, 1, 1), 0.85)
+	local start = os.clock()
+	local connection: RBXScriptConnection
+	connection = RunService.RenderStepped:Connect(function()
+		local e = os.clock() - start
+		if e >= life or not holder.Parent then
+			connection:Disconnect()
+			holder:Destroy()
+			return
+		end
+		local head = e / travel
+		local fade = if e <= travel then 0 else (e - travel) / (life - travel)
+		local inverted = e < impact
+		holder.BackgroundColor3 = if inverted then Color3.new(1, 1, 1) else color
+		holder.BackgroundTransparency = if inverted then 1 - 0.5 * s else 1 - 0.3 * s * (1 - math.min(1, e / 0.12))
+		for _, piece in ipairs(pieces) do
+			local shown = piece.u <= head
+			-- (just behind the head it burns brightest)
+			local hot = if shown then math.clamp(1 - (head - piece.u) * 0.6, 0.4, 1) else 0
+			local alpha = if shown then (1 - fade) ^ 1.5 else 0
+			piece.glow.BackgroundColor3 = if inverted then Color3.new(1, 1, 1) else glowColor
+			piece.blade.BackgroundColor3 = if inverted then Color3.new(0, 0, 0) else bladeColor
+			piece.glow.BackgroundTransparency = 1 - alpha * (0.35 + 0.3 * hot)
+			piece.blade.BackgroundTransparency = 1 - alpha
+			local thin = 1 - 0.85 * fade -- (it thins away)
+			piece.glow.Size = UDim2.fromOffset(piece.length, piece.width * 2.6 * thin)
+			piece.blade.Size = UDim2.fromOffset(piece.length, math.max(1, piece.width * thin))
+		end
+		for _, spark in ipairs(sparks) do
+			if spark.u <= head then
+				local k = math.clamp((e - spark.u * travel) / (life * 0.8), 0, 1)
+				local p = spark.from + spark.fly * (1 - (1 - k) ^ 2)
+				spark.frame.Position = UDim2.fromOffset(p.X, p.Y)
+				spark.frame.BackgroundTransparency = k
+			end
+		end
 	end)
 end
 

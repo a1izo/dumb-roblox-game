@@ -51,10 +51,11 @@ return function(t)
 				expect(type(shot.sound) == "table" and type(shot.sound.voice) == "string").to.equal(true)
 				local finish = CutLength.lineEnd(shot)
 				expect(finish ~= nil).to.equal(true)
-				-- the line starts after a lead-in of the scene's own acting (up to about 6 s), and the shot plays on after
-				-- it to its own ending (up to 7 s: the owner, 2026-10-28, let Diavolo's and the Muerto's play out)
-				expect(shot.sound.voiceAt >= 0.8 and shot.sound.voiceAt <= 6.5).to.equal(true)
-				expect(shot.length >= (finish :: number) and shot.length - (finish :: number) <= 7).to.equal(true)
+				-- the line starts after a lead-in of the scene's own acting (up to about 8 s), and the shot plays on after
+				-- it to its own ending (up to 8 s: the owner, 2026-10-28, let Diavolo's and the Muerto's play out, then
+				-- gave both 3-4 s more)
+				expect(shot.sound.voiceAt >= 0.8 and shot.sound.voiceAt <= 8.5).to.equal(true)
+				expect(shot.length >= (finish :: number) and shot.length - (finish :: number) <= 8).to.equal(true)
 				for _, event in ipairs(shot.events) do
 					expect(event.kind ~= "subtitle" and event.kind ~= "card").to.equal(true)
 				end

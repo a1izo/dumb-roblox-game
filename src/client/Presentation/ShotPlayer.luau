@@ -401,9 +401,10 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 			Cinema.slash(
 				Color3.fromRGB(event.r or 255, event.g or 40, event.b or 60),
 				event.strength or 0.6,
-				event.dur or 0.3,
+				event.dur or 0.35,
 				origin,
-				along
+				along,
+				event.bend
 			)
 		elseif name == "inkslash" then
 			-- a red slash cut into the open page of the Manual on the set (they pile up)

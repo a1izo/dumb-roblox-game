@@ -5,19 +5,19 @@ SLASHES it out, the arm sweeping right across the page and on up into the air, t
 head whipping; again and again, faster, forehand and backhand, until the page is red with slashes; a breath; then
 he throws himself back with his arms wide, in ecstasy, against the red city.
 
-A  0.0-2.6   Wide and low from the room, creeping in: a black shape at the desk against the red window, writing
+A  0.0-3.4   Wide and low from the room, creeping in: a black shape at the desk against the red window, writing
              neatly.
-B  2.6-4.3   High over the page from his left: the pen finishes a name, rises out of the frame... and slashes down
+B  3.4-5.1   High over the page from his left: the pen finishes a name, rises out of the frame... and slashes down
              across it (DELETE, 3.4).
-C  4.3-6.5   Low from in front, over the desk's edge, hand-held and tilted: the whole body in the swings, a
+C  5.1-7.6   Low from in front, over the desk's edge, hand-held and tilted: the whole body in the swings, a
              backhand, a forehand, a backhand.
-D  6.5-8.0   Close on his face, tilted the other way: the stare, the head jerking with each
+D  7.6-9.4   Close on his face, tilted the other way: the stare, the head jerking with each
              of three faster slashes, the arm tearing through the edge of the frame.
-E  8.0-9.6   Straight down on the page: the last and biggest slash rips the whole way across; the pen stops,
+E  9.4-11.2  Straight down on the page: the last and biggest slash rips the whole way across; the pen stops,
              pressed into the page, trembling. Red slashes everywhere.
-F  9.6-11.6  In front of him, creeping in: panting over the page; the head comes up slowly into the camera, staring,
+F  11.2-14.0 In front of him, creeping in: panting over the page; the head comes up slowly into the camera, staring,
              a smile.
-G  11.6-14.4 Low and wide from the room, pulling back and rising: he throws himself back in the chair, arms flung
+G  14.0-18.0 Low and wide from the room, pulling back and rising: he throws himself back in the chair, arms flung
              wide, head back, the red flooding in behind him.
 
 The flat (maps/venues/sets/flat.py, Sets scene space, origin (360, 60)): the room x -9..9, z -7..7, 10 high; the
@@ -31,7 +31,7 @@ from emotes.kit import basis_angles, hold
 from motion import Motion
 
 NAME = "RoleMuerto"
-LENGTH = 14.4
+LENGTH = 18.0
 OX, OZ = 360.0, 60.0
 TOP = 3.05 * 1.12  # the desk top (flat.DESK_SCALE)
 SEAT = 1.76  # the office chair's seat (the chair is set at 0.85 scale)
@@ -61,11 +61,13 @@ def page(x, d, above=ABOVE):
 # The slashes: (the moment the nib crosses the page's middle, forehand +1 / backhand -1). Forehand: from high over
 # the right shoulder, down across the page from its far right to its near left, and on up across the body to the
 # left. Backhand: the other way. They come faster and faster; the last is the biggest.
-SLASHES = [(3.4, 1), (4.7, -1), (5.35, 1), (5.95, -1), (6.85, 1), (7.3, -1), (7.7, 1), (8.5, -1)]  # (the last ends on his right: the arm never lies across him)
-WRITE_T = (0.0, 2.95)  # writing neatly
-STOP = 8.75  # the pen stops on the page after the last
-UP_T = (10.0, 11.3)  # the head comes up into the camera
-THROW = 11.95  # thrown back in the chair
+SLASHES = [(4.2, 1), (5.5, -1), (6.15, 1), (6.75, -1), (7.3, 1), (7.85, -1), (8.3, 1), (8.75, -1), (9.2, 1), (10.0, -1)]
+# (the last ends on his right: the arm never lies across him)
+WRITE_T = (0.0, 3.75)  # writing neatly
+STOP = 10.25  # the pen stops on the page after the last
+UP_T = (12.2, 13.6)  # the head comes up into the camera
+THROW = 14.35  # thrown back in the chair
+CUTS = (3.4, 5.1, 7.6, 9.4, 11.2, 14.0)  # B, C, D, E, F, G
 
 # The Muerto ----------------------------------------------------------------------------------------------
 
@@ -153,11 +155,11 @@ for n, (t, side) in enumerate(SLASHES):
 
 # The last slash ends with the pen ground into the page: pressed there, trembling, the eyes on it.
 for k in range(5):
-    tt = 8.62 + 0.09 * k
+    tt = SLASHES[-1][0] + 0.12 + 0.09 * k
     key(me, tt, "linear", -22, turn=4 + (2 if k % 2 else -1), neck=(-2, 10 + (3 if k % 2 else 0), 4),
         right=lambda j, o, k=k: pen_on(j, o, 0.42 * 1.35 + 0.02 * (k % 2), NEAR, ABOVE - 0.04))
 # F: panting over the page, three heaves; then the head comes up, slowly, into the camera.
-for k in range(4):
+for k in range(5):
     tt = STOP + 0.3 + 0.36 * k
     up = k % 2
     key(me, tt, "sine", -22 + 5 * up, turn=3, neck=(-6 + 4 * up, 6, 3),
@@ -179,7 +181,7 @@ key(me, THROW, "snap", 18, neck=(42, 0, 0), right=lambda j, o: wide(j, o, 1, 0.3
     left=lambda j, o: wide(j, o, -1, 0.3))
 key(me, THROW + 0.3, "out", 14, neck=(36, 0, 0), right=lambda j, o: wide(j, o, 1),
     left=lambda j, o: wide(j, o, -1))
-for k in range(9):
+for k in range(14):
     tt = THROW + 0.55 + 0.21 * k
     key(me, tt, "sine", 14 + (3 if k % 2 else 0), turn=(2 if k % 2 else -2),
         neck=(36 + (5 if k % 2 else 0), 0, 0), right=lambda j, o, k=k: wide(j, o, 1, 0.12 * (k % 2)),
@@ -227,34 +229,34 @@ PAGE = at(BOOK[0], PAGE_Y, BOOK[1])
 # of him: from the front they frame him; from either side they hide him. The cameras keep to the front, or go high.)
 # A: wide and low from the room, creeping in: the black shape writing against the red window, the screen's glow on
 # one side of him, the lamp on the other.
-shot.pan(0.0, 2.6, "self", front(9.4, 0.4, 3.7), aim="Torso", dy=0.5, fov=44, drift=(0.0, 0.25, -1.8))
+shot.pan(0.0, CUTS[0], "self", front(9.8, 0.4, 3.7), aim="Torso", dy=0.5, fov=44, drift=(0.0, 0.25, -2.4))
 # B: low over the far side of the desk, the page filling the foreground and him bent over it beyond: the name
 # finished, the pen up out of the frame... and the nib tearing across the page (the anime's shot of the pen).
-shot.subjects.append((2.6, 4.3, None, True))
+shot.subjects.append((CUTS[0], CUTS[1], None, True))
 look_b = (PAGE[0] - 0.05, PAGE[1] + 0.35, PAGE[2] - 0.45)
-shot.cam(2.6, (PAGE[0] + 0.55, PAGE[1] + 0.75, PAGE[2] + 1.75), look_b, fov=50, roll=-5.0, cut=True)
-shot.cam(4.3, (PAGE[0] + 0.5, PAGE[1] + 0.7, PAGE[2] + 1.5), look_b, fov=48, roll=-7.0, ease="linear")
+shot.cam(CUTS[0], (PAGE[0] + 0.55, PAGE[1] + 0.75, PAGE[2] + 1.75), look_b, fov=50, roll=-5.0, cut=True)
+shot.cam(CUTS[1], (PAGE[0] + 0.5, PAGE[1] + 0.7, PAGE[2] + 1.5), look_b, fov=48, roll=-7.0, ease="linear")
 # C: low in front, over the desk's edge, hand-held and tilted: the whole body in the swings.
-shot.pan(4.3, 6.5, "self", front(5.4, 0.5, TOP + 0.95), aim="Head", dy=-0.5, fov=62, cut=True, drift=(0.0, 0.1, 0.4),
+shot.pan(CUTS[1], CUTS[2], "self", front(5.4, 0.5, TOP + 0.95), aim="Head", dy=-0.5, fov=62, cut=True, drift=(0.0, 0.1, 0.4),
          roll=-11.0, operator=True, seed=3)
 # D: closer, from a little to his right, tilted the other way: the face jerking with each slash.
-shot.pan(6.5, 8.0, "self", front(4.3, -0.2, 4.9), aim="Head", dy=-0.15, fov=46, cut=True, drift=(0.0, 0.0, -0.3),
+shot.pan(CUTS[2], CUTS[3], "self", front(4.3, -0.2, 4.9), aim="Head", dy=-0.15, fov=46, cut=True, drift=(0.0, 0.0, -0.3),
          roll=12.0, operator=True, seed=5)
 # E: low over the desk again, from the other side, tilted the other way and creeping in: the last slash rips the
 # whole way across the page in the foreground, the pen ground into it, his face beyond staring down at it.
-shot.subjects.append((8.0, 9.6, None, True))
+shot.subjects.append((CUTS[3], CUTS[4], None, True))
 look_e = (PAGE[0] + 0.1, PAGE[1] + 0.6, PAGE[2] - 0.7)
-shot.cam(8.0, (PAGE[0] + 0.45, PAGE[1] + 0.85, PAGE[2] + 1.9), look_e, fov=52, roll=9.0, cut=True)
-shot.cam(9.6, (PAGE[0] + 0.4, PAGE[1] + 0.8, PAGE[2] + 1.5), look_e, fov=48, roll=11.0, ease="linear")
+shot.cam(CUTS[3], (PAGE[0] + 0.45, PAGE[1] + 0.85, PAGE[2] + 1.9), look_e, fov=52, roll=9.0, cut=True)
+shot.cam(CUTS[4], (PAGE[0] + 0.4, PAGE[1] + 0.8, PAGE[2] + 1.5), look_e, fov=48, roll=11.0, ease="linear")
 # F: in front, creeping in: panting, then the head comes up into the camera.
-shot.pan(9.6, 11.6, "self", front(7.2, -0.1, 4.7), aim="Head", dy=-0.3, fov=36, cut=True, drift=(0.0, 0.0, -0.9))
+shot.pan(CUTS[4], CUTS[5], "self", front(7.4, -0.1, 4.7), aim="Head", dy=-0.3, fov=36, cut=True, drift=(0.0, 0.0, -1.3))
 # G: low and wide from the room, pulling back and rising as he throws himself back.
-shot.pan(11.6, LENGTH, "self", front(6.2, 0.4, 4.4), aim="Torso", dy=1.4, fov=60, cut=True, drift=(0.0, 1.6, 2.6),
+shot.pan(CUTS[5], LENGTH, "self", front(6.2, 0.4, 4.4), aim="Torso", dy=1.4, fov=60, cut=True, drift=(0.0, 1.6, 2.6),
          back=True)  # (the head thrown back: the face to the ceiling is the point)
 
 # The lens: barely soft, only to put the eye where the cut is about.
-for t, part, radius in ((0.0, "Torso", 8.0), (2.6, "Right Arm", 2.5), (4.3, "Head", 4.0), (6.5, "Head", 2.5),
-                        (8.0, "Right Arm", 3.0), (9.6, "Head", 3.0), (11.6, "Torso", 6.0)):
+for t, part, radius in zip((0.0, *CUTS), ("Torso", "Right Arm", "Head", "Head", "Right Arm", "Head", "Torso"),
+                           (8.0, 2.5, 4.0, 2.5, 3.0, 3.0, 6.0)):
     shot.event(t, "fx", name="focus", slot="self", part=part, radius=radius, far=0.12, near=0.06)
 
 # The light: the red city through the window behind him a hard rim; the screen's cold light flickering up into his
@@ -269,7 +271,7 @@ shot.light("spot", at(-0.8, TOP + 1.0, -2.4), HEAD, color=(150, 200, 255), brigh
 shot.light("spot", at(3.6, TOP + 1.1, -2.4), at(1.3, 4.0, -4.6), color=(255, 180, 110), brightness=0.8, range=6,
            angle=70)
 shot.light("spot", (PAGE[0], PAGE[1] + 3.0, PAGE[2] + 0.4), PAGE, color=(255, 236, 220), brightness=1.2, range=5,
-           angle=40, shadows=False, show=(2.6, 9.6))  # (the page lit for the inserts)
+           angle=40, shadows=False, show=(CUTS[0], CUTS[4]))  # (the page lit for the inserts)
 shot.light("point", at(1.3, 5.0, -6.5), color=(255, 40, 50), brightness=1.6, range=12, shadows=False,
            show=(THROW, LENGTH))
 shot.light("spot", at(1.3, 6.0, -6.8), HEAD, color=(255, 210, 220), brightness=3.0, range=9, angle=80,
@@ -287,7 +289,7 @@ for n, (t, side) in enumerate(SLASHES):
     big = 1.35 if last else 1.0
     ends = [[round(v, 3) for v in at(BOOK[0] - x * big, PAGE_Y, BOOK[1] - dd)] for x, dd in ((x0, -0.55), (x1, 0.45))]
     shot.event(t - 0.02, "fx", name="slash", p0=ends[0], p1=ends[1], r=255, g=40 + 15 * (n % 2), b=60,
-               strength=0.55 + 0.04 * n + (0.2 if last else 0), dur=0.3 + (0.15 if last else 0))
+               strength=0.55 + 0.04 * n + (0.2 if last else 0), dur=0.35 + (0.2 if last else 0), bend=side)
     shot.event(t, "fx", name="shake", strength=0.14 + 0.03 * n + (0.2 if last else 0), dur=0.16)
 shot.event(SLASHES[-1][0], "fx", name="still", r=255, g=30, b=45, dur=0.28)
 shot.event(SLASHES[-1][0], "sfx", slot="slam")
@@ -298,5 +300,5 @@ shot.event(THROW, "fx", name="shake", strength=0.3, dur=0.3)
 
 SAID = SLASHES[0][0]
 shot.audio(voice="voiceMuerto", voice_at=SAID, bed="bedMuerto")
-shot.line(SAID, "Delete. Delete. Delete. DELETE. DELETE. DELETE. DELETE. DELETE!",
+shot.line(SAID, "Delete. Delete. Delete. DELETE. DELETE. DELETE. DELETE. DELETE. DELETE. DELETE!",
           times=[round(t - SAID, 3) for t, _ in SLASHES])
