@@ -24,7 +24,10 @@ The flat (maps/venues/sets/flat.py, Sets scene space, origin (360, 60)): the roo
 window across the north wall; the desk at (0, -2.6) (6.7 by 3.4, top 3.42, screen on its west half); the chair at
 (1.3, -5.5); the writer sits facing south (180), the window at his back, so his right is -x."""
 
+import math
+
 from animlib import J
+from cinema import framing
 from cinema.acting import body_reach, seat_offset, soft, to_torso
 from cinema.shot import Shot
 from emotes.kit import basis_angles, hold
@@ -153,41 +156,57 @@ for n, (t, side) in enumerate(SLASHES):
         key(me, t + 0.3, "sine", -15 * rage, turn=10 * s, neck=(2, 22 * s, 6 * s),
             right=lambda j, o, f=follow: body_reach(1, j, o, (f[0] * 0.6 + 0.6, f[1] - 0.1, f[2])))
 
-# The last slash ends with the pen ground into the page: pressed there, trembling, the eyes on it.
-for k in range(5):
-    tt = SLASHES[-1][0] + 0.12 + 0.09 * k
-    key(me, tt, "linear", -22, turn=4 + (2 if k % 2 else -1), neck=(-2, 10 + (3 if k % 2 else 0), 4),
-        right=lambda j, o, k=k: pen_on(j, o, 0.42 * 1.35 + 0.02 * (k % 2), NEAR, ABOVE - 0.04))
-# F: panting over the page, three heaves; then the head comes up, slowly, into the camera.
-for k in range(5):
-    tt = STOP + 0.3 + 0.36 * k
-    up = k % 2
-    key(me, tt, "sine", -22 + 5 * up, turn=3, neck=(-6 + 4 * up, 6, 3),
-        right=lambda j, o: pen_on(j, o, 0.5, NEAR, ABOVE + 0.05))
-key(me, UP_T[0], "sine", -21, turn=2, neck=(-6, 4, 3), right=lambda j, o: pen_on(j, o, 0.5, NEAR, ABOVE + 0.1))
-key(me, UP_T[1], "sine", -12, turn=0, neck=(12, 0, 9), right=lambda j, o: pen_on(j, o, 0.45, NEAR, ABOVE + 0.25))
-key(me, THROW - 0.3, "sine", -13, turn=0, neck=(13, 0, 11), right=lambda j, o: pen_on(j, o, 0.45, NEAR, ABOVE + 0.25))
-# G: a crouch down over it... then thrown back in the chair, the head flung back, the arms flung up and wide (the pen
-# still in his fist), trembling with a silent laugh.
-key(me, THROW - 0.12, "in", -26, neck=(0, 0, 0), right=lambda j, o: pen_on(j, o, 0.3, NEAR - 0.2, ABOVE + 0.4),
-    left=lambda j, o: body_reach(-1, j, o, (-1.1, 4.6, -1.0)))
+# After the deletes (the owner, 2026-10-28: "the animation after the deletes bugs me": it buzzed and jittered), one
+# phrase, slow then sudden: the pen ground in, held, with a shudder; the breath held... let go in one long sag; two
+# slow deep breaths; the head comes up with a tilt as the pen is lifted up beside his cheek like something holy; a
+# silent laugh starts in the shoulders and grows; he gathers himself in... and throws himself back, the arms opening
+# out wide in an arc, past it and settling; then big heaves of laughter dying away, the head rolling.
+LAST_X = 0.42 * 1.35  # where the last slash ended, on his right
+END = SLASHES[-1][0]
+key(me, END + 0.2, "out", -25, turn=5, neck=(-4, 12, 5), right=lambda j, o: pen_on(j, o, LAST_X, NEAR, ABOVE - 0.06))
+key(me, END + 0.45, "sine", -24, turn=4, roll=1.5, neck=(-3, 10, 7), right=lambda j, o: pen_on(j, o, LAST_X + 0.02, NEAR, ABOVE - 0.05))
+key(me, END + 0.75, "sine", -25, turn=5, roll=-1, neck=(-4, 11, 4), right=lambda j, o: pen_on(j, o, LAST_X, NEAR, ABOVE - 0.06))
+# (held: the breath)
+key(me, END + 1.05, "sine", -25, turn=5, neck=(-4, 11, 4), right=lambda j, o: pen_on(j, o, LAST_X, NEAR, ABOVE - 0.05))
+# let go: one long sag, the pen lifting off the page, the head dropping
+key(me, END + 1.75, "sine", -17, turn=2, neck=(-12, 4, 2), right=lambda j, o: pen_on(j, o, 0.5, NEAR, ABOVE + 0.25))
+# two slow deep breaths
+for k, tt in enumerate((END + 2.2, END + 2.65, END + 3.1, END + 3.55)):
+    up = k % 2 == 0
+    key(me, tt, "sine", -14 if up else -18, turn=2, neck=(-8 if up else -12, 3, 2),
+        right=lambda j, o, up=up: pen_on(j, o, 0.5, NEAR, ABOVE + (0.32 if up else 0.25)))
+# the head comes up, slowly, with a tilt; the pen raised up beside his cheek
+CHEEK = (1.25, 5.2, -0.9)
+key(me, UP_T[0] + 0.3, "sine", -12, turn=0, neck=(2, 0, 6), right=lambda j, o: body_reach(1, j, o, (1.0, 4.4, -1.4)))
+key(me, UP_T[1], "sine", -9, turn=-2, neck=(10, -3, 13), right=lambda j, o: body_reach(1, j, o, CHEEK))
+# the silent laugh starting in the shoulders, growing
+for k in range(4):
+    tt = UP_T[1] + 0.12 + 0.13 * k
+    key(me, tt, "sine", -9 + (1.5 + 0.6 * k) * (1 if k % 2 else -1), turn=-2, neck=(10 + k, -3, 13 - k),
+        right=lambda j, o: body_reach(1, j, o, CHEEK))
+# gathering in... (the arms drawn to the chest, the head down)
+key(me, THROW - 0.15, "in", -22, neck=(-10, 0, 0), right=lambda j, o: body_reach(1, j, o, (0.6, 4.7, -1.0)),
+    left=lambda j, o: body_reach(-1, j, o, (-0.6, 4.6, -1.0)))
 
 
-def wide(j, o, side, lift=0.0):
-    return body_reach(side, j, o, (side * 3.1, 6.6 + lift, -0.6))
+def wide(j, o, side, lift=0.0, spread=1.0):
+    return body_reach(side, j, o, (side * (1.2 + 1.9 * spread), 5.2 + 1.4 * spread + lift, -0.6 - 0.4 * (1 - spread)))
 
 
-key(me, THROW, "snap", 18, neck=(42, 0, 0), right=lambda j, o: wide(j, o, 1, 0.3),
-    left=lambda j, o: wide(j, o, -1, 0.3))
-key(me, THROW + 0.3, "out", 14, neck=(36, 0, 0), right=lambda j, o: wide(j, o, 1),
-    left=lambda j, o: wide(j, o, -1))
-for k in range(14):
-    tt = THROW + 0.55 + 0.21 * k
-    key(me, tt, "sine", 14 + (3 if k % 2 else 0), turn=(2 if k % 2 else -2),
-        neck=(36 + (5 if k % 2 else 0), 0, 0), right=lambda j, o, k=k: wide(j, o, 1, 0.12 * (k % 2)),
-        left=lambda j, o, k=k: wide(j, o, -1, 0.12 * (k % 2)))
-key(me, LENGTH, "sine", 15, neck=(40, 0, 0), right=lambda j, o: wide(j, o, 1, 0.2),
-    left=lambda j, o: wide(j, o, -1, 0.2))
+# ...and thrown back, the arms opening out in an arc, past it, settling
+key(me, THROW, "out", 12, neck=(30, 0, 0), right=lambda j, o: wide(j, o, 1, 0.0, 0.5), left=lambda j, o: wide(j, o, -1, 0.0, 0.5))
+key(me, THROW + 0.18, "out", 21, neck=(46, 0, 0), right=lambda j, o: wide(j, o, 1, 0.5), left=lambda j, o: wide(j, o, -1, 0.5))
+key(me, THROW + 0.55, "sine", 15, neck=(38, 0, 0), right=lambda j, o: wide(j, o, 1), left=lambda j, o: wide(j, o, -1))
+# big heaves of laughter, dying away; the head rolling slowly side to side
+heaves = int((LENGTH - THROW - 0.8) / 0.32)
+for k in range(heaves):
+    tt = THROW + 0.8 + 0.32 * k
+    amp = max(0.25, 1.0 - k / heaves)
+    roll_head = 7 * math.sin(k * 0.55)
+    key(me, tt, "sine", 15 + 4 * amp * (1 if k % 2 else -0.4), turn=1.5 * math.sin(k * 0.4),
+        neck=(38 + 5 * amp * (1 if k % 2 else -0.5), roll_head * 0.6, roll_head),
+        right=lambda j, o, a=amp, k=k: wide(j, o, 1, 0.15 * a * (k % 2)),
+        left=lambda j, o, a=amp, k=k: wide(j, o, -1, 0.15 * a * (k % 2)))
 soft(me, head=4.2, arms=5.0, head_damp=0.55, arm_damp=0.55)
 me.build()
 
@@ -227,32 +246,37 @@ PAGE = at(BOOK[0], PAGE_Y, BOOK[1])
 
 # (The desk's screen stands 2.5 studs to his right and its lamp 1.4 to his left, both at head height and in front
 # of him: from the front they frame him; from either side they hide him. The cameras keep to the front, or go high.)
-# A: wide and low from the room, creeping in: the black shape writing against the red window, the screen's glow on
-# one side of him, the lamp on the other.
-shot.pan(0.0, CUTS[0], "self", front(9.8, 0.4, 3.7), aim="Torso", dy=0.5, fov=44, drift=(0.0, 0.25, -2.4))
+# (Every camera is held by hand, the owner, 2026-10-28: "the camera feels very stale": a breath of drift on the calm
+# shots, more in the frenzy; each one moving too: a creep, a push, a zoom, a pull out.)
+# A: wide and low from the room, creeping in and zooming slowly: the black shape writing against the red window, the
+# screen's glow on one side of him, the lamp on the other.
+shot.pan(0.0, CUTS[0], "self", front(9.8, 0.4, 3.7), aim="Torso", dy=0.5, fov=44, drift=(0.0, 0.25, -2.4),
+         operator=True, seed=1, shake=0.6, fov_to=38, ease_move=True)
 # B: low over the far side of the desk, the page filling the foreground and him bent over it beyond: the name
-# finished, the pen up out of the frame... and the nib tearing across the page (the anime's shot of the pen).
-shot.subjects.append((CUTS[0], CUTS[1], None, True))
+# finished, the pen up out of the frame... and the nib tearing across the page (the anime's shot of the pen); the lens
+# pushing in on the page.
 look_b = (PAGE[0] - 0.05, PAGE[1] + 0.35, PAGE[2] - 0.45)
-shot.cam(CUTS[0], (PAGE[0] + 0.55, PAGE[1] + 0.75, PAGE[2] + 1.75), look_b, fov=50, roll=-5.0, cut=True)
-shot.cam(CUTS[1], (PAGE[0] + 0.5, PAGE[1] + 0.7, PAGE[2] + 1.5), look_b, fov=48, roll=-7.0, ease="linear")
-# C: low in front, over the desk's edge, hand-held and tilted: the whole body in the swings.
-shot.pan(CUTS[1], CUTS[2], "self", front(5.4, 0.5, TOP + 0.95), aim="Head", dy=-0.5, fov=62, cut=True, drift=(0.0, 0.1, 0.4),
-         roll=-11.0, operator=True, seed=3)
-# D: closer, from a little to his right, tilted the other way: the face jerking with each slash.
-shot.pan(CUTS[2], CUTS[3], "self", front(4.3, -0.2, 4.9), aim="Head", dy=-0.15, fov=46, cut=True, drift=(0.0, 0.0, -0.3),
-         roll=12.0, operator=True, seed=5)
+framing.dolly(shot, CUTS[0], CUTS[1], (PAGE[0] + 0.6, PAGE[1] + 0.8, PAGE[2] + 1.85),
+              (PAGE[0] + 0.45, PAGE[1] + 0.68, PAGE[2] + 1.4), look_b, fov0=52, fov1=44, roll0=-4.0, roll1=-8.0,
+              shake=0.8, seed=11)
+# C: low in front, over the desk's edge, hand-held hard and tilted, the lens tightening: the whole body in the swings.
+shot.pan(CUTS[1], CUTS[2], "self", front(5.4, 0.5, TOP + 0.95), aim="Head", dy=-0.5, fov=62, cut=True,
+         drift=(0.0, 0.1, 0.4), roll=-11.0, operator=True, seed=3, shake=1.6, fov_to=54)
+# D: closer, from a little to his right, tilted the other way, the lens punching in: the face jerking with each slash.
+shot.pan(CUTS[2], CUTS[3], "self", front(4.3, -0.2, 4.9), aim="Head", dy=-0.15, fov=48, cut=True,
+         drift=(0.0, 0.0, -0.3), roll=12.0, operator=True, seed=5, shake=1.9, fov_to=38)
 # E: low over the desk again, from the other side, tilted the other way and creeping in: the last slash rips the
 # whole way across the page in the foreground, the pen ground into it, his face beyond staring down at it.
-shot.subjects.append((CUTS[3], CUTS[4], None, True))
 look_e = (PAGE[0] + 0.1, PAGE[1] + 0.6, PAGE[2] - 0.7)
-shot.cam(CUTS[3], (PAGE[0] + 0.45, PAGE[1] + 0.85, PAGE[2] + 1.9), look_e, fov=52, roll=9.0, cut=True)
-shot.cam(CUTS[4], (PAGE[0] + 0.4, PAGE[1] + 0.8, PAGE[2] + 1.5), look_e, fov=48, roll=11.0, ease="linear")
-# F: in front, creeping in: panting, then the head comes up into the camera.
-shot.pan(CUTS[4], CUTS[5], "self", front(7.4, -0.1, 4.7), aim="Head", dy=-0.3, fov=36, cut=True, drift=(0.0, 0.0, -1.3))
-# G: low and wide from the room, pulling back and rising as he throws himself back.
-shot.pan(CUTS[5], LENGTH, "self", front(6.2, 0.4, 4.4), aim="Torso", dy=1.4, fov=60, cut=True, drift=(0.0, 1.6, 2.6),
-         back=True)  # (the head thrown back: the face to the ceiling is the point)
+framing.dolly(shot, CUTS[3], CUTS[4], (PAGE[0] + 0.5, PAGE[1] + 0.9, PAGE[2] + 2.0),
+              (PAGE[0] + 0.4, PAGE[1] + 0.78, PAGE[2] + 1.45), look_e, fov0=54, fov1=44, roll0=9.0, roll1=13.0,
+              shake=1.2, seed=13)
+# F: in front, creeping in and zooming slowly onto the face as it comes up into the camera.
+shot.pan(CUTS[4], CUTS[5], "self", front(7.4, -0.1, 4.7), aim="Head", dy=-0.3, fov=38, cut=True,
+         drift=(0.0, 0.0, -1.5), operator=True, seed=7, shake=0.5, fov_to=29, ease_move=True)
+# G: low and wide from the room, pulling back, rising and zooming out as he throws himself back.
+shot.pan(CUTS[5], LENGTH, "self", front(6.2, 0.4, 4.4), aim="Torso", dy=1.4, fov=56, cut=True, drift=(0.0, 1.6, 2.6),
+         back=True, operator=True, seed=9, shake=0.8, fov_to=66, ease_move=True)  # (the face to the ceiling is the point)
 
 # The lens: barely soft, only to put the eye where the cut is about.
 for t, part, radius in zip((0.0, *CUTS), ("Torso", "Right Arm", "Head", "Head", "Right Arm", "Head", "Torso"),

@@ -623,69 +623,76 @@ function Cinema.slash(
 	local function point(u: number): Vector2
 		return centre + dir * ((u - 0.5) * span) + normal * (bow * (4 * u * (1 - u) - 1))
 	end
-	local count = 34
+	-- three layers, each drawn solid and faded as a whole (a CanvasGroup), so where the arc's pieces overlap they
+	-- never stack into stripes: a wide haze, the glow, and the blade on them; each piece a capsule, so they join
+	-- smoothly round the curve
+	local layers = {}
+	for n, spec in ipairs({ { 3.8, 0.22 }, { 2.2, 0.55 }, { 1, 1 } }) do
+		layers[n] = {
+			scale = spec[1],
+			alpha = spec[2],
+			group = Kit.Base.make("CanvasGroup", {
+				BackgroundTransparency = 1,
+				Size = UDim2.fromScale(1, 1),
+				GroupTransparency = 1,
+				ZIndex = 5 + n,
+				Parent = holder,
+			}) :: CanvasGroup,
+		}
+	end
+	local count = 48
 	local pieces = {}
 	for k = 0, count - 1 do
 		local u0, u1 = k / count, (k + 1) / count
 		local a, b = point(u0), point(u1)
 		local mid = (a + b) / 2
 		local d = b - a
-		local width = thick * math.sin(math.pi * (u0 + u1) / 2) ^ 0.8 -- (the crescent: fat in the middle)
-		local layers = {}
-		for _, spec in ipairs({ { 2.6, 0.55 }, { 1, 0 } }) do -- the glow, and the blade on it
-			table.insert(
-				layers,
-				Kit.Base.make("Frame", {
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					Position = UDim2.fromOffset(mid.X, mid.Y),
-					Size = UDim2.fromOffset(d.Magnitude * 1.25, math.max(1, width * spec[1])),
-					Rotation = math.deg(math.atan2(d.Y, d.X)),
-					BackgroundColor3 = Color3.new(1, 1, 1),
-					BackgroundTransparency = 1,
-					BorderSizePixel = 0,
-					ZIndex = 5 + #layers,
-					Parent = holder,
-				})
-			)
+		local width = math.max(1, thick * math.sin(math.pi * (u0 + u1) / 2) ^ 0.8) -- (the crescent: fat in the middle)
+		local piece = { u = u0, width = width, frames = {} }
+		for n, layer in ipairs(layers) do
+			local w = width * layer.scale
+			local frame = Kit.Base.make("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromOffset(mid.X, mid.Y),
+				Size = UDim2.fromOffset(d.Magnitude + w, w), -- (overlapping its neighbours by its round ends)
+				Rotation = math.deg(math.atan2(d.Y, d.X)),
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				BorderSizePixel = 0,
+				Visible = false,
+				Parent = layer.group,
+			})
+			Create("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = frame })
+			piece.frames[n] = frame
 		end
-		table.insert(pieces, {
-			u = u0,
-			glow = layers[1],
-			blade = layers[2],
-			length = d.Magnitude * 1.25,
-			width = math.max(1, width),
-		})
+		piece.length = d.Magnitude
+		table.insert(pieces, piece)
 	end
 	-- sparks off the blade, flung out on its outer side
 	local sparks = {}
-	for _ = 1, 14 do
+	for _ = 1, 16 do
 		local u = 0.15 + math.random() * 0.7
 		local from = point(u)
 		local fly = (normal * (0.4 + math.random()) + dir * (math.random() - 0.5))
 			* view.Y
-			* (0.08 + math.random() * 0.12)
+			* (0.08 + math.random() * 0.14)
 		local size = math.random(3, 7)
-		table.insert(sparks, {
-			u = u,
-			from = from,
-			fly = fly,
-			frame = Kit.Base.make("Frame", {
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromOffset(from.X, from.Y),
-				Size = UDim2.fromOffset(size * 2.5, size),
-				Rotation = math.deg(math.atan2(fly.Y, fly.X)),
-				BackgroundColor3 = color:Lerp(Color3.new(1, 1, 1), math.random() * 0.6),
-				BackgroundTransparency = 1,
-				BorderSizePixel = 0,
-				ZIndex = 8,
-				Parent = holder,
-			}),
+		local spark = Kit.Base.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(from.X, from.Y),
+			Size = UDim2.fromOffset(size * 2.5, size),
+			Rotation = math.deg(math.atan2(fly.Y, fly.X)),
+			BackgroundColor3 = color:Lerp(Color3.new(1, 1, 1), math.random() * 0.6),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ZIndex = 9,
+			Parent = holder,
 		})
+		Create("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = spark })
+		table.insert(sparks, { u = u, from = from, fly = fly, frame = spark })
 	end
 	local travel = math.min(0.09, life * 0.3) -- (the head crosses the screen in this long)
 	local impact = 2 / 60 -- (the impact frame)
-	local glowColor = color:Lerp(Color3.new(1, 1, 1), 0.15)
-	local bladeColor = color:Lerp(Color3.new(1, 1, 1), 0.85)
+	local tints = { color, color:Lerp(Color3.new(1, 1, 1), 0.2), color:Lerp(Color3.new(1, 1, 1), 0.88) }
 	local start = os.clock()
 	local connection: RBXScriptConnection
 	connection = RunService.RenderStepped:Connect(function()
@@ -700,18 +707,24 @@ function Cinema.slash(
 		local inverted = e < impact
 		holder.BackgroundColor3 = if inverted then Color3.new(1, 1, 1) else color
 		holder.BackgroundTransparency = if inverted then 1 - 0.5 * s else 1 - 0.3 * s * (1 - math.min(1, e / 0.12))
+		local thin = 1 - 0.85 * fade -- (it thins away)
+		for _, layer in ipairs(layers) do
+			layer.group.GroupTransparency = 1 - layer.alpha * (1 - fade) ^ 1.3
+		end
 		for _, piece in ipairs(pieces) do
 			local shown = piece.u <= head
-			-- (just behind the head it burns brightest)
-			local hot = if shown then math.clamp(1 - (head - piece.u) * 0.6, 0.4, 1) else 0
-			local alpha = if shown then (1 - fade) ^ 1.5 else 0
-			piece.glow.BackgroundColor3 = if inverted then Color3.new(1, 1, 1) else glowColor
-			piece.blade.BackgroundColor3 = if inverted then Color3.new(0, 0, 0) else bladeColor
-			piece.glow.BackgroundTransparency = 1 - alpha * (0.35 + 0.3 * hot)
-			piece.blade.BackgroundTransparency = 1 - alpha
-			local thin = 1 - 0.85 * fade -- (it thins away)
-			piece.glow.Size = UDim2.fromOffset(piece.length, piece.width * 2.6 * thin)
-			piece.blade.Size = UDim2.fromOffset(piece.length, math.max(1, piece.width * thin))
+			-- (just behind the head it burns white)
+			local hot = math.clamp(1 - (head - piece.u) * 1.5, 0, 1)
+			for n, frame in ipairs(piece.frames) do
+				frame.Visible = shown
+				if shown then
+					local w = math.max(1, piece.width * layers[n].scale * thin)
+					frame.Size = UDim2.fromOffset(piece.length + w, w)
+					frame.BackgroundColor3 = if inverted
+						then (if n == 3 then Color3.new(0, 0, 0) else Color3.new(1, 1, 1))
+						else tints[n]:Lerp(Color3.new(1, 1, 1), hot * (if n == 3 then 1 else 0.5))
+				end
+			end
 		end
 		for _, spark in ipairs(sparks) do
 			if spark.u <= head then

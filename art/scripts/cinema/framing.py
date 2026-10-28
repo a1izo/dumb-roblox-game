@@ -148,11 +148,13 @@ def follow(shot, t0, t1, slot, kind="medium", step=0.25, cut=False, fov=None, ba
 
 
 def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=False, drift=(0.0, 0.0, 0.0),
-        back=False, roll=0.0, operator=False, seed=0):
+        back=False, roll=0.0, operator=False, seed=0, fov_to=None, shake=1.0, ease_move=False):
     """A camera standing at `pos` (drifting by `drift` over the cut) that turns to keep `slot`'s `aim` part
     in the middle of the frame while they move. `back`: seeing the back of their head is meant. `roll`: a dutch
     angle, in degrees. `operator`: a person holds it: the aim follows the subject a beat late and settles with
-    a little overshoot (a spring), and the frame breathes with a faint hand-held drift (seeded)."""
+    a little overshoot (a spring), and the frame breathes with a faint hand-held drift (seeded), `shake` times the
+    usual. `fov_to`: the lens zooms to this over the cut. `ease_move`: the drift and the zoom ease in and out (a
+    dolly that starts and settles) instead of running even."""
     shot.subjects.append((t0, t1, slot, back))
     if operator:
         step = min(step, 1 / 15)
@@ -165,8 +167,10 @@ def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=Fa
     for i in range(n + 1):
         u = i / n
         t = t0 + (t1 - t0) * u
+        m = u * u * (3 - 2 * u) if ease_move else u
         target = part(shot, slot, t, aim) + np.array([0.0, dy, 0.0])
-        p = np.array(pos, float) + np.array(drift, float) * u
+        p = np.array(pos, float) + np.array(drift, float) * m
+        lens = fov if fov_to is None else fov + (fov_to - fov) * m
         if operator:
             if look is None:
                 look, vel = target.copy(), np.zeros(3)
@@ -178,10 +182,35 @@ def pan(shot, t0, t1, slot, pos, aim="Head", dy=0.0, fov=40.0, step=0.25, cut=Fa
                     look = look + vel * h
             target = look.copy()
             # hand-held: slow, small, never in step (studs at the lens and at the aim)
-            p = p + 0.035 * np.array([math.sin(1.3 * t + phases[0]) + 0.5 * math.sin(3.1 * t + phases[1]),
-                                      math.sin(1.1 * t + phases[2]) + 0.4 * math.sin(2.7 * t + phases[3]), 0.0])
-            target = target + 0.05 * np.array([math.sin(0.9 * t + phases[4]), math.sin(1.7 * t + phases[5]), 0.0])
-        shot.cam(t, tuple(p), tuple(target), fov=fov, roll=roll, ease="linear", cut=cut and i == 0)
+            p = p + 0.035 * shake * np.array([math.sin(1.3 * t + phases[0]) + 0.5 * math.sin(3.1 * t + phases[1]),
+                                              math.sin(1.1 * t + phases[2]) + 0.4 * math.sin(2.7 * t + phases[3]), 0.0])
+            target = target + 0.05 * shake * np.array([math.sin(0.9 * t + phases[4]), math.sin(1.7 * t + phases[5]), 0.0])
+        shot.cam(t, tuple(p), tuple(target), fov=lens, roll=roll, ease="linear", cut=cut and i == 0)
+
+
+def dolly(shot, t0, t1, eye0, eye1, look0, look1=None, fov0=40.0, fov1=None, roll0=0.0, roll1=None, shake=1.0, seed=0,
+          ease_move=True, cut=True):
+    """A camera on no one in particular (an insert, a page): it moves from eye0 to eye1 and turns from look0 to look1,
+    zooming fov0 to fov1, eased in and out, held by hand: the frame breathes with a faint drift (seeded), `shake`
+    times the operator's. The slot-less counterpart of pan(operator=True)."""
+    look1 = look0 if look1 is None else look1
+    fov1 = fov0 if fov1 is None else fov1
+    roll1 = roll0 if roll1 is None else roll1
+    shot.subjects.append((t0, t1, None, True))
+    rng = np.random.default_rng(seed)
+    phases = rng.uniform(0, 2 * math.pi, 6)
+    n = max(2, int(round((t1 - t0) * 15)))
+    for i in range(n + 1):
+        u = i / n
+        t = t0 + (t1 - t0) * u
+        m = u * u * (3 - 2 * u) if ease_move else u
+        p = np.array(eye0, float) + (np.array(eye1, float) - np.array(eye0, float)) * m
+        look = np.array(look0, float) + (np.array(look1, float) - np.array(look0, float)) * m
+        p = p + 0.035 * shake * np.array([math.sin(1.3 * t + phases[0]) + 0.5 * math.sin(3.1 * t + phases[1]),
+                                          math.sin(1.1 * t + phases[2]) + 0.4 * math.sin(2.7 * t + phases[3]), 0.0])
+        look = look + 0.05 * shake * np.array([math.sin(0.9 * t + phases[4]), math.sin(1.7 * t + phases[5]), 0.0])
+        shot.cam(t, tuple(p), tuple(look), fov=fov0 + (fov1 - fov0) * m, roll=roll0 + (roll1 - roll0) * m,
+                 ease="linear", cut=cut and i == 0)
 
 
 def spot(shot, t, slot, kind="medium", **kw):

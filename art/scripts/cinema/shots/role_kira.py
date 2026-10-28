@@ -249,29 +249,38 @@ for t0, t1, eye, aim, fov, _ in CAMS:
     shot.subjects.append((t0, t1, None, True))
     shot.cam(t0, eye, aim, fov=fov, cut=True)
     shot.cam(t1, eye, aim, fov=fov, ease="linear")
-# B: low over the desk from in front, the page in the foreground and him bent over it beyond: the pen writes.
-shot.subjects.append((CUTS[0], CUTS[1], None, True))
+# (Every camera but the hidden ones is held by hand, the owner, 2026-10-28: "the camera feels very stale": a breath of
+# drift, and each one moving: a push, a creep, a zoom, a pull out. The hidden cameras stay locked off: that is what
+# makes them cameras on a wall.)
+# B: low over the desk from in front, the page in the foreground and him bent over it beyond: the pen writes; the
+# lens pushing in on the nib.
 look_b = (PAGE[0] + 0.05, PAGE[1] + 0.45, PAGE[2] - 0.5)
-shot.cam(CUTS[0], (PAGE[0] + 0.35, PAGE[1] + 0.8, PAGE[2] + 1.9), look_b, fov=48, roll=-5.0, cut=True)
-shot.cam(CUTS[1], (PAGE[0] + 0.3, PAGE[1] + 0.75, PAGE[2] + 1.55), look_b, fov=46, roll=-6.0, ease="linear")
-# C: close, from in front on his left: the eyes come up off the page.
-shot.pan(CUTS[1], CUTS[2], "self", front(3.9, -1.0, 4.6), aim="Head", dy=-0.2, fov=44, cut=True, drift=(0.0, 0.0, -0.2))
-# D: across the desk, pushing in: the crisp taken and raised.
-shot.pan(CUTS[3], CUTS[4], "self", front(6.6, 0.5, 4.4), aim="Head", dy=0.1, fov=44, cut=True, drift=(0.0, 0.0, -1.7),
-         roll=-3.0)
-# E: low and close from his right (the crisp comes in from the far side), tilted, half the face in the dark; a snap
-# in on the bite.
-shot.subjects.append((CUTS[4], CUTS[5], "self", False))
+framing.dolly(shot, CUTS[0], CUTS[1], (PAGE[0] + 0.4, PAGE[1] + 0.85, PAGE[2] + 2.0),
+              (PAGE[0] + 0.28, PAGE[1] + 0.72, PAGE[2] + 1.45), look_b, fov0=50, fov1=42, roll0=-4.0, roll1=-7.0,
+              shake=0.7, seed=21)
+# C: close, from in front on his left, zooming slowly: the eyes come up off the page.
+shot.pan(CUTS[1], CUTS[2], "self", front(3.9, -1.0, 4.6), aim="Head", dy=-0.2, fov=46, cut=True, drift=(0.0, 0.0, -0.2),
+         operator=True, seed=23, shake=0.5, fov_to=38, ease_move=True)
+# D: across the desk, pushing in and zooming through the held pause: the crisp taken and raised.
+shot.pan(CUTS[3], CUTS[4], "self", front(6.8, 0.5, 4.4), aim="Head", dy=0.1, fov=46, cut=True, drift=(0.0, 0.0, -2.0),
+         roll=-3.0, operator=True, seed=25, shake=0.5, fov_to=36, ease_move=True)
+# E: low and close from his right (the crisp comes in from the far side), tilted, half the face in the dark: held by
+# hand, creeping; a snap in on the bite, and the frame rattled after it.
 eye_e = front(3.5, 1.5, 4.75)
 head_e = framing.part(shot, "self", BITE, "Head")
 look_e = (float(head_e[0]), float(head_e[1]) - 0.15, float(head_e[2]))
-shot.cam(CUTS[4], eye_e, look_e, fov=42, roll=-10.0, cut=True)
-shot.cam(BITE - 0.02, (eye_e[0] - 0.05, eye_e[1], eye_e[2] - 0.08), look_e, fov=41, roll=-10.0, ease="linear")
-shot.cam(BITE + 0.08, (eye_e[0] + 0.15, eye_e[1] + 0.05, eye_e[2] - 0.22), look_e, fov=37, roll=-13.0, ease="snap")
-shot.cam(CUTS[5], (eye_e[0] + 0.18, eye_e[1] + 0.05, eye_e[2] - 0.28), look_e, fov=37, roll=-13.0, ease="linear")
-# F: low and wide from the room, rising as he leans back and the Deathsinger comes.
-shot.pan(CUTS[5], STUDY + 0.25, "self", front(7.6, 0.6, 3.2), aim="Torso", dy=1.6, fov=54, cut=True,
-         drift=(0.2, 1.6, 1.4))
+framing.dolly(shot, CUTS[4], BITE - 0.02, (eye_e[0] - 0.1, eye_e[1], eye_e[2] + 0.12),
+              (eye_e[0] - 0.05, eye_e[1], eye_e[2] - 0.08), look_e, fov0=43, fov1=41, roll0=-9.0, roll1=-10.0,
+              shake=0.6, seed=27, ease_move=False)
+shot.subjects.append((CUTS[4], CUTS[5], "self", False))
+shot.cam(BITE + 0.08, (eye_e[0] + 0.15, eye_e[1] + 0.05, eye_e[2] - 0.22), look_e, fov=36, roll=-13.0, ease="snap")
+for k, (dx, dy) in enumerate(((0.05, -0.04), (-0.04, 0.03), (0.02, -0.01))):  # (rattled by it)
+    shot.cam(BITE + 0.16 + 0.08 * k, (eye_e[0] + 0.15 + dx, eye_e[1] + 0.05 + dy, eye_e[2] - 0.23), look_e, fov=36,
+             roll=-13.0 + 1.5 * (1 if k % 2 else -1), ease="out")
+shot.cam(CUTS[5], (eye_e[0] + 0.2, eye_e[1] + 0.05, eye_e[2] - 0.32), look_e, fov=35, roll=-13.0, ease="sine")
+# F: low and wide from the room, rising and zooming out as he leans back and the Deathsinger comes.
+shot.pan(CUTS[5], STUDY + 0.25, "self", front(7.6, 0.6, 3.2), aim="Torso", dy=1.6, fov=50, cut=True,
+         drift=(0.2, 1.6, 1.4), operator=True, seed=29, shake=0.7, fov_to=58, ease_move=True)
 # G: the hidden camera behind him (CAMS).
 shot.cam_groups.sort(key=lambda g: g[0][0])  # (the hidden cameras' cuts were added first: in time order)
 
