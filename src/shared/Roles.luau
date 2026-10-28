@@ -22,7 +22,7 @@ Roles.INFO = {
 		side = "Kira",
 		blurb = Terms.f(
 			"You know {hand}; nobody knows you. Hack stations for real names and pass them to {hand} on paper "
-				.. "notes. Black out the lights, jam stations and barricade the way. You may accept {eyes}."
+				.. "notes, and black out the lights for cover. You may accept {eyes}."
 		),
 	},
 	L = {

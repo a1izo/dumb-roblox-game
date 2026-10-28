@@ -31,7 +31,7 @@ local RoleCopy: { [string]: RoleCopy } = {
 	Follower = card(
 		{
 			"You know {hand}; they do not know you. Hack stations for real names ({key.use}) and pass them on a paper note.",
-			"Sabotage: black out the map ({key.blackout}), jam the stations near you ({key.jam}), barricade the way ({key.barricade}).",
+			"Black out the lights ({key.blackout}): the map goes dark and name tags vanish, cover for a hack or a writing.",
 			"Accept {eyes} to read names at a glance by staring ({key.stare}), but it kills you 90 seconds later.",
 		},
 		"{Circle} wins when it matches {agency} in number.",

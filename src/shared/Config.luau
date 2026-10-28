@@ -73,8 +73,6 @@ Config.EYES_DURATION = 3 -- how long a learned name shows above its owner
 -- Muerto sabotage: one shared cooldown per Muerto, never during a meeting.
 Config.SABOTAGE_COOLDOWN = 45
 Config.BLACKOUT_TIME = 15
-Config.JAM_TIME = 30
-Config.BARRICADE_TIME = 10
 
 -- Meetings: one emergency bell per map, one ring per player per match.
 Config.BELL_RANGE = 10

@@ -65,11 +65,6 @@ local function canWork(): boolean
 	return ClientState.isLiving() or (ClientState.isParticipant() and ClientState.private.away ~= true)
 end
 
-local function jammed(instance: Instance): boolean
-	local untilTime = instance:GetAttribute("JammedUntil")
-	return type(untilTime) == "number" and workspace:GetServerTimeNow() < untilTime
-end
-
 -- Line of sight, as the server judges it (Match.hasLineOfSight): from the eyes to just over the object, through
 -- every body, and a hit on the object or within SLACK of it counts as seen. A change only holds once it has
 -- lasted HOLD seconds, so a ray grazing the table edge as you move never flickers the prompt.
@@ -109,7 +104,7 @@ local function refreshEntry(instance: Instance, entry)
 	local active = canAct() and entry.seen ~= false
 	local prompts = entry.prompts
 	if entry.kind == "station" then
-		local free = instance:GetAttribute("Busy") ~= true and not jammed(instance) and entry.seen ~= false
+		local free = instance:GetAttribute("Busy") ~= true and entry.seen ~= false
 		prompts.work.Enabled = canWork() and free and not TaskScreen.isBusy()
 		local role = ClientState.role()
 		prompts.hack.Enabled = active and (role == "Kira" or role == "Follower") and free and not HackScreen.isBusy()
@@ -162,7 +157,6 @@ local function setupStation(desk: Instance)
 		end
 	end
 	desk:GetAttributeChangedSignal("Busy"):Connect(changed)
-	desk:GetAttributeChangedSignal("JammedUntil"):Connect(changed)
 end
 
 -- The emergency bell: ringing it calls a meeting at once (one ring per player per match).

@@ -43,10 +43,7 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 				lines,
 				line("Hack stations ({key.use}) for real names, and pass them to {hand} on a note", known > 0)
 			)
-			table.insert(
-				lines,
-				line("Sabotage: blackout ({key.blackout}), jam stations ({key.jam}), barricade ({key.barricade})")
-			)
+			table.insert(lines, line("Black out the lights ({key.blackout}) when {hand} needs cover"))
 			if private.eyes then
 				table.insert(
 					lines,
@@ -67,10 +64,7 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 			end
 		end
 		if private.carrying == "note" then
-			table.insert(
-				lines,
-				line("You carry a written note: read it ({key.note}), drop it ({key.drop}) or pass it ({key.pass})")
-			)
+			table.insert(lines, line("You carry a written note: read or drop it ({key.note}), or pass it ({key.pass})"))
 		end
 	elseif phase == "Meeting" then
 		table.insert(lines, line("Talk it over. Full real names of living players are blocked"))

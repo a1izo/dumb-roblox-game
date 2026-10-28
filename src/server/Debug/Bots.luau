@@ -485,7 +485,7 @@ local function thinkCoven(bot, ps, now: number)
 			return
 		end
 		if workspace:GetServerTimeNow() >= ps.sabotageReadyAt and math.random() < 0.15 then
-			Net.simulate("Sabotage", bot, { kind = ({ "blackout", "jam", "barricade" })[math.random(1, 3)] })
+			Net.simulate("Sabotage", bot, { kind = "blackout" })
 		end
 	end
 	local target = if ps.eyes then stareTarget(ps) else nil

@@ -58,21 +58,16 @@ local function controls(): { string }
 		return {
 			string.format("%s: use the prompts near stations, notes and the bell.", k("interact", "pickUp")),
 			string.format(
-				"%s: emotes.  %s: quick chat.  %s: read or drop your note.",
+				"%s: emotes.  %s: quick chat.  %s: your note (read, write or drop it).  Hold %s: role card.",
 				k("quickChat"),
 				k("phrases"),
-				k("note", "drop")
+				k("note"),
+				k("roleCard")
 			),
 			string.format(
-				"Hold %s: role card.  %s: scratchpad.  %s: stare with the Oculus (a Muerto who took it).",
-				k("roleCard"),
-				k("scratchpad"),
-				k("eyesRead")
-			),
-			string.format(
-				Terms.f("%s: {grimoire} (only for {hand}).  %s: sabotage (only for {cultists})."),
-				k("privateScreen"),
-				k("sabotageBlackout", "sabotageJam", "sabotageBarricade")
+				Terms.f("%s: your role's power ({grimoire}, the blackout, the arrest).  %s: {eyes} (a {cultist})."),
+				k("ability"),
+				k("ability2")
 			),
 			string.format("%s: walk.  %s: look round.  %s: jump.", k("move"), k("look"), k("jump")),
 			"B: close the open window.",
@@ -81,27 +76,19 @@ local function controls(): { string }
 	return {
 		string.format("%s: use the prompts near stations, notes and the bell.", k("interact", "pickUp")),
 		string.format(
-			"%s: emotes.  %s: quick chat.  %s: read or write your note / drop it.",
+			"%s: emotes.  %s: quick chat.  %s: your note (read, write or drop it).",
 			k("quickChat"),
 			k("phrases"),
-			k("note", "drop")
+			k("note")
 		),
+		string.format("Hold %s: role card.  %s: this book.", k("roleCard"), k("help")),
 		string.format(
-			"Hold %s: role card.  %s: scratchpad.  %s: this book.",
-			k("roleCard"),
-			k("scratchpad"),
-			k("help")
+			Terms.f(
+				"%s: your role's power: {grimoire} for {hand}, the blackout for a {cultist}, the arrest for {zero} in a meeting."
+			),
+			k("ability")
 		),
-		string.format(
-			Terms.f("%s: stare with {eyes} (a {cultist} who took it).  %s: {grimoire} (only for {hand})."),
-			k("eyesRead"),
-			k("privateScreen")
-		),
-		string.format(
-			Terms.f("%s: blackout, jam stations, barricade (only for {cultists})."),
-			k("sabotageBlackout", "sabotageJam", "sabotageBarricade")
-		),
-		string.format(Terms.f("%s: arrest someone during a meeting (only for {zero})."), k("arrest")),
+		string.format(Terms.f("%s: {eyes}, a {cultist}'s deal and then its stare."), k("ability2")),
 		string.format(
 			"%s: walk.  %s: jump.  %s: turn the camera.  %s: shift lock.",
 			k("moveForward", "moveLeft", "moveBack", "moveRight"),

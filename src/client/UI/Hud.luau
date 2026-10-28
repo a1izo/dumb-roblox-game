@@ -48,19 +48,12 @@ local ROLE_ICON = {
 
 -- Icon per action id.
 local ACTION_ICON = {
-	privateScreen = "grimoire",
 	quickChat = "palm",
 	phrases = "chat",
 	note = "note",
-	drop = "mail",
-	eyesDeal = "eye",
-	eyesRead = "eye",
-	sabotageBlackout = "candle",
-	sabotageJam = "lock",
-	sabotageBarricade = "cross",
-	scratchpad = "quill",
+	ability = "grimoire",
+	ability2 = "eye",
 	help = "help",
-	arrest = "cuffs",
 }
 
 -- Phase banner

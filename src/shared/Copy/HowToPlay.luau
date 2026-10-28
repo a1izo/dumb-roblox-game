@@ -58,7 +58,7 @@ local RAW: { { title: string, body: { string } } } = {
 		title = "{Cultists} and {eyes}",
 		body = {
 			"A {cultist} knows {hand}, but {hand} does not know them.",
-			"{Cultists} sabotage: a blackout, jammed stations, or a barricade across the way.",
+			"{Cultists} can black out the lights: the map goes dark and name tags vanish for a while.",
 			"A {cultist} may accept {eyes}: stare at anyone to read their name at a glance, eyes blazing, and die 90 seconds later.",
 		},
 	},

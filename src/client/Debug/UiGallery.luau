@@ -134,7 +134,7 @@ local function build()
 	Kit.actionChip({ icon = "evidence", label = "Evidence", key = "B", Parent = chips })
 	Kit.actionChip({ icon = "eye", label = "Read name", key = "R", variant = "primary", Parent = chips })
 	Kit.actionChip({ icon = "mail", label = "Discard sheet", key = "D-Down", Parent = chips })
-	Kit.actionChip({ icon = "quill", label = "Scratchpad", touch = true, Parent = chips })
+	Kit.actionChip({ icon = "quill", label = "Notes", touch = true, Parent = chips })
 	Kit.tabs({
 		items = {
 			{ id = "a", label = "Hats", icon = "hood" },

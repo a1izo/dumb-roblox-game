@@ -254,7 +254,6 @@ function HintController.init()
 			HintController.trigger("eliminated")
 		elseif payload.kind == "dead" and ClientState.isParticipant() then
 			HintController.trigger("death")
-			HintController.trigger("scratchpad")
 		end
 	end)
 	ProximityPromptService.PromptShown:Connect(function(prompt: ProximityPrompt)

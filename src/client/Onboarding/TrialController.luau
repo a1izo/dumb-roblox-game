@@ -118,7 +118,7 @@ local function stareKey(): string
 	if Keys.input() == "touch" then
 		return "the Stare button"
 	end
-	local key = Keys.text("eyesRead")
+	local key = Keys.text("ability2")
 	return if key ~= "" then key else "the stare's key"
 end
 
@@ -289,8 +289,8 @@ local function bindStare(on: boolean)
 		return
 	end
 	local saved = if ClientState.profile then ClientState.profile.keybinds else nil
-	local inputs = Bindings.keyCodes("eyesRead", "keyboard", saved)
-	for _, key in ipairs(Bindings.keyCodes("eyesRead", "gamepad", saved)) do
+	local inputs = Bindings.keyCodes("ability2", "keyboard", saved)
+	for _, key in ipairs(Bindings.keyCodes("ability2", "gamepad", saved)) do
 		table.insert(inputs, key)
 	end
 	ContextActionService:BindAction(STARE_ACTION, function(_, inputState: Enum.UserInputState)

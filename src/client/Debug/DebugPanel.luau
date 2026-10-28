@@ -406,7 +406,7 @@ builders.People = function()
 		send("manualReady", { userId = selected })
 	end)
 	r = row()
-	for _, kind in ipairs({ "blackout", "jam", "barricade" }) do
+	for _, kind in ipairs({ "blackout" }) do
 		button(r, "Sabotage: " .. kind, function()
 			send("sabotage", { userId = selected, kind = kind })
 		end)
@@ -830,7 +830,6 @@ builders.UI = function()
 		"profile",
 		"leaderboards",
 		"party",
-		"scratchpad",
 		"quickChat",
 	}) do
 		button(r, name, function()

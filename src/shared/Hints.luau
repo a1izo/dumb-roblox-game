@@ -70,11 +70,6 @@ local RAW: { { string } } = {
 		"You are a {Specter}",
 		"Fly with {key.fly}. The living cannot see or hear you. You can still work case files for {agency}, gather lost souls and chat with other {specters}.",
 	},
-	{
-		"scratchpad",
-		"Your notes",
-		"{key.pad} to open a private notepad. Only you can see it, and it clears when the match ends.",
-	},
 }
 
 local Hints = {}
@@ -84,50 +79,40 @@ local Hints = {}
 Hints.KEYS = {
 	keyboard = {
 		card = "Hold C",
-		stare = "R",
-		manual = "P",
-		sabotage = "Z, B, T",
-		blackout = "Z",
-		jam = "B",
-		barricade = "T",
+		stare = "T",
+		manual = "R",
+		sabotage = "R",
+		blackout = "R",
 		use = "E",
 		note = "N",
-		drop = "G",
 		wheel = "Q",
-		arrest = "K",
+		arrest = "R",
 		work = "Press E",
 		pass = "X",
 		passDo = "press X",
-		pad = "Press V",
 		fly = "WASD, Space (up) and Ctrl (down)",
 	},
 	gamepad = {
 		card = "Hold LB",
-		stare = "RB",
-		manual = "Y",
-		sabotage = "LT, D-pad up",
-		blackout = "LT",
-		jam = "D-pad up",
-		barricade = "its button",
+		stare = "Y",
+		manual = "RB",
+		sabotage = "RB",
+		blackout = "RB",
 		use = "X",
 		note = "D-Right",
-		drop = "D-Down",
 		wheel = "D-Left",
-		arrest = "the meeting panel's button",
+		arrest = "RB",
 		work = "Press X",
 		pass = "LB",
 		passDo = "press LB",
-		pad = "Press RT",
 		fly = "the left stick, A (up) and LT (down)",
 	},
 	touch = {
 		card = "Press and hold your role badge",
-		stare = "the Stare button",
+		stare = "the Read name button",
 		manual = "its button on the right",
-		sabotage = "the buttons on the right",
+		sabotage = "its button on the right",
 		blackout = "its button",
-		jam = "its button",
-		barricade = "its button",
 		use = "tap",
 		note = "its button",
 		drop = "its button",
@@ -136,7 +121,6 @@ Hints.KEYS = {
 		work = "Tap the prompt",
 		pass = "tap its prompt",
 		passDo = "tap the prompt",
-		pad = "Tap Scratchpad",
 		fly = "the stick and the Up and Down buttons",
 	},
 } :: { [string]: { [string]: string } }
@@ -153,28 +137,17 @@ local function own(input: string, saved: any): { [string]: string }
 			keys[name] = text
 		end
 	end
-	local function some(list: { string }): string
-		local parts = {}
-		for _, text in ipairs(list) do
-			if text ~= "" then
-				table.insert(parts, text)
-			end
-		end
-		return table.concat(parts, ", ")
-	end
-	local card, stare, use, pass, pad = t("roleCard"), t("eyesRead"), t("interact"), t("passNote"), t("scratchpad")
+	local card, stare, use, pass = t("roleCard"), t("ability2"), t("interact"), t("passNote")
 	if card ~= "" then
 		put("card", "Hold " .. card)
 	end
 	put("stare", stare)
-	put("manual", t("privateScreen"))
-	put("sabotage", some({ t("sabotageBlackout"), t("sabotageJam"), t("sabotageBarricade") }))
-	put("blackout", t("sabotageBlackout"))
-	put("jam", t("sabotageJam"))
-	put("barricade", t("sabotageBarricade"))
-	put("arrest", t("arrest"))
+	local power = t("ability")
+	put("manual", power)
+	put("sabotage", power)
+	put("blackout", power)
+	put("arrest", power)
 	put("note", t("note"))
-	put("drop", t("drop"))
 	put("wheel", t("quickChat"))
 	put("use", use)
 	if use ~= "" then
@@ -183,9 +156,6 @@ local function own(input: string, saved: any): { [string]: string }
 	put("pass", pass)
 	if pass ~= "" then
 		put("passDo", "press " .. pass)
-	end
-	if pad ~= "" then
-		put("pad", "Press " .. pad)
 	end
 	local up, down = t("flyUp", " or "), t("flyDown", " or ")
 	if up ~= "" and down ~= "" then

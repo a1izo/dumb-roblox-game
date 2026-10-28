@@ -2,8 +2,7 @@
 -- sends its id and seed, and the case file counts the moment a right answer comes back. Every
 -- case file a Bureau player finishes fills the Bureau's shared task bar (TaskBarService), which never
 -- says who did it. Bureau Specters can keep working them. Diavolo and the Muertos cannot use stations
--- at all; they can hack one instead (HackService), to read who finished a case file there last,
--- and a Muerto can jam the stations in an area for a while (SabotageService).
+-- at all; they can hack one instead (HackService), to read who finished a case file there last.
 
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,7 +25,6 @@ local TaskStateRemote = Net.event("TaskState")
 local CaseFileService = {}
 
 local stations = {} -- id -> runtime record
-local order = {}
 local working = {} -- [playerState] = runtime record
 local monitorConnection: RBXScriptConnection? = nil
 
@@ -34,22 +32,11 @@ local function now(): number
 	return workspace:GetServerTimeNow()
 end
 
-local function jammed(runtime): boolean
-	return now() < runtime.jammedUntil
-end
-
 local function setScreen(runtime, busy: boolean)
 	local info = runtime.info
-	local isJammed = jammed(runtime)
 	info.desk:SetAttribute("Busy", busy)
-	info.desk:SetAttribute("JammedUntil", if isJammed then runtime.jammedUntil else nil)
-	-- (The name is the screen's own header; this is its state line, red while jammed.)
-	local label = info.label
-	if label:GetAttribute("Calm") == nil then
-		label:SetAttribute("Calm", label.TextColor3)
-	end
-	label.Text = if isJammed then "JAMMED" elseif busy then "ANALYSING…" else "READY"
-	label.TextColor3 = if isJammed then Color3.fromRGB(235, 72, 72) else label:GetAttribute("Calm")
+	-- (The name is the screen's own header; this is its state line.)
+	info.label.Text = if busy then "ANALYSING…" else "READY"
 end
 
 -- Everyone sees who is working a station (their character plays that station type's working
@@ -91,49 +78,6 @@ local function canWork(ps): boolean
 	return ps.alive or (ps.status ~= "left" and ps.away ~= true)
 end
 
--- Locks every station in the map area around `position` (the three closest when that area has none)
--- for `seconds`. Returns the names of the stations jammed.
-function CaseFileService.jamNear(position: Vector3, seconds: number): { string }
-	local area = Match.nearestArea(position)
-	local chosen = {}
-	for _, runtime in ipairs(order) do
-		if Match.nearestArea(runtime.info.position) == area then
-			table.insert(chosen, runtime)
-		end
-	end
-	if #chosen == 0 then
-		local sorted = table.clone(order)
-		table.sort(sorted, function(a, b)
-			return (a.info.position - position).Magnitude < (b.info.position - position).Magnitude
-		end)
-		for i = 1, math.min(3, #sorted) do
-			table.insert(chosen, sorted[i])
-		end
-	end
-	local names = {}
-	local untilTime = now() + seconds
-	for _, runtime in ipairs(chosen) do
-		runtime.jammedUntil = untilTime
-		if runtime.worker then
-			stopWork(runtime.worker, "The station jammed.")
-		end
-		setScreen(runtime, false)
-		table.insert(names, runtime.info.name)
-	end
-	local matchId = Match.id
-	task.delay(seconds + 0.1, function()
-		if Match.id ~= matchId then
-			return
-		end
-		for _, runtime in ipairs(chosen) do
-			if not jammed(runtime) then
-				setScreen(runtime, runtime.worker ~= nil or runtime.hacker ~= nil)
-			end
-		end
-	end)
-	return names
-end
-
 -- Close enough to the station, with it in sight (no case file worked, or hacked, through a wall).
 local function reaches(ps, runtime): boolean
 	local position = Match.position(ps)
@@ -152,8 +96,6 @@ function CaseFileService.hackProblem(ps, stationId: string): string?
 	local runtime = stations[stationId]
 	if not runtime then
 		return "missing"
-	elseif jammed(runtime) then
-		return "jammed"
 	elseif runtime.worker or runtime.hacker then
 		return "busy"
 	elseif now() < runtime.hackLockedUntil then
@@ -183,11 +125,6 @@ function CaseFileService.endHack(ps, stationId: string, lockFor: number?)
 		runtime.hackLockedUntil = now() + lockFor
 	end
 	setScreen(runtime, false)
-end
-
-function CaseFileService.isJammed(stationId: string): boolean
-	local runtime = stations[stationId]
-	return runtime ~= nil and jammed(runtime)
 end
 
 -- Who finished a case file at this station at or after `since` (server time), if anyone.
@@ -229,10 +166,6 @@ local function onStart(ps, stationId: string)
 	end
 	local runtime = stations[stationId]
 	if not runtime then
-		return
-	end
-	if jammed(runtime) then
-		Match.notify(ps.player, "This station is jammed. Try another one.", "bad")
 		return
 	end
 	if runtime.worker or runtime.hacker then
@@ -313,7 +246,6 @@ end
 
 function CaseFileService.onMatchStart(map)
 	stations = {}
-	order = {}
 	working = {}
 	for _, info in ipairs(map.stations) do
 		local runtime = {
@@ -321,14 +253,12 @@ function CaseFileService.onMatchStart(map)
 			worker = nil,
 			puzzle = nil,
 			seed = 0,
-			jammedUntil = 0,
 			hacker = nil,
 			hackLockedUntil = 0,
 			lastUser = nil,
 			lastAt = 0,
 		}
 		stations[info.id] = runtime
-		table.insert(order, runtime)
 	end
 	if monitorConnection then
 		monitorConnection:Disconnect()
@@ -358,7 +288,6 @@ function CaseFileService.onMatchEnd()
 		monitorConnection = nil
 	end
 	stations = {}
-	order = {}
 	working = {}
 end
 

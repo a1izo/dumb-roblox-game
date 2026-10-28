@@ -80,9 +80,8 @@ Muertos equal or outnumber the living Bureau.
 - **Diavolo**: hacks stations for names and writes them in the Manual (60 s cooldown). He does not know
   the Muertos, so writing a Muerto's name kills the Muerto. Cannot use stations or sabotage.
 - **Muerto** (none at 6 to 7 players, 1 at 8 to 11, 2 at 12): knows Diavolo; nobody knows them (not
-  even the other Muerto). Hacks stations, passes names on paper notes, sabotages (blackout, jam the stations near
-  them, a barricade across the way; one shared 45 s cooldown). May take the **Oculus of the Dead**
-  at any time: a 3 s visible ritual, then they can stare (R) to read a name in 1 s from 30 studs,
+  even the other Muerto). Hacks stations, passes names on paper notes, blacks out the lights (every 45 s). May take the **Oculus of the Dead**
+  at any time: a 3 s visible ritual, then they can stare (T) to read a name in 1 s from 30 studs,
   eyes glowing, and die after 90 s of free roam.
 - **Ace**: secret; only the Butler knows. One arrest per match during a meeting: a Coven player is
   removed, an innocent walks free and Ace dies. The arrest reveals Ace.
@@ -99,15 +98,12 @@ working case files.
 | --- | --- |
 | E / F | Use world prompts (work a station, ring the bell, take a sheet or a note) |
 | Hold C | Role card: your role, real name and allies |
-| V | Scratchpad (private notes, never sent anywhere) |
 | H | How to Play |
-| Q | Quick chat and the emote wheel; 1 to 8 play its emotes. In the lobby, the emote wheel alone |
-| N / G | Write or read your note / drop it |
+| Q / M | The emote wheel (1 to 8 play its emotes) / quick-chat phrases |
+| N | Your note: write, read or drop it |
 | E at a station | Hack its log (Diavolo and Muertos): three timing checks; miss one and its alarm goes off |
-| R | Stare (a Muerto who took the Oculus): read the real name of the player you look at |
-| P | Death's Manual (Diavolo) |
-| Z / B / T | Sabotage (Muertos): blackout, jam stations, barricade |
-| K | Ace's arrest, during a meeting |
+| R | Your role's power: Death's Manual (Diavolo), the blackout (Muerto), the arrest (Ace, in a meeting) |
+| T | The Oculus (Muerto): accept the deal, then stare to read a name |
 | As a Deathsinger or spectator | WASD to fly, Space up, Ctrl down (gamepad: A up, LT down; touch: on-screen buttons) |
 | F2 | Debug panel (Studio play tests only) |
 

@@ -40,7 +40,7 @@ return function(t)
 				keyboard = {
 					jump = { "K", "Escape", "K", "NotAKey", "L", "M" },
 					nonsense = { "B" },
-					scratchpad = "B",
+					help = "B",
 				},
 				gamepad = { jump = { "ButtonStart", "ButtonB" } },
 				mouse = { jump = { "K" } },
@@ -49,7 +49,7 @@ return function(t)
 			expect(clean.keyboard.jump[1]).to.equal("K")
 			expect(clean.keyboard.jump[2]).to.equal("L")
 			expect(clean.keyboard.nonsense).to.equal(nil)
-			expect(clean.keyboard.scratchpad).to.equal(nil)
+			expect(clean.keyboard.help).to.equal(nil)
 			expect(clean.gamepad.jump[1]).to.equal("ButtonB")
 			expect(#clean.gamepad.jump).to.equal(1)
 			expect((clean :: any).mouse).to.equal(nil)
@@ -57,8 +57,8 @@ return function(t)
 		end)
 
 		it("reads a player's own keys before the defaults, and finds the clash they make", function()
-			local saved = { keyboard = { scratchpad = { "N" } } }
-			expect(Bindings.keys("scratchpad", "keyboard", saved)[1]).to.equal("N")
+			local saved = { keyboard = { help = { "N" } } }
+			expect(Bindings.keys("help", "keyboard", saved)[1]).to.equal("N")
 			expect(Bindings.keys("note", "keyboard", saved)[1]).to.equal("N")
 			expect(#Bindings.clashes("keyboard", saved)).to.equal(1)
 			-- a key two actions share is fine when they are never live together

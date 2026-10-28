@@ -112,7 +112,6 @@ local function playerProblem(ps): string?
 end
 
 local PROBLEM_TEXT = {
-	jammed = "This station is jammed.",
 	busy = "Someone is at this station.",
 	locked = "The alarm went off here: its log is locked for now.",
 }
@@ -181,7 +180,7 @@ local function onRequest(player: Player, payload)
 	end
 end
 
--- Moving off, a jam, the end of free roam or a hack left hanging all break a hack off.
+-- Moving off, the end of free roam or a hack left hanging all break a hack off.
 local function watch(dt: number)
 	elapsed += dt
 	if elapsed < 0.25 then
@@ -195,8 +194,6 @@ local function watch(dt: number)
 			stop(ps, "The hack was cut off.", nil)
 		elseif not info or not position or (position - info.position).Magnitude > Config.TASK_RANGE + 4 then
 			stop(ps, "You moved away from the station.", nil)
-		elseif CaseFileService.isJammed(hack.stationId) then
-			stop(ps, "The station jammed.", nil)
 		elseif os.clock() - hack.clock > Config.HACK_TIME + 20 then
 			stop(ps, "The hack timed out.", nil)
 		end
