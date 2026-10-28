@@ -335,11 +335,15 @@ def train_car_open():
         parts.append(mk.box("Strap", (0.06, 0.3, 0.9), (0.6, sy, roof_z - 1.36), mat=trim))
         parts.append(mk.torus("StrapRing", 0.16, 0.035, (0.6, sy, roof_z - 1.95), rot=(0, 90, 0), mat=trim,
                               major_segments=12, minor_segments=5))
-    # outside, as the other cars
+    # outside, as the other cars (the open side's low band stops either side of the doorway: it ran across it)
     for sx in (-1, 1):
         x = sx * (W / 2 + 0.01)
-        parts += [mk.box("Band", (0.05, L - 0.6, 0.55), (x, 0, 3.4), mat=band),
-                  mk.box("BandTop", (0.05, L - 0.6, 0.3), (x, 0, 9.6), mat=band)]
+        if sx > 0:
+            for a0, a1 in ((front + 0.3, door0), (door1, -front - 0.3)):
+                parts.append(mk.box("Band", (0.05, a1 - a0, 0.55), (x, (a0 + a1) / 2, 3.4), mat=band))
+        else:
+            parts.append(mk.box("Band", (0.05, L - 0.6, 0.55), (x, 0, 3.4), mat=band))
+        parts.append(mk.box("BandTop", (0.05, L - 0.6, 0.3), (x, 0, 9.6), mat=band))
         for k in range(4):
             y = front + 6.5 + k * 12.6
             if sx > 0 and abs(y - DOOR_Y) < 0.1:

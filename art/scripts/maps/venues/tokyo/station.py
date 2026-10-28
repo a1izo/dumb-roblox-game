@@ -84,7 +84,9 @@ def platform(s, g):
         s.box("PaintYellow", ((x0 + x1) / 2, P.PLATFORM_Y + 0.06, z - facing * 1.6), (x1 - x0, 0.12, 1.0), 0,
               skip=("-y",))
         city.vquad(s, "ConcreteDark", (x0, z), (x1, z), TRACK_Y, P.PLATFORM_Y, (0, facing))
-        screen_doors(s, x0, x1, z, facing)
+        # (the north edge's bay at x -88 stands open, its doors slid away: the Tokyo intro's train stops there and
+        # the camera looks through it, cinema/shots/intro_tokyo.py DOOR_X)
+        screen_doors(s, x0, x1, z, facing, open_bays=(-88.0,) if facing > 0 else ())
     for t0, t1 in P.TRACKS_Z:
         bed = P.box(x0 - 8, t0, x1 + 8, t1)
         city.up_face(s, "ConcreteDark", bed, TRACK_Y)
@@ -107,16 +109,18 @@ def platform(s, g):
                    (24, 26, 32), (226, 228, 230))
 
 
-def screen_doors(s, x0, x1, z, facing, h=8.0, bay=6.0):
+def screen_doors(s, x0, x1, z, facing, h=8.0, bay=6.0, open_bays=()):
     """Full-height glass screen doors along a platform edge, up to a header band that meets the
-    ceiling: nobody gets onto the tracks, and nothing invisible is needed to stop them."""
+    ceiling: nobody gets onto the tracks, and nothing invisible is needed to stop them. A bay centred on
+    one of `open_bays` (x) stands open, no glass and no rail; the edge's collider still closes it."""
     zz = z - facing * 0.4
     top = P.PLATFORM_CEILING
     x = x0 + 1.0
     while x + bay <= x1 - 1.0:
         s.box("DarkMetal", (x, P.PLATFORM_Y + h / 2, zz), (0.4, h, 0.5), 0)
-        s.box("Glass", (x + bay / 2, P.PLATFORM_Y + h / 2, zz), (bay - 0.4, h - 0.2, 0.1), 0)
-        s.box("BlackTrim", (x + bay / 2, P.PLATFORM_Y + 1.1, zz), (bay - 0.4, 0.12, 0.14), 0)
+        if not any(abs(x + bay / 2 - ox) < 0.5 for ox in open_bays):
+            s.box("Glass", (x + bay / 2, P.PLATFORM_Y + h / 2, zz), (bay - 0.4, h - 0.2, 0.1), 0)
+            s.box("BlackTrim", (x + bay / 2, P.PLATFORM_Y + 1.1, zz), (bay - 0.4, 0.12, 0.14), 0)
         x += bay
     s.box("DarkMetal", (x, P.PLATFORM_Y + h / 2, zz), (0.4, h, 0.5), 0)
     # The header: a steel band from the doors to the ceiling with a strip of door lamps.

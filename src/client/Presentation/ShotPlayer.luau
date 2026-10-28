@@ -50,21 +50,31 @@ export type Options = {
 	length: number?,
 }
 
--- What a showing has going: what closes when it ends, the sounds it started, its stretch, the motion
--- blur's pulses ({ started (os.clock), size, seconds }) and the heartbeats' push-ins ({ started, share of
--- the field of view, seconds }).
+-- What a showing has going: what closes when it ends, the sounds it started, its stretch, the heartbeats
+-- ({ started (os.clock), share of the field of view, seconds }: the lens pushes in and the focus throbs),
+-- and the lens's focus (on whose head, how deep, how soft beyond it), nil for none.
+type Focus = {
+	slot: string,
+	part: string,
+	radius: number,
+	far: number,
+	near: number,
+	rack: number, -- seconds the focus takes to pull over from where it was (0: at once, as on a cut)
+	since: number, -- (os.clock) when it was set
+	from: number?, -- the focus distance it pulls from
+}
 type Showing = {
 	closers: { () -> () },
 	sounds: { Sound },
 	stretch: number,
-	pulses: { { number } },
 	punches: { { number } },
+	focus: Focus?,
 }
 
--- The motion blur: how much the camera's own speed blurs (size per degree a second turned, per stud a
--- second moved), its most, and a move in one frame that is a cut, not a move.
-local BLUR_TURN, BLUR_MOVE, BLUR_MOST = 1 / 30, 1 / 14, 6
-local CUT_TURN, CUT_MOVE = 20, 5
+-- Death's Manual as the game builds it (the Core import, Models.grimoire) lies half turned from the book in the Blender
+-- shots (its board opens the other way): seen in Studio, 2026-10-28, the open pages faced away from the one holding it.
+-- Models.heldManual turns it the same way.
+local MANUAL_TURN = CFrame.Angles(0, math.pi, 0)
 
 -- The data of a shot by name, or nil.
 function ShotPlayer.get(name: string): any
@@ -235,6 +245,7 @@ local function hold(actor: Model, spec: any): Instance?
 	local target = arm.CFrame
 		* CFrame.new(o[1], o[2], o[3])
 		* CFrame.Angles(math.rad(r[1]), math.rad(r[2]), math.rad(r[3]))
+		* (if spec.model == ManualBook.KEY then MANUAL_TURN else CFrame.identity)
 	placeModel(model, target)
 	local anchor = if model:IsA("Model")
 		then (model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true))
@@ -375,15 +386,24 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 			)
 		elseif name == "shake" then
 			CameraDirector.shake(token, event.strength or 0.4, event.dur or 0.4)
-		elseif name == "blur" then
-			table.insert(showing.pulses, { os.clock(), event.strength or 12, event.dur or 0.35 })
+		elseif name == "focus" then
+			-- the lens focuses on `slot`'s head (kept on it as they and the camera move): `radius` studs either
+			-- side are sharp, the rest softens by `far` behind and `near` in front; no slot lets it go
+			-- (`part` aims it elsewhere on them, "Left Arm" for the book in a hand; `rack` pulls it over in seconds)
+			showing.focus = if event.slot
+				then {
+					slot = event.slot,
+					part = event.part or "Head",
+					radius = event.radius or 2.5,
+					far = event.far or 0.45,
+					near = event.near or 0.3,
+					rack = event.rack or 0,
+					since = os.clock(),
+					from = nil,
+				}
+				else nil
 		elseif name == "pulse" then
-			-- a heartbeat: the edges thump in and the lens pushes in a touch
-			Cinema.pulse(
-				Color3.fromRGB(event.r or 110, event.g or 0, event.b or 10),
-				event.strength or 0.6,
-				event.dur or 0.6
-			)
+			-- a heartbeat: the lens pushes in a touch and its focus throbs
 			if not Vfx.still() then
 				table.insert(showing.punches, { os.clock(), event.punch or 0.05, event.dur or 0.6 })
 			end
@@ -548,25 +568,52 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				if type(data.scale) == "number" and math.abs(data.scale - 1) > 1e-3 then
 					model:ScaleTo(model:GetScale() * data.scale)
 				end
+				-- the lamps it carries (the map builder lights a placed prop; a shot's must light its own: the
+				-- metro car's interior)
+				local info = ModelLibrary.info(data.model)
+				local primary = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+				if info and info.lights and primary and primary:IsA("BasePart") then
+					local scale = if type(data.scale) == "number" then data.scale else 1
+					for _, spec in ipairs(info.lights) do
+						local at = model:GetPivot()
+							* CFrame.new(spec.at[1] * scale, spec.at[2] * scale, spec.at[3] * scale)
+						local holder =
+							Create("Attachment", { CFrame = primary.CFrame:ToObjectSpace(at), Parent = primary })
+						local color = spec.color or { 255, 255, 255 }
+						Create(if spec.kind == "spot" then "SpotLight" else "PointLight", {
+							Color = Color3.fromRGB(color[1], color[2], color[3]),
+							Range = (spec.range or 12) * scale,
+							Brightness = spec.brightness or 1,
+							Shadows = false,
+							Parent = holder,
+						})
+					end
+				end
 			end
-			table.insert(props, { model = model, data = data, times = data.t, frames = pathFrames(data) })
+			table.insert(props, {
+				model = model,
+				data = data,
+				times = data.t,
+				frames = pathFrames(data),
+				turn = if data.model == ManualBook.KEY then MANUAL_TURN else CFrame.identity,
+			})
 		end
 	end
 
 	local closers: { () -> () } = {}
-	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, pulses = {}, punches = {} }
-	-- Motion blur: the camera's own turning and moving blurs the frame a little, and a hit pulses it.
-	local blur: BlurEffect? = nil
-	if not Vfx.still() then
-		local made = Create("BlurEffect", { Name = "ShotMotionBlur", Size = 0, Parent = workspace.CurrentCamera })
-		blur = made
-		table.insert(closers, function()
-			made:Destroy()
-		end)
-	end
-	local lastCamera: CFrame? = nil
-	local lastClock = os.clock()
-	local blurSize = 0
+	local showing: Showing = { closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil }
+	-- The lens: a depth of field that the focus events aim (nothing soft until one does).
+	local lens = Create("DepthOfFieldEffect", {
+		Name = "ShotLens",
+		FarIntensity = 0,
+		NearIntensity = 0,
+		FocusDistance = 20,
+		InFocusRadius = 50,
+		Parent = workspace.CurrentCamera,
+	}) :: DepthOfFieldEffect
+	table.insert(closers, function()
+		lens:Destroy()
+	end)
 	-- With the debug rate set, the shot's own clock in a corner, so a screenshot says which moment it is.
 	local clockLabel: TextLabel? = nil
 	local probed = false
@@ -681,43 +728,39 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		local j, alpha = alphaAt(camTimes, i, tt)
 		local fov = cam.fov[i] + (cam.fov[j] - cam.fov[i]) * alpha
 		local clock = os.clock()
+		local throb = 0
 		for k = #showing.punches, 1, -1 do
 			local punch = showing.punches[k]
 			local u = (clock - punch[1]) / punch[3]
 			if u >= 1 then
 				table.remove(showing.punches, k)
 			else
-				-- (in fast, out slow, like the vignette's thump)
+				-- (in fast, out slow, as a heart thumps)
 				local shape = if u < 0.12 then u / 0.12 else 1 - (u - 0.12) / 0.88
 				fov *= 1 - punch[2] * shape * shape
+				throb = math.max(throb, shape * shape)
 			end
 		end
 		local frameCamera = camFrames[i]:Lerp(camFrames[j], alpha)
 		CameraDirector.cut(token, frameCamera, fov)
-		if blur then
-			local now = os.clock()
-			local dt = math.max(1e-3, now - lastClock)
-			local want = 0
-			if lastCamera then
-				local turn = math.deg(math.acos(math.clamp(lastCamera.LookVector:Dot(frameCamera.LookVector), -1, 1)))
-				local move = (frameCamera.Position - lastCamera.Position).Magnitude
-				if turn < CUT_TURN and move < CUT_MOVE then -- (a cut is not a move)
-					want = math.min(BLUR_MOST, (turn / dt) * BLUR_TURN + (move / dt) * BLUR_MOVE)
-				end
+		-- the lens: sharp on the focus's head, the rest soft (and softer, the sharp part thinner, on a heartbeat)
+		local focus = showing.focus
+		local subject = if focus then bySlot[focus.slot] else nil
+		local aimed = if focus and subject then subject.model:FindFirstChild(focus.part) else nil
+		if focus and aimed and aimed:IsA("BasePart") then
+			local distance = (aimed.Position - frameCamera.Position).Magnitude
+			if focus.rack > 0 then
+				-- a rack: from where the focus was, eased over to them
+				focus.from = focus.from or lens.FocusDistance
+				local u = math.clamp((clock - focus.since) / focus.rack, 0, 1)
+				distance = (focus.from :: number) + (distance - (focus.from :: number)) * (u * u * (3 - 2 * u))
 			end
-			for k = #showing.pulses, 1, -1 do
-				local pulse = showing.pulses[k]
-				local u = (now - pulse[1]) / pulse[3]
-				if u >= 1 then
-					table.remove(showing.pulses, k)
-				else
-					want = math.max(want, pulse[2] * (1 - u) * (1 - u))
-				end
-			end
-			-- (eased, so the blur breathes rather than flickers frame to frame)
-			blurSize = if want > blurSize then want else blurSize + (want - blurSize) * math.min(1, dt * 10)
-			blur.Size = blurSize
-			lastCamera, lastClock = frameCamera, now
+			lens.FocusDistance = distance
+			lens.InFocusRadius = focus.radius * (1 - 0.5 * throb)
+			lens.FarIntensity = math.min(1, focus.far + 0.35 * throb)
+			lens.NearIntensity = math.min(1, focus.near + 0.35 * throb)
+		else
+			lens.FarIntensity, lens.NearIntensity = 0, 0
 		end
 		-- actors
 		for _, live in ipairs(actors) do
@@ -761,7 +804,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		-- props
 		for _, prop in ipairs(props) do
 			if shown(prop.data.show, tt) then
-				placeModel(prop.model, CFrame.new(base) * samplePath(prop.times, prop.frames, tt))
+				placeModel(prop.model, CFrame.new(base) * samplePath(prop.times, prop.frames, tt) * prop.turn)
 				if not prop.model.Parent then
 					stage:add(prop.model)
 					-- (one joining the shot partway through is drawn in over a moment, never popped out of thin air:

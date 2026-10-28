@@ -120,18 +120,27 @@ v.key(7.9, "sine", root=(1, 0, 0), neck=(3, -8, 6), rShoulder=HANG_R, lShoulder=
 strike(v, JOLT, {"root": J((3, 0, 0)), "neck": J((6, 0, 0)), "rShoulder": J((14, 0, 6))},
        {"root": J((-24, 0, 2)), "neck": J((-20, 0, 0)), "rShoulder": CLUTCH, "lShoulder": OVER_L,
         "offset": (0.0, -0.18, 0.0)}, antic=0.12, travel=0.06, over=0.18, settle=0.3)
-# Frozen in it, only the breath and the hands shaking (small, quick).
-for k in range(8):
-    t = JOLT + 0.55 + 0.17 * k
-    v.key(t, "sine", offset=(0.0, -0.18, 0.0), root=(-24 + (1.5 if k % 2 else 0), 0, 2), neck=(-20, 0, 0),
-          rShoulder=J((CLUTCH["r"][0] + (2 if k % 2 else -1), CLUTCH["r"][1], CLUTCH["r"][2]), CLUTCH["p"]),
-          lShoulder=J((OVER_L["r"][0] + (-2 if k % 2 else 1), OVER_L["r"][1], OVER_L["r"][2]), OVER_L["p"]))
+# Fighting for breath where he stands: gasps that pull him up and crumple him again, the weight rolling from one
+# foot to the other (the feet stay put), the hand at his heart clawing tighter on each.
+for k, t in enumerate((JOLT + 0.6, JOLT + 1.05, JOLT + 1.45)):
+    side = 1 if k % 2 else -1
+    v.key(t, "out", offset=(0.0, -0.08, 0.0), root=(-15, 2 * side, 3 * side), neck=(-6, -4 * side, 2 * side),
+          rShoulder=CLUTCH, lShoulder=OVER_L)  # a gasp: up, the shoulders lifting
+    v.key(t + 0.28, "in", offset=(0.0, -0.22, 0.0), root=(-27, -side, 4 * side), neck=(-24, 3 * side, 3 * side),
+          rShoulder=J((CLUTCH["r"][0] + 6, CLUTCH["r"][1], CLUTCH["r"][2]), CLUTCH["p"]), lShoulder=OVER_L)
 # The head comes up once, to the car; the left hand leaves the chest towards it, and gives up.
 v.key(9.9, "sine", offset=(0.0, -0.16, 0.0), root=(-18, 0, 2), neck=(12, -6, 0), rShoulder=CLUTCH, lShoulder=OVER_L)
 v.key(10.4, "sine", offset=(0.0, -0.16, 0.0), root=(-16, 0, 2), neck=(16, -6, 2), rShoulder=CLUTCH, lShoulder=PLEA_L)
-v.key(KNEES[0], "sine", offset=(0.0, -0.16, 0.0), root=(-16, 0, 2), neck=(10, -6, 2), rShoulder=CLUTCH,
-      lShoulder=mix(PLEA_L, HANG_L, 0.5))
-# The knees go (the reference: straight down, upright, 0.7 s) and he settles back onto his heels, the head down.
+# A knee gives a little, he catches it...
+v.key(10.62, "in", offset=(0.0, -0.3, 0.0), root=(-18, 3, -6), neck=(8, -6, -2), rShoulder=CLUTCH,
+      lShoulder=mix(PLEA_L, HANG_L, 0.4))
+v.key(KNEES[0], "out", floor=True, root=(-16, 0, 2), neck=(10, -6, 2), rShoulder=CLUTCH,
+      lShoulder=mix(PLEA_L, HANG_L, 0.6), rHip=J((0, 0, 0)), lHip=J((0, 0, 0)))
+# ...and the knees go (the reference: the body straight down, upright, 0.7 s; an R6 leg cannot bend, so it swings
+# back under him as he drops, the body's height kept on the floor the whole way: never in the air), and he settles
+# back onto his heels, the head down.
+v.key(KNEES[0] + 0.3, "in", floor=True, root=(-12, 0, 2), neck=(2, -4, 2), rShoulder=CLUTCH, lShoulder=HANG_L,
+      rHip=J((-40, 0, 2), (0, 0.06, 0.12)), lHip=J((-40, 0, -2), (0, 0.06, 0.12)))
 kneel(v, KNEES[1], "in", lean=-8, head=-6, rShoulder=CLUTCH, lShoulder=HANG_L)
 kneel(v, KNEES[1] + 0.18, "out", lean=-4, head=-22, rShoulder=CLUTCH, lShoulder=HANG_L)
 kneel(v, KNEES[1] + 0.6, "sine", lean=-10, head=-26, rShoulder=CLUTCH, lShoulder=HANG_L)
@@ -355,7 +364,9 @@ LEAF_Z = TRACK_Z - 4.1  # just inside the car's side
 for side in (-1, 1):
     leaf = shot.prop("TrainDoorLeaf")
     closed, opened = side * 1.1, side * 3.3
-    keys = [(ARRIVE, closed, "smooth"), ((DOORS_OPEN[0], STOP), closed, "smooth"), ((DOORS_OPEN[1], STOP), opened, "out"),
+    # (riding in with the car on the car's own keys, or they drift along its side as it brakes)
+    keys = [(ARRIVE, closed, "smooth"), (STOPPED, closed, "out"), ((DOORS_OPEN[0], STOP), closed, "smooth"),
+            ((DOORS_OPEN[1], STOP), opened, "out"),
             ((DOORS_SHUT[0], STOP), opened, "smooth"), ((DOORS_SHUT[1], STOP), closed, "in"), ((LENGTH, STOP), closed, "smooth")]
     for (t, x), dx, ease in keys:
         leaf.at(t, (x + CAR_DOOR + dx, FLOOR + 3.7, LEAF_Z), (0, -90, 0), ease)
@@ -399,6 +410,20 @@ shot.subjects.append((BLACK, LENGTH, None, True))
 shot.cam(BLACK, (DOOR_X + 1.3, FLOOR + 0.55, -48.4), (DOOR_X, FLOOR + 1.6, -53.4), fov=46, cut=True)
 shot.cam(LENGTH, (DOOR_X + 1.3, FLOOR + 0.55, -48.4), (DOOR_X, FLOOR + 1.6, -53.4), fov=46, ease="linear")
 
+# The lens: sharp on whoever the cut is about, the rest soft; low along the body it racks from him to the writer.
+for t, slot, part, radius, far, near in (
+        (0.0, "victim", "Head", 9.0, 0.25, 0.0),  # A: the platform, gently soft at the far end
+        (5.0, "watcher", "Head", 2.5, 0.45, 0.6),  # B: the writer sharp, the victim's shoulder soft before him
+        (7.4, "watcher", "Left Arm", 1.4, 0.6, 0.4),  # W: the page
+        (JOLT, "victim", "Head", 3.0, 0.55, 0.3),  # C: him; the walker and the platform soft
+        (12.0, "victim", "Head", 3.0, 0.5, 0.3),  # D
+        (14.6, "victim", "Head", 1.4, 0.6, 0.2),  # E: on him lying there...
+        (16.0, "watcher", "Left Arm", 1.2, 0.6, 0.4),  # I: the book
+        (17.2, "watcher", "Head", 1.5, 0.7, 0.3),  # F: the smile
+        (18.6, "victim", "Head", 1.6, 0.5, 0.8)):  # H: him, the closing doors soft in front
+    shot.event(t, "fx", name="focus", slot=slot, part=part, radius=radius, far=far, near=near)
+shot.event(15.15, "fx", name="focus", slot="watcher", part="Head", radius=2.0, far=0.4, near=0.75, rack=0.6)  # ...to him
+
 # Faces
 shot.face(0.0, "victim", "Stern")
 shot.face(JOLT, "victim", "Shock")
@@ -417,7 +442,6 @@ shot.event(WRITE[0] + 0.3, "sfx", slot="penScratch")
 shot.event(WRITE[1] - 0.32, "sfx", slot="penScratch")
 shot.event(WRITE[1] + 0.1, "sfx", slot="penStop")
 shot.event(JOLT, "sfx", slot="introTokyoDrone")
-shot.event(JOLT, "fx", name="blur", strength=14, dur=0.4)
 shot.event(JOLT, "fx", name="drain", strength=0.85, contrast=0.15, dur=BLACK - JOLT)
 # the heart: a hard beat on the jolt, then slower and fainter
 for k, t in enumerate((JOLT, 9.35, 10.6, 12.0, 13.6, 15.4, 17.4, 19.7)):
@@ -425,7 +449,6 @@ for k, t in enumerate((JOLT, 9.35, 10.6, 12.0, 13.6, 15.4, 17.4, 19.7)):
     shot.event(t, "fx", name="pulse", strength=max(0.25, 0.75 - 0.07 * k), punch=0.05 if k == 0 else 0.025, dur=0.7)
 shot.event(HIT, "sfx", slot="bodyFall")
 shot.event(HIT, "fx", name="shake", strength=0.22, dur=0.25)
-shot.event(HIT, "fx", name="blur", strength=10, dur=0.4)
 shot.event(SHUT[1], "sfx", slot="bookShut")
 shot.event(18.8, "sfx", slot="doorRiser")
 shot.event(DOORS_SHUT[0], "sfx", slot="trainDoors")
