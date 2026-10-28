@@ -18,5 +18,7 @@ the `·` separators) specifically.
 - Don't chain clauses with `:` or `;` ("The deal is made: names come fast now"). Split into short sentences.
 - Contractions are fine ("don't", "can't").
 - Exceptions kept on purpose: cutscene subtitles (`art/scripts/cinema` uses `...` to time pauses), the font
-  truncation ellipsis in `UI/Core/FontMirror.luau`, and the ◆ rarity mark around Sealed+ titles (`Shared/Rarity`).
+  truncation ellipsis in `UI/Core/FontMirror.luau`, and the rarity marks around titles (`Shared/Rarity`): ◇ for
+  Penned, ◆ from Sealed up. Penned's mark was a `·` until the dots went; it needs a mark of its own, or a Penned
+  title looks exactly like a Scrawl one (Rarity.spec checks every tier differs).
 - Run `python scripts/check_terms.py` after text edits: words like "Hands", "agent", "Zero" are banned outside Terms placeholders.

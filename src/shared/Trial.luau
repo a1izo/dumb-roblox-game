@@ -53,7 +53,7 @@ local RAW: { Step } = {
 	{
 		id = "write",
 		line = "Learn a name, then write it",
-		how = "Stand near Dummy B and hold {stareKey} for {seconds}s.",
+		how = "Stand near Dummy B, press {stareKey} and keep still for {seconds}s.",
 		howNext = "Got it. Follow the wisp to {grimoire} and write the name.",
 		why = "That's how {hand} kills. Watch for red eyes.",
 		drill = "grimoire",

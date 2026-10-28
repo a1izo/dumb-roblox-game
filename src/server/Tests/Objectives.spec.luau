@@ -43,7 +43,7 @@ return function(t)
 			local lines = Objectives.lines("Follower", "Investigation", { eyes = { lifeLeft = 90 } }, true)
 			local found = false
 			for _, line in ipairs(lines) do
-				if string.find(line.text, "90 s", 1, true) then
+				if string.find(line.text, "90s", 1, true) then
 					found = true
 				end
 			end

@@ -53,11 +53,11 @@ function Rarity.color(id: string?): Color3
 end
 
 -- A title's look, over the head in the lobby and on its shop card: the mark either side of its words in the
--- tier's colour (none for Scrawl, a dot for Penned, a diamond from Sealed up) and how far its letters lean to
--- that colour (Condemned's and Godhood's).
+-- tier's colour (none for Scrawl, a hollow diamond for Penned, a solid one from Sealed up; Penned's was a dot until
+-- player text dropped its dots) and how far its letters lean to that colour (Condemned's and Godhood's).
 function Rarity.titleLook(id: string?): (string?, number)
 	local rank = Rarity.rank(id)
-	local mark = if rank >= 3 then "◆" else nil
+	local mark = if rank >= 3 then "◆" elseif rank == 2 then "◇" else nil
 	return mark, if rank >= 4 then 0.35 else 0
 end
 

@@ -123,7 +123,7 @@ return function(t)
 					expect(string.find(string.lower(line), "letter", 1, true)).to.equal(nil)
 				end
 			end
-			expect(Trial.text(Trial.BY_ID.card.how, keys)).to.equal("Hold C to turn it over.")
+			expect(Trial.text(Trial.BY_ID.card.how, keys)).to.equal("Hold C to flip it.")
 			expect(string.find(Trial.text(Trial.BY_ID.ready.why), "Six players", 1, true) ~= nil).to.equal(
 				Config.MIN_PLAYERS == 6
 			)
@@ -133,8 +133,9 @@ return function(t)
 			local write = Trial.BY_ID.write
 			local how = Trial.text(write.how, { stareKey = "R" })
 			expect(string.find(how, "Dummy B", 1, true) ~= nil).to.equal(true)
+			-- (a press, then keeping still: letting go of the key does not break a stare)
 			expect(string.find(how, "press R", 1, true) ~= nil).to.equal(true)
-			expect(string.find(how, tostring(Config.STARE_TIME) .. " s", 1, true) ~= nil).to.equal(true)
+			expect(string.find(how, tostring(Config.STARE_TIME) .. "s", 1, true) ~= nil).to.equal(true)
 			-- The second half (the Manual) has its own line; the other steps are done in one go.
 			expect(write.howNext ~= nil).to.equal(true)
 			for _, step in ipairs(Trial.STEPS) do

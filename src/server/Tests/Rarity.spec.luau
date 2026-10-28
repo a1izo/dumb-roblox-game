@@ -122,7 +122,7 @@ return function(t)
 		end)
 
 		it(
-			"gives each title tier its own look: no mark, a dot, then a diamond; the top two lean to their colour",
+			"gives each title tier its own look: no mark, a hollow diamond, then a solid one; the top two lean to their colour",
 			function()
 				local marks, leans = {}, {}
 				for _, id in ipairs(Rarity.ORDER) do
@@ -130,7 +130,7 @@ return function(t)
 					table.insert(marks, mark or "-")
 					table.insert(leans, tostring(lean > 0))
 				end
-				expect(table.concat(marks, ",")).to.equal("-,·,◆,◆,◆")
+				expect(table.concat(marks, ",")).to.equal("-,◇,◆,◆,◆")
 				expect(table.concat(leans, ",")).to.equal("false,false,false,true,true")
 			end
 		)
