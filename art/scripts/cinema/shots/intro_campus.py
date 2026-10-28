@@ -5,14 +5,14 @@ over the entrance exam, each candidate at their own rhythm; one player (picked a
 role) has finished, chin in hand; out in the night a black book falls past the lamp over the side door, and only he
 turns; it lands in the snow; nobody else looked up.
 
-A  0.0-4.0   High from the back corner of the hall, craning down and in: thirty candidates writing under the lamps, a desk apart.
+A  0.0-4.0   High from the back corner of the hall, craning down and in: the candidates writing under the lamps, a desk apart.
 B  4.0-6.8   Low down the aisle between the blocks, creeping forward: pencils going on both sides, each their own.
 C  6.8-9.6   The one by the side door, from in front: finished, chin in his hand, twirling his pencil, an eye on the
              clock, a sigh.
-D  9.6-11.0  Outside, high in the night by the wall: something black drops out of the dark.
-F  11.0-12.6 Falling with it: a black book turning over, past the lamp.
+D  9.6-11.0  Outside, low, looking up the lit wall: something black drops fast out of the dark.
+F  11.0-12.6 Time all but stops: a black book hanging in the air, turning over slowly in the lamp's light.
 E  12.6-13.6 Inside, close: his head snaps round to the door.
-G  13.6-15.8 Low in the snow outside: it lands under the lamp, the snow bursting; beyond the arch, the lit hall.
+G  13.6-15.8 Low in the snow outside: fast again, it lands under the lamp, the snow bursting; beyond the arch, the lit hall.
 H  15.8-17.8 Close on his face from the door's side, pushing in: he stares.
 I  17.8-19.6 Wide from the front of the hall, pulling back: everyone writing; only he is turned to the door.
    19.6-22.6 Black, then the case's card.
@@ -41,18 +41,18 @@ LEGS = 56  # the thighs sloping down under the desk's rack (R6 legs do not bend)
 SEAT_BACK = 1.4  # from a desk to the floor under the sitter's hips
 PAPER = (0.1, -1.65)  # (the character's frame) the exam paper: across, forward
 ABOVE = 0.78  # the fist this far over the paper puts the pencil's point on it (PEN_GRIP)
-DESK_ROWS = (-95.0, -90.0, -85.0)
 # (candidates sit every other desk, as an exam seats them: the two ends of each block of three; a body with its arms
 # is 4 studs across and the desks stand 3.6 apart)
-DESK_XS = [round(-55.8 + 15.2 * b + 1.8 + 3.6 * k, 1) for b in range(5) for k in (0, 2)]
 NOTICER_DESK = (14.0, -95.0)  # the front row's end, by the side door
 NEAR = [(6.8, -95.0), (14.0, -90.0), (6.8, -90.0), (14.0, -85.0), (6.8, -85.0), (-1.2, -95.0), (-1.2, -90.0),
         (-8.4, -95.0), (-8.4, -90.0), (-1.2, -85.0), (-8.4, -85.0)]  # the players' desks, nearest him first
-EMPTY = {(-54.0, -85.0), (-31.6, -95.0), (-23.6, -90.0)}  # (absentees)
 LAMP = (26.3, 13.0, -94.0)
 BOOK_X, BOOK_Z = 28.8, -94.4
 LANDING = (BOOK_X, 0.25, BOOK_Z)
-FALL = [(9.4, 31.0), (11.0, 21.0), (12.6, 10.5), (13.72, 0.25)]  # (t, y): out of the dark, past the lamp, into the snow
+# (t, y): out of the dark fast, then (the owner, 2026-10-28: "speed it down and then slow it down, anime-esque") nearly
+# stopped in the air, tumbling slowly over the lamp's light, then fast again into the snow
+FALL = [(9.4, 31.0), (10.9, 19.0), (11.1, 18.2), (12.45, 16.4), (12.6, 15.6), (13.72, 0.25)]
+SLOW = (11.0, 12.5)
 LANDS = FALL[-1][0]
 TURN = 12.55  # his head snaps round to the door
 
@@ -249,17 +249,11 @@ for k, desk in enumerate(NEAR):  # the players nearest him, each their own clip
     a = shot.actor(f"everyone:{k + 1}", clip=f"IntroCampus_w{order[used % VARIANTS]}", at=-rng.uniform(0.0, 5.0))
     seat(a, desk, rng.uniform(-3, 3))
     used += 1
-taken = {NOTICER_DESK, *NEAR, *EMPTY}
-extras = [(x, z) for z in DESK_ROWS for x in DESK_XS if (x, z) not in taken]
-for k, desk in enumerate(extras):  # the other candidates (the crowd's civilians), never in step with a neighbour
-    a = shot.actor(f"extra:{k + 1}", clip=f"IntroCampus_w{order[used % VARIANTS]}", at=-rng.uniform(0.0, 9.0),
-                   extra=True)
-    seat(a, desk, rng.uniform(-4, 4))
-    used += 1
+# (only the match's players: twelve at most, the owner, 2026-10-28: "too many people otherwise")
 
 # The book: out of the dark, turning over, past the lamp, into the snow (a drift-limited fall, near 7 studs a second).
 book = shot.prop("Grimoire", show=(FALL[0][0], LENGTH))
-spins = [(20, 0, 10), (130, 60, 40), (250, 110, 75), (0, 25, 0)]
+spins = [(20, 0, 10), (190, 80, 50), (205, 88, 54), (250, 112, 70), (262, 118, 74), (360, 25, 0)]
 for (t, y), rot in zip(FALL, spins):
     book.at(t, (BOOK_X + 0.4 * math.sin(t), y, BOOK_Z), rot, "linear" if t < LANDS else "in")
 book.at(LENGTH, LANDING, (0, 25, 0))
@@ -278,9 +272,10 @@ shot.pan(6.8, 9.6, "noticer", (16.7, 5.3, -99.6), aim="Head", dy=-0.1, fov=40, c
 # over it (seen against the lit brick, not the black sky).
 framing.dolly(shot, 9.6, 11.0, (33.6, 4.5, -101.6), (33.4, 4.6, -101.2), (BOOK_X - 1.4, 24.0, BOOK_Z), (BOOK_X - 1.2, 20.0, BOOK_Z),
               fov0=58, fov1=54, shake=0.6, seed=4)
-# F: falling with it, past the lamp, the wall behind it.
-framing.dolly(shot, 11.0, 12.6, (32.4, 22.0, -98.6), (32.0, 11.4, -98.2), (BOOK_X - 0.6, 20.6, BOOK_Z), (BOOK_X - 0.6, 10.2, BOOK_Z),
-              fov0=44, fov1=42, roll0=6.0, roll1=8.0, shake=0.8, seed=5, ease_move=False)
+# F: with it as time all but stops: close on the book hanging in the air, turning over slowly in the lamp's light, the
+# lens creeping in on its cover.
+framing.dolly(shot, 11.0, 12.6, (31.9, 19.4, -98.0), (31.7, 17.0, -97.8), (BOOK_X - 0.5, 18.4, BOOK_Z), (BOOK_X - 0.5, 15.9, BOOK_Z),
+              fov0=40, fov1=36, roll0=6.0, roll1=9.0, shake=0.4, seed=5, ease_move=True)
 # E: inside, close from in front on his right: his head snaps round to the door.
 shot.pan(12.6, 13.6, "noticer", (17.6, 4.9, -98.6), aim="Head", dy=-0.05, fov=38, cut=True, drift=(-0.2, 0.0, 0.3),
          operator=True, seed=6, shake=0.8, fov_to=33)
@@ -325,6 +320,9 @@ shot.event(0.0, "sfx", slot="penScratch")
 shot.event(0.4, "title", lines=["KAGEGAOKA UNIVERSITY", "Entrance exam, 23:58"], dur=3.2)
 shot.event(5.7, "sfx", slot="penStop")
 shot.event(9.6, "sfx", slot="mapWindSnow")
+shot.event(SLOW[0], "fx", name="pulse", punch=0.05, dur=1.4)  # (time slows: the lens breathes in)
+shot.event(SLOW[0], "sfx", slot="wisp")
+shot.event(SLOW[1], "fx", name="flash", r=230, g=236, b=255, strength=0.25, dur=0.25)  # (and snaps back)
 shot.event(LANDS, "sfx", slot="bookImpact")
 shot.event(LANDS, "fx", name="snowburst", pos=list(LANDING))
 shot.event(LANDS, "fx", name="shake", strength=0.18, dur=0.2)
