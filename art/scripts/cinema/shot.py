@@ -204,6 +204,8 @@ class Shot:
         self.props = []
         self.events = []
         self.sound = None  # (audio(): the voiced line, its bed, the scene's music)
+        self.lights = []  # the shot's own lamps (light()): its cinematography, on top of the set's
+        self.grade = None  # (contrast, saturation, brightness, tint (r, g, b)): the shot's colour grade
         SHOTS[name] = self
 
     # --- authoring ---------------------------------------------------------------------------------
@@ -237,6 +239,16 @@ class Shot:
         a = Actor(self, slot, motion, **kw)
         self.actors.append(a)
         return a
+
+    def light(self, kind, pos, aim=None, color=(255, 255, 255), brightness=1.0, range=16.0, angle=45.0,
+              shadows=True, show=(0.0, None)):
+        """A lamp of the shot's own, lit between show's times: "spot" (at pos, pointed at aim, a cone of
+        `angle` degrees) or "point" (at pos). The film's lighting: a key on a face, a rim behind a head, a spill."""
+        self.lights.append(dict(kind=kind, pos=tuple(pos), aim=tuple(aim) if aim else None, color=tuple(color),
+                                brightness=float(brightness), range=float(range), angle=float(angle),
+                                shadows=bool(shadows),
+                                show=(float(show[0]), float(show[1] if show[1] is not None else self.length))))
+        return self
 
     def prop(self, model, show=(0.0, None), scale=1.0, open=None):
         p = Prop(self, model, show, scale, open)
@@ -455,6 +467,12 @@ class Retime:
                 p.show = window
                 kept.append(p)
         shot.props = kept
+        lit = []
+        for light in shot.lights:
+            window = self.span(*light["show"])
+            if window:
+                lit.append(dict(light, show=window))
+        shot.lights = lit
         events = []
         for t, kind, data in sorted(shot.events, key=lambda e: e[0]):
             n = self.new(t)
@@ -711,6 +729,20 @@ def export(shot):
         lines.append(f"\tmood = {lua_string(shot.mood)},")
     if shot.own:
         lines.append("\town = true,")
+    if shot.grade:
+        contrast, saturation, brightness, tint = shot.grade
+        lines.append(f"\tgrade = {{ contrast = {num(contrast)}, saturation = {num(saturation)}, "
+                     f"brightness = {num(brightness)}, tint = {lua_value(list(tint))} }},")
+    if shot.lights:
+        lines.append("\tlights = {")
+        for light in shot.lights:
+            aim = f", aim = {lua_value(list(light['aim']))}" if light["aim"] else ""
+            lines.append(
+                f"\t\t{{ kind = {lua_string(light['kind'])}, p = {lua_value(list(light['pos']))}{aim}, "
+                f"color = {lua_value(list(light['color']))}, brightness = {num(light['brightness'])}, "
+                f"range = {num(light['range'])}, angle = {num(light['angle'])}, "
+                f"shadows = {lua_value(light['shadows'])}, show = {lua_value(list(light['show']))} }},")
+        lines.append("\t},")
     if shot.sound:
         lines.append(f"\tsound = {lua_value(shot.sound)},")
     lines += [

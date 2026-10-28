@@ -646,7 +646,63 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 		end
 	end
 
+	-- The shot's own lamps (its cinematography: a key on a face, a rim behind a head, a spill through a door),
+	-- each lit in its window, and its colour grade.
+	local lamps: { { light: Light, show: { number }? } } = {}
+	for _, spec in ipairs(shot.lights or {}) do
+		local at = base + Vector3.new(spec.p[1], spec.p[2], spec.p[3])
+		local aim = spec.aim
+		local holder = Create("Part", {
+			Name = "ShotLamp",
+			Anchored = true,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			CastShadow = false,
+			Transparency = 1,
+			Size = Vector3.new(0.2, 0.2, 0.2),
+			CFrame = if aim then CFrame.lookAt(at, base + Vector3.new(aim[1], aim[2], aim[3])) else CFrame.new(at),
+		}) :: Part
+		local color = Color3.fromRGB(spec.color[1], spec.color[2], spec.color[3])
+		local light: Light = if spec.kind == "spot"
+			then Create("SpotLight", {
+				Face = Enum.NormalId.Front,
+				Angle = spec.angle or 45,
+				Color = color,
+				Brightness = spec.brightness or 1,
+				Range = spec.range or 16,
+				Shadows = spec.shadows == true,
+				Enabled = false,
+				Parent = holder,
+			})
+			else Create("PointLight", {
+				Color = color,
+				Brightness = spec.brightness or 1,
+				Range = spec.range or 16,
+				Shadows = spec.shadows == true,
+				Enabled = false,
+				Parent = holder,
+			})
+		stage:add(holder)
+		table.insert(lamps, { light = light, show = spec.show })
+	end
+
 	local closers: { () -> () } = {}
+	if shot.grade then
+		local grade = shot.grade
+		local tint = grade.tint or { 255, 255, 255 }
+		local graded = Create("ColorCorrectionEffect", {
+			Name = "ShotGrade",
+			Contrast = grade.contrast or 0,
+			Saturation = grade.saturation or 0,
+			Brightness = grade.brightness or 0,
+			TintColor = Color3.fromRGB(tint[1], tint[2], tint[3]),
+			Parent = workspace.CurrentCamera,
+		})
+		table.insert(closers, function()
+			graded:Destroy()
+		end)
+	end
 	local showing: Showing =
 		{ closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil, freeze = nil }
 	-- The lens a shot's focus events aim (made at the first one; named as Cinema.focus names its own, so the
@@ -951,6 +1007,9 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 					end
 				end
 			end
+		end
+		for _, lamp in ipairs(lamps) do
+			lamp.light.Enabled = shown(lamp.show, tt)
 		end
 		-- props
 		for _, prop in ipairs(props) do

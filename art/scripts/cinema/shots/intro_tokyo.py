@@ -53,6 +53,7 @@ VICTIM = (DOOR_X, -55.2)  # waiting a little back from the glass, behind the yel
 WATCHER = (DOOR_X - 1.0, -47.6)  # in the car, in the doorway's west half, 2 back (clear of the closing leaves)
 WRITE = (5.4, 8.05)  # the writer's pen on the page; the last stroke ends it
 JOLT = 8.2  # on the cut
+FACE_CU = 9.55  # his face, close, as he looks up to the car
 INCLINE = 10.9  # he tips forward over his feet
 KNEES = (11.45, 11.95)  # the legs give .. the knees on the floor
 TIP, TIP_LEAN = 11.97, 52.0  # and straight on over, from that lean
@@ -398,26 +399,35 @@ for side in (-1, 1):
     for (t, x), dx, ease in keys:
         leaf.at(t, (x + CAR_DOOR + dx, FLOOR + 3.7, LEAF_Z), (0, -90, 0), ease)
 
-# A: wide on the platform from the west: the people, the car braking in behind the glass, him waiting.
+# The cinematography (the owner, 2026-10-28: lighting, faces and camera moves): every move has a reason (a crane down
+# onto him as the train comes in, pushes in as the tension builds), the faces are the players' own (no drawn faces),
+# and the shot lights its people itself.
+#
+# A: high on the platform from the west, craning down and in on him as the car brakes in behind the glass: the people,
+# the light, him waiting.
 shot.subjects.append((0.0, 5.0, None, True))
-shot.cam(0.0, (DOOR_X - 20.0, FLOOR + 7.6, -66.5), (DOOR_X + 1.0, FLOOR + 2.6, -54.0), fov=48)
-shot.cam(5.0, (DOOR_X - 17.5, FLOOR + 6.8, -65.0), (DOOR_X + 0.5, FLOOR + 2.8, -54.4), fov=44, ease="linear")
+shot.cam(0.0, (DOOR_X - 22.0, FLOOR + 10.5, -68.5), (DOOR_X + 5.0, FLOOR + 2.4, -53.6), fov=50)
+shot.cam(5.0, (DOOR_X - 13.5, FLOOR + 5.4, -63.0), (DOOR_X + 0.4, FLOOR + 3.4, -54.8), fov=40, ease="out")
 # B: on the platform behind his shoulder, up into the open doors: the man there is writing.
-shot.pan(5.0, 7.4, "watcher", (DOOR_X - 2.6, FLOOR + 4.6, -59.4), aim="Head", dy=-0.6, fov=38, cut=True,
-         drift=(0.3, -0.1, 0.3), operator=True, seed=1)
+shot.pan(5.0, 7.4, "watcher", (DOOR_X - 2.8, FLOOR + 4.6, -60.2), aim="Head", dy=-0.6, fov=38, cut=True,
+         drift=(0.5, -0.15, 1.3), operator=True, seed=1)  # (pushing in past his shoulder)
 # W: the insert, high from the doorway on his left (his writing arm on the far side), down onto the page: the pen
 # finishes the name and lifts.
 page = framing.part(shot, "watcher", WRITE[1] - 0.2, "lhand")
 look_w = (float(page[0]) + 0.8, float(page[1]) + 0.45, float(page[2]) + 0.1)
 shot.subjects.append((7.4, JOLT, None, True))
-shot.cam(7.4, (look_w[0] - 0.85, look_w[1] + 2.5, look_w[2] - 1.3), look_w, fov=34, cut=True)
-shot.cam(JOLT, (look_w[0] - 0.8, look_w[1] + 2.3, look_w[2] - 1.15), look_w, fov=32, ease="linear")
-# C: hard cut on the jolt, three-quarter front from the east by the glass: frozen, the look up, the knees.
-shot.pan(JOLT, INCLINE, "victim", (DOOR_X + 9.4, FLOOR + 4.0, -53.8), aim="Torso", dy=-0.4, fov=52, cut=True,
-         drift=(0.3, 0.0, -0.3), operator=True, seed=2)
+shot.cam(7.4, (look_w[0] - 0.9, look_w[1] + 2.6, look_w[2] - 1.4), look_w, fov=34, cut=True)
+shot.cam(JOLT, (look_w[0] - 0.6, look_w[1] + 1.8, look_w[2] - 0.9), look_w, fov=30, ease="in")  # (in on the nib)
+# C: hard cut on the jolt, from the side by the glass: the freeze, then gasping, folded over.
+shot.pan(JOLT, FACE_CU, "victim", (DOOR_X + 9.4, FLOOR + 4.0, -53.8), aim="Torso", dy=-0.4, fov=52, cut=True,
+         drift=(-0.6, 0.0, -0.2), operator=True, seed=2)
+# C2: his face, close, from in front (between him and the car): the look up at the man in the doorway, pleading, the
+# lens creeping in on it. His own face.
+shot.pan(FACE_CU, INCLINE, "victim", (DOOR_X - 1.1, FLOOR + 3.3, -50.8), aim="Head", dy=0.1, fov=40, cut=True,
+         drift=(0.2, 0.0, -0.5), operator=True, seed=4)
 # D: low from the side: rocking on his knees, then over onto his face.
 shot.pan(INCLINE, 14.6, "victim", (DOOR_X + 7.6, FLOOR + 2.6, -55.6), aim="Torso", dy=0.1, fov=54, cut=True,
-         drift=(-0.3, -0.2, 0.0), operator=True, seed=3)
+         drift=(-0.4, -0.7, 0.0), operator=True, seed=3)  # (sinking with him)
 # E: low behind him on the platform, along his body to the writer looking down at him; tilted.
 shot.pan(14.6, 16.0, "watcher", (DOOR_X + 1.8, FLOOR + 3.8, -60.6), aim="Head", dy=-1.4, fov=40, cut=True,
          drift=(-0.2, 0.1, 0.3), roll=-7.0)
@@ -425,14 +435,14 @@ shot.pan(14.6, 16.0, "watcher", (DOOR_X + 1.8, FLOOR + 3.8, -60.6), aim="Head", 
 book = framing.part(shot, "watcher", SHUT[0] + 0.3, "lhand")
 look = (float(book[0]) - 0.2, float(book[1]) + 0.45, float(book[2]) + 0.1)
 shot.subjects.append((16.0, 17.2, None, True))
-shot.cam(16.0, (look[0] + 0.3, look[1] + 2.6, look[2] - 1.35), look, fov=36, roll=4.0, cut=True)
-shot.cam(17.2, (look[0] + 0.25, look[1] + 2.35, look[2] - 1.2), look, fov=36, roll=4.0, ease="linear")
+shot.cam(16.0, (look[0] + 0.3, look[1] + 2.7, look[2] - 1.45), look, fov=36, roll=4.0, cut=True)
+shot.cam(17.2, (look[0] + 0.2, look[1] + 2.0, look[2] - 1.0), look, fov=34, roll=4.0, ease="in")  # (in as it shuts)
 # F: close on the writer through the doorway, tilted the other way: his head comes up from the body to us, smiling.
-shot.pan(17.2, 18.6, "watcher", (DOOR_X - 0.3, FLOOR + 4.3, -54.2), aim="Head", dy=-0.3, fov=36, cut=True,
-         drift=(-0.1, 0.0, 0.35), roll=5.0)
+shot.pan(17.2, 18.6, "watcher", (DOOR_X - 0.3, FLOOR + 4.3, -54.6), aim="Head", dy=-0.3, fov=36, cut=True,
+         drift=(-0.1, 0.0, 1.1), roll=5.0)  # (pushing in on the smile)
 # H: low on the car's floor, out through the doorway at him lying there reaching; the doors close; black.
-shot.pan(18.6, BLACK, "victim", (DOOR_X + 1.3, FLOOR + 0.6, -47.8), aim="Head", dy=0.5, fov=46, cut=True,
-         drift=(0.0, -0.05, -0.6), back=True)
+shot.pan(18.6, BLACK, "victim", (DOOR_X + 1.3, FLOOR + 0.6, -47.6), aim="Head", dy=0.5, fov=46, cut=True,
+         drift=(-0.3, -0.05, -1.3), back=True)  # (creeping to the doorway as the doors close on him)
 shot.subjects.append((BLACK, LENGTH, None, True))
 shot.cam(BLACK, (DOOR_X + 1.3, FLOOR + 0.55, -48.4), (DOOR_X, FLOOR + 1.6, -53.4), fov=46, cut=True)
 shot.cam(LENGTH, (DOOR_X + 1.3, FLOOR + 0.55, -48.4), (DOOR_X, FLOOR + 1.6, -53.4), fov=46, ease="linear")
@@ -443,6 +453,7 @@ for t, slot, part, radius, far, near in (
         (5.0, "watcher", "Head", 4.0, 0.15, 0.18),  # B: the writer sharp, the victim's shoulder a little soft
         (7.4, "watcher", "Left Arm", 2.5, 0.2, 0.1),  # W: the page
         (JOLT, "victim", "Head", 5.0, 0.15, 0.05),  # C: him; the walker and the platform a little soft
+        (FACE_CU, "victim", "Head", 2.0, 0.18, 0.05),  # C2: his face
         (10.9, "victim", "Head", 5.0, 0.15, 0.05),  # D
         (14.6, "victim", "Head", 3.0, 0.2, 0.05),  # E: on him lying there...
         (16.0, "watcher", "Left Arm", 2.5, 0.2, 0.1),  # I: the book
@@ -451,14 +462,22 @@ for t, slot, part, radius, far, near in (
     shot.event(t, "fx", name="focus", slot=slot, part=part, radius=radius, far=far, near=near)
 shot.event(15.15, "fx", name="focus", slot="watcher", part="Head", radius=3.5, far=0.15, near=0.2, rack=0.6)  # ...to him
 
-# Faces
-shot.face(0.0, "victim", "Stern")
-shot.face(JOLT, "victim", "Shock")
-shot.face(JOLT + 0.9, "victim", "Fear")
-shot.face(0.0, "watcher", "Stern")
-shot.face(SHUT[1], "watcher", "Grin")
-for k in range(len(WAITING) + 3):
-    shot.face(0.0, f"everyone:{k + 1}", "Stern")
+# The lights. The grade: cool, the shadows deeper. A hard cold key from the platform lamp above him; once the doors
+# open, the car's light spilling out across the platform and over his back (a rim); the writer lit from below by
+# the pages in his hands (sinister), and a cold rim on him from the platform for the smile; a low spill on the man
+# on the floor for the end. The players' own faces throughout (no drawn faces: the owner).
+shot.grade = (0.2, -0.12, -0.03, (222, 232, 255))
+WX, WZ = WATCHER
+shot.light("spot", (DOOR_X + 1.2, FLOOR + 9.5, -57.5), (DOOR_X, FLOOR + 3.5, -55.2), color=(205, 220, 255),
+           brightness=2.2, range=16, angle=50)
+shot.light("spot", (DOOR_X + 0.3, FLOOR + 6.2, -48.4), (DOOR_X, FLOOR + 2.0, -56.5), color=(255, 236, 205),
+           brightness=2.5, range=20, angle=70, show=(DOORS_OPEN[0] + 0.2, BLACK))
+shot.light("spot", (WX, FLOOR + 2.6, WZ - 1.7), (WX, FLOOR + 4.7, WZ), color=(255, 205, 160), brightness=1.4,
+           range=6, angle=70, shadows=False, show=(0.0, BLACK))
+shot.light("spot", (DOOR_X + 2.4, FLOOR + 6.5, -52.0), (WX, FLOOR + 4.6, WZ), color=(190, 210, 255),
+           brightness=1.5, range=10, angle=35, show=(14.6, 18.6))
+shot.light("spot", (DOOR_X + 0.4, FLOOR + 3.5, -49.6), (DOOR_X, FLOOR + 0.6, -53.6), color=(255, 230, 200),
+           brightness=1.6, range=9, angle=60, show=(18.6, BLACK))
 
 # Sound: the station under it all; the pen; the heart, slowing; the drone from the jolt; the riser to the doors.
 shot.event(0.0, "sfx", slot="tokyoStationBed", loop=True)

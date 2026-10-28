@@ -402,6 +402,30 @@ def open_at(keys, t):
     return keys[-1][1]
 
 
+def add_shot_lights(shot):
+    """The shot's own lamps (Shot.light), lit in their windows, as the game lights them (ShotPlayer)."""
+    for i, light in enumerate(shot.lights):
+        kind = "SPOT" if light["kind"] == "spot" else "POINT"
+        data = bpy.data.lights.new(f"ShotLamp{i}", kind)
+        data.color = [c / 255 for c in light["color"]]
+        data.energy = light["brightness"] * light["range"] * light["range"] * 2.2
+        data.shadow_soft_size = 0.25
+        if kind == "SPOT":
+            data.spot_size = math.radians(light["angle"])
+            data.spot_blend = 0.35
+        obj = bpy.data.objects.new(f"ShotLamp{i}", data)
+        common.collection("Actors").objects.link(obj)
+        obj.location = b_pos(light["pos"])
+        if light["aim"]:
+            obj.rotation_mode = "QUATERNION"
+            obj.rotation_quaternion = (b_pos(light["aim"]) - obj.location).to_track_quat("-Z", "Y")
+        t0, t1 = light["show"]
+        for frame, on in ((0, t0 <= 0.0), (t0 * FPS, True), (t1 * FPS, False)):
+            obj.hide_render = not on
+            obj.keyframe_insert("hide_render", frame=frame)
+        constant_keys(obj)
+
+
 def add_props(shot, library):
     """Each prop with its glowing parts and the lamps it carries, following its path."""
     import json
@@ -579,6 +603,7 @@ def sheet(shot, size=(640, 360)):
         root, arm, parts = place_actor(shot, actor, rig, actions, i)
         add_held(actor, arm, parts, library)
     add_props(shot, library)
+    add_shot_lights(shot)
     cam = add_camera(shot)
     plan = add_plan_camera(shot)
     scene = bpy.context.scene
@@ -619,6 +644,7 @@ def preview(shot, size=(960, 540), t_from=0.0, t_to=None, stills=None, eye=None)
         root, arm, parts = place_actor(shot, actor, rig, actions, i)
         add_held(actor, arm, parts, library)
     add_props(shot, library)
+    add_shot_lights(shot)
     cam = add_camera(shot)
     add_captions(shot, cam)
     scene = bpy.context.scene
