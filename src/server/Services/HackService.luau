@@ -51,12 +51,12 @@ end
 -- A missed check: the station's alarm for everyone, never naming who.
 local function alarm(ps, hack: Hack)
 	local info = CaseFileService.stationInfo(hack.stationId)
-	stop(ps, "You tripped the alarm.", Config.HACK_LOCK)
+	-- (no words for the hacker or anyone else: the red station says it all)
+	stop(ps, nil, Config.HACK_LOCK)
 	if not info then
 		return
 	end
 	info.desk:SetAttribute("AlarmUntil", now() + Config.ALARM_TIME)
-	Match.announce("Alarm at " .. info.name, "Someone tried to hack this.", "danger")
 	EventLog.add(
 		string.format("%s (%s) set off the alarm hacking %s.", ps.alias, Terms.role(ps.role), info.name),
 		"hack"

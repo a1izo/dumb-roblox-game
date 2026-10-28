@@ -53,6 +53,7 @@ local ACTION_ICON = {
 	note = "note",
 	ability = "grimoire",
 	ability2 = "eye",
+	tasks = "check",
 	help = "help",
 }
 
@@ -80,6 +81,8 @@ local cardHint: TextLabel
 -- Objectives and actions
 local objectives: Frame
 local objectivesNotice: any -- the notice around them (Kit/Notice)
+local objectivesHeld = false -- shown only while Tab (or the pad's D-Up) is held: Controllers/TabView
+local syncObjectives: () -> () = function() end
 local actionBar: Frame
 local actionKey = ""
 
@@ -553,14 +556,14 @@ function Hud.init()
 	})
 	Kit.Layout.place(objectivesNotice.group, "topLeft", Vector2.new(0, 4))
 	objectives = objectivesNotice.slot
-	local function syncObjectives()
+	syncObjectives = function()
 		local any = false
 		for _, child in ipairs(objectives:GetChildren()) do
 			if child:IsA("GuiObject") then
 				any = true
 			end
 		end
-		objectivesNotice.group.Visible = any
+		objectivesNotice.group.Visible = any and objectivesHeld
 	end
 	objectives.ChildAdded:Connect(syncObjectives)
 	objectives.ChildRemoved:Connect(syncObjectives)
@@ -618,6 +621,12 @@ end
 -- The container the objective tracker fills with lines (inside a notice that hides when it is empty).
 function Hud.objectives(): Frame
 	return objectives
+end
+
+-- Shows or hides the objectives (held open by Controllers/TabView).
+function Hud.setObjectivesShown(shown: boolean)
+	objectivesHeld = shown
+	syncObjectives()
 end
 
 -- The identity card on the HUD; pressing and holding it shows the full role card.

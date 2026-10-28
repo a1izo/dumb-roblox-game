@@ -391,11 +391,22 @@ local function workSpot(station): Vector3
 	return (station.desk.CFrame * CFrame.new(0, 0, -2.7)).Position
 end
 
-local function freeStation(nearTo: Vector3?)
+-- A free station near `nearTo`; with `ps` given, only one of their open assignments.
+local function freeStation(nearTo: Vector3?, ps: any?)
 	local stations = Match.map and Match.map.stations or {}
+	local open: { [string]: boolean }? = nil
+	if ps then
+		open = {}
+		for _, entry in ipairs(ps.assigned or {}) do
+			if not entry.done then
+				(open :: any)[entry.id] = true
+			end
+		end
+	end
 	local best, bestScore = nil, math.huge
 	for _, station in ipairs(stations) do
-		if not station.desk:GetAttribute("Busy") then
+		local mine = open == nil or open[station.id] == true
+		if mine and not station.desk:GetAttribute("Busy") then
 			-- Mostly the nearest free station (the maps are big), with a little chance in it.
 			local score = if nearTo
 				then (station.position - nearTo).Magnitude + math.random() * 80
@@ -580,7 +591,7 @@ local function thinkInvestigation(bot, ps, now: number)
 			return
 		end
 		local _, root = parts(bot)
-		local station = freeStation(if root then root.Position else nil)
+		local station = freeStation(if root then root.Position else nil, ps)
 		if station then
 			startWork(bot, station)
 		else
@@ -660,7 +671,7 @@ function Bots.order(bot, action: string, target: any, from: Vector3?): string
 		return bot.Name .. " is not alive in a match."
 	elseif action == "work" then
 		local _, root = parts(bot)
-		local station = freeStation(if root then root.Position else nil)
+		local station = freeStation(if root then root.Position else nil, ps)
 		if not station then
 			return "No free station."
 		end

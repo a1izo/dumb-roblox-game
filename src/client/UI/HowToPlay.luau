@@ -64,6 +64,7 @@ local function controls(): { string }
 				k("roleCard")
 			),
 			string.format(Terms.f("%s: role power   %s: {eyes}"), k("ability"), k("ability2")),
+			"Hold D-Up: your objectives and stations",
 			string.format("%s: walk   %s: look   %s: jump", k("move"), k("look"), k("jump")),
 			"B: close window",
 		}
@@ -72,6 +73,7 @@ local function controls(): { string }
 		string.format("%s: interact", k("interact", "pickUp")),
 		string.format("%s: emotes   %s: quick chat   %s: note", k("quickChat"), k("phrases"), k("note")),
 		string.format("Hold %s: role card   %s: how to play", k("roleCard"), k("help")),
+		"Hold Tab: your objectives and stations",
 		string.format(Terms.f("%s: role power"), k("ability")),
 		string.format(Terms.f("%s: {eyes}"), k("ability2")),
 		string.format(

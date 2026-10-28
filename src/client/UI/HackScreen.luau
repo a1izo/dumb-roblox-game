@@ -1,9 +1,14 @@
--- Hacking a station's log (Diavolo and the Muertos), after GTA Online's data crack: a column of
--- symbols scrolls past a window, and the player locks it when the target symbol sits in the window.
--- Three columns, each faster than the last, with a short "decrypting" pause between them. Locking on
--- anything else, or letting a column run too long, is a miss: the server sets off the station's
--- alarm for everyone. The server only ever hears pass or miss per column (HackService checks the
--- rest: the order, and that no hack is quicker than a person could play it).
+-- Hacking a station's log (Diavolo and the Muertos), after GTA Online's hacks. Each hack is one of
+-- three games, picked by the server's seed, played over three stages with a short decrypt between:
+--   crack       the data crack: a column of symbols scrolls past a window; lock it when the target
+--               symbol sits in the window.
+--   voltage     the Voltlab: wire three numbers to the x1, x2 and x10 multipliers so their sum hits
+--               the target.
+--   fingerprint the casino's fingerprint clone: pick the four pieces that make up the print out of
+--               eight.
+-- A wrong answer, or a stage left too long, is a miss: the server sets off the station's alarm. The
+-- server only ever hears pass or miss per stage (HackService checks the rest: the order, and that no
+-- hack is quicker than a person could play it).
 
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,99 +28,304 @@ local C = Kit.color
 
 local HackScreen = {}
 
+local GAMES = { "crack", "voltage", "fingerprint" }
+local BOOT = 1 -- seconds before the first stage
+local DECRYPT = 2 -- seconds between two stages
+local LIMIT = { crack = 7, voltage = 16, fingerprint = 14 } -- seconds a stage may run before it is a miss
+local TITLES = { crack = "Data crack", voltage = "Voltage", fingerprint = "Fingerprint" }
+local BUTTONS = { crack = "Lock  (Space)", voltage = "Connect  (Space)", fingerprint = "Clone  (Space)" }
+
+-- The data crack.
 local ROW = 44 -- px between two symbols
 local ROWS = 7 -- symbols in view
 local WINDOW_ROW = 3 -- the window's row (0-based, from the top)
 local TOLERANCE = 0.32 -- how far off the window's middle a lock still counts, in rows
-local SPEEDS = { 120, 170, 230 } -- px a second, per column
-local BOOT = 1 -- seconds before the first column moves
-local DECRYPT = 2 -- seconds between two columns
-local COLUMN_LIMIT = 7 -- seconds a column may run before it counts as a miss
+local SPEEDS = { 120, 170, 230 } -- px a second, per stage
 local SYMBOLS = { "A3", "7F", "C9", "1E", "B4", "5D", "E2", "08", "9A", "F6", "3C", "D7", "6B", "2F" }
+
+-- The Voltlab's multipliers.
+local MULTIPLIERS = { 1, 2, 10 }
+
+-- The fingerprint's ridge pieces (mono text, so every piece is the same width).
+local RIDGES = {
+	"((((((",
+	"))))))",
+	"()()()",
+	"(())((",
+	"))(())",
+	")()()(",
+	"((()))",
+	"()))((",
+	"(()(()",
+	")(()))",
+	"((()((",
+	"))()))",
+}
 
 local win: any
 local stationLabel: TextLabel
 local stageLabel: TextLabel
 local targetText: any
-local column: Frame
-local labels: { TextLabel } = {}
+local area: Frame
 local statusLabel: TextLabel
-local lockButton: TextButton
+local actionButton: TextButton
 
--- The hack in progress (nil when none).
-local current: {
-	stationId: string,
-	stages: number,
-	stage: number,
-	seed: number,
-	sequence: { string },
-	target: string,
-	startedAt: number,
-	state: string, -- "boot", "run", "decrypt", "wait" (for the server), "done"
-	stateUntil: number,
-}? =
-	nil
+-- The hack in progress (nil when none). `play` is the stage's own game: confirm() and draw().
+local current: any = nil
 
--- The column's symbols: random, with the target coming round every three to five rows.
-local function makeSequence(rng: Random, target: string): { string }
-	local list = {}
+local function report(index: number, ok: boolean)
+	HackRemote:FireServer({ action = "stage", index = index, ok = ok })
+end
+
+local function setStatus(text: string, color: Color3?)
+	statusLabel.Text = text
+	statusLabel.TextColor3 = color or C.dim
+end
+
+-- The data crack -----------------------------------------------------------------------------------
+
+local function crackStage(rng: Random, stage: number)
+	local target = SYMBOLS[rng:NextInteger(1, #SYMBOLS)]
 	local others = {}
 	for _, symbol in ipairs(SYMBOLS) do
 		if symbol ~= target then
 			table.insert(others, symbol)
 		end
 	end
+	-- The target comes round every three to five rows.
+	local sequence = {}
 	local nextTarget = rng:NextInteger(4, 6)
 	for i = 1, 400 do
 		if i == nextTarget then
-			table.insert(list, target)
+			table.insert(sequence, target)
 			nextTarget = i + rng:NextInteger(3, 5)
 		else
-			table.insert(list, others[rng:NextInteger(1, #others)])
+			table.insert(sequence, others[rng:NextInteger(1, #others)])
 		end
 	end
-	return list
+	targetText:set(target)
+	local column = Kit.frame({
+		Name = "Column",
+		ClipsDescendants = true,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.fromOffset(160, ROW * ROWS),
+		Parent = area,
+	})
+	column.BackgroundTransparency = 0.2
+	column.BackgroundColor3 = C.g0
+	local window = Kit.Base.make("Frame", {
+		Name = "Window",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, WINDOW_ROW * ROW),
+		Size = UDim2.new(1, 0, 0, ROW),
+		ZIndex = 5,
+		Parent = column,
+	})
+	Kit.Base.make("UIStroke", { Color = C.danger, Thickness = 2, Parent = window })
+	local labels = {}
+	for i = 1, ROWS + 1 do
+		table.insert(
+			labels,
+			Kit.label({
+				Text = "",
+				font = "mono",
+				TextScaled = true,
+				AutomaticSize = Enum.AutomaticSize.None,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				Size = UDim2.new(1, 0, 0, ROW),
+				Position = UDim2.fromOffset(0, (i - 1) * ROW),
+				Parent = column,
+			})
+		)
+	end
+	local startedAt = os.clock()
+	local function position(): number
+		return (os.clock() - startedAt) * SPEEDS[math.clamp(stage, 1, #SPEEDS)]
+	end
+	return {
+		hint = "Lock the target inside the window.",
+		confirm = function(): boolean
+			local at = position()
+			local top = math.floor(at / ROW)
+			local fraction = at - top * ROW
+			local row = if fraction >= ROW / 2 then WINDOW_ROW + 1 else WINDOW_ROW
+			local offset = (fraction - (row - WINDOW_ROW) * ROW) / ROW
+			return sequence[top + row + 1] == target and math.abs(offset) <= TOLERANCE
+		end,
+		draw = function(running: boolean)
+			local at = if running then position() else 0
+			local top = math.floor(at / ROW)
+			local fraction = at - top * ROW
+			for i, label in ipairs(labels) do
+				local row = i - 1
+				label.Position = UDim2.new(0, 0, 0, row * ROW - fraction)
+				local symbol = sequence[top + row + 1] or ""
+				label.Text = symbol
+				label.TextColor3 = if symbol == target then C.danger else C.dim
+			end
+		end,
+	}
 end
+
+-- The Voltlab --------------------------------------------------------------------------------------
+
+local function voltageStage(rng: Random, _stage: number)
+	local numbers = { rng:NextInteger(1, 9), rng:NextInteger(1, 9), rng:NextInteger(1, 9) }
+	local order = { 1, 2, 3 }
+	for i = 3, 2, -1 do
+		local j = rng:NextInteger(1, i)
+		order[i], order[j] = order[j], order[i]
+	end
+	local target = 0
+	for i, number in ipairs(numbers) do
+		target += number * MULTIPLIERS[order[i]]
+	end
+	targetText:set(tostring(target))
+	-- links[left] = the multiplier index wired to it
+	local links: { [number]: number } = {}
+	local picked: number? = nil
+	local leftButtons, rightButtons = {}, {}
+	local function refresh()
+		local used = {}
+		for _, right in pairs(links) do
+			used[right] = true
+		end
+		for i, button in ipairs(leftButtons) do
+			local wired = links[i]
+			local text = if wired
+				then string.format("%d  =  x%d", numbers[i], MULTIPLIERS[wired])
+				else tostring(numbers[i])
+			-- (the number being wired is marked with arrows: the button's own fill is drawn by the kit)
+			Kit.setText(button, if picked == i then "> " .. text .. " <" else text)
+		end
+		for i, button in ipairs(rightButtons) do
+			Kit.setEnabled(button, not used[i])
+		end
+	end
+	local column = Kit.frame({ Name = "Left", Size = UDim2.new(0.5, -8, 1, 0), Parent = area })
+	Kit.list(column, 10)
+	local right = Kit.frame({
+		Name = "Right",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0.5, -8, 1, 0),
+		Parent = area,
+	})
+	Kit.list(right, 10)
+	for i = 1, 3 do
+		table.insert(
+			leftButtons,
+			Kit.button({ text = tostring(numbers[i]), size = "l", LayoutOrder = i, Parent = column }, function()
+				if links[i] then
+					links[i] = nil -- unplug
+				end
+				picked = i
+				refresh()
+			end)
+		)
+		table.insert(
+			rightButtons,
+			Kit.button({ text = "x" .. MULTIPLIERS[i], size = "l", LayoutOrder = i, Parent = right }, function()
+				if picked then
+					links[picked] = i
+					picked = nil
+					refresh()
+				end
+			end)
+		)
+	end
+	refresh()
+	return {
+		hint = "Wire each number to a multiplier. Hit the target.",
+		confirm = function(): boolean
+			local sum, count = 0, 0
+			for left, rightIndex in pairs(links) do
+				sum += numbers[left] * MULTIPLIERS[rightIndex]
+				count += 1
+			end
+			return count == 3 and sum == target
+		end,
+	}
+end
+
+-- The fingerprint clone -----------------------------------------------------------------------------
+
+local function fingerprintStage(rng: Random, _stage: number)
+	local pool = table.clone(RIDGES)
+	for i = #pool, 2, -1 do
+		local j = rng:NextInteger(1, i)
+		pool[i], pool[j] = pool[j], pool[i]
+	end
+	local print = { pool[1], pool[2], pool[3], pool[4] }
+	local candidates = { pool[1], pool[2], pool[3], pool[4], pool[5], pool[6], pool[7], pool[8] }
+	for i = #candidates, 2, -1 do
+		local j = rng:NextInteger(1, i)
+		candidates[i], candidates[j] = candidates[j], candidates[i]
+	end
+	targetText:set("4")
+	-- The print on the left, the pieces to pick from on the right.
+	local printFrame = Kit.frame({ Name = "Print", Size = UDim2.new(0.42, 0, 1, 0), Parent = area })
+	printFrame.BackgroundTransparency = 0.2
+	printFrame.BackgroundColor3 = C.g0
+	Kit.list(printFrame, 4)
+	for i, piece in ipairs(print) do
+		Kit.label({
+			Text = piece,
+			font = "mono",
+			color = C.bone,
+			TextScaled = true,
+			AutomaticSize = Enum.AutomaticSize.None,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Size = UDim2.new(1, 0, 0.25, -4),
+			LayoutOrder = i,
+			Parent = printFrame,
+		})
+	end
+	local grid = Kit.frame({
+		Name = "Pieces",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0.55, 0, 1, 0),
+		Parent = area,
+	})
+	Kit.grid(grid, UDim2.new(0.5, -4, 0.25, -6), 8)
+	local chosen: { [number]: boolean } = {}
+	for i, piece in ipairs(candidates) do
+		local button
+		button = Kit.button({ text = piece, LayoutOrder = i, Parent = grid }, function()
+			chosen[i] = not chosen[i] or nil
+			Kit.setText(button, if chosen[i] then "[" .. piece .. "]" else piece)
+		end)
+	end
+	return {
+		hint = "Pick the four pieces of the print.",
+		confirm = function(): boolean
+			local count = 0
+			for index in pairs(chosen) do
+				count += 1
+				if not table.find(print, candidates[index]) then
+					return false
+				end
+			end
+			return count == 4
+		end,
+	}
+end
+
+local BUILD = { crack = crackStage, voltage = voltageStage, fingerprint = fingerprintStage }
+
+-- Flow ---------------------------------------------------------------------------------------------
 
 local function setupStage(hack, index: number)
-	local rng = Random.new(hack.seed + index * 7919)
+	Kit.clear(area)
 	hack.stage = index
-	hack.target = SYMBOLS[rng:NextInteger(1, #SYMBOLS)]
-	hack.sequence = makeSequence(rng, hack.target)
 	hack.startedAt = os.clock()
 	hack.state = "run"
-	stageLabel.Text = string.format("COLUMN %d / %d", index, hack.stages)
-	targetText:set(hack.target)
-	statusLabel.Text = "Lock it inside the window."
-	statusLabel.TextColor3 = C.dim
-	Kit.setEnabled(lockButton, true)
-end
-
--- Where the column is now: the symbol nearest the window and how far off its middle (in rows).
-local function inWindow(hack): (string, number)
-	local position = (os.clock() - hack.startedAt) * SPEEDS[hack.stage]
-	local top = math.floor(position / ROW)
-	local fraction = position - top * ROW
-	local row = if fraction >= ROW / 2 then WINDOW_ROW + 1 else WINDOW_ROW
-	local offset = (fraction - (row - WINDOW_ROW) * ROW) / ROW
-	return hack.sequence[top + row + 1] or "", offset
-end
-
-local function draw(hack)
-	local position = if hack.state == "run" then (os.clock() - hack.startedAt) * SPEEDS[hack.stage] else 0
-	local top = math.floor(position / ROW)
-	local fraction = position - top * ROW
-	for i, label in ipairs(labels) do
-		local row = i - 1
-		label.Position = UDim2.new(0, 0, 0, row * ROW - fraction)
-		local symbol = if hack.sequence then hack.sequence[top + row + 1] or "" else ""
-		label.Text = symbol
-		label.TextColor3 = if symbol == hack.target then C.danger else C.dim
-	end
-end
-
-local function report(index: number, ok: boolean)
-	HackRemote:FireServer({ action = "stage", index = index, ok = ok })
+	hack.play = BUILD[hack.game](Random.new(hack.seed + index * 7919), index)
+	stageLabel.Text = string.format("%s  %d / %d", string.upper(TITLES[hack.game]), index, hack.stages)
+	setStatus(hack.play.hint)
+	Kit.setEnabled(actionButton, true)
 end
 
 local function miss()
@@ -124,27 +334,24 @@ local function miss()
 		return
 	end
 	hack.state = "wait"
-	Kit.setEnabled(lockButton, false)
-	statusLabel.Text = "MISSED. Alarm!"
-	statusLabel.TextColor3 = C.danger
+	Kit.setEnabled(actionButton, false)
+	setStatus("Missed", C.danger)
 	report(hack.stage, false)
 end
 
-local function lock()
+local function confirm()
 	local hack = current
-	if not hack or hack.state ~= "run" then
+	if not hack or hack.state ~= "run" or not hack.play then
 		return
 	end
-	local symbol, offset = inWindow(hack)
-	if symbol ~= hack.target or math.abs(offset) > TOLERANCE then
+	if not hack.play.confirm() then
 		miss()
 		return
 	end
-	-- A pass: the column is cracked; the next one starts after a short decrypt. The last one is
-	-- reported once its decrypt is done, so the whole hack takes as long as a person plays it.
-	Kit.setEnabled(lockButton, false)
-	statusLabel.Text = "Cracked"
-	statusLabel.TextColor3 = C.good
+	-- A pass: the next stage starts after a short decrypt. The last one is reported once its decrypt
+	-- is done, so the whole hack takes as long as a person plays it.
+	Kit.setEnabled(actionButton, false)
+	setStatus("Cracked", C.good)
 	if hack.stage < hack.stages then
 		report(hack.stage, true)
 	end
@@ -160,7 +367,7 @@ local function update()
 	if hack.state == "boot" and os.clock() >= hack.stateUntil then
 		setupStage(hack, 1)
 	elseif hack.state == "run" then
-		if os.clock() - hack.startedAt > COLUMN_LIMIT then
+		if os.clock() - hack.startedAt > LIMIT[hack.game] then
 			miss()
 		end
 	elseif hack.state == "decrypt" and os.clock() >= hack.stateUntil then
@@ -168,11 +375,13 @@ local function update()
 			setupStage(hack, hack.stage + 1)
 		else
 			hack.state = "wait"
-			statusLabel.Text = "Reading log"
+			setStatus("Reading log")
 			report(hack.stage, true)
 		end
 	end
-	draw(hack)
+	if hack.play and hack.play.draw then
+		hack.play.draw(hack.state == "run")
+	end
 end
 
 local function close()
@@ -180,23 +389,28 @@ local function close()
 end
 
 local function start(payload)
+	local seed = tonumber(payload.seed) or 1
+	local game = if type(payload.game) == "string" and BUILD[payload.game]
+		then payload.game
+		else GAMES[(seed % #GAMES) + 1]
 	current = {
 		stationId = payload.stationId,
 		stages = tonumber(payload.stages) or 3,
 		stage = 0,
-		seed = tonumber(payload.seed) or 1,
-		sequence = {},
-		target = "",
+		seed = seed,
+		game = game,
+		play = nil,
 		startedAt = os.clock(),
 		state = "boot",
 		stateUntil = os.clock() + BOOT,
 	}
+	Kit.clear(area)
 	stationLabel.Text = string.upper(tostring(payload.stationName or ""))
 	stageLabel.Text = "CONNECTING"
 	targetText:set("--")
-	statusLabel.Text = "Hacking"
-	statusLabel.TextColor3 = C.dim
-	Kit.setEnabled(lockButton, false)
+	setStatus("Hacking")
+	Kit.setText(actionButton, BUTTONS[game])
+	Kit.setEnabled(actionButton, false)
 	Router.open("hack")
 end
 
@@ -242,40 +456,13 @@ function HackScreen.init()
 		Position = UDim2.new(1, 0, 0, 0),
 		Parent = body,
 	})
-	-- The column, clipped to ROWS symbols, and the window across its middle.
-	column = Kit.frame({
-		Name = "Column",
-		ClipsDescendants = true,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 52),
-		Size = UDim2.fromOffset(160, ROW * ROWS),
+	-- Where each stage's game is built.
+	area = Kit.frame({
+		Name = "Game",
+		Position = UDim2.fromOffset(0, 52),
+		Size = UDim2.new(1, 0, 1, -(52 + 92)),
 		Parent = body,
 	})
-	column.BackgroundTransparency = 0.2
-	column.BackgroundColor3 = C.g0
-	Kit.Base.make("Frame", {
-		Name = "Window",
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(0, WINDOW_ROW * ROW),
-		Size = UDim2.new(1, 0, 0, ROW),
-		ZIndex = 5,
-		Parent = column,
-	})
-	local window = column:FindFirstChild("Window") :: Frame
-	Kit.Base.make("UIStroke", { Color = C.danger, Thickness = 2, Parent = window })
-	for i = 1, ROWS + 1 do
-		local label = Kit.label({
-			Text = "",
-			font = "mono",
-			TextScaled = true,
-			AutomaticSize = Enum.AutomaticSize.None,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			Size = UDim2.new(1, 0, 0, ROW),
-			Position = UDim2.fromOffset(0, (i - 1) * ROW),
-			Parent = column,
-		})
-		table.insert(labels, label)
-	end
 	statusLabel = Kit.label({
 		size = "small",
 		color = C.dim,
@@ -286,15 +473,15 @@ function HackScreen.init()
 		AutomaticSize = Enum.AutomaticSize.None,
 		Parent = body,
 	})
-	lockButton = Kit.button({
-		text = "Lock  (Space)",
+	actionButton = Kit.button({
+		text = BUTTONS.crack,
 		icon = "lock",
 		variant = "primary",
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.new(1, 0, 0, 52),
 		Parent = body,
-	}, lock)
+	}, confirm)
 
 	HackStateRemote.OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" then
@@ -306,14 +493,13 @@ function HackScreen.init()
 			if current then
 				current.state = "done"
 			end
-			statusLabel.Text = string.format("%s is %s.", tostring(payload.alias), tostring(payload.name))
-			statusLabel.TextColor3 = C.good
+			setStatus(string.format("%s is %s.", tostring(payload.alias), tostring(payload.name)), C.good)
 			task.delay(1.6, close)
 		elseif payload.state == "empty" then
 			if current then
 				current.state = "done"
 			end
-			statusLabel.Text = "Nobody used this lately."
+			setStatus("Nobody used this lately.")
 			task.delay(1.6, close)
 		elseif payload.state == "stopped" then
 			close()
@@ -327,15 +513,20 @@ function HackScreen.init()
 			return view.living and view.phase == "Investigation" and (view.role == "Kira" or view.role == "Follower")
 		end,
 		show = function()
+			-- Space confirms in every game (and the pad's A in the data crack, where nothing else is pressed).
+			local keys = { Enum.KeyCode.Space }
+			if current and current.game == "crack" then
+				table.insert(keys, Enum.KeyCode.ButtonA)
+			end
 			ContextActionService:BindActionAtPriority("DeathsGambit_HackLock", function(_, state: Enum.UserInputState)
 				if state == Enum.UserInputState.Begin then
-					lock()
+					confirm()
 				end
 				return Enum.ContextActionResult.Sink
-			end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.Space, Enum.KeyCode.ButtonA)
+			end, false, Enum.ContextActionPriority.High.Value, table.unpack(keys))
 		end,
 		firstSelection = function()
-			return lockButton
+			return actionButton
 		end,
 		hide = function(reason)
 			ContextActionService:UnbindAction("DeathsGambit_HackLock")

@@ -99,13 +99,24 @@ local function seesFrom(eye: Vector3, instance: BasePart): boolean
 		or (hit.Position - target).Magnitude < SLACK
 end
 
+-- One of your stations you have not finished yet.
+local function mine(desk: Instance): boolean
+	local id = desk:GetAttribute("StationId")
+	for _, entry in ipairs(ClientState.private.stations or {}) do
+		if entry.id == id then
+			return not entry.done
+		end
+	end
+	return false
+end
+
 local function refreshEntry(instance: Instance, entry)
 	local private = ClientState.private
 	local active = canAct() and entry.seen ~= false
 	local prompts = entry.prompts
 	if entry.kind == "station" then
 		local free = instance:GetAttribute("Busy") ~= true and entry.seen ~= false
-		prompts.work.Enabled = canWork() and free and not TaskScreen.isBusy()
+		prompts.work.Enabled = canWork() and free and mine(instance) and not TaskScreen.isBusy()
 		local role = ClientState.role()
 		prompts.hack.Enabled = active and (role == "Kira" or role == "Follower") and free and not HackScreen.isBusy()
 	elseif entry.kind == "bell" then

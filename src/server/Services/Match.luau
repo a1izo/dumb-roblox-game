@@ -496,6 +496,14 @@ function Match.privateState(ps)
 		payload.sabotageReadyAt = ps.sabotageReadyAt
 	end
 	payload.tasksThisRound = ps.tasksThisRound
+	-- Your stations (the Bureau's), each with whether it is done.
+	if ps.assigned and #ps.assigned > 0 then
+		local list = {}
+		for _, entry in ipairs(ps.assigned) do
+			table.insert(list, { id = entry.id, done = entry.done })
+		end
+		payload.stations = list
+	end
 	if ps.eyes then
 		payload.eyes = { lifeLeft = math.ceil(ps.eyes.lifeLeft) }
 	end

@@ -101,6 +101,7 @@ working case files.
 | H | How to Play |
 | Q / M | The emote wheel (1 to 8 play its emotes) / quick-chat phrases |
 | N | Your note: write, read or drop it |
+| Hold Tab | Your objectives, and your own stations outlined in white (each Bureau player has 4 to work) |
 | E at a station | Hack its log (Diavolo and Muertos): three timing checks; miss one and its alarm goes off |
 | R | Your role's power: Death's Manual (Diavolo), the blackout (Muerto), the arrest (Ace, in a meeting) |
 | T | The Oculus (Muerto): accept the deal, then stare to read a name |

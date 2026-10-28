@@ -111,8 +111,8 @@ local function watchManuals()
 end
 
 -- A station's alarm (someone missed a check hacking its log): for everyone, the station is outlined
--- in red through walls, an ALARM sign stands over it and it buzzes until the alarm runs out. It
--- never says who was there: that is for whoever gets there first to see.
+-- in red through walls and it buzzes until the alarm runs out. No words: it never says who was
+-- there, that is for whoever gets there first to see.
 local alarms: { [Instance]: number } = {}
 
 local function showAlarm(desk: Instance)
@@ -132,35 +132,12 @@ local function showAlarm(desk: Instance)
 		DepthMode = Enum.HighlightDepthMode.AlwaysOnTop,
 		Parent = playerGui,
 	})
-	local sign = Create("BillboardGui", {
-		Name = "LAlarmSign",
-		Adornee = desk,
-		AlwaysOnTop = true,
-		LightInfluence = 0,
-		Size = UDim2.fromOffset(160, 40),
-		StudsOffset = Vector3.new(0, 5, 0),
-		ResetOnSpawn = false,
-		Parent = playerGui,
-	})
-	Kit.label({
-		Text = "ALARM",
-		font = "label",
-		TextScaled = true,
-		AutomaticSize = Enum.AutomaticSize.None,
-		TextColor3 = C.white,
-		BackgroundTransparency = 0,
-		BackgroundColor3 = C.danger,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.fromScale(1, 1),
-		Parent = sign,
-	})
 	task.spawn(function()
 		while alarms[desk] == token and workspace:GetServerTimeNow() < untilTime and desk.Parent do
 			Sfx.play("error", { volume = 1, parent = desk })
 			task.wait(1)
 		end
 		highlight:Destroy()
-		sign:Destroy()
 		if alarms[desk] == token then
 			alarms[desk] = nil
 		end

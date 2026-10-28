@@ -142,6 +142,70 @@ function CaseFileService.stationInfo(stationId: string)
 	return if runtime then runtime.info else nil
 end
 
+-- Assignments ----------------------------------------------------------------------------
+-- Every Bureau player is handed TASKS_PER_BUREAU stations of their own at the start (as evenly
+-- spread over the map's stations as can be), and works only those, each once. The task bar is
+-- exactly as long as all of them together, so nobody can farm one station.
+
+local function assign()
+	local ids = {}
+	for id in pairs(stations) do
+		table.insert(ids, id)
+	end
+	table.sort(ids)
+	local deck = {}
+	local function refill()
+		deck = table.clone(ids)
+		for i = #deck, 2, -1 do
+			local j = Match.rng:NextInteger(1, i)
+			deck[i], deck[j] = deck[j], deck[i]
+		end
+	end
+	local total = 0
+	for _, ps in ipairs(Match.list) do
+		ps.assigned = {}
+		if not Match.isKiraSide(ps) then
+			local mine = {}
+			local tries = 0
+			while #ps.assigned < math.min(Config.TASKS_PER_BUREAU, #ids) and tries < 100 do
+				tries += 1
+				if #deck == 0 then
+					refill()
+				end
+				local id = table.remove(deck)
+				if not mine[id] then
+					mine[id] = true
+					table.insert(ps.assigned, { id = id, done = false })
+				else
+					table.insert(deck, 1, id)
+				end
+			end
+			total += #ps.assigned
+		end
+	end
+	TaskBarService.setTotal(total)
+end
+
+-- This player's open assignment at this station, if any.
+local function openAssignment(ps, stationId: string)
+	for _, entry in ipairs(ps.assigned or {}) do
+		if entry.id == stationId and not entry.done then
+			return entry
+		end
+	end
+	return nil
+end
+
+local function remaining(ps): number
+	local count = 0
+	for _, entry in ipairs(ps.assigned or {}) do
+		if not entry.done then
+			count += 1
+		end
+	end
+	return count
+end
+
 -- Task flow ----------------------------------------------------------------------------
 
 local function finish(ps, runtime)
@@ -153,6 +217,10 @@ local function finish(ps, runtime)
 	-- What a hack reads: who finished here last, and when.
 	runtime.lastUser = ps
 	runtime.lastAt = now()
+	local entry = openAssignment(ps, runtime.info.id)
+	if entry then
+		entry.done = true
+	end
 	ps.tasksThisRound += 1
 	ps.stats.tasks += 1
 	TaskStateRemote:FireClient(ps.player, { state = "done", stationId = runtime.info.id })
@@ -166,6 +234,10 @@ local function onStart(ps, stationId: string)
 	end
 	local runtime = stations[stationId]
 	if not runtime then
+		return
+	end
+	if not openAssignment(ps, stationId) then
+		Match.notify(ps.player, "Not one of your stations. Hold Tab to see yours.", "bad")
 		return
 	end
 	if runtime.worker or runtime.hacker then
@@ -260,6 +332,7 @@ function CaseFileService.onMatchStart(map)
 		}
 		stations[info.id] = runtime
 	end
+	assign()
 	if monitorConnection then
 		monitorConnection:Disconnect()
 	end
@@ -300,7 +373,8 @@ function CaseFileService.debugFinish(ps): string?
 	local best, bestDistance = nil, math.huge
 	for _, runtime in pairs(stations) do
 		local distance = (runtime.info.position - position).Magnitude
-		if distance < bestDistance and (runtime.worker == nil or runtime.worker == ps) then
+		local free = runtime.worker == nil or runtime.worker == ps
+		if distance < bestDistance and free and openAssignment(ps, runtime.info.id) then
 			best, bestDistance = runtime, distance
 		end
 	end
@@ -318,6 +392,12 @@ end
 
 function CaseFileService.init()
 	TaskRequest.OnServerEvent:Connect(onTaskRequest)
+	Match.Eliminated:Connect(function(ps, kind)
+		if kind == "left" then
+			TaskBarService.forgive(remaining(ps))
+			ps.assigned = {}
+		end
+	end)
 end
 
 return CaseFileService

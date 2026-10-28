@@ -47,7 +47,26 @@ function Objectives.lines(role: string?, phase: string, private: { [string]: any
 				table.insert(lines, line("You can take {eyes} ({key.stare})"))
 			end
 		else
-			table.insert(lines, line("Work case files ({key.use})", tasks > 0))
+			-- Your own stations (Tab outlines them), as "2 of 4".
+			local stations = if type(private.stations) == "table" then private.stations else {}
+			local done = 0
+			for _, entry in ipairs(stations) do
+				if entry.done then
+					done += 1
+				end
+			end
+			if #stations > 0 then
+				table.insert(
+					lines,
+					line(
+						"Work your stations ({key.use})  {done} / {n}",
+						done >= #stations,
+						{ done = done, n = #stations }
+					)
+				)
+			else
+				table.insert(lines, line("Work case files ({key.use})", tasks > 0))
+			end
 			table.insert(lines, line("Watch for glowing eyes and a red book"))
 			if role == "Watari" then
 				table.insert(lines, line("Keep {zero} alive"))

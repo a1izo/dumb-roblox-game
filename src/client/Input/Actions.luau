@@ -11,6 +11,7 @@ local Terms = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ter
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
 
 local EyesController = require(script.Parent.Parent.Controllers.EyesController)
+local TabView = require(script.Parent.Parent.Controllers.TabView)
 local NotePanel = require(script.Parent.Parent.UI.NotePanel)
 local Router = require(script.Parent.Parent.UI.Core.Router)
 
@@ -132,6 +133,17 @@ Actions.list = {
 				EyesController.deal()
 			end
 		end,
+	},
+	{
+		-- Phones have no Tab to hold: a button opens the objectives and lights your stations.
+		id = "tasks",
+		label = fixed("Tasks"),
+		keys = {},
+		variant = "ghost",
+		when = function(view: View)
+			return view.participant and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+		end,
+		run = TabView.toggle,
 	},
 	{
 		id = "quickChat",

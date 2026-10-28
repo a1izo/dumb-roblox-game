@@ -23,6 +23,22 @@ function TaskBarService.onMatchStart()
 	Match.taskBar = { done = 0, total = WinConditions.taskTotal(bureau, Config.TASKS_PER_BUREAU) }
 end
 
+-- The bar is as long as every case file handed out (CaseFileService assigns them).
+function TaskBarService.setTotal(total: number)
+	Match.taskBar.total = math.max(1, total)
+	Match.pushState()
+end
+
+-- A Bureau player left with case files still to do: the bar no longer waits for them.
+function TaskBarService.forgive(count: number)
+	local bar = Match.taskBar
+	if count <= 0 or not Match.active then
+		return
+	end
+	bar.total = math.max(1, bar.total - count)
+	TaskBarService.add(0)
+end
+
 -- One more case file done.
 function TaskBarService.add(amount: number?)
 	local bar = Match.taskBar
