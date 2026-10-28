@@ -580,61 +580,65 @@ function Cinema.black(): () -> ()
 	end
 end
 
--- An anime impact frame: for a blink the screen washes over in `color` and thin streaks of light shoot out
--- from the middle, then everything fades. Lands on a hit (a pen driven into the page, a slam). Only the
--- Muerto's DELETE uses it (the owner, 2026-10-28).
-function Cinema.impact(color: Color3, strength: number?, seconds: number?, origin: Vector2?, along: number?)
+-- A slash across the screen (the Muerto's DELETE, the owner, 2026-10-28: "one line travelling the screen"): a single
+-- bright line drawn in a blink from edge to edge along the pen's stroke, through `origin` (0..1 of the screen) at
+-- `along` degrees (the way the stroke goes), its head racing ahead of a trail, then thinning away.
+function Cinema.slash(color: Color3, strength: number?, seconds: number?, origin: Vector2?, along: number?)
 	if Motion.flashesOff() then
 		return
 	end
-	local life = seconds or 0.22
+	local life = seconds or 0.3
+	local s = math.clamp(strength or 0.6, 0, 1)
+	local at = origin or Vector2.new(0.5, 0.5)
 	local holder = Kit.Base.make("Frame", {
-		BackgroundTransparency = 1 - (strength or 0.55) * (if origin then 0.55 else 1),
-		BackgroundColor3 = color,
-		BorderSizePixel = 0,
+		Name = "Slash",
+		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
 		ZIndex = 4,
 		ClipsDescendants = true,
 		Parent = Screens.cinematic,
 	})
-	-- `origin` (0..1 of the screen): the streaks burst from there (the pen's nib on the page), the longest and
-	-- thickest along `along` degrees (the stroke), both ways; without it, from the middle, all round
-	local size = holder.AbsoluteSize
-	local centre = if origin then Vector2.new(origin.X * size.X, origin.Y * size.Y) else size / 2
-	local streaks = {}
-	for k = 1, 16 do
-		local main = origin ~= nil and along ~= nil and k <= 2
-		local angle = if main
-			then (along :: number) + (if k == 2 then 180 else 0) + math.random(-4, 4)
-			else (k / 16) * 360 + math.random(-10, 10)
-		local length = (if main then 0.75 else 0.35 + math.random() * 0.45) * size.Magnitude * 0.5
-		local start = length * 0.18 -- (out from the hit a little, so its centre stays clear)
-		local dir = Vector2.new(math.cos(math.rad(angle)), math.sin(math.rad(angle)))
-		local middle = centre + dir * (start + length / 2)
-		local streak = Kit.Base.make("Frame", {
+	local view = holder.AbsoluteSize
+	local span = view.Magnitude * 2.2 -- (long enough to cross the screen from anywhere on it)
+	local lines = {}
+	-- a wide soft glow in `color`, and the white-hot core on it
+	for _, spec in ipairs({
+		{ math.max(8, view.Y * 0.03 * s), color, 0.45 },
+		{ math.max(2, view.Y * 0.006), color:Lerp(Color3.new(1, 1, 1), 0.75), 0 },
+	}) do
+		local line = Kit.Base.make("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromOffset(middle.X, middle.Y),
-			Size = UDim2.fromOffset(length, if main then math.random(6, 9) else math.random(2, 5)),
-			Rotation = angle,
-			BackgroundColor3 = if main then color:Lerp(Color3.new(1, 1, 1), 0.5) else Color3.new(1, 1, 1),
-			BackgroundTransparency = 0.15,
+			Position = UDim2.fromScale(at.X, at.Y),
+			Size = UDim2.fromOffset(span, spec[1]),
+			Rotation = along or -32,
+			BackgroundColor3 = spec[2],
+			BackgroundTransparency = spec[3],
 			BorderSizePixel = 0,
 			ZIndex = 5,
 			Parent = holder,
 		})
-		Kit.Base.make("UIGradient", {
+		-- the head at the gradient's middle, the trail fading out behind it, nothing ahead of it; sliding the
+		-- gradient carries the head from one end of the line to the other
+		local gradient = Kit.Base.make("UIGradient", {
 			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 0),
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.2, 1),
+				NumberSequenceKeypoint.new(0.47, 0.2),
+				NumberSequenceKeypoint.new(0.5, 0),
+				NumberSequenceKeypoint.new(0.505, 1),
 				NumberSequenceKeypoint.new(1, 1),
 			}),
-			Parent = streak,
-		})
-		table.insert(streaks, streak)
+			Offset = Vector2.new(-0.5, 0),
+			Parent = line,
+		}) :: UIGradient
+		Motion.tween(gradient, { Offset = Vector2.new(0.5, 0) }, life * 0.35)
+		table.insert(lines, line)
 	end
-	Motion.tween(holder, { BackgroundTransparency = 1 }, life)
-	for _, streak in ipairs(streaks) do
-		Motion.tween(streak, { BackgroundTransparency = 1 }, life * 0.8)
-	end
+	task.delay(life * 0.35, function()
+		for _, line in ipairs(lines) do
+			Motion.tween(line, { BackgroundTransparency = 1, Size = UDim2.fromOffset(span, 1) }, life * 0.65)
+		end
+	end)
 	task.delay(life + 0.05, function()
 		holder:Destroy()
 	end)

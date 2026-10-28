@@ -71,9 +71,7 @@ type Showing = {
 	punches: { { number } },
 	focus: Focus?,
 	freeze: { dur: number, blink: string? }?, -- a freeze asked for, not yet begun (the render step begins it)
-	-- where an actor's pen nib is on the screen (0..1) and which way the arm comes down it (degrees), for an impact
-	-- that bursts from the nib; and a red slash cut into the open page of a Manual on the set
-	nib: ((slot: string) -> (Vector2?, number?))?,
+	-- a red slash cut into the open page of a Manual on the set
 	ink: ((seed: number) -> ())?,
 }
 
@@ -383,16 +381,27 @@ local function runEvent(event: any, base: Vector3, token: number, options: Optio
 				event.strength or 0.6,
 				event.dur or 0.4
 			)
-		elseif name == "impact" then
-			-- (`from`: an actor whose pen nib the streaks burst from, along the stroke)
+		elseif name == "slash" then
+			-- one line drawn across the screen along a pen's stroke: `p0` to `p1` (set points: the stroke's two ends on
+			-- the page), seen from this camera
+			local camera = workspace.CurrentCamera
 			local origin, along = nil, nil
-			if event.from and showing.nib then
-				origin, along = showing.nib(event.from)
+			if camera and event.p0 and event.p1 then
+				local pa = camera:WorldToViewportPoint(base + Vector3.new(event.p0[1], event.p0[2], event.p0[3]))
+				local pb = camera:WorldToViewportPoint(base + Vector3.new(event.p1[1], event.p1[2], event.p1[3]))
+				if pa.Z > 0 and pb.Z > 0 then
+					local view = camera.ViewportSize
+					origin = Vector2.new(
+						math.clamp((pa.X + pb.X) / 2 / view.X, 0.1, 0.9),
+						math.clamp((pa.Y + pb.Y) / 2 / view.Y, 0.15, 0.85)
+					)
+					along = math.deg(math.atan2(pb.Y - pa.Y, pb.X - pa.X))
+				end
 			end
-			Cinema.impact(
-				Color3.fromRGB(event.r or 255, event.g or 255, event.b or 255),
-				event.strength or 0.55,
-				event.dur or 0.22,
+			Cinema.slash(
+				Color3.fromRGB(event.r or 255, event.g or 40, event.b or 60),
+				event.strength or 0.6,
+				event.dur or 0.3,
 				origin,
 				along
 			)
@@ -724,24 +733,6 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 	end
 	local showing: Showing =
 		{ closers = closers, sounds = {}, stretch = stretch, punches = {}, focus = nil, freeze = nil }
-	showing.nib = function(slot: string): (Vector2?, number?)
-		local live = bySlot[slot]
-		local arm = if live then live.model:FindFirstChild("Right Arm") else nil
-		local camera = workspace.CurrentCamera
-		if not arm or not arm:IsA("BasePart") or not camera then
-			return nil, nil
-		end
-		local tip = arm.CFrame * Vector3.new(0, -arm.Size.Y / 2 - 0.45, 0)
-		local top = arm.CFrame * Vector3.new(0, arm.Size.Y / 2, 0)
-		local a, onScreen = camera:WorldToViewportPoint(tip)
-		local b = camera:WorldToViewportPoint(top)
-		if not onScreen then
-			return nil, nil
-		end
-		local view = camera.ViewportSize
-		local d = Vector2.new(a.X - b.X, a.Y - b.Y)
-		return Vector2.new(a.X / view.X, a.Y / view.Y), math.deg(math.atan2(d.Y, d.X))
-	end
 	local slashed: SurfaceGui? = nil
 	showing.ink = function(seed: number)
 		local book: Model? = nil

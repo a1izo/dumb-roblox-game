@@ -2,22 +2,23 @@
 scratch (2026-10-28, the owner: "completely redo these two"). After the anime's potato chip scene (Death Note, episode
 8; art/refs/cinema/RoleDiavolo.toml): a student at his desk at night, studying, eating crisps; between the crisps a
 name goes into the Manual; the news on the television flatlines; then a crisp, raised slowly, held... and eaten like a
-verdict, the Deathsinger drawn out of the dark behind him laughing with him; and last, what the hidden camera in the
-corner sees: a good student at his books, and nothing behind him.
+verdict, the Deathsinger drawn out of the dark behind him laughing with him. Cut through it (the owner, 2026-10-28:
+"I like the camera concept, mix it around"), what the hidden cameras in the room see: a good student at his books.
 
-A  0.0-2.8   Over the television across the room, creeping in: night, rain on the window behind him, the lamp. He
-             writes; a hand goes into the bag on the dossier and a crisp is eaten without looking up.
-B  2.8-4.6   High over his right shoulder onto the page: the pen writes a name in hard quick strokes and underlines
-             it with a flick.
-C  4.6-6.6   Close, low, from in front on his left: the eyes come up off the page to the television; it flickers;
-             the flatline; a smile, just.
+A  0.0-2.4   The hidden camera in the front corner, black and white: a student at his desk at night, writing; a hand
+             goes into the bag on the dossier and a crisp is eaten without looking up.
+B  2.4-4.3   Low over the desk, the page in the foreground and him beyond: the pen writes a name in hard quick
+             strokes and underlines it with a flick.
+C  4.3-5.6   Close, from in front on his left: the eyes come up off the page to the television.
+S  5.6-6.6   The hidden camera on the side wall: the television flares, the flatline; he only sits and watches the
+             news. "I'll take a potato chip..." starts over it.
 D  6.6-9.3   Across the desk, pushing in: "I'll take a potato chip..." the hand into the bag, a crisp lifted slowly
              up beside his face, the head turning to it; held.
 E  9.3-10.8  Low and close on the crisp's side, tilted, half his face in the dark: "...and EAT IT!" the snap to the
              mouth, the crunch, the frame stopping red, the crumbs flying; he chews, grinning.
 F  10.8-12.8 Low and wide from the room, rising: he leans back into the chair laughing, and behind him the
              Deathsinger is drawn out of the dark, eyes first, leaning in over his shoulder, laughing with him.
-G  12.8-14.8 The hidden camera in the corner, black and white: a student at his desk, writing. Nothing behind him.
+G  12.8-16.0 The hidden camera in the corner behind him: a student at his desk, writing. Nothing behind him.
 
 The study (maps/venues/sets/study.py, Sets scene space): the room x -12..12, z -10..10, 14 high; the window in the
 north wall; the desk before it at (0, -5.4) (x -3.3..3.3, z -7.0..-3.8, top 2.7): its banker's lamp at x -2.3 (on his
@@ -33,7 +34,7 @@ from emotes.kit import basis_angles, hold, reach
 from motion import Motion
 
 NAME = "RoleDiavolo"
-LENGTH = 14.8
+LENGTH = 16.0
 TOP = 2.7  # the desk top
 HIP = 2.15  # on the chair's cushion
 LEGS = 52  # the thighs sloping under the desk's edge (R6 legs do not bend)
@@ -49,8 +50,8 @@ SINGER = (-2.6, -10.0)
 ABOVE = 0.78  # the fist this far over the page puts the nib on it (PEN_GRIP)
 
 CASUAL = (1.2, 2.2)  # the first crisp: into the bag .. eaten
-WRITE = (2.85, 4.35)  # the name
-LOOK = (4.85, 5.7)  # the eyes up to the television .. the flatline
+WRITE = (2.6, 4.1)  # the name
+LOOK = (4.5, 5.45)  # the eyes up to the television .. the flatline
 SAID = 6.3  # "I'll take a potato chip..."
 TAKE = (6.35, 6.95)  # into the bag .. a crisp out
 RAISED = 8.0  # up beside the face, held
@@ -233,15 +234,22 @@ for k in range(5):
     t = BACK + 1.0 + 0.24 * k
     singer.at(t, (SINGER[0], 0.3 + (0.25 if k % 2 else 0.0), SINGER[1] + 0.3), (12 - (5 if k % 2 else 0), 170, 4))
 
-# A: over the television across the room, creeping in on him.
-shot.pan(0.0, 2.8, "self", (2.0, 4.8, 7.6), aim="Torso", dy=0.5, fov=32, drift=(-0.5, -0.2, -3.2))
+# The hidden cameras (black and white, REC and the time: the "cctv" effect), each high in a corner of the room and
+# still: (from, to, where, looking at, fov, label).
+CAMS = [(0.0, 2.4, (10.6, 12.6, 8.6), (0.0, 3.4, -6.8), 28.0, "CAM 01"),
+        (5.6, 6.6, (-9.6, 11.0, -3.2), (0.0, 3.8, -7.0), 34.0, "CAM 03"),
+        (STUDY + 0.25, LENGTH, (-8.4, 12.2, -9.2), (0.0, 3.4, -6.8), 46.0, "CAM 02")]
+for t0, t1, eye, aim, fov, _ in CAMS:
+    shot.subjects.append((t0, t1, None, True))
+    shot.cam(t0, eye, aim, fov=fov, cut=True)
+    shot.cam(t1, eye, aim, fov=fov, ease="linear")
 # B: low over the desk from in front, the page in the foreground and him bent over it beyond: the pen writes.
-shot.subjects.append((2.8, 4.6, None, True))
+shot.subjects.append((2.4, 4.3, None, True))
 look_b = (PAGE[0] + 0.05, PAGE[1] + 0.45, PAGE[2] - 0.5)
-shot.cam(2.8, (PAGE[0] + 0.35, PAGE[1] + 0.8, PAGE[2] + 1.9), look_b, fov=48, roll=-5.0, cut=True)
-shot.cam(4.6, (PAGE[0] + 0.3, PAGE[1] + 0.75, PAGE[2] + 1.55), look_b, fov=46, roll=-6.0, ease="linear")
-# C: close and low, from in front on his left: the eyes come up off the page.
-shot.pan(4.6, 6.6, "self", front(3.9, -1.0, 4.6), aim="Head", dy=-0.2, fov=44, cut=True, drift=(0.0, 0.0, -0.2))
+shot.cam(2.4, (PAGE[0] + 0.35, PAGE[1] + 0.8, PAGE[2] + 1.9), look_b, fov=48, roll=-5.0, cut=True)
+shot.cam(4.3, (PAGE[0] + 0.3, PAGE[1] + 0.75, PAGE[2] + 1.55), look_b, fov=46, roll=-6.0, ease="linear")
+# C: close, from in front on his left: the eyes come up off the page.
+shot.pan(4.3, 5.6, "self", front(3.9, -1.0, 4.6), aim="Head", dy=-0.2, fov=44, cut=True, drift=(0.0, 0.0, -0.2))
 # D: across the desk, pushing in: the crisp taken and raised.
 shot.pan(6.6, 9.3, "self", front(6.4, 0.5, 4.4), aim="Head", dy=0.1, fov=44, cut=True, drift=(0.0, 0.0, -1.4),
          roll=-3.0)
@@ -258,16 +266,15 @@ shot.cam(10.8, (eye_e[0] + 0.18, eye_e[1] + 0.05, eye_e[2] - 0.28), look_e, fov=
 # F: low and wide from the room, rising as he leans back and the Deathsinger comes.
 shot.pan(10.8, STUDY + 0.25, "self", front(7.6, 0.6, 3.2), aim="Torso", dy=1.6, fov=54, cut=True,
          drift=(0.2, 1.6, 1.4))
-# G: the hidden camera, high in the corner behind him: wide and still.
-shot.subjects.append((STUDY + 0.25, LENGTH, None, True))
-shot.cam(STUDY + 0.25, (-8.4, 12.2, -9.2), (0.0, 3.4, -6.8), fov=46, cut=True)
-shot.cam(LENGTH, (-8.4, 12.2, -9.2), (0.0, 3.4, -6.8), fov=46, ease="linear")
+# G: the hidden camera behind him (CAMS).
+shot.cam_groups.sort(key=lambda g: g[0][0])  # (the hidden cameras' cuts were added first: in time order)
 
 # The lens: barely soft, only to put the eye where the cut is about.
-for t, part, radius in ((0.0, "Torso", 10.0), (2.8, "Right Arm", 2.5), (4.6, "Head", 2.5), (6.6, "Head", 3.0),
-                        (9.3, "Head", 2.0), (10.8, "Torso", 6.0)):
+for t, part, radius in ((2.4, "Right Arm", 2.5), (4.3, "Head", 2.5), (6.6, "Head", 3.0), (9.3, "Head", 2.0),
+                        (10.8, "Torso", 6.0)):
     shot.event(t, "fx", name="focus", slot="self", part=part, radius=radius, far=0.12, near=0.06)
-shot.event(STUDY + 0.25, "fx", name="focus")  # (a security camera sees it all flat)
+for t0, *_ in CAMS:
+    shot.event(t0, "fx", name="focus")  # (a security camera sees it all flat)
 
 # The light: night; the desk lamp a warm key from his right, the television's cold light flickering on his face from
 # across the room, the moon through the window a cold rim on his back; the red of the Deathsinger from below behind
@@ -278,7 +285,7 @@ shot.light("spot", (-2.6, TOP + 1.7, -6.0), HEAD, color=(255, 186, 120), brightn
 shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(190, 210, 255), brightness=1.5, range=20, angle=26, flicker=0.45)
 shot.light("spot", (1.6, 9.5, -9.6), HEAD, color=(160, 180, 255), brightness=1.3, range=12, angle=45)
 shot.light("spot", (PAGE[0] - 1.0, PAGE[1] + 2.8, PAGE[2] - 1.4), PAGE, color=(255, 214, 170), brightness=1.0, range=5,
-           angle=40, shadows=False, show=(2.8, 4.6))  # (the page lit for the insert)
+           angle=40, shadows=False, show=(2.4, 4.3))  # (the page lit for the insert)
 shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(235, 245, 255), brightness=3.0, range=20, angle=26,
            show=(LOOK[1] - 0.05, LOOK[1] + 0.35), flicker=0.9)  # (the television flaring as the news breaks)
 shot.light("spot", (SINGER[0] + 0.5, 0.6, SINGER[1] + 2.0), (SINGER[0], 7.0, SINGER[1]), color=(220, 25, 35),
@@ -302,9 +309,11 @@ shot.event(BITE + 0.02, "fx", name="burst", pos=[round(float(v), 3) for v in fra
            amount=26)  # (the crumbs)
 shot.event(BACK - 0.3, "sfx", slot="wisp")
 shot.event(BACK + 0.4, "sfx", slot="hauntWhisper")
-# the hidden camera: black and white, the grain, REC and the time; the room's quiet
-shot.event(STUDY + 0.25, "fx", name="cctv", dur=LENGTH - STUDY - 0.25, label="CAM 02")
-shot.event(STUDY + 0.25, "sfx", slot="screenStatic")
+# the hidden cameras: black and white, REC and the time
+for t0, t1, _, _, _, label in CAMS:
+    shot.event(t0, "fx", name="cctv", dur=round(t1 - t0, 3), label=label)
+    if t0 > 10.0:  # (the flatline's static covers the side camera)
+        shot.event(t0, "sfx", slot="screenStatic")
 
 shot.audio(voice="voiceDiavolo", voice_at=SAID, bed="bedDiavolo")
 shot.line(SAID, "I'll take a potato chip... and EAT IT!", times=[0.0, 0.3, 0.62, 0.8, 1.2, BITE - SAID - 0.5,

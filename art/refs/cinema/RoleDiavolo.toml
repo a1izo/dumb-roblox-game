@@ -35,8 +35,8 @@ src = 74.0
 pose = "the surveillance monitor: him from behind at his desk, ordinary"
 
 [timing]
-length = 14.8
-fit = "7 cuts: over the television, writing and a crisp (0-2.8); low over the desk, the page and the name (2.8-4.6); close, the eyes up, the flatline (4.6-6.6); across the desk, the crisp raised and held (6.6-9.3); close from his right, the bite (9.3-10.8); wide, laughing, the Deathsinger (10.8-12.8); the hidden camera (12.8-14.8)."
+length = 16.0
+fit = "8 cuts, the hidden cameras cut through it (the owner, 2026-10-28: 'mix it around'): CAM 01 from the front corner, writing and a crisp (0-2.4); low over the desk, the name (2.4-4.3); close, the eyes up (4.3-5.6); CAM 03 from the side, the television flares, the flatline, the line starts (5.6-6.6); across the desk, the crisp raised and held (6.6-9.3); close from his right, the bite (9.3-10.8); wide, laughing, the Deathsinger (10.8-12.8); CAM 02 behind him, writing, nothing there (12.8-16.0)."
 
 [r6]
 notes = "The crisp in the left hand (the pen stays in the right), raised beside the face and bitten with the emote's checked positions (emotes/props.py chipAndPen, mirrored). The pen hand is laid on the desk before the raise so it never hides the face from the right."

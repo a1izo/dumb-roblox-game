@@ -11,12 +11,12 @@ B  2.6-4.3   High over the page from his left: the pen finishes a name, rises ou
              across it (DELETE, 3.4).
 C  4.3-6.5   Low from in front, over the desk's edge, hand-held and tilted: the whole body in the swings, a
              backhand, a forehand, a backhand.
-D  6.5-8.0   Close on his face from the screen's side, tilted the other way: the red eyes, the head jerking with each
+D  6.5-8.0   Close on his face, tilted the other way: the stare, the head jerking with each
              of three faster slashes, the arm tearing through the edge of the frame.
 E  8.0-9.6   Straight down on the page: the last and biggest slash rips the whole way across; the pen stops,
              pressed into the page, trembling. Red slashes everywhere.
-F  9.6-11.6  In front of him, creeping in: panting over the page; the head comes up slowly into the camera, the eyes
-             red, a smile.
+F  9.6-11.6  In front of him, creeping in: panting over the page; the head comes up slowly into the camera, staring,
+             a smile.
 G  11.6-14.4 Low and wide from the room, pulling back and rising: he throws himself back in the chair, arms flung
              wide, head back, the red flooding in behind him.
 
@@ -214,7 +214,7 @@ shot = Shot(NAME, "Sets", LENGTH, note="The Muerto's role cutscene: delete.")
 shot.room = (OX - 9.0, OZ - 7.0, OX + 9.0, OZ + 7.0, 10.0)
 shot.allow = {"self": ["OfficeChair"]}  # in the chair (never into the desk)
 
-a = shot.actor("self", me, eyes=(3.2, LENGTH))
+a = shot.actor("self", me)  # (his own eyes: no glowing blocks, the owner, 2026-10-28)
 a.mark(0.0, at(SIT[0], 0.0, SIT[1]), 180.0)
 a.hold("Pen", "Right Arm", PEN_GRIP[0]["p"], PEN_GRIP[1]["r"])
 
@@ -259,8 +259,8 @@ for t, part, radius in ((0.0, "Torso", 8.0), (2.6, "Right Arm", 2.5), (4.3, "Hea
 
 # The light: the red city through the window behind him a hard rim; the screen's cold light flickering up into his
 # face from his right; the desk lamp a low warm fill from his left; once he throws himself back the red floods in
-# and a white-hot glare burns behind him (the anime's). The grade: dark, pushed red. His own face throughout; the red
-# eyes from the first slash.
+# and a white-hot glare burns behind him (the anime's). The grade: dark, pushed red. His own face and
+# eyes throughout.
 HEAD = at(SIT[0], 4.6, SIT[1])
 shot.grade = (0.26, 0.06, -0.05, (255, 226, 226))
 shot.light("spot", at(1.3, 7.5, -6.9), HEAD, color=(255, 45, 55), brightness=2.6, range=10, angle=70)
@@ -282,8 +282,12 @@ for n, (t, side) in enumerate(SLASHES):
     last = n == len(SLASHES) - 1
     shot.event(t - 0.03, "sfx", slot="knifeScrape")
     shot.event(t + 0.02, "fx", name="inkslash", seed=n + 1)
-    shot.event(t, "fx", name="impact", r=255, g=40 + 15 * (n % 2), b=60, strength=0.5 + 0.04 * n + (0.2 if last else 0),
-               dur=0.22 + (0.15 if last else 0), **{"from": "self"})
+    # one line slashed across the screen along the stroke (the owner: "one line travelling the screen")
+    x0, x1 = (0.42, -0.42) if side > 0 else (-0.42, 0.42)
+    big = 1.35 if last else 1.0
+    ends = [[round(v, 3) for v in at(BOOK[0] - x * big, PAGE_Y, BOOK[1] - dd)] for x, dd in ((x0, -0.55), (x1, 0.45))]
+    shot.event(t - 0.02, "fx", name="slash", p0=ends[0], p1=ends[1], r=255, g=40 + 15 * (n % 2), b=60,
+               strength=0.55 + 0.04 * n + (0.2 if last else 0), dur=0.3 + (0.15 if last else 0))
     shot.event(t, "fx", name="shake", strength=0.14 + 0.03 * n + (0.2 if last else 0), dur=0.16)
 shot.event(SLASHES[-1][0], "fx", name="still", r=255, g=30, b=45, dur=0.28)
 shot.event(SLASHES[-1][0], "sfx", slot="slam")
