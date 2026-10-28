@@ -8,9 +8,9 @@
 -- rain ends at a roof's edge, over the river it falls to the water, and no flake is ever born in a
 -- room or blown into one (2026-10-15: it was, on the Campus).
 --
--- The rain is heavy and slanted (a storm) with gusts, in near cells of long bright streaks and a
--- few coarse far cells for the veil of it behind; now and then the sky flashes and thunder rolls
--- in. The snow falls in two sizes of flake, drifts with the wind and gusts, and stops under cover
+-- The rain is heavy and falls straight down (the user's call of 2026-10-27: slanted with the wind and pushed along
+-- it in a gust, it looked to fall sideways), in near cells of long bright streaks and a few coarse far cells for the
+-- veil of it behind; a gust only makes it heavier; now and then the sky flashes and thunder rolls in. The snow falls in two sizes of flake, drifts with the wind and gusts, and stops under cover
 -- the same way. The loops and the thunder are outdoor sounds: they are muffled when you go in
 -- (Audio/Muffle), and quieter then.
 --
@@ -49,8 +49,8 @@ local TUNING = {
 		height = 34, -- studs over the ground a near drop starts
 		farHeight = 72,
 		speed = 92, -- studs a second along its path
-		slant = { pitch = 10, roll = -11 }, -- degrees: the wind from the north-east
-		gust = 34, -- studs/s^2 of extra sideways push at the height of a gust
+		slant = { pitch = 0, roll = 0 }, -- degrees off straight down (0: it falls straight down)
+		gust = 0, -- studs/s^2 of sideways push at the height of a gust (0: none, it stays straight)
 		size = 0.2, -- how wide a streak is, and how many times as long
 		squash = 9,
 		-- The streak's see-through-ness at birth, mid-fall and landing (0 solid, 1 invisible).
@@ -91,7 +91,9 @@ local FALLBACK_TEXTURE = "rbxasset://textures/particles/smoke_main.dds"
 local RING_FALLBACK = FALLBACK_TEXTURE
 local SLANT = CFrame.Angles(math.rad(TUNING.rain.slant.pitch), 0, math.rad(TUNING.rain.slant.roll))
 local FALL = -SLANT.UpVector -- the way a drop falls (a unit vector, going down)
-local WIND = Vector3.new(FALL.X, 0, FALL.Z).Unit -- the way the wind blows, across the ground
+-- The way the wind blows, across the ground, from the north-east (the snow drifts and leans along it; the rain no
+-- longer follows it).
+local WIND = Vector3.new(-0.746, 0, -0.666).Unit -- (as the old 10 by -11 degree slant blew it)
 local LEAN_AXIS = Vector3.new(0, 1, 0):Cross(WIND) -- the axis a gust leans the falling snow about
 -- How far upwind a drop is a stud higher (it falls along the slant: Probe.dropStart).
 local RAIN_LEAN = Vector3.new(-FALL.X, 0, -FALL.Z) / -FALL.Y

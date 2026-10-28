@@ -805,6 +805,56 @@ local function standIn(b, folder: Instance, p)
 	end
 end
 
+-- Props the catalog leaves without collision (their thin parts would snag a walker) that a body should still not walk
+-- through (2026-10-27: the user walked through Tokyo's street things): `box`, a block over the whole prop that many
+-- studs inside its outline, up to its height or `top`; or `pole`, a post that wide at the prop's anchor (its pole or
+-- trunk, the catalog's), up to `top`. Invisible, like the map's other colliders.
+local SOLID: { [string]: { box: number?, pole: number?, top: number? } } = {
+	Bicycle = { box = 0.25 },
+	Scooter = { box = 0.25 },
+	TrafficCone = { box = 0.2 },
+	BarStool = { box = 0.2 },
+	MicStand = { pole = 0.6, top = 5 },
+	StreetLightTokyo = { pole = 1.2, top = 8 },
+	TrafficSignal = { pole = 1.0, top = 8 },
+	PedestrianSignal = { pole = 0.6, top = 8 },
+	RoadSign = { pole = 0.5, top = 8 },
+	BusStopSign = { pole = 0.9, top = 8 },
+	TaxiRankSign = { pole = 0.8, top = 8 },
+	UtilityPole = { pole = 1.2, top = 8 },
+	TreeSakura = { pole = 1.3, top = 6 },
+	TreeZelkova = { pole = 1.3, top = 6 },
+}
+
+local function solidFor(b, folder: Instance, p)
+	local want = SOLID[p[1]]
+	local info = Catalog[p[1]]
+	if not want or not info or info.collide then
+		return
+	end
+	local scale = p[6] or 1
+	local size = Vector3.new(info.size[1], info.size[2], info.size[3]) * scale
+	local base = b:cf(p[2], p[3], p[4], p[5])
+	local box: Vector3, at: CFrame
+	if want.pole then
+		local anchor = info.anchor or { 0, 0 }
+		local top = math.min(want.top or size.Y, size.Y)
+		box = Vector3.new(want.pole * scale, top, want.pole * scale)
+		at = base * CFrame.new(anchor[1] * scale, top / 2, anchor[2] * scale)
+	else
+		local inset = (want.box or 0) * 2
+		local top = math.min(want.top or size.Y, size.Y)
+		box = Vector3.new(math.max(0.2, size.X - inset), top, math.max(0.2, size.Z - inset))
+		at = base * CFrame.new(0, top / 2, 0)
+	end
+	local part = Instance.new("Part")
+	part.Name = "PropSolid_" .. p[1]
+	part.Size = box
+	part.CFrame = b:world(at)
+	solid(part, nil, false, false)
+	part.Parent = folder
+end
+
 -- The lights a prop carries (its catalog lights, at their places in the prop), unless the map
 -- placed it dark. Their anchors show as fixtures when the prop is only a stand-in.
 local function propLights(b, folder: Instance, p, model: Instance?)
@@ -1201,6 +1251,7 @@ local function buildFormat2(b, venue: string, data): string
 		end
 		propLights(b, folder, p, model)
 		propFlames(b, folder, p)
+		solidFor(b, folder, p)
 	end
 	for _, spec in ipairs(dressing.lights) do
 		addLight(b, folder, spec, greybox)
