@@ -462,6 +462,8 @@ LIBRARY = {
     # Stone, concrete, plaster.
     "MarbleBlack": surface("granite_tile", (38, 37, 40), 16, "floor", 2, keep=0.3, contrast=1.5, rough=0.14, quiet=True, seed=11),
     "MarbleWhite": surface("marble_01", (204, 200, 192), 12, "floor", 2, keep=0.6, contrast=0.6, rough=0.16, quiet=True, seed=12),
+    # (the Muerto's flat: dark teal marble, its veins pale, polished)
+    "MarbleTeal": surface("marble_01", (34, 56, 60), 12, "floor", 2, keep=0.6, contrast=1.2, rough=0.1, quiet=True, seed=13),
     "Concrete": surface("concrete_wall_008", (114, 114, 116), 16, "wall", 2, True, keep=0.6, seed=20),
     "ConcreteDark": surface("concrete_floor_worn_001", (64, 64, 68), 16, "floor", 2, True, keep=0.6, seed=21),
     "PlasterDark": surface("beige_wall_001", (46, 50, 56), 10, "wall", 1, True, keep=0.2, contrast=0.6, quiet=True, seed=22),
