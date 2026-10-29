@@ -106,38 +106,51 @@ return function(t)
 			expect(Suit.PAD["Left Leg"] ~= Suit.PAD["Right Leg"]).to.equal(true)
 		end)
 
-		it("ends each sleeve in a white cuff and a classic hand in the player's skin, the arm's own end", function()
+		it("ends each sleeve in a white cuff and a hand in the player's skin within the arm's own end", function()
 			local arm = Instance.new("Part")
 			arm.Name = "Right Arm"
 			arm.Size = Vector3.new(1, 2, 1)
 			arm.CFrame = CFrame.new(10, 5, 0)
 			local skin = Color3.fromRGB(120, 80, 50)
-			local cuff, hand
+			local cuff
+			local hands: { BasePart } = {}
 			for _, item in ipairs(Suit.hand(arm, skin)) do
 				if item.Name == "Cuff" then
 					cuff = item
 				elseif item.Name == "Hand" then
-					hand = item
+					table.insert(hands, item)
 				end
 			end
-			expect(cuff ~= nil and hand ~= nil).to.equal(true)
+			expect(cuff ~= nil and #hands > 0).to.equal(true)
 			expect(cuff.Color == Suit.SHIRT).to.equal(true)
-			expect(hand.Color == skin).to.equal(true)
-			-- the arm's last Suit.HAND, a hair over its faces, never hanging below it; the cuff round its top
-			expect(hand.Size.X > arm.Size.X and hand.Size.Z > arm.Size.Z).to.equal(true)
+			local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+			for _, hand in ipairs(hands) do
+				expect(hand.Color == skin).to.equal(true)
+				lo, hi = lo:Min(hand.Position - hand.Size / 2), hi:Max(hand.Position + hand.Size / 2)
+			end
+			-- the arm's last Suit.HAND, never hanging below it; the cuff round its top
 			local armEnd = arm.Position.Y - 1
-			local handBottom = hand.Position.Y - hand.Size.Y / 2
-			local handTop = hand.Position.Y + hand.Size.Y / 2
-			expect(handBottom >= armEnd - 0.02).to.equal(true)
-			expect(math.abs(handTop - (armEnd + Suit.HAND)) < 0.03).to.equal(true)
-			expect(cuff.Size.X > hand.Size.X).to.equal(true)
+			expect(lo.Y >= armEnd - 0.03).to.equal(true)
+			expect(math.abs(hi.Y - (armEnd + Suit.HAND)) < 0.03).to.equal(true)
 			expect(math.abs(cuff.Position.Y - (armEnd + Suit.HAND)) < 0.06).to.equal(true)
+			expect(cuff.Size.X > hi.X - lo.X).to.equal(true)
+			if arm.Transparency == 1 then
+				-- the imported fist: a real hand's shape inside the arm's footprint, the arm see-through round it
+				expect(hi.X - lo.X < arm.Size.X and hi.Z - lo.Z < arm.Size.Z + 0.01).to.equal(true)
+			else
+				-- the classic hand: a skin shell a hair over the arm's faces
+				expect(hi.X - lo.X > arm.Size.X and hi.Z - lo.Z > arm.Size.Z).to.equal(true)
+			end
 			-- a late skin repaints the hand, never the cuff
 			local holder = Instance.new("Model")
 			cuff.Parent = holder
-			hand.Parent = holder
+			for _, hand in ipairs(hands) do
+				hand.Parent = holder
+			end
 			Suit.reskin(holder, Color3.fromRGB(240, 200, 170))
-			expect(hand.Color == Color3.fromRGB(240, 200, 170)).to.equal(true)
+			for _, hand in ipairs(hands) do
+				expect(hand.Color == Color3.fromRGB(240, 200, 170)).to.equal(true)
+			end
 			expect(cuff.Color == Suit.SHIRT).to.equal(true)
 			holder:Destroy()
 			arm:Destroy()

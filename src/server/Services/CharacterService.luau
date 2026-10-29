@@ -282,9 +282,12 @@ function CharacterService.setWriting(player: Player, on: boolean)
 		return
 	end
 	CharacterService.attachBuilt(player, "LWritingPen", HAND, function(anchor: CFrame)
+		-- In the fist (the arm's last Suit.HAND), its nib on the open page's right half: posed through the "write"
+		-- clip it stays on the paper, sliding across it as the arm writes (it sat mid-forearm before, out of the hand).
+		local held = anchor * CFrame.new(0, -0.74, -0.08) * CFrame.Angles(math.rad(-90), math.rad(1.1), math.rad(-70.6))
 		local pen = Models.pen()
 		if pen then
-			return modelParts(pen, anchor * CFrame.new(0, -0.35, -0.2) * CFrame.Angles(math.rad(-55), 0, 0))
+			return modelParts(pen, held)
 		end
 		return {
 			Create("Part", {
@@ -292,7 +295,7 @@ function CharacterService.setWriting(player: Player, on: boolean)
 				Size = Vector3.new(0.9, 0.09, 0.09),
 				Color = Color3.fromRGB(14, 14, 16),
 				Material = Enum.Material.Metal,
-				CFrame = anchor * CFrame.new(0, -0.2, -0.2) * CFrame.Angles(0, math.rad(90), math.rad(-60)),
+				CFrame = held * CFrame.new(0, -0.085, 0) * CFrame.Angles(0, 0, math.rad(90)),
 			}),
 		}
 	end)
@@ -545,7 +548,8 @@ function CharacterService.dressNoir(character: Model, tie: Color3?)
 			return Suit.cloth(part)
 		end)
 	end
-	-- R6 arms are one part: each sleeve ends in the shirt's white cuff and a slim hand in the player's skin (Shared/Suit).
+	-- R6 arms are one part: each sleeve ends in the shirt's white cuff and a fist in the player's skin, the arm under
+	-- them see-through once the suit is imported (Shared/Suit).
 	for _, side in ipairs({ "Left", "Right" }) do
 		CharacterService.attachBuiltTo(
 			character,
