@@ -5,7 +5,6 @@
 -- for everyone. Without the cutscene the card shows from the start. Everything here can be seen again on the role card
 -- (hold C).
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -26,8 +25,6 @@ local C = Kit.color
 local T = Kit.Tokens
 
 local BriefingScreen = {}
-
-local ROLE_ICON = { Kira = "hand", Follower = "cultist", L = "zero", Watari = "butler", TaskForce = "agency" } -- terms:ok
 
 local root: Frame
 local body: Frame
@@ -67,6 +64,42 @@ local function alliesText(role: string, allies): string
 	return "Trust no one."
 end
 
+-- A line in the big title font, kept out of the Melodrama mirror.
+local function bigText(props: { [string]: any }): TextLabel
+	local label = Kit.label({
+		Text = props.text,
+		font = "title",
+		size = props.size,
+		color = props.color or C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
+	})
+	label:SetAttribute("KeepFont", true)
+	label.Parent = props.Parent
+	return label
+end
+
+local function mono(text: string, props: { [string]: any }): TextLabel
+	return Kit.label({
+		Text = text,
+		font = "mono",
+		size = props.size or "small",
+		color = props.color or C.dim,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		Position = props.Position,
+		AnchorPoint = props.AnchorPoint,
+		TextXAlignment = props.align or Enum.TextXAlignment.Left,
+		Parent = props.Parent,
+	})
+end
+
+-- The role poster (concept A): your real name large in the serif, your alias in mono, three short rules
+-- numbered in red, and the role itself huge and lowercase across the foot, red for Diavolo's side.
 local function build(payload)
 	Kit.clear(body)
 	local role = payload.role or "TaskForce"
@@ -74,152 +107,78 @@ local function build(payload)
 	local copy = RoleCopy[role] or RoleCopy.TaskForce
 	local hostile = role == "Kira" or role == "Follower"
 	local phone = Kit.Layout.isPhone()
+	local left = if phone then T.space.l else T.space.xxxl
 
-	local holder = Kit.frame({
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.47),
-		Size = if phone then UDim2.fromScale(0.96, 0.84) else UDim2.fromOffset(940, 560),
-		Parent = body,
-	})
-	local list = Kit.list(holder, T.space.l, not phone, Enum.HorizontalAlignment.Center)
-	list.VerticalAlignment = Enum.VerticalAlignment.Center
-
-	-- The role card.
-	local card, cardContent = Kit.page({
-		tone = "black",
-		padding = T.space.xl,
-		Size = if phone then UDim2.new(1, 0, 0.55, 0) else UDim2.fromOffset(460, 540),
-		LayoutOrder = 1,
-		Parent = holder,
-	})
-	Kit.list(cardContent, T.space.s)
-	local top = Kit.frame({ Size = UDim2.new(1, 0, 0, 78), LayoutOrder = 1, Parent = cardContent })
-	Kit.seal({
-		size = 72,
-		color = if hostile then C.red else C.steel,
-		icon = ROLE_ICON[role],
-		portrait = Players.LocalPlayer.UserId,
-		Parent = top,
-	})
-	Kit.label({
-		Text = "YOU ARE",
-		font = "label",
-		size = "micro",
-		color = C.dim,
-		Position = UDim2.fromOffset(86, 6),
-		Size = UDim2.new(1, -86, 0, 14),
-		AutomaticSize = Enum.AutomaticSize.None,
-		Parent = top,
-	})
-	local roleName = Kit.text({
-		face = "Head",
-		text = info.display,
-		size = T.size.heading + 6,
-		color = if hostile then C.red else C.bone,
-		Position = UDim2.fromOffset(84, 22),
-		Parent = top,
-	})
-	roleName:write(0.6)
-	Kit.label({
-		Text = "How you win: " .. Keys.resolve(copy.win),
-		font = "bodyBold",
-		size = "small",
-		color = C.white,
-		LayoutOrder = 2,
-		Parent = cardContent,
-	})
-	for index, text in ipairs(copy.bullets) do
-		Kit.label({
-			Text = "-  " .. Keys.resolve(text),
-			size = "small",
-			color = C.bone,
-			LayoutOrder = 2 + index,
-			Parent = cardContent,
-		})
-	end
-	Kit.rule({ color = C.bone, transparency = 0.7, LayoutOrder = 10, Parent = cardContent })
-	Kit.label({
-		Text = "FIRST MOVE",
-		font = "label",
-		size = "micro",
-		color = C.dim,
-		LayoutOrder = 11,
-		Parent = cardContent,
-	})
-	Kit.label({
-		Text = Keys.resolve(copy.firstMove),
-		font = "document",
-		size = "body",
-		color = C.bone,
-		LayoutOrder = 12,
-		Parent = cardContent,
-	})
-
-	-- Your secret page.
-	local page, pageContent = Kit.page({
-		tone = "raised",
-		padding = T.space.xl,
-		Size = if phone then UDim2.new(1, 0, 0.4, 0) else UDim2.fromOffset(440, 520),
-		LayoutOrder = 2,
-		Parent = holder,
-	})
-	Kit.list(pageContent, T.space.xs)
-	Kit.label({
-		Text = "YOUR ALIAS",
-		font = "label",
-		size = "micro",
-		color = C.dim,
-		LayoutOrder = 1,
-		Parent = pageContent,
-	})
-	local alias =
-		Kit.text({ face = "Head", text = tostring(payload.alias), size = 44, LayoutOrder = 2, Parent = pageContent })
-	alias:write(0.5)
-	Kit.label({
-		Text = "YOUR REAL NAME",
-		font = "label",
-		size = "micro",
-		color = C.dim,
-		LayoutOrder = 3,
-		Parent = pageContent,
-	})
+	local holder = Kit.frame({ Name = "Poster", Parent = body })
+	mono(
+		string.format(
+			"%s   %d PLAYERS   %d %s",
+			string.upper(tostring(payload.mapName)),
+			payload.playerCount or 0,
+			payload.followers or 0,
+			string.upper(if payload.followers == 1 then Terms.role("Follower") else Terms.role("Follower", "plural"))
+		),
+		{ Position = UDim2.fromOffset(left, T.space.xl), Parent = holder }
+	)
+	mono("YOUR REAL NAME", { Position = UDim2.fromOffset(left, 84), Parent = holder })
 	local name = Kit.text({
 		face = "Head",
 		text = tostring(payload.realName),
-		size = 48,
-		color = C.danger,
-		LayoutOrder = 4,
-		Parent = pageContent,
+		size = if phone then 52 else 84,
+		color = C.bone,
+		Position = UDim2.fromOffset(left - 4, 100),
+		Parent = holder,
 	})
-	task.delay(0.5, function()
+	task.delay(0.3, function()
 		name:write(0.9)
 	end)
-	Kit.label({
-		Text = "Never share it.",
-		font = "bodyItalic",
-		size = "small",
-		color = C.dim,
-		LayoutOrder = 5,
-		Parent = pageContent,
+	mono(string.format("ALIAS %s   NEVER SAY IT", string.upper(tostring(payload.alias))), {
+		color = C.bone,
+		Position = UDim2.fromOffset(left, if phone then 164 else 200),
+		Parent = holder,
 	})
-	Kit.frame({ Size = UDim2.new(1, 0, 0, T.space.m), LayoutOrder = 6, Parent = pageContent })
-	Kit.label({ Text = alliesText(role, payload.allies), size = "small", LayoutOrder = 7, Parent = pageContent })
-	Kit.label({
-		Text = string.format(
-			"%d players, %d %s, %s",
-			payload.playerCount or 0,
-			payload.followers or 0,
-			if payload.followers == 1 then Terms.role("Follower") else Terms.role("Follower", "plural"),
-			tostring(payload.mapName)
-		),
-		font = "label",
-		size = "micro",
-		color = C.faint,
-		LayoutOrder = 9,
-		Parent = pageContent,
+	local rules = Kit.frame({
+		Name = "Rules",
+		Position = UDim2.fromOffset(left, if phone then 200 else 250),
+		Size = UDim2.fromOffset(if phone then 320 else 560, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Parent = holder,
 	})
-	Motion.slideIn(card, Vector2.new(-80, 0), T.motion.slow)
-	Motion.slideIn(page, Vector2.new(80, 0), T.motion.slow)
+	Kit.list(rules, T.space.m)
+	for index, text in ipairs(copy.bullets) do
+		local row = Kit.frame({
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			LayoutOrder = index,
+			Parent = rules,
+		})
+		mono(string.format("%02d", index), { color = C.danger, Position = UDim2.fromOffset(0, 3), Parent = row })
+		Kit.label({
+			Text = Keys.resolve(text),
+			font = "bodyBold",
+			size = if phone then "body" else "lead",
+			color = C.bone,
+			Position = UDim2.fromOffset(36, 0),
+			Size = UDim2.new(1, -36, 0, 0),
+			Parent = row,
+		})
+	end
+	mono(alliesText(role, payload.allies), {
+		color = C.bone,
+		Position = UDim2.fromOffset(left, if phone then 330 else 420),
+		Parent = holder,
+	})
+	-- The role, huge across the foot and cut by the screen's bottom edge, boiling.
+	local word = bigText({
+		text = string.lower(info.display) .. ".",
+		size = if phone then 110 else 220,
+		color = if hostile then C.danger else C.bone,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, left - 12, 1, if phone then 30 else 56),
+		Parent = holder,
+	})
+	Kit.Boil.attach(word, 2, 0.3)
+	Motion.slideIn(holder, Vector2.new(0, 30), T.motion.slow)
 end
 
 -- The captions the role cutscene asks for, by key (its "card" events).
@@ -234,13 +193,13 @@ local function caption(key: string, payload): (() -> ())?
 			"YOU ARE",
 			{ { text = info.display, head = true, color = if hostile then C.red else C.bone } }
 		)
-	elseif key == "win" then
-		return Cinema.caption("HOW YOU WIN", { { text = Keys.resolve(copy.win), font = "bodyBold", size = "body" } })
-	elseif key == "move" then
-		return Cinema.caption(
-			"FIRST MOVE",
-			{ { text = Keys.resolve(copy.firstMove), font = "document", size = "body" } }
-		)
+	elseif key == "win" or key == "move" then
+		-- (the owner, 2026-10-29: no "how you win" or first move on the card; the three rules say enough)
+		return Cinema.caption("YOUR RULES", {
+			{ text = Keys.resolve(copy.bullets[1] or ""), font = "bodyBold", size = "body" },
+			{ text = Keys.resolve(copy.bullets[2] or ""), font = "bodyBold", size = "body" },
+			{ text = Keys.resolve(copy.bullets[3] or ""), font = "bodyBold", size = "body" },
+		})
 	elseif key == "names" then
 		local lines: { any } = {
 			{ text = tostring(payload.alias), head = true, size = 40 },
@@ -260,7 +219,7 @@ local function showPanels(payload)
 		unbindTimer()
 	end
 	unbindTimer = Clock.bind(timerLabel, function(seconds: number)
-		return string.format("Starting in %d", math.ceil(seconds))
+		return string.format("BEGINS IN %02d", math.ceil(seconds))
 	end)
 end
 
@@ -311,12 +270,12 @@ function BriefingScreen.init()
 	body = Kit.frame({ Name = "Body", Parent = root })
 	timerLabel = Kit.label({
 		Text = "",
-		font = "label",
+		font = "mono",
 		size = "small",
 		color = C.dim,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -18),
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -T.space.xxxl, 1, -18),
 		Size = UDim2.new(1, 0, 0, 20),
 		AutomaticSize = Enum.AutomaticSize.None,
 		Parent = root,

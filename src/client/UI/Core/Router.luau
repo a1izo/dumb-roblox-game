@@ -9,7 +9,9 @@
 
 local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
+local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Signal = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Signal"))
@@ -99,8 +101,21 @@ local function newest(): string?
 	return best
 end
 
+-- The world blurs behind an open menu (the owner's direction, 2026-10-28: menus float over a dark, blurred screen).
+local blur: BlurEffect? = nil
+local BLUR_SIZE = 16
+
 local function refreshChrome()
-	scrim.Visible = Router.anyOpen("modal")
+	local menu = Router.anyOpen("modal")
+	scrim.Visible = menu
+	if not blur then
+		local made = Instance.new("BlurEffect")
+		made.Name = "MenuBlur"
+		made.Size = 0
+		made.Parent = Lighting
+		blur = made
+	end
+	TweenService:Create(blur :: BlurEffect, TweenInfo.new(0.2), { Size = if menu then BLUR_SIZE else 0 }):Play()
 	if newest() then
 		ContextActionService:BindActionAtPriority(BACK_ACTION, function(_, state)
 			if state == Enum.UserInputState.Begin then
@@ -280,7 +295,7 @@ function Router.init()
 	scrim.AutoButtonColor = false
 	scrim.Text = ""
 	scrim.BackgroundColor3 = Color3.new(0, 0, 0)
-	scrim.BackgroundTransparency = 0.45
+	scrim.BackgroundTransparency = 0.3
 	scrim.BorderSizePixel = 0
 	scrim.Size = UDim2.fromScale(1, 1)
 	scrim.ZIndex = 0

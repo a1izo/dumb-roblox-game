@@ -15,12 +15,11 @@ local UserInputService = game:GetService("UserInputService")
 local HoverGlitch = require(script.Parent.Parent.Core.HoverGlitch)
 local Motion = require(script.Parent.Parent.Core.Motion)
 local UiSound = require(script.Parent.Parent.Core.UiSound)
-local Screens = require(script.Parent.Parent.Screens)
 local Base = require(script.Parent.Base)
+local Boil = require(script.Parent.Boil)
+local Pointer = require(script.Parent.Pointer)
 local GlyphText = require(script.Parent.GlyphText)
 local Icon = require(script.Parent.Icon)
-local Surfaces = require(script.Parent.Surfaces)
-local Textures = require(script.Parent.Textures)
 local Tokens = require(script.Parent.Tokens)
 
 local Controls = {}
@@ -57,67 +56,24 @@ end
 -- and up on a button inside a window (it is read before it is pressed): Montserrat Bold, Melodrama from 22 px.
 local HEIGHT = { s = Tokens.touch, m = Tokens.touch, l = 60 }
 local TEXT = { s = 16, m = 18, l = 22 }
-local WINDOW_TEXT = 18
 
 type Look = {
-	bg: Color3?,
-	bgHover: Color3?,
-	bgPress: Color3?,
+	bg: Color3, -- the box
+	line: Color3, -- the inner frame
 	text: Color3,
-	textHover: Color3,
-	notch: boolean, -- drawn with the clipped-corner button image
-	line: boolean, -- an outline only (ghost)
+	thick: number, -- the inner frame's px
 }
 
--- Primary is the one white button on a screen; danger is the only red one. Everything else is grey.
+-- The OMORI button (concept A): a solid box with a thin frame drawn inside it that boils. Primary is ink with a
+-- paper frame, secondary paper with an ink frame, danger red. Chosen, it does not change: the red hand comes to it
+-- (Kit/Pointer). Pressed, its colours swap for a beat.
 local LOOKS: { [string]: Look } = {
-	primary = {
-		bg = C.white,
-		bgHover = C.white:Lerp(C.g6, 0.3),
-		bgPress = C.g6,
-		text = C.ink,
-		textHover = C.ink,
-		notch = true,
-		line = false,
-	},
-	danger = {
-		bg = C.blood,
-		bgHover = C.danger,
-		bgPress = C.blood:Lerp(Color3.new(0, 0, 0), 0.3),
-		text = C.white,
-		textHover = C.white,
-		notch = true,
-		line = false,
-	},
-	secondary = {
-		bg = C.lifted,
-		bgHover = C.g4,
-		bgPress = C.raised,
-		text = C.white,
-		textHover = C.white,
-		notch = true,
-		line = false,
-	},
-	ghost = { text = C.dim, textHover = C.bone, notch = false, line = true },
-	good = {
-		bg = C.lifted,
-		bgHover = C.g4,
-		bgPress = C.raised,
-		text = C.white,
-		textHover = C.white,
-		notch = true,
-		line = false,
-	},
-	-- The old paper button; reading pages are dark now, so it is a plain grey button.
-	parchment = {
-		bg = C.lifted,
-		bgHover = C.g4,
-		bgPress = C.raised,
-		text = C.white,
-		textHover = C.white,
-		notch = true,
-		line = false,
-	},
+	primary = { bg = C.g0, line = C.white, text = C.white, thick = 2 },
+	secondary = { bg = C.white, line = C.ink, text = C.ink, thick = 1 },
+	ghost = { bg = C.g0, line = C.g6, text = C.white, thick = 1 },
+	danger = { bg = C.danger, line = C.white, text = C.white, thick = 2 },
+	good = { bg = C.g0, line = C.white, text = C.white, thick = 2 },
+	parchment = { bg = C.white, line = C.ink, text = C.ink, thick = 1 },
 }
 
 type ButtonState = { look: Look, enabled: boolean, paint: (string) -> (), label: any }
@@ -141,9 +97,28 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 		Visible = if props.Visible == nil then true else props.Visible,
 		Parent = props.Parent,
 	})
+	-- (an ink box on a paper sheet stays an ink box: Kit/Paper leaves it alone)
+	button:SetAttribute("PaperKeep", true)
 	Controls.focusable(button)
 	local z = button.ZIndex
-	local bg = Base.frame({ Name = "Bg", ZIndex = z, Parent = button })
+	local box = Base.make("Frame", {
+		Name = "Box",
+		BackgroundColor3 = look.bg,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = z,
+		Parent = button,
+	})
+	local frame = Base.make("Frame", {
+		Name = "Frame",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(4, 4),
+		Size = UDim2.new(1, -8, 1, -8),
+		ZIndex = z,
+		Parent = button,
+	})
+	local stroke = Base.stroke(frame, look.line, look.thick, 0)
+	Boil.attach(frame, 1)
 	local row = Base.frame({
 		Name = "Row",
 		ZIndex = z + 1,
@@ -152,12 +127,12 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 		Parent = button,
 	})
 	Base.list(row, Tokens.space.s, true, Enum.HorizontalAlignment.Center)
-	Base.pad(row, 0, if look.line then Tokens.space.s else Tokens.space.l)
+	Base.pad(row, 0, Tokens.space.l + 4)
 	local icon: ImageLabel? = nil
 	if props.icon then
 		icon = Icon.new({
 			name = props.icon,
-			size = TEXT[sizeKey] * 1.35,
+			size = TEXT[sizeKey] * 1.2,
 			color = look.text,
 			LayoutOrder = 1,
 			ZIndex = z + 1,
@@ -181,90 +156,54 @@ function Controls.button(props: Props, onClick: (() -> ())?): TextButton
 	if props.key and props.key ~= "" then
 		Controls.keycap({ text = props.key, LayoutOrder = 3, ZIndex = z + 1, Parent = row })
 	end
-	if TEXT[sizeKey] < WINDOW_TEXT then
-		-- The small button's lettering grows once it sits in a window (now, or when it is put in one).
-		local function inWindow()
-			if button:IsDescendantOf(Screens.modal) then
-				label:setSize(WINDOW_TEXT)
-			end
-		end
-		inWindow()
-		button.AncestryChanged:Connect(inWindow)
-	end
 	if autoWidth then
-		-- As wide as the icon, text and key; the fill follows the button (see Base.fit).
+		-- As wide as the icon, text and key; the box follows the button (see Base.fit).
 		Base.fit(button, row, "X")
-	end
-	local fill: GuiObject? = nil
-	local function drawBg()
-		Base.clear(bg)
-		fill = nil
-		if look.line then
-			Surfaces.notch(
-				bg,
-				{ shape = "button", line = true, color = C.rule, transparency = Tokens.alpha.hairline, ZIndex = z }
-			)
-			return
-		end
-		if look.bg then
-			fill = Surfaces.notch(bg, { shape = "button", color = look.bg, ZIndex = z })
-		end
-	end
-	drawBg()
-	if not Textures.isReady() then
-		local connection
-		connection = Textures.Ready:Connect(function()
-			if button.Parent then
-				drawBg()
-			end
-			connection:Disconnect()
-		end)
 	end
 	local function paint(state: string)
 		local enabled = states[button] == nil or states[button].enabled
-		local hovered = state == "hover" and enabled
 		local pressed = state == "press" and enabled
-		local color = if pressed then look.bgPress elseif hovered then look.bgHover else look.bg
-		local current = fill
-		if current and color then
-			if current:IsA("ImageLabel") then
-				Motion.tween(current, { ImageColor3 = color }, Tokens.motion.quick)
-			else
-				Motion.tween(current, { BackgroundColor3 = color }, Tokens.motion.quick)
-			end
-		end
-		local textColor = if hovered or pressed then look.textHover else look.text
-		label:setColor(textColor)
+		local bg = if pressed then look.text else look.bg
+		local ink = if pressed then look.bg else look.text
+		box.BackgroundColor3 = bg
+		stroke.Color = if pressed then look.bg else look.line
+		label:setColor(ink)
 		if icon then
-			icon.ImageColor3 = textColor
+			icon.ImageColor3 = ink
 		end
 	end
 	states[button] = { look = look, enabled = true, paint = paint, label = label }
-	local scale = Base.make("UIScale", { Name = "PressScale", Parent = button })
-	HoverGlitch.wire(button)
+	local function chosen(on: boolean)
+		if on and states[button].enabled then
+			Pointer.point(button)
+		else
+			Pointer.release(button)
+		end
+	end
 	button.MouseEnter:Connect(function()
-		paint("hover")
+		chosen(true)
 		UiSound.play("uiHover")
 	end)
 	button.MouseLeave:Connect(function()
+		chosen(false)
 		paint("rest")
-		Motion.tween(scale, { Scale = 1 }, Tokens.motion.quick)
 	end)
 	button.SelectionGained:Connect(function()
-		paint("hover")
+		chosen(true)
 	end)
 	button.SelectionLost:Connect(function()
-		paint("rest")
+		chosen(false)
 	end)
 	button.MouseButton1Down:Connect(function()
 		if states[button].enabled then
 			paint("press")
-			Motion.tween(scale, { Scale = 0.96 }, 0.05)
 		end
 	end)
 	button.MouseButton1Up:Connect(function()
-		paint("hover")
-		Motion.tween(scale, { Scale = 1 }, Tokens.motion.quick)
+		paint("rest")
+	end)
+	button.Destroying:Once(function()
+		Pointer.release(button)
 	end)
 	if onClick then
 		button.Activated:Connect(function()
@@ -538,13 +477,14 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 	local function paint()
 		for id, parts in pairs(buttons) do
 			local on = id == current
-			Motion.tween(parts.ribbon, { BackgroundTransparency = if on then 0.9 else 1 }, Tokens.motion.base)
-			parts.ribbon.Edge.Visible = on
+			-- (no tint behind the chosen tab: its words go white and a thick line runs under them)
+			parts.ribbon.Edge.Visible = false
 			local marker = parts.ribbon:FindFirstChild("Marker")
 			if marker then
 				marker.Visible = on
 			end
-			parts.label.TextColor3 = if on then C.bone else C.dim
+			-- (the chosen tab's word goes red: concept A)
+			parts.label.TextColor3 = if on then C.danger else C.dim
 		end
 	end
 	local function choose(id: string)
@@ -580,7 +520,7 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			BorderSizePixel = 0,
 			AnchorPoint = if props.vertical then Vector2.zero else Vector2.new(0, 1),
 			Position = if props.vertical then UDim2.fromScale(0, 0) else UDim2.fromScale(0, 1),
-			Size = if props.vertical then UDim2.new(0, 3, 1, 0) else UDim2.new(1, 0, 0, 2),
+			Size = if props.vertical then UDim2.new(0, 4, 1, 0) else UDim2.new(1, 0, 0, 4),
 			ZIndex = button.ZIndex + 1,
 			Parent = ribbon,
 		})
@@ -622,9 +562,9 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			})
 		end
 		local label = Base.label({
-			Text = GlyphText.spaced(string.upper(item.label)),
-			font = "label",
-			size = "small",
+			Text = string.upper(item.label),
+			font = "title",
+			size = "lead",
 			color = C.dim,
 			TextWrapped = false,
 			AutomaticSize = Enum.AutomaticSize.X,
@@ -774,6 +714,32 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		ZIndex = z + 3,
 		Parent = button,
 	})
+	-- The chosen name's mark (concept A): a thin red crosshair ring round its start, boiling.
+	local ring = Base.make("Frame", {
+		Name = "Ring",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0, 44, 0.5, 2),
+		Size = UDim2.fromOffset(height * 0.95, height * 0.95),
+		Visible = false,
+		ZIndex = z + 3,
+		Parent = button,
+	})
+	Base.round(ring)
+	Base.stroke(ring, C.danger, 1.5, 0)
+	for _, across in ipairs({ true, false }) do
+		Base.make("Frame", {
+			Name = "Hair",
+			BackgroundColor3 = C.danger,
+			BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = if across then UDim2.new(1.5, 0, 0, 1) else UDim2.new(0, 1, 1.5, 0),
+			ZIndex = z + 3,
+			Parent = ring,
+		})
+	end
+	Boil.attach(ring, 1)
 	local enabled = true
 	local line: NameLine
 	line = {
@@ -783,8 +749,9 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 			Motion.tween(strike, { Size = UDim2.fromOffset(if on then name.width + 14 else 0, 3) }, Tokens.motion.slow)
 		end,
 		setSelected = function(on: boolean)
-			check.Visible = on
-			name:setColor(if on then C.white else ink)
+			check.Visible = false
+			ring.Visible = on
+			name:setColor(if on then C.danger else ink)
 		end,
 		setRight = function(text: string)
 			right:set(text)
@@ -800,18 +767,21 @@ function Controls.nameLine(props: Props, onClick: (() -> ())?): NameLine
 		Motion.tween(hover, { BackgroundTransparency = if on and enabled then 0.6 else 1 }, Tokens.motion.quick)
 		rule.BackgroundTransparency = if on and enabled then 0.5 else 0.8
 	end
-	HoverGlitch.wire(button)
 	button.MouseEnter:Connect(function()
 		lit(true)
+		Pointer.point(button)
 	end)
 	button.MouseLeave:Connect(function()
 		lit(false)
+		Pointer.release(button)
 	end)
 	button.SelectionGained:Connect(function()
 		lit(true)
+		Pointer.point(button)
 	end)
 	button.SelectionLost:Connect(function()
 		lit(false)
+		Pointer.release(button)
 	end)
 	if onClick then
 		button.Activated:Connect(function()

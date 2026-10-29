@@ -37,67 +37,89 @@ local function percent(won: number, played: number): string
 	return string.format("%d%%", math.floor(won / played * 100 + 0.5))
 end
 
+-- A big lowercase line in the title font (concept A), kept out of the Melodrama mirror.
+local function bigText(props: { [string]: any }): TextLabel
+	local label = Kit.label({
+		Text = props.text,
+		font = "title",
+		size = props.size,
+		color = props.color or C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		Position = props.Position,
+		LayoutOrder = props.LayoutOrder,
+	})
+	label:SetAttribute("KeepFont", true)
+	label.Parent = props.Parent
+	return label
+end
+
+-- The header, like the profile board: a case-file line, your name huge, your rank, a thick XP line filling red.
 local function rankBlock(profile, order: number)
-	local block = Kit.frame({ Name = "Rank", Size = UDim2.new(1, 0, 0, 76), LayoutOrder = order, Parent = list })
-	Kit.seal({
-		size = 68,
-		color = C.white,
-		text = string.sub(profile.rankName, 1, 1),
-		portrait = Players.LocalPlayer.UserId,
+	local block = Kit.frame({ Name = "Rank", Size = UDim2.new(1, 0, 0, 196), LayoutOrder = order, Parent = list })
+	local id = tostring(Players.LocalPlayer.UserId)
+	Kit.label({
+		Text = "CASE FILE " .. string.sub(id, -4),
+		font = "mono",
+		size = "small",
+		color = C.dim,
+		Size = UDim2.new(1, 0, 0, 0),
 		Parent = block,
 	})
-	Kit.text({
-		face = "Head",
-		text = profile.rankName,
-		size = T.size.heading,
-		color = C.white,
-		Position = UDim2.fromOffset(84, 0),
+	local name = bigText({
+		text = string.lower(Players.LocalPlayer.DisplayName) .. ".",
+		size = 76,
+		Position = UDim2.fromOffset(-4, 16),
 		Parent = block,
 	})
+	Kit.Boil.attach(name, 1, 0.2)
+	bigText({ text = string.lower(profile.rankName), size = 30, Position = UDim2.fromOffset(0, 104), Parent = block })
 	local _, setProgress = Kit.meter({
-		color = C.white,
-		Position = UDim2.fromOffset(86, 46),
-		Size = UDim2.new(1, -86, 0, 5),
+		color = C.danger,
+		Position = UDim2.fromOffset(0, 150),
+		Size = UDim2.new(1, 0, 0, 6),
 		Parent = block,
 	})
 	local xpText
 	if profile.nextRankXp then
 		setProgress((profile.xp - profile.rankXp) / math.max(1, profile.nextRankXp - profile.rankXp))
-		xpText = string.format("%d / %d XP   Next: %s", profile.xp, profile.nextRankXp, profile.nextRankName)
+		xpText =
+			string.format("%d / %d XP   NEXT: %s", profile.xp, profile.nextRankXp, string.upper(profile.nextRankName))
 	else
 		setProgress(1)
-		xpText = string.format("%d XP   Max rank", profile.xp)
+		xpText = string.format("%d XP   MAX RANK", profile.xp)
 	end
 	Kit.label({
 		Text = xpText,
 		font = "mono",
-		size = "micro",
+		size = "small",
 		color = C.dim,
-		Position = UDim2.fromOffset(86, 56),
-		Size = UDim2.new(1, -86, 0, 0),
+		Position = UDim2.fromOffset(0, 166),
+		Size = UDim2.new(1, 0, 0, 0),
 		Parent = block,
 	})
 end
 
+-- The lifetime numbers: big numbers with a small numbered caption under each, no boxes (the profile board).
 local function statGrid(entries: { { string } }, order: number)
 	local grid = Kit.frame({
 		Name = "Numbers",
-		Size = UDim2.new(1, 0, 0, math.ceil(#entries / 4) * (CELL + T.space.s)),
+		Size = UDim2.new(1, 0, 0, math.ceil(#entries / 4) * (CELL + T.space.l)),
 		LayoutOrder = order,
 		Parent = list,
 	})
-	Kit.grid(grid, UDim2.new(0.25, -T.space.s, 0, CELL), T.space.s)
-	for _, entry in ipairs(entries) do
-		-- The number, and under it what it counts (stacked, so a long caption never runs into the number).
-		local cell = Kit.card({ Size = UDim2.fromScale(1, 1), padding = T.space.m, Parent = grid })
-		Kit.list(cell, T.space.xxs)
-		Kit.label({ Text = entry[2], font = "bodyBold", size = "title", LayoutOrder = 1, Parent = cell })
+	Kit.grid(grid, UDim2.new(0.25, -T.space.s, 0, CELL), T.space.l)
+	for index, entry in ipairs(entries) do
+		local cell = Kit.frame({ Size = UDim2.fromScale(1, 1), LayoutOrder = index, Parent = grid })
+		bigText({ text = entry[2], size = 52, Parent = cell })
 		Kit.label({
-			Text = entry[1],
-			font = "label",
+			Text = string.format("%02d %s", index, string.upper(entry[1])),
+			font = "mono",
 			size = "small",
 			color = C.dim,
-			LayoutOrder = 2,
+			Position = UDim2.fromOffset(0, 58),
+			Size = UDim2.new(1, 0, 0, 0),
 			Parent = cell,
 		})
 	end

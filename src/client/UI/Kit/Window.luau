@@ -1,7 +1,7 @@
 --!strict
--- Windows: a Notch panel (two clipped corners and an outline) centred on the screen, or a sheet
--- that rises from the bottom on phones. Every window has a Melodrama title (Aktura when `loud`), a
--- close mark, a body and an optional footer for its actions, and frees the mouse while it is open.
+-- Windows are paper sheets over the darkened, blurred world (concept A, 2026-10-29): a huge lowercase title with a
+-- full stop, an ink rule, a Back button, a body and an optional footer. Screens write
+-- for the dark as before and Kit/Paper turns the sheet to ink on paper. Each frees the mouse while it is open.
 -- Windows never glitch: what is in them has to be read.
 --
 --   local win = Window.new({ name = "settings", title = "Settings", size = "M" })
@@ -21,7 +21,10 @@ local Base = require(script.Parent.Base)
 local Controls = require(script.Parent.Controls)
 local GlyphText = require(script.Parent.GlyphText)
 local Layout = require(script.Parent.Layout)
+local Boil = require(script.Parent.Boil)
+local Paper = require(script.Parent.Paper)
 local Surfaces = require(script.Parent.Surfaces)
+local Textures = require(script.Parent.Textures)
 local Tokens = require(script.Parent.Tokens)
 
 local Window = {}
@@ -55,11 +58,20 @@ export type Window = {
 	options: Options,
 }
 
-local HEADER = 76
+local HEADER = 128
 local FOOTER = 72
+local TITLE_SIZE = 88
 
-local function inkFor(tone: string?): Color3
-	return if tone == "white" then Tokens.color.ink else Tokens.color.bone
+-- How wide a window's sheet runs at most (design px).
+local WIDTHS = { S = 560, sheet = 620, M = 940, L = 1220 }
+
+-- A title the way concept A sets it: lowercase, ending on a full stop ("shop.").
+local function titled(text: string): string
+	local lower = string.lower(text)
+	if lower == "" or string.find(lower, "[%.%?!]$") then
+		return lower
+	end
+	return lower .. "."
 end
 
 function Window.new(options: Options): Window
@@ -69,7 +81,7 @@ function Window.new(options: Options): Window
 		ZIndex = 2,
 		Parent = options.parent or Screens.modal,
 	})
-	local limit = Base.maxSize(root, Tokens.modal[options.size or "M"] or Tokens.modal.M)
+	local limit = Base.maxSize(root, Vector2.new(WIDTHS[options.size or "M"] or WIDTHS.M, 900))
 	-- Frees the mouse (first person, shift lock) while the window shows.
 	Base.make("TextButton", {
 		Name = "MouseUnlock",
@@ -80,16 +92,42 @@ function Window.new(options: Options): Window
 		Selectable = false,
 		Parent = root,
 	})
-	local page, content = Surfaces.page({
-		tone = options.tone or "black",
-		padding = 0,
-		window = true,
-		glow = options.glow,
+	-- The sheet: paper, a hair off square, with toner grain over it. Everything in it is turned to ink on paper
+	-- (Kit/Paper), so screens written for the dark need no changes.
+	local page = Base.make("Frame", {
+		Name = "Sheet",
+		BackgroundColor3 = Tokens.paper.g0,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		Rotation = -0.4,
+		Size = UDim2.fromScale(1, 1),
 		ZIndex = 2,
 		Parent = root,
-	})
-	local ink = inkFor(options.tone)
-	-- The header is a CanvasGroup (it fades as one piece).
+	}) :: Frame
+	Surfaces.redrawWhenReady(page, function()
+		local old = page:FindFirstChild("Toner")
+		if old then
+			old:Destroy()
+		end
+		local grain = Textures.id("UiGrain")
+		if grain ~= "" then
+			Base.make("ImageLabel", {
+				Name = "Toner",
+				BackgroundTransparency = 1,
+				Image = grain,
+				ImageColor3 = Tokens.paper.white,
+				ImageTransparency = 0.82,
+				ScaleType = Enum.ScaleType.Tile,
+				TileSize = UDim2.fromOffset(256, 256),
+				Size = UDim2.fromScale(1, 1),
+				ZIndex = 2,
+				Parent = page,
+			})
+		end
+	end)
+	local inset = Tokens.space.xxl
+	local content = Base.frame({ Name = "Content", ZIndex = 3, Parent = page })
+	local ink = Tokens.color.bone -- (written for the dark like every screen; Paper turns it to ink)
 	local header = Base.make("CanvasGroup", {
 		Name = "Header",
 		BackgroundTransparency = 1,
@@ -97,54 +135,60 @@ function Window.new(options: Options): Window
 		ZIndex = 3,
 		Parent = content,
 	}) :: any
-	local title = GlyphText.new({
-		face = if options.loud then "Title" else "Head",
-		text = options.title or "",
-		size = if options.loud then Tokens.size.display else Tokens.size.heading,
-		color = ink,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, Tokens.space.xl + 4, 0.5, 2),
+	-- The title: huge, lowercase, whole (never cut by the sheet's edge), boiling.
+	local titleLabel = Base.label({
+		Text = titled(options.title or ""),
+		font = "title",
+		size = TITLE_SIZE,
+		color = if options.loud then Tokens.color.danger else ink,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		Position = UDim2.fromOffset(inset - 4, Tokens.space.m),
 		ZIndex = 4,
-		Parent = header,
 	})
+	-- (marked before it is parented: the font mirror would otherwise redraw it in Melodrama as it lands)
+	titleLabel:SetAttribute("KeepFont", true)
+	titleLabel.Parent = header
+	Boil.attach(titleLabel, 1, 0.25)
 	if options.jp then
 		local accent = Base.label({
 			Text = options.jp,
-			font = "label",
+			font = "mono",
 			size = "small",
-			color = if options.tone == "white" then Tokens.color.inkDim else Tokens.color.g5,
+			color = Tokens.color.g6,
 			TextWrapped = false,
 			AutomaticSize = Enum.AutomaticSize.X,
 			Size = UDim2.fromOffset(0, 20),
-			AnchorPoint = Vector2.new(0, 0.5),
 			ZIndex = 4,
 			Parent = header,
 		})
 		local function placeAccent()
-			accent.Position = UDim2.new(0, Tokens.space.xl + 4 + title.width + 14, 0.5, 8)
+			accent.Position = UDim2.fromOffset(inset + titleLabel.AbsoluteSize.X / Base.scaleOf(titleLabel) + 8, 62)
 		end
-		title.Changed:Connect(placeAccent)
+		titleLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeAccent)
 		placeAccent()
 	end
-	-- A short stroke under the title (white; red only on a danger window).
-	Base.make("Frame", {
-		Name = "Underline",
-		BackgroundColor3 = if options.loud then Tokens.color.danger else ink,
+	-- The ink rule under the header, across the sheet.
+	Boil.attach(Base.make("Frame", {
+		Name = "Rule",
+		BackgroundColor3 = ink,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, Tokens.space.xl, 1, -6),
-		Size = UDim2.fromOffset(72, 2),
+		Position = UDim2.new(0, inset, 1, 0),
+		Size = UDim2.new(1, -inset * 2, 0, 2),
 		ZIndex = 4,
 		Parent = header,
-	})
+	}))
 	local close: TextButton? = nil
 	if options.closable ~= false then
-		close = Controls.iconButton({
-			icon = "cross",
-			size = 40,
-			color = if options.tone == "white" then Tokens.color.inkDim else Tokens.color.dim,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -Tokens.space.m, 0.5, 0),
+		close = Controls.button({
+			Name = "Back",
+			text = "Back",
+			variant = "secondary",
+			size = "s",
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -inset, 0, Tokens.space.l),
 			ZIndex = 5,
 			Parent = header,
 		}, function()
@@ -158,38 +202,42 @@ function Window.new(options: Options): Window
 	local footerHeight = if options.footer then FOOTER else 0
 	local body = Base.frame({
 		Name = "Body",
-		Position = UDim2.fromOffset(Tokens.space.xl, HEADER + Tokens.space.s),
-		Size = UDim2.new(1, -Tokens.space.xl * 2, 1, -(HEADER + Tokens.space.s + footerHeight + Tokens.space.l)),
+		Position = UDim2.fromOffset(inset, HEADER + Tokens.space.l),
+		Size = UDim2.new(1, -inset * 2, 1, -(HEADER + Tokens.space.l + footerHeight + Tokens.space.l)),
 		ZIndex = 3,
 		Parent = content,
 	})
 	local footer = Base.frame({
 		Name = "Footer",
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, Tokens.space.xl, 1, -Tokens.space.m),
-		Size = UDim2.new(1, -Tokens.space.xl * 2, 0, footerHeight - Tokens.space.m),
+		Position = UDim2.new(0, inset, 1, -Tokens.space.m),
+		Size = UDim2.new(1, -inset * 2, 0, footerHeight - Tokens.space.m),
 		Visible = options.footer == true,
 		ZIndex = 3,
 		Parent = content,
 	})
 	Base.list(footer, Tokens.space.m, true, Enum.HorizontalAlignment.Right)
+	Paper.apply(page)
 
 	local function arrange(class: string)
+		root.AnchorPoint = Vector2.new(0.5, 0.5)
+		root.Position = UDim2.fromScale(0.5, 0.5)
 		if class == "phone" then
-			-- A sheet rising from the bottom edge, full width.
-			root.AnchorPoint = Vector2.new(0.5, 1)
-			root.Position = UDim2.new(0.5, 0, 1, 10)
-			root.Size = UDim2.fromScale(1, if options.size == "S" then 0.6 else 0.94)
-			limit.MaxSize = Vector2.new(900, math.huge)
+			root.Size = UDim2.new(1, -Tokens.space.l * 2, 1, -Tokens.space.l * 2)
+			limit.MaxSize = Vector2.new(math.huge, math.huge)
 		else
-			root.AnchorPoint = Vector2.new(0.5, 0.5)
-			root.Position = UDim2.fromScale(0.5, 0.5)
-			root.Size = UDim2.fromScale(0.94, 0.9)
-			limit.MaxSize = Tokens.modal[options.size or "M"] or Tokens.modal.M
+			root.Size = UDim2.new(1, -Tokens.space.xxxl * 2, 1, -Tokens.space.xxl * 2)
+			limit.MaxSize = Vector2.new(WIDTHS[options.size or "M"] or WIDTHS.M, 900)
 		end
 	end
 	Layout.watch(arrange)
 
+	local title = {
+		set = function(_, text: string)
+			titleLabel.Text = titled(text)
+		end,
+		label = titleLabel,
+	}
 	local win: Window
 	win = {
 		name = options.name,
@@ -202,7 +250,7 @@ function Window.new(options: Options): Window
 		close = close,
 		options = options,
 		setTitle = function(text: string)
-			title:set(text)
+			titleLabel.Text = titled(text)
 		end,
 	}
 	return win
@@ -232,9 +280,7 @@ function Window.register(win: Window, spec: Spec?)
 		end,
 		show = function(args)
 			win.root.Visible = true
-			if Layout.isPhone() then
-				Motion.slideIn(win.root, Vector2.new(0, 260), Tokens.motion.slow)
-			end
+			Motion.slideIn(win.root, Vector2.new(0, 24), Tokens.motion.base)
 			if s.show then
 				s.show(args)
 			end

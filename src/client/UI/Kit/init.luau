@@ -9,11 +9,14 @@
 -- See each child module for details. Kit.Textures.init() runs once at start.
 
 local Base = require(script.Base)
+local Boil = require(script.Boil)
 local Controls = require(script.Controls)
 local GlyphText = require(script.GlyphText)
 local Icon = require(script.Icon)
 local Layout = require(script.Layout)
 local Notice = require(script.Notice)
+local Paper = require(script.Paper)
+local Pointer = require(script.Pointer)
 local Ransom = require(script.Ransom)
 local Slip = require(script.Slip)
 local Surfaces = require(script.Surfaces)
@@ -24,11 +27,14 @@ local Glitch = require(script.Parent.Core.Glitch)
 
 local Kit = {
 	Base = Base,
+	Boil = Boil,
 	Controls = Controls,
 	GlyphText = GlyphText,
 	Icon = Icon,
 	Layout = Layout,
 	Notice = Notice,
+	Paper = Paper,
+	Pointer = Pointer,
 	Ransom = Ransom,
 	Glitch = Glitch,
 	Slip = Slip,

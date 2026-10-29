@@ -3,15 +3,16 @@
 -- daily streak). Every notice has the same parts in the same places, from Tokens.notice:
 --
 --   | [icon] EYEBROW                         X |   a small label row (optional), the X closes
---   | Title                                    |   Melodrama (optional)
---   | Body text, one or two short lines.       |   Montserrat body (optional)
+--   | TITLE                                    |   Gotham Heavy capitals (optional)
+--   | Body text, one or two short lines.       |   Gotham Bold (optional)
 --   | [extra slot]                             |   anything the screen adds (a meter, a held button)
 --   | [ PRIMARY ]  [ ghost ]                   |   the actions (optional)
 --
--- The accent line down the left is the kind's colour: white for most, red only for bad news and warnings.
--- It lives in a CanvasGroup so it fades and slides as one piece.
+-- It is OMORI's dialogue box (concept A, 2026-10-29): solid ink with a thin paper frame inside that boils, red only for
+-- bad news and warnings. It lives in a CanvasGroup so it fades and slides as one piece.
 
 local Base = require(script.Parent.Base)
+local Boil = require(script.Parent.Boil)
 local Controls = require(script.Parent.Controls)
 local GlyphText = require(script.Parent.GlyphText)
 local Icon = require(script.Parent.Icon)
@@ -24,15 +25,15 @@ local N = Tokens.notice
 
 local Notice = {}
 
--- kind -> { accent colour, default icon }
+-- kind -> { icon colour, default icon, bar colour }
 Notice.KINDS = {
-	info = { C.g6, "note" },
-	good = { C.white, "check" },
-	bad = { C.danger, "cross" },
-	warn = { C.danger, "bell" },
-	secret = { C.g6, "eye" },
-	coin = { C.white, "real" },
-	guide = { C.white, "help" },
+	info = { C.white, "note", C.g0 },
+	good = { C.white, "check", C.g0 },
+	bad = { C.white, "cross", C.danger },
+	warn = { C.white, "bell", C.danger },
+	secret = { C.g6, "eye", C.g0 },
+	coin = { C.white, "real", C.g0 },
+	guide = { C.white, "help", C.g0 },
 } :: { [string]: { any } }
 
 export type Action = { text: string, variant: string?, icon: string?, onClick: (() -> ())? }
@@ -90,21 +91,29 @@ function Notice.new(props: Props): Notice
 		Visible = if props.Visible == nil then true else props.Visible,
 		Parent = props.Parent,
 	}) :: CanvasGroup
-	local function makePage(accent: Color3): (Frame, Frame)
-		return Surfaces.page({
-			Name = "Card",
-			tone = "raised",
-			alpha = N.alpha,
-			edgeColor = accent,
-			edgeWidth = N.edge,
-			padding = N.padding,
-			autoHeight = true,
-			Size = UDim2.new(1, 0, 0, 0),
-			Parent = group,
-		})
-	end
-	local page, content = makePage(kind[1])
+	local pageProps = {
+		Name = "Card",
+		tone = "black",
+		alpha = 0,
+		fillColor = kind[3],
+		padding = N.padding,
+		autoHeight = true,
+		Size = UDim2.new(1, 0, 0, 0),
+		Parent = group,
+	}
+	local page, content = Surfaces.page(pageProps)
 	Base.list(content, N.gap)
+	-- OMORI's dialogue box: a thin paper frame drawn inside the ink one, boiling.
+	local inner = Base.make("Frame", {
+		Name = "InnerFrame",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(6, 6),
+		Size = UDim2.new(1, -12, 1, -12),
+		ZIndex = page.ZIndex + 1,
+		Parent = page,
+	})
+	Base.stroke(inner, C.white, 2, 0)
+	Boil.attach(inner, 1)
 
 	local self = { group = group, page = page, content = content } :: any
 
@@ -125,9 +134,10 @@ function Notice.new(props: Props): Notice
 		Parent = eyebrowRow,
 	})
 	local eyebrowLabel = Base.label({
-		font = "bodyBold",
+		font = "label",
 		size = "micro",
-		color = C.dim,
+		color = C.white,
+		TextTransparency = 0.3,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
@@ -228,7 +238,7 @@ function Notice.new(props: Props): Notice
 		arrange()
 	end
 	function self.setTitle(_: Notice, text: string?)
-		title:set(text or "")
+		title:set(string.upper(text or ""))
 		title.frame.Visible = text ~= nil and text ~= ""
 		arrange()
 	end
@@ -241,9 +251,12 @@ function Notice.new(props: Props): Notice
 		local k = Notice.KINDS[name] or Notice.KINDS.info
 		eyebrowIcon.ImageColor3 = k[1]
 		bodyIcon.ImageColor3 = k[1]
-		local edge = page:FindFirstChild("Edge", true)
-		if edge and edge:IsA("Frame") then
-			edge.BackgroundColor3 = k[1]
+		pageProps.fillColor = k[3]
+		local fill = page:FindFirstChild("Notch", true)
+		if fill and fill:IsA("ImageLabel") then
+			fill.ImageColor3 = k[3]
+		elseif fill and fill:IsA("Frame") then
+			fill.BackgroundColor3 = k[3]
 		end
 	end
 	function self.setWidth(_: Notice, w: number)

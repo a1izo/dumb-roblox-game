@@ -19,16 +19,18 @@ type Props = { [string]: any }
 local C = Tokens.color
 
 -- Page tones: the panel colour and the colour of text and lines that sit on it.
+-- (near black, never grey: the owner's direction 2026-10-28, solid slabs like the announcer's bar)
 local TONES = {
-	black = { color = C.page, rule = C.rule },
-	raised = { color = C.raised, rule = C.rule },
-	parchment = { color = C.raised, rule = C.rule }, -- the old paper tone: reading text is light on dark now
+	black = { color = C.g0, rule = C.rule },
+	raised = { color = C.g1, rule = C.rule },
+	parchment = { color = C.g1, rule = C.rule }, -- the old paper tone: reading text is light on dark now
 	white = { color = C.white, rule = C.ink }, -- Ace's surfaces, the only black-on-white panels
 }
 
 -- The Notch shapes: 9-slice images with a clipped corner (see art/scripts/ui/textures.py).
 local SHAPES = {
-	panel = { fill = "UiNotch", line = nil, slice = Rect.new(32, 32, 224, 224), scale = 1 },
+	-- (concept A has square panels: no clipped corner, so a panel is a plain rectangle)
+	panel = { fill = nil, line = nil, slice = Rect.new(32, 32, 224, 224), scale = 1 },
 	button = { fill = "UiNotchBtn", line = "UiNotchBtnLine", slice = Rect.new(32, 32, 224, 224), scale = 1 },
 	window = { fill = "UiNotchWin", line = "UiNotchWinLine", slice = Rect.new(48, 48, 208, 208), scale = 0.5 },
 }
@@ -61,7 +63,7 @@ local redrawWhenReady = Surfaces.redrawWhenReady
 function Surfaces.notch(parent: Instance, props: Props): GuiObject
 	local shape = SHAPES[props.shape or "panel"] or SHAPES.panel
 	local name = if props.line then shape.line or shape.fill else shape.fill
-	local id = Textures.id(name)
+	local id = if name then Textures.id(name) else ""
 	local z = props.ZIndex or 1
 	if id ~= "" then
 		return Base.make("ImageLabel", {
@@ -166,7 +168,7 @@ function Surfaces.page(props: Props?): (Frame, Frame)
 		frame.BackgroundTransparency = 1
 		local fill = Surfaces.notch(surface, {
 			shape = if p.window then "window" else "panel",
-			color = if p.glow then tone.color:Lerp(C.white, 0.07) else tone.color,
+			color = p.fillColor or (if p.glow then tone.color:Lerp(C.white, 0.07) else tone.color),
 			transparency = p.alpha or (if p.glass then Tokens.alpha.glass else 0),
 			ZIndex = z,
 		})
@@ -210,10 +212,11 @@ function Surfaces.page(props: Props?): (Frame, Frame)
 				ZIndex = z,
 			})
 		end
-		if p.texture ~= false and not isWhite and not p.window then
+		-- (scanlines, grain and the grey edge only when asked for now: they read as clutter)
+		if p.texture == true and not isWhite and not p.window then
 			Surfaces.texture(surface, z)
 		end
-		if p.edge ~= false and not isWhite and not p.window then
+		if (p.edge == true or p.edgeColor ~= nil) and not isWhite and not p.window then
 			Base.make("Frame", {
 				Name = "Edge",
 				BackgroundColor3 = p.edgeColor or C.g5,
@@ -454,17 +457,19 @@ end
 -- down the left side; only on cards with a fixed height), padding (px, default 12), plus frame
 -- properties. It has no full-size decoration, so AutomaticSize is safe on it. Children go
 -- straight inside (the padding is on the card).
+-- (near black and a little see-through, never grey: they sit over the blurred world in a menu)
 local CARD_TONES = {
-	raised = C.raised,
-	lifted = C.lifted,
-	page = C.page,
+	raised = C.g0,
+	lifted = C.g1,
+	page = C.g0,
 	parchment = C.parchment, -- the light card on Ace's desk (dark text)
 }
 
 function Surfaces.card(props: Props): Frame
 	local frame = Base.make("Frame", {
 		Name = props.Name or "Card",
-		BackgroundColor3 = CARD_TONES[props.tone or "raised"] or C.raised,
+		BackgroundColor3 = CARD_TONES[props.tone or "raised"] or C.g0,
+		BackgroundTransparency = if props.tone == "parchment" then 0 else 0.25,
 		BorderSizePixel = 0,
 		Size = props.Size or UDim2.new(1, 0, 0, 56),
 		AutomaticSize = props.AutomaticSize,

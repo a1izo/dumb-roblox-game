@@ -572,10 +572,8 @@ local function buildProfile()
 	local page, content = Kit.page({
 		Name = "ProfileCard",
 		tone = "raised",
-		-- (a notice's surface and accent, so the right column reads as one set: Kit/Notice)
-		alpha = T.notice.alpha,
-		edgeColor = C.white,
-		edgeWidth = T.notice.edge,
+		-- (no panel: your name and numbers float over the world, concept A)
+		alpha = 1,
 		padding = T.notice.padding,
 		autoHeight = true,
 		Size = UDim2.new(1, 0, 0, 0),
@@ -605,15 +603,14 @@ local function buildCard(phone: boolean)
 		Parent = profileContent,
 	})
 	rankSeal = Kit.frame({ Name = "RankSeal", Size = UDim2.fromOffset(sealSize, sealSize), Parent = top })
-	Kit.label({
-		Text = Players.LocalPlayer.DisplayName,
-		font = "bodyBold",
-		size = "lead",
-		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(beside, if phone then 0 else 4),
-		Size = UDim2.new(1, -beside, 0, if phone then 22 else 26),
+	-- Your name in the serif (names are Melodrama), the rank under it in mono.
+	Kit.text({
+		face = "Head",
+		text = Players.LocalPlayer.DisplayName,
+		size = if phone then 30 else 36,
+		color = C.bone,
+		maxWidth = T.notice.width - beside - 2 * T.notice.padding,
+		Position = UDim2.fromOffset(beside, if phone then -4 else -2),
 		Parent = top,
 	})
 	local coinsRow: Frame
@@ -626,26 +623,36 @@ local function buildCard(phone: boolean)
 			Parent = top,
 		})
 	else
-		rankText = Kit.text({
-			face = "Head",
-			text = "",
-			size = T.size.title,
-			color = C.white,
-			Position = UDim2.fromOffset(76, 32),
+		local rankLabel = Kit.label({
+			Text = "",
+			font = "monoBold",
+			size = "small",
+			color = C.bone,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.XY,
+			Size = UDim2.fromOffset(0, 0),
+			Position = UDim2.fromOffset(beside, 44),
 			Parent = top,
 		})
+		rankLabel.TextStrokeColor3 = C.g0
+		rankLabel.TextStrokeTransparency = 0.5
+		rankText = {
+			set = function(_, text: string)
+				rankLabel.Text = string.upper(text)
+			end,
+		}
 		local _bar
 		_bar, setXp = Kit.meter({ height = 5, LayoutOrder = 2, Parent = profileContent })
-		xpLabel = Kit.label({ font = "mono", size = "micro", color = C.dim, LayoutOrder = 3, Parent = profileContent })
+		xpLabel = Kit.label({ font = "mono", size = "small", color = C.dim, LayoutOrder = 3, Parent = profileContent })
 		coinsRow =
 			Kit.frame({ Name = "Coins", Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 4, Parent = profileContent })
 	end
 	Kit.list(coinsRow, T.space.s, true)
-	Kit.icon({ name = "real", size = if phone then 18 else 22, color = C.candle, LayoutOrder = 1, Parent = coinsRow })
+	Kit.icon({ name = "real", size = if phone then 18 else 22, color = C.bone, LayoutOrder = 1, Parent = coinsRow })
 	coinsLabel = Kit.label({
-		font = "bodyBold",
+		font = "monoBold",
 		size = "body",
-		color = C.candle,
+		color = C.bone,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.X,
 		Size = UDim2.fromScale(0, 1),
@@ -678,6 +685,13 @@ local function buildCard(phone: boolean)
 			Router.toggle(item[2])
 		end)
 		linkGlitches[index] = Glitch.attach(wrap, { loop = false, enter = false })
+	end
+	-- (no panel behind it: every line gets a dark edge so it reads over the bright lobby)
+	for _, item in ipairs(profileContent:GetDescendants()) do
+		if item:IsA("TextLabel") and not item:FindFirstAncestorWhichIsA("TextButton") then
+			item.TextStrokeColor3 = C.g0
+			item.TextStrokeTransparency = 0.5
+		end
 	end
 	lastRank = ""
 	lastCoins = nil

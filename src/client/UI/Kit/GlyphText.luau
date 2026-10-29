@@ -107,7 +107,7 @@ local LEGACY = { Gothic = "Head", Scrawl = "Semi" }
 -- Which Roblox font stands in for each face until its atlas loads.
 local STAND_IN = { Title = "title", Head = "display", Semi = "hand", RnLight = "hand", RnMedium = "hand" }
 -- Melodrama is drawn from its atlas only from this size up; smaller, it is real Montserrat.
-local MIN_ATLAS = 22
+local MIN_ATLAS = 30 -- (was 22; card names and small headings in hairline Melodrama were hard to read)
 GlyphText.MIN_ATLAS = MIN_ATLAS
 local MELODRAMA = { Head = true, Semi = true }
 local HAIR_SPACE = utf8.char(0x200A)
@@ -439,9 +439,7 @@ function GlyphText._render(self: GlyphText)
 		local label = Create("TextLabel", {
 			Name = "Fallback",
 			BackgroundTransparency = 1,
-			FontFace = if plain
-				then (if faceKey == "Head" then Tokens.font.bodyBold else Tokens.font.label)
-				else (Tokens.font :: any)[STAND_IN[faceKey] or "display"],
+			FontFace = if plain then Tokens.font.display else (Tokens.font :: any)[STAND_IN[faceKey] or "display"],
 			Text = text,
 			TextSize = if plain then size else size * 0.92,
 			TextColor3 = color,

@@ -11,3 +11,4 @@
 - [Studio cutscene testing](studio-cutscene-testing.md) — command-bar debug cues, slow-mo, debug camera; prop lamps, merged map glass; front-camera left/right trap
 - [UI text style](ui-text-style.md) — short plain text; no em dashes, ellipses, · separators or colon run-ons; check_terms after edits
 - [UI notice component](ui-notice-component.md) — every small HUD card is a Kit.notice (Tokens.notice sizes); never hand-build one
+- [UI direction: concept A](ui-direction-2026-10-28.md) — paper/ink/blood UI built 2026-10-29: Boil, Pointer, Paper, OMORI buttons; rejected looks

@@ -415,14 +415,55 @@ local function buildBanner()
 	}) :: any
 	Kit.Layout.place(banner, "topCenter", Vector2.new(0, -6))
 	Kit.list(banner, T.space.xs, false, Enum.HorizontalAlignment.Center)
-	local stroke, text = Kit.banner({
-		text = "",
-		size = T.size.heading,
+	-- The phase in big lowercase (concept A), boiling, with a dark edge so it reads over a bright room.
+	local phaseLabel = Kit.label({
+		Text = "",
+		font = "title",
+		size = 46,
+		color = C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
 		LayoutOrder = 1,
 		Parent = banner,
 	})
-	local _ = stroke
-	bannerText = text
+	phaseLabel:SetAttribute("KeepFont", true)
+	phaseLabel.TextStrokeColor3 = C.g0
+	phaseLabel.TextStrokeTransparency = 0.6
+	Kit.Boil.attach(phaseLabel, 1, 0.2)
+	bannerText = {
+		set = function(_, text: string)
+			phaseLabel.Text = string.lower(text)
+		end,
+		setSize = function(_, size: number)
+			phaseLabel.TextSize = size + 12
+		end,
+	}
+	-- A thin line under it with the one sparkle (the only other place a sparkle goes is a tip).
+	local line = Kit.frame({ Name = "Line", Size = UDim2.fromOffset(280, 16), LayoutOrder = 4, Parent = banner })
+	Kit.Boil.attach(Kit.Base.make("Frame", {
+		Name = "Rule",
+		BackgroundColor3 = C.bone,
+		BackgroundTransparency = 0.3,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.fromScale(0, 0.5),
+		Size = UDim2.new(1, 0, 0, 1),
+		Parent = line,
+	}))
+	local spark = Kit.label({
+		Text = "✦",
+		font = "body",
+		size = 16,
+		color = C.bone,
+		TextWrapped = false,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		Parent = line,
+	})
+	Kit.Boil.attach(spark, 1)
 	-- The clock, the rounds and the place: plain lines with a soft shadow, no panel behind them.
 	local inner = Kit.frame({
 		Name = "Inner",
@@ -469,7 +510,7 @@ local function buildBanner()
 	Kit.list(marks, 4, true, Enum.HorizontalAlignment.Center)
 	infoLabel = Kit.label({
 		Text = "",
-		font = "label",
+		font = "mono",
 		size = "small",
 		upper = true,
 		color = C.g6,
@@ -498,10 +539,8 @@ local function buildBadge()
 	local page, content = Kit.page({
 		Name = "Identity",
 		tone = "raised",
-		-- (a notice's surface and accent, like every card over the world: Kit/Notice)
-		alpha = T.notice.alpha,
-		edgeColor = C.white,
-		edgeWidth = T.notice.edge,
+		-- (no panel: who you are floats over the world, concept A)
+		alpha = 1,
 		padding = T.notice.padding,
 		autoHeight = true,
 		Size = UDim2.fromOffset(T.notice.width, 0),
@@ -527,8 +566,31 @@ local function buildBadge()
 		Parent = top,
 	})
 	Kit.list(column, 2)
-	roleText = Kit.text({ face = "Head", text = "", size = T.size.title, LayoutOrder = 1, Parent = column })
-	aliasLabel = Kit.label({ font = "bodyBold", size = "small", LayoutOrder = 2, Parent = column })
+	-- The role in big lowercase, boiling; alias and state in mono under it.
+	local roleLabel = Kit.label({
+		Text = "",
+		font = "title",
+		size = 44,
+		color = C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		LayoutOrder = 1,
+		Parent = column,
+	})
+	roleLabel:SetAttribute("KeepFont", true)
+	roleLabel.TextStrokeColor3 = C.g0
+	roleLabel.TextStrokeTransparency = 0.6
+	Kit.Boil.attach(roleLabel, 1, 0.2)
+	roleText = {
+		set = function(_, text: string)
+			roleLabel.Text = string.lower(text)
+		end,
+		setColor = function(_, color: Color3)
+			roleLabel.TextColor3 = color
+		end,
+	}
+	aliasLabel = Kit.label({ font = "mono", size = "small", LayoutOrder = 2, Parent = column })
 	alliesLabel = Kit.label({ size = "micro", color = C.dim, LayoutOrder = 3, Parent = column })
 	abilities = Kit.frame({
 		Name = "Abilities",
@@ -539,23 +601,30 @@ local function buildBadge()
 		Parent = content,
 	})
 	Kit.list(abilities, T.space.xxs)
-	cardHint = Kit.label({ font = "label", size = "micro", color = C.faint, LayoutOrder = 3, Parent = content })
+	cardHint = Kit.label({ font = "mono", size = "micro", color = C.dim, LayoutOrder = 3, Parent = content })
 end
 
 function Hud.init()
 	buildBanner()
 	buildBadge()
-	-- The list is a notice (Kit/Notice) that shows only while it has lines.
-	objectivesNotice = Kit.notice({
+	-- The list floats over the world with no box (concept A): mono lines with drawn boxes, top left.
+	local objectivesGroup = Kit.frame({
 		Name = "ObjectivesPanel",
-		kind = "guide",
-		eyebrow = "Objectives",
-		icon = "check",
-		Visible = false,
+		Size = UDim2.fromOffset(T.notice.width, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		-- (always shown: with no lines it is empty and takes no room)
+		Visible = true,
 		Parent = Screens.hud,
 	})
-	Kit.Layout.place(objectivesNotice.group, "topLeft", Vector2.new(0, 4))
-	objectives = objectivesNotice.slot
+	Kit.Layout.place(objectivesGroup, "topLeft", Vector2.new(0, 4))
+	Kit.list(objectivesGroup, T.space.xs)
+	objectivesNotice = {
+		group = objectivesGroup,
+		setWidth = function(_, width: number)
+			objectivesGroup.Size = UDim2.fromOffset(width, 0)
+		end,
+	}
+	objectives = objectivesGroup
 	syncObjectives = function()
 		local any = false
 		for _, child in ipairs(objectives:GetChildren()) do

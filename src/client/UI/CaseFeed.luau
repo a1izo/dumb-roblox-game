@@ -245,10 +245,8 @@ function CaseFeed.init()
 	local page, content = Kit.page({
 		Name = "CaseFeed",
 		tone = "raised",
-		-- (a notice's surface and accent, like every card over the world: Kit/Notice)
-		alpha = T.notice.alpha,
-		edgeColor = C.white,
-		edgeWidth = T.notice.edge,
+		-- (a solid bar like every notice: Kit/Notice)
+		alpha = 0,
 		padding = T.notice.padding,
 		autoHeight = true,
 		Size = UDim2.fromOffset(WIDTH, 0),

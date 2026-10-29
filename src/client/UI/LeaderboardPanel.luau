@@ -43,7 +43,7 @@ local function ledgerLine(entry, order: number)
 	local mine = entry.userId == LocalPlayer.UserId
 	local row = Kit.frame({ Name = "Line", Size = UDim2.new(1, 0, 0, 52), LayoutOrder = order, Parent = list })
 	if mine then
-		row.BackgroundColor3 = C.lifted
+		row.BackgroundColor3 = C.g1
 		row.BackgroundTransparency = 0.4
 	end
 	Kit.label({

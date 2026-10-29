@@ -11,7 +11,6 @@ local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Clock = require(script.Parent.Core.Clock)
-local Glitch = require(script.Parent.Core.Glitch)
 local Kit = require(script.Parent.Kit)
 local MeetingPanel = require(script.Parent.MeetingPanel)
 local Router = require(script.Parent.Core.Router)
@@ -71,6 +70,8 @@ function VotePanel.init()
 	local page, content = Kit.page({
 		Name = "Vote",
 		tone = "black",
+		-- (a paper sheet beside the table, so the room stays in view: concept A)
+		fillColor = T.paper.g0,
 		padding = T.space.l,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, T.space.l, 0.5, 20),
@@ -79,33 +80,32 @@ function VotePanel.init()
 		Parent = Screens.panels,
 	})
 	panel = page
+	page.Rotation = -0.4
 	Kit.Base.make("UISizeConstraint", {
 		MaxSize = Vector2.new(440, 480),
 		MinSize = Vector2.new(300, 320),
 		Parent = panel,
 	})
-	-- The loud header: the title and its Japanese accent glitch every couple of seconds.
-	local header = Kit.Base.make("CanvasGroup", {
-		Name = "Header",
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0.7, 0, 0, 44),
-		Parent = content,
-	}) :: any
-	Kit.text({ face = "Head", text = "The vote", size = T.size.heading, color = C.bone, Parent = header })
-	Kit.label({
-		Text = "投票",
-		font = "label",
-		size = "small",
-		color = C.g5,
+	-- The title, big and lowercase like every sheet's, boiling.
+	local header = Kit.frame({ Name = "Header", Size = UDim2.new(0.7, 0, 0, 44), Parent = content })
+	local title = Kit.label({
+		Text = "who did it.",
+		font = "title",
+		size = 44,
+		color = C.bone,
 		TextWrapped = false,
-		Position = UDim2.fromOffset(176, 18),
-		Parent = header,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
+		Position = UDim2.fromOffset(0, -6),
 	})
-	voteGlitch = Glitch.attach(header, { loop = true, enter = false })
+	title:SetAttribute("KeepFont", true)
+	title.Parent = header
+	Kit.Boil.attach(title, 1, 0.2)
+	voteGlitch = { enter = function() end }
 	-- The clock, in equal-width digits; red in the last ten seconds.
 	local timer = Kit.num({
 		text = "",
-		size = 30,
+		size = 40,
 		color = C.bone,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, 0, 0, 2),
@@ -116,6 +116,7 @@ function VotePanel.init()
 		return Clock.format(seconds)
 	end)
 	statusLabel = Kit.label({
+		font = "mono",
 		size = "micro",
 		color = C.dim,
 		Position = UDim2.fromOffset(0, 46),
@@ -143,6 +144,13 @@ function VotePanel.init()
 		Visible = false,
 		Parent = content,
 	}, MeetingPanel.openArrest)
+
+	-- Everything on the sheet in ink (Kit/Paper); the sheet's own paper stays paper.
+	local surface = page:FindFirstChild("Surface")
+	if surface then
+		Kit.Paper.keep(surface)
+	end
+	Kit.Paper.apply(page)
 
 	Net.event("VoteUpdate").OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" or type(payload.voted) ~= "table" then

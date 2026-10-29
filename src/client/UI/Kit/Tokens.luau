@@ -2,11 +2,10 @@
 -- Death's Gambit's design tokens: every colour, type size, spacing step, stroke and motion the UI uses.
 -- Screens never write a Color3 or a font by hand; they ask for a token.
 --
--- Look ("Notch"): black and cold grey panels with one clipped corner, white for what you act on, and
--- red ONLY for danger (deaths, Diavolo, Death's Gambit, the vote target, the last 10 seconds, warnings).
--- Big titles are Aktura, headings and numbers are Melodrama (both drawn from glyph atlases because
--- Roblox cannot load custom fonts), and small text is Montserrat, which Roblox ships. Ace's surfaces
--- (the meeting screen) are the only black-on-white panels in the game.
+-- Look (concept A, "paper, ink, blood", the owner's pick 2026-10-29): the HUD is ink over the world, menus are paper
+-- sheets with ink lettering (Kit/Paper turns a window's dark ramp into the paper one), and red is used for danger, the
+-- pointing hand and a chosen target only. Drawn lines and big lettering boil (Kit/Boil). Big titles are lowercase
+-- Gotham Heavy with a full stop, names are Melodrama, text is Arimo and data is Roboto Mono (both built into Roblox).
 
 local Tokens = {}
 
@@ -15,43 +14,56 @@ local rgb = Color3.fromRGB
 -- Colour --------------------------------------------------------------------------------------
 
 Tokens.color = {
-	-- the grey ramp, dark to light (cold, to sit with the night maps)
-	g0 = rgb(8, 9, 11),
-	g1 = rgb(15, 17, 21),
-	g2 = rgb(23, 26, 32),
-	g3 = rgb(35, 39, 47),
-	g4 = rgb(58, 64, 75),
-	g5 = rgb(107, 115, 128),
-	g6 = rgb(163, 170, 181),
-	white = rgb(244, 245, 247), -- text, selection, the main button; Ace's panels
+	-- the ink ramp, darkest to lightest (warm, like toner on paper)
+	g0 = rgb(14, 14, 14),
+	g1 = rgb(24, 23, 22),
+	g2 = rgb(33, 32, 30),
+	g3 = rgb(47, 46, 43),
+	g4 = rgb(74, 72, 68),
+	g5 = rgb(122, 118, 111),
+	g6 = rgb(167, 162, 154),
+	white = rgb(232, 228, 220), -- paper: text on the dark, the main button's frame, menu sheets
 	-- meaning
-	accent = rgb(244, 245, 247), -- what you act on or what is selected (white, never red)
-	danger = rgb(225, 17, 43), -- danger only
-	dangerDark = rgb(125, 10, 24),
+	accent = rgb(232, 228, 220), -- what you act on (paper on the dark, ink on paper; never red)
+	danger = rgb(210, 30, 30), -- danger, the pointing hand, the chosen target
+	dangerDark = rgb(120, 14, 16),
 
 	-- Names from the older kit, kept so every screen keeps working. Prefer the ramp above.
-	void = rgb(8, 9, 11), -- behind everything, scrims
-	page = rgb(15, 17, 21), -- a panel
-	raised = rgb(23, 26, 32), -- cards and rows on a panel
-	lifted = rgb(35, 39, 47), -- hover, selected rows
-	rule = rgb(244, 245, 247), -- hairlines (used at high transparency)
-	bone = rgb(244, 245, 247), -- main text on dark
-	dim = rgb(163, 170, 181), -- secondary text
-	faint = rgb(107, 115, 128), -- disabled, placeholders
-	ink = rgb(8, 9, 11), -- text on white (Ace) and on the light puzzle paper
-	inkDim = rgb(91, 99, 112),
-	blood = rgb(125, 10, 24), -- dark red: danger fills, pressed danger
-	red = rgb(225, 17, 43), -- DANGER ONLY
-	parchment = rgb(190, 196, 205), -- the light paper inside puzzles (documents, prints)
-	parchmentDark = rgb(150, 158, 170),
-	candle = rgb(163, 170, 181), -- coins and rare things (no gold any more)
-	steel = rgb(163, 170, 181), -- the Bureau
-	specter = rgb(163, 170, 181), -- Deathsingers
+	void = rgb(14, 14, 14),
+	page = rgb(24, 23, 22),
+	raised = rgb(33, 32, 30),
+	lifted = rgb(47, 46, 43),
+	rule = rgb(232, 228, 220),
+	bone = rgb(232, 228, 220),
+	dim = rgb(167, 162, 154),
+	faint = rgb(122, 118, 111),
+	ink = rgb(18, 18, 18),
+	inkDim = rgb(80, 77, 72),
+	blood = rgb(120, 14, 16),
+	red = rgb(210, 30, 30),
+	parchment = rgb(222, 218, 209),
+	parchmentDark = rgb(196, 191, 180),
+	candle = rgb(167, 162, 154),
+	steel = rgb(167, 162, 154),
+	specter = rgb(167, 162, 154),
 	-- feedback
-	good = rgb(244, 245, 247),
-	warn = rgb(225, 17, 43),
-	bad = rgb(225, 17, 43),
-	secret = rgb(163, 170, 181),
+	good = rgb(232, 228, 220),
+	warn = rgb(210, 30, 30),
+	bad = rgb(210, 30, 30),
+	secret = rgb(167, 162, 154),
+}
+
+-- The same ramp on paper (a menu sheet), lightest to darkest: Kit/Paper swaps each ink-ramp colour for its partner
+-- here, so a screen written for the dark reads as ink on paper without being rewritten.
+Tokens.paper = {
+	g0 = rgb(232, 228, 220), -- the sheet itself
+	g1 = rgb(222, 218, 209),
+	g2 = rgb(212, 207, 197),
+	g3 = rgb(196, 191, 180),
+	g4 = rgb(160, 155, 146),
+	g5 = rgb(120, 116, 109),
+	g6 = rgb(80, 77, 72),
+	white = rgb(18, 18, 18), -- ink
 }
 
 -- (Rarity's colours and names, and how a shop card wears each tier, are in Shared/Rarity and UI/Shop/Card.)
@@ -70,7 +82,7 @@ Tokens.alpha = {
 -- Type ---------------------------------------------------------------------------------------
 
 -- Glyph faces (Kit/GlyphText), each an atlas drawn from a Fontshare font. Every size is the on-screen
--- font size in px. Melodrama is only drawn at 22 px and up (GlyphText.MIN_ATLAS); below that the same
+-- font size in px. Melodrama is only drawn at 30 px and up (GlyphText.MIN_ATLAS); below that the same
 -- text is a real Montserrat label (Core/FontMirror and GlyphText switch over by themselves).
 Tokens.face = {
 	title = "Title", -- Aktura: the game title, CASE CLOSED, big slams. Mixed case only, never all caps.
@@ -78,28 +90,31 @@ Tokens.face = {
 	hand = "Semi", -- Melodrama Semibold: the lighter heading weight
 }
 
-local MONTSERRAT = "rbxasset://fonts/families/Montserrat.json"
+local ARIMO = "rbxasset://fonts/families/Arimo.json"
+local MONO = "rbxasset://fonts/families/RobotoMono.json"
+local GOTHAM = "rbxasset://fonts/families/GothamSSm.json"
 
--- Real fonts: all text under 22 px, typing, chat, and the stand-in until the glyph atlases are imported.
--- SemiBold reads cleanly on the dark panels at small sizes.
+-- Real fonts: all text under 30 px (GlyphText.MIN_ATLAS), typing, chat, and the stand-in until the glyph atlases are
+-- imported. Arimo for reading, Roboto Mono for data (clocks, counts, captions), Gotham Heavy for big lowercase titles.
 Tokens.font = {
-	body = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
-	bodyBold = Font.new(MONTSERRAT, Enum.FontWeight.Bold),
-	bodyItalic = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold, Enum.FontStyle.Italic),
-	label = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold), -- labels and tabs
-	document = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold), -- reading text and fields
-	mono = Font.new(MONTSERRAT, Enum.FontWeight.Bold), -- counts; the HUD uses Kit.num digits instead
-	-- fallbacks for the glyph faces
-	title = Font.new(MONTSERRAT, Enum.FontWeight.ExtraBold),
-	display = Font.new(MONTSERRAT, Enum.FontWeight.Bold),
-	hand = Font.new(MONTSERRAT, Enum.FontWeight.SemiBold),
+	body = Font.new(ARIMO, Enum.FontWeight.Bold),
+	bodyBold = Font.new(ARIMO, Enum.FontWeight.Bold),
+	bodyItalic = Font.new(ARIMO, Enum.FontWeight.Bold, Enum.FontStyle.Italic),
+	label = Font.new(ARIMO, Enum.FontWeight.Bold), -- labels, tabs, buttons (spaced capitals)
+	document = Font.new(ARIMO, Enum.FontWeight.Regular), -- reading text and fields
+	mono = Font.new(MONO, Enum.FontWeight.Regular), -- data: clocks, counts, captions, timestamps
+	monoBold = Font.new(MONO, Enum.FontWeight.Bold),
+	-- big lowercase titles ("shop."), and every heading under 30 px
+	title = Font.new(GOTHAM, Enum.FontWeight.Heavy),
+	display = Font.new(GOTHAM, Enum.FontWeight.Heavy),
+	hand = Font.new(ARIMO, Enum.FontWeight.Bold),
 }
 
 -- Type scale (px at desktop size).
 Tokens.size = {
-	micro = 12,
-	small = 14,
-	body = 16,
+	micro = 13,
+	small = 15,
+	body = 17,
 	lead = 20,
 	title = 26,
 	heading = 34,
@@ -182,10 +197,10 @@ Tokens.z = {
 Tokens.notice = {
 	width = 340,
 	phoneWidth = 280,
-	padding = Tokens.space.l,
+	padding = Tokens.space.xl, -- (inside the OMORI frame, which sits 6 px in)
 	gap = Tokens.space.s,
 	edge = 3, -- px of the accent line down the left
-	alpha = 0.04, -- near solid: text must read over bright snow
+	alpha = 0, -- solid: text must read over bright snow
 	titleSize = 24,
 	actionHeight = 40,
 }

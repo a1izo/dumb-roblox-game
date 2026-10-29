@@ -79,15 +79,33 @@ local function fill()
 	})
 	roleText:set(info.display)
 	roleText:setColor(if hostile then C.red else C.bone)
-	winLabel.Text = "How you win: " .. Keys.resolve(copy.win)
+	winLabel.Text = ""
+	winLabel.Visible = false
 	Kit.clear(bullets)
 	for index, text in ipairs(copy.bullets) do
-		Kit.label({
-			Text = "-  " .. Keys.resolve(text),
-			size = "small",
-			color = C.bone,
+		-- (numbered in red mono, the rule in bold: the role poster's list)
+		local row = Kit.frame({
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = index,
 			Parent = bullets,
+		})
+		Kit.label({
+			Text = string.format("%02d", index),
+			font = "mono",
+			size = "small",
+			color = C.danger,
+			Size = UDim2.fromOffset(28, 0),
+			Parent = row,
+		})
+		Kit.label({
+			Text = Keys.resolve(text),
+			font = "bodyBold",
+			size = "body",
+			color = C.bone,
+			Position = UDim2.fromOffset(32, 0),
+			Size = UDim2.new(1, -32, 0, 0),
+			Parent = row,
 		})
 	end
 	aliasText:set(tostring(private.alias or ""))

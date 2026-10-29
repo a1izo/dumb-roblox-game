@@ -1,5 +1,5 @@
--- The reveal, when the case closes: CASE CLOSED in ransom-note letters (two of them red when Diavolo's
--- side won), the winning side in Aktura beneath it, every role and real name on the left, a replay of the
+-- The reveal, when the case closes, on a paper report: "case closed." in the big title font (red when Diavolo's
+-- side won), the winning side in the serif beneath it, every role and real name on the left, a replay of the
 -- key events on the right, and your rewards. On a phone the two pages stack. The winner line glitches
 -- every couple of seconds.
 
@@ -50,7 +50,8 @@ local function fillRoster(players)
 	Kit.clear(roster)
 	for index, entry in ipairs(players) do
 		local info = Roles.get(entry.role)
-		local row = Kit.frame({ Name = "Line", Size = UDim2.new(1, 0, 0, 52), LayoutOrder = index, Parent = roster })
+		-- (14 px short of the edge, so the scroll bar never covers the role on the right)
+		local row = Kit.frame({ Name = "Line", Size = UDim2.new(1, -14, 0, 52), LayoutOrder = index, Parent = roster })
 		local name = string.format("%s  (%s)", plain(tostring(entry.alias)), plain(tostring(entry.displayName)))
 		if type(entry.title) == "string" and entry.title ~= "" then
 			-- (in its tier's look, as over the head in the lobby: Shared/Rarity.titleText)
@@ -194,29 +195,36 @@ end
 
 local handWon = false
 
--- CASE CLOSED, cut out of ransom-note letters at a size for the device.
+-- "case closed." in the big lowercase title font (concept A), boiling; red when Diavolo's side won.
 local function buildTitle()
 	Kit.clear(titleHolder)
 	local phone = Kit.Layout.isPhone()
-	ransom = Kit.ransom({
-		text = "Case Closed",
-		size = if phone then 34 else 56,
-		hand = handWon,
+	local title = Kit.label({
+		Text = "case closed.",
+		font = "title",
+		size = if phone then 48 else 92,
+		color = if handWon then C.danger else C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.fromScale(0.5, 0),
-		Parent = titleHolder,
 	})
+	title:SetAttribute("KeepFont", true)
+	title.Parent = titleHolder
+	Kit.Boil.attach(title, 1, 0.2)
+	ransom = { play = function() end }
 end
 
 -- The title block is 190 px tall on a PC and 130 on a phone; below it the two pages sit side by side or
 -- stacked. The close button and the rewards line take the bottom 72 px.
 local function layout(class: string)
 	local phone = class == "phone"
-	local top = if phone then 132 else 196
-	titleHolder.Size = UDim2.new(1, 0, 0, if phone then 44 else 70)
-	winnerHolder.Position = UDim2.new(0.5, 0, 0, if phone then 48 else 76)
-	winnerText:setSize(if phone then 26 else 44)
-	reasonText.frame.Position = UDim2.new(0.5, 0, 0, if phone then 84 else 130)
+	local top = if phone then 150 else 226
+	titleHolder.Size = UDim2.new(1, 0, 0, if phone then 56 else 104)
+	winnerHolder.Position = UDim2.new(0.5, 0, 0, if phone then 58 else 106)
+	winnerText:setSize(if phone then 30 else 44)
+	reasonText.frame.Position = UDim2.new(0.5, 0, 0, if phone then 96 else 162)
 	reasonText:setSize(if phone then 16 else 22)
 	if phone then
 		rosterPage.AnchorPoint = Vector2.new(0, 0)
@@ -287,7 +295,12 @@ function RevealScreen.init()
 		Size = UDim2.fromScale(0.95, 0.92),
 		Parent = root,
 	})
-	Kit.Base.maxSize(window, Vector2.new(1100, 720))
+	Kit.Base.maxSize(window, Vector2.new(1160, 760))
+	-- A paper report (concept A): the sheet, a hair off square, everything on it in ink (Kit/Paper).
+	window.BackgroundColor3 = T.paper.g0
+	window.BackgroundTransparency = 0
+	window.Rotation = 0.3
+	Kit.pad(window, T.space.xl, T.space.xxl)
 	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 70), Parent = window })
 	winnerHolder = Kit.Base.make("CanvasGroup", {
 		Name = "Winner",
@@ -297,7 +310,7 @@ function RevealScreen.init()
 		Parent = window,
 	}) :: any
 	winnerText = Kit.text({
-		face = "Title",
+		face = "Head",
 		text = "",
 		size = 44,
 		color = C.white,
@@ -319,9 +332,9 @@ function RevealScreen.init()
 	roster, rosterPage = page("Roles and real names", { Parent = window })
 	timeline, timelinePage = page("Case replay", { Parent = window })
 	rewardsLabel = Kit.label({
-		font = "bodyBold",
+		font = "monoBold",
 		size = "small",
-		color = C.candle,
+		color = C.bone,
 		AutomaticSize = Enum.AutomaticSize.None,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		AnchorPoint = Vector2.new(0, 1),
@@ -340,6 +353,7 @@ function RevealScreen.init()
 
 	buildTitle()
 	Kit.Layout.watch(layout)
+	Kit.Paper.apply(window)
 
 	Net.event("Reveal").OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" then

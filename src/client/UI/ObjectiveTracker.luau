@@ -37,10 +37,14 @@ local function line(parent: Instance, entry, index: number)
 		Parent = row,
 	})
 	if not entry.done then
-		Kit.Base.stroke(mark, C.g5, 1.5, 0)
+		Kit.Base.stroke(mark, C.bone, 2, 0)
 	end
+	Kit.Boil.attach(mark, 1)
 	local label = Kit.label({
-		Text = if entry.done then "<s>" .. Keys.resolve(entry.text) .. "</s>" else Keys.resolve(entry.text),
+		Text = if entry.done
+			then "<s>" .. string.upper(Keys.resolve(entry.text)) .. "</s>"
+			else string.upper(Keys.resolve(entry.text)),
+		font = "mono",
 		size = "body",
 		color = if entry.done then C.faint else C.bone,
 		Position = UDim2.fromOffset(20, 0),
@@ -48,6 +52,9 @@ local function line(parent: Instance, entry, index: number)
 		Parent = row,
 	})
 	label.RichText = true
+	-- (no box behind it: a dark edge keeps it readable over a bright room)
+	label.TextStrokeColor3 = C.g0
+	label.TextStrokeTransparency = 0.6
 end
 
 local function render()
