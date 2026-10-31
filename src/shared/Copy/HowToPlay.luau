@@ -19,7 +19,7 @@ local RAW: { { title: string, body: { string } } } = {
 		body = {
 			"Your real name is on your role card ({key.card}).",
 			"{Hand} and {cultists} hack stations to see who used them in the last 25 seconds. Fail a hack and the alarm goes off.",
-			"No typing during a case, only quick chat. Real names can only be shared on paper notes.",
+			"Chat only reaches players right next to you, as a bubble over your head. Real names are blocked: share them on paper notes.",
 		},
 	},
 	{
@@ -28,7 +28,7 @@ local RAW: { { title: string, body: { string } } } = {
 			"Work case files, watch each other, pass notes.",
 			"{Hand} can write in {grimoire} any time, but the book glows red while open.",
 			"Victims die 20 seconds later. Every death calls a meeting.",
-			"Quick chat only reaches nearby players.",
+			"In a meeting the whole table hears you.",
 		},
 	},
 	{

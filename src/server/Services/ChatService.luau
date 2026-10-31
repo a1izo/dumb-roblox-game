@@ -1,7 +1,5 @@
 -- Communication rules, enforced on the server with TextChatService:
---   * Typed chat is off inside a case (Config.CASE_CHAT, 2026-10-27): no one in it, living, Specter or a Specter
---     waiting in the lobby, can send a message in any channel; they speak in quick-chat phrases. The rules below
---     are typed chat's when CASE_CHAT is on (quick chat keeps them either way).
+--   * Config.CASE_CHAT off turns typing off inside a case altogether (no one in it can send anywhere).
 --   * The living share one channel of their own. In free roam it is proximity chat: a message only
 --     reaches players within PROXIMITY_CHAT_RANGE studs (bubbles over their heads). During the
 --     meeting and the vote it reaches the whole table. It is closed in the cutscene phases.
@@ -20,14 +18,8 @@ local TextChatService = game:GetService("TextChatService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
-local Net = require(Shared:WaitForChild("Net"))
-local QuickChat = require(Shared:WaitForChild("QuickChat"))
 
 local Match = require(script.Parent.Match)
-local RateLimit = require(script.Parent.RateLimit)
-
-local QuickChatRemote = Net.event("QuickChat")
-local QuickChatMsgRemote = Net.event("QuickChatMsg")
 
 local ChatService = {}
 
@@ -349,55 +341,6 @@ function ChatService.onMatchEnd()
 	ChatService.refresh()
 end
 
--- Quick-chat: fixed phrases that anyone can send at any time.
-local function onQuickChat(player: Player, index)
-	if type(index) ~= "number" then
-		return
-	end
-	local phrase = QuickChat.PHRASES[index]
-	if not phrase or not RateLimit.allow(player, "quickchat", Config.QUICK_CHAT_COOLDOWN) then
-		return
-	end
-	local ps = Match.getLiving(player)
-	local specter = isSpecter(player.UserId)
-	local participant = if Match.active then Match.get(player) else nil
-	local payload = {
-		userId = player.UserId,
-		name = if participant then participant.alias else player.DisplayName,
-		text = phrase,
-		specter = specter,
-	}
-	if specter then
-		-- Specters only reach other Specters.
-		for _, other in ipairs(Players:GetPlayers()) do
-			if isSpecter(other.UserId) then
-				QuickChatMsgRemote:FireClient(other, payload)
-			end
-		end
-	elseif Match.active and not ps then
-		-- Spectators and lobby players never reach the living.
-		for _, other in ipairs(Players:GetPlayers()) do
-			if not isLiving(other.UserId) then
-				QuickChatMsgRemote:FireClient(other, payload)
-			end
-		end
-	elseif Match.active then
-		-- One of the living: like typed chat, the living hear it only within earshot in free roam (the whole table
-		-- in a meeting); Specters and watchers read it all; the lobby never does (2026-10-27: a phrase reached the
-		-- whole map, which gave away where its sender was).
-		for _, other in ipairs(Players:GetPlayers()) do
-			local hears = if isLiving(other.UserId)
-				then inEarshot(player.UserId, other.UserId)
-				else isSpecter(other.UserId) or watchers[other.UserId] == true
-			if hears then
-				QuickChatMsgRemote:FireClient(other, payload)
-			end
-		end
-	else
-		QuickChatMsgRemote:FireAllClients(payload)
-	end
-end
-
 local function setupChannels()
 	if TextChatService.ChatVersion ~= Enum.ChatVersion.TextChatService then
 		warn("[DeathsGambit] Set TextChatService.ChatVersion to TextChatService; the chat rules need it.")
@@ -454,7 +397,6 @@ function ChatService.init()
 			end
 		end)
 	end)
-	QuickChatRemote.OnServerEvent:Connect(onQuickChat)
 end
 
 return ChatService

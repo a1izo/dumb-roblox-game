@@ -1,20 +1,18 @@
 -- Client side of the communication rules. The server enforces them; this controller
 -- keeps the chat bar in the right state:
---   in a case (living, a Specter, or away in the lobby as one) -> no chat bar at all while typed chat is off
---                               in cases (Config.CASE_CHAT, 2026-10-27): quick-chat only. With it on:
 --   living, free roam        -> chat bar sends to the living's channel; the server only delivers it
---                               to players close by (proximity chat, bubbles over heads)
---   living, meeting or vote  -> chat bar sends to the same channel, heard by the whole table
---   living, cutscene phases  -> no chat bar (quick-chat only)
+--                               to players close by. No chat window: what is said shows as a bubble
+--                               over the speaker's head, so you have to be next to them to read it.
+--   living, meeting or vote  -> chat bar sends to the same channel, heard by the whole table (window on)
+--   living, cutscene phases  -> no chat bar
+--   (Config.CASE_CHAT off: no chat bar for anyone in a case)
 --   everyone else            -> normal chat (living players never receive it)
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
-local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
@@ -44,8 +42,10 @@ local function update()
 	local hidden = LobbyChrome.isHidden()
 	local window = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
 	local bubbles = TextChatService:FindFirstChildOfClass("BubbleChatConfiguration")
+	-- The living in free roam read bubbles only: there is no window to scroll back through.
+	local roaming = ClientState.isLiving() and ClientState.phase() == "Investigation"
 	if window then
-		window.Enabled = not hidden
+		window.Enabled = not hidden and not roaming
 	end
 	if bubbles then
 		bubbles.Enabled = not hidden
@@ -103,28 +103,6 @@ local function onIncomingMessage(message: TextChatMessage)
 		then string.format('<font color="#A3AAB5">[%s] %s:</font>', Terms.NAMES.Specter, alias)
 		else string.format('<font color="#F4F5F7">%s:</font>', alias)
 	return properties
-end
-
--- Quick-chat phrases appear as a speech bubble and in the chat window.
-local function onQuickChat(payload)
-	if type(payload) ~= "table" or type(payload.text) ~= "string" then
-		return
-	end
-	local speaker = Players:GetPlayerByUserId(tonumber(payload.userId) or 0)
-	local character = if speaker then speaker.Character else nil
-	local head = if character then character:FindFirstChild("Head") else nil
-	if head then
-		pcall(function()
-			TextChatService:DisplayBubble(head, payload.text)
-		end)
-	end
-	local system = channel("RBXSystem") or channel("RBXGeneral")
-	if system then
-		pcall(function()
-			local tag = if payload.specter then "[" .. Terms.NAMES.Specter .. "]" else "[Quick]"
-			system:DisplaySystemMessage(string.format("%s %s: %s", tag, tostring(payload.name), payload.text))
-		end)
-	end
 end
 
 -- The chat window, the input bar and the speech bubbles in the Notch style: near-black panels, white
@@ -220,7 +198,6 @@ function ChatController.init()
 	ClientState.PrivateChanged:Connect(placeChat)
 	ClientState.WatchChanged:Connect(placeChat)
 	LobbyChrome.Changed:Connect(update)
-	Net.event("QuickChatMsg").OnClientEvent:Connect(onQuickChat)
 	task.spawn(function()
 		-- Channels are created by the server shortly after start.
 		local folder = TextChatService:WaitForChild("TextChannels", 30)

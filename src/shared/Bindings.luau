@@ -69,8 +69,6 @@ Bindings.ACTIONS = {
 	action("zoomOut", "Zoom out", "camera", { "O" }, {}),
 	action("shiftLock", "Shift lock", "camera", { "LeftShift", "RightShift" }, {}),
 	action("quickChat", "Emote wheel", "world", { "Q" }, { "DPadLeft" }),
-	-- (quick chat's phrases on their own key, 2026-10-27: Q had opened both, on two tabs)
-	action("phrases", "Quick chat", "world", { "M" }, { "ButtonL3" }),
 	action("note", "Notes", "world", { "N" }, { "DPadRight" }),
 	-- (one key for each role's power, the owner's call of 2026-10-28: the Manual, the blackout, the arrest)
 	action("ability", "Role power", "world", { "R" }, { "ButtonR1" }),
@@ -110,8 +108,8 @@ Bindings.SECTIONS = {
 		},
 	},
 	{
-		title = "Emotes and quick chat",
-		ids = { "quickChat", "phrases", "slot1", "slot2", "slot3", "slot4" },
+		title = "Emotes",
+		ids = { "quickChat", "slot1", "slot2", "slot3", "slot4" },
 	},
 	{
 		title = "Duo emotes and notes",

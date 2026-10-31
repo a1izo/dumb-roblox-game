@@ -19,7 +19,7 @@ local SabotageRemote = Net.event("Sabotage")
 
 local Actions = {}
 
--- Phases that are mostly a cutscene or a results screen: no quick chat, no action bar.
+-- Phases that are mostly a cutscene or a results screen: no emotes, no action bar.
 Actions.CUTSCENE_PHASES = { Intro = true, Verdict = true, Outro = true, Reveal = true } :: { [string]: boolean }
 
 export type View = Router.View
@@ -43,7 +43,7 @@ local function inMatchPhase(view: View, ...: string): boolean
 	return false
 end
 
--- Emotes (the quick-chat page's wheel) work in the lobby too, and in a case for the living and the
+-- Emotes (the emote wheel) work in the lobby too, and in a case for the living and the
 -- Specters outside the cutscenes. Not while watching a case from the lobby, nor for a Specter waiting
 -- there (hidden).
 function Actions.emotesAllowed(view: View): boolean
@@ -153,19 +153,6 @@ Actions.list = {
 		when = Actions.emotesAllowed,
 		run = function()
 			Router.toggle("quickChat")
-		end,
-	},
-	{
-		-- quick chat's phrases, in a case (their own page, their own key: UI/QuickChatPanel)
-		id = "phrases",
-		label = fixed("Quick chat"),
-		keys = { Enum.KeyCode.M },
-		pad = Enum.KeyCode.ButtonL3,
-		when = function(view: View)
-			return view.participant and Actions.emotesAllowed(view)
-		end,
-		run = function()
-			Router.toggle("phrases")
 		end,
 	},
 	{

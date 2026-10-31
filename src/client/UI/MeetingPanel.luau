@@ -145,7 +145,7 @@ function MeetingPanel.init()
 		Parent = content,
 	})
 	Kit.label({
-		Text = "Use quick chat. Everyone hears it.",
+		Text = "Chat is open. Everyone at the table hears it.",
 		size = "micro",
 		color = C.dim,
 		LayoutOrder = 2,

@@ -38,7 +38,7 @@ local function controls(): { string }
 			"Tap prompts near stations, notes and the bell.",
 			"Buttons on the right are your actions.",
 			"Hold your role badge to see your role card.",
-			"No typing during a case. Use quick chat.",
+			"Chat reaches only players next to you.",
 			"Move or resize buttons in Settings > Controls.",
 		}
 	end
@@ -56,13 +56,7 @@ local function controls(): { string }
 	if input == "gamepad" then
 		return {
 			string.format("%s: interact", k("interact", "pickUp")),
-			string.format(
-				"%s: emotes   %s: quick chat   %s: note   Hold %s: role card",
-				k("quickChat"),
-				k("phrases"),
-				k("note"),
-				k("roleCard")
-			),
+			string.format("%s: emotes   %s: note   Hold %s: role card", k("quickChat"), k("note"), k("roleCard")),
 			string.format(Terms.f("%s: role power   %s: {eyes}"), k("ability"), k("ability2")),
 			"Hold D-Up: your objectives and stations",
 			string.format("%s: walk   %s: look   %s: jump", k("move"), k("look"), k("jump")),
@@ -71,7 +65,7 @@ local function controls(): { string }
 	end
 	return {
 		string.format("%s: interact", k("interact", "pickUp")),
-		string.format("%s: emotes   %s: quick chat   %s: note", k("quickChat"), k("phrases"), k("note")),
+		string.format("%s: emotes   %s: note   /: chat", k("quickChat"), k("note")),
 		string.format("Hold %s: role card   %s: how to play", k("roleCard"), k("help")),
 		"Hold Tab: your objectives and stations",
 		string.format(Terms.f("%s: role power"), k("ability")),

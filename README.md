@@ -99,7 +99,8 @@ working case files.
 | E / F | Use world prompts (work a station, ring the bell, take a sheet or a note) |
 | Hold C | Role card: your role, real name and allies |
 | H | How to Play |
-| Q / M | The emote wheel (1 to 8 play its emotes) / quick-chat phrases |
+| Q | The emote wheel (1 to 4 play its emotes) |
+| / | Chat: in free roam only players right next to you see it, as a bubble over your head; in a meeting the whole table |
 | N | Your note: write, read or drop it |
 | Hold Tab | Your objectives, and your own stations outlined in white (each Bureau player has 4 to work) |
 | E at a station | Hack its log (Diavolo and Muertos): three timing checks; miss one and its alarm goes off |

@@ -93,14 +93,12 @@ Config.PASS_RANGE = 4
 Config.PASS_TIMEOUT = 5
 Config.PASS_COOLDOWN = 3
 
--- Communication. Typed chat is off inside a case (2026-10-27, your call): everyone in it, the living and the Specters,
--- speaks in quick-chat phrases only (in free roam they reach the living within PROXIMITY_CHAT_RANGE, in a meeting the
--- whole table), so only paper notes carry real names. CASE_CHAT = true brings typed chat back: the living's proximity
--- chat in free roam, the table's in meetings, the Specters' own (full real names blocked in it); the how-to-play
--- copy, the role cards and the meeting panel say there is no typing, so change them with it.
-Config.CASE_CHAT = false
+-- Communication (the owner's call of 2026-10-31): typed chat in a case, but no global chat. In free roam a message
+-- only reaches the living within PROXIMITY_CHAT_RANGE studs, as a bubble over the speaker's head (no chat window);
+-- in a meeting it reaches the whole table. Full real names are blocked in every chat, so only paper notes carry them.
+-- CASE_CHAT = false turns typing off inside a case altogether.
+Config.CASE_CHAT = true
 Config.PROXIMITY_CHAT_RANGE = 20
-Config.QUICK_CHAT_COOLDOWN = 2
 
 -- Rewards paid at the end of a match
 Config.STARTING_COINS = 100

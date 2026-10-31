@@ -30,7 +30,7 @@ Products.PASSES = {
 		name = "Custom Alias",
 		perks = { "Pick your own alias" },
 	},
-	{ key = "emotes", id = 0, name = "Emote Pack", perks = { "Extra quick chat emotes" } },
+	{ key = "emotes", id = 0, name = "Emote Pack", perks = { "Extra emotes" } },
 	{
 		key = "director",
 		id = 0,

@@ -1,23 +1,8 @@
--- Quick-chat phrases and emotes. Outside meetings these are the only way to talk.
+-- The emotes the wheel plays (the module keeps its old name: saved data and requires use it).
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
 local QuickChat = {}
-
-QuickChat.PHRASES = {
-	"Follow me",
-	"Suspicious",
-	"I'm working here",
-	"Watch this station",
-	"I saw something",
-	"Where is everyone?",
-	"Stay together",
-	"Split up",
-	"Trust me",
-	"Help!",
-	"Yes",
-	"No",
-}
 
 export type Emote = {
 	id: string, -- the clip (Anim/Clips)
