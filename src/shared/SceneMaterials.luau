@@ -60,7 +60,7 @@ return {
 	FacadeTile = { textured = true, fallback = { material = "Slate", color = { 144, 129, 114 } } },
 	FacadeTileGrey = { textured = true, fallback = { material = "Slate", color = { 105, 109, 115 } } },
 	Foliage = { material = "Grass", color = { 44, 74, 40 }, transparency = 0, reflectance = 0 },
-	FrostPink = { material = "Neon", color = { 84, 30, 52 }, transparency = 0, reflectance = 0 },
+	FrostPink = { material = "Neon", color = { 110, 46, 95 }, transparency = 0, reflectance = 0 },
 	Glass = { material = "Glass", color = { 150, 180, 210 }, transparency = 0.6, reflectance = 0.2 },
 	GlassDark = { material = "Glass", color = { 40, 52, 66 }, transparency = 0.35, reflectance = 0.25 },
 	GlassFrosted = { material = "Glass", color = { 196, 204, 212 }, transparency = 0.2, reflectance = 0.05 },

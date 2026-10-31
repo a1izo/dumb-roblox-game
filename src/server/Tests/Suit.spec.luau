@@ -133,12 +133,14 @@ return function(t)
 			expect(lo.Y >= armEnd - 0.03).to.equal(true)
 			expect(math.abs(hi.Y - (armEnd + Suit.HAND)) < 0.03).to.equal(true)
 			expect(math.abs(cuff.Position.Y - (armEnd + Suit.HAND)) < 0.06).to.equal(true)
-			expect(cuff.Size.X > hi.X - lo.X).to.equal(true)
 			if arm.Transparency == 1 then
-				-- the imported fist: a real hand's shape inside the arm's footprint, the arm see-through round it
+				-- the imported fist: a real hand's shape inside the arm's footprint, the arm see-through round it, the
+				-- cuff round its wrist (narrower than the sleeve: no white plate standing out past the hand)
 				expect(hi.X - lo.X < arm.Size.X and hi.Z - lo.Z < arm.Size.Z + 0.01).to.equal(true)
+				expect(cuff.Size.X < hi.X - lo.X and cuff.Size.Z < arm.Size.Z).to.equal(true)
 			else
-				-- the classic hand: a skin shell a hair over the arm's faces
+				-- the classic hand: a skin shell a hair over the arm's faces, the cuff round it
+				expect(cuff.Size.X > hi.X - lo.X).to.equal(true)
 				expect(hi.X - lo.X > arm.Size.X and hi.Z - lo.Z > arm.Size.Z).to.equal(true)
 			end
 			-- a late skin repaints the hand, never the cuff

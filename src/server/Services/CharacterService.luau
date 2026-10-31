@@ -284,7 +284,11 @@ function CharacterService.setWriting(player: Player, on: boolean)
 	CharacterService.attachBuilt(player, "LWritingPen", HAND, function(anchor: CFrame)
 		-- In the fist (the arm's last Suit.HAND), its nib on the open page's right half: posed through the "write"
 		-- clip it stays on the paper, sliding across it as the arm writes (it sat mid-forearm before, out of the hand).
-		local held = anchor * CFrame.new(0, -0.74, -0.08) * CFrame.Angles(math.rad(-90), math.rad(1.1), math.rad(-70.6))
+		-- It leaves the fist on the palm's side, between the fingers and the thumb; its end stays inside the fist (a
+		-- play test, 2026-10-31: further out, its cap showed through the back of the hand).
+		local held = anchor
+			* CFrame.new(-0.16, -0.76, -0.04)
+			* CFrame.Angles(math.rad(-90), math.rad(-0.5), math.rad(-71.6))
 		local pen = Models.pen()
 		if pen then
 			return modelParts(pen, held)

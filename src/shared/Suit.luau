@@ -195,6 +195,10 @@ function Suit.hand(arm: BasePart, skin: Color3): { BasePart }
 	if fist then
 		-- (made for an arm a stud wide; placed by its middle)
 		local size = (ModelLibrary.size(key) or Vector3.new(0.84, 0.72, 0.96)) * width
+		-- The cuff round the fist's wrist, just under the sleeve's end: as wide as the sleeve, with the arm see-through
+		-- its underside showed as a white plate standing out past the hand (seen in a play test, 2026-10-31).
+		cuff.Size = Vector3.new(size.X * 0.86, 0.11, size.Z * 0.9)
+		cuff.CFrame = finish * CFrame.new(0, Suit.HAND - 0.055, 0)
 		local parts: { BasePart } = { cuff }
 		for _, item in ipairs(fitted(fist, finish * CFrame.new(0, Suit.HAND - size.Y / 2, 0), Vector3.one * width)) do
 			item.Name = "Hand"
