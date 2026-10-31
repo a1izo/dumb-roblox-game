@@ -21,6 +21,11 @@ TEX_DIR = os.path.join(common.EXPORT, "textures", "maps")
 # name -> (Roblox material, sRGB colour, transparency, reflectance)
 FLAT = {
     "PaintSteel": ("Metal", (74, 88, 98), 0, 0),  # the blue-grey enamel of staff lockers (the cutscene sets)
+    # The Muerto's flat (the cutscene sets): the desk's glossy red top, its monitor's pale glow, and the frosted
+    # panels down the walls lit pink from behind (too dim to bloom).
+    "LacquerRed": ("SmoothPlastic", (150, 14, 26), 0, 0.14),
+    "MonitorPale": ("Neon", (170, 190, 210), 0, 0),
+    "FrostPink": ("Neon", (84, 30, 52), 0, 0),
     "Glass": ("Glass", (150, 180, 210), 0.6, 0.2),
     "GlassDark": ("Glass", (40, 52, 66), 0.35, 0.25),
     "Water": ("Glass", (40, 90, 120), 0.35, 0.3),

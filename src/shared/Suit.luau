@@ -114,9 +114,11 @@ local function fitted(model: Model, cframe: CFrame, stretch: Vector3): { MeshPar
 	return parts
 end
 
--- How much of an R6 arm's end is the hand: the sleeve stops this far short of it, a classic Roblox hand in the
--- player's skin (the owner, 2026-10-28: the fingered hands that hung below the arm went).
-Suit.HAND = 0.35
+-- How much of an R6 arm's end is the hand: the sleeve stops this far short of it. Under the imported suit it is a
+-- modelled fist (Suit.hand); before the import, a classic Roblox hand in the player's skin. Either way nothing
+-- reaches past the arm's end (alizo, 2026-10-28: the fingered hands that hung below the arm went), so what a hand
+-- holds sits in it; and the hands are a bit higher quality (the user, 2026-10-27, asked again 2026-10-29).
+Suit.HAND = 0.7
 
 -- The suit's cloth for one R6 part (the jacket for the Torso, a sleeve for an arm, a trouser leg for a leg), sized
 -- and placed on it, not parented and not welded; none before the Core import carries it (Models.suit). A sleeve
@@ -171,26 +173,43 @@ local function piece(size: Vector3, colour: Color3, cframe: CFrame, material: En
 	})
 end
 
--- The shirt's cuff and the hand at the end of one sleeve (`arm` is "Left Arm" or "Right Arm"): the arm's last
--- Suit.HAND in the player's skin, a classic R6 hand (a skin shell a hair over the arm, so the suit-painted part
--- under it never shows), and the cuff, a white band just below the sleeve's end. Nothing hangs below the arm, so
--- what a hand holds sits at the arm's end.
+-- The shirt's cuff and the hand at the end of one sleeve (`arm` is "Left Arm" or "Right Arm"), the cuff a white
+-- band just below the sleeve's end. With the imported suit, the Core import's fist (SuitHandL / SuitHandR,
+-- art/scripts/props_gameplay.py: knuckles, the fingers curled under with their nails, the thumb laid across, a little
+-- narrower than the sleeve) in the player's skin, its top at the cuff and its bottom at the arm's end; and the arm
+-- itself goes see-through (its sleeve and this fist are the arm now: the painted block under them would box the hand
+-- in). Before the import, a classic R6 hand: the arm's last Suit.HAND in the player's skin, a skin shell a hair over
+-- the arm (so the suit-painted part under it never shows).
 function Suit.hand(arm: BasePart, skin: Color3): { BasePart }
 	local width, depth = arm.Size.X, arm.Size.Z
 	local finish = arm.CFrame * CFrame.new(0, -arm.Size.Y / 2, 0) -- the arm's end
 	local pad = 0.03 -- (under the sleeve's own pad, over the arm's faces)
-	local hand = piece(
-		Vector3.new(width + pad, Suit.HAND, depth + pad),
-		skin,
-		finish * CFrame.new(0, Suit.HAND / 2 - pad / 4, 0)
-	)
-	hand.Name = "Hand"
 	local cuff = piece(
 		Vector3.new(width + pad * 2.4, 0.09, depth + pad * 2.4),
 		Suit.SHIRT,
 		finish * CFrame.new(0, Suit.HAND - 0.045, 0)
 	)
 	cuff.Name = "Cuff"
+	local key = if string.find(arm.Name, "Left") then "SuitHandL" else "SuitHandR"
+	local fist = if ModelLibrary.has("SuitLimb") then ModelLibrary.get(key) else nil
+	if fist then
+		-- (made for an arm a stud wide; placed by its middle)
+		local size = (ModelLibrary.size(key) or Vector3.new(0.84, 0.72, 0.96)) * width
+		local parts: { BasePart } = { cuff }
+		for _, item in ipairs(fitted(fist, finish * CFrame.new(0, Suit.HAND - size.Y / 2, 0), Vector3.one * width)) do
+			item.Name = "Hand"
+			Suit.paint(item, skin)
+			table.insert(parts, item)
+		end
+		arm.Transparency = 1
+		return parts
+	end
+	local hand = piece(
+		Vector3.new(width + pad, Suit.HAND, depth + pad),
+		skin,
+		finish * CFrame.new(0, Suit.HAND / 2 - pad / 4, 0)
+	)
+	hand.Name = "Hand"
 	return { cuff, hand }
 end
 

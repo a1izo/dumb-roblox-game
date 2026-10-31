@@ -698,9 +698,28 @@ local function runTrain(run: Instance)
 	end
 	driver.Changed:Connect(place)
 	local folder = run.Parent
+	-- Never while the map's intro plays: that shot brings its own car in on the platform's other track, and with
+	-- this one pulling in behind it the station had two trains. A run already in when the intro starts leaves the
+	-- track at once (out of sight, so nobody sees it go), and the next waits for the intro to end.
+	local function intro(): boolean
+		return ClientState.phase() == "Intro"
+	end
+	local phases = ClientState.PhaseChanged:Connect(function(phase)
+		if phase == "Intro" then
+			for _, model in ipairs(models) do
+				model.Parent = nil
+			end
+		end
+	end)
 	task.spawn(function()
 		task.wait(math.random() * 20)
 		while run.Parent do
+			while run.Parent and intro() do
+				task.wait(1)
+			end
+			if not run.Parent then
+				break
+			end
 			driver.Value = CFrame.new(enter)
 			for _, model in ipairs(models) do
 				model.Parent = folder
@@ -713,7 +732,9 @@ local function runTrain(run: Instance)
 			arrive:Play()
 			oneShot(folder, "mapTrainArrive")
 			arrive.Completed:Wait()
-			oneShot(folder, "mapStationChime")
+			if not intro() then
+				oneShot(folder, "mapStationChime")
+			end
 			task.wait(dwell)
 			local depart =
 				TweenService:Create(driver, TweenInfo.new(9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -726,6 +747,7 @@ local function runTrain(run: Instance)
 			end
 			task.wait(math.max(10, every - 18 - dwell))
 		end
+		phases:Disconnect()
 		for _, model in ipairs(models) do
 			model:Destroy()
 		end

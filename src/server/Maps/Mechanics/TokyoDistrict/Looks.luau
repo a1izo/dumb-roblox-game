@@ -1,7 +1,8 @@
--- The Tokyo crowd's bodies: CrowdLooks.COUNT R6 rigs built once per server, dressed as civilians (a coat, a hoodie,
--- an office shirt, a school uniform, a T-shirt; hair, sometimes a bag or an umbrella; never the players' suit) and kept in ReplicatedStorage.LCrowd, never in the
--- world: every client clones them for the walkers it draws. Roblox builds each rig from a description;
--- when it cannot (no web access in a test), a plain rig is put together by hand instead.
+-- The Tokyo crowd's bodies: CrowdLooks.COUNT R6 rigs built once per server, dressed as civilians (two in three in
+-- marketplace clothes from CrowdLooks.MARKET, the rest in clothes built from parts: a coat, a hoodie, an office shirt, a
+-- school uniform, a T-shirt; hair, sometimes a bag or an umbrella; never the players' suit) and kept in
+-- ReplicatedStorage.LCrowd, never in the world: every client clones them for the walkers it draws. Roblox builds each
+-- rig from a description; when it cannot (no web access in a test), a plain rig is put together by hand instead.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -77,6 +78,11 @@ local function rigFor(look: CrowdLooks.Look): Model
 	end
 	if look.faceId then
 		description.Face = look.faceId
+	end
+	-- a marketplace outfit (CrowdLooks.MARKET): its classic shirt and trousers
+	if look.shirtId and look.pantsId then
+		description.Shirt = look.shirtId
+		description.Pants = look.pantsId
 	end
 	local ok, model = pcall(function()
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
@@ -223,6 +229,25 @@ local function civilian(character: Model, look: CrowdLooks.Look)
 	end
 end
 
+-- A body in marketplace clothes (CrowdLooks.MARKET): the shirt and trousers came with its description, so only what
+-- it carries is added: a student's backpack, a tote over a casual shoulder.
+local function marketWear(character: Model, look: CrowdLooks.Look)
+	if not look.bag then
+		return
+	end
+	CharacterService.attachBuiltTo(character, "LCivilian", { "Torso" }, function(anchor: CFrame)
+		local carried = if look.kind == "school"
+			then block(Vector3.new(1.5, 1.4, 0.55), Color3.fromRGB(28, 28, 32), anchor * CFrame.new(0, 0.05, 0.78))
+			else block(
+				Vector3.new(0.22, 1.0, 0.9),
+				Color3.fromRGB(196, 186, 160),
+				anchor * CFrame.new(1.13, -0.55, 0)
+			)
+		carried.Material = Enum.Material.Fabric
+		return { carried }
+	end)
+end
+
 -- An open umbrella held up in the right fist (2026-10-27: it stood beside the body, nobody holding it). World/Crowd
 -- raises the arm with the umbrellaHold clip, and the grip is where that fist then is in the torso's frame (measured
 -- in a play test: it moves under a twentieth of a stud as the body walks): a hooked handle, a steel shaft, eight ribs
@@ -339,7 +364,12 @@ local function body(index: number, look: CrowdLooks.Look): Model
 		humanoid.BreakJointsOnDeath = false
 		humanoid.RequiresNeck = false
 	end
-	civilian(model, look)
+	-- (a marketplace outfit Roblox could not dress, or a test without web access, wears its stand-in colours in parts)
+	if look.shirtId and not model:GetAttribute("Plain") and model:FindFirstChildOfClass("Shirt") then
+		marketWear(model, look)
+	else
+		civilian(model, look)
+	end
 	hair(model, look)
 	-- (its catalog hair rebuilt as a MeshPart, as every player's accessories are: the old kind leave the whole body
 	-- blocky, and the crowd must look like the players)

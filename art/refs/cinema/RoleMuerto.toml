@@ -44,3 +44,10 @@ notes = "Hands placed with cinema.acting.body_reach (kit.reach in a leaning, tur
 
 [check]
 by = "run_cinema --clear 0 problems; --lint (only momentary close-ups); contact sheets of every cut"
+
+[set]
+url = "https://www.youtube.com/watch?v=tBQhV6BWK18"
+title = "Mikami delete compilation (Death Note episodes 31, 37 and Relight)"
+watched = "2026-10-29: frame sheets every 0.6 s over 0-7 s and every 1.75 s over the rest, single frames at 5.0, 5.6, 6.8 and 12.75 s, in the built-in browser"
+room = "The wide at 6.8 s: a long red desk with a silver rim on slim legs, a tall pale glowing monitor, a black keyboard, a silver gooseneck lamp, the open notebook and loose papers, on dark teal marble with pale veins. 5.0-5.6 s: behind the writer a floor-to-ceiling wall of small tall panes in thin mullions, blown out cold blue-white from outside. 12.75 s: frosted panels in dark frames glowing pink under recessed red downlights."
+ours = "maps/venues/sets/flat.py (Sets v17): the north wall glass in a 10 by 5 grid of panes over a cold glare with the towers dark and low against it; the red lacquer desk (the old desk's footprint and top, so the shots still fit) with its monitor, keyboard, gooseneck lamp and papers; MarbleTeal floor; three framed FrostPink panels down each side wall under eight red downlights."
