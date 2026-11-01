@@ -38,6 +38,8 @@ local function written(parent: GuiObject, word: string, letters, slants, rises, 
 			Parent = holder,
 		})
 	end
+	-- (a long word in a small card shrinks to fit it)
+	Common.fit(holder, parent, 0.12)
 	return holder
 end
 

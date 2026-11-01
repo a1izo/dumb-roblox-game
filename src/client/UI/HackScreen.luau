@@ -73,7 +73,21 @@ local actionButton: TextButton
 -- The hack in progress (nil when none). `play` is the stage's own game: confirm() and draw().
 local current: any = nil
 
+-- A stage's result goes to the server; a practice run (the Trial) ends on this client instead: a miss or
+-- the last pass calls its onDone and the window closes.
 local function report(index: number, ok: boolean)
+	local hack = current
+	if hack and hack.practice then
+		if not ok or index >= hack.stages then
+			local done = hack.practice
+			hack.state = "done"
+			task.delay(if ok then 0.6 else 1.2, function()
+				Router.close("hack", "rule")
+				done(ok)
+			end)
+		end
+		return
+	end
 	HackRemote:FireServer({ action = "stage", index = index, ok = ok })
 end
 
@@ -426,6 +440,16 @@ function HackScreen.isBusy(): boolean
 	return current ~= nil
 end
 
+-- A practice hack on this client only (the Trial): one stage of a random game. onDone(true) when it is
+-- cracked, onDone(false) on a miss.
+function HackScreen.practice(title: string, onDone: (boolean) -> ())
+	if current then
+		return
+	end
+	start({ stationName = title, stages = 1, seed = math.random(1, 2 ^ 30) })
+	current.practice = onDone
+end
+
 function HackScreen.init()
 	win = Kit.window({ name = "hack", title = "Hacking", jp = "ハッキング", size = "M" })
 	local body = win.body
@@ -510,6 +534,9 @@ function HackScreen.init()
 	end)
 	Kit.register(win, {
 		allowed = function(view)
+			if current and current.practice then
+				return not view.participant
+			end
 			return view.living and view.phase == "Investigation" and (view.role == "Kira" or view.role == "Follower")
 		end,
 		show = function()
@@ -532,7 +559,8 @@ function HackScreen.init()
 			ContextActionService:UnbindAction("DeathsGambit_HackLock")
 			-- Walked away from it: the server ends the hack quietly (no alarm).
 			local hack = current
-			if hack and hack.state ~= "done" and (reason == "user" or reason == "back" or reason == "replaced") then
+			local walkedOff = reason == "user" or reason == "back" or reason == "replaced"
+			if hack and not hack.practice and hack.state ~= "done" and walkedOff then
 				HackRemote:FireServer({ action = "cancel" })
 			end
 			current = nil

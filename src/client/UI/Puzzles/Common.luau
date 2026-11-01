@@ -62,7 +62,28 @@ function Common.text(parent: Instance, text: string, props: { [string]: any }?):
 		ZIndex = p.ZIndex,
 		Parent = parent,
 	})
+	-- Never spills out of its box: the text shrinks to fit, never past the size asked for (cards in a grid
+	-- get small on a phone, and long answers ran over their frames, 2026-11-01).
+	local wanted = label.TextSize
+	label.TextScaled = true
+	Kit.Base.make("UITextSizeConstraint", { MaxTextSize = wanted, MinTextSize = 8, Parent = label })
 	return label
+end
+
+-- Scales `gui` (sized in pixels) down until it fits inside `within` with `margin` (0 to 1) to spare, and keeps it
+-- fitting when the window resizes. Never scales up.
+function Common.fit(gui: GuiObject, within: GuiObject, margin: number?)
+	local spare = 1 - (margin or 0.1)
+	local scale = Kit.Base.make("UIScale", { Parent = gui }) :: UIScale
+	local function refit()
+		local size, room = gui.AbsoluteSize / scale.Scale, within.AbsoluteSize
+		if size.X <= 0 or size.Y <= 0 or room.X <= 0 then
+			return
+		end
+		scale.Scale = math.min(1, room.X * spare / size.X, room.Y * spare / size.Y)
+	end
+	within:GetPropertyChangedSignal("AbsoluteSize"):Connect(refit)
+	task.defer(refit)
 end
 
 -- Data in Roboto Mono (times, numbers, letters to compare).

@@ -47,6 +47,15 @@ local RAW: { { title: string, body: { string } } } = {
 		},
 	},
 	{
+		title = "Hacking",
+		body = {
+			"{Hand} and {cultists} hack stations to learn real names. Press {key.use} at a free station.",
+			"A hack shows who finished a case file there in the last 25 seconds.",
+			"Each hack is a data crack, a voltage puzzle or a fingerprint. Miss once and the station lights up red for everyone.",
+			"From outside a hack looks like normal work. Run to a red station to catch the hacker.",
+		},
+	},
+	{
 		title = "Notes",
 		body = {
 			"Grab a blank sheet, write up to 40 characters, and hand it over ({key.pass}).",

@@ -6,7 +6,7 @@
 --
 --   card     read your role card: an alias for everyone to see, a real name to keep
 --   file     work a case file: it fills the Bureau's shared task bar
---   write    stare at Dummy B to learn its real name, then write it in full in the Manual
+--   write    hack the station Dummy B just used to learn its real name, then write it in full in the Manual
 --   arrest   point at the suspect, as Ace does in a meeting (the Academy's "warrant" drill)
 --   ready    press READY
 --
@@ -32,8 +32,7 @@ local Trial = {}
 
 -- drill: the Academy drill whose completion is the step (nil: done some other way).
 -- how, howNext and why are Terms templates; `how` may hold {cardKey} and {stareKey} (the controls for the
--- role card and for staring, filled on the client for the input in the player's hands) and {seconds} (how
--- long a stare takes).
+-- role card and for the hack, filled on the client for the input in the player's hands) and {seconds}.
 export type Step = { id: string, line: string, how: string, howNext: string?, why: string, drill: string? }
 
 local RAW: { Step } = {
@@ -52,10 +51,10 @@ local RAW: { Step } = {
 	},
 	{
 		id = "write",
-		line = "Learn a name, then write it",
-		how = "Stand near Dummy B, press {stareKey} and keep still for {seconds}s.",
+		line = "Hack a name, then write it",
+		how = "Dummy B just worked a case file. Stand close and press {stareKey} to hack it.",
 		howNext = "Got it. Follow the wisp to {grimoire} and write the name.",
-		why = "That's how {hand} kills. Watch for red eyes.",
+		why = "That's how {hand} kills. A failed hack sets off the alarm.",
 		drill = "grimoire",
 	},
 	{

@@ -139,13 +139,12 @@ return function(t)
 			end
 		end)
 
-		it("teaches the stare before the Manual, as long as a stare takes", function()
+		it("teaches the hack before the Manual", function()
 			local write = Trial.BY_ID.write
-			local how = Trial.text(write.how, { stareKey = "R" })
+			local how = Trial.text(write.how, { stareKey = "E" })
 			expect(string.find(how, "Dummy B", 1, true) ~= nil).to.equal(true)
-			-- (a press, then keeping still: letting go of the key does not break a stare)
-			expect(string.find(how, "press R", 1, true) ~= nil).to.equal(true)
-			expect(string.find(how, tostring(Config.STARE_TIME) .. "s", 1, true) ~= nil).to.equal(true)
+			expect(string.find(how, "press E", 1, true) ~= nil).to.equal(true)
+			expect(string.find(how, "hack", 1, true) ~= nil).to.equal(true)
 			-- The second half (the Manual) has its own line; the other steps are done in one go.
 			expect(write.howNext ~= nil).to.equal(true)
 			for _, step in ipairs(Trial.STEPS) do

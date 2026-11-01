@@ -11,9 +11,10 @@
 -- once its turn comes. The role card is the real one, with a practice identity, opened with the real control
 -- (UI/RoleCard); the case file, the Manual and the arrest are the Academy's own drills (Controllers/
 -- AcademyController says when one is finished); the last is READY. Before the Manual comes the thing the whole
--- game turns on: the player stares at Dummy B (the stare key, standing still, close by) with their eyes
--- glowing red, and its real name shows over its head as a stare shows it in a case (UI/WorldFx). Only then
--- does the Manual drill count, and it lists the name learned (UI/PracticePanel.prefer).
+-- game turns on: Dummy B has just worked a case file, and the player hacks it (the use key, close by: a practice
+-- run of the real hack screen, UI/HackScreen.practice). Cracked, its real name shows over its head as a learned
+-- name shows in a case (UI/WorldFx); missed, they try again. Only then does the Manual drill count, and it lists
+-- the name learned (UI/PracticePanel.prefer).
 --
 -- The server is told three things: how many steps are done (saved, for a rejoin), the offer was skipped, or
 -- the Trial was finished (Services/ProfileService pays the Academy's reward once).
@@ -45,6 +46,7 @@ local UI = script.Parent.Parent.UI
 local Kit = require(UI.Kit)
 local LobbyIntro = require(UI.LobbyIntro)
 local Motion = require(UI.Core.Motion)
+local HackScreen = require(script.Parent.Parent.UI.HackScreen)
 local PracticePanel = require(UI.PracticePanel)
 local RoleCard = require(UI.RoleCard)
 local Toasts = require(UI.Toasts)
@@ -64,7 +66,6 @@ local AT_PLAZA = Vector3.new(0, -6.4, -55)
 local CARD_SECONDS = 1.5 -- how long the role card must be held open to count as read
 local BEGIN_REACH = 7 -- walking this close to the waiting wisp is a yes
 local STARE_ACTION = "DeathsGambit_TrialStare"
-local STILL_SPEED = 2.5 -- faster than this (studs per second, flat) and a stare breaks, as in a case
 local NAME_SECONDS = Config.EYES_DURATION + 1 -- the learned name stays a moment longer than in a case
 
 -- "idle", "offer" (the panel and the wisp wait for a yes) or "run".
@@ -113,13 +114,13 @@ local function cardKey(): string
 	return if key ~= "" then "Hold " .. key else "Hold the role card key"
 end
 
--- The stare's control, for the input in the player's hands (their own key where they rebound it).
+-- The hack's control (the use key, as at a station), for the input in the player's hands.
 local function stareKey(): string
 	if Keys.input() == "touch" then
-		return "the Stare button"
+		return "the Hack button"
 	end
-	local key = Keys.text("ability2")
-	return if key ~= "" then key else "the stare's key"
+	local key = Keys.text("interact")
+	return if key ~= "" then key else "the use key"
 end
 
 -- What a step's "how" line fills in.
@@ -151,39 +152,6 @@ local function myHead(): BasePart?
 	local character = LocalPlayer.Character
 	local head = if character then character:FindFirstChild("Head") else nil
 	return if head and head:IsA("BasePart") then head else nil
-end
-
--- Red eyes on your own head for as long as the stare lasts (as CharacterService.glowEyes shows them in a
--- case), and a red edge round the screen, since the camera sits behind you. Returns a remover.
-local function glowEyes(): () -> ()
-	local head = myHead()
-	local eyes = {}
-	if head then
-		for _, side in ipairs({ -0.2, 0.2 }) do
-			local eye = Create("Part", {
-				Name = "TrialEye",
-				Size = Vector3.new(0.2, 0.12, 0.06),
-				Color = Color3.fromRGB(255, 25, 25),
-				Material = Enum.Material.Neon,
-				CanCollide = false,
-				CanQuery = false,
-				CanTouch = false,
-				Massless = true,
-				CFrame = head.CFrame * CFrame.new(side, 0.12, -head.Size.Z / 2 - 0.03),
-				Parent = head,
-			})
-			Create("WeldConstraint", { Part0 = head, Part1 = eye, Parent = eye })
-			table.insert(eyes, eye)
-		end
-		Create("PointLight", { Color = Color3.fromRGB(255, 40, 40), Range = 8, Brightness = 4, Parent = eyes[1] })
-	end
-	local unvignette = Cinema.vignette(C.danger, 0.22)
-	return function()
-		for _, eye in ipairs(eyes) do
-			eye:Destroy()
-		end
-		unvignette()
-	end
 end
 
 -- The real name over the dummy's head, as a stare shows it in a case (UI/WorldFx): a red pulse, the dummy
@@ -258,7 +226,35 @@ local function stopStare(why: string?)
 	end
 end
 
--- The stare key: Dummy B close by and on the screen, the stare begins.
+local steerWisp: () -> ()
+
+-- Dummy B within reach and on the screen.
+local function nearDummy(): boolean
+	local target, head, camera = dummy(DUMMY), myHead(), workspace.CurrentCamera
+	if not target or not head or not camera then
+		return false
+	end
+	local at = lookAt(target).Position
+	local _, onScreen = camera:WorldToViewportPoint(at)
+	return (at - head.Position).Magnitude <= Config.STARE_RANGE and onScreen
+end
+
+-- The hack cracked: the dummy's name shows, the Manual drill lists it, and the wisp moves on.
+local function learnName(target: BasePart)
+	stared = true
+	local name = target:GetAttribute("PracticeName")
+	if type(name) == "string" then
+		showName(target, name)
+	end
+	PracticePanel.prefer(DUMMY, true)
+	local step = current()
+	if step and step.howNext then
+		TrialObjective.setHow(Trial.text(step.howNext, howVars()))
+	end
+	steerWisp()
+end
+
+-- The hack key next to Dummy B: a practice hack begins.
 local function startStare()
 	local step = current()
 	if not step or step.id ~= "write" or stared or staring or between or not inLobby() then
@@ -274,8 +270,16 @@ local function startStare()
 		Toasts.show(string.format("Look at %s within %d studs.", DUMMY, Config.STARE_RANGE), "bad")
 		return
 	end
-	staring = { since = os.clock(), stop = glowEyes() }
-	Toasts.show("Staring. Stand still.", "secret")
+	-- A practice hack: cracked, the name is learned; missed, the player tries again.
+	staring = { since = os.clock(), stop = function() end }
+	HackScreen.practice(DUMMY, function(ok: boolean)
+		staring = nil
+		if ok then
+			learnName(target)
+		else
+			Toasts.show("Missed. Try again.", "bad")
+		end
+	end)
 end
 
 -- Binds the stare's keys (and a Stare button on a touch screen) while the stare is the thing to do.
@@ -289,55 +293,29 @@ local function bindStare(on: boolean)
 		return
 	end
 	local saved = if ClientState.profile then ClientState.profile.keybinds else nil
-	local inputs = Bindings.keyCodes("ability2", "keyboard", saved)
-	for _, key in ipairs(Bindings.keyCodes("ability2", "gamepad", saved)) do
+	local inputs = Bindings.keyCodes("interact", "keyboard", saved)
+	for _, key in ipairs(Bindings.keyCodes("interact", "gamepad", saved)) do
 		table.insert(inputs, key)
 	end
 	ContextActionService:BindAction(STARE_ACTION, function(_, inputState: Enum.UserInputState)
 		if inputState ~= Enum.UserInputState.Begin or UserInputService:GetFocusedTextBox() then
 			return Enum.ContextActionResult.Pass
 		end
+		-- (only next to Dummy B: anywhere else the key stays the prompts')
+		if not nearDummy() then
+			return Enum.ContextActionResult.Pass
+		end
 		startStare()
 		return Enum.ContextActionResult.Sink
 	end, true, table.unpack(inputs))
-	ContextActionService:SetTitle(STARE_ACTION, "Stare")
+	ContextActionService:SetTitle(STARE_ACTION, "Hack")
 end
 
-local steerWisp: () -> ()
-
--- Every frame: the stare keys are bound while they are wanted, and a stare going on breaks or finishes.
+-- Every frame: the hack's key is bound while the hack is the thing to do.
 local function watchStare()
 	local step = current()
 	local wanted = step ~= nil and step.id == "write" and not stared and not between and inLobby()
 	bindStare(wanted)
-	local now = staring
-	if not now then
-		return
-	end
-	local target, head, root = dummy(DUMMY), myHead(), rootPart()
-	if not wanted or not target or not head or not root then
-		stopStare(nil)
-		return
-	end
-	local v = root.AssemblyLinearVelocity
-	if Vector3.new(v.X, 0, v.Z).Magnitude > STILL_SPEED then
-		stopStare("You moved. Try again.")
-	elseif (lookAt(target).Position - head.Position).Magnitude > Config.STARE_RANGE then
-		stopStare("Lost sight. Try again.")
-	elseif os.clock() - now.since >= Config.STARE_TIME then
-		stopStare(nil)
-		stared = true
-		local name = target:GetAttribute("PracticeName")
-		if type(name) == "string" then
-			showName(target, name)
-		end
-		-- The Manual drill now lists the name learned, and the wisp goes on to the Manual.
-		PracticePanel.prefer(DUMMY, true)
-		if step and step.howNext then
-			TrialObjective.setHow(Trial.text(step.howNext, howVars()))
-		end
-		steerWisp()
-	end
 end
 
 -- Saving progress ------------------------------------------------------------------------------------------
