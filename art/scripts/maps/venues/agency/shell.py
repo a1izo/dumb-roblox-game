@@ -281,9 +281,9 @@ def fire_stair(s, g):
     s.collider(((x0 + x1) / 2, 3.0, (h0 + h1) / 2), (x1 - x0, 6.0, h1 - h0), 0, True, "ConcreteDark")
     s.box("ConcreteDark", ((x0 + x1) / 2, 3.0, h1 + 0.01), (x1 - x0, 6.0, 0.02), 0)
     b0, b1 = fb["x"]
-    s.collider(((x0 + P.DIVIDER[0]) / 2, 3.5, (fb["z0"] + fb["z1"]) / 2), (P.DIVIDER[0] - x0, 7.0, fb["z1"] - fb["z0"]), 0,
-               True, "ConcreteDark")
-    s.box("ConcreteDark", ((x0 + P.DIVIDER[0]) / 2, 3.5, fb["z1"] + 0.01), (P.DIVIDER[0] - x0, 7.0, 0.02), 0)
+    # (a drawn solid: only its end face was drawn, so the rest of it showed the void past the flights' sides)
+    s.box("ConcreteDark", ((x0 + P.DIVIDER[0]) / 2, 3.5, (fb["z0"] + fb["z1"]) / 2),
+          (P.DIVIDER[0] - x0, 7.0, abs(fb["z1"] - fb["z0"])), 0, collide=True)
     # The wall between the flights, up to a rail's height over the upper flight.
     d0, d1 = P.DIVIDER
     s.box("ConcreteDark", ((d0 + d1) / 2, (P.L2 + 3.6) / 2, (fb["z0"] + fb["z1"]) / 2), (d1 - d0, P.L2 + 3.6, 16.0),

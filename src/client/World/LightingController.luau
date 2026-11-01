@@ -176,8 +176,11 @@ local function gatherLamps(venue: string, keyCount: number)
 							brightness = item.Brightness,
 							range = item.Range,
 							shadows = item.Shadows,
-							-- (a lamp built to cast shadows, the meeting room's spotlight rig, was placed for it)
-							canShadow = item:GetAttribute("LShadowOk") == true or item.Shadows,
+							-- Only a lamp built to cast shadows (the meeting room's spotlight rig) is ever given them. Lamps
+							-- given shadows here as the camera came near went dark in HQ, even placed clear of every mesh
+							-- (the owner, 2026-11-01: "as soon as I walk in a certain radius the light just turns off";
+							-- the other maps, with no lamp given shadows, kept theirs).
+							canShadow = item.Shadows,
 						}
 					end
 					table.insert(venueLamps, item)

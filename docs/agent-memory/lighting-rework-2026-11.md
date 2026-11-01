@@ -57,3 +57,7 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   glow face, a pendant's bulb) is then blacked out by its own fitting. Fix: only lamps marked clear (mesher light
   clear=True -> export "clear = true" -> SceneBuilder attribute LShadowOk) or built with shadows may become keys.
   Every new fitting must put its light clear of its own mesh and pass clear=True, or it never casts shadows.
+- 2026-11-01, later: even lamps placed clear of every mesh went dark in HQ when given shadows at runtime, while the
+  other maps (no lamp given shadows) kept theirs. LightingController now gives runtime shadows only to lamps BUILT
+  with Shadows = true (the meeting rig); the Shadows setting row is gone from the panel (the setting key is unused).
+  The engine reason is not known; don't re-enable runtime lamp shadows without testing in Studio first.

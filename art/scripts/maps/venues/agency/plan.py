@@ -54,7 +54,7 @@ RING = (-16.0, -48.0, 50.0, 2.0)  # the corridor's outer edge (8 studs round the
 SHAFT = (30.0, -40.0, 42.0, -6.0)
 FLIGHT_A = dict(x=(36.5, 41.5), z0=-14.0, z1=-30.0, y0=L1, y1=7.0)  # the landing up to the half landing
 FLIGHT_B = dict(x=(30.5, 35.5), z0=-30.0, z1=-14.0, y0=7.0, y1=L2)  # the half landing up to 39F
-DIVIDER = (35.8, 36.2)
+DIVIDER = (35.5, 36.5)  # flush with both flights' sides (0.3 slits showed the void)
 HALF_LANDING = (-40.0, -30.0)  # z extent, all across the shaft, at y 7
 LANDING = (-14.0, -6.0)  # z extent of each floor's landing
 STAIR_DOOR_Z = -10.0

@@ -186,7 +186,6 @@ function SettingsPanel.init()
 				return names[math.clamp(math.floor(v + 0.5), 0, #names - 1) + 1]
 			end
 		end
-		slider("shadowQuality", "Shadows", 0, 2, 1, named({ "Low", "Normal", "High" }))
 		slider("depthOfField", "Depth of field", 0, 2, 1, named({ "Off", "Subtle", "Cinematic" }))
 		toggle("filmGrain", "Film grain")
 		toggle("showFps", "Show FPS")

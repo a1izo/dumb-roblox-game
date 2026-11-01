@@ -18,3 +18,4 @@
 - [Lighting rework 2026-11](lighting-rework-2026-11.md) — owner's noir lighting decisions: fewer lights, held shadow keys, window-only lightning, room-aligned fittings; HQ first
 - [Studio with no screen](studio-no-screen.md) — temporary plugin + a second minimised Studio reads and play-tests the real place; imports and Save still need the screen; never accept a Rojo diff holding unpushed work
 - [Owner-rejected changes](owner-rejected-changes.md) — removed at the owner's word (suit fists): never re-add; Deathsinger on EAT IT unresolved, ask
+- [Walls at floor changes](floor-change-walls.md) — owner's rule: a wall (with doorways) wherever the floor finish changes; HQ's Bureau sign wall excepted
