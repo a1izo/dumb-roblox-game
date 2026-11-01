@@ -121,7 +121,9 @@ function MeetingPanel.init()
 	local page, content = Kit.page({
 		Name = "Meeting",
 		tone = "raised",
-		padding = T.space.l,
+		-- (no panel: floating type over the room, like the rest of the HUD in concept A)
+		alpha = 1,
+		padding = T.space.s,
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -T.space.l, 1, -T.space.l),
 		Size = UDim2.new(0.3, 0, 0, 0),
@@ -136,23 +138,35 @@ function MeetingPanel.init()
 		Parent = panel,
 	})
 	Kit.list(content, T.space.s)
-	Kit.text({
-		face = "Head",
-		text = Terms.f("{Meeting}"),
-		size = T.size.title,
+	local title = Kit.label({
+		Text = string.lower(Terms.f("{Meeting}")) .. ".",
+		font = "title",
+		size = 40,
 		color = C.bone,
+		TextWrapped = false,
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
 		LayoutOrder = 1,
-		Parent = content,
 	})
+	title:SetAttribute("KeepFont", true)
+	title.Parent = content
+	Kit.Boil.attach(title, 1, 0.2)
 	Kit.label({
 		Text = "Chat is open. Everyone at the table hears it.",
-		size = "micro",
+		size = "small",
 		color = C.dim,
 		LayoutOrder = 2,
 		Parent = content,
 	})
-	barLabel = Kit.label({ size = "small", color = C.bone, LayoutOrder = 3, Parent = content })
+	barLabel = Kit.label({ font = "mono", size = "small", color = C.bone, LayoutOrder = 3, Parent = content })
 	aceNote = Kit.label({ size = "small", color = C.dim, Visible = false, LayoutOrder = 4, Parent = content })
+	-- (a dark edge on every line: there is no panel behind them)
+	for _, item in ipairs(content:GetDescendants()) do
+		if item:IsA("TextLabel") then
+			item.TextStrokeColor3 = C.g0
+			item.TextStrokeTransparency = 0.5
+		end
+	end
 	arrestButton = Kit.button({
 		text = "Arrest someone",
 		icon = "cuffs",

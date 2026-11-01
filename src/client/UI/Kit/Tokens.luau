@@ -90,25 +90,28 @@ Tokens.face = {
 	hand = "Semi", -- Melodrama Semibold: the lighter heading weight
 }
 
-local ARIMO = "rbxasset://fonts/families/Arimo.json"
+local HAND = "rbxasset://fonts/families/IndieFlower.json"
 local MONO = "rbxasset://fonts/families/RobotoMono.json"
-local GOTHAM = "rbxasset://fonts/families/GothamSSm.json"
 
--- Real fonts: all text under 30 px (GlyphText.MIN_ATLAS), typing, chat, and the stand-in until the glyph atlases are
--- imported. Arimo for reading, Roboto Mono for data (clocks, counts, captions), Gotham Heavy for big lowercase titles.
+-- One hand for everything (the owner's pick, 2026-10-29: Indie Flower, "05" on the font sheet), built into Roblox.
+-- Roboto Mono only for data: clocks, counts, timestamps. Indie Flower has one weight, so "bold" is the same pen.
 Tokens.font = {
-	body = Font.new(ARIMO, Enum.FontWeight.Bold),
-	bodyBold = Font.new(ARIMO, Enum.FontWeight.Bold),
-	bodyItalic = Font.new(ARIMO, Enum.FontWeight.Bold, Enum.FontStyle.Italic),
-	label = Font.new(ARIMO, Enum.FontWeight.Bold), -- labels, tabs, buttons (spaced capitals)
-	document = Font.new(ARIMO, Enum.FontWeight.Regular), -- reading text and fields
-	mono = Font.new(MONO, Enum.FontWeight.Regular), -- data: clocks, counts, captions, timestamps
+	body = Font.new(HAND, Enum.FontWeight.Regular),
+	bodyBold = Font.new(HAND, Enum.FontWeight.Bold),
+	bodyItalic = Font.new(HAND, Enum.FontWeight.Regular, Enum.FontStyle.Italic),
+	label = Font.new(HAND, Enum.FontWeight.Bold), -- labels, tabs, buttons
+	document = Font.new(HAND, Enum.FontWeight.Regular), -- reading text and fields
+	mono = Font.new(MONO, Enum.FontWeight.Regular), -- data: clocks, counts, timestamps
 	monoBold = Font.new(MONO, Enum.FontWeight.Bold),
-	-- big lowercase titles ("shop."), and every heading under 30 px
-	title = Font.new(GOTHAM, Enum.FontWeight.Heavy),
-	display = Font.new(GOTHAM, Enum.FontWeight.Heavy),
-	hand = Font.new(ARIMO, Enum.FontWeight.Bold),
+	title = Font.new(HAND, Enum.FontWeight.Bold), -- big lowercase titles ("shop.")
+	display = Font.new(HAND, Enum.FontWeight.Bold), -- every heading the Melodrama atlas used to draw
+	hand = Font.new(HAND, Enum.FontWeight.Regular),
 }
+
+-- Indie Flower draws small for its size (a short x-height): text set in it is scaled up by this much (Kit/Base and
+-- Kit/GlyphText), so the sizes below still mean what they say.
+Tokens.handScale = 1.22
+Tokens.handFamily = HAND
 
 -- Type scale (px at desktop size).
 Tokens.size = {

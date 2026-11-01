@@ -284,6 +284,8 @@ end
 
 function RevealScreen.init()
 	root = Kit.frame({ Name = "Reveal", Visible = false, Parent = Screens.overlay })
+	-- (the case summary stands still: no boil on its lines or letters, the owner 2026-11-01)
+	root:SetAttribute("NoBoil", true)
 	root.BackgroundColor3 = C.void
 	root.BackgroundTransparency = 0.04
 	-- Darkened edges behind the spread.
@@ -299,7 +301,7 @@ function RevealScreen.init()
 	-- A paper report (concept A): the sheet, a hair off square, everything on it in ink (Kit/Paper).
 	window.BackgroundColor3 = T.paper.g0
 	window.BackgroundTransparency = 0
-	window.Rotation = 0.3
+	-- (never rotated: Roblox stops clipping inside a rotated frame, and the lists would spill over the title)
 	Kit.pad(window, T.space.xl, T.space.xxl)
 	titleHolder = Kit.frame({ Name = "Title", Size = UDim2.new(1, 0, 0, 70), Parent = window })
 	winnerHolder = Kit.Base.make("CanvasGroup", {

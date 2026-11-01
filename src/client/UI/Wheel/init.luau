@@ -884,6 +884,8 @@ end
 function Wheel.mount(parent: Frame, played: (QuickChat.Emote) -> ())
 	onPlay = played
 	holder = Kit.frame({ Name = "Wheel", Size = UDim2.fromScale(1, 1), Parent = parent })
+	-- (the emote wheel stays as it is: no boil)
+	holder:SetAttribute("NoBoil", true)
 	ringFrame = Kit.frame({
 		Name = "Ring",
 		AnchorPoint = Vector2.new(0.5, 0),

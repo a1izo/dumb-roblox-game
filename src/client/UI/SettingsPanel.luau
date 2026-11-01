@@ -26,6 +26,9 @@ function SettingsPanel.open(tab: string?)
 	end
 end
 
+-- The sections are a list of big words down the left (the concept A layout), the page beside them.
+local SECTIONS_WIDTH = 190
+
 function SettingsPanel.init()
 	local win = Kit.window({ name = "settings", title = "Settings", jp = "設定", size = "M" })
 	local pages: { [string]: GuiObject } = {}
@@ -33,10 +36,11 @@ function SettingsPanel.init()
 	local current = "sound"
 
 	local function page(id: string): ScrollingFrame
+		-- (the page beside the list of sections, like the shop's: concept A)
 		local list = Kit.scroll({
 			Name = "Page_" .. id,
-			Position = UDim2.new(0, 0, 0, T.touch + T.space.s),
-			Size = UDim2.new(1, 0, 1, -(T.touch + T.space.s)),
+			Position = UDim2.fromOffset(SECTIONS_WIDTH + T.space.l, 0),
+			Size = UDim2.new(1, -(SECTIONS_WIDTH + T.space.l), 1, 0),
 			-- (the rows end clear of the scroll bar, so a slider's value is never cut under it)
 			VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 			Visible = false,
@@ -60,7 +64,7 @@ function SettingsPanel.init()
 		end
 	end
 
-	local _, choose = Kit.tabs({
+	local sections, choose = Kit.tabs({
 		items = {
 			{ id = "sound", label = "Sound" },
 			{ id = "display", label = "Display" },
@@ -69,9 +73,13 @@ function SettingsPanel.init()
 			{ id = "help", label = "Help" },
 		},
 		selected = current,
-		Size = UDim2.new(1, 0, 0, T.touch),
+		vertical = true,
+		rowHeight = 50,
+		textSize = 30,
+		Size = UDim2.new(0, SECTIONS_WIDTH, 0, 0),
 		Parent = win.body,
 	}, show)
+	sections.AutomaticSize = Enum.AutomaticSize.Y
 
 	local function rows(list: ScrollingFrame)
 		local nextOrder = Kit.counter()

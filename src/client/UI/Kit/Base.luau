@@ -50,8 +50,10 @@ end
 
 local function applyText(label: any, props: Props?)
 	local p = props or {}
-	label.FontFace = (Tokens.font :: any)[p.font or "body"] or Tokens.font.body
-	label.TextSize = textSize(p.size)
+	local face = (Tokens.font :: any)[p.font or "body"] or Tokens.font.body
+	label.FontFace = face
+	-- (the hand font draws small for its size: scaled up so a size means the same in every font)
+	label.TextSize = textSize(p.size) * (if face.Family == Tokens.handFamily then Tokens.handScale else 1)
 	label.TextColor3 = p.color or label.TextColor3
 	if p.upper and type(label.Text) == "string" then
 		label.Text = string.upper(label.Text)

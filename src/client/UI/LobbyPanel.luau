@@ -363,7 +363,7 @@ function buildContents(phone: boolean)
 	table.clear(menuRows)
 	contents:ClearAllChildren()
 	Kit.list(contents, 0)
-	local rowHeight = if phone then 36 else 44
+	local rowHeight = if phone then 42 else 54
 	local shown = 0
 	local running = caseRunning()
 	for _, item in ipairs(MENU) do
@@ -387,7 +387,7 @@ function buildContents(phone: boolean)
 		local wrap = wrapper({ Name = "Wrap", Size = UDim2.new(0, if phone then 240 else 300, 1, 0), Parent = drift })
 		Kit.entry({
 			text = item.text,
-			size = if phone then 26 else 32,
+			size = if phone then 32 else 42,
 			seed = shown,
 			Size = UDim2.fromScale(1, 1),
 			Parent = wrap,
@@ -425,7 +425,8 @@ local function buildQuote(phone: boolean)
 	local tailText = if at then string.gsub(string.sub(tagline, at + #DIAVOLO), "^%s+", "") else ""
 	local size = if phone then 16 else 22
 	local wordSize = if phone then 22 else 30
-	local lead = Kit.text({ face = "Semi", text = leadText, size = size, color = C.bone, Parent = quoteFloat })
+	local lead =
+		Kit.text({ face = "Semi", text = leadText, size = size, atlas = true, color = C.bone, Parent = quoteFloat })
 	local word: any = nil
 	local wordHolder: CanvasGroup? = nil
 	if at then
@@ -437,7 +438,8 @@ local function buildQuote(phone: boolean)
 		word = Kit.text({ face = "Title", text = DIAVOLO, size = wordSize, color = C.danger, Parent = holder })
 		wordHolder = holder
 	end
-	local tail = Kit.text({ face = "Semi", text = tailText, size = size, color = C.bone, Parent = quoteFloat })
+	local tail =
+		Kit.text({ face = "Semi", text = tailText, size = size, atlas = true, color = C.bone, Parent = quoteFloat })
 	local semi = Kit.GlyphText.face("Semi")
 	local title = Kit.GlyphText.face("Title")
 	local function place()
@@ -487,6 +489,8 @@ local function buildTitle()
 		Visible = false,
 		Parent = Screens.world,
 	})
+	-- (the title and its quote keep their own lettering and stand still: the owner, 2026-11-01)
+	titleBlock:SetAttribute("NoBoil", true)
 	Kit.list(titleBlock, T.space.xs, false, Enum.HorizontalAlignment.Center)
 	-- The ransom letters are built into this by layout() (they are cut at a size per device).
 	wordmarkHolder = Kit.Base.make("CanvasGroup", {

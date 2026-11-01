@@ -68,6 +68,7 @@ local TOP = 40 -- the purse line
 local SUITS_HEIGHT = 48
 local BROWSE_HEIGHT = 40 -- the search, show and order row over a suit of kinds
 local LOOK_WIDTH = 300
+local SUITS_WIDTH = 210 -- the suit list down the left (the concept A board); a phone keeps the row across the top
 local GAP = T.space.l
 local CONFIRM_SECONDS = 6 -- a Condemned or Godhood card's confirm stays this long
 
@@ -881,6 +882,13 @@ local function paintStrip()
 	if width <= 0 or not suitTabs then
 		return
 	end
+	if not Kit.Layout.isPhone() then
+		-- (the suits are a list down the left: nothing runs off an end)
+		suitFade.Transparency = NumberSequence.new(0)
+		suitArrows[-1].Visible = false
+		suitArrows[1].Visible = false
+		return
+	end
 	local left = suitTabs.AbsolutePosition.X < suitStrip.AbsolutePosition.X - 1
 	local right = suitTabs.AbsolutePosition.X + suitTabs.AbsoluteSize.X > suitStrip.AbsolutePosition.X + width + 1
 	local edge = math.clamp(FADE * Kit.Base.scaleOf(suitStrip) / width, 0.02, 0.4)
@@ -927,7 +935,8 @@ local function buildSuits()
 		-- (the suits new with the shop overhaul carry the "new" dot until they are opened)
 		table.insert(items, { id = suit.id, label = suit.name, icon = suit.icon, dot = NEW_SUITS[suit.id] == true })
 	end
-	local key = table.concat(ids, ",")
+	local column = not Kit.Layout.isPhone()
+	local key = table.concat(ids, ",") .. (if column then "|column" else "|row")
 	if key == shownSuits and suitTabs then
 		return
 	end
@@ -941,8 +950,11 @@ local function buildSuits()
 	local tabs, choose, dot = Kit.tabs({
 		items = items,
 		selected = currentSuit,
-		marker = true,
-		Size = UDim2.fromOffset(0, SUITS_HEIGHT),
+		marker = not column,
+		vertical = column,
+		rowHeight = 44,
+		textSize = if column then 30 else nil,
+		Size = if column then UDim2.new(1, 0, 0, 0) else UDim2.fromOffset(0, SUITS_HEIGHT),
 		Parent = suitScroll,
 	}, function(id: string)
 		showTab(id)
@@ -957,7 +969,7 @@ local function buildSuits()
 			ShopPanel.rebuild()
 		end
 	end)
-	tabs.AutomaticSize = Enum.AutomaticSize.X
+	tabs.AutomaticSize = if column then Enum.AutomaticSize.Y else Enum.AutomaticSize.X
 	tabs:GetPropertyChangedSignal("AbsoluteSize"):Connect(paintStrip)
 	suitTabs = tabs
 	chooseSuit = choose
@@ -983,7 +995,7 @@ end
 
 -- The table's top: under the suits, and under the browse row when it shows.
 local function tableTop(): number
-	local top = TOP + SUITS_HEIGHT + T.space.s
+	local top = if Kit.Layout.isPhone() then TOP + SUITS_HEIGHT + T.space.s else TOP + T.space.s
 	return if browseRow.Visible then top + BROWSE_HEIGHT + T.space.s else top
 end
 
@@ -1163,9 +1175,23 @@ end
 function arrange()
 	local phone = Kit.Layout.isPhone()
 	local top = tableTop()
+	-- The suits: a list of big words down the left on a wide screen (the concept A board), a scrolling row on a phone.
+	local left = if phone then 0 else SUITS_WIDTH + GAP
+	if phone then
+		suitStrip.Position = UDim2.fromOffset(0, TOP)
+		suitStrip.Size = UDim2.new(1, 0, 0, SUITS_HEIGHT)
+		suitScroll.ScrollingDirection = Enum.ScrollingDirection.X
+		suitScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
+	else
+		suitStrip.Position = UDim2.fromOffset(0, TOP + T.space.s)
+		suitStrip.Size = UDim2.new(0, SUITS_WIDTH, 1, -(TOP + T.space.s))
+		suitScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+		suitScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	end
+	browseRow.Position = UDim2.fromOffset(left, if phone then TOP + SUITS_HEIGHT + T.space.s else TOP + T.space.s)
 	browseRow.Size = if phone
 		then UDim2.new(1, 0, 0, BROWSE_HEIGHT)
-		else UDim2.new(1, -(LOOK_WIDTH + GAP), 0, BROWSE_HEIGHT)
+		else UDim2.new(1, -(LOOK_WIDTH + GAP + left), 0, BROWSE_HEIGHT)
 	if phone then
 		tableScroll.Position = UDim2.fromOffset(0, top)
 		tableScroll.Size = UDim2.new(1, 0, 1, -top)
@@ -1175,8 +1201,8 @@ function arrange()
 		lookPanel.Visible = pickedId ~= nil
 		sheetClose.Visible = true
 	else
-		tableScroll.Position = UDim2.fromOffset(0, top)
-		tableScroll.Size = UDim2.new(1, -(LOOK_WIDTH + GAP), 1, -top)
+		tableScroll.Position = UDim2.fromOffset(left, top)
+		tableScroll.Size = UDim2.new(1, -(LOOK_WIDTH + GAP + left), 1, -top)
 		lookPanel.AnchorPoint = Vector2.new(1, 0)
 		lookPanel.Position = UDim2.new(1, 0, 0, top)
 		lookPanel.Size = UDim2.new(0, LOOK_WIDTH, 1, -top)

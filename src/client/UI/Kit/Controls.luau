@@ -562,9 +562,9 @@ function Controls.tabs(props: Props, onSelect: (string) -> ()): (Frame, (string)
 			})
 		end
 		local label = Base.label({
-			Text = string.upper(item.label),
+			Text = if props.textSize then item.label else string.upper(item.label),
 			font = "title",
-			size = "lead",
+			size = props.textSize or "lead",
 			color = C.dim,
 			TextWrapped = false,
 			AutomaticSize = Enum.AutomaticSize.X,
@@ -1096,17 +1096,18 @@ function Controls.slider(
 		ZIndex = z,
 		Parent = slot,
 	})
-	Base.make("Frame", {
+	-- (a drawn line that boils, and a red nib: concept A)
+	Boil.attach(Base.make("Frame", {
 		Name = "Line",
 		BackgroundColor3 = C.rule,
-		BackgroundTransparency = 0.7,
+		BackgroundTransparency = 0.5,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.fromScale(0, 0.5),
 		Size = UDim2.new(1, 0, 0, 2),
 		ZIndex = z,
 		Parent = track,
-	})
+	}))
 	local ink = Base.make("Frame", {
 		Name = "Ink",
 		BackgroundColor3 = C.white,
@@ -1119,7 +1120,7 @@ function Controls.slider(
 	})
 	local nib = Base.make("Frame", {
 		Name = "Nib",
-		BackgroundColor3 = C.bone,
+		BackgroundColor3 = C.danger,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0, 0.5),
@@ -1219,21 +1220,27 @@ function Controls.toggle(
 		ZIndex = z + 1,
 		Parent = button,
 	})
-	Base.round(ring)
-	local stroke = Base.stroke(ring, C.dim, 2, 0)
-	local mark = Icon.new({
-		name = "check",
-		size = 20,
-		color = C.ink,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		ZIndex = z + 2,
-		Parent = ring,
-	})
+	-- (concept A: a square drawn box that boils, and a red X drawn in it when on)
+	local stroke = Base.stroke(ring, C.white, 2, 0)
+	Boil.attach(ring, 1)
+	local mark = Base.frame({ Name = "Cross", ZIndex = z + 2, Parent = ring })
+	for _, turn in ipairs({ 45, -45 }) do
+		Base.make("Frame", {
+			Name = "Stroke",
+			BackgroundColor3 = C.danger,
+			BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(1.15, 0, 0, 3),
+			Rotation = turn,
+			ZIndex = z + 2,
+			Parent = mark,
+		})
+	end
 	local state = value
 	local word = Base.label({
 		Text = "",
-		font = "label",
+		font = "mono",
 		size = "micro",
 		color = C.dim,
 		TextWrapped = false,
@@ -1247,8 +1254,7 @@ function Controls.toggle(
 	})
 	local function set(on: boolean, notify: boolean?)
 		state = on
-		Motion.tween(ring, { BackgroundTransparency = if on then 0 else 1 }, Tokens.motion.base)
-		stroke.Color = if on then C.white else C.dim
+		stroke.Color = C.white
 		mark.Visible = on
 		word.Text = if on then "ON" else "OFF"
 		word.TextColor3 = if on then C.bone else C.dim
@@ -1256,7 +1262,12 @@ function Controls.toggle(
 			onChanged(on)
 		end
 	end
-	HoverGlitch.wire(button)
+	button.MouseEnter:Connect(function()
+		Pointer.point(button)
+	end)
+	button.MouseLeave:Connect(function()
+		Pointer.release(button)
+	end)
 	button.Activated:Connect(function()
 		set(not state, true)
 	end)

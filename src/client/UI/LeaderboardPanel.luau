@@ -41,34 +41,42 @@ local current = "wins"
 
 local function ledgerLine(entry, order: number)
 	local mine = entry.userId == LocalPlayer.UserId
-	local row = Kit.frame({ Name = "Line", Size = UDim2.new(1, 0, 0, 52), LayoutOrder = order, Parent = list })
+	-- (the top three in big type, the first in red: the concept A plan)
+	local top = entry.rank <= 3
+	local first = entry.rank == 1
+	local row = Kit.frame({
+		Name = "Line",
+		Size = UDim2.new(1, 0, 0, if top then 86 else 48),
+		LayoutOrder = order,
+		Parent = list,
+	})
 	if mine then
 		row.BackgroundColor3 = C.g1
 		row.BackgroundTransparency = 0.4
 	end
 	Kit.label({
-		Text = tostring(entry.rank),
+		Text = string.format("%02d", entry.rank),
 		font = "mono",
-		size = "lead",
-		color = if entry.rank <= 3 then C.white else C.dim,
+		size = if top then "title" else "lead",
+		color = if first then C.danger elseif top then C.white else C.dim,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.None,
 		Position = UDim2.fromOffset(0, 0),
-		Size = UDim2.new(0, 36, 1, 0),
+		Size = UDim2.new(0, if top then 56 else 36, 1, 0),
 		Parent = row,
 	})
 	-- Display names can be in any script, so they are set in the body face, not the ink.
 	Kit.label({
 		Text = tostring(entry.name),
-		font = "bodyBold",
-		size = "lead",
-		color = if mine then C.white else C.bone,
+		font = if top then "title" else "bodyBold",
+		size = if top then 40 else "lead",
+		color = if first then C.danger elseif mine then C.white else C.bone,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(52, 0),
-		Size = UDim2.new(1, -(52 + 130), 1, 0),
+		Position = UDim2.fromOffset(if top then 72 else 52, 0),
+		Size = UDim2.new(1, -((if top then 72 else 52) + 130), 1, 0),
 		Parent = row,
 	})
 	Kit.label({

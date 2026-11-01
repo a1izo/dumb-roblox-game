@@ -41,66 +41,93 @@ local function formatTime(seconds: number): string
 	return string.format("%dh %02dm", hours, math.floor((seconds % 3600) / 60))
 end
 
+-- A drawn box that boils (a checklist's box, or a streak day): filled ink when `filled`, ringed red when `ring`.
+local function drawnBox(
+	parent: Instance,
+	size: number,
+	filled: boolean,
+	ring: boolean,
+	props: { [string]: any }?
+): Frame
+	local p = props or {}
+	local box = Kit.Base.make("Frame", {
+		Name = "Box",
+		BackgroundColor3 = C.bone,
+		BackgroundTransparency = if filled then 0 else 1,
+		BorderSizePixel = 0,
+		Size = UDim2.fromOffset(size, size),
+		Position = p.Position,
+		AnchorPoint = p.AnchorPoint,
+		LayoutOrder = p.LayoutOrder,
+		Parent = parent,
+	})
+	Kit.Base.stroke(box, if ring then C.danger else C.bone, 2, 0)
+	Kit.Boil.attach(box, 1)
+	return box
+end
+
+-- A quest as a checklist line (the concept A plan): a drawn box, ticked red when done; the quest; how far along and
+-- what it pays in mono; Swap where a swap is free; a thin rule under it.
 local function questCard(item, canSwap: boolean, order: number)
 	local quest = Quests.byId(item.id)
 	if not quest then
 		return
 	end
-	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 96), LayoutOrder = order, Parent = list })
+	local line = Kit.frame({ Name = "Quest", Size = UDim2.new(1, 0, 0, 58), LayoutOrder = order, Parent = list })
+	local box = drawnBox(line, 22, false, false, {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 2, 0.5, 0),
+	})
+	if item.done then
+		local tick = Kit.icon({
+			name = "check",
+			size = 26,
+			color = C.danger,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.6, 0.4),
+			Parent = box,
+		})
+		Kit.Boil.attach(tick, 1)
+	end
 	Kit.label({
-		Text = (if item.done then "Done: " else "") .. quest.text,
-		font = "bodyBold",
-		color = if item.done then C.good else C.bone,
+		Text = quest.text,
+		font = "body",
+		size = "lead",
+		color = if item.done then C.g5 else C.bone,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Size = UDim2.new(1, -SIDE, 0, 22),
-		Parent = card,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 40, 0.5, -2),
+		Size = UDim2.new(1, -(40 + SIDE + 90), 0, 30),
+		Parent = line,
 	})
-	local bar, setProgress = Kit.meter({
-		color = if item.done then C.white else C.g6,
-		Position = UDim2.fromOffset(0, 38),
-		Size = UDim2.new(1, -(SIDE + 80), 0, 6),
-		Parent = card,
-	})
-	bar.Name = "Progress"
-	setProgress(item.progress / quest.goal)
 	Kit.label({
-		Text = string.format("%d / %d", item.progress, quest.goal),
+		Text = string.format("%d/%d   +%d R  +%d XP", item.progress, quest.goal, quest.coins, quest.xp),
 		font = "mono",
 		size = "small",
 		color = C.dim,
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.new(1, -(SIDE + 70), 0, 31),
-		Size = UDim2.fromOffset(64, 20),
-		Parent = card,
-	})
-	Kit.label({
-		Text = string.format("+%d Reál  +%d XP", quest.coins, quest.xp),
-		font = "label",
-		size = "small",
-		color = C.candle,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.None,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.fromOffset(SIDE, 20),
-		Parent = card,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -(if canSwap and not item.done then 96 else 0), 0.5, 0),
+		Size = UDim2.fromOffset(SIDE + 80, 20),
+		Parent = line,
 	})
 	if canSwap and not item.done then
 		Kit.button({
 			text = "Swap",
-			variant = "ghost",
+			variant = "secondary",
 			size = "s",
-			AnchorPoint = Vector2.new(1, 1),
-			Position = UDim2.fromScale(1, 1),
-			Parent = card,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.fromScale(1, 0.5),
+			Parent = line,
 		}, function()
 			ProfileRequest:FireServer({ action = "reroll", quest = item.id })
 		end)
 	end
+	Kit.rule({ color = C.bone, transparency = 0.75, Position = UDim2.new(0, 0, 1, -1), Parent = line })
 end
 
 local function canClaim(profile): boolean
@@ -125,31 +152,43 @@ local function rebuild()
 		LayoutOrder = nextOrder(),
 		Parent = list,
 	})
-	local streakCard = Kit.card({ Size = UDim2.new(1, 0, 0, 76), LayoutOrder = nextOrder(), Parent = list })
+	-- The streak as seven day boxes (the concept A plan): the days of this week's run filled, today's ringed red.
+	local streakRow =
+		Kit.frame({ Name = "Streak", Size = UDim2.new(1, 0, 0, 92), LayoutOrder = nextOrder(), Parent = list })
+	local done = if claimable then (nextCount - 1) % Streak.CYCLE else ((streak.count - 1) % Streak.CYCLE) + 1
+	for day = 1, Streak.CYCLE do
+		local x = (day - 1) * 52
+		drawnBox(streakRow, 38, day <= done, claimable and day == done + 1, { Position = UDim2.fromOffset(x, 6) })
+		Kit.label({
+			Text = tostring(day),
+			font = "mono",
+			size = "small",
+			color = C.dim,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AutomaticSize = Enum.AutomaticSize.None,
+			Position = UDim2.fromOffset(x, 48),
+			Size = UDim2.fromOffset(38, 18),
+			Parent = streakRow,
+		})
+	end
 	Kit.label({
 		Text = if claimable
-			then string.format("Claim day %d: +%d Reál", nextCount, Streak.COINS[cycleDay])
+			then string.format("Day %d: +%d Reál. Day 7 unlocks Night Owl.", nextCount, Streak.COINS[cycleDay])
 			else string.format("Day %d claimed. Next in %s.", streak.count, formatTime(profile.nextDayIn or 0)),
-		font = "bodyBold",
-		Size = UDim2.new(1, -140, 0, 0),
-		Parent = streakCard,
-	})
-	Kit.label({
-		Text = "Day 7 unlocks the Night Owl title.",
-		size = "small",
+		font = "body",
 		color = C.dim,
-		Position = UDim2.fromOffset(0, 28),
-		Size = UDim2.new(1, -140, 0, 0),
-		Parent = streakCard,
+		Position = UDim2.fromOffset(0, 70),
+		Size = UDim2.new(1, -160, 0, 0),
+		Parent = streakRow,
 	})
 	local claim = Kit.button({
 		text = if claimable then "Claim" else "Claimed",
 		icon = if claimable then "real" else "check",
 		variant = if claimable then "primary" else "secondary",
 		size = "s",
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.fromScale(1, 0.5),
-		Parent = streakCard,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 4),
+		Parent = streakRow,
 	}, function()
 		ProfileRequest:FireServer({ action = "streak" })
 	end)

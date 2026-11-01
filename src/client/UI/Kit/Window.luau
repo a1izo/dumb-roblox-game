@@ -92,14 +92,14 @@ function Window.new(options: Options): Window
 		Selectable = false,
 		Parent = root,
 	})
-	-- The sheet: paper, a hair off square, with toner grain over it. Everything in it is turned to ink on paper
+	-- The sheet: paper with toner grain over it (square: Roblox does not clip inside a rotated frame, so a tilted
+	-- sheet let scrolled lists run over its title). Everything in it is turned to ink on paper
 	-- (Kit/Paper), so screens written for the dark need no changes.
 	local page = Base.make("Frame", {
 		Name = "Sheet",
 		BackgroundColor3 = Tokens.paper.g0,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
-		Rotation = -0.4,
 		Size = UDim2.fromScale(1, 1),
 		ZIndex = 2,
 		Parent = root,

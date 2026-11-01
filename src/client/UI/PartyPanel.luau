@@ -28,12 +28,14 @@ local function heading(text: string)
 	Kit.heading({ text = text, LayoutOrder = nextOrder(), Parent = list })
 end
 
--- A card with a line of text and its buttons on the right.
+-- A ruled line with its text and its buttons on the right (no box: the concept A sheet).
 local function row(text: string, buttons: { RowButton }, quiet: boolean?)
-	local card = Kit.card({ Size = UDim2.new(1, 0, 0, 64), LayoutOrder = nextOrder(), Parent = list })
+	local card = Kit.frame({ Size = UDim2.new(1, 0, 0, 58), LayoutOrder = nextOrder(), Parent = list })
+	Kit.rule({ color = C.bone, transparency = 0.75, Position = UDim2.new(0, 0, 1, -1), Parent = card })
 	Kit.label({
 		Text = text,
 		font = if quiet then "bodyItalic" else "bodyBold",
+		size = "lead",
 		color = if quiet then C.dim else C.bone,
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
@@ -61,6 +63,96 @@ local function row(text: string, buttons: { RowButton }, quiet: boolean?)
 	end
 end
 
+local function inviteFriends()
+	task.spawn(function()
+		local ok, canInvite = pcall(function()
+			return SocialService:CanSendGameInviteAsync(Players.LocalPlayer)
+		end)
+		if ok and canInvite then
+			pcall(function()
+				SocialService:PromptGameInvite(Players.LocalPlayer)
+			end)
+		end
+	end)
+end
+
+-- Your party as a line-up of mugshots (the concept A plan): a drawn frame per seat with the member's head shot,
+-- their name under it, the leader marked in mono; an empty seat is a faint frame that invites friends.
+local function lineUp(party)
+	local seats = party.maxSize or 4
+	local members = if #party.members > 0
+		then party.members
+		else { { userId = LocalPlayer.UserId, name = LocalPlayer.DisplayName } }
+	local holder =
+		Kit.frame({ Name = "LineUp", Size = UDim2.new(1, 0, 0, 214), LayoutOrder = nextOrder(), Parent = list })
+	Kit.list(holder, T.space.l, true)
+	for seat = 1, seats do
+		local member = members[seat]
+		local cell = Kit.Base.make("TextButton", {
+			Name = "Seat" .. seat,
+			BackgroundTransparency = 1,
+			AutoButtonColor = false,
+			Text = "",
+			Size = UDim2.fromOffset(150, 214),
+			LayoutOrder = seat,
+			Parent = holder,
+		})
+		local frame = Kit.frame({ Name = "Frame", Size = UDim2.fromOffset(150, 168), Parent = cell })
+		Kit.Base.stroke(frame, C.bone, if member then 2 else 1, if member then 0 else 0.6)
+		Kit.Boil.attach(frame, 1)
+		if member then
+			Kit.Base
+				.make("ImageLabel", {
+					Name = "Face",
+					BackgroundTransparency = 1,
+					Image = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", member.userId),
+					Position = UDim2.fromOffset(6, 6),
+					Size = UDim2.new(1, -12, 1, -12),
+					Parent = frame,
+				})
+				:SetAttribute("PaperKeep", true)
+			Kit.label({
+				Text = tostring(member.name),
+				font = "bodyBold",
+				size = "lead",
+				TextWrapped = false,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				AutomaticSize = Enum.AutomaticSize.None,
+				Position = UDim2.fromOffset(0, 172),
+				Size = UDim2.new(1, 0, 0, 24),
+				Parent = cell,
+			})
+			Kit.label({
+				Text = if member.userId == party.leaderUserId
+					then "LEADER"
+					elseif member.userId == LocalPlayer.UserId then "YOU"
+					else string.format("%02d", seat),
+				font = "mono",
+				size = "micro",
+				color = C.dim,
+				Position = UDim2.fromOffset(0, 196),
+				Size = UDim2.new(1, 0, 0, 16),
+				AutomaticSize = Enum.AutomaticSize.None,
+				Parent = cell,
+			})
+		else
+			Kit.label({
+				Text = "+ invite",
+				font = "body",
+				size = "lead",
+				color = C.dim,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.new(1, 0, 0, 30),
+				AutomaticSize = Enum.AutomaticSize.None,
+				Parent = frame,
+			})
+			cell.Activated:Connect(inviteFriends)
+		end
+	end
+end
+
 local function rebuild()
 	Kit.clear(list)
 	nextOrder = Kit.counter()
@@ -68,14 +160,11 @@ local function rebuild()
 	local inParty = {}
 
 	heading(string.format("Your party (%d/%d)", math.max(#party.members, 1), party.maxSize or 4))
-	if #party.members == 0 then
-		row("Invite friends to play on the same side.", {}, true)
-	else
-		for _, member in ipairs(party.members) do
-			inParty[member.userId] = true
-			local suffix = if member.userId == party.leaderUserId then "  (leader)" else ""
-			row(member.name .. suffix, {})
-		end
+	for _, member in ipairs(party.members) do
+		inParty[member.userId] = true
+	end
+	lineUp(party)
+	if #party.members > 0 then
 		row("Leave this party", {
 			{
 				text = "Leave",
@@ -91,18 +180,7 @@ local function rebuild()
 		{
 			text = "Invite",
 			icon = "mail",
-			action = function()
-				task.spawn(function()
-					local ok, canInvite = pcall(function()
-						return SocialService:CanSendGameInviteAsync(Players.LocalPlayer)
-					end)
-					if ok and canInvite then
-						pcall(function()
-							SocialService:PromptGameInvite(Players.LocalPlayer)
-						end)
-					end
-				end)
-			end,
+			action = inviteFriends,
 		},
 	})
 

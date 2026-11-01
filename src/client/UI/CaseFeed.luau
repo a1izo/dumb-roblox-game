@@ -245,8 +245,8 @@ function CaseFeed.init()
 	local page, content = Kit.page({
 		Name = "CaseFeed",
 		tone = "raised",
-		-- (a solid bar like every notice: Kit/Notice)
-		alpha = 0,
+		-- (no panel: a column of type over the world, concept A)
+		alpha = 1,
 		padding = T.notice.padding,
 		autoHeight = true,
 		Size = UDim2.fromOffset(WIDTH, 0),
@@ -254,6 +254,14 @@ function CaseFeed.init()
 		Parent = Screens.hud,
 	})
 	panel = page
+	-- (no panel behind the lines, now or as they come: each gets a dark edge to read over the world)
+	local function edge(item: Instance)
+		if item:IsA("TextLabel") then
+			item.TextStrokeColor3 = C.g0
+			item.TextStrokeTransparency = 0.5
+		end
+	end
+	page.DescendantAdded:Connect(edge)
 	Kit.Layout.place(panel, "topRight", Vector2.new(0, 0))
 	Kit.list(content, T.space.xs)
 	Kit.text({ face = "Head", text = "Case feed", size = 20, color = C.white, LayoutOrder = 1, Parent = content })

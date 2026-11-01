@@ -159,6 +159,8 @@ Router.init()
 Settings.init()
 -- Every text in the stand-in font is redrawn in Melodrama (before the screens are built).
 FontMirror.init()
+-- Every text boils, like the lines (OMORI's wobble).
+Kit.Boil.watch(Players.LocalPlayer:WaitForChild("PlayerGui"))
 
 -- Screens, so every panel is registered and listening before state arrives.
 Toasts.init()

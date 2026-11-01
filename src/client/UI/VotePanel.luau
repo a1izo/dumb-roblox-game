@@ -80,7 +80,7 @@ function VotePanel.init()
 		Parent = Screens.panels,
 	})
 	panel = page
-	page.Rotation = -0.4
+	-- (never rotated: Roblox stops clipping inside a rotated frame)
 	Kit.Base.make("UISizeConstraint", {
 		MaxSize = Vector2.new(440, 480),
 		MinSize = Vector2.new(300, 320),

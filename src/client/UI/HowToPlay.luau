@@ -24,7 +24,7 @@ local NUMERALS = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", 
 local CONTENTS_WIDTH = 0.38 -- (wide enough for the longest chapter, "Muertos and the Oculus of the Dead")
 
 local contents: ScrollingFrame
-local chapterTitle: any
+local chapterTitle: TextLabel
 local page: ScrollingFrame
 local current = 1
 local firstEntry: TextButton? = nil
@@ -91,10 +91,32 @@ local function showChapter(index: number)
 	local list = chapters()
 	current = math.clamp(index, 1, #list)
 	local chapter = list[current]
-	chapterTitle:set(chapter.title)
+	chapterTitle.Text = string.lower(chapter.title) .. "."
 	Kit.clear(page)
+	-- (each line numbered in red mono, like the role poster's rules: concept A)
 	for order, line in ipairs(chapter.body) do
-		Kit.label({ Text = Keys.resolve(line), size = "body", LayoutOrder = order, Parent = page })
+		local row = Kit.frame({
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			LayoutOrder = order,
+			Parent = page,
+		})
+		Kit.label({
+			Text = string.format("%02d", order),
+			font = "mono",
+			size = "small",
+			color = C.danger,
+			Position = UDim2.fromOffset(0, 4),
+			Size = UDim2.fromOffset(30, 0),
+			Parent = row,
+		})
+		Kit.label({
+			Text = Keys.resolve(line),
+			size = "lead",
+			Position = UDim2.fromOffset(38, 0),
+			Size = UDim2.new(1, -38, 0, 0),
+			Parent = row,
+		})
 	end
 	page.CanvasPosition = Vector2.zero
 	Kit.clear(contents)
@@ -103,10 +125,10 @@ local function showChapter(index: number)
 		local button = Kit.entry({
 			text = entry.title,
 			numeral = NUMERALS[order],
-			size = 24,
+			size = 30,
 			seed = order,
 			selected = order == current,
-			Size = UDim2.new(1, -T.space.s, 0, 42),
+			Size = UDim2.new(1, -T.space.s, 0, 48),
 			LayoutOrder = order,
 			Parent = contents,
 		}, function()
@@ -139,8 +161,18 @@ function HowToPlay.init()
 		Size = UDim2.new(1 - CONTENTS_WIDTH, -T.space.xl, 1, 0),
 		Parent = win.body,
 	})
-	chapterTitle = Kit.text({ face = "Head", text = "", size = T.size.heading, color = C.white, Parent = right })
-	page = Kit.scroll({ Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 1, -58), Parent = right })
+	chapterTitle = Kit.label({
+		Text = "",
+		font = "title",
+		size = 52,
+		color = C.white,
+		TextWrapped = true,
+		Size = UDim2.new(1, 0, 0, 0),
+	})
+	chapterTitle:SetAttribute("KeepFont", true)
+	chapterTitle.Parent = right
+	Kit.Boil.attach(chapterTitle, 1, 0.2)
+	page = Kit.scroll({ Position = UDim2.fromOffset(0, 84), Size = UDim2.new(1, 0, 1, -84), Parent = right })
 	Kit.list(page, T.space.m)
 	Kit.pad(page, 0, T.space.xs)
 	Kit.register(win, {

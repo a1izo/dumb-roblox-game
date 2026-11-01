@@ -238,6 +238,7 @@ function Ransom.new(props: Props): Ransom
 				size = s,
 				color = fg,
 				plainCaps = false,
+				atlas = true, -- (the cut-out letters keep their Melodrama: the original title)
 				Position = UDim2.fromOffset(0.12 * s, top),
 				ZIndex = 2,
 				Parent = body,

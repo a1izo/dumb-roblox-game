@@ -62,6 +62,7 @@ export type Props = {
 	tabular: boolean?, -- digits in equal slots
 	plainCaps: boolean?, -- Title only: A H I J K N as lower case at capital height
 	upper: boolean?,
+	atlas: boolean?, -- Head/Semi from the atlas at any size (the lobby quote)
 	Name: string?,
 	Parent: Instance?,
 	Position: UDim2?,
@@ -107,7 +108,9 @@ local LEGACY = { Gothic = "Head", Scrawl = "Semi" }
 -- Which Roblox font stands in for each face until its atlas loads.
 local STAND_IN = { Title = "title", Head = "display", Semi = "hand", RnLight = "hand", RnMedium = "hand" }
 -- Melodrama is drawn from its atlas only from this size up; smaller, it is real Montserrat.
-local MIN_ATLAS = 30 -- (was 22; card names and small headings in hairline Melodrama were hard to read)
+-- Melodrama is no longer drawn at any size (the owner's font, 2026-10-29, is Indie Flower for every heading and line):
+-- Head and Semi always fall back to Tokens.font.display, and the font mirror never redraws a label in it.
+local MIN_ATLAS = math.huge
 GlyphText.MIN_ATLAS = MIN_ATLAS
 local MELODRAMA = { Head = true, Semi = true }
 local HAIR_SPACE = utf8.char(0x200A)
@@ -425,8 +428,9 @@ function GlyphText._render(self: GlyphText)
 	local zIndex = props.ZIndex or 1
 	local tabular = props.tabular == true
 	local ids = atlasIds(face)
-	-- Small Melodrama is set in Montserrat for good (see the top of the file).
-	local plain = MELODRAMA[faceKey] == true and size < MIN_ATLAS
+	-- Small Melodrama is set in the hand for good (see the top of the file), unless asked for by name (atlas = true:
+	-- the lobby title's quote keeps its Melodrama)
+	local plain = MELODRAMA[faceKey] == true and size < MIN_ATLAS and props.atlas ~= true
 	if not ids or plain then
 		-- Montserrat: for good under MIN_ATLAS, or standing in until the atlases load (Roblox places its own
 		-- text on whole pixels).
@@ -441,7 +445,7 @@ function GlyphText._render(self: GlyphText)
 			BackgroundTransparency = 1,
 			FontFace = if plain then Tokens.font.display else (Tokens.font :: any)[STAND_IN[faceKey] or "display"],
 			Text = text,
-			TextSize = if plain then size else size * 0.92,
+			TextSize = (if plain then size else size * 0.92) * Tokens.handScale,
 			TextColor3 = color,
 			TextTransparency = transparency,
 			TextWrapped = props.maxWidth ~= nil,

@@ -86,10 +86,19 @@ build()
 local beat = 0
 RunService.RenderStepped:Connect(function(dt)
 	local current = target
-	if not current or not current.Parent or not current.Visible or not current:IsDescendantOf(game) then
+	if not current or not current.Parent or not current:IsDescendantOf(game) then
 		hand.Visible = false
 		target = nil
 		return
+	end
+	-- (hidden when it, or anything it sits in, is hidden: a closed window leaves its buttons Visible)
+	local node: Instance? = current
+	while node and not node:IsA("LayerCollector") do
+		if node:IsA("GuiObject") and not node.Visible then
+			hand.Visible = false
+			return
+		end
+		node = node.Parent
 	end
 	-- (hidden when what it points at sits in a screen that is hidden)
 	local layer = current:FindFirstAncestorWhichIsA("LayerCollector")

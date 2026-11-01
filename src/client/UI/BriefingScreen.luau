@@ -108,6 +108,8 @@ local function build(payload)
 	local hostile = role == "Kira" or role == "Follower"
 	local phone = Kit.Layout.isPhone()
 	local left = if phone then T.space.l else T.space.xxxl
+	-- (below Roblox's own buttons at the top left)
+	local top = 48
 
 	local holder = Kit.frame({ Name = "Poster", Parent = body })
 	mono(
@@ -118,15 +120,15 @@ local function build(payload)
 			payload.followers or 0,
 			string.upper(if payload.followers == 1 then Terms.role("Follower") else Terms.role("Follower", "plural"))
 		),
-		{ Position = UDim2.fromOffset(left, T.space.xl), Parent = holder }
+		{ Position = UDim2.fromOffset(left, top + T.space.xl), Parent = holder }
 	)
-	mono("YOUR REAL NAME", { Position = UDim2.fromOffset(left, 84), Parent = holder })
+	mono("YOUR REAL NAME", { Position = UDim2.fromOffset(left, top + 84), Parent = holder })
 	local name = Kit.text({
 		face = "Head",
 		text = tostring(payload.realName),
 		size = if phone then 52 else 84,
 		color = C.bone,
-		Position = UDim2.fromOffset(left - 4, 100),
+		Position = UDim2.fromOffset(left - 4, top + 100),
 		Parent = holder,
 	})
 	task.delay(0.3, function()
@@ -134,12 +136,12 @@ local function build(payload)
 	end)
 	mono(string.format("ALIAS %s   NEVER SAY IT", string.upper(tostring(payload.alias))), {
 		color = C.bone,
-		Position = UDim2.fromOffset(left, if phone then 164 else 200),
+		Position = UDim2.fromOffset(left, top + if phone then 164 else 200),
 		Parent = holder,
 	})
 	local rules = Kit.frame({
 		Name = "Rules",
-		Position = UDim2.fromOffset(left, if phone then 200 else 250),
+		Position = UDim2.fromOffset(left, top + if phone then 200 else 250),
 		Size = UDim2.fromOffset(if phone then 320 else 560, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = holder,
@@ -165,7 +167,7 @@ local function build(payload)
 	end
 	mono(alliesText(role, payload.allies), {
 		color = C.bone,
-		Position = UDim2.fromOffset(left, if phone then 330 else 420),
+		Position = UDim2.fromOffset(left, top + if phone then 330 else 420),
 		Parent = holder,
 	})
 	-- The role, huge across the foot and cut by the screen's bottom edge, boiling.
@@ -260,7 +262,7 @@ function BriefingScreen.init()
 	root = Kit.Base.make("Frame", {
 		Name = "Briefing",
 		BackgroundColor3 = C.void,
-		BackgroundTransparency = 0.12,
+		BackgroundTransparency = 0,
 		BorderSizePixel = 0,
 		Size = UDim2.fromScale(1, 1),
 		Visible = false,
