@@ -12,3 +12,4 @@
 - [UI text style](ui-text-style.md) — short plain text; no em dashes, ellipses, · separators or colon run-ons; check_terms after edits
 - [UI notice component](ui-notice-component.md) — every small HUD card is a Kit.notice (Tokens.notice sizes); never hand-build one
 - [UI direction: concept A](ui-direction-2026-10-28.md) — paper/ink/blood UI built 2026-10-29: Boil, Pointer, Paper, OMORI buttons; rejected looks
+- [Station world feel](station-world-fx.md) — station screens/light/sounds/acting are client-side from Busy/BusySince only; a hack must look like work

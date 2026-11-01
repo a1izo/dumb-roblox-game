@@ -11,10 +11,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
+local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local HackScreen = require(script.Parent.Parent.UI.HackScreen)
 local TaskScreen = require(script.Parent.Parent.UI.TaskScreen)
+local StationFx = require(script.Parent.Parent.World.StationFx)
 
 local NoteRequest = Net.event("NoteRequest")
 local BellRemote = Net.event("Bell")
@@ -143,9 +145,26 @@ local function register(instance: Instance, kind: string, prompts)
 	refreshEntry(instance, entry)
 end
 
+-- What the work prompt says, per station type: the job itself, not "work case file".
+local WORK_ACTION = {
+	Camera = "Review footage",
+	Fingerprint = "Compare prints",
+	Phone = "Trace calls",
+	Forensics = "Examine evidence",
+}
+
 local function setupStation(desk: Instance)
 	local stationName = tostring(desk:GetAttribute("StationName") or "Case file")
-	local work = prompt(desk, "Work case file", stationName, Enum.KeyCode.E)
+	local kind = desk:GetAttribute("StationType")
+	local action = if type(kind) == "string" then WORK_ACTION[kind] else nil
+	-- (the object line: the station's name and its kind of case file, unless the name already says it)
+	local info = if type(kind) == "string" then TaskTypes.INFO[kind] else nil
+	local typeLabel = if info then info.label else nil
+	local objectText = if typeLabel
+			and not string.find(string.lower(stationName), string.lower(typeLabel), 1, true)
+		then stationName .. " / " .. typeLabel
+		else stationName
+	local work = prompt(desk, action or "Work case file", objectText, Enum.KeyCode.E)
 	work.Triggered:Connect(function()
 		local stationId = desk:GetAttribute("StationId")
 		if type(stationId) == "string" then
@@ -153,7 +172,7 @@ local function setupStation(desk: Instance)
 		end
 	end)
 	-- Diavolo and the Muertos: break into the station's log (UI/HackScreen, Services/HackService).
-	local hack = prompt(desk, "Hack the log", stationName, Enum.KeyCode.E)
+	local hack = prompt(desk, "Hack the log", objectText, Enum.KeyCode.E)
 	hack.Triggered:Connect(function()
 		local stationId = desk:GetAttribute("StationId")
 		if type(stationId) == "string" then
@@ -216,6 +235,8 @@ local function watchTag(tag: string, setup: (Instance) -> ())
 end
 
 function InteractionController.init()
+	-- (the stations' screens, lights and sounds, for everyone: World/StationFx)
+	StationFx.init()
 	watchTag("LStation", setupStation)
 	watchTag("LBell", setupBell)
 	watchTag("LSheet", setupSheet)

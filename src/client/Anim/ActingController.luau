@@ -9,9 +9,10 @@
 --                    hang their heads, the Hand laughs or kneels (a win scene never replaces its laugh)
 -- Reactions and endings are picked from the cue and the user id (Presentation/Activities), so
 -- every screen shows the same thing and nothing depends on roles.
---   station work   : a player working a case file types at the console
+--   station work   : a player working a case file acts that station's work (Anim/WorkActing)
 --   note handed    : the giver reaches out and a slip of paper crosses to the other's hand
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -26,6 +27,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
 local DeathFx = require(script.Parent.Parent.Presentation.DeathFx)
 local PoseController = require(script.Parent.PoseController)
+local WorkActing = require(script.Parent.WorkActing)
 local Characters = require(script.Parent.Parent.Characters)
 
 local ActingController = {}
@@ -256,24 +258,29 @@ local function onOutro(cue)
 end
 
 -- Station work: follows the LWorking attribute the server sets on the character, which holds the
--- station type; each type has its own working clip (workCamera, workFingerprint, ...).
-local WORK_FALLBACK = "workCamera"
-
+-- station type (and LWorkingAt, the desk). Anim/WorkActing acts it: the type's working clip with beats
+-- on top. This player's own body also steps up and turns to the station first.
 local function watchWorking(character: Model)
-	local playing: string? = nil
+	local playing = false
 	local function update()
 		local working = character:GetAttribute("LWorking")
 		if playing then
-			PoseController.stop(character, playing, 0.3)
-			playing = nil
+			PoseController.stop(character, "work", 0.35)
+			playing = false
 		end
 		if working then
-			local id = if type(working) == "string" then "work" .. working else WORK_FALLBACK
-			if not PoseController.exists(id) then
-				id = WORK_FALLBACK
+			local kind = if type(working) == "string" then working else "Camera"
+			local player = Players:GetPlayerFromCharacter(character)
+			local seed = (if player then player.UserId else 0) % 100003 + math.random(0, 999)
+			PoseController.playProcedural(character, "work", WorkActing.sampler(kind, seed), {
+				fadeIn = 0.45,
+				fadeOut = 0.35,
+			})
+			playing = true
+			local at = character:GetAttribute("LWorkingAt")
+			if player == Players.LocalPlayer and typeof(at) == "Vector3" then
+				WorkActing.face(character, at)
 			end
-			playing = id
-			PoseController.play(character, id, { fadeIn = 0.25, startAt = os.clock() - math.random() })
 		end
 	end
 	character:GetAttributeChangedSignal("LWorking"):Connect(update)

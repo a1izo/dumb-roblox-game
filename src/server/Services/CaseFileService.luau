@@ -32,18 +32,24 @@ local function now(): number
 	return workspace:GetServerTimeNow()
 end
 
+-- The screen's state, for everyone: Busy, and BusySince (server time) while it is, so every client
+-- draws the same activity on the glass (World/StationFx). A hack calls this exactly as a case file
+-- does, so the screen never tells them apart. The label is the server-drawn fallback that StationFx
+-- hides on every client it runs on.
 local function setScreen(runtime, busy: boolean)
 	local info = runtime.info
+	info.desk:SetAttribute("BusySince", if busy then now() else nil)
 	info.desk:SetAttribute("Busy", busy)
-	-- (The name is the screen's own header; this is its state line.)
-	info.label.Text = if busy then "ANALYSING" else "READY"
+	info.label.Text = if busy then "WORKING" else "STANDBY"
 end
 
 -- Everyone sees who is working a station (their character plays that station type's working
--- animation: LWorking holds the type, "Camera", "Fingerprint", "Phone" or "Forensics").
-local function markWorking(ps, on: boolean, stationType: string?)
+-- acting, Anim/WorkActing: LWorking holds the type, "Camera", "Fingerprint", "Phone" or "Forensics",
+-- and LWorkingAt the desk they face). Hacks and case files mark it the same way.
+local function markWorking(ps, on: boolean, stationType: string?, desk: BasePart?)
 	local character = ps.player.Character
 	if character then
+		character:SetAttribute("LWorkingAt", if on and desk then desk.Position else nil)
 		character:SetAttribute("LWorking", if on then stationType or true else nil)
 	end
 end
@@ -110,7 +116,7 @@ function CaseFileService.beginHack(ps, stationId: string)
 	local runtime = stations[stationId]
 	runtime.hacker = ps
 	setScreen(runtime, true)
-	markWorking(ps, true, runtime.info.type)
+	markWorking(ps, true, runtime.info.type, runtime.info.desk)
 end
 
 -- The hack is over (done, failed or broken off). lockFor: seconds before anyone may hack it again.
@@ -254,7 +260,7 @@ local function onStart(ps, stationId: string)
 	working[ps] = runtime
 	ps.taskStation = runtime.info.id
 	setScreen(runtime, true)
-	markWorking(ps, true, runtime.info.type)
+	markWorking(ps, true, runtime.info.type, runtime.info.desk)
 	TaskStateRemote:FireClient(ps.player, {
 		state = "started",
 		stationId = runtime.info.id,
