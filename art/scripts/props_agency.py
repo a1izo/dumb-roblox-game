@@ -13,33 +13,15 @@ game's screen goes in the prop's `screen` slot. Tabletop things (fax, phone, cof
 on z = 0 too; the map places them at the height of the surface they sit on."""
 
 import math
+import random
 
 import modelkit as mk
 import propkit as pk
+import stationkit as sk
 from common import srgb
 from props import prop
-from props_stations import desk, monitor
 
 LAMP_WARM = (255, 214, 160)
-
-
-def crt(prefix, x, y, z, w, h, housing, bezel, depth=2.2, screen=None, tilt=0):
-    """A CRT monitor whose face (w by h) is centred at (x, y, z) facing -Y: a deep tapered
-    housing behind it, a bezel round the face; screen (a material) fills the face when given
-    (the game's own screen goes there otherwise)."""
-    parts = [mk.box(prefix + "Bezel", (w + 0.5, 0.35, h + 0.5), (x, y + 0.17, z), rot=(-tilt, 0, 0), mat=bezel, bevel=0.08),
-             mk.box(prefix + "Body", (w + 0.2, depth * 0.55, h + 0.2), (x, y + 0.35 + depth * 0.27, z), mat=housing,
-                    bevel=0.1),
-             mk.box(prefix + "Tube", (w * 0.62, depth * 0.45, h * 0.62), (x, y + 0.35 + depth * 0.72, z + 0.05),
-                    mat=housing, bevel=0.15)]
-    if screen is not None:
-        parts.append(mk.box(prefix + "Face", (w, 0.04, h), (x, y - 0.02, z), rot=(-tilt, 0, 0), mat=screen))
-    return parts
-
-
-def feed_colours():
-    return [(110, 150, 130), (120, 140, 170), (160, 156, 110), (100, 130, 160), (140, 160, 120), (170, 140, 120),
-            (120, 160, 150), (150, 150, 170)]
 
 
 # Station looks -----------------------------------------------------------------------------------------
@@ -50,44 +32,82 @@ CRT_SCREEN = (0.0, -0.1, 4.25, 2.4, 1.8, 4)
 @prop("StationCRTBank", pivot="bottom", material="Metal", collide=False, texture=1024, set="Agency", anchor=(0, 0),
       screen=CRT_SCREEN)
 def station_crt_bank():
-    """The security office's monitor console: a grey steel desk and, on a steel rack behind it,
-    a bank of CRT monitors showing camera feeds; the middle one on the desk is the game's screen.
-    A keyboard, the switcher panel with its lit buttons, a joystick, the tape log and a mug."""
-    steel = pk.metal("Crt_Steel", (70, 72, 78), (98, 100, 108), rough=0.45, metallic=0.5)
-    beige = pk.plastic("Crt_Beige", (182, 172, 150))
-    bezel = pk.plastic("Crt_Bezel", (60, 58, 54))
-    dark = pk.metal("Crt_Dark", (20, 20, 22), (34, 34, 38), rough=0.5, metallic=0.2)
-    top = mk.noisy("Crt_Top", srgb(52, 54, 60), srgb(70, 72, 80), scale=10, roughness=0.35)
-    paper = pk.plastic("Crt_Paper", (232, 226, 210))
-    x, y, z, w, h, tilt = CRT_SCREEN
-    parts = desk("Crt_", top, steel)
-    parts += crt("Main_", x, y, z, w, h, beige, bezel, depth=2.0, tilt=tilt)
-    parts.append(mk.box("MainStand", (1.6, 1.4, 0.3), (x, y + 1.0, 3.05), mat=beige, bevel=0.05))
-    # The rack behind: two rows of feeds above the desk and a pair either side of the main one.
-    parts += [mk.box("RackPost", (0.18, 0.4, 8.6), (sx * 2.5, 1.25, 4.3), mat=steel) for sx in (-1, 1)]
-    parts += [mk.box("RackShelf", (5.2, 1.6, 0.14), (0, 1.25, zz), mat=steel) for zz in (5.68, 7.33)]
-    glows = []
-    colours = feed_colours()
+    """The security office's monitor console: a grey steel desk and, on a steel rack standing behind
+    it, two shelves of CRT monitors showing camera feeds; the big one on the desk is the game's
+    screen. On the desk the keyboard, the switcher with its lit buttons, a camera joystick, a pair of
+    tape recorders with their cassettes, the tape log, and a mug."""
+    rng = random.Random(61)
+    steel = pk.paint("Crt_Steel", (96, 98, 102), rough=0.45)
+    top = pk.plastic("Crt_Resin", (64, 66, 70), rough=0.5)
+    trim = pk.metal("Crt_Trim", (30, 30, 34), (48, 48, 52), rough=0.4, metallic=0.5)
+    beige = pk.plastic("Crt_Plastic", (184, 176, 156))
+    bezel = pk.plastic("Crt_Bezel", (64, 62, 58))
+    dark = pk.plastic("Crt_Dark", (24, 24, 26))
+    key = pk.plastic("Crt_Button", (210, 204, 188))
+    paper = mk.noisy("Crt_Paper", srgb(214, 208, 190), srgb(236, 230, 214), roughness=0.9)
+    cover = pk.plastic("Crt_Cover", (30, 60, 50))
+    ink = mk.flat("Crt_Ink", srgb(28, 28, 40), 0.6)
+    mugm = pk.plastic("Crt_Mug", (150, 30, 36))
+    coffee = mk.flat("Crt_Coffee", srgb(40, 24, 14), 0.1)
+    parts = sk.steel_desk("Crt_", top, steel, trim, w=5.2, d=2.6, h=2.95, pedestal=1.5)
+    main, glows = sk.crt("Main_", CRT_SCREEN, beige, bezel, dark, depth=2.0, base_to=2.95, border=0.18, chin=0.14)
+    parts += main
+    # The rack behind: four posts on the floor, two shelves cantilevered over the desk.
+    for sx in (-1, 1):
+        parts += [pk.rounded("RackPost", (0.16, 0.16, 8.7), (sx * 2.5, 1.75, 4.35), steel, r=0.03),
+                  mk.box("RackFoot", (0.2, 0.5, 0.06), (sx * 2.5, 1.75, 0.03), mat=trim, bevel=0.01),
+                  mk.box("RackArm", (0.1, 1.5, 0.1), (sx * 2.45, 1.05, 5.58), mat=steel),
+                  mk.box("RackArm", (0.1, 1.5, 0.1), (sx * 2.45, 1.05, 7.23), mat=steel)]
+    for zz in (5.68, 7.33):
+        parts += [mk.box("RackShelf", (5.0, 1.6, 0.08), (0, 1.25, zz - 0.03), mat=steel, bevel=0.01),
+                  mk.box("ShelfLip", (5.0, 0.04, 0.1), (0, 0.46, zz - 0.04), mat=steel)]
+    parts.append(mk.box("RackTop", (5.16, 0.2, 0.12), (0, 1.75, 8.64), mat=steel, bevel=0.02))
+    colours = [(110, 150, 130), (120, 140, 170), (160, 156, 110), (100, 130, 160), (140, 160, 120), (170, 140, 120)]
     k = 0
-    for row, zz in ((0, 6.45), (1, 8.1)):
+    for zz in (6.45, 8.1):
         for col in range(3):
             fx = -1.62 + col * 1.62
-            parts += crt(f"Feed{k}_", fx, 0.55, zz, 1.2, 0.9, beige, bezel, depth=1.3)
-            glows.append(mk.box(f"FeedLit{k}", (1.2, 0.04, 0.9), (fx, 0.51, zz),
-                                mat=pk.glow(f"Crt_Feed{k}", colours[k], 1.8)))
+            slot = (fx, 0.6, zz, 1.2, 0.9, 0)
+            mon, led = sk.crt(f"Feed{k}_", slot, beige, bezel, dark, depth=1.3, base_to=zz - 0.76, border=0.14, chin=0.1)
+            parts += mon
+            glows += led
+            glows.append(mk.box(f"FeedLit{k}", (1.2, 0.02, 0.9), (fx, 0.51, zz), mat=pk.glow(f"Crt_Feed{k}", colours[k], 1.8)))
+            parts += [mk.box(f"FeedKerb{k}", (1.2, 0.006, 0.05), (fx, 0.498, zz - 0.18), rot=(0, rng.uniform(-15, 15), 0), mat=dark),
+                      mk.box(f"FeedPost{k}", (0.08, 0.006, 0.5), (fx + rng.uniform(-0.4, 0.4), 0.498, zz + 0.05), mat=dark),
+                      mk.box(f"FeedTime{k}", (0.4, 0.006, 0.05), (fx - 0.33, 0.498, zz + 0.36), mat=dark)]
+            parts += pk.label(f"FeedNo{k}", f"CAM {k + 1:02d}", 0.06, (fx + 0.45, 0.455, zz - 0.52), key)
             k += 1
-    parts += [mk.box("Keyboard", (2.2, 0.8, 0.12), (-0.3, -0.8, 2.97), rot=(4, 0, 0), mat=beige, bevel=0.03),
-              mk.box("Switcher", (1.4, 0.9, 0.3), (1.8, -0.6, 3.05), rot=(8, 0, 0), mat=dark, bevel=0.04),
-              mk.box("JoyBase", (0.7, 0.7, 0.2), (-2.0, -0.7, 3.0), mat=dark, bevel=0.05),
-              mk.cylinder("Stick", 0.05, 0.5, (-2.0, -0.7, 3.35), mat=steel, verts=8),
-              mk.box("Log", (0.9, 1.1, 0.08), (-1.95, 0.4, 2.94), rot=(0, 0, -10), mat=paper),
-              mk.cylinder("Mug", 0.16, 0.38, (2.25, 0.5, 3.09), mat=pk.plastic("Crt_Mug", (150, 30, 36)), verts=12)]
-    for i in range(6):
-        bx = 1.35 + (i % 3) * 0.3
-        bz = 3.2 - 0.02 + (i // 3) * 0.0
-        by = -0.8 + (i // 3) * 0.3
-        glows.append(mk.box("Button", (0.18, 0.18, 0.05), (bx, by, bz + 0.03),
-                            mat=pk.glow("Crt_Button", (255, 170, 60) if i % 2 else (120, 255, 150), 3)))
+    parts.append(sk.cable("RackLoom", [(-2.3, 1.95, 8.4), (-2.35, 2.0, 5.0), (-2.3, 1.95, 0.3)], dark, r=0.06))
+    # The keyboard, the switcher, the joystick.
+    parts += sk.keyboard("Kb_", -0.2, -0.85, 2.95, beige, key, w=2.0, d=0.66)
+    sw = [sk.wedge("Switcher", [(-0.38, 0.0), (0.38, 0.0), (0.38, 0.24), (-0.38, 0.12)], 1.3, 0, dark, bevel=0.03)]
+    sw[0].location = (1.85, -0.7, 2.95)
+    parts += sw
+    for i in range(8):
+        bx, by = 1.4 + (i % 4) * 0.3, -0.85 + (i // 4) * 0.3
+        bz = 2.95 + 0.14 + (by + 0.7 + 0.38) / 0.76 * 0.1
+        glows.append(mk.box("Button", (0.18, 0.18, 0.05), (bx, by, bz), rot=(-9, 0, 0),
+                            mat=pk.glow("Crt_Button", (255, 170, 60) if i in (2, 5) else (120, 255, 150), 2.5)))
+    parts += [mk.lathe("JoyBoot", [(0.12, 0.0), (0.1, 0.04), (0.06, 0.1), (0.035, 0.16), (0.0, 0.16)], (-2.0, -0.7, 3.05),
+                       mat=pk.rubber("Crt_Rubber"), segments=12),
+              pk.rounded("JoyBase", (0.6, 0.6, 0.1), (-2.0, -0.7, 3.0), dark, r=0.03),
+              mk.tube("Stick", (-2.0, -0.7, 3.18), (-2.0, -0.72, 3.55), 0.03, mat=trim, verts=8),
+              mk.sphere("Grip", 1.0, (-2.0, -0.72, 3.62), scale=(0.07, 0.07, 0.1), mat=dark, segments=10, rings=6)]
+    # Two cassette recorders stacked at the back right, tapes beside them.
+    for k in range(2):
+        rz = 2.95 + k * 0.36
+        parts += [pk.rounded(f"Deck{k}", (1.1, 0.8, 0.34), (1.95, 0.8, rz + 0.17), dark, r=0.03),
+                  mk.box(f"DeckDoor{k}", (0.5, 0.02, 0.2), (1.8, 0.395, rz + 0.18), mat=trim),
+                  mk.box(f"DeckWindow{k}", (0.3, 0.01, 0.08), (1.8, 0.383, rz + 0.2), mat=paper)]
+        for j in range(4):
+            parts.append(mk.box(f"DeckKey{k}", (0.08, 0.04, 0.05), (2.2 + j * 0.09, 0.39, rz + 0.12), mat=key))
+        glows.append(mk.box(f"DeckRec{k}", (0.04, 0.02, 0.04), (2.3, 0.39, rz + 0.25), mat=pk.glow("Crt_Rec", (255, 60, 50), 4)))
+    for k in range(3):
+        parts.append(pk.rounded(f"Cassette{k}", (0.42, 0.28, 0.06), (1.75 + rng.uniform(-0.04, 0.04), -0.1 + k * 0.02, 2.98 + k * 0.065),
+                                mat=dark if k % 2 else paper, r=0.01, rot=(0, 0, rng.uniform(-10, 10))))
+    parts += sk.open_book("Log_", -1.95, 0.25, 2.95, cover, paper, ink, rng, yaw=-8, w=1.0, d=0.7)
+    parts += sk.pen("Pen_", (-1.75, 0.0, 3.05), (-1.5, 0.2, 3.05), ink, trim)
+    parts += sk.mug("Mug_", -2.25, 0.95, 2.95, mugm, coffee, handle_yaw=200)
     return parts, glows
 
 
@@ -97,97 +117,163 @@ PHONE_DESK_SCREEN = (-0.6, 0.15, 4.2, 2.1, 1.6, 6)
 @prop("StationPhoneDesk", pivot="bottom", material="Wood", collide=False, texture=1024, set="Agency", anchor=(0, 0),
       screen=PHONE_DESK_SCREEN)
 def station_phone_desk():
-    """A detective's desk on the phone-records beat: a worn wooden desk with a drawer pedestal,
-    the beige records terminal (the game's screen) and its keyboard, a multi-line desk phone with
-    lit line buttons, a dot-matrix printer spilling a call log, a card index, files and a lamp."""
+    """A detective's desk on the phone-records beat: a worn wooden desk with turned legs, its drawer
+    pedestal and a leather blotter, the beige records terminal (the game's screen) with its
+    keyboard, a multi-line desk phone with lit line lamps, a dot-matrix printer spilling its call
+    log over the back, a card index, case folders, a green banker's lamp, a mug and a notepad."""
+    rng = random.Random(67)
     wood = mk.wood("PDesk_Wood", srgb(104, 70, 44), srgb(58, 38, 24), scale=4)
-    top = mk.noisy("PDesk_Top", srgb(40, 50, 44), srgb(56, 68, 60), scale=8, roughness=0.45)
-    beige = pk.plastic("PDesk_Beige", (186, 176, 154))
+    top = mk.wood("PDesk_Oak", srgb(92, 62, 40), srgb(52, 34, 22), scale=4)
+    leather = mk.noisy("PDesk_Leather", srgb(30, 48, 40), srgb(48, 68, 58), roughness=0.6)
+    beige = pk.plastic("PDesk_Plastic", (186, 176, 154))
     bezel = pk.plastic("PDesk_Bezel", (70, 66, 60))
-    dark = pk.metal("PDesk_Dark", (22, 22, 24), (38, 38, 42), rough=0.5, metallic=0.2)
+    dark = pk.plastic("PDesk_Dark", (22, 22, 24))
+    key = pk.plastic("PDesk_Button", (214, 206, 188))
     brass = pk.metal("PDesk_Brass", (150, 118, 60), (200, 164, 90), rough=0.3, metallic=0.9)
-    paper = pk.plastic("PDesk_Paper", (236, 232, 218))
-    folder = pk.plastic("PDesk_Folder", (170, 140, 90))
+    paper = mk.noisy("PDesk_Paper", srgb(222, 218, 202), srgb(240, 236, 222), roughness=0.9)
+    folder = mk.noisy("PDesk_Folder", srgb(168, 136, 86), srgb(196, 164, 110), roughness=0.8)
+    ink = mk.flat("PDesk_Ink", srgb(26, 24, 30), 0.6)
+    green = pk.plastic("PDesk_Green", (24, 90, 60), rough=0.15)
+    mugm = pk.plastic("PDesk_Mug", (226, 222, 210))
+    coffee = mk.flat("PDesk_Coffee", srgb(40, 24, 14), 0.1)
     x, y, z, w, h, tilt = PHONE_DESK_SCREEN
-    parts = desk("PDesk_", wood, wood)
-    parts.append(mk.box("Blotter", (2.8, 1.4, 0.04), (0.2, -0.45, 2.99), mat=top))
-    parts.append(mk.box("Pedestal", (1.5, 2.3, 2.7), (1.75, -0.05, 1.35), mat=wood, bevel=0.03))
+    parts = sk.wood_desk("PDesk_", wood, top, brass, w=5.2, d=2.6, h=2.95, pedestal=1.5, blotter=leather)
+    term, glows = sk.crt("Term_", PHONE_DESK_SCREEN, beige, bezel, dark, depth=1.9, base_to=2.97, border=0.2, chin=0.14)
+    parts += term
+    parts += sk.keyboard("Kb_", x, -0.85, 2.97, beige, key, w=2.0, d=0.66)
+    ph, lines = sk.desk_phone("Ph_", 1.6, -0.35, 2.97, dark, key, dark, yaw=-12, lines=5)
+    parts += ph
+    glows += lines
+    # The printer at the back right, its paper fed from a box under the desk and the log spilling back.
+    parts += [pk.rounded("Printer", (1.3, 0.9, 0.42), (1.6, 0.75, 3.18), beige, r=0.05),
+              mk.box("PrinterLid", (1.0, 0.5, 0.04), (1.6, 0.85, 3.41), rot=(-8, 0, 0), mat=pk.plastic("PDesk_Smoke", (90, 80, 70))),
+              mk.cylinder("Platen", 0.06, 1.1, (1.6, 1.2, 3.38), rot=(0, 90, 0), mat=dark, verts=10),
+              mk.box("PrinterKnob", (0.05, 0.12, 0.12), (2.27, 1.1, 3.3), mat=dark)]
+    glows.append(mk.box("PrinterLed", (0.05, 0.02, 0.03), (1.1, 0.29, 3.25), mat=pk.glow("PDesk_Led", (120, 255, 150), 4)))
+    log = [(1.6, 1.22, 3.45), (1.6, 1.4, 3.3), (1.6, 1.5, 2.9), (1.6, 1.55, 2.2), (1.6, 1.62, 1.4)]
+    for a, b in zip(log, log[1:]):
+        mid = tuple((p + q) / 2 for p, q in zip(a, b))
+        run = math.dist(a, b)
+        ang = math.degrees(math.atan2(b[1] - a[1], -(b[2] - a[2])))
+        parts.append(mk.box("Log", (1.0, 0.012, run + 0.02), mid, rot=(-ang, 0, 0), mat=paper))
+    parts += [mk.box("LogPile", (1.0, 0.7, 0.3), (1.6, 1.9, 0.15), rot=(0, 0, 4), mat=paper)]
+    for k in range(6):
+        parts.append(mk.box("LogFold", (1.0, 0.012, 0.7), (1.6, 1.9, 0.32 + k * 0.012), rot=(90, 0, 4), mat=paper))
+    # The card index, case folders, notepad, the mug and the banker's lamp.
+    parts += [pk.rounded("CardIndex", (0.7, 0.6, 0.42), (-2.2, 0.25, 3.18), dark, r=0.03),
+              mk.box("IndexCards", (0.6, 0.5, 0.12), (-2.2, 0.25, 3.43), mat=paper),
+              mk.box("IndexTab", (0.6, 0.03, 0.18), (-2.2, 0.1, 3.48), mat=folder)]
     for k in range(3):
-        parts.append(mk.box("Drawer", (1.35, 0.04, 0.78), (1.75, -1.22, 0.5 + k * 0.88), mat=wood))
-        parts += pk.handle("Pull", 1.75, -1.24, 0.7 + k * 0.88, 0.5, brass, vertical=False, stand=0.07, r=0.03)
-    parts += crt("Term_", x, y, z, w, h, beige, bezel, depth=1.9, tilt=tilt)
-    parts.append(mk.box("TermBase", (1.8, 1.4, 0.26), (x, y + 0.9, 3.03), mat=beige, bevel=0.05))
-    parts.append(mk.box("Keyboard", (2.0, 0.75, 0.12), (x, -0.85, 2.98), rot=(4, 0, 0), mat=beige, bevel=0.03))
-    # The phone: body, handset on its cradle, the line buttons along the front.
-    parts += [pk.rounded("PhoneBody", (1.1, 0.9, 0.35), (1.55, -0.55, 3.07), dark, r=0.07),
-              pk.rounded("Handset", (1.0, 0.28, 0.24), (1.55, -0.35, 3.34), dark, r=0.1),
-              mk.tube("Cord", (1.05, -0.4, 3.1), (0.9, -0.2, 2.95), 0.025, mat=dark, verts=4)]
-    glows = []
-    for i in range(5):
-        glows.append(mk.box("Line", (0.12, 0.05, 0.09), (1.15 + i * 0.2, -1.0, 3.12),
-                            mat=pk.glow("PDesk_Line", (255, 190, 80) if i in (1, 3) else (255, 80, 60), 3)))
-    # The printer at the back right, its call log folding down behind the desk.
-    parts += [mk.box("Printer", (1.4, 1.0, 0.45), (1.6, 0.75, 3.12), mat=beige, bevel=0.05),
-              mk.box("PrinterSlot", (1.1, 0.1, 0.05), (1.6, 0.35, 3.36), mat=dark),
-              mk.box("Log", (1.0, 0.04, 1.4), (1.6, 1.3, 2.4), rot=(-8, 0, 0), mat=paper),
-              mk.box("LogFold", (1.0, 0.5, 0.05), (1.6, 1.0, 3.4), rot=(35, 0, 0), mat=paper)]
-    parts += [mk.box("CardIndex", (0.8, 0.6, 0.45), (-2.1, 0.5, 3.13), mat=dark, bevel=0.04),
-              mk.box("Cards", (0.7, 0.5, 0.2), (-2.1, 0.5, 3.4), mat=paper),
-              mk.box("Files", (1.0, 1.3, 0.35), (-2.05, -0.55, 3.08), rot=(0, 0, 8), mat=folder),
-              mk.box("File2", (1.0, 1.3, 0.05), (-2.0, -0.5, 3.28), rot=(0, 0, -5), mat=paper),
-              mk.cylinder("LampBase", 0.22, 0.08, (-2.1, 1.0, 2.99), mat=brass, verts=12),
-              mk.tube("LampStem", (-2.1, 1.0, 3.0), (-2.0, 0.9, 4.3), 0.04, mat=brass, verts=6),
-              mk.box("LampShade", (1.0, 0.45, 0.3), (-1.85, 0.75, 4.35), rot=(0, 0, 20), mat=pk.plastic("PDesk_Green", (30, 90, 60)),
-                     bevel=0.1)]
-    glows.append(mk.box("LampBulb", (0.6, 0.2, 0.05), (-1.85, 0.75, 4.18), mat=pk.glow("PDesk_Bulb", LAMP_WARM, 3)))
+        parts += sk.folder(f"Case{k}_", -2.08 + rng.uniform(-0.03, 0.03), -0.65, 2.97 + k * 0.09, folder, paper,
+                           yaw=rng.uniform(-5, 5), tab=pk.plastic(f"PDesk_Tab{k}", ((200, 40, 40), (40, 90, 160), (220, 180, 60))[k]))
+    parts += sk.papers("Pad_", 0.75, -0.75, 2.97, paper, rng, n=2, w=0.6, d=0.85)
+    parts += sk.written("PadInk", 0.75, -0.75, 3.0, ink, rng, lines=5, w=0.45, d=0.7)
+    parts += sk.pen("Pen_", (0.95, -1.05, 3.0), (1.05, -0.65, 3.0), ink, brass)
+    parts += sk.mug("Mug_", 2.25, -0.05, 2.97, mugm, coffee, handle_yaw=-40)
+    lx, ly = -2.2, 1.0
+    parts += [mk.lathe("LampBase", [(0.0, 0.0), (0.32, 0.0), (0.32, 0.05), (0.12, 0.12), (0.0, 0.12)], (lx, ly, 2.97), mat=brass,
+                       segments=18),
+              mk.tube("LampStem", (lx, ly, 3.08), (lx, ly - 0.05, 3.95), 0.035, mat=brass, verts=8),
+              mk.tube("LampYoke", (lx - 0.2, ly - 0.05, 4.0), (lx + 0.25, ly - 0.05, 4.0), 0.02, mat=brass, verts=6),
+              mk.lathe("LampShade", [(0.2, 0.18), (0.2, 0.02), (0.15, -0.02), (0.0, -0.02)], (lx, ly - 0.15, 4.12), mat=green,
+                       segments=16)]
+    parts[-1].scale = (2.0, 1.0, 1.0)
+    glows.append(mk.box("LampBulb", (0.5, 0.18, 0.03), (lx, ly - 0.15, 4.11), mat=pk.glow("PDesk_Bulb", LAMP_WARM, 3)))
+    parts += [mk.tube("LampChain", (lx + 0.15, ly - 0.3, 4.12), (lx + 0.15, ly - 0.34, 3.85), 0.008, mat=brass, verts=4)]
     return parts, glows
 
 
 REEL_SCREEN = (-1.25, -0.1, 3.9, 1.8, 1.3, 10)
 
 
+def reel(prefix, x, y, z, r, flange, hub, tape, wound):
+    """A tape reel facing -Y at (x, y, z): two flanges with three windows each, the hub, and the
+    tape wound round it out to `wound` of the radius."""
+    parts = [mk.cylinder(prefix + "Tape", r * wound, 0.07, (x, y + 0.02, z), rot=(90, 0, 0), mat=tape, verts=24),
+             mk.cylinder(prefix + "Hub", r * 0.18, 0.14, (x, y - 0.02, z), rot=(90, 0, 0), mat=hub, verts=12)]
+    for k in range(3):
+        a = math.radians(90 + k * 120)
+        parts.append(mk.tube(prefix + "Spoke", (x + math.cos(a) * r * 0.17, y - 0.03, z + math.sin(a) * r * 0.17),
+                             (x + math.cos(a) * r * 0.95, y - 0.03, z + math.sin(a) * r * 0.95), r * 0.11, mat=flange, verts=6))
+    parts += [mk.torus(prefix + "Rim", r * 0.96, 0.025, (x, y - 0.03, z), rot=(90, 0, 0), mat=flange, major_segments=28,
+                       minor_segments=4),
+              mk.torus(prefix + "RimBack", r * 0.96, 0.025, (x, y + 0.07, z), rot=(90, 0, 0), mat=flange, major_segments=28,
+                       minor_segments=4)]
+    return parts
+
+
 @prop("StationReelToReel", pivot="bottom", material="Metal", collide=False, texture=1024, set="Agency", anchor=(0, 0),
       screen=REEL_SCREEN)
 def station_reel_to_reel():
-    """The wiretap console behind the one-way mirror: a steel desk, a small scope monitor showing
-    the line (the game's screen), and on a rack at its right a reel-to-reel recorder over a panel
-    of VU meters; headphones, a microphone and the tape log on the desk."""
-    steel = pk.metal("Reel_Steel", (66, 68, 74), (94, 96, 104), rough=0.45, metallic=0.5)
-    alu = pk.metal("Reel_Alu", (160, 164, 170), (196, 200, 206), rough=0.3, metallic=0.8)
-    dark = pk.metal("Reel_Dark", (20, 20, 22), (34, 34, 38), rough=0.5, metallic=0.2)
-    top = mk.noisy("Reel_Top", srgb(46, 48, 54), srgb(64, 66, 72), scale=10, roughness=0.35)
-    tape = pk.plastic("Reel_Tape", (60, 38, 24))
-    paper = pk.plastic("Reel_Paper", (232, 226, 210))
-    x, y, z, w, h, tilt = REEL_SCREEN
-    parts = desk("Reel_", top, steel)
-    parts += crt("Scope_", x, y, z, w, h, steel, dark, depth=1.5, tilt=tilt)
-    parts.append(mk.box("ScopeBase", (1.4, 1.2, 0.3), (x, y + 0.8, 3.05), mat=steel, bevel=0.04))
-    # The rack at the right: the recorder above, the meters below, on the desk top.
-    rx = 1.45
-    parts += [mk.box("Rack", (2.2, 1.8, 4.6), (rx, 0.35, 5.2), mat=steel, bevel=0.04),
-              mk.box("DeckFace", (2.0, 0.06, 2.3), (rx, -0.58, 6.2), mat=alu, bevel=0.02),
-              mk.box("MeterFace", (2.0, 0.06, 1.1), (rx, -0.58, 4.1), mat=dark, bevel=0.02)]
+    """The wiretap console behind the one-way mirror: a steel desk, the small monitor showing the
+    line (the game's screen), and at its right a rack with the reel-to-reel recorder (two windowed
+    reels, the tape run past its guide rollers and the head block, the transport keys) over a panel
+    of lit VU meters with their needles and knobs. Headphones on their cord, a microphone on its
+    stand, the tape log, spare tape boxes."""
+    rng = random.Random(71)
+    steel = pk.paint("Reel_Steel", (86, 88, 94), rough=0.45)
+    top = pk.plastic("Reel_Resin", (56, 58, 62), rough=0.5)
+    trim = pk.metal("Reel_Trim", (30, 30, 34), (48, 48, 52), rough=0.4, metallic=0.5)
+    alu = pk.metal("Reel_Alu", (170, 174, 180), (206, 210, 216), rough=0.25, metallic=0.9)
+    dark = pk.plastic("Reel_Dark", (22, 22, 24))
+    key = pk.plastic("Reel_Button", (200, 200, 196))
+    tape = pk.plastic("Reel_Tape", (60, 38, 24), rough=0.3)
+    paper = mk.noisy("Reel_Paper", srgb(222, 218, 202), srgb(240, 236, 222), roughness=0.9)
+    card = mk.noisy("Reel_Card", srgb(150, 120, 80), srgb(180, 150, 104), roughness=0.8)
+    ink = mk.flat("Reel_Ink", srgb(26, 24, 30), 0.6)
+    cover = pk.plastic("Reel_Cover", (110, 30, 30))
+    parts = sk.steel_desk("Reel_", top, steel, trim, w=5.2, d=2.6, h=2.95, pedestal=1.5)
+    scope, glows = sk.crt("Scope_", REEL_SCREEN, steel, dark, dark, depth=1.5, base_to=2.95, border=0.14, chin=0.12)
+    parts += scope
+    # The rack at the right on the desk top.
+    rx, front = 1.45, -0.55
+    parts += [mk.box("Rack", (2.2, 1.7, 4.5), (rx, front + 0.85, 5.2), mat=steel, bevel=0.03),
+              mk.box("DeckFace", (2.02, 0.04, 2.45), (rx, front - 0.02, 6.05), mat=alu, bevel=0.01),
+              mk.box("MeterFace", (2.02, 0.04, 1.3), (rx, front - 0.02, 4.1), mat=dark, bevel=0.01),
+              mk.box("PatchFace", (2.02, 0.04, 0.6), (rx, front - 0.02, 3.25), mat=dark, bevel=0.01)]
     for sx in (-1, 1):
-        cx = rx + sx * 0.5
-        parts += [mk.cylinder("Reel", 0.46, 0.08, (cx, -0.66, 6.7), rot=(90, 0, 0), mat=alu, verts=24),
-                  mk.cylinder("Tape", 0.36, 0.1, (cx, -0.68, 6.7), rot=(90, 0, 0), mat=tape, verts=20),
-                  mk.cylinder("Hub", 0.1, 0.16, (cx, -0.72, 6.7), rot=(90, 0, 0), mat=dark, verts=10)]
-    parts += [mk.box("Heads", (0.8, 0.12, 0.3), (rx, -0.66, 5.9), mat=dark, bevel=0.03),
-              mk.tube("TapeRun", (rx - 0.5, -0.7, 6.3), (rx + 0.5, -0.7, 6.3), 0.02, mat=tape, verts=4)]
+        parts += [mk.box("RackEar", (0.1, 0.03, 4.4), (rx + sx * 1.05, front - 0.035, 5.2), mat=trim)]
+        parts += sk.screws("RackScrew", [(rx + sx * 1.05, front - 0.05, zz) for zz in (3.2, 4.1, 5.2, 6.3, 7.2)], alu, r=0.025)
+    # The recorder: reels, guides, heads, keys.
+    for sx in (-1, 1):
+        parts += reel(f"Reel{sx}_", rx + sx * 0.5, front - 0.1, 6.65, 0.46, alu, dark, tape, 0.72 if sx < 0 else 0.45)
+    parts += [mk.cylinder("GuideL", 0.06, 0.12, (rx - 0.45, front - 0.08, 5.95), rot=(90, 0, 0), mat=alu, verts=10),
+              mk.cylinder("GuideR", 0.06, 0.12, (rx + 0.45, front - 0.08, 5.95), rot=(90, 0, 0), mat=alu, verts=10),
+              pk.rounded("HeadBlock", (0.6, 0.14, 0.26), (rx, front - 0.08, 5.92), dark, r=0.03),
+              mk.box("TapeRunL", (0.012, 0.02, 0.5), (rx - 0.82, front - 0.1, 6.2), rot=(0, -40, 0), mat=tape),
+              mk.box("TapeRun", (0.9, 0.02, 0.06), (rx, front - 0.155, 5.92), mat=tape),
+              mk.box("TapeRunR", (0.012, 0.02, 0.5), (rx + 0.75, front - 0.1, 6.2), rot=(0, 35, 0), mat=tape)]
     for k in range(5):
-        parts.append(mk.cylinder("Knob", 0.08, 0.08, (rx - 0.8 + k * 0.4, -0.64, 5.3), rot=(90, 0, 0), mat=dark, verts=10))
-    glows = [mk.box(f"Meter{k}", (0.8, 0.04, 0.6), (rx - 0.45 + k * 0.9, -0.63, 4.15),
-                    mat=pk.glow("Reel_Meter", (255, 196, 110), 2.4)) for k in range(2)]
-    glows.append(mk.box("RecLamp", (0.14, 0.04, 0.14), (rx + 0.8, -0.63, 5.55), mat=pk.glow("Reel_Rec", (255, 50, 50), 5)))
-    # Headphones, the microphone and the log.
-    parts += [mk.torus("Band", 0.35, 0.04, (-0.2, -0.6, 3.05), rot=(0, 0, 0), mat=dark, major_segments=16,
-                       minor_segments=4),
-              mk.cylinder("Cup", 0.2, 0.14, (-0.55, -0.6, 3.02), mat=dark, verts=12),
-              mk.cylinder("Cup", 0.2, 0.14, (0.15, -0.6, 3.02), mat=dark, verts=12),
-              mk.cylinder("MicBase", 0.2, 0.06, (-2.1, -0.85, 2.98), mat=dark, verts=12),
-              mk.tube("MicStem", (-2.1, -0.85, 3.0), (-2.0, -1.0, 3.62), 0.03, mat=alu, verts=5),
-              mk.cylinder("Mic", 0.1, 0.35, (-1.98, -1.06, 3.74), rot=(-60, 0, 0), mat=dark, verts=10),
-              mk.box("Log", (1.0, 1.2, 0.06), (-0.2, -0.3, 2.95), rot=(0, 0, 6), mat=paper)]
+        parts.append(mk.box("Transport", (0.22, 0.08, 0.14), (rx - 0.5 + k * 0.25, front - 0.06, 5.45), mat=key, bevel=0.015))
+    for k in range(2):
+        mx = rx - 0.48 + k * 0.96
+        glows.append(mk.box(f"Meter{k}", (0.78, 0.02, 0.5), (mx, front - 0.045, 4.25), mat=pk.glow("Reel_Meter", (255, 196, 110), 2.2)))
+        parts += [mk.box(f"MeterRim{k}", (0.86, 0.05, 0.58), (mx, front - 0.02, 4.25), mat=trim),
+                  mk.box(f"Needle{k}", (0.012, 0.006, 0.42), (mx - 0.06 + k * 0.1, front - 0.058, 4.18), rot=(0, (-25, 18)[k], 0),
+                         mat=dark),
+                  mk.box(f"MeterRed{k}", (0.2, 0.006, 0.03), (mx + 0.24, front - 0.058, 4.42), mat=pk.plastic("Reel_Red", (190, 30, 30)))]
+    for k in range(6):
+        parts.append(mk.cylinder("Knob", 0.07, 0.08, (rx - 0.8 + k * 0.32, front - 0.08, 3.7), rot=(90, 0, 0), mat=alu, verts=12))
+    for k in range(8):
+        parts.append(mk.cylinder("Jack", 0.03, 0.04, (rx - 0.85 + k * 0.24, front - 0.06, 3.25), rot=(90, 0, 0), mat=alu, verts=8))
+    parts.append(sk.cable("Patch", [(rx - 0.61, front - 0.08, 3.25), (rx - 0.3, front - 0.22, 3.05), (rx + 0.11, front - 0.08, 3.25)],
+                          pk.plastic("Reel_PatchRed", (170, 30, 30)), r=0.018, sides=5))
+    glows.append(mk.box("RecLamp", (0.1, 0.02, 0.1), (rx + 0.8, front - 0.05, 5.45), mat=pk.glow("Reel_Rec", (255, 50, 50), 5)))
+    # Headphones, microphone, the log, tape boxes.
+    hx, hy = -0.2, -0.75
+    parts += [pk.sweep("Band", [(hx - 0.32, hy, 3.02), (hx - 0.3, hy + 0.1, 3.14), (hx, hy + 0.2, 3.2), (hx + 0.3, hy + 0.1, 3.14),
+                                (hx + 0.32, hy, 3.02)], 0.03, dark, sides=6),
+              mk.cylinder("Cup", 0.17, 0.12, (hx - 0.35, hy - 0.05, 3.01), mat=dark, verts=14, bevel=0.03),
+              mk.cylinder("Cup", 0.17, 0.12, (hx + 0.35, hy - 0.05, 3.01), mat=dark, verts=14, bevel=0.03),
+              sk.cable("PhoneCord", [(hx + 0.4, hy, 3.0), (0.4, -0.3, 2.97), (rx - 0.85, front - 0.08, 3.25)], dark, r=0.015, sides=4)]
+    parts += [mk.cylinder("MicBase", 0.18, 0.06, (-2.4, -0.75, 2.98), mat=dark, verts=14, bevel=0.02),
+              mk.tube("MicStem", (-2.4, -0.75, 3.0), (-2.38, -0.85, 3.55), 0.025, mat=alu, verts=6),
+              mk.lathe("Mic", [(0.0, 0.0), (0.06, 0.02), (0.08, 0.25), (0.07, 0.3), (0.0, 0.32)], (-2.37, -0.9, 3.55), mat=alu, segments=12)]
+    parts += sk.open_book("Log_", -1.3, -0.8, 2.95, cover, paper, ink, rng, yaw=8, w=1.0, d=0.66)
+    parts += sk.pen("Pen_", (-0.9, -1.15, 2.98), (-0.62, -0.95, 2.98), ink, alu)
+    for k in range(3):
+        parts.append(pk.rounded(f"TapeBox{k}", (0.48, 0.48, 0.1), (0.06, 0.7, 3.0 + k * 0.105), card, r=0.01,
+                                rot=(0, 0, rng.uniform(-3, 3))))
     return parts, glows
 
 

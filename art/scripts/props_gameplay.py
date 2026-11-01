@@ -18,31 +18,63 @@ from props_world import dark_wood
 
 @prop("Station", pivot="bottom", material="Metal", collide=False, texture=1024)
 def station():
-    """A case-file console: steel desk, CRT housing around the game's screen part, keyboard."""
-    steel = mk.noisy("Stat_Steel", srgb(44, 44, 50), srgb(70, 70, 78), scale=16, detail=10, roughness=0.45,
-                     metallic=0.6)
-    dark = mk.noisy("Stat_Dark", srgb(16, 16, 18), srgb(30, 30, 34), scale=20, roughness=0.5)
-    beige = mk.noisy("Stat_Beige", srgb(170, 162, 146), srgb(200, 192, 176), scale=18, roughness=0.6)
+    """A case-file console, the standard station: a grey steel desk with its drawer pedestal, the
+    terminal's processor unit on it (two disk slots, its lamps, a vent), the deep CRT housing round
+    the game's screen part (which stands 4.4 by 2.6 at the console's middle, 0.8 back), a keyboard,
+    a desk phone, a tray of case folders and a cup of pens. It is placed by its footprint's middle,
+    so it stays as deep in front as behind (a foot rail at the front, the cable tray at the back)."""
+    import stationkit as sk
+
+    rng = random.Random(11)
+    steel = pk.paint("Stat_Steel", (88, 90, 96), rough=0.45)
+    top = pk.plastic("Stat_Resin", (60, 62, 66), rough=0.5)
+    trim = pk.metal("Stat_Trim", (30, 30, 34), (48, 48, 52), rough=0.4, metallic=0.5)
+    beige = pk.plastic("Stat_Plastic", (182, 174, 156))
+    bezel = pk.plastic("Stat_Bezel", (66, 64, 60))
+    dark = pk.plastic("Stat_Dark", (22, 22, 24))
+    key = pk.plastic("Stat_Button", (210, 204, 188))
+    paper = mk.noisy("Stat_Paper", PAPER_B, PAPER_A, scale=30, roughness=0.9)
+    folder = mk.noisy("Stat_Folder", srgb(168, 136, 86), srgb(196, 164, 110), roughness=0.8)
     label = mk.noisy("Stat_Label", PAPER_B, PAPER_A, scale=30, roughness=0.9)
-    parts = [
-        mk.box("Top", (5.2, 2.6, 0.18), (0, 0, 2.91), mat=steel, bevel=0.04),
-        mk.box("Body", (4.8, 2.3, 2.8), (0, 0.05, 1.45), mat=steel, bevel=0.05),
-        mk.box("Kick", (4.6, 2.1, 0.25), (0, 0.05, 0.12), mat=dark),
-        # CRT housing behind and around the screen (the screen itself is the game's part).
-        mk.box("Shell", (4.9, 1.0, 3.1), (0, 1.45, 5.4), mat=beige, bevel=0.15),
-        mk.box("BezelTop", (4.9, 0.2, 0.25), (0, 0.72, 6.83), mat=beige, bevel=0.05),
-        mk.box("BezelBottom", (4.9, 0.2, 0.3), (0, 0.72, 3.95), mat=beige, bevel=0.05),
-        mk.box("BezelLeft", (0.25, 0.2, 2.6), (-2.33, 0.72, 5.4), mat=beige, bevel=0.05),
-        mk.box("BezelRight", (0.25, 0.2, 2.6), (2.33, 0.72, 5.4), mat=beige, bevel=0.05),
-        mk.box("Stand", (0.8, 0.8, 0.9), (0, 1.2, 3.45), mat=dark, bevel=0.05),
-        mk.box("Keyboard", (1.6, 0.5, 0.1), (0.2, -0.6, 3.05), rot=(4, 0, 0), mat=beige, bevel=0.03),
-        mk.box("Label", (1.2, 0.04, 0.4), (-1.4, -1.12, 2.2), mat=label),
-        mk.tube("Cable", (1.9, 1.2, 2.95), (2.2, 1.3, 0.2), 0.05, mat=dark, verts=8),
-    ]
-    for i in range(6):
-        parts.append(mk.box("Vent", (0.5, 0.04, 0.06), (1.6, -1.12, 1.0 + i * 0.25), mat=dark))
-    glow = [mk.box("Power", (0.12, 0.04, 0.08), (2.0, 0.6, 4.05), mat=mk.emissive("Stat_Led", srgb(80, 255, 140), 5))]
-    return parts, glow
+    ink = mk.flat("Stat_Ink", srgb(26, 24, 30), 0.6)
+    parts = sk.steel_desk("Stat_", top, steel, trim, w=5.2, d=2.6, h=2.95, pedestal=1.5)
+    parts += [mk.tube("FootRail", (-2.45, -1.58, 0.3), (2.45, -1.58, 0.3), 0.045, mat=trim, verts=10),
+              mk.box("CableTray", (4.6, 0.05, 0.5), (0, 1.6, 2.4), mat=trim),
+              mk.box("TrayLip", (4.6, 0.3, 0.04), (0, 1.47, 2.17), mat=trim)]
+    for sx in (-1, 1):
+        parts.append(mk.box("RailStay", (0.08, 0.3, 0.08), (sx * 2.45, -1.45, 0.3), mat=trim))
+    # The processor unit under the monitor.
+    parts += [pk.rounded("Unit", (3.6, 1.2, 0.6), (0, 1.0, 3.25), beige, r=0.05),
+              mk.box("Drive", (0.9, 0.02, 0.16), (-1.0, 0.395, 3.3), mat=dark),
+              mk.box("Drive", (0.9, 0.02, 0.16), (0.1, 0.395, 3.3), mat=dark),
+              mk.box("DriveLatch", (0.12, 0.03, 0.06), (-0.45, 0.385, 3.22), mat=key),
+              mk.box("DriveLatch", (0.12, 0.03, 0.06), (0.65, 0.385, 3.22), mat=key)]
+    parts += pk.louvres("UnitVent", 1.3, 0.395, 3.25, 0.7, 0.36, bezel, count=5)
+    glows = [mk.box("Power", (0.08, 0.02, 0.05), (-1.5, 0.39, 3.1), mat=mk.emissive("Stat_Led", srgb(80, 255, 140), 5)),
+             mk.box("DiskLed", (0.06, 0.02, 0.04), (-0.2, 0.39, 3.1), mat=mk.emissive("Stat_Disk", srgb(255, 170, 60), 4))]
+    # The CRT housing round the game's screen (a 0.3-deep part, its face 0.65 back).
+    term, led = sk.crt("Term_", (0, 0.75, 5.4, 4.4, 2.6, 0), beige, bezel, dark, depth=0.7, base_to=3.55, border=0.25, chin=0.14)
+    parts += term
+    glows += led
+    parts += pk.label("Badge", "警視庁 記録照会", 0.07, (-1.6, 0.592, 3.94), ink)
+    parts.append(sk.cable("UnitCable", [(1.6, 1.55, 3.2), (1.9, 1.58, 2.8), (2.0, 1.58, 0.5)], dark, r=0.04))
+    # Keyboard, phone, folders, pens, a label on the pedestal.
+    parts += sk.keyboard("Kb_", -0.2, -0.75, 2.95, beige, key, w=2.2, d=0.72)
+    ph, lines = sk.desk_phone("Ph_", 1.8, -0.5, 2.95, dark, key, dark, yaw=-12, lines=3)
+    parts += ph
+    glows += lines
+    parts += [mk.box("Tray", (1.0, 1.3, 0.05), (-2.0, -0.35, 2.975), mat=trim, bevel=0.01)]
+    for sx in (-1, 1):
+        parts.append(mk.box("TrayWall", (0.04, 1.3, 0.2), (-2.0 + sx * 0.48, -0.35, 3.07), mat=trim))
+    for k in range(3):
+        parts += sk.folder(f"Case{k}_", -2.0, -0.35, 3.0 + k * 0.09, folder, paper, yaw=rng.uniform(-4, 4), w=0.88, d=1.2,
+                           tab=mk.flat(f"Stat_Tab{k}", (RED, srgb(40, 90, 160), srgb(220, 180, 60))[k], 0.5))
+    parts += [mk.lathe("PenCup", [(0.0, 0.0), (0.13, 0.0), (0.13, 0.35), (0.11, 0.35), (0.11, 0.03), (0.0, 0.03)], (2.25, 0.25, 2.95),
+                       mat=trim, segments=12)]
+    for k in range(3):
+        parts += sk.pen(f"CupPen{k}", (2.25 + (k - 1) * 0.04, 0.25, 3.0), (2.25 + (k - 1) * 0.12, 0.25 + (k - 1) * 0.05, 3.5), ink)
+    parts.append(mk.box("Label", (0.26, 0.01, 0.1), (1.79, -1.2, 2.19), mat=label))
+    return parts, glows
 
 
 @prop("EvidenceBoard", pivot="centre", material="Wood", collide=False, texture=1024)

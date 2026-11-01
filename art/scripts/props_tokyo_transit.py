@@ -590,20 +590,39 @@ def ticket_machine():
 
 @prop("StationSignHanging", pivot="centre", material="Metal", collide=False, texture=1024, set="Tokyo")
 def station_sign_hanging():
-    """A lit double-faced platform sign on two rods: のりば 1・2 Platforms, arrows either way."""
-    frame = pk.metal("SH_Frame", (30, 30, 34), (46, 46, 50), rough=0.4, metallic=0.4)
+    """A lit double-faced platform sign hung on two rods from the ceiling: a slim aluminium box with
+    rounded ends, each face a lit panel in its frame with the line's colour band, the platform
+    roundels and のりば 1・2 / Platforms with arrows either way; the rods' turnbuckles and their
+    ceiling plates."""
+    frame = pk.metal("SH_Alu", (150, 154, 160), (186, 190, 196), rough=0.3, metallic=0.8)
+    dark = pk.metal("SH_Frame", (30, 30, 34), (46, 46, 50), rough=0.4, metallic=0.4)
     ink = pk.plastic("SH_Ink", (20, 22, 30))
-    parts = [mk.box("Box", (10.4, 0.6, 1.9), (0, 0, 0), mat=frame, bevel=0.06)]
+    band = pk.plastic("SH_Band", (40, 140, 70))
+    white = pk.plastic("SH_White", (246, 246, 240))
+    parts = [pk.rounded("Box", (10.3, 0.56, 1.9), (0, 0, 0), dark, r=0.12),
+             mk.box("Spine", (10.32, 0.1, 0.08), (0, 0, 0.92), mat=frame)]
     for x in (-4.2, 4.2):
-        parts.append(mk.cylinder("Rod", 0.06, 2.4, (x, 0, 2.15), mat=frame, verts=8))
+        parts += [mk.cylinder("Rod", 0.05, 2.2, (x, 0, 2.08), mat=frame, verts=10),
+                  mk.box("Lug", (0.3, 0.12, 0.2), (x, 0, 1.02), mat=frame, bevel=0.02),
+                  mk.cylinder("Turnbuckle", 0.08, 0.3, (x, 0, 1.7), mat=frame, verts=8),
+                  mk.cylinder("CeilPlate", 0.3, 0.08, (x, 0, 3.31), mat=dark, verts=16, bevel=0.02)]
     glows = []
     for side in (1, -1):
-        y = -side * 0.31
-        glows.append(mk.box("Face", (10.0, 0.04, 1.6), (0, y, 0), mat=pk.glow("SH_Face", (236, 238, 232), 2.5)))
+        y = -side * 0.285
         rot = (90, 0, 0 if side > 0 else 180)
-        parts += pk.label("Main", "のりば 1・2", 0.5, (-2.0 * side, y - side * 0.03, 0.2), ink, rot=rot)
-        parts += pk.label("En", "Platforms", 0.3, (-2.0 * side, y - side * 0.03, -0.45), ink, rot=rot)
-        parts += pk.label("Arrow", "↓", 0.8, (3.8 * side, y - side * 0.03, 0), ink, rot=rot)
+        parts += pk.frame("Rim", 10.0, 1.66, 0.08, 0.04, (0, y - side * 0.01, 0), frame, rot=(0, 0, 0))
+        glows.append(mk.box("Face", (9.84, 0.02, 1.5), (0, y, 0), mat=pk.glow("SH_Face", (236, 238, 232), 2.5)))
+        yy = y - side * 0.025
+        parts.append(mk.box("Band", (9.84, 0.01, 0.16), (0, yy + side * 0.008, -0.62), mat=band))
+        for k, n in enumerate(("1", "2")):
+            cx = (-4.2 + k * 0.85) * side
+            parts += [mk.cylinder("Roundel", 0.3, 0.01, (cx, yy + side * 0.006, 0.1), rot=(90, 0, 0), mat=band, verts=20)]
+            parts += pk.label("Num", n, 0.36, (cx, yy - side * 0.002, 0.1), white, rot=rot)
+        parts += pk.label("Main", "のりば", 0.5, (-1.0 * side, yy, 0.22), ink, rot=rot)
+        parts += pk.label("En", "Platforms 1・2", 0.26, (-1.0 * side, yy, -0.32), ink, rot=rot)
+        parts += pk.label("ArrowL", "←", 0.7, (-2.75 * side, yy, 0.05), ink, rot=rot)
+        parts += pk.label("ArrowR", "→", 0.7, (3.9 * side, yy, 0.05), ink, rot=rot)
+        parts += pk.label("Exit", "出口 Exit", 0.24, (2.6 * side, yy, 0.05), ink, rot=rot)
     return parts, glows
 
 
@@ -654,35 +673,49 @@ def coin_lockers():
 
 @prop("StationClock", pivot="centre", material="Metal", collide=False, texture=1024, set="Tokyo")
 def station_clock():
-    """A double-faced station clock, 3 across, hung from the ceiling on a rod: a deep round case,
-    white backlit faces with bold hour bars, black hands and a red seconds hand; its top meets a
-    ceiling 3 above the case."""
+    """A double-faced station clock hung from the ceiling on its rod (the kept box: 2.6 across, 0.68
+    deep, 4.9 from the canopy to the case's foot): a deep round case with a rolled rim, white backlit
+    faces under a bezel ring, a minute track of sixty ticks with bold hour bars, the station's
+    number plate, black hands with a red seconds hand and its counterweight; a clamp collar, the
+    rod, and the canopy on the ceiling."""
     case = pk.metal("SC_Case", (30, 30, 34), (48, 48, 52), rough=0.35, metallic=0.5)
+    chrome = pk.chrome("SC_Chrome")
     ink = pk.plastic("SC_Ink", (18, 18, 20))
     red = pk.plastic("SC_Red", (210, 30, 36))
-    R = 1.5
-    parts = [
-        mk.cylinder("Case", R + 0.15, 0.9, (0, 0, 0), rot=(90, 0, 0), mat=case, verts=40, bevel=0.1),
-        mk.cylinder("Rod", 0.1, 3.0, (0, 0, R + 1.6), mat=case, verts=10),
-        mk.cylinder("Canopy", 0.4, 0.15, (0, 0, R + 3.05), mat=case, verts=16),
-        mk.box("Clamp", (0.5, 0.5, 0.3), (0, 0, R + 0.2), mat=case),
-    ]
+    R, cz, depth = 1.3, -1.15, 0.56
+    face_r = R - 0.16
+    parts = [mk.cylinder("Case", R - 0.04, depth, (0, 0, cz), rot=(90, 0, 0), mat=case, verts=48, bevel=0.06),
+             mk.cylinder("Collar", 0.18, 0.3, (0, 0, cz + R + 0.1), mat=case, verts=14, bevel=0.02),
+             mk.cylinder("Rod", 0.07, 2.1, (0, 0, cz + R + 1.25), mat=chrome, verts=12),
+             mk.cylinder("Nut", 0.11, 0.1, (0, 0, cz + R + 0.3), mat=chrome, verts=6),
+             mk.lathe("Canopy", [(0.0, 2.3), (0.32, 2.3), (0.32, 2.35), (0.26, 2.45), (0.0, 2.45)], (0, 0, 0), mat=case, segments=20)]
     glows = []
     for side in (1, -1):
-        y = -side * 0.46
-        glows.append(mk.cylinder("Face", R, 0.03, (0, y, 0), rot=(90, 0, 0), mat=pk.glow("SC_Face", (244, 244, 238), 2),
-                                 verts=40))
-        yy = y - side * 0.03
-        for k in range(12):
-            a = math.radians(k * 30)
-            long = k % 3 == 0
-            length = 0.36 if long else 0.2
-            width = 0.12 if long else 0.07
-            r = R - 0.12 - length / 2
-            parts.append(mk.box("Mark", (width, 0.03, length), (math.sin(a) * r * side, yy, math.cos(a) * r),
-                                rot=(0, k * 30 * side, 0), mat=ink))
-        parts += [mk.box("Hour", (0.12, 0.04, 0.8), (0.28 * side, yy - side * 0.02, 0.2), rot=(0, 55 * side, 0), mat=ink),
-                  mk.box("Minute", (0.08, 0.04, 1.15), (-0.2 * side, yy - side * 0.04, 0.5), rot=(0, -22 * side, 0), mat=ink),
-                  mk.box("Second", (0.03, 0.04, 1.2), (0.05 * side, yy - side * 0.06, -0.55), rot=(0, 170 * side, 0), mat=red),
-                  mk.cylinder("Pin", 0.08, 0.1, (0, yy - side * 0.05, 0), rot=(90, 0, 0), mat=ink, verts=10)]
+        y = -side * (depth / 2 + 0.005)
+        ring_y = -side * (depth / 2 + 0.01)
+        parts.append(mk.torus("Bezel", R - 0.1, 0.04, (0, ring_y, cz), rot=(90, 0, 0), mat=chrome, major_segments=48,
+                              minor_segments=6))
+        glows.append(mk.cylinder("Face", face_r, 0.01, (0, y, cz), rot=(90, 0, 0), mat=pk.glow("SC_Face", (244, 244, 238), 2),
+                                 verts=48))
+        yy = y - side * 0.008
+        for k in range(60):
+            a = math.radians(k * 6)
+            hour = k % 5 == 0
+            length = 0.24 if hour else 0.07
+            width = 0.08 if hour else 0.018
+            r = face_r - 0.06 - length / 2
+            parts.append(mk.box("Tick", (width, 0.01, length), (math.sin(a) * r * side, yy, cz + math.cos(a) * r),
+                                rot=(0, k * 6 * side, 0), mat=ink))
+        parts += pk.label("Plate", "KAGEGAOKA", 0.07, (0, yy - side * 0.002, cz + 0.42), ink,
+                          rot=(90, 0, 0 if side > 0 else 180))
+        hz = yy - side * 0.012
+        for nm, ln, wd, ang, m, dz in (("Hour", 0.62, 0.09, 52, ink, 0.0), ("Minute", 0.92, 0.06, -20, ink, -0.012),
+                                       ("Second", 0.98, 0.02, 165, red, -0.024)):
+            a = math.radians(ang)
+            off = ln / 2 - 0.12
+            parts.append(mk.box(nm, (wd, 0.012, ln), (math.sin(a) * off * side, hz - side * -dz, cz + math.cos(a) * off),
+                                rot=(0, ang * side, 0), mat=m))
+        parts += [mk.cylinder("Weight", 0.06, 0.012, (math.sin(math.radians(345)) * 0.22 * side, hz - side * 0.024,
+                                                      cz + math.cos(math.radians(345)) * 0.22), rot=(90, 0, 0), mat=red, verts=10),
+                  mk.cylinder("Pin", 0.06, 0.04, (0, hz - side * 0.01, cz), rot=(90, 0, 0), mat=ink, verts=12)]
     return parts, glows

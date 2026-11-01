@@ -14,3 +14,4 @@
 - [UI direction: concept A](ui-direction-2026-10-28.md) — paper/ink/blood UI built 2026-10-29: Boil, Pointer, Paper, OMORI buttons; rejected looks
 - [Station world feel](station-world-fx.md) — station screens/light/sounds/acting are client-side from Busy/BusySince only; a hack must look like work
 - [Station puzzles](station-puzzles.md) — 16 case-file puzzles drawn with Puzzles/Common; ink-ramp colours only, misses lock picks, bots need minSeconds <= 3
+- [Station props rebuilt](station-props-2026-11.md) — 17 station looks remade from stationkit.py inside their old boxes and screen slots; anchor maths, Station must stay depth-symmetric
