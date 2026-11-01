@@ -1,33 +1,35 @@
 --!strict
--- Phone: an intercepted text in a shifted alphabet. Turn the cipher wheel until it reads, then
--- pick the word. Answer: the word.
+-- Phone: an intercepted text in a shifted alphabet ("MEET AT THE HARBOR"). Turn the cipher wheel until the text
+-- reads, then pick the place. Every place offered has the same length, so it can't be guessed by its shape.
+-- Answer: the place.
 
 local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 
 local Def = {
 	id = "Cipher",
 	title = "Cipher wheel",
-	hint = "Turn the wheel to decode, then pick the word.",
+	hint = "Turn the wheel until the text reads, then pick the place.",
 }
 
-Def.WORDS = {
-	"ARCHIVE",
-	"LANTERN",
+Def.PLACES = {
 	"HARBOR",
-	"LEDGER",
-	"STATION",
-	"CANDLE",
-	"SHADOW",
-	"MIDNIGHT",
-	"ORCHARD",
-	"TUNNEL",
-	"RAVEN",
-	"VIOLET",
-	"MARKET",
 	"CHAPEL",
 	"BRIDGE",
-	"WINTER",
+	"MARKET",
+	"TUNNEL",
+	"GARAGE",
+	"TEMPLE",
+	"GARDEN",
+	"CINEMA",
+	"OFFICE",
+	"CORNER",
+	"PALACE",
+	"SCHOOL",
+	"CASTLE",
+	"ISLAND",
 }
+Def.OPTIONS = 4
+Def.MESSAGE = "MEET AT THE %s"
 
 -- Shifts every capital letter `shift` places along the alphabet.
 function Def.shift(text: string, shift: number): string
@@ -40,14 +42,19 @@ end
 
 function Def.generate(seed: number)
 	local rng = PuzzleKit.rng(seed)
-	local picks = PuzzleKit.pickDistinct(4, 1, #Def.WORDS, rng)
-	local word = Def.WORDS[picks[1]]
+	local picks = PuzzleKit.pickDistinct(Def.OPTIONS, 1, #Def.PLACES, rng)
+	local word = Def.PLACES[picks[1]]
 	local options = {}
 	for _, index in ipairs(picks) do
-		table.insert(options, Def.WORDS[index])
+		table.insert(options, Def.PLACES[index])
 	end
-	local key = rng:NextInteger(3, 22)
-	return { word = word, key = key, encoded = Def.shift(word, key), options = PuzzleKit.shuffle(options, rng) }
+	local key = rng:NextInteger(3, 23)
+	return {
+		word = word,
+		key = key,
+		encoded = Def.shift(string.format(Def.MESSAGE, word), key),
+		options = PuzzleKit.shuffle(options, rng),
+	}
 end
 
 function Def.check(puzzle, answer): boolean

@@ -7,27 +7,29 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Chromatography",
 	title = "Pen chromatography",
-	hint = "Pick the pen that matches the sample.",
+	hint = "Pick the pen whose bands match the sample.",
 }
 
--- Band colours (the view draws them).
-Def.INKS = {
-	Color3.fromRGB(40, 40, 60),
-	Color3.fromRGB(140, 20, 30),
-	Color3.fromRGB(40, 80, 170),
-	Color3.fromRGB(110, 60, 150),
-	Color3.fromRGB(40, 120, 90),
-	Color3.fromRGB(180, 120, 40),
-}
+-- Band tones, darkest first (the view draws them in the ink ramp's greys).
+Def.TONES = 4
 Def.BANDS = 4
 Def.HEIGHTS = 9
 
 local function strip(rng: Random)
 	local bands = {}
-	for i = 1, Def.BANDS do
-		bands[i] = { rng:NextInteger(1, #Def.INKS), rng:NextInteger(1, Def.HEIGHTS) }
+	for i, height in ipairs(PuzzleKit.pickDistinct(Def.BANDS, 1, Def.HEIGHTS, rng)) do
+		bands[i] = { rng:NextInteger(1, Def.TONES), height }
 	end
 	return bands
+end
+
+local function key(bands): string
+	local parts = {}
+	for _, band in ipairs(bands) do
+		table.insert(parts, band[1] .. ":" .. band[2])
+	end
+	table.sort(parts)
+	return table.concat(parts, ",")
 end
 
 local function variant(bands, rng: Random)
@@ -37,17 +39,37 @@ local function variant(bands, rng: Random)
 	end
 	local index = rng:NextInteger(1, #copy)
 	if rng:NextNumber() < 0.5 then
-		copy[index][1] = (copy[index][1] + rng:NextInteger(1, #Def.INKS - 1) - 1) % #Def.INKS + 1
-	else
-		copy[index][2] = (copy[index][2] + rng:NextInteger(1, Def.HEIGHTS - 1) - 1) % Def.HEIGHTS + 1
+		copy[index][1] = (copy[index][1] + rng:NextInteger(1, Def.TONES - 1) - 1) % Def.TONES + 1
+		return copy
 	end
+	-- (a band moved one step up or down, onto a height no other band has)
+	local used = {}
+	for _, band in ipairs(copy) do
+		used[band[2]] = true
+	end
+	for _, step in ipairs(if rng:NextNumber() < 0.5 then { 1, -1, 2, -2 } else { -1, 1, -2, 2 }) do
+		local height = copy[index][2] + step
+		if height >= 1 and height <= Def.HEIGHTS and not used[height] then
+			copy[index][2] = height
+			return copy
+		end
+	end
+	copy[index][1] = copy[index][1] % Def.TONES + 1
 	return copy
 end
 
 function Def.generate(seed: number)
 	local rng = PuzzleKit.rng(seed)
 	local sample = strip(rng)
-	local decoys = { variant(sample, rng), variant(sample, rng), variant(sample, rng) }
+	local taken = { [key(sample)] = true }
+	local decoys = {}
+	while #decoys < 3 do
+		local candidate = variant(sample, rng)
+		if not taken[key(candidate)] then
+			taken[key(candidate)] = true
+			table.insert(decoys, candidate)
+		end
+	end
 	local pens, correct = PuzzleKit.lineup(sample, decoys, rng)
 	return { sample = sample, pens = pens, correct = correct }
 end

@@ -16,6 +16,7 @@ local TaskTypes = require(Tasks:WaitForChild("TaskTypes"))
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
+local Common = require(script.Parent:WaitForChild("Puzzles"):WaitForChild("Common"))
 local Toasts = require(script.Parent.Toasts)
 
 local C = Kit.color
@@ -34,6 +35,8 @@ local hintLabel: TextLabel
 local area: Frame
 local progressLabel: TextLabel
 local firstSelection: GuiObject? = nil
+-- A miss stops every pick for this long (seconds), so guessing through a puzzle costs more than thinking it out.
+local MISS_LOCK = 1.1
 
 local current = nil
 
@@ -50,7 +53,10 @@ local function mountPuzzle(task_)
 		return
 	end
 	hintLabel.Text = def.hint
+	hintLabel.TextColor3 = C.bone
 	local puzzle = def.generate(task_.seed)
+	local lockedUntil = 0
+	local missCount = 0
 	local ctx = {
 		area = area,
 		puzzle = puzzle,
@@ -66,12 +72,42 @@ local function mountPuzzle(task_)
 			end
 			task_.solved = true
 			task_.answer = answer
-			hintLabel.Text = "Done."
-			hintLabel.TextColor3 = C.good
+			hintLabel.Text = "Solved. Filing it."
+			hintLabel.TextColor3 = C.bone
 			return true
 		end,
+		miss = function(gui: GuiObject?, text: string?)
+			if current ~= task_ or task_.solved then
+				return
+			end
+			missCount += 1
+			local mine = missCount
+			lockedUntil = os.clock() + MISS_LOCK
+			hintLabel.Text = text or "Not that one."
+			hintLabel.TextColor3 = C.danger
+			if gui and gui.Parent then
+				local cross = Common.cross(gui)
+				Common.shake(gui)
+				task.delay(MISS_LOCK, function()
+					cross:Destroy()
+				end)
+			end
+			task.delay(MISS_LOCK, function()
+				if current == task_ and not task_.solved and missCount == mine then
+					hintLabel.Text = def.hint
+					hintLabel.TextColor3 = C.bone
+				end
+			end)
+		end,
+		busy = function(): boolean
+			return task_.solved or current ~= task_ or os.clock() < lockedUntil
+		end,
 		hint = function(text: string)
-			hintLabel.Text = text
+			-- (a miss's line, or the solved one, stays until it is done)
+			if not task_.solved and os.clock() >= lockedUntil then
+				hintLabel.Text = text
+				hintLabel.TextColor3 = C.bone
+			end
 		end,
 		first = function(gui: GuiObject)
 			if not firstSelection then
@@ -111,10 +147,9 @@ local function start(payload, practice: (() -> ())?)
 	local info = TaskTypes.INFO[payload.stationType] or TaskTypes.INFO.Camera
 	win.setTitle(tostring(payload.stationName))
 	Kit.Icon.set(typeIcon, info.icon)
-	typeIcon.ImageColor3 = info.color
-	typeLabel.Text = string.upper(info.label)
-	typeLabel.TextColor3 = info.color
-	hintLabel.TextColor3 = C.dim
+	local def = PuzzleSet.get(payload.puzzle or "")
+	typeLabel.Text = string.upper(info.label .. (if def then "   /   " .. def.title else ""))
+	typeIcon.ImageColor3 = C.bone
 	Router.open("task")
 	mountPuzzle(task_)
 end
@@ -124,7 +159,7 @@ local function update()
 	if not task_ then
 		return
 	end
-	progressLabel.Text = if task_.solved then "Filing" else "Solve the puzzle."
+	progressLabel.Text = if task_.solved then "FILING" else ""
 	-- Solved is done: the report goes in at once (practice finishes on this client).
 	if task_.solved and task_.practice then
 		local done = task_.practice
@@ -169,28 +204,33 @@ end
 
 function TaskScreen.init()
 	win = Kit.window({ name = "task", title = "Case file", jp = "事件ファイル", size = "M" })
-	local head = Kit.frame({ Name = "Head", Size = UDim2.new(1, 0, 0, 48), Parent = win.body })
-	typeIcon = Kit.icon({ name = "task", size = 22, Position = UDim2.fromOffset(0, 0), Parent = head })
+	-- The head: what kind of file and which puzzle in small capitals, then the one thing to do, big in the hand.
+	local head = Kit.frame({ Name = "Head", Size = UDim2.new(1, 0, 0, 58), Parent = win.body })
+	typeIcon = Kit.icon({ name = "task", size = 20, color = C.bone, Position = UDim2.fromOffset(0, 0), Parent = head })
 	typeLabel = Kit.label({
 		font = "label",
 		size = "micro",
+		color = C.dim,
 		TextWrapped = false,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(30, 3),
-		Size = UDim2.new(1, -30, 0, 16),
+		Position = UDim2.fromOffset(28, 0),
+		Size = UDim2.new(1, -28, 0, 20),
 		Parent = head,
 	})
 	hintLabel = Kit.label({
-		size = "small",
-		color = C.dim,
+		size = "lead",
+		color = C.bone,
+		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		AutomaticSize = Enum.AutomaticSize.None,
 		Position = UDim2.fromOffset(0, 24),
-		Size = UDim2.new(1, 0, 0, 20),
+		Size = UDim2.new(1, 0, 0, 30),
 		Parent = head,
 	})
 	area = Kit.frame({
 		Name = "Puzzle",
-		Position = UDim2.fromOffset(0, 56),
-		Size = UDim2.new(1, 0, 1, -106),
+		Position = UDim2.fromOffset(0, 66),
+		Size = UDim2.new(1, 0, 1, -90),
 		Parent = win.body,
 	})
 	progressLabel = Kit.label({

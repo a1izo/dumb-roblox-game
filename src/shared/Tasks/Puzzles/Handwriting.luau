@@ -11,7 +11,7 @@ local Def = {
 }
 
 Def.WORDS = { "NAMES", "WRITE", "SEALED", "PAGES", "RULES", "QUILL", "OMEN", "TOMB", "RAVEN", "CANDLE" }
-Def.SLANTS = { -14, -7, 0, 7, 14 }
+Def.SLANTS = { -16, -8, 0, 8, 16 }
 Def.RISES = { -4, 0, 4 }
 
 -- A hand: per letter, a slant index and a rise index.

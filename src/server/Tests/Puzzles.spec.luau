@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Tasks = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Tasks")
+local PuzzleKit = require(Tasks:WaitForChild("PuzzleKit"))
 local PuzzleSet = require(Tasks:WaitForChild("PuzzleSet"))
 local TaskTypes = require(Tasks:WaitForChild("TaskTypes"))
 
@@ -69,6 +70,123 @@ return function(t)
 			expect(function()
 				TaskTypes.get("Nope")
 			end).to.throw()
+		end)
+	end)
+
+	-- Each seed's puzzle has one right answer and the decoys the views promise.
+	local SEEDS = 60
+	local function each(id: string, fn: (any, any) -> ())
+		local def = PuzzleSet.get(id) :: any
+		for seed = 1, SEEDS do
+			fn(def, def.generate(seed * 104729))
+		end
+	end
+
+	describe("Puzzle designs", function()
+		it("Timeline's stills run in time order by rank, in both clocks", function()
+			each("Timeline", function(def, puzzle)
+				local times = {}
+				local twelve = 0
+				for _, frame in ipairs(puzzle.frames) do
+					times[frame.rank] = frame.time
+					twelve += if frame.twelve then 1 else 0
+				end
+				for rank = 2, def.COUNT do
+					expect(times[rank] > times[rank - 1]).to.equal(true)
+				end
+				expect(twelve).to.equal(def.COUNT / 2)
+			end)
+			expect(PuzzleKit.clock(22 * 3600 + 41 * 60 + 7, true)).to.equal("10:41:07 PM")
+			expect(PuzzleKit.clock(22 * 3600 + 41 * 60 + 7)).to.equal("22:41:07")
+		end)
+		it("Enhance has exactly one person on the note, and near misses", function()
+			each("Enhance", function(def, puzzle)
+				local exact, near = 0, 0
+				for i, person in ipairs(puzzle.people) do
+					local fit = def.fits(person, puzzle.wanted)
+					if fit == 3 then
+						exact += 1
+						expect(i).to.equal(puzzle.target)
+					elseif fit == 2 then
+						near += 1
+					end
+				end
+				expect(exact).to.equal(1)
+				expect(near >= def.NEAR).to.equal(true)
+				expect(#puzzle.people).to.equal(def.COLS * def.ROWS)
+			end)
+		end)
+		it("print puzzles show one true print among different ones", function()
+			local function distinct(list, correct, sample)
+				local keys = {}
+				for i, spec in ipairs(list) do
+					local key = PuzzleKit.printKey(spec)
+					expect(keys[key]).to.equal(nil)
+					keys[key] = true
+					expect(key == PuzzleKit.printKey(sample)).to.equal(i == correct)
+				end
+			end
+			each("PrintMatch", function(_, puzzle)
+				for _, round in ipairs(puzzle.rounds) do
+					distinct(round.choices, round.correct, round.sample)
+				end
+			end)
+			each("Dust", function(_, puzzle)
+				distinct(puzzle.cards, puzzle.correct, puzzle.print)
+			end)
+		end)
+		it("Chromatography's pens all differ and one matches", function()
+			each("Chromatography", function(_, puzzle)
+				local function key(bands)
+					local parts = {}
+					for _, band in ipairs(bands) do
+						table.insert(parts, band[1] .. ":" .. band[2])
+					end
+					table.sort(parts)
+					return table.concat(parts, ",")
+				end
+				local seen = {}
+				for i, pen in ipairs(puzzle.pens) do
+					expect(seen[key(pen)]).to.equal(nil)
+					seen[key(pen)] = true
+					expect(key(pen) == key(puzzle.sample)).to.equal(i == puzzle.correct)
+				end
+			end)
+		end)
+		it("Dial's note points at one call", function()
+			each("Dial", function(def, puzzle)
+				local numbers, unknowns = {}, 0
+				for _, entry in ipairs(puzzle.entries) do
+					expect(numbers[entry.number]).to.equal(nil)
+					numbers[entry.number] = true
+					expect(#entry.number).to.equal(11)
+					expect(string.sub(entry.number, 1, 3)).to.equal(def.PREFIX)
+					unknowns += if entry.name == def.UNKNOWN then 1 else 0
+				end
+				expect(unknowns >= 2).to.equal(true)
+				expect(def.pick(puzzle.entries, puzzle.rule).number).to.equal(puzzle.number)
+			end)
+		end)
+		it("Cipher offers four places of one length and decodes with its key", function()
+			each("Cipher", function(def, puzzle)
+				local seen = {}
+				for _, word in ipairs(puzzle.options) do
+					expect(#word).to.equal(#puzzle.word)
+					expect(seen[word]).to.equal(nil)
+					seen[word] = true
+				end
+				expect(seen[puzzle.word]).to.equal(true)
+				expect(def.shift(puzzle.encoded, -puzzle.key)).to.equal(string.format(def.MESSAGE, puzzle.word))
+			end)
+		end)
+		it("Autopsy charts stay on the chart from either side", function()
+			each("Autopsy", function(def, puzzle)
+				expect(#def.report(puzzle)).to.equal(def.MARKS)
+				for _, region in ipairs(def.REGIONS) do
+					local r = def.rect(puzzle, region.id)
+					expect(r[1] >= 0 and r[1] + r[3] <= 1.0001).to.equal(true)
+				end
+			end)
 		end)
 	end)
 

@@ -1,103 +1,111 @@
--- Forensics · Autopsy chart: mark on the body chart the three places the coroner's report
--- lists. The chart faces you, so the body's left is on your right.
+-- Forensics / Autopsy chart: the coroner's report on the left, three marks on the body, and the chart on the
+-- right, drawn from the front (a face) or the back (the spine). Left and right in the report are the body's own.
+-- Pick each part the report names; each found line is ticked off.
 
 local Kit = require(script.Parent.Parent.Kit)
 local Common = require(script.Parent.Common)
 
-local C = Kit.color
-
 return function(ctx: Common.Context)
 	local def, puzzle = ctx.def, ctx.puzzle
-	local report = Kit.Base.make("Frame", {
-		Name = "Report",
-		BackgroundColor3 = C.parchment,
-		BorderSizePixel = 0,
-		Size = UDim2.fromScale(0.4, 1),
-		Parent = ctx.area,
-	})
-	Kit.pad(report, Kit.space.m)
-	Kit.list(report, Kit.space.s)
-	Kit.label({
-		Text = "CORONER'S REPORT",
-		font = "label",
-		size = "small",
-		color = C.ink,
-		LayoutOrder = 1,
-		Parent = report,
-	})
-	for index, id in ipairs(puzzle.marks) do
-		Kit.label({
-			Text = string.format("%d. Bruising, %s.", index, def.REGIONS[id].name),
-			font = "document",
-			size = "body",
-			color = C.ink,
-			LayoutOrder = index + 1,
-			Parent = report,
-		})
+
+	local report =
+		Common.card({ Name = "Report", fill = Common.SHEET, Size = UDim2.new(0.42, -8, 1, 0), Parent = ctx.area })
+	Common.caption(report, "coroner's report", { Position = UDim2.fromOffset(14, 10), Size = UDim2.new(1, -28, 0, 18) })
+	local lines = {}
+	for i, text in ipairs(def.report(puzzle)) do
+		local y = 40 + (i - 1) * 52
+		lines[i] = Common.text(
+			report,
+			text,
+			{ size = "lead", Position = UDim2.fromOffset(14, y), Size = UDim2.new(1, -28, 0, 40) }
+		)
+		Common.rule(report, UDim2.new(0, 14, 0, y + 44), UDim2.new(1, -28, 0, 1))
 	end
-	local chart = Kit.Base.make("Frame", {
+	Common.text(report, "Left and right are the body's own.", {
+		size = "small",
+		color = Common.GREY,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 14, 1, -10),
+		Size = UDim2.new(1, -28, 0, 40),
+	})
+
+	local chartCard = Common.card({
 		Name = "Chart",
-		BackgroundColor3 = C.raised,
-		BorderSizePixel = 0,
+		fill = Common.CARD,
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.fromScale(0.56, 1),
+		Size = UDim2.new(0.58, -8, 1, 0),
 		Parent = ctx.area,
 	})
-	Kit.Base.make("UIAspectRatioConstraint", { AspectRatio = 0.7, Parent = chart })
-	local chosen: { number } = {}
-	local tiles = {}
-	local function reset()
-		chosen = {}
-		for _, tile in ipairs(tiles) do
-			tile.BackgroundColor3 = tile:GetAttribute("BaseColor")
-			local mark = tile:FindFirstChild("Mark")
-			if mark then
-				mark:Destroy()
-			end
-		end
+	Common.caption(chartCard, if puzzle.back then "seen from the back" else "seen from the front", {
+		Position = UDim2.fromOffset(12, 8),
+		Size = UDim2.new(1, -24, 0, 18),
+	})
+	local chart = Kit.frame({
+		Name = "Body",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 30),
+		Size = UDim2.new(1, -20, 1, -38),
+		Parent = chartCard,
+	})
+	Kit.Base.make("UIAspectRatioConstraint", { AspectRatio = 0.62, Parent = chart })
+
+	local wanted = {}
+	for i, id in ipairs(puzzle.marks) do
+		wanted[id] = i
 	end
-	for index, region in ipairs(def.REGIONS) do
-		local r = region.rect
-		local tile
-		tile = Common.tile({
-			Name = "Region_" .. region.id,
-			color = Color3.fromRGB(120, 114, 104),
+	local found = {}
+	for _, region in ipairs(def.REGIONS) do
+		local r = def.rect(puzzle, region.id)
+		local part
+		part = Common.target(ctx, {
+			Name = "Part",
+			fill = Common.SHEET,
 			Position = UDim2.fromScale(r[1], r[2]),
 			Size = UDim2.fromScale(r[3], r[4]),
+			ZIndex = 3,
 			Parent = chart,
 		}, function()
-			local at = table.find(chosen, region.id)
-			if at then
-				table.remove(chosen, at)
-				local mark = tile:FindFirstChild("Mark")
-				if mark then
-					mark:Destroy()
-				end
+			local line = wanted[region.id]
+			if not line then
+				ctx.miss(part, "The report doesn't name that.")
 				return
 			end
-			table.insert(chosen, region.id)
-			Kit.icon({
-				Name = "Mark",
-				name = "cross",
-				size = 22,
-				color = C.white,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				ZIndex = 6,
-				Parent = tile,
-			})
-			if #chosen == def.MARKS then
-				if not ctx.submit(table.clone(chosen)) then
-					ctx.hint("Wrong spots. The chart faces you.")
-					Common.flash(chart, false)
-					reset()
-				end
+			if found[region.id] then
+				return
+			end
+			found[region.id] = true
+			Common.ring(part, nil, 0.9)
+			lines[line].TextColor3 = Common.SOFT
+			Common.rule(lines[line], UDim2.fromScale(0, 0.5), UDim2.new(1, 0, 0, 2), Common.RED)
+			local list = {}
+			for id in pairs(found) do
+				table.insert(list, id)
+			end
+			if #list == def.MARKS then
+				ctx.submit(list)
 			end
 		end)
-		table.insert(tiles, tile)
-		if index == 1 then
-			ctx.first(tile)
+		Kit.Base.make("UICorner", { CornerRadius = UDim.new(if region.id == 1 then 0.5 else 0.25, 0), Parent = part })
+		local border = part:FindFirstChild("Border")
+		if border then
+			Kit.Base.make(
+				"UICorner",
+				{ CornerRadius = UDim.new(if region.id == 1 then 0.5 else 0.25, 0), Parent = border }
+			)
+		end
+		if region.id == 1 then
+			-- which way the body faces: a face from the front, the back of the head from behind
+			if puzzle.back then
+				Common.rule(part, UDim2.fromScale(0.3, 0.3), UDim2.new(0.4, 0, 0, 2), Common.SOFT)
+			else
+				Common.dot(part, 0.35, 0.45, 5, Common.INK, 5)
+				Common.dot(part, 0.65, 0.45, 5, Common.INK, 5)
+				Common.rule(part, UDim2.fromScale(0.38, 0.72), UDim2.new(0.24, 0, 0, 2), Common.INK)
+			end
+			ctx.first(part)
+		elseif puzzle.back and (region.id == 3 or region.id == 4) then
+			Common.rule(part, UDim2.new(0.5, -1, 0.05, 0), UDim2.new(0, 2, 0.9, 0), Common.SOFT)
 		end
 	end
 end

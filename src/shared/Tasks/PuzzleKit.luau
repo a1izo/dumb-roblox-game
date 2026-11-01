@@ -121,4 +121,99 @@ function PuzzleKit.lineup<T>(target: T, decoys: { T }, rng: Random): ({ T }, num
 	return out, correct
 end
 
+-- Fingerprints ---------------------------------------------------------------------------------
+-- A print is a few features the views draw (UI/Puzzles/Common.print): the pattern (1 whorl, 2 loop, 3 arch), how
+-- many ridges, where its core sits (1 left, 2 middle, 3 right), a scar across it (0 none, else one of four angles)
+-- and three islands (small ridge dots) on a 5 x 5 grid.
+
+PuzzleKit.PRINT = { KINDS = 3, MIN_RINGS = 4, MAX_RINGS = 6, CORES = 3, SCARS = 4, GRID = 5, DOTS = 3 }
+
+export type Print = { kind: number, rings: number, core: number, scar: number, dots: { { number } } }
+
+function PuzzleKit.print(rng: Random): Print
+	local P = PuzzleKit.PRINT
+	local dots = {}
+	for _, cell in ipairs(PuzzleKit.pickDistinct(P.DOTS, 0, P.GRID * P.GRID - 1, rng)) do
+		table.insert(dots, { cell % P.GRID, cell // P.GRID })
+	end
+	return {
+		kind = rng:NextInteger(1, P.KINDS),
+		rings = rng:NextInteger(P.MIN_RINGS, P.MAX_RINGS),
+		core = rng:NextInteger(1, P.CORES),
+		scar = rng:NextInteger(0, P.SCARS),
+		dots = dots,
+	}
+end
+
+-- A key that is the same for two prints exactly when they look the same.
+function PuzzleKit.printKey(p: Print): string
+	local cells = {}
+	for _, dot in ipairs(p.dots) do
+		table.insert(cells, dot[2] * PuzzleKit.PRINT.GRID + dot[1])
+	end
+	table.sort(cells)
+	return string.format("%d/%d/%d/%d/%s", p.kind, p.rings, p.core, p.scar, table.concat(cells, ","))
+end
+
+local function copyPrint(p: Print): Print
+	local dots = {}
+	for i, dot in ipairs(p.dots) do
+		dots[i] = { dot[1], dot[2] }
+	end
+	return { kind = p.kind, rings = p.rings, core = p.core, scar = p.scar, dots = dots }
+end
+
+-- The print with exactly one feature changed (a ridge more or less, the core moved, another scar, or one island
+-- moved a cell), and none of the prints already in `taken` (keys from printKey; the new one is added).
+function PuzzleKit.printVariant(p: Print, rng: Random, taken: { [string]: boolean }): Print
+	local P = PuzzleKit.PRINT
+	for _ = 1, 50 do
+		local copy = copyPrint(p)
+		local which = rng:NextInteger(1, 4)
+		if which == 1 then
+			copy.rings = if copy.rings == P.MIN_RINGS
+				then copy.rings + 1
+				elseif copy.rings == P.MAX_RINGS then copy.rings - 1
+				else copy.rings + (if rng:NextNumber() < 0.5 then -1 else 1)
+		elseif which == 2 then
+			copy.core = (copy.core + rng:NextInteger(1, P.CORES - 1) - 1) % P.CORES + 1
+		elseif which == 3 then
+			copy.scar = (copy.scar + rng:NextInteger(1, P.SCARS)) % (P.SCARS + 1)
+		else
+			local dot = copy.dots[rng:NextInteger(1, #copy.dots)]
+			local moves = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
+			PuzzleKit.shuffle(moves, rng)
+			for _, move in ipairs(moves) do
+				local x, y = dot[1] + move[1], dot[2] + move[2]
+				local free = x >= 0 and y >= 0 and x < P.GRID and y < P.GRID
+				for _, other in ipairs(copy.dots) do
+					if other[1] == x and other[2] == y then
+						free = false
+					end
+				end
+				if free then
+					dot[1], dot[2] = x, y
+					break
+				end
+			end
+		end
+		local key = PuzzleKit.printKey(copy)
+		if not taken[key] then
+			taken[key] = true
+			return copy
+		end
+	end
+	error("no print variant left")
+end
+
+-- A clock time (seconds into the day) as 24 h "22:41:07", or 12 h "10:41:07 PM".
+function PuzzleKit.clock(seconds: number, twelve: boolean?): string
+	local h, m, s = (seconds // 3600) % 24, (seconds // 60) % 60, seconds % 60
+	if twelve then
+		local hour = h % 12
+		return string.format("%d:%02d:%02d %s", if hour == 0 then 12 else hour, m, s, if h < 12 then "AM" else "PM")
+	end
+	return string.format("%02d:%02d:%02d", h, m, s)
+end
+
 return PuzzleKit

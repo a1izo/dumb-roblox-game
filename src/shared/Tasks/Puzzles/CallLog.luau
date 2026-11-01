@@ -7,10 +7,10 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "CallLog",
 	title = "Call logs",
-	hint = "Tap the number in both logs.",
+	hint = "Pick the number that is in both logs.",
 }
 
-Def.PER_LOG = 6
+Def.PER_LOG = 7
 
 local function number(rng: Random): string
 	local digits = { "0", "9", "0" }

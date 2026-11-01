@@ -1,95 +1,151 @@
--- Forensics · Microscope: bring the fibre into focus with the focus and light dials, then pick
--- the fibre that matches it.
+-- Forensics / Microscope: a fibre from the page in the eyepiece, out of focus and badly lit. Turn the focus until
+-- it is one sharp line and the light until the field is clear; then the three fibres on the slide tray can be
+-- compared, and the matching one picked.
 
 local Kit = require(script.Parent.Parent.Kit)
 local Common = require(script.Parent.Common)
 
-local C = Kit.color
+local T = Kit.Tokens
 
--- Draws a fibre (a bent line) across a frame of `w` x `h` pixels.
-local function fibre(parent: GuiObject, bends: { number }, w: number, h: number, color: Color3, blur: number)
-	Kit.clear(parent)
+-- Draws a fibre (a bent line across) in a new frame inside `parent`; `blur` doubles it into ghosts.
+local function fibre(parent: GuiObject, bends: { number }, blur: number, z: number): Frame
+	local holder = Kit.frame({ Name = "Fibre", ZIndex = z, Parent = parent })
 	local count = #bends
-	local previousX, previousY = 0, h / 2
-	for i, bend in ipairs(bends) do
-		local x = i / count * w
-		local y = h / 2 + bend * h * 0.1
-		for copy = 0, if blur > 0 then 2 else 0 do
-			local offset = (copy - 1) * blur * 2
-			local line = Common.line(parent, previousX, previousY + offset, x, y + offset, 4, color, 5)
-			line.BackgroundTransparency = if blur > 0 then 0.55 + blur * 0.05 else 0
+	for copy = -1, 1 do
+		if copy == 0 or blur > 0 then
+			local offset = copy * blur * 0.018
+			local px, py = 0, 0.5
+			for i, bend in ipairs(bends) do
+				local x, y = i / count, 0.5 + bend * 0.1
+				local line =
+					Common.scaleLine(holder, px, py + offset, x, y + offset, if blur > 0 then 5 else 3, Common.INK, z)
+				line.BackgroundTransparency = if blur > 0 then math.min(0.5 + blur * 0.07, 0.85) else 0
+				px, py = x, y
+			end
 		end
-		previousX, previousY = x, y
 	end
+	return holder
 end
 
 return function(ctx: Common.Context)
 	local def, puzzle = ctx.def, ctx.puzzle
 	local focus, light = def.START, def.START
-	local lens = Kit.Base.make("Frame", {
-		Name = "Lens",
-		BackgroundColor3 = Color3.fromRGB(200, 196, 170),
+
+	local left = Kit.frame({ Name = "Scope", Size = UDim2.new(0.46, -8, 1, 0), Parent = ctx.area })
+	local lens = Kit.Base.make("CanvasGroup", {
+		Name = "Eyepiece",
+		BackgroundColor3 = Common.SHEET,
 		BorderSizePixel = 0,
-		ClipsDescendants = true,
-		Size = UDim2.fromOffset(200, 200),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.new(1, 0, 1, -(T.touch * 2 + 28)),
+		Parent = left,
+	})
+	Kit.Base.make("UIAspectRatioConstraint", { Parent = lens })
+	Kit.Base.make("UICorner", { CornerRadius = UDim.new(0.5, 0), Parent = lens })
+	-- the eyepiece's rim, drawn over it
+	local rim = Kit.Base.make("Frame", {
+		Name = "Rim",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = lens.Size,
+		ZIndex = 5,
+		Parent = left,
+	})
+	Kit.Base.make("UIAspectRatioConstraint", { Parent = rim })
+	Kit.Base.round(rim)
+	Kit.Base.stroke(rim, Common.INK, 4, 0)
+	Kit.Boil.attach(rim, 1)
+	-- dark (too little light) or washed out (too much)
+	local dark = Kit.Base.make("Frame", {
+		Name = "Dark",
+		BackgroundColor3 = Kit.color.ink,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 6,
+		Parent = lens,
+	})
+	local glare = Kit.Base.make("Frame", {
+		Name = "Glare",
+		BackgroundColor3 = Common.SHEET,
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 6,
+		Parent = lens,
+	})
+
+	local controls = Kit.frame({
+		Name = "Controls",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, T.touch * 2 + 12),
+		Parent = left,
+	})
+	Kit.list(controls, 12)
+
+	local tray = Kit.frame({
+		Name = "Tray",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0.54, -8, 1, 0),
 		Parent = ctx.area,
 	})
-	Kit.Base.round(lens)
-	Kit.Base.stroke(lens, C.void, 8, 0)
-	local view = Kit.frame({ Name = "View", ZIndex = 4, Parent = lens })
+	Common.caption(tray, "slide tray", { Size = UDim2.new(1, 0, 0, 18) })
+	local slides = Common.grid(
+		tray,
+		1,
+		#puzzle.choices,
+		10,
+		{ Name = "Slides", Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 1, -24) }
+	)
 	local choices = {}
-	local done = false
 	local sharp = false
+	local current: Frame? = nil
 	local function draw()
 		local blur = math.abs(focus - puzzle.focus)
-		local dim = math.abs(light - puzzle.light)
-		lens.BackgroundColor3 = Color3.fromRGB(200, 196, 170):Lerp(Color3.fromRGB(20, 20, 18), math.min(dim / 6, 0.9))
-		fibre(view, puzzle.sample, 200, 200, Color3.fromRGB(60, 40, 90), blur)
-		sharp = blur == 0 and dim == 0
+		local off = light - puzzle.light
+		dark.BackgroundTransparency = if off < 0 then 1 - math.min(-off * 0.13, 0.85) else 1
+		glare.BackgroundTransparency = if off > 0 then 1 - math.min(off * 0.15, 0.9) else 1
+		if current then
+			current:Destroy()
+		end
+		current = fibre(lens, puzzle.sample, blur, 3)
+		sharp = blur == 0 and off == 0
 		for _, choice in ipairs(choices) do
-			choice.Active = sharp and not done
-			choice.Selectable = sharp and not done
-			choice.BackgroundTransparency = if sharp then 0 else 0.6
+			Common.setEnabled(choice, sharp)
 		end
-		if sharp then
-			ctx.hint("Now pick the matching fibre.")
-		end
+		ctx.hint(if sharp then "Sharp. Now pick the matching fibre." else def.hint)
 	end
-	local controls =
-		Kit.frame({ Position = UDim2.new(0, 214, 0, 0), Size = UDim2.new(1, -214, 0, 110), Parent = ctx.area })
-	Kit.list(controls, Kit.space.s)
-	local row = Common.dial(controls, "Focus", focus, 0, def.MAX, function(v)
+	Common.stepper(ctx, controls, "Focus", focus, 0, def.MAX, function(v)
 		focus = v
 		draw()
-	end, { LayoutOrder = 1 })
-	Common.dial(controls, "Light", light, 0, def.MAX, function(v)
+	end, { LayoutOrder = 1, first = true })
+	Common.stepper(ctx, controls, "Light", light, 0, def.MAX, function(v)
 		light = v
 		draw()
 	end, { LayoutOrder = 2 })
-	ctx.first(row:FindFirstChild("Plus") :: GuiObject)
-	local shelf =
-		Kit.frame({ Position = UDim2.new(0, 214, 0, 120), Size = UDim2.new(1, -214, 1, -120), Parent = ctx.area })
-	Kit.grid(shelf, UDim2.new(1 / 3, -6, 1, 0), 6)
+
 	for index, bends in ipairs(puzzle.choices) do
 		local tile
-		tile = Common.tile({ color = C.parchment, LayoutOrder = index, Parent = shelf }, function()
-			if not sharp or done then
+		tile = Common.target(ctx, { Name = "Slide", LayoutOrder = index, Parent = slides }, function()
+			if not sharp then
 				return
 			end
 			if ctx.submit({ focus, light, index }) then
-				done = true
+				Common.ring(tile, nil, 0.95)
 			else
-				Common.flash(tile, false)
+				ctx.miss(tile, "Not the same fibre.")
 			end
 		end)
+		Common.caption(tile, "slide " .. index, { Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 18) })
 		local art = Kit.frame({
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromOffset(96, 64),
-			ZIndex = 4,
+			Name = "Art",
+			Position = UDim2.new(0.06, 0, 0, 20),
+			Size = UDim2.new(0.88, 0, 1, -24),
 			Parent = tile,
 		})
-		fibre(art, bends, 96, 64, Color3.fromRGB(60, 40, 90), 0)
+		fibre(art, bends, 0, 3)
 		table.insert(choices, tile)
 	end
 	draw()

@@ -1,92 +1,96 @@
--- Fingerprint · Minutiae: the file print (left) has five marked points; tap the same five on
--- the lifted print (right), which is its mirror image.
+-- Fingerprint / Minutiae: the file print on the left has twelve points, five of them marked in red by the report.
+-- The lift on the right is the same print mirrored (a print on glass is reversed). Pick the same five points on it.
 
 local Kit = require(script.Parent.Parent.Kit)
 local Common = require(script.Parent.Common)
 
-local C = Kit.color
-
 return function(ctx: Common.Context)
 	local def, puzzle = ctx.def, ctx.puzzle
 	local grid = def.GRID
-	local function at(x: number, y: number): (number, number)
-		return (x + 0.5) / grid, (y + 0.5) / grid
+
+	local function panel(name: string, title: string, anchor: number, mirror: boolean): Frame
+		local card = Common.card({
+			Name = name,
+			fill = Common.SHEET,
+			AnchorPoint = Vector2.new(anchor, 0),
+			Position = UDim2.fromScale(anchor, 0),
+			Size = UDim2.new(0.5, -8, 1, 0),
+			Parent = ctx.area,
+		})
+		Common.caption(card, title, { Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -24, 0, 18) })
+		local holder = Kit.frame({
+			Name = "Holder",
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0, 32),
+			Size = UDim2.new(1, -24, 1, -44),
+			Parent = card,
+		})
+		Kit.Base.make("UIAspectRatioConstraint", { AspectRatio = Common.PRINT_ASPECT, Parent = holder })
+		Common.print(holder, puzzle.print, {
+			fill = Common.SHEET,
+			mirror = mirror,
+			color = Common.FAINT,
+			Size = UDim2.fromScale(1, 1),
+		})
+		return holder
+	end
+	local file = panel("File", "file print", 0, false)
+	local lift = panel("Lift", "lift, mirrored", 1, true)
+
+	local function at(p: { number }, mirror: boolean): (number, number)
+		local x, y = (p[1] + 0.5) / grid, (p[2] + 0.5) / grid
+		return if mirror then 1 - x else x, y
 	end
 	local marked = {}
 	for _, index in ipairs(puzzle.marked) do
 		marked[index] = true
 	end
-	local file = Kit.Base.make("Frame", {
-		Name = "File",
-		BackgroundColor3 = C.parchment,
-		BorderSizePixel = 0,
-		Size = UDim2.fromScale(0.48, 1),
-		Parent = ctx.area,
-	})
-	Kit.Base.make("UIAspectRatioConstraint", { Parent = file })
-	Common.caption(file, "file print", { Position = UDim2.fromOffset(6, 4), color = C.inkDim })
 	for index, p in ipairs(puzzle.points) do
-		local x, y = at(p[1], p[2])
-		Common.dot(file, x, y, 10, C.inkDim)
+		local x, y = at(p, false)
+		Common.dot(file, x, y, 0.045, Common.INK, 6)
 		if marked[index] then
-			local ring = Common.dot(file, x, y, 24, C.ink, 3)
-			ring.BackgroundTransparency = 1
-			Kit.Base.stroke(ring, C.ink, 2, 0)
+			Common.hoop(file, x, y, 26, Common.RED, 7)
 		end
 	end
-	local lifted = Kit.Base.make("Frame", {
-		Name = "Lifted",
-		BackgroundColor3 = Color3.fromRGB(34, 38, 44),
-		BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.fromScale(0.48, 1),
-		Parent = ctx.area,
-	})
-	Kit.Base.make("UIAspectRatioConstraint", { Parent = lifted })
-	Common.caption(lifted, "lifted print (mirrored)", { Position = UDim2.fromOffset(6, 4) })
-	local chosen: { number } = {}
-	local buttons = {}
-	local function reset()
-		chosen = {}
-		for _, button in ipairs(buttons) do
-			button.BackgroundColor3 = C.g5
-		end
-	end
+
+	local found = {}
+	local first = true
 	for index, p in ipairs(puzzle.points) do
-		local x, y = at(grid - 1 - p[1], p[2])
-		local button = Kit.Base.hit({
+		local x, y = at(p, true)
+		local point
+		point = Common.target(ctx, {
 			Name = "Point",
-			BackgroundTransparency = 0,
-			BackgroundColor3 = C.g5,
+			fill = false,
+			line = 1,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(x, y),
-			Size = UDim2.fromOffset(Kit.Tokens.touch * 0.6, Kit.Tokens.touch * 0.6),
-			ZIndex = 4,
-			Parent = lifted,
-		})
-		Kit.Base.round(button)
-		Kit.Controls.focusable(button)
-		button.Activated:Connect(function()
-			local at_ = table.find(chosen, index)
-			if at_ then
-				table.remove(chosen, at_)
-				button.BackgroundColor3 = C.g5
+			Size = UDim2.fromOffset(34, 34),
+			ZIndex = 8,
+			Parent = lift,
+		}, function()
+			if not marked[index] then
+				ctx.miss(point, "That point isn't marked.")
 				return
 			end
-			table.insert(chosen, index)
-			button.BackgroundColor3 = C.white
-			if #chosen == def.MARKED then
-				if not ctx.submit(table.clone(chosen)) then
-					ctx.hint("Wrong points. The print is mirrored.")
-					Common.flash(lifted, false)
-					reset()
-				end
+			if found[index] then
+				return
+			end
+			found[index] = true
+			Common.ring(point, nil, 0.85)
+			point.Active = false
+			point.Selectable = false
+			local list = {}
+			for i in pairs(found) do
+				table.insert(list, i)
+			end
+			if #list == def.MARKED then
+				ctx.submit(list)
 			end
 		end)
-		table.insert(buttons, button)
-		if index == 1 then
-			ctx.first(button)
+		Common.dot(point, 0.5, 0.5, 0.4, Common.INK, 9)
+		if first then
+			first = false
+			ctx.first(point)
 		end
 	end
 end

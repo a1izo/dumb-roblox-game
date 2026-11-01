@@ -13,3 +13,4 @@
 - [UI notice component](ui-notice-component.md) — every small HUD card is a Kit.notice (Tokens.notice sizes); never hand-build one
 - [UI direction: concept A](ui-direction-2026-10-28.md) — paper/ink/blood UI built 2026-10-29: Boil, Pointer, Paper, OMORI buttons; rejected looks
 - [Station world feel](station-world-fx.md) — station screens/light/sounds/acting are client-side from Busy/BusySince only; a hack must look like work
+- [Station puzzles](station-puzzles.md) — 16 case-file puzzles drawn with Puzzles/Common; ink-ramp colours only, misses lock picks, bots need minSeconds <= 3

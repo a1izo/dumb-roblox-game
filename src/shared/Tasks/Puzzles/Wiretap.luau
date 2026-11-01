@@ -7,12 +7,12 @@ local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 local Def = {
 	id = "Wiretap",
 	title = "Wiretap",
-	hint = "Match the waveform to the recording.",
+	hint = "Tune the line until it matches the recording.",
 }
 
-Def.MAX_FREQUENCY = 6
-Def.MAX_GAIN = 5
-Def.START = { 3, 3 }
+Def.MAX_FREQUENCY = 8
+Def.MAX_GAIN = 6
+Def.START = { 4, 3 }
 
 function Def.generate(seed: number)
 	local rng = PuzzleKit.rng(seed)

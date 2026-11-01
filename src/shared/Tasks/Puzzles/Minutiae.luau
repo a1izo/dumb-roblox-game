@@ -1,13 +1,13 @@
 --!strict
--- Fingerprint: the report marks five points on the file print. Tap the same five points on the
--- lifted print, which is its mirror image (a print on glass is reversed). Answer: five indexes.
+-- Fingerprint: the report marks five points on the file print. Pick the same five points on the lifted print,
+-- which is its mirror image (a print on glass is reversed). Answer: five point indexes.
 
 local PuzzleKit = require(script.Parent.Parent.PuzzleKit)
 
 local Def = {
 	id = "Minutiae",
 	title = "Minutiae",
-	hint = "Tap the five points. The print is mirrored.",
+	hint = "Pick the five marked points. The lift is mirrored.",
 }
 
 Def.GRID = 8
@@ -22,7 +22,8 @@ function Def.generate(seed: number)
 	end
 	local marked = PuzzleKit.pickDistinct(Def.MARKED, 1, Def.POINTS, rng)
 	table.sort(marked)
-	return { points = points, marked = marked }
+	-- (the ridges drawn under the points: only looks)
+	return { points = points, marked = marked, print = PuzzleKit.print(rng) }
 end
 
 function Def.check(puzzle, answer): boolean
