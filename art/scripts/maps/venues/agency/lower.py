@@ -8,7 +8,7 @@ Every station keeps a clear square in front of it and its screen in view of its 
 on tables built with the scene. Walls run so their "n" side is north (walls running east) or east
 (walls running south)."""
 
-from maps import city, kit
+from maps import city, kit, lightbook
 from maps import geo2d as g2
 from maps.venues.agency import fit
 from maps.venues.agency import plan as P
@@ -60,7 +60,7 @@ def security(s):
     fit.counter(s, x - 2.4, -66.5, 90, 12.6, d=2.4, h=3.4, top="BlackTrim", body="DarkMetal")
     for z in (-69.5, -63.5):
         s.prop("OfficeChair", x - 5.6, z, -90)
-    s.light("point", (x - 5.0, 6.5, -66.5), (110, 160, 255), 18, 0.8)
+    s.light("point", (x - 3.6, 7.0, -66.5), (110, 160, 255), 16, 0.7)  # the monitors' spill, at their faces
     # Filing cabinets along the west glass, a weapons locker, the duty sergeant's desk.
     for z in (-72.0, -69.5, -67.0, -64.5):
         s.prop("FilingCabinet", -98.0, z, -90)
@@ -70,9 +70,9 @@ def security(s):
     s.box("BlackTrim", (-60.6, 3.6, -57.1), (0.05, 6.6, 0.1))
     fit.desk(s, -84.0, -57.0, 90, Y)
     s.prop("CoatStand", -62.5, -51.5, 0)
-    fit.panel(s, -80.0, -63.0, C, color=fit.COOL, brightness=0.8, range_=20, flicker=True)  # the CCTV wall's tube
-    fit.panel(s, -70.0, -56.0, C, on=False)
-    fit.panel(s, -92.0, -54.0, C, on=False)
+    # Panels over the CCTV desk (a tired one) and the duty desk; the monitors light the rest.
+    fit.ceiling_lights(s, P.ROOMS_L1["security"], C, "panel", [(-80.0, -66.0), (-84.0, -57.0)], spacing=14.0,
+                       flicker=[(-80.0, -66.0)], color=fit.COOL, brightness=0.8)
     fit.plaque(s, -86.0, 10.6, -47.7, 180, 5.2, 0.9, "警備室 SECURITY")
 
 
@@ -88,7 +88,8 @@ def observation(s):
     s.box("NeonRed", (-51.0, 10.1, -48.34), (1.2, 0.35, 0.05))  # the red lamp over the door: recording
     s.sign((-51.0, 10.9, -48.36), 0, 3.0, 0.5, "録音中 ON AIR", "GothamBlack", (255, 90, 90), None)
     s.light("point", (-51.0, 9.8, -49.1), (255, 60, 60), 8, 0.5)
-    fit.panel(s, -52.0, -62.0, C, w=3.0, color=fit.WARM, brightness=0.55, range_=14)
+    fit.ceiling_lights(s, P.ROOMS_L1["observation"], C, "panel", [(-50.0, -62.0)], spacing=13.5, size=3.0,
+                       brightness=0.5)
 
 
 def interview(s, x0, x1, table):
@@ -99,8 +100,9 @@ def interview(s, x0, x1, table):
     s.prop("Handcuffs", tx, tz, 90, 1.0, 2.8)
     s.prop("Chair", tx - 3.3, tz, -90)
     s.prop("Chair", tx + 3.3, tz, 90)
-    kit.pendant(s, tx, C, tz, drop=4.6, shade="BlackMetal", color=(255, 226, 180), range_=16, brightness=1.4,
-                wide=1.0)
+    # (the room's only light: one bare lamp low over the table, the corners left dark)
+    kit.pendant(s, tx, C, tz, drop=5.6, shade="BlackMetal", color=fit.LAMP, range_=15, brightness=1.6, wide=1.0,
+                point=True)
     s.box("BlackMetal", (x1 - 1.2, 11.6, -73.8), (0.8, 0.6, 1.2), 45)
     s.box("NeonRed", (x1 - 1.6, 11.6, -73.4), (0.12, 0.12, 0.05), 45)
 
@@ -123,7 +125,9 @@ def interviews(s):
     s.prop("Plant", -9.7, -56.2, 0)
     for x, text in ((-38.0, "取調室 1  INTERVIEW 1"), (-14.0, "取調室 2  INTERVIEW 2")):
         fit.plaque(s, x, 10.4, -57.7, 180, 6.0, 0.8, text)
-    fit.panel(s, -26.0, -53.0, C, w=5.0, brightness=0.7, range_=18)
+    # The hall: a run of downlights along it, over the bench and the doors, the last one dead.
+    fit.ceiling_lights(s, (-44.0, -58.0, -8.0, -48.0), C, "downlight", [(-35.0, -53.0), (-17.0, -53.0)],
+                       spacing=9.0, dead=[(-11.0, -53.0)], brightness=0.75, range_=16)
     kit.wall_clock(s, -26.0, 10.6, -57.7, 180, 0.9)
 
 
@@ -145,8 +149,8 @@ def copy_room(s):
     fit.table(s, 8.0, -60.0, 6.0, 3.0, 0, Y)
     s.sheet(8.0, 2.8, -60.0, spare=True)
     s.prop("TrashCan", 21.8, -66.0, 0)
-    fit.panel(s, 0.0, -64.0, C, color=fit.COOL, brightness=0.8)
-    fit.panel(s, 14.0, -58.0, C, on=False)
+    fit.ceiling_lights(s, P.ROOMS_L1["copy"], C, "panel", [(4.0, -68.0), (12.0, -60.0)], spacing=11.0,
+                       dead=[(16.0, -55.0)], color=fit.COOL, brightness=0.75, range_=18)
     fit.plaque(s, 8.0, 10.6, -47.7, 180, 5.0, 0.9, "複写室 COPY ROOM")
 
 
@@ -160,7 +164,8 @@ def lockers(s):
     s.prop("Bench", 44.6, -64.6, -90)
     fit.closed_door(s, 24.3, -55.0, -90, Y, 4.0, "Steel", sign="シャワー SHOWERS")
     s.prop("CoatStand", 44.5, -51.5, 0)
-    fit.panel(s, 37.0, -64.0, C, color=fit.COOL, brightness=0.75)
+    fit.ceiling_lights(s, P.ROOMS_L1["lockers"], C, "tube", [(37.0, -64.0)], spacing=10.0, dead=[(37.0, -53.0)],
+                       color=lightbook.OFFICE, brightness=0.75, range_=17, flicker=[(37.0, -64.0)])
     fit.plaque(s, 37.0, 10.6, -47.7, 180, 5.4, 0.9, "更衣室 LOCKERS")
 
 
@@ -185,9 +190,9 @@ def break_room(s):
     s.prop("Plant", 97.2, -43.2, 0)
     s.box("BlackMetal", (88.0, 8.6, -40.45), (7.6, 4.6, 0.3))  # on the wall's face (-40.3), not in it
     s.screen((88.0, 8.6, -40.65), 0, 7.0, 4.0, "news")
-    for x, z in ((64.0, -60.0), (84.0, -64.0)):
-        fit.panel(s, x, z, C, brightness=0.95, range_=20)
-    fit.panel(s, 90.0, -50.0, C, on=False)
+    # Over the three tables and the kitchenette; the sofa's corner under the news screen stays dim.
+    fit.ceiling_lights(s, P.ROOMS_L1["break"], C, "panel", [(66.0, -60.0), (80.0, -58.0), (94.0, -64.0)],
+                       spacing=12.5, dead=[(94.0, -47.0)], brightness=0.85)
     s.sound("mapOfficeHum", (75.0, 8.0, -58.0), 40.0, 0.2)
     fit.plaque(s, 64.0, 10.6, -40.4, 0, 5.0, 0.9, "休憩室 BREAK ROOM")
 
@@ -208,10 +213,9 @@ def night_desk(s):
         s.prop("PinBoard", x, 15.55, 0, 1.0, 7.4)
     s.prop("CoatStand", 96.5, 12.0, 0)
     s.prop("Plant", 53.2, 12.8, 0)
-    for x, z in ((88.0, -26.0), (70.0, -4.0)):
-        fit.panel(s, x, z, C, brightness=0.8, flicker=x == 70.0)
-    fit.panel(s, 62.0, -22.0, C, on=False)
-    fit.panel(s, 88.0, 6.0, C, on=False)
+    # Over the call log desk and the desk pairs; the row by the east glass is off for the night.
+    fit.ceiling_lights(s, P.ROOMS_L1["night"], C, "panel", [(88.0, -29.0), (62.0, -22.0), (62.0, 2.0)],
+                       spacing=14.0, flicker=[(62.0, 2.0)], dead=[(88.0, -8.0), (88.0, 6.0)], brightness=0.8)
     fit.plaque(s, 49.7, 10.6, -26.0, 90, 5.0, 0.9, "夜勤 NIGHT DESK")
 
 
@@ -236,7 +240,7 @@ def lobby(s):
     s.prop("XRayScanner", 22.5, 7.6, 90)
     # Reception: the front desk (the Entrance Cam) facing the lifts; seats for visitors.
     s.station("Camera", "Entrance Cam", 18.0, 26.0, 0, prop="StationReception")
-    s.light("point", (20.1, 4.4, 26.8), fit.LAMP, 14, 0.9)
+    s.light("point", (15.9, 4.1, 26.85), fit.LAMP, 14, 0.9)  # at the desk lamp's bulb (StationReception)
     for x in (10.0, 30.0):
         s.prop("PlatformBench", x, 34.2, 180)
     for x, z in ((46.8, -3.2), (46.8, 41.0), (-12.8, -3.2)):
@@ -251,12 +255,10 @@ def lobby(s):
     s.box("Brass", (17.0, 5.6, 43.66), (18.0, 0.1, 0.05))
     s.box("BlackMetal", (17.0, 11.3, 43.55), (9.6, 3.0, 0.2))
     s.screen((17.0, 11.3, 43.4), 0, 9.0, 2.6, "news")
-    for x in (6.0, 28.0):
-        s.cylinder("DarkMetal", (x, C - 0.12, 40.0), 0.5, 0.12, 12)
-        s.cylinder("NeonWarm", (x, C - 0.16, 40.0), 0.36, 0.04, 12)  # (its lens: the can lit nothing before)
-        s.light("spot", (x, C - 0.4, 40.0), fit.WARM, 16, 1.1, False, "Bottom", 60)
-    for x, z in ((-10.0, -1.0), (-10.0, 20.0), (44.0, 2.0), (44.0, 20.0), (44.0, 36.0), (-10.0, 32.0)):
-        fit.downlight(s, x, z, C, range_=16, brightness=0.75)
+    # Downlights round the atrium's hole (the pendants light its middle): over the gates, the screening line's end and
+    # the sign wall, one kind all round.
+    for x, z in ((-10.0, 12.0), (44.0, 6.0), (44.0, 30.0), (14.0, 40.0)):
+        fit.downlight(s, x, z, C, range_=16, brightness=0.85)
     s.sound("mapOfficeHum", (18.0, 8.0, 10.0), 50.0, 0.18)
     s.sound("mapCityHum", (18.0, 20.0, 30.0), 70.0, 0.12)
 
@@ -284,7 +286,8 @@ def lounge(s):
         s.prop("BarStool", x, 20.4, 0)
     s.polygon("FabricRed", [(60.0, 0.08, 36.0), (74.0, 0.08, 36.0), (74.0, 0.08, 24.0), (60.0, 0.08, 24.0)])
     s.polygon("Fabric", [(66.0, 0.08, 56.0), (80.0, 0.08, 56.0), (80.0, 0.08, 44.0), (66.0, 0.08, 44.0)])
-    for x, z in ((-4.0, 62.0), (14.0, 62.0), (32.0, 62.0), (66.0, 36.0), (80.0, 24.0), (60.0, 56.0)):
+    # A downlight over each sofa group (the glass and the city light the rest).
+    for x, z in ((-4.0, 66.0), (32.0, 66.0), (66.0, 30.0), (72.0, 50.0)):
         fit.downlight(s, x, z, C, range_=15, brightness=0.8)
     s.sound("mapRainGlass", (30.0, 6.0, 72.0), 50.0, 0.25)
 
@@ -327,13 +330,14 @@ def bullpen(s):
         s.prop("CoatStand", x, z, 0)
     for x, z in ((-80.0, -24.0), (-52.0, 10.0), (-80.0, 29.0), (-24.0, 30.0)):
         s.prop("TrashCan", x, z, 0)
-    # After hours: a few panels on over the station and the table, the rest off.
-    for x, z in ((-40.0, -14.0), (-86.0, 46.0), (-58.0, 0.0), (-24.0, 40.0)):
-        fit.panel(s, x, z, C, brightness=0.85, range_=20, flicker=(x, z) in ((-58.0, 0.0), (-24.0, 40.0)))
-    for x, z in ((-86.0, 8.0), (-58.0, 30.0)):
-        fit.panel(s, x, z, C, brightness=0.6, range_=18)
-    for x, z in ((-86.0, -26.0), (-58.0, -30.0), (-30.0, -34.0), (-86.0, 64.0)):
-        fit.panel(s, x, z, C, on=False)
+    # After hours: panels on over the print scanner, the squad's table, the coffee corner and down the middle aisle
+    # (the desk lamps light the desks), and the row along the west glass dead. The sergeant's room is not the
+    # bullpen's: its ceiling stops at z 53.
+    pen = (-100.0, -48.0, -16.0, 53.0)
+    fit.ceiling_lights(s, pen, C, "panel", [(-40.0, -10.0), (-86.0, 46.0), (-58.0, 0.0), (-30.0, 20.0)],
+                       spacing=14.0, flicker=[(-58.0, 0.0)], dead=[(-93.0, -41.0), (-93.0, -12.0), (-93.0, 17.0)],
+                       brightness=0.85)
+    fit.ceiling_lights(s, (-76.0, 53.0, -16.0, 75.0), C, "panel", [(-20.0, 64.0)], spacing=14.0, brightness=0.75)
     s.sound("mapOfficeHum", (-58.0, 8.0, 10.0), 60.0, 0.2)
     s.sound("mapRainGlass", (-96.0, 6.0, 10.0), 60.0, 0.22)
 
@@ -345,8 +349,20 @@ def sergeant(s):
     s.prop("Bookshelf", -98.0, 60.0, -90)
     s.prop("Bookshelf", -98.0, 63.4, -90)
     s.prop("FilingCabinet", -79.0, 72.6, 0)  # back to the glass, front to the room
-    fit.panel(s, -88.0, 61.0, C, w=3.0, brightness=0.6, range_=14)
+    fit.ceiling_lights(s, P.ROOMS_L1["sergeant"], C, "downlight", [(-88.0, 64.0)], spacing=24.0, brightness=0.65,
+                       range_=14)
     fit.plaque(s, -75.7, 10.6, 60.5, -90, 4.0, 0.8, "班長室 SERGEANT")
+
+
+def corridor_lights(s, ceiling):
+    """The corridor round the core (both floors): narrow panels down the middle of each leg, turned along it, a pool
+    at the corners and the doors with dimmer stretches between, the far end of the north leg dead."""
+    legs = [((-16.0, -48.0, 50.0, -40.0), [(-10.0, -44.0), (14.0, -44.0), (38.0, -44.0)], [(46.0, -44.0)]),
+            ((-16.0, -40.0, -8.0, 2.0), [(-12.0, -24.0), (-12.0, -4.0)], []),
+            ((42.0, -40.0, 50.0, -6.0), [(46.0, -20.0)], [])]
+    for rect, over, dead in legs:
+        fit.ceiling_lights(s, rect, ceiling, "panel", over, spacing=13.0, size=3.0, dead=dead, brightness=0.7,
+                           range_=18)
 
 
 def corridor(s):
@@ -355,11 +371,7 @@ def corridor(s):
     # (the lobby's wall carried on south to the interview hall, two doorways into the bullpen: it lay open to the
     # corridor all along here, 2026-10-26)
     fit.partition(s, (-16.0, -48.0), (-16.0, 2.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(12.0, 5.0), (38.0, 5.0)])
-    for x in (-12.0, 22.0, 46.0):
-        fit.panel(s, x, -44.0, C, w=3.0, brightness=0.7, range_=18, rot=90)
-    for z in (-30.0, -14.0):
-        fit.panel(s, -12.0, z, C, w=3.0, brightness=0.7, range_=18)
-        fit.panel(s, 46.0, z, C, w=3.0, brightness=0.7, range_=18)
+    corridor_lights(s, C)
     kit.extinguisher(s, P.CORE[0] - 0.5, -36.0, 90)
     kit.extinguisher(s, P.CORE[2] + 0.5, -24.0, -90)
     fit.exit_sign(s, P.CORE[0] - 0.5, 10.0, -20.0, 90)

@@ -52,6 +52,9 @@ CHECKS = {
     "walk": (18.0, 25.0),
     "corners": [[(-96.0, P.L1, -71.0), (84.0, P.L2, 44.0)], [(96.0, P.L1, -71.0), (-96.0, P.L2, 71.0)],
                 [(-96.0, P.L1, 71.0), (96.0, P.L2, -71.0)], [(70.0, P.L1, 50.0), (-96.0, P.L2, -71.0)]],
+    # (lightbook's rules, 2026-11-01: at most this many lit lamps reach any point at eye height on either floor)
+    "lamp_budget": 12,
+    "lamp_levels": [P.L1, P.L2],
 }
 
 

@@ -42,6 +42,10 @@ Settings.DEFAULTS = {
 	chatBubbles = true,
 	otherAuras = true, -- other players' auras
 	otherEmoteFx = true, -- other players' emote effects
+	-- (2026-11-01, the lighting rework)
+	depthOfField = 1, -- 0 off, 1 subtle (far blur only), 2 cinematic
+	shadowQuality = 1, -- 0 low, 1 normal, 2 high: how many lamps near you cast shadows
+	filmGrain = true,
 }
 
 local values = table.clone(Settings.DEFAULTS)

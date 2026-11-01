@@ -79,6 +79,9 @@ function Migrations.defaults(startingCoins: number)
 			chatBubbles = true,
 			otherAuras = true,
 			otherEmoteFx = true,
+			depthOfField = 1,
+			shadowQuality = 1,
+			filmGrain = true,
 		},
 		tipsSeen = {}, -- [tipId] = true
 		-- The Academy's drills. `unrewarded` is set (by Shared/Trial) on a profile that finishes all seven now

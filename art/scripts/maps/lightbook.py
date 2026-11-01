@@ -51,12 +51,13 @@ def facing(dx, dz):
     return math.degrees(math.atan2(-dx, -dz))
 
 
-def ceiling(s, pos, color, range_, brightness, shadows=False, flicker=False, role=None, glow=None, rot=0.0):
+def ceiling(s, pos, color, range_, brightness, shadows=False, flicker=False, role=None, glow=None, rot=0.0,
+            clear=False):
     """The lamp of a fitting on a room's ceiling (panel, tube, downlit pendant, an arcade's lamps): a round
     light just under it. glow: (size, colour) of the fitting's face when the game draws it (see
     mesher.Scene.light); rot turns that face with the fitting."""
     s.light("point", pos, color, min(range_, MAX_RANGE), brightness, shadows, "Bottom", 90, flicker, role, rot,
-            glow)
+            glow, clear)
 
 
 def wall(s, pos, rot, color, range_, brightness, shadows=False, flicker=False, role=None, glow=None):
@@ -83,3 +84,51 @@ def open_light(s, pos, color, range_, brightness, shadows=False, flicker=False, 
     """A lamp that shines every way: a bare flame, a chandelier in the middle of a room, a pool of the
     realm's light."""
     s.light("point", pos, color, min(range_, MAX_RANGE), brightness, shadows, "Bottom", 90, flicker, role)
+
+
+# Laying out a room's ceiling fittings (the owner, 2026-11-01: every room's lamps were hand-typed points, turned
+# every which way, two kinds in one ceiling, stacked on each other). A room's fittings are one kind, sit on a regular
+# grid centred in its rectangle, are turned along its long side, and only go where something is lit: the grid cell
+# over each desk, station or door asked for. Darker walkways between the pools are the look.
+
+def bounds(rect):
+    """(x0, z0, x1, z1) of a rectangle given that way or as its corners [(x, z), ...]."""
+    if isinstance(rect[0], (tuple, list)):
+        xs, zs = [p[0] for p in rect], [p[1] for p in rect]
+        return min(xs), min(zs), max(xs), max(zs)
+    return tuple(rect)
+
+
+def long_rot(rect):
+    """The rot that runs a fitting along the rectangle's long side (x0, z0, x1, z1): 0 along x, 90 along z."""
+    x0, z0, x1, z1 = bounds(rect)
+    return 0.0 if abs(x1 - x0) >= abs(z1 - z0) else 90.0
+
+
+def grid(rect, spacing):
+    """The grid's column (x) and row (z) centres: each side cut into whole bays about `spacing` long."""
+    x0, z0, x1, z1 = bounds(rect)
+
+    def axis(a, b):
+        a, b = min(a, b), max(a, b)
+        n = max(1, round((b - a) / spacing))
+        bay = (b - a) / n
+        return [a + bay * (i + 0.5) for i in range(n)]
+
+    return axis(x0, x1), axis(z0, z1)
+
+
+def snap(rect, spacing, points):
+    """The grid cells over `points`, each once, in the order asked."""
+    xs, zs = grid(rect, spacing)
+    cells = []
+    for x, z in points:
+        cell = (min(xs, key=lambda v: abs(v - x)), min(zs, key=lambda v: abs(v - z)))
+        if cell not in cells:
+            cells.append(cell)
+    return cells
+
+
+def reach(spacing, range_):
+    """A fitting's range on a grid: no further than 1.6 bays, so a point never sits under more than a few lamps."""
+    return min(range_, spacing * 1.6, MAX_RANGE)

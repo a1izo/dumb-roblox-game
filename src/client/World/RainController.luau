@@ -30,6 +30,7 @@ local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local LightingController = require(script.Parent.LightingController)
 local Shelter = require(script.Parent.Shelter)
+local Lightning = require(script.Parent.Lightning)
 local Governor = require(script.Parent.Governor)
 
 local RainController = {}
@@ -817,7 +818,7 @@ local function lightningLoop()
 		local preset = LightingController.preset()
 		if preset.lightning and preset.rain > 0 then
 			if not Settings.get("reduceMotion") then
-				LightingController.lightning()
+				Lightning.strike()
 			end
 			task.delay(0.6 + math.random() * 1.6, function()
 				Sfx.play("thunder", {

@@ -52,8 +52,11 @@ def pine(s, x, z, rot, y=0.0, snow=False):
         s.emitter("branchsnow", (x, y + 10.0, z), 0, (9.0, 1.0, 9.0))
 
 
-def lamp(s, x, z, y=0.0):
-    place(s, "CampusLamp", x, z, 0, y)
+def lamp(s, x, z, y=0.0, rot=0.0):
+    """A lamp post standing off a path (the owner, 2026-11-01: every lamp stood in the middle of the paving): on the
+    lawn just past the path's edge, or on the kerb against a wall, a building or the hollow's rim where there is no
+    lawn. rot turns its crossbar along the path (0 along x, 90 along z)."""
+    place(s, "CampusLamp", x, z, rot, y)
     s.collider((x, y + 5.0, z), (0.8, 10.0, 0.8), 0, True, None)
 
 
@@ -70,9 +73,12 @@ def avenue(s):
             if (x, z) in skip:
                 continue
             ginkgo(s, x, z, rng.uniform(0, 360), snow=(k % 3 == 1))
-    for x, z in ((-33.6, -13.0), (-6.4, 1.0), (-33.6, 15.0), (-6.4, 29.0), (-33.6, 43.0), (-6.4, 57.0),
-                 (-31.4, 71.0), (-6.4, 85.0), (-31.4, 99.0)):
-        lamp(s, x, z)
+    # On the lawns either side of the avenue, staggered; north of the south path the west side is the café path's paving,
+    # so they keep to the east lawn there (one stood where the two pavings meet, another in the cross path's mouth).
+    for x, z in ((-33.6, -13.0), (-6.4, 1.0), (-33.6, 15.0), (-33.6, 43.0), (-6.4, 57.0), (-6.4, 71.0)):
+        lamp(s, x, z, rot=90)
+    lamp(s, -2.4, 35.1)  # the east cross path's south lawn, by the avenue
+    lamp(s, -6.4, 82.9)  # the gate plaza's north edge
     s.prop("Bench", -35.4, 29.4, -90)
     # The hot-drinks machine and the recycling by the avenue.
     s.prop("VendingBlue", -5.2, 45.7, 90)  # its front to the avenue, a step clear of the ginkgo beside it
@@ -160,7 +166,8 @@ def forecourt(s):
     s.prop("BustStatue", -58.0, -56.0, 150)
     for x in (0.0, 16.0):
         s.prop("Bench", x, -39.4, 0)
-    for x, z in ((-40.0, -60.0), (0.0, -60.0), (22.0, -44.0), (-62.0, -52.0), (-24.0, -34.0), (6.0, -33.0)):
+    # Round the forecourt's edges, not out on its paving: the north kerb, and the lawns south of its strip.
+    for x, z in ((-40.0, -61.0), (0.0, -61.0), (-34.2, -28.9), (6.0, -28.9)):
         lamp(s, x, z)
     s.prop("SnowTools", -33.0, -60.4, 180)
     s.prop("Snowman", 20.0, -58.0, 200)
@@ -247,8 +254,8 @@ def court(s):
         s.box("WhiteTrim", (cx - 12.0, 0.06, zz), (22.0, 0.06, 0.3), skip=("-y",))
     for xx in (cx - 36.0, cx + 36.0):
         s.box("WhiteTrim", (xx, 0.06, cz + 6.0), (0.3, 0.06, 16.0), skip=("-y",))
-    lamp(s, x0 - 3.0, cz - 10.0)
-    lamp(s, x1 + 5.4, cz - 12.0)
+    lamp(s, x0 - 3.0, cz - 10.0, rot=90)
+    lamp(s, x1 + 1.0, cz - 12.0, rot=90)  # on the east path's kerb against the fence
     # The roller shed outside the fence's west side.
     rx, rz = 62.0, 8.0
     s.box("Shutter", (rx, 2.6, rz), (4.0, 5.2, 8.0), collide=True, mats={"+y": "Slate"})
@@ -274,18 +281,23 @@ def bike_shed(s):
 
 
 def lawns(s):
-    for x, z in (
-            # West and east side paths (10 and 14 wide), the library's path (12), the east path (8, along the wall).
-            (-68.5, -104.0), (-68.5, -72.0), (37.5, -104.0), (37.5, -72.0), (40.0, -30.5), (90.0, -30.5),
-            (132.0, -30.5), (147.4, 4.0),
-            # The east cross path (12): along its north edge.
-            (22.0, 24.5), (60.0, 24.5), (100.0, 24.5), (136.0, 24.5),
-            # The south path (14): along the hollow's rim; the north-rim path (12): along the rim too.
-            (-140.0, 47.0), (-110.0, 47.0), (-80.0, 47.0), (-50.0, 47.0), (-130.0, -41.0), (-100.0, -41.0),
-            (-76.0, -41.0),
-            # The science path (12), the gate plaza, the alley (8, against the cafeteria wall), the open lawns.
-            (38.5, 64.0), (30.0, 96.0), (-82.4, 64.0), (16.0, 10.0), (32.0, -14.0), (34.0, 104.0)):
-        lamp(s, x, z)
+    for x, z, rot in (
+            # West and east side paths (10 and 14 wide): on their kerbs against the auditorium and the library (the west
+            # path's other side is the Law arcade, its columns).
+            (-67.0, -100.0, 90), (-67.0, -72.0, 90), (39.0, -104.0, 90), (39.0, -72.0, 90),
+            # The library's path (12): its south lawn, then its kerb along the court's fence.
+            (40.0, -26.9, 0), (90.0, -29.0, 0), (132.0, -29.0, 0),
+            # The east path (8, along the wall): on its kerb against the court's fence, clear of the east gateway.
+            (143.0, 4.0, 90),
+            # The east cross path (12): on the lawn along its north edge.
+            (22.0, 20.9, 0), (60.0, 20.9, 0), (100.0, 20.9, 0), (136.0, 20.9, 0),
+            # The south path (14) and the north-rim path (12): on their kerbs along the hollow's rim.
+            (-140.0, 46.0, 0), (-110.0, 46.0, 0), (-80.0, 46.0, 0), (-50.0, 42.9, 0), (-130.0, -40.0, 0),
+            (-100.0, -40.0, 0), (-78.0, -51.1, 0),
+            # The science path (12) on its west lawn, the gate plaza's north edge, the alley's kerb against the
+            # cafeteria wall, the open lawns.
+            (34.9, 64.0, 90), (30.0, 82.9, 0), (-81.0, 64.0, 90), (16.0, 10.0, 0), (32.0, -14.0, 0)):
+        lamp(s, x, z, rot=rot)
     for x, z, rot in ((30.0, 10.0, 20), (-44.0, 30.0, 300)):
         s.prop("Snowman", x, z, rot)
     for x, z, rot in ((-81.3, 70.0, -90), (-67.6, 56.6, 0)):

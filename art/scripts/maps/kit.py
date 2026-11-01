@@ -468,23 +468,26 @@ def panel_light(s, x, y, z, w=4.0, d=2.0, color=WARM, range_=24, brightness=1.1,
 
 
 def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18, brightness=0.7, tubes=2,
-               shadows=False):
+               shadows=False, on=True, flicker=False):
     """A fluorescent fitting on a ceiling at height y: a steel housing with its tubes behind a
-    ribbed diffuser, and one light under it. Dimmer than a panel, and it does not bloom."""
+    ribbed diffuser, and one light under it. Dimmer than a panel, and it does not bloom. on=False: the
+    fitting is there, dark; flicker: a tired one that cuts out now and then."""
     s.box("Steel", (x, y - 0.12, z), (length + 0.2, 0.24, 0.5 + 0.35 * tubes), rot, skip=("+y",))
     a = math.radians(rot)
     for k in range(tubes):
         off = (k - (tubes - 1) / 2) * 0.35
         dx, dz = off * math.sin(a), off * math.cos(a)
-        s.box("TubeDiffuser", (x + dx, y - 0.3, z + dz), (length - 0.2, 0.14, 0.18), rot)
+        s.box("TubeDiffuser" if on else "DiffuserOff", (x + dx, y - 0.3, z + dz), (length - 0.2, 0.14, 0.18), rot)
     for u in (-length / 2 + 0.15, length / 2 - 0.15):
         dx, dz = u * math.cos(a), -u * math.sin(a)
         s.box("DarkMetal", (x + dx, y - 0.3, z + dz), (0.2, 0.3, 0.5 + 0.35 * tubes), rot)
-    lightbook.ceiling(s, (x, y - lightbook.CEILING_DROP, z), color, range_, brightness, shadows)
+    if on:
+        # (under the diffusers, clear of them: a lamp inside a mesh blacks itself out when it casts shadows)
+        lightbook.ceiling(s, (x, y - 0.7, z), color, range_, brightness, shadows, flicker=flicker, clear=True)
 
 
 def pendant(s, x, ceiling_y, z, drop=4.0, shade="BlackMetal", color=WARM, range_=22, brightness=1.4,
-            shadows=False, wide=1.4, point=False):
+            shadows=False, wide=1.4, point=False, lit=True):
     """A lamp hanging on its rod under a shade. point: a round lamp in the shade's mouth instead of a spot down
     (a small room's only light: a spot lights the floor under it and leaves the walls black in Roblox)."""
     low = ceiling_y - drop
@@ -494,8 +497,12 @@ def pendant(s, x, ceiling_y, z, drop=4.0, shade="BlackMetal", color=WARM, range_
     s.lathe(shade, (x, low + 0.02, z), [(0.16, 0.88), (0.45 * wide - 0.04, 0.55), (0.9 * wide - 0.04, 0.2),
                                         (wide - 0.05, 0.02)], 20, caps=(False, False))
     s.lathe("NeonWarm", (x, low + 0.25, z), [(0.25, -0.05), (0.3, 0.1), (0.25, 0.3), (0.0, 0.34)], 10)
+    # (lit=False: one of a cluster whose light another shade of it gives, so the lamps do not stack)
+    if not lit:
+        return
     if point:
-        s.light("point", (x, low + 0.1, z), color, range_, brightness, shadows)
+        # (just under the shade's mouth: in the bulb's mesh it blacked itself out when it cast shadows)
+        s.light("point", (x, low - 0.3, z), color, range_, brightness, shadows, clear=True)
     else:
         s.light("spot", (x, low + 0.2, z), color, range_, brightness, shadows, "Bottom", 80)
 

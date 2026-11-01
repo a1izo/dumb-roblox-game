@@ -6,11 +6,11 @@ office and the training room.
 As on 38F, every station keeps a clear square in front of it and its screen in view; sheets rest on
 tables built with the scene."""
 
-from maps import city, kit
+from maps import city, kit, lightbook
 from maps import geo2d as g2
 from maps.venues.agency import fit
 from maps.venues.agency import plan as P
-from maps.venues.agency.lower import COLUMNS
+from maps.venues.agency.lower import COLUMNS, corridor_lights
 
 Y = P.L2
 C = P.CEIL2
@@ -89,8 +89,9 @@ def forensics(s):
     s.box("BlackMetal", (-50.35, Y + 8.0, -61.0), (0.1, 3.6, 6.0))  # the X-ray light box on the east wall
     s.box("NeonCool", (-50.42, Y + 8.0, -61.0), (0.04, 3.2, 5.6))
     s.light("point", (-51.3, Y + 8.0, -61.0), fit.COOL, 10, 0.5)
-    for x, z in ((-86.0, -64.0), (-66.0, -64.0), (-76.0, -54.0)):
-        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.9, range_=20, flicker=True)
+    # Cold panels over the two benches and the island; one of them tired.
+    fit.ceiling_lights(s, P.ROOMS_L2["forensics"], C, "panel", [(-86.0, -66.0), (-66.0, -66.0)],
+                       spacing=12.5, flicker=[(-66.0, -66.0)], color=fit.COOL, brightness=0.9)
     fit.plaque(s, -88.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "鑑識課 FORENSICS")
 
 
@@ -105,8 +106,9 @@ def lockup(s):
     prop(s, "DeskPhone", -26.0, -52.5, 180, 1.0, top)
     s.box("Paper", (-22.0, top + 0.03, -52.5), (1.0, 0.05, 1.3))
     station(s, "Fingerprint", "Evidence Print Kit", -20.0, -62.5, 90, prop="StationPrintKit", spare=True)
-    for x in (-40.0, -26.0):
-        kit.tube_light(s, x, C, -62.0, length=7.0, rot=90, range_=18, brightness=0.75)
+    # Bare tubes along the room, over the cages and the counter.
+    fit.ceiling_lights(s, P.ROOMS_L2["lockup"], C, "tube", [(-38.0, -68.0), (-24.0, -55.0)], spacing=11.0,
+                       color=lightbook.OFFICE, brightness=0.6, range_=17, dead=[(-38.0, -55.0)])
     fit.plaque(s, -33.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "証拠品保管庫 EVIDENCE")
 
 
@@ -123,10 +125,11 @@ def server_room(s):
         for x in (2.0, 13.8, 25.6):
             s.tube("DarkMetal", (x, C - 2.2, z), (x, C, z), 0.05, 5)
     for x in (6.0, 20.0):
-        s.light("point", (x + 0.5, Y + 6.0, -65.6), (100, 150, 255), 16, 0.6)  # at the racks' faces
+        s.light("point", (x + 0.5, Y + 5.0, -64.6), (100, 150, 255), 14, 0.6)  # on the racks' fronts, at their LEDs
     station(s, "Phone", "Records Terminal", -9.0, -58.0, -90, prop="StationPhoneDesk")
-    fit.panel(s, -9.0, -62.0, C, color=fit.COOL, brightness=0.8, range_=18, flicker=True)  # the server room
-    fit.panel(s, 14.0, -54.0, C, color=fit.COOL, brightness=0.5, range_=16)
+    # Tubes over the terminal and the aisle by the glass; the racks light their own rows blue.
+    fit.ceiling_lights(s, P.ROOMS_L2["server"], C, "tube", [(-9.0, -58.0), (14.0, -52.0)], spacing=11.5,
+                       flicker=[(-9.0, -58.0)], color=lightbook.OFFICE, brightness=0.6, range_=17)
     s.sound("mapServerHum", (14.0, Y + 6.0, -66.0), 34.0, 0.3)
     fit.plaque(s, -7.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "サーバー室 SERVERS")
 
@@ -145,10 +148,9 @@ def archive(s):
     top = fit.table(s, 42.0, -55.0, 6.0, 3.0, 0, Y)
     fit.chairs_round(s, 42.0, -55.0, 6.0, 3.0, 0, Y)
     s.sheet(42.0, top, -55.0)
-    for x, z in ((37.0, -64.0), (44.0, -54.0)):
-        fit.panel(s, x, z, C, brightness=0.8, range_=18)
-    for x in (57.5, 71.5, 85.5):
-        fit.panel(s, x, -64.8, C, w=3.0, brightness=0.55, range_=16, rot=90)
+    # Tubes down the room: over the examiner's corner and the reading table, then over every other aisle of shelving.
+    fit.ceiling_lights(s, P.ROOMS_L2["archive"], C, "tube", [(40.0, -62.0), (64.0, -64.0), (88.0, -64.0)],
+                       spacing=11.5, dead=[(76.0, -64.0)], color=lightbook.OFFICE, brightness=0.6, range_=17)
     fit.plaque(s, 40.0, Y + 10.6, -47.7, 180, 5.0, 0.9, "資料室 ARCHIVE")
 
 
@@ -174,10 +176,10 @@ def canteen(s):
     for k in range(8):
         prop(s, "BarStool", 95.6, -27.0 + k * 3.7, -90, 1.0, Y)
     prop(s, "WaterCooler", 50.9, 12.4, 0)
-    for x, z in ((62.0, -27.0), (84.0, -20.0), (62.0, 0.0)):
-        fit.panel(s, x, z, C, brightness=0.85, range_=20)
-    fit.panel(s, 88.0, -34.0, C, on=False)
-    fit.panel(s, 88.0, 4.0, C, on=False)
+    # Over the serving counter and the tables; the bar along the glass stays dark.
+    fit.ceiling_lights(s, P.ROOMS_L2["canteen"], C, "panel",
+                       [(70.0, -44.0), (62.0, -27.0), (84.0, -20.0), (62.0, -6.0)],
+                       spacing=12.5, dead=[(84.0, 1.0)], brightness=0.8)
     fit.plaque(s, 49.7, Y + 10.6, -40.0, 90, 5.0, 0.9, "食堂 CANTEEN")
 
 
@@ -185,7 +187,7 @@ def director(s):
     fit.partition(s, (60.0, 16.0), (60.0, 75.0), Y, C, "WoodPanel", "PlasterGrey", doors=[(14.0, 4.4)], glass="frosted",
                   spans=[(18.0, 52.0)])
     prop(s, "ExecutiveDesk", 80.0, 34.0, 0)
-    s.light("point", (82.3, Y + 4.2, 33.7), fit.LAMP, 14, 0.9)
+    s.light("point", (82.3, Y + 4.2, 33.7), fit.LAMP, 14, 0.9)  # the desk's lamp
     prop(s, "OfficeChair", 80.0, 37.3, 0)
     for x in (77.5, 82.5):
         prop(s, "Chair", x, 29.4, 180)
@@ -198,7 +200,7 @@ def director(s):
     prop(s, "Plant", 97.0, 19.5, 0)
     prop(s, "CoatStand", 62.8, 21.5, 0)
     kit.picture(s, 60.35, Y + 7.6, 23.0, -90, 4.0, 3.0, "Wood", "Paper")
-    for x, z in ((80.0, 30.0), (72.0, 56.0)):
+    for x, z in ((80.0, 32.0), (68.0, 56.0)):  # over the desk, over the sofa corner
         fit.downlight(s, x, z, C, range_=16, brightness=0.8)
     fit.plaque(s, 59.7, Y + 10.6, 27.0, 90, 5.0, 0.9, "局長室 DIRECTOR")
 
@@ -226,11 +228,9 @@ def analysts(s):
     for x, z in ((-96.8, 36.5), (-19.0, -4.0)):
         prop(s, "Plant", x, z, 30)
     prop(s, "CoatStand", -20.0, 36.0, 0)
-    for x, z in ((-72.0, 20.0), (-58.0, -28.0), (-30.0, 0.0)):
-        fit.panel(s, x, z, C, brightness=0.8, range_=20)
-    fit.panel(s, -86.0, 8.0, C, brightness=0.6, range_=18)
-    for x, z in ((-86.0, -26.0), (-44.0, -8.0), (-30.0, 30.0)):
-        fit.panel(s, x, z, C, on=False)
+    # Over the map table and the middle of the floor (the desk lamps light the desks); the row by the west glass dead.
+    fit.ceiling_lights(s, P.ANALYSTS, C, "panel", [(-72.0, 20.0), (-58.0, -28.0), (-30.0, 0.0), (-44.0, 12.0)],
+                       spacing=14.0, dead=[(-93.0, -41.0), (-93.0, -13.0), (-93.0, 15.0)], brightness=0.8)
     s.sound("mapOfficeHum", (-58.0, Y + 8.0, 0.0), 60.0, 0.18)
     s.sound("mapPhoneRing", (-86.0, Y + 4.0, -12.0), 26.0, 0.1)
     s.sound("mapRainGlass", (-96.0, Y + 6.0, 0.0), 60.0, 0.22)
@@ -252,9 +252,9 @@ def training(s):
     top = fit.table(s, -58.0, 57.0, 3.0, 4.0, 0, Y)
     s.box("BlackMetal", (-58.0, top + 0.3, 57.0), (1.2, 0.6, 1.4))  # the projector
     prop(s, "Whiteboard", -40.0, 70.0, 180)
-    for x in (-84.0, -66.0):
-        fit.panel(s, x, 57.0, C, brightness=0.55, range_=18)
-    fit.panel(s, -36.0, 57.0, C, on=False)
+    # Dim over the seats (the pull-down screen is the room's light), off at the back.
+    fit.ceiling_lights(s, P.ROOMS_L2["training"], C, "panel", [(-84.0, 57.0), (-66.0, 57.0)], spacing=12.0,
+                       dead=[(-38.0, 57.0)], brightness=0.5, range_=18)
     fit.plaque(s, -30.0, Y + 10.6, 40.3, 180, 5.0, 0.9, "研修室 TRAINING")
 
 
@@ -283,9 +283,10 @@ def ops(s):
     for x, z in ((-12.0, 72.0), (56.0, 72.0), (46.0, 22.0), (-12.0, 2.0)):
         prop(s, "Plant", x, z, 45)
     prop(s, "WaterCooler", 47.5, 36.0, -90)
-    for x, z in ((0.0, 45.0), (17.0, 45.0), (34.0, 45.0), (17.0, 56.0), (44.0, 10.0), (-10.0, 20.0),
-                 (-10.0, -1.0), (30.0, -1.0), (8.0, 70.0), (40.0, 68.0)):
-        fit.downlight(s, x, z, C, range_=16, brightness=0.8)
+    # Downlights over the two rows of command desks and the map table (the atrium's pendants light the hole and the
+    # video wall its face), and one by each balcony end; the deck between stays in the screens' glow.
+    for x, z in ((4.0, 45.0), (30.0, 45.0), (17.0, 62.0), (44.0, 10.0), (-10.0, 10.0)):
+        fit.downlight(s, x, z, C, range_=16, brightness=0.85)
     s.sound("mapCityHum", (17.0, Y + 8.0, 70.0), 70.0, 0.12)
     s.sound("mapSirenFar", (40.0, Y + 8.0, 72.0), 90.0, 0.07)
     s.sound("mapRainGlass", (17.0, Y + 6.0, 73.0), 50.0, 0.22)
@@ -293,11 +294,7 @@ def ops(s):
 
 
 def corridor(s):
-    for x in (-12.0, 22.0, 46.0):
-        fit.panel(s, x, -44.0, C, w=3.0, brightness=0.7, range_=18, rot=90)
-    for z in (-30.0, -14.0):
-        fit.panel(s, -12.0, z, C, w=3.0, brightness=0.7, range_=18)
-        fit.panel(s, 46.0, z, C, w=3.0, brightness=0.7, range_=18)
+    corridor_lights(s, C)
     kit.extinguisher(s, P.CORE[2] + 0.5, -24.0, -90, Y)
 
 

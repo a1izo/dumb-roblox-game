@@ -225,9 +225,7 @@ def lifts(s):
         s.box("Brass", (-1.0, y, z + 0.23), (9.0, 0.12, 0.06), 180)
     for dx in (-4.5, -1.5, 1.5, 4.5):
         s.box("Brass", (-1.0 + dx, 8.15, z + 0.23), (0.08, 4.38, 0.06), 180)
-    s.cylinder("DarkMetal", (-1.0, P.CEIL1 - 0.12, z + 1.5), 0.5, 0.12, 12)
-    s.cylinder("NeonWarm", (-1.0, P.CEIL1 - 0.16, z + 1.5), 0.36, 0.04, 12)
-    s.light("spot", (-1.0, P.CEIL1 - 0.4, z + 1.5), fit.WARM, 16, 1.0, False, "Bottom", 70)
+    fit.downlight(s, -1.0, z + 4.0, P.CEIL1, range_=14, brightness=0.8)  # one of the lifts' row, over the crest
     # The grand stair's head, faced in stone (38F sees its tall end from the lifts).
     x0, x1 = P.GRAND["x"]
     # (Its ends tucked inside the flight's sides: in their planes, the two flickered.)
@@ -252,8 +250,7 @@ def video_wall(s):
             s.screen((x, y, z + 0.55), 180, w - 0.5, h - 0.4, loops[k])
             k += 1
     # Blue spill from the screens onto the deck, and a console ledge under them.
-    for x in (x0 + 0.6 + w * 1.5, x0 + 0.6 + w * 2.5):  # in front of the two middle columns
-        s.light("point", (x, P.L2 + 10.0, z + 5.0), (120, 170, 255), 24, 0.75)
+    s.light("point", ((x0 + x1) / 2, P.L2 + 10.9, z + 1.2), (120, 170, 255), 24, 1.1)  # at the screens' middle
     s.box("DarkMetal", ((x0 + x1) / 2, P.L2 + 2.6, z + 0.9), (x1 - x0 - 4, 0.3, 1.6), 180)
     s.box("BlackMetal", ((x0 + x1) / 2, P.L2 + 1.3, z + 0.3), (x1 - x0 - 4, 2.6, 0.4), 180)
     s.collider(((x0 + x1) / 2, P.L2 + 1.4, z + 0.9), (x1 - x0 - 4, 2.8, 1.6), 180, True, "DarkMetal")
@@ -262,8 +259,7 @@ def video_wall(s):
 def board(s):
     """The evidence board on the core's west face at 39F, where the corridor opens out."""
     s.board(P.CORE[0] - 1.0, P.L2 + 6.5, -28.0, 90, 12.0, 7.0)
-    for dz in (-6.0, 6.0):
-        fit.downlight(s, P.CORE[0] - 4.0, -28.0 + dz * 0.5, P.CEIL2, range_=14, brightness=0.8, angle=80)
+    # (lit by the corridor's own panels down the west leg, one of them over the board: a downlight here sat on one)
 
 
 # The fire stair -----------------------------------------------------------------------------------------
@@ -322,15 +318,17 @@ def atrium(s, g):
     # 39F's balconies round the hole (the stair arrives at its north-west corner).
     fit.balcony(s, [(gx1, z0 + 0.2), (x1 - 0.2, z0 + 0.2), (x1 - 0.2, z1 - 0.2), (x0 + 0.2, z1 - 0.2)], P.L2)
     fit.balcony(s, [(x0 - 0.2, z1 - 0.2), (x0 - 0.2, z0 + 1.5)], P.L2)
-    # Uplights set in the lobby floor round the atrium, washing the balconies' undersides.
-    for x, z in ((7.0, 6.5), (36.0, 6.5), (36.0, 32.0), (22.0, 32.5)):
-        s.box("Brass", (x, 0.08, z), (1.0, 0.16, 1.0))
-        s.box("NeonWarm", (x, 0.17, z), (0.7, 0.03, 0.7))
-        s.light("spot", (x, 0.3, z), fit.WARM, 22, 0.9, False, "Top", 70)
-    # A tall pendant cluster hanging into the atrium from 39F's ceiling.
-    for dx, dz, drop in ((0, 0, 7.0), (-5, 3, 9.0), (6, -4, 8.0), (3, 6, 10.0)):
-        kit.pendant(s, (x0 + x1) / 2 + 4 + dx, P.CEIL2, (z0 + z1) / 2 + dz, drop=drop, shade="Brass",
-                    color=fit.WARM, range_=30, brightness=1.4, wide=1.2)
+    # A tall pendant cluster hanging into the atrium from 39F's ceiling: four shades, two lamps (the lower pair throw
+    # the light down the hole to the lobby, the upper pair light the deck; four overlapping lamps of range 30 stacked
+    # fifteen ranges on one spot here, and Roblox dropped lamps that were turned away from).
+    for k, (dx, dz, drop) in enumerate(((0, 0, 7.0), (-5, 3, 9.0), (6, -4, 8.0), (3, 6, 10.0))):
+        cx, cz = (x0 + x1) / 2 + 4 + dx, (z0 + z1) / 2 + dz
+        if k in (1, 3):
+            kit.pendant(s, cx, P.CEIL2, cz, drop=drop, shade="Brass", color=fit.WARM, range_=28, brightness=1.5,
+                        wide=1.2, point=True)
+        else:
+            kit.pendant(s, cx, P.CEIL2, cz, drop=drop, shade="Brass", color=fit.WARM, range_=0, brightness=0, wide=1.2,
+                        lit=False)
 
 
 def build(s, g):

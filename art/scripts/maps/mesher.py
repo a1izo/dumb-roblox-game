@@ -422,15 +422,17 @@ class Scene(LayoutMixin):
         self.preview_props.append((key, x, y, z, rot, scale_))
 
     def light(self, kind, pos, color, range_, brightness, shadows=False, face="Bottom", angle=90, flicker=False,
-              role=None, rot=0.0, glow=None):
+              role=None, rot=0.0, glow=None, clear=False):
         """role "emergency": a lamp that stays off until the map's blackout (Bureau HQ's breaker). rot: degrees
         about +Y the lamp is turned by (a spot facing "Front" then shines the way rot faces, out of a wall).
         glow: (size (x, y, z), colour) of the fitting's glowing face, centred on the lamp and turned with it,
         drawn by the game as the lamp's own part instead of in the scene's meshes (a flickering lamp: its
-        glow goes dark with it)."""
+        glow goes dark with it). clear: the lamp stands clear of every mesh, its own fitting's too, so it may cast
+        shadows when the game picks it as a key (one inside its fitting is blacked out by it: the owner, 2026-11-01,
+        "as soon as I walk in a certain radius the light just turns off")."""
         self.lights.append({"kind": kind, "pos": pos, "color": color, "range": range_, "brightness": brightness,
                             "shadows": shadows, "face": face, "angle": angle, "flicker": flicker, "role": role,
-                            "rot": rot, "glow": glow})
+                            "rot": rot, "glow": glow, "clear": clear})
 
     def sign(self, pos, rot, w, h, text, font="GothamBlack", color=(255, 255, 255), bg=None, glow=None,
              align="Center"):

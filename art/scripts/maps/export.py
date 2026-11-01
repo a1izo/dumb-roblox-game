@@ -424,6 +424,7 @@ def write_scene_v2(scene, module, source):
         f'shadows = {"true" if li["shadows"] else "false"}, face = "{li["face"]}", angle = {num(li["angle"], 1)}, '
         f'flicker = {"true" if li["flicker"] else "false"}'
         + (f', role = "{li["role"]}"' if li.get("role") else "")
+        + (", clear = true" if li.get("clear") else "")
         + (f', rot = {num(li["rot"], 1)}' if li.get("rot") else "")
         + (f', size = {vec(li["glow"][0])}, glow = {rgb(li["glow"][1])}' if li.get("glow") else "") + " }"
         for li in scene.lights

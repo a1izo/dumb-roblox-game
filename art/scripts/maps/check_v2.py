@@ -13,6 +13,9 @@ opening Studio:
              sides (a flag for the hand-check: it names what stands there, it never moves anything)
   spawns     the spawn pool (the active spawns and the spare ones: Shared/SpawnPicker deals from all of them) spreads a
              full case's players out of stare range of each other (SPAWN_GAP)
+  lamps      no two lit lamps stacked (closer than LAMP_GAP studs), and at eye height no point under more lamps'
+             reach than the venue's CHECKS["lamp_budget"] (Roblox drops lamps where too many overlap: a lamp
+             you turned away from went out and stayed out, 2026-11-01). Only venues that set a budget are held to it.
   finds      what maps/finders.py found at export (flicker, lamps, light through walls, stretched pictures): a
              report for the eye; a sign inside a wall or a floating or sunk prop is a problem unless the
              venue's CHECKS["finds_ok"] names it ("<kind> <detail>")
@@ -946,6 +949,50 @@ def spawn_spread(data, problems):
         problems.append(f"spawns: {MAX_PLAYERS} players cannot all start beyond {SPAWN_GAP:g} studs of each other")
 
 
+LAMP_GAP = 3.0
+EYE = 5.0  # eye height over a floor
+
+
+def lamps(data, problems):
+    """The lit lamps (the scene's and the props'): stacked pairs, and the most that reach one point at eye height."""
+    budget = (data.get("checks") or {}).get("lamp_budget")
+    if budget is None:
+        return
+    from maps import catalog
+
+    found = []
+    for li in data["lights"]:
+        if li.get("role") != "emergency":
+            found.append((tuple(li["pos"]), li["range"]))
+    cat = catalog.load()
+    for key, x, y, z, rot, sc, *rest in data["props"]:
+        if rest and rest[0] == "dark":
+            continue
+        a = math.radians(rot)
+        for li in cat.get(key, {}).get("lights", []):
+            lx, ly, lz = li["at"]
+            found.append(((x + (lx * math.cos(a) + lz * math.sin(a)) * sc, y + ly * sc,
+                           z + (-lx * math.sin(a) + lz * math.cos(a)) * sc), li["range"]))
+    for i, (a, _) in enumerate(found):
+        for b, _ in found[i + 1:]:
+            if math.dist(a, b) < LAMP_GAP:
+                problems.append(f"lamps: two lit lamps {math.dist(a, b):.1f} apart at ({a[0]:.0f}, {a[1]:.0f}, {a[2]:.0f})")
+    levels = (data.get("checks") or {}).get("lamp_levels") or [0.0]
+    worst = 0
+    for level in levels:
+        y = level + EYE
+        xs = [p[0] for p, _ in found]
+        zs = [p[2] for p, _ in found]
+        for gx in range(int(min(xs)), int(max(xs)) + 1, 4):
+            for gz in range(int(min(zs)), int(max(zs)) + 1, 4):
+                n = sum(1 for p, r in found if math.dist(p, (gx, y, gz)) <= r)
+                if n > worst:
+                    worst = n
+                if n > budget:
+                    problems.append(f"lamps: {n} lamps reach ({gx}, {y:.0f}, {gz}), over the budget of {budget}")
+    print(f"  lamps: {len(found)} lit, at most {worst} reaching one point at eye height (budget {budget})")
+
+
 def check(venue, full=True):
     path = os.path.join(SIDECARS, venue + ".json")
     if not os.path.exists(path):
@@ -964,6 +1011,7 @@ def check(venue, full=True):
     # (a venue whose players are not dealt a case's spawns, the lobby, says "spawns": None in its CHECKS)
     if (data.get("checks") or {}).get("spawns", True) is not None:
         spawn_spread(data, problems)
+    lamps(data, problems)
     finds(data, problems)
     if full:
         dist = walk(data, world, problems)

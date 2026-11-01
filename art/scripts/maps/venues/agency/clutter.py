@@ -68,14 +68,21 @@ def upper(s):
 
 # The blackout (Bureau HQ's mechanic) ---------------------------------------------------------------------
 
-# Red emergency lamps, off until someone pulls the breaker: along the corridor round the core and over
-# the open floors, on both storeys. (The lobby's middle one hung in the atrium's open air, a red bar under nothing
-# with the balcony far above, 2026-10-27: it is under the balcony's edge now, at z 0, the slab over it.)
+# Red emergency beacons, dark until someone pulls the breaker: one over each way out of a room and at the fire
+# stair, on the wall's face towards the way out (x, z of the door's middle on the wall's face, rot the way it faces).
+# They were red bars on the ceiling panels themselves, cutting through them (the owner, 2026-11-01: emergency lights
+# are beacons over the doors, leading the way out in a blackout).
 EMERGENCY = {
-    L1: [(-12.0, -44.0), (22.0, -44.0), (46.0, -44.0), (-12.0, -14.0), (46.0, -14.0), (-58.0, -20.0), (-58.0, 30.0),
-         (17.0, 0.0), (60.0, 40.0), (25.0, 60.0)],
-    L2: [(-12.0, -44.0), (22.0, -44.0), (46.0, -44.0), (-12.0, -14.0), (46.0, -14.0), (-58.0, -20.0), (-58.0, 20.0),
-         (-60.0, 58.0), (20.0, 50.0), (40.0, 10.0)],
+    L1: [(-15.6, -36.0, -90), (-15.6, -10.0, -90),  # the bullpen's doors onto the corridor
+         (-30.0, -47.6, 180), (-86.0, -47.6, 180),  # the interview hall's door, security's, from the bullpen
+         (8.0, -47.6, 180), (37.0, -47.6, 180),  # the copy room's, the locker room's, onto the corridor
+         (49.6, -44.0, 90), (49.6, -20.0, 90),  # the break room's, the night desk's
+         (-15.6, 13.0, -90), (-15.6, 60.0, -90),  # the gates' portal, the lounge's door from the bullpen
+         (42.5, -14.0, -90)],  # by the fire stair's door
+    L2: [(-88.0, -47.6, 180), (-33.0, -47.6, 180), (-7.0, -47.6, 180), (80.0, -47.6, 180),  # the north rooms
+         (49.6, -30.0, 90), (59.6, 32.0, 90),  # the canteen's, the director's
+         (-84.0, 39.6, 0), (-15.6, 6.0, -90),  # the training room's, the analysts' floor onto the deck
+         (42.5, -14.0, -90)],
 }
 
 
@@ -84,11 +91,8 @@ def blackout(s):
     # builds it at this anchor; its door folds flat against the wall).
     s.anchor("breaker", P.CORE[2] + 1.25, L1, -20.0, rot=-90)
     for level, spots in EMERGENCY.items():
-        ceiling = P.CEIL1 if level == L1 else P.CEIL2
-        for x, z in spots:
-            s.box("RedTrim", (x, ceiling - 0.12, z), (1.0, 0.24, 0.5), skip=("+y",))
-            s.box("NeonRed", (x, ceiling - 0.26, z), (0.8, 0.05, 0.3), skip=("+y",))
-            s.light("point", (x, ceiling - 0.8, z), (255, 40, 40), 26, 0.9, role="emergency")
+        for x, z, rot in spots:
+            fit.beacon(s, x, level + 9.3, z, rot)
 
 
 def build(s):

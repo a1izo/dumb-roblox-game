@@ -45,6 +45,9 @@ local SETTINGS = {
 	chatBubbles = "boolean",
 	otherAuras = "boolean",
 	otherEmoteFx = "boolean",
+	depthOfField = { min = 0, max = 2 },
+	shadowQuality = { min = 0, max = 2 },
+	filmGrain = "boolean",
 }
 
 local function setSettings(player: Player, payload)

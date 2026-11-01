@@ -38,7 +38,7 @@ local RIFT_TAG = "LRift" -- the rift's marker in the lobby (its heights: CloudY,
 local CITY_NEAR = 220 -- studs over the landing roof from which a diver sees the city's own look
 local CREEP_BLEND = 0.6 -- the vote's slow creep, applied in small steps
 
-type Lamp = { brightness: number, range: number, shadows: boolean }
+type Lamp = { brightness: number, range: number, shadows: boolean, canShadow: boolean }
 
 local atmosphere: Atmosphere
 local grade: ColorCorrectionEffect
@@ -98,25 +98,38 @@ local function lampPosition(light: Light): Vector3?
 	return nil
 end
 
--- The venue's lamps, and where the shadow-casting keys were last picked from.
+-- The venue's lamps.
 local venueLamps: { Light } = {}
-local keysPickedAt: Vector3? = nil
--- The keys are re-picked round the camera when it has moved this far (the maps are big).
-local KEY_REPICK = 40
+-- A key is held until a lamp this many studs nearer comes along, so walking about never trades shadows back and
+-- forth between two lamps (the owner, 2026-11-01: lamps popping and shadows jumping as you walk). The keys used to be
+-- re-picked from scratch every 40 studs, every one of them at once.
+local KEY_HOLD = 14
+-- A lamp on another floor (more than this far above or below) is scored as this much further away: the shadows
+-- that matter are the room's you are in, not the one over the ceiling.
+local FLOOR_GAP = 9
+local OTHER_FLOOR = 30
 
 -- Picks the keys: the lamps built to cast shadows nearest the camera first, then the strongest
--- nearest. Returns the lamps whose key state changed.
+-- nearest, the ones that are keys already holding on. Returns the lamps whose key state changed.
 local function pickKeys(keyCount: number): { Light }
 	local here = focus()
-	keysPickedAt = here
 	local scored = {}
 	for _, light in ipairs(venueLamps) do
 		local lamp = lamps[light]
 		local at = lampPosition(light)
-		if lamp and at and light.Parent then
+		-- Only lamps the map builder marked clear of every mesh may cast shadows: a lamp inside its own fitting (a
+		-- desk lamp's bulb in its shade, a panel's light in its face) is blacked out by it the moment it does, so
+		-- walking up to one turned it off (the owner, 2026-11-01).
+		if lamp and lamp.canShadow and at and light.Parent and light.Enabled then
 			local distance = (at - here).Magnitude
 			-- Lamps made for shadows win within reach; beyond that the nearest strong ones.
 			local score = distance - (if lamp.shadows then 60 else 0) - math.min(20, lamp.brightness * lamp.range * 0.2)
+			if math.abs(at.Y - here.Y) > FLOOR_GAP then
+				score += OTHER_FLOOR
+			end
+			if keys[light] then
+				score -= KEY_HOLD
+			end
 			table.insert(scored, { light = light, score = score })
 		end
 	end
@@ -159,7 +172,13 @@ local function gatherLamps(venue: string, keyCount: number)
 				local at = lampPosition(item)
 				if at and Venues.at(at) == venue then
 					if not lamps[item] then
-						lamps[item] = { brightness = item.Brightness, range = item.Range, shadows = item.Shadows }
+						lamps[item] = {
+							brightness = item.Brightness,
+							range = item.Range,
+							shadows = item.Shadows,
+							-- (a lamp built to cast shadows, the meeting room's spotlight rig, was placed for it)
+							canShadow = item:GetAttribute("LShadowOk") == true or item.Shadows,
+						}
 					end
 					table.insert(venueLamps, item)
 				end
@@ -356,6 +375,7 @@ local function resolve(): LightingPresets.Look
 		low = Settings.get("lowGraphics") == true,
 		noGlow = Governor.cut("glow"),
 		fewShadows = Governor.cut("shadows"),
+		shadows = tonumber(Settings.get("shadowQuality")) or 1,
 		progress = progress(),
 	})
 end
@@ -503,17 +523,22 @@ function LightingController.zone(): string?
 	return currentZone
 end
 
--- A lightning flash: the scene blows out for a moment, twice.
-function LightingController.lightning()
+-- The exposure's part of a lightning flash (World/Lightning strikes: the light through the windows, the lamps
+-- dipping): the scene blows out for a moment, twice, by `amount` (1 in the open, less inside away from the glass).
+-- The pulses are the strike's; `pulses` is { exposure, seconds } pairs at full strength.
+LightingController.PULSES = { { 1.6, 0.06 }, { 0.2, 0.08 }, { 1.1, 0.05 } }
+
+function LightingController.lightning(amount: number?)
+	local k = math.clamp(amount or 1, 0, 1)
 	-- (no storm reaches the cutscene sets' rooms)
-	if flashing or currentVenue == "sets" then
+	if flashing or currentVenue == "sets" or k <= 0 then
 		return
 	end
 	flashing = true
 	task.spawn(function()
 		local base = if currentLook then currentLook.exposure else currentPreset.exposure
-		for _, pulse in ipairs({ { 1.6, 0.06 }, { 0.2, 0.08 }, { 1.1, 0.05 } }) do
-			Lighting.ExposureCompensation = base + pulse[1]
+		for _, pulse in ipairs(LightingController.PULSES) do
+			Lighting.ExposureCompensation = base + pulse[1] * k
 			task.wait(pulse[2])
 		end
 		flashing = false
@@ -591,7 +616,8 @@ function LightingController.init()
 		update(true)
 	end)
 	Settings.Changed:Connect(function(key)
-		if key == "lowGraphics" then
+		if key == "lowGraphics" or key == "shadowQuality" then
+			lampKeyCount = -1
 			update(true)
 		end
 	end)
@@ -609,14 +635,9 @@ function LightingController.init()
 		while true do
 			task.wait(0.5)
 			update()
-			-- Move the shadow-casting keys along with the camera.
+			-- Move the shadow-casting keys along with the camera (one lamp at a time as you walk, held: pickKeys).
 			local look = currentLook
-			if
-				look
-				and lampVenue == currentVenue
-				and keysPickedAt
-				and (focus() - keysPickedAt).Magnitude > KEY_REPICK
-			then
+			if look and lampVenue == currentVenue and not flashing then
 				local info = TweenInfo.new(1, Enum.EasingStyle.Sine)
 				for _, light in ipairs(pickKeys(look.keyLights)) do
 					local lamp = lamps[light]

@@ -129,6 +129,11 @@ local function addLight(b, folder: Instance, spec, showFixture: boolean?, where:
 	light.Range = spec.range
 	light.Brightness = spec.brightness
 	light.Shadows = spec.shadows
+	if spec.clear then
+		-- Clear of every mesh: the client may give it shadows (World/LightingController's keys). One inside its fitting
+		-- is blacked out by it the moment it casts them.
+		light:SetAttribute("LShadowOk", true)
+	end
 	light.Parent = anchor
 	if spec.flicker then
 		CollectionService:AddTag(anchor, "LFlicker")

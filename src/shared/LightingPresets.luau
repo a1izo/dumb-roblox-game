@@ -230,29 +230,30 @@ LightingPresets.meeting = preset({
 })
 
 LightingPresets.maps = {
-	-- Agency HQ: the Agency's floors high in a tower, after hours. Most panels are off; desk lamps,
-	-- monitors and the city's glow through the glass light the floors, and the ambient keeps an
-	-- unlit corner legible. The haze is thin, so Kagegaoka's lights 440 studs down still show,
-	-- fading into a violet night towards the horizon; rain streams down the glass.
+	-- Agency HQ: the Agency's floors high in a tower, after hours, lit as noir (the owner, 2026-11-01): warm amber
+	-- pools under the fittings over the desks and stations, the walkways between them a cold blue-grey that still
+	-- shows a body and, up close, a face. Desk lamps, monitors and the city's glow through the glass do the rest. The
+	-- haze is thin, so Kagegaoka's lights 440 studs down still show, fading into a violet night towards the horizon;
+	-- rain streams down the glass, and lightning comes in through it (World/Lightning).
 	TaskForceHQ = preset({
 		clockTime = 0,
 		brightness = 1.2,
-		exposure = 0.2,
-		ambient = rgb(56, 58, 76),
-		outdoorAmbient = rgb(70, 72, 98),
-		envDiffuse = 0.5,
-		envSpecular = 0.45,
+		exposure = 0.15,
+		ambient = rgb(44, 49, 66),
+		outdoorAmbient = rgb(58, 64, 90),
+		envDiffuse = 0.45,
+		envSpecular = 0.5,
 		density = 0.22,
 		haze = 1.7,
 		glare = 0.05,
 		atmosphereColor = rgb(84, 74, 118),
 		decay = rgb(52, 40, 76),
-		saturation = -0.12,
-		contrast = 0.16,
-		tint = rgb(236, 236, 255),
-		bloom = 0.4,
-		bloomSize = 20,
-		bloomThreshold = 2.0,
+		saturation = -0.16,
+		contrast = 0.24,
+		tint = rgb(255, 246, 236),
+		bloom = 0.5,
+		bloomSize = 22,
+		bloomThreshold = 1.8,
 		lamps = 1,
 		lampRange = 1,
 		keyLights = 6,
@@ -591,6 +592,7 @@ export type Options = {
 	low: boolean?, -- the Low graphics setting: both of the cuts below
 	noGlow: boolean?, -- no bloom, haze or glare, thinner air (World/Governor's second cut)
 	fewShadows: boolean?, -- at most two shadow-casting lamps, shorter lamp range (its third)
+	shadows: number?, -- the Shadows setting: 0 low (as fewShadows), 1 normal (the preset's keys), 2 high (two more)
 	progress: number?, -- how far through the phase (0 to 1), for moods that creep
 }
 
@@ -598,7 +600,7 @@ export type Options = {
 function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 	local o = options or {}
 	local noGlow = o.low == true or o.noGlow == true
-	local fewShadows = o.low == true or o.fewShadows == true
+	local fewShadows = o.low == true or o.fewShadows == true or o.shadows == 0
 	local tint = p.tint:Lerp(m.tint, math.clamp(m.tintAmount, 0, 1))
 	local exposure = p.exposure + m.exposure
 	local creep = m.creep
@@ -629,7 +631,10 @@ function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 		keyScale = p.lamps * m.key,
 		fillScale = p.lamps * m.fill,
 		rangeScale = p.lampRange * (if fewShadows then 0.8 else 1),
-		keyLights = if fewShadows then math.min(2, p.keyLights) else p.keyLights,
+		keyLights = if fewShadows
+			then math.min(2, p.keyLights)
+			elseif o.shadows == 2 then p.keyLights + 2
+			else p.keyLights,
 		vignette = m.vignette,
 		sky = p.sky,
 		realmSky = p.realmSky == true,
