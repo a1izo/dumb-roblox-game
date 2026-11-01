@@ -25,7 +25,7 @@ FLAT = {
     # panels down the walls lit pink from behind (too dim to bloom).
     "LacquerRed": ("SmoothPlastic", (150, 14, 26), 0, 0.14),
     "MonitorPale": ("Neon", (170, 190, 210), 0, 0),
-    "FrostPink": ("Neon", (84, 30, 52), 0, 0),
+    "FrostPink": ("Neon", (110, 46, 95), 0, 0),  # (set by eye in a play test: darker read maroon, redder crimson)
     "Glass": ("Glass", (150, 180, 210), 0.6, 0.2),
     "GlassDark": ("Glass", (40, 52, 66), 0.35, 0.25),
     "Water": ("Glass", (40, 90, 120), 0.35, 0.3),

@@ -124,9 +124,19 @@ return function(t)
 				end
 			end
 			expect(Trial.text(Trial.BY_ID.card.how, keys)).to.equal("Hold C to flip it.")
-			expect(string.find(Trial.text(Trial.BY_ID.ready.why), "Six players", 1, true) ~= nil).to.equal(
-				Config.MIN_PLAYERS == 6
-			)
+			-- (the last step's line no longer counts the players a case needs; any count it gives must be the game's)
+			local why = string.lower(Trial.text(Trial.BY_ID.ready.why))
+			local counts =
+				{ "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve" }
+			for k, word in ipairs(counts) do
+				if string.find(why, word .. " players", 1, true) then
+					expect(k + 1).to.equal(Config.MIN_PLAYERS)
+				end
+			end
+			local digits = string.match(why, "(%d+) players")
+			if digits then
+				expect(tonumber(digits)).to.equal(Config.MIN_PLAYERS)
+			end
 		end)
 
 		it("teaches the stare before the Manual, as long as a stare takes", function()
