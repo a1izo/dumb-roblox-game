@@ -17,3 +17,4 @@
 - [Station props rebuilt](station-props-2026-11.md) — 17 station looks remade from stationkit.py inside their old boxes and screen slots; anchor maths, Station must stay depth-symmetric
 - [Lighting rework 2026-11](lighting-rework-2026-11.md) — owner's noir lighting decisions: fewer lights, held shadow keys, window-only lightning, room-aligned fittings; HQ first
 - [Studio with no screen](studio-no-screen.md) — temporary plugin + a second minimised Studio reads and play-tests the real place; imports and Save still need the screen; never accept a Rojo diff holding unpushed work
+- [Owner-rejected changes](owner-rejected-changes.md) — removed at the owner's word: suit fists, Deathsinger on EAT IT; never re-add
