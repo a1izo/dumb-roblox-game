@@ -1,39 +1,19 @@
 # The Agency intro (shot IntroAgency). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
 id = "IntroAgency"
-name = "Agency: the operations deck"
+name = "Agency: it's in the building"
 status = "built"
 
 [origin]
-what = "The task force's first night with L (Death Note): a dark room, the case's evidence spread out, the investigators lined up watching, and L crouched on a chair, thumb at his lip, staring at it."
-recognisable = "L crouched, thumb at the lip, extreme close-ups of his eyes; inserts of the evidence (crime-scene photographs, notes with arrows, a badge); low, cold light; the team in a row watching him."
-ours = "Rebuilt from scratch 2026-10-28: the match's players (twelve at most) round the map table in one pool of light; one crouched on a chair at the table's far end, thumb at his lip, staring down its length at the Manual at the other end; the reader lifts its cover, the lights stutter, the wall of the dead across the atrium flares and every head snaps up; the crouched one unfolds and stands; the camera comes straight down into the open page."
-
-[source]
-url = "https://www.youtube.com/watch?v=eCLKnpTYHN0"
-title = "L and task force start their investigation."
-kind = "the anime scene"
-watched = "2026-10-28: a frame sheet every 8 s over its 160 s, in the built-in browser"
-mirror = false
-
-[[beat]]
-src = 17.6
-pose = "L close, wide eyes, thumb at the lip"
-[[beat]]
-src = 42.4
-pose = "insert: crime-scene photographs and notes"
-[[beat]]
-src = 59.0
-pose = "the task force lined up watching him"
-[[beat]]
-src = 92.1
-pose = "a dark room lit only by a monitor"
+what = "The task force's surveillance in Death Note: investigators in a dark room watching rows of camera feeds (the cameras in Light's house), the clock running, nothing happening, until something does."
+recognisable = "A dark room lit only by monitors; tired faces in their glow; a feed that should be empty; the realisation."
+ours = "Scrapped and rebuilt a third time 2026-11-01 (the owner chose the idea): the team crowded in the dark security office at the wall of feeds; on the feed from an empty office upstairs a black book drops onto a desk out of nowhere; the one at the console switches to this room's own camera, which zooms past them onto the duty desk right behind them, the book on it; they turn round; its cover lifts."
 
 [timing]
 length = 22.6
-fit = "9 cuts and the card: crane in over the desks (0-3.6); tracking along the table over their heads (3.6-6.2); the evidence and the book (6.2-8.2); the crouched one close (8.2-10.2); the cover lifted (10.2-11.6); the stutter, every head up to the wall (11.6-13); the wall of the dead (13-15.2); he unfolds and stands (15.2-17.4); straight down into the open page (17.4-19.6); black and the case's card."
+fit = "11 cuts and the card: behind them at the feeds (0-2.6); over the console along their faces (2.6-4.4); the feed upstairs, empty (4.4-6); the watcher leans in, from the monitors' eye (6-7.2); the feed: the drop (7.2-9); they jolt (9-10.6); over his shoulder switching (10.6-12.2); this room's feed zooming onto the desk behind them (12.2-14.4); his face, sinking in, turning (14.4-16); from behind the book, all of them turned to it (16-18); the cover lifts (18-19.6); black and the case's card."
 
 [r6]
-notes = "The map table is solid to the floor and its four chairs leave no room along its long sides: the reader at one end, the crouched one on his own chair at the other, the rest at the corners and behind the chairs (a body with its arms is 4 studs across). The crouch is the R6 one (legs out along the seat, the torso upright on their back ends, as the chairPerch emote). The Manual on the table opens by its own keys (Shot.prop open=[(t, v)], new 2026-10-28)."
+notes = "Twelve only, nobody walks (two seated at the console, ten standing crowded behind it a body's width apart); they turn round on the spot (the path turns them, the neck takes the rest). The duty desk's monitor walls its south end: the book sits on its papers at the north end, and the shots from behind it come from the north. The feeds are the cctv fx over locked cameras."
 
 [check]
-by = "run_cinema --clear 0 problems; --lint; contact sheets of every cut"
+by = "run_cinema --clear 0 problems; --lint (close-ups only); contact sheets of every cut; to watch in Studio before calling it done (the owner saw clipping the Blender check missed in the last version)"
