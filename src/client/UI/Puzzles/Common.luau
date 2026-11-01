@@ -220,7 +220,35 @@ function Common.grid(parent: Instance, cols: number, rows: number, gap: number?,
 	local g = gap or T.space.m
 	local holder = Kit.frame(props or {})
 	holder.Parent = parent
-	Kit.grid(holder, UDim2.new(1 / cols, -g * (cols - 1) / cols, 1 / rows, -g * (rows - 1) / rows), g)
+	-- Placed by hand in LayoutOrder, not with a UIGridLayout: under the screen's UIScale that sized its cells too
+	-- big, so the last card of a row wrapped below the frame.
+	local cell = UDim2.new(1 / cols, -g * (cols - 1) / cols, 1 / rows, -g * (rows - 1) / rows)
+	local queued = false
+	local function arrange()
+		queued = false
+		local items = {}
+		for _, child in ipairs(holder:GetChildren()) do
+			if child:IsA("GuiObject") then
+				table.insert(items, child)
+			end
+		end
+		table.sort(items, function(a, b)
+			return a.LayoutOrder < b.LayoutOrder
+		end)
+		for index, item in ipairs(items) do
+			local col, row = (index - 1) % cols, (index - 1) // cols
+			item.Size = cell
+			item.Position = UDim2.new(col / cols, col * g / cols, row / rows, row * g / rows)
+		end
+	end
+	local function queue()
+		if not queued then
+			queued = true
+			task.defer(arrange)
+		end
+	end
+	holder.ChildAdded:Connect(queue)
+	holder.ChildRemoved:Connect(queue)
 	return holder
 end
 
