@@ -1,19 +1,19 @@
 # The Agency intro (shot IntroAgency). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
 id = "IntroAgency"
-name = "Agency: it's in the building"
+name = "Agency: night watch"
 status = "built"
 
 [origin]
-what = "The task force's surveillance in Death Note: investigators in a dark room watching rows of camera feeds (the cameras in Light's house), the clock running, nothing happening, until something does."
-recognisable = "A dark room lit only by monitors; tired faces in their glow; a feed that should be empty; the realisation."
-ours = "Scrapped and rebuilt a third time 2026-11-01 (the owner chose the idea), then told so it makes sense 2026-11-02 (the owner: why would they watch it, why would it teleport): the team on a night watch over the evidence room's feed, the recovered Manual on its counter; the feed breaks up and clears on an empty counter; on the replay a faceless figure in a suit takes it; this room's own camera zooms onto the duty desk behind them, the Manual on it (there from the first shot): one of them took it; they turn to it, then look at each other."
+what = "The task force's surveillance in Death Note: investigators in a dark room watching rows of camera feeds, the clock running, nothing happening, until something does."
+recognisable = "A dark room lit only by monitors; a bored operator clicking through cameras; a feed that should show something and doesn't; the replay; the alarm."
+ours = "Rebuilt 2026-11-02 after the owner's notes on the last version (why would they watch the Manual, why would it teleport, why would the killer bring it to them, not everyone at the monitors). Two on the night watch flick through the building's cameras: the others are spread round the building (break room, night desk, copy room, bullpen) doing their own thing. The evidence room's feed breaks up and clears on an empty counter; the replay shows a faceless figure in a suit lifting the Manual and walking out. The alarm: every room looks up into its camera. Last, the floor upstairs: the figure walking off with it stops and turns its head to the lens; static; black. The owner chose this ending ('both')."
 
 [timing]
 length = 22.6
-fit = "12 cuts and the card: behind them at the feeds (0-2.6); over the console along their faces (2.6-4.4); the evidence feed, the Manual on the counter (4.4-6); the watcher leans in (6-7.2); the feed breaks up, the counter empty (7.2-9); they jolt (9-10.6); he runs the tape back (10.6-12.2); the replay: a figure takes it (12.2-14.2); this room's camera zooms onto the desk behind them (14.2-15.6); his face, turning (15.6-16.6); from behind the book, all turned to it (16.6-18.2); they look at each other (18.2-19.6); black and the case's card."
+fit = "A: the two at the wall of feeds, from behind (0-2.2); B-E: the feeds, one click each: break room, night desk, copy room, bullpen (2.2-6.8); F: the watcher, bored, from the end of the console (6.8-8.2); G: the evidence feed, the Manual on the counter, breaking up, then gone (8.2-10); H: the two jolt and lean in (10-11); I: the replay, the figure takes it (11-12.8); J: from behind, he slams the alarm, red (12.8-13.8); K: each room looks up into its camera (13.8-17); L: the floor upstairs, the figure stops and turns its head to the lens, static (17-19.6); black and the card."
 
 [r6]
-notes = "Twelve only, nobody walks (two seated at the console, ten standing crowded behind it a body's width apart); they turn round on the spot (the path turns them, the neck takes the rest). The duty desk's monitor walls its south end: the book sits on its papers at the north end, and the shots from behind it come from the north. The feeds are the cctv fx over locked cameras."
+notes = "Twelve only. Two seated at the console; ten spread over four rooms, each with their own clip and their own fidget timing (no two in step). The figures are faceless stand-ins (extras), never a player. The console's monitors come out to x -61.3 between y 4.4 and 7.2: there is no room for a camera in front of the two, so their close shots come from the console's end (about -61.9, 4.9-6, -60.4), three-quarter on. The feeds are the cctv fx over locked cameras."
 
 [check]
-by = "run_cinema --clear 0 problems; --lint (close-ups only); contact sheets of every cut; to watch in Studio before calling it done (the owner saw clipping the Blender check missed in the last version)"
+by = "run_cinema --clear 0 problems; --lint clean; contact sheets of every cut; acting file 172,843 characters (stale IntroAgency_crowd* and walker* pruned from Animations.blend). Still to watch in Studio (the owner saw clipping the Blender check missed in an earlier version)."
