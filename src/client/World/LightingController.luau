@@ -554,13 +554,27 @@ function LightingController.lightning(amount: number?)
 	end)
 end
 
+-- The names Roblox gives the effects a new place's Lighting starts with.
+local STOCK_EFFECTS = {
+	Atmosphere = true,
+	Bloom = true,
+	Blur = true,
+	ColorCorrection = true,
+	DepthOfField = true,
+	SunRays = true,
+}
+
 function LightingController.init()
 	for _, child in ipairs(Lighting:GetChildren()) do
 		local ours = child.Name == "DeathsGambitAtmosphere"
 			or child.Name == "DeathsGambitGrade"
 			or child.Name == "DeathsGambitBloom"
 			or child.Name == "DeathsGambitSky"
-		if ours or child:IsA("Sky") then
+		-- (and the place's own stock effects, by their default names: a second Atmosphere overrode ours, and its
+		-- Bloom, DepthOfField and SunRays laid themselves over the look, 2026-11-02; the client's own effects, the menu
+		-- blur and the brightness setting's grade, have names of their own and stay)
+		local stock = (child:IsA("Atmosphere") or child:IsA("PostEffect")) and STOCK_EFFECTS[child.Name] == true
+		if ours or stock or child:IsA("Sky") then
 			child:Destroy()
 		end
 	end

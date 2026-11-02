@@ -60,6 +60,21 @@ def ceiling(s, pos, color, range_, brightness, shadows=False, flicker=False, rol
             glow, clear)
 
 
+# A noir ceiling lamp (the owner's look, tuned in a Studio play test at full quality, 2026-11-02): a spot straight down
+# throwing a pool on the floor, the ceiling round it left dark. Round lights a dozen studs up gave the floor a sixth of
+# their light and lit the ceiling flat instead; with the room's fill turned down (LightingPresets) these pools are the
+# light the room has. A 70 degree cone from a 13 stud ceiling makes a pool about 17 studs across.
+POOL_ANGLE = 70
+POOL_RANGE = 26
+POOL_GAIN = 5.0  # times the fitting's nominal brightness (a nominal 1.4 is a 7 here)
+
+
+def pool(s, pos, color, brightness, flicker=False, glow=None, rot=0.0):
+    """The lamp of a ceiling fitting as a noir pool: a spot down, POOL_ANGLE wide, clear of its fitting."""
+    s.light("spot", pos, color, POOL_RANGE, brightness * POOL_GAIN, False, "Bottom", POOL_ANGLE, flicker, None, rot,
+            glow, True)
+
+
 def wall(s, pos, rot, color, range_, brightness, shadows=False, flicker=False, role=None, glow=None):
     """The lamp of a fitting on a wall inside (sconce, bulkhead, exit sign) that faces rot: a round light
     just in front of the wall, so it washes the wall round it as well as the room."""

@@ -961,9 +961,12 @@ def lamps(data, problems):
     from maps import catalog
 
     found = []
+    cones = {}  # a spot down reaches only what is in its cone
     for li in data["lights"]:
         if li.get("role") != "emergency":
             found.append((tuple(li["pos"]), li["range"]))
+            if li.get("kind") == "spot" and li.get("face") == "Bottom":
+                cones[len(found) - 1] = math.cos(math.radians(min(180, li.get("angle", 90)) / 2))
     cat = catalog.load()
     for key, x, y, z, rot, sc, *rest in data["props"]:
         if rest and rest[0] == "dark":
@@ -985,7 +988,14 @@ def lamps(data, problems):
         zs = [p[2] for p, _ in found]
         for gx in range(int(min(xs)), int(max(xs)) + 1, 4):
             for gz in range(int(min(zs)), int(max(zs)) + 1, 4):
-                n = sum(1 for p, r in found if math.dist(p, (gx, y, gz)) <= r)
+                n = 0
+                for k, (p, r) in enumerate(found):
+                    dd = math.dist(p, (gx, y, gz))
+                    if dd > r:
+                        continue
+                    if k in cones and dd > 0 and (p[1] - y) / dd < cones[k]:
+                        continue
+                    n += 1
                 if n > worst:
                     worst = n
                 if n > budget:

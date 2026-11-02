@@ -79,7 +79,7 @@ local function build(map: Instance)
 	for _, light in ipairs(map:GetDescendants()) do
 		local anchor = light.Parent
 		if
-			light:IsA("PointLight")
+			(light:IsA("PointLight") or light:IsA("SpotLight"))
 			and anchor
 			and anchor:IsA("BasePart")
 			and anchor.Name == "Light"
@@ -103,7 +103,10 @@ local function build(map: Instance)
 				}) :: Part
 				local top = Create("Attachment", { Position = Vector3.new(0, -0.2, 0), Parent = holder })
 				local bottom = Create("Attachment", { Position = Vector3.new(0, -drop + 0.2, 0), Parent = holder })
-				local spread = math.clamp(light.Range * 0.45, 5, 11)
+				-- (a pool lamp's shaft is its cone; a round lamp's widens with its reach)
+				local spread = if light:IsA("SpotLight")
+					then math.clamp(2 * drop * math.tan(math.rad(light.Angle / 2)) * 0.75, 5, 16)
+					else math.clamp(light.Range * 0.45, 5, 11)
 				local beam = Create("Beam", {
 					Attachment0 = top,
 					Attachment1 = bottom,

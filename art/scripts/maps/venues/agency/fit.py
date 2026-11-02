@@ -196,12 +196,11 @@ def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9,
         # lamp's face is its own part, which casts no shadow, so its light stays in it.)
         if flicker:
             # The face is the lamp's own part, so it goes dark with the light (in the scene's meshes it could not).
-            lightbook.ceiling(s, (x, ceiling - 0.17, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS,
-                              flicker=True, glow=lightbook.glow_of(glow, (w, 0.04, d)), rot=rot, clear=True)
+            lightbook.pool(s, (x, ceiling - 0.17, z), color, brightness * ROOM_BRIGHTNESS, flicker=True,
+                           glow=lightbook.glow_of(glow, (w, 0.04, d)), rot=rot)
         else:
             s.box(glow, (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
-            lightbook.ceiling(s, (x, ceiling - 0.55, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS,
-                              clear=True)
+            lightbook.pool(s, (x, ceiling - 0.55, z), color, brightness * ROOM_BRIGHTNESS)
     else:
         s.box("DiffuserOff", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
 
@@ -212,8 +211,7 @@ def downlight(s, x, z, ceiling, color=WARM, range_=16, brightness=0.8, on=True, 
     s.cylinder("DarkMetal", (x, ceiling - 0.12, z), 0.55, 0.12, 12)
     if on:
         s.cylinder("NeonWarm" if color[0] > color[2] else "NeonCool", (x, ceiling - 0.16, z), 0.4, 0.04, 12)
-        lightbook.ceiling(s, (x, ceiling - 0.5, z), color, range_ * ROOM_RANGE, brightness * ROOM_BRIGHTNESS,
-                          flicker=flicker, clear=True)
+        lightbook.pool(s, (x, ceiling - 0.5, z), color, brightness * ROOM_BRIGHTNESS, flicker=flicker)
     else:
         s.cylinder("DiffuserOff", (x, ceiling - 0.16, z), 0.4, 0.04, 12)
 
@@ -237,7 +235,7 @@ def ceiling_lights(s, rect, ceiling, kind, over, spacing=14.0, dead=(), flicker=
         elif kind == "tube":
             kit.tube_light(s, x, ceiling, z, length=size or 6.0, rot=rot, color=color,
                            range_=reach * ROOM_RANGE, brightness=brightness * ROOM_BRIGHTNESS, on=on,
-                           flicker=on and (x, z) in tired)
+                           flicker=on and (x, z) in tired, pool=True)
         elif kind == "downlight":
             downlight(s, x, z, ceiling, color=color, range_=reach, brightness=brightness, on=on,
                       flicker=on and (x, z) in tired)

@@ -468,7 +468,7 @@ def panel_light(s, x, y, z, w=4.0, d=2.0, color=WARM, range_=24, brightness=1.1,
 
 
 def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18, brightness=0.7, tubes=2,
-               shadows=False, on=True, flicker=False):
+               shadows=False, on=True, flicker=False, pool=False):
     """A fluorescent fitting on a ceiling at height y: a steel housing with its tubes behind a
     ribbed diffuser, and one light under it. Dimmer than a panel, and it does not bloom. on=False: the
     fitting is there, dark; flicker: a tired one that cuts out now and then."""
@@ -481,7 +481,10 @@ def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18
     for u in (-length / 2 + 0.15, length / 2 - 0.15):
         dx, dz = u * math.cos(a), -u * math.sin(a)
         s.box("DarkMetal", (x + dx, y - 0.3, z + dz), (0.2, 0.3, 0.5 + 0.35 * tubes), rot)
-    if on:
+    if on and pool:
+        # (a noir pool down from under the diffusers: lightbook.pool; brightness as given is the pool's)
+        lightbook.pool(s, (x, y - 0.7, z), color, brightness, flicker=flicker)
+    elif on:
         # (under the diffusers, clear of them: a lamp inside a mesh blacks itself out when it casts shadows)
         lightbook.ceiling(s, (x, y - 0.7, z), color, range_, brightness, shadows, flicker=flicker, clear=True)
 

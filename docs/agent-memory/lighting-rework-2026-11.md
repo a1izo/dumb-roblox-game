@@ -61,3 +61,16 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   other maps (no lamp given shadows) kept theirs. LightingController now gives runtime shadows only to lamps BUILT
   with Shadows = true (the meeting rig); the Shadows setting row is gone from the panel (the setting key is unused).
   The engine reason is not known; don't re-enable runtime lamp shadows without testing in Studio first.
+- 2026-11-02, seen live through Studio MCP: Studio's PLAY-test quality (settings().Rendering.QualityLevel) was
+  Automatic (the owner had only set Edit Quality Level to 21). On it the client fell back to voxel lighting: a bright
+  probe PointLight lit the floor in coarse 4-stud blocks, ceiling lamps lit only the ceiling, no pools anywhere, so
+  "lamps vanish" and "no shaders" were mostly the quality level. Judge the look only at QualityLevel 21. Studio in
+  the background also throttles to ~15 fps, so fps read through MCP is not the game's.
+- The place's Lighting held stock effects (Atmosphere, Bloom, DepthOfField, SunRays) beside ours; LightingController
+  now removes effects with Roblox's default names at start.
+- 2026-11-02, the look tuned live (Studio MCP, play-test QualityLevel 21): what made HQ flat was the FILL, not the
+  lamps. Ambient 44,49,66 lit every surface evenly; at 16,18,28 (env diffuse 0.12) the rooms go dark and the lamps
+  carve pools. Round ceiling lamps 13 studs up put ~1/6 of their light on the floor and lit the ceiling instead, so
+  ceiling fittings are now lightbook.pool: a SpotLight down, 70 degrees, range 26, 5x the nominal brightness. Target
+  frame: docs/hq-noir-look-2026-11-02.jpg. Captures through the MCP lag a frame or two and the lightning flashes vary
+  them: change one thing at a time and compare.
