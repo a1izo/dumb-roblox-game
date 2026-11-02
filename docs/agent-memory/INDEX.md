@@ -19,3 +19,4 @@
 - [Studio with no screen](studio-no-screen.md) — temporary plugin + a second minimised Studio reads and play-tests the real place; imports and Save still need the screen; never accept a Rojo diff holding unpushed work
 - [Owner-rejected changes](owner-rejected-changes.md) — removed at the owner's word (suit fists): never re-add; Deathsinger on EAT IT unresolved, ask
 - [Walls at floor changes](floor-change-walls.md) — owner's rule: a wall (with doorways) wherever the floor finish changes; HQ's Bureau sign wall excepted
+- [Studio MCP](studio-mcp.md) — Studio's built-in MCP server is registered with Claude Code; switch it on in Studio; look and play-test, never edit the live Team Create place
