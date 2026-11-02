@@ -49,7 +49,7 @@ KEYS = (-61.6, 3.5, -64.6)  # the console's keys, in front of the watcher
 DUTY = (-84.0, -57.0)  # the duty desk
 BOOK = (-84.0, 2.9 + 0.22, -58.3)  # the book on it, on the papers at the end away from its monitor
 COUNTER_BOOK = (-24.0, 17.55 + 0.22, -52.4)  # the Manual on the evidence counter upstairs (39F lock-up)
-FIGURE = (-24.0, -55.0)  # where the figure stands at the counter, facing it (+z)
+FIGURE = (-24.0, -55.4)  # where the figure stands at the counter, facing it (+z)
 SEATS = [("watcher", (-64.3, -63.5)), ("everyone:1", (-64.3, -69.5))]  # (sat back in the chairs: turning, a knee met the console)
 # (x, z): the rest standing crowded behind the console, three rows, a body's width (4) apart
 STANDING = [(-67.6, -72.2), (-67.6, -66.5), (-68.4, -60.2), (-71.4, -69.4), (-71.4, -63.6), (-72.2, -56.8),
@@ -204,10 +204,12 @@ book.at(LENGTH, BOOK, (0, 170, 0))
 # counter, holds it to its chest, turns away and walks off.
 fig = Motion("IntroAgency_figure", LENGTH, note="The Agency intro: the figure on the replay.")
 FJ = dict(root=(-14, 0, 0))
-FREACH = body_reach(1, FJ, (0, 0, 0), (0.0, COUNTER_BOOK[1] - 14.0 + 0.5, -2.45), direction=(0.0, -0.5, -0.85))
+FREACH = body_reach(1, FJ, (0, 0, 0), (0.0, COUNTER_BOOK[1] - 14.0 + 0.75, -2.85), direction=(0.0, -0.35, -0.95))
 CHEST = J((44, 0, -30), (-0.25, 0.1, -0.2))
 fig.key(0.0, root=(-14, 0, 0), neck=(-24, 0, 0), rShoulder=FREACH, lShoulder=J((6, 0, -5)))
 fig.key(CUTS[6] + 0.7, "sine", root=(-14, 0, 0), neck=(-24, 0, 0), rShoulder=FREACH, lShoulder=J((6, 0, -5)))
+LIFT = body_reach(1, dict(root=(-9, 0, 0)), (0, 0, 0), (0.0, COUNTER_BOOK[1] - 14.0 + 1.6, -2.3), direction=(0.0, 0.1, -1.0))
+fig.key(CUTS[6] + 0.9, "out", root=(-9, 0, 0), neck=(-18, 0, 0), rShoulder=LIFT, lShoulder=J((6, 0, -5)))  # (up off it)
 fig.key(CUTS[6] + 1.1, "sine", root=(-4, 0, 0), neck=(-10, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig.key(CUTS[6] + 1.45, "sine", root=(-3, 0, 0), neck=(-6, 30, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig.key(LENGTH, root=(-3, 0, 0), neck=(-6, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
