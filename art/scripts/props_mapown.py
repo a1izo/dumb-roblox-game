@@ -5,7 +5,10 @@ and desks made again three ways, so no two maps furnish a room alike (maps/ownpr
   a fern on its stand, golden oak filing cabinets, a professor's twin pedestal desk and a banker's swivel chair.
 - Bureau HQ is steel and federal: cantilever guest chairs, beam seating, a chrome cage lounge sofa, rubber plants in
   square planters, steel security files with their lock bars, the bullpen's desks with flat monitors, reference shelves.
-- Tokyo keeps to the street: a perforated steel bench, a channel-backed vinyl booth, black bamboo in a glazed pot.
+- Tokyo keeps to the street: a perforated steel bench, a channel-backed vinyl booth, black bamboo in a glazed pot,
+  crates of mikan.
+- The second batch takes on what the maps still shared: the University's blackboards, bentwood coat stands, trophy cases
+  and oak lockers, the Bureau's steel lockers and evidence cases.
 
 Each keeps the footprint, seat height and desk height of what it stands for: seated poses, colliders, the walk checks
 and the cutscenes were all measured against those. Props face -Y and stand on z = 0, about 3.5 studs to the metre. The
@@ -1130,4 +1133,296 @@ def bamboo_pot():
                     out = Vector((math.cos(a), math.sin(a), rng.uniform(-0.15, 0.25)))
                     side = Vector((-math.sin(a), math.cos(a), 0))
                     parts.append(leaf("Leaf", p, out, side, rng.uniform(0.5, 0.72), 0.075, 0.42, pale if k == 1 else green, rows=4))
+    return parts, []
+
+
+# The second batch: what the three maps still shared --------------------------------------------------------
+
+
+@prop("ChalkBoard", pivot="bottom", material="Wood", collide=True, texture=512, set="Campus", exact=True)
+def chalk_board():
+    """A lecture room's blackboard on its oak easel: slate in a moulded frame hung between two posts on brass pivots, the
+    feet on castors, a ledge with its chalks and felt duster, a proof and a sketched curve left on the board."""
+    oak = mk.wood("Chalk_Oak", srgb(112, 78, 46), srgb(72, 48, 28), roughness=0.5)
+    slate = mk.noisy("Chalk_Stone", srgb(26, 34, 32), srgb(48, 58, 54), roughness=0.65)
+    chalk = mk.noisy("Chalk_Mark", srgb(196, 200, 192), srgb(232, 234, 226), roughness=0.9)
+    brass = pk.metal("Chalk_Brass", (124, 96, 50), (190, 156, 90), rough=0.32, metallic=1.0)
+    felt = mk.flat("Chalk_Felt", srgb(70, 60, 50), 0.9)
+    tyre = pk.rubber("Chalk_Tyre")
+    cz, wide, tall = 3.8, 5.6, 3.6
+    parts = [mk.box("Slate", (wide - 0.1, 0.06, tall - 0.1), (0, 0, cz), mat=slate),
+             mk.box("Cross", (6.0, 0.12, 0.14), (0, 0, 0.72), mat=oak, bevel=0.02, segments=1)]
+    for z, name in ((cz + tall / 2 - 0.06, "FrameTop"), (cz - tall / 2 + 0.06, "FrameBottom")):
+        parts.append(mk.box(name, (wide, 0.12, 0.13), (0, 0, z), mat=oak, bevel=0.02, segments=1))
+    for x in (-wide / 2 + 0.06, wide / 2 - 0.06):
+        parts.append(mk.box("FrameSide", (0.13, 0.12, tall - 0.2), (x, 0, cz), mat=oak, bevel=0.02, segments=1))
+    for side in (-1, 1):
+        x = side * 3.05
+        parts += [mk.box("Post", (0.17, 0.17, 5.7), (x, 0, 3.05), mat=oak, bevel=0.025, segments=1),
+                  sk.wedge("Foot", [(-1.0, 0.2), (1.0, 0.2), (0.86, 0.34), (0.1, 0.42), (-0.1, 0.42), (-0.86, 0.34)], 0.17, x, oak, bevel=0.02),
+                  mk.cylinder("Pivot", 0.1, 0.36, (side * 2.92, 0, cz), rot=(0, 90, 0), mat=brass, verts=10),
+                  mk.lathe("Finial", [(0.0, 5.9), (0.08, 5.9), (0.1, 5.96), (0.05, 6.04), (0.0, 6.1)], (x, 0, 0), mat=oak, segments=8)]
+        for y in (-0.88, 0.88):
+            parts.append(mk.soften(mk.cylinder("Castor", 0.1, 0.09, (x, y, 0.1), rot=(0, 90, 0), mat=tyre, verts=10)))
+    # The ledge, chalk and duster.
+    ledge = cz - tall / 2 - 0.03
+    parts.append(mk.box("Ledge", (5.2, 0.34, 0.05), (0, -0.2, ledge), mat=oak, bevel=0.012, segments=1))
+    for x, r in ((-1.9, 0), (-1.72, 8), (-1.5, -4), (1.3, 3)):
+        parts.append(mk.cylinder("Stick", 0.03, 0.42, (x, -0.2, ledge + 0.055), rot=(0, 90, r), mat=chalk, verts=6))
+    parts.append(pk.rounded("Duster", (0.54, 0.22, 0.13), (0.5, -0.2, ledge + 0.09), felt, r=0.03))
+    # The proof and the curve (the slate's face is y = -0.03).
+    face = -0.036
+    for k, (left, right) in enumerate((("f(x)", "ax^2"), ("f'(x)", "2ax"), ("x", "0"))):
+        z = cz + 1.0 - k * 0.72
+        parts += pk.label("Proof", left, 0.34, (-2.0, face, z), chalk)
+        parts += pk.label("Proof", right, 0.34, (-0.3, face, z), chalk)
+        # (the equals sign drawn by hand: a thin stroke of a font's is lost in the bake)
+        for dz in (-0.05, 0.05):
+            parts.append(mk.box("Equals", (0.24, 0.008, 0.045), (-1.3, face, z + dz), mat=chalk))
+    curve = [(1.15 + 0.11 * k, face, cz - 0.1 + 0.95 * ((k - 7) / 7) ** 2 - 0.5) for k in range(15)]
+    parts.append(bar("Curve", curve, 0.024, chalk, sides=3))
+    parts.append(mk.box("AxisX", (1.8, 0.008, 0.04), (1.92, face, cz - 0.62), mat=chalk))
+    parts.append(mk.box("AxisY", (0.04, 0.008, 1.5), (1.92, face, cz + 0.05), mat=chalk))
+    return parts, []
+
+
+@prop("BentwoodCoatStand", pivot="bottom", material="Wood", collide=True, texture=256, set="Campus", exact=True)
+def bentwood_coat_stand():
+    """A bentwood hat and coat stand: a turned column on four sweeping legs, an umbrella ring round its middle, six hooks
+    curling out of it at the top and six more below."""
+    wood = mk.wood("CStand_Wood", srgb(72, 46, 28), srgb(54, 34, 20), roughness=0.42)
+    brass = pk.metal("CStand_Brass", (124, 96, 50), (190, 156, 90), rough=0.32, metallic=1.0)
+    parts = [turned("Column", [(0.0, 0.0), (0.12, 0.0), (0.1, 0.03), (0.082, 0.45), (0.115, 0.5), (0.078, 0.56), (0.07, 0.94), (0.1, 0.97),
+                               (0.04, 1.0), (0.0, 1.0)], (0, 0, 0.4), (0, 0, 6.34), wood, segments=8)]
+    for k in range(4):
+        a = math.radians(45 + 90 * k)
+        c, s = math.cos(a), math.sin(a)
+        leg = spline([(0.05 * c, 0.05 * s, 2.0), (0.24 * c, 0.24 * s, 1.5), (0.5 * c, 0.5 * s, 0.8), (0.82 * c, 0.82 * s, 0.22),
+                      (0.92 * c, 0.92 * s, 0.05)], 3)
+        parts.append(bar("Leg", leg, [0.045 + 0.03 * j / (len(leg) - 1) for j in range(len(leg))], wood, sides=5))
+        parts.append(mk.cylinder("Tip", 0.06, 0.05, (0.92 * c, 0.92 * s, 0.025), mat=brass, verts=6))
+    parts.append(bar("UmbrellaRing", hoop(0.46, 1.62, 16), 0.024, wood, sides=4))
+    for k in range(6):
+        a = math.radians(60 * k)
+        c, s = math.cos(a), math.sin(a)
+        for z, reach in ((5.72, 0.62), (4.92, 0.46)):
+            hook = spline([(0.04 * c, 0.04 * s, z + 0.2), (reach * 0.5 * c, reach * 0.5 * s, z + 0.1), (reach * 0.9 * c, reach * 0.9 * s, z - 0.08),
+                           (reach * c, reach * s, z + 0.08), (reach * 0.86 * c, reach * 0.86 * s, z + 0.18)], 2)
+            parts.append(bar("Hook", hook, 0.034, wood, sides=4))
+    return parts, []
+
+
+def trophy(prefix, x, y, z, h, mat):
+    """A two handled cup on its stepped plinth."""
+    w = h * 0.3
+    base = mk.lathe(prefix + "Cup", [(0.0, 0.0), (w * 0.8, 0.0), (w * 0.8, 0.08), (w * 0.55, 0.12), (w * 0.2, 0.2 * h), (w * 0.12, 0.34 * h),
+                                     (w * 0.3, 0.4 * h), (w * 0.72, 0.55 * h), (w, h), (w * 0.9, h), (w * 0.64, 0.56 * h), (0.0, 0.46 * h)],
+                    (x, y, z), mat=mat, segments=12)
+    parts = [base]
+    for side in (-1, 1):
+        handle = spline([(x + side * w * 0.72, y, z + 0.56 * h), (x + side * w * 1.3, y, z + 0.62 * h), (x + side * w * 1.3, y, z + 0.88 * h),
+                         (x + side * w * 0.96, y, z + 0.92 * h)], 2)
+        parts.append(bar(prefix + "Handle", handle, 0.022, mat, sides=4))
+    return parts
+
+
+@prop("OakDisplayCase", pivot="bottom", material="Wood", collide=True, texture=512, set="Campus", exact=True)
+def oak_display_case():
+    """The university's trophy case: an oak cabinet with panelled doors, an open case on it in brass edging over green baize,
+    rowing and kendo cups on their plinths, a row of medals, a lit strip under the top rail. (Open: glass bakes solid.)"""
+    oak = mk.wood("OCase_Oak", srgb(120, 84, 50), srgb(76, 50, 30), roughness=0.45)
+    panel = mk.wood("OCase_Wood", srgb(100, 68, 40), srgb(62, 40, 24), roughness=0.5)
+    baize = mk.noisy("OCase_Felt", srgb(20, 54, 40), srgb(40, 84, 62), roughness=0.9)
+    brass = pk.metal("OCase_Brass", (124, 96, 50), (190, 156, 90), rough=0.32, metallic=1.0)
+    gold = pk.metal("OCase_Gold", (176, 140, 66), (230, 194, 108), rough=0.22, metallic=1.0)
+    silver = pk.metal("OCase_Chrome", (150, 154, 160), (214, 218, 224), rough=0.22, metallic=1.0)
+    ribbon = mk.flat("OCase_Ribbon", srgb(120, 26, 34), 0.7)
+    parts = [pk.rounded("Cabinet", (5.96, 2.3, 2.2), (0, 0, 1.2), panel, r=0.03),
+             pk.rounded("Plinth", (6.04, 2.38, 0.14), (0, 0, 0.07), oak, r=0.02),
+             pk.rounded("TopBoard", (6.1, 2.46, 0.1), (0, 0, 2.34), oak, r=0.03),
+             mk.box("Baize", (5.8, 2.2, 0.04), (0, 0, 2.4), mat=baize)]
+    for k in range(4):
+        x = -2.2 + k * 1.466
+        parts.append(mk.box("Door", (1.34, 0.04, 1.84), (x, -1.16, 1.2), mat=oak, bevel=0.012, segments=1))
+        parts.append(mk.box("DoorField", (1.06, 0.03, 1.5), (x, -1.19, 1.2), mat=panel, bevel=0.012, segments=1))
+        parts.append(mk.sphere("Knob", 0.05, (x + (0.5 if k % 2 == 0 else -0.5), -1.22, 1.3), mat=brass, segments=6, rings=4))
+    for x in (-3.0, 3.0):
+        for y in (-1.16, 1.16):
+            parts.append(mk.box("Corner", (0.09, 0.09, 1.06), (x, y, 2.93), mat=brass))
+    for y in (-1.16, 1.16):
+        parts.append(mk.box("Rail", (6.09, 0.09, 0.09), (0, y, 3.47), mat=brass))
+    for x in (-3.0, 3.0):
+        parts.append(mk.box("Rail", (0.09, 2.23, 0.09), (x, 0, 3.47), mat=brass))
+    z = 2.42
+    for k, (x, h, mat) in enumerate(((-2.1, 0.86, silver), (-0.9, 0.7, gold), (0.9, 0.96, gold), (2.1, 0.62, silver))):
+        parts.append(pk.rounded("Plinth", (0.52, 0.52, 0.12), (x, 0.3, z + 0.06), oak, r=0.015))
+        parts += trophy(f"T{k}", x, 0.3, z + 0.12, h, mat)
+    for k in range(6):
+        x = -1.5 + k * 0.6
+        parts.append(mk.box("Ribbon", (0.14, 0.32, 0.012), (x, -0.56, z + 0.006), mat=ribbon))
+        parts.append(mk.cylinder("Medal", 0.12, 0.02, (x, -0.8, z + 0.012), mat=gold if k % 3 else silver, verts=10))
+    glows = [mk.box("CaseLight", (5.6, 0.14, 0.04), (0, 0.9, 3.4), mat=pk.glow("OCase_Light", (255, 232, 200), 3))]
+    return parts, glows
+
+
+@prop("OakLockers", pivot="bottom", material="Wood", collide=True, texture=512, set="Campus", exact=True, normal=128)
+def oak_lockers():
+    """The student union's lockers: two tiers of six oak doors in a carcass with its plinth and cornice, each door with three
+    louvres, a brass number plate and a latch, padlocks and club notices on some."""
+    oak = mk.wood("OLock_Oak", srgb(136, 96, 56), srgb(88, 60, 34), roughness=0.5)
+    frame = mk.wood("OLock_Wood", srgb(96, 64, 38), srgb(60, 40, 24), roughness=0.55)
+    dark = mk.flat("OLock_Dark", srgb(18, 14, 12), 0.8)
+    brass = pk.metal("OLock_Brass", (124, 96, 50), (190, 156, 90), rough=0.32, metallic=1.0)
+    steel = pk.metal("OLock_Steel", (110, 112, 118), (160, 162, 168), rough=0.35, metallic=1.0)
+    paper = mk.noisy("OLock_Paper", srgb(200, 194, 176), srgb(232, 226, 208), roughness=0.9)
+    print_ = mk.flat("OLock_Print", srgb(44, 44, 50), 0.8)
+    rng = random.Random(12)
+    front = -1.2
+    parts = [mk.box("Carcass", (5.86, 2.46, 6.3), (0, 0.05, 3.4), mat=frame),
+             pk.rounded("Plinth", (5.96, 2.56, 0.26), (0, 0.05, 0.13), oak, r=0.02),
+             pk.rounded("Cornice", (6.0, 2.6, 0.2), (0, 0.0, 6.7), oak, r=0.03),
+             mk.box("Band", (5.92, 2.52, 0.08), (0, 0.03, 6.57), mat=frame, bevel=0.015, segments=1)]
+    wide, tall = 0.9, 3.04
+    number = 1
+    for row in range(2):
+        z = 0.32 + (tall + 0.06) * (row + 0.5)
+        for col in range(6):
+            x = -2.4 + col * 0.96
+            parts.append(mk.box("Door", (wide, 0.05, tall), (x, front - 0.025, z), mat=oak, bevel=0.014, segments=1))
+            for k in range(3):
+                parts.append(mk.box("Louvre", (wide * 0.62, 0.012, 0.05), (x, front - 0.054, z + tall * 0.34 - k * 0.11), mat=dark))
+            parts.append(mk.box("NumberPlate", (0.3, 0.014, 0.16), (x, front - 0.056, z - tall * 0.06), mat=brass, bevel=0.004))
+            parts += pk.label("Number", str(number), 0.09, (x, front - 0.066, z - tall * 0.06), dark)
+            parts.append(mk.box("Latch", (0.1, 0.05, 0.3), (x + wide * 0.34, front - 0.07, z - tall * 0.18), mat=steel, bevel=0.01, segments=1))
+            if rng.random() < 0.3:
+                parts.append(pk.rounded("Padlock", (0.13, 0.05, 0.15), (x + wide * 0.34, front - 0.115, z - tall * 0.27), brass, r=0.018))
+            if rng.random() < 0.35:
+                nx, nz = x - wide * 0.1, z - tall * 0.27
+                parts.append(mk.box("Notice", (0.42, 0.006, 0.56), (nx, front - 0.054, nz), rot=(0, rng.uniform(-5, 5), 0), mat=paper))
+                parts.append(mk.box("NoticeLine", (0.3, 0.004, 0.05), (nx, front - 0.059, nz + 0.16), mat=print_))
+            number += 1
+    return parts, []
+
+
+@prop("StaffLockers", pivot="bottom", material="Metal", collide=True, texture=512, set="Agency", exact=True, normal=128)
+def staff_lockers():
+    """The Bureau's changing room lockers: five full height doors in gunmetal steel with a sloped top that sheds dust, slotted
+    vents top and bottom, a keypad lock, a recessed pull and a typed name card."""
+    body = pk.metal("SLock_Steel", (44, 48, 54), (72, 76, 84), rough=0.42, metallic=0.6)
+    door = pk.metal("SLockDoor_Steel", (54, 58, 66), (84, 88, 96), rough=0.4, metallic=0.6)
+    vent = lattice("SLock_Vent", (54, 58, 66), (8, 8, 10), 0.09, _axis("X"), _axis("Z"), share=0.36, roughness=0.45, metallic=0.5, square=True)
+    pad = lattice("SLock_Keys", (20, 21, 24), (150, 152, 158), 0.09, _axis("X"), _axis("Z"), share=0.34, roughness=0.5, square=True)
+    dark = pk.metal("SLock_Iron", (14, 14, 16), (34, 34, 38), rough=0.55, metallic=0.6)
+    bright = pk.metal("SLock_Chrome", (126, 130, 134), (176, 180, 184), rough=0.3, metallic=1.0)
+    card = mk.noisy("SLock_Card", srgb(214, 208, 190), srgb(238, 232, 214), roughness=0.9)
+    typed = mk.flat("SLock_Print", srgb(26, 26, 30), 0.8)
+    front = -1.26
+    parts = [mk.box("Carcass", (5.9, 2.5, 6.1), (0, 0.04, 3.45), mat=body),
+             mk.box("Kick", (5.8, 2.4, 0.4), (0, 0.06, 0.2), mat=dark),
+             sk.wedge("SlopeTop", [(-1.3, 6.5), (1.32, 6.5), (1.32, 6.8), (-1.3, 6.54)], 6.0, 0.0, body, bevel=0.012)]
+    wide = 1.12
+    for k in range(5):
+        x = -2.36 + k * 1.18
+        parts += [mk.box("Door", (wide, 0.05, 5.96), (x, front - 0.025, 3.45), mat=door, bevel=0.014, segments=1),
+                  mk.box("VentTop", (0.64, 0.01, 0.46), (x, front - 0.054, 5.9), mat=vent),
+                  mk.box("VentLow", (0.64, 0.01, 0.46), (x, front - 0.054, 1.0), mat=vent),
+                  mk.box("PullShadow", (0.2, 0.01, 0.62), (x + 0.36, front - 0.054, 3.3), mat=dark),
+                  mk.box("PullLip", (0.26, 0.05, 0.05), (x + 0.36, front - 0.075, 3.6), mat=bright, bevel=0.012, segments=1),
+                  mk.box("KeyPlate", (0.3, 0.04, 0.4), (x + 0.36, front - 0.07, 4.14), mat=dark, bevel=0.01, segments=1),
+                  mk.box("Keys", (0.2, 0.008, 0.27), (x + 0.36, front - 0.092, 4.14), mat=pad)]
+        parts += card_frame("Name", x, front - 0.05, 4.86, bright, card, w=0.62, h=0.2)
+        parts.append(mk.box("Typed", (0.36, 0.005, 0.04), (x, front - 0.063, 4.86), mat=typed))
+    return parts, []
+
+
+@prop("EvidenceCrate", pivot="bottom", material="Plastic", collide=True, texture=512, set="Agency", exact=True, normal=128)
+def evidence_crate():
+    """A sealed evidence transit case on its pallet: a ribbed black case with steel corners, butterfly latches, carry handles,
+    a stencilled lid, the case label and a red numbered tamper strap across the front."""
+    case = mk.noisy("ECase_Plastic", srgb(16, 17, 19), srgb(40, 42, 46), roughness=0.45)
+    steel = pk.metal("ECase_Steel", (110, 112, 118), (160, 162, 168), rough=0.35, metallic=1.0)
+    pine = mk.wood("ECase_Wood", srgb(140, 108, 70), srgb(96, 70, 44), roughness=0.75)
+    white = mk.flat("ECaseStencil_Plastic", srgb(214, 212, 204), 0.6)
+    red = mk.flat("ECaseSeal_Plastic", srgb(160, 24, 30), 0.4)
+    label = mk.noisy("ECase_Label", srgb(214, 208, 190), srgb(238, 232, 214), roughness=0.9)
+    typed = mk.flat("ECase_Print", srgb(26, 26, 30), 0.8)
+    parts = []
+    # The pallet.
+    for x in (-1.72, 0.0, 1.72):
+        parts.append(mk.box("Runner", (0.42, 3.98, 0.26), (x, 0, 0.13), mat=pine, bevel=0.012, segments=1))
+    for k in range(6):
+        parts.append(mk.box("Deck", (4.04, 0.56, 0.08), (0, -1.71 + k * 0.684, 0.3), mat=pine, bevel=0.012, segments=1))
+    # The case and its lid.
+    parts += [pk.rounded("Body", (3.72, 3.72, 2.8), (0, 0, 1.75), case, r=0.1),
+              pk.rounded("Lid", (3.8, 3.8, 0.84), (0, 0, 3.5), case, r=0.12)]
+    for k in range(5):  # (ribs moulded round the body)
+        x = -1.5 + k * 0.75
+        parts.append(mk.box("RibFront", (0.14, 0.06, 2.4), (x, -1.87, 1.75), mat=case, bevel=0.02, segments=1))
+        parts.append(mk.box("RibBack", (0.14, 0.06, 2.4), (x, 1.87, 1.75), mat=case, bevel=0.02, segments=1))
+        parts.append(mk.box("RibSide", (0.06, 0.14, 2.4), (-1.87, x, 1.75), mat=case, bevel=0.02, segments=1))
+        parts.append(mk.box("RibSide", (0.06, 0.14, 2.4), (1.87, x, 1.75), mat=case, bevel=0.02, segments=1))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for z in (0.5, 3.79):
+                parts.append(pk.rounded("Corner", (0.36, 0.36, 0.42), (sx * 1.84, sy * 1.84, z), steel, r=0.05))
+    # The latches, the handles, the seal and the label.
+    for x in (-1.1, 1.1):
+        parts += [mk.box("LatchPlate", (0.42, 0.04, 0.5), (x, -1.92, 3.13), mat=steel, bevel=0.012, segments=1),
+                  mk.cylinder("Butterfly", 0.13, 0.05, (x, -1.96, 3.19), rot=(90, 0, 0), mat=steel, verts=8)]
+    for side in (-1, 1):
+        parts.append(bar("Handle", spline([(side * 1.94, -0.5, 2.3), (side * 2.01, -0.4, 2.16), (side * 2.01, 0.4, 2.16), (side * 1.94, 0.5, 2.3)], 2),
+                         0.04, steel, sides=5))
+    parts += [mk.box("SealStrap", (0.1, 0.012, 1.0), (0, -1.915, 3.01), mat=red),
+              mk.box("SealTag", (0.32, 0.016, 0.2), (0, -1.925, 2.49), mat=red, bevel=0.004),
+              mk.box("CaseLabel", (1.1, 0.012, 0.66), (-0.9, -1.907, 1.5), mat=label),
+              mk.box("LabelLine", (0.8, 0.004, 0.06), (-0.9, -1.915, 1.66), mat=typed),
+              mk.box("LabelLine", (0.6, 0.004, 0.06), (-1.0, -1.915, 1.5), mat=typed),
+              mk.box("LabelLine", (0.7, 0.004, 0.06), (-0.95, -1.915, 1.34), mat=typed)]
+    parts += pk.label("Stencil", "EVIDENCE", 0.36, (0.0, 0.0, 3.925), white, rot=(0, 0, 0))
+    return parts, []
+
+
+@prop("MarketCrate", pivot="bottom", material="WoodPlanks", collide=True, texture=512, set="Tokyo", exact=True, normal=128)
+def market_crate():
+    """Two slatted wooden produce crates stacked at a Tokyo shop front, corner posts, end boards with a stencilled grower's mark,
+    the top one heaped with mikan on green paper."""
+    pine = mk.wood("MCrate_Wood", srgb(170, 134, 88), srgb(118, 86, 52), roughness=0.75)
+    post = mk.wood("MCrate_Oak", srgb(142, 106, 66), srgb(96, 68, 40), roughness=0.75)
+    dark = mk.flat("MCrate_Dark", srgb(22, 18, 14), 0.9)
+    paper = mk.noisy("MCrate_Paper", srgb(44, 110, 70), srgb(70, 140, 92), roughness=0.8)
+    stencil = mk.flat("MCrate_Print", srgb(150, 36, 30), 0.8)
+    mikan = mk.noisy("MCrate_Fruit", srgb(226, 120, 24), srgb(246, 158, 44), roughness=0.5, kind="plastic")
+    stalk = mk.flat("MCrate_Stem", srgb(50, 70, 30), 0.7)
+    parts = []
+
+    def crate(z0, tall, prefix):
+        half = 1.95
+        out = [mk.box(prefix + "Inside", (3.74, 3.74, tall - 0.16), (0, 0, z0 + tall / 2), mat=dark)]
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                out.append(mk.box(prefix + "Post", (0.22, 0.22, tall), (sx * (half - 0.11), sy * (half - 0.11), z0 + tall / 2), mat=post, bevel=0.015, segments=1))
+        rows = 3
+        board = (tall - 0.1) / rows - 0.06
+        for k in range(rows):
+            z = z0 + 0.1 + (board + 0.06) * (k + 0.5)
+            for sy in (-1, 1):
+                out.append(mk.box(prefix + "Slat", (3.5, 0.06, board), (0, sy * (half - 0.03), z), mat=pine, bevel=0.012, segments=1))
+            for sx in (-1, 1):
+                out.append(mk.box(prefix + "Slat", (0.06, 3.5, board), (sx * (half - 0.03), 0, z), mat=pine, bevel=0.012, segments=1))
+        return out
+
+    parts += crate(0.0, 1.9, "Low")
+    parts += crate(1.92, 1.76, "High")
+    parts.append(mk.box("Base", (3.8, 3.8, 0.06), (0, 0, 0.03), mat=pine))
+    parts += pk.label("Mark", "MIKAN", 0.3, (0.0, -1.992, 0.95), stencil)
+    parts.append(mk.box("Lining", (3.6, 3.6, 0.04), (0, 0, 3.4), mat=paper))
+    rng = random.Random(8)
+    for layer, (count, spread, z) in enumerate(((24, 1.6, 3.56), (14, 1.2, 3.72))):
+        for k in range(count):
+            x, y = rng.uniform(-spread, spread), rng.uniform(-spread, spread)
+            r = rng.uniform(0.24, 0.29)
+            fruit = mk.sphere("Mikan", r, (x, y, min(3.8, z)), scale=(1, 1, 0.84), mat=mikan, segments=7, rings=4)
+            parts.append(mk.soften(fruit))
+            if k % 3 == 0:
+                parts.append(mk.cylinder("Stem", 0.03, 0.03, (x, y, min(3.8, z) + r * 0.84), mat=stalk, verts=5))
     return parts, []

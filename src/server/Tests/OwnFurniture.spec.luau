@@ -18,8 +18,7 @@ return function(t)
 					count += 1
 					local base = ModelCatalog[info.base]
 					expect(base ~= nil).to.equal(true)
-					expect(base.set).to.equal("Core")
-					expect(info.set ~= "Core").to.equal(true)
+					expect(info.set ~= base.set).to.equal(true)
 					expect(info.pivot).to.equal(base.pivot)
 					expect(info.collide).to.equal(base.collide)
 					expect(info.size[1] <= base.size[1] + OVER).to.equal(true)

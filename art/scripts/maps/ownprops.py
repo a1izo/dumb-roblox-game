@@ -14,6 +14,10 @@ OWN = {
         "FilingCabinet": "OakCabinet",
         "Desk": "ProfessorDesk",
         "OfficeChair": "BankerChair",
+        "Whiteboard": "ChalkBoard",
+        "CoatStand": "BentwoodCoatStand",
+        "DisplayCase": "OakDisplayCase",
+        "CoinLockers": "OakLockers",
     },
     "Agency": {
         "Chair": "BureauChair",
@@ -23,11 +27,14 @@ OWN = {
         "FilingCabinet": "BureauCabinet",
         "Desk": "BureauDesk",
         "Bookshelf": "ArchiveShelf",
+        "CoinLockers": "StaffLockers",
+        "Crate": "EvidenceCrate",
     },
     "Tokyo": {
         "Bench": "StreetBench",
         "Sofa": "BoothSofa",
         "Plant": "BambooPot",
+        "Crate": "MarketCrate",
     },
 }
 

@@ -20,4 +20,5 @@
 - [Owner-rejected changes](owner-rejected-changes.md) — removed at the owner's word (suit fists): never re-add; Deathsinger on EAT IT unresolved, ask
 - [Walls at floor changes](floor-change-walls.md) — owner's rule: a wall (with doorways) wherever the floor finish changes; HQ's Bureau sign wall excepted
 - [Studio MCP](studio-mcp.md) — Studio's built-in MCP server is registered with Claude Code; switch it on in Studio; look and play-test, never edit the live Team Create place
-- [Own furniture 2026-11](own-furniture-2026-11.md) — each case map has its own 17 models via maps/ownprops.py; footprint rules, the base fallback, modelling traps
+- [Own furniture 2026-11](own-furniture-2026-11.md) — each case map has its own 24 models via maps/ownprops.py; footprint rules, the base fallback, modelling traps
+- [Props.blend can be stale](props-blend-can-be-stale.md) — a --export writes the whole catalog from the blend, so it can undo a builder change; rebuild first, read the catalog diff after
