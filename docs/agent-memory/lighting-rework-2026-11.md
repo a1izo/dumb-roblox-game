@@ -74,3 +74,13 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   ceiling fittings are now lightbook.pool: a SpotLight down, 70 degrees, range 26, 5x the nominal brightness. Target
   frame: docs/hq-noir-look-2026-11-02.jpg. Captures through the MCP lag a frame or two and the lightning flashes vary
   them: change one thing at a time and compare.
+- 2026-11-02 TRAP: screen_capture with camera_position/look_at_position renders a camera the engine does not light
+  for (lamps missing, colour washed out): HQ and the University looked flat grey that way and lit properly through
+  the player's real camera. Pin the real camera instead (BindToRenderStep at RenderPriority.Last + 50, Scriptable,
+  set CFrame) and capture with no camera arguments. Also: the lobby pre-builds the next map, so clear every
+  LGameMap before MapService.build in a test, or two maps overlap.
+- Rollout 2026-11-02: lightbook.ceiling is now lightbook.pool for every map (POOL_ANGLE 80, POOL_RANGE 28, POOL_GAIN
+  8.5). Presets retuned live through the real camera: HQ fill 22,24,36; Campus 24,27,38 (moon 0.6); Tokyo 26,24,40
+  (moon 0.45, exposure 0.1; it was 80,72,102 at exposure 0.4); their Inside/Under zones lowered alike. CampusLamp's
+  light 3.2 / 26 / 120 degrees (props_campus.py and ModelCatalog.luau). Lobby (Grey Realm) and meeting room not
+  retuned: not looked at live.

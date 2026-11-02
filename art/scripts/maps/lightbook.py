@@ -53,25 +53,25 @@ def facing(dx, dz):
 
 def ceiling(s, pos, color, range_, brightness, shadows=False, flicker=False, role=None, glow=None, rot=0.0,
             clear=False):
-    """The lamp of a fitting on a room's ceiling (panel, tube, downlit pendant, an arcade's lamps): a round
-    light just under it. glow: (size, colour) of the fitting's face when the game draws it (see
-    mesher.Scene.light); rot turns that face with the fitting."""
-    s.light("point", pos, color, min(range_, MAX_RANGE), brightness, shadows, "Bottom", 90, flicker, role, rot,
-            glow, clear)
+    """The lamp of a fitting on a room's ceiling (panel, tube, downlit pendant, an arcade's lamps): a noir pool
+    (pool below) from just under it, every map alike since 2026-11-02 (it was a round light that lit the ceiling and
+    left the floor dim). range_ is kept for the older callers and no longer used. glow: (size, colour) of the
+    fitting's face when the game draws it (see mesher.Scene.light); rot turns that face with the fitting."""
+    pool(s, pos, color, brightness, flicker=flicker, glow=glow, rot=rot, role=role)
 
 
 # A noir ceiling lamp (the owner's look, tuned in a Studio play test at full quality, 2026-11-02): a spot straight down
 # throwing a pool on the floor, the ceiling round it left dark. Round lights a dozen studs up gave the floor a sixth of
 # their light and lit the ceiling flat instead; with the room's fill turned down (LightingPresets) these pools are the
-# light the room has. A 70 degree cone from a 13 stud ceiling makes a pool about 17 studs across.
-POOL_ANGLE = 70
-POOL_RANGE = 26
-POOL_GAIN = 5.0  # times the fitting's nominal brightness (a nominal 1.4 is a 7 here)
+# light the room has. An 80 degree cone from a 13 stud ceiling makes a pool about 21 studs across.
+POOL_ANGLE = 80
+POOL_RANGE = 28
+POOL_GAIN = 8.5  # times the fitting's nominal brightness (checked through the player's own camera, 2026-11-02)
 
 
-def pool(s, pos, color, brightness, flicker=False, glow=None, rot=0.0):
+def pool(s, pos, color, brightness, flicker=False, glow=None, rot=0.0, role=None):
     """The lamp of a ceiling fitting as a noir pool: a spot down, POOL_ANGLE wide, clear of its fitting."""
-    s.light("spot", pos, color, POOL_RANGE, brightness * POOL_GAIN, False, "Bottom", POOL_ANGLE, flicker, None, rot,
+    s.light("spot", pos, color, POOL_RANGE, brightness * POOL_GAIN, False, "Bottom", POOL_ANGLE, flicker, role, rot,
             glow, True)
 
 

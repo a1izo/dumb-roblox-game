@@ -241,9 +241,9 @@ LightingPresets.maps = {
 		exposure = 0.15,
 		-- (the fill turned right down, seen in a play test at full quality, 2026-11-02: at 44, 49, 66 it lit every
 		-- surface evenly and the rooms read flat; this low, the lamps' pools are the light and a corner still reads)
-		ambient = rgb(16, 18, 28),
-		outdoorAmbient = rgb(20, 23, 36),
-		envDiffuse = 0.12,
+		ambient = rgb(22, 24, 36),
+		outdoorAmbient = rgb(26, 29, 44),
+		envDiffuse = 0.2,
 		envSpecular = 0.4,
 		density = 0.22,
 		haze = 1.7,
@@ -269,12 +269,14 @@ LightingPresets.maps = {
 	-- lamps, heaters and windows back up, while the shadows stay a cold blue. The ambient keeps an
 	-- unlit corner legible, and the haze is thin enough to see from the gate to the clock tower.
 	UniversityCampus = preset({
+		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
+		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
 		clockTime = 0,
-		brightness = 1.3,
-		exposure = 0.15,
-		ambient = rgb(52, 54, 70),
-		outdoorAmbient = rgb(84, 88, 112),
-		envDiffuse = 0.6,
+		brightness = 0.6,
+		exposure = 0.1,
+		ambient = rgb(24, 27, 38),
+		outdoorAmbient = rgb(38, 42, 60),
+		envDiffuse = 0.25,
 		envSpecular = 0.4,
 		density = 0.4,
 		haze = 2.2,
@@ -282,7 +284,7 @@ LightingPresets.maps = {
 		atmosphereColor = rgb(116, 106, 116),
 		decay = rgb(92, 70, 64),
 		saturation = -0.12,
-		contrast = 0.14,
+		contrast = 0.2,
 		tint = rgb(246, 240, 244),
 		bloom = 0.45,
 		bloomSize = 22,
@@ -300,12 +302,14 @@ LightingPresets.maps = {
 	-- under the roof on their own, the wind is heard muffled, and footprints keep appearing on
 	-- the lawns seen through the windows. Picked by the interiors' look zones.
 	UniversityCampus_Inside = preset({
+		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
+		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
 		clockTime = 0,
-		brightness = 0.8,
+		brightness = 0.5,
 		exposure = 0,
-		ambient = rgb(56, 54, 64),
-		outdoorAmbient = rgb(70, 70, 88),
-		envDiffuse = 0.35,
+		ambient = rgb(18, 18, 26),
+		outdoorAmbient = rgb(24, 24, 34),
+		envDiffuse = 0.15,
 		envSpecular = 0.3,
 		density = 0,
 		haze = 0,
@@ -313,7 +317,7 @@ LightingPresets.maps = {
 		atmosphereColor = rgb(124, 104, 100),
 		decay = rgb(92, 70, 64),
 		saturation = -0.08,
-		contrast = 0.12,
+		contrast = 0.2,
 		tint = rgb(248, 242, 238),
 		bloom = 0.2,
 		bloomSize = 14,
@@ -334,20 +338,22 @@ LightingPresets.maps = {
 	-- haze (the night sky's own violet), which swallows its far skyline, so there is no edge to
 	-- see; low down the haze takes the warm glow of a city's lights.
 	TokyoDistrict = preset({
+		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
+		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
 		clockTime = 0,
-		brightness = 1.5,
-		exposure = 0.4,
-		ambient = rgb(80, 72, 102),
-		outdoorAmbient = rgb(112, 102, 142),
-		envDiffuse = 0.65,
-		envSpecular = 0.55,
+		brightness = 0.45,
+		exposure = 0.1,
+		ambient = rgb(26, 24, 40),
+		outdoorAmbient = rgb(42, 38, 62),
+		envDiffuse = 0.25,
+		envSpecular = 0.6,
 		density = 0.4,
 		haze = 3.3,
 		glare = 0.1,
 		atmosphereColor = rgb(98, 88, 140),
 		decay = rgb(132, 66, 74),
 		saturation = -0.05,
-		contrast = 0.14,
+		contrast = 0.2,
 		tint = rgb(242, 236, 255),
 		bloom = 0.5,
 		bloomSize = 24,
@@ -364,12 +370,14 @@ LightingPresets.maps = {
 	-- lit by its fluorescent fittings alone; the street's glow and rain stay up top. Picked by
 	-- the camera being inside the map's "look zone" boxes (SceneBuilder), not by map id.
 	TokyoDistrict_Under = preset({
+		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
+		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
 		clockTime = 0,
 		brightness = 0.4,
 		exposure = 0,
-		ambient = rgb(34, 36, 44),
-		outdoorAmbient = rgb(34, 36, 44),
-		envDiffuse = 0.3,
+		ambient = rgb(20, 22, 28),
+		outdoorAmbient = rgb(20, 22, 28),
+		envDiffuse = 0.2,
 		envSpecular = 0.3,
 		density = 0,
 		haze = 0,
@@ -377,7 +385,7 @@ LightingPresets.maps = {
 		atmosphereColor = rgb(60, 64, 76),
 		decay = rgb(40, 42, 50),
 		saturation = -0.1,
-		contrast = 0.12,
+		contrast = 0.18,
 		tint = rgb(236, 242, 255),
 		bloom = 0.2,
 		bloomSize = 12,
@@ -394,12 +402,14 @@ LightingPresets.maps = {
 	-- out to white, so indoors the camera takes a plainer look, a step darker than the street.
 	-- Picked by the interiors' look zones, like the metro's.
 	TokyoDistrict_Inside = preset({
+		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
+		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
 		clockTime = 0,
-		brightness = 0.8,
+		brightness = 0.5,
 		exposure = 0,
-		ambient = rgb(58, 54, 70),
-		outdoorAmbient = rgb(70, 66, 90),
-		envDiffuse = 0.35,
+		ambient = rgb(18, 17, 26),
+		outdoorAmbient = rgb(24, 22, 34),
+		envDiffuse = 0.15,
 		envSpecular = 0.3,
 		density = 0,
 		haze = 0,
@@ -407,7 +417,7 @@ LightingPresets.maps = {
 		atmosphereColor = rgb(110, 86, 140),
 		decay = rgb(70, 40, 80),
 		saturation = -0.05,
-		contrast = 0.12,
+		contrast = 0.2,
 		tint = rgb(246, 240, 250),
 		bloom = 0.2,
 		bloomSize = 14,
