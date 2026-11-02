@@ -84,3 +84,7 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   (moon 0.45, exposure 0.1; it was 80,72,102 at exposure 0.4); their Inside/Under zones lowered alike. CampusLamp's
   light 3.2 / 26 / 120 degrees (props_campus.py and ModelCatalog.luau). Lobby (Grey Realm) and meeting room not
   retuned: not looked at live.
+- 2026-11-03: two LightingPresets specs have failed since this rollout, known and left alone: "keeps the rebuilt maps
+  readable at night" (ambient 45 or brighter, the noir fills are about 26) and "never lets bloom catch lit skin"
+  (bloomThreshold 1.8 or higher, TaskForceHQ's is 1.5). The first limit is simply out of date. The second needs a look
+  by whoever owns HQ's bloom: check lit skin there before lowering the spec's limit.
