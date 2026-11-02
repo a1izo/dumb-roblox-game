@@ -456,37 +456,72 @@ for t0, t1 in ((0.0, DROP), (REPLAY[0], REPLAY[0] + 0.55)):
     on_counter.at(0.0, COUNTER_BOOK, (0, 90, 0))
     on_counter.at(LENGTH, COUNTER_BOOK, (0, 90, 0))
 
-# The cameras. In the security office, held by hand and moving; the building's own cameras locked, black and white.
+# The cameras. In the security office, held by hand and moving; the building's own cameras black and white, PTZ units
+# in their corners: they pan and zoom slowly over whoever is in the room, and crash-zoom when something happens.
+
+SLAM = ALARM + 0.07  # (the camera punches in as the room goes red)
+PTZ = {  # room: (look, fov) at the start of a feed, and where the slow pan and zoom end up
+    "break": ((63.0, 3.0, -56.5), 38.0, (65.0, 3.2, -53.8), 32.0),
+    "night": ((67.0, 3.0, -29.0), 40.0, (68.0, 3.0, -28.0), 35.0),
+    "copy": ((6.5, 3.4, -67.5), 34.0, (6.3, 3.6, -68.0), 29.0),
+    "bullpen": ((-82.0, 3.0, 44.0), 42.0, (-82.5, 3.0, 44.5), 37.0),
+}
+STAR = {"break": "everyone:2", "night": "everyone:6", "copy": "everyone:8", "bullpen": "everyone:10"}  # (crash-zoomed)
 
 
-def feed(t0, t1, room, zoom=0.0):
-    eye, look, fov, label = CAMS[room]
+def feed(t0, t1, room, look=None, fov=None, keys=(), label=None):
+    """A building camera over t0..t1, starting on `look`/`fov` and moved by `keys` [(t, look, fov, ease)]; it holds
+    the last of them to the cut."""
+    eye, base, base_fov, name = CAMS[room]
+    look, fov = look or base, fov or base_fov
     shot.subjects.append((t0, t1, None, True))
     shot.cam(t0, eye, look, fov=fov, cut=True)
-    shot.cam(t1, eye, look, fov=fov - zoom, ease="linear")
-    shot.event(t0, "fx", name="cctv", dur=round(t1 - t0, 3), label=label)
+    for t, lk, fv, ease in keys:
+        shot.cam(t, eye, lk, fov=fv, ease=ease)
+    last = keys[-1] if keys else (t0, look, fov, "linear")
+    if last[0] < t1 - 1e-3:
+        shot.cam(t1, eye, last[1], fov=last[2], ease="linear")
+    shot.event(t0, "fx", name="cctv", dur=round(t1 - t0, 3), label=label or name)
     shot.event(t0, "fx", name="focus")
 
 
-# A: the security office, dark: the two at the wall of feeds.
-framing.dolly(shot, 0.0, CUTS[0], (-80.0, 7.6, -64.6), (-77.6, 7.0, -65.2), (-61.5, 5.6, -66.5), fov0=54, fov1=48, shake=0.4,
-              seed=1, cut=False)
-for t0, t1, room in FEEDS:  # B-E: flicking through the cameras
-    feed(t0, t1, room)
+# A: the reveal: close on the wall of feeds between their heads, drawing back over them into the dark office.
+framing.dolly(shot, 0.0, CUTS[0], (-66.0, 6.7, -66.5), (-77.6, 7.0, -65.2), (-58.5, 6.4, -66.5), (-61.5, 5.6, -66.5),
+              fov0=54, fov1=50, shake=0.4, seed=1, cut=False)
+for t0, t1, room in FEEDS:  # B-E: flicking through the cameras, each one panning slowly over its room
+    look0, fov0, look1, fov1 = PTZ[room]
+    feed(t0, t1, room, look0, fov0, [(t1, look1, fov1, "linear")])
 # F: the watcher, bored, from the end of the console (the monitors leave no room in front of them).
 shot.pan(CUTS[4], CUTS[5], "watcher", (-61.8, 6.0, -60.4), aim="Head", dy=0.0, fov=52, cut=True, drift=(0.0, -0.1, -0.2),
          operator=True, seed=3, shake=0.35, fov_to=50, ease_move=True)
-feed(EVIDENCE[0], EVIDENCE[1], "evidence")  # G: the evidence room
-# H: the two at the console jolt and lean in: from the end of the console again, pushing in.
-framing.dolly(shot, CUTS[6], CUTS[7], (-61.9, 4.9, -60.3), (-62.0, 4.8, -60.9), (-64.6, 4.3, -65.6), fov0=58, fov1=52,
-              shake=0.9, seed=4)
-feed(REPLAY[0], REPLAY[1], "evidence")  # I: the replay
-# J: the watcher slams the alarm: from behind them, the arm up against the feeds and down, the red coming on.
-framing.dolly(shot, CUTS[8], CUTS[9], (-71.0, 6.8, -57.5), (-69.6, 6.3, -58.6), (-62.5, 4.4, -65.0), fov0=52, fov1=46,
-              roll0=-4.0, roll1=-7.0, shake=0.8, seed=5)
-for t0, t1, room in LOOKS:  # K: room by room, everyone looks up into the lens
-    feed(t0, t1, room, zoom=4.0)
-feed(CORRIDOR[0], LENGTH, "corridor", zoom=10.0)  # L: the floor upstairs (the camera's zoom creeping in)
+# G: the evidence room: the camera's zoom creeping onto the Manual on the counter, until the feed breaks up.
+BOOK_LOOK = (COUNTER_BOOK[0], COUNTER_BOOK[1] - 0.2, COUNTER_BOOK[2] - 0.4)
+feed(EVIDENCE[0], EVIDENCE[1], "evidence", keys=[(DROP - 0.35, BOOK_LOOK, 26.0, "sine"), (EVIDENCE[1], BOOK_LOOK, 25.0, "linear")])
+# H: the two jolt and lean in: a fast push, low between their chairs, at the wall of feeds.
+framing.dolly(shot, CUTS[6], CUTS[7], (-72.0, 5.0, -66.5), (-69.0, 5.3, -66.5), (-60.0, 5.2, -66.5), fov0=54, fov1=44,
+              shake=1.1, seed=4, ease_move=False)
+# I: the replay, zoomed on the counter, following the figure out.
+feed(REPLAY[0], REPLAY[1], "evidence", (FIGURE[0], 17.0, FIGURE[1] + 0.6), 28.0,
+     [(REPLAY[0] + 1.3, (FIGURE[0], 17.0, FIGURE[1] - 0.2), 27.0, "sine"),
+      (REPLAY[1], (FIGURE[0] - 1.8, 16.8, FIGURE[1] - 1.0), 30.0, "linear")], label="CAM 39-11  EVIDENCE  REPLAY")
+# J: the alarm: from behind them, dutch; the hand up against the feeds, and on the slam the camera punches in as the
+# room goes red.
+framing.dolly(shot, CUTS[8], SLAM, (-71.0, 6.7, -57.6), (-70.6, 6.6, -58.0), (-62.5, 4.6, -65.0), fov0=50, fov1=48,
+              roll0=-4.0, roll1=-5.0, shake=0.6, seed=5)
+framing.dolly(shot, SLAM, CUTS[9], (-70.6, 6.6, -58.0), (-68.6, 6.0, -59.8), (-62.5, 4.6, -65.0), (-62.8, 4.4, -65.2),
+              fov0=48, fov1=36, roll0=-5.0, roll1=-11.0, shake=1.5, seed=6, ease_move=False, cut=False)
+# K: room by room, everyone looks up into the lens: the camera crash-zooms onto a face as it comes up.
+for t0, t1, room in LOOKS:
+    _, fov0, look1, _ = PTZ[room]
+    k = [p[0] for p in PEOPLE].index(STAR[room])
+    when = LOOK_AT[room] + 0.15 + 0.07 * (k % 3)  # (as in person(): the head comes up)
+    head = tuple(float(v) for v in framing.part(shot, STAR[room], when + 0.4))  # (where it really is, the face up)
+    feed(t0, t1, room, look1, fov0 - 4.0, [(when + 0.04, look1, fov0 - 5.0, "linear"), (when + 0.3, head, 17.0, "out"),
+                                         (t1, head, 15.5, "linear")])
+# L: the floor upstairs: the zoom creeping in on the figure walking off; when its head turns, a crash zoom onto it.
+FIG_HEAD = (FIG2_TO[0], 18.6, FIG2_TO[1])
+feed(CORRIDOR[0], LENGTH, "corridor", keys=[(FIG_TURN + 0.3, (-44.0, 16.0, -34.0), 38.0, "sine"),
+                                            (FIG_TURN + 0.55, FIG_HEAD, 13.0, "out"), (LENGTH, FIG_HEAD, 12.0, "linear")])
 shot.event(CUTS[4], "fx", name="focus", slot="watcher", part="Head", radius=2.5, far=0.12, near=0.06)
 for t in (0.0, CUTS[6], CUTS[8]):
     shot.event(t, "fx", name="focus")
