@@ -538,7 +538,7 @@ LIBRARY = {
     "AshCracked": surface("dry_mud_field_001", (98, 97, 96), 21, "ground", 2, True, keep=0.2, contrast=1.2, seed=51),
     "RockGrey": surface("Rock050", (70, 70, 74), 14, "wall", 2, True, keep=0.3, seed=52),
     "RuinFlag": surface("monastery_stone_floor", (90, 90, 94), 12, "floor", 2, keep=0.3, seed=53),
-    "RuinStone": surface("medieval_blocks_03", (78, 78, 82), 14, "wall", 2, keep=0.3, seed=54),
+    "RuinStone": surface("medieval_blocks_03", (78, 78, 82), 14, "wall", 2, keep=0.3, seed=54, normal="height"),
     "BoneWhite": surface("white_plaster_02", (168, 162, 146), 4, "wall", 1, True, keep=0.3, rough=0.55, seed=81),
     "BoneOld": surface("white_plaster_02", (122, 116, 104), 4, "wall", 1, True, keep=0.4, rough=0.65, seed=82),
     # What used to be one flat colour each: the metals, the painted trims, cloth, leather, paper, wood

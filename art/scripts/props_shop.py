@@ -87,7 +87,7 @@ def chess_king():
 
 @prop("SugarCube", pivot="bottom", material="Sand", collide=False, texture=256)
 def sugar_cube():
-    """A sugar cube, its corners a little crumbled: Ace's Sugar Cubes (L's tower of them)."""
+    """A sugar cube, its corners a little crumbled: Ace's Sweet Justice (L's tower of them)."""
     sugar = mk.noisy("Sc_Sugar", srgb(222, 220, 214), srgb(250, 249, 246), roughness=0.9, kind="stone")
     cube = mk.box("Cube", (0.42, 0.42, 0.42), (0, 0, 0.21), mat=sugar, bevel=0.04, segments=2)
     mk.displace_noise(cube, strength=0.012, scale=0.08, name="SugarGrain")

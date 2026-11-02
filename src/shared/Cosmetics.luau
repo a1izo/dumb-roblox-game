@@ -302,7 +302,7 @@ Cosmetics.ITEMS = {
 	{
 		id = "verdict_sugar",
 		kind = "verdict",
-		name = "Sugar Cubes",
+		name = "Sweet Justice",
 		blurb = "The top sugar cube gets flicked off.",
 		rarity = "legendary",
 		source = "mastery",
@@ -1477,12 +1477,6 @@ Cosmetics.ITEMS = {
 	{ id = "title_m_zero", kind = "title", name = "Ace's Equal", rarity = "epic", source = "mastery" },
 	{ id = "title_m_butler", kind = "title", name = "Head Butler", rarity = "epic", source = "mastery" },
 	{ id = "title_m_agent", kind = "title", name = "Senior Operative", rarity = "epic", source = "mastery" },
-	-- Level 10 of each role's mastery (the ties it gave left the game, 2026-10-21: the owner's drops)
-	{ id = "title_m10_hand", kind = "title", name = "Diavolo Ascendant", rarity = "legendary", source = "mastery" },
-	{ id = "title_m10_cultist", kind = "title", name = "The Last Devotee", rarity = "legendary", source = "mastery" },
-	{ id = "title_m10_zero", kind = "title", name = "Ace of Aces", rarity = "legendary", source = "mastery" },
-	{ id = "title_m10_butler", kind = "title", name = "The Butler Who Knew", rarity = "legendary", source = "mastery" },
-	{ id = "title_m10_agent", kind = "title", name = "Operative of Record", rarity = "legendary", source = "mastery" },
 	-- Earned: ranks
 	{ id = "title_rank_2", kind = "title", name = "Patrol Officer", rarity = "common", source = "rank" },
 	{ id = "title_rank_3", kind = "title", name = "Constable", rarity = "common", source = "rank" },

@@ -109,11 +109,26 @@ return function(t)
 			expect(data.owned.book_white).to.equal(nil)
 			expect(data.owned.tie_black).to.equal(nil)
 			expect(data.owned.tie_m_zero).to.equal(nil)
-			expect(data.owned.title_m10_zero).to.equal(true)
+			expect(data.owned.title_m10_zero).to.equal(nil)
 			expect(data.owned.hat_cap).to.equal(nil)
 			expect(data.equipped.hat).to.equal(nil)
 			expect(data.equipped.tie).to.equal(nil)
 			expect(data.equipped.grimoire).to.equal(nil)
+		end)
+		it("takes the level 10 mastery titles away at v9, worn or not, with no refund", function()
+			local old = v1Profile()
+			old.v = 8
+			old.coins = 90
+			old.owned.title_m10_hand = true
+			old.owned.title_m10_agent = true
+			old.owned.title_m_agent = true
+			old.equipped.title = "title_m10_agent"
+			local data = Migrations.migrate(old, START)
+			expect(data.owned.title_m10_hand).to.equal(nil)
+			expect(data.owned.title_m10_agent).to.equal(nil)
+			expect(data.owned.title_m_agent).to.equal(true)
+			expect(data.equipped.title).to.equal(nil)
+			expect(data.coins).to.equal(90)
 		end)
 		it("takes every hat away at v7, with no refund", function()
 			local old = v1Profile()

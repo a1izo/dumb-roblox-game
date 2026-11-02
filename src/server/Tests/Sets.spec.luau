@@ -46,7 +46,7 @@ return function(t)
 				end
 			end
 		end)
-		it("unlocks The Knife and Sugar Cubes at mastery 7", function()
+		it("unlocks The Knife and Sweet Justice at mastery 7", function()
 			expect(Mastery.UNLOCKS.Kira[7]).to.equal("writing_knife") -- terms:ok (internal role id)
 			expect(Mastery.UNLOCKS.L[7]).to.equal("verdict_sugar")
 		end)

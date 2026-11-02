@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 8
+Migrations.CURRENT = 9
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -282,6 +282,32 @@ local STEPS: { [number]: (any) -> () } = {
 			kept[index] = ""
 		end
 		data.emoteWheel = kept
+	end,
+	-- v8 -> v9 (2026-11-01, the user's call): level 10 of a role's mastery gives nothing any more. Its five titles
+	-- left the game, so they leave every profile that earned them, worn or not, with no refund.
+	[8] = function(data)
+		local gone = {
+			title_m10_hand = true,
+			title_m10_cultist = true,
+			title_m10_zero = true,
+			title_m10_butler = true,
+			title_m10_agent = true,
+		}
+		for id in pairs(gone) do
+			if type(data.owned) == "table" then
+				data.owned[id] = nil
+			end
+			if type(data.wishlist) == "table" then
+				data.wishlist[id] = nil
+			end
+		end
+		if type(data.equipped) == "table" then
+			for slot, id in pairs(data.equipped) do
+				if gone[id] then
+					data.equipped[slot] = nil
+				end
+			end
+		end
 	end,
 }
 
