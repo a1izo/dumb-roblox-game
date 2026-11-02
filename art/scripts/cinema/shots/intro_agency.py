@@ -37,9 +37,9 @@ import random
 
 from animlib import J
 from cinema import framing
-from cinema.acting import alive, body_reach, facing, soft, walking
+from cinema.acting import alive, body_reach, facing, soft, strike, walking
 from cinema.shot import Shot
-from emotes.kit import MOUTH, reach
+from emotes.kit import CHIN, MOUTH, reach
 from motion import Motion
 
 NAME = "IntroAgency"
@@ -72,8 +72,8 @@ FIG2_FROM, FIG2_TO = (-41.0, -44.0), (-44.0, -35.0)  # the figure walking away d
 # Sitting ---------------------------------------------------------------------------------------------------
 
 
-def sit_key(m, t, ease="sine", hip=2.15, lean=-6.0, turn=0.0, neck=(4, 0, 0), right=None, left=None):
-    joints = dict(root=(lean, turn, 0), rHip=J((52 - lean * 0.5, -turn, 4)), lHip=J((52 - lean * 0.5, -turn, -4)))
+def sit_key(m, t, ease="sine", hip=2.15, lean=-6.0, turn=0.0, neck=(4, 0, 0), right=None, left=None, roll=0.0):
+    joints = dict(root=(lean, turn, roll), rHip=J((52 - lean * 0.5, -turn, 4)), lHip=J((52 - lean * 0.5, -turn, -4)))
     off = (0.0, hip - 2.0, 0.0)
     r = right(joints, off) if callable(right) else (right if right is not None else J((18, 0, 8)))
     lv = left(joints, off) if callable(left) else (left if left is not None else J((18, 0, -8)))
@@ -116,11 +116,14 @@ def key_hand(seat, up=0.4):
 
 
 w = Motion("IntroAgency_watcher", LENGTH, note="The Agency intro: the one at the console, on the night watch.")
-sit_key(w, 0.0, lean=6, neck=(4, 2, 0), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))
+sit_key(w, 0.0, lean=8, turn=-3, roll=-3, neck=(2, -8, 0), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))
+sit_key(w, 1.0, lean=9, turn=5, roll=2, neck=(8, 14, 3), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))  # (a look along)
 for t in [f[0] for f in FEEDS] + [EVIDENCE[0] - 0.1]:  # (a bored click to the next camera)
     sit_key(w, t - 0.25, lean=2, neck=(6, 0, 0), right=key_hand(SEAT_W), left=desk_hand(SEAT_W, -1))
     sit_key(w, t - 0.05, "linear", lean=2, neck=(6, 0, 0), right=key_hand(SEAT_W, 0.22), left=desk_hand(SEAT_W, -1))
-    sit_key(w, t + 0.15, "sine", lean=4, neck=(6, 2, 0), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))
+    sit_key(w, t + 0.15, "out", lean=1, neck=(9, 3, 0), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))  # (a peck)
+    sit_key(w, t + 0.55, "sine", lean=6, roll=2 * math.sin(t * 3), neck=(5, -4 * math.sin(t * 2), 2), right=desk_hand(SEAT_W, 1),
+            left=desk_hand(SEAT_W, -1))
 sit_key(w, 7.2, lean=12, neck=(8, -6, 6), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))  # (sat back, a long breath)
 sit_key(w, 7.9, lean=4, neck=(5, 0, 0), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))
 sit_key(w, EVIDENCE[0] + 0.6, lean=-6, neck=(12, 0, 0), right=desk_hand(SEAT_W, 1), left=desk_hand(SEAT_W, -1))
@@ -142,10 +145,16 @@ w.build()
 
 FOLD = dict(right=J((40, 0, -38), (-0.3, 0.1, -0.22)), left=J((38, 0, 36), (0.3, 0.1, -0.22)))
 o = Motion("IntroAgency_seated", LENGTH, note="The Agency intro: the other one on the night watch.")
-sit_key(o, 0.0, lean=10, neck=(6, 0, 0), **FOLD)  # (sat back, arms folded, half asleep)
-sit_key(o, 4.0, lean=11, neck=(-6, 0, 4), **FOLD)
+sit_key(o, 0.0, lean=10, neck=(-6, 0, 4), **FOLD)  # (sat back, arms folded, nodding off)
+sit_key(o, 1.45, "in", lean=12, roll=3, neck=(-30, 0, 9), **FOLD)
+sit_key(o, 1.6, "snap", lean=5, roll=-1, neck=(10, -8, -2), **FOLD)  # (jerks awake)
+sit_key(o, 2.1, "sine", lean=9, neck=(2, -2, 0), **FOLD)
+sit_key(o, 6.6, "sine", lean=10, neck=(-8, 0, 4), **FOLD)
+sit_key(o, 8.0, "in", lean=12, roll=3, neck=(-28, 0, 8), **FOLD)
+sit_key(o, 8.15, "snap", lean=6, roll=-1, neck=(8, -6, -2), **FOLD)
+sit_key(o, 8.6, "sine", lean=9, neck=(-2, 0, 3), **FOLD)
 sit_key(o, DROP + 0.1, lean=10, neck=(-4, 0, 4), **FOLD)
-sit_key(o, DROP + 0.45, "out", lean=-14, neck=(10, 4, 0), right=desk_hand(SEAT_O, 1), left=desk_hand(SEAT_O, -1))  # (awake)
+sit_key(o, DROP + 0.4, "out", lean=-18, neck=(10, 4, 0), right=desk_hand(SEAT_O, 1), left=desk_hand(SEAT_O, -1))  # (awake)
 sit_key(o, ALARM + 0.1, lean=-14, neck=(10, 4, 0), right=desk_hand(SEAT_O, 1), left=desk_hand(SEAT_O, -1))
 sit_key(o, ALARM + 0.5, "out", lean=-6, neck=(4, 30, 0), right=desk_hand(SEAT_O, 1), left=desk_hand(SEAT_O, -1))  # (to him)
 sit_key(o, LENGTH, "sine", lean=-8, neck=(8, 12, 0), right=desk_hand(SEAT_O, 1), left=desk_hand(SEAT_O, -1))
@@ -168,60 +177,175 @@ PEOPLE = [
     ("everyone:11", "bullpen", (-72.6, 40.5), 90.0, "board"),  # at its whiteboard (-76, 40.5)
 ]
 LOOK_AT = {room: t0 for t0, _, room in LOOKS}
+FEED_AT = {room: t0 for t0, _, room in FEEDS}
 STAND = dict(rHip=J((0, 0, 2)), lHip=J((0, 0, -2)))
+DOWN = (J((6, 0, 5)), J((6, 0, -5)))  # (arms hanging)
+
+
+def fist(side, p, d=None):
+    """A hand on `p` given in an upright standing body's torso frame (kit.reach's), for a body posed any way."""
+    return lambda j, o: body_reach(side, j, o, (p[0], p[1] + 3.0, p[2]), direction=d)
+
+
+def stand_key(m, t, ease="sine", lean=-3.0, turn=0.0, roll=0.0, neck=(-6, 0, 0), right=DOWN[0], left=DOWN[1]):
+    joints = dict(root=(lean, turn, roll), **STAND)
+    r = right(joints, (0, 0, 0)) if callable(right) else right
+    lv = left(joints, (0, 0, 0)) if callable(left) else left
+    m.key(round(t, 4), ease, neck=neck, rShoulder=r, lShoulder=lv, **joints)
+
+
+def act(m, slot, f, top, hip):
+    """Each one's own business, played big while their room's camera is on them (from f, for about 1.2 s)."""
+    sk = lambda t, e="sine", **kw: sit_key(m, t, e, hip=hip, **kw)  # noqa: E731
+    tbl = lambda side, up=0.0, ahead=1.9, across=0.6: on_top(side, top + up, ahead, across)  # noqa: E731
+    at = lambda side, x, y, z, d=(0.0, 0.2, -1.0): (  # noqa: E731
+        lambda j, o: body_reach(side, j, o, (x, hip + y, z), direction=d))  # (seated: y over the hips)
+    if slot == "everyone:2":  # break room: hears something funny, and laughs
+        sk(0.0, lean=-10, neck=(-6, 10, 0), right=tbl(1), left=tbl(-1))
+        sk(f - 0.5, lean=-12, neck=(-8, 12, 2), right=tbl(1), left=tbl(-1))
+        sk(f - 0.1, "sine", lean=-15, neck=(-14, 4, 0), right=tbl(1), left=tbl(-1))  # (in)
+        sk(f + 0.15, "out", lean=10, roll=-3, neck=(24, -6, 6), right=at(1, 0.35, 1.1, -1.0), left=tbl(-1, 0.25))  # (back)
+        for i, tt in enumerate((0.32, 0.47, 0.62, 0.8)):  # (shoulders shaking)
+            sk(f + tt, "sine", lean=(6, 11, 5, 9)[i], roll=-3 + i, neck=((16, 23, 14, 18)[i], -6, 6), right=at(1, 0.35, 1.1, -1.0),
+               left=tbl(-1, (0.0, 0.25, 0.0, 0.2)[i]))
+        sk(f + 1.15, "sine", lean=-2, neck=(4, 8, 2), right=at(1, 0.1, 1.3, -0.75, (0, 1, -0.3)), left=tbl(-1))  # (a sip)
+        sk(f + 1.9, "sine", lean=-8, neck=(-6, 10, 0), right=tbl(1), left=tbl(-1))
+        sk(LOOK_AT["break"] - 0.4, lean=-9, neck=(-4, 14, 0), right=tbl(1), left=tbl(-1))
+    elif slot == "everyone:3":  # break room: telling the story, both hands going
+        sk(0.0, lean=-10, neck=(-4, 0, 0), right=tbl(1), left=tbl(-1))
+        sk(f - 0.55, "sine", lean=-12, neck=(0, 6, 0), right=at(1, 0.55, 1.5, -1.4), left=tbl(-1))
+        sk(f - 0.2, "snap", lean=-14, neck=(-10, 4, 0), right=at(1, 0.6, 1.1, -1.5), left=tbl(-1))  # (a beat on the word)
+        sk(f + 0.1, "out", lean=-10, neck=(6, -8, 0), right=at(1, 0.8, 1.6, -1.35), left=tbl(-1))
+        sk(f + 0.45, "out", lean=-16, neck=(10, 0, 0), right=at(1, 0.95, 1.5, -1.25, (0.6, 0.2, -0.8)),
+           left=at(-1, -0.95, 1.5, -1.25, (-0.6, 0.2, -0.8)))  # ("and then!")
+        sk(f + 0.85, "sine", lean=-14, neck=(12, 2, 3), right=at(1, 0.9, 1.45, -1.3, (0.6, 0.2, -0.8)),
+           left=at(-1, -0.9, 1.45, -1.3, (-0.6, 0.2, -0.8)))
+        sk(f + 1.3, "sine", lean=-6, neck=(2, 0, 0), right=tbl(1), left=tbl(-1))
+        sk(LOOK_AT["break"] - 0.4, lean=-8, neck=(-2, 4, 0), right=at(1, 0.5, 1.3, -1.4), left=tbl(-1))
+    elif slot == "everyone:6":  # night desk: typing, then the long stretch
+        sk(0.0, lean=-10, neck=(-12, 0, 0), right=tbl(1), left=tbl(-1))
+        for i, tt in enumerate((-0.6, -0.45, -0.3, -0.15)):
+            sk(f + tt, "linear", lean=-10, neck=(-12, 0, 0), right=tbl(1, 0.12 * (i % 2)), left=tbl(-1, 0.12 * ((i + 1) % 2)))
+        sk(f + 0.15, "sine", lean=-4, neck=(-2, 0, 0), right=J((100, 0, 30)), left=J((100, 0, -30)))
+        sk(f + 0.55, "out", lean=12, roll=2, neck=(22, 0, 6), right=J((172, 0, 28)), left=J((172, 0, -28)))  # (the stretch)
+        sk(f + 0.95, "sine", lean=14, roll=-2, neck=(24, 0, -4), right=J((176, 0, 34)), left=J((176, 0, -34)))
+        sk(f + 1.4, "sine", lean=6, neck=(8, 0, 0), right=J((120, 0, 40)), left=J((120, 0, -40)))
+        sk(f + 2.0, "sine", lean=-10, neck=(-12, 0, 0), right=tbl(1), left=tbl(-1))
+        for i, tt in enumerate((-0.6, -0.45, -0.3)):
+            sk(LOOK_AT["night"] + tt, "linear", lean=-10, neck=(-12, 0, 0), right=tbl(1, 0.12 * (i % 2)), left=tbl(-1))
+    elif slot == "everyone:9":  # bullpen: jabbing at the papers, then up at the other one
+        sk(0.0, lean=-10, neck=(-14, 0, 0), right=tbl(1), left=tbl(-1))
+        sk(f - 0.45, "sine", lean=-18, neck=(-16, 0, 0), right=at(1, 0.2, 1.05, -2.5, (0, -0.3, -1)), left=tbl(-1))
+        for tt in (-0.1, 0.12, 0.34):  # (taps)
+            strike(m, f + tt, dict(rShoulder=at(1, 0.2, 1.35, -2.4, (0, -0.3, -1))(dict(root=(-18, 0, 0)), (0, hip - 2, 0))),
+                   dict(rShoulder=at(1, 0.2, 1.0, -2.5, (0, -0.3, -1))(dict(root=(-18, 0, 0)), (0, hip - 2, 0))), antic=0.07,
+                   travel=0.05, over=0.1, settle=0.08)
+        sk(f + 0.65, "out", lean=-8, neck=(8, -16, 0), right=at(1, 0.75, 1.55, -1.4), left=tbl(-1))  # ("see?")
+        sk(f + 1.05, "sine", lean=-9, neck=(4, -14, 3), right=at(1, 0.7, 1.4, -1.45), left=tbl(-1))
+        sk(f + 1.6, "sine", lean=-12, neck=(-10, 0, 0), right=tbl(1), left=tbl(-1))
+        sk(LOOK_AT["bullpen"] - 0.4, lean=-14, neck=(-14, 0, 0), right=tbl(1), left=tbl(-1))
+    elif slot == "everyone:10":  # bullpen: sat back, arms folded, shaking the head, then a shrug
+        sk(0.0, lean=8, neck=(-2, 0, 0), **FOLD)
+        for i, tt in enumerate((-0.3, -0.1, 0.1, 0.3, 0.5)):
+            sk(f + tt, "sine", lean=8, neck=(-4, (-16, 14, -12, 10, 0)[i], 0), **FOLD)
+        sk(f + 0.75, "out", lean=2, roll=2, neck=(6, -4, 10), right=at(1, 0.95, 1.2, -1.15, (0.4, 0.3, -0.85)),
+           left=at(-1, -0.95, 1.2, -1.15, (-0.4, 0.3, -0.85)))  # (a shrug)
+        sk(f + 1.15, "sine", lean=4, neck=(4, -4, 8), right=at(1, 0.9, 1.15, -1.2, (0.4, 0.3, -0.85)),
+           left=at(-1, -0.9, 1.15, -1.2, (-0.4, 0.3, -0.85)))
+        sk(f + 1.7, "sine", lean=8, neck=(-2, 0, 0), **FOLD)
+        sk(LOOK_AT["bullpen"] - 0.4, lean=8, neck=(-4, 6, 0), **FOLD)
+    elif slot == "everyone:4":  # break room, at the coffee machine: the cup up, a long drink, a look round
+        machine = fist(1, (0.3, 0.9, -1.5), (-0.2, -0.1, -0.95))
+        stand_key(m, 0.0, lean=-6, roll=3, neck=(-10, 0, 0), right=machine)
+        stand_key(m, f - 0.45, "sine", lean=-8, roll=3, neck=(-14, 0, 0), right=fist(1, (0.3, 0.75, -1.45)))  # (the cup)
+        stand_key(m, f + 0.15, "out", lean=5, roll=-3, neck=(10, 0, 0), right=fist(1, MOUTH))  # (up)
+        stand_key(m, f + 0.6, "sine", lean=8, roll=-4, neck=(22, 0, 4), right=fist(1, (0.05, 1.3, -0.65)))  # (a long drink)
+        stand_key(m, f + 1.05, "out", lean=0, turn=-8, roll=-2, neck=(-2, -30, 0), right=fist(1, (0.35, 0.5, -0.8)))  # (a look)
+        stand_key(m, f + 1.6, "sine", lean=-2, turn=-6, roll=2, neck=(-4, -24, 0), right=fist(1, (0.35, 0.5, -0.8)))
+        stand_key(m, LOOK_AT["break"] - 0.4, lean=-2, roll=3, neck=(-6, 0, 0), right=fist(1, (0.35, 0.6, -0.8)))
+    elif slot == "everyone:5":  # break room, the vending machine: a button, down for the drop, up with it
+        stand_key(m, 0.0, lean=-3, roll=-3, neck=(4, 0, 0), right=DOWN[0])
+        strike(m, f - 0.55, dict(rShoulder=reach(1, (0.25, 1.2, -1.0))), dict(rShoulder=reach(1, (0.25, 1.35, -1.4),
+               (-0.2, 0.3, -0.95))), antic=0.15, travel=0.06, over=0.15, settle=0.15)
+        stand_key(m, f - 0.2, "sine", lean=-14, neck=(-10, 0, 0), right=fist(1, (0.3, 0.6, -1.2)))
+        stand_key(m, f + 0.2, "sine", lean=-42, roll=2, neck=(8, 0, 0), right=fist(1, (0.2, -1.25, -1.6), (0, -0.8, -0.6)),
+                  left=fist(-1, (-0.5, -1.0, -0.6), (0, -1, 0)))  # (down to the tray, a hand on the knee)
+        stand_key(m, f + 0.5, "sine", lean=-44, roll=-2, neck=(10, 4, 0), right=fist(1, (0.4, -1.35, -1.7), (0, -0.8, -0.6)),
+                  left=fist(-1, (-0.5, -1.0, -0.6), (0, -1, 0)))
+        stand_key(m, f + 0.9, "out", lean=4, roll=-2, neck=(-4, 0, 0), right=fist(1, (0.2, 0.55, -0.8)))  # (up with it)
+        stand_key(m, f + 1.25, "sine", lean=0, turn=10, neck=(-20, 14, 0), right=fist(1, (0.15, 0.7, -0.9)))  # (a look at it)
+        stand_key(m, f + 1.9, "sine", lean=-1, turn=6, roll=3, neck=(-14, 8, 0), right=fist(1, (0.2, 0.55, -0.85)))
+        stand_key(m, LOOK_AT["break"] - 0.4, lean=-2, turn=4, roll=3, neck=(-10, 0, 0), right=fist(1, (0.2, 0.55, -0.85)))
+    elif slot in ("everyone:7", "everyone:11"):  # at a whiteboard: writing hard, a step back to look; or presenting
+        board = lambda x, y: fist(1, (x, y, -1.35), (-0.1, 0.3, -0.9))  # noqa: E731
+        if slot == "everyone:7":
+            stand_key(m, 0.0, lean=-4, neck=(4, 0, 0), right=board(0.1, 1.7))
+            for i, tt in enumerate((-0.6, -0.45, -0.3, -0.15, 0.0, 0.15, 0.3)):  # (writing, fast)
+                stand_key(m, f + tt, "linear", lean=-4, roll=-2 + 0.6 * i, neck=(4, -3 + i, 0),
+                          right=board(0.1 + 0.12 * i, 1.72 - 0.14 * (i % 2)))
+            stand_key(m, f + 0.6, "out", lean=6, roll=3, neck=(10, 6, -8), right=fist(1, (0.4, 0.45, -0.9)),
+                      left=J((20, 0, -40)))  # (back, a hand on the hip, the head on one side)
+            stand_key(m, f + 1.0, "sine", lean=5, roll=3, neck=(8, 8, -10), right=fist(1, (0.1, 1.0, -0.75)), left=J((20, 0, -40)))
+            stand_key(m, f + 1.5, "sine", lean=4, roll=2, neck=(8, 4, -6), right=fist(1, CHIN), left=J((20, 0, -40)))  # (marker to chin)
+            stand_key(m, LOOK_AT["night"] - 0.4, lean=-4, neck=(4, 0, 0), right=board(0.5, 1.6))
+            for i, tt in enumerate((-0.25, -0.1, 0.05)):
+                stand_key(m, LOOK_AT["night"] + tt, "linear", lean=-4, neck=(4, 0, 0), right=board(0.5 + 0.12 * i, 1.6 - 0.1 * (i % 2)))
+        else:
+            stand_key(m, 0.0, lean=-2, neck=(6, 0, 0), right=board(0.45, 1.7))
+            stand_key(m, f - 0.4, "out", lean=0, neck=(8, 0, 0), right=fist(1, (0.55, 1.95, -1.55)))  # (pointing up at it)
+            stand_key(m, f + 0.05, "out", lean=2, turn=-12, roll=3, neck=(2, -34, 0), right=fist(1, (0.55, 1.95, -1.55)),
+                      left=fist(-1, (-0.75, 0.55, -1.0), (-0.5, 0.2, -0.8)))  # (round to the table, an open hand)
+            strike(m, f + 0.5, dict(rShoulder=reach(1, (0.6, 1.8, -1.2))), dict(rShoulder=reach(1, (0.55, 1.75, -1.5))), antic=0.1,
+                   travel=0.05, over=0.15, settle=0.12)  # (a slap on the board)
+            strike(m, f + 0.75, dict(rShoulder=reach(1, (0.6, 1.8, -1.2))), dict(rShoulder=reach(1, (0.55, 1.75, -1.5))), antic=0.08,
+                   travel=0.05, over=0.15, settle=0.15)
+            stand_key(m, f + 1.15, "sine", lean=0, turn=-10, roll=2, neck=(4, -30, 4), right=fist(1, (0.5, 1.6, -1.45)),
+                      left=fist(-1, (-0.6, 0.5, -0.95)))
+            stand_key(m, f + 1.8, "sine", lean=-2, turn=-4, neck=(6, -10, 0), right=board(0.45, 1.6))
+            stand_key(m, LOOK_AT["bullpen"] - 0.4, lean=-2, neck=(6, 0, 0), right=board(0.4, 1.65))
+    else:  # the copy room: a jam: the button jabbed, the head down on the lid, a look at the watch
+        lid = lambda side, x=0.45: fist(side, (side * x, -0.1, -1.25), (-side * 0.1, -0.6, -0.8))  # noqa: E731
+        stand_key(m, 0.0, lean=-8, neck=(-12, 0, 0), right=lid(1), left=lid(-1))
+        stand_key(m, f - 0.5, "sine", lean=-8, roll=2, neck=(-14, 0, 0), right=lid(1), left=lid(-1))
+        for tt in (-0.3, -0.05, 0.2):  # (jab, jab, jab)
+            strike(m, f + tt, dict(rShoulder=reach(1, (0.55, 0.35, -1.05))), dict(rShoulder=reach(1, (0.6, 0.0, -1.3),
+                   (0, -0.7, -0.7))), antic=0.08, travel=0.05, over=0.1, settle=0.08)
+        stand_key(m, f + 0.55, "in", lean=-22, roll=4, neck=(-30, 0, 6), right=lid(1, 0.6), left=lid(-1, 0.6))  # (slumped on it)
+        stand_key(m, f + 0.9, "sine", lean=-20, roll=4, neck=(-32, 0, 8), right=lid(1, 0.6), left=lid(-1, 0.6))
+        stand_key(m, f + 1.3, "out", lean=-4, roll=-2, neck=(-24, -14, 0), right=lid(1),
+                  left=fist(-1, (-0.15, 0.55, -0.8), (0.6, 0.0, -0.4)))  # (the watch)
+        stand_key(m, f + 1.9, "sine", lean=-8, neck=(-12, 0, 0), right=lid(1), left=lid(-1))
+        stand_key(m, LOOK_AT["copy"] - 0.4, lean=-9, roll=2, neck=(-14, 0, 0), right=lid(1), left=lid(-1))
 
 
 def person(k, slot, room, pos, yaw, doing):
-    """Someone elsewhere in the building at night, at what they are doing; when the alarm goes and the beacons turn,
-    they stop and look up into the room's camera."""
-    rng = random.Random(1700 + k * 13)
+    """Someone elsewhere in the building at night, at their own business, played big while the feed is on them; when
+    the alarm goes and the beacons turn, the head snaps up into the room's camera and the body follows."""
     m = Motion(f"IntroAgency_{slot.replace(':', '')}", LENGTH, note="The Agency intro: someone elsewhere in the building.")
     cam = CAMS[room][0]
     seated = doing in ("table", "desk")
     top = 2.8 if doing == "table" else 2.9
     hip = 2.0 if doing == "table" else 2.15
-    t = 0.0
-    if seated:
-        def pose(tt, ease="sine", neck=(-6, 0, 0), sip=False):
-            sit_key(m, tt, ease, hip=hip, lean=-8, neck=neck,
-                    right=reach(1, (MOUTH[0] + 0.1, MOUTH[1] - 0.05, MOUTH[2] - 0.1)) if sip else on_top(1, top),
-                    left=on_top(-1, top))
-        while t < LOOK_AT[room] - 0.2:
-            talk = rng.uniform(-14, 14)
-            pose(t, neck=(-4 + 6 * math.sin(t * 2.3 + k), talk, 3 * math.sin(t + k)), sip=doing == "table" and rng.random() < 0.3)
-            t += rng.uniform(0.7, 1.2)
-        pose(LOOK_AT[room] - 0.1, neck=(-4, 0, 0))
-    else:
-        if doing == "coffee":
-            work = [reach(1, (0.3, 0.9, -1.5), direction=(-0.2, -0.1, -0.95)), reach(1, MOUTH)]  # (the cup at the machine)
-        elif doing == "vending":
-            work = [reach(1, (0.25, 1.35, -1.4), direction=(-0.2, 0.3, -0.95)), reach(1, (0.35, 1.2, -1.35))]
-        elif doing == "board":
-            work = [reach(1, (0.25, 1.7, -1.35), direction=(-0.1, 0.4, -0.9)), reach(1, (0.75, 1.5, -1.3), direction=(0.2, 0.3, -0.9))]
-        else:  # the copier: both hands on its lid
-            work = [reach(1, (0.45, -0.1, -1.25), direction=(-0.1, -0.6, -0.8)), reach(1, (0.5, 0.0, -1.2), direction=(-0.1, -0.5, -0.85))]
-        left = reach(-1, (-0.45, -0.1, -1.25), direction=(0.1, -0.6, -0.8)) if doing == "copier" else J((6, 0, -5))
-        i = 0
-        while t < LOOK_AT[room] - 0.2:
-            m.key(t, "sine", root=(-4, 0, 0), neck=(-8 + 10 * (i % 2 if doing in ("board", "vending") else 0), 4 * math.sin(t), 0),
-                  rShoulder=work[i % 2], lShoulder=left, **STAND)
-            t += rng.uniform(0.6, 1.1)
-            i += 1
-        m.key(LOOK_AT[room] - 0.1, root=(-3, 0, 0), neck=(-4, 0, 0), rShoulder=work[0], lShoulder=left, **STAND)
-    # the alarm: stopped; the head (and the body) turned up into the camera, a beat after the cut to them
+    act(m, slot, FEED_AT[room], top, hip)
+    # the alarm: a flinch, the head up into the lens, the body after it; held, breathing
     pitch, nyaw, body = look_up(pos, yaw, cam, eye=4.4 if seated else 4.8)
-    when = LOOK_AT[room] + 0.15 + rng.uniform(0.0, 0.2)
+    when = LOOK_AT[room] + 0.15 + 0.07 * (k % 3)
     if seated:
-        sit_key(m, when, "out", hip=hip, lean=-2, turn=body * 0.4, neck=(pitch, nyaw + body * 0.6, 0),
-                right=on_top(1, top), left=on_top(-1, top))
-        sit_key(m, LENGTH, "sine", hip=hip, lean=-2, turn=body * 0.4, neck=(pitch, nyaw + body * 0.6, 2),
-                right=on_top(1, top), left=on_top(-1, top))
+        hands = dict(right=on_top(1, top), left=on_top(-1, top))
+        sit_key(m, when - 0.12, "out", hip=hip, lean=-12, neck=(-14, 0, 0), **hands)  # (a flinch)
+        sit_key(m, when + 0.06, "snap", hip=hip, lean=0, turn=body * 0.15, neck=(pitch + 8, nyaw + body * 0.85, 0), **hands)
+        sit_key(m, when + 0.4, "sine", hip=hip, lean=-3, turn=body * 0.4, neck=(pitch, nyaw + body * 0.6, 0), **hands)
+        sit_key(m, LENGTH, "sine", hip=hip, lean=-2, turn=body * 0.4, neck=(pitch + 2, nyaw + body * 0.6, 4), **hands)
     else:
-        m.key(when, "out", root=(-1, body, 0), neck=(pitch, nyaw, 0), rShoulder=J((6, 0, 5)), lShoulder=J((6, 0, -5)), **STAND)
-        m.key(LENGTH, "sine", root=(-1, body, 0), neck=(pitch, nyaw, 2), rShoulder=J((6, 0, 5)), lShoulder=J((6, 0, -5)), **STAND)
+        stand_key(m, when - 0.12, "out", lean=-8, neck=(-14, 0, 0), right=J((24, 0, 14)), left=J((24, 0, -14)))  # (a flinch)
+        stand_key(m, when + 0.06, "snap", lean=3, turn=body * 0.2, neck=(pitch + 8, nyaw + body * 0.8, 0), right=J((14, 0, 10)),
+                  left=J((14, 0, -10)))
+        stand_key(m, when + 0.45, "sine", lean=-1, turn=body, neck=(pitch, nyaw, 0), right=J((8, 0, 6)), left=J((8, 0, -6)))
+        stand_key(m, LENGTH, "sine", lean=-1, turn=body, neck=(pitch + 2, nyaw, 4), right=J((6, 0, 5)), left=J((6, 0, -5)))
         m.plant(stance=0.06)
-    soft(m, head=2.8, arms=2.6)
-    alive(m, 0.4, seed=200 + k)
+    soft(m, head=2.4, arms=2.2, head_damp=0.55, arm_damp=0.5)
+    for t0, t1 in ((FEED_AT[room] - 0.8, FEED_AT[room] + 2.0), (LOOK_AT[room] - 0.8, BLACK)):  # (only while seen: size)
+        alive(m, 0.7, seed=200 + k, t0=t0, t1=t1)
     m.build()
     return m.name
 
@@ -232,6 +356,33 @@ CLIPS = [person(k, *p) for k, p in enumerate(PEOPLE)]
 # walking away down the aisle with it, stopping, its head turning back to the camera. A stand-in, never a player's
 # face (its back to the camera).
 CHEST = J((44, 0, -30), (-0.25, 0.1, -0.2))
+
+
+def swing(m, t0, t1, speed, blend=0.35):
+    """With the legs' walk: the free (left) arm swings, the book arm a little, the shoulders turn against the hips."""
+    from gait import WALK
+
+    period = WALK.period * (4.0 / speed) ** 0.5
+
+    def fn(t, pose, off):
+        if t <= t0 - blend or t >= t1 + blend:
+            return
+        u = min(1.0, (t - (t0 - blend)) / blend, ((t1 + blend) - t) / blend)
+        w = u * u * (3 - 2 * u)
+        a = math.sin(2 * math.pi * max(0.0, t - t0) / period)
+        if "lShoulder" in pose:
+            pose["lShoulder"][0] += w * 24 * a
+        if "rShoulder" in pose:
+            pose["rShoulder"][0] -= w * 5 * a
+        if "root" in pose:
+            pose["root"][1] += w * 4 * a
+        if "neck" in pose:
+            pose["neck"][1] -= w * 3 * a
+
+    m.extra(fn)
+    return m
+
+
 fig = Motion("IntroAgency_figure", LENGTH, note="The Agency intro: the figure on the replay.")
 FREACH = body_reach(1, dict(root=(-14, 0, 0)), (0, 0, 0), (0.0, COUNTER_BOOK[1] - 14.0 + 0.75, -2.85), direction=(0.0, -0.35, -0.95))
 LIFT = body_reach(1, dict(root=(-9, 0, 0)), (0, 0, 0), (0.0, COUNTER_BOOK[1] - 14.0 + 1.6, -2.3), direction=(0.0, 0.1, -1.0))
@@ -242,6 +393,7 @@ fig.key(REPLAY[0] + 0.9, "sine", root=(-4, 0, 0), neck=(-10, 0, 0), rShoulder=CH
 fig.key(REPLAY[0] + 1.25, "sine", root=(-3, 0, 0), neck=(-6, 30, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig.key(LENGTH, root=(-3, 0, 0), neck=(-6, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 walking(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4)
+swing(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4)
 fig.plant(None, REPLAY[0] + 1.3, stance=0.06)
 fig.plant(REPLAY[1], None, stance=0.06)
 soft(fig, head=2.6, arms=2.6)
@@ -255,6 +407,7 @@ fig2.key(FIG_TURN, "sine", root=(-2, 0, 0), neck=(-4, 0, 0), rShoulder=CHEST, lS
 fig2.key(FIG_TURN + 0.9, "sine", root=(-1, -30, 0), neck=(6, -70, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))  # (the head round)
 fig2.key(LENGTH, "sine", root=(-1, -32, 0), neck=(7, -72, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 walking(fig2, WALK2[0], WALK2[1], speed=math.hypot(FIG2_TO[0] - FIG2_FROM[0], FIG2_TO[1] - FIG2_FROM[1]) / (WALK2[1] - WALK2[0]))
+swing(fig2, WALK2[0], WALK2[1], speed=math.hypot(FIG2_TO[0] - FIG2_FROM[0], FIG2_TO[1] - FIG2_FROM[1]) / (WALK2[1] - WALK2[0]))
 fig2.plant(None, WALK2[0], stance=0.06)
 fig2.plant(WALK2[1], None, stance=0.06)
 soft(fig2, head=2.4, arms=2.6)
