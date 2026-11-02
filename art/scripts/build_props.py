@@ -15,6 +15,7 @@ import common
 import modelkit as mk
 import props
 from maps import export as maps_export
+from maps import ownprops
 
 CATALOG = os.path.join(common.ROOT, "src", "shared", "ModelCatalog.luau")
 
@@ -591,6 +592,9 @@ def write_catalog():
         anchor = json.loads(obj.get("anchor") or "null")
         if anchor:
             text += ", anchor = " + _lua_value(anchor)
+        base = ownprops.BASE.get(obj.name)
+        if base:
+            text += f', base = "{base}"'
         screen = json.loads(obj.get("screen") or "null")
         if screen:
             text += (", screen = { at = " + _lua_value(screen["at"]) + ", size = " + _lua_value(screen["size"])

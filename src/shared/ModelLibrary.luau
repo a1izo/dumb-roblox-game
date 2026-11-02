@@ -26,6 +26,7 @@ export type Info = {
 	flames: { { number } }?, -- where its flames burn: { x, y, z, height } from its pivot (World/Flames lights them)
 	anchor: { number }?, -- where maps put its foot (x, z from its pivot), when not the middle
 	set: string?, -- which import it comes in ("Core": DeathsGambitModels_Core.fbx, "Tokyo": DeathsGambitModels_Tokyo.fbx)
+	base: string?, -- a map's own model of a shared prop: the prop it stands for (shown until its set's import lands)
 	-- A station look's slot for the game's screen: the middle of its face from the station's
 	-- origin (x, y, z), its size (w, h) and how far its top leans back (degrees).
 	screen: { at: { number }, size: { number }, tilt: number? }?,

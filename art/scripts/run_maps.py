@@ -160,7 +160,7 @@ PLAN_LABEL = (1.0, 0.92, 0.2)
 PLAN_ARROW = (1.0, 0.1, 0.75)
 PLAN_GRID = (0.1, 0.85, 0.95)
 # Props that look the same from every side get no facing arrow (it would only be noise).
-ROUND_HINTS = ("Ginkgo", "Tree", "Plant", "Lamp", "Snowman", "Planter", "Hydrant", "TrashCan", "BarStool", "Bollard",
+ROUND_HINTS = ("Ginkgo", "Tree", "Plant", "Fern", "Ficus", "Bamboo", "Lamp", "Snowman", "Planter", "Hydrant", "TrashCan", "BarStool", "Bollard",
                "Bush", "Shrub", "Pine", "Cherry", "Lantern", "Post", "Cairn", "Stump")
 
 

@@ -1266,6 +1266,11 @@ local function buildFormat2(b, venue: string, data): string
 	local dressing = data.dressing
 	for _, p in ipairs(dressing.props) do
 		local model = b:placeModel(p[1], p[2], p[4], p[5], p[6], p[3])
+		-- (a map's own model not imported yet: the shared one it stands for, made to the same footprint)
+		local base = Catalog[p[1]] and Catalog[p[1]].base
+		if not model and base then
+			model = b:placeModel(base, p[2], p[4], p[5], p[6], p[3])
+		end
 		if model then
 			model.Parent = folder
 		else

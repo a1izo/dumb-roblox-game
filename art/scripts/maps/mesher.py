@@ -17,7 +17,7 @@ import sys
 
 import bpy
 
-from maps import matlib
+from maps import matlib, ownprops
 from maps.layout import LayoutMixin
 
 CHUNK = 64.0  # studs
@@ -402,9 +402,9 @@ class Scene(LayoutMixin):
                            "query": query, "a": a, "b": b, "y0": y0, "y1": y1, "width": width})
 
     def prop(self, key, x, z, rot=0.0, scale_=1.0, y=0.0, dark=False):
-        """A prop from the prop library. dark: leave off the light it carries (a string of
-        lanterns where only some are lit)."""
-        self.props.append((key, x, y, z, rot, scale_, "dark" if dark else ""))
+        """A prop from the prop library, the map's own model of it where it has one (ownprops.py). dark: leave off the
+        light it carries (a string of lanterns where only some are lit)."""
+        self.props.append((ownprops.own(self.venue, key), x, y, z, rot, scale_, "dark" if dark else ""))
         # The call chain outside this file ("dressing.py:120 < decor.py:44"), so a prop seen in a plan
         # can be found in the scripts that placed it.
         frame, trail = sys._getframe(1), []

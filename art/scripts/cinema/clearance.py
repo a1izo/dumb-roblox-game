@@ -13,6 +13,7 @@ import numpy as np
 import posekit
 import rbxsim
 from cinema import framing
+from maps import ownprops
 
 # R6 part sizes (the head's mesh is smaller than its 2x1x1 box)
 SIZES = {"Torso": (2, 2, 1), "Head": (1.2, 1.2, 1.2), "Left Arm": (1, 2, 1), "Right Arm": (1, 2, 1),
@@ -78,6 +79,7 @@ def set_boxes(scene, catalog):
         info = catalog.get(key)
         if not info:
             continue
+        key = ownprops.BASE.get(key, key)  # (a map's own model is checked as the thing it stands for)
         sx, sy, sz = (v * scale for v in info["size"])
         cy = y + sy / 2 if info.get("pivot", "bottom") == "bottom" else y
         if key in DESK_TOPS:
