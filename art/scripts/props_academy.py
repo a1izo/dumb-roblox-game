@@ -342,3 +342,54 @@ def candle_stone():
     puddle.scale = (1.0, 0.7, 1.0)
     parts.append(puddle)
     return parts, []
+
+
+# The name duel's stones (landmarks.duel places them, the game writes on their slates: LobbyGames DUEL_SLATE_Y and
+# DUEL_SLATE_SLOPE are this slope's middle and pitch).
+DUEL_SLOPE = (2.9, 0.8 / 1.7)  # the slope's height over the stone's middle, and how steeply it rises toward the front
+
+
+def _slope_z(y):
+    """The slope's height over the point y (front is -y, where the stone looks at the other one)."""
+    return DUEL_SLOPE[0] - DUEL_SLOPE[1] * y
+
+
+@prop("DuelStone", pivot="bottom", material="Slate", collide=False, texture=512, set="Lobby", detail=True, normal=256)
+def duel_stone():
+    """One of the name duel's two stones under the carcass's ribs: a waist-high lectern of old stone, its top sloping
+    up toward the other stone with a slate of black stone let into it (the duellist stands behind, the low side, and
+    writes; the game shows the writing on the slate), a moulded base, sunk panels down its sides, a bone ornament on
+    its front."""
+    m = _stones("Duel")
+    w, d = 3.4, 1.7
+    parts = [weathered(mk.box("Base", (w + 1.0, d + 1.0, 0.5), (0, 0, 0.25), mat=m["dark"], bevel=0.07))]
+    side = [(-d / 2, 0.5), (d / 2, 0.5), (d / 2, _slope_z(d / 2)), (-d / 2, _slope_z(-d / 2))]
+    body = mk.extrude_shape("Body", side, w, loc=(0, 0, 0), rot=(90, 0, 90), mat=m["stone"], bevel=0.05)
+    parts.append(weathered(body))
+    # A moulded band round it under the slope's low edge.
+    parts.append(weathered(mk.box("Band", (w + 0.16, d + 0.16, 0.18), (0, 0, 2.18), mat=m["stone"], bevel=0.04), WORN))
+    # Sunk panels down its two sides, and on its front a bone ornament: two crossed long bones.
+    for sx in (-1, 1):
+        x = sx * (w / 2 + 0.02)
+        for name, size, at in (("PanelTop", (0.06, 1.1, 0.1), (x, 0, 1.85)), ("PanelFoot", (0.06, 1.1, 0.1), (x, 0, 0.75)),
+                               ("PanelSide", (0.06, 0.1, 1.0), (x, -0.5, 1.3)), ("PanelSide", (0.06, 0.1, 1.0), (x, 0.5, 1.3))):
+            parts.append(weathered(mk.box(name, size, at, mat=m["stone"], bevel=0.02), WORN))
+    for k, a in enumerate((32, -32)):
+        bone = mk.cylinder(f"Bone{k}", 0.07, 1.3, (0, -d / 2 - 0.06, 1.35), rot=(0, a, 0), mat=m["bone"], verts=8)
+        parts.append(weathered(bone, BONE))
+        for e in (-1, 1):
+            r = math.radians(a)
+            parts.append(mk.sphere(f"Knob{k}", 0.1, (e * 0.62 * math.sin(r), -d / 2 - 0.06, 1.35 + e * 0.62 * math.cos(r)),
+                                   mat=m["bone"], segments=8, rings=5))
+    # The slate on the slope, lifted a hair along its normal, in a thin frame.
+    pitch = math.atan(DUEL_SLOPE[1])
+    margin = 0.3
+    length = math.hypot(d, d * DUEL_SLOPE[1]) - 2 * margin
+    nz, ny = math.cos(pitch), -math.sin(pitch)  # the slope's normal (up and toward the front)
+    centre = (0.0, ny * 0.03, DUEL_SLOPE[0] + nz * 0.03)
+    slate = mk.box("Slate", (w - 2 * margin, length, 0.05), centre, rot=(math.degrees(pitch), 0, 0), mat=m["slate"])
+    parts.append(slate)
+    frame = mk.box("SlateFrame", (w - 2 * margin + 0.22, length + 0.22, 0.04), (0.0, ny * 0.012, DUEL_SLOPE[0] + nz * 0.012),
+                   rot=(math.degrees(pitch), 0, 0), mat=m["dark"], bevel=0.015)
+    parts.append(weathered(frame, WORN))
+    return parts, []

@@ -105,6 +105,7 @@ return {
 	DrinksTrolley = { size = { 3.75, 3.656, 1.7 }, pivot = "bottom", material = "Metal", collide = true, color = { 80, 70, 52 }, set = "Meeting", tris = 1248 },
 	DrumKit = { size = { 5.5, 4.222, 4.3 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 70, 52, 48 }, set = "Campus", tris = 1392 },
 	DryerStack = { size = { 3.2, 8.6, 3.254 }, pivot = "bottom", material = "Metal", collide = true, color = { 133, 134, 137 }, set = "Tokyo", tris = 1020, glow = { { 80, 255, 150 } } },
+	DuelStone = { size = { 4.4, 3.281, 2.7 }, pivot = "bottom", material = "Slate", collide = false, color = { 55, 54, 53 }, set = "Lobby", tris = 1620 },
 	Dumpster = { size = { 6.2, 4.099, 3.3 }, pivot = "bottom", material = "Metal", collide = true, color = { 26, 28, 21 }, set = "Core", tris = 1428 },
 	ElevatorDoors = { size = { 6.2, 9.62, 0.85 }, pivot = "bottom", material = "Metal", collide = false, color = { 64, 64, 67 }, set = "Agency", tris = 988, glow = { { 255, 150, 60 }, { 255, 244, 220 } } },
 	EventTent = { size = { 16.504, 11.04, 16.52 }, pivot = "bottom", material = "Fabric", collide = false, color = { 39, 40, 43 }, set = "Campus", tris = 6128, glow = { { 150, 190, 240 } } },

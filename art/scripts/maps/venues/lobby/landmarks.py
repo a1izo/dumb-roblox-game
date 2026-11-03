@@ -536,28 +536,11 @@ def duel(s):
         rot = P.rot_towards(p, q)
         f = Frame(x, z, rot)
         w, d, low, high = 3.4, 1.7, 2.5, 3.3
-        s.box("RuinStone", (x, 0.25, z), (w + 1.0, 0.5, d + 1.0), rot, collide=True)
-        s.box("RuinStone", (x, 0.5 + (low - 0.5) / 2, z), (w, low - 0.5, d), rot, skip=("-y", "+y"))
+        # (the Lobby set's DuelStone, props_academy.py: the same slope, its slate where the game writes)
+        s.prop("DuelStone", x, z, rot, 1.0)
+        s.collider((x, 0.25, z), (w + 1.0, 0.5, d + 1.0), rot, True, "RuinStone")
         s.collider((x, high / 2, z), (w, high, d), rot, True, "RuinStone")
-        # The sloping top: low on the duellist's side (behind, +z in the stone's own frame), high in front.
-        inside = f.w3(0.0, low - 0.6, 0.0)
-        a, b = f.w3(-w / 2, low, d / 2), f.w3(w / 2, low, d / 2)
-        c, e = f.w3(w / 2, high, -d / 2), f.w3(-w / 2, high, -d / 2)
-        c0, e0 = f.w3(w / 2, low, -d / 2), f.w3(-w / 2, low, -d / 2)
-        away(s, "RuinStone", [a, b, c, e], inside)
-        away(s, "RuinStone", [e, c, c0, e0], inside)
-        away(s, "RuinStone", [a, e, e0], inside)
-        away(s, "RuinStone", [b, c0, c], inside)
-        # The slate let into the slope (lifted a hair off it, along the slope's own normal).
-        slope = math.atan2(high - low, d)
-        lift = 0.03
-        ny, nz = math.cos(slope) * lift, math.sin(slope) * lift
         m = 0.3
-        sa, sb = f.w3(-w / 2 + m, low + m * math.sin(slope) + ny, d / 2 - m * math.cos(slope) + nz), \
-            f.w3(w / 2 - m, low + m * math.sin(slope) + ny, d / 2 - m * math.cos(slope) + nz)
-        sc, se = f.w3(w / 2 - m, high - m * math.sin(slope) + ny, -d / 2 + m * math.cos(slope) + nz), \
-            f.w3(-w / 2 + m, high - m * math.sin(slope) + ny, -d / 2 + m * math.cos(slope) + nz)
-        away(s, "BlackTrim", [sa, sb, sc, se], inside)
         s.anchor(f"duel{k + 1}", x, 0.0, z, rot, w=w - 2 * m, h=round(math.hypot(d, high - low) - 2 * m, 2))
         # A candle cluster beside it, on the side away from the bones strewn under the ribs.
         cx, cz = f.w(-(w / 2 + 1.3), 0.6)
