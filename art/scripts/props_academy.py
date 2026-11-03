@@ -140,7 +140,7 @@ def practice_altar():
                   weathered(mk.box("PedCap", (1.45, 2.4, 0.22), (x, 0.0, 2.59), mat=m["stone"], bevel=0.05))]
         parts += [weathered(p, WORN) for p in pk.frame(f"Panel{sx}", 0.92, 1.5, 0.11, 0.06, (x, -1.085, 1.55),
                                                          m["stone"])]
-        skull = pk.skull(f"PedSkull{sx}", (x, -1.12, 1.6), 0.3, m["bone"], m["void"], segments=22, teeth=4)
+        skull = pk.skull(f"PedSkull{sx}", (x, -1.12, 1.6), 0.3, m["bone"], m["void"], segments=18, teeth=4)
         for p in skull:
             p.scale = (p.scale[0], p.scale[1] * 0.6, p.scale[2])
             weathered(p, BONE)
@@ -197,7 +197,7 @@ def practice_altar():
         wv = 0.11 * math.sin(math.pi * min(1.0, (u - 0.2) / 0.85))
         vane.append([(cx - wv, cy + wv * 0.4, cz), (cx, cy, cz + 0.01), (cx + wv * 0.8, cy - wv * 0.3, cz)])
     parts.append(mk.sheet("Vane", vane, mat=feather, apart=0.003))
-    skull = pk.skull("DeskSkull", (-1.95, 0.55, top + 0.3), 0.3, m["bone"], m["void"], yaw=18, segments=24, teeth=5)
+    skull = pk.skull("DeskSkull", (-1.95, 0.55, top + 0.3), 0.3, m["bone"], m["void"], yaw=18, segments=20, teeth=5)
     parts += [weathered(p, BONE) for p in skull]
     # Candles burnt down at the back corners on pools of old wax, run over the slab's edge.
     rng = random.Random(23)
@@ -208,7 +208,7 @@ def practice_altar():
         pool.scale = (1.0, 0.8, 1.0)
         parts.append(pool)
         for k, (dx, dy, h) in enumerate(((0.0, 0.0, 0.95), (0.3, -0.12, 0.55))):
-            body, tip = candle(f"Candle{sx}{k}", cx + dx * sx, 0.98 + dy, top + 0.03, 0.12, h, wax, wick, rng, drips=3)
+            body, tip = candle(f"Candle{sx}{k}", cx + dx * sx, 0.98 + dy, top + 0.03, 0.12, h, wax, wick, rng, drips=2)
             parts += body
             flames.append((tip[0], tip[1], tip[2], 0.45))
         # (where it ran over the back edge and set)
