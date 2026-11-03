@@ -191,7 +191,8 @@ local function inTheWay(item: GuiObject, current: GuiObject, low: Vector2, high:
 	return true
 end
 
--- The first side of `current` where the hand lies on the screen and over nothing; the left when there is none.
+-- The first side of `current` where the hand lies on the screen and over nothing; else the first where it lies over
+-- nothing though a little off the screen's edge; the left when there is none.
 local function choose(current: GuiObject, scale: number): Side
 	local layer = current:FindFirstAncestorWhichIsA("LayerCollector")
 	local camera = workspace.CurrentCamera
@@ -200,24 +201,25 @@ local function choose(current: GuiObject, scale: number): Side
 	end
 	local screen = camera.ViewportSize
 	local items = layer:GetDescendants()
+	local offEdge: Side? = nil
 	for _, s in ipairs(SIDES) do
 		local corner, size = cellFor(current, s, BOB, scale)
 		local low, high = corner + s.low * size, corner + s.high * size
-		local onScreen = low.X >= 0 and low.Y >= 0 and high.X <= screen.X and high.Y <= screen.Y
-		local clear = onScreen
-		if clear then
-			for _, item in ipairs(items) do
-				if item:IsA("GuiObject") and inTheWay(item, current, low, high, screen) then
-					clear = false
-					break
-				end
+		local clear = true
+		for _, item in ipairs(items) do
+			if item:IsA("GuiObject") and inTheWay(item, current, low, high, screen) then
+				clear = false
+				break
 			end
 		end
 		if clear then
-			return s
+			if low.X >= 0 and low.Y >= 0 and high.X <= screen.X and high.Y <= screen.Y then
+				return s
+			end
+			offEdge = offEdge or s
 		end
 	end
-	return SIDES[1]
+	return offEdge or SIDES[1]
 end
 
 -- Puts the hand beside `gui`.
