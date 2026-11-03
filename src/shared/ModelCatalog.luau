@@ -131,7 +131,7 @@ return {
 	FxRing = { size = { 2, 0.049, 2 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 57, 57, 57 }, set = "Core", tris = 768 },
 	FxSpikes = { size = { 2, 1.061, 1.736 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 177, 177, 177 }, set = "Core", tris = 420 },
 	Gavel = { size = { 0.95, 1.93, 0.5 }, pivot = "centre", material = "Wood", collide = false, color = { 72, 49, 29 }, set = "Core", tris = 444 },
-	GiantSkull = { size = { 12.734, 15.68, 26.474 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 41, 39, 35 }, set = "Lobby", tris = 7200 },
+	GiantSkull = { size = { 12.734, 15.68, 26.474 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 42, 40, 36 }, set = "Lobby", tris = 7200 },
 	GinkgoBare = { size = { 16.78, 29.244, 17.492 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 16, 16, 15 }, anchor = { 1.656, 0.684 }, set = "Campus", tris = 4628 },
 	Glove = { size = { 1.16, 0.704, 1.185 }, pivot = "centre", material = "Fabric", collide = false, color = { 162, 161, 157 }, set = "Core", tris = 1436 },
 	GranitePlanter = { size = { 6.5, 2.639, 2 }, pivot = "bottom", material = "Concrete", collide = true, color = { 39, 44, 40 }, base = "Planter", set = "Campus", tris = 4360 },

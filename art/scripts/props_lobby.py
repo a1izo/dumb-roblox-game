@@ -585,10 +585,11 @@ def giant_skull():
     ]
     parts = [_detail(_blob("GskHead", head, 0.55, 0.45, bone), WEATHERED)]
     skull = _surfaces(parts[0])
-    # Deep in the sockets and the nose, black.
+    # Deep in the sockets and the nose, black: set far back, so the bone walls of each socket show first, darkening
+    # into it (as black balls just inside the openings they read as eyes).
     for x in (-2.7, 2.7):
-        parts.append(mk.sphere("Socket", 1.6, (x, -0.6, 7.8), scale=(1.0, 0.8, 1.15), mat=dark, segments=12, rings=8))
-    parts.append(mk.sphere("Nose", 0.75, (0.0, -7.8, 6.8), scale=(0.6, 1.1, 1.1), mat=dark, segments=8, rings=6))
+        parts.append(mk.sphere("Socket", 1.25, (x * 0.94, 0.7, 7.8), scale=(1.0, 0.8, 1.15), mat=dark, segments=12, rings=8))
+    parts.append(mk.sphere("Nose", 0.6, (0.0, -7.0, 6.8), scale=(0.6, 1.1, 1.1), mat=dark, segments=8, rings=6))
     # The horns, broken off: thick stumps curving back, their ends snapped and splintered.
     from props_mapown import spline
 
