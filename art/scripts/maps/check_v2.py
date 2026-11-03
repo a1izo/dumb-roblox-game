@@ -33,6 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
 from maps import geo2d as g2  # noqa: E402
+from maps import ownprops  # noqa: E402
 from maps.layout import FORBIDDEN  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, "..", "..", ".."))
@@ -668,13 +669,14 @@ def footprints(data, cat):
         if not info or info["pivot"] != "bottom":
             continue
         sx, sy, sz = (v * sc for v in info["size"])
-        if key in FEET:
+        kind = ownprops.BASE.get(key, key)  # (a map's own model goes by what it stands for)
+        if kind in FEET:
             ax, az = info["anchor"]
             px, pz = rotate(rot, (ax * sc, az * sc))
-            foot = FEET[key]
-            out.append((f"{key} at {x:.0f}, {z:.0f}", key, g2.rect(x + px, z + pz, foot, foot, rot), y, y + sy))
+            foot = FEET[kind]
+            out.append((f"{key} at {x:.0f}, {z:.0f}", kind, g2.rect(x + px, z + pz, foot, foot, rot), y, y + sy))
             continue
-        out.append((f"{key} at {x:.0f}, {z:.0f}", key, g2.rect(x, z, sx - 2 * TOUCH, sz - 2 * TOUCH, rot), y, y + sy))
+        out.append((f"{key} at {x:.0f}, {z:.0f}", kind, g2.rect(x, z, sx - 2 * TOUCH, sz - 2 * TOUCH, rot), y, y + sy))
     for group in (data["layout"], data["spare"]):
         for st in group["stations"]:
             info = cat.get(st.get("prop") or "")

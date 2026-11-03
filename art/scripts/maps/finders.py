@@ -31,6 +31,7 @@ from mathutils.bvhtree import BVHTree
 from mathutils.kdtree import KDTree
 
 from maps import matlib
+from maps import ownprops
 
 ZFIGHT_GAP = 0.02  # faces closer than this (studs) along their normal draw on top of each other
 ZFIGHT_AREA = 0.1  # square studs of overlap worth a look
@@ -341,7 +342,7 @@ def rest(scene, tris, catalog):
     down = Vector((0, -1, 0))
     for index, (key, x, y, z, rot, sc, *_) in enumerate(scene.props):
         box = boxes[index]
-        if box is None or key in HANGING:
+        if box is None or ownprops.BASE.get(key, key) in HANGING:
             continue
         cx, base, cz, sx, sy, sz, r = box
         src = scene.prop_src[index] if index < len(scene.prop_src) else ""

@@ -345,63 +345,6 @@ def suit_tie():
     return parts, [], more
 
 
-# The fist in an R6 arm's last stretch (Shared/Suit.hand: Suit.HAND, 0.7, and 0.02 below its end): a little narrower
-# than the sleeve it comes out of, a real hand's shape, for the arm itself goes see-through under the suit (its sleeve
-# and this hand are the arm then); nothing reaches past the arm's end, so what a hand holds there sits in the fist.
-# Drawn at a smaller size and scaled up (FIST_SCALE) to the arm's.
-# (front -y = index .. little): y, the middle joint's height up the palm's side
-FIST_FINGERS = ((-0.255, 0.27), (-0.085, 0.29), (0.085, 0.27), (0.25, 0.22))
-FIST_BOTTOM, FIST_TOP = -0.288, 0.288
-FIST_SCALE = 1.25
-
-
-def _knob(name, size, loc, mat, r):
-    """A rounded box (two bevel segments: the hand has many), at FIST_SCALE."""
-    return mk.box(name, tuple(v * FIST_SCALE for v in size), tuple(v * FIST_SCALE for v in loc), mat=mat,
-                  bevel=r * FIST_SCALE, segments=2)
-
-
-def _suit_hand(palm):
-    """A fist at the end of the suit's sleeve (Shared/Suit.hand; the user's "a bit more high quality", 2026-10-27, and
-    alizo's rule that nothing hangs below the arm). The wrist going up into the shirt's cuff; the hand's mass, the back
-    of it with its row of four knuckles low across it; the fingers curled under, their first joints along the bottom,
-    their middle joints standing up the palm's side a little apart with the nails tucked in at their tops; the thumb
-    from a thick base at the front, laid back across the index and middle fingers, its nail out. palm: the side (+x or
-    -x, in Blender) the palm faces, the body's side for that hand. Made pale: the game dyes it in the player's skin
-    (the nails a shade lighter)."""
-    skin = mk.flat("Hand_Skin", srgb(238, 236, 234), 0.55, kind="plastic")
-    nail = mk.flat("Hand_Nail", srgb(255, 252, 252), 0.3, kind="plastic")
-    b, top = FIST_BOTTOM, FIST_TOP
-    parts = [
-        _knob("Wrist", (0.5, 0.6, 0.22), (-palm * 0.02, 0, top - 0.11), skin, 0.08),
-        _knob("Hand", (0.5, 0.74, 0.36), (-palm * 0.04, 0, b + 0.3), skin, 0.1),
-    ]
-    for y, height in FIST_FINGERS:
-        # the knuckle, low across the back of the hand
-        parts.append(_knob("Knuckle", (0.17, 0.165, 0.16), (-palm * 0.2, y, b + 0.13), skin, 0.07))
-        # the first joint, curled under from the knuckle towards the palm (the fist's flat bottom)
-        parts.append(_knob("Finger", (0.4, 0.16, 0.15), (palm * 0.0, y, b + 0.075), skin, 0.06))
-        # the middle joint standing up the palm's side, its nail tucked in at the top
-        parts.append(_knob("Finger", (0.15, 0.16, height), (palm * 0.2, y, b + height / 2 + 0.01), skin, 0.06))
-        parts.append(_knob("Nail", (0.03, 0.11, 0.08), (palm * 0.272, y, b + height - 0.04), nail, 0.012))
-    # the thumb: a thick base at the palm's front corner, then laid back across the index and middle fingers
-    parts.append(_knob("Thenar", (0.26, 0.2, 0.3), (palm * 0.12, -0.3, b + 0.33), skin, 0.08))
-    parts.append(_knob("Thumb", (0.15, 0.36, 0.14), (palm * 0.3, -0.17, b + 0.26), skin, 0.06))
-    parts.append(_knob("Nail", (0.03, 0.1, 0.09), (palm * 0.37, -0.04, b + 0.26), nail, 0.012))
-    return parts, []
-
-
-@prop("SuitHandR", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
-def suit_hand_right():
-    """The right hand: its palm toward the body (Roblox -x)."""
-    return _suit_hand(1)
-
-
-@prop("SuitHandL", pivot="centre", material="SmoothPlastic", collide=False, texture=256)
-def suit_hand_left():
-    """The left hand, the right one's mirror."""
-    return _suit_hand(-1)
-
 @prop("Hood", pivot="centre", material="Fabric", collide=False, texture=512)
 def hood():
     """The hood worn over the head (the game scales it to each head)."""

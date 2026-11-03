@@ -105,7 +105,7 @@ def _glow_objects(key):
 
 # Props held in a hand, in front of the camera: their textures get the denser rule (lookbook.DENSITY).
 # (The suit cloth too: it is what the camera follows.)
-HELD = {"Notebook", "Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLimb", "SuitTie", "SuitHandL", "SuitHandR"}
+HELD = {"Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLimb", "SuitTie"}
 
 # Tokyo's first props were shipped from builders older than the ones in the scripts now, and the
 # district was laid out around those shapes (a bicycle rack's spacing, a ticket gate's width, a
@@ -131,6 +131,10 @@ FIT_TO_KEPT = {
     "KeiTruck": (5.14, 10.87, 5.49),
     "PoliceCar": (5.94, 14.07, 5.73),
     "Taxi": (5.74, 14.0, 5.28),
+    "SnowBicycle": (1.6, 5.54, 3.05),
+    "SnowKeiTruck": (5.14, 10.87, 5.49),
+    "SnowPoliceCar": (5.94, 14.07, 5.73),
+    "SnowTaxi": (5.74, 14.0, 5.28),
     "TreeSakura": (11.26, 10.14, 13.72),
     "SiteFence": (8.0, 2.57, 10.0),
     "BeerCrates": (3.1, 1.9, 3.475),

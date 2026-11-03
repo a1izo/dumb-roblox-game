@@ -483,37 +483,6 @@ def crt_television():
     return parts, glows
 
 
-@prop("ShrineDoor", pivot="bottom", material="WoodPlanks", collide=True, texture=512)
-def shrine_door():
-    """One leaf of the shrine's heavy double door: dark planks, three iron bands with studs, a ring pull.
-    Its hinge is on its left edge (seen from the outside), x = -1.6; the door is 3.2 wide, 8 high."""
-    wood = mk.wood("Door_Wood", srgb(62, 40, 28), srgb(30, 18, 12), scale=3)
-    iron = mk.noisy("Door_Iron", IRON_A, IRON_B, scale=18, roughness=0.6, metallic=0.8)
-    parts = [mk.box("Leaf", (3.2, 0.4, 8.0), (0, 0, 4.0), mat=wood, bevel=0.04)]
-    for k in range(4):
-        parts.append(mk.box("Plank", (0.04, 0.42, 7.9), (-1.2 + k * 0.8, 0, 4.0), mat=iron))
-    for z in (1.2, 4.0, 6.8):
-        parts.append(mk.box("Band", (3.24, 0.46, 0.3), (0, 0, z), mat=iron, bevel=0.02))
-        for k in range(5):
-            parts.append(mk.sphere("Stud", 0.06, (-1.3 + k * 0.65, -0.25, z), mat=iron, segments=8, rings=6))
-    parts.append(mk.torus("Ring", 0.28, 0.05, (1.1, -0.32, 3.8), rot=(90, 0, 0), mat=iron, major_segments=20))
-    return parts, []
-
-
-@prop("Notebook", pivot="centre", material="SmoothPlastic", collide=False, texture=512)
-def notebook():
-    cover = mk.noisy("Note_Cover", srgb(28, 26, 30), srgb(48, 44, 48), scale=14, roughness=0.7)
-    pages = mk.banded("Note_Pages", PAPER_B, PAPER_A, frequency=160, axis="Z")
-    band = mk.flat("Note_Band", DEEP_RED, 0.7)
-    parts = [
-        mk.box("Back", (1.3, 0.95, 0.05), (0, 0, -0.08), mat=cover, bevel=0.015),
-        mk.box("Front", (1.3, 0.95, 0.05), (0, 0, 0.08), mat=cover, bevel=0.015),
-        mk.box("Pages", (1.24, 0.9, 0.12), (0.02, 0, 0), mat=pages, bevel=0.01),
-        mk.box("Band", (0.06, 0.97, 0.19), (0.45, 0, 0), mat=band),
-    ]
-    return parts, []
-
-
 @prop("Pen", pivot="centre", material="Metal", collide=False, texture=256)
 def pen():
     body = mk.noisy("Pen_Body", srgb(10, 10, 12), srgb(30, 30, 34), scale=30, roughness=0.3)
@@ -581,12 +550,13 @@ import props_stations  # noqa: E402,F401
 import props_tokyo  # noqa: E402,F401
 import props_agency  # noqa: E402,F401
 import props_mapown  # noqa: E402,F401
+import props_mapown2  # noqa: E402,F401
+import props_core  # noqa: E402,F401
 import props_campus  # noqa: E402,F401
 import props_lobby  # noqa: E402,F401
 import props_meeting  # noqa: E402,F401
 import props_shop  # noqa: E402,F401
 import props_emotes  # noqa: E402,F401
 import props_seats  # noqa: E402,F401
-import props_hats  # noqa: E402,F401
 import props_fx  # noqa: E402,F401
 import props_specter  # noqa: E402,F401

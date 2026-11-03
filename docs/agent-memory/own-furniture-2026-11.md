@@ -1,22 +1,32 @@
 ---
 name: own-furniture-2026-11
-description: Each case map has its own furniture now (24 models, maps/ownprops.py); how the swap works and what to keep when adding more
+description: No prop stands in two case maps any more (64 own models, maps/ownprops.py); how the swap works and what to keep when adding more
 metadata:
   type: project
 ---
 
-Asked 2026-11-02: "make way more detailed assets so we dont reuse them in every other map". The maps' scripts still
-ask for "Chair", "Desk" and so on; `art/scripts/maps/ownprops.py` is one table saying which model each map really uses,
-applied in `Scene.prop`. Nothing in the maps' placement lines changed, and the first batch moved no prop.
+Asked 2026-11-02: "make way more detailed assets so we dont reuse them in every other map", then 2026-11-03: "remove old
+models that are reused and make new high quality ones, and dont ask me what to do because ill be awway". The maps' scripts
+still ask for "Chair", "Desk" and so on; `art/scripts/maps/ownprops.py` is one table saying which model each map really
+uses, applied in `Scene.prop`. Nothing in the maps' placement lines changed, and no prop moved. As of 2026-11-03 no prop
+stands in two of the three case maps (36 did that morning, 16 of them in all three).
 
-- Models are in `art/scripts/props_mapown.py`, sets Campus, Agency and Tokyo (Models Campus 14, Agency 15, Tokyo 20).
-  375 placed rows swapped: Campus 141, Agency 215, Tokyo 19.
+- Models are in `art/scripts/props_mapown.py` and `props_mapown2.py`, sets Campus, Agency and Tokyo (Models Core 34, Campus
+  15, Agency 16, Tokyo 21). 495 placed rows swapped: Campus 212, Agency 260, Tokyo 23.
+- The old furniture the game itself still names (emotes, win cuts, shop, Sets) was remade in `props_core.py` under its old
+  keys: Chair, OfficeChair, Bookshelf (lighter than before: the library places 95), FilingCabinet.
+- Gone for good, builders and textures: the seven Hat props, SuitHandL/R, ShrineDoor, Notebook, Hydrant, VendingMachine.
+- A map may send several shared props to one model (Agency's three vending machines, Campus's two desks): the last named in
+  `OWN` is the model's `base`. `RETIRED` holds what a map still asks for but no longer exists as a fallback.
+- `snow_on()` (props_mapown2) drapes a snow sheet over any parts by casting down onto them: the University's cars, bicycle,
+  cone and pole are the street models under snow, not new shapes. It needs `flat` high enough to miss a windscreen.
 - The catalog carries `base` (the shared prop a model stands for). Until a set's import lands, `SceneBuilder` shows the
   base prop there, not a grey stand-in box, so a script sync ahead of the import does no harm.
 - `cinema/clearance.py` reads a model as its base, so `shot.allow` lists and `DESK_TOPS` keep working unchanged.
+- `SceneBuilder.solidFor` gives a model its base's solid, and `check_v2` and `finders` read a model as its base for their
+  name lists (FEET, WALLS, MAY_TOUCH, HANGING): a bicycle's collider and the tape strung on a fence depend on it.
 - `Tests/OwnFurniture.spec.luau` holds every model to its base's pivot, collision and footprint (0.1 studs over at most).
-- The shared props stay in Core: emotes, win cuts, Styles, the shop and the Sets still use them, and Meeting and Sets
-  venues are not in the table.
+- Meeting and Sets venues are not in the table. Props there may still repeat a Core model.
 
 **Why:** seats, colliders, walk checks and shots were all measured against the old boxes.
 
@@ -42,7 +52,7 @@ Modelling traps found on these, all fixed in `props_mapown.py` (reuse its helper
 - `check_v2` reads the finds saved at `run_maps.py --export`: after changing a model's size, export the venue again before
   trusting it. `find_defects.py` measures afresh.
 
-After both batches (2026-11-03): Agency 96.34 of 96.41 MP, Campus 128.69 of 129.03, Tokyo 163.62 of 167.94. Agency and
-Campus are full, so any more own models there need a smaller texture elsewhere, or a new budget exception from the user.
-Props in all three case maps went from 16 to 8: WaterCooler, PoliceTape, PinBoard, VendingBlue, VendingWhite, Planter,
-DrinkFridge, MealTicketMachine. 28 more are in two of the three, mostly street things.
+After the third round (2026-11-03): Agency 93.15 of 96.41 MP, Campus 127.63 of 129.03, Tokyo 158.11 of 167.94, Lobby 58.59,
+Meeting 59.38. Dropping Core's Desk, Sofa and Crate to 512 with a 128 normal paid for it: they hardly appear now.
+A model can also be wider than its base's spot even inside the 0.1 rule: `VendingMachine` was 2.7 deep where VendingBlue is
+3.1, so one model standing for both must fit the shallower.

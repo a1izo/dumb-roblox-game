@@ -222,7 +222,7 @@ def bench():
     return parts, []
 
 
-@prop("Crate", pivot="bottom", material="WoodPlanks", collide=True, texture=1024)
+@prop("Crate", pivot="bottom", material="WoodPlanks", collide=True, texture=512, exact=True, normal=128)
 def crate():
     planks = mk.wood("Crate_Planks", srgb(150, 112, 70), srgb(94, 66, 40), scale=5, rings=10)
     frame = mk.wood("Crate_Frame", srgb(110, 80, 48), srgb(70, 48, 28), scale=5, rings=10)
@@ -289,21 +289,6 @@ def trash_can():
     ]
     for z in (0.5, 1.0, 1.5):
         parts.append(mk.torus("Rib", 0.6, 0.025, (0, 0, z), mat=steel, major_segments=24, minor_segments=4))
-    return parts, []
-
-
-@prop("Hydrant", pivot="bottom", material="Metal", collide=True, texture=512)
-def hydrant():
-    paint = mk.noisy("Hyd_Paint", srgb(130, 18, 24), srgb(170, 34, 36), scale=16, roughness=0.5, metallic=0.3)
-    cap = mk.noisy("Hyd_Cap", srgb(60, 60, 64), srgb(100, 100, 106), scale=16, roughness=0.4, metallic=0.8)
-    parts = [
-        mk.lathe("Body", [(0.0, 0.0), (0.4, 0.0), (0.4, 0.15), (0.3, 0.2), (0.28, 1.3), (0.34, 1.35), (0.3, 1.5),
-                          (0.2, 1.8), (0.0, 1.85)], mat=paint, segments=20),
-        mk.cylinder("Nozzle", 0.12, 0.3, (0.38, 0, 1.0), rot=(0, 90, 0), mat=cap, verts=12),
-        mk.cylinder("Nozzle", 0.12, 0.3, (-0.38, 0, 1.0), rot=(0, 90, 0), mat=cap, verts=12),
-        mk.cylinder("Front", 0.16, 0.25, (0, -0.35, 1.0), rot=(90, 0, 0), mat=cap, verts=12),
-        mk.cylinder("Bolt", 0.06, 0.15, (0, 0, 1.9), mat=cap, verts=6),
-    ]
     return parts, []
 
 
@@ -415,7 +400,7 @@ def car():
 # Offices ------------------------------------------------------------------------------------------------
 
 
-@prop("Desk", pivot="bottom", material="Wood", collide=True, texture=1024)
+@prop("Desk", pivot="bottom", material="Wood", collide=True, texture=512, exact=True, normal=128)
 def desk():
     wood = dark_wood("Desk_Wood")
     metal = mk.noisy("Desk_Metal", srgb(30, 30, 34), srgb(60, 60, 66), scale=16, roughness=0.4, metallic=0.8)
@@ -452,145 +437,6 @@ def desk():
     return parts, glow
 
 
-@prop("OfficeChair", pivot="bottom", material="Leather", collide=True, texture=512)
-def office_chair():
-    leather = mk.noisy("Chair_Leather", srgb(22, 20, 22), srgb(44, 40, 42), scale=10, roughness=0.5)
-    metal = mk.noisy("Chair_Metal", srgb(60, 60, 66), srgb(110, 110, 118), scale=16, roughness=0.3, metallic=1.0)
-    parts = []
-    for i in range(5):
-        a = math.radians(i * 72)
-        parts.append(mk.box("Leg", (0.14, 0.9, 0.12), (math.sin(a) * 0.45, math.cos(a) * 0.45, 0.28),
-                            rot=(0, 0, -math.degrees(a)), mat=metal, bevel=0.03))
-        parts.append(mk.sphere("Caster", 0.12, (math.sin(a) * 0.88, math.cos(a) * 0.88, 0.12), mat=metal,
-                               segments=10, rings=6))
-    parts.append(mk.cylinder("Gas", 0.09, 1.1, (0, 0, 0.85), mat=metal, verts=12))
-    parts.append(mk.box("Seat", (1.8, 1.7, 0.35), (0, -0.05, 1.55), mat=leather, bevel=0.14, segments=3))
-    parts.append(mk.box("Back", (1.7, 0.3, 2.0), (0, 0.8, 2.75), rot=(-8, 0, 0), mat=leather, bevel=0.14, segments=3))
-    # (the back held up: a steel spine from under the seat into the back's lower half)
-    parts.append(mk.tube("Spine", (0, 0.35, 1.4), (0, 0.82, 1.62), 0.07, mat=metal, verts=8))
-    parts.append(mk.tube("Spine", (0, 0.82, 1.62), (0, 0.9, 2.3), 0.07, mat=metal, verts=8))
-    parts.append(mk.box("SpinePlate", (0.5, 0.06, 0.7), (0, 0.98, 2.1), rot=(-8, 0, 0), mat=metal, bevel=0.02))
-    for x in (-0.95, 0.95):
-        parts.append(mk.box("ArmPost", (0.1, 0.1, 0.55), (x, 0.1, 1.9), mat=metal))
-        parts.append(mk.box("ArmPad", (0.2, 0.9, 0.1), (x, 0.0, 2.2), mat=leather, bevel=0.04))
-    return parts, []
-
-
-@prop("FilingCabinet", pivot="bottom", material="Metal", collide=True, texture=512)
-def filing_cabinet():
-    body = mk.noisy("File_Body", srgb(70, 76, 72), srgb(100, 106, 100), scale=14, detail=12, roughness=0.5,
-                    metallic=0.6)
-    metal = mk.noisy("File_Metal", STEEL_B, STEEL_A, scale=18, roughness=0.3, metallic=1.0)
-    label = mk.noisy("File_Label", PAPER_B, PAPER_A, scale=40, roughness=0.9)
-    parts = [mk.box("Body", (2.4, 2.0, 5.0), (0, 0, 2.5), mat=body, bevel=0.06)]
-    for i in range(3):
-        z = 0.95 + i * 1.6
-        parts.append(mk.box("Drawer", (2.2, 0.08, 1.45), (0, -1.02, z), mat=body, bevel=0.04))
-        parts.append(mk.box("Handle", (0.8, 0.12, 0.12), (0, -1.1, z + 0.25), mat=metal, bevel=0.03))
-        parts.append(mk.box("Label", (0.6, 0.04, 0.28), (0, -1.07, z + 0.55), mat=label))
-    return parts, []
-
-
-@prop("Bookshelf", pivot="bottom", material="Wood", collide=True, texture=1024)
-def bookshelf():
-    wood = dark_wood("Shelf_Wood")
-    colours = [srgb(110, 20, 26), srgb(30, 44, 80), srgb(170, 140, 80), srgb(34, 60, 38), srgb(60, 40, 30),
-               srgb(20, 20, 24), srgb(140, 130, 118)]
-    books = [mk.noisy(f"Shelf_Book{i}", c, tuple(min(1.0, v * 1.4) for v in c), scale=30, roughness=0.7)
-             for i, c in enumerate(colours)]
-    parts = [
-        mk.box("Back", (3.0, 0.1, 7.96), (0, 0.74, 3.98), mat=wood),
-        mk.box("SideL", (0.15, 1.6, 8.0), (-1.45, 0, 4.0), mat=wood, bevel=0.03),
-        mk.box("SideR", (0.15, 1.6, 8.0), (1.45, 0, 4.0), mat=wood, bevel=0.03),
-        mk.box("Crown", (3.2, 1.75, 0.2), (0, 0, 8.0), mat=wood, bevel=0.05),
-    ]
-    rng = random.Random(11)
-    for level in range(4):
-        z = 0.2 + level * 1.95
-        parts.append(mk.box("Board", (2.8, 1.5, 0.12), (0, 0, z), mat=wood, bevel=0.02))
-        x = -1.3
-        while x < 1.25:
-            thick = rng.uniform(0.14, 0.26)
-            tall = rng.uniform(1.1, 1.6)
-            if rng.random() < 0.12:
-                x += thick
-                continue
-            lean = rng.uniform(-6, 6) if rng.random() < 0.2 else 0
-            parts.append(mk.box("Book", (thick, rng.uniform(0.9, 1.2), tall),
-                                (x + thick / 2, -0.05, z + 0.06 + tall / 2), rot=(0, lean, 0),
-                                mat=rng.choice(books), bevel=0.015))
-            x += thick + 0.01
-    return parts, []
-
-
-@prop("VendingMachine", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024)
-def vending_machine():
-    """A Japanese drinks machine in red: a rounded cabinet on a black plinth; behind its framed window three shelves
-    of sample cans and bottles, each with its price tag and a lit button under it; the coin slot, note reader, little
-    display and coin return to the right; the pick-up bay with its push flap below; a lit header and the side panels'
-    vents."""
-    import propkit as pk
-
-    red = pk.paint("Vend_Body", (176, 26, 34), rough=0.35, wear=14)
-    white = pk.plastic("Vend_White", (232, 230, 226))
-    dark = pk.metal("Vend_Dark", (16, 16, 18), (32, 32, 36), rough=0.5, metallic=0.2)
-    back = pk.plastic("Vend_Back", (200, 206, 214))
-    steel = pk.metal("Vend_Steel", (120, 122, 128), (170, 172, 178), rough=0.3, metallic=0.9)
-    tag = pk.plastic("Vend_Tag", (246, 244, 236))
-    ink = pk.plastic("Vend_Ink", (24, 24, 28))
-    tins = [pk.paint(f"Vend_Can{i}", c, rough=0.25, wear=6) for i, c in enumerate(
-        ((200, 30, 36), (30, 80, 170), (236, 190, 50), (40, 140, 80), (236, 236, 232), (120, 60, 30)))]
-    caps = pk.plastic("Vend_Cap", (236, 236, 232))
-    fy = -1.2  # the front
-    # The cabinet in five blocks round the window's opening (its back, the base under the window, the head over it,
-    # a jamb on the left and the coin column on the right), so the samples stand inside it, not behind its front.
-    parts = [pk.rounded("Back", (4.0, 1.85, 6.75), (0, 0.375, 3.525), red, r=0.12),
-             pk.rounded("Base", (4.0, 0.7, 2.6), (0, -0.85, 1.45), red, r=0.08),
-             pk.rounded("Head", (4.0, 0.7, 0.55), (0, -0.85, 6.625), red, r=0.08),
-             pk.rounded("Jamb", (0.2, 0.7, 3.6), (-1.9, -0.85, 4.55), red, r=0.05),
-             pk.rounded("CoinColumn", (1.0, 0.7, 3.6), (1.5, -0.85, 4.55), red, r=0.05),
-             pk.rounded("Plinth", (3.9, 2.4, 0.3), (0, 0.05, 0.15), dark, r=0.04),
-             mk.box("WinBack", (2.8, 0.04, 3.6), (-0.4, -0.57, 4.55), mat=back)]
-    parts += pk.frame("WinFrame", 2.95, 3.7, 0.1, 0.12, (-0.4, fy - 0.02, 4.55), steel)
-    # Three shelves of samples, cans and bottles by turns, a price tag and a button under each.
-    for row in range(3):
-        z = 3.0 + row * 1.12
-        parts.append(mk.box("Shelf", (2.8, 0.6, 0.05), (-0.4, -0.85, z), mat=white))
-        for col in range(5):
-            x = -1.55 + col * 0.58
-            mat = tins[(row * 5 + col) % len(tins)]
-            if (row + col) % 2:
-                parts += pk.bottle("Bottle", x, -0.85, z + 0.025, mat, caps, r=0.16, h=0.78)
-            else:
-                parts += pk.can("Can", x, -0.85, z + 0.025, mat, steel, r=0.16, h=0.56)
-            parts.append(mk.box("Tag", (0.4, 0.04, 0.13), (x, fy + 0.03, z - 0.03), mat=tag))
-            parts += pk.label("Price", "130", 0.08, (x, fy + 0.005, z - 0.03), ink)
-    # The coin side: the slot, the note reader, the display, the return lever and its cup.
-    parts += [pk.rounded("CoinPlate", (0.62, 0.08, 0.9), (1.55, fy - 0.03, 4.4), steel, r=0.03),
-              mk.box("CoinSlot", (0.06, 0.06, 0.3), (1.55, fy - 0.08, 4.55), mat=dark),
-              pk.rounded("NoteReader", (0.62, 0.12, 0.5), (1.55, fy - 0.04, 3.7), dark, r=0.04),
-              mk.box("NoteSlot", (0.46, 0.06, 0.03), (1.55, fy - 0.11, 3.8), mat=steel),
-              mk.box("Lever", (0.12, 0.12, 0.34), (1.55, fy - 0.1, 3.15), rot=(0, 20, 0), mat=steel),
-              pk.rounded("ReturnCup", (0.5, 0.2, 0.32), (1.55, fy - 0.06, 2.6), dark, r=0.05),
-              # the bay: a dark mouth across the bottom, its flap pushed in a little, PUSH on it
-              mk.box("BayMouth", (2.9, 0.12, 0.95), (-0.25, fy + 0.02, 1.15), mat=dark),
-              pk.rounded("Flap", (2.7, 0.06, 0.8), (-0.25, fy - 0.02, 1.15), white, r=0.02, rot=(-8, 0, 0)),
-              pk.rounded("Kick", (3.9, 0.12, 0.35), (0, fy - 0.01, 0.48), dark, r=0.03)]
-    parts += pk.label("Push", "PUSH", 0.13, (-0.25, fy - 0.08, 1.25), ink)
-    parts += pk.label("Cold", "つめた〜い", 0.16, (-0.4, fy - 0.03, 2.62), pk.plastic("Vend_Blue", (30, 90, 200)))
-    for sx in (-1, 1):
-        for k in range(6):
-            parts.append(mk.box("Vent", (0.04, 1.4, 0.06), (sx * 2.0, 0.2, 0.9 + k * 0.16), mat=dark))
-    glows = [pk.rounded("Header", (3.7, 0.08, 0.4), (0, fy - 0.03, 6.63), pk.glow("Vend_Glow", (226, 240, 255), 3), r=0.04),
-             mk.box("Display", (0.42, 0.04, 0.16), (1.55, fy - 0.08, 4.12), mat=pk.glow("Vend_Digits", (90, 255, 140), 4))]
-    for row in range(3):
-        for col in range(5):
-            glows.append(mk.box("Button", (0.2, 0.06, 0.07), (-1.55 + col * 0.58, fy + 0.03, 3.0 + row * 1.12 - 0.12),
-                                mat=pk.glow("Vend_Button", (120, 200, 255), 3)))
-    parts += pk.label("Brand", "DRINK", 0.26, (0, fy - 0.08, 6.63), ink)
-    return parts, glows
-
-
 @prop("ServerRack", pivot="bottom", material="Metal", collide=True, texture=512)
 def server_rack():
     frame = mk.noisy("Rack_Frame", srgb(20, 22, 26), srgb(40, 42, 48), scale=14, roughness=0.4, metallic=0.8)
@@ -610,7 +456,7 @@ def server_rack():
     return parts, glow
 
 
-@prop("Sofa", pivot="bottom", material="Leather", collide=True, texture=1024)
+@prop("Sofa", pivot="bottom", material="Leather", collide=True, texture=512, exact=True, normal=128)
 def sofa():
     leather = mk.noisy("Sofa_Leather", *LEATHER_RED, scale=8, roughness=0.45)
     wood = dark_wood("Sofa_Wood")
@@ -641,18 +487,4 @@ def table():
         for y in (-1.2, 1.2):
             parts.append(mk.lathe("Leg", [(0.0, 0.0), (0.12, 0.0), (0.16, 0.3), (0.1, 0.8), (0.15, 1.4),
                                           (0.12, 2.0), (0.14, 2.3), (0.0, 2.3)], (x, y, 0), mat=wood, segments=12))
-    return parts, []
-
-
-@prop("Chair", pivot="bottom", material="Wood", collide=True, texture=512)
-def chair():
-    wood = dark_wood("WChair_Wood")
-    seat = mk.noisy("WChair_Seat", *LEATHER_RED, scale=10, roughness=0.5)
-    parts = [mk.box("Seat", (1.8, 1.8, 0.25), (0, 0, 1.62), mat=seat, bevel=0.08)]
-    for x in (-0.75, 0.75):
-        for y in (-0.75, 0.75):
-            tall = 3.9 if y > 0 else 1.5
-            parts.append(mk.box("Leg", (0.16, 0.16, tall), (x, y, tall / 2), mat=wood, bevel=0.03))
-    for z in (2.4, 3.0, 3.6):
-        parts.append(mk.box("Rail", (1.5, 0.1, 0.25), (0, 0.75, z), mat=wood, bevel=0.03))
     return parts, []

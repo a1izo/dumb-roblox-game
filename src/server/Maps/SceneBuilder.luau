@@ -837,8 +837,9 @@ local SOLID: { [string]: { box: number?, pole: number?, top: number?, walls: { {
 }
 
 local function solidFor(b, folder: Instance, p)
-	local want = SOLID[p[1]]
 	local info = Catalog[p[1]]
+	-- (a map's own model has the solid of the prop it stands for)
+	local want = SOLID[p[1]] or (info and info.base and SOLID[info.base])
 	if not want or not info or info.collide then
 		return
 	end
