@@ -32,6 +32,7 @@ from mathutils.kdtree import KDTree
 
 from maps import matlib
 from maps import ownprops
+from maps.catalog import is_terrain
 
 ZFIGHT_GAP = 0.02  # faces closer than this (studs) along their normal draw on top of each other
 ZFIGHT_AREA = 0.1  # square studs of overlap worth a look
@@ -76,11 +77,13 @@ class Tris:
         self.verts, self.polys, self.mats, self.pieces = [], [], [], []
         self.uvs = []
         self.src = []  # per piece: the script line that made it (when the scene was traced)
+        self.ground = []  # per piece: a height field (mesher.Scene.mesh's ground)
         sources = getattr(scene, "piece_src", {})
         pid = 0
         for mat, pieces in sorted(scene.pieces.items()):
             for piece in pieces:
                 self.src.append(sources.get(id(piece), ""))
+                self.ground.append(getattr(piece, "ground", False))
                 base = len(self.verts)
                 self.verts.extend(Vector(v) for v in piece.verts)
                 for face, uv in zip(piece.faces, piece.uvs):
@@ -342,7 +345,7 @@ def rest(scene, tris, catalog):
     down = Vector((0, -1, 0))
     for index, (key, x, y, z, rot, sc, *_) in enumerate(scene.props):
         box = boxes[index]
-        if box is None or ownprops.BASE.get(key, key) in HANGING:
+        if box is None or ownprops.BASE.get(key, key) in HANGING or is_terrain(key):
             continue
         cx, base, cz, sx, sy, sz, r = box
         src = scene.prop_src[index] if index < len(scene.prop_src) else ""
@@ -635,8 +638,8 @@ def oneside(tris, eyes):
     found = {}
     for i in range(len(tris.polys)):
         mat = tris.mats[i]
-        if see_through(mat):
-            continue
+        if see_through(mat) or tris.ground[tris.pieces[i]]:
+            continue  # (a height field's faces all look up: what hides one from an eye is a prop, which is not here)
         a, b, c = tris.tri(i)
         n = (b - a).cross(c - a)
         area = n.length / 2

@@ -28,7 +28,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
-VERSION = {"ModelsCore": 34, "ModelsTokyo": 22, "ModelsAgency": 17, "ModelsCampus": 16, "ModelsLobby": 15,
+VERSION = {"ModelsCore": 34, "ModelsTokyo": 22, "ModelsAgency": 17, "ModelsCampus": 16, "ModelsLobby": 16,
            "ModelsMeeting": 6, "ModelsFx": 2}
 
 VERSIONS_LUAU = os.path.join(common.ROOT, "src", "shared", "ImportVersions.luau")
@@ -168,7 +168,8 @@ def mesh_digest(scene, carried=()):
         for p in pieces:
             for x, y, z in p.verts:
                 corners.update(b"%.3f,%.3f,%.3f;" % (x, y, z))
-        h.update(f"{mat}:{tris}:{corners.hexdigest()}:{matlib.tile_size(mat)};".encode())
+        smooth = sum(len(p.faces) for p in pieces if getattr(p, "smooth", False))
+        h.update(f"{mat}:{tris}:{corners.hexdigest()}:{matlib.tile_size(mat)}{f':s{smooth}' if smooth else ''};".encode())
     h.update(f"chunk:{scene.chunk};prefix:{scene.prefix};surfaces:{scanlib.REVISION}".encode())
     for name in carried:
         path = os.path.join(common.TEXTURES, name + ".png")

@@ -537,6 +537,12 @@ LIBRARY = {
     "Ash": surface("moon_01", (112, 112, 116), 22, "ground", 2, True, keep=0.3, quiet=True, seed=50),
     "AshCracked": surface("dry_mud_field_001", (98, 97, 96), 21, "ground", 2, True, keep=0.2, contrast=1.2, seed=51),
     "RockGrey": surface("Rock050", (70, 70, 74), 14, "wall", 2, True, keep=0.3, seed=52),
+    # The lobby's own ash and crust since its remake (2026-11-03): a tone darker than the ash the cutscene sets share,
+    # so the realm's pale fire and the paving read against it, and the crusts darker again.
+    "RealmAsh": surface("moon_01", (96, 96, 100), 22, "ground", 2, True, keep=0.35, quiet=True, seed=150),
+    "RealmCrust": surface("dry_mud_field_001", (70, 69, 68), 18, "ground", 2, True, keep=0.25, contrast=1.3, seed=151),
+    # The title monolith's black stone (a rock face's grain, graded near black).
+    "Basalt": surface("rock_face_03", (40, 40, 44), 12, "wall", 2, True, keep=0.35, seed=152),
     "RuinFlag": surface("monastery_stone_floor", (90, 90, 94), 12, "floor", 2, keep=0.3, seed=53),
     "RuinStone": surface("medieval_blocks_03", (78, 78, 82), 14, "wall", 2, keep=0.3, seed=54, normal="height"),
     "BoneWhite": surface("white_plaster_02", (168, 162, 146), 4, "wall", 1, True, keep=0.3, rough=0.55, seed=81),

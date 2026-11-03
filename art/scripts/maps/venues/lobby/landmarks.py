@@ -15,6 +15,7 @@ from maps import geo2d as g2
 from maps.city import Frame
 from maps.mesher import add, cross, dot, norm, scale, sub
 from maps.venues.lobby import plan as P
+from maps.venues.lobby import terrain
 from maps.venues.lobby.terrain import blade, boulder, column, needle_field, rock
 
 PALE = (170, 196, 232)
@@ -76,9 +77,7 @@ def plaza(s, g):
     rng = random.Random(33)
     for k, (x, z) in enumerate(P.ready_stones()):
         h = P.READY_H
-        lean = rng.uniform(-0.06, 0.06)
-        s.lathe("RuinStone", (x, 0.0, z), [(0.95, 0.0), (0.82, 0.3), (0.72 + lean, h - 0.3), (0.86, h - 0.12), (0.8, h)],
-                8, caps=(False, True))
+        s.prop("CandleStone", x, z, rng.uniform(0, 360), 1.0)
         s.collider((x, h / 2, z), (1.5, h, 1.5), 22.5, True, "RuinStone")
         s.anchor(f"ready{k + 1}", x, h, z, P.rot_towards((x, z), P.PLAZA_C))
     pool(s, px, 7.0, pz, 30, 0.9)
@@ -87,161 +86,35 @@ def plaza(s, g):
 # The monolith and the throne -------------------------------------------------------------------------
 
 
-# (the black stone the lobby already loads, the title panel's: a new texture would put the lobby over its budget)
-STONE = "BlackTrim"
-
-
-def _tri(s, mat, a, b, c, inside):
-    """One triangle of a solid, wound to face away from `inside`."""
-    n = cross(sub(b, a), sub(c, a))
-    mid = scale(add(add(a, b), c), 1 / 3)
-    if dot(n, sub(mid, inside)) < 0:
-        b, c = c, b
-    s.polygon(mat, [a, b, c])
-
-
-def _crack(s, rng, start, steps, step, face_z, stop=None):
-    """A crack down the face from `start` (x, y), jagged, a faint red light in it (each piece a thin strip just
-    proud of the face); it ends after `steps` pieces, at the face's foot, or where `stop(x, y)` says."""
-    x, y = start
-    heading = -math.pi / 2 + rng.uniform(-0.5, 0.5)
-    for _ in range(steps):
-        heading = max(-math.pi + 0.35, min(-0.35, heading + rng.uniform(-0.7, 0.7)))
-        length = rng.uniform(0.8, 2.2)
-        nx, ny = x + math.cos(heading) * length, y + math.sin(heading) * length
-        if ny < 1.4 or (stop and stop(nx, ny)):
-            break
-        ux = ((nx - x) / length, (ny - y) / length, 0.0)
-        s.obox("NeonRed", ((x + nx) / 2, (y + ny) / 2, face_z + 0.012), (length + 0.05, 0.045, 0.03), ux,
-               (-ux[1], ux[0], 0.0), (0.0, 0.0, 1.0), skip=("-z", "+x", "-x", "+y", "-y"))
-        # (now and then it forks: a short branch off to one side)
-        if rng.random() < 0.18:
-            _crack(s, rng, (nx, ny), rng.randint(2, 4), step, face_z, stop)
-        x, y = nx, ny
-
-
-def _chain(s, a, b, sag, link=0.9):
-    """A heavy iron chain hung from a to b (points on the face), sagging `sag` studs at its middle: links laid
-    along the curve, each turned a quarter round from the one before; an iron bolt and ring at each end."""
-    span = math.dist(a, b)
-    count = max(4, int(span / (link * 0.78)))
-    pts = []
-    for k in range(count + 1):
-        u = k / count
-        pts.append((a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u - sag * 4 * u * (1 - u), a[2] + (b[2] - a[2]) * u))
-    for k in range(count):
-        p, q = pts[k], pts[k + 1]
-        along = norm(sub(q, p))
-        out = (0.0, 0.0, 1.0)
-        side = norm(cross(out, along))
-        up, flat = (side, out) if k % 2 == 0 else (out, side)
-        mid = scale(add(p, q), 0.5)
-        s.obox("BlackMetal", add(mid, (0.0, 0.0, 0.25)), (link, 0.42, 0.14), along, up, flat, skip=("-z",))
-    for end in (a, b):
-        s.box("BlackMetal", (end[0], end[1], end[2] + 0.15), (0.7, 0.7, 0.3))
-        s.box("DarkMetal", (end[0], end[1] - 0.2, end[2] + 0.35), (0.5, 0.2, 0.2))
-
-
 def monolith(s):
-    """The title monolith (the user's call of 2026-10-27: tall, cracked and black; no eyes, no tusks). A black stone
-    face with the title's dark panel in its carved frame, its shoulders broken, rising into a tapering spire snapped
-    off near the top; faint red light in the cracks that run down it, heavy chains hung across its face from iron
-    bolts, candles along its foot. (The title's letters are pinned paper, on the panel: World/TitleCards.)"""
+    """The title monolith (asked 2026-10-27: tall, cracked and black; no eyes, no tusks): the Lobby set's TitleMonolith
+    (props_monolith.py), a slab of black basalt on three courses of rough-hewn blocks with its spire broken off near
+    the top, its face at MONO_FACE, facing the spawn. Here: what is solid of it, the braziers on its lowest step and
+    candles burning along the next, the names scratched into its face, and the anchors the game writes the title and
+    the tagline at (on the moulding's panel; the title's letters are pinned paper: World/TitleCards)."""
     x, z, w, t, h = P.MONO
     rng = random.Random(61)
     face = z + t / 2
-    # The plinth, two steps.
-    s.box("RuinStone", (x, 0.4, z), (w + 6.0, 0.8, t + 5.0), collide=True)
-    s.box("RuinStone", (x, 1.0, z), (w + 2.0, 0.4, t + 2.0), skip=("-y",))
-    body = h - 6.0
-    s.box(STONE, (x, 1.2 + (body - 1.2) / 2, z), (w, body - 1.2, t), skip=("-y",))
-    # The shoulders: the face's top in blocks of different heights, its corners snapped off.
-    cols = 9
-    for k in range(cols):
-        cw = w / cols
-        cx = x - w / 2 + cw * (k + 0.5)
-        drop = 5.0 if k in (0, cols - 1) else 2.5 if k in (1, cols - 2) else 0.0
-        top = h - drop - rng.uniform(0, 1.6)
-        back = rng.uniform(0, 0.3)
-        s.box(STONE, (cx, (body + top) / 2, z - back), (cw + 0.02, top - body + 0.02, t - 2 * back - rng.uniform(0, 0.6)),
-              skip=("-y",))
-    s.collider((x, h / 2, z), (w, h, t), 0.0, True, None)
-    # The spire: a smooth taper in three sections, each knocked a little askew where it cracked through, rising out
-    # of the shoulders (sunk into them, so no sky shows between) to a point snapped off across.
-    sections = [  # bottom (width, thickness), top (width, thickness), height, sideways shift, turn (degrees)
-        ((32.0, 5.6), (25.0, 4.8), 18.0, 0.0, 0.0),
-        ((24.6, 4.7), (18.0, 4.0), 11.0, 0.45, 1.6),
-        ((17.6, 3.9), (12.0, 3.2), 9.0, -0.3, -2.2),
-    ]
-    y = body
-    top_rim = None
-    for (bw, bt), (tw, tt), sh, shift, turn in sections:
-        a = math.radians(turn)
-        ca, sa = math.cos(a), math.sin(a)
-
-        def corner(hw, ht, yy, cx=x + shift, ca=ca, sa=sa):
-            return [(cx + px * ca - pz * sa, yy, z + px * sa + pz * ca) for px, pz in
-                    ((-hw, -ht), (hw, -ht), (hw, ht), (-hw, ht))]
-
-        low, high = corner(bw / 2, bt / 2, y), corner(tw / 2, tt / 2, y + sh)
-        inside = (x + shift, y + sh / 2, z)
-        for k in range(4):
-            q0, q1 = low[k], low[(k + 1) % 4]
-            r0, r1 = high[k], high[(k + 1) % 4]
-            _tri(s, STONE, q0, q1, r1, inside)
-            _tri(s, STONE, q0, r1, r0, inside)
-        top_rim = high
-        y += sh + 0.25
-    rim = top_rim
-    y = rim[0][1]
-    stump = [(x - 2.0, y + 5.4, z - 0.9), (x + 1.4, y + 4.3, z - 0.9), (x + 1.4, y + 4.3, z + 0.9), (x - 2.0, y + 5.4, z + 0.9)]
-    inside = (x, y + 2.0, z)
-    for k in range(4):
-        a, b, c, d = rim[k], rim[(k + 1) % 4], stump[(k + 1) % 4], stump[k]
-        _tri(s, STONE, a, b, c, inside)
-        _tri(s, STONE, a, c, d, inside)
-    _tri(s, STONE, stump[0], stump[1], stump[2], inside)
-    _tri(s, STONE, stump[0], stump[2], stump[3], inside)
-    # (the two cracks between the sections glow faintly along the front)
-    for seam_y, seam_w in ((body + 18.0 + 0.12, 24.8), (body + 18.0 + 0.25 + 11.0 + 0.12, 17.8)):
-        sx = x - seam_w / 2
-        while sx < x + seam_w / 2 - 0.5:
-            length = rng.uniform(0.9, 2.0)
-            dy = rng.uniform(-0.12, 0.12)
-            front = z + 2.45 if seam_w > 20 else z + 2.05
-            s.obox("NeonRed", (sx + length / 2, seam_y + dy, front), (length, 0.045, 0.04), (1.0, 0.0, 0.0),
-                   (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), skip=("-z", "+x", "-x", "+y", "-y"))
-            sx += length + rng.uniform(0.0, 0.8)
-    # The carved frame round the title and the tagline (the game writes them on the dark panel), bone at its corners.
-    fz = P.MONO_FACE + 0.3
-    py, ph = P.PANEL
-    for fx in (-23.4, 23.4):
-        s.box("RuinStone", (x + fx, py, fz), (1.2, ph + 0.4, 0.6))
-        s.box("BoneOld", (x + fx, py + ph / 2 + 1.15, fz + 0.1), (2.0, 1.2, 0.8))
-    for fy in (py - ph / 2 - 0.45, py + ph / 2 + 0.45):
-        s.box("RuinStone", (x, fy, fz), (48.0, 0.9, 0.6))
-    s.box("BlackTrim", (x, py, P.MONO_FACE + 0.05), (46.0, ph, 0.1))
-    # The cracks: down from the broken shoulders past the frame, up the spire, and out from under the panel.
-    panel_lo, panel_hi = py - ph / 2 - 1.2, py + ph / 2 + 1.2
-
-    def off_panel(cx, cy):
-        return abs(cx - x) < 24.6 and panel_lo < cy < panel_hi
-
-    for sx, sy, steps in ((x - 22.0, h - 5.5, 14), (x + 17.0, h - 2.0, 16), (x - 6.0, h - 0.5, 6), (x + 25.0, h - 6.0, 18),
-                          (x - 25.2, 12.0, 8), (x + 9.0, panel_lo - 0.2, 7), (x - 12.0, panel_lo - 0.2, 6)):
-        _crack(s, rng, (sx, sy), steps, 1.6, face, off_panel)
-    # Chains hung across the face below the panel, from iron bolts.
-    cy = panel_lo - 1.0
-    _chain(s, (x - 25.0, cy, face), (x - 7.0, cy - 0.6, face), 3.2)
-    _chain(s, (x + 7.0, cy - 0.6, face), (x + 25.0, cy, face), 3.2)
+    s.prop("TitleMonolith", x, z, 180.0, 1.0, 0.0)
+    # What is solid: the plinth's three courses (people climb onto them), the slab and its shoulders.
+    rise = 0.0
+    for cw, cd, cr in MONO_PLINTH:
+        s.collider((x, rise + cr / 2, z), (cw - 0.2, cr, cd - 0.2), 0.0, True, "RockGrey")
+        rise += cr
+    s.collider((x, (rise + h) / 2, z), (w, h - rise, t), 0.0, True, None)
+    # Braziers flanking its foot, candles burning in the ash along the foot of its plinth.
+    front = MONO_PLINTH[0][1] / 2 - t / 2  # (how far the plinth's lowest course stands out in front of the face)
     for side in (-1, 1):
-        s.prop("BoneBrazier", x + side * 21.0, P.MONO_FACE + 5.5, side * 30.0)
-    # Candles burning along its foot, on the plinth's step.
+        s.prop("BoneBrazier", x + side * 21.0, face + front + 2.6, side * 30.0, 1.0)
     for k, cx in enumerate((-26.5, -17.5, -10.0, 10.0, 17.5, 26.5)):
-        s.prop("CandleCluster", x + cx, face + 1.6, rng.uniform(0, 360), 0.9 if k % 2 else 1.0, 0.8)
-    scratches.overlay(s, (x - w / 2 + 0.6, P.MONO_FACE), (x + w / 2 - 0.6, P.MONO_FACE), 1.2, 13.8, (0.0, 1.0))
+        s.prop("CandleCluster", x + cx, face + front + 1.0, rng.uniform(0, 360), 0.9 if k % 2 else 1.0)
+    scratches.overlay(s, (x - w / 2 + 2.2, face - 0.02), (x + w / 2 - 2.2, face - 0.02), 3.6, 13.0, (0.0, 1.0))
     s.anchor("title", *P.TITLE[:3], P.TITLE[3], w=P.TITLE[4], h=P.TITLE[5])
     s.anchor("tagline", *P.TAGLINE[:3], P.TAGLINE[3], w=P.TAGLINE[4], h=P.TAGLINE[5])
+
+
+# The monolith's plinth (props_monolith.PLINTH): each course's width, depth and rise.
+MONO_PLINTH = [(62.0, 13.0, 1.1), (58.0, 10.0, 0.9), (54.6, 7.5, 0.9)]
 
 
 # The throne prop's own measures (props_lobby.bone_throne): its seat's top over its foot, the seat's middle in
@@ -341,6 +214,8 @@ def old_mesa(s):
     """The mesa the throne stood on (nobody climbs it): a chess king lies fallen across its top, the skull piles
     left round it."""
     x, z, r, h = P.OLD_MESA
+    key, sc = terrain.fit(terrain.MESAS + ("RealmSlab",), r, h, 91)
+    h = terrain.top_of(key, sc)  # (the kit mesa's own top, terrain.outcrops)
     kx, kz, krot, ks = P.FALLEN_KING
     s.prop("ChessKingFallen", kx, kz, krot, ks, h)
     f = Frame(kx, kz, krot)
@@ -353,34 +228,19 @@ def old_mesa(s):
 
 
 def steles(s):
-    """The stone a board is written on (one is left: Most Wins, low, at the foot of the throne's mesa)."""
+    """The stone a board is written on (one is left: Most Wins, beside the throne): the Lobby set's WinsStele
+    (props_academy.py), its slate where the game draws the board; solid, a candle cluster at its foot and a pale light
+    to read it by."""
     rng = random.Random(83)
     for name, (x, z, rot, bw, bh, board_y) in P.STELES.items():
         f = Frame(x, z, rot)
-        sw, sh, t = bw + 4.0, board_y + bh / 2 + 4.0, P.STELE_T
-        s.box("RuinStone", (x, 0.35, z), (sw + 2.4, 0.7, t + 2.4), rot, collide=True)
-        body = sh - 3.5
-        s.box("RuinStone", (x, 0.7 + body / 2, z), (sw, body, t), rot, collide=True, skip=("-y",))
-        # A broken top edge (set back a little from the face).
-        cols = 4
-        for k in range(cols):
-            lx = -sw / 2 + sw * (k + 0.5) / cols
-            top = sh + rng.uniform(-1.2, 0.6) - (0.8 if k in (0, cols - 1) else 0.0)
-            cx, cy, cz = f.w3(lx, 0.0, rng.uniform(0.0, 0.15))
-            s.box("RuinStone", (cx, (body + 0.7 + top) / 2, cz), (sw / cols + 0.02, top - body - 0.7 + 0.02, t - 0.3),
-                  rot, skip=("-y",))
-        # The carved frame round the board, a bone ornament over it.
-        fz = -t / 2 - 0.2
-        for lx in (-bw / 2 - 0.7, bw / 2 + 0.7):
-            s.box("RuinStone", f.w3(lx, board_y, fz), (0.9, bh + 2.3, 0.5), rot)
-        for ly in (board_y - bh / 2 - 0.7, board_y + bh / 2 + 0.7):
-            s.box("RuinStone", f.w3(0.0, ly, fz), (bw + 2.3, 0.9, 0.5), rot)
-        s.box("BlackTrim", f.w3(0.0, board_y, -t / 2 - 0.03), (bw + 0.6, bh + 0.6, 0.06), rot)
-        s.box("BoneOld", f.w3(0.0, board_y + bh / 2 + 1.7, fz), (3.0, 0.9, 0.6), rot)
+        t = P.STELE_T
+        s.prop("WinsStele", x, z, rot, 1.0)
+        s.collider((x, 0.6, z), (16.4, 1.2, 4.4), rot, True, "RuinStone")
+        s.collider((x, 8.2, z), (14.0, 14.4, t), rot, True, None)
         bx, by, bz = f.w3(0.0, board_y, -t / 2 - 0.17)
         s.anchor(name, bx, by, bz, rot, w=bw, h=bh)
-        # A candle cluster at its foot, and a pale light for reading it by.
-        cx, cz = f.w(bw / 2 - 1.0, -t / 2 - 2.2)
+        cx, cz = f.w(-(bw / 2 + 0.6), -t / 2 - 3.0)  # (on its side away from the throne and its braziers)
         s.prop("CandleCluster", cx, cz, rng.uniform(0, 360), 0.9, 0.0)
         lx, ly, lz = f.w3(0.0, board_y + 3.0, -t / 2 - 6.0)
         pool(s, lx, ly, lz)
@@ -390,19 +250,10 @@ def steles(s):
 
 
 def base(s, x, z, r, h, seed):
-    """A low round base of old stone, its edge worn, flagged on top; solid (people step up onto it)."""
-    rng = random.Random(seed)
-    n = 18
-    s.lathe("RuinStone", (x, 0.0, z), [(r + 0.6, 0.0), (r + 0.45, h * 0.45), (r, h * 0.5), (r, h)], n, caps=(False, False))
-    city.up_face(s, "RuinFlag", P.circle((x, z), r, n), h)
-    # A darker ring inlaid near its edge, worn through in places.
-    for k in range(n):
-        if rng.random() < 0.25:
-            continue
-        a0, a1 = math.tau * k / n, math.tau * (k + 1) / n
-        pts = [(x + math.cos(a) * rr, z + math.sin(a) * rr) for a, rr in ((a0, r - 1.3), (a1, r - 1.3), (a1, r - 0.6),
-                                                                         (a0, r - 0.6))]
-        s.polygon("RuinStone", [(px, h + 0.05, pz) for px, pz in reversed(g2.ccw(pts))])
+    """A low round base of old stone, flagged on top, solid (people step up onto it): the Lobby set's TableauBase
+    (props_academy.py, made 6 across its top and 0.7 high), scaled to r."""
+    sc = (r + 0.6) / 6.6
+    s.prop("TableauBase", x, z, (seed * 37) % 360, round(sc, 3))
     # Two boxes turned against each other stand in for the disc.
     side = r * 1.6
     for rot in (0.0, 45.0):
@@ -435,7 +286,8 @@ def bell(s):
             lx = side * (2.9 + 1.5 * math.sin(u * math.pi) - 3.6 * u * u)
             points.append(f.w3(lx, 0.3 + (top - 0.3) * u, side * 0.35 * u))
             radii.append(0.62 * (1 - u * 0.72))
-        s.bent_tube("BoneWhite", points, radii, 8, caps=(False, True))  # (its foot in the base)
+        with s.smooth():
+            s.bent_tube("BoneWhite", points, radii, 8, caps=(False, True))  # (its foot in the base)
         fx, fz = f.w(side * 2.9, 0.0)
         s.collider((fx, 3.6, fz), (1.5, 7.2, 1.5), rot, True, "BoneWhite")
     # The yoke it hangs from, lashed where the tusks cross; the bell; its clapper.
@@ -513,6 +365,9 @@ def academy(s, g):
     for k, (x, z, rot) in enumerate(P.altars()):
         s.anchor(f"drill{k + 1}", x, 0.0, z, rot)
         s.preview_prop("PracticeAltar", x, z, rot)
+        # (the stele the game stands behind it, Lobby.luau drillDesk: 2.6 back from the altar's middle)
+        bx, bz = P.facing(rot)
+        s.preview_prop("PracticeTablet", x - bx * 2.6, z - bz * 2.6, rot)
     for k, (x, z, rot) in enumerate(P.effigies()):
         s.anchor(f"dummy{k + 1}", x, 0.0, z, rot)
         s.preview_prop("Puppet", x, z, rot)
@@ -625,20 +480,24 @@ def carcass(s):
         dx, dy, dz = nxt[0] - prv[0], nxt[1] - prv[1], nxt[2] - prv[2]
         n = math.sqrt(dx * dx + dy * dy + dz * dz) or 1.0
         ax, ay, az = dx / n, dy / n, dz / n
-        # the vertebra's body, a drum lying along the spine, and the disc on to the next
-        s.tube("BoneOld", (px - ax * 1.5, py - ay * 1.5, pz - az * 1.5), (px + ax * 1.5, py + ay * 1.5, pz + az * 1.5),
-               2.0, 10, radius_b=1.9)
+        # the vertebra's body, a drum lying along the spine, and the disc on to the next (each bone shaded smooth)
+        with s.smooth():
+            s.tube("BoneOld", (px - ax * 1.5, py - ay * 1.5, pz - az * 1.5),
+                   (px + ax * 1.5, py + ay * 1.5, pz + az * 1.5), 2.0, 10, radius_b=1.9)
         if k + 1 < len(points):
-            s.tube("BoneWhite", (px + ax * 1.4, py + ay * 1.4, pz + az * 1.4),
-                   (nxt[0] - ax * 1.4, nxt[1] - ay * 1.4, nxt[2] - az * 1.4), 1.55, 10)
+            with s.smooth():
+                s.tube("BoneWhite", (px + ax * 1.4, py + ay * 1.4, pz + az * 1.4),
+                       (nxt[0] - ax * 1.4, nxt[1] - ay * 1.4, nxt[2] - az * 1.4), 1.55, 10)
         # its spine up and back, and a process out to each side
-        s.tube("BoneOld", (px, py + 1.4, pz), (px - ax * 1.0, py + 4.2, pz - az * 1.0), 0.75, 7, radius_b=0.25)
+        with s.smooth():
+            s.tube("BoneOld", (px, py + 1.4, pz), (px - ax * 1.0, py + 4.2, pz - az * 1.0), 0.75, 7, radius_b=0.25)
         side = (-az, ax)
         sn = math.hypot(*side) or 1.0
         side = (side[0] / sn, side[1] / sn)
         for sgn in (-1, 1):
-            s.tube("BoneOld", (px, py - 0.2, pz), (px + side[0] * sgn * 2.8, py - 0.5, pz + side[1] * sgn * 2.8), 0.85, 7,
-                   radius_b=0.65)
+            with s.smooth():
+                s.tube("BoneOld", (px, py - 0.2, pz), (px + side[0] * sgn * 2.8, py - 0.5, pz + side[1] * sgn * 2.8),
+                       0.85, 7, radius_b=0.65)
         if not ribbed:
             continue
         # the ribs: from the process's end out and down to a foot in the ash either side
@@ -653,7 +512,8 @@ def carcass(s):
                 height = (py - 0.5) * math.cos(ang) + 1.8 * math.sin(ang * 2) - 0.6 * math.sin(ang)
                 rib.append((px + side[0] * sgn * reach, height, pz + side[1] * sgn * reach))
                 radii.append(0.9 - 0.3 * u)
-            s.bent_tube("BoneWhite", rib, radii, 7, caps=(False, False))  # (from inside the process into the ash)
+            with s.smooth():
+                s.bent_tube("BoneWhite", rib, radii, 7, caps=(False, False))  # (from inside the process into the ash)
             fx, fz = px + side[0] * sgn * P.RIB_SPAN, pz + side[1] * sgn * P.RIB_SPAN
             s.collider((fx, 3.5, fz), (2.6, 7.0, 2.6), 0.0, True, "BoneWhite")
     # Bones strewn inside the cage, between the ribs' feet (clear of them).

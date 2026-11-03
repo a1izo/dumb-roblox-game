@@ -347,8 +347,13 @@ def load_props():
 def place_props(scene, coll):
     library = load_props()
     placed = []
+    # (a prop's pieces come with it: a tiled prop's other surfaces, a book's boards)
+    pieces = {}
+    for name, obj in library.items():
+        if obj.get("dg_part"):
+            pieces.setdefault(obj["dg_part"], []).append(name)
     for key, x, y, z, rot, sc, *_ in scene.props + scene.preview_props:
-        for name in [key] + [k for k in library if k.startswith(key + "_Glow")]:
+        for name in [key] + [k for k in library if k.startswith(key + "_Glow")] + pieces.get(key, []):
             src = library.get(name)
             if not src:
                 continue

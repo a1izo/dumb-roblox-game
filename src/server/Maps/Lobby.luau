@@ -39,6 +39,10 @@ local STONE = Color3.fromRGB(58, 58, 62)
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number? }
 
 local STONE_TOP = 0.6 -- the low stone each practice figure stands (or hangs) over
+-- The stele behind a practice altar (art/scripts/props_academy.py PracticeTablet): how far behind the altar's middle
+-- its body's middle stands, and where its slate's face is from there (toward the altar).
+local STELE_BACK = 2.6
+local STELE_SLATE = -0.6 -- (the writing stands 0.02 in front of it: the plaque is 0.04 thick)
 local HAND_HEIGHT = 22 -- how high over the figures' ground the hand's fingertips are
 
 -- The practice dummies' aliases and real names (names from the real name pools).
@@ -120,9 +124,22 @@ local function drillDesk(b, drill, a: Anchor)
 	desk:SetAttribute("Drill", id)
 	desk:SetAttribute("DrillTitle", title)
 	desk:AddTag("LTraining")
+	-- The stele behind it: a plain slab (its collision) dressed with the Blender stele once it is imported, the
+	-- drill's name written on the stele's black slate; until then on a dark plaque on the slab.
 	local base = b:cf(a.x, 0, a.z, a.rot)
-	b:part(Vector3.new(6.6, 7.6, 0.7), base * CFrame.new(0, 3.8, 2.6), STONE, Enum.Material.Slate)
-	local plaque = b:part(Vector3.new(6, 1.5, 0.3), base * CFrame.new(0, 6.5, 2.1), SLATE, Enum.Material.SmoothPlastic)
+	local slab = b:part(Vector3.new(6.6, 7.6, 0.7), base * CFrame.new(0, 3.8, STELE_BACK), STONE, Enum.Material.Slate)
+	local plaque
+	if ModelLibrary.dress(slab, "PracticeTablet", CFrame.new(0, -3.8, 0)) then
+		plaque = b:part(
+			Vector3.new(6, 1.5, 0.04),
+			base * CFrame.new(0, 6.5, STELE_BACK + STELE_SLATE),
+			SLATE,
+			Enum.Material.SmoothPlastic,
+			{ Transparency = 1, CanCollide = false, CanQuery = false }
+		)
+	else
+		plaque = b:part(Vector3.new(6, 1.5, 0.3), base * CFrame.new(0, 6.5, 2.1), SLATE, Enum.Material.SmoothPlastic)
+	end
 	signText(plaque, title, GOLD, Enum.Font.SpecialElite)
 end
 

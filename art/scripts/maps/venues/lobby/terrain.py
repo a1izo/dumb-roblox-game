@@ -10,10 +10,13 @@ plateaus and causeways are in islets.py."""
 import math
 import random
 
+import realmrock
 from maps import city
 from maps import geo2d as g2
 from maps.mesher import cross, dot, ry, sub
+from maps.venues.lobby import ground as surface
 from maps.venues.lobby import plan as P
+from maps.venues.lobby import rocks
 
 
 def face(s, mat, pts, inside):
@@ -27,171 +30,100 @@ def face(s, mat, pts, inside):
     s.polygon(mat, pts)
 
 
-# A rock's foot: how high people walk, jump and stand against it, and how far its walls reach in.
-FOOT_H = 9.0
-FOOT_T = 3.0
+# The rock: every one is a shape of the realm's kit (realmrock.py), stood by rocks.py with colliders round its foot.
+# These keep the measures the venue was laid out in (a rock about r across its foot and h tall) and pick the kit
+# shape nearest those proportions, scaled between them and turned by the seed; past FAR_FROM the kit's lighter far
+# variants stand in.
+CRAGS = ("RealmCragA", "RealmCragB", "RealmCragC")
+SPIRES = ("RealmSpireA", "RealmSpireB")
+COLUMNS_KIT = ("RealmColumn", "RealmColumnB")
+BOULDERS = ("RealmBoulderA", "RealmBoulderB")
+NEEDLES = ("RealmNeedleA", "RealmNeedleB")
+MESAS = ("RealmMesa", "RealmMesaLow")
+FAR_FROM = 300.0
 
 
-def foot_walls(s, rings, y, mat, r, facing=None):
-    """Solid slabs along the outline of a rock's foot (its widest outline from the ground to 4 studs up), so
-    nobody stands inside the rock where it looks solid. facing (x, z): only the sides that face that way (a
-    ridge rock, whose back is past the wall). Small rocks need none."""
-    if r < 3.0:
-        return
-    pts = []
-    for yy in (y - 0.5, y + 2.0, y + 4.0):
-        for t in range(len(rings) - 1):
-            lo, hi = rings[t], rings[t + 1]
-            y0, y1 = lo[0][1], hi[0][1]
-            if not (min(y0, y1) <= yy <= max(y0, y1)) or abs(y1 - y0) < 1e-6:
-                continue
-            f = (yy - y0) / (y1 - y0)
-            pts += [(a[0] + (b[0] - a[0]) * f, a[2] + (b[2] - a[2]) * f) for a, b in zip(lo, hi)]
-            break
-    hull = g2.convex_hull(pts)
-    cx, cz = g2.centroid(hull)
-    t = min(FOOT_T, r * 0.5)
-    for k in range(len(hull)):
-        a, b = hull[k], hull[(k + 1) % len(hull)]
-        length = math.dist(a, b)
-        if length < 0.3:
-            continue
-        nx, nz = (b[1] - a[1]) / length, -(b[0] - a[0]) / length
-        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
-        if nx * (mx - cx) + nz * (mz - cz) < 0:
-            nx, nz = -nx, -nz
-        if facing is not None and nx * facing[0] + nz * facing[1] < -0.2:
-            continue
-        inset = 0.25 + t / 2
-        rot = math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0]))
-        s.collider((mx - nx * inset, y + FOOT_H / 2 - 0.5, mz - nz * inset), (length + 0.4, FOOT_H + 1.0, t), rot, True,
-                   mat)
+def far(key, x, z, sc=1.0, lighter=False):
+    """The kit's far variant of key for a rock standing at (x, z), when it has one and stands far enough out, is
+    small enough (a few studs across) that the full one's corners would be wasted, or is asked to be lighter (out
+    of reach behind something nearer)."""
+    variant = key + "Far"
+    small = _reach(key) * sc < 4.0
+    return variant if variant in realmrock.KIT and (math.hypot(x, z) > FAR_FROM or small or lighter) else key
+
+
+def _reach(key):
+    sx, _, sz = realmrock.size(key)
+    return max(sx, sz) / 2
+
+
+def fit(keys, r, h, seed):
+    """(kit shape, scale): of keys, one of the two whose height over width is nearest h / 2r (by seed), scaled so
+    it is about r across its foot and h tall (between the two: one scale keeps its proportions)."""
+    want = h / (2.0 * r)
+    ranked = sorted(keys, key=lambda k: abs(math.log(realmrock.size(k)[1] / (2.0 * _reach(k)) / want)))
+    pool = ranked[:2]
+    key = pool[seed % len(pool)]
+    return key, math.sqrt((r / _reach(key)) * (h / realmrock.size(key)[1]))
+
+
+def top_of(key, sc):
+    """How high over its ground a kit shape stands, scaled."""
+    return (realmrock.size(key)[1] - realmrock.KIT[key].get("sink", 1.0)) * sc
 
 
 def rock(s, x, z, r, h, seed, mat="RockGrey", y=0.0, tiers=3, sides=9, taper=0.5, lean=(0.0, 0.0), collide=True,
-         flat_top=False, squash=1.0, turn=0.0, top_mat=None, collide_h=None, facing=None):
-    """A rock: rings of jittered points stacked `tiers` high, narrowing by taper, leaning; sides
-    and a top joined between them. Sunk half a stud into the ground. With collide, a box inside
-    its foot stops people (up to collide_h), and slabs along its foot's outline keep them out of
-    it (facing: only on the sides that face that way)."""
-    rng = random.Random(seed)
-    phase = rng.uniform(0, math.tau)
-    rings = []
-    for t in range(tiers + 1):
-        u = t / tiers
-        scale_r = r * (1 - taper * u) * (0.92 + 0.16 * rng.random())
-        yy = y - 0.5 if t == 0 else y + h * u * (0.94 + 0.08 * rng.random()) if t < tiers else y + h
-        cx, cz = x + lean[0] * u * h, z + lean[1] * u * h
-        ring = []
-        for k in range(sides):
-            a = phase + turn * u + 2 * math.pi * (k + rng.uniform(-0.2, 0.2)) / sides
-            rk = scale_r * (0.78 + 0.34 * rng.random())
-            yk = yy if (t < tiers or flat_top) else yy - rng.uniform(0, h * 0.12)
-            ring.append((cx + math.cos(a) * rk, yk, cz + math.sin(a) * rk * squash))
-        rings.append(ring)
-    for t in range(tiers):
-        lo, hi = rings[t], rings[t + 1]
-        mid = (x + lean[0] * (t + 0.5) / tiers * h, y + h * (t + 0.5) / tiers, z + lean[1] * (t + 0.5) / tiers * h)
-        for k in range(sides):
-            k1 = (k + 1) % sides
-            face(s, mat, [lo[k], lo[k1], hi[k1]], mid)
-            face(s, mat, [lo[k], hi[k1], hi[k]], mid)
-    top = rings[-1]
-    tc = (sum(p[0] for p in top) / sides, max(p[1] for p in top) + (0.0 if flat_top else h * 0.04),
-          sum(p[2] for p in top) / sides)
-    below = (tc[0], tc[1] - 5.0, tc[2])
-    for k in range(sides):
-        face(s, top_mat or mat, [tc, top[k], top[(k + 1) % sides]], below)
-    if collide:
-        ch = min(h, collide_h or 60.0)
-        inner = r * 0.72
-        s.collider((x, y + ch / 2 - 0.5, z), (inner * 1.6, ch + 1.0, inner * 1.6 * squash), math.degrees(phase) % 90, True,
-                   mat)
-        foot_walls(s, rings, y, mat, r, facing)
-    return tc[1]
+         flat_top=False, squash=1.0, turn=0.0, top_mat=None, collide_h=None, facing=None, lighter=False):
+    """A rock about r across its foot and h tall, standing on ground at y: a crag of the kit (a boulder when small,
+    a mesa or a slab when its top is flat, a spire when it is tall and thin). Its walls and core keep people out
+    (collide; facing: walls only on the sides that look that way, up to collide_h). Returns its top's height. (The
+    old faceted rock's other numbers are the kit's own now.)"""
+    if flat_top:
+        keys = ("RealmSlab",) if h < 1.4 else MESAS + ("RealmSlab",)
+    elif r < 4.0 and h < 7.0:
+        keys = BOULDERS
+    elif h > r * 4.0:
+        keys = SPIRES + CRAGS
+    else:
+        keys = CRAGS
+    key, sc = fit(keys, r, h, seed)
+    key = far(key, x, z, sc, lighter)
+    rot = random.Random(seed).uniform(0, 360)
+    rocks.rock(s, key, x, z, rot, sc, y, collide=collide, core_h=collide_h or 60.0, facing=facing)
+    return y + top_of(key, sc)
 
 
-def spire(s, x, z, r, h, seed, y=0.0, collide=False):
-    """A tall thin rock tower, leaning a little, split into more tiers."""
-    rng = random.Random(seed)
-    lean = (rng.uniform(-0.06, 0.06), rng.uniform(-0.06, 0.06))
-    return rock(s, x, z, r, h, seed, tiers=5, sides=8, taper=0.8, lean=lean, collide=collide, y=y)
+def spire(s, x, z, r, h, seed, y=0.0, collide=False, lighter=False):
+    """A tall thin tower of rock, worn to a point or snapped off."""
+    return rock(s, x, z, r, h, seed, y=y, collide=collide, lighter=lighter)
 
 
-def mesa(s, x, z, r, h, seed, y=0.0, collide=True, top_mat="Ash"):
-    """A flat-topped rock with steep sides, ash lying on its top."""
-    return rock(s, x, z, r, h, seed, tiers=4, sides=14, taper=0.18, flat_top=True, collide=collide, y=y,
-                top_mat=top_mat)
+def mesa(s, x, z, r, h, seed, y=0.0, collide=True, top_mat="RealmAsh"):
+    """A flat-topped rock with steep layered sides, ash lying on its top."""
+    return rock(s, x, z, r, h, seed, y=y, collide=collide, flat_top=True)
 
 
 def boulder(s, x, z, r, seed, y=0.0, collide=True, mat="RockGrey"):
     """A low, rounded boulder."""
     rng = random.Random(seed)
-    return rock(s, x, z, r, r * rng.uniform(0.8, 1.3), seed, tiers=2, sides=7, taper=0.55, collide=collide, y=y,
-                squash=rng.uniform(0.7, 1.0), mat=mat)
-
-
-# The realm's own shapes -----------------------------------------------------------------------------------
-
-
-FOOT_SLABS = 12  # radial slabs round a column's foot (their outer corners stand out 3% past the rock's surface)
+    key, sc = fit(BOULDERS, r, r * rng.uniform(0.8, 1.3), seed)
+    key = far(key, x, z, sc)
+    rocks.rock(s, key, x, z, rng.uniform(0, 360), sc, y, collide=collide)
+    return y + top_of(key, sc)
 
 
 def column(s, x, z, r, h, seed, y=0.0, twist=1.3, sides=14, tiers=11, collide=True, mat="RockGrey", flat=False):
-    """A fluted rock column, twisting as it rises: a flared foot, lumpy pinches, every other face
-    cut back into a flute, the top broken off."""
-    rng = random.Random(seed)
-    phase = rng.uniform(0, math.tau)
-    rings = []
-    for t in range(tiers + 1):
-        u = t / tiers
-        prof = 1.0 + 0.55 * (1 - u) ** 3 + 0.13 * math.sin(u * 9.0 + seed) + 0.09 * math.sin(u * 21.0 + 2 * seed)
-        rr = r * prof * (1 - 0.3 * u)
-        yy = y - 0.5 if t == 0 else y + h * u
-        ang0 = phase + twist * u * math.pi
-        ring = []
-        for k in range(sides):
-            a = ang0 + math.tau * k / sides
-            flute = 1.0 - (0.17 if k % 2 else 0.0)
-            rk = rr * flute * (0.94 + 0.12 * rng.random())
-            yk = yy - (rng.uniform(0, h * 0.05) if t == tiers and not flat else 0.0)
-            ring.append((x + math.cos(a) * rk, yk, z + math.sin(a) * rk))
-        rings.append(ring)
-    for t in range(tiers):
-        mid = (x, y + h * (t + 0.5) / tiers, z)
-        for k in range(sides):
-            k1 = (k + 1) % sides
-            face(s, mat, [rings[t][k], rings[t][k1], rings[t + 1][k1]], mid)
-            face(s, mat, [rings[t][k], rings[t + 1][k1], rings[t + 1][k]], mid)
-    top = rings[-1]
-    tc = (x, y + h + 0.3, z)
-    for k in range(sides):
-        face(s, mat, [tc, top[k], top[(k + 1) % sides]], (x, y + h - 6.0, z))
-    if collide:
-        ch = min(h, 70.0)
-        s.collider((x, y + ch / 2 - 0.5, z), (r * 1.7, ch + 1.0, r * 1.7), math.degrees(phase) % 90, True, mat)
-        # The flared foot reaches far past that box (to half again its radius): up to a body's height and over, a
-        # ring of radial slabs following the foot's own outline, tier by tier (2026-10-27: people walked into it).
-        for t in range(tiers):
-            if y + h * t / tiers > 12.0:
-                break
-            reach = min(math.hypot(px - x, pz - z) for ring in (rings[t], rings[t + 1]) for px, _, pz in ring)
-            low, high = y + h * t / tiers - (0.5 if t == 0 else 0.0), y + h * (t + 1) / tiers
-            for k in range(FOOT_SLABS):
-                a = phase + math.tau * k / FOOT_SLABS
-                mid = (x + math.cos(a) * reach / 2, (low + high) / 2, z + math.sin(a) * reach / 2)
-                s.collider(mid, (reach, high - low, 2 * reach * math.sin(math.pi / FOOT_SLABS)), -math.degrees(a) % 360,
-                           True, mat)
+    """One of the realm's twisted fluted columns, its top broken off."""
+    key, sc = fit(COLUMNS_KIT, r, h, seed)
+    key = far(key, x, z, sc)
+    rocks.rock(s, key, x, z, random.Random(seed).uniform(0, 360), sc, y, collide=collide, core_h=70.0)
+    return y + top_of(key, sc)
 
 
 def needle(s, x, z, h, r, seed, y=0.0, lean=0.14, mat="RockGrey"):
     """A tall thin spike of rock, kinked and leaning, a stud or two sunk into the ground."""
-    rng = random.Random(seed)
-    a = rng.uniform(0, math.tau)
-    bend = rng.uniform(-0.1, 0.1)
-    mid = (x + math.cos(a) * lean * h * 0.5 + bend * h, y + h * 0.5, z + math.sin(a) * lean * h * 0.5 - bend * h)
-    top = (x + math.cos(a) * lean * h, y + h, z + math.sin(a) * lean * h)
-    s.bent_tube(mat, [(x, y - 1.0, z), mid, top], [r, r * 0.45, 0.03], 5, caps=(False, False))  # (sunk, and a point)
+    key, sc = fit(NEEDLES, r, h, seed)
+    rocks.rock(s, far(key, x, z, sc), x, z, random.Random(seed).uniform(0, 360), sc, y, collide=False)
 
 
 def needle_field(s, cx, cz, r, count, hmin, hmax, seed, y=0.0, avoid=(), arc=None):
@@ -214,41 +146,30 @@ def needle_field(s, cx, cz, r, count, hmin, hmax, seed, y=0.0, avoid=(), arc=Non
     return placed
 
 
+FLOATERS = ("RealmFloaterA", "RealmFloaterB")
+
+
 def floating_rock(s, x, y, z, r, seed, depth=None, mat="RockGrey", top_mat=None, sides=9, spires=0, lean=0.0):
-    """A rock hanging in the air: a rough flat top at y, a thick body narrowing to a point `depth`
-    below; spires and a boulder or two standing on top."""
+    """A rock hanging in the air: its level top at y about r across (old flagstones on it with top_mat RuinFlag), its
+    body narrowing to a point `depth` under it; spires standing on top. Returns its depth."""
     rng = random.Random(seed)
     depth = depth or r * rng.uniform(1.2, 2.2)
-    frac = [(0.0, 1.0), (0.1, 1.05), (0.32, 0.86), (0.58, 0.6), (0.82, 0.32)]
-    phase = rng.uniform(0, math.tau)
-    rings = []
-    for u, f in frac:
-        ring = []
-        for k in range(sides):
-            a = phase + math.tau * (k + rng.uniform(-0.18, 0.18)) / sides
-            rk = r * f * (0.8 + 0.3 * rng.random())
-            yk = y - depth * u + (rng.uniform(-0.04, 0.03) * r if u == 0.0 else rng.uniform(-0.06, 0.06) * depth)
-            ring.append((x + math.cos(a) * rk + lean * depth * u, yk, z + math.sin(a) * rk))
-        rings.append(ring)
-    tip = (x + lean * depth, y - depth, z)
-    for i in range(len(frac) - 1):
-        mid = (x, y - depth * (frac[i][0] + frac[i + 1][0]) / 2, z)
-        for k in range(sides):
-            k1 = (k + 1) % sides
-            face(s, mat, [rings[i][k], rings[i][k1], rings[i + 1][k1]], mid)
-            face(s, mat, [rings[i][k], rings[i + 1][k1], rings[i + 1][k]], mid)
-    for k in range(sides):
-        face(s, mat, [tip, rings[-1][k], rings[-1][(k + 1) % sides]], (x, y - depth * 0.6, z))
-    top = rings[0]
-    tc = (x, y + r * 0.04, z)
-    for k in range(sides):
-        face(s, top_mat or mat, [tc, top[k], top[(k + 1) % sides]], (x, y - 5.0, z))
+    if top_mat == "RuinFlag":
+        key = "RealmFloaterFlag"
+    elif r > 9.0:
+        key = "RealmFloaterSky"
+    else:
+        key = FLOATERS[seed % 2]
+    sc = r / _reach(key)
+    rc = realmrock.KIT[key]
+    rim = (realmrock.size(key)[1] - rc.get("rise", 0.15)) * sc
+    s.prop(key, x, z, rng.uniform(0, 360), round(sc, 3), y - rim)
     for k in range(spires):
         a = rng.uniform(0, math.tau)
-        d = r * rng.uniform(0.0, 0.55)
+        d = r * rng.uniform(0.0, 0.5)
         sr = r * rng.uniform(0.07, 0.16)
-        spire(s, x + math.cos(a) * d, z + math.sin(a) * d, sr, sr * rng.uniform(5.0, 11.0), seed * 10 + k, y=y + r * 0.02)
-    return depth
+        spire(s, x + math.cos(a) * d, z + math.sin(a) * d, sr, sr * rng.uniform(5.0, 11.0), seed * 10 + k, y=y)
+    return realmrock.size(key)[1] * sc
 
 
 def arch(s, x, y, z, span, height, thick, rot, seed, mat="RockGrey", sections=12, sides=8):
@@ -287,18 +208,26 @@ def arch(s, x, y, z, span, height, thick, rot, seed, mat="RockGrey", sections=12
 
 
 def cloud_bank(s, cx, cy, cz, length, width, seed, rot=0.0, puffs=8, mat="CloudBank", height=None):
-    """A wall of cloud: a ragged row of squashed, overlapping puffs (their lowest bellies flat)."""
+    """A wall of cloud: a ragged row of soft, overlapping heaps, broad and flat-bellied, smaller ones riding on the
+    bigger, shaded smooth (each heap one smooth piece)."""
     rng = random.Random(seed)
     turn = ry(rot)
-    height = height or width * 0.9
+    height = height or width * 0.75
     for i in range(puffs):
         u = (i + 0.5) / puffs - 0.5
         px, pz = u * length + rng.uniform(-0.04, 0.04) * length, rng.uniform(-0.3, 0.3) * width
         r = width * rng.uniform(0.55, 1.0) * (1.0 - 0.5 * abs(u))
-        py = rng.uniform(-0.15, 0.25) * height + (0.5 - abs(u)) * height * 0.4
-        ox, oy, oz = turn((px, py, pz))
-        s.lathe(mat, (cx + ox, cy + oy, cz + oz), [(0.0, -0.5 * r), (0.95 * r, -0.2 * r), (0.85 * r, 0.3 * r),
-                                                    (0.4 * r, 0.62 * r), (0.0, 0.7 * r)], 9, caps=(False, False))
+        py = rng.uniform(-0.15, 0.2) * height + (0.5 - abs(u)) * height * 0.35
+        for k, (dx, dy, dr) in enumerate(((0.0, 0.0, 1.0), (rng.uniform(-0.4, 0.4), 0.42, 0.62))):
+            if k and rng.random() < 0.5:
+                continue
+            rr = r * dr
+            ox, oy, oz = turn((px + dx * r, py + dy * r, pz))
+            # (a heap: flat underneath, swelling out, rounded over the top; squashed to lie long and low)
+            profile = [(0.0, -0.32 * rr), (0.8 * rr, -0.26 * rr), (1.0 * rr, 0.0), (0.84 * rr, 0.28 * rr),
+                       (0.46 * rr, 0.5 * rr), (0.0, 0.56 * rr)]
+            with s.smooth():
+                s.lathe(mat, (cx + ox, cy + oy, cz + oz), profile, 10, caps=(False, False))
 
 
 def horn(s, x, y, z, height, curl, rot, r0, mat="BoneWhite", segments=10):
@@ -311,7 +240,8 @@ def horn(s, x, y, z, height, curl, rot, r0, mat="BoneWhite", segments=10):
         out = curl * (u * u * 0.8 + 0.2 * u)
         points.append((x + dx * out, y + height * (u - 0.35 * u * u * u), z + dz * out))
         radii.append(r0 * (1 - u * 0.92))
-    s.bent_tube(mat, points, radii, 8, caps=(False, True))  # (its root sunk)
+    with s.smooth():
+        s.bent_tube(mat, points, radii, 8, caps=(False, True))  # (its root sunk)
 
 
 def blade(s, x, y, z, w, length, thick, rot=0.0, mat="RuinStone", glow="RelicGlow", guard=True):
@@ -357,37 +287,24 @@ def islet_poly(c, r, seed, n=22):
 
 
 def ground(s, g):
-    """The island's ground: the whole island polygon in convex pieces, a hole cut for the rift; crusts
-    of cracked earth laid over the ash in patches."""
+    """The island's ground as people walk it: the whole island polygon in convex pieces, a hole cut for the rift, a
+    flat floor under each (what is seen is ground.py's: the ash with its swells, ripples, banks and crusts), and the
+    stones lying in the ash."""
     for piece in g2.convex_pieces(P.BASIN):
         for part in g2.subtract_all([piece], [P.RIFT]):
             if abs(g2.area(part)) < 0.05:
                 continue
-            g.add(part, "Ash", 0.0, 0, "plaza")
-            city.floor(s, part, 0.0, 1.0, "Ash")
+            s.zone("plaza", part, 0.0)
+            city.floor(s, part, 0.0, 1.0, "RealmAsh")
     s.zone("offlimits", P.RIFT_GUARD, 0.0)
-    rng = random.Random(404)
-    for cx, cz, rr in ((-30.0, 70.0, 16.0), (70.0, -40.0, 20.0), (-110.0, -20.0, 18.0), (40.0, 80.0, 14.0),
-                       (-60.0, -70.0, 12.0), (100.0, 100.0, 12.0), (-130.0, 50.0, 12.0), (20.0, -100.0, 13.0),
-                       (130.0, -10.0, 8.0), (-20.0, 140.0, 10.0), (-90.0, 130.0, 10.0)):
-        pts = []
-        for k in range(12):
-            a = 2 * math.pi * k / 12
-            rk = rr * rng.uniform(0.75, 1.1)
-            pts.append((cx + math.cos(a) * rk, cz + math.sin(a) * rk * rng.uniform(0.7, 1.0)))
-        hull = g2.convex_hull(pts)
-        if not all(g2.contains(P.BASIN, p) and g2.dist_to_poly_edge(P.BASIN, p) > 4.0 for p in hull):
-            continue
-        for piece in g2.subtract_all([hull], [P.RIFT_GUARD]):
-            city.up_face(s, "AshCracked", piece, 0.03)
     relief(s)
 
 
 def relief(s):
-    """The ground made less flat (2026-10-25, the owner: "improve the lobby terrain (make it more interesting not just
-    flat)"), all clear of everything standing on it and of the rift, and none of it in the way: fissures sunk in the
-    ash (nothing to trip on), low slabs of stone breaking through it (a step up at most), pebbles and stones strewn
-    about, and drifts of ash banked up near the basin's edge."""
+    """Stones in the ash (2026-10-25, asked: "improve the lobby terrain (make it more interesting not just flat)"; the
+    ground's own swells, ripples and drifts are ground.py's now), all clear of everything standing on it and of the
+    rift, and none of it in the way: low slabs of rock breaking through it (a step up at most), and pebbles and
+    stones strewn about."""
     rng = random.Random(9090)
     solid = list(P.footprints().values())
     xs = [p[0] for p in P.BASIN]
@@ -410,42 +327,6 @@ def relief(s):
                 return x, z
         return None
 
-    # Fissures: jagged cracks running through the ash, a dark groove sunk under it, narrowing to nothing.
-    placed = 0
-    while placed < 16:
-        start = spot(3.0)
-        if not start:
-            break
-        heading = rng.uniform(0, math.tau)
-        pts = [start]
-        for _ in range(6):
-            heading += rng.uniform(-0.6, 0.6)
-            step = rng.uniform(2.0, 3.2)
-            pts.append((pts[-1][0] + math.cos(heading) * step, pts[-1][1] + math.sin(heading) * step))
-        if not all(clear(x, z, 2.0) for x, z in pts):
-            continue
-        placed += 1
-        width = rng.uniform(0.7, 1.2)
-        for k in range(len(pts) - 1):
-            (ax, az), (bx, bz) = pts[k], pts[k + 1]
-            length = math.dist((ax, az), (bx, bz)) or 1.0
-            nx, nz = -(bz - az) / length, (bx - ax) / length
-            w0 = width * (1 - k / (len(pts) - 1)) ** 0.8 + 0.05
-            w1 = width * (1 - (k + 1) / (len(pts) - 1)) ** 0.8 + 0.05
-            top = 0.02
-            l0 = (ax + nx * w0 / 2, top, az + nz * w0 / 2)
-            r0 = (ax - nx * w0 / 2, top, az - nz * w0 / 2)
-            l1 = (bx + nx * w1 / 2, top, bz + nz * w1 / 2)
-            r1 = (bx - nx * w1 / 2, top, bz - nz * w1 / 2)
-            d0, d1 = -0.4 - w0 * 0.5, -0.4 - w1 * 0.5
-            bl0 = (ax + nx * w0 / 6, d0, az + nz * w0 / 6)
-            br0 = (ax - nx * w0 / 6, d0, az - nz * w0 / 6)
-            bl1 = (bx + nx * w1 / 6, d1, bz + nz * w1 / 6)
-            br1 = (bx - nx * w1 / 6, d1, bz - nz * w1 / 6)
-            above = ((ax + bx) / 2, 3.0, (az + bz) / 2)
-            toward(s, "RockGrey", [l0, l1, bl1, bl0], (above[0] - nx, 0.0, above[2] - nz))
-            toward(s, "RockGrey", [r0, br0, br1, r1], (above[0] + nx, 0.0, above[2] + nz))
-            toward(s, "AshCracked", [bl0, bl1, br1, br0], above)
     # Slabs: flat stones breaking through the ash, low enough to walk over.
     for k in range(30):
         r = rng.uniform(1.1, 2.4)
@@ -462,14 +343,6 @@ def relief(s):
         at = spot(r + 0.6)
         if at:
             boulder(s, at[0], at[1], r, 6300 + k, collide=False)
-    # Drifts of ash banked up near the basin's edge, where nobody walks a path.
-    for k in range(12):
-        at = spot(9.0, edge=4.0)
-        if not at or g2.dist_to_poly_edge(P.BASIN, at) > 14.0:
-            continue
-        r = rng.uniform(4.0, 7.0)
-        rock(s, at[0], at[1], r, rng.uniform(0.9, 1.6), 6500 + k, mat="Ash", tiers=2, sides=9, taper=0.75,
-             collide=False, squash=rng.uniform(0.5, 0.8), turn=rng.uniform(0, 1))
 
 
 # Plateau sides, the wall round an edge, the ridge, the plain and the chasms ----------------------------------
@@ -503,13 +376,14 @@ def plateau_sides(s, poly, centre, seed, top, mat="RockGrey"):
             rr = r * f + push
             ring.append((centre[0] + dx / r * rr, y + jit, centre[1] + dz / r * rr))
         rings.append(ring)
-    for li in range(len(levels) - 1):
-        a, b = rings[li], rings[li + 1]
-        axis = (centre[0], (levels[li][0] + levels[li + 1][0]) / 2, centre[1])
-        for k in range(n):
-            k1 = (k + 1) % n
-            face(s, mat, [a[k], a[k1], b[k1]], axis)
-            face(s, mat, [a[k], b[k1], b[k]], axis)
+    with s.smooth():  # (one surface of rock round the plateau, its ledges kept)
+        for li in range(len(levels) - 1):
+            a, b = rings[li], rings[li + 1]
+            axis = (centre[0], (levels[li][0] + levels[li + 1][0]) / 2, centre[1])
+            for k in range(n):
+                k1 = (k + 1) % n
+                face(s, mat, [a[k], a[k1], b[k1]], axis)
+                face(s, mat, [a[k], b[k1], b[k]], axis)
 
 
 def wall(s, poly, height, gaps=(), y=34.0, gap_w=P.BRIDGE_W + 1.0):
@@ -602,10 +476,11 @@ def edge(s):
             off = rng.uniform(13.0, 34.0)
             r = rng.uniform(7.0, 15.0)
             if rng.random() < 0.25:
-                spire(s, px + ox * off, pz + oz * off, r * 0.55, r * rng.uniform(5.0, 8.5), 4100 + k * 11 + int(u))
+                spire(s, px + ox * off, pz + oz * off, r * 0.55, r * rng.uniform(5.0, 8.5), 4100 + k * 11 + int(u),
+                      lighter=True)
             else:
                 rock(s, px + ox * off, pz + oz * off, r, r * rng.uniform(1.2, 3.0), 4200 + k * 13 + int(u), tiers=3,
-                     sides=7, taper=0.55, collide=False)
+                     sides=7, taper=0.55, collide=False, lighter=True)
             u += r * rng.uniform(1.8, 2.9)
 
 
@@ -642,8 +517,9 @@ def far_plain(s):
     so the greybox has a horizon too (nothing reaches it: the wall is in between)."""
     step = 250.0
     n = int(P.FAR // step)
-    holes = [piece for piece in g2.convex_pieces(P.BASIN)]
-    holes += [piece for c in P.CHASMS for piece in g2.convex_pieces(P.chasm_outline(c))]
+    # (inside the relief's square the ground is ground.py's: the plain's faces start at its edge)
+    reach = surface.REACH
+    holes = [[(-reach, -reach), (reach, -reach), (reach, reach), (-reach, reach)]]
     for i in range(-n, n):
         for j in range(-n, n):
             x0, z0 = i * step, j * step
@@ -651,7 +527,7 @@ def far_plain(s):
             pieces = g2.subtract_all(pieces, holes)
             for piece in pieces:
                 if abs(g2.area(piece)) > 0.05:
-                    city.up_face(s, "Ash", piece, -0.15)
+                    city.up_face(s, "RealmAsh", piece, -0.15)
     inner, outer = 195.0, P.FAR
     mid = (inner + outer) / 2
     # (Never over a chasm: the strips are cut round each chasm's box, so no unseen floor hangs over a hole.)
@@ -670,9 +546,9 @@ def far_plain(s):
             pieces = max(1, math.ceil(max(w2, d2) / 1000.0))
             for k in range(pieces):
                 if w2 >= d2:
-                    s.collider((x0 + w2 * (k + 0.5) / pieces, -0.5, (z0 + z1) / 2), (w2 / pieces, 1.0, d2), 0, False, "Ash")
+                    s.collider((x0 + w2 * (k + 0.5) / pieces, -0.5, (z0 + z1) / 2), (w2 / pieces, 1.0, d2), 0, False, "RealmAsh")
                 else:
-                    s.collider(((x0 + x1) / 2, -0.5, z0 + d2 * (k + 0.5) / pieces), (w2, 1.0, d2 / pieces), 0, False, "Ash")
+                    s.collider(((x0 + x1) / 2, -0.5, z0 + d2 * (k + 0.5) / pieces), (w2, 1.0, d2 / pieces), 0, False, "RealmAsh")
 
 
 def rect_minus(r, h):
@@ -704,13 +580,14 @@ def chasm(s, c, seed):
             ring.append((cx + dx * f + (dx / (math.hypot(dx, dz) or 1.0)) * push, y, cz + dz * f + (dz / (math.hypot(dx, dz) or 1.0)) * push))
         rings.append(ring)
     n = len(outline)
-    for li in range(len(levels) - 1):
-        a, b = rings[li], rings[li + 1]
-        axis = (cx, (levels[li][0] + levels[li + 1][0]) / 2, cz)
-        for k in range(n):
-            k1 = (k + 1) % n
-            toward(s, "RockGrey", [a[k], a[k1], b[k1]], axis)
-            toward(s, "RockGrey", [a[k], b[k1], b[k]], axis)
+    with s.smooth():  # (the chasm's walls one surface of rock, its ledges kept)
+        for li in range(len(levels) - 1):
+            a, b = rings[li], rings[li + 1]
+            axis = (cx, (levels[li][0] + levels[li + 1][0]) / 2, cz)
+            for k in range(n):
+                k1 = (k + 1) % n
+                toward(s, "RockGrey", [a[k], a[k1], b[k1]], axis)
+                toward(s, "RockGrey", [a[k], b[k1], b[k]], axis)
     bottom = [(p[0], p[2]) for p in rings[-1]]
     for piece in g2.convex_pieces(bottom):
         city.up_face(s, "Abyss", piece, -P.CHASM_DEPTH)

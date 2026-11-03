@@ -33,7 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
 from maps import geo2d as g2  # noqa: E402
-from maps import ownprops  # noqa: E402
+from maps import catalog, ownprops  # noqa: E402
 from maps.layout import FORBIDDEN  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, "..", "..", ".."))
@@ -666,7 +666,7 @@ def footprints(data, cat):
     out = []
     for key, x, y, z, rot, sc, *_ in data["props"]:
         info = cat.get(key)
-        if not info or info["pivot"] != "bottom":
+        if not info or info["pivot"] != "bottom" or catalog.is_terrain(key):
             continue
         sx, sy, sz = (v * sc for v in info["size"])
         kind = ownprops.BASE.get(key, key)  # (a map's own model goes by what it stands for)

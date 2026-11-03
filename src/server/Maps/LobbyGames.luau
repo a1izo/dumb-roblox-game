@@ -20,6 +20,12 @@ local STONE = Color3.fromRGB(58, 58, 64)
 local GLOW = Color3.fromRGB(176, 196, 224)
 local DIM = Color3.fromRGB(74, 82, 100)
 local INK = Color3.fromRGB(16, 16, 20)
+-- The Blender stones the plain parts below are dressed with once the Lobby models are imported
+-- (art/scripts/props_monolith.py): their sizes as made, which the parts' sizes scale them to.
+local MARKER_HEIGHT = 3.6 -- SpireMarker
+local TILE_SIZE = 7 -- RuneTile
+local PAD_SIZE = 8 -- StartPad
+local PAD_TOP = 0.31 -- StartPad: its flagstones' top over its foot
 
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number?, rx: number?, rz: number? }
 
@@ -81,14 +87,14 @@ local function part(parent: Instance, name: string, size: Vector3, cf: CFrame, c
 	return p
 end
 
--- A square outline of cold light lying flat (a pad's border).
-local function outline(parent: Instance, base: CFrame, size: number)
+-- A square outline of cold light lying flat (a pad's border), at height y over the pad's foot.
+local function outline(parent: Instance, base: CFrame, size: number, y: number)
 	for _, side in ipairs({ { 0, -1, size, 0.2 }, { 0, 1, size, 0.2 }, { -1, 0, 0.2, size }, { 1, 0, 0.2, size } }) do
 		local bar = part(
 			parent,
 			"Border",
 			Vector3.new(side[3], 0.06, side[4]),
-			base * CFrame.new(side[1] * size / 2, 0.16, side[2] * size / 2),
+			base * CFrame.new(side[1] * size / 2, y, side[2] * size / 2),
 			GLOW,
 			Enum.Material.Neon
 		)
@@ -106,7 +112,10 @@ local function pad(b, parent: Instance, name: string, tag: string, a: Anchor, si
 	p.CanTouch = false
 	p.CastShadow = false
 	p:AddTag(tag)
-	outline(parent, base, size - 1)
+	-- (dressed with the Blender pad, its outline lies on the pad's flagstones; on the plain slab, on the slab)
+	local scale = size / PAD_SIZE
+	local dressed = ModelLibrary.dress(p, "StartPad", CFrame.new(0, -0.15, 0), scale)
+	outline(parent, base, size - 1, if dressed then PAD_TOP * scale else 0.3)
 	return p
 end
 
@@ -133,6 +142,7 @@ local function parkour(b, folder: Instance, anchors: { [string]: Anchor })
 		)
 		inert(pylon)
 		pylon.CanCollide = false
+		ModelLibrary.dress(pylon, "SpireMarker", CFrame.new(0, -height / 2, 0), height / MARKER_HEIGHT)
 		pylon:SetAttribute("Index", index)
 		pylon:AddTag("LParkourCheckpoint")
 		local cap = part(
@@ -171,6 +181,7 @@ local function runes(b, folder: Instance, anchors: { [string]: Anchor })
 			slab.CanQuery = true
 			slab.CanTouch = false
 			slab.CastShadow = false
+			ModelLibrary.dress(slab, "RuneTile", CFrame.new(0, -0.25, 0), tile / TILE_SIZE)
 			slab:SetAttribute("Index", index)
 			slab:AddTag("LRuneTile")
 			for _, bar in ipairs(GLYPHS[index]) do

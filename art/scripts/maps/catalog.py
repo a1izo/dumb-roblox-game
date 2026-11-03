@@ -11,6 +11,14 @@ PATH = os.path.join(ROOT, "src", "shared", "ModelCatalog.luau")
 _CACHE = {}
 
 
+def is_terrain(key):
+    """True for the shapes of the Grey Realm's rock kit (art/scripts/realmrock.py; every key "Realm..."): landscape,
+    not furniture. They lean into one another, sink into the ground and hang in the air on purpose, and the venue
+    lays their colliders round their feet itself, so the checks take them as ground rather than as props standing on
+    it (whatever else stands in them is still caught by their colliders)."""
+    return key.startswith("Realm")
+
+
 def _entries(text):
     """(key, body) for every top-level entry, whatever its line breaks."""
     for m in re.finditer(r"^\t(\w+) = \{", text, re.M):

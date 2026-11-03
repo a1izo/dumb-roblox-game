@@ -38,7 +38,7 @@ BUILDERS = {}
 
 
 def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Core", lights=None,
-         anchor=None, screen=None, ao=0.6, exact=False, detail=False, normal=None):
+         anchor=None, screen=None, ao=0.6, exact=False, detail=False, normal=None, tiled=False):
     """Registers a prop builder. set: which FBX it goes in, DeathsGambitModels_<set>.fbx ("Core": the
     props every map and the game itself use, with the effect and UI textures; "Tokyo", "Agency",
     "Campus", "Lobby", "Meeting": one venue's own). lights: the lights the prop carries, so a lamp never exists
@@ -56,7 +56,10 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
     hundreds of small parts would bleed together at the rulebook's size).
     detail: a hero prop baked from a high-detail copy of itself (build_props._high_of: each part's "dg_detail", more
     subdivision and the displacements that raise creases, folds and wear), its normal map at full size.
-    normal: its normal map's size in px, when not the one the colour's size gives it (the budget's say)."""
+    normal: its normal map's size in px, when not the one the colour's size gives it (the budget's say).
+    tiled: no bake of its own: the builder returns one mesh already laid out in the maps' tiling surfaces (map
+    material names on its faces, UVs in repeats of each surface, maps/matlib), which it keeps, so it wears the map
+    surfaces' density and shares their textures (the Grey Realm's rocks, realmrock.py)."""
 
     def register(fn):
         BUILDERS[key] = {
@@ -73,6 +76,7 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
             "ao": ao,
             "exact": exact,
             "detail": detail,
+            "tiled": tiled,
         }
         return fn
 
@@ -555,6 +559,10 @@ import props_core  # noqa: E402,F401
 import props_remade  # noqa: E402,F401
 import props_campus  # noqa: E402,F401
 import props_lobby  # noqa: E402,F401
+import props_realm  # noqa: E402,F401
+import props_academy  # noqa: E402,F401
+import props_monolith  # noqa: E402,F401
+import props_realmfire  # noqa: E402,F401
 import props_meeting  # noqa: E402,F401
 import props_shop  # noqa: E402,F401
 import props_emotes  # noqa: E402,F401

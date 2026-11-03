@@ -14,6 +14,7 @@ outside (Roblox draws only the front of a mesh face).
 import math
 import os
 import sys
+from contextlib import contextmanager
 
 import bpy
 
@@ -24,6 +25,7 @@ CHUNK = 64.0  # studs
 MAX_TRIS = 9000
 SMALL_TRIS = 5000  # a material with fewer triangles than this stays in one mesh
 MAX_SPAN = 1500.0  # ...unless it spreads wider than this (Roblox parts stop at 2048 studs)
+SMOOTH_ANGLE = 58.0  # a smooth piece's creases sharper than this (degrees) stay sharp
 
 
 def ry(rot):
@@ -64,13 +66,17 @@ def norm(a):
 
 
 class Piece:
-    __slots__ = ("verts", "faces", "uvs", "centre")
+    __slots__ = ("verts", "faces", "uvs", "centre", "smooth", "index", "normals", "ground")
 
     def __init__(self):
         self.verts = []
         self.faces = []  # tuples of vertex indices
         self.uvs = []  # per face: tuple of (u, v) per corner
         self.centre = (0.0, 0.0, 0.0)
+        self.smooth = False  # its faces share their corners and are shaded smooth (Scene.smooth)
+        self.index = None  # (while a smooth piece is drawn: each corner's place -> its vertex)
+        self.normals = None  # a smooth piece's own normal at each vertex (Scene.mesh), else worked out from its faces
+        self.ground = False  # a height field (one height over each point, every face up): never seen from behind
 
 
 class Scene(LayoutMixin):
@@ -105,6 +111,7 @@ class Scene(LayoutMixin):
         self.far_chunk = None  # (distance, cell size): bigger chunks for far scenery (see _cell)
         self.used = set()
         self.preview_props = []  # placed by the game's own code; only drawn in previews
+        self._smooth = None  # the smooth pieces being drawn (Scene.smooth): material -> Piece
         self._layout_init()
 
     # Low level ------------------------------------------------------------------------------
@@ -115,15 +122,33 @@ class Scene(LayoutMixin):
         self.used.add(mat)
         return piece
 
+    @contextmanager
+    def smooth(self):
+        """Faces drawn inside the block share the corners they meet at and are shaded smooth, creases sharper than
+        SMOOTH_ANGLE kept: rocks, bones, cloud and the ground's relief, which flat faces show as facets. One piece per
+        material for the whole block (so keep a block to one thing, or one tile of a big one)."""
+        outer = self._smooth
+        self._smooth = {}
+        try:
+            yield self
+        finally:
+            for piece in self._smooth.values():
+                piece.index = None
+                if piece.verts:
+                    piece.centre = scale(tuple(map(sum, zip(*piece.verts))), 1 / len(piece.verts))
+            self._smooth = outer
+
     def polygon(self, mat, points, uvs=None, tile=None):
         """One face (convex polygon, counter-clockwise from the front). Without uvs, the face is
         mapped on the world plane it faces most."""
-        piece = self._piece(mat)
         tile = tile or matlib.tile_size(mat)
         if uvs is None:
             uvs = planar_uvs(points, tile)
         else:
             uvs = [(u / tile, v / tile) for u, v in uvs]
+        if self._smooth is not None:
+            return self._smooth_polygon(mat, points, uvs)
+        piece = self._piece(mat)
         base = len(piece.verts)
         piece.verts.extend(points)
         n = len(points)
@@ -131,6 +156,46 @@ class Scene(LayoutMixin):
             piece.faces.append((base, base + i, base + i + 1))
             piece.uvs.append((uvs[0], uvs[i], uvs[i + 1]))
         piece.centre = scale(tuple(map(sum, zip(*points))), 1 / n)
+        return piece
+
+    def mesh(self, mat, verts, faces, uvs, normals=None, ground=False):
+        """A smooth piece made whole: verts [(x, y, z)], faces [(i, j, k)] (counter-clockwise from the front), uvs
+        per face [(u, v)] per corner in studs (the material's repeat is applied), and optionally the normal at each
+        vertex (a surface cut into tiles shades as one across their joins when its normals come from the surface
+        itself). ground: the piece is a height field (the checks know its faces can only be seen from above)."""
+        if not faces:
+            return None
+        piece = self._piece(mat)
+        piece.smooth = True
+        piece.ground = ground
+        tile = matlib.tile_size(mat)
+        piece.verts = [tuple(v) for v in verts]
+        piece.faces = [tuple(f) for f in faces]
+        piece.uvs = [tuple((u / tile, v / tile) for u, v in face) for face in uvs]
+        piece.normals = [tuple(n) for n in normals] if normals is not None else None
+        piece.centre = scale(tuple(map(sum, zip(*piece.verts))), 1 / len(piece.verts))
+        return piece
+
+    def _smooth_polygon(self, mat, points, uvs):
+        piece = self._smooth.get(mat)
+        if piece is None:
+            piece = self._piece(mat)
+            piece.smooth = True
+            piece.index = {}
+            self._smooth[mat] = piece
+        ids = []
+        for p in points:
+            key = (round(p[0], 4), round(p[1], 4), round(p[2], 4))
+            i = piece.index.get(key)
+            if i is None:
+                i = len(piece.verts)
+                piece.verts.append(tuple(p))
+                piece.index[key] = i
+            ids.append(i)
+        for i in range(1, len(points) - 1):
+            if len({ids[0], ids[i], ids[i + 1]}) == 3:
+                piece.faces.append((ids[0], ids[i], ids[i + 1]))
+                piece.uvs.append((uvs[0], uvs[i], uvs[i + 1]))
         return piece
 
     def quad(self, mat, a, b, c, d, uvs=None, tile=None):
@@ -560,12 +625,15 @@ def planar_uvs(points, tile):
 
 def build_mesh(name, pieces, mat, collection):
     """One Blender mesh object from pieces, converted to Blender space (x -> -x, y <-> z)."""
-    verts, faces, uvs = [], [], []
+    verts, faces, uvs, smooth, normals = [], [], [], [], []
     for piece in pieces:
         base = len(verts)
         verts.extend((-x, z, y) for x, y, z in piece.verts)
         faces.extend(tuple(base + i for i in f) for f in piece.faces)
         uvs.extend(uv for face in piece.uvs for uv in face)
+        smooth.extend([piece.smooth] * len(piece.faces))
+        given = getattr(piece, "normals", None)
+        normals.extend((-x, z, y) for x, y, z in given) if given else normals.extend([(0.0, 0.0, 0.0)] * len(piece.verts))
     mesh = bpy.data.meshes.new(name)
     mesh.from_pydata(verts, [], faces)
     layer = mesh.uv_layers.new(name="UVMap")
@@ -573,6 +641,12 @@ def build_mesh(name, pieces, mat, collection):
     layer.data.foreach_set("uv", flat)
     mesh.validate(clean_customdata=False)
     mesh.update()
+    if any(smooth):
+        mesh.polygons.foreach_set("use_smooth", smooth)
+        _keep_creases(mesh, SMOOTH_ANGLE)
+        if any(n != (0.0, 0.0, 0.0) for n in normals):
+            # (zero normals keep the ones the faces give)
+            mesh.normals_split_custom_set_from_vertices(normals)
     obj = bpy.data.objects.new(name, mesh)
     obj.data.materials.append(matlib.material(mat, _IMAGES.get("images")))
     collection.objects.link(obj)
@@ -584,6 +658,21 @@ def build_mesh(name, pieces, mat, collection):
     mesh.transform(__import__("mathutils").Matrix.Translation((-mid[0], -mid[1], -mid[2])))
     obj.location = mid
     return obj
+
+
+def _keep_creases(mesh, angle):
+    """Edges sharper than `angle` (degrees), and every edge of a flat face, stay sharp."""
+    import bmesh
+
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    limit = math.radians(angle)
+    for edge in bm.edges:
+        faces = edge.link_faces
+        if len(faces) != 2 or not (faces[0].smooth and faces[1].smooth) or edge.calc_face_angle(0) > limit:
+            edge.smooth = False
+    bm.to_mesh(mesh)
+    bm.free()
 
 
 _IMAGES = {}

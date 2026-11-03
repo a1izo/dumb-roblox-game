@@ -130,6 +130,8 @@ FALLBACK_KIND = [
     ("Bark", "Wood"),
     ("Bamboo", "Wood"),
     ("AshCracked", "Salt"),
+    ("Crust", "Salt"),
+    ("Basalt", "Basalt"),
     ("Ash", "Sand"),
     ("RockGrey", "Rock"),
     ("Parquet", "WoodPlanks"),

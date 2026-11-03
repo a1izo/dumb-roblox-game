@@ -111,6 +111,8 @@ return {
 	PrintsCampus = { textured = true, fallback = { material = "SmoothPlastic", color = { 164, 158, 139 } } },
 	PrintsTokyo = { textured = true, fallback = { material = "SmoothPlastic", color = { 173, 162, 149 } } },
 	Puddle = { material = "Glass", color = { 16, 16, 22 }, transparency = 0.15, reflectance = 0.35 },
+	RealmAsh = { textured = true, fallback = { material = "Sand", color = { 95, 96, 101 } } },
+	RealmCrust = { textured = true, fallback = { material = "Salt", color = { 69, 69, 69 } } },
 	RedString = { textured = true, fallback = { material = "Fabric", color = { 160, 41, 45 } } },
 	RedTrim = { textured = true, fallback = { material = "SmoothPlastic", color = { 141, 36, 41 } } },
 	RelicGlow = { material = "Neon", color = { 176, 196, 224 }, transparency = 0, reflectance = 0 },

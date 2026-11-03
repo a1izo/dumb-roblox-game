@@ -271,11 +271,7 @@ def _branch(parts, rng, start, direction, length, radius, depth, bark, spread, r
                     start[1] + dy * length * u + rng.uniform(-jitter, jitter),
                     start[2] + dz * length * u + rng.uniform(-jitter, jitter) * 0.6))
     tip_r = radius * 0.58
-    verts = 7 if radius > 0.3 else 5
-    for k in range(3):
-        r0 = radius + (tip_r - radius) * k / 3
-        r1 = radius + (tip_r - radius) * (k + 1) / 3
-        parts.append(mk.tube("Limb", pts[k], pts[k + 1], r0, r1, mat=bark, verts=verts))
+    parts.append(_limb("Limb", pts, radius, tip_r, bark))
     end = pts[-1]
     if depth == 0:
         tips.append((end, (dx, dy, dz)))
@@ -296,8 +292,7 @@ def _roots(parts, rng, r, bark, count=5):
         reach = r * rng.uniform(2.2, 3.2)
         mid = (math.cos(a) * reach * 0.55, math.sin(a) * reach * 0.55, 0.35)
         end = (math.cos(a) * reach, math.sin(a) * reach, -0.1)
-        parts.append(mk.tube("Root", (0, 0, 1.2), mid, r * 0.55, r * 0.3, mat=bark, verts=6))
-        parts.append(mk.tube("Root", mid, end, r * 0.3, r * 0.08, mat=bark, verts=5))
+        parts.append(_limb("Root", [(0, 0, 1.2), mid, end], r * 0.55, r * 0.08, bark))
 
 
 def dead_tree(seed, prefix, height, lean, limbs, spread, rise, twist):
@@ -311,9 +306,8 @@ def dead_tree(seed, prefix, height, lean, limbs, spread, rise, twist):
     for k in range(1, 4):
         u = k / 3
         pts.append((lean[0] * u * u + rng.uniform(-0.4, 0.4), lean[1] * u * u + rng.uniform(-0.4, 0.4), height * 0.55 * u))
-    for k in range(3):
-        parts.append(mk.tube("Trunk", pts[k], pts[k + 1], r * (1 - 0.18 * k), r * (1 - 0.18 * (k + 1)), mat=bark, verts=9))
-    parts.append(mk.cylinder("Flare", r * 1.7, 1.2, (0, 0, 0.6), mat=bark, verts=9, radius2=r))
+    parts.append(_limb("Trunk", [(0.0, 0.0, -0.2)] + pts[1:], r, r * 0.46, bark))
+    parts.append(_detail(mk.cylinder("Flare", r * 1.7, 1.2, (0, 0, 0.6), mat=bark, verts=12, radius2=r), BARKED))
     head = pts[-1]
     for k in range(limbs):
         yaw = 2 * math.pi * k / limbs + rng.uniform(-0.4, 0.4)
@@ -331,36 +325,77 @@ def dead_tree(seed, prefix, height, lean, limbs, spread, rise, twist):
 # them): a thick trunk curving away from the wind, a few limbs reaching nearly level the same way, and on their
 # ends flat clouds of needles, layered, almost black against the grey sky. Same keys, sizes and places as the dead
 # trees they replace.
+NEEDLES = {"sub": 1, "disp": [("grain", 0.05, 0.08), ("cells", 0.04, 0.22)]}  # (the pads' high-detail copy)
+WEATHERED = {"sub": 1, "disp": [("cells", 0.09, 1.1), ("grain", 0.025, 0.18)]}  # (the giant skull: cracked, pitted bone)
+HORNY = {"sub": 1, "disp": [("rings", 0.04, 0.5), ("grain", 0.015, 0.1)]}  # (a horn's growth rings and grain)
+STONY = {"sub": 1, "disp": [("cells", 0.02, 0.35), ("grain", 0.008, 0.06)]}  # (the notebook's boards: pitted stone)
+BARKED = {"sub": 1, "disp": [("wrinkles", 0.05, 0.35), ("grain", 0.012, 0.07)]}
+
+
+def _detail(obj, detail):
+    import json
+
+    obj["dg_detail"] = json.dumps(detail)
+    return obj
+
+
 def _needle_pad(parts, rng, centre, size, mat, prefix):
-    """A cloud of needles: overlapping flattened lumps, its underside flat, its edge ragged."""
+    """A pad of needles as a pine holds it: a dome of clumps, highest at its middle and thinning to its rim, its
+    underside flatter; tufts of needles bristling out of the rim and the top so its outline is a pine's, never a
+    cloud's."""
     cx, cy, cz = centre
-    for k in range(rng.randint(4, 6)):
-        r = size * rng.uniform(0.36, 0.56)
-        at = (cx + rng.uniform(-0.5, 0.5) * size, cy + rng.uniform(-0.45, 0.45) * size, cz + rng.uniform(-0.06, 0.16) * size)
-        lump = mk.sphere(prefix + "Pad", r, at, scale=(1.0, 0.85, 0.36), mat=mat, segments=12, rings=6)
-        mk.displace_noise(lump, strength=r * 0.24, scale=r * 0.38, name=prefix + "Needles")
-        parts.append(lump)
+    for k in range(rng.randint(5, 7)):
+        a = rng.uniform(0, math.tau)
+        d = rng.uniform(0.0, 0.42) * size
+        r = size * rng.uniform(0.3, 0.42) * (1.0 - 0.45 * d / size)
+        at = (cx + math.cos(a) * d, cy + math.sin(a) * d * 0.9, cz + (0.16 - 0.3 * d / size) * size)
+        lump = mk.sphere(prefix + "Pad", r, at, scale=(1.0, 0.9, 0.52), mat=mat, segments=10, rings=6)
+        mk.displace_noise(lump, strength=r * 0.28, scale=r * 0.32, name=prefix + "Needles")
+        parts.append(_detail(lump, NEEDLES))
+    # (its fringe: small clumps round the rim and over the top, each bumpy, so the outline breaks up as a pine's does)
+    for k in range(int(7 + size * 3.2)):
+        a = rng.uniform(0, math.tau)
+        rim = rng.random() < 0.72
+        d = size * (rng.uniform(0.5, 0.68) if rim else rng.uniform(0.0, 0.4))
+        rr = size * rng.uniform(0.1, 0.16)
+        at = (cx + math.cos(a) * d, cy + math.sin(a) * d * 0.9, cz + size * (0.04 if rim else rng.uniform(0.16, 0.26)))
+        clump = mk.sphere(prefix + "Tuft", rr * 1.12, at, scale=(1.0, 1.0, 0.72), mat=mat, segments=6, rings=4)
+        mk.displace_noise(clump, strength=rr * 0.36, scale=rr * 0.45, name=prefix + "Tufts")
+        parts.append(clump)
+
+
+def _limb(name, points, r0, r1, mat):
+    """A limb or a trunk along a smooth curve through `points`, tapering from r0 to r1, barked."""
+    from props_mapown import spline
+
+    pts = spline(points, steps=4)
+    radii = [r0 + (r1 - r0) * k / (len(pts) - 1) for k in range(len(pts))]
+    return _detail(pk.sweep(name, pts, radii, mat, sides=9 if r0 > 0.4 else 6), BARKED)
 
 
 def black_pine(seed, prefix, height, lean, limbs, reach, droop):
     """A wind-bent black pine `height` tall, its top `lean` (x, y) downwind of its foot."""
     rng = random.Random(seed)
     bark = mk.noisy(prefix + "_Bark", srgb(22, 20, 20), srgb(50, 46, 44), scale=10, roughness=0.95, stretch=(1, 1, 0.35))
-    needles = mk.noisy(prefix + "_Needles", srgb(12, 15, 13), srgb(32, 38, 33), scale=14, roughness=0.9)
+    # (a fibrous scan under the needles' own dark green-black, never glossy)
+    needles = mk.noisy(prefix + "_Needles", srgb(14, 17, 15), srgb(36, 42, 37), scale=14, roughness=1.0, kind="cloth")
     parts = []
     r = 0.82
-    _roots(parts, rng, r, bark, count=4)
-    parts.append(mk.cylinder("Flare", r * 1.6, 1.1, (0, 0, 0.55), mat=bark, verts=9, radius2=r))
-    # The trunk: five pieces curving away from the wind and back, as a pine's does.
+    # Its roots gripping the ash, flaring into the trunk.
+    for k in range(4):
+        a = 2 * math.pi * k / 4 + rng.uniform(-0.3, 0.3)
+        span = r * rng.uniform(2.2, 3.0)
+        parts.append(_limb("Root", [(0.0, 0.0, 1.1), (math.cos(a) * span * 0.5, math.sin(a) * span * 0.5, 0.35),
+                                    (math.cos(a) * span, math.sin(a) * span, -0.12)], r * 0.6, r * 0.1, bark))
+    # The trunk: one curve away from the wind and back, as a pine's grows.
     wind = math.atan2(lean[1], lean[0])
     side = (-math.sin(wind), math.cos(wind))
-    pts = [(0.0, 0.0, 0.0)]
+    pts = [(0.0, 0.0, -0.2)]
     for k in range(1, 6):
         u = k / 5
         sway = math.sin(u * math.pi * 1.4) * 0.7
         pts.append((lean[0] * u ** 1.5 + side[0] * sway, lean[1] * u ** 1.5 + side[1] * sway, height * 0.8 * u))
-    for k in range(5):
-        parts.append(mk.tube("Trunk", pts[k], pts[k + 1], r * (1 - 0.12 * k), r * (1 - 0.12 * (k + 1)), mat=bark, verts=9))
+    parts.append(_limb("Trunk", pts, r * 1.05, r * 0.42, bark))
     # The limbs: nearly level, most of them downwind, the short ones upwind; a pad at each end, sometimes one
     # more along the way.
     for k in range(limbs):
@@ -369,38 +404,49 @@ def black_pine(seed, prefix, height, lean, limbs, reach, droop):
         yaw = wind + (rng.uniform(-0.9, 0.9) if downwind else math.pi + rng.uniform(-0.6, 0.6))
         length = reach * rng.uniform(0.7, 1.0) * (1.0 if downwind else 0.45)
         d = (math.cos(yaw), math.sin(yaw))
-        prev = start
-        rr = r * 0.42
+        line = [start]
         for q in range(1, 4):
             u = q / 3
-            p = (start[0] + d[0] * length * u, start[1] + d[1] * length * u,
-                 start[2] + length * (0.18 * u - droop * u * u) + rng.uniform(-0.2, 0.2))
-            parts.append(mk.tube("Limb", prev, p, rr * (1 - 0.25 * (q - 1)), rr * (1 - 0.25 * q), mat=bark, verts=6))
-            prev = p
-        _needle_pad(parts, rng, (prev[0], prev[1], prev[2] + 0.5), rng.uniform(2.4, 3.4) * (1.0 if downwind else 0.7),
+            line.append((start[0] + d[0] * length * u, start[1] + d[1] * length * u,
+                         start[2] + length * (0.18 * u - droop * u * u) + rng.uniform(-0.2, 0.2)))
+        parts.append(_limb("Limb", line, r * 0.42, r * 0.16, bark))
+        end = line[-1]
+        _needle_pad(parts, rng, (end[0], end[1], end[2] + 0.5), rng.uniform(2.4, 3.4) * (1.0 if downwind else 0.7),
                     needles, prefix)
         if downwind and rng.random() < 0.5:
             mid = (start[0] + d[0] * length * 0.55, start[1] + d[1] * length * 0.55, start[2] + length * 0.04 + 0.5)
             _needle_pad(parts, rng, mid, rng.uniform(1.6, 2.2), needles, prefix)
-    # The crown: a flat pad over the trunk's top, a smaller one above it.
+    # The crown: a pad over the trunk's top, a smaller one above it.
     top = pts[-1]
     _needle_pad(parts, rng, (top[0], top[1], top[2] + 0.6), 3.4, needles, prefix)
     _needle_pad(parts, rng, (top[0] + lean[0] * 0.15, top[1] + lean[1] * 0.15, top[2] + 1.9), 2.2, needles, prefix)
     return parts
 
 
-@prop("DeadTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
+def matte(floor):
+    """A bake's finish (modelkit.bake) holding the roughness map at `floor` at least: a prop of many small parts leaves
+    much of its small roughness map bare between them, and bare reads as glossy at their edges."""
+
+    def finish(colour, normal, rough):
+        rough[..., :3] = rough[..., :3].clip(floor, 1.0)
+
+    return finish
+
+
+@prop("DeadTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0), detail=True,
+      normal=512)
 def dead_tree_tall():
     """A tall black pine of the wasteland (the key is the dead tree's it replaced): a trunk curving away from
-    the wind, its limbs reaching downwind, flat dark clouds of needles on their ends."""
-    return black_pine(11, "Pnt", 15.5, (3.4, 1.6), 6, 6.2, 0.22), []
+    the wind, its limbs reaching downwind, dark pads of needles on their ends."""
+    return black_pine(11, "Pnt", 15.5, (3.4, 1.6), 6, 6.2, 0.22), [], {"finish": matte(0.86)}
 
 
-@prop("DeadTreeGnarled", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
+@prop("DeadTreeGnarled", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0),
+      detail=True, normal=512)
 def dead_tree_gnarled():
     """A low black pine flattened by the wind (the key is the gnarled dead tree's it replaced): a squat trunk
     bent far over, its limbs spreading wide and flat, the kind the realm's dwellers hang their lanterns in."""
-    return black_pine(23, "Png", 10.0, (5.0, -1.8), 5, 5.0, 0.3), []
+    return black_pine(23, "Png", 10.0, (5.0, -1.8), 5, 5.0, 0.3), [], {"finish": matte(0.86)}
 
 
 # An apple's shape (2026-10-25, the owner: "not just basic shapes (for example apples in the lobby)"): a lathed body,
@@ -436,7 +482,8 @@ def grey_apple():
     return apple_parts("Ga", (0, 0, 0), 1.0, skin, stem, leaf, tilt=14), []
 
 
-@prop("WitheredAppleTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0))
+@prop("WitheredAppleTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0),
+      detail=True, normal=512)
 def withered_apple_tree():
     """The one fruit tree in the realm: grey and twisted like the rest, yet hung with a few dull,
     grey-brown apples, and two more fallen in the ash at its foot (one bitten)."""
@@ -513,7 +560,8 @@ def bone_scatter():
     return parts, []
 
 
-@prop("GiantSkull", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
+@prop("GiantSkull", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Lobby", detail=True,
+      normal=512)
 def giant_skull():
     """The skull of a dead death god, the size of a house, settled into the ash on its open jaw (2026-10-16; the
     key is the beast's skull it replaced, same size and place): a tall narrow vault, a long muzzle, sockets so
@@ -535,17 +583,21 @@ def giant_skull():
         ("hollow", (2.7, -1.6, 7.9), 2.25, (1.0, 0.9, 1.2)),
         ("hollow", (0.0, -8.4, 6.9), 1.1, (0.6, 1.4, 1.2)),  # the nose
     ]
-    parts = [_blob("GskHead", head, 0.55, 0.45, bone)]
+    parts = [_detail(_blob("GskHead", head, 0.55, 0.45, bone), WEATHERED)]
     skull = _surfaces(parts[0])
     # Deep in the sockets and the nose, black.
     for x in (-2.7, 2.7):
         parts.append(mk.sphere("Socket", 1.6, (x, -0.6, 7.8), scale=(1.0, 0.8, 1.15), mat=dark, segments=12, rings=8))
     parts.append(mk.sphere("Nose", 0.75, (0.0, -7.8, 6.8), scale=(0.6, 1.1, 1.1), mat=dark, segments=8, rings=6))
     # The horns, broken off: thick stumps curving back, their ends snapped and splintered.
+    from props_mapown import spline
+
     for sx in (-1, 1):
         base, mid, end = (sx * 3.4, 0.6, 11.6), (sx * 4.6, 2.4, 13.4), (sx * 5.3, 4.4, 14.3)
-        parts.append(mk.tube("HornStump", base, mid, 1.55, 1.3, mat=horn, verts=10))
-        parts.append(mk.tube("HornStump", mid, end, 1.3, 1.08, mat=horn, verts=10))
+        # (one curve, ringed with the ridges a horn grows in, thinning to where it snapped)
+        line = spline([(sx * 3.2, 0.3, 11.2), base, mid, end], steps=6)
+        radii = [(1.62 - 0.5 * k / (len(line) - 1)) * (1.0 + 0.055 * math.sin(k * 2.3)) for k in range(len(line))]
+        parts.append(_detail(pk.sweep("HornStump", line, radii, horn, sides=14), HORNY))
         for k in range(4):
             a = math.tau * k / 4 + 0.4
             at = (end[0] + math.cos(a) * 0.6, end[1] + math.sin(a) * 0.5, end[2] + 0.3)
@@ -587,7 +639,7 @@ def giant_skull():
     # the bone's top right under it.
     jaw = [("capsule", (-4.2, 6.4, 3.4), (-2.0, -6.0, 1.0), 1.15), ("capsule", (4.2, 6.4, 3.4), (2.0, -6.0, 1.0), 1.15),
            ("capsule", (-2.0, -6.0, 1.0), (0.0, -11.6, 0.9), 1.05), ("capsule", (2.0, -6.0, 1.0), (0.0, -11.6, 0.9), 1.05)]
-    parts.append(_blob("GskJaw", jaw, 0.45, 0.45, bone))
+    parts.append(_detail(_blob("GskJaw", jaw, 0.45, 0.45, bone), WEATHERED))
     lower = _surfaces(parts[-1])
     for sx in (-1, 1):
         for k in range(6):
@@ -660,67 +712,6 @@ def cairn():
 
 
 # Fire and light -----------------------------------------------------------------------------------------
-
-
-@prop("BoneBrazier", pivot="bottom", material="Metal", collide=True, texture=1024, set="Lobby",
-      lights=[dict(at=(0, 0, 5.4), kind="point", color=PALE_FIRE, range=26, brightness=1.15)])
-def bone_brazier():
-    """A brazier burning with the realm's pale fire: a black iron bowl on three long bones lashed
-    together with rope, embers glowing under the flames, ash spilled round its feet."""
-    bone = bone_mat("Brz")
-    iron = iron_mat("Brz")
-    rope = mk.noisy("Brz_Rope", srgb(72, 66, 54), srgb(110, 100, 80), scale=30, roughness=0.95)
-    ash = mk.noisy("Brz_Ash", srgb(70, 70, 72), srgb(104, 104, 106), scale=20, roughness=0.95)
-    parts = [mk.cylinder("Ash", 1.5, 0.1, (0, 0, 0.05), mat=ash, verts=16, radius2=1.2)]
-    for k in range(3):
-        a = 2 * math.pi * k / 3 + 0.3
-        foot = (math.cos(a) * 1.25, math.sin(a) * 1.25, 0.05)
-        top = (math.cos(a) * 0.55, math.sin(a) * 0.55, 3.9)
-        parts += long_bone(f"Leg{k}", foot, top, 0.11, bone)
-    parts.append(mk.torus("Lash", 0.6, 0.08, (0, 0, 3.1), mat=rope, major_segments=16, minor_segments=5))
-    parts.append(mk.torus("Lash2", 0.58, 0.07, (0, 0, 3.3), mat=rope, major_segments=16, minor_segments=5))
-    parts += [mk.lathe("Bowl", [(0.3, 0.0), (1.05, 0.25), (1.35, 0.8), (1.42, 0.95), (1.3, 0.95), (0.95, 0.35), (0.0, 0.3)],
-                       (0, 0, 3.85), mat=iron, segments=18),
-              mk.torus("Rim", 1.38, 0.07, (0, 0, 4.8), mat=iron, major_segments=24, minor_segments=6)]
-    for k in range(6):
-        a = 2 * math.pi * k / 6
-        parts.append(mk.cylinder("Spike", 0.06, 0.5, (math.cos(a) * 1.38, math.sin(a) * 1.38, 5.05), mat=iron, verts=6,
-                                 radius2=0.0))
-    # the bed of embers glows; the fire over it is the game's (a living fire, Presentation/Vfx Recipes.flame)
-    glows = [mk.cylinder("Embers", 1.0, 0.2, (0, 0, 4.5), mat=pk.glow("Brz_Ember", (120, 150, 210), 3), verts=14)]
-    return parts, glows, {"flames": [(0, 0, 4.55, 2.6, 1)]}
-
-
-@prop("LanternPost", pivot="bottom", material="Wood", collide=True, texture=512, set="Lobby", anchor=(0, 0),
-      lights=[dict(at=(0, -1.9, 6.6), kind="point", color=PALE_FIRE, range=18, brightness=0.8)])
-def lantern_post():
-    """A crooked post of black wood driven into the ash, a hooked arm at its head, and hanging from
-    it an iron cage lantern with a pale flame inside."""
-    wood = bark_mat("Lnp")
-    iron = iron_mat("Lnp")
-    bone = bone_mat("Lnp")
-    parts = [mk.tube("Post", (0, 0, -0.2), (0.15, 0.1, 4.5), 0.26, 0.22, mat=wood, verts=7),
-             mk.tube("Post2", (0.15, 0.1, 4.5), (0.05, 0.0, 8.4), 0.22, 0.17, mat=wood, verts=7),
-             mk.tube("Arm", (0.05, 0.0, 7.9), (0.05, -1.9, 8.3), 0.12, 0.09, mat=wood, verts=6),
-             mk.tube("Brace", (0.1, 0.05, 6.8), (0.05, -1.1, 8.1), 0.07, mat=wood, verts=5),
-             mk.cylinder("Collar", 0.3, 0.25, (0.02, 0.0, 1.0), mat=iron, verts=8),
-             mk.tube("Chain", (0.05, -1.9, 8.2), (0.05, -1.9, 7.55), 0.03, mat=iron, verts=4)]
-    parts += long_bone("Charm", (0.35, -0.22, 5.2), (0.3, -0.25, 6.1), 0.05, bone)
-    cx, cy, cz = 0.05, -1.9, 6.6
-    parts += [mk.cylinder("CageTop", 0.55, 0.2, (cx, cy, cz + 0.85), mat=iron, verts=8, radius2=0.2),
-              mk.torus("Ring", 0.12, 0.03, (cx, cy, cz + 1.02), rot=(90, 0, 0), mat=iron, major_segments=8,
-                       minor_segments=4),
-              mk.cylinder("CageBase", 0.45, 0.14, (cx, cy, cz - 0.72), mat=iron, verts=8)]
-    for k in range(6):
-        a = 2 * math.pi * k / 6
-        parts.append(mk.tube("Bar", (cx + math.cos(a) * 0.42, cy + math.sin(a) * 0.42, cz - 0.66),
-                             (cx + math.cos(a) * 0.46, cy + math.sin(a) * 0.46, cz + 0.76), 0.03, mat=iron, verts=4))
-    # a stub of candle in the cage; its flame is the game's
-    wax = candle_wax("Lnp")
-    wick = mk.flat("Lnp_Wick", srgb(16, 14, 13), 0.9)
-    body, tip = candle("LnpCandle", cx, cy, cz - 0.58, 0.16, 0.42, wax, wick, random.Random(5), drips=3)
-    parts += body
-    return parts, [], {"flames": [(tip[0], tip[1], tip[2], 0.6)]}
 
 
 def candle_wax(key):
@@ -826,49 +817,6 @@ def candle_cluster():
 
 
 # The Academy ---------------------------------------------------------------------------------------------
-
-
-@prop("PracticeAltar", pivot="bottom", material="Slate", collide=False, texture=1024, set="Lobby", anchor=(0, 0),
-      lights=[dict(at=(0, 0.7, 4.0), kind="point", color=CANDLE, range=11, brightness=0.6)])
-def practice_altar():
-    """The Academy's practice altar, built round the game's invisible drill desk (5 x 3 x 2.4, the
-    one practising stands at -Y): a slab of grey stone on two carved legs with skulls set in them,
-    an old ledger lying open on it with a quill in its inkwell, and candles burning at the back."""
-    stone = stone_mat("Alt")
-    dark = dark_stone_mat("Alt")
-    bone = bone_mat("Alt")
-    void = void_mat("Alt")
-    leather = mk.noisy("Alt_Leather", srgb(26, 20, 20), srgb(52, 38, 34), scale=14, roughness=0.7)
-    pages = mk.banded("Alt_Pages", srgb(176, 166, 140), srgb(214, 206, 182), frequency=150, axis="Z")
-    ink = mk.flat("Alt_Ink", srgb(14, 12, 12), 0.4)
-    wax = candle_wax("Alt")
-    parts = [mk.box("Plinth", (5.6, 2.9, 0.3), (0, 0, 0.15), mat=dark, bevel=0.06),
-             mk.box("Slab", (5.2, 2.6, 0.42), (0, 0, 2.8), mat=stone, bevel=0.08),
-             mk.box("Apron", (4.2, 2.1, 0.5), (0, 0, 2.35), mat=dark, bevel=0.05)]
-    for sx in (-1, 1):
-        parts += [mk.box("Leg", (1.1, 2.1, 2.1), (sx * 1.9, 0, 1.3), mat=stone, bevel=0.1),
-                  mk.box("LegCap", (1.3, 2.3, 0.2), (sx * 1.9, 0, 2.28), mat=dark, bevel=0.04)]
-        parts += skull(f"LegSkull{sx}", sx * 1.9, -1.02, 1.35, 0.34, bone, void)
-    # The ledger lying open, the quill and the inkwell.
-    for side in (-1, 1):
-        parts.append(mk.box("Page", (1.25, 1.55, 0.12), (side * 0.66, -0.25, 3.09), rot=(0, side * -4, 0), mat=pages))
-        parts.append(mk.box("Board", (1.35, 1.65, 0.06), (side * 0.68, -0.25, 3.03), rot=(0, side * -4, 0), mat=leather))
-    parts.append(mk.cylinder("Spine", 0.08, 1.62, (0, -0.25, 3.06), rot=(90, 0, 0), mat=leather, verts=8))
-    for k in range(4):
-        parts.append(mk.box("Line", (0.9, 0.03, 0.01), (-0.66, -0.7 + k * 0.28, 3.16), mat=ink))
-    parts += [mk.cylinder("Inkwell", 0.18, 0.3, (1.7, 0.4, 3.16), mat=ink, verts=10, radius2=0.12),
-              mk.tube("Quill", (1.7, 0.4, 3.2), (2.0, 0.9, 4.2), 0.03, 0.01, mat=bone, verts=4),
-              mk.box("Vane", (0.06, 0.2, 0.7), (1.9, 0.75, 3.95), rot=(-25, 0, 18), mat=bone)]
-    wick = mk.flat("Alt_Wick", srgb(16, 14, 13), 0.9)
-    rng = random.Random(17)
-    flames = []
-    for sx in (-1, 1):
-        for k, (dx, h) in enumerate(((0.0, 0.9), (0.28, 0.55), (-0.25, 0.4))):
-            x = sx * 2.05 + dx
-            body, tip = candle(f"Candle{sx}{k}", x, 0.85, 3.01, 0.12, h, wax, wick, rng, drips=3)
-            parts += body
-            flames.append((tip[0], tip[1], tip[2], 0.45))
-    return parts, [], {"flames": flames}
 
 
 # The Academy's puppets (the owner's reference of 2026-10-13: a wooden artist's mannequin on strings, held
@@ -1629,7 +1577,7 @@ def _stone_leaf(name, w, h, bow, mat, rng, torn=False, curl=0.0):
     return leaf
 
 
-@prop("StoneNotebook", pivot="centre", material="Slate", collide=False, texture=256, set="Lobby")
+@prop("StoneNotebook", pivot="centre", material="Slate", collide=False, texture=512, set="Lobby", detail=True, normal=256)
 def stone_notebook():
     """A black notebook turned to stone, stopped in its fall over the rift: tumbling, its covers spread a third
     open (rounded boards, a sunken panel on each), the pages fanned between them, each bowed as a page bows, two
@@ -1643,10 +1591,22 @@ def stone_notebook():
     parts = []
     rng = random.Random(41)
     opening = 128.0  # degrees between the covers
+    bone = mk.noisy("Snb_Bone", srgb(120, 116, 106), srgb(166, 160, 146), scale=12, roughness=0.8)
+    void = void_mat("Snb")
     for k, ang in enumerate((-opening / 2, opening / 2)):
         side = -1 if k == 0 else 1
-        for obj in (pk.rounded(f"Cover{k}", (w, t, h), (w / 2, 0, 0), cover, r=0.09),
-                    mk.box(f"Panel{k}", (w - 0.9, 0.04, h - 1.2), (w / 2 + 0.1, side * (t / 2 + 0.005), 0), mat=panel)):
+        out = side * (t / 2 + 0.02)
+        # (on the outside of each board: a ring carved round a skull, the manual's own emblem gone to stone)
+        emblem = [mk.torus(f"Ring{k}", 1.05, 0.07, (w / 2 + 0.1, out, 0.3), rot=(90, 0, 0), mat=bone, major_segments=28,
+                           minor_segments=6)]
+        skull_parts = pk.skull(f"CoverSkull{k}", (w / 2 + 0.1, out + side * 0.08, 0.35), 0.48, bone, void, segments=24, teeth=5)
+        for sp in skull_parts:
+            sp.scale = (sp.scale[0], sp.scale[1] * 0.45, sp.scale[2])
+            if side > 0:
+                sp.rotation_euler = (0, 0, math.pi)
+        emblem += skull_parts
+        for obj in [_detail(pk.rounded(f"Cover{k}", (w, t, h), (w / 2, 0, 0), cover, r=0.09), STONY),
+                    mk.box(f"Panel{k}", (w - 0.9, 0.04, h - 1.2), (w / 2 + 0.1, side * (t / 2 + 0.005), 0), mat=panel)] + emblem:
             obj.matrix_basis = Matrix.Rotation(math.radians(ang), 4, "Z") @ obj.matrix_basis
             parts.append(obj)
     for k in range(7):

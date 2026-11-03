@@ -57,13 +57,14 @@ def hole(s):
             push = 0.0 if li == 0 else (rng if li <= 3 else deep).uniform(-1.8, 2.6) + min(li, 3) * 0.4
             ring.append((x + dx / r * push, y, z + dz / r * push))
         rings.append(ring)
-    for li in range(len(levels) - 1):
-        a, b = rings[li], rings[li + 1]
-        for k in range(n):
-            k1 = (k + 1) % n
-            axis = (cx, (levels[li] + levels[li + 1]) / 2, cz)
-            face_to(s, "RockGrey", [a[k], a[k1], b[k1]], axis)
-            face_to(s, "RockGrey", [a[k], b[k1], b[k]], axis)
+    with s.smooth():  # (the throat's walls one smooth surface of rock, its ledges kept)
+        for li in range(len(levels) - 1):
+            a, b = rings[li], rings[li + 1]
+            for k in range(n):
+                k1 = (k + 1) % n
+                axis = (cx, (levels[li] + levels[li + 1]) / 2, cz)
+                face_to(s, "RockGrey", [a[k], a[k1], b[k1]], axis)
+                face_to(s, "RockGrey", [a[k], b[k1], b[k]], axis)
     # The glowing cracks just under the rim, and the cold light rising from them.
     for k in range(n):
         p, q = poly[k], poly[(k + 1) % n]
@@ -126,7 +127,8 @@ def throat(s, rings, levels, cx, cz, _rng):
             mid = (top[0] - ox * bend * 0.5, top[1] - length * 0.55, top[2] - oz * bend * 0.5)
             tip = (top[0] - ox * bend, top[1] - length, top[2] - oz * bend)
             radius = rng.uniform(0.28, 0.55)
-            s.bent_tube("RockGrey", [top, mid, tip], [radius, radius * 0.65, radius * 0.15], 6, caps=(False, True))
+            with s.smooth():
+                s.bent_tube("RockGrey", [top, mid, tip], [radius, radius * 0.65, radius * 0.15], 6, caps=(False, True))
         # Now and then a ledge of broken stone standing out of the wall, sloping a little.
         k = rng.randrange(n)
         x, y, z = ring[k]

@@ -12,6 +12,7 @@ import math
 import random
 
 from maps import geo2d as g2
+from maps.venues.lobby import ground as surface
 from maps.venues.lobby import plan as P
 from maps.venues.lobby.terrain import (arch, blade, boulder, cloud_bank, column, face, floating_rock, horn, mesa,
                                        needle_field, rock, spire)
@@ -115,10 +116,13 @@ def ribs(s, taken, rng):
                 py = math.sin(ang) * height * (1 - 0.12 * rib) - 2.0
                 points.append((px, py, pz))
                 radii.append(3.2 - 1.2 * abs(u - 0.5))
-            s.bent_tube("BoneOld", points, radii, 7, caps=(False, False))  # (both feet in the ash)
+            with s.smooth():
+                s.bent_tube("BoneOld", points, radii, 7, caps=(False, False))  # (both feet in the ash)
         for q in range(7):
             a0 = (cx + along[0] * (q - 0.5) * span * 0.18, height - 4 - q * 2.2, cz + along[1] * (q - 0.5) * span * 0.18)
-            s.lathe("BoneOld", a0, [(0.0, -3.0), (4.2, -2.2), (4.6, 0.0), (4.2, 2.2), (0.0, 3.0)], 9, caps=(False, False))
+            with s.smooth():
+                s.lathe("BoneOld", a0, [(0.0, -3.0), (4.2, -2.2), (4.6, 0.0), (4.2, 2.2), (0.0, 3.0)], 9,
+                        caps=(False, False))
 
 
 def far_world(s):
@@ -179,16 +183,18 @@ def far_world(s):
                 continue
             r = rng.uniform(9.0, 18.0) * (0.5 + math.sin(math.pi * u))
             rock(s, x, z, r, r * rng.uniform(0.9, 1.8), 10400 + k * 40 + q, tiers=2, sides=7, taper=0.45, collide=False)
-    # Dunes: long low mounds of ash.
+    # Dunes: long low mounds of ash, out past the ground's own swells and dunes (lobby ground.py, to its REACH).
     for k in range(28):
         a = rng.uniform(0, math.tau)
         d = rng.uniform(240.0, 1200.0)
         x, z = math.cos(a) * d, math.sin(a) * d
         rr = rng.uniform(25.0, 80.0)
-        if not clear(x, z, rr * 0.6):
+        if not clear(x, z, rr * 0.6) or max(abs(x), abs(z)) < surface.REACH + rr:
             continue
         h = rr * rng.uniform(0.08, 0.18)
-        s.lathe("Ash", (x, -0.3, z), [(rr, 0.0), (rr * 0.7, h * 0.45), (rr * 0.35, h * 0.9), (0.0, h)], 10, caps=(False, False))
+        with s.smooth():
+            s.lathe("RealmAsh", (x, -0.3, z), [(rr, 0.0), (rr * 0.7, h * 0.45), (rr * 0.35, h * 0.9), (0.0, h)], 10,
+                    caps=(False, False))
     # The only things that float: a few rocks high in the sky, and debris about them.
     for k, (x, z, r) in enumerate(ring_place(rng, 12, 300.0, 1000.0, (14.0, 30.0), taken)):
         floating_rock(s, x, rng.uniform(90.0, 240.0), z, r, 10500 + k, depth=r * rng.uniform(1.2, 2.0), sides=9,
@@ -206,7 +212,7 @@ def far_world(s):
         floating_rock(s, x, rng.uniform(55.0, 190.0), z, r, 10600 + dust, depth=r * rng.uniform(1.0, 2.0), sides=6)
         dust += 1
     # Walls of cloud on the skyline: dark masses low, pale ones above.
-    for k in range(20):
+    for k in range(14):
         a = rng.uniform(0, math.tau)
         d = rng.uniform(760.0, 1250.0)
         x, z = math.cos(a) * d, math.sin(a) * d

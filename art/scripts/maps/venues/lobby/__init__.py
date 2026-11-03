@@ -18,7 +18,7 @@ and its landing, the rune tiles, the parkour's checkpoints, the roots and banner
 plan.py."""
 
 from maps import city
-from maps.venues.lobby import dressing, formations, gameplay, islets, landmarks, rift, terrain
+from maps.venues.lobby import dressing, formations, gameplay, ground, islets, landmarks, rift, rocks, terrain
 from maps.venues.lobby import plan as P
 
 FORMAT = 2
@@ -86,6 +86,7 @@ _LAST = {}
 
 
 def build(s):
+    rocks.FEET.clear()
     g = city.Ground(s)
     terrain.build(s, g)
     landmarks.build(s, g)
@@ -94,6 +95,7 @@ def build(s):
     dressing.build(s)
     formations.build(s)
     gameplay.build(s)
+    ground.build(s)
     g.finish()
     s.set_bounds(*P.BOUNDS)
     s.checks = CHECKS

@@ -164,6 +164,7 @@ function LobbyFixtures.build(b, anchors: { [string]: Anchor })
 			Parent = folder,
 		}) :: BasePart
 		plinth.CanCollide = true
+		ModelLibrary.dress(plinth, "ShopPlinth", CFrame.new(0, -WINDOW_HEIGHT / 2, 0))
 		mark(
 			b,
 			folder,

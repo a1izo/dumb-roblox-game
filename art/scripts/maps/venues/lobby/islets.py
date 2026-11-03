@@ -10,11 +10,12 @@ anchors written here."""
 import math
 import random
 
+import realmrock
 from maps import city
 from maps import geo2d as g2
-from maps.venues.lobby import landmarks
+from maps.venues.lobby import landmarks, rocks
 from maps.venues.lobby import plan as P
-from maps.venues.lobby.terrain import blade, column, floating_rock, islet_poly, needle_field, plateau_sides, rock, wall
+from maps.venues.lobby.terrain import blade, floating_rock, islet_poly, needle_field, plateau_sides, rock, wall
 
 H = P.PLATEAU_H
 
@@ -138,8 +139,8 @@ def plateau(s, g, c, r, seed, centre_dir_pt, wall_h):
     rim open at the causeway."""
     poly = islet_poly(c, r, seed)
     for piece in g2.convex_pieces(poly):
-        g.add(piece, "Ash", H, 0, "plaza")
-        city.floor(s, piece, H, H + 1.0, "Ash")
+        g.add(piece, "RealmAsh", H, 0, "plaza")
+        city.floor(s, piece, H, H + 1.0, "RealmAsh")
     plateau_sides(s, poly, c, seed * 7, H)
     wall(s, g2.ccw(poly), wall_h, gaps=[centre_dir_pt], y=H + wall_h / 2 - 2.0)
     return poly
@@ -201,6 +202,35 @@ def runes(s, g):
 # The Spire Ascent -------------------------------------------------------------------------------------------
 
 
+SPIRE = "RealmSpireAscent"
+
+
+def spire_ascent(s, c):
+    """The Spire Ascent's spire on its plateau: the kit shape, walls round its foot, and above them a stack of
+    blocks inside its waist all the way up (a box core reached out past the rock where it narrows, among the stones
+    people jump between). Returns how far out its rock reaches, at most, at each stone's height (for the check)."""
+    rocks.rock(s, SPIRE, c[0], c[1], 0.0, 1.0, H, collide=True, core_h=12.0)
+    verts = realmrock.shape(SPIRE)[0]
+    sink = realmrock.KIT[SPIRE].get("sink", 1.0)
+    top = max(v[2] for v in verts) - sink
+    step = 8.0
+    y = 10.0
+    while y < top - 2.0:
+        band = [math.hypot(v[0], v[1]) for v in verts if y <= v[2] - sink < y + step]
+        if band:
+            inner = min(band) * 0.62
+            s.collider((c[0], H + y + step / 2, c[1]), (inner * 1.41, step, inner * 1.41), 22.5, True, "RockGrey")
+        y += step
+
+
+def spire_reach(y_over_plateau, band=1.5):
+    """How far the spire's rock reaches from its axis around a height over the plateau (its widest there)."""
+    verts = realmrock.shape(SPIRE)[0]
+    sink = realmrock.KIT[SPIRE].get("sink", 1.0)
+    near = [math.hypot(v[0], v[1]) for v in verts if abs(v[2] - sink - y_over_plateau) < band]
+    return max(near) if near else 0.0
+
+
 def pk_platforms():
     """(x, y_top, z, width, checkpoint number or 0) for each stone of the climb, bottom to top (y over the
     plain: the plateau's own height is in it)."""
@@ -224,8 +254,8 @@ def parkour(s, g):
     c = P.PK_CENTER
     poly = plateau(s, g, c, P.ISLET_PARKOUR[2], 65, edge_point(P.ISLET_PARKOUR), 170.0)
     landmarks.flag_disc(s, g, c, 15.0, 67, name="the foot of the spire", broken=0.05, y=H + 0.04)
-    # The spire the stones climb round: twisted, fluted, broken off at the top.
-    column(s, c[0], c[1], 9.0, P.PK_TOP + 14.0, 68, twist=2.4, sides=16, tiers=22, collide=True, y=H)
+    # The spire the stones climb round: twisted, fluted, broken off at the top (the kit's own, made to its measures).
+    spire_ascent(s, c)
     s.anchor("pkCenter", c[0], H, c[1], 0.0)
     bx, bz = P.BRIDGE_PARKOUR[1]
     d = math.hypot(bx - c[0], bz - c[1])

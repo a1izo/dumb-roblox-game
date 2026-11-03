@@ -325,6 +325,67 @@ def _wear(obj, mat):
     obj.data.update()
 
 
+def _tiled(parts, key):
+    """A tiled prop's one mesh (props.prop's tiled): its parts joined as they are, keeping their map surfaces and their
+    UVs, shaded smooth with its creases kept (no weighted normals: a rock's faces are all of a size). Marks which map
+    surfaces it wears ("dg_tiled"), for the catalog's fallback colour."""
+    if len(parts) > 1 or parts[0].modifiers:
+        # Built from parts (masonry, chains): merged with their bevels applied, each keeping its surface; laid out
+        # in their surfaces' repeats from the six sides (props_realm.tile_uvs).
+        import props_realm
+
+        main = mk.merge(parts, key)
+        main.data.name = key
+        props_realm.tile_uvs(main)
+    else:
+        main = parts[0]
+        main.name = key
+        main.data.name = key
+        # (out of the builder's collection, which is emptied after every build, into the props')
+        for coll in list(main.users_collection):
+            coll.objects.unlink(main)
+        common.collection("Props").objects.link(main)
+        main.data.polygons.foreach_set("use_smooth", [True] * len(main.data.polygons))
+        mk.auto_smooth(main, 55)
+    main["dg_tiled"] = json.dumps([m.name[2:] if m.name.startswith("M_") else m.name for m in main.data.materials])
+    return main
+
+
+def _split_surfaces(main, key):
+    """A tiled prop wearing more than one surface comes apart into one mesh per surface (no prop before wore two on one
+    mesh, and a MeshPart takes one surface): the first stays the prop's own mesh, each other one becomes a piece of it,
+    <key>_<Surface> (ModelLibrary brings a prop's pieces with it). Returns {name: piece}."""
+    import bmesh
+
+    out = {}
+    mats = list(main.data.materials)
+    for index, mat in enumerate(mats[1:], start=1):
+        surface = mat.name[2:] if mat.name.startswith("M_") else mat.name
+        bm = bmesh.new()
+        bm.from_mesh(main.data)
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index != index], context="FACES")
+        if not bm.faces:
+            bm.free()
+            continue
+        for f in bm.faces:
+            f.material_index = 0
+        mesh = bpy.data.meshes.new(f"{key}_{surface}")
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh.materials.append(mat)
+        obj = bpy.data.objects.new(f"{key}_{surface}", mesh)
+        common.collection("Props").objects.link(obj)
+        out[surface] = obj
+    bm = bmesh.new()
+    bm.from_mesh(main.data)
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index != 0], context="FACES")
+    bm.to_mesh(main.data)
+    bm.free()
+    while len(main.data.materials) > 1:
+        main.data.materials.pop()
+    return out
+
+
 # The sets whose props bake at the maps' density (lookbook.DENSITY "venue"): the lobby's scene has no memory to spare
 # and Core is loaded in every scene.
 VENUE_SETS = ("Agency", "Campus", "Tokyo", "Meeting")
@@ -355,9 +416,17 @@ def build_one(key):
         for name, piece in more.get("pieces", {}).items():
             if piece["own"] and not piece.get("plain"):
                 highs[name] = _high_of(piece["parts"], f"{key}_{name}_High")
-    main = mk.merge(parts, key)
+    tiled = spec.get("tiled")
+    main = _tiled(parts, key) if tiled else mk.merge(parts, key)
     pieces = {name: mk.merge(piece["parts"], f"{key}_{name}") for name, piece in more.get("pieces", {}).items()}
-    if pieces:
+    if tiled:
+        # (laid out in the maps' tiling surfaces by its builder: no unwrap and no bake, see props.prop)
+        shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
+        whole_size = [round(v, 3) for v in mk.dimensions(main)]
+        for obj in _piece_objects(key):
+            bpy.data.objects.remove(obj, do_unlink=True)
+        pieces.update(_split_surfaces(main, key))
+    elif pieces:
         # Faces that carry pictures are laid by hand, where the builder's own coordinates still hold.
         mk.unwrap(main, laid=more.get("laid"), into=more.get("into", (0.0, 0.0, 1.0, 1.0)), least=_sliver(spec))
         for name, piece in more["pieces"].items():
@@ -397,7 +466,8 @@ def build_one(key):
             high.data.transform(Matrix.Translation(shift))
         mk.unwrap(main, least=_sliver(spec))
         mk.bake(main, size=spec["texture"], where=where, ao_strength=spec.get("ao", 0.6), exact=spec.get("exact", False),
-                high=highs.get(None), normal_full=bool(spec.get("detail")), normal_size=spec.get("normal"))
+                high=highs.get(None), normal_full=bool(spec.get("detail")), normal_size=spec.get("normal"),
+                finish=more.get("finish"))
     # (the high-detail copies only lent their surface to the bake)
     for high in highs.values():
         bpy.data.objects.remove(high, do_unlink=True)
@@ -578,6 +648,9 @@ def write_catalog():
         tex = os.path.join(common.TEXTURES, obj.name + "_color.jpg")
         if not os.path.exists(tex):
             tex = os.path.join(common.TEXTURES, obj.name + ".png")  # (a prop not yet baked from the scans)
+        if obj.get("dg_tiled"):
+            # (a tiled prop: the colour of the first map surface it wears)
+            tex = os.path.join(common.TEXTURES, "maps", json.loads(obj["dg_tiled"])[0] + "_color.jpg")
         if os.path.exists(tex):
             img = bpy.data.images.load(tex, check_existing=True)
             px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, img.channels)
