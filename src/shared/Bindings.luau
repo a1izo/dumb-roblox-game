@@ -74,6 +74,8 @@ Bindings.ACTIONS = {
 	action("ability", "Role power", "world", { "R" }, { "ButtonR1" }),
 	action("ability2", Terms.f("{Eyes}"), "world", { "T" }, { "ButtonY" }),
 	action("help", "Help", "world", { "H" }, {}),
+	-- (the guide's tip shuts with a key too: under shift lock the pointer cannot reach its buttons, 2026-11-03)
+	action("closeTip", "Close a tip", "world", { "G" }, { "DPadDown" }),
 	action("roleCard", "Role card (hold)", "world", { "C" }, { "ButtonL1" }),
 	action("interact", "Use", "world", { "E" }, { "ButtonX" }),
 	action("pickUp", "Pick up note", "world", { "F" }, { "ButtonB" }),
@@ -105,6 +107,7 @@ Bindings.SECTIONS = {
 			"ability2",
 			"note",
 			"help",
+			"closeTip",
 		},
 	},
 	{

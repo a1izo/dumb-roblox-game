@@ -36,7 +36,7 @@ Notice.KINDS = {
 	guide = { C.white, "help", C.g0 },
 } :: { [string]: { any } }
 
-export type Action = { text: string, variant: string?, icon: string?, onClick: (() -> ())? }
+export type Action = { text: string, variant: string?, icon: string?, key: string?, onClick: (() -> ())? }
 
 export type Props = {
 	Name: string?,
@@ -199,6 +199,7 @@ function Notice.new(props: Props): Notice
 		buttons[index] = Controls.button({
 			text = action.text,
 			icon = action.icon,
+			key = action.key,
 			variant = action.variant or (if index == 1 then "primary" else "ghost"),
 			size = "s",
 			LayoutOrder = index,

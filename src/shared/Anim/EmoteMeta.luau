@@ -851,8 +851,9 @@ return {
 	aceCrouch = { lowBody = true, camera = { move = "high", at = 1.6 } },
 	takeTheL = { lowBody = true },
 	-- New World (the owner's Q23): out of white, the figure resolving close on the bowed head; from the front-left as
-	-- the arm rises, tilting up after it; the flash as the fist closes and the low hero angle up at the raised arm;
-	-- then wide and low, held still on the silhouette against the sky.
+	-- the arms rise, tilting up after them; the flash as they are thrown wide open (spread out as in the anime, the
+	-- user's call of 2026-11-03) and the low hero angle up at him; then wide and low, held still on the silhouette
+	-- against the sky.
 	newWorld = {
 		cinematic = true,
 		fx = 4,
@@ -877,12 +878,12 @@ return {
 				},
 				{
 					at = 3.42,
-					eye = { 4.4, -1, -3.2 },
-					look = { 0.7, 1.9, 0 },
-					fov = 56,
-					to = { eye = { 4, -1.2, -2.8 }, look = { 0.8, 2.2, 0 } },
+					eye = { 3.2, -1.1, -4.6 },
+					look = { 0.2, 1.3, 0 },
+					fov = 58,
+					to = { eye = { 2.8, -1.3, -4.1 }, look = { 0.2, 1.5, 0 } },
 				},
-				{ at = 4.7, glide = 0.8, eye = { -0.6, -1.1, -7.6 }, look = { 0, 1.9, 0 }, fov = 46 },
+				{ at = 4.7, glide = 0.8, eye = { -0.6, -1.1, -7.6 }, look = { 0, 1.6, 0 }, fov = 50 },
 			},
 			beats = {
 				{ at = 0, kind = "flash", color = { 255, 252, 244 }, strength = 1, seconds = 1.4 },

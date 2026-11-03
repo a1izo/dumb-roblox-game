@@ -1,6 +1,8 @@
 -- The guide's one-time tips for new players, written on a slip under the objectives (under
 -- the phase banner on phones). Each tip appears once per profile (the server remembers it in
--- tipsSeen). The X (or "Got it") on a tip closes that tip; "Stop tips" turns the whole guide off
+-- tipsSeen). The X (or "Got it") on a tip closes that tip, and so does a key, G or D-Down, its keycap
+-- on "Got it" (the pointer is locked under shift lock and in a case's free roam, so the buttons are
+-- out of its reach there: the user's call of 2026-11-03); "Stop tips" turns the whole guide off
 -- (tips and the objective list); Settings turns it back on, and "Show all tips again" there resets
 -- which tips were seen.
 --
@@ -14,8 +16,10 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Bindings = require(Shared:WaitForChild("Bindings"))
 local Hints = require(Shared:WaitForChild("Hints"))
 local Net = require(Shared:WaitForChild("Net"))
 
@@ -43,6 +47,7 @@ local queue: { string } = {}
 local shownThisSession: { [string]: boolean } = {}
 local running = false
 local dismissed = false
+local up = false -- a tip is on the screen
 
 local card: CanvasGroup
 local tip: any -- the guide's notice (Kit/Notice)
@@ -80,6 +85,31 @@ local function place(beside: GuiObject?)
 	card.Position = position
 end
 
+-- "Got it" wears the key that closes the tip, as the player has it (none on touch: a tap does it).
+local function showKey()
+	local button = tip.buttons[1]
+	local cap = if button then button:FindFirstChild("Keycap", true) else nil
+	if cap and cap:IsA("GuiObject") then
+		local text = Keys.text("closeTip")
+		local label = cap:FindFirstChild("Key")
+		if label and label:IsA("TextLabel") then
+			label.Text = text
+		end
+		cap.Visible = text ~= ""
+	end
+end
+
+-- Whether a key closes the tip (the player's own keys for it, else G and D-Down).
+local function closes(key: Enum.KeyCode): boolean
+	local saved = Keys.saved()
+	for _, platform in ipairs(Bindings.PLATFORMS) do
+		if table.find(Bindings.keyCodes("closeTip", platform, saved), key) then
+			return true
+		end
+	end
+	return false
+end
+
 local function run()
 	running = true
 	while #queue > 0 do
@@ -93,7 +123,9 @@ local function run()
 			Net.event("ProfileRequest"):FireServer({ action = "hint", id = id })
 			tip:setTitle(hint.title)
 			tip:setBody(Keys.resolve(hint.text))
+			showKey()
 			dismissed = false
+			up = true
 			local showTime = if firstCase() then FIRST_CASE_TIME else SHOW_TIME
 			local beside = leftPanel()
 			place(beside)
@@ -109,6 +141,7 @@ local function run()
 					place(beside)
 				end
 			end
+			up = false
 			local tween = Motion.fade(card, false, 0.3)
 			if tween then
 				tween.Completed:Wait()
@@ -147,6 +180,7 @@ local function buildCard()
 		actions = {
 			{
 				text = "Got it",
+				key = "G",
 				onClick = function()
 					dismissed = true
 				end,
@@ -174,6 +208,18 @@ end
 
 function HintController.init()
 	buildCard()
+	-- (the key that closes the tip; not while typing in the chat)
+	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		if up and not processed and closes(input.KeyCode) then
+			dismissed = true
+		end
+	end)
+	-- (a pad picked up or a keyboard used again: the keycap follows the hands)
+	UserInputService.LastInputTypeChanged:Connect(function()
+		if up then
+			showKey()
+		end
+	end)
 
 	local lastPhase = ClientState.phase()
 	ClientState.PhaseChanged:Connect(function(phase)

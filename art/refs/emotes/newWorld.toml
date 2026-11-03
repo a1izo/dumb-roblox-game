@@ -8,22 +8,22 @@ uses = []
 
 [origin]
 what = "'I will become the god of this new world' (Death Note, episode 1)."
-recognisable = "The head bowed, then the right arm raised slowly to the sky, the fist closing at the top, the face up, held in the light."
+recognisable = "The head bowed, then both arms rising out to the sides together, spread wide (as in the anime), the chest open, the face up, held in the light."
 
 [source]
 url = "https://www.youtube.com/watch?v=XVd6ngs8Fr4"
 title = "I'll Become The God of This New World | Death Note"
 kind = "the anime scene"
-watched = "2026-10-20: the owner's answer (Q9: arm to the sky, fist closed)"
+watched = "2026-10-20: the owner's answer (Q9: arm to the sky, fist closed); 2026-11-03: the user's call, the hands spread out like in the anime"
 mirror = false
 
 [timing]
 length = 6.5
-fit = "Out of the white, bowed by 1.1 s, the arm up by 3.3 s, the fist 3.42 s, held to 5.6 s (2026-10-22: lengthened for the cutscene's white open and held silhouette, the owner's Q23)."
+fit = "Out of the white, bowed by 1.1 s, the arms spread by 3.3 s, thrown wide open at 3.42 s, held to 5.6 s (2026-10-22: lengthened for the cutscene's white open and held silhouette, the owner's Q23)."
 
 [[beat]]
 src = 3.42
-pose = "the fist closed at the top"
+pose = "the arms thrown wide open"
 
 [face]
 key = ""

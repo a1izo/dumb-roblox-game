@@ -1,12 +1,20 @@
-"""The game's two pointers (UI/Cursor), drawn with numpy, white with a black outline:
+"""The game's two pointers (UI/Cursor) and the red pointing hand (UI/Kit/Pointer), drawn with numpy:
 
-    CursorLock  64 x 64  the closed-eyes mark the user drew (art/refs/ui/cursor_lashes.png), traced from it: the
-                         pointer locked in the middle of the screen in a case's free roam (World/ShoulderCam)
-    CursorFree  64 x 64  a fountain-pen nib, bone white, its point on the middle pixel: the pointer everywhere else
+    CursorLock    64 x 64  the closed-eyes mark the user drew (art/refs/ui/cursor_lashes.png), traced from it, white
+                           with a black outline: the pointer locked in the middle of the screen in a case's free roam
+                           (World/ShoulderCam)
+    CursorFree    64 x 64  a fountain pen's nib on the black of its grip, its point on the middle pixel: the pointer
+                           everywhere else. Redrawn 2026-11-03 at the user's word ("sharper and more professional"):
+                           a longer nib with its shoulders, a lit and a shaded half, the slit and the breather hole cut
+                           clean, a steel ring and the grip behind it, a thin outline and a soft drop shadow
+    PointerHand  192 x 192 the hand that points at whatever is chosen (OMORI's, in the game's red): a right hand, its
+                           index finger alone held out (the user's word of 2026-11-03: "pointing with a single finger"),
+                           the thumb laid along it, the other three curled under, a white cuff; four cells, pointing
+                           right, left, down and up (the fingertip at 92, 48 of a 96 px cell pointing right)
 
 Roblox centres a custom pointer on the mouse, so each one's hot spot is the middle of its picture (the gap between
-the two lashes; the nib's point). Also writes a preview, art/export/previews/cursors.png (each on dark and on light,
-actual size and four times).
+the two lashes; the nib's point). Also writes previews, art/export/previews/cursors.png (each pointer on dark and on
+light, actual size and four times) and pointer_hand.png.
 
     "C:/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe" art/scripts/ui/cursors.py
 """
@@ -28,13 +36,14 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", "..", ".."))
 REF = os.path.join(ROOT, "art", "refs", "ui", "cursor_lashes.png")
 OUT = os.path.join(ROOT, "art", "export", "textures")
 PREVIEW = os.path.join(ROOT, "art", "export", "previews", "cursors.png")
+PREVIEW_HAND = os.path.join(ROOT, "art", "export", "previews", "pointer_hand.png")
 
 SIZE = 64
 SS = 8  # drawn at eight times the size, then averaged down
 LASH_WIDTH = 54  # the mark's width on screen, px
 THICKEN = 0.9  # the mark's strokes made this much bolder, px (thin strokes vanished under the outline)
-NIB = 1.25  # the nib's size against its first drawing
 OUTLINE = 1.4  # the black outline, px
+OUTLINE_NIB = 1.0  # the nib's outline, px (thin, so it stays sharp)
 WHITE = np.array([0.97, 0.97, 0.97], np.float32)
 BONE = np.array([0.93, 0.91, 0.86], np.float32)
 BLACK = np.array([0.02, 0.02, 0.025], np.float32)
@@ -74,38 +83,190 @@ def lashes():
     return outlined(flow.grow((canvas > 0.5).astype(np.float32), int(round(THICKEN * SS))))
 
 
+def _stamp(points, scale):
+    """A polygon given in final px, filled on the supersampled canvas."""
+    return pt.fill([(x * scale, y * scale) for x, y in points], SIZE * scale, SIZE * scale)
+
+
 def nib():
-    """A fountain-pen nib, its point on the middle pixel, its body slanting down to the right (as an arrow does):
-    the shoulders, the slit down from the point to the breather hole, the shade on its far half."""
-    centre = SIZE * SS / 2
-    axis = np.array([math.cos(math.radians(52)), math.sin(math.radians(52))])  # from the point to the back
+    """A fountain pen's nib, its point on the middle pixel, slanting down to the right (as an arrow does), on the black
+    grip of the pen: the shoulders, a lit half and a shaded one, the slit down from the point to the breather hole, a
+    line engraved across the shoulders, a steel ring where it meets the grip; a thin black outline round it all and a
+    soft shadow under it."""
+    centre = SIZE / 2
+    axis = np.array([math.cos(math.radians(50)), math.sin(math.radians(50))])  # from the point to the back
     side = np.array([-axis[1], axis[0]])
 
     def at(u, v):
-        p = np.array([centre, centre]) + (axis * u + side * v) * SS * NIB
+        p = np.array([centre, centre]) + axis * u + side * v
         return (float(p[0]), float(p[1]))
 
-    # half widths along the nib (px from the point): fine at the point, full at the shoulders, a step in at the back
-    us = np.linspace(0, 27, 40)
-    half = np.interp(us, [0, 1.5, 8, 15, 19, 21, 21.01, 27], [0.25, 1.2, 4.2, 6.6, 7.1, 6.8, 5.2, 5.2])
-    left = [at(u, -hw) for u, hw in zip(us, half)]
-    right = [at(u, hw) for u, hw in zip(us, half)]
-    body = pt.fill(left + right[::-1], SIZE * SS, SIZE * SS)
-    hard = (body > 0.5).astype(np.float32)
-    ring = flow.grow(hard, int(round(OUTLINE * SS)))
-    # the far half a shade darker, the slit and the breather hole in black, a line where the nib meets the pen
-    ys, xs = np.mgrid[0:SIZE * SS, 0:SIZE * SS].astype(np.float32)
+    def body(us, half):
+        left = [at(u, -hw) for u, hw in zip(us, half)]
+        right = [at(u, hw) for u, hw in zip(us, half)]
+        return left + right[::-1]
+
+    # half widths along the nib (px from the point): fine at the point, full at the shoulders, a little in to the ring
+    us = np.linspace(0, 24.2, 60)
+    half = np.interp(us, [0, 0.7, 2.5, 7, 11, 15, 18.5, 21.5, 24.2], [0.25, 0.65, 1.55, 3.6, 5.2, 6.4, 6.9, 6.7, 6.4])
+    nib_shape = _stamp(body(us, half), SS)
+    ring = _stamp(body([24.0, 25.6], [6.5, 6.5]), SS)
+    # the grip: straight, its end rounded
+    grip_pts = [at(25.4, -5.7), at(31.2, -5.7)]
+    grip_pts += [at(31.2 + 5.7 * math.sin(a), -5.7 * math.cos(a)) for a in np.linspace(0, math.pi, 13)]
+    grip_pts += [at(25.4, 5.7)]
+    grip = _stamp(grip_pts, SS)
+    solid = np.clip(nib_shape + ring + grip, 0, 1)
+    hard = (solid > 0.5).astype(np.float32)
+    ring_out = flow.grow(hard, int(round(OUTLINE_NIB * SS)))
+
+    n = SIZE * SS
+    ys, xs = np.mgrid[0:n, 0:n].astype(np.float32)
+    ys, xs = (ys + 0.5) / SS, (xs + 0.5) / SS
+    rel_u = (xs - centre) * axis[0] + (ys - centre) * axis[1]
     rel_v = (xs - centre) * side[0] + (ys - centre) * side[1]
-    tone = np.where(rel_v > 0, 0.84, 1.0)[..., None] * BONE[None, None]
-    slit = pt.fill(pt.outline([at(1.6, 0), at(12.6, 0)], [0.9 * SS, 0.9 * SS]), SIZE * SS, SIZE * SS)
-    hole = pt.ellipse(*at(14.4, 0), 1.7 * SS * NIB, 1.7 * SS * NIB, SIZE * SS, SIZE * SS)
-    collar = pt.fill(pt.outline([at(21.3, -6.9), at(21.3, 6.9)], [0.9 * SS, 0.9 * SS]), SIZE * SS, SIZE * SS)
-    marks = np.clip(slit + hole + collar, 0, 1) * hard
-    rgb = tone * (1 - marks[..., None]) + BLACK[None, None] * marks[..., None]
+    # the nib: the lit half (toward the light, top right) and the shaded half, a soft turn between them along the slit
+    turn = pt.smoothstep(-0.6, 0.9, rel_v)
+    lit = BONE[None, None] * (1.0 - 0.06 * pt.smoothstep(4, 22, rel_u))[..., None]
+    shade = BONE[None, None] * 0.74
+    rgb = lit * (1 - turn[..., None]) + shade * turn[..., None]
+    # (a bright edge along the lit side)
+    edge = pt.smoothstep(1.6, 0.2, np.abs(rel_v + np.interp(rel_u, us, half) - 0.9)) * (rel_v < 0) * (rel_u > 2)
+    rgb = rgb + edge[..., None] * 0.05
+    slit = pt.fill([(x * SS, y * SS) for x, y in pt.outline([at(0.9, 0), at(12.4, 0)], [0.8, 0.8])], n, n)
+    hole = pt.ellipse(*[c * SS for c in at(13.7, 0)], 1.55 * SS, 1.55 * SS, n, n)
+    arc = [at(19.6 - 2.2 * (1 - (v / 5.4) ** 2), v) for v in np.linspace(-5.4, 5.4, 15)]
+    engraved = pt.fill([(x * SS, y * SS) for x, y in pt.outline(arc, [0.55] * 15)], n, n)
+    marks = np.clip(slit + hole, 0, 1)
+    rgb = rgb * (1 - marks[..., None]) + BLACK[None, None] * marks[..., None]
+    rgb = rgb * (1 - 0.45 * engraved[..., None])
+    # the steel ring and the grip
+    in_ring = ring * (1 - nib_shape)
+    steel = np.array([0.62, 0.62, 0.64], np.float32)[None, None] * (1.0 - 0.25 * turn)[..., None]
+    rgb = rgb * (1 - in_ring[..., None]) + steel * in_ring[..., None]
+    in_grip = grip * (1 - np.clip(nib_shape + ring, 0, 1))
+    black_grip = np.array([0.07, 0.07, 0.08], np.float32)[None, None] * np.ones((n, n, 1), np.float32)
+    shine = pt.smoothstep(1.4, 0.0, np.abs(rel_v + 2.8)) * (rel_u > 26.5) * (rel_u < 32.5)
+    black_grip = black_grip + shine[..., None] * 0.28
+    rgb = rgb * (1 - in_grip[..., None]) + black_grip * in_grip[..., None]
     rgb = rgb * hard[..., None] + BLACK[None, None] * (1 - hard[..., None])
-    alpha = down(ring)
-    colour = down(rgb * ring[..., None]) / np.maximum(alpha, 1e-6)[..., None]
-    return np.concatenate([colour, alpha[..., None]], -1).astype(np.float32)
+    alpha = down(ring_out)
+    colour = down(rgb * ring_out[..., None]) / np.maximum(alpha, 1e-6)[..., None]
+    # the soft shadow under it (down and to the right), where the pen itself is not
+    shadow = pt.blur(alpha, 1.1)
+    moved = np.zeros_like(shadow)
+    moved[2:, 1:] = shadow[:-2, :-1]  # (shifted, not rolled: nothing wraps round to the other edge)
+    shadow = moved * 0.38
+    out_alpha = alpha + shadow * (1 - alpha)
+    out_rgb = colour * (alpha / np.maximum(out_alpha, 1e-6))[..., None]
+    return np.concatenate([np.clip(out_rgb, 0, 1), out_alpha[..., None]], -1).astype(np.float32)
+
+
+HAND_CELL = 96  # one cell of the PointerHand sheet, px
+HAND_SS = 6
+HAND_OUTLINE = 2.6  # px at the cell's size (the hand shows at half: 1.3 px)
+RED = np.array([210, 30, 30], np.float32) / 255
+RED_LIT = np.array([238, 84, 70], np.float32) / 255
+RED_DARK = np.array([150, 16, 20], np.float32) / 255
+INK = np.array([22, 10, 12], np.float32) / 255
+CUFF = np.array([236, 232, 224], np.float32) / 255
+
+
+def _capsule(a, b, r, n, scale):
+    """A capsule from a to b (final px), radius r, as coverage on the supersampled canvas."""
+    ax, ay = a
+    bx, by = b
+    ang = math.atan2(by - ay, bx - ax)
+    pts = []
+    for t in np.linspace(math.pi / 2, 3 * math.pi / 2, 16):
+        pts.append((ax + r * math.cos(ang + t), ay + r * math.sin(ang + t)))
+    for t in np.linspace(-math.pi / 2, math.pi / 2, 16):
+        pts.append((bx + r * math.cos(ang + t), by + r * math.sin(ang + t)))
+    return pt.fill([(x * scale, y * scale) for x, y in pts], n, n)
+
+
+def _rounded(x0, y0, x1, y1, r, n, scale):
+    """A rounded rectangle (final px) as coverage on the supersampled canvas."""
+    pts = []
+    for cx, cy, a0 in ((x1 - r, y0 + r, -90), (x1 - r, y1 - r, 0), (x0 + r, y1 - r, 90), (x0 + r, y0 + r, 180)):
+        for t in np.linspace(a0, a0 + 90, 8):
+            pts.append((cx + r * math.cos(math.radians(t)), cy + r * math.sin(math.radians(t))))
+    return pt.fill([(x * scale, y * scale) for x, y in pts], n, n)
+
+
+def _line(points, width, n, scale):
+    return pt.fill([(x * scale, y * scale) for x, y in pt.outline(points, [width] * len(points))], n, n)
+
+
+def pointer_hand():
+    """The red hand pointing right, its index finger alone held out (the fingertip at 92, 48 of the cell), drawn as
+    stickers back to front, each with its own ink outline so the fingers part from each other: the cuff, the back of
+    the hand, the three curled fingers, the index finger, the thumb laid along it. Lit from the top, darker below."""
+    n = HAND_CELL * HAND_SS
+    k = HAND_SS
+    pieces = [
+        ("cuff", _rounded(8, 37, 25, 83, 3.5, n, k)),
+        ("fist", _rounded(21, 39, 63, 82, 12, n, k)),
+        ("curl3", _capsule((47, 76.5), (57, 76.5), 4.4, n, k)),
+        ("curl2", _capsule((49, 68), (61, 68), 4.8, n, k)),
+        ("curl1", _capsule((51, 59), (64, 59), 5.2, n, k)),
+        ("index", _capsule((54, 48), (86, 48), 6.0, n, k)),
+        ("thumb", _capsule((31, 41.5), (57, 41.5), 5.0, n, k)),
+    ]
+    ys = (np.mgrid[0:n, 0:n][0].astype(np.float32) + 0.5) / k
+    # the red, lit from the top: light at y 36, the base by about 52, dark by 82
+    tone = np.clip((ys - 36) / 46, 0, 1)[..., None]
+    red = np.where(tone < 0.35, RED_LIT + (RED - RED_LIT) * (tone / 0.35), RED + (RED_DARK - RED) * ((tone - 0.35) / 0.65))
+    rgb = np.zeros((n, n, 3), np.float32)
+    alpha = np.zeros((n, n), np.float32)
+    ring_r = int(round(HAND_OUTLINE * k))
+    for name, cover in pieces:
+        hard = (cover > 0.5).astype(np.float32)
+        pt.layer_over(rgb, alpha, INK, flow.grow(hard, ring_r))
+        fill = CUFF[None, None] * (1.0 - 0.18 * tone) if name == "cuff" else red
+        pt.layer_over(rgb, alpha, fill, hard)
+        if name == "index":
+            # a lit line along the top of the finger, and the nail's edge near the tip
+            pt.layer_over(rgb, alpha, np.clip(RED_LIT * 1.08, 0, 1), _line([(60, 44.6), (84, 44.6)], 1.3, n, k) * hard * 0.8)
+            pt.layer_over(rgb, alpha, RED_DARK, _line([(81.5, 43.5), (81.5, 47.5)], 0.9, n, k) * hard * 0.6)
+        elif name == "fist":
+            pt.layer_over(rgb, alpha, RED_DARK, _line([(36, 52), (41, 60), (40, 70)], 1.1, n, k) * hard * 0.55)
+        elif name == "cuff":
+            pt.layer_over(rgb, alpha, INK, _line([(13.5, 40), (13.5, 80)], 0.9, n, k) * hard * 0.35)
+
+    def shrink_down(a):
+        return a.reshape(HAND_CELL, k, HAND_CELL, k, *a.shape[2:]).mean(axis=(1, 3))
+
+    a_small = shrink_down(alpha)
+    rgb_small = shrink_down(rgb * alpha[..., None]) / np.maximum(a_small, 1e-6)[..., None]
+    right = np.concatenate([np.clip(rgb_small, 0, 1), a_small[..., None]], -1).astype(np.float32)
+    left = right[:, ::-1]
+    down_cell = np.rot90(right, k=-1)
+    up_cell = np.rot90(right, k=1)
+    top = np.concatenate([right, left], axis=1)
+    bottom = np.concatenate([down_cell, up_cell], axis=1)
+    return np.ascontiguousarray(np.concatenate([top, bottom], axis=0))
+
+
+def hand_preview(sheet):
+    """The four cells at the size the game shows them (half) and at the drawn size, on dark and on light."""
+    cell = HAND_CELL
+    rows = []
+    for back in (0.08, 0.78):
+        tiles = []
+        for index in range(4):
+            y, x = (index // 2) * cell, (index % 2) * cell
+            picture = sheet[y:y + cell, x:x + cell]
+            half = picture.reshape(cell // 2, 2, cell // 2, 2, 4).mean(axis=(1, 3))
+            for img in (half, picture):
+                tile = np.full((cell, cell, 3), back, np.float32)
+                h, w = img.shape[:2]
+                oy, ox = (cell - h) // 2, (cell - w) // 2
+                a = img[..., 3:]
+                tile[oy:oy + h, ox:ox + w] = tile[oy:oy + h, ox:ox + w] * (1 - a) + img[..., :3] * a
+                tiles.append(tile)
+        rows.append(np.concatenate(tiles, axis=1))
+    return np.concatenate(rows, axis=0)
 
 
 def preview(pictures):
@@ -129,11 +290,13 @@ def preview(pictures):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    lock, free = lashes(), nib()
+    lock, free, hand = lashes(), nib(), pointer_hand()
     png.write(os.path.join(OUT, "CursorLock.png"), lock)
     png.write(os.path.join(OUT, "CursorFree.png"), free)
+    png.write(os.path.join(OUT, "PointerHand.png"), hand)
     png.write(PREVIEW, preview([lock, free]))
-    print("[cursors] wrote", os.path.join(OUT, "CursorLock.png"), "and CursorFree.png")
+    png.write(PREVIEW_HAND, hand_preview(hand))
+    print("[cursors] wrote", os.path.join(OUT, "CursorLock.png"), ", CursorFree.png and PointerHand.png")
 
 
 if __name__ == "__main__":

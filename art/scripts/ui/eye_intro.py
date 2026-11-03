@@ -7,9 +7,14 @@ the pencil itself (where it is dense, and its strokes for the hair's way). The c
 frame's. Painted in layers with art/scripts/ui/paint.py, so the game can move them apart a little for depth:
 
     IntroBaseL, IntroBaseR   the face with the eye shut, the mouth, the light (two halves, 896 x 1008 each)
-    IntroEye1..8             the eye's corner of the picture as it opens (eight steps, from a crack to open),
-                             laid exactly over the face (its edges feathered into the shut face's own pixels)
-    IntroHairL, IntroHairR   the hair in front, a touch out of focus (transparent, two halves)
+    IntroEyeSheet1..12       the eye's corner of the picture as it opens, 24 steps from a crack to open, two to a
+                             sheet (one over the other), each laid exactly over the face (its edges feathered into
+                             the shut face's own pixels); the game blends each into the next, so it opens smoothly
+                             (2026-11-03, the user's word: more frames, smoother, like the anime's opening; it was
+                             eight steps). As it opens the pupil tightens and the red comes up in the iris.
+    IntroHairL, IntroHairR   the hair in front, a touch out of focus (transparent, two halves): brown since
+                             2026-11-03 (the user's word: Light's brown, as in the opening), chestnut locks inked at
+                             their edges, a warm shine and fine dark strands
 
 It also writes src/client/UI/EyeArt.luau (where the eye's crop and the eye itself sit in the picture) and a preview,
 art/export/previews/intro_eye.png (shut and open, as the game lays them, and the sketch under them).
@@ -41,20 +46,26 @@ SW, SH = 1670, 942  # the sketch
 W, H = 1792, 1008  # the picture (each half fits Roblox's 1024 px limit)
 K = W / SW  # sketch px -> picture px
 OY = (H - SH * K) / 2
-# (eight frames, the user's call of 2026-10-27: the lid sliding up, the lashes with it, the iris coming out from under)
-OPENINGS = (0.06, 0.15, 0.27, 0.41, 0.56, 0.71, 0.86, 1.0)
+# (the lid sliding up, the lashes with it, the iris coming out from under: eight frames on 2026-10-27, 24 since
+# 2026-11-03, evenly apart, so blending each into the next reads as one movement; the game sets the pace)
+FRAMES = 24
+OPENINGS = tuple(round((k + 1) / FRAMES, 4) for k in range(FRAMES))
+PER_SHEET = 2  # frames on a sheet, one over the other (each sheet within Roblox's 1024 px)
 
 # The colours are read off your colour frame (sampled): grey skin, a dark plane where the face turns away, black beyond,
-# near-black cel hair with cool grey lit strips, a greyed white and a crimson iris.
+# a greyed white and a crimson iris. The hair is Light's brown, as the anime's opening has it (2026-11-03): a deep
+# brown in shade, chestnut on its lit locks, a warm copper shine, inked dark at its edges.
 BG = (0.006, 0.006, 0.007)
 SKIN = (0.78, 0.77, 0.775)
 PLANE = (0.335, 0.322, 0.318)  # the nose and mouth's plane, turned from the light
 STRIP = (0.6, 0.592, 0.593)  # the light caught along its foot and up its far edge
 INK = (0.04, 0.038, 0.045)
-HAIR_BASE = (0.03, 0.025, 0.022)
-HAIR_BODY = (0.17, 0.165, 0.18)
-HAIR_LOW = (0.1, 0.095, 0.105)  # the cel hair's soft gradient, toward the light
-HAIR_SHINE = (0.6, 0.6, 0.66)  # the cel hair's shine: a cool pale grey band
+HAIR_BASE = (0.1, 0.05, 0.03)  # the deep brown in its shade
+HAIR_BODY = (0.46, 0.255, 0.14)  # chestnut, its lit locks
+HAIR_LOW = (0.22, 0.115, 0.065)  # the cel hair's soft gradient, toward the light
+HAIR_SHINE = (0.86, 0.6, 0.38)  # the cel hair's shine: a warm copper band
+HAIR_INK = (0.045, 0.02, 0.015)  # the line at the locks' edges and the fine strands
+PUPIL_WIDE = 0.43  # the pupil, a share of the iris, as the eye cracks open (it tightens to PUPIL as it opens)
 SCLERA = (0.86, 0.84, 0.85)
 LIGHT = (-0.55, 0.835)  # which way shadows fall across the picture (the light is above and to the right)
 SHADE = (0.6, 0.595, 0.61)  # what a shadow leaves of the light on skin: a flat grey, as the frame's are
@@ -403,6 +414,9 @@ def eye(canvas, eye_model, openness, sx, sy):
     r = np.hypot(ex, ey)
     iris = np.zeros((H, W, 3), np.float32)
     iris[:] = (0.4, 0.015, 0.08)
+    # (as it opens the pupil tightens and the red comes up: dark and wide at the crack, burning once open)
+    pupil = PUPIL_WIDE + (PUPIL - PUPIL_WIDE) * pt.smoothstep(0.15, 1.0, openness)
+    burn = 0.62 + 0.38 * pt.smoothstep(0.1, 0.9, openness)
     qx, qy = ex * 80, ey * 80
     rng = random.Random(7)
     spokes = np.zeros((H, W), np.float32)
@@ -426,9 +440,10 @@ def eye(canvas, eye_model, openness, sx, sy):
     pt.over(iris, (0.16, 0.0, 0.04), pt.smoothstep(0.885, 0.93, r))
     pt.over(iris, (0.5, 0.04, 0.12), pt.smoothstep(0.42, 0.37, r))
     pt.over(iris, (0.2, 0.0, 0.03), pt.smoothstep(0.345, 0.325, r))
-    pt.over(iris, (0.015, 0.0, 0.004), pt.smoothstep(PUPIL + 0.012, PUPIL - 0.012, r))
+    pt.over(iris, (0.015, 0.0, 0.004), pt.smoothstep(pupil + 0.012, pupil - 0.012, r))
     # (its left side in shadow as drawn, and light caught low on its right)
     iris *= (0.72 + 0.28 * pt.smoothstep(-0.9, 0.5, ex))[..., None]
+    iris *= burn
     catch = pt.smoothstep(0.45, 0.85, r) * pt.smoothstep(0.85, 1.0, 1 - r)
     catch *= pt.smoothstep(0.1, 0.9, ex * 0.4 + ey * 0.9)
     iris += (catch * 0.25)[..., None] * np.array([1.0, 0.2, 0.35], np.float32)
@@ -528,6 +543,8 @@ def hair(dark, eye_zone, sx, sy):
     keep = flow.joined(solid, flow.shrink(solid.astype(np.float32), 7) > 0.5)
     front = front * flow.grow(keep.astype(np.float32), 2)
     front = np.maximum(front, flow.close(front, 5))
+    # (and the hairline gaps inside a mass of hair filled: the skin behind showed through them as pale streaks)
+    front = np.maximum(front, flow.close(front, 9) * pt.smoothstep(0.6, 0.9, pt.blur(front, 14 * K)))
     # Clean cel silhouettes: the outline smoothed and cut crisp (a pixel of antialiasing, no ragged pencil edge).
     front = pt.smoothstep(0.44, 0.56, pt.blur(front, 2.2 * K))
     mouth = dense * fill(MOUTH_ZONE)
@@ -539,9 +556,10 @@ def hair(dark, eye_zone, sx, sy):
     # cut crisp into flat tones.
     fx, fy, _ = flow.orientation(d, 3.0, 22.0)
     gap = pt.blur(d, 16 * K) - pt.blur(d, 2.0 * K)
-    strips = pt.blur(flow.lic(gap, fx, fy, 40.0, 1.5), 1.6 * K)
-    lit = pt.smoothstep(0.037, 0.047, strips) * inside
-    shine = pt.smoothstep(0.075, 0.085, strips) * inside
+    # (smeared further and softened more since the hair went brown: long lit locks rather than grain, 2026-11-03)
+    strips = pt.blur(flow.lic(gap, fx, fy, 64.0, 1.5), 2.6 * K)
+    lit = pt.smoothstep(0.03, 0.04, strips) * inside
+    shine = pt.smoothstep(0.062, 0.072, strips) * inside
     # The flat base and its one soft gradient, up from near-black toward the light.
     rgb = np.empty((H, W, 3), np.float32)
     rgb[:] = HAIR_BASE
@@ -557,6 +575,14 @@ def hair(dark, eye_zone, sx, sy):
     lines /= max(float(np.percentile(lines[front > 0.5], 99.0)), 1e-6)
     tips = front * (1 - pt.smoothstep(0.2, 0.7, inside))
     pt.over(rgb, HAIR_BODY, pt.smoothstep(0.45, 0.55, lines) * tips * (0.4 + 0.6 * light))
+    # Fine dark strands through the lit locks, running with them (the anime's hair is drawn strand by strand), and the
+    # ink along every lock's edge, heavier away from the light.
+    dark_seeds = (np.random.default_rng(9).random((H, W)) < 0.0016).astype(np.float32)
+    dark_lines = flow.lic(pt.blur(dark_seeds, 0.5), fx, fy, 34.0, 1.0)
+    dark_lines /= max(float(np.percentile(dark_lines[front > 0.5], 99.0)), 1e-6)
+    pt.over(rgb, HAIR_INK, pt.smoothstep(0.42, 0.58, dark_lines) * lit * inside * 0.55)
+    rim = np.clip(front - flow.shrink(front, int(round(2.0 * K))), 0, 1)
+    pt.over(rgb, HAIR_INK, rim * (0.95 - 0.35 * light))
     rgb *= (0.72 + 0.28 * light)[..., None]
     return np.clip(rgb, 0, 1), front, mouth
 
@@ -647,6 +673,7 @@ def main():
     png.write(os.path.join(OUT, "IntroBaseR.png"), shut[:, half:])
     x0, y0, x1, y1 = pic.window
     frames = []
+    pieces = []
     for k, openness in enumerate(OPENINGS):
         frame = pic.render(openness)
         frames.append(frame)
@@ -656,8 +683,11 @@ def main():
         fy = np.minimum(np.arange(ch), np.arange(ch)[::-1])[:, None]
         fx = np.minimum(np.arange(cw), np.arange(cw)[::-1])[None, :]
         feather = np.clip(np.minimum(fy, fx) / 20.0, 0, 1).astype(np.float32)
-        png.write(os.path.join(OUT, f"IntroEye{k + 1}.png"), np.concatenate([piece, feather[..., None]], -1))
+        pieces.append(np.concatenate([piece, feather[..., None]], -1))
         print("[eye] frame", k + 1, openness)
+    for sheet in range(len(pieces) // PER_SHEET):
+        stack = np.concatenate(pieces[sheet * PER_SHEET:(sheet + 1) * PER_SHEET], axis=0)
+        png.write(os.path.join(OUT, f"IntroEyeSheet{sheet + 1}.png"), stack)
     hair_rgb, hair_alpha = pic.near()
     rgba = np.concatenate([hair_rgb, hair_alpha[..., None]], axis=-1)
     png.write(os.path.join(OUT, "IntroHairL.png"), rgba[:, :half])
@@ -675,14 +705,17 @@ def main():
     lines = [
         "--!strict",
         "-- GENERATED by art/scripts/ui/eye_intro.py. Do not edit by hand.",
-        "-- The first join's painted eye (UI/EyeIntro): the picture's size in px, where the eye's crop (IntroEye1..n) lies",
-        "-- in it and where the eye itself is (the slow push-in closes on it), as shares of the picture.",
+        "-- The first join's painted eye (UI/EyeIntro): the picture's size in px, where the eye's crop lies in it and",
+        "-- where the eye itself is (the slow push-in closes on it), as shares of the picture; the opening's frames, how",
+        "-- many to a sheet (IntroEyeSheet1..n, one over the other) and a frame's size on its sheet in px.",
         "",
         "return {",
         f"\tsize = Vector2.new({W}, {H}),",
         f"\tcrop = {{ x = {x0 / W:.5f}, y = {y0 / H:.5f}, w = {(x1 - x0) / W:.5f}, h = {(y1 - y0) / H:.5f} }},",
         f"\teye = Vector2.new({ex / W:.4f}, {ey / H:.4f}),",
         f"\tframes = {len(OPENINGS)},",
+        f"\tperSheet = {PER_SHEET},",
+        f"\tframeSize = Vector2.new({x1 - x0}, {y1 - y0}),",
         "}",
     ]
     with open(LUAU, "w", encoding="utf-8", newline="\n") as f:

@@ -442,35 +442,42 @@ Assets.textures = {
 	UiWordmark = "113872686278317", -- (the title's pinned paper letters, uploaded 2026-10-28; was Core's carrier)
 } :: { [string]: string }
 
--- Pictures uploaded on their own through Studio's importer (art/export/textures). The first join's eye, painted in
--- layers by art/scripts/ui/eye_intro.py (UI/EyeIntro): the face with the eye shut in two halves, the eye's corner as it
--- opens (eight frames), the foreground hair in two halves. The loading screen's apple, a 4 x 4 sheet of it turning, and
--- the hand that catches it, waiting, its thumb closing (four frames) and holding it (art/scripts/ui/intro_frames.py,
--- UI/AppleLoading). "" until uploaded: those screens then draw a stand-in (a frame of the eye or the thumb not
--- uploaded is left out).
+-- Pictures uploaded on their own (art/export/textures; since 2026-11-03 through Studio's MCP, docs/agent-memory/
+-- pictures-by-mcp.md). The first join's eye, painted in layers by art/scripts/ui/eye_intro.py (UI/EyeIntro): the
+-- face with the eye shut in two halves, the eye's corner as it opens (24 frames, two to a sheet), the foreground
+-- hair in two halves. The loading screen's apple, four 4 x 4 sheets of it turning, and the hand that catches it in
+-- three layers, the inside of the palm behind the apple, the hand in front of it and the thumb that closes over it
+-- (art/scripts/ui/intro_frames.py and ui/apple_hand.py, UI/AppleLoading). "" until uploaded: those screens then
+-- draw a stand-in (frames or sheets not uploaded are left out).
 Assets.images = {
-	IntroBaseL = "99402871928245",
-	IntroBaseR = "137085813757400",
-	IntroEye1 = "90368623390656",
-	IntroEye2 = "133772217098143",
-	IntroEye3 = "120822303690075",
-	IntroEye4 = "125034282161541",
-	IntroEye5 = "95713400533522",
-	IntroEye6 = "134467055733729",
-	IntroEye7 = "101128340381069",
-	IntroEye8 = "73647841420587",
-	IntroHairL = "81440657034501",
-	IntroHairR = "125061429762895",
-	AppleSpin = "80647396058252",
-	AppleHand1 = "119620415469239",
-	AppleHand2 = "113469614959846",
-	AppleClose1 = "74850327668366",
-	AppleClose2 = "92884140912727",
-	AppleClose3 = "96947847026038",
-	AppleClose4 = "80639489563850",
+	IntroBaseL = "126469800109003",
+	IntroBaseR = "116798775158106",
+	IntroEyeSheet1 = "97110683762174",
+	IntroEyeSheet2 = "113791488685442",
+	IntroEyeSheet3 = "99330637426759",
+	IntroEyeSheet4 = "105782955241562",
+	IntroEyeSheet5 = "87497307482733",
+	IntroEyeSheet6 = "79062639882292",
+	IntroEyeSheet7 = "125794167501624",
+	IntroEyeSheet8 = "110505187659093",
+	IntroEyeSheet9 = "94060963338538",
+	IntroEyeSheet10 = "72565112350710",
+	IntroEyeSheet11 = "111057063419119",
+	IntroEyeSheet12 = "137470396341204",
+	IntroHairL = "99850936389635",
+	IntroHairR = "92835880545878",
+	AppleSpin1 = "87285355727532",
+	AppleSpin2 = "101058079851458",
+	AppleSpin3 = "107031597473568",
+	AppleSpin4 = "98149657604172",
+	AppleHandBack = "90611757340961",
+	AppleHandFront = "79903957152049",
+	AppleThumb = "112422251553812",
 	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
+	-- And the red hand that points at whatever is chosen (UI/Kit/Pointer): one finger, four ways round on a sheet.
 	CursorLock = "71963626863169",
-	CursorFree = "122660541972849",
+	CursorFree = "114760490451104",
+	PointerHand = "138380601479491",
 	-- The Reál's mark (the user's, 2026-10-28): the currency's icon everywhere (UI/Kit/Icon "real"); the coin until
 	-- it is uploaded.
 	RealIcon = "111490167287256",

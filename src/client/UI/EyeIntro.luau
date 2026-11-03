@@ -8,9 +8,11 @@
 -- the loading carrying on behind.
 --
 -- The picture is painted in layers (art/scripts/ui/eye_intro.py, laid out by UI/EyeArt): the face in two halves, the
--- eye's corner in four frames laid over it as it opens, and the foreground hair in two halves, which moves more than the
--- face, for depth; dust in the air and film grain over it. It is drawn on ReplicatedFirst's DGIntro (first/Cover: black
--- from the very first frame, full screen, the top bar too), which may already show the face.
+-- eye's corner in 24 frames laid over it as it opens (two to a sheet), and the foreground hair in two halves, which
+-- moves more than the face, for depth; dust in the air and film grain over it. The opening blends each frame into the
+-- next as it goes, slow to crack, quick through the middle, settling wide open (2026-11-03, the user's word: more
+-- frames and smoother, like the anime's opening; it stepped through eight). It is drawn on ReplicatedFirst's DGIntro
+-- (first/Cover: black from the very first frame, full screen, the top bar too), which may already show the face.
 
 local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -29,8 +31,8 @@ local EyeIntro = {}
 
 local HOLD = 2 -- the shut eye, at least
 local MOST = 45 -- the longest the intro waits for the game to load
--- each frame of the eye opening (the last stays): the lid slides up, quick at first, easing as it comes open
-local OPEN_STEPS = { 0.045, 0.045, 0.05, 0.05, 0.055, 0.06, 0.07 }
+local OPEN_TIME = 0.85 -- seconds the eye takes to open, from the crack to wide
+local OPEN_EASE = 2.4 -- how slow it is to crack and to settle against the quick middle
 local OPEN_HOLD = 1.3 -- the open eye, looking
 local TO_BLACK = 1
 local INTO_LOBBY = 3
@@ -58,8 +60,9 @@ local function picture(name: string, parent: Instance, position: UDim2, size: UD
 	return label
 end
 
--- The stage: the picture's layers, made here or found where Cover made them.
-type Stage = { face: Frame, near: Frame, eye: ImageLabel }
+-- The stage: the picture's layers, made here or found where Cover made them; the eye's two frames (the one it is on,
+-- and the next one blending in over it).
+type Stage = { face: Frame, near: Frame, eye: ImageLabel, next: ImageLabel }
 
 local function stageOf(black: Frame): Stage
 	local face = black:FindFirstChild("Face") :: Frame?
@@ -93,10 +96,40 @@ local function stageOf(black: Frame): Stage
 		end
 	end
 	local crop = EyeArt.crop
-	local eye = picture("IntroEye1", face :: Frame, UDim2.fromScale(crop.x, crop.y), UDim2.fromScale(crop.w, crop.h), 2)
-	eye.Name = "Opening"
-	eye.Visible = false
-	return { face = face :: Frame, near = near :: Frame, eye = eye }
+	local function frame(name: string): ImageLabel
+		local made = picture(
+			"IntroEyeSheet1",
+			face :: Frame,
+			UDim2.fromScale(crop.x, crop.y),
+			UDim2.fromScale(crop.w, crop.h),
+			2
+		)
+		made.Name = name
+		made.ImageRectSize = EyeArt.frameSize
+		made.Visible = false
+		return made
+	end
+	local eye = frame("Opening")
+	local next = frame("OpeningNext")
+	return { face = face :: Frame, near = near :: Frame, eye = eye, next = next }
+end
+
+-- Shows frame `k` of the opening (1 to EyeArt.frames) on `label`, from its sheet; false when its sheet is not uploaded.
+local function showFrame(label: ImageLabel, k: number): boolean
+	local sheet = image("IntroEyeSheet" .. math.ceil(k / EyeArt.perSheet))
+	if sheet == "" then
+		return false
+	end
+	label.Image = sheet
+	label.ImageRectOffset = Vector2.new(0, ((k - 1) % EyeArt.perSheet) * EyeArt.frameSize.Y)
+	return true
+end
+
+-- How far open the eye is `u` of the way through its opening (0..1): slow to crack, quick through the middle,
+-- settling.
+local function eased(u: number): number
+	local a, b = u ^ OPEN_EASE, (1 - u) ^ OPEN_EASE
+	return a / (a + b)
 end
 
 -- Lays a layer over the screen (covering it, the picture's shape kept) at `zoom`, closing in on the eye, moved `drift`.
@@ -120,12 +153,17 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 	local still = Motion.isReduced()
 
 	local stage = stageOf(black)
-	-- (a frame not uploaded yet is left out: the opening plays the ones there are)
-	local frames = {}
+	-- (frames whose sheet is not uploaded yet are left out: the opening plays as far as the sheets there are go)
+	local count = 0
+	local sheets = {}
 	for k = 1, EyeArt.frames do
-		local frame = image("IntroEye" .. k)
-		if frame ~= "" then
-			table.insert(frames, frame)
+		local sheet = image("IntroEyeSheet" .. math.ceil(k / EyeArt.perSheet))
+		if sheet == "" then
+			break
+		end
+		count = k
+		if not table.find(sheets, sheet) then
+			table.insert(sheets, sheet)
 		end
 	end
 	-- dust in the light, and the film's grain
@@ -166,7 +204,7 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 	end
 	if drawn then
 		local ids = { image("IntroBaseL"), image("IntroBaseR"), image("IntroHairL"), image("IntroHairR") }
-		for _, id in ipairs(frames) do
+		for _, id in ipairs(sheets) do
 			table.insert(ids, id)
 		end
 		pcall(function()
@@ -269,16 +307,25 @@ function EyeIntro.play(gui: ScreenGui, isLoaded: () -> boolean, onRevealed: (() 
 		task.wait(0.1)
 	end
 	skipButton:Destroy()
-	-- It opens: the frames, a red flare, the view pushing in a little with it.
-	if not skipped and drawn and #frames > 0 then
+	-- It opens: the frames, each blending into the next, a red flare, the view pushing in a little with it.
+	if not skipped and drawn and count > 0 then
 		Sfx.play("introEyeOpen")
-		stage.eye.Visible = true
-		for k = 1, #frames do
-			stage.eye.Image = frames[k]
-			if k < #frames and not still then
-				task.wait(OPEN_STEPS[k] or 0.06)
+		local began = os.clock()
+		while true do
+			local u = if still then 1 else math.clamp((os.clock() - began) / OPEN_TIME, 0, 1)
+			-- (0 is shut, the face's own picture under the frames; `count` is wide open)
+			local at = eased(u) * count
+			local k = math.floor(at)
+			local blend = at - k
+			stage.eye.Visible = k >= 1 and showFrame(stage.eye, k)
+			stage.next.Visible = k < count and blend > 0 and showFrame(stage.next, k + 1)
+			stage.next.ImageTransparency = 1 - blend
+			if u >= 1 then
+				break
 			end
+			RunService.RenderStepped:Wait()
 		end
+		stage.next.Visible = false
 		local flare = Instance.new("Frame")
 		flare.Name = "Flare"
 		flare.BackgroundColor3 = Color3.fromRGB(200, 10, 24)

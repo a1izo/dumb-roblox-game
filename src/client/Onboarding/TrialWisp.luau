@@ -5,7 +5,9 @@
 --   * it walks the real way there (PathfindingService, round walls and across bridges), a little ahead of
 --     you; if you fall behind it stops and pulses until you catch up;
 --   * when it is off the screen an amber arrow at the edge of the screen points to it;
---   * near the place itself it circles it, and a pillar of light stands there;
+--   * near the place itself it circles over it, above whatever stands there (a station's tablet: it hung in
+--     front of the name on it, the user's picture of 2026-11-03), and a soft column of light stands on the
+--     floor where you go to use it until you get there (it stood on the desk and rose through the tablet);
 --   * a soft chime each time it sets off somewhere new (Assets.sfx trialChime: silent until uploaded).
 --
 --   TrialWisp.target("file", deskPosition, "lead")   -- walk the player there
@@ -22,7 +24,6 @@ local Create = require(Shared:WaitForChild("Create"))
 
 local UI = script.Parent.Parent.UI
 local Kit = require(UI.Kit)
-local Motion = require(UI.Core.Motion)
 local Screens = require(UI.Screens)
 local UiSound = require(UI.Core.UiSound)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
@@ -39,7 +40,13 @@ local LEAD = 12 -- studs of path the wisp keeps ahead of you
 local HOVER = 3.5 -- studs above the path
 local WAIT_FOR = 24 -- further than this from you, it stops and calls
 local CIRCLE_AT = 22 -- this close to the place (flat), it goes and circles it
+local CIRCLE = 1.6 -- studs round, circling
 local PILLAR_AT = 48 -- this close, the pillar shows
+local ARRIVED = 7 -- this close to where you stand to use it, the pillar goes (you are there)
+local STAND_OUT = 4.4 -- studs out from the place towards you: where you stand to use it
+local PERCH_ROOF = 12 -- studs over the place the rays for its top start (a canopy higher up is not the place's)
+local PERCH_SEARCH = 1.75 -- studs between the rays, five by five round the place
+local PERCH_GAP = 2.2 -- studs it circles over the top of what stands at the place
 local SHINE_THROUGH = 30 -- further than this, its glow shows through walls
 local REPATH = 1.5 -- seconds between new paths while you are off the old one
 local OFF_PATH = 12 -- studs from the path that count as off it
@@ -59,6 +66,8 @@ local connection: RBXScriptConnection? = nil
 
 local goalKey: string? = nil
 local goal: Vector3? = nil
+local perch: Vector3? = nil -- where it circles at the place (over its top)
+local stand: Vector3? = nil -- where the pillar stands (on your side of the place)
 local mode: Mode = "wait"
 local waypoints: { Vector3 } = {}
 local pathFor: Vector3? = nil
@@ -74,6 +83,35 @@ end
 
 local function flat(v: Vector3): Vector3
 	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function solidRays(): RaycastParams
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local exclude: { Instance } = { workspace.CurrentCamera }
+	if LocalPlayer.Character then
+		table.insert(exclude, LocalPlayer.Character)
+	end
+	params.FilterDescendantsInstances = exclude
+	params.RespectCanCollide = true
+	return params
+end
+
+-- The spot over a place: a little above the top of whatever stands there (the tablet behind a station's desk,
+-- a figure's head), found by rays straight down round it; the place itself when nothing stands over it.
+local function perchOver(at: Vector3): Vector3
+	local params = solidRays()
+	local top = -math.huge
+	for dx = -2, 2 do
+		for dz = -2, 2 do
+			local from = at + Vector3.new(dx * PERCH_SEARCH, PERCH_ROOF, dz * PERCH_SEARCH)
+			local hit = workspace:Raycast(from, Vector3.new(0, -PERCH_ROOF - 6, 0), params)
+			if hit and hit.Position.Y < from.Y - 0.5 then
+				top = math.max(top, hit.Position.Y)
+			end
+		end
+	end
+	return Vector3.new(at.X, math.max(at.Y, top + PERCH_GAP), at.Z)
 end
 
 -- Building ------------------------------------------------------------------------------------------------
@@ -150,30 +188,12 @@ local function build(at: Vector3)
 		rate = 34,
 		z = 0.3,
 	})
-	-- (a thread of dark smoke torn off the flame's tip: the soul burning)
-	Vfx.Emit.make(ball, {
-		name = "Smoke",
-		tex = "VfxSmoke",
-		grid = 8,
-		color = Color3.fromRGB(60, 30, 16),
-		light = 0,
-		lit = 0.2,
-		size = { { 0, 0.5 }, { 1, 2.2 } },
-		alpha = { { 0, 1 }, { 0.2, 0.82 }, { 1, 1 } },
-		life = { 1, 1.6 },
-		speed = { 0.6, 1.2 },
-		accel = Vector3.new(0, 1.8, 0),
-		spread = 20,
-		rot = { 0, 360 },
-		spin = { -40, 40 },
-		rate = 7,
-		z = -1,
-	})
+	-- (no smoke off its tip any more: in the lobby's grey it read as a haze round a white puff, 2026-11-03)
 	local haloEmitter = Vfx.Emit.make(ball, {
 		name = "Halo",
 		tex = "VfxGlow",
 		color = AMBER,
-		size = 4.2,
+		size = 2.9,
 		alpha = { { 0, 1 }, { 0.05, 0.55 }, { 0.95, 0.55 }, { 1, 1 } },
 		life = 4,
 		rate = 1 / 3.8,
@@ -232,12 +252,12 @@ local function build(at: Vector3)
 		name = "Wake",
 		tex = "VfxGlow",
 		color = { { 0, CORE }, { 1, AMBER } },
-		size = { { 0, 0.7 }, { 1, 0 } },
-		alpha = { { 0, 0.3 }, { 1, 1 } },
-		life = 0.9,
+		size = { { 0, 0.5 }, { 1, 0 } },
+		alpha = { { 0, 0.35 }, { 1, 1 } },
+		life = 0.8,
 		light = 1,
 		bright = 1,
-		rate = 45,
+		rate = 26,
 	})
 	local lamp = Create("PointLight", {
 		Color = AMBER,
@@ -249,7 +269,7 @@ local function build(at: Vector3)
 	-- The glow around it: drawn over walls when you are far off (see step()).
 	local gui = Create("BillboardGui", {
 		Name = "Glow",
-		Size = UDim2.fromScale(5, 5),
+		Size = UDim2.fromScale(2.6, 2.6),
 		LightInfluence = 0,
 		AlwaysOnTop = false,
 		Parent = ball,
@@ -274,8 +294,8 @@ local function build(at: Vector3)
 		return item
 	end
 	if Vfx.Tex.real("VfxGlow") then
-		disc(1, Vfx.Tex.id("VfxGlow"), 0.1)
-		local star = disc(0.62, Vfx.Tex.id("VfxFlare"), 0.05) :: ImageLabel
+		disc(1, Vfx.Tex.id("VfxGlow"), 0.35)
+		local star = disc(0.62, Vfx.Tex.id("VfxFlare"), 0.1) :: ImageLabel
 		star.ImageColor3 = CORE
 	else
 		disc(0.8, nil, 0.88)
@@ -289,17 +309,10 @@ local function build(at: Vector3)
 	model, core, shell, light, halo, haloFx, orbits = holder, ball, glow, lamp, gui, haloEmitter, rings
 end
 
--- The pillar of light standing on the place itself.
+-- The pillar of light standing on the floor where you go to use the place.
 local function buildPillar(at: Vector3): Model
 	local floor = at - Vector3.new(0, 5, 0)
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	local exclude: { Instance } = { workspace.CurrentCamera }
-	if LocalPlayer.Character then
-		table.insert(exclude, LocalPlayer.Character)
-	end
-	params.FilterDescendantsInstances = exclude
-	local hit = workspace:Raycast(at + Vector3.new(0, 2, 0), Vector3.new(0, -30, 0), params)
+	local hit = workspace:Raycast(at + Vector3.new(0, 2, 0), Vector3.new(0, -30, 0), solidRays())
 	if hit then
 		floor = hit.Position
 	end
@@ -311,7 +324,8 @@ local function buildPillar(at: Vector3): Model
 		CFrame = CFrame.new(floor + Vector3.new(0, 9, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = CORE,
 		Material = Enum.Material.Neon,
-		Transparency = 0.7,
+		-- (unseen: the hard neon rod read as a white pole; the column is the soft beam round it, and its embers)
+		Transparency = 1,
 		Anchored = true,
 		CanCollide = false,
 		CanQuery = false,
@@ -355,7 +369,7 @@ local function buildPillar(at: Vector3): Model
 	Vfx.Beams.make(bottom, top, {
 		tex = "VfxColumn",
 		color = AMBER,
-		width = 3.2,
+		width = 2.6,
 		bright = 0.5,
 		light = 1,
 		speed = -6, -- (toward its top: rising)
@@ -532,9 +546,10 @@ local function step(dt: number)
 		local player = root.Position
 		near = flat(goal - player).Magnitude < CIRCLE_AT
 		if near then
-			-- At the place: circle it.
+			-- At the place: circle over it.
 			local angle = now * 1.6
-			target = goal + Vector3.new(math.cos(angle) * 2.4, 0, math.sin(angle) * 2.4)
+			perch = perch or perchOver(goal)
+			target = (perch :: Vector3) + Vector3.new(math.cos(angle) * CIRCLE, 0, math.sin(angle) * CIRCLE)
 		elseif (here - player).Magnitude > WAIT_FOR then
 			-- You fell behind: it stops and calls.
 			target = here - bob
@@ -560,7 +575,7 @@ local function step(dt: number)
 	-- Calling: a quick, bright pulse. Otherwise a slow breath (the halo round it swelling and settling).
 	local beat = if calling then (math.sin(now * 9) + 1) / 2 else (math.sin(now * 2) + 1) / 2
 	if haloFx then
-		haloFx.Size = NumberSequence.new(if calling then 4.4 + beat * 2.4 else 4 + beat * 0.6)
+		haloFx.Size = NumberSequence.new(if calling then 3.2 + beat * 1.6 else 2.8 + beat * 0.4)
 	end
 	-- The two motes round it, on rings tilted against each other.
 	for k, spot in ipairs(orbits) do
@@ -575,21 +590,26 @@ local function step(dt: number)
 	if halo and root then
 		local far = (here - root.Position).Magnitude > SHINE_THROUGH
 		halo.AlwaysOnTop = far
-		halo.Size = if far then UDim2.new(4, 26, 4, 26) else UDim2.fromScale(5, 5)
+		halo.Size = if far then UDim2.new(2.6, 22, 2.6, 22) else UDim2.fromScale(2.6, 2.6)
 	end
-	-- The pillar on the place, while you are on your way and close.
-	local showPillar = mode == "lead" and root ~= nil and flat(goal - root.Position).Magnitude < PILLAR_AT
+	-- The pillar where you stand to use the place (on your side of it, fixed once it shows), while you are on your
+	-- way and close, until you are there.
+	local showPillar = false
+	if mode == "lead" and root then
+		local away = flat(goal - root.Position).Magnitude
+		if away < PILLAR_AT then
+			if not stand then
+				local side = flat(root.Position - goal)
+				stand = if side.Magnitude > 0.1 then goal + side.Unit * STAND_OUT else goal
+			end
+			showPillar = flat((stand :: Vector3) - root.Position).Magnitude > ARRIVED
+		end
+	end
 	if showPillar and not pillar then
-		pillar = buildPillar(goal)
+		pillar = buildPillar(stand :: Vector3)
 	elseif not showPillar and pillar then
 		pillar:Destroy()
 		pillar = nil
-	end
-	if pillar and not Motion.isReduced() then
-		local beam = pillar:FindFirstChild("Beam")
-		if beam and beam:IsA("BasePart") then
-			beam.Transparency = 0.66 + math.sin(now * 2.4) * 0.08
-		end
 	end
 	placeArrow(here)
 end
@@ -612,7 +632,9 @@ function TrialWisp.target(key: string, at: Vector3, how: Mode)
 	mode = how
 	if fresh or not goal or (goal - at).Magnitude > 4 then
 		goal = at
+		perch = nil
 		if fresh then
+			stand = nil
 			waypoints = {}
 			pathFor = nil
 			if pillar then
@@ -665,7 +687,7 @@ function TrialWisp.clear()
 	end
 	model, core, shell, light, halo, haloFx, pillar = nil, nil, nil, nil, nil, nil, nil
 	orbits = {}
-	goalKey, goal, position = nil, nil, nil
+	goalKey, goal, position, perch, stand = nil, nil, nil, nil, nil
 	waypoints = {}
 	pathFor = nil
 end

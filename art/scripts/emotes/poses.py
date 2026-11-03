@@ -375,27 +375,28 @@ breakdown.plant(stance=0.2, forward=(0.1, -0.1))
 breakdown.build()
 
 # New World (clip newWorld, item emote_new_world) -----------------------------------------------------------
-# "I will become the god of this new world" (Death Note, episode 1; the owner's answer, 2026-10-20: the arm raised to
-# the sky, the fist closed; refs: newWorld.toml): the head bowed, then the right arm rising slowly to the sky, the
-# chest opening, the face lifting after it, the fist closing at the top, held in the light (EmoteFx), and down.
-world = Motion("newWorld", 6.5, note="The god of the new world: out of the white, bowed, the arm raised slowly to the "
-               "sky, the fist closed, the face up, held as a silhouette.")
-SKY_R = J((172, 0, 10), (0, 0.2, 0))
-# (6.5 s, the owner's Q23: the cutscene opens on white and holds the silhouette; the rise and the fist as before,
-# a second later)
+# "I will become the god of this new world" (Death Note, episode 1; refs: newWorld.toml). The user's call of
+# 2026-11-03: the hands spread out as in the anime (it was the right arm raised to the sky, the fist closed, their
+# answer of 2026-10-20): the head bowed, then both arms rising out to the sides together, the chest opening, the
+# face lifting after them, thrown wide open at the top with the flash, held in the light (EmoteFx), and down.
+world = Motion("newWorld", 6.5, note="The god of the new world: out of the white, bowed, both arms rising and spread "
+               "wide, the chest open, the face up, held as a silhouette.")
+OPEN_R, OPEN_L = J((8, 0, 95)), J((8, 0, -95))  # spread out to the sides, a little up
+WIDE_R, WIDE_L = J((10, 0, 102), (0, 0.03, 0)), J((10, 0, -102), (0, 0.03, 0))  # thrown open at the flash
+# (6.5 s, the owner's Q23: the cutscene opens on white and holds the silhouette; the rise and the flash at 3.42)
 world.key(0.0, "smooth", **REST)
 world.key(1.1, "smooth", offset=(0, -0.03, 0), root=(-6, 0, 0), neck=(-22, 0, 0), rShoulder=J((10, 0, 6)),
-          lShoulder=J((6, 0, -6)))  # bowed
+          lShoulder=J((10, 0, -6)))  # bowed
 world.key(1.7, "smooth", offset=(0, -0.035, 0), root=(-6.5, 0, 0), neck=(-24, 0, 0), rShoulder=J((10, 0, 6)),
-          lShoulder=J((6, 0, -6)))  # still bowed
-world.key(2.6, "sine", offset=(0, 0, 0.02), root=(3, 0, 0), neck=(6, 0, 0), rShoulder=J((110, 0, 16), (0, 0.1, 0)),
-          lShoulder=J((10, 0, -18)))
-world.key(3.3, "out", offset=(0, 0.02, 0.04), root=(7, 0, 0), neck=(28, 0, 0), rShoulder=SKY_R,
-          lShoulder=J((14, 0, -26)))  # at the top
-world.key(3.42, "snap", offset=(0, 0.02, 0.04), root=(8, 0, 0), neck=(30, 0, 0), rShoulder=J((174, 0, 9), (0, 0.22, 0)),
-          lShoulder=J((16, 0, -28)))  # the fist closes
-world.key(5.6, "smooth", offset=(0, 0.02, 0.04), root=(8, 0, 0), neck=(30, 0, 0), rShoulder=SKY_R,
-          lShoulder=J((14, 0, -28)))  # held
+          lShoulder=J((10, 0, -6)))  # still bowed
+world.key(2.6, "sine", offset=(0, 0, 0.02), root=(2, 0, 0), neck=(2, 0, 0), rShoulder=J((16, 0, 50)),
+          lShoulder=J((16, 0, -50)))  # rising, opening out
+world.key(3.3, "out", offset=(0, 0.02, 0.04), root=(4, 0, 0), neck=(12, 0, 0), rShoulder=OPEN_R,
+          lShoulder=OPEN_L)  # spread wide
+world.key(3.42, "snap", offset=(0, 0.03, 0.05), root=(6, 0, 0), neck=(16, 0, 0), rShoulder=WIDE_R,
+          lShoulder=WIDE_L)  # thrown open: the flash
+world.key(5.6, "smooth", offset=(0, 0.02, 0.04), root=(5, 0, 0), neck=(14, 0, 0), rShoulder=OPEN_R,
+          lShoulder=OPEN_L)  # held
 world.key(6.5, "sine", offset=(0, 0, 0), **REST)
 world.follow(("rShoulder", "lShoulder"), 2.4, 0.8)
 world.follow("neck", 1.8, 0.85)

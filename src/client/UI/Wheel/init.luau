@@ -310,6 +310,10 @@ end
 -- The pointed-at slot ----------------------------------------------------------------------------------------------
 
 local function caption(emote: QuickChat.Emote?, reason: string?)
+	-- (an emote's name is under its own chamber already: the line under the wheel only says what it is, so the
+	-- name never shows twice, the user's call of 2026-11-03)
+	nameLabel.Visible = emote == nil
+	lineLabel.Position = UDim2.fromOffset(0, if emote then 4 else 24)
 	if not emote then
 		nameLabel.Text = if hovered then "Empty" else "Point at an emote"
 		lineLabel.Text = if hovered then "Add emotes from your inventory." else ""
@@ -317,7 +321,7 @@ local function caption(emote: QuickChat.Emote?, reason: string?)
 		return
 	end
 	local info = EmoteInfo.of(emote.id)
-	nameLabel.Text = emote.name
+	nameLabel.Text = ""
 	local words = { Rarity.name(info.rarity) }
 	for _, word in ipairs(flags(emote.id)) do
 		-- (the reason it is locked says it already)
@@ -739,9 +743,9 @@ function Wheel.shown(on: boolean)
 			Motion.tween(ringScale, { Scale = 1 }, T.motion.slow, table.unpack(T.ease.ink))
 			ink.Rotation = -360 / WheelMath.SLOTS -- the cylinder rolls one chamber into place
 			Motion.tween(ink, { Rotation = 0 }, T.motion.scene, table.unpack(T.ease.ink))
-			-- (the Blender revolver's spins three chambers round and clicks into place; the plates come in as it
-			-- slows)
-			local lag = if revolver then 0.2 else 0
+			-- (the Blender revolver's spins three chambers round and clicks into place; the emotes come into their
+			-- chambers once it has, so they never ride past on the turning steel: the user's call of 2026-11-03)
+			local lag = if revolver then SPIN_SECONDS - 0.06 else 0
 			spinOpen()
 			for index, plate in ipairs(plates) do
 				plate.scale.Scale = 0

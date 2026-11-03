@@ -7,9 +7,11 @@
 -- closing over it and the hand giving a little under its weight. Then the screen goes to black and fades into the
 -- game. No text. Full screen, the top bar too.
 --
--- The pictures (art/scripts/ui/intro_frames.py, laid out by UI/LoadingArt): the apple's turns on one sheet, its first
--- cell how it lies in the hand, and the hand waiting and holding, laid over the apple (the palm and fingers in front of
--- it, the shade they cast on it).
+-- The pictures (art/scripts/ui/intro_frames.py and ui/apple_hand.py, laid out by UI/LoadingArt): the apple's turns on
+-- four sheets, 64 to a turn (2026-11-03: 16 a turn stepped as it fell; now it turns smoothly), its first cell how it
+-- lies in the hand; the hand in layers round it, the inside of the cupped palm behind it and the hand in front of it
+-- (the palm's lip, the fingers round its side); and the thumb, a picture of its own that the screen turns about its
+-- root, standing up while the hand waits and closing over the apple as it lands (it stepped through four pictures).
 --
 -- Every load uses it: a match map (World/MapPreloader), the way back to the lobby (UI/LobbyIntro), and the teleport to
 -- a match in another server (its first picture rides the teleport: AppleLoading.teleportGui).
@@ -41,7 +43,7 @@ local LAND = 0.7 -- seconds for that last stretch, the hand rising to meet it
 local RISE = Vector2.new(0.42, 1) -- the hand rises along its forearm, from below the screen's lower left
 local SWAY = 7 -- degrees the apple sways while a load holds it
 local GIVE = 0.014 -- how far the hand gives under the apple's weight, a share of the screen's height
-local CLOSE_STEP = 0.035 -- each picture of the thumb closing over the apple (AppleClose1..4), seconds
+local CLOSE = 0.26 -- seconds the thumb takes to close over the caught apple
 local TO_BLACK = 0.5
 local FADE_IN = 1
 
@@ -54,6 +56,19 @@ export type Loader = {
 
 local function image(name: string): string
 	return Assets.contentId(Assets.images[name] or "")
+end
+
+-- The sheets of the apple's turns that are uploaded, in order (an empty list: the stand-in disc).
+local function sheets(): { string }
+	local list = {}
+	for k = 1, LoadingArt.sheets do
+		local id = image("AppleSpin" .. k)
+		if id == "" then
+			break
+		end
+		table.insert(list, id)
+	end
+	return list
 end
 
 -- The screen itself: a ScreenGui of its own over everything (the join's black, DGIntro, sits over it).
@@ -73,10 +88,13 @@ local function screen(name: string): ScreenGui
 	return gui
 end
 
-local function cellOffset(frame: number): Vector2
+-- A turn's sheet (1-based among the uploaded ones) and its cell's place on the sheet.
+local function cellOf(turn: number, count: number): (number, Vector2)
+	local perSheet = LoadingArt.grid * LoadingArt.grid
+	local k = turn % (perSheet * count)
+	local within = k % perSheet
 	local grid = LoadingArt.grid
-	local k = frame % (grid * grid)
-	return Vector2.new((k % grid) * LoadingArt.cell, (k // grid) * LoadingArt.cell)
+	return k // perSheet + 1, Vector2.new((within % grid) * LoadingArt.cell, (within // grid) * LoadingArt.cell)
 end
 
 -- The apple's cell, a share of the screen's height.
@@ -84,16 +102,16 @@ local function cellSize(): number
 	return LoadingArt.handHeight * LoadingArt.appleCell
 end
 
--- The apple: a cell of the turning sheet, or (before the pictures are uploaded) a red disc.
+-- The apple: a cell of the turning sheets, or (before the pictures are uploaded) a red disc.
 local function makeApple(parent: Instance): GuiObject
-	local sheet = image("AppleSpin")
-	if sheet ~= "" then
+	local list = sheets()
+	if #list > 0 then
 		local apple = Instance.new("ImageLabel")
 		apple.Name = "Apple"
 		apple.BackgroundTransparency = 1
-		apple.Image = sheet
+		apple.Image = list[1]
 		apple.ImageRectSize = Vector2.new(LoadingArt.cell, LoadingArt.cell)
-		apple.ImageRectOffset = cellOffset(0)
+		apple.ImageRectOffset = Vector2.zero
 		apple.AnchorPoint = Vector2.new(0.5, 0.5)
 		apple.ZIndex = 2
 		apple.Parent = parent
@@ -110,6 +128,22 @@ local function makeApple(parent: Instance): GuiObject
 	round.CornerRadius = UDim.new(0.5, 0)
 	round.Parent = apple
 	return apple
+end
+
+-- One of the hand's pictures (nil until it is uploaded).
+local function layer(parent: Instance, name: string, z: number): ImageLabel?
+	local id = image(name)
+	if id == "" then
+		return nil
+	end
+	local made = Instance.new("ImageLabel")
+	made.Name = name
+	made.BackgroundTransparency = 1
+	made.Image = id
+	made.ZIndex = z
+	made.Visible = false
+	made.Parent = parent
+	return made
 end
 
 -- The still the teleport carries to the next server (Roblox shows it, unmoving, while the player crosses): the apple at
@@ -129,26 +163,15 @@ end
 function AppleLoading.open(): Loader
 	local gui = screen("DGLoading")
 	local black = gui:FindFirstChild("Black") :: Frame
+	local turns = sheets()
 	local apple = makeApple(black)
-	local handWaiting, handHolding = image("AppleHand1"), image("AppleHand2")
-	-- (the thumb on its way down between the two; one not uploaded yet is left out)
-	local handClosing = {}
-	for k = 1, 4 do
-		local id = image("AppleClose" .. k)
-		if id ~= "" then
-			table.insert(handClosing, id)
-		end
-	end
-	local hand: ImageLabel? = nil
-	if handWaiting ~= "" then
-		local made = Instance.new("ImageLabel")
-		made.Name = "Hand"
-		made.BackgroundTransparency = 1
-		made.Image = handWaiting
-		made.ZIndex = 3
-		made.Visible = false
-		made.Parent = black
-		hand = made
+	-- (the hand round the apple: the inside of the palm behind it, the hand in front, the thumb over it)
+	local back = layer(black, "AppleHandBack", 1)
+	local front = layer(black, "AppleHandFront", 3)
+	local thumb = layer(black, "AppleThumb", 4)
+	if thumb then
+		thumb.AnchorPoint = Vector2.new(0.5, 0.5)
+		thumb.Rotation = LoadingArt.thumbOpen
 	end
 	local veil = Instance.new("Frame")
 	veil.Name = "Veil"
@@ -160,14 +183,11 @@ function AppleLoading.open(): Loader
 	veil.Parent = black
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	task.spawn(function()
-		local ids = {}
-		for _, id in ipairs({ image("AppleSpin"), handWaiting, handHolding }) do
-			if id ~= "" then
-				table.insert(ids, id)
+		local ids = table.clone(turns)
+		for _, part in ipairs({ back, front, thumb }) do
+			if part then
+				table.insert(ids, part.Image)
 			end
-		end
-		for _, id in ipairs(handClosing) do
-			table.insert(ids, id)
 		end
 		if #ids > 0 then
 			pcall(function()
@@ -176,11 +196,11 @@ function AppleLoading.open(): Loader
 		end
 	end)
 
-	local frames = LoadingArt.grid * LoadingArt.grid
+	local frames = LoadingArt.frames
 	local still = Motion.isReduced()
 	local target, shown = 0, 0
 	local done = false -- the loading is done: the last stretch may fall
-	local caught = false
+	local caught: number? = nil -- when it was caught
 	local closed = false
 	local give = 0 -- the hand and the apple giving under its weight (screen px down)
 	local started = os.clock()
@@ -205,18 +225,39 @@ function AppleLoading.open(): Loader
 		apple.Size = UDim2.fromOffset(cell, cell)
 		apple.Position = UDim2.fromOffset(catchAt.X, size.Y * TOP + (catchAt.Y - size.Y * TOP) * shown + bob + give)
 		apple.Rotation = math.sin(t * 1.25) * SWAY * calm
-		if apple:IsA("ImageLabel") then
-			apple.ImageRectOffset = cellOffset(math.floor(shown * TURNS * frames + 0.5))
+		if apple:IsA("ImageLabel") and #turns > 0 then
+			-- (the turns there are: four sheets' worth once all are uploaded, fewer meanwhile)
+			local count = #turns
+			local sheet, offset = cellOf(math.floor(shown * TURNS * frames * count / LoadingArt.sheets + 0.5), count)
+			if apple.Image ~= turns[sheet] then
+				apple.Image = turns[sheet]
+			end
+			apple.ImageRectOffset = offset
 		end
 		-- The hand: up along its forearm, eased, as the apple comes down the last stretch.
-		if hand then
-			local rise = 1 - (1 - land) ^ 3
-			local away = (1 - rise) * size.Y * 0.62
-			local left = catchAt.X - LoadingArt.catch.X * handW - RISE.X * away
-			local top = catchAt.Y - LoadingArt.catch.Y * handH + RISE.Y * away + give
-			hand.Visible = land > 0
-			hand.Size = UDim2.fromOffset(handW, handH)
-			hand.Position = UDim2.fromOffset(left, top)
+		local rise = 1 - (1 - land) ^ 3
+		local away = (1 - rise) * size.Y * 0.62
+		local left = catchAt.X - LoadingArt.catch.X * handW - RISE.X * away
+		local top = catchAt.Y - LoadingArt.catch.Y * handH + RISE.Y * away + give
+		for _, part in ipairs({ back, front }) do
+			if part then
+				part.Visible = land > 0
+				part.Size = UDim2.fromOffset(handW, handH)
+				part.Position = UDim2.fromOffset(left, top)
+			end
+		end
+		if thumb then
+			local side = handH * LoadingArt.thumbSize
+			thumb.Visible = land > 0
+			thumb.Size = UDim2.fromOffset(side, side)
+			thumb.Position =
+				UDim2.fromOffset(left + LoadingArt.thumbPivot.X * handW, top + LoadingArt.thumbPivot.Y * handH)
+			-- (closing over the apple once it is caught: quick at first, settling onto it)
+			local closing = if caught then math.clamp((os.clock() - caught) / CLOSE, 0, 1) else 0
+			if still and caught then
+				closing = 1
+			end
+			thumb.Rotation = LoadingArt.thumbOpen * (1 - closing) ^ 3
 		end
 	end)
 
@@ -247,20 +288,8 @@ function AppleLoading.open(): Loader
 				return
 			end
 			-- The catch: the thumb closes over it, and the hand gives a little under it and comes back.
-			caught = true
+			caught = os.clock()
 			shown = 1
-			if hand and handHolding ~= "" then
-				local closing = hand
-				task.spawn(function()
-					if not Motion.isReduced() then
-						for _, id in ipairs(handClosing) do
-							closing.Image = id
-							task.wait(CLOSE_STEP)
-						end
-					end
-					closing.Image = handHolding
-				end)
-			end
 			Sfx.play("loadAppleCatch")
 			if sound then
 				sound:Stop()
@@ -282,8 +311,10 @@ function AppleLoading.open(): Loader
 			dark.Completed:Wait()
 			connection:Disconnect()
 			apple.Visible = false
-			if hand then
-				hand.Visible = false
+			for _, part in ipairs({ back, front, thumb }) do
+				if part then
+					part.Visible = false
+				end
 			end
 			veil.Visible = false
 			if onLift then
