@@ -333,34 +333,6 @@ def metal_detector():
     return parts, glows
 
 
-@prop("XRayScanner", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Agency")
-def xray_scanner():
-    """The lobby's baggage X-ray: a rubber belt through a grey tunnel with lead curtains, rollers
-    at both ends, the operator's screen on its arm and the trays stacked by the entrance."""
-    grey = pk.plastic("Xray_Grey", (178, 180, 184))
-    dark = pk.metal("Xray_Dark", (26, 26, 30), (42, 42, 48), rough=0.5, metallic=0.2)
-    belt = pk.rubber("Xray_Belt")
-    curtain = mk.noisy("Xray_Curtain", srgb(40, 40, 44), srgb(60, 60, 66), scale=30, roughness=0.9)
-    tray = pk.plastic("Xray_Tray", (60, 70, 90))
-    parts = [mk.box("Tunnel", (3.2, 3.6, 3.4), (0, 0, 2.9), mat=grey, bevel=0.15),
-             mk.box("Bed", (2.4, 9.6, 0.5), (0, 0, 2.35), mat=grey, bevel=0.06),
-             mk.box("Belt", (2.2, 9.4, 0.06), (0, 0, 2.63), mat=belt)]
-    for sy in (-1, 1):
-        parts.append(mk.box("Curtain", (2.0, 0.05, 1.3), (0, sy * 1.82, 2.95), mat=curtain))
-        parts.append(mk.cylinder("Roller", 0.2, 2.3, (0, sy * 4.7, 2.4), rot=(0, 90, 0), mat=dark, verts=12))
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            parts.append(mk.box("Leg", (0.2, 0.2, 2.1), (sx * 1.0, sy * 4.3, 1.05), mat=dark))
-    parts += [mk.tube("Arm", (1.1, -3.0, 2.4), (2.0, -3.0, 4.6), 0.06, mat=dark, verts=6),
-              mk.box("Monitor", (1.4, 0.3, 1.0), (2.0, -3.1, 5.0), rot=(0, 0, -30), mat=dark, bevel=0.05)]
-    for k in range(3):
-        parts.append(mk.box("Tray", (1.8, 1.4, 0.3), (0, -4.2, 2.8 + k * 0.3), mat=tray, bevel=0.06))
-    glows = [mk.box("Picture", (1.2, 0.04, 0.8), (1.94, -3.25, 5.0), rot=(0, 0, -30),
-                    mat=pk.glow("Xray_Picture", (120, 170, 230), 2)),
-             mk.box("Warning", (1.4, 0.04, 0.25), (0, -1.83, 4.3), mat=pk.glow("Xray_Warn", (255, 190, 60), 3))]
-    return parts, glows
-
-
 # The interrogation rooms, the archive and the evidence lock-up -----------------------------------------
 
 
@@ -498,38 +470,6 @@ def evidence_cage():
 # The director and the office ----------------------------------------------------------------------------
 
 
-@prop("ExecutiveDesk", pivot="bottom", material="Wood", collide=True, texture=1024, set="Agency")
-def executive_desk():
-    """The director's desk: dark walnut with a green leather inlay, pedestals of drawers, a brass
-    banker's lamp, a pen stand, the nameplate facing the visitor and a closed dossier."""
-    wood = mk.wood("Exec_Wood", srgb(70, 40, 26), srgb(34, 18, 12), scale=5)
-    leather = mk.noisy("Exec_Leather", srgb(26, 60, 42), srgb(40, 80, 58), scale=20, roughness=0.6)
-    brass = pk.metal("Exec_Brass", (150, 118, 60), (206, 170, 96), rough=0.25, metallic=0.9)
-    dark = pk.metal("Exec_Dark", (20, 20, 22), (34, 34, 38), rough=0.5, metallic=0.2)
-    folder = pk.plastic("Exec_Folder", (120, 30, 34))
-    w, d, h = 6.6, 3.2, 2.7
-    parts = [mk.box("Top", (w, d, 0.16), (0, 0, h - 0.08), mat=wood, bevel=0.04),
-             mk.box("Inlay", (w - 1.2, d - 0.9, 0.02), (0, 0.1, h + 0.005), mat=leather),
-             mk.box("Modesty", (w - 3.2, 0.12, 1.8), (0, -d / 2 + 0.3, h - 1.0), mat=wood)]
-    for sx in (-1, 1):
-        parts.append(mk.box("Pedestal", (1.5, d - 0.2, h - 0.16), (sx * (w / 2 - 0.85), 0, (h - 0.16) / 2), mat=wood,
-                            bevel=0.03))
-        for k in range(3):
-            parts.append(mk.box("Drawer", (1.3, 0.04, 0.65), (sx * (w / 2 - 0.85), d / 2 - 0.08, 0.45 + k * 0.75), mat=wood))
-            parts.append(mk.cylinder("Knob", 0.06, 0.1, (sx * (w / 2 - 0.85), d / 2 - 0.02, 0.5 + k * 0.75), rot=(90, 0, 0),
-                                     mat=brass, verts=8))
-    parts += [mk.cylinder("LampBase", 0.3, 0.1, (-2.3, 0.6, h + 0.05), mat=brass, verts=16),
-              mk.tube("LampStem", (-2.3, 0.6, h + 0.1), (-2.3, 0.6, h + 1.3), 0.05, mat=brass, verts=6),
-              mk.cylinder("LampShade", 0.45, 1.3, (-2.3, 0.35, h + 1.45), rot=(0, 90, 0), mat=pk.plastic("Exec_Green", (24, 90, 56)),
-                          verts=16),
-              mk.box("PenStand", (0.7, 0.4, 0.2), (1.3, 0.8, h + 0.1), mat=brass, bevel=0.03),
-              mk.tube("Pen", (1.2, 0.8, h + 0.2), (1.1, 0.7, h + 0.9), 0.03, mat=dark, verts=5),
-              mk.box("Nameplate", (1.6, 0.35, 0.35), (0.6, -1.25, h + 0.17), rot=(-20, 0, 0), mat=brass, bevel=0.03),
-              mk.box("Dossier", (1.2, 1.5, 0.12), (1.4, -0.2, h + 0.06), rot=(0, 0, -8), mat=folder)]
-    glows = [mk.box("LampGlow", (1.1, 0.3, 0.05), (-2.3, 0.35, h + 1.2), mat=pk.glow("Exec_Bulb", LAMP_WARM, 3))]
-    return parts, glows
-
-
 @prop("WaterCooler", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Agency")
 def water_cooler():
     """A water cooler: a white cabinet with rounded corners on four feet, a vent grille down its side; the dispensing
@@ -571,27 +511,6 @@ def water_cooler():
               mk.box("TubeBracket", (0.14, 0.12, 0.6), (-0.64, 0.1, 2.55), mat=grey)]
     glows = [mk.box("Lamp", (0.08, 0.02, 0.05), (sx * 0.2, -0.66, 2.98),
                     mat=pk.glow("Cool_Lamp", (80, 200, 120) if sx < 0 else (255, 120, 60), 3)) for sx in (-1, 1)]
-    return parts, glows
-
-
-@prop("Photocopier", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Agency")
-def photocopier():
-    """A big office photocopier: the cabinet with its paper drawers, the glass lid, the output
-    tray with copies in it, and the lit control panel."""
-    grey = pk.plastic("Copy_Grey", (196, 196, 192))
-    dark = pk.metal("Copy_Dark", (40, 42, 46), (60, 62, 68), rough=0.5, metallic=0.2)
-    paper = pk.plastic("Copy_Paper", (238, 236, 228))
-    parts = [mk.box("Body", (3.6, 2.4, 3.4), (0, 0, 1.7), mat=grey, bevel=0.1),
-             mk.box("Lid", (3.0, 2.2, 0.2), (-0.2, 0, 3.5), mat=dark, bevel=0.04),
-             mk.box("Panel", (1.2, 0.8, 0.2), (1.4, -0.9, 3.45), rot=(12, 0, 0), mat=dark, bevel=0.03),
-             mk.box("OutTray", (1.3, 1.8, 0.1), (2.3, 0, 2.6), rot=(0, 8, 0), mat=grey),
-             mk.box("Copies", (1.0, 1.4, 0.2), (2.3, 0, 2.72), rot=(0, 8, 0), mat=paper)]
-    for k in range(3):
-        parts.append(mk.box("Drawer", (3.2, 0.06, 0.7), (0, -1.22, 0.5 + k * 0.8), mat=grey))
-        parts += pk.handle("Pull", 0, -1.24, 0.75 + k * 0.8, 1.6, dark, vertical=False, stand=0.06, r=0.03)
-    parts += pk.feet("Foot", [(-1.5, -1.0), (1.5, -1.0), (-1.5, 1.0), (1.5, 1.0)], dark, r=0.12, h=0.1)
-    glows = [mk.box("Screen", (0.6, 0.04, 0.35), (1.3, -1.32, 3.52), rot=(12, 0, 0), mat=pk.glow("Copy_Screen", (120, 220, 170), 2)),
-             mk.box("Ready", (0.12, 0.04, 0.12), (1.85, -1.32, 3.52), rot=(12, 0, 0), mat=pk.glow("Copy_Ready", (80, 255, 120), 4))]
     return parts, glows
 
 
@@ -777,40 +696,6 @@ def pin_board():
     return parts, []
 
 
-@prop("Whiteboard", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Agency")
-def whiteboard():
-    """A rolling whiteboard: an aluminium frame on castors, the board covered in a timeline, names
-    struck through and arrows, the marker tray at its foot."""
-    alu = pk.metal("Wb_Alu", (170, 172, 178), (206, 208, 212), rough=0.3, metallic=0.8)
-    board = pk.plastic("Wb_Board", (236, 238, 238), rough=0.15)
-    ink = pk.plastic("Wb_Ink", (30, 40, 70))
-    red = pk.plastic("Wb_Red", (180, 30, 36))
-    dark = pk.rubber("Wb_Rubber")
-    w, h = 6.0, 3.6
-    parts = [mk.box("Board", (w, 0.1, h), (0, 0, 4.2), mat=board)]
-    parts += pk.frame("Frame", w + 0.2, h + 0.2, 0.12, 0.16, (0, 0, 4.2), alu)
-    for sx in (-1, 1):
-        parts += [mk.box("Leg", (0.12, 0.12, 6.0), (sx * (w / 2 + 0.1), 0, 3.0), mat=alu),
-                  mk.box("Foot", (0.14, 2.0, 0.12), (sx * (w / 2 + 0.1), 0, 0.35), mat=alu)]
-        for sy in (-1, 1):
-            parts.append(mk.cylinder("Castor", 0.15, 0.12, (sx * (w / 2 + 0.1), sy * 0.9, 0.15), rot=(0, 90, 0), mat=dark,
-                                     verts=10))
-    parts.append(mk.box("Tray", (w * 0.6, 0.35, 0.08), (0, -0.2, 2.35), mat=alu))
-    parts.append(mk.box("Timeline", (w - 0.8, 0.02, 0.05), (0, -0.07, 4.9), mat=ink))
-    for k in range(6):
-        x = -w / 2 + 0.7 + k * (w - 1.4) / 5
-        parts.append(mk.box("Tick", (0.04, 0.02, 0.3), (x, -0.07, 4.9), mat=ink))
-        parts.append(mk.box("Word", (0.6, 0.02, 0.07), (x, -0.07, 5.2 + (k % 2) * 0.2), mat=ink))
-    for k in range(4):
-        parts.append(mk.box("Name", (1.1, 0.02, 0.09), (-1.6 + k * 1.1, -0.07, 3.6 - (k % 2) * 0.4), mat=ink))
-        if k % 2 == 0:
-            parts.append(mk.box("Strike", (1.3, 0.02, 0.05), (-1.6 + k * 1.1, -0.08, 3.6 - (k % 2) * 0.4),
-                                rot=(0, 8, 0), mat=red))
-    parts.append(mk.torus("Circle", 0.45, 0.03, (1.9, -0.08, 3.4), rot=(90, 0, 0), mat=red, major_segments=16,
-                          minor_segments=3))
-    return parts, []
-
-
 @prop("MicrofilmReader", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Agency")
 def microfilm_reader():
     """A microfilm reader on its steel cabinet: two drawers of film boxes below (handles, card holders), the deck
@@ -853,36 +738,3 @@ def microfilm_reader():
                   mk.cylinder("KnobCap", 0.05, 0.04, (1.2, 0.3, z), rot=(0, 90, 0), mat=chrome, verts=10)]
     glows = [mk.box("Page", (1.6, 0.04, 1.3), (0, -0.32, 4.2), mat=pk.glow("Film_Page", (220, 214, 190), 1.6))]
     return parts, glows
-
-
-@prop("FumeHood", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Agency",
-      lights=[dict(at=(0, -0.3, 6.6), kind="point", color=(220, 236, 255), range=10, brightness=0.8)])
-def fume_hood():
-    """A lab fume hood: a white cabinet base, the black resin work top inside a steel box with a
-    raised glass sash, the lit panel in its roof, the extract duct rising out of the top."""
-    white = pk.plastic("Hood_White", (228, 230, 230))
-    steel = pk.metal("Hood_Steel", (170, 174, 180), (206, 210, 214), rough=0.3, metallic=0.7)
-    resin = mk.noisy("Hood_Resin", srgb(18, 18, 20), srgb(34, 34, 38), scale=10, roughness=0.25)
-    glass = pk.dark_glass("Hood_Glass", (70, 90, 100))
-    dark = pk.metal("Hood_Dark", (24, 24, 28), (40, 40, 46), rough=0.5, metallic=0.3)
-    w, d = 5.2, 2.6
-    parts = [mk.box("Base", (w, d, 2.8), (0, 0, 1.4), mat=white, bevel=0.03),
-             mk.box("Top", (w + 0.1, d + 0.1, 0.14), (0, 0, 2.87), mat=resin),
-             mk.box("Back", (w - 0.24, 0.12, 4.36), (0, d / 2 - 0.07, 5.08), mat=steel),
-             mk.box("Roof", (w + 0.04, d + 0.04, 0.6), (0, 0, 7.3), mat=steel, bevel=0.03),
-             mk.box("Sash", (w - 0.2, 0.06, 1.6), (0, -d / 2 + 0.1, 6.0), mat=glass),
-             mk.box("SashBar", (w - 0.2, 0.14, 0.14), (0, -d / 2 + 0.05, 5.2), mat=steel),
-             mk.cylinder("Duct", 0.5, 1.4, (0, 0.2, 8.3), mat=steel, verts=16)]
-    for sx in (-1, 1):
-        parts.append(mk.box("Side", (0.12, d, 4.36), (sx * (w / 2 - 0.06), 0, 5.08), mat=steel))
-    for k in range(3):
-        parts.append(mk.box("Door", (1.55, 0.04, 2.3), (-1.65 + k * 1.65, -d / 2 - 0.01, 1.35), mat=white))
-        parts += pk.handle("Pull", -1.65 + k * 1.65 + 0.5, -d / 2 - 0.02, 2.0, 0.5, dark, stand=0.07, r=0.03)
-    for k in range(4):
-        parts.append(mk.cylinder("Flask", 0.2, 0.6, (-1.6 + k * 0.9, 0.3, 3.24), mat=pk.plastic(f"Hood_Flask{k}",
-                                                                                              ((180, 60, 40), (40, 120, 80),
-                                                                                               (230, 230, 226), (60, 80, 150))[k]),
-                                 verts=10, radius2=0.08))
-    glows = [mk.box("Panel", (w - 0.6, d - 0.6, 0.04), (0, 0, 6.98), mat=pk.glow("Hood_Panel", (220, 236, 255), 2.4))]
-    return parts, glows
-

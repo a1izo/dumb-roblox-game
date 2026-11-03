@@ -552,6 +552,7 @@ import props_agency  # noqa: E402,F401
 import props_mapown  # noqa: E402,F401
 import props_mapown2  # noqa: E402,F401
 import props_core  # noqa: E402,F401
+import props_remade  # noqa: E402,F401
 import props_campus  # noqa: E402,F401
 import props_lobby  # noqa: E402,F401
 import props_meeting  # noqa: E402,F401

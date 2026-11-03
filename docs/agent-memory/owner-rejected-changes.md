@@ -9,7 +9,8 @@ The owner had these taken out; do not bring them back (or anything like them) un
 
 - **Modelled suit fists** (SuitHandL / SuitHandR, see-through arms, Suit.HAND 0.7; de4b91f and the cuff/pen part of
   8831a50): removed 2026-11-01 at the owner's word ("remove the hand things"). Hands are the classic skin hand at
-  the arm's end (Suit.HAND 0.35), the arm solid. The fist meshes may still sit in the Core import; nothing uses them.
+  the arm's end (Suit.HAND 0.35), the arm solid. The fist meshes and their builder were deleted too (Core v34,
+  2026-11-03).
 - **Unresolved, ask the owner first: the Deathsinger forming on "EAT IT!" in Diavolo's role scene** (394e2a9,
   re-applied as 63e7a2a, live now). The owner told one agent "ignore his commit for the shinigami" and had it
   force-pushed over (2026-10-28); the other agent's code cites the owner asking for it on "EAT IT!". Do not change

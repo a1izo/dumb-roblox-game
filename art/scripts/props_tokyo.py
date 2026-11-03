@@ -569,41 +569,6 @@ def vending_white():
 # Barriers ---------------------------------------------------------------------------------------------
 
 
-@prop("Barricade", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Tokyo")
-def barricade():
-    """A road-works barricade: two striped boards on steel A-frame legs with rubber feet, a
-    flashing lamp on top (lit)."""
-    steel = pk.metal("BA_Steel", (70, 72, 76), (100, 102, 108))
-    stripes = mk.banded("BA_Stripe", srgb(240, 196, 30), srgb(24, 24, 26), frequency=10, axis="X", roughness=0.5)
-    rubber = pk.rubber("BA_Feet")
-    parts = [pk.rounded("Board1", (4.2, 0.1, 0.6), (0, 0, 2.7), stripes, r=0.04),
-             pk.rounded("Board2", (4.2, 0.1, 0.6), (0, 0, 1.7), stripes, r=0.04)]
-    for x in (-1.9, 1.9):
-        parts += [mk.tube("Leg", (x, 0, 3.1), (x, -0.9, 0.05), 0.06, mat=steel, verts=6),
-                  mk.tube("Leg", (x, 0, 3.1), (x, 0.9, 0.05), 0.06, mat=steel, verts=6),
-                  mk.box("Foot", (0.3, 0.4, 0.12), (x, -0.9, 0.06), mat=rubber),
-                  mk.box("Foot", (0.3, 0.4, 0.12), (x, 0.9, 0.06), mat=rubber),
-                  mk.tube("Cross", (x, -0.6, 1.0), (x, 0.6, 1.0), 0.04, mat=steel, verts=5)]
-    parts.append(mk.box("LampBase", (0.3, 0.3, 0.2), (1.6, 0, 3.1), mat=steel))
-    glows = [mk.cylinder("Lamp", 0.2, 0.3, (1.6, 0, 3.35), mat=pk.glow("BA_Glow", (255, 140, 30), 4), verts=12)]
-    return parts, glows
-
-
-@prop("TrafficCone", pivot="bottom", material="Plastic", collide=False, texture=512, set="Tokyo")
-def traffic_cone():
-    """A road cone on its square base, with two reflective white bands."""
-    orange = pk.plastic("TC_Orange", (236, 90, 24))
-    white = pk.plastic("TC_White", (244, 244, 240))
-    base = pk.plastic("TC_Base", (30, 30, 32))
-    parts = [mk.box("Base", (1.2, 1.2, 0.14), (0, 0, 0.07), mat=base, bevel=0.1),
-             mk.lathe("Cone", [(0.5, 0.14), (0.44, 0.5), (0.3, 1.3), (0.12, 2.1), (0.0, 2.15)], mat=orange, segments=18)]
-    for z0, z1 in ((0.75, 1.0), (1.35, 1.55)):
-        r0 = 0.5 - (z0 - 0.14) * 0.19
-        r1 = 0.5 - (z1 - 0.14) * 0.19
-        parts.append(mk.lathe("Band", [(r0 + 0.015, z0), (r1 + 0.015, z1)], mat=white, segments=18))
-    return parts, []
-
-
 @prop("SiteFence", pivot="bottom", material="Metal", collide=True, texture=1024, set="Tokyo")
 def site_fence():
     """A panel of the tall white hoarding that closes a street, 8 wide and 10 tall: ribbed steel

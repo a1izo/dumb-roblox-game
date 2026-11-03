@@ -745,34 +745,6 @@ def shrub_snow():
     return parts, []
 
 
-@prop("StoneLantern", pivot="bottom", material="Slate", collide=True, texture=512, set="Campus",
-      lights=[dict(at=(0, 0, 3.95), kind="point", color=(255, 180, 110), range=9, brightness=0.55)])
-def stone_lantern():
-    """A kasuga stone lantern: hexagonal base, a round pillar, the platform, the fire box with its
-    windows (a candle burning inside), the curled roof under a cap of snow, the jewel on top."""
-    granite = mk.noisy("Toro_Stone", srgb(96, 94, 90), srgb(132, 128, 122), scale=14, roughness=0.9)
-    moss = mk.noisy("Toro_Moss", srgb(60, 72, 56), srgb(96, 104, 86), scale=18, roughness=0.9)
-    sn = snow("Toro")
-    dark = pk.metal("Toro_Dark", (18, 16, 14), (30, 28, 26), rough=0.8, metallic=0.0)
-    parts = [mk.cylinder("Base", 1.1, 0.5, (0, 0, 0.25), mat=moss, verts=6),
-             mk.cylinder("Base2", 0.8, 0.3, (0, 0, 0.65), mat=granite, verts=6),
-             mk.cylinder("Pillar", 0.35, 1.9, (0, 0, 1.75), mat=granite, verts=12),
-             mk.cylinder("Platform", 0.95, 0.35, (0, 0, 2.87), mat=granite, verts=6, radius2=0.8),
-             mk.cylinder("FireBox", 0.72, 1.3, (0, 0, 3.7), mat=granite, verts=6),
-             mk.lathe("Roof", [(0.2, 0.0), (1.35, 0.08), (1.45, 0.22), (1.2, 0.3), (0.5, 0.75), (0.2, 0.85), (0.0, 0.85)],
-                      (0, 0, 4.35), mat=granite, segments=6),
-             mk.lathe("RoofSnow", [(0.0, 0.0), (1.3, 0.1), (1.1, 0.34), (0.4, 0.62), (0.0, 0.66)], (0, 0, 4.63), mat=sn,
-                      segments=6),
-             mk.sphere("Jewel", 0.28, (0, 0, 5.45), scale=(1, 1, 1.2), mat=granite, segments=8, rings=6)]
-    glows = []
-    for k, rot in enumerate((0, 180)):
-        a = math.radians(rot)
-        glows.append(mk.box(f"Window{k}", (0.6, 0.04, 0.7), (0, math.cos(a) * -0.64, 3.7),
-                            mat=pk.glow("Toro_Flame", (255, 170, 90), 3)))
-    parts.append(mk.box("Grate", (0.64, 1.34, 0.04), (0, 0, 3.4), mat=dark))
-    return parts, glows
-
-
 @prop("Snowman", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Campus")
 def snowman():
     """A students' yukidaruma: two snowballs, charcoal eyes and brows, a red bucket for a hat,
@@ -1056,39 +1028,6 @@ def kerosene_heater():
     return parts, glows
 
 
-@prop("ExamDesk", pivot="bottom", material="Wood", collide=True, texture=512, set="Campus")
-def exam_desk():
-    """An exam hall desk with its seat behind: a wooden top on a steel frame, the book rack under
-    it, the candidate's number card, a pencil case, pencils, an eraser and the exam booklet face
-    down, waiting for tomorrow."""
-    wood = mk.wood("EDesk_Wood", srgb(170, 126, 80), srgb(120, 84, 50), scale=5)
-    steel = pk.metal("EDesk_Steel", (70, 72, 76), (100, 102, 108), rough=0.45, metallic=0.5)
-    card = pk.plastic("EDesk_Card", (242, 240, 232))
-    ink = pk.plastic("EDesk_Ink", (24, 24, 26))
-    case = pk.plastic("EDesk_Case", (40, 60, 110))
-    pencil = pk.plastic("EDesk_Pencil", (230, 190, 50))
-    parts = [mk.box("Top", (3.4, 1.7, 0.12), (0, -0.2, 2.6), mat=wood),
-             mk.box("Rack", (3.2, 1.3, 0.06), (0, -0.1, 2.2), mat=steel),
-             mk.box("Seat", (1.6, 1.3, 0.12), (0, 1.35, 1.55), mat=wood),
-             mk.box("Backrest", (1.6, 0.1, 1.0), (0, 2.0, 2.3), rot=(-8, 0, 0), mat=wood)]
-    for sx in (-1, 1):  # (the backrest's posts, up from the seat's back edge)
-        parts.append(mk.tube("BackPost", (sx * 0.7, 1.95, 1.5), (sx * 0.7, 2.06, 2.75), 0.05, mat=steel, verts=6))
-    for sx in (-1, 1):
-        parts += [mk.box("Leg", (0.12, 0.12, 2.55), (sx * 1.55, -0.8, 1.28), mat=steel),
-                  mk.box("Leg", (0.12, 0.12, 2.55), (sx * 1.55, 0.4, 1.28), mat=steel),
-                  mk.box("Runner", (0.12, 2.6, 0.12), (sx * 0.7, 0.9, 0.06), mat=steel),
-                  mk.box("SeatPost", (0.1, 0.1, 1.5), (sx * 0.7, 1.35, 0.75), mat=steel)]
-    parts += [mk.box("Number", (0.8, 0.05, 0.4), (1.1, -0.95, 2.86), rot=(-15, 0, 0), mat=card),
-              mk.box("Booklet", (1.0, 1.3, 0.05), (-0.1, -0.2, 2.69), rot=(0, 0, 3), mat=card),
-              mk.box("NumStripe", (0.6, 0.02, 0.1), (1.1, -0.98, 2.88), rot=(-15, 0, 0), mat=ink),
-              mk.box("PencilCase", (1.0, 0.3, 0.2), (-1.1, -0.7, 2.76), mat=case),
-              mk.box("Eraser", (0.25, 0.14, 0.1), (1.2, -0.3, 2.71), mat=card)]
-    for k in range(2):
-        parts.append(mk.cylinder(f"Pencil{k}", 0.05, 1.0, (-1.1 + k * 0.15, -0.35, 2.7), rot=(0, 90, 0), mat=pencil,
-                                 verts=5))
-    return parts, []
-
-
 @prop("Lectern", pivot="bottom", material="Wood", collide=True, texture=512, set="Campus")
 def lectern():
     """The proctor's lectern: a panelled oak stand with a sloped top, a gooseneck microphone and a
@@ -1347,37 +1286,6 @@ def kotatsu():
     return parts, []
 
 
-@prop("ShoeLockers", pivot="bottom", material="Wood", collide=True, texture=1024, set="Campus")
-def shoe_lockers():
-    """A getabako at the club house door: a wooden rack of shoe cubbies, sneakers and loafers in
-    some, a row of green slippers on the step below."""
-    wood = mk.wood("Shoe_Wood", srgb(150, 110, 70), srgb(104, 74, 46), scale=4)
-    dark = mk.noisy("Shoe_Dark", srgb(40, 32, 26), srgb(56, 46, 38), scale=10, roughness=0.8)
-    slipper = pk.plastic("Shoe_Slipper", (60, 110, 70))
-    shoes = [pk.plastic("Shoe_White", (230, 230, 226)), pk.plastic("Shoe_Black", (30, 30, 32)),
-             pk.plastic("Shoe_Brown", (110, 70, 40)), pk.plastic("Shoe_Red", (170, 50, 44))]
-    parts = [mk.box("Back", (6.0, 0.12, 5.0), (0, 0.64, 2.5), mat=dark),
-             mk.box("Top", (6.2, 1.5, 0.14), (0, 0, 5.05), mat=wood, bevel=0.03),
-             mk.box("Step", (6.2, 1.6, 0.4), (0, -1.3, 0.2), mat=wood, bevel=0.03)]
-    rows, cols = 4, 6
-    for c in range(cols + 1):
-        parts.append(mk.box("Divider", (0.1, 1.3, 4.3), (-3.0 + c * 1.0, 0, 2.95), mat=wood))
-    for r in range(rows + 1):
-        parts.append(mk.box("Shelf", (6.0, 1.3, 0.1), (0, 0, 0.8 + r * 1.07), mat=wood))
-    rng = random.Random(4)
-    for r in range(rows):
-        for c in range(cols):
-            if rng.random() < 0.55:
-                m = rng.choice(shoes)
-                x = -2.5 + c * 1.0
-                zz = 0.85 + r * 1.07
-                for sx in (-0.18, 0.18):
-                    parts.append(mk.box("Shoe", (0.3, 1.0, 0.32), (x + sx, -0.05, zz + 0.16), mat=m))
-    for k in range(6):
-        parts.append(mk.box("Slipper", (0.34, 0.9, 0.12), (-2.6 + k * 1.05, -1.3, 0.46), mat=slipper))
-    return parts, []
-
-
 @prop("DrumKit", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Campus")
 def drum_kit():
     """The light music club's drum kit: bass drum, snare, two rack toms and a floor tom, the
@@ -1416,35 +1324,6 @@ def drum_kit():
     parts.append(mk.cylinder("HatBottom", 0.7, 0.04, (-2.0, 0.6, 3.1), mat=brass, verts=24, radius2=0.1))
     parts += [mk.cylinder("Throne", 0.6, 0.25, (-0.2, 2.2, 1.9), mat=dark, verts=16),
               mk.cylinder("ThronePost", 0.08, 1.8, (-0.2, 2.2, 0.9), mat=chrome, verts=6)]
-    return parts, []
-
-
-@prop("UprightPiano", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Campus")
-def upright_piano():
-    """An upright piano in black lacquer, its fall open on the keys, the music desk with a score,
-    the pedals and a bench."""
-    lacquer = mk.noisy("Piano_Black", srgb(10, 10, 12), srgb(26, 26, 30), scale=8, roughness=0.12)
-    ivory = pk.plastic("Piano_Ivory", (236, 232, 220))
-    ebony = pk.plastic("Piano_Ebony", (16, 16, 18))
-    brass = pk.metal("Piano_Brass", (170, 136, 70), (210, 176, 100), rough=0.3, metallic=0.9)
-    paper = pk.plastic("Piano_Paper", (236, 230, 212))
-    parts = [mk.box("Case", (5.2, 2.0, 4.6), (0, 0.4, 2.3), mat=lacquer, bevel=0.05),
-             mk.box("Keybed", (5.0, 1.0, 0.3), (0, -0.9, 2.45), mat=lacquer, bevel=0.03),
-             mk.box("Keys", (4.7, 0.8, 0.1), (0, -0.95, 2.65), mat=ivory),
-             mk.box("Fall", (4.9, 0.6, 0.08), (0, -0.2, 3.1), rot=(60, 0, 0), mat=lacquer),
-             mk.box("Desk", (2.4, 0.1, 0.9), (0, -0.62, 3.6), rot=(-12, 0, 0), mat=lacquer),
-             mk.box("Score", (2.0, 0.04, 0.8), (0, -0.68, 3.62), rot=(-12, 0, 0), mat=paper)]
-    for k in range(34):
-        if k % 7 in (2, 6):
-            continue
-        parts.append(mk.box("Black", (0.08, 0.5, 0.1), (-2.25 + k * 0.137, -0.8, 2.75), mat=ebony))
-    for sx in (-1, 1):
-        parts.append(mk.box("Leg", (0.25, 0.25, 2.3), (sx * 2.3, -1.25, 1.15), mat=lacquer))
-    for k in range(3):
-        parts.append(mk.box("Pedal", (0.15, 0.5, 0.06), (-0.4 + k * 0.4, -0.7, 0.35), mat=brass))
-    parts += [pk.rounded("Bench", (3.0, 1.2, 0.3), (0, -2.6, 1.7), lacquer, r=0.08),
-              mk.box("BenchLeg", (0.2, 0.2, 1.6), (-1.3, -2.6, 0.8), mat=lacquer),
-              mk.box("BenchLeg", (0.2, 0.2, 1.6), (1.3, -2.6, 0.8), mat=lacquer)]
     return parts, []
 
 

@@ -15,6 +15,10 @@ stands in two of the three case maps (36 did that morning, 16 of them in all thr
   15, Agency 16, Tokyo 21). 495 placed rows swapped: Campus 212, Agency 260, Tokyo 23.
 - The old furniture the game itself still names (emotes, win cuts, shop, Sets) was remade in `props_core.py` under its old
   keys: Chair, OfficeChair, Bookshelf (lighter than before: the library places 95), FilingCabinet.
+- The weakest old props that only one map uses were remade in `props_remade.py` under their old keys, 512 textures where
+  they had 1024 for a few boxes: ExamDesk (45 in the exam hall), StoneLantern, ShoeLockers, UprightPiano, Whiteboard,
+  Photocopier, FumeHood, ExecutiveDesk, XRayScanner, Barricade, TrafficCone (Models Campus 16, Agency 17, Tokyo 22).
+  TicketGate was left alone: its catalog box is a kept shape the station's lanes were laid round.
 - Gone for good, builders and textures: the seven Hat props, SuitHandL/R, ShrineDoor, Notebook, Hydrant, VendingMachine.
 - A map may send several shared props to one model (Agency's three vending machines, Campus's two desks): the last named in
   `OWN` is the model's `base`. `RETIRED` holds what a map still asks for but no longer exists as a fallback.
@@ -46,13 +50,16 @@ Modelling traps found on these, all fixed in `props_mapown.py` (reuse its helper
 - A dome over about 25 degrees splits into six UV islands per nail, and a hundred nails left half the sofa's map empty.
   Draw long rows in the colour instead (`dotted()`, `punched()`, `lattice()`: no triangles, no islands).
 - `spline()` overshoots where a long span meets a short one (a rail's corner): use `loop()` arcs there.
+- `sk.wedge` sets the object's rotation itself: never reset `rotation_euler` after it, or the part stands on end.
 - A material's last name word picks its scan: `X_RollLeather` is not leather, `XRoll_Leather` is.
 - A font's thin strokes (`=`, `+`) are lost in the bake at a prop's texel density: size text at 0.34 or more on a big prop,
   or draw the stroke as a box.
 - `check_v2` reads the finds saved at `run_maps.py --export`: after changing a model's size, export the venue again before
   trusting it. `find_defects.py` measures afresh.
 
-After the third round (2026-11-03): Agency 93.15 of 96.41 MP, Campus 127.63 of 129.03, Tokyo 158.11 of 167.94, Lobby 58.59,
-Meeting 59.38. Dropping Core's Desk, Sofa and Crate to 512 with a 128 normal paid for it: they hardly appear now.
+After the fourth round (2026-11-03): Agency 87.48 of 96.41 MP, Campus 125.32 of 129.03, Tokyo 158.32 of 167.94, Lobby 58.59,
+Meeting 59.38. Dropping Core's Desk, Sofa and Crate to 512 with a 128 normal, and the remade props' 1024s, paid for it all.
+Weakest left (audit by triangles over surface): Tatekan, GinkgoBare and PineYukizuri (big, so thin by that measure),
+SiteFence, StreetLightTokyo, UtilityPole, EventTent, ElevatorDoors, MetalDetector, DryerStack, Washer, ReadingTable.
 A model can also be wider than its base's spot even inside the 0.1 rule: `VendingMachine` was 2.7 deep where VendingBlue is
 3.1, so one model standing for both must fit the shallower.
