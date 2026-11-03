@@ -20,3 +20,9 @@ person's mouse. **How to apply:** the place is Team Create and shared with other
 execute_luau land in their live session, and Rojo-managed scripts are overwritten by the next sync, so change code in
 the repo, not in Studio; use the MCP to look, play-test and capture (cutscene checks: the debug cues in
 [[studio-cutscene-testing]]).
+
+Switching it on (2026-11-03): the status bar's "MCP off" button, bottom right, opens Assistant Settings > MCP Servers
+directly; flip "Enable Studio as MCP server". The tools then arrive in the running session without a restart (it read
+"4 clients connected": every Claude window's StudioMCP.exe relays through the first one on port 13469). With the switch
+off, the server still shows "connected" with 0 tools. To bring Studio forward by screen control, do not use
+open_application: it starts a second, empty Studio. Focus the open one with WScript.Shell AppActivate(<pid>).
