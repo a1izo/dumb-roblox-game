@@ -132,6 +132,7 @@ FALLBACK_KIND = [
     ("AshCracked", "Salt"),
     ("Crust", "Salt"),
     ("Basalt", "Basalt"),
+    ("RealmShard", "Rock"),
     ("Ash", "Sand"),
     ("RockGrey", "Rock"),
     ("Parquet", "WoodPlanks"),

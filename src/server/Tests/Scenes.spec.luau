@@ -32,33 +32,29 @@ return function(t)
 		it("gives the lobby every anchor it builds at", function()
 			local anchors = SceneBuilder.data("Lobby").layout.anchors
 			local missing = {}
-			-- The title, the one board (Most Wins), the throne's seat and plaque, the bell, the duel's two slates.
-			local names = { "spawn", "title", "tagline", "wins", "throne", "throneplaque", "bell", "duel1", "duel2" }
+			-- The one board (Most Wins), the throne's seat and plaque, the bell, the duel's two slates.
+			local names = { "spawn", "wins", "throne", "throneplaque", "bell", "duel1", "duel2" }
 			for _, name in ipairs({ "academyGate", "dummy1", "dummy2", "dummy3" }) do
 				table.insert(names, name)
 			end
-			-- Twelve candle stones, five tableaux, seven apples.
+			-- Twelve candle stones, five tableaux.
 			for index = 1, 12 do
 				table.insert(names, "ready" .. index)
 			end
 			for index = 1, 5 do
 				table.insert(names, "tableau" .. index)
 			end
-			for index = 1, 7 do
-				table.insert(names, "apple" .. index)
-			end
 			-- An altar for each case-file drill, the Manual, the arrest (drill id "warrant") and the Oculus.
 			for index = 1, #TaskTypes.LIST + 3 do
 				table.insert(names, "drill" .. index)
 			end
 			-- The mini-games: the Spire Ascent's pad, centre and ten checkpoints, the rune courtyard's pad,
-			-- centre and nine tiles, the stone-toss, the rift's shape and the roof far under it.
+			-- centre and nine tiles, the rift's shape and the roof far under it.
 			for _, name in ipairs({
 				"pkStart",
 				"pkCenter",
 				"runeStart",
 				"runeCenter",
-				"toss",
 				"rift",
 				"landing",
 			}) do
@@ -69,6 +65,13 @@ return function(t)
 			end
 			for index = 1, 9 do
 				table.insert(names, "rune" .. index)
+			end
+			-- The Reaper's Sweep's dais and pad, the Lantern Run's first lantern and its eight others.
+			for _, name in ipairs({ "sweep", "sweepPad", "lanternStart" }) do
+				table.insert(names, name)
+			end
+			for index = 1, 8 do
+				table.insert(names, "lantern" .. index)
 			end
 			for _, name in ipairs(names) do
 				if not anchors[name] then

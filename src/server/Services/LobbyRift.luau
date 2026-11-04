@@ -16,7 +16,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Games = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames")
 local LastBreath = require(Games:WaitForChild("LastBreath"))
-local Toss = require(Games:WaitForChild("Toss"))
 
 local LeaderboardService = require(script.Parent.LeaderboardService)
 
@@ -145,7 +144,7 @@ local function enter(player: Player, seed: any)
 		return
 	end
 	local at = part.Position
-	local depth = Toss.depth(Vector2.new(at.X, at.Z), info.rift)
+	local depth = LastBreath.depth(Vector2.new(at.X, at.Z), info.rift)
 	if depth > 1.25 or at.Y > info.rimY + 4 or at.Y < info.rimY - 60 then
 		-- Not in the rift: the client lets go again.
 		context.tell(player, { game = "rift", kind = "refused" })

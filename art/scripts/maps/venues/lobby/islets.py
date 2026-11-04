@@ -1,6 +1,6 @@
-"""The two plateaus and the old stone causeways to them. West: the Spire Ascent, ten checkpoints climbing a
-spiral of floating stones round a tall twisted spire. North-east: the rune courtyard, nine tiles in a broken
-ruin. Each plateau is a raised table of rock standing out on the plain, with its own invisible wall (open only
+"""The two plateaus and the old stone causeways to them. West: the Chain Heap (2026-11-04), a mountain of junk with a
+colossal chain hanging into it out of the sky; the Spire Ascent's ten checkpoints climb round the chain on stones and
+broken gear wheels hanging in the air. North-east: the rune courtyard, nine tiles among pale shards. Each plateau is a raised table of rock standing out on the plain, with its own invisible wall (open only
 where the causeway arrives); each causeway runs from the basin's ridge over a deep chasm and up a short
 flight of steps onto the plateau.
 
@@ -10,12 +10,11 @@ anchors written here."""
 import math
 import random
 
-import realmrock
 from maps import city
 from maps import geo2d as g2
 from maps.venues.lobby import landmarks, rocks
 from maps.venues.lobby import plan as P
-from maps.venues.lobby.terrain import blade, floating_rock, islet_poly, needle_field, plateau_sides, rock, wall
+from maps.venues.lobby.terrain import floating_rock, islet_poly, plateau_sides, wall
 
 H = P.PLATEAU_H
 
@@ -134,23 +133,30 @@ def causeway(s, g, a, b, seed, chasm, name):
                 guard=CAP)
 
 
-def plateau(s, g, c, r, seed, centre_dir_pt, wall_h):
+def plateau(s, g, c, r, seed, arrive, wall_h):
     """A raised table of rock standing out on the plain: ash on top, rock sides, an invisible wall round the
-    rim open at the causeway."""
+    rim open at the causeway. arrive: the head of the causeway's flight; the rim is drawn in to it there, a cove
+    the flight climbs in front of (the flight ends 7 studs inside the plateau's nominal edge, and ran on into its
+    rock: the table's top and sides lay over its upper half, a 4-stud step up out of it)."""
     poly = islet_poly(c, r, seed)
+    toward = math.atan2(arrive[1] - c[1], arrive[0] - c[0])
+    inner = math.dist(c, arrive) - 0.3
+    cove = []
+    for x, z in poly:
+        a = math.atan2(z - c[1], x - c[0])
+        d = math.hypot(x - c[0], z - c[1])
+        # (within 30 degrees of the way in: the cove's last corners stand at least 7 studs either side of it, clear
+        # of the flight's parapets)
+        if abs(math.atan2(math.sin(a - toward), math.cos(a - toward))) < math.radians(30.0) and d > inner:
+            x, z = c[0] + (x - c[0]) * inner / d, c[1] + (z - c[1]) * inner / d
+        cove.append((x, z))
+    poly = cove
     for piece in g2.convex_pieces(poly):
         g.add(piece, "RealmAsh", H, 0, "plaza")
         city.floor(s, piece, H, H + 1.0, "RealmAsh")
     plateau_sides(s, poly, c, seed * 7, H)
-    wall(s, g2.ccw(poly), wall_h, gaps=[centre_dir_pt], y=H + wall_h / 2 - 2.0)
+    wall(s, g2.ccw(poly), wall_h, gaps=[arrive], y=H + wall_h / 2 - 2.0, reach=1.5)
     return poly
-
-
-def edge_point(islet):
-    """The plateau's nominal edge where its causeway arrives."""
-    d = math.hypot(islet[0], islet[1])
-    ux, uz = islet[0] / d, islet[1] / d
-    return (islet[0] - ux * islet[2], islet[1] - uz * islet[2])
 
 
 # The rune courtyard -----------------------------------------------------------------------------------------
@@ -158,8 +164,8 @@ def edge_point(islet):
 
 def runes(s, g):
     c = P.RUNE_CENTER
-    poly = plateau(s, g, c, P.ISLET_RUNE[2], 55, edge_point(P.ISLET_RUNE), 40.0)
-    landmarks.flag_disc(s, g, c, 33.0, 57, name="the rune courtyard", broken=0.05, y=H + 0.04)
+    poly = plateau(s, g, c, P.ISLET_RUNE[2], 55, P.BRIDGE_RUNE[1], 40.0)
+    landmarks.flag_disc(s, g, c, 32.0, 57, name="the rune courtyard", broken=0.05, y=H + 0.04, within=poly)
     # The slab the nine tiles lie on (the game builds the tiles themselves, lit one by one).
     pitch = P.RUNE_TILE + P.RUNE_GAP
     span = pitch * 3 + 1.0
@@ -171,64 +177,60 @@ def runes(s, g):
         for i in (-1, 0, 1):
             k += 1
             s.anchor(f"rune{k}", c[0] + i * pitch, H + 0.6, c[1] + j * pitch, 0.0, w=P.RUNE_TILE, h=P.RUNE_TILE)
-    # Where the causeway arrives: the stepping spot for starting a run.
+    # Where the causeway arrives: the stepping spot for starting a run, two shards either side of it.
     bx, bz = P.BRIDGE_RUNE[1]
     d = math.hypot(bx - c[0], bz - c[1])
     ux, uz = (bx - c[0]) / d, (bz - c[1]) / d
     sx, sz = c[0] + ux * 26.0, c[1] + uz * 26.0
     s.anchor("runeStart", sx, H, sz, P.rot_towards((sx, sz), c))
-    s.prop("BoneBrazier", sx + uz * 4.5, sz - ux * 4.5, 0.0, 1.0, H)
-    s.prop("BoneBrazier", sx - uz * 4.5, sz + ux * 4.5, 0.0, 1.0, H)
-    s.light("point", (sx, H + 8.0, sz), (170, 196, 232), 26, 1.0)
-    # A ring of broken pillars round the slab, the far side whole; an obelisk with cold glyphs behind it.
     rng = random.Random(58)
-    for q in range(12):
-        a = math.tau * q / 12 + 0.2
-        px, pz = c[0] + math.cos(a) * 30.0, c[1] + math.sin(a) * 30.0
-        if math.dist((px, pz), (sx, sz)) < 14.0 or not g2.contains(poly, (px, pz)):
+    for side in (-1, 1):
+        rocks.rock(s, "RealmShardsA", sx + uz * side * 6.5, sz - ux * side * 6.5, rng.uniform(0, 360), 0.42, y=H)
+    s.light("point", (sx, H + 8.0, sz), (170, 196, 232), 26, 1.0)
+    # The shard garden round the slab: pale clusters, the tallest behind it.
+    for q in range(11):
+        a = math.tau * q / 11 + 0.25
+        r = rng.uniform(25.0, 33.0)
+        px, pz = c[0] + math.cos(a) * r, c[1] + math.sin(a) * r
+        if math.dist((px, pz), (sx, sz)) < 13.0 or not g2.contains(poly, (px, pz)):
             continue
-        landmarks.pillar(s, px, pz, rng.choice((5.0, 8.0, 12.0, 15.5)), rng, whole=(q % 4 == 0), y=H)
-    ox, oz = c[0] - ux * 31.0, c[1] - uz * 31.0
-    orot = P.rot_towards((ox, oz), c)
-    fx, fz = P.facing(orot)
-    s.box("RuinStone", (ox, H + 0.5, oz), (9.0, 1.0, 5.0), orot, collide=True)
-    s.box("RuinStone", (ox, H + 12.5, oz), (5.0, 23.0, 3.0), orot, collide=True, skip=("-y",))
-    for gy in (6.0, 12.0, 18.0):
-        s.box("RelicGlow", (ox + fx * 1.6, H + gy, oz + fz * 1.6), (0.4, 2.4, 0.2), orot)
-    s.box("RuinStone", (ox, H + 25.0, oz), (3.4, 3.0, 2.6), orot)
-    needle_field(s, c[0], c[1], 36.0, 14, 5.0, 13.0, 59, y=H, avoid=[(c[0], c[1], 24.0), (sx, sz, 12.0)])
+        key, sc = (("RealmShardsA", rng.uniform(0.45, 0.85)) if q % 3 else ("RealmShardsC", rng.uniform(1.6, 2.6)))
+        rocks.rock(s, key, px, pz, rng.uniform(0, 360), sc, y=H)
+    ox, oz = c[0] - ux * 30.0, c[1] - uz * 30.0
+    rocks.rock(s, "RealmShardsB", ox, oz, rng.uniform(0, 360), 0.55, y=H)
+    s.light("point", (c[0], H + 14.0, c[1]), (170, 196, 232), 34, 0.8)
 
 
-# The Spire Ascent -------------------------------------------------------------------------------------------
+# The Spire Ascent, round the Chain Heap ----------------------------------------------------------------------
 
 
-SPIRE = "RealmSpireAscent"
+CHAIN_TOP = 170.0  # how high over the plateau the great chain is seen to hang from (the haze takes it before)
 
 
-def spire_ascent(s, c):
-    """The Spire Ascent's spire on its plateau: the kit shape, walls round its foot, and above them a stack of
-    blocks inside its waist all the way up (a box core reached out past the rock where it narrows, among the stones
-    people jump between). Returns how far out its rock reaches, at most, at each stone's height (for the check)."""
-    rocks.rock(s, SPIRE, c[0], c[1], 0.0, 1.0, H, collide=True, core_h=12.0)
-    verts = realmrock.shape(SPIRE)[0]
-    sink = realmrock.KIT[SPIRE].get("sink", 1.0)
-    top = max(v[2] for v in verts) - sink
-    step = 8.0
-    y = 10.0
-    while y < top - 2.0:
-        band = [math.hypot(v[0], v[1]) for v in verts if y <= v[2] - sink < y + step]
-        if band:
-            inner = min(band) * 0.62
-            s.collider((c[0], H + y + step / 2, c[1]), (inner * 1.41, step, inner * 1.41), 22.5, True, "RockGrey")
-        y += step
-
-
-def spire_reach(y_over_plateau, band=1.5):
-    """How far the spire's rock reaches from its axis around a height over the plateau (its widest there)."""
-    verts = realmrock.shape(SPIRE)[0]
-    sink = realmrock.KIT[SPIRE].get("sink", 1.0)
-    near = [math.hypot(v[0], v[1]) for v in verts if abs(v[2] - sink - y_over_plateau) < band]
-    return max(near) if near else 0.0
+def chain_heap(s, c):
+    """The Chain Heap on its plateau: a mountain of junk (rubble, broken gear wheels, piles of giant chain) and, hanging
+    into it out of the sky, a colossal chain; solid up its length (the climb's stones hang round it)."""
+    s.prop("GreatChain", c[0], c[1], 0.0, 1.0, H - 3.0)
+    y = 0.0
+    k = 0
+    while y < CHAIN_TOP:
+        s.collider((c[0], H + y + 4.0, c[1]), (4.2, 8.0, 4.2), 45.0 * (k % 2), True, "DarkMetal")
+        y += 8.0
+        k += 1
+    rng = random.Random(67)
+    avoid = [(c[0], c[1], 4.5)]
+    for k in range(4):
+        a = math.tau * k / 4 + rng.uniform(-0.25, 0.25)
+        d = 8.5 if k % 2 else 7.0
+        x, z = c[0] + math.cos(a) * d, c[1] + math.sin(a) * d
+        if k % 2:
+            # (the gear stands on its edge across the way out from the chain)
+            landmarks.gear(s, x, z, math.degrees(-a), 1.0, H - 1.2)
+        else:
+            landmarks.chain_pile(s, x, z, rng.uniform(0, 360), 1.1, H)
+        avoid.append((x, z, 5.0))
+    rocks.scatter(s, ("RealmBoulderA", "RealmBoulderB", "RealmSlab"), c[0], c[1], 11.0, 16, (0.9, 1.5), 66, y=H,
+                  collide=True, spacing=0.55, avoid=avoid)
 
 
 def pk_platforms():
@@ -252,37 +254,44 @@ def pk_platforms():
 
 def parkour(s, g):
     c = P.PK_CENTER
-    poly = plateau(s, g, c, P.ISLET_PARKOUR[2], 65, edge_point(P.ISLET_PARKOUR), 170.0)
-    landmarks.flag_disc(s, g, c, 15.0, 67, name="the foot of the spire", broken=0.05, y=H + 0.04)
-    # The spire the stones climb round: twisted, fluted, broken off at the top (the kit's own, made to its measures).
-    spire_ascent(s, c)
+    poly = plateau(s, g, c, P.ISLET_PARKOUR[2], 65, P.BRIDGE_PARKOUR[1], 170.0)
+    chain_heap(s, c)
     s.anchor("pkCenter", c[0], H, c[1], 0.0)
     bx, bz = P.BRIDGE_PARKOUR[1]
     d = math.hypot(bx - c[0], bz - c[1])
     ux, uz = (bx - c[0]) / d, (bz - c[1]) / d
     sx, sz = c[0] + ux * 24.0, c[1] + uz * 24.0
+    landmarks.flag_disc(s, g, (sx, sz), 6.5, 68, name="the foot of the climb", broken=0.05, y=H + 0.04, loose=6,
+                        within=poly)
     s.anchor("pkStart", sx, H, sz, P.rot_towards((sx, sz), c))
-    s.prop("BoneBrazier", sx + uz * 4.5, sz - ux * 4.5, 0.0, 1.0, H)
-    s.prop("BoneBrazier", sx - uz * 4.5, sz + ux * 4.5, 0.0, 1.0, H)
     s.light("point", (sx, H + 8.0, sz), (170, 196, 232), 26, 1.0)
+    # The climb: stones hanging in the air round the chain, a broken gear wheel at each checkpoint.
     for i, (x, y, z, w, check) in enumerate(pk_platforms()):
-        r = w * 0.62
-        floating_rock(s, x, y, z, r, 700 + i, depth=r * (1.1 + 0.25 * (i % 3)), sides=7,
-                      top_mat="RuinFlag" if check else "RockGrey")
-        s.collider((x, y - 0.6, z), (w * 0.82, 1.2, w * 0.82), (i * 37) % 90, True, "RockGrey")
+        if check:
+            turn = (i * 41) % 360
+            s.prop("GearPlatform", x, z, turn, round(w / 9.0, 3), y - 1.0)
+            # (inside the gear's round, whichever way it is turned)
+            s.collider((x, y - 0.6, z), (w * 0.66, 1.2, w * 0.66), turn, True, "DarkMetal")
+        else:
+            r = w * 0.62
+            floating_rock(s, x, y, z, r, 700 + i, depth=r * (1.1 + 0.25 * (i % 3)), sides=7, top_mat="RockGrey")
+            s.collider((x, y - 0.6, z), (w * 0.82, 1.2, w * 0.82), (i * 37) % 90, True, "RockGrey")
         if check:
             s.anchor(f"pk{check}", x, y, z, 0.0, w=w)
-    # Cold light at the top: the finish stone has a small blade standing in it.
+    # The finish: a cage lantern hangs over the last stone, burning cold.
     x, y, z, w, check = pk_platforms()[-1]
-    blade(s, x, y - 0.4, z, 1.1, 7.0, 0.3, rot=0.0)
-    s.light("point", (x, y + 5.0, z), (170, 196, 232), 26, 1.0)
+    s.prop("HangingCage", x, z, 0.0, 1.0, y + 12.0 - landmarks.HANGING_CAGE_DROP)
+    s.light("point", (x, y + 4.0, z), landmarks.LANTERN, 26, 1.0)
     rng = random.Random(69)
-    needle_field(s, c[0], c[1], 34.0, 18, 5.0, 14.0, 70, y=H, avoid=[(c[0], c[1], 17.0), (sx, sz, 11.0)])
-    for q in range(5):
+    for q in range(7):
         a = rng.uniform(0, math.tau)
-        d2 = rng.uniform(26.0, 33.0)
-        rock(s, c[0] + math.cos(a) * d2, c[1] + math.sin(a) * d2, rng.uniform(2.5, 4.0), rng.uniform(3.0, 8.0), 710 + q,
-             y=H, collide=False)
+        d2 = rng.uniform(27.0, 34.0)
+        px, pz = c[0] + math.cos(a) * d2, c[1] + math.sin(a) * d2
+        if math.dist((px, pz), (sx, sz)) < 10.0:
+            continue
+        key = rng.choice(("RealmBoulderA", "RealmBoulderB", "RealmCragB"))
+        rocks.rock(s, key, px, pz, rng.uniform(0, 360), rng.uniform(0.5, 1.1) if key != "RealmCragB" else 0.35, y=H,
+                   collide=False)
     return poly
 
 

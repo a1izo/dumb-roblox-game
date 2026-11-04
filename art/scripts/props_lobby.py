@@ -46,14 +46,6 @@ def dark_stone_mat(prefix):
     return mk.noisy(prefix + "_DarkStone", srgb(40, 40, 44), srgb(66, 66, 70), scale=12, roughness=0.9)
 
 
-def bark_mat(prefix):
-    return mk.noisy(prefix + "_Bark", srgb(34, 32, 32), srgb(72, 68, 66), scale=11, roughness=0.95, stretch=(1, 1, 0.3))
-
-
-def iron_mat(prefix):
-    return pk.metal(prefix + "_Iron", (24, 24, 26), (48, 46, 46), rough=0.7, metallic=0.6)
-
-
 def void_mat(prefix):
     return mk.flat(prefix + "_Void", srgb(8, 8, 10), roughness=0.95)
 
@@ -260,76 +252,9 @@ def top_of(parts):
 # Trees -------------------------------------------------------------------------------------------------
 
 
-def _branch(parts, rng, start, direction, length, radius, depth, bark, spread, rise, twist, tips):
-    """A twisted limb: three bent, tapering tubes, then its children."""
-    dx, dy, dz = direction
-    pts = [start]
-    for k in range(1, 4):
-        u = k / 3
-        jitter = length * 0.12
-        pts.append((start[0] + dx * length * u + rng.uniform(-jitter, jitter),
-                    start[1] + dy * length * u + rng.uniform(-jitter, jitter),
-                    start[2] + dz * length * u + rng.uniform(-jitter, jitter) * 0.6))
-    tip_r = radius * 0.58
-    parts.append(_limb("Limb", pts, radius, tip_r, bark))
-    end = pts[-1]
-    if depth == 0:
-        tips.append((end, (dx, dy, dz)))
-        return
-    base = math.atan2(dy, dx) + twist
-    count = rng.choice((2, 2, 3))
-    for k in range(count):
-        yaw = base + rng.uniform(-spread, spread) + (k - (count - 1) / 2) * spread
-        pitch = math.atan2(dz, math.hypot(dx, dy)) + rng.uniform(-0.35, 0.25) + rise
-        pitch = max(-0.5, min(1.3, pitch))
-        nd = (math.cos(pitch) * math.cos(yaw), math.cos(pitch) * math.sin(yaw), math.sin(pitch))
-        _branch(parts, rng, end, nd, length * rng.uniform(0.55, 0.75), tip_r, depth - 1, bark, spread, rise, twist, tips)
-
-
-def _roots(parts, rng, r, bark, count=5):
-    for k in range(count):
-        a = 2 * math.pi * k / count + rng.uniform(-0.3, 0.3)
-        reach = r * rng.uniform(2.2, 3.2)
-        mid = (math.cos(a) * reach * 0.55, math.sin(a) * reach * 0.55, 0.35)
-        end = (math.cos(a) * reach, math.sin(a) * reach, -0.1)
-        parts.append(_limb("Root", [(0, 0, 1.2), mid, end], r * 0.55, r * 0.08, bark))
-
-
-def dead_tree(seed, prefix, height, lean, limbs, spread, rise, twist):
-    rng = random.Random(seed)
-    bark = bark_mat(prefix)
-    parts, tips = [], []
-    r = 0.9
-    _roots(parts, rng, r, bark)
-    # The trunk: bent in three pieces, leaning.
-    pts = [(0, 0, 0)]
-    for k in range(1, 4):
-        u = k / 3
-        pts.append((lean[0] * u * u + rng.uniform(-0.4, 0.4), lean[1] * u * u + rng.uniform(-0.4, 0.4), height * 0.55 * u))
-    parts.append(_limb("Trunk", [(0.0, 0.0, -0.2)] + pts[1:], r, r * 0.46, bark))
-    parts.append(_detail(mk.cylinder("Flare", r * 1.7, 1.2, (0, 0, 0.6), mat=bark, verts=12, radius2=r), BARKED))
-    head = pts[-1]
-    for k in range(limbs):
-        yaw = 2 * math.pi * k / limbs + rng.uniform(-0.4, 0.4)
-        pitch = rng.uniform(0.35, 0.8)
-        d = (math.cos(pitch) * math.cos(yaw), math.cos(pitch) * math.sin(yaw), math.sin(pitch))
-        start = pts[2] if k % 2 else head
-        _branch(parts, rng, start, d, height * rng.uniform(0.26, 0.34), r * 0.5, 2, bark, spread, rise, twist, tips)
-    # A knot hole and a broken stub.
-    parts.append(mk.sphere("Knot", 0.35, (pts[1][0], pts[1][1] - r * 0.85, pts[1][2] + 0.4), scale=(1, 0.5, 1.3),
-                           mat=void_mat(prefix), segments=8, rings=6))
-    return parts, tips
-
-
-# The realm's pines (2026-10-16, after Japanese black pines bent by the sea wind, and the way an ink brush draws
-# them): a thick trunk curving away from the wind, a few limbs reaching nearly level the same way, and on their
-# ends flat clouds of needles, layered, almost black against the grey sky. Same keys, sizes and places as the dead
-# trees they replace.
-NEEDLES = {"sub": 1, "disp": [("grain", 0.05, 0.08), ("cells", 0.04, 0.22)]}  # (the pads' high-detail copy)
 WEATHERED = {"sub": 1, "disp": [("cells", 0.09, 1.1), ("grain", 0.025, 0.18)]}  # (the giant skull: cracked, pitted bone)
 HORNY = {"sub": 1, "disp": [("rings", 0.04, 0.5), ("grain", 0.015, 0.1)]}  # (a horn's growth rings and grain)
 STONY = {"sub": 1, "disp": [("cells", 0.02, 0.35), ("grain", 0.008, 0.06)]}  # (the notebook's boards: pitted stone)
-BARKED = {"sub": 1, "disp": [("wrinkles", 0.05, 0.35), ("grain", 0.012, 0.07)]}
 
 
 def _detail(obj, detail):
@@ -339,225 +264,337 @@ def _detail(obj, detail):
     return obj
 
 
-def _needle_pad(parts, rng, centre, size, mat, prefix):
-    """A pad of needles as a pine holds it: a dome of clumps, highest at its middle and thinning to its rim, its
-    underside flatter; tufts of needles bristling out of the rim and the top so its outline is a pine's, never a
-    cloud's."""
-    cx, cy, cz = centre
-    for k in range(rng.randint(5, 7)):
-        a = rng.uniform(0, math.tau)
-        d = rng.uniform(0.0, 0.42) * size
-        r = size * rng.uniform(0.3, 0.42) * (1.0 - 0.45 * d / size)
-        at = (cx + math.cos(a) * d, cy + math.sin(a) * d * 0.9, cz + (0.16 - 0.3 * d / size) * size)
-        lump = mk.sphere(prefix + "Pad", r, at, scale=(1.0, 0.9, 0.52), mat=mat, segments=10, rings=6)
-        mk.displace_noise(lump, strength=r * 0.28, scale=r * 0.32, name=prefix + "Needles")
-        parts.append(_detail(lump, NEEDLES))
-    # (its fringe: small clumps round the rim and over the top, each bumpy, so the outline breaks up as a pine's does)
-    for k in range(int(7 + size * 3.2)):
-        a = rng.uniform(0, math.tau)
-        rim = rng.random() < 0.72
-        d = size * (rng.uniform(0.5, 0.68) if rim else rng.uniform(0.0, 0.4))
-        rr = size * rng.uniform(0.1, 0.16)
-        at = (cx + math.cos(a) * d, cy + math.sin(a) * d * 0.9, cz + size * (0.04 if rim else rng.uniform(0.16, 0.26)))
-        clump = mk.sphere(prefix + "Tuft", rr * 1.12, at, scale=(1.0, 1.0, 0.72), mat=mat, segments=6, rings=4)
-        mk.displace_noise(clump, strength=rr * 0.36, scale=rr * 0.45, name=prefix + "Tufts")
-        parts.append(clump)
-
-
-def _limb(name, points, r0, r1, mat):
-    """A limb or a trunk along a smooth curve through `points`, tapering from r0 to r1, barked."""
-    from props_mapown import spline
-
-    pts = spline(points, steps=4)
-    radii = [r0 + (r1 - r0) * k / (len(pts) - 1) for k in range(len(pts))]
-    return _detail(pk.sweep(name, pts, radii, mat, sides=9 if r0 > 0.4 else 6), BARKED)
-
-
-def black_pine(seed, prefix, height, lean, limbs, reach, droop):
-    """A wind-bent black pine `height` tall, its top `lean` (x, y) downwind of its foot."""
-    rng = random.Random(seed)
-    bark = mk.noisy(prefix + "_Bark", srgb(22, 20, 20), srgb(50, 46, 44), scale=10, roughness=0.95, stretch=(1, 1, 0.35))
-    # (a fibrous scan under the needles' own dark green-black, never glossy)
-    needles = mk.noisy(prefix + "_Needles", srgb(14, 17, 15), srgb(36, 42, 37), scale=14, roughness=1.0, kind="cloth")
-    parts = []
-    r = 0.82
-    # Its roots gripping the ash, flaring into the trunk.
-    for k in range(4):
-        a = 2 * math.pi * k / 4 + rng.uniform(-0.3, 0.3)
-        span = r * rng.uniform(2.2, 3.0)
-        parts.append(_limb("Root", [(0.0, 0.0, 1.1), (math.cos(a) * span * 0.5, math.sin(a) * span * 0.5, 0.35),
-                                    (math.cos(a) * span, math.sin(a) * span, -0.12)], r * 0.6, r * 0.1, bark))
-    # The trunk: one curve away from the wind and back, as a pine's grows.
-    wind = math.atan2(lean[1], lean[0])
-    side = (-math.sin(wind), math.cos(wind))
-    pts = [(0.0, 0.0, -0.2)]
-    for k in range(1, 6):
-        u = k / 5
-        sway = math.sin(u * math.pi * 1.4) * 0.7
-        pts.append((lean[0] * u ** 1.5 + side[0] * sway, lean[1] * u ** 1.5 + side[1] * sway, height * 0.8 * u))
-    parts.append(_limb("Trunk", pts, r * 1.05, r * 0.42, bark))
-    # The limbs: nearly level, most of them downwind, the short ones upwind; a pad at each end, sometimes one
-    # more along the way.
-    for k in range(limbs):
-        start = pts[3 + k % 3]  # (from the upper trunk: lower down, the pads heaped into a bush)
-        downwind = k % 3 != 2
-        yaw = wind + (rng.uniform(-0.9, 0.9) if downwind else math.pi + rng.uniform(-0.6, 0.6))
-        length = reach * rng.uniform(0.7, 1.0) * (1.0 if downwind else 0.45)
-        d = (math.cos(yaw), math.sin(yaw))
-        line = [start]
-        for q in range(1, 4):
-            u = q / 3
-            line.append((start[0] + d[0] * length * u, start[1] + d[1] * length * u,
-                         start[2] + length * (0.18 * u - droop * u * u) + rng.uniform(-0.2, 0.2)))
-        parts.append(_limb("Limb", line, r * 0.42, r * 0.16, bark))
-        end = line[-1]
-        _needle_pad(parts, rng, (end[0], end[1], end[2] + 0.5), rng.uniform(2.4, 3.4) * (1.0 if downwind else 0.7),
-                    needles, prefix)
-        if downwind and rng.random() < 0.5:
-            mid = (start[0] + d[0] * length * 0.55, start[1] + d[1] * length * 0.55, start[2] + length * 0.04 + 0.5)
-            _needle_pad(parts, rng, mid, rng.uniform(1.6, 2.2), needles, prefix)
-    # The crown: a pad over the trunk's top, a smaller one above it.
-    top = pts[-1]
-    _needle_pad(parts, rng, (top[0], top[1], top[2] + 0.6), 3.4, needles, prefix)
-    _needle_pad(parts, rng, (top[0] + lean[0] * 0.15, top[1] + lean[1] * 0.15, top[2] + 1.9), 2.2, needles, prefix)
-    return parts
-
-
-def matte(floor):
-    """A bake's finish (modelkit.bake) holding the roughness map at `floor` at least: a prop of many small parts leaves
-    much of its small roughness map bare between them, and bare reads as glossy at their edges."""
-
-    def finish(colour, normal, rough):
-        rough[..., :3] = rough[..., :3].clip(floor, 1.0)
-
-    return finish
-
-
-@prop("DeadTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0), detail=True,
-      normal=512)
-def dead_tree_tall():
-    """A tall black pine of the wasteland (the key is the dead tree's it replaced): a trunk curving away from
-    the wind, its limbs reaching downwind, dark pads of needles on their ends."""
-    return black_pine(11, "Pnt", 15.5, (3.4, 1.6), 6, 6.2, 0.22), [], {"finish": matte(0.86)}
-
-
-@prop("DeadTreeGnarled", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0),
-      detail=True, normal=512)
-def dead_tree_gnarled():
-    """A low black pine flattened by the wind (the key is the gnarled dead tree's it replaced): a squat trunk
-    bent far over, its limbs spreading wide and flat, the kind the realm's dwellers hang their lanterns in."""
-    return black_pine(23, "Png", 10.0, (5.0, -1.8), 5, 5.0, 0.3), [], {"finish": matte(0.86)}
-
-
-# An apple's shape (2026-10-25, the owner: "not just basic shapes (for example apples in the lobby)"): a lathed body,
-# wider at the shoulders, a dimple at the top and a small one under it, a curled stem and a withered leaf.
-APPLE_PROFILE = [(0.0, 0.05), (0.08, 0.0), (0.24, 0.03), (0.38, 0.13), (0.45, 0.3), (0.46, 0.46), (0.42, 0.6),
-                 (0.32, 0.7), (0.18, 0.72), (0.08, 0.66), (0.0, 0.62)]
-
-
-def apple_parts(prefix, at, size, skin, stem, leaf, tilt=0.0, leafy=True):
-    """An apple standing at `at` (its foot), `size` times the made size, its stem tilted `tilt` degrees."""
-    x, y, z = at
-    body = mk.lathe(prefix + "Body", [(r * size, h * size) for r, h in APPLE_PROFILE], mat=skin, segments=18)
-    body.location = (x, y, z)
-    lean = math.radians(tilt)
-    base = (x, y, z + 0.62 * size)
-    tip = (x + math.sin(lean) * 0.28 * size, y, z + (0.62 + math.cos(lean) * 0.28) * size)
-    parts = [body, mk.tube(prefix + "Stem", base, tip, 0.03 * size, 0.02 * size, mat=stem, verts=6)]
-    if leafy:
-        blade = mk.sphere(prefix + "Leaf", 0.16 * size, (tip[0] + 0.12 * size, y + 0.02 * size, tip[2] - 0.02 * size),
-                          scale=(1.0, 0.42, 0.07), mat=leaf, segments=10, rings=4)
-        blade.rotation_euler = (math.radians(55), math.radians(-30), math.radians(10))  # (curling off the stem)
-        parts.append(blade)
-    return parts
-
-
-@prop("GreyApple", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Lobby")
-def grey_apple():
-    """One of the seven grey apples hidden round the realm (the lobby's apple hunt): the realm's own fruit, ash-grey
-    with a faint silver sheen and darker streaks, a black stem, a withered grey leaf."""
-    skin = mk.noisy("Ga_Skin", srgb(92, 92, 98), srgb(156, 156, 164), scale=9, roughness=0.3, stretch=(1, 1, 4))
-    stem = mk.flat("Ga_Stem", srgb(24, 22, 22), 0.8)
-    leaf = mk.noisy("Ga_Leaf", srgb(70, 72, 70), srgb(112, 112, 106), scale=14, roughness=0.7)
-    return apple_parts("Ga", (0, 0, 0), 1.0, skin, stem, leaf, tilt=14), []
-
-
-@prop("WitheredAppleTree", pivot="bottom", material="Wood", collide=False, texture=1024, set="Lobby", anchor=(0, 0),
-      detail=True, normal=512)
-def withered_apple_tree():
-    """The one fruit tree in the realm: grey and twisted like the rest, yet hung with a few dull,
-    grey-brown apples, and two more fallen in the ash at its foot (one bitten)."""
-    parts, tips = dead_tree(37, "Apl", 13.0, (0.6, 0.9), 5, 0.6, 0.05, 0.4)
-    rng = random.Random(8)
-    red = mk.noisy("Apl_Apple", srgb(58, 52, 48), srgb(104, 96, 88), scale=6, roughness=0.55)
-    stem = mk.flat("Apl_Stem", srgb(40, 30, 22), 0.8)
-    flesh = mk.flat("Apl_Flesh", srgb(176, 172, 164), 0.7)
-    leaf = mk.noisy("Apl_Leaf", srgb(60, 62, 58), srgb(98, 98, 92), scale=14, roughness=0.7)
-    for k, ((tx, ty, tz), _) in enumerate(tips[::2][:9]):
-        hang = rng.uniform(0.3, 0.7)
-        # (hung by its stalk off the twig, the apple's stem meeting the stalk's end: an apple upside-down on it)
-        parts.append(mk.tube("Stalk", (tx, ty, tz), (tx, ty, tz - hang), 0.03, mat=stem, verts=4))
-        body = mk.lathe("Apple", [(r * 0.95, h * 0.95) for r, h in APPLE_PROFILE], mat=red, segments=18)
-        body.location = (tx, ty, tz - hang - 0.6 * 0.95)  # (hanging upright: its top's dimple on the stalk's end)
-        parts.append(body)
-    for k, (x, y) in enumerate(((2.2, -1.4), (-1.8, 1.9))):
-        fallen = apple_parts("Fallen", (x, y, -0.02), 0.95, red, stem, leaf, tilt=40, leafy=False)
-        parts += fallen
-        if k == 0:
-            parts.append(mk.sphere("Bite", 0.24, (x - 0.3, y - 0.2, 0.36), scale=(0.5, 1, 1), mat=flesh, segments=8, rings=6))
-    return parts, []
-
-
 # The wasteland ------------------------------------------------------------------------------------------
+
+
+def _world_mesh(objs):
+    """The vertices and faces of objs as they will be built (modifiers applied, where they stand), as one mesh."""
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    verts, faces = [], []
+    for obj in objs:
+        ev = obj.evaluated_get(depsgraph)
+        mesh = ev.to_mesh()
+        m = ev.matrix_world.copy()
+        base = len(verts)
+        verts += [m @ v.co for v in mesh.vertices]
+        faces += [[base + i for i in p.vertices] for p in mesh.polygons]
+        ev.to_mesh_clear()
+    return verts, faces
+
+
+def _tree(objs):
+    """A tree of rays over objs as they will be built (None for nothing)."""
+    from mathutils.bvhtree import BVHTree
+
+    verts, faces = _world_mesh(objs)
+    return BVHTree.FromPolygons(verts, faces) if faces else None
+
+
+def _height_at(tree, x, y, floor=0.0):
+    """The top of what is laid (a tree of rays, or None) over the point (x, y), or the floor where nothing is."""
+    if tree is None:
+        return floor
+    hit = tree.ray_cast(Vector((x, y, 200.0)), Vector((0.0, 0.0, -1.0)))
+    return max(floor, hit[0].z) if hit[0] is not None else floor
+
+
+def drop(group, under, sink=0.04, floor=0.0):
+    """Drops a group of parts straight down until it touches what is under it (`under`: the parts laid before it) or
+    the floor (z = `floor`), then lets it sink `sink` into what it met: a stone laid on the stones below, a skull on
+    the heap; nothing hovers and nothing is buried deeper than asked. Returns the group."""
+    from mathutils.bvhtree import BVHTree
+
+    own, faces = _world_mesh(group)
+    below, below_faces = _world_mesh(under) if under else ([], [])
+    lift = max(0.0, max((v.z for v in below), default=floor) - min(v.z for v in own)) + 0.1
+    lifted = [v + Vector((0.0, 0.0, lift)) for v in own]
+    fall = min(v.z for v in lifted) - floor
+    if below_faces:
+        tree = BVHTree.FromPolygons(below, below_faces)
+        for v in lifted:
+            hit = tree.ray_cast(v, Vector((0.0, 0.0, -1.0)))
+            if hit[0] is not None:
+                fall = min(fall, hit[3])
+        # (and the other way: a point of what is under it rising between the group's own points)
+        mine = BVHTree.FromPolygons(lifted, faces)
+        x0, x1 = min(v.x for v in own), max(v.x for v in own)
+        y0, y1 = min(v.y for v in own), max(v.y for v in own)
+        for u in below:
+            if x0 <= u.x <= x1 and y0 <= u.y <= y1:
+                hit = mine.ray_cast(u, Vector((0.0, 0.0, 1.0)))
+                if hit[0] is not None:
+                    fall = min(fall, hit[3])
+    for obj in group:
+        obj.location.z += lift - fall - sink
+    return group
+
+
+def lay_bone(name, a, b, r, mat, under, sink=0.03, floor=0.0):
+    """A long bone (long_bone) laid from a to b ((x, y) points) on what is there (`under`, or the floor): it rests as a
+    straight bone would, on the two high points under it either side of its middle, an end free to hang over a dip.
+    (Its knobbed ends are thicker than its shaft: the line it rests on follows that.)"""
+    tree = _tree(under) if under else None
+    hull = []  # (the upper hull of what is under it, from a to b)
+    for k in range(13):
+        t = k / 12
+        p = (t, _height_at(tree, a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, floor)
+             + r * (0.74 + 0.51 * abs(2 * t - 1) ** 2.2))
+        while len(hull) >= 2 and ((hull[-1][0] - hull[-2][0]) * (p[1] - hull[-2][1])
+                                  - (hull[-1][1] - hull[-2][1]) * (p[0] - hull[-2][0])) >= 0:
+            hull.pop()
+        hull.append(p)
+    p, q = next((p, q) for p, q in zip(hull, hull[1:]) if p[0] <= 0.5 <= q[0])
+    slope = (q[1] - p[1]) / (q[0] - p[0])
+    za, zb = p[1] - slope * p[0] - sink, p[1] + slope * (1.0 - p[0]) - sink
+    return long_bone(name, (a[0], a[1], za), (b[0], b[1], zb), r, mat)
+
+
+def cut_at_floor(parts, floor=0.0):
+    """Cuts away what of each part lies under the floor (z = floor) and closes the cut flat, so that what lies half sunk
+    in the ash is half there and the prop still stands on the floor (it stands on its lowest point). A part wholly
+    under it goes. Modifiers are applied first. Returns the parts left."""
+    import bmesh
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    kept = []
+    for obj in parts:
+        if obj.modifiers:
+            mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
+            obj.modifiers.clear()
+            obj.data = mesh
+        obj.data.transform(obj.matrix_basis)
+        obj.matrix_basis = Matrix.Identity(4)
+        zs = [v.co.z for v in obj.data.vertices]
+        if min(zs) >= floor:
+            kept.append(obj)
+            continue
+        if max(zs) <= floor + 0.01:
+            bpy.data.objects.remove(obj, do_unlink=True)
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        cut = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0.0, 0.0, floor),
+                                     plane_no=(0.0, 0.0, 1.0), clear_inner=True)
+        edges = [e for e in cut["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+        bmesh.ops.holes_fill(bm, edges=edges, sides=0)
+        bm.to_mesh(obj.data)
+        bm.free()
+        kept.append(obj)
+    return kept
+
+
+def field_stone(name, size, mat, rng, cuts=4, flat=0.55):
+    """A field stone, `size` its half sizes along x, y and z: a ball pushed out of round in a few places and split flat
+    in `cuts` others (where it broke or wore flat; the crease where a flat meets the round stays sharp when it is
+    shaded), flat under it where it lies."""
+    import bmesh
+
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=3, radius=1.0)  # (320 faces: bmesh's 1 is the bare icosahedron)
+    lobes = [(Vector((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 1))).normalized(), rng.uniform(0.08, 0.22))
+             for _ in range(3)]
+    planes = [(Vector((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 0.6))).normalized(), rng.uniform(0.6, 0.86))
+              for _ in range(cuts)]
+    for v in bm.verts:
+        n = v.co.normalized()
+        p = n * (1.0 + sum(a * max(0.0, n.dot(d)) ** 2 for d, a in lobes))
+        for normal, at in planes:
+            over = p.dot(normal) - at
+            if over > 0.0:
+                p -= normal * over
+        v.co = Vector((p.x * size[0], p.y * size[1], max(p.z, -flat) * size[2]))
+    return mk.smooth(mk._obj_from_bm(name, bm, mat))
+
+
+def turned(parts, about, rot):
+    """Turns a group of parts about a point by Euler angles (radians)."""
+    about = Vector(about)
+    turn = Matrix.Translation(about) @ Euler(rot).to_matrix().to_4x4() @ Matrix.Translation(-about)
+    for obj in parts:
+        obj.matrix_basis = turn @ obj.matrix_basis
+    return parts
+
+
+def rib_bone(name, start, heading, length, bend, r, mat):
+    """A rib lying flat: a bar curving round `bend` radians over its `length` from its head at `start` ((x, y)), set off
+    toward `heading` (radians), thinning to its end, flatter than it is wide."""
+    pts, radii = [], []
+    x, y, th = start[0], start[1], heading
+    for k in range(9):
+        pts.append((x, y, r * 0.8))
+        radii.append(r * 0.85 if k == 0 else r * (1.0 - 0.55 * k / 8))
+        x += math.cos(th) * length / 8
+        y += math.sin(th) * length / 8
+        th += bend / 8
+    return squashed(pk.sweep(name, pts, radii, mat, sides=8), sz=0.8)
+
+
+def vertebra(name, at, along, s, mat):
+    """One vertebra lying on its front: its body a short drum along the spine (`along`, a direction (x, y)), the spine's
+    process rising from its back and leaning toward the tail, a process out to either side."""
+    u = Vector((along[0], along[1], 0.0)).normalized()
+    side = Vector((-u.y, u.x, 0.0))
+    up = Vector((0.0, 0.0, 1.0))
+    c = Vector((at[0], at[1], 0.11 * s))
+    parts = [spindle(name + "Body", c - u * 0.06 * s, c + u * 0.06 * s, [0.1 * s, 0.11 * s, 0.1 * s], mat, segments=10),
+             spindle(name + "Process", c + up * 0.06 * s, c + (up * 0.21 - u * 0.08) * s, [0.04 * s, 0.03 * s, 0.014 * s],
+                     mat, segments=6)]
+    for k in (-1, 1):
+        parts.append(spindle(f"{name}Wing{k}", c + (side * k * 0.07 + up * 0.04) * s,
+                             c + (side * k * 0.23 + up * 0.06 - u * 0.02) * s, [0.035 * s, 0.026 * s, 0.016 * s], mat,
+                             segments=6))
+    return parts
 
 
 @prop("SkullPile", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Lobby")
 def skull_pile():
-    """A heap of skulls and long bones, the old ones half sunk in the ash at the bottom."""
+    """A heap of the realm's dead: skulls piled on skulls over a mound of broken bone, turned every way, long bones
+    thrown across it and jutting out of it, ribs come loose at its foot, the lowest skulls half sunk in the ash. Each is
+    dropped onto the heap where it lies, none hovering. The sockets, noses and mouths are flat black parts of their
+    own; the skulls on top are a piece of their own ("Skulls", sharing the texture) so each mesh keeps under Roblox's
+    20,000 triangles."""
     rng = random.Random(5)
-    bone = bone_mat("Skp")
-    old = old_bone_mat("Skp")
-    dark = void_mat("Skp")
-    ash = mk.noisy("Skp_Ash", srgb(80, 80, 82), srgb(112, 112, 114), scale=20, roughness=0.95)
-    # (a lumpy heap of ash, not a smooth dome)
-    mound = mk.sphere("Mound", 1.7, (0, 0, 0.1), scale=(1.1, 0.9, 0.42), mat=ash, segments=28, rings=14)
-    mk.displace_noise(mound, strength=0.22, scale=0.55, name="SkpMound")
-    parts = [mound]
-    placed = [(-0.9, -0.5, 0.75, 0.45, 20), (0.8, -0.6, 0.7, 0.42, -25), (0.0, 0.5, 0.85, 0.46, 170),
-              (-0.2, -0.3, 1.45, 0.44, 5), (1.3, 0.5, 0.55, 0.38, 70), (-1.4, 0.4, 0.5, 0.4, -80)]
-    for k, (x, y, z, r, yaw) in enumerate(placed):
-        parts += skull(f"S{k}", x, y, z, r, old if k < 2 else bone, dark, yaw=yaw, jaw=k % 2 == 0)
-    for k in range(7):
-        a = rng.uniform(0, math.tau)
-        c = (rng.uniform(-1.2, 1.2), rng.uniform(-0.8, 0.8), rng.uniform(0.3, 0.9))
-        half = rng.uniform(0.7, 1.1)
-        d = (math.cos(a) * half, math.sin(a) * half, rng.uniform(-0.25, 0.25))
-        parts += long_bone("Bone", (c[0] - d[0], c[1] - d[1], c[2] - d[2]), (c[0] + d[0], c[1] + d[1], c[2] + d[2]), 0.09,
-                           bone if k % 2 else old)
-    return parts, []
+    bone, old, dark = bone_mat("Skp"), old_bone_mat("Skp"), void_mat("Skp")
+    crush = mk.noisy("Skp_Crush", srgb(70, 68, 63), srgb(118, 113, 103), scale=18, roughness=0.92)
+    # The mound: broken bone and ash packed into a heap, lumpy, its foot in the ground.
+    mound = mk.sphere("Mound", 1.0, (0.0, 0.0, -0.35), scale=(1.5, 1.3, 1.25), mat=crush, segments=24, rings=12)
+    mk.displace_noise(mound, strength=0.32, scale=0.45, name="SkpMound")
+    main, top, laid = [mound], [], [mound]
+    # Bits of bone stuck in it all over: short broken bones half buried at every angle.
+    surface = _tree([mound])
+    for k in range(14):
+        a, d = rng.uniform(0, math.tau), rng.uniform(0.2, 1.0)
+        x, y = math.cos(a) * d * 1.3, math.sin(a) * d * 1.1
+        c = Vector((x, y, _height_at(surface, x, y) - 0.02))
+        b = rng.uniform(0, math.tau)
+        half = Vector((math.cos(b), math.sin(b), rng.uniform(-0.35, 0.35))).normalized() * rng.uniform(0.17, 0.27)
+        bits = long_bone(f"Shard{k}", tuple(c - half), tuple(c + half), rng.uniform(0.045, 0.06), old if k % 2 else bone)
+        main += bits
+        laid += bits
+    base = list(laid)  # (the mound and the shards in it: what the top skull sits in)
+
+    def lay_skull(name, x, y, r, yaw, tilt, mat, segments, teeth, sink, into, under=None):
+        bits = turned(pk.skull(name, (x, y, 4.0), r, mat, dark, yaw=yaw, segments=segments, teeth=teeth), (x, y, 4.0),
+                      tilt)
+        drop(bits, laid if under is None else under, sink=sink)
+        laid.extend(bits)
+        into.extend(bits)
+
+    # Round its foot, half sunk where they meet the ash.
+    turn = rng.uniform(0, math.tau)
+    for k in range(6):
+        a = turn + math.tau * k / 6 + rng.uniform(-0.2, 0.2)
+        d = rng.uniform(1.3, 1.55)
+        lay_skull(f"Foot{k}", math.cos(a) * d * 1.05, math.sin(a) * d * 0.92, rng.uniform(0.37, 0.43),
+                  math.degrees(a) + 90 + rng.uniform(-55, 55), (rng.uniform(-0.4, 0.4), rng.uniform(-0.4, 0.4), 0.0),
+                  old if k % 2 else bone, 16, 3, 0.14, main)
+    # Long bones thrown across the heap, each resting where it lands (round its shoulders: its top is the skull's).
+    for k in range(8):
+        a, d = rng.uniform(0, math.tau), rng.uniform(0.6, 1.2)
+        c = (math.cos(a) * d, math.sin(a) * d * 0.85)
+        b, half = rng.uniform(0, math.pi), rng.uniform(0.45, 0.8)
+        e = (math.cos(b) * half, math.sin(b) * half)
+        bits = lay_bone(f"Thrown{k}", (c[0] - e[0], c[1] - e[1]), (c[0] + e[0], c[1] + e[1]), rng.uniform(0.085, 0.1),
+                        bone if k % 2 else old, laid)
+        main += bits
+        laid += bits
+    # Skulls pressed into its shoulders, and one sitting in its top looking out (to -Y, where it is seen from): sunk
+    # into the heap, not stacked on one another (2026-11-04: piled on each other they rose into a tower).
+    for k in range(4):
+        a = turn + math.tau * (k + 0.5) / 4 + rng.uniform(-0.3, 0.3)
+        d = rng.uniform(0.85, 1.05)
+        lay_skull(f"Heap{k}", math.cos(a) * d, math.sin(a) * d * 0.85, rng.uniform(0.4, 0.45),
+                  math.degrees(a) + 90 + rng.uniform(-40, 40), (rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3), 0.0),
+                  bone if k % 2 else old, 20, 5, 0.16, top)
+    lay_skull("Crown", 0.05, -0.12, 0.46, rng.uniform(-12, 12), (-0.15, rng.uniform(-0.1, 0.1), 0.0), bone, 24, 5, 0.12,
+              top, under=base)
+    # Long bones jutting out of it, their other ends deep in the heap.
+    for k in range(2):
+        a = turn + rng.uniform(0, math.tau)
+        x, y = math.cos(a) * 0.75, math.sin(a) * 0.65
+        out = Vector((math.cos(a), math.sin(a), 0.0))
+        root = Vector((x, y, _height_at(_tree(laid), x, y) - 0.3))
+        rise = math.radians(rng.uniform(30, 50))
+        tip = root + (out * math.cos(rise) + Vector((0.0, 0.0, math.sin(rise)))) * rng.uniform(1.1, 1.35)
+        bits = long_bone(f"Jut{k}", tuple(root), tuple(tip), rng.uniform(0.09, 0.105), old)
+        main += bits
+        laid += bits
+    # At its foot: ribs come loose.
+    for k in range(3):
+        a = turn + rng.uniform(0, math.tau)
+        d = rng.uniform(1.5, 1.85)
+        rib = rib_bone(f"Rib{k}", (math.cos(a) * d, math.sin(a) * d * 0.9), a + math.pi / 2 + rng.uniform(-0.6, 0.6),
+                       rng.uniform(0.75, 1.05), rng.choice((-1, 1)) * rng.uniform(1.0, 1.4), 0.065, old)
+        drop([rib], laid, sink=0.02)
+        main.append(rib)
+        laid.append(rib)
+    main, top = cut_at_floor(main), cut_at_floor(top)
+    glows = dark_apart(main, dark) + dark_apart(top, dark)
+    rects = grid_rects(2, 2)
+    return main, glows, {"into": rects[0], "pieces": {"Skulls": piece(top, into=rects[1])}, "finish": fill_gaps}
 
 
 @prop("BoneScatter", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
 def bone_scatter():
-    """Bones lying loose in the ash: a skull on its side, a jaw, ribs and long bones."""
+    """What is left of one of the dead, strewn in the ash: the skull rolled onto its side and half sunk, a run of the
+    spine with the ribs splayed from it (some broken short), the long bones of a leg and an arm thrown across one
+    another, finger bones. Each bone is laid on the ash or on the bones under it; the sockets are flat black parts of
+    their own."""
     rng = random.Random(14)
-    bone = bone_mat("Bsc")
-    old = old_bone_mat("Bsc")
-    dark = void_mat("Bsc")
-    parts = skull("Sk", 0.6, -0.3, 0.36, 0.4, bone, dark, yaw=35, jaw=False)
+    bone, old, dark = bone_mat("Bsc"), old_bone_mat("Bsc"), void_mat("Bsc")
+    parts, laid = [], []
+    # The spine: a run of vertebrae along a gentle curve, the neck's end toward +X.
+    spine = [(-1.2 + 1.9 * k / 6, 0.5 + 0.32 * math.sin(k / 6 * 2.2)) for k in range(7)]
+    tangent = []
+    for k, (x, y) in enumerate(spine):
+        (px, py), (nx, ny) = spine[max(k - 1, 0)], spine[min(k + 1, 6)]
+        tangent.append(math.atan2(ny - py, nx - px))
+        bits = vertebra(f"Vert{k}", (x, y), (math.cos(tangent[-1]), math.sin(tangent[-1])), 1.0 - 0.04 * k,
+                        old if k % 3 else bone)
+        drop(bits, laid, sink=0.03)
+        parts += bits
+        laid += bits
+    # The ribs, splayed from the spine's sides and curving back toward its tail, a few broken short.
+    for k in range(1, 6):
+        for side in (-1, 1):
+            if rng.random() < 0.2:
+                continue
+            x, y = spine[k]
+            head = tangent[k] + side * math.radians(rng.uniform(70, 85))
+            start = (x + math.cos(head) * 0.14, y + math.sin(head) * 0.14)
+            broken = rng.random() < 0.3
+            rib = rib_bone(f"Rib{k}{side}", start, head, rng.uniform(0.4, 0.6) if broken else rng.uniform(0.95, 1.25),
+                           -side * rng.uniform(1.0, 1.5), 0.065, old if (k + side) % 2 else bone)
+            drop([rib], laid, sink=0.02)
+            parts.append(rib)
+            laid.append(rib)
+    # The skull beyond the neck, rolled onto its side and half sunk.
+    yaw = rng.uniform(40, 80)
+    face = Vector((math.sin(math.radians(yaw)), -math.cos(math.radians(yaw)), 0.0))
+    sk = pk.skull("Skull", (1.2, 0.95, 4.0), 0.42, bone, dark, yaw=yaw, segments=20, teeth=5)
+    turn = Matrix.Translation((1.2, 0.95, 4.0)) @ Matrix.Rotation(math.radians(70), 4, face) @ Matrix.Translation(
+        (-1.2, -0.95, -4.0))
+    for obj in sk:
+        obj.matrix_basis = turn @ obj.matrix_basis
+    drop(sk, laid, sink=0.16)
+    parts += sk
+    laid += sk
+    # The long bones of a leg and an arm, thrown across one another.
+    for k, (a, b, r) in enumerate((((-1.85, -0.45), (-0.3, -1.1), 0.1), ((-0.75, -0.15), (0.75, -0.95), 0.088),
+                                   ((0.35, -0.2), (1.45, -0.75), 0.075), ((-1.5, -1.25), (-0.55, -0.5), 0.06))):
+        bits = lay_bone(f"Long{k}", a, b, r, old if k % 2 else bone, laid)
+        parts += bits
+        laid += bits
+    # Finger bones, a few, where a hand lay.
     for k in range(6):
-        a = rng.uniform(0, math.tau)
-        c = (rng.uniform(-1.8, 1.8), rng.uniform(-1.6, 1.6), 0.1)
-        half = rng.uniform(0.5, 1.0)
-        d = (math.cos(a) * half, math.sin(a) * half, 0)
-        parts += long_bone("Bone", (c[0] - d[0], c[1] - d[1], 0.1), (c[0] + d[0], c[1] + d[1], 0.1), 0.08,
-                           old if k % 2 else bone)
-    for k in range(3):
-        cx, cy = -1.0 + k * 0.35, 1.0
-        pts = [(cx + math.cos(t / 5 * math.pi) * 0.8, cy + math.sin(t / 5 * math.pi) * 0.4, 0.08) for t in range(6)]
-        for t in range(5):
-            parts.append(mk.tube("Rib", pts[t], pts[t + 1], 0.06, 0.05, mat=old, verts=5))
-    return parts, []
+        cx, cy = 0.7 + rng.uniform(-0.35, 0.35), -1.35 + rng.uniform(-0.25, 0.25)
+        b = rng.uniform(0, math.pi)
+        e = (math.cos(b) * 0.1, math.sin(b) * 0.1)
+        bits = lay_bone(f"Finger{k}", (cx - e[0], cy - e[1]), (cx + e[0], cy + e[1]), 0.034, bone, laid)
+        parts += bits
+        laid += bits
+    parts = cut_at_floor(parts)
+    return parts, dark_apart(parts, dark), {"finish": fill_gaps}
 
 
 @prop("GiantSkull", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Lobby", detail=True,
@@ -679,37 +716,64 @@ class _surfaces:
         return self._cast(x, y, from_z, -1.0)
 
 
-@prop("Cairn", pivot="bottom", material="Slate", collide=True, texture=512, set="Lobby")
+PITTED = {"sub": 1, "disp": [("cells", 0.03, 0.35), ("grain", 0.01, 0.07)]}  # (a field stone's pits and grain)
+
+
+@prop("Cairn", pivot="bottom", material="Slate", collide=True, texture=512, set="Lobby", detail=True, normal=256)
 def cairn():
-    """A cairn of flat field stones, each a rough slab (lumpy edges, a tilt of its own) lying on the one under it,
-    smaller as they rise, a few fallen stones at its foot and a long bone laid across its top: a waymark at the
-    realm's edge."""
+    """A cairn of field stones heaped up as a waymark at the realm's edge (and the toss's pile of throwing stones): the
+    big ones round its foot, smaller ones laid on them ring by ring up to a flat capstone, small stones wedged in the
+    gaps, a long bone laid across the top, a few rolled off at its foot and half sunk in the ash. Each stone is laid on
+    the ones under it (dropped until it touches); a dark core inside makes the gaps between them read deep."""
     rng = random.Random(3)
-    stone = stone_mat("Crn")
-    dark = dark_stone_mat("Crn")
-    bone = bone_mat("Crn")
-    parts = []
-    z, r = 0.0, 1.32
-    for k in range(7):
-        h = r * rng.uniform(0.34, 0.44)
-        x, y = rng.uniform(-0.08, 0.08), rng.uniform(-0.08, 0.08)
-        slab = mk.sphere(f"Stone{k}", 1.0, (x, y, z + h * 0.42), scale=(r * rng.uniform(0.98, 1.1),
-                         r * rng.uniform(0.82, 0.96), h / 2), mat=stone if k % 2 else dark, segments=16, rings=10)
-        slab.rotation_euler = (math.radians(rng.uniform(-4, 4)), math.radians(rng.uniform(-4, 4)),
-                               math.radians(rng.uniform(0, 180)))
-        mk.displace_noise(slab, strength=0.34, scale=0.55, name="CairnStone")
-        parts.append(slab)
-        z += h * 0.8  # (each lies a little into the one below: no gap under it)
-        r *= 0.8
+    tones = [stone_mat("Crn"), dark_stone_mat("Crn"),
+             mk.noisy("Crn_Pale", srgb(90, 88, 84), srgb(134, 130, 122), scale=10, roughness=0.9)]
+    gap = mk.noisy("Crn_Gap", srgb(18, 18, 20), srgb(34, 34, 37), scale=12, roughness=0.95)
+    parts = [mk.lathe("Core", [(0.001, 0.0), (0.95, 0.0), (0.85, 0.35), (0.62, 0.75), (0.38, 1.05), (0.001, 1.2)],
+                      mat=gap, segments=14)]
+    laid = []
+
+    def lay(name, half, at, rot, sink, cuts=4, flat=0.55, under=None):
+        stone = _detail(field_stone(name, half, tones[rng.randrange(3)], rng, cuts=cuts, flat=flat), PITTED)
+        stone.location = (at[0], at[1], 0.0)
+        stone.rotation_euler = rot
+        drop([stone], laid if under is None else under, sink=sink)
+        if under is None:
+            laid.append(stone)
+        return stone
+
+    # Ring by ring, each stone laid on the rings under it (not on its neighbours in its own ring, or a ring's stones
+    # climb one another into a stair), sized to fill its ring.
+    for ring, (count, radius, deep, high) in enumerate(((8, 1.02, 0.36, 0.28), (7, 0.76, 0.3, 0.24),
+                                                        (6, 0.5, 0.25, 0.21), (3, 0.26, 0.22, 0.18))):
+        turn = rng.uniform(0.0, math.tau)
+        under = list(laid)
+        along = 1.05 * math.pi * radius / count
+        for k in range(count):
+            a = turn + math.tau * k / count + rng.uniform(-0.1, 0.1)
+            s = rng.uniform(0.88, 1.12)
+            # (laid along the ring, its top dipping a little toward the middle: a cairn's stones lean in)
+            laid.append(lay(f"Stone{ring}{k}", (max(along, deep) * s, deep * s, high * rng.uniform(0.9, 1.1)),
+                            (math.cos(a) * radius, math.sin(a) * radius),
+                            (-math.radians(rng.uniform(4, 12)), math.radians(rng.uniform(-6, 6)),
+                             a + math.pi / 2 + rng.uniform(-0.25, 0.25)), 0.05, under=under))
+        if ring < 2:
+            # Small stones wedged in where they fall between this ring's.
+            for k in range(3):
+                a = turn + math.tau * (k * 2.4 + 0.5) / count
+                lay(f"Wedge{ring}{k}", (rng.uniform(0.13, 0.18), rng.uniform(0.11, 0.15), rng.uniform(0.09, 0.12)),
+                    (math.cos(a) * (radius + 0.28), math.sin(a) * (radius + 0.28)),
+                    (rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3), rng.uniform(0, math.tau)), 0.03)
+    lay("Capstone", (0.42, 0.33, 0.11), (0.03, -0.02), (math.radians(rng.uniform(-4, 4)), math.radians(rng.uniform(-4, 4)),
+                                                         rng.uniform(0, math.tau)), 0.03, cuts=5, flat=0.7)
+    # A few rolled off at its foot, half sunk in the ash.
     for k in range(4):
         a = k * 1.7 + 0.4
-        sr = rng.uniform(0.22, 0.32)
-        pebble = mk.sphere(f"Fallen{k}", 1.0, (math.cos(a) * 1.3, math.sin(a) * 1.15, sr * 0.38),
-                           scale=(sr * 1.3, sr, sr * 0.55), mat=dark if k % 2 else stone, segments=10, rings=7)
-        mk.displace_noise(pebble, strength=0.3, scale=0.5, name="CairnPebble")
-        parts.append(pebble)
-    parts += long_bone("TopBone", (-0.85, 0.1, z + 0.08), (0.85, -0.12, z + 0.1), 0.1, bone)
-    return parts, []
+        half = (rng.uniform(0.22, 0.3), rng.uniform(0.18, 0.24), rng.uniform(0.15, 0.19))
+        lay(f"Fallen{k}", half, (math.cos(a) * rng.uniform(1.6, 1.85), math.sin(a) * rng.uniform(1.5, 1.75)),
+            (rng.uniform(-0.4, 0.4), rng.uniform(-0.4, 0.4), rng.uniform(0, math.tau)), half[2] * 0.7)
+    bone = lay_bone("TopBone", (-0.82, 0.14), (0.84, -0.16), 0.1, bone_mat("Crn"), laid)
+    return cut_at_floor(parts + laid + bone), []
 
 
 # Fire and light -----------------------------------------------------------------------------------------
@@ -794,6 +858,13 @@ def ready_candle():
     return parts, [], {"flames": [(tip[0], tip[1], tip[2], 0.55)]}
 
 
+# The Academy ---------------------------------------------------------------------------------------------
+
+
+# The Academy's puppets (the owner's reference of 2026-10-13: a wooden artist's mannequin on strings, held
+# by a hand) -------------------------------------------------------------------------------------------------
+
+
 @prop("CandleCluster", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Lobby",
       lights=[dict(at=(0, 0, 1.6), kind="point", color=CANDLE, range=10, brightness=0.55)])
 def candle_cluster():
@@ -815,13 +886,6 @@ def candle_cluster():
         if k != 3:
             flames.append((tip[0], tip[1], tip[2], 0.38 + r * 1.2))
     return parts, [], {"flames": flames}
-
-
-# The Academy ---------------------------------------------------------------------------------------------
-
-
-# The Academy's puppets (the owner's reference of 2026-10-13: a wooden artist's mannequin on strings, held
-# by a hand) -------------------------------------------------------------------------------------------------
 
 
 def spindle(name, a, b, radii, mat, segments=12):
@@ -1440,11 +1504,6 @@ def fill_gaps(colour, normal, rough):
         mk.bleed(pixels, passes=1024)
 
 
-# The chess game sunk in the ash (maps/venues/lobby/plan.py CHESS_GAME): Staunton silhouettes, so a piece reads at a
-# glance, carved like the Lewis chessmen (heavy, worn, chipped). A square is 3.2 studs; the king stands 5.2.
-CHESS_SQUARE = 3.2
-
-
 def _piece_mats(colour):
     if colour == "w":
         return (mk.noisy("Chs_Bone", srgb(150, 144, 128), srgb(206, 199, 180), scale=14, roughness=0.8),
@@ -1532,20 +1591,6 @@ def chess_game():
     body, _ = _piece_mats("w")
     king.append(mk.box("FallenCross", (1.0, 0.32, 0.32), (-lx + 2.6, lz + 0.9, 0.16), rot=(0, 0, 24), mat=body, bevel=0.06))
     return parts + king, []
-
-
-@prop("ChessKingFallen", pivot="bottom", material="SmoothPlastic", collide=False, texture=256, set="Lobby")
-def chess_king_fallen():
-    """A white king of the sunk board's set, toppled: lying on its side, its cross snapped off beside it."""
-    body, dark = _piece_mats("w")
-    parts = [obj for obj in _staunton("King", "K", "w", -2.3, 0.0, axis=(1.0, 0.0)) if "Cross" not in obj.name]
-    d = (math.cos(math.radians(24)), math.sin(math.radians(24)))
-    cx, cy = 3.5, 0.9
-    parts += [mk.box("CrossV", (1.0, 0.32, 0.32), (cx, cy, 0.16), rot=(0, 0, 24), mat=body, bevel=0.06),
-              mk.box("CrossH", (0.3, 0.86, 0.3), (cx + d[0] * 0.16, cy + d[1] * 0.16, 0.15), rot=(0, 0, 24), mat=body,
-                     bevel=0.06),
-              mk.box("Chip", (0.4, 0.3, 0.2), (2.6, -1.1, 0.07), rot=(10, 4, 50), mat=dark, bevel=0.05)]
-    return parts, []
 
 
 def _stone_leaf(name, w, h, bow, mat, rng, torn=False, curl=0.0):

@@ -1,15 +1,50 @@
--- The lobby's later games: the dive into the rift (Last breath) and Death's mark.
+-- The lobby's later games: the dive into the rift (Last breath), Death's mark and the Reaper's Sweep.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Games = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames")
 local LastBreath = require(Games:WaitForChild("LastBreath"))
 local Mark = require(Games:WaitForChild("Mark"))
+local Sweep = require(Games:WaitForChild("Sweep"))
 
 local HEIGHT = 650 -- about the rift's depth (rim to the landing roof)
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
+
+	describe("Sweep", function()
+		it("turns faster and faster, then swings back at the first reversal", function()
+			expect(Sweep.angle(0)).to.be.near(0)
+			expect(Sweep.angle(4) > Sweep.angle(2)).to.equal(true)
+			expect(Sweep.angle(4) - Sweep.angle(2) > Sweep.angle(2) - Sweep.angle(0)).to.equal(true)
+			local turn = Sweep.REVERSALS[1]
+			expect(Sweep.angle(turn + 1) < Sweep.angle(turn)).to.equal(true)
+			expect(Sweep.spin(turn - 1) > 0).to.equal(true)
+			expect(Sweep.spin(turn + 1) < 0).to.equal(true)
+		end)
+
+		it("is the same turn by turn as all at once", function()
+			-- (the angle is continuous across a reversal: no jump where the scythe swings back)
+			local turn = Sweep.REVERSALS[2]
+			expect(Sweep.angle(turn + 1e-4)).to.be.near(Sweep.angle(turn - 1e-4), 1e-2)
+		end)
+
+		it("strikes the feet on the stones it passes, not ones in the air or off the dais", function()
+			local at = Vector2.new(math.cos(0.1), math.sin(0.1)) * 8
+			expect(Sweep.struck(0, 0.2, at, 0, 17)).to.equal(true)
+			expect(Sweep.struck(0, 0.2, at, Sweep.CLEAR + 0.5, 17)).to.equal(false)
+			expect(Sweep.struck(0, 0.2, Vector2.new(math.cos(0.4), math.sin(0.4)) * 8, 0, 17)).to.equal(false)
+			expect(Sweep.struck(0, 0.2, at * 3, 0, 17)).to.equal(false)
+			-- (the other blade, half a turn round, strikes too; and turning back the other way)
+			expect(Sweep.struck(0, 0.2, -at, 0, 17)).to.equal(true)
+			expect(Sweep.struck(0.2, 0, at, 0, 17)).to.equal(true)
+		end)
+
+		it("counts a longer stand as the better one", function()
+			expect(Sweep.isBetter(0, 12)).to.equal(true)
+			expect(Sweep.isBetter(20, 12)).to.equal(false)
+		end)
+	end)
 
 	describe("LastBreath", function()
 		it("falls faster and faster, up to a limit", function()
@@ -108,6 +143,13 @@ return function(t)
 			expect(LastBreath.sameWave(10, 10 + LastBreath.WAVE)).to.equal(true)
 			expect(LastBreath.sameWave(10, 10.1 + LastBreath.WAVE)).to.equal(false)
 			expect(LastBreath.sameWave(10, 9)).to.equal(false)
+		end)
+
+		it("measures how deep in the rift a point is", function()
+			local rift = { cx = 0, cz = 0, rx = 23, rz = 15, turn = 0 }
+			expect(LastBreath.depth(Vector2.new(0, 0), rift)).to.be.near(0)
+			expect(LastBreath.depth(Vector2.new(23, 0), rift)).to.be.near(1, 1e-6)
+			expect(LastBreath.depth(Vector2.new(0, 30), rift) > 1).to.equal(true)
 		end)
 	end)
 

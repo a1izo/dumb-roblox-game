@@ -53,23 +53,26 @@ def rock(s, key, x, z, rot=0.0, sc=1.0, y=0.0, collide=True, core_h=60.0, facing
         FEET.append(foot)
     if collide:
         # (up to its top as seen, never past it: what stands on a flat-topped rock stands on its core)
-        h = min(height(key, sc) - sink, core_h)
+        top = height(key, sc) - sink
+        h = min(top, core_h)
         cx, cz = g2.centroid(foot)
         inner = min(g2.dist_to_poly_edge(foot, (cx, cz)), radius(key, sc)) * 0.9
         if inner > 0.6:
             s.collider((cx, y + h / 2 - 0.5, cz), (inner * 1.41, h + 1.0, inner * 1.41), rot % 90.0, True, "RockGrey")
-        if walls:
-            foot_walls(s, foot, y, facing)
+        # (no higher than the rock itself: a slab breaking through the ash is walked over, and a boulder stood on,
+        # not fenced by walls rising past its top)
+        if walls and top > 1.5:
+            foot_walls(s, foot, y, facing, min(FOOT_H, top))
     return foot
 
 
-def foot_walls(s, poly, y, facing=None):
-    """Solid slabs along a rock foot's outline, set in from it, so nobody stands inside the rock where it looks
-    solid. facing (x, z): only the sides that face that way."""
+def foot_walls(s, poly, y, facing=None, tall=FOOT_H):
+    """Solid slabs along a rock foot's outline, set in from it, `tall` studs up from y, so nobody stands inside the
+    rock where it looks solid. facing (x, z): only the sides that face that way."""
     cx, cz = g2.centroid(poly)
     reach = max(math.dist((cx, cz), p) for p in poly)
     if reach < 2.2:
-        s.collider((cx, y + FOOT_H / 2 - 0.5, cz), (reach * 1.3, FOOT_H + 1.0, reach * 1.3), 0.0, True, "RockGrey")
+        s.collider((cx, y + tall / 2 - 0.5, cz), (reach * 1.3, tall + 1.0, reach * 1.3), 0.0, True, "RockGrey")
         return
     t = min(FOOT_T, reach * 0.5)
     for k in range(len(poly)):
@@ -85,7 +88,7 @@ def foot_walls(s, poly, y, facing=None):
             continue
         inset = 0.25 + t / 2
         rot = math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0]))
-        s.collider((mx - nx * inset, y + FOOT_H / 2 - 0.5, mz - nz * inset), (length + 0.4, FOOT_H + 1.0, t), rot, True,
+        s.collider((mx - nx * inset, y + tall / 2 - 0.5, mz - nz * inset), (length + 0.4, tall + 1.0, t), rot, True,
                    "RockGrey")
 
 

@@ -563,6 +563,7 @@ import props_realm  # noqa: E402,F401
 import props_academy  # noqa: E402,F401
 import props_monolith  # noqa: E402,F401
 import props_realmfire  # noqa: E402,F401
+import props_realmjunk  # noqa: E402,F401
 import props_meeting  # noqa: E402,F401
 import props_shop  # noqa: E402,F401
 import props_emotes  # noqa: E402,F401

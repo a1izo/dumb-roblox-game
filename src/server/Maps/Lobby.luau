@@ -1,12 +1,13 @@
--- The lobby: the Grey Realm, a never-ending wasteland under layered cloud, made in Blender
--- (art/scripts/maps/venues/lobby/). Players appear on a ruined terrace over its old flagstone
--- plaza, facing north. No wall in it explains anything: the game is learnt by doing (the Trial, in the
--- Academy) and by looking (the stone tableaux round the plaza, the candles at its middle). The only
--- writing left is the title on its monolith, one board (Most Wins, on a low slab beside the bone throne), the
--- champion's name on the throne's plaque and the names on the Academy's gate and altars.
--- South-west lies the Academy, a ring of broken pillars with a practice altar for every skill and three
--- wooden puppets to practise on, hung on strings from a great hand; two old causeways over chasms lead to the plateaus of the Spire Ascent and the
--- rune courtyard, and the stone-toss waits at the rift's rim in the basin itself.
+-- The lobby: the Grey Realm, the death gods' flat grey wasteland under one blinding glow low in the north, made in
+-- Blender (art/scripts/maps/venues/lobby/; remade from nothing 2026-11-04). Players appear on a ledge of billowing
+-- rock in the south, facing north over the bowl where everyone gathers to the bone throne high on its rock against the
+-- glow. No wall in it explains anything: the game is learnt by doing (the Trial, in the Academy) and by looking (the
+-- stone tableaux round the bowl's rim, the candles at its middle). The only writing is one board (Most Wins, on a
+-- slab beside the throne's rock), the champion's name on the throne's plaque and the names on the Academy's gate and
+-- altars. South-west, in a grotto in the cliffs, the Academy: a practice altar for every skill and three wooden
+-- puppets to practise on, hung on strings from a great hand; two old causeways over chasms lead to the Chain Heap
+-- (the Spire Ascent) and the rune courtyard; the Reaper's Sweep's dais lies south-east and the Lantern Run's posts
+-- stand all over.
 --
 -- SceneBuilder puts up the scene (or its greybox, without the import); this module builds what
 -- shows text or does something, at the scene's anchors. The Academy only tags parts (LTraining
@@ -21,7 +22,6 @@ local Create = require(Shared:WaitForChild("Create"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes"))
-local Assets = require(Shared:WaitForChild("Assets"))
 local Terms = require(Shared:WaitForChild("Terms"))
 
 local LobbyDecor = require(script.Parent.LobbyDecor)
@@ -247,24 +247,6 @@ function Lobby.build(b)
 	local anchors = data.layout.anchors :: { [string]: Anchor }
 
 	academy(b, anchors)
-
-	-- The title, carved into the monolith.
-	local _, titleLabel =
-		sign(b, anchors.title, Terms.NAMES.GAME, Color3.fromRGB(245, 245, 245), INK, Enum.Font.GothamBlack)
-	-- The ransom-note wordmark replaces the plain lettering once the Core import has brought it.
-	local wordmark = Assets.texture("UiWordmark")
-	if wordmark ~= "" and titleLabel.Parent then
-		titleLabel.Visible = false
-		Create("ImageLabel", {
-			Name = "Wordmark",
-			BackgroundTransparency = 1,
-			Image = wordmark,
-			ScaleType = Enum.ScaleType.Fit,
-			Size = UDim2.fromScale(1, 1),
-			Parent = titleLabel.Parent,
-		})
-	end
-	sign(b, anchors.tagline, Terms.TAGLINE, GOLD, INK, Enum.Font.SpecialElite)
 
 	-- The one board in the world: Most Wins, on the low slab beside the throne. The other
 	-- boards (experience, the week, the mini-games) are in the Leaderboards window; the next case and the

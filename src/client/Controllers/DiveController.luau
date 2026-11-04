@@ -4,7 +4,9 @@
 --
 -- Going over the rim starts it: once this player's character is inside the rift and under its rim, the
 -- client takes the body (it owns it), tells the server, and flies the fall itself along the rules' curve,
--- so what the player sees is exactly what is scored. The body has no say in how it falls: it tumbles
+-- so what the player sees is exactly what is scored (the body's own speed over the rim is eased into that curve
+-- over the first moments, and the way it was running dies away, so the leap flows into the fall; passing through the
+-- cloud the realm floats on, the screen breathes white). The body has no say in how it falls: it tumbles
 -- (Anim/Tumble), down the rock throat, through the cloud the realm floats on and on over the night city,
 -- ash streaming past, the view widening and shaking a little as the wind builds. A little steering is
 -- allowed, and the rift's draught keeps divers over the landing roof. One press (jump, a click or a tap) is
@@ -29,7 +31,6 @@ local Net = require(Shared:WaitForChild("Net"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
 local Games = Shared:WaitForChild("LobbyGames")
 local LastBreath = require(Games:WaitForChild("LastBreath"))
-local Toss = require(Games:WaitForChild("Toss"))
 local Limp = require(Shared:WaitForChild("Anim"):WaitForChild("Limp"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
@@ -52,10 +53,17 @@ local ROOT_UP = 3 -- the root's middle above the soles
 local STEER = 9 -- studs a second a diver can drift
 local FUNNEL = 11 -- studs from the rift's axis beyond which the draught pulls a diver back in
 local FOV_GAIN = 18 -- degrees the view widens by at the top speed
+-- The way in (2026-11-04, the user: "remake the rift dive jump transition"): the body goes over the rim with the speed it
+-- had and eases into the fall the rules draw over ENTRY seconds (it used to stop dead at the rim and start again from
+-- rest), what way it was running carried on a little and dying away, the tumble taking over the body slowly.
+local ENTRY = 0.9
+local DRIFT_FADE = 2.6 -- how fast the run's own way dies away (a share a second)
+local TUMBLE_IN = 0.8 -- seconds the tumble takes to take over the body
+local CLOUD_WHITE = Color3.fromRGB(236, 238, 242)
 local STRING_COLOR = Color3.fromRGB(226, 230, 238)
 local CLIPS = { "collapseAccident" }
 
-type Rift = { rift: Toss.Rift, rimY: number, roofY: number, cloudY: number, height: number }
+type Rift = { rift: LastBreath.Rift, rimY: number, roofY: number, cloudY: number, height: number }
 
 local rift: Rift? = nil
 
@@ -74,6 +82,10 @@ local tumble: Tumble.State? = nil
 local unlimp: (() -> ())? = nil -- puts the joints back after the crash's ragdoll
 local savedNeck: boolean? = nil
 local ash: BasePart? = nil
+local entryOffset = 0 -- how far the body was above the rules' fall when it went over (studs; below is negative)
+local entryVel = 0 -- ...and how much faster it was falling (studs a second, downward negative)
+local drift = Vector2.zero -- the way it was running when it went over (studs a second)
+local crossed = false -- the white of the cloud the realm floats on, passed through
 local shakeUntil = 0 -- a jolt of the camera (the catch, the crash) lasts until then
 local shakeStrength = 0
 
@@ -312,6 +324,13 @@ local function begin(root: BasePart, humanoid: Humanoid, character: Model)
 	rested = false
 	confirmed = false
 	spot = Vector2.new(root.Position.X, root.Position.Z)
+	-- (the fall the rules draw begins at rest just under the rim: the body's own height and speed are eased into it)
+	local info = rift
+	local velocity = root.AssemblyLinearVelocity
+	entryOffset = if info then root.Position.Y - (info.roofY + info.height + ROOT_UP) else 0
+	entryVel = math.min(0, velocity.Y)
+	drift = Vector2.new(velocity.X, velocity.Z)
+	crossed = false
 	local look = root.CFrame.LookVector
 	local flat = Vector3.new(look.X, 0, look.Z)
 	facing = if flat.Magnitude > 0.01 then CFrame.lookAt(Vector3.zero, flat) else CFrame.identity
@@ -322,7 +341,8 @@ local function begin(root: BasePart, humanoid: Humanoid, character: Model)
 	tumble = state
 	PoseController.playProcedural(character, TRACK, function(elapsed: number)
 		return Tumble.sample(state, elapsed)
-	end, { fadeIn = 0.25, fadeOut = 0.3 })
+	end, { fadeIn = TUMBLE_IN, fadeOut = 0.3 })
+	Sfx.play("gameThrow", { volume = 0.7 })
 	wind = Sfx.play("gameDiveFall", { volume = 0.8 }) or Sfx.play("gameDiveWind", { volume = 0.8, looped = true })
 	ash = makeAsh()
 end
@@ -435,7 +455,7 @@ local function step(dt: number)
 			and humanoid.Health > 0
 			and at.Y < info.rimY - LastBreath.DROP
 			and at.Y > info.rimY - 40
-			and Toss.depth(Vector2.new(at.X, at.Z), info.rift) < 1
+			and LastBreath.depth(Vector2.new(at.X, at.Z), info.rift) < 1
 		then
 			begin(root, humanoid, character)
 		end
@@ -459,6 +479,11 @@ local function step(dt: number)
 	end
 	local move = humanoid.MoveDirection
 	local steer = Vector3.zero
+	-- (the way it was running when it went over, dying away)
+	if drift.Magnitude > 0.05 then
+		spot += drift * dt
+		drift *= math.exp(-DRIFT_FADE * dt)
+	end
 	if not rested and move.Magnitude > 0.05 then
 		spot += Vector2.new(move.X, move.Z) * STEER * dt
 		steer = facing:VectorToObjectSpace(Vector3.new(move.X, 0, move.Z))
@@ -473,8 +498,23 @@ local function step(dt: number)
 		state.speed = speed
 		state.steer = steer
 	end
-	root.CFrame = CFrame.new(spot.X, info.roofY + height + ROOT_UP, spot.Y) * facing
+	-- (over the first ENTRY seconds the body's own height and speed at the rim ease into the rules' fall: a Hermite
+	-- curve from where and how fast it was to nothing)
+	local ease = 0
+	if t < ENTRY then
+		local u = t / ENTRY
+		ease = (2 * u ^ 3 - 3 * u ^ 2 + 1) * entryOffset + (u ^ 3 - 2 * u ^ 2 + u) * ENTRY * entryVel
+	end
+	root.CFrame = CFrame.new(spot.X, info.roofY + height + ROOT_UP + ease, spot.Y) * facing
 	root.AssemblyLinearVelocity = Vector3.new(0, -speed, 0)
+	-- Through the cloud the realm floats on: a breath of white, and the wind's rush.
+	if not crossed and root.Position.Y < info.cloudY then
+		crossed = true
+		if not calm() then
+			Curtain.flash(CLOUD_WHITE, 0.55, 0.12, 0.6)
+		end
+		Sfx.play("gameThrow", { volume = 0.5 })
+	end
 	root.AssemblyAngularVelocity = Vector3.zero
 	local held = strings[character]
 	if held then
@@ -537,7 +577,8 @@ local function onState(payload: any)
 		-- (the rift gives the diver back LastBreath.HOLD after this: the screen is black by then)
 		task.delay(math.max(0, LastBreath.HOLD - GIVE_BACK_OUT), function()
 			if diving then
-				Curtain.close(GIVE_BACK_OUT)
+				-- (hauled back up through the cloud: white, not black)
+				Curtain.close(GIVE_BACK_OUT, CLOUD_WHITE)
 			end
 		end)
 		if payload.crashed then

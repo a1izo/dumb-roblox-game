@@ -47,9 +47,9 @@ GROUPS = {
     "campus_rooms": ["ReadingTable", "CardCatalog", "BookCart", "SkeletonModel", "SpecimenShelf", "Microscope",
                      "Kotatsu", "ShoeLockers", "DrumKit", "UprightPiano", "FilmProjector", "Typewriter",
                      "TrayReturn", "UmbrellaStand"],
-    "lobby_realm": ["DeadTree", "DeadTreeGnarled", "WitheredAppleTree", "GiantSkull", "BoneThrone"],
-    "lobby_things": ["PracticeAltar", "Puppet", "PuppeteerHand", "BoneBrazier", "LanternPost", "CandleCluster", "SkullPile",
-                     "BoneScatter", "Cairn"],
+    "lobby_realm": ["GiantSkull", "BoneThrone", "RealmBillowA", "RealmShardsA", "RealmTusk", "SpikeGrass"],
+    "lobby_things": ["PracticeAltar", "Puppet", "PuppeteerHand", "RunLantern", "HangingCage", "SweepScythe", "RustGear",
+                     "ChainPile", "CandleCluster", "SkullPile", "BoneScatter", "Cairn"],
     "meeting_room": ["WarTable", "WarChair", "Sideboard", "BookcaseTall", "SpeakerColumn", "FloorGlobe"],
     "meeting_things": ["ClubChair", "DrinksTrolley", "Radiator", "WallClock", "CaseFiles", "FloorLamp", "BankerLamp"],
 }

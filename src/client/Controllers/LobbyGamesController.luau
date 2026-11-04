@@ -1,13 +1,11 @@
 --!strict
 -- The lobby mini-games on this client: prompts on the tagged objects the server built (Maps/LobbyGames),
--- a small card at the top of the screen while you are playing, the rune tiles lit for you alone, and the
--- thrown pebble's flight. Every rule and score is the server's (Services/LobbyGameService); this only
--- asks (start, throw, leave) and shows what the server says. Nothing here runs for a player
--- who is in a case or watching one.
+-- a small card at the top of the screen while you are playing, and the rune tiles lit for you alone. Every
+-- rule and score is the server's (Services/LobbyGameService); this only asks (start, leave) and shows what
+-- the server says. Nothing here runs for a player who is in a case or watching one.
 --
 -- Also here: the bell of Death's mark (join or leave at it; the card says who carries the mark and when
--- the bell tolls next; what shows on the characters is Controllers/MarkController's) and the seven grey
--- apples (a prompt on each; the ones this player has found are hidden on this screen). The dive into the
+-- the bell tolls next; what shows on the characters is Controllers/MarkController's). The dive into the
 -- rift has a controller of its own (Controllers/DiveController). The name duel's two stones get their
 -- prompts here (step up, step down); its card is UI/DuelPanel's.
 
@@ -15,11 +13,11 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
+local Lanterns = require(Shared:WaitForChild("LobbyGames"):WaitForChild("Lanterns"))
 local Parkour = require(Shared:WaitForChild("LobbyGames"):WaitForChild("Parkour"))
 
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
@@ -28,6 +26,7 @@ local Curtain = require(script.Parent.Parent.UI.Curtain)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
+local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 
 local LobbyGamesController = {}
 
@@ -41,10 +40,10 @@ type Offer = { action: string, object: string, distance: number }
 local OFFERS: { [string]: Offer } = {
 	LParkourStart = { action = "Start climb", object = "Spire Ascent", distance = 9 },
 	LRuneStart = { action = "Start runes", object = "Rune courtyard", distance = 8 },
-	LTossCairn = { action = "Throw a stone", object = "Aim higher to throw farther", distance = 10 },
 	LMarkBell = { action = "Take the mark", object = "Death's mark", distance = 10 },
-	LApple = { action = "Take", object = "A grey apple", distance = 7 },
 	LDuelStone = { action = "Step up", object = "Name duel", distance = 8 },
+	LLanternStart = { action = "Take the flame", object = "Lantern Run", distance = 10 },
+	LSweepPad = { action = "Join", object = "Reaper's Sweep", distance = 10 },
 }
 
 local prompts: { [BasePart]: { prompt: ProximityPrompt, tag: string } } = {}
@@ -56,7 +55,7 @@ local notice: any -- the card (Kit/Notice)
 local statusLabel: TextLabel
 
 -- What the player is doing now.
-local current: string? = nil -- "parkour", "runes", "spirit", "mark"
+local current: string? = nil -- "parkour", "runes", "spirit", "mark", "lanterns", "sweep"
 -- Is this player in a name duel now (between its start and its end)?
 local duelling = false
 -- Death's mark, as the server last told it.
@@ -80,30 +79,6 @@ local function hideCard()
 	card.Visible = false
 end
 
--- The apples this player has found already are not there for them: unseen, and nothing to take.
-local function hideFoundApples()
-	local profile = ClientState.profile
-	local games = if profile then profile.lobbyGames else nil
-	local found = if type(games) == "table" then math.floor(tonumber(games.apples) or 0) else 0
-	for object, entry in pairs(prompts) do
-		if entry.tag == "LApple" then
-			local index = object:GetAttribute("Index")
-			local has = type(index) == "number" and bit32.band(found, bit32.lshift(1, index - 1)) ~= 0
-			if has then
-				entry.prompt.Enabled = false
-			end
-			object.LocalTransparencyModifier = if has then 1 else 0
-			for _, item in ipairs(object:GetDescendants()) do
-				if item:IsA("BasePart") then
-					item.LocalTransparencyModifier = if has then 1 else 0
-				elseif item:IsA("Light") then
-					item.Enabled = not has
-				end
-			end
-		end
-	end
-end
-
 local function refresh()
 	local ok = usable()
 	local me = Players.LocalPlayer.UserId
@@ -124,7 +99,6 @@ local function refresh()
 			entry.prompt.ActionText = if current == "mark" then "Leave the game" else OFFERS.LMarkBell.action
 		end
 	end
-	hideFoundApples()
 	if not ok and card.Visible then
 		hideCard()
 	end
@@ -170,55 +144,6 @@ local function showSequence(seq: { number }, step: number)
 	end)
 end
 
--- The stone-toss: the pebble's flight, then its fall into the rift ---------------------------------------------------
-
-local function flyPebble(from: Vector3, land: Vector3, flight: number, hit: boolean, echo: number)
-	local pebble = Create("Part", {
-		Name = "Pebble",
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.new(0.7, 0.7, 0.7),
-		Color = Color3.fromRGB(120, 118, 116),
-		Material = Enum.Material.Slate,
-		Anchored = true,
-		CanCollide = false,
-		CanQuery = false,
-		CanTouch = false,
-		CastShadow = false,
-		Parent = workspace,
-	}) :: BasePart
-	Sfx.play("gameThrow", { volume = 0.7 })
-	local start = from + Vector3.new(0, 1.8, 0)
-	local ground = Vector3.new(land.X, 0.5, land.Z)
-	local peak = 10 + (ground - start).Magnitude * 0.12
-	local began = os.clock()
-	local connection: RBXScriptConnection
-	connection = RunService.Heartbeat:Connect(function()
-		local u = math.clamp((os.clock() - began) / flight, 0, 1)
-		pebble.Position = start:Lerp(ground, u) + Vector3.new(0, 4 * peak * u * (1 - u), 0)
-		if u >= 1 then
-			connection:Disconnect()
-			if hit then
-				Sfx.play("gameFall", { volume = 0.9 })
-				TweenService:Create(
-					pebble,
-					TweenInfo.new(math.max(echo * 0.8, 0.5), Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-					{
-						Position = ground - Vector3.new(0, 260, 0),
-						Transparency = 1,
-					}
-				):Play()
-				task.delay(echo + 0.5, function()
-					pebble:Destroy()
-				end)
-			else
-				task.delay(1.2, function()
-					pebble:Destroy()
-				end)
-			end
-		end
-	end)
-end
-
 -- What the server tells us ----------------------------------------------------------------------------------------
 
 local function onParkour(p: any)
@@ -248,6 +173,114 @@ local function onParkour(p: any)
 		hideAt = os.clock() + 7
 	elseif kind == "end" then
 		hideCard()
+	end
+end
+
+-- The Lantern Run on this screen: each lantern the runner lights burns here only, until the run is over.
+local LANTERN_FIRE = Color3.fromRGB(196, 214, 255)
+local lanternParts: { [number]: BasePart } = {}
+local lanternFlames: { [number]: any } = {}
+local lanternRun = { startedAt = 0, count = 0, total = Lanterns.COUNT, limit = Lanterns.LIMIT }
+
+local function lightLantern(index: number)
+	local spot = lanternParts[index]
+	if not spot or lanternFlames[index] then
+		return
+	end
+	lanternFlames[index] = Vfx.Recipes.flame(spot, {
+		kind = "fire",
+		scale = 1.1,
+		color = LANTERN_FIRE,
+		lightRange = 22,
+		lightBrightness = 1.4,
+	})
+end
+
+local function darkenLanterns()
+	for index, flame in pairs(lanternFlames) do
+		flame.out()
+		lanternFlames[index] = nil
+	end
+end
+
+local function collectLantern(object: Instance)
+	local index = object:GetAttribute("Index")
+	if object:IsA("BasePart") and type(index) == "number" then
+		lanternParts[index] = object
+	end
+end
+
+local function onLanterns(p: any)
+	local kind = p.kind
+	if kind == "start" then
+		darkenLanterns()
+		current = "lanterns"
+		lanternRun.startedAt = tonumber(p.at) or workspace:GetServerTimeNow()
+		lanternRun.count = 0
+		lanternRun.total = tonumber(p.total) or Lanterns.COUNT
+		lanternRun.limit = tonumber(p.limit) or Lanterns.LIMIT
+		Sfx.play("gameCheckpoint", { volume = 0.8 })
+		setStatus("LANTERN RUN", "Lanterns 0/" .. lanternRun.total .. "   0:00.0")
+		Toasts.show("Light every lantern before the flame dies.")
+	elseif kind == "lit" then
+		lanternRun.count = tonumber(p.count) or lanternRun.count
+		lightLantern(tonumber(p.index) or 0)
+		Sfx.play("gameCheckpoint", { volume = 0.8 })
+		Toasts.show(string.format("Lantern %d of %d", lanternRun.count, lanternRun.total))
+	elseif kind == "finish" then
+		current = nil
+		Sfx.play("gameFinish")
+		local text = "Every lantern lit: " .. Parkour.format(tonumber(p.time) or 0)
+		Toasts.show(text .. (if p.newBest then "  New best!" else ""), "good")
+		setStatus("LANTERN RUN", text .. "\nBest " .. Parkour.format(tonumber(p.best) or 0))
+		hideAt = os.clock() + 7
+		task.delay(8, darkenLanterns)
+	elseif kind == "end" then
+		if p.why == "out" then
+			Toasts.show("The flame went out.")
+		end
+		hideCard()
+		task.delay(1.5, darkenLanterns)
+	end
+end
+
+-- The Reaper's Sweep's card (the scythe itself, and being swept off, are Controllers/SweepController's).
+local sweepState = { startsAt = 0, startedAt = 0, running = false }
+
+local function onSweep(p: any)
+	local kind = p.kind
+	if kind == "joined" then
+		current = "sweep"
+		sweepState.startsAt = tonumber(p.startsAt) or workspace:GetServerTimeNow()
+		sweepState.running = false
+		setStatus("REAPER'S SWEEP", "Starting soon")
+		Toasts.show("Jump the blades as they come.")
+	elseif kind == "start" then
+		current = "sweep"
+		sweepState.startedAt = tonumber(p.at) or workspace:GetServerTimeNow()
+		sweepState.running = true
+		Sfx.play("gameCheckpoint", { volume = 0.8 })
+	elseif kind == "out" or kind == "won" then
+		current = nil
+		sweepState.running = false
+		local time = tonumber(p.time)
+		if time then
+			local text = if kind == "won"
+				then (if p.alone then "You outlasted the scythe" else "Last one standing")
+				else "Swept off"
+			text = string.format("%s: %.1f s", text, time)
+			Toasts.show(
+				text .. (if p.newBest then "  New best!" else ""),
+				if kind == "won" or p.newBest then "good" else nil
+			)
+			setStatus("REAPER'S SWEEP", text .. string.format("\nBest %.1f s", tonumber(p.best) or time))
+			if kind == "won" then
+				Sfx.play("gameFinish")
+			end
+			hideAt = os.clock() + 6
+		else
+			hideCard()
+		end
 	end
 end
 
@@ -371,25 +404,6 @@ local function onRunes(p: any)
 	end
 end
 
-local function onToss(p: any)
-	if p.kind ~= "result" then
-		return
-	end
-	local from = Vector3.new(p.from.x, p.from.y, p.from.z)
-	local land = Vector3.new(p.land.x, 0, p.land.z)
-	flyPebble(from, land, tonumber(p.flight) or 1, p.hit == true, tonumber(p.echo) or 0)
-	task.delay((tonumber(p.flight) or 1) + (if p.hit then (tonumber(p.echo) or 0) * 0.8 else 0.3), function()
-		if p.hit then
-			Toasts.show(
-				string.format("%.1fs.%s  Best %.1fs.", p.echo, if p.newBest then "  New best!" else "", p.best),
-				if p.newBest then "good" else nil
-			)
-		else
-			Toasts.show("Aim higher to throw farther.")
-		end
-	end)
-end
-
 -- Death's mark: the card says who carries it and counts down to the bell.
 local function onMark(p: any)
 	local me = Players.LocalPlayer.UserId
@@ -485,10 +499,12 @@ local function onState(payload: any)
 		onSpirit(payload)
 	elseif payload.game == "runes" then
 		onRunes(payload)
-	elseif payload.game == "toss" then
-		onToss(payload)
 	elseif payload.game == "mark" then
 		onMark(payload)
+	elseif payload.game == "lanterns" then
+		onLanterns(payload)
+	elseif payload.game == "sweep" then
+		onSweep(payload)
 	elseif payload.game == "duel" then
 		if payload.kind == "start" then
 			duelling = true
@@ -496,9 +512,6 @@ local function onState(payload: any)
 			duelling = false
 		end
 		refresh()
-	elseif payload.game == "apples" and payload.kind == "took" then
-		Sfx.play("gameCheckpoint", { volume = 0.8 })
-		Toasts.show(string.format("A grey apple.  %d of %d.", payload.count or 0, payload.total or 7), "good")
 	elseif payload.game == "lobby" and payload.kind == "caught" then
 		-- Set back on the terrace after falling out of the world: without the speed of the fall.
 		local character = Players.LocalPlayer.Character
@@ -524,8 +537,10 @@ local function trigger(tag: string, object: BasePart)
 		request:FireServer({ game = "runes", action = "start" })
 	elseif tag == "LMarkBell" then
 		request:FireServer({ game = "mark", action = if current == "mark" then "leave" else "join" })
-	elseif tag == "LApple" then
-		request:FireServer({ game = "apples", action = "take", index = object:GetAttribute("Index") })
+	elseif tag == "LLanternStart" then
+		request:FireServer({ game = "lanterns", action = "start" })
+	elseif tag == "LSweepPad" then
+		request:FireServer({ game = "sweep", action = "join" })
 	elseif tag == "LDuelStone" then
 		local mine = object:GetAttribute("Holder") == Players.LocalPlayer.UserId
 		request:FireServer({
@@ -533,11 +548,6 @@ local function trigger(tag: string, object: BasePart)
 			action = if mine then "leave" else "stand",
 			stone = object:GetAttribute("Index"),
 		})
-	elseif tag == "LTossCairn" then
-		local camera = workspace.CurrentCamera
-		if camera then
-			request:FireServer({ game = "toss", action = "throw", look = camera.CFrame.LookVector })
-		end
 	end
 end
 
@@ -620,6 +630,10 @@ function LobbyGamesController.init()
 			setup(tag, object)
 		end
 	end
+	CollectionService:GetInstanceAddedSignal("LLantern"):Connect(collectLantern)
+	for _, object in ipairs(CollectionService:GetTagged("LLantern")) do
+		collectLantern(object)
+	end
 	CollectionService:GetInstanceAddedSignal("LRuneGlyph"):Connect(collectGlyph)
 	for _, object in ipairs(CollectionService:GetTagged("LRuneGlyph")) do
 		collectGlyph(object)
@@ -629,7 +643,6 @@ function LobbyGamesController.init()
 	ClientState.PublicChanged:Connect(refresh)
 	ClientState.PrivateChanged:Connect(refresh)
 	ClientState.WatchChanged:Connect(refresh)
-	ClientState.ProfileChanged:Connect(hideFoundApples)
 	-- The Spire Ascent's clock, and the card's goodbye a few seconds after a run ends.
 	task.spawn(function()
 		while true do
@@ -648,6 +661,20 @@ function LobbyGamesController.init()
 					run.total,
 					Parkour.format(workspace:GetServerTimeNow() - run.startedAt)
 				)
+			elseif current == "lanterns" then
+				local elapsed = workspace:GetServerTimeNow() - lanternRun.startedAt
+				statusLabel.Text = string.format(
+					"Lanterns %d/%d   %s   Flame %d",
+					lanternRun.count,
+					lanternRun.total,
+					Parkour.format(elapsed),
+					math.max(0, math.ceil(lanternRun.limit - elapsed))
+				)
+			elseif current == "sweep" then
+				local now = workspace:GetServerTimeNow()
+				statusLabel.Text = if sweepState.running
+					then string.format("Standing %.1f s", now - sweepState.startedAt)
+					else string.format("Starts in %d", math.max(0, math.ceil(sweepState.startsAt - now)))
 			elseif current == "mark" then
 				local tollAt = mark.tollAt
 				local left = if tollAt then math.max(0, tollAt - workspace:GetServerTimeNow()) else nil

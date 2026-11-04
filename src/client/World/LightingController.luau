@@ -53,6 +53,7 @@ local currentPreset: LightingPresets.Preset = LightingPresets.lobby
 local currentVenue = "lobby"
 local currentZone: string? = nil -- the part of a map (or the lobby's depths) the camera is in, with a look of its own
 local currentLook: LightingPresets.Look? = nil
+local defaultLatitude = Lighting.GeographicLatitude -- (the place's own, for every look that does not aim the sun)
 local flashing = false
 local debugKey: string? = nil -- "lobby", "meeting" or "map:<mapId>", set from the debug panel
 local debugMood: string? = nil -- a phase id (or "OutroHand" / "OutroAgency"), from the debug panel
@@ -286,13 +287,38 @@ local function setVignette(strength: number, time: number)
 end
 
 local SKY_FACES = { "Bk", "Dn", "Ft", "Lf", "Rt", "Up" }
+local GLOW_SIZE = 24 -- degrees across the realm's sun is drawn (a great soft glow, not a disc)
+
+-- The clock and latitude that put the sun nearest `aim` (a direction): Roblox places the sun from those two, so they
+-- are searched for here rather than worked out (and kept: the answer never changes).
+local aimed: { [string]: { latitude: number, clock: number } } = {}
+local function aimSun(aim: Vector3): (number, number)
+	local key = string.format("%.3f,%.3f,%.3f", aim.X, aim.Y, aim.Z)
+	local found = aimed[key]
+	if found then
+		return found.latitude, found.clock
+	end
+	local best, bestLatitude, bestClock = -2, Lighting.GeographicLatitude, Lighting.ClockTime
+	for _, clock in ipairs({ 12, 0, 6, 18 }) do
+		for latitude = -88, 88, 2 do
+			Lighting.ClockTime = clock
+			Lighting.GeographicLatitude = latitude
+			local d = Lighting:GetSunDirection():Dot(aim.Unit)
+			if d > best then
+				best, bestLatitude, bestClock = d, latitude, clock
+			end
+		end
+	end
+	aimed[key] = { latitude = bestLatitude, clock = bestClock }
+	return bestLatitude, bestClock
+end
 
 -- The sky a look asks for: a map's own overcast faces (no stars, no moon's disc), the Grey Realm's
 -- (nothing at all: World/RealmSky lays its clouds over it), or Roblox's night sky (the meeting room's
 -- windowless war room never shows it). A map whose sky textures are not imported yet keeps Roblox's
 -- faces but loses the stars and the moon all the same: it is raining or snowing there.
 local function applySky(look: LightingPresets.Look)
-	local want = if look.realmSky then "realm" else (look.sky or "")
+	local want = if look.realmSky then (if look.sunAim then "realmSun" else "realm") else (look.sky or "")
 	if want == skyShown then
 		return
 	end
@@ -313,10 +339,11 @@ local function applySky(look: LightingPresets.Look)
 		(sky :: any)["Skybox" .. face] = if faces then faces[face] else defaultFaces[face]
 	end
 	local open = want == ""
+	local glow = want == "realmSun"
 	sky.StarCount = if open then 2500 else 0
-	sky.CelestialBodiesShown = open
+	sky.CelestialBodiesShown = open or glow
 	sky.MoonAngularSize = if open then 14 else 0
-	sky.SunAngularSize = if open then 8 else 0
+	sky.SunAngularSize = if glow then GLOW_SIZE elseif open then 8 else 0
 	-- (A sky still waiting for its textures is asked for again on the next change of look.)
 	skyShown = if look.sky and not faces then "" else want
 end
@@ -343,7 +370,13 @@ local function apply(look: LightingPresets.Look, time: number)
 	local info = TweenInfo.new(time, Enum.EasingStyle.Sine)
 	-- The hour is never blended: from the Grey Realm's afternoon to a map's midnight the sun would
 	-- sweep back across the sky. It changes at once, with the venue.
-	if not previous or previous.clockTime ~= look.clockTime then
+	local aim = look.sunAim
+	if aim then
+		local latitude, clock = aimSun(aim)
+		Lighting.GeographicLatitude = latitude
+		Lighting.ClockTime = clock
+	elseif not previous or previous.clockTime ~= look.clockTime or previous.sunAim then
+		Lighting.GeographicLatitude = defaultLatitude
 		Lighting.ClockTime = look.clockTime
 	end
 	applySky(look)

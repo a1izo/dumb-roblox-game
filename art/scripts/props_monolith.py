@@ -20,30 +20,7 @@ from props import prop
 from props_realm import surface
 
 W, T, H = 52.0, 6.0, 40.0  # the slab (plan.MONO): width, thickness, the height its shoulders reach
-BODY_TOP = 34.0  # where the shoulders start
 FACE = -T / 2  # its face (builder y)
-PLINTH = [(62.0, 13.0, 1.1), (58.0, 10.0, 0.9), (54.6, 7.5, 0.9)]  # the plinth's courses: width, depth, rise
-PANEL = (24.2, 19.6, 48.6)  # the moulding round the title: its middle's height, its height, its width
-CRACK_RED = (150, 22, 30)
-
-
-def _block_row(name, width, depth, z0, rise, mat, rng, lengths=(3.6, 6.2)):
-    """A course of blocks the course's whole depth, laid end to end across its width, each its own length, bevelled,
-    a hair apart, each a little out of true."""
-    parts = []
-    x = -width / 2
-    k = 0
-    while x < width / 2 - 0.05:
-        length = min(rng.uniform(*lengths), width / 2 - x)
-        if width / 2 - (x + length) < 1.2:
-            length = width / 2 - x
-        sink = rng.uniform(0.0, 0.05)
-        parts.append(mk.box(f"{name}{k}", (length - 0.06, depth - rng.uniform(0.0, 0.2), rise - sink),
-                            (x + length / 2, rng.uniform(-0.06, 0.06), z0 + (rise - sink) / 2),
-                            rot=(0, 0, rng.uniform(-0.4, 0.4)), mat=mat, bevel=0.09, segments=2))
-        x += length
-        k += 1
-    return parts
 
 
 def _loft(name, low, high, z0, z1, mat, slant=None):
@@ -119,77 +96,6 @@ def _chain(parts, a, b, sag, mat, link=0.95):
         parts.append(mk.box("Bolt", (0.75, 0.32, 0.75), (x, FACE - 0.16, z), mat=mat, bevel=0.06))
         parts.append(mk.torus("BoltRing", 0.3, 0.07, (x, FACE - 0.38, z - 0.3), rot=(90, 0, 0), mat=mat,
                               major_segments=12, minor_segments=6))
-
-
-@prop("TitleMonolith", pivot="bottom", material="Basalt", collide=False, texture=256, set="Lobby", tiled=True)
-def title_monolith():
-    """The title monolith (see the module)."""
-    basalt, rock, trim, iron = surface("Basalt"), surface("RockGrey"), surface("BlackTrim"), surface("BlackMetal")
-    core = pk.glow("Mono_CrackGlow", CRACK_RED, 2.0)
-    rng = random.Random(61)
-    parts, glows = [], []
-    # The plinth: three courses of rough-hewn blocks.
-    z = 0.0
-    for k, (w, d, rise) in enumerate(PLINTH):
-        parts += _block_row(f"Course{k}", w, d, z, rise, rock, rng)
-        z += rise
-    base = z
-    # The slab, and the raised border round its face.
-    parts.append(mk.box("Slab", (W, T, BODY_TOP - base + 0.1), (0, 0, (base + BODY_TOP) / 2), mat=basalt, bevel=0.3,
-                        segments=3))
-    rim = 1.25
-    for x in (-W / 2 + rim / 2 + 0.25, W / 2 - rim / 2 - 0.25):
-        parts.append(mk.box("Border", (rim, 0.5, BODY_TOP - base - 0.6), (x, FACE - 0.1, (base + BODY_TOP) / 2 - 0.2),
-                            mat=basalt, bevel=0.14))
-    parts.append(mk.box("Footing", (W - 0.3, 0.6, 1.1), (0, FACE - 0.15, base + 0.55), mat=basalt, bevel=0.14))
-    # The moulding round the title: a heavy frame and a slim fillet inside it.
-    pz, ph, pw = PANEL
-    parts += pk.frame("Moulding", pw, ph, 1.1, 0.7, (0, FACE - 0.2, pz), basalt)
-    parts += pk.frame("Fillet", pw - 2.6, ph - 2.6, 0.2, 0.3, (0, FACE - 0.1, pz), basalt)
-    # The shoulders: the slab's top broken into blocks of different heights, its corners snapped off.
-    cols = 9
-    for k in range(cols):
-        cw = W / cols
-        drop = 5.0 if k in (0, cols - 1) else 2.5 if k in (1, cols - 2) else 0.0
-        top = H - drop - rng.uniform(0, 1.6)
-        back = rng.uniform(0, 0.3)
-        parts.append(mk.box("Shoulder", (cw - 0.08, T - 2 * back - rng.uniform(0, 0.6), top - BODY_TOP + 0.3),
-                            (-W / 2 + cw * (k + 0.5), back, (BODY_TOP + top) / 2 - 0.15),
-                            rot=(rng.uniform(-0.6, 0.6), 0, rng.uniform(-0.5, 0.5)), mat=basalt, bevel=0.22, segments=2))
-    # The spire in three pieces, each knocked askew where it cracked, the last snapped off on a slant.
-    sections = [((32.0, 5.6), (25.0, 4.8), 18.0, 0.0, 0.0), ((24.6, 4.7), (18.0, 4.0), 11.0, 0.45, 1.6),
-                ((17.6, 3.9), (12.0, 3.2), 9.0, -0.3, -2.2)]
-    z = BODY_TOP + 0.6
-    for k, ((bw, bt), (tw, tt), sh, shift, turn) in enumerate(sections):
-        low = _octagon(bw, bt, 0.45, shift, turn)
-        high = _octagon(tw, tt, 0.4, shift, turn)
-        slant = (-0.22, 0.08) if k == len(sections) - 1 else None
-        parts.append(_loft(f"Spire{k}", low, high, z, z + sh, basalt, slant))
-        # (the seam where it cracked through: a dark groove round it with the red light in it)
-        if k:
-            parts.append(mk.box("Seam", (bw + 0.1, bt + 0.1, 0.22), (shift, 0, z + 0.05), rot=(0, 0, turn), mat=trim))
-            glows.append(mk.box("SeamCore", (bw * 0.8, 0.04, 0.06), (shift, -bt / 2 - 0.04, z + 0.05), rot=(0, 0, turn),
-                                mat=core))
-        z += sh + 0.25
-    # The stump left standing on the last piece, broken across.
-    top_z = z - 0.25
-    parts.append(_loft("Stump", _octagon(10.5, 2.8, 0.35, -0.6, -2.2), _octagon(6.5, 2.2, 0.3, -1.1, -2.2), top_z - 0.8,
-                       top_z + 4.4, basalt, (-0.3, 0.05)))
-    # Cracks: down from the broken shoulders past the moulding, up the spire's foot, out from under the panel.
-    lo, hi = pz - ph / 2 - 0.6, pz + ph / 2 + 0.6
-
-    def off_panel(cx, cz):
-        return abs(cx) < pw / 2 + 0.6 and lo < cz < hi
-
-    for sx, sz, steps in ((-22.0, BODY_TOP - 0.5, 9), (17.0, BODY_TOP - 0.5, 10), (-25.0, BODY_TOP - 1.0, 12),
-                          (24.4, BODY_TOP - 1.5, 14), (-24.6, 13.0, 8), (9.0, lo - 0.2, 7), (-12.0, lo - 0.2, 6),
-                          (2.0, lo - 0.4, 5)):
-        _crack(parts, glows, rng, (sx, sz), steps, trim, core, off_panel, low=base + 1.4)
-    # Chains hung across the face under the panel, from iron bolts.
-    cz = lo - 1.6
-    _chain(parts, (-24.2, cz), (-7.0, cz - 0.6), 3.0, iron)
-    _chain(parts, (7.0, cz - 0.6), (24.2, cz), 3.0, iron)
-    return parts, glows
 
 
 # The mini-games' stones (tiled like the monolith; the game builds the plain parts they dress and keeps their tags,

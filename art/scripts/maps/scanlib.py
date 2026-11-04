@@ -543,6 +543,8 @@ LIBRARY = {
     "RealmCrust": surface("dry_mud_field_001", (70, 69, 68), 18, "ground", 2, True, keep=0.25, contrast=1.3, seed=151),
     # The title monolith's black stone (a rock face's grain, graded near black).
     "Basalt": surface("rock_face_03", (40, 40, 44), 12, "wall", 2, True, keep=0.35, seed=152),
+    # The realm's shards (2026-11-04): the same rock's grain, pale, so the jagged clusters catch the glow.
+    "RealmShard": surface("rock_face_03", (152, 152, 158), 12, "wall", 2, True, keep=0.35, contrast=1.15, seed=153),
     "RuinFlag": surface("monastery_stone_floor", (90, 90, 94), 12, "floor", 2, keep=0.3, seed=53),
     "RuinStone": surface("medieval_blocks_03", (78, 78, 82), 14, "wall", 2, keep=0.3, seed=54, normal="height"),
     "BoneWhite": surface("white_plaster_02", (168, 162, 146), 4, "wall", 1, True, keep=0.3, rough=0.55, seed=81),

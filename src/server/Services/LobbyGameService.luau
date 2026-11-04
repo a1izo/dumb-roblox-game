@@ -1,16 +1,15 @@
 --!strict
--- The lobby mini-games, run by the server: the Spire Ascent, the rune courtyard and the rift stone-toss.
+-- The lobby mini-games, run by the server: the Spire Ascent, the rune courtyard and the Lantern Run.
 -- The rules are in Shared/LobbyGames (and tested); the objects are Maps/LobbyGames'. Everything here is the
 -- server's say: a run is checked against where the character really is (checkpoints in order and in a
--- believable time, tiles actually stepped on), the throws are rolled here, and a client only ever asks to
--- start or throw.
+-- believable time, tiles actually stepped on), and a client only ever asks to start.
 --
 -- A player in a case (or watching one) is in none of these: their runs end the moment they are
 -- called to a match. Nothing here pays coins or XP; bests are saved in the profile and the Spire
 -- Ascent and the rune rounds also go on the global boards (LeaderboardService).
 --
 -- Four more things to do in the lobby are routed through here: the dive into the rift (LobbyRift),
--- Death's mark (LobbyMark), the name duel (LobbyDuel) and the seven grey apples (below). And one safeguard: whoever falls out of
+-- Death's mark (LobbyMark), the name duel (LobbyDuel) and the Reaper's Sweep (LobbySweep). And one safeguard: whoever falls out of
 -- the lobby's world is set back on the terrace.
 
 local Players = game:GetService("Players")
@@ -23,7 +22,7 @@ local Venues = require(Shared:WaitForChild("Venues"))
 local Games = Shared:WaitForChild("LobbyGames")
 local Parkour = require(Games:WaitForChild("Parkour"))
 local Runes = require(Games:WaitForChild("Runes"))
-local Toss = require(Games:WaitForChild("Toss"))
+local Lanterns = require(Games:WaitForChild("Lanterns"))
 local SpiritTrial = require(Games:WaitForChild("SpiritTrial"))
 
 local DataService = require(script.Parent.DataService)
@@ -31,6 +30,7 @@ local LeaderboardService = require(script.Parent.LeaderboardService)
 local LobbyDuel = require(script.Parent.LobbyDuel)
 local LobbyMark = require(script.Parent.LobbyMark)
 local LobbyRift = require(script.Parent.LobbyRift)
+local LobbySweep = require(script.Parent.LobbySweep)
 local Match = require(script.Parent.Match)
 local RateLimit = require(script.Parent.RateLimit)
 
@@ -47,6 +47,7 @@ type Session = {
 	parkour: Parkour.Session?,
 	spirit: SpiritTrial.Session?,
 	runes: Runes.State?,
+	lanterns: Lanterns.Session?,
 	state: string?, -- runes: "show" or "input"
 	inputAt: number?,
 	deadline: number?,
@@ -56,8 +57,6 @@ type Session = {
 local games: any = nil -- what Maps/LobbyGames built, set by MapService
 local sessions: { [Player]: Session } = {}
 local rng = Random.new()
-
-local lastToss: { [Player]: number } = {}
 
 local function root(player: Player): BasePart?
 	local character = player.Character
@@ -171,6 +170,83 @@ local function finishParkour(player: Player, session: Session)
 	end
 	tell(player, { game = "parkour", kind = "finish", time = time, best = best, newBest = isBest })
 	sendHome(player, games.parkour.start)
+end
+
+-- The Lantern Run ------------------------------------------------------------------------------------------------
+
+local function startLanterns(player: Player)
+	local part = root(player)
+	local g = games.lanterns
+	if not part or not g or (part.Position - g.start).Magnitude > START_RANGE then
+		return
+	end
+	cancel(player, "restart")
+	LobbyMark.cancel(player)
+	LobbyDuel.cancel(player)
+	LobbySweep.cancel(player)
+	local session: Session = { game = "lanterns", lanterns = Lanterns.newSession(os.clock()) }
+	sessions[player] = session
+	tell(player, {
+		game = "lanterns",
+		kind = "start",
+		at = workspace:GetServerTimeNow(),
+		total = Lanterns.COUNT,
+		limit = Lanterns.LIMIT,
+	})
+end
+
+-- The first run with every lantern lit earns what the grey apples once did: the Realm Walker title and Apple Toss.
+local function rewardLanterns(player: Player): boolean
+	local data = DataService.get(player)
+	if not data or data.titles.realmwalker then
+		return false
+	end
+	data.titles.realmwalker = true
+	data.owned.emote_apple_toss = true
+	saved(player)
+	Match.notify(player, "Every lantern lit. Unlocked Realm Walker and Apple Toss.", "good")
+	return true
+end
+
+local function finishLanterns(player: Player, session: Session)
+	local run = session.lanterns :: Lanterns.Session
+	local time = Lanterns.finish(run, os.clock())
+	sessions[player] = nil
+	if not time then
+		tell(player, { game = "lanterns", kind = "end", why = "invalid" })
+		return
+	end
+	local isBest, best = improve(player, "lanternBest", time, Lanterns.isBetter)
+	local rewarded = rewardLanterns(player)
+	tell(player, { game = "lanterns", kind = "finish", time = time, best = best, newBest = isBest, reward = rewarded })
+end
+
+local function lanternsStep(player: Player, session: Session, position: Vector3)
+	local run = session.lanterns :: Lanterns.Session
+	local g = games.lanterns
+	if not g then
+		cancel(player, "reset")
+		return
+	end
+	if Lanterns.out(run, os.clock()) then
+		cancel(player, "out")
+		return
+	end
+	for index, spot in ipairs(g.spots) do
+		if not run.lit[index] and Lanterns.near(position, spot) and Lanterns.light(run, index) then
+			tell(player, {
+				game = "lanterns",
+				kind = "lit",
+				index = index,
+				count = run.count,
+				time = os.clock() - run.startedAt,
+			})
+			if Lanterns.done(run) then
+				finishLanterns(player, session)
+			end
+			return
+		end
+	end
 end
 
 -- The spirit trial (Deathsingers waiting in the lobby only) ------------------------------------------------
@@ -368,50 +444,6 @@ local function runesStep(player: Player, session: Session, position: Vector3)
 	end
 end
 
--- The stone-toss -------------------------------------------------------------------------------------------
-
-local function throwStone(player: Player, look: any)
-	local part = root(player)
-	if typeof(look) ~= "Vector3" or not part then
-		return
-	end
-	local mag = look.Magnitude
-	if mag < 0.5 or mag > 1.5 or (part.Position - games.toss.cairn).Magnitude > Toss.RANGE + 4 then
-		return
-	end
-	local now = os.clock()
-	if now - (lastToss[player] or -10) < Toss.COOLDOWN then
-		return
-	end
-	lastToss[player] = now
-	local unit = look.Unit
-	local across = Vector2.new(unit.X, unit.Z)
-	if across.Magnitude < 0.05 then
-		return
-	end
-	local pitch = math.deg(math.asin(math.clamp(unit.Y, -1, 1)))
-	local result = Toss.result(Vector2.new(part.Position.X, part.Position.Z), across.Unit, pitch, games.toss.rift, rng)
-	local isBest, best = false, 0
-	if result.hit then
-		isBest, best = improve(player, "tossBest", result.echo, Toss.isBetter)
-	else
-		local mine = bests(player)
-		best = if mine then mine.tossBest or 0 else 0
-	end
-	tell(player, {
-		game = "toss",
-		kind = "result",
-		hit = result.hit,
-		land = { x = result.land.X, z = result.land.Y },
-		from = { x = part.Position.X, y = part.Position.Y, z = part.Position.Z },
-		echo = result.echo,
-		bounces = result.bounces,
-		flight = result.flight,
-		best = best,
-		newBest = isBest,
-	})
-end
-
 -- The catch under the lobby -------------------------------------------------------------------------------
 
 -- Nothing under the lobby's ground is solid (the rift opens on another world's sky, the causeways cross
@@ -519,43 +551,6 @@ local function catchFallen()
 	end
 end
 
--- The seven grey apples -----------------------------------------------------------------------------------
-
-local APPLE_RANGE = 12
-
--- A player takes an apple they are standing at: kept in the profile (a bit per apple), and all seven earn
--- a title.
-local function takeApple(player: Player, index: number)
-	local spots: { Vector3 } = games.apples or {}
-	local spot = spots[index]
-	local part = root(player)
-	local data = DataService.get(player)
-	if not spot or not part or not data or (part.Position - spot).Magnitude > APPLE_RANGE then
-		return
-	end
-	local mine = data.lobbyGames
-	local have = math.floor(tonumber(mine.apples) or 0)
-	local bit = bit32.lshift(1, index - 1)
-	if bit32.band(have, bit) ~= 0 then
-		return
-	end
-	have = bit32.bor(have, bit)
-	mine.apples = have
-	local count = 0
-	for n = 0, #spots - 1 do
-		if bit32.band(have, bit32.lshift(1, n)) ~= 0 then
-			count += 1
-		end
-	end
-	if count >= #spots and not data.titles.realmwalker then
-		data.titles.realmwalker = true
-		data.owned.emote_apple_toss = true
-		Match.notify(player, "All 7 apples found. Unlocked Realm Walker and Apple Toss.", "good")
-	end
-	saved(player)
-	tell(player, { game = "apples", kind = "took", index = index, count = count, total = #spots })
-end
-
 -- The loop and the requests -------------------------------------------------------------------------------
 
 -- A lobby player in plain sight: not in a case, not watching one, not a hidden Deathsinger.
@@ -568,6 +563,7 @@ local function leaveOthers(player: Player)
 	cancel(player, "left")
 	LobbyMark.cancel(player)
 	LobbyDuel.cancel(player)
+	LobbySweep.cancel(player)
 end
 
 -- A name duel won goes in the profile (a count, nothing more); returns how many that makes.
@@ -590,6 +586,7 @@ local function step()
 	LobbyRift.step()
 	LobbyMark.step()
 	LobbyDuel.step()
+	LobbySweep.step()
 	for player, session in pairs(sessions) do
 		local part = root(player)
 		if not player.Parent or not part then
@@ -602,6 +599,8 @@ local function step()
 			runesStep(player, session, part.Position)
 		elseif session.game == "spirit" then
 			spiritStep(player, session, part.Position)
+		elseif session.game == "lanterns" then
+			lanternsStep(player, session, part.Position)
 		end
 	end
 end
@@ -635,16 +634,20 @@ local function onRequest(player: Player, payload: any)
 		elseif action == "leave" then
 			cancel(player, "left")
 		end
-	elseif game == "toss" and action == "throw" then
-		throwStone(player, payload.look)
+	elseif game == "lanterns" then
+		if action == "start" then
+			startLanterns(player)
+		elseif action == "leave" then
+			cancel(player, "left")
+		end
+	elseif game == "sweep" then
+		LobbySweep.request(player, action)
 	elseif game == "rift" then
 		LobbyRift.request(player, action, payload)
 	elseif game == "mark" then
 		LobbyMark.request(player, action)
 	elseif game == "duel" then
 		LobbyDuel.request(player, action, payload)
-	elseif game == "apples" and action == "take" and type(payload.index) == "number" then
-		takeApple(player, math.floor(payload.index))
 	end
 end
 
@@ -676,17 +679,24 @@ function LobbyGameService.setup(built: any)
 		leaveOthers = leaveOthers,
 		won = duelWon,
 	}, built.duel)
+	LobbySweep.setup({
+		tell = tell,
+		improve = improve,
+		root = root,
+		playable = playable,
+		leaveOthers = leaveOthers,
+	}, built.sweep)
 end
 
 function LobbyGameService.init()
 	requestRemote.OnServerEvent:Connect(onRequest)
 	Players.PlayerRemoving:Connect(function(player)
 		sessions[player] = nil
-		lastToss[player] = nil
 		onBridge[player] = nil
 		LobbyRift.cancel(player)
 		LobbyMark.cancel(player)
 		LobbyDuel.cancel(player)
+		LobbySweep.cancel(player)
 	end)
 	task.spawn(function()
 		while true do

@@ -53,7 +53,11 @@ def _kit(key):
     mesh = bpy.data.meshes.new(key)
     mesh.from_pydata(verts, [], faces)
     layer = mesh.uv_layers.new(name="UVMap")
-    layer.data.foreach_set("uv", [c for face in uvs for uv in face for c in uv])
+    # (the kit lays its UVs in repeats of the rock scan's tile; a shape of another surface, which wears no ash, is
+    # scaled to that surface's own)
+    main = realmrock.surfaces(key)[0]
+    k = 1.0 if main == realmrock.ROCK else realmrock.TILE / matlib.tile_size(main)
+    layer.data.foreach_set("uv", [c * k for face in uvs for uv in face for c in uv])
     for mat in _surfaces(key):
         mesh.materials.append(mat)
     mesh.polygons.foreach_set("material_index", realmrock.materials(key))
@@ -75,4 +79,5 @@ def _register(key):
 
 
 for _key in realmrock.KIT:
-    _register(_key)
+    if not realmrock.KIT[_key].get("only_far"):
+        _register(_key)

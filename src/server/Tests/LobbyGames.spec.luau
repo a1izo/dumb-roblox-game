@@ -1,15 +1,55 @@
--- The lobby mini-games' rules: the Spire Ascent, the rune courtyard and the stone-toss.
+-- The lobby mini-games' rules: the Spire Ascent, the rune courtyard, the Lantern Run and the spirit trial.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Games = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames")
+local Lanterns = require(Games:WaitForChild("Lanterns"))
 local Parkour = require(Games:WaitForChild("Parkour"))
 local Runes = require(Games:WaitForChild("Runes"))
-local Toss = require(Games:WaitForChild("Toss"))
 local SpiritTrial = require(Games:WaitForChild("SpiritTrial"))
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
+
+	describe("Lanterns", function()
+		it("lights each lantern once, and only the ones there are", function()
+			local s = Lanterns.newSession(0)
+			expect(Lanterns.light(s, 3)).to.equal(true)
+			expect(Lanterns.light(s, 3)).to.equal(false)
+			expect(Lanterns.light(s, 0)).to.equal(false)
+			expect(Lanterns.light(s, Lanterns.COUNT + 1)).to.equal(false)
+			expect(s.count).to.equal(1)
+		end)
+
+		it("finishes only with every lantern lit, and never faster than an honest run", function()
+			local s = Lanterns.newSession(10)
+			for index = 1, Lanterns.COUNT - 1 do
+				Lanterns.light(s, index)
+			end
+			expect(Lanterns.finish(s, 100)).to.equal(nil)
+			Lanterns.light(s, Lanterns.COUNT)
+			expect(Lanterns.finish(s, 10 + Lanterns.MIN_TIME - 1)).to.equal(nil)
+			expect(Lanterns.finish(s, 100)).to.equal(90)
+		end)
+
+		it("lets the flame die when the time is up, but not once the run is done", function()
+			local s = Lanterns.newSession(0)
+			expect(Lanterns.out(s, Lanterns.LIMIT - 1)).to.equal(false)
+			expect(Lanterns.out(s, Lanterns.LIMIT + 1)).to.equal(true)
+			for index = 1, Lanterns.COUNT do
+				Lanterns.light(s, index)
+			end
+			expect(Lanterns.out(s, Lanterns.LIMIT + 1)).to.equal(false)
+		end)
+
+		it("knows a better time and a lantern within reach", function()
+			expect(Lanterns.isBetter(0, 90)).to.equal(true)
+			expect(Lanterns.isBetter(80, 90)).to.equal(false)
+			expect(Lanterns.isBetter(95, 90)).to.equal(true)
+			expect(Lanterns.near(Vector3.new(3, 2, 4), Vector3.new(0, 9, 0))).to.equal(true)
+			expect(Lanterns.near(Vector3.new(30, 2, 0), Vector3.new(0, 9, 0))).to.equal(false)
+		end)
+	end)
 
 	describe("Parkour", function()
 		it("takes the checkpoints in order only", function()
@@ -109,40 +149,6 @@ return function(t)
 
 		it("takes longer to show a longer sequence", function()
 			expect(Runes.showTime(6) > Runes.showTime(3)).to.equal(true)
-		end)
-	end)
-
-	describe("Toss", function()
-		local rift = { cx = 0, cz = 0, rx = 23, rz = 15, turn = 0 }
-
-		it("throws farther the higher you look", function()
-			expect(Toss.distance(40) > Toss.distance(10)).to.equal(true)
-			expect(Toss.distance(10) > Toss.distance(-10)).to.equal(true)
-			expect(Toss.distance(-90)).to.equal(Toss.MIN_DISTANCE)
-			expect(Toss.distance(90)).to.equal(Toss.MAX_DISTANCE)
-		end)
-
-		it("measures how deep in the rift a point is", function()
-			expect(Toss.depth(Vector2.new(0, 0), rift)).to.be.near(0)
-			expect(Toss.depth(Vector2.new(23, 0), rift)).to.be.near(1, 1e-6)
-			expect(Toss.depth(Vector2.new(0, 30), rift) > 1).to.equal(true)
-		end)
-
-		it("misses a rift that is out of reach and rings when it lands in", function()
-			local rng = Random.new(3)
-			local miss = Toss.result(Vector2.new(-200, 0), Vector2.new(1, 0), 0, rift, rng)
-			expect(miss.hit).to.equal(false)
-			expect(miss.echo).to.equal(0)
-			-- aim from far enough away that the farthest throw reaches the middle of the rift
-			local origin = Vector2.new(-Toss.distance(25), 0)
-			local hit = Toss.result(origin, Vector2.new(1, 0), 25, rift, rng)
-			expect(hit.hit).to.equal(true)
-			expect(hit.echo >= Toss.FREE_FALL).to.equal(true)
-		end)
-
-		it("knows a better echo", function()
-			expect(Toss.isBetter(0, 2.1)).to.equal(true)
-			expect(Toss.isBetter(3.2, 2.1)).to.equal(false)
 		end)
 	end)
 

@@ -1,21 +1,19 @@
-"""The lobby: the Grey Realm, the never-ending wasteland beyond the world where the Grimoire comes from.
-Cracked grey ash running to the horizon under layered cloud, huge twisted columns, mesas and spires standing
-out of the fog, and far to the north one colossal blade. Players appear on a ruined terrace over an old
-flagstone plaza, facing north. No wall here explains anything: round the plaza five low bases carry the
-tableaux (stone figures acting out how a case goes) and a sixth place a bell; a ring of candle stones at the
-plaza's middle shows who is ready. South-west, the Academy's ring of broken pillars holds the practice altars;
-east, the rift looks down on Kagegaoka at night, its rim open; north-west lies the cleft,
-north-east the needle ledge; south-east a colossal carcass, the duel's two slates under its ribs; and behind
-the title monolith, up on its mesa, the bone throne, with the one board left (Most Wins) on a low slab at the
-mesa's foot. A ridge of rock and needles borders the walkable basin; two old stone causeways cross deep chasms
-to two plateaus: the Spire Ascent (west) and the rune courtyard (north-east).
+"""The lobby: the Grey Realm, the death gods' realm the Grimoire comes from, remade from nothing on 2026-11-04 to the
+user's two reference videos. A flat grey plain under one blinding glow low in the north, dark walls of cloud east and
+west, jagged pale shards on the skyline. Players appear on a ledge of billowing rock in the south, facing north over
+the bowl (a great stone basin sunk in the plain where everyone gathers: the candle stones of who is ready round a dish
+of skulls, the five tableaux and the bell round its rim) to the bone throne high on its rock against the glow. North-
+east, the rift down to the human world, the stone notebook hanging over it; east, the colossal carcass with the name
+duel under its ribs; south-west, the grotto with the Academy inside, lit by cage lanterns; south-east, the Reaper's
+Sweep; north-west, the chess game, two colossal tusks, the great arch; heaps of junk about. Over two causeways: the
+Chain Heap (the Spire Ascent climbs round a colossal chain hanging out of the sky, west) and the rune courtyard among
+shards (north-east). The Lantern Run's eight lanterns stand across it all, its first at the ledge's foot.
 
-Everything that shows text or does something is built by the game (src/server/Maps/Lobby.luau and
-the lobby games) at the anchors this scene exports: the title and tagline, the Most Wins board, the
-spawn, the Academy's gate sign, its seven drill altars and three effigies, the candles, the tableaux'
-figures, the figure on the throne, the bell, the duel, the apples, the stone-toss, the rift
-and its landing, the rune tiles, the parkour's checkpoints, the roots and banners that sway. The layout is in
-plan.py."""
+Everything that shows text or does something is built by the game (src/server/Maps/Lobby.luau and the lobby games)
+at the anchors this scene exports: the Most Wins board, the spawn, the Academy's gate sign, its seven drill altars and
+three puppets, the candles, the tableaux' figures, the figure on the throne, the bell, the duel, the Reaper's Sweep,
+the Lantern Run, the rift and its landing, the rune tiles, the parkour's checkpoints, the roots that sway. The layout
+is in plan.py."""
 
 from maps import city
 from maps.venues.lobby import dressing, formations, gameplay, ground, islets, landmarks, rift, rocks, terrain
@@ -33,24 +31,21 @@ FIGURES = [(0.0, 0.0, 20.0, 0.0)]
 
 # Views for --preview: (camera, target, lens), at a player's height unless noted.
 VIEWS = [
-    ((0.0, 19.0, 70.0), (-20.0, 60.0, -700.0), 18),  # from the spawn: the first view
-    ((0.0, 19.0, 70.0), (0.0, 12.0, -60.0), 18),  # from the spawn: the plaza and the title
-    ((-20.0, 6.0, 30.0), (-47.0, 5.0, 4.0), 16),  # the west tableaux' bases
-    ((14.0, 6.0, 46.0), (38.0, 7.0, 40.0), 16),  # the bell
-    ((14.0, 6.0, -78.0), (40.0, 9.0, -104.0), 18),  # the Most Wins slab and the throne's mesa
-    ((-54.0, 7.0, 58.0), (-80.0, 6.0, 84.0), 16),  # the Academy's gate
-    ((-80.0, 7.0, 76.0), (-86.0, 4.0, 100.0), 14),  # inside the ring: the altars and effigies
-    ((80.0, 12.0, 22.0), (106.0, -200.0, 22.0), 16),  # down through the rift (from over its lip)
-    ((66.0, 7.0, 44.0), (98.0, 0.0, 22.0), 18),  # the rift and the apple tree
-    ((-70.0, 6.0, -40.0), (-88.0, 3.0, -54.0), 16),  # the wayside rock
-    ((-70.0, 7.0, -92.0), (-110.0, 20.0, -140.0), 18),  # the cleft
-    ((104.0, 7.0, -48.0), (140.0, 14.0, -80.0), 18),  # the needle ledge and its blade
-    ((20.0, 8.0, 90.0), (70.0, 10.0, 110.0), 16),  # under the carcass's ribs
-    ((-150.0, 8.0, 0.0), (-300.0, 20.0, 0.0), 20),  # the west causeway to the Spire Ascent
-    ((-228.0, 8.0, 14.0), (-228.0, -50.0, -2.0), 20),  # looking down into its chasm
-    ((-290.0, 11.0, 0.0), (-326.0, 77.0, -2.0), 20),  # at the foot of the spire
+    ((0.0, 15.0, 108.0), (0.0, 40.0, -900.0), 18),  # from the spawn: the first view, over the bowl to the glow
+    ((0.0, 15.0, 108.0), (0.0, 4.0, -40.0), 18),  # from the spawn: the bowl and the throne
+    ((-26.0, 6.0, 46.0), (0.0, -1.0, 16.0), 16),  # into the bowl from its rim
+    ((0.0, 5.0, -30.0), (0.0, 14.0, -66.0), 16),  # the throne on its rock, the plaque, Most Wins
+    ((-50.0, 7.0, 30.0), (-104.0, 8.0, 52.0), 16),  # the grotto's mouth
+    ((-96.0, 6.0, 46.0), (-112.0, 6.0, 62.0), 14),  # inside the grotto: the altars and the puppets
+    ((60.0, 9.0, -20.0), (90.0, -10.0, -44.0), 18),  # the rift and the notebook
+    ((96.0, 7.0, 34.0), (122.0, 8.0, 38.0), 16),  # under the carcass's ribs: the duel
+    ((40.0, 8.0, 70.0), (64.0, 2.0, 96.0), 16),  # the Reaper's Sweep
+    ((-40.0, 7.0, -20.0), (-62.0, 3.0, -40.0), 16),  # the chess game
+    ((-60.0, 8.0, -84.0), (-76.0, 18.0, -104.0), 18),  # the tusks
+    ((-150.0, 8.0, 0.0), (-326.0, 60.0, -2.0), 20),  # the west causeway to the Chain Heap
+    ((-290.0, 11.0, 0.0), (-326.0, 80.0, -2.0), 20),  # at the foot of the great chain
     ((190.0, 14.0, -190.0), (214.0, 11.0, -216.0), 18),  # the rune courtyard
-    ((0.0, 300.0, 90.0), (0.0, 0.0, -80.0), 14),  # the basin from above
+    ((0.0, 300.0, 110.0), (0.0, 0.0, -40.0), 14),  # the basin from above
 ]
 
 # check_v2's targets: the walk from the spawn to each islet and across the island (seconds); up to 35 s to the
@@ -63,8 +58,18 @@ CHECKS = {
     "symmetry": None,
     # Nobody is dealt a case's spawn here: everyone arrives at the spawn ring (check_v2's spawn spread is for the maps).
     "spawns": None,
-    # The carcass's skull rests on its jaw, settled into the ash (landmarks.carcass): sunk on purpose.
-    "finds_ok": ["sunk GiantSkull in the floor or the map"],
+    # Everywhere a game is played can be walked to from the spawn: the bowl's candles, the tableaux, the throne's
+    # plaque and the wins slab, the duel, the sweep, the Lantern Run's posts, the Academy's altars and puppets (inside
+    # the grotto), the rune courtyard and the foot of the climb (on the plateaus).
+    "reach": ["spawn", "ready*", "tableau*", "throneplaque", "wins", "duel*", "sweep", "sweepPad", "lantern*", "drill*",
+              "dummy*", "runeStart", "runeCenter", "pkStart"],
+    # The carcass's skull rests on its jaw, settled into the ash (landmarks.carcass); the gears lie half buried in the
+    # junk (landmarks.junk, islets.chain_heap); the dish of skulls and the drips hang where they are meant to: all on
+    # purpose.
+    "finds_ok": ["sunk GiantSkull in the floor or the map", "sunk RustGear in the floor or the map",
+                 # (hanging on purpose: the climb's gear decks, the cage lanterns on their chains, the great chain out of
+                 # the sky, the gears standing on their edges in the junk; the rift's glow is seen only from inside)
+                 "float GearPlatform", "float HangingCage", "float GreatChain", "float RustGear", "oneside RiftGlow"],
 }
 
 
@@ -75,11 +80,11 @@ def preview(s):
     for name, (x, z, rot, w, h, by) in P.STELES.items():
         a = anchors[name]
         s.box("Screen", (a["x"], a["y"], a["z"]), (w, h, 0.3), rot)
-    for key in ("title", "tagline", "academyGate"):
+    for key in ("academyGate",):
         a = anchors[key]
         s.box("Screen", (a["x"], a["y"], a["z"]), (a["w"], a["h"], 0.3), a["rot"])
     sx, sz = P.SPAWN
-    s.box("RuinFlag", (sx, P.TERRACE[4] + 0.2, sz), (12.0, 0.4, 12.0))
+    s.box("RuinFlag", (sx, P.LEDGE[4] + 0.2, sz), (12.0, 0.4, 12.0))
 
 
 _LAST = {}

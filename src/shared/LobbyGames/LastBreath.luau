@@ -24,9 +24,21 @@ LastBreath.MIN_BRAKE = 0.4
 -- The fall begins this far under the rim (once a diver is really in the rift).
 LastBreath.DROP = 2
 
+-- The rift's opening on the ground: an ellipse (its middle, its two radii, turned by `turn` degrees).
+export type Rift = { cx: number, cz: number, rx: number, rz: number, turn: number }
+
 -- The height every dive is scored from: from where the fall begins down to the roof.
 function LastBreath.height(rimY: number, roofY: number): number
 	return rimY - LastBreath.DROP - roofY
+end
+
+-- How far into the rift a point is, as the elliptical radius: 0 in the middle, 1 at the edge, above 1 outside it.
+function LastBreath.depth(point: Vector2, rift: Rift): number
+	local a = math.rad(rift.turn)
+	local dx, dz = point.X - rift.cx, point.Y - rift.cz
+	local x = dx * math.cos(a) + dz * math.sin(a)
+	local z = -dx * math.sin(a) + dz * math.cos(a)
+	return math.sqrt((x / rift.rx) ^ 2 + (z / rift.rz) ^ 2)
 end
 
 export type Outcome = {

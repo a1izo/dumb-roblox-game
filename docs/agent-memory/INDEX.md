@@ -23,6 +23,8 @@
 - [Own furniture 2026-11](own-furniture-2026-11.md) — no prop stands in two case maps (64 own models via maps/ownprops.py); footprint rules, the base fallback, modelling traps
 - [Props.blend can be stale](props-blend-can-be-stale.md) — a --export writes the whole catalog from the blend, so it can undo a builder change; rebuild first, read the catalog diff after
 - [Lobby remake 2026-11](lobby-remake-2026-11.md) — the Grey Realm remade 2026-11-03: what was remade and kept, what is left, the budget after
-- [Realm rock kit](realm-rock-kit.md) — every lobby rock is a kit shape (realmrock.py, props "Realm..."), placed by lobby/rocks.py with footprint colliders; checks treat them as terrain
+- [Lobby remake v2](lobby-remake-v2.md) — the lobby remade from nothing 2026-11-04 to the user's videos: layout, glow lighting (sunAim), Lantern Run + Reaper's Sweep, the dive's new way in, what was removed and how
+- [Realm rock kit](realm-rock-kit.md) — every lobby rock is a kit shape (realmrock.py, props "Realm..."), placed by lobby/rocks.py with footprint colliders; checks treat them as terrain; foot walls stop at the rock's top; billow feet reach far
+- [check_v2 reach](check-v2-reach.md) — "ok" does not mean every place can be walked to; list must-reach anchors in CHECKS["reach"]
 - [Tiled props](tiled-props.md) — props.prop(tiled=True): map surfaces instead of a bake, one surface per mesh (pieces); for big stone and things placed by the hundred
 - [Lobby ground relief](lobby-ground-relief.md) — lobby/ground.py: one relief mesh over flat collision, level under paving; mesher smooth()/mesh(ground=True)

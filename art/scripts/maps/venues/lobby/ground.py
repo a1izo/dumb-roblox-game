@@ -141,12 +141,11 @@ def level_places():
     studs round it before it comes up."""
     out = []
     for name, poly in P.footprints().items():
-        if name.startswith("outcrop") or name.startswith("column") or name == "old mesa":
-            continue  # (rock: the ash banks against those)
+        if name in ("throne rock", "tusks", "arch") or name.startswith("junk"):
+            continue  # (rock and bone: the ash banks against those)
         out.append((g2.ccw(poly), 1.5))
-    # The paving: the plaza and the Academy (their loose stones lie out to a quarter past their edges), the ledges.
-    for c, r in ((P.PLAZA_C, P.PLAZA_R * 1.27), (P.ACADEMY_C, (P.ACADEMY_R + 3.0) * 1.27), (P.CLEFT, P.LEDGE_R * 1.3),
-                 (P.NEEDLE, P.LEDGE_R * 1.3)):
+    # The paving: the grotto's floor, the Reaper's Sweep (the bowl is a hole of its own).
+    for c, r in ((P.ACADEMY_C, (P.ACADEMY_R + 1.0) * 1.27), (P.SWEEP[:2], P.SWEEP[2] + 2.0)):
         out.append((g2.ccw(P.circle(c, r, 24)), 1.0))
     # The ways' stepping stones, the causeways' decks and the duel's stones.
     for points in WAYS:
@@ -164,18 +163,22 @@ def level_places():
     return out
 
 
-# (the ways people walk between the places, laid with old flagstones by dressing.ways: the same lines)
+# The ways people walk out from the bowl, laid with old flagstones by dressing.ways: to the grotto's mouth, the
+# throne's plaque, the carcass and the duel, the Reaper's Sweep, the two causeways and the chess game.
 WAYS = [
-    [(-22.0, 28.0), (-40.0, 46.0), (-58.0, 62.0), (-64.0, 68.0)],
-    [(0.0, -22.0), (0.0, -42.0), (0.0, -58.0)],
-    [(28.0, 12.0), (48.0, 18.0), (66.0, 22.0)],
-    [(-26.0, -6.0), (-44.0, -24.0), (-58.0, -36.0)],
+    [(-31.0, 24.0), (-52.0, 34.0), (-67.0, 40.0)],
+    [(0.0, -17.0), (0.0, -33.0), (0.0, -47.0)],
+    [(33.0, 12.0), (60.0, 18.0), (88.0, 25.0), (106.0, 29.0)],
+    [(22.0, 40.0), (36.0, 60.0), (47.0, 74.0)],
+    [(-33.0, 10.0), (-70.0, 4.0), (-108.0, 0.0), (-138.0, -1.0)],
+    [(30.0, -4.0), (48.0, -36.0), (66.0, -76.0), (93.0, -95.0)],
+    [(-28.0, -4.0), (-44.0, -22.0)],
 ]
 
 
 def holes():
-    """The ground's holes: the rift and the chasms."""
-    return [g2.ccw(P.RIFT)] + [g2.ccw(P.chasm_outline(c)) for c in P.CHASMS]
+    """The ground's holes: the rift, the chasms and the bowl (sunk, with floors of its own)."""
+    return [g2.ccw(P.RIFT), g2.ccw(P.circle(P.BOWL_C, P.BOWL_R, 32))] + [g2.ccw(P.chasm_outline(c)) for c in P.CHASMS]
 
 
 def _grid_points(step, lo, hi, rng, keep):

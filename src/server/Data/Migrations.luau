@@ -92,16 +92,17 @@ function Migrations.defaults(startingCoins: number)
 		-- of its steps were done (a rejoin carries on from there).
 		trial = { done = false, skipped = false, paid = false, step = 0 },
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
-		-- rounds cleared, the longest stone-toss echo (seconds), the fastest spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls survived in a row with
-		-- Death's mark; the grey apples found (a bit for each of the seven); and the name duels won.
+		-- rounds cleared, the fastest spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls
+		-- survived in a row with Death's mark, the fastest Lantern Run (seconds, 0 = none), the longest stand in the
+		-- Reaper's Sweep (seconds); and the name duels won.
 		lobbyGames = {
 			parkourBest = 0,
 			runesBest = 0,
-			tossBest = 0,
 			spiritBest = 0,
 			riftBest = 0,
 			markBest = 0,
-			apples = 0,
+			lanternBest = 0,
+			sweepBest = 0,
 			duelWins = 0,
 		},
 		alias = "", -- custom public alias (Custom Alias pass), already filtered

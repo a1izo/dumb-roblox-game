@@ -403,6 +403,28 @@ def reach_report(data, dist, problems):
     return picks, len(dist)
 
 
+def anchors_reached(data, dist, problems):
+    """The anchors a venue names (checks.reach: names, or prefixes ending in *) can be walked to from the spawns:
+    someone can stand within 4 studs of each across, from 9 under it (a lantern on its post, overhead) to 3 over it.
+    (The corner walk goes between the reached spots nearest the corners, so a place nobody can get into passes it
+    unseen: the Academy's grotto, shut by the foot walls of the rocks at its mouth; the plateaus, whose tops lay over
+    the upper half of their causeways' steps.)"""
+    names = (data.get("checks") or {}).get("reach")
+    if not names:
+        return
+    by_col = {}
+    for i, j, h in dist:
+        by_col.setdefault((i, j), []).append(h)
+    for name, a in sorted(data.get("anchors", {}).items()):
+        if not any(name == n or (n.endswith("*") and name.startswith(n[:-1])) for n in names):
+            continue
+        y = a.get("y", 0.0)
+        ci, cj = round(a["x"] / GRID), round(a["z"] / GRID)
+        if not any(y - 9.0 <= h <= y + 3.0 for di in range(-2, 3) for dj in range(-2, 3)
+                   for h in by_col.get((ci + di, cj + dj), ())):
+            problems.append(f"{name}: cannot be walked to from the spawns")
+
+
 def nearest_node(dist, x, y, z):
     """The reached walk node closest to (x, y, z), preferring the floor at height y."""
     return min(dist, key=lambda n: (n[0] * GRID - x) ** 2 + (n[1] * GRID - z) ** 2 + 4 * (n[2] - y) ** 2)
@@ -652,9 +674,7 @@ FEET = {"StreetLightTokyo": 1.2, "TrafficSignal": 1.2, "PedestrianSignal": 1.0, 
         "RoadSign": 0.8, "BusStopSign": 0.8, "TaxiRankSign": 0.8, "Tree": 2.0, "TreeSakura": 2.0,
         "TreeZelkova": 2.0, "GinkgoBare": 1.9, "PineYukizuri": 1.7, "CampusLamp": 1.2,
         # A tent stands on four thin legs round what stands under it (the map gives the legs colliders).
-        "EventTent": 0.5,
-        # The Grey Realm's dead trees and lantern posts.
-        "DeadTree": 2.0, "DeadTreeGnarled": 2.0, "WitheredAppleTree": 2.0, "LanternPost": 0.6}
+        "EventTent": 0.5}
 # Props that are walls themselves (the barriers across the streets that leave the map): they may
 # meet the buildings' walls.
 WALLS = {"SiteFence", "PoliceTape", "Barricade"}
@@ -1029,6 +1049,7 @@ def check(venue, full=True):
         dist = walk(data, world, problems)
         picks, reach_count = reach_report(data, dist, problems)
         print(f"  reach: {reach_count} walkable spots reached from the spawns")
+        anchors_reached(data, dist, problems)
         corner_times(data, world, picks, problems, dist)
         light(data, world, zones, dist, problems)
         symmetry(data, dist, problems)

@@ -43,8 +43,12 @@ export type Preset = {
 	rain: number,
 	lightning: boolean,
 	snow: number,
-	-- The Grey Realm's sky: no sun, moon or stars, and the layered moving clouds (World/RealmSky).
+	-- The Grey Realm's sky: no moon or stars, and the layered moving clouds (World/RealmSky).
 	realmSky: boolean?,
+	-- Where the sun should stand (a direction from the world's middle): the clock and latitude that put it nearest are
+	-- searched for (World/LightingController), and it shows as a great soft glow. Nil: the clock alone places it, and a
+	-- realm sky shows none.
+	sunAim: Vector3?,
 	-- A map's own overcast sky: the six faces Sky<name>Ft..Dn (art/scripts/skies.py, carried in its FBX).
 	-- Under it there are no stars and no moon's disc; the moon is only a dim cold light through the cloud.
 	sky: string?,
@@ -93,6 +97,7 @@ export type Look = {
 	vignette: number,
 	sky: string?,
 	realmSky: boolean,
+	sunAim: Vector3?,
 }
 
 local rgb = Color3.fromRGB
@@ -103,27 +108,25 @@ end
 
 -- Venues -------------------------------------------------------------------------------------
 
--- The lobby: the Grey Realm, a never-ending wasteland under layers of cloud, blacker and darker than the maps
--- (the owner's calls, 2026-10-06 and 2026-10-10: a deep dusk, about a third darker than it was, with the
--- ground ahead still easy to see and pools of pale light where people gather). No sun (the light comes
--- from the whole overcast sky: low, even, cool), almost no colour left, heavy haze: things close by are
--- clear, the far rocks and the colossal blade thin into near-black over a kilometre; the plain runs on past
--- where the haze has swallowed it, so its edge is never seen. The braziers' pale fire,
--- the cold glow of the relics and the rift are the only light that is not the sky's. The sky itself
--- (clouds, no sun) and its slow breathing are World/RealmSky's; these are the values it breathes around.
+-- The lobby: the Grey Realm (remade 2026-11-04 to the user's reference videos), a flat grey wasteland under one
+-- blinding glow low in the north: the sun stands there as a great soft disc, the haze brightening to white round it
+-- and falling to near-black away from it, so whatever stands between you and it is a dark silhouette against the light
+-- (from the spawn, the throne on its rock). The ground stays a deep dusk (the calls of 2026-10-06 and 2026-10-10: dark,
+-- with the ground ahead still easy to see and pools of pale light where people gather); almost no colour left. The
+-- clouds and their slow breathing are World/RealmSky's; these are the values it breathes around.
 LightingPresets.lobby = preset({
 	clockTime = 14.5,
-	brightness = 0.6,
-	exposure = -0.25,
-	ambient = rgb(60, 64, 71),
-	outdoorAmbient = rgb(76, 80, 88),
+	brightness = 1.3,
+	exposure = -0.3,
+	ambient = rgb(56, 60, 67),
+	outdoorAmbient = rgb(70, 74, 82),
 	envDiffuse = 0.5,
 	envSpecular = 0.3,
-	density = 0.34,
-	haze = 1.2,
-	glare = 0,
-	atmosphereColor = rgb(34, 36, 42),
-	decay = rgb(16, 17, 21),
+	density = 0.36,
+	haze = 2.1,
+	glare = 1.5,
+	atmosphereColor = rgb(176, 178, 184),
+	decay = rgb(30, 32, 38),
 	saturation = -0.78,
 	contrast = 0.16,
 	tint = rgb(212, 218, 230),
@@ -137,6 +140,7 @@ LightingPresets.lobby = preset({
 	lightning = false,
 	snow = 0,
 	realmSky = true,
+	sunAim = Vector3.new(0, math.sin(math.rad(8)), -math.cos(math.rad(8))),
 })
 
 -- A dive into the rift, under the cloud the realm floats on: the night over Kagegaoka. Still no sun (the cloud
@@ -650,6 +654,7 @@ function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 		vignette = m.vignette,
 		sky = p.sky,
 		realmSky = p.realmSky == true,
+		sunAim = p.sunAim,
 	}
 end
 

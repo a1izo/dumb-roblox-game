@@ -18,7 +18,7 @@ from maps import city
 from maps import geo2d as g2
 from maps.mesher import cross, dot, sub
 from maps.venues.lobby import plan as P
-from maps.venues.lobby.landmarks import pillar
+from maps.venues.lobby import rocks
 from maps.venues.lobby.terrain import boulder, rock
 
 K = P.CITY_SCALE  # the city's scale
@@ -65,18 +65,35 @@ def hole(s):
                 axis = (cx, (levels[li] + levels[li + 1]) / 2, cz)
                 face_to(s, "RockGrey", [a[k], a[k1], b[k1]], axis)
                 face_to(s, "RockGrey", [a[k], b[k1], b[k]], axis)
-    # The glowing cracks just under the rim, and the cold light rising from them.
+    # The glowing cracks just under the rim, and the cold light rising from them: each a jagged line, thin at its
+    # ends and wider in its middle, of its own length (evenly spaced bars of one size read as a road's markings).
+    # (The rim's stream gives each crack's depth as it always did, so the throat below is as it was; the cracks'
+    # own shapes come from a stream of their own.)
+    crack = random.Random(616)
+
+    def at(p, q, t):
+        x, z = p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t
+        d = math.dist((x, z), (cx, cz))
+        return x + (cx - x) / d * 0.08, z + (cz - z) / d * 0.08  # (a hair in front of the rock: on it, the two flickered)
+
     for k in range(n):
         p, q = poly[k], poly[(k + 1) % n]
-        for t0, t1 in ((0.08, 0.4), (0.55, 0.9)):
-            a = (p[0] + (q[0] - p[0]) * t0, p[1] + (q[1] - p[1]) * t0)
-            b = (p[0] + (q[0] - p[0]) * t1, p[1] + (q[1] - p[1]) * t1)
-            # (A hair in front of the rock, towards the rift's middle: on it, the two flickered.)
-            a = (a[0] + (cx - a[0]) / math.dist(a, (cx, cz)) * 0.08, a[1] + (cz - a[1]) / math.dist(a, (cx, cz)) * 0.08)
-            b = (b[0] + (cx - b[0]) / math.dist(b, (cx, cz)) * 0.08, b[1] + (cz - b[1]) / math.dist(b, (cx, cz)) * 0.08)
+        t = crack.uniform(0.0, 0.3)
+        for _ in range(2):
             y0 = -rng.uniform(0.5, 1.2)
-            y1 = y0 - rng.uniform(0.3, 0.7)
-            face_to(s, "RiftGlow", [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])], (cx, -5.0, cz))
+            mid = y0 - rng.uniform(0.3, 0.7) / 2
+            length = crack.uniform(0.18, 0.5)
+            if t + length > 0.98 or crack.random() < 0.25:
+                continue
+            us = [t + length * f for f in (0.0, crack.uniform(0.25, 0.4), crack.uniform(0.6, 0.75), 1.0)]
+            ys = [mid + crack.uniform(-0.3, 0.3) for _ in us]
+            hs = [0.04, crack.uniform(0.1, 0.24), crack.uniform(0.1, 0.24), 0.04]
+            for i in range(3):
+                a, b = at(p, q, us[i]), at(p, q, us[i + 1])
+                face_to(s, "RiftGlow", [(a[0], ys[i] + hs[i], a[1]), (b[0], ys[i + 1] + hs[i + 1], b[1]),
+                                        (b[0], ys[i + 1] - hs[i + 1], b[1]), (a[0], ys[i] - hs[i], a[1])],
+                        (cx, -5.0, cz))
+            t += length + crack.uniform(0.08, 0.3)
     s.light("point", (cx, -7.0, cz), (170, 196, 232), 40, 1.0)
     s.light("point", (cx, -22.0, cz), (150, 176, 214), 30, 0.6)
     throat(s, rings, levels, cx, cz, rng)
@@ -91,7 +108,7 @@ def hole(s):
             boulder(s, x + dx / r * off, z + dz / r * off, rng.uniform(0.7, 1.5), 7000 + k * 2 + int(t * 4), collide=True)
     rim(s, poly, cx, cz, rng)
     # A pale light on the plaza's side of the rim, where people come to it.
-    wx, wz = P.PLAZA_C[0] - cx, P.PLAZA_C[1] - cz
+    wx, wz = P.BOWL_C[0] - cx, P.BOWL_C[1] - cz
     wd = math.hypot(wx, wz)
     s.light("point", (cx + wx / wd * (P.RIFT_AXES[0] + 6.0), 7.0, cz + wz / wd * (P.RIFT_AXES[0] + 6.0)), (170, 196, 232),
             26, 1.0)
@@ -198,8 +215,8 @@ def cloud(s):
 
 def rim(s, poly, cx, cz, rng):
     """The rift's ruined rim: a band of old flagstones round the edge, a worn balustrade standing
-    just outside it (solid, with gaps, never higher than a jump), and a broken arch of two pillars over
-    the north side."""
+    just outside it (solid, with gaps, never higher than a jump), and two clusters of pale shards over
+    its far side."""
     ring = P.grown(poly, 3.3)
     n = len(poly)
     for k in range(n):
@@ -225,13 +242,12 @@ def rim(s, poly, cx, cz, rng):
             if rng.random() < 0.4:
                 s.box("RuinStone", (mx, h + 0.4, mz), (run * 0.7, 0.8, 1.1), rot)
             u += run + rng.uniform(0.1, 0.9)
-    # The arch, north of the rift: one pillar whole with a stub of lintel, one snapped off.
-    nx, nz = cx - 3.0, cz - P.RIFT_AXES[1] - 9.5
-    if g2.contains(P.BASIN, (nx, nz)):
-        pillar(s, nx - 7.0, nz, 16.0, rng, whole=True)
-        pillar(s, nx + 7.0, nz, 8.5, rng, whole=False)
-        s.box("RuinStone", (nx - 3.0, 17.0, nz), (9.5, 1.6, 2.6), 0.0, collide=True)
-        s.box("RuinStone", (nx - 1.5, 18.4, nz), (6.0, 1.2, 2.0), 0.0)
+    # Two clusters of pale shards over its far side, framing the hole against the glow.
+    nx, nz = cx - 3.0, cz - P.RIFT_AXES[1] - 11.0
+    for side, sc in ((-1, 0.62), (1, 0.48)):
+        x, z = nx + side * 13.0, nz + abs(side) * 2.0
+        if g2.contains(P.BASIN, (x, z)):
+            rocks.rock(s, "RealmShardsA", x, z, rng.uniform(0, 360), sc)
 
 
 # Kagegaoka far below --------------------------------------------------------------------------------------
@@ -469,7 +485,34 @@ def landing(s, b):
     s.light("point", (b.cx, y + 9.0, b.cz), (190, 205, 230), 40, 0.9)
 
 
+def vortex(s):
+    """(2026-11-04, the reference videos) A vortex of cloud turning down the rift's throat toward the human world: three
+    broad arms of pale cloud spiralling in and down along the walls to the cloud deck, banked like a funnel's wall, seen
+    from above as the hole's swirl (a diver falls through the eye in its middle)."""
+    cx, cz = P.RIFT_MID
+    t = math.radians(P.RIFT_TURN)
+    rx, rz = P.RIFT_AXES
+    steps = 44
+    for arm in range(3):
+        start = arm * math.tau / 3
+        outer, inner = [], []
+        for k in range(steps + 1):
+            u = k / steps
+            a = start + u * math.tau * 1.25
+            f = 0.94 - 0.3 * u
+            width = 0.22 - 0.08 * u
+            y = -5.0 + (P.CLOUD_Y + 7.0) * u ** 1.15
+            for share, out, dip in ((f, outer, 0.0), (f - width, inner, -2.6)):
+                lx, lz = math.cos(a) * rx * share, math.sin(a) * rz * share
+                out.append((cx + lx * math.cos(t) - lz * math.sin(t), y + dip, cz + lx * math.sin(t) + lz * math.cos(t)))
+        with s.smooth():
+            for k in range(steps):
+                quad = [outer[k], outer[k + 1], inner[k + 1], inner[k]]
+                face_to(s, "CloudBank", quad, (cx, quad[0][1] + 30.0, cz))
+
+
 def build(s):
     hole(s)
+    vortex(s)
     cloud(s)
     below(s)

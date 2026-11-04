@@ -1,9 +1,10 @@
 --!strict
 -- The lobby mini-games' objects, built at the scene's anchors (art/scripts/maps/venues/lobby): the
 -- Spire Ascent's start pad and checkpoint pylons, the rune courtyard's nine tiles and start pad, the
--- stone-toss cairn, the rift's numbers for the dive, the bell of Death's mark, the seven grey apples and
--- the name duel's two stones. Everything is tagged (LParkourStart, LParkourCheckpoint, LRuneStart,
--- LRuneTile, LTossCairn, LRift, LMarkBell, LApple, LDuelStone) so each client puts up its own prompts (client Controllers/LobbyGamesController); the rules and every score
+-- rift's numbers for the dive, the bell of Death's mark, the name duel's two stones, the Reaper's Sweep's pad and
+-- pivot and the Lantern Run's lanterns. Everything is tagged (LParkourStart, LParkourCheckpoint, LRuneStart,
+-- LRuneTile, LRift, LMarkBell, LDuelStone, LSweepPad, LSweepPivot, LLanternStart, LLantern) so each client puts up its
+-- own prompts (client Controllers/LobbyGamesController); the rules and every score
 -- are the server's (Services/LobbyGameService), which is handed the table this returns.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -32,7 +33,6 @@ type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: num
 export type Games = {
 	parkour: { start: Vector3, center: Vector3, marks: { Vector3 } },
 	runes: { start: Vector3, center: Vector3, tile: number, gap: number },
-	toss: { cairn: Vector3, rift: { cx: number, cz: number, rx: number, rz: number, turn: number } },
 	-- The dive: the rift's shape, the rim's and the landing roof's heights, where a diver is set down after.
 	dive: {
 		rift: { cx: number, cz: number, rx: number, rz: number, turn: number },
@@ -41,9 +41,12 @@ export type Games = {
 		back: Vector3,
 	}?,
 	mark: { bell: Vector3, mouth: Vector3 }?,
-	apples: { Vector3 },
 	-- The name duel's two stones: the foot of each, the part its prompt is on, the writing on its slate.
 	duel: { stones: { { at: Vector3, part: BasePart, label: TextLabel } } }?,
+	-- The Reaper's Sweep: the dais' top at its middle, its radius, the join pad, the pivot the round's state is on.
+	sweep: { centre: Vector3, radius: number, pad: Vector3, pivot: BasePart }?,
+	-- The Lantern Run: where the cold flame is taken, and each lantern a runner lights.
+	lanterns: { start: Vector3, spots: { Vector3 } }?,
 	-- The two causeways: each end's spot on the deck, facing along the way from there (a = at the basin's
 	-- rim, b = at the head of the steps on the plateau).
 	bridges: { { a: CFrame, b: CFrame } },
@@ -273,65 +276,6 @@ local function bell(b, folder: Instance, anchors: { [string]: Anchor })
 	return { bell = b:worldPos(a.x, 0, a.z), mouth = b:worldPos(a.x, a.y, a.z) }
 end
 
--- The seven grey apples: a small grey fruit at each anchor (tag LApple, attribute Index). Every client hides
--- the ones its player has found already.
-local function apples(b, folder: Instance, anchors: { [string]: Anchor })
-	local spots = {}
-	local index = 1
-	while anchors["apple" .. index] do
-		local a = anchors["apple" .. index]
-		local at = b:world(CFrame.new(a.x, a.y + 1.3, a.z))
-		local fruit = Create("Part", {
-			Name = "Apple" .. index,
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(1.2, 1.2, 1.2),
-			CFrame = at,
-			Color = Color3.fromRGB(128, 128, 134),
-			Material = Enum.Material.SmoothPlastic,
-			Anchored = true,
-			Parent = folder,
-		}) :: BasePart
-		inert(fruit)
-		fruit.CanCollide = false
-		fruit.CanQuery = true
-		-- (the Lobby props' grey apple when it is imported, the ball an unseen hit box round it; a ball and a stalk
-		-- until then. The client hides a found apple and everything in it.)
-		local model = ModelLibrary.get("GreyApple")
-		if model then
-			fruit.Transparency = 1
-			model:ScaleTo(model:GetScale() * 1.35)
-			model:PivotTo(at * CFrame.new(0, -0.62, 0) * CFrame.Angles(0, math.rad(index * 67), 0))
-			for _, piece in ipairs(model:GetDescendants()) do
-				if piece:IsA("BasePart") then
-					piece.Anchored = true
-					piece.CanCollide = false
-					piece.CanQuery = false
-					piece.CanTouch = false
-				end
-			end
-			model.Parent = fruit
-		else
-			local stem = part(
-				folder,
-				"Stem",
-				Vector3.new(0.12, 0.45, 0.12),
-				at * CFrame.new(0.05, 0.72, 0) * CFrame.Angles(0, 0, math.rad(-14)),
-				INK,
-				Enum.Material.SmoothPlastic
-			)
-			inert(stem)
-			stem.CanCollide = false
-			stem.Parent = fruit
-		end
-		Create("PointLight", { Color = GLOW, Range = 7, Brightness = 0.5, Shadows = false, Parent = fruit })
-		fruit:SetAttribute("Index", index)
-		fruit:AddTag("LApple")
-		table.insert(spots, fruit.Position)
-		index += 1
-	end
-	return spots
-end
-
 -- The slates on the duel's stones lie on a slope (art/scripts/maps/venues/lobby/landmarks.py, duel()): its
 -- middle is this high, and it rises this steeply from the duellist's side towards the other stone.
 local DUEL_SLATE_Y = 2.9
@@ -401,19 +345,78 @@ local function duel(b, folder: Instance, anchors: { [string]: Anchor })
 	return { stones = stones }
 end
 
-local function toss(b, folder: Instance, anchors: { [string]: Anchor })
-	local a, rift = anchors.toss, anchors.rift
-	local prompt =
-		part(folder, "TossCairn", Vector3.new(6, 5, 6), b:world(b:cf(a.x, 2.5, a.z, a.rot)), STONE, Enum.Material.Slate)
+-- The Reaper's Sweep: the dais' pivot (an unseen part tagged LSweepPivot at the dais' top, in its middle: the server
+-- puts the round's state on it, every client draws the scythe turning on it) and the join pad's prompt (tag
+-- LSweepPad).
+local function sweep(b, folder: Instance, anchors: { [string]: Anchor })
+	local a, p = anchors.sweep, anchors.sweepPad
+	if not a or not p then
+		return nil
+	end
+	local pivot =
+		part(folder, "SweepPivot", Vector3.new(1, 1, 1), b:world(b:cf(a.x, a.y, a.z, 0)), STONE, Enum.Material.Slate)
+	inert(pivot)
+	pivot.CanCollide = false
+	pivot.Transparency = 1
+	pivot:SetAttribute("Radius", a.r or 17)
+	pivot:AddTag("LSweepPivot")
+	local prompt = part(
+		folder,
+		"SweepPad",
+		Vector3.new(4, 5, 4),
+		b:world(b:cf(p.x, p.y + 2.5, p.z, p.rot)),
+		STONE,
+		Enum.Material.Slate
+	)
 	inert(prompt)
 	prompt.CanCollide = false
 	prompt.CanQuery = true
 	prompt.Transparency = 1
-	prompt:AddTag("LTossCairn")
-	return {
-		cairn = b:worldPos(a.x, 0, a.z),
-		rift = { cx = rift.x, cz = rift.z, rx = rift.rx or 23, rz = rift.rz or 15, turn = rift.rot },
-	}
+	prompt:AddTag("LSweepPad")
+	return { centre = b:worldPos(a.x, a.y, a.z), radius = a.r or 17, pad = b:worldPos(p.x, p.y, p.z), pivot = pivot }
+end
+
+-- The Lantern Run: the first lantern's prompt (tag LLanternStart, where the cold flame is taken) and an unseen part at
+-- each of the eight others (tag LLantern, attribute Index) that a runner's own client lights.
+local function lanterns(b, folder: Instance, anchors: { [string]: Anchor })
+	local start = anchors.lanternStart
+	if not start then
+		return nil
+	end
+	local prompt = part(
+		folder,
+		"LanternStart",
+		Vector3.new(3, 3, 3),
+		b:world(b:cf(start.x, start.y, start.z, start.rot)),
+		STONE,
+		Enum.Material.Slate
+	)
+	inert(prompt)
+	prompt.CanCollide = false
+	prompt.CanQuery = true
+	prompt.Transparency = 1
+	prompt:AddTag("LLanternStart")
+	local spots = {}
+	local index = 1
+	while anchors["lantern" .. index] do
+		local a = anchors["lantern" .. index]
+		local spot = part(
+			folder,
+			"Lantern" .. index,
+			Vector3.new(1, 1, 1),
+			b:world(b:cf(a.x, a.y, a.z, a.rot)),
+			STONE,
+			Enum.Material.Slate
+		)
+		inert(spot)
+		spot.CanCollide = false
+		spot.Transparency = 1
+		spot:SetAttribute("Index", index)
+		spot:AddTag("LLantern")
+		table.insert(spots, b:worldPos(a.x, a.y, a.z))
+		index += 1
+	end
+	return { start = b:worldPos(start.x, start.y, start.z), spots = spots }
 end
 
 -- The causeways' ends (anchors bridge<Name>A / B, from the scene).
@@ -433,11 +436,11 @@ function LobbyGames.build(b, anchors: { [string]: Anchor }): Games
 	return {
 		parkour = parkour(b, folder, anchors),
 		runes = runes(b, folder, anchors),
-		toss = toss(b, folder, anchors),
 		dive = dive(b, folder, anchors),
 		mark = bell(b, folder, anchors),
-		apples = apples(b, folder, anchors),
 		duel = duel(b, folder, anchors),
+		sweep = sweep(b, folder, anchors),
+		lanterns = lanterns(b, folder, anchors),
 		bridges = bridges(b, anchors),
 	}
 end

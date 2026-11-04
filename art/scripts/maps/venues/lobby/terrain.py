@@ -35,11 +35,11 @@ def face(s, mat, pts, inside):
 # shape nearest those proportions, scaled between them and turned by the seed; past FAR_FROM the kit's lighter far
 # variants stand in.
 CRAGS = ("RealmCragA", "RealmCragB", "RealmCragC")
-SPIRES = ("RealmSpireA", "RealmSpireB")
+SPIRES = ("RealmSpireA",)
 COLUMNS_KIT = ("RealmColumn", "RealmColumnB")
 BOULDERS = ("RealmBoulderA", "RealmBoulderB")
 NEEDLES = ("RealmNeedleA", "RealmNeedleB")
-MESAS = ("RealmMesa", "RealmMesaLow")
+MESAS = ("RealmMesa",)
 FAR_FROM = 300.0
 
 
@@ -154,12 +154,7 @@ def floating_rock(s, x, y, z, r, seed, depth=None, mat="RockGrey", top_mat=None,
     body narrowing to a point `depth` under it; spires standing on top. Returns its depth."""
     rng = random.Random(seed)
     depth = depth or r * rng.uniform(1.2, 2.2)
-    if top_mat == "RuinFlag":
-        key = "RealmFloaterFlag"
-    elif r > 9.0:
-        key = "RealmFloaterSky"
-    else:
-        key = FLOATERS[seed % 2]
+    key = FLOATERS[seed % 2]
     sc = r / _reach(key)
     rc = realmrock.KIT[key]
     rim = (realmrock.size(key)[1] - rc.get("rise", 0.15)) * sc
@@ -290,8 +285,9 @@ def ground(s, g):
     """The island's ground as people walk it: the whole island polygon in convex pieces, a hole cut for the rift, a
     flat floor under each (what is seen is ground.py's: the ash with its swells, ripples, banks and crusts), and the
     stones lying in the ash."""
+    bowl = P.circle(P.BOWL_C, P.BOWL_R, 32)
     for piece in g2.convex_pieces(P.BASIN):
-        for part in g2.subtract_all([piece], [P.RIFT]):
+        for part in g2.subtract_all([piece], [P.RIFT, bowl]):
             if abs(g2.area(part)) < 0.05:
                 continue
             s.zone("plaza", part, 0.0)
@@ -386,9 +382,9 @@ def plateau_sides(s, poly, centre, seed, top, mat="RockGrey"):
                 face(s, mat, [a[k], b[k1], b[k]], axis)
 
 
-def wall(s, poly, height, gaps=(), y=34.0, gap_w=P.BRIDGE_W + 1.0):
+def wall(s, poly, height, gaps=(), y=34.0, gap_w=P.BRIDGE_W + 1.0, reach=9.0):
     """The invisible wall following poly (counter-clockwise), `height` tall; `gaps` are points (x, z)
-    where a bridge leaves: the wall is left open there, gap_w wide."""
+    where a bridge leaves: the wall is left open there, gap_w wide, on every side within `reach` of the point."""
     n = len(poly)
     for k in range(n):
         a, b = poly[k], poly[(k + 1) % n]
@@ -400,7 +396,7 @@ def wall(s, poly, height, gaps=(), y=34.0, gap_w=P.BRIDGE_W + 1.0):
         for hx, hz in gaps:
             t = (hx - a[0]) * ux + (hz - a[1]) * uz
             off = abs((hx - a[0]) * -uz + (hz - a[1]) * ux)
-            if off < 9.0 and -gap_w < t < length + gap_w:
+            if off < reach and -gap_w < t < length + gap_w:
                 nxt = []
                 for lo, hi in runs:
                     if t - gap_w / 2 > lo:
@@ -418,97 +414,63 @@ def wall(s, poly, height, gaps=(), y=34.0, gap_w=P.BRIDGE_W + 1.0):
 
 
 def edge(s):
-    """The basin's border: a continuous ridge of big rock along the rim (solid, so you see it is a wall), needle
-    fields and tall spires in and behind it, here and there a bone stake or a cairn, a second ridge of rock
-    further out for depth; the invisible wall behind the first ridge, open where the causeways leave."""
+    """The basin's border (2026-11-04, to the reference videos): billowing cliffs heaped along the south and west, where
+    the spawn and the grotto back onto them, and pale shards with broken crags along the north and east, standing
+    against the glow; a second rank further out, out of reach, for depth. The invisible wall runs behind the first
+    rank, open where the causeways leave."""
     rng = random.Random(77)
     pts = P.BASIN
     n = len(pts)
     wall(s, pts, 72.0, gaps=[P.BRIDGE_RUNE[0], P.BRIDGE_PARKOUR[0]])
-    keep = [P.CLEFT, P.NEEDLE, P.BRIDGE_RUNE[0], P.BRIDGE_PARKOUR[0]]
-    solids = []  # (x, z, r) of what stands solid along the rim already
+    keep = [P.BRIDGE_RUNE[0], P.BRIDGE_PARKOUR[0]]
+    taken = [(c[0], c[1], r) for c, r in ((P.ACADEMY_C, P.GROTTO_WALL + 14.0), (P.LEDGE[:2], 46.0))]
+
+    def kind_at(x, z):
+        deg = math.degrees(math.atan2(z, x)) % 360.0
+        return "billow" if 25.0 < deg < 215.0 else "shard"
+
     for k in range(n):
         a, b = pts[k], pts[(k + 1) % n]
         length = math.dist(a, b)
         ux, uz = (b[0] - a[0]) / length, (b[1] - a[1]) / length
         ox, oz = uz, -ux  # outward (the basin runs counter-clockwise)
-        u = rng.uniform(0, 3)
+        u = rng.uniform(0, 4)
         while u < length:
             px, pz = a[0] + ux * u, a[1] + uz * u
-            if any(math.dist((px, pz), (x, z)) < r + 4.0 for x, z, r, _, _ in P.OUTCROPS) or \
-                    any(math.dist((px, pz), c) < 22.0 for c in keep):
-                u += 3.5
+            if any(math.dist((px, pz), c) < 20.0 for c in keep) or                     any(math.dist((px, pz), (x, z)) < r for x, z, r in taken):
+                u += 4.0
                 continue
-            r = rng.uniform(5.5, 10.5)
-            h = r * rng.uniform(1.5, 3.4)
-            off = rng.uniform(-r * 0.15, r * 0.45)
+            if kind_at(px, pz) == "billow":
+                key = rng.choice(("RealmBillowA", "RealmBillowB", "RealmBillowC", "RealmBillowA"))
+                sc = rng.uniform(0.75, 1.15)
+            else:
+                key = rng.choice(("RealmShardsA", "RealmCragA", "RealmCragB", "RealmCragC", "RealmBillowC",
+                                  "RealmShardsB", "RealmCragA"))
+                sc = rng.uniform(0.7, 1.1) if key != "RealmShardsB" else rng.uniform(0.45, 0.65)
+            off = rng.uniform(1.0, 7.0)
             rx, rz = px + ox * off, pz + oz * off
-            rock(s, rx, rz, r, h, 1000 + k * 37 + int(u), tiers=rng.choice((3, 4)), sides=rng.choice((7, 8, 9)),
-                 taper=rng.uniform(0.4, 0.75), lean=(ox * 0.05, oz * 0.05), facing=(-ox, -oz))
-            solids.append((rx, rz, r))
-            u += r * rng.uniform(0.95, 1.5)
-        # Between the rocks of some stretches: needles, a bone stake, a cairn.
-        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-        if not any(math.dist(mid, c) < 26.0 for c in keep):
-            kind = (k * 7 + 3) % 5
-            if kind in (0, 2):
-                needle_field(s, mid[0] + ox * 5.0, mid[1] + oz * 5.0, 8.0, 7, 8.0, 24.0, 3100 + k)
-            elif kind == 3:
-                bone_stake(s, mid[0] - ox * 1.2, mid[1] - oz * 1.2, rng.uniform(4.0, 7.5), rng)
-            elif kind == 4:
-                cx, cz = mid[0] - ox * 2.0, mid[1] - oz * 2.0
-                near = any(math.dist((cx, cz), (qx, qz)) < qr + 5.0 for qx, qz, qr in solids)
-                near = near or any(math.dist((cx, cz), (x, z)) < r + 6.0 for x, z, r, _, _ in P.OUTCROPS)
-                if not near:
-                    s.prop("Cairn", cx, cz, rng.uniform(0, 360), rng.uniform(0.9, 1.4))
-    # A second ridge behind the first and tall spires standing in it, out of reach: it gives the border depth.
+            rocks.rock(s, key, rx, rz, rng.uniform(0, 360), sc, facing=(-ox, -oz))
+            u += max(7.0, rocks.radius(key, sc) * rng.uniform(0.9, 1.3))
+    # A second rank behind the first, out of reach: it gives the border depth.
     for k in range(n):
         a, b = pts[k], pts[(k + 1) % n]
         length = math.dist(a, b)
         ux, uz = (b[0] - a[0]) / length, (b[1] - a[1]) / length
         ox, oz = uz, -ux
-        u = rng.uniform(0, 6)
+        u = rng.uniform(0, 8)
         while u < length:
             px, pz = a[0] + ux * u, a[1] + uz * u
             if any(math.dist((px, pz), c) < 30.0 for c in keep):
-                u += 6.0
+                u += 8.0
                 continue
-            off = rng.uniform(13.0, 34.0)
-            r = rng.uniform(7.0, 15.0)
-            if rng.random() < 0.25:
-                spire(s, px + ox * off, pz + oz * off, r * 0.55, r * rng.uniform(5.0, 8.5), 4100 + k * 11 + int(u),
-                      lighter=True)
+            off = rng.uniform(16.0, 40.0)
+            if kind_at(px, pz) == "billow":
+                key, sc = rng.choice(("RealmBillowB", "RealmBillowA")), rng.uniform(0.9, 1.5)
             else:
-                rock(s, px + ox * off, pz + oz * off, r, r * rng.uniform(1.2, 3.0), 4200 + k * 13 + int(u), tiers=3,
-                     sides=7, taper=0.55, collide=False, lighter=True)
-            u += r * rng.uniform(1.8, 2.9)
-
-
-def bone_stake(s, x, z, h, rng, mat="BoneOld"):
-    """A long bone driven into the ash, leaning."""
-    lean = (rng.uniform(-0.25, 0.25), rng.uniform(-0.25, 0.25))
-    top = (x + lean[0] * h, h, z + lean[1] * h)
-    s.tube(mat, (x, -0.3, z), top, 0.28, 7, radius_b=0.2)
-    s.lathe(mat, top, [(0.0, -0.1), (0.42, 0.1), (0.36, 0.45), (0.0, 0.55)], 7)
-
-
-# Outcrops and the old mesa (where the throne stood) ------------------------------------------------------------
-
-
-def outcrops(s):
-    for x, z, r, h, seed in P.OUTCROPS:
-        rock(s, x, z, r, h, seed, tiers=4 if h > 15 else 3, taper=0.55 if h > 15 else 0.45, collide_h=70.0)
-        rng = random.Random(seed)
-        for k in range(rng.randint(2, 4)):
-            a = rng.uniform(0, math.tau)
-            d = r + rng.uniform(1.5, 4.0)
-            boulder(s, x + math.cos(a) * d, z + math.sin(a) * d, rng.uniform(0.9, 2.2), seed * 10 + k)
-    x, z, r, h = P.OLD_MESA
-    mesa(s, x, z, r, h, 91)
-    # Steps of rock up its south face, broken off halfway (nobody climbs it).
-    for k in range(3):
-        rock(s, x - 6 + k * 3, z + r + 2.5 - k * 1.2, 3.2, 2.5 + k * 3.0, 92 + k, tiers=2, sides=7, taper=0.3,
-             flat_top=True)
+                key, sc = rng.choice(("RealmShardsB", "RealmShardsA", "RealmSpireA")), rng.uniform(0.6, 1.1)
+            rocks.rock(s, key + ("Far" if key + "Far" in realmrock.KIT else ""), px + ox * off, pz + oz * off,
+                       rng.uniform(0, 360), sc, collide=False)
+            u += rocks.radius(key, sc) * rng.uniform(1.4, 2.4)
 
 
 def far_plain(s):
@@ -614,9 +576,5 @@ def build(s, g):
     ground(s, g)
     far_plain(s)
     edge(s)
-    outcrops(s)
     for k, c in enumerate(P.CHASMS):
         chasm(s, c, 801 + k)
-    # The twisted columns that frame the first view.
-    for x, z, r, h, seed in P.COLUMNS:
-        column(s, x, z, r, h, seed)
