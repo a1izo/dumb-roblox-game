@@ -1090,21 +1090,11 @@ def massing(s, b, y=0.0, collide=True):
 
 
 def far(s, poly, floors, seed, y=0.0, lit=0.35, bay=7.0):
-    """A building beyond the map: a block with flat lit windows on the 12-stud floor grid, a
-    parapet line and a roof. lit: the share of windows lit (fewer on the distant skyline); bay:
-    the window spacing (wider far out, where a window is a few pixels)."""
-    rng = random.Random(seed)
-    top = y + height(floors)
-    clad = rng.choice(("FacadeTile", "FacadeTileGrey", "ConcreteDark", "PlasterGrey", "BrickDark"))
-    for e in edges_of(poly):
-        e.quad(s, clad, 0, e.length, y, top + 1.4)
-        spans = bays(e.length, bay)
-        for level in floor_levels(floors):
-            for u0, u1 in spans:
-                r = rng.random()
-                if r < lit:
-                    mat = "WindowLit" if r < lit * 0.7 else "WindowCool"
-                    e.quad(s, mat, (u0 + u1) / 2 - 2.0, (u0 + u1) / 2 + 2.0, level + 3.0, level + 9.4, 0.05)
-    for piece in g2.convex_pieces(poly):
-        city.up_face(s, "ConcreteDark", piece, top + 0.2)
-    return top
+    """A building beyond the map (maps/skyline.py): a block in a night facade, its lit windows over the glass (lit:
+    about the share lit), a parapet and a roof. bay: how far out it stands, as the old window spacing said it
+    (7 near, wider far out): the near ones get a cornice and a lift room."""
+    from maps import skyline
+
+    near = bay <= 7.0
+    return skyline.block(s, poly, floors, random.Random(seed), y=y, lit=lit * 0.8, detail=1 if near else 0,
+                         most=22 if near else 12)

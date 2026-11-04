@@ -579,6 +579,13 @@ LIBRARY = {
     "Bark": surface("sakura_bark", (60, 44, 34), 6, "wall", 1, keep=0.5, seed=107),
 }
 
+# The night facades of the city beyond the maps (maps/facades.py): windows cut into a scan, a repeat per two bays by
+# one floor, for skyline.block.
+from maps import facades  # noqa: E402
+
+for _name in facades.STYLES:
+    LIBRARY[_name] = facades.surface(_name)
+
 # Surfaces drawn at twice the size the rulebook gives them (the owner, 2026-10-25: "make every texture in the game
 # more high quality"): the floors under the players' feet first, then the small trims, as many as fit in 80% of the
 # texture memory each scene had free (scripts/budget.py), Tokyo's wet streets among them. None that the Lobby shows:

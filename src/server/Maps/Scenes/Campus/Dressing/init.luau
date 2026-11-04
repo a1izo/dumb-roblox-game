@@ -822,10 +822,10 @@ return {
 	-- small lamps the client blinks (aircraft warning lights): where, colour, seconds per blink, size
 	blinkers = {
 		{ at = { 560, 543, -700 }, color = { 255, 40, 40 }, period = 1.6, size = 2.4, phase = 0 },
-		{ at = { 530, 487.5, -726 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 0.6 },
-		{ at = { 530, 487.5, -674 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 0.38 },
-		{ at = { 590, 487.5, -726 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 0.59 },
-		{ at = { 590, 487.5, -674 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 2.15 },
+		{ at = { 530, 487.5, -726 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 0 },
+		{ at = { 530, 487.5, -674 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 0.26 },
+		{ at = { 590, 487.5, -726 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 0.85 },
+		{ at = { 590, 487.5, -674 }, color = { 255, 40, 40 }, period = 2.2, size = 2, phase = 1.07 },
 		{ at = { 356, 316, -560 }, color = { 255, 40, 40 }, period = 2, size = 1.6, phase = 0 },
 		{ at = { 404, 316, -560 }, color = { 255, 40, 40 }, period = 2, size = 1.6, phase = 0 },
 		{ at = { 674, 364, -480 }, color = { 255, 40, 40 }, period = 2, size = 1.6, phase = 0.37 },

@@ -12,7 +12,7 @@ as flat quads; long strips are cut into pieces so no mesh grows past a Roblox pa
 import math
 import random
 
-from maps import buildings, city
+from maps import buildings, city, skyline
 from maps import geo2d as g2
 from maps.venues.agency import plan as P
 
@@ -37,6 +37,10 @@ NEIGHBOURS = [(70.0, -330.0, 60.0, 50.0, 44), (340.0, -230.0, 50.0, 50.0, 38), (
               (230.0, 380.0, 50.0, 60.0, 34), (-390.0, -110.0, 60.0, 50.0, 40), (-250.0, -370.0, 50.0, 50.0, 46),
               (-150.0, 460.0, 44.0, 44.0, 30)]
 CLADS = ("CityFacade", "CityFacadeWarm", "CityFacade", "CityRoof")
+# The far city's facades (seen from the 38th floor the office slabs' bands read best) and the most lit windows a
+# building shows (a triangle budget: the scene is near its limit).
+STYLES = ("NightOffice", "NightOffice", "NightTile", "NightBrick", "NightFlats")
+MOST_LIT = 9
 
 
 def cuts(a, b, step=PIECE):
@@ -116,27 +120,12 @@ def faces_of(x0, z0, x1, z1):
 
 
 def block(s, rng, x0, z0, x1, z1, floors, lit, clad=None):
-    """A far building, cheap: its walls and roof, and lit floors as bands across some faces (the
-    windows read as bands from this far up). Returns its roof height."""
-    top = GY + buildings.height(floors)
-    clad = clad or rng.choice(CLADS)
-    for a, b, out in faces_of(x0, z0, x1, z1):
-        city.vquad(s, clad, a, b, GY, top + 1.2, out)
-        length = math.dist(a, b)
-        d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
-        for level in buildings.floor_levels(floors):
-            if rng.random() > lit:
-                continue
-            u0 = rng.uniform(0.0, length * 0.5)
-            u1 = min(length - 0.8, u0 + rng.uniform(length * 0.3, length))
-            if u1 - u0 < 4:
-                continue
-            p = (a[0] + d[0] * u0 + out[0] * 0.08, a[1] + d[1] * u0 + out[1] * 0.08)
-            q = (a[0] + d[0] * u1 + out[0] * 0.08, a[1] + d[1] * u1 + out[1] * 0.08)
-            city.vquad(s, "WindowLit" if rng.random() < 0.65 else "WindowCool", p, q, GY + level + 3.2, GY + level + 9.0,
-                       out)
-    flat(s, "CityRoof", x0, z0, x1, z1, top + 1.2)
-    return top
+    """A far building in a night facade (maps/skyline.py), seen from far above: its walls, its lit windows (lit:
+    about the share lit) and its roof. clad: a style, else one at random. Returns its roof height."""
+    poly = [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
+    # (a building draws from its own generator, so tuning one never moves the layout round it)
+    return skyline.block(s, poly, floors, random.Random(rng.random()), y=GY, lit=lit * 0.65, style=clad, styles=STYLES, detail=0,
+                         roof_mat="CityRoof", most=MOST_LIT)
 
 
 def tower(s, rng, x0, z0, x1, z1, floors, lit):
@@ -219,7 +208,7 @@ def ridge(s, rng):
     x = -FAR
     while x < FAR:
         w = rng.uniform(60.0, 120.0)
-        block(s, rng, x, -FAR_N + 10.0, x + w - 8.0, -FAR_N + 70.0, rng.randint(26, 44), 0.12, "CityFacade")
+        block(s, rng, x, -FAR_N + 10.0, x + w - 8.0, -FAR_N + 70.0, rng.randint(26, 44), 0.12, "NightOffice")
         x += w
 
 

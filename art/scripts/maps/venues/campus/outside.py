@@ -19,7 +19,7 @@ nothing reaches more than 1400 studs north (the lobby is built 3000 studs that w
 import math
 import random
 
-from maps import buildings, city
+from maps import buildings, city, skyline
 from maps import geo2d as g2
 from maps.venues.campus import plan as P
 
@@ -209,30 +209,17 @@ def tiles(x0, z0, x1, z1, size):
 CLADS = ("CityFacade", "CityFacadeWarm", "CityFacade", "CityRoof")
 
 
-def block(s, rng, lot, floors, lit):
-    """A block beyond the wall, cheap: flat walls, its lit floors as window bands, snow on its
-    roof. Returns the roof's height."""
-    x0, z0 = lot[0]
-    x1, z1 = lot[2]
-    top = buildings.height(floors)
-    clad = rng.choice(CLADS)
-    for a, b, out in (((x0, z0), (x1, z0), (0, -1)), ((x1, z0), (x1, z1), (1, 0)), ((x1, z1), (x0, z1), (0, 1)),
-                      ((x0, z1), (x0, z0), (-1, 0))):
-        city.vquad(s, clad, a, b, 0.0, top + 1.2, out)
-        length = math.dist(a, b)
-        d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
-        for level in buildings.floor_levels(floors):
-            if rng.random() > lit:
-                continue
-            u0 = rng.uniform(0.0, length * 0.5)
-            u1 = min(length - 0.8, u0 + rng.uniform(length * 0.3, length))
-            if u1 - u0 < 4:
-                continue
-            p = (a[0] + d[0] * u0 + out[0] * 0.08, a[1] + d[1] * u0 + out[1] * 0.08)
-            q = (a[0] + d[0] * u1 + out[0] * 0.08, a[1] + d[1] * u1 + out[1] * 0.08)
-            city.vquad(s, "WindowLit" if rng.random() < 0.65 else "WindowCool", p, q, level + 3.2, level + 9.0, out)
-    city.up_face(s, "Snow", P.box(x0, z0, x1, z1), top + 1.2)
-    return top
+# The facades of the snowy city round the campus: old brick and tiled blocks near it, office slabs further out.
+NEAR_STYLES = ("NightBrick", "NightBrick", "NightTile", "NightFlats")
+FAR_STYLES = ("NightOffice",)  # (their lit stretches are one glow each: the skyline's triangles)
+
+
+def block(s, rng, lot, floors, lit, detail=1, styles=NEAR_STYLES, most=12):
+    """A block beyond the wall in a night facade (maps/skyline.py): its lit windows (lit: about the share lit),
+    a cornice, snow on its roof, and on the nearer ones (detail 2) what stands on a roof. Returns the roof's
+    height."""
+    # (a building draws from its own generator, so tuning one never moves the layout round it)
+    return skyline.block(s, lot, floors, random.Random(rng.random()), lit=lit, styles=styles, detail=detail, roof_mat="Snow", most=most)
 
 
 def far_city(s, rng):
@@ -255,7 +242,11 @@ def far_city(s, rng):
                     floors = rng.randint(6, 16)
                 else:
                     floors = rng.randint(14, 28)
-                block(s, rng, lot, floors, 0.3 if dist < 240 else 0.18)
+                detail = 2 if dist < 80 else (1 if dist < 240 else 0)
+                if dist < 160:
+                    block(s, rng, lot, floors, 0.22, detail, NEAR_STYLES, 20)
+                else:
+                    block(s, rng, lot, floors, 0.3, detail, FAR_STYLES, 9)
             z += d
         x += w
     # Past the south street and along the east street: a row of low shops and flats facing them.
@@ -263,10 +254,10 @@ def far_city(s, rng):
         lot = P.box(float(a) + 1.0, SOUTH_ST[1] + 4.0, float(a) + 29.0, SOUTH_ST[1] + 24.0)
         if abs(a + 40) < 20:
             continue
-        block(s, rng, lot, rng.randint(2, 5), 0.4)
+        block(s, rng, lot, rng.randint(2, 5), 0.3, 2)
     for a in range(-320, 90, 30):
         lot = P.box(EAST_ST[1] + 4.0, float(a) + 1.0, EAST_ST[1] + 24.0, float(a) + 29.0)
-        block(s, rng, lot, rng.randint(2, 6), 0.4)
+        block(s, rng, lot, rng.randint(2, 6), 0.3, 2)
 
 
 def agency_tower(s, rng):
@@ -303,7 +294,7 @@ def agency_tower(s, rng):
                                                (-520.0, -620.0, 50.0, 24), (-640.0, 420.0, 46.0, 22),
                                                (640.0, 460.0, 50.0, 25))):
         lot = P.box(nx - nw / 2, nz - nw / 2, nx + nw / 2, nz + nw / 2)
-        top = block(s, rng, lot, nfloors, 0.22)
+        top = block(s, rng, lot, nfloors, 0.2, 0, FAR_STYLES, 14)
         for sx in (-1, 1):
             s.blinker((nx + sx * nw / 2, top + 2.0, nz), (255, 40, 40), 2.0, 1.6, (k * 0.37) % 2.0)
 

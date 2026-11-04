@@ -18,7 +18,8 @@ opening Studio:
              you turned away from went out and stayed out, 2026-11-01). Only venues that set a budget are held to it.
   finds      what maps/finders.py found at export (flicker, lamps, light through walls, stretched pictures): a
              report for the eye; a sign inside a wall or a floating or sunk prop is a problem unless the
-             venue's CHECKS["finds_ok"] names it ("<kind> <detail>")
+             venue's CHECKS["finds_ok"] names it ("<kind> <detail>", or "<kind> <detail> at <x>,<z>" for that one
+             spot only, rounded to the stud)
 
 Every rule covers the spare spots too. Returns a list of problems and prints a report.
 """
@@ -942,7 +943,8 @@ def finds(data, problems):
     print(f"  finds: {counts or 'none'}")
     allowed = set((data.get("checks") or {}).get("finds_ok", []))
     for f in found:
-        if f["kind"] in GATED_FINDS and f"{f['kind']} {f['detail']}" not in allowed:
+        spot = f"{f['kind']} {f['detail']} at {round(f['at'][0])},{round(f['at'][2])}"
+        if f["kind"] in GATED_FINDS and f"{f['kind']} {f['detail']}" not in allowed and spot not in allowed:
             problems.append(f"{f['kind']}: {f['detail']} at {f['at']} (maps/finders.py)")
 
 

@@ -59,7 +59,17 @@ def preview(s):
     s.preview_prop("TrainMiddle", stop + 26.0, z, 90, 1.0, station.TRACK_Y + 0.7)
 
 
+# check_v2's allowances for this map.
+CHECKS = {
+    # The station's east door: its frame posts' backs lie in the plane of the hall's inside wall, both hidden, so a
+    # pane check ray beside the shop window there meets one or the other by the order of the scene's faces (it
+    # flipped when the far city changed, 2026-11-05). Nothing cuts the window.
+    "finds_ok": ["pane Glass DarkMetal at -109,-39"],
+}
+
+
 def build(s):
+    s.checks = CHECKS
     # The city far out past the edges goes in a few big meshes, not hundreds of small ones.
     s.far_chunk = (360.0, 1400.0)
     g = city.Ground(s)
