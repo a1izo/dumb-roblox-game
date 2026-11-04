@@ -28,3 +28,6 @@
 - [check_v2 reach](check-v2-reach.md) — "ok" does not mean every place can be walked to; list must-reach anchors in CHECKS["reach"]
 - [Tiled props](tiled-props.md) — props.prop(tiled=True): map surfaces instead of a bake, one surface per mesh (pieces); for big stone and things placed by the hundred
 - [Lobby ground relief](lobby-ground-relief.md) — lobby/ground.py: one relief mesh over flat collision, level under paving; mesher smooth()/mesh(ground=True)
+- [Mesh triangle limit](mesh-triangle-limit.md) — Studio refuses a mesh of 20,000+ triangles; count each mesh of an export; cut small rounds first (mk.coarse_bevels)
+- [Tiny parts bake colour](tiny-parts-bake-colour.md) — small separate parts could bake a random colour; _snap_slivers fixed it 2026-11-04 for new bakes only
+- [check_v2 needs a venue export](check-v2-needs-venue-export.md) — the sidecar is gitignored; a fresh worktree exports first, and the re-export's binaries stay out of the commit

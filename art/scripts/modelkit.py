@@ -189,6 +189,24 @@ def add_bevel(obj, width, segments=2):
     return mod
 
 
+def coarse_bevels(objects, width=0.01):
+    """Draws every bevel `width` studs wide or narrower as one plain chamfer (one segment): a round that small is about
+    a texel of a prop's bake, so it looks the same, at 44 triangles a box where two segments take 108 and
+    propkit.rounded's three take 188. For a prop with dozens of small rounded parts (a keyboard's keys) that would
+    otherwise go over Roblox's 20,000 triangles a mesh. The part is shaded smooth all over (soften), as its round was
+    (each step under the merge's 40 degrees), so the chamfer turns the light like the round; the weighted normals keep
+    its big faces flat."""
+    for obj in objects:
+        coarse = False
+        for mod in obj.modifiers:
+            if mod.type == "BEVEL" and mod.width <= width + 1e-6:
+                mod.segments = 1
+                coarse = True
+        if coarse:
+            soften(obj)
+    return objects
+
+
 def smooth(obj):
     for poly in obj.data.polygons:
         poly.use_smooth = True
@@ -721,7 +739,10 @@ def _snap_slivers(obj, kept, least):
     belongs to the biggest island round it, shrunk to its middle, so it takes that face's colour. A smooth surface
     thinned by decimation (a skull grown from metaballs) leaves slivers that an unwrap makes islands of their own,
     smaller than a texel: the bake reaches no texel of them, and they took the colour of whatever lay round them in
-    the map, black specks on the bone."""
+    the map, black specks on the bone. A small part on its own (nothing bigger next to it in the mesh: a keyboard's
+    keys, each a fifth of a texel in the CRT bank's map) is laid in the biggest face of the nearest island of its own
+    material that is big enough, so it takes its own colour (2026-11-04: the bank's keys came out black or beige by
+    chance)."""
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     uv = bm.loops.layers.uv.active
@@ -759,6 +780,15 @@ def _snap_slivers(obj, kept, least):
         root = find(face.index)
         area[root] = area.get(root, 0.0) + uv_area(face)
         members.setdefault(root, []).append(face)
+
+    def middle_of(group):
+        return sum((f.calc_center_median() for f in group), Vector()) / len(group)
+
+    # (the islands big enough to lend their colour, by material: where each lies, and its biggest face)
+    donors = {}
+    for root, group in members.items():
+        if area[root] >= least:
+            donors.setdefault(group[0].material_index, []).append((middle_of(group), max(group, key=uv_area)))
     snapped = 0
     for root, group in members.items():
         if area[root] >= least:
@@ -770,7 +800,12 @@ def _snap_slivers(obj, kept, least):
                     if other.index in parent and area[find(other.index)] > best_area:
                         best, best_area = other, area[find(other.index)]
         if best is None:
-            continue  # (a small part on its own: nothing next to it to borrow from)
+            # (a small part on its own: the nearest island of its own material lends it its colour)
+            here = middle_of(group)
+            near = donors.get(group[0].material_index)
+            if not near:
+                continue
+            best = min(near, key=lambda d: (d[0] - here).length_squared)[1]
         corners = [loop[uv].uv.copy() for loop in best.loops]
         middle = sum(corners, corners[0] * 0) / len(corners)
         for face in group:

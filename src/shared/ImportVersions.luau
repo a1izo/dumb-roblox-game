@@ -8,7 +8,7 @@ return {
 	MapsMeeting = 6,
 	MapsSets = 17,
 	MapsTokyo = 39,
-	ModelsAgency = 17,
+	ModelsAgency = 18,
 	ModelsCampus = 16,
 	ModelsCore = 34,
 	ModelsFx = 2,

@@ -108,7 +108,9 @@ def station_crt_bank():
     parts += sk.open_book("Log_", -1.95, 0.25, 2.95, cover, paper, ink, rng, yaw=-8, w=1.0, d=0.7)
     parts += sk.pen("Pen_", (-1.75, 0.0, 3.05), (-1.5, 0.2, 3.05), ink, trim)
     parts += sk.mug("Mug_", -2.25, 0.95, 2.95, mugm, coffee, handle_yaw=200)
-    return parts, glows
+    # (the keys' 0.008 rounds and the other rounds of 0.01 or less as plain chamfers: in two segments they took the
+    # prop to 24,011 triangles, over Roblox's 20,000 a mesh)
+    return mk.coarse_bevels(parts), glows
 
 
 PHONE_DESK_SCREEN = (-0.6, 0.15, 4.2, 2.1, 1.6, 6)
