@@ -76,7 +76,7 @@ Assets.music = {
 -- Sound effects. Roblox's own uploads in the Creator Store are free to use.
 Assets.sfx = {
 	uiClick = { id = "105603302038059", ref = "soft click", fallbackId = "" },
-	uiHover = { id = "111593606306412", ref = "faint tick", fallbackId = "" },
+	uiHover = { id = "", ref = "faint tick", fallbackId = "" },
 	uiOpen = { id = "116713052791035", ref = "paper slide", fallbackId = "" },
 	toast = { id = "", ref = "short chime", fallbackId = "" },
 	coin = { id = "", ref = "coin chime", fallbackId = "" },
