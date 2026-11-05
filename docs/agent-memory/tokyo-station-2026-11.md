@@ -30,8 +30,12 @@ bar's ground floor, was hard-wired to WoodPanel (walnut veneer, an office panell
 izakaya's shell take `TimberSiding` (the same scan as weathered horizontal clapboard) where they had WoodPanel. Look in
 `buildings.py` for a hard-wired material before blaming a venue's style table.
 
-Still bare, for a later slice: the station hall's tiled walls and ceiling (only signs and machines on them), the
-platform's ceiling.
+**The station hall's walls** (Maps Tokyo v43, `interiors.hall_walls`): a polished granite dado (MarbleBlack) to a
+steel rail on the west wall and the north and south walls west of the two offices, the line's purple band at head
+height (flat materials LinePurple, LineGreen, LineOrange in matlib.FLAT: no texture), a route map board on the west
+wall drawn from boxes and signs, six framed adverts.
+
+Still plain, for a later slice if it matters: the hall's and the platform's tiled ceilings.
 
 **Why:** the user asked for the remade lobby's finish everywhere; the gates were the "white plain shapes" of the audit.
 **How to apply:** before dressing the platform again, read the intro's WAITING, WALK_FROM/WALK_TO and shot.cam lines and

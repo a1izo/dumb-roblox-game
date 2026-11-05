@@ -1069,6 +1069,8 @@ return {
 		{ at = { -115.35, 11.4, -62 }, rot = 90, w = 14, h = 1.8, text = "改札  GATES", font = "Bodoni", color = { 250, 214, 70 }, bg = { 24, 26, 32 }, glow = nil, align = "Center" },
 		{ at = { -122.15, 8.6, -65.05 }, rot = -90, w = 5, h = 1.4, text = "のりば  PLATFORMS  ↓", font = "SpecialElite", color = { 250, 214, 70 }, bg = { 24, 26, 32 }, glow = nil, align = "Center" },
 		{ at = { -122.85, 8.6, -65.05 }, rot = 90, w = 5, h = 1.4, text = "のりば  PLATFORMS  ↓", font = "SpecialElite", color = { 250, 214, 70 }, bg = { 24, 26, 32 }, glow = nil, align = "Center" },
+		{ at = { -150.76, 8, -89 }, rot = -90, w = 11, h = 0.7, text = "路線図  ROUTE MAP", font = "GothamBold", color = { 30, 30, 36 }, bg = nil, glow = nil, align = "Center" },
+		{ at = { -150.73, 6.25, -88 }, rot = -90, w = 2.2, h = 0.36, text = "現在地  影ヶ丘", font = "GothamBold", color = { 30, 30, 36 }, bg = nil, glow = nil, align = "Center" },
 		{ at = { -107.14, 12.6, -67.5 }, rot = -90, w = 40, h = 2.4, text = "影ヶ丘駅  KAGEGAOKA STATION", font = "Bodoni", color = { 24, 24, 28 }, bg = { 244, 240, 230 }, glow = { 244, 240, 230 }, align = "Center" },
 		{ at = { -68.946, 10.8, -38.395 }, rot = -27, w = 3.4, h = 1.2, text = "交番", font = "GothamBlack", color = { 255, 255, 255 }, bg = { 30, 60, 140 }, glow = nil, align = "Center" },
 		{ at = { -61.461, 10.8, -34.582 }, rot = -27, w = 3.4, h = 1.2, text = "POLICE", font = "SpecialElite", color = { 255, 255, 255 }, bg = { 30, 60, 140 }, glow = nil, align = "Center" },

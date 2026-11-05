@@ -21,6 +21,10 @@ TEX_DIR = os.path.join(common.EXPORT, "textures", "maps")
 # name -> (Roblox material, sRGB colour, transparency, reflectance)
 FLAT = {
     "PaintSteel": ("Metal", (74, 88, 98), 0, 0),  # the blue-grey enamel of staff lockers (the cutscene sets)
+    # Tokyo's metro line colours, painted: the band round the station hall and the route map's lines.
+    "LinePurple": ("SmoothPlastic", (98, 64, 150), 0, 0.05),
+    "LineGreen": ("SmoothPlastic", (54, 140, 84), 0, 0.05),
+    "LineOrange": ("SmoothPlastic", (214, 120, 44), 0, 0.05),
     # The Muerto's flat (the cutscene sets): the desk's glossy red top, its monitor's pale glow, and the frosted
     # panels down the walls lit pink from behind (too dim to bloom).
     "LacquerRed": ("SmoothPlastic", (150, 14, 26), 0, 0.14),

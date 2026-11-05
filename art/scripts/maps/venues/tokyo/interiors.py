@@ -348,6 +348,7 @@ def station_hall(s, g):
         kit.tube_light(s, x, CEIL, z, length=7.0, rot=rot, range_=20, brightness=0.8)
     for z in (-103.0, -31.0):
         kit.tube_light(s, -116.0, CEIL, z, length=5.0, rot=0, range_=14, brightness=0.7)
+    hall_walls(s)
     x0, z0, x1, z1 = g2.bbox(b["poly"])
     s.look_zone("TokyoDistrict_Under", (x0 + 0.5, -1.5, z0 + 0.5), (x1 - 0.5, CEIL + 0.5, z1 - 0.5))
     # Outside: a canopy over each door and the station's name over the front.
@@ -365,6 +366,48 @@ def station_hall(s, g):
     x, z = e.at(e.length / 2, 0.86)
     s.sign((x, 12.6, z), e.rot, 40.0, 2.4, "影ヶ丘駅  KAGEGAOKA STATION", "GothamBlack", (24, 24, 28),
            (244, 240, 230), glow=(244, 240, 230))
+
+
+# The hall's walls (inside faces at x -151, z -109 and z -26; the two offices take the east ends past x -124): a
+# polished granite dado to a steel rail, the line's purple band at head height, the route map, framed adverts.
+HALL_WALLS = [((-151.0, -109.0), (-151.0, -26.0), (1, 0)), ((-151.0, -109.0), (-124.6, -109.0), (0, 1)),
+              ((-151.0, -26.0), (-124.6, -26.0), (0, -1))]
+
+
+def hall_walls(s):
+    from maps.venues.tokyo.station import framed_poster
+
+    for a, b, out in HALL_WALLS:
+        length = math.dist(a, b)
+        mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        rot = g2.rot_of(((b[0] - a[0]) / length, (b[1] - a[1]) / length))
+        for y, h, depth, mat in ((1.5, 3.0, 0.1, "MarbleBlack"), (3.06, 0.12, 0.16, "Steel"), (7.6, 0.5, 0.06, "LinePurple")):
+            s.box(mat, (mid[0] + out[0] * depth / 2, y, mid[1] + out[1] * depth / 2), (length, h, depth), rot,
+                  skip=("-y",) if mat == "MarbleBlack" else ())
+    # The route map, on the west wall between the kiosk and the drinks machines: the three lines across a white board,
+    # their stations as dots, here a black one.
+    x, z = -151.0, -89.0
+    s.box("BlackTrim", (x + 0.08, 6.0, z), (0.16, 5.4, 12.4))
+    s.box("WhiteTrim", (x + 0.19, 6.0, z), (0.06, 5.0, 12.0))
+    s.sign((x + 0.24, 8.0, z), -90, 11.0, 0.7, "路線図  ROUTE MAP", "GothamBold", (30, 30, 36), None)
+    lines = [("LinePurple", [(-4.8, 5.0), (-1.0, 5.6), (2.5, 5.6), (4.8, 6.6)]),
+             ("LineGreen", [(-4.8, 6.8), (-1.0, 5.6), (1.5, 4.4), (4.8, 4.4)]),
+             ("LineOrange", [(-3.0, 4.0), (-1.0, 5.6), (0.5, 7.0)])]
+    stops = set()
+    for mat, pts in lines:
+        for (u0, y0), (u1, y1) in zip(pts, pts[1:]):
+            length = math.hypot(u1 - u0, y1 - y0)
+            s.obox(mat, (x + 0.24, (y0 + y1) / 2, z - (u0 + u1) / 2), (length + 0.12, 0.12, 0.03),
+                   (0, (y1 - y0) / length, -(u1 - u0) / length), (0, (u1 - u0) / length, (y1 - y0) / length), (1, 0, 0))
+            stops |= {(u0, y0), (u1, y1)}
+    for u, y in sorted(stops):
+        here = (u, y) == (-1.0, 5.6)
+        s.box("BlackTrim", (x + 0.28, y, z - u), (0.04, 0.42 if here else 0.26, 0.42 if here else 0.26))
+    s.sign((x + 0.27, 6.25, z + 1.0), -90, 2.2, 0.36, "現在地  影ヶ丘", "GothamBold", (30, 30, 36), None)
+    # Adverts in frames along the free stretches.
+    for px, pz, out, index in ((-151.0, -60.0, (1, 0), 0), (-151.0, -48.0, (1, 0), 3), (-151.0, -36.0, (1, 0), 5),
+                               (-144.0, -109.0, (0, 1), 1), (-133.0, -109.0, (0, 1), 2), (-147.0, -26.0, (0, -1), 4)):
+        framed_poster(s, px, pz, out, 5.6, 3.0, 4.24, index)
 
 
 # The police box --------------------------------------------------------------------------------------
