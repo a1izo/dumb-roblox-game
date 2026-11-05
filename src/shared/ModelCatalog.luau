@@ -321,7 +321,7 @@ return {
 	Teacup = { size = { 0.76, 0.286, 0.76 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 130, 126, 120 }, set = "Core", tris = 1452 },
 	TennisBall = { size = { 0.627, 0.6, 0.627 }, pivot = "centre", material = "Fabric", collide = false, color = { 179, 187, 113 }, set = "Core", tris = 952 },
 	TennisNet = { size = { 40.418, 4.06, 0.89 }, pivot = "bottom", material = "Fabric", collide = true, color = { 26, 28, 27 }, set = "Campus", tris = 6192 },
-	TicketGate = { size = { 2.8, 3.47, 5.1 }, pivot = "bottom", material = "Metal", collide = true, color = { 101, 97, 96 }, set = "Tokyo", tris = 468, glow = { { 80, 170, 255 }, { 90, 255, 170 } } },
+	TicketGate = { size = { 2.744, 3.47, 5.035 }, pivot = "bottom", material = "Metal", collide = true, color = { 50, 48, 48 }, set = "Tokyo", tris = 3792, glow = { { 80, 170, 255 }, { 120, 220, 255 }, { 90, 255, 170 }, { 255, 60, 60 } } },
 	TicketMachine = { size = { 3.4, 6.22, 2.6 }, pivot = "bottom", material = "Metal", collide = true, color = { 42, 42, 43 }, set = "Tokyo", tris = 8074, glow = { { 120, 200, 255 }, { 240, 244, 255 }, { 90, 230, 120 }, { 80, 170, 255 }, { 255, 60, 50 } } },
 	TimberBarrier = { size = { 4.127, 2.99, 2.142 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 121, 93, 77 }, base = "Barricade", set = "Campus", tris = 392, glow = { { 255, 150, 40 } } },
 	TimberShelter = { size = { 12.4, 8.135, 4.51 }, pivot = "bottom", material = "WoodPlanks", collide = false, color = { 31, 25, 20 }, lights = { { at = { 0, 7.6, 0.205 }, brightness = 0.8, color = { 236, 240, 255 }, kind = "point", range = 14 } }, base = "BusShelter", set = "Campus", tris = 1944, glow = { { 236, 240, 255 } } },

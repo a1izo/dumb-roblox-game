@@ -38,7 +38,8 @@ FIGURES = [(-45, 0, -46, -30)]  # (x, y, z, rot)
 VIEWS = [
     ((-50, 10, -44), (-20, 20, -96), 17),  # the scramble from its south-west corner
     ((-66, 9, -50), (-130, 16, -70), 18),  # the station plaza and the station
-    ((-110, 6, -72), (-140, 3, -60), 16),  # inside the station hall, towards the gates
+    ((-111, 5.5, -44), (-132, 5, -64), 16),  # inside the station hall, towards the gates (from by the doors: at
+    # -110, -72 the camera stood inside a ticket machine)
     ((-117, 6.5, -64.8), (-141, -9, -64.8), 16),  # through the gates, down the stairs
     ((-36, -13, -60), (-120, -14, -66), 18),  # the metro platform with the train in
     ((-6, 8, -86), (60, 12, -104), 17),  # into the covered shopping street

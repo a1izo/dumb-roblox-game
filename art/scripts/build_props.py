@@ -113,16 +113,15 @@ HELD = {"Pen", "Grimoire", "Handcuffs", "Hood", "SuitTorso", "SuitLimb", "SuitTi
 # shapes (2026-10-25: "make all assets much more high quality and not just basic shapes ... for every asset"). The
 # newer shapes are built now for every one whose size is within a little of the kept one's; vehicles, bicycles and
 # the cherry tree, larger in their newer shapes, are built and then scaled to fit inside the kept one's box
-# (FIT_TO_KEPT), so the lanes and racks laid out for them still hold them. Still KEPT: the ticket gates (the newer
-# ones half as wide, which opens gaps in the gate lines); the station clock and the security-camera station were rebuilt
+# (FIT_TO_KEPT), so the lanes and racks laid out for them still hold them. The ticket gate was the last one KEPT; it was
+# rebuilt inside its kept box on 2026-11-05 (its flaps reach the box's width, so the gate lines hold); the station clock and the security-camera station were rebuilt
 # inside their kept boxes (2026-11-01, the station overhaul); the beer crates were rebuilt as open crates of bottles, fitted to the kept
 # box, and the vending machines too (2026-10-26: the kept ones' samples were black slots, their light hidden). To take
 # one of these: remove the name here, build it, and run maps/check_v2.py on every map that places it.
-KEPT = frozenset("""
-    TicketGate
-""".split())
+KEPT = frozenset()
 # (each one's kept box, x across, y deep, z high: what the district was laid out around)
 FIT_TO_KEPT = {
+    "TicketGate": (2.8, 5.1, 3.47),
     "VendingBlue": (4.25, 3.075, 7.2),
     "VendingWhite": (4.25, 3.075, 7.2),
     "Bicycle": (1.6, 5.54, 3.05),

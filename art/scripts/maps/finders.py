@@ -315,7 +315,7 @@ def _over(box, px, pz, margin=0.0):
 
 
 # Props made to hang (from a wire, a hook, a beam) or to perch: they are never "floating".
-HANGING = {"Chochin", "LanternString", "PoliceTape", "Noren", "MirrorBall", "Crow"}
+HANGING = {"Chochin", "LanternString", "PoliceTape", "Noren", "MirrorBall", "Crow", "StationSignHanging"}
 
 
 def rest(scene, tris, catalog):

@@ -5,6 +5,14 @@
 return {
 	-- prop, x, y, z, degrees about Y, scale, flags ("dark": without its light)
 	props = {
+		{ "StationSignHanging", -58, -10.15, -62, 90, 1 },
+		{ "StationSignHanging", -40, -10.15, -62, 90, 1 },
+		{ "PlatformBench", -46, -20, -62.78, 0, 1 },
+		{ "PlatformBench", -46, -20, -61.22, 180, 1 },
+		{ "PlatformBench", -35, -20, -62.78, 0, 1 },
+		{ "PlatformBench", -35, -20, -61.22, 180, 1 },
+		{ "RecycleBins", -30.75, -20, -68, 90, 1 },
+		{ "RecycleBins", -30.75, -20, -56, 90, 1 },
 		{ "TicketGate", -116, 0, -69.2, -90, 1 },
 		{ "TicketGate", -116, 0, -62, -90, 1 },
 		{ "TicketGate", -116, 0, -54.8, -90, 1 },
@@ -773,6 +781,7 @@ return {
 		{ at = { -64, -12.6, -81.84 }, rot = 180, w = 12, h = 1.8, text = "影ヶ丘  KAGEGAOKA", font = "Bodoni", color = { 24, 26, 32 }, bg = { 226, 228, 230 }, glow = nil, align = "Center" },
 		{ at = { -104, -12.6, -42.16 }, rot = 0, w = 12, h = 1.8, text = "影ヶ丘  KAGEGAOKA", font = "Bodoni", color = { 24, 26, 32 }, bg = { 226, 228, 230 }, glow = nil, align = "Center" },
 		{ at = { -64, -12.6, -42.16 }, rot = 0, w = 12, h = 1.8, text = "影ヶ丘  KAGEGAOKA", font = "Bodoni", color = { 24, 26, 32 }, bg = { 226, 228, 230 }, glow = nil, align = "Center" },
+		{ at = { -120.28, -9.8, -58.95 }, rot = -90, w = 4.8, h = 1.2, text = "改札  GATES  ↑", font = "SpecialElite", color = { 250, 214, 70 }, bg = { 24, 26, 32 }, glow = { 250, 214, 70 }, align = "Center" },
 		{ at = { -109.6, 85, -67.5 }, rot = -90, w = 23, h = 6, text = "影ヶ丘駅  KAGEGAOKA STATION", font = "Bodoni", color = { 24, 24, 28 }, bg = { 244, 240, 230 }, glow = { 244, 240, 230 }, align = "Center" },
 		{ at = { -181.4, 6.2, -124.16 }, rot = 0, w = 2.2, h = 3, text = "テナント\nご案内\n\n1F  受付\n2F-  各社", font = "SpecialElite", color = { 230, 226, 214 }, bg = { 34, 36, 42 }, glow = nil, align = "Center" },
 		{ at = { -135, 11.4, -128.75 }, rot = 0, w = 32.2, h = 2.6, text = "駅北口 NORTH EXIT", font = "Bodoni", color = { 24, 24, 28 }, bg = { 244, 240, 230 }, glow = { 244, 240, 230 }, align = "Center" },

@@ -257,7 +257,60 @@ def divider(s, f1, f2, ceiling):
                    0, True, None)
 
 
+def framed_poster(s, x, z, out, y, w, h, index):
+    """Poster `index` of the district's sheet in a black frame on a wall face at (x, z) facing out ((1, 0), (0, 1)...):
+    an advertising frame on a platform wall. (The poster 0.04 off the frame's face, clear of flickering with it.)"""
+    from maps.venues.tokyo import decor
+
+    t = (-out[1], out[0])
+    s.box("BlackTrim", (x + out[0] * 0.06, y, z + out[1] * 0.06),
+          (abs(t[0]) * (w + 0.36) + abs(out[0]) * 0.12, h + 0.36, abs(t[1]) * (w + 0.36) + abs(out[1]) * 0.12))
+    f = (x + out[0] * 0.16, z + out[1] * 0.16)
+    a = (f[0] - t[0] * w / 2, f[1] - t[1] * w / 2)
+    b = (f[0] + t[0] * w / 2, f[1] + t[1] * w / 2)
+    decor.printed(s, a, b, y - h / 2, y + h / 2, out, index)
+
+
+def dressing(s):
+    """What a platform has that a tiled box does not (the intro is staged from x -110 to -62, so its stretch keeps only
+    the walls' frames, seen past the actors): advertising frames on both track walls between the station's names, the
+    stairwell's housing given its skirting, a lit sign over the way up, a clock and a notice; the hanging platform signs,
+    back-to-back benches and bins at the east end, a poster on the end wall."""
+    south, north = P.TRACKS_Z[0][0], P.TRACKS_Z[1][1]
+    for x, ia, ib in ((-131.0, 0, 3), (-119.0, 5, 2), (-90.0, 1, 4), (-78.0, 3, 0), (-50.0, 2, 5), (-38.0, 4, 1)):
+        framed_poster(s, x, south, (0, 1), P.PLATFORM_Y + 5.0, 3.3, 4.66, ia)
+        framed_poster(s, x, north, (0, -1), P.PLATFORM_Y + 5.0, 3.3, 4.66, ib)
+    # The stairwell's housing on the platform: a black skirting round its foot, the sign over the way up, the clock and
+    # a notice on its face.
+    sx0, sx1, sz0, sz1 = P.STAIRWELL
+    face = sx1 + 0.5
+    y = P.PLATFORM_Y
+    s.box("BlackTrim", (face + 0.05, y + 0.25, (sz0 - 0.5 + P.DIVIDER[1]) / 2 - 0.1),
+          (0.1, 0.5, P.DIVIDER[1] - sz0 + 0.3), skip=("-y",))
+    for z, out in ((sz0 - 0.5, -1), (sz1 + 0.5, 1)):
+        s.box("BlackTrim", ((P.PLATFORM[0] + face) / 2, y + 0.25, z + out * 0.05), (face - P.PLATFORM[0], 0.5, 0.1),
+              skip=("-y",))
+    door_z = (P.DIVIDER[1] + sz1) / 2
+    s.box("BlackTrim", (face + 0.1, y + 10.2, door_z), (0.2, 1.5, 5.2))
+    s.sign((face + 0.22, y + 10.2, door_z), -90, 4.8, 1.2, "改札  GATES  ↑", "GothamBlack", (250, 214, 70), (24, 26, 32),
+           glow=(250, 214, 70))
+    solid = (sz0 - 0.5 + P.DIVIDER[1]) / 2
+    kit.wall_clock(s, face, y + 9.4, solid, -90, 1.0)
+    framed_poster(s, face, solid, (1, 0), y + 5.0, 2.4, 3.39, 4)
+    # The east end: two platform signs hung across it, benches back to back down its middle, bins by the end wall.
+    for x in (-58.0, -40.0):
+        s.prop("StationSignHanging", x, (P.PLATFORM_Z[0] + P.PLATFORM_Z[1]) / 2, 90, 1.0, P.PLATFORM_CEILING - 2.15)
+    mid = (P.PLATFORM_Z[0] + P.PLATFORM_Z[1]) / 2
+    for x in (-46.0, -35.0):
+        s.prop("PlatformBench", x, mid - 0.78, 0, 1.0, y)
+        s.prop("PlatformBench", x, mid + 0.78, 180, 1.0, y)
+    for z in (mid - 6.0, mid + 6.0):
+        s.prop("RecycleBins", P.PLATFORM[1] - 0.75, z, 90, 1.0, y)
+    framed_poster(s, P.PLATFORM[1], mid, (-1, 0), y + 5.0, 3.3, 4.66, 0)
+
+
 def build(s, g):
     box_room(s)
     platform(s, g)
     stairwell(s, g)
+    dressing(s)

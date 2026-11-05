@@ -459,30 +459,62 @@ def taxi_rank_sign():
 # The station ----------------------------------------------------------------------------------------------
 
 
-@prop("TicketGate", pivot="bottom", material="Metal", collide=True, texture=1024, set="Tokyo")
+@prop("TicketGate", pivot="bottom", material="Metal", collide=True, texture=512, set="Tokyo", normal=256)
 def ticket_gate():
-    """An automatic ticket gate cabinet, 1.2 wide and 5.6 long, the passage along Y (in at -Y):
-    the IC card reader glowing at the entry end, the ticket slot and its return, a small screen,
-    orange flaps halfway on both sides, a green arrow at the entry and a red bar at the exit."""
-    body = pk.paint("TG_Body", (206, 208, 210), rough=0.3, wear=8)
-    top = pk.metal("TG_Top", (40, 42, 46), (60, 62, 66), rough=0.4, metallic=0.3)
-    flap = pk.plastic("TG_Flap", (236, 120, 40))
+    """An automatic ticket gate cabinet between two lanes, the passage along Y (in at -Y), built inside the box the
+    station's gate line was laid round (2.8 across with its flaps, 5.1 long, 3.47 high): a cabinet in pale enamel on a
+    dark plinth, brushed steel panels down both sides with their sensor windows and a rubber bumper, a dark top deck;
+    for each lane an IC card reader glowing at the entry end, the ticket slot and its return; a small screen tilted to
+    the entry; the orange flaps standing out into both lanes; a green arrow on the entry end, a red bar on the exit,
+    blue guide lights along the deck's edges."""
+    body = pk.paint("TG_Body", (210, 210, 206), rough=0.32, wear=10)
+    dark = pk.metal("TG_Top", (28, 30, 34), (48, 50, 56), rough=0.45, metallic=0.3)
+    steel = pk.metal("TG_Steel", (164, 168, 174), (206, 210, 214), rough=0.36, metallic=0.6, scale=40)
     chrome = pk.chrome("TG_Chrome")
+    rubber = pk.plastic("TG_Rubber", (22, 22, 24), rough=0.8)
+    flap = pk.plastic("TG_Flap", (232, 116, 38), rough=0.4)
+    sensor = mk.noisy("TG_Sensor", srgb(8, 10, 14), srgb(26, 30, 38), roughness=0.08)
+    ink = pk.plastic("TG_Ink", (24, 24, 28))
     parts = [
-        pk.rounded("Body", (1.2, 5.6, 3.3), (0, 0, 1.75), body, r=0.12),
-        mk.box("Plinth", (1.1, 5.4, 0.12), (0, 0, 0.06), mat=top),
-        mk.box("Top", (1.3, 5.7, 0.14), (0, 0, 3.45), mat=top, bevel=0.05),
-        mk.box("Slot", (0.5, 0.2, 0.04), (0, -1.2, 3.53), mat=chrome),
-        mk.box("Return", (0.5, 0.2, 0.04), (0, 1.4, 3.53), mat=chrome),
-        mk.box("ScreenFrame", (0.8, 0.5, 0.3), (0, -0.3, 3.62), rot=(-30, 0, 0), mat=top),
+        mk.box("Plinth", (2.08, 4.88, 0.14), (0, 0, 0.07), mat=dark, bevel=0.03),
+        pk.rounded("Body", (2.2, 5.0, 3.0), (0, 0, 1.62), body, r=0.12),
+        pk.rounded("Deck", (2.36, 5.1, 0.16), (0, 0, 3.2), dark, r=0.05),
+        # The screen's pod in the middle of the deck, its face tilted to whoever comes in.
+        pk.rounded("Pod", (0.56, 0.5, 0.22), (0, -0.95, 3.36), dark, r=0.05, rot=(-14, 0, 0)),
     ]
     for sx in (-1, 1):
-        parts += [mk.box("Flap", (0.08, 0.9, 1.3), (sx * 0.64, 0.4, 2.4), mat=flap, bevel=0.03),
-                  mk.box("Stripe", (0.02, 5.4, 0.12), (sx * 0.605, 0, 2.9), mat=top)]
-    glows = [mk.box("Reader", (0.8, 0.8, 0.05), (0, -2.1, 3.54), mat=pk.glow("TG_Reader", (80, 180, 255), 4)),
-             mk.box("Screen", (0.6, 0.05, 0.3), (0, -0.44, 3.62), rot=(-30, 0, 0), mat=pk.glow("TG_Screen", (120, 220, 255), 3)),
-             mk.box("Arrow", (0.5, 0.05, 0.4), (0, -2.81, 2.6), mat=pk.glow("TG_Green", (80, 255, 150), 4)),
-             mk.box("NoEntry", (0.5, 0.05, 0.4), (0, 2.81, 2.6), mat=pk.glow("TG_Red", (255, 60, 60), 4))]
+        x = sx * 1.1
+        parts += [
+            # Brushed steel down the side, in two panels, the sensor windows in a row, the bumper under them.
+            mk.box("SidePanel", (0.03, 2.05, 1.5), (x + sx * 0.005, -1.06, 1.85), mat=steel, bevel=0.01),
+            mk.box("SidePanel", (0.03, 2.05, 1.5), (x + sx * 0.005, 1.06, 1.85), mat=steel, bevel=0.01),
+            mk.box("Bumper", (0.07, 4.7, 0.16), (x + sx * 0.02, 0, 0.62), mat=rubber, bevel=0.02),
+            mk.box("Kick", (0.04, 4.7, 0.42), (x + sx * 0.005, 0, 0.32), mat=dark),
+            # The lane's reader on its raised pad, the slot and the return in their chrome lips.
+            pk.rounded("ReaderPad", (0.82, 0.92, 0.1), (sx * 0.58, -1.75, 3.31), dark, r=0.03, rot=(-8, 0, 0)),
+            mk.box("Slot", (0.56, 0.18, 0.04), (sx * 0.58, -0.45, 3.3), mat=chrome, bevel=0.01),
+            mk.box("SlotMouth", (0.4, 0.04, 0.02), (sx * 0.58, -0.45, 3.325), mat=ink),
+            mk.box("Return", (0.56, 0.24, 0.04), (sx * 0.58, 1.55, 3.3), mat=chrome, bevel=0.01),
+            mk.box("ReturnMouth", (0.4, 0.1, 0.02), (sx * 0.58, 1.55, 3.325), mat=ink),
+            # The flap standing out into the lane, on its hub.
+            pk.rounded("Flap", (0.3, 0.86, 1.02), (sx * 1.24, 0.35, 2.25), flap, r=0.05),
+            mk.box("FlapHub", (0.08, 0.3, 1.14), (sx * 1.13, 0.35, 2.25), mat=dark, bevel=0.02),
+        ]
+        for y in (-1.6, -0.6, 0.6, 1.6):
+            parts.append(mk.box("Sensor", (0.02, 0.32, 0.14), (x + sx * 0.022, y, 2.3), mat=sensor, bevel=0.01))
+    # The ends: a dark cap panel on each, the arrow's lamp housing on it.
+    for sy in (-1, 1):
+        parts.append(mk.box("EndCap", (1.7, 0.04, 2.2), (0, sy * 2.505, 1.75), mat=dark, bevel=0.01))
+    parts += pk.label("IC", "IC", 0.22, (0, -2.53, 1.9), pk.plastic("TG_White", (240, 240, 236)))
+    glows = []
+    for sx in (-1, 1):
+        glows += [mk.box("Reader", (0.6, 0.66, 0.02), (sx * 0.58, -1.75, 3.37), rot=(-8, 0, 0),
+                         mat=pk.glow("TG_Reader", (80, 170, 255), 3)),
+                  mk.box("Guide", (0.02, 4.6, 0.05), (sx * 1.18, 0, 3.12), mat=pk.glow("TG_Guide", (80, 170, 255), 2))]
+    glows += [mk.box("Screen", (0.42, 0.02, 0.15), (0, -1.205, 3.37), rot=(-14, 0, 0),
+                     mat=pk.glow("TG_Screen", (120, 220, 255), 3)),
+              mk.box("Arrow", (0.5, 0.03, 0.34), (0, -2.535, 2.55), mat=pk.glow("TG_Green", (90, 255, 170), 4)),
+              mk.box("NoEntry", (0.5, 0.03, 0.14), (0, 2.535, 2.55), mat=pk.glow("TG_Red", (255, 60, 60), 4))]
     return parts, glows
 
 
