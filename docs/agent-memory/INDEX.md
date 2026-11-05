@@ -32,3 +32,4 @@
 - [Tiny parts bake colour](tiny-parts-bake-colour.md) — small separate parts could bake a random colour; _snap_slivers fixed it 2026-11-04 for new bakes only
 - [check_v2 needs a venue export](check-v2-needs-venue-export.md) — the sidecar is gitignored; a fresh worktree exports first, and the re-export's binaries stay out of the commit
 - [Skyline facades](skyline-facades.md) — the far city of Agency/Campus/Tokyo is maps/skyline.block in four night facade textures; lit windows over the glass; tune lit/most/detail within the triangle budgets
+- [Agency interiors](agency-interiors-2026-11.md) — security, observation, director, lounge dressed 2026-11-05 (v29): rugs.lay, framed prints (PrintsAgency), dados with stiles, fit.coffers, towers on skyline.block(eye=); zfight/stretch traps

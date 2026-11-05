@@ -12,7 +12,7 @@ as flat quads; long strips are cut into pieces so no mesh grows past a Roblox pa
 import math
 import random
 
-from maps import buildings, city, skyline
+from maps import city, skyline
 from maps import geo2d as g2
 from maps.venues.agency import plan as P
 
@@ -41,6 +41,7 @@ CLADS = ("CityFacade", "CityFacadeWarm", "CityFacade", "CityRoof")
 # building shows (a triangle budget: the scene is near its limit).
 STYLES = ("NightOffice", "NightOffice", "NightTile", "NightBrick", "NightFlats")
 MOST_LIT = 9
+NEAR_LIT = 40  # (the towers round the Agency's: near enough that a lit window reads one by one)
 
 
 def cuts(a, b, step=PIECE):
@@ -129,31 +130,13 @@ def block(s, rng, x0, z0, x1, z1, floors, lit, clad=None):
 
 
 def tower(s, rng, x0, z0, x1, z1, floors, lit):
-    """A tall neighbour, near enough to show its windows one by one on the floors at eye level
-    (lit bands lower down, seen from far above). Returns its roof height."""
-    top = GY + buildings.height(floors)
-    for a, b, out in faces_of(x0, z0, x1, z1):
-        city.vquad(s, "CityFacade", a, b, GY, top + 1.5, out)
-        length = math.dist(a, b)
-        d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
-        spans = buildings.bays(length, 6.0)
-        for level in buildings.floor_levels(floors):
-            if GY + level < -140:
-                if rng.random() < lit:
-                    p = (a[0] + out[0] * 0.08, a[1] + out[1] * 0.08)
-                    q = (b[0] + out[0] * 0.08, b[1] + out[1] * 0.08)
-                    city.vquad(s, "WindowCool", p, q, GY + level + 3.2, GY + level + 9.0, out)
-                continue
-            for u0, u1 in spans:
-                if rng.random() > lit:
-                    continue
-                m = (u0 + u1) / 2
-                p = (a[0] + d[0] * (m - 2.0) + out[0] * 0.08, a[1] + d[1] * (m - 2.0) + out[1] * 0.08)
-                q = (a[0] + d[0] * (m + 2.0) + out[0] * 0.08, a[1] + d[1] * (m + 2.0) + out[1] * 0.08)
-                city.vquad(s, "WindowLit" if rng.random() < 0.6 else "WindowCool", p, q, GY + level + 3.0,
-                           GY + level + 9.4, out)
-    flat(s, "CityRoof", x0, z0, x1, z1, top + 1.5)
-    return top
+    """A tall neighbour in an office tower's night facade (maps/skyline.py), its lit windows glows over the glass, as
+    the far city's are (it drew a quad per lit window and none of the glass). Returns its roof's height, under the
+    crown its caller puts on it."""
+    poly = [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
+    return skyline.block(s, poly, floors, random.Random(rng.random()), y=GY, lit=lit, styles=("NightOffice", "NightTile"),
+                         detail=0, roof_mat="CityRoof", most=NEAR_LIT, setback=False,
+                         eye=P.L1)
 
 
 def blocks(s, rng):

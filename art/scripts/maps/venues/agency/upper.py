@@ -6,7 +6,7 @@ office and the training room.
 As on 38F, every station keeps a clear square in front of it and its screen in view; sheets rest on
 tables built with the scene."""
 
-from maps import city, kit, lightbook
+from maps import city, kit, lightbook, rugs
 from maps import geo2d as g2
 from maps.venues.agency import fit
 from maps.venues.agency import plan as P
@@ -163,8 +163,11 @@ def canteen(s):
     # (solid where the corridor's mouth wall meets it, at z -6: a pane ran through that wall)
     fit.partition(s, (50.0, -48.0), (50.0, 16.3), Y, C, "PlasterLight", "PlasterGrey", doors=[(18.0, 5.0), (54.0, 5.0)],
                   glass="clear", spans=[(0.6, 15.0), (21.0, 40.5), (43.5, 51.0), (57.0, 63.7)])
-    fit.partition(s, (50.3, 16.0), (100.0, 16.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(4.7, 4.4)],
-                  glass="frosted", spans=[(10.1, 49.1)])
+    # (In two: the deck's short stretch with the canteen's door, then the director's office, its side in damask like
+    # the office's west wall.)
+    fit.partition(s, (50.3, 16.0), (60.0, 16.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(4.7, 4.4)])
+    fit.partition(s, (60.0, 16.0), (100.0, 16.0), Y, C, "PlasterLight", "Damask", glass="frosted", spans=[(0.4, 39.4)],
+                  core="PlasterLight")
     prop(s, "MealTicketMachine", 53.2, -45.6, 180)
     top = fit.counter(s, 70.5, -45.8, 180, 11.0, d=2.4, y=Y, top="WhiteTrim", body="WoodPanel")
     prop(s, "CoffeeMachine", 68.0, -45.9, 180, 1.0, top)
@@ -187,23 +190,35 @@ def canteen(s):
 
 
 def director(s):
-    fit.partition(s, (60.0, 16.0), (60.0, 75.0), Y, C, "WoodPanel", "PlasterGrey", doors=[(14.0, 4.4)], glass="frosted",
-                  spans=[(18.0, 52.0)])
+    # The west wall: dark red damask over walnut panelling, the frosted glass onto the deck through it.
+    fit.partition(s, (60.0, 16.0), (60.0, 75.0), Y, C, "Damask", "PlasterGrey", doors=[(14.0, 4.4)], glass="frosted",
+                  spans=[(18.0, 52.0)], core="WoodPanel", dado_n=("WoodPanel", "Wood", 3.2))
     prop(s, "ExecutiveDesk", 80.0, 34.0, 0)
     s.light("point", (82.3, Y + 4.2, 33.7), fit.LAMP, 14, 0.9)  # the desk's lamp
     prop(s, "OfficeChair", 80.0, 37.3, 0)
     for x in (77.5, 82.5):
         prop(s, "Chair", x, 29.4, 180)
-    for k in range(10):
-        prop(s, "Bookshelf", 63.0 + k * 3.3, 17.3, 180)
+    rugs.lay(s, 80.0, 34.15, 16.0, 13.5, 0, Y)
+    # Walnut bookcases along the north wall (steel archive racks stood here), the globe by the desk.
+    for k in range(7):
+        prop(s, "BookcaseTall", 63.4 + k * 4.6, 17.4, 180)
+    prop(s, "FloorGlobe", 88.5, 28.0, -30)
+    # The sofa corner by the south glass: the sofa faces the low table across a rug, the city beyond it; the drinks
+    # trolley at its end, the credenza on the panelled wall.
     top = fit.table(s, 66.0, 62.0, 4.0, 2.6, 45, Y, top="WoodPanel")
     s.sheet(66.0, top, 62.0)
-    prop(s, "Sofa", 70.0, 52.0, -135)
+    prop(s, "Sofa", 64.6, 57.05, -135)
+    rugs.lay(s, 66.2, 59.2, 9.0, 7.0, 45, Y)
+    prop(s, "DrinksTrolley", 62.1, 49.0, -90)
+    prop(s, "Sideboard", 61.9, 40.0, -90)
     prop(s, "Plant", 61.9, 68.5, 0)
     prop(s, "Plant", 97.0, 19.5, 0)
     prop(s, "CoatStand", 62.8, 21.5, 0)
-    kit.picture(s, 60.35, Y + 7.6, 23.0, -90, 4.0, 3.0, "Wood", "Paper")
-    for x, z in ((80.0, 32.0), (68.0, 56.0), (90.0, 46.0)):  # over the desk, the sofa corner, the window side
+    fit.framed(s, 60.3, Y + 7.4, 24.4, -90, 2.4, 2, "Wood", 0.25)  # Kagegaoka at night
+    # A coffered ceiling, its cells round the downlights: over the desk, the sofa corner, the window side.
+    fit.coffers(s, P.ROOMS_L2["director"], C - 0.06, (70.0, 78.0, 86.0, 94.0), (22.0, 30.0, 38.0, 46.0, 54.0, 62.0, 70.0),
+                (0.3, 1.0, 1.0, 0.3))
+    for x, z in ((82.0, 34.0), (65.5, 58.0), (88.0, 40.0)):
         fit.downlight(s, x, z, C, range_=16, brightness=0.95)
     fit.plaque(s, 59.7, Y + 10.6, 27.0, 90, 5.0, 0.9, "局長室 DIRECTOR")
 

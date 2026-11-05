@@ -114,10 +114,12 @@ def roof_things(s, rng, poly, top, roof_mat, detail):
 
 
 def block(s, poly, floors, rng, *, y=0.0, lit=0.3, style=None, styles=None, detail=1, roof_mat="ConcreteDark",
-          most=None, setback=True):
+          most=None, setback=True, eye=None):
     """A building beyond the map on footprint poly [(x, z)], floors high from y. detail 0: walls, glows and roof
     only (the far skyline); 1: a cornice and a lift room; 2: also a water tank and plant (blocks people look at
-    across a street). A tall block (16 floors and more) may step back for its top third. Returns the roof's height."""
+    across a street). A tall block (16 floors and more) may step back for its top third. eye: the height players see
+    it from, when `most` should go mostly to the floors from 120 studs under it up (a tower beside a high office).
+    Returns the roof's height."""
     style = style or rng.choice(styles or list(STYLES))
     top = y + buildings.height(floors)
     levels = [y + level for level in buildings.floor_levels(floors)]
@@ -145,7 +147,15 @@ def block(s, poly, floors, rng, *, y=0.0, lit=0.3, style=None, styles=None, deta
                     y1 + (2.1 if last else 0.7), top=last and roof_mat != "Snow")
     # Past `most` glows (the scene's triangles), a fair pick of them: all over the building, not its lowest floors.
     if most is not None and len(glows) > most:
-        glows = rng.sample(glows, most)
+        if eye is None:
+            glows = rng.sample(glows, most)
+        else:
+            # (three quarters of them on the floors seen face on, the rest anywhere below, so it still reads lit from
+            # the street's side too)
+            near = [g for g in glows if g[4] >= eye - 120.0]
+            rest = [g for g in glows if g[4] < eye - 120.0]
+            take = min(len(near), round(most * 0.75))
+            glows = rng.sample(near, take) + rng.sample(rest, min(len(rest), most - take))
     for mat, e, u0, u1, g0, g1 in glows:
         e.quad(s, mat, u0, u1, g0, g1, 0.06)
     final = parts[-1][0]

@@ -8,7 +8,7 @@ Every station keeps a clear square in front of it and its screen in view of its 
 on tables built with the scene. Walls run so their "n" side is north (walls running east) or east
 (walls running south)."""
 
-from maps import city, kit, lightbook
+from maps import city, kit, lightbook, rugs
 from maps import geo2d as g2
 from maps.venues.agency import fit
 from maps.venues.agency import plan as P
@@ -42,11 +42,37 @@ def floors(s):
 
 
 def security(s):
-    # The south wall onto the bullpen (its blinds shut) with the door; the wall to the observation
-    # room with the staff door; a wall of monitors on that wall's west face.
+    # The south wall onto the bullpen (its blinds shut) with the door, solid at its east end where the roster and the
+    # key cabinet hang; the wall to the observation room with the staff door; a wall of monitors on that wall's west
+    # face. Both painted dark below a rail, as institutions paint the part that gets kicked.
     fit.partition(s, (-100.0, -48.0), (-58.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(14.0, 5.0)],
-                  glass="blinds")
-    fit.partition(s, (-58.0, -75.0), (-58.0, -48.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(23.0, 4.2)])
+                  glass="blinds", spans=[(0.6, 10.7), (19.6, 29.0)], dado_n=("PlasterDark", "BlackTrim"))
+    fit.framed(s, -82.0, 6.4, -48.3, 0, 1.5, 4, "BlackTrim", 0.12)  # the floor's evacuation plan, by the door
+    fit.partition(s, (-58.0, -75.0), (-58.0, -48.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(23.0, 4.2)],
+                  dado_n=("WoodPanel", "BlackTrim", 3.0), dado_s=("PlasterDark", "BlackTrim"))
+    # A bulkhead over the monitor wall, carrying their cables (the room's ceiling lights stand clear of it, at x -79).
+    s.box("PlasterGrey", (-60.3, C - 0.8, -61.35), (4.0, 1.6, 26.1), skip=("+y",))
+    s.box("BlackTrim", (-62.33, C - 1.6, -61.35), (0.1, 0.16, 26.1))  # (its foot 0.08 under the soffit's)
+    # The anti-fatigue mat the night shift stands on at the monitors.
+    s.box("Rubber", (-63.9, 0.02, -66.5), (3.9, 0.04, 12.4), skip=("-y",))
+    # The east end of the south wall: the shift roster on a cork board, the key cabinet, the clock over them, and the
+    # radio desk under them.
+    s.prop("PinBoard", -66.0, -48.45, 0, 1.0, 5.6)
+    s.box("DarkMetal", (-61.4, 6.6, -48.52), (2.6, 3.4, 0.4))
+    s.box("BlackTrim", (-61.4, 6.6, -48.73), (2.3, 3.1, 0.03))
+    for row in range(3):
+        for col in range(4):
+            s.box("Brass", (-62.3 + col * 0.6, 7.6 - row * 0.95, -48.8), (0.08, 0.32, 0.08))
+    s.sign((-61.4, 5.2, -48.76), 0, 2.2, 0.45, "鍵 KEYS", "GothamBold", (220, 220, 225), None)
+    s.prop("WallClock", -64.0, -48.6, 0, 0.7, 10.1)
+    top = fit.table(s, -66.5, -49.7, 5.0, 2.2, 0, Y, top="Wood")
+    s.prop("Radio", -67.9, -49.6, 0, 1.0, top)
+    s.prop("DeskPhone", -65.1, -49.9, 20, 1.0, top)
+    s.prop("Chair", -66.5, -51.9, 180)
+    # A camera dome in the corner over the staff door: the security office watches itself too.
+    s.box("BlackMetal", (-59.2, C - 0.08, -50.2), (0.9, 0.16, 0.9))
+    s.lathe("GlassDark", (-59.2, C - 0.6, -50.2), [(0.0, 0.0), (0.26, 0.08), (0.36, 0.25), (0.38, 0.44)], 10,
+            caps=(False, True))
     s.station("Camera", "CCTV Wall", -80.0, -71.2, 180, prop="StationCRTBank")
     x = -58.3  # the wall's west face
     s.box("BlackMetal", (x - 0.4, 7.4, -66.5), (0.8, 6.8, 12.8))
@@ -68,6 +94,14 @@ def security(s):
     # glass, it stood in a pane.)
     s.box("DarkMetal", (-59.45, 3.6, -57.1), (2.2, 7.2, 5.0), collide=True)
     s.box("BlackTrim", (-60.6, 3.6, -57.1), (0.05, 6.6, 0.1))
+    # (its two leaves: handles either side of the meeting line, louvres at the top, a stencilled plate, a plinth)
+    for dz in (-0.35, 0.35):
+        s.box("Steel", (-60.62, 3.8, -57.1 + dz), (0.08, 0.9, 0.1))
+    for k in range(3):
+        for dz in (-1.3, 1.3):
+            s.box("BlackTrim", (-60.58, 6.3 + k * 0.3, -57.1 + dz), (0.03, 0.08, 1.6), skip=("+x",))
+    s.sign((-60.64, 5.0, -57.1), -90, 3.0, 0.45, "武器庫 ARMOURY", "GothamBlack", (210, 200, 160), None)
+    s.box("BlackTrim", (-59.45, 0.12, -57.1), (2.3, 0.24, 5.1))
     fit.desk(s, -84.0, -57.0, 90, Y)
     s.prop("CoatStand", -62.5, -51.5, 0)
     # Panels over the CCTV desk (a tired one) and the duty desk; the monitors light the rest.
@@ -78,9 +112,18 @@ def security(s):
 
 def observation(s):
     # The one-way mirror onto interview 1 (dark glass: it stops a flash either way).
+    # (Walnut panelling up to a rail on the room's three walls; the mirror's sill at 3.2 keeps its casing clear of it.)
     fit.partition(s, (-44.0, -75.0), (-44.0, -48.0), Y, C, "PlasterDark", "PlasterDark", glass="mirror",
-                  spans=[(3.0, 14.5)], sill=3.0, head=9.0)
-    fit.partition(s, (-58.0, -48.0), (-44.0, -48.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(7.0, 4.4)])
+                  spans=[(3.0, 14.5)], sill=3.2, head=9.0, dado_s=("WoodPanel", "BlackTrim", 3.0))
+    fit.partition(s, (-58.0, -48.0), (-44.0, -48.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(7.0, 4.4)],
+                  dado_n=("WoodPanel", "BlackTrim", 3.0))
+    # Padded leather over the panelling on the west wall, in squares, so nothing said here carries through to the
+    # interview room. (Over the filing cabinet's top, 5.0, and clear of the staff door, z -54.1 to -49.9.)
+    for y in (6.45, 8.95):
+        for z in (-71.9, -69.4, -66.9, -64.4, -61.9, -59.4, -56.9):
+            s.box("Leather", (-57.56, y, z), (0.2, 2.3, 2.3), skip=("-x",))
+    fit.framed(s, -55.4, 5.6, -48.3, 0, 1.5, 5, "BlackTrim", 0.12)  # "quiet: do not come in while recording"
+    s.prop("WallClock", -44.6, -54.5, 90, 0.6, 7.6)  # (on the mirror's wall, past the glass)
     s.station("Phone", "Wiretap Console", -47.8, -66.0, 90, prop="StationReelToReel")
     s.prop("Chair", -54.5, -71.5, -90)
     top = fit.table(s, -55.8, -57.6, 3.0, 2.2, 90, Y)
@@ -201,7 +244,8 @@ def night_desk(s):
     # (solid where the corridor's mouth wall meets it, at z -6: a pane ran through that wall)
     fit.partition(s, (50.0, -40.0), (50.0, 16.3), Y, C, "PlasterGrey", "PlasterGrey", doors=[(20.0, 5.0), (48.0, 5.0)],
                   glass="clear", spans=[(0.6, 17.0), (23.0, 32.5), (35.5, 45.0), (51.0, 55.7)])
-    fit.partition(s, (50.3, 16.0), (100.0, 16.0), Y, C, "PlasterGrey", "PlasterLight", doors=[(37.7, 5.0)])
+    fit.partition(s, (50.3, 16.0), (100.0, 16.0), Y, C, "PlasterGrey", "PlasterLight", doors=[(37.7, 5.0)],
+                  dado_s=("WoodPanel", "Wood", 3.0))  # (the lounge's side)
     s.station("Phone", "Call Log Desk", 88.0, -29.0, 0, prop="StationPhoneDesk")
     kit.column_square(s, 75.0, -12.0, C, 2.4, "PlasterLight", trim="BlackTrim")
     for x, z, rot in ((62.0, -30.0, 0), (62.0, -14.0, 0), (88.0, -8.0, 90), (62.0, 2.0, 0)):
@@ -250,16 +294,18 @@ def lobby(s):
         s.prop("Planter", 48.4, z, -90)
     s.tip_box(48.3, 26.0, 90)
     # The sign wall facing the lifts, the Agency's name on it; the news over it.
-    fit.partition(s, (0.0, 44.0), (34.0, 44.0), Y, C, "WoodPanel", "PlasterGrey", trim=False)
+    fit.partition(s, (0.0, 44.0), (34.0, 44.0), Y, C, "WoodPanel", "PlasterGrey", trim=False,
+                  dado_s=("WoodPanel", "Wood", 3.0))
     # Walls wherever the lobby's marble meets another floor (the owner, 2026-11-01: the lounge lay open to it on two
     # sides and the corridor's mouths too, so the bell and the planters stood against nothing). Glass onto the lounge,
     # a doorway in each.
+    lounge_dado = ("WoodPanel", "Wood", 3.0)
     fit.partition(s, (-16.0, 44.0), (0.0, 44.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(8.0, 5.0)],
-                  glass="clear")
+                  glass="clear", dado_s=lounge_dado)
     fit.partition(s, (34.0, 44.0), (50.0, 44.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(8.0, 5.0)],
-                  glass="clear")
+                  glass="clear", dado_s=lounge_dado)
     fit.partition(s, (50.0, 16.3), (50.0, 44.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(23.2, 5.0)],
-                  glass="clear", spans=[(0.8, 6.5), (12.0, 19.5)])  # (solid behind the bell, at 9.7)
+                  glass="clear", spans=[(0.8, 6.5), (12.0, 19.5)], dado_n=lounge_dado)  # (solid behind the bell, at 9.7)
     for x0, x1 in ((-16.0, -8.0), (42.0, 50.0)):
         fit.partition(s, (x0, -6.0), (x1, -6.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(4.0, 5.0)])
     s.sign((17.0, 8.6, 43.62), 0, 20.0, 2.2, "THE BUREAU", "GothamBlack", (236, 226, 196), None, (255, 220, 170))
@@ -277,17 +323,28 @@ def lobby(s):
 
 def lounge(s):
     fit.partition(s, (-16.0, 44.0), (-16.0, 75.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(16.0, 5.0)], glass="clear",
-                  spans=[(0.6, 12.8), (19.2, 30.4)])
-    # Commendations along the sign wall's back; sofas facing the glass with low tables.
-    for x in (6.0, 13.0, 21.0, 28.0):
+                  spans=[(0.6, 12.8), (19.2, 30.4)], dado_n=("WoodPanel", "Wood", 3.0))
+    # The wall of honour along the sign wall's back: its name in brass over the citations and prints framed above the
+    # cases.
+    s.box("Brass", (17.0, 9.15, 44.36), (24.0, 0.08, 0.05))
+    s.sign((17.0, 9.85, 44.38), 180, 22.0, 1.0, "名誉の壁   WALL OF HONOUR", "GothamBold", (196, 170, 112), None)
+    for x, left, right in ((6.0, 0, 1), (13.0, 1, 2), (21.0, 0, 3), (28.0, 1, 0)):
         s.prop("DisplayCase", x, 45.8, 180)
-    for x in (-4.0, 14.0, 32.0):
+        fit.framed(s, x - 1.45, 6.5, 44.3, 180, 1.8, left, "Wood" if left in (0, 1) else "BlackTrim")
+        fit.framed(s, x + 1.45, 6.5, 44.3, 180, 1.8, right, "Wood" if right in (0, 1) else "BlackTrim")
+    # Sofas facing the glass with low tables, each group on its own rug.
+    for x, field in ((-4.0, "RugField"), (14.0, "RugFieldNavy"), (32.0, "RugField")):
         s.prop("Sofa", x, 65.5, 180)
         fit.table(s, x, 70.3, 4.0, 2.4, 0, Y, top="MarbleBlack", h=1.6)
+        rugs.lay(s, x, 68.4, 9.0, 7.0, 0, Y, field)
     s.sheet(14.0, 1.65, 70.3, spare=True)
     s.prop("Sofa", 70.0, 30.0, 90)
     fit.table(s, 64.5, 30.0, 3.0, 4.0, 0, Y, top="MarbleBlack", h=1.6)
+    rugs.lay(s, 66.5, 30.0, 11.0, 10.0, 0, Y)
     s.prop("Sofa", 74.0, 50.0, -135)
+    rugs.lay(s, 75.4, 51.4, 10.0, 7.0, 45, Y, "RugFieldNavy")
+    for cx in (5.0, 25.0):  # (the armchair corners: clutter.lower)
+        rugs.lay(s, cx, 55.0, 10.0, 7.0, 0, Y, "RugFieldNavy")
     for x, z in ((-13.0, 72.0), (44.0, 72.0), (53.0, 19.0), (96.0, 19.5), (57.0, 70.0)):
         s.prop("Plant", x, z, (x * 7) % 360)
     s.prop("CoatStand", 47.0, 47.5, 0)
@@ -296,10 +353,17 @@ def lounge(s):
     s.prop("CoffeeMachine", 68.0, 17.3, 180, 1.0, top)
     for x in (66.5, 70.0, 73.5, 77.0):
         s.prop("BarStool", x, 20.4, 0)
-    s.polygon("FabricRed", [(60.0, 0.08, 36.0), (74.0, 0.08, 36.0), (74.0, 0.08, 24.0), (60.0, 0.08, 24.0)])
-    s.polygon("Fabric", [(66.0, 0.08, 56.0), (80.0, 0.08, 56.0), (80.0, 0.08, 44.0), (66.0, 0.08, 44.0)])
-    # A downlight over each sofa group (the glass and the city light the rest).
-    for x, z in ((-4.0, 66.0), (14.0, 66.0), (32.0, 66.0), (66.0, 30.0), (72.0, 50.0), (88.0, 26.0)):
+    # Over the bar, a board of what it serves; city photographs along the wall beside it.
+    s.box("BlackTrim", (72.0, 7.4, 16.36), (6.4, 2.2, 0.12))
+    s.sign((72.0, 7.4, 16.44), 180, 6.0, 1.8, "珈琲  COFFEE\n煎茶  TEA", "GothamBold", (226, 214, 186), None)
+    for x, index in ((55.5, 2), (59.5, 3), (94.0, 2)):
+        fit.framed(s, x, 6.6, 16.3, 180, 2.2, index, "BlackTrim")
+    s.prop("WallClock", 82.0, 16.6, 180, 0.7, 7.6)
+    # A coffered ceiling, walnut beams 9 studs apart, a downlight in the cell over each sofa group (the glass and the
+    # city light the rest).
+    fit.coffers(s, P.LOUNGE, C - 0.06, [-8.5 + 9.0 * k for k in range(13)], [25.5 + 9.0 * k for k in range(6)],
+                (0.3, 0.3, 0.3, 1.0, 1.0, 1.0, 0.3))
+    for x, z in ((-4.0, 66.0), (14.0, 66.0), (32.0, 66.0), (66.0, 30.0), (77.0, 48.0), (86.0, 21.0)):
         fit.downlight(s, x, z, C, range_=16, brightness=0.95)
     s.sound("mapRainGlass", (30.0, 6.0, 72.0), 50.0, 0.25)
 

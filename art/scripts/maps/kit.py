@@ -144,6 +144,18 @@ def trims(s, a, t, outward, spans, height, spec, base=0.0):
             rail = spec.get("rail", "Wood")
             s.sweep(rail, add(p0, (0, top, 0)), add(p1, (0, top, 0)),
                     [(o + 0.08, h) for o, h in CHAIR_RAIL], outward)
+            if spec.get("stiles"):
+                # Panelling: upright stiles on the wainscot between the skirting and the rail, one at each end of the
+                # run and the rest evenly between, about `stiles` studs apart.
+                count = max(1, round((u1 - u0) / spec["stiles"]))
+                low, high = BASEBOARD[-1][1], top - CHAIR_RAIL[-1][1]
+                for k in range(count + 1):
+                    u = min(max(u0 + (u1 - u0) * k / count, u0 + 0.1), u1 - 0.1)
+                    # (A hair off the wainscot's face, so its back never lies in that face's plane, and only 0.02 proud
+                    # of it: where a wall meets a curtain wall, the broad mullion's side lies 0.15 out from the wall's
+                    # face, and a stile's face there flickered with it. Top and foot hide under the rail and skirting.)
+                    c = add(point_on(a, t, u, base + (low + high) / 2), scale(outward, 0.085 + 0.01))
+                    s.box(rail, c, (0.2, high - low, 0.02), math.degrees(math.atan2(-t[2], t[0])), skip=("+y", "-y"))
         if spec.get("base"):
             s.sweep(spec["base"], p0, p1, [(o + (0.08 if spec.get("wainscot") else 0), h) for o, h in BASEBOARD],
                     outward)

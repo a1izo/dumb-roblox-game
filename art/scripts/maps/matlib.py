@@ -106,7 +106,8 @@ FLAT = {
 
 
 # Printed sheets (maps/prints.py): one picture a map shows a poster at a time, never as a repeat.
-SHEETS = {"PrintsTokyo": "PrintsTokyo.png", "PrintsCampus": "PrintsCampus.png", "GrimeWall": "GrimeWall.png",
+SHEETS = {"PrintsTokyo": "PrintsTokyo.png", "PrintsCampus": "PrintsCampus.png", "PrintsAgency": "PrintsAgency.png",
+          "GrimeWall": "GrimeWall.png",
           "ScratchNames": "ScratchNames.png"}
 
 # Sheets whose alpha channel is their shape (maps/grime.py): the game shows them with the surface's
@@ -137,6 +138,7 @@ FALLBACK_KIND = [
     ("RockGrey", "Rock"),
     ("Parquet", "WoodPlanks"),
     ("Damask", "Fabric"),
+    ("Rug", "Fabric"),
     ("Snow", "Snow"),
     ("Ice", "Ice"),
     ("Shutter", "CorrodedMetal"),

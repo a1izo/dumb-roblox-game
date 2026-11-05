@@ -52,10 +52,12 @@ def reset():
 
 
 def partition(s, a, b, y0, y1, mat_n="PlasterGrey", mat_s="PlasterGrey", doors=(), glass=None, spans=None,
-              sill=3.2, head=9.4, thick=0.6, trim=True, core=None):
+              sill=3.2, head=9.4, thick=0.6, trim=True, core=None, dado_n=None, dado_s=None):
     """An inner wall from a to b (x, z) between floor y0 and ceiling y1. doors: [(distance from a
     to the door's middle, width)]. glass: a GLASS kind for windows along the wall above waist
-    height, all along it between the doors, or only over spans [(u0, u1)] when given."""
+    height, all along it between the doors, or only over spans [(u0, u1)] when given.
+    dado_n / dado_s: the lower wall of that side in another finish up to a rail, (material, rail material[,
+    stiles every so many studs]): two-tone paint, or panelling when stiles are given."""
     JOINS.append((tuple(a), tuple(b), thick))
     length = math.dist(a, b)
     ops = []
@@ -79,9 +81,23 @@ def partition(s, a, b, y0, y1, mat_n="PlasterGrey", mat_s="PlasterGrey", doors=(
                         "rows": 1, "glass": pane, "blinds": blinds, "blinds_side": 1, "slat": "CreamTrim",
                         "sill": "BlackMetal", "casing": 0.2, "see_through": through})
     trims = {"base": "BlackTrim", "grime": True} if trim else None
+
+    def dado(spec):
+        if not spec:
+            return trims
+        # (A side with a dado always has its skirting, even on a wall otherwise left bare.)
+        out = dict(trims or {"base": "BlackTrim", "grime": True}, wainscot=(spec[0], DADO_H), rail=spec[1])
+        if len(spec) > 2:
+            out["stiles"] = spec[2]
+        return out
+
     # (Up to the ceiling: no top, which only lay over other walls' tops above it and flickered with them.)
     kit.wall(s, a, b, y1, thick=thick, base=y0, core=core or mat_n, side_n=mat_n, side_s=mat_s, openings=ops,
-             trim_n=trims, trim_s=trims, covered=True)
+             trim_n=dado(dado_n), trim_s=dado(dado_s), covered=True)
+
+
+# A dado's rail: under a glass partition's sill (3.2) and its casings (from 3.0), clear of both.
+DADO_H = 2.8
 
 
 def closed_door(s, x, z, rot, y=0.0, w=4.0, leaf="WoodPanel", sign=None):
@@ -98,6 +114,23 @@ def closed_door(s, x, z, rot, y=0.0, w=4.0, leaf="WoodPanel", sign=None):
         s.box("BlackTrim", (x + p[0], y + DOOR_H + 1.0, z + p[1]), (w * 0.8, 0.8, 0.06), rot)
         q = turn(rot, 0, -0.3)
         s.sign((x + q[0], y + DOOR_H + 1.0, z + q[1]), rot, w * 0.75, 0.7, sign, "GothamBold", (230, 230, 230), None)
+
+
+def framed(s, x, y, z, rot, w, index, frame="Wood", border=0.18):
+    """A framed print from the Agency's sheet (maps/prints.py: 0 and 1 citations, 2 the city at night, 3 the tower's
+    blueprint, 4 the evacuation plan, 5 the recording notice) on a wall face: x, z at the face, y its middle, rot
+    facing out of the wall, w the print's width (its height is a sheet of paper's, 1.414 times that)."""
+    from maps import prints  # (it needs Blender to draw the sheet; the checks import this module without it)
+
+    h = w * prints.TALL
+    c = turn(rot, 0, -0.07)
+    s.box(frame, (x + c[0], y, z + c[1]), (w + border * 2, h + border * 2, 0.14), rot, skip=("+z",))
+    out = turn(rot, 0, -1)
+    right = turn(rot, 1, 0)
+    f = turn(rot, 0, -0.18)  # (0.04 proud of the frame's face: closer, the two flickered)
+    a = (x + f[0] - right[0] * w / 2, z + f[1] - right[1] * w / 2)
+    b = (x + f[0] + right[0] * w / 2, z + f[1] + right[1] * w / 2)
+    prints.paste(s, "Agency", a, b, y - h / 2, y + h / 2, out, index)
 
 
 def plaque(s, x, y, z, rot, w, h, text, fg=(236, 232, 220), bg=(24, 24, 28), glow=None):
@@ -357,6 +390,69 @@ def floor_faces(s, poly, y, mat, holes=()):
     for piece in pieces:
         if abs(g2.area(piece)) > 0.05:
             city.up_face(s, mat, piece, y)
+
+
+def _offset_poly(poly, insets):
+    """The polygon with each edge moved in by its own inset (poly counter-clockwise in the math plane)."""
+    n = len(poly)
+    lines = []
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        length = math.dist(a, b)
+        d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+        inward = (-d[1], d[0])
+        lines.append(((a[0] + inward[0] * insets[i], a[1] + inward[1] * insets[i]), d))
+    out = []
+    for i in range(n):
+        (p, d), (q, e) = lines[i - 1], lines[i]
+        den = d[0] * e[1] - d[1] * e[0]
+        t = ((q[0] - p[0]) * e[1] - (q[1] - p[1]) * e[0]) / den
+        out.append((p[0] + d[0] * t, p[1] + d[1] * t))
+    return out
+
+
+def _line_spans(poly, axis, value):
+    """Where the line x = value (axis 0) or z = value (axis 1) runs inside the polygon: [(start, end)] along the
+    other axis."""
+    hits = []
+    n = len(poly)
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        if (a[axis] - value) * (b[axis] - value) < 0:
+            t = (value - a[axis]) / (b[axis] - a[axis])
+            hits.append(a[1 - axis] + (b[1 - axis] - a[1 - axis]) * t)
+    hits.sort()
+    return [(hits[k], hits[k + 1]) for k in range(0, len(hits) - 1, 2)]
+
+
+def coffers(s, poly, ceiling, xs, zs, insets, mat="WoodPanel", w=0.7, depth=0.8):
+    """A coffered ceiling under a finished one at `ceiling`: a band round the room `insets[i]` off each edge of poly
+    (a wall's face, or clear of the curtain wall's blinds and mullions), and beams across it on the lines x in xs and
+    z in zs, ending in the band. Keep the room's fittings in the cells, off the lines. The beams running along x sit
+    a hair shallower, so where two cross their undersides never lie in one plane."""
+    poly = list(poly)
+    if g2.area(poly) < 0:
+        poly.reverse()
+        insets = list(insets[-2::-1]) + [insets[-1]]  # edge i of the reversed polygon is edge n - 2 - i
+    outer = _offset_poly(poly, insets)
+    inner = _offset_poly(poly, [v + w for v in insets])
+    bottom = ceiling - depth
+    n = len(poly)
+    for i in range(n):
+        o0, o1 = outer[i], outer[(i + 1) % n]
+        i0, i1 = inner[i], inner[(i + 1) % n]
+        city.down_face(s, mat, [o0, o1, i1, i0], bottom)
+        a, b = poly[i], poly[(i + 1) % n]
+        length = math.dist(a, b)
+        inward = (-(b[1] - a[1]) / length, (b[0] - a[0]) / length)
+        city.vquad(s, mat, i0, i1, bottom, ceiling, inward)  # (its outer face looks at the wall or out of the glass)
+    for x in xs:
+        for z0, z1 in _line_spans(inner, 0, x):
+            s.box(mat, (x, ceiling - depth / 2, (z0 + z1) / 2), (w, depth, z1 - z0), skip=("+y", "+z", "-z"))
+    for z in zs:
+        for x0, x1 in _line_spans(inner, 1, z):
+            s.box(mat, ((x0 + x1) / 2, ceiling - (depth - 0.02) / 2, z), (x1 - x0, depth - 0.02, w),
+                  skip=("+y", "+x", "-x"))
 
 
 def ceiling_faces(s, poly, y, mat, holes=()):

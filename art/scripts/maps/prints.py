@@ -179,8 +179,93 @@ SHEETS = {
     ],
 }
 
-# How hard the weather has been on a venue's posters: Tokyo's hang in the street, the campus's indoors.
-WEATHER = {"Tokyo": 1.0, "Campus": 0.3}
+# The Bureau's own walls (Agency HQ): framed things, not posters. Gold where a print would have a seal (red is the
+# game's colour for danger), and no person anywhere.
+GOLD = (168, 134, 66)
+NIGHT = (22, 26, 40)
+BLUEPRINT = (34, 62, 112)
+LINE = (226, 232, 240)
+_FLOORS = [("box", 0.33, 0.24 + k * 0.055, 0.67, 0.243 + k * 0.055, LINE) for k in range(16)]
+SHEETS["Agency"] = [
+    # 0. A commendation: "Commendation. For devotion to duty, whose service has been outstanding. The Director of
+    #    the Bureau." A gold border and a gold seal.
+    dict(paper=CREAM, items=[
+        ("box", 0.05, 0.05, 0.95, 0.065, GOLD), ("box", 0.05, 1.349, 0.95, 1.364, GOLD),
+        ("box", 0.05, 0.05, 0.065, 1.364, GOLD), ("box", 0.935, 0.05, 0.95, 1.364, GOLD),
+        ("text", "表彰状", "brush", 0.2, 0.5, 1.07, INK),
+        ("text", "COMMENDATION", "caps", 0.1, 0.5, 0.94, INK),
+        ("box", 0.2, 0.9, 0.8, 0.905, INK),
+        ("text", "職務に精励し", "round", 0.065, 0.5, 0.74, INK),
+        ("text", "その功績は顕著である", "round", 0.065, 0.5, 0.63, INK),
+        ("text", "捜査局長", "round", 0.07, 0.36, 0.22, INK),
+        ("disc", 0.74, 0.25, 0.09, GOLD), ("disc", 0.74, 0.25, 0.065, (200, 166, 92)),
+    ]),
+    # 1. A letter of thanks: "Letter of thanks. For many years of service we express our deep thanks. The Bureau."
+    dict(paper=(236, 232, 220), items=[
+        ("box", 0.07, 0.07, 0.93, 0.08, INK), ("box", 0.07, 1.334, 0.93, 1.344, INK),
+        ("box", 0.07, 0.07, 0.08, 1.344, INK), ("box", 0.92, 0.07, 0.93, 1.344, INK),
+        ("text", "感謝状", "brush", 0.2, 0.5, 1.07, INK),
+        ("text", "CITATION", "caps", 0.1, 0.5, 0.94, INK),
+        ("text", "長年の功労に対し", "round", 0.065, 0.5, 0.74, INK),
+        ("text", "深く感謝の意を表します", "round", 0.06, 0.5, 0.63, INK),
+        ("text", "捜査局", "round", 0.075, 0.36, 0.22, INK),
+        ("disc", 0.74, 0.25, 0.085, GOLD), ("disc", 0.74, 0.25, 0.06, (200, 166, 92)),
+    ]),
+    # 2. Kagegaoka at night, as a print: the moon over the roofs, a few lit windows.
+    dict(paper=NIGHT, items=[
+        ("disc", 0.72, 1.12, 0.09, (226, 222, 200)),
+        ("box", 0.04, 0.22, 0.2, 0.62, (44, 48, 62)), ("box", 0.18, 0.22, 0.36, 0.86, (52, 56, 72)),
+        ("box", 0.34, 0.22, 0.5, 0.54, (40, 44, 58)), ("box", 0.48, 0.22, 0.62, 0.98, (58, 62, 78)),
+        ("box", 0.6, 0.22, 0.8, 0.7, (46, 50, 64)), ("box", 0.78, 0.22, 0.96, 0.5, (52, 56, 70)),
+        ("box", 0.53, 0.98, 0.57, 1.06, (58, 62, 78)),
+        ("box", 0.22, 0.7, 0.25, 0.73, (220, 180, 110)), ("box", 0.29, 0.58, 0.32, 0.61, (220, 180, 110)),
+        ("box", 0.52, 0.86, 0.55, 0.89, (220, 180, 110)), ("box", 0.56, 0.62, 0.59, 0.65, (190, 206, 230)),
+        ("box", 0.66, 0.46, 0.69, 0.49, (220, 180, 110)), ("box", 0.08, 0.4, 0.11, 0.43, (190, 206, 230)),
+        ("box", 0.83, 0.32, 0.86, 0.35, (220, 180, 110)),
+        ("box", 0.0, 0.0, 1.0, 0.22, (14, 16, 22)),
+        ("text", "影ヶ丘", "round", 0.075, 0.5, 0.08, (200, 196, 184)),
+    ]),
+    # 3. The tower's elevation, a blueprint: "Kagegaoka Central Tower. Elevation 1:500."
+    dict(paper=BLUEPRINT, items=_FLOORS + [
+        ("box", 0.1, 0.2, 0.9, 0.205, LINE),
+        ("box", 0.32, 0.2, 0.33, 1.15, LINE), ("box", 0.67, 0.2, 0.68, 1.15, LINE),
+        ("box", 0.32, 1.145, 0.68, 1.155, LINE), ("box", 0.45, 1.155, 0.46, 1.23, LINE),
+        ("text", "影ヶ丘セントラルタワー", "round", 0.06, 0.5, 1.28, LINE),
+        ("text", "ELEVATION 1:500", "caps", 0.07, 0.5, 0.06, LINE),
+    ]),
+    # 4. The floor's evacuation plan, hung in the security office: "Evacuation routes, 38F. You are here. Fire stair."
+    #    North up: the plate with its south-east corner cut, the core, the fire stair in its east end, and the way
+    #    there from the office in green (along the corridor north of the core, down its east leg to the door).
+    dict(paper=(232, 232, 226), items=[
+        ("box", 0.0, 1.2, 1.0, 1.414, (36, 38, 46)),
+        ("text", "避難経路図  38F", "round", 0.08, 0.5, 1.27, (232, 232, 226)),
+        ("box", 0.07, 1.08, 0.93, 1.09, INK), ("box", 0.07, 0.45, 0.08, 1.09, INK),
+        ("box", 0.07, 0.45, 0.758, 0.46, INK), ("box", 0.92, 0.621, 0.93, 1.09, INK),
+        ("tri", 0.92, 0.626, 0.93, 0.616, 0.763, 0.45, INK), ("tri", 0.92, 0.626, 0.763, 0.45, 0.753, 0.46, INK),
+        ("box", 0.466, 0.796, 0.68, 0.94, (150, 150, 146)),
+        ("box", 0.629, 0.796, 0.68, 0.94, (60, 150, 90)),
+        ("box", 0.16, 0.95, 0.71, 0.965, (60, 150, 90)), ("box", 0.695, 0.8, 0.71, 0.965, (60, 150, 90)),
+        ("tri", 0.705, 0.775, 0.705, 0.845, 0.682, 0.81, (60, 150, 90)),
+        ("disc", 0.16, 0.99, 0.028, INK),
+        ("text", "現在地", "round", 0.05, 0.19, 0.87, INK),
+        ("text", "非常階段", "round", 0.06, 0.5, 0.3, (40, 120, 70)),
+        ("text", "FIRE STAIR", "caps", 0.08, 0.5, 0.16, (40, 120, 70)),
+    ]),
+    # 5. The observation room's notice: "The Bureau. Quiet. Do not come in while recording."
+    dict(paper=(228, 228, 224), items=[
+        ("box", 0.0, 1.2, 1.0, 1.414, (36, 38, 46)),
+        ("text", "捜査局", "round", 0.1, 0.5, 1.26, (228, 228, 224)),
+        ("text", "静粛に", "brush", 0.24, 0.5, 0.86, INK),
+        ("text", "QUIET", "caps", 0.16, 0.5, 0.6, INK),
+        ("box", 0.1, 0.5, 0.9, 0.515, INK),
+        ("text", "録音中は", "round", 0.08, 0.5, 0.32, INK),
+        ("text", "入室しないこと", "round", 0.08, 0.5, 0.17, INK),
+    ]),
+]
+
+# How hard the weather has been on a venue's posters: Tokyo's hang in the street, the campus's indoors, the Bureau's
+# behind glass in frames.
+WEATHER = {"Tokyo": 1.0, "Campus": 0.3, "Agency": 0.08}
 
 
 def name(venue):

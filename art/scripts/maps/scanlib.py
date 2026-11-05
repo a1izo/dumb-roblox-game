@@ -586,6 +586,13 @@ from maps import facades  # noqa: E402
 for _name in facades.STYLES:
     LIBRARY[_name] = facades.surface(_name)
 
+# The rooms' rugs (maps/rugs.py): the border band, an ornament over the carpet scan that tiles along a rug's edge,
+# and the fields inside it.
+from maps import rugs  # noqa: E402
+
+for _name in ("RugBorder",) + tuple(rugs.FIELDS):
+    LIBRARY[_name] = rugs.surface(_name)
+
 # Surfaces drawn at twice the size the rulebook gives them (the owner, 2026-10-25: "make every texture in the game
 # more high quality"): the floors under the players' feet first, then the small trims, as many as fit in 80% of the
 # texture memory each scene had free (scripts/budget.py), Tokyo's wet streets among them. None that the Lobby shows:
