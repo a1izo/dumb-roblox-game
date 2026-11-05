@@ -194,6 +194,15 @@ def cafeteria(s):
                (255, 200, 140))
     for x, z in ((-68.0, 70.0), (-52.0, 70.0), (-68.0, 86.0), (-52.0, 86.0)):
         fit.panel(s, x, z, C, brightness=0.85, range_=20)
+    # Dark oak beams across the dining room's plaster ceiling, a lamp panel in each of the four bays and a beam along
+    # the serving counter (the Agency's coffer kit, which takes any room's outline).
+    from maps.venues.agency.fit import coffers
+
+    coffers(s, P.rect_of(P.DINING), C, (-60.0,), (78.0,), (0.02, 0.02, 0.02, 0.02), mat="Wood", w=0.9, depth=1.1)
+    # Notices: the clubs' posters either side of the north door, the cork board on the west wall.
+    for x, sheet in ((-66.6, 1), (-53.4, 5)):
+        poster(s, x, 6.4, FZ0 + 0.02, 180, 2.4, 3.39, sheet)
+    s.prop("PinBoard", FX0 + 0.14, 82.0, -90, 1.0, 6.6)
     for x in (-66.0, -54.0):
         fit.panel(s, x, 103.0, C, color=fit.COOL, brightness=0.7, range_=16)
     s.sound("mapHeaterHum", (-60.0, 3.0, 100.0), 18.0, 0.15)
