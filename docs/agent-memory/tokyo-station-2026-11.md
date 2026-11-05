@@ -1,6 +1,6 @@
 ---
 name: tokyo-station-2026-11
-description: Tokyo's ticket gates rebuilt inside their kept box (KEPT is empty now) and the metro platform dressed around the intro's staging (2026-11-05); where the intro lives and what may stand there
+description: Tokyo's ticket gates rebuilt inside their kept box (KEPT is empty now), the metro platform dressed around the intro's staging, the yokocho's veneer walls made timber (2026-11-05)
 metadata:
   type: project
 ---
@@ -23,6 +23,12 @@ Models Tokyo v23.
 - `finders.HANGING` now holds StationSignHanging (it hangs on rods to the ceiling; place it with its pivot at the
   ceiling minus 2.15, half its height, or check_v2 calls it floating).
 - Preview view 3 ("inside the station hall") had its camera inside a ticket machine; it stands by the east doors now.
+
+**The yokocho** (same day, Maps Tokyo v42): its alleys read as giant cabinet doors because `buildings.tin_front`, every
+bar's ground floor, was hard-wired to WoodPanel (walnut veneer, an office panelling) nine studs high. It is
+`TimberBoards` now (the brown_planks_05 scan turned upright, dark cedar), and the bars' cladding palette and the
+izakaya's shell take `TimberSiding` (the same scan as weathered horizontal clapboard) where they had WoodPanel. Look in
+`buildings.py` for a hard-wired material before blaming a venue's style table.
 
 Still bare, for a later slice: the station hall's tiled walls and ceiling (only signs and machines on them), the
 platform's ceiling.

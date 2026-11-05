@@ -139,6 +139,7 @@ FALLBACK_KIND = [
     ("Parquet", "WoodPlanks"),
     ("Damask", "Fabric"),
     ("Rug", "Fabric"),
+    ("Timber", "WoodPlanks"),
     ("Snow", "Snow"),
     ("Ice", "Ice"),
     ("Shutter", "CorrodedMetal"),

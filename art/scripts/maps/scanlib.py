@@ -487,6 +487,11 @@ LIBRARY = {
     # Wood.
     "WoodFloor": surface("wood_floor", (118, 80, 52), 12, "floor", 2, keep=0.6, rough=0.34, quiet=True, seed=13),
     "WoodFloorDark": surface("dark_wooden_planks", (70, 46, 32), 12, "floor", 2, keep=0.6, rough=0.42, seed=14),
+    # (Old timber clapboard, weathered and stained dark: the yokocho's bars, where walnut veneer covered whole walls.)
+    "TimberSiding": surface("brown_planks_05", (66, 50, 38), 6, "wall", 1, keep=0.6, contrast=1.25, rough=0.78, seed=187),
+    # (The same boards stood upright and darker: a bar's frontage of cedar boards round its sliding door.)
+    "TimberBoards": surface("brown_planks_05", (62, 44, 31), 6, "wall", 1, keep=0.6, contrast=1.25, rough=0.78, turn=True,
+                            seed=188),
     "WoodPanel": surface("walnut_veneer_02", (92, 58, 36), 8, "wall", 2, keep=0.6, rough=0.36, quiet=True,
                          joint=(2, 1), turn=True, seed=25),
     "Parquet": surface("rectangular_parquet", (110, 72, 44), 8, "floor", 1, keep=0.6, rough=0.3, quiet=True, seed=55),

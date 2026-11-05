@@ -155,6 +155,8 @@ return {
 	TileMetroFloor = { textured = true, fallback = { material = "Slate", color = { 116, 118, 123 } } },
 	TileMetroGrey = { textured = true, fallback = { material = "Slate", color = { 149, 153, 156 } } },
 	TileWhite = { textured = true, fallback = { material = "Slate", color = { 213, 217, 220 } } },
+	TimberBoards = { textured = true, fallback = { material = "WoodPlanks", color = { 61, 45, 35 } } },
+	TimberSiding = { textured = true, fallback = { material = "WoodPlanks", color = { 64, 51, 42 } } },
 	TubeDiffuser = { material = "Neon", color = { 150, 158, 170 }, transparency = 0, reflectance = 0 },
 	Vermilion = { textured = true, fallback = { material = "SmoothPlastic", color = { 161, 54, 47 } } },
 	VinylClinic = { textured = true, fallback = { material = "SmoothPlastic", color = { 187, 196, 197 } } },

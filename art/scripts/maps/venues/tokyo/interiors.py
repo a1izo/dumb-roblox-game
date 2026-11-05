@@ -585,7 +585,7 @@ def laundromat(s, g):
 def izakaya(s, g):
     b = building("ya_s2")
     front = edge_towards(b["poly"], (0, 1))
-    shell(s, g, b, {front: [(0.0, 4.4)]}, inside="WoodPanel", floor="WoodFloorDark", outside="WoodPanel",
+    shell(s, g, b, {front: [(0.0, 4.4)]}, inside="WoodPanel", floor="WoodFloorDark", outside="TimberSiding",
           name="the izakaya", ceiling="CeilingSlats")
     top = counter(s, -85.4, 82.4, 180, 6.0, d=2.2, top="Wood", body="WoodPanel")
     s.sheet(-86.0, top, 82.2)

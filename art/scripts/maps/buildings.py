@@ -730,21 +730,21 @@ def potted_plant(s, x, z):
 
 
 def tin_front(s, e, style, rng):
-    """A tiny bar's frontage: timber with a sliding door, the lit room behind it, an awning."""
+    """A tiny bar's frontage: upright cedar boards round a sliding door, the lit room behind it, an awning."""
     mid = e.length / 2
     half = min(2.2, e.length / 2 - 0.8)
     depth = recess_depth(e, mid - half, mid + half, (SET_DEPTH, 3.0, 2.0), 0.0, 7.6) if half > 0.8 else None
     if depth is not None:
-        e.quad(s, "WoodPanel", 0, mid - half, 0, 9.0)
-        e.quad(s, "WoodPanel", mid + half, e.length, 0, 9.0)
-        e.quad(s, "WoodPanel", mid - half, mid + half, 7.6, 9.0)
+        e.quad(s, "TimberBoards", 0, mid - half, 0, 9.0)
+        e.quad(s, "TimberBoards", mid + half, e.length, 0, 9.0)
+        e.quad(s, "TimberBoards", mid - half, mid + half, 7.6, 9.0)
         e.quad(s, "WindowGlass", mid - half, mid + half, 0, 7.6, -0.3)
         e.niche(s, mid - half, mid + half, 0.0, 7.6, depth, "RoomLitSide", back="RoomLitBack", floor="WoodFloorDark",
                 ceiling="RoomLitCeiling")
         e.box(s, "Wood", mid, 7.9, 0.1, (half * 2 + 0.6, 0.3, 0.4))
         e.box(s, "Wood", mid, 1.8, -(depth - 0.8), (half * 2 - 0.4, 3.6, 1.2))  # the counter
     else:
-        e.quad(s, "WoodPanel", 0, e.length, 0, 9.0)
+        e.quad(s, "TimberBoards", 0, e.length, 0, 9.0)
     e.quad(s, style["clad"], 0, e.length, 9.0, FLOOR_GF)
     e.box(s, "Shutter", e.length / 2, 9.6, 0.7, (e.length, 0.25, 1.4))
     e.cover(s, e.length / 2, 9.6, 0.7, (e.length, 0.8, 1.4))  # the awning over the door

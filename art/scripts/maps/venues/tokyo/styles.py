@@ -30,7 +30,7 @@ CLADS = {
     "apartment": ["PlasterLight", "BrickRed", "FacadeTile", "PlasterGrey", "Concrete"],
     "hotel": ["BrickDark", "FacadeTileGrey", "PlasterLight", "FacadeTile"],
     "shop": ["FacadeTile", "PlasterLight", "BrickRed", "FacadeTileGrey", "PlasterGrey"],
-    "bar": ["Shutter", "WoodPanel", "PlasterDark", "BrickDark", "PlasterGrey"],
+    "bar": ["Shutter", "TimberSiding", "PlasterDark", "BrickDark", "PlasterGrey"],
     "edge": ["ConcreteDark", "FacadeTileGrey", "PlasterGrey", "BrickDark"],
     "pencil": ["FacadeTileGrey", "PlasterLight"],
 }
@@ -77,7 +77,7 @@ HAND = {
                       vsign=[("ラーメン", "red"), ("麺屋", "yellow"), ("餃子", "white")]),
     "laundromat": dict(clad="PlasterLight", trim="DarkMetal", windows="balcony", bay=8.0, lit=0.5,
                        ground="interior", roof=("tank",)),
-    "ya_s2": dict(clad="WoodPanel", trim="Wood", windows="tin", lit=0.6, ground="interior"),
+    "ya_s2": dict(clad="TimberSiding", trim="Wood", windows="tin", lit=0.6, ground="interior"),
 }
 
 
