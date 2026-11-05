@@ -256,10 +256,15 @@ def analysts(s):
 
 
 def training(s):
+    # (Painted dark below a black rail on the room's side, as the security office below it is.)
     fit.partition(s, (-100.0, 40.0), (-16.0, 40.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(16.0, 5.0), (70.0, 5.0)],
-                  glass="clear")
+                  glass="clear", dado_s=("PlasterDark", "BlackTrim"))
     fit.partition(s, (-16.0, 40.0), (-16.0, 75.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(20.0, 5.0)], glass="blinds",
-                  spans=[(0.6, 3.6), (23.3, 34.4)])
+                  spans=[(0.6, 3.6), (23.3, 34.4)], dado_s=("PlasterDark", "BlackTrim"))
+    # The east wall's solid stretch: the Bureau's citations and the tower's blueprint framed; the clock over the glass.
+    for z, index in ((46.5, 0), (50.5, 3), (54.5, 1)):
+        fit.framed(s, -16.3, Y + 6.6, z, 90, 2.2, index, "Wood" if index in (0, 1) else "BlackTrim")
+    prop(s, "WallClock", -60.0, 40.6, 180, 0.7, Y + 11.1)  # (its pivot is its middle: clear of the glass under 9.6)
     # Rows of chairs facing the pull-down screen hung in front of the west glass.
     for x in (-84.0, -78.0, -72.0, -66.0):
         for z in (48.0, 52.0, 56.0, 62.0, 66.0):

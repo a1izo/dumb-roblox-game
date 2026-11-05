@@ -28,6 +28,11 @@ What exists now, all reusable:
   `skyline.block(eye=...)` gives three quarters of `most` to the floors from 120 studs under the eye up. It freed about
   2,000 triangles; default `eye=None` leaves Campus and Tokyo unchanged.
 
+Second pass, the same evening (Maps Agency v30): the break room (walnut dado on both walls, the city print, a clock, a
+rug in the sofa's corner) and the training room (dark dado, three framed prints on the east wall's solid stretch, a
+clock over the glass). The analysts' office was left: its walls are clear glass nearly all round. Agency is at 110,834
+of 112,761 triangles after it.
+
 Traps hit (all fixed):
 
 - `finders.zfight` flags parallel faces within 0.02 studs (bucketed, so keep 0.04): a print 0.005 off its frame, a
@@ -39,6 +44,8 @@ Traps hit (all fixed):
 - Every `--export` that changes meshes bumps the version from the committed scene module. After a scratch export,
   `git checkout HEAD -- src/server/Maps/Scenes/<Venue> src/shared/ImportVersions.luau` before the final export, so the
   user gets one new version, not two.
+- WallClock's pivot is its middle (ModelCatalog pivot "centre"): placed by a base height it hung half over the glass
+  under a lintel, and check_v2 called it floating.
 - Meeting-set props (BookcaseTall, FloorGlobe, DrinksTrolley, Sideboard, WallClock, ClubChair) stand in no other case
   map, so the Agency may use them under the own-furniture rule; the director's steel ArchiveShelf row is now walnut
   BookcaseTall.

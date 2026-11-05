@@ -213,8 +213,15 @@ def lockers(s):
 
 
 def break_room(s):
-    fit.partition(s, (50.0, -75.0), (50.0, -40.0), Y, C, "PlasterLight", "TileMetroGrey", doors=[(31.0, 5.0)])
-    fit.partition(s, (50.0, -40.0), (100.0, -40.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(25.0, 5.0)])
+    # (Walnut below a rail on the break room's side of both its walls.)
+    fit.partition(s, (50.0, -75.0), (50.0, -40.0), Y, C, "PlasterLight", "TileMetroGrey", doors=[(31.0, 5.0)],
+                  dado_n=("WoodPanel", "Wood"))
+    fit.partition(s, (50.0, -40.0), (100.0, -40.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(25.0, 5.0)],
+                  dado_n=("WoodPanel", "Wood"))
+    # The city at night framed on the west wall past the machines, a clock by the door, a rug in the sofa's corner.
+    fit.framed(s, 50.3, 6.4, -52.5, -90, 2.6, 2, "BlackTrim")
+    s.prop("WallClock", 56.0, -40.6, 0, 0.7, 8.6)
+    rugs.lay(s, 88.0, -47.0, 10.0, 6.0, 0, Y, "RugFieldNavy")
     # Vending machines along the west wall.
     s.prop("VendingBlue", 51.9, -69.8, -90)
     s.prop("VendingWhite", 51.9, -65.4, -90)
