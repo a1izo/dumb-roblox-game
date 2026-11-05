@@ -671,8 +671,9 @@ def red_gate(s, x0, x1, z, depth=6.0, h=12.0):
 
 
 def booth(s, r, door):
-    """The guard booth: stone walls, a door, windows all round (the tip box stands under the one
-    facing the avenue), a hipped roof under snow."""
+    """The guard booth: stone walls, a door, windows on three sides (the tip box stands under one facing the
+    avenue; the back stands against the campus wall, so none there), a hipped roof under snow."""
     shell(s, r, P.EAVES["booth"], [door], brick="Stone", inside="PlasterGrey", storeys=[0.0], arch="round",
-          window_w=3.4, spacing=5.0, door_top=6.4, plinth=False, cornice=True, seed=9, see_through=True)
+          window_w=3.4, spacing=5.0, door_top=6.4, plinth=False, cornice=True, seed=9, see_through=True,
+          ground_windows=("n", "e", "w"))
     hip_roof(s, r, P.EAVES["booth"], 3.5, overhang=1.2)

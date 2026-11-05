@@ -86,6 +86,9 @@ def build(s):
     student.build(s, g)
     masonry.flush(s)  # the outer walls, now that every inner wall is known (no window where one meets them)
     grounds.build(s)
+    # (The guard booth's walls are a shell too, queued by grounds.build after the flush above: they were never built,
+    # and the booth stood as a roof on posts. Whatever was queued since is built here.)
+    masonry.flush(s)
     clutter.build(s)
     outside.build(s, g)
     gameplay.build(s)
