@@ -444,7 +444,7 @@ Assets.textures = {
 
 -- Pictures uploaded on their own (art/export/textures; since 2026-11-03 through Studio's MCP, docs/agent-memory/
 -- pictures-by-mcp.md). The first join's eye, painted in layers by art/scripts/ui/eye_intro.py (UI/EyeIntro): the
--- face with the eye shut in two halves, the eye's corner as it opens (24 frames, two to a sheet), the foreground
+-- face with the eye shut in two halves, the eye's corner as it opens (48 frames, two to a sheet), the foreground
 -- hair in two halves. The loading screen's apple, four 4 x 4 sheets of it turning, and the hand that catches it in
 -- three layers, the inside of the palm behind the apple, the hand in front of it and the thumb that closes over it
 -- (art/scripts/ui/intro_frames.py and ui/apple_hand.py, UI/AppleLoading). "" until uploaded: those screens then
@@ -452,32 +452,44 @@ Assets.textures = {
 Assets.images = {
 	IntroBaseL = "126469800109003",
 	IntroBaseR = "116798775158106",
-	IntroEyeSheet1 = "97110683762174",
-	IntroEyeSheet2 = "113791488685442",
-	IntroEyeSheet3 = "99330637426759",
-	IntroEyeSheet4 = "105782955241562",
-	IntroEyeSheet5 = "87497307482733",
-	IntroEyeSheet6 = "79062639882292",
-	IntroEyeSheet7 = "125794167501624",
-	IntroEyeSheet8 = "110505187659093",
-	IntroEyeSheet9 = "94060963338538",
-	IntroEyeSheet10 = "72565112350710",
-	IntroEyeSheet11 = "111057063419119",
-	IntroEyeSheet12 = "137470396341204",
-	IntroHairL = "99850936389635",
-	IntroHairR = "92835880545878",
+	IntroEyeSheet1 = "76525833377626",
+	IntroEyeSheet2 = "89070039327751",
+	IntroEyeSheet3 = "112654615711088",
+	IntroEyeSheet4 = "109038475208455",
+	IntroEyeSheet5 = "131167740469350",
+	IntroEyeSheet6 = "134831736646220",
+	IntroEyeSheet7 = "97655943445268",
+	IntroEyeSheet8 = "130485763493239",
+	IntroEyeSheet9 = "82319420385776",
+	IntroEyeSheet10 = "104999653953748",
+	IntroEyeSheet11 = "98409424329551",
+	IntroEyeSheet12 = "99990228460341",
+	IntroEyeSheet13 = "98047068841197",
+	IntroEyeSheet14 = "100103724959067",
+	IntroEyeSheet15 = "122453440514533",
+	IntroEyeSheet16 = "122086209615274",
+	IntroEyeSheet17 = "135940436413015",
+	IntroEyeSheet18 = "125482258326786",
+	IntroEyeSheet19 = "119963330326908",
+	IntroEyeSheet20 = "135621139384023",
+	IntroEyeSheet21 = "130204436587632",
+	IntroEyeSheet22 = "77355198387605",
+	IntroEyeSheet23 = "107069404981116",
+	IntroEyeSheet24 = "107848022857429",
+	IntroHairL = "115180504844511",
+	IntroHairR = "134343434434112",
 	AppleSpin1 = "87285355727532",
 	AppleSpin2 = "101058079851458",
 	AppleSpin3 = "107031597473568",
 	AppleSpin4 = "98149657604172",
-	AppleHandBack = "90611757340961",
-	AppleHandFront = "79903957152049",
-	AppleThumb = "112422251553812",
+	AppleHandBack = "105192433271820",
+	AppleHandFront = "119914963337923",
+	AppleThumb = "121261347008083",
 	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
-	-- And the red hand that points at whatever is chosen (UI/Kit/Pointer): one finger, four ways round on a sheet.
+	-- And the paper hand that points at whatever is chosen (UI/Kit/Pointer): one finger, four ways round on a sheet.
 	CursorLock = "71963626863169",
 	CursorFree = "114760490451104",
-	PointerHand = "138380601479491",
+	PointerHand = "101255659254048",
 	-- The Reál's mark (the user's, 2026-10-28): the currency's icon everywhere (UI/Kit/Icon "real"); the coin until
 	-- it is uploaded.
 	RealIcon = "111490167287256",

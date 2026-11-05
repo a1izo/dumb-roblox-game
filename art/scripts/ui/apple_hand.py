@@ -1,34 +1,32 @@
-"""The hand that catches the apple on the loading screen (UI/AppleLoading), redrawn 2026-11-03 at your word ("make the
-hand more high quality"). It was your pencil's light read as one flat shape, a thumb and a single prong; now it is built
-of its parts on your sketch's lines (art/refs/ui/apple_sketch.png): the back of the hand and its side, the thumb laid
-over the apple's front, the index finger round its right side with the middle and ring fingers' tips behind it, the palm
-cupped under it. Each part is shaded as a rounded form under the light from the upper left that lights the apple (a lit
-face, a crisp shade, a cool light round the shaded edge, the apple's red light on what faces it, a little sheen), inked
-as an anime frame is (a heavier line where the form turns from the light), with the nails, the knuckles, the joints'
-creases and the tendons along the back of the hand; out of the white shirt cuff and the dark jacket sleeve.
+"""The hand that catches the apple on the loading screen (UI/AppleLoading). Redrawn 2026-11-05 at your word ("the hand
+drawing is ugly, change it, make it ryuks hand instead"): a death god's hand in the spirit of Ryuk's, drawn for this
+game (not traced from any art). Long, gaunt fingers of bone with knobbly knuckles, dark blue-grey skin over tendons,
+long dark nails grown into claws, a black studded leather band round the wrist. It keeps the old hand's place and
+movement exactly: the same picture over your sketch (art/refs/ui/apple_sketch.png), the apple held at the same spot,
+the thumb's root, hinge and square where they were, so UI/AppleLoading and the apple's sheets are untouched.
 
-Three pictures, so the game closes the thumb smoothly (it turns the thumb's picture about its root) rather than in a
-few steps, and the apple lands between them:
+Each part is shaded as a rounded form under the light from the upper left that lights the apple (a lit face, a crisp
+shade, a cool light round the shaded edge, the apple's red light on what faces it), inked as an anime frame is (a
+heavier line where the form turns from the light): the fingers' joints swell and their shafts run thin, each joint
+creased; the tendons stand along the back of the hand, the knuckles stand out of it.
+
+Three pictures, so the game closes the thumb smoothly (it turns the thumb's picture about its root) and the apple
+lands between them:
 
     AppleHandBack   the inside of the cupped palm, under the apple (seen while the hand waits)
-    AppleHandFront  the hand over the apple: the back of the hand and its side, the palm's lip in front of the apple's
-                    foot, the three fingers round its right side, the cuff and the sleeve
+    AppleHandFront  the hand over the apple: the back of the hand and the forearm, the palm's lip in front of the
+                    apple's foot, the four fingers round its right side with their claws, the studded wristband
     AppleThumb      the thumb alone on a square whose middle is its root, laid over the apple with the shade it casts
 
 Coordinates are your sketch's px (1681 x 936), laid on the hand's picture (1024 x 736) by H.
 """
 
 import math
-import os
 
 import numpy as np
 
 import flow
 import paint as pt
-import png
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-SKETCH = os.path.normpath(os.path.join(HERE, "..", "..", "refs", "ui", "apple_sketch.png"))
 
 HAND_BOX = (400, 545, 1010, 983)  # the sketch's px the hand's picture covers (x0, y0, x1, y1)
 HAND_SCALE = 1024 / 610
@@ -37,67 +35,88 @@ HW, HH = 1024, 736
 # Measured on your sketch: the apple in the hand (its middle, half width and half height).
 HELD = (845.0, 652.0, 105.0, 91.0)
 
-# The thumb, root to tip, along its middle, and its width there (broad at its root, where the ball of the thumb is);
-# it turns where it leaves the hand's edge. The web of skin between it and the hand is drawn behind the apple, so it
-# shows only while the thumb stands up (the apple covers it once caught).
-THUMB_AXIS = [(712, 712), (735, 698), (757, 686), (777, 675), (797, 664), (817, 654), (835, 647), (849, 642)]
-THUMB_WIDTHS = [48, 42, 37, 33, 30, 28, 26, 24]
+# The thumb, root to tip, along its middle (the old hand's line from its hinge on, so its square, which reaches to
+# its tip, and its hinge stay where they were; it starts at the hinge now, rounded, so nothing of it shows behind the
+# hand as it stands up), and its width there: broad at its root, thin along its bones, swelling at its joint. It turns where it leaves the
+# hand's edge. The web of skin between it and the hand is drawn behind the apple, so it shows only while the thumb
+# stands up (the apple covers it once caught).
+THUMB_AXIS = [(722, 704), (735, 698), (757, 686), (777, 675), (797, 664), (817, 654), (835, 647), (849, 642)]
+THUMB_WIDTHS = [38, 33, 27, 24, 28.5, 22, 19.5, 18]
+THUMB_JOINT = (799.0, 663.0)  # its knuckle, where its two bones meet
 WEB = [(733, 702), (747, 668), (764, 652), (772, 662), (766, 676), (778, 686), (790, 690), (776, 706), (752, 712)]
 THUMB_PIVOT = (738.0, 694.0)
 THUMB_FADE = (8.0, 20.0)  # sketch px from its root: gone inside the first, whole past the second
 THUMB_BALL = 22.0  # the hand's own picture is skin this far round the thumb's root, so it turns over the hand
 OPEN_THUMB = -38.0  # degrees the thumb stands up while the hand waits (the game turns it down as the apple lands)
-# (where your pencil drew the thumb: the hand's own picture leaves it out)
-SKETCH_THUMB = [(655, 712), (700, 690), (740, 675), (800, 647), (830, 635), (845, 634), (853, 641), (850, 650),
-                (835, 657), (810, 672), (785, 690), (765, 705), (750, 725), (740, 738), (700, 748)]
 
-# The fingers round the apple's right side, back to front (ring, middle, index), root to tip, and their widths.
+
+def round_apple(degrees, off):
+    """A point round the held apple: `degrees` round from its right (down positive), `off` sketch px out from it."""
+    a = math.radians(degrees)
+    return (HELD[0] + (HELD[2] + off) * math.cos(a), HELD[1] + (HELD[3] + off) * math.sin(a))
+
+
+# The four fingers round the apple's right side, back to front (little, ring, middle, index): the knuckle each grows
+# from at the hand's end, then its two middle joints and its tip, wrapped round the apple a little further out the
+# further back the finger is, so each shows past the one in front; how thick it is at the knuckle, along its bones and
+# at its joints; and its claw (length, and how far it hooks in toward the apple, degrees).
 FINGERS = [
-    ([(926, 770), (940, 757), (950, 741), (956, 724), (959, 711)], [22, 21, 20, 19, 18]),
-    ([(912, 741), (924, 732), (936, 718), (944, 703), (950, 685), (954, 668), (955, 656), (954, 647)],
-     [25, 24, 23, 22, 21, 20.5, 20, 19.5]),
+    {"joints": [(906, 800), round_apple(50, 24), round_apple(28, 30), round_apple(12, 28)], "scale": 0.82,
+     "claw": (26, 34)},
+    {"joints": [(915, 782), round_apple(40, 12), round_apple(14, 14), round_apple(-4, 8)], "scale": 0.9,
+     "claw": (30, 36)},
+    {"joints": [(914, 762), round_apple(30, -4), round_apple(2, -6), round_apple(-20, -12)], "scale": 0.96,
+     "claw": (33, 38)},
+    {"joints": [(900, 744), round_apple(20, -22), round_apple(-14, -26), round_apple(-40, -30)], "scale": 1.0,
+     "claw": (36, 40)},
 ]
+# (sketch px across: the knuckle, the bone, the joint, the bone, the joint, the last bone, the tip)
+FINGER_WIDTHS = [33, 23.5, 29.5, 21, 25, 18.5, 17]
 
-# Your sketch's hand, as the earlier painting measured it: the palm's lip in front of the apple's foot; the curled
-# fingers' underside; the ball of the thumb; everything above the palm (where the apple lies); below the wrist.
-PALM_LIP = [(750, 722), (782, 733), (820, 745), (850, 750), (880, 744), (905, 730), (922, 714), (945, 690),
-            (960, 760), (900, 800), (720, 800)]
-UNDERSIDE = [(860, 752), (905, 740), (935, 712), (950, 690), (960, 700), (957, 730), (945, 752), (925, 778),
-             (900, 795), (870, 812), (840, 826), (820, 832), (800, 800)]
-THUMB_ROOT = [(630, 740), (668, 712), (700, 690), (728, 680), (752, 681), (766, 700), (762, 740), (700, 762),
-              (640, 792)]
-ABOVE_PALM = [(740, 560), (970, 560), (945, 690), (922, 714), (905, 730), (880, 744), (850, 750), (820, 745),
-              (782, 733), (750, 722), (735, 700)]
-BELOW_WRIST = [(575, 940), (620, 893), (700, 863), (760, 855), (800, 1000), (560, 1000)]
+# The back of the hand and the forearm, one outline: up from the bottom edge along the forearm's top, the wrist, the
+# ball of the thumb to its root, the palm's lip along the apple's foot to the index finger's knuckle; then back under
+# the knuckles, along the hand's underside, the wrist's bone and the forearm's underside.
+ARM = [
+    (500, 990), (560, 925), (620, 862), (668, 815), (698, 786), (710, 760), (710, 732), (712, 708), (720, 688),
+    (736, 673), (752, 671), (766, 680), (774, 698), (778, 716), (796, 732), (822, 742), (856, 747), (886, 744), (908, 736), (922, 738),
+    (934, 752), (936, 772), (930, 792), (916, 806), (890, 816), (852, 824), (812, 830), (776, 836), (746, 846),
+    (722, 862), (700, 884), (676, 914), (650, 950), (624, 990),
+]
+WRIST = (707.0, 830.0)  # the wrist's middle
+ARM_WAY = np.array([145.0, -160.0]) / math.hypot(145.0, -160.0)  # up the forearm toward the hand
+# The band round the wrist: where along the forearm it lies (sketch px from the wrist toward the elbow), how far its
+# near edge bows toward the hand (it is round), and the studs along it (across it, -1 its top edge to 1 its underside).
+BAND = (-14.0, -46.0)
+BAND_BOW = 7.0
+STUDS = (-0.66, -0.2, 0.26, 0.7)
 
 # The inside of the cupped palm, above the lip, where the apple lies (seen while the hand waits).
 CUP = [(742, 705), (760, 694), (800, 687), (850, 685), (900, 679), (930, 669), (942, 667), (950, 698), (928, 722),
        (910, 738), (882, 752), (850, 758), (818, 753), (780, 741), (748, 730)]
 
-# The jacket sleeve, as your sketch draws it: its opening runs down from the step in the forearm's top edge, a little
-# wider than the wrist; the white shirt cuff shows just past it; the sleeve carries on past the sketch's edge.
-SLEEVE_END = [(541, 848), (557, 877), (570, 903), (584, 932)]
-SLEEVE = [(541, 848), (557, 877), (570, 903), (584, 932), (560, 962), (534, 995), (378, 995), (400, 972), (428, 945),
-          (453, 921), (478, 900), (503, 880), (527, 862)]
-CUFF_WIDTH = 15
-
-# The nails (middle, half length along the digit and half width) and the creases, knuckles and tendons (sketch px).
-THUMB_NAIL = ((839, 643), 10.0, 7.2)
-INDEX_NAIL = ((954, 652), 7.0, 6.0)
-THUMB_CREASES = [[(806, 652), (809, 657), (810, 662)], [(812, 649), (815, 654), (816, 659)]]
-FINGER_CREASES = [[(938, 705), (944, 709)], [(945, 680), (951, 683)], [(948, 735), (955, 739)]]
-KNUCKLES = [(915, 760), (930, 772), (940, 784)]
-TENDONS = [[(640, 790), (720, 768), (800, 757), (880, 755)], [(650, 806), (730, 788), (810, 779), (890, 772)]]
+# The tendons standing along the back of the hand (wrist to each knuckle), and the thumb's own up to its root.
+TENDONS = [
+    [(712, 808), (770, 790), (840, 770), (890, 754), (912, 746)],
+    [(718, 822), (780, 806), (850, 788), (900, 772), (922, 766)],
+    [(726, 836), (790, 822), (856, 806), (900, 794), (920, 788)],
+]
+THUMB_TENDON = [(684, 812), (706, 776), (720, 740), (734, 704)]
+WRIST_BONE = (742.0, 850.0)  # the knob of bone at the wrist's underside
 
 LIGHT = np.array([-0.72, -0.58, -0.38])  # toward the light: up, left and toward us (x right, y down, z away)
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
-SKIN_LIT = np.array([0.93, 0.9, 0.9], np.float32)
-SKIN_SHADE = np.array([0.66, 0.6, 0.65], np.float32)
-SKIN_DEEP = np.array([0.36, 0.32, 0.37], np.float32)  # the cupped palm's inside, deep in shade
-COOL_RIM = np.array([0.72, 0.74, 0.82], np.float32)
-APPLE_GLOW = np.array([0.62, 0.05, 0.08], np.float32)
-NAIL = np.array([0.95, 0.88, 0.88], np.float32)
-LINE = np.array([0.2, 0.16, 0.19], np.float32)
+# A death god's skin: dark blue-grey, a cold slate where it is lit.
+SKIN_LIT = np.array([0.33, 0.365, 0.42], np.float32)
+SKIN_SHADE = np.array([0.165, 0.185, 0.23], np.float32)
+SKIN_DEEP = np.array([0.09, 0.1, 0.125], np.float32)  # the cupped palm's inside, deep in shade
+COOL_RIM = np.array([0.4, 0.47, 0.58], np.float32)
+APPLE_GLOW = np.array([0.5, 0.04, 0.07], np.float32)
+CLAW = np.array([0.06, 0.06, 0.075], np.float32)
+CLAW_SHINE = np.array([0.6, 0.62, 0.68], np.float32)
+LEATHER = np.array([0.05, 0.05, 0.058], np.float32)
+LEATHER_LIT = np.array([0.2, 0.2, 0.225], np.float32)
+STEEL = np.array([0.62, 0.63, 0.66], np.float32)
+LINE = np.array([0.025, 0.025, 0.04], np.float32)
 
 
 def H(x, y):
@@ -137,18 +156,29 @@ def smooth_fill(points):
 
 
 def digit(axis, widths):
-    """A finger or a thumb (coverage): a tube along `axis` (sketch px, root to tip), `widths` across, the tip round."""
+    """A finger or a thumb (coverage): a tube along `axis` (sketch px, root to tip), `widths` across, both ends
+    round."""
     line = spline(axis, 10)
     w = np.interp(np.linspace(0, 1, len(line)), np.linspace(0, 1, len(widths)), widths)
     shape = hfill(pt.outline(line, list(w)))
-    tx, ty = H(*line[-1])
-    return np.maximum(shape, pt.ellipse(tx, ty, w[-1] / 2 * HAND_SCALE, w[-1] / 2 * HAND_SCALE, HW, HH))
+    for end, width in ((line[0], w[0]), (line[-1], w[-1])):
+        ex, ey = H(*end)
+        shape = np.maximum(shape, pt.ellipse(ex, ey, width / 2 * HAND_SCALE, width / 2 * HAND_SCALE, HW, HH))
+    return shape
 
 
 def stroke(points, width, smooth=True):
     """A line (coverage) along `points` (sketch px), `width` picture px."""
     line = spline(points, 8) if smooth and len(points) > 2 else points
     return pt.fill(pt.outline([H(x, y) for x, y in line], [width] * len(line)), HW, HH)
+
+
+def tapered(points, width, tip=0.3):
+    """A line (coverage) along `points` (sketch px), `width` picture px in its middle, thinning to `tip` at both ends."""
+    line = spline(points, 8) if len(points) > 2 else points
+    m = len(line)
+    widths = [tip + (width - tip) * max(0.0, math.sin(math.pi * k / (m - 1))) ** 0.7 for k in range(m)]
+    return pt.fill(pt.outline([H(x, y) for x, y in line], widths), HW, HH)
 
 
 def form(mask, sigma):
@@ -161,20 +191,26 @@ def form(mask, sigma):
     return n / np.linalg.norm(n, axis=-1, keepdims=True)
 
 
+def normals(height, k):
+    gy, gx = np.gradient(height)
+    n = np.stack([-gx * k, -gy * k, -np.ones_like(height)], -1)
+    return n / np.linalg.norm(n, axis=-1, keepdims=True)
+
+
 def skin(n, near_apple, base=None):
     """Skin under the light: a lit face, a crisp shade, a cool light round the shaded edge, the apple's red light on
-    what faces it, a soft sheen on the lit bulges."""
+    what faces it, a dull sheen on the lit bulges (bone under thin skin)."""
     ndl = n @ LIGHT
-    lit = pt.smoothstep(-0.03, 0.12, ndl)[..., None]
+    lit = pt.smoothstep(-0.02, 0.1, ndl)[..., None]
     shade = SKIN_SHADE if base is None else base
     col = shade[None, None] * (1 - lit) + SKIN_LIT[None, None] * lit
-    col = col * (0.9 + 0.12 * np.clip(ndl, 0, 1))[..., None]
+    col = col * (0.88 + 0.16 * np.clip(ndl, 0, 1))[..., None]
     edge = pt.smoothstep(0.55, 0.95, 1 + n[..., 2])[..., None]  # (turned away from us, at the outline)
-    col = col * (1 - 0.35 * edge * (1 - lit)) + COOL_RIM[None, None] * (0.35 * edge * (1 - lit))
+    col = col * (1 - 0.45 * edge * (1 - lit)) + COOL_RIM[None, None] * (0.45 * edge * (1 - lit))
     col = col + APPLE_GLOW[None, None] * (near_apple[..., None] * (0.3 - 0.18 * lit))
     half = LIGHT + np.array([0.0, 0.0, -1.0])
     half = half / np.linalg.norm(half)
-    sheen = np.clip(n @ half, 0, 1) ** 28 * 0.1
+    sheen = np.clip(n @ half, 0, 1) ** 24 * 0.12
     return np.clip(col + sheen[..., None], 0, 1)
 
 
@@ -190,32 +226,19 @@ def apple_light(n):
     return near * (0.35 + 0.65 * facing)
 
 
-def ink(rgb, alpha, mask, lit_side, width=2.3):
+def ink(rgb, alpha, mask, lit_side, width=2.3, where=None):
     """The outline round `mask` (in place): thin and light where the form faces the light, heavier where it turns
-    away from it."""
+    away from it; only `where` if given."""
     ring = np.clip(mask - flow.shrink(mask, int(round(width))), 0, 1)
     soft = pt.blur(mask, 3.0)
     gy, gx = np.gradient(soft)
     length = np.sqrt(gx * gx + gy * gy) + 1e-6
     outward = np.stack([-gx / length, -gy / length], -1)
     toward = np.clip(outward @ LIGHT[:2] / np.linalg.norm(LIGHT[:2]), 0, 1)
-    weight = 0.95 - 0.5 * toward * lit_side
+    weight = 0.95 - 0.45 * toward * lit_side
+    if where is not None:
+        weight = weight * where
     pt.layer_over(rgb, alpha, LINE, ring * weight)
-
-
-def nail(rgb, alpha, spec, toward, clip_to):
-    """A nail (in place): pale, a white gleam along it, a thin rim; `toward` the digit's way (radians)."""
-    (nx, ny), along, across = spec
-    cx, cy = H(nx, ny)
-    body = pt.ellipse(cx, cy, along * HAND_SCALE, across * HAND_SCALE, HW, HH, angle=toward) * clip_to
-    pt.layer_over(rgb, alpha, NAIL, body)
-    inner = pt.ellipse(cx - math.cos(toward) * 1.5, cy - math.sin(toward) * 1.5, along * 0.78 * HAND_SCALE,
-                       across * 0.7 * HAND_SCALE, HW, HH, angle=toward)
-    rim = np.clip(body - inner, 0, 1)
-    pt.layer_over(rgb, alpha, LINE, rim * 0.55)
-    gx, gy = cx - math.sin(toward) * across * 0.35 * HAND_SCALE, cy + math.cos(toward) * across * -0.35 * HAND_SCALE
-    gleam = pt.ellipse(gx, gy, along * 0.55 * HAND_SCALE, across * 0.16 * HAND_SCALE, HW, HH, angle=toward) * body
-    pt.layer_over(rgb, alpha, np.array([1.0, 1.0, 1.0], np.float32), gleam * 0.85)
 
 
 def shifted(mask, dx, dy):
@@ -229,35 +252,6 @@ def shifted(mask, dx, dy):
     return out
 
 
-def sleeve(rgb, alpha, shape):
-    """The dark jacket sleeve and the white shirt cuff past it (in place): near black, the light along its top, two
-    soft folds, the hem of its opening catching the light; the cuff shaded underneath."""
-    x, y = hgrid()
-    cloth = hfill(SLEEVE)
-    pt.layer_over(rgb, alpha, np.array([0.075, 0.075, 0.088], np.float32), cloth)
-    (ax, ay), (bx, by) = SLEEVE_END[0], SLEEVE_END[-1]
-    run = np.array([bx - ax, by - ay], np.float64)
-    run /= np.linalg.norm(run)
-    across = np.array([run[1], -run[0]])  # (along the arm, toward the hand)
-    back = (x - ax) * across[0] + (y - ay) * across[1]  # (how far from the opening, toward the hand)
-    side = (x - ax) * run[0] + (y - ay) * run[1]  # (along the opening, from its top)
-    lit = cloth * (1 - pt.smoothstep(4, 22, side + 0.18 * back))
-    pt.layer_over(rgb, alpha, np.array([0.24, 0.24, 0.27], np.float32), pt.blur(lit, 2.0 * HAND_SCALE) * 0.8 * cloth)
-    for fold in (-30.0, -62.0):
-        crease = np.exp(-(((back - fold - 0.25 * side) / 5.0) ** 2)) * cloth
-        pt.layer_over(rgb, alpha, np.array([0.17, 0.17, 0.2], np.float32), crease * 0.6)
-        under = np.exp(-(((back - fold - 0.25 * side + 6) / 3.0) ** 2)) * cloth
-        pt.layer_over(rgb, alpha, np.array([0.03, 0.03, 0.035], np.float32), under * 0.6)
-    hem = np.exp(-(((back + 3.0) / 2.2) ** 2)) * cloth
-    pt.layer_over(rgb, alpha, np.array([0.32, 0.32, 0.36], np.float32), hem * 0.8)
-    cuff = pt.smoothstep(-0.5, 0.5, back) * (1 - pt.smoothstep(CUFF_WIDTH - 0.5, CUFF_WIDTH + 0.5, back)) * shape
-    tone = 0.95 - 0.26 * pt.smoothstep(25, 80, side)
-    pt.layer_over(rgb, alpha, np.stack([tone, tone, tone * 1.02], -1).astype(np.float32), pt.blur(cuff, 0.6))
-    seam = np.exp(-(((back - CUFF_WIDTH) / 1.2) ** 2)) * shape
-    pt.layer_over(rgb, alpha, np.array([0.55, 0.55, 0.6], np.float32), seam * 0.6)
-    return cloth
-
-
 def held_apple(grow=0.0):
     """Where the apple lies in the hand (coverage), a little wider by `grow` sketch px."""
     cx, cy, rx, ry = HELD
@@ -265,103 +259,202 @@ def held_apple(grow=0.0):
     return pt.ellipse(ex, ey, (rx + grow) * HAND_SCALE, (ry + grow) * HAND_SCALE, HW, HH)
 
 
-def sketch_lum():
-    """Your sketch's lightness laid over the hand's picture (sketch px past its bottom edge carry its last row)."""
-    lum = png.read(SKETCH)[..., 0].astype(np.float32) / 255.0
+# The parts ------------------------------------------------------------------------------------------------------------
+
+def finger_axis(finger):
+    """A finger's middle line through its joints, with a point half way along each bone (so the widths swell at the
+    joints and run thin between), and the widths there."""
+    j = finger["joints"]
+    pts = []
+    for a, b in zip(j[:-1], j[1:]):
+        pts += [a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)]
+    pts.append(j[-1])
+    return pts, [w * finger["scale"] for w in FINGER_WIDTHS]
+
+
+def claw(tip, before, width, length, hook):
+    """A claw (coverage) growing out of a fingertip at `tip` (sketch px), pointing on from `before`, `width` sketch px
+    at its root, `length` long, hooking `hook` degrees toward the apple; and its middle line."""
+    way = np.array(tip, np.float64) - np.array(before, np.float64)
+    way /= np.linalg.norm(way)
+    to_apple = np.array([HELD[0], HELD[1]]) - np.array(tip)
+    turn = math.radians(hook) * (1 if way[0] * to_apple[1] - way[1] * to_apple[0] > 0 else -1)
+    bent = np.array([way[0] * math.cos(turn) - way[1] * math.sin(turn), way[0] * math.sin(turn) + way[1] * math.cos(turn)])
+    root = np.array(tip, np.float64) - way * width * 0.55
+    mid = root + way * length * 0.55
+    end = mid + bent * length * 0.5
+    line = pt.quad(tuple(root), tuple(mid), tuple(end), 24)
+    widths = [width * (1 - t) ** 0.85 + 0.6 * t for t in np.linspace(0, 1, len(line))]
+    return hfill(pt.outline(line, widths)), line
+
+
+def paint_claw(rgb, alpha, shape, line):
+    """A claw (in place): near black, a cold glint along its upper edge, inked."""
+    pt.layer_over(rgb, alpha, CLAW, shape)
+    gl = [(x - 1.4, y - 1.6) for x, y in line[3:18]]
+    pt.layer_over(rgb, alpha, CLAW_SHINE, tapered(gl, 1.6, 0.2) * shape * 0.75)
+    ink(rgb, alpha, shape, 1.0, width=1.6)
+
+
+def wrinkles(rgb, alpha, at, across, width, clip, count=3, strength=0.55):
+    """The creases over a knuckle (in place): short curved lines across the finger at `at` (sketch px), `across` its
+    way across it (unit), `width` the finger's width there."""
+    ax, ay = across
+    way = (-ay, ax)
+    for k in range(count):
+        off = (k - (count - 1) / 2) * 3.4
+        cx, cy = at[0] + way[0] * off, at[1] + way[1] * off
+        half = width * (0.36 - 0.06 * abs(k - (count - 1) / 2))
+        bow = 1.6
+        pts = [(cx - ax * half + way[0] * bow, cy - ay * half + way[1] * bow), (cx, cy),
+               (cx + ax * half + way[0] * bow, cy + ay * half + way[1] * bow)]
+        pt.layer_over(rgb, alpha, LINE, tapered(pts, 1.5, 0.2) * clip * strength)
+
+
+def bump(rgb, at, rx, ry, clip, light=0.07):
+    """A knob of bone under the skin (in place): lit on its upper left, shaded on its lower right."""
+    cx, cy = H(*at)
+    blob = pt.blur(pt.ellipse(cx, cy, rx * HAND_SCALE, ry * HAND_SCALE, HW, HH), 2.0 * HAND_SCALE)
+    lit = shifted(blob, -2, -3)
+    dark = shifted(blob, 3, 4)
+    rgb += ((lit - dark).clip(0, 1) * clip)[..., None] * light
+    rgb -= ((dark - lit).clip(0, 1) * clip)[..., None] * light * 0.9
+
+
+def band_shape():
+    """The wristband (coverage) and, at every pixel, how far along it (0 its near edge, 1 its far edge) and across it
+    (-1 its top edge, 1 its underside)."""
     x, y = hgrid()
-    xi = np.clip(x, 0, lum.shape[1] - 1.001)
-    yi = np.clip(y, 0, lum.shape[0] - 1.001)
-    x0, y0 = xi.astype(int), yi.astype(int)
-    fx, fy = xi - x0, yi - y0
-    top = lum[y0, x0] * (1 - fx) + lum[y0, x0 + 1] * fx
-    bottom = lum[y0 + 1, x0] * (1 - fx) + lum[y0 + 1, x0 + 1] * fx
-    return (top * (1 - fy) + bottom * fy).astype(np.float32)
-
-
-_SILHOUETTE = []
+    way = ARM_WAY
+    across = np.array([way[1], -way[0]]) * -1  # (toward the forearm's underside: down and right)
+    rel_x, rel_y = x - WRIST[0], y - WRIST[1]
+    along = rel_x * way[0] + rel_y * way[1]
+    side = rel_x * across[0] + rel_y * across[1]
+    half = 41.0
+    t = np.clip(side / half, -1, 1)
+    bow = BAND_BOW * (1 - t * t)
+    near, far = BAND[0] + bow, BAND[1] + bow
+    inside = pt.smoothstep(-0.7, 0.7, near - along) * pt.smoothstep(-0.7, 0.7, along - far)
+    inside *= pt.smoothstep(-0.7, 0.7, half - np.abs(side))
+    return inside, (near - along) / (near - far), t, along, side
 
 
 def silhouette():
-    """The hand's outline from your sketch (0..1), the thumb left out (it is its own picture): the light your pencil
-    leaves against the hatched dark with its holes filled; the apple, what is above the palm and below the wrist taken
-    out; the ball of the thumb, the palm's lip, the curled fingers' underside and the sleeve put in; slits closed, thin
-    bits dropped, and the pencil's ragged edge smoothed away."""
-    if _SILHOUETTE:
-        return _SILHOUETTE[0]
-    x, y = hgrid()
-    light = (pt.blur(sketch_lum(), 7.0 * HAND_SCALE) > 0.5) & (y < 934)
-    shape = np.maximum(light.astype(np.float32), hfill(SLEEVE))
-    seeds = np.zeros((HH, HW), bool)
-    seeds[:4, :] = True
-    seeds[:, -4:] = True
-    seeds[:, :4] = True
-    shape = (~flow.joined(shape < 0.5, seeds, limit=3000)).astype(np.float32)
-    shape *= 1 - held_apple(grow=9)
-    shape *= 1 - hfill(SKETCH_THUMB)
-    shape *= 1 - hfill(ABOVE_PALM)
-    shape *= 1 - hfill(BELOW_WRIST)
+    """The back of the hand and the forearm (0..1): the outline smoothed, the ball of the thumb's root put in (so the
+    thumb turns over skin)."""
+    body = smooth_fill(ARM)
     px, py = H(*THUMB_PIVOT)
     ball = pt.ellipse(px, py, THUMB_BALL * HAND_SCALE, THUMB_BALL * HAND_SCALE, HW, HH)
-    parts = [hfill(THUMB_ROOT), ball, hfill(UNDERSIDE), hfill(PALM_LIP), hfill(SLEEVE)]
-    shape = np.maximum.reduce([shape] + parts)
-    shape = flow.shrink(flow.grow(shape, 4), 4)
-    body = flow.grow(flow.shrink(shape, 6), 6)
-    body = np.maximum.reduce([body] + parts)
-    wrist = hfill([(600, 820), (640, 820), (640, 860), (600, 860)]) > 0.5
-    kept = flow.joined(body > 0.5, wrist & (body > 0.5), limit=3000)
-    out = pt.smoothstep(0.42, 0.58, pt.blur(kept.astype(np.float32), 5.0))
-    _SILHOUETTE.append(out)
-    return out
+    return np.maximum(body, ball)
 
 
 def front():
-    """AppleHandFront (RGBA): the back of the hand and its side, the palm's lip, the three fingers round the apple's
-    right side, the cuff and the sleeve, inked."""
+    """AppleHandFront (RGBA): the forearm and the back of the hand with its tendons and knuckles, the palm's lip, the
+    four fingers round the apple's right side with their claws, the studded band at the wrist; inked."""
     body = silhouette()
-    fingers = [digit(axis, widths) for axis, widths in FINGERS]
-    shape = np.maximum.reduce([body] + fingers)
-    # One rounded form for the hand, the fingers standing up a little from it where they leave it.
-    height = pt.blur(body, 30.0)
-    for finger in fingers:
-        height = np.maximum(height, pt.blur(finger, 6.0) * 0.6 + 0.1 * finger)
-    gy, gx = np.gradient(height)
-    n = np.stack([-gx * 200.0, -gy * 200.0, -np.ones_like(height)], -1)
-    n = n / np.linalg.norm(n, axis=-1, keepdims=True)
-    # (the apple's red only faintly: this picture shows while the hand waits too, with no apple in it)
-    rgb = skin(n, apple_light(n) * 0.4)
-    # The tendons along the back of the hand and the knuckles at the fingers' roots: soft ridges of light.
+    x, y = hgrid()
+    # The back of the hand as one rounded form, the tendons and the knuckles standing up from it.
+    height = pt.blur(body, 26.0)
+    for tendon in TENDONS + [THUMB_TENDON]:
+        height = height + pt.blur(tapered(tendon, 5.0, 1.0), 3.2) * 0.05
+    for f in FINGERS:
+        kx, ky = H(*f["joints"][0])
+        height = height + pt.blur(pt.ellipse(kx, ky, 11 * HAND_SCALE, 9 * HAND_SCALE, HW, HH), 5.0) * 0.07
+    n = normals(height, 210.0)
+    rgb = skin(n, apple_light(n) * 0.35).astype(np.float32)
+    # (the bones of a gaunt hand: hollows between the tendons, a darker underside)
+    hollow = pt.blur(body, 10.0) - pt.blur(body, 30.0)
+    rgb *= (1 - 0.18 * np.clip(-hollow * 3, 0, 1))[..., None]
     for tendon in TENDONS:
-        line = stroke(tendon, 3.0)
-        rgb = rgb + (pt.blur(line, 2.4) * body)[..., None] * 0.05
-        rgb = rgb - (pt.blur(shifted(line, 2, 4), 2.6) * body)[..., None] * 0.035
-    for kx, ky in KNUCKLES:
-        cx, cy = H(kx, ky)
-        bump = pt.blur(pt.ellipse(cx, cy, 7 * HAND_SCALE, 5 * HAND_SCALE, HW, HH), 3.0) * shape
-        rgb = rgb + bump[..., None] * 0.045
-    rgb = np.clip(rgb, 0, 1).astype(np.float32)
-    alpha = shape.astype(np.float32).copy()
-    # Each finger's line where it lies across the one behind it, back to front (none where it grows out of the hand),
-    # with a little shade on what is behind, just below it.
+        groove = tapered([(px + 3, py + 6) for px, py in tendon], 4.0, 0.5)
+        rgb *= (1 - 0.15 * pt.blur(groove, 4.0) * body)[..., None]
+        ridge = tapered([(px - 1, py - 1.5) for px, py in tendon], 2.4, 0.3)
+        rgb += (pt.blur(ridge, 1.2) * body)[..., None] * np.array([0.09, 0.1, 0.11], np.float32)
+    ridge = tapered([(px - 1, py - 1.5) for px, py in THUMB_TENDON], 2.6, 0.3)
+    rgb += (pt.blur(ridge, 1.2) * body)[..., None] * np.array([0.08, 0.09, 0.1], np.float32)
+    bump(rgb, WRIST_BONE, 14, 10, body, 0.08)
+    alpha = body.astype(np.float32).copy()
+    # (skin, not plastic: the faintest mottling) and the palm's lip's crease
+    rgb *= (1 + (pt.noise(HH, HW, 26, 31, 3) - 0.5) * 0.09 + (pt.noise(HH, HW, 4, 32, 2) - 0.5) * 0.04)[..., None]
+    pt.layer_over(rgb, alpha, LINE, tapered([(760, 732), (800, 745), (845, 752), (885, 749)], 1.4, 0.2) * body * 0.4)
+
+    # The fingers, back to front: each its own rounded form with swollen joints, creased at them, inked where it lies
+    # over what is behind it (not where it grows out of the hand), with its claw.
     behind = body.copy()
-    root = pt.smoothstep(0.55, 0.85, pt.blur(body, 14.0))
-    for finger in fingers:
-        over = finger * pt.smoothstep(0.3, 0.6, pt.blur(behind, 2.0))
-        edge = np.clip(finger - flow.shrink(finger, 2), 0, 1) * over
-        pt.layer_over(rgb, alpha, LINE, edge * (1 - root) * 0.8)
-        drop = np.clip(pt.blur(shifted(finger, 3, 5), 3.0) - finger, 0, 1) * behind
-        rgb *= (1 - 0.22 * drop)[..., None]
-        behind = np.maximum(behind, finger)
-    for crease in FINGER_CREASES:
-        pt.layer_over(rgb, alpha, LINE, stroke(crease, 1.4, smooth=False) * shape * 0.5)
-    nail(rgb, alpha, INDEX_NAIL, math.radians(-86), fingers[-1])
-    cloth = sleeve(rgb, alpha, shape)
-    ink(rgb, alpha, np.maximum(shape, cloth), 1.0)
+    gy, gx = pt.grid(HH, HW)
+    for f in FINGERS:
+        axis, widths = finger_axis(f)
+        shape = digit(axis, widths)
+        fn = form(shape, 5.5)
+        frgb = skin(fn, apple_light(fn) * 0.7)
+        joints = f["joints"]
+        kx, ky = H(*joints[0])
+        root = 1 - pt.smoothstep(14 * HAND_SCALE, 24 * HAND_SCALE, np.hypot(gx - kx, gy - ky))
+        # (a soft shade on what is behind, just below it)
+        drop = np.clip(pt.blur(shifted(shape, 4, 6), 4.0) - shape, 0, 1) * behind
+        rgb *= (1 - 0.35 * drop)[..., None]
+        pt.layer_over(rgb, alpha, frgb, shape)
+        for k, joint in enumerate(joints[1:3]):
+            prev, nxt = joints[k], joints[k + 2]
+            way = np.array(nxt, float) - np.array(prev, float)
+            way /= np.linalg.norm(way)
+            bump(rgb, joint, 7 * f["scale"], 6 * f["scale"], shape, 0.06)
+            wrinkles(rgb, alpha, joint, (way[0], way[1]), widths[2 + 2 * k], shape, count=3)
+        ink(rgb, alpha, shape, 1.0, where=1 - root)
+        # (its nail, dark, over the end of its last bone, and the claw it grows into)
+        tip, before = joints[-1], joints[-2]
+        way = np.array(tip, float) - np.array(before, float)
+        way /= np.linalg.norm(way)
+        nail_mid = H(tip[0] - way[0] * 6, tip[1] - way[1] * 6)
+        plate = pt.ellipse(nail_mid[0], nail_mid[1], 9 * HAND_SCALE * f["scale"], 4.6 * HAND_SCALE * f["scale"], HW,
+                           HH, angle=math.atan2(way[1], way[0])) * shape
+        pt.layer_over(rgb, alpha, CLAW, plate * 0.92)
+        length, hook = f["claw"]
+        shape_c, line = claw(tip, before, widths[-1] * 0.92, length, hook)
+        paint_claw(rgb, alpha, shape_c, line)
+        behind = np.maximum(behind, shape)
+
+    # The band round the wrist: black leather, the light along its top, a stitched rim at each edge, steel studs.
+    inside, along, across, _, _ = band_shape()
+    inside = inside * pt.smoothstep(0.2, 0.6, pt.blur(np.maximum(body, flow.grow(body, 5)), 1.0))
+    # (it stands a little proud of the arm all round)
+    proud = flow.grow((inside > 0.5).astype(np.float32), 4)
+    proud = pt.blur(proud, 0.8) * pt.smoothstep(0.3, 0.7, flow.grow(body, 6))
+    lit = pt.smoothstep(0.2, -0.85, across)
+    leather = LEATHER[None, None] * (1 - lit[..., None]) + LEATHER_LIT[None, None] * lit[..., None]
+    sheen = np.exp(-(((across + 0.45) / 0.14) ** 2)) * 0.12
+    leather = leather + sheen[..., None]
+    pt.layer_over(rgb, alpha, leather, proud)
+    for edge in (0.13, 0.87):
+        stitch = np.exp(-(((along - edge) / 0.035) ** 2)) * (np.sin((across * 40.0)) > 0.1)
+        pt.layer_over(rgb, alpha, np.array([0.36, 0.36, 0.4], np.float32), stitch * proud * 0.7)
+    rim = np.exp(-(((along - 0.0) / 0.05) ** 2)) + np.exp(-(((along - 1.0) / 0.05) ** 2))
+    pt.layer_over(rgb, alpha, LINE, np.clip(rim, 0, 1) * proud * 0.5)
+    for t in STUDS:
+        across_v = np.array([ARM_WAY[1], -ARM_WAY[0]]) * -1
+        mid = np.array(WRIST) + ARM_WAY * ((BAND[0] + BAND[1]) / 2 + BAND_BOW * (1 - t * t)) + across_v * t * 41.0
+        cx, cy = H(*mid)
+        r = 6.2 * HAND_SCALE * (1 - 0.35 * abs(t) ** 2)
+        stud = pt.ellipse(cx, cy, r * (1 - 0.3 * abs(t)), r, HW, HH, angle=math.atan2(across_v[1], across_v[0]))
+        sn = form(stud, 2.5 * HAND_SCALE)
+        ndl = sn @ LIGHT
+        metal = STEEL[None, None] * (0.32 + 0.75 * np.clip(ndl, 0, 1))[..., None]
+        glint = pt.smoothstep(0.86, 0.95, ndl)[..., None]
+        metal = metal * (1 - glint) + glint * 1.0
+        shadow = np.clip(pt.blur(shifted(stud, 3, 4), 2.0) - stud, 0, 1)
+        rgb *= (1 - 0.5 * shadow * proud)[..., None]
+        pt.layer_over(rgb, alpha, metal, stud)
+        ink(rgb, alpha, stud, 1.0, width=1.4)
+    ink(rgb, alpha, proud, 1.0, width=1.8)
+
+    whole = np.maximum(body, behind)
+    ink(rgb, alpha, np.clip(whole, 0, 1), 1.0, width=2.6)
     return np.concatenate([np.clip(rgb, 0, 1), np.clip(alpha, 0, 1)[..., None]], -1).astype(np.float32)
 
 
 def back():
     """AppleHandBack (RGBA): the inside of the cupped palm, under the apple, deep in shade toward its bottom, the far
-    side catching the light; and the web of skin from the thumb's root (seen while the thumb stands up)."""
+    side catching the light, its lines; and the web of skin from the thumb's root (seen while the thumb stands up)."""
     cup = np.maximum(hfill(CUP), hfill(WEB))
     n = form(cup, 18.0)
     # (the inside of a cup faces the other way from a dome: its far side is lit)
@@ -371,10 +464,13 @@ def back():
     rgb = skin(n, apple_light(n) * 0.6, base=SKIN_DEEP)
     x, y = hgrid()
     deep = pt.smoothstep(690, 750, y) * pt.smoothstep(960, 760, x)
-    rgb = rgb * (1 - 0.45 * deep[..., None])
-    for crease in ([(760, 720), (800, 712), (850, 712), (900, 704)], [(790, 732), (840, 728), (890, 722)]):
-        pt.over(rgb, LINE, stroke(crease, 1.3) * cup * 0.14)
-    return np.concatenate([np.clip(rgb, 0, 1), cup[..., None]], -1).astype(np.float32)
+    rgb = rgb * (1 - 0.5 * deep[..., None])
+    for crease in ([(760, 720), (800, 712), (850, 712), (900, 704)], [(790, 732), (840, 728), (890, 722)],
+                   [(812, 700), (850, 696), (880, 690)]):
+        pt.over(rgb, LINE, tapered(crease, 1.6, 0.2) * cup * 0.45)
+    alpha = cup.astype(np.float32).copy()
+    ink(rgb, alpha, cup, 1.0, width=1.8)
+    return np.concatenate([np.clip(rgb, 0, 1), alpha[..., None]], -1).astype(np.float32)
 
 
 def thumb_square():
@@ -389,18 +485,28 @@ def thumb_square():
 
 
 def thumb():
-    """AppleThumb (RGBA, a square with the thumb's root in its middle): the thumb as it lies over the apple with the
-    web of skin under it, its nail, the creases over its knuckle, the shade it casts down to its right; faded out where
-    it lies deep in the hand, so the game can turn it at its root without a seam."""
+    """AppleThumb (RGBA, a square with the thumb's root in its middle): the gaunt thumb as it lies over the apple, its
+    knuckle swollen and creased, its nail grown into a claw, the shade it casts down to its right; faded out where it
+    lies deep in the hand, so the game can turn it at its root without a seam."""
     shape = digit(THUMB_AXIS, THUMB_WIDTHS)
-    n = form(shape, 10.0)
+    n = form(shape, 7.0)
     rgb = skin(n, apple_light(n))
     alpha = shape.astype(np.float32).copy()
-    for crease in THUMB_CREASES:
-        pt.layer_over(rgb, alpha, LINE, stroke(crease, 1.3) * shape * 0.55)
-    direction = math.atan2(THUMB_AXIS[-1][1] - THUMB_AXIS[-2][1], THUMB_AXIS[-1][0] - THUMB_AXIS[-2][0])
-    nail(rgb, alpha, THUMB_NAIL, direction, shape)
+    way = np.array(THUMB_AXIS[5], float) - np.array(THUMB_AXIS[3], float)
+    way /= np.linalg.norm(way)
+    bump(rgb, THUMB_JOINT, 9, 7, shape, 0.07)
+    wrinkles(rgb, alpha, THUMB_JOINT, (way[0], way[1]), 22.0, shape, count=3, strength=0.6)
     ink(rgb, alpha, shape, 1.0)
+    tip, before = THUMB_AXIS[-1], THUMB_AXIS[-3]
+    tw = np.array(tip, float) - np.array(before, float)
+    tw /= np.linalg.norm(tw)
+    nail_mid = H(tip[0] - tw[0] * 6, tip[1] - tw[1] * 6)
+    plate = pt.ellipse(nail_mid[0], nail_mid[1], 10 * HAND_SCALE, 5 * HAND_SCALE, HW, HH,
+                       angle=math.atan2(tw[1], tw[0])) * shape
+    pt.layer_over(rgb, alpha, CLAW, plate * 0.92)
+    shape_c, line = claw(tip, before, THUMB_WIDTHS[-1] * 0.95, 30, 30)
+    paint_claw(rgb, alpha, shape_c, line)
+    whole = np.maximum(shape, shape_c)
     # (faded out at its root, where it turns, and where it lies more than a few px inside the hand: the hand's own
     # picture shows there)
     x, y = hgrid()
@@ -409,8 +515,8 @@ def thumb():
     keep = (1 - pt.smoothstep(0.2, 0.9, pt.blur(deep, 4.0))) * pt.smoothstep(THUMB_FADE[0], THUMB_FADE[1], reach)
     alpha = alpha * keep
     # the shade it casts, down and to the right, where the thumb is not
-    cast = np.clip(pt.blur(shifted(shape, int(6 * HAND_SCALE), int(8 * HAND_SCALE)), 5.0 * HAND_SCALE) - shape, 0, 1)
-    cast = cast * 0.32 * keep
+    cast = np.clip(pt.blur(shifted(whole, int(6 * HAND_SCALE), int(8 * HAND_SCALE)), 5.0 * HAND_SCALE) - whole, 0, 1)
+    cast = cast * 0.36 * keep
     total = alpha + cast * (1 - alpha)
     rgb = rgb * (alpha / np.maximum(total, 1e-6))[..., None]
     picture = np.concatenate([np.clip(rgb, 0, 1), total[..., None]], -1).astype(np.float32)

@@ -1,12 +1,12 @@
 """The apple loading screen (UI/AppleLoading), painted after your pencil sketch (art/refs/ui/apple_sketch.png,
 2026-10-27): a red apple turning as it falls through the dark, then caught in a hand rising from the lower left, the
-thumb closing over it; coloured like your two frames (a glossy red apple, a pale hand, black).
+thumb closing over it; coloured like your two frames (a glossy red apple, black), the hand a death god's.
 
 The apple is modelled (an apple's shape: shoulders, the hollow its stem grows from, the dimple underneath), lit from
 the upper left as your sketch lights it and shaded as an anime frame lays it (a lit face and a crisp shade, long sharp
 white glints, a lighter rim; no glow round it), so every turn of it is the same apple and the one that lands in the
-hand is the one that fell. The hand is ui/apple_hand.py's (redrawn 2026-11-03: built of its parts on your sketch's
-lines, the thumb its own picture so it closes smoothly).
+hand is the one that fell. The hand is ui/apple_hand.py's (a death god's since 2026-11-05, in the spirit of Ryuk's;
+the thumb its own picture so it closes smoothly).
 
     AppleSpin1..4  1024 x 1024  four 4 x 4 sheets of the apple turning (transparent), 64 cells to a turn (2026-11-03:
                                 16 a turn stepped at about 15 a second as it fell; now it turns smoothly); the first
@@ -22,6 +22,7 @@ falling apple lands exactly in the hand) and a preview, art/export/previews/appl
 as the game lays them).
 
     "C:/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe" art/scripts/ui/intro_frames.py
+    (add --hand to redraw only the hand's three pictures, the apple's sheets read back as they are)
 """
 
 import math
@@ -344,9 +345,14 @@ def preview(sheets, back, front, thumb):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    sheets = apple_sheets()
-    for index, sheet in enumerate(sheets):
-        png.write(os.path.join(OUT, f"AppleSpin{index + 1}.png"), sheet)
+    if "--hand" in sys.argv:
+        # (the hand alone: the apple's sheets as they are on disk, untouched)
+        sheets = [png.read(os.path.join(OUT, f"AppleSpin{index + 1}.png")).astype(np.float32) / 255.0
+                  for index in range(SHEETS)]
+    else:
+        sheets = apple_sheets()
+        for index, sheet in enumerate(sheets):
+            png.write(os.path.join(OUT, f"AppleSpin{index + 1}.png"), sheet)
     back, front, thumb = ah.back(), ah.front(), ah.thumb()
     png.write(os.path.join(OUT, "AppleHandBack.png"), back)
     png.write(os.path.join(OUT, "AppleHandFront.png"), front)

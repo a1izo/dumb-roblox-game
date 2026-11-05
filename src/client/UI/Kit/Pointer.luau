@@ -1,7 +1,7 @@
 --!strict
--- The red pointing hand (OMORI's): one for the whole game. Whatever is chosen right now (the button under the
--- mouse, the gamepad's selection, a picked tab) gets it beside it, bobbing, and it jumps when the choice moves. The
--- button itself never changes look when chosen; the hand says it.
+-- The pointing hand (a paper manicule since 2026-11-05, red before): one for the whole game. Whatever is chosen right
+-- now (the button under the mouse, the gamepad's selection, a picked tab) gets it beside it, bobbing, and it jumps
+-- when the choice moves. The button itself never changes look when chosen; the hand says it.
 --
 -- The hand (Assets.images.PointerHand, art/scripts/ui/cursors.py) points with its index finger alone, and it never
 -- lies over anything else on its screen (the user's picture of 2026-11-03: chosen, SKIP had it over the end of BEGIN

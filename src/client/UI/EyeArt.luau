@@ -8,7 +8,7 @@ return {
 	size = Vector2.new(1792, 1008),
 	crop = { x = 0.12891, y = 0.18452, w = 0.39342, h = 0.47718 },
 	eye = Vector2.new(0.3356, 0.5090),
-	frames = 24,
+	frames = 48,
 	perSheet = 2,
 	frameSize = Vector2.new(705, 481),
 }

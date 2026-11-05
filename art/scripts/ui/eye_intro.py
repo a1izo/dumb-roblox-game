@@ -7,14 +7,15 @@ the pencil itself (where it is dense, and its strokes for the hair's way). The c
 frame's. Painted in layers with art/scripts/ui/paint.py, so the game can move them apart a little for depth:
 
     IntroBaseL, IntroBaseR   the face with the eye shut, the mouth, the light (two halves, 896 x 1008 each)
-    IntroEyeSheet1..12       the eye's corner of the picture as it opens, 24 steps from a crack to open, two to a
+    IntroEyeSheet1..24       the eye's corner of the picture as it opens, 48 steps from a crack to open, two to a
                              sheet (one over the other), each laid exactly over the face (its edges feathered into
                              the shut face's own pixels); the game blends each into the next, so it opens smoothly
-                             (2026-11-03, the user's word: more frames, smoother, like the anime's opening; it was
-                             eight steps). As it opens the pupil tightens and the red comes up in the iris.
-    IntroHairL, IntroHairR   the hair in front, a touch out of focus (transparent, two halves): brown since
-                             2026-11-03 (the user's word: Light's brown, as in the opening), chestnut locks inked at
-                             their edges, a warm shine and fine dark strands
+                             (the user's word: more frames, smoother, like the anime's opening; eight steps until
+                             2026-11-03, 24 until 2026-11-05). As it opens the pupil tightens and the red comes up.
+    IntroHairL, IntroHairR   the hair in front, a touch out of focus (transparent, two halves): Light's brown, made a
+                             deep dark brown on 2026-11-05 (the user's word: darker, to match him and the game), so
+                             it reads near black in the grey grade; its locks still lit a dark chestnut, inked at
+                             their edges, a dull warm shine and fine dark strands
 
 It also writes src/client/UI/EyeArt.luau (where the eye's crop and the eye itself sit in the picture) and a preview,
 art/export/previews/intro_eye.png (shut and open, as the game lays them, and the sketch under them).
@@ -46,25 +47,26 @@ SW, SH = 1670, 942  # the sketch
 W, H = 1792, 1008  # the picture (each half fits Roblox's 1024 px limit)
 K = W / SW  # sketch px -> picture px
 OY = (H - SH * K) / 2
-# (the lid sliding up, the lashes with it, the iris coming out from under: eight frames on 2026-10-27, 24 since
-# 2026-11-03, evenly apart, so blending each into the next reads as one movement; the game sets the pace)
-FRAMES = 24
+# (the lid sliding up, the lashes with it, the iris coming out from under: eight frames on 2026-10-27, 24 on
+# 2026-11-03, 48 since 2026-11-05, evenly apart, so blending each into the next reads as one movement; the game sets
+# the pace)
+FRAMES = 48
 OPENINGS = tuple(round((k + 1) / FRAMES, 4) for k in range(FRAMES))
 PER_SHEET = 2  # frames on a sheet, one over the other (each sheet within Roblox's 1024 px)
 
 # The colours are read off your colour frame (sampled): grey skin, a dark plane where the face turns away, black beyond,
-# a greyed white and a crimson iris. The hair is Light's brown, as the anime's opening has it (2026-11-03): a deep
-# brown in shade, chestnut on its lit locks, a warm copper shine, inked dark at its edges.
+# a greyed white and a crimson iris. The hair is Light's brown (2026-11-03), made darker on 2026-11-05 at the user's
+# word: near black in shade, a dark chestnut on its lit locks, a dull warm shine, inked darker still at its edges.
 BG = (0.006, 0.006, 0.007)
 SKIN = (0.78, 0.77, 0.775)
 PLANE = (0.335, 0.322, 0.318)  # the nose and mouth's plane, turned from the light
 STRIP = (0.6, 0.592, 0.593)  # the light caught along its foot and up its far edge
 INK = (0.04, 0.038, 0.045)
-HAIR_BASE = (0.1, 0.05, 0.03)  # the deep brown in its shade
-HAIR_BODY = (0.46, 0.255, 0.14)  # chestnut, its lit locks
-HAIR_LOW = (0.22, 0.115, 0.065)  # the cel hair's soft gradient, toward the light
-HAIR_SHINE = (0.86, 0.6, 0.38)  # the cel hair's shine: a warm copper band
-HAIR_INK = (0.045, 0.02, 0.015)  # the line at the locks' edges and the fine strands
+HAIR_BASE = (0.034, 0.02, 0.014)  # the near-black brown in its shade
+HAIR_BODY = (0.2, 0.118, 0.072)  # a dark chestnut, its lit locks
+HAIR_LOW = (0.078, 0.046, 0.03)  # the cel hair's soft gradient, toward the light
+HAIR_SHINE = (0.44, 0.31, 0.21)  # the cel hair's shine: a dull warm band
+HAIR_INK = (0.01, 0.006, 0.005)  # the line at the locks' edges and the fine strands
 PUPIL_WIDE = 0.43  # the pupil, a share of the iris, as the eye cracks open (it tightens to PUPIL as it opens)
 SCLERA = (0.86, 0.84, 0.85)
 LIGHT = (-0.55, 0.835)  # which way shadows fall across the picture (the light is above and to the right)

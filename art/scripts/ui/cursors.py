@@ -164,24 +164,27 @@ def nib():
 
 HAND_CELL = 96  # one cell of the PointerHand sheet, px
 HAND_SS = 6
-HAND_OUTLINE = 2.6  # px at the cell's size (the hand shows at half: 1.3 px)
-RED = np.array([210, 30, 30], np.float32) / 255
-RED_LIT = np.array([238, 84, 70], np.float32) / 255
-RED_DARK = np.array([150, 16, 20], np.float32) / 255
-INK = np.array([22, 10, 12], np.float32) / 255
-CUFF = np.array([236, 232, 224], np.float32) / 255
+HAND_OUTLINE = 2.5  # the graphite outline, px at the cell's size (the hand shows at half: about 1.25 px)
+# The game's own paper and graphite (UI/Kit/Tokens: the paper white, its ramp, the ink), lit from the top left.
+PAPER_LIT = np.array([240, 237, 230], np.float32) / 255
+PAPER = np.array([226, 221, 211], np.float32) / 255
+PAPER_SHADE = np.array([163, 158, 149], np.float32) / 255
+PAPER_DEEP = np.array([118, 114, 107], np.float32) / 255
+GRAPHITE = np.array([24, 23, 22], np.float32) / 255
+CUFF = np.array([196, 191, 180], np.float32) / 255
 
 
-def _capsule(a, b, r, n, scale):
-    """A capsule from a to b (final px), radius r, as coverage on the supersampled canvas."""
+def _capsule(a, b, r, n, scale, r_end=None):
+    """A capsule from a to b (final px), radius r (tapering to r_end at b), as coverage on the supersampled canvas."""
     ax, ay = a
     bx, by = b
+    rb = r if r_end is None else r_end
     ang = math.atan2(by - ay, bx - ax)
     pts = []
-    for t in np.linspace(math.pi / 2, 3 * math.pi / 2, 16):
+    for t in np.linspace(math.pi / 2, 3 * math.pi / 2, 18):
         pts.append((ax + r * math.cos(ang + t), ay + r * math.sin(ang + t)))
-    for t in np.linspace(-math.pi / 2, math.pi / 2, 16):
-        pts.append((bx + r * math.cos(ang + t), by + r * math.sin(ang + t)))
+    for t in np.linspace(-math.pi / 2, math.pi / 2, 18):
+        pts.append((bx + rb * math.cos(ang + t), by + rb * math.sin(ang + t)))
     return pt.fill([(x * scale, y * scale) for x, y in pts], n, n)
 
 
@@ -194,45 +197,106 @@ def _rounded(x0, y0, x1, y1, r, n, scale):
     return pt.fill([(x * scale, y * scale) for x, y in pts], n, n)
 
 
-def _line(points, width, n, scale):
-    return pt.fill([(x * scale, y * scale) for x, y in pt.outline(points, [width] * len(points))], n, n)
+def _poly(points, n, scale):
+    return pt.fill([(x * scale, y * scale) for x, y in points], n, n)
+
+
+def _line(points, width, n, scale, tip=None):
+    """A line along `points` (final px), `width` wide, thinning to `tip` at both ends if given."""
+    if tip is None:
+        widths = [width] * len(points)
+    else:
+        m = len(points)
+        widths = [tip + (width - tip) * max(0.0, math.sin(math.pi * k / (m - 1))) ** 0.6 for k in range(m)]
+    return pt.fill([(x * scale, y * scale) for x, y in pt.outline(points, widths)], n, n)
+
+
+def _arc(cx, cy, rx, ry, a0, a1, steps=12):
+    """Points along an elliptical arc (final px), angles in degrees."""
+    return [(cx + rx * math.cos(math.radians(a)), cy + ry * math.sin(math.radians(a))) for a in np.linspace(a0, a1, steps)]
+
+
+def _moved(mask, dx, dy):
+    """`mask` moved by (dx, dy) supersampled px, nothing wrapping round."""
+    out = np.zeros_like(mask)
+    h, w = mask.shape
+    out[max(dy, 0): h + min(dy, 0), max(dx, 0): w + min(dx, 0)] = mask[max(-dy, 0): h + min(-dy, 0),
+                                                                        max(-dx, 0): w + min(-dx, 0)]
+    return out
+
+
+def _cel(hard, lit, shade, depth, k):
+    """A piece's cel shading, as the anime frames and the rest of the game's drawn pieces have it: flat `lit` paper,
+    a crisp `shade` crescent along its lower right (where the piece moved `depth` px toward the light no longer
+    covers it), and a thin rim of the paper's own white along its top."""
+    toward = _moved(hard, int(round(-0.45 * depth * k)), int(round(-depth * k)))
+    crescent = np.clip(hard - toward, 0, 1)
+    rim = np.clip(hard - _moved(hard, 0, int(round(1.1 * k))), 0, 1)
+    col = np.empty(hard.shape + (3,), np.float32)
+    col[:] = lit
+    col = col * (1 - crescent[..., None]) + shade[None, None] * crescent[..., None]
+    rim = rim * (1 - crescent)
+    return col * (1 - 0.8 * rim[..., None]) + PAPER_LIT[None, None] * 0.8 * rim[..., None]
 
 
 def pointer_hand():
-    """The red hand pointing right, its index finger alone held out (the fingertip at 92, 48 of the cell), drawn as
-    stickers back to front, each with its own ink outline so the fingers part from each other: the cuff, the back of
-    the hand, the three curled fingers, the index finger, the thumb laid along it. Lit from the top, darker below."""
+    """The pointing hand, pointing right, its index finger alone held out (the fingertip at 92, 48 of the cell): a
+    manicule, the printer's pointing hand, drawn as the rest of the game's paper pieces are (redrawn 2026-11-05 at the
+    user's word, "make this hand match the style of the game more": it was a red cartoon glove). Paper white, shaded
+    in soft greys under a light from the top left, a graphite outline round every piece so the fingers part from each
+    other, graphite creases at the knuckles, nails drawn in line; out of the dark cuff of a sleeve. Built back to
+    front: the sleeve's cuff, the back of the hand, the three curled fingers, the index finger, the thumb along it."""
     n = HAND_CELL * HAND_SS
     k = HAND_SS
     pieces = [
-        ("cuff", _rounded(8, 37, 25, 83, 3.5, n, k)),
-        ("fist", _rounded(21, 39, 63, 82, 12, n, k)),
-        ("curl3", _capsule((47, 76.5), (57, 76.5), 4.4, n, k)),
-        ("curl2", _capsule((49, 68), (61, 68), 4.8, n, k)),
-        ("curl1", _capsule((51, 59), (64, 59), 5.2, n, k)),
-        ("index", _capsule((54, 48), (86, 48), 6.0, n, k)),
-        ("thumb", _capsule((31, 41.5), (57, 41.5), 5.0, n, k)),
+        ("cuff", _poly([(8, 38.5), (21, 36.5), (24.5, 38), (24.5, 82), (21, 83.5), (8, 81.5), (6.5, 79), (6.5, 41)],
+                       n, k)),
+        ("fist", _poly([(22, 42), (32, 37.5), (46, 37.5), (58, 41), (63.5, 50), (64, 64), (61, 76), (52, 82.5),
+                        (36, 83), (22, 80.5)], n, k)),
+        ("curl3", _capsule((44, 76.5), (57.5, 76), 4.5, n, k, 4.2)),
+        ("curl2", _capsule((46, 67.6), (61, 67.2), 4.9, n, k, 4.6)),
+        ("curl1", _capsule((48, 58.8), (63.5, 58.6), 5.1, n, k, 4.8)),
+        ("index", _capsule((50, 48.6), (86.6, 48), 5.6, n, k, 4.9)),
+        ("thumb", _capsule((30, 42.2), (58, 43.4), 4.9, n, k, 4.3)),
     ]
-    ys = (np.mgrid[0:n, 0:n][0].astype(np.float32) + 0.5) / k
-    # the red, lit from the top: light at y 36, the base by about 52, dark by 82
-    tone = np.clip((ys - 36) / 46, 0, 1)[..., None]
-    red = np.where(tone < 0.35, RED_LIT + (RED - RED_LIT) * (tone / 0.35), RED + (RED_DARK - RED) * ((tone - 0.35) / 0.65))
     rgb = np.zeros((n, n, 3), np.float32)
     alpha = np.zeros((n, n), np.float32)
     ring_r = int(round(HAND_OUTLINE * k))
     for name, cover in pieces:
         hard = (cover > 0.5).astype(np.float32)
-        pt.layer_over(rgb, alpha, INK, flow.grow(hard, ring_r))
-        fill = CUFF[None, None] * (1.0 - 0.18 * tone) if name == "cuff" else red
+        pt.layer_over(rgb, alpha, GRAPHITE, flow.grow(hard, ring_r))
+        if name == "cuff":
+            # the shirt's cuff, a shade greyer than the hand, its edge drawn in, a button
+            pt.layer_over(rgb, alpha, _cel(hard, CUFF, PAPER_DEEP, 3.0, k), hard)
+            pt.layer_over(rgb, alpha, GRAPHITE, _line([(19.8, 40), (19.8, 80)], 0.7, n, k, tip=0.3) * hard * 0.7)
+            button = pt.ellipse(13.5 * k, 46.5 * k, 1.5 * k, 1.5 * k, n, n) * hard
+            pt.layer_over(rgb, alpha, GRAPHITE, button * 0.75)
+            continue
+        curled = name.startswith("curl")
+        fill = _cel(hard, PAPER_SHADE * 0.25 + PAPER * 0.75 if curled else PAPER, PAPER_DEEP if curled else PAPER_SHADE,
+                    6.0 if name == "fist" else 2.6, k)
         pt.layer_over(rgb, alpha, fill, hard)
         if name == "index":
-            # a lit line along the top of the finger, and the nail's edge near the tip
-            pt.layer_over(rgb, alpha, np.clip(RED_LIT * 1.08, 0, 1), _line([(60, 44.6), (84, 44.6)], 1.3, n, k) * hard * 0.8)
-            pt.layer_over(rgb, alpha, RED_DARK, _line([(81.5, 43.5), (81.5, 47.5)], 0.9, n, k) * hard * 0.6)
+            # the nail drawn in line near the tip, the two joint creases
+            nail = _line(_arc(83.2, 48.1, 3.4, 3.0, -100, 100, 14), 0.75, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, GRAPHITE, nail * 0.85)
+            for x in (66.5, 75.5):
+                crease = _line([(x - 0.4, 51.2), (x, 52.4), (x + 0.4, 53.2)], 0.75, n, k, tip=0.3) * hard
+                pt.layer_over(rgb, alpha, GRAPHITE, crease * 0.75)
+        elif name == "thumb":
+            nail = _line(_arc(54.6, 43.2, 3.0, 2.6, -95, 95, 12), 0.7, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, GRAPHITE, nail * 0.8)
+            crease = _line([(44.5, 44.8), (45, 46.2), (45.6, 47)], 0.7, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, GRAPHITE, crease * 0.7)
+        elif name.startswith("curl"):
+            # each curled finger's middle knuckle: a short crease near its end
+            y = {"curl1": 58.7, "curl2": 67.4, "curl3": 76.2}[name]
+            x = {"curl1": 58.5, "curl2": 56.5, "curl3": 53.5}[name]
+            crease = _line([(x, y - 3.2), (x + 0.9, y - 1.0), (x + 1.0, y + 1.0)], 0.7, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, GRAPHITE, crease * 0.6)
         elif name == "fist":
-            pt.layer_over(rgb, alpha, RED_DARK, _line([(36, 52), (41, 60), (40, 70)], 1.1, n, k) * hard * 0.55)
-        elif name == "cuff":
-            pt.layer_over(rgb, alpha, INK, _line([(13.5, 40), (13.5, 80)], 0.9, n, k) * hard * 0.35)
+            # the bone of the wrist, a short line where the hand turns down
+            pt.layer_over(rgb, alpha, GRAPHITE, _line([(29, 70), (31.5, 75), (31.5, 79)], 0.7, n, k, tip=0.3) * hard * 0.5)
 
     def shrink_down(a):
         return a.reshape(HAND_CELL, k, HAND_CELL, k, *a.shape[2:]).mean(axis=(1, 3))

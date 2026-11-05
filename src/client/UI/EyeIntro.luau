@@ -8,7 +8,7 @@
 -- the loading carrying on behind.
 --
 -- The picture is painted in layers (art/scripts/ui/eye_intro.py, laid out by UI/EyeArt): the face in two halves, the
--- eye's corner in 24 frames laid over it as it opens (two to a sheet), and the foreground hair in two halves, which
+-- eye's corner in 48 frames laid over it as it opens (two to a sheet), and the foreground hair in two halves, which
 -- moves more than the face, for depth; dust in the air and film grain over it. The opening blends each frame into the
 -- next as it goes, slow to crack, quick through the middle, settling wide open (2026-11-03, the user's word: more
 -- frames and smoother, like the anime's opening; it stepped through eight). It is drawn on ReplicatedFirst's DGIntro

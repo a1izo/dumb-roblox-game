@@ -20,16 +20,14 @@ local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 local Wheel = require(script.Parent.Wheel)
 
-local C = Kit.color
 local T = Kit.Tokens
 
 local QuickChatPanel = {}
 
 -- Layout (design px).
-local CAPTION = 22
 local WIDTH = 470
 local PAD = T.space.l
-local HEIGHT_EMOTES = PAD * 2 + CAPTION + Wheel.HEIGHT
+local HEIGHT_EMOTES = PAD * 2 + Wheel.HEIGHT
 -- The slot a key plays: the wheel's slot keys (1 to 4 unless the player set their own, Shared/Bindings).
 local function slotFor(key: Enum.KeyCode): number?
 	local profile = ClientState.profile
@@ -45,7 +43,6 @@ end
 local panel: Frame
 local sizeLimit: UISizeConstraint?
 local emotesPage: Frame
-local caption: TextLabel
 local wheelHolder: Frame
 local wheelScale: UIScale
 local tab = "emotes"
@@ -113,23 +110,12 @@ function QuickChatPanel.init()
 	panel = page
 	sizeLimit = Kit.Base.maxSize(panel, Vector2.new(720, HEIGHT_EMOTES))
 
-	-- Emotes: a caption, then the wheel.
+	-- Emotes: the wheel alone (no caption over it since 2026-11-05, the user's word).
 	emotesPage = Kit.frame({ Name = "Emotes", Parent = content })
-	caption = Kit.label({
-		Text = string.format("EMOTES 1-%d", EmoteWheel.SLOTS),
-		font = "label",
-		size = "micro",
-		color = C.bone,
-		Size = UDim2.new(1, 0, 0, CAPTION),
-		Parent = emotesPage,
-	})
-	-- (over the world, with no panel behind it: an outline keeps it readable)
-	caption.TextStrokeColor3 = C.void
-	caption.TextStrokeTransparency = 0.35
 	wheelHolder = Kit.frame({
 		Name = "WheelHolder",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, CAPTION),
+		Position = UDim2.new(0.5, 0, 0, 0),
 		Size = UDim2.fromOffset(WIDTH, Wheel.HEIGHT),
 		Parent = emotesPage,
 	})
