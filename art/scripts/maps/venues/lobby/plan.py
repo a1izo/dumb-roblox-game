@@ -5,24 +5,21 @@ plain running out of sight under one blinding glow low in the north, dark walls 
 pale shards on the skyline, colossal bones curving out of the ground, heaps of junk hung with giant chains, a
 great stone bowl where the death gods sit and gamble, grottos lit by cage lanterns, and the hole they look down
 through on the human world. The part people can walk is a rough basin about 320 studs across (an invisible wall
-follows its edge, behind cliffs and shards); past it the plain goes on, out of reach. Two plateaus over chasms
-carry two of the games.
+follows its edge, behind cliffs and shards); past it the plain goes on, out of reach. Two plateaus over chasms:
+the Spire Ascent climbs on one, the other is a garden of shards.
 
 - South: the spawn ledge, a broad shelf of billowing rock backed by cliffs; players appear on it facing north,
   over the bowl to the throne standing against the glow.
 - The middle: the bowl, a great shallow basin of stone sunk in the plain in steps; at its floor's middle a dish
   heaped with skulls, the twelve candle stones round it (one burns for each player who is ready). The five
-  tableaux stand round its rim (stone figures the game stands on them, acting out how a case goes), the bell of
-  Death's mark at its rim too.
+  tableaux stand round its rim (stone figures the game stands on them, acting out how a case goes).
 - North, on the line from the spawn: the bone throne high on a rock against the glow (the game seats the player
   with the most wins on it, in stone), the plaque at the rock's foot, Most Wins on a slab beside it.
 - North-east: the rift, the hole down to the human world, the stone notebook hanging over it in its fall.
 - East: the colossal carcass, its ribs arching out of the ash; the name duel's two stones under them.
 - South-west: the grotto, a cave in the cliffs where the Academy is (the practice altars, the puppets).
 - West plateau (over its causeway): the Chain Heap, a mountain of junk with a colossal chain hanging into it out
-  of the sky; the Spire Ascent climbs round it. North-east plateau: the rune courtyard among shards.
-- South-east: the Reaper's Sweep, a round stone dais where a great scythe sweeps round (jump it or fall).
-- Eight cage lanterns on posts across the realm and a ninth at the spawn's foot: the Lantern Run.
+  of the sky; the Spire Ascent climbs round it. North-east plateau: a garden of pale shards.
 - North-west: a chess game sunk in the ash; two colossal tusks; junk heaps here and there.
 
 Every place the venue modules use is set here. Run it on its own (python
@@ -129,14 +126,12 @@ def ready_stones():
 
 
 # The five tableaux round the bowl's rim (clockwise from the spawn's side, the order the story is told), each a low
-# round base facing the bowl's middle; the bell of Death's mark at the rim too.
+# round base facing the bowl's middle.
 TABLEAU_RING = 44.0
 TABLEAU_R = 6.0
 TABLEAU_H = 0.7
 TABLEAU_DEG = [148.0, 200.0, 250.0, 302.0, 354.0]
 TABLEAUX = [polar(BOWL_C, d, TABLEAU_RING) for d in TABLEAU_DEG]
-BELL = polar(BOWL_C, 46.0, TABLEAU_RING)
-BELL_R = 3.6  # its base
 
 # The throne, high on its rock in the north on the spawn's line, against the glow, facing the spawn; the plaque at
 # the rock's foot, Most Wins on a slab beside it.
@@ -158,7 +153,7 @@ def _wins_slab():
 STELES = {"wins": _wins_slab()}
 
 # The two plateaus (x, z, radius) and the causeways to them from the basin's rim.
-ISLET_RUNE = (214.0, -216.0, 40.0)
+ISLET_SHARDS = (214.0, -216.0, 40.0)
 ISLET_PARKOUR = (-326.0, -2.0, 38.0)
 PLATEAU_H = 7.0  # how high their tops stand over the plain
 BRIDGE_W = 10.0  # the causeways' width
@@ -176,7 +171,7 @@ def _bridge(islet):
     return a, b
 
 
-BRIDGE_RUNE = _bridge(ISLET_RUNE)
+BRIDGE_SHARDS = _bridge(ISLET_SHARDS)
 BRIDGE_PARKOUR = _bridge(ISLET_PARKOUR)
 
 
@@ -190,7 +185,7 @@ def _chasm(bridge):
     return (a[0] + ux * t, a[1] + uz * t, 34.0, 84.0, math.degrees(math.atan2(-uz, ux)))
 
 
-CHASMS = [_chasm(BRIDGE_RUNE), _chasm(BRIDGE_PARKOUR)]
+CHASMS = [_chasm(BRIDGE_SHARDS), _chasm(BRIDGE_PARKOUR)]
 CHASM_DEPTH = 72.0
 
 
@@ -323,25 +318,6 @@ def _along(a, b, t):
 
 DUEL = [_along(SPINE[1], SPINE[2], 0.5625), _along(SPINE[2], SPINE[3], 0.4375)]
 
-# The Reaper's Sweep: a round stone dais (x, z, radius, its top's height), a great scythe turning on its middle (the
-# game builds and turns it); people join at the pad on the dais' edge nearest the bowl.
-SWEEP = (64.0, 96.0, 17.0, 1.2)
-SWEEP_PAD = polar(SWEEP[:2], math.degrees(math.atan2(BOWL_C[1] - SWEEP[1], BOWL_C[0] - SWEEP[0])), SWEEP[2] + 5.0)
-
-# The Lantern Run: take the cold flame at the first lantern (at the spawn's foot) and light the other eight across
-# the realm, in any order, against the clock. (x, z) of each post.
-LANTERN_START = (-17.0, 70.0)
-LANTERNS = [
-    (-58.0, -6.0),  # by the chess game
-    (-112.0, -52.0),  # under the cliffs, north-west
-    (-36.0, -112.0),  # by the tusks
-    (44.0, -96.0),  # between the throne and the rift
-    (132.0, -54.0),  # the rift's far rim
-    (146.0, 34.0),  # beyond the carcass's ribs
-    (88.0, 116.0),  # behind the Reaper's Sweep
-    (-48.0, 26.0),  # before the grotto's mouth
-]
-
 # The chess game sunk in the ash, north-west: x, z, its turn, a square's side. Its pieces stand mid-game; the
 # white king lies toppled.
 CHESS = (-62.0, -40.0, 18.0, 3.2)
@@ -380,13 +356,8 @@ ARCH = (-118.0, -96.0, 30.0, 38.0, 64.0)
 PK_CENTER = (ISLET_PARKOUR[0], ISLET_PARKOUR[1])
 PK_TOP = 118.0  # the finish's height over the plateau
 
-# The rune courtyard: nine tiles (3 x 3) of 7 studs with 1.8 between them, on the plateau's far side.
-RUNE_CENTER = (ISLET_RUNE[0], ISLET_RUNE[1])
-RUNE_TILE = 7.0
-RUNE_GAP = 1.8
-
 # Where the checks measure the walk (x, y, z pairs): the spawn to each plateau's far side, and across the basin.
-CORNERS = [[(SPAWN[0], LEDGE[4], SPAWN[1]), (ISLET_RUNE[0] + 22.0, PLATEAU_H, ISLET_RUNE[1] - 22.0)],
+CORNERS = [[(SPAWN[0], LEDGE[4], SPAWN[1]), (ISLET_SHARDS[0] + 22.0, PLATEAU_H, ISLET_SHARDS[1] - 22.0)],
            [(SPAWN[0], LEDGE[4], SPAWN[1]), (ISLET_PARKOUR[0] - 22.0, PLATEAU_H, ISLET_PARKOUR[1] + 10.0)],
            [(-100.0, 0.0, 110.0), (104.0, 0.0, -96.0)]]
 
@@ -395,7 +366,6 @@ def footprints():
     """name -> polygon of everything solid on the ground, for the overlap check."""
     items = {
         "bowl": circle(BOWL_C, BOWL_R + 1.0, 24),
-        "bell": circle(BELL, BELL_R),
         "throne rock": circle(THRONE_ROCK[:2], THRONE_ROCK[2] * 1.45, 16),
         "plaque": g2.rect(PLAQUE[0], PLAQUE[1], 6.4, 2.0),
         "rift guard": RIFT_GUARD,
@@ -408,16 +378,12 @@ def footprints():
         "ledge steps": g2.rect(LEDGE_STEPS[0][0], (LEDGE_STEPS[0][1] + LEDGE_STEPS[1][1]) / 2, LEDGE_STEPS[2],
                                LEDGE_STEPS[0][1] - LEDGE_STEPS[1][1]),
         "grotto": circle(ACADEMY_C, GROTTO_WALL + 4.0, 24),
-        "sweep": circle(SWEEP[:2], SWEEP[2] + 1.0, 24),
-        "lantern start": circle(LANTERN_START, 2.0, 8),
         "arch": g2.rect(ARCH[0], ARCH[1], ARCH[2] + 12.0, 12.0, ARCH[4]),
     }
     for name, (x, z, rot, w, h, by) in STELES.items():
         items["stele " + name] = g2.rect(x, z, w + 4.0, STELE_T, rot)
     for k, c in enumerate(TABLEAUX):
         items[f"tableau {k + 1}"] = circle(c, TABLEAU_R + 0.5)
-    for k, (x, z) in enumerate(LANTERNS):
-        items[f"lantern {k + 1}"] = circle((x, z), 2.0, 8)
     for k, (x, z, r, h, seed) in enumerate(JUNK):
         items[f"junk {k + 1}"] = circle((x, z), r)
     return items
@@ -433,15 +399,11 @@ def check():
             hit = g2.intersect(g2.ccw(items[a]), g2.ccw(items[b])) if g2.is_convex(items[b]) else []
             if hit and abs(g2.area(hit)) > 0.5:
                 problems.append(f"{a} overlaps {b}")
-    inside = ["bowl", "bell", "throne rock", "plaque", "rift guard", "chessboard", "ledge", "sweep", "lantern start",
-              "stele wins", "carcass skull"]
-    inside += [f"tableau {k + 1}" for k in range(len(TABLEAUX))] + [f"lantern {k + 1}" for k in range(len(LANTERNS))]
+    inside = ["bowl", "throne rock", "plaque", "rift guard", "chessboard", "ledge", "stele wins", "carcass skull"]
+    inside += [f"tableau {k + 1}" for k in range(len(TABLEAUX))]
     for name in inside:
         if not all(g2.contains(basin, p) for p in items[name]):
             problems.append(f"{name} leaves the basin")
-    for k, (x, z) in enumerate(LANTERNS + [LANTERN_START]):
-        if g2.dist_to_poly_edge(basin, (x, z)) < 8.0:
-            problems.append(f"lantern {k + 1} is within 8 of the rim")
     # The throne on the spawn's line, against the glow; its rock clear of the bowl.
     if abs(THRONE[0] - SPAWN[0]) > 0.01:
         problems.append("the throne is off the spawn's line")
@@ -494,11 +456,8 @@ def check():
     for name, (x, z, rot, w, h, by) in STELES.items():
         if by - h / 2 < 0.9:
             problems.append(f"stele {name}'s board reaches the ground")
-    # The Reaper's Sweep: its pad on the plain, clear of the dais.
-    if math.dist(SWEEP_PAD, SWEEP[:2]) < SWEEP[2] + 3.0:
-        problems.append("the sweep's pad is on its dais")
     # The causeways: their heads inside the basin, clear of every solid, and longer than 60.
-    for name, (a, b) in (("rune", BRIDGE_RUNE), ("parkour", BRIDGE_PARKOUR)):
+    for name, (a, b) in (("shards", BRIDGE_SHARDS), ("parkour", BRIDGE_PARKOUR)):
         deck = g2.rect((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, math.dist(a, b), BRIDGE_W,
                        math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0])))
         for iname, poly in items.items():
@@ -515,6 +474,6 @@ if __name__ == "__main__":
     print(f"{len(footprints())} footprints, {len(found)} problem(s)")
     for p in found:
         print("  -", p)
-    print("bridge rune", BRIDGE_RUNE, "bridge parkour", BRIDGE_PARKOUR)
-    print("wins slab", STELES["wins"], "duel", DUEL, "gate", GATE, "sweep pad", SWEEP_PAD)
-    print("tableaux", TABLEAUX, "bell", BELL)
+    print("bridge shards", BRIDGE_SHARDS, "bridge parkour", BRIDGE_PARKOUR)
+    print("wins slab", STELES["wins"], "duel", DUEL, "gate", GATE)
+    print("tableaux", TABLEAUX)

@@ -1,6 +1,6 @@
 -- Haunting the lobby. For a Specter waiting there (away from the case, hidden), a small bar at the bottom
 -- centre: Flicker (the nearest brazier or lamp sputters), Whisper and Mist (at the spot you are looking at,
--- within 25 studs), plus the spirit trial's start. One shared cooldown for the haunts; the server decides. Every player in the lobby sees and hears a
+-- within 25 studs). One shared cooldown for the haunts; the server decides. Every player in the lobby sees and hears a
 -- haunt (this module plays them all), and nothing says who did it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,7 +11,6 @@ local Create = require(Shared:WaitForChild("Create"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
-local LobbyGamesController = require(script.Parent.Parent.Controllers.LobbyGamesController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 local Kit = require(script.Parent.Kit)
@@ -197,12 +196,6 @@ function HauntBar.init()
 			haunt(item[1])
 		end)
 	end
-	Kit.button(
-		{ text = "Spirit trial", icon = "eye", variant = "primary", size = "s", LayoutOrder = 9, Parent = bar },
-		function()
-			LobbyGamesController.startSpiritTrial()
-		end
-	)
 	-- The cooldown, counted down on the bar's label.
 	task.spawn(function()
 		while true do

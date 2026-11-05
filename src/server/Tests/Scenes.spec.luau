@@ -32,8 +32,8 @@ return function(t)
 		it("gives the lobby every anchor it builds at", function()
 			local anchors = SceneBuilder.data("Lobby").layout.anchors
 			local missing = {}
-			-- The one board (Most Wins), the throne's seat and plaque, the bell, the duel's two slates.
-			local names = { "spawn", "wins", "throne", "throneplaque", "bell", "duel1", "duel2" }
+			-- The one board (Most Wins), the throne's seat and plaque, the duel's two slates.
+			local names = { "spawn", "wins", "throne", "throneplaque", "duel1", "duel2" }
 			for _, name in ipairs({ "academyGate", "dummy1", "dummy2", "dummy3" }) do
 				table.insert(names, name)
 			end
@@ -48,30 +48,13 @@ return function(t)
 			for index = 1, #TaskTypes.LIST + 3 do
 				table.insert(names, "drill" .. index)
 			end
-			-- The mini-games: the Spire Ascent's pad, centre and ten checkpoints, the rune courtyard's pad,
-			-- centre and nine tiles, the rift's shape and the roof far under it.
-			for _, name in ipairs({
-				"pkStart",
-				"pkCenter",
-				"runeStart",
-				"runeCenter",
-				"rift",
-				"landing",
-			}) do
+			-- The mini-games: the Spire Ascent's pad, centre and ten checkpoints, the rift's shape and the roof far
+			-- under it (the duel's stones are above).
+			for _, name in ipairs({ "pkStart", "pkCenter", "rift", "landing" }) do
 				table.insert(names, name)
 			end
 			for index = 1, 10 do
 				table.insert(names, "pk" .. index)
-			end
-			for index = 1, 9 do
-				table.insert(names, "rune" .. index)
-			end
-			-- The Reaper's Sweep's dais and pad, the Lantern Run's first lantern and its eight others.
-			for _, name in ipairs({ "sweep", "sweepPad", "lanternStart" }) do
-				table.insert(names, name)
-			end
-			for index = 1, 8 do
-				table.insert(names, "lantern" .. index)
 			end
 			for _, name in ipairs(names) do
 				if not anchors[name] then
@@ -79,6 +62,23 @@ return function(t)
 				end
 			end
 			expect(table.concat(missing, ", ")).to.equal("")
+		end)
+
+		it("keeps only the three games the user kept in the lobby", function()
+			-- (the rift dive, the Spire Ascent and the name duel: the others were removed for good on 2026-11-05)
+			local anchors = SceneBuilder.data("Lobby").layout.anchors
+			for _, name in ipairs({
+				"bell",
+				"sweep",
+				"sweepPad",
+				"lanternStart",
+				"lantern1",
+				"runeStart",
+				"runeCenter",
+				"rune1",
+			}) do
+				expect(anchors[name]).to.equal(nil)
+			end
 		end)
 
 		it("puts the spawn on the terrace, above the plaza", function()

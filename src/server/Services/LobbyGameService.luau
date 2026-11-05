@@ -1,16 +1,15 @@
 --!strict
--- The lobby mini-games, run by the server: the Spire Ascent, the rune courtyard and the Lantern Run.
--- The rules are in Shared/LobbyGames (and tested); the objects are Maps/LobbyGames'. Everything here is the
--- server's say: a run is checked against where the character really is (checkpoints in order and in a
--- believable time, tiles actually stepped on), and a client only ever asks to start.
+-- The lobby mini-games, run by the server: the Spire Ascent here, and routed through here the dive into the rift
+-- (LobbyRift) and the name duel (LobbyDuel); the user kept these three on 2026-11-05 and removed the rest. The rules
+-- are in Shared/LobbyGames (and tested); the objects are Maps/LobbyGames'. Everything here is the server's say: a run
+-- is checked against where the character really is (checkpoints in order and in a believable time), and a client only
+-- ever asks to start.
 --
 -- A player in a case (or watching one) is in none of these: their runs end the moment they are
 -- called to a match. Nothing here pays coins or XP; bests are saved in the profile and the Spire
--- Ascent and the rune rounds also go on the global boards (LeaderboardService).
+-- Ascent also goes on the global boards (LeaderboardService).
 --
--- Four more things to do in the lobby are routed through here: the dive into the rift (LobbyRift),
--- Death's mark (LobbyMark), the name duel (LobbyDuel) and the Reaper's Sweep (LobbySweep). And one safeguard: whoever falls out of
--- the lobby's world is set back on the terrace.
+-- And one safeguard: whoever falls out of the lobby's world is set back on the terrace.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,16 +20,11 @@ local Net = require(Shared:WaitForChild("Net"))
 local Venues = require(Shared:WaitForChild("Venues"))
 local Games = Shared:WaitForChild("LobbyGames")
 local Parkour = require(Games:WaitForChild("Parkour"))
-local Runes = require(Games:WaitForChild("Runes"))
-local Lanterns = require(Games:WaitForChild("Lanterns"))
-local SpiritTrial = require(Games:WaitForChild("SpiritTrial"))
 
 local DataService = require(script.Parent.DataService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local LobbyDuel = require(script.Parent.LobbyDuel)
-local LobbyMark = require(script.Parent.LobbyMark)
 local LobbyRift = require(script.Parent.LobbyRift)
-local LobbySweep = require(script.Parent.LobbySweep)
 local Match = require(script.Parent.Match)
 local RateLimit = require(script.Parent.RateLimit)
 
@@ -45,18 +39,10 @@ local START_RANGE = 16 -- studs from a pad within which a request counts
 type Session = {
 	game: string,
 	parkour: Parkour.Session?,
-	spirit: SpiritTrial.Session?,
-	runes: Runes.State?,
-	lanterns: Lanterns.Session?,
-	state: string?, -- runes: "show" or "input"
-	inputAt: number?,
-	deadline: number?,
-	lastTile: number?,
 }
 
 local games: any = nil -- what Maps/LobbyGames built, set by MapService
 local sessions: { [Player]: Session } = {}
-local rng = Random.new()
 
 local function root(player: Player): BasePart?
 	local character = player.Character
@@ -71,7 +57,7 @@ end
 
 -- Why a player may not play `game` now (in a case, or watching one from the lobby), nil when they may. A
 -- Specter waiting in the lobby (hidden) may play the solo games, not the ones played in front of others
--- ("shared": the rift, Death's mark, the duel).
+-- ("shared": the rift, the duel).
 local function blocked(player: Player, game: string?): string?
 	local ok, ghost = pcall(function()
 		return require(script.Parent.GhostService)
@@ -172,171 +158,6 @@ local function finishParkour(player: Player, session: Session)
 	sendHome(player, games.parkour.start)
 end
 
--- The Lantern Run ------------------------------------------------------------------------------------------------
-
-local function startLanterns(player: Player)
-	local part = root(player)
-	local g = games.lanterns
-	if not part or not g or (part.Position - g.start).Magnitude > START_RANGE then
-		return
-	end
-	cancel(player, "restart")
-	LobbyMark.cancel(player)
-	LobbyDuel.cancel(player)
-	LobbySweep.cancel(player)
-	local session: Session = { game = "lanterns", lanterns = Lanterns.newSession(os.clock()) }
-	sessions[player] = session
-	tell(player, {
-		game = "lanterns",
-		kind = "start",
-		at = workspace:GetServerTimeNow(),
-		total = Lanterns.COUNT,
-		limit = Lanterns.LIMIT,
-	})
-end
-
--- The first run with every lantern lit earns what the grey apples once did: the Realm Walker title and Apple Toss.
-local function rewardLanterns(player: Player): boolean
-	local data = DataService.get(player)
-	if not data or data.titles.realmwalker then
-		return false
-	end
-	data.titles.realmwalker = true
-	data.owned.emote_apple_toss = true
-	saved(player)
-	Match.notify(player, "Every lantern lit. Unlocked Realm Walker and Apple Toss.", "good")
-	return true
-end
-
-local function finishLanterns(player: Player, session: Session)
-	local run = session.lanterns :: Lanterns.Session
-	local time = Lanterns.finish(run, os.clock())
-	sessions[player] = nil
-	if not time then
-		tell(player, { game = "lanterns", kind = "end", why = "invalid" })
-		return
-	end
-	local isBest, best = improve(player, "lanternBest", time, Lanterns.isBetter)
-	local rewarded = rewardLanterns(player)
-	tell(player, { game = "lanterns", kind = "finish", time = time, best = best, newBest = isBest, reward = rewarded })
-end
-
-local function lanternsStep(player: Player, session: Session, position: Vector3)
-	local run = session.lanterns :: Lanterns.Session
-	local g = games.lanterns
-	if not g then
-		cancel(player, "reset")
-		return
-	end
-	if Lanterns.out(run, os.clock()) then
-		cancel(player, "out")
-		return
-	end
-	for index, spot in ipairs(g.spots) do
-		if not run.lit[index] and Lanterns.near(position, spot) and Lanterns.light(run, index) then
-			tell(player, {
-				game = "lanterns",
-				kind = "lit",
-				index = index,
-				count = run.count,
-				time = os.clock() - run.startedAt,
-			})
-			if Lanterns.done(run) then
-				finishLanterns(player, session)
-			end
-			return
-		end
-	end
-end
-
--- The spirit trial (Deathsingers waiting in the lobby only) ------------------------------------------------
-
-local spiritRings: { Vector3 }? = nil
-local spiritCenter = Vector3.zero
-
--- The loop's rings, dropped onto the lobby's real floor around its spawn (worked out once).
-local function spiritCourse(): { Vector3 }?
-	if spiritRings then
-		return spiritRings
-	end
-	local lobby = workspace:FindFirstChild("LGameLobby")
-	local spawn = if lobby then lobby:FindFirstChild("LobbySpawn", true) else nil
-	if not lobby or not spawn or not spawn:IsA("BasePart") then
-		return nil
-	end
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { lobby }
-	local rings = {}
-	for _, spot in ipairs(SpiritTrial.layout(spawn.Position)) do
-		local hit = workspace:Raycast(spot + Vector3.new(0, 60, 0), Vector3.new(0, -140, 0), params)
-		table.insert(rings, (if hit then hit.Position else spot) + Vector3.new(0, 3.5, 0))
-	end
-	spiritRings = rings
-	spiritCenter = spawn.Position
-	return rings
-end
-
-local function isAway(player: Player): boolean
-	local ok, ghost = pcall(function()
-		return require(script.Parent.GhostService)
-	end)
-	return ok and ghost.isAway(player)
-end
-
-local function startSpirit(player: Player)
-	local rings = spiritCourse()
-	if not rings or not isAway(player) then
-		return
-	end
-	cancel(player, "restart")
-	sessions[player] = { game = "spirit", spirit = SpiritTrial.newSession(os.clock()) }
-	tell(player, { game = "spirit", kind = "start", at = workspace:GetServerTimeNow(), rings = rings })
-end
-
-local function spiritStep(player: Player, session: Session, position: Vector3)
-	local run = session.spirit :: SpiritTrial.Session
-	local rings = spiritRings
-	if not rings or not isAway(player) then
-		cancel(player, "case")
-		return
-	end
-	if (flat(position) - flat(spiritCenter)).Magnitude > SpiritTrial.WANDER then
-		cancel(player, "wandered")
-		return
-	end
-	local index = run.reached + 1
-	local ring = rings[index]
-	if not ring or (position - ring).Magnitude > SpiritTrial.REACH then
-		return
-	end
-	local from = if run.reached > 0 then rings[run.reached] else position
-	local ok = SpiritTrial.reach(run, index, os.clock(), (ring - from).Magnitude)
-	if not ok then
-		return
-	end
-	tell(player, { game = "spirit", kind = "ring", reached = index })
-	if index < SpiritTrial.RINGS then
-		return
-	end
-	sessions[player] = nil
-	local time = SpiritTrial.finish(run, os.clock())
-	if not time then
-		tell(player, { game = "spirit", kind = "end", why = "invalid" })
-		return
-	end
-	local ps = Match.get(player)
-	if ps then
-		ps.stats.spiritRuns = (ps.stats.spiritRuns or 0) + 1
-	end
-	local isBest, best = improve(player, "spiritBest", time, SpiritTrial.isBetter)
-	if isBest then
-		-- Held off the public board until the case closes (LeaderboardService.hold).
-		LeaderboardService.record(player, "spirit", time)
-	end
-	tell(player, { game = "spirit", kind = "finish", time = time, best = best, newBest = isBest })
-end
-
 local function parkourStep(player: Player, session: Session, position: Vector3)
 	local run = session.parkour :: Parkour.Session
 	local g = games.parkour
@@ -363,84 +184,6 @@ local function parkourStep(player: Player, session: Session, position: Vector3)
 	if Parkour.fell(position, checkpoint) then
 		sendHome(player, checkpoint)
 		tell(player, { game = "parkour", kind = "fall", index = reached })
-	end
-end
-
--- The rune courtyard -------------------------------------------------------------------------------------
-
-local function showRound(player: Player, session: Session)
-	local state = session.runes :: Runes.State
-	session.state = "show"
-	session.inputAt = os.clock() + Runes.showTime(#state.seq)
-	tell(player, { game = "runes", kind = "show", seq = state.seq, round = state.round, step = Runes.STEP })
-end
-
-local function startRunes(player: Player)
-	local part = root(player)
-	if not part or (part.Position - games.runes.start).Magnitude > START_RANGE then
-		return
-	end
-	cancel(player, "restart")
-	local session: Session = { game = "runes", runes = Runes.start(rng:NextInteger(1, 2 ^ 30)) }
-	sessions[player] = session
-	tell(player, { game = "runes", kind = "start" })
-	showRound(player, session)
-end
-
-local function endRunes(player: Player, session: Session, why: string)
-	local rounds = Runes.rounds(session.runes :: Runes.State)
-	sessions[player] = nil
-	local isBest, best = improve(player, "runesBest", rounds, function(old, value)
-		return value > old
-	end)
-	if isBest then
-		LeaderboardService.record(player, "runes", rounds)
-	end
-	tell(player, { game = "runes", kind = "over", rounds = rounds, best = best, newBest = isBest, why = why })
-end
-
-local function runesStep(player: Player, session: Session, position: Vector3)
-	local g = games.runes
-	if (flat(position) - flat(g.center)).Magnitude > Runes.WANDER then
-		cancel(player, "left")
-		return
-	end
-	local now = os.clock()
-	local tile: number? = nil
-	if math.abs(position.Y - g.center.Y) < 8 then
-		tile = Runes.tileAt(position.X - g.center.X, position.Z - g.center.Z, g.tile, g.gap)
-	end
-	if session.state == "show" then
-		if now >= (session.inputAt or 0) then
-			session.state = "input"
-			session.lastTile = tile
-			session.deadline = now + Runes.INPUT_TIMEOUT
-			tell(player, { game = "runes", kind = "input" })
-		end
-		return
-	end
-	if tile ~= session.lastTile then
-		session.lastTile = tile
-		if tile then
-			local state = session.runes :: Runes.State
-			local result = Runes.step(state, tile)
-			tell(player, { game = "runes", kind = "step", tile = tile, ok = result ~= "wrong" })
-			if result == "wrong" then
-				endRunes(player, session, "wrong")
-			elseif result == "round" then
-				if Runes.rounds(state) >= Runes.MAX_ROUNDS then
-					endRunes(player, session, "perfect")
-				else
-					showRound(player, session)
-				end
-			else
-				session.deadline = now + Runes.INPUT_TIMEOUT
-			end
-			return
-		end
-	end
-	if session.deadline and now > session.deadline then
-		endRunes(player, session, "slow")
 	end
 end
 
@@ -561,9 +304,7 @@ end
 -- Ends whatever a player is doing in the lobby's games (they began another, or dived into the rift).
 local function leaveOthers(player: Player)
 	cancel(player, "left")
-	LobbyMark.cancel(player)
 	LobbyDuel.cancel(player)
-	LobbySweep.cancel(player)
 end
 
 -- A name duel won goes in the profile (a count, nothing more); returns how many that makes.
@@ -584,9 +325,7 @@ local function step()
 	end
 	catchFallen()
 	LobbyRift.step()
-	LobbyMark.step()
 	LobbyDuel.step()
-	LobbySweep.step()
 	for player, session in pairs(sessions) do
 		local part = root(player)
 		if not player.Parent or not part then
@@ -595,12 +334,6 @@ local function step()
 			cancel(player, "case")
 		elseif session.game == "parkour" then
 			parkourStep(player, session, part.Position)
-		elseif session.game == "runes" then
-			runesStep(player, session, part.Position)
-		elseif session.game == "spirit" then
-			spiritStep(player, session, part.Position)
-		elseif session.game == "lanterns" then
-			lanternsStep(player, session, part.Position)
 		end
 	end
 end
@@ -622,30 +355,8 @@ local function onRequest(player: Player, payload: any)
 		elseif action == "leave" then
 			cancel(player, "left")
 		end
-	elseif game == "spirit" then
-		if action == "start" then
-			startSpirit(player)
-		elseif action == "leave" then
-			cancel(player, "left")
-		end
-	elseif game == "runes" then
-		if action == "start" then
-			startRunes(player)
-		elseif action == "leave" then
-			cancel(player, "left")
-		end
-	elseif game == "lanterns" then
-		if action == "start" then
-			startLanterns(player)
-		elseif action == "leave" then
-			cancel(player, "left")
-		end
-	elseif game == "sweep" then
-		LobbySweep.request(player, action)
 	elseif game == "rift" then
 		LobbyRift.request(player, action, payload)
-	elseif game == "mark" then
-		LobbyMark.request(player, action)
 	elseif game == "duel" then
 		LobbyDuel.request(player, action, payload)
 	end
@@ -665,13 +376,6 @@ function LobbyGameService.setup(built: any)
 		sendHome = sendHome,
 		leaveOthers = leaveOthers,
 	}, built.dive)
-	LobbyMark.setup({
-		tell = tell,
-		improve = improve,
-		root = root,
-		humanoid = humanoid,
-		playable = playable,
-	}, built.mark)
 	LobbyDuel.setup({
 		tell = tell,
 		root = root,
@@ -679,13 +383,6 @@ function LobbyGameService.setup(built: any)
 		leaveOthers = leaveOthers,
 		won = duelWon,
 	}, built.duel)
-	LobbySweep.setup({
-		tell = tell,
-		improve = improve,
-		root = root,
-		playable = playable,
-		leaveOthers = leaveOthers,
-	}, built.sweep)
 end
 
 function LobbyGameService.init()
@@ -694,9 +391,7 @@ function LobbyGameService.init()
 		sessions[player] = nil
 		onBridge[player] = nil
 		LobbyRift.cancel(player)
-		LobbyMark.cancel(player)
 		LobbyDuel.cancel(player)
-		LobbySweep.cancel(player)
 	end)
 	task.spawn(function()
 		while true do

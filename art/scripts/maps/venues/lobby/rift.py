@@ -1,5 +1,5 @@
 """The rift: a hole torn in the Grey Realm's ground, where its dwellers sit and watch the world of
-the living. Its rim glows with cold cracks; jagged rock walls drop away into it; and far beneath,
+the living. Cold light rises out of it; jagged rock walls drop away into it; and far beneath,
 seen through it, lies Kagegaoka at night: streets of lamps, lit windows, the river, the Central
 Tower with its red lights.
 
@@ -18,7 +18,6 @@ from maps import city
 from maps import geo2d as g2
 from maps.mesher import cross, dot, sub
 from maps.venues.lobby import plan as P
-from maps.venues.lobby import rocks
 from maps.venues.lobby.terrain import boulder, rock
 
 K = P.CITY_SCALE  # the city's scale
@@ -65,35 +64,11 @@ def hole(s):
                 axis = (cx, (levels[li] + levels[li + 1]) / 2, cz)
                 face_to(s, "RockGrey", [a[k], a[k1], b[k1]], axis)
                 face_to(s, "RockGrey", [a[k], b[k1], b[k]], axis)
-    # The glowing cracks just under the rim, and the cold light rising from them: each a jagged line, thin at its
-    # ends and wider in its middle, of its own length (evenly spaced bars of one size read as a road's markings).
-    # (The rim's stream gives each crack's depth as it always did, so the throat below is as it was; the cracks'
-    # own shapes come from a stream of their own.)
-    crack = random.Random(616)
-
-    def at(p, q, t):
-        x, z = p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t
-        d = math.dist((x, z), (cx, cz))
-        return x + (cx - x) / d * 0.08, z + (cz - z) / d * 0.08  # (a hair in front of the rock: on it, the two flickered)
-
-    for k in range(n):
-        p, q = poly[k], poly[(k + 1) % n]
-        t = crack.uniform(0.0, 0.3)
-        for _ in range(2):
-            y0 = -rng.uniform(0.5, 1.2)
-            mid = y0 - rng.uniform(0.3, 0.7) / 2
-            length = crack.uniform(0.18, 0.5)
-            if t + length > 0.98 or crack.random() < 0.25:
-                continue
-            us = [t + length * f for f in (0.0, crack.uniform(0.25, 0.4), crack.uniform(0.6, 0.75), 1.0)]
-            ys = [mid + crack.uniform(-0.3, 0.3) for _ in us]
-            hs = [0.04, crack.uniform(0.1, 0.24), crack.uniform(0.1, 0.24), 0.04]
-            for i in range(3):
-                a, b = at(p, q, us[i]), at(p, q, us[i + 1])
-                face_to(s, "RiftGlow", [(a[0], ys[i] + hs[i], a[1]), (b[0], ys[i + 1] + hs[i + 1], b[1]),
-                                        (b[0], ys[i + 1] - hs[i + 1], b[1]), (a[0], ys[i] - hs[i], a[1])],
-                        (cx, -5.0, cz))
-            t += length + crack.uniform(0.08, 0.3)
+    # (The glowing cracks that ran just under the rim are gone, the user's call of 2026-11-05: from over the rift they
+    # read as white shards standing round its swirl. The rim's stream still gives up the four draws a side they took,
+    # so the lip's rocks and the balustrade below stand where they did.) The cold light rising out of the throat stays.
+    for _ in range(4 * n):
+        rng.random()
     s.light("point", (cx, -7.0, cz), (170, 196, 232), 40, 1.0)
     s.light("point", (cx, -22.0, cz), (150, 176, 214), 30, 0.6)
     throat(s, rings, levels, cx, cz, rng)
@@ -214,9 +189,9 @@ def cloud(s):
 
 
 def rim(s, poly, cx, cz, rng):
-    """The rift's ruined rim: a band of old flagstones round the edge, a worn balustrade standing
-    just outside it (solid, with gaps, never higher than a jump), and two clusters of pale shards over
-    its far side."""
+    """The rift's ruined rim: a band of old flagstones round the edge, and a worn balustrade standing
+    just outside it (solid, with gaps, never higher than a jump). (The two clusters of pale shards over its far side
+    went with the cracks on 2026-11-05.)"""
     ring = P.grown(poly, 3.3)
     n = len(poly)
     for k in range(n):
@@ -242,12 +217,6 @@ def rim(s, poly, cx, cz, rng):
             if rng.random() < 0.4:
                 s.box("RuinStone", (mx, h + 0.4, mz), (run * 0.7, 0.8, 1.1), rot)
             u += run + rng.uniform(0.1, 0.9)
-    # Two clusters of pale shards over its far side, framing the hole against the glow.
-    nx, nz = cx - 3.0, cz - P.RIFT_AXES[1] - 11.0
-    for side, sc in ((-1, 0.62), (1, 0.48)):
-        x, z = nx + side * 13.0, nz + abs(side) * 2.0
-        if g2.contains(P.BASIN, (x, z)):
-            rocks.rock(s, "RealmShardsA", x, z, rng.uniform(0, 360), sc)
 
 
 # Kagegaoka far below --------------------------------------------------------------------------------------

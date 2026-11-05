@@ -1,11 +1,11 @@
 """The two plateaus and the old stone causeways to them. West: the Chain Heap (2026-11-04), a mountain of junk with a
 colossal chain hanging into it out of the sky; the Spire Ascent's ten checkpoints climb round the chain on stones and
-broken gear wheels hanging in the air. North-east: the rune courtyard, nine tiles among pale shards. Each plateau is a raised table of rock standing out on the plain, with its own invisible wall (open only
-where the causeway arrives); each causeway runs from the basin's ridge over a deep chasm and up a short
+broken gear wheels hanging in the air. North-east: a garden of pale shards round a flagged floor (the rune courtyard
+stood here until 2026-11-05). Each plateau is a raised table of rock standing out on the plain, with its own invisible
+wall (open only where the causeway arrives); each causeway runs from the basin's ridge over a deep chasm and up a short
 flight of steps onto the plateau.
 
-The game builds the mini-games' own objects (the rune tiles, the checkpoint flags, the prompts) at the
-anchors written here."""
+The game builds the Spire Ascent's own objects (the checkpoint flags, the prompts) at the anchors written here."""
 
 import math
 import random
@@ -159,35 +159,24 @@ def plateau(s, g, c, r, seed, arrive, wall_h):
     return poly
 
 
-# The rune courtyard -----------------------------------------------------------------------------------------
+# The shard garden ------------------------------------------------------------------------------------------
 
 
-def runes(s, g):
-    c = P.RUNE_CENTER
-    poly = plateau(s, g, c, P.ISLET_RUNE[2], 55, P.BRIDGE_RUNE[1], 40.0)
-    landmarks.flag_disc(s, g, c, 32.0, 57, name="the rune courtyard", broken=0.05, y=H + 0.04, within=poly)
-    # The slab the nine tiles lie on (the game builds the tiles themselves, lit one by one).
-    pitch = P.RUNE_TILE + P.RUNE_GAP
-    span = pitch * 3 + 1.0
-    s.box("RuinStone", (c[0], H + 0.3, c[1]), (span, 0.6, span), collide=True)
-    s.box("BlackTrim", (c[0], H + 0.62, c[1]), (span - 0.6, 0.04, span - 0.6))
-    s.anchor("runeCenter", c[0], H, c[1], 0.0)
-    k = 0
-    for j in (-1, 0, 1):
-        for i in (-1, 0, 1):
-            k += 1
-            s.anchor(f"rune{k}", c[0] + i * pitch, H + 0.6, c[1] + j * pitch, 0.0, w=P.RUNE_TILE, h=P.RUNE_TILE)
-    # Where the causeway arrives: the stepping spot for starting a run, two shards either side of it.
-    bx, bz = P.BRIDGE_RUNE[1]
+def shards(s, g):
+    """The north-east plateau: a flagged floor in a garden of pale shards (the rune courtyard's tiles, the slab under
+    them and its start were removed with the game, 2026-11-05)."""
+    c = P.ISLET_SHARDS[:2]
+    poly = plateau(s, g, c, P.ISLET_SHARDS[2], 55, P.BRIDGE_SHARDS[1], 40.0)
+    landmarks.flag_disc(s, g, c, 32.0, 57, name="the shard garden", broken=0.05, y=H + 0.04, within=poly)
+    # Where the causeway arrives: two shards either side of it.
+    bx, bz = P.BRIDGE_SHARDS[1]
     d = math.hypot(bx - c[0], bz - c[1])
     ux, uz = (bx - c[0]) / d, (bz - c[1]) / d
     sx, sz = c[0] + ux * 26.0, c[1] + uz * 26.0
-    s.anchor("runeStart", sx, H, sz, P.rot_towards((sx, sz), c))
     rng = random.Random(58)
     for side in (-1, 1):
         rocks.rock(s, "RealmShardsA", sx + uz * side * 6.5, sz - ux * side * 6.5, rng.uniform(0, 360), 0.42, y=H)
-    s.light("point", (sx, H + 8.0, sz), (170, 196, 232), 26, 1.0)
-    # The shard garden round the slab: pale clusters, the tallest behind it.
+    # The shard garden round the floor's middle: pale clusters, the tallest at its far side.
     for q in range(11):
         a = math.tau * q / 11 + 0.25
         r = rng.uniform(25.0, 33.0)
@@ -296,7 +285,7 @@ def parkour(s, g):
 
 
 def build(s, g):
-    causeway(s, g, P.BRIDGE_RUNE[0], P.BRIDGE_RUNE[1], 301, P.CHASMS[0], "bridgeRune")
+    causeway(s, g, P.BRIDGE_SHARDS[0], P.BRIDGE_SHARDS[1], 301, P.CHASMS[0], "bridgeShards")
     causeway(s, g, P.BRIDGE_PARKOUR[0], P.BRIDGE_PARKOUR[1], 302, P.CHASMS[1], "bridgeParkour")
-    runes(s, g)
+    shards(s, g)
     parkour(s, g)

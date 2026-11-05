@@ -1,6 +1,6 @@
 """The Grey Realm's junk, lanterns and grass (set "Lobby"), made 2026-11-04 for the lobby's remake to the user's reference
 videos: the dish of skulls at the bowl's middle (where the death gods sit and gamble), the cage lanterns hanging in the
-grotto and the Lantern Run's posts, rusted gear wheels and piles of giant chain lying about the junk heaps, the gear
+grotto, rusted gear wheels and piles of giant chain lying about the junk heaps, the gear
 wheels the Spire Ascent's checkpoints are, the colossal chain hanging out of the sky into the Chain Heap, and the pale
 spiky dead grass. Forged and rusted iron, weathered stone, bone. They face -Y and stand on z = 0."""
 
@@ -19,8 +19,6 @@ from props_lobby import (bone_mat, dark_apart, drop, fill_gaps, lay_bone, old_bo
                          void_mat)
 from props_realm import surface
 from props_realmfire import FORGED
-
-PITTED = {"sub": 1, "disp": [("cells", 0.02, 0.4), ("grain", 0.008, 0.07)]}  # old stone
 
 
 def _rust(prefix):
@@ -200,40 +198,6 @@ def hanging_cage():
     return parts, [], {"flames": [(flame[0], flame[1], flame[2], 0.7)]}
 
 
-@prop("RunLantern", pivot="bottom", material="Metal", collide=True, texture=512, set="Lobby", anchor=(0, 0), detail=True,
-      normal=256)
-def run_lantern():
-    """A post of the Lantern Run: a tall shaft of black iron on a stone footing, a scrolled arm out from its head and a
-    big cage lantern hanging from it, cold and dark until a runner lights it (the game lights it: its flame and light
-    stand at the lantern, 1.9 out along the post's front and 8.2 up)."""
-    rng = random.Random(9)
-    iron = _iron("Rnl")
-    stone = stone_mat("Rnl")
-    parts = [weathered(mk.cylinder("Footing", 0.75, 0.7, (0.0, 0.0, 0.35), mat=stone, verts=8, radius2=0.6), PITTED),
-             weathered(mk.cylinder("Collar", 0.36, 0.5, (0.0, 0.0, 0.95), mat=iron, verts=12), FORGED)]
-    shaft = pk.sweep("Shaft", [(0.0, 0.0, 0.7), (0.0, 0.02, 5.0), (0.03, 0.0, 9.8), (0.0, 0.0, 11.0)],
-                     [0.2, 0.17, 0.14, 0.12], iron, sides=10)
-    parts.append(weathered(shaft, FORGED))
-    parts.append(mk.lathe("Finial", [(0.0, 0.0), (0.18, 0.0), (0.22, 0.12), (0.08, 0.5), (0.0, 0.62)], loc=(0.0, 0.0, 11.0),
-                          mat=iron, segments=10))
-    # The arm out toward the front (-Y), a scroll bracing it.
-    arm = [(0.0, 0.0, 10.4), (0.0, -0.8, 10.5), (0.0, -1.6, 10.42), (0.0, -2.1, 10.3)]
-    parts.append(weathered(pk.sweep("Arm", arm, 0.07, iron, sides=6), FORGED))
-    scroll = []
-    for q in range(16):
-        u = q / 15
-        a = u * math.pi * 1.7
-        r = 0.5 * (1 - 0.6 * u)
-        scroll.append((0.0, -0.2 - 1.1 * u - math.sin(a) * r * 0.4, 9.8 + math.cos(a) * r * 0.8 - 0.5 * u))
-    parts.append(weathered(pk.sweep("Scroll", scroll, 0.04, iron, sides=5), FORGED))
-    for k in range(3):
-        parts.append(chain_link(f"Link{k}", (0.0, -1.9, 10.15 - k * 0.3), 0.42, 0.26, 0.045, iron, rot=(0, 0, 90 * (k % 2)),
-                                segments=12))
-    cage, _ = cage_lantern("Rnl", (0.0, -1.9, 8.2 - 0.85 * 1.2), iron, rng, 1.2)
-    parts += cage
-    return parts, []
-
-
 # Gears and chain ------------------------------------------------------------------------------------------------------
 
 
@@ -314,57 +278,6 @@ def great_chain():
         parts.append(chain_link(f"Link{k}", (0.0, 0.0, z), length, width, bar, mat, rot=(0, 0, 90 * (k % 2) + 6 * k),
                                 segments=24))
     return parts, []
-
-
-SWEEP_REACH = 16.6  # how far from the middle each blade stands (the dais' radius less a little: LobbySweep)
-
-
-@prop("SweepScythe", pivot="bottom", material="Metal", collide=False, texture=512, set="Lobby", detail=True, normal=256)
-def sweep_scythe():
-    """The Reaper's Sweep's scythe (the game turns it on the dais' pillar): a collar of black iron round the pillar, one
-    long shaft through it low over the stones, bound with bone every few studs, and at each end a great curved blade
-    standing up, its edge forward the way it turns, worn pale."""
-    iron = _iron("Sws")
-    steel = pk.metal("Sws_Steel", (40, 42, 46), (88, 90, 96), rough=0.45, metallic=0.8)
-    edge = pk.metal("Sws_Edge", (150, 152, 156), (200, 202, 206), rough=0.3, metallic=0.85)
-    bone = bone_mat("Sws")
-    ring_out = [(math.cos(math.tau * k / 32) * 2.95, math.sin(math.tau * k / 32) * 2.95) for k in range(32)]
-    ring_in = [(x * 0.86, y * 0.86) for x, y in ring_out]
-    collar = ring_prism("Collar", ring_out, ring_in, 0.7, iron)
-    collar.location = (0.0, 0.0, 0.35)
-    parts = [weathered(collar, FORGED)]
-    for side in (-1, 1):
-        shaft = pk.sweep(f"Shaft{side}", [(side * 2.8, 0.0, 0.62), (side * 9.0, 0.0, 0.7), (side * SWEEP_REACH, 0.0, 0.78)],
-                         [0.32, 0.28, 0.24], iron, sides=10)
-        parts.append(weathered(shaft, FORGED))
-        for k in range(4):
-            x = side * (4.6 + k * 3.0)
-            parts.append(mk.torus(f"Binding{side}{k}", 0.22, 0.06, (x, 0.0, 0.68 + k * 0.025), rot=(0, 90, 0), mat=bone,
-                                  major_segments=12, minor_segments=5))
-        # The blade: a crescent standing in the plane the shaft turns through, its tip curling forward (+y for the
-        # +x arm, -y for the other: both lead the same way round).
-        lead = side
-        outline = []
-        for q in range(13):
-            u = q / 12
-            a = u * math.pi * 0.62
-            outline.append((math.sin(a) * 4.2 * lead, 0.9 + (1.0 - math.cos(a)) * 0.2 + u * 4.6))
-        for q in range(12, -1, -1):
-            u = q / 12
-            a = u * math.pi * 0.62
-            width = 0.95 * (1.0 - u) + 0.05
-            outline.append((math.sin(a) * 4.2 * lead - width * lead * 0.6, 0.9 + (1.0 - math.cos(a)) * 0.2 + u * 4.6 - width))
-        blade = mk.extrude_shape(f"Blade{side}", [(y, z) for y, z in outline], 0.2, mat=steel, bevel=0.03)
-        blade.rotation_euler = (math.radians(90), 0.0, math.radians(90))
-        blade.location = (side * SWEEP_REACH, 0.0, 0.0)
-        parts.append(blade)
-        spine = pk.sweep(f"Edge{side}", [(side * SWEEP_REACH, math.sin(u * math.pi * 0.62) * 4.2 * lead,
-                                          0.9 + (1.0 - math.cos(u * math.pi * 0.62)) * 0.2 + u * 4.6)
-                                         for u in (k / 10 for k in range(11))], 0.05, edge, sides=5)
-        parts.append(spine)
-        parts.append(weathered(mk.cylinder(f"Socket{side}", 0.32, 1.2, (side * SWEEP_REACH, 0.0, 1.05), mat=iron, verts=10),
-                               FORGED))
-    return parts, [], {"finish": fill_gaps}
 
 
 # Grass ----------------------------------------------------------------------------------------------------------------

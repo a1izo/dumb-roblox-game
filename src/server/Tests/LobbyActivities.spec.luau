@@ -1,50 +1,14 @@
--- The lobby's later games: the dive into the rift (Last breath), Death's mark and the Reaper's Sweep.
+-- The dive into the rift (Last breath).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Games = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("LobbyGames")
 local LastBreath = require(Games:WaitForChild("LastBreath"))
-local Mark = require(Games:WaitForChild("Mark"))
-local Sweep = require(Games:WaitForChild("Sweep"))
 
 local HEIGHT = 650 -- about the rift's depth (rim to the landing roof)
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
-
-	describe("Sweep", function()
-		it("turns faster and faster, then swings back at the first reversal", function()
-			expect(Sweep.angle(0)).to.be.near(0)
-			expect(Sweep.angle(4) > Sweep.angle(2)).to.equal(true)
-			expect(Sweep.angle(4) - Sweep.angle(2) > Sweep.angle(2) - Sweep.angle(0)).to.equal(true)
-			local turn = Sweep.REVERSALS[1]
-			expect(Sweep.angle(turn + 1) < Sweep.angle(turn)).to.equal(true)
-			expect(Sweep.spin(turn - 1) > 0).to.equal(true)
-			expect(Sweep.spin(turn + 1) < 0).to.equal(true)
-		end)
-
-		it("is the same turn by turn as all at once", function()
-			-- (the angle is continuous across a reversal: no jump where the scythe swings back)
-			local turn = Sweep.REVERSALS[2]
-			expect(Sweep.angle(turn + 1e-4)).to.be.near(Sweep.angle(turn - 1e-4), 1e-2)
-		end)
-
-		it("strikes the feet on the stones it passes, not ones in the air or off the dais", function()
-			local at = Vector2.new(math.cos(0.1), math.sin(0.1)) * 8
-			expect(Sweep.struck(0, 0.2, at, 0, 17)).to.equal(true)
-			expect(Sweep.struck(0, 0.2, at, Sweep.CLEAR + 0.5, 17)).to.equal(false)
-			expect(Sweep.struck(0, 0.2, Vector2.new(math.cos(0.4), math.sin(0.4)) * 8, 0, 17)).to.equal(false)
-			expect(Sweep.struck(0, 0.2, at * 3, 0, 17)).to.equal(false)
-			-- (the other blade, half a turn round, strikes too; and turning back the other way)
-			expect(Sweep.struck(0, 0.2, -at, 0, 17)).to.equal(true)
-			expect(Sweep.struck(0.2, 0, at, 0, 17)).to.equal(true)
-		end)
-
-		it("counts a longer stand as the better one", function()
-			expect(Sweep.isBetter(0, 12)).to.equal(true)
-			expect(Sweep.isBetter(20, 12)).to.equal(false)
-		end)
-	end)
 
 	describe("LastBreath", function()
 		it("falls faster and faster, up to a limit", function()
@@ -150,88 +114,6 @@ return function(t)
 			expect(LastBreath.depth(Vector2.new(0, 0), rift)).to.be.near(0)
 			expect(LastBreath.depth(Vector2.new(23, 0), rift)).to.be.near(1, 1e-6)
 			expect(LastBreath.depth(Vector2.new(0, 30), rift) > 1).to.equal(true)
-		end)
-	end)
-
-	describe("Mark", function()
-		local function first(_n: number): number
-			return 1
-		end
-		local function last(n: number): number
-			return n
-		end
-
-		it("waits for two players, then gives one of them the mark", function()
-			local state = Mark.new()
-			expect(Mark.join(state, "a", 0, first)).to.equal(true)
-			expect(Mark.running(state)).to.equal(false)
-			expect(state.carrier).to.equal(nil)
-			expect(Mark.join(state, "a", 0, first)).to.equal(false)
-			Mark.join(state, "b", 5, first)
-			expect(Mark.running(state)).to.equal(true)
-			expect(state.carrier).to.equal("a")
-			expect(state.nextToll).to.equal(5 + Mark.TOLL)
-		end)
-
-		it("passes the mark to someone close, but not straight back", function()
-			local state = Mark.new()
-			Mark.join(state, "a", 0, first)
-			Mark.join(state, "b", 0, first)
-			Mark.join(state, "c", 0, first)
-			expect(Mark.canPass(state, "a", "b", 10, Mark.RANGE + 1)).to.equal(false)
-			expect(Mark.canPass(state, "b", "a", 10, 1)).to.equal(false)
-			expect(Mark.canPass(state, "a", "a", 10, 0)).to.equal(false)
-			expect(Mark.canPass(state, "a", "z", 10, 1)).to.equal(false)
-			expect(Mark.canPass(state, "a", "b", 10, 1)).to.equal(true)
-			Mark.pass(state, "b", 10)
-			expect(state.carrier).to.equal("b")
-			expect(Mark.canPass(state, "b", "a", 10.5, 1)).to.equal(false)
-			expect(Mark.canPass(state, "b", "c", 10.5, 1)).to.equal(true)
-			expect(Mark.canPass(state, "b", "a", 10 + Mark.NO_TAGBACK, 1)).to.equal(true)
-		end)
-
-		it("drops the carrier at the toll and counts everyone else's streak", function()
-			local state = Mark.new()
-			Mark.join(state, "a", 0, first)
-			Mark.join(state, "b", 0, first)
-			Mark.join(state, "c", 0, first)
-			expect(Mark.due(state, Mark.TOLL - 1)).to.equal(false)
-			expect(Mark.due(state, Mark.TOLL)).to.equal(true)
-			local down, streaks = Mark.toll(state, Mark.TOLL, last)
-			expect(down).to.equal("a")
-			expect(streaks.a).to.equal(0)
-			expect(streaks.b).to.equal(1)
-			expect(streaks.c).to.equal(1)
-			-- The mark jumps to someone else, and cannot go back to whoever is lying down.
-			expect(state.carrier).to.equal("c")
-			expect(Mark.canPass(state, "c", "a", Mark.TOLL + 1, 1)).to.equal(false)
-			expect(Mark.canPass(state, "c", "b", Mark.TOLL + 1, 1)).to.equal(true)
-			expect(Mark.due(state, Mark.TOLL + 1)).to.equal(false)
-			Mark.toll(state, 2 * Mark.TOLL, first)
-			expect(state.streaks.c).to.equal(0)
-			expect(state.streaks.b).to.equal(2)
-			expect(state.streaks.a).to.equal(1)
-		end)
-
-		it("keeps the mark in the game when its carrier leaves, and stops when too few are left", function()
-			local state = Mark.new()
-			Mark.join(state, "a", 0, first)
-			Mark.join(state, "b", 0, first)
-			Mark.join(state, "c", 0, first)
-			expect(Mark.leave(state, "a", 3, first)).to.equal(true)
-			expect(state.carrier).to.equal("b")
-			expect(Mark.running(state)).to.equal(true)
-			expect(Mark.leave(state, "z", 3, first)).to.equal(false)
-			Mark.leave(state, "b", 4, first)
-			expect(Mark.running(state)).to.equal(false)
-			expect(state.carrier).to.equal(nil)
-			expect(state.nextToll).to.equal(nil)
-			expect(Mark.isMember(state, "c")).to.equal(true)
-		end)
-
-		it("counts more tolls survived as the better streak", function()
-			expect(Mark.isBetter(0, 1)).to.equal(true)
-			expect(Mark.isBetter(4, 4)).to.equal(false)
 		end)
 	end)
 end

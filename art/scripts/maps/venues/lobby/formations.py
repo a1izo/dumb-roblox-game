@@ -22,10 +22,10 @@ def clear(x, z, r):
     causeways with their chasms."""
     if math.hypot(x, z) < 238.0 + r * 0.9:
         return False
-    for ix, iz, ir in (P.ISLET_RUNE, P.ISLET_PARKOUR):
+    for ix, iz, ir in (P.ISLET_SHARDS, P.ISLET_PARKOUR):
         if math.dist((x, z), (ix, iz)) < ir + 44.0 + r:
             return False
-    for a, b in (P.BRIDGE_RUNE, P.BRIDGE_PARKOUR):
+    for a, b in (P.BRIDGE_SHARDS, P.BRIDGE_PARKOUR):
         if g2.dist_point_segment((x, z), a, b) < 56.0 + r:
             return False
     return True

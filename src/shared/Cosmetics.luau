@@ -1469,7 +1469,8 @@ Cosmetics.ITEMS = {
 	{ id = "title_shepherd", kind = "title", name = "Shepherd of Souls", rarity = "epic", source = "achievement" },
 	{ id = "title_inkstained", kind = "title", name = "Writer's Callus", rarity = "epic", source = "achievement" },
 	{ id = "title_handcuffs", kind = "title", name = "Handcuffs", rarity = "epic", source = "achievement" },
-	-- Earned: the first Lantern Run with every lantern lit (it was the seven grey apples, gone 2026-11-04)
+	-- Earned: the seven grey apples (gone 2026-11-04), then the first Lantern Run with every lantern lit (gone
+	-- 2026-11-05). Nothing grants it now; it and Apple Toss stay for those who have them.
 	{ id = "title_realmwalker", kind = "title", name = "Realm Walker", rarity = "rare", source = "achievement" },
 	-- Earned: role mastery (levels 5 and 10)
 	{ id = "title_m_hand", kind = "title", name = "Diavolo Incarnate", rarity = "epic", source = "mastery" },

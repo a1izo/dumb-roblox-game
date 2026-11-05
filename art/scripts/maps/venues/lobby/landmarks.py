@@ -1,8 +1,8 @@
 """The Grey Realm's landmarks (remade 2026-11-04 to the user's reference videos): the spawn ledge, the bowl with its
-dish of skulls and ring of candle stones, the tableaux and the bell round its rim, the throne high on its rock with the
-plaque at its foot and Most Wins beside it, the grotto with the Academy inside, the chess game, the stone notebook
-over the rift, the carcass with the duel's stones under its ribs, the two tusks, the junk heaps, the great arch, the
-Reaper's Sweep and the Lantern Run's posts. Each records the anchors the lobby's Luau builds its own things at (the
+dish of skulls and ring of candle stones, the tableaux round its rim, the throne high on its rock with the plaque at
+its foot and Most Wins beside it, the grotto with the Academy inside, the chess game, the stone notebook over the
+rift, the carcass with the duel's stones under its ribs, the two tusks, the junk heaps and the great arch. Each
+records the anchors the lobby's Luau builds its own things at (the
 board, signs, candles, stone figures, drill desks, puppets, the spawn, the games).
 
 The light is the glow's, low in the north (LightingPresets.lobby): a pale pool hangs only where something is done or
@@ -169,7 +169,7 @@ def bowl(s, g):
     pool(s, c[0], 8.0, c[1], 34, 1.0)
 
 
-# Round the bowl: the tableaux and the bell ---------------------------------------------------------------------------
+# Round the bowl: the tableaux ---------------------------------------------------------------------------------
 
 
 def base(s, x, z, r, h, seed, y=0.0):
@@ -189,38 +189,6 @@ def tableaux(s):
         base(s, x, z, P.TABLEAU_R, P.TABLEAU_H, 520 + k)
         s.anchor(f"tableau{k + 1}", x, P.TABLEAU_H, z, P.rot_towards((x, z), P.BOWL_C), r=P.TABLEAU_R)
         pool(s, x, P.TABLEAU_H + 9.0, z, 22, 0.8)
-
-
-def bell(s):
-    """The bell of Death's mark, at the bowl's rim: two great tusks rising from a round base and crossing over a black
-    bell that hangs between them, clear of people's heads. The game tolls it (anchor bell: the bell's mouth)."""
-    x, z = P.BELL
-    rot = P.rot_towards((x, z), P.BOWL_C)
-    f = Frame(x, z, rot)
-    base(s, x, z, P.BELL_R, 0.5, 531)
-    top = 11.6
-    for side in (-1, 1):
-        points, radii = [], []
-        for q in range(9):
-            u = q / 8
-            lx = side * (2.9 + 1.5 * math.sin(u * math.pi) - 3.6 * u * u)
-            points.append(f.w3(lx, 0.3 + (top - 0.3) * u, side * 0.35 * u))
-            radii.append(0.62 * (1 - u * 0.72))
-        with s.smooth():
-            s.bent_tube("BoneWhite", points, radii, 8, caps=(False, True))
-        fx, fz = f.w(side * 2.9, 0.0)
-        s.collider((fx, 3.6, fz), (1.5, 7.2, 1.5), rot, True, "BoneWhite")
-    yoke = 9.6
-    s.tube("BoneOld", f.w3(-1.5, yoke, 0.0), f.w3(1.5, yoke, 0.0), 0.3, 7)
-    mouth = 6.0
-    s.tube("BlackTrim", (x, yoke, z), (x, mouth + 3.1, z), 0.12, 6, caps=False)
-    s.lathe("BlackTrim", (x, mouth, z), [(1.75, 0.0), (1.85, 0.12), (1.6, 0.5), (1.25, 1.4), (1.0, 2.3), (0.7, 2.85),
-                                         (0.0, 3.1)], 16, caps=(False, False))
-    s.lathe("BlackTrim", (x, mouth + 0.02, z), [(0.0, 1.6), (1.7, 0.0)], 16, caps=(False, False))
-    s.tube("BoneOld", (x, mouth + 1.2, z), (x, mouth - 0.5, z), 0.1, 6)
-    s.lathe("BoneOld", (x, mouth - 0.85, z), [(0.0, 0.0), (0.3, 0.15), (0.3, 0.4), (0.0, 0.55)], 8, caps=(False, False))
-    s.anchor("bell", x, mouth, z, rot, r=1.85, h=3.1)
-    pool(s, x, 9.0, z, 22, 0.8)
 
 
 # The throne -------------------------------------------------------------------------------------------------------
@@ -635,72 +603,10 @@ def arch(s):
         s.collider((fx, 8.0, fz), (8.0, 16.0, 8.0), rot, True, "RockGrey")
 
 
-# The Reaper's Sweep and the Lantern Run --------------------------------------------------------------------------------
-
-
-def sweep(s):
-    """The Reaper's Sweep: a round dais of old stone on the plain, flagged, a ring of dark stone round its edge, a
-    squat pillar at its middle that the game's great scythe turns on (anchor sweep: the dais' top at its middle, r its
-    radius); a stone at its edge nearest the bowl where people join (anchor sweepPad)."""
-    x, z, r, h = P.SWEEP
-    s.lathe("RuinStone", (x, 0.0, z), [(r + 0.5, -0.3), (r + 0.35, 0.3), (r + 0.1, h - 0.15), (r, h)], 64,
-            caps=(False, False))
-    city.up_face(s, "RuinFlag", P.circle((x, z), r, 64), h)
-    for q in ring_quads((x, z), r - 1.6, r - 0.5, 64):
-        s.polygon("BlackTrim", [(px, h + 0.03, pz) for px, pz in reversed(g2.ccw(q))])
-    for q in ring_quads((x, z), 3.2, 3.9, 32):
-        s.polygon("RuinStone", [(px, h + 0.03, pz) for px, pz in reversed(g2.ccw(q))])
-    s.zone("plaza", P.circle((x, z), r, 32), h, name="the Reaper's Sweep")
-    disc_colliders(s, (x, z), r + 0.2, -0.5, h, "RuinStone", planks=8)
-    # The pillar at its middle.
-    s.lathe("RuinStone", (x, h, z), [(2.4, 0.0), (2.2, 0.4), (1.9, 0.6), (1.8, 2.2), (2.1, 2.5), (0.0, 2.6)], 20,
-            caps=(False, False))
-    s.collider((x, h + 1.3, z), (3.6, 2.6, 3.6), 0.0, True, "RuinStone")
-    s.anchor("sweep", x, h, z, 0.0, r=r)
-    px, pz = P.SWEEP_PAD
-    base(s, px, pz, 1.8, 0.4, 611)
-    s.anchor("sweepPad", px, 0.4, pz, P.rot_towards((px, pz), (x, z)))
-    pool(s, x, h + 14.0, z, 34, 0.9)
-    rng = random.Random(613)
-    placed = []
-    for k in range(24):
-        if len(placed) == 4:
-            break
-        a = rng.uniform(0, 360)
-        bx, bz = P.polar((x, z), a, r + rng.uniform(4.0, 8.0))
-        if any(g2.contains(foot, (bx, bz)) or g2.dist_to_poly_edge(foot, (bx, bz)) < 7.0 for foot in rocks.FEET):
-            continue  # (clear of the cliffs behind the spawn, which bulge out over their feet)
-        if any(math.dist((bx, bz), p) < 8.0 for p in placed) or math.dist((bx, bz), (px, pz)) < 6.0:
-            continue  # (apart from one another, and off the pad)
-        s.prop("BoneScatter", bx, bz, rng.uniform(0, 360), rng.uniform(0.9, 1.2))
-        placed.append((bx, bz))
-
-
-# The run lantern's lantern, from its post's foot (props_realmfire.run_lantern): out along its front and up.
-RUN_LANTERN_AT = (1.9, 8.2)
-
-
-def lanterns(s):
-    """The Lantern Run's posts: the first at the spawn's foot, where the cold flame is taken (lit for everyone), and the
-    eight across the realm that a runner lights (dark until then: the game lights them on the runner's screen).
-    Anchors lanternStart and lantern<n>: the lantern itself."""
-    rng = random.Random(801)
-    for name, (x, z) in [("lanternStart", P.LANTERN_START)] + [(f"lantern{k + 1}", p) for k, p in enumerate(P.LANTERNS)]:
-        rot = P.rot_towards((x, z), P.BOWL_C) + rng.uniform(-30, 30)
-        f = Frame(x, z, rot)
-        s.prop("RunLantern", x, z, rot, 1.0)
-        s.collider((x, 5.5, z), (1.2, 11.0, 1.2), rot, True, "BlackMetal")
-        ax, ay, az = f.w3(0.0, RUN_LANTERN_AT[1], -RUN_LANTERN_AT[0])
-        s.anchor(name, ax, ay, az, rot)
-        if name == "lanternStart":
-            pool(s, ax, ay, az, 22, 1.0, LANTERN)
-
-
 def build(s, g):
     ledge(s, g)
     bowl(s, g)
     tableaux(s)
-    bell(s)
     throne(s)
     steles(s)
     grotto(s, g)
@@ -712,5 +618,3 @@ def build(s, g):
     tusks(s)
     junk(s)
     arch(s)
-    sweep(s)
-    lanterns(s)

@@ -10,7 +10,6 @@ A tiled prop (props.prop's tiled): it is the size of a house, so it wears the ma
 footprint on the origin; the venue stands it facing the spawn (landmarks.monolith), its face at plan.MONO_FACE."""
 
 import math
-import random
 
 import bmesh
 
@@ -99,8 +98,8 @@ def _chain(parts, a, b, sag, mat, link=0.95):
 
 
 # The mini-games' stones (tiled like the monolith; the game builds the plain parts they dress and keeps their tags,
-# collisions and lights): the Spire Ascent's checkpoint markers, the rune courtyard's tiles, the start pads, the
-# shop window's pedestal on the spawn terrace.
+# collisions and lights): the Spire Ascent's checkpoint markers, its start pad, the shop window's pedestal on the spawn
+# terrace.
 
 
 @prop("SpireMarker", pivot="bottom", material="Basalt", collide=False, texture=256, set="Lobby", tiled=True)
@@ -113,23 +112,6 @@ def spire_marker():
     parts.append(_loft("Shaft", _octagon(0.82, 0.82, 0.12), _octagon(0.6, 0.6, 0.09), 0.5, 3.36, basalt))
     parts.append(mk.box("Collar", (0.78, 0.78, 0.12), (0, 0, 3.32), mat=basalt, bevel=0.03))
     parts.append(mk.box("Top", (0.7, 0.7, 0.22), (0, 0, 3.49), mat=basalt, bevel=0.04))
-    return parts, []
-
-
-@prop("RuneTile", pivot="bottom", material="Basalt", collide=False, texture=256, set="Lobby", tiled=True)
-def rune_tile():
-    """A tile of the rune courtyard (7 across, 0.5 thick; the game lays its glyph over it, lit when it is the tile's
-    turn): a slab of black basalt, its edges bevelled and chipped, a groove cut round it inside a narrow border."""
-    basalt, trim = surface("Basalt"), surface("BlackTrim")
-    rng = random.Random(77)
-    parts = [mk.box("Slab", (7.0, 7.0, 0.42), (0, 0, 0.21), mat=basalt, bevel=0.12, segments=2),
-             mk.box("Face", (6.1, 6.1, 0.1), (0, 0, 0.45), mat=basalt, bevel=0.03)]
-    for (x, y, w, d) in ((0, 3.21, 6.5, 0.14), (0, -3.21, 6.5, 0.14), (3.21, 0, 0.14, 6.5), (-3.21, 0, 0.14, 6.5)):
-        parts.append(mk.box("Groove", (w, d, 0.06), (x, y, 0.42), mat=trim))
-    for k in range(3):
-        a = rng.uniform(0, math.tau)
-        parts.append(mk.box("Chip", (0.5, 0.4, 0.2), (math.cos(a) * 3.3, math.sin(a) * 3.3, 0.33), rot=(0, 0, rng.uniform(0, 90)),
-                            mat=trim, bevel=0.04))
     return parts, []
 
 

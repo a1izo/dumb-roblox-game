@@ -29,7 +29,6 @@ export type Summary = {
 	-- Deathsinger quests (only counted when `ghost`: the player ended the case as a Deathsinger).
 	wagersWon: number?,
 	haunts: number?,
-	spiritRuns: number?,
 	ghost: boolean?,
 	xpBefore: number, -- profile xp before this match's rewards
 }

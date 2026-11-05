@@ -6,7 +6,8 @@
 -- stat: a key of the match summary (see ProgressRules): matches, wins, survived, tasks,
 -- notesFound, correctVotes, duties, reports (votes cast in meetings: the key is older than the
 -- meaning), and for the Deathsinger quests (period "ghost": three a
--- day, progressing only in cases you ended as a Deathsinger) wagersWon, haunts, spiritRuns.
+-- day, progressing only in cases you ended as a Deathsinger) wagersWon, haunts. (The spirit trial's quest went
+-- with the trial on 2026-11-05: a profile still holding it that day simply skips it.)
 
 local Terms = require(script.Parent.Parent.Terms)
 
@@ -67,15 +68,6 @@ Quests.LIST = {
 		goal = 1,
 		coins = 50,
 		xp = 50,
-		period = "ghost",
-	},
-	{
-		id = "g_trial1",
-		text = "Finish the spirit trial",
-		stat = "spiritRuns",
-		goal = 1,
-		coins = 40,
-		xp = 40,
 		period = "ghost",
 	},
 	{

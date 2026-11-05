@@ -53,6 +53,10 @@ local waves: { Wave } = {}
 -- under the lobby (their client owns it, and has to hear of the move).
 local backAt: { [Player]: number } = {}
 local BACK_GRACE = 2
+-- How far from the rift a body may still seem when its client says it has gone in: the rift's own radii times this, and
+-- studs over the rim (the root of a body that leapt the balustrade, at the top of its jump, is about 14 over it).
+local ENTER_REACH = 1.45
+local ENTER_ABOVE = 16
 
 local function pose(player: Player, value: string?, gap: number?)
 	local character = player.Character
@@ -143,9 +147,14 @@ local function enter(player: Player, seed: any)
 	if not part then
 		return
 	end
+	-- (Where the server last heard the body was: a beat behind the diver's own screen, which asks the moment the root is
+	-- under the rim. A body that leapt the balustrade comes down fast, so that beat can leave it well over the rim here,
+	-- or still over the flagstones: until 2026-11-05 this allowed 4 studs over the rim, about a root standing on it, so a
+	-- leap in could be refused, and the refused diver dropped like a fall into the pit, to a black screen and the
+	-- terrace.)
 	local at = part.Position
 	local depth = LastBreath.depth(Vector2.new(at.X, at.Z), info.rift)
-	if depth > 1.25 or at.Y > info.rimY + 4 or at.Y < info.rimY - 60 then
+	if depth > ENTER_REACH or at.Y > info.rimY + ENTER_ABOVE or at.Y < info.rimY - 60 then
 		-- Not in the rift: the client lets go again.
 		context.tell(player, { game = "rift", kind = "refused" })
 		return

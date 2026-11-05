@@ -421,8 +421,8 @@ def edge(s):
     rng = random.Random(77)
     pts = P.BASIN
     n = len(pts)
-    wall(s, pts, 72.0, gaps=[P.BRIDGE_RUNE[0], P.BRIDGE_PARKOUR[0]])
-    keep = [P.BRIDGE_RUNE[0], P.BRIDGE_PARKOUR[0]]
+    wall(s, pts, 72.0, gaps=[P.BRIDGE_SHARDS[0], P.BRIDGE_PARKOUR[0]])
+    keep = [P.BRIDGE_SHARDS[0], P.BRIDGE_PARKOUR[0]]
     taken = [(c[0], c[1], r) for c, r in ((P.ACADEMY_C, P.GROTTO_WALL + 14.0), (P.LEDGE[:2], 46.0))]
 
     def kind_at(x, z):

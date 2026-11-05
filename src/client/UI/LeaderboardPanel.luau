@@ -1,5 +1,5 @@
 -- The global leaderboards, kept like a ledger: all-time wins, experience, this week's wins, and the
--- lobby's own games (the Spire Ascent, the rune courtyard, the spirit trial). Top 10 each, refreshed every
+-- lobby's own games (the Spire Ascent, the rift's last breath). Top 10 each, refreshed every
 -- few minutes by the server; your own line is lit. Only Most Wins is also written in the world (on its
 -- slab beside the throne): every other board lives here. The boards are a column of tabs on a desktop and
 -- a row to swipe on a phone.
@@ -26,12 +26,10 @@ local TABS = {
 	{ id = "xp", label = "Experience", icon = "xp" },
 	{ id = "weekly", label = "This week", icon = "streak" },
 	{ id = "parkour", label = "Ascent" },
-	{ id = "runes", label = "Runes" },
 	{ id = "rift", label = "Last breath" },
-	{ id = "spirit", label = "Spirit trial", icon = "eye" },
 }
 -- Boards whose score is a time, kept in hundredths of a second.
-local TIMED = { parkour = true, spirit = true }
+local TIMED = { parkour = true }
 local TABS_WIDTH = 190
 local GAP = 16
 

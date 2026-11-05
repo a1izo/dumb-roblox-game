@@ -145,9 +145,12 @@ LightingPresets.lobby = preset({
 
 -- A dive into the rift, under the cloud the realm floats on: the night over Kagegaoka. Still no sun (the cloud
 -- is overhead) and the hour is the realm's (it never changes mid-fall); the light is the city's, from far
--- below, cool and dim. A heavy dark haze closes every horizon, so neither the cloud deck's edge nor the
--- city's is ever seen; the cloud's lobes overhead stand out a little paler than the deck. A touch of colour
+-- below, cool and dim. A dark haze closes the far horizons, so neither the cloud deck's edge nor the
+-- city's is seen; the cloud's lobes overhead stand out a little paler than the deck. A touch of colour
 -- comes back (the warm windows far down). Set by World/LightingController from the camera's depth.
+-- (2026-11-05, "a black screen after you jump in": the haze was 0.4 thick and near black while the city lies 620 studs
+-- under the cloud, so for most of the fall the city could drown in it and leave the screen black until the last
+-- stretch. Thinner and a shade lighter, so the streets' lamps and the lit windows show from the cloud down.)
 LightingPresets.lobbyBelow = preset({
 	clockTime = 14.5,
 	brightness = 0.35,
@@ -156,10 +159,10 @@ LightingPresets.lobbyBelow = preset({
 	outdoorAmbient = rgb(58, 56, 70),
 	envDiffuse = 0.4,
 	envSpecular = 0.3,
-	density = 0.4,
-	haze = 2.2,
+	density = 0.26,
+	haze = 1.3,
 	glare = 0,
-	atmosphereColor = rgb(30, 30, 44),
+	atmosphereColor = rgb(40, 40, 56),
 	decay = rgb(52, 40, 40),
 	saturation = -0.5,
 	contrast = 0.18,
@@ -185,10 +188,10 @@ LightingPresets.lobbyCity = preset({
 	outdoorAmbient = rgb(64, 60, 70),
 	envDiffuse = 0.4,
 	envSpecular = 0.3,
-	density = 0.26,
-	haze = 1.4,
+	density = 0.18,
+	haze = 0.9,
 	glare = 0,
-	atmosphereColor = rgb(34, 32, 44),
+	atmosphereColor = rgb(40, 38, 52),
 	decay = rgb(56, 42, 40),
 	saturation = -0.42,
 	contrast = 0.18,

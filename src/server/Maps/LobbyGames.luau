@@ -1,11 +1,9 @@
 --!strict
 -- The lobby mini-games' objects, built at the scene's anchors (art/scripts/maps/venues/lobby): the
--- Spire Ascent's start pad and checkpoint pylons, the rune courtyard's nine tiles and start pad, the
--- rift's numbers for the dive, the bell of Death's mark, the name duel's two stones, the Reaper's Sweep's pad and
--- pivot and the Lantern Run's lanterns. Everything is tagged (LParkourStart, LParkourCheckpoint, LRuneStart,
--- LRuneTile, LRift, LMarkBell, LDuelStone, LSweepPad, LSweepPivot, LLanternStart, LLantern) so each client puts up its
--- own prompts (client Controllers/LobbyGamesController); the rules and every score
--- are the server's (Services/LobbyGameService), which is handed the table this returns.
+-- Spire Ascent's start pad and checkpoint pylons, the rift's numbers for the dive and the name duel's two stones.
+-- Everything is tagged (LParkourStart, LParkourCheckpoint, LRift, LDuelStone) so each client puts up its own prompts
+-- (client Controllers/LobbyGamesController); the rules and every score are the server's
+-- (Services/LobbyGameService), which is handed the table this returns.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -19,12 +17,10 @@ local LobbyGames = {}
 local SLATE = Color3.fromRGB(34, 34, 40)
 local STONE = Color3.fromRGB(58, 58, 64)
 local GLOW = Color3.fromRGB(176, 196, 224)
-local DIM = Color3.fromRGB(74, 82, 100)
 local INK = Color3.fromRGB(16, 16, 20)
 -- The Blender stones the plain parts below are dressed with once the Lobby models are imported
 -- (art/scripts/props_monolith.py): their sizes as made, which the parts' sizes scale them to.
 local MARKER_HEIGHT = 3.6 -- SpireMarker
-local TILE_SIZE = 7 -- RuneTile
 local PAD_SIZE = 8 -- StartPad
 local PAD_TOP = 0.31 -- StartPad: its flagstones' top over its foot
 
@@ -32,7 +28,6 @@ type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: num
 
 export type Games = {
 	parkour: { start: Vector3, center: Vector3, marks: { Vector3 } },
-	runes: { start: Vector3, center: Vector3, tile: number, gap: number },
 	-- The dive: the rift's shape, the rim's and the landing roof's heights, where a diver is set down after.
 	dive: {
 		rift: { cx: number, cz: number, rx: number, rz: number, turn: number },
@@ -40,32 +35,14 @@ export type Games = {
 		roofY: number,
 		back: Vector3,
 	}?,
-	mark: { bell: Vector3, mouth: Vector3 }?,
 	-- The name duel's two stones: the foot of each, the part its prompt is on, the writing on its slate.
 	duel: { stones: { { at: Vector3, part: BasePart, label: TextLabel } } }?,
-	-- The Reaper's Sweep: the dais' top at its middle, its radius, the join pad, the pivot the round's state is on.
-	sweep: { centre: Vector3, radius: number, pad: Vector3, pivot: BasePart }?,
-	-- The Lantern Run: where the cold flame is taken, and each lantern a runner lights.
-	lanterns: { start: Vector3, spots: { Vector3 } }?,
 	-- The two causeways: each end's spot on the deck, facing along the way from there (a = at the basin's
 	-- rim, b = at the head of the steps on the plateau).
 	bridges: { { a: CFrame, b: CFrame } },
 	-- The walkable box of the lobby, in the world (set by Maps/Lobby from the scene): whoever leaves it is set
 	-- back like a fall.
 	bounds: { min: Vector3, max: Vector3 }?,
-}
-
--- Glyphs for the nine tiles: bars (x, z, width, depth, turn in degrees) on a 7-stud tile.
-local GLYPHS = {
-	{ { 0, 0, 4.4, 0.5, 0 }, { 0, 0, 4.4, 0.5, 90 } },
-	{ { 0, 0, 5.2, 0.5, 45 }, { 0, 0, 5.2, 0.5, -45 } },
-	{ { -1.6, 0, 0.5, 4.6, 0 }, { 0, 0, 0.5, 4.6, 0 }, { 1.6, 0, 0.5, 4.6, 0 } },
-	{ { 0, -2.1, 4.2, 0.5, 0 }, { 0, 2.1, 4.2, 0.5, 0 }, { -2.1, 0, 0.5, 4.2, 0 }, { 2.1, 0, 0.5, 4.2, 0 } },
-	{ { 0, 0, 1, 1, 0 }, { 0, -2, 3.6, 0.4, 0 }, { 0, 2, 3.6, 0.4, 0 } },
-	{ { 0, 0, 5.4, 0.5, 35 } },
-	{ { -1.6, 0, 0.5, 4.4, 0 }, { 0.2, 1.9, 3.6, 0.5, 0 } },
-	{ { 0, -1.8, 4.4, 0.5, 0 }, { 0, 0.3, 0.5, 4.4, 0 } },
-	{ { -1.8, 0, 0.5, 4.4, 0 }, { 1.8, 0, 0.5, 4.4, 0 }, { 0, 0, 3.6, 0.5, 0 } },
 }
 
 local function inert(part: BasePart)
@@ -169,52 +146,6 @@ local function parkour(b, folder: Instance, anchors: { [string]: Anchor })
 	}
 end
 
-local function runes(b, folder: Instance, anchors: { [string]: Anchor })
-	local tile, gap = 7, 1.8
-	for index = 1, 9 do
-		local a = anchors["rune" .. index]
-		if not a then
-			warn("[DeathsGambit] The lobby scene has no rune tile " .. index .. ".")
-		else
-			tile = a.w or tile
-			local base = b:world(CFrame.new(a.x, a.y + 0.25, a.z))
-			local slab =
-				part(folder, "RuneTile" .. index, Vector3.new(tile, 0.5, tile), base, SLATE, Enum.Material.Slate)
-			slab.CanCollide = true
-			slab.CanQuery = true
-			slab.CanTouch = false
-			slab.CastShadow = false
-			ModelLibrary.dress(slab, "RuneTile", CFrame.new(0, -0.25, 0), tile / TILE_SIZE)
-			slab:SetAttribute("Index", index)
-			slab:AddTag("LRuneTile")
-			for _, bar in ipairs(GLYPHS[index]) do
-				local glyph = part(
-					folder,
-					"Glyph" .. index,
-					Vector3.new(bar[3], 0.08, bar[4]),
-					base * CFrame.new(bar[1], 0.29, bar[2]) * CFrame.Angles(0, math.rad(bar[5]), 0),
-					DIM,
-					Enum.Material.Neon
-				)
-				inert(glyph)
-				glyph.CanCollide = false
-				glyph.Transparency = 0.35
-				glyph:SetAttribute("Tile", index)
-				glyph:AddTag("LRuneGlyph")
-			end
-		end
-	end
-	local startAnchor = anchors.runeStart
-	pad(b, folder, "RunePad", "LRuneStart", startAnchor, 6)
-	local centre = anchors.runeCenter
-	return {
-		start = b:worldPos(startAnchor.x, startAnchor.y, startAnchor.z),
-		center = b:worldPos(centre.x, anchors.rune5.y, centre.z),
-		tile = tile,
-		gap = gap,
-	}
-end
-
 -- The rift, for the dive: an unseen part tagged LRift carrying the numbers every client flies by (the rift's
 -- ellipse, the rim's height and the landing roof's), and where a diver is set down afterwards (on the
 -- plaza's side of the rim).
@@ -258,22 +189,6 @@ local function dive(b, folder: Instance, anchors: { [string]: Anchor })
 		roofY = roof.Y,
 		back = back,
 	}
-end
-
--- Death's mark: the bell's prompt (an unseen part tagged LMarkBell under the bell).
-local function bell(b, folder: Instance, anchors: { [string]: Anchor })
-	local a = anchors.bell
-	if not a then
-		return nil
-	end
-	local prompt =
-		part(folder, "MarkBell", Vector3.new(5, 6, 5), b:world(b:cf(a.x, 3, a.z, a.rot)), STONE, Enum.Material.Slate)
-	inert(prompt)
-	prompt.CanCollide = false
-	prompt.CanQuery = true
-	prompt.Transparency = 1
-	prompt:AddTag("LMarkBell")
-	return { bell = b:worldPos(a.x, 0, a.z), mouth = b:worldPos(a.x, a.y, a.z) }
 end
 
 -- The slates on the duel's stones lie on a slope (art/scripts/maps/venues/lobby/landmarks.py, duel()): its
@@ -345,84 +260,10 @@ local function duel(b, folder: Instance, anchors: { [string]: Anchor })
 	return { stones = stones }
 end
 
--- The Reaper's Sweep: the dais' pivot (an unseen part tagged LSweepPivot at the dais' top, in its middle: the server
--- puts the round's state on it, every client draws the scythe turning on it) and the join pad's prompt (tag
--- LSweepPad).
-local function sweep(b, folder: Instance, anchors: { [string]: Anchor })
-	local a, p = anchors.sweep, anchors.sweepPad
-	if not a or not p then
-		return nil
-	end
-	local pivot =
-		part(folder, "SweepPivot", Vector3.new(1, 1, 1), b:world(b:cf(a.x, a.y, a.z, 0)), STONE, Enum.Material.Slate)
-	inert(pivot)
-	pivot.CanCollide = false
-	pivot.Transparency = 1
-	pivot:SetAttribute("Radius", a.r or 17)
-	pivot:AddTag("LSweepPivot")
-	local prompt = part(
-		folder,
-		"SweepPad",
-		Vector3.new(4, 5, 4),
-		b:world(b:cf(p.x, p.y + 2.5, p.z, p.rot)),
-		STONE,
-		Enum.Material.Slate
-	)
-	inert(prompt)
-	prompt.CanCollide = false
-	prompt.CanQuery = true
-	prompt.Transparency = 1
-	prompt:AddTag("LSweepPad")
-	return { centre = b:worldPos(a.x, a.y, a.z), radius = a.r or 17, pad = b:worldPos(p.x, p.y, p.z), pivot = pivot }
-end
-
--- The Lantern Run: the first lantern's prompt (tag LLanternStart, where the cold flame is taken) and an unseen part at
--- each of the eight others (tag LLantern, attribute Index) that a runner's own client lights.
-local function lanterns(b, folder: Instance, anchors: { [string]: Anchor })
-	local start = anchors.lanternStart
-	if not start then
-		return nil
-	end
-	local prompt = part(
-		folder,
-		"LanternStart",
-		Vector3.new(3, 3, 3),
-		b:world(b:cf(start.x, start.y, start.z, start.rot)),
-		STONE,
-		Enum.Material.Slate
-	)
-	inert(prompt)
-	prompt.CanCollide = false
-	prompt.CanQuery = true
-	prompt.Transparency = 1
-	prompt:AddTag("LLanternStart")
-	local spots = {}
-	local index = 1
-	while anchors["lantern" .. index] do
-		local a = anchors["lantern" .. index]
-		local spot = part(
-			folder,
-			"Lantern" .. index,
-			Vector3.new(1, 1, 1),
-			b:world(b:cf(a.x, a.y, a.z, a.rot)),
-			STONE,
-			Enum.Material.Slate
-		)
-		inert(spot)
-		spot.CanCollide = false
-		spot.Transparency = 1
-		spot:SetAttribute("Index", index)
-		spot:AddTag("LLantern")
-		table.insert(spots, b:worldPos(a.x, a.y, a.z))
-		index += 1
-	end
-	return { start = b:worldPos(start.x, start.y, start.z), spots = spots }
-end
-
 -- The causeways' ends (anchors bridge<Name>A / B, from the scene).
 local function bridges(b, anchors: { [string]: Anchor })
 	local out = {}
-	for _, name in ipairs({ "bridgeRune", "bridgeParkour" }) do
+	for _, name in ipairs({ "bridgeShards", "bridgeParkour" }) do
 		local a, z = anchors[name .. "A"], anchors[name .. "B"]
 		if a and z then
 			table.insert(out, { a = b:world(b:cf(a.x, a.y, a.z, a.rot)), b = b:world(b:cf(z.x, z.y, z.z, z.rot)) })
@@ -435,12 +276,8 @@ function LobbyGames.build(b, anchors: { [string]: Anchor }): Games
 	local folder = Create("Folder", { Name = "Games", Parent = b.parent })
 	return {
 		parkour = parkour(b, folder, anchors),
-		runes = runes(b, folder, anchors),
 		dive = dive(b, folder, anchors),
-		mark = bell(b, folder, anchors),
 		duel = duel(b, folder, anchors),
-		sweep = sweep(b, folder, anchors),
-		lanterns = lanterns(b, folder, anchors),
 		bridges = bridges(b, anchors),
 	}
 end

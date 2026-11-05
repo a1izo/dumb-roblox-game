@@ -58,7 +58,6 @@ function ProgressService.onMatchEnd(rewards: { [any]: any })
 				rigs = 0,
 				wagersWon = ps.stats.wagersWon or 0,
 				haunts = ps.stats.haunts or 0,
-				spiritRuns = ps.stats.spiritRuns or 0,
 				ghost = not ps.alive,
 				xpBefore = data.xp - reward.xp,
 			}

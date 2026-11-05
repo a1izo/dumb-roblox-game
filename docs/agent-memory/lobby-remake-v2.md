@@ -43,3 +43,14 @@ transition; remove the title obelisk. References: youtube x7Lgseqn71I and 8pf3Pn
 **How to apply:** new lobby work starts from plan.py and these modules; keep the anchor names the scripts read (see
 Scenes.spec); a props census (placed vs used vs built) is in the session notes. Related: [[realm-rock-kit]],
 [[tiled-props]], [[lobby-ground-relief]].
+
+**2026-11-05, the user:** "remove every minigame other than the falling pit, the tower parkour and letter typing
+showdown". Kept: the rift dive (LobbyRift, DiveController, LastBreath), the Spire Ascent (Parkour) and the name duel
+(LobbyDuel, Duel, DuelPanel). Gone for good, code, map pieces and props: the Lantern Run (RunLantern), the Reaper's
+Sweep (dais, SweepScythe), Death's mark (the bell at the bowl's rim), the rune courtyard (tiles, slab, RuneTile; its
+plateau is now the "shard garden", ISLET_SHARDS / bridgeShards) and the spirit trial (HauntBar button, board, quest).
+Profile bests (lanternBest, sweepBest, markBest, runesBest, spiritBest) stay, written by nothing; Realm Walker and
+Apple Toss can no longer be earned. The rift's glowing cracks and the two pale shard clusters on its rim are gone too
+(they read as white shards round the vortex). Dive fixes: LobbyRift accepts a leaping diver (ENTER_ABOVE 16,
+ENTER_REACH 1.45), LobbyGamesController's pit curtain skips while DiveController.busy(), and lobbyBelow/lobbyCity
+haze is thinner (it hid the city 620 studs down). Models_Lobby v21, Maps_Lobby v38.

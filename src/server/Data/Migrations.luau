@@ -94,7 +94,9 @@ function Migrations.defaults(startingCoins: number)
 		-- The lobby mini-games' bests: the Spire Ascent's fastest time (seconds, 0 = none), the most rune
 		-- rounds cleared, the fastest spirit trial, the rift's smallest gap (studs, 0 = none), the most tolls
 		-- survived in a row with Death's mark, the fastest Lantern Run (seconds, 0 = none), the longest stand in the
-		-- Reaper's Sweep (seconds); and the name duels won.
+		-- Reaper's Sweep (seconds); and the name duels won. (The rune courtyard, the spirit trial, Death's mark, the
+		-- Lantern Run and the Reaper's Sweep were removed on 2026-11-05; their bests stay in the profile as they were,
+		-- written by nothing now.)
 		lobbyGames = {
 			parkourBest = 0,
 			runesBest = 0,

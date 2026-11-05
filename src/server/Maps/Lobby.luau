@@ -6,8 +6,8 @@
 -- slab beside the throne's rock), the champion's name on the throne's plaque and the names on the Academy's gate and
 -- altars. South-west, in a grotto in the cliffs, the Academy: a practice altar for every skill and three wooden
 -- puppets to practise on, hung on strings from a great hand; two old causeways over chasms lead to the Chain Heap
--- (the Spire Ascent) and the rune courtyard; the Reaper's Sweep's dais lies south-east and the Lantern Run's posts
--- stand all over.
+-- (the Spire Ascent) and a garden of pale shards; the rift opens in the north-east (the dive) and the name duel's two
+-- stones stand under the carcass's ribs.
 --
 -- SceneBuilder puts up the scene (or its greybox, without the import); this module builds what
 -- shows text or does something, at the scene's anchors. The Academy only tags parts (LTraining

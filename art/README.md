@@ -103,16 +103,16 @@ colossal blade standing in a rock mound. The walkable part is a rough basin abou
 a continuous ridge of rock, needle fields and spires (an invisible wall follows its edge, open only where the
 two causeways leave), with a second ridge behind it for depth. Two causeways of old stone cross deep chasms
 (cracks cut out of the plain) and climb a flight of steps onto two raised plateaus: the Spire Ascent (west)
-and the rune courtyard (north-east). A few rocks float high in the sky, the only things that do.
+and a garden of pale shards (north-east, where the rune courtyard was until 2026-11-05). A few rocks float high in the sky, the only things that do.
 `plan.py` (every place, with its own overlap check; `python plan.py` runs it), `terrain.py` (the basin's
 ground with the rift cut out, the endless plain `far_plain`, the ridge `edge`, the chasms `chasm`, the plateau
 sides, and the realm's own shapes: `column` (fluted, twisted), `needle`, `floating_rock`, `arch`,
 `cloud_bank`, `horn`, `blade`), `landmarks.py` (the spawn terrace, the plaza and its ring of candle stones,
-the five bases of the tableaux and the bell round it, the title monolith, the bone throne and the Most Wins
+the five bases of the tableaux round it, the title monolith, the bone throne and the Most Wins
 slab at its mesa's foot, the Academy's ring of pillars, a wayside rock, the stone-toss cairn, the cleft and the
 needle ledge, the carcass and the duel's two slates under its ribs; `pool()` hangs a pale light over every
 place where something is done or read), `islets.py` (the two causeways and plateaus, the Spire Ascent's spiral
-of stones round a twisted spire, the rune courtyard), `formations.py` (the world beyond: spires, mesas,
+of stones round a twisted spire, the shard garden), `formations.py` (the world beyond: spires, mesas,
 columns, arches, horns, ribs, ridges, dunes, cloud banks, floating rocks), `rift.py` (the hole through the
 ground, its ruined rim, open to step over, its throat of rock with dead roots down to the cloud the realm floats
 on (seen only from under it: a deck of storm cloud with hanging lobes, sealing the realm's underside), and

@@ -109,11 +109,10 @@ local function newState(player: Player)
 			duties = 0,
 			-- Votes cast in meetings (the stat key is older than the meaning).
 			reports = 0,
-			-- A Deathsinger's: Death's wager winnings and wins, lobby haunts, spirit trial runs.
+			-- A Deathsinger's: Death's wager winnings and wins, lobby haunts.
 			wagerCoins = 0,
 			wagersWon = 0,
 			haunts = 0,
-			spiritRuns = 0,
 			arrestedKira = false,
 		},
 	}

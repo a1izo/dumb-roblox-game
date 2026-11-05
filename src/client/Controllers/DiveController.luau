@@ -60,6 +60,8 @@ local ENTRY = 0.9
 local DRIFT_FADE = 2.6 -- how fast the run's own way dies away (a share a second)
 local TUMBLE_IN = 0.8 -- seconds the tumble takes to take over the body
 local CLOUD_WHITE = Color3.fromRGB(236, 238, 242)
+local REFUSED_WAIT = 1 -- seconds after the server refuses a dive before this screen asks again
+local BUSY_AFTER = 1.5 -- seconds after a dive is let go that it still counts as one (DiveController.busy)
 local STRING_COLOR = Color3.fromRGB(226, 230, 238)
 local CLIPS = { "collapseAccident" }
 
@@ -86,6 +88,8 @@ local entryOffset = 0 -- how far the body was above the rules' fall when it went
 local entryVel = 0 -- ...and how much faster it was falling (studs a second, downward negative)
 local drift = Vector2.zero -- the way it was running when it went over (studs a second)
 local crossed = false -- the white of the cloud the realm floats on, passed through
+local releasedAt = -math.huge -- when this screen last let a dive go (os.clock())
+local refusedAt = -math.huge -- when the server last said no to one
 local shakeUntil = 0 -- a jolt of the camera (the catch, the crash) lasts until then
 local shakeStrength = 0
 
@@ -290,6 +294,7 @@ local function release()
 		return
 	end
 	diving = false
+	releasedAt = os.clock()
 	local character, root, humanoid = body()
 	standUp()
 	if humanoid then
@@ -453,6 +458,8 @@ local function step(dt: number)
 		if
 			usable()
 			and humanoid.Health > 0
+			-- (refused just now: this fall is not a dive, so it is not asked again on every frame of it)
+			and os.clock() - refusedAt > REFUSED_WAIT
 			and at.Y < info.rimY - LastBreath.DROP
 			and at.Y > info.rimY - 40
 			and LastBreath.depth(Vector2.new(at.X, at.Z), info.rift) < 1
@@ -564,6 +571,11 @@ local function onState(payload: any)
 		-- Not a dive after all, or the rift is giving the diver back: the body is let go (moved to the rim straight
 		-- after, under the curtain: it comes up again once the rim is drawn).
 		release()
+		if payload.kind == "refused" then
+			refusedAt = os.clock()
+			-- (a plain fall from here: the screen goes dark for it like any fall into the pit)
+			releasedAt = -math.huge
+		end
 		if Curtain.isClosed() then
 			task.delay(0.15, function()
 				Curtain.open(GIVE_BACK_IN)
@@ -734,6 +746,13 @@ end
 -- Is this player in a dive now (for checks)?
 function DiveController.diving(): boolean
 	return diving
+end
+
+-- Is this player in a dive, or only just out of one (Controllers/LobbyGamesController: the screen is not put out for
+-- a fall into the pit then: this screen begins the dive before the server's word is on the character, and the body is
+-- still far under the lobby for a moment after the rift gives it back)?
+function DiveController.busy(): boolean
+	return diving or os.clock() - releasedAt < BUSY_AFTER
 end
 
 -- The catch, as a press would ask for it (for checks).

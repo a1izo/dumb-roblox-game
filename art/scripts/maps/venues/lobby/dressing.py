@@ -20,7 +20,7 @@ SOLIDS = {}  # (i, j) cell -> outlines of the colliders standing on the ground t
 def solids(s):
     """Gathers the colliders that stand on the ground (from under it to above ankle height: walls, cores, posts,
     the rims of dais and pads, the stones breaking through the ash) by 8-stud cell, and returns (x, z, r) circles
-    round every prop already stood on the ground that is not rock (the bones by the sweep, the lantern posts)."""
+    round every prop already stood on the ground that is not rock (the tableaux' bases, the candle stones)."""
     SOLIDS.clear()
     for x, y, z, sx, sy, sz, rot, *_ in s.colliders:
         if y + sy / 2 < 0.2 or y - sy / 2 > 3.0:

@@ -1,5 +1,5 @@
 -- Global leaderboards (all-time wins, experience, this week's wins, and the lobby mini-games'
--- fastest Spire Ascent, most rune rounds, fastest spirit trial and the rift's smallest gap) in ordered data stores. Scores are
+-- fastest Spire Ascent and the rift's smallest gap) in ordered data stores. Scores are
 -- written as absolute values, gathered up and flushed every 20 seconds within the request budget; the
 -- top 10 are read every 5 minutes and shown in the Leaderboards panel. One board is also written in the
 -- world: Most Wins, on its slab in the lobby (and the player at its top sits on the throne, in stone:
@@ -29,14 +29,13 @@ local SUFFIX = if RunService:IsStudio() then Config.STUDIO_DATASTORE_SUFFIX else
 type Entry = { rank: number, userId: number, name: string, value: number }
 
 local pending: { [number]: { wins: number, xp: number, weekly: number, week: number } } = {}
--- The mini-games' newly improved bests, written on the next flush: the Spire Ascent and the spirit trial in
--- centiseconds (lower is better), the rune rounds cleared, and the rift's smallest gap in hundredths of a
--- stud (lower is better).
-local extra: { [number]: { parkour: number?, runes: number?, spirit: number?, rift: number? } } = {}
-local boards: { [string]: { Entry } } =
-	{ wins = {}, xp = {}, weekly = {}, parkour = {}, runes = {}, spirit = {}, rift = {} }
+-- The mini-games' newly improved bests, written on the next flush: the Spire Ascent in centiseconds (lower is
+-- better) and the rift's smallest gap in hundredths of a stud (lower is better). (The rune courtyard's and the spirit
+-- trial's boards went with those games on 2026-11-05; their stores are left as they were, unread.)
+local extra: { [number]: { parkour: number?, rift: number? } } = {}
+local boards: { [string]: { Entry } } = { wins = {}, xp = {}, weekly = {}, parkour = {}, rift = {} }
 -- Boards where the lowest score is the best.
-local LOWEST = { parkour = true, spirit = true, rift = true }
+local LOWEST = { parkour = true, rift = true }
 local nameCache: { [number]: string } = {}
 local labels: { [string]: TextLabel } = {}
 local enabled = true
@@ -46,15 +45,9 @@ local STORES = {
 	wins = "LGameLB_Wins_v1",
 	xp = "LGameLB_Xp_v1",
 	parkour = "LGameLB_Parkour_v1",
-	runes = "LGameLB_Runes_v1",
-	spirit = "LGameLB_Spirit_v1",
 	-- (v2: the dive became about 650 studs deep on 2026-10-15; the old board measured a 205-stud fall.)
 	rift = "LGameLB_Rift_v2",
 }
--- Until the spirit trial had a store of its own, its times fell through to the weekly store's name with no
--- week ("..._Wnil"). They are copied across once (see moveSpirit).
-local OLD_SPIRIT = "LGameLB_Wins_Wnil"
-
 local function store(board: string, week: number?): OrderedDataStore
 	local name = STORES[board]
 	if name then
@@ -62,24 +55,6 @@ local function store(board: string, week: number?): OrderedDataStore
 	end
 	assert(board == "weekly" and week ~= nil, "no leaderboard store for " .. tostring(board))
 	return DataStoreService:GetOrderedDataStore("LGameLB_Wins_W" .. tostring(week) .. SUFFIX)
-end
-
--- The spirit trial's old times, brought to its own store: only while that store is still empty, so it
--- happens once (and never writes over a newer time).
-local function moveSpirit()
-	local ok, err = pcall(function()
-		if #store("spirit"):GetSortedAsync(true, 1):GetCurrentPage() > 0 then
-			return
-		end
-		local old = DataStoreService:GetOrderedDataStore(OLD_SPIRIT .. SUFFIX)
-		for _, row in ipairs(old:GetSortedAsync(true, TOP):GetCurrentPage()) do
-			store("spirit"):SetAsync(row.key, row.value)
-		end
-	end)
-	-- (Quiet where the stores cannot be reached at all: a Studio place without API access.)
-	if not ok and not string.find(tostring(err), "not allowed", 1, true) then
-		warn("[DeathsGambit] Could not move the spirit trial's old times: " .. tostring(err))
-	end
 end
 
 -- Remembers a player's latest scores; they are written on the next flush.
@@ -103,7 +78,7 @@ function LeaderboardService.hold(userId: number, on: boolean)
 	held[userId] = if on then true else nil
 end
 
--- Remembers a mini-game best that just improved ("parkour": seconds, lower is better; "runes": rounds).
+-- Remembers a mini-game best that just improved ("parkour": seconds, lower is better; "rift": studs, lower is better).
 function LeaderboardService.record(player: Player, board: string, value: number)
 	local mine = extra[player.UserId]
 	if not mine then
@@ -112,10 +87,6 @@ function LeaderboardService.record(player: Player, board: string, value: number)
 	end
 	if board == "parkour" then
 		mine.parkour = math.floor(value * 100 + 0.5)
-	elseif board == "runes" then
-		mine.runes = math.floor(value)
-	elseif board == "spirit" then
-		mine.spirit = math.floor(value * 100 + 0.5)
 	elseif board == "rift" then
 		mine.rift = LastBreath.score(value)
 	end
@@ -161,12 +132,6 @@ local function flushGames()
 		local ok, err = pcall(function()
 			if scores.parkour then
 				store("parkour"):SetAsync(key, scores.parkour)
-			end
-			if scores.runes then
-				store("runes"):SetAsync(key, scores.runes)
-			end
-			if scores.spirit then
-				store("spirit"):SetAsync(key, scores.spirit)
 			end
 			if scores.rift then
 				store("rift"):SetAsync(key, scores.rift)
@@ -218,8 +183,6 @@ local TITLES = {
 	xp = "MOST EXPERIENCE",
 	weekly = "WINS THIS WEEK",
 	parkour = "FASTEST ASCENT",
-	runes = "MOST RUNES CLEARED",
-	spirit = "FASTEST SPIRIT TRIAL",
 	rift = "LAST BREATH",
 }
 
@@ -229,7 +192,7 @@ local function renderLabels()
 		for _, entry in ipairs(boards[board] or {}) do
 			local value = if board == "rift"
 				then LastBreath.formatScore(entry.value)
-				elseif board == "parkour" or board == "spirit" then Parkour.formatCentis(entry.value)
+				elseif board == "parkour" then Parkour.formatCentis(entry.value)
 				else tostring(entry.value)
 			table.insert(lines, string.format("%d. %s  %s", entry.rank, entry.name, value))
 		end
@@ -247,8 +210,6 @@ local function read()
 		xp = readBoard("xp"),
 		weekly = readBoard("weekly", week),
 		parkour = readBoard("parkour"),
-		runes = readBoard("runes"),
-		spirit = readBoard("spirit"),
 		rift = readBoard("rift"),
 	}
 	renderLabels()
@@ -274,7 +235,6 @@ function LeaderboardService.init()
 	end)
 	task.spawn(function()
 		task.wait(8)
-		moveSpirit()
 		local sinceRead = READ_EVERY
 		while enabled do
 			pcall(flush)

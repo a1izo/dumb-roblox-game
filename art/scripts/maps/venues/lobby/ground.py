@@ -144,32 +144,30 @@ def level_places():
         if name in ("throne rock", "tusks", "arch") or name.startswith("junk"):
             continue  # (rock and bone: the ash banks against those)
         out.append((g2.ccw(poly), 1.5))
-    # The paving: the grotto's floor, the Reaper's Sweep (the bowl is a hole of its own).
-    for c, r in ((P.ACADEMY_C, (P.ACADEMY_R + 1.0) * 1.27), (P.SWEEP[:2], P.SWEEP[2] + 2.0)):
-        out.append((g2.ccw(P.circle(c, r, 24)), 1.0))
+    # The paving: the grotto's floor (the bowl is a hole of its own).
+    out.append((g2.ccw(P.circle(P.ACADEMY_C, (P.ACADEMY_R + 1.0) * 1.27, 24)), 1.0))
     # The ways' stepping stones, the causeways' decks and the duel's stones.
     for points in WAYS:
         for q in g2.strip_quads(points, 3.6, -3.6):
             out.append((g2.ccw(q), 0.5))
-    for a, b in (P.BRIDGE_RUNE, P.BRIDGE_PARKOUR):
+    for a, b in (P.BRIDGE_SHARDS, P.BRIDGE_PARKOUR):
         length = math.dist(a, b)
         out.append((g2.ccw(g2.rect((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, length + 6.0, P.BRIDGE_W + 4.0,
                                    math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0])))), 1.0))
     for x, z in P.DUEL:
         out.append((g2.ccw(P.circle((x, z), 3.4, 10)), 0.5))
     # The plateaus (the relief runs on under them, never up through them).
-    for islet in (P.ISLET_RUNE, P.ISLET_PARKOUR):
+    for islet in (P.ISLET_SHARDS, P.ISLET_PARKOUR):
         out.append((g2.ccw(P.circle(islet[:2], islet[2] * 1.12, 24)), 0.0))
     return out
 
 
 # The ways people walk out from the bowl, laid with old flagstones by dressing.ways: to the grotto's mouth, the
-# throne's plaque, the carcass and the duel, the Reaper's Sweep, the two causeways and the chess game.
+# throne's plaque, the carcass and the duel, the two causeways and the chess game.
 WAYS = [
     [(-31.0, 24.0), (-52.0, 34.0), (-67.0, 40.0)],
     [(0.0, -17.0), (0.0, -33.0), (0.0, -47.0)],
     [(33.0, 12.0), (60.0, 18.0), (88.0, 25.0), (106.0, 29.0)],
-    [(22.0, 40.0), (36.0, 60.0), (47.0, 74.0)],
     [(-33.0, 10.0), (-70.0, 4.0), (-108.0, 0.0), (-138.0, -1.0)],
     [(30.0, -4.0), (48.0, -36.0), (66.0, -76.0), (93.0, -95.0)],
     [(-28.0, -4.0), (-44.0, -22.0)],
