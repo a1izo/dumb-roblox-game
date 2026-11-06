@@ -88,6 +88,10 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   readable at night" (ambient 45 or brighter, the noir fills are about 26) and "never lets bloom catch lit skin"
   (bloomThreshold 1.8 or higher, TaskForceHQ's is 1.5). The first limit is simply out of date. The second needs a look
   by whoever owns HQ's bloom: check lit skin there before lowering the spec's limit.
+  - 2026-11-06: the first is FIXED (7550c7fb): the brightest fill channel of HQ, Campus and Tokyo must sit between 32
+    and 56 (28 read black, 66 read flat). The bloom one still fails, not looked at: Roblox Player was open, and
+    Studio captures fail while it runs. A spec can be run without a play test: execute_luau in Edit, the spec's text
+    in an unparented ModuleScript's Source, require it with a small describe/it/expect table.
 - 2026-11-06, looked at live (Studio MCP, play-test QualityLevel 21, the place's own Studio parked off screen):
   - FIXED: ceiling pools went on through their own floor. Lamps cast no shadows, so a pool 13 studs up with range 28
     lit the storey below: HQ's 39F lamps lit 38F's ceiling, blew out its pillars and whiteboards, put a white halo on
