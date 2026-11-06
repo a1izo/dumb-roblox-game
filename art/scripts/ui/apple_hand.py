@@ -46,13 +46,11 @@ HELD = (842.0, 666.0, 88.0, 76.0)
 
 # The thumb, root to tip, along its middle (the old hand's line from its hinge on, so its square, which reaches to
 # its tip, and its hinge stay where they were; it starts at the hinge now, rounded, so nothing of it shows behind the
-# hand as it stands up), and its width there: broad at its root, thin along its bones, swelling at its joint. It turns where it leaves the
-# hand's edge. The web of skin between it and the hand is drawn behind the apple, so it shows only while the thumb
-# stands up (the apple covers it once caught).
+# hand as it stands up), and its width there: broad at its root, thin along its bones, swelling at its joint. It turns
+# where it leaves the hand's edge.
 THUMB_AXIS = [(722, 704), (735, 698), (757, 686), (777, 675), (797, 664), (817, 654), (835, 647), (849, 642)]
 THUMB_WIDTHS = [46, 41, 34, 30, 35, 27, 24, 22]
 THUMB_JOINT = (799.0, 663.0)  # its knuckle, where its two bones meet
-WEB = [(733, 702), (747, 668), (764, 652), (772, 662), (766, 676), (778, 686), (790, 690), (776, 706), (752, 712)]
 THUMB_PIVOT = (738.0, 694.0)
 THUMB_FADE = (8.0, 20.0)  # sketch px from its root: gone inside the first, whole past the second
 THUMB_BALL = 22.0  # the hand's own picture is skin this far round the thumb's root, so it turns over the hand
@@ -100,10 +98,6 @@ BAND = (-14.0, -46.0)
 BAND_BOW = 7.0
 STUDS = (-0.66, -0.2, 0.26, 0.7)
 
-# The inside of the cupped palm, above the lip, where the apple lies (seen while the hand waits): a dish just inside
-# the apple's lower half, so once caught the apple hides it all.
-CUP = [round_apple(a, -2) for a in range(178, 0, -16)] + [(924, 660), (880, 650), (842, 648), (800, 650), (764, 660)]
-
 # The tendons standing along the back of the hand (wrist to each knuckle), and the thumb's own up to its root.
 TENDONS = [
     [(712, 808), (770, 790), (840, 770), (890, 754), (912, 746)],
@@ -118,7 +112,6 @@ LIGHT = LIGHT / np.linalg.norm(LIGHT)
 # A death god's skin: dark blue-grey, a cold slate where it is lit.
 SKIN_LIT = np.array([0.33, 0.365, 0.42], np.float32)
 SKIN_SHADE = np.array([0.165, 0.185, 0.23], np.float32)
-SKIN_DEEP = np.array([0.09, 0.1, 0.125], np.float32)  # the cupped palm's inside, deep in shade
 COOL_RIM = np.array([0.4, 0.47, 0.58], np.float32)
 APPLE_GLOW = np.array([0.5, 0.04, 0.07], np.float32)
 CLAW = np.array([0.06, 0.06, 0.075], np.float32)
@@ -405,7 +398,7 @@ def front():
         height = height + pt.blur(tapered(tendon, 5.0, 1.0), 3.2) * 0.05
     for f in FINGERS:
         kx, ky = H(*f["joints"][0])
-        height = height + pt.blur(pt.ellipse(kx, ky, 11 * HAND_SCALE, 9 * HAND_SCALE, HW, HH), 5.0) * 0.07
+        height = height + pt.blur(pt.ellipse(kx, ky, 13 * HAND_SCALE, 11 * HAND_SCALE, HW, HH), 6.0) * 0.11
     n = normals(height, 210.0)
     rgb = skin(n, apple_light(n) * 0.35).astype(np.float32)
     # (the bones of a gaunt hand: hollows between the tendons, a darker underside)
@@ -425,8 +418,11 @@ def front():
     pt.layer_over(rgb, alpha, LINE, tapered([(760, 732), (800, 745), (845, 752), (885, 749)], 1.4, 0.2) * body * 0.4)
 
     # The fingers, back to front: each its own rounded form with swollen joints, creased at them, inked where it lies
-    # over what is behind it (not where it grows out of the hand), with its claw.
+    # over what is behind it, with its claw. Each grows out of its knuckle: near the hand its shading melts into the
+    # hand's own and it casts no shade there and has no line, so it is not stuck on (2026-11-06: "make the fingers
+    # connect they look like theyre glued on").
     behind = body.copy()
+    hand_rgb = rgb.copy()
     gy, gx = pt.grid(HH, HW)
     for f in FINGERS:
         axis, widths = finger_axis(f)
@@ -435,11 +431,12 @@ def front():
         frgb = skin(fn, apple_light(fn) * 0.7)
         joints = f["joints"]
         kx, ky = H(*joints[0])
-        root = 1 - pt.smoothstep(14 * HAND_SCALE, 24 * HAND_SCALE, np.hypot(gx - kx, gy - ky))
-        # (a soft shade on what is behind, just below it)
-        drop = np.clip(pt.blur(shifted(shape, 4, 6), 4.0) - shape, 0, 1) * behind
+        root = 1 - pt.smoothstep(12 * HAND_SCALE, 36 * HAND_SCALE, np.hypot(gx - kx, gy - ky))
+        # (a soft shade on what is behind, just below it, but not where it grows out of the hand)
+        drop = np.clip(pt.blur(shifted(shape, 4, 6), 4.0) - shape, 0, 1) * behind * (1 - root)
         rgb *= (1 - 0.35 * drop)[..., None]
-        pt.layer_over(rgb, alpha, frgb, shape)
+        melt = (root * body)[..., None]
+        pt.layer_over(rgb, alpha, frgb * (1 - melt) + hand_rgb * melt, shape)
         for k, joint in enumerate(joints[1:3]):
             prev, nxt = joints[k], joints[k + 2]
             way = np.array(nxt, float) - np.array(prev, float)
@@ -495,23 +492,29 @@ def front():
 
 
 def back():
-    """AppleHandBack (RGBA): the inside of the cupped palm, under the apple, deep in shade toward its bottom, the far
-    side catching the light, its lines; and the web of skin from the thumb's root (seen while the thumb stands up)."""
-    cup = np.maximum(hfill(CUP), hfill(WEB))
-    n = form(cup, 18.0)
-    # (the inside of a cup faces the other way from a dome: its far side is lit)
-    n = n * np.array([-1.0, -1.0, 1.0])
-    n[..., 2] = -np.abs(n[..., 2])
-    n = n / np.linalg.norm(n, axis=-1, keepdims=True)
-    rgb = skin(n, apple_light(n) * 0.6, base=SKIN_DEEP)
+    """AppleHandBack (RGBA): a little of the palm, seen only before the apple lands: a strip of its inside just above
+    the palm's edge, from the thumb's root to the fingers' roots, shaded deep where the edge hides the light and fading
+    into the dark toward the fingers, with two short creases. No rim, no outline along its top: a whole hollow drawn
+    there read as a grey plate between the fingers (2026-11-06: "what is this thing between the fingers", "it still
+    looks weird", then "maybe add a bit of the palm back")."""
     x, y = hgrid()
-    deep = pt.smoothstep(690, 750, y) * pt.smoothstep(960, 760, x)
-    rgb = rgb * (1 - 0.5 * deep[..., None])
-    for crease in ([(760, 720), (800, 712), (850, 712), (900, 704)], [(790, 732), (840, 728), (890, 722)],
-                   [(812, 700), (850, 696), (880, 690)]):
-        pt.over(rgb, LINE, tapered(crease, 1.6, 0.2) * cup * 0.45)
-    alpha = cup.astype(np.float32).copy()
-    ink(rgb, alpha, cup, 1.0, width=1.8)
+    # (how far above the apple's foot each pixel lies, along the apple's own curve, sketch px)
+    dx, dy = (x - HELD[0]) / HELD[2], (y - HELD[1]) / HELD[3]
+    out = (np.sqrt(dx * dx + dy * dy) - 1) * HELD[3]
+    below = dy > 0.15
+    # (the strip's depth: most in the middle, nothing at the thumb's root or the fingers' roots)
+    across = np.clip((x - 766) / (926 - 766), 0, 1)
+    depth = 16 * np.clip(np.sin(np.pi * across), 0, 1) ** 0.8
+    strip = below & (out < 1.5) & (out > -depth) & (across > 0) & (across < 1)
+    strip = pt.blur(strip.astype(np.float32), 1.0)
+    fade = pt.smoothstep(-depth - 0.01, -depth * 0.25, out)  # (gone into the dark toward the fingers)
+    t = np.clip(-out / np.maximum(depth, 1e-3), 0, 1)  # 0 at the edge, 1 at the strip's top
+    col = SKIN_SHADE[None, None] * (0.85 + 0.55 * t[..., None])
+    col = col * (1 + (pt.noise(HH, HW, 2.5, 79, 1) - 0.5) * 0.08)[..., None]
+    rgb = col.astype(np.float32)
+    alpha = (strip * fade).astype(np.float32)
+    for crease in ([(800, 736), (830, 734), (858, 735)], [(846, 741), (872, 738), (896, 732)]):
+        pt.over(rgb, LINE, tapered(crease, 1.3, 0.2) * alpha * 0.45)
     return np.concatenate([np.clip(rgb, 0, 1), alpha[..., None]], -1).astype(np.float32)
 
 

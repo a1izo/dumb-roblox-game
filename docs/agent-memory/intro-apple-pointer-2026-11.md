@@ -79,3 +79,7 @@ game", "make it ryuks hand", "more frames for the intro of light and make his ha
     fingertip's skin (paint_claw masks the first stretch with the finger); the old nail plate read as a black cap.
   - Lesson: a reference picture means trace it (see the user memory "match references"); "don't make it 3D" means
     keep the game's drawn look even when asked for "rendered" quality.
+  - Round 3 ("what is this thing between the fingers", "it still looks weird", "maybe add a bit of the palm back", "make the
+    fingers connect they look like theyre glued on"): AppleHandBack is only a thin strip of palm just above its edge,
+    darkest at the edge and fading into the dark toward the fingers, no rim or outline (a whole hollow, and the thumb's web,
+    read as a plate); each finger's base takes the hand's own shading (melt) with no line or drop shade near its knuckle.
