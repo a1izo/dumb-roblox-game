@@ -262,7 +262,9 @@ LightingPresets.maps = {
 		tint = rgb(255, 246, 236),
 		bloom = 0.7,
 		bloomSize = 26,
-		bloomThreshold = 1.5,
+		-- (2.2, seen in a play test at full quality, 2026-11-06: pale skin under the brightest pool glowed at 1.5
+		-- and still at 1.8 and was clean at 2.2; the fittings keep their glow, lit white surfaces lose their halo)
+		bloomThreshold = 2.2,
 		lamps = 1,
 		lampRange = 1,
 		keyLights = 6,
