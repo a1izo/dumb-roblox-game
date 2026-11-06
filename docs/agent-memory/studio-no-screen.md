@@ -29,6 +29,16 @@ delete the plugin.
 - Opening the place a second time makes the same account's Studio already in it leave the session and go back to its
   start page. Nothing is lost (the edits are in the Team Create session), but it stays open and may not close by itself.
 
+**A few scripts into the place without Rojo (2026-11-06):** generate a one-shot plugin that holds main's text of each
+script in a long string plus the hash of the version it replaces, and calls `ScriptEditorService:UpdateSourceAsync` only
+when the place's `.Source` still hashes to that old version (else it warns SKIP: someone's live work). Start the place's
+Studio minimised so it loads, read its `[tag]` lines from the newest Studio log, then delete the plugin file. Team
+Create keeps the edit: a close and reopen showed both scripts at main's hashes, with no File > Save.
+
+**Before every launch, look for a Studio already in the place** (`Get-Process RobloxStudioBeta`, its command line):
+the user may have reopened theirs since the last check. On 2026-11-06 a launch 17 minutes after one check sent the
+user's own Studio back to its start page.
+
 **What still needs the screen:** the 3D importer's dialogs (about 20 s each, then the upload runs by itself) and File >
 Save to Roblox. Check first whether they are needed: the other developer often imports the new versions into the shared
 session themselves.

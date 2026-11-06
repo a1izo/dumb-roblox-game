@@ -97,6 +97,8 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
     spec was right; HQ's preset is the outlier. At 2.2 HQ's reception keeps its look: only the soft halo on lit
     white surfaces (X-ray scanner, lift frames) goes, the downlights keep their glow. Campus and Tokyo (1.9) not looked
     at. A RobloxPlayerBeta left running with no window (its game closed) did not stop the captures.
+  - 2026-11-06: the user picked 2.2: HQ's bloomThreshold is 2.2 (e5b191a7), intensity 0.7 and size 26 kept. In the
+    place (synced by a one-shot plugin, see [[studio-no-screen]]) the LightingPresets spec runs 13 of 13.
 - 2026-11-06, looked at live (Studio MCP, play-test QualityLevel 21, the place's own Studio parked off screen):
   - FIXED: ceiling pools went on through their own floor. Lamps cast no shadows, so a pool 13 studs up with range 28
     lit the storey below: HQ's 39F lamps lit 38F's ceiling, blew out its pillars and whiteboards, put a white halo on
