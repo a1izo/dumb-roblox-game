@@ -28,6 +28,17 @@ How to check (no screen):
   creationContext,moderationResult,revisionCreateTime` tells a TexturePack from an Image and who baked it when.
 - An anonymous curl to assetdelivery with the ktx2 list answers 406 for every id, ready or not: useless as a check.
 
+Which surface uses which pack: `SerializationService:SerializeInstancesAsync({sa})` and read the `rbxassetid://`
+ids in the buffer: the one that is not ColorMap/NormalMap/RoughnessMap/MetalnessMap is its pack (TexturePackContent
+itself needs RobloxScript to read). 2026-11-06: 1,215 SurfaceAppearances on 576 packs; 641 on the 192 stuck ones
+(Maps Tokyo 230, Campus 122, Models Lobby 110, Maps Lobby 91, Agency 70, Models Tokyo 18).
+
+A "re-bake" with the same textures is impossible (tried 2026-11-06, then undone): a fresh SurfaceAppearance with the
+same maps gets the SAME pack back the moment it is parented under a MeshPart in the place (a loose one has none), so
+the place keeps one pack per map combination. Copying the *Content properties carries the pack along too. Only a
+changed map (a re-uploaded image, new id) would bake a new pack, and that new pack and image join the same queue.
+ChangeHistoryService:TryBeginRecording returned nil from the MCP: keep your own references to undo by hand.
+
 Do not: re-import or re-save just to "fix" it (each save bakes new packs into the same queue); blame the grade or the
 lights (ruled out by turning each off live). Game scripts cannot set SurfaceAppearance maps (PluginSecurity).
 
