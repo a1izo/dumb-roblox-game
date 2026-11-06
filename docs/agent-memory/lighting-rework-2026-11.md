@@ -104,10 +104,12 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
     room warm with its chairs in silhouette. The lobby's dive fix (2be66fd7) could not be tried: the place's
     LobbyRift/DiveController were older than it (no ENTER_ABOVE, no busy), so scripts were not synced.
   - Still leaking, not fixed: prop lamps from the catalog (DeskLamp r13 on 39F reaches 38F's upper half).
-  - Seen, not changed (the user's call): the night skies render BLACK at the noir exposure. Roblox's own default sky is black
-    too at exposure 0.1, and only at +3 stops does Tokyo's violet show, so the far cities' towers vanish and their lit
-    windows float in black (Campus avenue, Tokyo scramble). The approved HQ frame shows the same floating windows. A fix
-    would be much brighter sky faces (skies.py) or a lit backdrop; ask before doing it.
+  - FIXED the same day (the user: "brighten skies"): the night skies rendered BLACK at the noir exposure (even
+    Roblox's default sky), so the far cities' towers vanished and their lit windows floated in nothing.
+    skies.py now writes each graded sky LIFT times brighter in linear light: Tokyo 8, Campus 8, Agency 12 (its
+    storm sky is graded darker). Picked in a play test by loading test faces from Studio's own content folder
+    (rbxasset://textures/<folder>/..., written into %LOCALAPPDATA%\Roblox\Versions\<ver>\content\textures and
+    deleted after): no upload needed to try a texture live. 4 was still near black, 16 lifted far facades.
   - Cold clinical rooms (HQ security, the Campus forensic lab) read flat and bright: white walls and tile under 80
     degree pools. A 60 degree cone gave real pools there in a live test; not changed (POOL_ANGLE is every map's).
   - Captures: Studio minimised draws no 3D (grey frames). Park its window off screen with SetWindowPos at

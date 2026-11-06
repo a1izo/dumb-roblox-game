@@ -32,6 +32,20 @@ SKIES = {
     "Campus": ("kloofendal_overcast_puresky", (58, 53, 58), 0.85),  # a snow sky: dull, a little warm, close
     "Agency": ("overcast_soil_puresky", (33, 30, 49), 1.25),  # storm cloud seen from the 38th floor
 }
+# How many times brighter (in linear light) each graded sky is written. Since the noir retune (2026-11-02, exposure
+# 0.1) the game shows a sky far darker than its faces: all three, and even Roblox's own default sky, read pure black,
+# and the far cities' towers vanished, leaving their lit windows floating in nothing. Tried in a Studio play test
+# (2026-11-06, the user: "brighten skies") at 1, 4, 8 and 16 times: at 8 a dark violet (Tokyo) or dull warm grey
+# (Campus) night that the skyline stands out against; 4 still nearly black, 16 lifts the far facades through the
+# haze. The Agency's storm sky is graded darker, so it takes 12 to land beside the other two.
+LIFT = {"Tokyo": 8.0, "Campus": 8.0, "Agency": 12.0}
+
+
+def lift(srgb, gain):
+    """srgb (0..1) made `gain` times brighter in linear light, clipped at white."""
+    linear = np.where(srgb <= 0.04045, srgb / 12.92, ((srgb + 0.055) / 1.055) ** 2.4)
+    linear = np.clip(linear * gain, 0.0, 1.0)
+    return np.where(linear <= 0.0031308, linear * 12.92, 1.055 * linear ** (1 / 2.4) - 0.055)
 # face -> (the way it looks, its up), in Roblox axes
 FACES = {
     "Ft": ((0, 0, -1), (0, 1, 0)),
@@ -84,6 +98,7 @@ def make(venue):
     for key, (forward, up) in FACES.items():
         srgb = scanlib.to_srgb(face(pano, forward, up)).astype(np.float32)
         graded = scanlib.grade(srgb, colour, keep=0.15, contrast=contrast, limits=(0.0, 1.0))
+        graded = lift(graded, LIFT.get(venue, 1.0)).astype(np.float32)
         rgba = np.concatenate([graded, np.ones((SIZE, SIZE, 1), dtype=np.float32)], axis=-1)
         img = bpy.data.images.new(f"Sky{venue}{key}", SIZE, SIZE, alpha=False)
         img.pixels.foreach_set(rgba.ravel())
