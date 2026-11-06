@@ -38,3 +38,4 @@
 - [Pictures by MCP](pictures-by-mcp.md) — upload Assets.images pictures with no screen: serve PNGs on localhost, Studio MCP upload_image, ids back at once
 - [Intro, apple, pointer 2026-11](intro-apple-pointer-2026-11.md) — eye 48 frames + dark hair, apple spin, nib, Pointer finds a clear side; 2026-11-06: Pointer TRACED from the user's picture (white, red line, no sleeve), apple hand drawn not 3D, apple fits the palm, talon claws
 - [Place script check](place-script-check.md) — before a Rojo sync into the shared place: hash every script both sides, match each stale one to a pushed commit; the MCP cannot fetch localhost
+- [Stuck texture packs](stuck-texture-packs.md) — everything grey in Studio = Roblox's texture packs (baked at save) stuck at 406 AcrBeingGenerated, Studio 0.746 won't fall back; check it from the logs, don't re-save to fix it
