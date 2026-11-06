@@ -58,24 +58,24 @@ game", "make it ryuks hand", "more frames for the intro of light and make his ha
   The base halves do not change with the frame count or hair colour (hair is its own layer), so they need no upload.
   Hair: near-black brown base, dark chestnut lit locks, dull warm shine (HAIR_*).
 
-**2026-11-06 follow-up** (the user: "i didnt mean to change the pointer colour, I meant to make it look better, more
-omori like style. Make it red again. the black outlines are ugly. Also make ryuks hand more detailed and high quality
-textured and rendered"):
+**2026-11-06 follow-ups** (two rounds the same day):
 
-- PointerHand is red again, drawn like OMORI's (cursors.py pointer_hand): the game's red (210, 30, 30), flat cel
-  shading, and NO black anywhere: the line round each piece is a maroon (80, 6, 12), a little wobbly (smooth one-octave
-  noise; a 3-octave warp made the edges fuzzy) and heavier on the side away from the light; faint crayon grain, a few
-  hatched strokes in the shade, white highlight strokes along the finger, thumb and knuckles, a white cuff. Same
-  cells, fingertip and box. Lesson: "match the style" meant the drawing, not the palette; the red is the pointer's
-  identity (ui-direction: red = danger, the pointer, a chosen target).
-- The apple hand is a 3D render now (art/scripts/ui/apple_hand_3d.py, run with Blender -b; Cycles on the RTX 4060 Ti
-  via OptiX, about 4 min quick, longer full). Metaballs (BALL 0.575 / CHAIN 0.7: where a lone ball's and a close
-  chain's surface lies, as a share of the radius) for forearm, palm (a negative ellipsoid cups it round the apple),
-  ball of the thumb, bone ridges, fingers laid over the apple's front by depth_at; knuckle creases pressed into the
-  mesh; skin shader with mottle, blotches, veins, pores, wrinkles, AO-darkened hollows, a little subsurface; lacquered
-  claws; a stitched leather band with steel studs. Three renders: Back (no apple), Front (an invisible red apple
-  throws its light and shade, a shadow-catcher apple holds the drawn apple's place out of the picture and catches the
-  fingers' shadows), Thumb (the hand as holdout, its shadow caught on the apple, faded at its root, laid on its
-  square). The hand keeps a slightly thinner stump of the thumb so the turning thumb sits over skin (a separate
-  thumb's root showed as a knot). apple_hand.py now holds only the shape and the contract; intro_frames reads the
-  three PNGs back for its preview (--hand remakes only the preview).
+- Round 1 ("make it red again, the black outlines are ugly", more OMORI-like; "make ryuks hand more detailed and high
+  quality textured and rendered"): a red cel-shaded pointer with maroon lines and a cuff, and the apple hand as a 3D
+  Blender/Cycles render (884ab973). Both rejected within the hour.
+- Round 2 ("dont make ryuks hand 3d, and make the apple fit the hand. also remove the sleeve from the pointer design
+  and make it more accurate to the image", "the nails look weird"), with a 41 x 40 px picture of the hand they want:
+  - PointerHand is TRACED from that picture (cursors.py pointer_hand; print the picture as a character grid to read
+    its lines): a near-white hand, a red line round it (194, 32, 42) swelling a little, heavier toward the lower right;
+    the three curled fingers filled a muted pink-red under the index finger with pink tops and red folds; the thumb
+    as two lines and a small red round over the back of the hand; a pale blush where the white turns. No sleeve, no
+    black. _at() lays the picture's px on the cell (scale 2.23) so the fingertip stays at (92, 48) inside Pointer's box.
+  - The apple hand is drawn again (apple_hand.py, numpy; apple_hand_3d.py deleted). "Fit": the apple was wider than
+    the grip, resting on the palm's edge. HELD is now (842, 666, 88, 76), down in the palm; intro_frames
+    APPLE_ON_SCREEN 0.21 -> 0.176 keeps the hand's size on screen (LoadingArt: only catch and appleCell moved); the
+    palm's edge (ARM) follows the apple's foot, CUP is a dish just inside the apple's lower half (hidden once caught),
+    fingers and thumb longer and thicker and fanned round it. Skin is anime cel shading (hard terminator, core shadow,
+    hatching in the shade, crisp cold rim, hard shine, grain). Claws: one tapered talon each, its root hidden under the
+    fingertip's skin (paint_claw masks the first stretch with the finger); the old nail plate read as a black cap.
+  - Lesson: a reference picture means trace it (see the user memory "match references"); "don't make it 3D" means
+    keep the game's drawn look even when asked for "rendered" quality.

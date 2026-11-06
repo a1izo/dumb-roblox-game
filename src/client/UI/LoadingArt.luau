@@ -10,8 +10,8 @@
 return {
 	handHeight = 0.4384,
 	handAspect = 1.3913,
-	catch = Vector2.new(0.7295, 0.2440),
-	appleCell = 0.6256,
+	catch = Vector2.new(0.7246, 0.2760),
+	appleCell = 0.5243,
 	cell = 256,
 	grid = 4,
 	sheets = 4,
