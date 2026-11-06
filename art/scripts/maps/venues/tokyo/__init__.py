@@ -61,6 +61,9 @@ def preview(s):
 
 
 # check_v2's allowances for this map.
+# Ceiling pools stop at their own floor at export (lightbook.stop_pools; seen in a play test, 2026-11-06).
+STOP_POOLS = True
+
 CHECKS = {
     # The station's east door: its frame posts' backs lie in the plane of the hall's inside wall, both hidden, so a
     # pane check ray beside the shop window there meets one or the other by the order of the scene's faces (it

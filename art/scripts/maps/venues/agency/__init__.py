@@ -48,6 +48,9 @@ VIEWS = [
 # check_v2's targets for this map: the walk (seconds) from each corner of 38F to the opposite
 # corner of 39F, the stairs included. Tighter than Tokyo's (30-45 s): two compact floors, so a
 # case's 6 to 12 players keep running into each other.
+# Ceiling pools stop at their own floor at export (lightbook.stop_pools; seen in a play test, 2026-11-06).
+STOP_POOLS = True
+
 CHECKS = {
     "walk": (18.0, 25.0),
     "corners": [[(-96.0, P.L1, -71.0), (84.0, P.L2, 44.0)], [(96.0, P.L1, -71.0), (-96.0, P.L2, 71.0)],
@@ -75,6 +78,9 @@ def s_layout(s):
     return _LAST.get("layout") or {"stations": []}
 
 
+L1_POOL_LIFT = 1.4
+
+
 def build(s):
     g = city.Ground(s)
     fit.reset()
@@ -87,6 +93,11 @@ def build(s):
     gameplay.build(s)
     mood.build(s)
     g.finish()
+    # 38F's look (approved in a play test, 2026-11-02) was partly 39F's pools shining down through the slab; since the
+    # pools stop at their own floor (lightbook.stop_pools), 38F's own pools make up for it (judged in the bullpen).
+    for li in s.lights:
+        if li.get("pool") and li["pos"][1] < P.CEIL1:
+            li["brightness"] = round(li["brightness"] * L1_POOL_LIFT, 2)
     s.set_bounds(*P.BOUNDS)
     s.checks = CHECKS
     s.far_chunk = (150.0, 1400.0)

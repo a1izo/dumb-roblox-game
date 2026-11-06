@@ -52,6 +52,9 @@ VIEWS = [
 
 # check_v2's targets: the walk (seconds) between the campus's far corners, measured between
 # the rooms furthest apart (the stair up to the gallery included).
+# Ceiling pools stop at their own floor at export (lightbook.stop_pools; seen in a play test, 2026-11-06).
+STOP_POOLS = True
+
 CHECKS = {
     "walk": (22.0, 30.0),
     "corners": [[(-144.0, 0.0, -104.0), (146.0, 0.0, 68.0)], [(-146.0, 0.0, 106.0), (146.0, 0.0, -106.0)],

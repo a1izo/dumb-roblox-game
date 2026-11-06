@@ -324,6 +324,10 @@ def write_scene_v2(scene, module, source):
     copy the checks read. Returns (version, paths)."""
     venue = scene.venue
     folder = os.path.join(SCENES_DIR, venue)
+    if getattr(module, "STOP_POOLS", False):  # (the venues whose pools were seen in a play test with the cut)
+        from maps import lightbook
+
+        print(f"  pools stopped at their floors: {lightbook.stop_pools(scene)}")
     version, digest = next_version(scene, getattr(module, "TEXTURES", ()))
     if os.path.isdir(folder):
         shutil.rmtree(folder)

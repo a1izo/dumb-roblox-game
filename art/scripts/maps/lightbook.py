@@ -70,9 +70,81 @@ POOL_GAIN = 8.5  # times the fitting's nominal brightness (checked through the p
 
 
 def pool(s, pos, color, brightness, flicker=False, glow=None, rot=0.0, role=None):
-    """The lamp of a ceiling fitting as a noir pool: a spot down, POOL_ANGLE wide, clear of its fitting."""
+    """The lamp of a ceiling fitting as a noir pool: a spot down, POOL_ANGLE wide, clear of its fitting. Its range
+    is cut to its own floor at export (stop_pools)."""
     s.light("spot", pos, color, POOL_RANGE, brightness * POOL_GAIN, False, "Bottom", POOL_ANGLE, flicker, role, rot,
             glow, True)
+    s.lights[-1]["pool"] = True
+
+
+# A pool's light stops at its own floor (seen in a Studio play test at full quality, 2026-11-06). Lamps cast no
+# shadows, so a pool 13 studs up with a 28 stud range went on through its floor into the storey below: Bureau HQ's
+# 39F lamps lit 38F's ceiling, blew out its pillars and whiteboards, put a white halo round the security office's
+# camera monitors, and stacked a second set of lamps on every point of 38F (the engine drops lights where too many
+# overlap). Measured on a test floor, a shorter range barely dims the pool itself (Roblox's falloff is not physical:
+# a range of 13 needs 1.7 times the brightness to match 28 at 12 studs, and a lamp 16 up lights its floor more than
+# one 12 up). 2.4 gave 38F back the light it had borrowed from 39F but blew out Tokyo's tiled station hall; at 1.7
+# every pool keeps its own brightness and only the borrowed light is gone.
+POOL_PAST_FLOOR = 1.0  # how far past its floor a pool reaches
+POOL_FURNITURE = 7.0  # anything nearer than this under a ceiling lamp is furniture, not its floor
+POOL_SHORT = 13.0  # the range the cut gain was chosen at (a lamp 12 studs over its floor)
+POOL_CUT_GAIN = 1.7  # brightness times this at POOL_SHORT, less for a smaller cut
+POOL_PROBES = ((0.0, 0.0), (3.0, 0.0), (-3.0, 0.0), (0.0, 3.0), (0.0, -3.0))  # where the floor is looked for
+
+
+def stop_pools(scene):
+    """Cuts every ceiling pool's range to its own floor (the lowest drop to an upward face at least POOL_FURNITURE
+    down, in the scene's opaque meshes, that two of the POOL_PROBES rays agree on) plus POOL_PAST_FLOOR, and raises
+    its brightness for the cut. Pools with no agreed floor within POOL_RANGE are left alone. Needs Blender
+    (mathutils); outside it nothing changes."""
+    try:
+        from mathutils import Vector
+
+        from maps import finders
+    except ImportError:
+        return 0
+    pools = [li for li in scene.lights if li.get("pool") and li["range"] == POOL_RANGE]
+    if not pools:
+        return 0
+    tree, _ = finders.Tris(scene).tree("opaque")
+    if tree is None:
+        return 0
+    down = Vector((0.0, -1.0, 0.0))
+
+    def drop(x, y, z):
+        """How far below (x, y, z) the first upward face at least POOL_FURNITURE down is, or None."""
+        start = Vector((x, y, z))
+        travelled = 0.0
+        for _ in range(12):
+            hit = tree.ray_cast(start, down, POOL_RANGE - travelled)
+            if hit[0] is None:
+                return None
+            loc, normal, _index, dist = hit
+            travelled += dist
+            if travelled >= POOL_FURNITURE and normal.y > 0.5:
+                return travelled
+            start = loc + down * 0.01
+            travelled += 0.01
+        return None
+
+    cut = 0
+    for li in pools:
+        x, y, z = li["pos"]
+        # Under the lamp and POOL_PROBE either side: a desk under its middle is passed by the outer rays, and a ray
+        # down a stairwell or an atrium's edge counts only where another one agrees with it.
+        drops = [d for d in (drop(x + dx, y, z + dz) for dx, dz in POOL_PROBES) if d is not None]
+        agreed = [d for d in drops if sum(1 for e in drops if abs(e - d) <= 1.0) >= 2]
+        if not agreed:
+            continue
+        floor = max(agreed)
+        reach = min(POOL_RANGE, floor + POOL_PAST_FLOOR)
+        if reach >= POOL_RANGE:
+            continue
+        share = min(1.0, (POOL_RANGE - reach) / (POOL_RANGE - POOL_SHORT))
+        li["range"] = round(reach, 1)
+        li["brightness"] = round(li["brightness"] * (1 + (POOL_CUT_GAIN - 1) * share), 2)
+        cut += 1
+    return cut
 
 
 def wall(s, pos, rot, color, range_, brightness, shadows=False, flicker=False, role=None, glow=None):

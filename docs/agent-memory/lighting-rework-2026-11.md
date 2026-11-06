@@ -88,3 +88,28 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   readable at night" (ambient 45 or brighter, the noir fills are about 26) and "never lets bloom catch lit skin"
   (bloomThreshold 1.8 or higher, TaskForceHQ's is 1.5). The first limit is simply out of date. The second needs a look
   by whoever owns HQ's bloom: check lit skin there before lowering the spec's limit.
+- 2026-11-06, looked at live (Studio MCP, play-test QualityLevel 21, the place's own Studio parked off screen):
+  - FIXED: ceiling pools went on through their own floor. Lamps cast no shadows, so a pool 13 studs up with range 28
+    lit the storey below: HQ's 39F lamps lit 38F's ceiling, blew out its pillars and whiteboards, put a white halo on
+    the security office's monitor bank and doubled the lamps on every point of 38F. `lightbook.stop_pools` (run by
+    export.write_scene_v2 for venues with STOP_POOLS = True: Agency, Campus, Tokyo) cuts each pool to its floor + 1
+    (the drop to an upward opaque face 7+ studs down that two of five rays, 3 studs apart, agree on: a desk under the
+    lamp or a stairwell beside it does not count) and multiplies its brightness by up to 1.7, the measured match: a
+    range-13 pool needs ~1.7x to light its floor like range 28 at 12 studs (Roblox's falloff is not physical; a lamp
+    16 up lights its floor MORE than one 12 up). HQ's 38F pools get 1.4x more on top (agency L1_POOL_LIFT): the
+    approved 38F look had been partly 39F's leak. 2.4 everywhere blew out Tokyo's tiled station hall. Lights do not
+    bump a venue's version: this reaches the game by script sync alone. Sets, meeting room and lobby not opted in
+    (not looked at with it).
+  - Lobby (Grey Realm: bowl, grotto) and meeting room looked at live and left as they are: grey and readable, the war
+    room warm with its chairs in silhouette. The lobby's dive fix (2be66fd7) could not be tried: the place's
+    LobbyRift/DiveController were older than it (no ENTER_ABOVE, no busy), so scripts were not synced.
+  - Still leaking, not fixed: prop lamps from the catalog (DeskLamp r13 on 39F reaches 38F's upper half).
+  - Seen, not changed (the user's call): the night skies render BLACK at the noir exposure. Roblox's own default sky is black
+    too at exposure 0.1, and only at +3 stops does Tokyo's violet show, so the far cities' towers vanish and their lit
+    windows float in black (Campus avenue, Tokyo scramble). The approved HQ frame shows the same floating windows. A fix
+    would be much brighter sky faces (skies.py) or a lit backdrop; ask before doing it.
+  - Cold clinical rooms (HQ security, the Campus forensic lab) read flat and bright: white walls and tile under 80
+    degree pools. A 60 degree cone gave real pools there in a live test; not changed (POOL_ANGLE is every map's).
+  - Captures: Studio minimised draws no 3D (grey frames). Park its window off screen with SetWindowPos at
+    (-1960, 0, 1920x1080, SWP_NOACTIVATE) and restore it after. The first capture after a move or change is often a
+    frame stale, and lightning flashes wash frames white or blue: capture twice.
