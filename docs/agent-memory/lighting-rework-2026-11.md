@@ -89,9 +89,14 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   (bloomThreshold 1.8 or higher, TaskForceHQ's is 1.5). The first limit is simply out of date. The second needs a look
   by whoever owns HQ's bloom: check lit skin there before lowering the spec's limit.
   - 2026-11-06: the first is FIXED (7550c7fb): the brightest fill channel of HQ, Campus and Tokyo must sit between 32
-    and 56 (28 read black, 66 read flat). The bloom one still fails, not looked at: Roblox Player was open, and
-    Studio captures fail while it runs. A spec can be run without a play test: execute_luau in Edit, the spec's text
-    in an unparented ModuleScript's Source, require it with a small describe/it/expect table.
+    and 56 (28 read black, 66 read flat). A spec can be run without a play test: execute_luau in Edit, the spec's
+    text in an unparented ModuleScript's Source, require it with a small describe/it/expect table.
+  - 2026-11-06, the bloom one LOOKED AT (play test, QL21, real camera pinned): an R6 avatar in bare pale skin
+    (255, 220, 190) under HQ's brightest pool (the staff locker room, b31 at 12 studs, drop 12.3) blooms hard at 1.5
+    (edges and face washed out), still glows at 1.8, holds its edges at 2.0 and is as clean as bloom off at 2.2. The
+    spec was right; HQ's preset is the outlier. At 2.2 HQ's reception keeps its look: only the soft halo on lit
+    white surfaces (X-ray scanner, lift frames) goes, the downlights keep their glow. Campus and Tokyo (1.9) not looked
+    at. A RobloxPlayerBeta left running with no window (its game closed) did not stop the captures.
 - 2026-11-06, looked at live (Studio MCP, play-test QualityLevel 21, the place's own Studio parked off screen):
   - FIXED: ceiling pools went on through their own floor. Lamps cast no shadows, so a pool 13 studs up with range 28
     lit the storey below: HQ's 39F lamps lit 38F's ceiling, blew out its pillars and whiteboards, put a white halo on

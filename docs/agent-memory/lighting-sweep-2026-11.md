@@ -50,5 +50,7 @@ has round tube lights; an export would turn them into pools), so leave Sets unti
 
 Parking Studio off screen: ShowWindow(SW_SHOWNOACTIVATE) on a window minimised from maximised brings it back
 MAXIMISED on the user's screen. Use SetWindowPlacement (flags 0, showCmd 4) and then SetWindowPos to (-1960, 0).
+Before closing a parked Studio, put it back with SetWindowPlacement (flags 2, showCmd 7, an on-screen normal rect):
+Studio remembers its window on close, and the user's next Studio would open off screen.
 
 Related: [[lighting-rework-2026-11]].
