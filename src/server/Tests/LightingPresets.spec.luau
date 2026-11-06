@@ -58,12 +58,16 @@ return function(t)
 			expect(look.keyLights <= 2).to.equal(true)
 		end)
 		it("keeps the rebuilt maps readable at night", function()
-			-- Maps rebuilt at full size get a night you can see in (the moods still darken them).
+			-- Maps rebuilt at full size get a night you can see in (the moods still darken them). Noir since
+			-- 2026-11-02, seen in play tests at full quality: the fill stays low so the lamps' pools are the
+			-- light (at 66 and up it lit every surface evenly and the rooms read flat) but above the 28 at
+			-- which HQ read black, so an unlit corner still shows a silhouette.
 			for _, mapId in ipairs({ "TokyoDistrict", "TaskForceHQ", "UniversityCampus" }) do
 				local p = LightingPresets.maps[mapId]
 				local brightest = math.max(p.ambient.R, p.ambient.G, p.ambient.B)
 				expect(p.exposure >= 0).to.equal(true)
-				expect(brightest >= 45 / 255).to.equal(true)
+				expect(brightest >= 32 / 255).to.equal(true)
+				expect(brightest <= 56 / 255).to.equal(true)
 				-- Mist and haze make the mood, but another player must stay recognisable at ~80 studs.
 				expect(p.density <= 0.45).to.equal(true)
 				local grim = LightingPresets.resolve(p, LightingPresets.moods.Blackout)
