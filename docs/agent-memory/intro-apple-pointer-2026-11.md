@@ -83,3 +83,11 @@ game", "make it ryuks hand", "more frames for the intro of light and make his ha
     fingers connect they look like theyre glued on"): AppleHandBack is only a thin strip of palm just above its edge,
     darkest at the edge and fading into the dark toward the fingers, no rim or outline (a whole hollow, and the thumb's web,
     read as a plate); each finger's base takes the hand's own shading (melt) with no line or drop shade near its knuckle.
+  - Round 4 (a picture of Ryuk's hand; "where are his rings", "make it better", rings "bigger than the finger" on
+    the index and middle fingers, "shouldnt the rings be facing forward from this view?"): skin() is two flat tones
+    (SKIN_LIT steel blue, SKIN_SHADE near black, a noise-wavered hard terminator, no hatching/grain). ring() draws a
+    band across the finger (clipped to what of it is not hidden by fingers in front) and the head SIDE-ON (the user
+    picked it over heads facing the camera): an oval cut at the finger's outer edge so only the dome rising off the
+    finger's back shows. Rings are drawn after all fingers (RINGED: middle at 0.3 of its first bone, index at 0.6).
+    Tries that failed: thin pins, balls on a bar (piercings), round discs facing us (buttons), ovals over the finger
+    (lenses), squared blocks (plates).

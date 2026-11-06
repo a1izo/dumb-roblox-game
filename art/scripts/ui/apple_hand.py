@@ -9,7 +9,10 @@ where they were, so UI/AppleLoading and the apple's sheets are untouched.
 of it was tried and dropped that day): the apple is smaller and sits down in the palm (HELD), the palm's edge follows
 its foot, the fingers and thumb are longer and thicker and fan round it; the skin is shaded as an anime frame is (a
 hard terminator, a core shadow, hatching, a crisp rim, a shine, grain) instead of airbrushed; each claw grows out from
-under its fingertip's skin like a talon instead of sitting on it as a black cap.
+under its fingertip's skin like a talon instead of sitting on it as a black cap. Later that day, after your picture of
+Ryuk's hand: two flat tones (steel blue, near-black shade cut sharp with a brushed edge), and his two big silver
+rings on the index and middle fingers, seen side-on as this view sees those fingers (a band across the finger, a
+dome rising off its back).
 
 Each part is shaded as a rounded form under the light from the upper left that lights the apple (a lit face, a crisp
 shade, a cool light round the shaded edge, the apple's red light on what faces it), inked as an anime frame is (a
@@ -77,6 +80,9 @@ FINGERS = [
     {"joints": [(904, 742), round_apple(12, -20), round_apple(-28, -24), round_apple(-62, -26)], "scale": 1.12,
      "claw": (40, 40)},
 ]
+# Ryuk's rings (your picture, 2026-11-06): big chunky silver ones, their heads bigger than the finger, on the middle
+# and index fingers, over their first bones; seen from this side, so their heads stand out from the fingers' backs.
+RINGED = (FINGERS[2], FINGERS[3])
 # (sketch px across: the knuckle, the bone, the joint, the bone, the joint, the last bone, the tip)
 FINGER_WIDTHS = [36, 26, 32.5, 23, 27.5, 20.5, 18.5]
 
@@ -110,8 +116,9 @@ WRIST_BONE = (742.0, 850.0)  # the knob of bone at the wrist's underside
 LIGHT = np.array([-0.72, -0.58, -0.38])  # toward the light: up, left and toward us (x right, y down, z away)
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
 # A death god's skin: dark blue-grey, a cold slate where it is lit.
-SKIN_LIT = np.array([0.33, 0.365, 0.42], np.float32)
-SKIN_SHADE = np.array([0.165, 0.185, 0.23], np.float32)
+# (2026-11-06, after your picture of Ryuk's hand: two flat tones, a steel blue lit and a near-black shade)
+SKIN_LIT = np.array([0.29, 0.38, 0.49], np.float32)
+SKIN_SHADE = np.array([0.075, 0.07, 0.085], np.float32)
 COOL_RIM = np.array([0.4, 0.47, 0.58], np.float32)
 APPLE_GLOW = np.array([0.5, 0.04, 0.07], np.float32)
 CLAW = np.array([0.06, 0.06, 0.075], np.float32)
@@ -201,28 +208,25 @@ def normals(height, k):
 
 
 def skin(n, near_apple, base=None):
-    """Skin under the light, drawn as an anime frame shades it (2026-11-06: it was airbrushed): a lit face and a shade
-    cut hard at the terminator, a deeper core shadow inside the shade, the shade hatched in fine ink strokes, a crisp
-    cold rim where the shaded form turns away from us, the apple's red light on what faces it, a hard shine on the lit
-    bulges (bone under thin skin) and a faint grain, so it reads as skin and not plastic."""
+    """Skin under the light in two flat tones, as your picture of Ryuk's hand is drawn (2026-11-06, "make it better"):
+    a steel blue where lit and a near-black shade, cut at a terminator that wavers like a brush's edge, so the shadow
+    reaches into the light in sharp tongues; a lighter band of the blue only where the form faces the light squarely;
+    a thin cold rim where the shaded form turns away from us; the apple's red on what faces it; a small hard shine.
+    No soft gradients, hatching or grain."""
     h, w = n.shape[:2]
     ndl = n @ LIGHT
-    lit = pt.smoothstep(-0.03, 0.03, ndl)[..., None]
-    core = (1 - pt.smoothstep(-0.4, -0.34, ndl))[..., None]
+    brush = (pt.noise(h, w, 20, 81, 1) - 0.5) * 0.3
+    lit = pt.smoothstep(-0.012, 0.012, ndl + brush)[..., None]
     shade = SKIN_SHADE if base is None else base
     col = shade[None, None] * (1 - lit) + SKIN_LIT[None, None] * lit
-    col = col * (1 - 0.32 * core) * (0.93 + 0.1 * np.clip(ndl, 0, 1))[..., None]
-    ys, xs = pt.grid(h, w)
-    strokes = pt.smoothstep(0.72, 0.92, 0.5 + 0.5 * np.cos(2 * math.pi * (xs + ys * 0.85) / 4.6))
-    strokes *= pt.smoothstep(0.38, 0.55, pt.noise(h, w, 9, 77, 2))
-    col = col * (1 - 0.2 * strokes[..., None] * (1 - lit) * (0.5 + 0.5 * core))
-    edge = pt.smoothstep(0.84, 0.9, 1 + n[..., 2])[..., None]  # (turned away from us, at the outline)
-    col = col * (1 - 0.55 * edge * (1 - lit)) + COOL_RIM[None, None] * (0.55 * edge * (1 - lit))
+    top = pt.smoothstep(0.6, 0.62, ndl + brush * 0.5)[..., None]
+    col = col + SKIN_LIT[None, None] * (0.16 * top)
+    edge = pt.smoothstep(0.9, 0.93, 1 + n[..., 2])[..., None]  # (turned away from us, at the outline)
+    col = col * (1 - 0.35 * edge * (1 - lit)) + COOL_RIM[None, None] * (0.35 * edge * (1 - lit))
     col = col + APPLE_GLOW[None, None] * (near_apple[..., None] * (0.3 - 0.18 * lit))
     half = LIGHT + np.array([0.0, 0.0, -1.0])
     half = half / np.linalg.norm(half)
-    shine = pt.smoothstep(0.955, 0.975, n @ half) * 0.16
-    col = col * (1 + (pt.noise(h, w, 2.5, 78, 1) - 0.5) * 0.07)[..., None]
+    shine = pt.smoothstep(0.965, 0.98, n @ half) * 0.14
     return np.clip(col + shine[..., None], 0, 1)
 
 
@@ -335,6 +339,51 @@ def paint_claw(rgb, alpha, shape, line, side_widths, skin_clip=None):
     ink(rgb, alpha, shape, 1.0, width=1.5)
 
 
+def ring(rgb, alpha, knuckle, joint, width, clip, at=0.5):
+    """One of Ryuk's rings (in place): a chunky silver ring on a finger's first bone, `at` of the way from `knuckle` to
+    `joint`, seen as this view sees the finger: from its side, the back of the finger (where a ring's head sits)
+    facing away from the apple. So the band crosses the finger, bowed as it wraps round it, and the big head, longer
+    than the finger is wide, stands out from the finger's outer edge in profile: a domed block, its flat top seen
+    nearly edge-on. Shaded flat like the hand (silver toward the light, dark steel away), a white glint, heavy ink, the
+    shade it throws. (2026-11-06: round heads facing the camera read as buttons stuck on the side of the finger.)"""
+    k, j = np.array(knuckle, float), np.array(joint, float)
+    way = (j - k) / np.linalg.norm(j - k)
+    across = np.array([-way[1], way[0]])
+    mid = k + (j - k) * at
+    out = across if (mid - np.array(HELD[:2])) @ across > 0 else -across  # (the finger's back, away from the apple)
+    half = width * 0.5
+    # the band: across the finger, bowed toward the joint where it wraps the near side
+    arc = [tuple(mid + across * half * 1.1 * u + way * width * 0.12 * (1 - u * u)) for u in np.linspace(-1, 1, 9)]
+    band = stroke(arc, 8.0 * HAND_SCALE) * clip
+    pt.layer_over(rgb, alpha, STEEL * 0.4, band)
+    pt.layer_over(rgb, alpha, STEEL * 1.0, stroke([(x - way[0] * 1.5, y - way[1] * 1.5) for x, y in arc],
+                                                  3.0 * HAND_SCALE) * band)
+    ink(rgb, alpha, band, 1.0, width=1.6)
+    # the head: a round dome on the finger's back, seen from the side (your pick, 2026-11-06: side-on), longer along
+    # the finger than the finger is wide; only the dome shows, rising off the finger's outer edge (its foot is in the
+    # band), and its top catches the light along a curved strip
+    long_r, deep_r = width * 0.6, width * 0.55
+    base = mid + out * half * 0.82
+    angle = math.atan2(way[1], way[0])
+    cx, cy = H(*base)
+    oval = pt.ellipse(cx, cy, long_r * HAND_SCALE, deep_r * HAND_SCALE, HW, HH, angle=angle)
+    x, y = hgrid()
+    rise = (x - base[0]) * out[0] + (y - base[1]) * out[1]
+    dome = oval * pt.smoothstep(-0.6, 0.6, rise)
+    shade = np.clip(pt.blur(shifted(dome, 4, 5), 3.0) - dome, 0, 1) * clip
+    rgb *= (1 - 0.55 * shade)[..., None]
+    nn = form(oval, deep_r * HAND_SCALE * 0.6)
+    lit = pt.smoothstep(-0.02, 0.02, nn @ LIGHT)[..., None]
+    pt.layer_over(rgb, alpha, STEEL[None, None] * (0.34 + 0.6 * lit), dome)
+    crest = [tuple(base + way * long_r * math.sin(t) * 0.78 + out * deep_r * math.cos(t) * 0.78)
+             for t in np.linspace(-1.2, 1.2, 11)]
+    pt.layer_over(rgb, alpha, STEEL * 1.2, stroke(crest, 2.4 * HAND_SCALE) * dome)
+    gx, gy = H(*(base - way * long_r * 0.4 + out * deep_r * 0.55))
+    glint = pt.ellipse(gx, gy, 3.2 * HAND_SCALE, 1.9 * HAND_SCALE, HW, HH, angle=angle - 0.5) * dome
+    pt.layer_over(rgb, alpha, np.array([0.96, 0.97, 1.0], np.float32), glint)
+    ink(rgb, alpha, dome, 1.0, width=2.0)
+
+
 def wrinkles(rgb, alpha, at, across, width, clip, count=3, strength=0.55):
     """The creases over a knuckle (in place): short curved lines across the finger at `at` (sketch px), `across` its
     way across it (unit), `width` the finger's width there."""
@@ -408,13 +457,13 @@ def front():
         groove = tapered([(px + 3, py + 6) for px, py in tendon], 4.0, 0.5)
         rgb *= (1 - 0.15 * pt.blur(groove, 4.0) * body)[..., None]
         ridge = tapered([(px - 1, py - 1.5) for px, py in tendon], 2.4, 0.3)
-        rgb += (pt.blur(ridge, 1.2) * body)[..., None] * np.array([0.09, 0.1, 0.11], np.float32)
+        rgb += (pt.blur(ridge, 1.2) * body)[..., None] * np.array([0.035, 0.04, 0.05], np.float32)
     ridge = tapered([(px - 1, py - 1.5) for px, py in THUMB_TENDON], 2.6, 0.3)
-    rgb += (pt.blur(ridge, 1.2) * body)[..., None] * np.array([0.08, 0.09, 0.1], np.float32)
+    rgb += (pt.blur(ridge, 1.2) * body)[..., None] * np.array([0.03, 0.035, 0.045], np.float32)
     bump(rgb, WRIST_BONE, 14, 10, body, 0.08)
     alpha = body.astype(np.float32).copy()
     # (skin, not plastic: the faintest mottling) and the palm's lip's crease
-    rgb *= (1 + (pt.noise(HH, HW, 26, 31, 3) - 0.5) * 0.09 + (pt.noise(HH, HW, 4, 32, 2) - 0.5) * 0.04)[..., None]
+    rgb *= (1 + (pt.noise(HH, HW, 26, 31, 3) - 0.5) * 0.04)[..., None]
     pt.layer_over(rgb, alpha, LINE, tapered([(760, 732), (800, 745), (845, 752), (885, 749)], 1.4, 0.2) * body * 0.4)
 
     # The fingers, back to front: each its own rounded form with swollen joints, creased at them, inked where it lies
@@ -423,6 +472,7 @@ def front():
     # connect they look like theyre glued on").
     behind = body.copy()
     hand_rgb = rgb.copy()
+    shapes = []
     gy, gx = pt.grid(HH, HW)
     for f in FINGERS:
         axis, widths = finger_axis(f)
@@ -443,7 +493,10 @@ def front():
             way /= np.linalg.norm(way)
             bump(rgb, joint, 7 * f["scale"], 6 * f["scale"], shape, 0.06)
             wrinkles(rgb, alpha, joint, (way[0], way[1]), widths[2 + 2 * k], shape, count=3)
-        ink(rgb, alpha, shape, 1.0, where=1 - root)
+        # (its line fades out further from the knuckle than its colour does, so no trace of its round end is left)
+        far = pt.smoothstep(20 * HAND_SCALE, 52 * HAND_SCALE, np.hypot(gx - kx, gy - ky))
+        ink(rgb, alpha, shape, 1.0, where=np.maximum(far, 1 - body))
+        shapes.append((f, shape, widths))
         # (its nail, dark, over the end of its last bone, and the claw it grows into)
         tip, before = joints[-1], joints[-2]
         way = np.array(tip, float) - np.array(before, float)
@@ -452,6 +505,18 @@ def front():
         shape_c, line, sides = claw(tip, before, widths[-1] * 0.62, length, hook)
         paint_claw(rgb, alpha, shape_c, line, sides, skin_clip=shape)
         behind = np.maximum(behind, shape)
+
+    # The rings, once every finger is down, so their heads (wider than the fingers) sit over them side by side; each
+    # band only where its finger is not hidden by a finger in front of it.
+    for index, (f, shape, widths) in enumerate(shapes):
+        if f not in RINGED:
+            continue
+        in_front = np.zeros_like(shape)
+        for _, later, _ in shapes[index + 1:]:
+            in_front = np.maximum(in_front, later)
+        # (the index finger's a little further up its bone than the middle finger's, so the two heads sit side by side)
+        at = 0.6 if f is FINGERS[3] else 0.3
+        ring(rgb, alpha, f["joints"][0], f["joints"][1], widths[1], shape * (1 - in_front), at=at)
 
     # The band round the wrist: black leather, the light along its top, a stitched rim at each edge, steel studs.
     inside, along, across, _, _ = band_shape()

@@ -482,9 +482,9 @@ Assets.images = {
 	AppleSpin2 = "101058079851458",
 	AppleSpin3 = "107031597473568",
 	AppleSpin4 = "98149657604172",
-	AppleHandBack = "123424977794426",
-	AppleHandFront = "130540291054568",
-	AppleThumb = "104953818442451",
+	AppleHandBack = "129667866259961",
+	AppleHandFront = "132593992776984",
+	AppleThumb = "109551358538247",
 	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
 	-- And the red hand that points at whatever is chosen (UI/Kit/Pointer): one finger, four ways round on a sheet.
 	CursorLock = "71963626863169",
