@@ -65,6 +65,10 @@ def ceiling(s, pos, color, range_, brightness, shadows=False, flicker=False, rol
 # their light and lit the ceiling flat instead; with the room's fill turned down (LightingPresets) these pools are the
 # light the room has. An 80 degree cone from a 13 stud ceiling makes a pool about 21 studs across.
 POOL_ANGLE = 80
+# A pendant that lights a room on its own (a spot down from its shade: kit.pendant): its brightness. At 1.0 such
+# rooms measured a fifth to a third of rooms lit by pools (art/scripts/maps/room_light.py, the 2026-11-06 sweep);
+# every map's lone-pendant rooms use this.
+PENDANT_ROOM = 3.5
 POOL_RANGE = 28
 POOL_GAIN = 8.5  # times the fitting's nominal brightness (checked through the player's own camera, 2026-11-02)
 

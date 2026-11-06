@@ -78,4 +78,6 @@ def build(s):
     s.box("MirrorGlass", (OX + 10.42, 6.0, OZ - 1.0), (0.1, 3.0, 4.0))
     s.box("WhiteTrim", (OX + 10.05, 3.2, OZ - 1.0), (0.8, 0.4, 2.2))
     for x in (-6.0, 0.0, 6.0):
-        kit.tube_light(s, OX + x, h, OZ, length=6.0, rot=90, range_=16, brightness=0.8)
+        # (as noir pools now, like every map's ceiling fittings: 0.25 puts the room level with the other sets'
+        # rooms, 0.8 made it near four times as bright; 2026-11-06 sweep)
+        kit.tube_light(s, OX + x, h, OZ, length=6.0, rot=90, range_=16, brightness=0.25)

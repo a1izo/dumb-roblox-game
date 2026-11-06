@@ -5,7 +5,7 @@ only light; one armchair in front of them where Ace sits crouched; a low table w
 across the carpet. The pantry next door (through a doorway in the east wall): the Butler's narrow galley,
 cupboards and a counter, the tea trolley, one warm lamp."""
 
-from maps import kit
+from maps import kit, lightbook
 from maps.venues.sets import plan as P
 
 AX, AZ = P.ACE
@@ -70,7 +70,8 @@ def pantry(s):
             s.box("WhiteTrim", (PX - 2.6 + j * 1.8, 6.75 + k * 1.6, PZ - 5.6), (0.5, 0.55, 0.5))
     s.prop("DrinksTrolley", PX + 2.0, PZ + 1.5, 90)
     s.box("BlackMetal", (PX - 1.4, 3.75, PZ - 4.4), (0.8, 0.5, 0.8))  # the kettle on the counter
-    kit.pendant(s, PX + 1.0, h, PZ - 1.0, drop=3.5, shade="Brass", range_=18, brightness=1.0)
+    # (the pantry's one warm lamp: at 1.0 the room was black, 2026-11-06)
+    kit.pendant(s, PX + 1.0, h, PZ - 1.0, drop=3.5, shade="Brass", range_=18, brightness=lightbook.PENDANT_ROOM)
 
 
 def build(s):

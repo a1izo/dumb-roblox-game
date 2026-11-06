@@ -358,6 +358,8 @@ def grotto(s, g):
     sx, sy, sz = f.w3(0.0, P.GROTTO_MOUTH_H - 0.9, -2.6)
     s.anchor("academyGate", sx, sy, sz, lrot, w=14.0, h=1.5)
     s.zone("plaza", g2.rect(mx, mz, P.GROTTO_MOUTH_W, 12.0, lrot), 0.0, name="the grotto's mouth")
+    # A pool of the realm's light under the lintel: the way in was black between the lit bowl and the lit Academy.
+    pool(s, mx + ux * 2.0, P.GROTTO_MOUTH_H - 3.0, mz + uz * 2.0, range_=22, brightness=0.9)
     # Twisted pillars of rock up to the vault, between the altars and the walls.
     for k, a in enumerate((gate + 130.0, gate + 180.0, gate + 230.0, gate + 80.0, gate + 280.0)):
         x, z = P.polar(c, a, P.ACADEMY_R - 3.5)

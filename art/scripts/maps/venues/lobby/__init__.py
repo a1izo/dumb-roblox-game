@@ -50,6 +50,9 @@ VIEWS = [
 # farthest activity (settled with the user, 2026-10-05). The mirror
 # rule is for the gameplay maps; the lobby is an open field to wait in, naturally close to its own
 # mirror image, so it is not held to it (settled with the user, 2026-09-29).
+# Ceiling pools stop at their own floor at export (lightbook.stop_pools), on every map since 2026-11-06.
+STOP_POOLS = True
+
 CHECKS = {
     "walk": (15.0, 35.0),
     "corners": P.CORNERS,

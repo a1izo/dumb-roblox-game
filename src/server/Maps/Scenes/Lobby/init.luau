@@ -13,7 +13,7 @@ return {
 	marker = "DeathsGambitMapsLobby_Version_38",
 	fbx = "DeathsGambitMaps_Lobby.fbx",
 	bounds = { min = { -380, -6, -290 }, max = { 270, 150, 190 } },
-	stats = { materials = 24, triangles = 110526, colliders = 2608, floors = 343, ramps = 3, props = 765, lights = 26, signs = 0 },
+	stats = { materials = 24, triangles = 110526, colliders = 2608, floors = 343, ramps = 3, props = 765, lights = 27, signs = 0 },
 	layout = require(script.Layout),
 	geometry = require(script.Geometry),
 	dressing = require(script.Dressing),

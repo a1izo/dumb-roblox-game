@@ -211,9 +211,8 @@ def desk(s, x, z, rot, y=0.0, lamp=True, chair=True, key="Desk"):
 # nominal values (the game scales every lamp again by the map's preset).
 ROOM_BRIGHTNESS = 1.35
 # A brass pendant that lights an old room on its own (the library's circulation desk and rare books room, Law &
-# Letters' hall, the clock tower's foot): a spot down, like the panels' pools. At 1.0 these rooms measured a third
-# of the campus's other rooms (2026-11-06 sweep, the user: no room randomly darker than its peers).
-PENDANT_ROOM = 3.5
+# Letters' hall, the clock tower's foot): lightbook's level for such rooms on every map.
+PENDANT_ROOM = lightbook.PENDANT_ROOM
 ROOM_RANGE = 1.25
 
 

@@ -28,6 +28,9 @@ VIEWS = [
     ((0.0, 6.5, 20.0), (0.0, 0.0, 400.0), 18),  # out through the blinds
 ]
 
+# Ceiling pools stop at their own floor at export (lightbook.stop_pools), on every map since 2026-11-06.
+STOP_POOLS = True
+
 CHECKS = {
     "walk": (2.0, 10.0),
     "corners": [[(-26.0, 0.0, -24.0), (26.0, 0.0, 24.0)], [(-24.0, 0.0, 24.0), (24.0, 0.0, -24.0)]],

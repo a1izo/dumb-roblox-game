@@ -784,6 +784,7 @@ return {
 		{ kind = "point", at = { 0, 31.57, -61 }, color = { 170, 196, 232 }, range = 30, brightness = 1.1, shadows = false, face = "Bottom", angle = 90, flicker = false },
 		{ kind = "point", at = { 0, 7, -53 }, color = { 170, 196, 232 }, range = 18, brightness = 0.7, shadows = false, face = "Bottom", angle = 90, flicker = false },
 		{ kind = "point", at = { 19.491, 9, -51.086 }, color = { 170, 196, 232 }, range = 22, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false },
+		{ kind = "point", at = { -70.93, 10, 40.556 }, color = { 170, 196, 232 }, range = 22, brightness = 0.9, shadows = false, face = "Bottom", angle = 90, flicker = false },
 		{ kind = "point", at = { -113.17, 24.793, 62.58 }, color = { 196, 214, 255 }, range = 26, brightness = 1, shadows = false, face = "Bottom", angle = 90, flicker = false },
 		{ kind = "point", at = { -117.75, 24.793, 49.35 }, color = { 196, 214, 255 }, range = 26, brightness = 1, shadows = false, face = "Bottom", angle = 90, flicker = false },
 		{ kind = "point", at = { -101.16, 23.814, 69.77 }, color = { 196, 214, 255 }, range = 26, brightness = 1, shadows = false, face = "Bottom", angle = 90, flicker = false },

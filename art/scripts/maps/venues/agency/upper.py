@@ -249,7 +249,7 @@ def analysts(s):
     # Over the map table and the middle of the floor (the desk lamps light the desks); the row by the west glass dead.
     fit.ceiling_lights(s, P.ANALYSTS, C, "panel",
                        [(-72.0, 20.0), (-58.0, -28.0), (-30.0, 0.0), (-44.0, 12.0), (-79.0, -14.0), (-30.0, -30.0)],
-                       spacing=14.0, dead=[(-93.0, -41.0), (-93.0, -13.0), (-93.0, 15.0)], brightness=1.05)
+                       spacing=14.0, dead=[(-93.0, -41.0), (-93.0, -13.0), (-93.0, 15.0)], brightness=1.35)
     s.sound("mapOfficeHum", (-58.0, Y + 8.0, 0.0), 60.0, 0.18)
     s.sound("mapPhoneRing", (-86.0, Y + 4.0, -12.0), 26.0, 0.1)
     s.sound("mapRainGlass", (-96.0, Y + 6.0, 0.0), 60.0, 0.22)
@@ -278,7 +278,7 @@ def training(s):
     prop(s, "Whiteboard", -40.0, 70.0, 180)
     # Dim over the seats (the pull-down screen is the room's light), off at the back.
     fit.ceiling_lights(s, P.ROOMS_L2["training"], C, "panel", [(-84.0, 57.0), (-66.0, 57.0), (-48.0, 57.0), (-36.0, 69.0)],
-                       spacing=12.0, dead=[(-24.0, 57.0)], brightness=1.1, range_=19)
+                       spacing=12.0, dead=[(-24.0, 57.0)], brightness=1.45, range_=19)
     fit.plaque(s, -30.0, Y + 10.6, 40.3, 180, 5.0, 0.9, "研修室 TRAINING")
 
 

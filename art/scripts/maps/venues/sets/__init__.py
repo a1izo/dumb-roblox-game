@@ -52,6 +52,9 @@ VIEWS = [
     ((1302.0, 3.2, 7.0), (1300.0, 0.5, -5.0), 20),  # the rain roof, over the crate to the edge
 ]
 
+# Ceiling pools stop at their own floor at export (lightbook.stop_pools), on every map since 2026-11-06.
+STOP_POOLS = True
+
 CHECKS = {"symmetry": None}
 
 

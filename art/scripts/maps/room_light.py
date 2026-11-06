@@ -66,6 +66,18 @@ if venue == "Agency":
             zones_in.append(dict(name=name, kind="room" if name in small else "open", poly=[list(q) for q in poly], y0=level, y1=level + 13))
     for name, poly, level in (("lounge", P.LOUNGE, P.L1), ("lobby", P.LOBBY, P.L1), ("bullpen", P.BULLPEN, P.L1), ("analysts", P.ANALYSTS, P.L2), ("ops", P.OPS, P.L2)):
         zones_in.append(dict(name=name, kind="open", poly=[list(q) for q in poly], y0=level, y1=level + 13))
+if venue == "Sets":
+    # Each set from its line in sets/plan.py: NAME = (x, z)  # ...: x a..b, z c..d (offsets from the origin).
+    import re
+    zones_in = []
+    night_rooms = {"STUDY", "SHRINE", "ACE", "PANTRY", "LOCKER", "FLAT", "WRITER", "OFFICE", "ARCHIVE", "DEN"}
+    for line in open(os.path.join(ROOT, "art", "scripts", "maps", "venues", "sets", "plan.py"), encoding="utf-8"):
+        m = re.match(r"([A-Z]+) = \(([-\d.]+), ([-\d.]+)\)\s+#.*?x ([-\d.]+)\.\.([-\d.]+), z ([-\d.]+)\.\.([-\d.]+)", line)
+        if m:
+            name, ox, oz, x0, x1, z0, z1 = m.group(1), *map(float, m.groups()[1:])
+            zones_in.append(dict(name=name.lower(), kind="room" if name in night_rooms else "open",
+                                 poly=[[ox + x0, oz + z0], [ox + x1, oz + z0], [ox + x1, oz + z1], [ox + x0, oz + z1]],
+                                 y0=0.0, y1=12.0))
 rows = []
 for zone in zones_in:
     if not zone.get("name") or zone["kind"] in ("water", "offlimits", "stairs", "track", "park"):
