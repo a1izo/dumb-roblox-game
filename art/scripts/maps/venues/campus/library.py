@@ -96,7 +96,8 @@ def circulation(s):
     s.prop("Plant", 70.2, -61.8, 0)
     s.prop("Bench", 58.4, -61.9, 180)
     for x in (50.0, 63.0):
-        kit.pendant(s, x, C, -52.0, drop=3.0, shade="Brass", color=fit.WARM, range_=20, brightness=1.0, wide=1.1)
+        kit.pendant(s, x, C, -52.0, drop=3.0, shade="Brass", color=fit.WARM, range_=20, brightness=fit.PENDANT_ROOM,
+                    wide=1.1)
     fit.plaque(s, 52.0, 9.8, -63.7, 180, 5.0, 0.9, "返却  RETURNS")
     s.sound("mapHeaterHum", (60.0, 3.0, -44.0), 14.0, 0.15)
 
@@ -134,7 +135,8 @@ def reading_room(s, g):
     for x in (90.0, 110.0, 130.0):
         kit.pendant(s, x, H, -60.0, drop=9.0, shade="Brass", color=fit.WARM, range_=36, brightness=1.3, wide=1.8)
     for x in (86.0, 134.0):
-        fit.wall_lamp(s, x, GY + 7.0, -83.7, 180, color=fit.WARM, range_=16, brightness=0.7, inside=True)
+        # (the gallery's only light)
+        fit.wall_lamp(s, x, GY + 7.0, -83.7, 180, color=fit.WARM, range_=16, brightness=1.5, inside=True)
     # Downlights set in the gallery's underside, over the shelves under it.
     for x in (90.0, 110.0, 130.0):
         fit.downlight(s, x, -80.0, SLAB, range_=16, brightness=0.8)
@@ -164,7 +166,8 @@ def rare_books(s):
     s.prop("Microscope", 97.0, -88.5, 0, 1.0, top)
     s.prop("Chair", 96.0, -86.2, 180, 1.0, GY)
     for x in (92.0, 110.0, 128.0):
-        kit.pendant(s, x, H, -97.0, drop=6.0, shade="Brass", color=fit.WARM, range_=24, brightness=1.0, wide=1.2)
+        kit.pendant(s, x, H, -97.0, drop=6.0, shade="Brass", color=fit.WARM, range_=24, brightness=fit.PENDANT_ROOM,
+                    wide=1.2)
     fit.plaque(s, 110.0, GY + 10.4, -83.7, 180, 6.0, 0.9, "貴重書庫  RARE BOOKS")
 
 

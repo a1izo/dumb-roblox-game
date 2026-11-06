@@ -494,7 +494,9 @@ def dept_store(s, g):
     partition(s, (36.0, -92.4), (36.0, -66.0), UP, UP + CEIL, "PlasterGrey", door=(7.8, 5.0), glass=True,
               outer="Wallpaper")
     s.station("Camera", "Store Security Office", 43.5, -84.0, 90, y=UP, prop="StationCCTV")
-    lights(s, [(-2.0, -76.0), (12.0, -69.5), (22.0, -88.2), (33.0, -80.0)], y=UP + CEIL - 1.0, brightness=1.3,
+    # (the fifth, by the escalators' head, and 1.4 like the ground floor's: the floor measured half as bright)
+    lights(s, [(-2.0, -76.0), (12.0, -69.5), (22.0, -88.2), (33.0, -80.0), (26.0, -68.5)], y=UP + CEIL - 1.0,
+           brightness=1.4,
            color=(255, 240, 220))
     lights(s, [(42.0, -84.0)], y=UP + CEIL - 1.0, brightness=1.0, range_=14, color=COOL)
 

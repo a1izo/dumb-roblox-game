@@ -135,7 +135,8 @@ def law_rooms(s, g):
     s.prop("UmbrellaStand", -85.0, -53.0, 0)
     s.prop("Plant", -85.2, -74.2, 0)
     for z in (-60.0, -76.0, -92.0):
-        kit.pendant(s, -91.0, C, z, drop=3.0, shade="Brass", color=fit.WARM, range_=20, brightness=1.0, wide=1.1)
+        kit.pendant(s, -91.0, C, z, drop=3.0, shade="Brass", color=fit.WARM, range_=20, brightness=fit.PENDANT_ROOM,
+                    wide=1.1)
     fit.plaque(s, -97.7, 10.2, -60.0, -90, 5.4, 0.9, "学務課  STUDENT AFFAIRS")
 
 

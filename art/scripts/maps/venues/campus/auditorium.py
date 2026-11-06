@@ -64,7 +64,7 @@ def vestibule(s):
     s.zone("interior", P.box(x0, z0, x1, z1), 0.0, name="the clock tower")
     s.look_zone("UniversityCampus_Inside", (x0, 0.0, z0), (x1, vc, z1))
     kit.pendant(s, (x0 + x1) / 2, vc, (z0 + z1) / 2, drop=4.3, shade="Brass", color=fit.WARM, range_=22,
-                brightness=1.1, wide=1.1)
+                brightness=fit.PENDANT_ROOM, wide=1.1)
     s.prop("UmbrellaStand", x0 + 1.2, z1 - 1.4, 0)
     s.prop("Plant", x1 - 2.0, z1 - 2.0, 0)
 

@@ -149,6 +149,7 @@ def streets(s):
     for u in (63.0, 136.0):
         street_light(s, "east", 1, u)
     street_light(s, "kita", 1, 50.0)
+    street_light(s, "minami", -1, 36.0)  # (it had none: the power poles stand on its other side)
     # The frontage road under the expressway lies in the pier lamps' light (edges.py).
     # Vending machines against walls, bins beside them, bikes and scooters left by the doors.
     # (A pair on the zakkyo's avenue front, where the pavement is 6 wide and they leave room to walk
@@ -471,6 +472,9 @@ def dark_corners(s):
     lamps_on_walls(s, "lane_e", 3.2, spacing=16.0, h=8.0, start=6.0)
     lamps_on_walls(s, "y_dead", 2.1, spacing=16.0, h=7.6, start=8.0, flicker_every=3)
     lamps_on_walls(s, "y_cross", 2.1, spacing=22.0, h=7.8, start=10.0, flicker_every=4)
+    # The other three alleys of the yokocho, lit like y_cross (two of them had no lamp at all).
+    for name in ("y_a", "y_b", "y_c"):
+        lamps_on_walls(s, name, 2.1, spacing=22.0, h=7.8, start=10.0, flicker_every=4)
     for x, z in YARD_LAMPS:
         city.pole_lamp(s, x, z)
     x, z, rot = at_front("station_tower", (0, -1), 0.55, 0.3)
