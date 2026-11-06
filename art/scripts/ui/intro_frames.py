@@ -5,24 +5,23 @@ thumb closing over it; coloured like your two frames (a glossy red apple, black)
 The apple is modelled (an apple's shape: shoulders, the hollow its stem grows from, the dimple underneath), lit from
 the upper left as your sketch lights it and shaded as an anime frame lays it (a lit face and a crisp shade, long sharp
 white glints, a lighter rim; no glow round it), so every turn of it is the same apple and the one that lands in the
-hand is the one that fell. The hand is ui/apple_hand.py's (a death god's since 2026-11-05, in the spirit of Ryuk's;
-the thumb its own picture so it closes smoothly).
+hand is the one that fell. The hand is a death god's in the spirit of Ryuk's, modelled and rendered in 3D by
+ui/apple_hand_3d.py (its shape and its contract with the game in ui/apple_hand.py); this reads its three pictures back
+for the preview, the thumb its own picture so it closes smoothly.
 
     AppleSpin1..4  1024 x 1024  four 4 x 4 sheets of the apple turning (transparent), 64 cells to a turn (2026-11-03:
                                 16 a turn stepped at about 15 a second as it fell; now it turns smoothly); the first
                                 cell of the first sheet is how it lies in the hand, and the game brings the turn round
                                 to it as the hand catches it
-    AppleHandBack  1024 x 736   the inside of the cupped palm, under the apple
-    AppleHandFront 1024 x 736   the hand over the apple (the palm's lip, the fingers round its right side, the sleeve)
-    AppleThumb     square       the thumb on a square round its root; the game stands it up while the hand waits and
-                                turns it down over the apple as it lands
+    (and, rendered by apple_hand_3d.py: AppleHandBack and AppleHandFront, 1024 x 736, under and over the apple;
+    AppleThumb, the thumb on a square round its root, stood up while the hand waits and turned down as the apple lands)
 
 Also writes src/client/UI/LoadingArt.luau (how the hand's picture and the apple's cells sit on the screen, so the
 falling apple lands exactly in the hand) and a preview, art/export/previews/apple_loading.png (the fall and the catch,
 as the game lays them).
 
     "C:/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe" art/scripts/ui/intro_frames.py
-    (add --hand to redraw only the hand's three pictures, the apple's sheets read back as they are)
+    (add --hand to remake only the preview after the hand is rendered again, the apple's sheets read back as they are)
 """
 
 import math
@@ -353,10 +352,8 @@ def main():
         sheets = apple_sheets()
         for index, sheet in enumerate(sheets):
             png.write(os.path.join(OUT, f"AppleSpin{index + 1}.png"), sheet)
-    back, front, thumb = ah.back(), ah.front(), ah.thumb()
-    png.write(os.path.join(OUT, "AppleHandBack.png"), back)
-    png.write(os.path.join(OUT, "AppleHandFront.png"), front)
-    png.write(os.path.join(OUT, "AppleThumb.png"), thumb)
+    back, front, thumb = (png.read(os.path.join(OUT, f"{name}.png")).astype(np.float32) / 255.0
+                          for name in ("AppleHandBack", "AppleHandFront", "AppleThumb"))
     png.write(PREVIEW, preview(sheets, back, front, thumb))
     print("[apple] wrote", PREVIEW)
     hand_h, catch, cell, pivot, thumb_side = layout()

@@ -482,14 +482,14 @@ Assets.images = {
 	AppleSpin2 = "101058079851458",
 	AppleSpin3 = "107031597473568",
 	AppleSpin4 = "98149657604172",
-	AppleHandBack = "105192433271820",
-	AppleHandFront = "119914963337923",
-	AppleThumb = "121261347008083",
+	AppleHandBack = "128932163557817",
+	AppleHandFront = "132056563809175",
+	AppleThumb = "70711260833959",
 	-- The pointer (UI/Cursor, art/scripts/ui/cursors.py): locked in a case, the closed-eyes mark; free, the pen nib.
-	-- And the paper hand that points at whatever is chosen (UI/Kit/Pointer): one finger, four ways round on a sheet.
+	-- And the red hand that points at whatever is chosen (UI/Kit/Pointer): one finger, four ways round on a sheet.
 	CursorLock = "71963626863169",
 	CursorFree = "114760490451104",
-	PointerHand = "101255659254048",
+	PointerHand = "115133041908173",
 	-- The Reál's mark (the user's, 2026-10-28): the currency's icon everywhere (UI/Kit/Icon "real"); the coin until
 	-- it is uploaded.
 	RealIcon = "111490167287256",

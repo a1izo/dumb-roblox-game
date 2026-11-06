@@ -7,7 +7,8 @@
                            everywhere else. Redrawn 2026-11-03 at the user's word ("sharper and more professional"):
                            a longer nib with its shoulders, a lit and a shaded half, the slit and the breather hole cut
                            clean, a steel ring and the grip behind it, a thin outline and a soft drop shadow
-    PointerHand  192 x 192 the hand that points at whatever is chosen (OMORI's, in the game's red): a right hand, its
+    PointerHand  192 x 192 the hand that points at whatever is chosen (OMORI's, in the game's red, lines in its blood
+                           red, never black): a right hand, its
                            index finger alone held out (the user's word of 2026-11-03: "pointing with a single finger"),
                            the thumb laid along it, the other three curled under, a white cuff; four cells, pointing
                            right, left, down and up (the fingertip at 92, 48 of a 96 px cell pointing right)
@@ -164,14 +165,16 @@ def nib():
 
 HAND_CELL = 96  # one cell of the PointerHand sheet, px
 HAND_SS = 6
-HAND_OUTLINE = 2.5  # the graphite outline, px at the cell's size (the hand shows at half: about 1.25 px)
-# The game's own paper and graphite (UI/Kit/Tokens: the paper white, its ramp, the ink), lit from the top left.
-PAPER_LIT = np.array([240, 237, 230], np.float32) / 255
-PAPER = np.array([226, 221, 211], np.float32) / 255
-PAPER_SHADE = np.array([163, 158, 149], np.float32) / 255
-PAPER_DEEP = np.array([118, 114, 107], np.float32) / 255
-GRAPHITE = np.array([24, 23, 22], np.float32) / 255
-CUFF = np.array([196, 191, 180], np.float32) / 255
+HAND_OUTLINE = 2.0  # the line round each piece, px at the cell's size (the hand shows at half: about 1.1 px)
+HAND_OUTLINE_HEAVY = 2.7  # where the hand-drawn line presses harder
+# The game's one red (UI/Kit/Tokens red 210, 30, 30) and its blood (120, 14, 16) for the lines: no black anywhere.
+RED = np.array([210, 30, 30], np.float32) / 255
+RED_SHADE = np.array([158, 18, 24], np.float32) / 255
+RED_DEEP = np.array([128, 12, 18], np.float32) / 255
+LINE = np.array([80, 6, 12], np.float32) / 255  # a maroon, the red at its darkest
+HIGHLIGHT = np.array([255, 236, 228], np.float32) / 255
+CUFF = np.array([236, 232, 224], np.float32) / 255
+CUFF_SHADE = np.array([200, 190, 182], np.float32) / 255
 
 
 def _capsule(a, b, r, n, scale, r_end=None):
@@ -225,27 +228,35 @@ def _moved(mask, dx, dy):
     return out
 
 
+def _warped(mask, amp, cell, seed):
+    """`mask` pushed about by smooth noise (`amp` supersampled px, features about `cell` px): a hand-drawn wobble."""
+    h, w = mask.shape
+    dx = (pt.noise(h, w, cell, seed, octaves=1) - 0.5) * 2 * amp
+    dy = (pt.noise(h, w, cell, seed + 1, octaves=1) - 0.5) * 2 * amp
+    ys, xs = np.mgrid[0:h, 0:w]
+    sy = np.clip(np.round(ys + dy).astype(int), 0, h - 1)
+    sx = np.clip(np.round(xs + dx).astype(int), 0, w - 1)
+    return mask[sy, sx]
+
+
 def _cel(hard, lit, shade, depth, k):
-    """A piece's cel shading, as the anime frames and the rest of the game's drawn pieces have it: flat `lit` paper,
-    a crisp `shade` crescent along its lower right (where the piece moved `depth` px toward the light no longer
-    covers it), and a thin rim of the paper's own white along its top."""
+    """A piece's flat cel shading: `lit` colour, a crisp `shade` crescent along its lower right (where the piece
+    moved `depth` px toward the light from the top left no longer covers it). Returns the colours and the crescent."""
     toward = _moved(hard, int(round(-0.45 * depth * k)), int(round(-depth * k)))
     crescent = np.clip(hard - toward, 0, 1)
-    rim = np.clip(hard - _moved(hard, 0, int(round(1.1 * k))), 0, 1)
     col = np.empty(hard.shape + (3,), np.float32)
     col[:] = lit
     col = col * (1 - crescent[..., None]) + shade[None, None] * crescent[..., None]
-    rim = rim * (1 - crescent)
-    return col * (1 - 0.8 * rim[..., None]) + PAPER_LIT[None, None] * 0.8 * rim[..., None]
+    return col, crescent
 
 
 def pointer_hand():
-    """The pointing hand, pointing right, its index finger alone held out (the fingertip at 92, 48 of the cell): a
-    manicule, the printer's pointing hand, drawn as the rest of the game's paper pieces are (redrawn 2026-11-05 at the
-    user's word, "make this hand match the style of the game more": it was a red cartoon glove). Paper white, shaded
-    in soft greys under a light from the top left, a graphite outline round every piece so the fingers part from each
-    other, graphite creases at the knuckles, nails drawn in line; out of the dark cuff of a sleeve. Built back to
-    front: the sleeve's cuff, the back of the hand, the three curled fingers, the index finger, the thumb along it."""
+    """The pointing hand, pointing right, its index finger alone held out (the fingertip at 92, 48 of the cell), drawn
+    like OMORI's: the game's red, flat and cel shaded, a hand-drawn line that wobbles and swells round every piece in
+    the red's own blood (never black), crayon grain in the fill, a few hatched strokes in the shadows, white
+    highlight strokes where the light catches, a white cuff (redrawn 2026-11-06 at the user's word: "make it red
+    again, the black outlines are ugly", more OMORI-like). Built back to front: the cuff, the back of the hand, the
+    three curled fingers, the index finger, the thumb along it."""
     n = HAND_CELL * HAND_SS
     k = HAND_SS
     pieces = [
@@ -261,42 +272,66 @@ def pointer_hand():
     ]
     rgb = np.zeros((n, n, 3), np.float32)
     alpha = np.zeros((n, n), np.float32)
-    ring_r = int(round(HAND_OUTLINE * k))
-    for name, cover in pieces:
-        hard = (cover > 0.5).astype(np.float32)
-        pt.layer_over(rgb, alpha, GRAPHITE, flow.grow(hard, ring_r))
+    ys, xs = pt.grid(n, n)
+    # crayon grain: fine noise that lifts and sinks the fill a little
+    grain = pt.noise(n, n, 1.6 * k, 71, octaves=1)
+    # the pen's pressure along the line: where it is high the line swells
+    pressure = pt.smoothstep(0.4, 0.7, pt.noise(n, n, 16 * k, 33, octaves=1))
+    # hatching: short diagonal strokes, broken up so they read as drawn, not ruled
+    period = 3.4 * k
+    hatch = pt.smoothstep(0.62, 0.8, 0.5 + 0.5 * np.cos(2 * math.pi * (xs + ys * 0.9) / period))
+    hatch *= pt.smoothstep(0.35, 0.5, pt.noise(n, n, 5 * k, 57, octaves=2))
+    thin_r = int(round(HAND_OUTLINE * k))
+    heavy_r = int(round(HAND_OUTLINE_HEAVY * k))
+    for seed, (name, cover) in enumerate(pieces):
+        hard = _warped((cover > 0.5).astype(np.float32), 0.25 * k, 16 * k, 100 + 7 * seed)
+        # the line swells with the pen's pressure and sits heavier on the side away from the light (lower right)
+        ring = flow.grow(hard, thin_r) * (1 - pressure) + flow.grow(hard, heavy_r) * pressure
+        ring = np.maximum(ring, _moved(flow.grow(hard, thin_r), int(0.5 * k), int(0.9 * k)))
+        pt.layer_over(rgb, alpha, LINE, ring)
         if name == "cuff":
-            # the shirt's cuff, a shade greyer than the hand, its edge drawn in, a button
-            pt.layer_over(rgb, alpha, _cel(hard, CUFF, PAPER_DEEP, 3.0, k), hard)
-            pt.layer_over(rgb, alpha, GRAPHITE, _line([(19.8, 40), (19.8, 80)], 0.7, n, k, tip=0.3) * hard * 0.7)
-            button = pt.ellipse(13.5 * k, 46.5 * k, 1.5 * k, 1.5 * k, n, n) * hard
-            pt.layer_over(rgb, alpha, GRAPHITE, button * 0.75)
+            fill, _ = _cel(hard, CUFF, CUFF_SHADE, 3.0, k)
+            pt.layer_over(rgb, alpha, fill, hard)
+            seam = _line([(19.8, 40), (19.6, 60), (19.9, 80)], 0.8, n, k, tip=0.3)
+            pt.layer_over(rgb, alpha, LINE, seam * hard * 0.8)
+            button = pt.ellipse(13.5 * k, 46.5 * k, 1.6 * k, 1.6 * k, n, n) * hard
+            pt.layer_over(rgb, alpha, RED, button)
             continue
         curled = name.startswith("curl")
-        fill = _cel(hard, PAPER_SHADE * 0.25 + PAPER * 0.75 if curled else PAPER, PAPER_DEEP if curled else PAPER_SHADE,
-                    6.0 if name == "fist" else 2.6, k)
+        base = RED_SHADE * 0.3 + RED * 0.7 if curled else RED
+        fill, crescent = _cel(hard, base, RED_DEEP if curled else RED_SHADE, 6.0 if name == "fist" else 2.6, k)
+        fill = fill * (0.96 + 0.07 * grain[..., None])
         pt.layer_over(rgb, alpha, fill, hard)
+        pt.layer_over(rgb, alpha, LINE, hatch * crescent * 0.75)
         if name == "index":
-            # the nail drawn in line near the tip, the two joint creases
-            nail = _line(_arc(83.2, 48.1, 3.4, 3.0, -100, 100, 14), 0.75, n, k, tip=0.3) * hard
-            pt.layer_over(rgb, alpha, GRAPHITE, nail * 0.85)
+            # a long white catch of light along the finger's top, the nail in line, the two joint creases
+            hi = _line([(53, 45.2), (62, 44.6), (72, 44.4), (80, 44.8)], 1.1, n, k, tip=0.25) * hard
+            pt.layer_over(rgb, alpha, HIGHLIGHT, hi * 0.95)
+            nail = _line(_arc(83.2, 48.1, 3.4, 3.0, -100, 100, 14), 0.8, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, LINE, nail)
             for x in (66.5, 75.5):
-                crease = _line([(x - 0.4, 51.2), (x, 52.4), (x + 0.4, 53.2)], 0.75, n, k, tip=0.3) * hard
-                pt.layer_over(rgb, alpha, GRAPHITE, crease * 0.75)
+                crease = _line([(x - 0.4, 50.8), (x, 52.2), (x + 0.4, 53.2)], 0.8, n, k, tip=0.3) * hard
+                pt.layer_over(rgb, alpha, LINE, crease)
         elif name == "thumb":
-            nail = _line(_arc(54.6, 43.2, 3.0, 2.6, -95, 95, 12), 0.7, n, k, tip=0.3) * hard
-            pt.layer_over(rgb, alpha, GRAPHITE, nail * 0.8)
-            crease = _line([(44.5, 44.8), (45, 46.2), (45.6, 47)], 0.7, n, k, tip=0.3) * hard
-            pt.layer_over(rgb, alpha, GRAPHITE, crease * 0.7)
-        elif name.startswith("curl"):
-            # each curled finger's middle knuckle: a short crease near its end
+            hi = _line([(36, 39.8), (44, 39.6), (51, 40.2)], 1.0, n, k, tip=0.25) * hard
+            pt.layer_over(rgb, alpha, HIGHLIGHT, hi * 0.95)
+            nail = _line(_arc(54.6, 43.2, 3.0, 2.6, -95, 95, 12), 0.75, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, LINE, nail)
+            crease = _line([(44.5, 44.8), (45, 46.2), (45.6, 47)], 0.75, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, LINE, crease * 0.9)
+        elif curled:
+            # each curled finger's knuckle catches a dab of light; a crease near its end
             y = {"curl1": 58.7, "curl2": 67.4, "curl3": 76.2}[name]
             x = {"curl1": 58.5, "curl2": 56.5, "curl3": 53.5}[name]
-            crease = _line([(x, y - 3.2), (x + 0.9, y - 1.0), (x + 1.0, y + 1.0)], 0.7, n, k, tip=0.3) * hard
-            pt.layer_over(rgb, alpha, GRAPHITE, crease * 0.6)
+            dab = _line([(x - 6.5, y - 2.6), (x - 3.0, y - 3.0)], 0.9, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, HIGHLIGHT, dab * 0.8)
+            crease = _line([(x, y - 3.2), (x + 0.9, y - 1.0), (x + 1.0, y + 1.0)], 0.75, n, k, tip=0.3) * hard
+            pt.layer_over(rgb, alpha, LINE, crease * 0.85)
         elif name == "fist":
-            # the bone of the wrist, a short line where the hand turns down
-            pt.layer_over(rgb, alpha, GRAPHITE, _line([(29, 70), (31.5, 75), (31.5, 79)], 0.7, n, k, tip=0.3) * hard * 0.5)
+            # light along the back of the hand's top edge, the bone of the wrist where the hand turns down
+            hi = _line([(27, 42.5), (33, 40.2), (40, 39.8)], 1.0, n, k, tip=0.25) * hard
+            pt.layer_over(rgb, alpha, HIGHLIGHT, hi * 0.85)
+            pt.layer_over(rgb, alpha, LINE, _line([(29, 70), (31.5, 75), (31.5, 79)], 0.8, n, k, tip=0.3) * hard * 0.7)
 
     def shrink_down(a):
         return a.reshape(HAND_CELL, k, HAND_CELL, k, *a.shape[2:]).mean(axis=(1, 3))

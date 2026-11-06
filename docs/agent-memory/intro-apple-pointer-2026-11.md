@@ -57,3 +57,25 @@ game", "make it ryuks hand", "more frames for the intro of light and make his ha
 - The eye opens in 48 frames (24 sheets, still two to a sheet: 705 px wide leaves one column), OPEN_TIME unchanged.
   The base halves do not change with the frame count or hair colour (hair is its own layer), so they need no upload.
   Hair: near-black brown base, dark chestnut lit locks, dull warm shine (HAIR_*).
+
+**2026-11-06 follow-up** (the user: "i didnt mean to change the pointer colour, I meant to make it look better, more
+omori like style. Make it red again. the black outlines are ugly. Also make ryuks hand more detailed and high quality
+textured and rendered"):
+
+- PointerHand is red again, drawn like OMORI's (cursors.py pointer_hand): the game's red (210, 30, 30), flat cel
+  shading, and NO black anywhere: the line round each piece is a maroon (80, 6, 12), a little wobbly (smooth one-octave
+  noise; a 3-octave warp made the edges fuzzy) and heavier on the side away from the light; faint crayon grain, a few
+  hatched strokes in the shade, white highlight strokes along the finger, thumb and knuckles, a white cuff. Same
+  cells, fingertip and box. Lesson: "match the style" meant the drawing, not the palette; the red is the pointer's
+  identity (ui-direction: red = danger, the pointer, a chosen target).
+- The apple hand is a 3D render now (art/scripts/ui/apple_hand_3d.py, run with Blender -b; Cycles on the RTX 4060 Ti
+  via OptiX, about 4 min quick, longer full). Metaballs (BALL 0.575 / CHAIN 0.7: where a lone ball's and a close
+  chain's surface lies, as a share of the radius) for forearm, palm (a negative ellipsoid cups it round the apple),
+  ball of the thumb, bone ridges, fingers laid over the apple's front by depth_at; knuckle creases pressed into the
+  mesh; skin shader with mottle, blotches, veins, pores, wrinkles, AO-darkened hollows, a little subsurface; lacquered
+  claws; a stitched leather band with steel studs. Three renders: Back (no apple), Front (an invisible red apple
+  throws its light and shade, a shadow-catcher apple holds the drawn apple's place out of the picture and catches the
+  fingers' shadows), Thumb (the hand as holdout, its shadow caught on the apple, faded at its root, laid on its
+  square). The hand keeps a slightly thinner stump of the thumb so the turning thumb sits over skin (a separate
+  thumb's root showed as a knot). apple_hand.py now holds only the shape and the contract; intro_frames reads the
+  three PNGs back for its preview (--hand remakes only the preview).
