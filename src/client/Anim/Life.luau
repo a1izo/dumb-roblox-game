@@ -69,12 +69,15 @@ local function hash(text: string): number
 	return h
 end
 
+local made = 0 -- bodies given a life so far (each its own seed, so no two breathe in step)
+
 local function stateOf(rig: any): State
 	local state = states[rig]
 	if state then
 		return state
 	end
-	local seed = hash(rig.character.Name .. tostring(rig.character:GetDebugId()))
+	made += 1
+	local seed = hash(rig.character.Name .. "#" .. made)
 	local random = Random.new(seed)
 	state = {
 		seed = seed,

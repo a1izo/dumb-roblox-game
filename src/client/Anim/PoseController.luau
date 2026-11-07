@@ -102,6 +102,7 @@ local afterPass: AfterPass? = nil
 local cost = { rigs = 0, posed = 0, last = 0, average = 0 }
 local IDENTITY = CFrame.identity
 local scratch: { [string]: CFrame } = {}
+local lifeWorks = true -- (Anim/Life, until it fails once)
 
 local function rotation(cf: CFrame): CFrame
 	return cf - cf.Position
@@ -658,8 +659,13 @@ local function step(dt: number)
 		end
 		-- 5. life, for the bodies that act (a cutscene's actors): breath, weight, glances, the lag behind the body
 		local life = character:GetAttribute(Life.ATTRIBUTE)
-		if type(life) == "number" and life > 0 and not uploaded then
-			Life.apply(rig, life, elapsed, now)
+		if type(life) == "number" and life > 0 and not uploaded and lifeWorks then
+			-- (never at the cost of the pose itself: a fault in it turns it off and says so once)
+			local ok, err = pcall(Life.apply, rig, life, elapsed, now)
+			if not ok then
+				lifeWorks = false
+				warn("[DeathsGambit] Anim/Life failed and is off: " .. tostring(err))
+			end
 		end
 		if every and not uploaded then
 			local held = rig.held or {}
