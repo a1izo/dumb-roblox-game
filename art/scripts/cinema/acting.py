@@ -49,6 +49,43 @@ def body_reach(side, joints, offset, target, direction=None, twist=0.0, max_slid
     return reach(side, tuple(tgt), d, twist, max_slide)
 
 
+def keep_arm(side, body_from, arm_from, body_to, shift=(0.0, 0.0, 0.0), with_shoulder=False, offset_from=(0, 0, 0),
+             offset_to=(0, 0, 0)):
+    """The arm value that, in the body posed `body_to`, leaves this side's arm turned in the character's frame as it was
+    in `body_from` with `arm_from`, moved `shift` studs (and with the shoulder, if with_shoulder): a tray carried level
+    while the body straightens up or bows over it (2026-11-07: welded to a rigid arm it tipped with every lean)."""
+    from animlib import J as _J
+
+    key, part = ("rShoulder", "Right Arm") if side > 0 else ("lShoulder", "Left Arm")
+    goal = posekit.fk({**body_from, key: arm_from}, offset_from)[part].copy()
+    goal[:3, 3] += np.array(shift, float)
+    if with_shoulder:
+        pivot = np.array([side * 1.5, 1.0, 0.0, 1.0])
+        before = posekit.fk(body_from, offset_from)["Torso"] @ pivot
+        after = posekit.fk(body_to, offset_to)["Torso"] @ pivot
+        goal[:3, 3] += (after - before)[:3]
+
+    def err(x):
+        m = posekit.fk({**body_to, key: _J(tuple(x[:3]), tuple(x[3:]))}, offset_to)[part]
+        d = goal[:3, :3].T @ m[:3, :3]
+        turn = 0.5 * np.array([d[2, 1] - d[1, 2], d[0, 2] - d[2, 0], d[1, 0] - d[0, 1]])
+        return np.concatenate([turn * 4.0, m[:3, 3] - goal[:3, 3]])
+
+    value = arm_from if isinstance(arm_from, dict) else _J(arm_from)
+    x = np.array([*value.get("r", (0, 0, 0)), *value.get("p", (0, 0, 0))], float)
+    for _ in range(30):
+        e = err(x)
+        if np.linalg.norm(e) < 1e-6:
+            break
+        jac = np.zeros((6, 6))
+        for i in range(6):
+            dx = np.zeros(6)
+            dx[i] = 1e-3 if i < 3 else 1e-4
+            jac[:, i] = (err(x + dx) - e) / dx[i]
+        x = x + np.linalg.lstsq(jac, -e, rcond=None)[0]
+    return _J(tuple(round(float(v), 3) for v in x[:3]), tuple(round(float(v), 3) for v in x[3:]))
+
+
 def to_torso(joints, offset, point=None, direction=None):
     """A point (or a direction) in the character's frame, in the torso's frame of the body posed by `joints`."""
     torso = posekit.fk({k: v for k, v in joints.items() if k not in ARMS}, offset)["Torso"]

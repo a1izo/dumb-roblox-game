@@ -14,7 +14,10 @@ something the matter? Hmm? ... What's wrong?" and bowing (10 s). The role card h
 
 from animlib import J
 from cinema import footwork
-from cinema.acting import alive, beat, facing, seated, soft, walking
+import numpy as np
+
+import posekit
+from cinema.acting import alive, beat, body_reach, facing, keep_arm, seated, soft, walking
 from cinema.shot import Retime, Shot
 from emotes.kit import reach
 from motion import Motion
@@ -23,19 +26,50 @@ NAME = "RoleButler"
 LENGTH = 15.0
 PX = 258.0
 TOP = 3.5
-COUNTER = (PX + 0.5, -2.5)  # where the Butler stands at the counter
-TRAY_AT = (PX + 0.5, TOP, -4.4)
+COUNTER = (PX + 0.5, -2.3)  # where the Butler stands at the counter (his forearms clear of its front edge)
+TRAY_AT = (PX + 0.5, TOP, -4.3)
 DOOR = (PX - 6.0, -0.1)  # where they stop, on the pantry's threshold
 THRESHOLD = (PX - 6.6, 0.0)
 ACE = (238.0, 2.0, -1.6)  # the crouched shape in the chair
 
 # Acting ---------------------------------------------------------------------------------------------
 
-ARRANGE_A = dict(rShoulder=J((58, 0, -6), (-0.04, 0.06, -0.26)), lShoulder=J((54, 0, 10), (0.06, 0.06, -0.24)))
-ARRANGE_B = dict(rShoulder=J((54, 6, -12), (-0.1, 0.06, -0.24)), lShoulder=J((60, 0, 4), (0.02, 0.06, -0.28)))
-TIE = dict(rShoulder=J((62, 0, -52), (-0.36, 0.18, -0.2)), lShoulder=J((4, 0, -4)))
-WATCH = dict(rShoulder=J((58, 0, -40), (-0.28, 0.12, -0.24)), lShoulder=J((76, 0, 30), (0.24, 0.12, -0.28)))
-TRAY = dict(rShoulder=J((62, 0, -10), (0, 0.06, -0.16)), lShoulder=J((62, 0, 10), (0, 0.06, -0.16)))
+# (2026-11-07: the tie, the watch and the lift were keyed by angle, and the hands went a stud into the counter's front,
+# below its top: now each fist is put on its mark. The Butler stands at COUNTER facing the counter (-z); his frame's
+# z is the room's z less COUNTER's, and the tray lies 1.9 in front of him on the top.)
+UPRIGHT = dict(root=(0, 0, 0))
+# (the right fist at the knot, the left resting on the counter's edge: hanging, it swept down through the cupboards)
+TIE = dict(rShoulder=body_reach(1, UPRIGHT, (0, 0, 0), (0.15, 3.95, -0.72), direction=(-0.92, 0.15, -0.36)),
+           lShoulder=body_reach(-1, UPRIGHT, (0, 0, 0), (-1.05, 4.05, -1.15), direction=(0.1, -0.5, -0.86)))
+TUG = body_reach(1, UPRIGHT, (0, 0, 0), (0.15, 3.86, -0.68), direction=(-0.92, 0.0, -0.38))  # (the knot pulled down a touch)
+WATCHING = dict(root=(-2, 0, 0))
+# (the left forearm across before the chest, the right fist at its cuff; both clear of the counter's top)
+WATCH = dict(lShoulder=body_reach(-1, WATCHING, (0, 0, 0), (-0.3, 4.05, -1.0), direction=(0.5, 0.05, -0.86)),
+             rShoulder=body_reach(1, WATCHING, (0, 0, 0), (0.15, 4.15, -0.95), direction=(-0.75, 0.15, -0.65)))
+TRAY_LOCAL = (TRAY_AT[0] - COUNTER[0], TRAY_AT[1], TRAY_AT[2] - COUNTER[1])  # the tray's bottom middle, his frame
+TRAY_ENDS = 1.22  # (ModelCatalog's TeaTray is 2.45 across: the fists take its two ends)
+REACHING = dict(root=(-14, 0, 0))
+# (setting the cups on the tray: the fists among them, over the top, never under it)
+ARRANGE_A = dict(rShoulder=body_reach(1, REACHING, (0, 0, 0), (0.5, 4.05, -1.7), direction=(-0.3, -0.35, -0.9)),
+                 lShoulder=body_reach(-1, REACHING, (0, 0, 0), (-0.6, 4.05, -1.5), direction=(0.3, -0.35, -0.9)))
+ARRANGE_B = dict(rShoulder=body_reach(1, REACHING, (0, 0, 0), (0.2, 4.05, -1.95), direction=(-0.4, -0.35, -0.85)),
+                 lShoulder=body_reach(-1, REACHING, (0, 0, 0), (-0.35, 4.05, -1.65), direction=(0.35, -0.35, -0.87)))
+REACH = {key: body_reach(side, REACHING, (0, 0, 0), (TRAY_LOCAL[0] + side * TRAY_ENDS, TRAY_LOCAL[1] + 0.5, TRAY_LOCAL[2]))
+         for key, side in (("rShoulder", 1), ("lShoulder", -1))}
+# Lifted level: both arms keep their turn in the room as the body straightens, the tray 0.42 up off the top and drawn
+# 0.4 in, over the kettle as he turns (a rigid arm turning with the torso tipped it 14 degrees); level through the bow.
+LIFT = (0.0, 0.42, 0.4)
+TRAY = {key: keep_arm(side, REACHING, REACH[key], UPRIGHT, LIFT) for key, side in (("rShoulder", 1), ("lShoulder", -1))}
+BOWING = dict(root=(-16, 0, 0))
+BOW = {key: keep_arm(side, UPRIGHT, TRAY[key], BOWING, with_shoulder=True) for key, side in (("rShoulder", 1), ("lShoulder", -1))}
+BOWED = dict(root=(-15, 0, 0))
+BOW2 = {key: keep_arm(side, UPRIGHT, TRAY[key], BOWED, with_shoulder=True) for key, side in (("rShoulder", 1), ("lShoulder", -1))}
+# The tray welded to the right arm just where it lies on the counter when the hands close on it (no jump).
+_arm = posekit.fk({**REACHING, "rShoulder": REACH["rShoulder"]})["Right Arm"]
+_tray = np.identity(4)
+_tray[:3, 3] = TRAY_LOCAL
+_local = np.linalg.inv(_arm) @ _tray
+TRAY_GRIP = (tuple(round(float(v), 3) for v in _local[:3, 3]), tuple(round(float(v), 2) for v in posekit.euler(_local[:3, :3])))
 
 b = Motion("RoleButler_self", LENGTH, note="The Butler's role cutscene: the tray, the time, the door.")
 b.key(0.0, root=(-14, 0, 0), neck=(-26, 0, 0), **ARRANGE_A)
@@ -47,17 +81,18 @@ b.key(6.2, root=(-2, 0, 0), neck=(-27, -8, 0), **WATCH)
 b.key(9.6, root=(-1, 0, 0), neck=(-3, 0, 0), **TRAY)
 b.key(10.4, root=(-1, 0, 0), neck=(2, 0, 0), **TRAY)  # stops at the door, looks in
 b.key(11.6, root=(-1, 0, 0), neck=(0, 0, 0), **TRAY)
-b.key(13.8, root=(-15, 0, 0), neck=(-14, 0, 0), **TRAY)
+b.key(13.8, root=(-15, 0, 0), neck=(-14, 0, 0), **BOW2)
 b.key(LENGTH, root=(-2, 0, 0), neck=(-4, 0, 0), **TRAY)
 # The big moves acted: a breath drawn before straightening, the tie tugged, the cuff shot back for the
 # watch, the tray's weight taken low before it rises, the bow dipping past and settling.
 beat(b, 3.9, 0.5, antic=0.14, over=0.12, root=(0, 0, 0), neck=(-8, 0, 0), **TIE)  # straightens; the tie
-b.key(4.32, rShoulder=J((66, 0, -50), (-0.36, 0.14, -0.2)))
-b.key(4.46, rShoulder=J((62, 0, -52), (-0.36, 0.18, -0.2)))
+b.key(4.32, rShoulder=TUG)
+b.key(4.46, rShoulder=TIE["rShoulder"])
 beat(b, 5.2, 0.45, antic=0.12, over=0.1, root=(-2, 0, 0), neck=(-26, -8, 0), **WATCH)  # the time
-b.key(6.9, root=(-14, 0, 0), neck=(-20, 0, 0), **TRAY)  # lifts the tray
-beat(b, 7.5, 0.6, antic=0.0, over=0.06, root=(0, 0, 0), neck=(-4, 0, 0))
-beat(b, 12.6, 0.7, antic=0.1, over=0.12, root=(-16, 0, 0), neck=(-14, 0, 0))  # a bow to the one in the chair
+b.key(6.85, root=(-14, 0, 0), neck=(-22, 0, 0), **REACH)  # the hands to the tray's two ends
+b.key(7.0, root=(-14, 0, 0), neck=(-22, 0, 0), **REACH)
+beat(b, 7.6, 0.6, antic=0.0, over=0.06, root=(0, 0, 0), neck=(-4, 0, 0), **TRAY)  # lifts it, level
+beat(b, 12.6, 0.7, antic=0.1, over=0.12, root=(-16, 0, 0), neck=(-14, 0, 0), **BOW)  # a bow to the one in the chair
 soft(b, arms=2.6).plant(None, 7.6, stance=0.04).plant(9.9, None, stance=0.04)
 walking(b, 7.9, 9.6, arms=0.3)  # (the tray carried, a wall at his right: a small swing)
 alive(b, 0.5, seed=3, t1=6.7)
@@ -97,7 +132,7 @@ me.mark(7.9, (COUNTER[0], 0.0, COUNTER[1]), facing(COUNTER, DOOR), "linear")
 me.mark(9.6, (DOOR[0], 0.0, DOOR[1]), facing(COUNTER, DOOR), "linear")
 me.mark(10.2, (DOOR[0], 0.0, DOOR[1]), 90.0)
 me.mark(LENGTH, (DOOR[0], 0.0, DOOR[1]), 90.0)
-me.hold("TeaTray", "Right Arm", (-1.0, -1.05, 0.0), (-62, 0, 0), t0=7.0)
+me.hold("TeaTray", "Right Arm", TRAY_GRIP[0], TRAY_GRIP[1], t0=7.0)
 
 tray = shot.prop("TeaTray", show=(0.0, 7.0))
 tray.at(0.0, TRAY_AT, (0, 0, 0))
