@@ -65,6 +65,22 @@ def depth(a, b):
 # slab alone (its height above the floor), not the whole bounding box down to the floor.
 DESK_TOPS = {"Desk": 3.05, "ExecutiveDesk": 2.7}
 SLAB = 0.35
+# Round things, checked as the upright cylinder they are (radius: half their size across), not their square box: the
+# war room's table is 26 across, and its box's corners stood 18.5 out on the diagonals, among the standing places.
+ROUND = {"WarTable"}
+
+
+def round_depth(part, centre, radius, y0, y1):
+    """How far a body part (centre, rotation, half sizes) goes into an upright cylinder (0 when clear of it)."""
+    c, r, h = part
+    best = 0.0
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                p = c + r @ (h * np.array([sx, sy, sz], float))
+                if y0 <= p[1] <= y1:
+                    best = max(best, radius - math.hypot(p[0] - centre[0], p[2] - centre[2]))
+    return best
 
 
 def set_boxes(scene, catalog):
@@ -107,7 +123,10 @@ def report(shot, scene, step=0.2):
                 if key in ok or np.linalg.norm((c - centre)[[0, 2]]) > np.linalg.norm(h) + 3.0:
                     continue
                 for name, pc, pr, ph in parts:
-                    dd = depth((pc, pr, ph), (c, r, h))
+                    if key in ROUND:
+                        dd = round_depth((pc, pr, ph), c, max(h[0], h[2]), c[1] - h[1], c[1] + h[1])
+                    else:
+                        dd = depth((pc, pr, ph), (c, r, h))
                     if name.endswith("Leg") and key == "solid" and c[1] + h[1] <= ground + 2.1:
                         continue  # the floor and the steps they walk on, low ledges
                     if dd > TOL:

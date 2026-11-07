@@ -17,8 +17,8 @@ from animlib import J
 
 NAME = "MeetingIntro"
 LENGTH = 6.0
-SEAT_R = 17.0
-SPEED = 4.0  # the walk's own speed (studs a second)
+SEAT_R = 16.1  # (the montage stands everyone just inside the chairs: the meeting seats them in them after)
+SPEED = 5.0  # the walk's own speed (studs a second: late to an emergency meeting, they hurry)
 
 
 def seat(k):
@@ -32,23 +32,34 @@ def ring(angle, r=19.6):
     return math.sin(a) * r, math.cos(a) * r
 
 
-# k: (the way in, through the gaps between the chairs, before their own place; when they set off)
+# k: (where they come from, the gap between two chairs they come in by; when they set off). Each comes straight in
+# through the middle of its gap, then along the inside of the chairs (INSIDE: the outer arm clear of the chairs' fronts,
+# the inner clear of the table) to stand before its own place, and steps into it as it turns to the table (2026-11-07:
+# cutting across the ring to the place, the outer arm went through the chair at every arrival).
 WALKERS = {
-    4: ([(27.4, -22.0), ring(135)], 0.05),
-    5: ([(27.6, -23.8), ring(135)], 0.35),
-    3: ([(25.4, -9.6), ring(105)], 0.05),
-    2: ([(24.6, -2.0), ring(75)], 0.1),
-    8: ([ring(255, 23.0)], 2.5),
-    9: ([ring(285, 23.0)], 2.6),
+    4: ([(27.4, -22.0)], 135, 0.0),
+    5: ([(27.6, -23.8)], 135, 0.45),
+    3: ([(25.4, -9.6)], 105, 0.0),
+    2: ([(24.6, -2.0)], 75, 0.1),
+    8: ([], 255, 2.5),
+    9: ([], 285, 2.6),
 }
+OUTSIDE, INSIDE = 23.0, 15.9  # where the way through a gap begins (outside the chairs) and the ring inside them
+TURN, STEP = 0.35, 0.35  # at the end of the way, the turn to the table on the spot, then the step out into the place
+
+
+def arc(a0, a1, r, step=6.0):
+    """Points along the ring r from the angle a0 to a1 (degrees), every `step` degrees or so, a0 left out."""
+    n = max(1, round(abs(a1 - a0) / step))
+    return [ring(a0 + (a1 - a0) * (i + 1) / n, r) for i in range(n)]
 
 STAND = dict(rShoulder=J((4, 0, 2)), lShoulder=J((4, 0, -2)))
 
 
 def route(k):
     """[(t, (x, z), heading)] at the walk's own speed, from the first point to the place."""
-    points, t0 = WALKERS[k]
-    points = list(points) + [seat(k)]
+    start, gap, t0 = WALKERS[k]
+    points = list(start) + [ring(gap, OUTSIDE), ring(gap, INSIDE)] + arc(gap, k * 30.0, INSIDE)
     out = [(t0, points[0], facing(points[0], points[1]))]
     t = t0
     for a, b in zip(points, points[1:]):
@@ -62,13 +73,15 @@ def clip(k):
     if k in WALKERS:
         way = route(k)
         t0, t1 = way[0][0], way[-1][0]
+        done = t1 + TURN + STEP  # (in the place)
         m.key(0.0, root=(-4, 0, 0), neck=(6, 0, 0), **STAND)
         m.key(t1, root=(-4, 0, 0), neck=(4, 0, 0), **STAND)
-        m.key(min(LENGTH, t1 + 0.6), root=(-1, 0, 0), neck=(-6, 0, 0), **STAND)
+        m.key(min(LENGTH, done), root=(-1, 0, 0), neck=(-6, 0, 0), **STAND)
         m.key(LENGTH, root=(-1, 0, 0), neck=(-8, 0, 0), **STAND)
-        soft(m).plant(None, t0 - 0.05, stance=0.05).plant(t1 + 0.2, None, stance=0.05)
-        walking(m, t0, t1, arms=0.3)  # (a small swing: the way to the seats runs between the chairs)
-        alive(m, 0.4, seed=70 + k, t0=min(LENGTH, t1 + 0.4))
+        soft(m).plant(None, t0 - 0.05, stance=0.05).plant(done + 0.15, None, stance=0.05)
+        # (the legs walk on through the turn and the step: a turn on the spot is stepped round, not slid)
+        walking(m, t0, done, arms=0.3)  # (a small swing: the way to the seats runs between the chairs)
+        alive(m, 0.4, seed=70 + k, t0=min(LENGTH, done + 0.2))
         return m, way
     look = (k * 37) % 20 - 10
     m.key(0.0, root=(-1, look * 0.3, 0), neck=(-6, look, 0), **STAND)
@@ -106,12 +119,13 @@ for k in range(12):
     a.mark(0.0, (first[0], 0.0, first[1]), heading)
     for t, (px, pz), h in walk:
         a.mark(t, (px, 0.0, pz), h, "linear")
-    t1 = walk[-1][0]
-    if t1 + 0.6 < LENGTH:
-        a.mark(t1 + 0.6, (x, 0.0, z), centre)
+    t1, last = walk[-1][0], walk[-1][1]
+    # (turned to the table where the way ends, before the place, then the step into it: turning while stepping out, the
+    # outer arm swept through the chair)
+    a.mark(t1 + TURN, (last[0], 0.0, last[1]), centre)
+    a.mark(min(LENGTH, t1 + TURN + STEP), (x, 0.0, z), centre)
+    if t1 + TURN + STEP < LENGTH:
         a.mark(LENGTH, (x, 0.0, z), centre)
-    else:
-        a.mark(LENGTH, (x, 0.0, z), walk[-1][2])
 
 shot.event(0.0, "sfx", slot="mapRainGlass")
 shot.event(4.0, "sfx", slot="gavel")
