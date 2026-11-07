@@ -57,7 +57,8 @@ re-bake did not beat the old queue; it doubled the chances. At 22:05Z a second p
 any on a pending pack flip it and keep the flip if that pack is built) left 576 of 641 on built packs, including every
 lobby piece the user named (steles, altars, bone throne, candles, giant skull). 65 waited on 13 pairs where neither
 pack was built, 51 of them Tokyo's DarkMetal and WhiteTrim. The flip takes 4 s for 255 surfaces, and serializing all
-641 takes 11 s.
+641 takes 11 s. Two hours more (watching only the 30 pending ids every 10 minutes) brought it to 640 of 641 at
+00:06Z on 2026-11-07. Only Campus's TerrazzoDark floor still waited.
 
 Traps in measuring it:
 - A Studio process remembers a failed texture: restarting the PLAY TEST does not ask again (the stele's pack failed
