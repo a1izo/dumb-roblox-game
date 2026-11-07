@@ -406,56 +406,17 @@ GATE_LINTEL = (2.0, 2.9)  # its height (z) and depth (y)
 GATE_CAP = 0.45  # the capitals' height, under the lintel
 GATE_PLINTH = 0.7
 GATE_NAME_Z = GATE_TOP - 0.32 - GATE_LINTEL[0] / 2  # the middle of the name's slate on the lintel's face
-GATE_FONT = ("Melodrama_Complete", "Fonts", "WEB", "fonts", "Melodrama-Bold.ttf")
-
-
-def _gate_font():
-    import os
-
-    import bpy
-
-    f = bpy.data.fonts.get("AcademyGateFont")
-    if f:
-        return f
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fonts", "fontshare", *GATE_FONT)
-    f = bpy.data.fonts.load(os.path.normpath(path), check_existing=True)
-    f.name = "AcademyGateFont"
-    return f
-
-
-def _carved_name(name, body, size, loc, mat, depth=0.05, spacing=1.18):
-    """Letters standing out of the slate as if left when the field round them was cut away: the Academy's own serif,
-    a little wide-set, with a chamfer on every edge, facing -Y."""
-    import bpy
-
-    curve = bpy.data.curves.new(name, "FONT")
-    curve.body = body
-    curve.size = size
-    curve.extrude = depth
-    curve.bevel_depth = 0.014
-    curve.bevel_resolution = 0
-    curve.resolution_u = 2
-    curve.space_character = spacing
-    curve.align_x = "CENTER"
-    curve.align_y = "CENTER"
-    curve.font = _gate_font()
-    curve.materials.append(mat)
-    obj = bpy.data.objects.new(name, curve)
-    obj.location = loc
-    obj.rotation_euler = (math.radians(90), 0, 0)
-    mk._link(obj)
-    return obj
-
-
 @prop("AcademyGate", pivot="bottom", material="Slate", collide=False, texture=1024, set="Lobby", anchor=(0, 0),
       detail=True, normal=512)
 def academy_gate():
     """The gate of the Academy in the grotto's mouth: two posts of the Academy's dark old stone on stepped plinths,
     fluted down their faces, a skull carved under each capital, and across them a heavy lintel carrying the shelf of
-    rock over the mouth, a moulded band at its top and foot, a slate of black stone let into its face with the name cut
-    in pale relief, ACADEMY. Chipped, pitted, ash on every ledge. Its front faces -Y (out of the cave); the way through
-    is GATE_OPEN wide and stands on z = 0. Solid where a body meets it (landmarks.grotto lays its blocks: collide is off
-    so that no stand-in box shuts the mouth before the import lands)."""
+    rock over the mouth, a moulded band at its top and foot, a slate of black stone let into its face, a small skull at
+    each of its ends. The name is the game's to write on the slate (Lobby.luau, at the anchor academyGate), like the
+    steles' names: cut in relief it baked grey on grey and could not be read in the cave's dark. Ash on every ledge.
+    Its front faces -Y (out of the cave); the way through is GATE_OPEN wide and stands on z = 0. Solid where a body meets
+    it (landmarks.academy_gate lays its blocks: collide is off so that no stand-in box shuts the mouth before the
+    import lands)."""
     m = _stones("Gate")
     pw, pd = GATE_POST
     lh, ld = GATE_LINTEL
@@ -500,7 +461,6 @@ def academy_gate():
     parts.append(mk.box("Slate", (sw, 0.12, sh), (0.0, face - 0.04, GATE_NAME_Z), mat=m["slate"], bevel=0.02))
     parts += [weathered(p, WORN) for p in pk.frame("SlateFrame", sw + 0.34, sh + 0.34, 0.17, 0.18,
                                                     (0.0, face - 0.06, GATE_NAME_Z), m["dark"])]
-    parts.append(_carved_name("Name", "ACADEMY", 1.34, (0.0, face - 0.11, GATE_NAME_Z - 0.05), m["bone"], spacing=1.22))
     # Two small skulls closing the slate's ends.
     for side in (-1, 1):
         skull = pk.skull("EndSkull", (side * (sw / 2 + 0.72), face - 0.12, GATE_NAME_Z), 0.34, m["bone"], m["void"],

@@ -7,7 +7,7 @@
 
 return {
 	ATM = { size = { 2.5, 5.69, 2.95 }, pivot = "bottom", material = "Metal", collide = true, color = { 49, 53, 59 }, set = "Tokyo", tris = 3048, glow = { { 150, 200, 255 }, { 60, 240, 120 }, { 120, 170, 255 } } },
-	AcademyGate = { size = { 22.6, 12.469, 3.7 }, pivot = "bottom", material = "Slate", collide = false, color = { 24, 24, 23 }, anchor = { -0, 0 }, set = "Lobby", tris = 13212 },
+	AcademyGate = { size = { 22.6, 12.469, 3.7 }, pivot = "bottom", material = "Slate", collide = false, color = { 27, 27, 27 }, anchor = { -0, 0 }, set = "Lobby", tris = 12300 },
 	Apple = { size = { 0.886, 0.888, 0.886 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 103, 18, 19 }, set = "Core", tris = 1520 },
 	AppleBitten = { size = { 0.92, 0.903, 0.883 }, pivot = "bottom", material = "SmoothPlastic", collide = false, color = { 126, 38, 36 }, set = "Core", tris = 774 },
 	ArcadeCabinet = { size = { 3.1, 6.2, 3.25 }, pivot = "bottom", material = "SmoothPlastic", collide = true, color = { 102, 94, 107 }, set = "Tokyo", tris = 1752, glow = { { 120, 200, 255 }, { 255, 220, 120 }, { 255, 60, 60 } } },

@@ -220,12 +220,22 @@ local function handMark(b, anchors: { [string]: Anchor })
 	mark:AddTag("LPuppeteer")
 end
 
--- The Academy's name over its gate, its drill altars, the practice figures and the hand over them. The name is cut into
--- the gate's lintel (the Lobby set's AcademyGate, 2026-11-07); only while that model is not imported does a board carry
--- it, on the lintel's slate.
+-- The Academy's name over its gate, its drill altars, the practice figures and the hand over them. The name is written
+-- on the slate let into the gate's lintel (the Lobby set's AcademyGate, 2026-11-07), as the steles' names are on theirs;
+-- while that model is not imported, a board carries it there instead.
 local function academy(b, anchors: { [string]: Anchor })
-	if anchors.academyGate and not ModelLibrary.has("AcademyGate") then
-		sign(b, anchors.academyGate, "ACADEMY", GOLD, INK, Enum.Font.GothamBlack)
+	local gate = anchors.academyGate
+	if gate and ModelLibrary.has("AcademyGate") then
+		local slate = b:part(
+			Vector3.new(gate.w or 11, gate.h or 1.3, 0.04),
+			b:cf(gate.x, gate.y, gate.z, gate.rot),
+			SLATE,
+			Enum.Material.SmoothPlastic,
+			{ Name = "AcademyName", Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false }
+		)
+		signText(slate, "ACADEMY", GOLD, Enum.Font.GothamBlack, 60)
+	elseif gate then
+		sign(b, gate, "ACADEMY", GOLD, INK, Enum.Font.GothamBlack)
 	end
 	for index, drill in ipairs(DRILLS) do
 		local a = anchors["drill" .. index]
