@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 
 from maps import geo2d as g2  # noqa: E402
 from maps import catalog, ownprops  # noqa: E402
+from maps import catalog as _catalog  # noqa: E402
 from maps.layout import FORBIDDEN  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, "..", "..", ".."))
@@ -103,6 +104,68 @@ class Solid:
         return False
 
 
+class ColsSolid:
+    """A prop solid by its own mesh (maps/propcols.py): the heights where it is solid in each column of a grid in its
+    own frame, placed at (x, y, z) turned rot and scaled sc (the way the game places it)."""
+
+    kind = "cols"
+
+    def __init__(self, cols, x, y, z, rot, sc):
+        self.cell, self.x0, self.z0 = cols["cell"], cols["x0"], cols["z0"]
+        self.cells = {}
+        for key, spans in cols["cols"].items():
+            i, j = (int(v) for v in key.split(","))
+            self.cells[(i, j)] = [(y + a * sc, y + b * sc) for a, b in spans]
+        self.x, self.y, self.z, self.sc = x, y, z, sc
+        a = math.radians(rot)
+        self.c, self.s = math.cos(a), math.sin(a)
+        n_i = max((i for i, _ in self.cells), default=0) + 1
+        n_j = max((j for _, j in self.cells), default=0) + 1
+        corners = []
+        for lx, lz in ((self.x0, self.z0), (self.x0 + n_i * self.cell, self.z0),
+                       (self.x0 + n_i * self.cell, self.z0 + n_j * self.cell), (self.x0, self.z0 + n_j * self.cell)):
+            corners.append(self._world(lx * sc, lz * sc))
+        self.poly = g2.ccw(corners)
+        self.box = g2.bbox(self.poly)
+        spans = [s for v in self.cells.values() for s in v] or [(y, y)]
+        self.y0, self.y1 = min(s[0] for s in spans), max(s[1] for s in spans)
+        self.query = True
+        self.data = None
+
+    def _world(self, lx, lz):
+        return self.x + lx * self.c + lz * self.s, self.z - lx * self.s + lz * self.c
+
+    def spans(self, x, z):
+        dx, dz = x - self.x, z - self.z
+        lx = (dx * self.c - dz * self.s) / self.sc
+        lz = (dx * self.s + dz * self.c) / self.sc
+        return self.cells.get((math.floor((lx - self.x0) / self.cell), math.floor((lz - self.z0) / self.cell)), ())
+
+    def top_at(self, x, z):
+        spans = self.spans(x, z)
+        return max(b for _, b in spans) if spans else None
+
+    def tops_at(self, x, z):
+        return [b for _, b in self.spans(x, z)]
+
+    def blocks(self, x, z, y0, y1):
+        return any(b > y0 + 1e-3 and a < y1 - 1e-3 for a, b in self.spans(x, z))
+
+    def segment(self, a, b, y):
+        if not (self.y0 < y < self.y1):
+            return False
+        if not g2.bbox_overlap(self.box, (min(a[0], b[0]), min(a[1], b[1]), max(a[0], b[0]), max(a[1], b[1]))):
+            return False
+        length = math.dist(a, b)
+        n = max(1, int(math.ceil(length / 0.4)))
+        for k in range(n + 1):
+            t = k / n
+            px, pz = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
+            if any(lo < y < hi for lo, hi in self.spans(px, pz)):
+                return True
+        return False
+
+
 class World:
     CELL = 8.0
 
@@ -123,12 +186,29 @@ class World:
             poly = [(ax + nx * w / 2, az + nz * w / 2), (bx + nx * w / 2, bz + nz * w / 2),
                     (bx - nx * w / 2, bz - nz * w / 2), (ax - nx * w / 2, az - nz * w / 2)]
             self.solids.append(Solid("ramp", poly, r["y0"] - 1, r["y1"], r["query"], ((ax, az), (bx, bz), r["y0"], r["y1"])))
+        # Props solid by their own mesh, as their columns (maps/propcols.py) where the export measured them, else as
+        # their whole box; and the blocks cut from the shape of those that are not (the catalog's solids).
+        cols = data.get("propCols") or {}
+        cut = {k: v.get("solids") for k, v in _catalog.load().items()}
         for key, x, y, z, rot, sc, *_ in data["props"]:
-            if key in catalog and catalog[key][2]:
-                (sx, sy, sz), pivot, _ = catalog[key]
+            if key not in catalog:
+                continue
+            (sx, sy, sz), pivot, collide = catalog[key][:3]
+            solids = cut.get(key)
+            if collide and key in cols:
+                self.solids.append(ColsSolid(cols[key], x, y, z, rot, sc))
+            elif collide:
                 sx, sy, sz = sx * sc, sy * sc, sz * sc
                 base = y if pivot == "bottom" else y - sy / 2
                 self.solids.append(Solid("box", g2.rect(x, z, sx, sz, rot), base, base + sy, True))
+            elif solids:
+                a = math.radians(rot)
+                for bx, by, bz, bsx, bsy, bsz in solids:
+                    wx = x + (bx * math.cos(a) + bz * math.sin(a)) * sc
+                    wz = z + (-bx * math.sin(a) + bz * math.cos(a)) * sc
+                    wy = y + by * sc
+                    self.solids.append(Solid("box", g2.rect(wx, wz, bsx * sc, bsz * sc, rot), wy - bsy * sc / 2,
+                                             wy + bsy * sc / 2, False))
         self.grid = {}
         for i, s in enumerate(self.solids):
             for cell in self._cells(s.box):
@@ -155,7 +235,8 @@ class World:
     def tops(self, x, z):
         """Every walkable height at (x, z) with room for a body above it."""
         near = self.near(x, z)
-        heights = sorted({round(t, 2) for s in near for t in [s.top_at(x, z)] if t is not None})
+        heights = sorted({round(t, 2) for s in near for t in (s.tops_at(x, z) if s.kind == "cols" else [s.top_at(x, z)])
+                          if t is not None})
         out = []
         for h in heights:
             if not any(s.blocks(x, z, h + 0.3, h + BODY) for s in near):
@@ -165,13 +246,13 @@ class World:
     def floor_under(self, x, y, z, reach=0.6):
         best = None
         for s in self.near(x, z):
-            t = s.top_at(x, z)
-            if t is not None and y - reach <= t <= y + 0.35:
-                best = t if best is None else max(best, t)
+            for t in (s.tops_at(x, z) if s.kind == "cols" else [s.top_at(x, z)]):
+                if t is not None and y - reach <= t <= y + 0.35:
+                    best = t if best is None else max(best, t)
         return best
 
     def inside(self, x, y, z):
-        return [s for s in self.near(x, z) if s.kind == "box" and s.blocks(x, z, y + 0.4, y + 0.6)]
+        return [s for s in self.near(x, z) if s.kind in ("box", "cols") and s.blocks(x, z, y + 0.4, y + 0.6)]
 
     def sight(self, a, b, y):
         return not any(s.query and s.segment(a, b, y) for s in self.along(a, b))
@@ -749,6 +830,8 @@ def overlaps(data, problems):
     walls = {}
     for k, c in enumerate(data["colliders"]):
         x, y, z, sx, sy, sz, rot = c[:7]
+        if sy <= 1.0 and not c[7]:
+            continue  # (a low ledge laid where it is drawn, a kerb or a heater's sill: furniture stands against it)
         poly = g2.rect(x, z, sx, sz, rot)
         for cc in cells(g2.bbox(poly)):
             walls.setdefault(cc, []).append((poly, y - sy / 2, y + sy / 2))

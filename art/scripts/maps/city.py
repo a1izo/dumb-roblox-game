@@ -275,19 +275,21 @@ def retaining(s, poly, y, base, wall_mat="Stone", coping="ConcreteDark", edges=N
         out = (dz / length, -dx / length)  # right of a->b: outside a counter-clockwise polygon
         vquad(s, wall_mat, a, b, base, y, out)
         mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        # (solid: a foot at the terrace's edge stood in it)
         s.box(coping, (mid[0] + out[0] * 0.15, y + 0.12, mid[1] + out[1] * 0.15), (length + 0.3, 0.24, 0.6),
-              g2.rot_of((dx / length, dz / length)), skip=() if under else ("-y",))
+              g2.rot_of((dx / length, dz / length)), collide=True, query=False, skip=() if under else ("-y",))
 
 
 GUARD_FROM = 2.0  # how high a flight climbs before its side guards begin
 
 
 def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="ConcreteDark", step=0.8, name=None, cheeks=True,
-           guard=0.0, guard_out=0.15):
+           guard=0.0, guard_out=0.15, guard_from=None):
     """A flight of steps from a (x, z) at height y0 to b at y1 (either way up), with a smooth
     ramp under the steps for walking and a "stairs" zone. The mass under the steps is solid (no
     walking into the side of a flight); guard: an invisible wall that high along both sides over
-    the steps, where handrails or balustrades stand (guard_out: how far out past the steps)."""
+    the steps, where handrails or balustrades stand (guard_out: how far out past the steps; guard_from: how high the
+    flight has climbed where they begin, GUARD_FROM unless a rail or glass runs its whole length)."""
     run = math.dist(a, b)
     d = ((b[0] - a[0]) / run, (b[1] - a[1]) / run)
     n = g2.normal_left(d)
@@ -310,12 +312,25 @@ def stairs(s, g, a, b, y0, y1, width, mat="Stone", side_mat="ConcreteDark", step
         if under > 0.6:
             s.collider((c[0], low + under / 2, c[1]), (width, under, run / count), rot, False, None)
         # (Not over the first steps: people step onto a flight from its sides there too.)
-        if guard > 0 and top - low > GUARD_FROM:
+        if guard > 0 and top - low > (GUARD_FROM if guard_from is None else guard_from):
             for side in (1, -1):
                 off = width / 2 + guard_out
                 p = (c[0] + n[0] * side * off, c[1] + n[1] * side * off)
                 s.collider((p[0], top + guard / 2, p[1]), (0.3, guard, run / count + 0.05), rot, False, None)
-    s.ramp(a if rise > 0 else b, b if rise > 0 else a, low, max(y0, y1), width, look=mat)
+    # The slope a body walks up runs through the middle of every riser (2026-11-07: it ran along the treads' back
+    # corners, so a foot sank a whole step into the front of each): half a tread before the first step on the floor,
+    # up to the middle of the top tread, then level over the rest of it to the landing. A foot is never more than half
+    # a step into a tread or over it.
+    foot, head = (a, b) if rise > 0 else (b, a)
+    tread = run / count
+    ux, uz = (head[0] - foot[0]) / run, (head[1] - foot[1]) / run
+    start = (foot[0] - ux * tread / 2, foot[1] - uz * tread / 2)
+    end = (head[0] - ux * tread / 2, head[1] - uz * tread / 2)
+    s.ramp(start, end, low, max(y0, y1), width, look=mat)
+    top_y = max(y0, y1)
+    # (on half a stud over the landing, so the two meet with no seam a foot could find)
+    mid = (head[0] - ux * (tread / 4 - 0.25), head[1] - uz * (tread / 4 - 0.25))
+    s.collider((mid[0], top_y - 0.2, mid[1]), (width, 0.4, tread / 2 + 0.5), rot, False, None)
     band = [
         (a[0] + g2.normal_left(d)[0] * width / 2, a[1] + g2.normal_left(d)[1] * width / 2),
         (b[0] + g2.normal_left(d)[0] * width / 2, b[1] + g2.normal_left(d)[1] * width / 2),

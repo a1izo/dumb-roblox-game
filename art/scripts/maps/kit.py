@@ -512,6 +512,8 @@ def pendant(s, x, ceiling_y, z, drop=4.0, shade="BlackMetal", color=WARM, range_
     s.lathe(shade, (x, low + 0.02, z), [(0.16, 0.88), (0.45 * wide - 0.04, 0.55), (0.9 * wide - 0.04, 0.2),
                                         (wide - 0.05, 0.02)], 20, caps=(False, False))
     s.lathe("NeonWarm", (x, low + 0.25, z), [(0.25, -0.05), (0.3, 0.1), (0.25, 0.3), (0.0, 0.34)], 10)
+    # (the shade solid where a head or a jump meets it; it sees nothing through it)
+    s.collider((x, low + 0.45, z), (wide * 1.6, 0.9, wide * 1.6), 0.0, False, None)
     # (lit=False: one of a cluster whose light another shade of it gives, so the lamps do not stack)
     if not lit:
         return
@@ -649,6 +651,7 @@ def exit_sign(s, x, y, z, rot):
 def extinguisher(s, x, z, rot, y=0.0):
     p = _on_wall(x, 0, z, rot, 0.35)
     s.cylinder("RedTrim", (p[0], y + 1.6, p[2]), 0.28, 1.4, 12)
+    s.collider((p[0], y + 1.6, p[2]), (0.6, 1.5, 0.6), rot, False, None)
     s.lathe("BlackMetal", (p[0], y + 3.0, p[2]), [(0.2, 0), (0.12, 0.25), (0.06, 0.4)], 8)
     s.box("BlackMetal", _on_wall(x, y + 2.4, z, rot, 0.05), (0.5, 0.2, 0.1), rot)
 

@@ -185,7 +185,7 @@ def exam_bed(s, x, z, y):
     rail = y + 8.0
     s.box("Steel", (x + 1.6, rail, z), (0.08, 0.08, 6.6))
     s.box("Steel", (x, rail, z + 3.3), (3.2, 0.08, 0.08))
-    s.box("Fabric", (x + 1.6, y + 4.6, z - 0.9), (0.06, 6.6, 4.6))
+    s.box("Fabric", (x + 1.6, y + 4.6, z - 0.9), (0.06, 6.6, 4.6), collide=True, query=False)
 
 
 def partition(s, a, b, y0, y1, mat="PlasterLight", door=None, glass=False, outer=None):
@@ -218,7 +218,7 @@ def stairs_up(s, g, a, b, y0, y1, width, mat="Stone", rail=True):
     """A straight flight from a (at y0) to b (at y1) with handrails on both sides (solid: nobody
     steps through them off the side of the flight)."""
     city.stairs(s, g, a, b, y0, y1, width, mat, "ConcreteDark", step=0.9, guard=3.3 if rail else 0.0,
-                guard_out=-0.2)
+                guard_out=-0.2, guard_from=0.0)
     if not rail:
         return
     run = math.dist(a, b)
@@ -237,7 +237,8 @@ def stairs_up(s, g, a, b, y0, y1, width, mat="Stone", rail=True):
 
 def escalator(s, g, a, b, y0, y1, width=3.6):
     """A (still) escalator: metal steps between glass balustrades with black handrails (solid)."""
-    city.stairs(s, g, a, b, y0, y1, width, "MetalFloor", "DarkMetal", step=0.7, guard=3.6, guard_out=0.25)
+    city.stairs(s, g, a, b, y0, y1, width, "MetalFloor", "DarkMetal", step=0.7, guard=3.6, guard_out=0.25,
+                guard_from=0.0)
     run = math.dist(a, b)
     d = ((b[0] - a[0]) / run, (b[1] - a[1]) / run)
     n = g2.normal_left(d)

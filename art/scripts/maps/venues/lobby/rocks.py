@@ -1,6 +1,7 @@
 """Standing the realm's rock kit (realmrock.py, the Lobby set's props) about the Grey Realm: a kit shape placed at a
-spot, turned and scaled, sunk to its foot, with colliders round its foot from the shape's own outline (so nobody
-walks into rock that looks solid, and nobody stands inside it) and a core up its middle.
+spot, turned and scaled, sunk to its foot. Every shape is solid by its own mesh (2026-11-07, the user: "make everything
+solid so that it matches the structure"): until then each stood in boxes laid round its foot's outline and a core up its
+middle, which its bulges and overhangs reached past (walked into) and its creases fell short of (stopped by nothing).
 
 Everything rocky in the lobby is one of these: the ridge round the basin, the outcrops, the columns, the vistas' rocks,
 the boulders and slabs in the ash, the chasms' lips, and the whole far world."""
@@ -12,8 +13,6 @@ import realmrock
 from maps import geo2d as g2
 
 FEET = []  # every rock's foot outline stood this build (the ground banks ash against them: ground.py)
-FOOT_H = 9.0  # how high the walls round a rock's foot stand (people walk, jump and stand against them)
-FOOT_T = 3.0  # how thick they are at most
 
 
 def turn(rot, x, z):
@@ -43,53 +42,15 @@ def radius(key, sc):
 
 
 def rock(s, key, x, z, rot=0.0, sc=1.0, y=0.0, collide=True, core_h=60.0, facing=None, walls=True):
-    """Stands kit shape `key` at (x, z) on ground at height y, turned rot and scaled sc. collide: walls round its
-    foot and a core up its middle (up to core_h over the ground); facing (x, z): walls only on the sides that look
-    that way (a ridge rock whose back is past the basin's wall). Returns its foot's outline."""
+    """Stands kit shape `key` at (x, z) on ground at height y, turned rot and scaled sc; it is solid by its own mesh.
+    Returns its foot's outline. (collide, core_h, facing and walls laid the boxes it stood in before 2026-11-07; they
+    are kept so the venue's calls read as they did, and do nothing now.)"""
     sink = realmrock.KIT[key].get("sink", 1.0) * sc
     s.prop(key, x, z, rot % 360.0, round(sc, 3), y - sink)
     foot = outline(key, x, z, rot, sc)
     if abs(y) < 0.5:
         FEET.append(foot)
-    if collide:
-        # (up to its top as seen, never past it: what stands on a flat-topped rock stands on its core)
-        top = height(key, sc) - sink
-        h = min(top, core_h)
-        cx, cz = g2.centroid(foot)
-        inner = min(g2.dist_to_poly_edge(foot, (cx, cz)), radius(key, sc)) * 0.9
-        if inner > 0.6:
-            s.collider((cx, y + h / 2 - 0.5, cz), (inner * 1.41, h + 1.0, inner * 1.41), rot % 90.0, True, "RockGrey")
-        # (no higher than the rock itself: a slab breaking through the ash is walked over, and a boulder stood on,
-        # not fenced by walls rising past its top)
-        if walls and top > 1.5:
-            foot_walls(s, foot, y, facing, min(FOOT_H, top))
     return foot
-
-
-def foot_walls(s, poly, y, facing=None, tall=FOOT_H):
-    """Solid slabs along a rock foot's outline, set in from it, `tall` studs up from y, so nobody stands inside the
-    rock where it looks solid. facing (x, z): only the sides that face that way."""
-    cx, cz = g2.centroid(poly)
-    reach = max(math.dist((cx, cz), p) for p in poly)
-    if reach < 2.2:
-        s.collider((cx, y + tall / 2 - 0.5, cz), (reach * 1.3, tall + 1.0, reach * 1.3), 0.0, True, "RockGrey")
-        return
-    t = min(FOOT_T, reach * 0.5)
-    for k in range(len(poly)):
-        a, b = poly[k], poly[(k + 1) % len(poly)]
-        length = math.dist(a, b)
-        if length < 0.3:
-            continue
-        nx, nz = (b[1] - a[1]) / length, -(b[0] - a[0]) / length
-        mx, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
-        if nx * (mx - cx) + nz * (mz - cz) < 0:
-            nx, nz = -nx, -nz
-        if facing is not None and nx * facing[0] + nz * facing[1] < -0.2:
-            continue
-        inset = 0.25 + t / 2
-        rot = math.degrees(math.atan2(-(b[1] - a[1]), b[0] - a[0]))
-        s.collider((mx - nx * inset, y + tall / 2 - 0.5, mz - nz * inset), (length + 0.4, tall + 1.0, t), rot, True,
-                   "RockGrey")
 
 
 def scatter(s, keys, cx, cz, r, count, sc, seed, y=0.0, avoid=(), arc=None, collide=False, spacing=1.0):

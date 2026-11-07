@@ -1,7 +1,8 @@
 """The Grey Realm's rock kit as props (set "Lobby"): every shape of realmrock.py, made once here and stood about the
 realm by the lobby's venue, turned and scaled. They are tiled props (props.prop's tiled): the realm's rock scan and
-its ash laid straight onto them, shared with the map's own ground, with no texture of their own. None collides: the
-venue puts its own colliders round each one's foot (realmrock.footprint)."""
+its ash laid straight onto them, shared with the map's own ground, with no texture of their own. Each is solid by its
+own mesh (2026-11-07, the user: no walking into anything): until then the venue stood boxes round each one's foot
+(realmrock.footprint), and their bulges, overhangs and creases were walked into or stopped at by nothing drawn."""
 
 import bpy
 
@@ -69,7 +70,7 @@ def _kit(key):
 
 
 def _register(key):
-    @prop(key, pivot="bottom", material="Rock", collide=False, texture=256, set="Lobby", tiled=True)
+    @prop(key, pivot="bottom", material="Rock", collide=True, texture=256, set="Lobby", tiled=True)
     def build():
         return _kit(key)
 

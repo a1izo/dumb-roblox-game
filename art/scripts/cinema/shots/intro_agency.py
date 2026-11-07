@@ -369,7 +369,7 @@ fig.key(REPLAY[0] + 0.7, "out", root=(-9, 0, 0), neck=(-18, 0, 0), rShoulder=LIF
 fig.key(REPLAY[0] + 0.9, "sine", root=(-4, 0, 0), neck=(-10, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig.key(REPLAY[0] + 1.25, "sine", root=(-3, 0, 0), neck=(-6, 30, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig.key(LENGTH, root=(-3, 0, 0), neck=(-6, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
-walking(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4)
+walking(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4, arms=False)
 swing(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4)
 fig.plant(None, REPLAY[0] + 1.3, stance=0.06)
 fig.plant(REPLAY[1], None, stance=0.06)
@@ -383,7 +383,8 @@ fig2.key(WALK2[1] + 0.2, "in", root=(-2, 0, 0), neck=(-4, 0, 0), rShoulder=CHEST
 fig2.key(FIG_TURN, "sine", root=(-2, 0, 0), neck=(-4, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig2.key(FIG_TURN + 0.9, "sine", root=(-1, -30, 0), neck=(6, -70, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))  # (the head round)
 fig2.key(LENGTH, "sine", root=(-1, -32, 0), neck=(7, -72, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
-walking(fig2, WALK2[0], WALK2[1], speed=math.hypot(FIG2_TO[0] - FIG2_FROM[0], FIG2_TO[1] - FIG2_FROM[1]) / (WALK2[1] - WALK2[0]))
+walking(fig2, WALK2[0], WALK2[1], speed=math.hypot(FIG2_TO[0] - FIG2_FROM[0], FIG2_TO[1] - FIG2_FROM[1]) / (WALK2[1] - WALK2[0]),
+        arms=False)
 swing(fig2, WALK2[0], WALK2[1], speed=math.hypot(FIG2_TO[0] - FIG2_FROM[0], FIG2_TO[1] - FIG2_FROM[1]) / (WALK2[1] - WALK2[0]))
 fig2.plant(None, WALK2[0], stance=0.06)
 fig2.plant(WALK2[1], None, stance=0.06)

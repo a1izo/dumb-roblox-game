@@ -64,6 +64,14 @@ local REFUSED_WAIT = 1 -- seconds after the server refuses a dive before this sc
 local BUSY_AFTER = 1.5 -- seconds after a dive is let go that it still counts as one (DiveController.busy)
 local STRING_COLOR = Color3.fromRGB(226, 230, 238)
 local CLIPS = { "collapseAccident" }
+-- The throat (2026-11-07, the user: "make it so you cant see through the map while falling"): from the rim down to
+-- the cloud the realm floats on, nothing but rock is drawn round the hole, so a diver's body and the camera both stay
+-- inside its walls. They bulge in under the rim's ellipse by a few studs at most: an ellipse THROAT_IN of the rim's
+-- is clear of them everywhere, and the body keeps BODY_ROOM and the camera CAMERA_ROOM inside that.
+local THROAT_IN = 0.84
+local BODY_ROOM = 3
+local CAMERA_ROOM = 1.5
+local CAMERA_BIND = "DeathsGambitDiveCamera"
 
 type Rift = { rift: LastBreath.Rift, rimY: number, roofY: number, cloudY: number, height: number }
 
@@ -120,6 +128,38 @@ local function readRift()
 		end
 	end
 	rift = nil
+end
+
+-- A point (x, z) in the rift's own frame (its middle, turned by its turn: the ellipse's axes along x and z), and back.
+local function toRift(info: Rift, p: Vector2): Vector2
+	local a = math.rad(info.rift.turn)
+	local dx, dz = p.X - info.rift.cx, p.Y - info.rift.cz
+	return Vector2.new(dx * math.cos(a) + dz * math.sin(a), -dx * math.sin(a) + dz * math.cos(a))
+end
+
+local function fromRift(info: Rift, l: Vector2): Vector2
+	local a = math.rad(info.rift.turn)
+	return Vector2.new(
+		info.rift.cx + l.X * math.cos(a) - l.Y * math.sin(a),
+		info.rift.cz + l.X * math.sin(a) + l.Y * math.cos(a)
+	)
+end
+
+-- How far out of the throat's clear ellipse (less `room` studs) a point (x, z) is: 1 on its edge, above 1 outside.
+local function throatReach(info: Rift, p: Vector2, room: number): number
+	local l = toRift(info, p)
+	local ax = math.max(2, info.rift.rx * THROAT_IN - room)
+	local az = math.max(2, info.rift.rz * THROAT_IN - room)
+	return math.sqrt((l.X / ax) ^ 2 + (l.Y / az) ^ 2)
+end
+
+-- The point (x, z) brought in to the throat's clear ellipse, less `room` studs, if it is outside it.
+local function inThroat(info: Rift, p: Vector2, room: number): Vector2
+	local r = throatReach(info, p, room)
+	if r <= 1 then
+		return p
+	end
+	return fromRift(info, toRift(info, p) / r)
 end
 
 local function body(): (Model?, BasePart?, Humanoid?)
@@ -500,6 +540,13 @@ local function step(dt: number)
 		spot -= off.Unit * (off.Magnitude - FUNNEL) * math.min(1, dt * 1.5)
 	end
 	local height, speed = LastBreath.at(info.height, t, brakeAt)
+	-- Down the throat the walls hold the body in (the draught alone let a diver who steered hard drift 17 studs out,
+	-- through the rock on the rift's narrow sides, and the camera went with them).
+	-- (eased in, not snapped: a diver who went over right at the rim's edge is drawn in over a moment, while the fall is
+	-- still slow and the walls are still close to the rim's line)
+	if info.roofY + height + ROOT_UP > info.cloudY - 4 then
+		spot += (inThroat(info, spot, BODY_ROOM) - spot) * math.min(1, dt * 8)
+	end
 	local state = tumble
 	if state then
 		state.speed = speed
@@ -743,6 +790,48 @@ local function keepStrings()
 	end
 end
 
+-- The camera down the throat: once Roblox's camera (and CameraCollision) have placed it, a camera that would stand
+-- in the rock round the hole, or past it in the dark under the realm, is pulled in along its line to what it looks at
+-- until it is inside the walls again. Only while it is in the throat (under the rim, over the cloud) and looking at
+-- something in it (a diver, or anyone who fell in).
+local function holdCamera()
+	local info = rift
+	local camera = workspace.CurrentCamera
+	if not info or not camera or camera.CameraType ~= Enum.CameraType.Custom then
+		return
+	end
+	local at = camera.CFrame.Position
+	if at.Y > info.rimY - 0.5 or at.Y < info.cloudY then
+		return
+	end
+	local focus = camera.Focus.Position
+	if not diving and throatReach(info, Vector2.new(focus.X, focus.Z), 0) > 1.1 then
+		return
+	end
+	if throatReach(info, Vector2.new(at.X, at.Z), CAMERA_ROOM) <= 1 then
+		return
+	end
+	local inside: Vector3
+	if throatReach(info, Vector2.new(focus.X, focus.Z), CAMERA_ROOM) > 1 then
+		-- (what it looks at is itself by the wall: in to the clear ellipse, at the camera's own height)
+		local flat = inThroat(info, Vector2.new(at.X, at.Z), CAMERA_ROOM)
+		inside = Vector3.new(flat.X, at.Y, flat.Y)
+	else
+		local low, high = 0, 1
+		for _ = 1, 14 do
+			local middle = (low + high) / 2
+			local p = focus + (at - focus) * middle
+			if throatReach(info, Vector2.new(p.X, p.Z), CAMERA_ROOM) <= 1 then
+				low = middle
+			else
+				high = middle
+			end
+		end
+		inside = focus + (at - focus) * low
+	end
+	camera.CFrame = CFrame.new(inside) * camera.CFrame.Rotation
+end
+
 -- Is this player in a dive now (for checks)?
 function DiveController.diving(): boolean
 	return diving
@@ -785,6 +874,8 @@ function DiveController.init()
 	-- After the simulation step, so the body is where the dive puts it when the frame is drawn.
 	RunService.PostSimulation:Connect(step)
 	RunService.RenderStepped:Connect(keepStrings)
+	-- (after Roblox's camera, CameraCollision and the screen's shake)
+	RunService:BindToRenderStep(CAMERA_BIND, Enum.RenderPriority.Camera.Value + 3, holdCamera)
 end
 
 return DiveController

@@ -35,9 +35,9 @@ def screen_wall(s):
     face = -IN
     # The bezel round the game's screen, a dais of shadow under it, the red neon either side.
     for bx in (-w / 2 - 0.7, w / 2 + 0.7):
-        s.box("BlackMetal", (bx, y, face + 0.35), (1.4, h + 2.8, 0.7))
+        s.box("BlackMetal", (bx, y, face + 0.35), (1.4, h + 2.8, 0.7), collide=True, query=False)
     for by in (y - h / 2 - 0.7, y + h / 2 + 0.7):
-        s.box("BlackMetal", (0.0, by, face + 0.35), (w + 2.8, 1.4, 0.7))
+        s.box("BlackMetal", (0.0, by, face + 0.35), (w + 2.8, 1.4, 0.7), collide=True, query=False)
     s.box("Screen", (0.0, y, face + 0.05), (w + 0.2, h + 0.2, 0.1))
     for nx in (-w / 2 - 1.7, w / 2 + 1.7):
         s.box("NeonRed", (nx, y, face + 0.15), (0.16, h + 1.0, 0.16))

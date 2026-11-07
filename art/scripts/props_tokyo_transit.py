@@ -385,7 +385,7 @@ def train_door_leaf():
 # The bus stop and the taxi rank ---------------------------------------------------------------------------
 
 
-@prop("BusShelter", pivot="bottom", material="Metal", collide=False, texture=1024, set="Tokyo",
+@prop("BusShelter", pivot="bottom", material="Metal", collide=False, solids=True, texture=1024, set="Tokyo",
       lights=[dict(at=(0, 0.2, 7.6), kind="point", color=(236, 240, 255), range=14, brightness=0.8)])
 def bus_shelter():
     """A bus shelter 12 long, open to the kerb (-Y): a steel frame under a curved roof with its
@@ -419,7 +419,7 @@ def bus_shelter():
     return parts, glows
 
 
-@prop("BusStopSign", pivot="bottom", material="Metal", collide=False, texture=512, set="Tokyo", anchor=(0, 0))
+@prop("BusStopSign", pivot="bottom", material="Metal", collide=False, solids=True, texture=512, set="Tokyo", anchor=(0, 0))
 def bus_stop_sign():
     """The bus stop's post: a round sign with the stop's name on top, the lit timetable box below,
     a weighted base."""

@@ -66,7 +66,7 @@ def railing_wall(s, a, b, base=3.4, top=9.0):
     rot = g2.rot_of(d)
     mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
     s.box("BrickRed", (mid[0], base / 2, mid[1]), (length, base, 1.4), rot)
-    s.box("Stone", (mid[0], base + 0.15, mid[1]), (length + 0.2, 0.3, 1.7), rot)
+    s.box("Stone", (mid[0], base + 0.15, mid[1]), (length + 0.2, 0.3, 1.7), rot, collide=True)
     s.box("Snow", (mid[0], base + 0.38, mid[1]), (length, 0.16, 1.5), rot, skip=("-y",))
     for yy in (base + 0.9, top - 0.4):
         s.box("BlackMetal", (mid[0], yy, mid[1]), (length, 0.14, 0.14), rot)
@@ -77,7 +77,7 @@ def railing_wall(s, a, b, base=3.4, top=9.0):
     count = max(1, round(length / 10.0))
     for k in range(count + 1):
         p = (a[0] + d[0] * length * k / count, a[1] + d[1] * length * k / count)
-        s.box("Stone", (p[0], (top + 1.0) / 2, p[1]), (1.6, top + 1.0, 1.8), rot)
+        s.box("Stone", (p[0], (top + 1.0) / 2, p[1]), (1.6, top + 1.0, 1.8), rot, collide=True)
         s.box("Snow", (p[0], top + 1.08, p[1]), (1.6, 0.16, 1.8), rot, skip=("-y",))
     s.collider((mid[0], base / 2, mid[1]), (length, base, 1.4), rot, True, "BrickRed")
     s.collider((mid[0], (base + 40.0) / 2, mid[1]), (length, 40.0 - base, 1.0), rot, False, None)
@@ -89,7 +89,8 @@ def walls(s):
         solid_wall(s, (x0, Z0 + 0.7), (x1, Z0 + 0.7))
     # West: from Law & Letters to the club house, past the hollow.
     solid_wall(s, (X0 + 0.7, P.LAW[3]), (X0 + 0.7, P.CLUB[1]))
-    s.box("Stone", (X0 + 0.7, P.HOLLOW_Y / 2, (P.HOLLOW[1] + P.HOLLOW[3]) / 2), (1.4, -P.HOLLOW_Y, P.HOLLOW[3] - P.HOLLOW[1]))
+    s.box("Stone", (X0 + 0.7, P.HOLLOW_Y / 2, (P.HOLLOW[1] + P.HOLLOW[3]) / 2), (1.4, -P.HOLLOW_Y, P.HOLLOW[3] - P.HOLLOW[1]),
+          collide=True)
     # East: from the library to the science building, the iron gate in the middle.
     g0, g1 = P.EAST_GATE
     railing_wall(s, (X1 - 0.7, P.LIBRARY[3]), (X1 - 0.7, g0 - 1.0))

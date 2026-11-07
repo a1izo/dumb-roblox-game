@@ -340,7 +340,7 @@ def bridge(s, g):
             if under > 0.3:
                 s.collider((x, Y + under / 2, (za + zb) / 2), (w, under, abs(zb - za)), 0, False, None)
         s.box("Vermilion", (x, (Y + top) / 2 - 0.5, (z_lo + z_hi) / 2), (w + 0.4, top - Y - 0.8, abs(z_hi - z_lo) * 0.6),
-              0)
+              0, collide=True)
     # Piers under the deck, standing on the ice (up to its underside: their tops level with the planks flickered
     # through them).
     for zz in (d0 + 2.0, (d0 + d1) / 2, d1 - 2.0):
@@ -398,6 +398,10 @@ def fountain(s):
         s.lathe("GlassFrosted", (px, 5.12 - length, pz), [(0.0, 0.0), (0.03, length * 0.5), (0.09, length)], 6)
     s.collider((x, 1.05, z), (2 * r + 2.4, 2.1, 2 * r + 2.4), 0, True, "Stone")
     s.collider((x, 1.05, z), (2 * r + 2.4, 2.1, 2 * r + 2.4), 45, True, "Stone")
+    # (and up the lantern itself: its post, and its roof standing out at head height)
+    for turn in (0, 45):
+        s.collider((x, 1.2 + 2.3, z), (1.5, 2.4, 1.5), turn, False, None)
+        s.collider((x, 1.2 + 4.2, z), (5.2, 0.7, 5.2), turn, False, None)
     s.collider((x, 3.5, z), (1.6, 7.0, 1.6), 0, True, "Stone")
 
 

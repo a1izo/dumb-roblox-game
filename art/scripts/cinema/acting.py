@@ -102,14 +102,26 @@ def kneel(m, t, ease="smooth", lean=-8.0, head=-28.0, turn=0.0, **upper):
     m.key(t, ease, floor=True, **joints)
 
 
-def walking(m, t0, t1, blend=0.35, speed=4.0):
+WALK_ARMS = 14.0  # degrees each arm swings either way on a walk at the game's walk speed (noir: low and close)
+WALK_ARM_LAG = 0.06  # how far behind the legs, a share of the cycle, the arms swing
+WALK_TWIST = 3.0  # degrees the shoulders turn against the hips (the head kept to the front against it)
+HELD_FROM = 28.0  # an arm keyed this far forward is holding or doing something: it swings a quarter as far
+
+
+def walking(m, t0, t1, blend=0.35, speed=4.0, arms=True):
     """The legs walk between t0 and t1, easing in and out over `blend` seconds, at `speed` studs a second
     (the game's walk is 4; slower walks take shorter, slower steps). The actor's path must cover the
-    same distance meanwhile, so the soles do not slide. Plant the feet outside t0..t1."""
+    same distance meanwhile, so the soles do not slide. Plant the feet outside t0..t1.
+
+    arms: the arms swing against the legs, a little behind them, the shoulders turning against the hips and the
+    head held to the front (2026-11-07: walkers' arms hung dead, "movements dont look stiff"); an arm keyed forward
+    (a book carried, a hand at the chest) swings only a little. A number scales the swing (a walk between chairs, or
+    along a wall, swings less); False for a walk that swings its own arms."""
     from gait import WALK, Gait
 
     period = WALK.period * (4.0 / speed) ** 0.5
     g = Gait("walk_" + m.name, period, speed * period, WALK.stance, WALK.lift * min(1.0, speed / 4.0), WALK.note)
+    reach = WALK_ARMS * min(1.3, (speed / 4.0) ** 0.6) * (1.0 if arms is True else float(arms or 0.0))
 
     def fn(t, pose, off):
         if t <= t0 - blend or t >= t1 + blend:
@@ -124,6 +136,18 @@ def walking(m, t0, t1, blend=0.35, speed=4.0):
             new = np.array([*leg["r"], *leg["p"]], float)
             old = pose.get(key, np.zeros(6))
             pose[key] = old * (1 - w) + new * w
+        if not reach:
+            return
+        # (phase 0: the right foot lands, its leg forward, so the right arm is back and the left forward)
+        swing = math.cos(2 * math.pi * (phase - WALK_ARM_LAG))
+        for key, side in (("rShoulder", -1.0), ("lShoulder", 1.0)):
+            if key in pose:
+                held = 0.25 if pose[key][0] > HELD_FROM else 1.0
+                pose[key][0] += w * held * reach * side * swing
+        if "root" in pose:
+            pose["root"][1] += w * WALK_TWIST * swing
+        if "neck" in pose:
+            pose["neck"][1] -= w * WALK_TWIST * 0.8 * swing
 
     m.extra(fn)
     return m

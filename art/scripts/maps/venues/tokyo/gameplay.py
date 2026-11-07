@@ -50,7 +50,7 @@ AREAS = [
     ("the department store", (34, -80)),
     ("the shopping street", (60, -101)),
     ("the back alley", (56, -14)),
-    ("the river walk", (-40, 20)),
+    ("the river walk", (-40, 20), 0.0, [(-38, 20), (-40.5, 17.5)]),  # (the second clear of the cherry by it)
     ("the footbridge", (P.FOOTBRIDGE_X, 40)),
     ("the yokocho", (-60, 90.5)),
     ("the karaoke tower", (92, 80)),

@@ -68,7 +68,7 @@ def tree(prefix, seed, trunk_h, trunk_r, limbs, limb_len, depth, spread, rise, d
     return parts
 
 
-@prop("TreeSakura", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Tokyo", anchor=(0, 0))
+@prop("TreeSakura", pivot="bottom", material="SmoothPlastic", collide=False, solids=True, texture=1024, set="Tokyo", anchor=(0, 0))
 def tree_sakura():
     """A Somei-Yoshino cherry in full bloom: a short dark trunk splitting low into wide, rising
     limbs that droop at their ends, clouds of pale pink blossom (white and deeper pink in it)."""

@@ -28,7 +28,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
-VERSION = {"ModelsCore": 34, "ModelsTokyo": 23, "ModelsAgency": 18, "ModelsCampus": 16, "ModelsLobby": 21,
+VERSION = {"ModelsCore": 34, "ModelsTokyo": 23, "ModelsAgency": 18, "ModelsCampus": 16, "ModelsLobby": 22,
            "ModelsMeeting": 6, "ModelsFx": 2}
 
 VERSIONS_LUAU = os.path.join(common.ROOT, "src", "shared", "ImportVersions.luau")
@@ -503,6 +503,14 @@ def write_scene_v2(scene, module, source):
         finds = finders.run(scene, prop_catalog.load(), venue)[0]
     except ImportError:  # (outside Blender there is no mathutils: no finds)
         finds = None
+    # The shapes of the props solid by their own mesh (maps/propcols.py), for check_v2's walk.
+    try:
+        from maps import catalog as prop_catalog
+        from maps import propcols
+
+        prop_cols = propcols.for_scene(scene, prop_catalog.load())
+    except ImportError:
+        prop_cols = {}
     sidecar = {
         "venue": venue,
         "mapId": map_id,
@@ -524,6 +532,7 @@ def write_scene_v2(scene, module, source):
         "stats": stats,
         "checks": scene.checks,
         "finds": finds,
+        "propCols": prop_cols,
     }
     side_path = os.path.join(SIDECAR_DIR, venue + ".json")
     with open(side_path, "w", encoding="utf-8") as f:

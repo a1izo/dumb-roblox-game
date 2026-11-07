@@ -5,7 +5,8 @@
 --   3. an after-pass from the locomotion controller that keeps a standing body's soles planted under
 --      whatever the layers above did to it, then
 --   4. while a clip that moves the legs fades in or out, the body lifted off the floor wherever the blend of
---      two poses would put a leg through it.
+--      two poses would put a leg through it, then
+--   5. for a body that acts (attribute DGLife: a cutscene's actors), its life laid over it all (Anim/Life).
 -- Clips come from Blender (Anim/Clips). A clip with an uploaded animation id in
 -- Assets.anim plays that animation instead. A track can also be procedural (playProcedural): a function
 -- that gives the joints' rotations each frame, like a clip's sample (the rift dive's tumble, Anim/Tumble).
@@ -18,6 +19,8 @@ local Anim = Shared:WaitForChild("Anim")
 local Assets = require(Shared:WaitForChild("Assets"))
 local ClipPlayer = require(Anim:WaitForChild("ClipPlayer"))
 local Joints = require(Anim:WaitForChild("Joints"))
+
+local Life = require(script.Parent.Life)
 
 local PoseController = {}
 
@@ -652,6 +655,11 @@ local function step(dt: number)
 		-- 4. the floor guard, while a leg clip blends
 		if rig.legsBlending and not uploaded then
 			liftOffFloor(rig)
+		end
+		-- 5. life, for the bodies that act (a cutscene's actors): breath, weight, glances, the lag behind the body
+		local life = character:GetAttribute(Life.ATTRIBUTE)
+		if type(life) == "number" and life > 0 and not uploaded then
+			Life.apply(rig, life, elapsed, now)
 		end
 		if every and not uploaded then
 			local held = rig.held or {}

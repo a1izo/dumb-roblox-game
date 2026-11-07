@@ -47,7 +47,7 @@ def karaoke_console():
     return parts, glows
 
 
-@prop("MicStand", pivot="bottom", material="Metal", collide=False, texture=512, set="Tokyo")
+@prop("MicStand", pivot="bottom", material="Metal", collide=True, texture=512, set="Tokyo")
 def mic_stand():
     """A boom mic stand: a weighted round base, a telescopic column, the boom tilted toward -Y and a
     wired mic in its clip."""
@@ -145,7 +145,7 @@ def tambourine():
     return parts, []
 
 
-@prop("DrinksTray", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Tokyo")
+@prop("DrinksTray", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Tokyo")
 def drinks_tray():
     """A tray of the night's drinks: highballs, an oolong tea, a beer mug, coasters and a menu card."""
     rng = random.Random(9)

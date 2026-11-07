@@ -24,6 +24,7 @@ local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
 local Venues = require(Shared:WaitForChild("Venues"))
 
+local Life = require(script.Parent.Parent.Anim.Life)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
 local Mixer = require(script.Parent.Parent.Audio.Mixer)
@@ -618,6 +619,8 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 					PoseController.bindWhenReady(model, 2)
 					PoseController.play(model, clip, { startAt = startClock + at / rate, fadeIn = 0, speed = rate })
 				end)
+				-- (breath, weight, glances and the lag behind the body's turns over the acting: Anim/Life)
+				model:SetAttribute(Life.ATTRIBUTE, 1)
 			end
 			table.insert(actors, live)
 			bySlot[data.slot] = live
@@ -915,6 +918,8 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 						live.clip,
 						{ fadeIn = 0, phase = math.max(0, at - live.at), speed = 0 }
 					)
+					-- (a frozen frame is still: no breath in it)
+					live.model:SetAttribute(Life.ATTRIBUTE, 0)
 				end
 			end
 			-- he flashes red on the heart's two beats (lub, dub), each throwing a swell of red out from him
@@ -935,6 +940,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 						live.clip,
 						{ startAt = startClock + live.at / rate, fadeIn = 0, speed = rate }
 					)
+					live.model:SetAttribute(Life.ATTRIBUTE, 1)
 				end
 			end
 			Motion.tween(paused.grey, { Saturation = 0, Contrast = 0, Brightness = 0 }, 0.35)

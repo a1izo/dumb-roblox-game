@@ -82,7 +82,7 @@ def forensics(s):
                            (-60.0, -57.5, -59.0, -58.6)):
         s.tube("WhiteTrim", (x0, Y + 0.03, z0), (x1, Y + 0.03, z1), 0.06, 4)
     for k, (px, pz) in enumerate(((-56.5, -54.5), (-59.5, -54.0), (-61.0, -57.8))):
-        s.box("PaintYellow", (px, Y + 0.2, pz), (0.4, 0.4, 0.3))
+        s.box("PaintYellow", (px, Y + 0.2, pz), (0.4, 0.4, 0.3), collide=True, query=False)
     prop(s, "Mannequin", -58.5, -55.4, -60)
     s.box("Steel", (-52.2, Y + 3.6, -72.0), (2.6, 7.2, 3.0), collide=True)  # the evidence fridge
     s.box("BlackTrim", (-53.52, Y + 4.6, -72.0), (0.05, 0.1, 2.0))
@@ -270,7 +270,7 @@ def training(s):
         for z in (48.0, 52.0, 56.0, 62.0, 66.0):
             prop(s, "Chair", x, z, 90)
     s.box("DarkMetal", (-97.6, Y + 11.8, 57.0), (0.8, 0.5, 18.0))
-    s.box("Paper", (-97.6, Y + 7.8, 57.0), (0.06, 7.6, 16.0))
+    s.box("Paper", (-97.6, Y + 7.8, 57.0), (0.06, 7.6, 16.0), collide=True, query=False)
     s.screen((-97.5, Y + 7.8, 57.0), -90, 15.4, 7.0, "map")
     s.box("BlackMetal", (-91.5, Y + 2.2, 44.5), (1.6, 4.4, 1.2), collide=True)  # the lectern
     top = fit.table(s, -58.0, 57.0, 3.0, 4.0, 0, Y)

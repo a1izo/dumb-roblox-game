@@ -84,7 +84,7 @@ hold(b, 10.6)
 beat(b, 11.3, 0.5, root=(0, 0, 0), neck=(-6, 0, 0), **TRAY)  # straightens
 b.key(LENGTH, root=(0, 0, 0), neck=(-6, 0, 0))
 soft(b, arms=2.6).plant(None, WALK_IN[0] - 0.1, stance=0.04).plant(WALK_IN[1] + 0.1, None, stance=0.04)
-walking(b, *WALK_IN)
+walking(b, *WALK_IN, arms=0.35)  # (the tray in his hands, the wall at his side: a small swing)
 alive(b, 0.4, seed=82, t1=WALK_IN[0] - 0.2)
 alive(b, 0.4, seed=83, t0=WALK_IN[1] + 0.3, t1=8.5)
 alive(b, 0.4, seed=84, t0=11.9)

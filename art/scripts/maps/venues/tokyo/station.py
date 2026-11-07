@@ -133,8 +133,9 @@ def stairwell(s, g):
     for f in (f1, f2):
         zc = (f["z"][0] + f["z"][1]) / 2
         w = f["z"][1] - f["z"][0]
+        # (its handrails solid the flight's whole length, as drawn a third of a stud in from its sides)
         city.stairs(s, g, (f["top"][0], zc), (f["bottom"][0], zc), f["top"][1], f["bottom"][1], w, "Stone",
-                    "ConcreteDark", step=0.9, name="the metro stairs")
+                    "ConcreteDark", step=0.9, name="the metro stairs", guard=3.3, guard_out=-0.3, guard_from=0.0)
     landing = P.box(P.HALF_LANDING[0], sz0, P.HALF_LANDING[1], sz1)
     city.up_face(s, "Stone", landing, land_y)
     city.floor(s, landing, land_y, 1.0, look="Stone")

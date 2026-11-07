@@ -192,7 +192,7 @@ def canteen_kiosk():
     return parts, [lit, ring]
 
 
-@prop("BureauTape", pivot="centre", material="Plastic", collide=False, texture=256, set="Agency", exact=True)
+@prop("BureauTape", pivot="centre", material="Plastic", collide=True, texture=256, set="Agency", exact=True)
 def bureau_tape():
     """The Bureau's barrier tape: navy ribbon with white diagonal bands, hung with a little sag."""
     return [tape("Ribbon", stripes("BTape_Band", (16, 24, 58), (222, 224, 228), 0.7))], []
@@ -295,7 +295,7 @@ def forensic_scope():
     return parts, []
 
 
-@prop("CounterStool", pivot="bottom", material="Metal", collide=False, texture=256, set="Agency", exact=True)
+@prop("CounterStool", pivot="bottom", material="Metal", collide=True, texture=256, set="Agency", exact=True)
 def counter_stool():
     """A canteen counter stool: a chrome pedestal on a round foot, a foot ring, a black vinyl seat with its piped edge."""
     chrome = pk.chrome("CStool_Chrome")
@@ -422,7 +422,7 @@ def evidence_rack():
     return parts, []
 
 
-@prop("BureauFloorLamp", pivot="bottom", material="Metal", collide=False, texture=256, set="Agency", exact=True,
+@prop("BureauFloorLamp", pivot="bottom", material="Metal", collide=True, texture=256, set="Agency", exact=True,
       lights=[dict(at=(0, 0, 5.4), kind="point", color=(255, 210, 150), range=15, brightness=0.9)])
 def bureau_floor_lamp():
     """An office floor lamp: a black steel tube on a weighted round foot, a grey drum shade over its bulb, the cord down the stem."""
@@ -661,7 +661,7 @@ def stone_fountain():
     return parts, []
 
 
-@prop("CorkBoard", pivot="centre", material="Wood", collide=False, texture=512, set="Campus", exact=True, normal=128)
+@prop("CorkBoard", pivot="centre", material="Wood", collide=True, texture=512, set="Campus", exact=True, normal=128)
 def cork_board():
     """A faculty notice board: an oak frame round cork, thick with club flyers, exam notices and a seminar timetable, red and brass pins
     and one curling corner."""
@@ -980,7 +980,7 @@ def bin_store():
     return parts, []
 
 
-@prop("ReadingLamp", pivot="bottom", material="Metal", collide=False, texture=256, set="Campus", exact=True,
+@prop("ReadingLamp", pivot="bottom", material="Metal", collide=True, texture=256, set="Campus", exact=True,
       lights=[dict(at=(0, 0, 5.4), kind="point", color=(255, 210, 150), range=15, brightness=0.9)])
 def reading_lamp():
     """A library standard lamp: a turned brass stem on a stepped foot, a pleated cream shade, its pull chain."""

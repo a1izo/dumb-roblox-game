@@ -838,14 +838,30 @@ local SOLID: { [string]: { box: number?, pole: number?, top: number?, walls: { {
 
 local function solidFor(b, folder: Instance, p)
 	local info = Catalog[p[1]]
-	-- (a map's own model has the solid of the prop it stands for)
-	local want = SOLID[p[1]] or (info and info.base and SOLID[info.base])
-	if not want or not info or info.collide then
+	if not info or info.collide then
 		return
 	end
 	local scale = p[6] or 1
-	local size = Vector3.new(info.size[1], info.size[2], info.size[3]) * scale
 	local base = b:cf(p[2], p[3], p[4], p[5])
+	-- Blocks cut from the prop's own shape (the catalog's solids, art/scripts/build_props.py cut_solids: a tent's legs,
+	-- walls and guy ropes, a tree's trunk and low boughs, a signal's pole and heads), from its pivot.
+	if info.solids then
+		for _, s in ipairs(info.solids) do
+			local part = Instance.new("Part")
+			part.Name = "PropSolid_" .. p[1]
+			part.Size = Vector3.new(s[4], s[5], s[6]) * scale
+			part.CFrame = b:world(base * CFrame.new(s[1] * scale, s[2] * scale, s[3] * scale))
+			solid(part, nil, false, false)
+			part.Parent = folder
+		end
+		return
+	end
+	-- (a map's own model has the solid of the prop it stands for)
+	local want = SOLID[p[1]] or (info.base and SOLID[info.base])
+	if not want then
+		return
+	end
+	local size = Vector3.new(info.size[1], info.size[2], info.size[3]) * scale
 	if want.walls then
 		local top = math.min(want.top or size.Y, size.Y)
 		for _, wall in ipairs(want.walls) do
@@ -1274,6 +1290,11 @@ local function buildFormat2(b, venue: string, data): string
 		end
 		if model then
 			model.Parent = folder
+			-- The realm's rock is solid by its own mesh and so big that a camera would slip inside it (seeing out
+			-- through its one-sided faces): it stops the camera like the map's walls (World/CameraCollision).
+			if string.sub(p[1], 1, 5) == "Realm" and Catalog[p[1]] and Catalog[p[1]].collide then
+				CollectionService:AddTag(model, SceneBuilder.CAMERA_TAG)
+			end
 		else
 			standIn(b, folder, p)
 		end

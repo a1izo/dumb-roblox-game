@@ -282,7 +282,7 @@ def station_reel_to_reel():
 # The lobby -------------------------------------------------------------------------------------------
 
 
-@prop("ElevatorDoors", pivot="bottom", material="Metal", collide=False, texture=1024, set="Agency")
+@prop("ElevatorDoors", pivot="bottom", material="Metal", collide=True, texture=1024, set="Agency")
 def elevator_doors():
     """A lift's doors in the core wall: two brushed-steel leaves in a stone surround, the floor
     indicator over them (lit) and the call buttons at the right. Flat against the wall behind."""
@@ -579,7 +579,7 @@ def desk_phone():
     return parts, glows
 
 
-@prop("CoffeeMachine", pivot="bottom", material="Metal", collide=False, texture=256, set="Agency")
+@prop("CoffeeMachine", pivot="bottom", material="Metal", collide=True, texture=256, set="Agency")
 def coffee_machine():
     """An office filter coffee machine: a black tower with its water tank behind (its gauge a window of blue), the
     brewing head over the lower plate with the filter basket's handle out of its side, the glass jug under it half
@@ -674,7 +674,7 @@ def coat_stand():
     return parts, []
 
 
-@prop("PinBoard", pivot="centre", material="Wood", collide=False, texture=1024, set="Agency")
+@prop("PinBoard", pivot="centre", material="Wood", collide=True, texture=1024, set="Agency")
 def pin_board():
     """A cork board on a wall: a wooden frame, photographs, clippings and index cards pinned to it,
     and red string running between the pins. Faces -Y; the map hangs it by its middle."""

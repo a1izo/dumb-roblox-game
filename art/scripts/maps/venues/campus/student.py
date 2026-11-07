@@ -104,7 +104,7 @@ def newsroom(s):
 
 def film_club(s):
     s.prop("FilmProjector", -104.5, 64.7, -90)
-    s.box("BlackMetal", (KX1 - 0.25, 6.5, 64.7), (0.3, 5.1, 8.6))
+    s.box("BlackMetal", (KX1 - 0.25, 6.5, 64.7), (0.3, 5.1, 8.6), collide=True, query=False)
     s.screen((KX1 - 0.45, 6.5, 64.7), 90, 8.0, 4.5, "film")
     for z in (62.2, 64.7):
         s.prop("Chair", -96.0, z, -90)
@@ -123,7 +123,7 @@ def kotatsu_room(s):
     for z in (84.0, 87.4):
         s.prop("Bookshelf", -130.2, z, 90)
     s.box("BlackMetal", (-139.0, 1.2, 107.6), (4.0, 2.4, 1.6), collide=True)
-    s.box("CreamTrim", (-139.0, 3.6, 107.4), (3.0, 2.4, 2.0))
+    s.box("CreamTrim", (-139.0, 3.6, 107.4), (3.0, 2.4, 2.0), collide=True, query=False)
     s.screen((-139.0, 3.6, 106.35), 0, 2.4, 1.8, "news")
     fit.room_pendant(s, -139.0, C, 94.0, drop=4.5, shade="Brass", range_=18, brightness=1.0, wide=1.0, scaled=False)
     fit.plaque(s, -139.0, 10.2, 76.7, 0, 4.4, 0.8, "囲碁将棋部  GO CLUB")

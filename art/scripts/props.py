@@ -38,7 +38,7 @@ BUILDERS = {}
 
 
 def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Core", lights=None,
-         anchor=None, screen=None, ao=0.6, exact=False, detail=False, normal=None, tiled=False):
+         anchor=None, screen=None, ao=0.6, exact=False, detail=False, normal=None, tiled=False, solids=False):
     """Registers a prop builder. set: which FBX it goes in, DeathsGambitModels_<set>.fbx ("Core": the
     props every map and the game itself use, with the effect and UI textures; "Tokyo", "Agency",
     "Campus", "Lobby", "Meeting": one venue's own). lights: the lights the prop carries, so a lamp never exists
@@ -59,7 +59,12 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
     normal: its normal map's size in px, when not the one the colour's size gives it (the budget's say).
     tiled: no bake of its own: the builder returns one mesh already laid out in the maps' tiling surfaces (map
     material names on its faces, UVs in repeats of each surface, maps/matlib), which it keeps, so it wears the map
-    surfaces' density and shares their textures (the Grey Realm's rocks, realmrock.py)."""
+    surfaces' density and shares their textures (the Grey Realm's rocks, realmrock.py).
+    collide: the prop is solid by its own mesh (Roblox's collision of it follows its shape): anything a body can walk
+    into or stand on. solids: (for one that does not collide, being open or thin where a hull of it would fill the air:
+    a tent, a tree, a pole with a sign, a string of lanterns) invisible blocks cut from its own shape instead, in slices
+    a stud tall (build_props.cut_solids, written to the catalog; SceneBuilder lays them). 2026-11-07, the user: "make
+    absolutely EVERYTHING solid so in the whole game you cant noclip through anything at all"."""
 
     def register(fn):
         BUILDERS[key] = {
@@ -77,6 +82,7 @@ def prop(key, pivot="bottom", material="SmoothPlastic", collide=True, texture=10
             "exact": exact,
             "detail": detail,
             "tiled": tiled,
+            "solids": solids,
         }
         return fn
 

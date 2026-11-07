@@ -534,7 +534,7 @@ def skull_pile():
     return main, glows, {"into": rects[0], "pieces": {"Skulls": piece(top, into=rects[1])}, "finish": fill_gaps}
 
 
-@prop("BoneScatter", pivot="bottom", material="SmoothPlastic", collide=False, texture=512, set="Lobby")
+@prop("BoneScatter", pivot="bottom", material="SmoothPlastic", collide=True, texture=512, set="Lobby")
 def bone_scatter():
     """What is left of one of the dead, strewn in the ash: the skull rolled onto its side and half sunk, a run of the
     spine with the ribs splayed from it (some broken short), the long bones of a leg and an arm thrown across one
@@ -597,7 +597,7 @@ def bone_scatter():
     return parts, dark_apart(parts, dark), {"finish": fill_gaps}
 
 
-@prop("GiantSkull", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Lobby", detail=True,
+@prop("GiantSkull", pivot="bottom", material="SmoothPlastic", collide=True, texture=1024, set="Lobby", detail=True,
       normal=512)
 def giant_skull():
     """The skull of a dead death god, the size of a house, settled into the ash on its open jaw (2026-10-16; the

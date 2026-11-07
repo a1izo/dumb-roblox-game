@@ -654,7 +654,7 @@ def ginkgo_bare():
     return parts, []
 
 
-@prop("PineYukizuri", pivot="bottom", material="SmoothPlastic", collide=False, texture=1024, set="Campus", anchor=(0, 0))
+@prop("PineYukizuri", pivot="bottom", material="SmoothPlastic", collide=False, solids=True, texture=1024, set="Campus", anchor=(0, 0))
 def pine_yukizuri():
     """A black pine in its winter yukizuri: a leaning, twisting trunk with its needles in flat
     dark pads on long level branches, snow on every pad, and over it all the straw ropes fanned
@@ -895,7 +895,7 @@ def tatekan():
 # The exam -------------------------------------------------------------------------------------------
 
 
-@prop("EventTent", pivot="bottom", material="Fabric", collide=False, texture=1024, set="Campus")
+@prop("EventTent", pivot="bottom", material="Fabric", collide=False, solids=True, texture=1024, set="Campus")
 def event_tent():
     """A white check-in tent pitched in the snow: an aluminium frame on telescoping legs, each foot weighed down with
     a sandbag; a peaked canopy sagging a little between its rafters, seamed along them, a cap at its peak; a navy
@@ -1085,7 +1085,7 @@ def queue_posts():
 # The library ------------------------------------------------------------------------------------------
 
 
-@prop("ReadingTable", pivot="bottom", material="Wood", collide=False, texture=1024, set="Campus",
+@prop("ReadingTable", pivot="bottom", material="Wood", collide=True, texture=1024, set="Campus",
       lights=[dict(at=(-2.5, 0, 3.7), kind="point", color=(255, 220, 170), range=11, brightness=0.55),
               dict(at=(2.5, 0, 3.7), kind="point", color=(255, 220, 170), range=11, brightness=0.55)])
 def reading_table():
@@ -1265,7 +1265,7 @@ def microscope():
 # The club house and the cafeteria ---------------------------------------------------------------------
 
 
-@prop("Kotatsu", pivot="bottom", material="Fabric", collide=False, texture=1024, set="Campus")
+@prop("Kotatsu", pivot="bottom", material="Fabric", collide=True, texture=1024, set="Campus")
 def kotatsu():
     """A club room's kotatsu: the low table over its thick quilt, a board top (1.25 high), a bowl of
     mikan, four floor cushions round it. The map gives the table its collider."""
@@ -1382,7 +1382,7 @@ def film_projector():
     return parts, glows
 
 
-@prop("Typewriter", pivot="bottom", material="Metal", collide=False, texture=256, set="Campus")
+@prop("Typewriter", pivot="bottom", material="Metal", collide=True, texture=256, set="Campus")
 def typewriter():
     """A manual typewriter with a page in it."""
     body = pk.paint("Type_Body", (40, 60, 56), rough=0.35)

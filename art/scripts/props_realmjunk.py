@@ -107,7 +107,7 @@ def chain_link(name, at, length, width, bar, mat, rot=(0.0, 0.0, 0.0), segments=
 # The dish of skulls ------------------------------------------------------------------------------------------------
 
 
-@prop("SkullDish", pivot="bottom", material="Slate", collide=False, texture=512, set="Lobby")
+@prop("SkullDish", pivot="bottom", material="Slate", collide=True, texture=512, set="Lobby")
 def skull_dish():
     """The dish at the bowl's middle, where the death gods sit and gamble: a great shallow dish of old stone on a low
     foot, a band of carving round its rim, heaped with skulls and bones (a beast's among them), lying as they were left."""
@@ -201,7 +201,7 @@ def hanging_cage():
 # Gears and chain ------------------------------------------------------------------------------------------------------
 
 
-@prop("RustGear", pivot="bottom", material="Metal", collide=False, texture=512, set="Lobby", detail=True, normal=256)
+@prop("RustGear", pivot="bottom", material="Metal", collide=True, texture=512, set="Lobby", detail=True, normal=256)
 def rust_gear():
     """A broken gear wheel of rusted iron, as big as a cart wheel, standing on its edge half sunk in the junk (the venue
     sinks it): toothed rim, six spokes, a hub with its bore, three teeth knocked off."""
@@ -235,7 +235,7 @@ def gear_platform():
     return parts, [], {"finish": fill_gaps}
 
 
-@prop("ChainPile", pivot="bottom", material="Metal", collide=False, texture=512, set="Lobby", detail=True, normal=256)
+@prop("ChainPile", pivot="bottom", material="Metal", collide=True, texture=512, set="Lobby", detail=True, normal=256)
 def chain_pile():
     """A heap of giant chain lying tangled in the junk, links as long as an arm, rusted through in places."""
     rng = random.Random(23)
@@ -264,7 +264,7 @@ GREAT_LINK = (10.0, 6.0, 1.2)  # a link of the great chain: its length, its widt
 GREAT_LINKS = 23
 
 
-@prop("GreatChain", pivot="bottom", material="Metal", collide=False, texture=256, set="Lobby", tiled=True)
+@prop("GreatChain", pivot="bottom", material="Metal", collide=True, texture=256, set="Lobby", tiled=True)
 def great_chain():
     """The colossal chain hanging out of the sky into the Chain Heap (and, far off, into heaps of junk on the plain):
     links as tall as a house, each turned a quarter from the next, its foot in the junk; worn dark iron (the maps' own

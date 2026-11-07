@@ -306,7 +306,7 @@ def lawns(s):
     for x, z, y in ((34.0, -26.0, 0.0), (-60.0, -34.5, -5.0), (-5.6, -27.5, 0.0), (34.0, 36.6, 0.0)):
         s.prop("ShrubSnow", x, z, (x * 3) % 180, 1.0, y)
     for x, z in ((30.0, 48.0), (-60.0, 20.0)):
-        s.box("BlackMetal", (x, 0.08, z), (2.4, 0.16, 2.4), skip=("-y",))
+        s.box("BlackMetal", (x, 0.08, z), (2.4, 0.16, 2.4), collide=True, query=False, skip=("-y",))
         for k in range(5):
             s.box("DarkMetal", (x - 1.0 + k * 0.5, 0.17, z), (0.12, 0.04, 2.2))
         s.emitter("steam", (x, 0.2, z))

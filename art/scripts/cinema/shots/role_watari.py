@@ -58,7 +58,7 @@ b.key(6.9, root=(-14, 0, 0), neck=(-20, 0, 0), **TRAY)  # lifts the tray
 beat(b, 7.5, 0.6, antic=0.0, over=0.06, root=(0, 0, 0), neck=(-4, 0, 0))
 beat(b, 12.6, 0.7, antic=0.1, over=0.12, root=(-16, 0, 0), neck=(-14, 0, 0))  # a bow to the one in the chair
 soft(b, arms=2.6).plant(None, 7.6, stance=0.04).plant(9.9, None, stance=0.04)
-walking(b, 7.9, 9.6)
+walking(b, 7.9, 9.6, arms=0.3)  # (the tray carried, a wall at his right: a small swing)
 alive(b, 0.5, seed=3, t1=6.7)
 alive(b, 0.4, seed=4, t0=10.0)
 b.build()

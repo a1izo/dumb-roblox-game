@@ -200,6 +200,23 @@ def arch(s, x, y, z, span, height, thick, rot, seed, mat="RockGrey", sections=12
         for k in range(sides):
             face(s, mat, [c, rings[end][k], rings[end][(k + 1) % sides]], (c[0], c[1] + height, c[2]) if end == 0 else
                  (c[0], c[1] + height, c[2]))
+    # Solid as drawn where a body meets it (2026-11-07): each section low enough to reach, a block over its two rings
+    # in the arch's own frame (along its span, across its thickness), from the ground or the section's foot to its top.
+    a = math.radians(rot)
+    ux, uz = math.cos(a), -math.sin(a)  # (the span's direction, as ry(rot) turns +x)
+    vx, vz = math.sin(a), math.cos(a)
+    for i in range(sections):
+        pts = rings[i] + rings[i + 1]
+        low = min(q[1] for q in pts)
+        if low > y + 12.0:
+            continue
+        us = [(q[0] - x) * ux + (q[2] - z) * uz for q in pts]
+        vs = [(q[0] - x) * vx + (q[2] - z) * vz for q in pts]
+        top = min(max(q[1] for q in pts), y + 14.0)
+        bottom = max(y - 0.5, low - 0.2) if low > y + 1.0 else y - 0.5
+        cu, cv = (min(us) + max(us)) / 2, (min(vs) + max(vs)) / 2
+        s.collider((x + ux * cu + vx * cv, (top + bottom) / 2, z + uz * cu + vz * cv),
+                   (max(us) - min(us), top - bottom, max(vs) - min(vs)), rot, True, mat)
 
 
 def cloud_bank(s, cx, cy, cz, length, width, seed, rot=0.0, puffs=8, mat="CloudBank", height=None):

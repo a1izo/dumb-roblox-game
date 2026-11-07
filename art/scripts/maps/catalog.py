@@ -82,6 +82,14 @@ def load():
                                "kind": kind.group(1) if kind else "point",
                                "angle": float(angle.group(1)) if angle else 90.0,
                                "face": face.group(1) if face else "Bottom"})
+        solids = None
+        start = body.find("solids = {")
+        if start >= 0:
+            depth, i = 1, start + len("solids = {")
+            while depth and i < len(body):
+                depth += {"{": 1, "}": -1}.get(body[i], 0)
+                i += 1
+            solids = [_numbers(entry) for _, entry in _entries_in(body[start + len("solids = {"):i - 1])]
         if size:
             _CACHE[key] = {
                 "size": _numbers(size.group(1)),
@@ -91,5 +99,8 @@ def load():
                 "lights": lights,
                 "screen": {"at": _numbers(screen.group(1)), "size": _numbers(screen.group(2))} if screen else None,
                 "glows": bool(glows),
+                # blocks cut from its shape, for a prop that does not collide by its mesh (build_props.cut_solids):
+                # (x, y, z, sx, sy, sz) from its pivot, in the game's axes
+                "solids": solids,
             }
     return _CACHE

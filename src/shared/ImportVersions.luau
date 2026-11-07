@@ -4,7 +4,7 @@
 return {
 	MapsAgency = 31,
 	MapsCampus = 31,
-	MapsLobby = 38,
+	MapsLobby = 39,
 	MapsMeeting = 6,
 	MapsSets = 17,
 	MapsTokyo = 45,
@@ -12,7 +12,7 @@ return {
 	ModelsCampus = 16,
 	ModelsCore = 34,
 	ModelsFx = 2,
-	ModelsLobby = 21,
+	ModelsLobby = 22,
 	ModelsMeeting = 6,
 	ModelsTokyo = 23,
 }

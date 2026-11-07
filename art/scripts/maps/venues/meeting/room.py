@@ -82,9 +82,9 @@ def pilasters(s):
             a = math.radians(rot)
             fx, fz = -math.sin(a), -math.cos(a)
             cx, cz = x + fx * 0.25, z + fz * 0.25
-            s.box("WoodPanel", (cx, 6.1, cz), (1.3, 11.4, 0.5), rot, skip=("-y",))
+            s.box("WoodPanel", (cx, 6.1, cz), (1.3, 11.4, 0.5), rot, collide=True, query=False, skip=("-y",))
             s.box("Brass", (cx + fx * 0.05, 11.55, cz + fz * 0.05), (1.6, 0.5, 0.6), rot)
-            s.box("Wood", (cx + fx * 0.05, 0.4, cz + fz * 0.05), (1.6, 0.8, 0.6), rot)
+            s.box("Wood", (cx + fx * 0.05, 0.4, cz + fz * 0.05), (1.6, 0.8, 0.6), rot, collide=True, query=False)
 
 
 def ceiling(s):

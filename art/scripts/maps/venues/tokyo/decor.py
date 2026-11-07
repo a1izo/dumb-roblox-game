@@ -66,7 +66,7 @@ def rubbish(s, e, u, out):
 def air_conditioner(s, e, u, y):
     """An outdoor unit on brackets high on a wall, its pipes run up the wall into it."""
     x, z = e.at(u, 0.5)
-    s.box("WhiteTrim", (x, y, z), (2.2, 1.6, 0.9), e.rot)
+    s.box("WhiteTrim", (x, y, z), (2.2, 1.6, 0.9), e.rot, collide=True, query=False)
     gx, gz = e.at(u - 0.2, 0.96)
     s.box("DarkMetal", (gx, y, gz), (1.1, 1.1, 0.04), e.rot)
     for side in (-0.8, 0.8):
@@ -101,7 +101,7 @@ def umbrella_stand(s, e, u, out):
         tip = (x + dx + lean, 2.5, z + dz + lean * 0.4)
         s.tube("Glass", base, tip, 0.13, 6, radius_b=0.05)
         s.tube("BlackTrim", tip, (tip[0] + 0.1, tip[1] + 0.25, tip[2]), 0.04, 4)
-    s.collider((x, 0.75, z), (0.8, 1.5, 0.8), 0, True, None)
+    s.collider((x, 1.25, z), (1.6, 2.5, 1.6), 0, True, None)
     note("umbrellas", x, z, 0.5, 0.0, 2.8)
 
 

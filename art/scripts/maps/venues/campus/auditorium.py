@@ -125,7 +125,7 @@ def exam_hq(s):
     s.prop("Crate", -46.4, -64.7, 8, 0.6)
     # The CRT on its stand, the late news on it.
     s.box("BlackMetal", (-58.5, 1.6, -64.4), (3.4, 3.2, 1.6), 0, collide=True)
-    s.box("CreamTrim", (-58.5, 4.4, -64.6), (3.0, 2.4, 2.0), 0)
+    s.box("CreamTrim", (-58.5, 4.4, -64.6), (3.0, 2.4, 2.0), 0, collide=True, query=False)
     s.screen((-58.5, 4.4, -65.65), 0, 2.4, 1.8, "news")
     fit.panel(s, -54.0, -72.0, C, brightness=0.9, range_=20)
     fit.panel(s, -60.0, -66.0, C, brightness=0.7, range_=16)
@@ -136,7 +136,7 @@ def proctor(s):
     """The proctors' room, blinds shut: the Proctor Booth's CCTV desk and the hall's cameras on a
     rack of monitors, the duty desk, a heater."""
     s.station("Camera", "Proctor Booth", 22.4, -70.5, 90, prop="StationCCTV")
-    s.box("BlackMetal", (14.0, 7.5, -77.1), (12.0, 5.2, 0.6))
+    s.box("BlackMetal", (14.0, 7.5, -77.1), (12.0, 5.2, 0.6), collide=True, query=False)
     for k in range(3):
         s.screen((10.0 + k * 4.0, 7.5, -76.75), 180, 3.4, 2.4, "cctv")
     fit.desk(s, 9.0, -65.2, 0)

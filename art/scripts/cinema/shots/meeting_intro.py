@@ -67,7 +67,7 @@ def clip(k):
         m.key(min(LENGTH, t1 + 0.6), root=(-1, 0, 0), neck=(-6, 0, 0), **STAND)
         m.key(LENGTH, root=(-1, 0, 0), neck=(-8, 0, 0), **STAND)
         soft(m).plant(None, t0 - 0.05, stance=0.05).plant(t1 + 0.2, None, stance=0.05)
-        walking(m, t0, t1)
+        walking(m, t0, t1, arms=0.3)  # (a small swing: the way to the seats runs between the chairs)
         alive(m, 0.4, seed=70 + k, t0=min(LENGTH, t1 + 0.4))
         return m, way
     look = (k * 37) % 20 - 10

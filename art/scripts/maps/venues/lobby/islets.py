@@ -47,19 +47,21 @@ def parapet(s, a, ux, uz, rot, off, u0, u1, rng):
         s.box("RuinStone", (x, h / 2, z), (run, h, PARAPET_T), rot, skip=("-y",))
         if not breach and run > 1.6:
             cut = rng.uniform(0.1, 0.3)
-            s.box("RuinStone", (x, h + 0.17, z), (run - cut, 0.34, PARAPET_T + 0.3), rot, skip=("-y",))
+            s.box("RuinStone", (x, h + 0.17, z), (run - cut, 0.34, PARAPET_T + 0.3), rot, collide=True, query=False,
+                  skip=("-y",))
         elif breach:
             # A broken top: a chunk still standing on it, off-centre.
             du = rng.uniform(-run / 2 + 0.4, run / 2 - 0.4) if run > 1.2 else 0.0
             bh = rng.uniform(0.3, 0.7)
             bx, _, bz = at(u + run / 2 + du, 0.0)
             s.box("RuinStone", (bx, h + bh / 2, bz), (rng.uniform(0.6, 1.1), bh, PARAPET_T * 0.8), rot + rng.uniform(-6, 6),
-                  skip=("-y",))
+                  collide=True, query=False, skip=("-y",))
         if u + run >= next_pier and u + run < u1 - 1.0:
             px, _, pz = at(u + run, 0.0)
             ph = rng.uniform(3.6, 4.2)
-            s.box("RuinStone", (px, ph / 2, pz), (1.5, ph, PARAPET_T + 0.5), rot, skip=("-y",))
-            s.box("RuinStone", (px, ph + 0.2, pz), (1.8, 0.4, PARAPET_T + 0.8), rot, skip=("-y",))
+            s.box("RuinStone", (px, ph / 2, pz), (1.5, ph, PARAPET_T + 0.5), rot, collide=True, query=False, skip=("-y",))
+            s.box("RuinStone", (px, ph + 0.2, pz), (1.8, 0.4, PARAPET_T + 0.8), rot, collide=True, query=False,
+                  skip=("-y",))
             next_pier = u + run + rng.uniform(8.0, 12.0)
         u += run
 
@@ -112,7 +114,8 @@ def causeway(s, g, a, b, seed, chasm, name):
             uc = flat + P.STAIR_RUN * (t0 + t1) / 2
             x, z = a[0] + ux * uc + side[0] * off, a[1] + uz * uc + side[1] * off
             s.box("RuinStone", (x, top / 2, z), (P.STAIR_RUN / steps + 0.02, top, PARAPET_T), rot, skip=("-y",))
-            s.box("RuinStone", (x, top + 0.17, z), (P.STAIR_RUN / steps - 0.1, 0.34, PARAPET_T + 0.3), rot)
+            s.box("RuinStone", (x, top + 0.17, z), (P.STAIR_RUN / steps - 0.1, 0.34, PARAPET_T + 0.3), rot, collide=True,
+                  query=False)
     s.anchor(name + "A", a[0] + ux * 6.0, 0.0, a[1] + uz * 6.0, P.rot_towards(a, b))
     s.anchor(name + "B", b[0] - ux * 2.0, H, b[1] - uz * 2.0, P.rot_towards(b, a))
     # Piers down into the chasm, now and then a block fallen on the deck.
@@ -127,7 +130,7 @@ def causeway(s, g, a, b, seed, chasm, name):
         t = q * 32.0
         if rng.random() < 0.6:
             s.box("RuinStone", (a[0] + ux * t + side[0] * rng.uniform(-3, 3), 0.5, a[1] + uz * t + side[1] * rng.uniform(-3, 3)),
-                  (rng.uniform(1.2, 2.2), 1.0, rng.uniform(1.2, 2.2)), rng.uniform(0, 90))
+                  (rng.uniform(1.2, 2.2), 1.0, rng.uniform(1.2, 2.2)), rng.uniform(0, 90), collide=True)
     # The steps up onto the plateau.
     city.stairs(s, g, foot, b, 0.0, H, w, mat="RuinStone", side_mat="RuinStone", step=0.85, name="the causeway steps",
                 guard=CAP)

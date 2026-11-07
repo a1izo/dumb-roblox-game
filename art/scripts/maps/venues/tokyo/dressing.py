@@ -396,7 +396,7 @@ def alley_ac(s, x, y=5.4):
     """An outdoor unit on brackets high on the back alley's south wall, clear of heads, its grille and its pipe up the
     wall (as decor.air_conditioner makes them on the other alleys)."""
     z = ALLEY_WALL[x]
-    s.box("WhiteTrim", (x, y, z + 0.5), (2.2, 1.6, 0.9), 3)
+    s.box("WhiteTrim", (x, y, z + 0.5), (2.2, 1.6, 0.9), 3, collide=True, query=False)
     s.box("DarkMetal", (x - 0.2, y, z + 0.96), (1.1, 1.1, 0.04), 3)
     for side in (-0.8, 0.8):
         s.box("BlackMetal", (x + side, y - 0.86, z + 0.5), (0.08, 0.12, 1.0), 3)

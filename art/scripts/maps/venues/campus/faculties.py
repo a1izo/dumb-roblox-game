@@ -163,7 +163,7 @@ def seminar(s):
     fit.chairs_round(s, -135.0, -94.0, 14.0, 4.0, 0)
     s.sheet(-136.0, top, -94.0, spare=True)
     # The chalkboard on the west wall, today's lecture still on it.
-    s.box("WoodPanel", (LX0 + 0.3, 7.0, -94.0), (0.4, 6.0, 16.0))
+    s.box("WoodPanel", (LX0 + 0.3, 7.0, -94.0), (0.4, 6.0, 16.0), collide=True, query=False)
     fit.LOW_BLOCKERS.append((LX0, -102.0, LX0 + 0.5, -86.0, 0.6))  # (no window behind the board)
     s.box("BlackTrim", (LX0 + 0.52, 7.0, -94.0), (0.06, 5.2, 15.0))
     s.sign((LX0 + 0.6, 8.2, -94.0), -90, 13.0, 1.6, "刑法 第三十八条  罪を犯す意思", "GothamBold", (224, 224, 214), None)

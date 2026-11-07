@@ -5,6 +5,7 @@
 """
 
 import json
+import math
 import os
 
 import bpy
@@ -607,6 +608,170 @@ def preview(key, path=None, angle=35, height_factor=0.6):
     return path
 
 
+# Solids cut from a prop's own shape (props.prop(solids=True)) ---------------------------------------------------
+
+SOLID_SLICE = 1.0  # studs: how tall each slice of the prop is cut
+SOLID_REACH = 8.5  # how high over the prop's foot slices are cut (a body, jumping, meets nothing higher)
+SOLID_CELL = 0.25  # the grid each slice's cross-section is drawn on
+SOLID_MAX = 48  # at most this many blocks for one prop (coarser cells until it fits)
+
+
+def _clip_z(poly, z0, z1):
+    """The part of a polygon (points x, y, z) between the heights z0 and z1."""
+    def clip(points, keep, cross):
+        out = []
+        n = len(points)
+        for i in range(n):
+            a, b = points[i], points[(i + 1) % n]
+            ka, kb = keep(a), keep(b)
+            if ka:
+                out.append(a)
+            if ka != kb:
+                out.append(cross(a, b))
+        return out
+
+    def at(z):
+        def cross(a, b):
+            t = (z - a[2]) / (b[2] - a[2])
+            return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, z)
+        return cross
+
+    pts = clip(poly, lambda q: q[2] >= z0, at(z0))
+    if pts:
+        pts = clip(pts, lambda q: q[2] <= z1, at(z1))
+    return pts
+
+
+def _touches(poly, x0, y0, x1, y1):
+    """Whether a convex polygon (x, y) meets the square [x0, x1] x [y0, y1] (separating axes)."""
+    xs = [q[0] for q in poly]
+    ys = [q[1] for q in poly]
+    if max(xs) < x0 or min(xs) > x1 or max(ys) < y0 or min(ys) > y1:
+        return False
+    corners = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
+    n = len(poly)
+    for i in range(n):
+        ax, ay = poly[i]
+        bx, by = poly[(i + 1) % n]
+        nx, ny = by - ay, ax - bx
+        if abs(nx) + abs(ny) < 1e-9:
+            continue
+        ps = [nx * qx + ny * qy for qx, qy in poly]
+        cs = [nx * qx + ny * qy for qx, qy in corners]
+        if max(ps) < min(cs) - 1e-9 or min(ps) > max(cs) + 1e-9:
+            return False
+    return True
+
+
+def _rectangles(grid, w, h):
+    """Covers the set cells of a w x h grid (a set of (i, j)) with rectangles (i0, j0, i1, j1), grown greedily."""
+    left = set(grid)
+    out = []
+    for j in range(h):
+        for i in range(w):
+            if (i, j) not in left:
+                continue
+            i1 = i
+            while (i1 + 1, j) in left:
+                i1 += 1
+            j1 = j
+            while all((k, j1 + 1) in left for k in range(i, i1 + 1)):
+                j1 += 1
+            for jj in range(j, j1 + 1):
+                for ii in range(i, i1 + 1):
+                    left.discard((ii, jj))
+            out.append((i, j, i1, j1))
+    return out
+
+
+def _filled(grid, w, h):
+    """The grid with its enclosed holes filled (a hollow shell's inside is solid too)."""
+    outside = set()
+    stack = [(i, j) for i in range(-1, w + 1) for j in (-1, h)] + [(i, j) for j in range(h) for i in (-1, w)]
+    while stack:
+        c = stack.pop()
+        if c in outside or c in grid:
+            continue
+        i, j = c
+        if i < -1 or j < -1 or i > w or j > h:
+            continue
+        outside.add(c)
+        stack += [(i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)]
+    return {(i, j) for i in range(w) for j in range(h) if (i, j) not in outside}
+
+
+def cut_solids(objs, cell=SOLID_CELL):
+    """Invisible blocks following a prop's shape: its meshes (as settled: the pivot at the origin) cut in slices
+    SOLID_SLICE tall from their foot up to SOLID_REACH, each slice's cross-section drawn on a `cell` grid (every cell a
+    face of the slice passes through, hollows inside filled), covered with rectangles, and a block merged with the one
+    below it when their footprints are the same. [(x, y, z, sx, sy, sz)] in the game's axes (x = -Blender x, y up,
+    z = Blender y) from the pivot."""
+    tris = []
+    for obj in objs:
+        me = obj.data
+        me.calc_loop_triangles()
+        m = obj.matrix_world
+        verts = [m @ v.co for v in me.vertices]
+        for t in me.loop_triangles:
+            tris.append(tuple((verts[i].x, verts[i].y, verts[i].z) for i in t.vertices))
+    if not tris:
+        return []
+    zs = [q[2] for t in tris for q in t]
+    xs = [q[0] for t in tris for q in t]
+    ys = [q[1] for t in tris for q in t]
+    lo_z, hi_z = min(zs), min(max(zs), min(zs) + SOLID_REACH)
+    x0, y0 = min(xs) - cell, min(ys) - cell
+    w = int(math.ceil((max(xs) - x0) / cell)) + 2
+    h = int(math.ceil((max(ys) - y0) / cell)) + 2
+    slices = max(1, int(math.ceil((hi_z - lo_z) / SOLID_SLICE)))
+    blocks = []  # [i0, j0, i1, j1, k0, k1]
+    open_ = {}
+    for k in range(slices):
+        z0 = lo_z + k * SOLID_SLICE
+        z1 = min(z0 + SOLID_SLICE, hi_z)
+        grid = set()
+        for t in tris:
+            if max(q[2] for q in t) < z0 or min(q[2] for q in t) > z1:
+                continue
+            poly = _clip_z(list(t), z0, z1)
+            if len(poly) < 2:
+                continue
+            flat = [(q[0], q[1]) for q in poly]
+            ia = max(0, int((min(q[0] for q in flat) - x0) / cell))
+            ib = min(w - 1, int((max(q[0] for q in flat) - x0) / cell))
+            ja = max(0, int((min(q[1] for q in flat) - y0) / cell))
+            jb = min(h - 1, int((max(q[1] for q in flat) - y0) / cell))
+            for i in range(ia, ib + 1):
+                for j in range(ja, jb + 1):
+                    if (i, j) in grid:
+                        continue
+                    if _touches(flat, x0 + i * cell, y0 + j * cell, x0 + (i + 1) * cell, y0 + (j + 1) * cell):
+                        grid.add((i, j))
+        rects = _rectangles(_filled(grid, w, h), w, h)
+        now = {}
+        for r in rects:
+            if r in open_:
+                b = open_[r]
+                b[5] = k
+                now[r] = b
+            else:
+                b = [r[0], r[1], r[2], r[3], k, k]
+                blocks.append(b)
+                now[r] = b
+        open_ = now
+    if len(blocks) > SOLID_MAX and cell < 1.0:
+        return cut_solids(objs, cell * 2)
+    out = []
+    for i0, j0, i1, j1, k0, k1 in blocks:
+        bx0, bx1 = x0 + i0 * cell, x0 + (i1 + 1) * cell
+        by0, by1 = y0 + j0 * cell, y0 + (j1 + 1) * cell
+        bz0 = lo_z + k0 * SOLID_SLICE
+        bz1 = min(lo_z + (k1 + 1) * SOLID_SLICE, hi_z)
+        out.append((round(-(bx0 + bx1) / 2, 3), round((bz0 + bz1) / 2, 3), round((by0 + by1) / 2, 3),
+                    round(bx1 - bx0, 3), round(bz1 - bz0, 3), round(by1 - by0, 3)))
+    return out
+
+
 def _lua_value(value):
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -632,11 +797,13 @@ def write_catalog():
     ]
     for obj in sorted((o for o in bpy.data.objects if common.flag(o, "prop")), key=lambda o: o.name):
         size = json.loads(obj["size"]) if obj.get("size") else mk.dimensions(obj)
+        spec = props.BUILDERS.get(obj.name)
         entry = {
             "size": [size[0], size[2], size[1]],
             "pivot": obj["pivot"],
             "material": obj["material"],
-            "collide": bool(obj["collide"]),
+            # (the builder's word, not the blend's: a prop's collision changed in its code holds without a rebuild)
+            "collide": bool(spec["collide"]) if spec else bool(obj["collide"]),
         }
         text = ", ".join(f"{k} = {_lua_value(v)}" for k, v in entry.items())
 
@@ -686,6 +853,11 @@ def write_catalog():
                 colours.append(f"{{ {rgb[0]}, {rgb[1]}, {rgb[2]} }}")
         if colours:
             text += ", glow = { " + ", ".join(colours) + " }"
+        if spec and spec.get("solids") and not entry["collide"]:
+            pieces = list(_piece_objects(obj.name))
+            blocks = cut_solids([obj] + pieces)
+            if blocks:
+                text += ", solids = " + _lua_value([list(b) for b in blocks])
         parts = json.loads(obj.get("parts") or "[]")
         if parts:
             text += ", parts = " + _lua_value(parts)

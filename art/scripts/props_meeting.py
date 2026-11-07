@@ -414,7 +414,7 @@ def case_files():
     return parts, []
 
 
-@prop("FloorLamp", pivot="bottom", material="Metal", collide=False, texture=512, set="Meeting",
+@prop("FloorLamp", pivot="bottom", material="Metal", collide=True, texture=512, set="Meeting",
       lights=[dict(at=(0, 0, 5.4), kind="point", color=LAMP_WARM, range=15, brightness=0.9)])
 def floor_lamp():
     """A brass standard lamp: a weighted base, a reeded pole, a pleated parchment drum shade with

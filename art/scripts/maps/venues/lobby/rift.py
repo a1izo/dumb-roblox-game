@@ -71,7 +71,7 @@ def hole(s):
         rng.random()
     s.light("point", (cx, -7.0, cz), (170, 196, 232), 40, 1.0)
     s.light("point", (cx, -22.0, cz), (150, 176, 214), 30, 0.6)
-    throat(s, rings, levels, cx, cz, rng)
+    throat(s, rings, levels, cx, cz)
     # The lip: broken rocks round the edge, solid, low enough to hop over.
     for k in range(n):
         p, q = poly[k], poly[(k + 1) % n]
@@ -97,38 +97,51 @@ def hole(s):
             rock(s, x, z, r, h, 7100 + k, tiers=2, sides=8, taper=0.35, flat_top=True)
 
 
-def throat(s, rings, levels, cx, cz, _rng):
-    """The throat's dressing under the glow: dead roots hanging from its walls (gone to stone, like the rest of
-    the realm), and ledges of broken stone standing out of them, all out of a diver's way (outside the rift's
-    own outline, which no diver leaves)."""
-    rng = random.Random(613)
+THROAT_WALL_T = 3.0  # how thick the solid behind the throat's walls is
+
+
+def throat(s, rings, levels, cx, cz):
+    """The throat is bare rock all the way down (2026-11-07, the user: the dead roots hung from midair and the cloud's
+    pale arms read as stairs going nowhere; both are gone, and so are the loose ledges, which stood off the bulging
+    walls in places). What it keeps is solid: behind every face of its walls a block whose inner face stands on the
+    face's innermost corner, so no camera (a diver's, or one looking down over the rim) ever slips through the rock
+    into the dark between the realm and its cloud. They start a hair under the rim, where nobody walks."""
     n = len(rings[0])
-    for li in range(2, len(levels) - 1):
-        ring = rings[li]
-        for k in range(n):
-            if rng.random() > 0.42:
-                continue
-            x, y, z = ring[k]
-            dx, dz = x - cx, z - cz
-            r = math.hypot(dx, dz)
-            ox, oz = dx / r, dz / r
-            # A root: out of the wall a little above this ring, hanging down, curling in a little at its tip.
-            top = (x + ox * 0.6, y + rng.uniform(1.0, 4.0), z + oz * 0.6)
-            length = rng.uniform(6.0, 14.0)
-            bend = rng.uniform(0.3, 1.0)
-            mid = (top[0] - ox * bend * 0.5, top[1] - length * 0.55, top[2] - oz * bend * 0.5)
-            tip = (top[0] - ox * bend, top[1] - length, top[2] - oz * bend)
-            radius = rng.uniform(0.28, 0.55)
-            with s.smooth():
-                s.bent_tube("RockGrey", [top, mid, tip], [radius, radius * 0.65, radius * 0.15], 6, caps=(False, True))
-        # Now and then a ledge of broken stone standing out of the wall, sloping a little.
-        k = rng.randrange(n)
-        x, y, z = ring[k]
-        dx, dz = x - cx, z - cz
-        r = math.hypot(dx, dz)
-        rot = math.degrees(math.atan2(-dz, dx))
-        s.box("RuinStone", (x + dx / r * 0.4, y - 1.0, z + dz / r * 0.4), (rng.uniform(4.0, 7.0), 1.4, 2.4), rot + 90.0)
-        s.box("RuinStone", (x + dx / r * 0.9, y - 2.2, z + dz / r * 0.9), (rng.uniform(2.0, 3.5), 1.0, 1.6), rot + 87.0)
+    bands = 3  # each face's height in bands, each block standing where its band of the face is (the walls lean)
+
+    def lerp(p, q, t):
+        return tuple(p[i] + (q[i] - p[i]) * t for i in range(3))
+
+    for li in range(len(levels) - 1):
+        a, b = rings[li], rings[li + 1]
+        for band in range(bands):
+            t0, t1 = band / bands, (band + 1) / bands
+            top = levels[li] + (levels[li + 1] - levels[li]) * t0
+            bottom = levels[li] + (levels[li + 1] - levels[li]) * t1 - 0.5
+            if top > -0.4:
+                top = -0.4
+            for k in range(n):
+                k1 = (k + 1) % n
+                corners = (lerp(a[k], b[k], t0), lerp(a[k1], b[k1], t0), lerp(a[k], b[k], t1), lerp(a[k1], b[k1], t1))
+                p, q = corners[0], corners[1]
+                length = math.dist((p[0], p[2]), (q[0], q[2]))
+                if length < 0.2:
+                    continue
+                ux, uz = (q[0] - p[0]) / length, (q[2] - p[2]) / length
+                nx, nz = uz, -ux
+                mx, mz = (p[0] + q[0]) / 2, (p[2] + q[2]) / 2
+                if nx * (mx - cx) + nz * (mz - cz) < 0:
+                    nx, nz = -nx, -nz
+                out = [(c[0] - cx) * nx + (c[2] - cz) * nz for c in corners]
+                # (the band's face, where it is on average; at the rim, its outermost point: no ledge under the edge for
+                # a foot to find)
+                face = max(out) if li == 0 and band == 0 else sum(out) / 4
+                along = sum((c[0] - cx) * ux + (c[2] - cz) * uz for c in corners) / 4
+                run = max(length, math.dist((corners[2][0], corners[2][2]), (corners[3][0], corners[3][2]))) + 1.2
+                ox = cx + nx * (face + THROAT_WALL_T / 2) + ux * along
+                oz = cz + nz * (face + THROAT_WALL_T / 2) + uz * along
+                rot = math.degrees(math.atan2(-uz, ux))
+                s.collider((ox, (top + bottom) / 2, oz), (run, top - bottom, THROAT_WALL_T), rot, True, None)
 
 
 def cloud(s):
@@ -215,7 +228,8 @@ def rim(s, poly, cx, cz, rng):
             mx, mz = a[0] + ux * (u + run / 2), a[1] + uz * (u + run / 2)
             s.box("RuinStone", (mx, h / 2, mz), (run, h, 0.8), rot, collide=True, skip=("-y",))
             if rng.random() < 0.4:
-                s.box("RuinStone", (mx, h + 0.4, mz), (run * 0.7, 0.8, 1.1), rot)
+                # (its capstone solid too: someone standing on the wall stood inside it)
+                s.box("RuinStone", (mx, h + 0.4, mz), (run * 0.7, 0.8, 1.1), rot, collide=True)
             u += run + rng.uniform(0.1, 0.9)
 
 
@@ -454,34 +468,7 @@ def landing(s, b):
     s.light("point", (b.cx, y + 9.0, b.cz), (190, 205, 230), 40, 0.9)
 
 
-def vortex(s):
-    """(2026-11-04, the reference videos) A vortex of cloud turning down the rift's throat toward the human world: three
-    broad arms of pale cloud spiralling in and down along the walls to the cloud deck, banked like a funnel's wall, seen
-    from above as the hole's swirl (a diver falls through the eye in its middle)."""
-    cx, cz = P.RIFT_MID
-    t = math.radians(P.RIFT_TURN)
-    rx, rz = P.RIFT_AXES
-    steps = 44
-    for arm in range(3):
-        start = arm * math.tau / 3
-        outer, inner = [], []
-        for k in range(steps + 1):
-            u = k / steps
-            a = start + u * math.tau * 1.25
-            f = 0.94 - 0.3 * u
-            width = 0.22 - 0.08 * u
-            y = -5.0 + (P.CLOUD_Y + 7.0) * u ** 1.15
-            for share, out, dip in ((f, outer, 0.0), (f - width, inner, -2.6)):
-                lx, lz = math.cos(a) * rx * share, math.sin(a) * rz * share
-                out.append((cx + lx * math.cos(t) - lz * math.sin(t), y + dip, cz + lx * math.sin(t) + lz * math.cos(t)))
-        with s.smooth():
-            for k in range(steps):
-                quad = [outer[k], outer[k + 1], inner[k + 1], inner[k]]
-                face_to(s, "CloudBank", quad, (cx, quad[0][1] + 30.0, cz))
-
-
 def build(s):
     hole(s)
-    vortex(s)
     cloud(s)
     below(s)

@@ -134,7 +134,7 @@ def traffic_signal():
     return parts, glow
 
 
-@prop("PedestrianSignal", pivot="bottom", material="Metal", collide=False, texture=1024, set="Tokyo", anchor=(0, 0),
+@prop("PedestrianSignal", pivot="bottom", material="Metal", collide=False, solids=True, texture=1024, set="Tokyo", anchor=(0, 0),
       lights=[dict(at=(0, -1.1, 7.3), kind="point", color=GREEN, range=5, brightness=0.6)])
 def pedestrian_signal():
     """A walk signal: two lamps in one housing (a red standing figure, dark; a green walking one,

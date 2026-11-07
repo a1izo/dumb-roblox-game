@@ -54,3 +54,19 @@ Apple Toss can no longer be earned. The rift's glowing cracks and the two pale s
 (they read as white shards round the vortex). Dive fixes: LobbyRift accepts a leaping diver (ENTER_ABOVE 16,
 ENTER_REACH 1.45), LobbyGamesController's pit curtain skips while DiveController.busy(), and lobbyBelow/lobbyCity
 haze is thinner (it hid the city 620 studs down). Models_Lobby v21, Maps_Lobby v38.
+
+**2026-11-07, the user** (pictures of the Academy's mouth and the rift): "fix the academy entrance thing", "remove those
+white things ... and the vines hanging from midair", "make it so you cant see through the map while falling". Done:
+- The rift's throat is bare rock (rift.py): the cloud vortex's three pale arms (`vortex`, read as stairs going nowhere),
+  the dead roots (they hung off the bulging walls in midair) and the loose ledges are gone for good. Behind every face of
+  the throat's walls stands a solid block (`throat`, three bands a face), so neither a falling body nor a camera passes
+  the rock; the top band keeps to the rim's line (no hidden ledge under the edge).
+- DiveController keeps the body (and, after Roblox's camera, the camera) inside an ellipse 0.84 of the rim's, less 3
+  studs for the body and 1.5 for the camera, from the rim down to the cloud deck: a diver steering hard used to drift
+  17 studs out (the draught's pull and the steering balanced there), through the narrow sides' rock, and the camera
+  went with them into the dark between the realm and its cloud.
+- The Academy's gate (props_academy.academy_gate, Lobby set; landmarks.academy_gate stands it 2 studs out of the mouth's
+  middle and lays its posts' and lintel's solids): ACADEMY in pale raised capitals (Melodrama Bold) on a slate in the
+  lintel. Lobby.luau draws the old board only while AcademyGate is not imported. The fifth cage lantern (it hung in
+  front of the puppets' hand) lights the way in from the gate now, and no drip hangs over the middle or the way in.
+

@@ -144,7 +144,7 @@ def _curtain(s):
             s.box("BlackMetal", (mid[0], level + 0.18, mid[1]), (length, 0.36, 0.4), rot)
             # The low sill inside, along the glass (a heater cover).
             sill = at(length / 2, -0.9)
-            s.box("DarkMetal", (sill[0], level + 0.45, sill[1]), (length - 1.2, 0.9, 0.9), rot)
+            s.box("DarkMetal", (sill[0], level + 0.45, sill[1]), (length - 1.2, 0.9, 0.9), rot, collide=True, query=False)
             for b0, b1 in zip(bounds, bounds[1:]):
                 # Roller blinds, a bay each: their box under the ceiling; some pulled part-way down. (Clear of a
                 # broad mullion, and of the glass round a corner.)

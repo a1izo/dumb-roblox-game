@@ -131,7 +131,8 @@ def coping(s, gaps_n, gaps_s):
                     continue
                 d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
                 mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-                s.box("Stone", (mid[0], 0.2, mid[1]), (length + 0.8, 0.4, 1.0), g2.rot_of(d), skip=("-y",))
+                s.box("Stone", (mid[0], 0.2, mid[1]), (length + 0.8, 0.4, 1.0), g2.rot_of(d), collide=True, query=False,
+                      skip=("-y",))
 
 
 def culvert(s, x):

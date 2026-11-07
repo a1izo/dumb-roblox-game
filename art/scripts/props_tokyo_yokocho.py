@@ -28,7 +28,7 @@ def _lantern(prefix, x, y, z, r, h, paper, band, ribs=10):
     return parts
 
 
-@prop("Chochin", pivot="centre", material="Fabric", collide=False, texture=512, set="Tokyo",
+@prop("Chochin", pivot="centre", material="Fabric", collide=False, solids=True, texture=512, set="Tokyo",
       lights=[dict(at=(0, 0, -0.2), kind="point", color=(255, 150, 90), range=12, brightness=0.9)])
 def chochin():
     """A red paper lantern hung from its hook: ribbed paper glowing warm, black caps, a tassel,
@@ -46,7 +46,7 @@ def chochin():
     return parts, glows
 
 
-@prop("LanternString", pivot="centre", material="Fabric", collide=False, texture=512, set="Tokyo",
+@prop("LanternString", pivot="centre", material="Fabric", collide=False, solids=True, texture=512, set="Tokyo",
       lights=[dict(at=(0, 0, -1.0), kind="point", color=(255, 190, 140), range=14, brightness=0.8)])
 def lantern_string():
     """A string of paper lanterns 12 long, sagging between two trees: white and red lanterns in turn

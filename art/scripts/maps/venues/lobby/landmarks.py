@@ -149,11 +149,13 @@ def bowl(s, g):
             (x0, z0), (x1, z1) = q[0], q[1]
             away(s, "RuinStone", [(x0, below, z0), (x1, below, z1), (x1, top, z1), (x0, top, z0)],
                  (c[0] + (x0 - c[0]) * 3.0, (below + top) / 2, c[1] + (z0 - c[1]) * 3.0))
-        for j in range(16):
-            a = math.radians(j * 22.5 + 11.25)
+        # (a block under each flag of the ring, 56 to the turn like the flags: with 16 the blocks' ends fell short of
+        # the ring's inner edge, and a foot from the terrace below stood in the flags there)
+        for j in range(56):
+            a = math.radians((j + 0.5) * 360.0 / 56)
             mid = (r0 + r1) / 2
             s.collider((c[0] + math.cos(a) * mid, (top + fy - 1.2) / 2, c[1] + math.sin(a) * mid),
-                       (r1 - r0 + 0.3, top - fy + 1.2, 2 * math.pi * r1 / 16 + 1.0), -j * 22.5 - 11.25, True, "RuinFlag")
+                       (r1 - r0 + 0.2, top - fy + 1.2, 2 * math.pi * r1 / 56 + 0.3), -math.degrees(a), True, "RuinFlag")
         below = top
     s.zone("plaza", P.circle(c, P.BOWL_R, 48), 0.0, name="the bowl's rim")
     for q in ring_quads(c, P.BOWL_R - 0.9, P.BOWL_R + 0.3, 64):
@@ -299,6 +301,39 @@ def _vault(s, c, seed):
         away(s, "RockGrey", [inner[k], inner[k1], outer[k1], outer[k]], (c[0], 20.0, c[1]))
 
 
+# The Academy's gate as made (props_academy.academy_gate: GATE_OPEN, GATE_POST, GATE_TOP, GATE_LINTEL, GATE_CAP,
+# GATE_PLINTH, GATE_NAME_Z), and how far out of the mouth's middle it stands (under the front of the shelf of rock).
+GATE_OPEN, GATE_POST, GATE_TOP, GATE_LINTEL, GATE_CAP, GATE_PLINTH = 16.0, (2.3, 2.7), 12.4, (2.0, 2.9), 0.45, 0.7
+GATE_NAME_Z = GATE_TOP - 0.32 - GATE_LINTEL[0] / 2
+GATE_OUT = 2.0
+
+
+def academy_gate(s, f, mx, mz, rot):
+    """The Academy's gate in the grotto's mouth (2026-11-07, the user: "fix the academy entrance thing": the name hung on
+    a bare black board under the lintel of rock with nothing holding it): two stone posts and a lintel carrying the
+    shelf of rock, the name cut into a slate on its face. Solid as it is drawn: each post's plinth steps, shaft and
+    capital, and the lintel and its cornice over the way. Anchor academyGate: the slate's face (the game writes the
+    name there only while the gate's model is not imported; the Trial is begun under it)."""
+    pw, pd = GATE_POST
+    lh, ld = GATE_LINTEL
+    gx, gz = f.w(0.0, -GATE_OUT)
+    s.prop("AcademyGate", gx, gz, rot, 1.0)
+    g = Frame(gx, gz, rot)
+    cap_top = GATE_TOP - lh
+    shaft_top = cap_top - GATE_CAP
+    for side in (-1, 1):
+        px, pz = g.w(side * (GATE_OPEN / 2 + pw / 2), 0.0)
+        for (w, h, d, y0) in ((pw + 1.0, 0.4, pd + 1.0, 0.0), (pw + 0.5, GATE_PLINTH - 0.4, pd + 0.5, 0.4),
+                              (pw, shaft_top - GATE_PLINTH, pd, GATE_PLINTH),
+                              (pw + 0.55, GATE_CAP, pd + 0.45, shaft_top)):
+            s.collider((px, y0 + h / 2, pz), (w, h, d), rot, True, "RuinStone")
+    span = GATE_OPEN + 2 * pw + 1.4
+    s.collider((gx, cap_top + (lh - 0.32) / 2, gz), (span, lh - 0.32, ld), rot, True, "RuinStone")
+    s.collider((gx, GATE_TOP - 0.16, gz), (span + 0.6, 0.32, ld + 0.5), rot, True, "RuinStone")
+    ax, ay, az = g.w3(0.0, GATE_NAME_Z, -ld / 2 - 0.12)
+    s.anchor("academyGate", ax, ay, az, rot, w=11.2, h=1.3)
+
+
 def grotto(s, g):
     """A cave in the south-west cliffs, its mouth toward the bowl: billowing rock all round its walls, a vault over it
     with drips of rock hanging from it, twisted pillars of rock standing up to the vault between the altars, pale
@@ -355,8 +390,7 @@ def grotto(s, g):
     lrot = P.rot_towards(c, (mx, mz))
     rocks.rock(s, "RealmBillowShelf", mx, mz, lrot + 90.0, 0.55, y=P.GROTTO_MOUTH_H)
     f = Frame(mx, mz, lrot)
-    sx, sy, sz = f.w3(0.0, P.GROTTO_MOUTH_H - 0.9, -2.6)
-    s.anchor("academyGate", sx, sy, sz, lrot, w=14.0, h=1.5)
+    academy_gate(s, f, mx, mz, lrot)
     s.zone("plaza", g2.rect(mx, mz, P.GROTTO_MOUTH_W, 12.0, lrot), 0.0, name="the grotto's mouth")
     # A pool of the realm's light under the lintel: the way in was black between the lit bowl and the lit Academy.
     pool(s, mx + ux * 2.0, P.GROTTO_MOUTH_H - 3.0, mz + uz * 2.0, range_=22, brightness=0.9)
@@ -365,13 +399,17 @@ def grotto(s, g):
         x, z = P.polar(c, a, P.ACADEMY_R - 3.5)
         key = "RealmColumn" if k % 2 else "RealmColumnB"
         rocks.rock(s, key, x, z, rng.uniform(0, 360), _roof_y(P.ACADEMY_R - 3.5) / 70.0 + 0.02)
-    # Drips of rock from the vault, crystals at the walls' feet.
+    # Drips of rock from the vault, crystals at the walls' feet. (No drip over the middle, where the hand holds the
+    # puppets' strings, nor over the way in from the gate: from the mouth they crossed the hand and the gate.)
     cages = [P.polar(c, a, d) for a, d in CAGES]
     for k in range(16):
         a = rng.uniform(0, 360)
         d = rng.uniform(6.0, P.GROTTO_WALL - 4.0)
         x, z = P.polar(c, a, d)
         if any(math.dist((x, z), q) < 4.0 for q in cages):
+            continue
+        off = abs(math.degrees(math.atan2(math.sin(math.radians(a - gate)), math.cos(math.radians(a - gate)))))
+        if d < DRIP_CLEAR or math.sin(math.radians(min(off, 90.0))) * d < P.GROTTO_MOUTH_W / 2 + 2.0 and off < 90.0:
             continue
         key = "RealmDripB" if k % 3 == 0 else "RealmDripA"
         sc = rng.uniform(0.7, 1.1)
@@ -400,8 +438,11 @@ def grotto(s, g):
 
 HANGING_CAGE_DROP = 9.0  # how far under its hook the HangingCage's lantern hangs (props_realmjunk.hanging_cage)
 # The grotto's cage lanterns: (direction from the cave's middle, degrees from the gate's; how far out).
+# (The fifth, toward the gate, hung 4 out, in front of the puppets' hand seen from the mouth: since 2026-11-07 it lights
+# the way in from the gate, out where nothing hangs.)
 CAGES = [(P.GATE_DIR + 150.0, 14.0), (P.GATE_DIR + 210.0, 14.0), (P.GATE_DIR + 100.0, 18.0), (P.GATE_DIR + 260.0, 18.0),
-         (P.GATE_DIR, 4.0)]
+         (P.GATE_DIR + 24.0, 19.0)]
+DRIP_CLEAR = 12.0  # how far from the grotto's middle (the hand and its strings) the drips keep
 
 
 # The chessboard, the notebook, the rift -----------------------------------------------------------------------------
@@ -599,10 +640,6 @@ def arch(s):
     """The great arch of twisted rock north-west of the bowl, framing the glow."""
     x, z, span, height, rot = P.ARCH
     terrain.arch(s, x, 0.0, z, span, height, 5.5, rot, 701)
-    for side in (-1, 1):
-        a = math.radians(-rot)
-        fx, fz = x + math.cos(a) * side * span / 2, z + math.sin(a) * side * span / 2
-        s.collider((fx, 8.0, fz), (8.0, 16.0, 8.0), rot, True, "RockGrey")
 
 
 def build(s, g):

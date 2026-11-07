@@ -2,6 +2,10 @@
 
     blender -b --factory-startup --python art/scripts/run_props.py -- [keys...] [--export] [--preview] [--set Tokyo]
     blender -b --factory-startup --python art/scripts/run_props.py -- --sheet street [--no-build]
+    blender -b --factory-startup --python art/scripts/run_props.py -- --catalog
+
+--catalog only writes src/shared/ModelCatalog.luau again from Props.blend as it is (a prop's collide or solids changed
+in its builder's code needs no rebuild: the catalog takes them from the code); it builds and saves nothing.
 
 With no keys every prop is built; with --set only that set's props (--export alone rebuilds
 nothing). --export writes the set's FBX, DeathsGambitModels_<Set>.fbx (--set is needed: Core, Tokyo,
@@ -41,6 +45,9 @@ def main():
         bpy.ops.wm.open_mainfile(filepath=blend)
     else:
         common.clear_scene()
+    if "--catalog" in argv:
+        print("[props] catalog", build_props.write_catalog())
+        return
     no_build = sheet and "--no-build" in argv
     if (keys or not do_export) and not no_build:
         started = time.time()

@@ -75,12 +75,12 @@ def security(s):
             caps=(False, True))
     s.station("Camera", "CCTV Wall", -80.0, -71.2, 180, prop="StationCRTBank")
     x = -58.3  # the wall's west face
-    s.box("BlackMetal", (x - 0.4, 7.4, -66.5), (0.8, 6.8, 12.8))
+    s.box("BlackMetal", (x - 0.4, 7.4, -66.5), (0.8, 6.8, 12.8), collide=True, query=False)
     for row in range(2):
         for col in range(4):
             z = -71.4 + col * 3.1
             y = 5.6 + row * 2.9
-            s.box("CreamTrim", (x - 1.9, y, z), (2.2, 2.5, 2.9))
+            s.box("CreamTrim", (x - 1.9, y, z), (2.2, 2.5, 2.9), collide=True, query=False)
             s.box("BlackTrim", (x - 3.02, y, z), (0.05, 2.1, 2.5))
             s.screen((x - 3.1, y, z), 90, 2.3, 1.7, "cctv")
     fit.counter(s, x - 2.4, -66.5, 90, 12.6, d=2.4, h=3.4, top="BlackTrim", body="DarkMetal")
