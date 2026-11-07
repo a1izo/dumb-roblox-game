@@ -28,7 +28,7 @@ pedestals; the chair behind it at (0, -8.0); the television across the room at (
 facing south (180), so his right is -x."""
 
 from animlib import J
-from cinema import framing
+from cinema import footwork, framing
 from cinema.acting import body_reach, soft, to_torso
 from cinema.shot import Shot
 from emotes.kit import basis_angles, hold, reach
@@ -224,6 +224,7 @@ me.mark(0.0, (SIT[0], 0.0, SIT[1]), 180.0)
 me.hold("Pen", "Right Arm", PEN_GRIP[0]["p"], PEN_GRIP[1]["r"])
 me.hold("Chip", "Left Arm", CHIP_GRIP[0]["p"], CHIP_GRIP[1]["r"], t0=CASUAL[0] + 0.45, t1=CASUAL[1] + 0.05)
 me.hold("Chip", "Left Arm", CHIP_GRIP[0]["p"], CHIP_GRIP[1]["r"], t0=TAKE[1] - 0.05, t1=BITE + 0.02)
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 
 book = shot.prop("Grimoire", scale=MANUAL, open=1.0)
 book.at(0.0, (BOOK[0], BOOK_Y, BOOK[1]), (0, 0, 0))

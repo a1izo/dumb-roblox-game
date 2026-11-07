@@ -1,6 +1,7 @@
 """The meeting intro (everyone, 6 s, before the meeting): the survivors arrive at the war room. Quick cuts:
-two come in through the records door, two more along the case wall, two step up to their places on the
-west side; then the wide from high over the table, everyone in their place under the one light.
+two come in through the records door, two more come in between the chairs on the east side (seen from over the
+table's edge), two step up to their places on the west side (the same); then the wide from high over the table,
+everyone in their place under the one light.
 
 Every actor is the player of one standing place ("seat:k", 0-based like plan.seats()), so the montage
 ends where the meeting begins. Players not walking in stand in their places from the start.
@@ -10,6 +11,7 @@ places at 17 studs, the records door in the east wall at z -23."""
 
 import math
 
+from cinema import footwork
 from cinema.acting import alive, facing, soft, walking
 from cinema.shot import Shot
 from motion import Motion
@@ -37,7 +39,9 @@ def ring(angle, r=19.6):
 # the inner clear of the table) to stand before its own place, and steps into it as it turns to the table (2026-11-07:
 # cutting across the ring to the place, the outer arm went through the chair at every arrival).
 WALKERS = {
-    4: ([(27.4, -22.0)], 135, 0.0),
+    # (4 a step into the room already: 5 follows it in through the same gap, and at a hurried walk's stride the one's
+    # trailing foot met the other's leading one 3.3 studs behind)
+    4: ([(26.3, -21.45)], 135, 0.0),
     5: ([(27.6, -23.8)], 135, 0.45),
     3: ([(25.4, -9.6)], 105, 0.0),
     2: ([(24.6, -2.0)], 75, 0.1),
@@ -62,8 +66,10 @@ def route(k):
     points = list(start) + [ring(gap, OUTSIDE), ring(gap, INSIDE)] + arc(gap, k * 30.0, INSIDE)
     out = [(t0, points[0], facing(points[0], points[1]))]
     t = t0
-    for a, b in zip(points, points[1:]):
-        t += math.hypot(b[0] - a[0], b[1] - a[1]) / SPEED
+    legs = list(zip(points, points[1:]))
+    for i, (a, b) in enumerate(legs):
+        # (the last stretch slows to a stop over twice its time: never stopped dead out of a hurried walk)
+        t += math.hypot(b[0] - a[0], b[1] - a[1]) / SPEED * (2.0 if i == len(legs) - 1 else 1.0)
         out.append((t, b, facing(a, b)))
     return out
 
@@ -80,7 +86,7 @@ def clip(k):
         m.key(LENGTH, root=(-1, 0, 0), neck=(-8, 0, 0), **STAND)
         soft(m).plant(None, t0 - 0.05, stance=0.05).plant(done + 0.15, None, stance=0.05)
         # (the legs walk on through the turn and the step: a turn on the spot is stepped round, not slid)
-        walking(m, t0, done, arms=0.3)  # (a small swing: the way to the seats runs between the chairs)
+        walking(m, t0, done, speed=SPEED, arms=0.3)  # (a small swing: the way to the seats runs between the chairs)
         alive(m, 0.4, seed=70 + k, t0=min(LENGTH, done + 0.2))
         return m, way
     look = (k * 37) % 20 - 10
@@ -96,12 +102,13 @@ shot = Shot(NAME, "Meeting", LENGTH, note="The meeting intro: the survivors arri
 # A: inside by the records door: the first two come in.
 shot.cam(0.0, (18.6, 5.6, -25.4), (28.0, 4.2, -20.0), fov=48)
 shot.cam(1.5, (18.4, 5.4, -25.0), (25.0, 4.2, -17.0), fov=46, ease="linear")
-# B: low along the case wall: two more come towards the table.
-shot.cam(1.5, (24.6, 3.4, 5.6), (20.6, 4.2, -6.0), fov=44, cut=True)
-shot.cam(3.0, (23.8, 3.4, 4.0), (18.0, 4.2, -2.0), fov=44, ease="linear")
-# C: the west side: two step up to their places.
-shot.cam(3.0, (-25.0, 4.8, 6.4), (-16.0, 4.0, -4.0), fov=44, cut=True)
-shot.cam(4.0, (-24.6, 4.8, 5.6), (-16.0, 4.2, -4.0), fov=42, ease="linear")
+# B: from over the table's edge, the east places: two more come in between the chairs towards it, to their places.
+# C: the same over the west side: two step up to theirs, turning to the table (to the lens).
+# (2026-11-07: shot from outside the ring, through it, a chair's back filled half of each frame)
+shot.cam(1.5, (7.6, 5.0, 0.8), (18.5, 3.9, -1.0), fov=42, cut=True)
+shot.cam(3.0, (8.3, 4.9, 0.4), (17.5, 3.8, -0.5), fov=40, ease="linear")
+shot.cam(3.0, (-7.7, 4.9, -1.8), (-18.5, 3.8, -2.4), fov=42, cut=True)
+shot.cam(4.0, (-8.4, 4.8, -1.5), (-17.4, 3.9, -2.1), fov=40, ease="linear")
 # D: high over the table: everyone in their place.
 shot.cam(4.0, (0.0, 30.0, 24.0), (0.0, 1.0, 0.0), fov=50, cut=True)
 shot.cam(LENGTH, (0.0, 31.0, 20.0), (0.0, 1.0, 0.0), fov=48, ease="linear")
@@ -117,8 +124,8 @@ for k in range(12):
         continue
     t0, first, heading = walk[0]
     a.mark(0.0, (first[0], 0.0, first[1]), heading)
-    for t, (px, pz), h in walk:
-        a.mark(t, (px, 0.0, pz), h, "linear")
+    for i, (t, (px, pz), h) in enumerate(walk):
+        a.mark(t, (px, 0.0, pz), h, "smooth" if i == len(walk) - 1 else "linear")
     t1, last = walk[-1][0], walk[-1][1]
     # (turned to the table where the way ends, before the place, then the step into it: turning while stepping out, the
     # outer arm swept through the chair)
@@ -126,6 +133,7 @@ for k in range(12):
     a.mark(min(LENGTH, t1 + TURN + STEP), (x, 0.0, z), centre)
     if t1 + TURN + STEP < LENGTH:
         a.mark(LENGTH, (x, 0.0, z), centre)
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 
 shot.event(0.0, "sfx", slot="mapRainGlass")
 shot.event(4.0, "sfx", slot="gavel")

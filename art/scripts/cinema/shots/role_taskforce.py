@@ -12,6 +12,7 @@ First timed to 15 s; 2026-10-27 about 4 s longer, at your word (19 s): the badge
 the jacket and the tie unhurried, the walk out at its own pace. T maps the first timings onto the longer scene."""
 
 from animlib import J
+from cinema import footwork
 from cinema.acting import alive, beat, soft, walking
 from cinema.shot import Shot
 from motion import Motion
@@ -107,6 +108,7 @@ me.mark(LENGTH, (LOCKER[0], 0.0, LOCKER[1] + BACK + 4.0 * (LENGTH - T(12.5))), 1
 GRIP = (0.0, -1.05, -0.65)
 me.hold("BureauBadge", "Right Arm", GRIP, (-90, 180, 0), t0=T(3.8), t1=T(7.2))
 me.hold("BureauBadge", "Right Arm", GRIP, (-90, 0, 0), t0=T(7.2), t1=T(10.8))
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 
 shot.event(0.0, "sfx", slot="mapOfficeHum")
 shot.event(T(3.8), "sfx", slot="pageTurn")

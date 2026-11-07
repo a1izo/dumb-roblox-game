@@ -23,8 +23,9 @@ its arms hanging (only that shot had its own `swing`).
   acting files.
 - **acting.walking(arms=True)**: the arms swing 14 degrees either way against the legs (more for a faster walk), 6% of
   a cycle behind them, the shoulders turn 3 degrees against the hips and the head keeps to the front; an arm keyed
-  more than 28 degrees forward (carrying something) swings a quarter as far. `arms=False` for a walk with its own
-  swing (the HQ intro's figure).
+  more than 28 degrees forward (carrying something) swings a quarter as far. Since the feet are planned
+  ([[cutscene-footwork]]) the plan swings the arms from the feet it puts down and walking only sets the scale (the HQ
+  intro's figures use arms=1.9 for their old 24-degree swing).
 
 **Why:** the user called the movement stiff and "ai made"; the HQ intro's review (round 12, cutscene-quality-bar) had
 already named dead holds and dead free arms.

@@ -30,7 +30,7 @@ z -52.1..-53.1, the stairwell at its west end (x -146..-121); the north track's 
 import math
 
 from animlib import J
-from cinema import framing
+from cinema import footwork, framing
 from cinema.acting import alive, facing, kneel, seated, soft, strike, walking
 from cinema.shot import Shot
 from emotes.kit import CHEST, basis_angles, hold, reach
@@ -383,6 +383,8 @@ for k, (x, z, yaw) in enumerate(EXTRAS):
     e.mark(0.0, (x, FLOOR, z), yaw)
     if k % 2:
         e.hold("Smartphone", "Right Arm", (0.0, -1.05, -0.2), (-14, 0, 0))
+# (the feet planted where they come down; those riding the car in keep their place on its floor)
+footwork.apply(shot, carried={slot: [(0.0, STOPPED[0])] for slot in ("watcher", "everyone:1", "everyone:2")})
 
 # The car, turned to run along x with its doorway facing the platform, and its two door leaves. It stays.
 car = shot.prop("TrainCarOpen")

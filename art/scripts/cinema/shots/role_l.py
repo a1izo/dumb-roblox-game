@@ -23,7 +23,7 @@ facing north (seat about 2 high); the low table with the sweets at (241.6, -1.4)
 wall at z 0 into the pantry (x 251..265)."""
 
 from animlib import J
-from cinema import framing
+from cinema import footwork, framing
 from cinema.acting import alive, beat, facing, hold, seated, soft, walking
 from cinema.shot import Shot
 from emotes.kit import reach
@@ -112,6 +112,7 @@ bu.mark(WALK_IN[1], (OFFER[0], 0.0, OFFER[1]), heading, "linear")
 bu.mark(WALK_IN[1] + 0.5, (OFFER[0], 0.0, OFFER[1]), facing(OFFER, ACE))
 bu.mark(LENGTH, (OFFER[0], 0.0, OFFER[1]), facing(OFFER, ACE))
 bu.hold("TeaTray", "Right Arm", (-1.0, -1.05, 0.0), (-62, 0, 0))
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 
 # 1: behind the armchair: the screens, Ace's shape against them.
 shot.cam(0.0, (ACE[0] + 0.4, 6.4, 6.4), (ACE[0], 5.2, -8.0), fov=46)

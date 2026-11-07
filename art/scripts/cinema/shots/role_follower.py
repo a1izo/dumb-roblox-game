@@ -27,7 +27,7 @@ window across the north wall; the desk at (0, -2.6) (6.7 by 3.4, top 3.42, scree
 import math
 
 from animlib import J
-from cinema import framing
+from cinema import footwork, framing
 from cinema.acting import body_reach, seat_offset, soft, to_torso
 from cinema.shot import Shot
 from emotes.kit import basis_angles, hold
@@ -238,6 +238,7 @@ shot.allow = {"self": ["OfficeChair"]}  # in the chair (never into the desk)
 a = shot.actor("self", me)  # (his own eyes: no glowing blocks, the owner, 2026-10-28)
 a.mark(0.0, at(SIT[0], 0.0, SIT[1]), 180.0)
 a.hold("Pen", "Right Arm", PEN_GRIP[0]["p"], PEN_GRIP[1]["r"])
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 
 book = shot.prop("Grimoire", scale=MANUAL, open=1.0)
 book.at(0.0, at(BOOK[0], BOOK_Y, BOOK[1]), (0, 0, 0))

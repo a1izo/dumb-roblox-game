@@ -36,7 +36,7 @@ import math
 import random
 
 from animlib import J
-from cinema import framing
+from cinema import footwork, framing
 from cinema.acting import alive, body_reach, facing, hold, soft, walking
 from cinema.shot import Shot
 from emotes.kit import CHIN, MOUTH
@@ -335,31 +335,6 @@ CLIPS = [person(k, *p) for k, p in enumerate(PEOPLE)]
 CHEST = J((44, 0, -30), (-0.25, 0.1, -0.2))
 
 
-def swing(m, t0, t1, speed, blend=0.35):
-    """With the legs' walk: the free (left) arm swings, the book arm a little, the shoulders turn against the hips."""
-    from gait import WALK
-
-    period = WALK.period * (4.0 / speed) ** 0.5
-
-    def fn(t, pose, off):
-        if t <= t0 - blend or t >= t1 + blend:
-            return
-        u = min(1.0, (t - (t0 - blend)) / blend, ((t1 + blend) - t) / blend)
-        w = u * u * (3 - 2 * u)
-        a = math.sin(2 * math.pi * max(0.0, t - t0) / period)
-        if "lShoulder" in pose:
-            pose["lShoulder"][0] += w * 24 * a
-        if "rShoulder" in pose:
-            pose["rShoulder"][0] -= w * 5 * a
-        if "root" in pose:
-            pose["root"][1] += w * 4 * a
-        if "neck" in pose:
-            pose["neck"][1] -= w * 3 * a
-
-    m.extra(fn)
-    return m
-
-
 fig = Motion("IntroAgency_figure", LENGTH, note="The Agency intro: the figure on the replay.")
 FREACH = body_reach(1, dict(root=(-14, 0, 0)), (0, 0, 0), (0.0, COUNTER_BOOK[1] - 14.0 + 0.75, -2.85), direction=(0.0, -0.35, -0.95))
 LIFT = body_reach(1, dict(root=(-9, 0, 0)), (0, 0, 0), (0.0, COUNTER_BOOK[1] - 14.0 + 1.6, -2.3), direction=(0.0, 0.1, -1.0))
@@ -369,8 +344,8 @@ fig.key(REPLAY[0] + 0.7, "out", root=(-9, 0, 0), neck=(-18, 0, 0), rShoulder=LIF
 fig.key(REPLAY[0] + 0.9, "sine", root=(-4, 0, 0), neck=(-10, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig.key(REPLAY[0] + 1.25, "sine", root=(-3, 0, 0), neck=(-6, 30, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 fig.key(LENGTH, root=(-3, 0, 0), neck=(-6, 0, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
-walking(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4, arms=False)
-swing(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4)
+# (the free arm swings about 24 degrees either way, the book arm at the chest a quarter of that, in step with the feet)
+walking(fig, REPLAY[0] + 1.3, REPLAY[1], speed=3.4, arms=1.9)
 fig.plant(None, REPLAY[0] + 1.3, stance=0.06)
 fig.plant(REPLAY[1], None, stance=0.06)
 soft(fig, head=2.6, arms=2.6)
@@ -384,8 +359,7 @@ fig2.key(FIG_TURN, "sine", root=(-2, 0, 0), neck=(-4, 0, 0), rShoulder=CHEST, lS
 fig2.key(FIG_TURN + 0.9, "sine", root=(-1, -30, 0), neck=(6, -70, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))  # (the head round)
 fig2.key(LENGTH, "sine", root=(-1, -32, 0), neck=(7, -72, 0), rShoulder=CHEST, lShoulder=J((6, 0, -5)))
 walking(fig2, WALK2[0], WALK2[1], speed=math.hypot(FIG2_TO[0] - FIG2_FROM[0], FIG2_TO[1] - FIG2_FROM[1]) / (WALK2[1] - WALK2[0]),
-        arms=False)
-swing(fig2, WALK2[0], WALK2[1], speed=math.hypot(FIG2_TO[0] - FIG2_FROM[0], FIG2_TO[1] - FIG2_FROM[1]) / (WALK2[1] - WALK2[0]))
+        arms=1.9)
 fig2.plant(None, WALK2[0], stance=0.06)
 fig2.plant(WALK2[1], None, stance=0.06)
 soft(fig2, head=2.4, arms=2.6)
@@ -427,6 +401,7 @@ figure2.mark(WALK2[0], (FIG2_FROM[0], 14.0, FIG2_FROM[1]), yaw2)
 figure2.mark(WALK2[1], (FIG2_TO[0], 14.0, FIG2_TO[1]), yaw2, "linear")
 figure2.mark(LENGTH, (FIG2_TO[0], 14.0, FIG2_TO[1]), yaw2)
 figure2.hold("Grimoire", "Right Arm", (0.0, -1.05, -0.35), (80, 0, 0))
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 
 # The Manual on the evidence counter: live on the feed until it breaks up; on the replay, until the figure lifts it.
 for t0, t1 in ((0.0, DROP), (REPLAY[0], REPLAY[0] + 0.55)):

@@ -116,15 +116,20 @@ def walking(m, t0, t1, blend=0.35, speed=4.0, arms=True):
     arms: the arms swing against the legs, a little behind them, the shoulders turning against the hips and the
     head held to the front (2026-11-07: walkers' arms hung dead, "movements dont look stiff"); an arm keyed forward
     (a book carried, a hand at the chest) swings only a little. A number scales the swing (a walk between chairs, or
-    along a wall, swings less); False for a walk that swings its own arms."""
+    along a wall, swings less); False for a walk that swings its own arms.
+
+    Once the shot plans its actors' feet (cinema.footwork.apply), the plan steps the legs, bobs the body and swings
+    the arms from the feet it put down; this walk then only says where the walk is, how fast, and how far the arms go."""
     from gait import WALK, Gait
+
+    m.walks.append({"t0": float(t0), "t1": float(t1), "blend": float(blend), "speed": float(speed), "arms": arms})
 
     period = WALK.period * (4.0 / speed) ** 0.5
     g = Gait("walk_" + m.name, period, speed * period, WALK.stance, WALK.lift * min(1.0, speed / 4.0), WALK.note)
     reach = WALK_ARMS * min(1.3, (speed / 4.0) ** 0.6) * (1.0 if arms is True else float(arms or 0.0))
 
     def fn(t, pose, off):
-        if t <= t0 - blend or t >= t1 + blend:
+        if m.footwork is not None or t <= t0 - blend or t >= t1 + blend:
             return
         u = min(1.0, (t - (t0 - blend)) / blend, ((t1 + blend) - t) / blend)
         w = u * u * (3 - 2 * u)

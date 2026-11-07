@@ -132,6 +132,8 @@ class Motion:
         self.springs = {}
         self.plants = []  # (t0, t1, stance, forward, tilt)
         self.extras = []  # f(t, pose, offset) -> None, edits in place
+        self.walks = []  # acting.walking's windows: {t0, t1, blend, speed, arms}
+        self.footwork = None  # cinema.footwork's plan of the feet, once a shot has made one (its legs win)
         self.stride = None
         self.stance = None
         self.additive = False
@@ -259,7 +261,7 @@ class Motion:
         for i, t in enumerate(times):
             pose, off = self.sample(t, sprung, i)
             joints = {j: J(v[:3], v[3:]) if np.any(np.abs(v[3:]) > 1e-4) else tuple(v[:3]) for j, v in pose.items()}
-            c.pose(t, "linear", offset=tuple(off) if (self.offset.keys or self.plants) else None, **joints)
+            c.pose(t, "linear", offset=tuple(off) if (self.offset.keys or self.plants or self.footwork) else None, **joints)
         return c
 
     def build_retimed(self, old_of, length):
@@ -278,7 +280,7 @@ class Motion:
         for i, t in enumerate(times):
             pose, off = self.sample(olds[i], sprung, i)
             joints = {j: J(v[:3], v[3:]) if np.any(np.abs(v[3:]) > 1e-4) else tuple(v[:3]) for j, v in pose.items()}
-            c.pose(t, "linear", offset=tuple(off) if (self.offset.keys or self.plants) else None, **joints)
+            c.pose(t, "linear", offset=tuple(off) if (self.offset.keys or self.plants or self.footwork) else None, **joints)
         return c
 
 

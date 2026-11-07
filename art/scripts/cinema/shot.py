@@ -122,6 +122,10 @@ def _lerp_frac(times, i, j, k):
 # Parts ------------------------------------------------------------------------------------------------
 
 
+def _wrap180(a):
+    return (a + 180.0) % 360.0 - 180.0
+
+
 class Track:
     """A path through the set: keys of position (x, y, z) and rotation (yaw only, or x/y/z angles)."""
 
@@ -132,6 +136,15 @@ class Track:
     def key(self, t, pos, rot=0.0, ease="smooth"):
         r = tuple(rot) if self.full else (float(rot),)
         self.channel.add(float(t), np.array([*pos, *r], float), ease)
+        if not self.full:
+            # a heading turns the short way round to the next (2026-11-07: a late arrival in the meeting intro spun
+            # 270 degrees one way where a turn of 90 the other was meant); a spin past half a turn needs keys between,
+            # and a half turn exactly goes the way it is keyed
+            keys = self.channel.keys
+            for i in range(1, len(keys)):
+                prev, v = keys[i - 1][1][3], keys[i][1]
+                if abs(v[3] - prev) > 180.0:
+                    v[3] = prev + _wrap180(v[3] - prev)
         return self
 
     def value(self, t):

@@ -26,7 +26,7 @@ import math
 import random
 
 from animlib import J
-from cinema import framing
+from cinema import footwork, framing
 from cinema.acting import body_reach, soft, to_torso
 from cinema.shot import Shot
 from emotes.kit import CHIN, basis_angles, hold, reach
@@ -250,6 +250,7 @@ for k, desk in enumerate(NEAR):  # the players nearest him, each their own clip
     seat(a, desk, rng.uniform(-3, 3))
     used += 1
 # (only the match's players: twelve at most, the owner, 2026-10-28: "too many people otherwise")
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 
 # The book: out of the dark, turning over, past the lamp, into the snow (a drift-limited fall, near 7 studs a second).
 book = shot.prop("Grimoire", show=(FALL[0][0], LENGTH))

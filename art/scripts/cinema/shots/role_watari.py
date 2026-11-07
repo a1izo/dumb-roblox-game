@@ -13,6 +13,7 @@ something the matter? Hmm? ... What's wrong?" and bowing (10 s). The role card h
 15 s timeline below; RETIME picks the pieces."""
 
 from animlib import J
+from cinema import footwork
 from cinema.acting import alive, beat, facing, seated, soft, walking
 from cinema.shot import Retime, Shot
 from emotes.kit import reach
@@ -111,6 +112,7 @@ shot.event(5.2, "sfx", slot="clockTick")
 shot.event(9.6, "sfx", slot="mapServerHum")
 # Cut down round the line: the tie and the watch, the tray carried to the door, then asked from the doorway with a bow
 # (the line starts as they reach it).
+footwork.apply(shot)  # (the feet planted where they come down, stepping after the body: cinema/footwork.py)
 RETIME = Retime([(3.6, 9.6), (11.0, 15.0)])
 RETIME.apply(shot, [b, shape])
 SAID = RETIME.new(9.5)
