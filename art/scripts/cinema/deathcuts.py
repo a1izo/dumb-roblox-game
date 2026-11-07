@@ -157,19 +157,60 @@ def lamp(name, at, color, range_, brightness, visible=None):
                                                                  "brightness": brightness})
 
 
+class Set(list):
+    """A set's dressing, with the room it stands in (`spec`): the room is built round the dressing by the scene,
+    once the dressing is placed (CAMERAS deep in front of the star, to the dressing's far side behind it)."""
+
+    def __init__(self, items, spec):
+        super().__init__(items)
+        self.spec = spec
+
+    def __add__(self, other):
+        return Set(list(self) + list(other), self.spec)
+
+
+CAMERAS = 13.0  # studs in front of the star the room keeps clear for the cameras
+
+
 def room(w, d, h, floor, wall, floor_mat="SmoothPlastic", wall_mat="SmoothPlastic", ceiling=True, cx=0.0, cz=0.0,
          ceiling_color=None):
-    """A box round the mark: the floor (its top at 0), four walls and a ceiling, so nothing of the world is seen."""
-    out = [part("Floor", (w, 1, d), (cx, -0.5, cz), floor, floor_mat)]
+    """A box round the mark: the floor (its top at 0), four walls and a ceiling, so nothing of the world is seen. Built
+    by the scene round its dressing (`Set`); w and h as given, its depth from the dressing and the cameras."""
+    return Set([], dict(w=w, d=d, h=h, floor=floor, wall=wall, floor_mat=floor_mat, wall_mat=wall_mat,
+                        ceiling=ceiling, cx=cx, cz=cz, ceiling_color=ceiling_color))
+
+
+def build_room(spec, z0, z1):
+    w, h, cx = spec["w"], spec["h"], spec["cx"]
+    d, cz = z1 - z0, (z0 + z1) / 2
+    floor, wall = spec["floor"], spec["wall"]
+    out = [part("Floor", (w, 1, d), (cx, -0.5, cz), floor, spec["floor_mat"])]
     out += [
-        part(None, (w, h, 1), (cx, h / 2, cz - d / 2 - 0.5), wall, wall_mat),
-        part(None, (w, h, 1), (cx, h / 2, cz + d / 2 + 0.5), wall, wall_mat),
-        part(None, (1, h, d), (cx - w / 2 - 0.5, h / 2, cz), wall, wall_mat),
-        part(None, (1, h, d), (cx + w / 2 + 0.5, h / 2, cz), wall, wall_mat),
+        part(None, (w, h, 1), (cx, h / 2, z0 - 0.5), wall, spec["wall_mat"]),
+        part(None, (w, h, 1), (cx, h / 2, z1 + 0.5), wall, spec["wall_mat"]),
+        part(None, (1, h, d), (cx - w / 2 - 0.5, h / 2, cz), wall, spec["wall_mat"]),
+        part(None, (1, h, d), (cx + w / 2 + 0.5, h / 2, cz), wall, spec["wall_mat"]),
     ]
-    if ceiling:
-        out.append(part(None, (w + 2, 1, d + 2), (cx, h + 0.5, cz), ceiling_color or wall, wall_mat))
+    if spec["ceiling"]:
+        out.append(part(None, (w + 2, 1, d + 2), (cx, h + 0.5, cz), spec["ceiling_color"] or wall, spec["wall_mat"]))
     return out
+
+
+def dress(set_parts, set_props, flip):
+    """The set's parts and props: the dressing put behind the star (when `flip`) and the room built round it."""
+    spec = getattr(set_parts, "spec", None)
+    parts, props = list(set_parts), list(set_props)
+    if flip:
+        parts, props = behind(parts, props)
+    if spec:
+        if flip:
+            far = [p["at"][2] + p["size"][2] / 2 for p in parts] + [q["at"][2] + 2.0 for q in props]
+            z1 = max([spec["d"] / 2 - spec["cz"]] + far) + 1.0
+            z0 = -CAMERAS
+        else:
+            z0, z1 = spec["cz"] - spec["d"] / 2, spec["cz"] + spec["d"] / 2
+        parts = build_room(spec, z0, z1) + parts
+    return parts, props
 
 
 def prop(key, at, turn=0, size=None, color=(60, 50, 40), name=None, hidden=None):
@@ -191,9 +232,27 @@ def name_of(cosmetic_cause):
     return cosmetic_cause
 
 
-def death_scene(item, cause, clip, reason, mood, set_parts, set_props=(), set_events=(), shots_fn=None):
+def behind(parts, props):
+    """The set mirrored to the star's back (z to -z): the cameras stand in front of it, looking past it."""
+    out_parts, out_props = [], []
+    for p in parts:
+        q = dict(p)
+        q["at"] = [p["at"][0], p["at"][1], -p["at"][2]]
+        if "rot" in p:
+            q["rot"] = [-p["rot"][0], -p["rot"][1], p["rot"][2]]
+        out_parts.append(q)
+    for p in props:
+        q = dict(p)
+        q["at"] = [p["at"][0], p["at"][1], -p["at"][2]]
+        q["turn"] = 180 - p.get("turn", 0)
+        out_props.append(q)
+    return out_parts, out_props
+
+
+def death_scene(item, cause, clip, reason, mood, set_parts, set_props=(), set_events=(), shots_fn=None, flip=True):
     """A custom death's scene: the book, a wide on the player in the set, the death in two or three shots aimed at
     the body, and the body on the floor under the cause of death."""
+    set_parts, set_props = dress(set_parts, set_props, flip)
     t = deaths.TIMING[clip]
     clip_at = BOOK + 1.1
     tl = Timeline(clip, clip_at)
@@ -239,7 +298,7 @@ def default_shots(tl, clip_at, t, end):
         # (time for a medium shot on the first beat: a quick death goes from the wide straight to the fall)
         head = tl.point(beat)
         out.append(shot(beat, around(head, 38, 5.6, 0.2), head, 42,
-                        to={"eye": around(head, 46, 5.2, 0.3), "look": tl.point(fall_at)}))
+                        to={"eye": around(head, 46, 6.6, 0.6), "look": tl.point(fall_at)}))
     else:
         fall_at = clip_at + 0.15
     out.append(shot(fall_at, around(mid, 72, 6.4 + 0.4 * np.linalg.norm(lying - stand), -0.4), mid, 50,
@@ -250,9 +309,10 @@ def default_shots(tl, clip_at, t, end):
     return out
 
 
-def style_scene(item, style, mood, set_parts, set_props=(), set_events=(), style_shot=None):
+def style_scene(item, style, mood, set_parts, set_props=(), set_events=(), style_shot=None, flip=True):
     """A death style's scene: the book (the heart attack written), the heart attack, a beat on the floor, and the
     style's acting on the body, from where it shows best."""
+    set_parts, set_props = dress(set_parts, set_props, flip)
     clip = "collapseHeart"
     t = deaths.TIMING[clip]
     clip_at = BOOK + 1.0
@@ -269,7 +329,7 @@ def style_scene(item, style, mood, set_parts, set_props=(), set_events=(), style
     beat = clip_at + 0.25
     head = tl.point(beat)
     shots.append(shot(beat, around(head, 38, 5.6, 0.2), head, 42,
-                      to={"eye": around(head, 46, 5.2, 0.3), "look": tl.point(hit - 0.5)}))
+                      to={"eye": around(head, 46, 6.6, 0.6), "look": tl.point(hit - 0.5)}))
     shots.append(shot(hit - 0.45, around(lying, 70, 6.6, -0.2), (stand + lying) / 2, 50,
                       to={"eye": around(lying, 60, 5.6, 0.2), "look": lying}))
     shots += style_shot(tl, style_at, slen, end) if style_shot else [
@@ -466,7 +526,7 @@ CUTS["reason_chip"] = death_scene(
         lamp("Fill", (4, 6, 6), (130, 130, 160), 14, 0.4),
     ],
     set_props=[prop("Desk", (1.6, 0, -6.2), size=6), prop("CRTTelevision", (-2.6, 0, -7), size=4.2),
-               prop("ChipBag", (2.4, 4.58, -6.0), turn=20, size=1.3), prop("ChairOffice", (1.2, 0, -3.6), turn=180,
+               prop("ChipBag", (2.4, 4.58, -6.0), turn=20, size=1.3), prop("ChairOffice", (4.8, 0, -2.6), turn=200,
                                                                           size=5.3)],
 )
 
@@ -505,11 +565,11 @@ def dark_shots(tl, clip_at, t, end):
     down = tl.middle(hit + 0.1)
     gone = tl.middle(clip_at + t["still"])
     return [
-        shot(BOOK, around(stand, 150, 8.5, 1.6), stand + [0, 0.3, 0], 46, to={"eye": around(stand, 140, 7.2, 1.2)}),
-        shot(clip_at + 0.62, around(stand, 80, 7.2, 0.4), (stand + down) / 2, 50, to={"eye": around(down, 74, 6.4, 0.2),
-                                                                                  "look": down}),
-        shot(hit + 0.35, down + [0.4, 0.9, -3.4], down + [0, 0.1, 0], 50, to={"eye": down + [0.3, 0.8, -3.0],
-                                                                           "look": gone + [0, 0.2, 0], "fov": 40}),
+        shot(BOOK, stand + [1.4, 1.4, 8.0], stand + [0, 0.3, 0], 48, to={"eye": stand + [1.2, 1.1, 6.8]}),
+        shot(clip_at + 0.62, stand + [-2.2, 1.2, -6.4], (stand + down) / 2, 52, to={"eye": down + [-2.0, 1.0, -5.6],
+                                                                                 "look": down}),
+        shot(hit + 0.35, down + [0.6, 1.4, -4.8], down + [0, 0.1, 0], 50, to={"eye": down + [0.5, 1.2, -4.2],
+                                                                           "look": gone + [0, 0.2, 0], "fov": 42}),
     ]
 
 
@@ -517,6 +577,7 @@ CUTS["reason_dark"] = death_scene(
     "reason_dark", "Taken by the dark", "deathDark", "dark", RED,
     room(8, 34, 9, (40, 36, 34), (52, 46, 42), "WoodPlanks", "Plaster", cz=2) + CORRIDOR,
     shots_fn=dark_shots,
+    flip=False,
     set_events=[{"at": round(BOOK + 1.1 + 0.6 + k * 0.32, 2), "act": "out", "targets": [f"Lamp{3 - k}"]}
                 for k in range(3)],
 )
@@ -536,15 +597,14 @@ CUTS["death_ash"] = style_scene(
 def stage_parts():
     """A puppet theatre's stage: boards, red curtains either side and behind, footlights along its front edge."""
     out = room(26, 22, 18, (70, 46, 30), (14, 10, 12), "WoodPlanks", "Fabric", cz=-2)
-    out += [part(None, (4, 16, 0.6), (-8, 8, -8), (120, 16, 24), "Fabric"),
+    out = out + [part(None, (4, 16, 0.6), (-8, 8, -8), (120, 16, 24), "Fabric"),
             part(None, (4, 16, 0.6), (8, 8, -8), (120, 16, 24), "Fabric"),
             part(None, (26, 16, 0.6), (0, 8, -12.4), (96, 12, 20), "Fabric"),
             part(None, (26, 3, 0.6), (0, 15.5, -8), (120, 16, 24), "Fabric")]
-    for k, x in enumerate((-6, -3, 0, 3, 6)):
-        out.append(lamp(f"Foot{k}", (x, 0.4, 4.6), (255, 220, 160), 10, 0.9, visible=((0.8, 0.3, 0.3),
-                                                                                       (255, 226, 170))))
-    out.append(lamp("Spot", (0, 15, 2), (255, 236, 200), 26, 1.8))
-    return out
+    out = out + [lamp(f"Foot{k}", (x, 0.12, 6.2), (255, 220, 160), 10, 0.9, visible=((0.6, 0.2, 0.2),
+                                                                                       (255, 226, 170)))
+                 for k, x in enumerate((-7, -3.5, 3.5, 7))]
+    return out + [lamp("Spot", (0, 15, 2), (255, 236, 200), 26, 1.8)]
 
 
 def strings_shot(tl, style_at, slen, end):

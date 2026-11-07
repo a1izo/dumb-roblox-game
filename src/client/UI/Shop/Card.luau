@@ -282,13 +282,15 @@ local function formPicture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 	return view
 end
 
--- The clip a body is caught in for each death style's card.
-local DEATH_POSE: { [string]: string } = {
-	ash = "collapseDisease",
-	strings = "slump",
-	crows = "reactHandsHead",
-	stone = "reactStartle",
-	glass = "collapseHeart",
+-- The moment of each death style's own acting (Presentation/Fallen) its card catches the body in: the last try to rise
+-- (ash), hanging on its strings with the arms jerked up (strings), the arms thrown open as it bursts (crows), the reach
+-- set in stone (stone), risen on its knees as glass (glass).
+local DEATH_POSE: { [string]: { clip: string, at: number } } = {
+	ash = { clip = "fallenAshDown", at = 0.85 },
+	strings = { clip = "fallenStringsDown", at = 2.06 },
+	crows = { clip = "fallenCrowsDown", at = 1.72 },
+	stone = { clip = "fallenStoneUp", at = 1.4 },
+	glass = { clip = "fallenGlassDown", at = 1.5 },
 }
 
 -- How a body looks half way through each death style: its colour, material and transparency.
@@ -301,7 +303,8 @@ local DEATH_LOOK: { [string]: { color: Color3, material: Enum.Material, transpar
 
 local function deathPicture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 	local style = item.style :: string
-	local figure = PoseFigure.build(DEATH_POSE[style] or "slump")
+	local pose = DEATH_POSE[style]
+	local figure = if pose then PoseFigure.build(pose.clip, pose.at) else PoseFigure.build("slump")
 	if not figure then
 		return nil
 	end
