@@ -32,6 +32,7 @@ local BookStage = require(script.Parent.BookStage)
 local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
 local CustomDeaths = require(script.Parent.CustomDeaths)
+local DeathVfx = require(script.Parent.DeathVfx)
 local Fallen = require(script.Parent.Fallen)
 local Stage = require(script.Parent.Stage)
 local FxKit = require(script.Parent.FxKit)
@@ -1119,10 +1120,12 @@ ACTS.book = function(refs, event)
 	table.insert(refs.cleanups, once)
 end
 
--- The star is acted to the end from here (a death): no breath or glance over it (Anim/Life).
-ACTS.lifeless = function(refs)
+-- The star is acted to the end from here (a death): no breath or glance over it (Anim/Life); the death's own effects
+-- on its beats (Presentation/DeathVfx), from when its clip starts.
+ACTS.lifeless = function(refs, event, cut)
 	if refs.star then
 		refs.star:SetAttribute(Life.ATTRIBUTE, 0)
+		DeathVfx.play(cut.clip, refs.star, os.clock() + ((cut.clipAt or 0) - (event.at or 0)))
 	end
 end
 

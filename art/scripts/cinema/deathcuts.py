@@ -253,6 +253,7 @@ def death_scene(item, cause, clip, reason, mood, set_parts, set_props=(), set_ev
     """A custom death's scene: the book, a wide on the player in the set, the death in two or three shots aimed at
     the body, and the body on the floor under the cause of death."""
     set_parts, set_props = dress(set_parts, set_props, flip)
+    set_parts = set_parts + key_lights(mood)
     t = deaths.TIMING[clip]
     clip_at = BOOK + 1.1
     tl = Timeline(clip, clip_at)
@@ -313,6 +314,7 @@ def style_scene(item, style, mood, set_parts, set_props=(), set_events=(), style
     """A death style's scene: the book (the heart attack written), the heart attack, a beat on the floor, and the
     style's acting on the body, from where it shows best."""
     set_parts, set_props = dress(set_parts, set_props, flip)
+    set_parts = set_parts + key_lights(mood)
     clip = "collapseHeart"
     t = deaths.TIMING[clip]
     clip_at = BOOK + 1.0
@@ -355,10 +357,23 @@ def style_scene(item, style, mood, set_parts, set_props=(), set_events=(), style
     return cut
 
 
-NIGHT = {"grade": {"saturation": -0.3, "contrast": 0.18, "brightness": -0.04, "tint": [210, 216, 236]}}
-WARM = {"grade": {"saturation": -0.15, "contrast": 0.16, "brightness": -0.03, "tint": [244, 226, 206]}}
-COLD = {"grade": {"saturation": -0.25, "contrast": 0.14, "brightness": -0.02, "tint": [214, 232, 246]}}
-RED = {"grade": {"saturation": -0.2, "contrast": 0.2, "brightness": -0.05, "tint": [240, 212, 212]}}
+# Each mood: the screen's grade, the vignette, and the colour of the key light that picks the star out of the dark.
+NIGHT = {"grade": {"saturation": -0.3, "contrast": 0.2, "brightness": 0.0, "tint": [214, 220, 238]},
+         "vignette": {"strength": 0.4}, "key": (205, 216, 255)}
+WARM = {"grade": {"saturation": -0.15, "contrast": 0.18, "brightness": 0.01, "tint": [246, 230, 210]},
+        "vignette": {"strength": 0.4}, "key": (255, 222, 182)}
+COLD = {"grade": {"saturation": -0.25, "contrast": 0.16, "brightness": 0.01, "tint": [218, 234, 248]},
+        "vignette": {"strength": 0.38}, "key": (205, 230, 255)}
+RED = {"grade": {"saturation": -0.2, "contrast": 0.22, "brightness": -0.01, "tint": [242, 216, 216]},
+       "vignette": {"strength": 0.42}, "key": (255, 206, 200)}
+
+
+def key_lights(mood):
+    """The noir key on the star (high, in front and to its right: shadows falling away from the lens), a rim behind to
+    cut its outline out of the dark, and a little fill low on the other side; added to every set."""
+    key = mood.get("key", (240, 236, 228))
+    return [lamp("Key", (3.5, 8.5, -5.5), key, 20, 3.2), lamp("Rim", (-2.5, 6.5, 5.0), (210, 220, 255), 14, 2.4),
+            lamp("FillLow", (-5.0, 2.5, -6.0), key, 14, 0.7)]
 
 CUTS = {}
 

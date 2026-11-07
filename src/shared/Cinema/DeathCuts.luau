@@ -15,12 +15,12 @@ return {
 		length = 7.1,
 		grade = {
 			saturation = -0.3,
-			contrast = 0.18,
-			brightness = -0.04,
-			tint = { 210, 216, 236 },
+			contrast = 0.2,
+			brightness = 0,
+			tint = { 214, 220, 238 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {},
 		parts = {
@@ -113,6 +113,42 @@ return {
 				color = { 60, 62, 72 },
 				material = "Marble",
 				alpha = 0.4,
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 216, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 216, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 14,
+					brightness = 0.7,
+				},
 			},
 		},
 		shots = {
@@ -210,12 +246,12 @@ return {
 		length = 7.7,
 		grade = {
 			saturation = -0.2,
-			contrast = 0.2,
-			brightness = -0.05,
-			tint = { 240, 212, 212 },
+			contrast = 0.22,
+			brightness = -0.01,
+			tint = { 242, 216, 216 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.42,
 		},
 		props = {
 			{
@@ -306,6 +342,42 @@ return {
 					color = { 220, 40, 60 },
 					range = 16,
 					brightness = 1.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 206, 200 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 206, 200 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 206, 200 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 206, 200 },
+					range = 14,
+					brightness = 0.7,
 				},
 			},
 		},
@@ -414,12 +486,12 @@ return {
 		length = 7.05,
 		grade = {
 			saturation = -0.25,
-			contrast = 0.14,
-			brightness = -0.02,
-			tint = { 214, 232, 246 },
+			contrast = 0.16,
+			brightness = 0.01,
+			tint = { 218, 234, 248 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.38,
 		},
 		props = {},
 		parts = {
@@ -511,6 +583,42 @@ return {
 				color = { 14, 14, 18 },
 				material = "Wood",
 				rot = { 0, 0, 40 },
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 230, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 230, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 14,
+					brightness = 0.7,
+				},
 			},
 		},
 		shots = {
@@ -618,12 +726,12 @@ return {
 		length = 7.2,
 		grade = {
 			saturation = -0.15,
-			contrast = 0.16,
-			brightness = -0.03,
-			tint = { 244, 226, 206 },
+			contrast = 0.18,
+			brightness = 0.01,
+			tint = { 246, 230, 210 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {},
 		parts = {
@@ -794,6 +902,42 @@ return {
 				color = { 70, 44, 34 },
 				material = "Wood",
 			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 222, 182 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 222, 182 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 14,
+					brightness = 0.7,
+				},
+			},
 		},
 		shots = {
 			{
@@ -936,12 +1080,12 @@ return {
 		length = 8.1,
 		grade = {
 			saturation = -0.25,
-			contrast = 0.14,
-			brightness = -0.02,
-			tint = { 214, 232, 246 },
+			contrast = 0.16,
+			brightness = 0.01,
+			tint = { 218, 234, 248 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.38,
 		},
 		props = {},
 		parts = {
@@ -1029,6 +1173,42 @@ return {
 				at = { -5.2, 3, 12.6 },
 				color = { 200, 204, 210 },
 				material = "Metal",
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 230, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 230, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 14,
+					brightness = 0.7,
+				},
 			},
 		},
 		shots = {
@@ -1136,12 +1316,12 @@ return {
 		length = 7.2,
 		grade = {
 			saturation = -0.3,
-			contrast = 0.18,
-			brightness = -0.04,
-			tint = { 210, 216, 236 },
+			contrast = 0.2,
+			brightness = 0,
+			tint = { 214, 220, 238 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {},
 		parts = {
@@ -1224,6 +1404,42 @@ return {
 					color = { 140, 150, 190 },
 					range = 14,
 					brightness = 0.5,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 216, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 216, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 14,
+					brightness = 0.7,
 				},
 			},
 		},
@@ -1332,12 +1548,12 @@ return {
 		length = 7.5,
 		grade = {
 			saturation = -0.15,
-			contrast = 0.16,
-			brightness = -0.03,
-			tint = { 244, 226, 206 },
+			contrast = 0.18,
+			brightness = 0.01,
+			tint = { 246, 230, 210 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {
 			{
@@ -1495,6 +1711,42 @@ return {
 				color = { 226, 218, 198 },
 				rot = { 0, -45, 0 },
 			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 222, 182 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 222, 182 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 14,
+					brightness = 0.7,
+				},
+			},
 		},
 		shots = {
 			{
@@ -1601,12 +1853,12 @@ return {
 		length = 7.5,
 		grade = {
 			saturation = -0.15,
-			contrast = 0.16,
-			brightness = -0.03,
-			tint = { 244, 226, 206 },
+			contrast = 0.18,
+			brightness = 0.01,
+			tint = { 246, 230, 210 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {
 			{
@@ -1697,6 +1949,42 @@ return {
 					color = { 160, 120, 110 },
 					range = 14,
 					brightness = 0.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 222, 182 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 222, 182 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 14,
+					brightness = 0.7,
 				},
 			},
 		},
@@ -1823,12 +2111,12 @@ return {
 		length = 7.7,
 		grade = {
 			saturation = -0.3,
-			contrast = 0.18,
-			brightness = -0.04,
-			tint = { 210, 216, 236 },
+			contrast = 0.2,
+			brightness = 0,
+			tint = { 214, 220, 238 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {
 			{
@@ -1932,6 +2220,42 @@ return {
 					color = { 130, 130, 160 },
 					range = 14,
 					brightness = 0.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 216, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 216, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 14,
+					brightness = 0.7,
 				},
 			},
 		},
@@ -2040,12 +2364,12 @@ return {
 		length = 7.65,
 		grade = {
 			saturation = -0.15,
-			contrast = 0.16,
-			brightness = -0.03,
-			tint = { 244, 226, 206 },
+			contrast = 0.18,
+			brightness = 0.01,
+			tint = { 246, 230, 210 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {},
 		parts = {
@@ -2204,6 +2528,42 @@ return {
 					brightness = 0.5,
 				},
 			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 222, 182 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 222, 182 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 14,
+					brightness = 0.7,
+				},
+			},
 		},
 		shots = {
 			{
@@ -2310,12 +2670,12 @@ return {
 		length = 7.5,
 		grade = {
 			saturation = -0.2,
-			contrast = 0.2,
-			brightness = -0.05,
-			tint = { 240, 212, 212 },
+			contrast = 0.22,
+			brightness = -0.01,
+			tint = { 242, 216, 216 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.42,
 		},
 		props = {},
 		parts = {
@@ -2402,6 +2762,42 @@ return {
 					color = { 255, 226, 180 },
 					range = 12,
 					brightness = 1.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 206, 200 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 206, 200 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 206, 200 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 206, 200 },
+					range = 14,
+					brightness = 0.7,
 				},
 			},
 		},
@@ -2521,12 +2917,12 @@ return {
 		length = 9.4,
 		grade = {
 			saturation = -0.15,
-			contrast = 0.16,
-			brightness = -0.03,
-			tint = { 244, 226, 206 },
+			contrast = 0.18,
+			brightness = 0.01,
+			tint = { 246, 230, 210 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {},
 		parts = {
@@ -2602,6 +2998,42 @@ return {
 				at = { 5, 0.12, 5 },
 				color = { 60, 56, 52 },
 				material = "Sand",
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 222, 182 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 222, 182 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 14,
+					brightness = 0.7,
+				},
 			},
 		},
 		shots = {
@@ -2709,12 +3141,12 @@ return {
 		length = 10,
 		grade = {
 			saturation = -0.15,
-			contrast = 0.16,
-			brightness = -0.03,
-			tint = { 244, 226, 206 },
+			contrast = 0.18,
+			brightness = 0.01,
+			tint = { 246, 230, 210 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {},
 		parts = {
@@ -2839,6 +3271,42 @@ return {
 					brightness = 1.8,
 				},
 			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 255, 222, 182 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 255, 222, 182 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 255, 222, 182 },
+					range = 14,
+					brightness = 0.7,
+				},
+			},
 		},
 		shots = {
 			{
@@ -2954,12 +3422,12 @@ return {
 		length = 9.2,
 		grade = {
 			saturation = -0.3,
-			contrast = 0.18,
-			brightness = -0.04,
-			tint = { 210, 216, 236 },
+			contrast = 0.2,
+			brightness = 0,
+			tint = { 214, 220, 238 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.4,
 		},
 		props = {
 			{
@@ -3056,6 +3524,42 @@ return {
 				color = { 90, 92, 96 },
 				material = "Slate",
 				rot = { 0, -20, -6 },
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 216, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 216, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 216, 255 },
+					range = 14,
+					brightness = 0.7,
+				},
 			},
 		},
 		shots = {
@@ -3163,12 +3667,12 @@ return {
 		length = 9.8,
 		grade = {
 			saturation = -0.25,
-			contrast = 0.14,
-			brightness = -0.02,
-			tint = { 214, 232, 246 },
+			contrast = 0.16,
+			brightness = 0.01,
+			tint = { 218, 234, 248 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.38,
 		},
 		props = {},
 		parts = {
@@ -3258,6 +3762,42 @@ return {
 				color = { 120, 118, 112 },
 				material = "Limestone",
 				rot = { 0, 0, 8 },
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 230, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 230, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 14,
+					brightness = 0.7,
+				},
 			},
 		},
 		shots = {
@@ -3365,12 +3905,12 @@ return {
 		length = 9.2,
 		grade = {
 			saturation = -0.25,
-			contrast = 0.14,
-			brightness = -0.02,
-			tint = { 214, 232, 246 },
+			contrast = 0.16,
+			brightness = 0.01,
+			tint = { 218, 234, 248 },
 		},
 		vignette = {
-			strength = 0.5,
+			strength = 0.38,
 		},
 		props = {},
 		parts = {
@@ -3490,6 +4030,42 @@ return {
 				color = { 170, 190, 210 },
 				material = "Glass",
 				alpha = 0.45,
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.5, 8.5, -5.5 },
+				color = { 205, 230, 255 },
+				name = "Key",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 20,
+					brightness = 3.2,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.5, 6.5, 5 },
+				color = { 210, 220, 255 },
+				name = "Rim",
+				alpha = 1,
+				light = {
+					color = { 210, 220, 255 },
+					range = 14,
+					brightness = 2.4,
+				},
+			},
+			{
+				size = { 0.2, 0.2, 0.2 },
+				at = { -5, 2.5, -6 },
+				color = { 205, 230, 255 },
+				name = "FillLow",
+				alpha = 1,
+				light = {
+					color = { 205, 230, 255 },
+					range = 14,
+					brightness = 0.7,
+				},
 			},
 		},
 		shots = {

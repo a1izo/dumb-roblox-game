@@ -23,6 +23,7 @@ local Joints = require(Anim:WaitForChild("Joints"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
+local DeathVfx = require(script.Parent.DeathVfx)
 local Stage = require(script.Parent.Stage)
 local Styles = require(script.Parent.Styles)
 
@@ -140,6 +141,7 @@ function Fallen.act(body: Model, style: string, collapse: string, options: { qui
 	end, { fadeIn = 0 })
 	if not (options and options.quiet) then
 		Styles.death(style, body, { clip = clipId, moments = Causes.moments(clipId) })
+		DeathVfx.style(style, body, Causes.moments(clipId))
 	end
 	return length
 end
