@@ -59,6 +59,18 @@ lobby piece the user named (steles, altars, bone throne, candles, giant skull). 
 pack was built, 51 of them Tokyo's DarkMetal and WhiteTrim. The flip takes 4 s for 255 surfaces, and serializing all
 641 takes 11 s. Two hours more (watching only the 30 pending ids every 10 minutes) brought it to 640 of 641 at
 00:06Z on 2026-11-07. Only Campus's TerrazzoDark floor still waited.
+After the user restarted Studio (00:49Z), its log failed 19 ids instead of 201, all expected:
+- the one pending pack;
+- 16 sky faces on the `Tex_Sky*` carrier quads (plain MeshPart textures the game does not show);
+- HQ's poster sheet (`Map_Agency_PrintsAgency_1`, a plain MeshPart texture uploaded 2026-11-06 15:59Z);
+- 203785492, a type-mismatch warning present in every session since before.
+
+The server check of all 576 packs in use answered 575 built. The plain images were still stuck after 33 h, longer
+than any pack took.
+
+The undo is not always the recorded pack: in a NEW Studio session, removing the floor's mask gave it a third pack
+(98007606877730, already built) within 2 s, not its old 75051558459905. Serialize again after any switch, and check
+the pack you actually got.
 
 Traps in measuring it:
 - A Studio process remembers a failed texture: restarting the PLAY TEST does not ask again (the stele's pack failed
