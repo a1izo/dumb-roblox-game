@@ -166,15 +166,16 @@ local function showAction(profile, item: Cosmetics.Item?)
 		return
 	end
 	local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win" or item.kind == "reason"
-	local hasPreview = item.kind == "win" and type(item.cut) == "string"
+	local scene = WinCinema.cutOf(item)
+	local hasPreview = scene ~= nil
 	local size = if hasPreview then UDim2.new(0.5, -T.space.s / 2, 0, T.touch) else UDim2.new(1, 0, 0, T.touch)
 	local at = if hasPreview then UDim2.new(0.5, T.space.s / 2, 0, 0) else UDim2.new()
-	if hasPreview then
+	if scene then
 		Kit.button(
 			{ text = "Preview", variant = "secondary", size = "m", Size = size, Parent = actionHolder },
 			function()
 				Router.close("inventory")
-				WinCinema.preview(item.cut, function()
+				WinCinema.preview(scene, function()
 					Router.open("inventory")
 				end)
 			end

@@ -1,17 +1,21 @@
 -- A death at the table. A death by the Manual opens on the book, alone in the dark, the victim's real
--- name and the cause being written in it (everyone sees it, the victim too). Then quick cuts of two
--- others reacting (their reactions are picked from the cue, the same on every screen, never from
--- roles), then the victim's collapse in close-up while the heart monitor beats twice and flatlines,
--- and the cause is written across the screen. The victim sees their own screen drain of colour
--- instead. The name goes into the book in the writer's writing style on the writer's screen only (the
--- server sends it there alone); the victim's death style (ash, cut strings, crows, stone) plays on the
--- body after it falls, on every screen, under the cause of death.
+-- name and the cause being written in it (everyone sees it, the victim too). Then the victim, from the moment the
+-- body goes (cause and effect: the cut lands on the death's first beat), the camera pushing in on where the body will
+-- lie as it falls (Shared/Anim/DeathTiming says when it hits the floor; the clip says where); quick cuts of two others
+-- reacting once it is down (their reactions are picked from the cue, the same on every screen, never from roles); and
+-- back to the body, from above, while the heart monitor flatlines and the cause is written across the screen. The
+-- victim sees their own screen drain of colour instead. The name goes into the book in the writer's writing style on
+-- the writer's screen only (the server sends it there alone); a custom death's effect (Presentation/CustomDeaths) plays
+-- on the body as it goes, timed to its acting; the victim's death style (Presentation/Fallen: ash, cut strings, crows,
+-- stone, glass) takes the body once it lies still, on every screen, and the last shot stays on it until it is done.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ManualTiming =
-	require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Presentation"):WaitForChild("ManualTiming"))
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
+local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
+local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Parent.Parent.UI.Kit)
@@ -22,6 +26,7 @@ local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local CustomDeaths = require(script.Parent.Parent.CustomDeaths)
 local Cinema = require(script.Parent.Parent.Cinema)
 local DeathFx = require(script.Parent.Parent.DeathFx)
+local Fallen = require(script.Parent.Parent.Fallen)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local StageLight = require(script.Parent.Parent.StageLight)
 local Styles = require(script.Parent.Parent.Styles)
@@ -29,7 +34,7 @@ local Styles = require(script.Parent.Parent.Styles)
 local C = Kit.color
 local LocalPlayer = Players.LocalPlayer
 
-local SHOT = 3.8
+local WITNESS = 0.55 -- seconds on each witness
 
 -- Two living witnesses (not the victim), picked the same way on every screen.
 local function witnesses(cue, victim: number): { Model }
@@ -51,6 +56,30 @@ local function witnesses(cue, victim: number): { Model }
 		table.insert(out, table.remove(list, rng:NextInteger(1, #list)).character)
 	end
 	return out
+end
+
+-- Where the body's middle is `t` seconds into its clip (the clip's own offset from where it stood).
+local function bodyAt(mark: CFrame, clip: string, t: number): Vector3
+	local prepared = ClipPlayer.get(clip)
+	local offset = if prepared then ClipPlayer.sampleOffset(prepared, t) else nil
+	return mark:PointToWorldSpace(offset or Vector3.zero)
+end
+
+-- A camera at `distance` from `target`, `height` over it, `angle` degrees round from `facing` (0: in front), or the
+-- nearest angle round it with nothing in the way.
+local function frameAt(target: Vector3, facing: Vector3, distance: number, height: number, angle: number): CFrame
+	local flat = Vector3.new(facing.X, 0, facing.Z)
+	flat = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.new(0, 0, -1)
+	for _, scale in ipairs({ 1, 0.8, 0.6 }) do
+		for _, delta in ipairs({ 0, 25, -25, 50, -50, 90, -90, 140, -140, 180 }) do
+			local dir = CFrame.Angles(0, math.rad(angle + delta), 0):VectorToWorldSpace(flat)
+			local eye = target + dir * distance * scale + Vector3.new(0, height * scale, 0)
+			if ShotSolver.clear(target, eye) then
+				return CFrame.lookAt(eye, target)
+			end
+		end
+	end
+	return CFrame.lookAt(target + flat * 2 + Vector3.new(0, 1, 0), target)
 end
 
 return function(cue)
@@ -78,41 +107,80 @@ return function(cue)
 			Cinema.letterbox(false)
 		end
 	end
+	local clip = Causes.clipFor(tostring(data.cause or ""))
+	local timing = Causes.timing(clip)
+	local style = if type(data.death) == "string" then data.death else nil
+	local acted = style ~= nil and Fallen.has(style)
+	local styleAt = timing.length + ManualTiming.STYLE_AFTER
+	local total = if acted then styleAt + Causes.fallenLength(style) + 0.4 else timing.length + 1.6
 	Sfx.play("heartbeat")
 	task.delay(0.8, Sfx.play, "heartbeat")
-	task.delay(1.9, Sfx.play, "flatline")
+	task.delay(timing.hit + 0.35, Sfx.play, "flatline")
 	local removeVignette = Cinema.vignette(C.red, 0.3)
-	-- A custom death written as the cause (Presentation/CustomDeaths): its effect starts as the body goes down.
+	-- A custom death written as the cause (Presentation/CustomDeaths): its effect starts on its beat, its impact on the
+	-- moment the body hits the floor.
 	if type(data.reason) == "string" then
-		task.delay(0.9, function()
-			CustomDeaths.play(data.reason, Cinema.character(data.userId))
+		local fx = timing.fx or 0.9
+		task.delay(fx, function()
+			CustomDeaths.play(data.reason, Fallen.bodyOf(data.userId), { hit = timing.hit - fx })
 		end)
 	end
 	-- The body hits the floor in a burst of shards and leaves a chalk outline.
-	task.delay(1.15, function()
-		local body = Cinema.character(data.userId)
+	task.delay(timing.hit, function()
+		local body = Fallen.bodyOf(data.userId)
 		local root = if body then body:FindFirstChild("Torso") or body:FindFirstChild("HumanoidRootPart") else nil
 		if root and root:IsA("BasePart") then
 			DeathFx.burst(root.Position, DeathFx.DARK, 40)
 			DeathFx.chalk(root.Position, 7, DeathFx.CHALK, 14)
 		end
-		-- The victim's death style, once the body is down.
-		if body and type(data.death) == "string" then
-			task.delay(0.9, Styles.death, data.death, body)
+		-- (a death style with no acting of its own plays on the body as it lies)
+		if body and style and not acted then
+			task.delay(timing.length - timing.hit + 0.3, Styles.death, style, body)
 		end
 	end)
 
 	if data.userId == LocalPlayer.UserId then
 		DeathFx.screenTear(3.5)
 		local untint = Cinema.tint({ Saturation = -1, Contrast = 0.15, Brightness = -0.05 }, 1.2)
-		task.wait(5)
+		task.wait(math.max(5, total))
 		untint()
 	else
-		local victim = Cinema.character(data.userId)
-		if victim then
-			local token = CameraDirector.take(SHOT + 0.6)
+		-- (the copy that stands in for a body with a death style is made on this same beat: ActingController)
+		local victim = if acted then Fallen.waitFor(data.userId, 0.4) else Fallen.bodyOf(data.userId)
+		local mark = if victim then victim:FindFirstChild("HumanoidRootPart") else nil
+		if victim and mark and mark:IsA("BasePart") then
+			local token = CameraDirector.take(total + 1)
 			Cinema.letterbox(true)
 			local cleanup = {}
+			local start = mark.CFrame
+			local facing = start.LookVector
+			-- The victim, from the first beat: wide from the front, pushing in, tilting as it comes (a Dutch angle: the
+			-- world is wrong now), on where the body lands; a hard red light finds them as the room's lamps sink.
+			local standing = start.Position + Vector3.new(0, 1.2, 0)
+			local lying = bodyAt(start, clip, timing.still)
+			local wide = frameAt(standing:Lerp(lying, 0.35), facing, 10.5, 2.6, 20)
+			local close = frameAt(lying + Vector3.new(0, 0.4, 0), facing, 6, 2.2, 14)
+				* CFrame.Angles(0, 0, math.rad(-7))
+			CameraDirector.cut(token, wide, 58)
+			CameraDirector.move(token, close, timing.hit + 0.45, 44)
+			table.insert(cleanup, Cinema.outline(victim, C.red))
+			table.insert(cleanup, StageLight.rim(victim, wide.Position, Color3.fromRGB(255, 52, 60), total))
+			task.delay(0.6, function()
+				table.insert(cleanup, StageLight.dip(start.Position, 40, 0.35, total))
+			end)
+			task.delay(timing.hit, function()
+				table.insert(
+					cleanup,
+					Cinema.card({
+						kicker = "Cause of death: " .. tostring(data.cause or ""),
+						title = tostring(data.alias or ""),
+						subtitle = "is dead.",
+						color = C.danger,
+						y = 0.74,
+					})
+				)
+			end)
+			task.wait(timing.hit + 0.5)
 			-- The witnesses react (their bodies act on every screen through ActingController).
 			for index, character in ipairs(witnesses(cue, data.userId)) do
 				CameraDirector.cut(
@@ -120,42 +188,22 @@ return function(cue)
 					ShotSolver.frame(character, { distance = 5, height = 0.6, angle = if index == 1 then 25 else -25 }),
 					45
 				)
-				task.wait(0.55)
+				task.wait(WITNESS)
 			end
-			-- The victim goes down: a hard red light finds them from behind as the room's lamps stutter and sink, and the
-			-- camera pushes in, tilting as it comes (a Dutch angle: the world is wrong now).
-			local wide = ShotSolver.frame(victim, { distance = 9, height = 2.5, angle = 20 })
-			local close = ShotSolver.frame(victim, { distance = 5.5, height = 1.2, lookHeight = 0.5, angle = 10 })
-				* CFrame.Angles(0, 0, math.rad(-7))
-			CameraDirector.cut(token, wide, 58)
-			CameraDirector.move(token, close, SHOT - 1.1, 44)
-			table.insert(cleanup, Cinema.outline(victim, C.red))
-			table.insert(cleanup, StageLight.rim(victim, wide.Position, Color3.fromRGB(255, 52, 60), 3.2))
-			local root = victim:FindFirstChild("HumanoidRootPart")
-			if root and root:IsA("BasePart") then
-				local at = root.Position
-				task.delay(0.6, function()
-					table.insert(cleanup, StageLight.dip(at, 40, 0.35, SHOT))
-				end)
-			end
-			table.insert(
-				cleanup,
-				Cinema.card({
-					kicker = "Cause of death: " .. tostring(data.cause or ""),
-					title = tostring(data.alias or ""),
-					subtitle = "is dead.",
-					color = C.danger,
-					y = 0.74,
-				})
-			)
-			task.wait(SHOT - 1.1)
+			-- Back on the body, from above, the camera sinking slowly towards it (through its death style).
+			local left = math.max(0.8, total - (timing.hit + 0.5 + WITNESS * 2))
+			local over = frameAt(lying, facing, 5.5, 5.2, 35)
+			local nearer = frameAt(lying, facing, 4.4, 3.6, 30)
+			CameraDirector.cut(token, over, 46)
+			CameraDirector.move(token, nearer, left, 42)
+			task.wait(left)
 			for index = #cleanup, 1, -1 do
 				cleanup[index]()
 			end
 			Cinema.letterbox(false)
 			CameraDirector.release(token)
 		else
-			task.wait(SHOT)
+			task.wait(total)
 		end
 		if book then
 			Cinema.letterbox(false)

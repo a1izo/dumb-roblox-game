@@ -12,13 +12,23 @@ local CustomDeaths = {}
 
 local WHITE = Color3.new(1, 1, 1)
 
-type Fx = (body: Model, centre: Vector3, floor: Vector3, head: BasePart?, torso: BasePart?) -> ()
+-- `hit`: seconds from the effect's start to when the body hits the floor (Shared/Anim/DeathTiming), for the effects
+-- whose impact lands with it.
+type Fx = (body: Model, centre: Vector3, floor: Vector3, head: BasePart?, torso: BasePart?, hit: number?) -> ()
 
 local FX: { [string]: Fx } = {}
 
 local function floorOf(body: Model, at: Vector3): Vector3
 	local hit = Vfx.Ground.at(at, { body }, 8)
 	return hit
+end
+
+-- Where the body is now (its torso, or `fallback`), and the floor under it: for an impact that lands where the body
+-- has fallen to, not where it stood when the effect began.
+local function bodyNow(body: Model, fallback: Vector3): (Vector3, Vector3)
+	local torso = body:FindFirstChild("Torso") or body:FindFirstChild("HumanoidRootPart")
+	local at = if torso and torso:IsA("BasePart") and torso.Parent then torso.Position else fallback
+	return at, floorOf(body, at)
 end
 
 -- A held emitter on a still box of air round the body, let go after `seconds`.
@@ -36,9 +46,10 @@ local function hold(centre: Vector3, size: Vector3, spec: { [string]: any }, sec
 end
 
 -- A long fall: the floor comes up hard, dust thrown out low, a crack under them.
-FX.fall = function(_, _, floor)
-	Vfx.Clock.after(0.25, function()
-		Vfx.Recipes.slam(CFrame.new(floor), { color = Color3.fromRGB(200, 196, 190), scale = 0.75, shake = true })
+FX.fall = function(body, centre, _, _, _, hit)
+	Vfx.Clock.after(hit or 0.25, function()
+		local _, floor = bodyNow(body, centre)
+		Vfx.Recipes.slam(CFrame.new(floor), { color = Color3.fromRGB(200, 196, 190), scale = 0.85, shake = true })
 	end)
 end
 
@@ -101,9 +112,10 @@ FX.heart = function(_, _, floor, _, torso)
 end
 
 -- Frozen where they stood: frost climbs them (a cold edge and mist), then breaks off as falling ice.
-FX.frost = function(body, centre, floor)
+FX.frost = function(body, centre, floor, _, _, hit)
 	local ice = Color3.fromRGB(180, 225, 255)
-	Vfx.Rim.glow(body, ice, 0.6, { fill = 0.45, fadeIn = 0.45, fadeOut = 0.5 })
+	local breaks = hit or 0.8
+	Vfx.Rim.glow(body, ice, breaks + 0.15, { fill = 0.45, fadeIn = 0.45, fadeOut = 0.5 })
 	hold(floor + Vector3.new(0, 0.4, 0), Vector3.new(3, 0.4, 3), {
 		tex = "VfxSmoke",
 		grid = 8,
@@ -129,8 +141,9 @@ FX.frost = function(body, centre, floor)
 		bright = 1.4,
 		rate = 30,
 	}, 0.8)
-	Vfx.Clock.after(0.8, function()
-		Vfx.Emit.burst(centre, {
+	Vfx.Clock.after(breaks, function()
+		local at, ground = bodyNow(body, centre)
+		Vfx.Emit.burst(at, {
 			{
 				{
 					tex = "VfxFlare",
@@ -164,13 +177,13 @@ FX.frost = function(body, centre, floor)
 				30,
 			},
 		}, nil, Vector3.new(2, 4, 1.4))
-		Vfx.Ground.mark(floor, Vector3.yAxis, "VfxCrack", 6, ice, 3, { fadeOut = 1.2 })
-		Vfx.Light.flash(centre, ice, 16, 3, 0.4)
+		Vfx.Ground.mark(ground, Vector3.yAxis, "VfxCrack", 6, ice, 3, { fadeOut = 1.2 })
+		Vfx.Light.flash(at, ice, 16, 3, 0.4)
 	end)
 end
 
 -- The chandelier: crystal and dust come down from above and land on them in a gold flash.
-FX.chandelier = function(_, centre, floor)
+FX.chandelier = function(body, centre, floor, _, _, hit)
 	local gold = Color3.fromRGB(255, 230, 170)
 	Vfx.Emit.burst(floor + Vector3.new(0, 16, 0), {
 		tex = "VfxSpike",
@@ -186,9 +199,10 @@ FX.chandelier = function(_, centre, floor)
 		light = 0.5,
 		bright = 1.4,
 	}, 14, Vector3.new(3, 0.5, 3))
-	Vfx.Clock.after(0.5, function()
-		Vfx.Recipes.slam(CFrame.new(floor), { color = gold, scale = 0.9, shake = true })
-		Vfx.Emit.burst(centre - Vector3.new(0, 1.5, 0), {
+	Vfx.Clock.after(hit or 0.5, function()
+		local _, ground = bodyNow(body, centre)
+		Vfx.Recipes.slam(CFrame.new(ground), { color = gold, scale = 0.9, shake = true })
+		Vfx.Emit.burst(ground + Vector3.new(0, 0.5, 0), {
 			tex = "VfxFlare",
 			color = WHITE,
 			size = { { 0, 0 }, { 0.2, 0.4 }, { 0.4, 0 }, { 0.6, 0.35 }, { 1, 0 } },
@@ -442,15 +456,16 @@ FX.chip = function(_, centre, _, head)
 end
 
 -- Their time ran out: a stopwatch's face opens on the floor under them, turns, and is gone with a tick of light.
-FX.clock = function(_, centre, floor)
+FX.clock = function(_, centre, floor, _, _, hit)
 	local pale = Color3.fromRGB(230, 220, 190)
+	local last = hit or 1.1 -- the last tick, as the body lands
 	local base = Vfx.Emit.point(CFrame.new(floor + Vector3.new(0, 0.06, 0)))
 	local face = Vfx.Emit.make(base, {
 		tex = "VfxCircle",
 		color = pale,
 		size = 0.1,
 		alpha = { { 0, 1 }, { 0.1, 0.25 }, { 0.85, 0.25 }, { 1, 1 } },
-		life = 1.8,
+		life = last + 0.7,
 		speed = 0.001,
 		face = "flat",
 		spin = -40,
@@ -461,7 +476,7 @@ FX.clock = function(_, centre, floor)
 	Vfx.Clock.tween(0.5, Vfx.Ease.outBack, function(u)
 		face.Size = NumberSequence.new(math.max(0.1, 7 * u))
 	end)
-	Vfx.Clock.after(1.1, function()
+	Vfx.Clock.after(last, function()
 		Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 3, 9, 0.6, {
 			tex = "VfxRingBand",
 			color = pale,
@@ -471,7 +486,7 @@ FX.clock = function(_, centre, floor)
 		})
 		Vfx.Light.flash(centre, pale, 14, 3, 0.4)
 	end)
-	Vfx.Clock.after(2.2, function()
+	Vfx.Clock.after(last + 1.1, function()
 		base:Destroy()
 	end)
 end
@@ -515,8 +530,10 @@ FX.dark = function(body, centre, floor, head)
 	end)
 end
 
--- Plays the custom death `style` on `body` (a falling character), if there is one by that name.
-function CustomDeaths.play(style: string?, body: Model?)
+-- Plays the custom death `style` on `body` (a falling character), if there is one by that name. `timing.hit`: seconds
+-- from now until the body hits the floor (Shared/Anim/DeathTiming), where the impact of a fall, a crushing or a breaking
+-- lands.
+function CustomDeaths.play(style: string?, body: Model?, timing: { hit: number? }?)
 	local fx = if style then FX[style] else nil
 	if not fx or not body then
 		return
@@ -532,7 +549,8 @@ function CustomDeaths.play(style: string?, body: Model?)
 		centre,
 		floorOf(body, centre),
 		if head and head:IsA("BasePart") then head else nil,
-		if torso:IsA("BasePart") then torso else nil
+		if torso:IsA("BasePart") then torso else nil,
+		if timing and timing.hit and timing.hit > 0 then timing.hit else nil
 	)
 end
 

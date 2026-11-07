@@ -22,12 +22,17 @@ local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
 local Venues = require(Shared:WaitForChild("Venues"))
 local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
+local DeathCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("DeathCuts")) :: any
 
+local Life = require(script.Parent.Parent.Anim.Life)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local EmoteController = require(script.Parent.Parent.Controllers.EmoteController)
+local BookStage = require(script.Parent.BookStage)
 local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
+local CustomDeaths = require(script.Parent.CustomDeaths)
+local Fallen = require(script.Parent.Fallen)
 local Stage = require(script.Parent.Stage)
 local FxKit = require(script.Parent.FxKit)
 local Vfx = require(script.Parent.Vfx)
@@ -55,6 +60,8 @@ type Refs = {
 	folder: Instance,
 	origin: CFrame,
 	star: Model?,
+	starName: string?, -- the star's name (a death scene writes it in the Manual)
+	token: number?, -- the camera's token (a death scene's book shot takes it over a while)
 	cleanups: { () -> () },
 }
 
@@ -85,7 +92,22 @@ end
 -- Cut data --------------------------------------------------------------------------------------------------
 
 function WinCinema.get(name: string?): any
-	return if name then WinCuts[name] else nil
+	return if name then WinCuts[name] or DeathCuts[name] else nil
+end
+
+-- The scene a shop item's Preview plays: a win cutscene's own (`cut`), or a custom death's or death style's
+-- (Shared/Cinema/DeathCuts, by the item's id); nil for an item with none.
+function WinCinema.cutOf(item: any): string?
+	if type(item) ~= "table" then
+		return nil
+	end
+	if item.kind == "win" and type(item.cut) == "string" then
+		return item.cut
+	end
+	if (item.kind == "reason" or item.kind == "death") and DeathCuts[item.id] then
+		return item.id
+	end
+	return nil
 end
 
 function WinCinema.length(name: string?): number
@@ -1070,6 +1092,68 @@ ACTS.glow = function(refs, event)
 	end
 end
 
+-- The death scenes' own (Shared/Cinema/DeathCuts) ------------------------------------------------------------------
+
+-- Death's Manual, open in the dark, the lines written in it ("$name": the star's name), as a death in a case opens: it
+-- takes the camera for its `seconds` (the scene's shots come after).
+ACTS.book = function(refs, event)
+	local token = refs.token
+	if not token then
+		return
+	end
+	local lines = {}
+	for _, line in ipairs(event.lines or {}) do
+		local text = if line.text == "$name" then refs.starName or "" else tostring(line.text)
+		table.insert(lines, { text = text, small = line.small == true })
+	end
+	local seconds = event.seconds or 1.6
+	local stop = BookStage.play(token, lines, seconds, nil)
+	local stopped = false
+	local function once()
+		if not stopped then
+			stopped = true
+			stop()
+		end
+	end
+	task.delay(seconds, once)
+	table.insert(refs.cleanups, once)
+end
+
+-- The star is acted to the end from here (a death): no breath or glance over it (Anim/Life).
+ACTS.lifeless = function(refs)
+	if refs.star then
+		refs.star:SetAttribute(Life.ATTRIBUTE, 0)
+	end
+end
+
+-- A custom death's effect on the star (Presentation/CustomDeaths); `hit` seconds on, the body meets the floor.
+ACTS.deathFx = function(refs, event)
+	if refs.star then
+		CustomDeaths.play(event.reason, refs.star, { hit = event.hit })
+	end
+end
+
+-- A death style's acting on the fallen star, with its effect (Presentation/Fallen).
+ACTS.fallen = function(refs, event)
+	if refs.star then
+		Fallen.act(refs.star, event.style, event.from)
+	end
+end
+
+-- The cause of death across the screen, over the star's name.
+ACTS.card = function(refs, event)
+	table.insert(
+		refs.cleanups,
+		Cinema.card({
+			kicker = tostring(event.kicker or ""),
+			title = refs.starName or "",
+			subtitle = tostring(event.subtitle or ""),
+			color = Color3.fromRGB(196, 32, 44),
+			y = 0.74,
+		})
+	)
+end
+
 WinCinema.ACTS = ACTS
 
 -- Playing ---------------------------------------------------------------------------------------------------
@@ -1165,13 +1249,28 @@ function WinCinema.play(name: string, options: Options?): () -> ()
 			star = stage:cast(Stage.figure() :: any, origin, nil)
 		end
 		if star then
-			(refs :: Refs).star = star
+			local r = refs :: Refs
+			r.star = star
+			r.token = token
+			local who = if opts.userId then Players:GetPlayerByUserId(opts.userId) else nil
+			r.starName = if who then who.DisplayName else "Unknown"
+			-- (a death scene's clip starts later, `clipAt`: until then the star stands in its first frame)
+			local clipAt = cut.clipAt or 0
 			local elapsed = math.max(0, workspace:GetServerTimeNow() - zero)
 			PoseController.bindWhenReady(star, 2)
-			PoseController.play(star, cut.clip, { fadeIn = 0, startAt = os.clock() - elapsed })
-			undress = EmoteController.dress(star, cut.clip, function()
-				return not done
-			end)
+			PoseController.play(star, cut.clip, { fadeIn = 0, startAt = os.clock() - elapsed + clipAt })
+			local function dress()
+				if not done then
+					undress = EmoteController.dress(star, cut.clip, function()
+						return not done
+					end)
+				end
+			end
+			if clipAt > elapsed then
+				task.delay(clipAt - elapsed, dress)
+			else
+				dress()
+			end
 		end
 		Cinema.letterbox(true)
 		table.insert(screen, function()

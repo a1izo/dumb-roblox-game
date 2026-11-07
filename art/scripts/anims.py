@@ -143,59 +143,7 @@ for t, b in ((0.0, 0.0), (2.0, 1.0)):
 soft(specter, head=1.2, arms=1.0).follow(("rHip", "lHip"), 1.0, 0.8)
 specter.build()
 
-# Deaths: each ends lying on the floor; the server then locks the final pose into the joints and lets
-# the body go limp. floor=True keys work out the height so the body rests on the floor.
-
-heart = Motion("collapseHeart", 2.4, note="A hand to the chest, the knees buckle, and down forward.", floor=True)
-heart.key(0.0, **REST)
-heart.key(0.2, "snap", offset=(0, -0.08, 0.04), root=(-14, 0, 0), neck=(-20, 0, 0), rShoulder=r_chest(64, -42),
-          lShoulder=J((10, 0, -6), (0, 0, -0.05)))
-heart.key(0.75, offset=(0.06, -0.2, 0.06), root=(-20, 6, 5), neck=(-24, 0, 6), rShoulder=r_chest(66, -42),
-          lShoulder=J((34, 0, -12), (0, 0.04, -0.12)))
-heart.key(1.2, "in", offset=(0.08, -0.95, -0.05), root=(-30, 6, 6), neck=(-16, 0, 6), rShoulder=r_chest(60, -38),
-          lShoulder=J((48, 0, -14), (0, 0.05, -0.15)))
-heart.plant(0.0, 1.2, stance=0.05, forward=(0.15, -0.05), tilt=(18, 14))
-heart.key(1.75, "in", offset=(0.08, 0, -0.75), floor=True, root=(-74, 5, 6), neck=(4, 0, 10),
-          rShoulder=J((80, 0, -20), (0, 0.05, -0.1)), lShoulder=J((110, 0, -24), (0, 0.05, 0)),
-          rHip=J((40, 0, 3), (0, 0.4, 0)), lHip=J((36, 0, -3), (0, 0.4, 0)))
-heart.key(2.4, "out", offset=(0.08, 0, -1.0), floor=True, root=(-89, 4, 5), neck=(14, 0, 18),
-          rShoulder=J((150, 0, -14), (0, 0.04, 0)), lShoulder=J((130, 0, -26), (0, 0.04, 0)),
-          rHip=J((4, 0, 3)), lHip=J((-2, 0, -3)))
-soft(heart, arms=2.0)
-heart.build()
-
-ill = Motion("collapseDisease", 3.0, note="Racking coughs into the fist, a sway, sinking down, then onto the back.", floor=True)
-ill.key(0.0, **REST)
-for t, bend in ((0.18, 14), (0.4, 6), (0.62, 16), (0.84, 7), (1.06, 13)):
-    ill.key(t, "snap", offset=(0, -0.05 - bend * 0.004, 0.03), root=(-bend, 0, 0), neck=(-12, 0, 0),
-            rShoulder=r_face(112, -26), lShoulder=J((20, 0, 14), (0.15, 0, -0.08)))
-ill.key(1.55, offset=(-0.06, -0.55, 0.05), root=(-10, -8, -6), neck=(-8, 0, -8),
-        rShoulder=J((40, 0, 10), (0, 0, -0.1)), lShoulder=J((44, 0, -18), (0, 0, -0.1)))
-ill.key(1.9, "in", offset=(-0.08, -1.05, 0.15), root=(4, -8, -6), neck=(-2, 0, -6),
-        rShoulder=J((30, 0, 16)), lShoulder=J((32, 0, -20)))
-ill.plant(0.0, 1.9, stance=0.06, forward=(0.1, -0.15), tilt=(24, 20))
-ill.key(2.4, "in", offset=(-0.12, 0, 0.6), floor=True, root=(55, -6, -8), neck=(16, 0, -6),
-        rShoulder=J((26, 0, 30)), lShoulder=J((34, 0, -26)), rHip=J((40, 0, 4), (0, 0.4, 0)), lHip=J((30, 0, -4), (0, 0.35, 0)))
-ill.key(3.0, "out", offset=(-0.12, 0, 0.95), floor=True, root=(88, -5, -10), neck=(20, 0, -12),
-        rShoulder=J((10, 0, 42)), lShoulder=J((16, 0, -36)), rHip=J((-2, 0, 5)), lHip=J((-6, 0, -5)))
-soft(ill, arms=2.2)
-ill.build()
-
-acc = Motion("collapseAccident", 1.9, note="Struck from the side: knocked off balance, the knees go, down.", floor=True)
-acc.key(0.0, **REST)
-acc.key(0.1, "snap", offset=(0.3, -0.05, 0.05), root=(-6, 16, 24), neck=(-4, 0, -18),
-        rShoulder=J((30, 0, 40), (0, 0.1, 0)), lShoulder=J((22, 0, -20)))
-acc.key(0.45, "in", offset=(0.75, -0.8, 0.2), root=(8, 24, 50), neck=(4, 0, -20),
-        rShoulder=J((50, 0, 56), (0, 0.1, 0)), lShoulder=J((30, 0, -30)), rHip=J((-8, 0, 14), (0, 0.3, 0)),
-        lHip=J((24, 0, -6), (0, 0.5, 0)))
-acc.key(0.95, "in", offset=(1.3, 0, 0.3), floor=True, root=(40, 20, 62), neck=(8, 0, -12),
-        rShoulder=J((20, 0, 60)), lShoulder=J((16, 0, -34)), rHip=J((-4, 0, 14), (0, 0.2, 0)), lHip=J((16, 0, -8), (0, 0.3, 0)))
-acc.key(1.4, "in", offset=(1.4, 0, 0.4), floor=True, root=(86, 10, 8), neck=(12, 0, -10),
-        rShoulder=J((6, 0, 48)), lShoulder=J((12, 0, -30)), rHip=J((-2, 0, 10)), lHip=J((6, 0, -8)))
-acc.key(1.9, "out", offset=(1.4, 0, 0.4), floor=True, root=(87, 10, 8), neck=(13, 0, -10),
-        rShoulder=J((6, 0, 49)), lShoulder=J((12, 0, -31)), rHip=J((-2, 0, 10)), lHip=J((6, 0, -8)))
-soft(acc, arms=2.6)
-acc.build()
+# Deaths (the collapses, the custom deaths, the fallen bodies' death styles) live in deaths.py and fallen.py.
 
 # Reactions: the table's one-shot reaction to a death, an arrest or a verdict (they hold their last
 # pose, then fade out).
@@ -454,8 +402,11 @@ import anims_emotes  # noqa: E402,F401
 # The rebuilt emotes (2026-10-17), each copied from its reference: they replace clips of the same name above.
 import emotes  # noqa: E402,F401
 
-# The custom deaths' actings (2026-10-27), one for each cause in the shop.
+# Every death (redone 2026-11-07): the three collapses, the custom deaths, the rift dive's crash.
 import deaths  # noqa: E402,F401
+
+# What a fallen body does under its death style (2026-11-07).
+import fallen  # noqa: E402,F401
 
 
 # The cutscenes' actors: their acting clips are built with everything else.

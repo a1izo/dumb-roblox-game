@@ -63,7 +63,7 @@ local CLOUD_WHITE = Color3.fromRGB(236, 238, 242)
 local REFUSED_WAIT = 1 -- seconds after the server refuses a dive before this screen asks again
 local BUSY_AFTER = 1.5 -- seconds after a dive is let go that it still counts as one (DiveController.busy)
 local STRING_COLOR = Color3.fromRGB(226, 230, 238)
-local CLIPS = { "collapseAccident" }
+local CLIPS = { "diveCrash" }
 -- The throat (2026-11-07, the user: "make it so you cant see through the map while falling"): from the rim down to
 -- the cloud the realm floats on, nothing but rock is drawn round the hole, so a diver's body and the camera both stay
 -- inside its walls. They bulge in under the rim's ellipse by a few studs at most: an ellipse THROAT_IN of the rim's
@@ -738,7 +738,7 @@ local function showPose(character: Model)
 	elseif state == "crash" then
 		cutString(character)
 		PoseController.stop(character, TRACK, 0.05)
-		PoseController.play(character, "collapseAccident", { fadeIn = 0.05 })
+		PoseController.play(character, "diveCrash", { fadeIn = 0.05 })
 		others[character] = nil
 	else
 		cutString(character)

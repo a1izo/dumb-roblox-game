@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local Config = require(Shared:WaitForChild("Config"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
@@ -69,6 +70,19 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 	if custom then
 		data.reason = custom.style
 	end
+	-- The case waits while the body falls and, with a death style that acts (Presentation/Fallen), until it is done;
+	-- the body carries its style, so every screen knows its frozen copy (RagdollService) for the one its style left.
+	local fall = Causes.timing(Causes.clipFor(cause))
+	local acting = Causes.fallenLength(data.death)
+	local hold = ManualTiming.BOOK
+		+ math.max(
+			ManualTiming.HOLD - ManualTiming.BOOK,
+			if acting > 0 then fall.length + ManualTiming.STYLE_AFTER + acting + 0.6 else fall.length + 1.8
+		)
+	local character = if typeof(target.player) == "Instance" then target.player.Character else nil
+	if character and data.death then
+		character:SetAttribute("LDeathStyle", data.death)
+	end
 	local writing = CosmeticsService.style(kira.player, "writing")
 	if writing and typeof(kira.player) == "Instance" then
 		local others = {}
@@ -79,10 +93,10 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 		end
 		local mine = table.clone(data)
 		mine.writing = writing
-		local id = Cues.fire("death", mine, { hold = ManualTiming.HOLD, lead = CUE_LEAD, to = { kira.player } })
+		local id = Cues.fire("death", mine, { hold = hold, lead = CUE_LEAD, to = { kira.player } })
 		Cues.fire("death", data, { lead = CUE_LEAD, to = others, sameAs = id })
 	else
-		Cues.fire("death", data, { hold = ManualTiming.HOLD, lead = CUE_LEAD })
+		Cues.fire("death", data, { hold = hold, lead = CUE_LEAD })
 	end
 	task.delay(CUE_LEAD + ManualTiming.BOOK, function()
 		if not stillOn() then

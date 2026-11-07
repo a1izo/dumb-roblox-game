@@ -6,3 +6,4 @@ src/shared/MapBounds.luau
 src/shared/ModelCatalog.luau
 src/shared/Cinema/Acting/
 src/shared/Cinema/Shots/
+src/shared/Cinema/DeathCuts.luau

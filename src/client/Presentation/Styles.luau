@@ -16,9 +16,11 @@
 --            and cracks across), sugar (the top cube flicked off, the tower falling in a puff of sugar), stamp
 --            (GUILTY slammed onto the file), lamp (a lamp on a cord swings in over an empty chair and the room goes
 --            dark round a shaft of warm light, dust turning in it). Styles.verdictStill: one at its moment.
---   death    what becomes of a body after it falls (Presenters/Death, Your look): ash, strings (cut
---            from above), crows (a whirl of feathers that flies off as crows), stone (stone creeps up from
---            the feet, then it crumbles), glass (it cracks like glass and falls in shards).
+--   death    what becomes of a body after it falls, played with its acting (Presentation/Fallen, 2026-11-07): ash
+--            (greys from the head down on its last try, crumbles into a drift of ash), strings (strings from a
+--            control bar haul it up, follow its limbs through a puppet's dance and snap), crows (feathers shed as it
+--            lifts; it bursts into crows), stone (stone climbs it as it reaches, it sets, it crumbles), glass (it turns
+--            to glass as it is drawn up, glints, shatters).
 --   form     what a Deathsinger wears (World/GhostVisibility): embers (a smouldering heart, the shoulders
 --            burning low, embers trailing off the hands, a flickering warm light), veil (a veiled hood and thin
 --            veils streaming back from it as it moves), chains (chains hanging and crossed over the body, a red
@@ -43,6 +45,7 @@ local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local FxKit = require(script.Parent.FxKit)
+local Materialize = require(script.Parent.Materialize)
 local Vfx = require(script.Parent.Vfx)
 local ViewFx = require(script.Parent.ViewFx)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
@@ -1824,25 +1827,227 @@ local function featherBurst(centre: Vector3, count: number, up: boolean)
 	Vfx.Emit.burst(centre, list, nil, Vector3.new(1.6, 3, 1.6))
 end
 
--- Plays a death style on a fallen body (a character in the world, or the copy in Your look). Returns
--- how long it runs. The body is left as the style leaves it (stone stays stone; ash and crows leave
--- nothing).
-function Styles.death(style: string?, model: Model): number
+-- How far along the body from its feet to its head a part is (0 at the soles, 1 at the head), however it lies: stone
+-- climbs and ash greys along the body, not up the world, so it works on a body on the floor too.
+local function alongBody(model: Model, parts: { BasePart }): { [BasePart]: number }
+	local feet, head = nil :: Vector3?, nil :: Vector3?
+	local legs = {}
+	for _, name in ipairs({ "Left Leg", "Right Leg" }) do
+		local leg = model:FindFirstChild(name)
+		if leg and leg:IsA("BasePart") then
+			table.insert(legs, leg.CFrame:PointToWorldSpace(Vector3.new(0, -leg.Size.Y / 2, 0)))
+		end
+	end
+	if #legs > 0 then
+		local sum = Vector3.zero
+		for _, p in ipairs(legs) do
+			sum += p
+		end
+		feet = sum / #legs
+	end
+	local headPart = model:FindFirstChild("Head")
+	if headPart and headPart:IsA("BasePart") then
+		head = headPart.Position
+	end
+	local out = {}
+	if not feet or not head or (head - feet).Magnitude < 0.5 then
+		local box, size = model:GetBoundingBox()
+		local low = box.Position.Y - size.Y / 2
+		for _, piece in ipairs(parts) do
+			out[piece] = math.clamp((piece.Position.Y - low) / math.max(size.Y, 1), 0, 1)
+		end
+		return out
+	end
+	local axis = head - feet
+	local length = axis.Magnitude
+	for _, piece in ipairs(parts) do
+		out[piece] = math.clamp((piece.Position - feet):Dot(axis.Unit) / length, 0, 1)
+	end
+	return out
+end
+
+-- Cut Strings' strings: from points high over the body down to its head, hands and knees, each following its limb
+-- as the body is hauled up and danced, under a control bar that sways over them; at `snap` they part one after
+-- another, the cut ends fall away and the bar goes.
+local STRING_COLOR = Color3.fromRGB(226, 216, 196)
+local STRING_POINTS = {
+	{ "Head", Vector3.new(0, 0.5, 0), Vector3.new(0, 0, 0) },
+	{ "Right Arm", Vector3.new(0, -1, 0), Vector3.new(1.4, 0, 0) },
+	{ "Left Arm", Vector3.new(0, -1, 0), Vector3.new(-1.4, 0, 0) },
+	{ "Right Leg", Vector3.new(0, 0, -0.5), Vector3.new(0.7, 0, -0.5) },
+	{ "Left Leg", Vector3.new(0, 0, -0.5), Vector3.new(-0.7, 0, -0.5) },
+}
+
+local function marionette(model: Model, here: Instance, world: boolean, m: { [string]: number }): number
+	local catch, snap = m.catch or 0.14, m.snap or 0.7
+	local holder = group(here, "Strings")
+	local root = model:FindFirstChild("HumanoidRootPart")
+	local base = if root and root:IsA("BasePart") then root.CFrame else model:GetPivot()
+	local flat = CFrame.lookAt(base.Position, base.Position + Vector3.new(base.LookVector.X, 0, base.LookVector.Z))
+	local barHeight = 9
+	-- the bar: the Core's marionette control, or two crossed sticks
+	local barAt = flat * CFrame.new(0, barHeight, 0)
+	local bar = prop("MarionetteBar", barAt, holder, 0.7, true)
+	if not bar then
+		local m2 = group(holder, "Bar")
+		part(m2, Vector3.new(3.2, 0.18, 0.18), barAt, Color3.fromRGB(110, 80, 52), Enum.Material.Wood)
+		part(
+			m2,
+			Vector3.new(0.18, 0.18, 2.0),
+			barAt * CFrame.new(0, 0.12, 0),
+			Color3.fromRGB(110, 80, 52),
+			Enum.Material.Wood
+		)
+		m2.WorldPivot = barAt
+		bar = m2
+	end
+	local threads = {}
+	for index, spec in ipairs(STRING_POINTS) do
+		local limb = model:FindFirstChild(spec[1])
+		if limb and limb:IsA("BasePart") then
+			local thread = part(holder, Vector3.new(0.04, 0.04, 1), limb.CFrame, STRING_COLOR)
+			thread.Material = Enum.Material.Fabric
+			thread.Transparency = 1
+			table.insert(threads, {
+				limb = limb,
+				at = spec[2],
+				top = spec[3],
+				part = thread,
+				catch = catch + (index - 1) * 0.07,
+				cut = false,
+				order = index,
+			})
+		end
+	end
+	local started = os.clock()
+	local barFrom = barAt
+	local connection: RBXScriptConnection? = nil
+	connection = RunService.RenderStepped:Connect(function()
+		local t = os.clock() - started
+		if not holder.Parent then
+			if connection then
+				connection:Disconnect()
+			end
+			return
+		end
+		-- the bar follows the body's head about, a little behind it, swaying
+		local head = model:FindFirstChild("Head")
+		if bar and bar.Parent and head and head:IsA("BasePart") then
+			local over = Vector3.new(head.Position.X, base.Position.Y + barHeight, head.Position.Z)
+			local sway = math.sin(t * 5.2) * 0.08 + (if t > 1.5 and t < snap then math.sin(t * 13) * 0.12 else 0)
+			local target = CFrame.new(over) * (flat - flat.Position) * CFrame.Angles(0, 0, sway)
+			barFrom = barFrom:Lerp(target, 0.18)
+			bar:PivotTo(barFrom)
+		end
+		for _, th in ipairs(threads) do
+			if not th.cut and th.limb.Parent then
+				local low = th.limb.CFrame:PointToWorldSpace(th.at)
+				local high = barFrom:PointToWorldSpace(th.top)
+				-- (each string comes down from the bar to its limb over a moment as it catches)
+				local reach = math.clamp((t - (th.catch - 0.12)) / 0.12, 0, 1)
+				local tip = high:Lerp(low, reach)
+				local length = (tip - high).Magnitude
+				if length > 0.05 then
+					th.part.Size = Vector3.new(0.04, 0.04, length)
+					th.part.CFrame = CFrame.lookAt((high + tip) / 2, tip)
+					th.part.Transparency = 0.05
+				end
+			end
+		end
+	end)
+	-- the snap: one string after another parts near the limb; the cut ends whip up and fade, the bar goes
+	for index, th in ipairs(threads) do
+		task.delay(snap + (index - 1) * 0.04, function()
+			if th.cut or not th.part.Parent then
+				return
+			end
+			th.cut = true
+			if index == 1 then
+				Sfx.play("stringsSnap")
+			end
+			local at = th.part.CFrame
+			local up = at * CFrame.new(0, 0, -th.part.Size.Z * 0.15)
+			TweenService:Create(th.part, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				CFrame = up * CFrame.Angles(0.4 * (index % 2 == 0 and 1 or -1), 0, 0.3),
+				Transparency = 1,
+			}):Play()
+			if world and not Vfx.quiet() then
+				local low = th.limb.CFrame:PointToWorldSpace(th.at)
+				Vfx.Emit.burst(low + Vector3.new(0, 0.6, 0), {
+					{
+						{
+							tex = "VfxFlare",
+							color = Color3.new(1, 1, 1),
+							size = { { 0, 0.3 }, { 0.25, 1.8 }, { 1, 0 } },
+							life = 0.2,
+							rot = { 0, 360 },
+							bright = 1.5,
+						},
+						1,
+					},
+					{
+						{
+							tex = "VfxStreak",
+							color = Color3.fromRGB(255, 244, 220),
+							size = { { 0, 0.16 }, { 1, 0.04 } },
+							squash = -2,
+							life = { 0.2, 0.4 },
+							speed = { 8, 16 },
+							drag = 3,
+							accel = Vector3.new(0, -30, 0),
+							spread = 180,
+							face = "along",
+							bright = 1.4,
+						},
+						5,
+					},
+				})
+			end
+		end)
+	end
+	task.delay(snap + 0.35, function()
+		if bar and bar.Parent then
+			if world and not Vfx.still() then
+				Materialize.vanish(bar, { seconds = 0.6, quiet = true, destroy = true })
+			else
+				bar:Destroy()
+			end
+		end
+	end)
+	Debris:AddItem(holder, snap + 1.6)
+	return snap + 1.1
+end
+
+export type DeathOptions = {
+	clip: string?, -- the fallen body's acting this plays with (Presentation/Fallen)
+	moments: { [string]: number }?, -- its moments (Shared/Anim/DeathTiming.fallen), which the effect is timed by
+}
+
+-- Plays a death style on a fallen body (a character in the world, a stand-in for one, or the copy in Your look), timed
+-- to its acting when it has one (`options.moments`, Shared/Anim/DeathTiming: the stone climbs while the body reaches
+-- and crumbles after it has set; the glass forms while it rises and shatters after its last look; the ash greys and
+-- crumbles after its last try; the crows come when it bursts; the strings follow its limbs and snap). Returns how
+-- long it runs. The body is left as the style leaves it (stone and glass in pieces, ash in a heap, crows nothing, a
+-- puppet on the floor).
+function Styles.death(style: string?, model: Model, options: DeathOptions?): number
 	if not style then
 		return 0
 	end
+	local m = (options and options.moments) or {}
 	local parts = bodyParts(model)
 	local box = model:GetBoundingBox()
 	local centre = box.Position
 	local here = model.Parent or workspace
 	local world = not inView(model)
 	local rng = Random.new(math.floor(centre.X * 7 + centre.Z))
-	local low = centre.Y - 3
 	if style == "stone" then
-		-- Stone creeps up from the feet, part by part; a held moment; then the figure crumbles.
+		-- Stone creeps up the body from the feet while it makes its last reach (until `set`); a held moment; then the
+		-- figure crumbles.
+		local set, crumbleAt = m.set or 0.9, m.crumble or 1.9
+		local along = alongBody(model, parts)
 		Sfx.play("stoneCrack")
 		for _, piece in ipairs(parts) do
-			local delay = math.clamp((piece.Position.Y - low) / 5, 0, 1) * 0.9
+			local delay = (along[piece] or 0.5) * set * 0.95
 			task.delay(delay, function()
 				piece.Material = Enum.Material.Slate
 				TweenService:Create(piece, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Color = STONE }):Play()
@@ -1856,10 +2061,11 @@ function Styles.death(style: string?, model: Model): number
 				end
 			end)
 		end
-		task.delay(1.9, function()
+		task.delay(crumbleAt, function()
 			Sfx.play("stoneCrack")
+			local now = model:GetBoundingBox().Position
 			if world then
-				stoneCrumble(centre)
+				stoneCrumble(now)
 			end
 			for _, piece in ipairs(parts) do
 				if piece.Parent then
@@ -1868,33 +2074,35 @@ function Styles.death(style: string?, model: Model): number
 				end
 			end
 		end)
-		return 3.2
+		return crumbleAt + 1.3
 	elseif style == "glass" then
-		-- It turns to glass (a glint runs over it), a beat, then cracks and falls in shards.
+		-- It turns to glass as it is drawn up (a glint runs over it at its last look), a beat, then it cracks and falls
+		-- in shards.
+		local formed, look, shatterAt = m.look or 0.5, m.look or 0.45, m.shatter or 0.9
 		if world then
-			task.delay(0.45, function()
-				Vfx.Recipes.twinkle(centre + Vector3.new(0.4, 1.4, 0), { color = GLASS, scale = 1.2 })
+			task.delay(look, function()
+				local now = model:GetBoundingBox().Position
+				Vfx.Recipes.twinkle(now + Vector3.new(0.4, 1.0, 0), { color = GLASS, scale = 1.2 })
 			end)
 		end
 		for _, piece in ipairs(parts) do
 			piece.Material = Enum.Material.Glass
-			TweenService:Create(piece, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Color = GLASS, Transparency = 0.3 })
-				:Play()
+			TweenService:Create(piece, TweenInfo.new(math.max(0.5, formed * 0.8), Enum.EasingStyle.Quad), {
+				Color = GLASS,
+				Transparency = 0.3,
+			}):Play()
 			for _, decal in ipairs(piece:GetChildren()) do
 				if decal:IsA("Decal") then
 					TweenService:Create(decal, TweenInfo.new(0.5), { Transparency = 1 }):Play()
 				end
 			end
 		end
-		task.delay(0.9, function()
+		task.delay(shatterAt, function()
 			Sfx.play("stoneCrack")
+			local now = model:GetBoundingBox().Position
 			if world then
-				FxKit.shape(
-					"spikes",
-					CFrame.new(centre),
-					{ size = 5, seconds = 0.2, color = GLASS, transparency = 0.3 }
-				)
-				glassBurst(centre)
+				FxKit.shape("spikes", CFrame.new(now), { size = 5, seconds = 0.2, color = GLASS, transparency = 0.3 })
+				glassBurst(now)
 			end
 			for _, piece in ipairs(parts) do
 				if piece.Parent then
@@ -1903,16 +2111,16 @@ function Styles.death(style: string?, model: Model): number
 				end
 			end
 		end)
-		return 2.4
+		return shatterAt + 1.5
 	elseif style == "ash" then
-		-- It greys from the head down, then crumbles the same way: each part breaking into ash that tumbles and
-		-- blows off, until a low drift of ash lies where it fell.
-		local _, size = model:GetBoundingBox()
-		local top = centre.Y + size.Y / 2
-		local floor = centre.Y - size.Y / 2
+		-- It greys from the head down during its last try (from `grey`), then crumbles the same way once the arms have
+		-- given (from `crumble`): each part breaking into ash that tumbles and blows off, until a low drift of ash lies
+		-- where it fell.
+		local greyAt, crumbleAt = m.grey or 0, m.crumble or 0.9
+		local along = alongBody(model, parts)
 		for _, piece in ipairs(parts) do
-			local delay = math.clamp((top - piece.Position.Y) / math.max(size.Y, 1), 0, 1)
-			task.delay(delay * 0.5, function()
+			local fromHead = 1 - (along[piece] or 0.5)
+			task.delay(greyAt + fromHead * 0.5, function()
 				piece.Material = Enum.Material.Sand
 				TweenService:Create(piece, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Color = ASH }):Play()
 				for _, decal in ipairs(piece:GetChildren()) do
@@ -1921,146 +2129,89 @@ function Styles.death(style: string?, model: Model): number
 					end
 				end
 			end)
-			task.delay(0.9 + delay * 0.9, function()
+			task.delay(crumbleAt + fromHead * 0.9, function()
 				if piece.Parent then
 					shatter(piece, here, 5, ASH, Enum.Material.Sand, rng)
 					piece.Transparency = 1
 				end
 			end)
 		end
-		-- The drift: low mounds of ash, softly rounded, run together where the body lay.
-		local heap = group(here, "AshHeap")
-		local along = (box.RightVector * size.X + box.LookVector * size.Z).Unit
-		for k = 1, 7 do
-			local r = rng:NextNumber(0.5, 1.1) * (if k == 1 then 1.4 else 1)
-			local spot = centre + along * rng:NextNumber(-1.4, 1.4) + box.LookVector * rng:NextNumber(-0.5, 0.5)
-			local lump = part(
-				heap,
-				Vector3.new(r * 2.2, r * 0.55, r * 1.7),
-				CFrame.new(spot.X, floor + r * 0.08, spot.Z) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0),
-				ASH:Lerp(Color3.fromRGB(40, 38, 36), rng:NextNumber(0, 0.35)),
-				Enum.Material.Sand
-			)
-			Create("SpecialMesh", { MeshType = Enum.MeshType.Sphere, Parent = lump })
-			lump.Transparency = 1
-			task.delay(1.1 + k * 0.08, function()
-				TweenService:Create(lump, TweenInfo.new(0.9), { Transparency = 0 }):Play()
-			end)
-		end
-		Debris:AddItem(heap, if world then 8 else 4)
-		if world then
-			ashRise(centre, 1.8)
-		end
-		return 2.8
+		-- The drift: low mounds of ash, softly rounded, run together where the body lies.
+		task.delay(crumbleAt, function()
+			local lying, size = model:GetBoundingBox()
+			local spot0 = lying.Position
+			local floor = spot0.Y - size.Y / 2
+			local heap = group(here, "AshHeap")
+			local along2 = (lying.RightVector * size.X + lying.LookVector * size.Z)
+			along2 = if along2.Magnitude > 1e-3 then along2.Unit else Vector3.xAxis
+			for k = 1, 7 do
+				local r = rng:NextNumber(0.5, 1.1) * (if k == 1 then 1.4 else 1)
+				local spot = spot0 + along2 * rng:NextNumber(-1.4, 1.4) + lying.LookVector * rng:NextNumber(-0.5, 0.5)
+				local lump = part(
+					heap,
+					Vector3.new(r * 2.2, r * 0.55, r * 1.7),
+					CFrame.new(spot.X, floor + r * 0.08, spot.Z) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0),
+					ASH:Lerp(Color3.fromRGB(40, 38, 36), rng:NextNumber(0, 0.35)),
+					Enum.Material.Sand
+				)
+				Create("SpecialMesh", { MeshType = Enum.MeshType.Sphere, Parent = lump })
+				lump.Transparency = 1
+				task.delay(0.2 + k * 0.08, function()
+					TweenService:Create(lump, TweenInfo.new(0.9), { Transparency = 0 }):Play()
+				end)
+			end
+			Debris:AddItem(heap, if world then 12 else 4)
+			if world then
+				ashRise(spot0, 1.8)
+			end
+		end)
+		return crumbleAt + 1.9
 	elseif style == "crows" then
-		-- The body comes apart from the feet up into a whirl of black feathers, and the whirl flies off as crows.
+		-- Feathers start to shed as it lifts; at the burst the body comes apart from the feet up into a whirl of black
+		-- feathers, and the whirl flies off as crows.
+		local burst = m.burst or 1.0
 		Sfx.play("crows")
 		if world then
-			featherBurst(centre, 18, true)
-			task.delay(1.0, function()
-				featherBurst(centre + Vector3.new(0, 2.5, 0), 12, false)
+			featherBurst(centre, 10, true)
+			task.delay(burst, function()
+				local now = model:GetBoundingBox().Position
+				featherBurst(now, 18, true)
+				featherBurst(now + Vector3.new(0, 1.5, 0), 12, false)
 			end)
 		end
+		local along = alongBody(model, parts)
 		for _, piece in ipairs(parts) do
-			local delay = math.clamp((piece.Position.Y - low) / 5, 0, 1) * 0.6
-			task.delay(delay, function()
-				TweenService:Create(piece, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+			task.delay(burst - 0.05 + (along[piece] or 0.5) * 0.22, function()
+				TweenService:Create(piece, TweenInfo.new(0.2), { Transparency = 1 }):Play()
 			end)
 		end
-		for k = 1, 22 do
-			local a = rng:NextNumber(0, math.pi * 2)
-			local r = rng:NextNumber(0.4, 1.3)
-			local start = CFrame.new(centre + Vector3.new(math.cos(a) * r, rng:NextNumber(-2.2, 1.2), math.sin(a) * r))
-				* CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
-			local feather = part(here, Vector3.new(0.12, 0.05, 0.42), start, FEATHER)
-			local turn = a + rng:NextNumber(2, 4)
-			local up = CFrame.new(
-				centre + Vector3.new(math.cos(turn) * (r + 0.6), rng:NextNumber(1.5, 3.5), math.sin(turn) * (r + 0.6))
-			) * CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
-			task.delay(k * 0.025, function()
-				TweenService:Create(feather, TweenInfo.new(1.0, Enum.EasingStyle.Sine), { CFrame = up }):Play()
-				task.delay(0.8, function()
-					TweenService:Create(feather, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+		task.delay(burst - 0.1, function()
+			local now = model:GetBoundingBox().Position
+			for k = 1, 22 do
+				local a = rng:NextNumber(0, math.pi * 2)
+				local r = rng:NextNumber(0.4, 1.3)
+				local start = CFrame.new(now + Vector3.new(math.cos(a) * r, rng:NextNumber(-2.2, 1.2), math.sin(a) * r))
+					* CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
+				local feather = part(here, Vector3.new(0.12, 0.05, 0.42), start, FEATHER)
+				local turn = a + rng:NextNumber(2, 4)
+				local up = CFrame.new(
+					now + Vector3.new(math.cos(turn) * (r + 0.6), rng:NextNumber(1.5, 3.5), math.sin(turn) * (r + 0.6))
+				) * CFrame.Angles(rng:NextNumber(0, 6), rng:NextNumber(0, 6), 0)
+				task.delay(k * 0.02, function()
+					TweenService:Create(feather, TweenInfo.new(1.0, Enum.EasingStyle.Sine), { CFrame = up }):Play()
+					task.delay(0.8, function()
+						TweenService:Create(feather, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+					end)
 				end)
-			end)
-			Debris:AddItem(feather, 1.6)
-		end
-		task.delay(1.0, function()
+				Debris:AddItem(feather, 1.6)
+			end
 			for _ = 1, 9 do
-				crow(
-					here,
-					centre + Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(1.2, 3), rng:NextNumber(-1, 1)),
-					rng
-				)
+				crow(here, now + Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(0.2, 2), rng:NextNumber(-1, 1)), rng)
 			end
 		end)
-		return 3.0
+		return burst + 1.6
 	elseif style == "strings" then
-		-- Strings from far above to its head and limbs, taut a moment, then cut: they fall away.
-		local holder = group(here, "Strings")
-		local tops = {}
-		for _, name in ipairs({ "Head", "Left Arm", "Right Arm", "Left Leg", "Right Leg" }) do
-			local limb = model:FindFirstChild(name)
-			if limb and limb:IsA("BasePart") then
-				local low = limb.Position
-				local high = low + Vector3.new(0, 14, 0)
-				local thread = part(
-					holder,
-					Vector3.new(0.05, 14, 0.05),
-					CFrame.new((low + high) / 2),
-					Color3.fromRGB(214, 206, 190)
-				)
-				table.insert(tops, thread)
-			end
-		end
-		task.delay(0.7, function()
-			Sfx.play("stringsSnap")
-			if world then
-				for _, thread in ipairs(tops) do
-					local cut = thread.Position + Vector3.new(0, 4, 0)
-					Vfx.Emit.burst(cut, {
-						{
-							{
-								tex = "VfxFlare",
-								color = Color3.new(1, 1, 1),
-								size = { { 0, 0.3 }, { 0.25, 2.2 }, { 1, 0 } },
-								life = 0.2,
-								rot = { 0, 360 },
-								bright = 1.5,
-							},
-							1,
-						},
-						{
-							{
-								tex = "VfxStreak",
-								color = Color3.fromRGB(255, 244, 220),
-								size = { { 0, 0.18 }, { 1, 0.04 } },
-								squash = -2,
-								life = { 0.2, 0.4 },
-								speed = { 8, 16 },
-								drag = 3,
-								accel = Vector3.new(0, -30, 0),
-								spread = 180,
-								face = "along",
-								bright = 1.4,
-							},
-							6,
-						},
-					})
-				end
-			end
-			for index, thread in ipairs(tops) do
-				local fallen = thread.CFrame
-					* CFrame.new(0, -3, 0)
-					* CFrame.Angles(math.rad(index * 25), 0, math.rad(index * 40))
-				TweenService:Create(thread, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-					CFrame = fallen,
-					Transparency = 1,
-				}):Play()
-			end
-		end)
-		Debris:AddItem(holder, 2)
-		return 1.8
+		return marionette(model, here, world, m)
 	end
 	return 0
 end

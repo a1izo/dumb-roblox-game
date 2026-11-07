@@ -3,8 +3,9 @@
 -- cover on the copy, a Deathsinger form as the copy turned to a
 -- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
 -- billboards). Styles and emotes play once when picked (again when picked again): an emote on the
--- copy, all of it (with its props, sound and face, if it has them), a writing style writing a name on a strip of page, a verdict's little scene, a death style on
--- the copy (which is taken again afterwards). The copy is taken once
+-- copy, all of it (with its props, sound and face, if it has them), a writing style writing a name on a
+-- strip of page, a verdict's little scene, a custom death's acting on the copy, a death style's collapse
+-- and acting on it (the copy is taken again afterwards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
 -- little on its own; drag it to turn it, and it comes back to face you a few seconds later.
@@ -18,6 +19,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
@@ -30,6 +32,7 @@ local Motion = require(script.Parent.Parent.Core.Motion)
 local Tokens = require(script.Parent.Parent.Kit.Tokens)
 local EmoteController = require(script.Parent.Parent.Parent.Controllers.EmoteController)
 local PoseController = require(script.Parent.Parent.Parent.Anim.PoseController)
+local Fallen = require(script.Parent.Parent.Parent.Presentation.Fallen)
 local Styles = require(script.Parent.Parent.Parent.Presentation.Styles)
 local Stage = require(script.Parent.Parent.Parent.Presentation.Stage)
 
@@ -56,6 +59,7 @@ export type YourLook = typeof(setmetatable(
 		profile: any,
 		titleLabel: TextLabel,
 		stopPreview: (() -> ())?,
+		still: boolean?, -- a death on the copy: it stops turning while it lies there
 		wearing: string,
 		spin: number,
 		lastDrag: number,
@@ -544,6 +548,65 @@ local function seatPreview(self: YourLook, item: Cosmetics.Item): () -> ()
 	end
 end
 
+-- A death on the copy (2026-11-07): a custom death plays its own acting (its effect needs the world: the scene's
+-- Preview has it); a death style plays the heart attack's collapse and then its acting on the fallen copy with its
+-- effect (Presentation/Fallen). The copy stops turning while it lies there, the camera stands back and above so the
+-- whole fall is in sight, and the copy is taken again when it is over.
+local function deathPreview(self: YourLook, item: Cosmetics.Item): () -> ()
+	local copy = self.copy
+	if not copy then
+		return function() end
+	end
+	self.still = true
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" and not part:FindFirstAncestor("Trying") then
+			part.Anchored = false
+		end
+	end
+	local clip = if item.kind == "reason" then Causes.clipFor(item.cause) else Causes.clipFor("Heart attack")
+	local timing = Causes.timing(clip)
+	-- the camera: back and above, on the middle of where the body stands and where it will lie
+	local root = copy:FindFirstChild("HumanoidRootPart")
+	local prepared = ClipPlayer.get(clip)
+	if root and root:IsA("BasePart") then
+		local lying = if prepared then ClipPlayer.sampleOffset(prepared, timing.still) else nil
+		local from = root.Position - Vector3.new(0, 1.5, 0)
+		local to = root.CFrame:PointToWorldSpace(lying or Vector3.zero) - Vector3.new(0, 0.8, 0)
+		local focus = from:Lerp(to, 0.5) + Vector3.new(0, 0.9, 0)
+		local reach = math.max(5.5, (to - from).Magnitude + 3.5)
+		local distance = reach / math.tan(math.rad(FOV / 2)) * 0.62
+		self.camera.CFrame =
+			CFrame.lookAt(focus + Vector3.new(-distance * 0.38, distance * 0.42, -distance * 0.82), focus)
+	end
+	PoseController.bindWhenReady(copy, 1)
+	PoseController.play(copy, clip, { fadeIn = 0.15 })
+	local alive = true
+	local undress = EmoteController.dress(copy, clip, function()
+		return alive
+	end)
+	local total = timing.length + 1.2
+	if item.kind == "death" then
+		local style = item.style :: string
+		total = timing.length + 0.5 + Causes.fallenLength(style) + 1.2
+		task.delay(timing.length + 0.5, function()
+			if alive and self.copy == copy then
+				Fallen.act(copy, style, clip)
+			end
+		end)
+	end
+	task.delay(total, function()
+		if alive and self.world and self.item == item then
+			self.still = false
+			self:capture(self.profile)
+		end
+	end)
+	return function()
+		alive = false
+		self.still = false
+		undress()
+	end
+end
+
 -- Plays a style or an emote once, for the item picked (nothing for other kinds).
 local function preview(self: YourLook, item: Cosmetics.Item)
 	stopPreview(self)
@@ -559,26 +622,16 @@ local function preview(self: YourLook, item: Cosmetics.Item)
 	elseif item.kind == "verdict" and type(item.style) == "string" then
 		self.stopPreview =
 			Styles.verdict(item.style, self.viewport, UDim2.fromScale(0.5, 0.62), UDim2.fromScale(0.95, 0.6))
-	elseif item.kind == "death" and type(item.style) == "string" and self.copy then
-		local style = item.style
-		Styles.death(style, self.copy)
-		local alive = true
-		task.delay(3.2, function()
-			if alive and self.world and self.item == item then
-				self:capture(self.profile)
-			end
-		end)
-		self.stopPreview = function()
-			alive = false
-		end
+	elseif (item.kind == "death" or item.kind == "reason") and type(item.style) == "string" and self.copy then
+		self.stopPreview = deathPreview(self, item)
 	end
 end
 
 -- Shows `item` on the copy (nil = just what you wear), and plays it if it is a style or an emote.
 function YourLook.show(self: YourLook, item: Cosmetics.Item?)
 	stopPreview(self)
-	if self.item ~= item and self.item and self.item.kind == "death" and self.world then
-		-- (A death style left the copy as it left it: take it again.)
+	if self.item ~= item and self.item and (self.item.kind == "death" or self.item.kind == "reason") and self.world then
+		-- (A death left the copy as it left it, on the floor or in pieces: take it again.)
 		self.item = item
 		self:capture(self.profile)
 	end
@@ -638,7 +691,7 @@ function YourLook.open(self: YourLook, profile)
 	table.insert(
 		self.connections,
 		RunService.RenderStepped:Connect(function(dt: number)
-			if not self.copy then
+			if not self.copy or self.still then
 				return
 			end
 			if not self.dragging and os.clock() - self.lastDrag > SETTLE_AFTER then

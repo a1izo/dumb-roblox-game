@@ -2,7 +2,8 @@
 --   the Manual     : whoever has it open writes (the server marks them LManualOpen, or LManualHeld while they pick a
 --                    name with it out in their hands; it is seen on purpose)
 --   vote cast      : that player raises a hand (who voted is public, not for whom)
---   death          : the collapse for the public cause of death; everyone else reacts
+--   death          : the collapse for the public cause of death; everyone else reacts as the body hits the floor; a
+--                    death style with an acting of its own then takes the body (Presentation/Fallen)
 --   arrest         : hands cuffed behind the back; everyone else reacts
 --   verdict        : the player voted out slumps and fades away; everyone else reacts
 --   ending         : winners celebrate (or play their win scene, an emote they chose in the shop), losers
@@ -24,8 +25,10 @@ local Activities = require(Shared:WaitForChild("Presentation"):WaitForChild("Act
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local EmoteController = require(script.Parent.Parent.Controllers.EmoteController)
 local CueRouter = require(script.Parent.Parent.Presentation.CueRouter)
 local DeathFx = require(script.Parent.Parent.Presentation.DeathFx)
+local Fallen = require(script.Parent.Parent.Presentation.Fallen)
 local PoseController = require(script.Parent.PoseController)
 local WorkActing = require(script.Parent.WorkActing)
 local Characters = require(script.Parent.Parent.Characters)
@@ -153,7 +156,28 @@ local function onDeath(cue)
 		-- Holds the last frame until the server locks the pose into the body (LPoseBaked).
 		{ startAt = localTime(at), fadeIn = 0.15 }
 	)
-	reactAround(cue, tonumber(cue.data.userId), at + 0.3, 3.4)
+	-- A death style with an acting of its own: a copy stands in for the body on this screen, collapses as it would and
+	-- then acts the style (Presentation/Fallen); the real body, hidden, plays on underneath for the server's pose lock.
+	local userId = tonumber(cue.data.userId) :: number
+	local style = cue.data.death
+	if type(style) == "string" and Fallen.has(style) then
+		Fallen.stand(
+			userId,
+			character,
+			at,
+			cause,
+			style,
+			if type(cue.data.alias) == "string" then cue.data.alias else nil
+		)
+	end
+	-- what the death holds (the chip in "Choked on a potato chip"), on the body that shows
+	local shown = Fallen.bodyOf(userId) or character
+	local timing = Causes.timing(poseId)
+	EmoteController.dress(shown, poseId, function()
+		return shown.Parent ~= nil and now() < at + timing.length + 1
+	end)
+	-- (everyone else reacts as the body goes down: the cutscene shows them once it has hit the floor)
+	reactAround(cue, userId, at + math.max(0.3, timing.hit - 0.3), 3.6)
 end
 
 local function onArrest(cue)

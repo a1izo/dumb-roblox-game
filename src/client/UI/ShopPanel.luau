@@ -354,8 +354,10 @@ local function showAction(profile, item: Cosmetics.Item?)
 	lookLine.Text =
 		string.format("%s %s", Rarity.name(item.rarity), string.lower(Cosmetics.KIND_SINGULAR[item.kind] or item.kind))
 	lookLine.TextColor3 = Rarity.color(item.rarity):Lerp(C.bone, 0.3)
-	-- (a win cutscene's Preview shares the row: it on the left, the buy or use button on the right; they overlapped)
-	local hasPreview = item.kind == "win" and type(item.cut) == "string"
+	-- (a scene's Preview shares the row: it on the left, the buy or use button on the right; they overlapped): a win
+	-- cutscene's, a custom death's or a death style's (WinCinema.cutOf)
+	local scene = WinCinema.cutOf(item)
+	local hasPreview = scene ~= nil
 	local gap = T.space.s
 	local size = if hasPreview then UDim2.new(0.5, -gap / 2, 0, T.touch) else UDim2.new(1, 0, 0, T.touch)
 	local at = if hasPreview then UDim2.new(0.5, gap / 2, 0, 0) else UDim2.new()
@@ -383,15 +385,16 @@ local function showAction(profile, item: Cosmetics.Item?)
 		})
 		Kit.setEnabled(button, false)
 	end
-	-- a win cutscene: watch it first, starring you (the shop steps aside while it plays)
-	if hasPreview then
+	-- a scene: watch it first, starring you (the shop steps aside while it plays, and opens again on the same suit)
+	if scene then
 		Kit.button(
 			{ text = "Preview", variant = "secondary", size = "m", Size = size, Parent = actionHolder },
 			function()
+				local back = currentSuit
 				Router.close("shop")
-				WinCinema.preview(item.cut, function()
+				WinCinema.preview(scene, function()
 					if Router.open("shop") ~= false then
-						ShopPanel.showSuit("wins")
+						ShopPanel.showSuit(back)
 					end
 				end)
 			end
