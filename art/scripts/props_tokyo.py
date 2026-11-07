@@ -597,7 +597,7 @@ def site_fence():
     return parts, []
 
 
-@prop("PoliceTape", pivot="centre", material="Plastic", collide=False, texture=512, set="Tokyo")
+@prop("PoliceTape", pivot="centre", material="Plastic", collide=True, texture=512, set="Tokyo")
 def police_tape():
     """A length of yellow police tape, 8.4 across, printed with the warning in both languages."""
     yellow = pk.plastic("PT_Yellow", (244, 210, 30))

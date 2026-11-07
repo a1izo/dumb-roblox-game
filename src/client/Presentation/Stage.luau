@@ -17,6 +17,7 @@ local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
 local Suit = require(Shared:WaitForChild("Suit"))
 
+local Life = require(script.Parent.Parent.Anim.Life)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
 
@@ -309,6 +310,8 @@ function Stage.cast(self: Stage, who: number | Model, mark: CFrame, clip: string
 		lift = humanoid.HipHeight + root.Size.Y / 2 + (if leg and leg:IsA("BasePart") then leg.Size.Y else 2)
 	end
 	actor:PivotTo(mark * CFrame.new(0, lift, 0))
+	-- (every actor breathes, shifts its weight and glances over whatever it acts: Anim/Life)
+	actor:SetAttribute(Life.ATTRIBUTE, 1)
 	actor.Parent = self.folder
 	table.insert(self.actors, actor)
 	for _, item in ipairs(actor:GetChildren()) do

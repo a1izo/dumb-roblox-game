@@ -641,7 +641,7 @@ def push_ticketer():
     return parts, glows
 
 
-@prop("CampusTape", pivot="centre", material="Plastic", collide=False, texture=256, set="Campus", exact=True)
+@prop("CampusTape", pivot="centre", material="Plastic", collide=True, texture=256, set="Campus", exact=True)
 def campus_tape():
     """The caretaker's barrier tape: red and white ribbon, frayed by the cold, hung with more sag than the police use."""
     return [tape("Ribbon", stripes("CTape_Band", (150, 26, 30), (232, 230, 224), 0.7), sag=0.3, rows=16)], []
@@ -933,7 +933,7 @@ def club_amp():
     return parts, glows
 
 
-@prop("ClubMic", pivot="bottom", material="Metal", collide=False, texture=256, set="Campus", exact=True)
+@prop("ClubMic", pivot="bottom", material="Metal", collide=True, texture=256, set="Campus", exact=True)
 def club_mic():
     """A boom microphone stand from the light music club: a three legged foot, the upright and counterweighted boom, an old chrome ball microphone, the
     cable taped down the stem."""
@@ -1010,7 +1010,7 @@ def _around(nodes, links, split):
     return scale.outputs[0]
 
 
-@prop("TimberShelter", pivot="bottom", material="WoodPlanks", collide=False, texture=512, set="Campus", exact=True, normal=128, lights=BUILDERS["BusShelter"]["lights"])
+@prop("TimberShelter", pivot="bottom", material="WoodPlanks", collide=False, solids=True, texture=512, set="Campus", exact=True, normal=128, lights=BUILDERS["BusShelter"]["lights"])
 def timber_shelter():
     """The campus bus shelter: a cedar frame boarded at the back and ends, a bench along the boards, a grey tiled roof with snow lying thick on it, a caged lamp
     under the ridge, a framed timetable."""
@@ -1050,7 +1050,7 @@ def timber_shelter():
     return parts, glows
 
 
-@prop("CampusBusSign", pivot="bottom", material="Metal", collide=False, texture=256, set="Campus", exact=True, anchor=(0, 0))
+@prop("CampusBusSign", pivot="bottom", material="Metal", collide=False, solids=True, texture=256, set="Campus", exact=True, anchor=(0, 0))
 def campus_bus_sign():
     """The campus bus stop's sign: a cast iron post in a concrete foot, a round enamel plate, a lit timetable box, a cap of snow on the plate."""
     iron = pk.metal("CSign_Iron", (24, 26, 28), (54, 56, 60), rough=0.5, metallic=0.8)
@@ -1115,7 +1115,7 @@ def water_server():
     return parts, [mk.box("PowerLamp", (0.08, 0.012, 0.05), (0.34, -0.7, 3.1), mat=pk.glow("WServer_Lamp", (120, 220, 170), 3))]
 
 
-@prop("WardBoard", pivot="centre", material="Wood", collide=False, texture=512, set="Tokyo", exact=True, normal=128)
+@prop("WardBoard", pivot="centre", material="Wood", collide=True, texture=512, set="Tokyo", exact=True, normal=128)
 def ward_board():
     """A neighbourhood association's notice board: a little tin roof over a framed cream panel of posters and rotas, each with a block of print and a coloured band."""
     frame = pk.paint("WBoard_Paint", (52, 62, 58), rough=0.5, wear=12)

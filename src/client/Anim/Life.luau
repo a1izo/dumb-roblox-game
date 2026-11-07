@@ -7,7 +7,7 @@
 --   weight      the weight drifting from foot to foot, very slowly, the soles left where they stand
 --   attention   the head glancing about in small quick moves between holds, as eyes would
 --   lag         the head and the arms trailing the body: on a turn the head lags then catches up past and settles;
---               on a stop the arms swing on and settle; on a start they trail
+--               on a stop the arms swing on and the chest tips forward a little, and settle; on a start they trail
 -- Each joint the clip itself is moving fast keeps its own motion (the pass fades out on it), so a strike or a reach
 -- lands exactly where it was acted; the breath stays.
 
@@ -34,6 +34,8 @@ local HEAD_LAG = 0.085 -- seconds of the body's turn the head trails by (degrees
 local HEAD_LAG_MAX = 14
 local ARM_LAG = 0.05 -- degrees of swing per stud/s^2 of the body's change of speed
 local ARM_LAG_MAX = 9
+local CHEST_LAG = 0.022 -- degrees the chest pitches per stud/s^2 (forward as the body stops, back as it sets off)
+local CHEST_LAG_MAX = 3.5
 local SPRING_W = 11 -- rad/s: the lags' springs
 local SPRING_Z = 0.55 -- their damping (a soft settle)
 local BUSY_FROM = 25 -- degrees a second a joint of the clip moves at before the pass gives way on it
@@ -53,6 +55,7 @@ type State = {
 	pos: Vector3?,
 	vel: Vector3?,
 	head: Spring,
+	chest: Spring,
 	armR: Spring,
 	armL: Spring,
 	prev: { [string]: CFrame },
@@ -88,6 +91,7 @@ local function stateOf(rig: any): State
 		glanceTo = Vector2.zero,
 		glanceStart = -math.huge,
 		head = { x = 0, v = 0 },
+		chest = { x = 0, v = 0 },
 		armR = { x = 0, v = 0 },
 		armL = { x = 0, v = 0 },
 		prev = {},
@@ -208,10 +212,12 @@ function Life.apply(rig: any, amount: number, dt: number, now: number)
 	local swing = math.clamp(-forwardAccel * ARM_LAG, -ARM_LAG_MAX, ARM_LAG_MAX)
 	spring(state.armR, swing, dt)
 	spring(state.armL, swing, dt)
+	-- (the chest: carried on by its weight as the body stops, left behind as it sets off; root pitch + leans back)
+	spring(state.chest, math.clamp(forwardAccel * CHEST_LAG, -CHEST_LAG_MAX, CHEST_LAG_MAX), dt)
 
 	-- Laid on the pose: the chest and the weight on the body, the legs turned back against the weight's roll so the
 	-- soles stay put, the head kept level against the breath plus its glances and lag, the arms' breath and lag.
-	add(rig, "root", BREATH_CHEST * breath * k, SWAY_YAW * s2 * k, SWAY_ROLL * s1 * k)
+	add(rig, "root", (BREATH_CHEST * breath + state.chest.x) * k, SWAY_YAW * s2 * k, SWAY_ROLL * s1 * k)
 	add(rig, "rHip", 0, 0, -SWAY_ROLL * s1 * k)
 	add(rig, "lHip", 0, 0, -SWAY_ROLL * s1 * k)
 	add(

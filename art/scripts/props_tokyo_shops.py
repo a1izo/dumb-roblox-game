@@ -171,7 +171,7 @@ def shop_counter():
     return parts, glows
 
 
-@prop("BarStool", pivot="bottom", material="Metal", collide=False, texture=512, set="Tokyo")
+@prop("BarStool", pivot="bottom", material="Metal", collide=True, texture=512, set="Tokyo")
 def bar_stool():
     """A counter stool: a round padded seat on a chrome column, a foot ring and a heavy base."""
     chrome = pk.chrome("BS_Chrome")

@@ -635,7 +635,9 @@ def izakaya(s, g):
           name="the izakaya", ceiling="CeilingSlats")
     top = counter(s, -85.4, 82.4, 180, 6.0, d=2.2, top="Wood", body="WoodPanel")
     s.sheet(-86.0, top, 82.2)
-    for x in (-87.6, -85.4, -83.2):
+    # (two stools, at the counter's far end: the door opens onto its near end, and since the stools are solid as drawn
+    # a third stood in the way in)
+    for x in (-88.1, -86.5):
         s.prop("BarStool", x, 85.2, 0)
     partition(s, (-89.4, 80.2), (-77.6, 80.2), 0.0, CEIL, "WoodPanel", door=(9.0, 3.6))
     s.prop("BeerCrates", -87.4, 77.2, 90)
