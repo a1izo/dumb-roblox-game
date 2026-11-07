@@ -101,8 +101,8 @@ shot = Shot(NAME, "Meeting", LENGTH, note="The meeting intro: the survivors arri
 
 # A: inside by the records door: the first two come in.
 # (2026-11-07: from 7 studs off their way in, their hair filled the frame by 1 s; now further back, both whole)
-shot.cam(0.0, (15.0, 6.2, -27.2), (25.0, 4.2, -19.8), fov=44)
-shot.cam(1.5, (15.3, 6.0, -26.7), (23.5, 4.1, -18.6), fov=42, ease="linear")
+shot.cam(0.0, (14.6, 6.4, -27.4), (25.0, 3.8, -19.8), fov=52)
+shot.cam(1.5, (14.9, 6.2, -26.9), (23.5, 3.7, -18.6), fov=50, ease="linear")
 # B: from over the table's edge, the east places: two more come in between the chairs towards it, to their places.
 # C: the same over the west side: two step up to theirs, turning to the table (to the lens).
 # (2026-11-07: shot from outside the ring, through it, a chair's back filled half of each frame)
