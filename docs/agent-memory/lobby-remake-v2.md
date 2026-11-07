@@ -66,7 +66,8 @@ white things ... and the vines hanging from midair", "make it so you cant see th
   17 studs out (the draught's pull and the steering balanced there), through the narrow sides' rock, and the camera
   went with them into the dark between the realm and its cloud.
 - The Academy's gate (props_academy.academy_gate, Lobby set; landmarks.academy_gate stands it 2 studs out of the mouth's
-  middle and lays its posts' and lintel's solids): ACADEMY in pale raised capitals (Melodrama Bold) on a slate in the
-  lintel. Lobby.luau draws the old board only while AcademyGate is not imported. The fifth cage lantern (it hung in
+  middle and lays its posts' and lintel's solids), a bare slate let into its lintel that Lobby.luau writes ACADEMY on
+  (as the steles' names; raised letters baked grey on grey, unreadable in the dark), or the old board while the model
+  is not imported. The fifth cage lantern (it hung in
   front of the puppets' hand) lights the way in from the gate now, and no drip hangs over the middle or the way in.
 
