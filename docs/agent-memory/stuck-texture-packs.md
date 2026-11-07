@@ -72,6 +72,16 @@ The undo is not always the recorded pack: in a NEW Studio session, removing the 
 (98007606877730, already built) within 2 s, not its old 75051558459905. Serialize again after any switch, and check
 the pack you actually got.
 
+**A stuck plain image (MeshPart.TextureContent) can be moved onto a pack, with no restart (2026-11-07, the user's
+"Yes, try it", for HQ's poster sheet).** Bake it out of sight first: a Folder `DG_PackBake` in ServerStorage holding
+a bare `Instance.new("MeshPart")` with a SurfaceAppearance whose only map is the stuck image. Team Create baked its
+pack at once (116183169455079, creator the experience owner). The open Studio never asked for it, because Studio does
+not draw ServerStorage, so no failure got cached. The pack was built 45 minutes later. Then give the real part a
+SurfaceAppearance with the same map and AlphaMode: it gets the same pack straight away, Studio loads it fresh, and
+there is nothing new in the log. Then delete the stand-in. The part's own TextureContent stays as it was, so deleting
+that SurfaceAppearance is the undo. The next import of the map replaces the part and drops the SurfaceAppearance.
+Still not done: the 16 `Tex_Sky*` carriers, which nobody sees.
+
 Traps in measuring it:
 - A Studio process remembers a failed texture: restarting the PLAY TEST does not ask again (the stele's pack failed
   at 19:53Z and was never requested in the 19:58Z play test). Only a new Studio process retries. So the user must
