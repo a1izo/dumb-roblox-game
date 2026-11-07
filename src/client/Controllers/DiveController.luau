@@ -805,6 +805,12 @@ local function holdCamera()
 		return
 	end
 	local focus = camera.Focus.Position
+	if focus.Y < info.cloudY - 0.5 and (diving or throatReach(info, Vector2.new(focus.X, focus.Z), 0) < 4) then
+		-- (what it looks at has fallen through the cloud: the camera stays under the cloud with it, never up in the dark
+		-- between the realm and its cloud beside the throat)
+		camera.CFrame = CFrame.new(at.X, info.cloudY - 1, at.Z) * camera.CFrame.Rotation
+		return
+	end
 	if not diving and throatReach(info, Vector2.new(focus.X, focus.Z), 0) > 1.1 then
 		return
 	end
