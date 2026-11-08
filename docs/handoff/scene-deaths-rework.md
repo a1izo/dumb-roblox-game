@@ -137,3 +137,26 @@ quality possible."
   Walrider swarm placement, patriot lone saluter (olive soldier) + stone light. Merged into main 31e49b56 and pushed.
   LEFT: the place sync (the user's Studio is open on the place: a second Studio on it would bump their session; sync
   when it is closed, sync/make_sync.py from 90a60109), Iron Man's gauntlet close-up still tight, a death in a real case.
+
+## The user's next verdict (2026-11-08, after the sync): "why are the scenarios so low quality?"
+
+Their screenshot (the patriot's grave in the gallery): the sets are code-built Roblox primitives (blocks, cylinders,
+balls, flat walls of one colour), the box room's corners show in the background, the light is blown out (the face
+glows white, the drawn face lost), long glowing "sun shaft" slabs cross the frame as pink lines. The game's own maps
+are Blender-modelled FBX imports; these scenes are not, and it shows.
+
+**What the next pass must do (not started):**
+1. Model each scene's set in Blender like the other sets (art/scripts kit + run_maps / the Sets FBX the win cutscenes
+   use): the cemetery (modelled headstones with bevelled tops and engraving, a real tree with branches, grass
+   ground with clumps, rows going into fog, a horizon instead of box walls), the car park (pillars, ramps, ceiling
+   beams, cars, lift), the desert ridge, the battlefield ruins, the asylum lab and its doorway, the starfield/void
+   skies as proper sky domes, the board room. Export as an FBX set the place imports (a new import for the user),
+   referenced by SceneDeaths instead of ctx:part boxes.
+2. Light every set like the maps (keys + rims, no blow-out; drop Brightness in the grades, cap PointLights near faces;
+   fog via Atmosphere-like layered veils far off, never box walls in view).
+3. Remove the crossing sun-shaft slabs; use beams/god-ray textures behind the subject.
+4. Check the drawn faces on avatars with mesh heads (the user's head showed none).
+5. Re-shoot with ScenePics and compare against art/refs/deaths/*.md.
+
+Also open (not part of this task): the Studio notice about missing lobby imports: Maps_Lobby v39 and Models_Lobby
+v22 (from the 2026-11-07 "solid and alive" work) were never imported into the place.
