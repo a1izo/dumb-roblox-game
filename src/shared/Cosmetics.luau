@@ -547,6 +547,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 900,
 		style = "blackwall",
+		scene = 23.3, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(255, 40, 50),
 	},
 	{
@@ -560,6 +561,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1000,
 		style = "walrider",
+		scene = 19.5, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(120, 120, 128),
 	},
 	{
@@ -573,6 +575,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1300,
 		style = "sans",
+		scene = 30, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(90, 200, 255),
 	},
 	{
@@ -586,6 +589,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1400,
 		style = "sam",
+		scene = 14, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(255, 34, 48),
 	},
 	{
@@ -599,6 +603,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1500,
 		style = "god",
+		scene = 16, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(255, 70, 220),
 	},
 	{
@@ -612,6 +617,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1500,
 		style = "ironMan",
+		scene = 18, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(255, 200, 110),
 	},
 	{
@@ -625,20 +631,36 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1600,
 		style = "requiem",
+		scene = 16.5, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(150, 70, 230),
 	},
 	{
 		id = "reason_patriot",
 		kind = "reason",
 		name = "A true patriot",
-		blurb = "One shot. Then a friend salutes at your grave.",
+		blurb = "A grave, a sad face, a friend's salute.",
 		cause = "A true patriot",
 		line = "{name} saved the world, and got a grave and a salute.",
 		rarity = "legendary",
 		source = "shop",
 		price = 1600,
 		style = "patriot",
+		scene = 25, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(236, 236, 228),
+	},
+	{
+		id = "reason_selection",
+		kind = "reason",
+		name = "Dead by selection",
+		blurb = "Every line passes you by.",
+		cause = "Dead by selection",
+		line = "{name} was left unselected. Dead by selection.",
+		rarity = "epic",
+		source = "shop",
+		price = 800,
+		style = "selection",
+		scene = 12, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
+		color = Color3.fromRGB(40, 170, 230),
 	},
 
 	-- Emotes (`emote` is the clip). The Emote Pack pass still unlocks its four (`pass`).

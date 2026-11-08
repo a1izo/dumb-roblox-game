@@ -164,7 +164,7 @@ end
 
 -- An actor: `who` a userId (their look; the faceless figure when they have no body here) or "figure"; standing on
 -- `at` (scene space: a floor point and the way it faces). Plays `clip` from scene time `from`.
-function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?): Model?
+function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: number?): Model?
 	local source = if type(who) == "number" then who else Stage.figure()
 	local actor = self.stage:cast(source :: any, self.origin * at, nil)
 	if not actor and type(who) == "number" then
@@ -174,6 +174,11 @@ function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?): Model?
 		return nil
 	end
 	actor:SetAttribute(Life.ATTRIBUTE, 0)
+	if scale and scale ~= 1 then
+		-- (scaled about its root: lifted so its feet stay on the floor; an R6 root stands 3 studs up)
+		actor:ScaleTo(scale)
+		actor:PivotTo(actor:GetPivot() + Vector3.new(0, (scale - 1) * 3, 0))
+	end
 	if clip then
 		self:act(actor, clip, from)
 	end

@@ -690,14 +690,15 @@ end
 -- deaths, the death styles, the grave after "A true patriot"), on this screen alone and anywhere, the lobby too; one,
 -- the new deaths, or all of them one after another. The panel hides while they play (F2 brings it back to stop them).
 local NEW_SCENES = {
-	"reason_requiem",
-	"reason_blackwall",
-	"reason_god",
-	"reason_ironman",
-	"reason_sam",
-	"reason_walrider",
-	"reason_sans",
-	"reason_patriot",
+	"scene:requiem",
+	"scene:blackwall",
+	"scene:god",
+	"scene:ironMan",
+	"scene:sam",
+	"scene:walrider",
+	"scene:sans",
+	"scene:patriot",
+	"scene:selection",
 }
 local GROUPS = { reason = "Custom deaths", death = "Death styles", win = "Win cutscenes" }
 local GROUP_ORDER = { "Custom deaths", "Death styles", "Win cutscenes", "Others" }
@@ -808,7 +809,7 @@ builders.Show = function()
 	button(r, "Play all " .. #all, function()
 		playGallery(all, labels)
 	end, COLORS.on)
-	button(r, "The " .. #news .. " new deaths", function()
+	button(r, "The " .. #news .. " scene deaths", function()
 		playGallery(news, labels)
 	end, COLORS.on)
 	button(r, "Stop", function()

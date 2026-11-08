@@ -12,9 +12,7 @@ ManualTiming.OUTRO = 3 -- the ending's page of every name written, when there is
 -- A death style's body (Presentation/Fallen): it lies still this long after its collapse ends (the witnesses' faces
 -- are shown meanwhile) before the style takes it.
 ManualTiming.STYLE_AFTER = 1.2
--- "A true patriot" (a custom death): its grave scene (Shared/Cinema/DeathCuts "patriot_grave") starts this long after
--- the death's own shots are over, at least HOLD - BOOK after the body began to fall, on every screen at once.
-ManualTiming.GRAVE_GAP = 0.3
-ManualTiming.GRAVE = "patriot_grave"
+-- A scene death (Presentation/SceneDeaths): after its cutscene the camera stays this long on the body where it lies.
+ManualTiming.SCENE_AFTER = 2.4
 
 return ManualTiming

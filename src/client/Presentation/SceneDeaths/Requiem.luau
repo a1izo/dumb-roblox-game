@@ -69,9 +69,8 @@ local function build(ctx)
 	ctx:light(Vector3.new(-6, 4, -8), VIOLET, 30, 1.6)
 
 	-- The killer: a tall shadow, no face, edged in pale gold light.
-	local killer = ctx:actor("figure", KILLER, "sceneRequiemKiller")
+	local killer = ctx:actor("figure", KILLER, "sceneRequiemKiller", 0, 1.3)
 	if killer then
-		killer:ScaleTo(1.3)
 		ctx:dress(killer, {
 			head = Color3.fromRGB(8, 6, 12),
 			torso = Color3.fromRGB(8, 6, 12),
