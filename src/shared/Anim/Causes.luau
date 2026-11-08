@@ -21,13 +21,28 @@ Causes.CLIP = {
 
 for _, item in ipairs(Cosmetics.ofKind("reason")) do
 	local cause, style = item.cause, item.style
-	if type(cause) == "string" and type(style) == "string" and style ~= "" then
+	if type(cause) == "string" and type(item.scene) == "number" then
+		-- (a scene death: everyone watches its cutscene, Presentation/SceneDeaths; the body itself just falls)
+		Causes.CLIP[cause] = "collapseHeart"
+	elseif type(cause) == "string" and type(style) == "string" and style ~= "" then
 		Causes.CLIP[cause] = "death" .. string.upper(string.sub(style, 1, 1)) .. string.sub(style, 2)
 	end
 end
 
 function Causes.clipFor(cause: string?): string
 	return Causes.CLIP[cause or ""] or Causes.CLIP["Heart attack"]
+end
+
+-- How long a scene death's cutscene runs (Shared/Cosmetics `scene`), 0 for a cause without one.
+function Causes.sceneLength(cause: string?): number
+	local item = Cosmetics.reasonByCause(cause)
+	return if item and type(item.scene) == "number" then item.scene else 0
+end
+
+-- The scene a cause plays (its custom death's style) when it has one.
+function Causes.scene(cause: string?): string?
+	local item = Cosmetics.reasonByCause(cause)
+	return if item and type(item.scene) == "number" then item.style else nil
 end
 
 -- When things happen in a death's clip (DeathTiming.deaths): a heart attack's for a clip it does not know.

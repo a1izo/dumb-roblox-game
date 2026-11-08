@@ -30,6 +30,8 @@ export type Line = {
 	text: string,
 	struck: boolean?, -- crossed out once written (a name that took a life, at the ending)
 	small: boolean?, -- a smaller hand (the cause under a name)
+	scatter: boolean?, -- a sentence written word by word over as many lines as it takes, the words a little off the
+	-- line, tilted and spaced unevenly as a hand writes (the anime's page); the same on every screen
 }
 
 local SET = Vector3.new(0, 1500, 300) -- far above the world, beside the role reveal's void
@@ -129,6 +131,65 @@ local function strip(gui: SurfaceGui, rule: ManualBook.Rule, row: number, line: 
 	return clip, label, wide
 end
 
+-- How many ruled lines a scattered sentence takes (about 24 letters to a line).
+local function rowsOf(line: Line): number
+	return if line.scatter then math.max(1, math.ceil(#line.text / 24)) else 1
+end
+
+-- A sentence written word by word from ruled line `row` on (see Line.scatter), each word uncovered as a pen writes
+-- it; returns the next free row.
+local function scatter(gui: SurfaceGui, rule: ManualBook.Rule, row: number, line: Line, pace: number, style: string?)
+	local seed = 7
+	for i = 1, #line.text do
+		seed = (seed * 31 + string.byte(line.text, i)) % 2147483647
+	end
+	local rng = Random.new(seed)
+	local colour, font = Styles.pen(style)
+	local left = (rule.margin + 0.07) * PIXELS
+	local right = (rule.size.X - 0.1) * PIXELS
+	local size = rule.pitch * PIXELS * 0.8
+	local x = left + rng:NextNumber(0, 0.4) * size
+	local first = true
+	for word in string.gmatch(line.text, "%S+") do
+		local scale = rng:NextNumber(0.88, 1.06) * (if first then 1.08 else 1)
+		local label = Create("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(right - left, rule.pitch * PIXELS),
+			Text = word,
+			FontFace = font,
+			TextSize = math.floor(size * scale),
+			TextColor3 = colour,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Bottom,
+		})
+		local clip = Create("Frame", {
+			BackgroundTransparency = 1,
+			ClipsDescendants = true,
+			Size = UDim2.fromOffset(0, rule.pitch * PIXELS),
+			Rotation = rng:NextNumber(-4.5, 3.5),
+			Parent = gui,
+		})
+		label.Parent = clip
+		task.wait()
+		local measured = if label.TextBounds.X > 1 then label.TextBounds.X else #word * label.TextSize * 0.48
+		local wide = measured + PIXELS * 0.03
+		if x + wide > right and x > left + size then
+			row += 1
+			x = left + rng:NextNumber(0, 0.6) * size
+		end
+		if row >= rule.count then
+			clip:Destroy()
+			break
+		end
+		local top = (rule.first + row * rule.pitch - rule.pitch * 0.92) * PIXELS
+		clip.Position = UDim2.fromOffset(x, top + rng:NextNumber(-0.16, 0.1) * rule.pitch * PIXELS)
+		Styles.write(clip, label, wide, pace, style)
+		x += wide + rng:NextNumber(0.22, 0.55) * size
+		first = false
+	end
+	return row + 1
+end
+
 -- Writes the lines one after another over `seconds`.
 local function write(gui: SurfaceGui, rule: ManualBook.Rule, lines: { Line }, seconds: number, style: string?)
 	local letters = 0
@@ -136,12 +197,18 @@ local function write(gui: SurfaceGui, rule: ManualBook.Rule, lines: { Line }, se
 		letters += math.max(4, #line.text)
 	end
 	local pace = math.min(0.07, seconds / math.max(1, letters))
-	for row, line in ipairs(lines) do
+	local row = 1
+	for _, line in ipairs(lines) do
 		if row > rule.count then
 			break
 		end
 		local lineStyle = if line.small then nil else style
+		if line.scatter then
+			row = scatter(gui, rule, row - 1, line, pace, lineStyle) + 1
+			continue
+		end
 		local clip, label, wide = strip(gui, rule, row - 1, line, lineStyle)
+		row += 1
 		task.wait()
 		-- (The font may still be on its way: then the hand's usual width per letter.)
 		local measured = if label.TextBounds.X > 1 then label.TextBounds.X else #line.text * label.TextSize * 0.48
@@ -164,8 +231,9 @@ end
 
 -- The middle of the first `count` lines' writing, in the world. (The page's sheet carries its SurfaceGui on
 -- Front: the gui's left edge is the sheet's +X side, its top the sheet's +Y, the page's head.)
-local function writing(sheet: BasePart, rule: ManualBook.Rule, count: number): Vector3
-	local across = rule.margin + 0.07 + 0.36 -- (a name's middle, from the page's left edge)
+local function writing(sheet: BasePart, rule: ManualBook.Rule, count: number, wide: boolean?): Vector3
+	-- (a name's middle, from the page's left edge; a sentence's, across the whole line)
+	local across = if wide then (rule.margin + rule.size.X) / 2 else rule.margin + 0.07 + 0.36
 	local down = rule.first + (math.max(1, count) - 1) * rule.pitch / 2 - rule.pitch * 0.4
 	return sheet.CFrame:PointToWorldSpace(Vector3.new(rule.size.X / 2 - across, rule.size.Y / 2 - down, 0))
 end
@@ -185,7 +253,12 @@ function BookStage.play(token: number, lines: { Line }, seconds: number, style: 
 	buildSet(stage, page)
 	-- The open book first, looking down from its foot; then in close on the lines as they are written
 	-- (a name is a hand's size on its ruled line: from where the whole book shows, it cannot be read).
-	local into = if sheet and rule then writing(sheet, rule, math.min(#lines, rule.count)) else page
+	local rows, wide = 0, false
+	for _, line in ipairs(lines) do
+		rows += rowsOf(line)
+		wide = wide or line.scatter == true
+	end
+	local into = if sheet and rule then writing(sheet, rule, math.min(rows, rule.count), wide) else page
 	local up = if sheet then sheet.CFrame.LookVector else Vector3.yAxis
 	local head = if sheet then sheet.CFrame.UpVector else Vector3.zAxis
 	local side = if sheet then sheet.CFrame.RightVector else Vector3.xAxis

@@ -21,7 +21,6 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
-local DeathCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("DeathCuts")) :: any
 
 local CharacterService = require(script.Parent.CharacterService)
 local CosmeticsService = require(script.Parent.CosmeticsService)
@@ -109,11 +108,14 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 			ManualTiming.HOLD - ManualTiming.BOOK,
 			if acting > 0 then fall.length + ManualTiming.STYLE_AFTER + acting + 0.6 else fall.length + 1.8
 		)
-	-- "A true patriot": the grave after it, every screen at once (Presenters/Death), someone saluting at it.
-	local grave = if data.reason == "patriot" then DeathCuts[ManualTiming.GRAVE] else nil
-	if grave then
-		data.saluter = saluterFor(if typeof(target.player) == "Instance" then target.player else nil)
-		hold += ManualTiming.GRAVE_GAP + (grave.length or 10) + 0.6
+	-- A scene death (Presentation/SceneDeaths): everyone watches its cutscene after the book, then the body; the case
+	-- waits for all of it. "A true patriot" is its grave: someone saluting at it (a friend of the dead in the server).
+	local scene = Causes.sceneLength(cause)
+	if scene > 0 then
+		hold = ManualTiming.BOOK + scene + ManualTiming.SCENE_AFTER + 0.4
+		if data.reason == "patriot" then
+			data.saluter = saluterFor(if typeof(target.player) == "Instance" then target.player else nil)
+		end
 	end
 	local character = if typeof(target.player) == "Instance" then target.player.Character else nil
 	if character and data.death then

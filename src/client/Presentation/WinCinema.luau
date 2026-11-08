@@ -23,6 +23,8 @@ local Models = require(Shared:WaitForChild("Models"))
 local Venues = require(Shared:WaitForChild("Venues"))
 local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
 local DeathCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("DeathCuts")) :: any
+local DeathLines = require(Shared:WaitForChild("Presentation"):WaitForChild("DeathLines"))
+local SceneDeaths = require(script.Parent:WaitForChild("SceneDeaths"))
 
 local Life = require(script.Parent.Parent.Anim.Life)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
@@ -92,7 +94,20 @@ end
 
 -- Cut data --------------------------------------------------------------------------------------------------
 
+-- (a scene death is "scene:<style>": Presentation/SceneDeaths plays it)
+local function sceneOf(name: string?): string?
+	if type(name) == "string" and string.sub(name, 1, 6) == "scene:" then
+		local style = string.sub(name, 7)
+		return if SceneDeaths.has(style) then style else nil
+	end
+	return nil
+end
+
 function WinCinema.get(name: string?): any
+	local style = sceneOf(name)
+	if style then
+		return { kind = "scene", length = SceneDeaths.length(style) }
+	end
 	return if name then WinCuts[name] or DeathCuts[name] else nil
 end
 
@@ -104,6 +119,9 @@ function WinCinema.cutOf(item: any): string?
 	end
 	if item.kind == "win" and type(item.cut) == "string" then
 		return item.cut
+	end
+	if item.kind == "reason" and type(item.scene) == "number" and SceneDeaths.has(item.style) then
+		return "scene:" .. item.style
 	end
 	if (item.kind == "reason" or item.kind == "death") and DeathCuts[item.id] then
 		return item.id
@@ -1103,6 +1121,10 @@ ACTS.book = function(refs, event)
 		return
 	end
 	local lines = {}
+	-- (a death scene's: one sentence, the star's name and how they died, Shared/Presentation/DeathLines)
+	if type(event.cause) == "string" then
+		table.insert(lines, { text = DeathLines.sentence(refs.starName or "", event.cause), scatter = true })
+	end
 	for _, line in ipairs(event.lines or {}) do
 		local text = if line.text == "$name" then refs.starName or "" else tostring(line.text)
 		table.insert(lines, { text = text, small = line.small == true })
@@ -1487,6 +1509,43 @@ end
 function WinCinema.preview(name: string, onEnd: (() -> ())?): boolean
 	if previewing or CameraDirector.busy() then
 		return false
+	end
+	-- a scene death: its own cutscene starring this player (the patriot's grave: someone else at it, their name on it)
+	local scene = sceneOf(name)
+	if scene then
+		local me = Players.LocalPlayer
+		local stopper: (() -> ())? = nil
+		local cancelled = false
+		previewing = function()
+			cancelled = true
+			if stopper then
+				stopper()
+			end
+		end
+		task.spawn(function()
+			local saluter = if scene == "patriot" then WinCinema.saluter() else nil
+			if cancelled then
+				previewing = nil
+				if onEnd then
+					onEnd()
+				end
+				return
+			end
+			stopper = SceneDeaths.play(scene, {
+				victim = me.UserId,
+				saluter = saluter,
+				named = me.DisplayName,
+				wait = false,
+				glideBack = true,
+				onEnd = function()
+					previewing = nil
+					if onEnd then
+						onEnd()
+					end
+				end,
+			})
+		end)
+		return true
 	end
 	local cut = WinCinema.get(name)
 	if not cut then

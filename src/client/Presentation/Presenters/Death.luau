@@ -8,7 +8,8 @@
 -- the writer's screen only (the server sends it there alone); a custom death's effect (Presentation/CustomDeaths) plays
 -- on the body as it goes, timed to its acting; the victim's death style (Presentation/Fallen: ash, cut strings, crows,
 -- stone, glass) takes the body once it lies still, on every screen, and the last shot stays on it until it is done.
--- After "A true patriot" (a custom death) everyone sees its grave (Shared/Cinema/DeathCuts "patriot_grave").
+-- A scene death (Presentation/SceneDeaths: requiem, Blackwall, the god, Iron Man, Sam, Walrider, sans, the patriot's
+-- grave, dead by selection) plays its own full cutscene instead, then shows the body.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
+local DeathLines = require(Shared:WaitForChild("Presentation"):WaitForChild("DeathLines"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
@@ -31,7 +33,7 @@ local Fallen = require(script.Parent.Parent.Fallen)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local StageLight = require(script.Parent.Parent.StageLight)
 local Styles = require(script.Parent.Parent.Styles)
-local WinCinema = require(script.Parent.Parent.WinCinema)
+local SceneDeaths = require(script.Parent.Parent.SceneDeaths)
 
 local C = Kit.color
 local LocalPlayer = Players.LocalPlayer
@@ -98,7 +100,8 @@ return function(cue)
 	if book then
 		bookToken = CameraDirector.take(ManualTiming.BOOK + 0.8)
 		Cinema.letterbox(true)
-		local lines = { { text = data.realName }, { text = tostring(data.cause or ""), small = true } }
+		-- (one sentence: the name and how they died, the words scattered as a hand writes: Shared/Presentation/DeathLines)
+		local lines = { { text = DeathLines.sentence(data.realName, tostring(data.cause or "")), scatter = true } }
 		local writing = if type(data.writing) == "string" then data.writing else nil
 		local stop = BookStage.play(bookToken, lines, ManualTiming.BOOK, writing)
 		task.wait(ManualTiming.BOOK)
@@ -108,6 +111,50 @@ return function(cue)
 			CameraDirector.release(bookToken)
 			Cinema.letterbox(false)
 		end
+	end
+	-- A scene death (Presentation/SceneDeaths): everyone watches its cutscene from the moment the book closes, then the
+	-- body where it lies, from above, under the cause of death.
+	local scene = Causes.scene(tostring(data.cause or ""))
+	if scene and SceneDeaths.has(scene) then
+		if book then
+			CameraDirector.release(bookToken)
+		end
+		local fell = cue.at + (if book then ManualTiming.BOOK else 0)
+		local named = if scene == "patriot"
+				and type(data.realName) == "string"
+				and data.realName ~= ""
+			then data.realName
+			else tostring(data.alias or "")
+		SceneDeaths.play(scene, {
+			victim = data.userId,
+			saluter = if type(data.saluter) == "number" then data.saluter else nil,
+			named = named,
+			at = fell,
+			wait = true,
+		})
+		local body = Fallen.bodyOf(data.userId)
+		local mark = if body then body:FindFirstChild("Torso") or body:FindFirstChild("HumanoidRootPart") else nil
+		if mark and mark:IsA("BasePart") then
+			local token = CameraDirector.take(ManualTiming.SCENE_AFTER + 1)
+			Cinema.letterbox(true)
+			local at = mark.Position
+			CameraDirector.cut(token, CFrame.lookAt(at + Vector3.new(3, 6, 3), at), 46)
+			CameraDirector.move(token, CFrame.lookAt(at + Vector3.new(2.2, 4.4, 2.2), at), ManualTiming.SCENE_AFTER, 42)
+			local closeCard = Cinema.card({
+				kicker = "Cause of death: " .. tostring(data.cause or ""),
+				title = tostring(data.alias or ""),
+				subtitle = "is dead.",
+				color = C.danger,
+				y = 0.74,
+			})
+			Sfx.play("flatline")
+			task.wait(ManualTiming.SCENE_AFTER)
+			closeCard()
+			Cinema.letterbox(false)
+			CameraDirector.release(token)
+		end
+		Mixer.duck("death", false)
+		return
 	end
 	local clip = Causes.clipFor(tostring(data.cause or ""))
 	local timing = Causes.timing(clip)
@@ -213,22 +260,5 @@ return function(cue)
 		end
 	end
 	removeVignette()
-	-- "A true patriot": the grave after, on every screen at once: the name that was written on the headstone, the one
-	-- the server picked (a friend of theirs in the server, else anyone) saluting at it.
-	local grave = if data.reason == "patriot" then ManualTiming.GRAVE else nil
-	if grave and WinCinema.get(grave) then
-		local fell = cue.at + (if book then ManualTiming.BOOK else 0)
-		local graveAt = fell + math.max(ManualTiming.HOLD - ManualTiming.BOOK, total) + ManualTiming.GRAVE_GAP
-		Cinema.waitUntil(graveAt)
-		local name = if type(data.realName) == "string" and data.realName ~= ""
-			then data.realName
-			else tostring(data.alias or "")
-		WinCinema.play(grave, {
-			userId = if type(data.saluter) == "number" then data.saluter else nil,
-			named = name,
-			at = graveAt,
-			wait = true,
-		})
-	end
 	Mixer.duck("death", false)
 end
