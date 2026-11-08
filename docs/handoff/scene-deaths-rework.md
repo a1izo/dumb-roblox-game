@@ -185,3 +185,6 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
   Models v21. To finish: let the queue end, check Workspace for DeathsGambitMapsLobby_Version_39 and
   DeathsGambitModelsLobby_Version_22, import whichever is missing (Home > Import 3D, art/export), then delete the old
   DeathsGambitMaps_Lobby (v38 marker) and DeathsGambitModels_Lobby (v21 marker) models, and File > Save.
+- 2026-11-08 (later), checked by Studio MCP in the user's play test: Maps_Lobby v39 LANDED (the loader uses it and moves
+  v38 to ServerStorage.DeathsGambitSuperseded). Models_Lobby is still v21: v22 never queued, so it is the one import
+  left (art/export/DeathsGambitModels_Lobby.fbx), then delete the old v38 maps model and v21 models model and save.
