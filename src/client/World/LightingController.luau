@@ -349,11 +349,11 @@ local function applySky(look: LightingPresets.Look)
 	local faces: { [string]: string }? = nil
 	if look.sky then
 		local found = {}
-		-- (the scene deaths' drawn skies name their side faces by the way skies.py's camera looked, but Roblox shows
-		-- SkyboxLf toward +X and SkyboxRt toward -X: seen 2026-11-08 as a hard seam down the nebula; the two swap here)
-		local scene = string.sub(look.sky, 1, 5) == "Scene"
+		-- (every sky's side faces are named by the way skies.py's camera looked, but Roblox shows SkyboxLf toward +X
+		-- and SkyboxRt toward -X: seen 2026-11-08 as a hard seam down the scene deaths' nebula, and as cloud bands
+		-- that did not meet on the maps' skies; the two swap here)
 		for _, face in ipairs(SKY_FACES) do
-			local file = if scene and face == "Lf" then "Rt" elseif scene and face == "Rt" then "Lf" else face
+			local file = if face == "Lf" then "Rt" elseif face == "Rt" then "Lf" else face
 			local id = Assets.texture("Sky" .. look.sky .. file)
 			if id == "" then
 				found = nil

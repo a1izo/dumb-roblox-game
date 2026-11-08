@@ -95,10 +95,14 @@ def make(venue):
     pano = pano * (0.18 / max(1e-6, float((pano @ scanlib.LUMA).mean())))
     pano = pano / (1 + pano)
     paths = []
-    for key, (forward, up) in FACES.items():
-        srgb = scanlib.to_srgb(face(pano, forward, up)).astype(np.float32)
-        graded = scanlib.grade(srgb, colour, keep=0.15, contrast=contrast, limits=(0.0, 1.0))
-        graded = lift(graded, LIFT.get(venue, 1.0)).astype(np.float32)
+    # Graded as one picture: the six faces stacked, so each keeps its place in the sky's light and dark. Graded face by
+    # face, every face was moved onto the same mean and the sky stepped in tone at each edge (seen 2026-11-08).
+    keys = list(FACES)
+    stack = np.concatenate([scanlib.to_srgb(face(pano, *FACES[key])).astype(np.float32) for key in keys], axis=0)
+    stack = scanlib.grade(stack, colour, keep=0.15, contrast=contrast, limits=(0.0, 1.0))
+    stack = lift(stack, LIFT.get(venue, 1.0)).astype(np.float32)
+    for index, key in enumerate(keys):
+        graded = stack[index * SIZE:(index + 1) * SIZE]
         rgba = np.concatenate([graded, np.ones((SIZE, SIZE, 1), dtype=np.float32)], axis=-1)
         img = bpy.data.images.new(f"Sky{venue}{key}", SIZE, SIZE, alpha=False)
         img.pixels.foreach_set(rgba.ravel())
