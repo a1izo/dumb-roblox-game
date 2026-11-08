@@ -130,3 +130,10 @@ quality possible."
   of each scene against art/refs/deaths/*.md and fix what differs. 3) Merge to main, push, sync the place
   (sync/make_sync.py one-shot plugin; scripts last synced at 90a60109). 4) A death in a real case (the hold, the
   saluter pick) has never been run.
+- 2026-11-08 (day): TESTED + MERGED. Probe `Scenes`: all 9 play to the end, 0 errors, patriot headstone = player name,
+  Manual sentence written word by word; specs 456/0. Picture probe `ScenePics` (harness, -Off -CornerSize 1920x1080
+  -Attr DGSharp; MOMENTS per sheet) shot 82 frames; fixed from them: sans camera inside its box, Blackwall mirrored,
+  requiem nebula + row closeness, god sky/size/close-ups, Iron Man light, Sam blade-mode blue wash + shoulder shots,
+  Walrider swarm placement, patriot lone saluter (olive soldier) + stone light. Merged into main 31e49b56 and pushed.
+  LEFT: the place sync (the user's Studio is open on the place: a second Studio on it would bump their session; sync
+  when it is closed, sync/make_sync.py from 90a60109), Iron Man's gauntlet close-up still tight, a death in a real case.
