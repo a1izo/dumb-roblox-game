@@ -9,6 +9,10 @@ like the maps' skies (skies.py). SceneDeaths shows them through LightingPresets.
     God      A GOD.. IS NOT... AFRAID OF...: a purple sky of stars and nebulae, magenta and cyan
 
     blender -b --factory-startup --python art/scripts/scene_skies.py [-- Mist Dusk ...]
+
+Faces keep skies.py's names (the way its camera looks), but Roblox shows SkyboxLf toward +X and SkyboxRt toward -X:
+World/LightingController swaps the two for these skies (seen 2026-11-08 as a seam down the nebula). The maps' skies
+(skies.py) are named the same way and probably need the same swap: not checked.
 """
 
 import os
