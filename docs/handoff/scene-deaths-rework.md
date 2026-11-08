@@ -221,3 +221,11 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
   (one sat beside the god wide's lens). The maps' skies (skies.py) use the same naming and probably have the same
   seam: NOT checked, NOT changed. (2) Iron Man's army wide now shot from in front of the broken wall (475e4532): clear.
   Scripts synced by hash-checked MCP patches; place saved (not published).
+- 2026-11-08 (late): THE MAPS' SKIES CHECKED (play test, Tokyo look forced, haze held off, noon for readability): their
+  cloud bands did not meet at the front/side face edge until SkyboxLf/Rt were swapped, so LightingController now swaps
+  the side faces for EVERY sky (main ea530f11; synced into the place). A tone step stayed: skies.py graded each face onto
+  the same mean; it now grades the six faces as one picture. Tokyo v46, Campus v32, Agency v32 re-exported (only the sky
+  textures and the versions changed). PENDING: those three IMPORTS (the user was playing Roblox, the screen was not
+  taken). After importing them: delete Tokyo v45 / Campus v31 / Agency v31, then sync ImportVersions.luau and
+  src/server/Maps/Scenes/{Tokyo,Campus,Agency}/init.luau into the place (NOT before: a marker newer than the import
+  makes SceneBuilder build that map as a greybox), then File > Save.
