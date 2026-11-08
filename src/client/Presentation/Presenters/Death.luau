@@ -16,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
+local DeathLines = require(Shared:WaitForChild("Presentation"):WaitForChild("DeathLines"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
 
 local ClientState = require(script.Parent.Parent.Parent.ClientState)
@@ -98,7 +99,8 @@ return function(cue)
 	if book then
 		bookToken = CameraDirector.take(ManualTiming.BOOK + 0.8)
 		Cinema.letterbox(true)
-		local lines = { { text = data.realName }, { text = tostring(data.cause or ""), small = true } }
+		-- (one sentence: the name and how they died, the words scattered as a hand writes: Shared/Presentation/DeathLines)
+		local lines = { { text = DeathLines.sentence(data.realName, tostring(data.cause or "")), scatter = true } }
 		local writing = if type(data.writing) == "string" then data.writing else nil
 		local stop = BookStage.play(bookToken, lines, ManualTiming.BOOK, writing)
 		task.wait(ManualTiming.BOOK)

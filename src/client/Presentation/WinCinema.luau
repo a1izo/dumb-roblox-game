@@ -23,6 +23,7 @@ local Models = require(Shared:WaitForChild("Models"))
 local Venues = require(Shared:WaitForChild("Venues"))
 local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
 local DeathCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("DeathCuts")) :: any
+local DeathLines = require(Shared:WaitForChild("Presentation"):WaitForChild("DeathLines"))
 
 local Life = require(script.Parent.Parent.Anim.Life)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
@@ -1103,6 +1104,10 @@ ACTS.book = function(refs, event)
 		return
 	end
 	local lines = {}
+	-- (a death scene's: one sentence, the star's name and how they died, Shared/Presentation/DeathLines)
+	if type(event.cause) == "string" then
+		table.insert(lines, { text = DeathLines.sentence(refs.starName or "", event.cause), scatter = true })
+	end
 	for _, line in ipairs(event.lines or {}) do
 		local text = if line.text == "$name" then refs.starName or "" else tostring(line.text)
 		table.insert(lines, { text = text, small = line.small == true })

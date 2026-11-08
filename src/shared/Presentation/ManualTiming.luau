@@ -5,7 +5,7 @@
 
 local ManualTiming = {}
 
-ManualTiming.BOOK = 1.6 -- the book shot that opens the death cutscene
+ManualTiming.BOOK = 2.8 -- the book shot that opens the death cutscene (a sentence written in it: DeathLines)
 ManualTiming.HOLD = 5.5 + ManualTiming.BOOK -- the match loop waits this long after the death cue
 ManualTiming.WRITE = 2.6 -- Diavolo's own shot of the name inking itself in (private)
 ManualTiming.OUTRO = 3 -- the ending's page of every name written, when there is one

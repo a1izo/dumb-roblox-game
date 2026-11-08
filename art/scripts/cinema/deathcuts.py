@@ -32,7 +32,7 @@ import fallen  # noqa: E402,F401  (defines the style clips)
 from motion import MOTIONS  # noqa: E402
 
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "..", "src", "shared", "Cinema", "DeathCuts.luau"))
-BOOK = 1.6  # Death's Manual, the name written in it
+BOOK = 2.8  # Death's Manual, the sentence written in it (ManualTiming.BOOK)
 LETTERBOX = 0.11  # of the screen's height, top and bottom (Cinema.letterbox)
 ASPECT = 16 / 9
 
@@ -262,7 +262,7 @@ def death_scene(item, cause, clip, reason, mood, set_parts, set_props=(), set_ev
     end = clip_at + t["still"] + 1.7
     shots = shots_fn(tl, clip_at, t, end) if shots_fn else default_shots(tl, clip_at, t, end)
     events = [
-        {"at": 0, "act": "book", "seconds": BOOK, "lines": [{"text": "$name"}, {"text": cause, "small": True}]},
+        {"at": 0, "act": "book", "seconds": BOOK, "cause": cause},
         {"at": round(clip_at - 0.05, 2), "act": "lifeless"},
     ]
     if t["fx"] is not None:
@@ -339,7 +339,7 @@ def style_scene(item, style, mood, set_parts, set_props=(), set_events=(), style
         shot(style_at - 0.3, around(lying, 34, 7.5, 3.0), lying + [0, 0.8, 0], 48,
              to={"eye": around(lying, 30, 6.4, 2.4), "look": tl.middle(style_at + slen * 0.6)})]
     events = [
-        {"at": 0, "act": "book", "seconds": BOOK, "lines": [{"text": "$name"}, {"text": "Heart attack", "small": True}]},
+        {"at": 0, "act": "book", "seconds": BOOK, "cause": "Heart attack"},
         {"at": round(clip_at - 0.05, 2), "act": "lifeless"},
         {"at": round(hit + 0.3, 2), "act": "card", "kicker": "Cause of death: Heart attack", "subtitle": "is dead."},
         {"at": round(style_at, 2), "act": "fallen", "style": style, "from": clip},
