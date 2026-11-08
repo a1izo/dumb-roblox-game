@@ -25,7 +25,8 @@ local function smooth(u: number): number
 	return u * u * (3 - 2 * u)
 end
 
-local function build(ctx)
+-- The set of parts (before it was modelled): only when the Scenes import is missing.
+local function standIn(ctx)
 	-- the lab: a pale concrete floor with yellow lines, the hazard stripe, the steel double door, the tiled room beyond
 	ctx:part({
 		size = Vector3.new(20, 1, 26),
@@ -57,18 +58,6 @@ local function build(ctx)
 		at = Vector3.new(0, 11.5, -2),
 		color = Color3.fromRGB(88, 98, 104),
 		material = Enum.Material.Concrete,
-	})
-	local doorL = ctx:part({
-		size = Vector3.new(3.5, 9, 0.5),
-		at = Vector3.new(-1.75, 4.5, -2),
-		color = STEEL,
-		material = Enum.Material.DiamondPlate,
-	})
-	local doorR = ctx:part({
-		size = Vector3.new(3.5, 9, 0.5),
-		at = Vector3.new(1.75, 4.5, -2),
-		color = STEEL,
-		material = Enum.Material.DiamondPlate,
 	})
 	-- yellow floor lines and the black-and-yellow hazard stripe before the door
 	for _, x in ipairs({ -4.5, 4.5 }) do
@@ -133,7 +122,27 @@ local function build(ctx)
 		color = Color3.fromRGB(240, 246, 255),
 		glow = true,
 	})
+end
 
+local function build(ctx)
+	-- (the lab, modelled: art/scripts/maps/venues/scenes/walrider.py; its lamps and tubes light it)
+	if not ctx:set() then
+		standIn(ctx)
+	end
+	-- the steel double door's leaves (on their track in front of the modelled frame)
+	local doorZ = if ctx.built then -1.55 else -2
+	local doorL = ctx:part({
+		size = Vector3.new(3.5, 9, 0.5),
+		at = Vector3.new(-1.75, 4.5, doorZ),
+		color = STEEL,
+		material = Enum.Material.Metal,
+	})
+	local doorR = ctx:part({
+		size = Vector3.new(3.5, 9, 0.5),
+		at = Vector3.new(1.75, 4.5, doorZ),
+		color = STEEL,
+		material = Enum.Material.Metal,
+	})
 	-- the men in the doorway: soldiers in black (helmets, rifles), the old man in a wheelchair among them
 	local soldiers = {}
 	local marks =

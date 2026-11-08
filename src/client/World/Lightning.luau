@@ -125,8 +125,9 @@ end
 
 -- A strike, on this screen. Returns how much of it was seen (0 inside, away from the glass; 1 in the open).
 function Lightning.strike(): number
-	-- (no storm reaches the cutscene sets, and the lamps are already out in a blackout)
-	if LightingController.venue() == "sets" then
+	-- (no storm reaches the cutscene sets or a scene death, and the lamps are already out in a blackout)
+	local venue = LightingController.venue()
+	if venue == "sets" or venue == "scene" then
 		return 0
 	end
 	gather(workspace:FindFirstChild("LGameMap"))

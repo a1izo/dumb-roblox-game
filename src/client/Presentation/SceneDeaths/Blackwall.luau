@@ -47,7 +47,8 @@ local function text(
 	})
 end
 
-local function build(ctx)
+-- The set of parts (before it was modelled): only when the Scenes import is missing.
+local function standIn(ctx)
 	-- the car park
 	ctx:part({
 		size = Vector3.new(60, 1, 60),
@@ -147,6 +148,15 @@ local function build(ctx)
 	for _, at in ipairs({ Vector3.new(0, 12, -2), Vector3.new(-8, 12, 6), Vector3.new(8, 12, 6) }) do
 		ctx:part({ size = Vector3.new(0.4, 0.2, 5), at = at, color = Color3.fromRGB(240, 246, 230), glow = true })
 		ctx:light(at - Vector3.new(0, 1, 0), Color3.fromRGB(232, 236, 214), 22, 1.6, at.X == 0)
+	end
+end
+
+local function build(ctx)
+	if ctx:set() then
+		-- (the car park, modelled: art/scripts/maps/venues/scenes/blackwall.py; its fittings light it)
+		ctx:light(Vector3.new(-0.5, 7, -4), Color3.fromRGB(236, 232, 214), 14, 0.45)
+	else
+		standIn(ctx)
 	end
 	local haze = SceneDeaths.emit(ctx, Vector3.new(0, 3, 4), Vector3.new(30, 6, 24), {
 		tex = "VfxSmoke",

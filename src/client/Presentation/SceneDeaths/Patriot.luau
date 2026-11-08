@@ -11,7 +11,8 @@ local STONE = Color3.fromRGB(232, 228, 214)
 local DARK_STONE = Color3.fromRGB(86, 78, 70)
 local GRAVE = Vector3.new(0, 0, -3.8)
 
-local function build(ctx)
+-- The cemetery of parts (the scene's set before it was modelled): only when the Scenes import is missing.
+local function standIn(ctx): BasePart
 	-- ground, misty walls far off, the light
 	ctx:part({
 		size = Vector3.new(160, 1, 160),
@@ -74,18 +75,6 @@ local function build(ctx)
 			rot = { 0, 360 },
 		})
 		fog:Emit(10)
-	end
-	-- sun shafts from the upper left
-	for k = 0, 4 do
-		ctx:part({
-			size = Vector3.new(1.4 + k * 0.4, 70, 0.1),
-			at = Vector3.new(-18 + k * 6, 24, -14 - k * 3),
-			rot = Vector3.new(0, 20, -32),
-			color = Color3.fromRGB(255, 248, 226),
-			glow = true,
-			alpha = 0.86,
-			cast = false,
-		})
 	end
 	ctx:light(Vector3.new(-20, 30, -10), Color3.fromRGB(255, 244, 220), 80, 2.2, true)
 	ctx:light(Vector3.new(3, 8, -6), Color3.fromRGB(240, 236, 226), 24, 1.4)
@@ -150,6 +139,36 @@ local function build(ctx)
 		shape = "Cylinder",
 		rot = Vector3.new(0, 90, 0),
 	})
+	for k = 0, 5 do
+		ctx:part({
+			size = Vector3.new(0.24, 0.24, 0.24),
+			at = GRAVE + Vector3.new(-0.5 + k * 0.2, 0.12, 0.6 + (k % 2) * 0.15),
+			color = Color3.fromRGB(250, 250, 244),
+			shape = "Ball",
+		})
+	end
+
+	ctx:grade(0, nil, {
+		Saturation = -0.35,
+		Contrast = 0.05,
+		TintColor = Color3.fromRGB(255, 246, 228),
+	}, 0.1)
+	return stone
+end
+
+local function build(ctx)
+	-- the cemetery (modelled: art/scripts/maps/venues/scenes/patriot.py), lit by its own look: the low sun through the
+	-- mist behind the saluter, its rays through the oak's branches
+	local stone: BasePart? = nil
+	if ctx:set() then
+		ctx:sunRays(0.08, 0.55)
+		-- (a soft fill on the faces from the front-left, the sky's own light; never enough to wash them out)
+		ctx:light(Vector3.new(-3, 6.5, -6), Color3.fromRGB(255, 240, 220), 14, 0.35)
+		ctx:light(Vector3.new(0.6, 1.6, -1.2), Color3.fromRGB(250, 242, 226), 5, 0.25)
+	else
+		stone = standIn(ctx)
+	end
+	-- the dead's name on the headstone's face (the modelled stone's face stands at z = -3.59)
 	local function engrave(text: string, y: number, h: number)
 		local plate = ctx:part({
 			size = Vector3.new(1.8, h, 0.05),
@@ -167,14 +186,6 @@ local function build(ctx)
 	nameLabel.Name = "DeadName"
 	engrave("A TRUE PATRIOT", 1.1, 0.3)
 	engrave("WHO SAVED THE WORLD", 0.75, 0.24)
-	for k = 0, 5 do
-		ctx:part({
-			size = Vector3.new(0.24, 0.24, 0.24),
-			at = GRAVE + Vector3.new(-0.5 + k * 0.2, 0.12, 0.6 + (k % 2) * 0.15),
-			color = Color3.fromRGB(250, 250, 244),
-			shape = "Ball",
-		})
-	end
 	ctx.grave = stone
 
 	-- the one saluting, facing the grave
@@ -260,12 +271,6 @@ local function build(ctx)
 			return true
 		end)
 	end)
-	ctx:grade(0, nil, {
-		Saturation = -0.35,
-		Contrast = 0.05,
-		Brightness = 0.06,
-		TintColor = Color3.fromRGB(255, 246, 228),
-	}, 0.1)
 end
 
 return { length = 25, build = build }

@@ -15,7 +15,10 @@ local SEGMENTS = 26
 local GAP = 3.4
 
 local function build(ctx)
-	SceneDeaths.box(ctx, Vector3.new(500, 400, 500), Vector3.new(0, -150, 0), Color3.fromRGB(44, 16, 86))
+	-- (the sky is the scene's own, SkyScene* from the import; a dark box only without it)
+	if not ctx:imported() then
+		SceneDeaths.box(ctx, Vector3.new(500, 400, 500), Vector3.new(0, -150, 0), Color3.fromRGB(44, 16, 86))
+	end
 	SceneDeaths.emit(ctx, Vector3.new(0, 20, 0), Vector3.new(160, 100, 160), {
 		tex = "VfxEmber",
 		color = Color3.new(1, 1, 1),

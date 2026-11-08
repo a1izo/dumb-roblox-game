@@ -109,6 +109,9 @@ class Scene(LayoutMixin):
         self.clocks = []  # clock faces whose hands the client turns (the campus's tower)
         self.checks = {}  # the venue's own targets for check_v2 (walk times and where to measure them)
         self.far_chunk = None  # (distance, cell size): bigger chunks for far scenery (see _cell)
+        # A venue of separate sets (the scene deaths' venue): centre -> the set a piece belongs to. No mesh then
+        # holds pieces of two sets, so the game can clone one set's meshes alone.
+        self.group = None
         self.used = set()
         self.preview_props = []  # placed by the game's own code; only drawn in previews
         self._smooth = None  # the smooth pieces being drawn (Scene.smooth): material -> Piece
@@ -569,6 +572,8 @@ class Scene(LayoutMixin):
                     key = (0, 0, 0)
                 else:
                     key = self._cell(piece.centre)
+                if self.group is not None:
+                    key = (self.group(piece.centre),) + key
                 cells.setdefault(key, []).append(piece)
             chunks = []
             for key in sorted(cells):

@@ -40,7 +40,8 @@ local function ashAway(ctx, model: Model, seconds: number)
 	end
 end
 
-local function build(ctx)
+-- The set of parts (before it was modelled): only when the Scenes import is missing.
+local function standIn(ctx)
 	-- the battlefield
 	ctx:part({
 		size = Vector3.new(200, 1, 200),
@@ -112,6 +113,17 @@ local function build(ctx)
 	ctx:light(Vector3.new(6, 10, 2), Color3.fromRGB(255, 200, 150), 30, 2.6, true)
 	ctx:light(Vector3.new(-5, 6, -3), Color3.fromRGB(170, 190, 255), 24, 1.4)
 	ctx:light(Vector3.new(0, 12, -11), Color3.fromRGB(255, 180, 120), 30, 2.2)
+end
+
+local function build(ctx)
+	if ctx:set() then
+		-- (the battlefield, modelled: art/scripts/maps/venues/scenes/ironman.py; the low sun behind the army;
+		-- an ember fill on the faces turned away from it)
+		ctx:light(Vector3.new(4, 6, 6), Color3.fromRGB(255, 170, 110), 18, 0.6)
+		ctx:light(Vector3.new(-3, 5, -2), Color3.fromRGB(170, 180, 230), 14, 0.35)
+	else
+		standIn(ctx)
+	end
 	for _, at in ipairs({ Vector3.new(-18, 0, -30), Vector3.new(16, 0, -26), Vector3.new(-6, 0, -44) }) do
 		SceneDeaths.emit(ctx, at, Vector3.new(4, 1, 4), {
 			tex = "VfxSmoke",

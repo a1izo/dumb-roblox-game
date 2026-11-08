@@ -19,7 +19,10 @@ local COPIES = 6
 
 local function build(ctx)
 	-- The void: a vast dark violet box, star dust streaming past (the rewind), nebula clouds that change colour.
-	SceneDeaths.box(ctx, Vector3.new(400, 260, 400), Vector3.new(0, -90, 0), Color3.fromRGB(10, 6, 22))
+	-- (the sky is the scene's own, SkyScene* from the import; a dark box only without it)
+	if not ctx:imported() then
+		SceneDeaths.box(ctx, Vector3.new(400, 260, 400), Vector3.new(0, -90, 0), Color3.fromRGB(10, 6, 22))
+	end
 	local stars = SceneDeaths.emit(ctx, Vector3.new(0, 4, 0), Vector3.new(70, 40, 70), {
 		tex = "VfxEmber",
 		color = Color3.new(1, 1, 1),

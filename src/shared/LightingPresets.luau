@@ -475,6 +475,173 @@ LightingPresets.sets = preset({
 	snow = 0,
 })
 
+-- The scene deaths' own looks (Presentation/SceneDeaths, set while one plays: World/LightingController.scene), each lit
+-- like a map of its own: its sky (art/scripts/scene_skies.py), its sun aimed where the sky's glow is, its mist and its
+-- grade. Asked 2026-11-08 after the first sets: "why are the scenarios so low quality?" (they had been lit by whatever
+-- map look the far-off camera fell in, then pushed brighter in the grade until faces blew out).
+local function scene(overrides: { [string]: any }): Preset
+	local p: { [string]: any } = {
+		clockTime = 0,
+		brightness = 0,
+		exposure = 0,
+		ambient = rgb(30, 30, 34),
+		outdoorAmbient = rgb(30, 30, 34),
+		envDiffuse = 0.4,
+		envSpecular = 0.4,
+		density = 0,
+		haze = 0,
+		glare = 0,
+		atmosphereColor = rgb(120, 120, 130),
+		decay = rgb(60, 60, 70),
+		saturation = 0,
+		contrast = 0.1,
+		tint = rgb(255, 255, 255),
+		bloom = 0.35,
+		bloomSize = 22,
+		bloomThreshold = 1.6,
+		lamps = 1,
+		lampRange = 1,
+		keyLights = 2,
+		rain = 0,
+		lightning = false,
+		snow = 0,
+	}
+	for key, value in pairs(overrides) do
+		p[key] = value
+	end
+	return p :: any
+end
+
+local function aim(x: number, y: number, z: number): Vector3
+	return Vector3.new(x, y, z).Unit
+end
+
+LightingPresets.scenes = {
+	-- A military cemetery in a sunlit morning mist: the sun low at the upper left behind the saluter (rim light, the
+	-- mist glowing round it), soft cream fill, the rows fading into the mist.
+	patriot = scene({
+		clockTime = 9,
+		sunAim = aim(0.42, 0.4, 0.81),
+		brightness = 1.4,
+		exposure = -0.1,
+		ambient = rgb(118, 116, 110),
+		outdoorAmbient = rgb(150, 146, 136),
+		envDiffuse = 0.6,
+		envSpecular = 0.3,
+		density = 0.42,
+		haze = 2.2,
+		glare = 0.9,
+		atmosphereColor = rgb(228, 224, 212),
+		decay = rgb(196, 188, 172),
+		saturation = -0.32,
+		contrast = 0.06,
+		tint = rgb(255, 247, 232),
+		bloom = 0.35,
+		bloomSize = 30,
+		bloomThreshold = 1.4,
+		sky = "SceneMist",
+	}),
+	-- An underground car park: fluorescent fittings only, a warm haze hanging under the soffit.
+	blackwall = scene({
+		ambient = rgb(44, 44, 42),
+		outdoorAmbient = rgb(30, 30, 30),
+		density = 0.3,
+		atmosphereColor = rgb(126, 122, 104),
+		decay = rgb(70, 66, 56),
+		contrast = 0.12,
+		tint = rgb(255, 246, 226),
+		bloom = 0.45,
+	}),
+	-- The asylum's lab: cold, blue-grey, the white tiled room beyond burning under its tubes.
+	walrider = scene({
+		ambient = rgb(34, 40, 46),
+		outdoorAmbient = rgb(30, 34, 40),
+		density = 0.18,
+		atmosphereColor = rgb(96, 108, 118),
+		decay = rgb(50, 56, 62),
+		saturation = -0.25,
+		contrast = 0.16,
+		tint = rgb(222, 234, 246),
+		bloom = 0.5,
+	}),
+	-- Desert hills at dusk: the sun low and gold to the front-left of the over-the-shoulder shots, long shadows.
+	sam = scene({
+		clockTime = 17.5,
+		sunAim = aim(0.55, 0.16, 0.82),
+		brightness = 2.2,
+		exposure = -0.05,
+		ambient = rgb(92, 74, 60),
+		outdoorAmbient = rgb(140, 108, 80),
+		envDiffuse = 0.5,
+		envSpecular = 0.4,
+		density = 0.28,
+		haze = 1.4,
+		glare = 0.5,
+		atmosphereColor = rgb(222, 172, 120),
+		decay = rgb(150, 100, 70),
+		saturation = -0.06,
+		contrast = 0.12,
+		tint = rgb(255, 236, 206),
+		bloom = 0.3,
+		sky = "SceneDusk",
+	}),
+	-- A battlefield's orange dusk under smoke: the sun low behind the warlord's army (silhouettes), ember fill.
+	ironMan = scene({
+		clockTime = 18,
+		sunAim = aim(-0.28, 0.1, -0.95),
+		brightness = 2.0,
+		exposure = -0.05,
+		ambient = rgb(78, 54, 44),
+		outdoorAmbient = rgb(122, 80, 58),
+		envDiffuse = 0.5,
+		density = 0.34,
+		haze = 1.8,
+		glare = 0.6,
+		atmosphereColor = rgb(210, 128, 78),
+		decay = rgb(120, 60, 40),
+		saturation = -0.05,
+		contrast = 0.14,
+		tint = rgb(255, 224, 196),
+		bloom = 0.35,
+		sky = "SceneEmber",
+	}),
+	-- A dim board room after hours: the board's glow and the city through the blinds.
+	selection = scene({
+		ambient = rgb(24, 26, 32),
+		outdoorAmbient = rgb(20, 22, 30),
+		saturation = -0.15,
+		contrast = 0.18,
+		tint = rgb(232, 238, 255),
+		bloom = 0.4,
+	}),
+	-- The star void of the requiem: no sun, the nebula sky all round, violet fill.
+	requiem = scene({
+		clockTime = 14,
+		ambient = rgb(52, 34, 78),
+		outdoorAmbient = rgb(70, 46, 100),
+		envDiffuse = 0.7,
+		envSpecular = 0.6,
+		contrast = 0.12,
+		bloom = 0.6,
+		bloomThreshold = 1.3,
+		sky = "SceneRequiem",
+	}),
+	-- The Devourer's purple sky.
+	god = scene({
+		clockTime = 14,
+		ambient = rgb(70, 40, 100),
+		outdoorAmbient = rgb(90, 50, 120),
+		envDiffuse = 0.7,
+		envSpecular = 0.6,
+		contrast = 0.1,
+		bloom = 0.6,
+		bloomThreshold = 1.3,
+		sky = "SceneGod",
+	}),
+	-- sans' battle screen: black, the victim lit flat by the scene's own lamps.
+	sans = scene({ ambient = rgb(0, 0, 0), outdoorAmbient = rgb(0, 0, 0), bloom = 0.2 }),
+} :: { [string]: Preset }
+
 function LightingPresets.pick(venue: string, mapId: string?): Preset
 	if venue == "meeting" then
 		return LightingPresets.meeting

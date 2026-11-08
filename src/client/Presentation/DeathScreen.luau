@@ -229,13 +229,41 @@ function DeathScreen.face(head: BasePart, kind: string): () -> ()
 			item.Transparency = 1
 		end
 	end
+	-- The drawing goes on a thin carrier welded just in front of the face the player sees, not on the head part's own
+	-- face: a classic head's mesh renders a quarter bigger than its part (1.25 studs round a 1-stud-deep box) and a mesh
+	-- head has its own shape, so the part's face sat inside the head and the drawing never showed (2026-11-08, the
+	-- user's own head in the gallery: "no face").
+	local depth = head.Size.Z
+	local width = math.min(head.Size.X, head.Size.Y * 1.1)
+	local special = head:FindFirstChildWhichIsA("SpecialMesh")
+	if special then
+		depth = math.max(depth, 1.25 * special.Scale.Z)
+		width = 1.25 * math.min(special.Scale.X, special.Scale.Y)
+	end
+	width = math.clamp(width, 0.9, 1.4)
+	local carrier = Instance.new("Part")
+	carrier.Name = "DGDrawnFace"
+	carrier.Transparency = 1
+	carrier.CanCollide = false
+	carrier.CanQuery = false
+	carrier.CanTouch = false
+	carrier.CastShadow = false
+	carrier.Massless = true
+	carrier.Size = Vector3.new(width, width, 0.02)
+	carrier.CFrame = head.CFrame * CFrame.new(0, 0, -(math.max(depth / 2, 0.6) + 0.02))
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = head
+	weld.Part1 = carrier
+	weld.Parent = carrier
+	carrier.Anchored = head.Anchored
+	carrier.Parent = head
 	local gui = Instance.new("SurfaceGui")
-	gui.Name = "DGDrawnFace"
+	gui.Name = "Drawing"
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	gui.CanvasSize = Vector2.new(200, 200)
 	gui.LightInfluence = 1
-	gui.Parent = head
+	gui.Parent = carrier
 	local root = Instance.new("Frame")
 	root.BackgroundTransparency = 1
 	root.Size = UDim2.fromScale(1, 1)
@@ -286,7 +314,7 @@ function DeathScreen.face(head: BasePart, kind: string): () -> ()
 		blob(root, 0.5, 0.74, 0.18, 0.025, black, nil, 0)
 	end
 	return function()
-		gui:Destroy()
+		carrier:Destroy()
 		for item, transparency in pairs(hidden) do
 			if item.Parent then
 				item.Transparency = transparency

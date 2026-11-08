@@ -11,7 +11,8 @@ local Vfx = require(script.Parent.Parent.Vfx)
 local RED = Color3.fromRGB(255, 36, 40)
 local DUSK = Color3.fromRGB(214, 170, 110)
 
-local function build(ctx)
+-- The set of parts (before it was modelled): only when the Scenes import is missing.
+local function standIn(ctx)
 	-- the hills at dusk
 	ctx:part({
 		size = Vector3.new(220, 1, 220),
@@ -84,7 +85,16 @@ local function build(ctx)
 	})
 	ctx:light(Vector3.new(-30, 20, -60), Color3.fromRGB(255, 200, 140), 120, 2.4, true)
 	ctx:light(Vector3.new(6, 10, 10), Color3.fromRGB(200, 180, 160), 30, 0.8)
+end
 
+local function build(ctx)
+	if ctx:set() then
+		-- (the desert, modelled: art/scripts/maps/venues/scenes/sam.py, under the dusk sun of its look; a warm
+		-- bounce off the ground on the faces)
+		ctx:light(Vector3.new(2, 2, -2.5), Color3.fromRGB(255, 200, 150), 10, 0.35)
+	else
+		standIn(ctx)
+	end
 	-- the two of them
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -5)), "sceneSamVictim")

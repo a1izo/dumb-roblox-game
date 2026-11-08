@@ -602,6 +602,11 @@ for _name in ("RugBorder",) + tuple(rugs.FIELDS):
 # more high quality"): the floors under the players' feet first, then the small trims, as many as fit in 80% of the
 # texture memory each scene had free (scripts/budget.py), Tokyo's wet streets among them. None that the Lobby shows:
 # its scene has no room left.
+# The scene deaths' sets (maps/venues/scenes): a drawn meadow and scans graded for their grounds, rocks and stones.
+from maps import scenesurf  # noqa: E402
+
+LIBRARY.update(scenesurf.SURFACES)
+
 SHARPER = frozenset("""
     WoodFloorDark WoodFloor WoodHerringbone Terrazzo VinylClinic CarpetTile CarpetTileBlue Linoleum TerrazzoDark
     TileChecker MarbleWhite CarpetPurple Tatami TileMetroFloor CarpetGreen PaversWarmWet PaversWet PaversWarm

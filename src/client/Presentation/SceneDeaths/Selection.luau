@@ -28,26 +28,32 @@ local RIGHT = {
 local ME = 5 -- the victim's dot (bottom left)
 
 local function build(ctx)
-	SceneDeaths.box(
-		ctx,
-		Vector3.new(40, 16, 40),
-		Vector3.new(0, 0, -2),
-		Color3.fromRGB(24, 24, 28),
-		Enum.Material.Concrete
-	)
+	-- the board room (modelled: art/scripts/maps/venues/scenes/selection.py, the board's stand with it)
+	local built = ctx:set() ~= nil
+	if not built then
+		SceneDeaths.box(
+			ctx,
+			Vector3.new(40, 16, 40),
+			Vector3.new(0, 0, -2),
+			Color3.fromRGB(24, 24, 28),
+			Enum.Material.Concrete
+		)
+	end
 	local board = ctx:part({ size = Vector3.new(12, 7.5, 0.3), at = BOARD, color = Color3.fromRGB(14, 16, 20) })
-	ctx:part({
-		size = Vector3.new(0.3, 2.2, 0.3),
-		at = BOARD + Vector3.new(-3, -4.8, 0.3),
-		color = Color3.fromRGB(40, 40, 44),
-		material = Enum.Material.Metal,
-	})
-	ctx:part({
-		size = Vector3.new(0.3, 2.2, 0.3),
-		at = BOARD + Vector3.new(3, -4.8, 0.3),
-		color = Color3.fromRGB(40, 40, 44),
-		material = Enum.Material.Metal,
-	})
+	if not built then
+		ctx:part({
+			size = Vector3.new(0.3, 2.2, 0.3),
+			at = BOARD + Vector3.new(-3, -4.8, 0.3),
+			color = Color3.fromRGB(40, 40, 44),
+			material = Enum.Material.Metal,
+		})
+		ctx:part({
+			size = Vector3.new(0.3, 2.2, 0.3),
+			at = BOARD + Vector3.new(3, -4.8, 0.3),
+			color = Color3.fromRGB(40, 40, 44),
+			material = Enum.Material.Metal,
+		})
+	end
 	local glow = ctx:light(BOARD + Vector3.new(0, 0, 3), Color3.fromRGB(170, 190, 230), 18, 0)
 	ctx:light(Vector3.new(0, 12, 4), Color3.fromRGB(150, 150, 170), 26, 0.5)
 	local gui = Instance.new("SurfaceGui")

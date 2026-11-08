@@ -10,6 +10,7 @@
 -- Played by the shop's Preview and the debug gallery (WinCinema.preview of "scene:<style>") and, in a case, by the death
 -- cutscene after the Manual's shot (Presenters/Death), on every screen at once. Everything it made goes when it ends.
 
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -22,6 +23,8 @@ local Cinema = require(script.Parent.Cinema)
 local DeathScreen = require(script.Parent.DeathScreen)
 local Stage = require(script.Parent.Stage)
 local Vfx = require(script.Parent.Vfx)
+local LightingController = require(script.Parent.Parent.World.LightingController)
+local Sets = require(script.Sets)
 
 local SceneDeaths = {}
 
@@ -154,6 +157,41 @@ function Ctx:text(part: BasePart, face: Enum.NormalId, text: string, color: Colo
 	label.Text = text
 	label.Parent = gui
 	return label
+end
+
+-- The scene's set, modelled in Blender (SceneDeaths/Sets: the Scenes import), cloned into the stage. Returns it, or nil
+-- without the import: the scene then builds its stand-in set of parts.
+function Ctx:set(): Folder?
+	local folder = Sets.build(self.name, self.origin, self.stage.folder)
+	self.built = folder ~= nil
+	return folder
+end
+
+-- Whether the scenes' import is here at all (its skies come with it: a void scene shows its sky instead of a box).
+function Ctx:imported(): boolean
+	return Sets.available()
+end
+
+-- Shafts of sunlight through gaps (the trees, the smoke) while the scene plays: Roblox's sun rays, aimed by the
+-- scene's look (LightingPresets.scenes).
+function Ctx:sunRays(intensity: number, spread: number)
+	local rays = Instance.new("SunRaysEffect")
+	rays.Name = "SceneSunRays"
+	rays.Intensity = intensity
+	rays.Spread = spread
+	rays.Parent = Lighting
+	table.insert(self.cleanups, function()
+		rays:Destroy()
+	end)
+end
+
+-- A soft focus on whatever stands `distance` studs from the lens (close-ups), from t0 to t1.
+function Ctx:focus(t0: number, t1: number, distance: number, radius: number?)
+	self:at(t0, function()
+		local undo = Cinema.focus(distance, radius)
+		table.insert(self.cleanups, undo)
+		self:atNow(t1, undo)
+	end)
 end
 
 -- Starts `clip` on an actor in step with the scene (from scene time `from`, default 0).
@@ -383,6 +421,8 @@ function SceneDeaths.play(name: string, options: Options?): () -> ()
 	}, Ctx)
 	SceneDeaths.lastCtx = ctx
 	SceneDeaths.current = name
+	-- (lit by its own look while it plays, not by whatever venue the far-off camera falls in)
+	LightingController.scene(name)
 	local done = false
 	local runner: thread? = nil
 	local frameConn: RBXScriptConnection? = nil
@@ -394,6 +434,7 @@ function SceneDeaths.play(name: string, options: Options?): () -> ()
 		done = true
 		if SceneDeaths.current == name then
 			SceneDeaths.current = nil
+			LightingController.scene(nil)
 		end
 		if frameConn then
 			frameConn:Disconnect()

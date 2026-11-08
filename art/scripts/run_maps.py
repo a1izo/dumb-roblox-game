@@ -36,8 +36,9 @@ import bpy  # noqa: E402
 import common  # noqa: E402
 from maps import export, matlib, mesher  # noqa: E402
 
-VENUES = ["Lobby", "Meeting", "Agency", "Campus", "Tokyo", "Sets"]
-MODULES = {"Lobby": "lobby", "Meeting": "meeting", "Agency": "agency", "Campus": "campus", "Tokyo": "tokyo", "Sets": "sets"}
+VENUES = ["Lobby", "Meeting", "Agency", "Campus", "Tokyo", "Sets", "Scenes"]
+MODULES = {"Lobby": "lobby", "Meeting": "meeting", "Agency": "agency", "Campus": "campus", "Tokyo": "tokyo", "Sets": "sets",
+           "Scenes": "scenes"}
 
 
 def build_venue(name):
@@ -46,6 +47,7 @@ def build_venue(name):
     module = importlib.import_module("maps.venues." + MODULES[name])
     assert getattr(module, "FORMAT", 1) >= 2, f"{name}: every venue is FORMAT 2 now"
     scene = mesher.Scene(name, prefix="Map", chunk=128.0)
+    scene.group = getattr(module, "GROUP", None)
     module.build(scene)
     coll = common.collection("Scene_" + name)
     started = time.time()
@@ -517,6 +519,9 @@ def render_views(name, module, scene, only=None, views=None, tag="map"):
     if cam.name not in bpy.context.scene.collection.objects:
         bpy.context.scene.collection.objects.link(cam)
     bpy.context.scene.camera = cam
+    # Stand-ins where the cutscene's actors stand (a venue's FIGURES), so a preview shows the framing.
+    figures = [o for (x, y, z, rot) in getattr(module, "PREVIEW_FIGURES", [])
+               for o in add_figure(common.collection("PreviewFigures"), x, y, z, rot)]
     paths = []
     for i, view in enumerate(views if views is not None else getattr(module, "VIEWS", [])):
         if only and i + 1 not in only:
@@ -530,9 +535,16 @@ def render_views(name, module, scene, only=None, views=None, tag="map"):
         cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
         cam_data.lens = lens
         cam_data.clip_end = 2000
+        # (a venue of daylit sets turns the preview's sky, sun and mist to the set the view looks at)
+        setup = getattr(module, "PREVIEW_SETUP", None)
+        if setup:
+            setup((px, py, pz), world, moon)
         path = os.path.join(common.PREVIEWS, f"{tag}_{name}_{i + 1}.png")
         common.render(path)
         paths.append(path)
+    if figures:
+        for obj in figures:
+            bpy.data.objects.remove(obj, do_unlink=True)
     return paths
 
 

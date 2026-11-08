@@ -57,6 +57,7 @@ local defaultLatitude = Lighting.GeographicLatitude -- (the place's own, for eve
 local flashing = false
 local debugKey: string? = nil -- "lobby", "meeting" or "map:<mapId>", set from the debug panel
 local debugMood: string? = nil -- a phase id (or "OutroHand" / "OutroAgency"), from the debug panel
+local sceneKey: string? = nil -- a scene death playing on this screen (SceneDeaths): LightingPresets.scenes key
 local winner: string? = nil -- the winning side once the ending starts
 local phaseStartedAt = 0
 local blendEndsAt = 0 -- os.clock() when the blend in progress finishes
@@ -243,6 +244,10 @@ end
 local function moodName(): string
 	if debugMood then
 		return debugMood
+	end
+	-- (a scene death keeps its own look: no phase lays its mood over it)
+	if sceneKey then
+		return "Scene"
 	end
 	-- (the cutscene sets keep their own look: no phase lays its mood over them)
 	if currentVenue == "sets" then
@@ -461,7 +466,7 @@ end
 
 local function update(force: boolean?)
 	local position = focus()
-	local venue = Venues.at(position)
+	local venue = if sceneKey then "scene" else Venues.at(position)
 	local mapId = if type(ClientState.public.mapId) == "string" then ClientState.public.mapId else nil
 	if (mapId == nil or mapId == "") and venue == "map" then
 		mapId = builtMapId()
@@ -477,14 +482,26 @@ local function update(force: boolean?)
 		else nil
 	currentZone = zone
 	local mood = if venue == "sets" and not debugMood then "Sets" else moodName()
-	local key = venue .. ":" .. (if venue == "map" then (zone or mapId or "") else (zone or "")) .. ":" .. mood
+	local key = venue
+		.. ":"
+		.. (if sceneKey then sceneKey elseif venue == "map" then (zone or mapId or "") else (zone or ""))
+		.. ":"
+		.. mood
 	if key == currentKey and not force then
 		return
 	end
 	-- (a cut to the sets or back is a cut: the look changes with it, never blended across it)
-	local instant = currentKey == "" or venue == "sets" or currentVenue == "sets"
-	local preset = if zone
-		then (LightingPresets.maps[zone] or (LightingPresets :: any)[zone] or LightingPresets.pick(venue, mapId))
+	local instant = currentKey == ""
+		or venue == "sets"
+		or currentVenue == "sets"
+		or venue == "scene"
+		or currentVenue == "scene"
+	local preset = if sceneKey
+		then (LightingPresets.scenes[sceneKey] or LightingPresets.sets)
+		elseif zone then (LightingPresets.maps[zone] or (LightingPresets :: any)[zone] or LightingPresets.pick(
+			venue,
+			mapId
+		))
 		else LightingPresets.pick(venue, mapId)
 	local venueChanged = venue ~= currentVenue
 	local presetChanged = preset ~= currentPreset
@@ -517,6 +534,15 @@ end
 
 function LightingController.unlean(seconds: number?)
 	LightingController.lean(0, nil, 0, seconds or 1.2)
+end
+
+-- A scene death's own look (LightingPresets.scenes) while it plays, on this screen; nil gives the camera's back.
+function LightingController.scene(key: string?)
+	if sceneKey == key then
+		return
+	end
+	sceneKey = key
+	update(true)
 end
 
 -- Debug panel: forces a lighting preset (nil to follow the camera again).
@@ -677,7 +703,7 @@ function LightingController.init()
 	-- A cut to another venue (a cutscene's first shot on the sets, the cut back) is lit on its own frame, not up to
 	-- half a second later.
 	RunService.RenderStepped:Connect(function()
-		if not debugKey and Venues.at(focus()) ~= currentVenue then
+		if not debugKey and not sceneKey and Venues.at(focus()) ~= currentVenue then
 			update()
 		end
 	end)
