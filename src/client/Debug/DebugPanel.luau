@@ -6,7 +6,8 @@
 --   Bots     add test bots, autoplay, how they vote, orders for one bot (Studio only)
 --   World    teleports, map previews, Blender scenes on or off, fly / noclip / free camera,
 --            collider boxes, role tags, lighting and rain
---   Show     cutscene previews, announcements, the briefing card, results, music and sounds
+--   Show     every shop cutscene in a gallery (anywhere, the lobby too), match cutscene previews, announcements,
+--            the briefing card, results, music and sounds
 --   Anim     play any animation clip on yourself or on someone, at any speed
 --   Profile  coins, XP, cosmetics, passes, day / week jumps, resets, test purchases
 
@@ -19,6 +20,9 @@ local Assets = require(Shared:WaitForChild("Assets"))
 -- (every clip's id: the clips themselves load part by part as they are played)
 local Clips = require(Shared:WaitForChild("Anim"):WaitForChild("Clips"):WaitForChild("Index"))
 local Config = require(Shared:WaitForChild("Config"))
+local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
+local DeathCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("DeathCuts")) :: any
+local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :: any
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Products = require(Shared:WaitForChild("Products"))
@@ -30,6 +34,7 @@ local Toasts = require(script.Parent.Parent.UI.Toasts)
 local AudioCheck = require(script.Parent.Parent.Audio.AudioCheck)
 local MusicController = require(script.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local WinCinema = require(script.Parent.Parent.Presentation.WinCinema)
 local LightingController = require(script.Parent.Parent.World.LightingController)
 local Lightning = require(script.Parent.Parent.World.Lightning)
 local RainController = require(script.Parent.Parent.World.RainController)
@@ -681,9 +686,161 @@ builders.World = function()
 	)
 end
 
+-- The cutscene gallery: every cutscene the shop's Preview plays (Presentation/WinCinema: the win cutscenes, the custom
+-- deaths, the death styles, the grave after "A true patriot"), on this screen alone and anywhere, the lobby too; one,
+-- the new deaths, or all of them one after another. The panel hides while they play (F2 brings it back to stop them).
+local NEW_SCENES = {
+	"reason_requiem",
+	"reason_blackwall",
+	"reason_god",
+	"reason_ironman",
+	"reason_sam",
+	"reason_walrider",
+	"reason_sans",
+	"reason_patriot",
+}
+local GROUPS = { reason = "Custom deaths", death = "Death styles", win = "Win cutscenes" }
+local GROUP_ORDER = { "Custom deaths", "Death styles", "Win cutscenes", "Others" }
+local galleryToken = 0
+
+type Scene = { name: string, label: string, group: string }
+
+local function galleryList(): { Scene }
+	local list: { Scene } = {}
+	local seen: { [string]: boolean } = {}
+	for _, item in ipairs(Cosmetics.ITEMS) do
+		local name = WinCinema.cutOf(item)
+		if name and not seen[name] then
+			seen[name] = true
+			table.insert(list, { name = name, label = item.name, group = GROUPS[item.kind] or "Others" })
+		end
+	end
+	for _, source in ipairs({ WinCuts, DeathCuts }) do
+		local rest = {}
+		for name in pairs(source) do
+			if not seen[name] then
+				table.insert(rest, name)
+			end
+		end
+		table.sort(rest)
+		for _, name in ipairs(rest) do
+			seen[name] = true
+			local cut = WinCinema.get(name)
+			local label = if cut and cut.kind == "grave" then "A true patriot: the grave" else name
+			table.insert(list, { name = name, label = label, group = "Others" })
+		end
+	end
+	return list
+end
+
+local galleryShowAgain = false -- (the gallery hid the open panel: show it again when the run ends or stops)
+
+local function galleryDone()
+	if galleryShowAgain then
+		galleryShowAgain = false
+		window.Visible = true
+		lastSignature = ""
+	end
+end
+
+local function stopGallery()
+	galleryToken += 1
+	WinCinema.stopPreview()
+	galleryDone()
+end
+
+local function playGallery(names: { string }, labels: { [string]: string })
+	stopGallery()
+	galleryToken += 1
+	local token = galleryToken
+	galleryShowAgain = window.Visible
+	window.Visible = false
+	local index, tries = 0, 0
+	local function nextScene()
+		if token ~= galleryToken then
+			return
+		end
+		index += 1
+		local name = names[index]
+		if not name then
+			galleryDone()
+			return
+		end
+		local started = WinCinema.preview(name, function()
+			task.delay(0.6, nextScene)
+		end)
+		if started then
+			tries = 0
+			Toasts.show(string.format("Cutscene %d of %d: %s", index, #names, labels[name] or name))
+		elseif tries < 20 then
+			-- (the last one is still letting the camera go, or something else holds it: try again in a moment)
+			tries += 1
+			index -= 1
+			task.delay(0.5, nextScene)
+		else
+			Toasts.show("Could not play " .. (labels[name] or name) .. ": the camera is taken.", "bad")
+			tries = 0
+			task.defer(nextScene)
+		end
+	end
+	task.defer(nextScene)
+end
+
 builders.Show = function()
-	heading("Cutscenes (in a match; only you see them)")
+	heading("Cutscene gallery (on your screen, anywhere: the lobby too)")
+	local scenes = galleryList()
+	local labels: { [string]: string } = {}
+	local all: { string } = {}
+	for _, scene in ipairs(scenes) do
+		labels[scene.name] = scene.label
+		-- (the grave plays at the end of "A true patriot": not twice in a row)
+		if scene.group ~= "Others" or (WinCinema.get(scene.name) or {}).kind ~= "grave" then
+			table.insert(all, scene.name)
+		end
+	end
+	local news: { string } = {}
+	for _, name in ipairs(NEW_SCENES) do
+		if labels[name] then
+			table.insert(news, name)
+		end
+	end
 	local r = row()
+	button(r, "Play all " .. #all, function()
+		playGallery(all, labels)
+	end, COLORS.on)
+	button(r, "The " .. #news .. " new deaths", function()
+		playGallery(news, labels)
+	end, COLORS.on)
+	button(r, "Stop", function()
+		stopGallery()
+	end, COLORS.danger)
+	note(
+		'Each plays as the shop\'s Preview does, starring you. "A true patriot" goes on into its grave: a friend of yours'
+			.. " in the server salutes (anyone in it if no friend is; a faceless figure when you are alone)."
+			.. " The panel hides while they play: F2 brings it back to stop them."
+	)
+	for _, group in ipairs(GROUP_ORDER) do
+		local inGroup = {}
+		for _, scene in ipairs(scenes) do
+			if scene.group == group then
+				table.insert(inGroup, scene)
+			end
+		end
+		if #inGroup > 0 then
+			note(group .. " (" .. #inGroup .. ")")
+			r = row()
+			for i, scene in ipairs(inGroup) do
+				if i > 1 and (i - 1) % 3 == 0 then
+					r = row()
+				end
+				button(r, scene.label, function()
+					playGallery({ scene.name }, labels)
+				end)
+			end
+		end
+	end
+	heading("Cutscenes (in a match; only you see them)")
+	r = row()
 	button(r, "Intro", function()
 		send("cue", { kind = "intro" })
 	end)
@@ -1208,6 +1365,29 @@ function DebugPanel.init()
 	end
 	LocalPlayer:GetAttributeChangedSignal("LDebug"):Connect(start)
 	start()
+end
+
+-- Opens the panel on a tab (for the test harness: nothing clicks in a play test). False before the panel is built.
+function DebugPanel.openTab(name: string): boolean
+	if not window or not builders[name] then
+		return false
+	end
+	currentTab = name
+	setOpen(true)
+	return true
+end
+
+-- The cutscene gallery, for the test harness: its scenes, and playing or stopping a run of them as its buttons do.
+DebugPanel.gallery = {
+	list = galleryList,
+	play = playGallery,
+	stop = stopGallery,
+	new = NEW_SCENES,
+}
+
+-- Whether the panel's window shows (the gallery hides it while it plays).
+function DebugPanel.shown(): boolean
+	return window ~= nil and window.Visible
 end
 
 return DebugPanel

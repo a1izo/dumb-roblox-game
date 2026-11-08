@@ -1482,12 +1482,20 @@ function WinCinema.saluter(): number?
 	return if #pool > 0 then pool[math.random(1, #pool)] else nil
 end
 
-function WinCinema.preview(name: string, onEnd: (() -> ())?)
+-- (Returns whether it started: not while another plays or the camera is taken.) A grave played on its own (the debug
+-- panel's gallery) has someone else at it and the player's own name on it, as at the end of "A true patriot".
+function WinCinema.preview(name: string, onEnd: (() -> ())?): boolean
 	if previewing or CameraDirector.busy() then
-		return
+		return false
 	end
 	local cut = WinCinema.get(name)
-	local after = if cut and type(cut.after) == "string" and WinCinema.get(cut.after) then cut.after else nil
+	if not cut then
+		return false
+	end
+	local after = if type(cut.after) == "string" and WinCinema.get(cut.after) then cut.after else nil
+	local me = Players.LocalPlayer
+	local cancelled = false
+	local current: (() -> ())? = nil
 	local function finished()
 		previewing = nil
 		if onEnd then
@@ -1501,28 +1509,49 @@ function WinCinema.preview(name: string, onEnd: (() -> ())?)
 			saluter = WinCinema.saluter()
 		end)
 	end
-	previewing = WinCinema.play(name, {
-		userId = Players.LocalPlayer.UserId,
+	local grave = cut.kind == "grave"
+	previewing = function()
+		cancelled = true
+		if current then
+			current()
+		end
+	end
+	local first = WinCinema.play(name, {
+		userId = if grave then WinCinema.saluter() else me.UserId,
+		named = if grave then me.DisplayName else nil,
 		wait = false,
 		glideBack = after == nil,
 		onEnd = function()
-			if not after or not previewing then
+			if not after or cancelled then
 				finished()
 				return
 			end
-			previewing = WinCinema.play(after :: string, {
+			current = WinCinema.play(after :: string, {
 				userId = saluter,
-				named = Players.LocalPlayer.DisplayName,
+				named = me.DisplayName,
 				wait = false,
 				glideBack = true,
 				onEnd = finished,
 			})
 		end,
 	})
+	-- (a scene that failed at once has already gone on into the next: keep that one's stopper)
+	if current == nil then
+		current = first
+	end
+	return true
 end
 
 function WinCinema.previewing(): boolean
 	return previewing ~= nil
+end
+
+-- Stops the preview playing, if one is (it does not go on into a scene after it).
+function WinCinema.stopPreview()
+	local stop = previewing
+	if stop then
+		stop()
+	end
 end
 
 return WinCinema

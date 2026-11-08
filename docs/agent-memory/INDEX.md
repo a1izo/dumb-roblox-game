@@ -45,3 +45,4 @@
 - [Dive probe: hover first](dive-probe-hover.md) — a probe that drops a body into the rift must hover it (CFrame each Heartbeat) or the server refuses the dive into a plain fall; the camera stays under the cloud with what it looks at
 - [Deaths 2026-11](deaths-2026-11.md) — every death redone on deathkit.py (rod_fall, hips placement, real steps), style actings (fallen.py, Presentation/Fallen), shop death scenes (deathcuts.py); traps: root angles lean in the mark frame, sets behind the cameras
 - [Deaths batch 2](deaths-batch2.md) — eight scene re-enactment deaths (requiem, Blackwall, DoG, Iron Man, Sam, Walrider, sans, patriot): what each reference shows, where the pieces are, the patriot grave with a server-picked saluter
+- [Debug cutscene gallery](debug-cutscene-gallery.md) — Show tab plays every shop cutscene anywhere (lobby too): Play all, the new deaths, Stop, one per scene; WinCinema.stopPreview; harness hooks openTab/gallery/shown
