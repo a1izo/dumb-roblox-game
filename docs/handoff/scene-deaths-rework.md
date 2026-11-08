@@ -116,3 +116,17 @@ quality possible."
     server hold (Cosmetics item `scene = <length>`), Causes clip for scene deaths (collapseHeart), removing the old
     first-build pieces (DeathCuts entries for the 8 + patriot_grave chain, CustomDeaths FX + DeathVfx beats for the
     8, the deaths_scenes.py clips), the "Dead by selection" item. Nothing tested in Roblox yet.
+- 2026-11-08 (night, branch `wip/scene-deaths` at 915e90eb): ALL NINE scenes written and wired; lint clean; actor
+  clips reviewed in Blender renders. Wired: Cosmetics `scene = <seconds>` on the 8 + new item `reason_selection`
+  ("Dead by selection"); Causes.scene/sceneLength (the world body plays collapseHeart); DeathNoteService holds
+  BOOK + scene + ManualTiming.SCENE_AFTER (2.4) + 0.4 and picks the patriot's saluter; Presenters/Death plays the scene
+  after the book then a shot of the body with the card; WinCinema.cutOf -> "scene:<style>", preview plays it;
+  DebugPanel gallery lists them ("The 9 scene deaths"). Removed: the first build (CustomDeaths/DeathVfx batch blocks,
+  deathcuts.py batch scenes + grave, deaths_scenes.py). The old death<Requiem..Patriot> + graveSalute clips are still
+  inside src/shared/Anim/Clips until a FULL `run_anims.py` rebuild (unused, harmless).
+  NEXT: 1) play-test in the throwaway place: probe `Scenes` (scratchpad harness ScenesClient/Scenes.server, run.ps1
+  -Min -Probe Scenes) and pictures (adapt DeathPics to "scene:<style>" names); NOT run yet because the user's own
+  Studio was open on the place (a harness launch beside it once crashed theirs: ask/warn first). 2) Look at real frames
+  of each scene against art/refs/deaths/*.md and fix what differs. 3) Merge to main, push, sync the place
+  (sync/make_sync.py one-shot plugin; scripts last synced at 90a60109). 4) A death in a real case (the hold, the
+  saluter pick) has never been run.
