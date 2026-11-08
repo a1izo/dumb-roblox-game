@@ -210,3 +210,8 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
   LEFT / ideas: Walrider's first-person hands are still part-built blocks; the scene actors' acting is the previous
   session's; the lobby HUD (tagline, daily streak card) showed over scenes in my hook-driven test (the debug gallery
   hides its panel; check what the shop Preview hides).
+- 2026-11-08 (evening, last look): god's purple nebula sky CHECKED in the place (serpent + chat spam fine). Two flaws
+  seen and NOT fixed: (1) god's disintegration wide (~t 7) has a hard-edged translucent purple plane over the left
+  third (an effect part from the first build, not the set); (2) Iron Man's army wide (t 10-13) still reads dark on its
+  left third after the camera move: move the eye further right (x ~11) or trim the broken wall's +X end in
+  art/scripts/maps/venues/scenes/ironman.py (that one needs a v3 import).
