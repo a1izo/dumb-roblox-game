@@ -100,3 +100,7 @@ quality possible."
 
 - 2026-11-08: feedback saved (memory feedback-scene-deaths-1for1). Requiem and Blackwall references read frame by
   frame; sheets written. Manual sentence code written (not yet wired or tested).
+- 2026-11-08: ALL references read frame by frame; every death has its sheet in art/refs/deaths/ (requiem, blackwall,
+  sam, walrider, sans, patriot) and a spec for the three without a clip (ironman, god, selection). Manual sentence
+  wired (Presenters/Death, WinCinema ACTS.book, BOOK 2.8, deathcuts.py book event `cause`), not yet tested.
+  User went to sleep: "take as long as you need ... make it perfect". Next: the cinematic engine, then each scene.
