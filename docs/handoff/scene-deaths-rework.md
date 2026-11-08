@@ -190,3 +190,23 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
   left (art/export/DeathsGambitModels_Lobby.fbx), then delete the old v38 maps model and v21 models model and save.
 - 2026-11-08 15:56: DONE. Models_Lobby v22 imported, the old Maps v38 / Models v21 removed, place saved (not
   published). All 13 imports in the place now match src/shared/ImportVersions.luau.
+- 2026-11-08 (evening): THE MODELLED SETS ARE IN (branch wip/scene-sets merged to main). Venue `Scenes`
+  (art/scripts/maps/venues/scenes, DeathsGambitMaps_Scenes.fbx v2, IMPORTED into the place, v1 removed, place saved,
+  not published): the patriot's cemetery (rolling meadow + grass tufts, ~950 bevelled arched headstones in rows, the
+  big bare oak, bare woods and hills into the mist), Blackwall's car park (pillars painted with the "1", beams, duct,
+  pipes, bays, parked cars, the two-level lift with the blue car, shutter, exit doors), Walrider's lab (vault on ribs,
+  pipes, chevron door frame, hazard stripe, the white tiled room with blood), Sam's desert ridge (hills, boulders, the
+  ridge, mesas), Iron Man's battlefield (craters, rubble, torn walls with rebar, burnt-out shells), the selection
+  board room (panelling, blinds, table and chairs, the board's stand). Five drawn skies (Mist, Dusk, Ember, Requiem,
+  God). Each scene lit by LightingPresets.scenes (sun aimed finely, mist, grade); the old part sets stay only as
+  stand-ins without the import. Drawn faces now on a carrier in front of the head (mesh heads hid them). Every scene
+  played from its start opens on black for ~0.75 s (the engine lights a new place a moment late). Actors carry no
+  name tags. Details and traps: docs/agent-memory/scene-death-sets.md.
+  CHECKED in the real place (play test by MCP + screen): patriot wide/headstone/salute close, Blackwall normal + scan
+  + fire, Walrider floor/door/tiled room, Sam desert, Iron Man wide and wall, selection board, requiem void.
+  Scripts synced by hash-checked MCP patches (all 20 + follow-ups UPDATED, none skipped).
+  NOT CHECKED: god's purple sky in Roblox (same path as requiem's), sans (no set; black), the Iron Man army wide after
+  its camera move, a death in a real case (the hold), the Walrider drops/tiled room after v2 (tubes now 2.97).
+  LEFT / ideas: Walrider's first-person hands are still part-built blocks; the scene actors' acting is the previous
+  session's; the lobby HUD (tagline, daily streak card) showed over scenes in my hook-driven test (the debug gallery
+  hides its panel; check what the shop Preview hides).
