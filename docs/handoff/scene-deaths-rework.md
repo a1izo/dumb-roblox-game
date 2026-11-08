@@ -188,3 +188,5 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
 - 2026-11-08 (later), checked by Studio MCP in the user's play test: Maps_Lobby v39 LANDED (the loader uses it and moves
   v38 to ServerStorage.DeathsGambitSuperseded). Models_Lobby is still v21: v22 never queued, so it is the one import
   left (art/export/DeathsGambitModels_Lobby.fbx), then delete the old v38 maps model and v21 models model and save.
+- 2026-11-08 15:56: DONE. Models_Lobby v22 imported, the old Maps v38 / Models v21 removed, place saved (not
+  published). All 13 imports in the place now match src/shared/ImportVersions.luau.
