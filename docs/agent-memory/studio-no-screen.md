@@ -56,3 +56,6 @@ ids from `git log --raw`, read in one `git cat-file --batch`): 61 updated and 8 
 skipped. New scripts are made with `Instance.new` + `UpdateSourceAsync`. Files deleted in the repo are only reported.
 The place's scripts are at main 90a60109 (the lobby's old Geometry `Colliders1`/`Colliders2` modules are left in it,
 unused).
+2026-11-08: the same plugin synced main 31e49b56 (the scene deaths) in two launches: a new folder module
+(`SceneDeaths/init.luau`) and its children in one run fail NOPARENT for the children listed before it; order jobs
+parents first (shortest path) or run it twice. The place's scripts are at main 31e49b56.
