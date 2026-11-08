@@ -1,5 +1,24 @@
 # Handoff: the scene deaths rework (started 2026-11-08)
 
+## For the next Claude: paste this to start
+
+> Read docs/handoff/scene-deaths-rework.md in full, then docs/agent-memory/INDEX.md and the shot sheets in
+> art/refs/deaths/. The scene deaths (src/client/Presentation/SceneDeaths/) work and are synced, but their sets are
+> built from code primitives and look low quality. Model every scene's set in Blender like the game's other sets
+> (section "The user's next verdict" below says what each needs), light them like the maps, import them, and point
+> SceneDeaths at them. Copy the references 1 for 1. Test with the harness probes named below and compare frames
+> against the sheets before calling it done.
+
+The whole previous conversation (every message, tool call and picture) is exported at
+`C:\Users\negru\Downloads\session-export-1794141328128.zip` (95 MB, too big for git); its raw transcript is
+`C:\Users\negru\.claude\projects\C--Users-negru-Documents-Lgame\1006243a-657a-4ece-83f7-f284b1514138.jsonl`.
+The harness (run.ps1; probes Scenes, ScenePics, Gallery, Deaths) is in
+`C:\Users\negru\AppData\Local\Temp\claude\607a96825a4aa8f9\1006243a-657a-4ece-83f7-f284b1514138\scratchpad\harness`
+(tools/ beside it: rojo, stylua, selene). The place sync generator is in
+`C:\Users\negru\AppData\Local\Temp\claude\c9df517f12cfcae6\1006243a-657a-4ece-83f7-f284b1514138\scratchpad\sync`
+(make_sync.py + pass.ps1; set SINCE_COMMIT to the place's last synced commit, now 31e49b56). Copy these out of Temp
+if they matter: Windows may clean it. Copies of the harness scripts and the sync tools are in docs/handoff/harness and docs/handoff/sync (run.ps1 builds the throwaway place from a repo path: set AUDIT_REPO; it expects tools one folder up for rojo).
+
 This file is for whichever Claude picks this task up next (the user may switch accounts when the weekly limit runs
 out). Read it all first, then `docs/agent-memory/INDEX.md`, then the shot sheets in `art/refs/deaths/`. The previous
 session's transcript export is listed at the bottom.
