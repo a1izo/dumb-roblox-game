@@ -215,3 +215,9 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
   third (an effect part from the first build, not the set); (2) Iron Man's army wide (t 10-13) still reads dark on its
   left third after the camera move: move the eye further right (x ~11) or trim the broken wall's +X end in
   art/scripts/maps/venues/scenes/ironman.py (that one needs a v3 import).
+- 2026-11-08 (night): BOTH FLAWS FIXED and checked in the place. (1) God's "purple plane" was a SKY SEAM: Roblox shows
+  SkyboxLf toward +X and SkyboxRt toward -X, the opposite of skies.py's face names; LightingController.applySky swaps
+  the two for Scene* skies (main 0e6eb21c). Also moved god's and requiem's nebula smoke clouds far from the cameras
+  (one sat beside the god wide's lens). The maps' skies (skies.py) use the same naming and probably have the same
+  seam: NOT checked, NOT changed. (2) Iron Man's army wide now shot from in front of the broken wall (475e4532): clear.
+  Scripts synced by hash-checked MCP patches; place saved (not published).
