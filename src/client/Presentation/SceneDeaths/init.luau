@@ -212,6 +212,12 @@ function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: nu
 		return nil
 	end
 	actor:SetAttribute(Life.ATTRIBUTE, 0)
+	-- (no overhead name tag or role label floating in a cutscene's frame)
+	for _, item in ipairs(actor:GetDescendants()) do
+		if item:IsA("BillboardGui") then
+			item:Destroy()
+		end
+	end
 	if scale and scale ~= 1 then
 		-- (scaled about its root: lifted so its feet stay on the floor; an R6 root stands 3 studs up)
 		actor:ScaleTo(scale)
