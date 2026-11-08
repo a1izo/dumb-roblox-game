@@ -7,3 +7,4 @@ src/shared/ModelCatalog.luau
 src/shared/Cinema/Acting/
 src/shared/Cinema/Shots/
 src/shared/Cinema/DeathCuts.luau
+src/shared/Scenes/
