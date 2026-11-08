@@ -179,3 +179,9 @@ are Blender-modelled FBX imports; these scenes are not, and it shows.
 
 Also open (not part of this task): the Studio notice about missing lobby imports: Maps_Lobby v39 and Models_Lobby
 v22 (from the 2026-11-07 "solid and alive" work) were never imported into the place.
+- 2026-11-08 (afternoon), lobby imports: started by screen control in the user's open Studio. DeathsGambitMaps_Lobby.fbx
+  (v39) was in the Import Queue (uploading, ~30%); DeathsGambitModels_Lobby.fbx (v22) was submitted to the importer
+  but not confirmed (the user started using the PC). At the last check the place still held only Maps v38 and
+  Models v21. To finish: let the queue end, check Workspace for DeathsGambitMapsLobby_Version_39 and
+  DeathsGambitModelsLobby_Version_22, import whichever is missing (Home > Import 3D, art/export), then delete the old
+  DeathsGambitMaps_Lobby (v38 marker) and DeathsGambitModels_Lobby (v21 marker) models, and File > Save.
