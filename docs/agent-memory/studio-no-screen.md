@@ -49,3 +49,10 @@ the other developer's live work, and Accept would have reverted it to our checko
 pushes once they pull, so check the place's `.Source` before assuming a sync is needed at all.
 
 Related: [[parallel-agent-merges]], [[protect-user-assets-edits]], [[studio-cutscene-testing]].
+
+**Every changed script at once (2026-11-08):** the same one-shot plugin, generated for every `src` file changed since
+the place's last sync commit (`git diff --name-only <last> HEAD`), each with every hash its file has had lately (blob
+ids from `git log --raw`, read in one `git cat-file --batch`): 61 updated and 8 created in one minimised launch, 0
+skipped. New scripts are made with `Instance.new` + `UpdateSourceAsync`. Files deleted in the repo are only reported.
+The place's scripts are at main 90a60109 (the lobby's old Geometry `Colliders1`/`Colliders2` modules are left in it,
+unused).
