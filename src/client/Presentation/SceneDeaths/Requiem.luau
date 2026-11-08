@@ -68,8 +68,8 @@ local function build(ctx)
 		rate = 3,
 	})
 	nebulaGreen:Emit(5)
-	ctx:light(Vector3.new(3, 9, 4), Color3.fromRGB(220, 200, 255), 40, 2.2)
-	ctx:light(Vector3.new(-6, 4, -8), VIOLET, 30, 1.6)
+	ctx:light(Vector3.new(3, 9, 4), Color3.fromRGB(220, 200, 255), 40, 1.0)
+	ctx:light(Vector3.new(-6, 4, -8), VIOLET, 30, 0.9)
 
 	-- The killer: a tall shadow, no face, edged in pale gold light.
 	local killer = ctx:actor("figure", KILLER, "sceneRequiemKiller", 0, 1.3)

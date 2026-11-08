@@ -297,20 +297,39 @@ local GLOW_SIZE = 24 -- degrees across the realm's sun is drawn (a great soft gl
 -- The clock and latitude that put the sun nearest `aim` (a direction): Roblox places the sun from those two, so they
 -- are searched for here rather than worked out (and kept: the answer never changes).
 local aimed: { [string]: { latitude: number, clock: number } } = {}
-local function aimSun(aim: Vector3): (number, number)
-	local key = string.format("%.3f,%.3f,%.3f", aim.X, aim.Y, aim.Z)
+-- (fine: every hour of the day, then refined round the best, for a scene death's low dusk or morning sun; the venues
+-- keep the four-hour search their looks were set by)
+local function aimSun(aim: Vector3, fine: boolean?): (number, number)
+	local key = string.format("%.3f,%.3f,%.3f,%s", aim.X, aim.Y, aim.Z, tostring(fine == true))
 	local found = aimed[key]
 	if found then
 		return found.latitude, found.clock
 	end
 	local best, bestLatitude, bestClock = -2, Lighting.GeographicLatitude, Lighting.ClockTime
-	for _, clock in ipairs({ 12, 0, 6, 18 }) do
-		for latitude = -88, 88, 2 do
-			Lighting.ClockTime = clock
-			Lighting.GeographicLatitude = latitude
-			local d = Lighting:GetSunDirection():Dot(aim.Unit)
-			if d > best then
-				best, bestLatitude, bestClock = d, latitude, clock
+	local function try(clock: number, latitude: number)
+		Lighting.ClockTime = clock
+		Lighting.GeographicLatitude = latitude
+		local d = Lighting:GetSunDirection():Dot(aim.Unit)
+		if d > best then
+			best, bestLatitude, bestClock = d, latitude, clock
+		end
+	end
+	if fine then
+		for clock = 0, 23 do
+			for latitude = -88, 88, 4 do
+				try(clock, latitude)
+			end
+		end
+		local c0, l0 = bestClock, bestLatitude
+		for dc = -1, 1, 0.1 do
+			for dl = -4, 4, 0.5 do
+				try((c0 + dc) % 24, math.clamp(l0 + dl, -89, 89))
+			end
+		end
+	else
+		for _, clock in ipairs({ 12, 0, 6, 18 }) do
+			for latitude = -88, 88, 2 do
+				try(clock, latitude)
 			end
 		end
 	end
@@ -377,7 +396,7 @@ local function apply(look: LightingPresets.Look, time: number)
 	-- sweep back across the sky. It changes at once, with the venue.
 	local aim = look.sunAim
 	if aim then
-		local latitude, clock = aimSun(aim)
+		local latitude, clock = aimSun(aim, sceneKey ~= nil)
 		Lighting.GeographicLatitude = latitude
 		Lighting.ClockTime = clock
 	elseif not previous or previous.clockTime ~= look.clockTime or previous.sunAim then

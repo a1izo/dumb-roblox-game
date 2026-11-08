@@ -51,9 +51,9 @@ local function build(ctx)
 			rate = 2,
 		}):Emit(6 + i)
 	end
-	ctx:light(Vector3.new(0, 30, 20), Color3.fromRGB(230, 200, 255), 120, 2.4)
-	ctx:light(Vector3.new(-30, 0, -20), MAGENTA, 90, 1.8)
-	ctx:light(Vector3.new(30, 10, -20), CYAN, 90, 1.6)
+	ctx:light(Vector3.new(0, 30, 20), Color3.fromRGB(230, 200, 255), 120, 1.3)
+	ctx:light(Vector3.new(-30, 0, -20), MAGENTA, 90, 1.1)
+	ctx:light(Vector3.new(30, 10, -20), CYAN, 90, 1.0)
 
 	-- the serpent: segments of dark plate edged in magenta, cyan fins; the victim's head, huge, at the front
 	local segments = {}

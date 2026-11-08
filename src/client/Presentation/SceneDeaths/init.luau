@@ -143,7 +143,7 @@ function Ctx:text(part: BasePart, face: Enum.NormalId, text: string, color: Colo
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 50
+	gui.PixelsPerStud = 120 -- (crisp in a close-up: the headstone's name fills the frame)
 	gui.LightInfluence = 1
 	gui.Parent = part
 	local label = Instance.new("TextLabel")
@@ -467,6 +467,26 @@ function SceneDeaths.play(name: string, options: Options?): () -> ()
 		return function() end
 	end
 	Cinema.letterbox(true)
+	-- (from black: the engine lights a place the camera has just jumped to over its first few frames, so a scene played
+	-- from its start opens on black for a beat and fades up, never on a half-lit frame)
+	if workspace:GetServerTimeNow() - zero < 0.2 then
+		local veil = Instance.new("Frame")
+		veil.Name = "FromBlack"
+		veil.BackgroundColor3 = Color3.new(0, 0, 0)
+		veil.BorderSizePixel = 0
+		veil.Size = UDim2.fromScale(1, 1)
+		veil.ZIndex = 50
+		veil.Parent = gui
+		task.delay(0.3, function()
+			if veil.Parent then
+				TweenService:Create(veil, TweenInfo.new(0.45, Enum.EasingStyle.Sine), { BackgroundTransparency = 1 })
+					:Play()
+				task.delay(0.5, function()
+					veil:Destroy()
+				end)
+			end
+		end)
+	end
 	table.sort(ctx.shots, function(a, b)
 		return a.t < b.t
 	end)

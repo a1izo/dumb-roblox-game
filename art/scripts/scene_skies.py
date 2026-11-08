@@ -25,7 +25,7 @@ from maps import scanlib  # noqa: E402
 
 # Where each sky's sun stands (a direction toward it; LightingPresets.scenes aims Roblox's sun the same way).
 SUNS = {
-    "Mist": (0.42, 0.40, 0.81),
+    "Mist": (0.5, 0.26, 0.83),
     "Dusk": (0.55, 0.16, 0.82),
     "Ember": (-0.28, 0.10, -0.95),
 }

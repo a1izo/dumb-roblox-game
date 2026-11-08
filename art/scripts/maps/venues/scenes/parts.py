@@ -313,8 +313,8 @@ def headstone(s, mat, x, z, rot, w=1.3, h=2.0, t=0.32, bevel=0.05, sag=0.22, arc
             o = tuple((out[k] + face[k]) for k in range(3))
             poly(s, mat, pts, o, [(0, 0), (seg, 0), (seg, bevel), (0, bevel)])
     if engrave:
-        lines = ((0.0, h * 0.70, w * 0.22, 0.12), (0.0, h * 0.52, w * 0.55, 0.06), (0.0, h * 0.42, w * 0.42, 0.05),
-                 (0.0, h * 0.32, w * 0.5, 0.05))
+        lines = ((0.0, h * 0.70, w * 0.16, 0.07), (0.0, h * 0.53, w * 0.5, 0.035), (0.0, h * 0.45, w * 0.38, 0.03),
+                 (0.0, h * 0.37, w * 0.44, 0.03))
         for u, v, half, thick in lines:
             pts = [P(u - half / 2 * 2, v - thick, -ht - 0.006), P(u + half, v - thick, -ht - 0.006),
                    P(u + half, v + thick, -ht - 0.006), P(u - half, v + thick, -ht - 0.006)]

@@ -63,7 +63,7 @@ return {
 	DimLamp = { material = "Neon", color = { 92, 102, 124 }, transparency = 0, reflectance = 0 },
 	DimWarm = { material = "Neon", color = { 150, 124, 94 }, transparency = 0, reflectance = 0 },
 	DimWindow = { material = "Neon", color = { 112, 128, 156 }, transparency = 0, reflectance = 0 },
-	Engrave = { material = "SmoothPlastic", color = { 62, 58, 54 }, transparency = 0, reflectance = 0 },
+	Engrave = { material = "SmoothPlastic", color = { 98, 92, 86 }, transparency = 0, reflectance = 0 },
 	Fabric = { textured = true, fallback = { material = "Fabric", color = { 41, 40, 46 } } },
 	FabricRed = { textured = true, fallback = { material = "Fabric", color = { 113, 32, 38 } } },
 	FacadeTile = { textured = true, fallback = { material = "Slate", color = { 144, 129, 114 } } },

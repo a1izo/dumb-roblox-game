@@ -81,7 +81,7 @@ def build(s):
                                    (0.1, 5.4, 0.22), (1.6, 6.1, 0.16), (-0.7, 5.9, 0.14))):
         pts2 = [W(x + math.cos(a) * w * (1 + 0.25 * math.sin(a * 3 + k)), 0.02, z + math.sin(a) * w * 0.8)
                 for a in (math.tau * j / 8 for j in range(8))]
-        parts.poly(s, "Puddle", pts2, (0, 1, 0))
+        parts.poly(s, "Water", pts2, (0, 1, 0))
     s.box("BlackMetal", W(6.5, 0.015, 10.0), (1.2, 0.03, 1.2))
     # pipes and cable trays down both walls, conduit boxes, caged wall lamps
     for side in (-1, 1):
@@ -126,8 +126,8 @@ def build(s):
         s.box("TileWhite", W(side * 9.0, th / 2, (t0 + t1) / 2), (1.0, th, t0 - t1))
     s.box("Ceiling", W(0, th + 0.25, (t0 + t1) / 2), (17.0, 0.5, t0 - t1))
     for z in (-7.0, -12.5, -17.0):
-        kit.tube_light(s, OX - 3.0, th, OZ + z, length=5.0, rot=90, color=(236, 242, 255), range_=20, brightness=1.0)
-        kit.tube_light(s, OX + 3.0, th, OZ + z, length=5.0, rot=90, color=(236, 242, 255), range_=20, brightness=1.0)
+        kit.tube_light(s, OX - 3.0, th, OZ + z, length=5.0, rot=90, color=(236, 242, 255), range_=20, brightness=0.35)
+        kit.tube_light(s, OX + 3.0, th, OZ + z, length=5.0, rot=90, color=(236, 242, 255), range_=20, brightness=0.35)
     for k, (x, z, rx, rz) in enumerate(((-1.6, -8.2, 2.2, 1.3), (2.4, -12.0, 1.4, 1.0), (-3.6, -14.6, 1.1, 0.8),
                                         (0.8, -5.6, 0.9, 0.5), (4.6, -9.4, 0.7, 0.5))):
         pts3 = [W(x + math.cos(a) * rx * (1 + 0.22 * math.sin(a * 3 + k * 2)), 0.02,

@@ -111,7 +111,7 @@ FLAT = {
     "TailLamp": ("Neon", (120, 14, 18), 0, 0),
     "HeadLamp": ("SmoothPlastic", (210, 214, 210), 0, 0.3),
     "BloodDry": ("SmoothPlastic", (86, 8, 10), 0, 0.2),
-    "Engrave": ("SmoothPlastic", (62, 58, 54), 0, 0),
+    "Engrave": ("SmoothPlastic", (98, 92, 86), 0, 0),
     "HazardYellow": ("SmoothPlastic", (226, 180, 30), 0, 0.05),
     "HazardBlack": ("SmoothPlastic", (22, 22, 24), 0, 0.05),
     "BoardScreen": ("SmoothPlastic", (14, 16, 20), 0, 0.12),
