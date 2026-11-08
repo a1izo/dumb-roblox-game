@@ -104,3 +104,15 @@ quality possible."
   sam, walrider, sans, patriot) and a spec for the three without a clip (ironman, god, selection). Manual sentence
   wired (Presenters/Death, WinCinema ACTS.book, BOOK 2.8, deathcuts.py book event `cause`), not yet tested.
   User went to sleep: "take as long as you need ... make it perfect". Next: the cinematic engine, then each scene.
+- 2026-11-08 (later): WORK IN PROGRESS IS ON BRANCH `wip/scene-deaths` (pushed), not on main yet:
+  - `art/scripts/scene_actors.py`: 15 actor clips (scene<Death><Role>), built into Clips (check_anims 0 failed);
+    sans dodges to HIS right (screen left).
+  - `src/client/Presentation/SceneDeaths/init.luau`: the engine (ctx: part/light/text/actor/dress/attach/face/at/
+    during/shot/camera/layer/say/grade/screen/tween/fadeOut; SceneDeaths.box/emit; play(name, {victim, saluter,
+    named, at, wait, glideBack, onEnd})). Scenes written: Requiem, Sans, Patriot, Walrider. NOT yet: Blackwall, Sam,
+    IronMan, God, Selection.
+  - `DeathScreen.face` (drawn faces), Manual sentence wiring (DeathLines, BookStage scatter, BOOK 2.8).
+  - NOT wired yet: WinCinema.cutOf/preview for "scene:<style>", Presenters/Death playing the scene in a case, the
+    server hold (Cosmetics item `scene = <length>`), Causes clip for scene deaths (collapseHeart), removing the old
+    first-build pieces (DeathCuts entries for the 8 + patriot_grave chain, CustomDeaths FX + DeathVfx beats for the
+    8, the deaths_scenes.py clips), the "Dead by selection" item. Nothing tested in Roblox yet.
