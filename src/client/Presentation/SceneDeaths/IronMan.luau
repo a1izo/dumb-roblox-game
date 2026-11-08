@@ -363,8 +363,8 @@ local function build(ctx)
 			ashAway(ctx, killer, 1.8)
 		end
 	end)
-	-- (from right of the broken wall's end: the modelled wall stood in the old line of sight)
-	ctx:shot(10.0, Vector3.new(8.8, 3.4, 6), Vector3.new(-1, 3.6, -9), 50, { eye = Vector3.new(7.6, 3.6, 7) })
+	-- (from in front of the broken wall, at the right: from behind it, the modelled wall filled the frame's left)
+	ctx:shot(10.0, Vector3.new(7.5, 3.4, 1.8), Vector3.new(-1, 3.6, -9), 50, { eye = Vector3.new(6.6, 3.6, 2.3) })
 	-- 13.0 the victim staggering back, sitting down against the wall, the arm burnt black and smoking
 	ctx:at(12.9, function()
 		if not victim then

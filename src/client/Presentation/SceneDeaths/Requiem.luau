@@ -34,7 +34,8 @@ local function build(ctx)
 		light = 1,
 		rate = 260,
 	})
-	local nebula = SceneDeaths.emit(ctx, Vector3.new(0, 4, 18), Vector3.new(90, 50, 30), {
+	-- (the clouds well beyond the row, never at a lens: a sprite crossing the camera shows as a hard-edged sheet)
+	local nebula = SceneDeaths.emit(ctx, Vector3.new(0, 4, 60), Vector3.new(120, 60, 30), {
 		tex = "VfxSmoke",
 		grid = 8,
 		mode = "OneShot",
@@ -52,7 +53,7 @@ local function build(ctx)
 	})
 	nebula:Emit(14)
 	stars:Emit(300)
-	local nebulaGreen = SceneDeaths.emit(ctx, Vector3.new(-20, 0, 25), Vector3.new(40, 30, 20), {
+	local nebulaGreen = SceneDeaths.emit(ctx, Vector3.new(-40, 0, 70), Vector3.new(50, 30, 20), {
 		tex = "VfxSmoke",
 		grid = 8,
 		mode = "OneShot",

@@ -30,10 +30,12 @@ local function build(ctx)
 		light = 1,
 		rate = 120,
 	}):Emit(400)
+	-- (glowing clouds far beyond the serpent, on the side every camera looks at: the purple one stood beside the
+	-- circling wide's lens and showed as a hard-edged sheet across a third of the frame)
 	for i, spec in ipairs({
-		{ Vector3.new(-40, 30, -80), MAGENTA },
-		{ Vector3.new(50, 10, -70), CYAN },
-		{ Vector3.new(0, 50, 60), Color3.fromRGB(140, 60, 255) },
+		{ Vector3.new(-50, 40, -150), MAGENTA },
+		{ Vector3.new(60, 15, -140), CYAN },
+		{ Vector3.new(10, 70, -190), Color3.fromRGB(140, 60, 255) },
 	}) do
 		SceneDeaths.emit(ctx, spec[1], Vector3.new(60, 30, 20), {
 			tex = "VfxSmoke",
