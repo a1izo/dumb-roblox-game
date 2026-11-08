@@ -102,8 +102,8 @@ local function build(ctx)
 		ctx:attach(killer, "Head", {
 			size = Vector3.new(1.35, 0.7, 1.35),
 			at = Vector3.new(0, 0.45, 0.15),
-			color = Color3.fromRGB(236, 236, 230),
-			material = Enum.Material.Fabric,
+			color = Color3.fromRGB(240, 240, 236),
+			material = Enum.Material.SmoothPlastic,
 		})
 		ctx:attach(killer, "Head", {
 			size = Vector3.new(1.0, 0.24, 0.08),
@@ -186,7 +186,7 @@ local function build(ctx)
 	local count = 1
 
 	-- 0.25 over the killer's shoulder: the combo across the victim
-	ctx:shot(0.0, Vector3.new(-1.7, 5.7, -8.6), Vector3.new(0, 3.6, 0), 50, { eye = Vector3.new(-1.5, 5.6, -8.2) })
+	ctx:shot(0.0, Vector3.new(-3.4, 6.4, -10.5), Vector3.new(0, 3.6, 0), 50, { eye = Vector3.new(-3.1, 6.3, -10.0) })
 	ctx:say(0.2, "Just getting started", 1.1)
 	local function cut(t: number, from: Vector3, to: Vector3)
 		ctx:at(t, function()
@@ -282,7 +282,7 @@ local function build(ctx)
 	ctx:grade(
 		1.6,
 		3.25,
-		{ Saturation = -0.35, Contrast = 0.2, Brightness = -0.04, TintColor = Color3.fromRGB(130, 165, 255) },
+		{ Saturation = -0.25, Contrast = 0.22, Brightness = -0.06, TintColor = Color3.fromRGB(100, 145, 255) },
 		0.12
 	)
 	ctx:shot(
@@ -292,8 +292,22 @@ local function build(ctx)
 		48,
 		{ eye = Vector3.new(-3.3, 4.3, -9.0) }
 	)
+	-- the blade-mode screen: a cool blue wash over the whole picture (under the 斬 and the lock-on), as the game's
+	ctx:at(1.6, function()
+		local wash = ctx:layer(2)
+		local blue = Instance.new("Frame")
+		blue.BorderSizePixel = 0
+		blue.BackgroundColor3 = Color3.fromRGB(40, 96, 255)
+		blue.BackgroundTransparency = 1
+		blue.Size = UDim2.fromScale(1, 1)
+		blue.Parent = wash
+		ctx:tween(blue, 0.12, { BackgroundTransparency = 0.72 })
+		ctx:atNow(3.25, function()
+			wash:Destroy()
+		end)
+	end)
 	-- 2.5 over the killer's shoulder, close on the victim: the lock-on box, the green cut line
-	ctx:shot(2.5, Vector3.new(-1.2, 5.3, -7.4), Vector3.new(0, 3.9, 0), 38)
+	ctx:shot(2.5, Vector3.new(-2.6, 6.0, -9.4), Vector3.new(0, 3.9, 0), 38)
 	local lock: Frame? = nil
 	local line: BasePart? = nil
 	ctx:at(2.5, function()
@@ -410,7 +424,7 @@ local function build(ctx)
 		}, 1)
 	end)
 	-- 7.25 over the killer's back: the blade through him, sparks at the wound
-	ctx:shot(7.25, Vector3.new(-1.3, 5.6, -5.4), Vector3.new(0, 3.9, 0), 40, { eye = Vector3.new(-1.1, 5.4, -4.9) })
+	ctx:shot(7.25, Vector3.new(-2.8, 6.2, -6.8), Vector3.new(0, 3.9, 0), 40, { eye = Vector3.new(-2.5, 6.0, -6.4) })
 	ctx:during(7.25, 11.0, function()
 		if math.random() < 0.3 then
 			Vfx.Emit.burst(ctx:world(chest() + Vector3.new(0, 0.1, -0.5)), {

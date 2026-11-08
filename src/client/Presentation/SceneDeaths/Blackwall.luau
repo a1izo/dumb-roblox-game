@@ -70,24 +70,24 @@ local function build(ctx)
 	-- the back wall's roller shutter and a pillar painted with a big 1
 	ctx:part({
 		size = Vector3.new(14, 9, 0.4),
-		at = Vector3.new(-6, 4.5, 15.4),
+		at = Vector3.new(6, 4.5, 15.4),
 		color = Color3.fromRGB(70, 78, 92),
 		material = Enum.Material.CorrodedMetal,
 	})
 	local pillar = ctx:part({
 		size = Vector3.new(2.4, 13, 2.4),
-		at = Vector3.new(-9, 6, 6),
+		at = Vector3.new(9, 6, 6),
 		color = Color3.fromRGB(96, 92, 84),
 		material = Enum.Material.Concrete,
 	})
 	ctx:part({
 		size = Vector3.new(2.45, 2.5, 2.45),
-		at = Vector3.new(-9, 1.25, 6),
+		at = Vector3.new(9, 1.25, 6),
 		color = Color3.fromRGB(200, 160, 40),
 		material = Enum.Material.Concrete,
 	})
 	ctx:text(pillar, Enum.NormalId.Front, "1", Color3.fromRGB(30, 140, 150), Enum.Font.GothamBlack, 0.3)
-	for _, x in ipairs({ -16, 10 }) do
+	for _, x in ipairs({ 16, -10 }) do
 		ctx:part({
 			size = Vector3.new(2.4, 13, 2.4),
 			at = Vector3.new(x, 6, 12),
@@ -96,7 +96,7 @@ local function build(ctx)
 		})
 	end
 	-- the blue car on a lift, at the right
-	local car = Vector3.new(9, 0, 4)
+	local car = Vector3.new(-9, 0, 4)
 	ctx:part({
 		size = Vector3.new(5, 0.3, 9),
 		at = car + Vector3.new(0, 4.2, 0),
@@ -106,7 +106,7 @@ local function build(ctx)
 	for _, z in ipairs({ -4, 4 }) do
 		ctx:part({
 			size = Vector3.new(0.5, 9, 0.5),
-			at = car + Vector3.new(2.8, 4.5, z),
+			at = car + Vector3.new(-2.8, 4.5, z),
 			color = Color3.fromRGB(200, 170, 60),
 			material = Enum.Material.Metal,
 		})
@@ -165,9 +165,9 @@ local function build(ctx)
 
 	-- the victim, arms crossed, facing us; two bystanders behind at the left
 	local victim =
-		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(-1, 0, -9)), "sceneBlackwallVictim")
+		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(1, 0, -9)), "sceneBlackwallVictim")
 	local by = {}
-	for i, at in ipairs({ Vector3.new(-5.5, 0, 6), Vector3.new(-7.2, 0, 8.4) }) do
+	for i, at in ipairs({ Vector3.new(5.5, 0, 6), Vector3.new(7.2, 0, 8.4) }) do
 		local b = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, -9)), "sceneBlackwallBystander")
 		if b then
 			ctx:dress(b, {
@@ -185,13 +185,13 @@ local function build(ctx)
 	end
 
 	-- the hacker's eye: still, a little hand-held sway; turning away at the end
-	local eye = Vector3.new(1.0, 5.2, -9.5)
+	local eye = Vector3.new(-1.0, 5.2, -9.5)
 	ctx:camera(0, 23.3, function(t)
 		local sway = Vector3.new(math.sin(t * 0.7) * 0.06, math.sin(t * 1.1) * 0.04, 0)
-		local look = Vector3.new(-0.4, 4.2, 0)
+		local look = Vector3.new(0.4, 4.2, 0)
 		if t > 21.8 then
 			local u = math.clamp((t - 21.8) / 1.4, 0, 1)
-			look = look:Lerp(Vector3.new(10, 3.8, -4), u * u * (3 - 2 * u))
+			look = look:Lerp(Vector3.new(-10, 3.8, -4), u * u * (3 - 2 * u))
 		end
 		return CFrame.lookAt(eye + sway, look + sway), 58
 	end)

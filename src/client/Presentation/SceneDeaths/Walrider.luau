@@ -390,7 +390,7 @@ local function build(ctx)
 	end)
 	-- the swarm boiling up at the left of the view (grey static, laced with white streaks)
 	ctx:at(8.6, function()
-		local at = Vector3.new(-2.6, 2.4, 2.4)
+		local at = Vector3.new(-1.4, 1.4, 1.6)
 		local swarm = SceneDeaths.emit(ctx, at, Vector3.new(3, 4, 3), {
 			tex = "VfxSmoke",
 			grid = 8,

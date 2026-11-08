@@ -43,7 +43,7 @@ local function box(parent: Instance, x: number, y: number, w: number, h: number,
 end
 
 local function build(ctx)
-	SceneDeaths.box(ctx, Vector3.new(120, 60, 120), Vector3.new(0, -20, 0), Color3.new(0, 0, 0))
+	SceneDeaths.box(ctx, Vector3.new(220, 80, 220), Vector3.new(0, -30, 0), Color3.new(0, 0, 0))
 	ctx:light(Vector3.new(0, 6, -10), WHITE, 30, 3)
 	ctx:light(Vector3.new(0, 10, 4), WHITE, 20, 1)
 	local victim =

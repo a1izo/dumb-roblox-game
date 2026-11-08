@@ -37,14 +37,14 @@ local function build(ctx)
 		mode = "OneShot",
 		color = { { 0, VIOLET }, { 0.5, MAGENTA }, { 1, VIOLET } },
 		size = { { 0, 18 }, { 1, 30 } },
-		alpha = { { 0, 1 }, { 0.3, 0.55 }, { 0.7, 0.6 }, { 1, 1 } },
+		alpha = { { 0, 1 }, { 0.3, 0.8 }, { 0.7, 0.84 }, { 1, 1 } },
 		life = { 6, 9 },
 		speed = { 0.4, 1.2 },
 		spread = 180,
 		rot = { 0, 360 },
 		spin = { -8, 8 },
 		light = 1,
-		bright = 1.2,
+		bright = 0.55,
 		rate = 10,
 	})
 	nebula:Emit(14)
@@ -226,7 +226,7 @@ local function build(ctx)
 		Cinema.flash(VIOLET, 0.45, 0.35)
 	end)
 	-- every copy's face turned to the lens (each twisted round to look back over the shoulder)
-	local eyeRow = Vector3.new(7.2, 6.2, -5.2)
+	local eyeRow = Vector3.new(4.6, 5.4, -3.0)
 	ctx:during(3.3, 16.5, function(t)
 		local cam = workspace.CurrentCamera.CFrame.Position
 		local list = table.clone(copies)
@@ -274,9 +274,9 @@ local function build(ctx)
 	ctx:shot(
 		3.3,
 		eyeRow,
-		Vector3.new(2.6, 4.0, 4.2),
-		50,
-		{ eye = Vector3.new(8.4, 6.0, -3.6), look = Vector3.new(2.8, 4.0, 4.6) }
+		Vector3.new(2.0, 4.0, 3.2),
+		46,
+		{ eye = Vector3.new(5.4, 5.2, -2.2), look = Vector3.new(2.4, 4.0, 3.8) }
 	)
 	ctx:say(6.0, "Wha—", 2.6)
 	-- 8.75 the extreme close: eyes and mouth, dark red streaks round it
@@ -316,9 +316,9 @@ local function build(ctx)
 		end
 	end)
 	ctx:say(9.0, "Wha—", 7.0)
-	ctx:shot(9.75, Vector3.new(6.2, 5.9, -3.6), Vector3.new(2.2, 4.1, 3.6), 46, {
-		eye = Vector3.new(7.8, 5.6, -1.6),
-		look = Vector3.new(2.6, 4.1, 4.6),
+	ctx:shot(9.75, Vector3.new(4.2, 5.3, -2.4), Vector3.new(1.8, 4.1, 3.0), 44, {
+		eye = Vector3.new(5.2, 5.1, -1.2),
+		look = Vector3.new(2.2, 4.1, 3.8),
 	})
 	-- 16.25 the close profile in dark blue: "What is this?"
 	ctx:shot(16.2, function()

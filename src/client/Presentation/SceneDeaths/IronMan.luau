@@ -108,7 +108,10 @@ local function build(ctx)
 		cast = false,
 	})
 	ctx:light(Vector3.new(30, 14, -50), Color3.fromRGB(255, 150, 80), 120, 2.4, true)
-	ctx:light(Vector3.new(-4, 8, 6), Color3.fromRGB(200, 170, 150), 26, 0.9)
+	ctx:light(Vector3.new(-4, 8, 6), Color3.fromRGB(220, 190, 170), 30, 2.0)
+	ctx:light(Vector3.new(6, 10, 2), Color3.fromRGB(255, 200, 150), 30, 2.6, true)
+	ctx:light(Vector3.new(-5, 6, -3), Color3.fromRGB(170, 190, 255), 24, 1.4)
+	ctx:light(Vector3.new(0, 12, -11), Color3.fromRGB(255, 180, 120), 30, 2.2)
 	for _, at in ipairs({ Vector3.new(-18, 0, -30), Vector3.new(16, 0, -26), Vector3.new(-6, 0, -44) }) do
 		SceneDeaths.emit(ctx, at, Vector3.new(4, 1, 4), {
 			tex = "VfxSmoke",
@@ -257,10 +260,10 @@ local function build(ctx)
 	ctx:shot(0.0, Vector3.new(9, 4.2, 5), Vector3.new(0, 3.5, -4), 50, { eye = Vector3.new(8.4, 4.0, 4.4) })
 	-- 2.0 close on the gauntlet: the stones slide in, one after another
 	ctx:shot(2.0, function()
-		return hand() + Vector3.new(1.6, 0.2, -1.3)
+		return hand() + Vector3.new(0.9, 0.2, -2.4)
 	end, function()
 		return hand()
-	end, 34)
+	end, 38)
 	for i = 1, 6 do
 		ctx:at(2.05 + (i - 1) * 0.22, function()
 			local s = stones[i]

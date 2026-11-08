@@ -89,6 +89,8 @@ local function build(ctx)
 	end
 	ctx:light(Vector3.new(-20, 30, -10), Color3.fromRGB(255, 244, 220), 80, 2.2, true)
 	ctx:light(Vector3.new(3, 8, -6), Color3.fromRGB(240, 236, 226), 24, 1.4)
+	ctx:light(Vector3.new(0.8, 3.2, -1.0), Color3.fromRGB(250, 244, 230), 9, 1.3)
+	ctx:light(Vector3.new(-2.5, 6, -3.5), Color3.fromRGB(250, 244, 230), 14, 0.9)
 	-- the big bare tree behind
 	local trunk = Vector3.new(-9, 0, -16)
 	ctx:part({
@@ -178,6 +180,15 @@ local function build(ctx)
 	-- the one saluting, facing the grave
 	local saluter = ctx:actor(ctx.saluter or "figure", CFrame.lookAt(Vector3.zero, GRAVE), "scenePatriotSaluter")
 	if saluter then
+		if not ctx.saluter then
+			-- (no one else in the server: a soldier in olive drab, not the black figure)
+			ctx:dress(saluter, {
+				head = Color3.fromRGB(214, 180, 150),
+				torso = Color3.fromRGB(74, 80, 54),
+				arms = Color3.fromRGB(74, 80, 54),
+				legs = Color3.fromRGB(62, 64, 50),
+			})
+		end
 		ctx:face(saluter, "sad")
 	end
 	local function head(): Vector3

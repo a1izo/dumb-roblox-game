@@ -15,7 +15,7 @@ local SEGMENTS = 26
 local GAP = 3.4
 
 local function build(ctx)
-	SceneDeaths.box(ctx, Vector3.new(500, 400, 500), Vector3.new(0, -150, 0), Color3.fromRGB(16, 6, 34))
+	SceneDeaths.box(ctx, Vector3.new(500, 400, 500), Vector3.new(0, -150, 0), Color3.fromRGB(44, 16, 86))
 	SceneDeaths.emit(ctx, Vector3.new(0, 20, 0), Vector3.new(160, 100, 160), {
 		tex = "VfxEmber",
 		color = Color3.new(1, 1, 1),
@@ -57,22 +57,22 @@ local function build(ctx)
 	for i = 1, SEGMENTS do
 		local scale = 1 - (i / SEGMENTS) * 0.45
 		local body =
-			ctx:part({ size = Vector3.new(4.6, 4.2, 3.2) * scale, color = PLATE, material = Enum.Material.Metal })
+			ctx:part({ size = Vector3.new(4.6, 4.2, 3.2) * scale * 1.6, color = PLATE, material = Enum.Material.Metal })
 		local band = ctx:part({
-			size = Vector3.new(4.8, 0.5, 3.0) * scale,
+			size = Vector3.new(4.8, 0.5, 3.0) * scale * 1.6,
 			color = if i % 2 == 0 then MAGENTA else CYAN,
 			glow = true,
 			cast = false,
 		})
 		local finL = ctx:part({
-			size = Vector3.new(0.3, 2.4, 1.6) * scale,
+			size = Vector3.new(0.3, 2.4, 1.6) * scale * 1.6,
 			color = CYAN,
 			glow = true,
 			shape = "Wedge",
 			cast = false,
 		})
 		local finR = ctx:part({
-			size = Vector3.new(0.3, 2.4, 1.6) * scale,
+			size = Vector3.new(0.3, 2.4, 1.6) * scale * 1.6,
 			color = CYAN,
 			glow = true,
 			shape = "Wedge",
@@ -99,7 +99,7 @@ local function build(ctx)
 			copy.Parent = m
 			m.PrimaryPart = copy
 			m.Parent = ctx.stage.folder
-			m:ScaleTo(5.5)
+			m:ScaleTo(8)
 			headModel, headPart = m, copy
 		end
 	end
@@ -121,9 +121,9 @@ local function build(ctx)
 	local function path(s: number, t: number): Vector3
 		local a = s * 0.11 - t * 0.55
 		return Vector3.new(
-			math.sin(a) * 26 + math.sin(s * 0.05) * 6,
+			math.sin(a) * 34 + math.sin(s * 0.05) * 6,
 			14 + math.sin(a * 1.7 + 1) * 9,
-			math.cos(a) * 18 - 10
+			math.cos(a) * 24 - 10
 		)
 	end
 	local headFrame = CFrame.new()
@@ -132,7 +132,7 @@ local function build(ctx)
 		local tt = t - math.max(0, t - 8) * 0.6
 		for i, seg in ipairs(segments) do
 			if not seg.gone then
-				local s = i * GAP / 3.4
+				local s = i * GAP * 0.62
 				local p, q = path(s, tt), path(s - 0.3, tt)
 				local cf = CFrame.lookAt(ctx:world(p), ctx:world(q))
 				local wiggle = CFrame.Angles(0, 0, math.sin(t * 2 + i * 0.4) * 0.15)
@@ -140,11 +140,11 @@ local function build(ctx)
 				seg.band.CFrame = cf * wiggle * CFrame.new(0, 0, 0)
 				seg.finL.CFrame = cf
 					* wiggle
-					* CFrame.new(-2.6 * seg.scale, 1.2 * seg.scale, 0)
+					* CFrame.new(-4.2 * seg.scale, 1.9 * seg.scale, 0)
 					* CFrame.Angles(0, 0, math.rad(30))
 				seg.finR.CFrame = cf
 					* wiggle
-					* CFrame.new(2.6 * seg.scale, 1.2 * seg.scale, 0)
+					* CFrame.new(4.2 * seg.scale, 1.9 * seg.scale, 0)
 					* CFrame.Angles(0, 0, math.rad(-30))
 			end
 		end
@@ -319,12 +319,16 @@ local function build(ctx)
 	local function headAt(): Vector3
 		return ctx.origin:PointToObjectSpace(headFrame.Position)
 	end
-	ctx:shot(0.0, Vector3.new(0, 26, 70), Vector3.new(0, 12, -6), 58, { eye = Vector3.new(-14, 24, 64) })
-	ctx:shot(3.0, function()
-		return headAt() + Vector3.new(6, 3, 14)
-	end, function()
-		return headAt()
-	end, 46)
+	ctx:shot(0.0, Vector3.new(0, 24, 60), Vector3.new(0, 12, -6), 58, { eye = Vector3.new(-14, 22, 56) })
+	-- (in front of the face: the body trails behind the head, so nothing of it comes between)
+	local function facing(): Vector3
+		local v = ctx.origin:VectorToObjectSpace(headFrame.LookVector)
+		return Vector3.new(v.X, 0, v.Z).Unit
+	end
+	ctx:camera(3.0, 6.0, function()
+		local h = headAt()
+		return CFrame.lookAt(h + facing() * 26 + Vector3.new(0, 5, 0), h), 46
+	end)
 	ctx:camera(6.0, 12.0, function(t)
 		local a = (t - 6) * 0.12
 		local eye = Vector3.new(math.sin(a) * 70, 24, math.cos(a) * 70)
@@ -332,7 +336,7 @@ local function build(ctx)
 	end)
 	ctx:camera(12.0, 14.6, function()
 		local h = headAt()
-		return CFrame.lookAt(h + Vector3.new(4, 2, 13), h), 44
+		return CFrame.lookAt(h + facing() * 22 + Vector3.new(0, 4, 0), h), 44
 	end)
 	ctx:shot(14.6, Vector3.new(0, 24, 60), Vector3.new(0, 14, -6), 56)
 	ctx:grade(0, nil, { Saturation = 0.15, Contrast = 0.2, TintColor = Color3.fromRGB(240, 220, 255) }, 0.1)
