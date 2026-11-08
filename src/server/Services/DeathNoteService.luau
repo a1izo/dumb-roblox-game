@@ -21,6 +21,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Util = require(Shared:WaitForChild("Util"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
+local DeathCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("DeathCuts")) :: any
 
 local CharacterService = require(script.Parent.CharacterService)
 local CosmeticsService = require(script.Parent.CosmeticsService)
@@ -43,6 +44,35 @@ local CUE_LEAD = 0.35
 
 local function now(): number
 	return workspace:GetServerTimeNow()
+end
+
+-- Who salutes at the grave after "A true patriot" (the user's call, 2026-11-08): a Roblox friend of the dead who is in
+-- the server, else anyone in it (with a body to cast); nil when there is no one (the faceless figure). The friend
+-- checks run side by side and are given a second at most.
+local function saluterFor(victim: Player?): number?
+	local friends, anyone = {}, {}
+	local asked, answered = 0, 0
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= victim and other.Character then
+			table.insert(anyone, other.UserId)
+			if victim then
+				asked += 1
+				task.spawn(function()
+					local ok, friend = pcall(victim.IsFriendsWith, victim, other.UserId)
+					if ok and friend then
+						table.insert(friends, other.UserId)
+					end
+					answered += 1
+				end)
+			end
+		end
+	end
+	local deadline = os.clock() + 1
+	while answered < asked and os.clock() < deadline do
+		task.wait(0.05)
+	end
+	local pool = if #friends > 0 then friends else anyone
+	return if #pool > 0 then pool[math.random(1, #pool)] else nil
 end
 
 local function kill(target, kira, cause: string, matchId: number, entry)
@@ -79,6 +109,12 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 			ManualTiming.HOLD - ManualTiming.BOOK,
 			if acting > 0 then fall.length + ManualTiming.STYLE_AFTER + acting + 0.6 else fall.length + 1.8
 		)
+	-- "A true patriot": the grave after it, every screen at once (Presenters/Death), someone saluting at it.
+	local grave = if data.reason == "patriot" then DeathCuts[ManualTiming.GRAVE] else nil
+	if grave then
+		data.saluter = saluterFor(if typeof(target.player) == "Instance" then target.player else nil)
+		hold += ManualTiming.GRAVE_GAP + (grave.length or 10) + 0.6
+	end
 	local character = if typeof(target.player) == "Instance" then target.player.Character else nil
 	if character and data.death then
 		character:SetAttribute("LDeathStyle", data.death)

@@ -8,6 +8,7 @@
 -- the writer's screen only (the server sends it there alone); a custom death's effect (Presentation/CustomDeaths) plays
 -- on the body as it goes, timed to its acting; the victim's death style (Presentation/Fallen: ash, cut strings, crows,
 -- stone, glass) takes the body once it lies still, on every screen, and the last shot stays on it until it is done.
+-- After "A true patriot" (a custom death) everyone sees its grave (Shared/Cinema/DeathCuts "patriot_grave").
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,6 +31,7 @@ local Fallen = require(script.Parent.Parent.Fallen)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local StageLight = require(script.Parent.Parent.StageLight)
 local Styles = require(script.Parent.Parent.Styles)
+local WinCinema = require(script.Parent.Parent.WinCinema)
 
 local C = Kit.color
 local LocalPlayer = Players.LocalPlayer
@@ -211,5 +213,22 @@ return function(cue)
 		end
 	end
 	removeVignette()
+	-- "A true patriot": the grave after, on every screen at once: the name that was written on the headstone, the one
+	-- the server picked (a friend of theirs in the server, else anyone) saluting at it.
+	local grave = if data.reason == "patriot" then ManualTiming.GRAVE else nil
+	if grave and WinCinema.get(grave) then
+		local fell = cue.at + (if book then ManualTiming.BOOK else 0)
+		local graveAt = fell + math.max(ManualTiming.HOLD - ManualTiming.BOOK, total) + ManualTiming.GRAVE_GAP
+		Cinema.waitUntil(graveAt)
+		local name = if type(data.realName) == "string" and data.realName ~= ""
+			then data.realName
+			else tostring(data.alias or "")
+		WinCinema.play(grave, {
+			userId = if type(data.saluter) == "number" then data.saluter else nil,
+			named = name,
+			at = graveAt,
+			wait = true,
+		})
+	end
 	Mixer.duck("death", false)
 end

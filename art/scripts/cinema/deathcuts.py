@@ -27,6 +27,7 @@ import numpy as np  # noqa: E402
 import posekit  # noqa: E402
 from animlib import J  # noqa: E402
 import deaths  # noqa: E402,F401  (defines the death clips)
+import deaths_scenes  # noqa: E402,F401  (the second batch, and the grave's salute)
 import fallen  # noqa: E402,F401  (defines the style clips)
 from motion import MOTIONS  # noqa: E402
 
@@ -701,6 +702,251 @@ CUTS["death_glass"] = style_scene(
        for z in (-6, -1)],
     style_shot=glass_shot,
 )
+
+
+# The second batch of custom deaths (2026-11-08, deaths_scenes.py): each in a set after its scene's own place.
+
+VOID = {"grade": {"saturation": -0.2, "contrast": 0.22, "brightness": 0.0, "tint": [228, 216, 246]},
+        "vignette": {"strength": 0.42}, "key": (226, 210, 255)}
+COSMIC = {"grade": {"saturation": -0.05, "contrast": 0.24, "brightness": 0.0, "tint": [236, 220, 250]},
+          "vignette": {"strength": 0.45}, "key": (240, 200, 255)}
+GOLDEN = {"grade": {"saturation": -0.05, "contrast": 0.14, "brightness": 0.02, "tint": [255, 240, 205]},
+          "vignette": {"strength": 0.35}, "key": (255, 232, 180)}
+MUTED = {"grade": {"saturation": -0.45, "contrast": 0.1, "brightness": 0.03, "tint": [236, 236, 230]},
+         "vignette": {"strength": 0.35}, "key": (236, 236, 230)}
+
+
+def batch_shots(moments, fall_angle=60.0, fall_height=1.6):
+    """The batch's cameras: the wide; a shot on each of the death's own moments (`moments`: at (s into the clip),
+    angle, dist, height, fov, head (aim at the head, not the middle)), each pushing in a little and following the body
+    to the next; the fall from higher and further than the default's (a body thrown on its back must not come at the
+    lens), and the high shot over the body after."""
+
+    def fn(tl, clip_at, t, end):
+        hit = clip_at + t["hit"]
+        stand = tl.middle(clip_at)
+        lying = tl.middle(clip_at + t["still"])
+        fall_at = hit - 0.6
+        out = [shot(BOOK, around(stand, 28, 9.5, 1.6), stand + [0, 0.3, 0], 46,
+                    to={"eye": around(stand, 22, 7.8, 1.2), "fov": 44})]
+        kept = [m for m in moments if clip_at + m["at"] < fall_at - 0.5]
+        for i, m in enumerate(kept):
+            at = clip_at + m["at"]
+            until = clip_at + kept[i + 1]["at"] if i + 1 < len(kept) else fall_at
+
+            def aim(time, m=m):
+                return tl.point(time) + [0, -0.3, 0] if m.get("head") else tl.middle(time)
+
+            first, last = aim(at), aim(until - 0.05)
+            out.append(shot(at, around(first, m["angle"], m["dist"], m["height"]), first, m.get("fov", 44),
+                            to={"eye": around(last, m["angle"] + m.get("turn", 6), m["dist"] * 0.88, m["height"]),
+                                "look": last}))
+        mid = (tl.middle(fall_at) + lying) / 2
+        out.append(shot(fall_at, around(mid, fall_angle, 7.6, fall_height), mid, 50,
+                        to={"eye": around(lying, fall_angle - 6, 6.4, fall_height + 0.6), "look": lying}))
+        out.append(shot(hit + 0.75, around(lying, 30, 4.6, 5.0), lying, 44,
+                        to={"eye": around(lying, 36, 3.6, 3.8), "fov": 42}))
+        return out
+
+    return fn
+
+
+BATCH_SHOTS = {
+    # the lunge; close on the face as they look at their hands ("What? Why?"); the barrage from the side
+    "reason_requiem": batch_shots([dict(at=0.1, angle=34, dist=5.6, height=0.3),
+                                   dict(at=1.5, angle=14, dist=3.6, height=0.1, head=True, fov=40),
+                                   dict(at=2.18, angle=56, dist=5.8, height=0.4)], fall_angle=70, fall_height=2.0),
+    "reason_blackwall": batch_shots([dict(at=0.2, angle=20, dist=3.8, height=0.2, head=True, fov=42),
+                                     dict(at=1.25, angle=40, dist=6.2, height=0.6)]),
+    "reason_god": batch_shots([dict(at=0.2, angle=-24, dist=6.0, height=-1.2, fov=46),
+                               dict(at=1.4, angle=30, dist=5.0, height=0.2)]),
+    # close on the raised fist and the face over it; wider for the snap and the stagger
+    "reason_ironman": batch_shots([dict(at=0.45, angle=28, dist=3.4, height=0.1, head=True, fov=40),
+                                   dict(at=1.62, angle=44, dist=7.0, height=0.8, fov=46),
+                                   dict(at=2.75, angle=60, dist=5.4, height=0.6)], fall_angle=66, fall_height=1.8),
+    "reason_sam": batch_shots([dict(at=0.3, angle=-30, dist=5.2, height=0.0),
+                               dict(at=1.5, angle=24, dist=4.6, height=0.4)]),
+    "reason_walrider": batch_shots([dict(at=0.15, angle=14, dist=6.0, height=0.6)], fall_angle=64, fall_height=2.2),
+    # the doze; the smug line and the cut; following the walk aside
+    "reason_sans": batch_shots([dict(at=0.15, angle=20, dist=4.4, height=0.2, head=True, fov=42),
+                                dict(at=1.35, angle=26, dist=5.6, height=0.3),
+                                dict(at=3.3, angle=40, dist=7.4, height=0.8, fov=46)]),
+    "reason_patriot": batch_shots([dict(at=0.2, angle=22, dist=6.0, height=0.5)], fall_angle=62, fall_height=2.0),
+}
+
+
+def batch_scene(item, *args, **kwargs):
+    return death_scene(item, *args, shots_fn=BATCH_SHOTS[item], **kwargs)
+
+# This is... requiem: an old Roman street at night, travertine arches behind, one warm lamp.
+CUTS["reason_requiem"] = batch_scene(
+    "reason_requiem", "This is... requiem", "deathRequiem", "requiem", VOID,
+    room(26, 26, 18, (120, 112, 98), (70, 64, 56), "Cobblestone", "Limestone", ceiling=False) + [
+        part(None, (2.2, 12, 2.2), (x, 6, -12), (150, 140, 120), "Limestone") for x in (-9, -3, 3, 9)
+    ] + [
+        part(None, (26, 2.2, 2.2), (0, 13, -12), (150, 140, 120), "Limestone"),
+        part(None, (26, 6, 1), (0, 17, -12.6), (130, 122, 106), "Limestone"),
+        lamp("Lamp", (-6, 8, -6), (255, 214, 160), 22, 1.8, visible=((0.7, 1.0, 0.7), (255, 220, 170))),
+        lamp("Night", (6, 16, 6), (170, 160, 230), 30, 0.8),
+    ],
+)
+
+# Blackwall gateway: a netrunner's dark back room, red and cyan strips of light, a wall of red static.
+CUTS["reason_blackwall"] = batch_scene(
+    "reason_blackwall", "Blackwall gateway", "deathBlackwall", "blackwall", RED,
+    room(18, 20, 11, (22, 22, 26), (16, 16, 20), "DiamondPlate", "Metal", cz=-2) + [
+        part(None, (10, 5, 0.3), (0, 4.5, -11.6), (255, 40, 50), glow=True, alpha=0.35),
+        lamp("Wall", (0, 4.5, -10), (255, 40, 50), 20, 1.6),
+        part(None, (0.2, 0.2, 18), (-8.8, 8.5, -2), (60, 230, 255), glow=True),
+        part(None, (0.2, 0.2, 18), (8.8, 8.5, -2), (255, 40, 60), glow=True),
+        lamp("Cyan", (-7, 7, -4), (60, 220, 255), 14, 0.8),
+        part(None, (2.4, 1.6, 1.2), (5.5, 0.8, -8), (40, 40, 46), "Metal"),
+        part(None, (2.0, 1.2, 0.1), (5.5, 2.3, -8.6), (255, 60, 60), glow=True),
+    ],
+)
+
+# A GOD.. IS NOT... AFRAID OF...: a dark platform under a violet sky full of stars.
+CUTS["reason_god"] = batch_scene(
+    "reason_god", "A GOD.. IS NOT... AFRAID OF...", "deathGod", "god", COSMIC,
+    room(30, 30, 24, (26, 20, 34), (14, 8, 26), "Slate", "SmoothPlastic", ceiling=False) + [
+        part(None, (14, 0.6, 14), (0, -0.2, -2), (40, 30, 56), "Marble"),
+        lamp("Magenta", (-6, 9, -8), (255, 70, 220), 26, 1.6),
+        lamp("Cyan", (7, 6, -6), (70, 230, 255), 22, 1.2),
+    ] + [part(None, (0.25, 0.25, 0.25), (x, y, -14.3), (255, 255, 255), glow=True, shape="Ball")
+         for x, y in ((-12, 9), (-8, 15), (-4, 11), (-1, 19), (3, 13), (6, 18), (9, 10), (12, 16), (-10, 20),
+                      (0, 8.5), (10, 21), (-6, 6))],
+)
+
+# and I.. am..: a ruined battlefield at dusk, broken walls and rubble, the light low and orange through the dust.
+CUTS["reason_ironman"] = batch_scene(
+    "reason_ironman", "and I.. am..", "deathIronMan", "ironMan", WARM,
+    room(28, 28, 18, (70, 62, 54), (60, 54, 48), "Ground", "Concrete", ceiling=False) + [
+        part(None, (6, 7, 1), (-6, 3.5, -11), (90, 84, 76), "Concrete", rot=[0, 0, 4]),
+        part(None, (4, 3.5, 1), (5, 1.75, -12), (90, 84, 76), "Concrete", rot=[0, 8, -6]),
+        part(None, (2.4, 1.2, 1.8), (-3, 0.6, -6), (80, 74, 66), "Concrete", rot=[0, 30, 8]),
+        part(None, (1.6, 0.9, 1.4), (4, 0.45, -5), (80, 74, 66), "Concrete", rot=[0, -20, -10]),
+        part(None, (1.0, 0.6, 1.0), (-6.5, 0.3, -2), (80, 74, 66), "Concrete", rot=[0, 50, 12]),
+        part("Dust", (18, 1, 18), (0, 0.6, -2), (200, 170, 130), alpha=1, emit="fog"),
+        lamp("Dusk", (10, 6, -12), (255, 150, 80), 34, 1.8),
+    ],
+)
+
+# Let's dance!: moonlit rock on a windy night.
+CUTS["reason_sam"] = batch_scene(
+    "reason_sam", "Let's dance!", "deathSam", "sam", COLD,
+    room(30, 30, 22, (70, 66, 64), (20, 22, 30), "Rock", "SmoothPlastic", ceiling=False) + [
+        part(None, (6, 4, 5), (-8, 1.6, -11), (60, 58, 56), "Rock", rot=[8, 20, 4]),
+        part(None, (4, 2.6, 4), (7, 1.0, -10), (60, 58, 56), "Rock", rot=[-6, -30, 10]),
+        lamp("Moon", (-8, 18, -14), (190, 210, 255), 40, 1.7),
+        part("Wind", (16, 1, 16), (0, 0.6, -2), (190, 196, 210), alpha=1, emit="fog"),
+    ],
+)
+
+# Walrider: the asylum's tiled lab, a fluorescent tube, the doorway behind them bright with the soldiers' lights.
+CUTS["reason_walrider"] = batch_scene(
+    "reason_walrider", "Walrider", "deathWalrider", "walrider", NIGHT,
+    room(18, 22, 10, (70, 76, 72), (110, 118, 112), "CeramicTiles", "CeramicTiles", cz=-2) + [
+        part(None, (4, 7, 0.4), (0, 3.5, -12.6), (230, 236, 255), glow=True),
+        lamp("Door", (0, 4, -10.5), (220, 230, 255), 24, 2.0),
+        lamp("Tube", (0, 9.6, -3), (200, 240, 210), 16, 1.0, visible=((5, 0.2, 0.4), (220, 250, 225))),
+        part(None, (3, 1, 1.6), (-6, 0.5, -8), (60, 64, 62), "Metal"),
+    ],
+)
+
+# heh, didja really think-: a long golden hall, light through tall windows, pillars.
+CUTS["reason_sans"] = batch_scene(
+    "reason_sans", "heh, didja really think-", "deathSans", "sans", GOLDEN,
+    room(26, 24, 18, (214, 190, 120), (230, 206, 140), "Marble", "Plaster", cz=-2) + [
+        part(None, (1.8, 16, 1.8), (x, 8, -11), (240, 220, 160), "Marble", shape="Cylinder", rot=[0, 0, 90])
+        for x in (-10, -5, 0, 5, 10)
+    ] + [
+        part(None, (3, 9, 0.2), (x, 8, -12.4), (255, 236, 170), glow=True) for x in (-7.5, -2.5, 2.5, 7.5)
+    ] + [
+        lamp("Sun", (-4, 12, -9), (255, 226, 150), 34, 1.8),
+        lamp("Fill", (5, 5, 6), (230, 200, 150), 16, 0.6),
+    ],
+)
+
+# A true patriot: a field of white flowers under a pale sky, one tree.
+CUTS["reason_patriot"] = batch_scene(
+    "reason_patriot", "A true patriot", "deathPatriot", "patriot", MUTED,
+    room(30, 30, 22, (92, 104, 80), (190, 196, 196), "Grass", "SmoothPlastic", ceiling=False) + [
+        lamp("Sky", (4, 18, -8), (236, 236, 230), 40, 1.6),
+        part("Haze", (18, 1, 18), (0, 0.6, -2), (230, 232, 230), alpha=1, emit="fog"),
+    ] + [part(None, (0.3, 0.3, 0.3), (x, 0.15, z), (245, 245, 238), shape="Ball")
+         for x, z in ((-3.2, -2.1), (-2.4, -4.6), (-1.1, -3.3), (1.4, -2.8), (2.6, -4.1), (3.4, -1.6), (-4.1, -0.8),
+                      (4.2, -5.6), (-3.6, -6.2), (0.4, -6.9), (2.0, -7.4), (-1.6, -8.1), (5.2, -3.2), (-5.4, -4.4),
+                      (3.0, 1.2), (-2.6, 1.4), (5.6, 0.4), (-5.8, 0.8), (1.2, -10.2), (-4.4, -9.6), (4.6, -9.0))],
+    set_props=[prop("Tree", (-8, 0, -11), size=12, color=(40, 44, 36))],
+)
+
+
+# The grave, after "A true patriot" (the reference's 1:50-2:15): the one who salutes (a friend of the dead in the server
+# first, else anyone in it: DeathNoteService, or the Preview's own pick in WinCinema) at a white headstone with the
+# dead's name on it, rows of white headstones fading into the mist. The headstone first, close, the name read; low
+# and in front as the salute comes up; close on the face (a tear); the wide among the stones; close on the salute.
+def grave_cut():
+    tl = Timeline("graveSalute", 0.0)
+    length = 10.6
+    head = tl.point(4.6)
+    stone_z = -3.8
+    parts = room(70, 70, 30, (78, 90, 70), (196, 200, 200), "Grass", "SmoothPlastic", ceiling=False, cz=-10)
+    parts = build_room(parts.spec, -45, 25)
+    stone = (238, 238, 232)
+    parts += [
+        part("Grave", (1.9, 2.4, 0.4), (0, 1.2, stone_z), stone, "Marble"),
+        part(None, (0.4, 1.9, 1.9), (0, 2.4, stone_z), stone, "Marble", shape="Cylinder", rot=[0, 90, 0]),
+        part("Above", (1.7, 0.32, 0.05), (0, 2.05, stone_z + 0.23), stone, alpha=1,
+             text={"text": "IN MEMORY OF", "face": "Back", "color": [70, 70, 74], "font": "Merriweather", "tilt": 0}),
+        part("Name", (1.7, 0.5, 0.05), (0, 1.55, stone_z + 0.23), stone, alpha=1,
+             text={"text": "$dead", "face": "Back", "color": [50, 50, 54], "font": "Merriweather", "tilt": 0}),
+        part("Below", (1.7, 0.3, 0.05), (0, 1.05, stone_z + 0.23), stone, alpha=1,
+             text={"text": "A TRUE PATRIOT", "face": "Back", "color": [70, 70, 74], "font": "Merriweather",
+                   "tilt": 0}),
+    ]
+    parts += [part(None, (0.22, 0.22, 0.22), (x, 0.12, stone_z + 0.55 + z), (250, 250, 244), shape="Ball")
+              for x, z in ((-0.5, 0.0), (-0.2, 0.15), (0.15, 0.05), (0.45, 0.18), (0.0, 0.32), (0.3, -0.05))]
+    # the rows of headstones, all alike, fading into the mist (none where the cameras stand)
+    rows = []
+    for zi, z in enumerate(range(-36, 22, 5)):
+        for x in range(-26, 27, 4):
+            if abs(x) < 4 and -8 < z < 6:
+                continue
+            if 10 < x < 22 and -24 < z < -12:
+                continue
+            xs = x + (1.5 if zi % 2 else 0)
+            rows.append(part(None, (1.2, 1.8, 0.28), (xs, 0.9, z), stone, "Marble"))
+            rows.append(part(None, (0.28, 1.2, 1.2), (xs, 1.8, z), stone, "Marble", shape="Cylinder",
+                             rot=[0, 90, 0]))
+    parts += rows
+    # mist: veils further off, and drifting fog low over the grass
+    parts += [part(None, (70, 14, 0.2), (0, 7, z), (214, 218, 220), alpha=a) for z, a in ((-18, 0.86), (-30, 0.7))]
+    parts += [part(None, (0.2, 14, 70), (x, 7, -10), (214, 218, 220), alpha=0.8) for x in (-20, 24)]
+    parts += [part(f"Mist{k}", (24, 1, 24), (x, 0.8, z), (220, 224, 226), alpha=1, emit="fog")
+              for k, (x, z) in enumerate(((0, -6), (-14, -20), (14, -20), (0, 10)))]
+    parts += [lamp("Sky", (6, 22, -6), (232, 234, 236), 50, 1.4), lamp("Key", (3.5, 8.5, -5.5), (236, 236, 230), 20, 2.0),
+              lamp("Rim", (-2.5, 6.5, 5.0), (214, 222, 236), 14, 1.6)]
+    face = head + np.array([0.0, -0.05, 0.0])
+    shots = [
+        shot(0.0, (0.55, 1.95, -1.1), (0, 1.6, stone_z), 42, to={"eye": (0.35, 1.85, -1.6), "fov": 38}),
+        shot(2.5, around(head, 40, 6.2, -1.4), head + [0, -0.7, 0], 44,
+             to={"eye": around(head, 34, 5.4, -1.1), "look": head + [0, -0.4, 0]}),
+        shot(5.0, around(face, -20, 4.0, 0.1), face, 36, to={"eye": around(face, -15, 3.5, 0.05), "fov": 34}),
+        shot(6.9, (15.0, 6.2, -15.5), head + [0, -1.2, 0], 40, to={"eye": (17.5, 7.0, -19.5), "fov": 38}),
+        shot(8.9, around(head, -32, 5.2, -0.6), head + [0, -0.5, 0], 40, to={"eye": around(head, -26, 4.6, -0.5)}),
+    ]
+    check("patriot_grave", shots[1:], tl, length)
+    return {
+        "kind": "grave", "clip": "graveSalute", "clipAt": 0, "length": length,
+        "grade": MUTED["grade"], "vignette": MUTED["vignette"], "parts": parts, "props": [], "shots": shots,
+        "events": [{"at": 5.5, "act": "tear", "seconds": 1.3, "side": -0.24}],
+        "beats": [],
+        "sounds": [],
+    }
+
+
+CUTS["patriot_grave"] = grave_cut()
+CUTS["reason_patriot"]["after"] = "patriot_grave"
 
 
 # Luau ------------------------------------------------------------------------------------------------------------

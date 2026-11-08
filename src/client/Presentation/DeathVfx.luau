@@ -10,8 +10,13 @@
 --
 -- In the world only (a 3D view in the shop draws no particles); lighter on Low graphics (Vfx.quiet).
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local DeathTiming = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Anim"):WaitForChild("DeathTiming"))
+
 local Vfx = require(script.Parent.Vfx)
 local Cinema = require(script.Parent.Cinema)
+local DeathScreen = require(script.Parent.DeathScreen)
 
 local DeathVfx = {}
 
@@ -23,6 +28,7 @@ type Body = {
 	model: Model,
 	torso: BasePart?,
 	head: BasePart?,
+	state: { [string]: any }, -- (what one beat leaves for a later one, per play)
 }
 type Beat = { at: number, fn: (Body) -> () }
 
@@ -810,6 +816,349 @@ table.insert(BEATS.deathDark, {
 	end,
 })
 
+-- The second batch (2026-11-08, art/scripts/deaths_scenes.py): the beats around each one's signature effect
+-- (Presentation/CustomDeaths), on the moments of its acting; when the body lands is DeathTiming's.
+local function hitOf(clip: string, fallback: number): number
+	local timing = DeathTiming.deaths[clip]
+	return if timing and timing.hit then timing.hit else fallback
+end
+
+local function landing(b: Body, scale: number)
+	dust(b, middle(b), scale)
+	Vfx.Screen.shakeAt(middle(b), 0.2 * scale, 0.25)
+end
+
+-- This is... requiem: the blow meets nothing (time stops on it, violet); "What? Why? What is this!?" as they look at
+-- their hands; the barrage, blow on blow on the chest; the last blow throws them; and they die again, and again.
+local VIOLET = Color3.fromRGB(150, 70, 230)
+local GOLD = Color3.fromRGB(255, 214, 110)
+BEATS.deathRequiem = {
+	{
+		at = 0.42,
+		fn = function(b)
+			glow(hand(b, 1), WHITE, 2.4, 0.25, 3)
+			Cinema.still(VIOLET, 0.16)
+		end,
+	},
+	{
+		at = 1.58,
+		fn = function()
+			Cinema.line(
+				{ { "What?", 0 }, { "Why?", 0.26 }, { "What", 0.46 }, { "is", 0.54 }, { "this!?", 0.62, 1 } },
+				1.0
+			)
+		end,
+	},
+}
+for k, t in ipairs({ 2.22, 2.3, 2.38, 2.46, 2.54, 2.62, 2.7, 2.78 }) do
+	table.insert(BEATS.deathRequiem, {
+		at = t,
+		fn = function(b)
+			local at = chest(b) + Vector3.new((k % 3 - 1) * 0.35, (k % 2) * 0.3 - 0.15, 0)
+			glow(at, GOLD, 1.6, 0.14)
+			sparks(at, GOLD, 5, 10)
+			Vfx.Screen.shakeAt(at, 0.12, 0.08)
+		end,
+	})
+end
+table.insert(BEATS.deathRequiem, {
+	at = 2.92,
+	fn = function(b)
+		Vfx.Recipes.impact(CFrame.new(chest(b)), { color = GOLD, scale = 1.1, shake = true })
+		screenFlash(WHITE, 0.45, 0.2)
+	end,
+})
+table.insert(BEATS.deathRequiem, {
+	at = hitOf("deathRequiem", 3.36),
+	fn = function(b)
+		landing(b, 1.2)
+	end,
+})
+for _, t in ipairs({ 3.78, 4.06 }) do
+	table.insert(BEATS.deathRequiem, {
+		at = t,
+		fn = function(b)
+			Cinema.still(VIOLET, 0.18)
+			pulse(chest(b), VIOLET, 4, 0.35)
+			glow(chest(b), VIOLET, 2.2, 0.3, 2)
+		end,
+	})
+end
+
+-- Blackwall gateway: red glitch sparks off the head with every convulsion; down, it still glitches through them.
+local GLITCH = Color3.fromRGB(255, 40, 50)
+BEATS.deathBlackwall = {}
+for _, t in ipairs({ 0.52, 0.66, 0.8, 0.94, 1.08, 1.2 }) do
+	table.insert(BEATS.deathBlackwall, {
+		at = t,
+		fn = function(b)
+			sparks(headAt(b), GLITCH, 4, 6)
+		end,
+	})
+end
+local blackwallHit = hitOf("deathBlackwall", 2.19)
+table.insert(BEATS.deathBlackwall, {
+	at = 1.7,
+	fn = function(b)
+		dust(b, middle(b), 0.6)
+	end,
+})
+table.insert(BEATS.deathBlackwall, {
+	at = blackwallHit,
+	fn = function(b)
+		landing(b, 1.1)
+	end,
+})
+for _, t in ipairs({ blackwallHit + 0.55, blackwallHit + 0.85 }) do
+	table.insert(BEATS.deathBlackwall, {
+		at = t,
+		fn = function(b)
+			sparks(middle(b), GLITCH, 8, 7)
+			glow(middle(b), GLITCH, 2, 0.15, 1.5)
+		end,
+	})
+end
+
+-- A GOD.. IS NOT... AFRAID OF...: a cyan pulse as they rise, a magenta still as the last of them goes, the floor.
+local COSMIC = Color3.fromRGB(255, 70, 220)
+BEATS.deathGod = {
+	{
+		at = 0.4,
+		fn = function(b)
+			pulse(chest(b), Color3.fromRGB(70, 230, 255), 5, 0.5)
+		end,
+	},
+	{
+		at = 2.28,
+		fn = function()
+			Cinema.still(COSMIC, 0.2)
+		end,
+	},
+	{
+		at = 2.5,
+		fn = function(b)
+			dust(b, middle(b), 0.6)
+		end,
+	},
+	{
+		at = hitOf("deathGod", 3.15),
+		fn = function(b)
+			landing(b, 1.1)
+		end,
+	},
+}
+
+-- and I.. am..: a light in the chest from the start; the six stones lit on the raised fist, "And I... am..."; (the
+-- snap: CustomDeaths); steps, the sitting down, the landing; the chest's light goes out last.
+local STONES = {
+	Color3.fromRGB(150, 70, 230),
+	Color3.fromRGB(70, 140, 255),
+	Color3.fromRGB(255, 50, 60),
+	Color3.fromRGB(255, 150, 40),
+	Color3.fromRGB(70, 230, 110),
+	Color3.fromRGB(255, 220, 70),
+}
+local ironHit = hitOf("deathIronMan", 4.64)
+BEATS.deathIronMan = {
+	{
+		at = 0.05,
+		fn = function(b)
+			local torso = partOf(b.model, "Torso")
+			if torso then
+				local _, stop = Vfx.Light.hold(torso, Color3.fromRGB(150, 215, 255), 5, 1.6, 0.3)
+				b.state.reactor = stop
+			end
+			during(ironHit + 0.4, 0.3, function()
+				glow(chest(b), Color3.fromRGB(150, 215, 255), 0.7, 0.35)
+			end)
+		end,
+	},
+	{
+		at = 0.6,
+		fn = function(b)
+			local k = 0
+			during(1.1, 0.07, function()
+				k += 1
+				local side = partOf(b.model, "Right Arm")
+				local at = if side
+					then side.CFrame:PointToWorldSpace(Vector3.new(((k % 3) - 1) * 0.3, -0.85, -0.5 + (k % 2) * 0.1))
+					else hand(b, 1)
+				glow(at, STONES[(k % 6) + 1], 0.5, 0.2)
+			end)
+			glow(hand(b, 1), Color3.fromRGB(255, 200, 120), 1.6, 1.1, 2)
+		end,
+	},
+	{
+		at = 0.75,
+		fn = function()
+			Cinema.line({ { "And", 0 }, { "I...", 0.35 }, { "am...", 0.95 } }, 1.4)
+		end,
+	},
+	{
+		at = 1.9,
+		fn = function(b)
+			dust(b, foot(b, 1), 0.4)
+		end,
+	},
+	{
+		at = 2.9,
+		fn = function(b)
+			dust(b, middle(b), 0.7)
+		end,
+	},
+	{
+		at = ironHit,
+		fn = function(b)
+			landing(b, 0.9)
+		end,
+	},
+	{
+		at = ironHit + 0.5,
+		fn = function(b)
+			local stop = b.state.reactor
+			if stop then
+				stop(1.2)
+			end
+		end,
+	},
+}
+
+-- Let's dance!: a glint where the hands draw; (blade mode: CustomDeaths); the knees, and the floor.
+BEATS.deathSam = {
+	{
+		at = 0.36,
+		fn = function(b)
+			Vfx.Recipes.twinkle(hand(b, 1), { color = WHITE, scale = 1 })
+		end,
+	},
+	{
+		at = 2.2,
+		fn = function(b)
+			dust(b, middle(b), 0.6)
+		end,
+	},
+	{
+		at = hitOf("deathSam", 2.62),
+		fn = function(b)
+			landing(b, 1)
+			sparks(middle(b), Color3.fromRGB(255, 40, 50), 10, 8)
+		end,
+	},
+}
+
+-- Walrider: dust where they go down; the hand reaching up shakes with dark motes; limp, a last thud.
+BEATS.deathWalrider = {
+	{
+		at = 1.2,
+		fn = function(b)
+			dust(b, middle(b), 0.6)
+		end,
+	},
+	{
+		at = hitOf("deathWalrider", 1.76),
+		fn = function(b)
+			landing(b, 1.1)
+		end,
+	},
+	{
+		at = 2.4,
+		fn = function(b)
+			during(0.75, 0.1, function()
+				puff(hand(b, 1), Color3.fromRGB(30, 30, 34), 0.5, 1, 0.6, nil, 0.5)
+			end)
+		end,
+	},
+	{
+		at = 3.55,
+		fn = function(b)
+			dust(b, middle(b), 0.5)
+		end,
+	},
+}
+
+-- heh, didja really think-: Z's while they doze; an eye flaring blue as they wake; the first slash cutting the air where
+-- they stood; the line, cut off by the second (CustomDeaths); dust as the knees go.
+BEATS.deathSans = {
+	{
+		at = 0.08,
+		fn = function(b)
+			b.state.stood = middle(b)
+			local head = partOf(b.model, "Head")
+			if head then
+				DeathScreen.zzz(head, 1.1)
+			end
+		end,
+	},
+	{
+		at = 1.26,
+		fn = function(b)
+			local eye = point(b.model, "Head", Vector3.new(-0.22, 0.12, -0.62))
+			Vfx.Emit.burst(eye, {
+				tex = "VfxFlare",
+				color = Color3.fromRGB(90, 200, 255),
+				size = { { 0, 0.2 }, { 0.3, 1.1 }, { 1, 0.4 } },
+				life = 0.9,
+				rot = { 0, 45 },
+				bright = 2,
+				z = 2,
+			}, 1)
+			Vfx.Light.flash(eye, Color3.fromRGB(90, 200, 255), 6, 2, 0.6)
+		end,
+	},
+	{
+		at = 1.4,
+		fn = function(b)
+			local at = (b.state.stood :: Vector3?) or middle(b)
+			Vfx.Emit.burst(at + Vector3.new(0, 0.3, 0), {
+				tex = "VfxCrescent",
+				color = Color3.fromRGB(255, 20, 30),
+				size = { { 0, 1.5 }, { 0.3, 4.6 }, { 1, 5 } },
+				alpha = { { 0, 0 }, { 0.6, 0.25 }, { 1, 1 } },
+				life = 0.35,
+				rot = { -50, -40 },
+				light = 1,
+				bright = 2.2,
+				z = 3,
+			}, 1)
+			Cinema.slash(Color3.fromRGB(255, 20, 30), 0.35, 0.3, Vector2.new(0.5, 0.45), -40, 1)
+		end,
+	},
+	{
+		at = 1.7,
+		fn = function()
+			Cinema.line({ { "heh,", 0 }, { "didja", 0.28 }, { "really", 0.5 }, { "think-", 0.72 } }, 1.05)
+		end,
+	},
+	{
+		at = 5.0,
+		fn = function(b)
+			dust(b, middle(b), 0.5)
+		end,
+	},
+}
+
+-- A true patriot: dust at the step back and where they sit; the floor as they lie down in the flowers.
+BEATS.deathPatriot = {
+	{
+		at = 0.95,
+		fn = function(b)
+			dust(b, foot(b, 1), 0.4)
+		end,
+	},
+	{
+		at = 2.1,
+		fn = function(b)
+			dust(b, middle(b), 0.6)
+		end,
+	},
+	{
+		at = hitOf("deathPatriot", 2.68),
+		fn = function(b)
+			landing(b, 0.8)
+		end,
+	},
+}
+
 -- Plays a death's effects on `body` (the body playing the clip `clip`, which started at `startedAt`, os.clock()). A
 -- beat already past by more than a moment is left out.
 function DeathVfx.play(clip: string, body: Model?, startedAt: number?)
@@ -817,14 +1166,17 @@ function DeathVfx.play(clip: string, body: Model?, startedAt: number?)
 	if not beats or not body or not body:IsDescendantOf(workspace) then
 		return
 	end
-	local b: Body = { model = body }
+	local b: Body = { model = body, state = {} }
 	local started = startedAt or os.clock()
 	for _, beat in ipairs(beats) do
 		local delay = started + beat.at - os.clock()
 		if delay > -0.08 then
 			Vfx.Clock.after(math.max(0, delay), function()
 				if body.Parent and body:IsDescendantOf(workspace) then
-					pcall(beat.fn, b)
+					local ok, err = pcall(beat.fn, b)
+					if not ok then
+						warn("[DeathsGambit] death effect " .. clip .. " at " .. beat.at .. ": " .. tostring(err))
+					end
 				end
 			end)
 		end
@@ -935,8 +1287,11 @@ function DeathVfx.style(style: string?, body: Model?, moments: { [string]: numbe
 	if not fn or not body or not body:IsDescendantOf(workspace) then
 		return
 	end
-	local b: Body = { model = body }
-	pcall(fn, b, moments or {})
+	local b: Body = { model = body, state = {} }
+	local ok, err = pcall(fn, b, moments or {})
+	if not ok then
+		warn("[DeathsGambit] death effect " .. tostring(style) .. ": " .. tostring(err))
+	end
 end
 
 -- (for checks: the clips and styles with effects of their own)

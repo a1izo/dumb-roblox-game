@@ -405,6 +405,9 @@ import emotes  # noqa: E402,F401
 # Every death (redone 2026-11-07): the three collapses, the custom deaths, the rift dive's crash.
 import deaths  # noqa: E402,F401
 
+# The second batch of custom deaths (2026-11-08), each re-acting a scene the user named.
+import deaths_scenes  # noqa: E402,F401
+
 # What a fallen body does under its death style (2026-11-07).
 import fallen  # noqa: E402,F401
 

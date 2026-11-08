@@ -1143,6 +1143,42 @@ ACTS.fallen = function(refs, event)
 	end
 end
 
+-- A tear: a glint of light running down the star's cheek over `seconds`.
+ACTS.tear = function(refs, event)
+	local star = refs.star
+	local head = if star then star:FindFirstChild("Head") else nil
+	if not head or not head:IsA("BasePart") then
+		return
+	end
+	local seconds = event.seconds or 1.2
+	local side = event.side or 0.24
+	local spark = Vfx.Emit.point(head.CFrame)
+	local glint = Vfx.Emit.make(spark, {
+		tex = "VfxFlare",
+		color = Color3.fromRGB(235, 245, 255),
+		size = { { 0, 0.16 }, { 1, 0.04 } },
+		life = 0.18,
+		rate = 50,
+		speed = 0.001,
+		light = 1,
+		bright = 2,
+		z = 2,
+	})
+	local began = os.clock()
+	Vfx.Clock.every(function()
+		local u = (os.clock() - began) / seconds
+		if u >= 1 or not head.Parent then
+			glint.Enabled = false
+			Vfx.Clock.after(0.4, function()
+				spark:Destroy()
+			end)
+			return false
+		end
+		spark.CFrame = head.CFrame * CFrame.new(side, 0.08 - 0.42 * u, -0.61)
+		return true
+	end)
+end
+
 -- The cause of death across the screen, over the star's name.
 ACTS.card = function(refs, event)
 	table.insert(
@@ -1166,8 +1202,22 @@ export type Options = {
 	at: number?, -- the server time its first frame stands at (now when nil)
 	wait: boolean?, -- block until it is over (the default); false returns at once with the stopper
 	glideBack: boolean?, -- give the camera back with a glide (the shop's preview) instead of a cut
+	named: string?, -- the name a set's "$dead" mark reads (the grave after "A true patriot")
 	onEnd: (() -> ())?,
 }
+
+-- Writes `name` where a set's marks read "$dead" (a headstone's).
+local function nameMarks(refs: Refs, name: string)
+	for _, part in pairs(refs.parts) do
+		local mark = part:FindFirstChild("Mark")
+		local label = mark and mark:FindFirstChildOfClass("TextLabel")
+		if label and string.find(label.Text, "$dead", 1, true) then
+			label.Text = string.gsub(label.Text, "%$dead", function()
+				return string.upper(name)
+			end)
+		end
+	end
+end
 
 -- Plays a win cutscene on this screen. Returns the function that stops it (and puts everything back).
 function WinCinema.play(name: string, options: Options?): () -> ()
@@ -1245,6 +1295,7 @@ function WinCinema.play(name: string, options: Options?): () -> ()
 	step(function()
 		refs = build(cut, origin, stage.folder, room ~= nil)
 		WinCinema.lastRefs = refs
+		nameMarks(refs :: Refs, opts.named or "")
 		-- the star: a copy of the winner (their match look), or the faceless figure
 		local source = if opts.userId then opts.userId else Stage.figure()
 		local star = stage:cast(source :: any, origin, nil)
@@ -1411,19 +1462,61 @@ end
 -- Plays the cutscene for the local player as the shop's preview (in the lobby, starring them), unless one plays;
 -- `onEnd` when it is over.
 local previewing: (() -> ())? = nil
+
+-- Who salutes at this player's grave in the Preview of "A true patriot": a friend of theirs in the server first, else
+-- anyone in it with a body here; nil (the faceless figure) when they are alone. (In a case the server picks:
+-- DeathNoteService.)
+function WinCinema.saluter(): number?
+	local me = Players.LocalPlayer
+	local friends, anyone = {}, {}
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= me and other.Character then
+			table.insert(anyone, other.UserId)
+			local ok, friend = pcall(me.IsFriendsWith, me, other.UserId)
+			if ok and friend then
+				table.insert(friends, other.UserId)
+			end
+		end
+	end
+	local pool = if #friends > 0 then friends else anyone
+	return if #pool > 0 then pool[math.random(1, #pool)] else nil
+end
+
 function WinCinema.preview(name: string, onEnd: (() -> ())?)
 	if previewing or CameraDirector.busy() then
 		return
 	end
+	local cut = WinCinema.get(name)
+	local after = if cut and type(cut.after) == "string" and WinCinema.get(cut.after) then cut.after else nil
+	local function finished()
+		previewing = nil
+		if onEnd then
+			onEnd()
+		end
+	end
+	-- (a scene that goes on into another: the grave after "A true patriot", someone else at it, the player's name on it)
+	local saluter: number? = nil
+	if after then
+		task.spawn(function()
+			saluter = WinCinema.saluter()
+		end)
+	end
 	previewing = WinCinema.play(name, {
 		userId = Players.LocalPlayer.UserId,
 		wait = false,
-		glideBack = true,
+		glideBack = after == nil,
 		onEnd = function()
-			previewing = nil
-			if onEnd then
-				onEnd()
+			if not after or not previewing then
+				finished()
+				return
 			end
+			previewing = WinCinema.play(after :: string, {
+				userId = saluter,
+				named = Players.LocalPlayer.DisplayName,
+				wait = false,
+				glideBack = true,
+				onEnd = finished,
+			})
 		end,
 	})
 end
