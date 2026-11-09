@@ -242,3 +242,10 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
   with storeys/bays/window reveals/floor ledges/rebar/rubble, finer three-segment grass), headstone cross-in-ring
   emblem + plinths, the oak one fork fuller. Rendered in Blender and compared; NOT yet seen in Roblox (needs the v3
   import).
+- 2026-11-09 (day): ALL IMPORTS DONE. In the place: Tokyo v46, Campus v32, Agency v32 (seamless skies), Scenes v4
+  (the remade models + the car park's "1"s lifted clear of their band, which they z-fought in v3); old copies deleted;
+  ImportVersions, the venues' scene data and LightingPresets synced (hash-checked); place SAVED, not published. Seen in a
+  play test: lofted cars and the lift car, faceted desert rocks, the bombed buildings behind the battlefield, the
+  headstones' cross-in-ring emblems, the 1s back. The battlefield's look is a stop brighter (exposure 0.25).
+  Importer trap: after one import its queue can freeze at ~21% though the model is complete (check the model's
+  MeshIds by MCP); saving, closing and reopening the place clears it; a queued file then needs "Start Import".
