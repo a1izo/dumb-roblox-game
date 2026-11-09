@@ -229,3 +229,16 @@ v22 (from the 2026-11-07 "solid and alive" work) were never imported into the pl
   taken). After importing them: delete Tokyo v45 / Campus v31 / Agency v31, then sync ImportVersions.luau and
   src/server/Maps/Scenes/{Tokyo,Campus,Agency}/init.luau into the place (NOT before: a marker newer than the import
   makes SceneBuilder build that map as a greybox), then File > Save.
+- 2026-11-09 (night): IMPORTS IN PROGRESS. Tokyo v46 IMPORTED (all 494 meshes + 342 textures uploaded), Tokyo v45
+  deleted, place saved. The importer then jammed (its queue frozen at "21%" with Tokyo already complete); saving,
+  closing and reopening the place cleared it. Campus v32 is QUEUED in Studio's Import Queue (press Start Import there),
+  Agency v32 and Scenes v3 (art/export/DeathsGambitMaps_Scenes.fbx, the remade models, main 5de0fda0) still to import.
+  After all four: delete Campus v31, Agency v31, Scenes v2; then sync src/shared/ImportVersions.luau,
+  src/server/Maps/Scenes/{Tokyo,Campus,Agency}/init.luau and src/shared/Scenes/init.luau into the place (NOT before
+  their imports: a marker newer than the import makes that venue build as a greybox / the scene sets fall back to
+  stand-ins), then File > Save. Stopped taking the screen because the user was using the PC.
+- 2026-11-09: MODELS REMADE ("improve the models tenfold"): art/scripts/maps/venues/scenes/models.py (lofted saloon
+  cars, plane-chiselled flat-faceted rocks with world-planar UVs, sandstone ledges on the desert ridge, ruined buildings
+  with storeys/bays/window reveals/floor ledges/rebar/rubble, finer three-segment grass), headstone cross-in-ring
+  emblem + plinths, the oak one fork fuller. Rendered in Blender and compared; NOT yet seen in Roblox (needs the v3
+  import).
