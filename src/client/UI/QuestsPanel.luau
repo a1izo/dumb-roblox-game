@@ -31,6 +31,7 @@ local SIDE = 170
 local list: ScrollingFrame
 local popup: CanvasGroup
 local popupNotice: any -- the streak's notice (Kit/Notice)
+local heldByCinema = false -- the pop-up wanted to show while a cutscene's frame was up
 local popupShown = false
 
 local function formatTime(seconds: number): string
@@ -239,7 +240,12 @@ local function maybePopup()
 	local cycleDay = ((nextCount - 1) % Streak.CYCLE) + 1
 	popupNotice:setTitle(string.format("Day %d streak", nextCount))
 	popupNotice:setBody(string.format("+%d Reál to claim", Streak.COINS[cycleDay]))
-	popup.Visible = true
+	-- (never over a cutscene, the shop's Preview of a scene death included: it waits for the frame to go)
+	if Screens.hud:GetAttribute("Cinematic") == true then
+		heldByCinema = true
+	else
+		popup.Visible = true
+	end
 end
 
 local function buildPopup()
@@ -289,7 +295,26 @@ local function buildPopup()
 			popup.Visible = false
 		elseif waiting then
 			waiting = false
-			popup.Visible = true
+			if Screens.hud:GetAttribute("Cinematic") == true then
+				heldByCinema = true
+			else
+				popup.Visible = true
+			end
+		end
+	end)
+	-- A cutscene's frame (Cinema.letterbox) hides it the same way, 2026-11-09: it showed over the scene deaths when the
+	-- shop previewed one in the lobby.
+	Screens.hud:GetAttributeChangedSignal("Cinematic"):Connect(function()
+		if Screens.hud:GetAttribute("Cinematic") == true then
+			heldByCinema = heldByCinema or popup.Visible
+			popup.Visible = false
+		elseif heldByCinema then
+			heldByCinema = false
+			if not LobbyChrome.isHidden() then
+				popup.Visible = true
+			else
+				waiting = true
+			end
 		end
 	end)
 	card:GetPropertyChangedSignal("AbsolutePosition"):Connect(place)

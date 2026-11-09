@@ -137,7 +137,9 @@ local function applyVisibility()
 	local shown = view and not introHidden and not LobbyChrome.isHidden()
 	menu.Visible = shown
 	profileGroup.Visible = shown
-	titleBlock.Visible = shown
+	-- (the title stands in the full-screen layer, which a cutscene's frame does not hide as it hides the HUD: it showed
+	-- over the scene deaths the shop previews, 2026-11-09)
+	titleBlock.Visible = shown and Screens.hud:GetAttribute("Cinematic") ~= true
 	if eyeButton then
 		eyeButton.Visible = view and not introHidden and LobbyChrome.isHidden()
 	end
@@ -775,6 +777,11 @@ function LobbyPanel.init()
 	eyeButton = eye
 	LobbyChrome.Changed:Connect(function()
 		applyVisibility()
+	end)
+	Screens.hud:GetAttributeChangedSignal("Cinematic"):Connect(function()
+		if titleBlock and menu and profileGroup then
+			applyVisibility()
+		end
 	end)
 	hudProbe = Kit.frame({ Name = "LobbyHudProbe", Size = UDim2.fromOffset(0, 0), Parent = Screens.hud })
 	buildTitle()
