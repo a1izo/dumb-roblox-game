@@ -28,7 +28,7 @@ def W(x, y, z):
 def one(s, cx, cy, cz, face, size=2.2):
     """A painted "1" on a pillar's face: `face` the face's outward direction along X or Z (+1/-1, axis)."""
     sign, axis = face
-    off = 1.2 + 0.012
+    off = 1.21 + 0.03  # (clear of the teal band's face, or the "1" z-fights it)
 
     def at(u, v):
         # u across the face (left to right seen from in front), v up
