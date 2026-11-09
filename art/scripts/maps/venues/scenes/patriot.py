@@ -11,7 +11,7 @@ the oak and the woods stand mostly at +Z.
 import math
 import random
 
-from maps.venues.scenes import parts
+from maps.venues.scenes import models, parts
 from maps.venues.scenes import plan as P
 
 OX, OZ = P.PATRIOT
@@ -65,7 +65,8 @@ def build(s):
             pale = (k + int(rz)) % 3 == 0
             parts.headstone(s, "HeadstonePale" if pale else "HeadstoneDark", wx, wz, 180 + r.uniform(-2.5, 2.5),
                             w=1.25, h=1.9 + r.uniform(-0.1, 0.1), t=0.3, bevel=0.045, arch=4 if far else 7,
-                            sink=0.45, y=h(wx, wz) - r.uniform(0, 0.06), engrave=not far)
+                            sink=0.45, y=h(wx, wz) - r.uniform(0, 0.06), engrave=not far,
+                            plinth=not far and (k * 7 + int(rz)) % 4 == 0)
 
     # grass tufts round the actors and the near rows (none on the saluter's feet or the grave's face)
     for k in range(820):
@@ -75,11 +76,11 @@ def build(s):
         if math.hypot(x, z) < 1.2 or (abs(x - GRAVE[0]) < 1.8 and -4.4 < z < 0.2):
             continue  # (the saluter's feet; the grave's face and the close-up's line to it)
         wx, wz = OX + x, OZ + z
-        parts.grass_clump(s, wx, wz, h(wx, wz), seed=k, blades=7, height=(0.3, 0.75), spread=0.3, dry=0.3)
+        models.grass_clump(s, wx, wz, h(wx, wz), seed=k, blades=7, height=(0.3, 0.75), spread=0.3, dry=0.3)
 
     # the big bare oak behind the saluter (left of the wide shots), roots in the grass
     tx, tz = OX + 6.0, OZ + 31.0
-    parts.bare_tree(s, "Bark", tx, tz, h(tx, tz), 30.0, seed=21, levels=4, trunk=1.25, spread=34.0, lean=(-0.08, 0.05))
+    parts.bare_tree(s, "Bark", tx, tz, h(tx, tz), 30.0, seed=21, levels=5, trunk=1.25, spread=32.0, lean=(-0.08, 0.05))
     # bare woods: a ragged belt behind the rows and down both sides, fading into the mist
     for k in range(46):
         if k < 30:

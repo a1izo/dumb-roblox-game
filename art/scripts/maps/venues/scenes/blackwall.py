@@ -10,7 +10,7 @@ to the right (-X, -Z) at the end, so the near right wall and the stair door are 
 """
 
 from maps import kit
-from maps.venues.scenes import parts
+from maps.venues.scenes import models, parts
 from maps.venues.scenes import plan as P
 
 OX, OZ = P.BLACKWALL
@@ -92,7 +92,7 @@ def build(s):
     for x, z, rot, paint in ((-18.0, 18.0, 90, "CarGrey"), (-18.0, 26.0, 90, "CarRed"), (-18.0, 42.0, 90, "CarGrey"),
                              (18.0, 18.0, -90, "CarGrey"), (18.0, 34.0, -90, "CarBlue"), (18.0, 50.0, -90, "CarRed"),
                              (18.0, -6.0, -90, "CarGrey")):
-        parts.car(s, OX + x, OZ + z, rot, paint)
+        models.car(s, OX + x, OZ + z, rot, paint)
     # the two-level lift at the right: four yellow posts, the deck with its ramps and rails, the blue car up on it
     lx, lz = LIFT
     for dx in (-2.9, 2.9):
@@ -108,8 +108,8 @@ def build(s):
     s.box("BlackMetal", W(lx, deck_y - 0.4, lz), (5.0, 0.5, 0.5))
     for dz in (-4.0, 4.0):
         s.tube("Steel", W(lx - 2.9, 7.4, lz + dz * 1.3), W(lx + 2.9, 7.4, lz + dz * 1.3), 0.08, 6)
-    parts.car(s, OX + lx, OZ + lz, 0, "CarBlue", y=deck_y + 0.125)
-    parts.car(s, OX + lx, OZ + lz, 0, "CarGrey")
+    models.car(s, OX + lx, OZ + lz, 0, "CarBlue", y=deck_y + 0.125)
+    models.car(s, OX + lx, OZ + lz, 0, "CarGrey")
     # the duct and pipes down the aisle; the sprinkler main in red
     s.box("Steel", W(-3.5, CEIL - 1.6, (Z0 + Z1) / 2), (2.6, 1.6, Z1 - Z0))
     for z in range(int(Z0) + 4, int(Z1), 10):

@@ -282,7 +282,7 @@ def _arched(w, h, sag, n, bottom):
 
 
 def headstone(s, mat, x, z, rot, w=1.3, h=2.0, t=0.32, bevel=0.05, sag=0.22, arch=7, sink=0.4, y=0.0,
-              engrave=True):
+              engrave=True, plinth=False):
     """An upright headstone, its face toward rot (0 faces -Z), sunk into the ground, edges bevelled; with a few
     engraved lines across its face (a dark inlay a hair proud of the stone)."""
     outer = _arched(w, h, sag, arch, -sink)
@@ -312,9 +312,23 @@ def headstone(s, mat, x, z, rot, w=1.3, h=2.0, t=0.32, bevel=0.05, sag=0.22, arc
             pts = [P(ua, va, side - sign * bevel), P(ub, vb, side - sign * bevel), P(ib, jb, side), P(ia, ja, side)]
             o = tuple((out[k] + face[k]) for k in range(3))
             poly(s, mat, pts, o, [(0, 0), (seg, 0), (seg, bevel), (0, bevel)])
+    if plinth:  # a low base the stone stands in
+        base = place((0, 0, 0), x, y, z, rot)
+        s.box(mat, (base[0], y + 0.06, base[2]), (w + 0.34, 0.32, t + 0.42), rot)
     if engrave:
-        lines = ((0.0, h * 0.70, w * 0.16, 0.07), (0.0, h * 0.53, w * 0.5, 0.035), (0.0, h * 0.45, w * 0.38, 0.03),
-                 (0.0, h * 0.37, w * 0.44, 0.03))
+        # the emblem: a cross in a ring, cut near the top
+        cx, cy, rr = 0.0, h * 0.72, w * 0.13
+        for k in range(14):
+            a0, a1 = math.tau * k / 14, math.tau * (k + 1) / 14
+            pts = [P(cx + math.cos(a0) * rr, cy + math.sin(a0) * rr, -ht - 0.006),
+                   P(cx + math.cos(a1) * rr, cy + math.sin(a1) * rr, -ht - 0.006),
+                   P(cx + math.cos(a1) * rr * 0.78, cy + math.sin(a1) * rr * 0.78, -ht - 0.006),
+                   P(cx + math.cos(a0) * rr * 0.78, cy + math.sin(a0) * rr * 0.78, -ht - 0.006)]
+            poly(s, "Engrave", pts, front)
+        for (du, dv) in ((rr * 0.11, rr * 0.75), (rr * 0.75, rr * 0.11)):
+            poly(s, "Engrave", [P(cx - du, cy - dv, -ht - 0.007), P(cx + du, cy - dv, -ht - 0.007),
+                                P(cx + du, cy + dv, -ht - 0.007), P(cx - du, cy + dv, -ht - 0.007)], front)
+        lines = ((0.0, h * 0.53, w * 0.5, 0.035), (0.0, h * 0.45, w * 0.38, 0.03), (0.0, h * 0.37, w * 0.44, 0.03))
         for u, v, half, thick in lines:
             pts = [P(u - half / 2 * 2, v - thick, -ht - 0.006), P(u + half, v - thick, -ht - 0.006),
                    P(u + half, v + thick, -ht - 0.006), P(u - half, v + thick, -ht - 0.006)]

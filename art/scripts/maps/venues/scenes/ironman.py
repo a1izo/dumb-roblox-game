@@ -10,7 +10,7 @@ and his army in rows behind him (z -12 to -18): the ground there is flat and cle
 import math
 import random
 
-from maps.venues.scenes import parts
+from maps.venues.scenes import models, parts
 from maps.venues.scenes import plan as P
 
 OX, OZ = P.IRONMAN
@@ -132,14 +132,14 @@ def build(s):
             continue  # (the victim, the warlord and the army)
         size = r.uniform(0.25, 1.4) * (1 + d / 80)
         wx, wz = OX + x, OZ + z
-        parts.rock(s, "WarRubble" if k % 3 else "ConcreteDark", (wx, h(wx, wz), wz),
-                   (size * 1.4, size * 0.6, size), seed=1000 + k, rot=r.uniform(0, 360), rough=0.35, segs=(7, 5),
+        models.rock(s, "WarRubble" if k % 3 else "ConcreteDark", (wx, h(wx, wz), wz),
+                   (size * 1.4, size * 0.6, size), seed=1000 + k, rot=r.uniform(0, 360), segs=(7, 5),
                    sink=0.3, flat_top=0.3)
     for k in range(12):  # (the heap at the broken wall's foot)
         x, z = r.uniform(-4, 5), r.uniform(3.6, 5.0)
         q = r.uniform(0.3, 0.8)
-        parts.rock(s, "ConcreteDark", (OX + x, 0, OZ + z), (q * 1.3, q * 0.7, q), seed=1300 + k,
-                   rot=r.uniform(0, 360), rough=0.3, segs=(7, 5), sink=0.3, flat_top=0.4)
+        models.rock(s, "ConcreteDark", (OX + x, 0, OZ + z), (q * 1.3, q * 0.7, q), seed=1300 + k,
+                   rot=r.uniform(0, 360), segs=(7, 5), sink=0.3, flat_top=0.4)
     # torn wall fragments near, burnt-out shells further, a skyline of ruins far off
     for k, (x, z, w, rot) in enumerate(((-12, -18, 6, 20), (14, -22, 8, -15), (-18, 8, 7, 70), (16, 12, 9, 100),
                                         (-6, 18, 5, 10))):
@@ -153,7 +153,8 @@ def build(s):
                                           (4, -90, 26, 18, 30), (-90, -70, 24, 20, 26), (96, -80, 22, 22, 28),
                                           (-110, 30, 26, 20, 24), (110, 24, 22, 18, 30), (0, 110, 30, 20, 26))):
         wx, wz = OX + x, OZ + z
-        shell(s, wx, wz, w, d, hh, 40 + k, rot=r.uniform(-25, 25), mat="ConcreteDark" if k % 3 else "BrickDark")
+        models.ruin(s, wx, wz, w, d, hh, 40 + k, rot=r.uniform(-25, 25), mat="ConcreteDark" if k % 3 else "BrickDark",
+                    ground=h(wx, wz) - 0.4)
     for k in range(22):
         a = r.uniform(0, math.tau)
         dist = r.uniform(170, 280)
