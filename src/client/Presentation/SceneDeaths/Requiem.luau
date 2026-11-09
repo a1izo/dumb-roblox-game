@@ -220,8 +220,16 @@ local function build(ctx)
 	ctx:at(3.25, function()
 		for k = 1, COPIES do
 			local at = Vector3.new(0.95 * k, 0, 1.7 * k)
-			local c =
-				ctx:actor(ctx.victim or "figure", CFrame.lookAt(at, at + Vector3.new(0, 0, -1)), "sceneRequiemCopy", 0)
+			-- (each copy further along its own slow dread, so the row never moves as one; frozen in time, they barely
+			-- breathe)
+			local c = ctx:actor(
+				ctx.victim or "figure",
+				CFrame.lookAt(at, at + Vector3.new(0, 0, -1)),
+				"sceneRequiemCopy",
+				3.25 - 1.7 * k,
+				nil,
+				0.35
+			)
 			if c then
 				ctx:face(c, "shock")
 				table.insert(copies, { model = c, base = at, k = k })

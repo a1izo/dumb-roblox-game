@@ -99,7 +99,6 @@ local function build(ctx)
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -5)), "sceneSamVictim")
 	local killer = ctx:actor("figure", CFrame.lookAt(Vector3.new(0, 0, -5), Vector3.zero), "sceneSamKiller")
-	local blade: BasePart? = nil
 	if killer then
 		local metal = Color3.fromRGB(176, 178, 184)
 		ctx:dress(killer, {
@@ -109,41 +108,17 @@ local function build(ctx)
 			legs = metal,
 			material = Enum.Material.Metal,
 		})
-		ctx:attach(killer, "Head", {
-			size = Vector3.new(1.35, 0.7, 1.35),
-			at = Vector3.new(0, 0.45, 0.15),
-			color = Color3.fromRGB(240, 240, 236),
-			material = Enum.Material.SmoothPlastic,
-		})
-		ctx:attach(killer, "Head", {
-			size = Vector3.new(1.0, 0.24, 0.08),
-			at = Vector3.new(0, 0.05, -0.62),
-			color = Color3.fromRGB(30, 32, 36),
-			material = Enum.Material.Glass,
-		})
-		ctx:attach(killer, "Torso", {
-			size = Vector3.new(0.3, 1.6, 0.3),
-			at = Vector3.new(0.6, 0.2, 0.62),
-			rot = Vector3.new(0, 0, 18),
-			color = Color3.fromRGB(80, 210, 255),
-			glow = true,
-		})
-		blade = ctx:attach(killer, "Right Arm", {
-			size = Vector3.new(0.12, 0.3, 4.6),
-			at = Vector3.new(0, -1.05, -2.4),
-			color = Color3.fromRGB(220, 220, 226),
-			material = Enum.Material.Metal,
-		})
-		ctx:attach(
-			killer,
-			"Right Arm",
-			{ size = Vector3.new(0.14, 0.08, 4.5), at = Vector3.new(0, -0.88, -2.4), color = RED, glow = true }
-		)
-		if blade then
+		-- the white hair swept back into its tail and the visor, the long blade with its red edge (modelled:
+		-- props_scenes)
+		ctx:wear(killer, "cyborgHead")
+		local sword = ctx:wear(killer, "murasama")
+		local arm = ctx:limb(killer, "Right Arm")
+		if sword and arm then
+			-- the red trail runs from the blade's hilt to its tip, on the arm that swings it
 			local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
-			a0.Position = Vector3.new(0, 0, -2.2)
-			a1.Position = Vector3.new(0, 0, 1.6)
-			a0.Parent, a1.Parent = blade, blade
+			a0.Position = arm.CFrame:PointToObjectSpace(ctx:pointOf(sword, "murasama", "tip"))
+			a1.Position = arm.CFrame:PointToObjectSpace(ctx:pointOf(sword, "murasama", "base"))
+			a0.Parent, a1.Parent = arm, arm
 			local trail = Instance.new("Trail")
 			trail.Attachment0, trail.Attachment1 = a0, a1
 			trail.Color = ColorSequence.new(RED)
@@ -151,16 +126,11 @@ local function build(ctx)
 			trail.Lifetime = 0.25
 			trail.Transparency = NumberSequence.new(0.1, 1)
 			trail.FaceCamera = true
-			trail.Parent = blade
+			trail.Parent = arm
 		end
 	end
 	if victim then
-		ctx:attach(victim, "Right Arm", {
-			size = Vector3.new(0.12, 0.25, 3.6),
-			at = Vector3.new(0, -1.05, -1.9),
-			color = Color3.fromRGB(120, 16, 20),
-			material = Enum.Material.Metal,
-		})
+		ctx:wear(victim, "redBlade")
 		ctx:face(victim, "pain")
 	end
 	local function chest(): Vector3

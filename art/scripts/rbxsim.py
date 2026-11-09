@@ -9,6 +9,7 @@ import re
 import numpy as np
 
 import clipfile
+import cubic
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
@@ -105,45 +106,26 @@ def quat_matrix(x, y, z, w):
     )
 
 
-def slerp(qa, qb, t):
-    qa, qb = np.array(qa, float), np.array(qb, float)
-    dot = float(np.dot(qa, qb))
-    if dot < 0:
-        qb, dot = -qb, -dot
-    if dot > 0.9995:
-        q = qa + (qb - qa) * t
-        return q / np.linalg.norm(q)
-    theta = math.acos(dot)
-    return (math.sin((1 - t) * theta) * qa + math.sin(t * theta) * qb) / math.sin(theta)
+def period_of(clip, times):
+    """The clip's length when this track loops round (as ClipPlayer decides it), else None."""
+    loops = clip.get("loop") and len(times) > 2 and times[0] <= 1e-6 and abs(times[-1] - clip["length"]) < 1e-3
+    return clip["length"] if loops else None
 
 
-def sample_track(track, t):
+# (the keys run on ClipPlayer's monotone cubic: cubic.py)
+def sample_track(track, t, period=None):
     times, q = track["t"], track["q"]
-    quats = [q[i * 4 : i * 4 + 4] for i in range(len(times))]
-    if t <= times[0]:
-        return quats[0]
-    if t >= times[-1]:
-        return quats[-1]
-    i = max(k for k in range(len(times)) if times[k] <= t)
-    span = times[i + 1] - times[i]
-    return slerp(quats[i], quats[i + 1], (t - times[i]) / span if span > 0 else 0)
+    quats = np.array(q, float).reshape(len(times), 4)
+    return cubic.sample(times, quats, t, period, quat=True)
 
 
-def sample_track_position(track, t):
+def sample_track_position(track, t, period=None):
     """The slide (x, y, z studs, parent frame) of a joint at t, or None when the joint only turns."""
     p = track.get("p")
     if not p:
         return None
     times = track["t"]
-    pts = [np.array(p[i * 3 : i * 3 + 3]) for i in range(len(times))]
-    if t <= times[0]:
-        return pts[0]
-    if t >= times[-1]:
-        return pts[-1]
-    i = max(k for k in range(len(times)) if times[k] <= t)
-    span = times[i + 1] - times[i]
-    a = (t - times[i]) / span if span > 0 else 0
-    return pts[i] + (pts[i + 1] - pts[i]) * a
+    return cubic.sample(times, np.array(p, float).reshape(len(times), 3), t, period)
 
 
 def sample_offset(clip, t):
@@ -151,15 +133,7 @@ def sample_offset(clip, t):
     if not off:
         return None
     times, p = off["t"], off["p"]
-    pts = [np.array(p[i * 3 : i * 3 + 3]) for i in range(len(times))]
-    if t <= times[0]:
-        return pts[0]
-    if t >= times[-1]:
-        return pts[-1]
-    i = max(k for k in range(len(times)) if times[k] <= t)
-    span = times[i + 1] - times[i]
-    a = (t - times[i]) / span if span > 0 else 0
-    return pts[i] + (pts[i + 1] - pts[i]) * a
+    return cubic.sample(times, np.array(p, float).reshape(len(times), 3), t, period_of(clip, times))
 
 
 def clip_time(clip, t):
@@ -174,8 +148,9 @@ def pose_parts(rig, clip, t):
     t = clip_time(clip, t)
     rotations = {}
     for joint, track in clip["joints"].items():
-        rot = quat_matrix(*sample_track(track, t))
-        pos = sample_track_position(track, t)
+        period = period_of(clip, track["t"])
+        rot = quat_matrix(*sample_track(track, t, period))
+        pos = sample_track_position(track, t, period)
         rotations[JOINT_MOTORS[joint]] = rot if pos is None else (rot, pos)
     offset = sample_offset(clip, t)
     return pose_from(rig, rotations, offset)

@@ -75,7 +75,8 @@ def pose(rig, clip, t):
 
 def joint_rotations(clip, t):
     t = rbxsim.clip_time(clip, t)
-    return {j: rbxsim.quat_matrix(*rbxsim.sample_track(track, t)) for j, track in clip["joints"].items()}
+    return {j: rbxsim.quat_matrix(*rbxsim.sample_track(track, t, rbxsim.period_of(clip, track["t"])))
+            for j, track in clip["joints"].items()}
 
 
 def box_points(m, size):

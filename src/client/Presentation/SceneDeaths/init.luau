@@ -25,6 +25,10 @@ local Stage = require(script.Parent.Stage)
 local Vfx = require(script.Parent.Vfx)
 local LightingController = require(script.Parent.Parent.World.LightingController)
 local Sets = require(script.Sets)
+local Costumes = require(script.Costumes) :: any
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
+local EmoteProps = require(Shared:WaitForChild("Anim"):WaitForChild("EmoteProps"))
 
 local SceneDeaths = {}
 
@@ -201,8 +205,11 @@ function Ctx:act(actor: Model, clip: string, from: number?, speed: number?)
 end
 
 -- An actor: `who` a userId (their look; the faceless figure when they have no body here) or "figure"; standing on
--- `at` (scene space: a floor point and the way it faces). Plays `clip` from scene time `from`.
-function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: number?): Model?
+-- `at` (scene space: a floor point and the way it faces). Plays `clip` from scene time `from`. `life` (0 to 1,
+-- default LIFE) is how much Anim/Life breathes, shifts and glances over the clip (2026-11-09: held poses read as
+-- frozen without it; small life is too fine for the exported keys, which drop moves under 0.6 degrees).
+local LIFE = 0.8
+function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: number?, life: number?): Model?
 	local source = if type(who) == "number" then who else Stage.figure()
 	local actor = self.stage:cast(source :: any, self.origin * at, nil)
 	if not actor and type(who) == "number" then
@@ -211,7 +218,7 @@ function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: nu
 	if not actor then
 		return nil
 	end
-	actor:SetAttribute(Life.ATTRIBUTE, 0)
+	actor:SetAttribute(Life.ATTRIBUTE, life or LIFE)
 	-- (no overhead name tag or role label floating in a cutscene's frame)
 	for _, item in ipairs(actor:GetDescendants()) do
 		if item:IsA("BillboardGui") then
@@ -277,6 +284,102 @@ function Ctx:attach(actor: Model, limbName: string, spec: { [string]: any }): Ba
 	weld.Parent = part
 	part.Parent = actor
 	return part
+end
+
+-- A costume piece (Costumes: a helmet, a vest, a blade) worn by an actor: the Core model, scaled to its size, welded to
+-- its body part where it sits. Before the import that holds them (Costumes.CORE) a held piece shows its plain stand-in
+-- part, a worn one nothing at all (never a block stuck on a head). Returns the model.
+function Ctx:wear(actor: Model, key: string): Model?
+	local spec = Costumes[key]
+	local limb = if spec then self:limb(actor, spec.mount) else nil
+	if not spec or not limb then
+		return nil
+	end
+	local model: Model? = nil
+	-- (a scaled actor, the towering warlord, wears its pieces scaled with it)
+	local k = actor:GetScale()
+	if ModelLibrary.version("ModelsCore") >= Costumes.CORE then
+		model = ModelLibrary.get(spec.model)
+	end
+	if model then
+		local _, size = model:GetBoundingBox()
+		local biggest = math.max(size.X, size.Y, size.Z)
+		if biggest > 0 then
+			model:ScaleTo(model:GetScale() * spec.size * k / biggest)
+		end
+	elseif spec.stand then
+		local holder = Instance.new("Model")
+		local part = Instance.new("Part")
+		part.Size = Vector3.new(spec.stand.size[1], spec.stand.size[2], spec.stand.size[3]) * k
+		part.Color = Color3.fromRGB(spec.stand.color[1], spec.stand.color[2], spec.stand.color[3])
+		part.Material = Enum.Material.SmoothPlastic
+		part.Parent = holder
+		holder.PrimaryPart = part
+		model = holder
+	end
+	if not model then
+		return nil
+	end
+	model.Name = "Costume_" .. key
+	model:SetAttribute("CostumeScale", k)
+	local at = EmoteProps.steps(spec.at)
+	model:PivotTo(limb.CFrame * CFrame.new(at.Position * k) * at.Rotation)
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("BasePart") then
+			item.Anchored = false
+			item.CanCollide = false
+			item.CanQuery = false
+			item.CanTouch = false
+			item.Massless = true
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = limb
+			weld.Part1 = item
+			weld.Parent = item
+		end
+	end
+	model.Parent = actor
+	return model
+end
+
+-- A Costumes model standing in the scene (the old man's wheelchair): its pivot at `at` (scene space). Nil before the
+-- import that holds it, so the scene keeps its stand-in.
+function Ctx:place(key: string, at: CFrame): Model?
+	local spec = Costumes[key]
+	if not spec or ModelLibrary.version("ModelsCore") < Costumes.CORE then
+		return nil
+	end
+	local model = ModelLibrary.get(spec.model)
+	if not model then
+		return nil
+	end
+	local _, size = model:GetBoundingBox()
+	local biggest = math.max(size.X, size.Y, size.Z)
+	if biggest > 0 then
+		model:ScaleTo(model:GetScale() * spec.size / biggest)
+	end
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("BasePart") then
+			item.Anchored = true
+			item.CanCollide = false
+			item.CanQuery = false
+			item.CanTouch = false
+		end
+	end
+	model:PivotTo(self.origin * at)
+	model.Parent = self.stage.folder
+	return model
+end
+
+-- Where a named point of a worn piece is now (world): Costumes' `muzzle`, `tip`, `base` (from the piece's pivot), or a
+-- list entry (`list`, `index`: the gauntlet's sockets).
+function Ctx:pointOf(piece: Model, key: string, name: string, index: number?): Vector3
+	local spec = Costumes[key]
+	local p = if index then Costumes[name][index] else spec and spec[name]
+	local k = piece:GetAttribute("CostumeScale") or 1
+	if not p then
+		return piece:GetPivot().Position
+	end
+	return piece:GetPivot():PointToWorldSpace(Vector3.new(p[1], p[2], p[3]) * k)
 end
 
 -- A face drawn over an actor's head (DeathScreen.face): "shock", "shout", "pain", "sleep", "smug".

@@ -148,38 +148,24 @@ local function build(ctx)
 	local marks =
 		{ Vector3.new(-3.2, 0, -7.5), Vector3.new(-1.4, 0, -9.6), Vector3.new(2.6, 0, -6.6), Vector3.new(3.6, 0, -9.0) }
 	for i, at in ipairs(marks) do
-		local s = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, 6)), "sceneWalriderSoldier")
+		-- (each its own clip: its own idle, its own raise, its own shots: soldier 3 fires the first)
+		local s = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, 6)), "sceneWalriderSoldier" .. i)
 		if s then
 			ctx:dress(s, { head = BLACK, torso = BLACK, arms = BLACK, legs = Color3.fromRGB(30, 30, 34), face = false })
-			ctx:attach(s, "Head", {
-				size = Vector3.new(1.4, 0.7, 1.4),
-				at = Vector3.new(0, 0.45, 0),
-				color = Color3.fromRGB(26, 28, 30),
-				shape = "Ball",
-			})
-			ctx:attach(s, "Head", {
-				size = Vector3.new(1.1, 0.25, 0.1),
-				at = Vector3.new(0, 0.05, -0.62),
-				color = Color3.fromRGB(40, 60, 70),
-				material = Enum.Material.Glass,
-			})
-			ctx:attach(
-				s,
-				"Torso",
-				{ size = Vector3.new(2.1, 1.6, 1.3), at = Vector3.new(0, 0.1, 0), color = Color3.fromRGB(34, 36, 34) }
-			)
-			local rifle = ctx:attach(s, "Right Arm", {
-				size = Vector3.new(0.25, 0.35, 3.0),
-				at = Vector3.new(0, -1.1, -1.2),
-				color = Color3.fromRGB(16, 16, 18),
-				material = Enum.Material.Metal,
-			})
+			-- their gear, modelled (props_scenes: the helmet, the plate carrier, the carbine)
+			ctx:wear(s, "soldierHelmet")
+			ctx:wear(s, "soldierVest")
+			local rifle = ctx:wear(s, "rifle")
 			table.insert(soldiers, { model = s, rifle = rifle, i = i })
 		end
 	end
+	-- the old man's wheelchair (modelled; its pivot at its lowest point, the wheels on the floor), facing the victim;
+	-- the parts are its stand-in before the import
+	local chair = ctx:place("wheelchair", CFrame.new(0.4, 0, -10.2) * CFrame.Angles(0, math.pi, 0))
+	local seatY = if chair then 1.07 else 1.2 -- (the model's seat is 0.13 lower than the stand-in's)
 	local seated = ctx:actor(
 		"figure",
-		CFrame.lookAt(Vector3.new(0.4, 1.2, -10.2), Vector3.new(0.4, 1.2, 6)),
+		CFrame.lookAt(Vector3.new(0.4, seatY, -10.2), Vector3.new(0.4, seatY, 6)),
 		"sceneWalriderSeated"
 	)
 	if seated then
@@ -191,13 +177,17 @@ local function build(ctx)
 		})
 		ctx:face(seated, "sad")
 	end
-	for _, w in ipairs({
-		{ size = Vector3.new(2.2, 0.3, 2.0), at = Vector3.new(0.4, 2.0, -10.2) },
-		{ size = Vector3.new(2.2, 2.4, 0.3), at = Vector3.new(0.4, 3.3, -11.2) },
-	}) do
+	for _, w in
+		ipairs(if chair
+			then {}
+			else {
+				{ size = Vector3.new(2.2, 0.3, 2.0), at = Vector3.new(0.4, 2.0, -10.2) },
+				{ size = Vector3.new(2.2, 2.4, 0.3), at = Vector3.new(0.4, 3.3, -11.2) },
+			})
+	do
 		ctx:part({ size = w.size, at = w.at, color = Color3.fromRGB(40, 44, 48), material = Enum.Material.Metal })
 	end
-	for _, x in ipairs({ -0.85, 1.65 }) do
+	for _, x in ipairs(if chair then {} else { -0.85, 1.65 }) do
 		ctx:part({
 			size = Vector3.new(0.25, 2.6, 2.6),
 			at = Vector3.new(x, 1.3, -10.2),
@@ -343,7 +333,7 @@ local function build(ctx)
 		if not rifle then
 			return
 		end
-		local tip = (rifle.CFrame * CFrame.new(0, 0, -1.6)).Position
+		local tip = ctx:pointOf(rifle, "rifle", "muzzle")
 		Vfx.Emit.burst(tip, {
 			tex = "VfxFlare",
 			color = Color3.fromRGB(255, 236, 190),

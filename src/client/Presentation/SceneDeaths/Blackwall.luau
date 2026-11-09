@@ -178,7 +178,13 @@ local function build(ctx)
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(1, 0, -9)), "sceneBlackwallVictim")
 	local by = {}
 	for i, at in ipairs({ Vector3.new(5.5, 0, 6), Vector3.new(7.2, 0, 8.4) }) do
-		local b = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, -9)), "sceneBlackwallBystander")
+		-- (the second is caught a moment after the first: not one body twice)
+		local b = ctx:actor(
+			"figure",
+			CFrame.lookAt(at, Vector3.new(0, 0, -9)),
+			"sceneBlackwallBystander",
+			if i == 2 then 0.35 else 0
+		)
 		if b then
 			ctx:dress(b, {
 				head = Color3.fromRGB(150, 110, 84),

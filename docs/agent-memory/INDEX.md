@@ -47,3 +47,4 @@
 - [Deaths batch 2](deaths-batch2.md) — eight scene re-enactment deaths (requiem, Blackwall, DoG, Iron Man, Sam, Walrider, sans, patriot): what each reference shows, where the pieces are, the patriot grave with a server-picked saluter
 - [Debug cutscene gallery](debug-cutscene-gallery.md) — Show tab plays every shop cutscene anywhere (lobby too): Play all, the new deaths, Stop, one per scene; WinCinema.stopPreview; harness hooks openTab/gallery/shown
 - [Scene death sets](scene-death-sets.md) — 2026-11-08: Blender venue Scenes (own FBX, client-built per 1000-stud cell), LightingPresets.scenes, fine sun aim, open-from-black, MCP play-test traps
+- [Animation bar](animation-bar.md) — 2026-11-09 the measurable "made by a human" bar (snap+hold impacts, uneven spacing, asymmetry, moving holds, overlap, no steady shakes); ClipPlayer now cubic, small life belongs to Anim/Life

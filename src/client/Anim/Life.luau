@@ -38,6 +38,8 @@ local CHEST_LAG = 0.022 -- degrees the chest pitches per stud/s^2 (forward as th
 local CHEST_LAG_MAX = 3.5
 local SPRING_W = 11 -- rad/s: the lags' springs
 local SPRING_Z = 0.55 -- their damping (a soft settle)
+local JUMP_STUDS = 4 -- a body moved further than this in one frame, or turned more than JUMP_TURN degrees, was placed
+local JUMP_TURN = 50
 local BUSY_FROM = 25 -- degrees a second a joint of the clip moves at before the pass gives way on it
 local BUSY_SPAN = 70
 
@@ -192,6 +194,14 @@ function Life.apply(rig: any, amount: number, dt: number, now: number)
 	-- The lags, from how the body itself turns and changes speed.
 	local yaw, pos = bodyOf(rig)
 	local turnRate, forwardAccel = 0, 0
+	-- (a body put somewhere else between two frames, a cutscene placing its actor for the next shot, is a cut, not a
+	-- move: no lag swings off it)
+	if yaw and pos and state.yaw and state.pos then
+		local d = math.abs((yaw - state.yaw + math.pi) % (2 * math.pi) - math.pi)
+		if (pos - state.pos).Magnitude > JUMP_STUDS or d > math.rad(JUMP_TURN) then
+			state.yaw, state.pos, state.vel = nil, nil, nil
+		end
+	end
 	if yaw and pos then
 		if state.yaw then
 			local d = (yaw - state.yaw + math.pi) % (2 * math.pi) - math.pi

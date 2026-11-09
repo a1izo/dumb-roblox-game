@@ -1,19 +1,21 @@
 """Samples every Death's Gambit action on the R6 rig and writes src/shared/Anim/Clips (clipfile.py).
 
 For each clip and each joint it uses, the rotation of the joint in its parent's frame is
-sampled 60 times a second, converted to Roblox space, and reduced to the fewest keys that
-stay within a small angle of the curve (so snappy moves keep their shape). The game plays the
-keys back with spherical interpolation.
+sampled 60 times a second, converted to Roblox space, and reduced to the fewest keys whose
+curve stays within a small angle of the samples (so snappy moves keep their shape). The game
+plays the keys back on that same curve, a monotone cubic (cubic.py, Anim/ClipPlayer).
 """
 
 import math
 import os
 
 import bpy
+import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 import clipfile
 import common
+import cubic
 from common import M, M_INV
 from rig import JOINTS, LEG, PARENT
 
@@ -60,54 +62,13 @@ def sample_offset(arm):
     return M @ (pb.head - rest_head)
 
 
-def _angle(a, b):
-    d = abs(a.dot(b))
-    return 2 * math.acos(min(1.0, d))
+def _quats(quats):
+    """(m, 4) x y z w, as the game reads them."""
+    return np.array([(q.x, q.y, q.z, q.w) for q in quats], float)
 
 
-def reduce_quats(times, quats, tolerance=ANGLE_TOLERANCE):
-    """Douglas-Peucker on quaternions: keeps keys whose removal would bend the curve too much."""
-    keep = {0, len(quats) - 1}
-
-    def recurse(i, j):
-        if j <= i + 1:
-            return
-        worst, worst_k = -1.0, None
-        for k in range(i + 1, j):
-            f = (times[k] - times[i]) / (times[j] - times[i])
-            approx = quats[i].slerp(quats[j], f)
-            err = _angle(approx, quats[k])
-            if err > worst:
-                worst, worst_k = err, k
-        if worst > tolerance:
-            keep.add(worst_k)
-            recurse(i, worst_k)
-            recurse(worst_k, j)
-
-    recurse(0, len(quats) - 1)
-    return sorted(keep)
-
-
-def reduce_vectors(times, vectors, tolerance=OFFSET_TOLERANCE):
-    keep = {0, len(vectors) - 1}
-
-    def recurse(i, j):
-        if j <= i + 1:
-            return
-        worst, worst_k = -1.0, None
-        for k in range(i + 1, j):
-            f = (times[k] - times[i]) / (times[j] - times[i])
-            approx = vectors[i].lerp(vectors[j], f)
-            err = (approx - vectors[k]).length
-            if err > worst:
-                worst, worst_k = err, k
-        if worst > tolerance:
-            keep.add(worst_k)
-            recurse(i, worst_k)
-            recurse(worst_k, j)
-
-    recurse(0, len(vectors) - 1)
-    return sorted(keep)
+def _vectors(vectors):
+    return np.array([(v.x, v.y, v.z) for v in vectors], float)
 
 
 def fmt(value, digits):
@@ -189,15 +150,16 @@ def clip_lua(name, action, length, times, samples, offsets, positions=None):
     movement = bool(action.get("stride"))
     angle_tol = MOVEMENT_ANGLE_TOLERANCE if movement else ANGLE_TOLERANCE
     offset_tol = MOVEMENT_OFFSET_TOLERANCE if movement else OFFSET_TOLERANCE
+    period = length if action["loop"] else None
     for joint in sorted(samples):
         quats = samples[joint]
-        keep = set(reduce_quats(times, quats, angle_tol))
+        series = [(_quats(quats), True, angle_tol)]
         moved = positions.get(joint)
         if moved and max(p.length for p in moved) > 0.002:
-            keep |= set(reduce_vectors(times, moved, offset_tol))
+            series.append((_vectors(moved), False, offset_tol))
         else:
             moved = None
-        keep = sorted(keep)
+        keep = cubic.reduce(times, series, period)
         t_text = ", ".join(fmt(times[i], 3) for i in keep)
         q_text = ", ".join(
             f"{fmt(quats[i].x, 4)}, {fmt(quats[i].y, 4)}, {fmt(quats[i].z, 4)}, {fmt(quats[i].w, 4)}" for i in keep
@@ -209,7 +171,7 @@ def clip_lua(name, action, length, times, samples, offsets, positions=None):
         lines.append(line + " },")
     lines.append("\t\t},")
     if offsets:
-        keep = reduce_vectors(times, offsets, offset_tol)
+        keep = cubic.reduce(times, [(_vectors(offsets), False, offset_tol)], period)
         t_text = ", ".join(fmt(times[i], 3) for i in keep)
         p_text = ", ".join(f"{fmt(offsets[i].x, 3)}, {fmt(offsets[i].y, 3)}, {fmt(offsets[i].z, 3)}" for i in keep)
         lines.append(f"\t\toffset = {{ t = {{ {t_text} }}, p = {{ {p_text} }} }},")

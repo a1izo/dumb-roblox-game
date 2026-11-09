@@ -7,7 +7,9 @@ local Clips = require(script.Parent.Clips)
 
 local ClipPlayer = {}
 
-export type Track = { times: { number }, frames: { CFrame } }
+-- `q` (4 a key, each key's sign chosen to follow the one before) and `p` (3 a key, or nil) are the keys as numbers,
+-- for the curve through them; `period` is the clip's length when the track loops round.
+export type Track = { times: { number }, frames: { CFrame }, q: { number }?, p: { number }?, period: number? }
 export type Prepared = {
 	id: string,
 	length: number,
@@ -15,6 +17,7 @@ export type Prepared = {
 	joints: { [string]: Track },
 	offsetTimes: { number }?,
 	offsets: { Vector3 }?,
+	offsetPeriod: number?,
 	-- Movement clips: studs the body covers in one cycle, on a rig whose leg (hip to ankle)
 	-- is `leg` studs long, and the part of the cycle each foot is on the ground (the right foot
 	-- lands at 0, the left at 0.5).
@@ -60,8 +63,15 @@ function ClipPlayer.get(id: string): Prepared?
 	local joints: { [string]: Track } = {}
 	for joint, data in pairs(source.joints) do
 		local frames = {}
-		local q = data.q
 		local p = data.p -- slides (studs, parent frame), for joints that move as well as turn
+		-- (a key and its negation are one turn; the curve needs neighbours on the same side)
+		local q = table.clone(data.q)
+		for i = 2, #data.t do
+			local b, a = (i - 1) * 4, (i - 2) * 4
+			if q[b + 1] * q[a + 1] + q[b + 2] * q[a + 2] + q[b + 3] * q[a + 3] + q[b + 4] * q[a + 4] < 0 then
+				q[b + 1], q[b + 2], q[b + 3], q[b + 4] = -q[b + 1], -q[b + 2], -q[b + 3], -q[b + 4]
+			end
+		end
 		for i = 1, #data.t do
 			local base = (i - 1) * 4
 			local x, y, z = 0, 0, 0
@@ -71,7 +81,9 @@ function ClipPlayer.get(id: string): Prepared?
 			end
 			frames[i] = CFrame.new(x, y, z, q[base + 1], q[base + 2], q[base + 3], q[base + 4])
 		end
-		joints[joint] = { times = data.t, frames = frames }
+		local times = data.t
+		local loops = source.loop and #times > 2 and times[1] <= 1e-6 and math.abs(times[#times] - source.length) < 1e-3
+		joints[joint] = { times = times, frames = frames, q = q, p = p, period = if loops then source.length else nil }
 	end
 	local clip: Prepared = {
 		id = id,
@@ -86,12 +98,15 @@ function ClipPlayer.get(id: string): Prepared?
 	if source.offset then
 		local offsets = {}
 		local p = source.offset.p
-		for i = 1, #source.offset.t do
+		local times = source.offset.t
+		for i = 1, #times do
 			local base = (i - 1) * 3
 			offsets[i] = Vector3.new(p[base + 1], p[base + 2], p[base + 3])
 		end
-		clip.offsetTimes = source.offset.t
+		clip.offsetTimes = times
 		clip.offsets = offsets
+		local loops = source.loop and #times > 2 and times[1] <= 1e-6 and math.abs(times[#times] - source.length) < 1e-3
+		clip.offsetPeriod = if loops then source.length else nil
 	end
 	prepared[id] = clip
 	return clip
@@ -133,6 +148,65 @@ local function localTime(clip: Prepared, time: number): number
 	return math.clamp(time, 0, clip.length)
 end
 
+-- The curve between two keys (2026-11-09, "not choppy and stiff"): the export thins every clip to the fewest keys a
+-- straight line between them keeps within 0.6 degrees, so a straight line between them is a polyline whose speed
+-- jumps at every kept key. A monotone cubic through them (Fritsch-Carlson, as art/scripts/motion.py's "smooth") keeps
+-- curves curved, and never overshoots a key: a hold stays still and a snap still lands on its frame.
+local function tangents(s0: number?, d: number, s1: number?): (number, number)
+	if d == 0 then
+		return 0, 0
+	end
+	local m0 = if s0 == nil then d elseif s0 * d <= 0 then 0 else (s0 + d) * 0.5
+	local m1 = if s1 == nil then d elseif s1 * d <= 0 then 0 else (d + s1) * 0.5
+	local cap = 3 * math.abs(d)
+	return math.clamp(m0, -cap, cap), math.clamp(m1, -cap, cap)
+end
+
+-- The neighbour keys of the span i..j: (index, time) before i and after j, round the loop when the track loops.
+local function neighbours(times: { number }, i: number, j: number, period: number?): (number?, number, number?, number)
+	local n = #times
+	local h, th, k, tk = nil, 0, nil, 0
+	if i > 1 then
+		h, th = i - 1, times[i - 1]
+	elseif period then
+		h, th = n - 1, times[n - 1] - period
+	end
+	if j < n then
+		k, tk = j + 1, times[j + 1]
+	elseif period then
+		k, tk = 2, times[2] + period
+	end
+	return h, th, k, tk
+end
+
+-- One span's weights and keys, filled in by sampleTrack (one scratch table: sampling never yields).
+type Weights = {
+	h00: number,
+	h10: number,
+	h01: number,
+	h11: number,
+	i: number,
+	j: number,
+	h: number?,
+	k: number?,
+	t0: number,
+	t1: number,
+	th: number,
+	tk: number,
+	span: number,
+}
+local W: Weights = { h00 = 0, h10 = 0, h01 = 0, h11 = 0, i = 1, j = 1, t0 = 0, t1 = 0, th = 0, tk = 0, span = 0 }
+
+-- One component of a key series (`stride` numbers a key, component `c`) on the span's cubic.
+local function curve(values: { number }, stride: number, c: number, flipH: number, flipK: number, w: Weights): number
+	local v0, v1 = values[(w.i - 1) * stride + c], values[(w.j - 1) * stride + c]
+	local d = (v1 - v0) / w.span
+	local s0 = if w.h then (v0 - values[(w.h - 1) * stride + c] * flipH) / (w.t0 - w.th) else nil
+	local s1 = if w.k then (values[(w.k - 1) * stride + c] * flipK - v1) / (w.tk - w.t1) else nil
+	local m0, m1 = tangents(s0, d, s1)
+	return w.h00 * v0 + w.h10 * w.span * m0 + w.h01 * v1 + w.h11 * w.span * m1
+end
+
 function ClipPlayer.sampleTrack(track: Track, t: number): CFrame
 	local times = track.times
 	local i = find(times, t)
@@ -140,9 +214,45 @@ function ClipPlayer.sampleTrack(track: Track, t: number): CFrame
 	if i == j then
 		return track.frames[i]
 	end
-	local span = times[j] - times[i]
-	local alpha = if span > 0 then (t - times[i]) / span else 0
-	return track.frames[i]:Lerp(track.frames[j], math.clamp(alpha, 0, 1))
+	local t0, t1 = times[i], times[j]
+	local span = t1 - t0
+	local u = if span > 0 then math.clamp((t - t0) / span, 0, 1) else 1
+	local q = track.q
+	if not q or span <= 0 then
+		return track.frames[i]:Lerp(track.frames[j], u)
+	end
+	local h, th, k, tk = neighbours(times, i, j, track.period)
+	local bi, bj = (i - 1) * 4, (j - 1) * 4
+	-- (a neighbour across the loop's seam may sit on the other side of the sphere)
+	local fh, fk = 1, 1
+	if h and i == 1 then
+		local bh = (h - 1) * 4
+		local dot = q[bh + 1] * q[bi + 1] + q[bh + 2] * q[bi + 2] + q[bh + 3] * q[bi + 3] + q[bh + 4] * q[bi + 4]
+		fh = if dot < 0 then -1 else 1
+	end
+	if k and j == #times then
+		local bk = (k - 1) * 4
+		local dot = q[bk + 1] * q[bj + 1] + q[bk + 2] * q[bj + 2] + q[bk + 3] * q[bj + 3] + q[bk + 4] * q[bj + 4]
+		fk = if dot < 0 then -1 else 1
+	end
+	local u2 = u * u
+	local u3 = u2 * u
+	local w = W
+	w.h00, w.h10, w.h01, w.h11 = 2 * u3 - 3 * u2 + 1, u3 - 2 * u2 + u, -2 * u3 + 3 * u2, u3 - u2
+	w.i, w.j, w.h, w.k = i, j, h, k
+	w.t0, w.t1, w.th, w.tk, w.span = t0, t1, th, tk, span
+	local qx, qy, qz, qw =
+		curve(q, 4, 1, fh, fk, w), curve(q, 4, 2, fh, fk, w), curve(q, 4, 3, fh, fk, w), curve(q, 4, 4, fh, fk, w)
+	local length = math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw)
+	if length < 1e-6 then
+		return track.frames[i]:Lerp(track.frames[j], u)
+	end
+	local x, y, z = 0, 0, 0
+	local p = track.p
+	if p then
+		x, y, z = curve(p, 3, 1, 1, 1, w), curve(p, 3, 2, 1, 1, w), curve(p, 3, 3, 1, 1, w)
+	end
+	return CFrame.new(x, y, z, qx / length, qy / length, qz / length, qw / length)
 end
 
 function ClipPlayer.sampleOffset(clip: Prepared, t: number): Vector3?
@@ -156,9 +266,24 @@ function ClipPlayer.sampleOffset(clip: Prepared, t: number): Vector3?
 	if i == j then
 		return offsets[i]
 	end
-	local span = times[j] - times[i]
-	local alpha = if span > 0 then (t - times[i]) / span else 0
-	return offsets[i]:Lerp(offsets[j], math.clamp(alpha, 0, 1))
+	local t0, t1 = times[i], times[j]
+	local span = t1 - t0
+	local u = if span > 0 then math.clamp((t - t0) / span, 0, 1) else 1
+	if span <= 0 then
+		return offsets[j]
+	end
+	local h, th, k, tk = neighbours(times, i, j, clip.offsetPeriod)
+	local v0, v1 = offsets[i], offsets[j]
+	local d = (v1 - v0) / span
+	local s0 = if h then (v0 - offsets[h]) / (t0 - th) else nil
+	local s1 = if k then (offsets[k] - v1) / (tk - t1) else nil
+	local u2 = u * u
+	local u3 = u2 * u
+	local h00, h10, h01, h11 = 2 * u3 - 3 * u2 + 1, u3 - 2 * u2 + u, -2 * u3 + 3 * u2, u3 - u2
+	local ax0, ax1 = tangents(if s0 then s0.X else nil, d.X, if s1 then s1.X else nil)
+	local ay0, ay1 = tangents(if s0 then s0.Y else nil, d.Y, if s1 then s1.Y else nil)
+	local az0, az1 = tangents(if s0 then s0.Z else nil, d.Z, if s1 then s1.Z else nil)
+	return v0 * h00 + Vector3.new(ax0, ay0, az0) * (h10 * span) + v1 * h01 + Vector3.new(ax1, ay1, az1) * (h11 * span)
 end
 
 -- Every joint's rotation at `time` seconds (looping or holding the end), and the offset.

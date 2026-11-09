@@ -8,6 +8,7 @@
 local SceneDeaths = require(script.Parent)
 local Cinema = require(script.Parent.Parent.Cinema)
 local Vfx = require(script.Parent.Parent.Vfx)
+local Costumes = require(script.Parent.Costumes) :: any
 
 local STONES = {
 	Color3.fromRGB(160, 70, 240),
@@ -164,29 +165,15 @@ local function build(ctx)
 			material = Enum.Material.Metal,
 			face = false,
 		})
-		ctx:attach(killer, "Head", {
-			size = Vector3.new(1.5, 0.5, 1.5),
-			at = Vector3.new(0, 0.5, 0),
-			color = Color3.fromRGB(190, 150, 60),
-			material = Enum.Material.Metal,
-		})
-		ctx:attach(killer, "Head", {
-			size = Vector3.new(0.2, 0.9, 1.2),
-			at = Vector3.new(0, 1.0, 0.1),
-			color = Color3.fromRGB(190, 150, 60),
-			material = Enum.Material.Metal,
-		})
-		ctx:attach(killer, "Torso", {
-			size = Vector3.new(2.2, 0.4, 1.2),
-			at = Vector3.new(0, 0.6, 0),
-			color = Color3.fromRGB(190, 150, 60),
-			material = Enum.Material.Metal,
-		})
+		-- his ridged gold helm and chest plate (modelled: props_scenes)
+		ctx:wear(killer, "warlordHelm")
+		ctx:wear(killer, "warlordPlate")
 	end
 	local army = {}
 	for k = 1, 14 do
 		local at = Vector3.new(-16 + (k % 7) * 5.2 + (k > 7 and 2.6 or 0), 0, -12 - (k > 7 and 6 or 0))
-		local s = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, 4)), "sceneIronSoldier")
+		-- (each soldier from its own moment of the looping stance: the ranks never move as one)
+		local s = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, 4)), "sceneIronSoldier", -((k * 2.3) % 18))
 		if s then
 			ctx:dress(s, {
 				head = Color3.fromRGB(46, 44, 50),
@@ -195,46 +182,30 @@ local function build(ctx)
 				legs = Color3.fromRGB(34, 32, 38),
 				face = false,
 			})
-			ctx:attach(s, "Right Arm", {
-				size = Vector3.new(0.15, 0.15, 5),
-				at = Vector3.new(0, -0.9, -0.5),
-				rot = Vector3.new(-60, 0, 0),
-				color = Color3.fromRGB(60, 56, 52),
-				material = Enum.Material.Metal,
-			})
+			ctx:wear(s, "spear")
 			table.insert(army, s)
 		end
 	end
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -6.5)), "sceneIronVictim")
 	local stones = {}
+	local gauntlet: Model? = nil
 	local chestLight: PointLight? = nil
 	local chestDisc: BasePart? = nil
 	if victim then
 		ctx:face(victim, "pain")
-		local red, gold = Color3.fromRGB(160, 24, 28), Color3.fromRGB(214, 170, 70)
-		ctx:attach(victim, "Right Arm", {
-			size = Vector3.new(1.08, 1.3, 1.08),
-			at = Vector3.new(0, -0.4, 0),
-			color = red,
-			material = Enum.Material.Metal,
-			name = "Gauntlet",
-		})
-		ctx:attach(victim, "Right Arm", {
-			size = Vector3.new(1.12, 0.55, 1.12),
-			at = Vector3.new(0, -0.75, 0),
-			color = gold,
-			material = Enum.Material.Metal,
-			name = "Gauntlet",
-		})
-		for i = 1, 6 do
-			local at = if i == 6
-				then Vector3.new(0, -0.55, -0.58)
-				else Vector3.new(-0.38 + (i - 1) * 0.19, -0.95, -0.58)
+		-- the gauntlet (modelled: props_scenes), its six sockets empty until each stone slides in at 2.05+
+		gauntlet = ctx:wear(victim, "gauntlet")
+		local spec = Costumes.gauntlet
+		local base = Vector3.new(spec.at[1].p[1], spec.at[1].p[2], spec.at[1].p[3])
+		for _, socket in ipairs(Costumes.gauntletSockets) do
+			-- (in the arm's frame: the gauntlet sits square on it; a stone stands a little proud of its socket)
+			local at = base + Vector3.new(socket[1], socket[2], socket[3] - 0.03)
 			local s = ctx:attach(victim, "Right Arm", {
-				size = Vector3.new(0.16, 0.16, 0.08),
+				size = Vector3.new(0.13, 0.13, 0.13),
 				at = at,
 				color = Color3.fromRGB(30, 30, 30),
+				shape = "Ball",
 				glow = false,
 				name = "Stone",
 			})
@@ -370,8 +341,25 @@ local function build(ctx)
 		if not victim then
 			return
 		end
-		for _, p in ipairs(victim:GetDescendants()) do
-			if p:IsA("BasePart") and (p.Name == "Gauntlet" or p.Name == "Stone" or p.Name == "Right Arm") then
+		-- burnt black: the arm, the stones and the gauntlet (its painted textures gone, so its colour shows, from a dark
+		-- red to char)
+		local burnt = { ctx:limb(victim, "Right Arm") }
+		for _, s in ipairs(stones) do
+			table.insert(burnt, s)
+		end
+		for _, p in ipairs(if gauntlet then gauntlet:GetDescendants() else {}) do
+			if p:IsA("SurfaceAppearance") then
+				p:Destroy()
+			elseif p:IsA("BasePart") then
+				if p:IsA("MeshPart") then
+					p.TextureID = ""
+				end
+				p.Color = Color3.fromRGB(70, 20, 18)
+				table.insert(burnt, p)
+			end
+		end
+		for _, p in ipairs(burnt) do
+			if p then
 				ctx:tween(p, 0.8, { Color = Color3.fromRGB(26, 22, 20) })
 				p.Material = Enum.Material.Slate
 			end
