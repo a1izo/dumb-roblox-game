@@ -137,13 +137,14 @@ FIT_TO_KEPT = {
     "SnowTaxi": (5.74, 14.0, 5.28),
     "TreeSakura": (11.26, 10.14, 13.72),
     "SiteFence": (8.0, 2.57, 10.0),
+    "SiteFenceBoard": (8.0, 3.01, 10.155),  # (its sister panel, fitted the same way so the two meet end to end)
     "BeerCrates": (3.1, 1.9, 3.475),
     # (and two Core props remade the same way, for the beds and the parking laid out round their old shapes)
     "Tree": (7.642, 8.402, 13.717),
     "Car": (5.4, 10.9, 3.444),
 }
 # (a tree takes being drawn up taller and narrower: fitted to the kept one's box along each axis on its own)
-FIT_STRETCH = frozenset({"TreeSakura", "SiteFence", "Tree"})
+FIT_STRETCH = frozenset({"TreeSakura", "SiteFence", "SiteFenceBoard", "Tree"})
 # Designs no map places: not built, so no file carries them.
 SHELVED = frozenset({"TreeZelkova", "PetalScatter"})
 

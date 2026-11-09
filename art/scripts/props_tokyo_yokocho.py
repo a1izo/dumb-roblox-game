@@ -15,14 +15,17 @@ WARM_LIGHT = (255, 232, 196)
 def _lantern(prefix, x, y, z, r, h, paper, band, ribs=10):
     """A paper lantern at (x, y, z): the ribbed paper body (lathe), black lacquered caps, the
     ribs showing as fine rings."""
-    profile = [(0.0, -h / 2), (r * 0.55, -h / 2), (r * 0.86, -h * 0.36), (r, -h * 0.12), (r, h * 0.12),
-               (r * 0.86, h * 0.36), (r * 0.55, h / 2), (0.0, h / 2)]
-    parts = [mk.lathe(prefix + "Paper", profile, (x, y, z), mat=paper, segments=20)]
+    # (a smooth barrel, 2026-11-09: eight points made a faceted lozenge in the alleys, where they hang at eye height)
+    def radius(t):
+        return r * (0.55 + 0.45 * math.sin(math.pi * t) ** 0.7)
+
+    profile = [(0.0, -h / 2)] + [(radius(k / 14), -h / 2 + h * k / 14) for k in range(15)] + [(0.0, h / 2)]
+    parts = [mk.lathe(prefix + "Paper", profile, (x, y, z), mat=paper, segments=28)]
     for k in range(1, ribs):
         t = k / ribs
         zz = -h / 2 + h * t
-        rr = r * math.sin(math.pi * (0.18 + 0.64 * t)) * 1.005
-        parts.append(mk.torus(prefix + "Rib", rr, 0.012, (x, y, z + zz), mat=band, major_segments=20, minor_segments=3))
+        rr = radius(t) * 1.006
+        parts.append(mk.torus(prefix + "Rib", rr, 0.01, (x, y, z + zz), mat=band, major_segments=28, minor_segments=3))
     parts += [mk.cylinder(prefix + "CapT", r * 0.6, h * 0.08, (x, y, z + h / 2 + h * 0.03), mat=band, verts=16),
               mk.cylinder(prefix + "CapB", r * 0.6, h * 0.08, (x, y, z - h / 2 - h * 0.03), mat=band, verts=16)]
     return parts
@@ -36,13 +39,18 @@ def chochin():
     band = pk.metal("CH_Lacquer", (14, 12, 12), (30, 26, 24), rough=0.35, metallic=0.1)
     ink = pk.plastic("CH_Ink", (20, 16, 14))
     parts = []
-    glows = _lantern("CH_", 0, 0, 0, 0.52, 1.9, pk.glow("CH_Paper", (230, 60, 40), 2.6), band, ribs=9)
+    glows = _lantern("CH_", 0, 0, 0, 0.52, 1.9, pk.glow("CH_Paper", (230, 60, 40), 2.6), band, ribs=14)
     parts += [g for g in glows if "Rib" in g.name or "Cap" in g.name]
     glows = [g for g in glows if g not in parts]
     parts += [mk.torus("Hook", 0.1, 0.025, (0, 0, 1.22), rot=(90, 0, 0), mat=band, major_segments=10, minor_segments=4),
               mk.tube("Cord", (0, 0, 1.05), (0, 0, 1.15), 0.02, mat=band, verts=4),
               mk.tube("Tassel", (0, 0, -1.02), (0, 0, -1.35), 0.05, mat=pk.plastic("CH_Tassel", (200, 30, 30)), verts=6)]
-    parts += pk.label("Word", "居酒屋", 0.3, (0, -0.53, 0.05), ink, rot=(90, 0, 0))
+    # 居酒屋 brushed down its front, each character on the paper's curve
+    for ch, zz in zip("居酒屋", (0.46, 0.0, -0.46)):
+        t = (zz - 0.12 + 0.95) / 1.9
+        rr = 0.52 * (0.55 + 0.45 * math.sin(math.pi * t) ** 0.7)
+        # (a flat letter on a round lantern: its edges stand clear of the curve too)
+        parts += pk.label("Word", ch, 0.36, (0, -(rr + 0.04), zz - 0.12), ink, rot=(90, 0, 0))
     return parts, glows
 
 

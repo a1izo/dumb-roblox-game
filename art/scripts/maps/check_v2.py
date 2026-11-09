@@ -743,7 +743,7 @@ def stair_ends(data, world, problems):
 
 # Props that stand on the floor and may overlap by design: a bike in its rack, tape strung
 # across a fence or a barricade.
-MAY_TOUCH = {frozenset(p) for p in (("Bicycle", "BikeRack"), ("PoliceTape", "SiteFence"),
+MAY_TOUCH = {frozenset(p) for p in (("Bicycle", "BikeRack"), ("PoliceTape", "SiteFence"), ("PoliceTape", "SiteFenceBoard"),
                                     ("PoliceTape", "Barricade"), ("PoliceTape", "PoliceCar"),
                                     ("PoliceTape", "TrafficCone"), ("BarStool", "ShopCounter"),
                                     ("BankerLamp", "Sideboard"),
@@ -759,7 +759,7 @@ FEET = {"StreetLightTokyo": 1.2, "TrafficSignal": 1.2, "PedestrianSignal": 1.0, 
         "EventTent": 0.5}
 # Props that are walls themselves (the barriers across the streets that leave the map): they may
 # meet the buildings' walls.
-WALLS = {"SiteFence", "PoliceTape", "Barricade"}
+WALLS = {"SiteFence", "SiteFenceBoard", "PoliceTape", "Barricade"}
 
 
 def footprints(data, cat):

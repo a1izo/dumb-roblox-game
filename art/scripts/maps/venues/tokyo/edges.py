@@ -48,7 +48,8 @@ def barrier(s, a, b, out, rng, car=None):
     for k in range(count):
         c = (a[0] + d[0] * step * (k + 0.5), a[1] + d[1] * step * (k + 0.5))
         # Each 8-stud panel sized to its share of the span, so they meet end to end.
-        s.prop("SiteFence", c[0], c[1], rot, step / 8.0)
+        # (every other panel carries the site's notices and a warning lamp, as a real hoarding does)
+        s.prop("SiteFenceBoard" if k % 2 == 1 or count == 1 else "SiteFence", c[0], c[1], rot, step / 8.0)
         s.collider((c[0], 5.0, c[1]), (step + 0.2, 10.0, 0.6), g2.rot_of(d), True, None)
         # Invisible above the fence, so nothing gets over it (the view past it stays open).
         s.collider((c[0], 10.0 + BLOCK_H / 2, c[1]), (step + 0.2, BLOCK_H, 0.6), g2.rot_of(d), False, None)

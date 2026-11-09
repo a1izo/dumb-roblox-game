@@ -574,27 +574,81 @@ def site_fence():
     """A panel of the tall white hoarding that closes a street, 8 wide and 10 tall: ribbed steel
     sheet on a pipe frame braced behind, with a red band and the 立入禁止 KEEP OUT notice; panels
     meet end to end."""
-    sheet = mk.banded("SF_Sheet", srgb(214, 214, 208), srgb(236, 236, 230), frequency=26, axis="X", roughness=0.6)
-    pipe = galvanised("SF_Pipe")
-    red = pk.plastic("SF_Red", (196, 36, 40))
-    ink = pk.plastic("SF_Ink", (30, 30, 34))
-    white = pk.plastic("SF_White", (244, 244, 240))
-    parts = [mk.box("Sheet", (8.0, 0.12, 9.6), (0, 0, 5.0), mat=sheet),
-             mk.box("Cap", (8.0, 0.3, 0.2), (0, 0, 9.9), mat=pipe),
-             mk.box("Band", (8.0, 0.02, 0.5), (0, -0.07, 8.9), mat=red)]
+    parts, (red, ink, white) = _hoarding("SF")
+    parts.append(mk.box("Notice", (3.2, 0.03, 2.2), (0, -0.2, 5.2), mat=white))
+    parts.append(mk.box("NoticeBar", (3.2, 0.035, 0.5), (0, -0.21, 6.05), mat=red))
+    parts += pk.label("Ban", "立入禁止", 0.55, (0, -0.22, 5.25), ink)
+    parts += pk.label("Keep", "KEEP OUT", 0.3, (0, -0.22, 4.55), ink)
+    parts += pk.label("Works", "工事中", 0.26, (0, -0.22, 6.05), white)
+    return parts, []
+
+
+def _hoarding(tag):
+    """One 8 x 10 panel of a Japanese site hoarding (2026-11-09, made real: it was a flat sheet with a faint printed
+    banding): white steel sheet pressed in deep upright ribs, a dark kick plate along the foot with road grime on it,
+    a red band near the top under the capping, the pipe frame braced behind on its weights. Returns (parts, (red,
+    ink, white)) for the panel's notices, which stand on the ribs' faces (y -0.2)."""
+    sheet = mk.noisy(tag + "_Sheet", srgb(216, 216, 210), srgb(236, 236, 230), scale=14, roughness=0.55, kind="metal")
+    kick = mk.noisy(tag + "_Kick", srgb(52, 54, 56), srgb(92, 90, 84), scale=10, roughness=0.8, kind="metal")
+    pipe = galvanised(tag + "_Pipe")
+    red = pk.plastic(tag + "_Red", (196, 36, 40))
+    ink = pk.plastic(tag + "_Ink", (30, 30, 34))
+    white = pk.plastic(tag + "_White", (244, 244, 240))
+    # (8 wide exactly, the weights behind inside that: they stood out to 8.7, so the fit to the kept 8-stud box
+    # squeezed every sheet to 7.4 and left a slit to see through between panels; an upright batten over the joint at
+    # the +x end hides the seam)
+    parts = [mk.box("Sheet", (8.0, 0.08, 9.6), (0, 0, 5.0), mat=sheet),
+             mk.box("Cap", (8.0, 0.4, 0.22), (0, -0.05, 9.9), mat=pipe),
+             mk.box("Kick", (8.0, 0.32, 0.9), (0, -0.1, 0.45), mat=kick),
+             mk.box("Band", (8.0, 0.03, 0.5), (0, -0.19, 8.9), mat=red),
+             mk.box("Batten", (0.12, 0.24, 9.8), (4.0, -0.14, 4.9), mat=pipe)]
+    # the pressed ribs: a trapezoid every half stud, standing 0.14 proud, from the kick plate to the band
+    for k in range(16):
+        x = -3.75 + k * 0.5
+        rib = mk.extrude_shape("Rib", [(-0.16, 0.0), (0.16, 0.0), (0.1, -0.14), (-0.1, -0.14)], 7.7,
+                               (x, -0.04, 4.75), rot=(0, 0, 0), mat=sheet)
+        parts.append(rib)
     for x in (-3.9, 3.9):
         parts.append(mk.cylinder("Post", 0.14, 10.0, (x, 0.25, 5.0), mat=pipe, verts=10))
         parts.append(mk.tube("Brace", (x, 0.25, 7.5), (x, 2.3, 0.1), 0.1, mat=pipe, verts=8))
-        parts.append(mk.box("Weight", (0.9, 0.9, 0.6), (x, 2.3, 0.3), mat=mk.noisy("SF_Weight", srgb(90, 88, 84),
+        parts.append(mk.box("Weight", (0.9, 0.9, 0.6), (x * 0.92, 2.3, 0.3), mat=mk.noisy(tag + "_Weight", srgb(90, 88, 84),
                                                                                     srgb(120, 118, 112), scale=8)))
     for z in (2.0, 7.8):
         parts.append(mk.tube("Rail", (-4.0, 0.25, z), (4.0, 0.25, z), 0.1, mat=pipe, verts=8))
-    parts.append(mk.box("Notice", (3.2, 0.03, 2.2), (0, -0.08, 5.2), mat=white))
-    parts.append(mk.box("NoticeBar", (3.2, 0.035, 0.5), (0, -0.09, 6.05), mat=red))
-    parts += pk.label("Ban", "立入禁止", 0.55, (0, -0.1, 5.25), ink)
-    parts += pk.label("Keep", "KEEP OUT", 0.3, (0, -0.1, 4.55), ink)
-    parts += pk.label("Works", "工事中", 0.26, (0, -0.1, 6.05), white)
-    return parts, []
+    return parts, (red, ink, white)
+
+
+@prop("SiteFenceBoard", pivot="bottom", material="Metal", collide=True, texture=512, set="Tokyo",
+      lights=[dict(at=(3.6, -0.3, 10.5), kind="point", color=(255, 150, 40), range=8, brightness=0.8)])
+def site_fence_board():
+    """A hoarding panel carrying the site's notices, as every Tokyo site shows them: the white 建築計画のお知らせ
+    board (the building's plan, ruled into its table), the builder's apology ご迷惑をおかけしております with its
+    hours, and an amber warning lamp on the capping. Meets SiteFence end to end."""
+    parts, (red, ink, white) = _hoarding("SB")
+    green = pk.plastic("SB_Green", (40, 120, 70))
+    board = pk.plastic("SB_Board", (248, 248, 244))
+    rule = pk.plastic("SB_Rule", (60, 62, 68))
+    # the plan board, framed in green, its title and the ruled table
+    parts.append(mk.box("PlanFrame", (3.6, 0.04, 3.4), (-1.9, -0.19, 5.2), mat=green))
+    parts.append(mk.box("Plan", (3.4, 0.03, 3.2), (-1.9, -0.215, 5.2), mat=board))
+    parts += pk.label("PlanTitle", "建築計画のお知らせ", 0.26, (-1.9, -0.235, 6.4), ink)
+    for k in range(6):
+        parts.append(mk.box("PlanRule", (3.1, 0.01, 0.025), (-1.9, -0.235, 6.05 - k * 0.42), mat=rule))
+    parts.append(mk.box("PlanCol", (0.025, 0.01, 2.1), (-2.75, -0.235, 4.9), mat=rule))
+    for k, row in enumerate(("名称  影ヶ丘ビル新築工事", "用途  事務所・店舗", "構造  鉄骨造 地上12階", "工期  2026年11月まで",
+                             "施主  影ヶ丘開発")):
+        parts += pk.label("PlanRow", row, 0.14, (-1.75, -0.24, 5.78 - k * 0.42), ink)
+    # the apology, with the hours
+    parts.append(mk.box("Sorry", (2.6, 0.03, 1.8), (2.3, -0.215, 5.6), mat=white))
+    parts.append(mk.box("SorryBar", (2.6, 0.035, 0.36), (2.3, -0.225, 6.3), mat=green))
+    parts += pk.label("SorryTitle", "ご迷惑をおかけしております", 0.15, (2.3, -0.24, 5.75), ink)
+    parts += pk.label("SorryHours", "作業時間 8:00〜18:00", 0.16, (2.3, -0.24, 5.25), ink)
+    parts += pk.label("SorryWho", "工事中", 0.18, (2.3, -0.24, 6.3), white)
+    # the amber lamp on the capping
+    lamp = pk.glow("SB_Lamp", (255, 150, 40), 3.0)
+    parts.append(mk.cylinder("LampBase", 0.18, 0.14, (3.6, -0.05, 10.12), mat=rule, verts=12))
+    glows = [mk.sphere("Lamp", 0.2, (3.6, -0.05, 10.38), scale=(1, 1, 1.2), mat=lamp, segments=12, rings=8)]
+    return parts, glows
 
 
 @prop("PoliceTape", pivot="centre", material="Plastic", collide=True, texture=512, set="Tokyo")

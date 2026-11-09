@@ -729,22 +729,74 @@ def potted_plant(s, x, z):
     s.lathe("Foliage", (x, 1.4, z), [(0.2, 0.0), (0.9, 0.6), (1.1, 1.6), (0.8, 2.6), (0.0, 3.2)], 9)
 
 
+BOTTLES = ("GlassDark", "Glass", "LacquerRed", "Brass", "GlassDark", "PaintTeal")
+
+
 def tin_front(s, e, style, rng):
-    """A tiny bar's frontage: upright cedar boards round a sliding door, the lit room behind it, an awning."""
+    """A tiny bar's frontage: upright cedar boards on a granite plinth round a sliding lattice door (two leaves of thin
+    slats over the glass, a solid kick panel, a timber frame), the lit room behind it (a counter with its stools, a
+    shelf of bottles, the paper menu strips on the back wall), a lit upright sign by the door, an awning.
+    (2026-11-09, "keep polishing the maps": the fronts were bare boards round a flat glowing hole.)"""
     mid = e.length / 2
     half = min(2.2, e.length / 2 - 0.8)
     depth = recess_depth(e, mid - half, mid + half, (SET_DEPTH, 3.0, 2.0), 0.0, 7.6) if half > 0.8 else None
     if depth is not None:
-        e.quad(s, "TimberBoards", 0, mid - half, 0, 9.0)
-        e.quad(s, "TimberBoards", mid + half, e.length, 0, 9.0)
-        e.quad(s, "TimberBoards", mid - half, mid + half, 7.6, 9.0)
-        e.quad(s, "WindowGlass", mid - half, mid + half, 0, 7.6, -0.3)
-        e.niche(s, mid - half, mid + half, 0.0, 7.6, depth, "RoomLitSide", back="RoomLitBack", floor="WoodFloorDark",
+        a, b = mid - half, mid + half
+        e.quad(s, "TimberBoards", 0, a, 1.0, 9.0)
+        e.quad(s, "TimberBoards", b, e.length, 1.0, 9.0)
+        e.quad(s, "TimberBoards", a, b, 7.6, 9.0)
+        # the plinth: dark granite to knee height, standing a little proud of the boards
+        for u0, u1 in ((0.0, a), (b, e.length)):
+            if u1 - u0 > 0.05:
+                e.box(s, "Slate", (u0 + u1) / 2, 0.5, 0.05, (u1 - u0, 1.0, 0.1), skip=("+z",))
+        e.quad(s, "WindowGlass", a, b, 0, 7.6, -0.3)
+        e.niche(s, a, b, 0.0, 7.6, depth, "RoomLitSide", back="RoomLitBack", floor="WoodFloorDark",
                 ceiling="RoomLitCeiling")
+        # the door's frame (posts and head in dark timber) and its two sliding leaves
+        for u in (a - 0.12, b + 0.12):
+            e.box(s, "Wood", u, 3.9, 0.05, (0.26, 7.8, 0.3))
         e.box(s, "Wood", mid, 7.9, 0.1, (half * 2 + 0.6, 0.3, 0.4))
+        e.box(s, "Wood", mid, 0.08, 0.0, (half * 2 + 0.2, 0.16, 0.5))  # the sill
+        e.box(s, "Wood", mid, 3.8, -0.22, (0.16, 7.6, 0.12))  # the leaves' meeting stiles
+        for side in (-1, 1):
+            # each leaf: a timber kick rail, frosted panes to the middle rail, clear panes over it, split by a muntin
+            c = mid + side * half / 2
+            w = half - 0.1
+            e.box(s, "Wood", c, 0.6, -0.22, (w, 1.0, 0.1), skip=("+z",))
+            e.quad(s, "GlassFrosted", c - w / 2, c + w / 2, 1.1, 4.2, -0.26)
+            for y in (4.2, 7.45):
+                e.box(s, "Wood", c, y, -0.22, (w, 0.16, 0.1), skip=("+z",))
+            e.box(s, "Wood", c, 4.0, -0.22, (0.1, 6.8, 0.08), skip=("+z",))
+            e.box(s, "Brass", c - side * (w / 2 - 0.25), 3.6, -0.14, (0.08, 0.5, 0.06), skip=("+z",))  # the pull
+        # the room: the counter, its stools, a shelf of bottles and the menu on the back wall
         e.box(s, "Wood", mid, 1.8, -(depth - 0.8), (half * 2 - 0.4, 3.6, 1.2))  # the counter
+        e.box(s, "WoodFloorDark", mid, 3.66, -(depth - 0.85), (half * 2 - 0.3, 0.12, 1.4))  # its top
+        if depth >= 3.0:
+            for u in (mid - half * 0.5, mid + half * 0.5):
+                e.box(s, "Leather", u, 2.3, -(depth - 2.0), (0.7, 0.18, 0.7), skip=("-y",))
+                e.box(s, "BlackMetal", u, 1.15, -(depth - 2.0), (0.12, 2.2, 0.12), skip=("+y", "-y"))
+        e.box(s, "Wood", mid, 5.0, -(depth - 0.2), (half * 2 - 0.5, 0.1, 0.36), skip=("+z",))
+        for k in range(int((half * 2 - 0.8) / 0.42)):
+            u = a + 0.55 + k * 0.42
+            hh = rng.choice((0.55, 0.7, 0.85))
+            e.box(s, rng.choice(BOTTLES), u, 5.05 + hh / 2, -(depth - 0.2), (0.16, hh, 0.16), skip=("-y", "+z"))
+        for k in range(int((half * 2 - 0.6) / 0.62)):
+            u = a + 0.6 + k * 0.62
+            e.box(s, "CreamTrim", u, 6.7 + rng.uniform(-0.05, 0.05), -(depth - 0.03), (0.4, 1.1, 0.02),
+                  skip=("+z", "-y", "+y"))
+        # the upright sign beside the door, lit, its name down it, above heads
+        name = (style.get("fascia") or ("酒場", None))[0]
+        glyphs = "\n".join(ch for ch in name if ch != " ")[:11]
+        side = -1 if rng.random() < 0.5 else 1
+        u = a - 0.75 if side < 0 else b + 0.75
+        if (side < 0 and a > 1.4) or (side > 0 and e.length - b > 1.4):
+            e.box(s, "WhiteTrim", u, 6.9, 0.22, (0.9, 2.6, 0.36))
+            x, z = e.at(u, 0.41)
+            s.sign((x, 6.9, z), e.rot, 0.8, 2.5, glyphs, "GothamBlack", (40, 22, 18), bg=(246, 240, 226),
+                   glow=(255, 230, 190))
     else:
-        e.quad(s, "TimberBoards", 0, e.length, 0, 9.0)
+        e.quad(s, "TimberBoards", 0, e.length, 1.0, 9.0)
+        e.quad(s, "Slate", 0, e.length, 0, 1.0)
     e.quad(s, style["clad"], 0, e.length, 9.0, FLOOR_GF)
     e.box(s, "Shutter", e.length / 2, 9.6, 0.7, (e.length, 0.25, 1.4))
     e.cover(s, e.length / 2, 9.6, 0.7, (e.length, 0.8, 1.4))  # the awning over the door
