@@ -86,3 +86,12 @@ hit-stop length, smear/arc use, camera kick, ease curves, how idles breathe, how
 - NOT SEEN in Roblox: the costumes (they need the Core v35 import) and the new acting in the real place's lighting.
 - LEFT for the user: import art/export/DeathsGambitModels_Core.fbx (v35) in Studio, then delete the v34 model and
   File > Save; a look at the scenes in Roblox (F2 > Show > the 9 scene deaths).
+- 2026-11-10, "keep polishing the maps": all three case maps rendered (run_maps --preview); weakest found in Tokyo.
+  PUSHED e2b4d1c2: yokocho bar fronts (buildings.tin_front: plinth, framed sliding door, lit upright sign, counter,
+  stools, bottles, menus), smooth Chochin lanterns, real site hoardings (ribs, kick plate, SiteFenceBoard with the
+  plan board, apology and amber lamp; the see-through slit between panels was the weights standing out to 8.7 and the
+  fit squeezing the sheet). Maps Tokyo v47, Models Tokyo v24; check_v2 Tokyo ok; budget ok (385,582 / 403,233).
+  Agency's "white tile" rooms are a preview artefact (CarpetTile's texture is dark slate, mean 69/73/82).
+  NOT synced into the place: ImportVersions and the Tokyo scene data wait for the imports (a marker newer than the
+  import builds the map as a greybox). LEFT for the user: import Maps Tokyo v47, Models Tokyo v24, Core v35, then
+  sync (make_sync from 229744e1) and save.
