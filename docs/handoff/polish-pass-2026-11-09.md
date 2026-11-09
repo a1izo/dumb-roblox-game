@@ -77,5 +77,12 @@ hit-stop length, smear/arc use, camera kick, ease curves, how idles breathe, how
 - Bugs fixed: the lobby title (world layer) and the daily streak pop-up (panels layer) showed over cutscenes, the shop's
   scene-death Preview included; both now wait while a cutscene's frame is up. The first build's nine dead clips
   (death<Requiem..Patriot>, graveSalute) removed from Animations.blend.
-- LEFT for the user: import art/export/DeathsGambitModels_Core.fbx (v35) in Studio, then delete the v34 model; a look at
-  the scenes in Roblox.
+- TESTED (harness -Min -Probe Scenes, throwaway place, no imports): all 9 scenes start and finish on time with 0 script
+  errors (the one counted line is the "sets not imported" notice the harness place always gives); specs 456 passed,
+  0 failed. PUSHED origin/main e871749f + e2fd9bfa.
+- PLACE SYNCED (one-shot DGPass plugin in a minimised second Studio, from 7ce5a55b): 34 updated, 1 created (Costumes),
+  0 skipped, 0 failed. The place's ReplicatedStorage.Shared.Anim.Clips.Part12-Part15 are left in it, unused (Clips'
+  init now lists Part1-Part11): delete them when convenient. Not published.
+- NOT SEEN in Roblox: the costumes (they need the Core v35 import) and the new acting in the real place's lighting.
+- LEFT for the user: import art/export/DeathsGambitModels_Core.fbx (v35) in Studio, then delete the v34 model and
+  File > Save; a look at the scenes in Roblox (F2 > Show > the 9 scene deaths).
