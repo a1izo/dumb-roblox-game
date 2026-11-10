@@ -64,9 +64,25 @@ local function build(ctx)
 	ratio.Parent = area
 	area.Parent = ui
 	local battle, _ = box(area, 0.5, 0.62, 0.2, 0.26, WHITE, 3)
-	local soul = label(battle, "♥", 0.08, 0.78, 0.16, 0.16, RED)
-	soul.Font = Enum.Font.GothamBlack
-	soul.TextXAlignment = Enum.TextXAlignment.Center
+	-- the soul: Undertale's pixel heart (2026-11-10, the user: "pixelated"), a 7 x 6 bitmap of red squares
+	local soul = Instance.new("Frame")
+	soul.BackgroundTransparency = 1
+	soul.AnchorPoint = Vector2.new(0.5, 0.5)
+	soul.Size = UDim2.fromScale(0.14, 0.12)
+	soul.Position = UDim2.fromScale(0.5, 0.5)
+	soul.Parent = battle
+	for row, bits in ipairs({ ".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..." }) do
+		for col = 1, 7 do
+			if string.sub(bits, col, col) == "X" then
+				local px = Instance.new("Frame")
+				px.BorderSizePixel = 0
+				px.BackgroundColor3 = RED
+				px.Position = UDim2.fromScale((col - 1) / 7, (row - 1) / 6)
+				px.Size = UDim2.fromScale(1 / 7 + 0.004, 1 / 6 + 0.004)
+				px.Parent = soul
+			end
+		end
+	end
 	label(area, "DEATH   LV 19   HP", 0.14, 0.785, 0.32, 0.035, WHITE)
 	local hpBack = Instance.new("Frame")
 	hpBack.BorderSizePixel = 0
@@ -89,11 +105,19 @@ local function build(ctx)
 		local name = label(frame, spec[1], 0.3, 0.5, 0.66, 0.7, ORANGE)
 		buttons[i] = { frame = frame, stroke = stroke, icon = icon, name = name }
 	end
-	-- the soul pushes the box left, slowly, to FIGHT (0-19 s), and sits on FIGHT
+	-- the soul walks to the box's left edge first (0-3.5 s); only once it is pressing the edge does the box move with
+	-- it, slowly left to FIGHT (3.5-17 s); then it presses the bottom edge and the box drops onto the button (17-19 s)
+	-- (2026-11-10, the user: the box moves only when the heart pushes its edges)
 	ctx:during(0, 30, function(t)
-		local u = math.clamp(t / 19, 0, 1)
-		battle.Position = UDim2.fromScale(0.5 - 0.29 * u, 0.62 + 0.18 * math.clamp((t - 17) / 2, 0, 1))
-		soul.Position = UDim2.fromScale(0.08 + 0.02 * math.sin(t * 3), 0.78 + 0.02 * math.cos(t * 2.3))
+		local walk = math.clamp(t / 3.5, 0, 1)
+		walk = walk * walk * (3 - 2 * walk)
+		local soulX = 0.5 - 0.41 * walk + 0.006 * math.sin(t * 7) * (1 - walk)
+		local push = math.clamp((t - 3.5) / 13.5, 0, 1)
+		local down = math.clamp((t - 16.5) / 0.6, 0, 1)
+		local soulY = 0.5 + 0.38 * down
+		local drop = math.clamp((t - 17) / 2, 0, 1)
+		battle.Position = UDim2.fromScale(0.5 - 0.29 * push, 0.62 + 0.18 * drop)
+		soul.Position = UDim2.fromScale(soulX, soulY)
 	end)
 	ctx:at(19.0, function()
 		local b = buttons[1]

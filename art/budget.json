@@ -73,6 +73,12 @@
       "approved": "2026-10-24",
       "megapixels": 8.2,
       "megabytes": 2.0
+    },
+    {
+      "what": "The Devourer of Gods' own models in the Core set (GodHead 512 px, GodBody 512 px, GodTail 256 px: props_god.py), for the user's 'make it 100x more high quality ... give him his actual head' (2026-11-10)",
+      "approved": "2026-11-10",
+      "megapixels": 0.9,
+      "megabytes": 0.9
     }
   ]
 }

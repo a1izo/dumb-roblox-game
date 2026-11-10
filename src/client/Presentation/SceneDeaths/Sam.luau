@@ -134,28 +134,90 @@ local function build(ctx)
 		return if t then ctx.origin:PointToObjectSpace(t.Position) else Vector3.new(0, 3.5, -5)
 	end
 
-	-- the HUD: the energy bars top left, the HITS counter at the right
+	-- the HUD, drawn like the game's (2026-11-10, "more high quality"): top left the killer's name over a long thin
+	-- health bar (an orange lead, white behind, on a dark backing with its number box), the cyan fuel-cell cells under
+	-- it with their count; bottom right the victim's name and short bar with its number; the HITS plate right of
+	-- centre, bumping on every cut
 	local hud = ctx:layer(3)
-	local function bar(y: number, color: Color3, w: number)
+	local ORANGE = Color3.fromRGB(240, 150, 40)
+	local function text(
+		parent: Instance,
+		str: string,
+		x: number,
+		y: number,
+		w: number,
+		h: number,
+		color: Color3,
+		font: Enum.Font?,
+		align: Enum.TextXAlignment?
+	)
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.Position = UDim2.fromScale(x, y)
+		l.Size = UDim2.fromScale(w, h)
+		l.Font = font or Enum.Font.GothamBold
+		l.TextScaled = true
+		l.TextColor3 = color
+		l.TextStrokeTransparency = 0.5
+		l.TextXAlignment = align or Enum.TextXAlignment.Left
+		l.Text = str
+		l.Parent = parent
+		return l
+	end
+	local function backing(x: number, y: number, w: number, h: number): Frame
 		local b = Instance.new("Frame")
 		b.BorderSizePixel = 0
-		b.BackgroundColor3 = color
-		b.Position = UDim2.fromScale(0.04, y)
-		b.Size = UDim2.fromScale(w, 0.012)
+		b.BackgroundColor3 = Color3.fromRGB(14, 16, 20)
+		b.BackgroundTransparency = 0.25
+		b.Position = UDim2.fromScale(x, y)
+		b.Size = UDim2.fromScale(w, h)
+		local edge = Instance.new("UIStroke")
+		edge.Color = Color3.fromRGB(150, 160, 170)
+		edge.Thickness = 1
+		edge.Transparency = 0.4
+		edge.Parent = b
 		b.Parent = hud
+		return b
 	end
-	bar(0.14, Color3.fromRGB(240, 150, 40), 0.24)
-	bar(0.158, Color3.fromRGB(80, 220, 240), 0.2)
-	local hits = Instance.new("TextLabel")
-	hits.BackgroundColor3 = Color3.fromRGB(240, 150, 40)
-	hits.BorderSizePixel = 0
-	hits.Position = UDim2.fromScale(0.78, 0.3)
-	hits.Size = UDim2.fromScale(0.08, 0.035)
-	hits.Font = Enum.Font.GothamBlack
-	hits.TextScaled = true
-	hits.Text = "1 HITS"
-	hits.Parent = hud
+	local function fill(parent: Frame, color: Color3, from: number, to: number): Frame
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = color
+		f.Position = UDim2.fromScale(from, 0.15)
+		f.Size = UDim2.fromScale(to - from, 0.7)
+		f.Parent = parent
+		return f
+	end
+	text(hud, "RAIDEN", 0.04, 0.045, 0.1, 0.022, Color3.fromRGB(230, 232, 236))
+	local life = backing(0.04, 0.07, 0.27, 0.014)
+	fill(life, Color3.fromRGB(236, 238, 240), 0.0, 1.0)
+	fill(life, ORANGE, 0.0, 0.09)
+	local lifeBox = backing(0.312, 0.064, 0.05, 0.026)
+	text(lifeBox, "200", 0.06, 0.08, 0.6, 0.84, Color3.fromRGB(240, 240, 240), Enum.Font.GothamBlack)
+	text(lifeBox, "/200", 0.6, 0.3, 0.4, 0.5, Color3.fromRGB(180, 184, 190))
+	text(hud, "FC", 0.04, 0.092, 0.03, 0.016, Color3.fromRGB(120, 220, 240))
+	local cells = backing(0.07, 0.093, 0.16, 0.012)
+	for k = 1, 12 do
+		fill(cells, Color3.fromRGB(80, 220, 240), (k - 1) / 12 + 0.006, k / 12 - 0.006)
+	end
+	text(hud, "1290/1296", 0.235, 0.09, 0.07, 0.016, Color3.fromRGB(160, 220, 236))
+	-- the victim's bar, bottom right
+	text(hud, "SAM", 0.78, 0.835, 0.05, 0.02, Color3.fromRGB(230, 232, 236))
+	local foe = backing(0.78, 0.86, 0.16, 0.012)
+	local foeFill = fill(foe, Color3.fromRGB(236, 238, 240), 0.0, 1.0)
+	local foeNumber = text(hud, "96", 0.945, 0.855, 0.04, 0.022, Color3.fromRGB(240, 240, 240), Enum.Font.GothamBlack)
+	-- the hits plate
+	local plate = backing(0.76, 0.33, 0.11, 0.045)
+	plate.BackgroundColor3 = ORANGE
+	plate.BackgroundTransparency = 0
+	local hits =
+		text(plate, "1", 0.06, 0.04, 0.36, 0.92, Color3.new(1, 1, 1), Enum.Font.GothamBlack, Enum.TextXAlignment.Right)
+	text(plate, "HITS", 0.48, 0.2, 0.48, 0.6, Color3.fromRGB(40, 26, 10), Enum.Font.GothamBlack)
 	local count = 1
+	local function foeLife(share: number)
+		foeFill.Size = UDim2.fromScale(math.max(0, share), 0.7)
+		foeNumber.Text = tostring(math.floor(96 * share + 0.5))
+	end
 
 	-- 0.25 over the killer's shoulder: the combo across the victim
 	ctx:shot(0.0, Vector3.new(-3.4, 6.4, -10.5), Vector3.new(0, 3.6, 0), 50, { eye = Vector3.new(-3.1, 6.3, -10.0) })
@@ -191,7 +253,10 @@ local function build(ctx)
 				bright = 2,
 			}, 10)
 			count += 1
-			hits.Text = count .. " HITS"
+			hits.Text = tostring(count)
+			plate.Size = UDim2.fromScale(0.125, 0.052)
+			ctx:tween(plate, 0.12, { Size = UDim2.fromScale(0.11, 0.045) })
+			foeLife(1 - count * 0.04)
 		end)
 	end
 	cut(0.4, Vector3.new(-1.5, 1.2, -0.6), Vector3.new(1.5, -1.0, -0.6))
@@ -212,6 +277,20 @@ local function build(ctx)
 		k.Text = "斬"
 		k.TextColor3 = Color3.new(1, 1, 1)
 		k.Rotation = -4
+		-- (a brush's edge: a soft wide stroke, a dry second impression a hair off and turned)
+		local edge = Instance.new("UIStroke")
+		edge.Color = Color3.new(1, 1, 1)
+		edge.Thickness = 3
+		edge.Transparency = 0.35
+		edge.Parent = k
+		local dry = k:Clone()
+		dry.Position = UDim2.fromScale(0.748, 0.455)
+		dry.Rotation = -1
+		dry.TextTransparency = 0.55
+		dry.Parent = hud
+		ctx:atNow(3.2, function()
+			dry:Destroy()
+		end)
 		local paint = Instance.new("UIGradient")
 		paint.Rotation = 0
 		paint.Transparency = NumberSequence.new({
@@ -274,6 +353,37 @@ local function build(ctx)
 		blue.Size = UDim2.fromScale(1, 1)
 		blue.Parent = wash
 		ctx:tween(blue, 0.12, { BackgroundTransparency = 0.72 })
+		-- the blade mode frame: a cyan border and corner brackets, faint scan lines
+		local border = Instance.new("Frame")
+		border.BackgroundTransparency = 1
+		border.Size = UDim2.fromScale(1, 1)
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(120, 220, 255)
+		stroke.Thickness = 6
+		stroke.Transparency = 0.3
+		stroke.Parent = border
+		border.Parent = wash
+		for i = 0, 11 do
+			local line = Instance.new("Frame")
+			line.BorderSizePixel = 0
+			line.BackgroundColor3 = Color3.fromRGB(140, 200, 255)
+			line.BackgroundTransparency = 0.9
+			line.Position = UDim2.fromScale(0, i / 12)
+			line.Size = UDim2.new(1, 0, 0, 2)
+			line.Parent = wash
+		end
+		for _, c in ipairs({ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }) do
+			local bracket = Instance.new("Frame")
+			bracket.BackgroundTransparency = 1
+			bracket.AnchorPoint = Vector2.new(c[1], c[2])
+			bracket.Position = UDim2.fromScale(c[1] * 0.96 + 0.02, c[2] * 0.94 + 0.03)
+			bracket.Size = UDim2.fromScale(0.05, 0.08)
+			local bs = Instance.new("UIStroke")
+			bs.Color = Color3.fromRGB(120, 220, 255)
+			bs.Thickness = 3
+			bs.Parent = bracket
+			bracket.Parent = wash
+		end
 		ctx:atNow(3.25, function()
 			wash:Destroy()
 		end)
@@ -384,6 +494,7 @@ local function build(ctx)
 	ctx:shot(5.0, Vector3.new(1.3, 5.2, 3.4), Vector3.new(-0.2, 4.8, -2.4), 42, { eye = Vector3.new(1.1, 5.1, 3.0) })
 	ctx:say(5.2, "Play time's over.", 2.2)
 	ctx:at(6.8, function()
+		foeLife(0.1)
 		Cinema.flash(RED, 0.35, 0.25)
 		Vfx.Emit.burst(ctx:world(chest()), {
 			tex = "VfxFlare",
@@ -414,6 +525,7 @@ local function build(ctx)
 		end
 	end)
 	ctx:at(11.0, function()
+		foeLife(0)
 		Vfx.Emit.burst(ctx:world(chest()), {
 			tex = "VfxFlare",
 			color = RED,

@@ -1,21 +1,68 @@
--- A GOD.. IS NOT... AFRAID OF... (art/refs/deaths/god.md, 16 s): the victim IS the devourer: a colossal serpent of dark
--- armoured segments edged in magenta and cyan, the victim's own head (made huge) at its front, coiling through a violet
--- sky of stars and nebulae. "A GOD DOES NOT FEAR DEATH!" in the chat at the bottom left, then spammed faster and faster
--- while the serpent comes apart a segment at a time from the tail (white flash, a burst of magenta-cyan dust), the
--- head alone cracking with light, and bursting into violet dust.
+-- A GOD.. IS NOT... AFRAID OF... (art/refs/deaths/god.md; 13 s since 2026-11-10): the victim IS the Devourer of Gods,
+-- a colossal armoured cosmic serpent (our own models of its look: GodHead, GodBody, GodTail in Core, props_god.py)
+-- coiling through a purple sky of stars. "A GOD DOES NOT FEAR DEATH!" in an old game's chat at the bottom left, then
+-- spammed faster and faster while the god CRACKS: glowing fractures spread from the tail to the head, light leaking
+-- out of every plate, the coil seizing up; then it flares white, the screen goes white, and the chat says
+-- "<Name> has been defeated!" (the user, 2026-11-10: cracks, not pieces falling off; die faster; the white screen
+-- transition to the chat line).
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local SceneDeaths = require(script.Parent)
-local Cinema = require(script.Parent.Parent.Cinema)
 local Vfx = require(script.Parent.Parent.Vfx)
+local ModelLibrary = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModelLibrary"))
 
 local MAGENTA = Color3.fromRGB(255, 60, 220)
 local CYAN = Color3.fromRGB(60, 230, 255)
+local CRACK = Color3.fromRGB(255, 240, 255)
 local PLATE = Color3.fromRGB(40, 30, 64)
-local SEGMENTS = 26
-local GAP = 3.4
+local SEGMENTS = 20
+local SCALE = 1.5 -- the serpent's size over the models' own (the head 10 studs wide)
+local CRACK_FROM, CRACK_TO = 4.6, 8.6 -- the fractures run from the tail to the head between these
+local FLARE = 9.0 -- the god flares white; the screen is white by 9.35
+local LENGTH = 13.0
+
+-- One link of the serpent: its model (or a stand-in part), the length it takes along the body, its crack parts.
+local function link(ctx, key: string, scale: number, standIn: Vector3)
+	local model = ModelLibrary.get(key)
+	local cracks = {}
+	local plates = {}
+	if model then
+		model:ScaleTo(model:GetScale() * scale)
+		for _, p in ipairs(model:GetDescendants()) do
+			if p:IsA("BasePart") then
+				p.Anchored = true
+				p.CanCollide = false
+				p.CanQuery = false
+				p.CanTouch = false
+				if string.find(p.Name, "_Cracks", 1, true) then
+					p.Material = Enum.Material.Neon
+					p.Color = CRACK
+					p.Transparency = 1
+					if p:IsA("MeshPart") then
+						p.TextureID = ""
+					end
+					p.CastShadow = false
+					table.insert(cracks, p)
+				elseif not string.find(p.Name, "_Glow", 1, true) then
+					table.insert(plates, p)
+				end
+			end
+		end
+		model.Parent = ctx.stage.folder
+		local _, size = model:GetBoundingBox()
+		return { model = model, length = size.Z, cracks = cracks, plates = plates, pivot = model:GetPivot() }
+	end
+	local part = ctx:part({ size = standIn * scale, color = PLATE, material = Enum.Material.Metal })
+	local m = Instance.new("Model")
+	part.Parent = m
+	m.PrimaryPart = part
+	m.Parent = ctx.stage.folder
+	return { model = m, length = standIn.Z * scale, cracks = {}, plates = { part }, pivot = m:GetPivot() }
+end
 
 local function build(ctx)
-	-- (the sky is the scene's own, SkyScene* from the import; a dark box only without it)
 	if not ctx:imported() then
 		SceneDeaths.box(ctx, Vector3.new(500, 400, 500), Vector3.new(0, -150, 0), Color3.fromRGB(44, 16, 86))
 	end
@@ -30,146 +77,66 @@ local function build(ctx)
 		light = 1,
 		rate = 120,
 	}):Emit(400)
-	-- (glowing clouds far beyond the serpent, on the side every camera looks at: the purple one stood beside the
-	-- circling wide's lens and showed as a hard-edged sheet across a third of the frame)
-	for i, spec in ipairs({
-		{ Vector3.new(-50, 40, -150), MAGENTA },
-		{ Vector3.new(60, 15, -140), CYAN },
-		{ Vector3.new(10, 70, -190), Color3.fromRGB(140, 60, 255) },
-	}) do
-		SceneDeaths.emit(ctx, spec[1], Vector3.new(60, 30, 20), {
-			tex = "VfxSmoke",
-			grid = 8,
-			mode = "OneShot",
-			color = spec[2],
-			size = { { 0, 30 }, { 1, 50 } },
-			alpha = { { 0, 1 }, { 0.3, 0.7 }, { 0.7, 0.75 }, { 1, 1 } },
-			life = { 8, 12 },
-			speed = { 0.2, 0.6 },
-			spread = 180,
-			rot = { 0, 360 },
-			light = 1,
-			bright = 1,
-			rate = 2,
-		}):Emit(6 + i)
-	end
 	ctx:light(Vector3.new(0, 30, 20), Color3.fromRGB(230, 200, 255), 120, 1.3)
 	ctx:light(Vector3.new(-30, 0, -20), MAGENTA, 90, 1.1)
 	ctx:light(Vector3.new(30, 10, -20), CYAN, 90, 1.0)
 
-	-- the serpent: segments of dark plate edged in magenta, cyan fins; the victim's head, huge, at the front
-	local segments = {}
+	-- the serpent: the head, the body's rings tapering to the tail
+	local links = {}
+	table.insert(links, link(ctx, "GodHead", SCALE, Vector3.new(6.7, 5.8, 9.7)))
 	for i = 1, SEGMENTS do
-		local scale = 1 - (i / SEGMENTS) * 0.45
-		local body =
-			ctx:part({ size = Vector3.new(4.6, 4.2, 3.2) * scale * 1.6, color = PLATE, material = Enum.Material.Metal })
-		local band = ctx:part({
-			size = Vector3.new(4.8, 0.5, 3.0) * scale * 1.6,
-			color = if i % 2 == 0 then MAGENTA else CYAN,
-			glow = true,
-			cast = false,
-		})
-		local finL = ctx:part({
-			size = Vector3.new(0.3, 2.4, 1.6) * scale * 1.6,
-			color = CYAN,
-			glow = true,
-			shape = "Wedge",
-			cast = false,
-		})
-		local finR = ctx:part({
-			size = Vector3.new(0.3, 2.4, 1.6) * scale * 1.6,
-			color = CYAN,
-			glow = true,
-			shape = "Wedge",
-			cast = false,
-		})
-		segments[i] = { body = body, band = band, finL = finL, finR = finR, scale = scale, gone = false }
+		local s = SCALE * (1 - (i / SEGMENTS) * 0.45)
+		table.insert(links, link(ctx, "GodBody", s, Vector3.new(8.2, 6.4, 4.7)))
 	end
-	local headModel: Model? = nil
-	local headPart: BasePart? = nil
-	if ctx.victim then
-		local who = game:GetService("Players"):GetPlayerByUserId(ctx.victim)
-		local character = who and who.Character
-		local h = character and character:FindFirstChild("Head")
-		if h and h:IsA("BasePart") then
-			local m = Instance.new("Model")
-			local copy = h:Clone()
-			for _, item in ipairs(copy:GetChildren()) do
-				if not (item:IsA("Decal") or item:IsA("SpecialMesh")) then
-					item:Destroy()
-				end
-			end
-			copy.Anchored = true
-			copy.CanCollide = false
-			copy.Parent = m
-			m.PrimaryPart = copy
-			m.Parent = ctx.stage.folder
-			m:ScaleTo(8)
-			headModel, headPart = m, copy
-		end
-	end
-	if not headPart then
-		headPart = ctx:part({
-			size = Vector3.new(6, 6, 6),
-			color = Color3.fromRGB(70, 50, 110),
-			material = Enum.Material.Metal,
-			shape = "Ball",
-		})
-	end
-	local crown = {}
-	for _ = 1, 6 do
-		table.insert(crown, ctx:part({ size = Vector3.new(0.5, 3.4, 0.5), color = MAGENTA, glow = true, cast = false }))
-	end
-	local jaw = ctx:part({ size = Vector3.new(6.4, 0.6, 3), color = PLATE, material = Enum.Material.Metal })
+	table.insert(links, link(ctx, "GodTail", SCALE * 0.55, Vector3.new(4.7, 4.7, 5.5)))
 
-	-- the path: a slow coil through the sky (scene space), its head leading
+	-- the path: a slow coil through the sky (scene space), the head leading; the serpent walked along it by arc length
 	local function path(s: number, t: number): Vector3
-		local a = s * 0.11 - t * 0.55
+		local a = s * 0.07 - t * 0.5
 		return Vector3.new(
-			math.sin(a) * 34 + math.sin(s * 0.05) * 6,
-			14 + math.sin(a * 1.7 + 1) * 9,
-			math.cos(a) * 24 - 10
+			math.sin(a) * 40 + math.sin(s * 0.03) * 6,
+			16 + math.sin(a * 1.7 + 1) * 10,
+			math.cos(a) * 28 - 10
 		)
 	end
+	local STEP = 0.5
+	local frozen: number? = nil -- scene time the coil seized up at (the fractures have reached the head)
 	local headFrame = CFrame.new()
-	ctx:during(0, 16, function(t)
-		-- (the coil slows as it comes apart)
-		local tt = t - math.max(0, t - 8) * 0.6
-		for i, seg in ipairs(segments) do
-			if not seg.gone then
-				local s = i * GAP * 0.62
-				local p, q = path(s, tt), path(s - 0.3, tt)
-				local cf = CFrame.lookAt(ctx:world(p), ctx:world(q))
-				local wiggle = CFrame.Angles(0, 0, math.sin(t * 2 + i * 0.4) * 0.15)
-				seg.body.CFrame = cf * wiggle
-				seg.band.CFrame = cf * wiggle * CFrame.new(0, 0, 0)
-				seg.finL.CFrame = cf
-					* wiggle
-					* CFrame.new(-4.2 * seg.scale, 1.9 * seg.scale, 0)
-					* CFrame.Angles(0, 0, math.rad(30))
-				seg.finR.CFrame = cf
-					* wiggle
-					* CFrame.new(4.2 * seg.scale, 1.9 * seg.scale, 0)
-					* CFrame.Angles(0, 0, math.rad(-30))
+	local function place(t: number)
+		-- (the coil slows as it cracks, then stops dead)
+		local tt = if frozen
+			then frozen - math.max(0, frozen - CRACK_FROM) * 0.5
+			else t - math.max(0, t - CRACK_FROM) * 0.5
+		local s, prev, walked = 0, path(0, tt), 0
+		local want = 0 -- the arc distance the next link's middle wants
+		local n = 1
+		local lastPos = prev
+		while n <= #links and s < 200 do
+			s += STEP
+			local p = path(s, tt)
+			local d = (p - prev).Magnitude
+			while n <= #links and walked + d >= want do
+				local f = (want - walked) / math.max(d, 1e-3)
+				local pos = prev:Lerp(p, f)
+				local ahead = pos + (prev - p).Unit * 2 -- toward the head
+				local cf = CFrame.lookAt(ctx:world(pos), ctx:world(ahead))
+				local wiggle = CFrame.Angles(0, 0, math.sin(tt * 2 + n * 0.5) * 0.12)
+				links[n].model:PivotTo(cf * wiggle)
+				if n == 1 then
+					headFrame = cf
+				end
+				local half = links[n].length / 2
+				want += half + (if links[n + 1] then links[n + 1].length / 2 else 0) - 0.4 * SCALE
+				n += 1
+				lastPos = pos
 			end
+			walked += d
+			prev = p
 		end
-		local front, ahead = path(0, tt), path(-0.4, tt)
-		local throw = if t > 3 and t < 6 then math.sin((t - 3) / 3 * math.pi) * 0.5 else 0
-		headFrame = CFrame.lookAt(ctx:world(front), ctx:world(ahead))
-			* CFrame.Angles(throw, 0, 0)
-			* CFrame.new(0, 0, -2.6)
-		if headModel then
-			headModel:PivotTo(headFrame)
-		elseif headPart then
-			headPart.CFrame = headFrame
-		end
-		jaw.CFrame = headFrame * CFrame.new(0, -3.2, -0.6)
-		for k, c in ipairs(crown) do
-			local a = (k - 3.5) * 0.35
-			c.CFrame = headFrame
-				* CFrame.new(math.sin(a) * 3.2, 3.6, math.cos(a) * 0.8 + 0.8)
-				* CFrame.Angles(-0.4, 0, -a)
-		end
+		return lastPos
+	end
+	ctx:during(0, LENGTH, function(t)
+		place(t)
 	end)
 
 	-- the chat at the bottom left: the boast, then spammed
@@ -178,7 +145,7 @@ local function build(ctx)
 	log.BackgroundTransparency = 1
 	log.AnchorPoint = Vector2.new(0, 1)
 	log.Position = UDim2.fromScale(0.02, 0.86)
-	log.Size = UDim2.fromScale(0.5, 0.36)
+	log.Size = UDim2.fromScale(0.6, 0.4)
 	log.ClipsDescendants = true
 	log.Parent = chat
 	local list = Instance.new("UIListLayout")
@@ -186,7 +153,7 @@ local function build(ctx)
 	list.SortOrder = Enum.SortOrder.LayoutOrder
 	list.Parent = log
 	local lines = 0
-	local function say(color: Color3)
+	local function say(text: string, color: Color3)
 		lines += 1
 		local l = Instance.new("TextLabel")
 		l.BackgroundTransparency = 1
@@ -196,7 +163,7 @@ local function build(ctx)
 		l.TextColor3 = color
 		l.TextStrokeTransparency = 0.1
 		l.TextXAlignment = Enum.TextXAlignment.Left
-		l.Text = "A GOD DOES NOT FEAR DEATH!"
+		l.Text = text
 		l.LayoutOrder = lines
 		l.Parent = log
 		if lines > 14 then
@@ -210,141 +177,141 @@ local function build(ctx)
 				oldest:Destroy()
 			end
 		end
+		return l
 	end
+	local BOAST = "A GOD DOES NOT FEAR DEATH!"
 	ctx:at(0.4, function()
-		say(CYAN)
+		say(BOAST, CYAN)
 	end)
-	ctx:at(3.2, function()
-		say(CYAN)
+	ctx:at(2.8, function()
+		say(BOAST, CYAN)
 	end)
-	local spam = 6.0
-	while spam < 16 do
+	local spam = 4.4
+	while spam < FLARE do
 		local t = spam
 		ctx:at(t, function()
-			say(if math.floor(t * 2) % 4 == 0 then MAGENTA else CYAN)
+			say(BOAST, if math.floor(t * 2) % 4 == 0 then MAGENTA else CYAN)
 		end)
-		spam += math.max(0.18, 0.55 - (spam - 6) * 0.04)
+		spam += math.max(0.14, 0.5 - (spam - 4.4) * 0.07)
 	end
 
-	-- 6-14.5 the tail comes apart, segment by segment toward the head
-	for i = SEGMENTS, 1, -1 do
-		local t = 6 + (SEGMENTS - i) * (8.3 / SEGMENTS)
-		ctx:at(t, function()
-			local seg = segments[i]
-			seg.body.Color = Color3.new(1, 1, 1)
-			seg.body.Material = Enum.Material.Neon
-			task.delay(0.08, function()
-				local at = seg.body.Position
-				Vfx.Emit.burst(at, {
-					{
-						{
-							tex = "VfxFlare",
-							color = { { 0, Color3.new(1, 1, 1) }, { 1, if i % 2 == 0 then MAGENTA else CYAN } },
-							size = { { 0, 1 }, { 0.2, 9 * seg.scale }, { 1, 0 } },
-							life = 0.3,
-							rot = { 0, 360 },
-							bright = 2.4,
-							z = 2,
-						},
-						1,
-					},
-					{
-						{
-							tex = "VfxDust",
-							color = { { 0, MAGENTA }, { 1, CYAN } },
-							size = { { 0, 0.4 }, { 1, 0.15 } },
-							life = { 1.2, 2.2 },
-							speed = { 3, 9 },
-							spread = 180,
-							drag = 1,
-							accel = Vector3.new(0, 2, 0),
-							light = 1,
-							bright = 1.8,
-						},
-						40,
-					},
-				}, nil, seg.body.Size)
-				Vfx.Light.flash(at, if i % 2 == 0 then MAGENTA else CYAN, 30, 4, 0.3)
-				seg.gone = true
-				for _, p in ipairs({ seg.body, seg.band, seg.finL, seg.finR }) do
-					p:Destroy()
-				end
-			end)
+	-- the fractures: each link's cracks light up in turn from the tail to the head, flickering as they spread, light
+	-- leaking from the plates (their colour lifting toward white), dust shaken out; the coil seizes when they reach the
+	-- head
+	for n = #links, 1, -1 do
+		local at = CRACK_FROM + (CRACK_TO - CRACK_FROM) * (#links - n) / (#links - 1)
+		local l = links[n]
+		ctx:at(at, function()
+			for _, c in ipairs(l.cracks) do
+				TweenService:Create(c, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Transparency = 0,
+				}):Play()
+			end
+			local pos = l.model:GetPivot().Position
+			Vfx.Light.flash(pos, CRACK, 24 * SCALE, 3, 0.4)
+			Vfx.Emit.burst(pos, {
+				tex = "VfxDust",
+				color = { { 0, CRACK }, { 1, MAGENTA } },
+				size = { { 0, 0.3 }, { 1, 0.1 } },
+				life = { 1.0, 1.8 },
+				speed = { 2, 6 },
+				spread = 180,
+				drag = 1,
+				light = 1,
+				bright = 1.8,
+			}, 18, Vector3.new(4, 4, 4) * SCALE)
+			if n == 1 then
+				frozen = ctx:now()
+			end
+		end)
+		-- the cracks pulse while they spread, and the plates pale toward the light inside
+		ctx:during(at + 0.5, FLARE, function(t)
+			local u = math.clamp((t - at) / (FLARE - at), 0, 1)
+			local pulse = 0.5 + 0.5 * math.sin(t * 17 + n)
+			for _, c in ipairs(l.cracks) do
+				c.Transparency = 0.1 * pulse * (1 - u)
+			end
+			for _, p in ipairs(l.plates) do
+				p.Color = PLATE:Lerp(Color3.fromRGB(230, 200, 255), u * 0.6)
+			end
 		end)
 	end
-	-- 12-14.5 the head alone, cracking with light; 14.5 it bursts
-	ctx:at(12.2, function()
-		for k = 1, 8 do
-			local crack =
-				ctx:part({ size = Vector3.new(0.18, 2 + k % 3, 0.18), color = CYAN, glow = true, cast = false })
-			local offset = CFrame.new(math.random() * 4 - 2, math.random() * 4 - 2, -2.8)
-				* CFrame.Angles(0, 0, math.rad(k * 41))
-			ctx:during(12.2, 14.5, function()
-				crack.CFrame = headFrame * offset
-			end)
-			ctx:atNow(14.5, function()
-				crack:Destroy()
-			end)
+	-- 8.6-9.0 the head alone shudders with light; 9.0 the god flares white and the screen goes white
+	local white: Frame? = nil
+	ctx:at(FLARE, function()
+		for _, l in ipairs(links) do
+			for _, p in ipairs(l.plates) do
+				p.Material = Enum.Material.Neon
+				p.Color = Color3.new(1, 1, 1)
+				if p:IsA("MeshPart") then
+					p.TextureID = ""
+				end
+			end
 		end
-	end)
-	ctx:at(14.5, function()
 		local at = headFrame.Position
-		Vfx.Emit.burst(at, {
-			tex = "VfxDust",
-			color = { { 0, Color3.fromRGB(200, 120, 255) }, { 1, MAGENTA } },
-			size = { { 0, 0.6 }, { 1, 0.2 } },
-			life = { 1.5, 2.6 },
-			speed = { 6, 16 },
-			spread = 180,
-			drag = 1,
-			light = 1,
-			bright = 2,
-		}, 160, Vector3.new(6, 6, 6))
 		Vfx.Beams.wave(
 			CFrame.new(at),
 			1,
-			40,
-			1.2,
-			{ tex = "VfxRingBand", color = MAGENTA, width = 1.4, light = 1, bright = 2 }
+			60,
+			1.0,
+			{ tex = "VfxRingBand", color = CRACK, width = 1.6, light = 1, bright = 2 }
 		)
-		Cinema.flash(Color3.fromRGB(230, 170, 255), 0.6, 0.6)
-		if headModel then
-			headModel:Destroy()
-			headModel = nil
-		elseif headPart then
-			headPart:Destroy()
+		Vfx.Light.flash(at, Color3.new(1, 1, 1), 80, 6, 0.5)
+		local layer = ctx:layer(8)
+		local w = Instance.new("Frame")
+		w.BackgroundColor3 = Color3.new(1, 1, 1)
+		w.BorderSizePixel = 0
+		w.Size = UDim2.fromScale(1, 1)
+		w.BackgroundTransparency = 1
+		w.Parent = layer
+		white = w
+		TweenService:Create(w, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			BackgroundTransparency = 0,
+		}):Play()
+		-- (the chat stays over the white: it is the last thing seen)
+		chat.ZIndex = 9
+	end)
+	-- 9.6 on the white: the chat clears and says who was defeated
+	ctx:at(9.6, function()
+		for _, c in ipairs(log:GetChildren()) do
+			if c:IsA("TextLabel") then
+				c:Destroy()
+			end
 		end
-		jaw:Destroy()
-		for _, c in ipairs(crown) do
-			c:Destroy()
+		local l = say(ctx.victimName .. " has been defeated!", Color3.fromRGB(200, 40, 160))
+		l.TextStrokeTransparency = 0.6
+		l.TextStrokeColor3 = Color3.fromRGB(120, 20, 100)
+	end)
+	ctx:at(LENGTH - 0.4, function()
+		if white then
+			TweenService:Create(white, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
 		end
 	end)
 
-	-- cameras: wide; the head; wide circling; the head alone; wide on the burst
+	-- cameras: wide; the head from in front (the body trails behind it); a slow circling medium as it cracks; close on
+	-- the head's fractures; white
 	local function headAt(): Vector3
 		return ctx.origin:PointToObjectSpace(headFrame.Position)
 	end
-	ctx:shot(0.0, Vector3.new(0, 24, 60), Vector3.new(0, 12, -6), 58, { eye = Vector3.new(-14, 22, 56) })
-	-- (in front of the face: the body trails behind the head, so nothing of it comes between)
 	local function facing(): Vector3
 		local v = ctx.origin:VectorToObjectSpace(headFrame.LookVector)
 		return Vector3.new(v.X, 0, v.Z).Unit
 	end
-	ctx:camera(3.0, 6.0, function()
+	ctx:shot(0.0, Vector3.new(0, 26, 66), Vector3.new(0, 14, -6), 58, { eye = Vector3.new(-14, 24, 62) })
+	ctx:camera(2.6, 5.0, function()
 		local h = headAt()
-		return CFrame.lookAt(h + facing() * 26 + Vector3.new(0, 5, 0), h), 46
+		return CFrame.lookAt(h + facing() * 30 * SCALE / 1.5 + Vector3.new(0, 6, 0), h), 44
 	end)
-	ctx:camera(6.0, 12.0, function(t)
-		local a = (t - 6) * 0.12
-		local eye = Vector3.new(math.sin(a) * 70, 24, math.cos(a) * 70)
-		return CFrame.lookAt(eye, Vector3.new(0, 12, -8)), 56
+	ctx:camera(5.0, 8.3, function(t)
+		local a = (t - 5) * 0.14
+		local eye = Vector3.new(math.sin(a) * 76, 26, math.cos(a) * 76)
+		return CFrame.lookAt(eye, Vector3.new(0, 14, -8)), 56
 	end)
-	ctx:camera(12.0, 14.6, function()
+	ctx:camera(8.3, FLARE + 0.3, function()
 		local h = headAt()
-		return CFrame.lookAt(h + facing() * 22 + Vector3.new(0, 4, 0), h), 44
+		return CFrame.lookAt(h + facing() * 22 + Vector3.new(0, 4, 0), h), 40
 	end)
-	ctx:shot(14.6, Vector3.new(0, 24, 60), Vector3.new(0, 14, -6), 56)
 	ctx:grade(0, nil, { Saturation = 0.15, Contrast = 0.2, TintColor = Color3.fromRGB(240, 220, 255) }, 0.1)
 end
 
-return { length = 16, build = build }
+return { length = LENGTH, build = build }

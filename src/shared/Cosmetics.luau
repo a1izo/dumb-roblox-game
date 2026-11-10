@@ -603,7 +603,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1500,
 		style = "god",
-		scene = 16, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
+		scene = 13, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(255, 70, 220),
 	},
 	{
