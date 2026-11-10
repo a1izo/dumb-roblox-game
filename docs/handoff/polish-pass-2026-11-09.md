@@ -95,3 +95,8 @@ hit-stop length, smear/arc use, camera kick, ease curves, how idles breathe, how
   NOT synced into the place: ImportVersions and the Tokyo scene data wait for the imports (a marker newer than the
   import builds the map as a greybox). LEFT for the user: import Maps Tokyo v47, Models Tokyo v24, Core v35, then
   sync (make_sync from 229744e1) and save.
+- 2026-11-10 (the user: "import and upload everything yourself"): IMPORTED by screen control in Studio: Core v35, Models
+  Tokyo v24, Maps Tokyo v47 (every MeshPart has its mesh id); the old Core v34, Models Tokyo v23, Maps Tokyo v46 and
+  the unused Clips.Part12-15 removed by MCP; File > Save to Roblox (saved, not published). Then the four scripts
+  changed since 229744e1 (Tokyo scene data + Dressing, ImportVersions, ModelCatalog) synced by the DGPass plugin in a
+  minimised Studio: 4 updated, 0 skipped. The place matches main 34f3ad53. Not checked in a play test.
