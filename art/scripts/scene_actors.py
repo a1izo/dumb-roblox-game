@@ -51,6 +51,20 @@ def knees_go(m, t0, t1, lean, hips, turn=0.0, neck=(-14, 0, 0), **upper):
 LOOK_BACK = dict(neck=(10, 62, 4), rShoulder=J((86, 0, -12), (0, 0.1, -0.2)), lShoulder=J((26, 0, -34)))
 
 
+def look_back_turn(m, t0, turn, t1, seed=0):
+    """A copy in the rewound row (2026-11-10, the user: "looking back 1 by 1", not glitching): it stands facing the
+    killer in the punch it was rewound out of, then at `turn` looks back over its shoulder at the lens (a dip, the head
+    whipping round, a small overshoot, settled), then holds the growing dread (look_back_hold)."""
+    v = (seed % 3) - 1
+    body_key(m, t0, "smooth", -14, 10, 0, hips=(0, -0.5), drop=0.2, neck=(-2, -6, 0), rShoulder=BLOW["rShoulder"],
+             lShoulder=BLOW["lShoulder"])
+    body_key(m, turn - 0.14, "smooth", -13, 9, 0, hips=(0, -0.48), drop=0.2, neck=(-6, -10, 0),
+             rShoulder=BLOW["rShoulder"], lShoulder=BLOW["lShoulder"])  # the dip before the turn
+    body_key(m, turn + 0.22, "out", 5, -20, -3, hips=(0, 0.05), drop=0.04, neck=(12 + 2 * v, 70 + 3 * v, 5),
+             rShoulder=LOOK_BACK["rShoulder"], lShoulder=LOOK_BACK["lShoulder"])  # round, a little past
+    look_back_hold(m, turn + 0.5, t1, seed)
+
+
 def look_back_hold(m, t0, t1, seed=0):
     """Rewound and frozen in it (requiem.md 3.5-16: "still"): twisted round to look back over the left shoulder at the
     lens, the punching arm still out at the killer. Not a stutter (2026-11-09, "choppy"): the dread grows instead,
@@ -85,15 +99,15 @@ body_key(rv, 3.245, "smooth", -13, 12, 0, hips=(0, -0.6), drop=0.21, neck=(0, -1
          lShoulder=J((-24, 0, -20)))
 stand(rv, 0.0, 3.25, Feet(steps=[(1.05, 1.32, 1, 0.75)]), ramp=0)
 # (the cut at 3.25 hides the jump into the rewound row's pose: its feet stand together again under it)
-look_back_hold(rv, 3.26, 16.5, seed=0)
+look_back_turn(rv, 3.26, 3.75, 16.5, seed=0)  # (the first of the row to look back)
 stand(rv, 3.26, 16.5, Feet(), ramp=0)
 soft(rv, head=3.6, arms=3.0)
 rv.build()
 
-rc = Motion("sceneRequiemCopy", 16.5, note="A copy in the rewound row: frozen looking back over the shoulder, the dread "
-            "growing.", floor=True)
+rc = Motion("sceneRequiemCopy", 16.5, note="A copy in the rewound row: facing the killer, then looking back over the "
+            "shoulder at 1 s, the dread growing.", floor=True)
 rc.key(0.0, **REST)
-look_back_hold(rc, 0.0, 16.5, seed=2)
+look_back_turn(rc, 0.0, 1.0, 16.5, seed=2)  # (each copy from its own moment: Requiem.luau)
 stand(rc, 0.0, 16.5, Feet())
 soft(rc, head=3.0, arms=2.6)
 rc.build()

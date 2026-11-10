@@ -26,11 +26,13 @@ local Vfx = require(script.Parent.Vfx)
 local LightingController = require(script.Parent.Parent.World.LightingController)
 local Sets = require(script.Sets)
 local Costumes = require(script.Costumes) :: any
+local Cast = require(script.Cast)
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local EmoteProps = require(Shared:WaitForChild("Anim"):WaitForChild("EmoteProps"))
 
 local SceneDeaths = {}
+SceneDeaths.Cast = Cast
 
 SceneDeaths.ORIGIN = CFrame.new(-6000, 650, 6000) -- far off and high: no map, lobby or other set reaches here
 SceneDeaths.current = nil :: string?
@@ -210,7 +212,13 @@ end
 -- frozen without it; small life is too fine for the exported keys, which drop moves under 0.6 degrees).
 local LIFE = 0.8
 function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: number?, life: number?): Model?
-	local source = if type(who) == "number" then who else Stage.figure()
+	-- who: a userId, a Model (a player dressed in a costume: Cast.dressed), "cast:<costume>" (an extra in its marketplace
+	-- costume, Cast), or anything else for the plain figure
+	local source: any = if type(who) == "number" or typeof(who) == "Instance" then who else nil
+	if type(who) == "string" and string.sub(who, 1, 5) == "cast:" then
+		source = Cast.get(string.sub(who, 6))
+	end
+	source = source or Stage.figure()
 	local actor = self.stage:cast(source :: any, self.origin * at, nil)
 	if not actor and type(who) == "number" then
 		actor = self.stage:cast(Stage.figure() :: any, self.origin * at, nil)

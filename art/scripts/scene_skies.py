@@ -159,8 +159,17 @@ def nebula(d, size, base, clouds, seed, star_count, star_tint=(255, 255, 255)):
 
 
 def requiem(d, size):
-    return nebula(d, size, (14, 8, 30), [((150, 70, 240), 1.15, 1.0), ((236, 70, 200), 0.85, 1.4),
-                                          ((60, 210, 140), 0.65, 1.8)], 41, 11000)
+    """2026-11-10, the user: "the sky isnt accurate". The anime's rewind is a BRIGHT galaxy, not a dark one: violet and
+    blue cores, pink veils, green patches, dense bright stars and a white glow."""
+    sky = nebula(d, size, (40, 22, 86), [((168, 96, 255), 1.7, 1.0), ((255, 104, 214), 1.25, 1.4),
+                                         ((90, 140, 255), 1.0, 0.8), ((80, 236, 160), 0.85, 1.8)], 41, 30000,
+                 (255, 250, 255))
+    # a band of bright galaxy light across the sky, and the white glow where the light breaks through
+    band = np.exp(-((d @ _unit((0.2, 0.9, 0.35))) / 0.28) ** 2)
+    core = np.clip(fbm(d * 1.4, 77, octaves=5) * 0.5 + 0.5, 0, 1) ** 2
+    sky += (band * core * 0.55)[..., None] * rgb((236, 214, 255))
+    sky += glow(d, (-0.7, 0.2, -0.6), 0.05, 0.9)[..., None] * rgb((255, 250, 240))
+    return sky
 
 
 def god(d, size):
