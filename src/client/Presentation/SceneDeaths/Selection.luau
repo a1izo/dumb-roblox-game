@@ -188,7 +188,6 @@ local function build(ctx)
 		if not victim then
 			return
 		end
-		ctx:face(victim, "sad")
 		for _, p in ipairs(victim:GetDescendants()) do
 			if p:IsA("BasePart") and p.Transparency < 1 and p.Name ~= "HumanoidRootPart" then
 				local h, s, v = p.Color:ToHSV()

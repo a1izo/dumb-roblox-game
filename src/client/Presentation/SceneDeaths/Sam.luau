@@ -98,16 +98,9 @@ local function build(ctx)
 	-- the two of them
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -5)), "sceneSamVictim")
-	local killer = ctx:actor("figure", CFrame.lookAt(Vector3.new(0, 0, -5), Vector3.zero), "sceneSamKiller")
+	-- (Raiden in his marketplace cyborg armour, white hair and visor: Cast)
+	local killer = ctx:actor("cast:raiden", CFrame.lookAt(Vector3.new(0, 0, -5), Vector3.zero), "sceneSamKiller")
 	if killer then
-		local metal = Color3.fromRGB(176, 178, 184)
-		ctx:dress(killer, {
-			head = Color3.fromRGB(226, 214, 204),
-			torso = metal,
-			arms = metal,
-			legs = metal,
-			material = Enum.Material.Metal,
-		})
 		-- the white hair swept back into its tail and the visor, the long blade with its red edge (modelled:
 		-- props_scenes)
 		ctx:wear(killer, "cyborgHead")
@@ -131,7 +124,6 @@ local function build(ctx)
 	end
 	if victim then
 		ctx:wear(victim, "redBlade")
-		ctx:face(victim, "pain")
 	end
 	local function chest(): Vector3
 		local t = victim and ctx:limb(victim, "Torso")

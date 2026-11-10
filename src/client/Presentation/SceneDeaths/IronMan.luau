@@ -154,34 +154,15 @@ local function build(ctx)
 	})
 
 	-- the warlord, the army behind him, the victim on one knee before him
-	local killer = ctx:actor("figure", CFrame.lookAt(Vector3.new(0, 0, -6.5), Vector3.zero), "sceneIronKiller", 0, 1.5)
-	if killer then
-		local plate = Color3.fromRGB(60, 54, 70)
-		ctx:dress(killer, {
-			head = Color3.fromRGB(70, 62, 84),
-			torso = plate,
-			arms = plate,
-			legs = plate,
-			material = Enum.Material.Metal,
-			face = false,
-		})
-		-- his ridged gold helm and chest plate (modelled: props_scenes)
-		ctx:wear(killer, "warlordHelm")
-		ctx:wear(killer, "warlordPlate")
-	end
+	-- (the warlord in his marketplace armour, head and helmet: Cast)
+	local killer =
+		ctx:actor("cast:warlord", CFrame.lookAt(Vector3.new(0, 0, -6.5), Vector3.zero), "sceneIronKiller", 0, 1.5)
 	local army = {}
 	for k = 1, 14 do
 		local at = Vector3.new(-16 + (k % 7) * 5.2 + (k > 7 and 2.6 or 0), 0, -12 - (k > 7 and 6 or 0))
 		-- (each soldier from its own moment of the looping stance: the ranks never move as one)
-		local s = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, 4)), "sceneIronSoldier", -((k * 2.3) % 18))
+		local s = ctx:actor("cast:army", CFrame.lookAt(at, Vector3.new(0, 0, 4)), "sceneIronSoldier", -((k * 2.3) % 18))
 		if s then
-			ctx:dress(s, {
-				head = Color3.fromRGB(46, 44, 50),
-				torso = Color3.fromRGB(40, 38, 44),
-				arms = Color3.fromRGB(40, 38, 44),
-				legs = Color3.fromRGB(34, 32, 38),
-				face = false,
-			})
 			ctx:wear(s, "spear")
 			table.insert(army, s)
 		end
@@ -193,7 +174,6 @@ local function build(ctx)
 	local chestLight: PointLight? = nil
 	local chestDisc: BasePart? = nil
 	if victim then
-		ctx:face(victim, "pain")
 		-- the gauntlet (modelled: props_scenes), its six sockets empty until each stone slides in at 2.05+
 		gauntlet = ctx:wear(victim, "gauntlet")
 		local spec = Costumes.gauntlet

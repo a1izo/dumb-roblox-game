@@ -189,19 +189,13 @@ local function build(ctx)
 	ctx.grave = stone
 
 	-- the one saluting, facing the grave
-	local saluter = ctx:actor(ctx.saluter or "figure", CFrame.lookAt(Vector3.zero, GRAVE), "scenePatriotSaluter")
-	if saluter then
-		if not ctx.saluter then
-			-- (no one else in the server: a soldier in olive drab, not the black figure)
-			ctx:dress(saluter, {
-				head = Color3.fromRGB(214, 180, 150),
-				torso = Color3.fromRGB(74, 80, 54),
-				arms = Color3.fromRGB(74, 80, 54),
-				legs = Color3.fromRGB(62, 64, 50),
-			})
-		end
-		ctx:face(saluter, "sad")
+	-- (the friend's own avatar dressed as Snake: his fatigues and bandana from the marketplace, their own head; no one
+	-- else in the server: Snake himself, Cast's costume on its own)
+	local who: any = "cast:snake"
+	if ctx.saluter then
+		who = SceneDeaths.Cast.dressed(ctx.saluter, "snake") or ctx.saluter
 	end
+	local saluter = ctx:actor(who, CFrame.lookAt(Vector3.zero, GRAVE), "scenePatriotSaluter")
 	local function head(): Vector3
 		local h = saluter and ctx:limb(saluter, "Head")
 		return if h then ctx.origin:PointToObjectSpace(h.Position) else Vector3.new(0, 4.6, 0)

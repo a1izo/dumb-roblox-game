@@ -20,7 +20,6 @@ local Life = require(script.Parent.Parent.Anim.Life)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
-local DeathScreen = require(script.Parent.DeathScreen)
 local Stage = require(script.Parent.Stage)
 local Vfx = require(script.Parent.Vfx)
 local LightingController = require(script.Parent.Parent.World.LightingController)
@@ -388,14 +387,6 @@ function Ctx:pointOf(piece: Model, key: string, name: string, index: number?): V
 		return piece:GetPivot().Position
 	end
 	return piece:GetPivot():PointToWorldSpace(Vector3.new(p[1], p[2], p[3]) * k)
-end
-
--- A face drawn over an actor's head (DeathScreen.face): "shock", "shout", "pain", "sleep", "smug".
-function Ctx:face(actor: Model, kind: string)
-	local head = self:limb(actor, "Head")
-	if head then
-		DeathScreen.face(head, kind)
-	end
 end
 
 -- `fn` at scene time `t` (in order with everything else).

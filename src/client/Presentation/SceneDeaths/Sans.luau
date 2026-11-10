@@ -48,15 +48,6 @@ local function build(ctx)
 	ctx:light(Vector3.new(0, 10, 4), WHITE, 20, 1)
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -1)), "sceneSansVictim")
-	if victim then
-		ctx:face(victim, "sleep")
-		ctx:at(24.0, function()
-			ctx:face(victim, "smug")
-		end)
-		ctx:at(25.85, function()
-			ctx:face(victim, "pain")
-		end)
-	end
 	-- the flat camera: far off, a narrow lens, the victim small in the upper middle
 	ctx:shot(0, Vector3.new(0, 4.6, -70), Vector3.new(0, 1.4, 0), 11.5)
 	ctx:grade(0, nil, { Saturation = -1, Contrast = 0.6, Brightness = 0.05 }, 0.05)

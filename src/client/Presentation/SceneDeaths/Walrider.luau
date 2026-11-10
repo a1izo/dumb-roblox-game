@@ -149,12 +149,9 @@ local function build(ctx)
 		{ Vector3.new(-3.2, 0, -7.5), Vector3.new(-1.4, 0, -9.6), Vector3.new(2.6, 0, -6.6), Vector3.new(3.6, 0, -9.0) }
 	for i, at in ipairs(marks) do
 		-- (each its own clip: its own idle, its own raise, its own shots: soldier 3 fires the first)
-		local s = ctx:actor("figure", CFrame.lookAt(at, Vector3.new(0, 0, 6)), "sceneWalriderSoldier" .. i)
+		-- (in their marketplace tactical gear and helmets, Cast; the carbine modelled, props_scenes)
+		local s = ctx:actor("cast:soldier", CFrame.lookAt(at, Vector3.new(0, 0, 6)), "sceneWalriderSoldier" .. i)
 		if s then
-			ctx:dress(s, { head = BLACK, torso = BLACK, arms = BLACK, legs = Color3.fromRGB(30, 30, 34), face = false })
-			-- their gear, modelled (props_scenes: the helmet, the plate carrier, the carbine)
-			ctx:wear(s, "soldierHelmet")
-			ctx:wear(s, "soldierVest")
 			local rifle = ctx:wear(s, "rifle")
 			table.insert(soldiers, { model = s, rifle = rifle, i = i })
 		end
@@ -163,20 +160,11 @@ local function build(ctx)
 	-- the parts are its stand-in before the import
 	local chair = ctx:place("wheelchair", CFrame.new(0.4, 0, -10.2) * CFrame.Angles(0, math.pi, 0))
 	local seatY = if chair then 1.07 else 1.2 -- (the model's seat is 0.13 lower than the stand-in's)
-	local seated = ctx:actor(
-		"figure",
+	ctx:actor(
+		"cast:doctor",
 		CFrame.lookAt(Vector3.new(0.4, seatY, -10.2), Vector3.new(0.4, seatY, 6)),
 		"sceneWalriderSeated"
 	)
-	if seated then
-		ctx:dress(seated, {
-			head = Color3.fromRGB(214, 190, 170),
-			torso = Color3.fromRGB(160, 170, 190),
-			arms = Color3.fromRGB(160, 170, 190),
-			legs = Color3.fromRGB(160, 170, 190),
-		})
-		ctx:face(seated, "sad")
-	end
 	for _, w in
 		ipairs(if chair
 			then {}

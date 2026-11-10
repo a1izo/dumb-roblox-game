@@ -180,18 +180,12 @@ local function build(ctx)
 	for i, at in ipairs({ Vector3.new(5.5, 0, 6), Vector3.new(7.2, 0, 8.4) }) do
 		-- (the second is caught a moment after the first: not one body twice)
 		local b = ctx:actor(
-			"figure",
+			if i == 1 then "cast:bystanderA" else "cast:bystanderB",
 			CFrame.lookAt(at, Vector3.new(0, 0, -9)),
 			"sceneBlackwallBystander",
 			if i == 2 then 0.35 else 0
 		)
 		if b then
-			ctx:dress(b, {
-				head = Color3.fromRGB(150, 110, 84),
-				torso = if i == 1 then Color3.fromRGB(110, 70, 40) else Color3.fromRGB(60, 70, 50),
-				arms = if i == 1 then Color3.fromRGB(110, 70, 40) else Color3.fromRGB(60, 70, 50),
-				legs = Color3.fromRGB(40, 50, 70),
-			})
 			table.insert(by, b)
 		end
 	end
