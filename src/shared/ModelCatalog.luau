@@ -249,6 +249,7 @@ return {
 	RobedStatue = { size = { 4.342, 5.64, 2.089 }, pivot = "bottom", material = "Slate", collide = false, color = { 84, 83, 80 }, set = "Lobby", tris = 21960, parts = { "Head", "RightArm", "LeftArm", "RightLeg", "LeftLeg" }, hinge = { Head = { 0.004, 4.02, -0.024 }, RightArm = { 1.004, 3.52, -0.024 }, LeftArm = { -0.996, 3.52, -0.024 }, RightLeg = { 1.004, 2.02, -0.024 }, LeftLeg = { -0.996, 2.02, -0.024 } }, turn = {  }, page = {  } },
 	RustGear = { size = { 7.867, 7.444, 1.979 }, pivot = "bottom", material = "Metal", collide = true, color = { 32, 22, 17 }, set = "Lobby", tris = 1208 },
 	ScaffoldScreen = { size = { 8, 9.9, 2.509 }, pivot = "bottom", material = "Concrete", collide = true, color = { 79, 82, 59 }, base = "SiteFence", set = "Campus", tris = 1848 },
+	SceneArcReactor = { size = { 0.641, 0.656, 0.115 }, pivot = "centre", material = "Metal", collide = false, color = { 61, 54, 50 }, set = "Core", tris = 6488, parts = { "Light" }, hinge = {  }, turn = {  }, page = {  } },
 	SceneCyborgHead = { size = { 1.46, 2.445, 1.715 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 79, 78, 79 }, set = "Core", tris = 3032 },
 	SceneGauntlet = { size = { 1.1, 1.11, 1.16 }, pivot = "centre", material = "Metal", collide = false, color = { 106, 51, 30 }, set = "Core", tris = 2556 },
 	SceneHelmet = { size = { 1.535, 1.573, 1.476 }, pivot = "centre", material = "SmoothPlastic", collide = false, color = { 14, 14, 13 }, set = "Core", tris = 3144 },

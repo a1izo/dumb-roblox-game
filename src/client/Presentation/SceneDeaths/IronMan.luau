@@ -191,14 +191,30 @@ local function build(ctx)
 			})
 			table.insert(stones, s)
 		end
-		chestDisc = ctx:attach(victim, "Torso", {
-			size = Vector3.new(0.45, 0.45, 0.06),
-			at = Vector3.new(0, 0.35, -0.52),
-			color = Color3.fromRGB(150, 220, 255),
-			glow = true,
-			shape = "Cylinder",
-			rot = Vector3.new(0, 90, 0),
-		})
+		-- the light in the chest, modelled (props_scenes SceneArcReactor, Core 37: a housing, ten copper coils over a
+		-- lit ring, a lit core behind its lattice; 2026-11-10 "more accurate/detailed"); its lit piece is what dims
+		-- out at the end. Before that import, the plain disc.
+		local reactor = ctx:wear(victim, "arcReactor")
+		if reactor then
+			for _, piece in ipairs(reactor:GetDescendants()) do
+				if piece:IsA("MeshPart") and string.find(piece.Name, "_Light", 1, true) then
+					piece.Material = Enum.Material.Neon
+					piece.TextureID = ""
+					piece.Color = Color3.fromRGB(170, 228, 255)
+					piece.CastShadow = false
+					chestDisc = piece
+				end
+			end
+		else
+			chestDisc = ctx:attach(victim, "Torso", {
+				size = Vector3.new(0.45, 0.45, 0.06),
+				at = Vector3.new(0, 0.35, -0.52),
+				color = Color3.fromRGB(150, 220, 255),
+				glow = true,
+				shape = "Cylinder",
+				rot = Vector3.new(0, 90, 0),
+			})
+		end
 		local torso = ctx:limb(victim, "Torso")
 		if torso then
 			chestLight = Instance.new("PointLight")
@@ -377,16 +393,29 @@ local function build(ctx)
 	ctx:shot(15.5, function()
 		return head(victim) + Vector3.new(0.8, -0.6, -2.6)
 	end, function()
-		return head(victim) + Vector3.new(0, -0.5, 0)
+		return head(victim) + Vector3.new(0, -0.9, 0)
 	end, 36)
-	ctx:at(15.8, function()
+	-- the light in the chest goes the way a failing lamp does: it sags, catches twice (each catch weaker), and is out
+	local LIT, OUT = Color3.fromRGB(170, 228, 255), Color3.fromRGB(26, 30, 36)
+	local function chest(share: number, seconds: number)
 		if chestLight then
-			ctx:tween(chestLight, 1.8, { Brightness = 0 })
+			ctx:tween(chestLight, seconds, { Brightness = 2 * share })
 		end
 		if chestDisc then
-			ctx:tween(chestDisc, 1.8, { Color = Color3.fromRGB(30, 34, 40) })
+			ctx:tween(chestDisc, seconds, { Color = OUT:Lerp(LIT, share) })
 		end
-	end)
+	end
+	for _, step in ipairs({
+		{ 15.8, 0.35, 0.5 },
+		{ 16.35, 0.75, 0.08 },
+		{ 16.5, 0.2, 0.3 },
+		{ 16.95, 0.45, 0.06 },
+		{ 17.05, 0, 0.7 },
+	}) do
+		ctx:at(step[1], function()
+			chest(step[2], step[3])
+		end)
+	end
 	ctx:grade(0, nil, { Saturation = -0.15, Contrast = 0.14, TintColor = Color3.fromRGB(255, 226, 200) }, 0.1)
 end
 

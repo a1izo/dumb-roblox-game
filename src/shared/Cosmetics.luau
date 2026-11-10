@@ -659,7 +659,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 800,
 		style = "selection",
-		scene = 12, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
+		scene = 14, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(40, 170, 230),
 	},
 
@@ -1672,7 +1672,8 @@ Cosmetics.SUITS = {
 	{ id = "wins", name = "Win cutscenes", icon = "flag", kinds = { "win" } },
 	{ id = "seats", name = "Seats", icon = "podium", kinds = { "seat", "chair" } },
 	{ id = "titles", name = "Titles", icon = "trophy", kinds = { "title" } },
-	{ id = "sets", name = "Sets", icon = "set" },
+	-- (no Sets suit: taken out of the shop 2026-11-10, the user's call; a set's pieces stay on sale in their own
+	-- suits and a full set still earns its title, Shared/Sets)
 	{ id = "robux", name = "Robux", icon = "coin" },
 } :: { Suit }
 

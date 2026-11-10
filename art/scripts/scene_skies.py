@@ -7,6 +7,8 @@ like the maps' skies (skies.py). SceneDeaths shows them through LightingPresets.
     Ember    and I.. am..: a battlefield's orange dusk under drifting smoke
     Requiem  This is... requiem: the star void, violet with magenta and green nebulae, dense white stars
     God      A GOD.. IS NOT... AFRAID OF...: a purple sky of stars and nebulae, magenta and cyan
+    Night    Dead by selection: a clear night over a city: deep blue, the Milky Way across it high ahead, thick with
+             stars, a faint warm glow along the horizon
 
     blender -b --factory-startup --python art/scripts/scene_skies.py [-- Mist Dusk ...]
 
@@ -177,8 +179,37 @@ def god(d, size):
                                            ((70, 220, 255), 0.5, 1.7)], 51, 8000, (240, 230, 255))
 
 
+def night(d, size):
+    """A clear night over a city (Dead by selection, 2026-11-10: "up to the starry night sky"). The Milky Way crosses
+    high ahead of the victim (who faces -Z): its pole is tipped so the band climbs from the left, passes about 65
+    degrees up in front, and comes down at the right."""
+    elev = d[..., 1]
+    sky = gradient(elev, [(-1, (5, 6, 10)), (-0.06, (20, 22, 32)), (0.0, (40, 38, 46)), (0.07, (24, 28, 46)),
+                          (0.25, (12, 17, 36)), (0.6, (7, 10, 24)), (1, (4, 6, 17))])
+    pole = _unit((0.5, 0.42, 0.76))
+    lat = d @ pole
+    wide = np.exp(-(lat / 0.24) ** 2)
+    core = np.exp(-(lat / 0.085) ** 2)
+    cloud = np.clip(fbm(d * 2.2, 61, octaves=6) * 0.6 + 0.5, 0, 1)
+    lanes = np.clip(fbm(d * np.array([4.0, 4.0, 4.0]), 67, octaves=5) * 0.9 + 0.4, 0, 1)
+    up = np.clip(elev * 3.5 + 0.15, 0, 1)  # (nothing of it shows through the city haze at the horizon)
+    sky += (wide * (0.3 + 0.7 * cloud) * (0.4 + 0.6 * lanes) * up * 0.85)[..., None] * rgb((140, 154, 206))
+    sky += (core * cloud * lanes * up * 0.62)[..., None] * rgb((240, 216, 190))
+    # stars: everywhere, and many more along the band; a few big ones, cool and warm
+    field = stars(d, 71, 26000, size)
+    dense = stars(d, 72, 120000, size) * np.clip(wide * 1.6, 0, 1)
+    bright = stars(d, 73, 1100, size)
+    sky += ((field * 0.9 + dense * 0.8) * up)[..., None] * rgb((226, 232, 255))
+    tint = np.clip(fbm(d * 9.0, 79, octaves=3) * 0.5 + 0.5, 0, 1)[..., None]
+    sky += (bright * up)[..., None] * 2.2 * (rgb((190, 214, 255)) * tint + rgb((255, 226, 190)) * (1 - tint))
+    # the city under it: a warm haze along the horizon
+    haze = np.exp(-(np.abs(elev) / np.where(elev > 0, 0.07, 0.03)) ** 2)
+    sky += (haze * 0.2)[..., None] * rgb((255, 196, 140))
+    return sky
+
+
 SKIES = {"Mist": (mist, 512), "Dusk": (dusk, 512), "Ember": (ember, 512), "Requiem": (requiem, 1024),
-         "God": (god, 1024)}
+         "God": (god, 1024), "Night": (night, 1024)}
 
 
 def make(name):

@@ -1,11 +1,10 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
--- top (Cosmetics.SUITS: Today's hand, Diavolo, Ace, The dead, Emotes, Titles, Sets, and Robux
+-- top (Cosmetics.SUITS: Today's hand, Diavolo, Ace, The dead, Emotes, Titles, and Robux
 -- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six
 -- and the day's deal (a card of the shop's own stock, a quarter off: Shared/ShopRotation), dealt face
 -- down (the same for everyone): each is turned over with a click, and stays turned that day (ShopService
 -- "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances, poses, with
--- props, strolls, duo, with how many you own and the next collection milestone); Sets lays out each set
--- (Shared/Sets) with how many of its pieces you own, and the title it earns. Fate lays out the week's deck
+-- props, strolls, duo, with how many you own and the next collection milestone). Fate lays out the week's deck
 -- face up with the odds of each card, and draws one you do not own for 250 coins (hold "Draw"; the card
 -- dealt turns over: Shared/Fate). The Ledger shows the season's thirty tiers, how far you are and what each
 -- pays (Progression/Ledger).
@@ -35,7 +34,6 @@ local EmoteWheel = require(Shared:WaitForChild("EmoteWheel"))
 local Net = require(Shared:WaitForChild("Net"))
 local Products = require(Shared:WaitForChild("Products"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
-local Sets = require(Shared:WaitForChild("Sets"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
@@ -175,8 +173,6 @@ local function suits(): { Cosmetics.Suit }
 			show = true
 		elseif suit.id == "robux" then
 			show = onSale()
-		elseif suit.id == "sets" then
-			show = #Sets.LIST > 0
 		elseif suit.kinds then
 			show = false
 			for _, kind in ipairs(suit.kinds) do
@@ -919,6 +915,27 @@ local function showTab(id: string)
 	if not tab then
 		return
 	end
+	if not Kit.Layout.isPhone() then
+		-- The suits are a list down the left: it scrolls up and down, and only as far as it takes to bring a tab that
+		-- is cut off at an end back in. (2026-11-10, "it drags me back to the top": this slid the list sideways as a
+		-- row's is, which put its scroll at the top on every press, so a press on one tab after scrolling down to
+		-- another threw the list back up under the pointer.)
+		local scale = Kit.Base.scaleOf(suitStrip)
+		local top = suitScroll.AbsolutePosition.Y
+		local bottom = top + suitScroll.AbsoluteWindowSize.Y
+		local by = 0
+		if tab.AbsolutePosition.Y < top then
+			by = tab.AbsolutePosition.Y - top
+		elseif tab.AbsolutePosition.Y + tab.AbsoluteSize.Y > bottom then
+			by = tab.AbsolutePosition.Y + tab.AbsoluteSize.Y - bottom
+		end
+		if by ~= 0 then
+			local most = math.max(0, (suitScroll.AbsoluteCanvasSize.Y - suitScroll.AbsoluteWindowSize.Y) / scale)
+			local y = math.clamp(suitScroll.CanvasPosition.Y + by / scale, 0, most)
+			Motion.tween(suitScroll, { CanvasPosition = Vector2.new(0, y) }, T.motion.slow)
+		end
+		return
+	end
 	local fade = FADE * Kit.Base.scaleOf(suitStrip)
 	local left = suitStrip.AbsolutePosition.X + fade
 	local right = suitStrip.AbsolutePosition.X + suitStrip.AbsoluteSize.X - fade
@@ -1082,33 +1099,6 @@ function ShopPanel.rebuild()
 			})
 		end
 		noteLabel.Text = "You get a ping when a wishlisted item is on sale."
-	elseif currentSuit == "sets" then
-		for index, set in ipairs(Sets.LIST) do
-			local have = Sets.progress(set, function(id: string): boolean
-				local item = Cosmetics.byId(id)
-				return item ~= nil and owns(profile, item)
-			end)
-			local title = Cosmetics.byId(set.title)
-			local done = title ~= nil and owns(profile, title)
-			local grid = section(
-				string.format(
-					"%s (%s)",
-					set.name,
-					if done then "Complete" else string.format("%d/%d", have, #set.pieces)
-				),
-				index
-			)
-			for order, id in ipairs(set.pieces) do
-				local item = Cosmetics.byId(id)
-				if item then
-					deal(profile, item, grid, order, false)
-				end
-			end
-			if title then
-				deal(profile, title, grid, #set.pieces + 1, false)
-			end
-		end
-		noteLabel.Text = "Collect a full set to earn its title."
 	else
 		local suit = Cosmetics.suit(currentSuit)
 		local order = 0

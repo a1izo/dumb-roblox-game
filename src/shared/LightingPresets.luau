@@ -605,14 +605,24 @@ LightingPresets.scenes = {
 		bloom = 0.35,
 		sky = "SceneEmber",
 	}),
-	-- A dim board room after hours: the board's glow and the city through the blinds.
+	-- A rooftop at night under the Milky Way (2026-11-10: "up to the starry night sky"): no sun, a blue night fill
+	-- from the sky, the scene's own lamps (the phone's glow, the stair door's lamp) doing the rest.
 	selection = scene({
-		ambient = rgb(40, 42, 52),
-		outdoorAmbient = rgb(34, 38, 50),
-		saturation = -0.15,
-		contrast = 0.18,
-		tint = rgb(232, 238, 255),
-		bloom = 0.4,
+		clockTime = 14,
+		ambient = rgb(30, 36, 58),
+		outdoorAmbient = rgb(40, 48, 78),
+		envDiffuse = 0.45,
+		envSpecular = 0.3,
+		density = 0.12,
+		haze = 0.6,
+		atmosphereColor = rgb(40, 44, 66),
+		decay = rgb(60, 50, 50),
+		saturation = -0.12,
+		contrast = 0.16,
+		tint = rgb(228, 236, 255),
+		bloom = 0.45,
+		bloomThreshold = 1.9,
+		sky = "SceneNight",
 	}),
 	-- The star void of the requiem: no sun, the nebula sky all round, violet fill.
 	requiem = scene({

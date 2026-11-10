@@ -333,7 +333,18 @@ local function caption(emote: QuickChat.Emote?, reason: string?)
 	lineLabel.TextColor3 = if reason then C.dim else Rarity.color(info.rarity):Lerp(C.bone, 0.3)
 end
 
+-- While the wheel opens (the cylinder spinning, the emotes not in their chambers yet) pointing at a chamber waits:
+-- it showed that chamber's emote, grown, before the opening had brought it in (2026-11-10, "it shows up before the
+-- opening animation finishes"). What is pointed at when the opening ends is taken then.
+local openingUntil = 0
+local waitingHover: number? = nil
+
 local function setHover(index: number?)
+	if index and os.clock() < openingUntil then
+		waitingHover = index
+		return
+	end
+	waitingHover = nil
 	if index == hovered then
 		return
 	end
@@ -460,14 +471,17 @@ local function onInputEnded(input: InputObject)
 	end
 	if input.UserInputType == Enum.UserInputType.Touch and dragging then
 		dragging = false
-		if hovered then
-			play(hovered :: number)
+		-- (let go while the wheel was still opening: what was pointed at then counts)
+		local chosen = hovered or waitingHover
+		if chosen then
+			play(chosen)
 		end
 	elseif holdKey and input.KeyCode == holdKey then
 		-- Held Q, pointed, let go: that one plays (a quick tap leaves the wheel open).
 		holdKey = nil
-		if os.clock() - shownAt >= HOLD_RELEASE and hovered then
-			play(hovered :: number)
+		local chosen = hovered or waitingHover
+		if os.clock() - shownAt >= HOLD_RELEASE and chosen then
+			play(chosen)
 		end
 	end
 end
@@ -747,6 +761,15 @@ function Wheel.shown(on: boolean)
 			-- chambers once it has, so they never ride past on the turning steel: the user's call of 2026-11-03)
 			local lag = if revolver then SPIN_SECONDS - 0.06 else 0
 			spinOpen()
+			local opened = shownAt
+			local wait = lag + 0.02 * #plates + 0.14
+			openingUntil = os.clock() + wait
+			waitingHover = nil
+			task.delay(wait, function()
+				if visible and shownAt == opened and waitingHover then
+					setHover(waitingHover)
+				end
+			end)
 			for index, plate in ipairs(plates) do
 				plate.scale.Scale = 0
 				task.delay(lag + 0.02 * index, function()
@@ -755,6 +778,7 @@ function Wheel.shown(on: boolean)
 			end
 		end
 	else
+		openingUntil = 0
 		setHover(nil)
 		clearPreview()
 		dragging = false

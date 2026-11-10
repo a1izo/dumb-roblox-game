@@ -10,7 +10,7 @@ where the scene's first actor stands, as the scene module's ctx works.
     walrider    Walrider: the asylum lab, the hazard stripe and the steel double door, the white tiled room beyond
     sam         Let's dance!: open desert hills at dusk, boulders, a rocky ridge
     ironman     and I.. am..: a ruined battlefield at dusk, broken walls, rubble, craters, burnt-out shells far off
-    selection   Dead by selection: a dim board room, the board on its stand
+    selection   Dead by selection: a rooftop at night over a city, under the Milky Way (SkySceneNight)
 
 The two void scenes (requiem, god) and sans' battle screen have no set: their skies are Sky faces (scene_skies.py,
 carried here as TEXTURES) and sans' is black.
@@ -30,7 +30,8 @@ DATA_DIR = os.path.join(common.ROOT, "src", "shared")
 
 PLAN_LEVELS = [("floor", 3.0)]
 SKY_FACES = ("Ft", "Bk", "Lf", "Rt", "Up", "Dn")
-TEXTURES = ["SkyScene" + sky + face for sky in P.SKIES for face in SKY_FACES]
+# (and the pictures the scenes show: scene_pictures.py)
+TEXTURES = ["SkyScene" + sky + face for sky in P.SKIES for face in SKY_FACES] + ["SelectionChart"]
 
 
 def _at(where, eye, look, lens):
@@ -62,9 +63,11 @@ VIEWS = [
     _at(P.IRONMAN, (9, 4.2, 5), (0, 3.5, -4), _lens(50)),
     _at(P.IRONMAN, (14, 7, 8), (0, 3, -8), _lens(56)),
     _at(P.IRONMAN, (4.6, 3.6, -4.6), (0, 2.8, 0.4), _lens(44)),
-    # Dead by selection: over the shoulder to the board; the close on the victim
-    _at(P.SELECTION, (2.2, 5.4, 6.4), (0, 5.5, -6), _lens(50)),
-    _at(P.SELECTION, (3.4, 4.2, -2.8), (0, 3.0, 2), _lens(46)),
+    # Dead by selection: over the shoulder to the city; the low angle up at the sky; down from high above; the wide
+    _at(P.SELECTION, (1.6, 5.2, 3.4), (-0.4, 4.2, -6), _lens(42)),
+    _at(P.SELECTION, (1.2, 1.2, -2.6), (0, 6.5, 0.4), _lens(40)),
+    _at(P.SELECTION, (0.5, 24, 1.5), (0, 0, 0), _lens(40)),
+    _at(P.SELECTION, (-7.5, 3.2, 8.5), (0, 5.5, -2), _lens(34)),
 ]
 
 PREVIEW_FIGURES = [
@@ -84,7 +87,7 @@ PREVIEW_LIGHT = {
     "walrider": ((0.03, 0.035, 0.04), 0.4, 0.0, (50, 0), (1, 1, 1), 0.0),
     "sam": ((0.72, 0.52, 0.32), 1.1, 3.0, (78, -140), (1.0, 0.72, 0.42), 0.006),
     "ironman": ((0.62, 0.36, 0.2), 0.9, 2.5, (82, 20), (1.0, 0.55, 0.28), 0.01),
-    "selection": ((0.02, 0.02, 0.025), 0.4, 0.0, (50, 0), (1, 1, 1), 0.0),
+    "selection": ((0.05, 0.06, 0.1), 1.0, 0.6, (40, 150), (0.7, 0.8, 1.0), 0.0),
 }
 
 

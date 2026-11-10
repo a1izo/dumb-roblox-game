@@ -13,7 +13,7 @@ actors, the cameras, the sets, the UI and the effects around them.
     ironman   sceneIronVictim (on one knee, the gauntlet, the snap, sat against the wall), sceneIronKiller,
               sceneIronSoldier (the army behind, standing)
     patriot   scenePatriotSaluter (head bowed at the grave, the slow salute held)
-    selection sceneSelectionVictim (staring at the board, drained)
+    selection sceneSelectionVictim (reading the phone, lowering it, the head up to the stars, the phone let go)
 
 Angles as in deathkit: root pitch negative leans forward, arms x 0 hangs / 90 ahead / 180 overhead, z out (right +),
 legs x + forward."""
@@ -497,18 +497,48 @@ soft(ps, head=2.0, arms=2.0)
 ps.build()
 
 # =====================================================================================================================
-# Dead by selection (12 s; selection.md)
+# Dead by selection (14 s; selection.md, redone 2026-11-10: the phone, then the sky)
 
-dv = Motion("sceneSelectionVictim", 12.0, note="Staring up at the chart; the lines pass them by; drained, sagging.",
-            floor=True)
+# The reading hand: the phone held up before the chest, the forearm up and in (scene_costumes solves the phone on it).
+PHONE_R = reach(1, (0.32, 0.45, -0.95), direction=(-0.12, 0.62, -0.78))
+PHONE_SCROLL = reach(1, (0.32, 0.41, -0.97), direction=(-0.12, 0.6, -0.8))
+PHONE_SAG = reach(1, (0.34, 0.3, -0.9), direction=(-0.1, 0.5, -0.85))
+PHONE_LOW = J((12, 0, 7), (0, 0.02, 0))
+
+dv = Motion("sceneSelectionVictim", 14.0, note="Reading the phone, head down, weight on one leg; it lands, the breath "
+            "goes out; the phone comes down; the head comes up to the stars, a slow shake of it, chin high; the hand "
+            "opens and the phone is let go; standing so to the end.", floor=True)
 dv.key(0.0, **REST)
-body_key(dv, 0.0, "smooth", 0, neck=(8, 0, 0), rShoulder=HANG_R, lShoulder=HANG_L)
-body_key(dv, 8.2, "sine", 0, neck=(10, 0, 0), rShoulder=HANG_R, lShoulder=HANG_L)
-body_key(dv, 9.2, "out", -2, neck=(14, -6, 0), rShoulder=J((10, 0, 8)), lShoulder=J((10, 0, -8)))
-body_key(dv, 10.5, "sine", -12, drop=0.12, neck=(-20, 0, 0), rShoulder=J((0, 0, 2)), lShoulder=J((0, 0, -2)))
-body_key(dv, 12.0, "linear", -14, drop=0.16, neck=(-26, 0, 0), rShoulder=J((0, 0, 2)), lShoulder=J((0, 0, -2)))
-stand(dv, 0.0, 12.0, Feet())
-alive(dv, amount=0.4, seed=11, t0=0.0, t1=9.0)
+# reading: the head down to the phone, the thumb's scroll (the hand dips and comes back), twice
+body_key(dv, 0.0, "smooth", -5, 5, 0, hips=(0.06, 0), neck=(-25, -8, 0), rShoulder=PHONE_R, lShoulder=HANG_L)
+body_key(dv, 1.2, "sine", -5, 5, 0, hips=(0.06, 0), neck=(-26, -8, 0), rShoulder=PHONE_SCROLL, lShoulder=HANG_L)
+body_key(dv, 1.5, "out", -5, 5, 0, hips=(0.06, 0), neck=(-25, -8, 0), rShoulder=PHONE_R, lShoulder=HANG_L)
+body_key(dv, 2.9, "sine", -6, 5, 0, hips=(0.06, 0), neck=(-27, -7, 0), rShoulder=PHONE_SCROLL, lShoulder=HANG_L)
+body_key(dv, 3.2, "out", -6, 5, 0, hips=(0.06, 0), neck=(-27, -7, 0), rShoulder=PHONE_R, lShoulder=HANG_L)
+# it lands: still, then the breath goes out of them and the hand sinks
+body_key(dv, 4.5, "sine", -6, 5, 0, hips=(0.06, 0), neck=(-27, -7, 0), rShoulder=PHONE_R, lShoulder=HANG_L)
+body_key(dv, 5.5, "smooth", -9, 4, 0, hips=(0.04, 0), drop=0.05, neck=(-31, -5, 0), rShoulder=PHONE_SAG,
+         lShoulder=HANG_L)
+# the phone comes down to the side
+body_key(dv, 6.5, "smooth", -6, 2, 0, hips=(0.02, 0), drop=0.03, neck=(-22, -2, 0), rShoulder=PHONE_LOW,
+         lShoulder=HANG_L)
+# the head comes up to the sky: the chest opens, the weight goes back onto the heels
+body_key(dv, 7.7, "smooth", 5, 0, 0, hips=(0, 0.05), neck=(36, 0, 0), rShoulder=J((8, 0, 8), (0, 0.02, 0)),
+         lShoulder=J((4, 0, -7)))
+# contempt: a slow shake of the head, the chin high
+body_key(dv, 8.4, "sine", 6, 0, 0, hips=(0, 0.05), neck=(37, -10, 0), rShoulder=J((8, 0, 8), (0, 0.02, 0)),
+         lShoulder=J((4, 0, -7)))
+body_key(dv, 9.0, "sine", 6, 0, 0, hips=(0, 0.05), neck=(38, 8, 0), rShoulder=J((8, 0, 8), (0, 0.02, 0)),
+         lShoulder=J((4, 0, -7)))
+body_key(dv, 9.5, "sine", 6, 0, 0, hips=(0, 0.05), neck=(37, -3, 0), rShoulder=J((8, 0, 9), (0, 0.02, 0)),
+         lShoulder=J((4, 0, -7)))
+# the hand opens (Selection.luau drops the phone at 9.7) and the arm falls dead
+body_key(dv, 9.72, "out", 6, 0, 0, hips=(0, 0.05), neck=(37, -2, 0), rShoulder=J((10, 0, 13)), lShoulder=J((4, 0, -7)))
+body_key(dv, 10.4, "smooth", 7, 0, 0, hips=(0, 0.05), neck=(38, 0, 0), rShoulder=HANG_R, lShoulder=HANG_L)
+body_key(dv, 14.0, "sine", 8, 0, 0, hips=(0, 0.06), neck=(40, 0, 0), rShoulder=HANG_R, lShoulder=HANG_L)
+stand(dv, 0.0, 14.0, Feet())
+alive(dv, amount=0.4, seed=11, t0=0.0, t1=11.0)
+soft(dv, head=3.0, arms=2.4)
 dv.build()
 
 SCENE_CLIPS = [m.name for m in (rv, rc, rk, bw, bb, sv, sk, *SOLDIER_CLIPS, wo, sn, iv, ik, isd, ps, dv)]

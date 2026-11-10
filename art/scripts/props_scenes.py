@@ -14,6 +14,9 @@ says where each goes and how big (the game scales it to its biggest side, as Emo
 - SceneGauntlet: the victim's armoured gauntlet over the right hand, its six stone sockets empty (the game sets each
   stone in, lit, at its moment).
 - SceneSpear: the warlord's army's spear.
+- SceneArcReactor: the light in the victim's chest in the Iron Man scene: a housing, a ring of ten copper coils over
+  a lit ring, a lit core behind a three-spoke lattice (2026-11-10, "more accurate/detailed": it was a plain disc).
+  Its lit ring and core are a piece of their own (SceneArcReactor_Light), so the game can dim them out.
 - SceneWheelchair: the old man's chair among the soldiers.
 Moderation: every piece reads as what it is on its own (no body parts)."""
 
@@ -24,6 +27,7 @@ from mathutils import Vector
 
 import modelkit as mk
 import propkit as pk
+import props
 from common import srgb
 from props import prop
 
@@ -456,3 +460,53 @@ def scene_wheelchair():
                               minor_segments=6))
     parts.append(pk.sweep("Cross", [(-1.02, 0.2, 1.86), (1.02, 0.2, 1.86)], 0.04, steel, sides=8))
     return parts, []
+
+
+@prop("SceneArcReactor", pivot="centre", material="Metal", collide=False, texture=256)
+def scene_arc_reactor():
+    """The chest light of the Iron Man scene, on the front of an R6 torso (2 x 2 x 1, its middle at the origin, its
+    front face at y -0.5), front to -Y: a dark round housing with three bolted lugs, a steel bezel, a LIT RING under
+    ten copper coils set round it like a clock's hours, a steel inner ring, a LIT CORE behind a three-spoke lattice
+    with a hub. The lit ring and core are the piece "Light" (unbaked: the game makes it neon and dims it out)."""
+    steel = pk.metal("AR_Steel", (120, 126, 134), (186, 192, 200), rough=0.3, metallic=0.9, scale=26)
+    dark = pk.metal("AR_Dark", (30, 32, 38), (58, 62, 70), rough=0.45, metallic=0.85, scale=26)
+    copper = pk.metal("AR_Copper", (150, 84, 40), (214, 138, 78), rough=0.35, metallic=0.9, scale=30)
+    lit = pk.glow("AR_Lit", (170, 228, 255), 5.0)
+    z0 = 0.35  # the reactor's middle, up the chest
+    face = -0.5
+
+    def y(depth):
+        return face - depth
+
+    parts = [mk.cylinder("Housing", 0.3, 0.07, (0.0, y(0.035), z0), rot=(90, 0, 0), mat=dark, verts=40, bevel=0.012),
+             mk.torus("Bezel", 0.275, 0.026, (0.0, y(0.07), z0), rot=(90, 0, 0), mat=steel, major_segments=40,
+                      minor_segments=8),
+             mk.torus("Inner", 0.112, 0.018, (0.0, y(0.085), z0), rot=(90, 0, 0), mat=steel, major_segments=32,
+                      minor_segments=8),
+             mk.cylinder("Hub", 0.032, 0.03, (0.0, y(0.1), z0), rot=(90, 0, 0), mat=steel, verts=16, bevel=0.006)]
+    light = [mk.torus("Ring", 0.196, 0.036, (0.0, y(0.066), z0), rot=(90, 0, 0), mat=lit, major_segments=40,
+                      minor_segments=8),
+             mk.cylinder("Core", 0.1, 0.02, (0.0, y(0.076), z0), rot=(90, 0, 0), mat=lit, verts=32)]
+    # ten coils over the lit ring: a copper winding with a dark clamp across its middle
+    for k in range(10):
+        a = math.radians(36 * k + 18)
+        c, sn = math.cos(a), math.sin(a)
+        at = (c * 0.196, y(0.078), z0 + sn * 0.196)
+        turn = (0, -math.degrees(a), 0)
+        parts.append(pk.rounded("Coil", (0.1, 0.052, 0.062), at, copper, r=0.016, rot=turn))
+        parts.append(mk.box("Clamp", (0.022, 0.058, 0.07), at, rot=turn, mat=dark, bevel=0.004))
+    # the lattice over the core: three spokes from the hub to the inner ring
+    for k in range(3):
+        a = math.radians(120 * k + 90)
+        c, sn = math.cos(a), math.sin(a)
+        parts.append(mk.box("Spoke", (0.1, 0.014, 0.018), (c * 0.062, y(0.096), z0 + sn * 0.062),
+                            rot=(0, -math.degrees(a), 0), mat=steel, bevel=0.003))
+    # three lugs bolting the housing down
+    for k in range(3):
+        a = math.radians(120 * k + 30)
+        c, sn = math.cos(a), math.sin(a)
+        parts.append(pk.rounded("Lug", (0.09, 0.03, 0.07), (c * 0.31, y(0.02), z0 + sn * 0.31), dark, r=0.012,
+                                rot=(0, -math.degrees(a), 0)))
+        parts.append(mk.cylinder("Bolt", 0.016, 0.02, (c * 0.325, y(0.04), z0 + sn * 0.325), rot=(90, 0, 0),
+                                 mat=steel, verts=6))
+    return parts, [], {"pieces": {"Light": props.piece(light, bake=False)}}

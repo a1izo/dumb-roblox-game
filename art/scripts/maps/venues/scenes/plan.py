@@ -11,7 +11,7 @@ SELECTION = (5000.0, 0.0)
 CELL = 1000.0
 
 # The skies the scenes show (Sky faces SkyScene<name><face>, art/scripts/scene_skies.py).
-SKIES = ("Mist", "Dusk", "Ember", "Requiem", "God")
+SKIES = ("Mist", "Dusk", "Ember", "Requiem", "God", "Night")
 
 BOUNDS = ((-450.0, -80.0, -450.0), (5450.0, 220.0, 450.0))
 

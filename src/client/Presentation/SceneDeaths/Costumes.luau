@@ -9,6 +9,13 @@
 
 return {
 	CORE = 35,
+	-- the light in the victim's chest (Core 37; nothing before it)
+	arcReactor = {
+		model = "SceneArcReactor",
+		size = 0.656,
+		mount = "Torso",
+		at = { { p = { 0, 0.323, -0.558 } } },
+	},
 	-- the blade's hair and visor
 	cyborgHead = {
 		model = "SceneCyborgHead",
@@ -32,6 +39,14 @@ return {
 		tip = { 0, 0.118, -2.051 },
 		base = { 0, -0.002, 1.349 },
 		stand = { size = { 0.12, 0.3, 4 }, color = { 170, 172, 178 } },
+	},
+	-- the victim's phone in Dead by selection, held up to read
+	phone = {
+		model = "Smartphone",
+		size = 1.04,
+		mount = "Right Arm",
+		at = { { p = { 0.086, -0.97, -0.261 } }, { r = { 155.31, 16.71, 147.98 } } },
+		stand = { size = { 0.54, 0.085, 1.04 }, color = { 20, 20, 22 } },
 	},
 	-- the victim's red sword
 	redBlade = {
@@ -97,6 +112,6 @@ return {
 		{ -0.36, -0.395, -0.57 },
 		{ 0, 0.045, -0.54 },
 	},
-	-- the old man's wheelchair, standing on the floor: its size, and its pivot's height off the floor
-	wheelchair = { model = "SceneWheelchair", size = 3.7202, lift = 1.86 },
+	-- the old man's wheelchair, standing on the floor (a bottom-pivot prop: its pivot at its lowest point)
+	wheelchair = { model = "SceneWheelchair", size = 3.7202 },
 }

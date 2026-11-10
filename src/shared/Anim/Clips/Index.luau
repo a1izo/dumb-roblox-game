@@ -161,7 +161,7 @@ return {
 	sceneSamKiller = { part = 9, length = 14, loop = false },
 	sceneSamVictim = { part = 9, length = 14, loop = false },
 	sceneSansVictim = { part = 9, length = 30, loop = false },
-	sceneSelectionVictim = { part = 9, length = 12, loop = false },
+	sceneSelectionVictim = { part = 9, length = 14, loop = false },
 	sceneWalriderSeated = { part = 9, length = 19.5, loop = false },
 	sceneWalriderSoldier1 = { part = 9, length = 19.5, loop = false },
 	sceneWalriderSoldier2 = { part = 9, length = 19.5, loop = false },

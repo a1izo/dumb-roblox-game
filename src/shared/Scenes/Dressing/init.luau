@@ -4,18 +4,7 @@
 
 return {
 	-- prop, x, y, z, degrees about Y, scale, flags ("dark": without its light)
-	props = {
-		{ "OfficeChair", 4995, 0, 6, 180, 1 },
-		{ "OfficeChair", 4995, 0, 11.2, 0, 1 },
-		{ "OfficeChair", 4998.3, 0, 6, 180, 1 },
-		{ "OfficeChair", 4998.3, 0, 11.2, 0, 1 },
-		{ "OfficeChair", 5001.7, 0, 6, 180, 1 },
-		{ "OfficeChair", 5001.7, 0, 11.2, 0, 1 },
-		{ "OfficeChair", 5005, 0, 6, 180, 1 },
-		{ "OfficeChair", 5005, 0, 11.2, 0, 1 },
-		{ "OfficeFicus", 5012.4, 0, -9, 0, 1 },
-		{ "WaterCooler", 4987.6, 0, 12, 180, 1 },
-	},
+	props = {},
 	lights = {
 		{ kind = "spot", at = { 1000, 11.3, -2 }, color = { 232, 236, 214 }, range = 28, brightness = 7.65, shadows = false, face = "Bottom", angle = 80, flicker = false, clear = true },
 		{ kind = "spot", at = { 984, 11.3, -2 }, color = { 232, 236, 214 }, range = 28, brightness = 5.1, shadows = false, face = "Bottom", angle = 80, flicker = false, clear = true },

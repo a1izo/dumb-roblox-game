@@ -8,6 +8,7 @@ held one is solved on its key pose (emotes.kit.hold): the rifle's grip in the ai
 aim, the spear upright in the soldier's fist. The game scales each model to `size` (its biggest side) and puts its
 pivot (the middle of its box) at the part times `at` (SceneDeaths Ctx:wear)."""
 
+import math
 import os
 import sys
 
@@ -30,6 +31,8 @@ CORE = 35  # the Core import that holds them (maps/export.py VERSION["ModelsCore
 # The poses the held pieces are solved on (scene_actors.py): the Walrider soldiers' aim, the Iron army's stance.
 AIM_R = kit.reach(1, (0.25, 0.75, -1.6), direction=(-0.15, 0.1, -1.0))
 SPEAR_R = J((50, 0, 20))
+# Dead by selection: the reading hand (scene_actors.PHONE_R)
+PHONE_R = kit.reach(1, (0.32, 0.45, -0.95), direction=(-0.12, 0.62, -0.78))
 
 
 def measure(key):
@@ -69,7 +72,8 @@ def main():
     sizes = {}
     centres = {}
     for key in ("SceneHelmet", "SceneVest", "SceneRifle", "SceneCyborgHead", "SceneMurasama", "SceneRedBlade",
-                "SceneWarlordHelm", "SceneWarlordPlate", "SceneGauntlet", "SceneSpear", "SceneWheelchair"):
+                "SceneWarlordHelm", "SceneWarlordPlate", "SceneGauntlet", "SceneSpear", "SceneWheelchair",
+                "SceneArcReactor", "Smartphone"):
         centre, size = measure(key)
         centres[key] = centre
         sizes[key] = round(max(size), 4)
@@ -83,6 +87,7 @@ def main():
     worn("warlordHelm", "SceneWarlordHelm", "Head", "the warlord's helm")
     worn("warlordPlate", "SceneWarlordPlate", "Torso", "his chest plate and pauldrons")
     worn("gauntlet", "SceneGauntlet", "Right Arm", "the victim's gauntlet over the right hand")
+    worn("arcReactor", "SceneArcReactor", "Torso", "the light in the victim's chest (Core 37; nothing before it)")
 
     # the blades: the grip in the fist (the arm's end), the blade out ahead of the fist along the hand's front (-Z)
     for name, key, length in (("murasama", "SceneMurasama", 3.4), ("redBlade", "SceneRedBlade", 2.8)):
@@ -109,6 +114,15 @@ def main():
     entries["spear"] = dict(model="SceneSpear", size=sizes["SceneSpear"], mount="Right Arm",
                             at=kit.hold("Right Arm", {"rShoulder": SPEAR_R}, tuple(fist - grip)),
                             stand=dict(size=[0.12, 5.2, 0.12], color=[40, 38, 36]), note="the army's spear")
+
+    # the phone of Dead by selection: upright above the reading fist, its screen (the model's +Y) to the face and
+    # tipped up to the eyes, its top (the model's +Z) up: turned 180 about Y, then 65 about X
+    fist = kit.fist_at(1, PHONE_R)
+    up = np.array([0.0, math.sin(math.radians(65)), -math.cos(math.radians(65))])
+    entries["phone"] = dict(model="Smartphone", size=sizes["Smartphone"], mount="Right Arm",
+                            at=kit.hold("Right Arm", {"rShoulder": PHONE_R}, tuple(fist + up * 0.3), (65.0, 180.0, 0.0)),
+                            stand=dict(size=[0.54, 0.085, 1.04], color=[20, 20, 22]),
+                            note="the victim's phone in Dead by selection, held up to read")
 
     # the stones' sockets on the gauntlet, from its pivot (Roblox axes, at its built size)
     sockets = [r3(rbx(Vector(s) - centres["SceneGauntlet"])) for s in ps.GAUNTLET_SOCKETS]
