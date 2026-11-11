@@ -627,6 +627,56 @@ def render_massing(scene, module):
     return paths
 
 
+def _image_bytes(obj):
+    """The images an object's materials embed: {path: bytes on disk}."""
+    found = {}
+    for slot in obj.material_slots:
+        mat = slot.material
+        if not mat or not mat.use_nodes:
+            continue
+        for node in mat.node_tree.nodes:
+            image = getattr(node, "image", None)
+            if image is not None and image.filepath:
+                path = bpy.path.abspath(image.filepath)
+                if os.path.exists(path):
+                    found[path] = os.path.getsize(path)
+    return found
+
+
+def write_split(venue, version, objects, carriers, parts):
+    """The venue's meshes shared out over `parts` FBX files, each kept as small as it can be (a greedy share by the
+    bytes each would add: its geometry, and its images where that part has not got them yet)."""
+    letters = "ABCDEFGH"[:parts]
+    groups = [{"objects": [], "images": {}, "verts": 0} for _ in letters]
+
+    def cost(group, obj, images):
+        extra = sum(size for path, size in images.items() if path not in group["images"])
+        return extra + len(obj.data.vertices) * 60
+
+    def total(group):
+        return sum(group["images"].values()) + group["verts"] * 60
+
+    weighed = [(obj, _image_bytes(obj)) for obj in objects + carriers]
+    weighed.sort(key=lambda item: -(sum(item[1].values()) + len(item[0].data.vertices) * 60))
+    for obj, images in weighed:
+        best = min(groups, key=lambda g: total(g) + cost(g, obj, images))
+        best["objects"].append(obj)
+        best["images"].update(images)
+        best["verts"] += len(obj.data.vertices)
+    for letter, group in zip(letters, groups):
+        kind = "Maps" + venue + ("" if letter == "A" else letter)
+        coll = common.collection(f"Calibration_{venue}{letter}")
+        cubes = export.calibration_cubes(coll, "Calib_" + venue, kind, version)
+        path = os.path.join(common.EXPORT, f"DeathsGambitMaps_{venue}_{letter}.fbx")
+        export.export_fbx(group["objects"] + cubes, path)
+        size = os.path.getsize(path) / 1e6
+        print(f"[maps] {venue} v{version} part {letter}: {path} ({size:.1f} MB, {len(group['objects'])} objects)")
+        if size > 20:
+            print(f"[maps] WARNING: part {letter} is over Open Cloud's 20 MB; split in more parts.")
+        for cube in cubes:
+            bpy.data.objects.remove(cube, do_unlink=True)
+
+
 def texture_carriers(names, venue):
     """Small quads Tex_<name>, one per effect texture a venue's effects use (its TEXTURES), so
     importing the venue's FBX also brings those textures in (ModelLibrary.carrierTexture)."""
@@ -689,6 +739,11 @@ def main():
             eyes.append(((v[0], v[1], v[2]), (v[3], v[4], v[5]), v[6] if len(v) > 6 else 28.0))
     preview = "--preview" in argv or eyes is not None
     do_export = "--export" in argv
+    # --split N: the venue's FBX in N parts (DeathsGambitMaps_<Venue>_A.fbx...), each under Open Cloud's 20 MB, for an
+    # upload without the 3D importer (2026-11-11). Part A carries the venue's version marker; the others a marker of their
+    # own kind (Maps<Venue>B, Maps<Venue>C...), so the game never takes them for older copies of one import. Every part
+    # carries the calibration cubes: lined up on them after the insert, the parts stand as one import.
+    split = int(argv[argv.index("--split") + 1]) if "--split" in argv else 1
     plan = "--plan" in argv
     if "--out" in argv:
         # Scratch renders (not the tracked previews).
@@ -765,9 +820,13 @@ def main():
             source = f"art/scripts/maps/venues/{MODULES[scene.venue]}"
             version, paths = export.write_scene_v2(scene, module, source)
             objects = [o for o in coll.objects if o.type == "MESH"]
+            carriers = texture_carriers(getattr(module, "TEXTURES", ()), scene.venue)
+            if split > 1:
+                write_split(scene.venue, version, objects, carriers, split)
+                continue
             objects.extend(export.calibration_cubes(common.collection("Calibration_" + scene.venue),
                                                     "Calib_" + scene.venue, "Maps" + scene.venue, version))
-            objects.extend(texture_carriers(getattr(module, "TEXTURES", ()), scene.venue))
+            objects.extend(carriers)
             path = export.export_fbx(objects, export.venue_fbx(scene.venue))
             size = os.path.getsize(path) / 1e6
             print(f"[maps] {scene.venue} v{version}: {path} ({size:.1f} MB, {len(objects)} objects)")
