@@ -752,11 +752,16 @@ MAY_TOUCH = {frozenset(p) for p in (("Bicycle", "BikeRack"), ("PoliceTape", "Sit
 TOUCH = 0.2  # how far two things may press into each other (a bin against a wall)
 # Props that meet the ground only at a pole or a trunk (their arms and canopies may reach over
 # other things): the size of that foot, at the prop's anchor.
+# The lobby's garden: a tree stands on its trunk, however far its crown spreads (props_garden.py, anchored at the trunk).
+FEET_GARDEN = {"LobbyGreatTree": 7.0, "LobbyArchTree": 2.4, "LobbyWillow": 2.6}
+# Ground cover: flowers, roses and lilies may grow into one another and under a tree; only walls and rocks are kept
+# off them (their colliders).
+GROUND_COVER = {"LobbyFlowersA", "LobbyRoseBush", "LobbyLilies"}
 FEET = {"StreetLightTokyo": 1.2, "TrafficSignal": 1.2, "PedestrianSignal": 1.0, "UtilityPole": 1.4,
         "RoadSign": 0.8, "BusStopSign": 0.8, "TaxiRankSign": 0.8, "Tree": 2.0, "TreeSakura": 2.0,
         "TreeZelkova": 2.0, "GinkgoBare": 1.9, "PineYukizuri": 1.7, "CampusLamp": 1.2,
         # A tent stands on four thin legs round what stands under it (the map gives the legs colliders).
-        "EventTent": 0.5}
+        "EventTent": 0.5, **FEET_GARDEN}
 # Props that are walls themselves (the barriers across the streets that leave the map): they may
 # meet the buildings' walls.
 WALLS = {"SiteFence", "SiteFenceBoard", "PoliceTape", "Barricade"}
@@ -822,6 +827,8 @@ def overlaps(data, problems):
                 seen.add((n, m))
                 label2, key2, poly2, v0, v1 = items[m]
                 if min(y1, v1) - max(y0, v0) < 0.3 or frozenset((key, key2)) in MAY_TOUCH:
+                    continue
+                if key in GROUND_COVER or key2 in GROUND_COVER:
                     continue
                 if not g2.bbox_overlap(g2.bbox(poly), g2.bbox(poly2)):
                     continue

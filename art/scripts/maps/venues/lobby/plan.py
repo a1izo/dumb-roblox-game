@@ -352,6 +352,27 @@ JUNK = [
 # Where the great arch of twisted rock stands, framing the throne's glow from the bowl (x, z, span, height, rot).
 ARCH = (-118.0, -96.0, 30.0, 38.0, 64.0)
 
+# The garden of the dead (2026-11-10, the user's pictures; lobby/garden.py): white flowers everywhere else grey.
+# South-east, beside the spawn ledge: a still pond (x, z, radius across x, radius across z) crossed by a stone
+# footbridge, a cascade of water down a stair into it from the south, a round temple by it, a willow leaning over it.
+POND = (68.0, 96.0, 14.0, 9.0)
+ROTUNDA = (96.0, 96.0, 9.6)  # x, z, the radius of its lowest step
+CASCADE = (76.0, 114.0)  # the middle of its foot; its stair climbs south (+z) from the pond
+WILLOW = (84.0, 82.0)
+# North-west of the throne: the great tree over a hill of white flowers (Bloodborne's), broken columns on the skyline
+# behind the throne, ruined chapel walls; the avenue of old trees on the way to the Academy.
+GREAT_TREE = (-38.0, -92.0)
+COLUMNS = [(14.0, -106.0, 1.0), (34.0, -118.0, 1.25), (52.0, -100.0, 0.85), (-6.0, -128.0, 1.4), (24.0, -142.0, 1.6)]
+RUINS = [(-106.0, -64.0, 238.0), (-60.0, -132.0, 202.0)]  # x, z, rot (its arches' faces toward the bowl)
+# Far beyond the north-west rim, through the fog: the castle on its crag (a dragon circles it: World/LobbyDragon).
+CASTLE = (-150.0, -720.0, 1.4, 1.5)  # x, z, the crag's scale, the castle's scale (against the glow, left of the throne)
+
+
+def ellipse(c, rx, rz, n=32):
+    return [(round(c[0] + math.cos(math.tau * k / n) * rx, 2), round(c[1] + math.sin(math.tau * k / n) * rz, 2))
+            for k in range(n)]
+
+
 # The Spire Ascent: ten checkpoints climbing round the colossal chain that hangs into the Chain Heap.
 PK_CENTER = (ISLET_PARKOUR[0], ISLET_PARKOUR[1])
 PK_TOP = 118.0  # the finish's height over the plateau
@@ -379,7 +400,15 @@ def footprints():
                                LEDGE_STEPS[0][1] - LEDGE_STEPS[1][1]),
         "grotto": circle(ACADEMY_C, GROTTO_WALL + 4.0, 24),
         "arch": g2.rect(ARCH[0], ARCH[1], ARCH[2] + 12.0, 12.0, ARCH[4]),
+        "pond": ellipse(POND[:2], POND[2] + 1.5, POND[3] + 1.5),
+        "rotunda": circle(ROTUNDA[:2], ROTUNDA[2] + 0.5, 20),
+        "cascade": g2.rect(CASCADE[0], CASCADE[1] + 4.55, 6.4, 20.6),
+        "great tree": circle(GREAT_TREE, 6.0, 12),
     }
+    for k, (x, z, sc) in enumerate(COLUMNS):
+        items[f"column {k + 1}"] = g2.rect(x, z, 4.0 * sc, 4.0 * sc)
+    for k, (x, z, rot) in enumerate(RUINS):
+        items[f"ruin {k + 1}"] = g2.rect(x, z, 30.0, 5.0, rot)
     for name, (x, z, rot, w, h, by) in STELES.items():
         items["stele " + name] = g2.rect(x, z, w + 4.0, STELE_T, rot)
     for k, c in enumerate(TABLEAUX):
@@ -399,7 +428,9 @@ def check():
             hit = g2.intersect(g2.ccw(items[a]), g2.ccw(items[b])) if g2.is_convex(items[b]) else []
             if hit and abs(g2.area(hit)) > 0.5:
                 problems.append(f"{a} overlaps {b}")
-    inside = ["bowl", "throne rock", "plaque", "rift guard", "chessboard", "ledge", "stele wins", "carcass skull"]
+    inside = ["bowl", "throne rock", "plaque", "rift guard", "chessboard", "ledge", "stele wins", "carcass skull",
+              "pond", "rotunda", "cascade", "great tree", "ruin 1", "ruin 2"]
+    inside += [f"column {k + 1}" for k in range(len(COLUMNS))]
     inside += [f"tableau {k + 1}" for k in range(len(TABLEAUX))]
     for name in inside:
         if not all(g2.contains(basin, p) for p in items[name]):

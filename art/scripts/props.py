@@ -564,6 +564,7 @@ import props_mapown2  # noqa: E402,F401
 import props_core  # noqa: E402,F401
 import props_remade  # noqa: E402,F401
 import props_campus  # noqa: E402,F401
+import props_garden  # noqa: E402,F401
 import props_lobby  # noqa: E402,F401
 import props_realm  # noqa: E402,F401
 import props_academy  # noqa: E402,F401

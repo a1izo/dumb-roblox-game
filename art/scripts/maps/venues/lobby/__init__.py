@@ -15,7 +15,7 @@ three puppets, the candles, the tableaux' figures, the figure on the throne, the
 parkour's checkpoints, the roots that sway. The layout is in plan.py."""
 
 from maps import city
-from maps.venues.lobby import dressing, formations, gameplay, ground, islets, landmarks, rift, rocks, terrain
+from maps.venues.lobby import dressing, formations, gameplay, garden, ground, islets, landmarks, rift, rocks, terrain
 from maps.venues.lobby import plan as P
 
 FORMAT = 2
@@ -44,6 +44,12 @@ VIEWS = [
     ((-290.0, 11.0, 0.0), (-326.0, 80.0, -2.0), 20),  # at the foot of the great chain
     ((190.0, 14.0, -190.0), (214.0, 11.0, -216.0), 18),  # the shard garden
     ((0.0, 300.0, 110.0), (0.0, 0.0, -40.0), 14),  # the basin from above
+    ((40.0, 9.0, 72.0), (70.0, 4.0, 102.0), 18),  # the pond garden: the bridge, the cascade, the temple, the willow
+    ((-12.0, 6.0, -60.0), (-38.0, 14.0, -92.0), 16),  # the great tree over its flowers
+    ((-20.0, 14.0, 60.0), (0.0, 10.0, 87.0), 18),  # up at the ledge's balustrade and urns
+    ((-36.0, 6.0, 26.0), (-67.0, 8.0, 40.0), 16),  # down the avenue to the Academy
+    ((-100.0, 7.0, -30.0), (-128.0, 12.0, -56.0), 18),  # the ruined chapel wall
+    ((0.0, 15.0, 108.0), (-360.0, 150.0, -520.0), 30),  # from the spawn: the castle far off
 ]
 
 # check_v2's targets: the walk from the spawn to each islet and across the island (seconds); up to 35 s to the
@@ -69,7 +75,15 @@ CHECKS = {
     "finds_ok": ["sunk GiantSkull in the floor or the map", "sunk RustGear in the floor or the map",
                  # (hanging on purpose: the climb's gear decks, the cage lanterns on their chains, the great chain out of
                  # the sky, the gears standing on their edges in the junk)
-                 "float GearPlatform", "float HangingCage", "float GreatChain", "float RustGear"],
+                 "float GearPlatform", "float HangingCage", "float GreatChain", "float RustGear",
+                 # (the garden, lobby/garden.py: the lilies float under the willow's crown, the cascade's head is built
+                 # into its cliff, a grotto lantern hangs inside an old tree's crown's box)
+                 "sunk LobbyLilies in LobbyWillow", "sunk LobbyCascade in RealmBillowBFar",
+                 "sunk HangingCage in LobbyArchTree", "sunk LobbyArchTree in RealmBillowC"]
+                + [f"sunk {plant} in {rock}" for plant in ("LobbyFlowersA", "LobbyRoseBush")
+                   for rock in ("RealmTusk", "RealmBillowA", "RealmBillowB", "RealmBillowC", "RealmBillowShelf",
+                                "RealmBoulderA", "RealmBoulderB", "RealmSlab", "RealmCragA", "RealmCragB", "RealmCragC",
+                                "RealmShardsA", "RealmShardsB", "RealmShardsC", "RealmThroneRock")],
 }
 
 
@@ -97,6 +111,7 @@ def build(s):
     landmarks.build(s, g)
     islets.build(s, g)
     rift.build(s)
+    garden.build(s)
     dressing.build(s)
     formations.build(s)
     gameplay.build(s)

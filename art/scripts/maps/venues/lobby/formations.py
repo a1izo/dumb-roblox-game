@@ -22,6 +22,9 @@ def clear(x, z, r):
     causeways with their chasms."""
     if math.hypot(x, z) < 238.0 + r * 0.9:
         return False
+    # (the castle on its crag, lobby/garden.py: nothing far off stands in it)
+    if math.dist((x, z), P.CASTLE[:2]) < 70.0 * P.CASTLE[3] + r:
+        return False
     for ix, iz, ir in (P.ISLET_SHARDS, P.ISLET_PARKOUR):
         if math.dist((x, z), (ix, iz)) < ir + 44.0 + r:
             return False

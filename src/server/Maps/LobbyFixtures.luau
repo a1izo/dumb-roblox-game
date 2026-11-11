@@ -39,6 +39,7 @@ local PLINTH = Color3.fromRGB(88, 88, 94)
 -- braziers by the steps, the pillars and the balustrade), and the height of its plinth.
 local WINDOW_OFFSET = Vector2.new(15, -2)
 local WINDOW_HEIGHT = 1.4
+local GUARD_HEIGHT = 9 -- the column over the plinth (ShopWindowGuard): past any emote prop, past a jump
 
 type Anchor = { x: number, y: number, z: number, rot: number, w: number?, h: number?, rx: number?, rz: number? }
 
@@ -165,6 +166,21 @@ function LobbyFixtures.build(b, anchors: { [string]: Anchor })
 		}) :: BasePart
 		plinth.CanCollide = true
 		ModelLibrary.dress(plinth, "ShopPlinth", CFrame.new(0, -WINDOW_HEIGHT / 2, 0))
+		-- The mannequin and the day's emote props on it are the client's and walk-through (a gravestone emote's slab
+		-- stood out over the plinth's edge: the user's noclip picture, 2026-11-10). An unseen column over the plinth
+		-- keeps everyone out of them; too tall to jump onto, and nothing the camera stops on.
+		local guard = Create("Part", {
+			Name = "ShopWindowGuard",
+			Size = Vector3.new(3.6, GUARD_HEIGHT, 3.6),
+			CFrame = b:world(b:cf(x, spawn.y + WINDOW_HEIGHT + GUARD_HEIGHT / 2, z, rot)),
+			Transparency = 1,
+			Anchored = true,
+			Parent = folder,
+		}) :: BasePart
+		guard.CanCollide = true
+		guard.CanQuery = false
+		guard.CanTouch = false
+		guard.CastShadow = false
 		mark(
 			b,
 			folder,

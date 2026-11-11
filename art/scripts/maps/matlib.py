@@ -115,6 +115,12 @@ FLAT = {
     "HazardYellow": ("SmoothPlastic", (226, 180, 30), 0, 0.05),
     "HazardBlack": ("SmoothPlastic", (22, 22, 24), 0, 0.05),
     "BoardScreen": ("SmoothPlastic", (14, 16, 20), 0, 0.12),
+    # The Grey Realm's garden (props_garden.py, 2026-11-10): everything grey but the flowers' white petals; still
+    # water, and water falling over a stone step. ModelLibrary.FLAT paints the prop pieces that wear these.
+    "PetalWhite": ("SmoothPlastic", (236, 236, 230), 0, 0),
+    "LeafGrey": ("SmoothPlastic", (66, 68, 66), 0, 0),
+    "PondWater": ("Glass", (30, 32, 38), 0.15, 0.35),
+    "WaterFall": ("Glass", (196, 200, 206), 0.35, 0.1),
     # Massing: plain blocks at true height, for reviewing a layout before its buildings are made.
     "MassLight": ("SmoothPlastic", (208, 204, 196), 0, 0),
     "MassMid": ("SmoothPlastic", (168, 166, 162), 0, 0),

@@ -572,6 +572,52 @@ local function shapeError(a: Vector3, b: Vector3): number
 	return (na - nb).Magnitude
 end
 
+-- The flat colours a tiled prop's pieces can wear (art/scripts/maps/matlib.py FLAT; the piece is named
+-- <Key>_<Colour>): painted here, with no texture, since the importer brings no picture for them. The lobby's garden
+-- (props_garden.py, 2026-11-10): white petals, grey leaves, still and falling water.
+local FLAT: { [string]: { color: Color3, material: Enum.Material, transparency: number, reflectance: number } } = {
+	PetalWhite = {
+		color = Color3.fromRGB(236, 236, 230),
+		material = Enum.Material.SmoothPlastic,
+		transparency = 0,
+		reflectance = 0,
+	},
+	LeafGrey = {
+		color = Color3.fromRGB(66, 68, 66),
+		material = Enum.Material.SmoothPlastic,
+		transparency = 0,
+		reflectance = 0,
+	},
+	PondWater = {
+		color = Color3.fromRGB(30, 32, 38),
+		material = Enum.Material.Glass,
+		transparency = 0.15,
+		reflectance = 0.35,
+	},
+	WaterFall = {
+		color = Color3.fromRGB(196, 200, 206),
+		material = Enum.Material.Glass,
+		transparency = 0.35,
+		reflectance = 0.1,
+	},
+}
+
+local function paintFlat(part: BasePart, flat)
+	part.Color = flat.color
+	part.Material = flat.material
+	part.Transparency = flat.transparency
+	part.Reflectance = flat.reflectance
+	local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
+	if appearance then
+		appearance:Destroy()
+	end
+	if part:IsA("MeshPart") then
+		pcall(function()
+			(part :: MeshPart).TextureID = ""
+		end)
+	end
+end
+
 local function prepareGlow(part: BasePart, colour: { number }?)
 	part.Anchored = true
 	part.CanCollide = false
@@ -643,6 +689,11 @@ local function build(key: string): Model?
 			local material = (Enum.Material :: any)[info.material]
 			if material then
 				part.Material = material
+			end
+			local flat = FLAT[name]
+			if flat then
+				paintFlat(part, flat)
+				part.CastShadow = false -- (petals, leaves and water by the hundred: no shadows from them)
 			end
 		end
 		piece.Parent = model
