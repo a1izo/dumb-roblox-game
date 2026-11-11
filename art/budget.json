@@ -79,6 +79,13 @@
       "approved": "2026-11-10",
       "megapixels": 0.9,
       "megabytes": 0.9
+    },
+    {
+      "what": "The lobby's garden of the dead (2026-11-11, the user's pictures 5-15) with the Lobby props file now carrying its shared surfaces (Props.blend relinked), and the Core's pencil drawings (Core v38); the user's 'Accept it' to the lobby being over its megabytes",
+      "approved": "2026-11-11",
+      "venue": "Lobby",
+      "megapixels": 0.0,
+      "megabytes": 1.05
     }
   ]
 }
