@@ -143,7 +143,7 @@ for t, b in ((0.0, 0.0), (2.0, 1.0)):
 soft(specter, head=1.2, arms=1.0).follow(("rHip", "lHip"), 1.0, 0.8)
 specter.build()
 
-# Deaths (the collapses, the custom deaths, the fallen bodies' death styles) live in deaths.py and fallen.py.
+# Deaths (the collapses, the custom deaths) live in deaths.py.
 
 # Reactions: the table's one-shot reaction to a death, an arrest or a verdict (they hold their last
 # pose, then fade out).
@@ -408,8 +408,8 @@ import deaths  # noqa: E402,F401
 # The scene deaths' actors (rebuilt 2026-11-08 from the frame-by-frame sheets): Presentation/SceneDeaths stages them.
 import scene_actors  # noqa: E402,F401
 
-# What a fallen body does under its death style (2026-11-07).
-import fallen  # noqa: E402,F401
+# Shared/Anim/DeathTiming.luau, once every death is made (the death styles' fallen.py went on 2026-11-10).
+deaths.write_timing()
 
 
 # The cutscenes' actors: their acting clips are built with everything else.

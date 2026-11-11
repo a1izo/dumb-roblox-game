@@ -84,7 +84,7 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 	-- Free roam stops at once: everyone watches the death, then the meeting starts.
 	Match.requestMeeting("death", target)
 	-- The book first, then the death: the cutscene opens on the name being written, and the body falls
-	-- as that shot ends. The victim's death style plays for everyone; the writer's writing style only on
+	-- as that shot ends. The writer's writing style shows only on
 	-- the writer's own screen (who wrote is secret while the case runs).
 	local data = {
 		userId = target.userId,
@@ -92,22 +92,15 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 		cause = cause,
 		realName = target.realName,
 		written = true,
-		death = CosmeticsService.style(target.player, "death"),
 	}
 	-- (a custom death written as the cause: its effect plays on the body as it falls, Presentation/CustomDeaths)
 	local custom = Cosmetics.reasonByCause(cause)
 	if custom then
 		data.reason = custom.style
 	end
-	-- The case waits while the body falls and, with a death style that acts (Presentation/Fallen), until it is done;
-	-- the body carries its style, so every screen knows its frozen copy (RagdollService) for the one its style left.
+	-- The case waits while the body falls.
 	local fall = Causes.timing(Causes.clipFor(cause))
-	local acting = Causes.fallenLength(data.death)
-	local hold = ManualTiming.BOOK
-		+ math.max(
-			ManualTiming.HOLD - ManualTiming.BOOK,
-			if acting > 0 then fall.length + ManualTiming.STYLE_AFTER + acting + 0.6 else fall.length + 1.8
-		)
+	local hold = ManualTiming.BOOK + math.max(ManualTiming.HOLD - ManualTiming.BOOK, fall.length + 1.8)
 	-- A scene death (Presentation/SceneDeaths): everyone watches its cutscene after the book, then the body; the case
 	-- waits for all of it. "A true patriot" is its grave: someone saluting at it (a friend of the dead in the server).
 	local scene = Causes.sceneLength(cause)
@@ -116,10 +109,6 @@ local function kill(target, kira, cause: string, matchId: number, entry)
 		if data.reason == "patriot" then
 			data.saluter = saluterFor(if typeof(target.player) == "Instance" then target.player else nil)
 		end
-	end
-	local character = if typeof(target.player) == "Instance" then target.player.Character else nil
-	if character and data.death then
-		character:SetAttribute("LDeathStyle", data.death)
 	end
 	local writing = CosmeticsService.style(kira.player, "writing")
 	if writing and typeof(kira.player) == "Instance" then

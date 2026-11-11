@@ -2,8 +2,7 @@
 --   the Manual     : whoever has it open writes (the server marks them LManualOpen, or LManualHeld while they pick a
 --                    name with it out in their hands; it is seen on purpose)
 --   vote cast      : that player raises a hand (who voted is public, not for whom)
---   death          : the collapse for the public cause of death; everyone else reacts as the body hits the floor; a
---                    death style with an acting of its own then takes the body (Presentation/Fallen)
+--   death          : the collapse for the public cause of death; everyone else reacts as the body hits the floor
 --   arrest         : hands cuffed behind the back; everyone else reacts
 --   verdict        : the player voted out slumps and fades away; everyone else reacts
 --   ending         : winners celebrate (or play their win scene, an emote they chose in the shop), losers
@@ -157,20 +156,7 @@ local function onDeath(cue)
 		-- Holds the last frame until the server locks the pose into the body (LPoseBaked).
 		{ startAt = localTime(at), fadeIn = 0.15 }
 	)
-	-- A death style with an acting of its own: a copy stands in for the body on this screen, collapses as it would and
-	-- then acts the style (Presentation/Fallen); the real body, hidden, plays on underneath for the server's pose lock.
 	local userId = tonumber(cue.data.userId) :: number
-	local style = cue.data.death
-	if type(style) == "string" and Fallen.has(style) then
-		Fallen.stand(
-			userId,
-			character,
-			at,
-			cause,
-			style,
-			if type(cue.data.alias) == "string" then cue.data.alias else nil
-		)
-	end
 	-- what the death holds (the chip in "Choked on a potato chip"), on the body that shows
 	local shown = Fallen.bodyOf(userId) or character
 	local timing = Causes.timing(poseId)

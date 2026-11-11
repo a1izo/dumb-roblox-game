@@ -35,7 +35,6 @@ local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
 local CustomDeaths = require(script.Parent.CustomDeaths)
 local DeathVfx = require(script.Parent.DeathVfx)
-local Fallen = require(script.Parent.Fallen)
 local Stage = require(script.Parent.Stage)
 local FxKit = require(script.Parent.FxKit)
 local Vfx = require(script.Parent.Vfx)
@@ -111,7 +110,7 @@ function WinCinema.get(name: string?): any
 	return if name then WinCuts[name] or DeathCuts[name] else nil
 end
 
--- The scene a shop item's Preview plays: a win cutscene's own (`cut`), or a custom death's or death style's
+-- The scene a shop item's Preview plays: a win cutscene's own (`cut`), or a custom death's
 -- (Shared/Cinema/DeathCuts, by the item's id); nil for an item with none.
 function WinCinema.cutOf(item: any): string?
 	if type(item) ~= "table" then
@@ -123,7 +122,7 @@ function WinCinema.cutOf(item: any): string?
 	if item.kind == "reason" and type(item.scene) == "number" and SceneDeaths.has(item.style) then
 		return "scene:" .. item.style
 	end
-	if (item.kind == "reason" or item.kind == "death") and DeathCuts[item.id] then
+	if item.kind == "reason" and DeathCuts[item.id] then
 		return item.id
 	end
 	return nil
@@ -1155,13 +1154,6 @@ end
 ACTS.deathFx = function(refs, event)
 	if refs.star then
 		CustomDeaths.play(event.reason, refs.star, { hit = event.hit })
-	end
-end
-
--- A death style's acting on the fallen star, with its effect (Presentation/Fallen).
-ACTS.fallen = function(refs, event)
-	if refs.star then
-		Fallen.act(refs.star, event.style, event.from)
 	end
 end
 

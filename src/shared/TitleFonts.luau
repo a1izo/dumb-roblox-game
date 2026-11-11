@@ -26,7 +26,6 @@ local LOOKS: { [string]: Look } = {
 	title_set_ivory = { font = F.Antique, case = "title" },
 	title_set_gilded = { font = F.Bodoni, weight = W.Bold, case = "upper" },
 	title_set_red = { font = F.PermanentMarker, case = "title" },
-	title_set_ninelives = { font = F.Creepster, case = "title" },
 	title_set_desk = { font = F.Kalam, weight = W.Bold, case = "lower" },
 	title_set_successors = { font = F.TitilliumWeb, weight = W.Light, case = "upper" },
 	title_set_main = { font = F.GothamBlack, weight = W.Heavy, case = "upper" },

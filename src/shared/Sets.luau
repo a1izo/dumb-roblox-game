@@ -24,7 +24,7 @@ Sets.LIST = {
 	{
 		id = "ivory",
 		name = "Ivory Tower",
-		pieces = { "specter_moth", "writing_frost", "death_glass" },
+		pieces = { "specter_moth", "writing_frost" },
 		title = "title_set_ivory",
 	},
 	{
@@ -38,12 +38,6 @@ Sets.LIST = {
 		name = "Seeing Red",
 		pieces = { "book_red", "writing_fire" },
 		title = "title_set_red",
-	},
-	{
-		id = "ninelives",
-		name = "Nine Lives",
-		pieces = { "death_ash", "death_strings", "death_crows", "death_stone" },
-		title = "title_set_ninelives",
 	},
 	{
 		id = "desk",

@@ -4,8 +4,8 @@
 -- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
 -- billboards). Styles and emotes play once when picked (again when picked again): an emote on the
 -- copy, all of it (with its props, sound and face, if it has them), a writing style writing a name on a
--- strip of page, a verdict's little scene, a custom death's acting on the copy, a death style's collapse
--- and acting on it (the copy is taken again afterwards). The copy is taken once
+-- strip of page, a verdict's little scene, a custom death's acting on the copy (the copy is taken again
+-- afterwards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
 -- little on its own; drag it to turn it, and it comes back to face you a few seconds later.
@@ -32,7 +32,6 @@ local Motion = require(script.Parent.Parent.Core.Motion)
 local Tokens = require(script.Parent.Parent.Kit.Tokens)
 local EmoteController = require(script.Parent.Parent.Parent.Controllers.EmoteController)
 local PoseController = require(script.Parent.Parent.Parent.Anim.PoseController)
-local Fallen = require(script.Parent.Parent.Parent.Presentation.Fallen)
 local Styles = require(script.Parent.Parent.Parent.Presentation.Styles)
 local Stage = require(script.Parent.Parent.Parent.Presentation.Stage)
 
@@ -549,8 +548,7 @@ local function seatPreview(self: YourLook, item: Cosmetics.Item): () -> ()
 end
 
 -- A death on the copy (2026-11-07): a custom death plays its own acting (its effect needs the world: the scene's
--- Preview has it); a death style plays the heart attack's collapse and then its acting on the fallen copy with its
--- effect (Presentation/Fallen). The copy stops turning while it lies there, the camera stands back and above so the
+-- Preview has it). The copy stops turning while it lies there, the camera stands back and above so the
 -- whole fall is in sight, and the copy is taken again when it is over.
 local function deathPreview(self: YourLook, item: Cosmetics.Item): () -> ()
 	local copy = self.copy
@@ -585,15 +583,6 @@ local function deathPreview(self: YourLook, item: Cosmetics.Item): () -> ()
 		return alive
 	end)
 	local total = timing.length + 1.2
-	if item.kind == "death" then
-		local style = item.style :: string
-		total = timing.length + 0.5 + Causes.fallenLength(style) + 1.2
-		task.delay(timing.length + 0.5, function()
-			if alive and self.copy == copy then
-				Fallen.act(copy, style, clip)
-			end
-		end)
-	end
 	task.delay(total, function()
 		if alive and self.world and self.item == item then
 			self.still = false
@@ -622,7 +611,7 @@ local function preview(self: YourLook, item: Cosmetics.Item)
 	elseif item.kind == "verdict" and type(item.style) == "string" then
 		self.stopPreview =
 			Styles.verdict(item.style, self.viewport, UDim2.fromScale(0.5, 0.62), UDim2.fromScale(0.95, 0.6))
-	elseif (item.kind == "death" or item.kind == "reason") and type(item.style) == "string" and self.copy then
+	elseif item.kind == "reason" and type(item.style) == "string" and self.copy then
 		self.stopPreview = deathPreview(self, item)
 	end
 end
@@ -630,7 +619,7 @@ end
 -- Shows `item` on the copy (nil = just what you wear), and plays it if it is a style or an emote.
 function YourLook.show(self: YourLook, item: Cosmetics.Item?)
 	stopPreview(self)
-	if self.item ~= item and self.item and (self.item.kind == "death" or self.item.kind == "reason") and self.world then
+	if self.item ~= item and self.item and self.item.kind == "reason" and self.world then
 		-- (A death left the copy as it left it, on the floor or in pieces: take it again.)
 		self.item = item
 		self:capture(self.profile)

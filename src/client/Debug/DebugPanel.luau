@@ -687,7 +687,7 @@ builders.World = function()
 end
 
 -- The cutscene gallery: every cutscene the shop's Preview plays (Presentation/WinCinema: the win cutscenes, the custom
--- deaths, the death styles, the grave after "A true patriot"), on this screen alone and anywhere, the lobby too; one,
+-- deaths, the grave after "A true patriot"), on this screen alone and anywhere, the lobby too; one,
 -- the new deaths, or all of them one after another. The panel hides while they play (F2 brings it back to stop them).
 local NEW_SCENES = {
 	"scene:requiem",
@@ -700,8 +700,8 @@ local NEW_SCENES = {
 	"scene:patriot",
 	"scene:selection",
 }
-local GROUPS = { reason = "Custom deaths", death = "Death styles", win = "Win cutscenes" }
-local GROUP_ORDER = { "Custom deaths", "Death styles", "Win cutscenes", "Others" }
+local GROUPS = { reason = "Custom deaths", win = "Win cutscenes" }
+local GROUP_ORDER = { "Custom deaths", "Win cutscenes", "Others" }
 local galleryToken = 0
 
 type Scene = { name: string, label: string, group: string }

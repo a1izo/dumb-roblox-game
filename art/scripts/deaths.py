@@ -1,7 +1,7 @@
 """Every death the game plays (the user's ask of 2026-11-07: "very high quality", all of them redone; the custom deaths'
 first actings of 2026-10-27 and the three plain collapses are replaced): the three everyday causes (Heart attack,
-Disease, Accident: collapse*), the eleven causes bought in the shop (Shared/Cosmetics kind "reason": death*, matched to
-their effects in Presentation/CustomDeaths) and what a fallen body does under its death style (fallen.py). anims.py
+Disease, Accident: collapse*), the causes bought in the shop (Shared/Cosmetics kind "reason": death*, matched to
+their effects in Presentation/CustomDeaths). anims.py
 imports this file near its end, so its helpers are ready.
 
 Every death ends lying still on the floor (face down or on the back, near enough the poses deathkit names): the server
@@ -244,47 +244,6 @@ soft(crash, arms=2.6)
 crash.build()
 
 # =====================================================================================================================
-# A long fall ("They trip on nothing"): a step, the trailing toe catches on nothing, and they go down like a felled tree
-# from their own height, arms flung out ahead; the floor comes up hard (the effect's slam, 0.25 s after it starts).
-
-fall = Motion("deathFall", 2.7, note="A step, the toe catches on nothing, down from full height like a felled tree, "
-              "slammed flat.", floor=True)
-fall.key(0.0, **REST)
-body_key(fall, 0.2, "sine", -6, hips=(-0.02, -0.24), drop=0.06, neck=(-4, 0, 0), rShoulder=J((16, 0, 6)),
-         lShoulder=J((-14, 0, -6)))
-body_key(fall, 0.36, "smooth", -8, hips=(-0.05, -0.44), drop=0.04, neck=(-2, 0, 0), rShoulder=J((10, 0, 6)),
-         lShoulder=J((-10, 0, -6)))
-stand(fall, 0.0, 0.42, Feet(steps=[(0.06, 0.3, -1, 0.6)]), ramp=0.0)
-# the right toe catches as it swings through: the body goes on without it, the arms flung out ahead, the head up
-TRIP = 0.42
-# down like a tree from its own height, pivoting on the left foot (a rod five studs long)
-keys, HIT_FALL = rod_fall(TRIP, 14.0, spin0=1.1, length=5.0, give=0.14)
-PIVOT = (-0.55, 0.0, -1.1)  # the left sole's front edge, where it stands
-last = None
-for t, lean in keys:
-    u = clamp01((lean - 14.0) / 74.0)
-    arms_out = 60 + 120 * u ** 0.8
-    joints = dict(root=(-lean, 0, 2 - 2 * u), neck=(14 + 20 * u if t < HIT_FALL else 30, 0, 4 * u),
-                  rShoulder=J((arms_out, 0, 26 - 10 * u)), lShoulder=J((arms_out + 6 * (1 - u), 0, -24 + 10 * u)),
-                  rHip=J((-24 - 12 * math.sin(math.pi * u), 0, 4)), lHip=J((6 * (1 - u), 0, -2)))
-    off = body_on(joints, "Left Leg", (0, -1, -0.5), PIVOT)
-    fall.key(t, "snap" if t == TRIP else "linear", offset=off, **joints)
-    last = (joints, off)
-    if t > HIT_FALL + 0.15:
-        break
-FALL_HIPS = hips_of(*last)
-prone_key(fall, HIT_FALL + 0.2, "out", neck=(28, 0, 6), rShoulder=J((176, 0, 18)), lShoulder=J((178, 0, -18)),
-          hips=FALL_HIPS, legs=dict(rHip=J((-8, 0, 6)), lHip=J((-2, 0, -4))))
-prone_key(fall, HIT_FALL + 0.4, "in", neck=(10, 0, 12), rShoulder=AHEAD_R, lShoulder=AHEAD_L, hips=FALL_HIPS)
-# a hand closes on the floor and opens; the head turns aside; still
-prone_key(fall, 1.95, "sine", neck=(12, 0, 18), rShoulder=J((172, 0, 14), (0, 0.1, 0)), lShoulder=AHEAD_L,
-          hips=FALL_HIPS)
-prone_key(fall, 2.7, "sine", neck=(12, 0, 20), rShoulder=AHEAD_R, lShoulder=AHEAD_L, hips=FALL_HIPS)
-soft(fall, head=3.5, arms=3.0, arm_damp=0.5)
-fall.build()
-record(fall, HIT_FALL, fx=HIT_FALL - 0.25)
-
-# =====================================================================================================================
 # A broken heart: a hand rises to the heart and the other over it; it beats once (a jolt) and again (an arch, the
 # head thrown back: the effect's two beats, 0 and 0.32 s in); it cracks (0.7 s in) and they go slack, swooning back
 # onto the floor, the right hand reaching out to someone a moment.
@@ -358,87 +317,6 @@ fr.build()
 record(fr, HIT_FROST, fx=0.9, still=HIT_FROST + 0.2)
 
 # =====================================================================================================================
-# The chandelier: a creak above; the head snaps up; frozen a beat looking at it; the arms fly up over the head, the
-# knees bend, too late: crushed flat under it (the effect's crystal lands 0.5 s after it starts), limbs flung out; a
-# twitch; pinned.
-
-ch = Motion("deathChandelier", 2.8, note="A look up at a creak, the arms up too late, crushed flat, limbs flung out.",
-            floor=True)
-ch.key(0.0, **REST)
-strike(ch, 0.2, body(0, neck=J((-4, 0, 0))), body(5, hips=(0, 0.04), drop=-0.01, neck=J((42, 0, 0))),
-       antic=0.08, travel=0.08, over=0.12, settle=0.2)
-body_key(ch, 0.5, "smooth", 5, hips=(0, 0.04), drop=-0.01, neck=(44, 0, 2), rShoulder=J((10, 0, 8)),
-         lShoulder=J((12, 0, -8)))
-SHIELD_R, SHIELD_L = J((152, 0, 30), (0, 0.06, 0)), J((150, 0, -32), (0, 0.06, 0))
-strike(ch, 0.72, dict(rShoulder=J((20, 0, 10)), lShoulder=J((22, 0, -10))),
-       body(-12, hips=(0, 0.14), drop=0.28, rShoulder=SHIELD_R, lShoulder=SHIELD_L, neck=J((30, 0, 0))),
-       antic=0.1, travel=0.1, over=0.1, settle=0.12)
-HIT_CH = 0.95
-CH_HIPS = (0.0, 0.14)
-body_key(ch, HIT_CH - 0.04, "smooth", -14, hips=CH_HIPS, drop=0.34, neck=(30, 0, 0), rShoulder=SHIELD_R,
-         lShoulder=SHIELD_L)
-stand(ch, 0.0, HIT_CH - 0.03, Feet(), ramp=0.0)
-# crushed: driven down flat in a few frames, the arms and legs flung out
-floor_key(ch, HIT_CH + 0.03, "snap", -62, 0, 0, CH_HIPS, dict(rHip=J((30, 0, 16)), lHip=J((26, 0, -16))),
-          dict(neck=(10, 0, 0), rShoulder=J((150, 0, 70)), lShoulder=J((150, 0, -70))))
-PINNED_LEGS = dict(rHip=J((-3, 0, 15)), lHip=J((-2, 0, -15)))
-PIN_R, PIN_L = J((96, 0, 82)), J((96, 0, -84))
-prone_key(ch, HIT_CH + 0.1, "snap", neck=(6, 0, 4), rShoulder=J((92, 0, 86)), lShoulder=J((92, 0, -86)), hips=CH_HIPS,
-          legs=dict(rHip=J((-2, 0, 16)), lHip=J((-2, 0, -16))))
-prone_key(ch, HIT_CH + 0.2, "out", neck=(10, 0, 8), rShoulder=PIN_R, lShoulder=PIN_L, hips=CH_HIPS,
-          legs=dict(rHip=J((-4, 0, 14)), lHip=J((-2, 0, -15))))
-# a twitch of the leg, then of a hand; pinned
-prone_key(ch, 1.25, "snap", neck=(10, 0, 8), rShoulder=PIN_R, lShoulder=PIN_L, hips=CH_HIPS,
-          legs=dict(rHip=J((-14, 0, 16), (0, 0.15, 0)), lHip=J((-2, 0, -15))))
-prone_key(ch, 1.45, "sine", neck=(10, 0, 8), rShoulder=PIN_R, lShoulder=PIN_L, hips=CH_HIPS, legs=PINNED_LEGS)
-prone_key(ch, 1.62, "snap", neck=(10, 0, 8), rShoulder=PIN_R, lShoulder=J((106, 0, -80)), hips=CH_HIPS,
-          legs=PINNED_LEGS)
-prone_key(ch, 1.9, "sine", neck=(10, 0, 9), rShoulder=PIN_R, lShoulder=PIN_L, hips=CH_HIPS, legs=PINNED_LEGS)
-prone_key(ch, 2.8, "smooth", neck=(10, 0, 9), rShoulder=PIN_R, lShoulder=PIN_L, hips=CH_HIPS, legs=PINNED_LEGS)
-soft(ch, head=4.0, arms=4.0, arm_damp=0.5)
-ch.build()
-record(ch, HIT_CH, fx=HIT_CH - 0.5)
-
-# =====================================================================================================================
-# Drowned on dry land: a gasp and both hands at the throat, clawing, twisting, a step back; then it is as if they were
-# under water: everything slows, the arms reach up and pull for a surface that isn't there, up on the toes, the head
-# back; and a slow sink, sat down and laid back as if the water held them, the arms floating down last.
-
-dr = Motion("deathDrown", 3.7, note="Clawing at the throat, then as if under water: reaching up for a surface, a slow "
-            "sink onto the back.", floor=True)
-dr.key(0.0, **REST)
-strike(dr, 0.18, body(-3), body(8, hips=(0, 0.06), drop=-0.04, neck=J((18, 0, 0)), rShoulder=THROAT_R,
-                                lShoulder=THROAT_L), antic=0.06, travel=0.08, over=0.15, settle=0.15)
-for k, t in enumerate((0.42, 0.62, 0.82, 1.0)):
-    s = 1 if k % 2 else -1
-    body_key(dr, t, "sine", 6 - k, 12 * s, 4 * s, hips=(0.03 * s, 0.06 + 0.1 * min(1, k / 2)), drop=0.04 + 0.02 * k,
-             neck=(14, -10 * s, 4 * s), rShoulder=mix(THROAT_R, J((112, 0, -26), (-0.25, 0.2, -0.2)), 0.2 * (k % 2)),
-             lShoulder=mix(THROAT_L, J((110, 0, 26), (0.25, 0.2, -0.2)), 0.2 * ((k + 1) % 2)))
-# under water: slow; the arms let go of the throat and reach up, pulling down in turn; up on the toes
-body_key(dr, 1.3, "sine", 6, hips=(0, 0.22), drop=-0.06, neck=(30, 0, 0), rShoulder=J((168, 0, 18)),
-         lShoulder=J((120, 0, -30)))
-body_key(dr, 1.6, "sine", 8, 4, 2, hips=(0, 0.2), drop=-0.08, neck=(32, 4, 0), rShoulder=J((120, 0, 30)),
-         lShoulder=J((170, 0, -16)))
-body_key(dr, 1.9, "sine", 6, -2, -1, hips=(0, 0.2), drop=-0.04, neck=(30, -2, 0), rShoulder=J((166, 0, 20)),
-         lShoulder=J((116, 0, -32)))
-stand(dr, 0.0, 2.0, Feet(steps=[(0.5, 0.74, 1, -0.42)]))
-# the slow sink: the knees fold, they settle onto the floor, the arms floating up before them
-DR_HIPS = (0.0, 0.5)
-floor_key(dr, 2.3, "sine", 4, 0, 0, (0.0, 0.3), crouch_legs(50, 0.5),
-          dict(neck=(18, 0, 0), rShoulder=J((120, 0, 24)), lShoulder=J((110, 0, -26))))
-sit_key(dr, 2.65, "sine", lean=16, neck=(8, 0, 0), hips=DR_HIPS, rShoulder=J((104, 0, 26)), lShoulder=J((100, 0, -28)))
-# laid back slowly, as if the water held them (no gravity's snap)
-sit_key(dr, 2.9, "sine", lean=46, neck=(-6, 0, 0), hips=DR_HIPS, rShoulder=J((100, 0, 30)), lShoulder=J((96, 0, -30)))
-HIT_DR = 3.12
-supine_key(dr, HIT_DR, "sine", neck=(10, 0, 0), hips=DR_HIPS, rShoulder=J((96, 0, 34)), lShoulder=J((92, 0, -34)))
-# the arms drift down to the floor
-supine_key(dr, 3.5, "sine", neck=(14, 8, -4), hips=DR_HIPS, rShoulder=J((30, 0, 40)), lShoulder=J((26, 0, -38)))
-supine_key(dr, 3.7, "smooth", neck=(14, 10, -4), hips=DR_HIPS, rShoulder=BACK_R, lShoulder=BACK_L)
-soft(dr, head=1.6, arms=1.2, head_damp=0.8, arm_damp=0.75)
-dr.build()
-record(dr, HIT_DR, fx=0.9)
-
-# =====================================================================================================================
 # Struck by lightning: a prickle, the head tilting up; the bolt: rigid in two frames, arched back, the arms flung out
 # stiff, up on the toes, shaking with the current; it stops: limp at once, the knees go, sat down and over onto the
 # back; one last twitch.
@@ -477,87 +355,6 @@ supine_key(lt, 2.8, "smooth", neck=(14, 6, 10), hips=LT_HIPS, rShoulder=OUT_R, l
 soft(lt, head=3.5, arms=3.0, arm_damp=0.5)
 lt.build()
 record(lt, hit, fx=BOLT)
-
-# =====================================================================================================================
-# A thousand paper cuts: a flinch at the first, the arms up beside the head; then cut from every side, each a jerk away
-# from it, staggering round on real steps; the arms give, the knees go, and over onto the face.
-
-pg = Motion("deathPages", 3.1, note="Arms up against a storm of pages, flinching from every side, staggering round, "
-            "down on the face.", floor=True)
-GUARD_R = reach(1, (0.62, 1.7, -0.5), direction=(-0.2, 0.95, -0.3))
-GUARD_L = reach(-1, (-0.62, 1.66, -0.52), direction=(0.2, 0.95, -0.3))
-pg.key(0.0, **REST)
-strike(pg, 0.3, body(0), body(-6, 14, 6, hips=(-0.06, 0.0), drop=0.04, neck=J((-6, 24, 4)),
-                              rShoulder=J((70, 0, 20))), antic=0.05, travel=0.05, over=0.2, settle=0.12)
-body_key(pg, 0.52, "out", -10, 10, 0, hips=(0, 0.04), drop=0.12, neck=(-8, 6, 0), rShoulder=GUARD_R, lShoulder=GUARD_L)
-# cut after cut, each from a side: the body jerks away from it (two frames) and turns further round each time,
-# the feet stepping round under it
-turn = 10.0
-cuts = [(0.66, 1, 22, (0.0, 0.12)), (0.9, -1, 34, (0.05, 0.26)), (1.1, 1, 30, (0.0, 0.42)), (1.32, -1, 34, (0.1, 0.6)),
-        (1.52, 1, 30, (0.12, 0.68))]
-for k, (t, side, more, hips) in enumerate(cuts):
-    body_key(pg, t - 0.05, "smooth", -10, turn + more * 0.4, 0, hips=hips, drop=0.14, neck=(-8, 0, 0),
-             rShoulder=GUARD_R, lShoulder=GUARD_L)
-    turn += more
-    body_key(pg, t, "snap", -14 + 6 * (k % 2), turn, -8 * side, hips=(hips[0] + 0.05 * side, hips[1]), drop=0.2,
-             neck=(-14, -10 * side, -6 * side), rShoulder=GUARD_R, lShoulder=GUARD_L)
-TURN = turn
-pg_feet = Feet(steps=[(0.62, 0.84, -1, (-0.35, 0.3, 50)), (0.86, 1.06, 1, (0.6, 0.35, 92)),
-                      (1.08, 1.28, -1, (-0.2, 0.85, 128)), (1.3, 1.5, 1, (0.55, 0.95, 160))])
-pg.key(0.0, rHip=J((0, 0, 0)), lHip=J((0, 0, 0)))
-PG_HIPS = (0.14, 0.72)
-body_key(pg, 1.72, "sine", -14, TURN, -4, hips=PG_HIPS, drop=0.3, neck=(-12, 0, -4), rShoulder=mix(GUARD_R, HANG_R, 0.6),
-         lShoulder=mix(GUARD_L, HANG_L, 0.7))
-stand(pg, 0.0, 1.85, pg_feet)
-# the arms give, the knees go
-floor_key(pg, 2.0, "in", -34, TURN, -4, PG_HIPS, dict(rHip=J((34, 0, 2)), lHip=J((34, 0, -2))),
-          dict(neck=(-16, 0, -2), rShoulder=J((30, 0, 6)), lShoulder=J((26, 0, -6))))
-kneel_key(pg, 2.16, "in", lean=-40, turn=TURN, head=-20, hips=PG_HIPS, rShoulder=J((60, 0, 6)), lShoulder=J((50, 0, -6)))
-hit = topple_forward(pg, 2.16, 40.0, PG_HIPS, spin0=1.7, arm="r", hold_l=J((50, 0, -6)), head0=-20.0, turn=TURN,
-                     rest_neck=(12, 0, -16))
-prone_key(pg, 3.1, "smooth", turn=TURN, neck=(12, 0, -18), hips=PG_HIPS, rShoulder=J((180, 0, 8)), lShoulder=SIDE_L)
-soft(pg, head=3.6, arms=3.2, arm_damp=0.5)
-pg.build()
-record(pg, hit, fx=0.3)
-
-# =====================================================================================================================
-# Burned from within: doubled over at the gut; the heat climbs and throws them upright, the head back in a silent
-# scream, hands tearing at the chest; staggering, beating at themselves; the knees go, hands to the face; over.
-
-bn = Motion("deathBurn", 3.1, note="Doubled over at the gut, thrown upright screaming, beating at themselves, down on "
-            "the face.", floor=True)
-bn.key(0.0, **REST)
-strike(bn, 0.2, body(3), body(-32, hips=(0, 0.16), drop=0.12, neck=J((-6, 0, 0)), rShoulder=BELLY_R,
-                              lShoulder=BELLY_L), antic=0.06, travel=0.08, over=0.15, settle=0.2)
-FX_BURN = 0.45
-TEAR_R = reach(1, (0.3, 0.75, -0.72), direction=(-0.4, 0.55, -0.72))
-TEAR_L = reach(-1, (-0.3, 0.7, -0.72), direction=(0.4, 0.55, -0.72))
-strike(bn, 0.72, body(-36, hips=(0, 0.16), drop=0.14, neck=J((-12, 0, 0))),
-       body(12, hips=(0, 0.06), drop=0.0, neck=J((36, 0, 0)), rShoulder=TEAR_R, lShoulder=TEAR_L),
-       antic=0.12, travel=0.12, over=0.12, settle=0.2)
-body_key(bn, 1.0, "sine", 8, 8, 4, hips=(0, 0.1), drop=0.04, neck=(30, 10, 4), rShoulder=J((70, 0, 46)),
-         lShoulder=TEAR_L)
-body_key(bn, 1.2, "snap", -4, -10, -4, hips=(0.05, 0.22), drop=0.08, neck=(14, -8, -4),
-         rShoulder=reach(1, (-0.9, 0.3, -0.7), direction=(-0.9, -0.1, -0.4)), lShoulder=J((60, 0, -50)))
-body_key(bn, 1.4, "snap", -8, 8, 4, hips=(-0.04, 0.04), drop=0.1, neck=(10, 8, 4), rShoulder=J((50, 0, 40)),
-         lShoulder=reach(-1, (0.3, 0.45, -0.75), direction=(0.8, 0.0, -0.6)))
-BN_HIPS = (0.0, -0.02)
-body_key(bn, 1.58, "sine", -14, 4, 2, hips=BN_HIPS, drop=0.2, neck=(4, 0, 2), rShoulder=J((40, 0, 20)),
-         lShoulder=J((44, 0, -18)))
-stand(bn, 0.0, 1.66, Feet(steps=[(0.98, 1.16, -1, -0.38), (1.22, 1.42, 1, 0.4)]))
-FACE_R = reach(1, (0.2, 1.42, -0.86), direction=(-0.3, 0.8, -0.5))
-FACE_L = reach(-1, (-0.2, 1.38, -0.86), direction=(0.3, 0.8, -0.5))
-floor_key(bn, 1.8, "in", -30, 2, 2, BN_HIPS, dict(rHip=J((36, 0, 2)), lHip=J((36, 0, -2))),
-          dict(neck=(-6, 0, 0), rShoulder=FACE_R, lShoulder=FACE_L))
-kneel_key(bn, 1.98, "in", lean=-38, head=-12, hips=BN_HIPS, rShoulder=FACE_R, lShoulder=FACE_L)
-kneel_key(bn, 2.12, "sine", lean=-42, head=-16, hips=BN_HIPS, rShoulder=FACE_R, lShoulder=FACE_L)
-hit = topple_forward(bn, 2.12, 42.0, BN_HIPS, spin0=1.5, arm="l", hold_r=FACE_R, head0=-16.0)
-prone_key(bn, 2.75, "sine", neck=(12, 0, 14), hips=BN_HIPS, rShoulder=SIDE_R, lShoulder=J((180, 0, -8)))
-prone_key(bn, 2.85, "snap", neck=(12, 0, 14), hips=BN_HIPS, rShoulder=J((14, 0, 12)), lShoulder=J((180, 0, -8)))
-prone_key(bn, 3.1, "sine", neck=(12, 0, 14), hips=BN_HIPS, rShoulder=SIDE_R, lShoulder=J((180, 0, -8)))
-soft(bn, head=3.4, arms=3.0, arm_damp=0.55)
-bn.build()
-record(bn, hit, fx=FX_BURN)
 
 # =====================================================================================================================
 # Choked on a potato chip (Light's chip: "and EAT IT"): the hand sweeps up from the side with a flourish to the mouth;
@@ -681,24 +478,21 @@ record(dk, HIT_DK, fx=0.5)
 
 
 # =====================================================================================================================
-# Shared/Anim/DeathTiming.luau, from TIMING and fallen.py's MOMENTS (fallen.py writes it once both are made).
+# Shared/Anim/DeathTiming.luau, from TIMING (anims.py writes it once every death is made).
 
 def _num(v):
     return f"{v:g}"
 
 
-def write_timing(fallen=None):
+def write_timing():
     here = os.path.dirname(os.path.abspath(__file__))
     path = os.path.normpath(os.path.join(here, "..", "..", "src", "shared", "Anim", "DeathTiming.luau"))
     lines = [
         "--!strict",
-        "-- When things happen in each death, seconds from the start of its clip. Written by art/scripts/deaths.py and",
-        "-- fallen.py (do not edit by hand).",
+        "-- When things happen in each death, seconds from the start of its clip. Written by art/scripts/deaths.py",
+        "-- (do not edit by hand).",
         "--   deaths  each collapse and custom death: when the body first hits the floor (`hit`), when its custom effect",
         "--           starts (`fx`: Presentation/CustomDeaths), when it lies still (`still`), the clip's `length`",
-        "--   fallen  each fallen body's death-style clip (fallen<Style><Down|Up>): its `length` and its moments, which",
-        "--           Presentation/Styles.death times its effect by (strings: catch, lift, snap, heap; crows: lift, burst;",
-        "--           stone: climb, set, crumble; glass: glass, look, shatter; ash: effort, give, grey, crumble)",
         "",
         "export type Timing = { hit: number, fx: number?, still: number, length: number }",
         "",
@@ -710,12 +504,6 @@ def write_timing(fallen=None):
         fx = "" if t["fx"] is None else f", fx = {_num(t['fx'])}"
         lines.append(f"		{name} = {{ hit = {_num(t['hit'])}{fx}, still = {_num(t['still'])}, length = {_num(t['length'])} }},")
     lines.append("	} :: { [string]: Timing },")
-    lines.append("	fallen = {")
-    for name in sorted(fallen or {}):
-        moments = fallen[name]
-        parts = ", ".join(f"{k} = {_num(v)}" for k, v in sorted(moments.items()))
-        lines.append(f"		{name} = {{ {parts} }},")
-    lines.append("	} :: { [string]: { [string]: number } },")
     lines.append("}")
     text = "\n".join(lines) + "\n"
     old = open(path, encoding="utf-8").read() if os.path.exists(path) else ""

@@ -6,8 +6,7 @@
 -- back to the body, from above, while the heart monitor flatlines and the cause is written across the screen. The
 -- victim sees their own screen drain of colour instead. The name goes into the book in the writer's writing style on
 -- the writer's screen only (the server sends it there alone); a custom death's effect (Presentation/CustomDeaths) plays
--- on the body as it goes, timed to its acting; the victim's death style (Presentation/Fallen: ash, cut strings, crows,
--- stone, glass) takes the body once it lies still, on every screen, and the last shot stays on it until it is done.
+-- on the body as it goes, timed to its acting.
 -- A scene death (Presentation/SceneDeaths: requiem, Blackwall, the god, Iron Man, Sam, Walrider, sans, the patriot's
 -- grave, dead by selection) plays its own full cutscene instead, then shows the body.
 
@@ -32,7 +31,6 @@ local DeathFx = require(script.Parent.Parent.DeathFx)
 local Fallen = require(script.Parent.Parent.Fallen)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local StageLight = require(script.Parent.Parent.StageLight)
-local Styles = require(script.Parent.Parent.Styles)
 local SceneDeaths = require(script.Parent.Parent.SceneDeaths)
 
 local C = Kit.color
@@ -158,10 +156,7 @@ return function(cue)
 	end
 	local clip = Causes.clipFor(tostring(data.cause or ""))
 	local timing = Causes.timing(clip)
-	local style = if type(data.death) == "string" then data.death else nil
-	local acted = style ~= nil and Fallen.has(style)
-	local styleAt = timing.length + ManualTiming.STYLE_AFTER
-	local total = if acted then styleAt + Causes.fallenLength(style) + 0.4 else timing.length + 1.6
+	local total = timing.length + 1.6
 	Sfx.play("heartbeat")
 	task.delay(0.8, Sfx.play, "heartbeat")
 	task.delay(timing.hit + 0.35, Sfx.play, "flatline")
@@ -182,10 +177,6 @@ return function(cue)
 			DeathFx.burst(root.Position, DeathFx.DARK, 40)
 			DeathFx.chalk(root.Position, 7, DeathFx.CHALK, 14)
 		end
-		-- (a death style with no acting of its own plays on the body as it lies)
-		if body and style and not acted then
-			task.delay(timing.length - timing.hit + 0.3, Styles.death, style, body)
-		end
 	end)
 
 	if data.userId == LocalPlayer.UserId then
@@ -194,8 +185,7 @@ return function(cue)
 		task.wait(math.max(5, total))
 		untint()
 	else
-		-- (the copy that stands in for a body with a death style is made on this same beat: ActingController)
-		local victim = if acted then Fallen.waitFor(data.userId, 0.4) else Fallen.bodyOf(data.userId)
+		local victim = Fallen.bodyOf(data.userId)
 		local mark = if victim then victim:FindFirstChild("HumanoidRootPart") else nil
 		if victim and mark and mark:IsA("BasePart") then
 			local token = CameraDirector.take(total + 1)
@@ -239,7 +229,7 @@ return function(cue)
 				)
 				task.wait(WITNESS)
 			end
-			-- Back on the body, from above, the camera sinking slowly towards it (through its death style).
+			-- Back on the body, from above, the camera sinking slowly towards it.
 			local left = math.max(0.8, total - (timing.hit + 0.5 + WITNESS * 2))
 			local over = frameAt(lying, facing, 5.5, 5.2, 35)
 			local nearer = frameAt(lying, facing, 4.4, 3.6, 30)

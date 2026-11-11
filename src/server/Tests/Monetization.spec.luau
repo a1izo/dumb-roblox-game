@@ -253,7 +253,7 @@ return function(t)
 		it("deals every kind in exactly one suit", function()
 			-- (trails and ties left on 2026-10-21; win cutscenes, seats and chairs came; custom deaths on 2026-10-25;
 			-- hats left with the Wardrobe on 2026-10-27)
-			expect(#Cosmetics.KINDS).to.equal(11)
+			expect(#Cosmetics.KINDS).to.equal(10)
 			for _, kind in ipairs(Cosmetics.KINDS) do
 				local suits = 0
 				for _, suit in ipairs(Cosmetics.SUITS) do

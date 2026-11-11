@@ -58,7 +58,6 @@ local CHIP_ICONS = { "real", "check", "lock" }
 local STILL_ICON = {
 	writing = "quill",
 	verdict = "zero",
-	death = "skull",
 	emote = "palm",
 	specter = "ghost",
 }
@@ -282,157 +281,6 @@ local function formPicture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
 	return view
 end
 
--- The moment of each death style's own acting (Presentation/Fallen) its card catches the body in: the last try to rise
--- (ash), hanging on its strings with the arms jerked up (strings), the arms thrown open as it bursts (crows), the reach
--- set in stone (stone), risen on its knees as glass (glass).
-local DEATH_POSE: { [string]: { clip: string, at: number } } = {
-	ash = { clip = "fallenAshDown", at = 0.85 },
-	strings = { clip = "fallenStringsDown", at = 2.06 },
-	crows = { clip = "fallenCrowsDown", at = 1.72 },
-	stone = { clip = "fallenStoneUp", at = 1.4 },
-	glass = { clip = "fallenGlassDown", at = 1.5 },
-}
-
--- How a body looks half way through each death style: its colour, material and transparency.
-local DEATH_LOOK: { [string]: { color: Color3, material: Enum.Material, transparency: number } } = {
-	ash = { color = Color3.fromRGB(78, 74, 70), material = Enum.Material.Slate, transparency = 0 },
-	crows = { color = Color3.fromRGB(20, 20, 24), material = Enum.Material.SmoothPlastic, transparency = 0.15 },
-	stone = { color = Color3.fromRGB(128, 126, 120), material = Enum.Material.Slate, transparency = 0 },
-	glass = { color = Color3.fromRGB(196, 220, 232), material = Enum.Material.Glass, transparency = 0.35 },
-}
-
-local function deathPicture(item: Cosmetics.Item, parent: GuiObject): GuiObject?
-	local style = item.style :: string
-	local pose = DEATH_POSE[style]
-	local figure = if pose then PoseFigure.build(pose.clip, pose.at) else PoseFigure.build("slump")
-	if not figure then
-		return nil
-	end
-	local view, holder = styleView(parent, Color3.fromRGB(110, 110, 118), Color3.fromRGB(255, 248, 236))
-	local look = DEATH_LOOK[style]
-	if look then
-		for _, piece in ipairs(figure:GetDescendants()) do
-			if piece:IsA("BasePart") then
-				piece.Color = look.color
-				piece.Material = look.material
-				piece.Transparency = look.transparency
-			end
-		end
-	end
-	figure.Parent = holder
-	local torso, head = bodyOf(figure, "Torso"), bodyOf(figure, "Head")
-	local string_ = Color3.fromRGB(236, 230, 214)
-	if style == "ash" and head then
-		-- (already going: the head and an arm crumbled away)
-		head.Transparency = 1
-		local arm = bodyOf(figure, "Left Arm")
-		if arm then
-			arm.Transparency = 1
-		end
-	elseif style == "strings" and head then
-		-- A puppet dropped as its strings went: two still holding, the rest snapped and hanging.
-		local top = head.Position.Y + 5
-		for k, name in ipairs({ "Head", "Left Arm", "Right Arm", "Left Leg", "Right Leg" }) do
-			local limb = bodyOf(figure, name)
-			if limb then
-				local low = limb.Position
-				if k > 2 then
-					thread(holder, Vector3.new(low.X, top - 1.6, low.Z), Vector3.new(low.X, top - 3, low.Z), string_)
-					thread(holder, low, low + Vector3.new(0.2, 0.9, 0), string_)
-				else
-					thread(holder, Vector3.new(low.X, top, low.Z), low, string_)
-				end
-			end
-		end
-	end
-	frameView(view, holder, 152)
-	if not torso then
-		return view
-	end
-	local chest = torso.Position + torso.CFrame.LookVector * 0.6
-	local rng = Random.new(#style)
-	if style == "ash" then
-		for k = 1, 4 do
-			mark(view, chest + Vector3.new(rng:NextNumber(-1, 1), 0.8 + k * 0.6, 0), {
-				tex = "VfxDust",
-				color = Color3.fromRGB(120, 116, 112),
-				size = { 0.3, 0.3 },
-				alpha = { 0.45, 0.45 },
-				rot = { k * 50, 0 },
-				z = 2,
-			})
-		end
-		for _ = 1, 6 do
-			mark(view, chest + Vector3.new(rng:NextNumber(-1.2, 1.2), rng:NextNumber(0.5, 3), -0.4), {
-				tex = "VfxEmber",
-				color = Color3.fromRGB(255, 150, 70),
-				size = { 0.03, 0 },
-				alpha = { 0.1, 1 },
-				z = 3,
-			})
-		end
-	elseif style == "crows" then
-		for _ = 1, 10 do
-			mark(view, chest + Vector3.new(rng:NextNumber(-2, 2), rng:NextNumber(-1.5, 2.5), -0.8), {
-				tex = "VfxFeather",
-				color = Color3.fromRGB(26, 26, 32),
-				size = { rng:NextNumber(0.06, 0.1), 0 },
-				squash = 0.5,
-				alpha = { 0, 1 },
-				rot = { rng:NextNumber(0, 360), 0 },
-				z = 3,
-			})
-		end
-	elseif style == "stone" then
-		mark(view, chest, {
-			tex = "VfxCrack",
-			color = Color3.fromRGB(30, 30, 32),
-			size = { 0.45, 0.45 },
-			alpha = { 0.1, 0.1 },
-			rot = { 15, 0 },
-			z = 2,
-		})
-		for _ = 1, 5 do
-			mark(view, torso.Position + Vector3.new(rng:NextNumber(-1, 1), -2.6, -0.4), {
-				tex = "VfxChunk",
-				color = Color3.fromRGB(110, 108, 102),
-				size = { 0.05, 0 },
-				alpha = { 0, 1 },
-				rot = { rng:NextNumber(0, 360), 0 },
-				z = 3,
-			})
-		end
-	elseif style == "glass" then
-		mark(view, chest, {
-			tex = "VfxCrack",
-			color = Color3.fromRGB(255, 255, 255),
-			size = { 0.5, 0.5 },
-			alpha = { 0.05, 0.05 },
-			rot = { -10, 0 },
-			z = 2,
-		})
-		mark(view, chest, {
-			tex = "VfxFlare",
-			color = Color3.fromRGB(230, 244, 255),
-			size = { 0.3, 0.3 },
-			alpha = { 0.2, 0.2 },
-			z = 3,
-		})
-		for k = 1, 7 do
-			local angle = k / 7 * math.pi * 2
-			mark(view, chest + Vector3.new(math.cos(angle) * 1.8, math.sin(angle) * 1.6, -0.6), {
-				tex = "VfxChunk",
-				color = Color3.fromRGB(214, 232, 242),
-				size = { 0.06, 0 },
-				alpha = { 0.1, 1 },
-				rot = { rng:NextNumber(0, 360), 0 },
-				z = 3,
-			})
-		end
-	end
-	return view
-end
-
 -- An emote's mannequin, caught in the move (a stroll in its walk, holding the stroll's props). Posed once
 -- per emote; each card gets a copy (the shop deals its cards again whenever the profile changes).
 local figures: { [string]: Model | false } = {}
@@ -471,11 +319,6 @@ local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Mo
 		end
 	elseif kind == "specter" and type(item.form) == "string" then
 		local view = formPicture(item, parent)
-		if view then
-			return view, nil
-		end
-	elseif kind == "death" and type(style) == "string" then
-		local view = deathPicture(item, parent)
 		if view then
 			return view, nil
 		end
@@ -933,7 +776,6 @@ local KIND_WORD: { [string]: string } = {
 	title = "Title",
 	writing = "Writing",
 	verdict = "Verdict",
-	death = "Death",
 	emote = "Emote",
 	win = "Cutscene",
 	seat = "Seat",

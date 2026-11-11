@@ -1,6 +1,5 @@
 """The shop's death scenes (the user's ask of 2026-11-07: "cutscenes for whatever don't have any in the shop"): a
-Preview for every custom death (Shared/Cosmetics kind "reason") and every death style (kind "death"), starring the
-player, played by Presentation/WinCinema like the win cutscenes' previews. Written to src/shared/Cinema/DeathCuts.luau
+Preview for every custom death (Shared/Cosmetics kind "reason"), starring the player, played by Presentation/WinCinema like the win cutscenes' previews. Written to src/shared/Cinema/DeathCuts.luau
 (the WinCuts format, plus the death's own events), so run it after the death clips change:
 
     blender -b --factory-startup --python art/scripts/cinema/deathcuts.py
@@ -8,10 +7,9 @@ player, played by Presentation/WinCinema like the win cutscenes' previews. Writt
 Each scene: Death's Manual first (the player's name and the cause written in it, as a death in a case opens), then the
 player in a small dark set of their death's own (a ballroom under a chandelier, a drained pool, an empty archive, a
 puppet theatre...), the death acted (art/scripts/deaths.py) with its effect, the heart monitor's beats and flatline, the
-cause of death across the screen; a death style's scene has the heart attack and then the style's acting on the
-fallen body (fallen.py). Every camera is aimed at where the body is at that moment, worked out from the clips
-(the style's acting laid over the body where it lies, as Presentation/Fallen does), and checked against the frame the
-letterbox leaves (`check`).
+cause of death across the screen. Every camera is aimed at where the body is at that moment, worked out from the clips,
+and checked against the frame the letterbox leaves (`check`). (The death styles' scenes went with the styles,
+2026-11-10.)
 
 Space as in WinCuts: the star's floor frame, x to its right, y up, z behind it (it faces -z); studs."""
 
@@ -27,7 +25,6 @@ import numpy as np  # noqa: E402
 import posekit  # noqa: E402
 from animlib import J  # noqa: E402
 import deaths  # noqa: E402,F401  (defines the death clips)
-import fallen  # noqa: E402,F401  (defines the style clips)
 from motion import MOTIONS  # noqa: E402
 
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "..", "src", "shared", "Cinema", "DeathCuts.luau"))
@@ -45,24 +42,12 @@ def _pose(name, t):
 
 
 class Timeline:
-    """Where the star's parts are at a scene's time: its death clip from `at`, and (for a style) the style's clip from
-    `style_at`, laid over the body where it lies, as Presentation/Fallen does."""
+    """Where the star's parts are at a scene's time: its death clip from `at`."""
 
-    def __init__(self, clip, at, style=None, style_at=None):
-        self.clip, self.at, self.style_at = clip, at, style_at
-        self.style_clip = None
-        self.base = np.identity(4)
-        if style:
-            end = _pose(clip, MOTIONS[clip].length)
-            down = (end["Torso"][:3, :3] @ np.array([0, 0, -1.0]))[1] < 0
-            self.style_clip = f"fallen{style.capitalize()}{'Down' if down else 'Up'}"
-            first = _pose(self.style_clip, 0.0)
-            self.base = end["Torso"] @ np.linalg.inv(first["Torso"])
+    def __init__(self, clip, at):
+        self.clip, self.at = clip, at
 
     def parts(self, t):
-        if self.style_clip and t >= self.style_at:
-            w = _pose(self.style_clip, t - self.style_at)
-            return {k: self.base @ v for k, v in w.items()}
         return _pose(self.clip, t - self.at)
 
     def point(self, t, part="Head", local=(0, 0, 0)):
@@ -310,52 +295,6 @@ def default_shots(tl, clip_at, t, end):
     return out
 
 
-def style_scene(item, style, mood, set_parts, set_props=(), set_events=(), style_shot=None, flip=True):
-    """A death style's scene: the book (the heart attack written), the heart attack, a beat on the floor, and the
-    style's acting on the body, from where it shows best."""
-    set_parts, set_props = dress(set_parts, set_props, flip)
-    set_parts = set_parts + key_lights(mood)
-    clip = "collapseHeart"
-    t = deaths.TIMING[clip]
-    clip_at = BOOK + 1.0
-    style_at = clip_at + t["length"] + 0.5
-    tl = Timeline(clip, clip_at, style, style_at)
-    sclip = tl.style_clip
-    slen = MOTIONS[sclip].length
-    end = style_at + slen + 0.6
-    hit = clip_at + t["hit"]
-    stand = tl.middle(clip_at)
-    lying = tl.middle(clip_at + t["still"])
-    shots = [shot(BOOK, around(stand, 28, 9.5, 1.6), stand + [0, 0.3, 0], 46,
-                  to={"eye": around(stand, 22, 7.8, 1.2), "fov": 44})]
-    beat = clip_at + 0.25
-    head = tl.point(beat)
-    shots.append(shot(beat, around(head, 38, 5.6, 0.2), head, 42,
-                      to={"eye": around(head, 46, 6.6, 0.6), "look": tl.point(hit - 0.5)}))
-    shots.append(shot(hit - 0.45, around(lying, 70, 6.6, -0.2), (stand + lying) / 2, 50,
-                      to={"eye": around(lying, 60, 5.6, 0.2), "look": lying}))
-    shots += style_shot(tl, style_at, slen, end) if style_shot else [
-        shot(style_at - 0.3, around(lying, 34, 7.5, 3.0), lying + [0, 0.8, 0], 48,
-             to={"eye": around(lying, 30, 6.4, 2.4), "look": tl.middle(style_at + slen * 0.6)})]
-    events = [
-        {"at": 0, "act": "book", "seconds": BOOK, "cause": "Heart attack"},
-        {"at": round(clip_at - 0.05, 2), "act": "lifeless"},
-        {"at": round(hit + 0.3, 2), "act": "card", "kicker": "Cause of death: Heart attack", "subtitle": "is dead."},
-        {"at": round(style_at, 2), "act": "fallen", "style": style, "from": clip},
-    ]
-    events += list(set_events)
-    events.sort(key=lambda e: e["at"])
-    cut = {
-        "kind": "death", "item": item, "clip": clip, "clipAt": round(clip_at, 2), "length": round(end, 2),
-        "grade": mood["grade"], "vignette": mood.get("vignette", {"strength": 0.5}), "props": list(set_props),
-        "parts": list(set_parts), "shots": shots, "events": events,
-        "beats": [{"at": round(hit, 2), "kind": "shake", "strength": 0.1, "seconds": 0.25}],
-        "sounds": [{"at": round(clip_at, 2), "slot": "heartbeat"}, {"at": round(clip_at + 0.8, 2), "slot": "heartbeat"},
-                   {"at": round(hit + 0.35, 2), "slot": "flatline"}],
-    }
-    check(item, shots, tl, end)
-    return cut
-
 
 # Each mood: the screen's grade, the vignette, and the colour of the key light that picks the star out of the dark.
 NIGHT = {"grade": {"saturation": -0.3, "contrast": 0.2, "brightness": 0.0, "tint": [214, 220, 238]},
@@ -368,6 +307,7 @@ RED = {"grade": {"saturation": -0.2, "contrast": 0.22, "brightness": -0.01, "tin
        "vignette": {"strength": 0.42}, "key": (255, 206, 200)}
 
 
+
 def key_lights(mood):
     """The noir key on the star (high, in front and to its right: shadows falling away from the lens), a rim behind to
     cut its outline out of the dark, and a little fill low on the other side; added to every set."""
@@ -378,19 +318,6 @@ def key_lights(mood):
 CUTS = {}
 
 # A long fall: a dark marble hall, two columns, one cold shaft of light from a high window across the floor.
-CUTS["reason_fall"] = death_scene(
-    "reason_fall", "A long fall", "deathFall", "fall", NIGHT,
-    room(22, 26, 16, (34, 33, 38), (26, 25, 30), "Marble", "Limestone", cz=-4) + [
-        part(None, (2.2, 16, 2.2), (-6.5, 8, -9), (46, 44, 50), "Marble", shape="Cylinder", rot=[0, 0, 90]),
-        part(None, (2.2, 16, 2.2), (6.5, 8, -9), (46, 44, 50), "Marble", shape="Cylinder", rot=[0, 0, 90]),
-        part(None, (4, 6, 0.4), (0, 11, -17.2), (150, 170, 200), glow=True),
-        lamp("Shaft", (0, 13, -10), (170, 190, 230), 24, 2.2),
-        lamp("Fill", (4, 4, 6), (120, 120, 150), 14, 0.5),
-        part(None, (5, 0.05, 9), (0, 0.03, -4), (60, 62, 72), "Marble", alpha=0.4),
-    ],
-)
-
-# A broken heart: a wet street at night under a lamp post, in the rain.
 CUTS["reason_heart"] = death_scene(
     "reason_heart", "A broken heart", "deathHeart", "heart", RED,
     room(26, 26, 20, (22, 22, 26), (14, 14, 18), "Asphalt", "Brick", ceiling=False) + [
@@ -418,77 +345,6 @@ CUTS["reason_frost"] = death_scene(
 )
 
 
-def chandelier(y=10.5):
-    """A chandelier of gold rings and glowing drops on its chain, over the mark (named, so it can fall)."""
-    names, out = [], []
-    out.append(part("Ch_body", (1.2, 1.6, 1.2), (0, y, -0.4), (200, 160, 70), "Metal", shape="Ball"))
-    out.append(part("Ch_ring", (0.25, 4.2, 4.2), (0, y - 0.5, -0.4), (210, 170, 80), "Metal", shape="Cylinder",
-                    rot=[0, 0, 90]))
-    names += ["Ch_body", "Ch_ring"]
-    for k in range(8):
-        a = k * math.pi / 4
-        n = f"Ch_drop{k}"
-        out.append(part(n, (0.35, 0.6, 0.35), (math.cos(a) * 2.0, y - 0.95, -0.4 + math.sin(a) * 2.0),
-                        (255, 236, 190), glow=True, shape="Ball"))
-        names.append(n)
-    out.append(part("Ch_chain", (0.18, 8, 0.18), (0, y + 4.6, -0.4), (120, 100, 60), "Metal"))
-    out.append(lamp("Ch_light", (0, y - 1.2, -0.4), (255, 220, 160), 20, 2.2))
-    names += ["Ch_light"]
-    return out, names
-
-
-CH_PARTS, CH_NAMES = chandelier()
-_ch = deaths.TIMING["deathChandelier"]
-
-
-def chandelier_shots(tl, clip_at, t, end):
-    """The wide; low in front looking up past the head (snapping up at the creak) to the chandelier over it; a hard
-    cut on the crush, from the side and above; high over the body after."""
-    hit = clip_at + t["hit"]
-    stand = tl.middle(clip_at)
-    lying = tl.middle(clip_at + t["still"])
-    up = np.array([0.0, 6.2, -0.4])
-    return [
-        shot(BOOK, around(stand, 28, 9.5, 1.6), stand + [0, 0.3, 0], 46, to={"eye": around(stand, 22, 7.8, 1.2)}),
-        shot(clip_at + 0.1, around(stand, 24, 6.6, -2.2), up, 68, to={"eye": around(stand, 20, 6.0, -2.0)}),
-        shot(hit + 0.03, around(lying, 72, 6.8, 3.0), tl.middle(hit + 0.03), 50,
-             to={"eye": around(lying, 66, 5.8, 2.6), "look": lying}),
-        shot(hit + 0.9, around(lying, 30, 4.6, 5.0), lying, 44, to={"eye": around(lying, 36, 3.6, 3.8), "fov": 42}),
-    ]
-
-
-CUTS["reason_chandelier"] = death_scene(
-    "reason_chandelier", "A chandelier, from above", "deathChandelier", "chandelier", WARM,
-    room(24, 24, 22, (40, 26, 22), (52, 36, 30), "Marble", "Wood", ceiling_color=(30, 22, 18)) + CH_PARTS + [
-        lamp("Sconce1", (-11, 7, -6), (255, 200, 140), 12, 1.0, visible=((0.5, 0.8, 0.5), (255, 210, 150))),
-        lamp("Sconce2", (11, 7, -6), (255, 200, 140), 12, 1.0, visible=((0.5, 0.8, 0.5), (255, 210, 150))),
-        part(None, (24, 4, 0.3), (0, 2, -11.8), (70, 44, 34), "Wood"),
-    ],
-    set_events=[
-        {"at": round(BOOK + 1.1 + 0.1, 2), "act": "flash", "targets": ["Ch_light"], "brightness": 3.2, "seconds": 0.25},
-        {"at": round(BOOK + 1.1 + _ch["hit"] - 0.42, 2), "act": "fling", "targets": CH_NAMES, "to": [0, 0.6, -0.9],
-         "seconds": 0.42, "fall": True, "arc": 0, "spin": [0.05, 0.1, 0.03]},
-        {"at": round(BOOK + 1.1 + _ch["hit"] + 0.05, 2), "act": "dim", "target": "Ch_light", "to": 0.25,
-         "seconds": 0.5},
-    ],
-    shots_fn=chandelier_shots,
-)
-
-# Drowned on dry land: a drained pool at night, its tiles dry, one pool light still on under where the water was.
-CUTS["reason_drown"] = death_scene(
-    "reason_drown", "Drowned on dry land", "deathDrown", "drown", COLD,
-    room(18, 22, 14, (150, 186, 196), (120, 160, 172), "CeramicTiles", "CeramicTiles", ceiling=False, cz=-2) + [
-        part(None, (18, 0.3, 0.4), (0, 0.15, -6), (40, 60, 120), "CeramicTiles"),
-        part(None, (0.2, 0.2, 22), (-4, 0.02, -2), (30, 50, 110), "CeramicTiles"),
-        part(None, (0.2, 0.2, 22), (4, 0.02, -2), (30, 50, 110), "CeramicTiles"),
-        lamp("PoolLight", (0, 1.6, -12.7), (110, 200, 255), 20, 2.0, visible=((1.6, 1.0, 0.2), (150, 220, 255))),
-        lamp("Moon", (6, 16, 8), (180, 200, 240), 30, 0.9),
-        part(None, (0.25, 6, 0.25), (-6.4, 3, -12.6), (200, 204, 210), "Metal"),
-        part(None, (0.25, 6, 0.25), (-5.2, 3, -12.6), (200, 204, 210), "Metal"),
-    ],
-)
-
-# Struck by lightning: a flat roof under a clear night sky, an antenna and a water tank against it.
 CUTS["reason_lightning"] = death_scene(
     "reason_lightning", "Struck by lightning", "deathLightning", "lightning", NIGHT,
     room(30, 30, 8, (44, 44, 48), (36, 36, 40), "Concrete", "Concrete", ceiling=False) + [
@@ -502,37 +358,6 @@ CUTS["reason_lightning"] = death_scene(
 )
 
 # A thousand paper cuts: an archive's dead end, shelves to the ceiling, papers over the floor, one desk lamp.
-CUTS["reason_pages"] = death_scene(
-    "reason_pages", "A thousand paper cuts", "deathPages", "pages", WARM,
-    room(18, 20, 12, (60, 46, 34), (40, 32, 26), "WoodPlanks", "Wood", cz=-2) + [
-        lamp("Lamp", (4, 5, -7), (255, 220, 160), 18, 1.6, visible=((0.6, 0.4, 0.6), (255, 226, 170))),
-        lamp("Fill", (-3, 6, 5), (200, 170, 140), 14, 0.5),
-    ] + [part(None, (1.1, 0.05, 1.5), (x, 0.03, z), (226, 218, 198), rot=[0, r, 0])
-         for x, z, r in ((-2.5, -3, 20), (1.8, -4.5, -35), (3.2, 1.5, 60), (-3.4, 2.2, -10), (0.6, -6.5, 80),
-                         (-1.2, 3.8, 45))],
-    set_props=[prop("Bookshelf", (-6.5, 0, -10.6), size=8.1), prop("Bookshelf", (-3.2, 0, -10.6), size=8.1),
-               prop("Bookshelf", (0, 0, -10.6), size=8.1), prop("Bookshelf", (3.2, 0, -10.6), size=8.1),
-               prop("Bookshelf", (6.5, 0, -10.6), size=8.1), prop("Bookshelf", (-8.4, 0, -4), turn=-90, size=8.1),
-               prop("Bookshelf", (8.4, 0, -4), turn=90, size=8.1), prop("Desk", (4.2, 0, -7.8), size=6)],
-)
-
-# Burned from within: a dark parlour, a fireplace that flares as they burn.
-CUTS["reason_burn"] = death_scene(
-    "reason_burn", "Burned from within", "deathBurn", "burn", WARM,
-    room(20, 20, 12, (54, 34, 28), (34, 24, 22), "Carpet", "Plaster", cz=-2) + [
-        part(None, (6, 5, 1.6), (0, 2.5, -11.2), (60, 44, 40), "Brick"),
-        part("Hearth", (3.2, 2.2, 0.8), (0, 1.3, -10.6), (20, 12, 10), emit="fire"),
-        lamp("FireLight", (0, 1.8, -9.6), (255, 140, 60), 18, 1.4),
-        lamp("Fill", (5, 6, 4), (160, 120, 110), 14, 0.4),
-    ],
-    set_props=[prop("Sofa", (-5.5, 0, -2), turn=90, size=7.4), prop("Plant", (6.5, 0, -8), size=4)],
-    set_events=[{"at": round(BOOK + 1.1 + deaths.TIMING["deathBurn"]["fx"], 2), "act": "ignite", "targets": ["Hearth"],
-                 "scale": 1.6, "flare": True},
-                {"at": round(BOOK + 1.1 + deaths.TIMING["deathBurn"]["fx"], 2), "act": "flash", "targets": ["FireLight"],
-                 "brightness": 4, "seconds": 1.2}],
-)
-
-# Choked on a potato chip: a bedroom desk at night, the television's glow, the bag of chips.
 CUTS["reason_chip"] = death_scene(
     "reason_chip", "Choked on a potato chip", "deathChip", "chip", NIGHT,
     room(18, 18, 11, (52, 50, 56), (40, 44, 52), "Carpet", "Plaster", cz=-2) + [
@@ -598,113 +423,6 @@ CUTS["reason_dark"] = death_scene(
 )
 
 # Ash to Ash: a burnt-out room, embers in the ash on the floor.
-CUTS["death_ash"] = style_scene(
-    "death_ash", "ash", WARM,
-    room(18, 18, 12, (34, 30, 28), (24, 20, 18), "Slate", "Slate", cz=-2) + [
-        lamp("Ember", (0, 1, -3), (255, 120, 60), 14, 0.9),
-        lamp("Top", (0, 10, -1), (220, 200, 180), 16, 1.0),
-        part(None, (5, 0.3, 3.6), (-4.5, 0.15, -6), (60, 56, 52), "Sand"),
-        part(None, (3, 0.25, 2.4), (5, 0.12, -5), (60, 56, 52), "Sand"),
-    ],
-)
-
-
-def stage_parts():
-    """A puppet theatre's stage: boards, red curtains either side and behind, footlights along its front edge."""
-    out = room(26, 22, 18, (70, 46, 30), (14, 10, 12), "WoodPlanks", "Fabric", cz=-2)
-    out = out + [part(None, (4, 16, 0.6), (-8, 8, -8), (120, 16, 24), "Fabric"),
-            part(None, (4, 16, 0.6), (8, 8, -8), (120, 16, 24), "Fabric"),
-            part(None, (26, 16, 0.6), (0, 8, -12.4), (96, 12, 20), "Fabric"),
-            part(None, (26, 3, 0.6), (0, 15.5, -8), (120, 16, 24), "Fabric")]
-    out = out + [lamp(f"Foot{k}", (x, 0.12, 6.2), (255, 220, 160), 10, 0.9, visible=((0.6, 0.2, 0.2),
-                                                                                       (255, 226, 170)))
-                 for k, x in enumerate((-7, -3.5, 3.5, 7))]
-    return out + [lamp("Spot", (0, 15, 2), (255, 236, 200), 26, 1.8)]
-
-
-def strings_shot(tl, style_at, slen, end):
-    """Low in front, looking up at it hanging from its strings, the bar above."""
-    lying = tl.middle(style_at)
-    hang = tl.middle(style_at + 1.6)
-    floor = tl.middle(style_at + slen)
-    snap = style_at + fallen.SNAP
-    return [
-        shot(style_at - 0.3, around(hang, 18, 8.6, -0.6), lying + [0, 0.6, 0], 52,
-             to={"eye": around(hang, 24, 7.6, -0.9), "look": hang + [0, 1.0, 0]}),
-        shot(snap + 0.32, around(floor, 40, 6.4, 2.4), floor, 46, to={"eye": around(floor, 34, 5.4, 2.0)}),
-    ]
-
-
-CUTS["death_strings"] = style_scene("death_strings", "strings", WARM, stage_parts(), style_shot=strings_shot)
-
-
-def crows_shot(tl, style_at, slen, end):
-    """Low and wide, the body lifting into the frame, the burst against the sky."""
-    top = tl.middle(style_at + 1.6)
-    return [shot(style_at - 0.3, around(top, 24, 9.5, -1.6), top + [0, -0.6, 0], 54,
-                 to={"eye": around(top, 18, 8.6, -1.2), "look": top})]
-
-
-# Murder of Crows: a graveyard at night, crooked stones, a dead tree, fog.
-CUTS["death_crows"] = style_scene(
-    "death_crows", "crows", NIGHT,
-    room(30, 30, 22, (30, 34, 28), (20, 22, 26), "Ground", "SmoothPlastic", ceiling=False) + [
-        lamp("Moon", (8, 18, -12), (190, 205, 240), 40, 1.4),
-        part("Fog", (18, 1, 18), (0, 0.5, -2), (200, 210, 220), alpha=1, emit="fog"),
-    ] + [part(None, (1.6, 2.6, 0.5), (x, 1.2, z), (90, 92, 96), "Slate", rot=[0, r, tilt])
-         for x, z, r, tilt in ((-5, -7, 8, 6), (-1.5, -9, -4, -4), (3, -7.5, 12, 3), (6.5, -9.5, -10, 8),
-                               (-7.5, -3, 20, -6))],
-    set_props=[prop("Tree", (-9, 0, -11), size=13.7, color=(20, 20, 22))],
-    style_shot=crows_shot,
-)
-
-
-def stone_shot(tl, style_at, slen, end):
-    """Medium on the reach, from the side it reaches to."""
-    reach = tl.middle(style_at + 1.4)
-    return [shot(style_at - 0.3, around(reach, -40, 6.8, 1.4), reach + [0, 0.6, 0], 46,
-                 to={"eye": around(reach, -34, 5.6, 1.0), "look": reach + [0, 0.8, 0]})]
-
-
-# Petrified: a courtyard of old statues under the moon.
-CUTS["death_stone"] = style_scene(
-    "death_stone", "stone", COLD,
-    room(28, 28, 22, (96, 94, 90), (40, 42, 48), "Cobblestone", "Limestone", ceiling=False) + [
-        lamp("Moon", (-8, 18, -10), (190, 205, 240), 40, 1.5),
-        lamp("Fill", (6, 4, 6), (150, 160, 190), 16, 0.5),
-        part(None, (2.4, 1.2, 2.4), (-7, 0.6, -9), (110, 108, 104), "Limestone"),
-        part(None, (1.6, 5, 1.2), (-7, 3.7, -9), (120, 118, 112), "Limestone"),
-        part(None, (1.2, 1.2, 1.2), (-7, 6.8, -9), (120, 118, 112), "Limestone", shape="Ball"),
-        part(None, (2.4, 1.2, 2.4), (7, 0.6, -10), (110, 108, 104), "Limestone"),
-        part(None, (1.6, 4.6, 1.2), (7, 3.5, -10), (120, 118, 112), "Limestone", rot=[0, 0, 8]),
-    ],
-    style_shot=stone_shot,
-)
-
-
-def glass_shot(tl, style_at, slen, end):
-    """Front and close on the glass figure risen on its knees, its last look, the shatter."""
-    risen = tl.middle(style_at + 1.3)
-    head = tl.point(style_at + 1.5)
-    return [shot(style_at - 0.3, around(risen, 30, 6.8, 1.6), risen, 46,
-                 to={"eye": around(head, 14, 4.6, 0.3), "look": head + [0, -0.4, 0], "fov": 42})]
-
-
-# Shattered: a hall of mirrors, tall dark glass on every side.
-CUTS["death_glass"] = style_scene(
-    "death_glass", "glass", COLD,
-    room(20, 20, 14, (24, 26, 30), (16, 18, 22), "Marble", "SmoothPlastic", cz=-2) + [
-        lamp("Top", (0, 12, -2), (200, 220, 240), 20, 1.6),
-        lamp("Rim", (0, 5, -10), (160, 200, 255), 14, 0.8),
-    ] + [part(None, (3.4, 10, 0.2), (x, 5, -11.5), (170, 190, 210), "Glass", alpha=0.45) for x in (-6, -2, 2, 6)]
-    + [part(None, (0.2, 10, 3.4), (x, 5, z), (170, 190, 210), "Glass", alpha=0.45) for x in (-9.5, 9.5)
-       for z in (-6, -1)],
-    style_shot=glass_shot,
-)
-
-
-# Luau ------------------------------------------------------------------------------------------------------------
-
 def luau(v, indent=1):
     pad = "\t" * indent
     if isinstance(v, bool):
@@ -734,11 +452,11 @@ def write():
     lines = [
         "--!strict",
         "-- The shop's death scenes (written by art/scripts/cinema/deathcuts.py: do not edit by hand): a Preview for every",
-        "-- custom death and death style, starring the player, played by Presentation/WinCinema like the win cutscenes'.",
+        "-- custom death, starring the player, played by Presentation/WinCinema like the win cutscenes'.",
         "-- The WinCuts format, plus: clipAt (when the star's clip starts) and the death's events: book (Death's Manual,",
         "-- the name written in it: \"$name\" is the star's), lifeless (the star's life layer off: it is acted to the end),",
-        "-- deathFx (a custom death's effect, Presentation/CustomDeaths), fallen (a death style's acting on the fallen body,",
-        "-- Presentation/Fallen), card (the cause of death across the screen). Keyed by the cosmetic's id.",
+        "-- deathFx (a custom death's effect, Presentation/CustomDeaths), card (the cause of death across the screen).",
+        "-- Keyed by the cosmetic's id.",
         "",
         "return " + luau(CUTS, 0) + " :: { [string]: any }",
     ]

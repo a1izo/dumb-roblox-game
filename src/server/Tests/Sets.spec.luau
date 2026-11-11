@@ -28,7 +28,7 @@ return function(t)
 			expect(#Sets.completed(owns)).to.equal(0)
 		end)
 		it("knows which sets an item is a piece of", function()
-			expect(#Sets.of("death_stone")).to.equal(1)
+			expect(#Sets.of("writing_frost")).to.equal(1)
 			expect(#Sets.of("hat_cap")).to.equal(0)
 		end)
 	end)
@@ -36,7 +36,7 @@ return function(t)
 	describe("Styles and emotes", function()
 		it("gives every style a style and every emote a clip", function()
 			for _, item in ipairs(Cosmetics.ITEMS) do
-				if item.kind == "writing" or item.kind == "verdict" or item.kind == "death" then
+				if item.kind == "writing" or item.kind == "verdict" then
 					expect(type(item.style)).to.equal("string")
 				elseif item.kind == "emote" then
 					expect(type(item.emote)).to.equal("string")

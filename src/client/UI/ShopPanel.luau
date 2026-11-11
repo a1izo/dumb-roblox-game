@@ -351,7 +351,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 		string.format("%s %s", Rarity.name(item.rarity), string.lower(Cosmetics.KIND_SINGULAR[item.kind] or item.kind))
 	lookLine.TextColor3 = Rarity.color(item.rarity):Lerp(C.bone, 0.3)
 	-- (a scene's Preview shares the row: it on the left, the buy or use button on the right; they overlapped): a win
-	-- cutscene's, a custom death's or a death style's (WinCinema.cutOf)
+	-- cutscene's or a custom death's (WinCinema.cutOf)
 	local scene = WinCinema.cutOf(item)
 	local hasPreview = scene ~= nil
 	local gap = T.space.s
