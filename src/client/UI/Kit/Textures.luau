@@ -94,14 +94,15 @@ local function load()
 	if #ids == 0 then
 		return
 	end
+	-- (fetched ahead, but every texture the imports carry is used whatever the preload says: Studio reports image ids
+	-- as Failure even when they draw, and waiting on Success left the icons, the panels and the pencil lines on their
+	-- stand-ins in every Studio play test, 2026-11-11)
 	pcall(function()
-		ContentProvider:PreloadAsync(ids, function(id: string, status: Enum.AssetFetchStatus)
-			local name = byId[id]
-			if name and status == Enum.AssetFetchStatus.Success then
-				loaded[name] = id
-			end
-		end)
+		ContentProvider:PreloadAsync(ids)
 	end)
+	for id, name in pairs(byId) do
+		loaded[name] = id
+	end
 	ready = true
 	Textures.Ready:Fire()
 end
