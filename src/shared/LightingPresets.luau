@@ -605,19 +605,21 @@ LightingPresets.scenes = {
 		bloom = 0.35,
 		sky = "SceneEmber",
 	}),
-	-- A rooftop at night under the Milky Way (2026-11-10: "up to the starry night sky"): no sun, a blue night fill
-	-- from the sky, the scene's own lamps (the phone's glow, the stair door's lamp) doing the rest.
+	-- An old cemetery at night in fog (the user's second picture, 2026-11-11), the stars over it (2026-11-10: "up to
+	-- the starry night sky"): no sun, a blue night fill, a fog that swallows the far stones and leaves the sky
+	-- overhead, nearly no colour (the picture is black and white); the scene's own lamps do the rest (the candles,
+	-- the phone's glow, the moon).
 	selection = scene({
 		clockTime = 14,
 		ambient = rgb(30, 36, 58),
 		outdoorAmbient = rgb(40, 48, 78),
 		envDiffuse = 0.45,
 		envSpecular = 0.3,
-		density = 0.12,
-		haze = 0.6,
-		atmosphereColor = rgb(40, 44, 66),
-		decay = rgb(60, 50, 50),
-		saturation = -0.12,
+		density = 0.34,
+		haze = 1.6,
+		atmosphereColor = rgb(74, 80, 96),
+		decay = rgb(46, 48, 58),
+		saturation = -0.55,
 		contrast = 0.16,
 		tint = rgb(228, 236, 255),
 		bloom = 0.45,

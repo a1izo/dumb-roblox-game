@@ -10,7 +10,7 @@ where the scene's first actor stands, as the scene module's ctx works.
     walrider    Walrider: the asylum lab, the hazard stripe and the steel double door, the white tiled room beyond
     sam         Let's dance!: open desert hills at dusk, boulders, a rocky ridge
     ironman     and I.. am..: a ruined battlefield at dusk, broken walls, rubble, craters, burnt-out shells far off
-    selection   Dead by selection: a rooftop at night over a city, under the Milky Way (SkySceneNight)
+    selection   Dead by selection: an old cemetery at night in fog, the angel on her pedestal, wax and candles
 
 The two void scenes (requiem, god) and sans' battle screen have no set: their skies are Sky faces (scene_skies.py,
 carried here as TEXTURES) and sans' is black.

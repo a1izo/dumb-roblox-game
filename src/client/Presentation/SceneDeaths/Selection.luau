@@ -2,8 +2,10 @@
 -- cutscene entirely because the way you drew those lines looks completely made by AI - instead make the character
 -- look at the phone at the second image then up to the starry night sky in contempt with dramatic camera shots").
 --
--- A rooftop at night over a city, under the Milky Way (the set: maps/venues/scenes/selection.py; the sky:
--- SkySceneNight). The victim stands at the parapet reading their phone: on it the chart (scene_pictures.py's
+-- An old cemetery at night in fog, under the stars (the user's second picture, 2026-11-11: the angel on her tall
+-- pedestal, leaning stones crowding round, bare trees; the set: maps/venues/scenes/selection.py; the sky:
+-- SkySceneNight); at the angel's foot heaps of melted wax with candles burning on them (the first picture). The
+-- victim stands among the graves reading their phone: on it the chart (scene_pictures.py's
 -- SelectionChart, a picture drawn by hand, never lines grown from bars): every blue arrow goes to the top three, none
 -- to the ringed dot at the bottom, which is theirs. It lands. The phone comes down, the head comes up to the stars, a
 -- slow shake of it, chin high; the hand opens and the phone falls to the roof; they stand so, grey, and go to dust
@@ -29,7 +31,18 @@ local BLUE = Color3.fromRGB(40, 108, 220)
 local PAPER = Color3.fromRGB(246, 244, 237)
 local APP = Color3.fromRGB(14, 16, 22)
 local SCREEN_LIGHT = Color3.fromRGB(206, 220, 255)
-local WARM = Color3.fromRGB(255, 196, 140)
+-- The candles on the wax heaps (scene space: x, base height, z, height; the set's selection.py CANDLES): a flame on
+-- each tip.
+local CANDLES = {
+	{ 2.2, 0.6, -4.3, 0.9 },
+	{ 2.8, 0.6, -4.6, 1.25 },
+	{ 2.55, 0.6, -3.95, 0.6 },
+	{ 1.95, 0.42, -4.75, 0.5 },
+	{ 5.05, 1.15, -4.75, 0.8 },
+	{ 5.95, 0.52, -4.3, 1.05 },
+	{ -3.1, 0.5, -3.5, 0.7 },
+	{ -3.55, 0.5, -3.85, 1.1 },
+}
 -- where the phone lands (scene space): at the victim's right, a little ahead
 local LANDING = Vector3.new(1.7, 0.06, -0.6)
 local DROP = 9.7
@@ -165,29 +178,36 @@ local function appScreen(parent: Instance)
 end
 
 local function build(ctx)
-	-- the rooftop (modelled: art/scripts/maps/venues/scenes/selection.py); before its import, a bare roof and parapet
-	if ctx:set() == nil then
+	-- the cemetery (modelled: art/scripts/maps/venues/scenes/selection.py); before its import, bare grass
+	local built = ctx:set() ~= nil
+	if not built then
 		ctx:part({
-			size = Vector3.new(36, 1, 30),
-			at = Vector3.new(0, -0.5, 10),
-			color = Color3.fromRGB(46, 46, 50),
-			material = Enum.Material.Asphalt,
-		})
-		ctx:part({
-			size = Vector3.new(36, 2.8, 1),
-			at = Vector3.new(0, 1.4, -4.5),
-			color = Color3.fromRGB(64, 64, 68),
-			material = Enum.Material.Concrete,
+			size = Vector3.new(60, 1, 60),
+			at = Vector3.new(0, -0.5, -4),
+			color = Color3.fromRGB(52, 58, 48),
+			material = Enum.Material.Grass,
 		})
 	end
-	-- the stair door's lamp at their back (a warm rim), the night's fill from the front, the mast's red lamp
-	ctx:light(Vector3.new(0, 7.0, 14.6), WARM, 26, 1.2)
-	ctx:light(Vector3.new(-3, 9, -6), Color3.fromRGB(110, 140, 220), 22, 0.45)
-	local mast = ctx:light(Vector3.new(12.5, 24.2, -0.5), Color3.fromRGB(255, 40, 50), 14, 1.4)
-	ctx:during(0, 14, function(t)
-		-- (an aircraft lamp: on a second, off a second, softly)
-		mast.Brightness = 1.4 * smooth(math.abs(((t * 0.5) % 1) * 2 - 1) * 1.6)
-	end)
+	-- the moon's cold light from high behind the angel, a faint fill toward the victim's face
+	ctx:light(Vector3.new(10, 26, -24), Color3.fromRGB(150, 168, 210), 60, 0.9)
+	ctx:light(Vector3.new(-3, 7, 5), Color3.fromRGB(110, 124, 160), 16, 0.3)
+	-- the candles: a living flame on every wick, their warm light on the wax and the stones (the set's own wax and
+	-- candles; nothing floats before its import)
+	if built then
+		for i, c in ipairs(CANDLES) do
+			local wick = ctx:part({
+				size = Vector3.new(0.05, 0.05, 0.05),
+				at = Vector3.new(c[1], c[2] + c[4] + 0.06, c[3]),
+				alpha = 1,
+				cast = false,
+				name = "Wick",
+			})
+			-- (only every other flame carries a light: eight lights in a heap only burn white)
+			Vfx.Recipes.flame(wick, { kind = "candle", scale = 0.28, lit = true, light = i % 2 == 1 } :: any)
+		end
+		ctx:light(Vector3.new(2.6, 2.2, -4.0), Color3.fromRGB(255, 176, 110), 14, 1.1)
+		ctx:light(Vector3.new(-3.3, 1.9, -3.4), Color3.fromRGB(255, 176, 110), 11, 0.8)
+	end
 
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -6)), "sceneSelectionVictim")

@@ -6,7 +6,7 @@ return {
 	MapsCampus = 32,
 	MapsLobby = 39,
 	MapsMeeting = 6,
-	MapsScenes = 5,
+	MapsScenes = 6,
 	MapsSets = 17,
 	MapsTokyo = 47,
 	ModelsAgency = 18,

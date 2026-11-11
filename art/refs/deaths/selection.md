@@ -12,15 +12,20 @@ shots."
 
 Now: the chart is a PICTURE drawn by hand (art/scripts/scene_pictures.py, SelectionChart: two columns of five dots on
 paper, red arrows fanning evenly from the left, blue arrows from the right all going to the top three; the bottom left
-dot ringed in pencil is the victim's, and no blue arrow comes to it), shown on the victim's phone. The place is a
-rooftop at night over a city under the Milky Way (maps/venues/scenes/selection.py, sky SkySceneNight).
+dot ringed in pencil is the victim's, and no blue arrow comes to it), shown on the victim's phone.
+
+The place (2026-11-11, the user's "second image": the angel in a foggy cemetery): an old cemetery at night in fog,
+under the stars (maps/venues/scenes/selection.py, sky SkySceneNight). The angel on her tall pedestal ahead of the
+victim, wings raised, a wreath in her hand; tall old stones crowding round, many leaning, crosses, an urn on its
+column, an obelisk, bare trees; at the angel's foot and by a stone on the left, heaps of melted white wax with
+candles burning (the user's first picture). Almost no colour (the picture is black and white).
 
 Not suicide (Roblox bans depicting it): the victim is "deselected": they read it, look up at the stars, let the phone
 go, grey, and go to dust that rises into the sky. No words, no face expressions. Length: 14 s.
 
 | t | shot | in frame | motion | VFX / light |
 |---|------|----------|--------|-------------|
-| 0.0–2.4 | over the right shoulder, slow push | the lit phone in the reading hand, the city beyond, soft | reading, head down; the thumb scrolls | the phone's glow on them, the stair lamp's warm rim behind |
+| 0.0–2.4 | over the right shoulder, slow push | the lit phone in the reading hand, the angel and the candles beyond, soft | reading, head down; the thumb scrolls | the phone's glow on them, the candles' warm light ahead |
 | 2.4–4.6 | the screen itself, filling the frame | the app: the post, the chart on its paper | a held phone's drift, a scroll, then a push in to the ringed dot | the glass's shine |
 | 4.6–6.6 | the face from below | lit by the phone | it lands: still, the breath goes out; the phone sinks | the light leaves the face |
 | 6.6–8.2 | from low behind, going up | the back of the head, then the Milky Way | the head comes up; the camera goes up past it and opens wide | |
