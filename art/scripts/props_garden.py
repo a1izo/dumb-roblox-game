@@ -320,7 +320,7 @@ def tree(prefix, seed, bark, height, trunk, levels, spread, lean=(0.0, 0.0), dro
     for k in range(roots):
         a = math.tau * k / roots + rng.uniform(-0.25, 0.25)
         out = Vector((math.cos(a), math.sin(a), 0.0))
-        reach = trunk * rng.uniform(2.2, 3.4)
+        reach = trunk * rng.uniform(1.8, 2.6)
         pts = [Vector((0, 0, trunk * 1.8)) + out * trunk * 0.6, out * trunk * 1.1 + Vector((0, 0, trunk * 0.7)),
                out * reach * 0.7 + Vector((0, 0, 0.1)), out * reach + Vector((0, 0, -0.5))]
         parts.append(pk.sweep(prefix + "Root", [tuple(v) for v in pts],
@@ -366,7 +366,7 @@ def lobby_great_tree():
 def lobby_arch_tree():
     """An old tree leaning over (picture 13's avenue): its trunk leaning toward +X and its crown arching over, so a pair
     of them, facing, close over a path."""
-    return tree("Arch", 13, surface("Basalt"), 44.0, 1.9, 4, 30.0, lean=(0.55, 0.0), droop=0.25, sides=10,
+    return tree("Arch", 13, surface("Basalt"), 50.0, 1.9, 4, 30.0, lean=(0.3, 0.0), droop=0.3, sides=10, roots=5,
                 first=0.42), []
 
 

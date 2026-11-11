@@ -137,6 +137,21 @@ function RagdollService.collapse(player: Player, alias: string, respawn: (Player
 	-- Tells the Died handler not to respawn on its own.
 	character:SetAttribute("LHeldBody", true)
 	local clipId = Causes.clipFor(cause)
+	-- Taken by the dark (2026-11-10, the user: "you completely disappear into the dark"): nothing is left of them, no
+	-- body falls and none is kept.
+	if Causes.vanishes(cause) then
+		for _, item in ipairs(character:GetDescendants()) do
+			if item:IsA("BasePart") or item:IsA("Decal") then
+				(item :: any).Transparency = 1
+			end
+		end
+		task.delay(RagdollService.collapseTime(clipId) + RagdollService.BODY_TIME, function()
+			if player.Parent == Players and player.Character == character then
+				respawn(player)
+			end
+		end)
+		return
+	end
 	task.delay(RagdollService.collapseTime(clipId), function()
 		if not character.Parent then
 			return

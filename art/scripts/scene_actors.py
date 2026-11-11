@@ -20,9 +20,10 @@ legs x + forward."""
 
 from animlib import J
 from cinema.acting import alive, beat, soft, strike
-from deathkit import (BACK_L, BACK_R, REST, SIDE_R, Feet, body, body_key, breaths, floor_key, kneel_key, mix, prone_key,
-                      shiver, sit_key, stand)
-from deaths import CLUTCH, HANG_L, HANG_R, OVER_L, crouch_legs, topple_forward
+from deathkit import (AHEAD_L, AHEAD_R, BACK_L, BACK_R, REST, SIDE_L, SIDE_R, Feet, body, body_key, breaths, floor_key,
+                      kneel_key, mix, prone_key, shiver, sit_key, stand)
+from deaths import (CLUTCH, HANG_L, HANG_R, MOUTH_R, OVER_L, THROAT_L, THROAT_R, crouch_legs, topple_back,
+                    topple_forward)
 from emotes.kit import reach
 from motion import Motion
 
@@ -541,4 +542,268 @@ alive(dv, amount=0.4, seed=11, t0=0.0, t1=11.0)
 soft(dv, head=3.0, arms=2.4)
 dv.build()
 
-SCENE_CLIPS = [m.name for m in (rv, rc, rk, bw, bb, sv, sk, *SOLDIER_CLIPS, wo, sn, iv, ik, isd, ps, dv)]
+
+# =====================================================================================================================
+# The six custom deaths remade as scene deaths (2026-11-11; the user's word of 2026-11-10: their "scenarios, camera
+# work, vfx, animation and everything SUCKS"). Each clip runs its scene's whole length; Presentation/SceneDeaths
+# stages the set, the cameras and the effects round it.
+
+# A broken heart (12 s): at the bridge's parapet in the rain, reading a letter held in both hands; it lands: the first
+# beat a jolt, a hand flying to the chest; the second an arch back, the letter hand flung out (the letter let go); the
+# crack: doubled over both hands at the heart, a step back; the knees go; over onto the face; the last breaths.
+LETTER_R = reach(1, (0.22, 0.52, -0.86), direction=(-0.25, 0.5, -0.8))
+LETTER_L = reach(-1, (-0.16, 0.48, -0.9), direction=(0.25, 0.5, -0.8))
+LETTER_LOW = reach(1, (0.3, 0.25, -0.8), direction=(-0.2, 0.3, -0.9))
+HEART_HIPS = (0.0, 0.24)
+
+hv = Motion("sceneHeartVictim", 12.0, note="A broken heart: reading a letter in the rain; two beats, the crack; down.",
+            floor=True)
+hv.key(0.0, **REST)
+body_key(hv, 0.0, "smooth", -6, neck=(-22, 0, 0), rShoulder=LETTER_R, lShoulder=LETTER_L)
+body_key(hv, 1.8, "sine", -7, neck=(-24, -5, 0), rShoulder=LETTER_R, lShoulder=LETTER_L)
+body_key(hv, 3.2, "sine", -6, neck=(-20, 3, 0), rShoulder=LETTER_R, lShoulder=LETTER_L)
+body_key(hv, 4.1, "smooth", -4, neck=(-12, 0, 0), rShoulder=LETTER_LOW, lShoulder=mix(LETTER_L, HANG_L, 0.5))
+# the first beat: a jolt, the left hand flying to the heart
+strike(hv, 4.5, body(-4, neck=J((-12, 0, 0)), rShoulder=LETTER_LOW, lShoulder=mix(LETTER_L, HANG_L, 0.5)),
+       body(-13, roll=2, drop=0.05, neck=J((-4, 6, 0)), rShoulder=LETTER_LOW, lShoulder=OVER_L),
+       antic=0.06, travel=0.05, over=0.18, settle=0.3)
+body_key(hv, 5.3, "sine", -11, roll=2, drop=0.05, neck=(-8, 4, 0), rShoulder=LETTER_LOW, lShoulder=OVER_L)
+# the second: an arch back, the letter hand flung out (the letter goes)
+strike(hv, 5.75, body(-11, drop=0.05, neck=J((-8, 4, 0)), rShoulder=LETTER_LOW, lShoulder=OVER_L),
+       body(7, roll=-2, drop=0.02, neck=J((18, 0, -4)), rShoulder=J((38, 0, 46)), lShoulder=OVER_L),
+       antic=0.08, travel=0.05, over=0.22, settle=0.3)
+# the crack: doubled over, both hands at the heart, a step back
+body_key(hv, 6.6, "in", -24, roll=3, hips=(0, 0.1), drop=0.14, neck=(-18, 0, 2), rShoulder=CLUTCH, lShoulder=OVER_L)
+body_key(hv, 7.2, "out", -27, roll=4, hips=HEART_HIPS, drop=0.2, neck=(-14, -4, 3), rShoulder=CLUTCH,
+         lShoulder=OVER_L)
+stand(hv, 0.0, 7.5, Feet(steps=[(6.75, 7.15, -1, -0.45)]))
+# the knees go
+floor_key(hv, 7.75, "in", -30, 0, 3, HEART_HIPS, dict(rHip=J((40, 0, 2)), lHip=J((40, 0, -2))),
+          dict(neck=(-20, 0, 2), rShoulder=CLUTCH, lShoulder=OVER_L))
+floor_key(hv, 7.92, "in", -32, 0, 3, HEART_HIPS,
+          dict(rHip=J((6, 0, 2), (0, 0.06, 0.12)), lHip=J((6, 0, -2), (0, 0.06, 0.12))),
+          dict(neck=(-24, 0, 3), rShoulder=CLUTCH, lShoulder=OVER_L))
+kneel_key(hv, 8.1, "out", lean=-30, head=-24, hips=HEART_HIPS, rShoulder=CLUTCH, lShoulder=OVER_L)
+kneel_key(hv, 9.0, "sine", lean=-22, head=-10, hips=HEART_HIPS, rShoulder=CLUTCH, lShoulder=mix(OVER_L, HANG_L, 0.4))
+kneel_key(hv, 9.5, "in", lean=-34, head=-26, hips=HEART_HIPS, rShoulder=CLUTCH, lShoulder=J((60, 0, -6)))
+hit = topple_forward(hv, 9.5, 34.0, HEART_HIPS, spin0=1.2, arm="l", hold_r=CLUTCH, head0=-26.0)
+breaths(hv, hit + 0.4, 11.9, every=0.85, depth=1.8)
+alive(hv, amount=0.35, seed=21, t0=0.0, t1=4.3)
+soft(hv, head=3.0, arms=2.6, arm_damp=0.58)
+hv.build()
+
+# Frozen where they stood (12 s): the last two slow steps onto the ice; a look down (the frost climbing their boots);
+# a foot that will not come up, twice, harder; hugging themselves, shaking; the shaking slowing as a hand reaches out
+# ahead; then nothing at all: frozen solid in the reach.
+HUG_R = reach(1, (-0.5, 0.3, -0.6), direction=(-0.85, 0.15, -0.45))
+HUG_L = reach(-1, (0.52, 0.42, -0.64), direction=(0.85, 0.15, -0.45))
+REACH_R = reach(1, (0.42, 0.95, -1.55), direction=(0.1, 0.25, -1.0))
+FHIPS = (0.0, -0.7)
+
+fv = Motion("sceneFrostVictim", 12.0, note="Frozen where they stood: steps onto the ice, the feet held, shaking, a "
+            "reach, frozen solid.", floor=True)
+fv.key(0.0, **REST)
+body_key(fv, 0.0, "smooth", -5, neck=(-4, 0, 0), rShoulder=J((-6, 0, 8)), lShoulder=J((12, 0, -8)))
+body_key(fv, 0.85, "smooth", -7, hips=(0, -0.35), neck=(-6, 0, 0), rShoulder=J((14, 0, 8)), lShoulder=J((-8, 0, -8)))
+body_key(fv, 1.7, "out", -4, hips=FHIPS, neck=(-2, 0, 0), rShoulder=J((4, 0, 8)), lShoulder=J((4, 0, -8)))
+# a look down: the frost is climbing the boots
+body_key(fv, 2.7, "smooth", -12, hips=FHIPS, neck=(-36, 0, 0), rShoulder=J((16, 0, 16)), lShoulder=J((16, 0, -16)))
+# a foot that will not come: the body heaves, twice, the arms out for balance
+body_key(fv, 3.45, "in", -16, roll=-5, hips=(0.08, -0.7), drop=0.06, neck=(-30, 8, 0), rShoulder=J((42, 0, 46)),
+         lShoulder=J((30, 0, -36)))
+body_key(fv, 3.9, "out", -8, roll=3, hips=FHIPS, drop=0.02, neck=(-26, 0, 0), rShoulder=J((26, 0, 34)),
+         lShoulder=J((22, 0, -30)))
+body_key(fv, 4.4, "in", -19, roll=-6, hips=(0.1, -0.7), drop=0.08, neck=(-22, 10, 2), rShoulder=J((56, 0, 52)),
+         lShoulder=J((40, 0, -44)))
+body_key(fv, 4.95, "out", -9, roll=2, hips=FHIPS, drop=0.04, neck=(-14, 0, 0), rShoulder=J((20, 0, 26)),
+         lShoulder=J((18, 0, -24)))
+shiver(fv, 3.3, 5.2, {"root": (0.8, 0.4, 1.4), "neck": (1.0, 0.6, 0.6)}, amount=0.8, hz=7.0, seed=4)
+# hugging themselves, shaking hard, the head coming up
+body_key(fv, 5.8, "smooth", -6, hips=FHIPS, drop=0.1, neck=(-8, 0, 0), rShoulder=HUG_R, lShoulder=HUG_L)
+body_key(fv, 7.0, "sine", -5, hips=FHIPS, drop=0.11, neck=(-2, -4, 0), rShoulder=HUG_R, lShoulder=HUG_L)
+shiver(fv, 5.6, 8.7, {"root": (1.4, 0.6, 1.2), "neck": (2.0, 1.2, 1.0), "rShoulder": (3.0, 0, 2.0),
+                      "lShoulder": (3.0, 0, 2.0)}, amount=1.0, hz=11.0, decay=0.85, seed=6)
+# the reach: one hand out ahead, slower and slower; then frozen in it
+body_key(fv, 8.3, "out", -9, hips=FHIPS, drop=0.1, neck=(4, 0, 0), rShoulder=REACH_R, lShoulder=HUG_L)
+body_key(fv, 8.75, "out", -9.4, hips=FHIPS, drop=0.1, neck=(5, 0, 0), rShoulder=REACH_R, lShoulder=HUG_L)
+body_key(fv, 12.0, "linear", -9.4, hips=FHIPS, drop=0.1, neck=(5, 0, 0), rShoulder=REACH_R, lShoulder=HUG_L)
+# (the feet step only while walking: frozen, the legs stay straight under the body, the soles where they stopped)
+stand(fv, 0.0, 2.2, Feet(steps=[(0.1, 0.8, 1, 0.7), (0.8, 1.55, -1, 0.7)]))
+alive(fv, amount=0.3, seed=7, t0=0.0, t1=2.6)
+soft(fv, head=2.6, arms=2.2)
+fv.build()
+
+# Struck by lightning (10 s): on the hilltop in the storm looking out; the head comes up to the sky, a hand lifting palm
+# up (the air prickling); the bolt: thrown rigid, arched, up on the toes, arms flung out and up, shaking; limp at
+# once, the knees gone, sat down hard and over onto the back; a last twitch.
+lv = Motion("sceneLightningVictim", 10.0, note="Struck by lightning: looking up into the storm, the bolt, rigid and "
+            "shaking, down on the back.", floor=True)
+lv.key(0.0, **REST)
+body_key(lv, 0.0, "smooth", -3, neck=(2, 0, 0), rShoulder=J((4, 0, 8)), lShoulder=J((4, 0, -8)))
+body_key(lv, 1.6, "sine", -4, neck=(4, -10, 0), rShoulder=J((6, 0, 8)), lShoulder=J((4, 0, -8)))
+body_key(lv, 2.6, "smooth", 3, neck=(30, 4, 0), rShoulder=reach(1, (0.5, 0.6, -0.85), direction=(0.2, 0.3, -1.0)),
+         lShoulder=J((8, 0, -10)))
+body_key(lv, 3.5, "sine", 4, drop=-0.03, neck=(34, 0, 0), rShoulder=reach(1, (0.55, 0.75, -0.8),
+                                                                           direction=(0.25, 0.4, -0.9)),
+         lShoulder=J((14, 0, -18)))
+STRUCK = 3.85
+strike(lv, STRUCK, body(4, drop=-0.03, neck=J((34, 0, 0)), rShoulder=J((60, 0, 30)), lShoulder=J((14, 0, -18))),
+       body(16, drop=-0.14, neck=J((38, 0, 0)), rShoulder=J((148, 0, 64)), lShoulder=J((148, 0, -64))),
+       antic=0.02, travel=0.04, over=0.1, settle=0.2)
+body_key(lv, 5.4, "linear", 15, drop=-0.12, neck=(36, 0, 0), rShoulder=J((144, 0, 62)), lShoulder=J((144, 0, -62)))
+shiver(lv, STRUCK + 0.02, 5.5, {"root": (2.5, 1.2, 2.0), "neck": (4.0, 3.0, 2.0), "rShoulder": (6.0, 2.0, 5.0),
+                               "lShoulder": (6.0, 2.0, 5.0)}, amount=1.0, hz=17.0, decay=0.35, seed=11)
+# limp: the arms drop, the knees go, sat down hard
+body_key(lv, 5.75, "in", -4, drop=0.25, neck=(-10, 0, 0), rShoulder=J((10, 0, 14)), lShoulder=J((10, 0, -14)))
+stand(lv, 0.0, 5.9, Feet())
+LHIPS = (0.0, 0.42)
+sit_key(lv, 6.25, "in", lean=22, hips=LHIPS, neck=(-16, 0, 0), rShoulder=J((-10, 0, 24)), lShoulder=J((-10, 0, -24)))
+hit = topple_back(lv, 6.25, 22.0, LHIPS, spin0=1.4, head0=-16.0)
+shiver(lv, hit + 0.9, hit + 1.25, {"rShoulder": (6, 0, 4), "root": (1.2, 0, 0.6)}, amount=1.0, hz=13.0, seed=12)
+alive(lv, amount=0.45, seed=13, t0=0.0, t1=3.6)
+soft(lv, head=3.0, arms=2.4)
+lv.build()
+
+# Choked on a potato chip (11 s): behind the desk, a hand into the bag; the chip held up; the flourish (Light's: the arm
+# sweeping out wide and up, the body turning with it); "and EAT IT": the hand to the mouth, the head back; the crunch;
+# frozen; hands to the throat; staggering back, a hand out; the knees; over onto the face.
+BAG_R = reach(1, (0.5, -0.05, -1.25), direction=(0.1, -0.5, -0.85))
+HELD_R = reach(1, (0.35, 0.55, -0.8), direction=(0.0, 0.5, -0.85))
+SWEEP_R = J((118, 0, 78))
+CHIP_HIPS = (0.0, 0.55)
+
+cv = Motion("sceneChipVictim", 11.0, note="Choked on a potato chip: the chip, the flourish, the bite, the crunch, "
+            "choking, down.", floor=True)
+cv.key(0.0, **REST)
+body_key(cv, 0.0, "smooth", -8, neck=(-26, 0, 0), rShoulder=J((10, 0, 10)), lShoulder=J((8, 0, -8)))
+body_key(cv, 0.9, "smooth", -16, neck=(-30, 6, 0), rShoulder=BAG_R, lShoulder=J((8, 0, -8)))
+body_key(cv, 1.6, "out", -6, neck=(-14, 0, 0), rShoulder=HELD_R, lShoulder=J((8, 0, -8)))
+# the flourish
+body_key(cv, 2.35, "in", -2, yaw=18, neck=(-4, -14, 4), rShoulder=SWEEP_R, lShoulder=J((26, 0, -30)))
+body_key(cv, 2.75, "smooth", 2, yaw=22, neck=(8, -18, 6), rShoulder=J((140, 0, 64)), lShoulder=J((30, 0, -36)))
+# "and EAT IT": the hand snaps to the mouth, the head back
+strike(cv, 3.15, body(2, yaw=22, neck=J((8, -18, 6)), rShoulder=J((140, 0, 64)), lShoulder=J((30, 0, -36))),
+       body(10, yaw=-8, neck=J((20, 6, -2)), rShoulder=MOUTH_R, lShoulder=J((20, 0, -26))),
+       antic=0.1, travel=0.05, over=0.2, settle=0.22)
+CRUNCH = 3.38
+body_key(cv, CRUNCH, "in", 8, yaw=-6, drop=0.02, neck=(16, 4, -2), rShoulder=MOUTH_R, lShoulder=J((20, 0, -26)))
+body_key(cv, 4.7, "linear", 7, yaw=-6, drop=0.03, neck=(15, 4, -2), rShoulder=MOUTH_R, lShoulder=J((20, 0, -26)))
+shiver(cv, CRUNCH + 0.05, 4.7, {"neck": (0.6, 0.4, 0.4), "root": (0.3, 0, 0.3)}, amount=1.0, hz=9.0, seed=14)
+# hands to the throat
+strike(cv, 5.0, body(7, yaw=-6, neck=J((15, 4, -2)), rShoulder=MOUTH_R, lShoulder=J((20, 0, -26))),
+       body(-12, drop=0.08, neck=J((10, 0, 0)), rShoulder=THROAT_R, lShoulder=THROAT_L),
+       antic=0.05, travel=0.06, over=0.2, settle=0.3)
+# staggering back, a hand out
+body_key(cv, 5.9, "smooth", -18, roll=-4, hips=(0, 0.25), drop=0.12, neck=(-2, -8, 0), rShoulder=THROAT_R,
+         lShoulder=THROAT_L)
+body_key(cv, 6.7, "smooth", -14, roll=5, hips=(0.1, 0.5), drop=0.14, neck=(6, 10, 0), rShoulder=THROAT_R,
+         lShoulder=reach(-1, (-0.3, 0.6, -1.4), direction=(-0.1, 0.2, -1.0)))
+body_key(cv, 7.4, "in", -26, roll=2, hips=CHIP_HIPS, drop=0.2, neck=(-10, 4, 0), rShoulder=THROAT_R,
+         lShoulder=reach(-1, (-0.25, 0.4, -1.35), direction=(-0.1, 0.0, -1.0)))
+stand(cv, 0.0, 7.7, Feet(steps=[(5.4, 5.8, 1, -0.4), (6.0, 6.45, -1, -0.5), (6.8, 7.2, 1, -0.15)]))
+floor_key(cv, 7.95, "in", -32, 0, 2, CHIP_HIPS, dict(rHip=J((40, 0, 2)), lHip=J((40, 0, -2))),
+          dict(neck=(-18, 0, 0), rShoulder=THROAT_R, lShoulder=J((70, 0, -8))))
+floor_key(cv, 8.1, "in", -34, 0, 2, CHIP_HIPS,
+          dict(rHip=J((6, 0, 2), (0, 0.06, 0.12)), lHip=J((6, 0, -2), (0, 0.06, 0.12))),
+          dict(neck=(-22, 0, 0), rShoulder=THROAT_R, lShoulder=J((80, 0, -8))))
+kneel_key(cv, 8.25, "in", lean=-36, head=-22, hips=CHIP_HIPS, rShoulder=THROAT_R, lShoulder=J((90, 0, -8)))
+hit = topple_forward(cv, 8.25, 36.0, CHIP_HIPS, spin0=1.4, arm="l", hold_r=THROAT_R, head0=-22.0)
+breaths(cv, hit + 0.4, 10.9, every=0.6, depth=2.0)
+alive(cv, amount=0.35, seed=15, t0=0.0, t1=1.8)
+soft(cv, head=3.0, arms=2.8, arm_damp=0.55)
+cv.build()
+
+# Their time ran out (11 s): a look at the wrist; the head up, round at the ticking; then they try to walk ahead, but
+# time moves only in ticks: each tick jumps them into the next moment and holds them there, the ticks further and
+# further apart; at the last, they are stopped dead mid-stride, reaching.
+WRIST_L = reach(-1, (-0.15, 0.62, -0.72), direction=(0.3, 0.4, -0.85))
+TICKS = [2.7, 3.25, 3.9, 4.65, 5.55, 6.6]
+STRIDE = [  # (pitch, hips z, neck, right arm, left arm) at each tick: a walk forward, slower and leaning more
+    (-6, -0.25, (-2, 0, 0), J((-18, 0, 8)), J((20, 0, -8))),
+    (-8, -0.55, (-4, 0, 0), J((22, 0, 8)), J((-16, 0, -8))),
+    (-9, -0.85, (-2, 0, 0), J((-20, 0, 8)), J((24, 0, -8))),
+    (-10, -1.15, (0, 0, 0), J((26, 0, 8)), J((-18, 0, -8))),
+    (-11, -1.45, (2, 0, 0), J((-14, 0, 8)), J((40, 0, -8))),
+    (-12, -1.7, (6, 0, 0), reach(1, (0.4, 0.9, -1.5), direction=(0.1, 0.25, -1.0)), J((-14, 0, -10))),
+]
+
+kv = Motion("sceneClockVictim", 11.0, note="Their time ran out: a look at the wrist; walking in ticks, slower and "
+            "slower; stopped dead mid-stride.", floor=True)
+kv.key(0.0, **REST)
+body_key(kv, 0.0, "smooth", -6, neck=(-24, 12, 0), rShoulder=J((6, 0, 8)), lShoulder=WRIST_L)
+body_key(kv, 1.2, "sine", -6, neck=(-26, 14, 0), rShoulder=J((6, 0, 8)), lShoulder=WRIST_L)
+body_key(kv, 1.8, "smooth", -2, neck=(10, -22, 0), rShoulder=J((6, 0, 8)), lShoulder=J((10, 0, -8)))
+body_key(kv, 2.35, "smooth", -2, neck=(8, 20, 0), rShoulder=J((6, 0, 8)), lShoulder=J((8, 0, -8)))
+prev = (-2, 0.0, (8, 20, 0), J((6, 0, 8)), J((8, 0, -8)))
+for k, (t, pose) in enumerate(zip(TICKS, STRIDE)):
+    pitch, hz, neck, ra, la = prev
+    body_key(kv, t - 0.001, "linear", pitch, hips=(0, hz), neck=neck, rShoulder=ra, lShoulder=la)
+    pitch, hz, neck, ra, la = pose
+    body_key(kv, t + 0.07, "out", pitch, hips=(0, hz), neck=neck, rShoulder=ra, lShoulder=la)
+    prev = pose
+pitch, hz, neck, ra, la = prev
+body_key(kv, 11.0, "linear", pitch, hips=(0, hz), neck=neck, rShoulder=ra, lShoulder=la)
+steps = []
+for k, t in enumerate(TICKS):
+    side = 1 if k % 2 == 0 else -1
+    steps.append((t, t + 0.07, side, 0.62 if k else 0.4))
+stand(kv, 0.0, 11.0, Feet(steps=steps, lift_h=0.0), ramp=0.0)
+alive(kv, amount=0.35, seed=16, t0=0.0, t1=2.6)
+soft(kv, head=2.4, arms=2.0)
+kv.build()
+
+# Taken by the dark (11 s): walking the hall under the bulb; a sound behind: a look back over the shoulder, held,
+# staring into the black; the head round again, walking on, faster; the flinch as the bulb fails, looking back again;
+# running; the legs yanked out from behind, down on the face; dragged back along the floor in pulls, clawing at the
+# boards, into the black.
+kd = Motion("sceneDarkVictim", 11.0, note="Taken by the dark: a look back, walking on, the flinch, the run, yanked "
+            "down, dragged back into the black.", floor=True)
+kd.key(0.0, **REST)
+body_key(kd, 0.0, "smooth", -3, neck=(-2, 0, 0), rShoulder=J((4, 0, 8)), lShoulder=J((4, 0, -8)))
+body_key(kd, 1.5, "sine", -3, neck=(-4, 6, 0), rShoulder=J((4, 0, 8)), lShoulder=J((4, 0, -8)))
+# a sound behind: the head whips round over the right shoulder, the shoulders after it; held, staring
+strike(kd, 1.9, body(-3, neck=J((-4, 6, 0)), rShoulder=J((4, 0, 8)), lShoulder=J((4, 0, -8))),
+       body(-1, yaw=-30, neck=J((2, -64, 0)), rShoulder=J((14, 0, 14)), lShoulder=J((20, 0, -14))),
+       antic=0.05, travel=0.07, over=0.16, settle=0.3)
+body_key(kd, 3.0, "sine", 0, yaw=-32, drop=0.02, neck=(4, -66, 0), rShoulder=J((16, 0, 16)), lShoulder=J((22, 0, -16)))
+# round again, walking on, faster
+body_key(kd, 3.45, "smooth", -6, yaw=0, hips=(0, -0.3), neck=(-2, 6, 0), rShoulder=J((-16, 0, 8)),
+         lShoulder=J((20, 0, -8)))
+body_key(kd, 3.95, "smooth", -8, hips=(0, -0.9), neck=(-2, 0, 0), rShoulder=J((22, 0, 8)), lShoulder=J((-18, 0, -8)))
+body_key(kd, 4.45, "smooth", -9, hips=(0, -1.55), neck=(-2, -4, 0), rShoulder=J((-20, 0, 8)),
+         lShoulder=J((24, 0, -8)))
+# the bulb fails: the flinch, a look back again
+strike(kd, 4.9, body(-9, hips=(0, -1.55), neck=J((-2, -4, 0)), rShoulder=J((-20, 0, 8)), lShoulder=J((24, 0, -8))),
+       body(-4, yaw=-34, hips=(0, -1.75), drop=0.1, neck=J((-6, -58, 0)), rShoulder=J((96, 0, 30)),
+            lShoulder=J((60, 0, -20))),
+       antic=0.04, travel=0.06, over=0.18, settle=0.25)
+# running
+body_key(kd, 5.55, "in", -18, yaw=-6, hips=(0, -2.4), drop=0.06, neck=(0, 10, 0), rShoulder=J((50, 0, 10)),
+         lShoulder=J((-40, 0, -10)))
+body_key(kd, 5.95, "out", -22, hips=(0, -3.4), drop=0.08, neck=(4, 0, 0), rShoulder=J((-40, 0, 8)),
+         lShoulder=J((54, 0, -8)))
+stand(kd, 0.0, 6.1, Feet(steps=[(3.3, 3.65, 1, 0.6), (3.7, 4.05, -1, 1.2), (4.1, 4.45, 1, 1.85),
+                                (5.15, 5.45, -1, 2.6), (5.5, 5.8, 1, 3.6)]))
+# the legs yanked out: down on the face, the arms thrown out ahead
+YANK = 6.15
+body_key(kd, YANK + 0.18, "in", -55, hips=(0, -3.2), drop=0.7, neck=(14, 0, 0), rShoulder=J((150, 0, 12)),
+         lShoulder=J((150, 0, -12)))
+prone_key(kd, YANK + 0.42, "in", hips=(0, -2.8), neck=(28, 0, 0), rShoulder=AHEAD_R, lShoulder=AHEAD_L)
+# dragged back in pulls, clawing at the boards: each pull a hard slide back, the hands raking after it
+z = -2.8
+for k, t in enumerate((6.9, 7.55, 8.2, 8.8, 9.35, 9.85, 10.3, 10.7)):
+    pull = 1.3 + 0.35 * k
+    reach_r = J((166, 0, 14)) if k % 2 else J((150, 0, 22))
+    reach_l = J((150, 0, -22)) if k % 2 else J((166, 0, -14))
+    prone_key(kd, t - 0.25, "sine", hips=(0, z), neck=(30, 0, 4 * (1 if k % 2 else -1)), rShoulder=reach_r,
+              lShoulder=reach_l)
+    z += pull
+    prone_key(kd, t, "in", hips=(0, z), neck=(20, 0, 0), rShoulder=AHEAD_R, lShoulder=AHEAD_L)
+alive(kd, amount=0.4, seed=17, t0=0.0, t1=1.8)
+soft(kd, head=2.6, arms=2.6)
+kd.build()
+
+REMADE_CLIPS = [m.name for m in (hv, fv, lv, cv, kv, kd)]
+
+SCENE_CLIPS = [m.name for m in (rv, rc, rk, bw, bb, sv, sk, *SOLDIER_CLIPS, wo, sn, iv, ik, isd, ps, dv,
+                                hv, fv, lv, cv, kv, kd)]

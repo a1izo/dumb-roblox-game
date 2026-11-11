@@ -699,6 +699,12 @@ local NEW_SCENES = {
 	"scene:sans",
 	"scene:patriot",
 	"scene:selection",
+	"scene:heart",
+	"scene:frost",
+	"scene:lightning",
+	"scene:chip",
+	"scene:clock",
+	"scene:dark",
 }
 local GROUPS = { reason = "Custom deaths", win = "Win cutscenes" }
 local GROUP_ORDER = { "Custom deaths", "Win cutscenes", "Others" }

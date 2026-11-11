@@ -345,6 +345,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 400,
 		style = "heart",
+		scene = 12, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(205, 40, 60),
 	},
 	{
@@ -358,6 +359,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 450,
 		style = "frost",
+		scene = 12, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(170, 215, 245),
 	},
 	{
@@ -371,6 +373,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 700,
 		style = "lightning",
+		scene = 10, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(200, 225, 255),
 	},
 	{
@@ -384,6 +387,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1100,
 		style = "chip",
+		scene = 11, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(240, 196, 90),
 	},
 	{
@@ -397,6 +401,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1200,
 		style = "clock",
+		scene = 11, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(210, 200, 170),
 	},
 	{
@@ -410,6 +415,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1500,
 		style = "dark",
+		scene = 11, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(150, 20, 34),
 	},
 	-- The second batch (2026-11-08): each re-acts a famous scene, named as the user named it (art/scripts/

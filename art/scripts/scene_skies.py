@@ -9,6 +9,8 @@ like the maps' skies (skies.py). SceneDeaths shows them through LightingPresets.
     God      A GOD.. IS NOT... AFRAID OF...: a purple sky of stars and nebulae, magenta and cyan
     Night    Dead by selection: a clear night over a city: deep blue, the Milky Way across it high ahead, thick with
              stars, a faint warm glow along the horizon
+    Storm    Struck by lightning, A broken heart: low torn cloud at night, a pale seam along the horizon
+    Void     Their time ran out: a grey fog all round
 
     blender -b --factory-startup --python art/scripts/scene_skies.py [-- Mist Dusk ...]
 
@@ -208,8 +210,35 @@ def night(d, size):
     return sky
 
 
+def storm(d, size):
+    """A storm at night (Struck by lightning, A broken heart, 2026-11-11): low heavy cloud in torn layers, lit from
+    below by a pale glow along the horizon, darker overhead; the clouds' edges catching light."""
+    elev = d[..., 1]
+    sky = gradient(elev, [(-1, (14, 15, 18)), (-0.04, (54, 56, 64)), (0.0, (96, 98, 108)), (0.08, (70, 72, 82)),
+                          (0.3, (44, 46, 54)), (1, (24, 25, 30))])
+    big = np.clip(fbm(d * np.array([1.0, 2.6, 1.0]), 81, octaves=6) * 0.9 + 0.5, 0, 1)
+    torn = np.clip(fbm(d * np.array([2.2, 5.0, 2.2]), 83, octaves=5) * 1.0 + 0.45, 0, 1)
+    up = np.clip(elev * 2.5 + 0.2, 0, 1)
+    shade = 0.45 + 0.75 * big * (0.55 + 0.45 * torn)
+    sky *= np.where(elev[..., None] > -0.02, shade[..., None], 1.0)
+    rim = np.clip(big - 0.5, 0, 1) * np.clip(1 - torn, 0, 1)
+    sky += (rim * 0.35 * up)[..., None] * rgb((170, 176, 192))
+    return sky
+
+
+def void(d, size):
+    """The grey nowhere of Their time ran out: a pale fog all round, brighter where it thins high ahead."""
+    elev = d[..., 1]
+    sky = gradient(elev, [(-1, (52, 52, 56)), (-0.1, (84, 84, 88)), (0.05, (120, 120, 124)), (0.4, (96, 96, 100)),
+                          (1, (66, 66, 70))])
+    drift = np.clip(fbm(d * 1.6, 91, octaves=5) * 0.5 + 0.5, 0, 1)
+    sky *= (0.9 + 0.12 * drift)[..., None]
+    sky += glow(d, (0.0, 0.35, -1.0), 0.08, 0.25)[..., None] * rgb((220, 220, 226))
+    return sky
+
+
 SKIES = {"Mist": (mist, 512), "Dusk": (dusk, 512), "Ember": (ember, 512), "Requiem": (requiem, 1024),
-         "God": (god, 1024), "Night": (night, 1024)}
+         "God": (god, 1024), "Night": (night, 1024), "Storm": (storm, 512), "Void": (void, 512)}
 
 
 def make(name):

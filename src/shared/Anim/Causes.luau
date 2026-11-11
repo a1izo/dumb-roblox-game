@@ -42,6 +42,12 @@ function Causes.scene(cause: string?): string?
 	return if item and type(item.scene) == "number" then item.style else nil
 end
 
+-- Whether a cause leaves nothing of the body (Taken by the dark: the dark has them).
+function Causes.vanishes(cause: string?): boolean
+	local item = Cosmetics.reasonByCause(cause)
+	return item ~= nil and item.style == "dark"
+end
+
 -- When things happen in a death's clip (DeathTiming.deaths): a heart attack's for a clip it does not know.
 function Causes.timing(clip: string): DeathTiming.Timing
 	return DeathTiming.deaths[clip] or DeathTiming.deaths.collapseHeart

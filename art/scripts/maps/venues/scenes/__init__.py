@@ -20,7 +20,7 @@ import math
 import os
 
 import common
-from maps.venues.scenes import blackwall, ironman, patriot, sam, selection, walrider
+from maps.venues.scenes import blackwall, ironman, patriot, remade, sam, selection, walrider
 from maps.venues.scenes import plan as P
 
 FORMAT = 2
@@ -68,6 +68,13 @@ VIEWS = [
     _at(P.SELECTION, (1.2, 1.2, -2.6), (0, 6.5, 0.4), _lens(40)),
     _at(P.SELECTION, (0.5, 24, 1.5), (0, 0, 0), _lens(40)),
     _at(P.SELECTION, (-7.5, 3.2, 8.5), (0, 5.5, -2), _lens(34)),
+    # the six remade custom deaths: one wide each
+    _at(P.HEART, (6.0, 4.5, 6.0), (0, 3.5, -6), _lens(38)),
+    _at(P.FROST, (8.0, 5.0, 12.0), (0, 2.5, -4), _lens(34)),
+    _at(P.LIGHTNING, (10.0, -2.0, 14.0), (-3, 8.0, -3), _lens(30)),
+    _at(P.CHIP, (5.0, 6.0, -8.0), (0, 3.0, 2), _lens(30)),
+    _at(P.CLOCK, (20.0, 26.0, 30.0), (0, 0.0, 0), _lens(28)),
+    _at(P.DARK, (1.5, 5.0, -10.0), (0, 4.0, 20), _lens(32)),
 ]
 
 PREVIEW_FIGURES = [
@@ -88,6 +95,12 @@ PREVIEW_LIGHT = {
     "sam": ((0.72, 0.52, 0.32), 1.1, 3.0, (78, -140), (1.0, 0.72, 0.42), 0.006),
     "ironman": ((0.62, 0.36, 0.2), 0.9, 2.5, (82, 20), (1.0, 0.55, 0.28), 0.01),
     "selection": ((0.05, 0.06, 0.1), 1.0, 0.6, (40, 150), (0.7, 0.8, 1.0), 0.0),
+    "heart": ((0.12, 0.13, 0.16), 0.8, 0.6, (50, 30), (0.8, 0.85, 1.0), 0.0),
+    "frost": ((0.08, 0.1, 0.16), 1.0, 0.9, (40, 150), (0.75, 0.85, 1.0), 0.0),
+    "lightning": ((0.14, 0.15, 0.18), 0.9, 0.7, (60, 30), (0.8, 0.85, 1.0), 0.0),
+    "chip": ((0.03, 0.03, 0.04), 0.4, 0.0, (50, 0), (1, 1, 1), 0.0),
+    "clock": ((0.45, 0.45, 0.47), 1.2, 1.5, (60, 120), (1.0, 1.0, 1.0), 0.0),
+    "dark": ((0.02, 0.02, 0.02), 0.3, 0.0, (50, 0), (1, 1, 1), 0.0),
 }
 
 
@@ -121,5 +134,6 @@ def build(s):
     sam.build(s)
     ironman.build(s)
     selection.build(s)
+    remade.build(s)
     s.set_bounds(*P.BOUNDS)
     s.checks = CHECKS

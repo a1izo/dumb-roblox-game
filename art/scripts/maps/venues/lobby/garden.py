@@ -277,7 +277,7 @@ def avenue(s, blocked):
     grotto = P.ACADEMY_C
     for k, t in enumerate((-8.0, -1.0, 6.0, 13.0)):
         for side in (-1, 1):
-            px, pz = ax + dx * t + nx * side * 7.5, az + dz * t + nz * side * 7.5
+            px, pz = ax + dx * t + nx * side * 9.0, az + dz * t + nz * side * 9.0
             if math.dist((px, pz), tab) < P.TABLEAU_R + 3.0 or math.dist((px, pz), grotto) < P.GROTTO_WALL + 5.0:
                 continue
             if blocked.hits(px, pz, 3.0):

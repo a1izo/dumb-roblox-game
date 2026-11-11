@@ -37,7 +37,24 @@ SceneDeaths.ORIGIN = CFrame.new(-6000, 650, 6000) -- far off and high: no map, l
 SceneDeaths.current = nil :: string?
 SceneDeaths.lastCtx = nil :: any -- (the last scene's context, for the harness's checks)
 
-local NAMES = { "requiem", "blackwall", "god", "ironMan", "sam", "walrider", "sans", "patriot", "selection" }
+local NAMES = {
+	"requiem",
+	"blackwall",
+	"god",
+	"ironMan",
+	"sam",
+	"walrider",
+	"sans",
+	"patriot",
+	"selection",
+	-- (the six custom deaths remade as scene deaths, 2026-11-11)
+	"heart",
+	"frost",
+	"lightning",
+	"chip",
+	"clock",
+	"dark",
+}
 local MODULES = {
 	requiem = "Requiem",
 	blackwall = "Blackwall",
@@ -48,6 +65,12 @@ local MODULES = {
 	sans = "Sans",
 	patriot = "Patriot",
 	selection = "Selection",
+	heart = "Heart",
+	frost = "Frost",
+	lightning = "Lightning",
+	chip = "Chip",
+	clock = "Clock",
+	dark = "Dark",
 }
 local loaded: { [string]: any } = {}
 

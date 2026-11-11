@@ -9,6 +9,8 @@ return {
 		{ 966.4, 1.6, -4, 0.6, 1.5, 0.6, -90, false, 0 },
 		{ 2000, 10.25, 4.5, 2.24, 0.9, 2.24, 0, false, 0 },
 		{ 2000, 10.25, 10.5, 2.24, 0.9, 2.24, 0, false, 0 },
+		{ 9000, 11.3, 0, 22, 0.6, 18, 0, true, 0 },
+		{ 11000, 10.3, 10, 9, 0.6, 100, 0, true, 0 },
 	},
 	-- flat floor triangles: x1, z1, x2, z2, x3, z3, top y, thickness, look, blocks sight lines
 	floors = {},

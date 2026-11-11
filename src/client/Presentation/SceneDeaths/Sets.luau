@@ -18,7 +18,20 @@ local Data = require(Shared:WaitForChild("Scenes")) :: any
 local Sets = {}
 
 -- The scene -> its cell in the import (plan.ORDER).
-Sets.CELLS = { patriot = 0, blackwall = 1, walrider = 2, sam = 3, ironMan = 4, selection = 5 }
+Sets.CELLS = {
+	patriot = 0,
+	blackwall = 1,
+	walrider = 2,
+	sam = 3,
+	ironMan = 4,
+	selection = 5,
+	heart = 6,
+	frost = 7,
+	lightning = 8,
+	chip = 9,
+	clock = 10,
+	dark = 11,
+}
 local CELL = 1000
 
 local warned = false

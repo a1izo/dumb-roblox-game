@@ -441,21 +441,6 @@ return {
 		-- the chip goes into the mouth
 		allow = { { prop = 2, part = "Head", from = 0.26, to = 0.34 } },
 	},
-	-- Choked on a potato chip (a custom death, art/scripts/deaths.py): the chip in the right hand, swept up with a
-	-- flourish and bitten at the crunch (0.62 s), where it goes
-	deathChip = {
-		props = {
-			{
-				model = "Chip",
-				size = 0.5,
-				stand = { shape = "Block", size = { 0.5, 0.05, 0.42 }, color = { 222, 178, 86 } },
-				mount = "Right Arm",
-				at = { { p = { 0.023, -1.14, -0.157 } }, { r = { -47.58, -0.5, 0.45 } } }, -- hold: chip/Chip
-				hide = 0.64,
-			},
-		},
-		allow = { { prop = 1, part = "Head", from = 0.56, to = 0.66 } },
-	},
 	-- WRITE IT: the last name written huge and slashed across
 	furiousScribbling = {
 		props = {

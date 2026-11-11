@@ -94,9 +94,7 @@ def preview(s):
     for name, (x, z, rot, w, h, by) in P.STELES.items():
         a = anchors[name]
         s.box("Screen", (a["x"], a["y"], a["z"]), (w, h, 0.3), rot)
-    for key in ("academyGate",):
-        a = anchors[key]
-        s.box("Screen", (a["x"], a["y"], a["z"]), (a["w"], a["h"], 0.3), a["rot"])
+    # (the Academy's name is cut into its gate's slate: nothing to draw over it)
     sx, sz = P.SPAWN
     s.box("RuinFlag", (sx, P.LEDGE[4] + 0.2, sz), (12.0, 0.4, 12.0))
 
