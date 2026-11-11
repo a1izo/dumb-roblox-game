@@ -2,6 +2,7 @@
 -- right, drawn from the front (a face) or the back (the spine). Left and right in the report are the body's own.
 -- Pick each part the report names; each found line is ticked off.
 
+local Device = require(script.Parent.Parent.Core.Device)
 local Kit = require(script.Parent.Parent.Kit)
 local Common = require(script.Parent.Common)
 
@@ -55,17 +56,11 @@ return function(ctx: Common.Context)
 		wanted[id] = i
 	end
 	local found = {}
+	local picks: { { part: GuiObject, pick: () -> () } } = {}
 	for _, region in ipairs(def.REGIONS) do
 		local r = def.rect(puzzle, region.id)
 		local part
-		part = Common.target(ctx, {
-			Name = "Part",
-			fill = Common.SHEET,
-			Position = UDim2.fromScale(r[1], r[2]),
-			Size = UDim2.fromScale(r[3], r[4]),
-			ZIndex = 3,
-			Parent = chart,
-		}, function()
+		local function pick()
 			local line = wanted[region.id]
 			if not line then
 				ctx.miss(part, "The report doesn't name that.")
@@ -85,7 +80,16 @@ return function(ctx: Common.Context)
 			if #list == def.MARKS then
 				ctx.submit(list)
 			end
-		end)
+		end
+		part = Common.target(ctx, {
+			Name = "Part",
+			fill = Common.SHEET,
+			Position = UDim2.fromScale(r[1], r[2]),
+			Size = UDim2.fromScale(r[3], r[4]),
+			ZIndex = 3,
+			Parent = chart,
+		}, pick)
+		table.insert(picks, { part = part, pick = pick })
 		Kit.Base.make("UICorner", { CornerRadius = UDim.new(if region.id == 1 then 0.5 else 0.25, 0), Parent = part })
 		local border = part:FindFirstChild("Border")
 		if border then
@@ -107,5 +111,31 @@ return function(ctx: Common.Context)
 		elseif puzzle.back and (region.id == 3 or region.id == 4) then
 			Common.rule(part, UDim2.new(0.5, -1, 0.05, 0), UDim2.new(0, 2, 0.9, 0), Common.SOFT)
 		end
+	end
+
+	-- On a touch screen a finger is wider than a hand or a foot on the chart: a tap anywhere on the body picks the
+	-- part nearest it (2026-11-11, the phone pass).
+	if Device.touch() then
+		local catcher = Kit.Base.hit({ Name = "Catch", Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = chart })
+		catcher.BackgroundTransparency = 1
+		catcher.Activated:Connect(function(input: InputObject?)
+			if not input then
+				return
+			end
+			local at = Vector2.new(input.Position.X, input.Position.Y)
+			local best, bestDistance = nil, math.huge
+			for _, entry in ipairs(picks) do
+				local min, size = entry.part.AbsolutePosition, entry.part.AbsoluteSize
+				local nearest =
+					Vector2.new(math.clamp(at.X, min.X, min.X + size.X), math.clamp(at.Y, min.Y, min.Y + size.Y))
+				local distance = (at - nearest).Magnitude
+				if distance < bestDistance then
+					best, bestDistance = entry, distance
+				end
+			end
+			if best and bestDistance < 40 then
+				best.pick()
+			end
+		end)
 	end
 end

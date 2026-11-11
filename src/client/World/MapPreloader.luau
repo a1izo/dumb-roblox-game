@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
 
 local Net = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Net"))
+local Device = require(script.Parent.Parent.UI.Core.Device)
 
 local AppleLoading = require(script.Parent.Parent.UI.AppleLoading)
 local Router = require(script.Parent.Parent.UI.Core.Router)
@@ -73,6 +74,35 @@ local function contentOf(root: Instance, list: { Entry }, seen: { [string]: bool
 	end
 end
 
+-- On a phone or tablet only the imports the lobby and the shop show are fetched ahead (the props everyone uses, the
+-- lobby's, the effects): every other map's props come with that map, and the scene deaths' and win rooms' sets when
+-- they play. Fetching all of it on every join and every map load cost phones memory and time (2026-11-11).
+local AHEAD_ON_TOUCH = { ModelsCore = true, ModelsLobby = true, ModelsFx = true }
+
+local function importKind(import: Instance): string?
+	for _, item in ipairs(import:GetDescendants()) do
+		local kind = string.match(item.Name, "^DeathsGambit(%a+)_Version_%d+$")
+		if kind then
+			return kind
+		end
+	end
+	return nil
+end
+
+-- What of the store to fetch ahead: all of it on a computer, the lobby's and shop's imports on a touch screen.
+local function storeContent(store: Instance, list: { Entry }, seen: { [string]: boolean })
+	if not Device.touch() then
+		contentOf(store, list, seen)
+		return
+	end
+	for _, import in ipairs(store:GetChildren()) do
+		local kind = importKind(import)
+		if kind and AHEAD_ON_TOUCH[kind] then
+			contentOf(import, list, seen)
+		end
+	end
+end
+
 -- Downloads `list`, calling onProgress(0..1) as it goes.
 local function preload(list: { Entry }, onProgress: ((number) -> ())?)
 	local total = #list
@@ -126,20 +156,26 @@ local function onMap(model: Model, quiet: boolean?)
 	end
 	-- 1. Every piece of the map, over the network.
 	local started = os.clock()
+	-- (counted as they arrive: listing tens of thousands of pieces ten times a second cost a phone frames while
+	-- it was busiest)
+	local have = #model:GetDescendants()
+	local arriving = model.DescendantAdded:Connect(function()
+		have += 1
+	end)
 	while model.Parent and os.clock() - started < PIECES_TIMEOUT do
-		local have = #model:GetDescendants()
 		set(0.35 * math.min(1, have / math.max(1, want)))
 		if have >= want then
 			break
 		end
 		task.wait(0.1)
 	end
+	arriving:Disconnect()
 	-- 2. Everything it, the props and the avatars are made of.
 	local list, seen = {}, {}
 	contentOf(model, list, seen)
 	local store = ReplicatedStorage:FindFirstChild(ASSETS)
 	if store then
-		contentOf(store, list, seen)
+		storeContent(store, list, seen)
 	end
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player.Character then
@@ -179,10 +215,13 @@ end
 -- The lobby and the avatars in it, downloaded again on the way back from a case (most of it is still there).
 function MapPreloader.lobby(onProgress: (number) -> ())
 	local list, seen = {}, {}
-	for _, root in ipairs({ workspace:FindFirstChild(LOBBY_NAME), ReplicatedStorage:FindFirstChild(ASSETS) }) do
-		if root then
-			contentOf(root, list, seen)
-		end
+	local lobby = workspace:FindFirstChild(LOBBY_NAME)
+	if lobby then
+		contentOf(lobby, list, seen)
+	end
+	local store = ReplicatedStorage:FindFirstChild(ASSETS)
+	if store then
+		storeContent(store, list, seen)
 	end
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player.Character then
@@ -219,13 +258,13 @@ function MapPreloader.init()
 	-- eye waits for this).
 	task.spawn(function()
 		local list, seen = {}, {}
-		for _, root in ipairs({
-			ReplicatedStorage:WaitForChild(ASSETS, 30),
-			workspace:WaitForChild(LOBBY_NAME, 30),
-		}) do
-			if root then
-				contentOf(root, list, seen)
-			end
+		local store = ReplicatedStorage:WaitForChild(ASSETS, 30)
+		if store then
+			storeContent(store, list, seen)
+		end
+		local lobby = workspace:WaitForChild(LOBBY_NAME, 30)
+		if lobby then
+			contentOf(lobby, list, seen)
 		end
 		preload(list)
 		joinDone = true

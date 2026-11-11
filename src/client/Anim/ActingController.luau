@@ -102,12 +102,16 @@ end
 local function dissolve(character: Model, seconds: number)
 	local started = os.clock()
 	task.spawn(function()
+		local pieces = {}
+		for _, item in ipairs(character:GetDescendants()) do
+			if item:IsA("BasePart") or item:IsA("Decal") then
+				table.insert(pieces, item)
+			end
+		end
 		while character.Parent and os.clock() - started < seconds do
 			local alpha = (os.clock() - started) / seconds
-			for _, item in ipairs(character:GetDescendants()) do
-				if item:IsA("BasePart") or item:IsA("Decal") then
-					item.LocalTransparencyModifier = alpha
-				end
+			for _, item in ipairs(pieces) do
+				item.LocalTransparencyModifier = alpha
 			end
 			task.wait()
 		end

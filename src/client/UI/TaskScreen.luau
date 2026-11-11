@@ -187,8 +187,8 @@ function TaskScreen.isBusy(): boolean
 	return current ~= nil
 end
 
--- An Academy drill: a random puzzle of the station type, checked only on this client.
-function TaskScreen.practice(stationType: string, title: string, onDone: () -> ())
+-- An Academy drill: a random puzzle of the station type (or the one named), checked only on this client.
+function TaskScreen.practice(stationType: string, title: string, onDone: () -> (), puzzle: string?)
 	if current or not TaskTypes.exists(stationType) then
 		return
 	end
@@ -197,7 +197,7 @@ function TaskScreen.practice(stationType: string, title: string, onDone: () -> (
 		stationId = "practice",
 		stationType = stationType,
 		stationName = title,
-		puzzle = TaskTypes.pickPuzzle(stationType, rng),
+		puzzle = puzzle or TaskTypes.pickPuzzle(stationType, rng),
 		seed = rng:NextInteger(1, 2 ^ 30),
 	}, onDone)
 end

@@ -135,11 +135,22 @@ local function pitLift()
 	end
 end
 
+-- The lobby's spawn pad, found once per lobby build (a search of the whole lobby every frame cost frames).
+local spawnPad: BasePart? = nil
+local function lobbySpawn(): BasePart?
+	if spawnPad and spawnPad.Parent and spawnPad:IsDescendantOf(workspace) then
+		return spawnPad
+	end
+	local lobby = workspace:FindFirstChild("LGameLobby")
+	local found = if lobby then lobby:FindFirstChild("LobbySpawn", true) else nil
+	spawnPad = if found and found:IsA("BasePart") then found else nil
+	return spawnPad
+end
+
 local function watchPit()
 	local character = Players.LocalPlayer.Character
 	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
-	local lobby = workspace:FindFirstChild("LGameLobby")
-	local spawn = if lobby then lobby:FindFirstChild("LobbySpawn", true) else nil
+	local spawn = lobbySpawn()
 	if not character or not root or not root:IsA("BasePart") or not spawn or not spawn:IsA("BasePart") then
 		return
 	end

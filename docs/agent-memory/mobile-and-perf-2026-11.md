@@ -33,3 +33,21 @@ whole case with bots as a phone: debug remote fillBots/startMatch/skipTo).
 the engine culls the rest, and the HQ blackout toggles lights itself); StreamingEnabled stays off (the client code
 expects whole maps). The harness place has no map imports (4 meshes), so real map memory on a phone is unmeasured:
 the honest check is a real phone or Studio's device emulator in the real place.
+
+**Second pass (2026-11-11, "check the rest"):**
+- Every per-frame callback and fast loop scanned for whole-tree searches (frames.py/loops.py style: GetDescendants,
+  deep FindFirstChild, raycasts, Instance.new): fixed the lobby pit watcher (searched the whole lobby for its spawn
+  every frame), the map loading screen (listed every map piece 10 times a second), the fade-out (listed a body's
+  parts every frame).
+- **Imports split (ModelLibrary):** the five venue scenes the server alone builds from (MapsLobby, MapsMeeting,
+  MapsAgency, MapsCampus, MapsTokyo = ModelLibrary.SERVER_ONLY) go to ServerStorage.DeathsGambitServerAssets at
+  install; the server indexes both stores, players' devices only the ReplicatedStorage one (props, Fx, Scenes,
+  Sets: the client reads those). Spec ModelStores.spec uses a made-up kind so a real place's imports are untouched.
+  A client never asks for a Maps* version (only ModelsCore), so nothing on the client misses them.
+- MapPreloader on touch fetches ahead only ModelsCore/ModelsLobby/ModelsFx from the store (computers: all).
+- Touch: every key feature has a touch path (prompts, action bar, wheel, Tasks button, hack buttons). All 16
+  puzzles and the hack screen open on the phone layout inside the screen. Fixed: hack practice (the Trial's) never
+  opened (practice set after Router.open; allowed() refused it outside a case); hack column ran out of a phone's
+  window (UIScale fit) and its buttons said "(Space)" on touch; phone window headers 84 px (title 62%); Dial keypad
+  room on phones; Autopsy taps pick the nearest body part on touch.
+- TaskScreen.practice takes an optional puzzle name (the probe opens each of the 16).

@@ -18,6 +18,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared:WaitForChild("Net"))
 
 local Kit = require(script.Parent.Kit)
+local Device = require(script.Parent.Core.Device)
 local Router = require(script.Parent.Core.Router)
 local Toasts = require(script.Parent.Toasts)
 
@@ -34,6 +35,12 @@ local DECRYPT = 2 -- seconds between two stages
 local LIMIT = { crack = 7, voltage = 16, fingerprint = 14 } -- seconds a stage may run before it is a miss
 local TITLES = { crack = "Data crack", voltage = "Voltage", fingerprint = "Fingerprint" }
 local BUTTONS = { crack = "Lock  (Space)", voltage = "Connect  (Space)", fingerprint = "Clone  (Space)" }
+
+-- A game's button text, without the key on a touch screen (a phone has no Space).
+local function buttonText(game: string): string
+	local text = BUTTONS[game] or ""
+	return if Device.touch() then (string.gsub(text, "%s+%(Space%)", "")) else text
+end
 
 -- The data crack.
 local ROW = 44 -- px between two symbols
@@ -128,6 +135,18 @@ local function crackStage(rng: Random, stage: number)
 	})
 	column.BackgroundTransparency = 0.2
 	column.BackgroundColor3 = C.g0
+	-- (shrunk to the room there is: a landscape phone's window is shorter than the column, which ran out of it)
+	local fit = Instance.new("UIScale")
+	fit.Parent = column
+	local function refit()
+		local room = area.AbsoluteSize.Y / math.max(0.01, Kit.Base.scaleOf(area))
+		fit.Scale = math.clamp(room / (ROW * ROWS), 0.4, 1)
+	end
+	local watching = area:GetPropertyChangedSignal("AbsoluteSize"):Connect(refit)
+	column.Destroying:Once(function()
+		watching:Disconnect()
+	end)
+	refit()
 	local window = Kit.Base.make("Frame", {
 		Name = "Window",
 		BackgroundTransparency = 1,
@@ -402,7 +421,7 @@ local function close()
 	Router.close("hack", "rule")
 end
 
-local function start(payload)
+local function start(payload, practice: ((boolean) -> ())?)
 	local seed = tonumber(payload.seed) or 1
 	local game = if type(payload.game) == "string" and BUILD[payload.game]
 		then payload.game
@@ -417,13 +436,15 @@ local function start(payload)
 		startedAt = os.clock(),
 		state = "boot",
 		stateUntil = os.clock() + BOOT,
+		-- (set before the screen opens: only a practice run may open outside a case, 2026-11-11)
+		practice = practice,
 	}
 	Kit.clear(area)
 	stationLabel.Text = string.upper(tostring(payload.stationName or ""))
 	stageLabel.Text = "CONNECTING"
 	targetText:set("--")
 	setStatus("Hacking")
-	Kit.setText(actionButton, BUTTONS[game])
+	Kit.setText(actionButton, buttonText(game))
 	Kit.setEnabled(actionButton, false)
 	Router.open("hack")
 end
@@ -446,8 +467,7 @@ function HackScreen.practice(title: string, onDone: (boolean) -> ())
 	if current then
 		return
 	end
-	start({ stationName = title, stages = 1, seed = math.random(1, 2 ^ 30) })
-	current.practice = onDone
+	start({ stationName = title, stages = 1, seed = math.random(1, 2 ^ 30) }, onDone)
 end
 
 function HackScreen.init()
@@ -498,7 +518,7 @@ function HackScreen.init()
 		Parent = body,
 	})
 	actionButton = Kit.button({
-		text = BUTTONS.crack,
+		text = buttonText("crack"),
 		icon = "lock",
 		variant = "primary",
 		AnchorPoint = Vector2.new(0, 1),

@@ -74,20 +74,22 @@ return function(ctx: Common.Context)
 		Parent = ctx.area,
 	})
 	local typed = def.PREFIX
+	-- (on a phone the number is shorter and the keys get the room: the window is short in landscape)
+	local small = Kit.Layout.isPhone()
 	local display = Common.mono(phone, "", {
 		size = "title",
 		align = Enum.TextXAlignment.Center,
 		Position = UDim2.fromOffset(10, 10),
-		Size = UDim2.new(1, -20, 0, 40),
+		Size = UDim2.new(1, -20, 0, if small then 30 else 40),
 	})
-	Common.rule(phone, UDim2.fromOffset(14, 54), UDim2.new(1, -28, 0, 1), Common.INK)
+	Common.rule(phone, UDim2.fromOffset(14, if small then 42 else 54), UDim2.new(1, -28, 0, 1), Common.INK)
 	local function show()
 		display.Text = def.format(typed)
 	end
-	local pad = Common.grid(phone, 3, 4, 8, {
+	local pad = Common.grid(phone, 3, 4, if small then 6 else 8, {
 		Name = "Keys",
-		Position = UDim2.fromOffset(14, 66),
-		Size = UDim2.new(1, -28, 1, -80),
+		Position = UDim2.fromOffset(14, if small then 50 else 66),
+		Size = UDim2.new(1, -28, 1, if small then -58 else -80),
 	})
 	local keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "Del", "0", "Call" }
 	for index, key in ipairs(keys) do

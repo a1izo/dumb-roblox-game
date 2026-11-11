@@ -59,6 +59,9 @@ export type Window = {
 }
 
 local HEADER = 128
+-- A phone's header is shorter, its title smaller (still whole): a landscape phone has little height to spare.
+local PHONE_HEADER = 84
+local PHONE_TITLE = 0.62
 local FOOTER = 72
 local TITLE_SIZE = 88
 
@@ -164,7 +167,8 @@ function Window.new(options: Options): Window
 			Parent = header,
 		})
 		local function placeAccent()
-			accent.Position = UDim2.fromOffset(inset + titleLabel.AbsoluteSize.X / Base.scaleOf(titleLabel) + 8, 62)
+			local y = if Layout.isPhone() then 40 else 62
+			accent.Position = UDim2.fromOffset(inset + titleLabel.AbsoluteSize.X / Base.scaleOf(titleLabel) + 8, y)
 		end
 		titleLabel:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeAccent)
 		placeAccent()
@@ -219,7 +223,14 @@ function Window.new(options: Options): Window
 	Base.list(footer, Tokens.space.m, true, Enum.HorizontalAlignment.Right)
 	Paper.apply(page)
 
+	local titleSize = titleLabel.TextSize
 	local function arrange(class: string)
+		local headerHeight = if class == "phone" then PHONE_HEADER else HEADER
+		header.Size = UDim2.new(1, 0, 0, headerHeight)
+		titleLabel.TextSize = if class == "phone" then math.floor(titleSize * PHONE_TITLE) else titleSize
+		titleLabel.Position = UDim2.fromOffset(inset - 4, if class == "phone" then Tokens.space.s else Tokens.space.m)
+		body.Position = UDim2.fromOffset(inset, headerHeight + Tokens.space.l)
+		body.Size = UDim2.new(1, -inset * 2, 1, -(headerHeight + Tokens.space.l + footerHeight + Tokens.space.l))
 		root.AnchorPoint = Vector2.new(0.5, 0.5)
 		root.Position = UDim2.fromScale(0.5, 0.5)
 		if class == "phone" then

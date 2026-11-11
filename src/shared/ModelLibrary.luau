@@ -48,6 +48,13 @@ export type Info = {
 }
 
 local STORE_NAME = "DeathsGambitAssets"
+-- The case maps' and the lobby's scenes are built by the server alone (into Workspace, which sends each player only
+-- the map in play), so they are kept in ServerStorage, off every player's device: before 2026-11-11 a phone held all
+-- five venues' templates (about 67 MB of imports) on top of the map it stood in.
+local SERVER_STORE_NAME = "DeathsGambitServerAssets"
+local SERVER_ONLY = { MapsLobby = true, MapsMeeting = true, MapsAgency = true, MapsCampus = true, MapsTokyo = true }
+-- (the specs add a made-up kind of their own)
+ModelLibrary.SERVER_ONLY = SERVER_ONLY
 local PREFIX = "DeathsGambit"
 local BIN_NAME = "DeathsGambitSuperseded"
 
@@ -65,6 +72,27 @@ local TURNS = {
 
 local function store(): Instance?
 	return ReplicatedStorage:FindFirstChild(STORE_NAME)
+end
+
+-- The server's own store (nil on a player's device).
+local function serverStore(): Instance?
+	if not RunService:IsServer() then
+		return nil
+	end
+	return game:GetService("ServerStorage"):FindFirstChild(SERVER_STORE_NAME)
+end
+
+-- Every store this side can see: the shared one, and on the server its own.
+local function stores(): { Instance }
+	local list = {}
+	local shared, own = store(), serverStore()
+	if shared then
+		table.insert(list, shared)
+	end
+	if own then
+		table.insert(list, own)
+	end
+	return list
 end
 
 local function isMeshSource(instance: Instance): boolean
@@ -98,8 +126,7 @@ end
 -- name -> the first mesh (or model of meshes) with that name in the store, the newest import's first.
 local function buildIndex(): { [string]: Instance }
 	local found = {}
-	local root = store()
-	if root then
+	for _, root in ipairs(stores()) do
 		for _, import in ipairs(importsInOrder(root)) do
 			for _, item in ipairs(import:GetDescendants()) do
 				if found[item.Name] == nil and isMeshSource(item) then
@@ -113,9 +140,9 @@ end
 
 -- The import (a child of the store) that holds `item`.
 local function importOf(item: Instance): Instance?
-	local root = store()
+	local roots = stores()
 	local at: Instance? = item
-	while at and at.Parent ~= root do
+	while at and not table.find(roots, at.Parent :: Instance) do
 		at = at.Parent
 	end
 	return at
@@ -152,7 +179,7 @@ local function looksImported(instance: Instance): boolean
 		return false
 	end
 	local name = instance.Name
-	if name == STORE_NAME or name == BIN_NAME then
+	if name == STORE_NAME or name == BIN_NAME or name == SERVER_STORE_NAME then
 		return false
 	end
 	if string.sub(name, 1, #PREFIX) == PREFIX then
@@ -328,13 +355,14 @@ function ModelLibrary.version(kind: string): number
 	if known then
 		return known
 	end
-	local root = store()
 	local newest = 0
-	for _, child in ipairs(if root then root:GetChildren() else {}) do
-		if child:IsA("Model") or child:IsA("Folder") then
-			local found, version, marked = importVersion(child)
-			if marked and found == kind then
-				newest = math.max(newest, version)
+	for _, root in ipairs(stores()) do
+		for _, child in ipairs(root:GetChildren()) do
+			if child:IsA("Model") or child:IsA("Folder") then
+				local found, version, marked = importVersion(child)
+				if marked and found == kind then
+					newest = math.max(newest, version)
+				end
 			end
 		end
 	end
@@ -409,6 +437,25 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 	end
 	quiet(rootInstance)
 	local setAside = setAsideOlder(rootInstance)
+	-- The venues only the server builds from go to its own store.
+	local ServerStorage = game:GetService("ServerStorage")
+	local own = ServerStorage:FindFirstChild(SERVER_STORE_NAME)
+	if not own then
+		own = Instance.new("Folder")
+		own.Name = SERVER_STORE_NAME
+		own.Parent = ServerStorage
+	end
+	for _, child in ipairs(rootInstance:GetChildren()) do
+		if child:IsA("Model") or child:IsA("Folder") then
+			local kind, _, marked = importVersion(child)
+			if marked and SERVER_ONLY[kind] then
+				child.Parent = own
+			end
+		end
+	end
+	for _, extra in ipairs(setAsideOlder(own :: Instance)) do
+		table.insert(setAside, extra)
+	end
 	index = buildIndex()
 	templates = {}
 	calibrations = {}
