@@ -163,6 +163,7 @@ Settings.init()
 FontMirror.init()
 -- Every text boils, like the lines (OMORI's wobble).
 Kit.Boil.watch(Players.LocalPlayer:WaitForChild("PlayerGui"))
+Kit.Pencil.watch(Players.LocalPlayer:WaitForChild("PlayerGui"))
 
 -- Screens, so every panel is registered and listening before state arrives.
 Toasts.init()

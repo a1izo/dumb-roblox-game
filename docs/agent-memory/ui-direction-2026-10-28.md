@@ -21,6 +21,14 @@ What it is, in the code (src/client/UI/Kit):
   with MaxVisibleGraphemes = 0 sizes AutomaticSize labels as if empty; a full-size copy grows an auto-sized padded
   label every frame (so it has no height and is 1 px narrower); a Folder around it crashed Studio.
   NoBoil (attribute) keeps a subtree still: the game title and its quote, the case summary, the emote wheel.
+- **All text boils since 2026-11-11** (the user: "make all of the text ... more omori styled"): headers and a hovered
+  button's text letter by letter as before; smaller text gently (a quarter of its letters +-1 px, the line drifting
+  1 px), which keeps it readable. **Kit/Pencil.luau** redraws every UIStroke box outline and every thin rule frame as
+  a pencil line: three drawings (UiPencilBox1..3 9-slice 40..216, UiPencilLine1..3, art/scripts/ui/textures.py, Core
+  carriers) swapped at 8 fps, each line on its own beat. The stroke stays (its maker keeps using it) but is drawn 0
+  thick; rounder-than-8-px corners, text strokes and NoBoil/NoPencil subtrees are left alone. A box that lays out
+  its children gets its pencil as a sibling. Test without the import: Kit.Textures.override with rbxasset://
+  files copied into Studio's content/textures (the harness Pencil probe does this).
 - **Pointer.luau**: the one red pointing hand; buttons and name lines call point/release on hover and selection.
 - **Buttons** (Controls.button): solid box plus a boiling inner frame; chosen = the hand comes, never a colour change.
 - **Windows** (Window.new): paper sheet over the blurred world, big lowercase title with a full stop (whole, never

@@ -33,6 +33,13 @@ Textures.NAMES = {
 	"UiVignette",
 	"UiIcons",
 	"UiWordmark",
+	-- the pencil drawings (Kit/Pencil): three of a box outline, three of a rule
+	"UiPencilBox1",
+	"UiPencilBox2",
+	"UiPencilBox3",
+	"UiPencilLine1",
+	"UiPencilLine2",
+	"UiPencilLine3",
 	-- (a soft round glow, the aura kit's: the shop window's light from the top)
 	"AuraGlow",
 }
@@ -62,6 +69,17 @@ function Textures.whenReady(callback: () -> ()): Signal.Connection?
 		return nil
 	end
 	return Textures.Ready:Connect(callback)
+end
+
+-- Points textures at other content (a test place without the import: rbxasset:// files) and calls them ready.
+function Textures.override(ids: { [string]: string })
+	for name, id in pairs(ids) do
+		loaded[name] = id
+	end
+	if not ready then
+		ready = true
+		Textures.Ready:Fire()
+	end
 end
 
 local function load()

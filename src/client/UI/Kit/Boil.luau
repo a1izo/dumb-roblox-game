@@ -1,9 +1,11 @@
 --!strict
 -- Line boil (OMORI's hand-drawn wobble): a drawn thing redraws a hair differently 8 times a second, cycling
 -- three states. Each attached object gets its own three small offsets (and a hair of rotation), so a screen
--- full of frames never moves in step. Lines and frames boil; of the text, only big headers and a button's text
--- while it is hovered (the owner, 2026-11-01: on small text it "makes small text unreadable"). The case summary
--- at the end stays still altogether (NoBoil on it).
+-- full of frames never moves in step. Lines and frames boil, and all of the text (the user, 2026-11-10: "make all
+-- of the text ... more omori styled ... 2 or more images going back and forth"): big headers and a hovered
+-- button's text letter by letter, smaller text gently (2026-11-01 a full boil on small text "makes small text
+-- unreadable": so a quarter of its letters move a pixel and the whole line drifts a pixel). The case summary at
+-- the end stays still altogether (NoBoil on it). Kit/Pencil redraws the outlines and rules in pencil.
 --
 --   Boil.attach(frame)          -- 1 px, the default for frames, rules and the hand
 --   Boil.attach(title, 2, 0.4)  -- 2 px and up to 0.4 degrees, for big lettering
@@ -102,10 +104,14 @@ end
 
 type TextEntry = {
 	copy: TextLabel,
-	-- whether it boils now: a header always, a button's text while the button is hovered
+	-- whether it boils loudly now: a header always, a button's text while the button is hovered
 	active: boolean,
-	-- the copy's text in each state, worked out again when the label's text changes
+	-- the copy's text in each state, worked out again when the label's text changes: loud (every letter) and
+	-- soft (a few letters), and where the copy sits in each state (the soft drift)
 	states: { string },
+	soft: { string },
+	home: UDim2,
+	drift: { UDim2 },
 	shown: boolean,
 	drawn: number?,
 }
@@ -128,7 +134,8 @@ local LONGEST = 400 -- letters: longer text (a page of reading) keeps still
 local HEADER = 32 -- px: text this big or bigger is a header and always boils
 
 -- The label's text with each letter at its own size, one string per state (the first at the label's size).
-local function letterStates(text: string, rich: boolean, size: number, seed: number): { string }
+local function letterStates(text: string, rich: boolean, size: number, seed: number, share: number?): { string }
+	local part = share or 1
 	local random = Random.new(seed)
 	local swing = math.max(1, math.floor(size * 0.07 + 0.5))
 	-- (cut into tags, entities and letters; only letters change size)
@@ -160,7 +167,7 @@ local function letterStates(text: string, rich: boolean, size: number, seed: num
 	for index = 1, STATES do
 		local out = table.create(#pieces)
 		for _, piece in ipairs(pieces) do
-			if piece.letter and index > 1 then
+			if piece.letter and index > 1 and (part >= 1 or random:NextNumber() < part) then
 				local grow = random:NextInteger(-swing, swing)
 				if grow ~= 0 then
 					table.insert(out, string.format('<font size="%d">%s</font>', size + grow, piece.text))
@@ -214,9 +221,6 @@ function Boil.text(label: GuiObject)
 		then label :: any
 		else label:FindFirstAncestorWhichIsA("GuiButton")
 	local header = button == nil and source.TextSize >= HEADER
-	if not header and not button then
-		return
-	end
 	local copy = Instance.new("TextLabel")
 	copy.Name = "BoilLetters"
 	copy.BackgroundTransparency = 1
@@ -226,19 +230,34 @@ function Boil.text(label: GuiObject)
 	copy.Size = UDim2.new(1, -1, 0, 0)
 	copy.TextTruncate = Enum.TextTruncate.None
 	copy.RichText = true
+	local random = Random.new()
+	local drift = { UDim2.new() }
+	for index = 2, STATES do
+		drift[index] = UDim2.fromOffset(random:NextInteger(-1, 1), random:NextInteger(-1, 1))
+	end
+	local entry: TextEntry = {
+		copy = copy,
+		states = {},
+		soft = {},
+		shown = false,
+		active = header,
+		home = UDim2.new(),
+		drift = drift,
+	}
 	local function align()
 		local y = source.TextYAlignment
-		copy.Position = if y == Enum.TextYAlignment.Top
+		entry.home = if y == Enum.TextYAlignment.Top
 			then UDim2.new()
 			elseif y == Enum.TextYAlignment.Bottom then UDim2.new(0, 0, 1, -1)
 			else UDim2.fromScale(0, 0.5)
+		copy.Position = entry.home
+		entry.drawn = nil
 	end
 	align()
 	label:GetPropertyChangedSignal("TextYAlignment"):Connect(align)
 	copy:SetAttribute("PaperKeep", true) -- (it follows the label's colours, already on paper)
 	copy:SetAttribute("KeepFont", true)
 	copy:SetAttribute("NoBoil", true) -- (or the watcher would boil the copy, and its copy, and on)
-	local entry: TextEntry = { copy = copy, states = {}, shown = false, active = header }
 	if not header and button then
 		button.MouseEnter:Connect(function()
 			entry.active = true
@@ -252,12 +271,15 @@ function Boil.text(label: GuiObject)
 		local text = source.Text
 		if utf8.len(text) and (utf8.len(text) :: number) > LONGEST then
 			entry.states = { text, text, text }
+			entry.soft = entry.states
 		else
 			local ok, states = pcall(letterStates, text, source.RichText, source.TextSize, seed)
 			entry.states = if ok then states else { text, text, text }
+			local okSoft, soft = pcall(letterStates, text, source.RichText, source.TextSize, seed + 1, 0.25)
+			entry.soft = if okSoft then soft else { text, text, text }
 		end
 		entry.drawn = nil
-		copy.Text = entry.states[frame + 1]
+		copy.Text = (if entry.active then entry.states else entry.soft)[frame + 1]
 	end
 	for _, prop in ipairs(MIRRORED) do
 		(copy :: any)[prop] = source[prop]
@@ -348,10 +370,14 @@ task.spawn(function()
 			if look then
 				entry.shown = onScreen(label)
 			end
-			local state = if reduced or not entry.active then 1 else frame + 1
+			-- (loud states are 1..3, soft ones 4..6)
+			local state = if reduced then 1 elseif entry.active then frame + 1 else frame + 1 + STATES
 			if entry.shown and entry.drawn ~= state then
 				entry.drawn = state
-				entry.copy.Text = entry.states[state]
+				local index = (state - 1) % STATES + 1
+				local loud = state <= STATES
+				entry.copy.Text = (if loud then entry.states else entry.soft)[index]
+				entry.copy.Position = entry.home + (if loud then UDim2.new() else entry.drift[index])
 			end
 		end
 	end

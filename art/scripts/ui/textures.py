@@ -674,9 +674,100 @@ def write_icons_luau(cells):
     return ICONS_LUAU
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Pencil (the OMORI look, 2026-11-11: the user wants "almost everything" drawn in wobbly pencil, "like 2 or more images
+# going back and forth"). Three drawings of the same box and of the same rule, each drawn again by hand: the game swaps
+# them 8 times a second (Kit/Pencil.luau). A graphite stroke is two quick passes a hair apart, its strength broken by
+# the paper's tooth, the sides running past the corners as a hand-drawn box does.
+#   UiPencilBox1..3   a box outline, 9-slice: slice 40..216, the line about 5 px wide 18 px in from the edge
+#   UiPencilLine1..3  a rule across, 512 x 48, slice 64..448 across (the ends taper)
+
+
+def _stroke_alpha(h, w, pts, width, tooth, taper=0.0):
+    """Coverage of a polyline drawn `width` wide over an h x w image, broken by `tooth` (0..1 per pixel)."""
+    yy, xx = np.mgrid[0:h, 0:w].astype(float)
+    best = np.full((h, w), 1e9)
+    along = np.zeros((h, w))
+    total = sum(math.dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
+    run = 0.0
+    for i in range(len(pts) - 1):
+        (ax, ay), (bx, by) = pts[i], pts[i + 1]
+        dx, dy = bx - ax, by - ay
+        ll = dx * dx + dy * dy or 1.0
+        t = np.clip(((xx - ax) * dx + (yy - ay) * dy) / ll, 0, 1)
+        d = np.hypot(xx - (ax + t * dx), yy - (ay + t * dy))
+        closer = d < best
+        best = np.where(closer, d, best)
+        seg = math.sqrt(ll)
+        along = np.where(closer, (run + t * seg) / max(total, 1e-6), along)
+        run += seg
+    half = np.full((h, w), width / 2)
+    if taper > 0:
+        ends = np.minimum(along, 1 - along) / taper
+        half = half * np.clip(0.35 + 0.65 * ends, 0.35, 1)
+    cov = np.clip(half - best + 0.5, 0, 1)
+    return cov * tooth
+
+
+def _paper_tooth(h, w, seed):
+    """The paper's tooth: graphite catches on the bumps, misses the hollows."""
+    r = np.random.default_rng(seed)
+    fine = r.random((h, w))
+    coarse = noise(h, w, 6, seed + 1)
+    return np.clip(0.42 + 0.5 * coarse + 0.35 * (fine - 0.5), 0.15, 1.0)
+
+
+def _wobbly(a, b, r, amount, n=10):
+    """Points from a to b, nudged sideways by up to `amount` px (a hand's line is never ruled)."""
+    (ax, ay), (bx, by) = a, b
+    length = math.dist(a, b) or 1.0
+    nx, ny = -(by - ay) / length, (bx - ax) / length
+    phase, freq = r.uniform(0, 6.28), r.uniform(0.6, 1.4)
+    pts = []
+    for k in range(n + 1):
+        t = k / n
+        off = amount * (0.6 * math.sin(phase + t * math.pi * 2 * freq) + 0.4 * r.uniform(-1, 1))
+        pts.append((ax + (bx - ax) * t + nx * off, ay + (by - ay) * t + ny * off))
+    return pts
+
+
+def pencil_box(seed, size=256, inset=18, width=4.6):
+    r = np.random.default_rng(seed)
+    tooth = _paper_tooth(size, size, seed)
+    alpha = np.zeros((size, size))
+    lo, hi = inset, size - 1 - inset
+    corners = [(lo, lo), (hi, lo), (hi, hi), (lo, hi)]
+    for side in range(4):
+        a, b = corners[side], corners[(side + 1) % 4]
+        # each side runs past its corners by a different amount (a box drawn in four strokes)
+        dx, dy = (b[0] - a[0]) / (size - 2 * inset), (b[1] - a[1]) / (size - 2 * inset)
+        over0, over1 = r.uniform(2, 15), r.uniform(4, 17)
+        sa = (a[0] - dx * over0 + r.uniform(-1.5, 1.5), a[1] - dy * over0 + r.uniform(-1.5, 1.5))
+        sb = (b[0] + dx * over1 + r.uniform(-1.5, 1.5), b[1] + dy * over1 + r.uniform(-1.5, 1.5))
+        # (the wobble lives near the corners only: the middle of each side stretches with the box)
+        main = _wobbly(sa, sb, r, 2.4)
+        alpha = np.maximum(alpha, _stroke_alpha(size, size, main, width, tooth, taper=0.08))
+        # the second, lighter pass a hair off the first
+        shift = (r.uniform(-2.6, 2.6), r.uniform(-2.6, 2.6))
+        echo = [(x + shift[0], y + shift[1]) for x, y in _wobbly(sa, sb, r, 1.2)]
+        alpha = np.maximum(alpha, 0.55 * _stroke_alpha(size, size, echo, width * 0.6, tooth[::-1, ::-1], taper=0.12))
+    return rgba(np.ones((size, size)), np.clip(alpha, 0, 1))
+
+
+def pencil_line(seed, w=512, h=48, width=4.4):
+    r = np.random.default_rng(seed)
+    tooth = _paper_tooth(h, w, seed)
+    mid = h / 2
+    a, b = (r.uniform(6, 14), mid + r.uniform(-1.5, 1.5)), (w - r.uniform(6, 14), mid + r.uniform(-1.5, 1.5))
+    alpha = _stroke_alpha(h, w, _wobbly(a, b, r, 1.8, n=24), width, tooth, taper=0.06)
+    echo = [(x, y + r.uniform(-1.2, 1.2)) for x, y in _wobbly((a[0] + 20, a[1]), (b[0] - 30, b[1]), r, 1.3, n=24)]
+    alpha = np.maximum(alpha, 0.5 * _stroke_alpha(h, w, echo, width * 0.6, tooth[:, ::-1], taper=0.1))
+    return rgba(np.ones((h, w)), np.clip(alpha, 0, 1))
+
+
 def preview(textures, icons):
     """A contact sheet: every texture white-on-dark, as the game tints them."""
-    sheet = np.zeros((1500, 1400, 4))
+    sheet = np.zeros((1500, 1700, 4))
     sheet[..., :3] = np.array([23, 26, 32]) / 255
     sheet[..., 3] = 1
 
@@ -699,6 +790,9 @@ def preview(textures, icons):
     put(textures["FxStatic"], 240, 660, max_w=200)
     put(textures["FxChalk"], 460, 660, max_w=300)
     put(textures["FxTear"], 780, 660, max_w=400)
+    for k in range(3):
+        put(textures["UiPencilBox%d" % (k + 1)], 1420, 20 + k * 270, max_w=256)
+        put(textures["UiPencilLine%d" % (k + 1)], 1100, 1100 + k * 60, max_w=512)
     put(icons, 20, 980, max_w=1000)
     os.makedirs(PREVIEWS, exist_ok=True)
     return png.write(os.path.join(PREVIEWS, "ui_textures.png"), sheet)
@@ -719,6 +813,12 @@ def main():
         "FxStatic": static(),
         "FxChalk": chalk(),
         "FxTear": tear(),
+        "UiPencilBox1": pencil_box(101),
+        "UiPencilBox2": pencil_box(202),
+        "UiPencilBox3": pencil_box(303),
+        "UiPencilLine1": pencil_line(111),
+        "UiPencilLine2": pencil_line(222),
+        "UiPencilLine3": pencil_line(333),
     }
     for name, img in textures.items():
         png.write(os.path.join(TEXTURES, name + ".png"), img)

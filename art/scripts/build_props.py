@@ -47,6 +47,12 @@ UI_TEXTURES = [
     "UiVignette",
     "UiIcons",
     "UiWordmark",
+    "UiPencilBox1",
+    "UiPencilBox2",
+    "UiPencilBox3",
+    "UiPencilLine1",
+    "UiPencilLine2",
+    "UiPencilLine3",
 ]
 
 
