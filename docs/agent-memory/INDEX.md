@@ -49,3 +49,4 @@
 - [Scene death sets](scene-death-sets.md) — 2026-11-08: Blender venue Scenes (own FBX, client-built per 1000-stud cell), LightingPresets.scenes, fine sun aim, open-from-black, MCP play-test traps
 - [Animation bar](animation-bar.md) — 2026-11-09 the measurable "made by a human" bar (snap+hold impacts, uneven spacing, asymmetry, moving holds, overlap, no steady shakes); ClipPlayer now cubic, small life belongs to Anim/Life
 - [Mobile and performance](mobile-and-perf-2026-11.md) - Device module + DGForceDevice phone tests; boil/pencil sliced, emit share, phone layout fixes (2026-11-11)
+- [Imports by Open Cloud](imports-by-open-cloud.md) - no-screen imports + script sync through the Studio MCP: upload, insert, line up, share with the universe; --split for >20 MB
