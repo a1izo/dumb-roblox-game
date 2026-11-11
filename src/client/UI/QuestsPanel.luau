@@ -281,20 +281,45 @@ local function buildPopup()
 	local card = LobbyPanel.profileCard()
 	local probe = Kit.frame({ Name = "StreakProbe", Size = UDim2.fromOffset(0, 0), Parent = Screens.panels })
 	local GAP = 16
+	-- The Trial's card at the top right, when it is on screen.
+	local function trialCard(): GuiObject?
+		local found = Screens.hud:FindFirstChild("TrialObjective", true)
+		local node: Instance? = found
+		while node and node ~= Screens.hud do
+			if node:IsA("GuiObject") and not node.Visible then
+				return nil
+			end
+			node = node.Parent
+		end
+		return if found and found:IsA("GuiObject") then found else nil
+	end
 	local function place()
 		popupNotice:setWidth(Kit.Notice.width())
-		if Kit.Layout.isPhone() then
-			-- (a phone's screen is too short for it over the card and the Trial's card at the top: it goes to the
-			-- bottom middle, between the thumbstick and the jump button)
+		local scale = Kit.Base.scaleOf(popup)
+		local bottom = (card.AbsolutePosition.Y - probe.AbsolutePosition.Y) / scale - GAP
+		-- (over the card it would reach up into the Trial's card on a short screen, a phone's or a small window's,
+		-- 2026-11-12: then it goes to the bottom middle, between a phone's thumbstick and jump button)
+		local trial = trialCard()
+		local top = card.AbsolutePosition.Y - GAP * scale - popup.AbsoluteSize.Y
+		local crowded = trial ~= nil and top < trial.AbsolutePosition.Y + trial.AbsoluteSize.Y + 8 * scale
+		if Kit.Layout.isPhone() or crowded then
 			popup.AnchorPoint = Vector2.new(0.5, 1)
 			popup.Position = UDim2.new(0.5, 0, 1, -T.space.l)
 			return
 		end
-		local scale = Kit.Base.scaleOf(popup)
-		local bottom = (card.AbsolutePosition.Y - probe.AbsolutePosition.Y) / scale - GAP
 		popup.AnchorPoint = Vector2.new(1, 1)
 		popup.Position = UDim2.new(1, -T.space.l, 0, math.floor(bottom))
 	end
+	-- (looked at again twice a second while it is up: the Trial's card comes and goes, grows, and is hidden with the
+	-- lobby's intro, and none of that tells this card)
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			if popup.Visible then
+				place()
+			end
+		end
+	end)
 	-- Hide UI hides the pop-up too; it comes back with the rest if it was still waiting.
 	local waiting = false
 	LobbyChrome.Changed:Connect(function(hidden: boolean)
@@ -328,6 +353,7 @@ local function buildPopup()
 	card:GetPropertyChangedSignal("AbsolutePosition"):Connect(place)
 	card:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
 	popup:GetPropertyChangedSignal("Visible"):Connect(place)
+	popup:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
 	Kit.Layout.watch(function()
 		place()
 	end)

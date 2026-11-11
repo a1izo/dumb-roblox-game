@@ -18,9 +18,13 @@ function Device.forced(): string?
 	return if value == "phone" or value == "tablet" then value else nil
 end
 
--- A touch screen with no keyboard: a phone or a tablet.
+-- A touch screen with no keyboard: a phone or a tablet. In Studio a touch screen counts whatever else is plugged in:
+-- the device emulator plays a phone on a computer, keyboard and all (2026-11-12: it showed the computer layout).
 function Device.touch(): boolean
 	if Device.forced() then
+		return true
+	end
+	if RunService:IsStudio() and UserInputService.TouchEnabled then
 		return true
 	end
 	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
