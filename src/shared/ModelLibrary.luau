@@ -412,6 +412,21 @@ local function setAsideOlder(root: Instance): { string }
 	return setAside
 end
 
+-- Moves the imports of a server-only kind (SERVER_ONLY) from `shared` to `own`. Returns how many it moved.
+function ModelLibrary.keepServerOnly(shared: Instance, own: Instance): number
+	local moved = 0
+	for _, child in ipairs(shared:GetChildren()) do
+		if child:IsA("Model") or child:IsA("Folder") then
+			local kind, _, marked = importVersion(child)
+			if marked and SERVER_ONLY[kind] then
+				child.Parent = own
+				moved += 1
+			end
+		end
+	end
+	return moved
+end
+
 -- Server, once at start (before any map is built): moves imports that were left in Workspace,
 -- ReplicatedStorage or ServerStorage into ReplicatedStorage.DeathsGambitAssets and reports what
 -- the game can use.
@@ -445,14 +460,7 @@ function ModelLibrary.install(): { found: number, missing: { string } }
 		own.Name = SERVER_STORE_NAME
 		own.Parent = ServerStorage
 	end
-	for _, child in ipairs(rootInstance:GetChildren()) do
-		if child:IsA("Model") or child:IsA("Folder") then
-			local kind, _, marked = importVersion(child)
-			if marked and SERVER_ONLY[kind] then
-				child.Parent = own
-			end
-		end
-	end
+	ModelLibrary.keepServerOnly(rootInstance, own :: Instance)
 	for _, extra in ipairs(setAsideOlder(own :: Instance)) do
 		table.insert(setAside, extra)
 	end
