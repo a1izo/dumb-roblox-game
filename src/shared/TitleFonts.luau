@@ -33,6 +33,8 @@ local LOOKS: { [string]: Look } = {
 	title_set_floor = { font = F.Sarpanch, weight = W.Bold, case = "upper" },
 	title_s1_bookkeeper = { font = F.Garamond, case = "title" },
 	title_s1_accountant = { font = F.RobotoMono, weight = W.Medium, case = "upper" },
+	title_s2_scribe = { font = F.Kalam, case = "title" },
+	title_s2_witness = { font = F.GrenzeGotisch, case = "upper" },
 	title_c_mover = { font = F.Ubuntu, weight = W.Bold, italic = true, case = "upper" },
 	title_c_showstopper = { font = F.Michroma, case = "upper" },
 	title_c_living_legend = { font = F.GrenzeGotisch, weight = W.Bold, case = "title" },

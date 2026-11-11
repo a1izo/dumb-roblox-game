@@ -99,11 +99,12 @@ return function(t)
 			local reached = Ledger.add(record, 1, 151)
 			expect(#reached).to.equal(2)
 			expect(reached[1].tier).to.equal(1)
-			expect(reached[2].reward.coins).to.equal(34)
+			expect(reached[2].reward.coins).to.equal(72)
 			expect(#Ledger.add(record, 1, 0)).to.equal(0)
 			reached = Ledger.add(record, 1, 750)
 			expect(reached[#reached].tier).to.equal(10)
-			expect(reached[#reached].reward.item).to.equal("title_s1_bookkeeper")
+			expect(reached[#reached].reward.coins).to.equal(Ledger.PURSES[10])
+			expect(reached[#reached - 1].reward.item).to.equal("title_s1_bookkeeper")
 			reached = Ledger.add(record, 1, 99999)
 			expect(reached[#reached].tier).to.equal(Ledger.TIERS)
 			expect(reached[#reached].reward.item).to.equal("emote_new_world")
@@ -119,7 +120,9 @@ return function(t)
 			for _, season in pairs(Ledger.SEASONS) do
 				for tier, id in pairs(season.items) do
 					local item = Cosmetics.byId(id) :: any
-					expect(item ~= nil and item.source == "season" and tier <= Ledger.TIERS).to.equal(true)
+					-- (the season's own things, or pieces from the shop given free)
+					local earned = item ~= nil and (item.source == "season" or item.price ~= nil)
+					expect(earned and tier <= Ledger.TIERS and tier % 3 == 0).to.equal(true)
 				end
 			end
 		end)
@@ -157,6 +160,38 @@ return function(t)
 				end
 			end
 			expect(paid).to.equal(true)
+		end)
+		it("pays a thing already owned in coins instead", function()
+			local data = Migrations.defaults(0)
+			local now = Ledger.START + 3 * DAY
+			data.ledger = { season = 1, points = 299, tier = 2 }
+			data.owned["seat_composed"] = true
+			local summary = {
+				won = false,
+				role = "L",
+				side = "Team",
+				survived = true,
+				tasks = 0,
+				notesFound = 0,
+				correctVotes = 0,
+				kills = 0,
+				reads = 0,
+				arrests = 0,
+				duties = 0,
+				reports = 0,
+				rigs = 0,
+				ghost = false,
+				xpBefore = 0,
+			} :: any
+			local result = ProgressRules.apply(data, summary, now)
+			local paid = 0
+			for _, line in ipairs(result.lines) do
+				if string.find(line.label, "Ledger, tier 3", 1, true) then
+					paid = line.coins
+				end
+			end
+			expect(paid).to.equal(Ledger.instead(Cosmetics.byId("seat_composed")))
+			expect(paid > 0).to.equal(true)
 		end)
 		it("puts the season's emote in Today's hand only once the season is over, at its later price", function()
 			local newWorld = Cosmetics.byId("emote_new_world") :: any

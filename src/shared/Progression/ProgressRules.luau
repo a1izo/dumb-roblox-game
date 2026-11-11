@@ -4,6 +4,7 @@
 -- once per player after the rewards are paid; the result lists what to tell the player.
 
 local Achievements = require(script.Parent.Achievements)
+local Cosmetics = require(script.Parent.Parent.Cosmetics)
 local Ledger = require(script.Parent.Ledger)
 local Mastery = require(script.Parent.Mastery)
 local Quests = require(script.Parent.Quests)
@@ -223,10 +224,14 @@ function ProgressRules.apply(data: any, summary: Summary, now: number): Result
 	if season > 0 and type(data.ledger) == "table" then
 		local points = Ledger.pointsFor(summary.won, #result.quests)
 		for _, step in ipairs(Ledger.add(data.ledger, season, points)) do
+			local item = step.reward.item
 			if step.reward.coins then
 				add(string.format("Ledger, tier %d", step.tier), step.reward.coins, 0)
+			elseif item and data.owned[item] then
+				-- (already owned: its worth in coins instead)
+				add(string.format("Ledger, tier %d", step.tier), Ledger.instead(Cosmetics.byId(item)), 0)
 			end
-			unlock(data, result, step.reward.item)
+			unlock(data, result, item)
 		end
 		result.ledger = { points = points, tier = data.ledger.tier, season = season }
 	end

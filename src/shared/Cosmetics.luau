@@ -1467,6 +1467,8 @@ Cosmetics.ITEMS = {
 	-- Earned: the Season ledger (Progression/Ledger)
 	{ id = "title_s1_bookkeeper", kind = "title", name = "Bookkeeper", rarity = "rare", source = "season" },
 	{ id = "title_s1_accountant", kind = "title", name = "Death's Accountant", rarity = "epic", source = "season" },
+	{ id = "title_s2_scribe", kind = "title", name = "Night Scribe", rarity = "rare", source = "season" },
+	{ id = "title_s2_witness", kind = "title", name = "The Last Witness", rarity = "epic", source = "season" },
 	-- Earned: owning so many emotes (Progression/Collection)
 	{ id = "title_c_mover", kind = "title", name = "Mover", rarity = "rare", source = "collection" },
 	{ id = "title_c_showstopper", kind = "title", name = "Showstopper", rarity = "epic", source = "collection" },

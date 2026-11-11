@@ -673,6 +673,24 @@ local function buildFate(profile)
 end
 
 -- The Ledger: the season, how far you are, what each tier pays; its things as cards.
+-- One thing of each kind, as the ledger names it on its line.
+local ONE_KIND = {
+	grimoire = "Manual cover",
+	specter = "Deathsinger form",
+	title = "Title",
+	writing = "Writing style",
+	verdict = "Verdict style",
+	reason = "Custom death",
+	emote = "Emote",
+	win = "Win cutscene",
+	seat = "Seat",
+	chair = "Chair",
+}
+
+-- The Ledger (redone 2026-11-11, the user: "making it look better and the rewards being more tempting"): the
+-- season's name big over the standing and the points to the next tier; the season's things as shop cards (the next
+-- one marked); then the ledger itself, one line per tier as an account book is kept: a drawn box (ticked red once
+-- paid), the tier, what it pays, the amount in mono. Things and purses stand out from the plain coin lines.
 local function buildLedger(profile)
 	local now = os.time()
 	local season = Ledger.season(now)
@@ -682,88 +700,170 @@ local function buildLedger(profile)
 	end
 	local record = Ledger.view(profile.ledger, season)
 	local _, ends = Ledger.bounds(season)
-	local top = banner(1, 64)
-	Kit.text({ face = "Head", text = Ledger.name(season), size = 26, color = C.bone, Parent = top })
+	local done = record.tier >= Ledger.TIERS
 	local into = record.points - record.tier * Ledger.PER_TIER
+	local nextThing: number? = nil
+	for tier = record.tier + 1, Ledger.TIERS do
+		if Ledger.reward(season, tier).item then
+			nextThing = tier
+			break
+		end
+	end
+
+	-- the standing
+	local top = banner(1, 104)
+	Kit.text({ face = "Head", text = Ledger.name(season), size = 34, color = C.bone, Parent = top })
 	Kit.label({
 		Name = "Standing",
-		Text = if record.tier >= Ledger.TIERS
-			then string.format("All tiers done. %d points", record.points)
-			else string.format("Tier %d/%d (%d/%d points)", record.tier, Ledger.TIERS, into, Ledger.PER_TIER),
+		Text = if done then "Every tier paid." else string.format("Tier %d of %d", record.tier, Ledger.TIERS),
+		font = "body",
+		size = "lead",
+		color = C.bone,
+		AutomaticSize = Enum.AutomaticSize.None,
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(0.5, 0, 0, 26),
+		Parent = top,
+	})
+	Kit.label({
+		Name = "Earn",
+		Text = string.format("+%d a case  +%d a win  +%d a quest", Ledger.PLAY, Ledger.WIN, Ledger.QUEST),
+		font = "mono",
+		size = "small",
+		color = C.dim,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AutomaticSize = Enum.AutomaticSize.None,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 50),
+		Size = UDim2.new(0.5, 0, 0, 20),
+		Parent = top,
+	})
+	Kit.label({
+		Name = "Points",
+		Text = if done
+			then string.format("%d points", record.points)
+			else string.format("%d/%d points to tier %d", into, Ledger.PER_TIER, record.tier + 1),
+		font = "mono",
+		size = "small",
 		color = C.dim,
 		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(0, 34),
-		Size = UDim2.new(1, 0, 0, 20),
+		Position = UDim2.fromOffset(0, 72),
+		Size = UDim2.new(1, 0, 0, 18),
 		Parent = top,
 	})
 	local _, setMeter = Kit.meter({ Position = UDim2.new(0, 0, 1, -6), Parent = top })
-	setMeter(if record.tier >= Ledger.TIERS then 1 else into / Ledger.PER_TIER, false)
-	-- The thirty tiers, small, each with what it pays.
-	local holder = Kit.frame({
-		Name = "Tiers",
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 2,
-		Parent = tableScroll,
-	})
-	Kit.grid(holder, UDim2.fromOffset(104, 58), T.space.s)
-	local things: { { tier: number, item: Cosmetics.Item } } = {}
+	setMeter(if done then 1 else into / Ledger.PER_TIER, false)
+
+	-- the season's things, as the shop shows them (the next one marked)
+	local things = section("This season's things", 2)
+	local order = 0
 	for tier = 1, Ledger.TIERS do
 		local reward = Ledger.reward(season, tier)
-		local reached = tier <= record.tier
-		local tile = Kit.Base.make("Frame", {
-			Name = "Tier" .. tier,
-			BackgroundColor3 = C.void,
-			BackgroundTransparency = if reached then 0.1 else 0.5,
-			BorderSizePixel = 0,
-			LayoutOrder = tier,
-			Parent = holder,
-		})
-		Kit.Base.corner(tile, 4)
-		Kit.Base.stroke(tile, C.bone, 1, if reached then 0.2 else 0.8)
-		Kit.pad(tile, T.space.xs, T.space.s)
 		local item = if reward.item then Cosmetics.byId(reward.item) else nil
 		if item then
-			table.insert(things, { tier = tier, item = item })
-		end
-		Kit.label({
-			Text = string.format("TIER %d", tier),
-			font = "bodyBold",
-			size = "micro",
-			color = if reached then C.bone else C.dim,
-			AutomaticSize = Enum.AutomaticSize.None,
-			Size = UDim2.new(1, 0, 0, 16),
-			Parent = tile,
-		})
-		Kit.label({
-			Text = if item then item.name else string.format("%d Reál", reward.coins or 0),
-			size = "small",
-			color = if reached then C.bone else C.dim,
-			TextTruncate = Enum.TextTruncate.AtEnd,
-			TextWrapped = false,
-			AutomaticSize = Enum.AutomaticSize.None,
-			Position = UDim2.fromOffset(0, 18),
-			Size = UDim2.new(1, 0, 0, 20),
-			Parent = tile,
-		})
-		if reached then
-			Kit.icon({
-				name = "check",
-				size = 14,
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.fromScale(1, 0),
-				Parent = tile,
-			})
-		end
-	end
-	if #things > 0 then
-		local grid = section("Rewards", 3)
-		for index, thing in ipairs(things) do
-			deal(profile, thing.item, grid, index, false)
-			if not owns(profile, thing.item) then
-				cards[thing.item.id]:setChip(string.format("Tier %d", thing.tier), false)
+			order += 1
+			deal(profile, item, things, order, false)
+			if not owns(profile, item) then
+				cards[item.id]:setChip(
+					if tier == nextThing then string.format("Next: tier %d", tier) else string.format("Tier %d", tier),
+					false
+				)
 			end
 		end
+	end
+
+	-- the ledger itself
+	local book = Kit.frame({
+		Name = "Book",
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 3,
+		Parent = tableScroll,
+	})
+	Kit.list(book, 0)
+	Kit.heading({ text = "The ledger", LayoutOrder = 0, Parent = book })
+	for tier = 1, Ledger.TIERS do
+		local reward = Ledger.reward(season, tier)
+		local item = if reward.item then Cosmetics.byId(reward.item) else nil
+		local purse = reward.coins ~= nil and Ledger.PURSES[tier] ~= nil
+		local big = item ~= nil or purse
+		local paid = tier <= record.tier
+		local line = Kit.frame({
+			Name = "Tier" .. tier,
+			Size = UDim2.new(1, 0, 0, if big then 46 else 32),
+			LayoutOrder = tier,
+			Parent = book,
+		})
+		local box = Kit.Base.make("Frame", {
+			Name = "Box",
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Size = UDim2.fromOffset(18, 18),
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 2, 0.5, 0),
+			Parent = line,
+		})
+		Kit.Base.stroke(box, C.bone, 2, if paid then 0 else 0.4)
+		Kit.Boil.attach(box, 1)
+		if paid then
+			local tick = Kit.icon({
+				name = "check",
+				size = 22,
+				color = C.danger,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.6, 0.4),
+				Parent = box,
+			})
+			Kit.Boil.attach(tick, 1)
+		end
+		Kit.label({
+			Text = string.format("%02d", tier),
+			font = "mono",
+			size = "small",
+			color = C.dim,
+			AutomaticSize = Enum.AutomaticSize.None,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 32, 0.5, 0),
+			Size = UDim2.fromOffset(28, 18),
+			Parent = line,
+		})
+		local what = if item then item.name elseif purse then "A purse" else "Reál"
+		local amount = if item
+			then (if owns(profile, item)
+				then string.format("yours, or %d R", Ledger.instead(item))
+				else (ONE_KIND[item.kind] or item.kind))
+			else string.format("+%d R", reward.coins or 0)
+		Kit.label({
+			Text = what,
+			font = if big then "bodyBold" else "body",
+			size = if big then "lead" else "body",
+			color = if big and not paid then C.bone else C.dim,
+			TextWrapped = false,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			AutomaticSize = Enum.AutomaticSize.None,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 68, 0.5, -1),
+			Size = UDim2.new(1, -(68 + 200), 0, 28),
+			Parent = line,
+		})
+		Kit.label({
+			Text = if tier == nextThing or (tier == record.tier + 1 and not big) then "next  " .. amount else amount,
+			font = "mono",
+			size = "small",
+			color = if big and not paid then C.bone else C.dim,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			TextWrapped = false,
+			AutomaticSize = Enum.AutomaticSize.None,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -4, 0.5, 0),
+			Size = UDim2.fromOffset(196, 20),
+			Parent = line,
+		})
+		Kit.rule({
+			color = C.bone,
+			transparency = if big then 0.55 else 0.8,
+			Position = UDim2.new(0, 0, 1, -1),
+			Parent = line,
+		})
 	end
 	noteLabel.Text = string.format("Ends in %s", formatSpan(math.max(0, ends - now)))
 end

@@ -1,9 +1,12 @@
 --!strict
 -- The Season ledger (the shop's Ledger suit): seasons of WEEKS weeks, each of TIERS tiers. Every case played
 -- writes points in it (more for a win, more for each quest finished in that case: ProgressRules.apply), each
--- PER_TIER points is a tier, and a tier pays the moment it is reached: coins on most, the season's titles on
--- some, and its emote at the last. A new season starts the ledger again at 0. Only this free line exists; a
--- paid one would stay hidden until a Robux product is set up (Shared/Products).
+-- PER_TIER points is a tier, and a tier pays the moment it is reached. Every third tier is a thing (the user,
+-- 2026-11-10: "the rewards being more tempting"): pieces from the shop given free, the season's own titles, a
+-- custom death near the end and the season's best thing at the last; tiers 10 and 20 are purses; the rest pay
+-- more coins the higher they are. A thing already owned pays its worth in coins instead (Ledger.instead). A new
+-- season starts the ledger again at 0. Only this free line exists; a paid one would stay hidden until a Robux
+-- product is set up (Shared/Products).
 --
 -- Season 1 began on the day the ledger came (2026-10-14). A season's emote is only earned here while it
 -- lasts; once it is over the emote joins Today's hand (Cosmetics `later`: from that day, at that price).
@@ -16,9 +19,13 @@ Ledger.WEEKS = 6
 Ledger.TIERS = 30
 Ledger.PER_TIER = 100
 -- Points: a case played, a win on top, each quest finished in it.
-Ledger.PLAY = 10
-Ledger.WIN = 10
+Ledger.PLAY = 15
+Ledger.WIN = 15
 Ledger.QUEST = 15
+-- The purses: tiers that pay a heap of coins.
+Ledger.PURSES = { [10] = 750, [20] = 1000 } :: { [number]: number }
+-- What a thing already owned pays instead, by rarity (when it has no price of its own).
+local WORTH = { common = 150, rare = 300, epic = 600, legendary = 1000, godhood = 1500 }
 
 local DAY = 86400
 local LENGTH = Ledger.WEEKS * 7 * DAY
@@ -31,7 +38,33 @@ export type Record = { season: number, points: number, tier: number }
 Ledger.SEASONS = {
 	[1] = {
 		name = "The Season of Names",
-		items = { [10] = "title_s1_bookkeeper", [25] = "title_s1_accountant", [30] = "emote_new_world" },
+		items = {
+			[3] = "seat_composed",
+			[6] = "specter_moth",
+			[9] = "title_s1_bookkeeper",
+			[12] = "writing_frost",
+			[15] = "book_iron",
+			[18] = "chair_crate",
+			[21] = "verdict_lamp",
+			[24] = "title_s1_accountant",
+			[27] = "reason_clock",
+			[30] = "emote_new_world",
+		},
+	},
+	[2] = {
+		name = "The Season of Ash",
+		items = {
+			[3] = "writing_quill",
+			[6] = "specter_ember",
+			[9] = "title_s2_scribe",
+			[12] = "seat_steepled",
+			[15] = "book_scale",
+			[18] = "verdict_checkmate",
+			[21] = "specter_crow",
+			[24] = "title_s2_witness",
+			[27] = "reason_chip",
+			[30] = "win_bureau_mate",
+		},
 	},
 } :: { [number]: Season }
 
@@ -59,14 +92,22 @@ function Ledger.tierOf(points: number): number
 	return math.clamp(math.floor(points / Ledger.PER_TIER), 0, Ledger.TIERS)
 end
 
--- What a tier of a season pays: its thing, or coins (a little more the higher it is).
+-- What a tier of a season pays: its thing, a purse, or coins (more the higher it is).
 function Ledger.reward(season: number, tier: number): Reward
 	local known = Ledger.SEASONS[season]
 	local item = if known then known.items[tier] else nil
 	if item then
 		return { item = item }
 	end
-	return { coins = 30 + 2 * tier }
+	return { coins = Ledger.PURSES[tier] or (60 + 6 * tier) }
+end
+
+-- The coins a thing pays when it is already owned: its price, else its rarity's worth.
+function Ledger.instead(item: any): number
+	if type(item) ~= "table" then
+		return WORTH.rare
+	end
+	return tonumber(item.price) or WORTH[item.rarity] or WORTH.rare
 end
 
 -- The profile's ledger as it stands in `season` (a record of another season counts as empty).
