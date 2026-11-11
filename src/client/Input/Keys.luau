@@ -3,19 +3,19 @@
 -- the objectives all name what to press through here, so a rebound key shows as the player set it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Bindings = require(Shared:WaitForChild("Bindings"))
 local Hints = require(Shared:WaitForChild("Hints"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Device = require(script.Parent.Parent.UI.Core.Device)
 
 local Keys = {}
 
 -- "keyboard", "gamepad" or "touch": what the player last used.
 function Keys.input(): string
-	local last = UserInputService:GetLastInputType()
+	local last = Device.lastInput()
 	if last == Enum.UserInputType.Touch then
 		return "touch"
 	elseif string.find(last.Name, "Gamepad") then

@@ -13,6 +13,7 @@
 local UserInputService = game:GetService("UserInputService")
 
 local HoverGlitch = require(script.Parent.Parent.Core.HoverGlitch)
+local Device = require(script.Parent.Parent.Core.Device)
 local Motion = require(script.Parent.Parent.Core.Motion)
 local UiSound = require(script.Parent.Parent.Core.UiSound)
 local Base = require(script.Parent.Base)
@@ -434,7 +435,7 @@ function Controls.keycap(props: Props): Frame
 		Position = props.Position,
 		AnchorPoint = props.AnchorPoint,
 		ZIndex = props.ZIndex or 1,
-		Visible = text ~= "" and not (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled),
+		Visible = text ~= "" and not Device.touch(),
 		Parent = props.Parent,
 	})
 	Base.corner(frame, Tokens.radius.key)

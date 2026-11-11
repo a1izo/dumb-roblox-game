@@ -16,12 +16,17 @@
 -- letter, so a copy over the label sets each letter a pixel or two larger or smaller in each state. Anything with the attribute NoBoil (or inside something
 -- that has it) stays still: the emote wheel, text boxes being typed in.
 
+local Device = require(script.Parent.Parent.Core.Device)
 local Motion = require(script.Parent.Parent.Core.Motion)
+local Settings = require(script.Parent.Parent.Core.Settings)
 
 local Boil = {}
 
 local FPS = 8
 local STATES = 3
+-- Each redraw is spread over this many steps (each thing boils in a step of its own), so no one frame does it all:
+-- with the shop open a redraw of every text at once cost about 5 ms on a desktop, a hitch on a phone (2026-11-11).
+local SLICES = 4
 
 type Entry = {
 	base: UDim2,
@@ -35,6 +40,8 @@ type Entry = {
 	wroteRotation: number?,
 	-- inside something marked NoBoil (looked up once it is first shown)
 	still: boolean?,
+	-- the step of each redraw it is drawn in
+	slot: number,
 }
 
 local entries: { [GuiObject]: Entry } = setmetatable({}, { __mode = "k" }) :: any
@@ -71,7 +78,13 @@ function Boil.attach(gui: GuiObject, amount: number?, turn: number?)
 			turns[index] = random:NextNumber(-tilt, tilt)
 		end
 	end
-	local entry: Entry = { base = gui.Position, rot = gui.Rotation, offsets = offsets, turns = turns }
+	local entry: Entry = {
+		base = gui.Position,
+		rot = gui.Rotation,
+		offsets = offsets,
+		turns = turns,
+		slot = random:NextInteger(0, SLICES - 1),
+	}
 	entries[gui] = entry
 	gui:GetPropertyChangedSignal("Position"):Connect(function()
 		if gui.Position ~= entry.wrotePosition then
@@ -114,6 +127,9 @@ type TextEntry = {
 	drift: { UDim2 },
 	shown: boolean,
 	drawn: number?,
+	slot: number,
+	-- whether the copy holds a soft state's letters or the plain text (light mode: the line only drifts)
+	plain: boolean?,
 }
 
 local texts: { [GuiObject]: TextEntry } = setmetatable({}, { __mode = "k" }) :: any
@@ -243,6 +259,7 @@ function Boil.text(label: GuiObject)
 		active = header,
 		home = UDim2.new(),
 		drift = drift,
+		slot = random:NextInteger(0, SLICES - 1),
 	}
 	local function align()
 		local y = source.TextYAlignment
@@ -279,6 +296,7 @@ function Boil.text(label: GuiObject)
 			entry.soft = if okSoft then soft else { text, text, text }
 		end
 		entry.drawn = nil
+		entry.plain = nil
 		copy.Text = (if entry.active then entry.states else entry.soft)[frame + 1]
 	end
 	for _, prop in ipairs(MIRRORED) do
@@ -346,15 +364,33 @@ local function onScreen(gui: GuiObject): boolean
 	return false
 end
 
-local beat = 0
+local step = 0
+local cost = 0
+
+-- What one step of a redraw costs, in milliseconds of script time (a running average; for the performance checks).
+function Boil.cost(): number
+	return cost
+end
+
+-- Light mode (a phone or tablet, or the Low quality setting): small text keeps its letters and only drifts, which
+-- costs a move instead of new rich text; headers and a hovered button's text still boil letter by letter.
+local function light(): boolean
+	return Device.touch() or Settings.get("lowGraphics") == true
+end
 
 task.spawn(function()
 	while true do
-		task.wait(1 / FPS)
-		frame = (frame + 1) % STATES
-		beat += 1
+		task.wait(1 / (FPS * SLICES))
+		local slot = step % SLICES
+		if slot == 0 then
+			frame = (frame + 1) % STATES
+		end
+		-- (which texts are on screen is looked up twice a second; only those are redrawn)
+		local look = (step // SLICES) % 4 == 0
+		step += 1
+		local started = os.clock()
 		for gui, entry in pairs(entries) do
-			if gui.Parent and gui.Visible then
+			if entry.slot == slot and gui.Parent and gui.Visible then
 				if entry.still == nil then
 					entry.still = still(gui)
 				end
@@ -363,10 +399,12 @@ task.spawn(function()
 				end
 			end
 		end
-		-- (which texts are on screen is looked up twice a second; only those are redrawn)
-		local look = beat % 4 == 0
 		local reduced = Motion.isReduced()
+		local lightMode = light()
 		for label, entry in pairs(texts) do
+			if entry.slot ~= slot then
+				continue
+			end
 			if look then
 				entry.shown = onScreen(label)
 			end
@@ -376,10 +414,22 @@ task.spawn(function()
 				entry.drawn = state
 				local index = (state - 1) % STATES + 1
 				local loud = state <= STATES
-				entry.copy.Text = (if loud then entry.states else entry.soft)[index]
+				if loud then
+					entry.copy.Text = entry.states[index]
+					entry.plain = false
+				elseif lightMode then
+					if not entry.plain then
+						entry.copy.Text = entry.soft[1]
+						entry.plain = true
+					end
+				else
+					entry.copy.Text = entry.soft[index]
+					entry.plain = false
+				end
 				entry.copy.Position = entry.home + (if loud then UDim2.new() else entry.drift[index])
 			end
 		end
+		cost += ((os.clock() - started) * 1000 - cost) * 0.1
 	end
 end)
 

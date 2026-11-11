@@ -10,9 +10,9 @@
 -- A button sitting alone in a CanvasGroup marked with the attribute `GlitchWrap` (the lobby menu) glitches
 -- through that wrapper, so it also blinks; any other button gets the split and the tears on itself.
 
-local UserInputService = game:GetService("UserInputService")
 
 local Glitch = require(script.Parent.Glitch)
+local Device = require(script.Parent.Device)
 local Screens = require(script.Parent.Parent.Screens)
 
 local HoverGlitch = {}
@@ -36,7 +36,7 @@ function HoverGlitch.begin(gui: GuiObject)
 	if active[gui] or not Glitch.isEnabled() or not gui.Parent then
 		return
 	end
-	if not HoverGlitch.isLoud(gui) or UserInputService:GetLastInputType() == Enum.UserInputType.Touch then
+	if not HoverGlitch.isLoud(gui) or Device.lastInput() == Enum.UserInputType.Touch then
 		return
 	end
 	local handle = Glitch.attach(targetOf(gui), { loop = false, enter = false })

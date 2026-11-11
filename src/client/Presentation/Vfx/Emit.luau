@@ -18,6 +18,8 @@
 
 local Tex = require(script.Parent.Tex)
 local Clock = require(script.Parent.Clock)
+local Device = require(script.Parent.Parent.Parent.UI.Core.Device)
+local Governor = require(script.Parent.Parent.Parent.World.Governor)
 
 local Emit = {}
 
@@ -119,7 +121,7 @@ function Emit.make(parent: Instance, spec: Spec): ParticleEmitter
 	e.ZOffset = spec.z or 0
 	e.Orientation = FACES[spec.face or "camera"] or Enum.ParticleOrientation.FacingCamera
 	e.LockedToPart = spec.locked == true
-	e.Rate = spec.rate or 0
+	e.Rate = (spec.rate or 0) * Emit.share()
 	e.VelocityInheritance = spec.inherit or 0
 	e.TimeScale = spec.timeScale or 1
 	e.WindAffectsDrag = spec.wind == true
@@ -181,6 +183,16 @@ end
 
 -- Emits `count` particles of the spec once from `at` (its up the emitters' Top), and cleans up after the last dies.
 -- With several specs, each with its own count: Emit.burst(at, { {spec, count}, ... }).
+-- The share of the particles asked for that are made: all on a computer, fewer on a phone or tablet, fewer still
+-- in Low quality mode or once the governor has cut effects (2026-11-11: most players come from phones). Every
+-- effect's rate and burst passes through it, the scene deaths' too.
+function Emit.share(): number
+	if Governor.low("emoteFx") then
+		return 0.4
+	end
+	return if Device.touch() then 0.6 else 1
+end
+
 function Emit.burst(at: CFrame | Vector3, spec: Spec | { any }, count: number?, size: Vector3?): Part
 	local holder = Emit.point(at, size)
 	local list = if (spec :: any).tex ~= nil or (spec :: any)[1] == nil
@@ -190,7 +202,7 @@ function Emit.burst(at: CFrame | Vector3, spec: Spec | { any }, count: number?, 
 	for _, entry in ipairs(list) do
 		local s, n = entry[1], entry[2]
 		local e = Emit.make(holder, s)
-		e:Emit(n)
+		e:Emit(math.max(1, math.floor(n * Emit.share() + 0.5)))
 		longest = math.max(longest, Emit.longest(s))
 	end
 	Clock.after(longest + 0.25, function()

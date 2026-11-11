@@ -2,6 +2,8 @@
 -- A notification (concept A): a log line, not a box. The time in mono, a thin rule that boils, then the message in
 -- bold capitals over the world; bad news and warnings sit on a red strip. Right-aligned, newest on top (UI/Toasts).
 
+local TextService = game:GetService("TextService")
+
 local Base = require(script.Parent.Base)
 local Boil = require(script.Parent.Boil)
 local Tokens = require(script.Parent.Tokens)
@@ -95,9 +97,24 @@ function Slip.new(props: Props): CanvasGroup
 		Size = UDim2.fromOffset(0, 0),
 		Parent = holder,
 	})
-	-- (long messages wrap rather than run off the screen: the time and rule take about 70 px)
-	local cap = Base.make("UISizeConstraint", { MaxSize = Vector2.new(width - 70, math.huge), Parent = message })
-	local _ = cap
+	-- Long messages wrap rather than run off the screen (the time and rule take about 70 px). A self-sizing label
+	-- capped in width is sized as one line by Roblox, which cut the wrapped second line off on a phone (2026-11-11):
+	-- so a message wider than the room is measured and given the room's width, growing down instead.
+	local room = width - 70
+	task.spawn(function()
+		local ok, bounds = pcall(function()
+			local params = Instance.new("GetTextBoundsParams")
+			params.Text = message.Text
+			params.Font = message.FontFace
+			params.Size = message.TextSize
+			params.Width = math.huge
+			return TextService:GetTextBoundsAsync(params)
+		end)
+		if ok and bounds.X > room and message.Parent then
+			message.AutomaticSize = Enum.AutomaticSize.Y
+			message.Size = UDim2.fromOffset(room, 0)
+		end
+	end)
 	if not danger then
 		message.TextStrokeColor3 = C.g0
 		message.TextStrokeTransparency = 0.55

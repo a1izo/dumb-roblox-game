@@ -3,7 +3,6 @@
 -- `when` decides if the action is available right now; nothing else needs to know.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local Bindings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Bindings"))
 local Terms = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Terms"))
@@ -14,6 +13,7 @@ local EyesController = require(script.Parent.Parent.Controllers.EyesController)
 local TabView = require(script.Parent.Parent.Controllers.TabView)
 local NotePanel = require(script.Parent.Parent.UI.NotePanel)
 local Router = require(script.Parent.Parent.UI.Core.Router)
+local Device = require(script.Parent.Parent.UI.Core.Device)
 
 local SabotageRemote = Net.event("Sabotage")
 
@@ -141,7 +141,7 @@ Actions.list = {
 		keys = {},
 		variant = "ghost",
 		when = function(view: View)
-			return view.participant and UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+			return view.participant and Device.touch()
 		end,
 		run = TabView.toggle,
 	},
@@ -204,7 +204,7 @@ end
 
 -- The key to show next to an action for the input the player used last ("" on touch).
 function Actions.hint(action: Action): string
-	local last = UserInputService:GetLastInputType()
+	local last = Device.lastInput()
 	if last == Enum.UserInputType.Touch then
 		return ""
 	end

@@ -282,9 +282,17 @@ local function buildPopup()
 	local probe = Kit.frame({ Name = "StreakProbe", Size = UDim2.fromOffset(0, 0), Parent = Screens.panels })
 	local GAP = 16
 	local function place()
+		popupNotice:setWidth(Kit.Notice.width())
+		if Kit.Layout.isPhone() then
+			-- (a phone's screen is too short for it over the card and the Trial's card at the top: it goes to the
+			-- bottom middle, between the thumbstick and the jump button)
+			popup.AnchorPoint = Vector2.new(0.5, 1)
+			popup.Position = UDim2.new(0.5, 0, 1, -T.space.l)
+			return
+		end
 		local scale = Kit.Base.scaleOf(popup)
 		local bottom = (card.AbsolutePosition.Y - probe.AbsolutePosition.Y) / scale - GAP
-		popupNotice:setWidth(Kit.Notice.width())
+		popup.AnchorPoint = Vector2.new(1, 1)
 		popup.Position = UDim2.new(1, -T.space.l, 0, math.floor(bottom))
 	end
 	-- Hide UI hides the pop-up too; it comes back with the rest if it was still waiting.
@@ -320,6 +328,9 @@ local function buildPopup()
 	card:GetPropertyChangedSignal("AbsolutePosition"):Connect(place)
 	card:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
 	popup:GetPropertyChangedSignal("Visible"):Connect(place)
+	Kit.Layout.watch(function()
+		place()
+	end)
 	place()
 end
 

@@ -34,6 +34,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Trial = require(Shared:WaitForChild("Trial"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Device = require(script.Parent.Parent.UI.Core.Device)
 local Keys = require(script.Parent.Parent.Input.Keys)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local AcademyController = require(script.Parent.Parent.Controllers.AcademyController)
@@ -102,7 +103,7 @@ local function spawnPosition(): Vector3?
 end
 
 local function isTouch(): boolean
-	return UserInputService:GetLastInputType() == Enum.UserInputType.Touch
+	return Device.lastInput() == Enum.UserInputType.Touch
 end
 
 -- How to turn the role card, for the input in the player's hands (their own key: Input/Keys).

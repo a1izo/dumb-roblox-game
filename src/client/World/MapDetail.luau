@@ -4,8 +4,10 @@
 -- Automatic), so the realm's far spires, islands and ridges, and every map's distant buildings, went blocky and lost
 -- their edges. Every mesh of the world here (not the bodies: World/CharacterDetail sees to their accessories) is
 -- drawn Precise on this screen (the property is not replicated, so each client sets its own). Low quality mode
--- (Settings lowGraphics) gives them back to Roblox's own choice, for machines that need it.
+-- (Settings lowGraphics) gives them back to Roblox's own choice, for machines that need it, and so does a phone or tablet
+-- (2026-11-11: most players come from phones, where full detail everywhere costs frames).
 
+local Device = require(script.Parent.Parent.UI.Core.Device)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 
 local MapDetail = {}
@@ -23,7 +25,9 @@ local function onBody(item: Instance): boolean
 end
 
 local function fidelity(): Enum.RenderFidelity
-	return if Settings.get("lowGraphics") == true then Enum.RenderFidelity.Automatic else Enum.RenderFidelity.Precise
+	return if Settings.get("lowGraphics") == true or Device.touch()
+		then Enum.RenderFidelity.Automatic
+		else Enum.RenderFidelity.Precise
 end
 
 local function sharpen(item: Instance, wanted: Enum.RenderFidelity)

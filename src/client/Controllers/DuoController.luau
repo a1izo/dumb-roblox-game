@@ -14,7 +14,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ContextActionService = game:GetService("ContextActionService")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
@@ -24,6 +23,7 @@ local Net = require(Shared:WaitForChild("Net"))
 local Bindings = require(Shared:WaitForChild("Bindings"))
 local ClipPlayer = require(Shared:WaitForChild("Anim"):WaitForChild("ClipPlayer"))
 local ClientState = require(script.Parent.Parent.ClientState)
+local Device = require(script.Parent.Parent.UI.Core.Device)
 
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Characters = require(script.Parent.Parent.Characters)
@@ -224,9 +224,7 @@ local function showPrompt(rally: Rally)
 		Position = UDim2.fromScale(0.5, 0.72),
 		Size = UDim2.fromOffset(160, 40),
 		BackgroundTransparency = 1,
-		Text = if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-			then "HIT"
-			else "HIT  [" .. (hitKeys()[1] or Enum.KeyCode.F).Name .. "]",
+		Text = if Device.touch() then "HIT" else "HIT  [" .. (hitKeys()[1] or Enum.KeyCode.F).Name .. "]",
 		TextColor3 = Color3.fromRGB(236, 232, 222),
 		TextStrokeTransparency = 0.4,
 		Font = Enum.Font.GothamBlack,

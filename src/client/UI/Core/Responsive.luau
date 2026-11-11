@@ -12,6 +12,7 @@ local UserInputService = game:GetService("UserInputService")
 local Signal = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Signal"))
 
 local Screens = require(script.Parent.Parent.Screens)
+local Device = require(script.Parent.Device)
 
 local Responsive = {}
 
@@ -28,10 +29,14 @@ local function viewport(): Vector2
 end
 
 local function classify(size: Vector2): string
+	local forced = Device.forced()
+	if forced then
+		return forced
+	end
 	if GuiService:IsTenFootInterface() then
 		return "console"
 	end
-	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+	if Device.touch() then
 		return if math.min(size.X, size.Y) < 500 then "phone" else "tablet"
 	end
 	return "desktop"

@@ -223,7 +223,23 @@ function Window.new(options: Options): Window
 		root.AnchorPoint = Vector2.new(0.5, 0.5)
 		root.Position = UDim2.fromScale(0.5, 0.5)
 		if class == "phone" then
-			root.Size = UDim2.new(1, -Tokens.space.l * 2, 1, -Tokens.space.l * 2)
+			-- (the whole screen but Roblox's top bar: its menu and chat buttons sat on the title, 2026-11-11)
+			-- (until Roblox reports its bar, which it does after the first layout, its usual 58 px)
+			local bar = 58
+			pcall(function()
+				if GuiService.TopbarInset.Max.Y > 0 then
+					bar = GuiService.TopbarInset.Max.Y
+				end
+			end)
+			-- (a layer kept clear of the bar already has it out of the way)
+			local layer = root:FindFirstAncestorWhichIsA("ScreenGui")
+			if layer and layer.ScreenInsets ~= Enum.ScreenInsets.None then
+				bar = 0
+			end
+			local top = math.max(Tokens.space.l, (bar + 4) / Base.scaleOf(root))
+			root.AnchorPoint = Vector2.new(0.5, 1)
+			root.Position = UDim2.new(0.5, 0, 1, -Tokens.space.l)
+			root.Size = UDim2.new(1, -Tokens.space.l * 2, 1, -(Tokens.space.l + top))
 			limit.MaxSize = Vector2.new(math.huge, math.huge)
 		else
 			root.Size = UDim2.new(1, -Tokens.space.xxxl * 2, 1, -Tokens.space.xxl * 2)
@@ -231,6 +247,13 @@ function Window.new(options: Options): Window
 		end
 	end
 	Layout.watch(arrange)
+	pcall(function()
+		local function again()
+			arrange(if Layout.isPhone() then "phone" else "other")
+		end
+		GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(again)
+		root.AncestryChanged:Connect(again)
+	end)
 
 	local title = {
 		set = function(_, text: string)

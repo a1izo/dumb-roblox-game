@@ -13,6 +13,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Device = require(script.Parent.Parent.UI.Core.Device)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
 local Characters = require(script.Parent.Parent.Characters)
 
@@ -36,7 +37,7 @@ local function findTarget(): number?
 		return nil
 	end
 	local aim: Vector3
-	if UserInputService.MouseEnabled and not UserInputService.TouchEnabled then
+	if Device.mouse() then
 		local mouse = UserInputService:GetMouseLocation()
 		aim = camera:ViewportPointToRay(mouse.X, mouse.Y).Direction.Unit
 	else

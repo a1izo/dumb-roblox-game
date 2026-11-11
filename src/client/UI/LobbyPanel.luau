@@ -63,7 +63,7 @@ local MENU = {
 -- The zigzag: every other menu entry is pushed this far right.
 local ZIGZAG = { pc = 40, phone = 20 }
 -- Where the left column starts, down from the top of the screen.
-local COLUMN_TOP = { pc = 0.25, phone = 0.18 }
+local COLUMN_TOP = { pc = 0.25, phone = 0.13 }
 local DIAVOLO = "Diavolo"
 -- Where the title's letters come to rest, from the top of the screen (level with Roblox's buttons).
 local TITLE_TOP = 6
@@ -365,7 +365,7 @@ function buildContents(phone: boolean)
 	table.clear(menuRows)
 	contents:ClearAllChildren()
 	Kit.list(contents, 0)
-	local rowHeight = if phone then 42 else 54
+	local rowHeight = if phone then 37 else 54
 	local shown = 0
 	local running = caseRunning()
 	for _, item in ipairs(MENU) do
@@ -389,7 +389,7 @@ function buildContents(phone: boolean)
 		local wrap = wrapper({ Name = "Wrap", Size = UDim2.new(0, if phone then 240 else 300, 1, 0), Parent = drift })
 		Kit.entry({
 			text = item.text,
-			size = if phone then 32 else 42,
+			size = if phone then 30 else 42,
 			seed = shown,
 			Size = UDim2.fromScale(1, 1),
 			Parent = wrap,

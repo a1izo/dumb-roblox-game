@@ -19,6 +19,8 @@ local Textures = require(script.Parent.Textures)
 local Pencil = {}
 
 local FPS = 8
+-- Each swap is spread over this many steps, and only lines on screen are swapped (as Kit/Boil does).
+local SLICES = 4
 local BOXES = { "UiPencilBox1", "UiPencilBox2", "UiPencilBox3" }
 local LINES = { "UiPencilLine1", "UiPencilLine2", "UiPencilLine3" }
 -- the drawings' measures (textures.py): the box's slice and where its line runs, the rule's slice and height
@@ -33,7 +35,7 @@ local ROUND = 8 -- px: a corner rounder than this is a round thing (a dot, a pil
 local RULE = 3 -- px: a filled frame this thin and at least RULE_LONG long is a rule
 local RULE_LONG = 24
 
-type Drawn = { images: { string }, phase: number }
+type Drawn = { images: { string }, phase: number, slot: number, shown: boolean }
 
 local drawn: { [ImageLabel]: Drawn } = setmetatable({}, { __mode = "k" }) :: any
 local frame = 0
@@ -65,7 +67,7 @@ local function overlay(name: string, images: { string }): ImageLabel
 	image:SetAttribute("NoBoil", true)
 	local phase = math.random(0, 2)
 	image.Image = Textures.id(images[(frame + phase) % 3 + 1])
-	drawn[image] = { images = images, phase = phase }
+	drawn[image] = { images = images, phase = phase, slot = math.random(0, SLICES - 1), shown = true }
 	return image
 end
 
@@ -266,17 +268,55 @@ function Pencil.watch(root: Instance)
 	end)
 end
 
+local cost = 0
+local step = 0
+
+-- What one step of a swap costs, in milliseconds of script time (a running average; for the performance checks).
+function Pencil.cost(): number
+	return cost
+end
+
+-- On screen at all: it and every frame above it visible, its screen enabled.
+local function onScreen(gui: GuiObject): boolean
+	local node: Instance? = gui
+	while node do
+		if node:IsA("GuiObject") then
+			if not node.Visible then
+				return false
+			end
+		elseif node:IsA("LayerCollector") then
+			return node.Enabled
+		end
+		node = node.Parent
+	end
+	return false
+end
+
 task.spawn(function()
 	while true do
-		task.wait(1 / FPS)
-		frame = (frame + 1) % 3
+		task.wait(1 / (FPS * SLICES))
+		local slot = step % SLICES
+		if slot == 0 then
+			frame = (frame + 1) % 3
+		end
+		-- (which lines are on screen is looked up twice a second)
+		local look = (step // SLICES) % 4 == 0
+		step += 1
+		local started = os.clock()
 		local reduced = Motion.isReduced()
 		for image, entry in pairs(drawn) do
-			if image.Parent and image.Visible then
+			if entry.slot ~= slot then
+				continue
+			end
+			if look then
+				entry.shown = onScreen(image)
+			end
+			if entry.shown then
 				local index = if reduced then 1 else (frame + entry.phase) % 3 + 1
 				image.Image = Textures.id(entry.images[index])
 			end
 		end
+		cost += ((os.clock() - started) * 1000 - cost) * 0.1
 	end
 end)
 
