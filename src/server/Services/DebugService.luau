@@ -405,9 +405,10 @@ end
 COMMANDS.kill = function(player, args)
 	local ps = needTarget(player, args)
 	if ps and ps.alive then
-		local cause = if type(args.cause) == "string" and table.find(Config.DEATH_CAUSES, args.cause)
-			then args.cause
-			else "Heart attack"
+		-- (a plain cause, or a custom death's: its scene plays)
+		local known = type(args.cause) == "string"
+			and (table.find(Config.DEATH_CAUSES, args.cause) ~= nil or Cosmetics.reasonByCause(args.cause) ~= nil)
+		local cause = if known then args.cause else "Heart attack"
 		DeathNoteService.debugKill(ps, cause)
 	end
 end
