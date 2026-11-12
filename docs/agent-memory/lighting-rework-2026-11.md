@@ -132,3 +132,4 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   presets got more fill (within the spec's 32..56), contrast ~0.1 and a grade per map (HQ cool steel tint, Campus
   warm tint, Tokyo saturated violet, bloom 0.9). CampusLamp 3.2 -> 2.2. Tuned by emulating on a play-test client
   (not synced into the place, not committed at the time of writing). Tokyo's asphalt stays near black (its scan).
+- 2026-11-12: the plan for what comes after the balance pass (shadows, wet street, coloured light, contact darkness, air, rim light, low-quality notice), written for another agent: docs/handoff/graphics-plan-2026-11-12.md
