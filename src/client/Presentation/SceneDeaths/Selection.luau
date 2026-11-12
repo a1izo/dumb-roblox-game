@@ -427,32 +427,14 @@ local function build(ctx)
 		table.sort(list, function(a, b)
 			return a.Position.Y < b.Position.Y
 		end)
-		for i, p in ipairs(list) do
-			local wait = (i - 1) / math.max(1, #list) * 1.1
-			task.delay(wait, function()
-				if not p.Parent then
-					return
-				end
-				Vfx.Emit.burst(p.Position, {
-					tex = "VfxDust",
-					color = { { 0, Color3.fromRGB(176, 178, 186) }, { 1, Color3.fromRGB(120, 126, 150) } },
-					size = { { 0, 0.16 }, { 1, 0.05 } },
-					alpha = { { 0, 0.1 }, { 0.7, 0.4 }, { 1, 1 } },
-					life = { 1.4, 2.4 },
-					speed = { 0.4, 1.6 },
-					spread = 180,
-					accel = Vector3.new(0.6, 3.2, -1.2),
-					drag = 0.6,
-					lit = 0.7,
-				}, 26, p.Size)
-				ctx:tween(p, 0.5, { Transparency = 1 })
-				for _, d in ipairs(p:GetDescendants()) do
-					if d:IsA("Decal") then
-						ctx:tween(d, 0.4, { Transparency = 1 })
-					end
-				end
-			end)
-		end
+		-- cold ash, from the feet up, lifting and carried off toward the sky (2026-11-12: the old dust was "ugly")
+		Vfx.Recipes.dissolve(list, 1.4, {
+			tint = Color3.fromRGB(150, 156, 172),
+			glow = Color3.fromRGB(196, 214, 255),
+			wind = Vector3.new(0.8, 0, -1.6),
+			rise = 3.2,
+			fade = 0.7,
+		})
 	end)
 
 	-- cameras

@@ -13,7 +13,7 @@ import math
 import random
 
 from maps import mesher
-from maps.venues.scenes import models, parts
+from maps.venues.scenes import angel_statue, models, parts
 from maps.venues.scenes import plan as P
 
 OX, OZ = P.SELECTION
@@ -137,61 +137,9 @@ def angel(s):
     s.box(m, W(ax, 3.75, az), (2.6, 0.3, 2.4))
     s.box(m, W(ax, 4.05, az), (1.9, 0.3, 1.7))
     y0 = 4.2
-    # the robe: a long turned body, wider at the hem, narrow at the waist, the shoulders, the neck
-    s.lathe(pale, W(ax, y0, az), [(0.82, 0.0), (0.74, 0.5), (0.62, 1.4), (0.5, 2.2), (0.44, 2.6), (0.52, 3.05),
-                                  (0.58, 3.35), (0.42, 3.6), (0.16, 3.72), (0.13, 3.85)], segments=22)
-    # folds down the robe: thin ridges
-    for k in range(9):
-        a = math.tau * k / 9
-        bottom = L(math.cos(a) * 0.8, y0 + 0.05, math.sin(a) * 0.8)
-        top = L(math.cos(a) * 0.48, y0 + 2.3, math.sin(a) * 0.48)
-        s.tube(pale, bottom, top, 0.06, segments=5)
-    # the head, bowed forward a little
-    hx, hy, hz = L(0.0, y0 + 4.12, -0.08)
-    s.lathe(pale, (hx, hy - 0.3, hz), [(0.0, 0.0), (0.2, 0.06), (0.28, 0.24), (0.29, 0.38), (0.24, 0.52), (0.12, 0.6),
-                                       (0.0, 0.62)], segments=16)
-    # hair gathered at the back
-    s.lathe(pale, L(0.0, y0 + 3.86, 0.18), [(0.0, 0.0), (0.18, 0.08), (0.2, 0.3), (0.0, 0.42)], segments=10)
-    # the arms: the right hand at the breast, the left down at the side holding the wreath
-    s.bent_tube(pale, [L(-0.55, y0 + 3.3, 0.0), L(-0.62, y0 + 2.75, -0.2), L(-0.15, y0 + 2.95, -0.42)],
-                [0.15, 0.13, 0.1], segments=7)
-    s.bent_tube(pale, [L(0.55, y0 + 3.3, 0.0), L(0.68, y0 + 2.6, -0.05), L(0.74, y0 + 1.95, -0.2)],
-                [0.15, 0.13, 0.1], segments=7)
-    wreath = [L(0.76 + math.cos(a) * 0.3, y0 + 1.6 + math.sin(a) * 0.32, -0.25) for a in
-              [math.tau * k / 14 for k in range(15)]]
-    s.bent_tube(m, wreath, [0.08] * len(wreath), segments=5)
-    # the wings, raised behind her (the picture's): a leading edge curving up and out from each shoulder blade to a
-    # high tip; from it the feathers, turning along it from hanging down at the root to reaching up and out at the
-    # tip, long flight feathers behind and two shorter rows of coverts over them
-    for side in (-1, 1):
-        def edge(u):
-            return (side * (0.3 + 1.05 * u - 0.15 * u * u), y0 + 3.3 + 3.0 * u - 0.6 * u * u, 0.4 + 0.35 * u)
-
-        for layer, (count, length, width) in enumerate(((13, 1.7, 0.3), (10, 1.05, 0.32), (8, 0.55, 0.3))):
-            for k in range(count):
-                u = 0.04 + 0.96 * k / (count - 1)
-                start = edge(u * (1 - 0.06 * layer))
-                # the feather's way: down and a little out at the root, up and out at the tip
-                ang = math.radians(-100 + 150 * u ** 1.3)
-                d = (side * math.cos(ang) * 0.8 + side * 0.3, math.sin(ang), 0.12)
-                dl = math.sqrt(sum(c * c for c in d))
-                d = tuple(c / dl for c in d)
-                reach = length * (0.75 + 0.5 * math.sin(math.pi * min(1.0, u * 1.1)))
-                start = (start[0], start[1], start[2] - 0.05 * layer)
-                tip = tuple(start[i] + d[i] * reach for i in range(3))
-                across = mesher.norm(mesher.cross(d, (0, 0, 1)))
-                half = width / 2
-                p0 = tuple(start[i] - across[i] * half * 0.7 for i in range(3))
-                p1 = tuple(start[i] + across[i] * half * 0.7 for i in range(3))
-                mid = tuple(start[i] + d[i] * reach * 0.62 for i in range(3))
-                p2 = tuple(mid[i] + across[i] * half for i in range(3))
-                p3 = tuple(mid[i] - across[i] * half for i in range(3))
-                mat = m if layer == 0 else pale
-                quad2(s, mat, [L(*p0), L(*p1), L(*p2), L(*p3)])
-                quad2(s, mat, [L(*p3), L(*p2), L(*tip)])
-        # the wing's bone along its leading edge
-        bone = [L(*edge(u / 8)) for u in range(9)]
-        s.bent_tube(pale, bone, [0.14 - 0.012 * k for k in range(9)], segments=6)
+    # her: one sculpted stone figure (angel_statue: metaball body, clasped hands, bowed head, feathered wings), redone
+    # 2026-11-12 at the user's word after the swept primitives of the first
+    angel_statue.place(s, pale, W(ax, y0, az), facing_deg=0.0, scale=1.0)
 
 
 def candles(s):

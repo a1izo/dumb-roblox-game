@@ -68,6 +68,18 @@ local function colorSeq(value: any): ColorSequence
 	return ColorSequence.new(keys)
 end
 
+-- The flipbook sheets (art/scripts/vfx): their grid and the rate they play at when an effect does not say.
+local SHEETS: { [string]: { grid: number, fps: number } } = {
+	VfxFlame = { grid = 8, fps = 30 },
+	VfxCandleFlame = { grid = 8, fps = 30 },
+	VfxSmoke = { grid = 8, fps = 24 },
+	VfxWisp = { grid = 4, fps = 12 },
+	VfxDust = { grid = 4, fps = 12 },
+	VfxChunk = { grid = 2, fps = 0 },
+	VfxMoth = { grid = 2, fps = 14 },
+	VfxAsh = { grid = 4, fps = 16 },
+}
+
 local function range(value: any, default: number): NumberRange
 	if value == nil then
 		return NumberRange.new(default)
@@ -131,7 +143,10 @@ function Emit.make(parent: Instance, spec: Spec): ParticleEmitter
 		e.ShapeInOut = spec.shapeInOut or Enum.ParticleEmitterShapeInOut.Outward
 		e.ShapePartial = spec.shapePartial or 1
 	end
-	local grid = spec.grid
+	-- (a flipbook sheet always plays as one: before 2026-11-12 an effect that forgot its grid drew the whole sheet,
+	-- sixteen little clouds in rows, on every particle; the user's "dotted" dissolve in Dead by selection and Iron Man)
+	local sheet = SHEETS[spec.tex or ""]
+	local grid = spec.grid or (sheet and sheet.grid)
 	if grid then
 		if type(grid) == "number" then
 			e.FlipbookLayout = if grid == 2
@@ -144,8 +159,8 @@ function Emit.make(parent: Instance, spec: Spec): ParticleEmitter
 			e.FlipbookSizeY = grid[2]
 		end
 		e.FlipbookMode = (Enum.ParticleFlipbookMode :: any)[spec.mode or "Loop"]
-		e.FlipbookFramerate = range(spec.fps, 30)
-		e.FlipbookStartRandom = spec.startRandom == true
+		e.FlipbookFramerate = range(spec.fps or (sheet and sheet.fps), 30)
+		e.FlipbookStartRandom = spec.startRandom == true or (spec.grid == nil and sheet ~= nil)
 		e.FlipbookBlendFrames = spec.blend ~= false
 	end
 	e.Parent = parent
