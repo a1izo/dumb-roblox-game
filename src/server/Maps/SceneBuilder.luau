@@ -95,7 +95,27 @@ end
 -- A light in an invisible anchor inside its fixture. When the fixture itself is not there (a
 -- greybox, or a prop that is not imported) the anchor shows as a small glowing fixture, so no
 -- light ever hangs in mid-air.
-local function addLight(b, folder: Instance, spec, showFixture: boolean?, where: CFrame?): BasePart
+-- Balanced pools (the owner, 2026-11-12: "in most places the lighting is blindingly strong and in others completely
+-- unlit"). Roblox has no bounced light, so a ceiling pool alone gave a hard bright disc with black round it. On the
+-- maps below, each ceiling pool (a spot down, marked clear) is built weaker and wider, with a soft round light low
+-- under it standing in for the light its floor throws back: the room between the pools reads, nothing blows out.
+-- Tuned in a Studio play test at full quality through the player's own camera. The cutscene sets, the lobby and the
+-- meeting room keep their own lamps as they were judged.
+local SOFT_POOLS = { Agency = true, Campus = true, Tokyo = true }
+local SOFT = {
+	spot = 0.55, -- times the pool's exported brightness
+	angle = 100, -- at least this wide
+	fill = 0.5, -- the bounce light's brightness for a pool of nominal strength (fillPer)
+	fillPer = 6.6,
+	fillRange = 20,
+	fillAt = 0.6, -- how far down the pool's reach the bounce light sits
+	-- A pool under a low ceiling (an arcade's canopy, 8 studs up) sits close to the walls beside it and blew pale
+	-- stone out: pool and bounce are scaled down by reach / fullReach, no lower than lowest.
+	fullReach = 14,
+	lowest = 0.5,
+}
+
+local function addLight(b, folder: Instance, spec, showFixture: boolean?, where: CFrame?, soft: boolean?): BasePart
 	local at = spec.at
 	local face = spec.size -- the fitting's glowing face, drawn as this part (a flickering lamp's)
 	local anchor = Create("Part", {
@@ -135,6 +155,24 @@ local function addLight(b, folder: Instance, spec, showFixture: boolean?, where:
 		light:SetAttribute("LShadowOk", true)
 	end
 	light.Parent = anchor
+	if soft and spec.kind == "spot" and spec.face == "Bottom" and spec.clear and spec.role ~= "emergency" then
+		local low = math.clamp(spec.range / SOFT.fullReach, SOFT.lowest, 1)
+		local pool = spec.brightness * SOFT.spot * low
+		light.Brightness = pool
+		light.Angle = math.max(spec.angle, SOFT.angle)
+		local under = Create("Attachment", {
+			Name = "Bounce",
+			Position = Vector3.new(0, -math.max(3, spec.range - 1) * SOFT.fillAt, 0),
+			Parent = anchor,
+		})
+		Create("PointLight", {
+			Color = (color(spec.color) :: Color3):Lerp(Color3.new(1, 1, 1), 0.15),
+			Brightness = SOFT.fill * math.clamp(pool / SOFT.fillPer, 0.5, 1.4) * low * low,
+			Range = math.min(SOFT.fillRange, spec.range * 1.5),
+			Shadows = false,
+			Parent = under,
+		})
+	end
 	if spec.flicker then
 		CollectionService:AddTag(anchor, "LFlicker")
 	end
@@ -1303,7 +1341,7 @@ local function buildFormat2(b, venue: string, data): string
 		solidFor(b, folder, p)
 	end
 	for _, spec in ipairs(dressing.lights) do
-		addLight(b, folder, spec, greybox)
+		addLight(b, folder, spec, greybox, nil, SOFT_POOLS[data.venue] == true)
 	end
 	addAmbience(b, folder, dressing)
 	for _, spec in ipairs(dressing.signs) do

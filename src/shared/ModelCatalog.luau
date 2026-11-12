@@ -519,7 +519,7 @@ return {
 			{
 				angle = 120,
 				at = { -0, 10.4, 0 },
-				brightness = 3.2,
+				brightness = 2.2,
 				color = { 255, 210, 150 },
 				face = "Bottom",
 				kind = "spot",

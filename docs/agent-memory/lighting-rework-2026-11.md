@@ -126,3 +126,9 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   - Captures: Studio minimised draws no 3D (grey frames). Park its window off screen with SetWindowPos at
     (-1960, 0, 1920x1080, SWP_NOACTIVATE) and restore it after. The first capture after a move or change is often a
     frame stale, and lightning flashes wash frames white or blue: capture twice.
+- 2026-11-12 (owner: "blindingly strong in most places, completely unlit in others; make maps distinct"): pools alone
+  gave hard discs with black between. SceneBuilder now builds each ceiling pool on Agency/Campus/Tokyo softer
+  (SOFT: 0.55x, at least 100 degrees, scaled down under low ceilings) with a "Bounce" PointLight low under it; the
+  presets got more fill (within the spec's 32..56), contrast ~0.1 and a grade per map (HQ cool steel tint, Campus
+  warm tint, Tokyo saturated violet, bloom 0.9). CampusLamp 3.2 -> 2.2. Tuned by emulating on a play-test client
+  (not synced into the place, not committed at the time of writing). Tokyo's asphalt stays near black (its scan).

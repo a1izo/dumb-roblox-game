@@ -243,23 +243,26 @@ LightingPresets.maps = {
 	-- haze is thin, so Kagegaoka's lights 440 studs down still show, fading into a violet night towards the horizon;
 	-- rain streams down the glass, and lightning comes in through it (World/Lightning).
 	TaskForceHQ = preset({
+		-- (balanced, 2026-11-12, the owner: "blindingly strong in most places, completely unlit in others": more fill,
+		-- a gentler grade, the pools softened in SceneBuilder; each map keeps a grade of its own. Tuned live at full
+		-- quality through the player's camera)
 		clockTime = 0,
 		brightness = 1.2,
 		exposure = 0.15,
 		-- (the fill turned right down, seen in a play test at full quality, 2026-11-02: at 44, 49, 66 it lit every
 		-- surface evenly and the rooms read flat; this low, the lamps' pools are the light and a corner still reads)
-		ambient = rgb(22, 24, 36),
-		outdoorAmbient = rgb(26, 29, 44),
-		envDiffuse = 0.2,
+		ambient = rgb(32, 35, 52),
+		outdoorAmbient = rgb(36, 40, 60),
+		envDiffuse = 0.28,
 		envSpecular = 0.4,
 		density = 0.22,
 		haze = 1.7,
 		glare = 0.05,
 		atmosphereColor = rgb(84, 74, 118),
 		decay = rgb(52, 40, 76),
-		saturation = -0.08,
-		contrast = 0.2,
-		tint = rgb(255, 246, 236),
+		saturation = -0.1,
+		contrast = 0.1,
+		tint = rgb(236, 241, 255),
 		bloom = 0.7,
 		bloomSize = 26,
 		-- (2.2, seen in a play test at full quality, 2026-11-06: pale skin under the brightest pool glowed at 1.5
@@ -280,21 +283,24 @@ LightingPresets.maps = {
 	UniversityCampus = preset({
 		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
 		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
+		-- (balanced, 2026-11-12, the owner: "blindingly strong in most places, completely unlit in others": more fill,
+		-- a gentler grade, the pools softened in SceneBuilder; each map keeps a grade of its own. Tuned live at full
+		-- quality through the player's camera)
 		clockTime = 0,
 		brightness = 0.6,
 		exposure = 0.1,
-		ambient = rgb(24, 27, 38),
-		outdoorAmbient = rgb(38, 42, 60),
-		envDiffuse = 0.25,
+		ambient = rgb(36, 40, 56),
+		outdoorAmbient = rgb(52, 58, 84),
+		envDiffuse = 0.35,
 		envSpecular = 0.4,
 		density = 0.4,
 		haze = 2.2,
 		glare = 0,
 		atmosphereColor = rgb(116, 106, 116),
 		decay = rgb(92, 70, 64),
-		saturation = -0.12,
-		contrast = 0.2,
-		tint = rgb(246, 240, 244),
+		saturation = 0,
+		contrast = 0.08,
+		tint = rgb(255, 244, 230),
 		bloom = 0.45,
 		bloomSize = 22,
 		bloomThreshold = 1.9,
@@ -313,12 +319,15 @@ LightingPresets.maps = {
 	UniversityCampus_Inside = preset({
 		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
 		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
+		-- (balanced, 2026-11-12, the owner: "blindingly strong in most places, completely unlit in others": more fill,
+		-- a gentler grade, the pools softened in SceneBuilder; each map keeps a grade of its own. Tuned live at full
+		-- quality through the player's camera)
 		clockTime = 0,
 		brightness = 0.5,
 		exposure = 0,
-		ambient = rgb(18, 18, 26),
-		outdoorAmbient = rgb(24, 24, 34),
-		envDiffuse = 0.15,
+		ambient = rgb(32, 31, 40),
+		outdoorAmbient = rgb(36, 36, 48),
+		envDiffuse = 0.25,
 		envSpecular = 0.3,
 		density = 0,
 		haze = 0,
@@ -326,7 +335,7 @@ LightingPresets.maps = {
 		atmosphereColor = rgb(124, 104, 100),
 		decay = rgb(92, 70, 64),
 		saturation = -0.08,
-		contrast = 0.2,
+		contrast = 0.08,
 		tint = rgb(248, 242, 238),
 		bloom = 0.2,
 		bloomSize = 14,
@@ -349,24 +358,27 @@ LightingPresets.maps = {
 	TokyoDistrict = preset({
 		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
 		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
+		-- (balanced, 2026-11-12, the owner: "blindingly strong in most places, completely unlit in others": more fill,
+		-- a gentler grade, the pools softened in SceneBuilder; each map keeps a grade of its own. Tuned live at full
+		-- quality through the player's camera)
 		clockTime = 0,
-		brightness = 0.45,
+		brightness = 0.7,
 		exposure = 0.1,
-		ambient = rgb(26, 24, 40),
-		outdoorAmbient = rgb(42, 38, 62),
-		envDiffuse = 0.25,
+		ambient = rgb(38, 34, 56),
+		outdoorAmbient = rgb(58, 52, 88),
+		envDiffuse = 0.4,
 		envSpecular = 0.6,
 		density = 0.4,
 		haze = 3.3,
 		glare = 0.1,
 		atmosphereColor = rgb(98, 88, 140),
 		decay = rgb(132, 66, 74),
-		saturation = -0.05,
-		contrast = 0.2,
-		tint = rgb(242, 236, 255),
-		bloom = 0.5,
+		saturation = 0.12,
+		contrast = 0.1,
+		tint = rgb(244, 236, 255),
+		bloom = 0.9,
 		bloomSize = 24,
-		bloomThreshold = 1.9,
+		bloomThreshold = 1.8,
 		lamps = 1,
 		lampRange = 1,
 		keyLights = 6,
@@ -381,11 +393,14 @@ LightingPresets.maps = {
 	TokyoDistrict_Under = preset({
 		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
 		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
+		-- (balanced, 2026-11-12, the owner: "blindingly strong in most places, completely unlit in others": more fill,
+		-- a gentler grade, the pools softened in SceneBuilder; each map keeps a grade of its own. Tuned live at full
+		-- quality through the player's camera)
 		clockTime = 0,
 		brightness = 0.4,
 		exposure = 0,
-		ambient = rgb(20, 22, 28),
-		outdoorAmbient = rgb(20, 22, 28),
+		ambient = rgb(28, 31, 38),
+		outdoorAmbient = rgb(28, 31, 38),
 		envDiffuse = 0.2,
 		envSpecular = 0.3,
 		density = 0,
@@ -394,7 +409,7 @@ LightingPresets.maps = {
 		atmosphereColor = rgb(60, 64, 76),
 		decay = rgb(40, 42, 50),
 		saturation = -0.1,
-		contrast = 0.18,
+		contrast = 0.1,
 		tint = rgb(236, 242, 255),
 		bloom = 0.2,
 		bloomSize = 12,
@@ -413,12 +428,15 @@ LightingPresets.maps = {
 	TokyoDistrict_Inside = preset({
 		-- (noir, tuned in a Studio play test at full quality through the player's own camera, 2026-11-02: the fill and
 		-- the moon lit every surface evenly; turned down, the lamps, windows and neon carve the night)
+		-- (balanced, 2026-11-12, the owner: "blindingly strong in most places, completely unlit in others": more fill,
+		-- a gentler grade, the pools softened in SceneBuilder; each map keeps a grade of its own. Tuned live at full
+		-- quality through the player's camera)
 		clockTime = 0,
 		brightness = 0.5,
 		exposure = 0,
-		ambient = rgb(18, 17, 26),
-		outdoorAmbient = rgb(24, 22, 34),
-		envDiffuse = 0.15,
+		ambient = rgb(32, 30, 44),
+		outdoorAmbient = rgb(36, 34, 50),
+		envDiffuse = 0.25,
 		envSpecular = 0.3,
 		density = 0,
 		haze = 0,
@@ -426,7 +444,7 @@ LightingPresets.maps = {
 		atmosphereColor = rgb(110, 86, 140),
 		decay = rgb(70, 40, 80),
 		saturation = -0.05,
-		contrast = 0.2,
+		contrast = 0.08,
 		tint = rgb(246, 240, 250),
 		bloom = 0.2,
 		bloomSize = 14,
