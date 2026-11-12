@@ -6,6 +6,8 @@
 
 local SceneDeaths = require(script.Parent)
 local DeathScreen = require(script.Parent.Parent.DeathScreen)
+local Cinema = require(script.Parent.Parent.Cinema)
+local Vfx = require(script.Parent.Parent.Vfx)
 
 local RED = Color3.fromRGB(255, 0, 0)
 local ORANGE = Color3.fromRGB(255, 127, 39)
@@ -25,6 +27,39 @@ local function label(parent: Instance, text: string, x: number, y: number, w: nu
 	l.TextXAlignment = Enum.TextXAlignment.Left
 	l.Parent = parent
 	return l
+end
+
+-- Undertale's soul: a 7 x 6 bitmap
+local HEART = { ".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..." }
+-- the damage font's 9: a chunky two-pixel stroke, 6 x 9
+local NINE = { ".XXXX.", "XX..XX", "XX..XX", "XX..XX", ".XXXXX", "....XX", "....XX", "XX..XX", ".XXXX." }
+
+-- A bitmap of square pixels filling `holder` (each "X" one cell), optionally under a one-cell dark outline so it reads
+-- over the picture; returns the cells.
+local function pixels(holder: Frame, rows: { string }, color: Color3, outline: Color3?)
+	local h, w = #rows, #rows[1]
+	local cells = {}
+	local function cell(col: number, row: number, c: Color3, z: number, grow: number)
+		local px = Instance.new("Frame")
+		px.BorderSizePixel = 0
+		px.BackgroundColor3 = c
+		px.Position = UDim2.fromScale((col - 1 - grow) / w, (row - 1 - grow) / h)
+		px.Size = UDim2.fromScale((1 + 2 * grow) / w + 0.004, (1 + 2 * grow) / h + 0.004)
+		px.ZIndex = z
+		px.Parent = holder
+		table.insert(cells, px)
+	end
+	for row, bits in ipairs(rows) do
+		for col = 1, w do
+			if string.sub(bits, col, col) == "X" then
+				if outline then
+					cell(col, row, outline, 1, 0.45)
+				end
+				cell(col, row, color, 2, 0)
+			end
+		end
+	end
+	return cells
 end
 
 local function box(parent: Instance, x: number, y: number, w: number, h: number, color: Color3, thick: number)
@@ -71,18 +106,7 @@ local function build(ctx)
 	soul.Size = UDim2.fromScale(0.14, 0.12)
 	soul.Position = UDim2.fromScale(0.5, 0.5)
 	soul.Parent = battle
-	for row, bits in ipairs({ ".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..." }) do
-		for col = 1, 7 do
-			if string.sub(bits, col, col) == "X" then
-				local px = Instance.new("Frame")
-				px.BorderSizePixel = 0
-				px.BackgroundColor3 = RED
-				px.Position = UDim2.fromScale((col - 1) / 7, (row - 1) / 6)
-				px.Size = UDim2.fromScale(1 / 7 + 0.004, 1 / 6 + 0.004)
-				px.Parent = soul
-			end
-		end
-	end
+	pixels(soul, HEART, RED)
 	label(area, "DEATH   LV 19   HP", 0.14, 0.785, 0.32, 0.035, WHITE)
 	local hpBack = Instance.new("Frame")
 	hpBack.BorderSizePixel = 0
@@ -123,9 +147,16 @@ local function build(ctx)
 		local b = buttons[1]
 		b.stroke.Color = YELLOW
 		b.name.TextColor3 = YELLOW
-		b.icon.Text = "♥"
-		b.icon.TextColor3 = RED
-		b.icon.Font = Enum.Font.GothamBlack
+		-- (2026-11-12, the user: the heart stopped being pixelated on FIGHT; it is the same bitmap now)
+		b.icon.Text = ""
+		local heart = Instance.new("Frame")
+		heart.BackgroundTransparency = 1
+		heart.AnchorPoint = Vector2.new(0.5, 0.5)
+		heart.Position = UDim2.fromScale(0.5, 0.5)
+		heart.Size = UDim2.fromScale(0.62, 0.62)
+		heart.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		heart.Parent = b.icon
+		pixels(heart, HEART, RED)
 		soul.Visible = false
 	end)
 	ctx:at(23.75, function()
@@ -154,24 +185,72 @@ local function build(ctx)
 		local p = if h then ctx:screen(h.Position) else Vector2.new(0.5, 0.33)
 		return p
 	end
+	-- the slash (2026-11-12, the user: "make the slashing VFX more dramatic"): Undertale's crescent, built of square
+	-- pixels, swept on corner to corner in 0.1 s, white-hot as it goes and red behind, a white flash and a hard shake
+	-- as it lands, then it thins from its edges and blinks out
 	local function slash(at: Vector2, angle: number, len: number, life: number)
-		local f = Instance.new("Frame")
-		f.BorderSizePixel = 0
-		f.BackgroundColor3 = RED
-		f.AnchorPoint = Vector2.new(0.5, 0.5)
-		f.Position = UDim2.fromScale(at.X, at.Y)
-		f.Size = UDim2.new(0, 6, len, 0)
-		f.Rotation = angle
-		f.Parent = ui
-		ctx:tween(f, life * 0.4, { Size = UDim2.new(0, 14, len, 0) })
-		task.delay(life, function()
-			f:Destroy()
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		holder.Position = UDim2.fromScale(at.X, at.Y)
+		holder.Size = UDim2.fromScale(len, len)
+		holder.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		holder.Rotation = angle
+		holder.Parent = ui
+		local G = 30
+		local cells = {}
+		for i = 0, G - 1 do
+			for j = 0, G - 1 do
+				local u, v = (i + 0.5) / G, (j + 0.5) / G
+				-- along the chord from the top right to the bottom left, and how far off it toward the bulge
+				local sAlong = ((u - 0.88) * -0.76 + (v - 0.06) * 0.88) / (0.76 * 0.76 + 0.88 * 0.88)
+				local px, py = 0.88 - 0.76 * sAlong, 0.06 + 0.88 * sAlong
+				local off = ((u - px) * 0.88 + (v - py) * 0.76) / math.sqrt(0.76 * 0.76 + 0.88 * 0.88)
+				if sAlong > 0 and sAlong < 1 then
+					local bulge = math.sin(math.pi * sAlong)
+					local outer, inner = 0.3 * bulge, 0.3 * bulge - 0.13 * bulge ^ 0.7 - 0.012
+					if off <= outer and off >= inner then
+						local c = Instance.new("Frame")
+						c.BorderSizePixel = 0
+						c.BackgroundColor3 = WHITE
+						c.Position = UDim2.fromScale(i / G, j / G)
+						c.Size = UDim2.fromScale(1 / G + 0.003, 1 / G + 0.003)
+						c.Visible = false
+						c.Parent = holder
+						table.insert(
+							cells,
+							{ frame = c, s = sAlong, depth = (outer - off) / math.max(outer - inner, 1e-3) }
+						)
+					end
+				end
+			end
+		end
+		local start = ctx:now()
+		local landed = false
+		ctx:during(start, start + life + 0.4, function(t)
+			local k = t - start
+			for _, c in ipairs(cells) do
+				local shown = k >= c.s * 0.1
+				-- thinning: the crescent's edges go first, its middle last
+				local gone = k > life * (0.55 + 0.45 * (1 - math.abs(c.depth - 0.5) * 2))
+				c.frame.Visible = shown and not gone and (k < life * 0.85 or math.floor(k * 30) % 2 == 0)
+				local age = k - c.s * 0.1
+				c.frame.BackgroundColor3 = if age < 0.05 then WHITE else RED
+			end
+			if not landed and k >= 0.1 then
+				landed = true
+				Cinema.flash(WHITE, 0.45, 0.12)
+				Vfx.Screen.shake(1.6, 0.35)
+			end
 		end)
-		return f
+		task.delay(life + 0.45, function()
+			holder:Destroy()
+		end)
+		return holder
 	end
 	-- 24.0 the first slash cuts the air where he stood (he sidestepped)
 	ctx:at(23.98, function()
-		slash(torsoScreen(), 0, 0.14, 0.3)
+		slash(torsoScreen(), 0, 0.3, 0.5)
 	end)
 	-- 24.25 the speech bubble types "heh, didja really think you would be"
 	local bubble: Frame? = nil
@@ -223,7 +302,7 @@ local function build(ctx)
 			said.Text = ""
 		end
 		local at = torsoScreen()
-		slash(at, -48, 0.2, 0.35)
+		slash(at, 8, 0.42, 0.6)
 		local star = label(ui, "*", at.X - 0.01, at.Y - 0.12, 0.03, 0.04, WHITE)
 		task.delay(0.5, function()
 			star:Destroy()
@@ -249,40 +328,35 @@ local function build(ctx)
 			wound.Position = UDim2.fromScale(p.X, p.Y)
 		end
 	end)
-	-- 27.5 the damage: a row of red digits over him
+	-- 27.5 the damage (2026-11-12, the user: "the 9999999 number more accurate to Undertale"): 9999999, seven nines
+	-- in the battle's chunky pixel digits, red under a dark rim, hopping up off him and dropping back as the game's do
 	local damage: Frame? = nil
 	ctx:at(27.5, function()
 		local row = Instance.new("Frame")
 		row.BackgroundTransparency = 1
-		row.AnchorPoint = Vector2.new(0.5, 0.5)
-		row.Size = UDim2.fromScale(0.26, 0.05)
+		row.AnchorPoint = Vector2.new(0.5, 1)
+		row.Size = UDim2.fromScale(0.3, 0.075)
 		local list = Instance.new("UIListLayout")
 		list.FillDirection = Enum.FillDirection.Horizontal
-		list.Padding = UDim.new(0.01, 0)
+		list.Padding = UDim.new(0.018, 0)
 		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		list.Parent = row
 		for _ = 1, 7 do
-			local d = Instance.new("TextLabel")
+			local d = Instance.new("Frame")
 			d.BackgroundTransparency = 1
-			d.Size = UDim2.fromScale(0.13, 1)
-			d.Font = Enum.Font.Arcade
-			d.TextScaled = true
-			d.TextColor3 = RED
-			d.Text = "9"
-			local s = Instance.new("UIStroke")
-			s.Color = RED
-			s.Thickness = 1
-			s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-			s.Parent = d
+			d.Size = UDim2.fromScale(0.125, 1)
 			d.Parent = row
+			pixels(d, NINE, RED, Color3.fromRGB(20, 0, 0))
 		end
 		row.Parent = ui
 		damage = row
 	end)
-	ctx:during(27.5, 30, function()
+	ctx:during(27.5, 30, function(t)
 		if damage then
 			local p = headScreen()
-			damage.Position = UDim2.fromScale(p.X, p.Y - 0.1)
+			local u = math.clamp((t - 27.5) / 0.45, 0, 1)
+			local hop = math.sin(math.pi * u) * 0.05
+			damage.Position = UDim2.fromScale(p.X, p.Y - 0.06 - hop)
 		end
 	end)
 end
