@@ -16,6 +16,10 @@ local function light(holder: Instance)
 		return
 	end
 	task.defer(function()
+		-- (gone already: a cutscene's actor copied from a player has its copy taken off at once)
+		if not holder.Parent then
+			return
+		end
 		for _, eye in ipairs(holder:GetChildren()) do
 			if eye:IsA("BasePart") then
 				Vfx.Emit.make(eye, {
