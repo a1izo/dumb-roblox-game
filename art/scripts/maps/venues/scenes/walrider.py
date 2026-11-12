@@ -10,6 +10,7 @@ at the door; then fall on their back looking up at the vault.
 """
 
 import math
+import random
 
 from maps import kit
 from maps.venues.scenes import parts
@@ -56,6 +57,64 @@ def hazard(s, x0, x1, z0, z1, y=0.015, width=0.6):
                        (0, 1, 0))
         x += width
         k += 1
+
+
+def splat(s, centre, a, b, r, seed, out, drops=5, streak=None):
+    """A spatter of blood on a flat face: a ragged blot (a fan of triangles round `centre`, spikes thrown out of it),
+    drops flung round it, and `streak` (a direction in the face) a run dripping down from it. `a`, `b` span the face
+    (unit vectors), `out` its outward normal (to lift the blood a hair off it)."""
+    rnd = random.Random(seed)
+    lift = 0.012
+
+    def at(u, v):
+        return tuple(centre[i] + a[i] * u + b[i] * v + out[i] * lift for i in range(3))
+
+    n = 20
+    rim = []
+    for k in range(n):
+        ang = math.tau * k / n
+        rr = r * (0.7 + 0.3 * rnd.random())
+        if rnd.random() < 0.15:
+            rr *= 1.2 + 0.4 * rnd.random()
+        rim.append((math.cos(ang) * rr, math.sin(ang) * rr * 0.85))
+    for k in range(n):
+        (u0, v0), (u1, v1) = rim[k], rim[(k + 1) % n]
+        parts.poly(s, "BloodDry", [at(0, 0), at(u0, v0), at(u1, v1)], out)
+    for _ in range(drops):
+        ang = rnd.uniform(0, math.tau)
+        d = r * rnd.uniform(1.4, 2.8)
+        cu, cv = math.cos(ang) * d, math.sin(ang) * d
+        dr = r * rnd.uniform(0.06, 0.16)
+        parts.poly(s, "BloodDry", [at(cu + math.cos(math.tau * j / 6) * dr, cv + math.sin(math.tau * j / 6) * dr)
+                                   for j in range(6)], out)
+    if streak:
+        for k in range(rnd.randint(2, 4)):
+            u = rnd.uniform(-0.6, 0.6) * r
+            length = r * rnd.uniform(1.5, 3.5)
+            w = r * rnd.uniform(0.05, 0.1)
+            su, sv = streak
+            parts.poly(s, "BloodDry", [at(u - w, 0), at(u + w, 0), at(u + su * length + w * 0.4, sv * length),
+                                       at(u + su * length - w * 0.4, sv * length)], out)
+
+
+def handprint(s, centre, a, b, size, out, turn=0.0):
+    """A bloody handprint: the palm and five fingers, upright on a face (b is up), turned `turn` degrees."""
+    c, sn = math.cos(math.radians(turn)), math.sin(math.radians(turn))
+
+    def at(u, v):
+        uu, vv = u * c - v * sn, u * sn + v * c
+        return tuple(centre[i] + a[i] * uu * size + b[i] * vv * size + out[i] * 0.012 for i in range(3))
+
+    parts.poly(s, "BloodDry", [at(-0.32, -0.4), at(0.32, -0.4), at(0.36, 0.1), at(0.3, 0.3), at(-0.3, 0.3),
+                               at(-0.36, 0.05)], out)
+    for fu, fv, length, lean in ((-0.27, 0.3, 0.42, -8), (-0.1, 0.32, 0.52, -3), (0.08, 0.32, 0.55, 2),
+                                 (0.25, 0.3, 0.45, 7), (-0.38, -0.05, 0.4, -55)):
+        lc, ls = math.cos(math.radians(lean)), math.sin(math.radians(lean))
+        w = 0.07
+        tipu, tipv = fu + ls * length, fv + lc * length
+        parts.poly(s, "BloodDry", [at(fu - w * lc, fv + w * ls), at(fu + w * lc, fv - w * ls),
+                                   at(tipu + w * lc * 0.8, tipv - w * ls * 0.8), at(tipu - w * lc * 0.8,
+                                                                                     tipv + w * ls * 0.8)], out)
 
 
 def build(s):
@@ -137,6 +196,47 @@ def build(s):
         parts.poly(s, "BloodDry", [W(-1.6 + k * 0.15, 0.021, -9.4 - k * 1.6), W(-0.9 + k * 0.1, 0.021, -9.4 - k * 1.6),
                                    W(-1.0 + k * 0.1, 0.021, -10.9 - k * 1.6), W(-1.5 + k * 0.15, 0.021, -10.9 - k * 1.6)],
                    (0, 1, 0))
+    # (2026-11-12, the user: "the background isnt accurate to the game, so make it more accurate - blood and all"):
+    # Outlast's lab is a slaughterhouse by the end. The trail where the victim dragged themself from where they woke
+    # to the door; spatter up the lab's walls; bloody handprints either side of the door; the white room's walls
+    # sprayed and run with it, a great smear across its back wall.
+    rnd = random.Random(12)
+    z = 7.6
+    x = 0.3
+    while z > -0.5:  # the drag trail: broken smears, wider where they stopped, the hazard stripe crossed
+        length = rnd.uniform(0.5, 1.1)
+        w = rnd.uniform(0.18, 0.34)
+        x2 = x + rnd.uniform(-0.15, 0.15)
+        parts.poly(s, "BloodDry", [W(x - w, 0.026, z), W(x + w, 0.026, z), W(x2 + w * 0.7, 0.026, z - length),
+                                   W(x2 - w * 0.7, 0.026, z - length)], (0, 1, 0))
+        z -= length + rnd.uniform(0.05, 0.3)
+        x = x2
+    for k, (sx, sz, r) in enumerate(((0.2, 7.4, 0.5), (0.0, 3.6, 0.35), (-0.1, -1.0, 0.3), (1.2, 9.6, 0.4))):
+        splat(s, W(sx, 0.022, sz), (1, 0, 0), (0, 0, 1), r, 40 + k, (0, 1, 0), drops=4)
+    for side in (-1, 1):  # the lab walls
+        for k, (y, z, r) in enumerate(((2.2, 4.2, 0.6), (4.6, 10.2, 0.8), (1.4, 12.6, 0.5))):
+            if (k + (side > 0)) % 2 == 0 or k == 1:
+                splat(s, W(side * (HALF - 0.005), y, z), (0, 0, 1), (0, 1, 0), r, 60 + k * 3 + side, (-side, 0, 0),
+                      drops=6, streak=(0.0, -1.0))
+    # either side of the door, on the concrete: handprints dragged down, spatter
+    for side, turn, y in ((-1, 12, 4.4), (-1, -6, 3.1), (1, -14, 5.0)):
+        handprint(s, W(side * 4.7, y, -1.995), (1, 0, 0), (0, 1, 0), 0.55, (0, 0, 1), turn)
+        s.box("BloodDry", W(side * 4.7 + 0.05, y - 0.75, -1.99), (0.12, 1.1, 0.01))  # (the smear it left going down)
+    splat(s, W(-6.2, 6.0, -1.995), (1, 0, 0), (0, 1, 0), 0.9, 81, (0, 0, 1), drops=8, streak=(0.05, -1.0))
+    splat(s, W(5.9, 2.2, -1.995), (1, 0, 0), (0, 1, 0), 0.6, 82, (0, 0, 1), drops=6, streak=(0.0, -1.0))
+    # the white room: its back wall sprayed and smeared, its side walls run with it
+    for k, (x, y, r) in enumerate(((-2.4, 4.5, 1.3), (1.8, 6.8, 0.9), (4.2, 3.0, 1.0), (-5.6, 7.4, 0.8),
+                                   (0.2, 2.2, 0.7))):
+        splat(s, W(x, y, t1 + 0.005), (1, 0, 0), (0, 1, 0), r, 90 + k, (0, 0, 1), drops=9, streak=(0.0, -1.0))
+    for k in range(9):  # the smear: a hand dragged across the back wall at chest height
+        x0 = -6.0 + k * 1.1
+        y0 = 4.6 - 0.12 * k + 0.2 * math.sin(k)
+        parts.poly(s, "BloodDry", [W(x0, y0 - 0.3, t1 + 0.006), W(x0 + 1.15, y0 - 0.32, t1 + 0.006),
+                                   W(x0 + 1.15, y0 + 0.28, t1 + 0.006), W(x0, y0 + 0.3, t1 + 0.006)], (0, 0, 1))
+    for side in (-1, 1):
+        for k, (y, z, r) in enumerate(((5.5, -6.5, 0.9), (2.0, -11.0, 1.1), (7.0, -15.5, 0.7))):
+            splat(s, W(side * 8.495, y, z), (0, 0, 1), (0, 1, 0), r, 110 + k * 5 + side, (-side, 0, 0), drops=7,
+                  streak=(0.0, -1.0))
     # a steel bench and a cabinet against the far wall, a floor drain
     s.box("Steel", W(-4.5, 2.6, t1 + 1.0), (5.0, 0.15, 1.8))
     for dx in (-2.2, 2.2):

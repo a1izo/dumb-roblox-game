@@ -1,15 +1,13 @@
--- Walrider (art/refs/deaths/walrider.md, 19.5 s), redone 2026-11-10 to the ending watched at 0.5 s a frame (the user:
--- "the camera shots, the hands - they should be the hands of the player who dies, the movement, the vfx, when you die
--- by falling, basically everything"). FIRST PERSON the whole way: the camera is the victim's eyes, and the only thing
--- seen of them is their own arms (the dead player's arm colours in the match suit's sleeves, their skin on the hands,
--- bloodied). Face down on the pale floor pushing up (0-1.5); rising, the yellow line and the hazard stripe swinging
--- through the view (2-3.3); the doors already parting on the lit white room: the soldiers and the old man in the
--- wheelchair, blood on the tiles (3.5); the staggering walk at them, a hand swinging into view each step (4-7); the
--- shot: the room flashes warm, the view jolts (7.3); the left hand flung up across the frame, slow (8); falling over
--- onto the back: the view rolls, the wall and the doorway tilt, a red haze closes in, the grey swarm boils up at the
--- upper left (8.5-11.5); lying at floor level, the doorway at the right, the soldiers coming in (12-15); the view rolls
--- straight up to the ceiling (15.5); the right hand reaching up at the light, the volley (shots jolt the view, debris
--- falling) (16-17.3); dark, a soldier standing over (17.5); blood over the lens under a white glare (18); black.
+-- Walrider (art/refs/deaths/walrider.md, 21.5 s), reworked 2026-11-12 to the user's notes. FIRST PERSON the whole
+-- way: the camera is the victim's eyes, and all that is seen of them is their own arm, the dead player's, coming in
+-- from the edge of the frame as a game's view arm does. Face down on the floor pushing up, both hands (0-1.6); rising,
+-- the trail of blood they dragged and the hazard stripe swinging through, the doors parting on the lit white room
+-- (1.6-3.3); the staggering walk at the door, only the right hand out ahead (3.3-5.4); they see the soldiers and back
+-- up a step or two, the hand coming up (5.4-7.3); the front soldier, the only one who raises his rifle, fires ONCE
+-- (7.3); about eight seconds of slow motion, still standing: the hand comes up red from the wound, reaches out at him
+-- (7.7-15.2); then he empties the rifle into them (15.3-16.4); only then they fall, onto their back (16.6-17.9);
+-- lying there, the swarm boiling up at the edge; dark; blood over the lens under a white glare; black. The soldiers
+-- never walk in: each is at his own business in the doorway (their clips, scene_actors.py).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,14 +16,21 @@ local SceneDeaths = require(script.Parent)
 local Cinema = require(script.Parent.Parent.Cinema)
 local Vfx = require(script.Parent.Parent.Vfx)
 local Suit = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Suit"))
+local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 
 local CONCRETE = Color3.fromRGB(150, 164, 172)
 local STEEL = Color3.fromRGB(70, 80, 88)
 local BLOOD = Color3.fromRGB(110, 8, 10)
 local BLACK = Color3.fromRGB(20, 20, 22)
 
-local SHOT = 7.28 -- the first shot (soldier 3's clip fires then)
-local VOLLEY = { 15.55, 15.8, 15.95, 16.15, 16.3, 16.5, 16.62, 16.8, 16.95, 17.1 }
+local SEEN = 5.4 -- they see the soldiers and stop
+local SHOT = 7.3 -- the one shot (soldier 3's clip fires then)
+local SLOW_FROM, SLOW_TO = 7.7, 15.2 -- the slow motion, still standing
+-- the shot, then the volley (soldier 3's clip recoils on each: scene_actors.py VOLLEY)
+local VOLLEY = { SHOT, 15.3, 15.42, 15.53, 15.66, 15.78, 15.9, 16.03, 16.15, 16.28, 16.4 }
+local FALL = 16.6 -- only now do they fall
+local DARK = 19.6
+local LENGTH = 21.5
 
 local function lerp(a: number, b: number, u: number): number
 	return a + (b - a) * math.clamp(u, 0, 1)
@@ -121,10 +126,13 @@ local function standIn(ctx)
 	})
 end
 
--- One of the victim's own arms for the first-person view: a copy of the player's arm part (their colour), the match
--- suit's sleeve and cuff and their skin on the hand (as every player wears it in a case), blood over the fingers and
--- the back of the hand. A model pivoted every frame: its pivot is the arm's middle, its -Y the hand's way.
-local function ownArm(ctx, side: number, character: Model?, skin: Color3): Model
+-- The victim's own right arm (the left too, for the push off the floor) for the first-person view, as a game's view
+-- arm: it starts at the shoulder (below and behind the lens, out of the picture) and runs to the hand, so it always
+-- comes in from the edge of the frame, attached (2026-11-12, the user: "you made it look like its detached"). It is
+-- the dead player's own arm (2026-11-12, "the hand of the players avatar that died"): their arm part and colour; the
+-- match suit's sleeve and their skin on the hand when they wear the suit (in a case), else their avatar's own shirt
+-- (a Humanoid in the holder draws it). Blood on the hand and the cuff, more of it after the shot.
+local function ownArm(ctx, side: number, character: Model?, skin: Color3): (Model, { BasePart })
 	local name = if side < 0 then "Left Arm" else "Right Arm"
 	local source = character and character:FindFirstChild(name)
 	local arm: BasePart
@@ -138,7 +146,7 @@ local function ownArm(ctx, side: number, character: Model?, skin: Color3): Model
 	else
 		arm = Instance.new("Part")
 		arm.Size = Vector3.new(1, 2, 1)
-		arm.Color = Color3.fromRGB(40, 40, 46)
+		arm.Color = skin
 	end
 	arm.Name = name
 	arm.Anchored = true
@@ -150,37 +158,38 @@ local function ownArm(ctx, side: number, character: Model?, skin: Color3): Model
 	local model = Instance.new("Model")
 	model.Name = "OwnArm" .. name
 	arm.Parent = model
-	for _, list in ipairs({ Suit.cloth(arm), Suit.hand(arm, skin) }) do
-		for _, piece in ipairs(list) do
-			piece.Anchored = true
-			piece.CanCollide = false
-			piece.CanQuery = false
-			piece.CastShadow = false
-			piece.Parent = model
+	local bloody = {}
+	local suited = character ~= nil and character:FindFirstChild("LHandRight", true) ~= nil
+	if suited or not character then
+		for _, list in ipairs({ Suit.cloth(arm), Suit.hand(arm, skin) }) do
+			for _, piece in ipairs(list) do
+				piece.Anchored = true
+				piece.CanCollide = false
+				piece.CanQuery = false
+				piece.CastShadow = false
+				piece.Parent = model
+				if piece.Name == "Hand" or piece.Name == "Cuff" then
+					table.insert(bloody, piece)
+				end
+			end
 		end
-	end
-	-- blood: over the fingers' end, the back of the hand and up the cuff, in patches
-	for k, spec in ipairs({
-		{ Vector3.new(0.72, 0.22, 0.72), Vector3.new(0, -0.95, 0) },
-		{ Vector3.new(0.5, 0.18, 0.74), Vector3.new(0.12, -0.78, 0) },
-		{ Vector3.new(0.74, 0.1, 0.46), Vector3.new(0, -0.62, -0.14) },
-	}) do
-		local gore = Instance.new("Part")
-		gore.Name = "Blood" .. k
-		gore.Size = spec[1] * arm.Size.X
-		gore.Color = BLOOD
-		gore.Material = Enum.Material.SmoothPlastic
-		gore.Transparency = 0.15
-		gore.Anchored = true
-		gore.CanCollide = false
-		gore.CanQuery = false
-		gore.CastShadow = false
-		gore.CFrame = arm.CFrame * CFrame.new(spec[2] * (arm.Size.Y / 2))
-		gore.Parent = model
+	else
+		-- their own avatar: the shirt and the body colours drawn on the arm by a Humanoid in the holder
+		local humanoid = Instance.new("Humanoid")
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+		humanoid.RigType = Enum.HumanoidRigType.R6
+		humanoid.Parent = model
+		for _, item in ipairs(character:GetChildren()) do
+			if item:IsA("Shirt") or item:IsA("BodyColors") then
+				item:Clone().Parent = model
+			end
+		end
+		table.insert(bloody, arm)
 	end
 	model.PrimaryPart = arm
 	model.Parent = ctx.stage.folder
-	return model
+	return model, bloody
 end
 
 local function build(ctx)
@@ -202,15 +211,18 @@ local function build(ctx)
 	})
 
 	-- the men in the doorway: soldiers in their marketplace tactical gear (Cast), the carbines modelled; the old doctor
-	-- in his wheelchair among them. After the shot they come in.
+	-- in his wheelchair among them. They stay where they stand, each at his own business (their clips); only soldier 3,
+	-- the front one at the right, raises his rifle and fires.
 	local soldiers = {}
 	local marks =
 		{ Vector3.new(-3.2, 0, -7.5), Vector3.new(-1.4, 0, -9.6), Vector3.new(2.6, 0, -6.6), Vector3.new(3.6, 0, -9.0) }
+	local faces =
+		{ Vector3.new(-1.4, 0, -9.6), Vector3.new(-3.2, 0, -7.5), Vector3.new(0, 0, 6), Vector3.new(0.4, 0, -10.2) }
 	for i, at in ipairs(marks) do
-		local s = ctx:actor("cast:soldier", CFrame.lookAt(at, Vector3.new(0, 0, 6)), "sceneWalriderSoldier" .. i)
+		local s = ctx:actor("cast:soldier", CFrame.lookAt(at, faces[i]), "sceneWalriderSoldier" .. i)
 		if s then
 			local rifle = ctx:wear(s, "rifle")
-			table.insert(soldiers, { model = s, rifle = rifle, i = i, from = at })
+			soldiers[i] = { model = s, rifle = rifle, i = i, from = at }
 		end
 	end
 	local chair = ctx:place("wheelchair", CFrame.new(0.4, 0, -10.2) * CFrame.Angles(0, math.pi, 0))
@@ -237,48 +249,50 @@ local function build(ctx)
 			})
 		end
 	end
-	-- the soldiers walk in after the shot (12-15), a slow advance with a step's bob
-	ctx:during(12.0, 15.2, function(t)
-		local u = smooth((t - 12.0) / 3.2)
-		for _, s in ipairs(soldiers) do
-			local from = s.from
-			local to = from + Vector3.new(0, 0, 5.5 + (s.i % 2) * 1.2)
-			local at = from:Lerp(to, u)
-			local bob = math.abs(math.sin(t * 5.5 + s.i)) * 0.12 * (1 - u)
-			local pivot = s.model:GetPivot()
-			local floor = ctx:world(at + Vector3.new(0, bob, 0))
-			s.model:PivotTo(CFrame.new(floor.X, pivot.Position.Y, floor.Z) * pivot.Rotation)
-		end
-	end)
+	local shooter = soldiers[3]
 
-	-- the victim's own arms (their arm colours, the suit's sleeves, their skin, blood)
+	-- the victim's own arms
 	local skin = Color3.fromRGB(214, 180, 150)
 	local character: Model? = nil
-	if ctx.victim then
-		local who = Players:GetPlayerByUserId(ctx.victim)
-		character = who and who.Character
-		local head = character and character:FindFirstChild("Head")
-		if head and head:IsA("BasePart") then
-			skin = head.Color
+	local who = if ctx.victim then Players:GetPlayerByUserId(ctx.victim) else Players.LocalPlayer
+	character = who and who.Character
+	local head = character and character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		skin = head.Color
+	end
+	local arms, bloody = {}, {}
+	arms[-1], bloody[-1] = ownArm(ctx, -1, character, skin)
+	arms[1], bloody[1] = ownArm(ctx, 1, character, skin)
+	local function bleed(share: number)
+		for _, side in ipairs({ -1, 1 }) do
+			for _, p in ipairs(bloody[side]) do
+				local base = p:GetAttribute("Clean") or p.Color
+				p:SetAttribute("Clean", base)
+				p.Color = (base :: Color3):Lerp(BLOOD, share)
+			end
 		end
 	end
-	local arms = { [-1] = ownArm(ctx, -1, character, skin), [1] = ownArm(ctx, 1, character, skin) }
-	-- an arm in the eyes' frame: `at` from the lens (x to the right, y up, z back: negative is ahead), its hand
-	-- pointing `pitch` degrees down from straight ahead and `spread` degrees out to its side, turned `roll`
-	local function place(side: number, cam: CFrame, at: Vector3, pitch: number, spread: number, roll: number?)
-		local hand = cam
-			* CFrame.new(at.X, at.Y, at.Z)
-			* CFrame.Angles(0, math.rad(-side * spread), math.rad(roll or 0))
-			* CFrame.Angles(math.rad(-90 + pitch), 0, 0)
-		-- (the arm's pivot is its middle; the hand is at its -Y end, one stud down: the pivot sits a stud back up the
-		-- arm from where the hand is)
-		arms[side]:PivotTo(hand * CFrame.new(0, 1.0, 0))
+	bleed(0.35)
+	-- an arm in the eyes' frame: its hand ON `hand` (lens frame: x right, y up, z back, so ahead is negative), the arm
+	-- running back from it toward its shoulder (side * 0.95 right, 1.35 down, 0.3 ahead: past the bottom corner of
+	-- the picture, so the arm always comes in from the frame's edge), the palm turned `roll` degrees. Lying face down
+	-- the shoulders are under and behind the lens instead (PRONE).
+	local SHOULDER = Vector3.new(0.95, -1.35, -0.3)
+	local PRONE = Vector3.new(1.0, -1.4, 0.2)
+	local function place(side: number, cam: CFrame, hand: Vector3, roll: number?, prone: boolean?)
+		local anchor = if prone then PRONE else SHOULDER
+		local shoulder = Vector3.new(side * anchor.X, anchor.Y, anchor.Z)
+		local way = (hand - shoulder).Unit
+		local length = arms[side].PrimaryPart.Size.Y
+		local middle = hand - way * (length / 2)
+		local local_ = CFrame.lookAt(middle, middle + way) * CFrame.Angles(math.rad(90), 0, 0)
+		arms[side]:PivotTo(cam * local_ * CFrame.Angles(0, math.rad(roll or 0), 0))
 	end
 	local function hide(side: number)
 		arms[side]:PivotTo(CFrame.new(0, -5000, 0))
 	end
 
-	-- the eyes: keyed to the ending (pos in scene space; pitch down is negative, roll in degrees)
+	-- the eyes (pos in scene space; pitch down is negative, roll in degrees)
 	local function eyes(t: number): (CFrame, number)
 		local pos, pitch, yaw, roll, fov = Vector3.new(0, 0.7, 7.5), -70, 0, 0, 72
 		if t < 1.6 then
@@ -287,50 +301,63 @@ local function build(ctx)
 			pos = Vector3.new(0.1 * push, 0.9 + 0.2 * math.max(0, push), 7.5)
 			pitch, yaw, roll = -74 + 8 * push, 4 * push, -6 + 5 * push
 		elseif t < 3.3 then
-			-- rising: the head comes up and swings, the floor's line and the stripe sweep through, the door rises in
+			-- rising: the head comes up and swings, the floor's trail and the stripe sweep through, the door rises in
 			local u = smooth((t - 1.6) / 1.7)
 			local sway = math.sin(u * math.pi) * 18
 			pos = Vector3.new(0.2 * math.sin(u * 6), lerp(1.1, 4.7, u), lerp(7.5, 6.9, u))
 			pitch, yaw, roll = lerp(-68, -6, u), lerp(6, 0, u) + sway * 0.3, lerp(-6, 0, u) + sway
-		elseif t < SHOT then
+		elseif t < SEEN then
 			-- the staggering walk at the door: heavy steps, the view bobbing and rolling with each
-			local u = (t - 3.3) / (SHOT - 3.3)
+			local u = (t - 3.3) / (SEEN - 3.3)
 			local step = math.sin(t * 4.6)
-			pos = Vector3.new(0.3 * step, 4.7 + 0.14 * math.abs(step), lerp(6.9, 3.0, u))
+			pos = Vector3.new(0.3 * step, 4.7 + 0.14 * math.abs(step), lerp(6.9, 4.3, u))
 			pitch, yaw, roll = -5 + 2 * step, 3 * math.sin(t * 2.3), 4 * step
-		elseif t < 8.6 then
-			-- hit: the view jolts back and tilts, slowed right down
-			local u = smooth((t - SHOT) / 1.3)
-			pos = Vector3.new(lerp(0.1, 0.6, u), lerp(4.7, 4.4, u), lerp(3.0, 3.6, u))
-			pitch, yaw, roll = lerp(-5, 10, u), lerp(0, 8, u), lerp(2, 38, u)
-		elseif t < 11.6 then
-			-- the fall onto the back: a drop with a bounce, rolling over until the wall and the doorway top the frame
-			local u = (t - 8.6) / 3.0
-			local drop = smooth(math.min(1, u * 1.6))
-			local bounce = math.exp(-u * 6) * math.sin(u * 22) * 0.3
-			pos = Vector3.new(lerp(0.6, 1.0, drop), lerp(4.4, 0.9, drop) + bounce, lerp(3.6, 4.3, drop))
-			pitch, yaw, roll = lerp(10, 26, drop), lerp(8, -14, drop), lerp(38, 72, smooth(u))
-		elseif t < 15.3 then
-			-- lying on the back at floor level: the doorway at the right, the view settling, barely moving
-			local u = smooth((t - 11.6) / 3.7)
-			pos = Vector3.new(1.0, 0.9, 4.3)
-			pitch, yaw, roll = lerp(26, 20, u), lerp(-14, -18, u), lerp(72, 66, u)
-		elseif t < 16.0 then
-			-- the view rolls over to look straight up at the ceiling arch
-			local u = smooth((t - 15.3) / 0.7)
-			pos = Vector3.new(1.0, 0.9, 4.3)
-			pitch, yaw, roll = lerp(20, 84, u), lerp(-18, 0, u), lerp(66, 0, u)
-		elseif t < 17.5 then
-			pos = Vector3.new(1.0, 0.9, 4.3)
-			pitch, yaw, roll = 82 + 2 * math.sin(t * 3), 0, 2 * math.sin(t * 2)
+		elseif t < SHOT then
+			-- he sees them: stops dead, then backs up two short steps, the head lifting
+			local u = smooth((t - SEEN) / 1.0)
+			local step = math.abs(math.sin(math.clamp((t - SEEN) / 1.0, 0, 1) * math.pi * 2)) * 0.08
+			pos = Vector3.new(lerp(0.1, -0.1, u), 4.75 - step, lerp(4.3, 5.2, u))
+			pitch, yaw, roll = lerp(-4, 1, u), lerp(1, -2, u) + math.sin(t * 9) * 0.4, lerp(2, -2, u)
+		elseif t < SLOW_FROM then
+			-- hit: the view jolts back
+			local u = smooth((t - SHOT) / (SLOW_FROM - SHOT))
+			pos = Vector3.new(lerp(-0.1, 0.1, u), lerp(4.75, 4.65, u), lerp(5.2, 5.55, u))
+			pitch, yaw, roll = lerp(1, 7, u), lerp(-2, 4, u), lerp(-2, 7, u)
+		elseif t < SLOW_TO then
+			-- SLOW MOTION, still standing: the view drifts on, unsteady; down to the hand (9-11.5), back up at the man
+			-- with the rifle (12.5-15), the knees going a little, the edges closing in
+			local u = (t - SLOW_FROM) / (SLOW_TO - SLOW_FROM)
+			local look = smooth((t - 8.8) / 1.4) - smooth((t - 11.4) / 1.6)
+			pos = Vector3.new(0.1 + 0.12 * math.sin(t * 0.7), lerp(4.65, 4.4, u) + 0.03 * math.sin(t * 1.1), 5.55)
+			pitch = lerp(7, 0, smooth(u * 2)) - 34 * look + 1.5 * math.sin(t * 0.8)
+			yaw = lerp(4, 7, u) + 2 * math.sin(t * 0.5) - 8 * look
+			roll = 7 + 5 * math.sin(t * 0.45) + 3 * u
+			fov = lerp(72, 62, smooth(u * 1.5))
+		elseif t < FALL then
+			-- the volley: the view held up on them, every round jolting it
+			pos = Vector3.new(0.2, 4.4, 5.6)
+			pitch, yaw, roll, fov = 1, 6, 11, 62
+		elseif t < 17.9 then
+			-- the fall, at last: backward onto the floor, a drop with a bounce, the view going over to the ceiling
+			local u = (t - FALL) / (17.9 - FALL)
+			local drop = smooth(math.min(1, u * 1.35))
+			local bounce = math.exp(-u * 6) * math.sin(u * 20) * 0.25 * drop
+			pos = Vector3.new(lerp(0.2, 0.7, drop), lerp(4.4, 0.9, drop) + bounce, lerp(5.6, 6.9, drop))
+			pitch, yaw, roll = lerp(1, 58, drop), lerp(6, -12, drop), lerp(11, 24, smooth(u))
+			fov = lerp(62, 72, drop)
+		elseif t < DARK then
+			-- lying on the back: the vault's light above, the doorway at the top of the view, barely moving
+			local u = smooth((t - 17.9) / (DARK - 17.9))
+			pos = Vector3.new(0.7, 0.9, 6.9)
+			pitch, yaw, roll = lerp(58, 52, u), lerp(-12, -8, u), lerp(24, 18, u)
 		else
-			pos = Vector3.new(1.0, 0.9, 4.3)
-			pitch, yaw, roll = 78, 0, -3
+			pos = Vector3.new(0.7, 0.9, 6.9)
+			pitch, yaw, roll = 70, 0, -3
 		end
-		-- (every shot of the volley jolts the view for a moment)
+		-- (the first shot and every round of the volley jolt the view)
 		for _, v in ipairs(VOLLEY) do
-			if t >= v and t < v + 0.14 then
-				local k = 1 - (t - v) / 0.14
+			if t >= v and t < v + 0.12 then
+				local k = 1 - (t - v) / 0.12
 				pitch += 4 * k
 				yaw += (if math.floor(v * 10) % 2 == 0 then 3 else -3) * k
 				break
@@ -341,67 +368,85 @@ local function build(ctx)
 			* CFrame.Angles(math.rad(pitch), 0, math.rad(roll))
 		return look, fov
 	end
-	ctx:camera(0, 19.5, eyes)
+	ctx:camera(0, LENGTH, eyes)
 
-	-- the arms, in the eyes' frame
-	ctx:during(0, 19.5, function(t)
+	-- the arms in the eyes' frame: both on the floor pushing up; after that only the right one (2026-11-12, the user:
+	-- "when walking, only the right hand should be visible")
+	ctx:during(0, LENGTH, function(t)
 		local cam = workspace.CurrentCamera.CFrame
 		if t < 1.6 then
-			-- both hands flat on the floor ahead, pushing: each comes up a little in turn
+			-- both hands flat on the floor either side, just under the lens (the floor is a stud off), pushing
 			local push = math.sin(t * 2.4)
-			place(-1, cam, Vector3.new(-1.05, -0.55 + 0.25 * math.max(0, push), -2.1), 58, 10, -8)
-			place(1, cam, Vector3.new(1.05, -0.55 + 0.25 * math.max(0, -push), -2.2), 56, 10, 8)
+			place(-1, cam, Vector3.new(-0.78, -0.5 + 0.08 * math.max(0, push), -0.82), -10, true)
+			place(1, cam, Vector3.new(0.78, -0.5 + 0.08 * math.max(0, -push), -0.85), 10, true)
 		elseif t < 3.3 then
-			-- rising: the right hand pushes off and drops out of the frame, the left is gone
-			local u = (t - 1.6) / 1.7
+			-- rising: the right hand pushes off and drops away under the frame
+			local u = smooth((t - 1.6) / 1.7)
 			hide(-1)
-			place(1, cam, Vector3.new(1.0, -0.6 - u * 1.2, -2.0), 40 - 20 * u, 8)
-		elseif t < SHOT then
-			-- the walk: a hand swings up into the frame with each step, reaching for the door
-			local swing = math.sin(t * 4.6)
-			if swing > 0 then
-				place(1, cam, Vector3.new(1.15, -1.0 + 0.45 * swing, -2.1), 8 + 14 * swing, 12, 6)
-				hide(-1)
-			else
-				place(-1, cam, Vector3.new(-1.15, -1.0 - 0.45 * swing, -2.1), 8 - 14 * swing, 12, -6)
-				hide(1)
-			end
-		elseif t < 8.6 then
-			-- the left hand flung up across the frame, close, the fingers spread
-			local u = smooth((t - SHOT) / 0.6)
-			place(
-				-1,
-				cam,
-				Vector3.new(lerp(-1.2, -0.45, u), lerp(-0.9, 0.3, u), lerp(-2.2, -1.5, u)),
-				lerp(10, 55, u),
-				20,
-				lerp(-6, -24, u)
-			)
-			hide(1)
-		elseif t < 11.6 then
-			-- falling: the left hand sinks away below, the right comes up at the edge
-			local u = smooth((t - 8.6) / 1.5)
-			place(-1, cam, Vector3.new(lerp(-0.45, -1.4, u), lerp(0.3, -1.2, u), -1.8), 40, 24, -20)
-			place(1, cam, Vector3.new(1.5, lerp(-1.4, -0.9, u), -2.0), 10, 30, 12)
-		elseif t < 15.3 then
-			-- lying: the right arm across the low left of the view, still
-			place(1, cam, Vector3.new(1.3, -1.1, -2.0), 4, 34, 14)
-			hide(-1)
-		elseif t < 17.5 then
-			-- the right hand reaching up at the light, shaking
-			local u = smooth((t - 15.3) / 0.8)
+			place(1, cam, Vector3.new(0.8, lerp(-0.5, -2.0, u), lerp(-0.85, -1.1, u)), 10, true)
+		elseif t < SEEN then
+			-- the walk: the right hand out ahead, reaching for the door, swaying with each step
+			local step = math.sin(t * 4.6)
+			local reach = smooth((t - 3.3) / 0.8)
 			place(
 				1,
 				cam,
-				Vector3.new(lerp(1.3, 0.6, u), lerp(-1.1, -0.35, u) + 0.06 * math.sin(t * 11), lerp(-2.0, -2.5, u)),
-				lerp(4, 30, u),
-				6,
-				4 * math.sin(t * 7)
+				Vector3.new(0.62 + 0.08 * step, lerp(-1.9, -0.72, reach) + 0.07 * math.abs(step), -2.2),
+				-8 + 6 * step
 			)
-			hide(-1)
+		elseif t < SHOT then
+			-- seen them: the hand comes up between, palm out, shaking
+			local u = smooth((t - SEEN) / 0.6)
+			place(
+				1,
+				cam,
+				Vector3.new(lerp(0.62, 0.42, u), lerp(-0.72, -0.42, u) + 0.02 * math.sin(t * 23), -2.15),
+				lerp(-8, -70, u)
+			)
+		elseif t < 8.8 then
+			-- the shot: the hand drops away to the wound
+			local u = smooth((t - SHOT) / 0.6)
+			place(1, cam, Vector3.new(lerp(0.42, 0.35, u), lerp(-0.42, -2.3, u), lerp(-2.15, -1.6, u)), -70)
+		elseif t < 11.6 then
+			-- slow: the hand comes up from the wound into the view, palm up, red, turning; then sinks
+			local up = smooth((t - 8.8) / 1.4) * (1 - smooth((t - 10.8) / 0.8))
+			place(
+				1,
+				cam,
+				Vector3.new(0.4, lerp(-2.3, -0.55, up) + 0.015 * math.sin(t * 2), lerp(-1.6, -1.95, up)),
+				lerp(-70, -165, up) + 6 * math.sin(t * 0.9)
+			)
+		elseif t < SLOW_TO then
+			-- slow: reaching out at the man with the rifle, trembling, the arm heavy
+			local u = smooth((t - 11.6) / 2.4)
+			place(
+				1,
+				cam,
+				Vector3.new(lerp(0.4, 0.5, u), lerp(-2.1, -0.85, u) + 0.02 * math.sin(t * 6), -2.2),
+				lerp(-120, -20, u)
+			)
+		elseif t < FALL then
+			-- the volley: the arm jerked with every round
+			local kick = 0
+			for _, v in ipairs(VOLLEY) do
+				if t >= v and t < v + 0.1 then
+					kick = 1 - (t - v) / 0.1
+				end
+			end
+			place(1, cam, Vector3.new(0.5 + 0.12 * kick, -0.85 - 0.25 * kick, -2.2), -20 + 25 * kick)
+		elseif t < 17.9 then
+			-- falling: the arm flung up and out of the frame
+			local u = smooth((t - FALL) / 0.7)
+			place(1, cam, Vector3.new(lerp(0.5, 1.9, u), lerp(-0.85, 0.3, u), lerp(-2.2, -1.6, u)), lerp(-20, 40, u))
+		elseif t < 19.3 then
+			-- on the floor: the hand lifts toward the light above, weakly, and falls back
+			local u = smooth((t - 18.2) / 0.7) * (1 - smooth((t - 18.95) / 0.35))
+			place(1, cam, Vector3.new(0.55, lerp(-2.3, -0.6, u) + 0.03 * math.sin(t * 9), lerp(-1.5, -2.0, u)), -150)
 		else
-			hide(-1)
 			hide(1)
+		end
+		if t >= SEEN then
+			hide(-1)
 		end
 	end)
 
@@ -410,9 +455,9 @@ local function build(ctx)
 		ctx:tween(doorL, 0.8, { CFrame = doorL.CFrame * CFrame.new(-3.4, 0, 0) })
 		ctx:tween(doorR, 0.8, { CFrame = doorR.CFrame * CFrame.new(3.4, 0, 0) })
 	end)
-	-- a muzzle flash at a soldier's rifle (and its light on the room)
-	local function fire(s, strength: number)
-		local rifle = s.rifle
+	-- a muzzle flash at the front soldier's rifle (its light on the room), smoke off the muzzle, the casing
+	local function fire(strength: number, slow: boolean)
+		local rifle = shooter and shooter.rifle
 		if not rifle then
 			return
 		end
@@ -428,33 +473,77 @@ local function build(ctx)
 		}, 1)
 		Vfx.Light.flash(tip, Color3.fromRGB(255, 220, 160), 30 * strength, 5 * strength, 0.1)
 		Vfx.Emit.burst(tip, {
+			tex = "VfxSmoke",
+			color = Color3.fromRGB(200, 200, 204),
+			size = { { 0, 0.3 }, { 1, if slow then 2.4 else 1.2 } },
+			alpha = { { 0, 0.55 }, { 1, 1 } },
+			life = if slow then { 6, 7.5 } else { 0.8, 1.2 },
+			speed = if slow then { 0.1, 0.3 } else { 1, 2.5 },
+			spread = 30,
+			rot = { 0, 360 },
+			spin = if slow then { -8, 8 } else { -60, 60 },
+			lit = 0.8,
+		}, if slow then 4 else 2)
+		Vfx.Emit.burst(tip, {
 			tex = "VfxChunk",
-			grid = 2,
-			fps = 0,
-			startRandom = true,
-			color = Color3.fromRGB(20, 18, 18),
-			size = { { 0, 0.08 }, { 1, 0.05 } },
-			life = { 0.4, 0.8 },
-			speed = { 10, 18 },
-			spread = 25,
-			dir = Enum.NormalId.Front,
-		}, 4)
+			color = Color3.fromRGB(196, 160, 70),
+			size = { { 0, 0.07 }, { 1, 0.06 } },
+			life = if slow then { 6, 7 } else { 0.5, 0.8 },
+			speed = if slow then { 0.4, 0.6 } else { 5, 8 },
+			spread = 20,
+			accel = if slow then Vector3.new(0, -0.15, 0) else Vector3.new(0, -30, 0),
+			rot = { 0, 360 },
+			spin = if slow then { -40, 40 } else { -600, 600 },
+			lit = 1,
+		}, 1)
+	end
+	-- the hit on the view: a red spray across the edge of the lens
+	local function hit(strength: number)
+		Cinema.flash(Color3.fromRGB(150, 10, 8), 0.45 * strength, 0.18)
+		Vfx.Screen.shake(0.9 * strength, 0.2)
 	end
 	ctx:at(SHOT, function()
-		if soldiers[3] then
-			fire(soldiers[3], 1.6)
-		end
+		fire(1.6, true)
+		hit(1.2)
 		Cinema.flash(Color3.fromRGB(255, 236, 200), 0.75, 0.25)
 		Cinema.still(Color3.fromRGB(255, 200, 160), 0.12)
+		bleed(0.75)
 	end)
-	-- the red closing in from the edges, from the hit on (a soft red-brown haze, deeper as they lie there)
+	-- the slow motion (2026-11-12, the user: "a little slowmo scene of about 8 seconds"): the world drained and dim,
+	-- dust hanging in the air, a slow heartbeat, the red closing in from the edges
+	local undoGrade: (() -> ())? = nil
+	ctx:at(SLOW_FROM, function()
+		undoGrade = Cinema.tint({ Saturation = -0.55, Contrast = 0.2, TintColor = Color3.fromRGB(226, 214, 214) }, 0.6)
+		SceneDeaths.emit(ctx, Vector3.new(0, 4.5, 1.5), Vector3.new(8, 5, 8), {
+			tex = "VfxDust",
+			color = Color3.fromRGB(230, 230, 236),
+			size = { { 0, 0.04 }, { 0.5, 0.07 }, { 1, 0.03 } },
+			alpha = { { 0, 1 }, { 0.3, 0.4 }, { 0.7, 0.4 }, { 1, 1 } },
+			life = { 6, 8 },
+			speed = { 0.02, 0.08 },
+			spread = 180,
+			lit = 1,
+			rate = 12,
+		}, SLOW_FROM, SLOW_TO):Emit(40)
+	end)
+	for k = 0, 6 do
+		ctx:at(SLOW_FROM + 0.5 + k * 1.1, function()
+			Sfx.play("heartbeat", { pitch = 0.62, volume = 1.1 })
+		end)
+	end
+	ctx:at(SLOW_TO, function()
+		if undoGrade then
+			undoGrade()
+		end
+	end)
+	-- the red closing in from the edges, from the hit on (a soft red-brown haze, deeper as it goes)
 	ctx:at(7.6, function()
 		local layer = ctx:layer(2)
 		local v = Instance.new("Frame")
 		v.BackgroundColor3 = Color3.fromRGB(96, 12, 8)
 		v.BorderSizePixel = 0
 		v.Size = UDim2.fromScale(1, 1)
-		v.BackgroundTransparency = 0.2
+		v.BackgroundTransparency = 0.45
 		local g = Instance.new("UIGradient")
 		g.Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 0.2),
@@ -468,17 +557,28 @@ local function build(ctx)
 		local v2 = v:Clone()
 		v2.UIGradient.Rotation = 90
 		v2.Parent = layer
-		ctx:tween(v, 4, { BackgroundTransparency = 0.05 })
-		ctx:tween(v2, 4, { BackgroundTransparency = 0.05 })
+		ctx:tween(v, 8, { BackgroundTransparency = 0.15 })
+		ctx:tween(v2, 8, { BackgroundTransparency = 0.15 })
+		ctx:atNow(FALL, function()
+			ctx:tween(v, 1.5, { BackgroundTransparency = 0 })
+			ctx:tween(v2, 1.5, { BackgroundTransparency = 0 })
+		end)
 	end)
-	-- the swarm boiling up at the upper left of the fallen view (grey static laced with white streaks), 8.5-12
-	ctx:at(8.5, function()
-		-- (placed where the eyes will look from the floor: up and to the left of the lying view)
-		local at = Vector3.new(-1.8, 2.6, 2.2)
+	-- the volley: the front man empties his rifle; every round jolts the view and sprays red at its edge
+	for i, t in ipairs(VOLLEY) do
+		if i > 1 then
+			ctx:at(t, function()
+				fire(1, false)
+				hit(0.8)
+				bleed(math.min(1, 0.75 + i * 0.03))
+			end)
+		end
+	end
+	-- the swarm boiling up at the upper left of the fallen view (grey static laced with white streaks)
+	ctx:at(17.6, function()
+		local at = Vector3.new(-1.6, 2.6, 5.4)
 		local swarm = SceneDeaths.emit(ctx, at, Vector3.new(2.5, 3, 2.5), {
 			tex = "VfxSmoke",
-			grid = 8,
-			mode = "OneShot",
 			color = { { 0, Color3.fromRGB(205, 205, 210) }, { 1, Color3.fromRGB(60, 60, 66) } },
 			size = { { 0, 1.5 }, { 1, 4.5 } },
 			alpha = { { 0, 0.35 }, { 0.6, 0.55 }, { 1, 1 } },
@@ -492,7 +592,7 @@ local function build(ctx)
 			rate = 50,
 		})
 		swarm:Emit(24)
-		ctx:during(8.5, 12.0, function(t)
+		ctx:during(17.6, DARK, function(t)
 			if math.floor(t * 8) % 2 == 0 and math.random() < 0.35 then
 				local from =
 					ctx:world(at + Vector3.new(math.random() * 2 - 1, math.random() * 2.5, math.random() * 2 - 1))
@@ -504,35 +604,13 @@ local function build(ctx)
 				)
 			end
 		end)
-		ctx:at(12.0, function()
+		ctx:at(DARK, function()
 			swarm.Enabled = false
 		end)
 	end)
-	-- 15.5-17.3 the volley from the doorway: every shot jolts the view; grit and debris rain from the ceiling
-	for i, t in ipairs(VOLLEY) do
-		ctx:at(t, function()
-			local s = soldiers[(i % #soldiers) + 1]
-			if s then
-				fire(s, 1)
-			end
-			Vfx.Emit.burst(ctx:world(Vector3.new(1.0, 10.5, 4.3)), {
-				tex = "VfxChunk",
-				grid = 2,
-				fps = 0,
-				startRandom = true,
-				color = Color3.fromRGB(26, 24, 24),
-				size = { { 0, 0.12 }, { 1, 0.08 } },
-				life = { 0.5, 0.9 },
-				speed = { 2, 6 },
-				spread = 60,
-				accel = Vector3.new(0, -30, 0),
-				dir = Enum.NormalId.Bottom,
-			}, 6)
-		end)
-	end
-	-- 17.45 dark; 17.75 blood over the lens, a white glare, a soldier standing over
+	-- dark; then blood over the lens, a white glare, the front man standing over (the cut hides him getting there)
 	local dark: Frame? = nil
-	ctx:at(17.45, function()
+	ctx:at(DARK, function()
 		local layer = ctx:layer(4)
 		local d = Instance.new("Frame")
 		d.BackgroundColor3 = Color3.new(0, 0, 0)
@@ -541,16 +619,16 @@ local function build(ctx)
 		d.BackgroundTransparency = 0.35
 		d.Parent = layer
 		dark = layer
-		if soldiers[1] then
-			soldiers[1].model:PivotTo(
+		if shooter then
+			shooter.model:PivotTo(
 				ctx.origin
-					* CFrame.lookAt(Vector3.new(1.0, 0.2, 3.0), Vector3.new(1.0, 0.2, 6))
+					* CFrame.lookAt(Vector3.new(0.7, 0.2, 4.6), Vector3.new(0.7, 0.2, 8))
 					* CFrame.new(0, 3, 0)
 					* CFrame.Angles(math.rad(-30), 0, 0)
 			)
 		end
 	end)
-	ctx:at(17.75, function()
+	ctx:at(DARK + 0.3, function()
 		if dark then
 			dark:Destroy()
 		end
@@ -585,7 +663,7 @@ local function build(ctx)
 			drop.Parent = layer
 		end
 		ctx:tween(glare, 1.5, { BackgroundTransparency = 0.9 })
-		ctx:atNow(19.2, function()
+		ctx:atNow(LENGTH - 0.3, function()
 			local black = Instance.new("Frame")
 			black.BackgroundColor3 = Color3.new(0, 0, 0)
 			black.BackgroundTransparency = 1
@@ -597,7 +675,7 @@ local function build(ctx)
 		end)
 	end)
 	ctx:grade(0, nil, { Saturation = -0.25, Contrast = 0.15, TintColor = Color3.fromRGB(214, 226, 236) }, 0.1)
-	ctx:grade(7.6, nil, { Saturation = -0.15, TintColor = Color3.fromRGB(255, 196, 184) }, 0.6)
+	ctx:grade(FALL, nil, { Saturation = -0.15, TintColor = Color3.fromRGB(255, 196, 184) }, 0.6)
 end
 
-return { length = 19.5, build = build }
+return { length = LENGTH, build = build }
