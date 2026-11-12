@@ -431,14 +431,23 @@ floor_key(iv, 10.0, "sine", -2, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(6, 0, 0), rS
 floor_key(iv, 12.9, "linear", -4, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(-4, 0, 0), rShoulder=BURNT,
                                                                 lShoulder=J((20, 0, -20))))
 IV_SIT = (0.0, 1.4)
-floor_key(iv, 13.8, "in", 10, 6, 4, (0.0, 0.8), crouch_legs(50, 0.5),
-          dict(neck=(-16, 0, 6), rShoulder=BURNT, lShoulder=J((10, 0, -30))))
-sit_key(iv, 14.4, "in", lean=24, turn=6, roll=4, neck=(-14, 0, 8), hips=IV_SIT, rShoulder=BURNT,
+ARM_HELD = J((62, 0, 26), (0, 0.06, -0.1))  # (the left hand across to the burnt arm)
+# (2026-11-12, the user: the falls were "extremely stiff": weight first, then the body follows, then it settles)
+floor_key(iv, 13.4, "smooth", 18, 4, 2, (0.0, 0.25), crouch_legs(62, 0.35),
+          dict(neck=(-20, 0, 4), rShoulder=BURNT, lShoulder=ARM_HELD))
+floor_key(iv, 13.7, "smooth", 6, 8, 6, (0.0, 0.55), crouch_legs(70, 0.42),
+          dict(neck=(-8, 10, 6), rShoulder=BURNT, lShoulder=ARM_HELD))
+floor_key(iv, 13.92, "in", -8, 6, 4, (0.0, 0.85), crouch_legs(58, 0.48),
+          dict(neck=(6, 4, 2), rShoulder=BURNT, lShoulder=J((-10, 0, -40))))
+sit_key(iv, 14.25, "in", lean=12, turn=6, roll=6, neck=(4, 0, 6), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=J((-24, 0, -34), (0, 0.06, 0)))
+sit_key(iv, 14.7, "out", lean=30, turn=6, roll=4, neck=(-22, 0, 8), hips=IV_SIT, rShoulder=BURNT,
         lShoulder=J((-20, 0, -30), (0, 0.06, 0)))
 sit_key(iv, 15.6, "sine", lean=26, turn=6, roll=6, neck=(-24, 0, 10), hips=IV_SIT, rShoulder=BURNT,
         lShoulder=J((-16, 0, -28), (0, 0.06, 0)))
 sit_key(iv, 18.0, "sine", lean=28, turn=6, roll=8, neck=(-34, 10, 16), hips=IV_SIT, rShoulder=BURNT,
         lShoulder=J((-14, 0, -26), (0, 0.06, 0)))
+alive(iv, amount=0.35, seed=12)
 soft(iv, head=2.4, arms=2.0)
 iv.build()
 
@@ -453,15 +462,26 @@ body_key(ik, 4.6, "out", 0, neck=(-14, -24, 0), rShoulder=J((40, 0, 6)), lShould
 body_key(ik, 6.2, "smooth", -2, -6, 0, neck=(-18, -12, -2), rShoulder=J((36, 0, 6)), lShoulder=J((10, 0, -14)))
 body_key(ik, 7.8, "out", -6, -8, 0, drop=0.06, neck=(-20, -8, 0), rShoulder=J((58, 0, 12)),
          lShoulder=J((14, 0, -16)))
-body_key(ik, 9.0, "snap", 2, -4, 0, drop=0.02, neck=(-8, -6, 0), rShoulder=J((30, 0, 20)), lShoulder=J((20, 0, -24)))
-body_key(ik, 10.2, "smooth", 0, -2, 0, drop=0.02, neck=(-10, -4, 0), rShoulder=J((26, 0, 10)),
-         lShoulder=J((10, 0, -14)))
-stand(ik, 0.0, 10.4, Feet(stance=0.25))
+body_key(ik, 9.0, "snap", -7, -4, 0, drop=0.04, neck=(-2, -6, 0), rShoulder=J((46, 0, 30)),
+         lShoulder=J((42, 0, -30)))
+body_key(ik, 9.55, "out", 3, -10, -2, drop=0.08, neck=(-14, -22, 0), rShoulder=J((34, 0, 22)),
+         lShoulder=J((30, 0, -22)))
+body_key(ik, 10.3, "smooth", 2, 8, 2, drop=0.06, neck=(-12, 26, 0), rShoulder=J((26, 0, 16)),
+         lShoulder=J((30, 0, -18)))
+body_key(ik, 11.0, "sine", 9, 0, 0, drop=0.08, neck=(-30, 0, 0), rShoulder=J((40, 0, 10)),
+         lShoulder=J((40, 0, -10)))
+stand(ik, 0.0, 11.0, Feet(stance=0.25))
 IK_HIPS = (0.0, 1.0)
-floor_key(ik, 11.4, "in", 6, 0, 0, (0.0, 0.7), crouch_legs(50, 0.5),
-          dict(neck=(-20, 0, 0), rShoulder=J((20, 0, 20)), lShoulder=J((20, 0, -20))))
-sit_key(ik, 12.4, "in", lean=12, head=-22, hips=IK_HIPS, rShoulder=J((10, 0, 18)), lShoulder=J((10, 0, -18)))
-sit_key(ik, 18.0, "linear", lean=14, head=-26, hips=IK_HIPS, rShoulder=J((10, 0, 18)), lShoulder=J((10, 0, -18)))
+floor_key(ik, 11.55, "in", 16, 0, 0, (0.0, 0.45), crouch_legs(40, 0.35),
+          dict(neck=(-26, 0, 0), rShoulder=J((24, 0, 24)), lShoulder=J((24, 0, -24))))
+floor_key(ik, 11.95, "smooth", 20, 0, 0, (0.0, 0.8), crouch_legs(62, 0.5),
+          dict(neck=(-22, 0, 0), rShoulder=J((10, 0, 26)), lShoulder=J((10, 0, -26))))
+sit_key(ik, 12.35, "in", lean=24, head=-24, hips=IK_HIPS, rShoulder=J((16, 0, 18)), lShoulder=J((16, 0, -18)))
+sit_key(ik, 12.8, "out", lean=8, head=-18, hips=IK_HIPS, rShoulder=J((12, 0, 18)), lShoulder=J((12, 0, -18)))
+sit_key(ik, 14.0, "sine", lean=12, head=-26, hips=IK_HIPS, rShoulder=J((10, 0, 18)), lShoulder=J((10, 0, -18)))
+sit_key(ik, 18.0, "linear", lean=16, head=-34, hips=IK_HIPS, rShoulder=J((8, 0, 16)), lShoulder=J((8, 0, -16)))
+alive(ik, amount=0.5, seed=21)
+soft(ik, head=2.6, arms=2.2)
 ik.build()
 
 isd = Motion("sceneIronSoldier", 18.0, note="One of the army behind the warlord: standing ready, the spear grounded; "

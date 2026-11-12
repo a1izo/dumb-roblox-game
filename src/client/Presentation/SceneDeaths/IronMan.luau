@@ -9,6 +9,7 @@ local SceneDeaths = require(script.Parent)
 local Cinema = require(script.Parent.Parent.Cinema)
 local Vfx = require(script.Parent.Parent.Vfx)
 local Costumes = require(script.Parent.Costumes) :: any
+local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 
 local STONES = {
 	Color3.fromRGB(160, 70, 240),
@@ -18,27 +19,26 @@ local STONES = {
 	Color3.fromRGB(60, 230, 100),
 	Color3.fromRGB(255, 220, 60),
 }
-local ASH = Color3.fromRGB(120, 112, 104)
 
-local function ashAway(ctx, model: Model, seconds: number)
+local function ashAway(_ctx, model: Model, seconds: number)
+	-- (2026-11-12, the user: the dissolve's particles were "extremely ugly": the shared ash, warm brown as the snap's
+	-- dust is, carried off sideways, from the head down)
+	local list = {}
 	for _, p in ipairs(model:GetDescendants()) do
 		if p:IsA("BasePart") and p.Transparency < 1 and p.Name ~= "HumanoidRootPart" then
-			Vfx.Emit.burst(p.Position, {
-				tex = "VfxDust",
-				color = ASH,
-				size = { { 0, 0.18 }, { 1, 0.08 } },
-				life = { 1.2, 2.2 },
-				speed = { 1, 3 },
-				spread = 50,
-				accel = Vector3.new(4, 1.5, 0),
-				drag = 0.6,
-				lit = 0.6,
-			}, 14, p.Size)
-			ctx:tween(p, seconds, { Transparency = 1, Color = ASH })
-		elseif p:IsA("Decal") then
-			ctx:tween(p, seconds, { Transparency = 1 })
+			table.insert(list, p)
 		end
 	end
+	table.sort(list, function(a, b)
+		return a.Position.Y > b.Position.Y
+	end)
+	Vfx.Recipes.dissolve(list, seconds, {
+		tint = Color3.fromRGB(122, 98, 80),
+		glow = Color3.fromRGB(255, 150, 80),
+		wind = Vector3.new(3.4, 0, 0.9),
+		rise = 1.2,
+		fade = 0.6,
+	})
 end
 
 -- The set of parts (before it was modelled): only when the Scenes import is missing.
@@ -176,13 +176,32 @@ local function build(ctx)
 	if victim then
 		-- the gauntlet (modelled: props_scenes), its six sockets empty until each stone slides in at 2.05+
 		gauntlet = ctx:wear(victim, "gauntlet")
+		-- (2026-11-12, the user: "you can barely see them": dusk light left the gold dark; it carries its own warm
+		-- light and a faint gold edge now, and the stones are larger)
+		if gauntlet then
+			local edge = Instance.new("Highlight")
+			edge.FillColor = Color3.fromRGB(255, 196, 90)
+			edge.FillTransparency = 0.88
+			edge.OutlineColor = Color3.fromRGB(255, 214, 130)
+			edge.OutlineTransparency = 0.5
+			edge.DepthMode = Enum.HighlightDepthMode.Occluded
+			edge.Parent = gauntlet
+			local part = gauntlet:FindFirstChildWhichIsA("BasePart", true)
+			if part then
+				local glow = Instance.new("PointLight")
+				glow.Color = Color3.fromRGB(255, 200, 120)
+				glow.Range = 7
+				glow.Brightness = 1.8
+				glow.Parent = part
+			end
+		end
 		local spec = Costumes.gauntlet
 		local base = Vector3.new(spec.at[1].p[1], spec.at[1].p[2], spec.at[1].p[3])
 		for _, socket in ipairs(Costumes.gauntletSockets) do
 			-- (in the arm's frame: the gauntlet sits square on it; a stone stands a little proud of its socket)
 			local at = base + Vector3.new(socket[1], socket[2], socket[3] - 0.03)
 			local s = ctx:attach(victim, "Right Arm", {
-				size = Vector3.new(0.13, 0.13, 0.13),
+				size = Vector3.new(0.17, 0.17, 0.17),
 				at = at,
 				color = Color3.fromRGB(30, 30, 30),
 				shape = "Ball",
@@ -302,10 +321,50 @@ local function build(ctx)
 	end, function()
 		return hand()
 	end, 26)
+	ctx:at(8.56, function()
+		-- the instant before: the picture holds its breath on the fingers
+		Cinema.still(Color3.fromRGB(255, 244, 220), 0.06)
+	end)
 	ctx:at(8.62, function()
 		Cinema.flash(Color3.new(1, 1, 1), 1, 1.1)
 		local at = ctx:world(hand())
 		Vfx.Light.flash(at, Color3.new(1, 1, 1), 80, 8, 0.8)
+		Sfx.play("uiClick", { pitch = 0.7, volume = 1.6 })
+		Sfx.play("thunder", { pitch = 0.55, volume = 1.3 })
+		Vfx.Screen.shake(3.2, 1.0)
+		local bursts = {
+			{
+				{
+					tex = "VfxFlare",
+					color = Color3.new(1, 1, 1),
+					size = { { 0, 2 }, { 0.12, 14 }, { 1, 0 } },
+					life = 0.6,
+					speed = 0.01,
+					light = 1,
+					bright = 3,
+				},
+				1,
+			},
+		}
+		for _, c in ipairs(STONES) do
+			table.insert(bursts, {
+				{
+					tex = "Spark",
+					color = { { 0, Color3.new(1, 1, 1) }, { 1, c } },
+					size = { { 0, 0.22 }, { 1, 0.04 } },
+					squash = -3,
+					face = "along",
+					life = { 0.5, 1.2 },
+					speed = { 30, 70 },
+					drag = 2.5,
+					spread = 180,
+					light = 1,
+					bright = 3,
+				},
+				22,
+			})
+		end
+		Vfx.Emit.burst(at, bursts :: any)
 		for i, c in ipairs(STONES) do
 			task.delay(0.05 * i, function()
 				Vfx.Beams.wave(
