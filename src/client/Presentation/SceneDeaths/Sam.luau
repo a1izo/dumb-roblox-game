@@ -7,6 +7,10 @@
 
 local Cinema = require(script.Parent.Parent.Cinema)
 local Vfx = require(script.Parent.Parent.Vfx)
+local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
+
+-- the white brush 斬, drawn stroke by stroke (art/scripts/ui/zan_kanji.py)
+local ZAN = "rbxassetid://96312430448376"
 
 local RED = Color3.fromRGB(255, 36, 40)
 local DUSK = Color3.fromRGB(214, 170, 110)
@@ -122,8 +126,9 @@ local function build(ctx)
 			trail.Parent = arm
 		end
 	end
+	local victimBlade: Model? = nil
 	if victim then
-		ctx:wear(victim, "redBlade")
+		victimBlade = ctx:wear(victim, "redBlade")
 	end
 	local function chest(): Vector3
 		local t = victim and ctx:limb(victim, "Torso")
@@ -201,13 +206,49 @@ local function build(ctx)
 		fill(cells, Color3.fromRGB(80, 220, 240), (k - 1) / 12 + 0.006, k / 12 - 0.006)
 	end
 	text(hud, "1290/1296", 0.235, 0.09, 0.07, 0.016, Color3.fromRGB(160, 220, 236))
-	-- the victim's bar, bottom right
-	text(hud, "SAM", 0.78, 0.835, 0.05, 0.02, Color3.fromRGB(230, 232, 236))
-	local foe = backing(0.78, 0.86, 0.16, 0.012)
-	local foeFill = fill(foe, Color3.fromRGB(236, 238, 240), 0.0, 1.0)
-	local foeNumber = text(hud, "96", 0.945, 0.855, 0.04, 0.022, Color3.fromRGB(240, 240, 240), Enum.Font.GothamBlack)
-	-- the hits plate
-	local plate = backing(0.76, 0.33, 0.11, 0.045)
+	-- the victim's bar, bottom right, in Metal Gear Rising's style (2026-11-12, the user: "how is it a finisher if hes
+	-- 77 HP? it should be 0.1%"): the name in small capitals over a long thin bar, its right end cut at a slant, the
+	-- life left white (a sliver), the life just lost red and draining away, the share as a number, pulsing red
+	local FOE_RED = Color3.fromRGB(230, 40, 50)
+	text(hud, "SAM", 0.6, 0.83, 0.06, 0.02, Color3.fromRGB(230, 232, 236), Enum.Font.GothamBold)
+	local foe = backing(0.6, 0.857, 0.3, 0.011)
+	foe.BackgroundColor3 = Color3.fromRGB(8, 10, 14)
+	foe.BackgroundTransparency = 0.15
+	local lost = fill(foe, FOE_RED, 0.0, 0.08)
+	lost.Position = UDim2.fromScale(0, 0.15)
+	local foeFill = Instance.new("Frame")
+	foeFill.BorderSizePixel = 0
+	foeFill.BackgroundColor3 = Color3.fromRGB(244, 246, 248)
+	foeFill.Position = UDim2.fromScale(0, 0.15)
+	foeFill.Size = UDim2.new(0.001, 2, 0.7, 0)
+	foeFill.Parent = foe
+	-- the slanted end and a tick every quarter, as the game's bar
+	local cap = Instance.new("Frame")
+	cap.BorderSizePixel = 0
+	cap.BackgroundColor3 = Color3.fromRGB(150, 160, 170)
+	cap.AnchorPoint = Vector2.new(0.5, 0.5)
+	cap.Position = UDim2.fromScale(1.0, 0.5)
+	cap.Size = UDim2.new(0, 3, 2.2, 0)
+	cap.Rotation = 30
+	cap.Parent = foe
+	for q = 1, 3 do
+		local tick = Instance.new("Frame")
+		tick.BorderSizePixel = 0
+		tick.BackgroundColor3 = Color3.fromRGB(90, 96, 104)
+		tick.Position = UDim2.fromScale(q / 4, 0)
+		tick.Size = UDim2.new(0, 1, 1, 0)
+		tick.Parent = foe
+	end
+	local foeNumber =
+		text(hud, "0.1%", 0.905, 0.849, 0.05, 0.026, FOE_RED, Enum.Font.GothamBlack, Enum.TextXAlignment.Left)
+	ctx:during(0, 14, function(t)
+		foeNumber.TextTransparency = 0.25 + 0.25 * math.sin(t * 9)
+	end)
+	ctx:at(0.05, function()
+		ctx:tween(lost, 0.9, { Size = UDim2.fromScale(0.001, 0.7) })
+	end)
+	-- the hits plate (left of the 斬, which covers the right half: they never overlap)
+	local plate = backing(0.36, 0.3, 0.11, 0.045)
 	plate.BackgroundColor3 = ORANGE
 	plate.BackgroundTransparency = 0
 	local hits =
@@ -215,8 +256,15 @@ local function build(ctx)
 	text(plate, "HITS", 0.48, 0.2, 0.48, 0.6, Color3.fromRGB(40, 26, 10), Enum.Font.GothamBlack)
 	local count = 1
 	local function foeLife(share: number)
-		foeFill.Size = UDim2.fromScale(math.max(0, share), 0.7)
-		foeNumber.Text = tostring(math.floor(96 * share + 0.5))
+		foeFill.Size = UDim2.new(math.max(0, share), if share > 0 then 2 else 0, 0.7, 0)
+		foeNumber.Text = string.format("%.1f%%", math.max(0, share) * 100)
+	end
+	-- (each cut flashes the sliver red: there is nothing left to take)
+	local function foeHit()
+		foeFill.BackgroundColor3 = FOE_RED
+		task.delay(0.08, function()
+			foeFill.BackgroundColor3 = Color3.fromRGB(244, 246, 248)
+		end)
 	end
 
 	-- 0.25 over the killer's shoulder: the combo across the victim
@@ -256,69 +304,47 @@ local function build(ctx)
 			hits.Text = tostring(count)
 			plate.Size = UDim2.fromScale(0.125, 0.052)
 			ctx:tween(plate, 0.12, { Size = UDim2.fromScale(0.11, 0.045) })
-			foeLife(1 - count * 0.04)
+			foeHit()
 		end)
 	end
 	cut(0.4, Vector3.new(-1.5, 1.2, -0.6), Vector3.new(1.5, -1.0, -0.6))
 	cut(0.75, Vector3.new(1.5, 1.0, -0.6), Vector3.new(-1.5, -0.8, -0.6))
 	cut(1.05, Vector3.new(-1.6, 0.2, -0.6), Vector3.new(1.6, 0.4, -0.6))
 	cut(1.3, Vector3.new(0.2, 2.2, -0.6), Vector3.new(-0.2, -2.0, -0.6))
-	-- 1.5 the white brush kanji, painted on
-	local kanji: TextLabel? = nil
+	-- 1.5 the white brush 斬, painted on over the whole right half of the screen (2026-11-12, the user: "It should be
+	-- entirely on the right part of the screen, covering it"): the drawn character, swept on from the top in 0.3 s, a
+	-- faint dry second impression a hair off
+	local kanji: ImageLabel? = nil
 	ctx:at(1.5, function()
-		local k = Instance.new("TextLabel")
+		local k = Instance.new("ImageLabel")
 		k.BackgroundTransparency = 1
-		k.AnchorPoint = Vector2.new(0.5, 0.5)
-		k.Position = UDim2.fromScale(0.74, 0.45)
-		k.Size = UDim2.fromScale(0.32, 0.62)
-		k.SizeConstraint = Enum.SizeConstraint.RelativeYY
-		k.Font = Enum.Font.GothamBlack
-		k.TextScaled = true
-		k.Text = "斬"
-		k.TextColor3 = Color3.new(1, 1, 1)
-		k.Rotation = -4
-		-- (a brush's edge: a soft wide stroke, a dry second impression a hair off and turned)
-		local edge = Instance.new("UIStroke")
-		edge.Color = Color3.new(1, 1, 1)
-		edge.Thickness = 3
-		edge.Transparency = 0.35
-		edge.Parent = k
+		k.AnchorPoint = Vector2.new(1, 0.5)
+		k.Position = UDim2.fromScale(1.0, 0.5)
+		k.Size = UDim2.fromScale(0.5, 1.0)
+		k.ScaleType = Enum.ScaleType.Fit
+		k.Image = ZAN
+		k.Rotation = -3
+		k.ZIndex = 4
 		local dry = k:Clone()
-		dry.Position = UDim2.fromScale(0.748, 0.455)
+		dry.Position = UDim2.fromScale(1.008, 0.506)
 		dry.Rotation = -1
-		dry.TextTransparency = 0.55
+		dry.ImageTransparency = 0.7
 		dry.Parent = hud
 		ctx:atNow(3.2, function()
 			dry:Destroy()
 		end)
 		local paint = Instance.new("UIGradient")
-		paint.Rotation = 0
+		paint.Rotation = 90
 		paint.Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 0),
-			NumberSequenceKeypoint.new(0.5, 0),
-			NumberSequenceKeypoint.new(0.501, 1),
+			NumberSequenceKeypoint.new(0.45, 0),
+			NumberSequenceKeypoint.new(0.55, 1),
 			NumberSequenceKeypoint.new(1, 1),
 		})
-		paint.Offset = Vector2.new(-1, 0)
+		paint.Offset = Vector2.new(0, -1)
 		paint.Parent = k
 		k.Parent = hud
-		ctx:tween(paint, 0.3, { Offset = Vector2.new(0.5, 0) })
-		for s = 1, 9 do
-			local drop = Instance.new("Frame")
-			drop.BorderSizePixel = 0
-			drop.BackgroundColor3 = Color3.new(1, 1, 1)
-			drop.AnchorPoint = Vector2.new(0.5, 0.5)
-			drop.Position = UDim2.fromScale(0.62 + (s % 5) * 0.05, 0.2 + (s % 4) * 0.17)
-			drop.Size = UDim2.fromScale(0.01 + (s % 3) * 0.006, 0.014 + (s % 2) * 0.01)
-			drop.Rotation = s * 33
-			local c = Instance.new("UICorner")
-			c.CornerRadius = UDim.new(1, 0)
-			c.Parent = drop
-			drop.Parent = hud
-			ctx:atNow(3.2, function()
-				drop:Destroy()
-			end)
-		end
+		ctx:tween(paint, 0.3, { Offset = Vector2.new(0, 0.6) })
 		kanji = k
 	end)
 	ctx:at(3.2, function()
@@ -494,7 +520,7 @@ local function build(ctx)
 	ctx:shot(5.0, Vector3.new(1.3, 5.2, 3.4), Vector3.new(-0.2, 4.8, -2.4), 42, { eye = Vector3.new(1.1, 5.1, 3.0) })
 	ctx:say(5.2, "Play time's over.", 2.2)
 	ctx:at(6.8, function()
-		foeLife(0.1)
+		foeHit()
 		Cinema.flash(RED, 0.35, 0.25)
 		Vfx.Emit.burst(ctx:world(chest()), {
 			tex = "VfxFlare",
@@ -505,6 +531,58 @@ local function build(ctx)
 			bright = 2.4,
 			z = 2,
 		}, 1)
+	end)
+	-- 7.3 run through, his hand opens: the red sword falls, turning, hits the ground point first, tips over flat
+	-- (2026-11-12, the user: after "playtime's over" he pierced Sam, so Sam drops it)
+	ctx:at(7.3, function()
+		local blade = victimBlade
+		if not blade or not blade.Parent then
+			return
+		end
+		for _, d in ipairs(blade:GetDescendants()) do
+			if d:IsA("WeldConstraint") or d:IsA("Weld") then
+				d:Destroy()
+			elseif d:IsA("BasePart") then
+				d.Anchored = true
+			end
+		end
+		blade.Parent = ctx.stage.folder
+		local from = blade:GetPivot()
+		local floor = ctx.origin.Position.Y
+		local landing = Vector3.new(from.Position.X + 0.5, floor + 0.12, from.Position.Z - 0.4)
+		local flat = CFrame.new(landing) * CFrame.Angles(0, math.rad(35), 0) * CFrame.Angles(math.rad(90), 0, 0)
+		local start = ctx:now()
+		local landed = false
+		ctx:during(7.3, 8.3, function(t)
+			local u = math.clamp((t - start) / 0.55, 0, 1)
+			if u < 1 then
+				-- falling: gravity's ease, the blade turning toward flat as it goes
+				local fall = u * u
+				local pos = from.Position:Lerp(landing, fall)
+				blade:PivotTo(CFrame.new(pos) * (from - from.Position):Lerp(flat - flat.Position, u * 0.8))
+			else
+				if not landed then
+					landed = true
+					Sfx.play("realmMetal1", { pitch = 1.9, volume = 1.2 })
+					Vfx.Emit.burst(landing, {
+						tex = "VfxStreak",
+						color = Color3.fromRGB(255, 210, 160),
+						size = { { 0, 0.06 }, { 1, 0.01 } },
+						squash = -2,
+						life = { 0.15, 0.3 },
+						speed = { 4, 9 },
+						spread = 70,
+						face = "along",
+						light = 1,
+						bright = 2,
+					}, 8)
+				end
+				-- a small bounce and it settles
+				local v = math.clamp((t - start - 0.55) / 0.3, 0, 1)
+				local hop = math.sin(v * math.pi) * 0.12 * (1 - v)
+				blade:PivotTo(flat + Vector3.new(0, hop, 0))
+			end
+		end)
 	end)
 	-- 7.25 over the killer's back: the blade through him, sparks at the wound
 	ctx:shot(7.25, Vector3.new(-2.8, 6.2, -6.8), Vector3.new(0, 3.9, 0), 40, { eye = Vector3.new(-2.5, 6.0, -6.4) })
