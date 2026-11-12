@@ -15,13 +15,20 @@ local BLUE = Color3.fromRGB(34, 58, 150)
 
 local KILLER = CFrame.lookAt(Vector3.new(0, 0, -3.6), Vector3.new(0, 0, 0)) -- facing the victim
 local VICTIM = CFrame.lookAt(Vector3.new(0, 0, 0), Vector3.new(0, 0, -3.6)) -- facing the killer
-local COPIES = 6
--- the row: back and to the side of the victim, close enough that the bodies overlap as in the reference
+-- (2026-11-12, the user: "make more clones": 6 became a row of 16 and a second row of 10 behind it)
+local COPIES = 16
+local SECOND_ROW = 10
+-- the row: back and to the side of the victim, close enough that the bodies overlap as in the reference; the second
+-- row further off, beyond the first from the lens, turning in a later wave
 local function copyAt(k: number): Vector3
+	if k > COPIES then
+		local j = k - COPIES
+		return Vector3.new(1.7 + 0.85 * j, 0, -0.9 + 1.25 * j)
+	end
 	return Vector3.new(0.85 * k, 0, 1.25 * k)
 end
 local TURN_FIRST = 3.75 -- the victim looks back first (sceneRequiemVictim), then each copy, this far apart
-local TURN_EVERY = 0.62
+local TURN_EVERY = 0.34
 
 -- A burst of white speed lines on blue, drawn on a plane standing behind the subject and facing the lens (crisp lines
 -- at any distance, behind the body, never over it). Returns the plane and its lines.
@@ -110,6 +117,34 @@ local function build(ctx)
 				rate = 5,
 				z = -1,
 			})
+			-- Requiem's light rising off him: golden motes drifting up round the body, and glints catching in them
+			Vfx.Emit.make(torso, {
+				tex = "VfxEmber",
+				color = { { 0, Color3.fromRGB(255, 248, 220) }, { 1, GOLD } },
+				size = { { 0, 0.12 }, { 0.6, 0.09 }, { 1, 0 } },
+				alpha = { { 0, 0.2 }, { 0.7, 0.3 }, { 1, 1 } },
+				life = { 1.4, 2.4 },
+				speed = { 0.3, 1.0 },
+				spread = 180,
+				accel = Vector3.new(0, 1.6, 0),
+				drag = 0.8,
+				light = 1,
+				bright = 2.4,
+				rate = 26,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
+			Vfx.Emit.make(torso, {
+				tex = "VfxFlare",
+				color = Color3.fromRGB(255, 244, 210),
+				size = { { 0, 0 }, { 0.3, 0.5 }, { 1, 0 } },
+				life = { 0.35, 0.6 },
+				speed = 0.01,
+				rot = { 0, 45 },
+				light = 1,
+				bright = 2.6,
+				rate = 3,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
 		end
 	end
 
@@ -193,13 +228,60 @@ local function build(ctx)
 	ctx:shot(1.5, Vector3.new(1.5, 5.6, 2.6), Vector3.new(-0.2, 5.0, -3.6), 46, { eye = Vector3.new(1.3, 5.5, 2.2) })
 	ctx:at(2.0, function()
 		local at = ctx:world(Vector3.new(0, 5.3, -2.4))
-		Vfx.Beams.wave(CFrame.lookAt(at, at + Vector3.zAxis) * CFrame.Angles(math.rad(90), 0, 0), 0.4, 6, 0.6, {
-			tex = "VfxRingBand",
-			color = GOLD,
-			width = 0.3,
-			light = 1,
-			bright = 1.4,
-		})
+		-- time stops at the fist: three golden rings racing out after each other, a hard flare, gold sparks flung
+		for i = 0, 2 do
+			Vfx.Clock.after(i * 0.11, function()
+				Vfx.Beams.wave(
+					CFrame.lookAt(at, at + Vector3.zAxis) * CFrame.Angles(math.rad(90), 0, 0),
+					0.3,
+					6 + i * 3,
+					0.7,
+					{
+						tex = "VfxRingBand",
+						color = if i == 1 then VIOLET else GOLD,
+						width = 0.34 - i * 0.07,
+						light = 1,
+						bright = 1.8,
+					}
+				)
+			end)
+		end
+		Vfx.Emit.burst(
+			at,
+			{
+				{
+					{
+						tex = "VfxFlare",
+						color = Color3.fromRGB(255, 250, 230),
+						size = { { 0, 1 }, { 0.15, 7 }, { 1, 0 } },
+						life = 0.45,
+						speed = 0.01,
+						light = 1,
+						bright = 3,
+						rot = { 0, 0 },
+					},
+					1,
+				},
+				{
+					{
+						tex = "Spark",
+						color = { { 0, Color3.new(1, 1, 1) }, { 1, GOLD } },
+						size = { { 0, 0.12 }, { 1, 0.03 } },
+						squash = -2,
+						face = "along",
+						life = { 0.4, 0.9 },
+						speed = { 14, 32 },
+						drag = 3,
+						spread = 180,
+						light = 1,
+						bright = 2.6,
+					},
+					70,
+				},
+			} :: any
+		)
+		Vfx.Light.flash(at, GOLD, 30, 8, 0.6)
+		Vfx.Screen.shake(1.2, 0.35)
 		Cinema.still(VIOLET, 0.18)
 	end)
 	-- 2.5 close profile from the right: the wide eye, the stopped fist past it (aimed by the head)
@@ -209,7 +291,7 @@ local function build(ctx)
 	-- 3.25 the rewind: the row of copies stretching back from the victim, packed close, each looking back in turn
 	local copies = {}
 	ctx:at(3.25, function()
-		for k = 1, COPIES do
+		for k = 1, COPIES + SECOND_ROW do
 			local at = copyAt(k)
 			-- (each copy's clip turns its head at 1 s of its own time; started so that falls TURN_EVERY after the one
 			-- before it)
@@ -224,10 +306,61 @@ local function build(ctx)
 			)
 			if c then
 				table.insert(copies, { model = c, base = at, k = k })
+				-- each copy flickers in as a violet afterimage, the further back the more of a ghost
+				local ghost = Instance.new("Highlight")
+				ghost.FillColor = VIOLET
+				ghost.OutlineColor = Color3.fromRGB(210, 180, 255)
+				ghost.FillTransparency = math.clamp(0.95 - k * 0.012, 0.6, 0.95)
+				ghost.OutlineTransparency = math.clamp(0.75 - k * 0.02, 0.35, 0.75)
+				ghost.DepthMode = Enum.HighlightDepthMode.Occluded
+				ghost.Parent = c
+				local torso = ctx:limb(c, "Torso")
+				if torso then
+					Vfx.Emit.burst(torso.Position, {
+						tex = "VfxSmoke",
+						color = Color3.fromRGB(170, 120, 255),
+						size = { { 0, 1.2 }, { 1, 3 } },
+						alpha = { { 0, 0.6 }, { 1, 1 } },
+						life = { 0.5, 0.8 },
+						speed = { 0.5, 1.5 },
+						spread = 180,
+						light = 0.6,
+						bright = 1.4,
+					}, 3)
+				end
 			end
 		end
 		Cinema.flash(VIOLET, 0.45, 0.35)
-		stream.Rate = 220
+		stream.Rate = 260
+		-- time running back: violet motes drifting back along the rows, slow
+		SceneDeaths.emit(ctx, Vector3.new(8, 4.5, 10), Vector3.new(16, 6, 22), {
+			tex = "VfxGlow",
+			color = { { 0, Color3.fromRGB(220, 200, 255) }, { 1, VIOLET } },
+			size = { { 0, 0.18 }, { 1, 0.05 } },
+			alpha = { { 0, 0.3 }, { 0.8, 0.5 }, { 1, 1 } },
+			life = { 2.0, 3.4 },
+			speed = { 1.0, 2.2 },
+			spread = 10,
+			dir = Enum.NormalId.Back,
+			light = 1,
+			bright = 2,
+			rate = 70,
+		})
+	end)
+	-- the rewind's clock: violet rings pulsing out at the far end of the row, as if time were wound back through it
+	ctx:during(3.6, 16.2, function(t)
+		local beat = math.floor((t - 3.6) / 1.15)
+		if beat ~= (ctx :: any).requiemBeat then
+			(ctx :: any).requiemBeat = beat
+			local at = ctx:world(copyAt(COPIES) + Vector3.new(0, 4.5, 2))
+			Vfx.Beams.wave(CFrame.lookAt(at, at + Vector3.new(-0.55, 0, -0.85)), 0.5, 11, 1.1, {
+				tex = "VfxRingBand",
+				color = VIOLET,
+				width = 0.22,
+				light = 1,
+				bright = 1.4,
+			})
+		end
 	end)
 	-- the whole row drifts slowly back along itself (being rewound), smoothly: nothing turns but the heads
 	ctx:during(3.3, 16.5, function(t)

@@ -381,6 +381,15 @@ builders.People = function()
 			send("kill", { userId = selected, cause = cause })
 		end, COLORS.danger)
 	end
+	-- every custom death, written as the cause: its scene plays as it would in a case
+	r = row()
+	for _, item in ipairs(Cosmetics.ofKind("reason")) do
+		if type(item.cause) == "string" then
+			button(r, item.name, function()
+				send("kill", { userId = selected, cause = item.cause })
+			end, COLORS.danger)
+		end
+	end
 	r = row()
 	button(r, "Vote out", function()
 		send("voteOut", { userId = selected })
@@ -1218,6 +1227,8 @@ local function build()
 	})
 	-- A tool for us, not part of the game's look: its fonts stay as they are (UI/Core/FontMirror).
 	window:SetAttribute("KeepFont", true)
+	-- (nor the pencil lines and the boiling text: the user, 2026-11-12, "remove it from ... the debug menu")
+	window:SetAttribute("NoBoil", true)
 	corner(window, 6)
 	make("UIStroke", { Color = Color3.fromRGB(70, 70, 84), Thickness = 1, Parent = window })
 	make("UISizeConstraint", { MaxSize = Vector2.new(480, 620), Parent = window })
@@ -1330,6 +1341,7 @@ local function build()
 		Visible = false,
 		Parent = Screens.overlay,
 	})
+	statsLabel:SetAttribute("NoBoil", true)
 end
 
 local function setOpen(open: boolean)

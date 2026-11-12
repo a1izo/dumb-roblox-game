@@ -29,7 +29,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
 VERSION = {"ModelsCore": 38, "ModelsTokyo": 24, "ModelsAgency": 18, "ModelsCampus": 16, "ModelsLobby": 23,
-           "ModelsMeeting": 6, "ModelsFx": 2}
+           "ModelsMeeting": 6, "ModelsFx": 3}
 
 VERSIONS_LUAU = os.path.join(common.ROOT, "src", "shared", "ImportVersions.luau")
 

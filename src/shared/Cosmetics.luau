@@ -445,7 +445,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1000,
 		style = "walrider",
-		scene = 19.5, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
+		scene = 21.5, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(120, 120, 128),
 	},
 	{
@@ -487,7 +487,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1500,
 		style = "god",
-		scene = 13, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
+		scene = 17, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(255, 70, 220),
 	},
 	{

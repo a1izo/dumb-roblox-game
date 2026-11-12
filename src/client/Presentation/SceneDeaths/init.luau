@@ -249,9 +249,13 @@ function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: nu
 		return nil
 	end
 	actor:SetAttribute(Life.ATTRIBUTE, life or LIFE)
-	-- (no overhead name tag or role label floating in a cutscene's frame)
+	-- (no overhead name tag or role label floating in a cutscene's frame, and nothing the player was showing in the case:
+	-- the red eyes of the deal, an aura, a tell. Copied onto a posed actor the eyes' model was left behind at the chest
+	-- and drew its red stars there, the "red lines out of nowhere" of 2026-11-12)
 	for _, item in ipairs(actor:GetDescendants()) do
-		if item:IsA("BillboardGui") then
+		if item:IsA("BillboardGui") or item.Name == "LEyesGlow" then
+			item:Destroy()
+		elseif item:IsA("ParticleEmitter") or item:IsA("Beam") or item:IsA("Trail") then
 			item:Destroy()
 		end
 	end

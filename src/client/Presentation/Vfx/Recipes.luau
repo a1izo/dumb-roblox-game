@@ -8,8 +8,11 @@
 --   Recipes.twinkle(at, { color, scale })                        a glint: a star that blooms and closes
 --   Recipes.pillar(at, { color, height, radius, seconds })       a column of light out of the floor
 --   Recipes.flame(parent, { kind, scale, color, light })         a living flame (candle or fire), with its light
+--   Recipes.dissolve(parts, seconds, { tint, glow, wind, rise })  a body turning to ash and blown away, part by part
 --
 -- `at` is a CFrame whose up is the surface's (the world's up for a hit in the air).
+
+local TweenService = game:GetService("TweenService")
 
 local Clock = require(script.Parent.Clock)
 local Ease = require(script.Parent.Ease)
@@ -687,6 +690,109 @@ function Recipes.flame(parent: Instance, options: FlameOptions?): Flame
 		end,
 	}
 	return flame
+end
+
+export type DissolveOptions = {
+	tint: Color3?, -- the ash flakes' colour (cold grey for Dead by selection, warm brown for the snap)
+	glow: Color3?, -- the embers' (the edges still smouldering)
+	wind: Vector3?, -- where the ash is carried (studs a second, sideways)
+	rise: number?, -- how fast it lifts
+	scale: number?,
+	fade: number?, -- seconds each part takes to go (default 0.55)
+}
+
+-- A body turning to ash (2026-11-12, the user: the dissolves' particles were "extremely ugly", "make better high quality
+-- ones"): `parts` go in the order given over `seconds`, each torn into tumbling flakes of ash (VfxAsh) that lift and
+-- are carried off, a few embers still glowing at their edges, a thin smoke after them, the part itself fading as it
+-- goes. A part's volume sets how much comes off it.
+function Recipes.dissolve(parts: { BasePart }, seconds: number, options: DissolveOptions?)
+	local o = options or {}
+	local tint = o.tint or Color3.fromRGB(150, 150, 156)
+	local glow = o.glow or Color3.fromRGB(255, 190, 120)
+	local wind = o.wind or Vector3.new(1.4, 0, -0.6)
+	local rise = o.rise or 2.6
+	local scale = o.scale or 1
+	local fade = o.fade or 0.55
+	for i, part in ipairs(parts) do
+		local wait = (i - 1) / math.max(1, #parts) * seconds
+		Clock.after(wait, function()
+			if not part.Parent then
+				return
+			end
+			local size = part.Size
+			local volume = math.clamp(size.X * size.Y * size.Z, 0.05, 4)
+			local count = math.floor(10 + volume * 14)
+			Emit.burst(
+				part.CFrame,
+				{
+					{
+						{
+							tex = "VfxAsh",
+							color = { { 0, tint:Lerp(WHITE, 0.15) }, { 1, tint:Lerp(Color3.new(0, 0, 0), 0.35) } },
+							size = { { 0, 0.16 * scale }, { 0.7, 0.13 * scale }, { 1, 0.05 * scale } },
+							alpha = { { 0, 0 }, { 0.75, 0.15 }, { 1, 1 } },
+							life = { 1.8, 3.2 },
+							speed = { 0.5, 1.8 },
+							spread = 180,
+							accel = wind + Vector3.new(0, rise, 0),
+							drag = 0.9,
+							rot = { 0, 360 },
+							spin = { -160, 160 },
+							fps = { 10, 22 },
+							lit = 0.65,
+						},
+						count,
+					},
+					{
+						{
+							tex = "VfxEmber",
+							color = { { 0, hot(glow, 0.4) }, { 1, glow } },
+							size = { { 0, 0.07 * scale }, { 1, 0.0 } },
+							alpha = { { 0, 0 }, { 0.6, 0.2 }, { 1, 1 } },
+							life = { 0.8, 1.8 },
+							speed = { 0.3, 1.2 },
+							spread = 180,
+							accel = wind * 0.6 + Vector3.new(0, rise * 1.3, 0),
+							drag = 1.2,
+							light = 1,
+							bright = 2.5,
+						},
+						math.floor(count * 0.35),
+					},
+					{
+						{
+							tex = "VfxSmoke",
+							color = { { 0, tint:Lerp(WHITE, 0.25) }, { 1, tint } },
+							size = { { 0, 0.4 * scale }, { 1, 1.6 * scale } },
+							alpha = { { 0, 0.8 }, { 0.3, 0.86 }, { 1, 1 } },
+							life = { 1.6, 2.6 },
+							speed = { 0.2, 0.6 },
+							spread = 60,
+							accel = wind * 0.8 + Vector3.new(0, rise * 0.7, 0),
+							rot = { 0, 360 },
+							spin = { -20, 20 },
+							lit = 0.8,
+						},
+						2,
+					},
+				} :: any,
+				nil,
+				size
+			)
+			-- the part goes: it darkens toward the ash, then is gone
+			local tween =
+				TweenService:Create(part, TweenInfo.new(fade, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+					Transparency = 1,
+					Color = part.Color:Lerp(tint, 0.5),
+				})
+			tween:Play()
+			for _, d in ipairs(part:GetDescendants()) do
+				if d:IsA("Decal") or d:IsA("Texture") then
+					TweenService:Create(d, TweenInfo.new(fade * 0.8), { Transparency = 1 }):Play()
+				end
+			end
+		end)
+	end
 end
 
 return Recipes

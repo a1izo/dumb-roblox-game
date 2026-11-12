@@ -52,7 +52,10 @@ FACES = {
     "Bk": ((0, 0, 1), (0, 1, 0)),
     "Rt": ((1, 0, 0), (0, 1, 0)),
     "Lf": ((-1, 0, 0), (0, 1, 0)),
-    "Up": ((0, 1, 0), (0, 0, 1)),
+    # (Roblox turns its top face a quarter round from the way this was first drawn: measured 2026-11-12 with a
+    # painted test sky, the edge drawn for -Z showed toward -X and so on round; the Milky Way met the side faces at a
+    # hard edge in Dead by selection. Drawn with +X up, it meets all four.)
+    "Up": ((0, 1, 0), (1, 0, 0)),
     "Dn": ((0, -1, 0), (0, 0, -1)),
 }
 

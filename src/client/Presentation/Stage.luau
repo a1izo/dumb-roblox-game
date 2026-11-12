@@ -135,10 +135,13 @@ local function copyOf(source: Model): Model?
 	if not ok or not clone then
 		return nil
 	end
-	-- What an emote or a duo put on the body (props, effects, a chain: all marked "DGEmote") stays with it.
+	-- What an emote or a duo put on the body (props, effects, a chain: all marked "DGEmote") stays with it, and so does
+	-- what the case showed on it: the deal's red eyes (left at the chest of a posed copy, drawing red stars there:
+	-- 2026-11-12) and any running effect.
 	local leftovers: { Instance } = {}
 	for _, item in ipairs(clone:GetDescendants()) do
-		if item:GetAttribute("DGEmote") or item.Name == "DuoChain" then
+		local effect = item:IsA("ParticleEmitter") or item:IsA("Beam") or item:IsA("Trail")
+		if item:GetAttribute("DGEmote") or item.Name == "DuoChain" or item.Name == "LEyesGlow" or effect then
 			table.insert(leftovers, item)
 		end
 	end

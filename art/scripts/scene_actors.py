@@ -318,46 +318,103 @@ soft(sk, head=3.2, arms=3.4, arm_damp=0.7)  # (the blade arm only trails a littl
 sk.build()
 
 # =====================================================================================================================
-# Walrider (19.5 s; walrider.md): the victim is the camera; these are the men in the doorway.
+# Walrider (21.5 s; walrider.md; reworked 2026-11-12): the victim is the camera; these are the men in the doorway.
+# The user: "the soldiers arent supposed to walk forward. Theyre supposed to each be doing their own thing, and only the
+# soldier in front takes up his gun and starts shooting"; and the shooting: "shot once, then theres a little slowmo
+# scene of about 8 seconds and THEN he gets shot completely". So: each man at his own business in the doorway, never
+# stepping in; soldier 3 (the front one, at the right) shoulders his rifle (6.5), fires once (SHOT), holds his aim
+# through the slow motion (everything he does there drawn out), then empties it (VOLLEY). The rest only flinch.
 
 AIM = dict(neck=(-4, 0, 0), rShoulder=AIM_R, lShoulder=AIM_L)
 LOW_R, LOW_L = J((34, 0, 18)), J((46, 0, -22))  # low ready: the rifle across the body, muzzle down
-# Walrider.luau's shots: the first (7.28) is soldier 3's alone, "a soldier at the right raises his rifle"; then the
-# volley (VOLLEY there, shot i by soldier (i % 4) + 1). Each soldier recoils on its own shots only.
-VOLLEY = (15.55, 15.8, 15.95, 16.15, 16.3, 16.5, 16.62, 16.8, 16.95, 17.1)
-SOLDIER_SHOTS = {n: [t for i, t in enumerate(VOLLEY, 1) if i % 4 + 1 == n] for n in (1, 2, 3, 4)}
-SOLDIER_SHOTS[3] = [7.28] + SOLDIER_SHOTS[3]
-SOLDIER_RAISE = {1: 14.75, 2: 14.5, 3: 5.7, 4: 15.0}  # the right one early; the others as they come in
+SLUNG_R, SLUNG_L = J((14, 0, 10)), J((26, 0, -14))  # the rifle hanging, the hands resting on it
+RADIO_L = reach(-1, (-0.62, 1.5, -0.12), direction=(0.45, 0.85, -0.2))  # the left hand up at the helmet's radio
+# (Walrider.luau's SHOT and VOLLEY; the slow motion runs between them)
+SHOT = 7.3
+VOLLEY = (15.3, 15.42, 15.53, 15.66, 15.78, 15.9, 16.03, 16.15, 16.28, 16.4)
+SLOW_FROM, SLOW_TO = 7.4, 15.2
+WAL_LEN = 21.5
 SOLDIER_CLIPS = []
 for n in (1, 2, 3, 4):
-    ws = Motion(f"sceneWalriderSoldier{n}", 19.5, note=f"Soldier {n} in the doorway: low ready, the rifle up at the "
-                "victim, its own shots.", floor=True)
+    ws = Motion(f"sceneWalriderSoldier{n}", WAL_LEN, note=f"Soldier {n} in the doorway, at his own business; only "
+                "soldier 3 shoulders his rifle and fires.", floor=True)
     ws.key(0.0, **REST)
     turn = (-6, 4, 8, -3)[n - 1]
-    body_key(ws, 0.0, "smooth", -4, turn, 0, hips=(0.06 * (n % 2), 0.0), drop=0.1, neck=(-2, -turn * 0.6, 0),
-             rShoulder=LOW_R, lShoulder=LOW_L)
-    beat(ws, 2.2 + 0.9 * n, dur=0.6, antic=0.1, over=0.06, neck=(0, -turn * 0.6 + (6 if n % 2 else -6), 0))
-    raise_at = SOLDIER_RAISE[n]
-    body_key(ws, raise_at - 0.55, "smooth", -4, turn, 0, hips=(0.06 * (n % 2), 0.0), drop=0.1, neck=(-2, 0, 0),
-             rShoulder=LOW_R, lShoulder=LOW_L)
-    body_key(ws, raise_at, "out", -7, 0, 0, drop=0.15, **AIM)  # shouldered fast, settled on the sights
-    body_key(ws, raise_at + 0.3, "smooth", -6, 0, 0, drop=0.14, **AIM)
-    for t in SOLDIER_SHOTS[n]:
-        strike(ws, t, body(-6, drop=0.14, **AIM), body(3, hips=(0, 0.08), drop=0.12, neck=J((-1, 0, 0)),
+    if n == 1:
+        # talking to the man beside him, the rifle low; the head turned to him, a nod; through the slow motion his
+        # head comes round to the shot, slow; at the volley a flinch
+        body_key(ws, 0.0, "smooth", -3, -14, 0, hips=(0.05, 0.0), drop=0.08, neck=(-2, 22, 0), rShoulder=LOW_R,
+                 lShoulder=LOW_L)
+        beat(ws, 2.6, dur=0.5, antic=0.1, over=0.05, neck=(6, 24, 0))
+        beat(ws, 3.4, dur=0.5, antic=0.1, over=0.05, neck=(-4, 20, 0))
+        beat(ws, 4.8, dur=0.6, antic=0.1, over=0.05, neck=(0, 26, 4))
+        body_key(ws, SHOT, "smooth", -3, -12, 0, hips=(0.05, 0.0), drop=0.08, neck=(-2, 18, 0), rShoulder=LOW_R,
+                 lShoulder=LOW_L)
+        body_key(ws, 11.5, "sine", -2, -4, 0, hips=(0.05, 0.0), drop=0.1, neck=(-4, -6, 0), rShoulder=LOW_R,
+                 lShoulder=LOW_L)
+        body_key(ws, SLOW_TO, "sine", -2, -2, 0, hips=(0.05, 0.0), drop=0.1, neck=(-6, -10, 0), rShoulder=LOW_R,
+                 lShoulder=LOW_L)
+    elif n == 2:
+        # on the radio: the left hand up at his helmet, the head down to listen, the rifle in the right hand
+        body_key(ws, 0.0, "smooth", -2, 4, 0, hips=(0.0, 0.0), drop=0.06, neck=(-12, -10, -6), rShoulder=LOW_R,
+                 lShoulder=RADIO_L)
+        beat(ws, 3.1, dur=0.5, antic=0.08, over=0.04, neck=(-6, -16, -8))
+        beat(ws, 5.0, dur=0.6, antic=0.08, over=0.04, neck=(-14, -6, -4))
+        body_key(ws, SHOT, "smooth", -2, 4, 0, drop=0.06, neck=(-10, -8, -4), rShoulder=LOW_R, lShoulder=RADIO_L)
+        # (slow: the hand comes down from the helmet, the head up)
+        body_key(ws, 12.0, "sine", -3, 2, 0, drop=0.08, neck=(-4, 4, 0), rShoulder=LOW_R, lShoulder=LOW_L)
+        body_key(ws, SLOW_TO, "sine", -3, 2, 0, drop=0.08, neck=(-3, 6, 0), rShoulder=LOW_R, lShoulder=LOW_L)
+    elif n == 4:
+        # watching the old man in the chair beside him, the rifle hanging, the weight on one leg, a glance round
+        body_key(ws, 0.0, "smooth", -1, -22, 0, hips=(-0.08, 0.0), drop=0.05, neck=(-10, -18, 0),
+                 rShoulder=SLUNG_R, lShoulder=SLUNG_L)
+        beat(ws, 4.2, dur=0.7, antic=0.1, over=0.05, neck=(-4, 14, 0))
+        beat(ws, 5.6, dur=0.7, antic=0.1, over=0.05, neck=(-10, -16, 0))
+        body_key(ws, SHOT, "smooth", -1, -20, 0, hips=(-0.08, 0.0), drop=0.05, neck=(-6, 2, 0), rShoulder=SLUNG_R,
+                 lShoulder=SLUNG_L)
+        body_key(ws, 12.5, "sine", -2, -8, 0, hips=(-0.06, 0.0), drop=0.07, neck=(-4, 10, 0), rShoulder=LOW_R,
+                 lShoulder=LOW_L)
+        body_key(ws, SLOW_TO, "sine", -2, -6, 0, hips=(-0.06, 0.0), drop=0.07, neck=(-4, 12, 0), rShoulder=LOW_R,
+                 lShoulder=LOW_L)
+    else:
+        # the front man: low ready, watching the victim come; shoulders his rifle; one shot; the aim held through the
+        # slow motion (drawn out: the recoil coming back down over seconds); then he empties it
+        body_key(ws, 0.0, "smooth", -4, turn, 0, hips=(0.06, 0.0), drop=0.1, neck=(-2, -turn * 0.6, 0),
+                 rShoulder=LOW_R, lShoulder=LOW_L)
+        beat(ws, 4.6, dur=0.6, antic=0.1, over=0.06, neck=(0, -turn * 0.6 + 6, 0))
+        body_key(ws, 5.95, "smooth", -4, turn, 0, hips=(0.06, 0.0), drop=0.1, neck=(-2, 0, 0), rShoulder=LOW_R,
+                 lShoulder=LOW_L)
+        body_key(ws, 6.5, "out", -7, 0, 0, drop=0.15, **AIM)  # shouldered fast, settled on the sights
+        body_key(ws, 6.8, "smooth", -6, 0, 0, drop=0.14, **AIM)
+        strike(ws, SHOT, body(-6, drop=0.14, **AIM), body(3, hips=(0, 0.08), drop=0.12, neck=J((-1, 0, 0)),
+                                                         rShoulder=AIM_R, lShoulder=AIM_L),
+               antic=0.01, travel=0.03, over=0.3, settle=0.2)
+        body_key(ws, 9.0, "sine", 1, 0, 0, hips=(0, 0.05), drop=0.13, **AIM)
+        body_key(ws, SLOW_TO, "sine", -6, 0, 0, drop=0.14, **AIM)
+        for t in VOLLEY:
+            strike(ws, t, body(-6, drop=0.14, **AIM), body(2, hips=(0, 0.06), drop=0.12, neck=J((-1, 0, 0)),
                                                        rShoulder=AIM_R, lShoulder=AIM_L),
-               antic=0.01, travel=0.03, over=0.4, settle=0.16)
-    body_key(ws, 19.5, "smooth", -6, 0, 0, drop=0.14, **AIM)
-    stand(ws, 0.0, 19.5, Feet(stance=0.2, start={-1: (-0.55, -0.35, -10)}))
+                   antic=0.01, travel=0.025, over=0.04, settle=0.05)
+        body_key(ws, 17.0, "smooth", -5, 0, 0, drop=0.14, **AIM)
+        body_key(ws, 18.5, "smooth", -8, 0, 0, drop=0.16, neck=(-14, 0, 0), rShoulder=AIM_R, lShoulder=AIM_L)
+    if n != 3:
+        # (the volley: a flinch, the head turning to it; then still)
+        beat(ws, 15.45, dur=0.15, antic=0.02, over=0.08, neck=(-6, (8 if n % 2 else -8), 0))
+        body_key(ws, 17.0, "smooth", -3, 0, 0, drop=0.08, neck=(-8, 0, 0), rShoulder=LOW_R, lShoulder=LOW_L)
+    body_key(ws, WAL_LEN, "smooth", -4, 0, 0, drop=0.1, neck=(-10, 0, 0),
+             rShoulder=AIM_R if n == 3 else LOW_R, lShoulder=AIM_L if n == 3 else LOW_L)
+    stand(ws, 0.0, WAL_LEN, Feet(stance=0.2, start={-1: (-0.55, -0.35, -10)}))
+    alive(ws, amount=0.35, seed=30 + n)
     soft(ws, head=2.8, arms=2.4)
     ws.build()
     SOLDIER_CLIPS.append(ws)
 
-wo = Motion("sceneWalriderSeated", 19.5, note="The old man in the wheelchair among the soldiers: sat, watching.",
+wo = Motion("sceneWalriderSeated", WAL_LEN, note="The old man in the wheelchair among the soldiers: sat, watching.",
             floor=False)
 SEATED = dict(root=(0, 0, 0), neck=(-8, 0, 0), rShoulder=J((40, 0, 8)), lShoulder=J((40, 0, -8)),
               rHip=J((90, 0, 6)), lHip=J((90, 0, -6)))
 wo.key(0.0, offset=(0, -1.0, 0), **SEATED)
-wo.key(19.5, offset=(0, -1.0, 0), **SEATED)
+wo.key(WAL_LEN, offset=(0, -1.0, 0), **SEATED)
 alive(wo, amount=0.25, seed=8)
 wo.build()
 
@@ -431,14 +488,23 @@ floor_key(iv, 10.0, "sine", -2, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(6, 0, 0), rS
 floor_key(iv, 12.9, "linear", -4, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(-4, 0, 0), rShoulder=BURNT,
                                                                 lShoulder=J((20, 0, -20))))
 IV_SIT = (0.0, 1.4)
-floor_key(iv, 13.8, "in", 10, 6, 4, (0.0, 0.8), crouch_legs(50, 0.5),
-          dict(neck=(-16, 0, 6), rShoulder=BURNT, lShoulder=J((10, 0, -30))))
-sit_key(iv, 14.4, "in", lean=24, turn=6, roll=4, neck=(-14, 0, 8), hips=IV_SIT, rShoulder=BURNT,
+ARM_HELD = J((62, 0, 26), (0, 0.06, -0.1))  # (the left hand across to the burnt arm)
+# (2026-11-12, the user: the falls were "extremely stiff": weight first, then the body follows, then it settles)
+floor_key(iv, 13.4, "smooth", 18, 4, 2, (0.0, 0.25), crouch_legs(62, 0.35),
+          dict(neck=(-20, 0, 4), rShoulder=BURNT, lShoulder=ARM_HELD))
+floor_key(iv, 13.7, "smooth", 6, 8, 6, (0.0, 0.55), crouch_legs(70, 0.42),
+          dict(neck=(-8, 10, 6), rShoulder=BURNT, lShoulder=ARM_HELD))
+floor_key(iv, 13.92, "in", -8, 6, 4, (0.0, 0.85), crouch_legs(58, 0.48),
+          dict(neck=(6, 4, 2), rShoulder=BURNT, lShoulder=J((-10, 0, -40))))
+sit_key(iv, 14.25, "in", lean=12, turn=6, roll=6, neck=(4, 0, 6), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=J((-24, 0, -34), (0, 0.06, 0)))
+sit_key(iv, 14.7, "out", lean=30, turn=6, roll=4, neck=(-22, 0, 8), hips=IV_SIT, rShoulder=BURNT,
         lShoulder=J((-20, 0, -30), (0, 0.06, 0)))
 sit_key(iv, 15.6, "sine", lean=26, turn=6, roll=6, neck=(-24, 0, 10), hips=IV_SIT, rShoulder=BURNT,
         lShoulder=J((-16, 0, -28), (0, 0.06, 0)))
 sit_key(iv, 18.0, "sine", lean=28, turn=6, roll=8, neck=(-34, 10, 16), hips=IV_SIT, rShoulder=BURNT,
         lShoulder=J((-14, 0, -26), (0, 0.06, 0)))
+alive(iv, amount=0.35, seed=12)
 soft(iv, head=2.4, arms=2.0)
 iv.build()
 
@@ -453,15 +519,26 @@ body_key(ik, 4.6, "out", 0, neck=(-14, -24, 0), rShoulder=J((40, 0, 6)), lShould
 body_key(ik, 6.2, "smooth", -2, -6, 0, neck=(-18, -12, -2), rShoulder=J((36, 0, 6)), lShoulder=J((10, 0, -14)))
 body_key(ik, 7.8, "out", -6, -8, 0, drop=0.06, neck=(-20, -8, 0), rShoulder=J((58, 0, 12)),
          lShoulder=J((14, 0, -16)))
-body_key(ik, 9.0, "snap", 2, -4, 0, drop=0.02, neck=(-8, -6, 0), rShoulder=J((30, 0, 20)), lShoulder=J((20, 0, -24)))
-body_key(ik, 10.2, "smooth", 0, -2, 0, drop=0.02, neck=(-10, -4, 0), rShoulder=J((26, 0, 10)),
-         lShoulder=J((10, 0, -14)))
-stand(ik, 0.0, 10.4, Feet(stance=0.25))
+body_key(ik, 9.0, "snap", -7, -4, 0, drop=0.04, neck=(-2, -6, 0), rShoulder=J((46, 0, 30)),
+         lShoulder=J((42, 0, -30)))
+body_key(ik, 9.55, "out", 3, -10, -2, drop=0.08, neck=(-14, -22, 0), rShoulder=J((34, 0, 22)),
+         lShoulder=J((30, 0, -22)))
+body_key(ik, 10.3, "smooth", 2, 8, 2, drop=0.06, neck=(-12, 26, 0), rShoulder=J((26, 0, 16)),
+         lShoulder=J((30, 0, -18)))
+body_key(ik, 11.0, "sine", 9, 0, 0, drop=0.08, neck=(-30, 0, 0), rShoulder=J((40, 0, 10)),
+         lShoulder=J((40, 0, -10)))
+stand(ik, 0.0, 11.0, Feet(stance=0.25))
 IK_HIPS = (0.0, 1.0)
-floor_key(ik, 11.4, "in", 6, 0, 0, (0.0, 0.7), crouch_legs(50, 0.5),
-          dict(neck=(-20, 0, 0), rShoulder=J((20, 0, 20)), lShoulder=J((20, 0, -20))))
-sit_key(ik, 12.4, "in", lean=12, head=-22, hips=IK_HIPS, rShoulder=J((10, 0, 18)), lShoulder=J((10, 0, -18)))
-sit_key(ik, 18.0, "linear", lean=14, head=-26, hips=IK_HIPS, rShoulder=J((10, 0, 18)), lShoulder=J((10, 0, -18)))
+floor_key(ik, 11.55, "in", 16, 0, 0, (0.0, 0.45), crouch_legs(40, 0.35),
+          dict(neck=(-26, 0, 0), rShoulder=J((24, 0, 24)), lShoulder=J((24, 0, -24))))
+floor_key(ik, 11.95, "smooth", 20, 0, 0, (0.0, 0.8), crouch_legs(62, 0.5),
+          dict(neck=(-22, 0, 0), rShoulder=J((10, 0, 26)), lShoulder=J((10, 0, -26))))
+sit_key(ik, 12.35, "in", lean=24, head=-24, hips=IK_HIPS, rShoulder=J((16, 0, 18)), lShoulder=J((16, 0, -18)))
+sit_key(ik, 12.8, "out", lean=8, head=-18, hips=IK_HIPS, rShoulder=J((12, 0, 18)), lShoulder=J((12, 0, -18)))
+sit_key(ik, 14.0, "sine", lean=12, head=-26, hips=IK_HIPS, rShoulder=J((10, 0, 18)), lShoulder=J((10, 0, -18)))
+sit_key(ik, 18.0, "linear", lean=16, head=-34, hips=IK_HIPS, rShoulder=J((8, 0, 16)), lShoulder=J((8, 0, -16)))
+alive(ik, amount=0.5, seed=21)
+soft(ik, head=2.6, arms=2.2)
 ik.build()
 
 isd = Motion("sceneIronSoldier", 18.0, note="One of the army behind the warlord: standing ready, the spear grounded; "

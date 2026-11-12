@@ -42,6 +42,9 @@ Screens.modal = screen("DeathsGambitModal", 30, true)
 Screens.overlay = screen("DeathsGambitOverlay", 40, true)
 Screens.toast = screen("DeathsGambitToasts", 50)
 Screens.cinematic = screen("DeathsGambitCinematic", 60, true)
+-- (the cutscenes, the death scenes and their HUDs keep still: the pencil lines and the boiling text are for the
+-- game's own screens, not for scenes copying another game's look, the user's call of 2026-11-12)
+Screens.cinematic:SetAttribute("NoBoil", true)
 Screens.system = screen("DeathsGambitSystem", 70)
 
 return Screens

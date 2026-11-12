@@ -647,6 +647,41 @@ def VfxChunk(cell=128, grid=2, seed=41):
     return D.bleed(D.sheet(frames, grid))
 
 
+@texture
+def VfxAsh(cell=128, grid=4, seed=53):
+    """A flake of ash tumbling (4 x 4, one whole turn; 2026-11-12, the user: the dissolves' particles were "extremely
+    ugly", make better high quality ones): a thin, torn, slightly curled flake, dark grey with grain, its edge burnt
+    bright on one side. As it turns it narrows to a sliver and opens again, so a cloud of them glitters. Color tints
+    it: cold for Dead by selection, warm for the snap."""
+    rng = np.random.default_rng(seed)
+    frames = []
+    y, x = D.grid(cell)
+    pixel = D.px(cell) * 1.2
+    n = rng.integers(8, 11)
+    angles = np.sort(rng.uniform(0, 2 * math.pi, n))
+    radii = rng.uniform(0.42, 0.78, n)
+    base = [(math.sin(t) * r, math.cos(t) * r * 0.62) for t, r in zip(angles, radii)]
+    grain = N.fbm2(x * 7 + 3, y * 7 + 9, octaves=3, seed=seed)
+    for k in range(grid * grid):
+        turn = 2 * math.pi * k / (grid * grid)
+        squash = 0.16 + 0.84 * abs(math.cos(turn))  # (edge on, it is a sliver)
+        spin = 0.35 * math.sin(turn * 0.5)
+        pts = []
+        for py, pxx in base:
+            px2 = pxx * squash
+            pts.append((py * math.cos(spin) - px2 * math.sin(spin), py * math.sin(spin) + px2 * math.cos(spin)))
+        d = D.polygon_sdf(y, x, pts)
+        a = D.aa(d, pixel)
+        # the curl: the face lit across, brighter on the side turned to the light
+        light = 0.38 + 0.22 * math.cos(turn) * np.clip(x * 1.4 + 0.5, 0, 1)
+        tone = np.clip(light + grain * 0.12, 0.18, 0.7)
+        # the burnt edge, bright on the leading side (where the flake still smoulders)
+        rim = D.smoothstep(-0.10, -0.015, d) * np.clip(0.5 + y * 1.2 + x * 0.6, 0, 1)
+        v = np.clip(tone + rim * 0.75, 0, 1)
+        frames.append(D.rgba(v, a))
+    return D.bleed(D.sheet(frames, grid))
+
+
 def build(names=None):
     out = []
     for name, fn in BUILDERS.items():
