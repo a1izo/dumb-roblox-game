@@ -50,6 +50,7 @@ return {
 	CloudUnderPale = { material = "SmoothPlastic", color = { 72, 74, 86 }, transparency = 0, reflectance = 0 },
 	Concrete = { textured = true, fallback = { material = "Concrete", color = { 114, 115, 119 } } },
 	ConcreteDark = { textured = true, fallback = { material = "Concrete", color = { 64, 63, 68 } } },
+	ContactDark = { material = "SmoothPlastic", color = { 0, 0, 0 }, transparency = 0.9, reflectance = 0 },
 	CoreDark = { material = "SmoothPlastic", color = { 14, 15, 18 }, transparency = 0, reflectance = 0 },
 	CreamTrim = { textured = true, fallback = { material = "SmoothPlastic", color = { 193, 185, 166 } } },
 	CurtainGlass = { material = "SmoothPlastic", color = { 70, 82, 100 }, transparency = 0.72, reflectance = 0.12 },

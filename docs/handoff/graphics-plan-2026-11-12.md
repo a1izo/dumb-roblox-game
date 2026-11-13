@@ -219,7 +219,7 @@ Add what you learned to `docs/agent-memory/lighting-rework-2026-11.md`.
 
 ## Status, 2026-11-13 (carried out by another agent)
 
-Phases 1 to 3 and 5 to 7 are in the code and checked; phase 4 is written and switched off. Pictures in
+Phases 1 to 7 are in the code and checked; phase 4 was switched on later the same day (Agency v33). Pictures in
 `docs/graphics-2026-11-13/`; what was learned in `docs/agent-memory/lighting-rework-2026-11.md`.
 
 | Phase | State | What the owner has to do |
@@ -227,7 +227,7 @@ Phases 1 to 3 and 5 to 7 are in the code and checked; phase 4 is written and swi
 | 1 shadows | 20 HQ pools, 12 Campus, a few in Tokyo built to cast; the nearest few are keyed. Root cause of "lamps go dark" found and fixed (a shadow spot within ~1 stud of a ceiling is dark). Lights only: no version change. | Rojo sync (SceneBuilder, LightingController, Scenes data) |
 | 2 wet street | The road borrows ConcreteDark's colour map so it is no longer black. No mirror of the signs is possible. A brighter AsphaltWet needs a retexture and an upload. | Say yes to the retexture and upload if wanted |
 | 3 sign light | 79 coloured spots from Tokyo's big signs, Tokyo lamp budget 12 (its check now passes) | Rojo sync |
-| 4 contact darkness | `maps/contact.py` + `CONTACT_DARKNESS` in Agency, OFF: it bumps Agency's version, so HQ would be a grey box until the FBX is imported | Say yes, then export Agency and import the FBX |
+| 4 contact darkness | `maps/contact.py` + `CONTACT_DARKNESS` in Agency, ON (the owner said yes): Agency is v33, so HQ is a grey box until the FBX is imported | Import `DeathsGambitMaps_Agency.fbx` v33 with the Rojo sync, then look at the bullpen |
 | 5 air | `World/AirFx` (Tokyo haze, Campus halos and snow cones), `LampHaze` (HQ glass boost) | Rojo sync |
 | 6 rim light | `World/RimLight` | Rojo sync |
 | 7 notice | `World/QualityNotice` | Rojo sync |

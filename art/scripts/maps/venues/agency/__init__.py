@@ -81,11 +81,10 @@ def s_layout(s):
 L1_POOL_LIFT = 1.4
 
 # Contact darkness (contact.py; the owner's graphics plan, 2026-11-13, phase 4): soft dark under the furniture and along
-# the feet of the walls. OFF until the owner has agreed to import the venue's next FBX: it adds meshes, so the venue goes
-# up a version, and until its new import is in the place the game builds the map as a grey box. To use it: set this to
-# True, run run_maps.py -- Agency --export, import DeathsGambitMaps_Agency.fbx (the new version), then look at the
-# bullpen in a play test at full quality.
-CONTACT_DARKNESS = False
+# the feet of the walls. ON since 2026-11-13 (the owner's yes): it added the ContactDark meshes, Agency v33, so the game
+# builds HQ as a grey box until DeathsGambitMaps_Agency.fbx v33 is imported. Set to False and export again to take it
+# off (the version goes up again).
+CONTACT_DARKNESS = True
 
 
 def build(s):

@@ -148,9 +148,10 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
     budget now (12) and lightbook.unstack takes out stacked lamps at export (UNSTACK in the venue): its check_v2 was
     never run before and flagged 24 problems, all gone. HQ's monitor spills and Campus' window spill were not added.
   - Phase 4, contact darkness: maps/contact.py (stepped layers of the flat look ContactDark under furniture and along
-    wall feet; 151 pieces and 168 walls in HQ, preview in docs/graphics-2026-11-13). OFF (Agency CONTACT_DARKNESS =
-    False): it adds meshes, so Agency goes up a version and HQ is a grey box until the new FBX is imported, and it could
-    not be looked at in the real place. Switch on, export, import, look at the bullpen.
+    wall feet; 151 pieces and 168 walls in HQ, preview in docs/graphics-2026-11-13). ON since the owner's yes the same
+    day (Agency CONTACT_DARKNESS = True): Agency is v33 (+3,224 triangles, one new mesh Map_Agency_ContactDark), so HQ is
+    a grey box until DeathsGambitMaps_Agency.fbx v33 is imported. Not yet seen in the real place: after the import look
+    at the bullpen at full quality and tune the layer strength (matlib "ContactDark" transparency, contact.py grows).
   - Phase 5, air: World/AirFx (Tokyo neon haze round the signs' lights, Campus halos and snow cones at the lamp posts)
     and LampHaze (HQ shafts up to 1.8x stronger within 26 studs of the outside glass). Low quality off, Reduce motion
     keeps them still.
