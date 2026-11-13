@@ -210,6 +210,30 @@ are fully matt.
 **Done when.** From the corridor camera the floor shows the red of the exit sign and the white of the lab as soft
 streaks, and a player standing on it is not mirrored sharply.
 
+**Result 2026-11-14: measured and tried live, no scanlib change made.** Tried in a play test at Quality 21 in the
+University's science hall (floor `Map_Campus_Terrazzo_1`, one mesh for the whole campus's terrazzo; wall
+`Map_Campus_PlasterCream_1`), swapping a flat roughness map in at run time (`SurfaceAppearance.RoughnessMapContent` from a
+4 by 4 `EditableImage`, written with `WritePixelsBuffer`) and a red test light at the hall's far end for an exit sign.
+- The plan's premise is wrong for floors: they are already glossy. Measured means of the roughness maps in
+  `art/export/textures/maps`: Terrazzo 0.21, TerrazzoDark 0.20, MarbleBlack 0.14, MarbleWhite 0.15, TileWhite 0.12,
+  TileChecker 0.15, VinylLab 0.30, VinylClinic 0.30, Linoleum 0.34, WoodFloor 0.34, WoodFloorDark 0.41, Parquet 0.30,
+  TileMetroFloor 0.30, AsphaltWet 0.23; the painted walls 0.62 (PlasterLight, Grey, Dark); carpet 0.95, concrete 0.74.
+  The floors read matt because nothing bright and narrow is there for their gloss to catch, and because they are pale.
+- `Lighting.EnvironmentSpecularScale` 0.3 against 0.9: no visible change indoors. It is not the lever.
+- A flat roughness of 0.12 on the pale floor removes the terrazzo's mottle and shows a pale sheen; it does not make
+  streaks. Roblox has no reflections, only specular highlights from lights and a reflected sky, so the reference's
+  mirrored red sign cannot be made by roughness. A red light of 1.2 / range 16 at the far end did colour the end wall,
+  ceiling and the floor near it and fade out within about 25 studs: the "red sign tints its surroundings then stops"
+  half of the picture works. The streak half would need a fake (a soft light-coloured strip laid on the floor under
+  each sign, as contact darkness lays dark ones).
+- A darker floor (the mesh's `Color` at 105, 110, 120) with roughness 0.18 reads as a polished corridor and shows the
+  red sheen best. That is a finish change for the whole terrazzo floor of the campus, so it is the owner's call.
+- Painted walls: 0.35 and 0.5 both turn the cream plaster cool lilac-grey, because the lowered roughness lets the dark blue
+  sky reflect in them. It is a grade change, not a sheen, and it moves toward the office picture's cool teal.
+  Not rolled out. If wanted, change the plaster looks in `scanlib.py` (`rough=` on PlasterLight, PlasterGrey, PlasterDark,
+  PlasterCream, PlasterGreen) together with a look at that map's preset grade; it needs a `--retexture` export and a
+  re-import of the venue's FBX.
+
 ## Phase 11: light placed like the pictures
 
 **Why.** Both pictures get their mood from where the light is not.
