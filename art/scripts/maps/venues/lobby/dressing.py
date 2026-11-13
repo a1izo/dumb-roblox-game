@@ -156,11 +156,7 @@ def ways(s):
 # from the rift's rim. Anchors root<n> (x, y, z, h = length) hang from their anchor down.
 def sway(s):
     roots = []
-    mx, mz = P.GATE
-    gate = math.radians(P.GATE_DIR)
-    side = (-math.sin(gate), math.cos(gate))
-    for k, (off, length) in enumerate(((-5.5, 6.0), (-2.0, 8.0), (1.5, 5.0), (4.8, 7.0))):
-        roots.append((mx + side[0] * off, P.GROTTO_MOUTH_H - 0.3, mz + side[1] * off, length))
+    # (the roots that hung in the grotto's mouth went with its roof, 2026-11-12)
     cx, cz = P.RIFT_MID
     for k in range(5):
         a = math.tau * k / 5 + 0.4

@@ -267,7 +267,11 @@ def ruins(s):
 
 
 def avenue(s, blocked):
-    """Old trees leaning in over the way to the Academy, two by two, their crowns meeting over it."""
+    """Old trees along the way to the Academy (2026-11-12, the user: "remove those uniformally sitting trees ... dont
+    place things mathematically - just do what feels natural"): no pairs, no even spacing. A loose handful placed by
+    eye: a close group of three of different sizes on one side, a lone big one across the way further on, a small one
+    set well back; each at its own distance from the way, its own size, leaning its own way (mostly toward the way,
+    never squarely)."""
     pts = WAYS[0]
     (ax, az), (bx, bz) = pts[-2], pts[-1]
     length = math.dist((ax, az), (bx, bz))
@@ -275,15 +279,19 @@ def avenue(s, blocked):
     nx, nz = -dz, dx
     tab = P.TABLEAUX[0]
     grotto = P.ACADEMY_C
-    for k, t in enumerate((-8.0, -1.0, 6.0, 13.0)):
-        for side in (-1, 1):
-            px, pz = ax + dx * t + nx * side * 9.0, az + dz * t + nz * side * 9.0
-            if math.dist((px, pz), tab) < P.TABLEAU_R + 3.0 or math.dist((px, pz), grotto) < P.GROTTO_WALL + 5.0:
-                continue
-            if blocked.hits(px, pz, 3.0):
-                continue  # (a trunk in a rock's foot)
-            rot = lean_rot(-nx * side, -nz * side)
-            tree(s, "LobbyArchTree", px, pz, rot, 0.85 + 0.1 * ((k + side) % 2), 2.2)
+    # (along the way, out from it (+ right / - left), size, how far its lean is turned off the way's normal, degrees)
+    for t, out, sc, turn in ((-9.5, 12.5, 1.02, -24.0), (-5.0, 9.0, 0.78, 14.0), (-1.5, 15.5, 0.9, -40.0),
+                             (7.5, -10.5, 1.08, 18.0), (15.5, -17.0, 0.7, -32.0)):
+        px, pz = ax + dx * t + nx * out, az + dz * t + nz * out
+        if math.dist((px, pz), tab) < P.TABLEAU_R + 3.0 or math.dist((px, pz), grotto) < P.GROTTO_WALL + 5.0:
+            continue
+        if blocked.hits(px, pz, 3.0):
+            continue  # (a trunk in a rock's foot)
+        side = 1.0 if out > 0 else -1.0
+        a = math.radians(turn)
+        lx, lz = -nx * side, -nz * side
+        lx, lz = lx * math.cos(a) - lz * math.sin(a), lx * math.sin(a) + lz * math.cos(a)
+        tree(s, "LobbyArchTree", px, pz, lean_rot(lx, lz), sc, 2.2)
 
 
 def castle(s):

@@ -255,50 +255,10 @@ def steles(s):
 
 
 def _roof_y(r):
-    """The grotto roof's height over its floor at r from its middle (an elliptic vault from GROTTO_ROOF over the middle
-    down to 14 at the walls)."""
+    """The height the grotto's roof had over its floor at r from its middle (the roof is gone since 2026-11-12; the
+    rock pillars still stand as tall as it was)."""
     u = min(1.0, r / (P.GROTTO_WALL + 2.0))
     return 14.0 + (P.GROTTO_ROOF - 14.0) * math.sqrt(max(0.0, 1.0 - u * u))
-
-
-def _vault(s, c, seed):
-    """The grotto's roof: a lumpy vault seen from inside (its faces look down), and its back seen from above (the
-    Spire Ascent looks down on it), both shaded smooth; it rests on the billowing walls."""
-    rng = random.Random(seed)
-    rim = P.GROTTO_WALL + 2.0
-    n, rings = 40, 9
-    bumps = [(rng.uniform(0, math.tau), rng.uniform(0.2, 0.95), rng.uniform(0.5, 1.4)) for _ in range(14)]
-
-    def lump(a, u):
-        return sum(amp * math.exp(-((math.atan2(math.sin(a - ba), math.cos(a - ba)) * 2.2) ** 2 + ((u - bu) * 6.0) ** 2))
-                   for ba, bu, amp in bumps)
-
-    rims = []
-    for skin, lift, inside in (("in", 0.0, (c[0], 200.0, c[1])), ("out", 2.5, (c[0], -200.0, c[1]))):
-        pts = []
-        for j in range(rings + 1):
-            u = 1.0 - j / rings
-            r = rim * u
-            row = []
-            for k in range(n):
-                a = math.tau * k / n
-                y = _roof_y(r) + lift - (lump(a, u) if skin == "in" else -0.6 * lump(a, u))
-                row.append((c[0] + math.cos(a) * r, y, c[1] + math.sin(a) * r))
-            pts.append(row)
-        with s.smooth():
-            for j in range(rings):
-                for k in range(n):
-                    k1 = (k + 1) % n
-                    quad = [pts[j][k], pts[j][k1], pts[j + 1][k1], pts[j + 1][k]]
-                    if j == rings - 1:
-                        quad = quad[:3]
-                    away(s, "RockGrey", quad, inside)
-        rims.append(pts[0])
-    # (its rim closed between the two skins, facing out)
-    inner, outer = rims
-    for k in range(n):
-        k1 = (k + 1) % n
-        away(s, "RockGrey", [inner[k], inner[k1], outer[k1], outer[k]], (c[0], 20.0, c[1]))
 
 
 # The Academy's gate as made (props_academy.academy_gate: GATE_OPEN, GATE_POST, GATE_TOP, GATE_LINTEL, GATE_CAP,
@@ -384,11 +344,12 @@ def grotto(s, g):
             continue
         x, z = P.polar(c, mid, wall_r)
         s.collider((x, 6.0, z), (2.4, 12.0, 2 * math.pi * wall_r / 28 + 1.0), -mid, True, "RockGrey")
-    # The vault over it all, the lintel over the mouth.
-    _vault(s, c, 103)
+    # (2026-11-12, the user: "redo the academy cave entrance terrain completely ... or just remove the roof entirely so
+    # the hand above is more visible": the roof is REMOVED: no vault, no shelf of rock over the mouth, no drips from
+    # it. The Academy is a ring of rock open to the sky, its gate standing free in the gap, the hand over the puppets
+    # seen from the whole bowl.)
     mx, mz = P.GATE
     lrot = P.rot_towards(c, (mx, mz))
-    rocks.rock(s, "RealmBillowShelf", mx, mz, lrot + 90.0, 0.55, y=P.GROTTO_MOUTH_H)
     f = Frame(mx, mz, lrot)
     academy_gate(s, f, mx, mz, lrot)
     s.zone("plaza", g2.rect(mx, mz, P.GROTTO_MOUTH_W, 12.0, lrot), 0.0, name="the grotto's mouth")
@@ -399,32 +360,17 @@ def grotto(s, g):
         x, z = P.polar(c, a, P.ACADEMY_R - 3.5)
         key = "RealmColumn" if k % 2 else "RealmColumnB"
         rocks.rock(s, key, x, z, rng.uniform(0, 360), _roof_y(P.ACADEMY_R - 3.5) / 70.0 + 0.02)
-    # Drips of rock from the vault, crystals at the walls' feet. (No drip over the middle, where the hand holds the
-    # puppets' strings, nor over the way in from the gate: from the mouth they crossed the hand and the gate.)
-    cages = [P.polar(c, a, d) for a, d in CAGES]
-    for k in range(16):
-        a = rng.uniform(0, 360)
-        d = rng.uniform(6.0, P.GROTTO_WALL - 4.0)
-        x, z = P.polar(c, a, d)
-        if any(math.dist((x, z), q) < 4.0 for q in cages):
-            continue
-        off = abs(math.degrees(math.atan2(math.sin(math.radians(a - gate)), math.cos(math.radians(a - gate)))))
-        if d < DRIP_CLEAR or math.sin(math.radians(min(off, 90.0))) * d < P.GROTTO_MOUTH_W / 2 + 2.0 and off < 90.0:
-            continue
-        key = "RealmDripB" if k % 3 == 0 else "RealmDripA"
-        sc = rng.uniform(0.7, 1.1)
-        h = {"RealmDripA": 9.0, "RealmDripB": 15.0}[key] * sc
-        s.prop(key, x, z, rng.uniform(0, 360), round(sc, 3), _roof_y(d) - h + 0.4)
+    # Crystals at the walls' feet.
     for k in range(14):
         a = gate + rng.uniform(30, 330)
         x, z = P.polar(c, a, P.GROTTO_WALL - rng.uniform(1.0, 4.0))
         s.prop("RealmShardsC", x, z, rng.uniform(0, 360), round(rng.uniform(0.8, 1.6), 3), -0.3)
-    # Cage lanterns hanging on chains from the vault, burning cold.
+    # Lanterns standing on the floor where the cages hung from the roof, burning cold.
     for k, (a, d) in enumerate(CAGES):
         x, z = P.polar(c, a, d)
-        hang = _roof_y(d)
-        s.prop("HangingCage", x, z, rng.uniform(0, 360), 1.0, hang - HANGING_CAGE_DROP)
-        pool(s, x, hang - HANGING_CAGE_DROP + 1.2, z, 26, 1.0, LANTERN)
+        s.prop("LobbyLantern", x, z, rng.uniform(0, 360), 1.0, 0.0)
+        s.collider((x, 2.0, z), (1.3, 4.0, 1.3), 0.0, True, None)
+        pool(s, x, 5.0, z, 26, 1.0, LANTERN)
     # The practice altars (the game's drill desks stand in them) and the puppets.
     for k, (x, z, rot) in enumerate(P.altars()):
         s.anchor(f"drill{k + 1}", x, 0.0, z, rot)
@@ -437,12 +383,11 @@ def grotto(s, g):
 
 
 HANGING_CAGE_DROP = 9.0  # how far under its hook the HangingCage's lantern hangs (props_realmjunk.hanging_cage)
-# The grotto's cage lanterns: (direction from the cave's middle, degrees from the gate's; how far out).
+# The Academy's lanterns: (direction from its middle, degrees from the gate's; how far out).
 # (The fifth, toward the gate, hung 4 out, in front of the puppets' hand seen from the mouth: since 2026-11-07 it lights
 # the way in from the gate, out where nothing hangs.)
 CAGES = [(P.GATE_DIR + 150.0, 14.0), (P.GATE_DIR + 210.0, 14.0), (P.GATE_DIR + 100.0, 18.0), (P.GATE_DIR + 260.0, 18.0),
          (P.GATE_DIR + 24.0, 19.0)]
-DRIP_CLEAR = 12.0  # how far from the grotto's middle (the hand and its strings) the drips keep
 
 
 # The chessboard, the notebook, the rift -----------------------------------------------------------------------------

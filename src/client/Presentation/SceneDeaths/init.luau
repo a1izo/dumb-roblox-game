@@ -253,9 +253,13 @@ function Ctx:actor(who: any, at: CFrame, clip: string?, from: number?, scale: nu
 	-- the red eyes of the deal, an aura, a tell. Copied onto a posed actor the eyes' model was left behind at the chest
 	-- and drew its red stars there, the "red lines out of nowhere" of 2026-11-12)
 	for _, item in ipairs(actor:GetDescendants()) do
-		if item:IsA("BillboardGui") or item.Name == "LEyesGlow" then
-			item:Destroy()
-		elseif item:IsA("ParticleEmitter") or item:IsA("Beam") or item:IsA("Trail") then
+		if
+			item:IsA("BillboardGui")
+			or item.Name == "LEyesGlow"
+			or item:IsA("ParticleEmitter")
+			or item:IsA("Beam")
+			or item:IsA("Trail")
+		then
 			item:Destroy()
 		end
 	end
