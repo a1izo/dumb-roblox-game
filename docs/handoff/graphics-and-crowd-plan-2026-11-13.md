@@ -75,6 +75,16 @@ work is spread over three maps.
 Pick the exact HQ room by walking the map in a play test: the one whose shape is nearest the picture. Write the
 room and the camera position into this file under this table when you have chosen.
 
+**Chosen 2026-11-13 from the venue plans, confirmed in a play test 2026-11-14** (the place has Agency v34, Campus v33,
+Tokyo v48 imported). World positions are the venue's local studs plus 3000 in z. The University camera moved: from
+the hall's south end at z 100 it stood against the roped-off stair.
+
+| Map | Room | Camera (world) | Look at (world) | Why |
+|---|---|---|---|---|
+| HQ | the sergeant's office, 38F (`plan.ROOMS_L1["sergeant"]`, x -100..-76, z 53..75): one downlight that casts shadows, a desk, two bookshelves and two filing cabinets, a dark wood floor, a wood dado, blinds on its glass | (-77.5, 5.5, 3058.5) | (-92, 3.5, 3066) | The only 38F room with one ceiling fitting, one desk and the furniture the office picture has. The one door is on its east wall at z 58 to 62, so this is the view from the doorway toward the desk and the bookshelves, with the night city in the west glass. |
+| University | the forensic medicine lab (`campus.plan.FORENSIC`, x 68..108, z 37.4..72) and the science hall outside it (`SCI_HALL`, x 49.4..68), glass between them at x 68 (z 39.4 to 51.7 and 58.3 to 71.2) | (53.5, 5.5, 3086) | (67, 5, 3050) | The hall is the corridor: four cool panels (two of them cast shadows). The lab has three cool panels (one casts) and a small point light at its south wall's sign. Looking north along the glass wall from the hall's south end. |
+| Tokyo | the arcade's mouth from the crossing | (-60, 8, 2935) | (0, 2, 2905) | The camera from the earlier plan. |
+
 **Steps.**
 1. Capture each room now, at Quality 21 and at Quality 3. Save them as `docs/handoff/refs/before-<map>-q21.jpg`
    and `before-<map>-q3.jpg`.
@@ -85,6 +95,47 @@ room and the camera position into this file under this table when you have chose
    and show the owner the pairs before rolling out.
 
 **Done when.** The owner has seen before and after pairs for the three rooms and has said which parts to keep.
+
+**Before pictures and what each lacks (2026-11-14).** `docs/handoff/refs/before-<map>-q21.jpg` and `-q3.jpg`, taken
+through the player's real camera in a play test (UI hidden, camera pinned, quality set from the client). Judged
+against the two references.
+
+HQ, the sergeant's office, against the office picture:
+- No key. The ceiling fitting is out of frame and nothing in frame is the brightest thing. The room is lit evenly, warm
+  everywhere, so the eye has nowhere to go. The picture has one hard panel and a lamp.
+- No falloff. The near third of the frame is a lit wood floor, not a near-black silhouette. The filing cabinet at the
+  left edge is lit like everything else.
+- Weak grounding. No dark line where the floor meets the glass sill, nothing dark under the desk or behind the
+  shelves, though contact darkness is on in v34.
+- Walls: one wood dado wall, the rest is glass, so there is no two-tone paint and no glossy streak. The wood floor is
+  matt.
+- Grade: saturated warm wood under a deep blue sky, where the picture is low-saturation cool teal. The accents are
+  right (red and blue binders, a yellow folder).
+- Detail it has: a ceiling tile grid, labelled filing cabinet drawers, shelves with boxes and binders, blinds, a
+  monitor and a mug. Detail it lacks: pipes on the wall, a cork board with paper, a clock, boxes on top of a
+  cupboard, scuffs, a desk lamp.
+- No glow round a lamp, no grain visible at this size.
+
+University, the science hall beside the forensic lab, against the corridor picture:
+- The corridor is not dark. Four panels light the white ceiling, the pale walls and the terrazzo evenly, so nothing
+  reads as "lit by what spills from the lab".
+- The lab is not the bright place. Seen through the glass it is no brighter than the hall; nothing spills onto the
+  hall floor.
+- No red. There is no exit sign and no coloured light anywhere.
+- The floor is matt terrazzo: no streaks of the lab's light or of a sign.
+- Black window frames are there, but against a room that is no brighter than the hall.
+- The lab has no task light, no strips under cabinets, no pools; it is flat.
+- Something to go to at the end: the arch at the far end and the lab plaque are there, a sign overhead is not.
+
+Tokyo, the crossing and the arcade's mouth (no reference; the target is neon over a wet road):
+- Good: the road is dark grey and shows rain rings and a sheen under the lamps; the alley has a pink lantern and warm
+  windows; the signs tint nearby walls.
+- Missing: long soft streaks of the neon on the road (Roblox has no real reflections, so a roughness and sheen job,
+  phase 10), air in the alley (the haze is faint), a clear brightest point for the eye.
+
+Quality 3 against 21, all three rooms: the lamps do not turn to blocks here. The differences are softer texture
+detail, less reflection in glass, and in Tokyo the big sign blows out to white, the lamp halos and the glow round
+signs are gone and the shop windows go flat. The office and the hall look nearly the same at both levels.
 
 ## Phase 9: shading baked into the map meshes
 
