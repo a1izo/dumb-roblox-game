@@ -91,6 +91,16 @@ the C2 layout): 231 trips, pairs closer than 1.2 studs 0.040% of samples, kerb w
 released together from side-by-side places at a kerb pass through the single point where the walk turns onto the
 crossing and can brush for a frame or two; fixing it means changing how a turn maps sideways offsets.
 
+**Graph clean-up after C4 (`crowd.merge_short`).** Nine walks were under 3 studs long (nodes laid almost on top of each
+other: a 2.3-stud link joined two kerb nodes and three approaches met there, so a queue for the lamp stood in a heap
+for the whole red). `merge_short` contracts each such walk (a kerb node never moves; two plain ones meet halfway when
+the ground allows), re-links the neighbours, measures their widths again and closes the numbers up; 8 of 9 merged
+(255 nodes, 261 links now), never a station door's node. On the spec's lamp cycle pairs closer than 1.2 studs fell from
+0.16% to 0.07 to 0.1%. Not solved: two queues that meet at a corner hub from different links (headings more than 53
+degrees apart) do not see each other and can stand 1 stud apart for a whole red phase (longest overlaps 40 s at the
+kerbs near (-5,-46), (-77,-82) and (-7,-48)). The rule that would see them (any stationary walker, from any heading)
+gridlocked the crowd when tried, see the C3 notes; a hub that holds them properly needs slots at the kerb.
+
 **How to iterate.** The Tokyo scene builds in 7 s in Blender with no export: a scratch script that does
 `module.build(mesher.Scene("Tokyo", prefix="Map", chunk=128.0))` and prints `scene.crowd` shows a change to
 `crowd.py` at once (the full `run_maps.py -- Tokyo --export` takes 100 s). Everything Luau goes through the bundle in

@@ -280,6 +280,7 @@ def walks(s):
         else:
             w.missing.append(f"the station door at z {door_z}")
     district(w)
+    merge_short(w)
     shops(w)
     widen(w)
     single_file(w)
@@ -387,6 +388,78 @@ def district(w):
     dropped = _one_network(w.s)
     print(f"[crowd] district: {len(chains)} walks laid, {sum(len(c) for c in chains)} nodes; {dropped} nodes cut off "
           "by roads taken out again")
+
+
+SHORT = 3.0  # studs: two nodes nearer than this are one place (a walk this short is two nodes laid on top of each other)
+
+
+def _contract(w, keep, drop, index):
+    """Joins node `drop` into node `keep` (the link `index` between them goes): everything that ran to `drop` runs to
+    `keep`, which stands where it was (a kerb never moves; two plain nodes meet half way when the ground allows), the
+    walks round it are measured again and the node numbers close up. False, and nothing changed, when a walk that
+    would then run from it is blocked."""
+    s, street = w.s, w.street
+    nodes, links = s.crowd["nodes"], s.crowd["links"]
+    kerb = nodes[keep - 1]["kind"] == "kerb" or nodes[drop - 1]["kind"] == "kerb"
+    at = w.at(keep)
+    if not kerb:
+        mid = (round((at[0] + w.at(drop)[0]) / 2, 2), round((at[1] + w.at(drop)[1]) / 2, 2))
+        if street.stand(*mid):
+            at = mid
+    elif nodes[keep - 1]["kind"] != "kerb":
+        at = w.at(drop)
+    joined, seen = [], set()
+    for i, lk in enumerate(links):
+        if i == index:
+            continue
+        a, b = (keep if lk["a"] == drop else lk["a"]), (keep if lk["b"] == drop else lk["b"])
+        if a == b or (min(a, b), max(a, b)) in seen:
+            continue  # (a self-link, or a second link between the same two nodes)
+        seen.add((min(a, b), max(a, b)))
+        joined.append(dict(lk, a=a, b=b))
+    for lk in joined:
+        if lk["kind"] == "walk" and keep in (lk["a"], lk["b"]):
+            far = lk["b"] if lk["a"] == keep else lk["a"]
+            if not street.walk(at, w.at(far)):
+                return False
+    nodes[keep - 1]["x"], nodes[keep - 1]["z"] = at
+    if kerb:
+        nodes[keep - 1]["kind"] = "kerb"
+    for lk in joined:
+        if lk["kind"] == "walk" and keep in (lk["a"], lk["b"]):
+            far = lk["b"] if lk["a"] == keep else lk["a"]
+            lk["width"] = 2 * street.half(at, w.at(far))
+    # (the numbers close up over the dropped node)
+    renumber = lambda n: n - 1 if n > drop else n  # noqa: E731
+    s.crowd["links"] = [dict(lk, a=renumber(lk["a"]), b=renumber(lk["b"])) for lk in joined]
+    del nodes[drop - 1]
+    return True
+
+
+def merge_short(w):
+    """Contracts every walk shorter than SHORT (nodes laid almost on top of each other: a crowd waiting for the same
+    lamp from three sides stood in a heap on a 2-stud hub). Never a station door's node."""
+    merged, tried = 0, set()
+    while True:
+        nodes, links = w.s.crowd["nodes"], w.s.crowd["links"]
+        best = None
+        for index, lk in enumerate(links):
+            if lk["kind"] != "walk":
+                continue
+            a, b = w.at(lk["a"]), w.at(lk["b"])
+            length = math.dist(a, b)
+            if length < SHORT and (a, b) not in tried and (best is None or length < best[0]):
+                if not any(p in w.fixed for p in (a, b)):
+                    best = (length, index, lk["a"], lk["b"], (a, b))
+        if best is None:
+            break
+        _, index, a, b, key = best
+        keep, drop = (b, a) if nodes[b - 1]["kind"] == "kerb" and nodes[a - 1]["kind"] != "kerb" else (a, b)
+        if _contract(w, keep, drop, index):
+            merged += 1
+        else:
+            tried.add(key)
+    print(f"[crowd] {merged} nodes merged into their neighbours (walks under {SHORT:g} studs)")
 
 
 SHOP_REACH = 12.0  # studs: a post this near a door is the clerk of the shop behind it
