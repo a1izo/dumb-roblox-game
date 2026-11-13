@@ -213,6 +213,25 @@ function MapContract.validateCrowd(layout: any): { string }
 				fail("crowd node " .. index .. " cannot be reached from the others")
 			end
 		end
+		-- Trips begin and end at the crowd's ends: real nodes, each once, with a kind and a weight, and at least two.
+		local listed: { [number]: boolean } = {}
+		for index, entry in ipairs(crowd.ends or {}) do
+			if not (isNumber(entry.node) and nodes[entry.node]) then
+				fail("crowd end " .. index .. " is not a node")
+			elseif listed[entry.node] then
+				fail("crowd end " .. index .. " lists node " .. entry.node .. " twice")
+			end
+			listed[entry.node] = true
+			if entry.kind ~= "edge" and entry.kind ~= "door" then
+				fail("crowd end " .. index .. " has an unknown kind " .. tostring(entry.kind))
+			end
+			if not isNumber(entry.weight) or entry.weight <= 0 then
+				fail("crowd end " .. index .. " needs a weight")
+			end
+		end
+		if crowd.ends ~= nil and #crowd.ends < 2 then
+			fail("the crowd has fewer than two ends: trips need somewhere to go")
+		end
 		for index, post in ipairs(crowd.posts or {}) do
 			if not (isNumber(post.x) and isNumber(post.z) and isNumber(post.rot)) then
 				fail("crowd post " .. index .. " needs x, z and rot")

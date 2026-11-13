@@ -30,6 +30,24 @@ alley pavement that really is that narrow) carry `single = true`. The sim reads 
 Rules: `check_v2` (laid twice, narrow without single) and `MapContract.validateCrowd` (the same, run on the real layout
 by `MapContract.spec`). Tokyo export: only `Layout/init.luau` changed, Maps v47 and its mesh digest kept.
 
+**C2 (trips).** `layout.crowd.ends` (written by `crowd.ends(w)`): 20 nodes, each `edge` or `door` with a weight: the
+station's two hall doors (4), the avenue and the north street's far ends (3), the map-edge barricades (1.5), a door node
+for the konbini, the ramen bar and the game centre (1.5; the last two are new nodes laid by `crowd.shops`, from the
+opening nearest each clerk's post), the arcade's far end (2) and every other dead end (0.6). `posts()` now runs before
+`walks()` because `shops` reads them. In `CrowdSim`: every end has a next-hop table built once in `CrowdSim.graph`
+(`routesTo`, reverse Dijkstra over states "node, arrived by walk or crossing"; a crossing costs +15 studs and
+stepping straight from one crossing onto another +60, so the old "no crossing onto a crossing" rule lives on as a cost);
+a walker has `origin`/`dest` (indexes into `graph.ends`), `_enter` takes the next link from the table, at the trip's end
+`_arrive` hides it for `AWAY` 2 to 8 s (`walker.away`; `shown = false`; `setShown` keeps `visible` apart so a meeting
+does not bring it back early) and `_return` puts it on another end with a new destination. `seed` places walkers part-way
+along random trips, never on a crossing. A graph with no `ends` gets every dead end (or every node of a ring), so small
+test graphs work. The placeless 12% pause stays until C5. Also fixed: a walker whose step carried it past the kerb in
+the same step that first tripped the wait check walked onto the crossing on the cars' light (found because trips send
+everybody to a kerb); it now looks at the lamp again before it steps on. After C2 (seed 1, 300 s): U-turns 302 to 0,
+revisits of a node 1179 to 7, dead-end lingering 306 stops to 0, 1.2 trips per walker a minute, 9% of walker time out of the
+world. Overlap went UP (pairs closer than 1.2 studs 0.45% to 1.1% of samples) because trips share the same shortest
+corridors: that is C3's job.
+
 **How to iterate.** The Tokyo scene builds in 7 s in Blender with no export: a scratch script that does
 `module.build(mesher.Scene("Tokyo", prefix="Map", chunk=128.0))` and prints `scene.crowd` shows a change to
 `crowd.py` at once (the full `run_maps.py -- Tokyo --export` takes 100 s). Everything Luau goes through the bundle in

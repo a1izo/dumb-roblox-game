@@ -224,9 +224,11 @@ function Crowd.describe(): string
 	if not sim then
 		return "no crowd on this map"
 	end
-	local walking, waiting, passing, standing = 0, 0, 0, 0
+	local walking, waiting, passing, standing, away = 0, 0, 0, 0, 0
 	for _, walker in ipairs(sim.walkers) do
-		if walker.standing then
+		if (walker.away or 0) > 0 then
+			away += 1
+		elseif walker.standing then
 			standing += 1
 		elseif walker.waiting then
 			waiting += 1
@@ -238,11 +240,12 @@ function Crowd.describe(): string
 		end
 	end
 	return string.format(
-		"crowd %s: %d walking, %d at the kerb, %d standing, %d stepping through someone",
+		"crowd %s: %d walking, %d at the kerb, %d standing, %d between trips, %d stepping through someone",
 		if shown then "out" else "hidden",
 		walking,
 		waiting,
 		standing,
+		away,
 		passing
 	)
 end

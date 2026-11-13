@@ -141,7 +141,8 @@ class Walks:
         self.s = s
         self.street = Street(s)
         self.missing = []
-        self.fixed = set()  # nodes that stay where they were put (the station's doors)
+        self.fixed = set()  # where nodes stay as they were put: (x, z) of the station's doors and the shops'
+        self.shop_nodes = []  # each shop's door node (shops)
 
     def at(self, node):
         nd = self.s.crowd["nodes"][node - 1]
@@ -279,7 +280,10 @@ def walks(s):
         else:
             w.missing.append(f"the station door at z {door_z}")
     district(w)
+    shops(w)
     widen(w)
+    single_file(w)
+    ends(w)
     if w.missing:
         print("[crowd] no walk found for: " + "; ".join(w.missing))
 
@@ -385,6 +389,104 @@ def district(w):
           "by roads taken out again")
 
 
+SHOP_REACH = 12.0  # studs: a post this near a door is the clerk of the shop behind it
+DOOR_OUT = (2.5, 3.5, 4.5)  # how far outside a shop's door a walker stands to go in (the first that is free)
+DOOR_NODE = 3.5  # studs: a node already this near that spot serves as the door's node
+
+
+def _outward(rot):
+    """The unit vector a door faces out of the building (rot 0 faces -Z, as everywhere in the scene)."""
+    a = math.radians(rot)
+    return (-math.sin(a), -math.cos(a))
+
+
+def shops(w):
+    """A door node for each shop that has a clerk or attendant in the crowd's posts (the konbini, the ramen bar, the
+    game centre): the nearest opening to the post is the shop's door, and a node stands just outside it (an
+    existing one when it is close, else a new one joined to the walks round it). Walkers go in and out there
+    (ends). The station kiosk stands inside the hall, with no shop door near, and is left out."""
+    s, street = w.s, w.street
+    for post in s.crowd["posts"]:
+        if not s.openings:
+            break
+        door = min(s.openings, key=lambda o: math.dist((o[0], o[2]), (post["x"], post["z"])))
+        dx, _, dz, _, rot = door[:5]
+        if math.dist((dx, dz), (post["x"], post["z"])) > SHOP_REACH:
+            continue
+        out = _outward(rot)
+        near = min(range(1, len(s.crowd["nodes"]) + 1), key=lambda m: math.dist(w.at(m), (dx, dz)))
+        if math.dist(w.at(near), (dx + out[0] * DOOR_OUT[0], dz + out[1] * DOOR_OUT[0])) <= DOOR_NODE:
+            w.shop_nodes.append(near)
+            continue
+        for reach in DOOR_OUT:
+            spot = (round(dx + out[0] * reach, 2), round(dz + out[1] * reach, 2))
+            if not street.stand(*spot):
+                continue
+            node = s.crowd_node(*spot)
+            others = sorted((m for m in range(1, node) if math.dist(w.at(m), spot) <= 24.0),
+                            key=lambda m: math.dist(w.at(m), spot))
+            if any(w.join(node, other) for other in others[:6]):
+                w.fixed.add(spot)
+                w.shop_nodes.append(node)
+                break
+            # (no way in from here: the node goes, the numbers stay as they were)
+            s.crowd["nodes"].pop()
+        else:
+            w.missing.append(f"the {post['kind']}'s shop door at {dx:.0f}, {dz:.0f}")
+
+
+# Where trips begin and end, and how often each is chosen (the sim sends every walker from one end to another by the
+# shortest way and takes it out of the world there for a few seconds): the station and the scramble's streets are the
+# busiest, a lane or an alley's end the quietest.
+W_STATION = 4.0  # each of the station's two side doors
+W_AVENUE = 3.0  # the far end of the avenue's sidewalks and of the north street
+W_EDGE = 1.5  # a barricade at the map's edge on a service street or lane
+W_SHOP = 1.5  # a shop's door
+W_ARCADE = 2.0  # the shopping street's far end
+W_BACK = 0.6  # the end of an alley, a lane or a back street
+EDGE_MARGIN = 18.0  # studs from the map's edge within which a dead end is a barricade
+
+
+def ends(w):
+    """Marks the nodes where trips begin and end (layout.crowd_end): the station's side doors, the map's edge, the
+    shops' doors, the shopping street's far end, and every other dead end (an alley's end: a bar's back door)."""
+    s = w.s
+    nodes = s.crowd["nodes"]
+    count = len(nodes)
+    degree = [0] * (count + 1)
+    for lk in s.crowd["links"]:
+        degree[lk["a"]] += 1
+        degree[lk["b"]] += 1
+    chosen = {}
+
+    def add(node, kind, weight, name):
+        if node not in chosen or chosen[node][1] < weight:
+            chosen[node] = (kind, weight, name)
+
+    def nearest(point, among=None):
+        return min(among or range(1, count + 1), key=lambda m: math.dist(w.at(m), point))
+
+    for x, z in sorted(w.fixed):
+        if x < -110.0:  # the hall's side of a station door
+            add(nearest((x, z)), "door", W_STATION, "station door")
+    for node in w.shop_nodes:
+        add(node, "door", W_SHOP, "shop door")
+    x0, x1, z0, z1 = P.X0, P.X1, P.Z0, P.Z1
+    for m in range(1, count + 1):
+        if degree[m] != 1:
+            continue
+        x, z = w.at(m)
+        edge = x - x0 < EDGE_MARGIN or x1 - x < EDGE_MARGIN or z - z0 < EDGE_MARGIN or z1 - z < EDGE_MARGIN
+        add(m, "edge" if edge else "door", W_EDGE if edge else W_BACK, "map edge" if edge else "dead end")
+    for name, index in (("ave_nw", 0), ("ave_se", -1), ("kita", 0)):
+        add(nearest(P.STREETS[name]["points"][index]), "edge", W_AVENUE, name + "'s far end")
+    add(nearest(P.STREETS["arcade"]["points"][-1]), "door", W_ARCADE, "the arcade's far end")
+    for node, (kind, weight, name) in sorted(chosen.items()):
+        s.crowd_end(node, kind, weight, name)
+    print(f"[crowd] {len(chosen)} ends: " + ", ".join(
+        f"{kind} {sum(1 for k, _, _ in chosen.values() if k == kind)}" for kind in ("edge", "door")))
+
+
 NARROW = 1.5  # studs: a walk narrower than this is single file (two walkers cannot pass or keep left on it)
 NUDGE = (0.5, 1.0, 1.5, 2.0, 2.5)  # how far a node may be moved to widen the walks it ends
 APART = 3.0  # ...and how close it may come to another node while it moves
@@ -451,12 +553,18 @@ def widen(w):
                 changed = True
         if not changed:
             break
+    print(f"[crowd] widening: {moved} nodes moved")
+
+
+def single_file(w):
+    """Marks every walk still under NARROW wide `single` (after the last node is laid and moved)."""
+    links = w.s.crowd["links"]
     single = 0
     for lk in links:
         if lk["kind"] == "walk" and lk["width"] < NARROW:
             lk["single"] = True
             single += 1
-    print(f"[crowd] widening: {moved} nodes moved; {single} of {len(links)} walks left single file")
+    print(f"[crowd] {single} of {len(links)} walks are single file")
 
 
 def _one_network(s):
@@ -529,6 +637,6 @@ def lanes(s):
 
 
 def build(s):
+    posts(s)  # (first: the walks give each shop with a clerk a door to go in by)
     walks(s)
-    posts(s)
     lanes(s)

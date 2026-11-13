@@ -999,6 +999,22 @@ def crowd_and_traffic(data, world, zones, problems):
                 problems.append(f"{label}: something solid in the way")
             if set(kinds) & {"road", "crossing", "water", "track"}:
                 problems.append(f"{label}: over {sorted(set(kinds))}")
+    # Trips begin and end at the crowd's ends: real nodes, each once, with a kind and a weight, and at least two of them.
+    ends = crowd.get("ends") or []
+    listed = set()
+    for e in ends:
+        label = f"crowd end at node {e.get('node')}"
+        if not isinstance(e.get("node"), int) or not 1 <= e["node"] <= len(nodes):
+            problems.append(f"{label}: no such node")
+        elif e["node"] in listed:
+            problems.append(f"{label}: listed twice")
+        listed.add(e.get("node"))
+        if e.get("kind") not in ("edge", "door"):
+            problems.append(f"{label}: kind {e.get('kind')!r} is not edge or door")
+        if not e.get("weight", 0) > 0:
+            problems.append(f"{label}: needs a weight above 0")
+    if len(ends) < 2:
+        problems.append(f"crowd: {len(ends)} ends, but trips need at least two")
     for post in crowd.get("posts") or []:
         if world.floor_under(post["x"], post["y"], post["z"], reach=1.0) is None or world.inside(post["x"], post["y"], post["z"]):
             problems.append(f"crowd post at {post['x']:.0f}, {post['z']:.0f}: not standing free on a floor")
@@ -1021,7 +1037,7 @@ def crowd_and_traffic(data, world, zones, problems):
             problems.append(f"lane {k + 1}: its stop line is on the crossing")
     singles = sum(1 for link in crowd.get("links") or [] if link.get("single"))
     print(f"  crowd: {len(nodes)} nodes, {len(crowd.get('links') or [])} links ({singles} single file), "
-          f"{len(crowd.get('posts') or [])} posts; {len((data.get('traffic') or {}).get('lanes') or [])} lanes")
+          f"{len(crowd.get('posts') or [])} posts, {len(ends)} ends; {len((data.get('traffic') or {}).get('lanes') or [])} lanes")
 
 
 def _rect_of(poly, grow):

@@ -1,4 +1,5 @@
--- The Tokyo crowd's maths: the same crowd from the same seed, waiting at the kerb and crossing in a
+-- The Tokyo crowd's maths: the same crowd from the same seed, trips between the map's ends (by the shortest way,
+-- never turning back, out of the world for a few seconds at the end of each), waiting at the kerb and crossing in a
 -- wave, stepping through a player who pins a walker, whose body blocks a sight line, and when a
 -- player's name tag hides among them.
 
@@ -29,6 +30,58 @@ local function lane(width: number)
 		posts = {},
 	}
 end
+
+-- A district: four ends (two edges and two doors), a crossing between two of the pavements, a spur that is nobody's
+-- end, and a pavement across the top.
+local TRIPS = {
+	nodes = {
+		{ x = 0, y = 0, z = 0, kind = "walk" },
+		{ x = 40, y = 0, z = 0, kind = "kerb" },
+		{ x = 40, y = 0, z = -25, kind = "kerb" },
+		{ x = 0, y = 0, z = -25, kind = "walk" },
+		{ x = 40, y = 0, z = 30, kind = "walk" },
+		{ x = 80, y = 0, z = 0, kind = "walk" },
+		{ x = 80, y = 0, z = -25, kind = "walk" },
+	},
+	links = {
+		{ a = 1, b = 2, kind = "walk", width = 2.5 },
+		{ a = 2, b = 3, kind = "crossing", width = 5 },
+		{ a = 3, b = 4, kind = "walk", width = 2.5 },
+		{ a = 2, b = 5, kind = "walk", width = 2.5 }, -- a spur: nobody's end
+		{ a = 2, b = 6, kind = "walk", width = 2.5 },
+		{ a = 3, b = 7, kind = "walk", width = 2.5 },
+		{ a = 6, b = 7, kind = "walk", width = 2.5 },
+	},
+	ends = {
+		{ node = 1, kind = "edge", weight = 1 },
+		{ node = 4, kind = "door", weight = 1 },
+		{ node = 6, kind = "edge", weight = 1 },
+		{ node = 7, kind = "door", weight = 1 },
+	},
+	posts = {},
+}
+
+-- Two crossings that meet at a corner, with a way round on the pavement between their far ends.
+local TRIPS_CORNER = {
+	nodes = {
+		{ x = 0, y = 0, z = 0, kind = "walk" },
+		{ x = 30, y = 0, z = 0, kind = "kerb" },
+		{ x = 30, y = 0, z = -25, kind = "kerb" },
+		{ x = 55, y = 0, z = -25, kind = "kerb" },
+		{ x = 30, y = 0, z = -55, kind = "walk" },
+		{ x = 85, y = 0, z = -25, kind = "walk" },
+	},
+	links = {
+		{ a = 1, b = 2, kind = "walk", width = 2.5 },
+		{ a = 2, b = 3, kind = "crossing", width = 5 },
+		{ a = 3, b = 4, kind = "crossing", width = 5 },
+		{ a = 3, b = 5, kind = "walk", width = 2.5 },
+		{ a = 4, b = 6, kind = "walk", width = 2.5 },
+		{ a = 5, b = 6, kind = "walk", width = 2.5 },
+	},
+	ends = { { node = 1, kind = "edge", weight = 1 }, { node = 6, kind = "edge", weight = 1 } },
+	posts = {},
+}
 
 local DT = 1 / 30
 
@@ -102,6 +155,182 @@ return function(t)
 			end
 			expect(same).to.equal(false)
 		end)
+		it("takes every dead end for an end of a trip when none are given", function()
+			local graph = CrowdSim.graph(GRAPH)
+			expect(#graph.ends).to.equal(2)
+			expect(graph.ends[1].node).to.equal(1)
+			expect(graph.ends[2].node).to.equal(4)
+			-- (and every node when there is no dead end: a ring)
+			local ring = CrowdSim.graph({
+				nodes = { { x = 0, z = 0 }, { x = 10, z = 0 }, { x = 10, z = 10 } },
+				links = { { a = 1, b = 2, width = 2 }, { a = 2, b = 3, width = 2 }, { a = 3, b = 1, width = 2 } },
+			})
+			expect(#ring.ends).to.equal(3)
+		end)
+		it("seeds walkers part-way along trips, never on a crossing", function()
+			local sim = CrowdSim.new(TRIPS, Random.new(5))
+			sim:seed(60)
+			local midway = 0
+			for _, walker in ipairs(sim.walkers) do
+				if not walker.standing then
+					expect(sim.graph.links[walker.link].kind).to.equal("walk")
+					expect(walker.dest ~= nil and walker.dest ~= walker.origin).to.equal(true)
+					expect(walker.shown).to.equal(true)
+					if walker.s > 1 and walker.s < sim.graph.links[walker.link].length - 1 then
+						midway += 1
+					end
+				end
+			end
+			expect(midway > 40).to.equal(true)
+		end)
+		it("sends each trip from one end to another, never turning back on the way", function()
+			local sim = CrowdSim.new(TRIPS, Random.new(8))
+			sim:seed(20)
+			local ends = {}
+			for _, entry in ipairs(sim.graph.ends) do
+				ends[entry.node] = true
+			end
+			local was, arrived, visited = {}, 0, {}
+			for frame = 1, math.round(300 / DT) do
+				local t = (frame * DT) % 50
+				sim:step(DT, { clearFor = math.max(0, 15 - t), cars = t >= 15, players = {} })
+				for index, walker in ipairs(sim.walkers) do
+					if not walker.standing then
+						local before = was[index]
+						local away = (walker.away or 0) > 0
+						if away and (before == nil or not before.away) then
+							-- A trip ended: on the end it was sent to, and no other.
+							expect(sim.graph.ends[walker.dest].node).to.equal(walker.to)
+							visited[walker.to] = true
+							arrived += 1
+						end
+						-- No turning round on the way, at a dead end or anywhere else (it comes back in at an end).
+						if before and not before.away and not away and walker.from ~= before.from then
+							expect(walker.to ~= before.from).to.equal(true)
+						end
+						was[index] = { link = walker.link, from = walker.from, away = away }
+					end
+				end
+			end
+			expect(arrived > 30).to.equal(true)
+			expect(sim.trips >= arrived).to.equal(true)
+			-- Every end was somebody's.
+			for node in pairs(ends) do
+				expect(visited[node]).to.equal(true)
+			end
+		end)
+		it(
+			"takes the pavement rather than step from one crossing onto another, and the crossings when that is all there is",
+			function()
+				-- 1 -> 6 can go over both crossings (140 studs of walking and waiting) or round on the pavement (163): the
+				-- second is taken, because stepping off one crossing onto another costs more than the way round.
+				local sim = CrowdSim.new(TRIPS_CORNER, Random.new(1))
+				local node, arrived, route = 1, "walk", {}
+				while node ~= 6 and #route < 10 do
+					local index = sim:_hop(2, node, arrived)
+					expect(index ~= nil).to.equal(true)
+					local link = sim.graph.links[index]
+					table.insert(route, link.kind)
+					node = if link.a == node then link.b else link.a
+					arrived = link.kind
+				end
+				expect(node).to.equal(6)
+				expect(table.concat(route, ",")).to.equal("walk,crossing,walk,walk")
+				-- Without the way round, the two crossings are the way.
+				local bare = table.clone(TRIPS_CORNER)
+				bare.links = { table.unpack(TRIPS_CORNER.links, 1, 5) }
+				local only = CrowdSim.new(bare, Random.new(1))
+				local kinds = {}
+				node, arrived = 1, "walk"
+				while node ~= 6 and #kinds < 10 do
+					local link = only.graph.links[only:_hop(2, node, arrived)]
+					table.insert(kinds, link.kind)
+					node = if link.a == node then link.b else link.a
+					arrived = link.kind
+				end
+				expect(table.concat(kinds, ",")).to.equal("walk,crossing,crossing,walk")
+			end
+		)
+		it(
+			"is out of the world for a few seconds at the end of a trip, then back at another end with somewhere new to go",
+			function()
+				local sim = CrowdSim.new(TRIPS, Random.new(4))
+				sim:seed(8)
+				local walker = sim.walkers[1]
+				local dest = walker.dest
+				local frames = 0
+				while (walker.away or 0) <= 0 and frames < 60 * 30 do
+					sim:step(DT, WALK)
+					frames += 1
+				end
+				expect((walker.away or 0) > 0).to.equal(true)
+				expect(walker.shown).to.equal(false)
+				expect(walker.away >= CrowdSim.AWAY[1] and walker.away <= CrowdSim.AWAY[2]).to.equal(true)
+				local spent = 0
+				while (walker.away or 0) > 0 and spent < 12 * 30 do
+					sim:step(DT, WALK)
+					spent += 1
+					if (walker.away or 0) > 0 then
+						expect(walker.shown).to.equal(false)
+					end
+				end
+				expect(spent / 30 >= CrowdSim.AWAY[1] - 0.1).to.equal(true)
+				expect(spent / 30 <= CrowdSim.AWAY[2] + 0.1).to.equal(true)
+				-- Back in, at an end that is not the one it went to, on its way somewhere else.
+				expect(walker.shown).to.equal(true)
+				expect(walker.origin ~= dest).to.equal(true)
+				expect(walker.dest ~= walker.origin).to.equal(true)
+				expect(sim.graph.ends[walker.origin].node).to.equal(walker.from)
+			end
+		)
+		it("keeps a walker between trips out of the world when the crowd is shown again", function()
+			local sim = CrowdSim.new(TRIPS, Random.new(4))
+			sim:seed(8)
+			local walker = sim.walkers[1]
+			while (walker.away or 0) <= 0 do
+				sim:step(DT, WALK)
+			end
+			sim:setShown(false)
+			expect(walker.shown).to.equal(false)
+			sim:setShown(true)
+			expect(walker.shown).to.equal(false)
+			while (walker.away or 0) > 0 do
+				sim:step(DT, WALK)
+			end
+			expect(walker.shown).to.equal(true)
+		end)
+		it("chooses the ends by weight, never the one a trip starts from", function()
+			local sim = CrowdSim.new({
+				nodes = { { x = 0, z = 0 }, { x = 20, z = 0 }, { x = 40, z = 0 }, { x = 60, z = 0 } },
+				links = { { a = 1, b = 2, width = 2 }, { a = 2, b = 3, width = 2 }, { a = 3, b = 4, width = 2 } },
+				ends = {
+					{ node = 1, kind = "door", weight = 8 },
+					{ node = 3, kind = "edge", weight = 1 },
+					{ node = 4, kind = "edge", weight = 1 },
+				},
+			}, Random.new(9))
+			local counts = { 0, 0, 0 }
+			for _ = 1, 3000 do
+				counts[sim:_destination(nil)] += 1
+			end
+			expect(counts[1] > counts[2] * 4).to.equal(true)
+			expect(counts[1] > 2000).to.equal(true)
+			for _ = 1, 200 do
+				expect(sim:_destination(1) ~= 1).to.equal(true)
+			end
+		end)
+		it("is the same crowd from the same seed, trips and all", function()
+			local a, b = CrowdSim.new(TRIPS, Random.new(31)), CrowdSim.new(TRIPS, Random.new(31))
+			a:seed(25)
+			b:seed(25)
+			run(a, 120, WALK)
+			run(b, 120, WALK)
+			expect(a.trips).to.equal(b.trips)
+			for index, walker in ipairs(a.walkers) do
+				expect(walker.x).to.be.near(b.walkers[index].x, 1e-9)
+				expect(walker.dest).to.equal(b.walkers[index].dest)
+			end
+		end)
 		it("waits at the kerb while the cars have their light", function()
 			local sim = crowd(3, 14)
 			local waited = 0
@@ -150,7 +379,10 @@ return function(t)
 					{ a = 3, b = 4, kind = "crossing", width = 5 },
 					{ a = 3, b = 5, kind = "walk", width = 2.5 },
 					{ a = 4, b = 6, kind = "walk", width = 2.5 },
+					-- (the long way round on the pavement, from the far side of one crossing to the other)
+					{ a = 5, b = 6, kind = "walk", width = 2.5 },
 				},
+				ends = { { node = 1, kind = "edge", weight = 1 }, { node = 6, kind = "edge", weight = 1 } },
 				posts = {},
 			}
 			local sim = CrowdSim.new(corner, Random.new(21))

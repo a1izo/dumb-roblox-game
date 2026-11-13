@@ -45,7 +45,7 @@ class LayoutMixin:
         self.anchors = {}
         # Tokyo's scramble: where its crowd walks (nodes, links between them, posts where some stand)
         # and where its cars drive (lanes, each with the distance along it to its stop line).
-        self.crowd = {"nodes": [], "links": [], "posts": []}
+        self.crowd = {"nodes": [], "links": [], "posts": [], "ends": []}
         self.traffic = {"lanes": []}
         self.bounds = None
 
@@ -109,6 +109,15 @@ class LayoutMixin:
         if single:
             link["single"] = True
         self.crowd["links"].append(link)
+
+    def crowd_end(self, node, kind, weight, name=None):
+        """A node where trips begin and end: the crowd's walkers go from one end to another and leave the world there
+        for a few seconds (kind "edge": round the corner or past a barricade at the map's edge; "door": into a shop or
+        the station); weight: how often it is chosen against the others."""
+        item = {"node": node, "kind": kind, "weight": weight}
+        if name:
+            item["name"] = name
+        self.crowd["ends"].append(item)
 
     def crowd_post(self, x, z, rot, y=0.0, kind="clerk"):
         """Where one of the crowd stands all match (behind a counter, at the police box's door)."""

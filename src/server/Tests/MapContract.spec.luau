@@ -81,6 +81,42 @@ return function(t)
 			expect(text).to.contain("lane 1 has no stop line along it")
 			expect(text).to.contain("lane 1 wants a car the game does not have: Tank")
 		end)
+		it("reports crowd ends that are not nodes, listed twice, of no kind, weightless or too few", function()
+			local nodes = { { x = 0, y = 0, z = 0, kind = "walk" }, { x = 30, y = 0, z = 0, kind = "walk" } }
+			local links = { { a = 1, b = 2, kind = "walk", width = 2 } }
+			local text = table.concat(
+				MapContract.validateCrowd({
+					crowd = {
+						nodes = nodes,
+						links = links,
+						posts = {},
+						ends = {
+							{ node = 1, kind = "door", weight = 1 },
+							{ node = 1, kind = "wall", weight = 0 },
+							{ node = 9, kind = "edge", weight = 1 },
+						},
+					},
+				}),
+				"; "
+			)
+			expect(text).to.contain("crowd end 2 lists node 1 twice")
+			expect(text).to.contain("crowd end 2 has an unknown kind wall")
+			expect(text).to.contain("crowd end 2 needs a weight")
+			expect(text).to.contain("crowd end 3 is not a node")
+			local few = MapContract.validateCrowd({
+				crowd = { nodes = nodes, links = links, posts = {}, ends = { { node = 1, kind = "edge", weight = 1 } } },
+			})
+			expect(table.concat(few, "; ")).to.contain("fewer than two ends")
+			local fine = MapContract.validateCrowd({
+				crowd = {
+					nodes = nodes,
+					links = links,
+					posts = {},
+					ends = { { node = 1, kind = "edge", weight = 1 }, { node = 2, kind = "door", weight = 2 } },
+				},
+			})
+			expect(table.concat(fine, "; ")).to.equal("")
+		end)
 		it("reports a crowd node on top of a station", function()
 			local layout = {
 				stations = { { name = "Desk", x = 3, z = 0 } },

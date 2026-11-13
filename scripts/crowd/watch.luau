@@ -100,7 +100,7 @@ return function(root: Instance, seed: number?, seconds: number?): string
 	sim:seed(50)
 	local walkers = sim.walkers
 	local N = #walkers
-	local prev, startPos, pathLen, hist = {}, {}, {}, {}
+	local prev, pathLen, hist = {}, {}, {}
 	for i = 1, N do
 		local w = walkers[i]
 		if not w.standing then
@@ -114,12 +114,12 @@ return function(root: Instance, seed: number?, seconds: number?): string
 				z = w.z,
 				wait = w.wait,
 			}
-			startPos[i] = { x = w.x, z = w.z }
 			pathLen[i] = 0
 			hist[i] = {}
 		end
 	end
 	local entered, uturns, revisits = 0, 0, 0
+	local awaySteps = 0
 	local pauses, deadPauses, lingerTime = 0, 0, 0
 	local near12, near06, pairSteps, closest, closestAt = 0, 0, 0, math.huge, ""
 	local maxDV, bigDV, maxDH, bigDH = 0, 0, 0, 0
@@ -135,12 +135,26 @@ return function(root: Instance, seed: number?, seconds: number?): string
 		sim:step(DT, { clearFor = Cycle.clearFor(0, t), cars = phase == "CARS" or phase == "AMBER", players = {} })
 		for i = 1, N do
 			local w = walkers[i]
-			if w.standing or not w.shown then
+			if w.standing then
+				continue
+			end
+			if not w.shown then
+				-- (out of the world between trips: it comes back somewhere else, so its baseline moves with it)
+				if prev[i] then
+					prev[i].x, prev[i].z, prev[i].speed, prev[i].wait = w.x, w.z, 0, 0
+					prev[i].link, prev[i].from, prev[i].to = w.link, w.from, w.to
+					awaySteps += 1
+				end
 				continue
 			end
 			local p = prev[i]
 			if not p then
 				continue
+			end
+			if p.speed == 0 and p.x ~= w.x and math.abs(w.x - p.x) + math.abs(w.z - p.z) > 3 then
+				-- (back in the world at an end: not a step)
+				p.x, p.z, p.link, p.from, p.to = w.x, w.z, w.link, w.from, w.to
+				p.heading = w.heading
 			end
 			local dv = math.abs(w.speed - p.speed) / DT
 			maxDV = math.max(maxDV, dv)
@@ -252,12 +266,11 @@ return function(root: Instance, seed: number?, seconds: number?): string
 		end
 	end
 	local span = frames * DT
-	local live, net, walked = 0, 0, 0
+	local live, walked = 0, 0
 	for i = 1, N do
 		local w = walkers[i]
 		if not w.standing and prev[i] then
 			live += 1
-			net += math.sqrt((w.x - startPos[i].x) ^ 2 + (w.z - startPos[i].z) ^ 2)
 			walked += pathLen[i]
 		end
 	end
@@ -271,11 +284,12 @@ return function(root: Instance, seed: number?, seconds: number?): string
 		100 * lingerTime / (span * live)
 	)
 	say(
-		"path walked %.0f studs, net from start %.0f (straightness %.2f); mean moving speed %.1f",
+		"path walked %.0f studs; mean moving speed %.1f; trips finished %d (%.1f per walker a minute); out of the world %.0f%% of walker time",
 		walked,
-		net,
-		net / math.max(1, walked),
-		speedSum / math.max(1, speedN)
+		speedSum / math.max(1, speedN),
+		sim.trips,
+		sim.trips / math.max(1, live) / (span / 60),
+		100 * awaySteps / math.max(1, frames * live)
 	)
 	say(
 		"pair samples closer than 1.2 studs: %d (%.3f%%), than 0.6: %d; closest %.2f at %s",

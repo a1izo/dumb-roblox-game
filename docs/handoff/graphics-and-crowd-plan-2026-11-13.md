@@ -399,3 +399,4 @@ How the crowd was watched, with the numbers before the rework, is in `docs/agent
 | Phase | State | What the owner has to do |
 |---|---|---|
 | C1 graph | Done: no double links, 21 of the 27 narrow walks widened, the 6 left marked `single`; `check_v2` and `MapContract` hold both rules. Tokyo export changed only the layout data: Maps v47 kept. | Script sync only |
+| C2 trips | Done: 20 ends in the layout (hall doors, edge barricades, three shop doors, the arcade's far end, the dead ends), a route table per end, trips with 2 to 8 s out of the world at each end, walkers seeded part-way along trips. No more U-turns or dead-end lingering. The placeless pause stays for C5. Tokyo export: layout data only, Maps v47 kept. | Script sync only |
