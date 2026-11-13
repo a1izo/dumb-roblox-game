@@ -59,3 +59,4 @@
 - [Tokyo crowd 2026-11](tokyo-crowd-2026-11.md) - the crowd rework (plan Part B, C1 to C6): how it behaved before, what each phase changed, where the pieces are, how to measure it
 - [Spec bundle via rbxasset](spec-bundle-via-rbxasset.md) - run the repo's pure specs and the crowd watcher in a running Studio with no write into the shared place: rojo build into Studio's content folder, GetObjects rbxasset
 - [Animation plan 2026-11](animation-plan-2026-11.md) - the owner's 2026-11-13 verdict (only RoleMuerto, maybe RoleDiavolo, are good), why those two work, and the plan: tools first, a pilot, then base scenes, deaths, wins, emotes and movement
+- [Vertex colours vs SurfaceAppearance](vertex-colours-ignored-under-surfaceappearance.md) - Roblox ignores vertex colours under a SurfaceAppearance (seen 2026-11-14): no baked mesh shading for textured materials; run-time EditableMesh tests need no upload

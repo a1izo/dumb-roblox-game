@@ -171,6 +171,22 @@ look good and add this on top. If it has not, do this instead of it.
 **Done when.** In the HQ room at Quality 3, with every lamp's contribution gone to blocks, corners and the floor
 under furniture are still visibly darker than open floor, and at Quality 21 nothing reads as a painted stripe.
 
+**Result 2026-11-14: step 1 failed, so the phase stops here.** Seen in a play test at Quality 21 with the real camera,
+on three 8 by 8 stud meshes built at run time with `EditableMesh` (the same size and grid the plan asks for) and lit
+alike: a MeshPart with a plain colour and a vertex colour that falls from 4% at the foot to full at 6 studs shows the
+gradient clearly; the same mesh with a SurfaceAppearance (a map's own concrete maps) shows NO gradient, and is
+identical to the control without vertex colours. Roblox ignores vertex colours under a SurfaceAppearance, and all 114
+textured map materials have one. Only the 85 flat materials (glass, neon, light fittings, a few paints) have none, and
+those are mostly the ones that should not be shaded. Not tried: an FBX through the importer (a test file with the same
+three walls was built in Blender and its colours read back, but never imported); the renderer path is the same, so it
+is not expected to differ.
+What was built and then taken out: a baker (`maps/bakeshade.py`, rays over each vertex's hemisphere against a BVH
+of the venue and its props, grid cuts along creases, a byte colour layer) that ran on Agency in 8 to 35 seconds. It
+worked, but only a vertex-colour route could use it. The fallback the plan names is the strips of phase 4 (done for
+furniture and wall feet in HQ). Extending them to the ceiling creases and the inside corners of walls is the way
+left; it changes meshes, so it needs the owner's yes and a re-import. Step 7 needs nothing: `props.py` already bakes
+occlusion into every prop's colour map (`ao`, 0.6 by default).
+
 ## Phase 10: glossy floors and a sheen on painted walls
 
 **Why.** The corridor picture is half reflection. The office picture's wall catches the lamp. Today most surfaces

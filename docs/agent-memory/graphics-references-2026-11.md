@@ -22,3 +22,11 @@ for interiors.
 over them (fill within the spec, no skin bloom, no heavy blur, a light only in a visible source). The owner did not
 say which crowd behaviour looks wrong: the plan's list is from reading the code, so watch the crowd and ask if
 unsure. Related: [[lighting-rework-2026-11]], [[lighting-sweep-2026-11]].
+
+**2026-11-14, phase 8:** the three finished rooms and their cameras are in the plan (HQ's sergeant's office from its door,
+the University's science hall looking north along the lab's glass, Tokyo's crossing and arcade mouth). Before pictures at
+Quality 21 and 3 are `docs/handoff/refs/before-<hq|uni|tokyo>-q<21|3>.jpg`, with the gap lists in the plan. A map's world
+position is its local studs plus 3000 in z (a camera without it looks at the lobby). Studio was minimised, which draws no
+3D: park it off screen ([[lighting-sweep-2026-11]]) and put it back minimised (flags 2, showCmd 2) afterwards. The quality
+level can be set from the Client datamodel (`settings().Rendering.QualityLevel = Enum.QualityLevel.Level03`) mid-test.
+Phase 9 is closed: [[vertex-colours-ignored-under-surfaceappearance]].
