@@ -20,7 +20,11 @@ local Looks = require(script.Parent.Looks)
 
 local Crowd = {}
 
-Crowd.WALKERS = 50 -- walking (over the whole district since 2026-10-27, so more of them); the map's posts add those who stand
+-- Walking (over the whole district since 2026-10-27; 90 since 2026-11-13, measured: with 50 two or more were within 5 studs of
+-- the scramble's middle for 39% of the walk lamp, with 90 for 55%; the sim costs 0.34 ms a step and the snapshot is 588 of
+-- the 900 bytes an unreliable event carries; the client draws at most the device's cap of the nearest, however many). The
+-- map's posts add those who stand.
+Crowd.WALKERS = 90
 Crowd.DRAWN_BEHIND = 0.3 -- seconds late the clients draw the crowd (they glide between snapshots)
 Crowd.LEVEL = 4 -- studs above or below a walker's feet a player's still count as beside it
 

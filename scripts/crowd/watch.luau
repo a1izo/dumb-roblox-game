@@ -97,7 +97,7 @@ return function(root: Instance, seed: number?, seconds: number?): string
 
 	-- The run --------------------------------------------------------------------------------------
 	local sim = CrowdSim.new(data, Random.new(SEED))
-	sim:seed(50)
+	sim:seed(90) -- (Crowd.WALKERS)
 	local walkers = sim.walkers
 	local N = #walkers
 	local prev, pathLen, hist = {}, {}, {}

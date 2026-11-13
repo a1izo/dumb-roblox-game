@@ -114,6 +114,7 @@ local SPOTTED = {
 }
 
 local DT = 1 / 30
+local WALKERS = 90 -- the crowd's size (Crowd.WALKERS, on the server)
 
 local function distance(a, b): number
 	return math.sqrt((a.x - b.x) ^ 2 + (a.z - b.z) ^ 2)
@@ -766,6 +767,82 @@ return function(t)
 			env.players = { { x = 60 + CrowdSim.CLERK_NOTICE + 3, z = 10 } }
 			run(sim, 20, env)
 			expect(clerk.heading).to.be.near(home, 0.02)
+		end)
+		it("finds which trips pass the hub, and picks them more often", function()
+			-- TRIPS: the crossing (2 - 3) is the hub. 1 -> 4 goes over it; 6 -> 7 is a walk 40 studs from it.
+			local sim = CrowdSim.new(TRIPS, Random.new(2))
+			expect(sim.graph.hub ~= nil).to.equal(true)
+			expect(sim.graph.hub.x).to.be.near(40, 1e-6)
+			expect(sim.graph.through[1][2]).to.equal(true) -- end 1 (node 1) to end 2 (node 4)
+			expect(sim.graph.through[3][4]).to.equal(nil) -- end 3 (node 6) to end 4 (node 7)
+			-- From end 3, the far end 4 is on a walk that does not pass it; end 1 is over the crossing.
+			local counts = { 0, 0, 0, 0 }
+			for _ = 1, 3000 do
+				counts[sim:_destination(3, true)] += 1
+			end
+			expect(counts[3]).to.equal(0)
+			expect(counts[1] > counts[4] * 2).to.equal(true)
+			-- Without asking for the bias, the weights alone decide.
+			local plain = { 0, 0, 0, 0 }
+			for _ = 1, 3000 do
+				plain[sim:_destination(3)] += 1
+			end
+			expect(math.abs(plain[1] - plain[4]) < 300).to.equal(true)
+			-- A map without a crossing has no hub and no bias.
+			expect(CrowdSim.new(lane(7), Random.new(1)).graph.hub).to.equal(nil)
+		end)
+		it("keeps the scramble thick enough to vanish into, over five minutes with the real lamps", function()
+			local sim = CrowdSim.new(TOKYO.crowd, Random.new(1))
+			sim:seed(WALKERS)
+			local hub = sim.graph.hub
+			local walkSamples, walkThick, close, samples = 0, 0, 0, 0
+			for frame = 1, math.round(300 / DT) do
+				-- (The cycle: 11 s of walk, 4 of blink, 32 of cars, 3 of amber.)
+				local t = (frame * DT) % 50
+				sim:step(DT, { clearFor = if t < 11 then 15 - t else 0, cars = t >= 15, players = {} })
+				if frame % 3 == 0 then
+					local near = 0
+					for i = 1, #sim.walkers do
+						local a = sim.walkers[i]
+						if a.shown and not a.standing then
+							if (a.x - hub.x) ^ 2 + (a.z - hub.z) ^ 2 <= 25 then
+								near += 1
+							end
+							for j = i + 1, #sim.walkers do
+								local b = sim.walkers[j]
+								if b.shown and not b.standing then
+									samples += 1
+									if distance(a, b) < 1.2 then
+										close += 1
+									end
+								end
+							end
+						end
+					end
+					if t < 11 then
+						walkSamples += 1
+						if near >= 2 then
+							walkThick += 1
+						end
+					end
+				end
+			end
+			-- Two or more within 5 studs of the middle for most of the walk lamp, nobody stuck, few on top of each other.
+			expect(walkThick / walkSamples > 0.45).to.equal(true)
+			expect(sim.trips > 300).to.equal(true)
+			expect(close / samples < 0.002).to.equal(true)
+		end)
+		it("sends the whole crowd in one snapshot, well inside what an unreliable event carries", function()
+			local MapSync = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("MapSync"))
+			local sim = CrowdSim.new(TOKYO.crowd, Random.new(1))
+			sim:seed(WALKERS)
+			local cars = {}
+			for index = 1, 4 do
+				cars[index] = { x = 0, z = 0, heading = 0, shown = true, braking = false, kind = 0, honks = 0 }
+			end
+			local size = buffer.len(MapSync.encode(1, sim.walkers, cars))
+			expect(#sim.walkers >= WALKERS).to.equal(true)
+			expect(size < MapSync.LIMIT - 200).to.equal(true)
 		end)
 		it("waits at the kerb while the cars have their light", function()
 			local sim = crowd(3, 14)

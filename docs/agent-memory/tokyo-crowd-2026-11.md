@@ -124,6 +124,28 @@ Checked in a play test with the OLD server sim (the place's scripts are older th
 `World/Crowd` (it is in the bundle, `Client/World/Crowd`; parent a clone beside the game's own and `init()` it) drew 40
 bodies, gave the standing ones life, never more than one idle at a time, and logged no error.
 
+**C6 (density and the client).** `Crowd.WALKERS` is 90 (was 50). Measured on the real sim and layout with the real lamp
+cycle (`scripts/crowd/watch.luau`, seed 1, 300 s): walk lamp with two or more walkers within 5 studs of the scramble's
+middle 39% of the time with 50 walkers, 43% with 70, 55% with 90 (the plan's "most"); sim cost 0.17 ms a step with 50,
+0.34 ms with 90 (a 60 Hz frame is 16.7); snapshot 348, 468 and 588 bytes of the 900 an unreliable event carries; pairs
+closer than 1.2 studs 0.05%. Weighting trips towards the hub (`CrowdSim.THROUGH`, 6: a trip whose way passes within 30
+studs of where the crossings meet is six times as likely) helps only a little by itself (27% to 39% of the walk lamp,
+and it saturates: only the two diagonal crossings pass through a 5-stud disc at the middle), so the walker count is what
+makes the difference. The 40-body cap on desktops (18 phones, 26 tablets, 32 consoles) used to be exceeded: everyone
+within 40 studs of the camera was drawn whatever the cap, so a thicker scramble would have cost phones more; `choose` now
+takes the nearest up to the cap, however many are close. A phone's frame rate was NOT measured (none to hand: the
+off-screen Studio reads 15 fps); with the cap strict the client's cost no longer grows with the crowd, only the 6-byte-a-
+body snapshot and `choose`'s sort do. Only 45 body looks exist (`LCrowd`, Body01..45), so with 90 walkers a look repeats
+in the crowd; more looks would be a Looks.luau job. Client: a body within 20 studs of the camera looks for the ground
+every frame (`GROUND_NEAR`; 0.4 s otherwise), and a body that enters or leaves the drawn set fades over 0.3 s
+(`FADE`; `LocalTransparencyModifier` on its parts, the face decal's `Transparency`; a walker that goes through a door
+fades where it stood). Play-tested through a copy of `World/Crowd` against the old server's snapshots: 41 bodies at most
+at once on the 40 cap (the 41st fading out), mid-fade bodies at every step from 0.06 to 0.94, no client error.
+Not seen: the plan's done-test (two lamp cycles at the scramble in a play test) with the new sim and client together;
+that needs the owner's Rojo sync of the scripts (the place's are older than main). Run it first thing after the sync:
+groups at the kerbs in rows facing the road, crossing together and thinning out, people of different speeds passing,
+people leaving at the map's edges and others arriving, clerks turning to you within 8 studs.
+
 **How to iterate.** The Tokyo scene builds in 7 s in Blender with no export: a scratch script that does
 `module.build(mesher.Scene("Tokyo", prefix="Map", chunk=128.0))` and prints `scene.crowd` shows a change to
 `crowd.py` at once (the full `run_maps.py -- Tokyo --export` takes 100 s). Everything Luau goes through the bundle in

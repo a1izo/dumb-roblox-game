@@ -22,6 +22,10 @@ CrowdSim.KINDS = {
 	{ name = "hurry", share = 0.25, pace = { 13, 15 } },
 }
 CrowdSim.PACE = { 7, 15 }
+-- The hub (where the crossings meet: Tokyo's scramble) is where the crowd is meant to be thick enough to disappear in:
+-- a trip whose way passes within HUB_REACH studs of it is THROUGH times as likely to be picked.
+CrowdSim.THROUGH = 6
+CrowdSim.HUB_REACH = 30
 CrowdSim.ACCEL = 20 -- studs a second, every second, a walker speeds up by at most...
 CrowdSim.DECEL = 30 -- ...and slows down by (it brakes for a stop at a gentler BRAKING)
 CrowdSim.TURN = 2 * math.pi -- radians a second: a walker turns no faster than a full turn a second
@@ -210,6 +214,8 @@ function CrowdSim.graph(data)
 		ends = {},
 		endWeight = 0,
 		hops = {},
+		hub = nil, -- where the crossings meet (nil for a map without any)
+		through = {}, -- through[a][b]: a trip from end a to end b passes the hub
 		spots = {}, -- where a walker may stop on the way, each: x, z, heading, kind, link, s (along the link), taken (by whom)
 		spotsAt = {}, -- per link
 	}
@@ -277,6 +283,51 @@ function CrowdSim.graph(data)
 	for index, entry in ipairs(graph.ends) do
 		graph.hops[index] = routesTo(graph, entry.node)
 	end
+	-- The hub: the middle of the crossings' middles (nil for a map without any).
+	local hx, hz, count = 0, 0, 0
+	for _, link in ipairs(links) do
+		if link.kind == "crossing" then
+			hx += (nodes[link.a].x + nodes[link.b].x) / 2
+			hz += (nodes[link.a].z + nodes[link.b].z) / 2
+			count += 1
+		end
+	end
+	if count > 0 then
+		graph.hub = { x = hx / count, z = hz / count }
+		-- through[a][b]: the way from end a to end b passes within HUB_REACH of it.
+		for a, from in ipairs(graph.ends) do
+			graph.through[a] = {}
+			for b, to in ipairs(graph.ends) do
+				if a ~= b then
+					local routes = graph.hops[b]
+					local node, index = from.node, routes.first[from.node]
+					local steps = 0
+					while index and steps <= #links do
+						steps += 1
+						local link = links[index]
+						local p, q = nodes[link.a], nodes[link.b]
+						local ex, ez = q.x - p.x, q.z - p.z
+						local along = math.clamp(
+							((graph.hub.x - p.x) * ex + (graph.hub.z - p.z) * ez) / math.max(ex * ex + ez * ez, 1e-9),
+							0,
+							1
+						)
+						local gap =
+							math.sqrt((p.x + ex * along - graph.hub.x) ^ 2 + (p.z + ez * along - graph.hub.z) ^ 2)
+						if gap < CrowdSim.HUB_REACH then
+							graph.through[a][b] = true
+							break
+						end
+						node = if link.a == node then link.b else link.a
+						if node == to.node then
+							break
+						end
+						index = routes.nextOf[index * 2 + (if link.a == node then 1 else 0)]
+					end
+				end
+			end
+		end
+	end
 	return graph
 end
 
@@ -297,14 +348,25 @@ local function other(link, node: number): number
 	return if link.a == node then link.b else link.a
 end
 
--- The end (an index into graph.ends) a new trip goes to: chosen by weight, never `from` (the end it starts at).
-function CrowdSim:_destination(from: number?): number
-	local ends = self.graph.ends
-	local total = self.graph.endWeight - (if from then ends[from].weight else 0)
-	local roll = self.rng:NextNumber() * total
-	for index, entry in ipairs(ends) do
+-- The end (an index into graph.ends) a new trip goes to: chosen by weight, never `from` (the end it starts at); with
+-- `through`, trips whose way passes the hub are THROUGH times as likely.
+function CrowdSim:_destination(from: number?, through: boolean?): number
+	local graph = self.graph
+	local ends = graph.ends
+	local passes = if through and from then graph.through[from] else nil
+	local function weight(index: number): number
+		return ends[index].weight * (if passes and passes[index] then CrowdSim.THROUGH else 1)
+	end
+	local total = 0
+	for index = 1, #ends do
 		if index ~= from then
-			roll -= entry.weight
+			total += weight(index)
+		end
+	end
+	local roll = self.rng:NextNumber() * total
+	for index = 1, #ends do
+		if index ~= from then
+			roll -= weight(index)
 			if roll < 0 then
 				return index
 			end
@@ -358,7 +420,7 @@ end
 function CrowdSim:_depart(walker, origin: number): boolean
 	local graph = self.graph
 	for _ = 1, 8 do
-		local dest = self:_destination(origin)
+		local dest = self:_destination(origin, true)
 		local first = self:_first(dest, graph.ends[origin].node)
 		if first then
 			walker.origin, walker.dest = origin, dest
@@ -767,7 +829,7 @@ function CrowdSim:_seedOnTrip(walker): boolean
 	local graph = self.graph
 	for _ = 1, 20 do
 		local origin = self:_destination(nil)
-		local dest = self:_destination(origin)
+		local dest = self:_destination(origin, true)
 		local target = graph.ends[dest].node
 		local node = graph.ends[origin].node
 		local index = self:_first(dest, node)

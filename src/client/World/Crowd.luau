@@ -7,8 +7,10 @@
 -- as soon as it would trap them: pressed against it for a moment, or walking into it and getting nowhere (the
 -- user's call of 2026-10-27: their collision kept, nobody stuck in them). Nobody in the crowd has a name tag,
 -- and nothing here can be clicked, touched or seen by a ray.
--- Fewer are drawn on slower devices: everyone within NEAR studs, then the nearest up to the device's
--- cap; bodies far off are posed less often, and cast no shadow on phones. A body that stands still (at the kerb, at a
+-- Fewer are drawn on slower devices: the nearest up to the device's cap (however thick the crowd about the camera is);
+-- bodies far off are posed less often, and cast no shadow on phones. A body that comes into the drawn set or leaves it
+-- fades over FADE seconds (a walker that goes through a door fades where it stood), and one within GROUND_NEAR studs of
+-- the camera looks for the ground under it every frame, so it steps up and down a kerb on time. A body that stands still (at the kerb, at a
 -- shop sign, a clerk at a counter) is alive: it breathes, shifts its weight and glances (Anim/Life, the DGLife
 -- attribute), and now and then, up to the waist, checks a watch or looks round (an idle clip of its own, picked by its
 -- number, one every few seconds while it stands).
@@ -34,10 +36,11 @@ local Crowd = {}
 local BEHIND = 0.3 -- seconds late the crowd is drawn (the server tests sight lines against the same)
 local KEEP = 8 -- snapshots kept
 local STALE = 3 -- seconds without a snapshot before the street is cleared
-local NEAR = 40 -- studs from the camera within which everyone is drawn
 local CAP = { phone = 18, tablet = 26, console = 32, desktop = 40 } -- bodies drawn at most beyond that
 local FAR = 70 -- studs from the camera beyond which a body is posed every third frame
 local GROUND_EVERY = 0.4 -- seconds between looks at the ground under a body
+local GROUND_NEAR = 20 -- studs from the camera within which it is every frame
+local FADE = 0.3 -- seconds a body takes to come into the drawn set, or to leave it
 local INSIDE = 0.8 -- studs: a body this deep in this player lets them through (nobody gets stuck)
 local PRESSED = 2.4 -- studs between the two: pressed against it...
 local PRESSED_TIME = 0.35 -- ...this long, it lets this player through
@@ -66,6 +69,10 @@ type Rig = {
 	ground: number,
 	groundAt: number,
 	far: boolean,
+	parts: { BasePart }, -- everything that is drawn of it, faded as one
+	decals: { { decal: Decal, base: number } },
+	alpha: number, -- 0 not there, 1 wholly there
+	leaving: boolean, -- fading out
 	stillFor: number, -- seconds it has stood still
 	lively: boolean, -- it has its life (DGLife)
 	idleAt: number, -- seconds standing, when its next idle starts
@@ -152,6 +159,14 @@ local function build(number: number, standing: boolean): Rig?
 		torso.CanCollide = true
 	end
 	model.PrimaryPart = root
+	local parts, decals = {}, {}
+	for _, item in ipairs(model:GetDescendants()) do
+		if item:IsA("BasePart") then
+			table.insert(parts, item)
+		elseif item:IsA("Decal") then
+			table.insert(decals, { decal = item, base = item.Transparency })
+		end
+	end
 	return {
 		model = model,
 		root = root,
@@ -164,6 +179,10 @@ local function build(number: number, standing: boolean): Rig?
 		ground = Venues.MAP.Y,
 		groundAt = 0,
 		far = false,
+		parts = parts,
+		decals = decals,
+		alpha = 0,
+		leaving = false,
 		stillFor = 0,
 		lively = false,
 		idleAt = IDLE_AFTER[1] + (number % 5) * 0.6,
@@ -178,7 +197,15 @@ local function setDrawn(rig: Rig, drawn: boolean)
 	end
 	rig.drawn = drawn
 	rig.model.Parent = if drawn then folder else nil
+	rig.leaving = false
 	if drawn then
+		rig.alpha = 0
+		for _, part in ipairs(rig.parts) do
+			part.LocalTransparencyModifier = 1
+		end
+		for _, item in ipairs(rig.decals) do
+			item.decal.Transparency = 1
+		end
 		LocomotionController.adopt(rig.model)
 		rig.far = false
 		-- (one with an umbrella holds it up in its right fist, the walk going on beneath: Looks seats the grip there)
@@ -198,8 +225,8 @@ local function setPassing(rig: Rig, passing: boolean)
 end
 
 -- The ground under a spot of the street (the map's solid parts), looked up now and then.
-local function groundUnder(rig: Rig, x: number, z: number, now: number): number
-	if now - rig.groundAt >= GROUND_EVERY then
+local function groundUnder(rig: Rig, x: number, z: number, now: number, near: boolean): number
+	if near or now - rig.groundAt >= GROUND_EVERY then
 		rig.groundAt = now + math.random() * 0.1
 		local current = map()
 		local scene = if current then current:FindFirstChild("Scene") else nil
@@ -220,28 +247,18 @@ local function choose(walkers: { MapSync.Walker }, camera: Vector3)
 	if Governor.low("crowd") then
 		most = math.floor(most / 2)
 	end
-	local rest = {}
-	local count = 0
+	local list = {}
 	for number, walker in ipairs(walkers) do
 		if walker.shown then
 			local distance = (Vector3.new(walker.x, 0, walker.z) + Venues.MAP - camera).Magnitude
-			if distance <= NEAR then
-				wanted[number] = true
-				count += 1
-			else
-				table.insert(rest, { number = number, distance = distance })
-			end
+			table.insert(list, { number = number, distance = distance })
 		end
 	end
-	table.sort(rest, function(a, b)
+	table.sort(list, function(a, b)
 		return a.distance < b.distance
 	end)
-	for _, entry in ipairs(rest) do
-		if count >= most then
-			break
-		end
-		wanted[entry.number] = true
-		count += 1
+	for index = 1, math.min(most, #list) do
+		wanted[list[index].number] = true
 	end
 end
 
@@ -274,6 +291,34 @@ end
 
 local moved: { BasePart } = {}
 local places: { CFrame } = {}
+
+-- A body that is no longer wanted fades where it stands, then leaves.
+local function retire(rig: Rig)
+	if rig.drawn then
+		rig.leaving = true
+	end
+end
+
+-- One step of a fade: in while it is wanted, out once it is retired.
+local function fade(rig: Rig, dt: number)
+	if not rig.drawn then
+		return
+	end
+	local goal = if rig.leaving then 0 else 1
+	if rig.alpha == goal then
+		return
+	end
+	rig.alpha = if goal == 1 then math.min(1, rig.alpha + dt / FADE) else math.max(0, rig.alpha - dt / FADE)
+	for _, part in ipairs(rig.parts) do
+		part.LocalTransparencyModifier = 1 - rig.alpha
+	end
+	for _, item in ipairs(rig.decals) do
+		item.decal.Transparency = item.base + (1 - item.base) * (1 - rig.alpha)
+	end
+	if rig.alpha == 0 and rig.leaving then
+		setDrawn(rig, false)
+	end
+end
 
 -- A body that stands still gets its life and now and then a small idle; one that moves loses them. Whatever goes
 -- wrong here (a clip missing, a body not yet bound) must never stop the crowd being drawn, so it is all protected.
@@ -354,7 +399,7 @@ local function draw(dt: number)
 		local rig = rigs[number]
 		if not walker.shown or not wanted[number] then
 			if rig then
-				setDrawn(rig, false)
+				retire(rig)
 			end
 			continue
 		end
@@ -382,10 +427,12 @@ local function draw(dt: number)
 			speed = stride / math.max(b.time - a.time, 0.05)
 		end
 		local at = Vector3.new(x + Venues.MAP.X, 0, z + Venues.MAP.Z)
-		local ground = groundUnder(known, at.X, at.Z, clock)
+		local fromEye = (at - eye).Magnitude
+		local ground = groundUnder(known, at.X, at.Z, clock, fromEye < GROUND_NEAR)
+		known.leaving = false
 		setDrawn(known, true)
 		LocomotionController.setSpeed(known.model, if walker.standing then 0 else speed)
-		liven(number, known, speed, walker.standing, dt, (at - eye).Magnitude < IDLE_NEAR)
+		liven(number, known, speed, walker.standing, dt, fromEye < IDLE_NEAR)
 		-- Stepping through someone, already inside this player, or about to trap them: no bump.
 		local gap = if own ~= nil and own:IsA("BasePart")
 			then (Vector3.new(own.Position.X, 0, own.Position.Z) - at).Magnitude
@@ -406,7 +453,7 @@ local function draw(dt: number)
 			end
 		end
 		setPassing(known, walker.passing or gap < INSIDE or known.yielding)
-		local far = (at - eye).Magnitude > FAR
+		local far = fromEye > FAR
 		if far ~= known.far then
 			known.far = far
 			PoseController.setEvery(known.model, if far then 3 else 1)
@@ -423,6 +470,9 @@ local function draw(dt: number)
 	end
 	if #moved > 0 then
 		workspace:BulkMoveTo(moved, places, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+	for _, rig in pairs(rigs) do
+		fade(rig, dt)
 	end
 end
 
