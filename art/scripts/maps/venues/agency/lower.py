@@ -144,8 +144,12 @@ def interview(s, x0, x1, table):
     s.prop("Chair", tx - 3.3, tz, -90)
     s.prop("Chair", tx + 3.3, tz, 90)
     # (the room's only light: one bare lamp low over the table, the corners left dark)
+    # (it casts shadows: the table, the chairs and the cuffs throw theirs across the floor and the walls fall dark. Seen in
+    # a Studio play test at full quality, 2026-11-13: a point light with shadows is not dimmed to nothing like a spot
+    # near a ceiling, it is hung 5 studs under it, and without them the white floor blew out. The game gives shadows to
+    # the nearest few lamps built to cast them, LightingController.)
     kit.pendant(s, tx, C, tz, drop=5.6, shade="BlackMetal", color=fit.LAMP, range_=15, brightness=1.6, wide=1.0,
-                point=True)
+                point=True, shadows=True)
     s.box("BlackMetal", (x1 - 1.2, 11.6, -73.8), (0.8, 0.6, 1.2), 45)
     s.box("NeonRed", (x1 - 1.6, 11.6, -73.4), (0.12, 0.12, 0.05), 45)
 

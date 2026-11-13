@@ -24,3 +24,10 @@ and the arcade's pendants. One or two a room, never two within 20 studs. Never a
 **How to apply:** a new fitting that should cast shadows hangs >= 1.5 under its ceiling face. Measured on this machine:
 the nearest 10 shadow lamps held 60 fps in HQ's bullpen at QL21 (the presets only ever key 4 to 6, Low graphics 2).
 Related: [[lighting-rework-2026-11]], [[studio-frame-rate-measure]].
+
+Point lights too (2026-11-13, later): HQ's two interview-room pendants (a point light 5 studs under the ceiling, range 15)
+are built to cast shadows (`kit.pendant(..., point=True, shadows=True)`). A shadowed point light was NOT dark: alone in the
+room it threw the table's, the chairs' and the cuffs' shadows across the floor and the walls fell dark, and the room's
+white floor, blown out by the same lamp without shadows, stopped being white. No gain is needed for them (SceneBuilder
+tags only the spot pools). The two lamps are 15 studs apart, inside the 20-stud rule's spirit only because each is in its
+own room.
