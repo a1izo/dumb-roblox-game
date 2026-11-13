@@ -3,8 +3,13 @@
 -- wave, stepping through a player who pins a walker, whose body blocks a sight line, and when a
 -- player's name tag hides among them.
 
-local Mechanics = script.Parent.Parent:WaitForChild("Maps"):WaitForChild("Mechanics")
+local Maps = script.Parent.Parent:WaitForChild("Maps")
+local Mechanics = Maps:WaitForChild("Mechanics")
 local CrowdSim = require(Mechanics:WaitForChild("TokyoDistrict"):WaitForChild("CrowdSim"))
+-- Tokyo's generated layout, with its crowd's walks (the place keeps it under Scenes; a test bundle may hold it apart).
+local TOKYO = require(
+	Maps:FindFirstChild("TokyoLayout") or Maps:WaitForChild("Scenes"):WaitForChild("Tokyo"):WaitForChild("Layout")
+)
 
 -- Two walks either side of a road, a zebra between their kerbs, a clerk at a post.
 local GRAPH = {
@@ -83,7 +88,41 @@ local TRIPS_CORNER = {
 	posts = {},
 }
 
+-- Two pavements joined by a narrow single-file stretch (the middle walk): 1 - 2 - 3 - 4.
+local NARROW = {
+	nodes = {
+		{ x = 0, y = 0, z = 0, kind = "walk" },
+		{ x = 30, y = 0, z = 0, kind = "walk" },
+		{ x = 50, y = 0, z = 0, kind = "walk" },
+		{ x = 80, y = 0, z = 0, kind = "walk" },
+	},
+	links = {
+		{ a = 1, b = 2, kind = "walk", width = 3 },
+		{ a = 2, b = 3, kind = "walk", width = 1, single = true },
+		{ a = 3, b = 4, kind = "walk", width = 3 },
+	},
+	ends = { { node = 1, kind = "edge", weight = 1 }, { node = 4, kind = "edge", weight = 1 } },
+	posts = {},
+}
+
 local DT = 1 / 30
+
+local function distance(a, b): number
+	return math.sqrt((a.x - b.x) ^ 2 + (a.z - b.z) ^ 2)
+end
+
+-- Puts a walker on `link`, leaving node `from`, `s` studs along it and `lateral` to its left, bound for end `dest`.
+local function put(sim, walker, link: number, from: number, s: number, dest: number, lateral: number?)
+	walker.dest = dest
+	walker.origin = if dest == 1 then 2 else 1
+	sim:_enter(walker, link, from)
+	walker.s = s
+	walker.lateral = lateral or walker.side
+	walker.side = walker.lateral
+	walker.pace, walker.speed, walker.wait, walker.linger = 12, 0, 0, 0
+	walker.shown, walker.away = true, 0
+	sim:_place(walker)
+end
 
 local function crowd(seed: number, count: number)
 	local sim = CrowdSim.new(GRAPH, Random.new(seed))
@@ -330,6 +369,188 @@ return function(t)
 				expect(walker.x).to.be.near(b.walkers[index].x, 1e-9)
 				expect(walker.dest).to.equal(b.walkers[index].dest)
 			end
+		end)
+		it(
+			"holds a faster walker back behind a slower one on a narrow walk, and sends it round on a wide one",
+			function()
+				-- Narrow (too narrow for two): the faster one stays behind and matches the pace ahead.
+				local narrow = CrowdSim.new(lane(1.4), Random.new(3))
+				narrow:seed(2)
+				local slow, fast = narrow.walkers[1], narrow.walkers[2]
+				put(narrow, slow, 1, 1, 14, 2, 0.5)
+				slow.pace = 9
+				put(narrow, fast, 1, 1, 4, 2, 0.5)
+				fast.pace = 15
+				local nearest = math.huge
+				for _ = 1, math.round(5 / DT) do
+					narrow:step(DT, WALK)
+					nearest = math.min(nearest, distance(slow, fast))
+				end
+				expect(fast.s < slow.s).to.equal(true)
+				expect(nearest >= 1.5).to.equal(true)
+				expect(fast.speed <= slow.speed + 1).to.equal(true)
+				-- Wide: it steps out and passes, never closer than a shoulder's width.
+				local wide = CrowdSim.new(lane(7), Random.new(3))
+				wide:seed(2)
+				slow, fast = wide.walkers[1], wide.walkers[2]
+				put(wide, slow, 1, 1, 14, 2, 1.2)
+				slow.pace = 9
+				put(wide, fast, 1, 1, 4, 2, 1.2)
+				fast.pace = 15
+				nearest = math.huge
+				for _ = 1, math.round(4 / DT) do
+					wide:step(DT, WALK)
+					nearest = math.min(nearest, distance(slow, fast))
+				end
+				expect(fast.s > slow.s + 2).to.equal(true)
+				expect(nearest >= 1.2).to.equal(true)
+			end
+		)
+		it("does not step out to pass into someone coming the other way", function()
+			local sim = CrowdSim.new(lane(7), Random.new(3))
+			sim:seed(3)
+			local slow, fast, coming = sim.walkers[1], sim.walkers[2], sim.walkers[3]
+			put(sim, slow, 1, 1, 14, 2, 1.2)
+			slow.pace = 9
+			put(sim, fast, 1, 1, 4, 2, 1.2)
+			fast.pace = 15
+			-- Somebody walking the other way, in the lane it would pass in, 20 studs on.
+			put(sim, coming, 1, 2, 40, 1, 1.2)
+			coming.pace = 12
+			local nearest = math.huge
+			for _ = 1, math.round(1.2 / DT) do
+				sim:step(DT, WALK)
+				nearest = math.min(nearest, distance(fast, coming))
+				-- (Still behind the slow one, in the lane it started in, while the other is near.)
+				if distance(fast, coming) < 14 then
+					expect(fast.lateral > -0.3).to.equal(true)
+				end
+			end
+			expect(nearest > 1.2).to.equal(true)
+		end)
+		it("lets one way at a time into a single-file stretch, the other waiting at the end of its walk", function()
+			local sim = CrowdSim.new(NARROW, Random.new(2))
+			sim:seed(2)
+			local a, b = sim.walkers[1], sim.walkers[2]
+			-- A comes to the stretch from the west, B is already in it coming from the east.
+			put(sim, a, 1, 1, 24, 2)
+			put(sim, b, 2, 3, 6, 1)
+			local waited, nearest = false, math.huge
+			for _ = 1, math.round(6 / DT) do
+				sim:step(DT, WALK)
+				nearest = math.min(nearest, distance(a, b))
+				if a.yielding then
+					waited = true
+					-- (It does not go in while B is in there.)
+					expect(a.link).to.equal(1)
+				end
+			end
+			expect(waited).to.equal(true)
+			-- Then it did go through, and neither walked through the other.
+			expect(a.link ~= 1).to.equal(true)
+			expect(nearest >= 0.95).to.equal(true) -- (a stretch a stud wide: as far apart as two can be)
+			-- A trip that starts at one end of the stretch waits for those already in it coming the other way, and not for
+			-- those going its way.
+			local start = CrowdSim.new(NARROW, Random.new(2))
+			start:seed(2)
+			local inside, leaving = start.walkers[1], start.walkers[2]
+			put(start, inside, 2, 3, 3, 1) -- in the stretch, heading west for node 2
+			expect(start:_comingThrough(leaving, 2, 2)).to.equal(true) -- from node 2, heading east: they meet
+			expect(start:_comingThrough(leaving, 2, 3)).to.equal(false) -- from node 3, heading west: the same way
+		end)
+		it("makes a group at the kerb in rows, nobody closer than 1.6 studs to anyone standing", function()
+			local sim = CrowdSim.new(GRAPH, Random.new(6))
+			sim:seed(8)
+			for index = 1, 8 do
+				local walker = sim.walkers[index]
+				put(sim, walker, 1, 1, 6 + 2.4 * (index - 1), 2, ({ 0.7, -0.7 })[index % 2 + 1])
+				walker.pace = 13 + index % 3
+			end
+			for _ = 1, math.round(40 / DT) do
+				sim:step(DT, RED)
+			end
+			local standing, near = {}, 0
+			for index = 1, 8 do
+				local walker = sim.walkers[index]
+				expect(walker.speed < 0.1).to.equal(true)
+				table.insert(standing, walker)
+				if walker.s > 35 then
+					near += 1
+				end
+			end
+			-- Two abreast at the kerb, the rest in rows behind.
+			expect(near >= 2).to.equal(true)
+			for i = 1, #standing do
+				for j = i + 1, #standing do
+					expect(distance(standing[i], standing[j]) >= 1.6).to.equal(true)
+				end
+			end
+			-- And across when the lamp gives the time, in a wave.
+			local nearest = math.huge
+			for _ = 1, math.round(12 / DT) do
+				sim:step(DT, WALK)
+				for i = 1, #standing do
+					for j = i + 1, #standing do
+						if standing[i].shown and standing[j].shown then
+							nearest = math.min(nearest, distance(standing[i], standing[j]))
+						end
+					end
+				end
+			end
+			-- (At the corner, as the front of the group steps off and the row behind moves up, two can brush shoulders for
+			-- a frame or two; nobody is ever on top of anybody.)
+			expect(nearest >= 0.4).to.equal(true)
+		end)
+		it("keeps walkers off each other over five minutes of trips", function()
+			local sim = CrowdSim.new(TRIPS, Random.new(12))
+			sim:seed(24)
+			local close, samples = 0, 0
+			for frame = 1, math.round(300 / DT) do
+				local t = (frame * DT) % 50
+				sim:step(DT, { clearFor = math.max(0, 15 - t), cars = t >= 15, players = {} })
+				if frame % 3 == 0 then
+					for i = 1, #sim.walkers do
+						local a = sim.walkers[i]
+						for j = i + 1, #sim.walkers do
+							local b = sim.walkers[j]
+							if a.shown and b.shown and not a.standing and not b.standing then
+								samples += 1
+								if distance(a, b) < 1.2 then
+									close += 1
+								end
+							end
+						end
+					end
+				end
+			end
+			expect(sim.trips > 80).to.equal(true)
+			expect(close / samples < 0.002).to.equal(true)
+		end)
+		it("keeps Tokyo's own crowd moving and off each other through five minutes of the lamps", function()
+			local sim = CrowdSim.new(TOKYO.crowd, Random.new(1))
+			sim:seed(50)
+			local close, samples = 0, 0
+			for frame = 1, math.round(300 / DT) do
+				local t = (frame * DT) % 50
+				sim:step(DT, { clearFor = math.max(0, 15 - t), cars = t >= 15, players = {} })
+				if frame % 3 == 0 then
+					for i = 1, #sim.walkers do
+						local a = sim.walkers[i]
+						for j = i + 1, #sim.walkers do
+							local b = sim.walkers[j]
+							if a.shown and b.shown and not a.standing and not b.standing then
+								samples += 1
+								if distance(a, b) < 1.2 then
+									close += 1
+								end
+							end
+						end
+					end
+				end
+			end
+			-- Walkers keep coming and going (no gridlock), and are within a shoulder of each other very rarely.
+			expect(sim.trips > 150).to.equal(true)
+			expect(close / samples < 0.0015).to.equal(true)
 		end)
 		it("waits at the kerb while the cars have their light", function()
 			local sim = crowd(3, 14)

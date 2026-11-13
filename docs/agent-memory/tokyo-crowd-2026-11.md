@@ -48,6 +48,28 @@ revisits of a node 1179 to 7, dead-end lingering 306 stops to 0, 1.2 trips per w
 world. Overlap went UP (pairs closer than 1.2 studs 0.45% to 1.1% of samples) because trips share the same shortest
 corridors: that is C3's job.
 
+**C3 (walkers mind each other).** All in `CrowdSim`: `_grid` snapshots everyone at the start of a step (6 stud cells),
+`_social` answers three things for each walker: a speed cap (it keeps `GAP` 1.8 studs behind anyone ahead within 1.5 of
+its line and moving its way, and behind anyone standing for the lamp or a pause whatever their heading), a sideways
+target (it steers to 1.8 studs from anyone alongside, round a slower or standing walker when the walk is wide enough, to
+the right only when nobody is coming the other way within 14 studs) and who holds it back. Near a corner it looks both
+along its walk and towards where the path goes on (`_lookAhead`): at the kerb the look-ahead swings to the crossing and
+a walker standing just behind the node would otherwise fall out of view. `side` is at least 0.65 so two coming from
+opposite ends are never closer than 1.3. Single-file walks form corridors (consecutive `single` links, built in
+`CrowdSim.graph`): one direction at a time, entering waits (`yielding`) for anyone in the corridor going the other way,
+and a trip starting or seeded at an end checks too (`_comingThrough(walker, link, node)`). Arrivals and seeds check the
+spot is free (`_crowded`), and a pause is not begun where someone already stands. A walker held back for 3 s by people
+who are not themselves waiting for something squeezes by for 1.5 s (`_queued` tells a kerb queue, which waits as long
+as the lamp does, from a knot). Traps found: (1) holding back for ANY stationary walker at any heading gridlocked the
+crowd slowly (trips fell from 260 to 160 a run): the "ahead" relation must be asymmetric, so only walkers within 53 degrees
+of my heading count, plus those standing for reasons that depend on nobody (lamp, pause timer; not a yielder, or two
+yielding at both ends of a narrow walk wait for each other for ever); (2) two single-file links meeting end to end made
+both walkers yield at the node between them until corridors were modelled; (3) a first version with no deadlock fallback
+looked fine for 60 s and froze by 300. After C3 (seed 1, 300 s): pairs closer than 1.2 studs 0.033% of samples
+(1.09% after C2, 0.45% before the rework), 250 trips, 0 U-turns, kerb groups of two abreast in rows, a faster walker passes a
+slower one on a wide walk and queues behind it on a narrow one. What is left are shoulder brushes of a few frames at corners
+and at kerb nodes 2 studs apart (nodes 2 and 35). Specs: seven new ones, including a five-minute run on Tokyo's real layout.
+
 **How to iterate.** The Tokyo scene builds in 7 s in Blender with no export: a scratch script that does
 `module.build(mesher.Scene("Tokyo", prefix="Map", chunk=128.0))` and prints `scene.crowd` shows a change to
 `crowd.py` at once (the full `run_maps.py -- Tokyo --export` takes 100 s). Everything Luau goes through the bundle in
