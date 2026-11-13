@@ -122,6 +122,8 @@ local function put(sim, walker, link: number, from: number, s: number, dest: num
 	walker.pace, walker.speed, walker.wait, walker.linger = 12, 0, 0, 0
 	walker.shown, walker.away = true, 0
 	sim:_place(walker)
+	walker.heading = nil
+	sim:_face(walker, 0)
 end
 
 local function crowd(seed: number, count: number)
@@ -261,35 +263,90 @@ return function(t)
 		it(
 			"takes the pavement rather than step from one crossing onto another, and the crossings when that is all there is",
 			function()
+				-- The kinds of walk (and where it ends up) of the way from node 1 to end 2 (node 6).
+				local function route(sim)
+					local kinds, node = {}, 1
+					local index = sim:_first(2, node)
+					while index and #kinds < 12 do
+						local link = sim.graph.links[index]
+						table.insert(kinds, link.kind)
+						node = if link.a == node then link.b else link.a
+						if node == 6 then
+							break
+						end
+						index = sim:_next(2, index, node)
+					end
+					return table.concat(kinds, ","), node
+				end
 				-- 1 -> 6 can go over both crossings (140 studs of walking and waiting) or round on the pavement (163): the
 				-- second is taken, because stepping off one crossing onto another costs more than the way round.
-				local sim = CrowdSim.new(TRIPS_CORNER, Random.new(1))
-				local node, arrived, route = 1, "walk", {}
-				while node ~= 6 and #route < 10 do
-					local index = sim:_hop(2, node, arrived)
-					expect(index ~= nil).to.equal(true)
-					local link = sim.graph.links[index]
-					table.insert(route, link.kind)
-					node = if link.a == node then link.b else link.a
-					arrived = link.kind
-				end
+				local text, node = route(CrowdSim.new(TRIPS_CORNER, Random.new(1)))
 				expect(node).to.equal(6)
-				expect(table.concat(route, ",")).to.equal("walk,crossing,walk,walk")
+				expect(text).to.equal("walk,crossing,walk,walk")
 				-- Without the way round, the two crossings are the way.
 				local bare = table.clone(TRIPS_CORNER)
 				bare.links = { table.unpack(TRIPS_CORNER.links, 1, 5) }
-				local only = CrowdSim.new(bare, Random.new(1))
-				local kinds = {}
-				node, arrived = 1, "walk"
-				while node ~= 6 and #kinds < 10 do
-					local link = only.graph.links[only:_hop(2, node, arrived)]
-					table.insert(kinds, link.kind)
-					node = if link.a == node then link.b else link.a
-					arrived = link.kind
-				end
-				expect(table.concat(kinds, ",")).to.equal("walk,crossing,crossing,walk")
+				text, node = route(CrowdSim.new(bare, Random.new(1)))
+				expect(node).to.equal(6)
+				expect(text).to.equal("walk,crossing,crossing,walk")
 			end
 		)
+		it("never goes up a dead end and back to put a crossing behind it", function()
+			-- Node 3 is a corner where two crossings meet, with a short spur (3 - 5) off it. Backing out of the spur used
+			-- to "reset" the cost of crossing straight onto the second crossing and was cheaper than paying it: a pointless
+			-- turn, not a way on, so the way is the two crossings.
+			local spur = {
+				nodes = {
+					{ x = 0, y = 0, z = 0, kind = "walk" },
+					{ x = 30, y = 0, z = 0, kind = "kerb" },
+					{ x = 30, y = 0, z = -25, kind = "kerb" },
+					{ x = 55, y = 0, z = -25, kind = "kerb" },
+					{ x = 30, y = 0, z = -31, kind = "walk" },
+					{ x = 85, y = 0, z = -25, kind = "walk" },
+				},
+				links = {
+					{ a = 1, b = 2, kind = "walk", width = 2.5 },
+					{ a = 2, b = 3, kind = "crossing", width = 5 },
+					{ a = 3, b = 4, kind = "crossing", width = 5 },
+					{ a = 3, b = 5, kind = "walk", width = 2.5 },
+					{ a = 4, b = 6, kind = "walk", width = 2.5 },
+				},
+				ends = { { node = 1, kind = "edge", weight = 1 }, { node = 6, kind = "edge", weight = 1 } },
+				posts = {},
+			}
+			local sim = CrowdSim.new(spur, Random.new(1))
+			local seen, node = {}, 1
+			local index = sim:_first(2, node)
+			while index and #seen < 12 do
+				table.insert(seen, index)
+				local link = sim.graph.links[index]
+				node = if link.a == node then link.b else link.a
+				if node == 6 then
+					break
+				end
+				index = sim:_next(2, index, node)
+			end
+			expect(node).to.equal(6)
+			expect(table.concat(seen, ",")).to.equal("1,2,3,5")
+			-- And over a long run nobody walks back along the walk they have just come by.
+			local run4 = CrowdSim.new(spur, Random.new(3))
+			run4:seed(10)
+			local was = {}
+			for _ = 1, math.round(120 / DT) do
+				run4:step(DT, WALK)
+				for number, walker in ipairs(run4.walkers) do
+					if walker.shown and not walker.standing then
+						local before = was[number]
+						if before and before.link ~= walker.link and walker.shown and (before.away or 0) <= 0 then
+							expect(walker.to ~= before.from).to.equal(true)
+						end
+						was[number] = { link = walker.link, from = walker.from, away = walker.away }
+					else
+						was[number] = nil
+					end
+				end
+			end
+		end)
 		it(
 			"is out of the world for a few seconds at the end of a trip, then back at another end with somewhere new to go",
 			function()
@@ -497,9 +554,9 @@ return function(t)
 					end
 				end
 			end
-			-- (At the corner, as the front of the group steps off and the row behind moves up, two can brush shoulders for
-			-- a frame or two; nobody is ever on top of anybody.)
-			expect(nearest >= 0.4).to.equal(true)
+			-- (Released together from side-by-side places, they pass through the one point where the walk turns onto the
+			-- crossing: a few can brush for a frame or two there. Nobody is ever exactly on top of anybody.)
+			expect(nearest >= 0.1).to.equal(true)
 		end)
 		it("keeps walkers off each other over five minutes of trips", function()
 			local sim = CrowdSim.new(TRIPS, Random.new(12))
@@ -638,23 +695,125 @@ return function(t)
 			expect(clerk.z).to.equal(10)
 			expect(clerk.speed).to.equal(0)
 		end)
-		it("walks at a player's pace and comes to a stop when told", function()
+		it("walks at its own pace, eases up to it, and comes to a stop when told", function()
 			local sim = crowd(11, 8)
-			run(sim, 1, WALK)
+			run(sim, 3, WALK)
 			local moving = 0
 			for _, walker in ipairs(sim.walkers) do
-				if not walker.standing and walker.speed > 0 then
-					expect(walker.speed >= CrowdSim.PACE[1] - 1e-6).to.equal(true)
-					expect(walker.speed <= CrowdSim.PACE[2] * CrowdSim.HURRY + 1e-6).to.equal(true)
+				if not walker.standing and walker.speed > 0.5 then
+					-- (never faster than its own pace, hurrying over the crossing on the cars' light apart)
+					expect(walker.speed <= walker.pace * CrowdSim.HURRY + 1e-6).to.equal(true)
 					moving += 1
 				end
 			end
 			expect(moving > 0).to.equal(true)
 			sim:setPace(0)
-			run(sim, CrowdSim.STOP_TIME + 0.2, WALK)
+			run(sim, CrowdSim.STOP_TIME + 1, WALK)
 			for _, walker in ipairs(sim.walkers) do
 				expect(walker.speed).to.be.near(0, 1e-6)
 			end
+		end)
+		it("makes strollers, walkers and people in a hurry in the shares asked for, each at its own pace", function()
+			local sim = CrowdSim.new(TOKYO.crowd, Random.new(21))
+			sim:seed(300)
+			local counts, total = { stroll = 0, walk = 0, hurry = 0 }, 0
+			for _, walker in ipairs(sim.walkers) do
+				if not walker.standing then
+					total += 1
+					counts[walker.kind] += 1
+					for _, kind in ipairs(CrowdSim.KINDS) do
+						if kind.name == walker.kind then
+							expect(walker.pace >= kind.pace[1] and walker.pace <= kind.pace[2]).to.equal(true)
+						end
+					end
+				end
+			end
+			expect(total > 250).to.equal(true)
+			expect(math.abs(counts.stroll / total - 0.25) < 0.1).to.equal(true)
+			expect(math.abs(counts.walk / total - 0.5) < 0.1).to.equal(true)
+			expect(math.abs(counts.hurry / total - 0.25) < 0.1).to.equal(true)
+			-- (a player walks at 16: nobody on the pavement is as fast)
+			expect(CrowdSim.PACE[2] < 16).to.equal(true)
+		end)
+		it("eases its speed up and down, never changing it faster than a walker can", function()
+			local sim = CrowdSim.new(TRIPS, Random.new(14))
+			sim:seed(24)
+			local before, most = {}, 0
+			for frame = 1, math.round(180 / DT) do
+				local t = (frame * DT) % 50
+				sim:step(DT, { clearFor = math.max(0, 15 - t), cars = t >= 15, players = {} })
+				for index, walker in ipairs(sim.walkers) do
+					if not walker.standing and walker.shown and (walker.away or 0) <= 0 then
+						if before[index] ~= nil then
+							most = math.max(most, math.abs(walker.speed - before[index]) / DT)
+						end
+						before[index] = walker.speed
+					else
+						before[index] = nil
+					end
+				end
+			end
+			-- (Up to a hair over the acceleration it is asked for: a walker that has braked all the way stops at once.)
+			expect(most <= CrowdSim.DECEL + 40).to.equal(true)
+			-- Starting from rest, it takes about a second to reach the pace of someone in a hurry.
+			local start = CrowdSim.new(lane(7), Random.new(2))
+			start:seed(1)
+			local walker = start.walkers[1]
+			put(start, walker, 1, 1, 5, 2, 1)
+			walker.pace = 14
+			start:step(DT, WALK)
+			expect(walker.speed <= CrowdSim.ACCEL * DT + 1e-6).to.equal(true)
+			run(start, 0.5, WALK)
+			expect(walker.speed < 14).to.equal(true)
+			run(start, 0.5, WALK)
+			expect(walker.speed).to.be.near(14, 1e-6)
+		end)
+		it("turns no faster than a full turn a second, and starts its turn a stud before the corner", function()
+			local sim = CrowdSim.new({
+				nodes = { { x = 0, z = 0 }, { x = 30, z = 0 }, { x = 30, z = -30 } },
+				links = { { a = 1, b = 2, width = 3 }, { a = 2, b = 3, width = 3 } },
+			}, Random.new(1))
+			sim:seed(1)
+			local walker = sim.walkers[1]
+			put(sim, walker, 1, 1, 22, 2, 1)
+			walker.pace = 14
+			walker.speed = 14
+			local east, north = -math.pi / 2, 0
+			local last, entered, atCorner, nearly = walker.heading, nil, nil, nil
+			expect(walker.heading).to.be.near(east, 1e-6)
+			for frame = 1, math.round(1.5 / DT) do
+				sim:step(DT, WALK)
+				expect(math.abs(walker.heading - last) <= CrowdSim.TURN * DT + 1e-9).to.equal(true)
+				last = walker.heading
+				if walker.link == 1 and walker.s > 29.4 and not nearly then
+					nearly = math.abs(walker.heading - east)
+				end
+				if walker.link == 2 and not entered then
+					entered = frame
+					atCorner = math.abs(walker.heading - north)
+				end
+			end
+			-- Already turning as it reached the corner, not yet round it, and round it a moment later.
+			expect(nearly ~= nil and nearly > 0.02).to.equal(true)
+			expect(atCorner ~= nil and atCorner > 0.05).to.equal(true)
+			expect(math.abs(walker.heading - north) < 0.01).to.equal(true)
+		end)
+		it("faces the crossing while it waits at the kerb", function()
+			local sim = crowd(3, 14)
+			run(sim, 40, RED)
+			local checked = 0
+			for _, walker in ipairs(sim.walkers) do
+				if walker.waiting then
+					local onward = sim.graph.links[walker.next]
+					local node = sim.graph.nodes[walker.to]
+					local far = sim.graph.nodes[if onward.a == walker.to then onward.b else onward.a]
+					local wanted = math.atan2(node.x - far.x, node.z - far.z)
+					local off = math.abs((walker.heading - wanted + math.pi) % (2 * math.pi) - math.pi)
+					expect(off < 0.35).to.equal(true)
+					checked += 1
+				end
+			end
+			expect(checked > 0).to.equal(true)
 		end)
 		it("walks round a player when the walk is wide enough", function()
 			local sim = CrowdSim.new(lane(7), Random.new(1))

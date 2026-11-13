@@ -70,6 +70,27 @@ looked fine for 60 s and froze by 300. After C3 (seed 1, 300 s): pairs closer th
 slower one on a wide walk and queues behind it on a narrow one. What is left are shoulder brushes of a few frames at corners
 and at kerb nodes 2 studs apart (nodes 2 and 35). Specs: seven new ones, including a five-minute run on Tokyo's real layout.
 
+**C4 (how they move).** `CrowdSim.KINDS`: a quarter of the walkers stroll (7 to 9 studs a second), half walk (10 to 12),
+a quarter are in a hurry (13 to 15; a player walks at 16); `HURRY` on the crossing stays. Speed eases (`ACCEL` 20 up,
+`DECEL` 30 down) and a walker brakes in time: for the gap behind someone (`sqrt(2 * BRAKING * room)` plus the leader's
+own stopping distance, `BRAKING` 20) and for a stop it knows is coming (the lamp at a kerb, a narrow way taken by
+someone else). The heading is its own thing (`_face`): it turns at most `TURN` (a full turn a second), aims at the
+point it will be at one stud on (`TURN_AHEAD`, with its sideways offset so a walker on the inside of a corner does not
+swing out first) and, standing within 8 studs of a kerb whose crossing it waits for, faces the crossing. The client
+needs nothing for the feet: `LocomotionController` advances the stride by the ground the body covered (`setSpeed` gets
+the displacement between two snapshots), so any pace from 7 to 15 follows. Routes: they are now over directed walks
+(`routesTo`, `_first`, `_next`) and never go straight back along the walk just taken: the node-based version found that
+after a crossing, going up a 7-stud dead-end spur and back "reset" the crossing-after-crossing cost and was cheaper
+than paying it, so walkers made pointless U-turns (18 a five-minute run; found by the watcher, 0 after). Other fixes
+that came with it: a gap rule that allows for a leader who then brakes at its full 30 (follower braking 20 closed the
+gap to 1.1 studs), sideways steering that always honours whoever is alongside before whoever is ahead (two walkers side
+by side in a packed queue each held still for the other for ever), and a walker may stand up to 3 studs before the start
+of the walk it is about to enter so leaving a kerb does not clamp its place forward (`BEFORE`). After C4 (seed 1, 300 s,
+the C2 layout): 231 trips, pairs closer than 1.2 studs 0.040% of samples, kerb waiters facing away from the crossing
+0% (85 to 95% before), steps where a walker's speed changed by more than 60 studs/s^2: 171 (6180 before). Known: walkers
+released together from side-by-side places at a kerb pass through the single point where the walk turns onto the
+crossing and can brush for a frame or two; fixing it means changing how a turn maps sideways offsets.
+
 **How to iterate.** The Tokyo scene builds in 7 s in Blender with no export: a scratch script that does
 `module.build(mesher.Scene("Tokyo", prefix="Map", chunk=128.0))` and prints `scene.crowd` shows a change to
 `crowd.py` at once (the full `run_maps.py -- Tokyo --export` takes 100 s). Everything Luau goes through the bundle in

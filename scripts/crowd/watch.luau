@@ -143,6 +143,7 @@ return function(root: Instance, seed: number?, seconds: number?): string
 				if prev[i] then
 					prev[i].x, prev[i].z, prev[i].speed, prev[i].wait = w.x, w.z, 0, 0
 					prev[i].link, prev[i].from, prev[i].to = w.link, w.from, w.to
+					prev[i].fresh = true
 					awaySteps += 1
 				end
 				continue
@@ -169,7 +170,7 @@ return function(root: Instance, seed: number?, seconds: number?): string
 			pathLen[i] += math.sqrt((w.x - p.x) ^ 2 + (w.z - p.z) ^ 2)
 			if w.link ~= p.link or w.from ~= p.from then
 				entered += 1
-				if w.to == p.from then
+				if w.to == p.from and not p.fresh then
 					uturns += 1
 				end
 				for _, n in ipairs(hist[i]) do
