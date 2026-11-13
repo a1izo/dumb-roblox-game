@@ -80,6 +80,13 @@ def s_layout(s):
 
 L1_POOL_LIFT = 1.4
 
+# Contact darkness (contact.py; the owner's graphics plan, 2026-11-13, phase 4): soft dark under the furniture and along
+# the feet of the walls. OFF until the owner has agreed to import the venue's next FBX: it adds meshes, so the venue goes
+# up a version, and until its new import is in the place the game builds the map as a grey box. To use it: set this to
+# True, run run_maps.py -- Agency --export, import DeathsGambitMaps_Agency.fbx (the new version), then look at the
+# bullpen in a play test at full quality.
+CONTACT_DARKNESS = False
+
 
 def build(s):
     g = city.Ground(s)
@@ -93,6 +100,11 @@ def build(s):
     gameplay.build(s)
     mood.build(s)
     g.finish()
+    if CONTACT_DARKNESS:
+        from maps import contact
+
+        print(f"  contact darkness: {contact.under_props(s, P.LEVELS)} pieces of furniture, "
+              f"{contact.wall_bases(s, P.LEVELS)} walls")
     # 38F's look (approved in a play test, 2026-11-02) was partly 39F's pools shining down through the slab; since the
     # pools stop at their own floor (lightbook.stop_pools), 38F's own pools make up for it (judged in the bullpen).
     for li in s.lights:
