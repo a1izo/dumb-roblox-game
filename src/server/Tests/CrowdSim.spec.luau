@@ -105,6 +105,14 @@ local NARROW = {
 	posts = {},
 }
 
+-- One long walk with a spot beside it, halfway along: a shop sign to look up at (facing -Z).
+local SPOTTED = {
+	nodes = { { x = 0, y = 0, z = 0, kind = "walk" }, { x = 80, y = 0, z = 0, kind = "walk" } },
+	links = { { a = 1, b = 2, kind = "walk", width = 3 } },
+	spots = { { x = 40, z = 3.5, rot = 0, kind = "sign", link = 1, s = 40 } },
+	posts = {},
+}
+
 local DT = 1 / 30
 
 local function distance(a, b): number
@@ -608,6 +616,156 @@ return function(t)
 			-- Walkers keep coming and going (no gridlock), and are within a shoulder of each other very rarely.
 			expect(sim.trips > 150).to.equal(true)
 			expect(close / samples < 0.0015).to.equal(true)
+		end)
+		it(
+			"stops at a free spot it passes: steps off to it, faces it for 3 to 10 seconds, steps back and goes on",
+			function()
+				local sim = CrowdSim.new(SPOTTED, Random.new(5))
+				sim:seed(1)
+				local walker = sim.walkers[1]
+				put(sim, walker, 1, 1, 10, 2, 0.8)
+				walker.pace = 9
+				local spot = sim.graph.spots[1]
+				walker.plan, walker.planAt = spot, 40 -- (the plan _enter makes with the walker's chance)
+				local stood, facing, went, nearest = 0, nil, false, math.huge
+				for _ = 1, math.round(45 / DT) do
+					sim:step(DT, WALK)
+					if walker.visit then
+						expect(spot.taken).to.equal(walker)
+						went = true
+						if walker.visit.phase == "stand" then
+							stood += DT
+							nearest = math.min(nearest, distance(walker, spot))
+							facing = math.abs((walker.heading - spot.heading + math.pi) % (2 * math.pi) - math.pi)
+						end
+					end
+				end
+				expect(went).to.equal(true)
+				-- It stood on the spot, facing it, for the time it stands, and the spot is free again.
+				expect(nearest < 0.2).to.equal(true)
+				expect(stood >= CrowdSim.STAND[1] - 0.1 and stood <= CrowdSim.STAND[2] + 0.1).to.equal(true)
+				expect(facing ~= nil and facing < 0.15).to.equal(true)
+				expect(spot.taken).to.equal(nil)
+				expect(walker.visit).to.equal(nil)
+				-- And its trip went on to the end.
+				expect(sim.trips >= 1).to.equal(true)
+			end
+		)
+		it("lets one walker at a spot, the next going on past it", function()
+			local sim = CrowdSim.new(SPOTTED, Random.new(5))
+			sim:seed(2)
+			local first, second = sim.walkers[1], sim.walkers[2]
+			put(sim, first, 1, 1, 30, 2, 0.8)
+			put(sim, second, 1, 1, 8, 2, -0.8)
+			first.pace, second.pace = 9, 11
+			local spot = sim.graph.spots[1]
+			first.plan, first.planAt = spot, 40
+			second.plan, second.planAt = spot, 40
+			local passed, together = false, false
+			for _ = 1, math.round(20 / DT) do
+				sim:step(DT, WALK)
+				-- Never two of them at the spot at once, and the one that walks on never visits it.
+				expect(second.visit).to.equal(nil)
+				if first.visit and second.shown and distance(second, spot) < 1.5 then
+					together = true
+				end
+				if second.s > 55 and first.visit ~= nil then
+					passed = true
+				end
+			end
+			expect(passed).to.equal(true)
+			expect(together).to.equal(false)
+		end)
+		it("never stands still on a walk for no reason", function()
+			local sim = CrowdSim.new(TRIPS, Random.new(9))
+			sim:seed(24)
+			local idle, worst = {}, 0
+			for frame = 1, math.round(300 / DT) do
+				local t = (frame * DT) % 50
+				sim:step(DT, { clearFor = math.max(0, 15 - t), cars = t >= 15, players = {} })
+				for index, walker in ipairs(sim.walkers) do
+					if not walker.standing and walker.shown and (walker.away or 0) <= 0 then
+						local reason = walker.waiting
+							or walker.yielding
+							or walker.wait > 0
+							or walker.behind ~= nil
+							or walker.visit ~= nil
+							or walker.squeeze > 0
+						if walker.speed < 0.1 and not reason then
+							idle[index] = (idle[index] or 0) + DT
+							worst = math.max(worst, idle[index])
+						else
+							idle[index] = nil
+						end
+					else
+						idle[index] = nil
+					end
+				end
+			end
+			-- (A walker held back by the braking for a kerb is a moment from its reason: the waiting.)
+			expect(worst < 1.0).to.equal(true)
+		end)
+		it("uses Tokyo's own spots, one walker at each, over five minutes", function()
+			local sim = CrowdSim.new(TOKYO.crowd, Random.new(3))
+			sim:seed(50)
+			expect(#sim.graph.spots > 20).to.equal(true)
+			local visits, seen = 0, {}
+			for frame = 1, math.round(300 / DT) do
+				local t = (frame * DT) % 50
+				sim:step(DT, { clearFor = math.max(0, 15 - t), cars = t >= 15, players = {} })
+				if frame % 15 == 0 then
+					local held = 0
+					for _, walker in ipairs(sim.walkers) do
+						if walker.visit then
+							held += 1
+							expect(walker.visit.spot.taken).to.equal(walker)
+							if not seen[walker] or seen[walker] ~= walker.visit.spot then
+								seen[walker] = walker.visit.spot
+								visits += 1
+							end
+						end
+					end
+					local taken = 0
+					for _, spot in ipairs(sim.graph.spots) do
+						if spot.taken then
+							taken += 1
+							expect(spot.taken.visit.spot).to.equal(spot)
+						end
+					end
+					expect(taken).to.equal(held)
+				end
+			end
+			expect(visits >= 8).to.equal(true)
+		end)
+		it("turns a clerk towards a player who comes by, now and then, and back again", function()
+			local sim = crowd(9, 0)
+			local clerk = sim.walkers[#sim.walkers]
+			local home = clerk.heading
+			expect(home).to.be.near(math.rad(90), 1e-9)
+			-- A player four studs off, standing there for a minute: it looks, up to 40 degrees round, and looks away.
+			local env = { clearFor = 0, cars = true, players = { { x = 56, z = 14 } } }
+			local farthest, turned = 0, 0
+			for _ = 1, math.round(60 / DT) do
+				sim:step(DT, env)
+				local off = math.abs((clerk.heading - home + math.pi) % (2 * math.pi) - math.pi)
+				farthest = math.max(farthest, off)
+				if off > math.rad(10) then
+					turned += 1
+				end
+			end
+			expect(farthest <= CrowdSim.CLERK_TURN + 0.01).to.equal(true)
+			expect(farthest > math.rad(25)).to.equal(true)
+			-- (it notices, it does not stare)
+			expect(turned / math.round(60 / DT) < 0.6).to.equal(true)
+			expect(turned / math.round(60 / DT) > 0.05).to.equal(true)
+			-- With nobody near it goes back to its own way and stays there.
+			env.players = {}
+			run(sim, 6, env)
+			expect(clerk.heading).to.be.near(home, 0.02)
+			-- And a player beyond the notice does nothing.
+			env.players = { { x = 60 + CrowdSim.CLERK_NOTICE + 3, z = 10 } }
+			run(sim, 20, env)
+			expect(clerk.heading).to.be.near(home, 0.02)
 		end)
 		it("waits at the kerb while the cars have their light", function()
 			local sim = crowd(3, 14)

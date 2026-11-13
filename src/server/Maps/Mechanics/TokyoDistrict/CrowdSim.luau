@@ -4,9 +4,10 @@
 -- wait on the kerb for the walk signal and cross together when it comes, slow and step round a player in
 -- their way and, held up for PIN_TIME, walk through them (and each client lets its own player through sooner
 -- when a body would trap them: World/Crowd). At the end of its trip a walker leaves the world for a few seconds (it
--- went through a door, or off down the street) and comes back at another end with somewhere new to go. Now and then
--- one stops at the end of a walk for a moment (a shop window, a phone) before going on, as people do. A few stand at
--- posts all match (clerks).
+-- went through a door, or off down the street) and comes back at another end with somewhere new to go. On the way
+-- it may stop at a free spot beside the walk (a shop sign to look up at, a vending machine, the river's rail, an
+-- awning): it steps off to it, turns to face it, stands a few seconds and steps back on, one walker to a spot. A few
+-- stand at posts all match (clerks).
 -- Positions are in the map's own coordinates (the server adds nothing: clients add the map's origin).
 -- Everything here is deterministic for a given Random, so the specs can step it by hand.
 
@@ -31,8 +32,14 @@ CrowdSim.SIDESTEP = 3.5 -- studs a second a walker drifts across its walk (at a 
 CrowdSim.SHOULDER = 2.6 -- how far to one side a player is still minded...
 CrowdSim.SQUARELY = 2.0 -- ...and how far to one side they still bar the way (two bodies' half widths)
 CrowdSim.PIN_TIME = 1.0 -- seconds held up before a walker steps through whoever blocks it
-CrowdSim.PAUSE = 0.12 -- the share of walks a walker stops at the end of for a moment (never by a crossing)...
-CrowdSim.PAUSE_TIME = { 1.5, 4 } -- ...for this many seconds
+CrowdSim.STOP_CHANCE = { stroll = 0.2, walk = 0.1, hurry = 0 } -- the chance a walker takes a free spot on a walk it enters
+CrowdSim.STAND = { 3, 10 } -- seconds a walker stands at a spot
+-- A clerk at a post now and then turns to a player who comes within CLERK_NOTICE studs: up to CLERK_TURN radians off its
+-- own way, for LOOK seconds, then back, and not again for COOL seconds (it notices, it does not stare).
+CrowdSim.CLERK_NOTICE = 8
+CrowdSim.CLERK_TURN = math.rad(40)
+CrowdSim.LOOK = { 1.5, 4 }
+CrowdSim.COOL = { 4, 9 }
 CrowdSim.STOP_TIME = 1.5 -- seconds the whole crowd takes to come to a stop (or start again)
 CrowdSim.HURRY = 1.4 -- caught on the crossing when the cars get their light
 CrowdSim.AWAY = { 2, 8 } -- seconds a walker is out of the world at the end of a trip, before it comes back at another end
@@ -66,6 +73,7 @@ local SEP = 1.8
 local ZONE = 2.2
 local BRAKE = 5
 local BRAKING = 20 -- studs a second, every second: how hard a walker brakes to stop behind someone or at a kerb
+local VISIT_SPEED = 4.5 -- studs a second, stepping off a walk to a spot and back
 local TURN_AHEAD = 1 -- studs before the end of a walk that a walker starts turning for the next
 local ONCOMING = 14
 local MIN_SIDE = 0.65
@@ -80,10 +88,6 @@ export type Env = {
 	players: { { x: number, z: number } }, -- living players, in the map's coordinates
 	marks: { { x: number, z: number } }?, -- spots nobody walks through (the intro's cast)
 }
-
-local function farEnd(link, node: number): number
-	return if link.a == node then link.b else link.a
-end
 
 -- A min-heap of { priority, value } pairs (for the routes below).
 local function heapPush(heap, priority: number, value: number)
@@ -199,7 +203,32 @@ function CrowdSim.graph(data)
 			table.insert(b.out, #links)
 		end
 	end
-	local graph = { nodes = nodes, links = links, posts = data.posts or {}, ends = {}, endWeight = 0, hops = {} }
+	local graph = {
+		nodes = nodes,
+		links = links,
+		posts = data.posts or {},
+		ends = {},
+		endWeight = 0,
+		hops = {},
+		spots = {}, -- where a walker may stop on the way, each: x, z, heading, kind, link, s (along the link), taken (by whom)
+		spotsAt = {}, -- per link
+	}
+	for _, spot in ipairs(data.spots or {}) do
+		local link = links[spot.link]
+		if link then
+			local entry = {
+				x = spot.x,
+				z = spot.z,
+				heading = math.rad(spot.rot or 0),
+				kind = spot.kind or "sign",
+				link = spot.link,
+				s = math.clamp(spot.s or 0, 0, link.length),
+			}
+			table.insert(graph.spots, entry)
+			graph.spotsAt[spot.link] = graph.spotsAt[spot.link] or {}
+			table.insert(graph.spotsAt[spot.link], entry)
+		end
+	end
 	-- A run of single-file walks that meet end to end is one narrow way (a corridor): it takes people one way at a
 	-- time. Each such walk knows its corridor and which of its two ways is the corridor's forward.
 	local corridors = 0
@@ -310,12 +339,17 @@ function CrowdSim:_enter(walker, link: number, from: number)
 	walker.short = if onward and onward.kind == "crossing" and entry.kind ~= "crossing" then 0.5 else 0
 	walker.side = math.min(entry.half, MIN_SIDE + self.rng:NextNumber() * math.max(0, entry.half - MIN_SIDE))
 	walker.linger = 0
-	-- A moment's pause where the walk ends (a look in a window, at a phone), never on or before a crossing, and never
-	-- at the end of the trip (it goes in or off there).
-	local plain = entry.kind ~= "crossing" and onward ~= nil and onward.kind ~= "crossing"
-	if plain and self.rng:NextNumber() < CrowdSim.PAUSE then
-		local least, most = CrowdSim.PAUSE_TIME[1], CrowdSim.PAUSE_TIME[2]
-		walker.linger = least + self.rng:NextNumber() * (most - least)
+	-- Maybe a stop on this walk: the nearest free spot ahead, taken with the walker's own chance (never on a crossing).
+	walker.plan, walker.planAt = nil, nil
+	local spots = graph.spotsAt[link]
+	if spots and entry.kind == "walk" and self.rng:NextNumber() < (CrowdSim.STOP_CHANCE[walker.kind] or 0.1) then
+		local nearest = math.huge
+		for _, spot in ipairs(spots) do
+			local at = if from == entry.a then spot.s else entry.length - spot.s
+			if spot.taken == nil and at > 1 and at < nearest then
+				walker.plan, walker.planAt, nearest = spot, at, at
+			end
+		end
 	end
 end
 
@@ -333,6 +367,7 @@ function CrowdSim:_depart(walker, origin: number): boolean
 			walker.wait, walker.pinned, walker.speed = 0, 0, 0
 			walker.stuck, walker.squeeze, walker.yielding, walker.behind = 0, 0, false, nil
 			walker.heading = nil
+			walker.visit = nil
 			walker.passing, walker.waiting, walker.held = false, false, false
 			return true
 		end
@@ -365,7 +400,7 @@ function CrowdSim:_grid()
 				dz = walker.dz,
 				speed = walker.speed,
 				-- standing for the lamp or for a pause, which nobody else's moving decides: an obstacle from any side
-				fixed = walker.waiting or walker.wait > 0,
+				fixed = walker.waiting or walker.wait > 0 or walker.visit ~= nil,
 			})
 		end
 	end
@@ -612,11 +647,97 @@ function CrowdSim:_place(walker)
 	place(self, walker)
 end
 
+-- A clerk: turns to a player who comes within CLERK_NOTICE (now and then: it looks for a few seconds, then goes back to
+-- its own way and does not notice anybody for a while), by at most CLERK_TURN off the way it faces, eased like any turn.
+function CrowdSim:_clerk(walker, dt: number, players)
+	local target = walker.home
+	if walker.look > 0 then
+		walker.look -= dt
+		local nearest, nx, nz = CrowdSim.CLERK_NOTICE, nil, nil
+		for _, player in ipairs(players) do
+			local reach = math.sqrt((player.x - walker.x) ^ 2 + (player.z - walker.z) ^ 2)
+			if reach < nearest then
+				nearest, nx, nz = reach, player.x, player.z
+			end
+		end
+		if nx then
+			local toward = math.atan2(-(nx - walker.x), -(nz - walker.z))
+			local off = (toward - walker.home + math.pi) % (2 * math.pi) - math.pi
+			target = walker.home + math.clamp(off, -CrowdSim.CLERK_TURN, CrowdSim.CLERK_TURN)
+		else
+			walker.look = 0 -- (they went away)
+		end
+	else
+		walker.cool -= dt
+		if walker.cool <= 0 then
+			for _, player in ipairs(players) do
+				if (player.x - walker.x) ^ 2 + (player.z - walker.z) ^ 2 < CrowdSim.CLERK_NOTICE ^ 2 then
+					walker.look = CrowdSim.LOOK[1] + self.rng:NextNumber() * (CrowdSim.LOOK[2] - CrowdSim.LOOK[1])
+					walker.cool = walker.look
+						+ CrowdSim.COOL[1]
+						+ self.rng:NextNumber() * (CrowdSim.COOL[2] - CrowdSim.COOL[1])
+					break
+				end
+			end
+		end
+	end
+	local turn = (target - walker.heading + math.pi) % (2 * math.pi) - math.pi
+	local most = CrowdSim.TURN * 0.35 * dt
+	walker.heading = (walker.heading + math.clamp(turn, -most, most) + math.pi) % (2 * math.pi) - math.pi
+end
+
+-- A walker at a spot: off the walk to it, facing it a few seconds, and back to where it left the walk (nothing of its
+-- trip changes meanwhile). Stepping off and on at VISIT_SPEED, speed eased like any walking; turning as it goes.
+function CrowdSim:_visit(walker, dt: number)
+	local visit = walker.visit
+	local spot = visit.spot
+	local forced = nil
+	if visit.phase == "stand" then
+		walker.speed += math.clamp(-walker.speed, -CrowdSim.DECEL * dt, 0)
+		forced = spot.heading
+		visit.timer -= dt
+		if visit.timer <= 0 then
+			visit.phase = "back"
+		end
+	else
+		local goalX, goalZ = spot.x, spot.z
+		if visit.phase == "back" then
+			goalX, goalZ = visit.leftX, visit.leftZ
+		end
+		local vx, vz = goalX - walker.x, goalZ - walker.z
+		local dist = math.sqrt(vx * vx + vz * vz)
+		if dist > 1e-3 then
+			walker.dx, walker.dz = vx / dist, vz / dist
+		end
+		local want = math.min(VISIT_SPEED, 3 * dist + 0.6)
+		walker.speed += math.clamp(want - walker.speed, -CrowdSim.DECEL * dt, CrowdSim.ACCEL * dt)
+		local step = walker.speed * dt
+		if dist <= math.max(step, 0.08) then
+			walker.x, walker.z = goalX, goalZ
+			walker.speed = 0
+			if visit.phase == "to" then
+				visit.phase = "stand"
+				visit.timer = CrowdSim.STAND[1] + self.rng:NextNumber() * (CrowdSim.STAND[2] - CrowdSim.STAND[1])
+			else
+				spot.taken = nil
+				walker.visit = nil
+				place(self, walker)
+				return
+			end
+		else
+			walker.x += walker.dx * step
+			walker.z += walker.dz * step
+			forced = math.atan2(-walker.dx, -walker.dz)
+		end
+	end
+	self:_face(walker, dt, forced)
+end
+
 -- Turns a walker towards the way it is going, by at most TURN radians a second: along its walk, and from TURN_AHEAD
 -- before the end of it towards the next, so it is already turning as it reaches the corner. Waiting at the kerb, or
 -- standing close behind those who are, it faces the crossing. A body that stands still anywhere else keeps its heading.
 -- (A walker with no heading yet takes its first at once.)
-function CrowdSim:_face(walker, dt: number)
+function CrowdSim:_face(walker, dt: number, forced: number?)
 	local graph = self.graph
 	local entry = graph.links[walker.link]
 	local target = walker.heading
@@ -625,7 +746,9 @@ function CrowdSim:_face(walker, dt: number)
 		target = math.atan2(-lookX, -lookZ)
 	end
 	local onward = walker.next and graph.links[walker.next]
-	if onward and onward.kind == "crossing" and walker.speed < 1 and walker.s > entry.length - 8 then
+	if forced then
+		target = forced
+	elseif onward and onward.kind == "crossing" and walker.speed < 1 and walker.s > entry.length - 8 then
 		local node, far = graph.nodes[walker.to], graph.nodes[other(onward, walker.to)]
 		target = math.atan2(node.x - far.x, node.z - far.z)
 	end
@@ -695,6 +818,9 @@ end
 function CrowdSim:seed(count: number)
 	local graph = self.graph
 	table.clear(self.walkers)
+	for _, spot in ipairs(graph.spots) do
+		spot.taken = nil
+	end
 	self.visible = true
 	for _ = 1, if #graph.ends >= 2 then count else 0 do
 		local roll, kind = self.rng:NextNumber(), CrowdSim.KINDS[#CrowdSim.KINDS]
@@ -731,6 +857,9 @@ function CrowdSim:seed(count: number)
 			y = post.y or 0,
 			z = post.z,
 			heading = math.rad(post.rot or 0),
+			home = math.rad(post.rot or 0), -- the way it faces when nobody is by
+			look = 0, -- seconds still to spend looking at a player
+			cool = 0, -- seconds before it notices another
 			speed = 0,
 			passing = false,
 			waiting = false,
@@ -790,12 +919,37 @@ function CrowdSim:step(dt: number, env: Env)
 			end
 			continue
 		end
-		if walker.standing or not walker.shown then
+		if walker.standing then
+			if walker.shown and walker.home then
+				self:_clerk(walker, dt, env.players)
+			end
+			continue
+		end
+		if not walker.shown then
+			continue
+		end
+		if walker.visit then
+			self:_visit(walker, dt)
 			continue
 		end
 		local entry = graph.links[walker.link]
 		local want = walker.pace * self.scale
 		local goal = walker.side
+		-- A stop it planned on this walk comes due: it steps off to the spot if nobody has taken it meanwhile.
+		if walker.plan then
+			if walker.s >= walker.planAt - 0.2 and walker.s < walker.planAt + 1.5 then
+				local spot = walker.plan
+				walker.plan = nil
+				if spot.taken == nil and not walker.waiting then
+					spot.taken = walker
+					walker.visit = { spot = spot, phase = "to", leftX = walker.x, leftZ = walker.z }
+					self:_visit(walker, dt)
+					continue
+				end
+			elseif walker.s >= walker.planAt + 1.5 then
+				walker.plan = nil
+			end
+		end
 		-- The others about it: held back behind someone in its way, steering round or away from them.
 		local cap, around, blocker = self:_social(walker, entry)
 		walker.behind = blocker
@@ -827,8 +981,6 @@ function CrowdSim:step(dt: number, env: Env)
 			if remaining > -0.05 and env.clearFor < (math.max(remaining, 0) + onward.length) / walker.pace + 0.5 then
 				stopIn = math.max(remaining, 0)
 			end
-		elseif walker.linger > 0 then
-			stopIn = toEnd
 		elseif toEnd < 9 and walker.next and graph.links[walker.next].single then
 			if self:_comingThrough(walker, walker.next, walker.to) then
 				stopIn = toEnd
@@ -908,14 +1060,7 @@ function CrowdSim:step(dt: number, env: Env)
 		end
 		if walker.s >= entry.length and not walker.waiting then
 			walker.s = entry.length
-			if walker.linger > 0 and self:_crowded(walker.x, walker.z, GAP, walker) then
-				walker.linger = 0 -- (somebody is at the spot: it goes on instead)
-			end
-			if walker.linger > 0 then
-				walker.wait = walker.linger
-				walker.linger = 0
-				walker.speed = 0
-			elseif walker.wait <= 0 and walker.next == nil then
+			if walker.wait <= 0 and walker.next == nil then
 				self:_arrive(walker) -- the end of its trip
 			elseif
 				walker.wait <= 0

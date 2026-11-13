@@ -232,6 +232,23 @@ function MapContract.validateCrowd(layout: any): { string }
 		if crowd.ends ~= nil and #crowd.ends < 2 then
 			fail("the crowd has fewer than two ends: trips need somewhere to go")
 		end
+		-- Pause spots hang off a real walk of the right kind, with a place along it and a facing.
+		for index, spot in ipairs(crowd.spots or {}) do
+			local link = links[spot.link]
+			if not (isNumber(spot.x) and isNumber(spot.z) and isNumber(spot.rot) and isNumber(spot.s)) then
+				fail("crowd spot " .. index .. " needs x, z, rot and s")
+			elseif not link or not nodes[link.a] or not nodes[link.b] then
+				fail("crowd spot " .. index .. " hangs off a walk that is not there")
+			elseif link.kind ~= "walk" or link.single == true then
+				fail("crowd spot " .. index .. " hangs off a crossing or a single-file walk")
+			else
+				local a, b = nodes[link.a], nodes[link.b]
+				local length = math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
+				if spot.s < -0.05 or spot.s > length + 0.05 then
+					fail("crowd spot " .. index .. " is not along its walk")
+				end
+			end
+		end
 		for index, post in ipairs(crowd.posts or {}) do
 			if not (isNumber(post.x) and isNumber(post.z) and isNumber(post.rot)) then
 				fail("crowd post " .. index .. " needs x, z and rot")

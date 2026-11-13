@@ -8,7 +8,10 @@
 -- user's call of 2026-10-27: their collision kept, nobody stuck in them). Nobody in the crowd has a name tag,
 -- and nothing here can be clicked, touched or seen by a ray.
 -- Fewer are drawn on slower devices: everyone within NEAR studs, then the nearest up to the device's
--- cap; bodies far off are posed less often, and cast no shadow on phones.
+-- cap; bodies far off are posed less often, and cast no shadow on phones. A body that stands still (at the kerb, at a
+-- shop sign, a clerk at a counter) is alive: it breathes, shifts its weight and glances (Anim/Life, the DGLife
+-- attribute), and now and then, up to the waist, checks a watch or looks round (an idle clip of its own, picked by its
+-- number, one every few seconds while it stands).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -42,6 +45,14 @@ local BLOCKED = 2.9 -- studs: walking into it and getting nowhere this close let
 local APART = 3.6 -- studs apart again before it is in the way once more
 local LEAP = 10 -- studs between two snapshots that no walk covers: the walker was put somewhere new
 local FOLDER = "LCrowd"
+local LIFE = "DGLife" -- Anim/Life's attribute: how much of a breath, a weight and glances a body is given
+local STILL = 0.3 -- studs a second below which a body counts as standing still
+local LIVELY_AFTER = 0.5 -- seconds standing before it gets its life
+-- small idles, picked by number: the clip and how long it is (a clip that is not told how long runs for ever)
+local IDLES =
+	{ { "idleWatch", 3.2 }, { "idleLook", 3.4 }, { "idleGlance", 2.2 }, { "idleHand", 2.8 }, { "idleSleeve", 2.6 } }
+local IDLE_AFTER = { 2.5, 6 } -- seconds standing before its first idle, and the gap between them
+local IDLE_NEAR = 45 -- studs from the camera within which a standing body idles
 
 type Rig = {
 	model: Model,
@@ -55,6 +66,11 @@ type Rig = {
 	ground: number,
 	groundAt: number,
 	far: boolean,
+	stillFor: number, -- seconds it has stood still
+	lively: boolean, -- it has its life (DGLife)
+	idleAt: number, -- seconds standing, when its next idle starts
+	idles: number, -- how many it has had
+	idling: string?, -- the idle clip playing
 }
 
 local folder: Folder
@@ -148,6 +164,11 @@ local function build(number: number, standing: boolean): Rig?
 		ground = Venues.MAP.Y,
 		groundAt = 0,
 		far = false,
+		stillFor = 0,
+		lively = false,
+		idleAt = IDLE_AFTER[1] + (number % 5) * 0.6,
+		idles = 0,
+		idling = nil,
 	}
 end
 
@@ -254,7 +275,40 @@ end
 local moved: { BasePart } = {}
 local places: { CFrame } = {}
 
-local function draw()
+-- A body that stands still gets its life and now and then a small idle; one that moves loses them. Whatever goes
+-- wrong here (a clip missing, a body not yet bound) must never stop the crowd being drawn, so it is all protected.
+local function liven(number: number, rig: Rig, speed: number, standing: boolean, dt: number, nearCamera: boolean)
+	rig.stillFor = if speed < STILL or standing then rig.stillFor + dt else 0
+	local lively = rig.stillFor > LIVELY_AFTER and nearCamera
+	if lively ~= rig.lively then
+		rig.lively = lively
+		pcall(function()
+			rig.model:SetAttribute(LIFE, if lively then 1 else 0)
+		end)
+	end
+	if rig.idling and rig.stillFor == 0 then
+		local id = rig.idling
+		rig.idling = nil
+		pcall(PoseController.stop, rig.model, id, 0.25)
+	end
+	if lively and rig.stillFor >= rig.idleAt and not rig.model:FindFirstChild("LUmbrella") then
+		local id, length = IDLES[(number + rig.idles) % #IDLES + 1][1], IDLES[(number + rig.idles) % #IDLES + 1][2]
+		rig.idles += 1
+		rig.idleAt = rig.stillFor
+			+ length
+			+ IDLE_AFTER[1]
+			+ ((number * 7 + rig.idles * 3) % 10) / 10 * (IDLE_AFTER[2] - IDLE_AFTER[1])
+		local ok, handle = pcall(
+			PoseController.play,
+			rig.model,
+			id,
+			{ mask = "upper", emote = true, fadeIn = 0.35, fadeOut = 0.4, duration = length }
+		)
+		rig.idling = if ok and handle then id else nil
+	end
+end
+
+local function draw(dt: number)
 	local current = map()
 	local started = if current then current:GetAttribute("SyncEpoch") else nil
 	if not current or type(started) ~= "number" then
@@ -331,6 +385,7 @@ local function draw()
 		local ground = groundUnder(known, at.X, at.Z, clock)
 		setDrawn(known, true)
 		LocomotionController.setSpeed(known.model, if walker.standing then 0 else speed)
+		liven(number, known, speed, walker.standing, dt, (at - eye).Magnitude < IDLE_NEAR)
 		-- Stepping through someone, already inside this player, or about to trap them: no bump.
 		local gap = if own ~= nil and own:IsA("BasePart")
 			then (Vector3.new(own.Position.X, 0, own.Position.Z) - at).Magnitude

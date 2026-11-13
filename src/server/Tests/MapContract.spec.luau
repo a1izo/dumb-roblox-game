@@ -117,6 +117,43 @@ return function(t)
 			})
 			expect(table.concat(fine, "; ")).to.equal("")
 		end)
+		it(
+			"reports pause spots that hang off nothing, a crossing or a single-file walk, or lie off their walk",
+			function()
+				local nodes = {
+					{ x = 0, y = 0, z = 0, kind = "kerb" },
+					{ x = 30, y = 0, z = 0, kind = "kerb" },
+					{ x = 60, y = 0, z = 0, kind = "walk" },
+					{ x = 90, y = 0, z = 0, kind = "walk" },
+				}
+				local links = {
+					{ a = 1, b = 2, kind = "crossing", width = 4 },
+					{ a = 2, b = 3, kind = "walk", width = 2 },
+					{ a = 3, b = 4, kind = "walk", width = 1, single = true },
+				}
+				local function text(spots)
+					return table.concat(
+						MapContract.validateCrowd({
+							crowd = { nodes = nodes, links = links, posts = {}, spots = spots },
+						}),
+						"; "
+					)
+				end
+				local bad = text({
+					{ x = 10, z = 3, rot = 0, s = 10, kind = "sign", link = 1 },
+					{ x = 70, z = 3, rot = 0, s = 10, kind = "sign", link = 3 },
+					{ x = 40, z = 3, rot = 0, s = 90, kind = "sign", link = 2 },
+					{ x = 40, z = 3, rot = 0, s = 10, kind = "sign", link = 9 },
+					{ x = 40, z = 3, s = 10, kind = "sign", link = 2 },
+				})
+				expect(bad).to.contain("crowd spot 1 hangs off a crossing or a single-file walk")
+				expect(bad).to.contain("crowd spot 2 hangs off a crossing or a single-file walk")
+				expect(bad).to.contain("crowd spot 3 is not along its walk")
+				expect(bad).to.contain("crowd spot 4 hangs off a walk that is not there")
+				expect(bad).to.contain("crowd spot 5 needs x, z, rot and s")
+				expect(text({ { x = 40, z = 3, rot = 90, s = 10, kind = "sign", link = 2 } })).to.equal("")
+			end
+		)
 		it("reports a crowd node on top of a station", function()
 			local layout = {
 				stations = { { name = "Desk", x = 3, z = 0 } },

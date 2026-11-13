@@ -101,6 +101,29 @@ degrees apart) do not see each other and can stand 1 stud apart for a whole red 
 kerbs near (-5,-46), (-77,-82) and (-7,-48)). The rule that would see them (any stationary walker, from any heading)
 gridlocked the crowd when tried, see the C3 notes; a hub that holds them properly needs slots at the kerb.
 
+**C5 (pauses with a reason).** `layout.crowd.spots` (`crowd.spots(w)`): 55 places a walker may stop, each with a facing
+(`rot`, like a post's) and the walk it hangs off (`link` 1-based, `s` along it, within 4.5 studs, open ground between,
+never a crossing or a single-file walk): 36 under low hanging shop signs (the 1F signs at about 6 studs: looking up at
+them), 14 under awnings (facing the nearest street), 2 in front of vending machines, 3 at the river's rail. The station's
+route map is 38 studs past the hall doors where nothing walks, so it is left out; the scramble itself has none (its
+shops have no sign or awning at that height). The old placeless pause (`PAUSE`, `linger`) is gone. In `CrowdSim`, when a
+walker enters a walk with spots it takes the nearest free one ahead with its kind's chance (`STOP_CHANCE`: strollers
+0.2, walkers 0.1, people in a hurry never), steps off to it at 4.5 studs a second, turns to its facing, stands 3 to 10 s
+(`STAND`), steps back to where it left the walk and goes on; a spot holds one walker (`spot.taken`), so the next one
+passes by; a visitor counts as standing for a reason of its own to everyone else (`fixed`). Five minutes (seed 1): 68
+visits (13.6 a minute among 50 walkers), 3% of walker time standing at one, 256 trips. Clerks (`_clerk`): within 8
+studs of a player a clerk turns its body up to 40 degrees towards them for 1.5 to 4 s, goes back, and does not notice
+anybody for 4 to 9 s more. The Life layer has no look target and the sign of a head yaw could not be checked without a
+play test, so it is the body that turns, in the sim. Client (`World/Crowd`): a body that has stood still for half a
+second within 45 studs of the camera gets `DGLife` = 1 (breath, weight, glances: Anim/Life) and, every few seconds, a
+small upper-body idle picked by its number (`idleWatch`, `idleLook`, `idleGlance`, `idleHand`, `idleSleeve`, existing
+clips: no animation work needed); all of it is under `pcall` so a missing clip can never stop the crowd being drawn.
+Trap: a non-looping clip that is not given a `duration` is never stopped by `PoseController` (it holds its last pose
+until told), so idles piled up four deep on one body in the first play test; each idle now passes its own length.
+Checked in a play test with the OLD server sim (the place's scripts are older than main): a copy of the new
+`World/Crowd` (it is in the bundle, `Client/World/Crowd`; parent a clone beside the game's own and `init()` it) drew 40
+bodies, gave the standing ones life, never more than one idle at a time, and logged no error.
+
 **How to iterate.** The Tokyo scene builds in 7 s in Blender with no export: a scratch script that does
 `module.build(mesher.Scene("Tokyo", prefix="Map", chunk=128.0))` and prints `scene.crowd` shows a change to
 `crowd.py` at once (the full `run_maps.py -- Tokyo --export` takes 100 s). Everything Luau goes through the bundle in

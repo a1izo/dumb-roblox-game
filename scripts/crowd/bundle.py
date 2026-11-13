@@ -54,7 +54,10 @@ def project():
     tools = {"$className": "Folder"}
     for name in ("run", "watch"):
         tools[name] = {"$path": path("scripts/crowd", name + ".luau")}
-    return {"name": "DGSpecs", "tree": {"$className": "Folder", "Shared": shared, "Tools": tools,
+    # (the client's crowd drawer, for a play test through a copy parented beside the game's own: see
+    # docs/agent-memory/tokyo-crowd-2026-11.md)
+    client = {"$className": "Folder", "World": {"$className": "Folder", "Crowd": {"$path": path("src/client/World/Crowd.luau")}}}
+    return {"name": "DGSpecs", "tree": {"$className": "Folder", "Shared": shared, "Tools": tools, "Client": client,
                                         "Server": {"$className": "Folder", "Maps": maps, "Tests": tests}}}
 
 

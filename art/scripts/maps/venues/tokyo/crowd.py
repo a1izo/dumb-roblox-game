@@ -285,6 +285,7 @@ def walks(s):
     widen(w)
     single_file(w)
     ends(w)
+    spots(w)
     if w.missing:
         print("[crowd] no walk found for: " + "; ".join(w.missing))
 
@@ -558,6 +559,106 @@ def ends(w):
         s.crowd_end(node, kind, weight, name)
     print(f"[crowd] {len(chosen)} ends: " + ", ".join(
         f"{kind} {sum(1 for k, _, _ in chosen.values() if k == kind)}" for kind in ("edge", "door")))
+
+
+SPOT_REACH = 4.5  # studs: how far off a walk a pause spot may be (a walker steps off to it)
+SPOT_FRONT = (1.9, 2.6, 3.4)  # how far in front of what it looks at a walker stands: the first of these that is free
+SPOT_APART = 6.0  # studs: no two spots nearer than this (one walker at each window, each machine)
+SPOT_MOST = {"vending": 12, "sign": 36, "rail": 16, "awning": 20}  # how many of each kind
+SIGN_LOW = 8.0  # studs: a sign this low or lower is a shop front's, to be looked up at
+RAIL_EVERY = 30.0  # studs between the spots along a river promenade
+
+
+def _rot_facing(dx, dz):
+    """The heading (degrees, as a post's rot) of someone who faces along (dx, dz): rot 0 faces -Z."""
+    return math.degrees(math.atan2(-dx, -dz))
+
+
+def _closest(p, a, b):
+    """The point on the segment a-b nearest p, and how far along a-b it is."""
+    abx, abz = b[0] - a[0], b[1] - a[1]
+    length2 = abx * abx + abz * abz
+    t = 0.0 if length2 < 1e-9 else max(0.0, min(1.0, ((p[0] - a[0]) * abx + (p[1] - a[1]) * abz) / length2))
+    return (a[0] + abx * t, a[1] + abz * t), t * math.sqrt(length2)
+
+
+def spots(w):
+    """Where walkers stop on the way for a reason (layout.crowd_spot): in front of a vending machine, under a low shop
+    sign to look up at it, at the river's rail, under an awning out of the rain. Each has the heading its walker faces
+    there, and hangs off the nearest walk (within SPOT_REACH, with open ground between): the walker steps off it at
+    that place, stands, and steps back on. A spot holds one walker."""
+    s, street = w.s, w.street
+    nodes, links = s.crowd["nodes"], s.crowd["links"]
+    chosen = []
+    counts = {kind: 0 for kind in SPOT_MOST}
+
+    def hang(spot):
+        """(link number, studs along it) of the walk this spot hangs off, or None."""
+        best = None
+        for number, lk in enumerate(links, start=1):
+            if lk["kind"] != "walk" or lk.get("single"):
+                continue  # (nobody steps off a crossing, nor out of the way of the one at a time on a narrow walk)
+            a, b = nodes[lk["a"] - 1], nodes[lk["b"] - 1]
+            point, along = _closest(spot, (a["x"], a["z"]), (b["x"], b["z"]))
+            dist = math.dist(point, spot)
+            if dist <= SPOT_REACH and (best is None or dist < best[0]) and street.open(point, spot, 0.3):
+                best = (dist, number, along)
+        return None if best is None else best[1:]
+
+    def offer(kind, spot, rot):
+        if counts[kind] >= SPOT_MOST[kind] or not street.stand(spot[0], spot[1], 0.6):
+            return False
+        if any(math.dist(spot, other) < SPOT_APART for other in chosen):
+            return False
+        found = hang(spot)
+        if found is None:
+            return False
+        number, along = found
+        s.crowd_spot(round(spot[0], 2), round(spot[1], 2), round(rot, 1), kind, number, round(along, 2))
+        chosen.append(spot)
+        counts[kind] += 1
+        return True
+
+    def in_front(kind, x, z, rot):
+        """A spot in front of something at (x, z) that faces out along `rot`, looking at it."""
+        out = (-math.sin(math.radians(rot)), -math.cos(math.radians(rot)))
+        for reach in SPOT_FRONT:
+            if offer(kind, (x + out[0] * reach, z + out[1] * reach), _rot_facing(-out[0], -out[1])):
+                return
+
+    for key, x, _, z, rot, *_rest in s.props:
+        if key.startswith("Vending"):
+            in_front("vending", x, z, rot)
+    for sign in s.signs:
+        x, y, z = sign["pos"]
+        if 0 <= y < SIGN_LOW and sign["w"] <= 4.0:
+            in_front("sign", x, z, sign["rot"])
+    from maps.venues.tokyo import river as R  # (here: river imports the plan and the kit, which this file may not)
+
+    line = R.inner_river()
+    total = g2.polyline_length(line)
+    for prom, toward in ((P.PROM_N, -1.0), (P.PROM_S, 1.0)):
+        mid = (prom[0] + prom[1]) / 2
+        u = RAIL_EVERY / 2
+        while u < total - 1.0:
+            p, d = g2.point_along(line, u)
+            n = g2.normal_left(d)
+            spot = (p[0] + n[0] * mid, p[1] + n[1] * mid)
+            offer("rail", spot, _rot_facing(n[0] * toward, n[1] * toward))
+            u += RAIL_EVERY
+    for centre, size, _rot, _amount in s.covers:
+        if 8.0 <= centre[1] <= 12.0 and size[2] >= 2.9:
+            spot = (centre[0], centre[2])
+            # facing the nearest street's centre line: out at the road, the rain falling beyond the awning's edge
+            nearest = None
+            for st in P.STREETS.values():
+                for p, q in zip(st["points"], st["points"][1:]):
+                    point, _ = _closest(spot, p, q)
+                    if nearest is None or math.dist(point, spot) < nearest[0]:
+                        nearest = (math.dist(point, spot), point)
+            if nearest is not None and nearest[0] > 0.5:
+                offer("awning", spot, _rot_facing(nearest[1][0] - spot[0], nearest[1][1] - spot[1]))
+    print("[crowd] pause spots: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
 
 
 NARROW = 1.5  # studs: a walk narrower than this is single file (two walkers cannot pass or keep left on it)

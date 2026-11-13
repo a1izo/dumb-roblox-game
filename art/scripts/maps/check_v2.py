@@ -1015,6 +1015,30 @@ def crowd_and_traffic(data, world, zones, problems):
             problems.append(f"{label}: needs a weight above 0")
     if len(ends) < 2:
         problems.append(f"crowd: {len(ends)} ends, but trips need at least two")
+    # Pause spots hang off a walk (one that is not a crossing nor single file), close to it, on a floor, inside nothing.
+    spots = crowd.get("spots") or []
+    for i, sp in enumerate(spots, 1):
+        label = f"crowd spot {i} ({sp.get('kind')}) at {sp['x']:.0f}, {sp['z']:.0f}"
+        number = sp.get("link")
+        if sp.get("kind") not in ("vending", "sign", "rail", "awning"):
+            problems.append(f"{label}: unknown kind")
+        if not isinstance(number, int) or not 1 <= number <= len(crowd.get("links") or []):
+            problems.append(f"{label}: no such link")
+            continue
+        link = crowd["links"][number - 1]
+        a, b = nodes[link["a"] - 1], nodes[link["b"] - 1]
+        if link["kind"] != "walk" or link.get("single"):
+            problems.append(f"{label}: hangs off a {'single-file ' if link.get('single') else ''}{link['kind']}")
+        length = math.dist((a["x"], a["z"]), (b["x"], b["z"]))
+        if not -0.05 <= sp["s"] <= length + 0.05:
+            problems.append(f"{label}: {sp['s']:.1f} studs along a walk {length:.1f} long")
+        abx, abz = b["x"] - a["x"], b["z"] - a["z"]
+        t = max(0.0, min(1.0, ((sp["x"] - a["x"]) * abx + (sp["z"] - a["z"]) * abz) / max(abx * abx + abz * abz, 1e-9)))
+        off = math.dist((a["x"] + abx * t, a["z"] + abz * t), (sp["x"], sp["z"]))
+        if off > 4.7:
+            problems.append(f"{label}: {off:.1f} studs from its walk")
+        if world.floor_under(sp["x"], 0.0, sp["z"], reach=1.0) is None or world.inside(sp["x"], 0.0, sp["z"]):
+            problems.append(f"{label}: not standing free on a floor")
     for post in crowd.get("posts") or []:
         if world.floor_under(post["x"], post["y"], post["z"], reach=1.0) is None or world.inside(post["x"], post["y"], post["z"]):
             problems.append(f"crowd post at {post['x']:.0f}, {post['z']:.0f}: not standing free on a floor")
@@ -1037,7 +1061,7 @@ def crowd_and_traffic(data, world, zones, problems):
             problems.append(f"lane {k + 1}: its stop line is on the crossing")
     singles = sum(1 for link in crowd.get("links") or [] if link.get("single"))
     print(f"  crowd: {len(nodes)} nodes, {len(crowd.get('links') or [])} links ({singles} single file), "
-          f"{len(crowd.get('posts') or [])} posts, {len(ends)} ends; {len((data.get('traffic') or {}).get('lanes') or [])} lanes")
+          f"{len(crowd.get('posts') or [])} posts, {len(ends)} ends, {len(spots)} pause spots; {len((data.get('traffic') or {}).get('lanes') or [])} lanes")
 
 
 def _rect_of(poly, grow):
