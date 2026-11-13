@@ -63,12 +63,18 @@ def preview(s):
 # check_v2's allowances for this map.
 # Ceiling pools stop at their own floor at export (lightbook.stop_pools; seen in a play test, 2026-11-06).
 STOP_POOLS = True
+# Two lit lamps never stand within 3 studs of each other (check_v2 "lamps"): at export the weaker of a stack goes, and a
+# scene lamp beside a prop's own lamp (a lantern, a vending machine) goes (lightbook.unstack).
+UNSTACK = True
 
 CHECKS = {
     # The station's east door: its frame posts' backs lie in the plane of the hall's inside wall, both hidden, so a
     # pane check ray beside the shop window there meets one or the other by the order of the scene's faces (it
     # flipped when the far city changed, 2026-11-05). Nothing cuts the window.
     "finds_ok": ["pane Glass DarkMetal at -109,-39"],
+    # (lightbook's rules, 2026-11-13: at most this many lit lamps reach any point at eye height; the signs' coloured
+    # lights, lightbook.sign_glow, and the street lamps share it)
+    "lamp_budget": 12,
 }
 
 

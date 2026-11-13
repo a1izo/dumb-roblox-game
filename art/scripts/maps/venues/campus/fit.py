@@ -232,14 +232,15 @@ def room_pendant(s, x, ceiling, z, drop=3.5, shade="BlackMetal", color=WARM, ran
                 brightness=brightness * k_bright, wide=wide, point=True)
 
 
-def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9, rot=0.0, on=True):
-    """A frosted ceiling panel; off after hours unless on (the fitting is there either way)."""
+def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9, rot=0.0, on=True, shadows=False):
+    """A frosted ceiling panel; off after hours unless on (the fitting is there either way). shadows: its lamp may be
+    given shadows (lightbook.pool: one to a room, over what the room is for)."""
     s.box("DarkMetal", (x, ceiling - 0.08, z), (w + 0.3, 0.16, d + 0.3), rot, skip=("+y",))
     if on:
         glow = "PanelWarm" if color[0] > color[2] else "PanelCool"
         s.box(glow, (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
         lightbook.ceiling(s, (x, ceiling - lightbook.CEILING_DROP, z), color, range_ * ROOM_RANGE,
-                          brightness * ROOM_BRIGHTNESS)
+                          brightness * ROOM_BRIGHTNESS, shadows)
     else:
         s.box("DiffuserOff", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
 

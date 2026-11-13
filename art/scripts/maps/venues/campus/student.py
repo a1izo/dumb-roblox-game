@@ -138,7 +138,7 @@ def band_room(s):
     s.prop("Sofa", -110.9, 88.0, 90)
     poster(s, -110.6, 7.0, 95.0, 90, 3.0, 4.0, 2)
     fit.room_pendant(s, -119.0, C, 92.0, drop=4.0, shade="BlackMetal", range_=18, brightness=0.9, wide=1.0, scaled=False)
-    fit.panel(s, -119.0, 82.0, C, brightness=0.7, range_=16)
+    fit.panel(s, -119.0, 82.0, C, brightness=0.7, range_=16, shadows=True)
     s.sound("mapPianoFar", (-124.0, 4.0, 88.0), 34.0, 0.35)
     fit.plaque(s, -119.0, 10.2, 76.7, 0, 4.4, 0.8, "軽音楽部  BAND ROOM")
 
@@ -193,7 +193,7 @@ def cafeteria(s):
         s.sign((-72.0 + k * 12.0, 7.8, FZ1 - 0.3), 0, 10.0, 1.4, text, "GothamBold", (255, 236, 200), (60, 30, 20),
                (255, 200, 140))
     for x, z in ((-68.0, 70.0), (-52.0, 70.0), (-68.0, 86.0), (-52.0, 86.0)):
-        fit.panel(s, x, z, C, brightness=0.85, range_=20)
+        fit.panel(s, x, z, C, brightness=0.85, range_=20, shadows=(x, z) in ((-68.0, 70.0), (-52.0, 86.0)))
     # Dark oak beams across the dining room's plaster ceiling, a lamp panel in each of the four bays and a beam along
     # the serving counter (the Agency's coffer kit, which takes any room's outline).
     from maps.venues.agency.fit import coffers

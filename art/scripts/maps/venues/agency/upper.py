@@ -91,7 +91,8 @@ def forensics(s):
     s.light("point", (-51.3, Y + 8.0, -61.0), fit.COOL, 10, 0.5)
     # Cold panels over the two benches and the island; one of them tired.
     fit.ceiling_lights(s, P.ROOMS_L2["forensics"], C, "panel", [(-86.0, -66.0), (-66.0, -66.0)],
-                       spacing=12.5, flicker=[(-66.0, -66.0)], color=fit.COOL, brightness=1.15)
+                       spacing=12.5, flicker=[(-66.0, -66.0)], color=fit.COOL, brightness=1.15,
+                       shadows=[(-86.0, -66.0)])
     fit.plaque(s, -88.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "鑑識課 FORENSICS")
 
 
@@ -108,7 +109,8 @@ def lockup(s):
     station(s, "Fingerprint", "Evidence Print Kit", -20.0, -62.5, 90, prop="StationPrintKit", spare=True)
     # Bare tubes along the room, over the cages and the counter.
     fit.ceiling_lights(s, P.ROOMS_L2["lockup"], C, "tube", [(-38.0, -68.0), (-24.0, -55.0), (-38.0, -55.0)],
-                       spacing=11.0, color=lightbook.OFFICE, brightness=0.9, range_=18, flicker=[(-38.0, -55.0)])
+                       spacing=11.0, color=lightbook.OFFICE, brightness=0.9, range_=18, flicker=[(-38.0, -55.0)],
+                       shadows=[(-38.0, -68.0)])
     fit.plaque(s, -33.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "証拠品保管庫 EVIDENCE")
 
 
@@ -129,7 +131,8 @@ def server_room(s):
     station(s, "Phone", "Records Terminal", -9.0, -58.0, -90, prop="StationPhoneDesk")
     # Tubes over the terminal and the aisle by the glass; the racks light their own rows blue.
     fit.ceiling_lights(s, P.ROOMS_L2["server"], C, "tube", [(-9.0, -58.0), (14.0, -52.0)], spacing=11.5,
-                       flicker=[(-9.0, -58.0)], color=lightbook.OFFICE, brightness=0.75, range_=17)
+                       flicker=[(-9.0, -58.0)], color=lightbook.OFFICE, brightness=0.75, range_=17,
+                       shadows=[(14.0, -52.0)])
     s.sound("mapServerHum", (14.0, Y + 6.0, -66.0), 34.0, 0.3)
     fit.plaque(s, -7.0, Y + 10.6, -47.7, 180, 6.0, 0.9, "サーバー室 SERVERS")
 
@@ -152,7 +155,8 @@ def archive(s):
     # (one tube over every aisle but one: the archive read black with three)
     fit.ceiling_lights(s, P.ROOMS_L2["archive"], C, "tube",
                        [(40.0, -62.0), (48.0, -64.0), (60.0, -64.0), (82.0, -64.0), (94.0, -64.0), (40.0, -54.0)],
-                       spacing=11.5, dead=[(71.0, -64.0)], color=lightbook.OFFICE, brightness=0.9, range_=18)
+                       spacing=11.5, dead=[(71.0, -64.0)], color=lightbook.OFFICE, brightness=0.9, range_=18,
+                       shadows=[(60.0, -64.0)])
     fit.plaque(s, 40.0, Y + 10.6, -47.7, 180, 5.0, 0.9, "資料室 ARCHIVE")
 
 
@@ -185,7 +189,7 @@ def canteen(s):
     # Over the serving counter and the tables; the bar along the glass stays dark.
     fit.ceiling_lights(s, P.ROOMS_L2["canteen"], C, "panel",
                        [(70.0, -44.0), (62.0, -27.0), (84.0, -20.0), (62.0, -6.0)],
-                       spacing=12.5, dead=[(84.0, 1.0)], brightness=1.05)
+                       spacing=12.5, dead=[(84.0, 1.0)], brightness=1.05, shadows=[(62.0, -27.0)])
     fit.plaque(s, 49.7, Y + 10.6, -40.0, 90, 5.0, 0.9, "食堂 CANTEEN")
 
 
@@ -249,7 +253,8 @@ def analysts(s):
     # Over the map table and the middle of the floor (the desk lamps light the desks); the row by the west glass dead.
     fit.ceiling_lights(s, P.ANALYSTS, C, "panel",
                        [(-72.0, 20.0), (-58.0, -28.0), (-30.0, 0.0), (-44.0, 12.0), (-79.0, -14.0), (-30.0, -30.0)],
-                       spacing=14.0, dead=[(-93.0, -41.0), (-93.0, -13.0), (-93.0, 15.0)], brightness=1.35)
+                       spacing=14.0, dead=[(-93.0, -41.0), (-93.0, -13.0), (-93.0, 15.0)], brightness=1.35,
+                       shadows=[(-58.0, -28.0), (-30.0, 0.0)])
     s.sound("mapOfficeHum", (-58.0, Y + 8.0, 0.0), 60.0, 0.18)
     s.sound("mapPhoneRing", (-86.0, Y + 4.0, -12.0), 26.0, 0.1)
     s.sound("mapRainGlass", (-96.0, Y + 6.0, 0.0), 60.0, 0.22)
@@ -278,7 +283,7 @@ def training(s):
     prop(s, "Whiteboard", -40.0, 70.0, 180)
     # Dim over the seats (the pull-down screen is the room's light), off at the back.
     fit.ceiling_lights(s, P.ROOMS_L2["training"], C, "panel", [(-84.0, 57.0), (-66.0, 57.0), (-48.0, 57.0), (-36.0, 69.0)],
-                       spacing=12.0, dead=[(-24.0, 57.0)], brightness=1.45, range_=19)
+                       spacing=12.0, dead=[(-24.0, 57.0)], brightness=1.45, range_=19, shadows=[(-66.0, 57.0)])
     fit.plaque(s, -30.0, Y + 10.6, 40.3, 180, 5.0, 0.9, "研修室 TRAINING")
 
 

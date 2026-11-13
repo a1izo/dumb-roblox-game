@@ -106,7 +106,7 @@ def security(s):
     s.prop("CoatStand", -62.5, -51.5, 0)
     # Panels over the CCTV desk (a tired one) and the duty desk; the monitors light the rest.
     fit.ceiling_lights(s, P.ROOMS_L1["security"], C, "panel", [(-80.0, -66.0), (-84.0, -57.0)], spacing=14.0,
-                       flicker=[(-80.0, -66.0)], color=fit.COOL, brightness=0.85)
+                       flicker=[(-80.0, -66.0)], color=fit.COOL, brightness=0.85, shadows=[(-84.0, -57.0)])
     fit.plaque(s, -86.0, 10.6, -47.7, 180, 5.2, 0.9, "警備室 SECURITY")
 
 
@@ -132,7 +132,7 @@ def observation(s):
     s.sign((-51.0, 10.9, -48.36), 0, 3.0, 0.5, "録音中 ON AIR", "GothamBlack", (255, 90, 90), None)
     s.light("point", (-51.0, 9.8, -49.1), (255, 60, 60), 8, 0.5)
     fit.ceiling_lights(s, P.ROOMS_L1["observation"], C, "panel", [(-50.0, -62.0)], spacing=13.5, size=3.0,
-                       brightness=0.75)
+                       brightness=0.75, shadows=[(-50.0, -62.0)])
 
 
 def interview(s, x0, x1, table):
@@ -170,7 +170,7 @@ def interviews(s):
         fit.plaque(s, x, 10.4, -57.7, 180, 6.0, 0.8, text)
     # The hall: a run of downlights along it, over the bench and the doors, the last one dead.
     fit.ceiling_lights(s, (-44.0, -58.0, -8.0, -48.0), C, "downlight", [(-35.0, -53.0), (-17.0, -53.0)],
-                       spacing=9.0, dead=[(-11.0, -53.0)], brightness=0.75, range_=16)
+                       spacing=9.0, dead=[(-11.0, -53.0)], brightness=0.75, range_=16, shadows=[(-35.0, -53.0)])
     kit.wall_clock(s, -26.0, 10.6, -57.7, 180, 0.9)
 
 
@@ -193,7 +193,7 @@ def copy_room(s):
     s.sheet(8.0, 2.8, -60.0, spare=True)
     s.prop("TrashCan", 21.8, -66.0, 0)
     fit.ceiling_lights(s, P.ROOMS_L1["copy"], C, "panel", [(4.0, -68.0), (12.0, -60.0)], spacing=11.0,
-                       dead=[(16.0, -55.0)], color=fit.COOL, brightness=1.1, range_=18)
+                       dead=[(16.0, -55.0)], color=fit.COOL, brightness=1.1, range_=18, shadows=[(12.0, -60.0)])
     fit.plaque(s, 8.0, 10.6, -47.7, 180, 5.0, 0.9, "複写室 COPY ROOM")
 
 
@@ -208,7 +208,8 @@ def lockers(s):
     fit.closed_door(s, 24.3, -55.0, -90, Y, 4.0, "Steel", sign="シャワー SHOWERS")
     s.prop("CoatStand", 44.5, -51.5, 0)
     fit.ceiling_lights(s, P.ROOMS_L1["lockers"], C, "tube", [(37.0, -64.0), (37.0, -53.0)], spacing=10.0,
-                       color=lightbook.OFFICE, brightness=1.15, range_=18, flicker=[(37.0, -53.0)])
+                       color=lightbook.OFFICE, brightness=1.15, range_=18, flicker=[(37.0, -53.0)],
+                       shadows=[(37.0, -64.0)])
     fit.plaque(s, 37.0, 10.6, -47.7, 180, 5.4, 0.9, "更衣室 LOCKERS")
 
 
@@ -242,7 +243,7 @@ def break_room(s):
     s.screen((88.0, 8.6, -40.65), 0, 7.0, 4.0, "news")
     # Over the three tables and the kitchenette; the sofa's corner under the news screen stays dim.
     fit.ceiling_lights(s, P.ROOMS_L1["break"], C, "panel", [(66.0, -60.0), (80.0, -58.0), (94.0, -64.0)],
-                       spacing=12.5, dead=[(94.0, -47.0)], brightness=0.85)
+                       spacing=12.5, dead=[(94.0, -47.0)], brightness=0.85, shadows=[(80.0, -58.0)])
     s.sound("mapOfficeHum", (75.0, 8.0, -58.0), 40.0, 0.2)
     fit.plaque(s, 64.0, 10.6, -40.4, 0, 5.0, 0.9, "休憩室 BREAK ROOM")
 
@@ -267,7 +268,8 @@ def night_desk(s):
     s.prop("Plant", 53.2, 12.8, 0)
     # Over the call log desk and the desk pairs; the row by the east glass is off for the night.
     fit.ceiling_lights(s, P.ROOMS_L1["night"], C, "panel", [(88.0, -29.0), (62.0, -22.0), (62.0, 2.0)],
-                       spacing=14.0, flicker=[(62.0, 2.0)], dead=[(88.0, -8.0), (88.0, 6.0)], brightness=0.9)
+                       spacing=14.0, flicker=[(62.0, 2.0)], dead=[(88.0, -8.0), (88.0, 6.0)], brightness=0.9,
+                       shadows=[(88.0, -29.0)])
     fit.plaque(s, 49.7, 10.6, -26.0, 90, 5.0, 0.9, "夜勤 NIGHT DESK")
 
 
@@ -420,9 +422,9 @@ def bullpen(s):
     fit.ceiling_lights(s, pen, C, "panel",
                        [(-40.0, -10.0), (-86.0, 46.0), (-58.0, 0.0), (-30.0, 20.0), (-65.0, -28.0), (-65.0, 30.0)],
                        spacing=14.0, flicker=[(-58.0, 0.0)], dead=[(-93.0, -41.0), (-93.0, -12.0), (-93.0, 17.0)],
-                       brightness=1.05)
+                       brightness=1.05, shadows=[(-40.0, -10.0), (-65.0, 30.0), (-65.0, -28.0)])
     fit.ceiling_lights(s, (-76.0, 53.0, -16.0, 75.0), C, "panel", [(-20.0, 64.0), (-50.0, 64.0)], spacing=14.0,
-                       brightness=0.9)
+                       brightness=0.9, shadows=[(-50.0, 64.0)])
     s.sound("mapOfficeHum", (-58.0, 8.0, 10.0), 60.0, 0.2)
     s.sound("mapRainGlass", (-96.0, 6.0, 10.0), 60.0, 0.22)
 
@@ -435,7 +437,7 @@ def sergeant(s):
     s.prop("Bookshelf", -98.0, 63.4, -90)
     s.prop("FilingCabinet", -79.0, 72.6, 0)  # back to the glass, front to the room
     fit.ceiling_lights(s, P.ROOMS_L1["sergeant"], C, "downlight", [(-88.0, 64.0)], spacing=24.0, brightness=0.8,
-                       range_=14)
+                       range_=14, shadows=[(-88.0, 64.0)])
     fit.plaque(s, -75.7, 10.6, 60.5, -90, 4.0, 0.8, "班長室 SERGEANT")
 
 

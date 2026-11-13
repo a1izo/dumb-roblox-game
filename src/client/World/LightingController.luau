@@ -38,7 +38,9 @@ local RIFT_TAG = "LRift" -- the rift's marker in the lobby (its heights: CloudY,
 local CITY_NEAR = 220 -- studs over the landing roof from which a diver sees the city's own look
 local CREEP_BLEND = 0.6 -- the vote's slow creep, applied in small steps
 
-type Lamp = { brightness: number, range: number, shadows: boolean, canShadow: boolean }
+-- gain: how much brighter a lamp built for shadows was built (SceneBuilder's SHADOW_GAIN), for the lamp to be as bright
+-- as its neighbours while it casts them; without them it is brought back down by this.
+type Lamp = { brightness: number, range: number, shadows: boolean, canShadow: boolean, gain: number }
 
 local atmosphere: Atmosphere
 local grade: ColorCorrectionEffect
@@ -183,6 +185,9 @@ local function gatherLamps(venue: string, keyCount: number)
 							-- (the owner, 2026-11-01: "as soon as I walk in a certain radius the light just turns off";
 							-- the other maps, with no lamp given shadows, kept theirs).
 							canShadow = item.Shadows,
+							gain = if item.Shadows
+								then math.max(1, tonumber(item:GetAttribute("LShadowGain")) or 1)
+								else 1,
 						}
 					end
 					table.insert(venueLamps, item)
@@ -205,6 +210,13 @@ function LightingController.lampsNear(at: Vector3, radius: number): { Light }
 	return near
 end
 
+-- What a lamp is worth under the look: its built brightness scaled by the look, and a lamp built for shadows that is not
+-- casting them now (it is not one of the keys) taken back off its gain.
+local function brightnessOf(lamp: Lamp, key: boolean, look: LightingPresets.Look): number
+	local scale = if key then look.keyScale else look.fillScale
+	return lamp.brightness * scale / (if lamp.canShadow and not key then lamp.gain else 1)
+end
+
 -- The brightness a lamp should have right now (the flicker returns lamps to this).
 function LightingController.lampBrightness(light: Light): number?
 	local lamp = lamps[light]
@@ -212,7 +224,7 @@ function LightingController.lampBrightness(light: Light): number?
 	if not lamp or not look then
 		return nil
 	end
-	return lamp.brightness * (if keys[light] then look.keyScale else look.fillScale)
+	return brightnessOf(lamp, keys[light] == true, look)
 end
 
 local function applyLamps(look: LightingPresets.Look, time: number)
@@ -226,7 +238,7 @@ local function applyLamps(look: LightingPresets.Look, time: number)
 				light.Shadows = false
 			elseif at then
 				local key = keys[light] == true
-				local target = lamp.brightness * (if key then look.keyScale else look.fillScale)
+				local target = brightnessOf(lamp, key, look)
 				light.Range = lamp.range * look.rangeScale
 				light.Shadows = key
 				if time > 0 then
@@ -744,7 +756,7 @@ function LightingController.init()
 						local key = keys[light] == true
 						light.Shadows = key
 						TweenService:Create(light, info, {
-							Brightness = lamp.brightness * (if key then look.keyScale else look.fillScale),
+							Brightness = brightnessOf(lamp, key, look),
 						}):Play()
 					end
 				end

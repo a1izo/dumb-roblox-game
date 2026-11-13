@@ -598,6 +598,7 @@ def fascia(s, e, text, colour, y=11.4, h=3.0, u0=None, u1=None):
     e.box(s, "BlackTrim", (u0 + u1) / 2, y, 0.35, (u1 - u0, h + 0.3, 0.7), skip=("+z",))
     x, z = e.at((u0 + u1) / 2, 0.75)
     s.sign((x, y, z), e.rot, u1 - u0 - 0.6, h - 0.4, text, "GothamBlack", fg, bg, glow=bg)
+    lightbook.sign_glow(s, (x, y, z), e.rot, bg, (u1 - u0 - 0.6) * (h - 0.4))
 
 
 def shutters(s, e, style, rng):
@@ -867,6 +868,7 @@ def roof(s, poly, top, style, rng, edges, others=()):
             s.box("DarkMetal", (x, top + 11.0, z), (bw, 7.0, 0.6), front.rot)
             sx, sz = front.at(u, -1.6)
             s.sign((sx, top + 11.0, sz), front.rot, bw - 1.0, 6.0, words, "GothamBlack", fg, bg, glow=bg)
+            lightbook.sign_glow(s, (sx, top + 11.0, sz), front.rot, bg, (bw - 1.0) * 6.0)
 
 
 def sign_corner(e, others, top, reach=6.0):
@@ -905,6 +907,8 @@ def vertical_signs(s, e, top, signs, u=1.4):
             face = math.degrees(math.atan2(-e.t[0] * side, -e.t[1] * side))
             s.sign((px, y + 5.0, pz), face, 2.4, 9.6, "\n".join(words), "GothamBlack",
                    fg, bg, glow=bg if side > 0 else None)
+            if side > 0:
+                lightbook.sign_glow(s, (px, y + 5.0, pz), face, bg, 2.4 * 9.6)
         y += FLOOR_UP
 
 

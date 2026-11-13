@@ -332,6 +332,10 @@ def write_scene_v2(scene, module, source):
         from maps import lightbook
 
         print(f"  pools stopped at their floors: {lightbook.stop_pools(scene)}")
+    if getattr(module, "UNSTACK", False):  # (the venues whose lamps check_v2 holds to the "never two on one point" rule)
+        from maps import lightbook
+
+        print(f"  stacked lamps taken out: {lightbook.unstack(scene)}")
     version, digest = next_version(scene, getattr(module, "TEXTURES", ()), getattr(module, "DATA_DIR", None))
     if os.path.isdir(folder):
         shutil.rmtree(folder)

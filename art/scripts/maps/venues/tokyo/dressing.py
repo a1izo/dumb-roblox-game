@@ -162,7 +162,7 @@ def streets(s):
         x, z, rot = at_front(name, direction, frac, 1.7)
         s.prop(("VendingBlue", "VendingWhite")[k % 2], x, z, rot)
     # By the station's glass front, clear of its doors, facing the plaza.
-    s.prop("VendingBlue", -106.2, -30.0, -90)
+    s.prop("VendingBlue", -106.2, -31.4, -90)
     for name, direction, frac in (("east_s2", (0, -1), 0.5), ("flats_yw", (1, 0), 0.9)):
         x, z, rot = at_front(name, direction, frac, 0.8)
         s.prop("RecycleBins", x, z, rot)
@@ -244,7 +244,8 @@ def arcade(s):
             s.tube("BlackMetal", (p[0], y, p[1]), (p[0], y - 6.0, p[1]), 0.05, 4)
             s.cylinder("BlackMetal", (p[0], y - 6.8, p[1]), 1.1, 0.8, segments=12, radius_top=0.4)
             s.box("NeonWarm", (p[0], y - 6.85, p[1]), (1.2, 0.1, 1.2))
-            lightbook.ceiling(s, (p[0], y - 8.0, p[1]), (255, 226, 190), 24, 1.4)  # the arcade's roof and shops too
+            # (the arcade's roof and shops too; every third pendant may cast shadows: one lamp in 48 studs of street)
+            lightbook.ceiling(s, (p[0], y - 8.0, p[1]), (255, 226, 190), 24, 1.4, shadows=(k % 6 == 0))
         else:
             colour = RNG.choice(("FabricRed", "CreamTrim", "NeonPink", "Fabric"))
             s.box(colour, (p[0], y - 5.0, p[1]), (0.1, 5.0, 3.0), rot + 90)

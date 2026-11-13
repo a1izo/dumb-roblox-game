@@ -40,7 +40,7 @@ def karaoke(s):
         s.prop("Tambourine", 97.0, z + 0.8, 0, 1.0, top)
         s.prop("DrinksTray", 96.6, z - 0.2, -10, 1.0, top)
         s.prop("MicStand", 91.5, z - 1.8, -90, 1.0, UP)
-        s.light("spot", (96.0, ROOM_TOP - 3.6, z), (255, 120, 220), 16, 0.8, False, "Bottom", 70)
+        s.light("spot", (96.0, ROOM_TOP - 4.3, z), (255, 120, 220), 16, 0.8, False, "Bottom", 70)  # (the ball's spill)
 
 
 def konbini(s):

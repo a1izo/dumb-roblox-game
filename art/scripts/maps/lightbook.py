@@ -56,8 +56,9 @@ def ceiling(s, pos, color, range_, brightness, shadows=False, flicker=False, rol
     """The lamp of a fitting on a room's ceiling (panel, tube, downlit pendant, an arcade's lamps): a noir pool
     (pool below) from just under it, every map alike since 2026-11-02 (it was a round light that lit the ceiling and
     left the floor dim). range_ is kept for the older callers and no longer used. glow: (size, colour) of the
-    fitting's face when the game draws it (see mesher.Scene.light); rot turns that face with the fitting."""
-    pool(s, pos, color, brightness, flicker=flicker, glow=glow, rot=rot, role=role)
+    fitting's face when the game draws it (see mesher.Scene.light); rot turns that face with the fitting. shadows:
+    see pool."""
+    pool(s, pos, color, brightness, flicker=flicker, glow=glow, rot=rot, role=role, shadows=shadows)
 
 
 # A noir ceiling lamp (the owner's look, tuned in a Studio play test at full quality, 2026-11-02): a spot straight down
@@ -73,10 +74,26 @@ POOL_RANGE = 28
 POOL_GAIN = 8.5  # times the fitting's nominal brightness (checked through the player's own camera, 2026-11-02)
 
 
-def pool(s, pos, color, brightness, flicker=False, glow=None, rot=0.0, role=None):
+# A pool that casts shadows (the owner's graphics plan, 2026-11-13; seen in a Studio play test at full quality, HQ's
+# bullpen, a pool alone on a grey pad): a shadow-casting spot goes DARK within about a stud of the ceiling face above it
+# (dark at 0.8 below, lit at 1.1 below; HQ's lamps hang 0.5 to 0.7 under it, which is why the shadows given to them at
+# run time "turned the lamp off"), so it hangs SHADOW_DROP lower. A shadowed spot also lights its floor at about a
+# third of what the same spot does without shadows (a pool of 8 against one of 24: equal): SceneBuilder builds it
+# SHADOW_GAIN times brighter and LightingController takes that back off when the key moves on to another lamp.
+SHADOW_DROP = 1.0
+SHADOW_GAIN = 3.0
+
+
+def pool(s, pos, color, brightness, flicker=False, glow=None, rot=0.0, role=None, shadows=False):
     """The lamp of a ceiling fitting as a noir pool: a spot down, POOL_ANGLE wide, clear of its fitting. Its range
-    is cut to its own floor at export (stop_pools)."""
-    s.light("spot", pos, color, POOL_RANGE, brightness * POOL_GAIN, False, "Bottom", POOL_ANGLE, flicker, role, rot,
+    is cut to its own floor at export (stop_pools). shadows: a lamp the game may give shadows (it picks the few nearest
+    the camera as its keys, LightingController): hung SHADOW_DROP lower, and never a flickering one (its face is its own
+    part, drawn where the lamp is)."""
+    if shadows and not flicker:
+        pos = (pos[0], pos[1] - SHADOW_DROP, pos[2])
+    else:
+        shadows = False
+    s.light("spot", pos, color, POOL_RANGE, brightness * POOL_GAIN, shadows, "Bottom", POOL_ANGLE, flicker, role, rot,
             glow, True)
     s.lights[-1]["pool"] = True
 
@@ -151,6 +168,43 @@ def stop_pools(scene):
     return cut
 
 
+LAMP_GAP = 3.0  # check_v2's: two lit lamps nearer than this are stacked
+
+
+def unstack(scene, gap=LAMP_GAP):
+    """Takes out the lamps that stack on another lit lamp (the owner's rule: one light to a fitting, never two on one
+    point): a scene lamp within `gap` of a prop's own lamp (the prop is the visible source), then the weaker of two
+    scene lamps. Emergency lamps stay. Returns how many went. Run by export.write_scene_v2 for venues with UNSTACK."""
+    from maps import catalog
+
+    cat = catalog.load()
+    held = []
+    for key, x, y, z, rot, sc, *rest in scene.props:
+        if rest and rest[0] == "dark":
+            continue
+        a = math.radians(rot)
+        for li in cat.get(key, {}).get("lights", []):
+            lx, ly, lz = li["at"]
+            held.append((x + (lx * math.cos(a) + lz * math.sin(a)) * sc, y + ly * sc,
+                         z + (-lx * math.sin(a) + lz * math.cos(a)) * sc))
+    keep = []
+    gone = 0
+    for li in scene.lights:
+        if li.get("role") != "emergency" and any(math.dist(li["pos"], p) < gap for p in held):
+            gone += 1
+            continue
+        keep.append(li)
+    lit = [li for li in keep if li.get("role") != "emergency"]
+    drop = set()
+    for i, a in enumerate(lit):
+        for b in lit[i + 1:]:
+            if id(a) in drop or id(b) in drop or math.dist(a["pos"], b["pos"]) >= gap:
+                continue
+            drop.add(id(a if a["brightness"] * a["range"] < b["brightness"] * b["range"] else b))
+    scene.lights[:] = [li for li in keep if id(li) not in drop]
+    return gone + len(drop)
+
+
 def wall(s, pos, rot, color, range_, brightness, shadows=False, flicker=False, role=None, glow=None):
     """The lamp of a fitting on a wall inside (sconce, bulkhead, exit sign) that faces rot: a round light
     just in front of the wall, so it washes the wall round it as well as the room."""
@@ -164,6 +218,33 @@ def facade(s, pos, rot, color, range_, brightness, shadows=False, flicker=False,
     door): a spot shining out of the wall over the street, nothing into the building behind."""
     s.light("spot", pos, color, min(range_, MAX_RANGE), brightness, shadows, "Front", angle, flicker, role, rot,
             glow)
+
+
+# What a big lit sign gives the street (the owner's graphics plan, 2026-11-13: signs, screens and windows glowed and lit
+# nothing, so the glow looked painted on). One spot out of each large coloured sign's face, in its colour; the walls and
+# the ground near a pink sign take a pink tint that dies away within about 20 studs. Plain white and black signs give
+# none (a tint is the point), nor do small ones; two sign lights never stand within SIGN_GLOW_APART of each other
+# (the venue's lamp budget, check_v2 "lamps"); signs above SIGN_GLOW_TOP only light the sky and the buildings across.
+SIGN_GLOW_TOP = 20.0
+SIGN_GLOW_APART = 9.0
+SIGN_GLOW_SATURATION = 90  # the widest gap between a colour's channels below which it is "white"
+_SIGN_GLOWS = {}
+
+
+def sign_glow(s, pos, rot, color, area):
+    """The light of a lit sign of `area` square studs at pos that faces rot (the rot its board was given), in `color`
+    (the sign's glow colour): a spot 0.9 out of its face, range 14 to 19 and brightness 0.6 to 1.2 by size. Returns
+    whether one was added."""
+    if area < 8.0 or pos[1] > SIGN_GLOW_TOP or max(color) - min(color) < SIGN_GLOW_SATURATION:
+        return False
+    taken = _SIGN_GLOWS.setdefault(id(s), [])
+    out = (-math.sin(math.radians(rot)), -math.cos(math.radians(rot)))
+    at = (pos[0] + out[0] * 0.9, pos[1], pos[2] + out[1] * 0.9)
+    if any(math.dist(at, other) < SIGN_GLOW_APART for other in taken):
+        return False
+    taken.append(at)
+    facade(s, at, rot, color, 14.0 + min(5.0, area / 12.0), max(0.6, min(1.2, 0.5 + area / 60.0)))
+    return True
 
 
 def post(s, pos, color, range_, brightness, shadows=False, flicker=False):

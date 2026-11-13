@@ -127,7 +127,7 @@ def exam_hq(s):
     s.box("BlackMetal", (-58.5, 1.6, -64.4), (3.4, 3.2, 1.6), 0, collide=True)
     s.box("CreamTrim", (-58.5, 4.4, -64.6), (3.0, 2.4, 2.0), 0, collide=True, query=False)
     s.screen((-58.5, 4.4, -65.65), 0, 2.4, 1.8, "news")
-    fit.panel(s, -54.0, -72.0, C, brightness=0.9, range_=20)
+    fit.panel(s, -54.0, -72.0, C, brightness=0.9, range_=20, shadows=True)
     fit.panel(s, -60.0, -66.0, C, brightness=0.7, range_=16)
     s.sound("mapHeaterHum", (-46.2, 2.0, -76.2), 16.0, 0.25)
 
@@ -143,7 +143,7 @@ def proctor(s):
     s.prop("FilingCabinet", 23.3, -65.0, 90)
     s.prop("KeroseneHeater", 6.2, -76.0, 0)
     s.prop("CoatStand", 23.0, -76.4, 0)
-    fit.panel(s, 14.0, -70.0, C, color=fit.COOL, brightness=0.75, range_=18)
+    fit.panel(s, 14.0, -70.0, C, color=fit.COOL, brightness=0.75, range_=18, shadows=True)
 
 
 # The exam hall ---------------------------------------------------------------------------------------------

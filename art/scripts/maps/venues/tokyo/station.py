@@ -96,7 +96,9 @@ def platform(s, g):
     # Fluorescent fittings down the middle, one over each walk past the stairwell.
     mid = (pz0 + pz1) / 2
     for x in (-112.0, -92.0, -72.0, -52.0, -34.0):
-        kit.tube_light(s, x, P.PLATFORM_CEILING, mid, length=8.0, rot=0.0, range_=18, brightness=0.6)
+        # (two of them may cast shadows, 40 studs apart: the platform's people against the lit track wall)
+        kit.tube_light(s, x, P.PLATFORM_CEILING, mid, length=8.0, rot=0.0, range_=18, brightness=0.6,
+                       shadows=x in (-92.0, -52.0))
     sx0, sx1, sz0, sz1 = P.STAIRWELL
     for z in ((pz0 + sz0) / 2, (sz1 + pz1) / 2):
         kit.tube_light(s, (x0 + sx1) / 2, P.PLATFORM_CEILING, z, length=6.0, rot=0.0, range_=14, brightness=0.5)

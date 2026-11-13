@@ -219,9 +219,11 @@ ROOM_BRIGHTNESS = 1.35
 ROOM_RANGE = 1.25
 
 
-def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9, rot=0.0, on=True, flicker=False):
+def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9, rot=0.0, on=True, flicker=False,
+          shadows=False):
     """A frosted ceiling panel; off after hours unless on (the fitting is there either way).
-    flicker: a tired tube that now and then cuts out for half a second (the client does it, rarely)."""
+    flicker: a tired tube that now and then cuts out for half a second (the client does it, rarely).
+    shadows: its lamp may be given shadows (lightbook.pool)."""
     s.box("DarkMetal", (x, ceiling - 0.08, z), (w + 0.3, 0.16, d + 0.3), rot, skip=("+y",))
     if on:
         glow = "PanelWarm" if color[0] > color[2] else "PanelCool"
@@ -233,45 +235,49 @@ def panel(s, x, z, ceiling, w=4.0, d=1.2, color=WARM, range_=18, brightness=0.9,
                            glow=lightbook.glow_of(glow, (w, 0.04, d)), rot=rot)
         else:
             s.box(glow, (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
-            lightbook.pool(s, (x, ceiling - 0.55, z), color, brightness * ROOM_BRIGHTNESS)
+            lightbook.pool(s, (x, ceiling - 0.55, z), color, brightness * ROOM_BRIGHTNESS, shadows=shadows)
     else:
         s.box("DiffuserOff", (x, ceiling - 0.17, z), (w, 0.04, d), rot, skip=("+y",))
 
 
-def downlight(s, x, z, ceiling, color=WARM, range_=16, brightness=0.8, on=True, flicker=False):
+def downlight(s, x, z, ceiling, color=WARM, range_=16, brightness=0.8, on=True, flicker=False, shadows=False):
     """A small round downlight in the ceiling. Its lamp is a round light just under the lens (lightbook: a spot
     down leaves a room's walls black in Roblox)."""
     s.cylinder("DarkMetal", (x, ceiling - 0.12, z), 0.55, 0.12, 12)
     if on:
         s.cylinder("NeonWarm" if color[0] > color[2] else "NeonCool", (x, ceiling - 0.16, z), 0.4, 0.04, 12)
-        lightbook.pool(s, (x, ceiling - 0.5, z), color, brightness * ROOM_BRIGHTNESS, flicker=flicker)
+        lightbook.pool(s, (x, ceiling - 0.5, z), color, brightness * ROOM_BRIGHTNESS, flicker=flicker, shadows=shadows)
     else:
         s.cylinder("DiffuserOff", (x, ceiling - 0.16, z), 0.4, 0.04, 12)
 
 
 def ceiling_lights(s, rect, ceiling, kind, over, spacing=14.0, dead=(), flicker=(), color=WARM, range_=20.0,
-                   brightness=0.9, size=None):
+                   brightness=0.9, size=None, shadows=()):
     """A room's ceiling fittings (lightbook's rules): one kind ("panel", "tube" or "downlight"), on the room's grid,
     turned along its long side, a lit fitting in the cell over each point of `over` (its desks, stations, doors).
     dead: points whose cells get a fitting that is off (a deliberate row, a corridor's far end); flicker: points
-    whose lit fitting is a tired one. Returns the cells lit."""
+    whose lit fitting is a tired one; shadows: points whose lit fitting's lamp may cast shadows (the lamp over the
+    room's main feature, one or two to a room and never two within 20 studs: the game gives shadows to the few
+    nearest the camera, lightbook.pool). Returns the cells lit."""
     rot = lightbook.long_rot(rect)
     reach = lightbook.reach(spacing, range_) / ROOM_RANGE
     lit = lightbook.snap(rect, spacing, over)
     tired = set(lightbook.snap(rect, spacing, flicker))
+    keyed = set(lightbook.snap(rect, spacing, shadows))
     off = [c for c in lightbook.snap(rect, spacing, dead) if c not in lit]
     for (x, z), on in [(c, True) for c in lit] + [(c, False) for c in off]:
+        key = on and (x, z) in keyed
         if kind == "panel":
             w = size or 4.0
             panel(s, x, z, ceiling, w=w, color=color, range_=reach, brightness=brightness, rot=rot, on=on,
-                  flicker=on and (x, z) in tired)
+                  flicker=on and (x, z) in tired, shadows=key)
         elif kind == "tube":
             kit.tube_light(s, x, ceiling, z, length=size or 6.0, rot=rot, color=color,
                            range_=reach * ROOM_RANGE, brightness=brightness * ROOM_BRIGHTNESS, on=on,
-                           flicker=on and (x, z) in tired, pool=True)
+                           flicker=on and (x, z) in tired, pool=True, shadows=key)
         elif kind == "downlight":
             downlight(s, x, z, ceiling, color=color, range_=reach, brightness=brightness, on=on,
-                      flicker=on and (x, z) in tired)
+                      flicker=on and (x, z) in tired, shadows=key)
         else:
             raise ValueError(kind)
     return lit

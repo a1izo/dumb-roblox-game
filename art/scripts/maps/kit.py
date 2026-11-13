@@ -495,7 +495,7 @@ def tube_light(s, x, y, z, length=6.0, rot=0.0, color=(226, 236, 255), range_=18
         s.box("DarkMetal", (x + dx, y - 0.3, z + dz), (0.2, 0.3, 0.5 + 0.35 * tubes), rot)
     if on and pool:
         # (a noir pool down from under the diffusers: lightbook.pool; brightness as given is the pool's)
-        lightbook.pool(s, (x, y - 0.7, z), color, brightness, flicker=flicker)
+        lightbook.pool(s, (x, y - 0.7, z), color, brightness, flicker=flicker, shadows=shadows)
     elif on:
         # (under the diffusers, clear of them: a lamp inside a mesh blacks itself out when it casts shadows)
         lightbook.ceiling(s, (x, y - 0.7, z), color, range_, brightness, shadows, flicker=flicker, clear=True)

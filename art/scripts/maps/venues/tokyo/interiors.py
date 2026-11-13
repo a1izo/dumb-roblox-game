@@ -346,7 +346,10 @@ def station_hall(s, g):
     for x, z, rot in ((-112.0, -88.0, 90), (-112.0, -74.0, 90), (-112.0, -50.0, 90), (-112.0, -40.0, 90),
                       (-136.0, -100.0, 0), (-136.0, -84.0, 0), (-136.0, -46.0, 0), (-136.0, -34.0, 0),
                       (-118.5, -62.0, 90)):
-        kit.tube_light(s, x, CEIL, z, length=7.0, rot=rot, range_=20, brightness=0.8)
+        # (the concourse's, the paid landing's and the offices' may cast shadows: one lamp to a stretch, never two
+        # within 20 studs)
+        kit.tube_light(s, x, CEIL, z, length=7.0, rot=rot, range_=20, brightness=0.8,
+                       shadows=(x, z) in ((-112.0, -74.0), (-112.0, -40.0), (-136.0, -100.0)))
     for z in (-103.0, -31.0):
         kit.tube_light(s, -116.0, CEIL, z, length=5.0, rot=0, range_=14, brightness=0.7)
     hall_walls(s)

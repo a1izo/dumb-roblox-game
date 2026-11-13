@@ -111,7 +111,7 @@ def microfilm(s):
     top = fit.table(s, 60.0, -76.0, 6.0, 3.0, 0, 0.0)
     fit.chairs_round(s, 60.0, -76.0, 6.0, 3.0, 0)
     s.sheet(60.0, top, -76.0, spare=True)
-    fit.panel(s, 56.0, -92.0, C, brightness=0.8, range_=18)
+    fit.panel(s, 56.0, -92.0, C, brightness=0.8, range_=18, shadows=True)
     fit.panel(s, 56.0, -74.0, C, on=False)
 
 

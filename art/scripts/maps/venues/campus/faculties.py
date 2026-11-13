@@ -153,7 +153,7 @@ def affairs(s):
     for z in (-73.5, -71.0):
         s.prop("Crate", -146.6, z, 12 * (z > -72), 0.6)
     for x, z in ((-120.0, -66.0), (-130.0, -55.0)):
-        fit.panel(s, x, z, C, brightness=0.85, range_=20)
+        fit.panel(s, x, z, C, brightness=0.85, range_=20, shadows=(x, z) == (-120.0, -66.0))
     fit.panel(s, -106.0, -60.0, C, on=False)
     s.sound("mapHeaterHum", (-106.0, 2.0, -76.0), 14.0, 0.2)
 
@@ -227,7 +227,7 @@ def science_rooms(s, g):
     s.prop("DisplayCase", 66.3, 80.0, 90)
     s.prop("Plant", 50.8, 40.0, 0)
     for z in (48.0, 66.0, 84.0, 100.0):
-        fit.panel(s, 58.0, z, C, color=fit.COOL, brightness=0.75, range_=18, rot=90)
+        fit.panel(s, 58.0, z, C, color=fit.COOL, brightness=0.75, range_=18, rot=90, shadows=z in (48.0, 84.0))
     fit.plaque(s, 67.7, 10.2, 46.0, 90, 5.8, 0.9, "法医学教室  FORENSIC MEDICINE", (240, 236, 226), (26, 40, 60))
 
 
@@ -251,7 +251,7 @@ def forensic(s):
     s.prop("OfficeChair", 99.0, 61.4, 180)
     s.prop("FilingCabinet", 69.4, 40.0, -90)
     for x, z in ((80.0, 46.0), (96.0, 46.0), (88.0, 66.0)):
-        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.8, range_=20)
+        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.8, range_=20, shadows=(x, z) == (88.0, 66.0))
     fit.plaque(s, 107.7, 10.2, 62.0, 90, 5.0, 0.9, "化学実験室  CHEMISTRY", (240, 236, 226), (26, 40, 60))
 
 
@@ -279,7 +279,7 @@ def chemistry(s):
     s.cylinder("PaintYellow", (110.0, 9.0, 70.0), 0.7, 0.3, 12)
     s.tube("PaintYellow", (110.0, 7.0, 70.4), (110.0, 5.6, 70.0), 0.04, 5)
     for x, z in ((118.0, 45.0), (132.0, 45.0), (125.0, 66.0), (141.0, 56.0)):
-        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.8, range_=20)
+        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.8, range_=20, shadows=(x, z) == (125.0, 66.0))
 
 
 def specimens(s):
@@ -291,7 +291,7 @@ def specimens(s):
     top = fit.table(s, 76.0, 80.0, 6.0, 3.0, 90, 0.0)
     s.prop("Microscope", 76.0, 79.0, -90, 1.0, top)
     for x, z in ((80.0, 90.0), (98.0, 90.0), (88.0, 102.0), (88.0, 80.0)):
-        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.75, range_=18)
+        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.75, range_=18, shadows=(x, z) == (88.0, 80.0))
 
 
 def build(s, g):
