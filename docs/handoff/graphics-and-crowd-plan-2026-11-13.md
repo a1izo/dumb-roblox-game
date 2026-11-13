@@ -389,3 +389,13 @@ As in the earlier plan: what changed and where to look, before and after picture
 are needed (file name and version) or "script sync only", what was checked and what was not seen. Add what you
 learned to `docs/agent-memory/` (lighting notes in `lighting-rework-2026-11.md`; the crowd deserves a file of its
 own once its first phase lands).
+
+## Status of Part B, 2026-11-13 (carried out by another agent)
+
+How the crowd was watched, with the numbers before the rework, is in `docs/agent-memory/tokyo-crowd-2026-11.md`
+(`scripts/crowd/watch.luau`, run through the bundle in `docs/agent-memory/spec-bundle-via-rbxasset.md`). Every item of
+"What is wrong, from the code" was confirmed except 9, which is on the client and needs a drawn crowd.
+
+| Phase | State | What the owner has to do |
+|---|---|---|
+| C1 graph | Done: no double links, 21 of the 27 narrow walks widened, the 6 left marked `single`; `check_v2` and `MapContract` hold both rules. Tokyo export changed only the layout data: Maps v47 kept. | Script sync only |

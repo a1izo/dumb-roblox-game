@@ -56,3 +56,5 @@
 - [Studio frame rate](studio-frame-rate-measure.md) - off-screen Studio reads 15 fps; activate it before each 2 s count; 10 shadow lamps held 60
 - [Shared place writes blocked](studio-shared-place-write-blocked.md) - the classifier refuses script writes into the Team Create place; emulate on the play copy (server edits after build, client grade)
 - [Exports restore binaries](export-restores-binaries.md) - a lights-only export rewrites FBX/blend/previews/ImportVersions: git checkout them, commit Scenes data + scripts
+- [Tokyo crowd 2026-11](tokyo-crowd-2026-11.md) - the crowd rework (plan Part B, C1 to C6): how it behaved before, what each phase changed, where the pieces are, how to measure it
+- [Spec bundle via rbxasset](spec-bundle-via-rbxasset.md) - run the repo's pure specs and the crowd watcher in a running Studio with no write into the shared place: rojo build into Studio's content folder, GetObjects rbxasset

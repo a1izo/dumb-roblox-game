@@ -15,6 +15,10 @@ drive. Data only: the game moves them (Maps/Mechanics/TokyoDistrict) and every c
   crossing. Every street ends at a closed-road barricade by the map's edge: a lane runs from just
   inside one to just inside the other (cars fade in and out there), with nothing standing in it.
 
+A node is joined to another once, never twice, and a walk too narrow for two to pass (under NARROW wide) is first
+widened by moving its nodes (widen) and, where the pavement really is that narrow, marked `single`: the game
+sends walkers along it one way at a time.
+
 Every node and walk is placed against the scene as it stands, with the checker's own eyes
 (check_v2.World): on a floor, on the pavement, inside nothing, round the street lights, planters and
 vending machines, and clear of the spawns and the stations."""
@@ -137,18 +141,27 @@ class Walks:
         self.s = s
         self.street = Street(s)
         self.missing = []
+        self.fixed = set()  # nodes that stay where they were put (the station's doors)
 
     def at(self, node):
         nd = self.s.crowd["nodes"][node - 1]
         return (nd["x"], nd["z"])
 
+    def linked(self, a, b):
+        """Whether a link already runs between the two nodes, either way round."""
+        return any((lk["a"], lk["b"]) in ((a, b), (b, a)) for lk in self.s.crowd["links"])
+
     def link(self, a, b, most=WIDEST):
         """A walk between two nodes, as wide as the street lets it be. False (and no link) when
-        something is in the way."""
+        something is in the way. Two nodes already joined are not joined again (a second link would
+        double the odds of that turn) and a node is never joined to itself."""
+        if a == b:
+            return False
         pa, pb = self.at(a), self.at(b)
         if not self.street.walk(pa, pb):
             return False
-        self.s.crowd_link(a, b, "walk", 2 * self.street.half(pa, pb, most))
+        if not self.linked(a, b):
+            self.s.crowd_link(a, b, "walk", 2 * self.street.half(pa, pb, most))
         return True
 
     def join(self, a, b):
@@ -259,12 +272,14 @@ def walks(s):
         outside = s.crowd_node(-103.0, door_z)
         inside = s.crowd_node(-112.5, door_z)
         s.crowd_link(outside, inside, "walk", 2.5)
+        w.fixed |= {(-103.0, door_z), (-112.5, door_z)}
         for near in sorted(plaza, key=lambda m: math.dist(w.at(m), (-103.0, door_z)))[:6]:
             if w.join(near, outside):
                 break
         else:
             w.missing.append(f"the station door at z {door_z}")
     district(w)
+    widen(w)
     if w.missing:
         print("[crowd] no walk found for: " + "; ".join(w.missing))
 
@@ -368,6 +383,80 @@ def district(w):
     dropped = _one_network(w.s)
     print(f"[crowd] district: {len(chains)} walks laid, {sum(len(c) for c in chains)} nodes; {dropped} nodes cut off "
           "by roads taken out again")
+
+
+NARROW = 1.5  # studs: a walk narrower than this is single file (two walkers cannot pass or keep left on it)
+NUDGE = (0.5, 1.0, 1.5, 2.0, 2.5)  # how far a node may be moved to widen the walks it ends
+APART = 3.0  # ...and how close it may come to another node while it moves
+
+
+def widen(w):
+    """Narrow walks (under NARROW wide: a walker cannot keep left on one, nor step round anyone) are widened by
+    moving the nodes they run between, a little at a time, to the nearest place where every walk at the node is open
+    and wide (never a kerb, a crossing's end or a station door: their places are laid on purpose). A walk that is
+    still too narrow where the pavement really is that narrow is marked `single`: the game sends walkers along it
+    one way at a time (CrowdSim)."""
+    s, street = w.s, w.street
+    nodes, links = s.crowd["nodes"], s.crowd["links"]
+    stuck = {m for lk in links if lk["kind"] == "crossing" for m in (lk["a"], lk["b"])}
+    count = len(nodes)
+
+    def movable(i):
+        nd = nodes[i - 1]
+        return nd["kind"] == "walk" and i not in stuck and (nd["x"], nd["z"]) not in w.fixed
+
+    def walks_at(i):
+        return [lk for lk in links if lk["kind"] == "walk" and i in (lk["a"], lk["b"])]
+
+    def other(lk, i):
+        return lk["b"] if lk["a"] == i else lk["a"]
+
+    def trial(i, spot):
+        """(how many of the walks at node i are narrow, minus their total width) with it at `spot`; None when
+        one of them could not be walked from there."""
+        narrow, total = 0, 0.0
+        for lk in walks_at(i):
+            far = w.at(other(lk, i))
+            if not street.walk(spot, far):
+                return None
+            width = 2 * street.half(spot, far)
+            narrow += width < NARROW
+            total += width
+        return narrow, -total
+
+    moved = 0
+    for _ in range(3):
+        changed = False
+        for i in range(1, count + 1):
+            if not movable(i) or all(lk["width"] >= NARROW for lk in walks_at(i)):
+                continue
+            nd = nodes[i - 1]
+            here = (nd["x"], nd["z"])
+            best, best_spot = trial(i, here) or (math.inf, 0.0), None
+            gaps = {j: min(APART, math.dist(here, w.at(j))) for j in range(1, count + 1) if j != i}
+            for reach in NUDGE:
+                for k in range(16):
+                    a = 2 * math.pi * k / 16
+                    spot = (round(here[0] + reach * math.cos(a), 2), round(here[1] + reach * math.sin(a), 2))
+                    if any(math.dist(spot, w.at(j)) < gap for j, gap in gaps.items()) or not street.stand(*spot):
+                        continue
+                    score = trial(i, spot)
+                    if score is not None and score < best:
+                        best, best_spot = score, spot
+            if best_spot is not None:
+                nd["x"], nd["z"] = best_spot
+                for lk in walks_at(i):
+                    lk["width"] = 2 * street.half(w.at(lk["a"]), w.at(lk["b"]))
+                moved += 1
+                changed = True
+        if not changed:
+            break
+    single = 0
+    for lk in links:
+        if lk["kind"] == "walk" and lk["width"] < NARROW:
+            lk["single"] = True
+            single += 1
+    print(f"[crowd] widening: {moved} nodes moved; {single} of {len(links)} walks left single file")
 
 
 def _one_network(s):

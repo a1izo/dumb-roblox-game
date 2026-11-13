@@ -52,6 +52,7 @@ function CrowdSim.graph(data)
 				b = link.b,
 				kind = link.kind or "walk",
 				half = (link.width or 2) / 2,
+				single = link.single == true, -- too narrow for two to pass: one way at a time
 				length = math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2),
 			}
 			table.insert(links, entry)

@@ -14,6 +14,9 @@ local TaskTypes = require(Shared:WaitForChild("Tasks"):WaitForChild("TaskTypes")
 
 local MapContract = {}
 
+-- A crowd walk narrower than this (studs) is single file: tools/check_v2 holds the same line (NARROW_WALK).
+local NARROW_WALK = 1.5
+
 local function isNumber(value: any): boolean
 	return type(value) == "number" and value == value
 end
@@ -158,6 +161,7 @@ function MapContract.validateCrowd(layout: any): { string }
 				end
 			end
 		end
+		local laid: { [string]: number } = {}
 		for index, link in ipairs(links) do
 			local a, b = nodes[link.a], nodes[link.b]
 			if not a or not b or link.a == link.b then
@@ -165,6 +169,22 @@ function MapContract.validateCrowd(layout: any): { string }
 			else
 				table.insert(joined[link.a], link.b)
 				table.insert(joined[link.b], link.a)
+				-- Two nodes are joined once (a second link doubles the odds of that turn).
+				local pair = math.min(link.a, link.b) .. "-" .. math.max(link.a, link.b)
+				if laid[pair] then
+					fail("crowd link " .. index .. " joins the same two nodes as link " .. laid[pair])
+				else
+					laid[pair] = index
+				end
+				-- A walk too narrow for two to pass is single file, and says so.
+				if
+					link.kind == "walk"
+					and isNumber(link.width)
+					and link.width < NARROW_WALK
+					and link.single ~= true
+				then
+					fail(string.format("crowd link %d is %.1f wide and not marked single file", index, link.width))
+				end
 				if link.kind == "crossing" then
 					if a.kind ~= "kerb" or b.kind ~= "kerb" then
 						fail("crowd link " .. index .. " crosses the road from somewhere that is not a kerb")

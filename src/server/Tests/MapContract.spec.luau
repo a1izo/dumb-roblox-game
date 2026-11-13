@@ -55,11 +55,16 @@ return function(t)
 					{ x = 10, y = 0, z = 0, kind = "kerb" },
 					{ x = 10, y = 0, z = 20, kind = "walk" },
 					{ x = 50, y = 0, z = 50, kind = "walk" },
+					{ x = 60, y = 0, z = 60, kind = "walk" },
+					{ x = 70, y = 0, z = 60, kind = "walk" },
 				},
 				links = {
 					{ a = 1, b = 2, kind = "walk", width = 2 },
 					{ a = 2, b = 3, kind = "crossing", width = 4 },
 					{ a = 3, b = 9, kind = "walk", width = 2 },
+					{ a = 2, b = 1, kind = "walk", width = 2 },
+					{ a = 1, b = 3, kind = "walk", width = 1 },
+					{ a = 5, b = 6, kind = "walk", width = 1, single = true },
 				},
 				posts = { { x = 1, z = 1 } },
 			}
@@ -67,6 +72,10 @@ return function(t)
 			local text = table.concat(MapContract.validateCrowd({ crowd = crowd, traffic = traffic }), "; ")
 			expect(text).to.contain("crosses the road from somewhere that is not a kerb")
 			expect(text).to.contain("crowd link 3 does not join two nodes")
+			expect(text).to.contain("crowd link 4 joins the same two nodes as link 1")
+			expect(text).to.contain("crowd link 5 is 1.0 wide and not marked single file")
+			-- (a narrow walk marked single is fine)
+			expect(string.find(text, "crowd link 6", 1, true)).to.equal(nil)
 			expect(text).to.contain("crowd node 4 cannot be reached")
 			expect(text).to.contain("crowd post 1 needs x, z and rot")
 			expect(text).to.contain("lane 1 has no stop line along it")

@@ -101,10 +101,14 @@ class LayoutMixin:
         self.crowd["nodes"].append({"x": round(x, 2), "y": y, "z": round(z, 2), "kind": kind})
         return len(self.crowd["nodes"])
 
-    def crowd_link(self, a, b, kind="walk", width=2.0):
+    def crowd_link(self, a, b, kind="walk", width=2.0, single=False):
         """A way between two nodes (kind "crossing": only walked on the walk signal); width: how far a
-        walker may step aside on it."""
-        self.crowd["links"].append({"a": a, "b": b, "kind": kind, "width": width})
+        walker may step aside on it; single: the way is too narrow for two to pass, so walkers go along
+        it one way at a time (the game reads `single` on a link; it is only written when true)."""
+        link = {"a": a, "b": b, "kind": kind, "width": width}
+        if single:
+            link["single"] = True
+        self.crowd["links"].append(link)
 
     def crowd_post(self, x, z, rot, y=0.0, kind="clerk"):
         """Where one of the crowd stands all match (behind a counter, at the police box's door)."""

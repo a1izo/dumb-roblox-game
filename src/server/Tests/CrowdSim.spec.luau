@@ -69,6 +69,21 @@ return function(t)
 			expect(clerk.x).to.equal(60)
 			expect(clerk.heading).to.be.near(math.rad(90))
 		end)
+		it("reads which walks are single file", function()
+			local graph = CrowdSim.graph({
+				nodes = {
+					{ x = 0, y = 0, z = 0 },
+					{ x = 10, y = 0, z = 0 },
+					{ x = 20, y = 0, z = 0 },
+				},
+				links = {
+					{ a = 1, b = 2, kind = "walk", width = 1, single = true },
+					{ a = 2, b = 3, kind = "walk", width = 2.5 },
+				},
+			})
+			expect(graph.links[1].single).to.equal(true)
+			expect(graph.links[2].single).to.equal(false)
+		end)
 		it("is the same crowd from the same seed", function()
 			local a, b = crowd(42, 10), crowd(42, 10)
 			run(a, 20, WALK)

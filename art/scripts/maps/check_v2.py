@@ -950,10 +950,14 @@ def doorways(data, problems):
     print(f"  doorways: {len(data.get('openings', []))} checked, {flagged} crowded")
 
 
+NARROW_WALK = 1.5  # studs: a crowd walk narrower than this must be marked `single` (tokyo/crowd.py NARROW)
+
+
 def crowd_and_traffic(data, world, zones, problems):
     """Tokyo's crowd walks on floors, through open ground, never on a road but at a crossing, never
-    near a station's worker or a spawn; its posts stand on floors; the cars' lanes run on roads and
-    crossings and stop before the crossing."""
+    near a station's worker or a spawn; no two nodes are joined twice and no walk under NARROW_WALK wide is
+    left without `single`; its posts stand on floors; the cars' lanes run on roads and crossings and stop
+    before the crossing."""
     crowd = data.get("crowd") or {}
     nodes = crowd.get("nodes") or []
     if not nodes:
@@ -971,11 +975,22 @@ def crowd_and_traffic(data, world, zones, problems):
         for x, z, r, what in keep_clear:
             if math.dist((x, z), (nd["x"], nd["z"])) < r:
                 problems.append(f"{label}: within {r:.0f} of {what}")
+    laid = set()
     for link in crowd.get("links") or []:
         a, b = nodes[link["a"] - 1], nodes[link["b"] - 1]
         mid = ((a["x"] + b["x"]) / 2, (a["y"] + b["y"]) / 2, (a["z"] + b["z"]) / 2)
         kinds = zones.kinds(*mid)
         label = f"crowd link {link['a']}-{link['b']}"
+        # A pair of nodes is joined once (a second link doubles the odds of that turn), and a walk too narrow for
+        # two to pass is marked single file, for the game sends walkers along those one way at a time.
+        pair = (min(link["a"], link["b"]), max(link["a"], link["b"]))
+        if link["a"] == link["b"]:
+            problems.append(f"{label}: joins a node to itself")
+        elif pair in laid:
+            problems.append(f"{label}: laid twice")
+        laid.add(pair)
+        if link["kind"] != "crossing" and link["width"] < NARROW_WALK and not link.get("single"):
+            problems.append(f"{label}: {link['width']:.1f} wide and not marked single file")
         if link["kind"] == "crossing":
             if "crossing" not in kinds:
                 problems.append(f"{label}: a crossing link off the crossing ({kinds})")
@@ -1004,8 +1019,9 @@ def crowd_and_traffic(data, world, zones, problems):
             left -= seg
         if "crossing" in zones.kinds(at[0], 0.0, at[1]):
             problems.append(f"lane {k + 1}: its stop line is on the crossing")
-    print(f"  crowd: {len(nodes)} nodes, {len(crowd.get('links') or [])} links, {len(crowd.get('posts') or [])} posts; "
-          f"{len((data.get('traffic') or {}).get('lanes') or [])} lanes")
+    singles = sum(1 for link in crowd.get("links") or [] if link.get("single"))
+    print(f"  crowd: {len(nodes)} nodes, {len(crowd.get('links') or [])} links ({singles} single file), "
+          f"{len(crowd.get('posts') or [])} posts; {len((data.get('traffic') or {}).get('lanes') or [])} lanes")
 
 
 def _rect_of(poly, grow):
