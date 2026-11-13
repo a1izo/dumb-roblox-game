@@ -51,3 +51,4 @@
 - [Mobile and performance](mobile-and-perf-2026-11.md) - Device module + DGForceDevice phone tests; boil/pencil sliced, emit share, phone layout fixes (2026-11-11)
 - [Imports by Open Cloud](imports-by-open-cloud.md) - no-screen imports + script sync through the Studio MCP: upload, insert, line up, share with the universe; --split for >20 MB
 - [Workflow](workflow.md) - the delivery chain from a big message to the saved place, and the traps hit (2026-11-12)
+- [Graphics references 2026-11](graphics-references-2026-11.md) - the owner's two interior photo references (docs/handoff/refs) and the part-two plan: baked shading, one finished room per map, motion, detail, low quality, the Tokyo crowd's logic
