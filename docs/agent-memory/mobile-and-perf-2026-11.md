@@ -51,3 +51,7 @@ the honest check is a real phone or Studio's device emulator in the real place.
   window (UIScale fit) and its buttons said "(Space)" on touch; phone window headers 84 px (title 62%); Dial keypad
   room on phones; Autopsy taps pick the nearest body part on touch.
 - TaskScreen.practice takes an optional puzzle name (the probe opens each of the 16).
+
+**2026-11-13:** player feedback said the lobby UI covered the phone joystick (Roblox's thumbstick takes the lower
+left). On any touch screen LobbyPanel folds the menu entries behind a "Menu" entry under READY (Close folds them
+again, picking an entry folds them). Desktop chat text went 15 -> 20 px (Indie Flower at 15 was unreadable).

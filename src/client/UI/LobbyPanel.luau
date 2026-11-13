@@ -3,6 +3,8 @@
 -- On the left, from a quarter of the way down: the READY button, the queue status, and the menu (Quests,
 -- Shop...) in a zigzag, each entry floating on its own beat; while a case is running, "Spectate" is its last
 -- entry (for everyone, players who joined during the case too).
+-- On a touch screen the menu entries fold away behind one "Menu" entry under READY: Roblox's thumbstick takes
+-- the lower left of the screen, and a column of buttons over it ate the taps meant for moving (2026-11-13).
 -- On the right, your card: rank seal, XP, coins, and the way to your profile and the leaderboards. On a touch
 -- screen it ends just above Roblox's jump button, and on a phone it is cut down to your portrait, name and
 -- coins over the two buttons.
@@ -28,6 +30,7 @@ local TouchSafe = require(Shared:WaitForChild("UI"):WaitForChild("TouchSafe"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local DirectorPanel = require(script.Parent.DirectorPanel)
+local Device = require(script.Parent.Core.Device)
 local Glitch = require(script.Parent.Core.Glitch)
 local LobbyChrome = require(script.Parent.Core.LobbyChrome)
 local Kit = require(script.Parent.Kit)
@@ -96,6 +99,9 @@ local statusLabel: TextLabel
 local readyHolder: CanvasGroup
 local readyGlitch: any
 local readyButton: TextButton
+-- The touch screen's "Menu" entry (folds the menu away), and whether the menu is unfolded.
+local toggleHolder: Frame
+local menuOpen = false
 local saveWarning: TextLabel
 local linkGlitches: { any } = {}
 local lastCoins: number? = nil
@@ -368,6 +374,26 @@ function buildContents(phone: boolean)
 	local rowHeight = if phone then 37 else 54
 	local shown = 0
 	local running = caseRunning()
+	-- On a touch screen the entries show only while the menu is unfolded (the thumbstick lives under them).
+	local folding = Device.touch()
+	toggleHolder:ClearAllChildren()
+	toggleHolder.Visible = folding
+	toggleHolder.Size = UDim2.new(1, 0, 0, rowHeight)
+	if folding then
+		Kit.entry({
+			text = if menuOpen then "Close" else "Menu",
+			size = if phone then 30 else 42,
+			seed = 0,
+			Size = UDim2.new(0, if phone then 240 else 300, 1, 0),
+			Parent = toggleHolder,
+		}, function()
+			menuOpen = not menuOpen
+			task.defer(buildContents, Kit.Layout.isPhone())
+		end)
+		if not menuOpen then
+			return
+		end
+	end
 	for _, item in ipairs(MENU) do
 		if (item.vip and not DirectorPanel.state.vip) or (item.running and not running) then
 			continue
@@ -394,6 +420,10 @@ function buildContents(phone: boolean)
 			Size = UDim2.fromScale(1, 1),
 			Parent = wrap,
 		}, function()
+			if folding then
+				menuOpen = false
+				task.defer(buildContents, Kit.Layout.isPhone())
+			end
 			if item.action == "hide" then
 				Router.closeAll()
 				LobbyChrome.setHidden(true)
@@ -528,6 +558,8 @@ local function buildMenu()
 	readyHolder = wrapper({ Name = "Ready", Size = UDim2.new(1, 0, 0, 60), LayoutOrder = 1, Parent = menu })
 	slot(readyHolder, 1, menu)
 	readyGlitch = Glitch.attach(readyHolder, { loop = false, enter = false })
+	-- (right under READY, above the thumbstick's part of the screen)
+	toggleHolder = Kit.frame({ Name = "MenuToggle", Size = UDim2.new(1, 0, 0, 37), LayoutOrder = 2, Parent = menu })
 	-- The status line and the rule under it glitch in together.
 	statusGroup = wrapper({ Name = "Status", Size = UDim2.new(1, 0, 0, 34), LayoutOrder = 3, Parent = menu })
 	slot(statusGroup, 3, menu)

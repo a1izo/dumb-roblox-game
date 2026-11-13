@@ -1,11 +1,10 @@
 --!strict
 -- Line boil (OMORI's hand-drawn wobble): a drawn thing redraws a hair differently 8 times a second, cycling
 -- three states. Each attached object gets its own three small offsets (and a hair of rotation), so a screen
--- full of frames never moves in step. Lines and frames boil, and all of the text (the user, 2026-11-10: "make all
--- of the text ... more omori styled ... 2 or more images going back and forth"): big headers and a hovered
--- button's text letter by letter, smaller text gently (2026-11-01 a full boil on small text "makes small text
--- unreadable": so a quarter of its letters move a pixel and the whole line drifts a pixel). The case summary at
--- the end stays still altogether (NoBoil on it). Kit/Pencil redraws the outlines and rules in pencil.
+-- full of frames never moves in step. Lines and frames boil; of the text, only big headers and a button's text
+-- while it is hovered (the owner, 2026-11-01: on small text it "makes small text unreadable"; 2026-11-13, after a
+-- pass that boiled all text: "visual overload, back to hover only and big headers"). The case summary at the end
+-- stays still altogether (NoBoil on it). Kit/Pencil redraws the outlines and rules in pencil.
 --
 --   Boil.attach(frame)          -- 1 px, the default for frames, rules and the hand
 --   Boil.attach(title, 2, 0.4)  -- 2 px and up to 0.4 degrees, for big lettering
@@ -16,9 +15,7 @@
 -- letter, so a copy over the label sets each letter a pixel or two larger or smaller in each state. Anything with the attribute NoBoil (or inside something
 -- that has it) stays still: the emote wheel, text boxes being typed in.
 
-local Device = require(script.Parent.Parent.Core.Device)
 local Motion = require(script.Parent.Parent.Core.Motion)
-local Settings = require(script.Parent.Parent.Core.Settings)
 
 local Boil = {}
 
@@ -117,19 +114,13 @@ end
 
 type TextEntry = {
 	copy: TextLabel,
-	-- whether it boils loudly now: a header always, a button's text while the button is hovered
+	-- whether it boils now: a header always, a button's text while the button is hovered
 	active: boolean,
-	-- the copy's text in each state, worked out again when the label's text changes: loud (every letter) and
-	-- soft (a few letters), and where the copy sits in each state (the soft drift)
+	-- the copy's text in each state, worked out again when the label's text changes
 	states: { string },
-	soft: { string },
-	home: UDim2,
-	drift: { UDim2 },
 	shown: boolean,
 	drawn: number?,
 	slot: number,
-	-- whether the copy holds a soft state's letters or the plain text (light mode: the line only drifts)
-	plain: boolean?,
 }
 
 local texts: { [GuiObject]: TextEntry } = setmetatable({}, { __mode = "k" }) :: any
@@ -150,8 +141,7 @@ local LONGEST = 400 -- letters: longer text (a page of reading) keeps still
 local HEADER = 32 -- px: text this big or bigger is a header and always boils
 
 -- The label's text with each letter at its own size, one string per state (the first at the label's size).
-local function letterStates(text: string, rich: boolean, size: number, seed: number, share: number?): { string }
-	local part = share or 1
+local function letterStates(text: string, rich: boolean, size: number, seed: number): { string }
 	local random = Random.new(seed)
 	local swing = math.max(1, math.floor(size * 0.07 + 0.5))
 	-- (cut into tags, entities and letters; only letters change size)
@@ -183,7 +173,7 @@ local function letterStates(text: string, rich: boolean, size: number, seed: num
 	for index = 1, STATES do
 		local out = table.create(#pieces)
 		for _, piece in ipairs(pieces) do
-			if piece.letter and index > 1 and (part >= 1 or random:NextNumber() < part) then
+			if piece.letter and index > 1 then
 				local grow = random:NextInteger(-swing, swing)
 				if grow ~= 0 then
 					table.insert(out, string.format('<font size="%d">%s</font>', size + grow, piece.text))
@@ -237,6 +227,9 @@ function Boil.text(label: GuiObject)
 		then label :: any
 		else label:FindFirstAncestorWhichIsA("GuiButton")
 	local header = button == nil and source.TextSize >= HEADER
+	if not header and not button then
+		return
+	end
 	local copy = Instance.new("TextLabel")
 	copy.Name = "BoilLetters"
 	copy.BackgroundTransparency = 1
@@ -246,29 +239,19 @@ function Boil.text(label: GuiObject)
 	copy.Size = UDim2.new(1, -1, 0, 0)
 	copy.TextTruncate = Enum.TextTruncate.None
 	copy.RichText = true
-	local random = Random.new()
-	local drift = { UDim2.new() }
-	for index = 2, STATES do
-		drift[index] = UDim2.fromOffset(random:NextInteger(-1, 1), random:NextInteger(-1, 1))
-	end
 	local entry: TextEntry = {
 		copy = copy,
 		states = {},
-		soft = {},
 		shown = false,
 		active = header,
-		home = UDim2.new(),
-		drift = drift,
-		slot = random:NextInteger(0, SLICES - 1),
+		slot = math.random(0, SLICES - 1),
 	}
 	local function align()
 		local y = source.TextYAlignment
-		entry.home = if y == Enum.TextYAlignment.Top
+		copy.Position = if y == Enum.TextYAlignment.Top
 			then UDim2.new()
 			elseif y == Enum.TextYAlignment.Bottom then UDim2.new(0, 0, 1, -1)
 			else UDim2.fromScale(0, 0.5)
-		copy.Position = entry.home
-		entry.drawn = nil
 	end
 	align()
 	label:GetPropertyChangedSignal("TextYAlignment"):Connect(align)
@@ -288,16 +271,12 @@ function Boil.text(label: GuiObject)
 		local text = source.Text
 		if utf8.len(text) and (utf8.len(text) :: number) > LONGEST then
 			entry.states = { text, text, text }
-			entry.soft = entry.states
 		else
 			local ok, states = pcall(letterStates, text, source.RichText, source.TextSize, seed)
 			entry.states = if ok then states else { text, text, text }
-			local okSoft, soft = pcall(letterStates, text, source.RichText, source.TextSize, seed + 1, 0.25)
-			entry.soft = if okSoft then soft else { text, text, text }
 		end
 		entry.drawn = nil
-		entry.plain = nil
-		copy.Text = (if entry.active then entry.states else entry.soft)[frame + 1]
+		copy.Text = entry.states[if entry.active then frame + 1 else 1]
 	end
 	for _, prop in ipairs(MIRRORED) do
 		(copy :: any)[prop] = source[prop]
@@ -372,12 +351,6 @@ function Boil.cost(): number
 	return cost
 end
 
--- Light mode (a phone or tablet, or the Low quality setting): small text keeps its letters and only drifts, which
--- costs a move instead of new rich text; headers and a hovered button's text still boil letter by letter.
-local function light(): boolean
-	return Device.touch() or Settings.get("lowGraphics") == true
-end
-
 task.spawn(function()
 	while true do
 		task.wait(1 / (FPS * SLICES))
@@ -400,7 +373,6 @@ task.spawn(function()
 			end
 		end
 		local reduced = Motion.isReduced()
-		local lightMode = light()
 		for label, entry in pairs(texts) do
 			if entry.slot ~= slot then
 				continue
@@ -408,25 +380,10 @@ task.spawn(function()
 			if look then
 				entry.shown = onScreen(label)
 			end
-			-- (loud states are 1..3, soft ones 4..6)
-			local state = if reduced then 1 elseif entry.active then frame + 1 else frame + 1 + STATES
+			local state = if reduced or not entry.active then 1 else frame + 1
 			if entry.shown and entry.drawn ~= state then
 				entry.drawn = state
-				local index = (state - 1) % STATES + 1
-				local loud = state <= STATES
-				if loud then
-					entry.copy.Text = entry.states[index]
-					entry.plain = false
-				elseif lightMode then
-					if not entry.plain then
-						entry.copy.Text = entry.soft[1]
-						entry.plain = true
-					end
-				else
-					entry.copy.Text = entry.soft[index]
-					entry.plain = false
-				end
-				entry.copy.Position = entry.home + (if loud then UDim2.new() else entry.drift[index])
+				entry.copy.Text = entry.states[state]
 			end
 		end
 		cost += ((os.clock() - started) * 1000 - cost) * 0.1

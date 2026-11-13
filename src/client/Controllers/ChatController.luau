@@ -141,8 +141,8 @@ local function placeChat()
 	end
 	placed = key
 	setProps(window, {
-		HeightScale = if phone then (if lobby then 0.32 else 0.4) else (if lobby then 0.2 else 0.3),
-		WidthScale = if phone then 0.5 else (if lobby then 0.26 else 0.32),
+		HeightScale = if phone then (if lobby then 0.32 else 0.4) else (if lobby then 0.22 else 0.34),
+		WidthScale = if phone then 0.5 else (if lobby then 0.3 else 0.34),
 		HorizontalAlignment = if lobby and phone then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Left,
 		VerticalAlignment = if phone
 			then Enum.VerticalAlignment.Top
@@ -151,13 +151,17 @@ local function placeChat()
 	})
 end
 
+-- Indie Flower draws small, so chat text is bigger than Roblox's default: at 15 px a computer's chat was too small
+-- to read (2026-11-13).
+local DESK_TEXT = 20
+
 local function styleChat()
 	local font = Kit.Tokens.font.body
 	local C = Kit.color
 	local phone = Kit.Layout.isPhone()
 	setProps(TextChatService:FindFirstChildOfClass("ChatWindowConfiguration"), {
 		FontFace = font,
-		TextSize = if phone then 13 else 15,
+		TextSize = if phone then 14 else DESK_TEXT,
 		TextColor3 = C.white,
 		TextStrokeTransparency = 1,
 		BackgroundColor3 = C.g0,
@@ -167,7 +171,7 @@ local function styleChat()
 	placeChat()
 	setProps(TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration"), {
 		FontFace = font,
-		TextSize = 15,
+		TextSize = if phone then 15 else DESK_TEXT,
 		TextColor3 = C.white,
 		PlaceholderColor3 = C.g5,
 		TextStrokeTransparency = 1,
@@ -176,7 +180,7 @@ local function styleChat()
 	})
 	setProps(TextChatService:FindFirstChildOfClass("BubbleChatConfiguration"), {
 		FontFace = Kit.Tokens.font.bodyBold,
-		TextSize = 16,
+		TextSize = if phone then 16 else 19,
 		TextColor3 = C.white,
 		BackgroundColor3 = C.g0,
 		BackgroundTransparency = 0.1,
@@ -184,7 +188,10 @@ local function styleChat()
 end
 
 function ChatController.init()
-	styleChat()
+	-- (and again when the device class changes: phone and computer sizes differ)
+	Kit.Layout.watch(function()
+		styleChat()
+	end)
 	TextChatService.ChildAdded:Connect(function()
 		task.defer(styleChat)
 	end)
