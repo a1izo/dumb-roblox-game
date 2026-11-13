@@ -216,3 +216,21 @@ menu to see the full lighting". Show it once per session.
 Write to the owner in plain words: what changed and where to look, the before and after pictures, the frame rate,
 which imports are needed (file name and version) or "script sync only", what was checked and what was not seen.
 Add what you learned to `docs/agent-memory/lighting-rework-2026-11.md`.
+
+## Status, 2026-11-13 (carried out by another agent)
+
+Phases 1 to 3 and 5 to 7 are in the code and checked; phase 4 is written and switched off. Pictures in
+`docs/graphics-2026-11-13/`; what was learned in `docs/agent-memory/lighting-rework-2026-11.md`.
+
+| Phase | State | What the owner has to do |
+|---|---|---|
+| 1 shadows | 20 HQ pools, 12 Campus, a few in Tokyo built to cast; the nearest few are keyed. Root cause of "lamps go dark" found and fixed (a shadow spot within ~1 stud of a ceiling is dark). Lights only: no version change. | Rojo sync (SceneBuilder, LightingController, Scenes data) |
+| 2 wet street | The road borrows ConcreteDark's colour map so it is no longer black. No mirror of the signs is possible. A brighter AsphaltWet needs a retexture and an upload. | Say yes to the retexture and upload if wanted |
+| 3 sign light | 79 coloured spots from Tokyo's big signs, Tokyo lamp budget 12 (its check now passes) | Rojo sync |
+| 4 contact darkness | `maps/contact.py` + `CONTACT_DARKNESS` in Agency, OFF: it bumps Agency's version, so HQ would be a grey box until the FBX is imported | Say yes, then export Agency and import the FBX |
+| 5 air | `World/AirFx` (Tokyo haze, Campus halos and snow cones), `LampHaze` (HQ glass boost) | Rojo sync |
+| 6 rim light | `World/RimLight` | Rojo sync |
+| 7 notice | `World/QualityNotice` | Rojo sync |
+
+Not done from the plan: HQ's monitor spill check and the Campus window spill lights (phase 3 steps 3 and 4), pendants
+with a point light (interview rooms) as shadow lamps, a frame rate read on the owner's machine.

@@ -133,3 +133,29 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   warm tint, Tokyo saturated violet, bloom 0.9). CampusLamp 3.2 -> 2.2. Tuned by emulating on a play-test client
   (not synced into the place, not committed at the time of writing). Tokyo's asphalt stays near black (its scan).
 - 2026-11-12: the plan for what comes after the balance pass (shadows, wet street, coloured light, contact darkness, air, rim light, low-quality notice), written for another agent: docs/handoff/graphics-plan-2026-11-12.md
+- 2026-11-13, the graphics plan (docs/handoff/graphics-plan-2026-11-12.md) carried out, phase by phase (pictures in
+  docs/graphics-2026-11-13/):
+  - Phase 1, shadows: ROOT CAUSE of the lamps going dark found: a shadow-casting spot within ~1 stud of the ceiling lights
+    nothing (and a shadowed spot is ~3x dimmer than an unshadowed one): see [[shadow-lamps-ceiling-clearance]]. 20 pools
+    in HQ, 12 on the Campus and a few in Tokyo (station hall, platform, arcade) are built to cast; the controller keys
+    the nearest few. Version unchanged (lights only). Nearest 10 held 60 fps at QL21 here ([[studio-frame-rate-measure]]).
+  - Phase 2, Tokyo's road: the road's colour map is near black (that is why no light showed on it; Reflectance and a
+    polished roughness map changed nothing). SceneBuilder now lends it ConcreteDark's colour map (BORROWED_COLOUR): a
+    dark violet-grey street with lamp sheen, no upload. It does NOT mirror the signs (Roblox has no reflections of
+    lights). The proper fix, a brighter AsphaltWet in maps/scanlib.py (retexture + upload), is the owner's call.
+  - Phase 3, light from signs: lightbook.sign_glow, 79 coloured spots out of Tokyo's big fascia signs and vertical signs
+    (range 14 to 19, brightness 0.6 to 1.2, none above y 20, none within 9 studs of each other). Tokyo has a lamp
+    budget now (12) and lightbook.unstack takes out stacked lamps at export (UNSTACK in the venue): its check_v2 was
+    never run before and flagged 24 problems, all gone. HQ's monitor spills and Campus' window spill were not added.
+  - Phase 4, contact darkness: maps/contact.py (stepped layers of the flat look ContactDark under furniture and along
+    wall feet; 151 pieces and 168 walls in HQ, preview in docs/graphics-2026-11-13). OFF (Agency CONTACT_DARKNESS =
+    False): it adds meshes, so Agency goes up a version and HQ is a grey box until the new FBX is imported, and it could
+    not be looked at in the real place. Switch on, export, import, look at the bullpen.
+  - Phase 5, air: World/AirFx (Tokyo neon haze round the signs' lights, Campus halos and snow cones at the lamp posts)
+    and LampHaze (HQ shafts up to 1.8x stronger within 26 studs of the outside glass). Low quality off, Reduce motion
+    keeps them still.
+  - Phase 6, rim light: World/RimLight, a 0.4 / 6.5 PointLight past each other player's head, away from the camera,
+    only while a ray from the camera reaches the head, off in a blackout, in Low quality and outside a map.
+  - Phase 7: World/QualityNotice, one Kit.notice once per session in a map when the saved quality is Automatic or under 7.
+  - Not in the place: none of these scripts or the new Scenes data are synced into the owner's place (a classifier
+    blocks script writes into the shared place, [[studio-shared-place-write-blocked]]): the owner's Rojo sync does it.

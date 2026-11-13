@@ -52,3 +52,7 @@
 - [Imports by Open Cloud](imports-by-open-cloud.md) - no-screen imports + script sync through the Studio MCP: upload, insert, line up, share with the universe; --split for >20 MB
 - [Workflow](workflow.md) - the delivery chain from a big message to the saved place, and the traps hit (2026-11-12)
 - [Graphics references 2026-11](graphics-references-2026-11.md) - the owner's two interior photo references (docs/handoff/refs) and the part-two plan: baked shading, one finished room per map, motion, detail, low quality, the Tokyo crowd's logic
+- [Shadow lamps need ceiling clearance](shadow-lamps-ceiling-clearance.md) - a shadowed spot is dark within ~1 stud of the ceiling and 3x dimmer; lightbook.pool(shadows=), SHADOW_GAIN, keys (2026-11-13)
+- [Studio frame rate](studio-frame-rate-measure.md) - off-screen Studio reads 15 fps; activate it before each 2 s count; 10 shadow lamps held 60
+- [Shared place writes blocked](studio-shared-place-write-blocked.md) - the classifier refuses script writes into the Team Create place; emulate on the play copy (server edits after build, client grade)
+- [Exports restore binaries](export-restores-binaries.md) - a lights-only export rewrites FBX/blend/previews/ImportVersions: git checkout them, commit Scenes data + scripts
