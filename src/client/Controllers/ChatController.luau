@@ -180,7 +180,7 @@ local function styleChat()
 	})
 	setProps(TextChatService:FindFirstChildOfClass("BubbleChatConfiguration"), {
 		FontFace = Kit.Tokens.font.bodyBold,
-		TextSize = if phone then 16 else 19,
+		TextSize = if phone then 19 else 23,
 		TextColor3 = C.white,
 		BackgroundColor3 = C.g0,
 		BackgroundTransparency = 0.1,

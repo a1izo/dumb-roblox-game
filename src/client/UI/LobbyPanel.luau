@@ -39,6 +39,7 @@ local MapPreloader = require(script.Parent.Parent.World.MapPreloader)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local TouchControls = require(script.Parent.Core.TouchControls)
+local TrialObjective = require(script.Parent.Parent.Onboarding.TrialObjective)
 local Screens = require(script.Parent.Screens)
 
 local C = Kit.color
@@ -142,7 +143,9 @@ local function applyVisibility()
 	local view = lobbyView()
 	local shown = view and not introHidden and not LobbyChrome.isHidden()
 	menu.Visible = shown
-	profileGroup.Visible = shown
+	-- (on a touch screen the Trial's panel takes the top right and there is no room for both: the card waits
+	-- until the panel has gone, 2026-11-13)
+	profileGroup.Visible = shown and not (Device.touch() and TrialObjective.shown())
 	-- (the title stands in the full-screen layer, which a cutscene's frame does not hide as it hides the HUD: it showed
 	-- over the scene deaths the shop previews, 2026-11-09)
 	titleBlock.Visible = shown and Screens.hud:GetAttribute("Cinematic") ~= true
@@ -378,7 +381,8 @@ function buildContents(phone: boolean)
 	local folding = Device.touch()
 	toggleHolder:ClearAllChildren()
 	toggleHolder.Visible = folding
-	toggleHolder.Size = UDim2.new(1, 0, 0, rowHeight)
+	-- (a little taller than a row: it is the one thing a thumb has to find)
+	toggleHolder.Size = UDim2.new(1, 0, 0, if phone then 46 else 60)
 	if folding then
 		Kit.entry({
 			text = if menuOpen then "Close" else "Menu",
@@ -809,6 +813,11 @@ function LobbyPanel.init()
 	eyeButton = eye
 	LobbyChrome.Changed:Connect(function()
 		applyVisibility()
+	end)
+	TrialObjective.Changed:Connect(function()
+		if menu and profileGroup and titleBlock then
+			applyVisibility()
+		end
 	end)
 	Screens.hud:GetAttributeChangedSignal("Cinematic"):Connect(function()
 		if titleBlock and menu and profileGroup then

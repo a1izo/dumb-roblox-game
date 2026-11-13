@@ -8,6 +8,9 @@
 -- few seconds later the panel slides out and the next step slides in. The offer to begin sits in the same
 -- place, with Begin and Skip. The panel only says what to do; the wisp (Onboarding/TrialWisp) shows where.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Signal = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Signal"))
+
 local UI = script.Parent.Parent.UI
 local Kit = require(UI.Kit)
 local LobbyChrome = require(UI.Core.LobbyChrome)
@@ -19,6 +22,9 @@ local C = Kit.color
 local T = Kit.Tokens
 
 local TrialObjective = {}
+
+-- Fired when the panel comes or goes (the lobby's card makes room for it on a phone).
+TrialObjective.Changed = Signal.new()
 
 local WHY_TIME = 3.2 -- seconds the "why" line stays before the next step
 
@@ -48,8 +54,17 @@ local function tellToasts()
 end
 
 local function apply()
+	local was = holder.Visible
 	holder.Visible = wanted and allowed and not LobbyChrome.isHidden()
 	tellToasts()
+	if holder.Visible ~= was then
+		TrialObjective.Changed:Fire()
+	end
+end
+
+-- Whether the panel is on screen.
+function TrialObjective.shown(): boolean
+	return holder ~= nil and holder.Visible
 end
 
 -- Shows the panel with new contents: it slides in from the right.

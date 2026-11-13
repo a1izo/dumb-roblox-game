@@ -13,6 +13,7 @@ local Streak = require(Progression:WaitForChild("Streak"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
+local Device = require(script.Parent.Core.Device)
 local LobbyChrome = require(script.Parent.Core.LobbyChrome)
 local LobbyPanel = require(script.Parent.LobbyPanel)
 local Router = require(script.Parent.Core.Router)
@@ -303,8 +304,10 @@ local function buildPopup()
 		local top = card.AbsolutePosition.Y - GAP * scale - popup.AbsoluteSize.Y
 		local crowded = trial ~= nil and top < trial.AbsolutePosition.Y + trial.AbsoluteSize.Y + 8 * scale
 		if Kit.Layout.isPhone() or crowded then
+			-- (on a touch screen a little right of the middle: centred, its left edge reached into the thumbstick's
+			-- left two fifths of the screen, 2026-11-13)
 			popup.AnchorPoint = Vector2.new(0.5, 1)
-			popup.Position = UDim2.new(0.5, 0, 1, -T.space.l)
+			popup.Position = UDim2.new(if Device.touch() then 0.6 else 0.5, 0, 1, -T.space.l)
 			return
 		end
 		popup.AnchorPoint = Vector2.new(1, 1)
