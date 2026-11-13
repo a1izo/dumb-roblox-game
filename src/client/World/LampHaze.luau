@@ -7,6 +7,10 @@
 --
 -- A ceiling lamp is a map lamp (SceneBuilder's "Light" anchors) with a floor 7 to 16 studs under it; desk lamps,
 -- sconces and screens' spill are not. Only lamps near the camera are kept lit. Off in Low quality mode.
+--
+-- Near the outside glass (a pane of a curtain wall, the map's colliders of the CurtainGlass look: Bureau HQ's tower)
+-- the shafts are up to GLASS_BOOST stronger, where the city's light comes in and the air in front of the glass is the
+-- brightest (the owner's graphics plan, 2026-11-13, phase 5).
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -23,10 +27,14 @@ local LampHaze = {}
 local DROP = { 7, 16 } -- a ceiling lamp's height over the floor under it
 local NEAR = 110 -- studs from the camera within which the shafts are drawn
 local SHAFT = 0.93 -- the shaft's transparency at its brightest (just under the lamp)
+local GLASS_LOOK = "CurtainGlass" -- the look of the glass that faces outside (SceneBuilder sets the Look attribute)
+local GLASS_REACH = 26 -- a lamp this far from a pane or further has its shaft as it was
+local GLASS_BOOST = 0.8 -- and one at the glass has it this much stronger
 local UPDATE = 0.1
 
 type Haze = {
 	light: Light,
+	boost: number, -- 1 in the room, up to 1 + GLASS_BOOST at the glass
 	base: number,
 	beam: Beam,
 	dust: ParticleEmitter?,
@@ -67,6 +75,22 @@ local function shade(k: number): NumberSequence
 	})
 end
 
+-- How much stronger a lamp's shaft is for the glass near it (1 where there is none).
+local function glassBoost(panes: { BasePart }, at: Vector3): number
+	local nearest = math.huge
+	for _, pane in ipairs(panes) do
+		local local_ = pane.CFrame:PointToObjectSpace(at)
+		local half = pane.Size / 2
+		local edge = Vector3.new(
+			math.clamp(local_.X, -half.X, half.X),
+			math.clamp(local_.Y, -half.Y, half.Y),
+			math.clamp(local_.Z, -half.Z, half.Z)
+		)
+		nearest = math.min(nearest, (local_ - edge).Magnitude)
+	end
+	return 1 + GLASS_BOOST * (1 - math.clamp(nearest / GLASS_REACH, 0, 1))
+end
+
 local function build(map: Instance)
 	clear()
 	builtFor = map
@@ -76,6 +100,12 @@ local function build(map: Instance)
 		return
 	end
 	local params = rayParams()
+	local panes: { BasePart } = {}
+	for _, item in ipairs(map:GetDescendants()) do
+		if item:IsA("BasePart") and item:GetAttribute("Look") == GLASS_LOOK then
+			table.insert(panes, item)
+		end
+	end
 	for _, light in ipairs(map:GetDescendants()) do
 		local anchor = light.Parent
 		if
@@ -158,6 +188,7 @@ local function build(map: Instance)
 				dust.Parent = box
 				table.insert(hazes, {
 					light = light,
+					boost = if #panes > 0 then glassBoost(panes, from) else 1,
 					base = LightingController.lampBrightness(light) or light.Brightness,
 					beam = beam,
 					dust = dust,
@@ -200,7 +231,7 @@ local function step()
 			else 0
 		haze.beam.Enabled = near and k > 0.05
 		if haze.beam.Enabled then
-			haze.beam.Transparency = shade(math.min(k, 1))
+			haze.beam.Transparency = shade(math.min(k, 1) * haze.boost)
 		end
 		local dust = haze.dust
 		if dust then

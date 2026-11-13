@@ -153,6 +153,11 @@ local function run()
 	running = false
 end
 
+-- Whether a tip is on the screen now (World/QualityNotice waits for it).
+function HintController.isUp(): boolean
+	return up
+end
+
 -- Queues a hint if this profile has not seen it yet.
 function HintController.trigger(id: string)
 	if seen(id) or not Settings.get("hints") or not Hints.BY_ID[id] then
