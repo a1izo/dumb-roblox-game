@@ -464,7 +464,7 @@ return {
 		collide = true,
 		color = { 49, 34, 25 },
 		lights = {
-			{ at = { -0, 1.413, -1.55 }, brightness = 0.9, color = { 170, 196, 255 }, kind = "point", range = 12 },
+			{ at = { -0, 1.413, -1.55 }, brightness = 0.7, color = { 170, 196, 255 }, kind = "point", range = 12 },
 		},
 		set = "Core",
 		tris = 824,

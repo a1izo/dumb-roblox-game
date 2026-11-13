@@ -146,7 +146,10 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
   - Phase 3, light from signs: lightbook.sign_glow, 79 coloured spots out of Tokyo's big fascia signs and vertical signs
     (range 14 to 19, brightness 0.6 to 1.2, none above y 20, none within 9 studs of each other). Tokyo has a lamp
     budget now (12) and lightbook.unstack takes out stacked lamps at export (UNSTACK in the venue): its check_v2 was
-    never run before and flagged 24 problems, all gone. HQ's monitor spills and Campus' window spill were not added.
+    never run before and flagged 24 problems, all gone. Later the same day: HQ's monitor spills checked (all at their
+    screens, blue-white, 0.6 to 0.7; the video wall's 1.1 kept as a wall of screens) and the only prop screen light, the
+    CRT television's, lowered 0.9 to 0.7 (props.py and ModelCatalog.luau by hand); Campus got 39 warm spots (range 12,
+    0.5) out of every third ground-floor window, 27 studs apart, onto the snow (campus/masonry.py). Version unchanged.
   - Phase 4, contact darkness: maps/contact.py (stepped layers of the flat look ContactDark under furniture and along
     wall feet; 151 pieces and 168 walls in HQ, preview in docs/graphics-2026-11-13). ON since the owner's yes the same
     day (Agency CONTACT_DARKNESS = True): Agency is v33 (+3,224 triangles, one new mesh Map_Agency_ContactDark), so HQ is

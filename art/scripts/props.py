@@ -471,7 +471,7 @@ def chip_bag():
 
 
 @prop("CRTTelevision", pivot="bottom", material="SmoothPlastic", collide=True, texture=512,
-      lights=[dict(at=(0, -1.6, 1.4), kind="point", color=(170, 196, 255), range=12, brightness=0.9)])
+      lights=[dict(at=(0, -1.6, 1.4), kind="point", color=(170, 196, 255), range=12, brightness=0.7)])
 def crt_television():
     """An old television on its own short legs: a wood-grain cabinet, the glass bulging out of a dark
     bezel and lit a cold blue, two dials and a speaker grille, rabbit-ear antennas."""

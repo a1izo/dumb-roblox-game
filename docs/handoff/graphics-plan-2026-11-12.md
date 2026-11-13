@@ -232,5 +232,6 @@ Phases 1 to 7 are in the code and checked; phase 4 was switched on later the sam
 | 6 rim light | `World/RimLight` | Rojo sync |
 | 7 notice | `World/QualityNotice` | Rojo sync |
 
-Not done from the plan: HQ's monitor spill check and the Campus window spill lights (phase 3 steps 3 and 4), pendants
-with a point light (interview rooms) as shadow lamps, a frame rate read on the owner's machine.
+Phase 3 steps 3 and 4 were done later the same day (HQ's monitor spills checked, the CRT's light 0.9 to 0.7; 39 warm
+window spills on the University's snow). Not done from the plan: pendants with a point light (interview rooms) as
+shadow lamps, a frame rate read on the owner's machine, the Campus window spill seen in a play test.

@@ -18,7 +18,7 @@ Walls run so their "n" side is outside (see face_line)."""
 import math
 import random
 
-from maps import city, kit
+from maps import city, kit, lightbook
 from maps import geo2d as g2
 from maps.mesher import cross, dot, sub
 from maps.venues.campus import fit
@@ -299,6 +299,7 @@ def _shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", store
         low = blocked_on(a, b, length, fit.LOW_BLOCKERS)
         ops, arches = [], []
         rooms = []
+        grounds = []  # the ground floor's windows along this wall, for their spill on the snow
         door_spans = []
         for f, c, w in doors:
             if f != face:
@@ -328,6 +329,7 @@ def _shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", store
                 glass = pane(face, at, level_i) if (pane and not ground) else None
                 if glass is None and ground:
                     glass = "Glass"
+                    grounds.append(at)
                 elif glass is None:
                     roll = rng.random()
                     glass = "WindowLit" if roll < lit else ("WindowCool" if roll < lit + 0.12 else "WindowDark")
@@ -346,6 +348,15 @@ def _shell(s, r, eaves, doors, *, brick="BrickRed", inside="PlasterLight", store
             arch_head(s, a, t, n, T, at, w, top, rise, brick, inside)
         for at, w, sill, head, look in rooms:
             window_room(s, a, t, n, at, w, sill, head, rng, look)
+        # The warm light of the rooms behind the ground floor's glass spilling out onto the snow in front of it (the
+        # owner's graphics plan, 2026-11-13): a spot out of every third window, 27 studs apart, never in the glass
+        # itself (the lamps behind it are the room's own).
+        for k, at in enumerate(grounds):
+            if k % 3 == 1:
+                p = kit.point_on(a, t, at)
+                off = T / 2 + 0.6
+                lightbook.facade(s, (p[0] + n[0] * off, 4.6, p[2] + n[2] * off), lightbook.facing(n[0], n[2]),
+                                 lightbook.TUNGSTEN, 12, 0.5)
         if plinth:
             cursor = 0.0
             profile = [(o + T / 2, y) for o, y in ((0, 0), (0.35, 0), (0.35, 1.3), (0.1, 1.6), (0, 1.7))]
