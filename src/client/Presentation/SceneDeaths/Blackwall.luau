@@ -16,6 +16,79 @@ local EMBER = Color3.fromRGB(255, 110, 40)
 local GREEN = Color3.fromRGB(80, 255, 140)
 local HOT = Color3.fromRGB(255, 226, 190)
 
+-- The quickhacks' icons, DRAWN (2026-11-12, the user: "MAKE SURE you dont use emojis": the symbols typed here before
+-- came out as coloured emoji): each from a few plain frames in a square holder. 1 ping (rings round a dot), 2 sonic
+-- shock (a waveform), 3 overheat (heat rising off a bar), 4 short circuit (a bolt), 5 the gateway (a wall, breached).
+local function drawIcon(parent: Instance, kind: number, color: Color3)
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UDim2.fromScale(0.5, 0.5)
+	holder.Size = UDim2.fromScale(0.78, 0.78)
+	holder.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	holder.Parent = parent
+	local function bar(x: number, y: number, w: number, h: number, turn: number?, c: Color3?)
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = c or color
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromScale(x, y)
+		f.Size = UDim2.fromScale(w, h)
+		f.Rotation = turn or 0
+		f.Parent = holder
+		return f
+	end
+	local function ring(size: number)
+		local f = Instance.new("Frame")
+		f.BackgroundTransparency = 1
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromScale(0.5, 0.5)
+		f.Size = UDim2.fromScale(size, size)
+		local round = Instance.new("UICorner")
+		round.CornerRadius = UDim.new(1, 0)
+		round.Parent = f
+		local edge = Instance.new("UIStroke")
+		edge.Color = color
+		edge.Thickness = 1.5
+		edge.Parent = f
+		f.Parent = holder
+	end
+	if kind == 1 then
+		ring(0.9)
+		ring(0.5)
+		local dot = bar(0.5, 0.5, 0.18, 0.18)
+		local round = Instance.new("UICorner")
+		round.CornerRadius = UDim.new(1, 0)
+		round.Parent = dot
+	elseif kind == 2 then
+		for i, h in ipairs({ 0.3, 0.7, 1.0, 0.55, 0.85, 0.35 }) do
+			bar(0.08 + (i - 1) * 0.168, 0.5, 0.09, h)
+		end
+	elseif kind == 3 then
+		bar(0.5, 0.9, 0.9, 0.12)
+		for i = 0, 2 do
+			local x = 0.22 + i * 0.28
+			bar(x + 0.05, 0.62, 0.09, 0.26, 24)
+			bar(x - 0.05, 0.4, 0.09, 0.26, -24)
+			bar(x + 0.05, 0.18, 0.09, 0.26, 24)
+		end
+	elseif kind == 4 then
+		bar(0.58, 0.24, 0.16, 0.5, 28)
+		bar(0.5, 0.5, 0.5, 0.13, -8)
+		bar(0.42, 0.76, 0.16, 0.5, 28)
+	else
+		for row = 0, 2 do
+			for col = 0, 2 do
+				if not (row == 1 and col == 1) then
+					bar(0.18 + col * 0.32 + (row % 2) * 0.05, 0.2 + row * 0.3, 0.26, 0.22)
+				end
+			end
+		end
+		bar(0.5, 0.5, 0.2, 0.2, 45, RED)
+	end
+	return holder
+end
+
 -- The glitch is STEPPED (2026-11-10 remake): fourteen hard jumps a second read as data; a smooth move reads as smoke.
 local STEP = 14
 local LIMBS = { "Torso", "Head", "Left Arm", "Right Arm", "Left Leg", "Right Leg" }
@@ -320,9 +393,14 @@ local function build(ctx)
 		Size = UDim2.fromScale(0.06, 0.04),
 	})
 	-- the quickhack quick slots
-	for k, glyph in ipairs({ "◉", "⌁", "♨", "⚡", "▣" }) do
+	for k = 1, 5 do
 		local slot = panel(0.03 + (k - 1) * 0.037, 0.8, 0.032, 0.05, 0.3)
-		text(slot, glyph, 0.05, 0.05, 0.9, 0.6, CYAN, Enum.TextXAlignment.Center)
+		local top = ui(slot, "Frame", {
+			BackgroundTransparency = 1,
+			Position = UDim2.fromScale(0.05, 0.05),
+			Size = UDim2.fromScale(0.9, 0.6),
+		})
+		drawIcon(top, k, CYAN)
 		text(slot, tostring(k), 0.05, 0.62, 0.9, 0.34, Color3.fromRGB(170, 180, 186), Enum.TextXAlignment.Center)
 	end
 	local subBox = panel(0.2, 0.83, 0.6, 0.045, 0.45)
@@ -401,7 +479,6 @@ local function build(ctx)
 			})
 		end
 		text(m, "AVAILABLE QUICKHACKS", 0.09, 0.3, 0.2, 0.022, CYAN)
-		local glyphs = { "◉", "⌁", "♨", "⚡", "▣" }
 		for i, spec in ipairs(listNames) do
 			local row = ui(m, "Frame", {
 				BackgroundColor3 = Color3.fromRGB(6, 22, 28),
@@ -424,7 +501,7 @@ local function build(ctx)
 				Size = UDim2.fromScale(0.1, 0.7),
 			})
 			ui(icon, "UIStroke", { Color = CYAN, Thickness = 1, Transparency = 0.4 })
-			text(icon, glyphs[i], 0.05, 0.05, 0.9, 0.9, CYAN, Enum.TextXAlignment.Center)
+			drawIcon(icon, i, CYAN)
 			local name = text(row, spec[1], 0.16, 0.15, 0.6, 0.7, CYAN)
 			local cost = ui(row, "Frame", {
 				BackgroundColor3 = Color3.fromRGB(10, 40, 48),
@@ -521,7 +598,7 @@ local function build(ctx)
 			tag.AlwaysOnTop = true
 			tag.LightInfluence = 0
 			tag.Parent = workspace.CurrentCamera
-			text(tag, "◆ " .. string.upper(ctx.victimName), 0, 0, 1, 1, CYAN, Enum.TextXAlignment.Center)
+			text(tag, "// " .. string.upper(ctx.victimName), 0, 0, 1, 1, CYAN, Enum.TextXAlignment.Center)
 			table.insert(ctx.cleanups, function()
 				tag:Destroy()
 			end)
@@ -902,6 +979,10 @@ local function build(ctx)
 	ctx:at(18.0, function()
 		subtitle.Text = ""
 	end)
+	-- (polish, 2026-11-12) the breath before the pillar: the picture holds, drained white-red
+	ctx:at(16.17, function()
+		Cinema.still(Color3.fromRGB(255, 210, 206), 0.08)
+	end)
 	-- 16.25 the white-red pillar of light out of the victim; sparks in a sphere
 	ctx:at(16.25, function()
 		local torso = victim and ctx:limb(victim, "Torso")
@@ -953,6 +1034,60 @@ local function build(ctx)
 		}, 140)
 		Vfx.Light.flash(world, Color3.fromRGB(255, 120, 110), 60, 8, 0.8)
 		Cinema.flash(Color3.fromRGB(255, 200, 196), 0.75, 0.6)
+		-- (polish, 2026-11-12) what it leaves: the floor scorched black under them with a dull red rim that cools, the
+		-- arcs to the others striking twice more, embers raining back down through the smoke
+		local scorch = ctx:part({
+			size = Vector3.new(0.06, 7, 7),
+			at = Vector3.new(at.X, 0.04, at.Z),
+			rot = Vector3.new(0, 0, 90),
+			color = Color3.fromRGB(12, 10, 10),
+			shape = "Cylinder",
+			cast = false,
+		})
+		scorch.Transparency = 0.15
+		local rim = ctx:part({
+			size = Vector3.new(0.05, 7.6, 7.6),
+			at = Vector3.new(at.X, 0.03, at.Z),
+			rot = Vector3.new(0, 0, 90),
+			color = RED,
+			glow = true,
+			shape = "Cylinder",
+			cast = false,
+		})
+		ctx:tween(rim, 4.5, { Transparency = 1, Color = Color3.fromRGB(90, 20, 14) })
+		for k = 1, 2 do
+			Vfx.Clock.after(0.28 * k, function()
+				if not torso then
+					return
+				end
+				for _, b in ipairs(by) do
+					local other = ctx:limb(b, "Torso")
+					if other then
+						Vfx.Beams.bolt(
+							torso.Position,
+							other.Position,
+							0.25,
+							{ color = if k == 1 then HOT else RED, width = 0.3, jag = 1.6, pieces = 11, bright = 3 }
+						)
+					end
+				end
+			end)
+		end
+		Vfx.Clock.after(0.9, function()
+			Vfx.Emit.burst(ctx:world(Vector3.new(at.X, 13, at.Z)), {
+				tex = "VfxEmber",
+				color = { { 0, HOT }, { 0.5, EMBER }, { 1, RED } },
+				size = { { 0, 0.1 }, { 1, 0.02 } },
+				alpha = { { 0, 0 }, { 0.8, 0.2 }, { 1, 1 } },
+				life = { 2.2, 3.6 },
+				speed = { 0.5, 2 },
+				spread = 180,
+				accel = Vector3.new(0, -5, 0),
+				drag = 0.6,
+				light = 1,
+				bright = 2.6,
+			}, 90, Vector3.new(9, 5, 9))
+		end)
 	end)
 	ctx:grade(13.0, nil, { Saturation = 0.15, Contrast = 0.12, TintColor = Color3.fromRGB(255, 236, 230) }, 0.3)
 end
