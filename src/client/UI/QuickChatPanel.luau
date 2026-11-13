@@ -15,6 +15,7 @@ local QuickChat = require(Shared:WaitForChild("QuickChat"))
 local EmoteController = require(script.Parent.Parent.Controllers.EmoteController)
 local Actions = require(script.Parent.Parent.Input.Actions)
 local ClientState = require(script.Parent.Parent.ClientState)
+local Device = require(script.Parent.Core.Device)
 local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
@@ -28,6 +29,10 @@ local QuickChatPanel = {}
 local WIDTH = 470
 local PAD = T.space.l
 local HEIGHT_EMOTES = PAD * 2 + Wheel.HEIGHT
+-- How far up from the bottom of the screen the wheel stands: clear of the action bar on a computer; low on a touch
+-- screen, where the height is short (a phone's wheel ran off the top of the screen, 2026-11-13).
+local BOTTOM = 96
+local BOTTOM_TOUCH = T.space.l
 -- The slot a key plays: the wheel's slot keys (1 to 4 unless the player set their own, Shared/Bindings).
 local function slotFor(key: Enum.KeyCode): number?
 	local profile = ClientState.profile
@@ -72,6 +77,8 @@ end
 
 -- Lays the page out for the wheel.
 local function arrange()
+	local bottom = if Device.touch() then BOTTOM_TOUCH else BOTTOM
+	panel.Position = UDim2.new(0.5, 0, 1, -bottom)
 	panel.Size = UDim2.new(0.9, 0, 0, HEIGHT_EMOTES)
 	if sizeLimit then
 		sizeLimit.MaxSize = Vector2.new(WIDTH + PAD * 2, HEIGHT_EMOTES)
@@ -79,10 +86,22 @@ local function arrange()
 	emotesPage.Size = UDim2.fromScale(1, 1)
 	emotesPage.Visible = true
 	backing()
-	-- A narrow screen shrinks the wheel to fit.
+	-- A narrow or short screen shrinks the wheel to fit: across, and from the top of the screen down to its place.
 	task.defer(function()
-		local width = emotesPage.AbsoluteSize.X / Kit.Base.scaleOf(emotesPage)
-		wheelScale.Scale = if width > 0 then math.min(1, width / WIDTH) else 1
+		local scale = Kit.Base.scaleOf(emotesPage)
+		local width = emotesPage.AbsoluteSize.X / scale
+		local fit = if width > 0 then math.min(1, width / WIDTH) else 1
+		local screen = panel.Parent :: GuiBase2d
+		local room = screen.AbsoluteSize.Y / Kit.Base.scaleOf(panel) - bottom - T.space.s - PAD * 2
+		if room > 0 then
+			fit = math.min(fit, room / Wheel.HEIGHT)
+		end
+		wheelScale.Scale = fit
+		local height = math.ceil(PAD * 2 + Wheel.HEIGHT * fit)
+		panel.Size = UDim2.new(0.9, 0, 0, height)
+		if sizeLimit then
+			sizeLimit.MaxSize = Vector2.new(WIDTH + PAD * 2, height)
+		end
 	end)
 end
 
@@ -105,6 +124,8 @@ function QuickChatPanel.init()
 		Position = UDim2.new(0.5, 0, 1, -96),
 		Size = UDim2.new(0.9, 0, 0, HEIGHT_EMOTES),
 		Visible = false,
+		-- (over the pop-ups in the same layer, such as the daily streak card)
+		ZIndex = 5,
 		Parent = Screens.panels,
 	})
 	panel = page

@@ -57,6 +57,6 @@ Without these, frames walked off-screen and the paper swap looped until Roblox s
 **Rejected, don't bring back:** skewed slabs/tilted cards/stamps ("Marvel Rivals AI slop"), grey glass panels,
 "bolder font + grey boxes" as an overhaul, tape-strip and boxed notifications, sparkles anywhere but tips and the
 phase line, Arimo as the display face ("boring"), a dark gothic concept B ("horrible"), cropped window titles.
-Role card text: three short rules, no "how you win" ("just keep it simple"). The emote wheel is off limits.
+Role card text: three short rules, no "how you win" ("just keep it simple"). The emote wheel is off limits (its look; the owner let it be fitted to phone screens, 2026-11-13).
 
 **How to apply:** build new UI from these Kit pieces; check every change in a Studio playtest before reporting it.

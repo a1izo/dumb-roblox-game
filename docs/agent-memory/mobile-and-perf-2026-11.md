@@ -57,7 +57,8 @@ left). On any touch screen LobbyPanel folds the menu entries behind a "Menu" ent
 again, picking an entry folds them). Desktop chat text went 15 -> 20 px (Indie Flower at 15 was unreadable).
 Phone check the same day (local rojo-built place, DGForceDevice=phone, window ~1017x463): every lobby window fine. Fixed:
 the Trial's panel covered the profile card on phones (the card now waits while the panel is up, TrialObjective.Changed),
-the streak popup sits at 0.6 across on touch (centred, it reached the thumbstick's two fifths). Left for the owner: the
-emote wheel runs off the top on a phone and sits over the streak card (the wheel is off limits).
+the streak popup sits at 0.6 across on touch (centred, it reached the thumbstick's two fifths). The emote wheel ran off the top on a
+phone: with the owner's yes it now fits the screen's height too (QuickChatPanel.arrange), stands 16 px up on touch
+(96 on a computer) and draws over the streak card. Its look is unchanged.
 Testing trap: Studio MCP clicks only work once the test window is restored (off-screen at x -4000 is fine, minimised
 is not); MCP mouse y is below the top bar inset. Studio 0.747 auto-update closed every Studio mid-test.
