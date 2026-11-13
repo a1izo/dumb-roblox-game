@@ -1248,44 +1248,6 @@ function SceneBuilder.mode(venue: string): string
 	return "greybox"
 end
 
--- Tokyo's wet street (the owner's graphics plan, 2026-11-13: the road "reads as a pure black void"). Its scan, AsphaltWet, is
--- near black (an average of about 12 of 255), so no lamp, sign or window glow ever showed on it, whatever its roughness
--- (seen in a Studio play test at full quality: Reflectance on the road and the roughness map of polished marble changed
--- nothing; its own roughness map under a brighter colour map did). Until the asphalt is rendered brighter again
--- (art/scripts/maps/scanlib.py, "AsphaltWet", which means new texture uploads: the owner's call) the road borrows the
--- colour map of ConcreteDark, a dark grey of the same grain that is in the venue's import anyway, and keeps its own
--- normal and roughness maps: a dark violet-grey street with a sheen under every lamp. Nothing is borrowed in a venue
--- without the donor, or where it was not asked for.
-local BORROWED_COLOUR = {
-	Tokyo = { AsphaltWet = "ConcreteDark" },
-}
-
-local function materialOf(part: Instance, prefix: string): string
-	return (string.gsub(string.sub(part.Name, #prefix + 1), "_%d+$", ""))
-end
-
-local function borrowColour(folder: Folder, prefix: string, borrows: { [string]: string })
-	local donors: { [string]: SurfaceAppearance } = {}
-	local wanted: { [string]: boolean } = {}
-	for _, donor in pairs(borrows) do
-		wanted[donor] = true
-	end
-	for _, part in ipairs(folder:GetChildren()) do
-		local material = materialOf(part, prefix)
-		local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
-		if appearance and wanted[material] and appearance.ColorMap ~= "" and not donors[material] then
-			donors[material] = appearance
-		end
-	end
-	for _, part in ipairs(folder:GetChildren()) do
-		local donor = donors[borrows[materialOf(part, prefix)] or ""]
-		local appearance = part:FindFirstChildWhichIsA("SurfaceAppearance")
-		if donor and appearance then
-			appearance.ColorMap = donor.ColorMap
-		end
-	end
-end
-
 local function buildFormat2(b, venue: string, data): string
 	local mode = SceneBuilder.mode(venue)
 	local greybox = mode == "greybox"
@@ -1303,10 +1265,6 @@ local function buildFormat2(b, venue: string, data): string
 			local rest = string.sub(source.Name, #data.meshPrefix + 1)
 			dress(part, (string.gsub(rest, "_%d+$", "")))
 			part.Parent = folder
-		end
-		local borrows = BORROWED_COLOUR[data.venue]
-		if borrows then
-			borrowColour(folder, data.meshPrefix, borrows)
 		end
 	end
 	local geometry = data.geometry

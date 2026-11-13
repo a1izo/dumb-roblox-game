@@ -139,10 +139,15 @@ Status 2026-11-01: HQ done in code and exported (Maps Agency v25), not yet seen 
     nothing (and a shadowed spot is ~3x dimmer than an unshadowed one): see [[shadow-lamps-ceiling-clearance]]. 20 pools
     in HQ, 12 on the Campus and a few in Tokyo (station hall, platform, arcade) are built to cast; the controller keys
     the nearest few. Version unchanged (lights only). Nearest 10 held 60 fps at QL21 here ([[studio-frame-rate-measure]]).
-  - Phase 2, Tokyo's road: the road's colour map is near black (that is why no light showed on it; Reflectance and a
-    polished roughness map changed nothing). SceneBuilder now lends it ConcreteDark's colour map (BORROWED_COLOUR): a
-    dark violet-grey street with lamp sheen, no upload. It does NOT mirror the signs (Roblox has no reflections of
-    lights). The proper fix, a brighter AsphaltWet in maps/scanlib.py (retexture + upload), is the owner's call.
+  - Phase 2, Tokyo's road: the road's colour map was near black (mean 30 of 255; that is why no light showed on it;
+    Reflectance and a polished roughness map changed nothing). First fixed by lending it ConcreteDark's colour map in
+    SceneBuilder; then, with the owner's yes, properly: AsphaltWet in maps/scanlib.py is (92, 92, 102) with rough 0.6, so
+    its colour map has a mean of 62 (ConcreteDark's) and its roughness map 0.23 (the old road's 0.25; rough 0.3 gave 0.12
+    and the road mirrored the sky), puddles at 0.03; the borrow is gone. Tokyo's FBX carries the new textures, SAME
+    version (47: a texture alone does not move the digest), so nothing greyboxes, but the place's old import keeps the
+    black road until DeathsGambitMaps_Tokyo.fbx is imported again. It does NOT mirror the signs (Roblox has no
+    reflections of lights). Trap: a SurfaceAppearance map pointed at rbxasset://textures/<folder>/x.jpg in Studio did
+    not load (the road showed pale default grey whatever the colour), so a texture cannot be tried live that way.
   - Phase 3, light from signs: lightbook.sign_glow, 79 coloured spots out of Tokyo's big fascia signs and vertical signs
     (range 14 to 19, brightness 0.6 to 1.2, none above y 20, none within 9 studs of each other). Tokyo has a lamp
     budget now (12) and lightbook.unstack takes out stacked lamps at export (UNSTACK in the venue): its check_v2 was

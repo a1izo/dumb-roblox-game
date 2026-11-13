@@ -527,7 +527,12 @@ LIBRARY = {
     "Shutter": surface("painted_metal_shutter", (150, 152, 154), 7, "wall", 1, keep=0.4, seed=38),
     # Outside: Tokyo in the rain, the campus in snow.
     "Asphalt": surface("asphalt_02", (46, 46, 50), 20, "ground", 2, True, keep=0.5, seed=29),
-    "AsphaltWet": surface("clean_asphalt", (44, 44, 48), 16, "road", 2, True, keep=0.5, wet=1.0, seed=29),
+    # (Tokyo's roads. Wet tarmac: dark grey, not black. At (44, 44, 48) the wet grade (x 0.7) left it near black (mean 30 of
+    # 255), and no lamp, sign or window glow ever showed on it (the owner's graphics plan, 2026-11-13); (92, 92, 102) comes
+    # out at a mean of 62, which is what ConcreteDark's map has and what it looked like in a play test when the road
+    # borrowed it: dark violet-grey with a sheen under every lamp. rough 0.6 comes out at a map mean of 0.25 (the old
+    # road's; 0.3 gave 0.12, as glossy as polished black marble, and the road mirrored the sky), with the puddles at 0.03.)
+    "AsphaltWet": surface("clean_asphalt", (92, 92, 102), 16, "road", 2, True, keep=0.5, rough=0.6, wet=1.0, seed=29),
     "PaversWarm": surface("brick_pavement_02", (120, 106, 92), 8, "floor", 1, keep=0.5, seed=31),
     "PaversWet": surface("PavingStones136", (104, 104, 108), 8, "floor", 1, keep=0.4, wet=1.0, seed=30),
     "PaversWarmWet": surface("brick_pavement_02", (120, 106, 92), 8, "floor", 1, keep=0.5, wet=1.0, seed=31),

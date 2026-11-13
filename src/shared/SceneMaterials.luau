@@ -10,7 +10,7 @@ return {
 	Ash = { textured = true, fallback = { material = "Sand", color = { 112, 112, 117 } } },
 	AshCracked = { textured = true, fallback = { material = "Salt", color = { 96, 96, 96 } } },
 	Asphalt = { textured = true, fallback = { material = "Asphalt", color = { 47, 46, 51 } } },
-	AsphaltWet = { textured = true, fallback = { material = "Asphalt", color = { 30, 30, 32 } } },
+	AsphaltWet = { textured = true, fallback = { material = "Asphalt", color = { 62, 62, 68 } } },
 	Bamboo = { textured = true, fallback = { material = "Wood", color = { 149, 135, 96 } } },
 	Bark = { textured = true, fallback = { material = "Wood", color = { 57, 43, 36 } } },
 	BlackMetal = { textured = true, fallback = { material = "Metal", color = { 39, 38, 43 } } },

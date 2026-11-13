@@ -59,3 +59,9 @@ unused).
 2026-11-08: the same plugin synced main 31e49b56 (the scene deaths) in two launches: a new folder module
 (`SceneDeaths/init.luau`) and its children in one run fail NOPARENT for the children listed before it; order jobs
 parents first (shortest path) or run it twice. The place's scripts are at main 31e49b56.
+
+**2026-11-13, again:** a launch that merely sat after a `Get-Process` in the same command still ran, and sent the owner's
+Studio (open in the place for 13 minutes) back to its start page. Make it conditional: launch only when no
+RobloxStudioBeta has the place (`list_roblox_studios` shows "Place is not open" for a start page), and when one is
+yours, park it by its PID (a script that takes "the first window" can pick the owner's).
+
