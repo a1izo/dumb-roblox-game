@@ -258,7 +258,7 @@ def VfxRingBand(w=128, h=1024, seed=7):
 
 
 @texture
-def VfxColumn(w=256, h=512, seed=11):
+def VfxColumn(w=256, h=256, seed=11):
     """A column of light for a beam: across, a white core in a wide soft glow; along, faint streaks running its
     length (tiling: scrolled, they race up it)."""
     yy, xx = np.mgrid[0:h, 0:w]
@@ -648,7 +648,7 @@ def VfxChunk(cell=128, grid=2, seed=41):
 
 
 @texture
-def VfxAsh(cell=128, grid=4, seed=53):
+def VfxAsh(cell=64, grid=4, seed=53):
     """A flake of ash tumbling (4 x 4, one whole turn; 2026-11-12, the user: the dissolves' particles were "extremely
     ugly", make better high quality ones): a thin, torn, slightly curled flake, dark grey with grain, its edge burnt
     bright on one side. As it turns it narrows to a sliver and opens again, so a cloud of them glitters. Color tints

@@ -558,6 +558,7 @@ class Scene(LayoutMixin):
     def finish(self, collection):
         """Builds the Blender meshes (chunked per material) and returns their names."""
         names = []
+        planned = []  # (mesh name, its pieces, material)
         for mat, pieces in sorted(self.pieces.items()):
             # Small materials stay in one mesh; big ones are cut into cells of CHUNK studs. So are
             # small ones spread wider than a Roblox part may be (2048 studs a side), which the
@@ -589,7 +590,11 @@ class Scene(LayoutMixin):
             for index, chunk in enumerate(chunks, 1):
                 name = f"{self.prefix}_{self.venue}_{mat}_{index}"
                 names.append(name)
-                build_mesh(name, chunk, mat, collection)
+                planned.append((name, chunk, mat))
+        self.sealed = seal(planned)
+        print(f"[maps] {self.venue}: {self.sealed} joins between meshes sealed (+{self.sealed * 2} triangles)")
+        for name, chunk, mat in planned:
+            build_mesh(name, chunk, mat, collection)
         return names
 
     def _cell(self, centre):
@@ -605,6 +610,95 @@ class Scene(LayoutMixin):
 
     def triangles(self):
         return sum(len(p.faces) for pieces in self.pieces.values() for p in pieces)
+
+
+SEAL_OUT, SEAL_DOWN = 0.22, 0.22  # the lip under a join: this far under the neighbour, this far behind the surface
+
+
+def _sealable(mat):
+    """Opaque surfaces only: a lip under glass, water or an alpha sheet would be seen through it."""
+    if mat in matlib.ALPHA:
+        return False
+    return not (matlib.is_flat(mat) and (matlib.FLAT[mat][0] == "Glass" or matlib.FLAT[mat][2] > 0))
+
+
+def seal(planned):
+    """Seals the hairline cracks between meshes (2026-11-12, the user: "small line or cracks where you can see below
+    ... absolutely everywhere"). WHY they open: a venue is exported as many meshes (one per material and chunk), each
+    recentred on its own bounds and scaled by Roblox to its own size, so two meshes that meet along an edge do not
+    round that edge to the same pixels: a one-pixel slit opens along every join, and with nothing behind a floor or a
+    wall the bright void shows through it. The fix: wherever the border of one mesh meets the border of another in
+    the same plane (their faces turned the same way), the first grows a lip from that edge, sloping under its
+    neighbour (SEAL_OUT out, SEAL_DOWN behind the surface), in its own material; what shows in the slit is the lip.
+    A height field cut into tiles (Piece.ground) has thousands of such joins and lays one backing sheet under itself
+    instead.
+    Returns how many lips were made."""
+    def key(p):
+        return (round(p[0], 3), round(p[1], 3), round(p[2], 3))
+
+    borders = []  # per mesh: {(ka, kb): (a, b, normal, piece)}
+    for name, pieces, mat in planned:
+        edges = {}
+        if _sealable(mat):
+            for piece in pieces:
+                for face in piece.faces:
+                    pts = [piece.verts[i] for i in face]
+                    n = cross(sub(pts[1], pts[0]), sub(pts[2], pts[0]))
+                    length = math.sqrt(dot(n, n))
+                    if length < 1e-9:
+                        continue
+                    n = scale(n, 1 / length)
+                    for i in range(3):
+                        a, b = pts[i], pts[(i + 1) % 3]
+                        ka, kb = key(a), key(b)
+                        if ka == kb:
+                            continue
+                        if (kb, ka) in edges:
+                            del edges[(kb, ka)]  # (an inner edge: both its sides are in this mesh)
+                        else:
+                            edges[(ka, kb)] = (a, b, n, piece.ground)
+        borders.append(edges)
+    owners = {}  # (ka, kb) -> [mesh index]
+    for m, edges in enumerate(borders):
+        for e in edges:
+            owners.setdefault(e, []).append(m)
+    count = 0
+    for m, (name, pieces, mat) in enumerate(planned):
+        tile = matlib.tile_size(mat)
+        lip = None
+        for (ka, kb), (a, b, n, ground) in borders[m].items():
+            # the neighbour's border runs the other way along the same edge
+            other = None
+            for m2 in owners.get((kb, ka), ()):
+                theirs = borders[m2][(kb, ka)]
+                # (two tiles of a height field are backed by a sheet of their own instead: lobby/ground.py)
+                if m2 != m and dot(theirs[2], n) > 0.9 and not (ground and theirs[3]):
+                    other = m2
+                    break
+            if other is None or other < m:
+                continue  # (one lip a join: the earlier mesh's)
+            along = sub(b, a)
+            out = cross(along, n)  # (in the surface's plane, away from this mesh's own face)
+            length = math.sqrt(dot(out, out))
+            if length < 1e-9:
+                continue
+            out = scale(out, SEAL_OUT / length)
+            down = scale(n, -SEAL_DOWN)
+            a2, b2 = add(add(a, out), down), add(add(b, out), down)
+            if lip is None:
+                lip = Piece()
+            base = len(lip.verts)
+            quad = [a, a2, b2, b]
+            lip.verts.extend(quad)
+            uv = planar_uvs(quad, tile)
+            for i, j, k in ((0, 1, 2), (0, 2, 3)):
+                lip.faces.append((base + i, base + j, base + k))
+                lip.uvs.append((uv[i], uv[j], uv[k]))
+            count += 1
+        if lip is not None:
+            lip.centre = pieces[0].centre
+            pieces.append(lip)
+    return count
 
 
 def planar_uvs(points, tile):

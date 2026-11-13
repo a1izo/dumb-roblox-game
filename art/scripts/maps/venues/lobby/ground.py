@@ -270,7 +270,50 @@ def build(s):
                 uvs.append(tuple((verts[i][0], -verts[i][2]) for i in ids))
         s.mesh(mat, verts, faces, uvs, normals, ground=True)
         count += len(faces)
+    count += _backing(s, field, hole_polys, hole_boxes)
     return count
+
+
+BACK_STEP = 8.0  # the backing sheet's grid
+BACK_UNDER = 0.45  # how far under the lowest of the relief over each cell it lies
+
+
+def _backing(s, field, hole_polys, hole_boxes):
+    """A plain sheet of ash under the relief over the basin (2026-11-12, the user: "small line or cracks where you can
+    see below"): the relief is many meshes (a tile for each surface) and Roblox opens one-pixel slits along their joins
+    (mesher.seal says why); the lobby floats over a bright sky, so each slit showed as a bright line. Now what shows
+    in a slit is this sheet. One mesh, a coarse grid, each corner under the lowest relief round it; left out over the
+    holes (the rift, the chasms)."""
+    n = int(round(2 * INNER / BACK_STEP))
+    low = {}
+
+    def corner(i, j):
+        if (i, j) not in low:
+            x, z = -INNER + i * BACK_STEP, -INNER + j * BACK_STEP
+            low[(i, j)] = min(field.height(x + dx, z + dz) for dx in (-BACK_STEP, -BACK_STEP / 2, 0.0, BACK_STEP / 2,
+                                                                         BACK_STEP)
+                              for dz in (-BACK_STEP, -BACK_STEP / 2, 0.0, BACK_STEP / 2, BACK_STEP)) - BACK_UNDER
+        return low[(i, j)]
+
+    verts, faces, uvs, normals, index = [], [], [], [], {}
+    for i in range(n):
+        for j in range(n):
+            x0, z0 = -INNER + i * BACK_STEP, -INNER + j * BACK_STEP
+            box = (x0, z0, x0 + BACK_STEP, z0 + BACK_STEP)
+            if any(g2.bbox_overlap(box, hb) for hb in hole_boxes):
+                continue
+            ids = []
+            for ci, cj in ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)):
+                if (ci, cj) not in index:
+                    index[(ci, cj)] = len(verts)
+                    verts.append((-INNER + ci * BACK_STEP, corner(ci, cj), -INNER + cj * BACK_STEP))
+                    normals.append((0.0, 1.0, 0.0))
+                ids.append(index[(ci, cj)])
+            for tri in ((ids[0], ids[1], ids[2]), (ids[0], ids[2], ids[3])):
+                faces.append(tri)
+                uvs.append(tuple((verts[k][0], -verts[k][2]) for k in tri))
+    s.mesh("RealmAsh", verts, faces, uvs, normals, ground=True)
+    return len(faces)
 
 
 def _split(tri, f, cache):

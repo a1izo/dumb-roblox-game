@@ -32,3 +32,9 @@ Traps: a play test is needed to prove it (start_stop_play; specs print in get_co
 Client datamodel runs in its own Lua VM (requiring a game module gives a fresh copy, not the game's); screen_capture
 showed no 3D at all in this Studio; never call ModelLibrary.install() at run time (it gathers "imports" from
 Workspace and took the built lobby once). Related: [[studio-no-screen]], [[studio-mcp]].
+
+2026-11-13: the Scenes venue's export is not deterministic (its version goes up on every run, a few vertices move by a
+thousandth: the sculpted angel's modifiers). Export it ONCE with `--split 4` and upload those parts; the whole
+DeathsGambitMaps_Scenes.fbx in git is older than the parts (they are too big to commit). Tokyo's map is over 20 MB
+too: `--split 2`. `run_props.py --export --set Fx` writes an EMPTY Fx file: the Fx set is built by
+`art/scripts/vfx/textures.py` then `art/scripts/vfx/meshes.py`.
