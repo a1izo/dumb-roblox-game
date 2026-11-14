@@ -66,6 +66,9 @@
 - [Photo mode and moving titles](photo-mode-and-moving-titles.md) — added overnight 2026-11-14 on "just innovate", not yet judged by the user
 - [Lobby hummocks and ruins](lobby-hummocks-and-ruins.md) — 2026-11-14: real hills in the lobby's open ground (terrain ramps), things lifted onto them, wreckage by dressing.ruins; Maps_Lobby v48
 - [Scene death hits and blood](scene-death-hits-and-blood.md) — 2026-11-14: Splat (drawn blood on the lens), Sam's hitFx and OPEN shift, the unseen first 0.75 s, harness texture folder, marketplace faces
+- [Deaths today](deaths-current-state-2026-11-14.md) - 3 collapses + the table cutscene + 15 scene deaths; the 14 custom deaths, deaths_scenes.py, fallen.py and the 5 styles are gone (older death notes are partly stale)
+- [Review scripts write into the repo](review-scripts-write-into-repo.md) - review_anims/win/emote write under art/export/previews; redirect common.PREVIEWS with a wrapper; review_deaths renders nothing now
+- [Win name card timing](win-cutscene-name-card-timing.md) - the "<side> wins" card runs from the cue start, not on the ending pose; 8 win clips measured: five hold under 1.5 s
 - [Motion report](motion-report.md) - 2026-11-14 check_motion.py (plan Tool 1): the animation bar as numbers and a PASS/FAIL per clip; run line, what it reads, calibrated limits (dead limb, torso share, same timing), sign and reversal traps
 - [Spacing strip](spacing-strip.md) - review_strip.py: an actor's frames 0.05 s apart as black bodies through the shot's camera, with a travel bar; reads the module not the clips; two-minute start
 - [Shape lint](shape-lint.md) - run_cinema --lint [shape] notes: both arms hidden in the torso's outline, or a raised arm over the head, at each hold, from the shot's camera; the numbers and why

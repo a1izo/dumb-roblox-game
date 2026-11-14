@@ -3,6 +3,10 @@ name: deaths-batch2
 description: The second batch of custom deaths (2026-11-08): eight scene re-enactments the user named, what each reference shows, where each piece lives, and the "A true patriot" grave with a server-picked saluter
 ---
 
+**Partly out of date (2026-11-14):** `art/scripts/deaths_scenes.py` and `Presentation/CustomDeaths`/`DeathVfx` effects for these eight were removed when
+they became scene deaths (`915e90eb`, 2026-11-08); the shop cuts in `deathcuts.py` are retired. Their code is now `Presentation/SceneDeaths/` and
+`art/scripts/scene_actors.py`; see [deaths-current-state-2026-11-14](deaths-current-state-2026-11-14.md).
+
 Asked 2026-11-07/08: eight custom deaths, each re-acting a scene the user named and linked (a ninth, a suicide joke,
 was declined: Roblox bans depicting suicide). Built like the first batch ([deaths-2026-11](deaths-2026-11.md)).
 
