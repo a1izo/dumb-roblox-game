@@ -11,12 +11,12 @@ local Splat = {}
 
 -- The drawn splats (A a full burst, B light with spray, C heavy, D flung sideways) and the drip.
 Splat.IMAGES = {
-	"rbxassetid://0",
-	"rbxassetid://0",
-	"rbxassetid://0",
-	"rbxassetid://0",
+	"rbxassetid://70565336311504",
+	"rbxassetid://85681407750856",
+	"rbxassetid://88815808426188",
+	"rbxassetid://72010509883809",
 }
-Splat.DRIP = "rbxassetid://0"
+Splat.DRIP = "rbxassetid://86768980486661"
 
 export type Options = {
 	at: Vector2, -- where on the screen (0..1)
