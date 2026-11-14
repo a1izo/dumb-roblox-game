@@ -59,3 +59,6 @@
 - [Tokyo crowd 2026-11](tokyo-crowd-2026-11.md) - the crowd rework (plan Part B, C1 to C6): how it behaved before, what each phase changed, where the pieces are, how to measure it
 - [Spec bundle via rbxasset](spec-bundle-via-rbxasset.md) - run the repo's pure specs and the crowd watcher in a running Studio with no write into the shared place: rojo build into Studio's content folder, GetObjects rbxasset
 - [Animation plan 2026-11](animation-plan-2026-11.md) - the owner's 2026-11-13 verdict (only RoleMuerto, maybe RoleDiavolo, are good), why those two work, and the plan: tools first, a pilot, then base scenes, deaths, wins, emotes and movement
+- [Deaths today](deaths-current-state-2026-11-14.md) - 3 collapses + the table cutscene + 15 scene deaths; the 14 custom deaths, deaths_scenes.py, fallen.py and the 5 styles are gone (older death notes are partly stale)
+- [Review scripts write into the repo](review-scripts-write-into-repo.md) - review_anims/win/emote write under art/export/previews; redirect common.PREVIEWS with a wrapper; review_deaths renders nothing now
+- [Win name card timing](win-cutscene-name-card-timing.md) - the "<side> wins" card runs from the cue start, not on the ending pose; 8 win clips measured: five hold under 1.5 s

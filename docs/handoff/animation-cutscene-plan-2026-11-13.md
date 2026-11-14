@@ -304,11 +304,10 @@ nothing in them without the owner's word.
 
 ## Stage 2: deaths
 
-Start with an inventory, written into this file: every death clip in `art/scripts/deaths.py` (the 14 and the three
-cause collapses), the eight scene re-enactments in `art/scripts/deaths_scenes.py`, the scene deaths under
-`src/client/Presentation/SceneDeaths/`, the five death styles in `art/scripts/fallen.py`, and the death at the
-table (`Presenters/Death.luau`). For each: watch it in the game through the debug gallery (Show tab), run the
-motion report, and mark it good, re-act or rebuild.
+The inventory is written: [animation-inventory-stages-2-4-2026-11-14.md](animation-inventory-stages-2-4-2026-11-14.md)
+(read its section 1.0 first: the 14 custom deaths, `deaths_scenes.py` and the five styles no longer exist; the three
+collapses, the table cutscene and 15 scene deaths are what is left). For each item there: watch it in the game through
+the debug gallery (Show tab), run the motion report, and confirm or change its mark (good, re-act or rebuild).
 
 Then, worst first:
 
