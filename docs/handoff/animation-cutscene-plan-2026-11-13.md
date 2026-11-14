@@ -147,11 +147,118 @@ numbers into this file under this section. From then on, a clip that fails the r
 
 The report is a floor, not a judge. Passing it does not make a clip good. Failing it means it is not.
 
+### Tool 1 as built and calibrated (2026-11-14)
+
+Built: `art/scripts/check_motion.py`. Run it with Blender's Python (it only needs numpy and writes nothing):
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe" art/scripts/check_motion.py --shot RoleAce --detail
+```
+
+Pick clips by name (`RoleAce_self`), by cutscene (`--shot RoleAce`, or the bare name), `--all` (every cutscene),
+`--emotes` (the 70), `--movement` (the 21 clips `check_anims.py` holds). `--lead` leaves out a cutscene's extras
+(slots `everyone:N` and `extra:N`, which are only noted as `info`, never failing, unless `--strict-extras`).
+`--detail` says where each fault is in seconds, `--worst N` ranks, `--table` prints a Markdown table, `--json PATH`
+keeps every number, `--selftest` measures made-up clips with known answers. One line per clip: `PASS`, `FAIL` or
+`info`, the nine numbers, the failing traits named after `<-`. Exit code 1 when a clip that counts fails, 2 for an
+unknown name. It reads the committed exported keys (`src/shared/Cinema/Acting/<Shot>.luau`, `src/shared/Anim/Clips`)
+and never opens `Animations.blend`: rebuild and export a clip first (`run_anims.py -- --add`, `run_cinema.py --
+--export`) or it measures the old one. A clip the story keeps still is listed in `FREEZE_OK` in the script (today
+only `RoleButler_ace`) or passed as `--frozen-ok`.
+
+**What the calibration changed.** Of the plan's nine traits as first worded, only some tell Muerto from Ace, and
+Muerto itself broke two of the plan's numbers. In the order of the plan:
+
+| Trait | Muerto (must pass) | Ace self / butler (must fail) | Limit | Verdict on the trait |
+|---|---|---|---|---|
+| Frozen: whole upper body still | 0.6 s | 0.9 s / 1.3 s | over 2.5 s fails | Does not separate them (the neck always drifts, so the whole body is never still), kept as the plan's guard. |
+| **Dead limb** (new, replaces the above as the test): one upper joint still | 3.7 s (left arm) | **17.5 s (left arm never moves)** / 6.2 s | over 8 s fails | Separates. Ace's left arm is dead the whole scene and its torso is still for 7.7 s. No emote is over 6 s. |
+| Glides: constant-speed spans over 0.4 s | 0 | 0 / 0 | over 2.5 s in all fails | Does not separate (the game's cubic eases every move between held keys); kept as a guard, it catches RoleButler (2.7 s). |
+| Snap and hold: big moves over 0.35 s with no hold | 2 of 44 | 0 of 4 / none | over 35% of 5 or more | Does not separate (Ace's arm moves are fast; its fault is what comes before and after). Guard. |
+| Anticipation: big moves drawn back first | 18 of 44 (41%) | 1 of 4 / none | under 15% of 5 or more fails | Muerto passes; Ace has only 4 big moves, too few to judge. Fails a clip with 5 or more big moves and almost none drawn back (IntroTokyo_victim 1 of 8, the emote diceTower 0 of 12). |
+| Overshoot: passes its rest pose and comes back | 1 of 44 | 2 of 4 / none | **not judged** | Dropped from the verdict. Muerto has almost none (its strokes flow into each other, they are not settled one by one), so no limit can make Muerto pass and Ace fail. Still printed. |
+| Symmetry: held arms mirrored within 8 degrees | 100% of 0.6 s of holds | 0% of 14.2 s / **100% of 15.5 s** | over 50% of 2 s or more | Separates the butler. Muerto has under a second of held arms, so it is not judged. |
+| **Torso share** | 15% | **1%** / 38% | under 4% fails (when the limbs turn over 100 degrees) | Separates. The plan guessed a fifth: Muerto itself is 15% and Diavolo 7%, so a fifth would fail the bar. Legs are left out (footwork plans them) and the body offset counts at 25 degrees a stud. |
+| Metronome: same size, same interval, in a row | 4 (the torso, 7.9 to 9.8 s, 20 degrees every 0.45 s) | 0 / 0 | 5 or more fails | The plan said three; Muerto's own torso makes four, so five. By itself it does not separate. |
+| **Same timing** (new): moves of one joint that take the same number of frames | 20 of 50 (40%) | **14 of 17 neck moves, all 0.18 s (82%)** / none | 6 or more and 60% fails | Separates. Ace's head turns have different sizes and gaps but one timing: that is the metronome the eye catches. |
+| Overlap: head or arms arrive 2 to 12 frames after the torso | 32 of 33 | no torso turn at all / 2 of 2 | under 25% of 3 or more fails | Does not separate (Ace's torso never moves, so there is nothing to follow). Guard. |
+
+Result: RoleMuerto_self **PASS**; RoleAce_self **FAIL** (dead limb, torso share, same timing); RoleAce_butler **FAIL**
+(symmetry: both arms mirrored for all 15.5 s of held poses). Sanity on the owner's well-rated emotes: 63 of 70 pass;
+the 7 that fail are diceTower (anticipation, metronome), finalBreakdown (metronome, same timing), justAsPlanned
+(anticipation), preDawnBonk (anticipation, same timing), theLongClimb (torso), twoWeeksNotice (same timing) and wave
+(torso: arms only, and its length is frozen). Movement set: 19 of 21 pass; `idle` (16.5 s) and `idleGuarded`
+(23.1 s) fail dead limb, because the exported clip's shoulders never move more than 0.6 degrees.
+
+The units: a move is a joint turning faster than 6 degrees a second, so the life layer's breath and glances never
+count. Everything is measured on the played curve at 60 a second. Two measuring bugs the self-test caught while
+building (a draw-back that swings the joint back past its start was missed, and the hold after an overshoot was
+timed from the peak) are fixed; run `--selftest` after touching a measuring.
+
+**Before numbers (2026-11-14, the clips as they stand).** `PASS`/`FAIL` as the report gives it. A sibling session
+compares its after against these.
+
+| Clip | Verdict | Frozen s | Dead limb s | Glides s | Slow/big | Wound up/big | Mirrored | Torso | Metronome / same timing | Overlap |
+|---|---|---|---|---|---|---|---|---|---|---|
+| RoleMuerto_self (the bar) | PASS | 0.6 | 3.7 left arm | 0.0 | 2/44 | 18/44 | 100% of 0.6 s | 15% | 4 / 20 of 50 | 32/33 |
+| RoleAce_self | FAIL: dead limb, torso, same timing | 0.9 | 17.5 left arm | 0.0 | 0/4 | 1/4 | 0% of 14.2 s | 1% | 0 / 14 of 17 | 0/0 |
+| RoleAce_butler | FAIL: symmetry | 1.3 | 6.2 left arm | 0.0 | 0/0 | 0/0 | 100% of 15.5 s | 38% | 0 / 0 of 0 | 2/2 |
+| RoleDiavolo_self | PASS | 0.5 | 4.3 torso | 0.0 | 0/11 | 3/11 | 34% of 5.7 s | 7% | 0 / 3 of 14 | 2/4 |
+| RoleOperative_self | PASS | 1.1 | 4.0 right arm | 0.0 | 0/4 | 2/4 | 30% of 10.8 s | 15% | 0 / 4 of 7 | 1/2 |
+| RoleButler_self | FAIL: glides, symmetry | 0.4 | 1.5 right arm | 2.7 | 0/1 | 0/1 | 100% of 5.0 s | 19% | 0 / 3 of 8 | 4/5 |
+| RoleButler_ace (still by design, in `FREEZE_OK`) | PASS | 3.4 | 10.0 right arm | 0.0 | 0/0 | 0/0 | 0% of 10.0 s | 24% | 0 / 0 of 0 | 0/0 |
+| IntroAgency_watcher | PASS | 1.3 | 2.8 right arm | 0.0 | 0/0 | 0/0 | 9% of 10.7 s | 18% | 4 / 4 of 15 | 7/8 |
+| IntroCampus_noticer | FAIL: frozen | 4.4 | 7.5 left arm | 0.0 | 0/0 | 0/0 | 0% of 12.2 s | 12% | 3 / 3 of 5 | 2/2 |
+| IntroTokyo_victim | FAIL: frozen, dead limb, anticipation, symmetry | 3.3 | 12.1 right arm | 1.1 | 1/8 | 1/8 | 61% of 13.2 s | 23% | 0 / 3 of 12 | 11/12 |
+| IntroTokyo_watcher | FAIL: dead limb | 1.4 | 17.3 left arm | 0.0 | 0/3 | 0/3 | 0% of 18.1 s | 5% | 0 / 2 of 7 | 0/0 |
+
+MeetingIntro (12 clips, one per seat, 6.0 s): **10 of 12 FAIL**. Ten fail symmetry: both arms are mirror images for
+the whole of their held poses (6 of the seats hold 6.0 s of it; 1.3 to 4.0 s for the others), and seats 8 and 9 are
+also frozen for 2.5 and 2.6 s with the torso itself still. Only seats 4 and 5 pass. No seat has a big move, so
+snap, anticipation and overshoot have nothing to judge. Torso share 23 to 39%, glides 0 to 0.5 s.
+
+The extras of the three intros are only noted (`info`). IntroAgency (13 extras): 10 have a fault, mostly a dead arm
+(8, up to 11.2 s) and mirrored held arms (7). IntroCampus (11 walkers): the 6 with a fault all have a torso under 4%
+(the torso stays upright while they walk). IntroTokyo (12 extras): 8 have a fault, mostly mirrored held arms (7);
+the two seated commuters never move an arm for the whole 24.6 s, and two of the waiting figures glide for 4 to 5 s.
+
+How to read the other numbers: RoleOperative passes because the report only sees the clip, not the missing hand
+targets and locked cameras that make it weak (Part 1). RoleDiavolo (the owner's "maybe") passes. Neither tells the
+sessions to leave a scene alone: the report is a floor.
+
 ## Tool 2: the spacing strip
 
 An option for `art/scripts/review_anims.py` (or a small new script): one row of frames at a fixed step of 0.05
 seconds over a chosen window, from the shot's own camera, bodies drawn as flat black on white. Even spacing between
 frames shows at a glance, and so does a weak silhouette. Use it on every big move.
+
+**Built 2026-11-14** as a small new script, `art/scripts/review_strip.py` (the drawing and the geometry live in
+`art/scripts/cinema/silhouette.py`, which Tool 3 shares). How to run it, from the repo root:
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python art/scripts/review_strip.py -- RoleMuerto self 5.2 6.8 art/export/previews/cinema/strips/RoleMuerto_self_slashes.png
+```
+
+The five arguments are the shot, the actor's slot (`self`, `butler`...), the window's start and end in shot seconds and
+the output image. `--step=0.05` (the default), `--height=220` (a frame's height in pixels), `--cols=N` (wrap a long
+window into rows of N frames) and `--fixed` (hold the camera as it is at the start, to see the body's spacing
+without the camera's own move) are the options. Give several groups of five to make several strips in one run:
+every shot module loads at start (about two minutes, the emote kit builds every emote when a role scene imports it).
+`art/export/previews/cinema/` is gitignored, so strips written there stay out of commits.
+
+- It reads the shot module's own acting (the keys, springs and extras of each actor's `Motion`, through the rig's
+  forward kinematics, the same as `--lint` and `--clear`), not the clips saved in `Animations.blend`. Nothing has to
+  be rebuilt first, and a strip never shows a stale clip.
+- The body is the six R6 boxes (the head a 1.2 box) as flat black on white, in the shot's own camera at each frame, so
+  a camera that moves or cuts inside the window shows in the frames. It has no hair, hat or prop, and no set between
+  the lens and the body. Grey is what the lens does not show (past the frame's edge, under the letterbox); a red edge
+  on a frame is a cut of the camera.
+- Under each frame are its time and a bar for how far the body travelled on the screen since the frame before (the
+  head, the torso and both hands; the window's biggest step is full height, but never less than 4 percent of a frame's height, so a hold
+  stays flat). Read it like this: a run of bars of
+  one height is a glide, the stiffness the owner sees; a tall bar followed by flat ones is a snap and a hold, as
+  `animation-bar.md` wants. Frames piled on each other are slow, frames far apart are fast. Run it over every big move
+  (from 0.3 s before it to 0.5 s after) before and after the timing step of the scene loop.
 
 ## Tool 3: the silhouette check
 
@@ -159,6 +266,60 @@ For each held pose in a shot, from that shot's camera at that time: project each
 and measure how much of each lies inside the torso's outline. An arm more than 70 percent inside the torso is
 hidden. Print the holds where both arms are hidden or where the head overlaps a raised arm. Add it to
 `run_cinema.py --lint` as `[shape]` notes.
+
+**Built 2026-11-14** in `art/scripts/cinema/silhouette.py` (shared with Tool 2), printed by `run_cinema.py --lint` as
+`[shape]` lines, one per run of held moments, after the `[lint]` and `[frame]` ones. How to run it, from the repo root:
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python art/scripts/run_cinema.py -- --lint RoleAce
+```
+
+```
+[shape] RoleAce  0.00- 3.10s self: the head is overlapped by the raised right arm (32% of the head) (drawn as a black silhouette)
+[shape] RoleAce  8.40- 9.40s self: the head is overlapped by the raised right arm (77% of the head)
+```
+
+What it does, and the numbers (constants at the top of `silhouette.py`):
+
+- **A held pose** is a moment at which the body rests: the middle of the head, both hands, both arms' middles and the
+  torso's four corners (in the actor's own frame, so a walk across the room does not count as moving) travel less than
+  0.25 studs over the 0.15 s either side of it. That is the shot's key poses as the eye sees them, wherever the module
+  keyed them (`key()`, `beat()`, `hold()` and the springs all end up as the same sampled pose). The module's own
+  `Motion` is sampled every 0.05 s with its springs and extras, through the rig, as `--lint` and `--clear` do; no
+  clip in `Animations.blend` is read. The shape is measured at every 0.1 s of a hold, and moments that run together
+  become one line with their average.
+- **Which actors:** any actor with a `Motion` in the module whose torso is at least 0.2 frame heights tall on the
+  screen (a tenth of the frame) with its middle inside the visible frame, from the shot's camera at that moment.
+  Bodies too small to read are skipped.
+- **The outline** of each part is the convex hull of its box's eight corners through the lens (the head a 1.2 box),
+  and the share of a part that lies inside another is the exact overlap of the two hulls.
+- **Both arms hidden:** each arm has more than 70 percent of its outline inside the torso's. From the front, arms
+  hanging at the sides share 7 percent with the torso; from the side, 83 to 100 percent.
+- **Head overlaps a raised arm:** a hand at least 0.5 studs above its own shoulder joint, and that arm covers more than
+  40 percent of the head's outline. (An arm level with the shoulder, a tray carried out, is not raised.)
+- **A black silhouette** (an actor with `silhouette=` windows, such as Ace's first 3.2 s): the shape is all there is,
+  so the lines are 50 percent and 20 percent there, and the note says so.
+- **To clear a note:** move the raised arm out from the head (beside it, not in front), or change the camera angle
+  at that hold. `run_cinema.py -- --preview <Shot> --stills=t` at the time of the note shows it, and
+  Tool 2's strip over the hold shows it in the shot's own frames.
+
+**Calibration, 2026-11-14** (first rule: a hand at shoulder height, 20 percent of the head: RoleMuerto had 7 notes,
+the writing poses, the wind-up and the laughing, which is how the scene is meant to look, so the rule was the fault,
+not the scene):
+
+| Shot | Notes | What they are |
+|---|---|---|
+| RoleMuerto (the good scene) | 1 | 5.2 to 5.3 s: the wind-up before the first slash, the fist up in front of the face (73 percent) |
+| RoleDiavolo | 0 | |
+| RoleAce (the weak scene) | 2 | 0 to 3.1 s: the hand at the lip against the head as a black silhouette; 8.4 to 9.4 s: the hand to the cup covers the head from the two-shot |
+| RoleButler | 1 | the silhouetted Ace actor, borderline at 20 percent |
+| RoleOperative | 0 | |
+| MeetingIntro | 2 | two seated players with both arms in the lap hidden from the front |
+| IntroAgency | 5 | hands at faces in the crowd |
+| IntroTokyo, IntroCampus | 0 | |
+
+Like Tool 1, it is a floor and not a judge: the weak scenes' faults are mostly timing and cameras, which the notes do
+not see. It says whether the held shape of the body reads. A clip with a `[shape]` note it did not mean is not done.
 
 ## One experiment to offer the owner: smears
 
@@ -411,3 +572,6 @@ the bottom of this file.
 # Log
 
 (Each finished scene: date, scene, rebuild or re-act, the owner's verdict.)
+
+- 2026-11-14, RoleAce (pilot, rebuild), branch claude/pilot-ace-101c0e: new module art/scripts/cinema/shots/role_ace.py (the old role_l.py is kept, no longer imported), reference art/refs/cinema/RoleAce.toml. Motion report: RoleAce_self FAIL (dead limb 17.5 s, torso 1 percent, same timing 14 of 17) before, PASS after; RoleAce_butler FAIL (symmetry, mirrored tray arms) before, PASS after (frozen 2.3 s, dead limb 5.8 s). `--clear` 0, `--lint` no `[shape]` notes, acting file 35,876 characters. Not done: the game watch (the new Acting and Shots files must be synced into the place first, which only the owner's Rojo can do), the owner's verdict.
+

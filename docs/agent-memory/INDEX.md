@@ -66,3 +66,12 @@
 - [Photo mode and moving titles](photo-mode-and-moving-titles.md) — added overnight 2026-11-14 on "just innovate", not yet judged by the user
 - [Lobby hummocks and ruins](lobby-hummocks-and-ruins.md) — 2026-11-14: real hills in the lobby's open ground (terrain ramps), things lifted onto them, wreckage by dressing.ruins; Maps_Lobby v48
 - [Scene death hits and blood](scene-death-hits-and-blood.md) — 2026-11-14: Splat (drawn blood on the lens), Sam's hitFx and OPEN shift, the unseen first 0.75 s, harness texture folder, marketplace faces
+- [Motion report](motion-report.md) - 2026-11-14 check_motion.py (plan Tool 1): the animation bar as numbers and a PASS/FAIL per clip; run line, what it reads, calibrated limits (dead limb, torso share, same timing), sign and reversal traps
+- [Spacing strip](spacing-strip.md) - review_strip.py: an actor's frames 0.05 s apart as black bodies through the shot's camera, with a travel bar; reads the module not the clips; two-minute start
+- [Shape lint](shape-lint.md) - run_cinema --lint [shape] notes: both arms hidden in the torso's outline, or a raised arm over the head, at each hold, from the shot's camera; the numbers and why
+- [YouTube reference hunting](youtube-reference-hunting.md) - search by fetch() in the page and contact-sheet watch pages when the pane will not draw search results; where L's line and crouch are in the anime
+- [R6 near-arm occlusion](r6-near-arm-occlusion.md) - the arm nearest the lens covers the face: act with the far arm, shoot at head height, frame 4.5+ studs tall
+- [R6 held props on paths](r6-held-props-on-paths.md) - welds tip with the forearm and sit inside the arm box: key the prop on its own path from the baked motion, past the arm's end
+- [R6 reach limits](r6-reach-limits.md) - fist 1.3 to 2.4 studs from the shoulder pivot; what that did to RoleAce's table, tray and rest hands
+- [Many stills, one run](review-stills.md) - art/scripts/review_stills.py renders any number of shot-camera or free-camera stills with the venue built once (a --stills call rebuilds it each time, about 3 minutes)
+
