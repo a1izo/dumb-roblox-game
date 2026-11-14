@@ -38,6 +38,7 @@ local LobbyIntro = require(script.Parent.LobbyIntro)
 local MapPreloader = require(script.Parent.Parent.World.MapPreloader)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
+local PhotoMode = require(script.Parent.Parent.World.PhotoMode)
 local TouchControls = require(script.Parent.Core.TouchControls)
 local TrialObjective = require(script.Parent.Parent.Onboarding.TrialObjective)
 local Screens = require(script.Parent.Screens)
@@ -61,6 +62,7 @@ local MENU = {
 	{ text = "Settings", screen = "settings" },
 	{ text = "Private server", screen = "director", vip = true },
 	{ text = "Hide UI", action = "hide" },
+	{ text = "Photo mode", action = "photo" },
 	{ text = "Spectate", action = "spectate", running = true },
 }
 
@@ -150,7 +152,8 @@ local function applyVisibility()
 	-- over the scene deaths the shop previews, 2026-11-09)
 	titleBlock.Visible = shown and Screens.hud:GetAttribute("Cinematic") ~= true
 	if eyeButton then
-		eyeButton.Visible = view and not introHidden and LobbyChrome.isHidden()
+		-- (not in photo mode: its own keys and buttons leave it, and the eye would bring the menus back mid-shot)
+		eyeButton.Visible = view and not introHidden and LobbyChrome.isHidden() and not PhotoMode.isActive()
 	end
 end
 
@@ -431,6 +434,9 @@ function buildContents(phone: boolean)
 			if item.action == "hide" then
 				Router.closeAll()
 				LobbyChrome.setHidden(true)
+			elseif item.action == "photo" then
+				Router.closeAll()
+				PhotoMode.start()
 			elseif item.action == "spectate" then
 				-- A Specter waiting here goes back in as a ghost; anyone else starts watching.
 				if ClientState.isAway() then
@@ -812,6 +818,9 @@ function LobbyPanel.init()
 	eye.Visible = false
 	eyeButton = eye
 	LobbyChrome.Changed:Connect(function()
+		applyVisibility()
+	end)
+	PhotoMode.Changed:Connect(function()
 		applyVisibility()
 	end)
 	TrialObjective.Changed:Connect(function()
