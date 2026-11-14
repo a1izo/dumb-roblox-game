@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local ClientState = require(script.Parent.Parent.ClientState)
+local Motion = require(script.Parent.Parent.UI.Core.Motion)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -116,9 +117,9 @@ function CameraDirector.move(
 	return newTween
 end
 
--- A small random shake for impacts (respects the camera shake setting in the caller).
+-- A small random shake for impacts (the camera shake setting, and reduced motion, turn it off).
 function CameraDirector.shake(myToken: number, strength: number, seconds: number)
-	if myToken ~= token or not saved then
+	if myToken ~= token or not saved or Motion.shakeOff() then
 		return
 	end
 	task.spawn(function()

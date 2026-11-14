@@ -60,6 +60,8 @@ local function apply(key: string, value: any)
 		Motion.setLow(value == true)
 	elseif key == "screenFlashes" then
 		Motion.setFlashes(value ~= false)
+	elseif key == "cameraShake" then
+		Motion.setShake(value ~= false)
 	elseif key == "uiScale" then
 		Responsive.setUserScale(tonumber(value) or 1)
 	end

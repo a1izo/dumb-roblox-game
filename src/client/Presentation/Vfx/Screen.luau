@@ -49,7 +49,7 @@ end
 
 -- A shake of up to `amount` degrees dying away over `seconds` (speed: how fast it wanders, 18 by default).
 function Screen.shake(amount: number, seconds: number, speed: number?)
-	if Motion.isReduced() then
+	if Motion.shakeOff() then
 		return
 	end
 	bind()
