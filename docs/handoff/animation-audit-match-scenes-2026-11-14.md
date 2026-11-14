@@ -4,11 +4,29 @@ Written 2026-11-14 for the owner. The plan (`animation-cutscene-plan-2026-11-13.
 what reads as cheap or stiff in the six match scenes that are built in Luau and not in Blender. Nothing in them was
 changed.
 
-**Every line below comes from reading the code and not one was watched in game** ("not watched in game"). When the
-audit was written Studio was in Play, started by someone else, so it was left alone. The owner then said yes to a
-watch and Studio was free, but the watch through the Studio MCP did not work (see "The watch that was tried" at the
-end). Times are worked out from the code (phase lengths, `task.wait`s, tween lengths), not measured on a screen. Where
-a fault depends on how a thing looks, it is marked "check in game".
+**The first version of this file came from the code alone. A second session then watched five of the six scenes in a
+Studio play test (2026-11-14, Studio in front, the owner's "yes, screen ok"; see "The watch that was done" at the
+end).** Each fault line now carries a mark: **Seen** (with the time, in seconds from the cue's start), **Wrong** or
+**Not seen** (with what was actually there) or **Not checked** (and why). The marks are in the "In game" block at the
+end of each scene, so the code-based text above it stays as it was written. The case opening is the exception: no
+live map plays it, so it was not watched. Times in the "In game" blocks were measured (the camera logged every
+0.1 s from a `RenderStepped` listener, and stills taken with a clock on the screen), the others still come from the code.
+Verdicts stay as they were unless a block says otherwise.
+
+## What the watch changed, in short
+
+- **Confirmed as predicted:** the Verdict's cut at 4.1 s with a creep onto a body that is dissolving; the Arrest's two
+  operatives popping in on the cut and never moving, and no cuff on screen; the Oculus deal's player not being frozen;
+  the Outro's Ace turn and Hand turn being one shot twice; the Manual shot's small name.
+- **Worse than predicted:** the Outro's Manual page shows about 4 to 5 of its 18 lines at the end, not 6.7, and with 10
+  names it rendered as a black frame in every capture (cause not found, see the Outro block); the Manual shots are very
+  dark even with one name; the Arrest's operatives are huge black T-posed blocks that stand in front of the suspect.
+- **Wrong or not seen:** the Arrest's suspect head is not lost at the end of the creep; the Outro's sweep camera has no
+  head within 3 studs and nothing in the lens (it is 19 studs from the nearest face); the Oculus deal's close-up is not
+  "all hair"; no visible wall or prop blocked any Oculus camera in open air (only invisible colliders did).
+- **New:** the Verdict shows a seated person from behind and never their face; the Oculus deal's first 2 s are close to
+  black and the over-shoulder frame shows a black silhouette with the player a few dozen pixels big; in a debug run the
+  Outro's Ace turn only plays if the cue is sent by hand (the debug outro cue carries no timing).
 
 Yardstick: the plan's "what sloppy has meant" list and "the owner's taste", the Part 3 checklist, and the Part 1 table
 of counts (RoleMuerto: 7 moving cameras, 0 locked, 12 effect events, 13 hands on targets).
@@ -73,7 +91,8 @@ Faults, against the checklist:
 **Verdict: leave alone.** It is never played; if a fourth map ships without a Blender intro, that map needs the Blender
 treatment, not this.
 
-Not seen: all of it.
+In game: **Not checked, all of it** (2026-11-14). All three live maps have a Blender intro, and the debug panel's intro
+plays that one, so the Luau version cannot be reached without a fourth map. Every line above is still from the code.
 
 ## 2. Verdict (`Presenters/Verdict.luau`)
 
@@ -99,7 +118,35 @@ Faults:
 **Verdict: small fix.** The shot is simple and short; re-time the cut onto the gavel, start the dissolve after the
 push-in, and add one reaction shot. No rebuild needed.
 
-Not seen: all of it, the tally's sound pile-up above all.
+**In game (2026-11-14).** Watched in the Campus meeting room (everyone seated, the voted-out player in a chair),
+Bureau HQ and Campus free roam, with the debug `verdict` cue on a bot; the camera was logged at 0.1 s steps in runs
+without a screenshot, then stills taken at 3.4, 4.4 and 5.7 s.
+
+- **Seen, 4.1 s: the cut and creep as predicted.** The camera is the player's until 4.1 s, cuts to the shot (fov 55, 8.2
+  studs from the head), creeps to fov 42 and 5.1 studs by 5.9 s, and the player's own camera is back at about 6.05 s.
+  The gavel and the red name are at 3.2 s (still at 3.38 s: "Marten" struck in red with three strokes, "Skip" with one,
+  on a dark card about 540 px wide in the middle of the live room), so the cut lands 0.9 s after the gavel.
+- **Seen, 4.1 to 6.05 s: the camera pushes in on someone who is vanishing.** The target's mean
+  `LocalTransparencyModifier` (83 parts) is 0.06 at 4.1 s, 0.19 at 4.3, 0.31 at 4.5, 0.56 at 4.9, 0.69 at 5.1, 0.94 at
+  5.5 and 1.00 at 5.7 s. Half-way through the creep (5.0 s) the person is about 62 percent gone (predicted 60); the body
+  is gone from 5.65 s, so the last **0.4 s** of the shot (the audit said 0.3) has nobody in it.
+- **Seen, 5.74 s: the close frame is an empty chair with the outline still drawn.** The white outline keeps tracing the
+  vanished body's shape, static particles drift across, the chair back and armrests show, and the stamp "Their role
+  stays secret" sits over the armrests. Nobody is in it; it is not empty of marks.
+- **New, seen, 4.39 s and 5.74 s: the camera sees a seated person from behind.** In the meeting room the table is in
+  front of the chair, `ShotSolver.frame` takes the first clear angle, and that is the chair back: the back of the head at
+  4.39 s (static across it), the chair back at 5.74 s. The face never shows. (This is for this seat on the Campus;
+  other seats may differ. A standing target in free roam was framed from the side, face hidden by the static.)
+- **Wrong:** the head does not leave the frame. It stays at 754 to 776 px across and 310 to 325 px down of a 1507 x 619
+  view for the whole creep.
+- **Seen: the others' reactions are never shown.** One seated player's head touches the right edge of the 4.39 s frame
+  and nothing else.
+- **Seen, 3.38 s: the tally is a small text card**, the "part that works"; the stock stamp and lamps are the same as in
+  the other scenes.
+- **Not checked:** the tally's sound pile-up (no audio in the stills). The debug cue plays while the match is in the
+  Meeting phase, so the phase's HUD text ("bureau meeting", bottom right) stayed on screen over the shot; in the real
+  Verdict phase it may differ.
+- **Verdict unchanged: small fix.** Add: frame the face (a seat-aware angle) and start the dissolve after the push-in.
 
 ## 3. Arrest (`Presenters/Arrest.luau`)
 
@@ -128,7 +175,28 @@ Faults:
 **Verdict: rebuild** (in Blender, when its turn comes). A patch cannot add the physical action the scene lacks (the
 operatives walking in, the cuffs shut on the wrists); that is a new scene.
 
-Not seen: all of it; whether the operatives stand in the table or a chair (they are placed with no clearance check).
+**In game (2026-11-14).** Watched in the Campus meeting room (the suspect, a bot, seated), debug `arrest` cue, a
+24-sample camera and actor log plus stills at 0.49 and 1.47 s. The suspect was not the Hand, so the stamp read "Innocent".
+
+- **Seen, 0.35 s: the two operatives pop in on the cut.** No actor on the stage at 0.3 s, two at 0.4 s, at 2.6 studs
+  either side and 1.4 studs in front of the suspect.
+- **Seen, 0.4 to 2.9 s: they never move.** Their offsets are the same to 0.1 stud for the whole shot.
+- **Seen, 0.49 s: they are huge, black and in the way.** The still at 0.49 s (under the glyph and the white flash) has
+  two faceless black figures that together cover about half the frame, arms held straight out sideways (the `point`
+  clip reads as a T pose at this size), standing between the camera and the suspect and hiding much of them. At
+  1.47 s they are black masses on a dark room (the meeting room is dark); the suspect, outlined, is dim.
+- **Seen, 0.49 and 1.47 s: no cuff on screen.** No cuff, no hand on a wrist, no operative reaching; the suspect is in
+  the cuffed pose with the stamp over the chest. That is the scene's real fault, as predicted.
+- **Seen: both operatives play the same clip** (the same arms-out pose, from the code's single `point` clip).
+- **Wrong: the head is not lost at the end of the creep.** From 0.4 to 2.9 s the head stays at 729 to 753 px across and
+  316 to 331 px down of a 1507 x 619 view; the camera goes from 9.2 to 5.1 studs (fov 55 to 44) and is given back at
+  about 2.95 s.
+- **Seen: an innocent is treated like the guilty** (same pose, lights and stamp, text "Innocent").
+- **Not seen: any operative inside the table or a chair.** In the seated arrangement they stand in the aisle beside
+  and in front of the suspect.
+- **Not checked:** the handcuff and gavel sounds, and the four flashes' look (the stills were taken between flashes).
+- **Verdict unchanged: rebuild.** The watch makes it plainer: what is on screen is two black T-posed blocks in front of
+  the lens and a click.
 
 ## 4. Outro (`Presenters/Outro.luau`)
 
@@ -162,7 +230,38 @@ Faults:
 **Verdict: small fix** for the Manual's fit and pace, the Hand's turn and the variety of the Ace and Hand shots; the
 first part belongs to Stage 3.
 
-Not seen: all of it; how the seated or standing winners look in their cheer, dance and slump clips (not in this file).
+**In game (2026-11-14).** Watched in the Campus meeting room (five bots seated) with a full `outro` cue sent by hand
+from the Server DM (`winner = "Team"`, timing 5 / 3 / 2.5 / 5 s, four names written, 15.5 s in all); a camera log at
+0.1 s steps, a nearest-head and lens check each step, stills at 2.52 s (sweep) and in the Manual at 5.4 to 7.5 s. The
+debug panel's own `outro` cue carries no `timing` or Ace, so it plays only the sweep and the Hand's turn (see "How to
+watch them").
+
+- **Seen, 0.3 to 5.0 s: the sweep.** The camera stands at (0, 5.2, -3000), the meeting center the server sends, turns
+  150 degrees and goes from fov 70 to 58. The nearest head is 19.4 studs away the whole time, nothing is within 1.2
+  studs of the lens and nothing within 6 studs ahead of it. **Wrong: no head within 3 studs and nothing in the lens.**
+  New: because the ring of seats is 10 to 20 studs from that spot, the faces are small (about 70 px wide in a 1884 px
+  frame at 2.52 s), the room is dark and the sitters were still, so the sweep reads as a dim wide shot with a card
+  ("The Bureau wins") over the floor, not a turn "across their faces".
+- **Seen, 5.0 to 8.0 s: the Manual, and it is worse than predicted.** The page is 1.89 x 2.58 studs; at the end the camera
+  is 1.65 studs from it at fov 36 and the page is about three times the frame's height, so only about **4 to 5 of the 18
+  ruled lines** are in frame (the audit said 6.7; counted from the page corners projected to the screen and the height of the letterbox
+  bars, not from the stills). With 10 names written the camera is aimed at the middle of rows 1 to 10, so about
+  half of the names are out of frame. And **with 10 names every capture of this shot was a black
+  frame** (four stills at 5.4, 5.5, 7.3 and 7.5 s: only film grain inside the bars), although the set was there (the
+  Grimoire, the page with 8 labels at 7.0 s, the lamp enabled at brightness 4.3, the camera 1.7 studs over the page, the
+  page corners on screen at 5.4 s); switching the grade, bloom, depth of field and atmosphere off did not change it.
+  With 2 names the same shot at 7.1 s shows the page dim but readable (Aiko Tanaka, and Ren Sato struck through).
+  Not explained: **needs the owner's eyes**, and a test at 5, 8 and 10 names (the 10 name frame may be this play
+  test's lighting, or a real fault).
+- **Seen, 8.0 to 10.65 s and 10.7 to 15.2 s: Ace's turn and the Hand's turn are one shot twice.** Ace: cut at 8.2 studs
+  from the head at fov 50, creep to 5.1 studs at fov 42. Hand: cut at 9.2 studs at fov 55, creep to 5.1 studs at
+  fov 40. The two cuts stand 1.4 studs apart ((11.9, 6.1, -2996.0) and (10.9, 6.2, -2996.8)): the same tripod, panned 55
+  degrees between two neighbouring seats. The camera is given back at about 15.2 s.
+- **Seen: four sections, four timers.** Cuts at 5.0, 8.0 and 10.65 s, on the server's marks, not on a movement.
+- **Not seen:** the Hand's card (the logger ran, no still was taken in the Hand's turn); the winners' and losers'
+  cheer, dance and slump clips (the sitters in the stills were not acting; whether the cue starts them was not checked,
+  they are in `ActingController`).
+- **Verdict unchanged: small fix**, with the Manual's fit and its rendering as the first thing to fix or check.
 
 ## 5. Oculus deal (`Presenters/EyesDeal.luau`)
 
@@ -199,7 +298,45 @@ Faults:
 move the two middle shots, pull the close-up back to a longer lens; the rigid Deathsinger is the larger job and can
 wait.
 
-Not seen: all of it; the first 0.5 s (whether the red tint covers the start).
+**In game (2026-11-14).** Watched in Campus free roam (open air, no ceiling), the player at (120, 3, 3028) and at two
+spots next to invisible colliders, debug `eyesDeal` cue; the camera, a line to the player's head, a part-in-the-lens
+check and the Deathsinger's box logged at 0.1 s steps, stills at 1.10, 2.87, 4.10, 4.19 and 6.20 s. Not tested indoors.
+
+- **Seen: the timeline.** Cut at 0.0 s (fov 52, 9.2 studs from the head), creep to fov 48 and 7.1 studs by 2.1 s; the
+  over-shoulder cut at 2.2 s (fov 55, locked); the face cut at about 3.8 s (fov 40, 2.4 studs, locked); the wide cut at
+  about 5.6 s (fov 52, 9.3 studs); the camera is given back at about 7.3 s. The three cuts land 0.1 to 0.15 s later than
+  the code's 2.2, 3.7 and 5.45 s; the face shot lasts 1.8 s and the wide with the card 1.7 s.
+- **Seen: three locked frames after one move**, as written (1.5, 1.75 and 1.75 s; measured 1.6, 1.8 and 1.7).
+- **Not seen, hand-placed cameras (open air and next to invisible colliders):** in all three tests every camera had a
+  clear line to the player's head and none was inside a part. The one blocked line was the over-shoulder camera behind
+  an invisible `Collider` (5.5 of 9.7 studs, standing 3 studs from it), which cannot be seen. No visible wall or prop
+  blocked a camera, and the one prop tested (a display case) does not collide at all. **The fault stays "possible,
+  unconfirmed"**: it needs an indoor spot (a meeting room or office) to be seen.
+- **Not seen, the Deathsinger through a wall or ceiling:** 8.5 studs at the start, 8.2 after the lean; its box
+  overlapped only invisible colliders. The Campus is open air, so the ceiling case was not tested.
+- **Seen: the player is not frozen.** `WalkSpeed` stayed 16 and the root was not anchored the whole cue. With a held
+  forward input (camera-relative, as a held key is) the player was 16 studs from where they started by 1.8 s, and 48
+  studs by 4.1 s in a second run. **At the eye ignition (3.95 s, the close-up is locked from 3.8 s) the 4.19 s still
+  of that run shows the player's head at the left edge, its right side behind a stone pillar, walking out of frame**;
+  the burst is on a body that is leaving. (Without a key the player stays put and the frame is as designed.)
+- **Wrong: the face close-up is not "all hair" (still at 4.10 s, no key).** The head fills about a sixth of the frame
+  width; the bangs hide the face, but the two red star flares sit where the eyes are, a red ring is round the head and the
+  Deathsinger's grin looms behind at the upper left, its head cropped by the top bar. It reads as "eyes on fire". It is
+  still level, locked and from straight ahead.
+- **New, seen, 1.10 s: the opening is close to black.** The red tint, the vignette and the dimmed lamps leave a nearly
+  black frame; the player is a dark mass in the middle, two small red sparks (the Deathsinger's eyes) are the only
+  thing that reads. Your face is not readable in the first 2 s.
+- **New, seen, 2.87 s: the over-shoulder frame is a black silhouette.** The Deathsinger's collar fills the left half as a
+  black shape with a thin red outline and snow specks; the player is a few dozen pixels, behind a fence. It reads as
+  "a shape", not as "it leans over you". (The lean itself was not looked at: a 0.9 stud, 10 degree tilt would not show
+  at this size.)
+- **Seen, 6.20 s: the card reads** ("The Oculus Of The Dead", "You can read names from afar. 2 minutes left to live."),
+  on screen about 1.7 s; the kicker "Deal made" is tiny (about 10 px high). It sits over the player's lower body in a
+  frame where the player is already a dark shape.
+- **Not checked:** the sounds (`eyesOpen`, `hauntWhisper`), the bolts' look (the 4.10 s still shows the flares and the
+  ring), the 0.5 s start.
+- **Verdict unchanged: small fix.** The first fix is to freeze the player (cheap and it saves the key shot); then the
+  dark opening and the silhouette frame; the camera clearance check can wait for an indoor test.
 
 ## 6. Manual's writing shot (`Presenters/ManualWrite.luau`, via `BookStage`)
 
@@ -222,21 +359,38 @@ Faults:
 **Verdict: small fix**, inside the owner's staging (no hands): let the writing last the shot, and give the last stroke a
 beat (a sound, an ink bloom). The staging stays.
 
-Not seen: all of it; what the default ink's wipe looks like at the end of the creep.
+**In game (2026-11-14).** Watched in the Campus meeting room with a `manualWrite` cue sent by hand from the Server DM
+(`name = "Kenji Mori"`, no writing style, so plain ink); stills at 0.48 and 1.53 s. The shot is dark, so the numbers
+below are rough.
+
+- **Seen, 0.48 s: the first frame is near black.** The page's outline is barely there, no name has appeared. (The set
+  exists from the cut; it is the exposure, not an empty frame. A pure black frame was seen only in the 10 name Outro
+  version, see the Outro block.)
+- **Seen, 1.53 s: the name is finished and the page is dim.** "Kenji Mori" is fully written, in dark grey ink on dark
+  brown paper, about 160 px wide and 30 px high in a 1884 x 774 frame, **about 4 to 5 percent of the frame height** (the
+  audit said 5 to 10): readable, low contrast, small. The writing is done between 0.48 s and 1.53 s, consistent with the
+  code's 0.7 s; the camera keeps creeping for the rest of the 2.6 s.
+- **Not checked:** any sound with the plain ink (no audio in the stills), and the exact second the name ends. Nothing
+  else was on the page at 1.53 s, so **no mark, bleed or last-stroke beat was seen** with the plain ink, as predicted.
+- **Not seen as a fault:** the set built at y 1500 loads at once (no empty first frame).
+- **Verdict unchanged: small fix**, and add the exposure: the page needs a stronger light or a paler page so the name
+  reads.
 
 ## Summary and order
 
 | Scene | Verdict | Why in one line |
 |---|---|---|
-| Case opening | leave alone | not played by any live map |
-| Verdict | small fix | the cut lands late and the camera pushes in on a person who is dissolving |
-| Arrest | rebuild | nothing physical happens on screen: static pointing copies, no cuffs seen |
-| Outro | small fix (the rest is Stage 3) | one recipe twice, the Manual cannot show 8 names, the Hand's turn is all front-loaded |
-| Oculus deal | small fix | the beats are good; three locked frames, three unchecked cameras, the player is not frozen |
-| Manual writing shot | small fix | the writing is done in the first second and the plain ink has no pen |
+| Case opening | leave alone | not played by any live map (not watched) |
+| Verdict | small fix | the cut lands late, the camera pushes in on a person who is dissolving, from behind, ending on an empty chair |
+| Arrest | rebuild | nothing physical happens on screen: two black T-posed blocks in front of the lens, no cuffs seen |
+| Outro | small fix (the rest is Stage 3) | one recipe twice from one spot, the Manual shows 4 to 5 lines and went black at 10 names, the sweep is a dim wide shot |
+| Oculus deal | small fix | the beats are good; three locked frames, the player is not frozen (a held key walks them out of the key shot), a near-black opening |
+| Manual writing shot | small fix | the writing is done in the first second, the page is dim and the name small, the plain ink has no pen |
 
 If the owner wants them done after the Stage 1 list: the Oculus deal and the Verdict first (smallest, most seen by one
-player each), then the Manual's pace, then the Outro with Stage 3; the Arrest is a Blender scene of its own.
+player each), then the Manual's pace, then the Outro with Stage 3; the Arrest is a Blender scene of its own. The watch
+adds two things to check before any of that: the Manual set's lighting (the shot is dim with one name and was black
+with ten) and the Oculus deal's freeze, both cheap to look at.
 
 ## The watch that was tried (2026-11-14, nothing seen)
 
@@ -262,31 +416,61 @@ client at 0.25 s steps, cut to the 3D shot at about 4.1 s, crept from fov 55 to 
 about 6.0 s. That matches the code's timeline above (the cut, the creep and the end). Not yet measured or seen: the
 dissolve against the push-in, the frames of any scene, the Arrest, the Outro, the Oculus deal, the Manual shot. A
 caution for the next try: the match's own intro and briefing cutscenes hold the camera for a while after `startMatch`,
-so wait until the camera type is Custom for 4 s before a cue, and read the bot's model from `workspace` by its
+so wait until the camera type is Custom for 4 s before a cue (**corrected by the third try below: the camera type reads
+Custom during the intro, wait on the cue's clock instead**), and read the bot's model from `workspace` by its
 `BotUserId` attribute.
 
-So the list above is still from the code. Two ways to see them: the owner plays the cues (the list below) with the
-list of "check in game" lines in hand, or a session starts Studio's play test with Studio in front, once the owner
-agrees to the screen.
+## The watch that was done (2026-11-14, third try: five scenes seen)
+
+A session with the owner's "yes, screen ok" (asked once in chat) brought Studio to the front
+(`WScript.Shell.AppActivate(<pid of RobloxStudioBeta.exe>)` returned True this time; 60 fps, checked with a 2 s
+`RenderStepped` count), started Play through the MCP, ran the cues described in "How to watch them", and stopped Play
+again (`get_studio_state` says Edit; nothing in the place was edited, and nothing in the scenes' files was touched).
+It saw the Verdict, the Arrest, the Outro (sweep, Manual, Ace's turn and the Hand's turn), the Oculus deal and the
+Manual's writing shot. It did not see the case opening (not reachable), the sounds (no audio in the stills), the Hand's
+card in the Outro, the Oculus deal indoors, or any Outro Manual with 3 to 9 names. The stills were not kept (a few
+hundred KB each, not committed); the "In game" blocks describe them. What got in the way, in the order it was found:
+
+- The match's own intro and briefing hold the camera for about 20 s after `startMatch`, but `CameraType` reads `Custom`
+  while they do (the cutscene sets the camera's CFrame itself): wait on the cue's own clock, not on the camera type.
+- Bots wander in free roam and the phase timer runs, so a target walks away, a phase changes under the cue (everyone is
+  teleported to the meeting room) and bots die on their own ("Name the next Ace" covered a whole run). Fix: skip to the
+  `Meeting` phase straight after `startMatch`, send `pause` once (it toggles, and it survives `skipTo`), and anchor the
+  bots' `HumanoidRootPart` from the Server DM if they must stay still in free roam.
+- **A `screen_capture` seems to disturb the camera it is taken in.** In all four runs that had a still, the camera log
+  showed the camera pulled back toward the player's own camera from the moment of the capture (the fov creep went on,
+  the position did not); the runs without a still (Verdict twice, Oculus, Arrest, Outro) were clean. So: log the numbers
+  in runs with no capture, and take
+  the stills in separate runs; a still is true at the instant it was taken.
+- The debug panel's `outro` cue sends no `timing`, `aceUserId` or `lead`, so the Ace turn never plays from it.
 
 ## How to watch them
 
-The Studio MCP (`mcp__Roblox_Studio__*`) and the no-screen methods are allowed by the owner (2026-11-14); a session that
-watches should first run `list_roblox_studios` and `get_studio_state` and leave it alone while another session is in
-Play.
+The Studio MCP (`mcp__Roblox_Studio__*`) is allowed by the owner (2026-11-14, and the screen too, asked again each new
+session); a session that watches should first run `list_roblox_studios` and `get_studio_state` and leave it alone while
+another session is in Play. The recipe that worked, from the Client DM's `execute_luau` unless it says Server:
 
-- A running match with bots is needed for the server cues: `Net.event("Debug"):FireServer("fillBots", {total=6})` then
-  `"startMatch"` (`studio-cutscene-testing.md`). Then, one at a time, from the client:
-  `FireServer("cue", {kind="verdict"})`, `{kind="arrest"}`, `{kind="eyesDeal"}`, `{kind="outro", extra="Kira"}` and
-  `extra="Team"` (the Bureau's Ace turn), `{kind="intro"}` (this plays the Blender shot: the Luau version needs a map
-  with no shot).
-- `manualWrite` has no debug cue. From the client command bar require
-  `Client.Presentation.Presenters.ManualWrite` and call it with `{at = workspace:GetServerTimeNow(), data = {name =
-  "Kenji Mori"}}`, or write a name in the Manual in a real match.
-- For slow motion: `game.Players.LocalPlayer:SetAttribute("ShotRate", 0.25)` (it affects Blender shots; the Luau
-  scenes run on `task.wait` and tweens at real time, so capture them with several `screen_capture` calls).
-- The audit's checks to make in game, in order of how much they matter: the Verdict's dissolve against the push-in;
-  the Oculus deal's cameras near a wall and the player walking; the Outro's Manual with 8 or more names; the Arrest's
-  operatives and the cuffs; the Manual shot's first frame and the name's size.
-- The `docs/handoff/harness` scripts are for pictures of Blender shots and deaths; they need paths adjusted on this
-  machine (see `docs/agent-memory/harness-paths-stale.md`) and a place with the imports to show a map.
+- Bring Studio to the front, `start_stop_play true`. Fill and start a match:
+  `f = game.ReplicatedStorage.LGameRemotes; f.Debug:FireServer("fillBots", {total = 6}); task.wait(2);
+  f.Debug:FireServer("startMatch")`, then `FireServer("skipTo", {phase = "Meeting"})` and one `"pause"`. Bots are models in
+  `workspace` with a `BotUserId` attribute (-1001 to -1005). `f.GetSnapshot:InvokeServer()` gives the real state.
+  Wait about 20 s for the intro and briefing cutscenes before a cue.
+- A clock and a logger in `PlayerGui`: a ScreenGui (DisplayOrder 10000) whose label reads
+  "kind t=3.82" from the last `Cue` remote's `at`, and a `BindToRenderStep` at `Last + 1` that logs the camera's
+  position, look, fov, type and the thing you are checking every 0.1 s into `_G`.
+- A still at a chosen second: one `execute_luau` that fires the cue, waits until the cue's clock is 0.2 s short of the
+  second you want and returns, then `screen_capture` in the same message (the capture follows within about 0.1 s).
+- Debug cues from the Client: `f.Debug:FireServer("cue", {kind = "verdict", userId = -1002})`, `{kind = "arrest",
+  userId = -1003}`, `{kind = "eyesDeal"}`, `{kind = "outro", extra = "Kira"}` (sweep and Hand's turn only, no names).
+  `intro` plays the Blender shot.
+- Cues with their full data (the Ace turn, names in the Manual, `manualWrite`) are sent by hand from the **Server** DM:
+  `f.Cue:FireClient(game.Players:GetPlayers()[1], {id = 0, matchId = 0, kind = "outro", at = workspace:GetServerTimeNow()
+  + 0.3, data = {winner = "Team", center = Vector3.new(0, 0, -3000), written = {{name = "Aiko Tanaka"}, {name = "Ren
+  Sato", struck = true}}, duration = 15.5, timing = {opening = 5, book = 3, ace = 2.5, hand = 5}, handUserId = -1003,
+  aceUserId = -1002, lead = -1002, leadAlias = "Marten", winners = {...}}})`. `id = 0` always passes the router; the
+  centre of the meeting room was (0, 0, -3000) on both maps tried. `manualWrite` takes `data = {name = "Kenji Mori"}`.
+- To test the Oculus deal's walking, bind `hum:Move(Vector3.new(0, 0, -1), true)` on `RenderStepped` before the cue.
+- `docs/handoff/harness` is for pictures of Blender shots and deaths and needs its paths fixed on this machine (see
+  `docs/agent-memory/harness-paths-stale.md`).
+- Still to look at: the Oculus deal indoors (a meeting room, an office: walls and a low ceiling near the player), the
+  Outro Manual at 3 to 9 names (and why 10 names rendered black), the Outro's Hand card, and any sound.
