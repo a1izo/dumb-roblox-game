@@ -18,9 +18,10 @@ Verdicts stay as they were unless a block says otherwise.
 - **Confirmed as predicted:** the Verdict's cut at 4.1 s with a creep onto a body that is dissolving; the Arrest's two
   operatives popping in on the cut and never moving, and no cuff on screen; the Oculus deal's player not being frozen;
   the Outro's Ace turn and Hand turn being one shot twice; the Manual shot's small name.
-- **Worse than predicted:** the Outro's Manual page shows about 4 to 5 of its 18 lines at the end, not 6.7, and with 10
-  names it rendered as a black frame in every capture (cause not found, see the Outro block); the Manual shots are very
-  dark even with one name; the Arrest's operatives are huge black T-posed blocks that stand in front of the suspect.
+- **Worse than predicted:** the Outro's Manual page shows about 4 to 5 of its 18 lines at the end, not 6.7; **every
+  Manual shot (the Outro's book and the writing shot) is a black frame under the game's normal colour grade, whatever the
+  number of names**, because the page is lit by almost nothing and the grade crushes it (run down at the end); the
+  Arrest's operatives are huge black T-posed blocks that stand in front of the suspect.
 - **Wrong or not seen:** the Arrest's suspect head is not lost at the end of the creep; the Outro's sweep camera has no
   head within 3 studs and nothing in the lens (it is 19 studs from the nearest face); the Oculus deal's close-up is not
   "all hair"; no visible wall or prop blocked any Oculus camera in open air (only invisible colliders did).
@@ -246,13 +247,15 @@ watch them").
   is 1.65 studs from it at fov 36 and the page is about three times the frame's height, so only about **4 to 5 of the 18
   ruled lines** are in frame (the audit said 6.7; counted from the page corners projected to the screen and the height of the letterbox
   bars, not from the stills). With 10 names written the camera is aimed at the middle of rows 1 to 10, so about
-  half of the names are out of frame. And **with 10 names every capture of this shot was a black
-  frame** (four stills at 5.4, 5.5, 7.3 and 7.5 s: only film grain inside the bars), although the set was there (the
-  Grimoire, the page with 8 labels at 7.0 s, the lamp enabled at brightness 4.3, the camera 1.7 studs over the page, the
-  page corners on screen at 5.4 s); switching the grade, bloom, depth of field and atmosphere off did not change it.
-  With 2 names the same shot at 7.1 s shows the page dim but readable (Aiko Tanaka, and Ren Sato struck through).
-  Not explained: **needs the owner's eyes**, and a test at 5, 8 and 10 names (the 10 name frame may be this play
-  test's lighting, or a real fault).
+  half of the names are out of frame. And **the whole Manual segment is a black frame under the game's normal
+  lighting, with 10 names or with 2** (first run: four stills at 5.4, 5.5, 7.3 and 7.5 s with 10 names, only film grain
+  inside the bars; a fresh Play session on Bureau HQ later: black at 6.9 s with 10 names and with 2), although the set
+  was there (the Grimoire, the page with 8 labels at 7.0 s, the lamp enabled at brightness 4.3, the camera 1.7 studs over
+  the page, the page corners on screen). **This replaces the first version of this line, which blamed the number of
+  names: that comparison was confounded, because I had switched the grade, bloom, depth of field and atmosphere off
+  between the 10 name and the 2 name runs** (the 2 name still at 7.1 s, "Aiko Tanaka, and Ren Sato struck through",
+  dim but readable, was taken with them off). The cause is in "The black Manual, run down" at the end: the colour grade
+  crushes a page that is lit by almost nothing.
 - **Seen, 8.0 to 10.65 s and 10.7 to 15.2 s: Ace's turn and the Hand's turn are one shot twice.** Ace: cut at 8.2 studs
   from the head at fov 50, creep to 5.1 studs at fov 42. Hand: cut at 9.2 studs at fov 55, creep to 5.1 studs at
   fov 40. The two cuts stand 1.4 studs apart ((11.9, 6.1, -2996.0) and (10.9, 6.2, -2996.8)): the same tripod, panned 55
@@ -360,21 +363,23 @@ Faults:
 beat (a sound, an ink bloom). The staging stays.
 
 **In game (2026-11-14).** Watched in the Campus meeting room with a `manualWrite` cue sent by hand from the Server DM
-(`name = "Kenji Mori"`, no writing style, so plain ink); stills at 0.48 and 1.53 s. The shot is dark, so the numbers
-below are rough.
+(`name = "Kenji Mori"`, no writing style, so plain ink); stills at 0.48 and 1.53 s. **These stills were taken with the
+game's colour grade (and bloom, depth of field, atmosphere) switched off on my client, so they show the best case.**
+Under the normal grade the same shot is a black frame (see "The black Manual, run down" at the end), so the numbers
+below are rough and the page is darker in the game than in them.
 
-- **Seen, 0.48 s: the first frame is near black.** The page's outline is barely there, no name has appeared. (The set
-  exists from the cut; it is the exposure, not an empty frame. A pure black frame was seen only in the 10 name Outro
-  version, see the Outro block.)
-- **Seen, 1.53 s: the name is finished and the page is dim.** "Kenji Mori" is fully written, in dark grey ink on dark
-  brown paper, about 160 px wide and 30 px high in a 1884 x 774 frame, **about 4 to 5 percent of the frame height** (the
-  audit said 5 to 10): readable, low contrast, small. The writing is done between 0.48 s and 1.53 s, consistent with the
-  code's 0.7 s; the camera keeps creeping for the rest of the 2.6 s.
+- **Seen, 0.48 s (grade off): the first frame is near black.** The page's outline is barely there, no name has
+  appeared. (The set exists from the cut; it is the exposure, not an empty frame.)
+- **Seen, 1.53 s (grade off): the name is finished and the page is dim.** "Kenji Mori" is fully written, in dark grey
+  ink on dark brown paper, about 160 px wide and 30 px high in a 1884 x 774 frame, **about 4 to 5 percent of the frame
+  height** (the audit said 5 to 10): readable, low contrast, small. The writing is done between 0.48 s and 1.53 s,
+  consistent with the code's 0.7 s; the camera keeps creeping for the rest of the 2.6 s. **With the normal grade the
+  1.43 s frame is black** (fresh Play session, Bureau HQ, grade contrast 0.46 and saturation -0.60).
 - **Not checked:** any sound with the plain ink (no audio in the stills), and the exact second the name ends. Nothing
   else was on the page at 1.53 s, so **no mark, bleed or last-stroke beat was seen** with the plain ink, as predicted.
 - **Not seen as a fault:** the set built at y 1500 loads at once (no empty first frame).
-- **Verdict unchanged: small fix**, and add the exposure: the page needs a stronger light or a paler page so the name
-  reads.
+- **Verdict unchanged: small fix**, but the first thing to fix is the light: the page must be lit enough to survive the
+  grade (the lamp does not seem to reach it at all, see the end), or the shot needs its own grade.
 
 ## Summary and order
 
@@ -383,14 +388,14 @@ below are rough.
 | Case opening | leave alone | not played by any live map (not watched) |
 | Verdict | small fix | the cut lands late, the camera pushes in on a person who is dissolving, from behind, ending on an empty chair |
 | Arrest | rebuild | nothing physical happens on screen: two black T-posed blocks in front of the lens, no cuffs seen |
-| Outro | small fix (the rest is Stage 3) | one recipe twice from one spot, the Manual shows 4 to 5 lines and went black at 10 names, the sweep is a dim wide shot |
+| Outro | small fix (the rest is Stage 3) | one recipe twice from one spot, the Manual segment is a black frame under the normal grade and shows only 4 to 5 lines, the sweep is a dim wide shot |
 | Oculus deal | small fix | the beats are good; three locked frames, the player is not frozen (a held key walks them out of the key shot), a near-black opening |
-| Manual writing shot | small fix | the writing is done in the first second, the page is dim and the name small, the plain ink has no pen |
+| Manual writing shot | small fix (light first) | black under the normal grade, the page is not lit by its lamp; the writing is done in the first second, the name small, the plain ink has no pen |
 
 If the owner wants them done after the Stage 1 list: the Oculus deal and the Verdict first (smallest, most seen by one
 player each), then the Manual's pace, then the Outro with Stage 3; the Arrest is a Blender scene of its own. The watch
-adds two things to check before any of that: the Manual set's lighting (the shot is dim with one name and was black
-with ten) and the Oculus deal's freeze, both cheap to look at.
+adds two things to do before any of that: the Manual set's lighting (the shot is black under the normal grade, with any
+number of names) and the Oculus deal's freeze, both small.
 
 ## The watch that was tried (2026-11-14, nothing seen)
 
@@ -473,4 +478,39 @@ another session is in Play. The recipe that worked, from the Client DM's `execut
 - `docs/handoff/harness` is for pictures of Blender shots and deaths and needs its paths fixed on this machine (see
   `docs/agent-memory/harness-paths-stale.md`).
 - Still to look at: the Oculus deal indoors (a meeting room, an office: walls and a low ceiling near the player), the
-  Outro Manual at 3 to 9 names (and why 10 names rendered black), the Outro's Hand card, and any sound.
+  Outro's Hand card, any sound, and why the Manual's lamp does not light its page (see the next section).
+
+## The black Manual, run down (2026-11-14, later the same day, at the owner's yes)
+
+Question: why was the Outro's Manual segment black with 10 names? Answer: **it is black with any number of names, under
+the game's normal lighting; the first note (10 names black, 2 names dim) was a confounded comparison.** A fresh Play
+session on Bureau HQ (Meeting phase, paused, stills at 6.9 s of a hand-sent `outro` cue and at 1.4 s of a `manualWrite`
+cue, grade state set only through the Client DM's `Lighting` children):
+
+| Run | Grade | Lamp | Result |
+|---|---|---|---|
+| Outro, 10 names, 6.91 s | on (contrast 0.46, saturation -0.60) | 4.3 | black |
+| Outro, 2 names, 6.90 s | on | 4.3 | black |
+| `manualWrite`, 1.45 s | on | 17.2 (4 times) | black |
+| `manualWrite`, 1.43 s | **off** | 4.3 | page visible, dim brown, grey ink, "Kenji Mori" readable |
+| `manualWrite`, 1.38 s | **off** | 17.2 (4 times) | the same dim page, no brighter |
+
+- **Cause 1, seen: the colour grade hides the page.** Only switching `DeathsGambitGrade` off makes the page appear. The
+  likely mechanism (inferred, not measured): a contrast of 0.46 around mid grey sends any pixel below roughly 0.16 to
+  zero, and the page is far below that.
+- **Cause 2, seen, not explained: the lamp does not seem to light the page.** Raising the lamp four times changed
+  nothing (grade on or off), so the page is lit by ambient light alone and BookStage's PointLight (range 9, 3.2 studs over
+  the page, enabled, brightness 4.3 as built) contributes nothing visible. So brightening the lamp is not the fix. Not
+  found why: the likely suspects are the lamp part (a 0.2 stud invisible cube, no collision) or Roblox dropping or
+  ignoring the light up at y 1500 or in this light budget (see `lighting-rework-2026-11.md` on lights the engine
+  drops). My tries to test it (a fresh page and lamp at y 1500 and at y 60 seen through a camera I placed, then through
+  `screen_capture`'s own camera arguments) did not work: the capture seems to reset a scripted camera (see
+  `studio-capture-disturbs-camera.md`), one call timed out, and the y 60 control was black too, so they prove nothing.
+- **Not tried:** raising ambient or exposure only for the set, a different light type (a SurfaceLight or SpotLight), moving
+  the set to a lower altitude in the code, or a per-shot grade. Those are the next tests, in that order, and they need a
+  repo change (a scratch copy of `BookStage`), which this audit does not make.
+- **What it means for the verdict:** the Manual's shots (the Outro's book and the writing shot, and probably the death
+  scene's book opening, which uses the same set) most likely show a black frame in the live game today, whatever the
+  names. That is a bigger fault than the pace or the fit, and a small one to fix once the light is understood. It still
+  needs the owner's eyes in a normal play session: this was a Studio play test with Studio in front, and a real client
+  could differ.

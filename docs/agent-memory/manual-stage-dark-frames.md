@@ -1,21 +1,22 @@
 ---
 name: manual-stage-dark-frames
-description: The Manual stage (BookStage: Outro book, Manual writing shot, death opening) rendered near black in a 2026-11-14 play test, pure black with 10 names written; cause not found, check first
+description: The Manual stage (BookStage: Outro book, Manual writing shot, death opening) is a black frame under the game's colour grade in a 2026-11-14 play test, any number of names; the grade crushes a page the lamp does not seem to light
 ---
 
-In a Studio play test on 2026-11-14 (Campus meeting room, Studio in front) the BookStage frames were very dark: the
-`manualWrite` shot showed a near-black page at 0.48 s and a dim brown page with dark grey ink at 1.53 s (the name about
-4 to 5 percent of the frame height); the Outro's book segment with 2 names at 7.1 s was dim but readable; with 10
-names written four stills (5.4, 5.5, 7.3, 7.5 s) were pure black (only film grain inside the letterbox) even though
-the set existed (Grimoire model, ManualPage with 8 labels at 7.0 s, the lamp enabled at brightness 4.3, the page
-corners on screen at 5.4 s) and turning the grade, bloom, depth of field and atmosphere off changed nothing.
-The camera is within about 0.6 stud of the lamp at 5.4 s. Not explained: it may be this play test's lighting, or a real
-fault (the lamp at y 1500 and its brightness, a page that is too dark, the camera aimed at the lower page with many
-names). Details in [animation-audit-match-scenes-2026-11-14.md](../handoff/animation-audit-match-scenes-2026-11-14.md)
-(Outro and Manual shot blocks). The owner's own staging note (BookStage header: "a spotlight lit nothing, a point
-light close over the book is what reads") says this scene has gone black before.
+In a Studio play test on 2026-11-14 (Studio in front, Campus and then Bureau HQ) the BookStage shots were **black under
+the game's normal lighting**, with 10 names or 2 (the `manualWrite` shot too). Only switching the client's
+`DeathsGambitGrade` ColorCorrection off (HQ: contrast 0.46, saturation -0.60) made the page appear, dim brown with grey
+ink; raising the BookStage PointLight four times (4.3 to 17.2) changed nothing, grade on or off, so the page seems lit
+by ambient light only and the lamp contributes nothing. Why the lamp does not light it is not known (an invisible 0.2
+stud part at y 1500, an engine light budget or altitude limit are the suspects). Run-down, with the table of runs, in
+[animation-audit-match-scenes-2026-11-14.md](../handoff/animation-audit-match-scenes-2026-11-14.md) ("The black Manual,
+run down"). The BookStage header says this scene has gone black before ("a spotlight lit nothing in the game").
 
-**Why it matters:** the Manual shots are the owner's staging; a black or unreadable page makes the cause-and-effect
-beat (the name being written) invisible. **How to apply:** before touching the Manual's fit or pace, look at the shot
-with the owner's eyes (the Studio play test, a real match) at 1, 2, 5, 8 and 10 names; if it is dark there too, raise
-the lamp or lighten the page first, then fix the framing.
+My first note on this was wrong: it said 10 names rendered black and 2 names dim. That comparison was confounded, I had
+switched the grade, bloom, depth of field and atmosphere off between the two. Do not repeat it: change one thing per run.
+
+**Why it matters:** the Manual shots are the owner's staging; a black page makes the cause-and-effect beat (the name
+being written) invisible, in every match. **How to apply:** before touching the Manual's fit or pace, look at the shot
+in a normal play session; if it is black there too, fix the light first (a scratch copy of BookStage: ambient or
+exposure for the set, a SurfaceLight or SpotLight, a lower altitude, or a per-shot grade, in that order of try), then
+the framing. Related: [[lighting-rework-2026-11]], [[studio-capture-disturbs-camera]].
