@@ -9,8 +9,8 @@ cutscene, on every screen) from the cue's start and shows the typewriter card `"
 until the cut is stopped (`firstShot` seconds in), then the names are written in the Manual. `WinCinema.TAIL` holds the last frame 0.35 s.
 
 Measured from the exported clips (upper body within 6 degrees of its final pose, counted back from the end): winFinalPage 2.0 s, winCheckmateCoven 1.7,
-winCaseClosed 1.5, winCaseClosedCoven 1.5 (1.47), winNewWorldBureau 1.4, winFinalPageBureau 0.9, winNewWorld 0.8, winCheckmate 0.8. These are interim
-numbers, not the motion report's.
+winCaseClosed 1.5, winCaseClosedCoven 1.5 (1.47), winNewWorldBureau 1.4, winFinalPageBureau 0.9, winNewWorld 0.8, winCheckmate 0.8. This is a
+one-off measure of the inventory, not a trait of `check_motion.py` (which has no ending-hold trait).
 
 **How to apply:** when a win cutscene is re-acted, hold its ending pose the 1.5 s inside the clip (the 8 s length is fixed by the cut data); if the
 owner wants the card on the ending pose, that is a change in `Outro.luau`, so ask first. Inventory:
