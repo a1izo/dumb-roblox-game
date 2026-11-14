@@ -572,3 +572,6 @@ the bottom of this file.
 # Log
 
 (Each finished scene: date, scene, rebuild or re-act, the owner's verdict.)
+
+- 2026-11-14, RoleAce (pilot, rebuild), branch claude/pilot-ace-101c0e: new module art/scripts/cinema/shots/role_ace.py (the old role_l.py is kept, no longer imported), reference art/refs/cinema/RoleAce.toml. Motion report: RoleAce_self FAIL (dead limb 17.5 s, torso 1 percent, same timing 14 of 17) before, PASS after; RoleAce_butler still FAIL on a still stretch (a few small moves added after, not re-measured). `--clear` 0, `--lint` no `[shape]` notes. Not done: game watch, final stills of the widened cameras, owner's verdict. The session ran out of usage before the report.
+

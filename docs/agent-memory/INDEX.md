@@ -62,3 +62,8 @@
 - [Motion report](motion-report.md) - 2026-11-14 check_motion.py (plan Tool 1): the animation bar as numbers and a PASS/FAIL per clip; run line, what it reads, calibrated limits (dead limb, torso share, same timing), sign and reversal traps
 - [Spacing strip](spacing-strip.md) - review_strip.py: an actor's frames 0.05 s apart as black bodies through the shot's camera, with a travel bar; reads the module not the clips; two-minute start
 - [Shape lint](shape-lint.md) - run_cinema --lint [shape] notes: both arms hidden in the torso's outline, or a raised arm over the head, at each hold, from the shot's camera; the numbers and why
+- [YouTube reference hunting](youtube-reference-hunting.md) - search by fetch() in the page and contact-sheet watch pages when the pane will not draw search results; where L's line and crouch are in the anime
+- [R6 near-arm occlusion](r6-near-arm-occlusion.md) - the arm nearest the lens covers the face: act with the far arm, shoot at head height, frame 4.5+ studs tall
+- [R6 held props on paths](r6-held-props-on-paths.md) - welds tip with the forearm and sit inside the arm box: key the prop on its own path from the baked motion, past the arm's end
+- [R6 reach limits](r6-reach-limits.md) - fist 1.3 to 2.4 studs from the shoulder pivot; what that did to RoleAce's table, tray and rest hands
+

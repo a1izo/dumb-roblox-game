@@ -1,0 +1,94 @@
+# Ace's role scene (shot RoleAce). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
+id = "RoleAce"
+name = "Ace: the tea and the turn"
+status = "rebuilt 2026-11-14 (the pilot of docs/handoff/animation-cutscene-plan-2026-11-13.md)"
+
+[scene]
+sentence = "Ace sits curled up alone in the dark, as still as a stone and doing small exact odd things without looking (a sugar cube stacked on a tower, a cup taken by its rim), hearing that Kira can kill from afar; on the last words, 'in person', his head snaps round to the lens: he knows he is being watched."
+action = "Stillness broken by small precise odd movements (the blind reach, the pinch, the stack), then ONE sharp turn of the head to the lens on the line's last words, and a stare held."
+mood = "A mystery scene: slow cameras that creep in on a still figure, the screens' glow the only light, no strikes, no crash zooms (cutscene-quality-bar round 14)."
+
+[origin]
+what = "L (Death Note): the way he sits, picks things up and looks, as the anime first shows it in episode 6 (his face first seen), plus the sweet-eating moments cut together in a compilation. The line itself is episode 2's (L speaks it through a voice changer over his logo, he is not shown), so the staging is ours."
+recognisable = "Crouched in an armchair, knees drawn up to the chest, arms resting on or hugging the knees; a cup lifted by its rim between finger and thumb; sweets pinched between finger and thumb and eaten without hurry, eyes wide and flat; then a slow, unblinking turn of the face to the lens, extreme close, the eyes wide; low angles; slow stills of him."
+ours = "The set stays (maps/venues/sets/ace.py: the wall of screens, the club chair, the low table, the pantry door); the story stays (the briefing line, the Butler brings the tea). Everything acted, shot and lit is new: a tower of sugar cubes on the table, a blind reach to the tower, a cup taken by its rim, the head turned to the lens on 'in person'."
+
+[source]
+url = "https://www.youtube.com/watch?v=zoJ8QI26Jt4"
+title = "L's First Appearance | Death Note Episode 6 - Unraveling"
+kind = "the anime scene"
+watched = "2026-11-14: frame sheets every 1.5 s over 0-23 s, every 2 s over 24-79 s (82 s clip), in the built-in browser"
+mirror = false
+
+[source2]
+url = "https://www.youtube.com/watch?v=WzC8DdTKp0Q"
+title = "Every time L eats sweets."
+kind = "the anime scenes, cut together"
+watched = "2026-11-14: frame sheets every 9.5 s over 0-150 s, single frames at 57, 59, 62, 68, 86, 88, 92, 96 and 98 s (152 s clip), in the built-in browser"
+mirror = false
+
+[source3]
+url = "https://deathnote.fandom.com/wiki/Confrontation/Transcript"
+title = "Confrontation (episode 2) transcript"
+kind = "the line's own scene: L's voice over his logo after Lind L. Tailor dies; nobody is shown crouching"
+watched = "2026-11-14: read the scene and the words around the line"
+
+# The poses, each with the source (S1 = the episode 6 clip, S2 = the sweets compilation) and its time.
+
+[[beat]]
+src = "S1 24.0"
+pose = "extreme close: the face turned square to the lens, black hair over the brow, eyes wide and flat, mouth shut, nothing else moving; the look as if caught"
+[[beat]]
+src = "S1 26.0-28.0"
+pose = "wide, from the side: hunched far forward over a low table, back bowed, arms down, head low; curtains and a lamp behind; he is as still as furniture"
+[[beat]]
+src = "S1 30.0"
+pose = "extreme close on the eyes alone, held, dead steady"
+[[beat]]
+src = "S1 52.0-56.0"
+pose = "low, from the front at his knees: knees drawn up high in the armchair, both hands resting on top of the knees with the fingers hooked over them; the chair's wing behind"
+[[beat]]
+src = "S1 60.0-62.0"
+pose = "low wide from the table's end: the whole crouch: knees to the chest, arms hugging the shins, chin near the knees, head tipped down at the tea set on the low table at his feet; one lamp, a warm room"
+[[beat]]
+src = "S1 64.0"
+pose = "insert: tea poured from a white pot into a cup, the sugar bowl beside it"
+[[beat]]
+src = "S1 68.0-72.0"
+pose = "extreme close: the face behind the lifted cup, the rim held in finger and thumb at the lips, the eyes very wide and flat, looking past the lens"
+[[beat]]
+src = "S1 74.0-76.0"
+pose = "insert from above: the hand over the cup, thumb and finger pinched round a sugar cube, the other fingers curled away, the nails showing"
+[[beat]]
+src = "S2 59.0"
+pose = "close: the hand raised to the lips, a morsel pinched between finger and thumb, the eyes wide and sideways, the mouth a little open"
+[[beat]]
+src = "S2 62.0"
+pose = "close from below: the morsel (a biscuit) at the mouth in finger and thumb, the eyes rolled up, the head tipped back a little"
+[[beat]]
+src = "S2 68.0"
+pose = "close: a spoon of sugar at the lips, the eyes wide and sideways"
+[[beat]]
+src = "S2 86.0"
+pose = "top-down on the cup: a sugar cube dropping into the tea"
+[[beat]]
+src = "S2 88.0"
+pose = "low wide: crouched in the armchair, one hand raised to the back of his head, the other arm over the knee, the tea set at his feet, a dim room with lit screens behind him"
+[[beat]]
+src = "S2 92.0"
+pose = "the cup lifted by its rim between finger and thumb to the lips, the other arm resting over the knee, the head tilted to one side"
+[[beat]]
+src = "S2 96.0"
+pose = "crouched, forearms resting on the knees, a sweet pinched between finger and thumb at chest height, the eyes straight at the lens, a cold dark room behind"
+
+[timing]
+length = 17.5
+fit = "6 cuts of 2.4 to 4.1 s, none under 1.5 s: A 0.0-3.6 the stillness (low, from beyond the table, creeping in, the figure small and lit by the screens, the first small odd movement a slow head tilt); B 3.6-6.0 the screens' side, close, the head jumping screen to screen with long holds; C 6.0-8.4 the blind reach to the tower of sugar cubes, a follow that starts on the table and ends at his lips; D 8.4-11.0 the Butler's tea: the pantry's warm light, over Ace's shoulder to the door, the cup taken by its rim without a look; E 11.0-13.4 the cup at his lips, profile, then on 'in person' the head snaps to the lens; F 13.4-17.5 the stare held, a slow creep in, one last small tilt."
+lens = "Low (the eye a little under his), fov 30 to 40 from 5 to 8 studs for the face; wide fov 48 to 56 only for the room; everything creeps or drifts by hand (shot.pan operator), never locked; something in the foreground in most cuts (the table's edge, the chair's wing, the cup)."
+light = "The screens are the only light: cold blue-white from the north wall as a rim and a flicker on his face; one warm shaft from the pantry door when the Butler enters."
+
+[r6]
+notes = "R6 has no knees or fingers: the crouch is the accepted one (thighs out along the seat, torso upright on them, plus a joint slide to tuck the shins); the pinch is a fist with a sugar cube welded to it, put on the cube with body_reach and checked by number; the head leads every turn and the torso follows 2 to 4 frames later; both arms never alike; the face stays up to the lens for the close shots (a bowed head is only hair)."
+
+[check]
+by = "run_cinema --clear 0 problems; --lint (only momentary close-ups); motion report and spacing strip; silhouette check; contact sheets of every cut; a game watch at full speed and at 0.25"
