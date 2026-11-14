@@ -15,6 +15,30 @@ before the next is started.
 This file is long because fourteen rounds of rework on these scenes already happened and most were rejected. The
 reasons are known. Read all of it once before touching a clip.
 
+## Status (2026-11-14, written when the first batch landed on main)
+
+Read this before picking up work. Stage order and the owner's gates are unchanged.
+
+- **Stage 0 is done and on main.** Tool 1 `art/scripts/check_motion.py`, Tool 2 `art/scripts/review_strip.py`,
+  Tool 3 the `[shape]` notes in `run_cinema.py --lint`. Their numbers and how to run them are under Part 2.
+- **Stage 1a, the RoleAce pilot, is rebuilt and on main** (`art/scripts/cinema/shots/role_ace.py`; the old `role_l.py`
+  is kept and no longer imported; reference `art/refs/cinema/RoleAce.toml`). Both clips pass the motion report. The owner
+  has seen it play in the game. **The owner's verdict on whether it is clearly better is still pending.** Do not start
+  1b or any later scene until the owner gives it. If the answer is no, fix the method in this file and redo the pilot.
+  Known faults listed in the pilot's report: the cup tips a little on its saucer at the sip, one cup stays on the
+  Butler's tray after Ace lifts his, Ace's face is mostly hair in cut 2 and during the tea, the near arm is a large dark
+  block in some frames, and `--lint` still prints `[frame]` notes on the close cuts.
+- **Inventory for stages 2 to 4:** [animation-inventory-stages-2-4-2026-11-14.md](animation-inventory-stages-2-4-2026-11-14.md).
+  The plan's death list below is out of date (see its section 0); work from the inventory. Nothing there was watched in
+  the game yet.
+- **Audit of the Luau-built match scenes (1i):** [animation-audit-match-scenes-2026-11-14.md](animation-audit-match-scenes-2026-11-14.md).
+  Its biggest find: the Manual's writing shot is black under the game's normal colour grade. Fix that before the
+  Manual's pacing or framing.
+- **Still to ask the owner:** 1g (IntroCampus: keep the cuts and re-act, or leave it) and 1h (RoleDiavolo: what bothers
+  them). The defaults written there stand until they answer.
+- After merging the pilot, `art/blend/Animations.blend` was kept from main and `run_anims.py -- --add
+  RoleAce_self,RoleAce_butler` was re-run, as the rules below say; the exports came out byte-identical.
+
 ## Read these first
 
 - `docs/agent-memory/cutscene-pipeline.md`: the loop, the tools and the commands. The method here builds on it.
