@@ -21,6 +21,12 @@ local LOOKS: { [string]: Look } = {
 	title_trainee = { font = F.DenkOne, case = "upper" },
 	title_detective = { font = F.Merriweather, weight = W.Bold, case = "title" },
 	title_insomniac = { font = F.Jura, weight = W.Light, case = "lower" },
+	-- (the moving titles, Shared/TitleMotion)
+	title_a_candle = { font = F.Fondamento, italic = true, case = "title" },
+	title_a_coldcase = { font = F.Oswald, weight = W.Light, case = "title" },
+	title_a_chalk = { font = F.PatrickHand, case = "lower" },
+	title_a_borrowed = { font = F.SpecialElite, case = "upper" },
+	title_a_afterglow = { font = F.Garamond, italic = true, case = "lower" },
 	title_vip = { font = F.Bodoni, italic = true, case = "title" },
 	title_set_noir = { font = F.Oswald, weight = W.Bold, case = "upper" },
 	title_set_ivory = { font = F.Antique, case = "title" },

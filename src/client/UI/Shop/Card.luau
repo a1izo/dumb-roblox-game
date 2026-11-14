@@ -20,6 +20,7 @@
 --   local card = Card.new(item, { Parent = slot, chip = "300", onPick = fn, isNew = true, onWish = fn })
 --   card:setPicked(true)  card:setChip("Worn")  card:turn(fn)  card:setNew(false)  card:setWished(true)
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -29,6 +30,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
+local TitleMotion = require(Shared:WaitForChild("TitleMotion"))
 local TitleFonts = require(Shared:WaitForChild("TitleFonts"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
@@ -450,6 +452,11 @@ local function still(item: Cosmetics.Item, parent: GuiObject)
 		})
 		words:SetAttribute("KeepFont", true)
 		Kit.Base.make("UITextSizeConstraint", { MaxTextSize = 26, MinTextSize = 9, Parent = words })
+		-- (a title whose letters move plays its motion on its card: World/TitleAnimator)
+		if TitleMotion.of(item.id) then
+			words:SetAttribute("TitleId", item.id)
+			CollectionService:AddTag(words, TitleMotion.TAG)
+		end
 		if rank >= 4 then
 			-- (the two rarest tiers' letters lit along their length in the tier's colour)
 			Kit.Base.make("UIGradient", {
@@ -774,6 +781,7 @@ local KIND_WORD: { [string]: string } = {
 	grimoire = "Cover",
 	specter = "Form",
 	title = "Title",
+	movingTitle = "Moving title", -- (a title whose letters move: Shared/TitleMotion)
 	writing = "Writing",
 	verdict = "Verdict",
 	emote = "Emote",
@@ -939,7 +947,7 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		Parent = slot,
 	}) :: Frame
 	Kit.Base.corner(face, 8)
-	local edge = dress(face, item.rarity, item.kind)
+	local edge = dress(face, item.rarity, if TitleMotion.of(item.id) then "movingTitle" else item.kind)
 	local pictureBox = Kit.Base.make("Frame", {
 		Name = "PictureBox",
 		BackgroundColor3 = C.void,
