@@ -6,6 +6,8 @@
 `clip` shows `cols` frames spread over the clip (one row per clip); `clip:t` one frame at t seconds;
 `clip@n` n frames spread over the clip. Angles are in degrees round the character (0 = front,
 90 = the character's left side, -90 = right side).
+
+For an actor's frames in a shot, 0.05 s apart, through that shot's own camera, see review_strip.py.
 """
 
 import os

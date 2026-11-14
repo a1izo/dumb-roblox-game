@@ -232,12 +232,94 @@ An option for `art/scripts/review_anims.py` (or a small new script): one row of 
 seconds over a chosen window, from the shot's own camera, bodies drawn as flat black on white. Even spacing between
 frames shows at a glance, and so does a weak silhouette. Use it on every big move.
 
+**Built 2026-11-14** as a small new script, `art/scripts/review_strip.py` (the drawing and the geometry live in
+`art/scripts/cinema/silhouette.py`, which Tool 3 shares). How to run it, from the repo root:
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python art/scripts/review_strip.py -- RoleMuerto self 5.2 6.8 art/export/previews/cinema/strips/RoleMuerto_self_slashes.png
+```
+
+The five arguments are the shot, the actor's slot (`self`, `butler`...), the window's start and end in shot seconds and
+the output image. `--step=0.05` (the default), `--height=220` (a frame's height in pixels), `--cols=N` (wrap a long
+window into rows of N frames) and `--fixed` (hold the camera as it is at the start, to see the body's spacing
+without the camera's own move) are the options. Give several groups of five to make several strips in one run:
+every shot module loads at start (about two minutes, the emote kit builds every emote when a role scene imports it).
+`art/export/previews/cinema/` is gitignored, so strips written there stay out of commits.
+
+- It reads the shot module's own acting (the keys, springs and extras of each actor's `Motion`, through the rig's
+  forward kinematics, the same as `--lint` and `--clear`), not the clips saved in `Animations.blend`. Nothing has to
+  be rebuilt first, and a strip never shows a stale clip.
+- The body is the six R6 boxes (the head a 1.2 box) as flat black on white, in the shot's own camera at each frame, so
+  a camera that moves or cuts inside the window shows in the frames. It has no hair, hat or prop, and no set between
+  the lens and the body. Grey is what the lens does not show (past the frame's edge, under the letterbox); a red edge
+  on a frame is a cut of the camera.
+- Under each frame are its time and a bar for how far the body travelled on the screen since the frame before (the
+  head, the torso and both hands; the window's biggest step is full height, but never less than 4 percent of a frame's height, so a hold
+  stays flat). Read it like this: a run of bars of
+  one height is a glide, the stiffness the owner sees; a tall bar followed by flat ones is a snap and a hold, as
+  `animation-bar.md` wants. Frames piled on each other are slow, frames far apart are fast. Run it over every big move
+  (from 0.3 s before it to 0.5 s after) before and after the timing step of the scene loop.
+
 ## Tool 3: the silhouette check
 
 For each held pose in a shot, from that shot's camera at that time: project each arm and the head onto the screen
 and measure how much of each lies inside the torso's outline. An arm more than 70 percent inside the torso is
 hidden. Print the holds where both arms are hidden or where the head overlaps a raised arm. Add it to
 `run_cinema.py --lint` as `[shape]` notes.
+
+**Built 2026-11-14** in `art/scripts/cinema/silhouette.py` (shared with Tool 2), printed by `run_cinema.py --lint` as
+`[shape]` lines, one per run of held moments, after the `[lint]` and `[frame]` ones. How to run it, from the repo root:
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python art/scripts/run_cinema.py -- --lint RoleAce
+```
+
+```
+[shape] RoleAce  0.00- 3.10s self: the head is overlapped by the raised right arm (32% of the head) (drawn as a black silhouette)
+[shape] RoleAce  8.40- 9.40s self: the head is overlapped by the raised right arm (77% of the head)
+```
+
+What it does, and the numbers (constants at the top of `silhouette.py`):
+
+- **A held pose** is a moment at which the body rests: the middle of the head, both hands, both arms' middles and the
+  torso's four corners (in the actor's own frame, so a walk across the room does not count as moving) travel less than
+  0.25 studs over the 0.15 s either side of it. That is the shot's key poses as the eye sees them, wherever the module
+  keyed them (`key()`, `beat()`, `hold()` and the springs all end up as the same sampled pose). The module's own
+  `Motion` is sampled every 0.05 s with its springs and extras, through the rig, as `--lint` and `--clear` do; no
+  clip in `Animations.blend` is read. The shape is measured at every 0.1 s of a hold, and moments that run together
+  become one line with their average.
+- **Which actors:** any actor with a `Motion` in the module whose torso is at least 0.2 frame heights tall on the
+  screen (a tenth of the frame) with its middle inside the visible frame, from the shot's camera at that moment.
+  Bodies too small to read are skipped.
+- **The outline** of each part is the convex hull of its box's eight corners through the lens (the head a 1.2 box),
+  and the share of a part that lies inside another is the exact overlap of the two hulls.
+- **Both arms hidden:** each arm has more than 70 percent of its outline inside the torso's. From the front, arms
+  hanging at the sides share 7 percent with the torso; from the side, 83 to 100 percent.
+- **Head overlaps a raised arm:** a hand at least 0.5 studs above its own shoulder joint, and that arm covers more than
+  40 percent of the head's outline. (An arm level with the shoulder, a tray carried out, is not raised.)
+- **A black silhouette** (an actor with `silhouette=` windows, such as Ace's first 3.2 s): the shape is all there is,
+  so the lines are 50 percent and 20 percent there, and the note says so.
+- **To clear a note:** move the raised arm out from the head (beside it, not in front), or change the camera angle
+  at that hold. `run_cinema.py -- --preview <Shot> --stills=t` at the time of the note shows it, and
+  Tool 2's strip over the hold shows it in the shot's own frames.
+
+**Calibration, 2026-11-14** (first rule: a hand at shoulder height, 20 percent of the head: RoleMuerto had 7 notes,
+the writing poses, the wind-up and the laughing, which is how the scene is meant to look, so the rule was the fault,
+not the scene):
+
+| Shot | Notes | What they are |
+|---|---|---|
+| RoleMuerto (the good scene) | 1 | 5.2 to 5.3 s: the wind-up before the first slash, the fist up in front of the face (73 percent) |
+| RoleDiavolo | 0 | |
+| RoleAce (the weak scene) | 2 | 0 to 3.1 s: the hand at the lip against the head as a black silhouette; 8.4 to 9.4 s: the hand to the cup covers the head from the two-shot |
+| RoleButler | 1 | the silhouetted Ace actor, borderline at 20 percent |
+| RoleOperative | 0 | |
+| MeetingIntro | 2 | two seated players with both arms in the lap hidden from the front |
+| IntroAgency | 5 | hands at faces in the crowd |
+| IntroTokyo, IntroCampus | 0 | |
+
+Like Tool 1, it is a floor and not a judge: the weak scenes' faults are mostly timing and cameras, which the notes do
+not see. It says whether the held shape of the body reads. A clip with a `[shape]` note it did not mean is not done.
 
 ## One experiment to offer the owner: smears
 

@@ -60,3 +60,5 @@
 - [Spec bundle via rbxasset](spec-bundle-via-rbxasset.md) - run the repo's pure specs and the crowd watcher in a running Studio with no write into the shared place: rojo build into Studio's content folder, GetObjects rbxasset
 - [Animation plan 2026-11](animation-plan-2026-11.md) - the owner's 2026-11-13 verdict (only RoleMuerto, maybe RoleDiavolo, are good), why those two work, and the plan: tools first, a pilot, then base scenes, deaths, wins, emotes and movement
 - [Motion report](motion-report.md) - 2026-11-14 check_motion.py (plan Tool 1): the animation bar as numbers and a PASS/FAIL per clip; run line, what it reads, calibrated limits (dead limb, torso share, same timing), sign and reversal traps
+- [Spacing strip](spacing-strip.md) - review_strip.py: an actor's frames 0.05 s apart as black bodies through the shot's camera, with a travel bar; reads the module not the clips; two-minute start
+- [Shape lint](shape-lint.md) - run_cinema --lint [shape] notes: both arms hidden in the torso's outline, or a raised arm over the head, at each hold, from the shot's camera; the numbers and why
