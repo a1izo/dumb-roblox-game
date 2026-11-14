@@ -128,6 +128,11 @@ blender -b --factory-startup --python art/scripts/check_export.py   # the Blende
 blender -b --factory-startup --python art/scripts/video_anims.py -- name.mp4 run idle ...
 ```
 
+`art/scripts/check_motion.py` is the other check: the motion report, the nine traits of animation that looks made by a
+person as numbers per clip (frozen limbs, torso share, wind-up, same timing, mirrored holds ...) with a PASS/FAIL. It
+reads the exported clips, cutscene acting included, so it also runs on the emotes and the movement set
+(`--emotes`, `--movement`). See `docs/agent-memory/motion-report.md`.
+
 `check_anims.py` holds the movement set to: soles that do not slide while down (0.03 studs), nothing below the
 floor (0.03), no gap at the hip (0.12), no leg deeper than 0.6 in the torso, clean loop seams, no joint faster
 than 900 degrees a second. `run_anims.py` fails when any of them fails.

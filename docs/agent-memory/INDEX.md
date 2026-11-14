@@ -62,3 +62,4 @@
 - [Deaths today](deaths-current-state-2026-11-14.md) - 3 collapses + the table cutscene + 15 scene deaths; the 14 custom deaths, deaths_scenes.py, fallen.py and the 5 styles are gone (older death notes are partly stale)
 - [Review scripts write into the repo](review-scripts-write-into-repo.md) - review_anims/win/emote write under art/export/previews; redirect common.PREVIEWS with a wrapper; review_deaths renders nothing now
 - [Win name card timing](win-cutscene-name-card-timing.md) - the "<side> wins" card runs from the cue start, not on the ending pose; 8 win clips measured: five hold under 1.5 s
+- [Motion report](motion-report.md) - 2026-11-14 check_motion.py (plan Tool 1): the animation bar as numbers and a PASS/FAIL per clip; run line, what it reads, calibrated limits (dead limb, torso share, same timing), sign and reversal traps

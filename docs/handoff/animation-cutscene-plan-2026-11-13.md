@@ -147,6 +147,85 @@ numbers into this file under this section. From then on, a clip that fails the r
 
 The report is a floor, not a judge. Passing it does not make a clip good. Failing it means it is not.
 
+### Tool 1 as built and calibrated (2026-11-14)
+
+Built: `art/scripts/check_motion.py`. Run it with Blender's Python (it only needs numpy and writes nothing):
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe" art/scripts/check_motion.py --shot RoleAce --detail
+```
+
+Pick clips by name (`RoleAce_self`), by cutscene (`--shot RoleAce`, or the bare name), `--all` (every cutscene),
+`--emotes` (the 70), `--movement` (the 21 clips `check_anims.py` holds). `--lead` leaves out a cutscene's extras
+(slots `everyone:N` and `extra:N`, which are only noted as `info`, never failing, unless `--strict-extras`).
+`--detail` says where each fault is in seconds, `--worst N` ranks, `--table` prints a Markdown table, `--json PATH`
+keeps every number, `--selftest` measures made-up clips with known answers. One line per clip: `PASS`, `FAIL` or
+`info`, the nine numbers, the failing traits named after `<-`. Exit code 1 when a clip that counts fails, 2 for an
+unknown name. It reads the committed exported keys (`src/shared/Cinema/Acting/<Shot>.luau`, `src/shared/Anim/Clips`)
+and never opens `Animations.blend`: rebuild and export a clip first (`run_anims.py -- --add`, `run_cinema.py --
+--export`) or it measures the old one. A clip the story keeps still is listed in `FREEZE_OK` in the script (today
+only `RoleButler_ace`) or passed as `--frozen-ok`.
+
+**What the calibration changed.** Of the plan's nine traits as first worded, only some tell Muerto from Ace, and
+Muerto itself broke two of the plan's numbers. In the order of the plan:
+
+| Trait | Muerto (must pass) | Ace self / butler (must fail) | Limit | Verdict on the trait |
+|---|---|---|---|---|
+| Frozen: whole upper body still | 0.6 s | 0.9 s / 1.3 s | over 2.5 s fails | Does not separate them (the neck always drifts, so the whole body is never still), kept as the plan's guard. |
+| **Dead limb** (new, replaces the above as the test): one upper joint still | 3.7 s (left arm) | **17.5 s (left arm never moves)** / 6.2 s | over 8 s fails | Separates. Ace's left arm is dead the whole scene and its torso is still for 7.7 s. No emote is over 6 s. |
+| Glides: constant-speed spans over 0.4 s | 0 | 0 / 0 | over 2.5 s in all fails | Does not separate (the game's cubic eases every move between held keys); kept as a guard, it catches RoleButler (2.7 s). |
+| Snap and hold: big moves over 0.35 s with no hold | 2 of 44 | 0 of 4 / none | over 35% of 5 or more | Does not separate (Ace's arm moves are fast; its fault is what comes before and after). Guard. |
+| Anticipation: big moves drawn back first | 18 of 44 (41%) | 1 of 4 / none | under 15% of 5 or more fails | Muerto passes; Ace has only 4 big moves, too few to judge. Fails a clip with 5 or more big moves and almost none drawn back (IntroTokyo_victim 1 of 8, the emote diceTower 0 of 12). |
+| Overshoot: passes its rest pose and comes back | 1 of 44 | 2 of 4 / none | **not judged** | Dropped from the verdict. Muerto has almost none (its strokes flow into each other, they are not settled one by one), so no limit can make Muerto pass and Ace fail. Still printed. |
+| Symmetry: held arms mirrored within 8 degrees | 100% of 0.6 s of holds | 0% of 14.2 s / **100% of 15.5 s** | over 50% of 2 s or more | Separates the butler. Muerto has under a second of held arms, so it is not judged. |
+| **Torso share** | 15% | **1%** / 38% | under 4% fails (when the limbs turn over 100 degrees) | Separates. The plan guessed a fifth: Muerto itself is 15% and Diavolo 7%, so a fifth would fail the bar. Legs are left out (footwork plans them) and the body offset counts at 25 degrees a stud. |
+| Metronome: same size, same interval, in a row | 4 (the torso, 7.9 to 9.8 s, 20 degrees every 0.45 s) | 0 / 0 | 5 or more fails | The plan said three; Muerto's own torso makes four, so five. By itself it does not separate. |
+| **Same timing** (new): moves of one joint that take the same number of frames | 20 of 50 (40%) | **14 of 17 neck moves, all 0.18 s (82%)** / none | 6 or more and 60% fails | Separates. Ace's head turns have different sizes and gaps but one timing: that is the metronome the eye catches. |
+| Overlap: head or arms arrive 2 to 12 frames after the torso | 32 of 33 | no torso turn at all / 2 of 2 | under 25% of 3 or more fails | Does not separate (Ace's torso never moves, so there is nothing to follow). Guard. |
+
+Result: RoleMuerto_self **PASS**; RoleAce_self **FAIL** (dead limb, torso share, same timing); RoleAce_butler **FAIL**
+(symmetry: both arms mirrored for all 15.5 s of held poses). Sanity on the owner's well-rated emotes: 63 of 70 pass;
+the 7 that fail are diceTower (anticipation, metronome), finalBreakdown (metronome, same timing), justAsPlanned
+(anticipation), preDawnBonk (anticipation, same timing), theLongClimb (torso), twoWeeksNotice (same timing) and wave
+(torso: arms only, and its length is frozen). Movement set: 19 of 21 pass; `idle` (16.5 s) and `idleGuarded`
+(23.1 s) fail dead limb, because the exported clip's shoulders never move more than 0.6 degrees.
+
+The units: a move is a joint turning faster than 6 degrees a second, so the life layer's breath and glances never
+count. Everything is measured on the played curve at 60 a second. Two measuring bugs the self-test caught while
+building (a draw-back that swings the joint back past its start was missed, and the hold after an overshoot was
+timed from the peak) are fixed; run `--selftest` after touching a measuring.
+
+**Before numbers (2026-11-14, the clips as they stand).** `PASS`/`FAIL` as the report gives it. A sibling session
+compares its after against these.
+
+| Clip | Verdict | Frozen s | Dead limb s | Glides s | Slow/big | Wound up/big | Mirrored | Torso | Metronome / same timing | Overlap |
+|---|---|---|---|---|---|---|---|---|---|---|
+| RoleMuerto_self (the bar) | PASS | 0.6 | 3.7 left arm | 0.0 | 2/44 | 18/44 | 100% of 0.6 s | 15% | 4 / 20 of 50 | 32/33 |
+| RoleAce_self | FAIL: dead limb, torso, same timing | 0.9 | 17.5 left arm | 0.0 | 0/4 | 1/4 | 0% of 14.2 s | 1% | 0 / 14 of 17 | 0/0 |
+| RoleAce_butler | FAIL: symmetry | 1.3 | 6.2 left arm | 0.0 | 0/0 | 0/0 | 100% of 15.5 s | 38% | 0 / 0 of 0 | 2/2 |
+| RoleDiavolo_self | PASS | 0.5 | 4.3 torso | 0.0 | 0/11 | 3/11 | 34% of 5.7 s | 7% | 0 / 3 of 14 | 2/4 |
+| RoleOperative_self | PASS | 1.1 | 4.0 right arm | 0.0 | 0/4 | 2/4 | 30% of 10.8 s | 15% | 0 / 4 of 7 | 1/2 |
+| RoleButler_self | FAIL: glides, symmetry | 0.4 | 1.5 right arm | 2.7 | 0/1 | 0/1 | 100% of 5.0 s | 19% | 0 / 3 of 8 | 4/5 |
+| RoleButler_ace (still by design, in `FREEZE_OK`) | PASS | 3.4 | 10.0 right arm | 0.0 | 0/0 | 0/0 | 0% of 10.0 s | 24% | 0 / 0 of 0 | 0/0 |
+| IntroAgency_watcher | PASS | 1.3 | 2.8 right arm | 0.0 | 0/0 | 0/0 | 9% of 10.7 s | 18% | 4 / 4 of 15 | 7/8 |
+| IntroCampus_noticer | FAIL: frozen | 4.4 | 7.5 left arm | 0.0 | 0/0 | 0/0 | 0% of 12.2 s | 12% | 3 / 3 of 5 | 2/2 |
+| IntroTokyo_victim | FAIL: frozen, dead limb, anticipation, symmetry | 3.3 | 12.1 right arm | 1.1 | 1/8 | 1/8 | 61% of 13.2 s | 23% | 0 / 3 of 12 | 11/12 |
+| IntroTokyo_watcher | FAIL: dead limb | 1.4 | 17.3 left arm | 0.0 | 0/3 | 0/3 | 0% of 18.1 s | 5% | 0 / 2 of 7 | 0/0 |
+
+MeetingIntro (12 clips, one per seat, 6.0 s): **10 of 12 FAIL**. Ten fail symmetry: both arms are mirror images for
+the whole of their held poses (6 of the seats hold 6.0 s of it; 1.3 to 4.0 s for the others), and seats 8 and 9 are
+also frozen for 2.5 and 2.6 s with the torso itself still. Only seats 4 and 5 pass. No seat has a big move, so
+snap, anticipation and overshoot have nothing to judge. Torso share 23 to 39%, glides 0 to 0.5 s.
+
+The extras of the three intros are only noted (`info`). IntroAgency (13 extras): 10 have a fault, mostly a dead arm
+(8, up to 11.2 s) and mirrored held arms (7). IntroCampus (11 walkers): the 6 with a fault all have a torso under 4%
+(the torso stays upright while they walk). IntroTokyo (12 extras): 8 have a fault, mostly mirrored held arms (7);
+the two seated commuters never move an arm for the whole 24.6 s, and two of the waiting figures glide for 4 to 5 s.
+
+How to read the other numbers: RoleOperative passes because the report only sees the clip, not the missing hand
+targets and locked cameras that make it weak (Part 1). RoleDiavolo (the owner's "maybe") passes. Neither tells the
+sessions to leave a scene alone: the report is a floor.
+
 ## Tool 2: the spacing strip
 
 An option for `art/scripts/review_anims.py` (or a small new script): one row of frames at a fixed step of 0.05
