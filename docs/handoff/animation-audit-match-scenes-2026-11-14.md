@@ -255,6 +255,16 @@ place was edited). It produced no pictures and no measurements of the scenes:
   not the running one, so game state cannot be read or driven by requiring the services. See
   `docs/agent-memory/studio-mcp-play-test-traps.md`.
 
+**Second try, same day, with the owner's yes to the screen** (Studio in front, 54 fps, `screen_capture` then showed the
+3D and the game's screens; the Debug cues worked after a match with bots was started and `skipTo` Investigation was
+sent): one measurement only before the usage limit ended the session. The Verdict cue for a bot, logged from the
+client at 0.25 s steps, cut to the 3D shot at about 4.1 s, crept from fov 55 to fov 42 and gave the camera back at
+about 6.0 s. That matches the code's timeline above (the cut, the creep and the end). Not yet measured or seen: the
+dissolve against the push-in, the frames of any scene, the Arrest, the Outro, the Oculus deal, the Manual shot. A
+caution for the next try: the match's own intro and briefing cutscenes hold the camera for a while after `startMatch`,
+so wait until the camera type is Custom for 4 s before a cue, and read the bot's model from `workspace` by its
+`BotUserId` attribute.
+
 So the list above is still from the code. Two ways to see them: the owner plays the cues (the list below) with the
 list of "check in game" lines in hand, or a session starts Studio's play test with Studio in front, once the owner
 agrees to the screen.
