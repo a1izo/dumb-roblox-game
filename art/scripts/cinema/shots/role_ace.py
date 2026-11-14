@@ -245,18 +245,18 @@ key(0.9, "sine", -17, neck=(8, 0, 0), right=R_REST, left=L_KNEE)
 key(1.5, "sine", -17, neck=(8, 0, 0), right=R_REST, left=L_KNEE_B)
 key(2.3, "sine", -17, neck=(8, 0, 0), right=R_REST, left=L_KNEE_B)
 # 2.3 the head tilts, slowly, to one side
-key(3.1, "sine", -17, neck=(6, 3, 9), right=R_REST, left=L_KNEE_B)
+key(3.1, "sine", -17, neck=(6, 20, 9), right=R_REST, left=L_KNEE_B)
 # 3.9 the right hand draws back a hair... and drifts up to hang over the tower (the head still on the screens)
-key(3.95, "sine", -17, neck=(6, 3, 9), right=R_REST.shift(0.0, -0.05, 0.3), left=L_KNEE_B)
-key(4.7, "sine", -19, turn=-3, neck=(6, 6, 6), right=R_HOVER, left=L_KNEE_B)
+key(3.95, "sine", -17, neck=(6, 20, 9), right=R_REST.shift(0.0, -0.05, 0.3), left=L_KNEE_B)
+key(4.7, "sine", -19, turn=-3, neck=(6, 28, 6), right=R_HOVER, left=L_KNEE_B)
 # 5.0 it drops onto the top cube without a look
-key(5.15, "out", -20, turn=-3, neck=(6, 6, 6), right=R_CUBE, left=L_KNEE_B)
-key(5.5, "sine", -20, turn=-3, neck=(6, 6, 6), right=R_CUBE, left=L_KNEE_B)
+key(5.15, "out", -20, turn=-3, neck=(6, 28, 6), right=R_CUBE, left=L_KNEE_B)
+key(5.5, "sine", -20, turn=-3, neck=(6, 28, 6), right=R_CUBE, left=L_KNEE_B)
 # 6.1 the cube at the lips
-key(6.3, "sine", -16, turn=0, neck=(8, 4, 6), right=R_LIPS, left=L_KNEE_B)
-key(6.75, "sine", -16, turn=0, neck=(8, 4, 6), right=R_LIPS, left=L_KNEE_B)
+key(6.3, "sine", -16, turn=0, neck=(8, 16, 6), right=R_LIPS, left=L_KNEE_B)
+key(6.75, "sine", -16, turn=0, neck=(8, 16, 6), right=R_LIPS, left=L_KNEE_B)
 # 7.0 the hand goes back to rest (a nudge towards the mouth first)
-key(6.95, "sine", -16, turn=0, neck=(8, 4, 6), right=R_LIPS.shift(0.0, 0.1, -0.12), left=L_KNEE_B)
+key(6.95, "sine", -16, turn=0, neck=(8, 16, 6), right=R_LIPS.shift(0.0, 0.1, -0.12), left=L_KNEE_B)
 key(7.8, "sine", -17, neck=(8, 0, 4), right=R_REST, left=L_KNEE_B)
 # 8.0 the left hand goes up behind his head, as if the thought itched; held while the tray comes
 key(8.1, "sine", -17, neck=(8, 0, 4), right=R_REST, left=L_KNEE_B.shift(0.0, -0.15, 0.2))
@@ -291,6 +291,9 @@ T_PICK, T_EAT = 5.45, 6.55  # the top cube leaves the tower in his fist; it is e
 b = Motion("RoleAce_butler", LENGTH, note="Ace's role cutscene: the Butler brings the tea.")
 b.key(0.0, root=(0, 0, 0), neck=(-2, 0, 0), **TRAY)
 b.key(WALK_T1, root=(-2, 0, 0), neck=(-2, 0, 0), **TRAY)
+beat(b, 1.4, 0.5, antic=0.1, neck=(-3, 7, 0))  # (waiting in the pantry: a glance towards the door and the room)
+beat(b, 3.4, 0.6, antic=0.1, root=(-3, 2, 0), neck=(-5, 0, 0))  # a shift of weight
+beat(b, 5.0, 0.5, antic=0.1, neck=(-1, 4, 0))  # the order is ready
 beat(b, BOWED_AT, 0.5, antic=0.15, root=(-9, 0, 0), neck=(-4, 0, 0), **HELD)  # a small dip, the tray held out
 beat(b, 10.6, 0.6, antic=0.1, neck=(-7, 9, 0))  # his eyes follow the cup up
 beat(b, 11.7, 0.7, antic=0.1, root=(-9, 3, 0), neck=(-3, 3, 0))  # a breath of weight, the tray still

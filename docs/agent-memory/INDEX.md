@@ -66,4 +66,5 @@
 - [R6 near-arm occlusion](r6-near-arm-occlusion.md) - the arm nearest the lens covers the face: act with the far arm, shoot at head height, frame 4.5+ studs tall
 - [R6 held props on paths](r6-held-props-on-paths.md) - welds tip with the forearm and sit inside the arm box: key the prop on its own path from the baked motion, past the arm's end
 - [R6 reach limits](r6-reach-limits.md) - fist 1.3 to 2.4 studs from the shoulder pivot; what that did to RoleAce's table, tray and rest hands
+- [Many stills, one run](review-stills.md) - art/scripts/review_stills.py renders any number of shot-camera or free-camera stills with the venue built once (a --stills call rebuilds it each time, about 3 minutes)
 
