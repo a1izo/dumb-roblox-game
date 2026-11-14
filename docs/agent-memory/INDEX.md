@@ -59,3 +59,5 @@
 - [Tokyo crowd 2026-11](tokyo-crowd-2026-11.md) - the crowd rework (plan Part B, C1 to C6): how it behaved before, what each phase changed, where the pieces are, how to measure it
 - [Spec bundle via rbxasset](spec-bundle-via-rbxasset.md) - run the repo's pure specs and the crowd watcher in a running Studio with no write into the shared place: rojo build into Studio's content folder, GetObjects rbxasset
 - [Animation plan 2026-11](animation-plan-2026-11.md) - the owner's 2026-11-13 verdict (only RoleMuerto, maybe RoleDiavolo, are good), why those two work, and the plan: tools first, a pilot, then base scenes, deaths, wins, emotes and movement
+- [Scene previews in Studio](studio-scene-preview-check.md) — look at a scene death's HUD layer in the user's Studio: temp LocalScript + attribute + screen_capture; delete it before saving
+- [Photo mode and moving titles](photo-mode-and-moving-titles.md) — added overnight 2026-11-14 on "just innovate", not yet judged by the user
