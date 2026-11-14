@@ -59,3 +59,4 @@
 - [Tokyo crowd 2026-11](tokyo-crowd-2026-11.md) - the crowd rework (plan Part B, C1 to C6): how it behaved before, what each phase changed, where the pieces are, how to measure it
 - [Spec bundle via rbxasset](spec-bundle-via-rbxasset.md) - run the repo's pure specs and the crowd watcher in a running Studio with no write into the shared place: rojo build into Studio's content folder, GetObjects rbxasset
 - [Animation plan 2026-11](animation-plan-2026-11.md) - the owner's 2026-11-13 verdict (only RoleMuerto, maybe RoleDiavolo, are good), why those two work, and the plan: tools first, a pilot, then base scenes, deaths, wins, emotes and movement
+- [Spacing strip](spacing-strip.md) - review_strip.py: an actor's frames 0.05 s apart as black bodies through the shot's camera, with a travel bar; reads the module not the clips; two-minute start

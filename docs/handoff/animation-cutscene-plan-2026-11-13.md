@@ -153,6 +153,34 @@ An option for `art/scripts/review_anims.py` (or a small new script): one row of 
 seconds over a chosen window, from the shot's own camera, bodies drawn as flat black on white. Even spacing between
 frames shows at a glance, and so does a weak silhouette. Use it on every big move.
 
+**Built 2026-11-14** as a small new script, `art/scripts/review_strip.py` (the drawing and the geometry live in
+`art/scripts/cinema/silhouette.py`, which Tool 3 shares). How to run it, from the repo root:
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python art/scripts/review_strip.py -- RoleMuerto self 5.2 6.8 art/export/previews/cinema/strips/RoleMuerto_self_slashes.png
+```
+
+The five arguments are the shot, the actor's slot (`self`, `butler`...), the window's start and end in shot seconds and
+the output image. `--step=0.05` (the default), `--height=220` (a frame's height in pixels), `--cols=N` (wrap a long
+window into rows of N frames) and `--fixed` (hold the camera as it is at the start, to see the body's spacing
+without the camera's own move) are the options. Give several groups of five to make several strips in one run:
+every shot module loads at start (about two minutes, the emote kit builds every emote when a role scene imports it).
+`art/export/previews/cinema/` is gitignored, so strips written there stay out of commits.
+
+- It reads the shot module's own acting (the keys, springs and extras of each actor's `Motion`, through the rig's
+  forward kinematics, the same as `--lint` and `--clear`), not the clips saved in `Animations.blend`. Nothing has to
+  be rebuilt first, and a strip never shows a stale clip.
+- The body is the six R6 boxes (the head a 1.2 box) as flat black on white, in the shot's own camera at each frame, so
+  a camera that moves or cuts inside the window shows in the frames. It has no hair, hat or prop, and no set between
+  the lens and the body. Grey is what the lens does not show (past the frame's edge, under the letterbox); a red edge
+  on a frame is a cut of the camera.
+- Under each frame are its time and a bar for how far the body travelled on the screen since the frame before (the
+  head, the torso and both hands; the window's biggest step is full height, but never less than 4 percent of a frame's height, so a hold
+  stays flat). Read it like this: a run of bars of
+  one height is a glide, the stiffness the owner sees; a tall bar followed by flat ones is a snap and a hold, as
+  `animation-bar.md` wants. Frames piled on each other are slow, frames far apart are fast. Run it over every big move
+  (from 0.3 s before it to 0.5 s after) before and after the timing step of the scene loop.
+
 ## Tool 3: the silhouette check
 
 For each held pose in a shot, from that shot's camera at that time: project each arm and the head onto the screen
