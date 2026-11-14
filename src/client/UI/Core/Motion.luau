@@ -40,6 +40,16 @@ function Motion.flashesOff(): boolean
 	return not flashes
 end
 
+-- Camera shake (Settings cameraShake): every shake of the view (impacts, death scenes, emotes) asks this. Until
+-- 2026-11-14 only the opening's landing did, so the setting did nothing almost everywhere.
+local shake = true
+function Motion.setShake(value: boolean)
+	shake = value
+end
+function Motion.shakeOff(): boolean
+	return not shake or reduced
+end
+
 function Motion.isReduced(): boolean
 	return reduced
 end

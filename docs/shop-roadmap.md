@@ -26,7 +26,7 @@ shown, and nothing ever sold for Robux by chance.
 |---|---|---|
 | Role reveal intros | How your role card turns over at the start of a case (a flip, a burn, a seal broken) | Seen by you alone: the reveal is private |
 | Manual covers on the real book | The cover you own on Death's Manual in the cutscenes, not only on the notebook | Diavolo's alone, so shown only once Diavolo is out |
-| Animated titles | Titles whose letters move (a flicker, a slow chalk fill) in the lobby and on the results screen | Lobby and results only, like every title; no ink (the owner's rule) |
+| Animated titles | Titles whose letters move (a flicker, a slow chalk fill) in the lobby and on the results screen | BUILT 2026-11-14: five on sale (Candlelight, Cold Case, Chalk Outline, Borrowed Time, Afterglow; Shared/TitleMotion, World/TitleAnimator), stilled by reduced motion |
 | Portrait frames | A frame round your portrait on the profile card and the leaderboards | |
 | Lobby marionette companion | A small puppet that follows you round the lobby on its strings | Lobby only |
 | Season ledger: the paid line | A second line of rewards beside the free one (Progression/Ledger) | Needs a Robux product: owner's call |

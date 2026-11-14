@@ -1452,6 +1452,19 @@ Cosmetics.ITEMS = {
 	{ id = "title_trainee", kind = "title", name = "Trainee", rarity = "common", source = "achievement" },
 	{ id = "title_detective", kind = "title", name = "Detective", rarity = "common", source = "shop", price = 150 },
 	{ id = "title_insomniac", kind = "title", name = "Insomniac", rarity = "rare", source = "rotation", price = 300 },
+	-- Titles whose letters move (Shared/TitleMotion, docs/shop-roadmap.md "Animated titles", 2026-11-14)
+	{ id = "title_a_candle", kind = "title", name = "Candlelight", rarity = "rare", source = "shop", price = 350 },
+	{ id = "title_a_coldcase", kind = "title", name = "Cold Case", rarity = "rare", source = "shop", price = 400 },
+	{ id = "title_a_chalk", kind = "title", name = "Chalk Outline", rarity = "epic", source = "shop", price = 600 },
+	{ id = "title_a_borrowed", kind = "title", name = "Borrowed Time", rarity = "epic", source = "shop", price = 650 },
+	{
+		id = "title_a_afterglow",
+		kind = "title",
+		name = "Afterglow",
+		rarity = "legendary",
+		source = "shop",
+		price = 1100,
+	},
 	{ id = "title_vip", kind = "title", name = "Patron of the Arts", rarity = "epic", source = "vip" },
 	-- Earned: a whole set (Shared/Sets)
 	{ id = "title_set_noir", kind = "title", name = "Film Noir", rarity = "rare", source = "set" },

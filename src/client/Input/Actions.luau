@@ -14,6 +14,7 @@ local TabView = require(script.Parent.Parent.Controllers.TabView)
 local NotePanel = require(script.Parent.Parent.UI.NotePanel)
 local Router = require(script.Parent.Parent.UI.Core.Router)
 local Device = require(script.Parent.Parent.UI.Core.Device)
+local PhotoMode = require(script.Parent.Parent.World.PhotoMode)
 
 local SabotageRemote = Net.event("Sabotage")
 
@@ -167,6 +168,18 @@ Actions.list = {
 			return view.living and view.private.carrying ~= nil and inMatchPhase(view, "Investigation")
 		end,
 		run = NotePanel.toggle,
+	},
+	{
+		-- The lobby's photo mode (P): the body holds still, the camera comes loose (World/PhotoMode). Its own keys
+		-- take over while it is on; P leaves it again.
+		id = "photoMode",
+		label = fixed("Photo mode"),
+		keys = { Enum.KeyCode.P },
+		variant = "ghost",
+		when = function(view: View)
+			return not view.participant and not view.spectating and view.private.away ~= true
+		end,
+		run = PhotoMode.toggle,
 	},
 	{
 		id = "help",

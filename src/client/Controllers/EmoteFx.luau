@@ -1615,7 +1615,9 @@ local GOLD = ColorSequence.new(Color3.fromRGB(255, 214, 90), Color3.fromRGB(230,
 local LUCK = Color3.fromRGB(70, 230, 120)
 local LUCK_LIGHT = Color3.fromRGB(196, 255, 210)
 local JACKPOT_TURN = 7 * 60 / 150
-local SUITS = { "♠", "♥", "♣", "♦" }
+-- (the four suits, DRAWN from plain shapes: typed, ♠ ♥ ♣ ♦ come out as coloured emoji, and the user's rule of
+-- 2026-11-12 is no emojis anywhere)
+local SUITS = { "spade", "heart", "club", "diamond" }
 local jackpotCoins = accent(JACKPOT_TURN, { 0.0 }, function(character)
 	local sole = lowerSole(character)
 	if sole then
@@ -1632,24 +1634,82 @@ local jackpotCoins = accent(JACKPOT_TURN, { 0.0 }, function(character)
 	end
 end)
 
+-- One suit drawn into `holder` (a square frame) from circles and turned squares, in `colour`; returns its pieces.
+local function drawSuit(holder: Frame, kind: string, colour: Color3): { Frame }
+	local pieces = {}
+	local function piece(x: number, y: number, w: number, h: number, round: boolean, turn: number?)
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.BackgroundColor3 = colour
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromScale(x, y)
+		f.Size = UDim2.fromScale(w, h)
+		f.Rotation = turn or 0
+		if round then
+			local c = Instance.new("UICorner")
+			c.CornerRadius = UDim.new(1, 0)
+			c.Parent = f
+		end
+		f.Parent = holder
+		table.insert(pieces, f)
+	end
+	if kind == "diamond" then
+		piece(0.5, 0.5, 0.5, 0.5, false, 45)
+	elseif kind == "heart" then
+		piece(0.34, 0.38, 0.4, 0.4, true)
+		piece(0.66, 0.38, 0.4, 0.4, true)
+		piece(0.5, 0.56, 0.46, 0.46, false, 45)
+	elseif kind == "spade" then
+		piece(0.34, 0.56, 0.4, 0.4, true)
+		piece(0.66, 0.56, 0.4, 0.4, true)
+		piece(0.5, 0.4, 0.46, 0.46, false, 45)
+		piece(0.5, 0.82, 0.1, 0.3, false)
+	else
+		piece(0.5, 0.3, 0.36, 0.36, true)
+		piece(0.3, 0.56, 0.36, 0.36, true)
+		piece(0.7, 0.56, 0.36, 0.36, true)
+		piece(0.5, 0.8, 0.1, 0.32, false)
+	end
+	return pieces
+end
+
 -- A card suit floating up off a shoulder and fading, green with a dark edge.
-local function luckSign(root: BasePart, text: string, side: number)
+local function luckSign(root: BasePart, kind: string, side: number)
 	local start = Vector3.new(1.3 * side, 1.4 + math.random() * 0.8, 0)
-	local gui, label = signLabel(root, {
-		text = text,
-		colour = LUCK_LIGHT,
-		stroke = Color3.fromRGB(8, 40, 20),
-		size = 0.8,
-		at = start,
-		tilt = (6 + math.random() * 10) * side,
-	})
-	label.TextTransparency = 0.15
+	local gui = Create("BillboardGui", {
+		Name = "EmoteSign",
+		Adornee = root,
+		AlwaysOnTop = false,
+		LightInfluence = 0,
+		MaxDistance = 80,
+		Size = UDim2.fromScale(0.8, 0.8),
+		StudsOffset = start,
+		Parent = root,
+	}) :: BillboardGui
+	gui:SetAttribute("DGEmote", true)
+	local tilt = (6 + math.random() * 10) * side
+	local pieces = {}
+	-- (the dark edge: the same shape a little larger behind, then the suit itself)
+	for _, layer in ipairs({ { 1.16, Color3.fromRGB(8, 40, 20) }, { 1.0, LUCK_LIGHT } }) do
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		holder.Position = UDim2.fromScale(0.5, 0.5)
+		holder.Size = UDim2.fromScale(layer[1] * 0.8, layer[1] * 0.8)
+		holder.Rotation = tilt
+		holder.Parent = gui
+		for _, f in ipairs(drawSuit(holder, kind, layer[2])) do
+			f.BackgroundTransparency = 0.15
+			table.insert(pieces, f)
+		end
+	end
 	local info = TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 	TweenService:Create(gui, info, { StudsOffset = start + Vector3.new(0.3 * side, 1.4, 0) }):Play()
-	TweenService:Create(label, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-		TextTransparency = 1,
-		TextStrokeTransparency = 1,
-	}):Play()
+	for _, f in ipairs(pieces) do
+		TweenService:Create(f, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			BackgroundTransparency = 1,
+		}):Play()
+	end
 	task.delay(1.4, function()
 		gui:Destroy()
 	end)

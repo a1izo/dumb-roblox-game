@@ -199,7 +199,7 @@ end
 -- Shakes the view's camera (studs) for `seconds`, settling back.
 function ViewFx.shake(view: ViewportFrame, strength: number, seconds: number)
 	local camera = view.CurrentCamera
-	if not camera or Motion.isReduced() then
+	if not camera or Motion.shakeOff() then
 		return
 	end
 	local rest = camera.CFrame

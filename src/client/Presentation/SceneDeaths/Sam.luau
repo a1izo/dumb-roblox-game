@@ -193,24 +193,26 @@ local function build(ctx)
 		f.Parent = parent
 		return f
 	end
-	text(hud, "RAIDEN", 0.04, 0.045, 0.1, 0.022, Color3.fromRGB(230, 232, 236))
-	local life = backing(0.04, 0.07, 0.27, 0.014)
+	-- (all of it below Roblox's own buttons at the top left, which covered the name and the bar: seen 2026-11-14)
+	local DOWN = 0.085
+	text(hud, "RAIDEN", 0.04, 0.045 + DOWN, 0.1, 0.022, Color3.fromRGB(230, 232, 236))
+	local life = backing(0.04, 0.07 + DOWN, 0.27, 0.014)
 	fill(life, Color3.fromRGB(236, 238, 240), 0.0, 1.0)
 	fill(life, ORANGE, 0.0, 0.09)
-	local lifeBox = backing(0.312, 0.064, 0.05, 0.026)
+	local lifeBox = backing(0.312, 0.064 + DOWN, 0.05, 0.026)
 	text(lifeBox, "200", 0.06, 0.08, 0.6, 0.84, Color3.fromRGB(240, 240, 240), Enum.Font.GothamBlack)
 	text(lifeBox, "/200", 0.6, 0.3, 0.4, 0.5, Color3.fromRGB(180, 184, 190))
-	text(hud, "FC", 0.04, 0.092, 0.03, 0.016, Color3.fromRGB(120, 220, 240))
-	local cells = backing(0.07, 0.093, 0.16, 0.012)
+	text(hud, "FC", 0.04, 0.092 + DOWN, 0.03, 0.016, Color3.fromRGB(120, 220, 240))
+	local cells = backing(0.07, 0.093 + DOWN, 0.16, 0.012)
 	for k = 1, 12 do
 		fill(cells, Color3.fromRGB(80, 220, 240), (k - 1) / 12 + 0.006, k / 12 - 0.006)
 	end
-	text(hud, "1290/1296", 0.235, 0.09, 0.07, 0.016, Color3.fromRGB(160, 220, 236))
+	text(hud, "1290/1296", 0.235, 0.09 + DOWN, 0.07, 0.016, Color3.fromRGB(160, 220, 236))
 	-- the victim's bar, bottom right, in Metal Gear Rising's style (2026-11-12, the user: "how is it a finisher if hes
 	-- 77 HP? it should be 0.1%"): the name in small capitals over a long thin bar, its right end cut at a slant, the
 	-- life left white (a sliver), the life just lost red and draining away, the share as a number, pulsing red
 	local FOE_RED = Color3.fromRGB(230, 40, 50)
-	text(hud, "SAM", 0.6, 0.83, 0.06, 0.02, Color3.fromRGB(230, 232, 236), Enum.Font.GothamBold)
+	local foeName = text(hud, "SAM", 0.6, 0.83, 0.06, 0.02, Color3.fromRGB(230, 232, 236), Enum.Font.GothamBold)
 	local foe = backing(0.6, 0.857, 0.3, 0.011)
 	foe.BackgroundColor3 = Color3.fromRGB(8, 10, 14)
 	foe.BackgroundTransparency = 0.15
@@ -328,7 +330,7 @@ local function build(ctx)
 		local dry = k:Clone()
 		dry.Position = UDim2.fromScale(1.008, 0.506)
 		dry.Rotation = -1
-		dry.ImageTransparency = 0.7
+		dry.ImageTransparency = 0.86
 		dry.Parent = hud
 		ctx:atNow(3.2, function()
 			dry:Destroy()
@@ -346,11 +348,18 @@ local function build(ctx)
 		k.Parent = hud
 		ctx:tween(paint, 0.3, { Offset = Vector2.new(0, 0.6) })
 		kanji = k
+		-- (Sam's bar sits in the right half the 斬 covers: it steps away while the kanji is up, 2026-11-14)
+		foeName.Visible = false
+		foe.Visible = false
+		foeNumber.Visible = false
 	end)
 	ctx:at(3.2, function()
 		if kanji then
 			kanji:Destroy()
 		end
+		foeName.Visible = true
+		foe.Visible = true
+		foeNumber.Visible = true
 	end)
 	ctx:at(1.48, function()
 		Cinema.flash(Color3.new(1, 1, 1), 0.5, 0.25)

@@ -6,11 +6,13 @@
 -- A complete matching set earns its title (Shared/Sets), and owning so many emotes pays coins and a title
 -- once (Progression/Collection).
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
+local TitleMotion = require(Shared:WaitForChild("TitleMotion"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 local Mastery = require(Shared:WaitForChild("Progression"):WaitForChild("Mastery"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
@@ -232,7 +234,7 @@ local function titleTag(player: Player, character: Model, title: Cosmetics.Item?
 	if vip then
 		text = if text ~= "" then string.format('<font color="#%s">VIP</font>  ', TAG_WHITE:ToHex()) .. text else "VIP"
 	end
-	Create("TextLabel", {
+	local label = Create("TextLabel", {
 		BackgroundTransparency = 1,
 		Size = UDim2.fromScale(1, 1),
 		Text = text,
@@ -245,6 +247,11 @@ local function titleTag(player: Player, character: Model, title: Cosmetics.Item?
 		FontFace = TitleFonts.face(if title then title.id else nil),
 		Parent = gui,
 	})
+	-- (a title whose letters move: each client plays it, World/TitleAnimator)
+	if title and TitleMotion.of(title.id) then
+		label:SetAttribute("TitleId", title.id)
+		CollectionService:AddTag(label, TitleMotion.TAG)
+	end
 end
 
 -- The title over the head put right for where the player is now: none in a case (a body called into one keeps

@@ -14,6 +14,7 @@
 --   look:open()  look:show(item)  look:close()
 
 local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -25,6 +26,7 @@ local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
 local Models = require(Shared:WaitForChild("Models"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
+local TitleMotion = require(Shared:WaitForChild("TitleMotion"))
 local Seating = require(Shared:WaitForChild("Seating"))
 local TitleFonts = require(Shared:WaitForChild("TitleFonts"))
 
@@ -167,6 +169,8 @@ function YourLook.new(holder: GuiObject, props: { [string]: any }?): YourLook
 	}) :: TextLabel
 	-- (the tag as it hangs over the head: one line, in its tier's look; Shared/Rarity.titleText)
 	Create("UITextSizeConstraint", { MaxTextSize = 20, MinTextSize = 8, Parent = titleLabel })
+	-- (a title whose letters move plays here too: dress() names it, World/TitleAnimator moves it)
+	CollectionService:AddTag(titleLabel, TitleMotion.TAG)
 	local self = setmetatable({
 		viewport = viewport,
 		world = nil,
@@ -272,8 +276,10 @@ local function dress(self: YourLook)
 			Rarity.titleText(title.name, title.rarity, Tokens.color.dim, title.id)
 		-- (in the title's own face: Shared/TitleFonts)
 		self.titleLabel.FontFace = TitleFonts.face(title.id)
+		self.titleLabel:SetAttribute("TitleId", title.id)
 	else
 		self.titleLabel.Text = ""
+		self.titleLabel:SetAttribute("TitleId", nil)
 	end
 	ghost(copy, if looking == "specter" and item then item.color else nil)
 	Styles.form(copy, if looking == "specter" and item then item.form else nil, if item then item.color else nil)
