@@ -188,6 +188,60 @@ and measure how much of each lies inside the torso's outline. An arm more than 7
 hidden. Print the holds where both arms are hidden or where the head overlaps a raised arm. Add it to
 `run_cinema.py --lint` as `[shape]` notes.
 
+**Built 2026-11-14** in `art/scripts/cinema/silhouette.py` (shared with Tool 2), printed by `run_cinema.py --lint` as
+`[shape]` lines, one per run of held moments, after the `[lint]` and `[frame]` ones. How to run it, from the repo root:
+
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python art/scripts/run_cinema.py -- --lint RoleAce
+```
+
+```
+[shape] RoleAce  0.00- 3.10s self: the head is overlapped by the raised right arm (32% of the head) (drawn as a black silhouette)
+[shape] RoleAce  8.40- 9.40s self: the head is overlapped by the raised right arm (77% of the head)
+```
+
+What it does, and the numbers (constants at the top of `silhouette.py`):
+
+- **A held pose** is a moment at which the body rests: the middle of the head, both hands, both arms' middles and the
+  torso's four corners (in the actor's own frame, so a walk across the room does not count as moving) travel less than
+  0.25 studs over the 0.15 s either side of it. That is the shot's key poses as the eye sees them, wherever the module
+  keyed them (`key()`, `beat()`, `hold()` and the springs all end up as the same sampled pose). The module's own
+  `Motion` is sampled every 0.05 s with its springs and extras, through the rig, as `--lint` and `--clear` do; no
+  clip in `Animations.blend` is read. The shape is measured at every 0.1 s of a hold, and moments that run together
+  become one line with their average.
+- **Which actors:** any actor with a `Motion` in the module whose torso is at least 0.2 frame heights tall on the
+  screen (a tenth of the frame) with its middle inside the visible frame, from the shot's camera at that moment.
+  Bodies too small to read are skipped.
+- **The outline** of each part is the convex hull of its box's eight corners through the lens (the head a 1.2 box),
+  and the share of a part that lies inside another is the exact overlap of the two hulls.
+- **Both arms hidden:** each arm has more than 70 percent of its outline inside the torso's. From the front, arms
+  hanging at the sides share 7 percent with the torso; from the side, 83 to 100 percent.
+- **Head overlaps a raised arm:** a hand at least 0.5 studs above its own shoulder joint, and that arm covers more than
+  40 percent of the head's outline. (An arm level with the shoulder, a tray carried out, is not raised.)
+- **A black silhouette** (an actor with `silhouette=` windows, such as Ace's first 3.2 s): the shape is all there is,
+  so the lines are 50 percent and 20 percent there, and the note says so.
+- **To clear a note:** move the raised arm out from the head (beside it, not in front), or change the camera angle
+  at that hold. `run_cinema.py -- --preview <Shot> --stills=t` at the time of the note shows it, and
+  Tool 2's strip over the hold shows it in the shot's own frames.
+
+**Calibration, 2026-11-14** (first rule: a hand at shoulder height, 20 percent of the head: RoleMuerto had 7 notes,
+the writing poses, the wind-up and the laughing, which is how the scene is meant to look, so the rule was the fault,
+not the scene):
+
+| Shot | Notes | What they are |
+|---|---|---|
+| RoleMuerto (the good scene) | 1 | 5.2 to 5.3 s: the wind-up before the first slash, the fist up in front of the face (73 percent) |
+| RoleDiavolo | 0 | |
+| RoleAce (the weak scene) | 2 | 0 to 3.1 s: the hand at the lip against the head as a black silhouette; 8.4 to 9.4 s: the hand to the cup covers the head from the two-shot |
+| RoleButler | 1 | the silhouetted Ace actor, borderline at 20 percent |
+| RoleOperative | 0 | |
+| MeetingIntro | 2 | two seated players with both arms in the lap hidden from the front |
+| IntroAgency | 5 | hands at faces in the crowd |
+| IntroTokyo, IntroCampus | 0 | |
+
+Like Tool 1, it is a floor and not a judge: the weak scenes' faults are mostly timing and cameras, which the notes do
+not see. It says whether the held shape of the body reads. A clip with a `[shape]` note it did not mean is not done.
+
 ## One experiment to offer the owner: smears
 
 Fast moves on rigid boxes strobe. The games the owner named (Jujutsu Shenanigans, A Bizarre Run) cover 1 to 2

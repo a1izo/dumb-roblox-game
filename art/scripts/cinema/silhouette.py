@@ -1,12 +1,13 @@
-"""Bodies as flat shapes seen through a shot's own camera: Tool 2 (the spacing strip) of
-docs/handoff/animation-cutscene-plan-2026-11-13.md.
+"""Bodies as flat shapes seen through a shot's own camera: Tool 2 (the spacing strip) and Tool 3 (the silhouette
+check) of docs/handoff/animation-cutscene-plan-2026-11-13.md.
 
     from cinema import silhouette
     silhouette.strip(shot, "self", 3.2, 5.6, "out.png")     # one row of frames, 0.05 s apart, black on white
+    for line in silhouette.shape_lint(shot): print(line)    # the holds whose shape reads badly (run_cinema --lint)
 
-It works from the shot module's own motion (the keys, the springs and the extras of each actor's Motion, through the
-R6 rig's forward kinematics, as `framing` and `clearance` do), not from the clips saved in Animations.blend, so it
-shows what the module says right now, with no clip to rebuild first. The body is the six R6 boxes (the head a 1.2 box,
+Both work from the shot module's own motion (the keys, the springs and the extras of each actor's Motion, through the
+R6 rig's forward kinematics, as `framing` and `clearance` do), not from the clips saved in Animations.blend, so they
+show what the module says right now, with no clip to rebuild first. The body is the six R6 boxes (the head a 1.2 box,
 as `clearance` has it): no hair, no hat, no prop, no set between the lens and the body.
 
 This file stays free of bpy at the top (the drawing and the geometry can be tried in plain Python with numpy);
@@ -31,6 +32,20 @@ SIZES = {"Torso": (2, 2, 1), "Head": (1.2, 1.2, 1.2), "Left Arm": (1, 2, 1), "Ri
 CORNERS = {name: np.array([(x * s[0] / 2, y * s[1] / 2, z * s[2] / 2) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)],
                           float) for name, s in SIZES.items()}
 HAND = np.array([0.0, -0.9, 0.0])  # an arm's far end, in the arm's own frame (as framing.body has it)
+SHOULDER = np.array([0.0, 1.0, 0.0])  # and its near end, the joint
+
+# Tool 3's numbers (one place to tune them; the plan doc says what they mean)
+STEP = 0.05  # the poses are worked out this often
+STILL_SAMPLES = 3  # a moment is held when the body has not moved over this many samples either side of it (0.15 s)
+STILL_MOVE = 0.25  # studs: the most any hand, the head or the torso's corners may travel over that span
+EVERY = 2  # the shape is measured at every second sample of a hold (0.1 s)
+MIN_TORSO = 0.2  # a body is read only when its torso is at least this tall on the screen (v units; 0.2 = a tenth of the frame)
+HIDDEN = 0.70  # an arm with more than this share of its outline inside the torso's is hidden
+HEAD_OVER = 0.40  # a raised arm hides the head when it covers this share of the head's outline
+HIDDEN_BLACK = 0.50  # the same two, while the actor is drawn as a black silhouette (the shape is all there is)
+HEAD_OVER_BLACK = 0.20
+LIFTED = 0.5  # a hand is raised when it is at least this far (studs) above its shoulder joint
+
 
 # Geometry -----------------------------------------------------------------------------------------------------
 
@@ -86,6 +101,49 @@ def area(poly):
     return 0.5 * float(np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y))
 
 
+def clip(subject, window):
+    """The part of a convex polygon inside another convex counter-clockwise one (Sutherland-Hodgman)."""
+    out = [tuple(p) for p in subject]
+    n = len(window)
+    for i in range(n):
+        a, b = window[i], window[(i + 1) % n]
+        if not out:
+            break
+
+        def inside(p):
+            return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= 0
+
+        def meet(p, q):
+            # where the segment p-q crosses the line a-b
+            r = (q[0] - p[0], q[1] - p[1])
+            s = (b[0] - a[0], b[1] - a[1])
+            denom = r[0] * s[1] - r[1] * s[0]
+            if abs(denom) < 1e-12:
+                return q
+            k = ((a[0] - p[0]) * s[1] - (a[1] - p[1]) * s[0]) / denom
+            return (p[0] + k * r[0], p[1] + k * r[1])
+
+        source, out = out, []
+        prev = source[-1]
+        for cur in source:
+            if inside(cur):
+                if not inside(prev):
+                    out.append(meet(prev, cur))
+                out.append(cur)
+            elif inside(prev):
+                out.append(meet(prev, cur))
+            prev = cur
+    return np.array(out, float) if out else np.zeros((0, 2))
+
+
+def share_inside(poly, other):
+    """The share of poly's area that lies inside `other` (0..1)."""
+    whole = area(poly)
+    if whole < 1e-9 or len(other) < 3:
+        return 0.0
+    return max(0.0, min(1.0, area(clip(poly, other)) / whole))
+
+
 # The body through the lens ----------------------------------------------------------------------------------
 
 
@@ -103,8 +161,9 @@ def motion_of(actor):
 
 
 def poses(shot, actor, times, springs=True):
-    """For each shot time, how `actor` stands then: {"world": {part: (centre, rotation)}} (springs on: the head and
-    arms trail as they do in the baked clip). A time before or after the acting holds its first or last pose."""
+    """For each shot time, how `actor` stands then: {"world": {part: (centre, rotation)}, "track": points in the
+    character's own frame that say whether the body is moving} (springs on: the head and arms trail as they do in the
+    baked clip). A time before or after the acting holds its first or last pose."""
     import posekit
     from animlib import J
 
@@ -122,7 +181,14 @@ def poses(shot, actor, times, springs=True):
         place, a = np.array(v[:3]), math.radians(float(v[3]))
         turn = np.array([[math.cos(a), 0, math.sin(a)], [0, 1, 0], [-math.sin(a), 0, math.cos(a)]])
         world = {name: (place + turn @ parts[name][:3, 3], turn @ parts[name][:3, :3]) for name in SIZES}
-        out.append({"world": world})
+        track = [parts["Head"][:3, 3]]
+        for arm in ("Right Arm", "Left Arm"):
+            track.append(parts[arm][:3, 3] + parts[arm][:3, :3] @ HAND)
+            track.append(parts[arm][:3, 3])
+        for sx in (-1, 1):  # the torso's shoulders and hips: turning or leaning moves them
+            for sy in (-1, 1):
+                track.append(parts["Torso"][:3, 3] + parts["Torso"][:3, :3] @ np.array([sx, sy, 0.0]))
+        out.append({"world": world, "track": np.array(track)})
     return out
 
 
@@ -287,3 +353,105 @@ def strip(shot, slot, t0, t1, path, step=0.05, height=220, cols=0, fixed=False):
             "cuts": [round(times[k], 3) for k in sorted(cuts)], "biggest_step_px": round(max(travel), 1),
             "at": round(times[int(np.argmax(travel))], 3), "still_frames": sum(1 for d in travel[1:] if d <= 0.1 * top),
             "moving_frames": len(moving)}
+
+
+# Tool 3: the silhouette check -------------------------------------------------------------------------------
+
+
+def _still(series):
+    """For each sample, whether the body rested there: nothing travelled more than STILL_MOVE studs over the
+    STILL_SAMPLES samples either side of it."""
+    tracks = np.array([s["track"] for s in series])  # (samples, points, 3)
+    out = []
+    for i in range(len(series)):
+        lo, hi = max(0, i - STILL_SAMPLES), min(len(series), i + STILL_SAMPLES + 1)
+        window = tracks[lo:hi]
+        out.append(hi - lo >= 3
+                   and float(np.max(np.linalg.norm(window.max(axis=0) - window.min(axis=0), axis=1))) < STILL_MOVE)
+    return out
+
+
+def _readable(shapes):
+    torso = shapes.get("Torso")
+    if torso is None or len(torso) < 3:
+        return False
+    v = torso[:, 1]
+    centre = torso.mean(axis=0)
+    return bool(v.max() - v.min() >= MIN_TORSO and abs(centre[0]) < ASPECT and abs(centre[1]) < SEEN)
+
+
+def shape_moments(shot, step=STEP):
+    """Every held moment of every actor the lens reads (torso at least MIN_TORSO tall on the screen), with how the
+    body's outline reads from the shot's camera then: {"slot", "t", "right" and "left" (the share of each arm's
+    outline inside the torso's), "head_right" and "head_left" (the share of the head under that arm, when the hand
+    is raised, else 0)}."""
+    found = []
+    for actor in shot.actors:
+        if motion_of(actor) is None:
+            continue
+        t0, t1 = actor.show
+        times = [t0 + i * step for i in range(int((t1 - t0) / step + 1e-6) + 1)]
+        # a first look with the springs off: skip a body that is never big enough to read
+        coarse = poses(shot, actor, times[:: max(1, int(round(0.25 / step)))], springs=False)
+        if not any(_readable(part_hulls(s["world"], view_at(shot, t)))
+                   for s, t in zip(coarse, times[:: max(1, int(round(0.25 / step)))])):
+            continue
+        series = poses(shot, actor, times)
+        still = _still(series)
+        for i in range(0, len(times), EVERY):
+            if not still[i]:
+                continue
+            shapes = part_hulls(series[i]["world"], view_at(shot, times[i]))
+            if not _readable(shapes) or "Head" not in shapes:
+                continue
+            rec = {"slot": actor.slot, "t": times[i], "right": 0.0, "left": 0.0, "head_right": 0.0, "head_left": 0.0}
+            for key, arm in (("right", "Right Arm"), ("left", "Left Arm")):
+                if arm in shapes:
+                    rec[key] = share_inside(shapes[arm], shapes["Torso"])
+                    centre, rot = series[i]["world"][arm]
+                    hand, shoulder = centre + rot @ HAND, centre + rot @ SHOULDER
+                    if hand[1] - shoulder[1] >= LIFTED:
+                        rec["head_" + key] = share_inside(shapes["Head"], shapes[arm])
+            found.append(rec)
+    return found
+
+
+def shape_lint(shot, step=STEP):
+    """Notes, as time ranges, for the holds whose black shape reads badly from the shot's camera: both arms
+    hidden inside the torso's outline, or the head overlapped by a raised arm."""
+    silhouettes = {a.slot: a.silhouette for a in shot.actors if a.silhouette}
+
+    def black(slot, t):
+        window = silhouettes.get(slot)
+        return bool(window) and window[0] - 1e-6 <= t <= window[1] + 1e-6
+
+    flagged = {}  # (slot, what) -> [(t, {the numbers})]
+    for rec in shape_moments(shot, step):
+        dark = black(rec["slot"], rec["t"])
+        hidden, over = (HIDDEN_BLACK, HEAD_OVER_BLACK) if dark else (HIDDEN, HEAD_OVER)
+        if rec["right"] > hidden and rec["left"] > hidden:
+            flagged.setdefault((rec["slot"], "arms"), []).append((rec["t"], rec))
+        for side in ("right", "left"):
+            if rec["head_" + side] > over:
+                flagged.setdefault((rec["slot"], "head_" + side), []).append((rec["t"], rec))
+    lines = []
+    for (slot, what), moments in flagged.items():
+        runs = [[moments[0][0], moments[0][0], [moments[0][1]]]]
+        for t, rec in moments[1:]:
+            if t - runs[-1][1] <= step * EVERY * 1.5:
+                runs[-1][1] = t
+                runs[-1][2].append(rec)
+            else:
+                runs.append([t, t, [rec]])
+        for a, b, recs in runs:
+            def mean(key):
+                return sum(r[key] for r in recs) / len(recs)
+
+            if what == "arms":
+                msg = f"both arms are hidden in the torso's outline (right {mean('right'):.0%}, left {mean('left'):.0%})"
+            else:
+                side = what[5:]
+                msg = f"the head is overlapped by the raised {side} arm ({mean(what):.0%} of the head)"
+            tag = " (drawn as a black silhouette)" if black(slot, a) and black(slot, b) else ""
+            lines.append((a, f"{a:5.2f}-{b:5.2f}s {slot}: {msg}{tag}"))
+    return [line for _, line in sorted(lines)]
