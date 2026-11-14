@@ -250,8 +250,9 @@ def forensic(s):
     s.prop("Microscope", 99.5, 64.0, 180, 1.0, top)
     s.prop("OfficeChair", 99.0, 61.4, 180)
     s.prop("FilingCabinet", 69.4, 40.0, -90)
+    # (The lab is the lit room beside the hall's dark: the owner's corridor reference, graphics plan phase 11. 0.8 -> 1.1.)
     for x, z in ((80.0, 46.0), (96.0, 46.0), (88.0, 66.0)):
-        fit.panel(s, x, z, C, color=fit.COOL, brightness=0.8, range_=20, shadows=(x, z) == (88.0, 66.0))
+        fit.panel(s, x, z, C, color=fit.COOL, brightness=1.1, range_=20, shadows=(x, z) == (88.0, 66.0))
     fit.plaque(s, 107.7, 10.2, 62.0, 90, 5.0, 0.9, "化学実験室  CHEMISTRY", (240, 236, 226), (26, 40, 60))
 
 

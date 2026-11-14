@@ -95,6 +95,7 @@ the hall's south end at z 100 it stood against the roped-off stair.
    and show the owner the pairs before rolling out.
 
 **Done when.** The owner has seen before and after pairs for the three rooms and has said which parts to keep.
+(2026-11-14: before pairs for all three; after pairs for HQ and the University once phase 11 was in; Tokyo has had no change yet.)
 
 **Before pictures and what each lacks (2026-11-14).** `docs/handoff/refs/before-<map>-q21.jpg` and `-q3.jpg`, taken
 through the player's real camera in a play test (UI hidden, camera pinned, quality set from the client). Judged
@@ -259,6 +260,33 @@ University's science hall (floor `Map_Campus_Terrazzo_1`, one mesh for the whole
 
 **Done when.** The HQ room has one clear key and a near-black foreground with readable silhouettes, and the
 University corridor is lit mostly by the lab and the exit sign.
+
+**Result 2026-11-14 (HQ's office and the University's hall and lab; lights only, so no import and no version change).**
+What made both rooms flat was not the fill or the lamps: it was the "Bounce" lights. `SceneBuilder` hangs a round,
+shadowless PointLight (range up to 20) under every ceiling pool on Agency, Campus and Tokyo; with every light in the hall
+off and the ambient, environment and directional light zeroed the frame was black, and with only those Bounce lights cut to a
+quarter both rooms went from an even wash to a bright middle with a dark foreground (the office picture). They also lit the
+neighbouring rooms through the walls. What was built:
+- `lightbook.fit_fill` (run at export for venues with `FIT_FILL`, Agency and Campus): each Bounce light's range is kept to
+  its room (the median wall distance from sixteen rays at its height, glass counted, times 1.25, 10 to 20), and a venue's
+  `FILL_ROOMS` rows `(x0, z0, x1, z1, y0, y1, factor)` turn the fill down in the rooms they name. SceneBuilder reads the
+  optional `fill` and `fillRange` of a light, so lights without them build as before.
+- Keyed rooms: HQ's sergeant's office 0.4 (`agency/__init__.py`), the University's science hall 0.3
+  (`campus/__init__.py`); the forensic lab's three panels 0.8 to 1.1 (`campus/faculties.py`) so it is the lit room beside the
+  dark hall. A rule from the room's shape alone was tried first and rejected: it gave the four pools of one hall 0.38, 0.89,
+  0.49 and 0.35 (the arches and the lab's door gaps look open to a ray).
+- Measured (mean luminance of the same frame, 0 to 1): hall 0.434 to 0.292, its far-left wall 0.369 to 0.171, its floor
+  0.567 to 0.380; HQ's office 0.195 to 0.156, its floor 0.157 to 0.122; the bullpen, which only got the range limit,
+  0.192 to 0.178 with the same floor. Pictures: `docs/handoff/refs/after-hq-q21.jpg`, `after-hq-q3.jpg`,
+  `after-uni-q21.jpg`, `after-uni-q3.jpg`; Tokyo's room was not touched.
+- To reach the place: Rojo sync of `SceneBuilder.luau` and the two `Scenes/<Venue>/Dressing` data modules. Agency stays at
+  v34 and Campus at v33, so nothing greyboxes. Looked at live by writing the exported numbers onto the built Bounce lights
+  (the place's Dressing data predated the export); the real pipeline was not played.
+- Not done from the plan: exit signs that light (needs a sign mesh in the hall, a Campus version bump and an import; a green
+  test light, 0.9 / range 14 at the arch over the hall's far end, tinted the end wall, ceiling and floor and faded out well),
+  strip lights under cabinets in the lab, a darker lower band on the hall's wall, keying the other small rooms and HQ's glazed
+  offices (add rows to `FILL_ROOMS`: the factor is the look to tune), Tokyo, the frame rate. The hall's pools still sit at
+  full strength and 20 studs of range elsewhere.
 
 ## Phase 12: surface detail
 

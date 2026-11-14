@@ -168,6 +168,64 @@ def stop_pools(scene):
     return cut
 
 
+# The soft fill under each pool, kept to its room, and turned down in the rooms a venue names (the owner's graphics plan, part
+# two, phase 11, 2026-11-14). SceneBuilder gives every ceiling pool a round "Bounce" light low under it (range up to 20, no
+# shadows) so the floor between pools reads. Measured in a Studio play test at full quality: with every light in the
+# University's science hall and HQ's sergeant's office switched off the frame was black, and with only the Bounce lights cut
+# to a quarter the same rooms went from an even wash to a bright middle with a dark foreground, which is the owner's office
+# reference (one key, hard falloff), with the walls still readable. The lights also lit the next room (no shadows, so a wall
+# does not stop them). So two things, for the venues that opt in (FIT_FILL):
+#  - every Bounce light is kept to its room: its range is the median distance to the walls round it (sixteen rays level with
+#    the light, glass counted as a wall) times FILL_PAST, no less than FILL_LEAST_RANGE and no more than SceneBuilder's 20;
+#  - the rooms the venue lists in FILL_ROOMS ((x0, z0, x1, z1, y0, y1, factor): a small office, a hall beside a lit room) have
+#    their pools' fill multiplied by the factor, so the room is keyed by its pool. A factor is the owner's look to tune: a
+#    rule from the room's shape alone was tried first and gave neighbouring pools of one hall 0.38, 0.89, 0.49 and 0.35.
+FILL_RAYS = 16
+FILL_REACH = 20.0  # SceneBuilder.SOFT.fillRange: no ray is longer, no Bounce light reaches further
+FILL_PAST = 1.25  # reach = the median wall distance times this
+FILL_LEAST_RANGE = 10.0
+FILL_AT = 0.6  # SceneBuilder.SOFT.fillAt: how far down the pool's reach the Bounce light hangs
+
+
+def fit_fill(scene, rooms=()):
+    """Keeps every pool's soft fill to its room (li["fillRange"]) and multiplies it by a room's factor where `rooms` lists
+    one (li["fill"]); SceneBuilder reads both. Run after stop_pools (the Bounce light hangs by the pool's cut range). Needs
+    Blender (mathutils); outside it nothing changes. Returns (pools fitted, pools given a factor)."""
+    try:
+        from mathutils import Vector
+
+        from maps import finders
+    except ImportError:
+        return 0, 0
+    pools = [li for li in scene.lights if li.get("pool") and li["kind"] == "spot" and li.get("role") != "emergency"]
+    if not pools:
+        return 0, 0
+    # (every face, glass too: a glass wall bounds a room though light goes through it, and HQ's offices are mostly glass)
+    tree, _ = finders.Tris(scene).tree("all")
+    if tree is None:
+        return 0, 0
+    fitted = keyed = 0
+    for li in pools:
+        x, y, z = li["pos"]
+        level = y - max(3.0, li["range"] - 1.0) * FILL_AT  # where SceneBuilder hangs the Bounce light
+        reach = []
+        for k in range(FILL_RAYS):
+            a = 2 * math.pi * k / FILL_RAYS
+            hit = tree.ray_cast(Vector((x, level, z)), Vector((math.cos(a), 0.0, math.sin(a))), FILL_REACH)
+            reach.append(FILL_REACH if hit[0] is None else hit[3])
+        # (the median, not the mean: an arcade's arches or a hall's far ends are open directions)
+        reach.sort()
+        median = (reach[FILL_RAYS // 2 - 1] + reach[FILL_RAYS // 2]) / 2
+        li["fillRange"] = round(max(FILL_LEAST_RANGE, min(FILL_REACH, median * FILL_PAST)), 1)
+        fitted += 1
+        for x0, z0, x1, z1, y0, y1, factor in rooms:
+            if x0 <= x <= x1 and z0 <= z <= z1 and y0 <= y <= y1:
+                li["fill"] = factor
+                keyed += 1
+                break
+    return fitted, keyed
+
+
 LAMP_GAP = 3.0  # check_v2's: two lit lamps nearer than this are stacked
 
 

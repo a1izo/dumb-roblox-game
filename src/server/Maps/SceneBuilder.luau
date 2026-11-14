@@ -173,8 +173,10 @@ local function addLight(b, folder: Instance, spec, showFixture: boolean?, where:
 		})
 		Create("PointLight", {
 			Color = (color(spec.color) :: Color3):Lerp(Color3.new(1, 1, 1), 0.15),
-			Brightness = SOFT.fill * math.clamp(pool / SOFT.fillPer, 0.5, 1.4) * low * low,
-			Range = math.min(SOFT.fillRange, spec.range * 1.5),
+			-- (fill and fillRange: lightbook.fit_fill's fit of the bounce light to its room, for the venues that use it:
+			-- a small room or a narrow hall is keyed by its pool, and its fill stays inside its own walls)
+			Brightness = SOFT.fill * math.clamp(pool / SOFT.fillPer, 0.5, 1.4) * low * low * (spec.fill or 1),
+			Range = math.min(spec.fillRange or SOFT.fillRange, spec.range * 1.5),
 			Shadows = false,
 			Parent = under,
 		})

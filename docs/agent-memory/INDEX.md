@@ -61,3 +61,4 @@
 - [Animation plan 2026-11](animation-plan-2026-11.md) - the owner's 2026-11-13 verdict (only RoleMuerto, maybe RoleDiavolo, are good), why those two work, and the plan: tools first, a pilot, then base scenes, deaths, wins, emotes and movement
 - [Vertex colours vs SurfaceAppearance](vertex-colours-ignored-under-surfaceappearance.md) - Roblox ignores vertex colours under a SurfaceAppearance (seen 2026-11-14): no baked mesh shading for textured materials; run-time EditableMesh tests need no upload
 - [Roughness live test](surface-roughness-live-test-2026-11.md) - every map material's roughness measured (floors already 0.12 to 0.4), what roughness and env specular do live, EditableImage roughness swap with no upload (2026-11-14)
+- [Bounce lights are the flat wash](bounce-lights-are-the-flat-wash.md) - the even look of Agency/Campus rooms is the SceneBuilder Bounce lights, not the fill; per-room FILL_ROOMS fix; export and Studio traps (2026-11-14)

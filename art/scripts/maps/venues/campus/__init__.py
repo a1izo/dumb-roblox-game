@@ -54,6 +54,11 @@ VIEWS = [
 # the rooms furthest apart (the stair up to the gallery included).
 # Ceiling pools stop at their own floor at export (lightbook.stop_pools; seen in a play test, 2026-11-06).
 STOP_POOLS = True
+# The pools' soft fill is kept to its room at export (lightbook.fit_fill, the owner's graphics plan, 2026-11-14), and turned
+# down in the rooms listed here so a pool keys them: (x0, z0, x1, z1, y0, y1, factor). The science hall: dark beside the lit
+# forensic lab, the owner's corridor reference.
+FIT_FILL = True
+FILL_ROOMS = [(49.4, 37.4, 68.0, 108.6, 0.0, 14.0, 0.3)]
 
 CHECKS = {
     "walk": (22.0, 30.0),

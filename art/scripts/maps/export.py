@@ -339,6 +339,11 @@ def write_scene_v2(scene, module, source):
         from maps import lightbook
 
         print(f"  stacked lamps taken out: {lightbook.unstack(scene)}")
+    if getattr(module, "FIT_FILL", False):  # (the venues whose pools' soft fill is kept to each room: lightbook.fit_fill)
+        from maps import lightbook
+
+        print("  pools' soft fill kept to their rooms: %d, of which %d in a keyed room (FILL_ROOMS)" % lightbook.fit_fill(
+            scene, getattr(module, "FILL_ROOMS", ())))
     version, digest = next_version(scene, getattr(module, "TEXTURES", ()), getattr(module, "DATA_DIR", None))
     if os.path.isdir(folder):
         shutil.rmtree(folder)
@@ -441,6 +446,8 @@ def write_scene_v2(scene, module, source):
         f'flicker = {"true" if li["flicker"] else "false"}'
         + (f', role = "{li["role"]}"' if li.get("role") else "")
         + (", clear = true" if li.get("clear") else "")
+        + (f', fill = {num(li["fill"], 2)}' if li.get("fill") is not None else "")
+        + (f', fillRange = {num(li["fillRange"], 1)}' if li.get("fillRange") else "")
         + (f', rot = {num(li["rot"], 1)}' if li.get("rot") else "")
         + (f', size = {vec(li["glow"][0])}, glow = {rgb(li["glow"][1])}' if li.get("glow") else "") + " }"
         for li in scene.lights
